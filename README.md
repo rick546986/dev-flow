@@ -17,7 +17,10 @@ feature 走 7 份文檔、過 3 道 gate(G1 方向核准、G2 契約審查、G3 
 - 本 README = 制度正本(7 階段規則、gate 條件、切片與引擎分流)——往下讀就是全部規則
 - `_templates/` = 七份階段文檔 + STATUS/CONTEXT/ADR/living-spec 模板
 - `example/contract-expiry-reminder/` = 一個 feature 從討論到驗證走完全程的真實形狀
-- `guide-quickstart.html`、`guide-dev-flow.html`、`guide-dev-talk.html` = 圖解導覽(下載後瀏覽器開)
+- 圖解導覽(線上看):[quickstart](https://rick546986.github.io/dev-flow/guide-quickstart.html)、
+  [dev-flow](https://rick546986.github.io/dev-flow/guide-dev-flow.html)、
+  [dev-talk](https://rick546986.github.io/dev-flow/guide-dev-talk.html)
+  ——repo 內任一 html(含 example 的 twin)都可把路徑接在 `rick546986.github.io/dev-flow/` 後線上檢視
 
 **採用方式**:最低配是把模板複製進專案、人工照本 README 走流程;搭配 Claude Code 的
 dev-flow / dev-talk plugin 可用 `/dev-talk`、`/dev-flow` 指令自動導引與守衛(plugin

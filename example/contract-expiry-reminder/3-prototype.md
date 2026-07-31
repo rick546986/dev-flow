@@ -34,4 +34,4 @@ Variant B: dashboard 卡片(選定, 3/3 票)
 
 ## Verdict
 - 回寫 2-decision Risks:UI 形式已定 → dashboard 卡片。
-- branch `proto/expiry-ui-variants` 已刪;Variant B 結構截圖存 `3-prototype.html`。
+- branch `proto/expiry-ui-variants` 已刪;Variant B 結構已錄於上方 Sketch 節(原型閱後即焚,不留 code)。
