@@ -107,10 +107,26 @@ Reviewer 靠這條鏈機械檢查「每條需求都有測試」,不靠肉眼。
 
 ## 5. 實作期鐵則:不打斷、自主推進(源:Anthropic「Finding your unknowns」field guide)
 
-實作中**不打斷問人**,靠三條規則自主推進、事後可稽核:
+實作中**不打斷問人**,靠三條規則自主推進、事後可稽核。每個 T 一律照同一條
+acceptance seam,手動實作與 `dev-run` 不得各自另訂順序:
 
-- **檢查點**:每完成一個 T = Verify 綠 + 一個 commit(一 T 一 commit,可逐點回滾;
-  Progress Log 每列附 commit hash)。
+```text
+RED → GREEN → scope check → Verify
+→ independent T review
+→ PASS
+→ commit
+→ Progress Log + checkbox + review evidence
+```
+
+- **檢查點**:T 在獨立審查 PASS 前一律未完成、不得 commit。reviewer 必須不同於該
+  T 的 implementer;優先由適格人類 reviewer 審,否則派 fresh-context reviewer
+  Agent。reviewer 必須親自跑該 T 的 Verify,並檢查 Covers、RED→GREEN 證據與
+  **該 T 自己的 Files scope**。FAIL 回同一 T 修正後重新送審;尚未取得後續 PASS
+  就維持未完成。高風險或 findings 有爭議時可加第二位 reviewer。PASS 後才做一 T
+  一 commit(可逐點回滾),再把 hash、checkbox 與 review evidence 寫入 6-notes 的
+  Progress Log / T Review Log。
+- **分層**:上述是 Stage 6 的逐 T acceptance seam;Stage 7 G3 仍是獨立的 feature-level
+  gate,不被 T review 取代或重複。
 - **Decisions**(spec 未載明的自由選擇,如內部命名、資料結構):自己選、記一行入
   6-notes 的 Decisions 節、繼續。不屬偏差,不需回審。
 - **偏差兩級**:

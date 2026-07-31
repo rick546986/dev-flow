@@ -18,23 +18,31 @@ updated:
 >    (並行 → worktree)。完成 = 讀取清單回報+branch 就位。
 > 1. 接手核對:4-spec approved?5-tasks 每 T 有 Verify+Covers?缺 → 停回補。
 >    建 todo 一 T 一項,照 Blocked-by 拓撲序。完成 = todo 與 5-tasks 一一對應。
-> 2. 逐 T 循環(每 T 五小步):a 照 Covers 先寫失敗測試(名含 S-id)→ RED 輸出貼
+> 2. 逐 T 循環:a 照 Covers 先寫失敗測試(名含 S-id)→ RED 輸出貼
 >    TDD Evidence;b 最小實作到 GREEN(貼輸出)→ refactor 保綠;c scope check:
->    git status 改動檔 ⊆ Files 聯集,超出 → L1/L2 判(定義見下);d Verify 綠 →
->    一 commit → hash 入 Progress Log + 勾 checkbox;e 自由選擇 → Decisions 一行
->    續走,偏差 → L1/L2。完成 = 該 T checkbox ✓ + hash 在案 + Covers 的 S 全有
->    RED→GREEN 證據。
+>    git status 改動檔 ⊆ 該 T 自己的 Files,超出 → L1/L2 判(定義見下);d 跑該 T
+>    Verify;e independent T review:reviewer 必須不同於 T implementer,優先適格人類,
+>    否則 fresh-context reviewer Agent;reviewer 親跑 Verify,檢查 Covers、RED→GREEN
+>    證據與該 T 自己的 Files scope。FAIL → 回同一 T 修正並重新送審;高風險或
+>    finding 有爭議可加第二 reviewer;f PASS → commit;g hash 入 Progress Log +
+>    勾 checkbox + review evidence 入 T Review Log;h 自由選擇 → Decisions 一行續走,
+>    偏差 → L1/L2。完成 = 該 T reviewer PASS + checkbox ✓ + hash 在案 + Covers
+>    的 S 全有 RED→GREEN 證據。順序固定:RED → GREEN → scope check → Verify →
+>    independent T review → PASS → commit → Progress Log + checkbox + review evidence。
 > 3. 回歸:全 T 後跑既有全套,本次 S 全綠+既有全綠;紅 → 修+依偏差級記。
 >    完成 = 全套**全綠**輸出摘要入本檔(紅字摘要不算完成)。
 > 4. 自檢(= Self-Review 節逐問作答):①每 S-id 有含其名測試+RED/GREEN 證據?
->    ②每 T 一 commit、Progress Log 每列有 hash?③git diff --stat 檔案 ⊆ Files
->    聯集、Diff Budget 內?④Decisions/Deviations 與 diff 對得上(無 silent
->    drift)?⑤回歸綠?答不出 → 回步 2/3 補。完成 = 五答落檔。
+>    ②每 T 在 T Review Log 有 verdict?③每個 PASS 都早於該 T commit?④每個 FAIL
+>    後有較晚 PASS,否則該 T 仍未勾、未 commit?⑤每個已完成 T 一 commit、Progress
+>    Log 每列有 hash?⑥git diff --stat 檔案 ⊆ Files 聯集、Diff Budget 內?
+>    ⑦Decisions/Deviations 與 diff 對得上(無 silent drift)?⑧回歸綠?答不出 →
+>    回步 2/3 補。完成 = 八答落檔。
 > 5. 收尾:Files Changed 填(對照 Diff Budget)、全節齊無佔位、status 更新。
 >    完成 = 節齊 + frontmatter status 已更新。
 >
 > 實作期規則(實作中**不打斷問人**,自主推進):
-> - **檢查點**:每完成一個 T = Verify 綠 + 一個 commit。一 T 一 commit,可逐點回滾。
+> - **檢查點**:每個 T 都要先經不同 implementer 的 reviewer 獨立審查 PASS,才可
+>   commit、記 Progress Log、勾 checkbox;FAIL 回同一 T 修正並重新送審。
 > - **Scope guard**:改動檔案 ⊆ 5-tasks 全部 T 的 Files 聯集;超出依 L1/L2 判。
 > - **Decisions**(spec 未載明的自由選擇,如內部命名、資料結構):自己選、記一行、繼續。
 > - **偏差**:
@@ -43,10 +51,24 @@ updated:
 >     禁止 silent drift。(L1 = Anthropic field-guide 原版;L2 為本 SOP 加嚴)
 >   - 分不清 L1/L2 → **一律當 L2**,不留自由心證。
 
-## Progress Log
-<!-- 日期 | T-id | 一行;每列即一個檢查點(Verify 綠 + commit hash) -->
+## T Review Log
+<!-- 每 T 一筆,逐 round 留痕:
+### T-1
+- reviewer identity:<姓名或 Agent 身分>
+- reviewer kind:human | fresh-context Agent
+- reviewed-at:<時間,須早於該 T commit>
+- Verify:<原指令> → <reviewer 親跑的觀測結果>
+- Covers finding:<涵蓋是否吻合>
+- Files finding:<改動是否位於該 T 自己的 Files scope>
+- RED→GREEN finding:<證據是否完整、可信>
+- verdict:PASS | FAIL
+- correction + re-review after FAIL:<修正內容 + 後續 round 證據;無 FAIL 則 N/A>
+-->
 
-## 執行軌跡(dev-run 引擎用;手動實作留白)
+## Progress Log
+<!-- 日期 | T-id | 一行;只記 T Review PASS 後做的 commit,每列含 commit hash -->
+
+## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 <!-- 每 T 一列:T-id | 模型升階史(如 haiku→sonnet) | 回合數 | 升階原因一句。
      升階本身 = spec 品質訊號,7-review.html 以表呈現 -->
 
@@ -69,7 +91,7 @@ updated:
 <!-- 對照 4-spec Diff Budget -->
 
 ## Self-Review
-<!-- = 執行清單步 4 的五問:逐問作答、附證據(測試輸出/hash/diff stat),不憑印象 -->
+<!-- = 執行清單步 4 的八問:逐問作答、附證據(review 時間/verdict/測試輸出/hash/diff stat),不憑印象 -->
 
 ## Review Follow-up(G3 打回時才用)
 <!-- 逐 F:同意 → 改+一句為何對;不同意 → 擺論證,不盲改(禁 performative fix) -->
