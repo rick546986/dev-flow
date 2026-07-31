@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>contract-expiry-reminder · 7-review</title>
+<style>
+  :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;}
+  @media(prefers-color-scheme:dark){
+    :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+  main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
+  h2{font-size:1.15rem;margin-top:2em}
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:1em 0}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
+  th{background:var(--card)}
+  code{background:var(--card);border-radius:4px;padding:1px 5px;
+       font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
+  pre{background:var(--card);border:1px solid var(--line);border-radius:8px;
+      padding:10px;overflow-x:auto;font-size:.85em;line-height:1.5}
+  details{margin:.5em 0;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+  summary{cursor:pointer;font-weight:600}
+  .add{color:var(--ok)} .del{color:var(--bad)}
+  .meta{color:var(--muted);font-size:.85rem;margin-bottom:1.5em}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;
+         font-size:.8rem;font-weight:600}
+  .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+  .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  ul{padding-left:1.4em}
+</style>
+</head>
+<body>
+<main>
+  <h1>7. 驗證 — 合約到期提醒</h1>
+  <p class="meta">feature: contract-expiry-reminder · reviewer: &lt;reviewer-a&gt; · 2026-07-23 ·
+     <span class="badge ok">Verdict: PASS</span></p>
+
+  <h2>Coverage Matrix</h2>
+  <div class="tablewrap"><table>
+    <tr><th>S-id</th><th>測試</th><th>狀態</th></tr>
+    <tr><td>S-1</td><td><code>TestExpiring_S1</code>(Go)</td><td><span class="badge ok">✅ 綠</span></td></tr>
+    <tr><td>S-2</td><td><code>ExpiringContractsCard "S2 empty"</code></td><td><span class="badge ok">✅ 綠</span></td></tr>
+    <tr><td>S-3</td><td><code>ExpiringContractsCard "S3 navigate"</code></td><td><span class="badge ok">✅ 綠</span></td></tr>
+    <tr><td>回歸</td><td><code>go test ./... && npm test</code>(既有套件)</td><td><span class="badge ok">✅ 全綠</span></td></tr>
+  </table></div>
+
+  <h2>變更架構圖</h2>
+  <pre>
+frontend  Dashboard.tsx ─┬─ ExpiringContractsCard.tsx(新)── 點擊 → /contracts/:id(既有 route)
+backend   handler/contract.go(+Expiring)→ service/contract.go(+ListExpiring)
+          → repo/contract.go(查詢走 idx_contracts_end_date,無 migration)
+  </pre>
+
+  <h2>Diff(hover 看摘要,點擊展開)</h2>
+  <details title="+38 −2,新增 Expiring handler 與路由">
+    <summary><code>internal/handler/contract.go</code>(+38 −2)</summary>
+    <pre><span class="add">+ func (h *ContractHandler) Expiring(c echo.Context) error {</span>
+<span class="add">+     days := 30 // CONTEXT.md「Expiring」定義</span>
+<span class="add">+     list, err := h.svc.ListExpiring(c.Request().Context(), days)</span>
+<span class="add">+     ...</span>
+<span class="del">- // TODO: expiring endpoint</span></pre>
+  </details>
+  <details title="+21 −0,卡片元件(S-1/S-2/S-3)">
+    <summary><code>src/components/ExpiringContractsCard.tsx</code>(+21 −0)</summary>
+    <pre><span class="add">+ export function ExpiringContractsCard({items}: Props) { ... }</span></pre>
+  </details>
+
+  <h2>Findings</h2>
+  <div class="tablewrap"><table>
+    <tr><th>F-id</th><th>級別</th><th>位置</th><th>問題</th><th>處置</th></tr>
+    <tr><td>F-1</td><td><span class="badge warn">🟡 Should-fix</span></td>
+        <td><code>internal/handler/contract.go:41</code></td>
+        <td>handler 未設 context timeout</td>
+        <td>fast-lane follow-up,不擋出貨</td></tr>
+  </table></div>
+
+  <h2>Deviations(來自 6-implementation-notes)</h2>
+  <ul>
+    <li><strong>D-1(L1)</strong>:放棄新增覆蓋索引 migration —— 實測走既有
+        <code>idx_contracts_end_date</code>,p95 42ms 已達標;避免不必要 schema 變更。
+        reviewer 判定:記錄正確,不動 R/S。</li>
+  </ul>
+
+  <h2>Exit Checklist</h2>
+  <ul>
+    <li>✅ Quiz(不可逆改動必做;其餘 full lane 選配,fast 免):本次新增對外 API endpoint <code>GET /contracts/expiring</code>,shipped 後即成對外契約,移除屬破壞性變更 → 不可逆,Quiz 必做 —— AI 出 4 題(30 天定義/不做 email 原因/D-1 取捨/空狀態),&lt;reviewer-a&gt; 全對</li>
+    <li>✅ PR #142 → develop</li>
+    <li>✅ spec delta 併入 <code>docs/specs/contracts.md</code>(R-1、R-2,標 source)</li>
+    <li>✅ STATUS.md → shipped</li>
+    <li>✅ 資料夾 frontmatter 更新</li>
+    <li>✅ 本 html 產生(含變更架構圖 + diff 折疊)</li>
+    <li>✅ feature branch 已刪</li>
+  </ul>
+</main>
+</body>
+</html>

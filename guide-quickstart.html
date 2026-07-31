@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>dev-flow 快速上手 · 新專案零到一操作導覽</title>
+<style>
+  :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;
+        --opus:#7c3aed;--sonnet:#0d9488;}
+  @media(prefers-color-scheme:dark){
+    :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;
+          --opus:#a78bfa;--sonnet:#2dd4bf;}
+  }
+  :root[data-theme="dark"]{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;
+        --card:#1e2023;--ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;
+        --opus:#a78bfa;--sonnet:#2dd4bf;}
+  :root[data-theme="light"]{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;
+        --card:#f7f7f8;--ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;
+        --opus:#7c3aed;--sonnet:#0d9488;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+  main{max-width:960px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
+  h2{font-size:1.15rem;margin-top:2.2em}
+  h3{font-size:1rem;margin-top:1.6em}
+  nav{background:var(--card);border:1px solid var(--line);border-radius:10px;
+      padding:10px 16px;margin:1em 0;display:flex;flex-wrap:wrap;gap:6px 16px}
+  nav a{color:var(--acc);text-decoration:none;font-size:.9rem}
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:1em 0}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+  th{background:var(--card)}
+  code{background:var(--card);border-radius:4px;padding:1px 5px;
+       font-family:ui-monospace,Menlo,monospace;font-size:.88em}
+  pre{background:var(--card);border:1px solid var(--line);border-radius:8px;
+      padding:12px;overflow-x:auto;font-family:ui-monospace,Menlo,monospace;font-size:.85em}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.8rem;font-weight:600}
+  .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+  .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  .you{background:color-mix(in srgb,var(--acc) 14%,transparent);color:var(--acc)}
+  .opus{background:color-mix(in srgb,var(--opus) 16%,transparent);color:var(--opus)}
+  .sonnet{background:color-mix(in srgb,var(--sonnet) 16%,transparent);color:var(--sonnet)}
+  .haiku{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  svg{max-width:100%;height:auto}
+  svg text{fill:var(--fg);font:11px -apple-system,"PingFang TC",sans-serif}
+  svg .b{fill:var(--card);stroke:var(--line)}
+  svg .hl{fill:color-mix(in srgb,var(--acc) 18%,transparent);stroke:var(--acc)}
+  svg .m-opus{fill:color-mix(in srgb,var(--opus) 16%,transparent);stroke:var(--opus)}
+  svg .m-sonnet{fill:color-mix(in srgb,var(--sonnet) 16%,transparent);stroke:var(--sonnet)}
+  svg .cap{fill:var(--muted)}
+  svg .note{fill:var(--card);stroke:var(--warn);stroke-dasharray:5 3}
+  svg .flow{fill:none;stroke:var(--muted);stroke-width:1.6}
+  svg .fenceline{stroke:var(--bad);stroke-width:1.6;stroke-dasharray:6 4}
+  svg .flagcircle{fill:var(--bg);stroke:var(--bad);stroke-width:1.4}
+  svg .flagtext{fill:var(--bad);font-weight:700}
+  svg .arrowhead{fill:var(--acc)}
+  svg .arrowhead-bad{fill:var(--bad)}
+  svg .session{fill:none;stroke:var(--acc);stroke-dasharray:4 3;stroke-width:1.6}
+  .muted{color:var(--muted)}
+  details{margin:.35em 0 0}
+  details>summary{cursor:pointer;color:var(--acc);font-size:.85rem;user-select:none}
+  blockquote{margin:.5em 0 .2em;padding:.5em .9em;border-left:3px solid var(--acc);
+             background:var(--card);border-radius:0 6px 6px 0;font-size:.88em}
+  .cardgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin:1em 0}
+  .card{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--card)}
+  .card h4{margin:0 0 .4em;font-size:.95rem}
+  .card p{margin:0;font-size:.88rem}
+  .legend{font-size:.85rem;color:var(--muted);margin:.3em 0 1em}
+  footer.foot{margin-top:3em;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padding-top:1em}
+</style>
+</head>
+<body>
+<main>
+  <h1>dev-flow 快速上手 · 新專案零到一操作導覽</h1>
+  <p class="muted">給第一次在新專案跑 dev-flow 的人:照著本頁一步一步打,從裝好 plugin 到出第一個 PR。
+  正本規則是 <code>README.md</code>,本頁是操作導覽,兩者不一致以 README 為準。</p>
+  <p class="muted">本頁走的是 <strong>full lane</strong>(1→7 全套)。如果你要做的其實是 bugfix / ≤2 檔小改 /
+  行為已有 spec 條目,走 <strong>fast lane</strong> 更省(只要 4-spec 補 bug scenario + 6-notes + 7-review mini,
+  Gate 只有 G3)—— 兩軌判準與細節見 <a href="guide-dev-flow.html#lanes">guide-dev-flow.html ②兩軌</a>。</p>
+
+  <blockquote>本頁指令分兩種管道,下文用固定標籤區分:<br>
+  <span class="badge you">跟 AI 說</span> —— 對話裡打的觸發語(<code>dev-setup</code>、<code>/dev-talk …</code>、
+  <code>/dev-flow 繼續 …</code>、<code>dev-run …</code>),由 plugin 的 skill 描述以自然語言匹配,不是 shell 指令。<br>
+  <span class="badge warn">終端機</span> —— 實際在 shell 執行的指令(<code>git</code>、<code>devflow-exec.sh</code>)。</blockquote>
+
+  <nav>
+    <a href="#checklist">① 零到一 checklist</a>
+    <a href="#walkthrough">② 一個 feature 的完整走位</a>
+    <a href="#guardcheat">③ 執行守衛速查表</a>
+    <a href="#models">④ 模型分層速查</a>
+    <a href="#faq">⑤ 常見卡關 FAQ</a>
+    <a href="#diagram">⑥ 全程圖</a>
+  </nav>
+
+  <h2 id="checklist">① 零到一 checklist</h2>
+  <p>新專案第一次接觸 dev-flow,依序做這五件事。</p>
+
+  <h3>0. plugin 已改過就先 reload</h3>
+  <p><span class="badge you">跟 AI 說</span> 如果你剛裝好、或剛改過 <code>dev-talk</code>/<code>dev-flow</code> plugin,
+  在當前 session 打:</p>
+  <pre>/reload-plugins</pre>
+  <p class="muted">為何:skills 與 hooks 隨 plugin 全域生效(<code>~/.claude/plugins/local/{dev-talk,dev-flow}/</code>,
+  單一正本),但執行中的 session 不會自動感知改動,要 reload 新版 skill/hook 才生效
+  (見 <code>dev-setup</code> SKILL「注意」節)。</p>
+
+  <h3>1. 進專案打 dev-setup(不需參數)</h3>
+  <p><span class="badge you">跟 AI 說</span> cd 進新專案 repo root 後:</p>
+  <pre>dev-setup</pre>
+  <p>它會自動偵測現況分流,不用你自己判斷裝過沒:</p>
+  <div class="tablewrap"><table>
+    <tr><th>偵測</th><th>狀態</th><th>動作</th></tr>
+    <tr><td>無 <code>docs/dev/</code></td><td><strong>fresh</strong></td><td>跑 install,完成後跑 check 回報</td></tr>
+    <tr><td>有 <code>docs/dev/</code>,但版本落後母版</td><td><strong>stale</strong></td><td>先列 diff 摘要徵同意 → upgrade → check</td></tr>
+    <tr><td>有且與母版一致</td><td><strong>current</strong></td><td>只跑 check</td></tr>
+    <tr><td>check 抓到異常</td><td><strong>broken</strong></td><td>列異常+修法,徵得同意後 fix</td></tr>
+  </table></div>
+  <p class="muted">明講子命令(<code>dev-setup check</code> / <code>upgrade</code> / <code>install</code> / <code>fix</code> /
+  <code>uninstall</code>)會跳過偵測,直接照該子命令走。</p>
+
+  <h3>2. install 完成後,它建了什麼(fresh 情境)</h3>
+  <ul>
+    <li><code>docs/dev/README.md</code> ← cp 母版 <code>~/dev/dev-flow/README.md</code></li>
+    <li><code>docs/dev/_templates/</code> ← cp 母版 <code>_templates/</code></li>
+    <li><code>docs/dev/STATUS.md</code> ← 從模板建(進行中 feature 看板)</li>
+    <li>repo root <code>CONTEXT.md</code> ← 若無則從模板建(詞彙表)</li>
+    <li><code>.claude/rules/arch-invariants.md</code> —— <strong>自動產草稿</strong>(不是空殼):收割舊 harness
+    steering 與 <code>CLAUDE.md</code> 技術規則段 → 派 sonnet 掃 codebase 抓候選 → 每條標
+    <code>【待確認】</code> 列給你逐條核可,見下一步</li>
+    <li><code>.gitignore</code> 加一行 <code>.devflow/</code>(執行守衛的狀態檔目錄)</li>
+  </ul>
+  <p class="muted">兩個會跳出來徵你同意的動作,不是自動靜默完成:</p>
+  <ul>
+    <li><strong>文檔歸位</strong>:專案裡若有散落文件,會提議 <code>git mv</code> 進
+    <code>docs/specs/</code> / <code>docs/dev/</code> / <code>docs/adr/</code>,並同步全部引用(README §1)</li>
+    <li><strong>舊 harness steering 偵測</strong>:發現 <code>.claude/steering/*.md</code> → 徵同意把「架構不變量/
+    技術慣例」類內容遷入 <code>.claude/rules/</code>,流程類內容直接丟棄</li>
+  </ul>
+  <p class="muted">專案若已有 harness 產出(<code>specs/</code>、<code>reviews/</code>、<code>.harness/</code>)—— 一律不動,
+  舊 spec 仍可用 harness 繼續跑,不強迫轉換。</p>
+
+  <h3>3. 核可 <code>.claude/rules/arch-invariants.md</code> 草稿</h3>
+  <p>install 會產草稿,你要做的是<strong>逐條核可</strong>(不是從零寫)。草稿每條長這樣:</p>
+  <pre>## 交易與併發
+- 【待確認】寫入路徑一律走 TxManager(可設 isolation level + idempotent retry),
+  禁直接開 tx  &lt;- 證據:internal/db/tx_manager.go:42;信心:高</pre>
+  <p>核可 = 拿掉 <code>【待確認】</code>;不同意就刪。<strong>留著標記的條目不得被當事實引用</strong>。
+  判準兩問:<strong>①這條錯了會出 bug 或被 review 打回嗎?②新 session 看檔案結構會知道嗎?
+  ①是 ②否 → 留。</strong></p>
+  <div class="tablewrap"><table>
+    <tr><th>七類骨架(模板已列)</th><th>內容範例</th></tr>
+    <tr><td>資料層</td><td>軟刪除一律 <code>deleted_at</code>,查詢預設帶 <code>WHERE deleted_at IS NULL</code>;
+        pg unique violation(23505)必攔截轉 domain error</td></tr>
+    <tr><td>交易與併發</td><td>寫入走 TxManager(isolation level + 指數退避 retry 上限 5 次),禁直接開 tx</td></tr>
+    <tr><td>錯誤處理</td><td>domain error 定義位置;API 層才轉 HTTP status,domain 層不碰 HTTP</td></tr>
+    <tr><td>分層與依賴方向</td><td>業務規則只住 domain/services/,API 層禁寫業務 if/else;依賴方向 api → application → domain</td></tr>
+    <tr><td>命名與慣例</td><td>DB 欄位 snake_case、struct tag 對映、測試檔命名</td></tr>
+    <tr><td><strong>已知地雷</strong>(最高價值)</td><td>踩過的坑,例:某 cache 需在某動作後手動失效,否則會用到舊資料 —— 這種別人絕對看不出來</td></tr>
+    <tr><td>驗證指令</td><td><code>cd backend &amp;&amp; PYTHONPATH=. python -m pytest tests/</code>、<code>npm run build</code></td></tr>
+  </table></div>
+  <div class="tablewrap"><table>
+    <tr><th>放什麼</th><th>不放什麼</th></tr>
+    <tr><td rowspan="3">架構不變量與 gotchas —— 光看 repo 看不出來、會讓人踩坑的事
+        (例:「某張表禁止直接寫,一定要走某個 service」)</td>
+        <td><strong>dev-flow 流程規則</strong>(README/gate/lane 那套)—— 這檔案每 session 自動注入,
+        寫進流程規則等於把「有這套 SOP」的知識灌給所有 agent,包含理應對下游盲的 <code>/dev-talk</code>
+        (README §11:「禁把流程規則寫進專案 CLAUDE.md/AGENTS.md」)</td></tr>
+    <tr><td><strong>spec 內容</strong> —— living spec 已經在 <code>docs/specs/</code>,不重抄</td></tr>
+    <tr><td>「看 repo 就知道的事」—— 那是雜訊,不是不變量</td></tr>
+  </table></div>
+
+  <h3>4. check 的固定回報格式</h3>
+  <p>不論走哪個分流(fresh/stale/current/broken),結尾回報都是固定四段:</p>
+  <ol>
+    <li>判定狀態一句</li>
+    <li>做了什麼(逐條)</li>
+    <li>check 結果表</li>
+    <li>還需要你決定的事(可空)</li>
+  </ol>
+
+  <h2 id="walkthrough">② 一個 feature 的完整走位</h2>
+  <p>以下以「加一個 X 功能」為例,逐階段列出:使用者打什麼 / AI 做什麼 / 產出什麼檔 / gate 誰審 / 用什麼模型。</p>
+
+  <div class="tablewrap"><table>
+    <tr><th>階段</th><th>使用者打什麼</th><th>AI 做什麼</th><th>產出檔</th><th>Gate</th><th>模型</th></tr>
+    <tr>
+      <td>1 討論</td>
+      <td><span class="badge you">跟 AI 說</span>(<strong>建議另開新 session</strong>)<br>
+        <code>/dev-talk 我想做 X</code></td>
+      <td>蘇格拉底式一次一問:盤現況 → 逐題逼問 → 驗收雛形 → 發散推演 → 盲點掃描 → 詞彙對帳,
+        寫完 <code>1-discussion.md</code> 即停</td>
+      <td><code>docs/dev/&lt;slug&gt;/1-discussion.md</code> + <code>.html</code></td>
+      <td>Open Questions 全解或明標假設(無人工簽核,是自我完成條件)</td>
+      <td><span class="badge opus">opus</span></td>
+    </tr>
+    <tr>
+      <td>2 收斂</td>
+      <td><span class="badge you">跟 AI 說</span> 回主 session:<br><code>/dev-flow 繼續 &lt;slug&gt;</code></td>
+      <td><code>brainstorming</code>(2-3 approaches)+ <code>grill-me</code> 壓測定案</td>
+      <td><code>2-decision.md</code>(+html);三條件成立 → 抄 <code>docs/adr/</code></td>
+      <td><strong>G1</strong> 人工核准方向(reviewer ≠ owner)</td>
+      <td><span class="badge opus">opus</span></td>
+    </tr>
+    <tr>
+      <td>3 原型<br><span class="muted">(選配)</span></td>
+      <td><span class="badge you">跟 AI 說</span> <code>/dev-flow 繼續 &lt;slug&gt;</code></td>
+      <td>mattpocock <code>prototype</code>(code 進 throwaway branch,禁進 main)
+        + visual companion(UI 多 variant 互動挑)</td>
+      <td><code>3-prototype.md</code>;答案回寫 <code>2-decision.md</code></td>
+      <td>回寫完成即終態 approved(無獨立 gate)</td>
+      <td><span class="badge sonnet">sonnet</span></td>
+    </tr>
+    <tr>
+      <td>4 規格</td>
+      <td><span class="badge you">跟 AI 說</span> <code>/dev-flow 繼續 &lt;slug&gt;</code></td>
+      <td>openspec delta 格式 + 反模糊三律,一次一個 R 段段展開、段段給你確認</td>
+      <td><code>4-spec.md</code>(+html)</td>
+      <td><strong>G2</strong> R/S 全審 + Drafting Decisions 全裁決(有未裁決不得過)</td>
+      <td><span class="badge opus">opus</span></td>
+    </tr>
+    <tr>
+      <td>5 任務</td>
+      <td><span class="badge you">跟 AI 說</span> <code>/dev-flow 繼續 &lt;slug&gt;</code></td>
+      <td><code>to-tickets</code> 概念,tracer-bullet 順序拆 T,標 Covers/Verify/Blocked-by</td>
+      <td><code>5-tasks.md</code></td>
+      <td>每 T 有 Verify(無人工 gate)</td>
+      <td><span class="badge sonnet">sonnet</span></td>
+    </tr>
+    <tr>
+      <td>6 實作</td>
+      <td><span class="badge warn">終端機</span>(順序不可調,完整指令見下方「Stage 6 三步順序為何不可調」):<br>
+        1. 進 worktree/branch<br>
+        2. <code>devflow-exec.sh start &lt;slug&gt;</code><br>
+        3. <code>devflow-exec.sh status</code> 核對<br>
+        <span class="badge you">跟 AI 說</span> 4. <code>dev-run &lt;slug&gt;</code></td>
+      <td>派工者(opus)讀 4-spec/5-tasks/CONTEXT/living spec,逐 T 派工(haiku 起步)
+        → fresh sonnet 審(親跑 Verify)→ 錯誤升階 → 派工者 commit + 記帳</td>
+      <td><code>6-implementation-notes.md</code> + 逐 T commit</td>
+      <td>全 S 綠(reviewer 親跑 Verify,不採信執行者文字輸出)</td>
+      <td><span class="badge opus">opus</span> 派工<br>
+        <span class="badge haiku">haiku</span>→<span class="badge sonnet">sonnet</span>→<span class="badge opus">opus</span> 升階<br>
+        <span class="badge sonnet">sonnet</span> review</td>
+    </tr>
+    <tr>
+      <td>7 驗證</td>
+      <td><span class="badge you">跟 AI 說</span> <code>/dev-flow 繼續 &lt;slug&gt;</code></td>
+      <td>mattpocock <code>code-review</code> 雙軸(Standards + Spec)+ coverage matrix,
+        reviewer 先自建矩陣才看 Self-Review(防錨定)</td>
+      <td><code>7-review.md</code> + <code>.html</code></td>
+      <td><strong>G3</strong>:本次 S 全綠 + 既有測試全綠(回歸)+ 無 🔴 → Exit checklist</td>
+      <td><span class="badge sonnet">sonnet</span> 產檔 + <span class="badge opus">opus</span> G3 裁決</td>
+    </tr>
+  </table></div>
+
+  <p class="muted"><strong>過 gate 三連動</strong>:每過一個 gate,frontmatter <code>status</code> +
+  <code>STATUS.md</code> + 同名 html twin 三者同步更新,禁漏一項。Stage 1 完成後就該去
+  <code>STATUS.md</code> 加第一列(README §10 步驟 2):<code>| &lt;slug&gt; | full | 1-discussion | &lt;你的名字&gt; | G1⬜ G2⬜ G3⬜ | &lt;日期&gt; |</code>,
+  之後每過一個 gate 回來更新 Stage 欄與對應的 G⬜ → G✅。</p>
+
+  <blockquote><strong>G1/G2/G3 誰來審(reviewer 從哪來)</strong>:author ≠ approver,審查者不能是該文檔的 owner。
+  有適格的人類第二人(團隊裡另一個人)→ 他審。<strong>一個人單打獨鬥、沒有第二人可審時</strong> → 派
+  <strong>fresh-context reviewer agent</strong>(<span class="badge opus">opus</span>,乾淨 context,只給審核對象
+  + 基準 + 回報格式,不給作者結論),verdict 與審者身分記入該檔的 <code>reviewers</code> 欄
+  (如 <code>[independent-fresh-context-reviewer]</code>)。owner 自審留痕是最後手段 —— 留白示意「無獨立審」,
+  不假裝有四眼(README §7)。</blockquote>
+
+  <blockquote>為什麼討論要另開 session:圍欄①「討論盲下游」—— <code>/dev-talk</code> 全文零提及後續階段,
+  讀取白名單只有 CONTEXT.md / docs/specs/ / 原始碼 / 使用者指名檔案,不進其他文件資料夾。
+  同一個 session 若接著往下走,即使 skill 邊界仍在,模型也已經看過同一段對話,
+  盲從結構強制退化為紀律(README §11:「最強用法:獨立 session」)。
+  <code>/dev-talk</code> 收尾時若你說「開始做」「實作吧」,它只會回「討論記錄已完成,實作請另開 session」然後停。
+  這頁本身(<code>guide-quickstart.html</code>)也不在 <code>/dev-talk</code> 的讀取白名單內 —— 討論 agent 看不到、
+  也不會讀到這份導覽頁提前偷跑下游知識,圍欄①不因本頁存在而破。</blockquote>
+
+  <h3>Stage 6 三步順序為何不可調</h3>
+  <p>正確順序:<strong>先進工作樹 → <code>devflow-exec.sh start</code> → <code>status</code> 核對 → <code>dev-run</code></strong>。
+  完整可複製指令(單線用 feature branch,多 feature 並行用 worktree 互不干擾):</p>
+  <pre># 單線(不需要 cd,已經在這棵樹上):
+git checkout -b feature/&lt;slug&gt;
+
+# 並行(多 feature 互不干擾,建完務必 cd 進去):
+git worktree add -b feature/&lt;slug&gt; &lt;path&gt;
+cd &lt;path&gt;
+
+# 兩者接下來都一樣:
+~/.claude/plugins/local/dev-flow/hooks/devflow-exec.sh start &lt;slug&gt;
+~/.claude/plugins/local/dev-flow/hooks/devflow-exec.sh status  # 核對 slug 與 cwd 相符</pre>
+  <p class="muted">跟 AI 說 <code>dev-run &lt;slug&gt;</code> 才是最後一步。<code>dev-run</code> SKILL 原文:</p>
+  <blockquote>守衛只武裝「start 當下所在的那棵樹」—— 先 start 再換樹 = 安全網失效。</blockquote>
+  <p class="muted">原因是 git worktree 各自有獨立的 git-dir(<code>.git/worktrees/&lt;name&gt;</code>),
+  守衛的 sentinel 檔案與 <code>.devflow/exec.json</code> 的 baseline/scope 都是對「start 當下的 cwd」算出來的。
+  在主樹 start 完再 cd 進 worktree,武裝的是錯的樹,新樹完全不設防。
+  <code>status</code> 這一步不是可省的裝飾 —— 就是拿來核對「slug 與 cwd 相符」,提早抓到樹選錯的情況。</p>
+
+  <h3>Stage 7 的 G3 + Exit checklist</h3>
+  <p>G3 PASS 之後,<code>7-review.md</code> 的 Exit Checklist 要全勾才算 shipped(逐字抄自模板):</p>
+  <ul>
+    <li>Quiz(<strong>不可逆改動必做</strong>;其餘 full lane 選配,fast lane 免):AI 就本次變更出 3-5 題考 approver
+      (改了什麼/為何/邊界),全對才准 merge</li>
+    <li>PR → develop(feature branch,禁直上 master)</li>
+    <li>4-spec delta 已併入 <code>docs/specs/&lt;domain&gt;.md</code></li>
+    <li><code>STATUS.md</code> 已更新為 shipped</li>
+    <li>本資料夾各檔 frontmatter <code>status: shipped</code></li>
+    <li><code>7-review.html</code> 已產生(含變更架構圖 + diff 折疊)</li>
+    <li>feature branch 已刪 / worktree 已清</li>
+  </ul>
+
+  <h2 id="guardcheat">③ 執行守衛速查表</h2>
+  <p>Stage 6 的守衛是 <code>devflow-exec.sh</code>(plugin hooks 內,無 alias,要打路徑):</p>
+  <pre>~/.claude/plugins/local/dev-flow/hooks/devflow-exec.sh start &lt;slug&gt;</pre>
+  <p class="muted">此檔已可執行(<code>chmod +x</code> 免打),下文一律省略路徑,單寫 <code>devflow-exec.sh</code>。</p>
+
+  <div class="tablewrap"><table>
+    <tr><th>動作</th><th>指令</th><th>用途</th></tr>
+    <tr><td><code>start</code></td><td><code>devflow-exec.sh start &lt;slug&gt;</code></td>
+        <td>驗 4-spec 存在且 <code>status: approved</code>、5-tasks 存在且能解析出 Files 聯集當 scope
+        —— 四項缺一即<strong>拒絕</strong>;通過後才記錄 baseline 與契約 hash、寫 sentinel。</td></tr>
+    <tr><td><code>status</code></td><td><code>devflow-exec.sh status</code></td>
+        <td>查目前武裝的 slug/scope/extra 數與 sentinel 是否在;旗標存在 &gt;24h 會警告。</td></tr>
+    <tr><td><code>allow</code></td><td><code>devflow-exec.sh allow &lt;file&gt; --reason "D-n …"</code></td>
+        <td>L1 偏差擴 scope。<code>--reason</code> 必填 —— 位置參數是 <code>$1</code> 動作
+        <code>$2</code> 檔案 <code>$3</code>(固定字面 <code>--reason</code>)<code>$4</code> 理由;
+        漏打 <code>--reason</code> 會直接被拒絕(理由要進 D-n,留痕強制)。</td></tr>
+    <tr><td><code>stop</code></td><td><code>devflow-exec.sh stop</code></td>
+        <td>撤旗標與 sentinel。收工或判定 L2 才用。</td></tr>
+  </table></div>
+
+  <h3>被擋時看到什麼、怎麼處置(三種訊息內容逐字,為版面手動折行)</h3>
+  <p class="muted">下面三塊 <code>&lt;pre&gt;</code> 是 hook 原始碼裡的 f-string 逐字內容(含 ⛔ 與中文),
+  只為了塞進卡片寬度手動折成多行 —— 不是宣稱位元組全同斷行,是宣稱「拿掉手動折行後,文字內容零差異」。
+  這三塊訊息是<strong>驗證工具的原始輸出</strong>,不是欄位對齊的示意圖,故不套用本頁 ASCII 圖表的半形字元限制
+  (該限制是為了 <code>&lt;pre&gt;</code> 欄位對齊,這裡沒有對齊需求)。</p>
+  <div class="cardgrid">
+    <div class="card">
+      <h4>圍欄②(讀上游討論檔)</h4>
+      <pre>⛔ 圍欄②:執行期禁讀 &lt;path&gt;
+—— 要翻上游 = spec 不完整。
+停:devflow-exec.sh stop → 補 spec → 重審。</pre>
+      <p>Read 工具與 shell(<code>cat</code>/<code>grep</code> 等)皆擋,跨 feature 一律擋。
+      <strong>一律 stop</strong> —— 這不是 scope 問題,是 spec 完整度問題,沒有 allow 可用。</p>
+    </div>
+    <div class="card">
+      <h4>契約防篡改(改 1/2/3/4)</h4>
+      <pre>⛔ 契約防篡改:執行期禁改 &lt;path&gt;
+(跨 feature 一律保護)。
+改本 feature 的 spec = L2:
+devflow-exec.sh stop → 修 → 重審 → 重新 start。</pre>
+      <p>保護對象含 <code>.html</code> twin,含 4-spec。<strong>L2 → stop</strong>,修完重新走 G2,
+      再重新 <code>start</code>(baseline/hash 都要重算)。</p>
+    </div>
+    <div class="card">
+      <h4>scope 外寫入</h4>
+      <pre>⛔ scope 外寫入:&lt;path&gt; 不在 5-tasks Files 聯集。
+L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
+  --reason "..." 並記 D-n;L2 → stop。</pre>
+      <p>三種裡<strong>唯一有 L1 分支</strong>的一種:沒動到 R/S → <code>allow</code> + 記 D-n 繼續;
+      動到了 → stop 走 L2。分不清 → 一律當 L2。</p>
+    </div>
+  </div>
+
+  <details>
+    <summary>補充:其他會被擋的情況(較少見)</summary>
+    <ul>
+      <li><code>.devflow/</code> 被直接編輯(不論 Edit 工具或 shell)→ 擋,狀態只准 CLI 動,
+        擴 scope 要走 <code>allow</code>,不要手動改 JSON</li>
+      <li><code>.gitignore</code> 執行期被改 → 擋(改忽略規則會讓偵測網失明)→ 停下回報使用者</li>
+      <li>postbash 偵測網(每次 Bash 後跑,事後偵測):抓「經 shell 繞過」的契約 hash 變動與 scope 外改動,
+        exit 2 印到 stderr,處置同上兩張卡(契約變動 = L2 stop;scope 外 = L1 allow 或 L2 stop)</li>
+      <li><strong>shell 圍欄</strong>(<code>devflow-prebash.sh</code>,PreToolUse Bash,事前擋):
+        Bash 指令若含上游討論檔路徑(<code>cat docs/dev/*/1-discussion.md</code> 之類)→ 擋,
+        等同圍欄② 的 shell 版;指令若試圖 <code>rm</code>/覆寫 <code>.devflow/</code> 或 sentinel → 擋。
+        一般指令(測試、build、git)完全不受影響</li>
+      <li>fail-closed:sentinel 在但 <code>.devflow/exec.json</code> 消失或損壞 → <strong>擋一切</strong>
+        Edit/Write/Read 動作,不是自動放行 —— 見下方 FAQ「忘了 stop」</li>
+    </ul>
+  </details>
+  <p class="muted">守衛共四條掛載:<code>devflow-guard</code>(Edit|Write|Read)、
+  <code>devflow-prebash</code>(Bash 事前)、<code>devflow-postbash</code>(Bash 事後偵測)、
+  <code>devtalk-guard</code>(盲原則)。想確認整套沒壞:跑
+  <code>~/.claude/plugins/local/dev-flow/hooks/selftest.sh</code>(33 案自測,自建 temp repo 後自清)。</p>
+
+  <h2 id="models">④ 模型分層速查</h2>
+  <p>對照 README §9。</p>
+  <div class="tablewrap"><table>
+    <tr><th>角色 / 站</th><th>模型</th><th>規則</th></tr>
+    <tr><td>規劃/派工層<br>(1 討論、2/4 文檔、G1/G2/G3 審查 verdict、Stage 6 派工主對話)</td>
+        <td><span class="badge opus">opus</span>(或 fable5)</td>
+        <td>撰寫文檔、多方案辯論、審查裁決;派工不下場寫碼</td></tr>
+    <tr><td>Stage 6 · T 執行</td><td>
+        <span class="badge haiku">haiku</span> 起步 →
+        <span class="badge sonnet">sonnet</span> →
+        <span class="badge opus">opus</span></td>
+        <td>haiku 錯 1 次<strong>立即</strong>升 sonnet(同層不重試);sonnet 同 T 最多 2 次(換方法不歸零)才升 opus;
+        升階時把完整失敗軌跡帶給下一階</td></tr>
+    <tr><td>Stage 6 · T review</td><td><span class="badge sonnet">sonnet</span>(fresh context)</td>
+        <td>親跑該 T 的 Verify 指令(不採信執行者文字輸出);高風險/爭議升 opus 二審</td></tr>
+    <tr><td>adviser</td><td><span class="badge opus">opus</span>,唯讀</td>
+        <td>T 執行/review/adviser 三層皆 FAIL = 連敗,才派來診斷是任務定義問題還是純執行問題</td></tr>
+    <tr><td>其他執行活<br>(3 原型、5 任務拆解、7 產檔、html twin)</td>
+        <td><span class="badge sonnet">sonnet</span></td>
+        <td>手動(非引擎)實作亦可整段用 sonnet</td></tr>
+  </table></div>
+
+  <h2 id="faq">⑤ 常見卡關 FAQ</h2>
+
+  <h3>守衛擋住怎麼辦?</h3>
+  <p>先看是③三張卡的哪一種,照對應處置走。核心原則只有一條:<strong>分不清 L1/L2 一律當 L2</strong> ——
+  <code>devflow-exec.sh stop</code>,不要自由心證硬闖。</p>
+
+  <h3>忘了 stop 怎麼辦?</h3>
+  <p>上個 session 結束時沒跑 <code>stop</code>,旗標留著,有兩種徵狀:</p>
+  <ul>
+    <li><code>devflow-exec.sh status</code> 平時只印 slug/scope/sentinel 狀態;旗標存在<strong>超過 24 小時</strong>
+      才會多印一行「旗標已存在 N 天」警告;<code>dev-setup check</code> 也會把「陳年旗標」列為 broken 狀態的異常項</li>
+    <li>更糟的情況:sentinel 檔案還在但 <code>.devflow/exec.json</code> 被誤刪或損壞 ——
+      這時 hooks 是 <strong>fail-closed</strong>,會擋掉所有 Edit/Write/Read,不是靜默放行;
+      <code>status</code> 會印「旗標損壞/異常」訊息</li>
+  </ul>
+  <p>修法:確認沒人在跑該 feature 後,跑 <code>devflow-exec.sh stop</code> 清掉,需要時重新 <code>start</code>。</p>
+
+  <h3>5-tasks 的 Files 格式怎麼寫(機械可解析)?</h3>
+  <pre>- Files: src/api/export.ts, src/api/export.test.ts
+- Files: src/jobs/</pre>
+  <p>逗號分隔多檔;整個目錄要收作前綴放行,<strong>目錄結尾要加 <code>/</code></strong>(如
+  <code>src/jobs/</code> 會放行該目錄下所有檔案)。5-tasks 全篇至少要有一條可解析的 Files,
+  否則 <code>start</code> 直接拒絕:「5-tasks 無可解析的 Files 條目」。</p>
+
+  <h3>scope 太寬的警告怎麼處理?</h3>
+  <p>只有 Files 值(去掉頭尾斜線後)命中固定字集
+  <code>{"", ".", "docs", "src", "app", "lib"}</code> 才會觸發 —— 這是<strong>警告,不是硬擋</strong>,
+  <code>start</code> 仍會成功,只是等於整個目錄都在 scope 內,guard 形同虛設。
+  建議回 5-tasks 把 Files 收斂到實際會動的檔案,再重新 <code>start</code>。
+  沒命中固定字集的「寬」(例如某個很大的子目錄)不會被這條規則抓到,靠 5-tasks 撰寫時自己把關。</p>
+
+  <h3>舊 harness 專案能不能共存?</h3>
+  <p>能。<code>dev-setup</code> install 對已有 harness 產出的專案,<code>specs/</code>、<code>reviews/</code>、
+  <code>.harness/</code> 一律不動,舊 spec 可繼續用 harness 跑。新 feature 想改走 dev-flow,
+  走 README §13 的半機械轉換對照表,per-feature 手動轉。<strong>一個 feature 只認一個引擎</strong>
+  (雙狀態機共存 = 混亂),但兩種引擎在同一專案裡分屬不同 feature 是可以並存的。</p>
+
+  <h2 id="diagram">⑥ 全程圖</h2>
+  <p>同一張七階段圖,額外標出兩個新手常忽略的地方:<strong>虛線框</strong> = 建議另開 session 的站;
+  <strong>紅色虛線括號</strong> = 執行守衛的武裝區間(<code>start</code> 到 <code>stop</code> 之間)。</p>
+
+  <svg viewBox="0 0 1260 210" width="1260" height="210" role="img" aria-label="dev-flow 全程圖含另開 session 與守衛武裝區間標示">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/>
+      </marker>
+    </defs>
+
+    <!-- skip arrow: G1 -> 4(略過 3) -->
+    <path class="flow" marker-end="url(#arrow)" d="M365,47 C400,5 540,5 573,65" fill="none"/>
+    <text x="470" y="16" text-anchor="middle">G1 過·無技術疑問 → 跳 3</text>
+
+    <!-- session box around stage 1 -->
+    <rect class="session" x="110" y="57" width="94" height="60" rx="10"/>
+    <text x="157" y="50" text-anchor="middle" style="fill:var(--acc);font-weight:700">另開 session</text>
+
+    <!-- main row -->
+    <ellipse class="b" cx="50" cy="87" rx="40" ry="26"/>
+    <text x="50" y="91" text-anchor="middle">想法/需求</text>
+
+    <rect class="m-opus" x="118" y="65" width="78" height="44" rx="6"/>
+    <text x="157" y="91" text-anchor="middle">1 討論</text>
+
+    <rect class="m-opus" x="222" y="65" width="78" height="44" rx="6"/>
+    <text x="261" y="91" text-anchor="middle">2 收斂</text>
+
+    <polygon class="m-opus" points="365,47 405,87 365,127 325,87"/>
+    <text x="365" y="91" text-anchor="middle">G1</text>
+
+    <rect class="m-sonnet" x="430" y="65" width="78" height="44" rx="6" stroke-dasharray="5 3"/>
+    <text x="469" y="85" text-anchor="middle">3 原型</text>
+    <text x="469" y="99" text-anchor="middle">(選配)</text>
+
+    <rect class="m-opus" x="534" y="65" width="78" height="44" rx="6"/>
+    <text x="573" y="91" text-anchor="middle">4 規格</text>
+
+    <polygon class="m-opus" points="677,47 717,87 677,127 637,87"/>
+    <text x="677" y="91" text-anchor="middle">G2</text>
+
+    <rect class="m-sonnet" x="742" y="65" width="78" height="44" rx="6"/>
+    <text x="781" y="91" text-anchor="middle">5 任務</text>
+
+    <rect class="m-opus" x="846" y="65" width="78" height="44" rx="6"/>
+    <text x="885" y="91" text-anchor="middle">6 實作</text>
+
+    <rect class="m-sonnet" x="950" y="65" width="78" height="44" rx="6"/>
+    <text x="989" y="91" text-anchor="middle">7 驗證</text>
+
+    <polygon class="m-opus" points="1093,47 1133,87 1093,127 1053,87"/>
+    <text x="1093" y="91" text-anchor="middle">G3</text>
+
+    <rect class="b" x="1158" y="65" width="90" height="44" rx="6"/>
+    <text x="1203" y="91" text-anchor="middle">PR</text>
+
+    <!-- arrows -->
+    <path class="flow" marker-end="url(#arrow)" d="M90,87 L118,87"/>
+    <path class="flow" marker-end="url(#arrow)" d="M196,87 L222,87"/>
+    <path class="flow" marker-end="url(#arrow)" d="M300,87 L325,87"/>
+    <path class="flow" marker-end="url(#arrow)" d="M405,87 L430,87"/>
+    <path class="flow" marker-end="url(#arrow)" d="M508,87 L534,87"/>
+    <path class="flow" marker-end="url(#arrow)" d="M612,87 L637,87"/>
+    <path class="flow" marker-end="url(#arrow)" d="M717,87 L742,87"/>
+    <path class="flow" marker-end="url(#arrow)" d="M820,87 L846,87"/>
+    <path class="flow" marker-end="url(#arrow)" d="M924,87 L950,87"/>
+    <path class="flow" marker-end="url(#arrow)" d="M1028,87 L1053,87"/>
+    <path class="flow" marker-end="url(#arrow)" d="M1133,87 L1158,87"/>
+
+    <!-- guard-armed bracket under stage 6 -->
+    <path class="fenceline" d="M846,115 L846,123 L924,123 L924,115" fill="none"/>
+    <text x="885" y="136" text-anchor="middle" class="cap">守衛武裝</text>
+    <text x="885" y="148" text-anchor="middle" class="cap">start→stop</text>
+
+    <!-- per-stage model captions -->
+    <text x="157" y="168" class="cap" text-anchor="middle">opus</text>
+    <text x="261" y="168" class="cap" text-anchor="middle">opus</text>
+    <text x="365" y="168" class="cap" text-anchor="middle">opus·方向</text>
+    <text x="469" y="168" class="cap" text-anchor="middle">sonnet</text>
+    <text x="573" y="168" class="cap" text-anchor="middle">opus</text>
+    <text x="677" y="168" class="cap" text-anchor="middle">opus·契約</text>
+    <text x="781" y="168" class="cap" text-anchor="middle">sonnet</text>
+    <text x="885" y="168" class="cap" text-anchor="middle">opus·派工</text>
+    <text x="989" y="168" class="cap" text-anchor="middle">sonnet</text>
+    <text x="1093" y="168" class="cap" text-anchor="middle">opus·G3</text>
+    <text x="1203" y="168" class="cap" text-anchor="middle">→develop</text>
+    <text x="1203" y="182" class="cap" text-anchor="middle">→Exit checklist</text>
+  </svg>
+
+  <p class="legend">紫色 = <span class="badge opus">opus</span>(規劃/派工/裁決層);
+  青色 = <span class="badge sonnet">sonnet</span>(執行/產檔層);Stage 6 內部另有
+  <span class="badge haiku">haiku</span> 起步的 T 執行層,見④模型分層速查表。</p>
+
+  <footer class="foot">
+    正本規則:<code>~/dev/dev-flow/README.md</code>;模板:<code>~/dev/dev-flow/_templates/</code>;
+    路由器 skill:<code>~/.claude/plugins/local/dev-flow/skills/{dev-flow,dev-setup,dev-run}/SKILL.md</code>;
+    討論 skill:<code>~/.claude/plugins/local/dev-talk/skills/dev-talk/SKILL.md</code>;
+    執行守衛實作:<code>~/.claude/plugins/local/dev-flow/hooks/</code>。
+    風格沿用 <code>guide-dev-flow.html</code>。疑義以 README 為準。
+  </footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>dev-setup 安裝紀錄 · dev-flow 基建(plugin 版)</title>
+<style>
+  :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;}
+  @media(prefers-color-scheme:dark){
+    :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  }
+  :root[data-theme="dark"]{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;
+        --card:#1e2023;--ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  :root[data-theme="light"]{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;
+        --card:#f7f7f8;--ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+  main{max-width:900px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
+  h2{font-size:1.15rem;margin-top:2.2em}
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:1em 0}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+  th{background:var(--card)}
+  code{background:var(--card);border-radius:4px;padding:1px 5px;
+       font-family:ui-monospace,Menlo,monospace;font-size:.88em}
+  pre{background:var(--card);border:1px solid var(--line);border-radius:8px;
+      padding:12px;overflow-x:auto;font-family:ui-monospace,Menlo,monospace;font-size:.85em}
+  .ok{color:var(--ok);font-weight:600}
+  .muted{color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+  <h1>dev-setup 安裝紀錄(plugin 版)</h1>
+  <p class="muted">2026-07-25 初裝(settings hook 版)→ 2026-07-26 升級為 local plugin。目的:單一正本(兩帳號共用 local marketplace 目錄,舊「cp + md5 對檢」紀律退役)、盲原則機械守衛、健康檢查入口。</p>
+
+  <h2>① 現行架構</h2>
+  <pre>
+~/.claude/plugins/local/                 &lt;- local marketplace(兩帳號共用同一目錄)
+|- .claude-plugin/marketplace.json       &lt;- 已登錄 dev-talk、dev-flow 兩 plugin
+|- dev-talk/                             &lt;- plugin 1(獨立包裝,防耦合)
+|  |- .claude-plugin/plugin.json         &lt;- v4.0.0,描述中性
+|  |- skills/dev-talk/SKILL.md           &lt;- 訪談引導 v4(單一正本)
+|  |- skills/dev-talk/html-shell.html    &lt;- 視覺版殼檔
+|- dev-flow/                             &lt;- plugin 2
+   |- .claude-plugin/plugin.json         &lt;- v2.0.0
+   |- skills/dev-flow/SKILL.md           &lt;- 流程路由器
+   |- skills/dev-run/SKILL.md            &lt;- Stage 6 執行引擎(haiku 寫碼-sonnet 審-升階)
+   |- skills/dev-setup/SKILL.md          &lt;- 專案安裝器 + 基建檢查(install/upgrade/check)
+   |- hooks/hooks.json                   &lt;- 四條掛載(見下表)
+   |- hooks/devtalk-guard.sh             &lt;- 盲原則守衛(PostToolUse Edit|Write)
+   |- hooks/devflow-exec.sh              &lt;- 執行守衛 CLI(start/stop/status/allow)
+   |- hooks/devflow-guard.sh             &lt;- 執行期硬擋(PreToolUse Edit|Write|Read)
+   |- hooks/devflow-prebash.sh           &lt;- shell 圍欄(PreToolUse Bash:擋讀上游/破壞旗標)
+   |- hooks/devflow-postbash.sh          &lt;- shell 寫入偵測網(PostToolUse Bash)
+   |- hooks/selftest.sh                  &lt;- 守衛全情境自測(33 案,自建 temp repo 後自清)
+   |- hooks/devflow-lib.py               &lt;- 共用邏輯(fail-closed 狀態載入/路徑判定)
+   |- hooks/_{guard,prebash,postbash,exec}_impl.py  &lt;- 四支實作(shell 為薄殼)
+
+~/dev/dev-flow/                          &lt;- 母版文檔(不隨 plugin 走)
+|- README.md  _templates/  example/  guide-dev-talk.html  本檔
+|- _retired-skills-20260726/             &lt;- 舊兩帳號 skills 備份
+  </pre>
+  <p><strong>為什麼拆兩個 plugin</strong>:dev-talk 必須看不到任何下游流程字眼(盲原則);包進同一個 plugin 會讓它的 skill 識別名帶上流程前綴。拆開後 dev-talk 自成一包,描述與內容全中性。</p>
+
+  <h2>② 每件用途</h2>
+  <div class="tablewrap"><table>
+    <tr><th>元件</th><th>用途</th></tr>
+    <tr><td><code>dev-talk@local</code></td><td>訪談引導 skill(v4:含受影響面清點、五掃複核、⚠️ 高影響決策標記)+ 視覺版殼檔。單一正本,兩帳號同時生效。</td></tr>
+    <tr><td><code>dev-flow@local</code></td><td>流程路由器 + dev-setup 健康檢查 + guard hook。hook 隨 plugin 啟用自動掛載(不再寫進 settings.json)。</td></tr>
+    <tr><td>devtalk-guard.sh</td><td>任何 Edit/Write 後檢查:目標路徑含 <code>skills/dev-talk/</code> 才動作 → 洩漏掃描(下游階段字眼)→ 命中 <code>exit 2</code> 把錯誤直接回饋給模型要求立即修正。其他路徑靜默放行。</td></tr>
+    <tr><td>dev-setup skill</td><td>專案安裝器(install:docs/dev 模板 + <code>.claude/rules/</code> 骨架 + gitignore;upgrade:只覆蓋 README/_templates,絕不動已產 feature 檔;舊 harness specs/ 不碰可共存)+ 六項健康檢查。</td></tr>
+    <tr><td><strong>執行守衛</strong><br>(devflow-exec + guard + prebash + postbash)</td><td>Stage 6 起手 <code>devflow-exec.sh start &lt;slug&gt;</code>:驗 4-spec=approved(否則拒啟)→ 從 5-tasks Files 產 scope 快照 + 髒樹基線 → 建旗標。旗標存在時:<strong>PreToolUse</strong> 擋改 4-spec/1/2/3(契約防篡改+L2 強制停修審)、擋讀 1/2/3(圍欄②)、擋 scope 外寫入(附 L1/L2 提示);<strong>PostToolUse Bash</strong> 每次指令後 git status 對照 scope,shell 寫入幾秒內被抓。L1 合法出口:<code>allow &lt;file&gt; --reason</code>(留 log + 提醒記 D-n)。<code>stop</code> 撤旗標 → 全部沉睡,其他工作零干擾。</td></tr>
+    <tr><td><strong>dev-run 引擎</strong></td><td>派工者(opus/fable5 主對話,不寫碼)逐 T:haiku 執行 → sonnet fresh review → 錯誤升階(haiku→sonnet→opus,同層最多兩次);升階史記 6-notes「執行軌跡」→ 7-review.html 執行記錄表。偏差 L1 保守+記+續走,L2 才停(field guide 模式)。</td></tr>
+  </table></div>
+
+  <h2>③ 實測證據(2026-07-26 遷移當下)</h2>
+  <div class="tablewrap"><table>
+    <tr><th>測項</th><th>結果</th></tr>
+    <tr><td>六份 JSON(marketplace / plugin×2 / hooks / settings×2)</td><td class="ok">全部 jq 合法</td></tr>
+    <tr><td>settings.json 舊 hook 條目移除</td><td class="ok">兩帳號 devtalk-guard 字串 0 命中</td></tr>
+    <tr><td>enabledPlugins 兩帳號</td><td class="ok">dev-talk@local / dev-flow@local 皆 true</td></tr>
+    <tr><td>guard pipe-test 三案</td><td class="ok">非 dev-talk 放行 exit 0 / plugin 內 SKILL 乾淨 exit 0 / 洩漏假檔 exit 2</td></tr>
+    <tr><td>plugin 內 dev-talk 盲掃</td><td class="ok">零命中(SKILL + 殼檔)</td></tr>
+    <tr><td>舊 skills 目錄</td><td class="ok">已備份至 <code>~/dev/dev-flow/_retired-skills-20260726/</code> 後移除,兩帳號零殘留</td></tr>
+    <tr><td>plugin hook 實彈</td><td class="muted">需 <code>/reload-plugins</code> 或新 session 載入後生效 —— 前版 settings hook 已實彈驗過同一 script 邏輯(2026-07-25 hook fired),plugin 載入後建議跑一次「dev-setup」自測</td></tr>
+    <tr><td>執行守衛全情境(2026-07-28,假 repo)</td><td class="ok">12/12:draft 拒啟 / approved 啟動 / 擋改 4-spec / 擋讀 1-discussion / 放行 scope 內+目錄前綴+6-notes / 擋 scope 外 / allow 後放行 / postbash 抓 shell 寫入(不誤報既有髒樹) / 乾淨沉默 / stop 後全放行</td></tr>
+    <tr><td><strong>守衛自測套件</strong>(2026-07-28,可重跑)</td><td class="ok">33/33 全過 —— <code>hooks/selftest.sh</code> 把原本一次性手測固化:未武裝全靜默 3 案 / start 前置 3 案 / PreToolUse 守衛 11 案(含跨 feature 契約保護、symlink、exec.json、.gitignore)/ prebash 圍欄 3 案 / allow 出口 3 案 / postbash 偵測網 4 案(含契約 hash、既有髒檔內容變動)/ fail-closed 2 案 / stop 後沉睡 2 案。自建 temp repo、跑完自清,任何時候可重驗</td></tr>
+    <tr><td><strong>Red team 對抗測試 + 修復</strong>(2026-07-28)</td><td class="ok">獨立 agent 打 11 個繞過向量,找到 8 個洞 → 全數修復並回歸驗證:exec.json 自我加寬(V1)/ 旗標刪除自我停權(V8)/ 旗標損壞 fail-open(V11)→ 改 <strong>fail-CLOSED</strong> + git-dir sentinel;跨 slug 契約污染(V10)→ 保護所有 feature 的 1/2/3/4;symlink 詭計(V2)→ realpath;gitignore 遮蔽(V4)→ <code>--ignored=matching</code> + 禁改 .gitignore;預埋髒檔改寫(V3c)→ baseline 存內容 hash;shell <code>cat</code> 讀上游(V7)→ 新增 PreToolUse Bash 圍欄;另加契約 hash 釘住(執行期 spec 被任何方式改動即抓)、scope 過寬警告、allow 強制 --reason</td></tr>
+  </table></div>
+
+  <h2>④ 手動檢查指令</h2>
+  <pre>
+# plugin 結構 + 啟用
+jq '.plugins[].name' ~/.claude/plugins/local/.claude-plugin/marketplace.json
+jq '.enabledPlugins | with_entries(select(.key|test("dev-")))' \
+  ~/.claude/settings.json ~/.claude-team/settings.json
+
+# 執行守衛全情境自測(可重跑;自建 temp 假 repo 跑 33 案後自清)
+~/.claude/plugins/local/dev-flow/hooks/selftest.sh        # -v 看逐案明細
+
+# devtalk-guard 單案自測(期望:exit 0)
+echo '{"tool_input":{"file_path":"'$HOME'/.claude/plugins/local/dev-talk/skills/dev-talk/SKILL.md"}}' \
+  | ~/.claude/plugins/local/dev-flow/hooks/devtalk-guard.sh; echo exit=$?
+
+# 盲掃(掃整個 plugin 目錄,含 plugin.json description;期望:無輸出)
+grep -rniE "dev-flow|2-decision|4-spec|5-tasks|7-review|G1|G2|G3|gate|twin|pipeline|規劃|plan" \
+  ~/.claude/plugins/local/dev-talk/
+
+# 掛載驗證(自測只證 script 邏輯,不證掛載 —— 這條才驗掛載)
+jq -e '.hooks | to_entries[] | .key as $e | .value[] | .matcher' \
+  ~/.claude/plugins/local/dev-flow/hooks/hooks.json    # 應見 4 條
+  </pre>
+
+  <h2>⑤ 停用 / 移除</h2>
+  <p>停用:兩帳號 settings.json 的 <code>enabledPlugins</code> 把 <code>dev-talk@local</code> / <code>dev-flow@local</code> 設 false(hook 隨 plugin 一起停)。徹底移除:再刪 plugin 目錄與 marketplace.json 內兩個 entry。舊版備份在 <code>_retired-skills-20260726/</code>。</p>
+
+  <h2>⑥ 界線(誠實聲明)</h2>
+  <ul>
+    <li><strong>內容硬檢,非權限硬擋</strong> —— dev-talk 的讀寫白名單仍是 prompt 級圍欄(hook 無法得知目前 session 是不是 dev-talk,全域擋寫會誤傷其他工作)。</li>
+    <li>守得住:dev-talk 的檔案(SKILL/殼檔)被任何 session 改出洩漏字眼 → 立即被抓、回饋要求修正。</li>
+    <li>守不住:討論進行中的行為偏移(靠 dogfood 盯破盲徵兆)、使用者自己說出下游資訊(設計上不擋)。</li>
+    <li><strong>執行守衛的殘餘界線</strong>(red team 確認,刻意不修):①<code>start</code> 前把 5-tasks Files 寫寬 → 快照照收(緩解:start 會對 <code>src/</code>、<code>docs/</code> 這類過寬 scope 出警告;5-tasks 若已 commit 過,G3 diff 看得出加寬)②<code>stop</code> → 改 4-spec(保留 status: approved 字串)→ <code>start</code>:目前只驗字串不驗簽章(根治需 G2 核准時寫入內容 hash,列為後續)③shell 圍欄是關鍵字比對,能擋隨手 <code>cat</code>,擋不了刻意混淆 ④跳過步 0 不建旗標 = 全套沉睡。此守衛是<strong>紀律輔助工具</strong>,不是安全沙箱 —— 對手設定為「想抄捷徑的執行 agent」,不是惡意攻擊者。</li>
+    <li>改 plugin 內容後,執行中的 session 要 <code>/reload-plugins</code> 才吃到新版。</li>
+  </ul>
+
+  <p class="muted">相關:使用導覽 <code>~/dev/dev-flow/guide-dev-talk.html</code>;規則正本 <code>~/dev/dev-flow/README.md</code> §11。</p>
+</main>
+</body>
+</html>

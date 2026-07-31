@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>contract-expiry-reminder · 討論</title>
+<style>
+  :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--box:#eef2f7;}
+  @media(prefers-color-scheme:dark){
+    :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--box:#22262b;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+  main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
+  h2{font-size:1.15rem;margin-top:2em}
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:1em 0}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
+  th{background:var(--card)}
+  .meta{color:var(--muted);font-size:.85rem;margin-bottom:1.2em}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;
+         font-size:.8rem;font-weight:600}
+  .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+  .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  .summary{background:var(--card);border:1px solid var(--line);border-radius:10px;
+           padding:14px 18px;margin:1em 0}
+  .svgwrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);
+           border-radius:10px;padding:10px;margin:1em 0}
+  svg text{fill:var(--fg);font:12px -apple-system,"PingFang TC",sans-serif}
+  svg .box{fill:var(--box);stroke:var(--line)}
+  svg .arrow{stroke:var(--muted);stroke-width:1.5;marker-end:url(#ah)}
+  ul{padding-left:1.4em}
+</style>
+</head>
+<body>
+<main>
+  <h1>1. 討論 — 合約到期提醒</h1>
+  <p class="meta">feature: contract-expiry-reminder · owner: &lt;owner&gt; · 2026-07-23 ·
+     <span class="badge ok">status: approved</span></p>
+
+  <div class="summary">
+    <strong>Problem:</strong>業務靠記憶與 Excel 追合約到期,每季漏 2-3 件續約。<br>
+    <strong>Open Questions:</strong>
+    <span class="badge ok">3 已解</span>
+    <span class="badge warn">0 帶假設</span>
+  </div>
+
+  <h2>脈絡圖</h2>
+  <div class="svgwrap">
+  <svg viewBox="0 0 820 190" width="820" height="190" role="img" aria-label="討論脈絡圖">
+    <defs><marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="context-stroke"/></marker></defs>
+    <rect class="box" x="10"  y="60" width="170" height="64" rx="8"/>
+    <text x="95" y="86" text-anchor="middle">漏續約(每季 2-3 件)</text>
+    <text x="95" y="106" text-anchor="middle">靠記憶+Excel 追</text>
+    <rect class="box" x="240" y="60" width="170" height="64" rx="8"/>
+    <text x="325" y="86" text-anchor="middle">登入第一眼</text>
+    <text x="325" y="106" text-anchor="middle">看到 30 天內到期</text>
+    <rect class="box" x="470" y="10" width="150" height="46" rx="8"/>
+    <text x="545" y="38" text-anchor="middle">Q1 幾天算到期?→30</text>
+    <rect class="box" x="470" y="72" width="150" height="46" rx="8"/>
+    <text x="545" y="100" text-anchor="middle">Q2 誰看?→業務+主管</text>
+    <rect class="box" x="470" y="134" width="150" height="46" rx="8"/>
+    <text x="545" y="162" text-anchor="middle">Q3 形式?→站內</text>
+    <rect class="box" x="670" y="60" width="140" height="64" rx="8"/>
+    <text x="740" y="86" text-anchor="middle">約束:無新 infra</text>
+    <text x="740" y="106" text-anchor="middle">兩週內上線</text>
+    <line class="arrow" x1="180" y1="92" x2="234" y2="92"/>
+    <line class="arrow" x1="410" y1="80" x2="464" y2="36"/>
+    <line class="arrow" x1="410" y1="92" x2="464" y2="95"/>
+    <line class="arrow" x1="410" y1="104" x2="464" y2="155"/>
+    <line class="arrow" x1="620" y1="92" x2="664" y2="92"/>
+    <text x="95"  y="50" text-anchor="middle" style="font-weight:600">Problem</text>
+    <text x="325" y="50" text-anchor="middle" style="font-weight:600">Goal</text>
+    <text x="545" y="8"  text-anchor="middle" style="font-weight:600"></text>
+    <text x="740" y="50" text-anchor="middle" style="font-weight:600">Constraints</text>
+  </svg>
+  </div>
+
+  <h2>Open Questions</h2>
+  <div class="tablewrap"><table>
+    <tr><th>#</th><th>狀態</th><th>問題</th><th>答案</th></tr>
+    <tr><td>Q1</td><td><span class="badge ok">✅ 已解</span></td>
+        <td>提前幾天算「即將到期」?</td><td>30 天(主管拍板,入 CONTEXT.md「Expiring」)</td></tr>
+    <tr><td>Q2</td><td><span class="badge ok">✅ 已解</span></td>
+        <td>誰要看到?</td><td>該合約負責業務 + 主管</td></tr>
+    <tr><td>Q3</td><td><span class="badge ok">✅ 已解</span></td>
+        <td>站內顯示還是 email?</td><td>本期只做站內 dashboard</td></tr>
+  </table></div>
+
+  <h2>Constraints + 本輪新增詞條</h2>
+  <ul>
+    <li>不引入新 infra(無 MQ / 無獨立 scheduler)。</li>
+    <li>兩週內要上(下一版 release)。</li>
+    <li>新詞條:<strong>Expiring(即將到期)</strong>= end_date − today ≤ 30 天且未續約;
+        <strong>Renewal(續約)</strong>。</li>
+  </ul>
+
+  <h2>Interview Log 摘要</h2>
+  <ul>
+    <li>現況:無任何通知/排程機制;dashboard 是最低成本呈現面。</li>
+    <li>發散推演:若未來要 email/LINE,「即時查」不擋路 —— 查詢邏輯抽 service 即可複用。</li>
+    <li>盲點掃描:①「已續約但舊約還沒到期」該不該顯示?→ 定義入 Expiring(未續約才算)
+        ②主管要不要看全部業務的?→ 併入 Q2(要)。</li>
+  </ul>
+</main>
+</body>
+</html>

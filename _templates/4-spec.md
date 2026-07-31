@@ -1,0 +1,88 @@
+---
+feature: <slug>
+stage: 4-spec
+status: draft
+owner:
+reviewers: []        # G2 審查者,不可 = owner
+updated:
+parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision 所在資料夾,如 docs/dev/<slug>/
+---
+
+# 4. 規格 — change spec(delta)
+
+> 用途:本次變更的**可測契約**。SDD 真相來源;6 的測試從 S-id 長出來;7 逐條驗。
+> 格式:openspec delta。Scenario 寫到「可直接變成一個測試」的精度。
+> 通用慣例/架構不變量住 `.claude/rules/`,spec 只寫本次 delta,不重抄 rules。
+> ship 後由 7-Exit 把 delta 併入 docs/specs/<domain>.md,此檔隨 feature 封存。
+>
+> 反模糊三律(防偷懶條文):
+> 1. 每條 S 必須可直接轉成**一個測試**:含具體輸入與可斷言輸出;禁模糊詞
+>    (適當/正確/合理/必要時/妥善/robust/等等/視情況)。
+> 2. 未定事項禁寫「TBD/之後再說/實作再定」—— 只能列入 Drafting Decisions
+>    (標待裁決)或退回提問。
+> 3. G2 逐 S 自問:「fresh 工程師只看這條,寫得出測試嗎?」寫不出 = 重寫。
+>
+> 執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項併項、禁一發全生):
+> 0. 接手盤點:先前站核對 —— 2-decision status=approved(G1 過)?3-prototype 若
+>    存在,findings 已回寫 2-decision 且 frontmatter 收尾?缺 → 停,回補。再讀
+>    1-discussion(驗收雛形/OQ)、2-decision(Decision/Scope/Success Criteria)、
+>    living spec 相關域。完成 = 前站核對過 + 雙源清點回報(雛形 N 條、living 受影響條文)。
+> 1. 雙源列 R:驗收雛形逐條 → ADDED;living spec 受影響 → MODIFIED/REMOVED
+>    (引原條文)。完成 = R 清單經使用者確認範圍(確認紀錄節留一行)。
+> 2. 逐 R 展開 S:一次一個 R,GWT 寫到「可直接變一個測試」(具體輸入+可斷言輸出),
+>    **每 S 承接 1-discussion 該條驗收雛形的「觀測方式」**(從哪看/看到什麼算對/
+>    拿什麼資料試;雛形沒寫就在此補齊,純內部行為註明「無外部現象」)。
+>    段段給使用者確認。完成 = 全 R 展開、每 S 有觀測欄、每段有確認(確認紀錄節留一行)。
+> 3. 邊界收尾:Acceptance Criteria(全 S 綠+回歸+非功能;行為不變 → golden master)、
+>    Out of Scope、Diff Budget、Dependencies。完成 = 四節齊。
+> 4. Drafting Decisions 清點:草擬自拍板逐條(決策|理由|棄項|待人審);全文掃
+>    TBD/之後再說/實作再定 → 命中即轉 DD 或退回提問。完成 = 掃描零殘留。
+> 5. 自檢(反模糊掃描):逐 S 過三律(見上,含模糊詞掃);鏈檢:每條驗收雛形 ≥1 個 S
+>    承接、每 MODIFIED 有原文引用。任一否 → 重寫該 S;(選配)每 S 產 named test
+>    skeleton 入 Test Skeletons 節。完成 = 逐 S 打勾+鏈檢清零。
+> 6. G2 送審:html twin(R 級行為流程圖;DD 待裁決置頂)→ in-review → reviewer≠owner。
+>    G2 = R/S 全審 + DD 全裁決(有未裁決不得過;正本 README §7)。核准 → 三連動。
+>    完成 = verdict+三連動。
+>
+> 起草前估 S 數,單份 >~40 → 先切片(見 README §14)。
+
+## ADDED Requirements
+<!-- Scenario 種子:先收割 1-discussion.md 的「驗收雛形」,逐條升級為正式 GWT -->
+### R-1: 系統 SHALL <行為>
+#### S-1
+- GIVEN
+- WHEN
+- THEN
+- 觀測(承接 1-discussion 驗收雛形;7 據此驗現象):從哪看 | 看到什麼算對 | 拿什麼資料試
+
+## MODIFIED Requirements
+<!-- 引 living spec 原條文,標出改什麼 -->
+
+## REMOVED Requirements
+
+## 行為流程圖(R 級)
+<!-- 每個主要 R 一張行為流程(輸入 → 分支 → 輸出);判準同 README §6:
+     純線性 → ASCII 半形;多分支/跨層 → html 用 SVG(md 留 ASCII 正本)。gate 前必有 -->
+
+## Acceptance Criteria
+<!-- 打包驗收:全部 S 綠 + 既有測試全綠(回歸)+ 非功能(效能/相容/安全)。
+     行為不變類 → golden master:同輸入,改動前後輸出逐列一致 -->
+
+## Out of Scope
+
+## Diff Budget
+<!-- 預期 ≤N 檔 / ≤M 行。超支本身非偏差,是停下判 L1/L2 的訊號;分不清一律當 L2 -->
+
+## Dependencies
+<!-- 依賴的其他 feature / 外部系統 / migration -->
+
+## Drafting Decisions(草擬自判,待人審)
+<!-- 模型草擬時自己拍的板,每條:決策 | 理由 | 放棄的替代項 | 狀態(待人審→✅/✗)。
+     G2 過關條件之一 = 本節全裁決;✗ 打回重寫。審後保留(審計軌跡) -->
+
+## Test Skeletons(選配)
+<!-- 每 S 一個 named stub(名含 S-id,如 test_s_1_1_store_half_slot),語言隨 repo,
+     內文可空。給執行層高保真參照(code 形式 > 散文);不採用整節留空 -->
+
+## 確認紀錄
+<!-- 過程留痕,一行一筆(項目 | 日期),如「R 範圍確認 | 2026-07-25」「S 逐段確認完成 | 2026-07-25」 -->

@@ -1,0 +1,352 @@
+# dev-flow — 團隊開發流程 SOP
+
+> 給 4-6 人團隊 + AI 協作的開發流程。綜合 openspec(SDD)、mattpocock/skills(grill+DDD)、
+> superpowers(TDD+流程紀律)三者精華。**SDD 為主幹(spec 是真相),TDD 為驗證(測試證明做對)。**
+>
+> 母版:`~/dev/dev-flow/`。新專案採用:把 `_templates/` 複製進專案 `docs/dev/_templates/`,
+> 本 README 複製為 `docs/dev/README.md`,建 `docs/dev/STATUS.md` 與 repo root `CONTEXT.md`。
+> 或直接叫 AI:`/dev-flow 初始化這個專案`。
+
+**這是什麼**:一套讓「討論 → 決策 → 規格 → 實作 → 驗證」全程留痕的文檔管線。每個
+feature 走 7 份文檔、過 3 道 gate(G1 方向核准、G2 契約審查、G3 驗證出貨),AI 負責
+產出、人負責裁決。解決的痛:需求討論完就散、spec 與程式碼漂移、AI 改動無法審計、
+決策半年後沒人記得為什麼。
+
+**怎麼逛這個 repo**:
+
+- 本 README = 制度正本(7 階段規則、gate 條件、切片與引擎分流)——往下讀就是全部規則
+- `_templates/` = 七份階段文檔 + STATUS/CONTEXT/ADR/living-spec 模板
+- `example/contract-expiry-reminder/` = 一個 feature 從討論到驗證走完全程的真實形狀
+- `guide-quickstart.html`、`guide-dev-flow.html`、`guide-dev-talk.html` = 圖解導覽(下載後瀏覽器開)
+
+**採用方式**:最低配是把模板複製進專案、人工照本 README 走流程;搭配 Claude Code 的
+dev-flow / dev-talk plugin 可用 `/dev-talk`、`/dev-flow` 指令自動導引與守衛(plugin
+目前未隨本 repo 發佈)。
+
+## 0. 一張圖
+
+```mermaid
+flowchart LR
+    idea([需求/想法]) --> s1[1 討論<br/>發散]
+    s1 --> s2[2 收斂<br/>決策]
+    s2 -- G1 過 --> s3{{3 原型<br/>選配}}
+    s3 --> s4[4 規格<br/>change spec]
+    s2 -- G1 過·無技術疑問 --> s4
+    s4 -- G2 第二人審 --> s5[5 任務]
+    s5 --> s6[6 實作<br/>TDD]
+    s6 --> s7[7 驗證]
+    s7 -- G3 PASS --> pr[PR → develop]
+    pr --> merge[延伸 living spec<br/>docs/specs/]
+```
+
+## 1. 文件地圖(四象限 + STATUS 看板)
+
+| 檔 | 回答什麼 | 生命週期 | 誰寫 / 誰讀 |
+|---|---|---|---|
+| `CONTEXT.md`(repo root) | 這個詞是什麼意思 | 永生 | 階段1順手維護 / 新人第一讀 |
+| `docs/specs/<domain>.md` | 系統**現在**的行為(唯一真相) | 永生,只由階段7出口併入 | 7-Exit / 動這塊前必讀 |
+| `docs/adr/NNNN-slug.md` | 當初**為何**這樣選 | 永生,可 superseded | 2-decision 晉升 / 想翻案的人 |
+| `docs/dev/STATUS.md` | 誰正在做什麼、到哪一階段 | 常駐看板 | 每過 gate 更新 / 全隊 |
+| `docs/dev/<feature>/1-7` | 這次變更的完整生命週期 | ship 後封存 | 流程產出 / reviewer + 考古 |
+| `.claude/rules/*.md` | 架構不變量/技術慣例/坑(Claude Code 官方規則路徑,無 `paths` frontmatter 者每 session 自動載入) | 永生 | setup 產草稿 / 全員+執行引擎;**只放 gotchas,禁流程規則(§11),spec 不重抄**;CLAUDE.md 對應段改指標避免雙正本;檔案長大(>~100 行)或多技術棧時可用 `paths:` frontmatter 做 path-scoped 按需載入(判準見模板頂註) |
+
+一句話:**CONTEXT=語言、specs=現況、adr=過去、dev/=進行中**。
+
+**歸位規則**(init 與全程):文檔不散落 `docs/` 根 —— living 規格/規則/資料字典歸
+`docs/specs/`、feature 過程檔歸 `docs/dev/<slug>/`、長命決策歸 `docs/adr/`。既有散檔
+由 /dev-flow init 偵測,徵得同意後 `git mv` + 同步全部引用(code 註解/文檔/
+CLAUDE.md;舊路徑 grep 歸零才算完)。
+流程外草稿收編為 `docs/dev/<slug>/0-draft-<名>.md`,只當 Stage 2 原料,不得跳關當 spec。
+
+## 2. 兩軌(lane)
+
+| | Full lane | Fast lane |
+|---|---|---|
+| 判準 | 新能力 / 不可逆改動(schema、API 契約、跨模組介面) | bugfix / ≤2 檔小改 / 行為已有 spec 條目(可逆的跨模組小改也算) |
+| 文檔 | 1→7 全套(3 選配) | 只要 `4-spec`(補 bug scenario)+ `6-implementation-notes` + `7-review`(mini) |
+| Gate | G1 G2 G3 | G3(spec 改動大再補 G2) |
+
+拿不準 → Full。被流程煩到 → 檢討判準,不要繞過流程。
+
+**Fast lane 起手 = 診斷迴圈**(mattpocock×superpowers 聯集):重現 → 最小化 →
+假設 → 驗證定位 → 修 → 回歸測試。`4-spec` 的 bug scenario 從「重現步驟」直接長出
+(GIVEN=重現前置 / WHEN=觸發 / THEN=正確行為)。修根因,禁 symptom patch。
+
+## 3. 七份文檔(用途一句話;骨架見 `_templates/`,填好範例見 `example/`)
+
+| # | 檔 | 用途 | Gate |
+|---|---|---|---|
+| 1 | `1-discussion.md` | 發散:把「不知道自己不知道」變成可收斂的問題清單。不做決定 | Open Questions 全解或明標假設 |
+| 2 | `2-decision.md` | 收斂:2-3 方案比較 → 選定 + rejected + 理由 | **G1** 方向核准 + OC 全裁決(全文見 §7) |
+| 3 | `3-prototype.md` | 選配:throwaway 實驗回答技術/UI 疑問,答案回寫 2 | 答案回寫 2-decision + frontmatter 收尾同步(終態 approved) |
+| 4 | `4-spec.md` | 本次變更的可測契約(delta + GIVEN/WHEN/THEN)。SDD 真相 | **G2** R/S 全審 + DD 全裁決(全文見 §7) |
+| 5 | `5-tasks.md` | 切成可勾選任務,tracer-bullet 順序,每條有 Verify | 每 T 有 Verify |
+| 6 | `6-implementation-notes.md` | 實作日誌:TDD 證據 + 偏差記錄 | 全 S 綠 |
+| 7 | `7-review.md` + `.html` | 雙軸審 + coverage matrix + Exit checklist | **G3** S 全綠 + 回歸綠 + 現象證據(全文見 §7);PASS → PR |
+
+**執行清單四原則**(Stage 2/3/4/6/7;清單全文住各模板頂註,Stage 1 同款機制內建於
+/dev-talk):①開場第一動把清單建成 todo,每步有「完成 =」客觀條件,達成才勾;
+②交審前必過自檢步 —— 產物勾稽、附證據,不憑印象;③禁跳項、禁併項;
+④完成條件達不成 → 回上游步驟補,不硬過。
+
+## 4. ID 追溯鏈
+
+`R-n`(requirement,4-spec)→ `S-n`(scenario,4-spec)→ `T-n`(task,5-tasks,標 Covers)
+→ 測試名含 S-id(6 實作)→ `D-n`(deviation,6)→ `F-n`(finding,7,標影響的 S/T)。
+
+Reviewer 靠這條鏈機械檢查「每條需求都有測試」,不靠肉眼。
+
+裁決用 ID **不入鏈**:`OC-n`(2-decision)、`DD-n`(4-spec)不被 T 實作,不參與
+「需求→測試」勾稽;OC 被推翻 = 上游修訂(改 2-decision,連動後續 R/S),非鏈上斷點。
+
+## 5. 實作期鐵則:不打斷、自主推進(源:Anthropic「Finding your unknowns」field guide)
+
+實作中**不打斷問人**,靠三條規則自主推進、事後可稽核:
+
+- **檢查點**:每完成一個 T = Verify 綠 + 一個 commit(一 T 一 commit,可逐點回滾;
+  Progress Log 每列附 commit hash)。
+- **Decisions**(spec 未載明的自由選擇,如內部命名、資料結構):自己選、記一行入
+  6-notes 的 Decisions 節、繼續。不屬偏差,不需回審。
+- **偏差兩級**:
+  - **L1 計畫內偏差**(不動任何 R/S):選**保守方案** → 記 Deviations(D-n:現象/
+    保守選擇/理由/影響)→ **繼續執行**。(= field guide 原版 prompt)
+  - **L2 契約偏差**(要改 R/S 或推翻 2-decision):**停**。修訂 `4-spec.md` → 重新
+    G2 → 才能繼續。禁止 silent drift —— spec 說謊,SDD 就死了。(本 SOP 加嚴,
+    field guide 無此級)
+- **起手式**:開 feature branch 才動工;多 feature 並行用 git worktree 隔離,免互踩。
+- **Scope guard**:改動檔案 ⊆ 5-tasks 全部 T 的 Files 聯集;超出 → 依偏差兩級判
+  (不動 R/S = L1 記錄續走;動到 = L2 停)。
+- **執行守衛**(機械強制,dev-flow plugin 內建):Stage 6 起手在工作樹跑
+  `hooks/devflow-exec.sh start <slug>`(驗 4-spec=approved → 由 5-tasks Files 產 scope
+  快照 + 契約 hash + 髒樹基線 → 掛旗標)。旗標存在期間四條 hook 生效:
+  `devflow-guard`(PreToolUse Edit|Write|Read:擋改任何 feature 的 1/2/3/4、擋讀 1/2/3、
+  擋 scope 外寫入)、`devflow-prebash`(PreToolUse Bash:擋 shell 讀上游與破壞旗標)、
+  `devflow-postbash`(PostToolUse Bash:git status 對照 + 內容 hash,抓 shell 寫入)、
+  `devtalk-guard`(盲原則掃描)。L1 出口 = `devflow-exec.sh allow <file> --reason`;
+  L2 = `stop`。收尾 `stop` 後全部沉睡。自測:`hooks/selftest.sh`(33 案,可重跑)。
+  界線:紀律工具非安全沙箱,詳 `dev-setup-record.html`。
+- **接收審查**(G3 打回時):逐 F 驗證後才動手 —— 同意的改並一句說明為何對;
+  不同意的擺論證,不盲改(禁 performative fix)。
+- **判級疑義**:分不清 L1/L2 → 一律當 L2。Diff Budget 超支本身非偏差,
+  是停下判級的訊號。
+
+**自判分層**(同字不同義,先分清):
+| 名 | 誰拍 | 住哪 |
+|---|---|---|
+| Decision(方案決策) | **人** | 2-decision |
+| Owner Calls(自判裁決) | owner,G1 全裁決 | 2-decision |
+| Drafting Decisions(草擬自判) | 模型,G2 全裁決 | 4-spec |
+| Split Decisions(拆分自判,選配) | 模型 | 5-tasks |
+| Decisions(實作自判) | 模型,7 審對照 | 6-notes |
+
+## 6. HTML twin(可視化)+ Artifact
+
+**重生規則**:md = git 正本,html twin = 衍生視覺版、**隨時可重生**
+(dev-talk 內稱「視覺版」,同一物 —— 盲故那邊不用 twin 一詞)。gate 時必產;
+草稿期遇到**分歧點**(模型自判待裁決、方案分叉)必重生,且「⚠️ 待裁決」區置頂。
+你對著 html 在對話裁決(「D-3 ✗,理由…」)→ AI 改 md → html 重生。
+`1-discussion.html` 由 /dev-talk 收尾即產(殼在 skill 目錄,防破盲)。
+
+**圖規則(全域)**:每站 html 至少一張圖,**判準看關係形狀**:
+- 純線性步驟 / 單層樹 → ASCII(md code block,html `<pre>`,git-diffable;
+  **限半形字元** `| - + > < = [ ]` —— 全形框線與中文不參與欄位對齊,瀏覽器 pre
+  全形寬度不定必歪,中文只放行首標籤/行尾註)
+- 方塊+連線的空間關係(多層模型/時間軸/分支交錯/跨層互動)→ **inline SVG 真圖**
+  (block+線條+箭頭)。拿不準 → SVG。
+禁外部庫。md 永遠留 ASCII 正本,html 依判準選渲染。
+
+**Per-stage 規格表**:
+
+| twin | 必含圖 | 分歧/自判區 | diff |
+|---|---|---|---|
+| 1-discussion | 脈絡圖 | OQ+假設 badge、驗收雛形表 | — |
+| 2-decision | 方案架構圖(比較期可並排) | Approaches+Rejected、Owner Calls(待裁決置頂) | — |
+| 3-prototype | variant 流程/結構圖 | Verdict | — |
+| 4-spec | 行為流程圖(R 級) | Drafting Decisions(待裁決置頂) | — |
+| 5-tasks | T 依賴 DAG(ASCII 天生適合) | Split Decisions(選配) | — |
+| 6-notes | progress 時間線(選配) | Decisions+Deviations 表 | ✅ 每 T commit |
+| 7-review | 變更架構圖(動了哪些模組) | F-id 分級表 + **現象證據表**(逐 S 觀測 vs 實跑;前端截圖引 `evidence/`) | ✅ 全 branch |
+
+**Diff 細則**(6/7 的 html):每檔一個 `<details>` 折疊條 —— hover 顯示 stat 摘要
+(+N/−N、動到的函式),click 展開完整 diff(紅綠著色);內容必 HTML-escape;
+單檔 >400 行截斷留 stat+首段註「完整見 git」;base:6 = 該 T 的 commit,
+7 = merge-base(develop)..HEAD。
+
+要對外報告:跟 AI 說「這份 html 上 artifact」→ 發布成連結。
+殼檔有兩處副本(`_templates/html-shell.html` 與 dev-talk skill 目錄內),改殼須同步兩處。
+
+## 7. 角色與 Gate
+
+> **本節 = gate 條件(G1/G2/G3)的唯一正本**。改任何 gate 條件先改這裡,再同步
+> 三處摘要:①plugin `dev-flow` 的 SKILL.md 階段動作表 ②本 README §3 七份文檔表
+> ③對應模板頂註的送審/verdict 步(2-decision/4-spec/7-review)。摘要一律只寫
+> 「關鍵條件一句 + 全文見 §7」,不重抄全文;衝突以本節為準。
+
+- **author ≠ approver**:G1/G2/G3 的核准者不可以是該文檔的 owner(四眼原則)。
+  例外:無適格第二人(唯一懂的人 = 作者)時,owner 得自審 —— reviewers 留空
+  即示無獨立審,留痕即可,不假裝有四眼。
+- **審查者產生**:有適格人類第二人 → 他審;沒有 → 派 **fresh-context reviewer
+  agent**(opus;乾淨 context,只給審核對象+基準+回報格式,不給作者結論),
+  verdict 與審者身分記 reviewers 欄(如 `[independent-fresh-context-reviewer]`)
+  + 檔內留 round 紀錄。owner 自審留痕是最後手段。
+- **規劃層 git**:接手起手先看 `git status`,working tree 有與本 feature 無關的
+  改動 → 回報使用者處置,不與文檔混流;每過一個 gate,把該階段文檔
+  (`docs/dev/<slug>/` + STATUS + CONTEXT)commit 一次,只含文檔。尚未開
+  feature branch 的規劃階段(1-5),文檔 commit 直接落 develop(純文檔無程式碼,
+  低風險;Stage 6 起手式才開 feature branch,見 §5)。
+- 機械錨點註記:以下 G1/G2/G3 定義句內的粗體詞組是 gate-consistency 機械比對
+  錨(dev-setup check 第 8 項);增改 gate 條件務必加粗,不加粗則不被機械驗證
+  涵蓋。
+- G1 = 方向對不對(2-decision:方向核准 + **Owner Calls 全裁決**,有未裁決 OC
+  不得過;下層內部技術項告知即可,但 reviewer **須抽查下層清單有無該上未上的
+  誤放** —— 抽查是規則要求,不是 reviewer 自由心證)。G2 = 契約寫得對不對
+  (4-spec:**R/S 全審 + Drafting Decisions 全裁決**,有未裁決項不得過)。G3 = 做出來的對不對(7-review:本次 S 全綠 **+ 既有測試套件全綠**(回歸義務)
+  **+ 現象證據逐 S 相符** —— reviewer 照 4-spec 的「觀測方式」親自實跑,測試綠不等於
+  看得到它動起來)。
+- frontmatter 是狀態機:`draft → in-review → approved → superseded/shipped`。
+- 已知限界(明文接受,不另設機制):①Stage 1 討論期的自判無獨立節(單一機制
+  原則,不在 1-discussion 設節)—— 由 2-decision 步 0 接手盤點「連同討論期自判
+  一併清點」承接。②OC 的「若被推翻會怎樣」在 G1 時點是預估;4-spec 展開後發現
+  代價估錯 → 回頭校準該 OC 的代價欄(不改裁決)。
+
+## 8. 每階段呼叫的技能(AI 對照表)
+
+| 階段 | 呼叫 | 來源 |
+|---|---|---|
+| 1 討論 | **`/dev-talk`**(獨立 skill,盲下游):三層訪談(盤現況→逼問→發散;方法細節以其 SKILL 為準,收斂半在 Stage 2) | openspec / mattpocock / superpowers |
+| 2 收斂 | 2-3 方案並排比較 + 壓測定案(方法內建於 `_templates/2-decision.md` 清單;可搭 mattpocock `grill-me`) | 內建 / mattpocock |
+| 3 原型 | throwaway 實驗(code→throwaway branch、資料實驗→scratchpad);UI 疑問做 2-4 個結構不同 variant | 內建 / mattpocock `prototype` |
+| 4 規格 | openspec delta 格式手寫(模板已內建) | openspec |
+| 5 任務 | tracer-bullet 順序 + Covers/Verify/Blocked-by(模板內建) | 內建 |
+| 6 實作 | **`dev-run` 引擎**(haiku 執行→sonnet 審→升階;守衛 `devflow-exec` start/stop)或手動逐 T;TDD 紅綠(每 S-id 先 RED 貼輸出再 GREEN)+ checkbox 追蹤 | 本 plugin / 內建 |
+| 7 驗證 | 雙軸審(Standards + Spec)+ 自建 coverage matrix(可搭 mattpocock `code-review`) | 內建 / mattpocock |
+
+> **外部 skill 依賴原則**:方法一律內建於模板執行清單,外部 skill 只當**選配加分**(叫不到不影響流程)。
+> 原因:第三方 skill 常自帶終點鏈(跑完強制導向它自己的後續流程),會把本流程拖出七文檔管線;
+> 且常駐注入有 context 成本與觸發權衝突。歷史上本 SOP 綜合三家精髓,但**精髓已內化,不依賴其安裝**。
+
+## 9. 模型分層(AI 執行時)
+
+- **規劃/派工層 = opus(或 fable5)**:1 討論、2/4 文檔撰寫、多方案辯論、
+  G1/G2/G3 審查與 verdict、Stage 6 派工主對話(dev-run,不下場寫碼)。
+- **執行層(dev-run 引擎)**:T 執行 = **haiku 起步**,錯 1 次升 sonnet、sonnet 同 T
+  錯 2 次升 opus(帶完整失敗軌跡;同層最多兩次,換方法不歸零);T review =
+  **sonnet fresh**,高風險/爭議升 opus;adviser = opus 唯讀。升階史記 6-notes
+  「執行軌跡」→ 7-review.html 呈現(升階 = spec 品質訊號)。
+- **其他執行活 = sonnet**:3 原型、5-tasks 拆解、7 產檔、html twin。手動(非引擎)
+  實作亦可整段用 sonnet。
+
+## 10. 新 feature 快速上手
+
+1. **討論**:(建議開獨立 session)跟 AI 說 `/dev-talk 我想做 <想法>` → 一次一問
+   挖到 Open Questions 收斂,產出 `docs/dev/<feature-slug>/1-discussion.md`
+2. `STATUS.md` 加一列(lane / stage / owner)
+3. 換 session 說:`/dev-flow 繼續 <feature>` → 初次接手只讀 1-discussion.md
+   (續跑則讀 STATUS + frontmatter 定位),按 §8 帶你走
+4. 每過 gate:更新 frontmatter status + STATUS.md + 產 html twin
+5. G3 過:走 Exit checklist(PR→develop、delta 併 living spec、標 shipped)
+
+## 11. 資訊隔離(anti-premature-convergence)
+
+LLM 知道「終點要產 plan」就會引導式提問、提早收斂。對策:階段間只用文件交接,
+對上游隱藏下游。四道圍欄:
+
+1. **討論盲下游**:`/dev-talk` 全文零提及後續階段;讀取白名單(CONTEXT.md /
+   docs/specs/ / 原始碼 / 使用者指名),不進其他文件資料夾、不列目錄 —— 第二個
+   feature 起專案內已有 pipeline 檔案,盲靠圍欄不靠運氣。最強用法:獨立 session。
+2. **實作盲討論**:implementer 只讀 4/5/6 + CONTEXT + living spec,**禁讀 1/2/3**;
+   要翻討論才寫得出來 = spec 不完整 → 回 G2(用隔離測 spec 完整度)。
+   誠實界定:此欄對「換人 / fresh subagent 實作」可機械強制;同一人從討論做到
+   實作時退化為紀律 —— 一切以 spec 為準,不得引討論內容當依據。
+3. **審查防錨定**:reviewer 先自建 Coverage Matrix 再看 Self-Review;author ≠ approver。
+4. **Quiz gate**:不可逆改動(schema/API 契約/跨模組介面)merge 前**必做** ——
+   AI 出 3-5 題考 approver,全對才 merge;其餘 full lane 選配(approver 可要求),
+   fast lane 免。
+
+⚠️ **禁把流程規則寫進專案 CLAUDE.md / AGENTS.md**(每 session 自動注入 = 盲全滅)。
+規則只住 `docs/dev/README.md`,由 /dev-flow 需要時自己讀。
+
+界線:盲是**降偏不是密封** —— 封得掉檔案/檔名/git log/skill 互叫;白名單是 prompt
+約束非權限硬擋;擋不掉使用者自己提及下游與模型先驗。防的是「本次要產 plan」的
+**目標**,不是知識。破盲徵兆(dogfood 盯):討論 agent 主動比方案、提規劃、文檔
+冒規格字眼 → 回報修圍欄。
+
+交接鐵則:**文件是唯一通道,對話不是契約**。
+
+## 12. SDD × TDD 雙迴圈(V 對應)
+
+SDD 是脊椎(spec 驅動什麼該做),TDD 是右側驗證(測試證明做對)。左邊每個產物,
+右邊都有對應驗證;測試在 4 設計(S 即測試規格)、在 6 執行(ATDD 外圈+單元內圈):
+
+```
+1 驗收雛形(怎樣算解決)────────────┐
+   2 決策(方案)──────────────┐   │
+      4-spec R/S(GWT 契約)──┐ │   │
+         5-tasks(工單)──┐   │ │   │
+            6 實作 ──────┤   │ │   │
+         每T Verify+commit┘   │ │   │
+      6 TDD:每 S 先RED後GREEN┘ │   │
+   7 Spec Axis(對照方案/契約)──┘   │
+7 Quiz + G3 驗收(人確認解決了)─────┘
+```
+
+- 外圈(ATDD):每個 S-id → 失敗的驗收測試 → 打綠;測試名含 S-id。
+- 內圈:實作中的單元級 red-green,自由發揮。
+- 回歸義務見 §7(G3 定義);living spec 全量 S = 天然回歸集。
+- 行為不變類驗收 → **golden master** pattern:同輸入,改動前後輸出逐列一致。
+
+## 13. 執行引擎分流(harness 逃生門)
+
+預設引擎 = 本流程 Stage 6(逐 T + TDD + 一 T 一 commit)。**大案**才轉
+harness-engineering 自動執行,門檻(任一):≥3 個可獨立 phase / Diff Budget >15 檔 /
+跨 repo。**引擎判斷單位:未切片 = feature,切片後(§14)= 片;不論何者,單位只
+認一個引擎**(雙狀態機共存 = 混亂)。
+
+轉換對照(半機械,轉換時人工過一眼):
+| dev-flow | → harness |
+|---|---|
+| 4-spec R/S + Acceptance | `requirements.md`(驗收條件/Success Criteria 補自 2-decision) |
+| 4-spec Out of Scope / 帶假設 OQ | Non-goals / Assumptions |
+| 5-tasks(T+Verify) | `tasks.md` |
+| 5-tasks Files 聯集 + Diff Budget | `execution-contract.json` 的 allowed_files / 預算欄 |
+| 7-review | harness REVIEW ledger(自動) |
+
+## 14. Spec 切片(單份 4-spec 過大時)
+
+§13 門檻對象是 **feature**(phase/diff/repo);本節門檻對象是**spec 文件本身** ——
+單份 4-spec 條數失控是查無規則的真空(實戰曾估出 85-120 條 S,一次審不動),兩者
+判準不同、需並存,不是彼此的替代。
+
+- **觸發門檻(軟)**:4-spec 起草前估 S 條數,單份 >~40 條、或 reviewer 預判一次
+  審不動 → 切片;起草中途超標,同樣回頭切,不硬撐寫完。
+- **切點判準**:只能切在「後片只依賴前片的**對外產出**(介面/資料契約),不依賴
+  其內部設計」的接縫 —— 切點是架構邊界,不是條數平分。
+- **管線語義**:切片**不回切上游** —— 1-discussion、2-decision 全片共用一份,
+  不因切片拆分;切點只發生於 4-spec 起,每片各自擁有完整 `4-spec → 5-tasks →
+  6-notes → 7-review` 生命週期與獨立 G2/G3。
+- **與引擎分流的關係**:引擎判斷單位定義正本在 §13(未切片 = feature、切片後
+  = 片);本節只套用該定義 —— 門檻逐片各自套用,片際可各自選擇引擎,片內仍
+  不可混用。
+- **STATUS 記法**:一片一行,slug 帶後綴(如 `<slug>-a`、`<slug>-b`),連到片資料夾
+  `docs/dev/<slug>-a/`(住各自 4→7);1-discussion、2-decision 仍住母資料夾
+  `docs/dev/<slug>/`,母 slug 因無自己的 stage 不單獨佔行。
+- **ID 配號(跨片不重號)**:片間 R/S 號段接續,不各自從 1 起 —— 前片用到
+  S-38,後片自 S-39 起;coverage 比對(測試名含 S-id)與 living spec 合併靠
+  號段唯一辨片,foo-a、foo-b 都從 S-1 起號會讓跨片 coverage 誤判。
+- **上游定位(frontmatter,不靠字串猜)**:片資料夾 4-spec frontmatter 明載
+  `parent`(如 `parent: docs/dev/<slug>/`),1-discussion/2-decision 由此欄
+  定位;禁止用 slug 後綴反推母資料夾 —— 後綴只是人讀命名,不是機械依據。
+- **片序**:後片 G2 不得先於前片 G2 —— 前片對外契約未凍結(未過 G2)不得被
+  依賴;片可各自獨立出貨(先 A 後 B),feature 整體完成 = 全片 G3 皆過。
+- **前片契約變更**:前片對外產出(介面/資料契約)需變更 → 前片回 G2 重審;
+  所有依賴該產出的後片逐一 impact review,受影響 R/S 一併重審,不可只改
+  前片不通知後片。
+
+## 15. 附錄:跨 repo 與非 feature 入口
+
+**跨 repo feature**(如前後端成對 repo):feature 資料夾住**主 repo**(通常後端),
+配對 repo 的 `docs/dev/STATUS.md` 加一列連結過去,不重複建檔。
+
+**非 feature 入口**:架構巡檢/償債機會 → 一樣開 `/dev-talk` 討論,產物同格式。
+
+疑義以本 README 為準;範例看 `example/contract-expiry-reminder/`(填好的完整一輪)。
