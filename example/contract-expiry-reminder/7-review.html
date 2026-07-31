@@ -1,9 +1,11 @@
+<!-- html 外殼:把 md 轉出的 HTML 塞進 <main>,7. 驗證 換成頁題。
+     自足單檔、無外部資源、深淺色自適應。 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>contract-expiry-reminder · 7-review</title>
+<title>7. 驗證</title>
 <style>
   :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
         --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;}
@@ -17,87 +19,64 @@
   main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
   h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
   h2{font-size:1.15rem;margin-top:2em}
+  h3{font-size:1rem;margin-top:1.5em}
   .tablewrap{overflow-x:auto}
   table{border-collapse:collapse;width:100%;margin:1em 0}
   th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
   th{background:var(--card)}
-  code{background:var(--card);border-radius:4px;padding:1px 5px;
-       font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
-  pre{background:var(--card);border:1px solid var(--line);border-radius:8px;
-      padding:10px;overflow-x:auto;font-size:.85em;line-height:1.5}
-  details{margin:.5em 0;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
-  summary{cursor:pointer;font-weight:600}
-  .add{color:var(--ok)} .del{color:var(--bad)}
-  .meta{color:var(--muted);font-size:.85rem;margin-bottom:1.5em}
+  code,pre{background:var(--card);border-radius:4px;
+           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
+  pre{padding:12px;overflow-x:auto}
+  code{padding:1px 5px}
+  blockquote{margin:1em 0;padding:.5em 1em;border-left:3px solid var(--line);color:var(--muted)}
+  ul,ol{padding-left:1.4em}
+  .meta{color:var(--muted);font-size:.85rem;margin-bottom:2em}
   .badge{display:inline-block;padding:2px 10px;border-radius:999px;
-         font-size:.8rem;font-weight:600}
+         font-size:.8rem;font-weight:600;border:1px solid transparent}
   .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
   .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
-  ul{padding-left:1.4em}
+  .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
 </style>
 </head>
 <body>
 <main>
-  <h1>7. 驗證 — 合約到期提醒</h1>
-  <p class="meta">feature: contract-expiry-reminder · reviewer: &lt;reviewer-a&gt; · 2026-07-23 ·
-     <span class="badge ok">Verdict: PASS</span></p>
-
-  <h2>Coverage Matrix</h2>
-  <div class="tablewrap"><table>
-    <tr><th>S-id</th><th>測試</th><th>狀態</th></tr>
-    <tr><td>S-1</td><td><code>TestExpiring_S1</code>(Go)</td><td><span class="badge ok">✅ 綠</span></td></tr>
-    <tr><td>S-2</td><td><code>ExpiringContractsCard "S2 empty"</code></td><td><span class="badge ok">✅ 綠</span></td></tr>
-    <tr><td>S-3</td><td><code>ExpiringContractsCard "S3 navigate"</code></td><td><span class="badge ok">✅ 綠</span></td></tr>
-    <tr><td>回歸</td><td><code>go test ./... && npm test</code>(既有套件)</td><td><span class="badge ok">✅ 全綠</span></td></tr>
-  </table></div>
-
-  <h2>變更架構圖</h2>
-  <pre>
-frontend  Dashboard.tsx ─┬─ ExpiringContractsCard.tsx(新)── 點擊 → /contracts/:id(既有 route)
-backend   handler/contract.go(+Expiring)→ service/contract.go(+ListExpiring)
-          → repo/contract.go(查詢走 idx_contracts_end_date,無 migration)
-  </pre>
-
-  <h2>Diff(hover 看摘要,點擊展開)</h2>
-  <details title="+38 −2,新增 Expiring handler 與路由">
-    <summary><code>internal/handler/contract.go</code>(+38 −2)</summary>
-    <pre><span class="add">+ func (h *ContractHandler) Expiring(c echo.Context) error {</span>
-<span class="add">+     days := 30 // CONTEXT.md「Expiring」定義</span>
-<span class="add">+     list, err := h.svc.ListExpiring(c.Request().Context(), days)</span>
-<span class="add">+     ...</span>
-<span class="del">- // TODO: expiring endpoint</span></pre>
-  </details>
-  <details title="+21 −0,卡片元件(S-1/S-2/S-3)">
-    <summary><code>src/components/ExpiringContractsCard.tsx</code>(+21 −0)</summary>
-    <pre><span class="add">+ export function ExpiringContractsCard({items}: Props) { ... }</span></pre>
-  </details>
-
-  <h2>Findings</h2>
-  <div class="tablewrap"><table>
-    <tr><th>F-id</th><th>級別</th><th>位置</th><th>問題</th><th>處置</th></tr>
-    <tr><td>F-1</td><td><span class="badge warn">🟡 Should-fix</span></td>
-        <td><code>internal/handler/contract.go:41</code></td>
-        <td>handler 未設 context timeout</td>
-        <td>fast-lane follow-up,不擋出貨</td></tr>
-  </table></div>
-
-  <h2>Deviations(來自 6-implementation-notes)</h2>
-  <ul>
-    <li><strong>D-1(L1)</strong>:放棄新增覆蓋索引 migration —— 實測走既有
-        <code>idx_contracts_end_date</code>,p95 42ms 已達標;避免不必要 schema 變更。
-        reviewer 判定:記錄正確,不動 R/S。</li>
-  </ul>
-
-  <h2>Exit Checklist</h2>
-  <ul>
-    <li>✅ Quiz(不可逆改動必做;其餘 full lane 選配,fast 免):本次新增對外 API endpoint <code>GET /contracts/expiring</code>,shipped 後即成對外契約,移除屬破壞性變更 → 不可逆,Quiz 必做 —— AI 出 4 題(30 天定義/不做 email 原因/D-1 取捨/空狀態),&lt;reviewer-a&gt; 全對</li>
-    <li>✅ PR #142 → develop</li>
-    <li>✅ spec delta 併入 <code>docs/specs/contracts.md</code>(R-1、R-2,標 source)</li>
-    <li>✅ STATUS.md → shipped</li>
-    <li>✅ 資料夾 frontmatter 更新</li>
-    <li>✅ 本 html 產生(含變更架構圖 + diff 折疊)</li>
-    <li>✅ feature branch 已刪</li>
-  </ul>
+<h1>7. 驗證</h1>
+<h2>Coverage Matrix</h2>
+<p>| S-id | 測試 | 狀態 |
+|---|---|---|
+| S-1 | <code>TestExpiring_S1</code>(Go) | ✅ |
+| S-2 | <code>ExpiringContractsCard &quot;S2 empty&quot;</code>(vitest) | ✅ |
+| S-3 | <code>ExpiringContractsCard &quot;S3 navigate&quot;</code>(vitest) | ✅ |
+| 既有測試套件(回歸) | <code>go test ./... &amp;&amp; npm test</code> | ✅ |</p>
+<h2>現象證據(逐 S,對照 4-spec 的觀測欄)</h2>
+<p>| S-id | 觀測方式(引 4-spec) | reviewer 實跑證據 | 相符? |
+|---|---|---|---|
+| S-1 | <code>&lt;owner&gt;</code> dashboard 到期卡片；C 與「10 天」；C(<code>end_date = today + 10d</code>,未續約) | reviewer 以 C 登入 dashboard,卡片顯示 C 與「10 天」 | ✅ |
+| S-2 | <code>&lt;owner&gt;</code> dashboard 到期卡片；「近期無到期合約」且無錯誤；名下無 30 天內到期未續約合約 | reviewer 以無符合合約的 <code>&lt;owner&gt;</code> 登入,看到「近期無到期合約」且無錯誤畫面 | ✅ |
+| S-3 | C 那一列與瀏覽器 URL；<code>/contracts/C.id</code> 且顯示 C 詳情；S-1 的 C | reviewer 點擊可見的 C,URL 為 <code>/contracts/C.id</code> 並顯示 C 詳情 | ✅ |</p>
+<h2>Standards Axis</h2>
+<ul>
+<li>F-1 🟡 <code>internal/handler/contract.go:41</code> | handler 未設 context timeout,慢查詢會掛住
+dashboard | 建議:<code>context.WithTimeout(ctx, 2s)</code>,下個 fast-lane 補。</li>
+</ul>
+<h2>Spec Axis</h2>
+<ul>
+<li>R-1 符合(S-1/S-2 綠;空狀態文案同 spec)。</li>
+<li>R-2 符合(S-3 綠)。</li>
+<li>D-1 已如實記錄,判定正確(不動 R/S,屬 L1;避開了 migration)。</li>
+</ul>
+<h2>Verdict</h2>
+<p><strong>PASS</strong>(F-1 為 🟡,開 fast-lane follow-up,不擋出貨)</p>
+<h2>Exit Checklist</h2>
+<ul>
+<li>[x] Quiz(不可逆改動必做;其餘 full lane 選配,fast 免):本次新增對外 API endpoint <code>GET /contracts/expiring</code>,shipped 後即成對外契約,移除屬破壞性變更 → 不可逆,Quiz 必做 —— AI 出 4 題(30 天定義來源/為何不做 email/D-1 為何不加索引/空狀態行為),<code>&lt;reviewer-a&gt;</code> 全對</li>
+<li>[x] PR #142 → develop</li>
+<li>[x] 4-spec delta 已併入 <code>docs/specs/contracts.md</code>(R-1、R-2 貼入,標 source)</li>
+<li>[x] STATUS.md 已更新為 shipped</li>
+<li>[x] 7-review frontmatter status: shipped;上游 artifact 保留 approved(各自 gate 核准紀錄,依 7-review 模板 Exit 規則)</li>
+<li>[x] 7-review.html 已產生(含變更架構圖 + diff 折疊)</li>
+<li>[x] feature branch 已刪</li>
+</ul>
 </main>
 </body>
 </html>

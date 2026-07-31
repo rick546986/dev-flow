@@ -1,15 +1,17 @@
+<!-- html 外殼:把 md 轉出的 HTML 塞進 <main>,1. 討論 — 合約到期提醒 換成頁題。
+     自足單檔、無外部資源、深淺色自適應。 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>contract-expiry-reminder · 討論</title>
+<title>1. 討論 — 合約到期提醒</title>
 <style>
   :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
-        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--box:#eef2f7;}
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;}
   @media(prefers-color-scheme:dark){
     :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
-          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--box:#22262b;}
+          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;}
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);
@@ -17,96 +19,93 @@
   main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
   h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
   h2{font-size:1.15rem;margin-top:2em}
+  h3{font-size:1rem;margin-top:1.5em}
   .tablewrap{overflow-x:auto}
   table{border-collapse:collapse;width:100%;margin:1em 0}
   th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
   th{background:var(--card)}
-  .meta{color:var(--muted);font-size:.85rem;margin-bottom:1.2em}
+  code,pre{background:var(--card);border-radius:4px;
+           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
+  pre{padding:12px;overflow-x:auto}
+  code{padding:1px 5px}
+  blockquote{margin:1em 0;padding:.5em 1em;border-left:3px solid var(--line);color:var(--muted)}
+  ul,ol{padding-left:1.4em}
+  .meta{color:var(--muted);font-size:.85rem;margin-bottom:2em}
   .badge{display:inline-block;padding:2px 10px;border-radius:999px;
-         font-size:.8rem;font-weight:600}
+         font-size:.8rem;font-weight:600;border:1px solid transparent}
   .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
   .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
-  .summary{background:var(--card);border:1px solid var(--line);border-radius:10px;
-           padding:14px 18px;margin:1em 0}
-  .svgwrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);
-           border-radius:10px;padding:10px;margin:1em 0}
-  svg text{fill:var(--fg);font:12px -apple-system,"PingFang TC",sans-serif}
-  svg .box{fill:var(--box);stroke:var(--line)}
-  svg .arrow{stroke:var(--muted);stroke-width:1.5;marker-end:url(#ah)}
-  ul{padding-left:1.4em}
+  .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
 </style>
 </head>
 <body>
 <main>
-  <h1>1. 討論 — 合約到期提醒</h1>
-  <p class="meta">feature: contract-expiry-reminder · owner: &lt;owner&gt; · 2026-07-23 ·
-     <span class="badge ok">status: approved</span></p>
-
-  <div class="summary">
-    <strong>Problem:</strong>業務靠記憶與 Excel 追合約到期,每季漏 2-3 件續約。<br>
-    <strong>Open Questions:</strong>
-    <span class="badge ok">3 已解</span>
-    <span class="badge warn">0 帶假設</span>
-  </div>
-
-  <h2>脈絡圖</h2>
-  <div class="svgwrap">
-  <svg viewBox="0 0 820 190" width="820" height="190" role="img" aria-label="討論脈絡圖">
-    <defs><marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-      <path d="M0,0 L8,4 L0,8 z" fill="context-stroke"/></marker></defs>
-    <rect class="box" x="10"  y="60" width="170" height="64" rx="8"/>
-    <text x="95" y="86" text-anchor="middle">漏續約(每季 2-3 件)</text>
-    <text x="95" y="106" text-anchor="middle">靠記憶+Excel 追</text>
-    <rect class="box" x="240" y="60" width="170" height="64" rx="8"/>
-    <text x="325" y="86" text-anchor="middle">登入第一眼</text>
-    <text x="325" y="106" text-anchor="middle">看到 30 天內到期</text>
-    <rect class="box" x="470" y="10" width="150" height="46" rx="8"/>
-    <text x="545" y="38" text-anchor="middle">Q1 幾天算到期?→30</text>
-    <rect class="box" x="470" y="72" width="150" height="46" rx="8"/>
-    <text x="545" y="100" text-anchor="middle">Q2 誰看?→業務+主管</text>
-    <rect class="box" x="470" y="134" width="150" height="46" rx="8"/>
-    <text x="545" y="162" text-anchor="middle">Q3 形式?→站內</text>
-    <rect class="box" x="670" y="60" width="140" height="64" rx="8"/>
-    <text x="740" y="86" text-anchor="middle">約束:無新 infra</text>
-    <text x="740" y="106" text-anchor="middle">兩週內上線</text>
-    <line class="arrow" x1="180" y1="92" x2="234" y2="92"/>
-    <line class="arrow" x1="410" y1="80" x2="464" y2="36"/>
-    <line class="arrow" x1="410" y1="92" x2="464" y2="95"/>
-    <line class="arrow" x1="410" y1="104" x2="464" y2="155"/>
-    <line class="arrow" x1="620" y1="92" x2="664" y2="92"/>
-    <text x="95"  y="50" text-anchor="middle" style="font-weight:600">Problem</text>
-    <text x="325" y="50" text-anchor="middle" style="font-weight:600">Goal</text>
-    <text x="545" y="8"  text-anchor="middle" style="font-weight:600"></text>
-    <text x="740" y="50" text-anchor="middle" style="font-weight:600">Constraints</text>
-  </svg>
-  </div>
-
-  <h2>Open Questions</h2>
-  <div class="tablewrap"><table>
-    <tr><th>#</th><th>狀態</th><th>問題</th><th>答案</th></tr>
-    <tr><td>Q1</td><td><span class="badge ok">✅ 已解</span></td>
-        <td>提前幾天算「即將到期」?</td><td>30 天(主管拍板,入 CONTEXT.md「Expiring」)</td></tr>
-    <tr><td>Q2</td><td><span class="badge ok">✅ 已解</span></td>
-        <td>誰要看到?</td><td>該合約負責業務 + 主管</td></tr>
-    <tr><td>Q3</td><td><span class="badge ok">✅ 已解</span></td>
-        <td>站內顯示還是 email?</td><td>本期只做站內 dashboard</td></tr>
-  </table></div>
-
-  <h2>Constraints + 本輪新增詞條</h2>
-  <ul>
-    <li>不引入新 infra(無 MQ / 無獨立 scheduler)。</li>
-    <li>兩週內要上(下一版 release)。</li>
-    <li>新詞條:<strong>Expiring(即將到期)</strong>= end_date − today ≤ 30 天且未續約;
-        <strong>Renewal(續約)</strong>。</li>
-  </ul>
-
-  <h2>Interview Log 摘要</h2>
-  <ul>
-    <li>現況:無任何通知/排程機制;dashboard 是最低成本呈現面。</li>
-    <li>發散推演:若未來要 email/LINE,「即時查」不擋路 —— 查詢邏輯抽 service 即可複用。</li>
-    <li>盲點掃描:①「已續約但舊約還沒到期」該不該顯示?→ 定義入 Expiring(未續約才算)
-        ②主管要不要看全部業務的?→ 併入 Q2(要)。</li>
-  </ul>
+<h1>1. 討論 — 合約到期提醒</h1>
+<h2>Problem</h2>
+<p>業務靠記憶與 Excel 追合約到期,平均每季漏 2-3 件續約,客戶流失後才發現。</p>
+<h2>Context(已知事實)</h2>
+<ul>
+<li><code>docs/specs/contracts.md</code>:合約 CRUD 已有,<code>contracts.end_date</code> 欄位存效期,無任何通知機制。</li>
+<li>後端 Go/Echo/ent,無 scheduler、無 MQ(引入 = 新 infra)。</li>
+<li>現有 dashboard 頁面有空白卡片區(前端 <code>src/pages/Dashboard.tsx</code>)。</li>
+<li>量級:活躍合約約 8,000 筆。</li>
+</ul>
+<h2>Goals</h2>
+<ul>
+<li>業務登入後,不用翻任何清單就能看到「30 天內到期」的合約。</li>
+<li>點擊可直達該合約詳情。</li>
+</ul>
+<h2>Non-Goals(初稿)</h2>
+<ul>
+<li>email / LINE 通知(之後再議)。</li>
+<li>自訂提醒天數。</li>
+</ul>
+<h2>Open Questions</h2>
+<ul>
+<li>[x] Q1:提前幾天算「即將到期」?→ 30 天(業務主管拍板,寫入 CONTEXT.md「Expiring」)</li>
+<li>[x] Q2:誰要看到?→ 只有該合約負責業務 + 主管</li>
+<li>[x] Q3:站內顯示還是 email?→ 本期只做站內 dashboard</li>
+</ul>
+<h2>Constraints</h2>
+<ul>
+<li>不引入新 infra(無 MQ / 無獨立 scheduler service)。</li>
+<li>兩週內要上(下一版 release)。</li>
+</ul>
+<h2>驗收雛形</h2>
+<ul>
+<li>AC-1(Goal 1):任一負責業務登入 dashboard,名下 30 天內到期且未續約的合約 100% 出現在卡片。
+<ul>
+<li>從哪看:以 <code>&lt;owner&gt;</code> 登入後的 dashboard 到期卡片。</li>
+<li>看到什麼算對:卡片列出合約 C,顯示合約名稱與剩餘天數「10 天」。</li>
+<li>拿什麼資料試:<code>&lt;owner&gt;</code> 名下合約 C,<code>end_date = today + 10d</code>,未續約。</li>
+</ul>
+</li>
+<li>AC-2(Goal 1):無到期合約時顯示空狀態「近期無到期合約」,不報錯。
+<ul>
+<li>從哪看:以 <code>&lt;owner&gt;</code> 登入後的 dashboard 到期卡片。</li>
+<li>看到什麼算對:顯示「近期無到期合約」且畫面沒有錯誤。</li>
+<li>拿什麼資料試:<code>&lt;owner&gt;</code> 名下沒有 30 天內到期且未續約的合約。</li>
+</ul>
+</li>
+<li>AC-3(Goal 2):點擊卡片任一列,導向該合約詳情頁。
+<ul>
+<li>從哪看:dashboard 到期卡片中的合約 C 那一列與瀏覽器 URL。</li>
+<li>看到什麼算對:點擊 C 後 URL 為 <code>/contracts/C.id</code> 並顯示該合約詳情頁。</li>
+<li>拿什麼資料試:沿用 AC-1 的合約 C,使其先出現在到期卡片。</li>
+</ul>
+</li>
+</ul>
+<h2>邏輯圖(ASCII)</h2>
+<pre><code>登入 → dashboard 載入 → 查 expiring(end_date - today ≤ 30 且未續約)
+                          ├─ 有 → 卡片列出(名稱 + 剩餘天數)→ 點擊 → 詳情頁
+                          └─ 無 → 空狀態「近期無到期合約」
+</code></pre>
+<h2>Interview Log(三段結論)</h2>
+<ul>
+<li>explore:現況無任何通知/排程機制;dashboard 是最低成本的呈現面。</li>
+<li>grill-with-docs:逼出「Expiring」精確定義(30 天 + 未續約),新增 CONTEXT.md 詞條 Expiring、Renewal。</li>
+<li>brainstorming:方向收斂為「登入時即時查詢」優先,cron 留作後手 → 進 2-decision 比較。</li>
+</ul>
 </main>
 </body>
 </html>

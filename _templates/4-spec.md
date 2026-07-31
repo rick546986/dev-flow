@@ -40,8 +40,9 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 > 5. 自檢(反模糊掃描):逐 S 過三律(見上,含模糊詞掃);鏈檢:每條驗收雛形 ≥1 個 S
 >    承接、每 MODIFIED 有原文引用。任一否 → 重寫該 S;(選配)每 S 產 named test
 >    skeleton 入 Test Skeletons 節。完成 = 逐 S 打勾+鏈檢清零。
-> 6. G2 送審:html twin(R 級行為流程圖;DD 待裁決置頂)→ in-review → reviewer≠owner。
->    G2 = R/S 全審 + DD 全裁決(有未裁決不得過;正本 README §7)。核准 → 三連動。
+> 6. G2 送審:html twin(R 級行為流程圖;DD 待裁決置頂)→ in-review → reviewer。
+>    審查者依序:適格人類 reviewer → fresh-context reviewer Agent → owner 自審
+>    (有記錄的最後手段)。G2 = R/S 全審 + DD 全裁決(有未裁決不得過;正本 README §7)。核准 → 三連動。
 >    完成 = verdict+三連動。
 >
 > 起草前估 S 數,單份 >~40 → 先切片(見 README §14)。

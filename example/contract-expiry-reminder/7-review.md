@@ -16,6 +16,13 @@ updated: 2026-07-23
 | S-3 | `ExpiringContractsCard "S3 navigate"`(vitest) | ✅ |
 | 既有測試套件(回歸) | `go test ./... && npm test` | ✅ |
 
+## 現象證據(逐 S,對照 4-spec 的觀測欄)
+| S-id | 觀測方式(引 4-spec) | reviewer 實跑證據 | 相符? |
+|---|---|---|---|
+| S-1 | `<owner>` dashboard 到期卡片；C 與「10 天」；C(`end_date = today + 10d`,未續約) | reviewer 以 C 登入 dashboard,卡片顯示 C 與「10 天」 | ✅ |
+| S-2 | `<owner>` dashboard 到期卡片；「近期無到期合約」且無錯誤；名下無 30 天內到期未續約合約 | reviewer 以無符合合約的 `<owner>` 登入,看到「近期無到期合約」且無錯誤畫面 | ✅ |
+| S-3 | C 那一列與瀏覽器 URL；`/contracts/C.id` 且顯示 C 詳情；S-1 的 C | reviewer 點擊可見的 C,URL 為 `/contracts/C.id` 並顯示 C 詳情 | ✅ |
+
 ## Standards Axis
 - F-1 🟡 `internal/handler/contract.go:41` | handler 未設 context timeout,慢查詢會掛住
   dashboard | 建議:`context.WithTimeout(ctx, 2s)`,下個 fast-lane 補。
@@ -33,6 +40,6 @@ updated: 2026-07-23
 - [x] PR #142 → develop
 - [x] 4-spec delta 已併入 `docs/specs/contracts.md`(R-1、R-2 貼入,標 source)
 - [x] STATUS.md 已更新為 shipped
-- [x] 本資料夾各檔 frontmatter status: shipped/approved
+- [x] 7-review frontmatter status: shipped;上游 artifact 保留 approved(各自 gate 核准紀錄,依 7-review 模板 Exit 規則)
 - [x] 7-review.html 已產生(含變更架構圖 + diff 折疊)
 - [x] feature branch 已刪

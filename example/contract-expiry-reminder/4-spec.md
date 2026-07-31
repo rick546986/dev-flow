@@ -16,17 +16,20 @@ updated: 2026-07-23
 - GIVEN 登入業務 `<owner>` 名下有合約 C,`end_date = today + 10d`,未續約
 - WHEN `<owner>` 開啟 dashboard
 - THEN 到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」
+- 觀測:從 `<owner>` 的 dashboard 到期卡片看 | 看到 C 與「10 天」算對 | 用 C(`end_date = today + 10d`,未續約)測
 
 #### S-2
 - GIVEN `<owner>` 名下無 30 天內到期的合約
 - WHEN `<owner>` 開啟 dashboard
 - THEN 卡片顯示空狀態「近期無到期合約」,不顯示錯誤
+- 觀測:從 `<owner>` 的 dashboard 到期卡片看 | 看到「近期無到期合約」且無錯誤算對 | 用名下無 30 天內到期未續約合約的 `<owner>` 測
 
 ### R-2: 卡片中每筆合約 SHALL 可點擊導向該合約詳情頁
 #### S-3
 - GIVEN 到期卡片列出合約 C
 - WHEN `<owner>` 點擊 C 那一列
 - THEN 導向 `/contracts/C.id` 詳情頁
+- 觀測:從 C 那一列與瀏覽器 URL 看 | 點擊後 URL 為 `/contracts/C.id` 且顯示 C 詳情算對 | 用 S-1 的到期合約 C 測
 
 ## MODIFIED Requirements
 (無 —— 不改既有行為)

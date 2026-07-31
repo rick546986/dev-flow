@@ -13,7 +13,8 @@ updated:
 > 7-review.html 供報告。
 >
 > 執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併項):
-> 0. 角色+防錨定起手:reviewer ≠ 實作 owner(無適格第二人 → 自審留痕)。先讀
+> 0. 角色+防錨定起手:審查者依序:適格人類 reviewer → fresh-context reviewer Agent →
+>    owner 自審(有記錄的最後手段);前兩者皆須 ≠ 實作 owner。先讀
 >    4-spec/5-tasks/diff/測試碼,**此刻禁讀 6-notes 的 Self-Review**。
 >    完成 = 讀取順序聲明在案。
 > 1. 自建 Coverage Matrix:grep 測試檔 S-id ↔ 4-spec S 清單,逐列填(缺漏 ❌),
@@ -31,7 +32,8 @@ updated:
 >    REQUEST_CHANGES 列 🔴 →
 >    author 走 6-notes 的 Review Follow-up(同意改+一句為何對/不同意擺論證,
 >    禁 performative fix)→ 回步 1 增量重驗。完成 = verdict 落檔。
-> 6. Exit:逐勾 Exit Checklist。完成 = 全勾才 shipped。
+> 6. Exit:逐勾 Exit Checklist。完成 = 全勾才 shipped;僅 Stage 7 frontmatter 改為
+>    `shipped`,上游 artifact 保留 `approved` 作為各自 gate 核准紀錄。
 
 ## Coverage Matrix
 <!-- 產 html 時機械對照:grep 測試檔中的 S-id ↔ 4-spec 的 S 清單,缺漏自動標 ❌。
@@ -69,6 +71,6 @@ updated:
 - [ ] PR → develop(feature branch,禁直上 master)
 - [ ] 4-spec delta 已併入 docs/specs/<domain>.md
 - [ ] STATUS.md 已更新為 shipped
-- [ ] 本資料夾各檔 frontmatter status: shipped
+- [ ] 7-review frontmatter status: shipped;上游 artifact 可保留 approved(各自 gate 核准紀錄)
 - [ ] 7-review.html 已產生(含變更架構圖 + diff 折疊,規格見 README §6)
 - [ ] feature branch 已刪 / worktree 已清

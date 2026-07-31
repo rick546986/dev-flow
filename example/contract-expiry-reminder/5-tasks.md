@@ -32,5 +32,6 @@ updated: 2026-07-23
 ## T-4 e2e:登入 → dashboard 看到到期合約 → 點入詳情
 - [x] 完成
 - Covers: R-1, R-2 / S-1, S-3
-- Verify: `npx playwright test expiring-contracts`
+- Files: `e2e/expiring-contracts.spec.ts`
+- Verify: `npx playwright test e2e/expiring-contracts.spec.ts`
 - Blocked-by: T-3

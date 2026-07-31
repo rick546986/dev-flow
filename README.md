@@ -89,7 +89,7 @@ root 相對的 `Files` scope。
 | 4 | `4-spec.md` | 本次變更的可測契約(delta + GIVEN/WHEN/THEN)。SDD 真相 | **G2** R/S 全審 + DD 全裁決(全文見 §7) |
 | 5 | `5-tasks.md` | 切成可勾選任務,tracer-bullet 順序,每 T 有 Covers/Files/Verify/Blocked-by | 每 T 欄位完整 |
 | 6 | `6-implementation-notes.md` | 實作日誌:TDD 證據 + 偏差記錄 | 全 S 綠 |
-| 7 | `7-review.md` + `.html` | 雙軸審 + coverage matrix + Exit checklist | **G3** S 全綠 + 回歸綠 + 現象證據(全文見 §7);PASS → PR |
+| 7 | `7-review.md` + `.html` | 雙軸審 + coverage matrix + Exit checklist | **G3** 本次 S 全綠 + 回歸綠 + 現象證據(全文見 §7);PASS → PR |
 
 **執行清單四原則**(Stage 2/3/4/6/7;清單全文住各模板頂註,Stage 1 同款機制內建於
 /dev-talk):①開場第一動把清單建成 todo,每步有「完成 =」客觀條件,達成才勾;
@@ -211,12 +211,12 @@ RED → GREEN → scope check → Verify
 > 「關鍵條件一句 + 全文見 §7」,不重抄全文;衝突以本節為準。
 
 - **author ≠ approver**:G1/G2/G3 的核准者不可以是該文檔的 owner(四眼原則)。
-  例外:無適格第二人(唯一懂的人 = 作者)時,owner 得自審 —— reviewers 留空
-  即示無獨立審,留痕即可,不假裝有四眼。
-- **審查者產生**:有適格人類第二人 → 他審;沒有 → 派 **fresh-context reviewer
-  agent**(opus;乾淨 context,只給審核對象+基準+回報格式,不給作者結論),
-  verdict 與審者身分記 reviewers 欄(如 `[independent-fresh-context-reviewer]`)
-  + 檔內留 round 紀錄。owner 自審留痕是最後手段。
+  無適格人類第二人不豁免下述 Agent fallback;只有前兩種 reviewer 都不可用時,owner
+  才得自審 —— reviewers 留空即示無獨立審,留痕即可,不假裝有四眼。
+- **審查者產生**:G1/G2/G3 一律依序選 **適格人類 reviewer → fresh-context reviewer
+  Agent → owner 自審(有記錄的最後手段)**。Agent 必須是乾淨 context,只給審核對象+基準+回報格式,不給
+  作者結論;verdict 與審者身分記 reviewers 欄(如 `[independent-fresh-context-reviewer]`)
+  + 檔內留 round 紀錄。owner 自審僅能作為**有記錄的最後手段**,不假裝有四眼。
 - **規劃層 git**:接手起手先看 `git status`,working tree 有與本 feature 無關的
   改動 → 回報使用者處置,不與文檔混流;每過一個 gate,把該階段文檔
   (`docs/dev/<slug>/` + STATUS + CONTEXT)commit 一次,只含文檔。尚未開
@@ -228,7 +228,7 @@ RED → GREEN → scope check → Verify
 - G1 = 方向對不對(2-decision:方向核准 + **Owner Calls 全裁決**,有未裁決 OC
   不得過;下層內部技術項告知即可,但 reviewer **須抽查下層清單有無該上未上的
   誤放** —— 抽查是規則要求,不是 reviewer 自由心證)。G2 = 契約寫得對不對
-  (4-spec:**R/S 全審 + Drafting Decisions 全裁決**,有未裁決項不得過)。G3 = 做出來的對不對(7-review:本次 S 全綠 **+ 既有測試套件全綠**(回歸義務)
+  (4-spec:**R/S 全審 + Drafting Decisions 全裁決**,有未裁決項不得過)。G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件全綠**(回歸義務)
   **+ 現象證據逐 S 相符** —— reviewer 照 4-spec 的「觀測方式」親自實跑,測試綠不等於
   看得到它動起來)。
 - frontmatter 是狀態機:`draft → in-review → approved → superseded/shipped`。
@@ -255,8 +255,10 @@ RED → GREEN → scope check → Verify
 
 ## 9. 模型分層(AI 執行時)
 
-- **規劃/派工層 = opus(或 fable5)**:1 討論、2/4 文檔撰寫、多方案辯論、
-  G1/G2/G3 審查與 verdict、Stage 6 派工主對話(dev-run,不下場寫碼)。
+- **規劃/派工層 = opus(或 fable5)**:1 討論、2/4 文檔撰寫、多方案辯論、Stage 6
+  派工主對話(dev-run,不下場寫碼)。
+- **G1/G2/G3 審查與 verdict**:依 §7 的人類→fresh-context reviewer Agent→有記錄的
+  owner 自審順序；Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。
 - **執行層(dev-run 引擎)**:T 執行 = **haiku 起步**,錯 1 次升 sonnet、sonnet 同 T
   錯 2 次升 opus(帶完整失敗軌跡;同層最多兩次,換方法不歸零);T review =
   **sonnet fresh**,高風險/爭議升 opus;adviser = opus 唯讀。升階史記 6-notes

@@ -38,7 +38,8 @@ updated:
 >    介面清單——而非本次決策)?有 → 外移 docs/specs/,本檔只留決策與為什麼。
 >    完成 = 七掃清零(⑥含雙向對應成立)。
 > 7. G1 送審:html twin(方案架構圖,比較期並排;OC 待裁決置頂)→ in-review →
->    reviewer(≠owner;無適格第二人 → owner 自審留痕)。G1 = 方向核准 +
+>    reviewer。審查者依序:適格人類 reviewer → fresh-context reviewer Agent →
+>    owner 自審(有記錄的最後手段)。G1 = 方向核准 +
 >    Owner Calls 全裁決(有未裁決 OC 不得過;正本 README §7)。核准 → 三連動
 >    (frontmatter/STATUS/twin)。完成 = verdict 記錄+三連動齊。
 

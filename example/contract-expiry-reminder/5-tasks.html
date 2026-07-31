@@ -1,0 +1,78 @@
+<!-- html 外殼:把 md 轉出的 HTML 塞進 <main>,5. 任務(tracer bullet:T-1→T-2 先打通端到端,再 T-3 加厚) 換成頁題。
+     自足單檔、無外部資源、深淺色自適應。 -->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>5. 任務(tracer bullet:T-1→T-2 先打通端到端,再 T-3 加厚)</title>
+<style>
+  :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;}
+  @media(prefers-color-scheme:dark){
+    :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+  main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
+  h2{font-size:1.15rem;margin-top:2em}
+  h3{font-size:1rem;margin-top:1.5em}
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:1em 0}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
+  th{background:var(--card)}
+  code,pre{background:var(--card);border-radius:4px;
+           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
+  pre{padding:12px;overflow-x:auto}
+  code{padding:1px 5px}
+  blockquote{margin:1em 0;padding:.5em 1em;border-left:3px solid var(--line);color:var(--muted)}
+  ul,ol{padding-left:1.4em}
+  .meta{color:var(--muted);font-size:.85rem;margin-bottom:2em}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;
+         font-size:.8rem;font-weight:600;border:1px solid transparent}
+  .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+  .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+</style>
+</head>
+<body>
+<main>
+<h1>5. 任務(tracer bullet:T-1→T-2 先打通端到端,再 T-3 加厚)</h1>
+<h2>T-1 API:GET /contracts/expiring</h2>
+<ul>
+<li>[x] 完成</li>
+<li>Covers: R-1 / S-1, S-2</li>
+<li>Files: <code>internal/handler/contract.go</code>, <code>internal/service/contract.go</code>, <code>internal/repo/contract.go</code></li>
+<li>Verify: <code>go test ./internal/... -run TestExpiring</code></li>
+<li>Blocked-by: —</li>
+</ul>
+<h2>T-2 前端:dashboard 到期卡片(含空狀態)</h2>
+<ul>
+<li>[x] 完成</li>
+<li>Covers: R-1 / S-1, S-2</li>
+<li>Files: <code>src/components/ExpiringContractsCard.tsx</code>, <code>src/pages/Dashboard.tsx</code></li>
+<li>Verify: <code>npm test -- ExpiringContractsCard</code></li>
+<li>Blocked-by: T-1</li>
+</ul>
+<h2>T-3 卡片列點擊 → 合約詳情</h2>
+<ul>
+<li>[x] 完成</li>
+<li>Covers: R-2 / S-3</li>
+<li>Files: <code>src/components/ExpiringContractsCard.tsx</code></li>
+<li>Verify: <code>npm test -- ExpiringContractsCard</code></li>
+<li>Blocked-by: T-2</li>
+</ul>
+<h2>T-4 e2e:登入 → dashboard 看到到期合約 → 點入詳情</h2>
+<ul>
+<li>[x] 完成</li>
+<li>Covers: R-1, R-2 / S-1, S-3</li>
+<li>Files: <code>e2e/expiring-contracts.spec.ts</code></li>
+<li>Verify: <code>npx playwright test e2e/expiring-contracts.spec.ts</code></li>
+<li>Blocked-by: T-3</li>
+</ul>
+</main>
+</body>
+</html>

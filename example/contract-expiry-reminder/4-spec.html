@@ -1,9 +1,11 @@
+<!-- html 外殼:把 md 轉出的 HTML 塞進 <main>,4. 規格 — 合約到期提醒(change spec) 換成頁題。
+     自足單檔、無外部資源、深淺色自適應。 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>contract-expiry-reminder · 規格</title>
+<title>4. 規格 — 合約到期提醒(change spec)</title>
 <style>
   :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
         --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;}
@@ -14,74 +16,98 @@
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);
        font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
-  main{max-width:900px;margin:0 auto;padding:32px 20px 80px}
+  main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
   h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
   h2{font-size:1.15rem;margin-top:2em}
+  h3{font-size:1rem;margin-top:1.5em}
   .tablewrap{overflow-x:auto}
   table{border-collapse:collapse;width:100%;margin:1em 0}
-  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
   th{background:var(--card)}
-  .meta{color:var(--muted);font-size:.85rem;margin-bottom:1.2em}
-  .badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.8rem;font-weight:600}
+  code,pre{background:var(--card);border-radius:4px;
+           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
+  pre{padding:12px;overflow-x:auto}
+  code{padding:1px 5px}
+  blockquote{margin:1em 0;padding:.5em 1em;border-left:3px solid var(--line);color:var(--muted)}
+  ul,ol{padding-left:1.4em}
+  .meta{color:var(--muted);font-size:.85rem;margin-bottom:2em}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;
+         font-size:.8rem;font-weight:600;border:1px solid transparent}
   .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
-  code{background:var(--card);border-radius:4px;padding:1px 5px;
-       font-family:ui-monospace,Menlo,monospace;font-size:.88em}
-  pre{background:var(--card);border:1px solid var(--line);border-radius:8px;
-      padding:10px;overflow-x:auto;font-size:.85em;line-height:1.5}
+  .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
 </style>
 </head>
 <body>
 <main>
-  <h1>4. 規格 — 合約到期提醒(change spec)</h1>
-  <p class="meta">feature: contract-expiry-reminder · owner: &lt;owner&gt; · G2 審:&lt;reviewer-b&gt; ·
-     <span class="badge ok">status: approved</span></p>
+<h1>4. 規格 — 合約到期提醒(change spec)</h1>
+<h2>ADDED Requirements</h2>
+<h3>R-1: 系統 SHALL 在 dashboard 顯示登入者可見、30 天內到期且未續約的合約卡片</h3>
+<h4>S-1</h4>
+<ul>
+<li>GIVEN 登入業務 <code>&lt;owner&gt;</code> 名下有合約 C,<code>end_date = today + 10d</code>,未續約</li>
+<li>WHEN <code>&lt;owner&gt;</code> 開啟 dashboard</li>
+<li>THEN 到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</li>
+<li>觀測:從 <code>&lt;owner&gt;</code> 的 dashboard 到期卡片看 | 看到 C 與「10 天」算對 | 用 C(<code>end_date = today + 10d</code>,未續約)測</li>
+</ul>
+<h4>S-2</h4>
+<ul>
+<li>GIVEN <code>&lt;owner&gt;</code> 名下無 30 天內到期的合約</li>
+<li>WHEN <code>&lt;owner&gt;</code> 開啟 dashboard</li>
+<li>THEN 卡片顯示空狀態「近期無到期合約」,不顯示錯誤</li>
+<li>觀測:從 <code>&lt;owner&gt;</code> 的 dashboard 到期卡片看 | 看到「近期無到期合約」且無錯誤算對 | 用名下無 30 天內到期未續約合約的 <code>&lt;owner&gt;</code> 測</li>
+</ul>
+<h3>R-2: 卡片中每筆合約 SHALL 可點擊導向該合約詳情頁</h3>
+<h4>S-3</h4>
+<ul>
+<li>GIVEN 到期卡片列出合約 C</li>
+<li>WHEN <code>&lt;owner&gt;</code> 點擊 C 那一列</li>
+<li>THEN 導向 <code>/contracts/C.id</code> 詳情頁</li>
+<li>觀測:從 C 那一列與瀏覽器 URL 看 | 點擊後 URL 為 <code>/contracts/C.id</code> 且顯示 C 詳情算對 | 用 S-1 的到期合約 C 測</li>
+</ul>
+<h2>MODIFIED Requirements</h2>
+<p>(無 —— 不改既有行為)</p>
+<h2>REMOVED Requirements</h2>
+<p>(無)</p>
+<h2>行為流程圖(R 級)</h2>
+<pre><code>[R-1] dashboard 顯示到期卡片
+  登入 -&gt; 開啟 dashboard -&gt; GET /contracts/expiring?days=30
+    -&gt; 查詢結果
+      = 有到期合約 -&gt; 卡片列出 [名稱 + 剩餘天數]
+      = 無到期合約 -&gt; 空狀態 [近期無到期合約]
 
-  <h2>行為流程圖(R 級)</h2>
-  <pre>
-登入 → dashboard → [R-1] 查 Expiring(≤30 天且未續約)
-                     ├─ 有 → 卡片:名稱+剩餘天數 ──[R-2]── 點擊 → /contracts/:id
-                     └─ 無 → 空狀態「近期無到期合約」
-  </pre>
-
-  <h2>Requirements(ADDED)</h2>
-  <div class="tablewrap"><table>
-    <tr><th>R</th><th>S</th><th>GIVEN / WHEN / THEN</th></tr>
-    <tr><td rowspan="2">R-1 dashboard 顯示 30 天內到期未續約合約卡片</td>
-        <td>S-1</td><td>&lt;owner&gt; 名下合約 end_date=today+10d 未續約 / 開 dashboard / 卡片列出+「10 天」</td></tr>
-    <tr><td>S-2</td><td>名下無 30 天內到期 / 開 dashboard / 空狀態文案,不報錯</td></tr>
-    <tr><td>R-2 卡片列可點導向詳情</td>
-        <td>S-3</td><td>卡片列出合約 C / 點擊該列 / 導向 /contracts/C.id</td></tr>
-  </table></div>
-
-  <h2>Drafting Decisions(草擬自判,分歧區)</h2>
-  <div class="tablewrap"><table>
-    <tr><th>決策</th><th>理由</th><th>棄項</th><th>裁決</th></tr>
-    <tr><td>剩餘天數顯示「N 天」</td><td>業務以天為單位追</td><td>精確到時分</td>
-        <td><span class="badge ok">✅</span></td></tr>
-    <tr><td>空狀態文案寫死於 spec</td><td>驗收要可測,文案不可漂</td><td>留給前端自由</td>
-        <td><span class="badge ok">✅</span></td></tr>
-  </table></div>
-
-  <h2>邊界</h2>
-  <div class="tablewrap"><table>
-    <tr><th>Out of Scope</th><td>email/LINE、自訂天數、主管彙總報表</td></tr>
-    <tr><th>Diff Budget</th><td>≤6 檔 / ≤400 行</td></tr>
-    <tr><th>Acceptance</th><td>S-1~S-3 全綠 + 既有測試全綠(回歸)+ p95 增加 <100ms</td></tr>
-  </table></div>
-
-  <h2>Test Skeletons(選配)</h2>
-  <pre>func TestExpiring_S1(t *testing.T) {
+[R-2] 卡片列可點擊導向詳情
+  卡片列出到期合約 C -&gt; 使用者點擊該列 -&gt; 導向 /contracts/C.id
+</code></pre>
+<h2>Acceptance Criteria</h2>
+<ul>
+<li>S-1 ~ S-3 測試全綠。</li>
+<li>dashboard p95 載入延遲增加 &lt; 100ms(8k 筆量級,EXPLAIN 驗證走索引)。</li>
+</ul>
+<h2>Out of Scope</h2>
+<p>email/LINE 通知、自訂天數、主管彙總報表。</p>
+<h2>Diff Budget</h2>
+<p>≤ 6 檔 / ≤ 400 行(API handler+service+query、前端卡片元件+route、測試)。</p>
+<h2>Dependencies</h2>
+<p>無(不依賴其他 feature;不需 migration)。</p>
+<h2>Drafting Decisions(草擬自判,已裁決)</h2>
+<ul>
+<li>剩餘天數顯示「N 天」不含小時 | 理由:業務以天為單位追 | 棄項:精確到時分 | ✅</li>
+<li>S-2 空狀態文案寫死於 spec | 理由:驗收要可測,文案不可漂 | 棄項:留給前端自由 | ✅</li>
+</ul>
+<h2>Test Skeletons(選配)</h2>
+<pre><code class="language-go">func TestExpiring_S1(t *testing.T) {
 	// GIVEN 登入業務 &lt;owner&gt; 名下合約 C, end_date = today+10d, 未續約
 	// WHEN &lt;owner&gt; 開啟 dashboard (GET /contracts/expiring?days=30)
 	// THEN 到期卡片列出 C, 顯示名稱與剩餘天數「10 天」
-	t.Skip("skeleton - see 4-spec S-1; S-2/S-3 由前端 vitest 承接")
-}</pre>
-
-  <h2>確認紀錄</h2>
-  <ul>
-    <li>R 範圍確認 | 2026-07-23</li>
-    <li>S 逐段確認完成 | 2026-07-23</li>
-  </ul>
+	t.Skip(&quot;skeleton - see 4-spec S-1; S-2/S-3 由前端 vitest 承接,見 6-implementation-notes&quot;)
+}
+</code></pre>
+<h2>確認紀錄</h2>
+<ul>
+<li>R 範圍確認 | 2026-07-23</li>
+<li>S 逐段確認完成 | 2026-07-23</li>
+</ul>
 </main>
 </body>
 </html>

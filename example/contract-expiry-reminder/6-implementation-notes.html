@@ -1,0 +1,158 @@
+<!-- html 外殼:把 md 轉出的 HTML 塞進 <main>,6. 實作筆記 換成頁題。
+     自足單檔、無外部資源、深淺色自適應。 -->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>6. 實作筆記</title>
+<style>
+  :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;}
+  @media(prefers-color-scheme:dark){
+    :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+  main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
+  h2{font-size:1.15rem;margin-top:2em}
+  h3{font-size:1rem;margin-top:1.5em}
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:1em 0}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
+  th{background:var(--card)}
+  code,pre{background:var(--card);border-radius:4px;
+           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
+  pre{padding:12px;overflow-x:auto}
+  code{padding:1px 5px}
+  blockquote{margin:1em 0;padding:.5em 1em;border-left:3px solid var(--line);color:var(--muted)}
+  ul,ol{padding-left:1.4em}
+  .meta{color:var(--muted);font-size:.85rem;margin-bottom:2em}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;
+         font-size:.8rem;font-weight:600;border:1px solid transparent}
+  .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+  .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+</style>
+</head>
+<body>
+<main>
+<h1>6. 實作筆記</h1>
+<h2>T Review Log</h2>
+<h3>T-1</h3>
+<ul>
+<li>reviewer identity:<code>&lt;reviewer-a&gt;</code></li>
+<li>reviewer kind:human</li>
+<li>reviewed-at:2026-07-21 14:40(早於 commit <code>a1c3f02</code>)</li>
+<li>Verify:<code>go test ./internal/... -run TestExpiring</code> → reviewer 親跑 <code>ok  internal/...</code></li>
+<li>Covers finding:R-1 / S-1、S-2 的 API 查詢、到期結果與空結果均吻合。</li>
+<li>Files finding:改動僅 <code>internal/handler/contract.go</code>、<code>internal/service/contract.go</code>、<code>internal/repo/contract.go</code>。</li>
+<li>RED→GREEN finding:S-1/S-2 的 RED→GREEN 證據完整且可追溯。</li>
+<li>verdict:PASS</li>
+<li>correction + re-review after FAIL:N/A</li>
+</ul>
+<h3>T-2</h3>
+<ul>
+<li>reviewer identity:<code>&lt;reviewer-a&gt;</code></li>
+<li>reviewer kind:human</li>
+<li>reviewed-at:2026-07-22 10:15(早於 commit <code>b7e91d4</code>)</li>
+<li>Verify:<code>npm test -- ExpiringContractsCard</code> → reviewer 親跑 <code>PASS (2 tests)</code>。</li>
+<li>Covers finding:R-1 / S-1、S-2 的卡片與空狀態均吻合。</li>
+<li>Files finding:改動僅 <code>src/components/ExpiringContractsCard.tsx</code>、<code>src/pages/Dashboard.tsx</code>。</li>
+<li>RED→GREEN finding:S-1/S-2 的 RED→GREEN 證據完整且可追溯。</li>
+<li>verdict:PASS</li>
+<li>correction + re-review after FAIL:N/A</li>
+</ul>
+<h3>T-3</h3>
+<ul>
+<li>reviewer identity:<code>&lt;reviewer-a&gt;</code></li>
+<li>reviewer kind:human</li>
+<li>reviewed-at:2026-07-22 15:30(早於 commit <code>c58a2e0</code>)</li>
+<li>Verify:<code>npm test -- ExpiringContractsCard</code> → reviewer 親跑 <code>PASS (3 tests)</code>。</li>
+<li>Covers finding:R-2 / S-3 的卡片列導向詳情頁行為吻合。</li>
+<li>Files finding:改動僅 <code>src/components/ExpiringContractsCard.tsx</code>。</li>
+<li>RED→GREEN finding:S-3 的 RED→GREEN 證據完整且可追溯。</li>
+<li>verdict:PASS</li>
+<li>correction + re-review after FAIL:N/A</li>
+</ul>
+<h3>T-4</h3>
+<ul>
+<li>reviewer identity:<code>&lt;reviewer-a&gt;</code></li>
+<li>reviewer kind:human</li>
+<li>reviewed-at:2026-07-23 11:20(早於 commit <code>f3a08c1</code>)</li>
+<li>Verify:<code>npx playwright test e2e/expiring-contracts.spec.ts</code> → reviewer 親跑 <code>PASS (登入、卡片、詳情導向)</code>。</li>
+<li>Covers finding:R-1、R-2 / S-1、S-3 的端到端可見行為吻合。</li>
+<li>Files finding:改動僅 <code>e2e/expiring-contracts.spec.ts</code>。</li>
+<li>RED→GREEN finding:S-1/S-3 的端到端 RED→GREEN 證據完整且可追溯。</li>
+<li>verdict:PASS</li>
+<li>correction + re-review after FAIL:N/A</li>
+</ul>
+<h2>Progress Log</h2>
+<ul>
+<li>07-21 | T-1 | review PASS 後提交 API + service,EXPLAIN 確認走 idx_contracts_end_date | <code>a1c3f02</code></li>
+<li>07-22 | T-2 | review PASS 後提交卡片 + 空狀態 | <code>b7e91d4</code></li>
+<li>07-22 | T-3 | review PASS 後提交詳情連結 | <code>c58a2e0</code></li>
+<li>07-23 | T-4 | review PASS 後提交 e2e | <code>f3a08c1</code></li>
+</ul>
+<h2>TDD Evidence</h2>
+<h3>S-1</h3>
+<ul>
+<li>RED: <code>go test ./internal/... -run TestExpiring_S1</code> → <code>FAIL: expected 1 contract, got 0 (handler not implemented)</code></li>
+<li>GREEN: 同指令 → <code>ok  internal/service  0.31s</code></li>
+</ul>
+<h3>S-2</h3>
+<ul>
+<li>RED: <code>npm test -- ExpiringContractsCard -t &quot;S2 empty&quot;</code> → <code>Expected &quot;近期無到期合約&quot;, received element not found</code></li>
+<li>GREEN: 同指令 → <code>PASS (2 tests)</code></li>
+</ul>
+<h3>S-3</h3>
+<ul>
+<li>RED: <code>npm test -- ExpiringContractsCard -t &quot;S3 navigate&quot;</code> → <code>navigate not called</code></li>
+<li>GREEN: 同指令 → <code>PASS (3 tests)</code></li>
+</ul>
+<h2>Decisions(spec 未載明的自由選擇)</h2>
+<p>(無 —— 本次無 spec 未載明的自由選擇需記錄;取捨皆落在 D-1)</p>
+<h2>Deviations</h2>
+<h3>D-1(L1)</h3>
+<ul>
+<li>現象:原計畫在 repo 層新增覆蓋索引 migration 以壓查詢延遲;實測 EXPLAIN 走既有
+<code>idx_contracts_end_date</code>,p95 42ms 已達標。</li>
+<li>保守選擇:<strong>不新增 migration</strong>(新增 schema 變更屬不可逆面,且 4-spec Dependencies
+聲明「不需 migration」,加了反而變 L2)。</li>
+<li>理由:實測已達 Success Criteria(&lt;100ms),改 schema 的風險 &gt; 收益。</li>
+<li>影響:T-1(Files 少了 migration 檔);R/S 無影響。</li>
+</ul>
+<h2>Files Changed</h2>
+<p>6 檔 / +312 −8(Diff Budget ≤6 檔/≤400 行,內)。</p>
+<ul>
+<li><code>internal/handler/contract.go</code> (T-1)</li>
+<li><code>internal/service/contract.go</code> (T-1)</li>
+<li><code>internal/repo/contract.go</code> (T-1)</li>
+<li><code>src/components/ExpiringContractsCard.tsx</code> (T-2, T-3)</li>
+<li><code>src/pages/Dashboard.tsx</code> (T-2)</li>
+<li><code>e2e/expiring-contracts.spec.ts</code> (T-4)</li>
+</ul>
+<h2>Self-Review</h2>
+<!-- = 執行清單步 4 的八問:逐問作答、附證據(測試輸出/hash/diff stat),不憑印象 -->
+<ol>
+<li>每 S-id 有含其名測試 + RED/GREEN 證據? → 是,S-1(<code>TestExpiring_S1</code>)、S-2
+(<code>&quot;S2 empty&quot;</code>)、S-3(<code>&quot;S3 navigate&quot;</code>)皆見上方 TDD Evidence,RED(失敗輸出)→
+GREEN(通過輸出)證據齊全。</li>
+<li>每 T 都有獨立 T Review Log verdict? → 是,T-1~T-4 均由 <code>&lt;reviewer-a&gt;</code> 親跑 Verify,
+Covers/Files/RED→GREEN finding 皆記為 PASS。</li>
+<li>每個 PASS 都早於該 T commit? → 是,四筆 reviewed-at 均明列早於各自 hash。</li>
+<li>每個 FAIL 後有較晚 PASS,否則未勾未 commit? → 是,本次四 T 均首輪 PASS,各筆皆記 N/A。</li>
+<li>每 T 一 commit、Progress Log 每列有 hash? → 是,見上方 Progress Log,每 T 一列各自留 hash。</li>
+<li><code>git diff --stat</code> 改動檔案 ⊆ 5-tasks Files 聯集、Diff Budget 內? → 是,見 Files
+Changed(6 檔 / +312 −8),在 4-spec Diff Budget(≤6 檔/≤400 行)內。</li>
+<li>Decisions/Deviations 與 diff 對得上(無 silent drift)? → 是,Decisions 節本次
+空(取捨皆落在 D-1),僅 D-1 一筆 Deviation(放棄新增覆蓋索引 migration),對應
+diff 確實無新 migration 檔,R-1/R-2/S-1~S-3 均無變動。</li>
+<li>回歸綠? → 是,<code>go test ./...</code> 與 <code>npm test</code> 既有套件全綠(摘要見上)。</li>
+</ol>
+</main>
+</body>
+</html>
