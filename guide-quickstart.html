@@ -78,8 +78,12 @@
   <p class="muted">給第一次在新專案跑 dev-flow 的人:照著本頁一步一步打,從裝好 plugin 到出第一個 PR。
   正本規則是 <code>README.md</code>,本頁是操作導覽,兩者不一致以 README 為準。</p>
   <p class="muted">本頁走的是 <strong>full lane</strong>(1→7 全套)。如果你要做的其實是 bugfix / ≤2 檔小改 /
-  行為已有 spec 條目,走 <strong>fast lane</strong> 更省(只要 4-spec 補 bug scenario + 6-notes + 7-review mini,
-  Gate 只有 G3)—— 兩軌判準與細節見 <a href="guide-dev-flow.html#lanes">guide-dev-flow.html ②兩軌</a>。</p>
+  行為已有 spec 條目,走 <strong>fast lane</strong> 更省(4-spec 補 bug scenario → 5-tasks mini → 6-notes → 7-review mini,
+  Gate 是 G3,spec 改動大再補 G2)—— 兩軌判準與細節見 <a href="guide-dev-flow.html#lanes">guide-dev-flow.html ②兩軌</a>。</p>
+  <p class="muted">Fast lane 省略 Stage 1–3;它的 mini Stage 5 仍直接用
+  <code>_templates/5-tasks.md</code>,可只寫一個 T,但 <code>Covers</code>、<code>Files</code>、
+  <code>Verify</code>、<code>Blocked-by</code> 必填,才能供 <code>devflow-exec.sh start &lt;slug&gt;</code>
+  照常解析 scope。</p>
 
   <blockquote>本頁指令分兩種管道,下文用固定標籤區分:<br>
   <span class="badge you">跟 AI 說</span> —— 對話裡打的觸發語(<code>dev-setup</code>、<code>/dev-talk …</code>、
@@ -126,8 +130,8 @@
     <li><code>docs/dev/_templates/</code> ← cp 母版 <code>_templates/</code></li>
     <li><code>docs/dev/STATUS.md</code> ← 從模板建(進行中 feature 看板)</li>
     <li>repo root <code>CONTEXT.md</code> ← 若無則從模板建(詞彙表)</li>
-    <li><code>.claude/rules/arch-invariants.md</code> —— <strong>自動產草稿</strong>(不是空殼):收割舊 harness
-    steering 與 <code>CLAUDE.md</code> 技術規則段 → 派 sonnet 掃 codebase 抓候選 → 每條標
+    <li><code>.claude/rules/arch-invariants.md</code> —— <strong>自動產草稿</strong>(不是空殼):收割使用者指名的
+    external workflow artifacts 與 <code>CLAUDE.md</code> 的技術規則段 → 派 sonnet 掃 codebase 抓候選 → 每條標
     <code>【待確認】</code> 列給你逐條核可,見下一步</li>
     <li><code>.gitignore</code> 加一行 <code>.devflow/</code>(執行守衛的狀態檔目錄)</li>
   </ul>
@@ -135,11 +139,11 @@
   <ul>
     <li><strong>文檔歸位</strong>:專案裡若有散落文件,會提議 <code>git mv</code> 進
     <code>docs/specs/</code> / <code>docs/dev/</code> / <code>docs/adr/</code>,並同步全部引用(README §1)</li>
-    <li><strong>舊 harness steering 偵測</strong>:發現 <code>.claude/steering/*.md</code> → 徵同意把「架構不變量/
-    技術慣例」類內容遷入 <code>.claude/rules/</code>,流程類內容直接丟棄</li>
+    <li><strong>外部 workflow artifacts</strong>:使用者指名後,只讀取其中可重用的「架構不變量/
+    技術慣例」作為 rules 草稿候選;未指名目錄不掃描,原 artifacts 不移動、不覆蓋、不刪除</li>
   </ul>
-  <p class="muted">專案若已有 harness 產出(<code>specs/</code>、<code>reviews/</code>、<code>.harness/</code>)—— 一律不動,
-  舊 spec 仍可用 harness 繼續跑,不強迫轉換。</p>
+  <p class="muted">專案若已有其他 external workflow artifacts 與目錄,一律保留不動;
+  dev-setup 不轉換也不接管它們。</p>
 
   <h3>3. 核可 <code>.claude/rules/arch-invariants.md</code> 草稿</h3>
   <p>install 會產草稿,你要做的是<strong>逐條核可</strong>(不是從零寫)。草稿每條長這樣:</p>
@@ -434,11 +438,10 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   建議回 5-tasks 把 Files 收斂到實際會動的檔案,再重新 <code>start</code>。
   沒命中固定字集的「寬」(例如某個很大的子目錄)不會被這條規則抓到,靠 5-tasks 撰寫時自己把關。</p>
 
-  <h3>舊 harness 專案能不能共存?</h3>
-  <p>能。<code>dev-setup</code> install 對已有 harness 產出的專案,<code>specs/</code>、<code>reviews/</code>、
-  <code>.harness/</code> 一律不動,舊 spec 可繼續用 harness 跑。新 feature 想改走 dev-flow,
-  走 README §13 的半機械轉換對照表,per-feature 手動轉。<strong>一個 feature 只認一個引擎</strong>
-  (雙狀態機共存 = 混亂),但兩種引擎在同一專案裡分屬不同 feature 是可以並存的。</p>
+  <h3>既有 external workflow artifacts 會被改動嗎?</h3>
+  <p>不會。<code>dev-setup</code> install 會保留所有未識別的外部 workflow 目錄與產物:
+  不移動、不覆蓋、不刪除。外部 workflow 是專案層選擇,dev-flow 不轉換、不接管、
+  也不把它當成官方替代執行系統。</p>
 
   <h2 id="diagram">⑥ 全程圖</h2>
   <p>同一張七階段圖,額外標出兩個新手常忽略的地方:<strong>虛線框</strong> = 建議另開 session 的站;

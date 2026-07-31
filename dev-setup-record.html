@@ -63,7 +63,6 @@
 
 ~/dev/dev-flow/                          &lt;- 母版文檔(不隨 plugin 走)
 |- README.md  _templates/  example/  guide-dev-talk.html  本檔
-|- _retired-skills-20260726/             &lt;- 舊兩帳號 skills 備份
   </pre>
   <p><strong>為什麼拆兩個 plugin</strong>:dev-talk 必須看不到任何下游流程字眼(盲原則);包進同一個 plugin 會讓它的 skill 識別名帶上流程前綴。拆開後 dev-talk 自成一包,描述與內容全中性。</p>
 
@@ -73,7 +72,7 @@
     <tr><td><code>dev-talk@local</code></td><td>訪談引導 skill(v4:含受影響面清點、五掃複核、⚠️ 高影響決策標記)+ 視覺版殼檔。單一正本,兩帳號同時生效。</td></tr>
     <tr><td><code>dev-flow@local</code></td><td>流程路由器 + dev-setup 健康檢查 + guard hook。hook 隨 plugin 啟用自動掛載(不再寫進 settings.json)。</td></tr>
     <tr><td>devtalk-guard.sh</td><td>任何 Edit/Write 後檢查:目標路徑含 <code>skills/dev-talk/</code> 才動作 → 洩漏掃描(下游階段字眼)→ 命中 <code>exit 2</code> 把錯誤直接回饋給模型要求立即修正。其他路徑靜默放行。</td></tr>
-    <tr><td>dev-setup skill</td><td>專案安裝器(install:docs/dev 模板 + <code>.claude/rules/</code> 骨架 + gitignore;upgrade:只覆蓋 README/_templates,絕不動已產 feature 檔;舊 harness specs/ 不碰可共存)+ 六項健康檢查。</td></tr>
+    <tr><td>dev-setup skill</td><td>專案安裝器(install:docs/dev 模板 + <code>.claude/rules/</code> 骨架 + gitignore;upgrade:只覆蓋 README/_templates,絕不動已產 feature 檔;未識別的外部 workflow artifacts 全數保留)+ 六項健康檢查。</td></tr>
     <tr><td><strong>執行守衛</strong><br>(devflow-exec + guard + prebash + postbash)</td><td>Stage 6 起手 <code>devflow-exec.sh start &lt;slug&gt;</code>:驗 4-spec=approved(否則拒啟)→ 從 5-tasks Files 產 scope 快照 + 髒樹基線 → 建旗標。旗標存在時:<strong>PreToolUse</strong> 擋改 4-spec/1/2/3(契約防篡改+L2 強制停修審)、擋讀 1/2/3(圍欄②)、擋 scope 外寫入(附 L1/L2 提示);<strong>PostToolUse Bash</strong> 每次指令後 git status 對照 scope,shell 寫入幾秒內被抓。L1 合法出口:<code>allow &lt;file&gt; --reason</code>(留 log + 提醒記 D-n)。<code>stop</code> 撤旗標 → 全部沉睡,其他工作零干擾。</td></tr>
     <tr><td><strong>dev-run 引擎</strong></td><td>派工者(opus/fable5 主對話,不寫碼)逐 T:haiku 執行 → sonnet fresh review → 錯誤升階(haiku→sonnet→opus,同層最多兩次);升階史記 6-notes「執行軌跡」→ 7-review.html 執行記錄表。偏差 L1 保守+記+續走,L2 才停(field guide 模式)。</td></tr>
   </table></div>
@@ -86,7 +85,7 @@
     <tr><td>enabledPlugins 兩帳號</td><td class="ok">dev-talk@local / dev-flow@local 皆 true</td></tr>
     <tr><td>guard pipe-test 三案</td><td class="ok">非 dev-talk 放行 exit 0 / plugin 內 SKILL 乾淨 exit 0 / 洩漏假檔 exit 2</td></tr>
     <tr><td>plugin 內 dev-talk 盲掃</td><td class="ok">零命中(SKILL + 殼檔)</td></tr>
-    <tr><td>舊 skills 目錄</td><td class="ok">已備份至 <code>~/dev/dev-flow/_retired-skills-20260726/</code> 後移除,兩帳號零殘留</td></tr>
+    <tr><td>舊 skills 目錄</td><td class="ok">兩帳號的 legacy per-account skills 已移除,零殘留</td></tr>
     <tr><td>plugin hook 實彈</td><td class="muted">需 <code>/reload-plugins</code> 或新 session 載入後生效 —— 前版 settings hook 已實彈驗過同一 script 邏輯(2026-07-25 hook fired),plugin 載入後建議跑一次「dev-setup」自測</td></tr>
     <tr><td>執行守衛全情境(2026-07-28,假 repo)</td><td class="ok">12/12:draft 拒啟 / approved 啟動 / 擋改 4-spec / 擋讀 1-discussion / 放行 scope 內+目錄前綴+6-notes / 擋 scope 外 / allow 後放行 / postbash 抓 shell 寫入(不誤報既有髒樹) / 乾淨沉默 / stop 後全放行</td></tr>
     <tr><td><strong>守衛自測套件</strong>(2026-07-28,可重跑)</td><td class="ok">33/33 全過 —— <code>hooks/selftest.sh</code> 把原本一次性手測固化:未武裝全靜默 3 案 / start 前置 3 案 / PreToolUse 守衛 11 案(含跨 feature 契約保護、symlink、exec.json、.gitignore)/ prebash 圍欄 3 案 / allow 出口 3 案 / postbash 偵測網 4 案(含契約 hash、既有髒檔內容變動)/ fail-closed 2 案 / stop 後沉睡 2 案。自建 temp repo、跑完自清,任何時候可重驗</td></tr>
@@ -117,7 +116,7 @@ jq -e '.hooks | to_entries[] | .key as $e | .value[] | .matcher' \
   </pre>
 
   <h2>⑤ 停用 / 移除</h2>
-  <p>停用:兩帳號 settings.json 的 <code>enabledPlugins</code> 把 <code>dev-talk@local</code> / <code>dev-flow@local</code> 設 false(hook 隨 plugin 一起停)。徹底移除:再刪 plugin 目錄與 marketplace.json 內兩個 entry。舊版備份在 <code>_retired-skills-20260726/</code>。</p>
+  <p>停用:兩帳號 settings.json 的 <code>enabledPlugins</code> 把 <code>dev-talk@local</code> / <code>dev-flow@local</code> 設 false(hook 隨 plugin 一起停)。徹底移除:再刪 plugin 目錄與 marketplace.json 內兩個 entry。</p>
 
   <h2>⑥ 界線(誠實聲明)</h2>
   <ul>

@@ -86,7 +86,7 @@
     <a href="#gates">⑤ Gate 規則卡</a>
     <a href="#guard">⑥ 執行守衛</a>
     <a href="#fence">⑦ 資訊圍欄</a>
-    <a href="#engine">⑧ 引擎分流</a>
+    <a href="#large-work">⑧ 大案與切片</a>
     <a href="#example">⑨ 範例</a>
   </nav>
 
@@ -206,13 +206,17 @@
     <tr><td>判準</td><td>新能力 / 不可逆改動(schema、API 契約、跨模組介面)</td>
         <td>bugfix / ≤2 檔小改 / 行為已有 spec 條目(可逆的跨模組小改也算)</td></tr>
     <tr><td>文檔</td><td>1→7 全套(3 選配)</td>
-        <td>只要 <code>4-spec</code>(補 bug scenario)+ <code>6-implementation-notes</code> + <code>7-review</code>(mini)</td></tr>
+        <td><code>4-spec</code>(補 bug scenario) → <code>5-tasks</code>(mini) → <code>6-implementation-notes</code> → <code>7-review</code>(mini)</td></tr>
     <tr><td>Gate</td><td>G1 G2 G3</td><td>G3(spec 改動大再補 G2)</td></tr>
   </table></div>
   <p class="muted">拿不準 → Full。被流程煩到 → 檢討判準,不要繞過流程。</p>
   <p><strong>Fast lane 起手 = 診斷迴圈</strong>(mattpocock×superpowers 聯集):重現 → 最小化 →
   假設 → 驗證定位 → 修 → 回歸測試。<code>4-spec</code> 的 bug scenario 從「重現步驟」直接長出
   (GIVEN=重現前置 / WHEN=觸發 / THEN=正確行為)。修根因,禁 symptom patch。</p>
+  <p class="muted">Fast lane 省略 Stage 1–3,但保留 mini Stage 5。直接使用同一份
+  <code>_templates/5-tasks.md</code>;可只有一個 T,但 <code>Covers</code>、<code>Files</code>、
+  <code>Verify</code>、<code>Blocked-by</code> 必填,<code>devflow-exec.sh start &lt;slug&gt;</code>
+  才能照常解析 scope。</p>
 
   <h2 id="docs">③ 七份文件</h2>
   <div class="tablewrap"><table>
@@ -227,7 +231,7 @@
   </table></div>
   <p><code>.claude/rules/*.md</code>(不算七份文件之一,不跟 gate 流程走):架構不變量/技術慣例/坑,
   每 session 自動注入,生命週期「永生」(不隨 feature 結案封存);<code>dev-setup</code> install 時
-  <strong>自動產草稿</strong>(收割舊 harness steering 與 CLAUDE.md 技術段 → 派 sonnet 掃 codebase 抓候選 →
+  <strong>自動產草稿</strong>(收割使用者指名的 external workflow artifacts 與 CLAUDE.md 技術段 → 派 sonnet 掃 codebase 抓候選 →
   每條標 <code>【待確認】</code> 待使用者逐條核可,未核可者不得當事實引用),骨架見
   <code>_templates/arch-invariants.md</code> 七類分節;全員 + dev-run 執行引擎讀。<strong>只放 gotchas 與架構不變量,禁流程規則</strong>(見 ⑦ 資訊圍欄圍欄②
   盲禁令 —— 流程規則寫進每 session 自動注入檔 = 盲全滅),<code>4-spec</code> 只寫本次 delta,不重抄
@@ -512,21 +516,24 @@
   <p class="muted">界線:盲是<strong>降偏不是密封</strong>——封得掉檔案/檔名/git log/skill 互叫;白名單是 prompt
   約束非權限硬擋。交接鐵則:<strong>文件是唯一通道,對話不是契約</strong>。</p>
 
-  <h2 id="engine">⑧ 引擎分流(harness 逃生門)</h2>
-  <p>預設引擎 = 本流程 Stage 6(逐 T + TDD + 一 T 一 commit)。<strong>大案</strong>才轉
-  harness-engineering 自動執行,門檻(任一):≥3 個可獨立 phase / Diff Budget &gt;15 檔 /
-  跨 repo。<strong>一個 feature 只認一個引擎</strong>(雙狀態機共存 = 混亂)。</p>
-
-  <div class="tablewrap"><table>
-    <tr><th>dev-flow</th><th>→ harness</th></tr>
-    <tr><td>4-spec R/S + Acceptance</td><td><code>requirements.md</code>(驗收條件/Success Criteria 補自 2-decision)</td></tr>
-    <tr><td>4-spec Out of Scope / 帶假設 OQ</td><td>Non-goals / Assumptions</td></tr>
-    <tr><td>5-tasks(T+Verify)</td><td><code>tasks.md</code></td></tr>
-    <tr><td>5-tasks Files 聯集 + Diff Budget</td><td><code>execution-contract.json</code> 的 allowed_files / 預算欄</td></tr>
-    <tr><td>7-review</td><td>harness REVIEW ledger(自動)</td></tr>
-  </table></div>
-  <p class="muted">轉換時人工過一眼(半機械)。ID 追溯鏈供 reviewer 機械檢查覆蓋率:</p>
-  <pre>R-n -&gt; S-n -&gt; T-n(Covers) -&gt; test(name has S-id) -&gt; D-n(deviation) -&gt; F-n(finding)</pre>
+  <h2 id="large-work">⑧ 大案與切片</h2>
+  <p>大案先評估切片可行性:≥3 個可獨立 phase、Diff Budget &gt;15 檔、跨 repo,
+  都是「可能需要切片」的訊號,不是強制切片條件,也不證明已有合法接縫。</p>
+  <div class="cards">
+    <div class="card"><h4>合法接縫</h4><p>只能在「後片單純依賴前片對外產出(介面/資料契約),
+      不依賴其內部設計」的架構邊界切;不得只按數量平分,repo 分開也不自動是接縫。</p></div>
+    <div class="card"><h4>軟訊號</h4><p>單份 4-spec &gt;~40 條 scenario,或 reviewer 預判一次審不動,
+      也要回頭評估切片;仍不能跳過合法接縫判準。</p></div>
+    <div class="card"><h4>無接縫時</h4><p>若拆分會讓後片依賴前片內部設計,保留單一
+      <code>4 → 5 → 6 → 7</code> 管線。</p></div>
+  </div>
+  <p>有合法接縫時,1-discussion/2-decision 全片共用;每片各走
+  <code>4-spec → 5-tasks → 6-notes → 7-review</code>,各有 G2/G3。每片 frontmatter 明載
+  <code>parent</code>,R/S ID 跨片不重號,並依片序凍結前片對外契約;前片契約改動時,
+  後片必須 impact review。</p>
+  <p class="muted">長時間與跨 session 依 <code>STATUS.md</code>、<code>5-tasks.md</code>、
+  <code>6-implementation-notes.md</code> 接力;無人看管的多 phase orchestration 屬專案層選擇,
+  dev-flow 不依賴也不規範它。完整規則見 README §13–14。</p>
 
   <h2 id="example">⑨ 範例:合約到期提醒(<code>example/contract-expiry-reminder/</code>)</h2>
   <p class="muted">填好的完整一輪,full lane、G1/G2/G3 皆已過、狀態 shipped。html 有視覺版時優先連 html。</p>

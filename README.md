@@ -14,7 +14,7 @@ feature 走 7 份文檔、過 3 道 gate(G1 方向核准、G2 契約審查、G3 
 
 **怎麼逛這個 repo**:
 
-- 本 README = 制度正本(7 階段規則、gate 條件、切片與引擎分流)——往下讀就是全部規則
+- 本 README = 制度正本(7 階段規則、gate 條件、切片與大案規則)——往下讀就是全部規則
 - `_templates/` = 七份階段文檔 + STATUS/CONTEXT/ADR/living-spec 模板
 - `example/contract-expiry-reminder/` = 一個 feature 從討論到驗證走完全程的真實形狀
 - 圖解導覽(線上看):[quickstart](https://rick546986.github.io/dev-flow/guide-quickstart.html)、
@@ -66,7 +66,7 @@ CLAUDE.md;舊路徑 grep 歸零才算完)。
 | | Full lane | Fast lane |
 |---|---|---|
 | 判準 | 新能力 / 不可逆改動(schema、API 契約、跨模組介面) | bugfix / ≤2 檔小改 / 行為已有 spec 條目(可逆的跨模組小改也算) |
-| 文檔 | 1→7 全套(3 選配) | 只要 `4-spec`(補 bug scenario)+ `6-implementation-notes` + `7-review`(mini) |
+| 文檔 | 1→7 全套(3 選配) | `4-spec`(補 bug scenario) → `5-tasks`(mini) → `6-implementation-notes` → `7-review`(mini) |
 | Gate | G1 G2 G3 | G3(spec 改動大再補 G2) |
 
 拿不準 → Full。被流程煩到 → 檢討判準,不要繞過流程。
@@ -74,6 +74,9 @@ CLAUDE.md;舊路徑 grep 歸零才算完)。
 **Fast lane 起手 = 診斷迴圈**(mattpocock×superpowers 聯集):重現 → 最小化 →
 假設 → 驗證定位 → 修 → 回歸測試。`4-spec` 的 bug scenario 從「重現步驟」直接長出
 (GIVEN=重現前置 / WHEN=觸發 / THEN=正確行為)。修根因,禁 symptom patch。
+Fast lane 仍使用同一份 `_templates/5-tasks.md`:可只有一個 T,但必須填
+`Covers`、`Files`、`Verify`、`Blocked-by`。Stage 1–3 省略,Stage 5 不省略;
+`devflow-exec.sh start <slug>` 照常從這份 `5-tasks.md` 解析 `Files` scope。
 
 ## 3. 七份文檔(用途一句話;骨架見 `_templates/`,填好範例見 `example/`)
 
@@ -298,38 +301,29 @@ SDD 是脊椎(spec 驅動什麼該做),TDD 是右側驗證(測試證明做對)�
 - 回歸義務見 §7(G3 定義);living spec 全量 S = 天然回歸集。
 - 行為不變類驗收 → **golden master** pattern:同輸入,改動前後輸出逐列一致。
 
-## 13. 執行引擎分流(harness 逃生門)
+## 13. 大案與切片
 
-預設引擎 = 本流程 Stage 6(逐 T + TDD + 一 T 一 commit)。**大案**才轉
-harness-engineering 自動執行,門檻(任一):≥3 個可獨立 phase / Diff Budget >15 檔 /
-跨 repo。**引擎判斷單位:未切片 = feature,切片後(§14)= 片;不論何者,單位只
-認一個引擎**(雙狀態機共存 = 混亂)。
+大案先評估切片可行性(見 §14)。≥3 個可獨立 phase、Diff Budget >15 檔、
+跨 repo,都是「可能需要切片」的訊號,不是強制切片條件;這些訊號也不證明
+必然存在合法切片接縫。切片仍必須滿足 §14 的架構接縫規則;若無法在不洩漏
+片際內部設計的情況下拆分,大 feature 可保留單一 `4 → 5 → 6 → 7` 管線。
 
-轉換對照(半機械,轉換時人工過一眼):
-| dev-flow | → harness |
-|---|---|
-| 4-spec R/S + Acceptance | `requirements.md`(驗收條件/Success Criteria 補自 2-decision) |
-| 4-spec Out of Scope / 帶假設 OQ | Non-goals / Assumptions |
-| 5-tasks(T+Verify) | `tasks.md` |
-| 5-tasks Files 聯集 + Diff Budget | `execution-contract.json` 的 allowed_files / 預算欄 |
-| 7-review | harness REVIEW ledger(自動) |
+長時間與跨 session 工作以 `STATUS.md`、`5-tasks.md`、
+`6-implementation-notes.md` 接力;開新 session 不需要第二套執行系統。
+無人看管的多 phase orchestration 屬專案層選擇,在 dev-flow 方法之外;
+dev-flow 不依賴也不規範外部 orchestration。
 
 ## 14. Spec 切片(單份 4-spec 過大時)
 
-§13 門檻對象是 **feature**(phase/diff/repo);本節門檻對象是**spec 文件本身** ——
-單份 4-spec 條數失控是查無規則的真空(實戰曾估出 85-120 條 S,一次審不動),兩者
-判準不同、需並存,不是彼此的替代。
-
-- **觸發門檻(軟)**:4-spec 起草前估 S 條數,單份 >~40 條、或 reviewer 預判一次
-  審不動 → 切片;起草中途超標,同樣回頭切,不硬撐寫完。
+- **可行性評估訊號**:除 §13 的大案訊號外,4-spec 起草前估 S 條數
+  >~40 條、或 reviewer 預判一次審不動,也都要評估切片。起草中途發現超標,
+  同樣回頭評估,不硬撐寫完;但數量只是訊號,不能單獨使切片合法。
 - **切點判準**:只能切在「後片只依賴前片的**對外產出**(介面/資料契約),不依賴
-  其內部設計」的接縫 —— 切點是架構邊界,不是條數平分。
+  其內部設計」的接縫 —— 切點是架構邊界,不是條數平分;
+  repo 分開也不自動成為切片接縫。找不到合法接縫時,保留單一 `4 → 5 → 6 → 7` 管線。
 - **管線語義**:切片**不回切上游** —— 1-discussion、2-decision 全片共用一份,
   不因切片拆分;切點只發生於 4-spec 起,每片各自擁有完整 `4-spec → 5-tasks →
   6-notes → 7-review` 生命週期與獨立 G2/G3。
-- **與引擎分流的關係**:引擎判斷單位定義正本在 §13(未切片 = feature、切片後
-  = 片);本節只套用該定義 —— 門檻逐片各自套用,片際可各自選擇引擎,片內仍
-  不可混用。
 - **STATUS 記法**:一片一行,slug 帶後綴(如 `<slug>-a`、`<slug>-b`),連到片資料夾
   `docs/dev/<slug>-a/`(住各自 4→7);1-discussion、2-decision 仍住母資料夾
   `docs/dev/<slug>/`,母 slug 因無自己的 stage 不單獨佔行。
