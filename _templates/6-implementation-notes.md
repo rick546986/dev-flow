@@ -27,11 +27,12 @@ updated:
 >    finding 有爭議可加第二 reviewer;f PASS → commit;g hash 入 Progress Log +
 >    勾 checkbox + review evidence 入 T Review Log;h 自由選擇 → Decisions 一行續走,
 >    偏差 → L1/L2。完成 = 該 T reviewer PASS + checkbox ✓ + hash 在案 + Covers
->    的 S 全有 RED→GREEN 證據。順序固定:RED → GREEN → scope check → Verify →
+>    的每個 T × S 全有該 T 自己的 RED→GREEN 證據。順序固定:RED → GREEN → scope check → Verify →
 >    independent T review → PASS → commit → Progress Log + checkbox + review evidence。
 > 3. 回歸:全 T 後跑既有全套,本次 S 全綠+既有全綠;紅 → 修+依偏差級記。
 >    完成 = 全套**全綠**輸出摘要入本檔(紅字摘要不算完成)。
-> 4. 自檢(= Self-Review 節逐問作答):①每 S-id 有含其名測試+RED/GREEN 證據?
+> 4. 自檢(= Self-Review 節逐問作答):①每個「T × Covers S」都有含 S-id 的測試 +
+>    該 T 自己的 RED/GREEN 證據(不得跨 T 共用)?
 >    ②每 T 在 T Review Log 有 verdict?③每個 PASS 都早於該 T commit?④每個 FAIL
 >    後有較晚 PASS,否則該 T 仍未勾、未 commit?⑤每個已完成 T 一 commit、Progress
 >    Log 每列有 hash?⑥git diff --stat 檔案 ⊆ Files 聯集、Diff Budget 內?
@@ -73,7 +74,8 @@ updated:
      升階本身 = spec 品質訊號,7-review.html 以表呈現 -->
 
 ## TDD Evidence
-### S-1
+<!-- 每個「T × Covers S」各一筆;同一 S 在不同 T/層次的 RED→GREEN 不得共用。 -->
+### T-1 / S-1
 - RED: `<test cmd>` → <失敗輸出摘要>
 - GREEN: `<test cmd>` → <通過輸出摘要>
 
@@ -89,6 +91,10 @@ updated:
 
 ## Files Changed
 <!-- 對照 4-spec Diff Budget -->
+
+## Diff(各 T commit,逐檔折疊)
+<!-- README §6 要求每檔一個 details。summary 的 title/文字列 +N/-N 與函式;
+     內容放 HTML-escaped 完整 diff,刪行 class="del"、增行 class="add"。 -->
 
 ## Self-Review
 <!-- = 執行清單步 4 的八問:逐問作答、附證據(review 時間/verdict/測試輸出/hash/diff stat),不憑印象 -->

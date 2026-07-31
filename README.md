@@ -35,7 +35,7 @@ flowchart LR
     s2 -- G1 過 --> s3{{3 原型<br/>選配}}
     s3 --> s4[4 規格<br/>change spec]
     s2 -- G1 過·無技術疑問 --> s4
-    s4 -- G2 第二人審 --> s5[5 任務]
+    s4 -- G2 reviewer 核准 --> s5[5 任務]
     s5 --> s6[6 實作<br/>TDD]
     s6 --> s7[7 驗證]
     s7 -- G3 PASS --> pr[PR → develop]
@@ -88,7 +88,7 @@ root 相對的 `Files` scope。
 | 3 | `3-prototype.md` | 選配:throwaway 實驗回答技術/UI 疑問,答案回寫 2 | 答案回寫 2-decision + frontmatter 收尾同步(終態 approved) |
 | 4 | `4-spec.md` | 本次變更的可測契約(delta + GIVEN/WHEN/THEN)。SDD 真相 | **G2** R/S 全審 + DD 全裁決(全文見 §7) |
 | 5 | `5-tasks.md` | 切成可勾選任務,tracer-bullet 順序,每 T 有 Covers/Files/Verify/Blocked-by | 每 T 欄位完整 |
-| 6 | `6-implementation-notes.md` | 實作日誌:TDD 證據 + 偏差記錄 | 全 S 綠 |
+| 6 | `6-implementation-notes.md` | 實作日誌:TDD 證據 + 偏差記錄 | 每 T review PASS + 全 S 綠 |
 | 7 | `7-review.md` + `.html` | 雙軸審 + coverage matrix + Exit checklist | **G3** 本次 S 全綠 + 回歸綠 + 現象證據(全文見 §7);PASS → PR |
 
 **執行清單四原則**(Stage 2/3/4/6/7;清單全文住各模板頂註,Stage 1 同款機制內建於

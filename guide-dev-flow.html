@@ -92,8 +92,8 @@
 
   <h2 id="flow">① 七階段流程圖(含 Gate 與模型分層)</h2>
   <p>全程 = <strong>1 討論 → 2 收斂(G1)→ 3 原型(選配)→ 4 規格(G2)→ 5 任務 → 6 實作 → 7 驗證(G3)→ PR</strong>。
-  G1 過且無技術疑問時可從 2 直接跳到 4,略過選配的 3。紫色 = <span class="badge opus">opus</span>(規劃/派工層:撰寫文檔、多方案辯論、三道 gate
-  的審查與 verdict、Stage 6 派工主對話 —— 不下場寫碼);青色 = <span class="badge sonnet">sonnet</span>(執行層:原型、任務拆解、產檔等機械與執行活,
+  G1 過且無技術疑問時可從 2 直接跳到 4,略過選配的 3。紫色 = <span class="badge opus">opus</span>(規劃/派工層:撰寫文檔、多方案辯論、
+  Stage 6 派工主對話 —— 不下場寫碼);三道 gate 的 reviewer 依能力與 fallback 選擇,不指定模型。青色 = <span class="badge sonnet">sonnet</span>(執行層:原型、任務拆解、產檔等機械與執行活,
   Stage 6 T review 亦為 sonnet fresh);灰色 = <span class="badge haiku">haiku</span>(Stage 6 <code>dev-run</code> 引擎 T 執行起步模型)。
   <strong>Stage 6 不是單一模型</strong>:T 執行 haiku 起步,錯 1 次立即升 sonnet(同層不重試);sonnet 同 T 最多 2 次(換方法不歸零)才升 opus,
   帶完整失敗軌跡;T review = sonnet fresh,高風險/爭議升 opus;adviser = opus 唯讀。圖上以起步模型 haiku 標色,升階細節見 README §9 與下方
@@ -120,7 +120,7 @@
     <rect class="m-opus" x="222" y="65" width="78" height="44" rx="6"/>
     <text x="261" y="91" text-anchor="middle">2 收斂</text>
 
-    <polygon class="m-opus" points="365,47 405,87 365,127 325,87"/>
+    <polygon class="b" points="365,47 405,87 365,127 325,87"/>
     <text x="365" y="91" text-anchor="middle">G1</text>
 
     <rect class="m-sonnet" x="430" y="65" width="78" height="44" rx="6" stroke-dasharray="5 3"/>
@@ -130,7 +130,7 @@
     <rect class="m-opus" x="534" y="65" width="78" height="44" rx="6"/>
     <text x="573" y="91" text-anchor="middle">4 規格</text>
 
-    <polygon class="m-opus" points="677,47 717,87 677,127 637,87"/>
+    <polygon class="b" points="677,47 717,87 677,127 637,87"/>
     <text x="677" y="91" text-anchor="middle">G2</text>
 
     <rect class="m-sonnet" x="742" y="65" width="78" height="44" rx="6"/>
@@ -142,7 +142,7 @@
     <rect class="m-sonnet" x="950" y="65" width="78" height="44" rx="6"/>
     <text x="989" y="91" text-anchor="middle">7 驗證</text>
 
-    <polygon class="m-opus" points="1093,47 1133,87 1093,127 1053,87"/>
+    <polygon class="b" points="1093,47 1133,87 1093,127 1053,87"/>
     <text x="1093" y="91" text-anchor="middle">G3</text>
 
     <rect class="b" x="1158" y="65" width="90" height="44" rx="6"/>
@@ -164,14 +164,14 @@
     <!-- captions: model / stage note -->
     <text x="157" y="150" class="cap" text-anchor="middle">opus·/dev-talk</text>
     <text x="261" y="150" class="cap" text-anchor="middle">opus</text>
-    <text x="365" y="150" class="cap" text-anchor="middle">opus·方向</text>
+    <text x="365" y="150" class="cap" text-anchor="middle">reviewer·方向</text>
     <text x="469" y="150" class="cap" text-anchor="middle">sonnet</text>
     <text x="573" y="150" class="cap" text-anchor="middle">opus</text>
-    <text x="677" y="150" class="cap" text-anchor="middle">opus·契約</text>
+    <text x="677" y="150" class="cap" text-anchor="middle">reviewer·契約</text>
     <text x="781" y="150" class="cap" text-anchor="middle">sonnet</text>
     <text x="885" y="150" class="cap" text-anchor="middle">haiku·dev-run</text>
     <text x="989" y="150" class="cap" text-anchor="middle">sonnet·產檔</text>
-    <text x="1093" y="150" class="cap" text-anchor="middle">opus·驗收</text>
+    <text x="1093" y="150" class="cap" text-anchor="middle">reviewer·驗收</text>
     <text x="1203" y="150" class="cap" text-anchor="middle">→ develop</text>
 
     <!-- PR extension -->
@@ -190,7 +190,7 @@
     s2 -- G1 過 --&gt; s3{{3 原型&lt;br/&gt;選配}}
     s3 --&gt; s4[4 規格&lt;br/&gt;change spec]
     s2 -- G1 過·無技術疑問 --&gt; s4
-    s4 -- G2 第二人審 --&gt; s5[5 任務]
+    s4 -- G2 reviewer 核准 --&gt; s5[5 任務]
     s5 --&gt; s6[6 實作&lt;br/&gt;TDD]
     s6 --&gt; s7[7 驗證]
     s7 -- G3 PASS --&gt; pr[PR → develop]
@@ -219,16 +219,62 @@
   才能照常解析 scope。</p>
 
   <h2 id="docs">③ 七份文件</h2>
+  <!-- parity:start readme-stage-table -->
   <div class="tablewrap"><table>
-    <tr><th>#</th><th>檔</th><th>用途</th><th>Gate</th></tr>
-    <tr><td>1</td><td><code>1-discussion.md</code></td><td>發散:把「不知道自己不知道」變成可收斂的問題清單。不做決定</td><td>Open Questions 全解或明標假設</td></tr>
-    <tr><td>2</td><td><code>2-decision.md</code></td><td>收斂:2-3 方案比較 → 選定 + rejected + 理由</td><td><strong>G1</strong> 人工核准方向</td></tr>
-    <tr><td>3</td><td><code>3-prototype.md</code></td><td>選配:throwaway 實驗回答技術/UI 疑問,答案回寫 2</td><td>答案回寫 2-decision + frontmatter 收尾同步(終態 approved)</td></tr>
-    <tr><td>4</td><td><code>4-spec.md</code></td><td>本次變更的可測契約(delta + GIVEN/WHEN/THEN)。SDD 真相</td><td><strong>G2</strong> 第二人審</td></tr>
-    <tr><td>5</td><td><code>5-tasks.md</code></td><td>切成可勾選任務,tracer-bullet 順序,每條有 Verify</td><td>每 T 有 Verify</td></tr>
-    <tr><td>6</td><td><code>6-implementation-notes.md</code></td><td>實作日誌:TDD 證據 + 偏差記錄</td><td>全 S 綠</td></tr>
-    <tr><td>7</td><td><code>7-review.md</code> + <code>.html</code></td><td>雙軸審 + coverage matrix + Exit checklist</td><td><strong>G3</strong> PASS → PR</td></tr>
+  <thead>
+  <tr>
+  <th>#</th>
+  <th>檔</th>
+  <th>用途</th>
+  <th>Gate</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr>
+  <td>1</td>
+  <td><code>1-discussion.md</code></td>
+  <td>發散:把「不知道自己不知道」變成可收斂的問題清單。不做決定</td>
+  <td>Open Questions 全解或明標假設</td>
+  </tr>
+  <tr>
+  <td>2</td>
+  <td><code>2-decision.md</code></td>
+  <td>收斂:2-3 方案比較 → 選定 + rejected + 理由</td>
+  <td><strong>G1</strong> 方向核准 + OC 全裁決(全文見 §7)</td>
+  </tr>
+  <tr>
+  <td>3</td>
+  <td><code>3-prototype.md</code></td>
+  <td>選配:throwaway 實驗回答技術/UI 疑問,答案回寫 2</td>
+  <td>答案回寫 2-decision + frontmatter 收尾同步(終態 approved)</td>
+  </tr>
+  <tr>
+  <td>4</td>
+  <td><code>4-spec.md</code></td>
+  <td>本次變更的可測契約(delta + GIVEN/WHEN/THEN)。SDD 真相</td>
+  <td><strong>G2</strong> R/S 全審 + DD 全裁決(全文見 §7)</td>
+  </tr>
+  <tr>
+  <td>5</td>
+  <td><code>5-tasks.md</code></td>
+  <td>切成可勾選任務,tracer-bullet 順序,每 T 有 Covers/Files/Verify/Blocked-by</td>
+  <td>每 T 欄位完整</td>
+  </tr>
+  <tr>
+  <td>6</td>
+  <td><code>6-implementation-notes.md</code></td>
+  <td>實作日誌:TDD 證據 + 偏差記錄</td>
+  <td>每 T review PASS + 全 S 綠</td>
+  </tr>
+  <tr>
+  <td>7</td>
+  <td><code>7-review.md</code> + <code>.html</code></td>
+  <td>雙軸審 + coverage matrix + Exit checklist</td>
+  <td><strong>G3</strong> 本次 S 全綠 + 回歸綠 + 現象證據(全文見 §7);PASS → PR</td>
+  </tr>
+  </tbody>
   </table></div>
+  <!-- parity:end readme-stage-table -->
   <p><code>.claude/rules/*.md</code>(不算七份文件之一,不跟 gate 流程走):架構不變量/技術慣例/坑,
   每 session 自動注入,生命週期「永生」(不隨 feature 結案封存);<code>dev-setup</code> install 時
   <strong>自動產草稿</strong>(收割使用者指名的 external workflow artifacts 與 CLAUDE.md 技術段 → 派 sonnet 掃 codebase 抓候選 →
@@ -254,17 +300,46 @@
   是宣稱「拿掉格式標記後,文字內容零差異」。</p>
 
   <h3 id="stage2">Stage 2 — 收斂(G1)</h3>
-  <p>把 1 的發散收成一個選定方案;完成後 G1 人工核准方向才進 4。</p>
+  <p>把 1 的發散收成一個選定方案;完成後依 README §7 的 reviewer fallback 取得 G1 核准才進 4。</p>
   <details>
     <summary>原文(逐字,見 <code>_templates/2-decision.md</code> 頂註)</summary>
-    <blockquote>執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併項):<br>
-0. 接手盤點:只讀 1-discussion.md(對話不是契約)+ CONTEXT.md。核 status=approved、 OQ 全三態;缺 → 退回討論。從 Goals/驗收雛形/[&gt;] 移交項提煉「待收斂決策點」。 完成 = 決策點清單經使用者確認(確認紀錄節留一行)。<br>
-1. 方案生成:每決策點 2-3 個 approach 填表,禁單案過場;優劣必有背書 —— 引 1-discussion 事實或本階段查證(留紀錄),禁憑空斷言。完成 = 表齊、每格非空。<br>
-2. 壓測定案:對推薦案逼問失敗模式/邊界/最貴風險 → Risks &amp; Mitigations(每風險 有對策);Success Criteria 逐條可量測(7-review 對照用)。完成 = 兩節齊、 無不可量測句。<br>
-3. 定稿:Decision 一句話+範圍、Rejected 逐案一句棄因、Rationale、Scope &amp; Non-Goals。 完成 = 節全齊、無佔位符。<br>
-4. ADR 晉升檢查:三條件逐條答;全是 → 抄 docs/adr/。完成 = 三答落檔。<br>
-5. 自檢(交審前重讀全檔):①每案優劣有背書?②Decision 覆蓋 1 的每條 Goal (漏的進 Non-Goals)?③[&gt;] 移交項都有著落?④Success Criteria 可量測? ⑤Rejected 無空棄因?問題 → 改檔或回步 1。完成 = 五掃清零。<br>
-6. G1 送審:html twin(方案架構圖,比較期並排)→ in-review → reviewer(≠owner; 無適格第二人 → owner 自審留痕)。核准 → 三連動(frontmatter/STATUS/twin)。 完成 = verdict 記錄+三連動齊。</blockquote>
+    <!-- parity:start template2-checklist -->
+    <blockquote>
+    <p>執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併項):
+    0. 接手盤點:只讀 1-discussion.md(對話不是契約)+ CONTEXT.md。核 status=approved、
+    OQ 全三態;缺 → 退回討論。從 Goals/驗收雛形/[&gt;] 移交項提煉「待收斂決策點」,
+    連同討論期 owner 已自拍的板一併清點。
+    完成 = 決策點清單經使用者確認(確認紀錄節留一行)。</p>
+    <ol>
+    <li>方案生成:每決策點 2-3 個 approach 填表,禁單案過場;優劣必有背書 ——
+    引 1-discussion 事實或本階段查證(留紀錄),禁憑空斷言。完成 = 表齊、每格非空。</li>
+    <li>壓測定案:對推薦案逼問失敗模式/邊界/最貴風險 → Risks &amp; Mitigations(每風險
+    有對策);Success Criteria 逐條可量測(7-review 對照用)。完成 = 兩節齊、
+    無不可量測句。</li>
+    <li>定稿:Decision 一句話+範圍、Rejected 逐案一句棄因、Rationale、Scope &amp; Non-Goals。
+    完成 = 節全齊、無佔位符。</li>
+    <li>Owner Calls 清點:owner 沒問使用者、自己拍的板逐條收進 Owner Calls 節
+    (收錄判準見該節註;上層逐條 OC-n,下層內部項一段帶過)。特別掃兩型必收必標:
+    裁決延伸(使用者只被問到 X,owner 套到 Y/Z)、裁決收窄(使用者要 A,
+    實作成 A 減某部分)。完成 = 步 6 第⑥掃的歸屬雙向對應成立。</li>
+    <li>ADR 晉升檢查:三條件逐條答;全是 → 抄 docs/adr/。完成 = 三答落檔。</li>
+    <li>自檢(交審前重讀全檔):①每案優劣有背書?②Decision 覆蓋 1 的每條 Goal
+    (漏的進 Non-Goals)?③[&gt;] 移交項都有著落?④Success Criteria 可量測?
+    ⑤Rejected 無空棄因?⑥歸屬雙向對應:正向 — 步 0 每個決策點皆有使用者
+    裁決(確認紀錄有痕)或 ≥1 條 OC 承接(一對多合法)?反向 — 每條 OC(上層、
+    下層皆算)皆可追溯到某決策點,或標「流程層」?延伸/收窄算新增決策點。
+    任一向斷鏈 = 漏收或無主。問題 → 改檔或回步 1。⑦現況外移:產出有無
+    成段/成表的「是什麼」內容(描述系統現況或既有結構——schema、資料字典、
+    介面清單——而非本次決策)?有 → 外移 docs/specs/,本檔只留決策與為什麼。
+    完成 = 七掃清零(⑥含雙向對應成立)。</li>
+    <li>G1 送審:html twin(方案架構圖,比較期並排;OC 待裁決置頂)→ in-review →
+    reviewer。審查者依序:適格人類 reviewer → fresh-context reviewer Agent →
+    owner 自審(有記錄的最後手段)。G1 = 方向核准 +
+    Owner Calls 全裁決(有未裁決 OC 不得過;正本 README §7)。核准 → 三連動
+    (frontmatter/STATUS/twin)。完成 = verdict 記錄+三連動齊。</li>
+    </ol>
+    </blockquote>
+    <!-- parity:end template2-checklist -->
   </details>
 
   <h3 id="stage3">Stage 3 — 原型(選配)</h3>
@@ -272,12 +347,25 @@
   答案回寫 2-decision,無獨立 gate,回寫完成即終態(approved)。</p>
   <details>
     <summary>原文(逐字,見 <code>_templates/3-prototype.md</code> 頂註)</summary>
-    <blockquote>執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併項):<br>
-0. 定義疑問:引 2-decision 的哪個 Risk/open point;寫清「答案長什麼樣才算回答了」。 完成 = Question 節落檔。<br>
-1. 實驗:code → throwaway branch;純資料實驗 → scratchpad。完成 = Method 節記 branch 名/實驗位置與驗法。<br>
-2. 收證:Result 記答案+證據(輸出摘要/截圖/挑選 events)。完成 = 每個 Question 有證據背書。<br>
-3. 回寫:Verdict 記回寫 2-decision 哪一條 + branch/實驗產物處置(封存/刪), 並在 2-decision「確認紀錄」節留一行(prototype 回寫 | 日期)。 完成 = 2-decision 對應處已實際更新+留痕。<br>
-4. 收尾:結構圖節補齊;frontmatter status 改 <strong>approved</strong>(Stage 3 無 gate, 回寫完成即終態)、註解<strong>同步為最新事實</strong>(內文說已回寫,註解不得還寫待回寫)。 完成 = status=approved 且 frontmatter 與內文零矛盾。</blockquote>
+    <!-- parity:start template3-checklist -->
+    <blockquote>
+    <p>執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併項):
+    0. 定義疑問:引 2-decision 的哪個 Risk/open point;寫清「答案長什麼樣才算回答了」。
+    完成 = Question 節落檔。</p>
+    <ol>
+    <li>實驗:code → throwaway branch;純資料實驗 → scratchpad。完成 = Method 節記
+    branch 名/實驗位置與驗法。</li>
+    <li>收證:Result 記答案+證據(輸出摘要/截圖/挑選 events)。完成 = 每個 Question
+    有證據背書。</li>
+    <li>回寫:Verdict 記回寫 2-decision 哪一條 + branch/實驗產物處置(封存/刪),
+    並在 2-decision「確認紀錄」節留一行(prototype 回寫 | 日期)。
+    完成 = 2-decision 對應處已實際更新+留痕。</li>
+    <li>收尾:結構圖節補齊;frontmatter status 改 <strong>approved</strong>(Stage 3 無 gate,
+    回寫完成即終態)、註解<strong>同步為最新事實</strong>(內文說已回寫,註解不得還寫待回寫)。
+    完成 = status=approved 且 frontmatter 與內文零矛盾。</li>
+    </ol>
+    </blockquote>
+    <!-- parity:end template3-checklist -->
   </details>
 
   <h3 id="stage4">Stage 4 — 規格(G2)</h3>
@@ -285,46 +373,113 @@
   G2 = R/S 全審 + Drafting Decisions 全裁決,有未裁決不得過。</p>
   <details>
     <summary>原文(逐字,見 <code>_templates/4-spec.md</code> 頂註 —— 反模糊三律)</summary>
-    <blockquote>反模糊三律(防偷懶條文):<br>
-1. 每條 S 必須可直接轉成<strong>一個測試</strong>:含具體輸入與可斷言輸出;禁模糊詞 (適當/正確/合理/必要時/妥善/robust/等等/視情況)。<br>
-2. 未定事項禁寫「TBD/之後再說/實作再定」—— 只能列入 Drafting Decisions (標待裁決)或退回提問。<br>
-3. G2 逐 S 自問:「fresh 工程師只看這條,寫得出測試嗎?」寫不出 = 重寫。</blockquote>
+    <!-- parity:start template4-laws -->
+    <blockquote>
+    <p>反模糊三律(防偷懶條文):</p>
+    <ol>
+    <li>每條 S 必須可直接轉成<strong>一個測試</strong>:含具體輸入與可斷言輸出;禁模糊詞
+    (適當/正確/合理/必要時/妥善/robust/等等/視情況)。</li>
+    <li>未定事項禁寫「TBD/之後再說/實作再定」—— 只能列入 Drafting Decisions
+    (標待裁決)或退回提問。</li>
+    <li>G2 逐 S 自問:「fresh 工程師只看這條,寫得出測試嗎?」寫不出 = 重寫。</li>
+    </ol>
+    </blockquote>
+    <!-- parity:end template4-laws -->
   </details>
   <details>
     <summary>原文(逐字,見 <code>_templates/4-spec.md</code> 頂註 —— 執行清單)</summary>
-    <blockquote>執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項併項、禁一發全生):<br>
-0. 接手盤點:先前站核對 —— 2-decision status=approved(G1 過)?3-prototype 若 存在,findings 已回寫 2-decision 且 frontmatter 收尾?缺 → 停,回補。再讀 1-discussion(驗收雛形/OQ)、2-decision(Decision/Scope/Success Criteria)、 living spec 相關域。完成 = 前站核對過 + 雙源清點回報(雛形 N 條、living 受影響條文)。<br>
-1. 雙源列 R:驗收雛形逐條 → ADDED;living spec 受影響 → MODIFIED/REMOVED (引原條文)。完成 = R 清單經使用者確認範圍(確認紀錄節留一行)。<br>
-2. 逐 R 展開 S:一次一個 R,GWT 寫到「可直接變一個測試」(具體輸入+可斷言輸出), 段段給使用者確認。完成 = 全 R 展開、每段有確認(確認紀錄節留一行)。<br>
-3. 邊界收尾:Acceptance Criteria(全 S 綠+回歸+非功能;行為不變 → golden master)、 Out of Scope、Diff Budget、Dependencies。完成 = 四節齊。<br>
-4. Drafting Decisions 清點:草擬自拍板逐條(決策|理由|棄項|待人審);全文掃 TBD/之後再說/實作再定 → 命中即轉 DD 或退回提問。完成 = 掃描零殘留。<br>
-5. 自檢(反模糊掃描):逐 S 過三律(見上,含模糊詞掃);鏈檢:每條驗收雛形 ≥1 個 S 承接、每 MODIFIED 有原文引用。任一否 → 重寫該 S;(選配)每 S 產 named test skeleton 入 Test Skeletons 節。完成 = 逐 S 打勾+鏈檢清零。<br>
-6. G2 送審:html twin(R 級行為流程圖;DD 待裁決置頂)→ in-review → reviewer≠owner。 G2 = R/S 全審 + DD 全裁決(有未裁決不得過)。核准 → 三連動。完成 = verdict+三連動。</blockquote>
+    <!-- parity:start template4-checklist -->
+    <blockquote>
+    <p>執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項併項、禁一發全生):
+    0. 接手盤點:先前站核對 —— 2-decision status=approved(G1 過)?3-prototype 若
+    存在,findings 已回寫 2-decision 且 frontmatter 收尾?缺 → 停,回補。再讀
+    1-discussion(驗收雛形/OQ)、2-decision(Decision/Scope/Success Criteria)、
+    living spec 相關域。完成 = 前站核對過 + 雙源清點回報(雛形 N 條、living 受影響條文)。</p>
+    <ol>
+    <li>雙源列 R:驗收雛形逐條 → ADDED;living spec 受影響 → MODIFIED/REMOVED
+    (引原條文)。完成 = R 清單經使用者確認範圍(確認紀錄節留一行)。</li>
+    <li>逐 R 展開 S:一次一個 R,GWT 寫到「可直接變一個測試」(具體輸入+可斷言輸出),
+    <strong>每 S 承接 1-discussion 該條驗收雛形的「觀測方式」</strong>(從哪看/看到什麼算對/
+    拿什麼資料試;雛形沒寫就在此補齊,純內部行為註明「無外部現象」)。
+    段段給使用者確認。完成 = 全 R 展開、每 S 有觀測欄、每段有確認(確認紀錄節留一行)。</li>
+    <li>邊界收尾:Acceptance Criteria(全 S 綠+回歸+非功能;行為不變 → golden master)、
+    Out of Scope、Diff Budget、Dependencies。完成 = 四節齊。</li>
+    <li>Drafting Decisions 清點:草擬自拍板逐條(決策|理由|棄項|待人審);全文掃
+    TBD/之後再說/實作再定 → 命中即轉 DD 或退回提問。完成 = 掃描零殘留。</li>
+    <li>自檢(反模糊掃描):逐 S 過三律(見上,含模糊詞掃);鏈檢:每條驗收雛形 ≥1 個 S
+    承接、每 MODIFIED 有原文引用。任一否 → 重寫該 S;(選配)每 S 產 named test
+    skeleton 入 Test Skeletons 節。完成 = 逐 S 打勾+鏈檢清零。</li>
+    <li>G2 送審:html twin(R 級行為流程圖;DD 待裁決置頂)→ in-review → reviewer。
+    審查者依序:適格人類 reviewer → fresh-context reviewer Agent → owner 自審
+    (有記錄的最後手段)。G2 = R/S 全審 + DD 全裁決(有未裁決不得過;正本 README §7)。核准 → 三連動。
+    完成 = verdict+三連動。</li>
+    </ol>
+    </blockquote>
+    <!-- parity:end template4-checklist -->
   </details>
 
   <h3 id="stage6">Stage 6 — 實作(TDD)</h3>
-  <p>實作期唯一日誌:每個 S-id 先 RED 後 GREEN;一 T 一 commit;偏差分 L1(保守方案續走)/
+  <p>實作期唯一日誌:每個 T × Covers S 先 RED 後 GREEN;scope check 與 Verify 後由不同
+  implementer 的 reviewer 獨立審查,review PASS 才一 T 一 commit。偏差分 L1(保守方案續走)/
   L2(停,回 4-spec 重 G2)兩級,分不清一律當 L2。</p>
   <details>
     <summary>原文(逐字,見 <code>_templates/6-implementation-notes.md</code> 頂註 —— 執行清單)</summary>
-    <blockquote>執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併 T):<br>
-0. 起手式:圍欄自查 —— 只讀 4-spec/5-tasks/6-notes/CONTEXT.md/living spec, 禁讀 1/2/3(要翻才寫得出 = spec 不完整 → 停,回 G2)。開 feature branch (並行 → worktree)。完成 = 讀取清單回報+branch 就位。<br>
-1. 接手核對:4-spec approved?5-tasks 每 T 有 Verify+Covers?缺 → 停回補。 建 todo 一 T 一項,照 Blocked-by 拓撲序。完成 = todo 與 5-tasks 一一對應。<br>
-2. 逐 T 循環(每 T 五小步):a 照 Covers 先寫失敗測試(名含 S-id)→ RED 輸出貼 TDD Evidence;b 最小實作到 GREEN(貼輸出)→ refactor 保綠;c scope check: git status 改動檔 ⊆ Files 聯集,超出 → L1/L2 判(定義見下);d Verify 綠 → 一 commit → hash 入 Progress Log + 勾 checkbox;e 自由選擇 → Decisions 一行 續走,偏差 → L1/L2。完成 = 該 T checkbox ✓ + hash 在案 + Covers 的 S 全有 RED→GREEN 證據。<br>
-3. 回歸:全 T 後跑既有全套,本次 S 全綠+既有全綠;紅 → 修+依偏差級記。 完成 = 全套<strong>全綠</strong>輸出摘要入本檔(紅字摘要不算完成)。<br>
-4. 自檢(= Self-Review 節逐問作答):①每 S-id 有含其名測試+RED/GREEN 證據? ②每 T 一 commit、Progress Log 每列有 hash?③git diff --stat 檔案 ⊆ Files 聯集、Diff Budget 內?④Decisions/Deviations 與 diff 對得上(無 silent drift)?⑤回歸綠?答不出 → 回步 2/3 補。完成 = 五答落檔。<br>
-5. 收尾:Files Changed 填(對照 Diff Budget)、全節齊無佔位、status 更新。 完成 = 節齊 + frontmatter status 已更新。</blockquote>
+    <!-- parity:start template6-checklist -->
+    <blockquote>
+    <p>執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併 T):
+    0. 起手式:圍欄自查 —— 只讀 4-spec/5-tasks/6-notes/CONTEXT.md/living spec,
+    禁讀 1/2/3(要翻才寫得出 = spec 不完整 → 停,回 G2)。開 feature branch
+    (並行 → worktree)。完成 = 讀取清單回報+branch 就位。</p>
+    <ol>
+    <li>接手核對:4-spec approved?5-tasks 每 T 有 Verify+Covers?缺 → 停回補。
+    建 todo 一 T 一項,照 Blocked-by 拓撲序。完成 = todo 與 5-tasks 一一對應。</li>
+    <li>逐 T 循環:a 照 Covers 先寫失敗測試(名含 S-id)→ RED 輸出貼
+    TDD Evidence;b 最小實作到 GREEN(貼輸出)→ refactor 保綠;c scope check:
+    git status 改動檔 ⊆ 該 T 自己的 Files,超出 → L1/L2 判(定義見下);d 跑該 T
+    Verify;e independent T review:reviewer 必須不同於 T implementer,優先適格人類,
+    否則 fresh-context reviewer Agent;reviewer 親跑 Verify,檢查 Covers、RED→GREEN
+    證據與該 T 自己的 Files scope。FAIL → 回同一 T 修正並重新送審;高風險或
+    finding 有爭議可加第二 reviewer;f PASS → commit;g hash 入 Progress Log +
+    勾 checkbox + review evidence 入 T Review Log;h 自由選擇 → Decisions 一行續走,
+    偏差 → L1/L2。完成 = 該 T reviewer PASS + checkbox ✓ + hash 在案 + Covers
+    的每個 T × S 全有該 T 自己的 RED→GREEN 證據。順序固定:RED → GREEN → scope check → Verify →
+    independent T review → PASS → commit → Progress Log + checkbox + review evidence。</li>
+    <li>回歸:全 T 後跑既有全套,本次 S 全綠+既有全綠;紅 → 修+依偏差級記。
+    完成 = 全套<strong>全綠</strong>輸出摘要入本檔(紅字摘要不算完成)。</li>
+    <li>自檢(= Self-Review 節逐問作答):①每個「T × Covers S」都有含 S-id 的測試 +
+    該 T 自己的 RED/GREEN 證據(不得跨 T 共用)?
+    ②每 T 在 T Review Log 有 verdict?③每個 PASS 都早於該 T commit?④每個 FAIL
+    後有較晚 PASS,否則該 T 仍未勾、未 commit?⑤每個已完成 T 一 commit、Progress
+    Log 每列有 hash?⑥git diff --stat 檔案 ⊆ Files 聯集、Diff Budget 內?
+    ⑦Decisions/Deviations 與 diff 對得上(無 silent drift)?⑧回歸綠?答不出 →
+    回步 2/3 補。完成 = 八答落檔。</li>
+    <li>收尾:Files Changed 填(對照 Diff Budget)、全節齊無佔位、status 更新。
+    完成 = 節齊 + frontmatter status 已更新。</li>
+    </ol>
+    </blockquote>
+    <!-- parity:end template6-checklist -->
   </details>
   <details>
     <summary>原文(逐字,見 <code>_templates/6-implementation-notes.md</code> 頂註 —— 實作期規則)</summary>
-    <blockquote>實作期規則(實作中<strong>不打斷問人</strong>,自主推進):<br>
-- <strong>檢查點</strong>:每完成一個 T = Verify 綠 + 一個 commit。一 T 一 commit,可逐點回滾。<br>
-- <strong>Scope guard</strong>:改動檔案 ⊆ 5-tasks 全部 T 的 Files 聯集;超出依 L1/L2 判。<br>
-- <strong>Decisions</strong>(spec 未載明的自由選擇,如內部命名、資料結構):自己選、記一行、繼續。<br>
-- <strong>偏差</strong>:<br>
-- <strong>L1</strong>(不動 R/S 的計畫內偏差)→ 選<strong>保守方案</strong>、記 D-n、<strong>繼續執行</strong>。<br>
-- <strong>L2</strong>(要改 R/S 或推翻 2-decision)→ <strong>停</strong>,修 4-spec → 重新 G2 → 才續。 禁止 silent drift。(L1 = Anthropic field-guide 原版;L2 為本 SOP 加嚴)<br>
-- 分不清 L1/L2 → <strong>一律當 L2</strong>,不留自由心證。</blockquote>
+    <!-- parity:start template6-rules -->
+    <blockquote>
+    <p>實作期規則(實作中<strong>不打斷問人</strong>,自主推進):</p>
+    <ul>
+    <li><strong>檢查點</strong>:每個 T 都要先經不同 implementer 的 reviewer 獨立審查 PASS,才可
+    commit、記 Progress Log、勾 checkbox;FAIL 回同一 T 修正並重新送審。</li>
+    <li><strong>Scope guard</strong>:改動檔案 ⊆ 5-tasks 全部 T 的 Files 聯集;超出依 L1/L2 判。</li>
+    <li><strong>Decisions</strong>(spec 未載明的自由選擇,如內部命名、資料結構):自己選、記一行、繼續。</li>
+    <li><strong>偏差</strong>:
+    <ul>
+    <li><strong>L1</strong>(不動 R/S 的計畫內偏差)→ 選<strong>保守方案</strong>、記 D-n、<strong>繼續執行</strong>。</li>
+    <li><strong>L2</strong>(要改 R/S 或推翻 2-decision)→ <strong>停</strong>,修 4-spec → 重新 G2 → 才續。
+    禁止 silent drift。(L1 = Anthropic field-guide 原版;L2 為本 SOP 加嚴)</li>
+    <li>分不清 L1/L2 → <strong>一律當 L2</strong>,不留自由心證。</li>
+    </ul>
+    </li>
+    </ul>
+    </blockquote>
+    <!-- parity:end template6-rules -->
   </details>
 
   <h3 id="devrun">dev-run 引擎(選配執行方式)</h3>
@@ -336,7 +491,7 @@
     <tr><th>動作</th><th>誰</th></tr>
     <tr><td>寫碼、跑 Verify、貼 RED/GREEN 原文輸出到回報</td><td>執行者(fresh subagent)</td></tr>
     <tr><td>親跑 Verify 複驗、判 PASS/FAIL</td><td>reviewer(fresh sonnet)</td></tr>
-    <tr><td><strong>commit、寫 Progress Log(hash)、勾 checkbox、謄 TDD Evidence/Decisions/執行軌跡</strong></td><td><strong>派工者(你)</strong></td></tr>
+    <tr><td><strong>commit、寫 Progress Log(hash)、勾 checkbox、謄 T Review Log/TDD Evidence/Decisions/執行軌跡</strong></td><td><strong>派工者(你)</strong></td></tr>
     <tr><td>判偏差級、呼叫 <code>allow</code>/<code>stop</code>、諮詢 adviser</td><td>派工者(你)</td></tr>
   </table></div>
   <p class="muted">執行者<strong>不得自行 commit</strong>(先審後 commit 是引擎順序)。文件記帳 edit 累積,
@@ -347,7 +502,8 @@
     <li><strong>派工</strong>:三件套(目標與動機/驗收條件/回報格式),驗收條件寫明不要 commit。</li>
     <li><strong>收驗</strong>:派 fresh sonnet reviewer(給 T + S 原文 + diff + 執行者輸出,不給執行者結論)。
         FAIL → 升階重派(失敗軌跡全帶)。PASS → 你 commit → 讀出 hash。</li>
-    <li><strong>記帳</strong>:Progress Log 一列(日期|T-id|hash)、勾 checkbox、TDD Evidence 貼 RED/GREEN、
+    <li><strong>記帳</strong>:T Review Log 留 reviewer 親跑 Verify/Covers/Files/RED→GREEN/verdict,
+        Progress Log 一列(日期|T-id|hash)、勾 checkbox、TDD Evidence 貼每個 T × S 的 RED/GREEN、
         Decisions 記自由選擇、執行軌跡一列(T-id|升階史|回合數|原因;回合數 = 三層合計)。</li>
     <li><strong>偏差</strong>:L1(不動 R/S)→ 保守方案 + 記 D-n +(需要時)
         <code>devflow-exec.sh allow &lt;file&gt; --reason "D-n …"</code> + 續走;L2 或分不清 → 先問
@@ -371,23 +527,55 @@
   Matrix,此刻禁讀 6-notes 的 Self-Review(防錨定),親跑驗證後才對照作者。</p>
   <details>
     <summary>原文(逐字,見 <code>_templates/7-review.md</code> 頂註)</summary>
-    <blockquote>執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併項):<br>
-0. 角色+防錨定起手:reviewer ≠ 實作 owner(無適格第二人 → 自審留痕)。先讀 4-spec/5-tasks/diff/測試碼,<strong>此刻禁讀 6-notes 的 Self-Review</strong>。 完成 = 讀取順序聲明在案。<br>
-1. 自建 Coverage Matrix:grep 測試檔 S-id ↔ 4-spec S 清單,逐列填(缺漏 ❌), 末列固定回歸列。完成 = 矩陣全列填畢(未參考作者主張)。<br>
-2. 親跑驗證:本次 S 測試+既有全套,結果入矩陣。完成 = 兩輸出在案。<br>
-3. 雙軸審:Standards(F-id 🔴🟡🟢:位置|問題|建議)+ Spec(逐 R 符合/偏離); 每 F 標影響 S/T。完成 = 每 R 有判定、每 F 有鏈。<br>
-4. 對照作者:此刻才讀 6-notes —— 自建矩陣 vs Self-Review 差異逐條裁;Deviations 如實?Decisions 有無實為 L2?完成 = 差異全裁定入 Spec Axis。<br>
-5. Verdict:PASS = 本次 S 全綠+既有全綠+無 🔴;否則 REQUEST_CHANGES 列 🔴 → author 走 6-notes 的 Review Follow-up(同意改+一句為何對/不同意擺論證, 禁 performative fix)→ 回步 1 增量重驗。完成 = verdict 落檔。<br>
-6. Exit:逐勾 Exit Checklist。完成 = 全勾才 shipped。</blockquote>
+    <!-- parity:start template7-checklist -->
+    <blockquote>
+    <p>執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併項):
+    0. 角色+防錨定起手:審查者依序:適格人類 reviewer → fresh-context reviewer Agent →
+    owner 自審(有記錄的最後手段);前兩者皆須 ≠ 實作 owner。先讀
+    4-spec/5-tasks/diff/測試碼,<strong>此刻禁讀 6-notes 的 Self-Review</strong>。
+    完成 = 讀取順序聲明在案。</p>
+    <ol>
+    <li>自建 Coverage Matrix:grep 測試檔 S-id ↔ 4-spec S 清單,逐列填(缺漏 ❌),
+    末列固定回歸列。完成 = 矩陣全列填畢(未參考作者主張)。</li>
+    <li>親跑驗證:本次 S 測試+既有全套,結果入矩陣。完成 = 兩輸出在案。
+    2b. <strong>現象複驗</strong>:照 4-spec 每 S 的「觀測方式」<strong>親自實跑一次</strong>(後端打真實請求、
+    前端截圖存 <code>evidence/</code>、批次看 log/產出檔),填「現象證據」表。不採信 6-notes
+    貼的文字。完成 = 每 S 有實跑證據且與觀測方式相符(無外部現象者註明理由)。</li>
+    <li>雙軸審:Standards(F-id 🔴🟡🟢:位置|問題|建議)+ Spec(逐 R 符合/偏離);
+    每 F 標影響 S/T。完成 = 每 R 有判定、每 F 有鏈。</li>
+    <li>對照作者:此刻才讀 6-notes —— 自建矩陣 vs Self-Review 差異逐條裁;Deviations
+    如實?Decisions 有無實為 L2?完成 = 差異全裁定入 Spec Axis。</li>
+    <li>Verdict:PASS = 本次 S 全綠+既有全綠+<strong>現象證據逐 S 相符</strong>+無 🔴
+    (G3 正本 README §7;無 🔴 是本模板加嚴的出貨門檻,不與 §7 矛盾);否則
+    REQUEST_CHANGES 列 🔴 →
+    author 走 6-notes 的 Review Follow-up(同意改+一句為何對/不同意擺論證,
+    禁 performative fix)→ 回步 1 增量重驗。完成 = verdict 落檔。</li>
+    <li>Exit:逐勾 Exit Checklist。完成 = 全勾才 shipped;僅 Stage 7 frontmatter 改為
+    <code>shipped</code>,上游 artifact 保留 <code>approved</code> 作為各自 gate 核准紀錄。</li>
+    </ol>
+    </blockquote>
+    <!-- parity:end template7-checklist -->
   </details>
 
   <h2 id="gates">⑤ Gate 規則卡</h2>
   <div class="cardgrid">
-    <div class="card"><h4>G1 —— 方向對不對</h4><p><code>2-decision</code>:選定方案是否對。人工核准後才寫規格。</p></div>
+    <div class="card"><h4>G1 —— 方向對不對</h4><p><code>2-decision</code>:方向核准 + Owner Calls 全裁決,有未裁決 OC 不得過。</p></div>
     <div class="card"><h4>G2 —— 契約寫得對不對</h4><p><code>4-spec</code>:R/S 全審 + Drafting Decisions 全裁決,有未裁決項不得過。</p></div>
-    <div class="card"><h4>G3 —— 做出來的對不對</h4><p><code>7-review</code>:本次 S 全綠 <strong>+ 既有測試套件全綠</strong>(回歸義務),無 🔴 才 PASS。</p></div>
-    <div class="card"><h4>author ≠ approver</h4><p>G1/G2/G3 的核准者不可以是該文檔的 owner(四眼原則)。例外:無適格第二人(唯一懂的人 = 作者)時,owner 得自審 —— reviewers 留空即示無獨立審,留痕即可,不假裝有四眼。</p></div>
-    <div class="card"><h4>審查者產生</h4><p>有適格人類第二人 → 他審;沒有 → 派 <strong>fresh-context reviewer agent</strong>(opus;乾淨 context,只給審核對象+基準+回報格式,不給作者結論),verdict 與審者身分記 reviewers 欄(如 <code>[independent-fresh-context-reviewer]</code>)+ 檔內留 round 紀錄。</p></div>
+    <div class="card"><h4>G3 —— 做出來的對不對</h4><p><code>7-review</code>:本次 S 全綠 + 既有測試套件全綠 + 現象證據逐 S 相符;本模板另要求無 🔴 才 PASS。</p></div>
+    <div class="card"><h4>author ≠ approver</h4><p>G1/G2/G3 的核准者不可以是該文檔的 owner。無適格人類第二人不跳過 Agent fallback;只有前兩種 reviewer 都不可用時才記錄 owner 自審,不假裝有四眼。</p></div>
+    <div class="card"><h4>審查者產生</h4>
+      <!-- parity:start readme-reviewer-selection-flow -->
+      <ul>
+      <li><strong>審查者產生</strong>:G1/G2/G3 一律依序選 <strong>適格人類 reviewer → fresh-context reviewer
+      Agent → owner 自審(有記錄的最後手段)</strong>。Agent 必須是乾淨 context,只給審核對象+基準+回報格式,不給
+      作者結論;verdict 與審者身分記 reviewers 欄(如 <code>[independent-fresh-context-reviewer]</code>)
+      <ul>
+      <li>檔內留 round 紀錄。owner 自審僅能作為<strong>有記錄的最後手段</strong>,不假裝有四眼。</li>
+      </ul>
+      </li>
+      </ul>
+      <!-- parity:end readme-reviewer-selection-flow -->
+    </div>
     <div class="card"><h4>Quiz gate</h4><p><strong>不可逆改動</strong>(schema/API 契約/跨模組介面)merge 前<strong>必做</strong>:AI 出 3-5 題考 approver,全對才 merge;其餘 full lane <strong>選配</strong>(approver 可要求),fast lane <strong>免</strong>。</p></div>
     <div class="card"><h4>三連動</h4><p>每過一個 gate:frontmatter status + <code>STATUS.md</code> + 同名 html twin 三者同步更新,禁漏一項。</p></div>
     <div class="card"><h4>規劃層 git</h4><p>接手起手先看 <code>git status</code>,與本 feature 無關的改動 → 回報使用者處置,不與文檔混流;每過一個 gate,把該階段文檔commit 一次(只含文檔)。Stage 1-5 規劃階段文檔可直接落 develop(純文檔無程式碼,低風險);Stage 6 起手式才開 feature branch。</p></div>

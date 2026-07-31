@@ -36,24 +36,78 @@
   .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
   .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
   .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+  details{margin:.6em 0}
+  details>summary{cursor:pointer;color:var(--muted)}
+  .del{display:block;color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,transparent)}
+  .add{display:block;color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,transparent)}
 </style>
 </head>
 <body>
 <main>
 <h1>7. 驗證</h1>
 <h2>Coverage Matrix</h2>
-<p>| S-id | 測試 | 狀態 |
-|---|---|---|
-| S-1 | <code>TestExpiring_S1</code>(Go) | ✅ |
-| S-2 | <code>ExpiringContractsCard &quot;S2 empty&quot;</code>(vitest) | ✅ |
-| S-3 | <code>ExpiringContractsCard &quot;S3 navigate&quot;</code>(vitest) | ✅ |
-| 既有測試套件(回歸) | <code>go test ./... &amp;&amp; npm test</code> | ✅ |</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>S-id</th>
+<th>測試</th>
+<th>狀態</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S-1</td>
+<td><code>TestExpiring_S1</code>(Go)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>S-2</td>
+<td><code>ExpiringContractsCard &quot;S2 empty&quot;</code>(vitest)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>S-3</td>
+<td><code>ExpiringContractsCard &quot;S3 navigate&quot;</code>(vitest)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>既有測試套件(回歸)</td>
+<td><code>go test ./... &amp;&amp; npm test</code></td>
+<td>✅</td>
+</tr>
+</tbody>
+</table></div>
 <h2>現象證據(逐 S,對照 4-spec 的觀測欄)</h2>
-<p>| S-id | 觀測方式(引 4-spec) | reviewer 實跑證據 | 相符? |
-|---|---|---|---|
-| S-1 | <code>&lt;owner&gt;</code> dashboard 到期卡片；C 與「10 天」；C(<code>end_date = today + 10d</code>,未續約) | reviewer 以 C 登入 dashboard,卡片顯示 C 與「10 天」 | ✅ |
-| S-2 | <code>&lt;owner&gt;</code> dashboard 到期卡片；「近期無到期合約」且無錯誤；名下無 30 天內到期未續約合約 | reviewer 以無符合合約的 <code>&lt;owner&gt;</code> 登入,看到「近期無到期合約」且無錯誤畫面 | ✅ |
-| S-3 | C 那一列與瀏覽器 URL；<code>/contracts/C.id</code> 且顯示 C 詳情；S-1 的 C | reviewer 點擊可見的 C,URL 為 <code>/contracts/C.id</code> 並顯示 C 詳情 | ✅ |</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>S-id</th>
+<th>觀測方式(引 4-spec)</th>
+<th>reviewer 實跑證據</th>
+<th>相符?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S-1</td>
+<td><code>&lt;owner&gt;</code> dashboard 到期卡片；C 與「10 天」；C(<code>end_date = today + 10d</code>,未續約)</td>
+<td>reviewer 以擁有合約 C 的 <code>&lt;owner&gt;</code> 登入 dashboard,卡片顯示 C 與「10 天」</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>S-2</td>
+<td><code>&lt;owner&gt;</code> dashboard 到期卡片；「近期無到期合約」且無錯誤；名下無 30 天內到期未續約合約</td>
+<td>reviewer 以無符合合約的 <code>&lt;owner&gt;</code> 登入,看到「近期無到期合約」且無錯誤畫面</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>S-3</td>
+<td>C 那一列與瀏覽器 URL；<code>/contracts/C.id</code> 且顯示 C 詳情；S-1 的 C</td>
+<td>reviewer 點擊可見的 C,URL 為 <code>/contracts/C.id</code> 並顯示 C 詳情</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table></div>
 <h2>Standards Axis</h2>
 <ul>
 <li>F-1 🟡 <code>internal/handler/contract.go:41</code> | handler 未設 context timeout,慢查詢會掛住
@@ -65,6 +119,80 @@ dashboard | 建議:<code>context.WithTimeout(ctx, 2s)</code>,下個 fast-lane �
 <li>R-2 符合(S-3 綠)。</li>
 <li>D-1 已如實記錄,判定正確(不動 R/S,屬 L1;避開了 migration)。</li>
 </ul>
+<h2>變更架構圖</h2>
+<pre><code class="language-text">[Dashboard.tsx]
+       |
+       v
+[ExpiringContractsCard.tsx] -- click --&gt; [/contracts/:id]
+       |
+       v
+[GET /contracts/expiring]
+       |
+       v
+[handler] --&gt; [service] --&gt; [repo]
+                              |
+                              +--&gt; [idx_contracts_end_date]
+</code></pre>
+<h2>Diff(merge-base(develop)..HEAD,逐檔折疊)</h2>
+<details>
+<summary title="+6/-1; Expiring handler"><code>internal/handler/contract.go</code> (+6/-1; <code>Expiring</code>)</summary>
+<pre><span class="del">-func (h *Handler) ListContracts(w http.ResponseWriter, r *http.Request) {</span>
+<span class="add">+func (h *Handler) Expiring(w http.ResponseWriter, r *http.Request) {</span>
+<span class="add">+    ownerID := auth.OwnerID(r.Context())</span>
+<span class="add">+    contracts, err := h.contracts.ListExpiring(r.Context(), ownerID, time.Now())</span>
+<span class="add">+    if err != nil { h.errors.Write(w, err); return }</span>
+<span class="add">+    writeJSON(w, http.StatusOK, contracts)</span>
+<span class="add">+}</span></pre>
+</details>
+<details>
+<summary title="+6/-1; ListExpiring service"><code>internal/service/contract.go</code> (+6/-1; <code>ListExpiring</code>)</summary>
+<pre><span class="del">-func (s *ContractService) List(ctx context.Context, ownerID string) ([]Contract, error) {</span>
+<span class="add">+func (s *ContractService) ListExpiring(ctx context.Context, ownerID string, today time.Time) ([]Contract, error) {</span>
+<span class="add">+    cutoff := today.AddDate(0, 0, 30)</span>
+<span class="add">+    rows, err := s.repo.FindExpiring(ctx, ownerID, today, cutoff)</span>
+<span class="add">+    if err != nil { return nil, fmt.Errorf("find expiring contracts: %w", err) }</span>
+<span class="add">+    return rows, nil</span>
+<span class="add">+}</span></pre>
+</details>
+<details>
+<summary title="+5/-1; FindExpiring query"><code>internal/repo/contract.go</code> (+5/-1; <code>FindExpiring</code>)</summary>
+<pre><span class="del">-const listContracts = `SELECT * FROM contracts WHERE owner_id = $1`</span>
+<span class="add">+const findExpiring = `SELECT * FROM contracts</span>
+<span class="add">+  WHERE owner_id = $1 AND renewed_at IS NULL</span>
+<span class="add">+    AND end_date &gt;= $2 AND end_date &lt;= $3</span>
+<span class="add">+  ORDER BY end_date ASC`</span>
+<span class="add">+func (r *ContractRepo) FindExpiring(ctx context.Context, ownerID string, from, to time.Time) ([]Contract, error)</span></pre>
+</details>
+<details>
+<summary title="+8/-1; card list, empty state, navigation"><code>src/components/ExpiringContractsCard.tsx</code> (+8/-1; <code>ExpiringContractsCard</code>)</summary>
+<pre><span class="del">-export const ExpiringContractsCard = () =&gt; null</span>
+<span class="add">+export function ExpiringContractsCard({ contracts, navigate }: Props) {</span>
+<span class="add">+  if (contracts.length === 0) return &lt;p&gt;近期無到期合約&lt;/p&gt;</span>
+<span class="add">+  return &lt;section aria-label="近期到期合約"&gt;</span>
+<span class="add">+    {contracts.map((contract) =&gt; (</span>
+<span class="add">+      &lt;button key={contract.id} onClick={() =&gt; navigate(`/contracts/${contract.id}`)}&gt;</span>
+<span class="add">+        {contract.name} · {contract.daysRemaining} 天</span>
+<span class="add">+      &lt;/button&gt;))}</span>
+<span class="add">+  &lt;/section&gt; }</span></pre>
+</details>
+<details>
+<summary title="+2/-1; dashboard card mount"><code>src/pages/Dashboard.tsx</code> (+2/-1; <code>Dashboard</code>)</summary>
+<pre><span class="del">-return &lt;main&gt;&lt;/main&gt;</span>
+<span class="add">+return &lt;main&gt;</span>
+<span class="add">+  &lt;ExpiringContractsCard contracts={expiringContracts} navigate={navigate} /&gt;&lt;/main&gt;</span></pre>
+</details>
+<details>
+<summary title="+8/-1; S-1/S-3 browser flow"><code>e2e/expiring-contracts.spec.ts</code> (+8/-1; S-1/S-3)</summary>
+<pre><span class="del">-test.todo('contract expiry reminder')</span>
+<span class="add">+test('S-1 S-3 owner sees and opens an expiring contract', async ({ page }) =&gt; {</span>
+<span class="add">+  await loginAs(page, ownerWithContractC)</span>
+<span class="add">+  await page.goto('/dashboard')</span>
+<span class="add">+  await expect(page.getByText('C')).toBeVisible()</span>
+<span class="add">+  await expect(page.getByText('10 天')).toBeVisible()</span>
+<span class="add">+  await page.getByText('C').click()</span>
+<span class="add">+  await expect(page).toHaveURL('/contracts/C.id')</span>
+<span class="add">+})</span></pre>
+</details>
 <h2>Verdict</h2>
 <p><strong>PASS</strong>(F-1 為 🟡,開 fast-lane follow-up,不擋出貨)</p>
 <h2>Exit Checklist</h2>

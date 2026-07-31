@@ -204,8 +204,8 @@
       <td><span class="badge you">跟 AI 說</span> 回主 session:<br><code>/dev-flow 繼續 &lt;slug&gt;</code></td>
       <td><code>brainstorming</code>(2-3 approaches)+ <code>grill-me</code> 壓測定案</td>
       <td><code>2-decision.md</code>(+html);三條件成立 → 抄 <code>docs/adr/</code></td>
-      <td><strong>G1</strong> 人工核准方向(reviewer ≠ owner)</td>
-      <td><span class="badge opus">opus</span></td>
+      <td><strong>G1</strong> 方向核准 + Owner Calls 全裁決;reviewer 順序見表後正本摘錄</td>
+      <td><span class="badge opus">opus</span> 撰寫;Gate reviewer 不指定模型</td>
     </tr>
     <tr>
       <td>3 原型<br><span class="muted">(選配)</span></td>
@@ -222,14 +222,14 @@
       <td>openspec delta 格式 + 反模糊三律,一次一個 R 段段展開、段段給你確認</td>
       <td><code>4-spec.md</code>(+html)</td>
       <td><strong>G2</strong> R/S 全審 + Drafting Decisions 全裁決(有未裁決不得過)</td>
-      <td><span class="badge opus">opus</span></td>
+      <td><span class="badge opus">opus</span> 撰寫;Gate reviewer 不指定模型</td>
     </tr>
     <tr>
       <td>5 任務</td>
       <td><span class="badge you">跟 AI 說</span> <code>/dev-flow 繼續 &lt;slug&gt;</code></td>
       <td><code>to-tickets</code> 概念,tracer-bullet 順序拆 T,標 Covers/Verify/Blocked-by</td>
       <td><code>5-tasks.md</code></td>
-      <td>每 T 有 Verify(無人工 gate)</td>
+      <td>每 T 欄位完整(Covers/Files/Verify/Blocked-by;無人工 gate)</td>
       <td><span class="badge sonnet">sonnet</span></td>
     </tr>
     <tr>
@@ -242,7 +242,7 @@
       <td>派工者(opus)讀 4-spec/5-tasks/CONTEXT/living spec,逐 T 派工(haiku 起步)
         → fresh sonnet 審(親跑 Verify)→ 錯誤升階 → 派工者 commit + 記帳</td>
       <td><code>6-implementation-notes.md</code> + 逐 T commit</td>
-      <td>全 S 綠(reviewer 親跑 Verify,不採信執行者文字輸出)</td>
+      <td>每 T review PASS + 全 S 綠;PASS 前不得 commit</td>
       <td><span class="badge opus">opus</span> 派工<br>
         <span class="badge haiku">haiku</span>→<span class="badge sonnet">sonnet</span>→<span class="badge opus">opus</span> 升階<br>
         <span class="badge sonnet">sonnet</span> review</td>
@@ -253,22 +253,40 @@
       <td>mattpocock <code>code-review</code> 雙軸(Standards + Spec)+ coverage matrix,
         reviewer 先自建矩陣才看 Self-Review(防錨定)</td>
       <td><code>7-review.md</code> + <code>.html</code></td>
-      <td><strong>G3</strong>:本次 S 全綠 + 既有測試全綠(回歸)+ 無 🔴 → Exit checklist</td>
-      <td><span class="badge sonnet">sonnet</span> 產檔 + <span class="badge opus">opus</span> G3 裁決</td>
+      <td><strong>G3</strong> 本次 S 全綠 + 回歸綠 + 現象證據(全文見 §7);PASS → PR;
+        模板另要求無 🔴,之後逐勾 Exit checklist</td>
+      <td><span class="badge sonnet">sonnet</span> 產檔;Gate reviewer 不指定模型</td>
     </tr>
   </table></div>
+
+  <p class="muted">Stage 6 的固定 acceptance seam(README §5 正本):</p>
+  <!-- parity:start readme-stage6-seam-quickstart -->
+  <pre><code class="language-text">RED → GREEN → scope check → Verify
+  → independent T review
+  → PASS
+  → commit
+  → Progress Log + checkbox + review evidence
+  </code></pre>
+  <!-- parity:end readme-stage6-seam-quickstart -->
 
   <p class="muted"><strong>過 gate 三連動</strong>:每過一個 gate,frontmatter <code>status</code> +
   <code>STATUS.md</code> + 同名 html twin 三者同步更新,禁漏一項。Stage 1 完成後就該去
   <code>STATUS.md</code> 加第一列(README §10 步驟 2):<code>| &lt;slug&gt; | full | 1-discussion | &lt;你的名字&gt; | G1⬜ G2⬜ G3⬜ | &lt;日期&gt; |</code>,
   之後每過一個 gate 回來更新 Stage 欄與對應的 G⬜ → G✅。</p>
 
-  <blockquote><strong>G1/G2/G3 誰來審(reviewer 從哪來)</strong>:author ≠ approver,審查者不能是該文檔的 owner。
-  有適格的人類第二人(團隊裡另一個人)→ 他審。<strong>一個人單打獨鬥、沒有第二人可審時</strong> → 派
-  <strong>fresh-context reviewer agent</strong>(<span class="badge opus">opus</span>,乾淨 context,只給審核對象
-  + 基準 + 回報格式,不給作者結論),verdict 與審者身分記入該檔的 <code>reviewers</code> 欄
-  (如 <code>[independent-fresh-context-reviewer]</code>)。owner 自審留痕是最後手段 —— 留白示意「無獨立審」,
-  不假裝有四眼(README §7)。</blockquote>
+  <p><strong>G1/G2/G3 誰來審(reviewer 從哪來)</strong>:author ≠ approver;核心規則描述能力與
+  fallback,不指定模型或供應商。</p>
+  <!-- parity:start readme-reviewer-selection-quickstart -->
+  <ul>
+  <li><strong>審查者產生</strong>:G1/G2/G3 一律依序選 <strong>適格人類 reviewer → fresh-context reviewer
+  Agent → owner 自審(有記錄的最後手段)</strong>。Agent 必須是乾淨 context,只給審核對象+基準+回報格式,不給
+  作者結論;verdict 與審者身分記 reviewers 欄(如 <code>[independent-fresh-context-reviewer]</code>)
+  <ul>
+  <li>檔內留 round 紀錄。owner 自審僅能作為<strong>有記錄的最後手段</strong>,不假裝有四眼。</li>
+  </ul>
+  </li>
+  </ul>
+  <!-- parity:end readme-reviewer-selection-quickstart -->
 
   <blockquote>為什麼討論要另開 session:圍欄①「討論盲下游」—— <code>/dev-talk</code> 全文零提及後續階段,
   讀取白名單只有 CONTEXT.md / docs/specs/ / 原始碼 / 使用者指名檔案,不進其他文件資料夾。
@@ -300,16 +318,17 @@ cd &lt;path&gt;
 
   <h3>Stage 7 的 G3 + Exit checklist</h3>
   <p>G3 PASS 之後,<code>7-review.md</code> 的 Exit Checklist 要全勾才算 shipped(逐字抄自模板):</p>
+  <!-- parity:start template7-exit-quickstart -->
   <ul>
-    <li>Quiz(<strong>不可逆改動必做</strong>;其餘 full lane 選配,fast lane 免):AI 就本次變更出 3-5 題考 approver
-      (改了什麼/為何/邊界),全對才准 merge</li>
-    <li>PR → develop(feature branch,禁直上 master)</li>
-    <li>4-spec delta 已併入 <code>docs/specs/&lt;domain&gt;.md</code></li>
-    <li><code>STATUS.md</code> 已更新為 shipped</li>
-    <li>本資料夾各檔 frontmatter <code>status: shipped</code></li>
-    <li><code>7-review.html</code> 已產生(含變更架構圖 + diff 折疊)</li>
-    <li>feature branch 已刪 / worktree 已清</li>
+  <li>[ ] Quiz(<strong>不可逆改動必做</strong>;其餘 full lane 選配,fast 免):AI 就本次變更出 3-5 題考 approver(改了什麼/為何/邊界),全對才准 merge</li>
+  <li>[ ] PR → develop(feature branch,禁直上 master)</li>
+  <li>[ ] 4-spec delta 已併入 <code>docs/specs/&lt;domain&gt;.md</code></li>
+  <li>[ ] STATUS.md 已更新為 shipped</li>
+  <li>[ ] 7-review frontmatter status: shipped;上游 artifact 可保留 approved(各自 gate 核准紀錄)</li>
+  <li>[ ] 7-review.html 已產生(含變更架構圖 + diff 折疊,規格見 README §6)</li>
+  <li>[ ] feature branch 已刪 / worktree 已清</li>
   </ul>
+  <!-- parity:end template7-exit-quickstart -->
 
   <h2 id="guardcheat">③ 執行守衛速查表</h2>
   <p>Stage 6 的守衛是 <code>devflow-exec.sh</code>(plugin hooks 內,無 alias,要打路徑):</p>
@@ -392,11 +411,19 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
 
   <h2 id="models">④ 模型分層速查</h2>
   <p>對照 README §9。</p>
+  <!-- parity:start readme-gate-model-quickstart -->
+  <ul>
+  <li><strong>G1/G2/G3 審查與 verdict</strong>:依 §7 的人類→fresh-context reviewer Agent→有記錄的
+  owner 自審順序；Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。</li>
+  </ul>
+  <!-- parity:end readme-gate-model-quickstart -->
   <div class="tablewrap"><table>
     <tr><th>角色 / 站</th><th>模型</th><th>規則</th></tr>
-    <tr><td>規劃/派工層<br>(1 討論、2/4 文檔、G1/G2/G3 審查 verdict、Stage 6 派工主對話)</td>
+    <tr><td>規劃/派工層<br>(1 討論、2/4 文檔、Stage 6 派工主對話)</td>
         <td><span class="badge opus">opus</span>(或 fable5)</td>
-        <td>撰寫文檔、多方案辯論、審查裁決;派工不下場寫碼</td></tr>
+        <td>撰寫文檔、多方案辯論;派工不下場寫碼</td></tr>
+    <tr><td>G1/G2/G3 reviewer</td><td>不指定模型</td>
+        <td>適格人類 → fresh-context reviewer Agent → 有記錄的 owner 自審;Agent 只要求能力與乾淨 context</td></tr>
     <tr><td>Stage 6 · T 執行</td><td>
         <span class="badge haiku">haiku</span> 起步 →
         <span class="badge sonnet">sonnet</span> →
@@ -486,7 +513,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     <rect class="m-opus" x="222" y="65" width="78" height="44" rx="6"/>
     <text x="261" y="91" text-anchor="middle">2 收斂</text>
 
-    <polygon class="m-opus" points="365,47 405,87 365,127 325,87"/>
+    <polygon class="b" points="365,47 405,87 365,127 325,87"/>
     <text x="365" y="91" text-anchor="middle">G1</text>
 
     <rect class="m-sonnet" x="430" y="65" width="78" height="44" rx="6" stroke-dasharray="5 3"/>
@@ -496,7 +523,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     <rect class="m-opus" x="534" y="65" width="78" height="44" rx="6"/>
     <text x="573" y="91" text-anchor="middle">4 規格</text>
 
-    <polygon class="m-opus" points="677,47 717,87 677,127 637,87"/>
+    <polygon class="b" points="677,47 717,87 677,127 637,87"/>
     <text x="677" y="91" text-anchor="middle">G2</text>
 
     <rect class="m-sonnet" x="742" y="65" width="78" height="44" rx="6"/>
@@ -508,7 +535,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     <rect class="m-sonnet" x="950" y="65" width="78" height="44" rx="6"/>
     <text x="989" y="91" text-anchor="middle">7 驗證</text>
 
-    <polygon class="m-opus" points="1093,47 1133,87 1093,127 1053,87"/>
+    <polygon class="b" points="1093,47 1133,87 1093,127 1053,87"/>
     <text x="1093" y="91" text-anchor="middle">G3</text>
 
     <rect class="b" x="1158" y="65" width="90" height="44" rx="6"/>
@@ -535,19 +562,19 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     <!-- per-stage model captions -->
     <text x="157" y="168" class="cap" text-anchor="middle">opus</text>
     <text x="261" y="168" class="cap" text-anchor="middle">opus</text>
-    <text x="365" y="168" class="cap" text-anchor="middle">opus·方向</text>
+    <text x="365" y="168" class="cap" text-anchor="middle">reviewer·方向</text>
     <text x="469" y="168" class="cap" text-anchor="middle">sonnet</text>
     <text x="573" y="168" class="cap" text-anchor="middle">opus</text>
-    <text x="677" y="168" class="cap" text-anchor="middle">opus·契約</text>
+    <text x="677" y="168" class="cap" text-anchor="middle">reviewer·契約</text>
     <text x="781" y="168" class="cap" text-anchor="middle">sonnet</text>
     <text x="885" y="168" class="cap" text-anchor="middle">opus·派工</text>
     <text x="989" y="168" class="cap" text-anchor="middle">sonnet</text>
-    <text x="1093" y="168" class="cap" text-anchor="middle">opus·G3</text>
+    <text x="1093" y="168" class="cap" text-anchor="middle">reviewer·G3</text>
     <text x="1203" y="168" class="cap" text-anchor="middle">→develop</text>
     <text x="1203" y="182" class="cap" text-anchor="middle">→Exit checklist</text>
   </svg>
 
-  <p class="legend">紫色 = <span class="badge opus">opus</span>(規劃/派工/裁決層);
+  <p class="legend">紫色 = <span class="badge opus">opus</span>(規劃/派工層);gate reviewer 不指定模型;
   青色 = <span class="badge sonnet">sonnet</span>(執行/產檔層);Stage 6 內部另有
   <span class="badge haiku">haiku</span> 起步的 T 執行層,見④模型分層速查表。</p>
 

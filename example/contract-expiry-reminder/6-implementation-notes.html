@@ -36,6 +36,10 @@
   .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
   .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
   .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+  details{margin:.6em 0}
+  details>summary{cursor:pointer;color:var(--muted)}
+  .del{display:block;color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,transparent)}
+  .add{display:block;color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,transparent)}
 </style>
 </head>
 <body>
@@ -50,7 +54,7 @@
 <li>Verify:<code>go test ./internal/... -run TestExpiring</code> → reviewer 親跑 <code>ok  internal/...</code></li>
 <li>Covers finding:R-1 / S-1、S-2 的 API 查詢、到期結果與空結果均吻合。</li>
 <li>Files finding:改動僅 <code>internal/handler/contract.go</code>、<code>internal/service/contract.go</code>、<code>internal/repo/contract.go</code>。</li>
-<li>RED→GREEN finding:S-1/S-2 的 RED→GREEN 證據完整且可追溯。</li>
+<li>RED→GREEN finding:<code>T-1 / S-1</code>、<code>T-1 / S-2</code> 各有本 T 的 RED→GREEN 證據且可追溯。</li>
 <li>verdict:PASS</li>
 <li>correction + re-review after FAIL:N/A</li>
 </ul>
@@ -62,7 +66,7 @@
 <li>Verify:<code>npm test -- ExpiringContractsCard</code> → reviewer 親跑 <code>PASS (2 tests)</code>。</li>
 <li>Covers finding:R-1 / S-1、S-2 的卡片與空狀態均吻合。</li>
 <li>Files finding:改動僅 <code>src/components/ExpiringContractsCard.tsx</code>、<code>src/pages/Dashboard.tsx</code>。</li>
-<li>RED→GREEN finding:S-1/S-2 的 RED→GREEN 證據完整且可追溯。</li>
+<li>RED→GREEN finding:<code>T-2 / S-1</code>、<code>T-2 / S-2</code> 各有前端層 RED→GREEN 證據且可追溯。</li>
 <li>verdict:PASS</li>
 <li>correction + re-review after FAIL:N/A</li>
 </ul>
@@ -74,7 +78,7 @@
 <li>Verify:<code>npm test -- ExpiringContractsCard</code> → reviewer 親跑 <code>PASS (3 tests)</code>。</li>
 <li>Covers finding:R-2 / S-3 的卡片列導向詳情頁行為吻合。</li>
 <li>Files finding:改動僅 <code>src/components/ExpiringContractsCard.tsx</code>。</li>
-<li>RED→GREEN finding:S-3 的 RED→GREEN 證據完整且可追溯。</li>
+<li>RED→GREEN finding:<code>T-3 / S-3</code> 有本 T 的 RED→GREEN 證據且可追溯。</li>
 <li>verdict:PASS</li>
 <li>correction + re-review after FAIL:N/A</li>
 </ul>
@@ -86,7 +90,7 @@
 <li>Verify:<code>npx playwright test e2e/expiring-contracts.spec.ts</code> → reviewer 親跑 <code>PASS (登入、卡片、詳情導向)</code>。</li>
 <li>Covers finding:R-1、R-2 / S-1、S-3 的端到端可見行為吻合。</li>
 <li>Files finding:改動僅 <code>e2e/expiring-contracts.spec.ts</code>。</li>
-<li>RED→GREEN finding:S-1/S-3 的端到端 RED→GREEN 證據完整且可追溯。</li>
+<li>RED→GREEN finding:<code>T-4 / S-1</code>、<code>T-4 / S-3</code> 各有 Playwright RED→GREEN 證據且可追溯。</li>
 <li>verdict:PASS</li>
 <li>correction + re-review after FAIL:N/A</li>
 </ul>
@@ -98,20 +102,41 @@
 <li>07-23 | T-4 | review PASS 後提交 e2e | <code>f3a08c1</code></li>
 </ul>
 <h2>TDD Evidence</h2>
-<h3>S-1</h3>
+<!-- 每個「T × Covers S」各一筆;同一 S 在不同 T/層次的 RED→GREEN 不得共用。 -->
+<h3>T-1 / S-1</h3>
 <ul>
 <li>RED: <code>go test ./internal/... -run TestExpiring_S1</code> → <code>FAIL: expected 1 contract, got 0 (handler not implemented)</code></li>
 <li>GREEN: 同指令 → <code>ok  internal/service  0.31s</code></li>
 </ul>
-<h3>S-2</h3>
+<h3>T-1 / S-2</h3>
+<ul>
+<li>RED: <code>go test ./internal/... -run TestExpiring_S2</code> → <code>FAIL: expected empty list with 200, got 404 (handler not implemented)</code></li>
+<li>GREEN: 同指令 → <code>ok  internal/handler  0.29s</code></li>
+</ul>
+<h3>T-2 / S-1</h3>
+<ul>
+<li>RED: <code>npm test -- ExpiringContractsCard -t &quot;S1 list&quot;</code> → <code>Unable to find an element with the text: C</code></li>
+<li>GREEN: 同指令 → <code>PASS (1 test)</code></li>
+</ul>
+<h3>T-2 / S-2</h3>
 <ul>
 <li>RED: <code>npm test -- ExpiringContractsCard -t &quot;S2 empty&quot;</code> → <code>Expected &quot;近期無到期合約&quot;, received element not found</code></li>
-<li>GREEN: 同指令 → <code>PASS (2 tests)</code></li>
+<li>GREEN: 同指令 → <code>PASS (1 test)</code></li>
 </ul>
-<h3>S-3</h3>
+<h3>T-3 / S-3</h3>
 <ul>
 <li>RED: <code>npm test -- ExpiringContractsCard -t &quot;S3 navigate&quot;</code> → <code>navigate not called</code></li>
-<li>GREEN: 同指令 → <code>PASS (3 tests)</code></li>
+<li>GREEN: 同指令 → <code>PASS (1 test)</code></li>
+</ul>
+<h3>T-4 / S-1</h3>
+<ul>
+<li>RED: <code>npx playwright test e2e/expiring-contracts.spec.ts -g &quot;S1&quot;</code> → <code>Expected card &quot;C&quot; to be visible</code></li>
+<li>GREEN: 同指令 → <code>1 passed</code></li>
+</ul>
+<h3>T-4 / S-3</h3>
+<ul>
+<li>RED: <code>npx playwright test e2e/expiring-contracts.spec.ts -g &quot;S3&quot;</code> → <code>Expected URL /contracts/C.id, received /dashboard</code></li>
+<li>GREEN: 同指令 → <code>1 passed</code></li>
 </ul>
 <h2>Decisions(spec 未載明的自由選擇)</h2>
 <p>(無 —— 本次無 spec 未載明的自由選擇需記錄;取捨皆落在 D-1)</p>
@@ -126,7 +151,7 @@
 <li>影響:T-1(Files 少了 migration 檔);R/S 無影響。</li>
 </ul>
 <h2>Files Changed</h2>
-<p>6 檔 / +312 −8(Diff Budget ≤6 檔/≤400 行,內)。</p>
+<p>6 檔 / +35 −6(Diff Budget ≤6 檔/≤400 行,內)。</p>
 <ul>
 <li><code>internal/handler/contract.go</code> (T-1)</li>
 <li><code>internal/service/contract.go</code> (T-1)</li>
@@ -135,19 +160,82 @@
 <li><code>src/pages/Dashboard.tsx</code> (T-2)</li>
 <li><code>e2e/expiring-contracts.spec.ts</code> (T-4)</li>
 </ul>
+<h2>Diff(各 T commit,逐檔折疊)</h2>
+<h3>T-1 · <code>a1c3f02</code></h3>
+<details>
+<summary title="+6/-1; Expiring handler"><code>internal/handler/contract.go</code> (+6/-1; <code>Expiring</code>)</summary>
+<pre><span class="del">-func (h *Handler) ListContracts(w http.ResponseWriter, r *http.Request) {</span>
+<span class="add">+func (h *Handler) Expiring(w http.ResponseWriter, r *http.Request) {</span>
+<span class="add">+    ownerID := auth.OwnerID(r.Context())</span>
+<span class="add">+    contracts, err := h.contracts.ListExpiring(r.Context(), ownerID, time.Now())</span>
+<span class="add">+    if err != nil { h.errors.Write(w, err); return }</span>
+<span class="add">+    writeJSON(w, http.StatusOK, contracts)</span>
+<span class="add">+}</span></pre>
+</details>
+<details>
+<summary title="+6/-1; ListExpiring service"><code>internal/service/contract.go</code> (+6/-1; <code>ListExpiring</code>)</summary>
+<pre><span class="del">-func (s *ContractService) List(ctx context.Context, ownerID string) ([]Contract, error) {</span>
+<span class="add">+func (s *ContractService) ListExpiring(ctx context.Context, ownerID string, today time.Time) ([]Contract, error) {</span>
+<span class="add">+    cutoff := today.AddDate(0, 0, 30)</span>
+<span class="add">+    rows, err := s.repo.FindExpiring(ctx, ownerID, today, cutoff)</span>
+<span class="add">+    if err != nil { return nil, fmt.Errorf("find expiring contracts: %w", err) }</span>
+<span class="add">+    return rows, nil</span>
+<span class="add">+}</span></pre>
+</details>
+<details>
+<summary title="+5/-1; FindExpiring query"><code>internal/repo/contract.go</code> (+5/-1; <code>FindExpiring</code>)</summary>
+<pre><span class="del">-const listContracts = `SELECT * FROM contracts WHERE owner_id = $1`</span>
+<span class="add">+const findExpiring = `SELECT * FROM contracts</span>
+<span class="add">+  WHERE owner_id = $1 AND renewed_at IS NULL</span>
+<span class="add">+    AND end_date &gt;= $2 AND end_date &lt;= $3</span>
+<span class="add">+  ORDER BY end_date ASC`</span>
+<span class="add">+func (r *ContractRepo) FindExpiring(ctx context.Context, ownerID string, from, to time.Time) ([]Contract, error)</span></pre>
+</details>
+<h3>T-2 / T-3 · <code>b7e91d4</code> / <code>c58a2e0</code></h3>
+<details>
+<summary title="+8/-1; card list, empty state, navigation"><code>src/components/ExpiringContractsCard.tsx</code> (+8/-1; <code>ExpiringContractsCard</code>)</summary>
+<pre><span class="del">-export const ExpiringContractsCard = () =&gt; null</span>
+<span class="add">+export function ExpiringContractsCard({ contracts, navigate }: Props) {</span>
+<span class="add">+  if (contracts.length === 0) return &lt;p&gt;近期無到期合約&lt;/p&gt;</span>
+<span class="add">+  return &lt;section aria-label="近期到期合約"&gt;</span>
+<span class="add">+    {contracts.map((contract) =&gt; (</span>
+<span class="add">+      &lt;button key={contract.id} onClick={() =&gt; navigate(`/contracts/${contract.id}`)}&gt;</span>
+<span class="add">+        {contract.name} · {contract.daysRemaining} 天</span>
+<span class="add">+      &lt;/button&gt;))}</span>
+<span class="add">+  &lt;/section&gt; }</span></pre>
+</details>
+<details>
+<summary title="+2/-1; dashboard card mount"><code>src/pages/Dashboard.tsx</code> (+2/-1; <code>Dashboard</code>)</summary>
+<pre><span class="del">-return &lt;main&gt;&lt;/main&gt;</span>
+<span class="add">+return &lt;main&gt;</span>
+<span class="add">+  &lt;ExpiringContractsCard contracts={expiringContracts} navigate={navigate} /&gt;&lt;/main&gt;</span></pre>
+</details>
+<h3>T-4 · <code>f3a08c1</code></h3>
+<details>
+<summary title="+8/-1; S-1/S-3 browser flow"><code>e2e/expiring-contracts.spec.ts</code> (+8/-1; S-1/S-3)</summary>
+<pre><span class="del">-test.todo('contract expiry reminder')</span>
+<span class="add">+test('S-1 S-3 owner sees and opens an expiring contract', async ({ page }) =&gt; {</span>
+<span class="add">+  await loginAs(page, ownerWithContractC)</span>
+<span class="add">+  await page.goto('/dashboard')</span>
+<span class="add">+  await expect(page.getByText('C')).toBeVisible()</span>
+<span class="add">+  await expect(page.getByText('10 天')).toBeVisible()</span>
+<span class="add">+  await page.getByText('C').click()</span>
+<span class="add">+  await expect(page).toHaveURL('/contracts/C.id')</span>
+<span class="add">+})</span></pre>
+</details>
 <h2>Self-Review</h2>
 <!-- = 執行清單步 4 的八問:逐問作答、附證據(測試輸出/hash/diff stat),不憑印象 -->
 <ol>
-<li>每 S-id 有含其名測試 + RED/GREEN 證據? → 是,S-1(<code>TestExpiring_S1</code>)、S-2
-(<code>&quot;S2 empty&quot;</code>)、S-3(<code>&quot;S3 navigate&quot;</code>)皆見上方 TDD Evidence,RED(失敗輸出)→
-GREEN(通過輸出)證據齊全。</li>
+<li>每個「T × Covers S」有含 S-id 的測試 + 該 T 自己的 RED/GREEN 證據? → 是,
+<code>T-1/S-1</code>、<code>T-1/S-2</code>、<code>T-2/S-1</code>、<code>T-2/S-2</code>、<code>T-3/S-3</code>、
+<code>T-4/S-1</code>、<code>T-4/S-3</code> 七筆皆見上方 TDD Evidence,且未跨 T 共用證據。</li>
 <li>每 T 都有獨立 T Review Log verdict? → 是,T-1~T-4 均由 <code>&lt;reviewer-a&gt;</code> 親跑 Verify,
 Covers/Files/RED→GREEN finding 皆記為 PASS。</li>
 <li>每個 PASS 都早於該 T commit? → 是,四筆 reviewed-at 均明列早於各自 hash。</li>
 <li>每個 FAIL 後有較晚 PASS,否則未勾未 commit? → 是,本次四 T 均首輪 PASS,各筆皆記 N/A。</li>
 <li>每 T 一 commit、Progress Log 每列有 hash? → 是,見上方 Progress Log,每 T 一列各自留 hash。</li>
 <li><code>git diff --stat</code> 改動檔案 ⊆ 5-tasks Files 聯集、Diff Budget 內? → 是,見 Files
-Changed(6 檔 / +312 −8),在 4-spec Diff Budget(≤6 檔/≤400 行)內。</li>
+Changed(6 檔 / +35 −6),在 4-spec Diff Budget(≤6 檔/≤400 行)內。</li>
 <li>Decisions/Deviations 與 diff 對得上(無 silent drift)? → 是,Decisions 節本次
 空(取捨皆落在 D-1),僅 D-1 一筆 Deviation(放棄新增覆蓋索引 migration),對應
 diff 確實無新 migration 檔,R-1/R-2/S-1~S-3 均無變動。</li>

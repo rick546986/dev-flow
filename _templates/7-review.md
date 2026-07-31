@@ -63,13 +63,21 @@ updated:
 ## Spec Axis
 <!-- 逐 R 檢查符合/偏離;對照 6 的 Deviations 是否如實記錄 -->
 
+## 變更架構圖
+<!-- README §6:Markdown 留 ASCII 正本;純線性/單層樹用半形 | - + > < = [ ],
+     空間關係複雜才在 HTML 改 SVG。 -->
+
+## Diff(merge-base(develop)..HEAD,逐檔折疊)
+<!-- README §6 要求每檔一個 details。summary 的 title/文字列 +N/-N 與函式;
+     內容放 HTML-escaped 完整 diff,刪行 class="del"、增行 class="add"。 -->
+
 ## Verdict
 <!-- PASS / REQUEST_CHANGES(列 🔴) -->
 
 ## Exit Checklist(全勾才算 shipped)
 - [ ] Quiz(**不可逆改動必做**;其餘 full lane 選配,fast 免):AI 就本次變更出 3-5 題考 approver(改了什麼/為何/邊界),全對才准 merge
 - [ ] PR → develop(feature branch,禁直上 master)
-- [ ] 4-spec delta 已併入 docs/specs/<domain>.md
+- [ ] 4-spec delta 已併入 `docs/specs/<domain>.md`
 - [ ] STATUS.md 已更新為 shipped
 - [ ] 7-review frontmatter status: shipped;上游 artifact 可保留 approved(各自 gate 核准紀錄)
 - [ ] 7-review.html 已產生(含變更架構圖 + diff 折疊,規格見 README §6)
