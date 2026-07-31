@@ -76,7 +76,8 @@ CLAUDE.md;舊路徑 grep 歸零才算完)。
 (GIVEN=重現前置 / WHEN=觸發 / THEN=正確行為)。修根因,禁 symptom patch。
 Fast lane 仍使用同一份 `_templates/5-tasks.md`:可只有一個 T,但必須填
 `Covers`、`Files`、`Verify`、`Blocked-by`。Stage 1–3 省略,Stage 5 不省略;
-`devflow-exec.sh start <slug>` 照常從這份 `5-tasks.md` 解析 `Files` scope。
+`devflow-exec.sh start <slug>` 會逐 T 驗這四欄,並從這份 `5-tasks.md` 解析 Git repository
+root 相對的 `Files` scope。
 
 ## 3. 七份文檔(用途一句話;骨架見 `_templates/`,填好範例見 `example/`)
 
@@ -86,7 +87,7 @@ Fast lane 仍使用同一份 `_templates/5-tasks.md`:可只有一個 T,但必須
 | 2 | `2-decision.md` | 收斂:2-3 方案比較 → 選定 + rejected + 理由 | **G1** 方向核准 + OC 全裁決(全文見 §7) |
 | 3 | `3-prototype.md` | 選配:throwaway 實驗回答技術/UI 疑問,答案回寫 2 | 答案回寫 2-decision + frontmatter 收尾同步(終態 approved) |
 | 4 | `4-spec.md` | 本次變更的可測契約(delta + GIVEN/WHEN/THEN)。SDD 真相 | **G2** R/S 全審 + DD 全裁決(全文見 §7) |
-| 5 | `5-tasks.md` | 切成可勾選任務,tracer-bullet 順序,每條有 Verify | 每 T 有 Verify |
+| 5 | `5-tasks.md` | 切成可勾選任務,tracer-bullet 順序,每 T 有 Covers/Files/Verify/Blocked-by | 每 T 欄位完整 |
 | 6 | `6-implementation-notes.md` | 實作日誌:TDD 證據 + 偏差記錄 | 全 S 綠 |
 | 7 | `7-review.md` + `.html` | 雙軸審 + coverage matrix + Exit checklist | **G3** S 全綠 + 回歸綠 + 現象證據(全文見 §7);PASS → PR |
 
@@ -136,16 +137,21 @@ RED → GREEN → scope check → Verify
     G2 → 才能繼續。禁止 silent drift —— spec 說謊,SDD 就死了。(本 SOP 加嚴,
     field guide 無此級)
 - **起手式**:開 feature branch 才動工;多 feature 並行用 git worktree 隔離,免互踩。
-- **Scope guard**:改動檔案 ⊆ 5-tasks 全部 T 的 Files 聯集;超出 → 依偏差兩級判
-  (不動 R/S = L1 記錄續走;動到 = L2 停)。
+- **Scope guard**:改動檔案 ⊆ 5-tasks 全部 T 的 Files 聯集;Files 一律以 Git repository
+  root 為相對根,`internal/x_test.go` 和 `backend-go/internal/x_test.go` 在 monorepo 是不同
+  scope。超出 → 依偏差兩級判(不動 R/S = L1 記錄續走;動到 = L2 停)。
 - **執行守衛**(機械強制,dev-flow plugin 內建):Stage 6 起手在工作樹跑
-  `hooks/devflow-exec.sh start <slug>`(驗 4-spec=approved → 由 5-tasks Files 產 scope
-  快照 + 契約 hash + 髒樹基線 → 掛旗標)。旗標存在期間四條 hook 生效:
+  `hooks/devflow-exec.sh start <slug>`(驗 4-spec=approved、逐 T 驗 Covers/Files/Verify/
+  Blocked-by、正規化 Files → 產 scope 快照 + 契約 hash)。start 前只容許 scope 內髒檔;
+  scope 外的 tracked/untracked/ignored 真實改動一律拒啟,先 commit、還原或改用乾淨 worktree,
+  不再收進 baseline。`.DS_Store`、`._*`、`Thumbs.db`、`__pycache__/`、`*.pyc` 是 ambient
+  metadata:不進 baseline、不擋 start/post-Bash,也不需 allow;其餘路徑即使被 `.gitignore`
+  忽略仍會掃描。旗標存在期間四條 hook 生效:
   `devflow-guard`(PreToolUse Edit|Write|Read:擋改任何 feature 的 1/2/3/4、擋讀 1/2/3、
   擋 scope 外寫入)、`devflow-prebash`(PreToolUse Bash:擋 shell 讀上游與破壞旗標)、
   `devflow-postbash`(PostToolUse Bash:git status 對照 + 內容 hash,抓 shell 寫入)、
   `devtalk-guard`(盲原則掃描)。L1 出口 = `devflow-exec.sh allow <file> --reason`;
-  L2 = `stop`。收尾 `stop` 後全部沉睡。自測:`hooks/selftest.sh`(33 案,可重跑)。
+  L2 = `stop`。收尾 `stop` 後全部沉睡。自測:`hooks/selftest.sh`(動態發現案例,可重跑)。
   界線:紀律工具非安全沙箱,詳 `dev-setup-record.html`。
 - **接收審查**(G3 打回時):逐 F 驗證後才動手 —— 同意的改並一句說明為何對;
   不同意的擺論證,不盲改(禁 performative fix)。

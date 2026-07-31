@@ -57,7 +57,7 @@
    |- hooks/devflow-guard.sh             &lt;- 執行期硬擋(PreToolUse Edit|Write|Read)
    |- hooks/devflow-prebash.sh           &lt;- shell 圍欄(PreToolUse Bash:擋讀上游/破壞旗標)
    |- hooks/devflow-postbash.sh          &lt;- shell 寫入偵測網(PostToolUse Bash)
-   |- hooks/selftest.sh                  &lt;- 守衛全情境自測(33 案,自建 temp repo 後自清)
+   |- hooks/selftest.sh                  &lt;- 守衛全情境自測(動態發現案例,自建 temp repo 後自清)
    |- hooks/devflow-lib.py               &lt;- 共用邏輯(fail-closed 狀態載入/路徑判定)
    |- hooks/_{guard,prebash,postbash,exec}_impl.py  &lt;- 四支實作(shell 為薄殼)
 
@@ -73,7 +73,7 @@
     <tr><td><code>dev-flow@local</code></td><td>流程路由器 + dev-setup 健康檢查 + guard hook。hook 隨 plugin 啟用自動掛載(不再寫進 settings.json)。</td></tr>
     <tr><td>devtalk-guard.sh</td><td>任何 Edit/Write 後檢查:目標路徑含 <code>skills/dev-talk/</code> 才動作 → 洩漏掃描(下游階段字眼)→ 命中 <code>exit 2</code> 把錯誤直接回饋給模型要求立即修正。其他路徑靜默放行。</td></tr>
     <tr><td>dev-setup skill</td><td>專案安裝器(install:docs/dev 模板 + <code>.claude/rules/</code> 骨架 + gitignore;upgrade:只覆蓋 README/_templates,絕不動已產 feature 檔;未識別的外部 workflow artifacts 全數保留)+ 六項健康檢查。</td></tr>
-    <tr><td><strong>執行守衛</strong><br>(devflow-exec + guard + prebash + postbash)</td><td>Stage 6 起手 <code>devflow-exec.sh start &lt;slug&gt;</code>:驗 4-spec=approved(否則拒啟)→ 從 5-tasks Files 產 scope 快照 + 髒樹基線 → 建旗標。旗標存在時:<strong>PreToolUse</strong> 擋改 4-spec/1/2/3(契約防篡改+L2 強制停修審)、擋讀 1/2/3(圍欄②)、擋 scope 外寫入(附 L1/L2 提示);<strong>PostToolUse Bash</strong> 每次指令後 git status 對照 scope,shell 寫入幾秒內被抓。L1 合法出口:<code>allow &lt;file&gt; --reason</code>(留 log + 提醒記 D-n)。<code>stop</code> 撤旗標 → 全部沉睡,其他工作零干擾。</td></tr>
+    <tr><td><strong>執行守衛</strong><br>(devflow-exec + guard + prebash + postbash)</td><td>Stage 6 起手 <code>devflow-exec.sh start &lt;slug&gt;</code>:驗 4-spec=approved、逐 T 驗 Covers/Files/Verify/Blocked-by、把 Git root 相對 Files 正規化為 scope。scope 外真實髒檔先拒啟(不再 baseline);只有 <code>.DS_Store</code>/<code>._*</code>/<code>Thumbs.db</code>/<code>__pycache__/</code>/<code>*.pyc</code> 是 ambient。旗標存在時:<strong>PreToolUse</strong> 擋改 4-spec/1/2/3(契約防篡改+L2 強制停修審)、擋讀 1/2/3(圍欄②)、擋 scope 外寫入(附 L1/L2 提示);<strong>PostToolUse Bash</strong> 每次指令後 git status 對照 scope,shell 寫入幾秒內被抓。L1 合法出口:<code>allow &lt;file&gt; --reason</code>(留 log + 提醒記 D-n)。<code>stop</code> 撤旗標 → 全部沉睡,其他工作零干擾。</td></tr>
     <tr><td><strong>dev-run 引擎</strong></td><td>派工者(opus/fable5 主對話,不寫碼)逐 T:haiku 執行 → sonnet fresh review → 錯誤升階(haiku→sonnet→opus,同層最多兩次);升階史記 6-notes「執行軌跡」→ 7-review.html 執行記錄表。偏差 L1 保守+記+續走,L2 才停(field guide 模式)。</td></tr>
   </table></div>
 
@@ -88,7 +88,7 @@
     <tr><td>舊 skills 目錄</td><td class="ok">兩帳號的 legacy per-account skills 已移除,零殘留</td></tr>
     <tr><td>plugin hook 實彈</td><td class="muted">需 <code>/reload-plugins</code> 或新 session 載入後生效 —— 前版 settings hook 已實彈驗過同一 script 邏輯(2026-07-25 hook fired),plugin 載入後建議跑一次「dev-setup」自測</td></tr>
     <tr><td>執行守衛全情境(2026-07-28,假 repo)</td><td class="ok">12/12:draft 拒啟 / approved 啟動 / 擋改 4-spec / 擋讀 1-discussion / 放行 scope 內+目錄前綴+6-notes / 擋 scope 外 / allow 後放行 / postbash 抓 shell 寫入(不誤報既有髒樹) / 乾淨沉默 / stop 後全放行</td></tr>
-    <tr><td><strong>守衛自測套件</strong>(2026-07-28,可重跑)</td><td class="ok">33/33 全過 —— <code>hooks/selftest.sh</code> 把原本一次性手測固化:未武裝全靜默 3 案 / start 前置 3 案 / PreToolUse 守衛 11 案(含跨 feature 契約保護、symlink、exec.json、.gitignore)/ prebash 圍欄 3 案 / allow 出口 3 案 / postbash 偵測網 4 案(含契約 hash、既有髒檔內容變動)/ fail-closed 2 案 / stop 後沉睡 2 案。自建 temp repo、跑完自清,任何時候可重驗</td></tr>
+    <tr><td><strong>守衛自測套件</strong>(可重跑)</td><td class="ok">動態發現的全部案例全過 —— <code>hooks/selftest.sh</code> 把未武裝靜默、start 前置(含逐 T 欄位/Files 正規化/clean-start)、PreToolUse、prebash 圍欄、allow、postbash 偵測網(含 ambient metadata 與契約 hash)、fail-closed、stop 後沉睡固化。自建 temp repo、跑完自清,任何時候可重驗</td></tr>
     <tr><td><strong>Red team 對抗測試 + 修復</strong>(2026-07-28)</td><td class="ok">獨立 agent 打 11 個繞過向量,找到 8 個洞 → 全數修復並回歸驗證:exec.json 自我加寬(V1)/ 旗標刪除自我停權(V8)/ 旗標損壞 fail-open(V11)→ 改 <strong>fail-CLOSED</strong> + git-dir sentinel;跨 slug 契約污染(V10)→ 保護所有 feature 的 1/2/3/4;symlink 詭計(V2)→ realpath;gitignore 遮蔽(V4)→ <code>--ignored=matching</code> + 禁改 .gitignore;預埋髒檔改寫(V3c)→ baseline 存內容 hash;shell <code>cat</code> 讀上游(V7)→ 新增 PreToolUse Bash 圍欄;另加契約 hash 釘住(執行期 spec 被任何方式改動即抓)、scope 過寬警告、allow 強制 --reason</td></tr>
   </table></div>
 
@@ -99,7 +99,7 @@ jq '.plugins[].name' ~/.claude/plugins/local/.claude-plugin/marketplace.json
 jq '.enabledPlugins | with_entries(select(.key|test("dev-")))' \
   ~/.claude/settings.json ~/.claude-team/settings.json
 
-# 執行守衛全情境自測(可重跑;自建 temp 假 repo 跑 33 案後自清)
+# 執行守衛全情境自測(可重跑;自建 temp 假 repo 跑動態發現的案例後自清)
 ~/.claude/plugins/local/dev-flow/hooks/selftest.sh        # -v 看逐案明細
 
 # devtalk-guard 單案自測(期望:exit 0)

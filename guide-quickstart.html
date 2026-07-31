@@ -83,7 +83,7 @@
   <p class="muted">Fast lane 省略 Stage 1–3;它的 mini Stage 5 仍直接用
   <code>_templates/5-tasks.md</code>,可只寫一個 T,但 <code>Covers</code>、<code>Files</code>、
   <code>Verify</code>、<code>Blocked-by</code> 必填,才能供 <code>devflow-exec.sh start &lt;slug&gt;</code>
-  照常解析 scope。</p>
+  逐 T 驗證並照 Git repository root 相對路徑解析 scope。</p>
 
   <blockquote>本頁指令分兩種管道,下文用固定標籤區分:<br>
   <span class="badge you">跟 AI 說</span> —— 對話裡打的觸發語(<code>dev-setup</code>、<code>/dev-talk …</code>、
@@ -319,8 +319,9 @@ cd &lt;path&gt;
   <div class="tablewrap"><table>
     <tr><th>動作</th><th>指令</th><th>用途</th></tr>
     <tr><td><code>start</code></td><td><code>devflow-exec.sh start &lt;slug&gt;</code></td>
-        <td>驗 4-spec 存在且 <code>status: approved</code>、5-tasks 存在且能解析出 Files 聯集當 scope
-        —— 四項缺一即<strong>拒絕</strong>;通過後才記錄 baseline 與契約 hash、寫 sentinel。</td></tr>
+        <td>驗 4-spec 存在且 <code>status: approved</code>、逐 T 驗 Covers/Files/Verify/Blocked-by,
+        再把 Git repository root 相對的 Files 聯集正規化成 scope。scope 外的真實髒檔會<strong>拒絕</strong>
+        start(先 commit/還原/換乾淨 worktree),不會被收進 baseline;通過後才記錄 scope 內 baseline、契約 hash、寫 sentinel。</td></tr>
     <tr><td><code>status</code></td><td><code>devflow-exec.sh status</code></td>
         <td>查目前武裝的 slug/scope/extra 數與 sentinel 是否在;旗標存在 &gt;24h 會警告。</td></tr>
     <tr><td><code>allow</code></td><td><code>devflow-exec.sh allow &lt;file&gt; --reason "D-n …"</code></td>
@@ -372,6 +373,10 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
       <li><code>.gitignore</code> 執行期被改 → 擋(改忽略規則會讓偵測網失明)→ 停下回報使用者</li>
       <li>postbash 偵測網(每次 Bash 後跑,事後偵測):抓「經 shell 繞過」的契約 hash 變動與 scope 外改動,
         exit 2 印到 stderr,處置同上兩張卡(契約變動 = L2 stop;scope 外 = L1 allow 或 L2 stop)</li>
+      <li><strong>ambient metadata</strong>:任何深度的 <code>.DS_Store</code>、basename 為
+        <code>._*</code>、<code>Thumbs.db</code>、<code>__pycache__/</code>、<code>*.pyc</code>
+        不進 baseline,也不擋 start 或 postbash、不需 allow;這只是檔案系統雜訊。其他真正的
+        tracked/untracked/ignored scope 外檔仍會擋,守衛不把 <code>.gitignore</code> 當成政策介面。</li>
       <li><strong>shell 圍欄</strong>(<code>devflow-prebash.sh</code>,PreToolUse Bash,事前擋):
         Bash 指令若含上游討論檔路徑(<code>cat docs/dev/*/1-discussion.md</code> 之類)→ 擋,
         等同圍欄② 的 shell 版;指令若試圖 <code>rm</code>/覆寫 <code>.devflow/</code> 或 sentinel → 擋。
@@ -383,7 +388,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   <p class="muted">守衛共四條掛載:<code>devflow-guard</code>(Edit|Write|Read)、
   <code>devflow-prebash</code>(Bash 事前)、<code>devflow-postbash</code>(Bash 事後偵測)、
   <code>devtalk-guard</code>(盲原則)。想確認整套沒壞:跑
-  <code>~/.claude/plugins/local/dev-flow/hooks/selftest.sh</code>(33 案自測,自建 temp repo 後自清)。</p>
+  <code>~/.claude/plugins/local/dev-flow/hooks/selftest.sh</code>(動態發現所有案例,自建 temp repo 後自清)。</p>
 
   <h2 id="models">④ 模型分層速查</h2>
   <p>對照 README §9。</p>
@@ -425,18 +430,27 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   <p>修法:確認沒人在跑該 feature 後,跑 <code>devflow-exec.sh stop</code> 清掉,需要時重新 <code>start</code>。</p>
 
   <h3>5-tasks 的 Files 格式怎麼寫(機械可解析)?</h3>
-  <pre>- Files: src/api/export.ts, src/api/export.test.ts
-- Files: src/jobs/</pre>
-  <p>逗號分隔多檔;整個目錄要收作前綴放行,<strong>目錄結尾要加 <code>/</code></strong>(如
-  <code>src/jobs/</code> 會放行該目錄下所有檔案)。5-tasks 全篇至少要有一條可解析的 Files,
-  否則 <code>start</code> 直接拒絕:「5-tasks 無可解析的 Files 條目」。</p>
+  <pre>## T-1 export
+- Covers: R-1 / S-1
+- Files: ./src/api/export.ts, src/api/export.test.ts
+- Verify: `npm test -- export`
+- Blocked-by: —</pre>
+  <p>每個 <code>## T-n</code> 都必填 Covers、Files、Verify、Blocked-by。Files 逗號分隔多檔;
+  整個目錄要收作前綴放行,<strong>目錄結尾要加 <code>/</code></strong>(如 <code>src/jobs/</code>
+  會放行該目錄下所有檔案)。Files 一律以 <strong>Git repository root</strong> 為相對根:
+  <code>./src/api/export.ts</code> 會正規化為 <code>src/api/export.ts</code>,不可寫絕對路徑、
+  <code>..</code> traversal、空值或含糊的 root。monorepo 中 <code>internal/x_test.go</code> 與
+  <code>backend-go/internal/x_test.go</code> 是兩個不同 scope;前者不會放行後者。planned new file
+  可直接列入,不必先存在。</p>
 
   <h3>scope 太寬的警告怎麼處理?</h3>
   <p>只有 Files 值(去掉頭尾斜線後)命中固定字集
-  <code>{"", ".", "docs", "src", "app", "lib"}</code> 才會觸發 —— 這是<strong>警告,不是硬擋</strong>,
+  <code>{"docs", "src", "app", "lib"}</code> 才會觸發 —— 這是<strong>警告,不是硬擋</strong>,
   <code>start</code> 仍會成功,只是等於整個目錄都在 scope 內,guard 形同虛設。
   建議回 5-tasks 把 Files 收斂到實際會動的檔案,再重新 <code>start</code>。
-  沒命中固定字集的「寬」(例如某個很大的子目錄)不會被這條規則抓到,靠 5-tasks 撰寫時自己把關。</p>
+  <code>""</code>、<code>"."</code> 與任何正規化後指向 repository root 的條目是<strong>硬拒絕</strong>,
+  不是 scope 過寬警告。沒命中固定字集的「寬」(例如某個很大的子目錄)不會被這條規則抓到,
+  靠 5-tasks 撰寫時自己把關。</p>
 
   <h3>既有 external workflow artifacts 會被改動嗎?</h3>
   <p>不會。<code>dev-setup</code> install 會保留所有未識別的外部 workflow 目錄與產物:
