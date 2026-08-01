@@ -28,15 +28,21 @@ set -eu
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 export DEVFLOW_EG_VERSION="0.1.0"
 
+usage_error() {
+  echo "usage error: $1" >&2
+  echo "usage: devflow-evidence-gauntlet.sh <file.md> [--source-sha <sha>] [--require-layer <名>]... [--review-file] [--report <path>]" >&2
+  exit 2
+}
+
 TARGET="" SOURCE_SHA="" REVIEW_FILE="0" REPORT=""
 REQUIRE_LAYERS=()
 while [ $# -gt 0 ]; do
   case "$1" in
-    --source-sha) SOURCE_SHA="$2"; shift 2 ;;
-    --require-layer) REQUIRE_LAYERS+=("$2"); shift 2 ;;
+    --source-sha) [ $# -ge 2 ] || usage_error "$1 缺值"; SOURCE_SHA="$2"; shift 2 ;;
+    --require-layer) [ $# -ge 2 ] || usage_error "$1 缺值"; REQUIRE_LAYERS+=("$2"); shift 2 ;;
     --review-file) REVIEW_FILE="1"; shift ;;
-    --report) REPORT="$2"; shift 2 ;;
-    -*) echo "unknown flag: $1" >&2; exit 2 ;;
+    --report) [ $# -ge 2 ] || usage_error "$1 缺值"; REPORT="$2"; shift 2 ;;
+    -*) usage_error "unknown flag: $1" ;;
     *) TARGET="$1"; shift ;;
   esac
 done
@@ -92,8 +98,12 @@ def section(heading):
     return match.group(1) if match else None
 
 
-def table_rows(body, expected_cols):
-    """抽 markdown 表資料列(略過表頭與分隔列),回傳 list[list[str]]。"""
+def table_rows(body, expected_cols, table_label):
+    """抽 markdown 表資料列(略過表頭與分隔列),回傳 list[list[str]]。
+
+    fail-closed(E13):欄數 ≠ expected_cols 的表列是明確 error,不得靜默丟列 ——
+    否則 fail 列只要 Result 多打一個 `|` 就整列被吞、E6 不觸發(anti-gaming 漏洞)。
+    """
     rows = []
     for line in (body or "").splitlines():
         stripped = line.strip()
@@ -103,6 +113,9 @@ def table_rows(body, expected_cols):
         if all(re.fullmatch(r":?-+:?", c) for c in cells if c):
             continue  # 分隔列
         if len(cells) != expected_cols:
+            check("E13", False,
+                  f"{table_label} malformed 表列(欄數 {len(cells)} ≠ {expected_cols},"
+                  f"不得靜默略過;儲存格內勿用原生 `|`):{stripped}")
             continue
         rows.append(cells)
     return rows[1:] if rows else []  # rows[0] = 表頭
@@ -119,17 +132,38 @@ if evidence is not None:
         headers[field] = value
         check("E1", bool(value), f"header 欄「{field}」缺漏或為空")
 
-layers = table_rows(evidence, 5) if evidence is not None else []
+layers = table_rows(evidence, 5, "Verification Evidence") if evidence is not None else []
 check("E1", bool(layers), "Layer 表缺漏或無資料列(| Layer | Command | Status | Result | Skipped reason |)")
 
 # ---- E2 source SHA 綁定(Final Fresh Run 晚於最後修改的機械化身)----
+# m1 加嚴:比對取宣告值的前導 hex token(容許尾隨註記),且兩端 token 皆須 ≥7 字元
+# 才可比對 —— 否則「Source SHA: f」對任何 f 開頭的 SHA 互為前綴即過,綁定失效。
+SHA_MIN = 7
 declared_sha = headers.get("Source SHA", "")
-if expected_sha and declared_sha:
-    matched = declared_sha == expected_sha or \
-        declared_sha.startswith(expected_sha) or expected_sha.startswith(declared_sha)
-    check("E2", matched,
-          f"stale evidence:宣告 Source SHA「{declared_sha}」≠ 當下「{expected_sha}」"
-          "(evidence 產生後 source 又動過,必須重跑 Final Fresh Run)")
+
+
+def sha_token(value):
+    match = re.match(r"[0-9a-fA-F]+", value)
+    return match.group(0) if match else ""
+
+
+declared_token = sha_token(declared_sha)
+if declared_sha:
+    check("E2", len(declared_token) >= SHA_MIN,
+          f"宣告 Source SHA「{declared_sha}」的 hex 前綴長度 {len(declared_token)} "
+          f"< {SHA_MIN},不足以可靠綁定,拒絕比對")
+if expected_sha:
+    expected_token = sha_token(expected_sha)
+    check("E2", len(expected_token) >= SHA_MIN,
+          f"--source-sha「{expected_sha}」的 hex 前綴長度 {len(expected_token)} "
+          f"< {SHA_MIN},不足以可靠綁定,拒絕比對")
+    if len(declared_token) >= SHA_MIN and len(expected_token) >= SHA_MIN:
+        matched = declared_token == expected_token or \
+            declared_token.startswith(expected_token) or \
+            expected_token.startswith(declared_token)
+        check("E2", matched,
+              f"stale evidence:宣告 Source SHA「{declared_token}」≠ 當下「{expected_token}」"
+              "(evidence 產生後 source 又動過,必須重跑 Final Fresh Run)")
 
 # ---- E3–E9 逐層 ----
 fraction = re.compile(r"(\d+)\s*/\s*(\d+)")
@@ -175,7 +209,7 @@ negative = section("Negative Constraint Mapping")
 check("E10", negative is not None,
       "缺「## Negative Constraint Mapping」節(negative constraint 不得靜默消失)")
 if negative is not None:
-    negative_rows = table_rows(negative, 3)
+    negative_rows = table_rows(negative, 3, "Negative Constraint Mapping")
     check("E10", bool(negative_rows), "Negative Constraint Mapping 無資料列")
     for constraint, mapped, status in negative_rows:
         check("E10", status in STATUSES,
