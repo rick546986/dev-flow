@@ -95,8 +95,8 @@
 <h2>Verification Evidence</h2>
 <p>(以下為<strong>示範值</strong> —— 實案由執行清單 2c 的 Final Fresh Run 產出:Source SHA 必須
 = 當下 <code>git rev-parse HEAD</code>,並跑
-<code>scripts/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD) --review-file</code>
-全綠才算完成。)</p>
+<code>scripts/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD) --review-file --require-layer &quot;Full test suite&quot; --require-layer &quot;Changed-line coverage&quot; --require-layer &quot;Real execution&quot;</code>
+(Required 層 = 4-spec Verification Profile 所列,逐層一個 flag)全綠才算完成。)</p>
 <ul>
 <li>Source SHA: f92c1d5(示範值 = T-7 commit;實案填 Final Fresh Run 當下 HEAD)</li>
 <li>Final Fresh Run ID: 2026-07-23T1710+08-r1(示範值)</li>

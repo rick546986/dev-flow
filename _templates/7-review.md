@@ -28,7 +28,9 @@ updated:
 > 2c. **Final Fresh Run**:確認 Verification Evidence 節由 4-spec Verification Profile
 >    指名的 entry point 一次 fresh run 產出、Source SHA = 當下 HEAD;跑
 >    `scripts/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD)
->    --review-file` 全綠。完成 = gauntlet 輸出在案。
+>    --review-file --require-layer <Profile Required 層,逐層一個 flag>` 全綠
+>    (Required 層須逐層帶入命令,未實跑由機械擋下,不靠自律)。
+>    完成 = gauntlet 輸出在案。
 > 2d. **Operational Walkthrough**:以各 S 的 Operational Context 為腳本親自走一遍
 >    「人的工作」,逐列檢查六條 —— 技術上通過但人無法完成工作 / 看得到但沒有決策權 /
 >    系統把等待誤標為完成 / 系統外動作無法追蹤 / 使用者中斷後無法恢復 / 資訊過期、

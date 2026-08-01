@@ -22,8 +22,8 @@ updated: 2026-07-23
 ## Verification Evidence
 (以下為**示範值** —— 實案由執行清單 2c 的 Final Fresh Run 產出:Source SHA 必須
 = 當下 `git rev-parse HEAD`,並跑
-`scripts/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD) --review-file`
-全綠才算完成。)
+`scripts/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD) --review-file --require-layer "Full test suite" --require-layer "Changed-line coverage" --require-layer "Real execution"`
+(Required 層 = 4-spec Verification Profile 所列,逐層一個 flag)全綠才算完成。)
 - Source SHA: f92c1d5(示範值 = T-7 commit;實案填 Final Fresh Run 當下 HEAD)
 - Final Fresh Run ID: 2026-07-23T1710+08-r1(示範值)
 - Entry point: `go test ./... && npm test && npx playwright test`
