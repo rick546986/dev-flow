@@ -31,9 +31,16 @@
 | example {1,4}-discussion/spec html + 3-prototype.html(新) | AI 手工 twin 依 README §6 + html-shell.html 重生/新建 | B |
 | scripts/check-vnext-integration.sh(新) | 最薄整合案例(Step 10):T-1/T-2 平行→Candidate→Gate→integration DAG→per-task verdict→Final Fresh Gauntlet→Stage 7 PASS,串 A contract_ref + C schema/events + D gauntlet | Prompt 0 第十步 |
 
+## 補充決策(Step 11 review 後;2026-08-02)
+
+- **ID-10** D/C 事件契約合流(R2 Major-3):`agent-event.schema.json` 擴 `final_fresh_run_started/completed` 兩事件;`verification_layer_*` 欄位支持 Evidence 四值 `status`(pass/fail/unverified/n-a)+ `command_ref/result_summary/artifact_ref/source_sha`,與既有 `result(PASS|FAIL)` 的相容方案由 C 實作定案並以測試釘住;D 設計文件同步引用最終欄名。單一正本 = schema JSON。
+- **ID-11** `notes/verification-benchmark-2026-08.md` 為 2026-08 對標的**歷史紀錄**,不因四軌改寫結論;檔首加一行 vnext 指引即可(R2 Minor-1 處置)。
+- **ID-12** 消除第二套 G2 定義(R1 Blocker B1):`_templates/4-spec.md` 步 6 與 README §5「Demo verdict gate」句改寫為「審查範圍/流程規則」措辭,明示 gate 條件正本唯 README §7;「Verification Profile 審查」與「Stage 3 Demo verdict」**是否升格為 G2 正式條件(加粗入 §7 + plugin gate-consistency 連動)**列 Owner Call。
+
 ## Owner Call 彙整(待 rick,不代答)
 
 1. (D)G3 條件是否升格納「Evidence 契約全過」粗體錨(連動 plugin gate-consistency)。
+1b. (ID-12)G2 條件是否升格納「Verification Profile 審查」「Demo verdict ACCEPTED」(同樣連動 gate-consistency;未升格前以階段執行清單強制)。
 2. (D)Verification Profile:Full lane 必填/Fast lane 選配?(D 建議:Full 必填、Fast 僅 Risk: high 填)
 3. (A)DD-1「同 Wave 同 Base SHA」追認。
 4. (C)Retention:歸檔位置(user 層 vs repo docs/dev/…)/保存期限(提案 180 天)/是否納備份。

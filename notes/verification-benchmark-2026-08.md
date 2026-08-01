@@ -1,5 +1,7 @@
 # 驗證機制對標記錄(2026-08-01)
 
+> 2026-08-02 註:本檔為 2026-08 對標的歷史紀錄,結論不隨後續改造改寫;四軌(並行/真實互動/ledger/gauntlet)落地現況見 notes/change-manifests/(ID-11)。
+
 > 目的:回答「dev-flow 的驗證環節為什麼長這樣」。本檔是**設計依據記錄**,不是規則
 > 正本 —— 規則正本在 README §5「驗證五律」、§9、`_templates/6/7` 與 dev-run SKILL。
 > 對標對象:openspec(Fission-AI)、superpowers(obra)、mattpocock/skills、
