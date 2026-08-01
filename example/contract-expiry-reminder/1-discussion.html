@@ -36,6 +36,10 @@
   .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
   .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
   .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+  details{margin:.6em 0}
+  details>summary{cursor:pointer;color:var(--muted)}
+  .del{display:block;color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,transparent)}
+  .add{display:block;color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,transparent)}
 </style>
 </head>
 <body>
@@ -50,21 +54,159 @@
 <li>現有 dashboard 頁面有空白卡片區(前端 <code>src/pages/Dashboard.tsx</code>)。</li>
 <li>量級:活躍合約約 8,000 筆。</li>
 </ul>
+<h2>Real-world Context</h2>
+<h3>Actors</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Actor</th>
+<th>真實目標</th>
+<th>權限</th>
+<th>掌握資訊</th>
+<th>缺少資訊</th>
+<th>系統外工具</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>負責業務 <code>&lt;owner&gt;</code></td>
+<td>客戶合約不中斷、續約業績達標</td>
+<td>讀寫名下合約;不可代表公司拍板非標準價格</td>
+<td>名下合約清單、對方窗口聯絡方式</td>
+<td>到期日近況(靠記憶/Excel)、法務審閱進度</td>
+<td>Excel 私表、Email、電話、LINE</td>
+</tr>
+<tr>
+<td>業務主管</td>
+<td>團隊零漏約、掌握續約風險</td>
+<td>讀全團隊合約;核准非標準條件與「已續約」定案</td>
+<td>團隊業績目標</td>
+<td>個別合約到期日、業務手上跟催進度</td>
+<td>Email、週會口頭回報</td>
+</tr>
+<tr>
+<td>法務</td>
+<td>條款風險守門</td>
+<td>系統外(只審條款,無 CRM 帳號)</td>
+<td>合約條款範本、風險清單</td>
+<td>商務背景、急迫度</td>
+<td>Email、Word 修訂</td>
+</tr>
+<tr>
+<td>外部窗口(客戶/供應商)</td>
+<td>對己方有利的續約條件</td>
+<td>系統外(無任何系統存取)</td>
+<td>己方立場與時程</td>
+<td>我方內部流程</td>
+<td>Email、電話</td>
+</tr>
+</tbody>
+</table></div>
+<h3>Current Journey</h3>
+<p>(現況,無此功能時;訪談以「最近一次快到期的合約」實例還原)</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Step</th>
+<th>誰</th>
+<th>真實動作</th>
+<th>使用工具</th>
+<th>等待誰</th>
+<th>系統留下什麼</th>
+<th>痛點</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>負責業務</td>
+<td>月初翻 Excel 私表比對到期日</td>
+<td>Excel</td>
+<td>—</td>
+<td>無</td>
+<td>私表更新靠自律,常漏</td>
+</tr>
+<tr>
+<td>2</td>
+<td>負責業務</td>
+<td>問主管「這家要不要續」</td>
+<td>LINE/口頭</td>
+<td>業務主管</td>
+<td>無</td>
+<td>口頭交辦無紀錄</td>
+</tr>
+<tr>
+<td>3</td>
+<td>業務主管</td>
+<td>要求法務先看條款</td>
+<td>Email 轉寄合約</td>
+<td>法務</td>
+<td>無</td>
+<td>法務回覆要等,進度不可見</td>
+</tr>
+<tr>
+<td>4</td>
+<td>負責業務</td>
+<td>電話聯絡供應商窗口談條件</td>
+<td>電話</td>
+<td>外部窗口</td>
+<td>無</td>
+<td>口頭約定無留痕</td>
+</tr>
+<tr>
+<td>5</td>
+<td>負責業務</td>
+<td>談成後改 Excel 標「已續」</td>
+<td>Excel</td>
+<td>—</td>
+<td>續約完成後合約資料才回系統</td>
+<td>中間過程系統全程不可見</td>
+</tr>
+</tbody>
+</table></div>
+<h3>Workarounds</h3>
+<ul>
+<li>Excel 私表(每人一份、格式不一)追到期日;LINE 群裡喊「XX 合約快到了」。</li>
+<li>法務審閱走 Email 附件往返,版本散在信箱。</li>
+<li>Step 2-4 全程沒有留下系統紀錄;負責人請假或離職,進度只能口頭重問。</li>
+</ul>
+<h3>Exceptions</h3>
+<ul>
+<li>主管休假 → 代理主管口頭核,事後常忘了補知會。</li>
+<li>法務超過一週未回 → 業務電話催,或主管特批「先口頭續、條款後補」(實際做法跳過法務;正式 SOP 是先法務後簽,兩者都記)。</li>
+<li>供應商不回覆 → 擱置無提醒,直到客訴或斷約才發現。</li>
+<li>合約缺 <code>end_date</code>(歷史資料)→ Excel 上手填猜測值。</li>
+<li>同客戶多合約、多業務共管 → 誰跟催靠口頭認領,曾重複聯絡同一窗口。</li>
+<li>續約談到一半負責人離職 → 改派後新業務從 Email 考古,常斷線。</li>
+</ul>
+<h3>Evidence</h3>
+<ul>
+<li>訪談:2 位業務 + 業務主管,各以「最近一次真的發生時怎麼處理」走完上表(2026-07-22)。</li>
+<li>實際案例:上季漏約 2 件的事後檢討(週會紀錄)。</li>
+<li>去識別化 log:某業務 Excel 私表(去客戶名)佐證 Step 1/5。</li>
+<li>SOP:續約簽核辦法(正式流程=先法務後簽;與 Exceptions 記錄的實際做法並列)。</li>
+<li>[Assumption] 法務平均回覆 3 天:僅主管口述印象,未取 Email 時間戳驗證。</li>
+<li>[Assumption] 共管重複聯絡「約一季一次」:無記錄,僅訪談印象。</li>
+</ul>
 <h2>Goals</h2>
 <ul>
 <li>業務登入後,不用翻任何清單就能看到「30 天內到期」的合約。</li>
 <li>點擊可直達該合約詳情。</li>
+<li>續約處理進行到哪(等待法務/等待主管/已聯絡供應商)有一眼可見的目前狀態與下一步,不再靠記憶與 Excel。</li>
 </ul>
 <h2>Non-Goals(初稿)</h2>
 <ul>
 <li>email / LINE 通知(之後再議)。</li>
 <li>自訂提醒天數。</li>
+<li>法務簽核流程系統化、自動寄信給法務/供應商(本期只記錄狀態與下一步,不做 workflow 引擎)。</li>
 </ul>
 <h2>Open Questions</h2>
 <ul>
 <li>[x] Q1:提前幾天算「即將到期」?→ 30 天(業務主管拍板,寫入 CONTEXT.md「Expiring」)</li>
 <li>[x] Q2:誰要看到?→ 只有該合約負責業務 + 主管</li>
 <li>[x] Q3:站內顯示還是 email?→ 本期只做站內 dashboard</li>
+<li>[x] Q4:「看過提醒」算處理了嗎?→ 不算。看過不改變狀態;狀態只由明確標記改變(防「看過=完成續約」誤判)</li>
+<li>[x] Q5:誰能改處理狀態?→ 負責業務與其主管;「已續約」僅主管可標(對應核准權)</li>
 </ul>
 <h2>Constraints</h2>
 <ul>
@@ -94,10 +236,27 @@
 <li>拿什麼資料試:沿用 AC-1 的合約 C,使其先出現在到期卡片。</li>
 </ul>
 </li>
+<li>AC-4(Goal 3):負責業務可將到期合約標記處理狀態(等待法務/等待主管/已聯絡供應商/不續約;「已續約」僅主管可標),卡片顯示目前狀態與下一步。
+<ul>
+<li>從哪看:dashboard 到期卡片合約 C 那一列的狀態欄與下一步欄。</li>
+<li>看到什麼算對:標「等待法務」後,該列顯示狀態「等待法務」、下一步「等法務回覆條款」與最後動作時間。</li>
+<li>拿什麼資料試:AC-1 的合約 C,由 <code>&lt;owner&gt;</code> 將狀態標為「等待法務」。</li>
+</ul>
+</li>
+<li>AC-5(Goal 3):開啟/看過卡片不改變處理狀態;狀態僅由明確標記動作改變。
+<ul>
+<li>從哪看:合約 C 那一列的狀態欄。</li>
+<li>看到什麼算對:<code>&lt;owner&gt;</code> 開啟 dashboard 看過卡片兩次後,C 狀態仍為「未處理」,無任何自動變更。</li>
+<li>拿什麼資料試:AC-1 的合約 C,開 dashboard 兩次、不做標記動作。</li>
+</ul>
+</li>
 </ul>
 <h2>邏輯圖(ASCII)</h2>
 <pre><code>登入 → dashboard 載入 → 查 expiring(end_date - today ≤ 30 且未續約)
-                          ├─ 有 → 卡片列出(名稱 + 剩餘天數)→ 點擊 → 詳情頁
+                          ├─ 有 → 卡片列出(名稱 + 剩餘天數 + 狀態 + 下一步)
+                          │        ├─ 點擊列 → 詳情頁
+                          │        └─ 標記狀態(等待法務/等待主管/已聯絡供應商/…)
+                          │             └─ 看過不改狀態;只有標記動作改狀態
                           └─ 無 → 空狀態「近期無到期合約」
 </code></pre>
 <h2>Interview Log(三段結論)</h2>
@@ -105,6 +264,7 @@
 <li>explore:現況無任何通知/排程機制;dashboard 是最低成本的呈現面。</li>
 <li>grill-with-docs:逼出「Expiring」精確定義(30 天 + 未續約),新增 CONTEXT.md 詞條 Expiring、Renewal。</li>
 <li>brainstorming:方向收斂為「登入時即時查詢」優先,cron 留作後手 → 進 2-decision 比較。</li>
+<li>real-world:以「最近一次」實例還原 Journey(Excel/LINE/Email/電話全在系統外);正式 SOP(先法務後簽)與實際做法(急件先口頭續)不同,兩者都記;無紀錄斷點=Step 2-4 → 催生 Goal 3 與 Q4/Q5。</li>
 </ul>
 </main>
 </body>
