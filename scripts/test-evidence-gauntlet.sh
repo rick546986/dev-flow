@@ -70,9 +70,12 @@ run_case "宣告 SHA 與當下 SHA 不符 = stale evidence(E2)" 1 "E2" \
 run_case "header 欄位缺漏(E1)" 1 "E1" "$FIX/bad-missing-header.md"
 
 echo "== 二/四.Required layers(Verification Profile 對照)=="
-run_case "required layer 缺席(E7)" 1 "E7" \
+# Race/stress 在 fixture 內是 unverified:required 層必須實跑,unverified 不滿足
+run_case "required layer 未實跑(unverified 不滿足 required,E7)" 1 "E7" \
   "$FIX/good-evidence.md" --require-layer "Race/stress"
-run_case "required layer 在場則過" 0 "-" \
+run_case "required layer 完全缺席(E7)" 1 "E7" \
+  "$FIX/good-evidence.md" --require-layer "Fuzzing"
+run_case "required layer 實跑 pass 則過" 0 "-" \
   "$FIX/good-evidence.md" --require-layer "Mutation"
 
 echo "== 八.changed-line coverage:列 covered/total,禁全域 % 虛榮數字 =="
