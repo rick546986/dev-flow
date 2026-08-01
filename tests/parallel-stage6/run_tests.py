@@ -13,6 +13,8 @@ import json
 import os
 import sys
 
+sys.dont_write_bytecode = True  # 不落 __pycache__,保持工作樹乾淨
+
 ROOT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIX = os.path.join(HERE, "fixtures")
