@@ -1,0 +1,9 @@
+{
+ "schema": "devflow-run-manifest/1",
+ "run_id": "run_01JG8C4V2M0000000000000R01",
+ "feature_slug": "contract-expiry-reminder",
+ "base_sha": "90d30e8",
+ "workspace": "wt-main",
+ "started": "2026-08-01T09:00:00+08:00",
+ "note": "示範 fixture:T-1 升階後過、T-2 crash(incomplete attempt)。"
+}
