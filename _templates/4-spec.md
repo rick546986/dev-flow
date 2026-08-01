@@ -48,6 +48,14 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 >    完成 = verdict+三連動。
 >
 > 起草前估 S 數,單份 >~40 → 先切片(見 README §14)。
+>
+> Operational Context(承接 1-discussion Real-world Context 與 3-prototype Demo 回饋):
+> 涉人員操作/交接/等待/權限的重要 S 必附(欄位見 S-1 樣板);純內部行為 S 寫
+> 「不適用 + 一句理由」。每個重要 S 須同時答得出五問 —— 系統要做什麼?人看到後要做
+> 什麼?誰有權決定?哪些事情不在系統內發生?外部事情沒完成時,系統顯示什麼?
+> Operational Context 附著於 S-id,不另發 Journey/Actor/Interaction ID(單一 ID 鏈)。
+> 3-prototype 有 User Demo Feedback 時:Human verdict ≠ ACCEPTED → 相關互動 S 不得
+> 定案(列 Drafting Decisions 待裁決,或退回 Stage 3 重新 Demo)。
 
 ## ADDED Requirements
 <!-- Scenario 種子:先收割 1-discussion.md 的「驗收雛形」,逐條升級為正式 GWT -->
@@ -57,6 +65,20 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 - WHEN
 - THEN
 - 觀測(承接 1-discussion 驗收雛形;7 據此驗現象):從哪看 | 看到什麼算對 | 拿什麼資料試
+- Operational Context(涉人員操作/交接/等待/權限的重要 S 必填;純內部行為 S 寫「不適用+理由」):
+  - Actor:
+  - Goal:
+  - Situation:
+  - Known information:
+  - Missing information:
+  - Human decision:
+  - Authority:
+  - External dependency:
+  - Out-of-system action:
+  - Waiting/timeout behavior:
+  - Recovery:
+  - Audit/handoff requirement:
+  - Observation:
 
 ## MODIFIED Requirements
 <!-- 引 living spec 原條文,標出改什麼 -->
