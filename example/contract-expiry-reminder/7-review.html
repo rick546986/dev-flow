@@ -71,12 +71,136 @@
 <td>✅</td>
 </tr>
 <tr>
+<td>S-4</td>
+<td><code>TestRenewalStatus_S4</code>(Go)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>S-5</td>
+<td><code>TestRenewalStatus_S5_ViewDoesNotComplete</code>(Go)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>S-6</td>
+<td><code>ExpiringContractsCard &quot;S6 renewed-only-manager&quot;</code>(vitest)</td>
+<td>✅</td>
+</tr>
+<tr>
 <td>既有測試套件(回歸)</td>
 <td><code>go test ./... &amp;&amp; npm test</code></td>
 <td>✅</td>
 </tr>
 </tbody>
 </table></div>
+<h2>Verification Evidence</h2>
+<p>(以下為<strong>示範值</strong> —— 實案由執行清單 2c 的 Final Fresh Run 產出:Source SHA 必須
+= 當下 <code>git rev-parse HEAD</code>,並跑
+<code>scripts/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD) --review-file</code>
+全綠才算完成。)</p>
+<ul>
+<li>Source SHA: f92c1d5(示範值 = T-7 commit;實案填 Final Fresh Run 當下 HEAD)</li>
+<li>Final Fresh Run ID: 2026-07-23T1710+08-r1(示範值)</li>
+<li>Entry point: <code>go test ./... &amp;&amp; npm test &amp;&amp; npx playwright test</code></li>
+<li>Toolchain: go.mod + package-lock.json(pinned;go1.22 / node20)</li>
+</ul>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Command</th>
+<th>Status</th>
+<th>Result</th>
+<th>Skipped reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Full test suite</td>
+<td><code>go test ./... &amp;&amp; npm test</code></td>
+<td>pass</td>
+<td>58 passed, 0 failed</td>
+<td></td>
+</tr>
+<tr>
+<td>e2e</td>
+<td><code>npx playwright test</code></td>
+<td>pass</td>
+<td>3 passed(S-1/S-3 flow 含登入)</td>
+<td></td>
+</tr>
+<tr>
+<td>Types/compile</td>
+<td><code>tsc --noEmit</code></td>
+<td>pass</td>
+<td>0 errors in 14 files</td>
+<td></td>
+</tr>
+<tr>
+<td>Changed-line coverage</td>
+<td><code>go test -coverprofile</code> + <code>vitest --coverage</code></td>
+<td>pass</td>
+<td>76/76 changed lines covered</td>
+<td></td>
+</tr>
+<tr>
+<td>Real execution</td>
+<td><code>curl -s -X PATCH :8080/contracts/C.id/status</code></td>
+<td>pass</td>
+<td>HTTP 200,狀態=等待法務,歷程 1 筆</td>
+<td></td>
+</tr>
+<tr>
+<td>Rollback rehearsal</td>
+<td><code>make migrate-down &amp;&amp; make migrate-up</code>(staging snapshot)</td>
+<td>pass</td>
+<td>down/up 各 1 步 clean,0 orphan rows</td>
+<td></td>
+</tr>
+<tr>
+<td>Mutation</td>
+<td></td>
+<td>unverified</td>
+<td></td>
+<td>示範案例未跑 mutation 工具;實案依 4-spec Verification Profile 的 Required layers 決定</td>
+</tr>
+<tr>
+<td>Race/stress</td>
+<td></td>
+<td>n-a</td>
+<td></td>
+<td>無並發寫入路徑變更(狀態更新走單一交易)</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Negative Constraint Mapping</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Constraint</th>
+<th>Test/Layer</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>看過/任何 GET 路徑不得改狀態(S-5;1-discussion Q4)</td>
+<td><code>TestRenewalStatus_S5_ViewDoesNotComplete</code>(歷程零新增)</td>
+<td>pass</td>
+</tr>
+<tr>
+<td>非主管不得標「已續約」(S-6;1-discussion Q5)</td>
+<td><code>TestRenewalStatus_S4</code> 權限分支 + vitest <code>&quot;S6 renewed-only-manager&quot;</code></td>
+<td>pass</td>
+</tr>
+<tr>
+<td>不自動轉移狀態、不逾時升級(Out of Scope)</td>
+<td><code>grep -rn &quot;cron&quot; internal/</code> → 0 hits</td>
+<td>pass</td>
+</tr>
+</tbody>
+</table></div>
+<h2>執行記錄(dev-run 引擎案;手動實作留白)</h2>
+<p>(本例為手動實作 —— 無 dev-run ledger;依模板規則本節留白,不虛構模型歷史。)</p>
 <h2>現象證據(逐 S,對照 4-spec 的觀測欄)</h2>
 <div class="tablewrap"><table>
 <thead>
@@ -106,6 +230,106 @@
 <td>reviewer 點擊可見的 C,URL 為 <code>/contracts/C.id</code> 並顯示 C 詳情</td>
 <td>✅</td>
 </tr>
+<tr>
+<td>S-4</td>
+<td>C 列狀態欄/下一步欄與狀態歷程；標記後顯示「等待法務」「等法務回覆條款」與時間、歷程多一筆；用 S-1 的合約 C</td>
+<td>reviewer 以 <code>&lt;owner&gt;</code> 對 C 標「等待法務」,列即顯示狀態/下一步/最後動作時間;詳情頁歷程新增一筆(<code>&lt;owner&gt;</code>、時間、未處理→等待法務)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>S-5</td>
+<td>C 列狀態欄與狀態歷程;兩次開啟後仍「未處理」且歷程零新增;開 dashboard 兩次不標記</td>
+<td>reviewer 開 dashboard 兩次未做標記,C 仍「未處理」,<code>CountStatusHistory(C)</code> 回 0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>S-6</td>
+<td>C 列狀態選單與狀態欄;「已續約」灰階、提示字樣、狀態仍「已聯絡供應商」;非主管帳號對 S-4 的 C</td>
+<td>reviewer 以非主管 <code>&lt;owner&gt;</code> 開狀態選單,「已續約」灰階並顯示「已續約僅主管可標」,狀態不變、歷程零新增</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Operational Walkthrough</h2>
+<p>(reviewer 以各 S 的 Operational Context 為腳本親自走一遍「人的工作」;逐列檢查六條:
+技術上通過但人無法完成工作 / 看得到但沒有決策權 / 系統把等待誤標為完成 /
+系統外動作無法追蹤 / 使用者中斷後無法恢復 / 資訊過期、缺漏或多人同時操作)</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>S-id</th>
+<th>角色</th>
+<th>真實目標</th>
+<th>系統操作</th>
+<th>系統外步驟</th>
+<th>等待/例外</th>
+<th>結果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S-1</td>
+<td>負責業務</td>
+<td>登入第一眼決定今天跟催哪件</td>
+<td>開 dashboard 看到期卡片</td>
+<td>—</td>
+<td>多件同時到期逐列可見,含狀態與下一步</td>
+<td>✅ 人能完成工作</td>
+</tr>
+<tr>
+<td>S-2</td>
+<td>負責業務</td>
+<td>確認今天不需跟催</td>
+<td>開 dashboard 見空狀態</td>
+<td>—</td>
+<td>空狀態與錯誤呈現可區分</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>S-3</td>
+<td>—(純導覽)</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>不適用(無 Operational Context,理由見 4-spec S-3)</td>
+</tr>
+<tr>
+<td>S-4</td>
+<td>負責業務</td>
+<td>把「進行到哪、在等誰」移進系統</td>
+<td>對 C 標「等待法務」</td>
+<td>Email 合約給法務</td>
+<td>狀態停「等待法務」持續顯示,系統不自動轉移、不視為完成;標到一半關頁重開,狀態為最後成功標記值</td>
+<td>✅ 等待未被誤標完成;中斷可恢復</td>
+</tr>
+<tr>
+<td>S-4</td>
+<td>負責業務</td>
+<td>法務回覆後推進續約</td>
+<td>改標「等待主管」→「已聯絡供應商」</td>
+<td>電話聯絡供應商窗口</td>
+<td>系統外動作以「已聯絡供應商 + 誰 + 時間」留痕;改派後新業務讀歷程即可接手</td>
+<td>✅ 系統外動作可追蹤、交接不斷線</td>
+</tr>
+<tr>
+<td>S-5</td>
+<td>負責業務(下游:主管/接手業務)</td>
+<td>看過提醒不背「已處理」</td>
+<td>開 dashboard 兩次,不標記</td>
+<td>—</td>
+<td>「未處理」持續顯示直到明確標記;歷程零新增即為證據</td>
+<td>✅ 無「已讀即處理」假象</td>
+</tr>
+<tr>
+<td>S-6</td>
+<td>負責業務(嘗試者)/業務主管(有權者)</td>
+<td>結案定案權留在主管</td>
+<td>嘗試標「已續約」被拒(灰階 + 提示)</td>
+<td>LINE/口頭通知主管來標</td>
+<td>狀態停「已聯絡供應商」直到主管動作</td>
+<td>✅ 不暗示不存在的權限;被拒後知道找誰</td>
+</tr>
 </tbody>
 </table></div>
 <h2>Standards Axis</h2>
@@ -117,20 +341,23 @@ dashboard | 建議:<code>context.WithTimeout(ctx, 2s)</code>,下個 fast-lane �
 <ul>
 <li>R-1 符合(S-1/S-2 綠;空狀態文案同 spec)。</li>
 <li>R-2 符合(S-3 綠)。</li>
-<li>D-1 已如實記錄,判定正確(不動 R/S,屬 L1;避開了 migration)。</li>
+<li>R-3 符合(S-4/S-5/S-6 綠;歷程含誰/何時/舊→新,「已續約」僅主管與看過零變更行為同 spec)。</li>
+<li>D-1 已如實記錄,判定正確(不動 R/S,屬 L1;避開的是覆蓋索引 migration,
+<code>renewal_status</code> migration 為 4-spec Dependencies 明載的計畫內變更)。</li>
 </ul>
 <h2>變更架構圖</h2>
 <pre><code class="language-text">[Dashboard.tsx]
        |
        v
-[ExpiringContractsCard.tsx] -- click --&gt; [/contracts/:id]
-       |
-       v
-[GET /contracts/expiring]
-       |
-       v
-[handler] --&gt; [service] --&gt; [repo]
-                              |
+[ExpiringContractsCard.tsx] -- click --&gt; [/contracts/:id 詳情 + 歷程時間軸]
+       |         |
+       |         +-- mark status --&gt; [PATCH /contracts/:id/status]
+       v                                |
+[GET /contracts/expiring]               v
+       |                         [status handler] -- 權限檢查:已續約僅主管
+       v                                |
+[handler] --&gt; [service] --&gt; [repo]      v
+                              |  [status repo] --&gt; [renewal_status 欄 + 歷程表]
                               +--&gt; [idx_contracts_end_date]
 </code></pre>
 <h2>Diff(merge-base(develop)..HEAD,逐檔折疊)</h2>
@@ -164,15 +391,19 @@ dashboard | 建議:<code>context.WithTimeout(ctx, 2s)</code>,下個 fast-lane �
 <span class="add">+func (r *ContractRepo) FindExpiring(ctx context.Context, ownerID string, from, to time.Time) ([]Contract, error)</span></pre>
 </details>
 <details>
-<summary title="+8/-1; card list, empty state, navigation"><code>src/components/ExpiringContractsCard.tsx</code> (+8/-1; <code>ExpiringContractsCard</code>)</summary>
+<summary title="+12/-1; card list, empty state, navigation, status cell"><code>src/components/ExpiringContractsCard.tsx</code> (+12/-1; <code>ExpiringContractsCard</code>)</summary>
 <pre><span class="del">-export const ExpiringContractsCard = () =&gt; null</span>
-<span class="add">+export function ExpiringContractsCard({ contracts, navigate }: Props) {</span>
+<span class="add">+export function ExpiringContractsCard({ contracts, viewer, navigate }: Props) {</span>
 <span class="add">+  if (contracts.length === 0) return &lt;p&gt;近期無到期合約&lt;/p&gt;</span>
 <span class="add">+  return &lt;section aria-label="近期到期合約"&gt;</span>
 <span class="add">+    {contracts.map((contract) =&gt; (</span>
-<span class="add">+      &lt;button key={contract.id} onClick={() =&gt; navigate(`/contracts/${contract.id}`)}&gt;</span>
-<span class="add">+        {contract.name} · {contract.daysRemaining} 天</span>
-<span class="add">+      &lt;/button&gt;))}</span>
+<span class="add">+      &lt;row key={contract.id}&gt;</span>
+<span class="add">+        &lt;button onClick={() =&gt; navigate(`/contracts/${contract.id}`)}&gt;</span>
+<span class="add">+          {contract.name} · {contract.daysRemaining} 天&lt;/button&gt;</span>
+<span class="add">+        &lt;StatusCell status={contract.status} nextStep={contract.nextStep}</span>
+<span class="add">+          lastActionAt={contract.lastActionAt}</span>
+<span class="add">+          canMarkRenewed={viewer.isManager} /&gt; {/* 非主管:「已續約」灰階+提示 */}</span>
+<span class="add">+      &lt;/row&gt;))}</span>
 <span class="add">+  &lt;/section&gt; }</span></pre>
 </details>
 <details>
@@ -193,13 +424,62 @@ dashboard | 建議:<code>context.WithTimeout(ctx, 2s)</code>,下個 fast-lane �
 <span class="add">+  await expect(page).toHaveURL('/contracts/C.id')</span>
 <span class="add">+})</span></pre>
 </details>
+<details>
+<summary title="+10/-0; renewal_status enum + history table"><code>migrations/0007_renewal_status.sql</code> (+10/-0; <code>renewal_status</code>)</summary>
+<pre><span class="add">+CREATE TYPE renewal_status AS ENUM</span>
+<span class="add">+  ('未處理','等待法務','等待主管','已聯絡供應商','已續約','不續約');</span>
+<span class="add">+ALTER TABLE contracts</span>
+<span class="add">+  ADD COLUMN renewal_status renewal_status NOT NULL DEFAULT '未處理';</span>
+<span class="add">+CREATE TABLE contract_status_history (</span>
+<span class="add">+  contract_id  UUID REFERENCES contracts(id),</span>
+<span class="add">+  actor_id     UUID NOT NULL,</span>
+<span class="add">+  changed_at   TIMESTAMPTZ NOT NULL DEFAULT now(),</span>
+<span class="add">+  from_status  renewal_status NOT NULL,</span>
+<span class="add">+  to_status    renewal_status NOT NULL);</span></pre>
+</details>
+<details>
+<summary title="+14/-0; MarkStatus + StatusHistory handlers"><code>internal/handler/contract_status.go</code> (+14/-0; <code>MarkStatus</code>, <code>StatusHistory</code>)</summary>
+<pre><span class="add">+func (h *Handler) MarkStatus(w http.ResponseWriter, r *http.Request) {</span>
+<span class="add">+    actor := auth.Actor(r.Context())</span>
+<span class="add">+    req := decodeStatusRequest(r) // to_status(值域固定 6 值)</span>
+<span class="add">+    if req.To == "已續約" &amp;&amp; !actor.IsManager {</span>
+<span class="add">+        h.errors.Write(w, ErrManagerOnly) // S-6:已續約僅主管可標</span>
+<span class="add">+        return</span>
+<span class="add">+    }</span>
+<span class="add">+    result, err := h.status.Mark(r.Context(), req.ContractID, actor.ID, req.To)</span>
+<span class="add">+    if err != nil { h.errors.Write(w, err); return }; writeJSON(w, http.StatusOK, result) }</span>
+<span class="add">+func (h *Handler) StatusHistory(w http.ResponseWriter, r *http.Request) {</span>
+<span class="add">+    // GET 路徑:唯讀,零狀態寫入(S-5:看過 ≠ 處理)</span>
+<span class="add">+    rows, err := h.status.History(r.Context(), pathParam(r, "id"))</span>
+<span class="add">+    if err != nil { h.errors.Write(w, err); return }</span>
+<span class="add">+    writeJSON(w, http.StatusOK, rows) }</span></pre>
+</details>
+<details>
+<summary title="+16/-0; Mark 交易 + 歷程查詢"><code>internal/repo/contract_status.go</code> (+16/-0; <code>Mark</code>, <code>CountStatusHistory</code>)</summary>
+<pre><span class="add">+const markStatus = `UPDATE contracts SET renewal_status = $2,</span>
+<span class="add">+  last_action_at = now() WHERE id = $1 RETURNING renewal_status`</span>
+<span class="add">+const insertHistory = `INSERT INTO contract_status_history</span>
+<span class="add">+  (contract_id, actor_id, from_status, to_status) VALUES ($1,$2,$3,$4)`</span>
+<span class="add">+const countHistory = `SELECT COUNT(*) FROM contract_status_history</span>
+<span class="add">+  WHERE contract_id = $1`</span>
+<span class="add">+func (r *ContractStatusRepo) Mark(ctx context.Context, id, actorID string,</span>
+<span class="add">+    to Status) (StatusResult, error) {</span>
+<span class="add">+    // 單一交易:更新狀態 + 歷程一筆(誰/何時/舊→新)</span>
+<span class="add">+    return r.inTx(ctx, func(tx Tx) (StatusResult, error) {</span>
+<span class="add">+        prev := tx.CurrentStatus(id)</span>
+<span class="add">+        return tx.MarkAndLog(id, actorID, prev, to) }) }</span>
+<span class="add">+func (r *ContractStatusRepo) CountStatusHistory(ctx context.Context,</span>
+<span class="add">+    id string) (int, error)</span>
+<span class="add">+func (r *ContractStatusRepo) History(ctx context.Context,</span>
+<span class="add">+    id string) ([]StatusEvent, error)</span></pre>
+</details>
 <h2>Verdict</h2>
 <p><strong>PASS</strong>(F-1 為 🟡,開 fast-lane follow-up,不擋出貨)</p>
 <h2>Exit Checklist</h2>
 <ul>
-<li>[x] Quiz(不可逆改動必做;其餘 full lane 選配,fast 免):本次新增對外 API endpoint <code>GET /contracts/expiring</code>,shipped 後即成對外契約,移除屬破壞性變更 → 不可逆,Quiz 必做 —— AI 出 4 題(30 天定義來源/為何不做 email/D-1 為何不加索引/空狀態行為),<code>&lt;reviewer-a&gt;</code> 全對</li>
+<li>[x] Quiz(不可逆改動必做;其餘 full lane 選配,fast 免):本次新增對外 API endpoint(<code>GET /contracts/expiring</code>、<code>PATCH /contracts/:id/status</code>)與 <code>renewal_status</code> migration,shipped 後即成對外契約/schema,移除屬破壞性變更 → 不可逆,Quiz 必做 —— AI 出 5 題(30 天定義來源/為何不做 email/D-1 為何不加索引/空狀態行為/「已續約」為何僅主管),<code>&lt;reviewer-a&gt;</code> 全對</li>
 <li>[x] PR #142 → develop</li>
-<li>[x] 4-spec delta 已併入 <code>docs/specs/contracts.md</code>(R-1、R-2 貼入,標 source)</li>
+<li>[x] 4-spec delta 已併入 <code>docs/specs/contracts.md</code>(R-1~R-3 貼入,標 source)</li>
 <li>[x] STATUS.md 已更新為 shipped</li>
 <li>[x] 7-review frontmatter status: shipped;上游 artifact 保留 approved(各自 gate 核准紀錄,依 7-review 模板 Exit 規則)</li>
 <li>[x] 7-review.html 已產生(含變更架構圖 + diff 折疊)</li>
