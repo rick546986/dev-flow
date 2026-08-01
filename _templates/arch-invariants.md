@@ -6,6 +6,9 @@
 > **禁放**:流程規則(階段/gate/模板 —— 那是 SOP 的事,寫進來會破壞討論階段的隔離)、
 > 系統現況行為(那是 `docs/specs/` living spec 的事)、看目錄就知道的結構描述。
 > 每條盡量附「錯誤示範 → 正確做法」或檔案位置,一條 1-3 行。
+> **內容性質**:檔案「永生」(不隨 feature 封存)但內容**常態演進** —— codebase 變了
+> 規則會腐化,靠 `dev-setup refresh` 三向比對維護;每條增刪改由使用者**逐條核可**
+> 後才落檔(核可流程見 dev-setup SKILL),不是裝機時一次寫死。
 >
 > **檔案位置**:`.claude/rules/*.md` 是 Claude Code 官方的專案規則路徑,**無 `paths`
 > frontmatter 者每 session 自動載入**(與 `.claude/CLAUDE.md` 同優先級,`.md` 遞迴搜尋)。

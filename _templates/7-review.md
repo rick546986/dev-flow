@@ -11,6 +11,8 @@ updated:
 > 用途:**G3 出貨關卡**。雙軸審(mattpocock):Standards = 通用品質、Spec = 逐條對
 > 4-spec。本次 S 全綠 + **既有測試全綠(回歸)** + 無 🔴 才 PASS。過 gate 後產
 > 7-review.html 供報告。
+> 本階段固定產出:`7-review.md`(本模板全節)+ `7-review.html`(G3 必產;必含
+> 變更架構圖、F-id 分級表、現象證據表、全 branch diff 折疊 + 執行記錄表)。
 >
 > 執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併項):
 > 0. 角色+防錨定起手:審查者依序:適格人類 reviewer → fresh-context reviewer Agent →

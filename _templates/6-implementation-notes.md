@@ -9,6 +9,9 @@ updated:
 # 6. 實作筆記
 
 > 用途:實作期唯一日誌。TDD 證據 + 偏差記錄。reviewer 審之前先讀這份。
+> 本階段固定產出:`6-implementation-notes.md`(本模板全節)+ `6-implementation-notes.html`
+> (全 T 完成、bookkeeping commit 前必產;必含 T Review Log、Decisions+Deviations 表、
+> 每 T diff 折疊條)。
 > TDD 規則(superpowers):每個 S-id **先寫失敗測試**(RED,貼輸出摘要)→ 最小實作到
 > GREEN → refactor 保綠。沒看過測試失敗 = 不知道它測對東西。
 >

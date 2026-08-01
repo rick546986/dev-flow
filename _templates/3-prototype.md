@@ -12,6 +12,9 @@ updated:
 > branch,禁進 main**;純資料實驗(如複製 DB 查驗)→ 產物放 session scratchpad,
 > repo 零污染。LOGIC 疑問 → pure module + 最小介面驗證;UI 疑問 → 2-4 個結構
 > 不同的 variant(搭 superpowers visual companion 互動挑)。
+> 本階段固定產出(跑本階段才適用):`3-prototype.md`(本模板全節)+ `3-prototype.html`
+> (終態必產;必含 variant 流程/結構圖、Verdict)。跳過本階段 → 兩檔皆不建,
+> 跳過決定記 2-decision 流程層 Owner Call。
 >
 > 執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併項):
 > 0. 定義疑問:引 2-decision 的哪個 Risk/open point;寫清「答案長什麼樣才算回答了」。

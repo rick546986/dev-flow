@@ -177,6 +177,8 @@ RED → GREEN → scope check → Verify
 
 **重生規則**:md = git 正本,html twin = 衍生視覺版、**隨時可重生**
 (dev-talk 內稱「視覺版」,同一物 —— 盲故那邊不用 twin 一詞)。gate 時必產;
+**Stage 5 於 tasks 定稿(供 start 解析/派工)時必產、Stage 6 於全 T 完成
+(bookkeeping commit 前)必產 —— 1~7 每階段終態皆有 twin,不因「本階段無 gate」省略**;
 草稿期遇到**分歧點**(模型自判待裁決、方案分叉)必重生,且「⚠️ 待裁決」區置頂。
 你對著 html 在對話裁決(「D-3 ✗,理由…」)→ AI 改 md → html 重生。
 `1-discussion.html` 由 /dev-talk 收尾即產(殼在 skill 目錄,防破盲)。
@@ -302,6 +304,18 @@ RED → GREEN → scope check → Verify
    Stage 6 由它自動載入執行引擎,不需要學 `dev-run`
 4. 每過 gate:更新 frontmatter status + STATUS.md + 產 html twin
 5. G3 過:走 Exit checklist(PR→develop、delta 併 living spec、標 shipped)
+
+**Session 邊界(哪些階段要另開 session,唯一正本)**:
+
+| 階段 | session | 理由 |
+|---|---|---|
+| 1 討論 | **必開獨立 session** | 圍欄①討論盲下游;/dev-talk 收尾也會提醒 |
+| 2 收斂 | 回主 session | 讀 1-discussion 接手(對話不是契約) |
+| 3 原型(選配) | **建議獨立 session** | throwaway 心態,實驗過程不進主線 context,答案只回寫文檔 |
+| 4 規格、5 任務 | 同一規劃 session 連走 | G1 後的連續規劃思路 |
+| 6 實作 | **建議另開 session** | 規劃 context 不帶入執行;執行者只讀 4/5/6+CONTEXT+living spec(圍欄②機械強制) |
+| 7 驗證 | 可同 session | reviewer 本來就是 fresh-context agent(§9 鐵則),隔離在 agent 層,不靠 user session |
+| 中斷續跑 | 任何階段可換 | 靠 STATUS.md + frontmatter 定位接力(§13) |
 
 ## 11. 資訊隔離(anti-premature-convergence)
 

@@ -513,7 +513,9 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   也不把它當成官方替代執行系統。</p>
 
   <h2 id="diagram">⑥ 全程圖</h2>
-  <p>同一張七階段圖,額外標出兩個新手常忽略的地方:<strong>虛線框</strong> = 建議另開 session 的站;
+  <p>同一張七階段圖,額外標出兩個新手常忽略的地方:<strong>虛線框</strong> = 要/建議另開
+  session 的站(1 討論<strong>必開</strong>;3 原型、6 實作<strong>建議另開</strong>;
+  2/4/5 留在主 session,7 的隔離在 reviewer agent 層 —— 完整表見 README §10「Session 邊界」);
   <strong>紅色虛線括號</strong> = 執行守衛的武裝區間(<code>start</code> 到 <code>stop</code> 之間)。</p>
 
   <svg viewBox="0 0 1260 210" width="1260" height="210" role="img" aria-label="dev-flow 全程圖含另開 session 與守衛武裝區間標示">
@@ -527,9 +529,13 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     <path class="flow" marker-end="url(#arrow)" d="M365,47 C400,5 540,5 573,65" fill="none"/>
     <text x="470" y="16" text-anchor="middle">G1 過·無技術疑問 → 跳 3</text>
 
-    <!-- session box around stage 1 -->
+    <!-- session boxes: stage 1 必開, stage 3/6 建議另開 -->
     <rect class="session" x="110" y="57" width="94" height="60" rx="10"/>
-    <text x="157" y="50" text-anchor="middle" style="fill:var(--acc);font-weight:700">另開 session</text>
+    <text x="157" y="50" text-anchor="middle" style="fill:var(--acc);font-weight:700">必開新 session</text>
+    <rect class="session" x="422" y="55" width="94" height="58" rx="10"/>
+    <text x="469" y="48" text-anchor="middle" style="fill:var(--acc);font-weight:700">建議另開(選配)</text>
+    <rect class="session" x="838" y="55" width="94" height="58" rx="10"/>
+    <text x="885" y="48" text-anchor="middle" style="fill:var(--acc);font-weight:700">建議另開 session</text>
 
     <!-- main row -->
     <ellipse class="b" cx="50" cy="87" rx="40" ry="26"/>

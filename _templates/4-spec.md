@@ -14,6 +14,8 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 > 格式:openspec delta。Scenario 寫到「可直接變成一個測試」的精度。
 > 通用慣例/架構不變量住 `.claude/rules/`,spec 只寫本次 delta,不重抄 rules。
 > ship 後由 7-Exit 把 delta 併入 docs/specs/<domain>.md,此檔隨 feature 封存。
+> 本階段固定產出:`4-spec.md`(本模板全節)+ `4-spec.html`(G2 必產;必含 R 級
+> 行為流程圖、Drafting Decisions 待裁決置頂)。
 >
 > 反模糊三律(防偷懶條文):
 > 1. 每條 S 必須可直接轉成**一個測試**:含具體輸入與可斷言輸出;禁模糊詞

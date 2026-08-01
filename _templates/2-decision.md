@@ -10,6 +10,8 @@ updated:
 # 2. 收斂 — 方案決策
 
 > 用途:把 1 的發散收成一個選定方案。**G1 gate:人工核准後才寫規格**。
+> 本階段固定產出:`2-decision.md`(本模板全節)+ `2-decision.html`(G1 必產;必含
+> 方案架構圖、Approaches+Rejected、Owner Calls 待裁決置頂);三條件中 → 另抄 `docs/adr/`。
 >
 > 執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併項):
 > 0. 接手盤點:只讀 1-discussion.md(對話不是契約)+ CONTEXT.md。核 status=approved、
