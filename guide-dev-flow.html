@@ -542,14 +542,20 @@
     前端截圖存 <code>evidence/</code>、批次看 log/產出檔),填「現象證據」表。不採信 6-notes
     貼的文字。完成 = 每 S 有實跑證據且與觀測方式相符(無外部現象者註明理由)。</li>
     <li>雙軸審:Standards(F-id 🔴🟡🟢:位置|問題|建議)+ Spec(逐 R 符合/偏離);
-    每 F 標影響 S/T。完成 = 每 R 有判定、每 F 有鏈。</li>
+    每 F 標影響 S/T。Agent 審時<strong>兩軸各派一個獨立 fresh reviewer 並行</strong>(互不看
+    對方輸出;人類 reviewer 可自兼雙軸);彙整者只並列兩軸 finding,<strong>禁合併重排、
+    禁降級任一軸</strong>(防一軸失敗被另一軸掩蓋)。每 F 必引 spec 原文或 diff hunk,
+    禁無出處結論。完成 = 每 R 有判定、每 F 有鏈且有出處。</li>
     <li>對照作者:此刻才讀 6-notes —— 自建矩陣 vs Self-Review 差異逐條裁;Deviations
     如實?Decisions 有無實為 L2?完成 = 差異全裁定入 Spec Axis。</li>
     <li>Verdict:PASS = 本次 S 全綠+既有全綠+<strong>現象證據逐 S 相符</strong>+無 🔴
     (G3 正本 README §7;無 🔴 是本模板加嚴的出貨門檻,不與 §7 矛盾);否則
     REQUEST_CHANGES 列 🔴 →
     author 走 6-notes 的 Review Follow-up(同意改+一句為何對/不同意擺論證,
-    禁 performative fix)→ 回步 1 增量重驗。完成 = verdict 落檔。</li>
+    禁 performative fix)→ 回步 1 增量重驗。<strong>重驗迴圈上限 3 輪</strong>;第 3 輪仍
+    REQUEST_CHANGES → <strong>breaker</strong>:逐 F 強制裁決(立即修/park 記入 STATUS 待辦/
+    BLOCKED 停案),裁決表寫入本檔,禁 silent discard、禁無記錄續圈。
+    完成 = verdict 落檔(含輪次數;走到 breaker 則含裁決表)。</li>
     <li>Exit:逐勾 Exit Checklist。完成 = 全勾才 shipped;僅 Stage 7 frontmatter 改為
     <code>shipped</code>,上游 artifact 保留 <code>approved</code> 作為各自 gate 核准紀錄。</li>
     </ol>

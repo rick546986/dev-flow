@@ -164,6 +164,27 @@ RED → GREEN → scope check → Verify
 - **判級疑義**:分不清 L1/L2 → 一律當 L2。Diff Budget 超支本身非偏差,
   是停下判級的訊號。
 
+**驗證五律**(2026-08 對照 openspec/superpowers/mattpocock/harness-engineering
+四家驗證機制後定案;適用 T 執行、T review 與各 gate):
+
+1. **證據 = 原始輸出**:任何「完成/通過/綠了」宣稱必附**原始指令輸出或 檔案:行號**,
+   禁「我跑過了」「應該過了」式自陳;review finding 必逐條引用 spec 原文或 diff hunk。
+   (源:superpowers Iron Law、mattpocock paste-the-output)
+2. **派工者不下場修**:主控(派工者)不得繞過 T review 親自修 finding —— 修復一律
+   重派執行者、重新送審;主控 context 保持乾淨,主控親修 = 跳過 review 的漏洞。
+   (源:superpowers controller-never-fixes;呼應本 SOP「不下場寫碼」)
+3. **反預判禁令**:派工 prompt 禁止出現「不要標記 X」「X 最多算 Minor」「計畫已決定
+   所以不算問題」等預先框定 reviewer 判斷的措辭 —— 發現自己正在寫,停手。
+   (源:superpowers anti-prejudgment)
+4. **HITL 不可代答**:需要人裁決的問題(gate 核准、Owner Call、L2 判定)不得由
+   agent 代答或「合理推測使用者會同意」;沒有人的裁決就停在待裁狀態。
+   (源:mattpocock wayfinder 反模式)
+5. **失敗先分類再路由**:T FAIL 先歸類 —— **SPEC**(T/S 定義有問題)→ L2 停,回 G2;
+   **ENV**(環境/依賴壞)→ 修環境重跑,不計升階;**IMPL/UNKNOWN** → 走 §9 升階鏈。
+   同 T 總嘗試上限 = 4(haiku 1 + sonnet 2 + opus 1),用盡**強制** adviser 裁決,
+   禁無限重試;分類與升階史記 6-notes 執行軌跡。(源:harness-engineering failure
+   category + loop budget)
+
 **自判分層**(同字不同義,先分清):
 | 名 | 誰拍 | 住哪 |
 |---|---|---|

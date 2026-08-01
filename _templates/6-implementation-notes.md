@@ -73,8 +73,9 @@ updated:
 <!-- 日期 | T-id | 一行;只記 T Review PASS 後做的 commit,每列含 commit hash -->
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
-<!-- 每 T 一列:T-id | 模型升階史(如 haiku→sonnet) | 回合數 | 升階原因一句。
-     升階本身 = spec 品質訊號,7-review.html 以表呈現 -->
+<!-- 每 T 一列:T-id | 失敗分類(SPEC/ENV/IMPL/UNKNOWN,README §5 驗證五律 5;
+     全程無失敗填 —)| 模型升階史(如 haiku→sonnet)| 回合數 | 升階原因一句。
+     ENV 失敗的重跑不計升階回合。升階本身 = spec 品質訊號,7-review.html 以表呈現 -->
 
 ## TDD Evidence
 <!-- 每個「T × Covers S」各一筆;同一 S 在不同 T/層次的 RED→GREEN 不得共用。 -->
