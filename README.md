@@ -1,7 +1,6 @@
 # dev-flow — 團隊開發流程 SOP
 
-> 給 4-6 人團隊 + AI 協作的開發流程。綜合 openspec(SDD)、mattpocock/skills(grill+DDD)、
-> superpowers(TDD+流程紀律)三者精華。**SDD 為主幹(spec 是真相),TDD 為驗證(測試證明做對)。**
+> 給 4-6 人團隊 + AI 協作的開發流程。
 >
 > 母版:`~/dev/dev-flow/`。新專案採用:把 `_templates/` 複製進專案 `docs/dev/_templates/`,
 > 本 README 複製為 `docs/dev/README.md`,建 `docs/dev/STATUS.md` 與 repo root `CONTEXT.md`。
