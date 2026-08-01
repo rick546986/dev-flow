@@ -237,9 +237,9 @@ RED → GREEN → scope check → Verify
 
 | twin | 必含圖 | 分歧/自判區 | diff |
 |---|---|---|---|
-| 1-discussion | 脈絡圖 | OQ+假設 badge、驗收雛形表 | — |
+| 1-discussion | 脈絡圖 | OQ+假設 badge、驗收雛形表、Real-world Context 表 | — |
 | 2-decision | 方案架構圖(比較期可並排) | Approaches+Rejected、Owner Calls(待裁決置頂) | — |
-| 3-prototype | variant 流程/結構圖 | Verdict | — |
+| 3-prototype | variant 流程/結構圖 | Demo Script、User Demo Feedback(Human verdict 人類親填)、Verdict | — |
 | 4-spec | 行為流程圖(R 級) | Drafting Decisions(待裁決置頂) | — |
 | 5-tasks | T 依賴 DAG(ASCII 天生適合) | Split Decisions(選配) | — |
 | 6-notes | progress 時間線(選配) | Decisions+Deviations 表 | ✅ 每 T commit |
