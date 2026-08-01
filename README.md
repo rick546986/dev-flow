@@ -252,25 +252,44 @@ RED → GREEN → scope check → Verify
 | 3 原型 | throwaway 實驗(code→throwaway branch、資料實驗→scratchpad);UI 疑問做 2-4 個結構不同 variant | 內建 / mattpocock `prototype` |
 | 4 規格 | openspec delta 格式手寫(模板已內建) | openspec |
 | 5 任務 | tracer-bullet 順序 + Covers/Verify/Blocked-by(模板內建) | 內建 |
-| 6 實作 | **`dev-run` 引擎**(haiku 執行→sonnet 審→升階;守衛 `devflow-exec` start/stop)或手動逐 T;TDD 紅綠(每 S-id 先 RED 貼輸出再 GREEN)+ checkbox 追蹤 | 本 plugin / 內建 |
+| 6 實作 | **由 `/dev-flow` 自動接執行引擎**(對外入口一律 `/dev-flow`,定位到 Stage 6 即自動載入 `dev-run`,使用者不需記第二個指令;haiku 執行→sonnet 審→升階;守衛 `devflow-exec` start/stop)或手動逐 T;TDD 紅綠(每 S-id 先 RED 貼輸出再 GREEN)+ checkbox 追蹤 | 本 plugin / 內建 |
 | 7 驗證 | 雙軸審(Standards + Spec)+ 自建 coverage matrix(可搭 mattpocock `code-review`) | 內建 / mattpocock |
 
 > **外部 skill 依賴原則**:方法一律內建於模板執行清單,外部 skill 只當**選配加分**(叫不到不影響流程)。
 > 原因:第三方 skill 常自帶終點鏈(跑完強制導向它自己的後續流程),會把本流程拖出七文檔管線;
 > 且常駐注入有 context 成本與觸發權衝突。歷史上本 SOP 綜合三家精髓,但**精髓已內化,不依賴其安裝**。
 
-## 9. 模型分層(AI 執行時)
+## 9. 模型分層與 effort(AI 執行時)
 
-- **規劃/派工層 = opus(或 fable5)**:1 討論、2/4 文檔撰寫、多方案辯論、Stage 6
-  派工主對話(dev-run,不下場寫碼)。
+**這張表是預設約定:各階段自動採用對應模型與 effort,不因一時偏好切換;
+要偏離(表內建的升降階除外)須使用者明示同意,並記入該階段文檔
+(Stage 6 記 6-notes Decisions / 執行軌跡)。**
+
+| 階段/角色 | 模型 | effort | 備註 |
+|---|---|---|---|
+| 1 討論(/dev-talk 訪談) | opus(或 fable5) | medium | 一次一問;逐字稿整理可交 sonnet |
+| 2 收斂/決策文檔 | opus(或 fable5) | high | 多方案辯論、壓測定案 |
+| 3 原型(選配) | sonnet | medium | throwaway 實驗、variant 製作 |
+| 4 規格撰寫 | opus(或 fable5) | high | step-by-step delta 生成、反模糊三律 |
+| 5 任務拆解 | sonnet | medium | tracer-bullet 順序 + 依賴 DAG |
+| 6 派工者(引擎主對話) | opus(或 fable5) | medium | 派工、收驗、commit、記帳;不下場寫碼 |
+| 6 T 執行 | **haiku 起步** | low | 錯 1 次升 sonnet(medium);sonnet 同 T 錯 2 次升 opus(high)。同層最多兩次,換方法不歸零;升階帶完整失敗軌跡 |
+| 6 T review | **sonnet fresh** | high | 高風險/爭議由 opus 作第二 reviewer |
+| 6 adviser | opus,唯讀 | high | 三層連敗才派;verdict=STOP → L2 |
+| 7 驗證產檔/coverage matrix | sonnet | medium | 雙軸審材料準備 |
+| G1/G2/G3 審查與 verdict | (不指定模型) | high | 見下條;順序正本在 §7 |
+
 - **G1/G2/G3 審查與 verdict**:依 §7 的人類→fresh-context reviewer Agent→有記錄的
-  owner 自審順序；Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。
-- **執行層(dev-run 引擎)**:T 執行 = **haiku 起步**,錯 1 次升 sonnet、sonnet 同 T
-  錯 2 次升 opus(帶完整失敗軌跡;同層最多兩次,換方法不歸零);T review =
-  **sonnet fresh**,高風險/爭議升 opus;adviser = opus 唯讀。升階史記 6-notes
-  「執行軌跡」→ 7-review.html 呈現(升階 = spec 品質訊號)。
-- **其他執行活 = sonnet**:3 原型、5-tasks 拆解、7 產檔、html twin。手動(非引擎)
-  實作亦可整段用 sonnet。
+  owner 自審順序;Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。
+- **effort 定位**:low = 機械執行(照 spec 寫碼、格式轉換、抄錄);medium = 一般分析
+  與產檔;high = 審查、gate 判定、規格生成。原則:**判斷密度越高 effort 越高**;
+  執行密度高而判斷密度低的活壓 low。派工工具無 effort 參數時,此欄退化為
+  派工 prompt 內明示的思考深度要求。
+- **fresh context 鐵則**:一切 review(G1/G2/G3 與 T review)一律開新 agent,給乾淨
+  context 與按模板組裝的派工 prompt(審核對象/基準/回報格式),禁止在實作對話內
+  自演 reviewer —— 舊 context 汙染 = 審查失效。
+- 升階史記 6-notes「執行軌跡」→ 7-review.html 呈現(升階 = spec 品質訊號)。
+- 手動(非引擎)實作亦可整段用 sonnet,但 T review 的 fresh context 鐵則不豁免。
 
 ## 10. 新 feature 快速上手
 
@@ -278,7 +297,9 @@ RED → GREEN → scope check → Verify
    挖到 Open Questions 收斂,產出 `docs/dev/<feature-slug>/1-discussion.md`
 2. `STATUS.md` 加一列(lane / stage / owner)
 3. 換 session 說:`/dev-flow 繼續 <feature>` → 初次接手只讀 1-discussion.md
-   (續跑則讀 STATUS + frontmatter 定位),按 §8 帶你走
+   (續跑則讀 STATUS + frontmatter 定位),按 §8 帶你走。**之後每個階段
+   (含 Stage 6 實作)都是同一句指令** —— `/dev-flow` 自動判 stage 接對應動作,
+   Stage 6 由它自動載入執行引擎,不需要學 `dev-run`
 4. 每過 gate:更新 frontmatter status + STATUS.md + 產 html twin
 5. G3 過:走 Exit checklist(PR→develop、delta 併 living spec、標 shipped)
 
