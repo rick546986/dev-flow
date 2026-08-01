@@ -4,6 +4,10 @@ stage: 5-tasks
 status: draft
 owner:
 updated:
+execution:                              # 選配;整塊刪除 = 舊 sequential 行為,一字不變
+  mode: sequential                      # sequential(缺省)| parallel(並行須明確啟用,不自動套用)
+  max_parallel_tasks: 3                 # 選配;parallel 時同一 Wave 的 T 數上限(缺省 3)
+  rebuild_integration_on_rework: true   # 選配;rework 後重建 integration branch(缺省 true)
 ---
 
 # 5. 任務
@@ -22,6 +26,19 @@ updated:
 >   禁區(照哪個既有 pattern、不准動什麼),無則寫「—」。兩欄是派工 prompt 的
 >   直接原料;守衛只解析必填四欄,這兩欄不影響 scope。
 > - 一個 T 一個關注點:Files 超過 ~5 檔或 Verify 要跑兩套不相干指令 → 拆 T。
+>
+> **並行選配欄位(僅 `execution.mode: parallel` 有執行效果;全部有缺省,舊檔零欄位
+> 行為完全不變;完整契約見母版 `notes/design/parallel-stage6.md`)**:
+> - `Integrate-after: T-n`(缺省 —)= **軟整合依賴**:可平行實作,但 candidate 整合
+>   順序必須在指定 T 之後。`Blocked-by:` 仍是**硬執行依賴**(前置 T 未達安全狀態,
+>   本 T 不得開始實作)。
+> - `Risk: normal|high`(缺省 normal)。high 一律 dedicated review,PASS 才進 integration。
+> - `Review-mode: wave|dedicated`(缺省:normal→wave、high→dedicated;high 明寫 wave 非法)。
+> - `Semantic-conflicts-with: T-n`(缺省 —)= 檔案不重疊但語意衝突,禁排同一 Wave。
+> - **不必手排 wave**:Wave 由引擎從 Blocked-by + Files overlap 自動派生(runtime
+>   資料,不回寫本檔);Files 重疊由 Scheduler 自動判,毋須人工維護 Conflicts 清單。
+> - parallel 模式下 checkbox 只在該 T **ACCEPTED**(獨立 review 通過)後由派工者勾,
+>   Worker 不碰本檔。
 
 ## T-1 <標題:動詞開頭一句完成式>
 - [ ] 完成
