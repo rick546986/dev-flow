@@ -25,6 +25,15 @@ updated:
 > 2b. **現象複驗**:照 4-spec 每 S 的「觀測方式」**親自實跑一次**(後端打真實請求、
 >    前端截圖存 `evidence/`、批次看 log/產出檔),填「現象證據」表。不採信 6-notes
 >    貼的文字。完成 = 每 S 有實跑證據且與觀測方式相符(無外部現象者註明理由)。
+> 2c. **Final Fresh Run**:確認 Verification Evidence 節由 4-spec Verification Profile
+>    指名的 entry point 一次 fresh run 產出、Source SHA = 當下 HEAD;跑
+>    `scripts/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD)
+>    --review-file` 全綠。完成 = gauntlet 輸出在案。
+> 2d. **Operational Walkthrough**:以各 S 的 Operational Context 為腳本親自走一遍
+>    「人的工作」,逐列檢查六條 —— 技術上通過但人無法完成工作 / 看得到但沒有決策權 /
+>    系統把等待誤標為完成 / 系統外動作無法追蹤 / 使用者中斷後無法恢復 / 資訊過期、
+>    缺漏或多人同時操作 —— 填 Operational Walkthrough 表(無 Operational Context 的
+>    純內部 S 註明不適用)。完成 = 表逐 S 填畢。
 > 3. 雙軸審:Standards(F-id 🔴🟡🟢:位置|問題|建議)+ Spec(逐 R 符合/偏離);
 >    每 F 標影響 S/T。Agent 審時**兩軸各派一個獨立 fresh reviewer 並行**(互不看
 >    對方輸出;人類 reviewer 可自兼雙軸);彙整者只並列兩軸 finding,**禁合併重排、
@@ -51,8 +60,31 @@ updated:
 | S-1 |  | ✅/❌ |
 | 既有測試套件(回歸) | `<全套指令>` | ✅/❌ |
 
+## Verification Evidence
+<!-- Final Fresh Run 產出(契約正本:notes/design/evidence-gauntlet.md §6/§8;
+     機械檢查:scripts/devflow-evidence-gauntlet.sh,E1–E12)。四欄非空;
+     Status 只能 pass | fail | unverified | n-a;pass 列必有非空 Command 與含數字的
+     Result(數字非形容詞);unverified/n-a 必附 Skipped reason;coverage 層 Result
+     用 covered/total 分數,禁全域 % 虛榮數字 -->
+- Source SHA:
+- Final Fresh Run ID:
+- Entry point:
+- Toolchain:
+
+| Layer | Command | Status | Result | Skipped reason |
+|---|---|---|---|---|
+
+## Negative Constraint Mapping
+<!-- 4-spec Verification Profile 的 Negative constraints 逐條映射 test/layer;
+     skipped 必附理由且不得標 pass -->
+| Constraint | Test/Layer | Status |
+|---|---|---|
+
 ## 執行記錄(dev-run 引擎案;手動實作留白)
-<!-- 從 6-notes 執行軌跡彙整:模型分佈 | 升階次數 | allow/D-n 清單;html 以表呈現 -->
+<!-- dev-run 案由 `devflow-obs stats --run <run_dir>` 衍生(禁手填),欄位:
+     run_id | 模型分佈 | 升階次數 | first-pass rate | 失敗分類分佈 |
+     Prompt Version 清單 | allow/D-n 清單(維持既有三欄,加 prompt/run 兩欄);
+     html 以表呈現。parallel 模式加列 wave 分佈與 gate FAIL 重工次數 -->
 
 ## 現象證據(逐 S,對照 4-spec 的「觀測」欄)
 <!-- 測試綠 ≠ 看得到它動起來。每條 S 貼「照觀測方式實跑」的真實輸出:
@@ -64,6 +96,13 @@ updated:
 | S-id | 觀測方式(引 4-spec) | 實跑證據 | 相符? |
 |---|---|---|---|
 | S-1 |  |  | ✅/❌ |
+
+## Operational Walkthrough
+<!-- reviewer 以各 S 的 Operational Context 為腳本,親自走一遍「人的工作」;
+     逐列檢查:技術上通過但人無法完成工作 / 看得到但沒有決策權 / 系統把等待誤標為完成 /
+     系統外動作無法追蹤 / 使用者中斷後無法恢復 / 資訊過期、缺漏或多人同時操作 -->
+| S-id | 角色 | 真實目標 | 系統操作 | 系統外步驟 | 等待/例外 | 結果 |
+|---|---|---|---|---|---|---|
 
 ## Standards Axis
 <!-- F-id 🔴Blocker 🟡Should-fix 🟢Nice-to-have:位置 | 問題 | 建議 -->
