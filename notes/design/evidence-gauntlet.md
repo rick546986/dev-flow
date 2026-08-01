@@ -263,6 +263,9 @@ Operational Walkthrough、fresh reviewer 鐵則、G3 重驗 3 輪+breaker。
 
 ## 13. Ledger 事件介面(契約 only;實作屬 Workstream C,勿在本軌落地)
 
+> **欄名以 `observability/schema/agent-event.schema.json` 為準**(ID-10 合流:
+> `ts`→envelope `timestamp`;status 為正式欄,舊 `result` 為相容別名)。
+
 事件四種(append 進 C 的 ledger 流;命名沿 C 的 snake_case 慣例):
 
 | event | 時機 |

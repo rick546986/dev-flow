@@ -61,7 +61,7 @@
 
 ## 3. 事件 lifecycle(三節)
 
-20 種事件(正本:`observability/schema/agent-event.schema.json` events 區):
+22 種事件(正本:`observability/schema/agent-event.schema.json` events 區;ID-10 合流補 final_fresh_run 兩事件):
 
 ```
 run_started → stage_started → [每 T:
@@ -70,7 +70,8 @@ run_started → stage_started → [每 T:
   mechanical_gate_started/completed* →
   review_started → review_completed → finding_created* →
   (task_rework_requested | task_escalated)* → task_accepted ]
-→ verification_layer_started/completed*(Gauntlet)
+→ final_fresh_run_started → verification_layer_started/completed*(Gauntlet)
+  → final_fresh_run_completed
 → stage_completed → run_completed
 ```
 
@@ -155,7 +156,7 @@ hash 進事件(`context_manifest_hash`),內容不進事件。
 |---|---|---|
 | **Coordinator**(dev-run 主對話) | run/stage lifecycle、agent_dispatched、attempt_started/completed、candidate_created、review_*、finding_created、task_rework/escalated/accepted、derived | dev-run SKILL.md 逐 T 迴圈各步後追加「寫事件」動作;實際落盤經 `devflow-exec.sh event`(新子命令,呼叫 devflow_obs.writer;繞不開 guard 故必須 CLI 化)。start 時建 run 目錄+manifest,並把 run_id 寫進 exec.json 供 hooks 取用 |
 | **Hooks**(guard/prebash/postbash/devtalk) | mechanical_gate_completed(gate=guard-write/guard-read/prebash/postbash-detect/devtalk;violation=scope/contract/upstream_read/guard_state)、tool_completed(exit code) | hook 行程直接以 writer API append `hooks/events-<session_id>.jsonl`(hook 非 tool call,不受自家守衛限制);**不推測 agent_role/prompt/model**(schema 機械禁止 hook_forbidden_field),只帶 session_ref,歸屬留給 coordinator 事後關聯 |
-| **Verification engine**(old-coder Gauntlet,Workstream D) | verification_layer_started/completed | 寫 `verifier/events.jsonl`;介面 = schema 的兩種事件:`layer`(slug,如 unit/mutation/property)、`result`、`exit_code?`、`failure_kind?`、`evidence_ref?`;writer 欄位 = `verifier` |
+| **Verification engine**(old-coder Gauntlet,Workstream D) | final_fresh_run_started/completed、verification_layer_started/completed | 寫 `verifier/events.jsonl`,writer=`verifier`。**欄名正本 = agent-event.schema.json(ID-10 合流)**:layer 事件帶 `layer`、`status`(pass/fail/unverified/n-a,正式欄)、`command_ref`、`result_summary`(單行 ≤200,受隱私掃描)、`artifact_ref`、`source_sha`、`round?`、`exit_code?`、`failure_kind?`;舊 `result`(PASS\|FAIL)保留為相容別名(與 status 並存必須一致);run 級 completed 帶 `verdict`(PASS/FAIL)、`layers_total`、`layers_failed`、`source_sha` |
 
 ## 8. 失敗與結果(八節)
 
