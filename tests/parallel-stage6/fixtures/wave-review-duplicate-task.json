@@ -1,0 +1,16 @@
+{
+  "wave_tasks": ["T-3", "T-4"],
+  "review": {
+    "schema": "devflow-wave-review.v1",
+    "feature": "expiry", "wave": 2,
+    "tasks": [
+      {"task": "T-3", "verdict": "PASS", "findings": []},
+      {"task": "T-4", "verdict": "FAIL",
+       "findings": [{"id": "F-1", "task": "T-4", "severity": "major",
+                     "evidence": "S-4 原文:THEN 應顯示空狀態;diff hunk 未處理 rows==0"}]},
+      {"task": "T-4", "verdict": "PASS", "findings": []}
+    ],
+    "integration_verdict": "PASS",
+    "reviewed_at": "2026-08-02T12:00:00"
+  }
+}

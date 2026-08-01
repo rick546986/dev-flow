@@ -268,6 +268,10 @@ check(any("歸屬" in e for e in C.validate_wave_review(ua["review"], ua["wave_t
 ni = jfixture("wave-review-no-integration.json")
 check(any("integration_verdict" in e for e in C.validate_wave_review(ni["review"], ni["wave_tasks"])),
       "缺 integration verdict → 無效")
+dup = jfixture("wave-review-duplicate-task.json")
+check(any("重複" in e and "T-4" in e
+          for e in C.validate_wave_review(dup["review"], dup["wave_tasks"])),
+      "同一 T 重複 entry → 無效(先 FAIL 後 PASS 不得洗掉 FAIL)")
 
 # --- 3h. sequential regression(真檔) ---
 ex = C.parse_5_tasks(read("example/contract-expiry-reminder/5-tasks.md"))
