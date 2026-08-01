@@ -84,7 +84,7 @@ root 相對的 `Files` scope。
 |---|---|---|---|
 | 1 | `1-discussion.md` | 發散:把「不知道自己不知道」變成可收斂的問題清單。不做決定 | Open Questions 全解或明標假設 |
 | 2 | `2-decision.md` | 收斂:2-3 方案比較 → 選定 + rejected + 理由 | **G1** 方向核准 + OC 全裁決(全文見 §7) |
-| 3 | `3-prototype.md` | 選配:throwaway 實驗回答技術/UI 疑問,答案回寫 2 | 答案回寫 2-decision + frontmatter 收尾同步(終態 approved) |
+| 3 | `3-prototype.md` | 選配:throwaway 實驗回答技術/UI 疑問,答案回寫 2;命中觸發判定(前端/交接/核准/等待/權限/系統外/多互動設計)→ 條件式必要,產可操作 Demo + User Demo Feedback(Human verdict 人類親填) | 答案回寫 2-decision + frontmatter 收尾同步(終態 approved) |
 | 4 | `4-spec.md` | 本次變更的可測契約(delta + GIVEN/WHEN/THEN)。SDD 真相 | **G2** R/S 全審 + DD 全裁決(全文見 §7) |
 | 5 | `5-tasks.md` | 切成可勾選任務,tracer-bullet 順序,每 T 有 Covers/Files/Verify/Blocked-by | 每 T 欄位完整 |
 | 6 | `6-implementation-notes.md` | 實作日誌:TDD 證據 + 偏差記錄 | 每 T review PASS + 全 S 綠 |
@@ -126,7 +126,11 @@ RED → GREEN → scope check → Verify
   一 commit(可逐點回滾),再把 hash、checkbox 與 review evidence 寫入 6-notes 的
   Progress Log / T Review Log。
 - **分層**:上述是 Stage 6 的逐 T acceptance seam;Stage 7 G3 仍是獨立的 feature-level
-  gate,不被 T review 取代或重複。
+  gate,不被 T review 取代或重複。Stage 6 只跑快速 Task-local 驗證,即上述 seam 的
+  RED → GREEN → scope check → Verify → independent T review(Test Integrity Check
+  是 T review 的檢查清單擴充,不是新階段;「Candidate」僅 parallel 模式使用,
+  sequential 案照舊 = 送 T review);mutation/property 等重驗證層屬
+  feature 級 Final Fresh Run,**不逐 T 跑**。
 - **Decisions**(spec 未載明的自由選擇,如內部命名、資料結構):自己選、記一行入
   6-notes 的 Decisions 節、繼續。不屬偏差,不需回審。
 - **偏差兩級**:
@@ -159,10 +163,25 @@ RED → GREEN → scope check → Verify
   守衛互不相見 —— 模組 A 在 worktree 甲跑 Stage 6 時,模組 B 在 worktree 乙寫 spec、
   跑自己的 Stage 6,零互擋。同一工作樹內硬要並行做不到:武裝期間跨 feature 的
   1/2/3/4 契約檔一律受保護(hooks 分不清寫入來自哪個 session,fail-closed)。
+  同 feature 內 T 級並行 = 每 T 各開 task worktree(`task/<slug>/T-n`,同 Wave 同
+  Base SHA),守衛以 `--task` 釘單 T scope;仍然是「一工作樹一武裝」,不破例。
+- **T 級並行(選配,同一 feature 內)**:`5-tasks.md` frontmatter 明寫
+  `execution.mode: parallel` 才啟用(缺省 sequential,行為不變)。並行 seam 變體:
+  RED → GREEN → scope check → Verify → **Candidate Commit(task branch)→
+  Mechanical Gate → 整合(按 integration DAG)→ Wave/Dedicated Review → ACCEPTED**
+  → 派工者記帳。核心規則:未 Review 的程式碼可形成隔離 Candidate Commit,但未過
+  Review 的 Candidate 不得進正式 integration branch、不得標完成;只有 ACCEPTED
+  才勾 checkbox。每 T 一個 task worktree(`task/<slug>/T-n`)+ task-scoped 守衛;
+  Worker 不寫 5-tasks/6-notes/STATUS/twin(單寫者 = 派工者)。細節與欄位語意見
+  `notes/design/parallel-stage6.md`。
 - **接收審查**(G3 打回時):逐 F 驗證後才動手 —— 同意的改並一句說明為何對;
   不同意的擺論證,不盲改(禁 performative fix)。
 - **判級疑義**:分不清 L1/L2 → 一律當 L2。Diff Budget 超支本身非偏差,
   是停下判級的訊號。
+- **Demo verdict**(Stage 3→4 流程規則):3-prototype Human verdict ≠ ACCEPTED 的
+  互動 S,4-spec 不得將其標記定案(列 Drafting Decisions 待裁決或退回 Stage 3
+  重新 Demo)—— 屬 Stage 4 執行清單義務;NOT_REVIEWED ≠ ACCEPTED;
+  gate 條件正本見 §7。
 
 **驗證五律**(2026-08 對照 openspec/superpowers/mattpocock/harness-engineering
 四家驗證機制後定案;適用 T 執行、T review 與各 gate):
@@ -218,9 +237,9 @@ RED → GREEN → scope check → Verify
 
 | twin | 必含圖 | 分歧/自判區 | diff |
 |---|---|---|---|
-| 1-discussion | 脈絡圖 | OQ+假設 badge、驗收雛形表 | — |
+| 1-discussion | 脈絡圖 | OQ+假設 badge、驗收雛形表、Real-world Context 表 | — |
 | 2-decision | 方案架構圖(比較期可並排) | Approaches+Rejected、Owner Calls(待裁決置頂) | — |
-| 3-prototype | variant 流程/結構圖 | Verdict | — |
+| 3-prototype | variant 流程/結構圖 | Demo Script、User Demo Feedback(Human verdict 人類親填)、Verdict | — |
 | 4-spec | 行為流程圖(R 級) | Drafting Decisions(待裁決置頂) | — |
 | 5-tasks | T 依賴 DAG(ASCII 天生適合) | Split Decisions(選配) | — |
 | 6-notes | progress 時間線(選配) | Decisions+Deviations 表 | ✅ 每 T commit |
@@ -300,6 +319,8 @@ RED → GREEN → scope check → Verify
 | 6 派工者(引擎主對話) | opus(或 fable5) | medium | 派工、收驗、commit、記帳;不下場寫碼 |
 | 6 T 執行 | **haiku 起步** | low | 錯 1 次升 sonnet(medium);sonnet 同 T 錯 2 次升 opus(high)。同層最多兩次,換方法不歸零;升階帶完整失敗軌跡 |
 | 6 T review | **sonnet fresh** | high | 高風險/爭議由 opus 作第二 reviewer |
+| 6 Wave review(parallel) | sonnet fresh | high | 一次審一個 wave;**必須**輸出每 T 獨立 verdict + finding 歸屬 + integration verdict |
+| 6 Mechanical Gate | (無模型,機械) | — | 14 項檢查全 PASS 才 READY_FOR_INTEGRATION |
 | 6 adviser | opus,唯讀 | high | 三層連敗才派;verdict=STOP → L2 |
 | 7 驗證產檔/coverage matrix | sonnet | medium | 雙軸審材料準備 |
 | G1/G2/G3 審查與 verdict | (不指定模型) | high | 見下條;順序正本在 §7 |

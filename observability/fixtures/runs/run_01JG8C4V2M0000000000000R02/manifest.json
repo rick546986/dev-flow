@@ -1,0 +1,9 @@
+{
+ "schema": "devflow-run-manifest/1",
+ "run_id": "run_01JG8C4V2M0000000000000R02",
+ "feature_slug": "reminder-digest",
+ "base_sha": "def5678",
+ "workspace": "wt-digest",
+ "started": "2026-08-01T10:00:00+08:00",
+ "note": "示範 fixture:Stage 6 PASS 後 Stage 7 出 blocker(G3 REQUEST_CHANGES)+ Gauntlet 層事件。"
+}

@@ -1,0 +1,15 @@
+{
+  "wave_tasks": ["T-3", "T-4"],
+  "review": {
+    "schema": "devflow-wave-review.v1",
+    "feature": "expiry", "wave": 2,
+    "tasks": [
+      {"task": "T-3", "verdict": "PASS", "findings": []},
+      {"task": "T-4", "verdict": "FAIL",
+       "findings": [{"id": "F-1", "severity": "major",
+                     "evidence": "缺 task 歸屬的 finding"}]}
+    ],
+    "integration_verdict": "PASS",
+    "reviewed_at": "2026-08-02T12:00:00"
+  }
+}

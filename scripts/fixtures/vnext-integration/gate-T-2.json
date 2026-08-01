@@ -1,0 +1,25 @@
+{
+  "task": {
+    "files": ["src/components/ExpiringContractsCard.tsx"],
+    "verify": "npm test -- ExpiringContractsCard",
+    "s_ids": ["S-2"]
+  },
+  "pinned": {"base_sha": "aaaa1111", "contract_hash": "cafe0001"},
+  "extra_allowed": [],
+  "candidate_exists": true,
+  "diff_applies": true,
+  "candidate": {
+    "schema": "devflow-candidate.v1",
+    "feature": "vnext-thin-slice", "task": "T-2", "attempt": 1,
+    "branch": "task/vnext-thin-slice/T-2",
+    "base_sha": "aaaa1111", "candidate_sha": "cccc3333",
+    "prompt_id": "packet-vnext-thin-slice-T-2", "prompt_version": "v1",
+    "contract_hash": "cafe0001",
+    "verify": {"command": "npm test -- ExpiringContractsCard", "exit_code": 0, "log": "verify.log"},
+    "red": {"command": "npm test -- ExpiringContractsCard", "exit_code": 1, "log": "red.log", "at": "2026-08-02T10:02:00"},
+    "green": {"command": "npm test -- ExpiringContractsCard", "exit_code": 0, "log": "green.log", "at": "2026-08-02T10:05:30"},
+    "test_names": ["ExpiringContractsCard S2 empty state"],
+    "changed_files": ["src/components/ExpiringContractsCard.tsx"],
+    "created_at": "2026-08-02T10:06:00"
+  }
+}

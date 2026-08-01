@@ -1,0 +1,9 @@
+{
+ "schema": "devflow-run-manifest/1",
+ "run_id": "run_01JG8C4V2M0000000000000V01",
+ "feature_slug": "vnext-thin-slice",
+ "base_sha": "aaaa1111",
+ "workspace": "wt-vnext",
+ "started": "2026-08-02T10:00:00+08:00",
+ "note": "vnext 最薄整合案例 fixture:T-1/T-2 平行 → candidate → gate → wave review → accepted → verification layer → run PASS。"
+}

@@ -36,6 +36,10 @@
   .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
   .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
   .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+  details{margin:.6em 0}
+  details>summary{cursor:pointer;color:var(--muted)}
+  .del{display:block;color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,transparent)}
+  .add{display:block;color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,transparent)}
 </style>
 </head>
 <body>
@@ -49,6 +53,23 @@
 <li>WHEN <code>&lt;owner&gt;</code> 開啟 dashboard</li>
 <li>THEN 到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</li>
 <li>觀測:從 <code>&lt;owner&gt;</code> 的 dashboard 到期卡片看 | 看到 C 與「10 天」算對 | 用 C(<code>end_date = today + 10d</code>,未續約)測</li>
+<li>Operational Context:
+<ul>
+<li>Actor:負責業務 <code>&lt;owner&gt;</code></li>
+<li>Goal:不漏約;登入第一眼決定今天要跟催哪件</li>
+<li>Situation:每日登入;可能同時多件到期,亦可能剛被改派接手別人的合約</li>
+<li>Known information:合約名稱、剩餘天數、目前處理狀態與下一步</li>
+<li>Missing information:法務審閱進度(在 Email)、對方窗口意向(在電話)</li>
+<li>Human decision:先跟催哪一件;要不要升級找主管</li>
+<li>Authority:讀寫名下合約;不可代表公司拍板非標準價格</li>
+<li>External dependency:法務回覆、供應商窗口回覆</li>
+<li>Out-of-system action:Email 合約給法務、電話聯絡供應商</li>
+<li>Waiting/timeout behavior:等待中合約持續顯示於卡片並標等待對象,不因等待而消失(逾時自動升級提醒 = Out of Scope)</li>
+<li>Recovery:中斷後重開 dashboard,狀態與下一步仍在(狀態存於系統,非頁面 session)</li>
+<li>Audit/handoff requirement:狀態變更記誰在何時標(改派後新業務可接手,不必 Email 考古)</li>
+<li>Observation:卡片列含狀態欄與下一步欄(見 S-4 觀測)</li>
+</ul>
+</li>
 </ul>
 <h4>S-2</h4>
 <ul>
@@ -56,6 +77,23 @@
 <li>WHEN <code>&lt;owner&gt;</code> 開啟 dashboard</li>
 <li>THEN 卡片顯示空狀態「近期無到期合約」,不顯示錯誤</li>
 <li>觀測:從 <code>&lt;owner&gt;</code> 的 dashboard 到期卡片看 | 看到「近期無到期合約」且無錯誤算對 | 用名下無 30 天內到期未續約合約的 <code>&lt;owner&gt;</code> 測</li>
+<li>Operational Context:
+<ul>
+<li>Actor:負責業務(名下無到期合約)</li>
+<li>Goal:確認今天不需要跟催</li>
+<li>Situation:每日登入例行確認</li>
+<li>Known information:空狀態文案</li>
+<li>Missing information:無</li>
+<li>Human decision:無(空狀態=今天無續約動作)</li>
+<li>Authority:同 S-1</li>
+<li>External dependency:無</li>
+<li>Out-of-system action:無</li>
+<li>Waiting/timeout behavior:不適用</li>
+<li>Recovery:不適用</li>
+<li>Audit/handoff requirement:不適用</li>
+<li>Observation:空狀態文案與錯誤狀態可區分(錯誤走查詢失敗呈現,非空狀態)</li>
+</ul>
+</li>
 </ul>
 <h3>R-2: 卡片中每筆合約 SHALL 可點擊導向該合約詳情頁</h3>
 <h4>S-3</h4>
@@ -64,6 +102,80 @@
 <li>WHEN <code>&lt;owner&gt;</code> 點擊 C 那一列</li>
 <li>THEN 導向 <code>/contracts/C.id</code> 詳情頁</li>
 <li>觀測:從 C 那一列與瀏覽器 URL 看 | 點擊後 URL 為 <code>/contracts/C.id</code> 且顯示 C 詳情算對 | 用 S-1 的到期合約 C 測</li>
+<li>Operational Context:不適用(單純導覽,無等待/權限差異/系統外動作;人的決策已由 S-1 涵蓋)</li>
+</ul>
+<h3>R-3: 系統 SHALL 記錄合約處理狀態與下一步,且狀態僅由明確標記動作改變</h3>
+<h4>S-4</h4>
+<ul>
+<li>GIVEN 到期卡片列出合約 C,狀態「未處理」;登入者為負責業務 <code>&lt;owner&gt;</code></li>
+<li>WHEN <code>&lt;owner&gt;</code> 在 C 列將狀態標為「等待法務」</li>
+<li>THEN C 列顯示狀態「等待法務」、下一步「等法務回覆條款」與最後動作時間;狀態歷程新增一筆(<code>&lt;owner&gt;</code>、時間、未處理→等待法務)</li>
+<li>觀測:從 C 列狀態欄/下一步欄與狀態歷程看 | 標記後顯示「等待法務」「等法務回覆條款」與時間、歷程多一筆算對 | 用 S-1 的合約 C 測</li>
+<li>Operational Context:
+<ul>
+<li>Actor:負責業務 <code>&lt;owner&gt;</code></li>
+<li>Goal:把「進行到哪、在等誰」從腦中/Excel 移進系統</li>
+<li>Situation:剛把合約寄給法務,接下來幾天都在等</li>
+<li>Known information:自己剛做了什麼(寄出合約)</li>
+<li>Missing information:法務何時回(系統外 Email)</li>
+<li>Human decision:標哪個狀態;等多久要催</li>
+<li>Authority:業務可標等待類與「不續約」;「已續約」僅主管可標(見 S-6)</li>
+<li>External dependency:法務回覆</li>
+<li>Out-of-system action:Email 合約給法務;之後電話聯絡供應商(狀態「已聯絡供應商」記錄之)</li>
+<li>Waiting/timeout behavior:狀態停在「等待法務」並持續顯示,系統不自動轉移、不自動視為完成</li>
+<li>Recovery:標到一半關頁重開 → 狀態為最後一次成功標記值;可再次標記修正(誤標可改標回前值,歷程留兩筆)</li>
+<li>Audit/handoff requirement:歷程含誰/何時/從何狀態到何狀態;改派後新業務讀歷程即可接手</li>
+<li>Observation:C 列狀態欄/下一步欄/最後動作時間 + 詳情頁狀態歷程</li>
+</ul>
+</li>
+</ul>
+<h4>S-5</h4>
+<ul>
+<li>GIVEN 合約 C 狀態「未處理」</li>
+<li>WHEN <code>&lt;owner&gt;</code> 開啟 dashboard 看過到期卡片兩次,未做任何標記動作</li>
+<li>THEN C 狀態仍為「未處理」;狀態歷程零新增(不存在「看過即處理」的自動變更)</li>
+<li>觀測:從 C 列狀態欄與狀態歷程看 | 兩次開啟後仍顯示「未處理」且歷程零新增算對 | 用 S-1 的合約 C 開 dashboard 兩次測</li>
+<li>Operational Context:
+<ul>
+<li>Actor:負責業務 <code>&lt;owner&gt;</code>;下游讀狀態的是主管與接手業務</li>
+<li>Goal:防「看過提醒」被誤當「完成續約」</li>
+<li>Situation:業務每天看卡片但未必當天動作</li>
+<li>Known information:卡片上目前狀態</li>
+<li>Missing information:無</li>
+<li>Human decision:看過後可以不動作,不因此背上「已處理」標記</li>
+<li>Authority:同 S-4</li>
+<li>External dependency:無</li>
+<li>Out-of-system action:無</li>
+<li>Waiting/timeout behavior:「未處理」持續顯示直到有明確標記</li>
+<li>Recovery:不適用(無狀態變更即無恢復問題)</li>
+<li>Audit/handoff requirement:歷程零新增即為證據(看過不留「已處理」假象)</li>
+<li>Observation:狀態欄 + 狀態歷程筆數</li>
+</ul>
+</li>
+</ul>
+<h4>S-6</h4>
+<ul>
+<li>GIVEN 合約 C 狀態「已聯絡供應商」;登入者為負責業務 <code>&lt;owner&gt;</code>(非主管)</li>
+<li>WHEN <code>&lt;owner&gt;</code> 嘗試將 C 標為「已續約」</li>
+<li>THEN 系統拒絕:「已續約」選項灰階並顯示「已續約僅主管可標」;C 狀態不變、歷程零新增</li>
+<li>觀測:從 C 列狀態選單與狀態欄看 | 「已續約」灰階、提示字樣出現、狀態仍「已聯絡供應商」算對 | 用非主管帳號 <code>&lt;owner&gt;</code> 對 S-4 的合約 C 測</li>
+<li>Operational Context:
+<ul>
+<li>Actor:負責業務 <code>&lt;owner&gt;</code>(嘗試者);業務主管(有權者)</li>
+<li>Goal:結案定案權留在主管(對應核准權,1-discussion Q5)</li>
+<li>Situation:談成後業務想直接結案</li>
+<li>Known information:目前狀態、談判結果(口頭)</li>
+<li>Missing information:主管是否同意定案</li>
+<li>Human decision:主管決定是否標「已續約」</li>
+<li>Authority:「已續約」僅主管;業務可標其餘狀態</li>
+<li>External dependency:主管確認</li>
+<li>Out-of-system action:LINE/口頭通知主管來標</li>
+<li>Waiting/timeout behavior:狀態停在「已聯絡供應商」直到主管動作</li>
+<li>Recovery:不適用(拒絕操作無副作用)</li>
+<li>Audit/handoff requirement:「已續約」歷程必然記到主管名下(結案責任可追)</li>
+<li>Observation:灰階選項 + 提示字樣 + 狀態不變</li>
+</ul>
+</li>
 </ul>
 <h2>MODIFIED Requirements</h2>
 <p>(無 —— 不改既有行為)</p>
@@ -78,22 +190,95 @@
 
 [R-2] 卡片列可點擊導向詳情
   卡片列出到期合約 C -&gt; 使用者點擊該列 -&gt; 導向 /contracts/C.id
+
+[R-3] 處理狀態僅由明確標記改變
+  卡片列 C -&gt; 標記動作(等待法務/等待主管/已聯絡供應商/不續約)
+    -&gt; 權限檢查
+      = 通過 -&gt; 更新狀態 + 下一步 + 最後動作時間 + 歷程一筆(誰/何時/舊→新)
+      = 「已續約」且非主管 -&gt; 拒絕(灰階 + 提示), 狀態不變
+  卡片列 C -&gt; 僅開啟/看過 -&gt; 狀態不變, 歷程零新增
 </code></pre>
 <h2>Acceptance Criteria</h2>
 <ul>
-<li>S-1 ~ S-3 測試全綠。</li>
+<li>S-1 ~ S-6 測試全綠。</li>
 <li>dashboard p95 載入延遲增加 &lt; 100ms(8k 筆量級,EXPLAIN 驗證走索引)。</li>
 </ul>
 <h2>Out of Scope</h2>
-<p>email/LINE 通知、自訂天數、主管彙總報表。</p>
+<p>email/LINE 通知、自訂天數、主管彙總報表、自動寄信給法務/供應商、逾時自動升級提醒、法務簽核流程系統化。</p>
 <h2>Diff Budget</h2>
-<p>≤ 6 檔 / ≤ 400 行(API handler+service+query、前端卡片元件+route、測試)。</p>
+<p>≤ 9 檔 / ≤ 600 行(API handler+service+query、狀態 API+migration、前端卡片元件+route、測試)。</p>
 <h2>Dependencies</h2>
-<p>無(不依賴其他 feature;不需 migration)。</p>
+<p>需 migration:<code>contracts.renewal_status</code>(enum:未處理/等待法務/等待主管/已聯絡供應商/已續約/不續約)+ 狀態歷程表(contract_id、誰、何時、舊→新)。不依賴其他 feature。</p>
+<h2>Verification Profile(G2 一併審)</h2>
+<ul>
+<li>Risk: high(判準:公開 API(<code>GET /contracts/expiring</code>、<code>PATCH /contracts/:id/status</code>)+
+<code>renewal_status</code> migration 不可逆改動 + 權限行為(「已續約」僅主管)。T 級沿用同一判準:
+T-5(migration + 權限)標 <code>Risk: high</code>,其餘 T 缺省 normal,見 5-tasks)</li>
+<li>Failure model:(Risk: high 必填,表見下)</li>
+<li>Negative constraints:
+<ul>
+<li>看過/任何 GET 路徑不得改變狀態或新增歷程(1-discussion Q4;S-5)</li>
+<li>非主管不得標「已續約」(1-discussion Q5;S-6)</li>
+<li>不得自動轉移狀態、不得逾時自動升級(Out of Scope)</li>
+</ul>
+</li>
+<li>Required layers:Full test suite、Changed-line coverage、Real execution
+(= 7-review 執行清單 2c gauntlet 命令的 <code>--require-layer</code> 清單,逐層一個 flag)</li>
+<li>Conditional layers:Types/compile(TS 檔變動觸發)、e2e(新前端互動流程觸發)、
+Rollback rehearsal(schema migration 觸發)—— 本次三者皆觸發,列入 Final Fresh Run</li>
+<li>Explicitly excluded layers:Mutation(本示範 repo 未配 mutation 工具鏈;實案 Risk: high
+應評估納入 Required)、Race/stress(狀態更新走單一交易,本次無新增併發寫入路徑)</li>
+<li>Final fresh entry point:<code>go test ./... &amp;&amp; npm test &amp;&amp; npx playwright test</code></li>
+</ul>
+<h3>Failure Model(Risk: high 必填)</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Failure mode</th>
+<th>影響</th>
+<th>可觀測訊號</th>
+<th>驗證層</th>
+<th>未覆蓋原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>非主管標「已續約」成功(權限繞過)</td>
+<td>結案責任錯置、審計失真</td>
+<td>API 未回 403;「已續約」未灰階</td>
+<td>Full test suite(<code>TestRenewalStatus_S4</code> 權限分支 + vitest S6)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>「看過」觸發狀態自動變更</td>
+<td>等待被誤標完成 → 漏跟催重現</td>
+<td>歷程零新增斷言失敗</td>
+<td>Full test suite(<code>TestRenewalStatus_S5_ViewDoesNotComplete</code>)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>migration 損及既有合約資料或不可回滾</td>
+<td>8k 筆合約狀態受損</td>
+<td>down/up 演練 orphan rows &gt; 0</td>
+<td>Rollback rehearsal</td>
+<td>—</td>
+</tr>
+<tr>
+<td>狀態欄位加入後到期查詢變慢</td>
+<td>dashboard p95 超 100ms(AC)</td>
+<td>EXPLAIN 不走索引、p95 上升</td>
+<td>Real execution(EXPLAIN + p95 量測)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div>
 <h2>Drafting Decisions(草擬自判,已裁決)</h2>
 <ul>
 <li>剩餘天數顯示「N 天」不含小時 | 理由:業務以天為單位追 | 棄項:精確到時分 | ✅</li>
 <li>S-2 空狀態文案寫死於 spec | 理由:驗收要可測,文案不可漂 | 棄項:留給前端自由 | ✅</li>
+<li>狀態值域固定 6 值(未處理/等待法務/等待主管/已聯絡供應商/已續約/不續約)| 理由:可測、可報表 | 棄項:自由文字狀態 | ✅</li>
+<li>「已續約」僅主管可標 | 理由:對應核准權(1-discussion Q5;3-prototype Demo 權限修正)| 棄項:業務可標+事後稽核 | ✅</li>
+<li>看過不改狀態(無「已讀即處理」)| 理由:防看過誤當完成(Demo AC-5 場景 3/3 確認)| 棄項:自動標已讀 | ✅</li>
 </ul>
 <h2>Test Skeletons(選配)</h2>
 <pre><code class="language-go">func TestExpiring_S1(t *testing.T) {
@@ -102,11 +287,19 @@
 	// THEN 到期卡片列出 C, 顯示名稱與剩餘天數「10 天」
 	t.Skip(&quot;skeleton - see 4-spec S-1; S-2/S-3 由前端 vitest 承接,見 6-implementation-notes&quot;)
 }
+
+func TestRenewalStatus_S5_ViewDoesNotComplete(t *testing.T) {
+	// GIVEN 合約 C 狀態「未處理」; WHEN 開 dashboard 看過兩次不標記
+	// THEN 狀態仍「未處理」且歷程零新增(看過 ≠ 完成)
+	t.Skip(&quot;skeleton - see 4-spec S-5; S-4/S-6 同 R-3 一組&quot;)
+}
 </code></pre>
 <h2>確認紀錄</h2>
 <ul>
 <li>R 範圍確認 | 2026-07-23</li>
 <li>S 逐段確認完成 | 2026-07-23</li>
+<li>Operational Context 逐 S 確認(承接 3-prototype 第 2 輪 Demo ACCEPTED)| 2026-07-23</li>
+<li>Verification Profile 填畢確認(Risk: high;Required 三層 = 2c <code>--require-layer</code> 清單)| 2026-07-23</li>
 </ul>
 </main>
 </body>

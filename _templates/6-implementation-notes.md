@@ -14,6 +14,8 @@ updated:
 > 每 T diff 折疊條)。
 > TDD 規則(superpowers):每個 S-id **先寫失敗測試**(RED,貼輸出摘要)→ 最小實作到
 > GREEN → refactor 保綠。沒看過測試失敗 = 不知道它測對東西。
+> dev-run 引擎案:「執行軌跡」節由 `devflow-obs` 從 ledger 衍生,禁手填;
+> 手動實作該節留白照舊。
 >
 > 執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併 T):
 > 0. 起手式:圍欄自查 —— 只讀 4-spec/5-tasks/6-notes/CONTEXT.md/living spec,
@@ -26,7 +28,10 @@ updated:
 >    git status 改動檔 ⊆ 該 T 自己的 Files,超出 → L1/L2 判(定義見下);d 跑該 T
 >    Verify;e independent T review:reviewer 必須不同於 T implementer,優先適格人類,
 >    否則 fresh-context reviewer Agent;reviewer 親跑 Verify,檢查 Covers、RED→GREEN
->    證據與該 T 自己的 Files scope。FAIL → 回同一 T 修正並重新送審;高風險或
+>    證據與該 T 自己的 Files scope,並過 Test Integrity Check 七項(①刪 assertion
+>    ②放寬 assertion ③新增 skip/xfail ④同步改測試+實作重新定義正確性 ⑤mock 核心
+>    邏輯 ⑥只追 coverage 無有意義 assertion ⑦沒跑的層寫成 PASS;任一命中 → FAIL)。
+>    FAIL → 回同一 T 修正並重新送審;高風險或
 >    finding 有爭議可加第二 reviewer;f PASS → commit;g hash 入 Progress Log +
 >    勾 checkbox + review evidence 入 T Review Log;h 自由選擇 → Decisions 一行續走,
 >    偏差 → L1/L2。完成 = 該 T reviewer PASS + checkbox ✓ + hash 在案 + Covers
@@ -65,6 +70,7 @@ updated:
 - Covers finding:<涵蓋是否吻合>
 - Files finding:<改動是否位於該 T 自己的 Files scope>
 - RED→GREEN finding:<證據是否完整、可信>
+- Test Integrity finding:<七項檢查結果;任一命中即 FAIL,無命中記 none>
 - verdict:PASS | FAIL
 - correction + re-review after FAIL:<修正內容 + 後續 round 證據;無 FAIL 則 N/A>
 -->
@@ -73,9 +79,13 @@ updated:
 <!-- 日期 | T-id | 一行;只記 T Review PASS 後做的 commit,每列含 commit hash -->
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
-<!-- 每 T 一列:T-id | 失敗分類(SPEC/ENV/IMPL/UNKNOWN,README §5 驗證五律 5;
+Run: <run_id>
+<!-- 節首固定一行 `Run: <run_id>`;dev-run 案本節由 devflow-obs 從 ledger 衍生,禁手填。
+     每 T 一列:T-id | 失敗分類(SPEC/ENV/IMPL/UNKNOWN,README §5 驗證五律 5;
      全程無失敗填 —)| 模型升階史(如 haiku→sonnet)| 回合數 | 升階原因一句。
-     ENV 失敗的重跑不計升階回合。升階本身 = spec 品質訊號,7-review.html 以表呈現 -->
+     ENV 失敗的重跑不計升階回合。升階本身 = spec 品質訊號,7-review.html 以表呈現。
+     parallel 模式加記:wave 編號 | candidate SHA | gate verdict(devflow-gate-result.v1
+     的 verdict)| review 途徑(wave n / dedicated);sequential 留白照舊 -->
 
 ## TDD Evidence
 <!-- 每個「T × Covers S」各一筆;同一 S 在不同 T/層次的 RED→GREEN 不得共用。 -->

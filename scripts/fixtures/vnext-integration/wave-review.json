@@ -1,0 +1,13 @@
+{
+  "wave_tasks": ["T-1", "T-2"],
+  "review": {
+    "schema": "devflow-wave-review.v1",
+    "feature": "vnext-thin-slice", "wave": 1,
+    "tasks": [
+      {"task": "T-1", "verdict": "PASS", "findings": []},
+      {"task": "T-2", "verdict": "PASS", "findings": []}
+    ],
+    "integration_verdict": "PASS",
+    "reviewed_at": "2026-08-02T10:19:00"
+  }
+}
