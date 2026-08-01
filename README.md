@@ -176,8 +176,10 @@ RED → GREEN → scope check → Verify
   不同意的擺論證,不盲改(禁 performative fix)。
 - **判級疑義**:分不清 L1/L2 → 一律當 L2。Diff Budget 超支本身非偏差,
   是停下判級的訊號。
-- **Demo verdict gate**(gate 級流程規則):3-prototype Human verdict ≠ ACCEPTED →
-  相關互動 S 不得於 G2 定案;NOT_REVIEWED ≠ ACCEPTED。
+- **Demo verdict**(Stage 3→4 流程規則):3-prototype Human verdict ≠ ACCEPTED 的
+  互動 S,4-spec 不得將其標記定案(列 Drafting Decisions 待裁決或退回 Stage 3
+  重新 Demo)—— 屬 Stage 4 執行清單義務;NOT_REVIEWED ≠ ACCEPTED;
+  gate 條件正本見 §7。
 
 **驗證五律**(2026-08 對照 openspec/superpowers/mattpocock/harness-engineering
 四家驗證機制後定案;適用 T 執行、T review 與各 gate):
