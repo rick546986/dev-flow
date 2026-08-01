@@ -1,0 +1,23 @@
+{
+  "schema_id": "devflow-prompt-registry",
+  "schema_version": "1.0.0",
+  "comment": "Prompt Version registry(五節)。registry 檔住 prompt 正本所在 repo(runtime = plugin repo,外部契約);本 schema + validator 是格式正本。版本規則:Patch=文字澄清不改行為 / Minor=新增欄位或流程 / Major=責任邊界或輸出 schema 改變。改版必經人類核准(approved_by),統計工具只出 Recommendation,不自動改 Prompt(十節)。",
+  "required": ["schema", "prompts"],
+  "version_entry": {
+    "required": ["version", "prompt_hash", "source_sha", "change_class", "changed", "approved_by"],
+    "optional": ["rubric_version", "context_packet_version"]
+  },
+  "fields": {
+    "schema": {"type": "string", "pattern": "^devflow-prompt-registry/1$"},
+    "prompt_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "current_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "prompt_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "source_sha": {"type": "string", "pattern": "^[0-9a-f]{7,40}$"},
+    "change_class": {"type": "enum", "values": ["patch", "minor", "major"]},
+    "changed": {"type": "text", "maxlen": 500},
+    "approved_by": {"type": "text", "maxlen": 100},
+    "rubric_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "context_packet_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}
+  }
+}

@@ -1,0 +1,24 @@
+{
+ "schema": "devflow-prompt-registry/1",
+ "prompts": {
+  "stage6-worker": {
+   "current_version": "3.1.0",
+   "versions": [
+    {"version": "3.0.0", "prompt_hash": "sha256:7777777777777777777777777777777777777777777777777777777777777777", "source_sha": "aaaa111", "change_class": "major", "changed": "初版:三件套派工模板(目標/驗收/回報)", "approved_by": "rick"},
+    {"version": "3.1.0", "prompt_hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222", "source_sha": "90d30e8", "change_class": "minor", "changed": "新增:附 .claude/rules 相關節與 Test Skeleton", "approved_by": "rick"}
+   ]
+  },
+  "stage6-reviewer": {
+   "current_version": "2.0.0",
+   "versions": [
+    {"version": "2.0.0", "prompt_hash": "sha256:3333333333333333333333333333333333333333333333333333333333333333", "source_sha": "90d30e8", "change_class": "major", "changed": "初版:README §5 acceptance seam 收驗模板", "approved_by": "rick"}
+   ]
+  },
+  "stage7-spec-reviewer": {
+   "current_version": "1.0.0",
+   "versions": [
+    {"version": "1.0.0", "prompt_hash": "sha256:6666666666666666666666666666666666666666666666666666666666666666", "source_sha": "90d30e8", "change_class": "major", "changed": "初版:Spec Axis 逐 R 對照 + 現象複驗", "approved_by": "rick"}
+   ]
+  }
+ }
+}

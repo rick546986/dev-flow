@@ -1,0 +1,12 @@
+{
+ "schema": "devflow-context-manifest/1",
+ "context_packet_version": "1.0.0",
+ "task_id": "T-1",
+ "attempt_id": "att_01JG8C4V2M0000000000000A01",
+ "files_count": 5,
+ "scenario_count": 2,
+ "estimated_tokens": 6400,
+ "included_artifacts": ["docs/dev/contract-expiry-reminder/4-spec.md", "docs/dev/contract-expiry-reminder/5-tasks.md", "CONTEXT.md", "docs/specs/reminder.md", ".claude/rules/db.md"],
+ "contract_hash": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+ "living_spec_hash": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+}
