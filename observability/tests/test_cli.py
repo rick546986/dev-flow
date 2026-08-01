@@ -45,7 +45,8 @@ class TestCli(unittest.TestCase):
             self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
             derived = os.path.join(dst, "derived", "run-events.jsonl")
             self.assertTrue(os.path.exists(derived))
-            lines = open(derived).read().splitlines()
+            with open(derived) as f:
+                lines = f.read().splitlines()
             self.assertTrue(all(json.loads(l) for l in lines))
 
     def test_stats_over_fixtures_and_legacy(self):

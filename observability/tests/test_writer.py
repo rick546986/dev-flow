@@ -18,7 +18,8 @@ class TestAtomicWriteJson(unittest.TestCase):
     def test_writes_and_leaves_no_temp(self):
         p = os.path.join(self.tmp.name, "result.json")
         writer.atomic_write_json(p, {"result": "PASS"})
-        self.assertEqual(json.load(open(p)), {"result": "PASS"})
+        with open(p) as f:
+            self.assertEqual(json.load(f), {"result": "PASS"})
         leftovers = [f for f in os.listdir(self.tmp.name) if f != "result.json"]
         self.assertEqual(leftovers, [])
 
@@ -36,7 +37,8 @@ class TestAtomicWriteJson(unittest.TestCase):
                 writer.atomic_write_json(p, {"v": 2})
         finally:
             os.replace = real_replace
-        self.assertEqual(json.load(open(p)), {"v": 1})
+        with open(p) as f:
+            self.assertEqual(json.load(f), {"v": 1})
 
 
 class TestEventWriter(unittest.TestCase):
@@ -50,7 +52,8 @@ class TestEventWriter(unittest.TestCase):
         w.append({"event_type": "attempt_started", "run_id": "run_x"})
         w.append({"event_type": "attempt_completed", "run_id": "run_x"})
         w.close()
-        lines = open(os.path.join(self.attempt_dir, "events.jsonl")).read().splitlines()
+        with open(os.path.join(self.attempt_dir, "events.jsonl")) as f:
+            lines = f.read().splitlines()
         events = [json.loads(l) for l in lines]
         self.assertEqual([e["seq"] for e in events], [1, 2])
         self.assertEqual(events[0]["event_type"], "attempt_started")
@@ -68,12 +71,14 @@ class TestEventWriter(unittest.TestCase):
         w2 = writer.EventWriter(self.attempt_dir)
         w2.append({"event_type": "attempt_completed"})
         w2.close()
-        lines = open(os.path.join(self.attempt_dir, "events.jsonl")).read().splitlines()
+        with open(os.path.join(self.attempt_dir, "events.jsonl")) as f:
+            lines = f.read().splitlines()
         self.assertEqual([json.loads(l)["seq"] for l in lines], [1, 2])
 
     def test_stale_lock_detectable(self):
         w = writer.EventWriter(self.attempt_dir)
-        # 模擬 crash:不 close,直接丟棄 writer(鎖檔留存)
+        # 模擬 crash:不走 close()(鎖檔留存);僅收檔柄免 ResourceWarning
+        w._fh.close()
         del w
         self.assertTrue(writer.has_stale_lock(self.attempt_dir))
 

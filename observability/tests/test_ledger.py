@@ -117,7 +117,8 @@ class TestLoadAndIncomplete(unittest.TestCase):
     def test_validate_run_catches_broken_parent_ref(self):
         att2_dir = os.path.join(self.run_dir, "attempts", self.t1_atts[1])
         path = os.path.join(att2_dir, "events.jsonl")
-        lines = open(path).read().splitlines()
+        with open(path) as f:
+            lines = f.read().splitlines()
         events = [json.loads(l) for l in lines]
         ghost = evtools.mkid("att", 99)
         for e in events:
@@ -138,7 +139,8 @@ class TestDerive(unittest.TestCase):
 
     def test_derive_merges_all_sources(self):
         path = ledger.derive(self.run_dir)
-        lines = open(path).read().splitlines()
+        with open(path) as f:
+            lines = f.read().splitlines()
         view = ledger.load_run(self.run_dir)
         total = len(view["coordinator_events"])
         total += sum(len(a["events"]) for a in view["attempts"].values())
@@ -151,10 +153,12 @@ class TestDerive(unittest.TestCase):
 
     def test_derived_is_rebuildable_and_deterministic(self):
         p1 = ledger.derive(self.run_dir)
-        first = open(p1, "rb").read()
+        with open(p1, "rb") as f:
+            first = f.read()
         os.remove(p1)
         p2 = ledger.derive(self.run_dir)
-        self.assertEqual(open(p2, "rb").read(), first)
+        with open(p2, "rb") as f:
+            self.assertEqual(f.read(), first)
 
 
 class TestConcurrency(unittest.TestCase):
