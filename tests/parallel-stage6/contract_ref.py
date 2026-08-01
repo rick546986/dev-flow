@@ -410,6 +410,13 @@ def validate_wave_review(review, wave_tasks):
     errors = []
     if review.get("schema") != "devflow-wave-review.v1":
         errors.append(f"schema 非 devflow-wave-review.v1:{review.get('schema')}")
+    seen = set()
+    for e in review.get("tasks", []):
+        tid = e.get("task")
+        if tid in seen:
+            errors.append(f"{tid} 重複 entry(同一 T 多筆 verdict;後筆不得覆蓋前筆,"
+                          f"先 FAIL 後 PASS 必須整份退回重審)")
+        seen.add(tid)
     entries = {e.get("task"): e for e in review.get("tasks", [])}
     for wt in wave_tasks:
         if wt not in entries:
