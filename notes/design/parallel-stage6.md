@@ -116,7 +116,8 @@ execution:                              # 選配;整塊缺省 = 下列預設值
 舊 5-tasks.md(無 `execution:` 區塊、無新欄位)→ parser 產出與現行 `_exec_impl.py`
 完全相同的 scope/行為;新欄位行對舊 runtime 是未知行,**現行 regex 本來就忽略**,
 因此新模板檔餵舊 runtime 也不炸(雙向相容)。可執行證據:
-`tests/parallel-stage6/` 的 sequential regression 檢查 + 本 repo 74/74 基線保綠。
+`tests/parallel-stage6/` 的 sequential regression 檢查 + 本 repo 既有 check 基線保綠
+(條數以 `scripts/check-methodology-corrections.sh` 當次輸出為準,不寫死)。
 
 ## 3. 兩種 DAG
 
@@ -321,6 +322,9 @@ Candidate 不得進入正式 integration branch,也不得標示完成。
 }
 ```
 
+`checked_at` 語意 = **gate 執行檢查的時刻**(非 candidate 建立時刻),由 runtime 蓋章;
+contract_ref 為保決定論不自取時鐘,由呼叫者以參數顯式傳入(fixtures 未傳 → 空字串)。
+
 verdict = PASS ⟺ 14 項全 PASS;任一 FAIL → verdict FAIL + 該 T 轉 REWORK。
 Gate 只機械比對,**不做語意判斷**(語意歸 Review)。
 
@@ -434,7 +438,7 @@ T Review Log、Progress Log、TDD Evidence 謄錄、執行軌跡),沿用現行�
 | 未 Review 不可完成 | 狀態機:CANDIDATE/MECHANICAL_PASS→ACCEPTED 非法;can_tick 只認 ACCEPTED | runtime 強制 |
 | Wave per-task verdict | review schema fixtures(缺 verdict/歸屬 → 無效) | reviewer prompt 落地 |
 | high-risk dedicated | 缺省解析 high→dedicated;high+wave → 拒 | 排程路徑落地 |
-| sequential regression | 真檔 example 解析 + 74/74 + renderer 4/4 保綠 | selftest 全綠 |
+| sequential regression | 真檔 example 解析 + 既有 check 基線全綠 + renderer fixed point 全綠(條數動態,以腳本輸出為準) | selftest 全綠 |
 
 ## 15. 外部 plugin 待辦
 

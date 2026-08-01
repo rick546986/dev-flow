@@ -358,8 +358,11 @@ def _sid_matched(sid, names):
     return any(pattern.search(name) for name in names)
 
 
-def run_gate(bundle):
-    """輸入 fixture bundle(candidate/task/pinned/外部 git 事實),輸出 gate-result.v1。"""
+def run_gate(bundle, checked_at=""):
+    """輸入 fixture bundle(candidate/task/pinned/外部 git 事實),輸出 gate-result.v1。
+
+    checked_at = gate 執行檢查的時刻,由呼叫端(runtime)顯式傳入;
+    本檔為保決定論不自取時鐘,未傳 → 空字串(語意見設計文件 §9)。"""
     cand = bundle.get("candidate") or {}
     task = bundle.get("task") or {}
     pinned = bundle.get("pinned") or {}
@@ -400,7 +403,7 @@ def run_gate(bundle):
         "candidate_sha": cand.get("candidate_sha", ""),
         "verdict": "PASS" if all(results.values()) else "FAIL",
         "checks": checks,
-        "checked_at": cand.get("created_at", ""),
+        "checked_at": checked_at,
     }
 
 
