@@ -37,8 +37,8 @@ updated: 2026-07-23
 | Changed-line coverage | `go test -coverprofile` + `vitest --coverage` | pass | 76/76 changed lines covered | |
 | Real execution | `curl -s -X PATCH :8080/contracts/C.id/status` | pass | HTTP 200,狀態=等待法務,歷程 1 筆 | |
 | Rollback rehearsal | `make migrate-down && make migrate-up`(staging snapshot) | pass | down/up 各 1 步 clean,0 orphan rows | |
-| Mutation | | unverified | | 示範案例未跑 mutation 工具;實案依 4-spec Verification Profile 的 Required layers 決定 |
-| Race/stress | | n-a | | 無並發寫入路徑變更(狀態更新走單一交易) |
+| Mutation | | n-a | | Explicitly excluded(見 4-spec Verification Profile):本示範 repo 未配 mutation 工具鏈;實案 Risk: high 應評估納 Required |
+| Race/stress | | n-a | | Explicitly excluded(見 4-spec Verification Profile):狀態更新走單一交易,無新增併發寫入路徑 |
 
 ## Negative Constraint Mapping
 | Constraint | Test/Layer | Status |

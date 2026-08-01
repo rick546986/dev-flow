@@ -42,6 +42,7 @@ updated: 2026-07-23
 - Files: `migrations/0007_renewal_status.sql`, `internal/handler/contract_status.go`, `internal/repo/contract_status.go`
 - Verify: `go test ./internal/... -run TestRenewalStatus_S4`
 - Blocked-by: T-1
+- Risk: high
 - Intent: 系統多了「標記處理狀態」行為:標記後狀態/下一步/最後動作時間更新,歷程新增一筆(誰/何時/舊→新);「已續約」僅主管,非主管在 API 層被拒。
 - Boundaries: 狀態值域固定 6 值(4-spec Drafting Decisions);禁任何自動轉移狀態(僅明確標記動作);migration 只加 `renewal_status` enum 欄與歷程表,不動既有欄位。
 

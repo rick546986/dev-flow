@@ -209,6 +209,69 @@
 <p>≤ 9 檔 / ≤ 600 行(API handler+service+query、狀態 API+migration、前端卡片元件+route、測試)。</p>
 <h2>Dependencies</h2>
 <p>需 migration:<code>contracts.renewal_status</code>(enum:未處理/等待法務/等待主管/已聯絡供應商/已續約/不續約)+ 狀態歷程表(contract_id、誰、何時、舊→新)。不依賴其他 feature。</p>
+<h2>Verification Profile(G2 一併審)</h2>
+<ul>
+<li>Risk: high(判準:公開 API(<code>GET /contracts/expiring</code>、<code>PATCH /contracts/:id/status</code>)+
+<code>renewal_status</code> migration 不可逆改動 + 權限行為(「已續約」僅主管)。T 級沿用同一判準:
+T-5(migration + 權限)標 <code>Risk: high</code>,其餘 T 缺省 normal,見 5-tasks)</li>
+<li>Failure model:(Risk: high 必填,表見下)</li>
+<li>Negative constraints:
+<ul>
+<li>看過/任何 GET 路徑不得改變狀態或新增歷程(1-discussion Q4;S-5)</li>
+<li>非主管不得標「已續約」(1-discussion Q5;S-6)</li>
+<li>不得自動轉移狀態、不得逾時自動升級(Out of Scope)</li>
+</ul>
+</li>
+<li>Required layers:Full test suite、Changed-line coverage、Real execution
+(= 7-review 執行清單 2c gauntlet 命令的 <code>--require-layer</code> 清單,逐層一個 flag)</li>
+<li>Conditional layers:Types/compile(TS 檔變動觸發)、e2e(新前端互動流程觸發)、
+Rollback rehearsal(schema migration 觸發)—— 本次三者皆觸發,列入 Final Fresh Run</li>
+<li>Explicitly excluded layers:Mutation(本示範 repo 未配 mutation 工具鏈;實案 Risk: high
+應評估納入 Required)、Race/stress(狀態更新走單一交易,本次無新增併發寫入路徑)</li>
+<li>Final fresh entry point:<code>go test ./... &amp;&amp; npm test &amp;&amp; npx playwright test</code></li>
+</ul>
+<h3>Failure Model(Risk: high 必填)</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Failure mode</th>
+<th>影響</th>
+<th>可觀測訊號</th>
+<th>驗證層</th>
+<th>未覆蓋原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>非主管標「已續約」成功(權限繞過)</td>
+<td>結案責任錯置、審計失真</td>
+<td>API 未回 403;「已續約」未灰階</td>
+<td>Full test suite(<code>TestRenewalStatus_S4</code> 權限分支 + vitest S6)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>「看過」觸發狀態自動變更</td>
+<td>等待被誤標完成 → 漏跟催重現</td>
+<td>歷程零新增斷言失敗</td>
+<td>Full test suite(<code>TestRenewalStatus_S5_ViewDoesNotComplete</code>)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>migration 損及既有合約資料或不可回滾</td>
+<td>8k 筆合約狀態受損</td>
+<td>down/up 演練 orphan rows &gt; 0</td>
+<td>Rollback rehearsal</td>
+<td>—</td>
+</tr>
+<tr>
+<td>狀態欄位加入後到期查詢變慢</td>
+<td>dashboard p95 超 100ms(AC)</td>
+<td>EXPLAIN 不走索引、p95 上升</td>
+<td>Real execution(EXPLAIN + p95 量測)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div>
 <h2>Drafting Decisions(草擬自判,已裁決)</h2>
 <ul>
 <li>剩餘天數顯示「N 天」不含小時 | 理由:業務以天為單位追 | 棄項:精確到時分 | ✅</li>
@@ -236,6 +299,7 @@ func TestRenewalStatus_S5_ViewDoesNotComplete(t *testing.T) {
 <li>R 範圍確認 | 2026-07-23</li>
 <li>S 逐段確認完成 | 2026-07-23</li>
 <li>Operational Context 逐 S 確認(承接 3-prototype 第 2 輪 Demo ACCEPTED)| 2026-07-23</li>
+<li>Verification Profile 填畢確認(Risk: high;Required 三層 = 2c <code>--require-layer</code> 清單)| 2026-07-23</li>
 </ul>
 </main>
 </body>

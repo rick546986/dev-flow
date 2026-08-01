@@ -157,6 +157,31 @@ email/LINE 通知、自訂天數、主管彙總報表、自動寄信給法務/�
 ## Dependencies
 需 migration:`contracts.renewal_status`(enum:未處理/等待法務/等待主管/已聯絡供應商/已續約/不續約)+ 狀態歷程表(contract_id、誰、何時、舊→新)。不依賴其他 feature。
 
+## Verification Profile(G2 一併審)
+- Risk: high(判準:公開 API(`GET /contracts/expiring`、`PATCH /contracts/:id/status`)+
+  `renewal_status` migration 不可逆改動 + 權限行為(「已續約」僅主管)。T 級沿用同一判準:
+  T-5(migration + 權限)標 `Risk: high`,其餘 T 缺省 normal,見 5-tasks)
+- Failure model:(Risk: high 必填,表見下)
+- Negative constraints:
+  - 看過/任何 GET 路徑不得改變狀態或新增歷程(1-discussion Q4;S-5)
+  - 非主管不得標「已續約」(1-discussion Q5;S-6)
+  - 不得自動轉移狀態、不得逾時自動升級(Out of Scope)
+- Required layers:Full test suite、Changed-line coverage、Real execution
+  (= 7-review 執行清單 2c gauntlet 命令的 `--require-layer` 清單,逐層一個 flag)
+- Conditional layers:Types/compile(TS 檔變動觸發)、e2e(新前端互動流程觸發)、
+  Rollback rehearsal(schema migration 觸發)—— 本次三者皆觸發,列入 Final Fresh Run
+- Explicitly excluded layers:Mutation(本示範 repo 未配 mutation 工具鏈;實案 Risk: high
+  應評估納入 Required)、Race/stress(狀態更新走單一交易,本次無新增併發寫入路徑)
+- Final fresh entry point:`go test ./... && npm test && npx playwright test`
+
+### Failure Model(Risk: high 必填)
+| Failure mode | 影響 | 可觀測訊號 | 驗證層 | 未覆蓋原因 |
+|---|---|---|---|---|
+| 非主管標「已續約」成功(權限繞過) | 結案責任錯置、審計失真 | API 未回 403;「已續約」未灰階 | Full test suite(`TestRenewalStatus_S4` 權限分支 + vitest S6) | — |
+| 「看過」觸發狀態自動變更 | 等待被誤標完成 → 漏跟催重現 | 歷程零新增斷言失敗 | Full test suite(`TestRenewalStatus_S5_ViewDoesNotComplete`) | — |
+| migration 損及既有合約資料或不可回滾 | 8k 筆合約狀態受損 | down/up 演練 orphan rows > 0 | Rollback rehearsal | — |
+| 狀態欄位加入後到期查詢變慢 | dashboard p95 超 100ms(AC) | EXPLAIN 不走索引、p95 上升 | Real execution(EXPLAIN + p95 量測) | — |
+
 ## Drafting Decisions(草擬自判,已裁決)
 - 剩餘天數顯示「N 天」不含小時 | 理由:業務以天為單位追 | 棄項:精確到時分 | ✅
 - S-2 空狀態文案寫死於 spec | 理由:驗收要可測,文案不可漂 | 棄項:留給前端自由 | ✅
@@ -184,3 +209,4 @@ func TestRenewalStatus_S5_ViewDoesNotComplete(t *testing.T) {
 - R 範圍確認 | 2026-07-23
 - S 逐段確認完成 | 2026-07-23
 - Operational Context 逐 S 確認(承接 3-prototype 第 2 輪 Demo ACCEPTED)| 2026-07-23
+- Verification Profile 填畢確認(Risk: high;Required 三層 = 2c `--require-layer` 清單)| 2026-07-23
