@@ -338,11 +338,17 @@ cd &lt;path&gt;
   <div class="tablewrap"><table>
     <tr><th>動作</th><th>指令</th><th>用途</th></tr>
     <tr><td><code>start</code></td><td><code>devflow-exec.sh start &lt;slug&gt;</code></td>
-        <td>驗 4-spec 存在且 <code>status: approved</code>、逐 T 驗 Covers/Files/Verify/Blocked-by,
-        再把 Git repository root 相對的 Files 聯集正規化成 scope。scope 外的真實髒檔會<strong>拒絕</strong>
-        start(先 commit/還原/換乾淨 worktree),不會被收進 baseline;通過後才記錄 scope 內 baseline、契約 hash、寫 sentinel。</td></tr>
+        <td>依序檢查:①本工作樹是否已武裝 —— 武裝中<strong>他模組</strong> start 一律拒絕
+        (不靜默覆寫;見下方「並行與多模組」),<strong>同模組</strong>重跑 = re-arm 允許
+        (5-tasks 改動後重釘 scope 的正常路徑);②驗 4-spec 存在且 <code>status: approved</code>;
+        ③逐 T 驗 Covers/Files/Verify/Blocked-by;④把 Git repository root 相對的 Files 聯集
+        正規化成 scope。scope 外的真實髒檔會<strong>拒絕</strong> start(先 commit/還原/
+        換乾淨 worktree),不會被收進 baseline;唯一例外:<code>.gitignore</code> 若與 HEAD 的
+        差異只有上次 start 自己 append 的 <code>.devflow/</code> 一行,視為良性,不擋 re-arm。
+        全部通過後才記錄 scope 內 baseline、契約 hash、寫 sentinel。</td></tr>
     <tr><td><code>status</code></td><td><code>devflow-exec.sh status</code></td>
-        <td>查目前武裝的 slug/scope/extra 數與 sentinel 是否在;旗標存在 &gt;24h 會警告。</td></tr>
+        <td>查目前武裝的 slug/scope/extra 數與 sentinel 是否在。&gt;24h 警告<strong>只在
+        你手動跑 <code>status</code> 時檢查並列印</strong> —— 沒有背景排程,不跑就不會有人提醒。</td></tr>
     <tr><td><code>allow</code></td><td><code>devflow-exec.sh allow &lt;file&gt; --reason "D-n …"</code></td>
         <td>L1 偏差擴 scope。<code>--reason</code> 必填 —— 位置參數是 <code>$1</code> 動作
         <code>$2</code> 檔案 <code>$3</code>(固定字面 <code>--reason</code>)<code>$4</code> 理由;
@@ -380,16 +386,21 @@ devflow-exec.sh stop → 修 → 重審 → 重新 start。</pre>
 L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   --reason "..." 並記 D-n;L2 → stop。</pre>
       <p>三種裡<strong>唯一有 L1 分支</strong>的一種:沒動到 R/S → <code>allow</code> + 記 D-n 繼續;
-      動到了 → stop 走 L2。分不清 → 一律當 L2。</p>
+      動到了 → stop 走 L2。<strong>判級由誰認定</strong>:實作者當下自判,但必須以 D-n 留痕
+      (現象/保守選擇/理由/影響),T review 時 reviewer 對照 D-n 覆核判級 —— 自判錯誤會在
+      review 被打回。分不清 → 一律當 L2,這條沒有裁量空間。</p>
     </div>
   </div>
 
   <details>
     <summary>補充:其他會被擋的情況(較少見)</summary>
     <ul>
-      <li><code>.devflow/</code> 被直接編輯(不論 Edit 工具或 shell)→ 擋,狀態只准 CLI 動,
-        擴 scope 要走 <code>allow</code>,不要手動改 JSON</li>
-      <li><code>.gitignore</code> 執行期被改 → 擋(改忽略規則會讓偵測網失明)→ 停下回報使用者</li>
+      <li><code>.devflow/</code> 被直接編輯 → 擋。<strong>擋法</strong>:Edit/Write 由
+        <code>devflow-guard</code> 事前擋,shell(<code>rm</code>/覆寫)由 <code>devflow-prebash</code>
+        事前擋 —— 兩路都到不了檔案。狀態只准 CLI 動,擴 scope 走 <code>allow</code>,不要手動改 JSON</li>
+      <li><code>.gitignore</code> 執行期被改 → 擋(改忽略規則會讓偵測網失明)。<strong>擋法不同</strong>:
+        Edit/Write 事前擋;shell 改動<strong>事前不擋</strong>,由 <code>devflow-postbash</code>
+        事後比對 baseline hash 抓到(exit 2)—— 改動已落地,停下回報使用者、還原後再繼續</li>
       <li>postbash 偵測網(每次 Bash 後跑,事後偵測):抓「經 shell 繞過」的契約 hash 變動與 scope 外改動,
         exit 2 印到 stderr,處置同上兩張卡(契約變動 = L2 stop;scope 外 = L1 allow 或 L2 stop)</li>
       <li><strong>ambient metadata</strong>:任何深度的 <code>.DS_Store</code>、basename 為
@@ -401,9 +412,26 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         等同圍欄② 的 shell 版;指令若試圖 <code>rm</code>/覆寫 <code>.devflow/</code> 或 sentinel → 擋。
         一般指令(測試、build、git)完全不受影響</li>
       <li>fail-closed:sentinel 在但 <code>.devflow/exec.json</code> 消失或損壞 → <strong>擋一切</strong>
-        Edit/Write/Read 動作,不是自動放行 —— 見下方 FAQ「忘了 stop」</li>
+        Edit/Write/Read 動作,不是自動放行。<strong>復原路徑</strong>:<code>devflow-exec.sh</code> 是
+        CLI、不經 hooks,所以不會被自己擋 —— 跑 <code>stop</code>(撤旗標與 sentinel,守衛沉睡)
+        後重新 <code>start &lt;slug&gt;</code>(baseline/契約 hash 重算);sentinel 還記得原 slug 時,
+        直接 <code>start 同slug</code> 也可(視為 re-arm 復原)</li>
     </ul>
   </details>
+
+  <h3>並行與多模組:守衛的邊界在「工作樹」</h3>
+  <ul>
+    <li>守衛狀態(<code>.devflow/exec.json</code> + git-dir sentinel)以<strong>當前工作樹</strong>為
+      單位,一個工作樹同一時間只武裝一個模組。</li>
+    <li><strong>多模組並行的正解:各開 git worktree。</strong>每個 worktree 有自己的 toplevel 與
+      git-dir,守衛 state 天然隔離 —— 模組 A 在 worktree 甲跑 Stage 6 時,模組 B 在 worktree 乙
+      寫 spec、跑自己的 Stage 6,互不阻擋。模組 A 在 task 執行、模組 B 已進後段 stage 的
+      混速並行,就用這個方式。</li>
+    <li>同一工作樹內硬要並行<strong>做不到</strong>,且是刻意設計:hooks 分不清寫入來自哪個
+      session,武裝期間跨 feature 的 1/2/3/4 契約檔一律保護(fail-closed)。</li>
+    <li>武裝中另一模組 <code>start</code> → <strong>拒絕</strong>並提示開 worktree 或先
+      <code>stop</code>;絕不靜默覆寫已武裝模組的 scope/baseline(舊版曾有此漏洞,已修並入 selftest)。</li>
+  </ul>
   <p class="muted">守衛共四條掛載:<code>devflow-guard</code>(Edit|Write|Read)、
   <code>devflow-prebash</code>(Bash 事前)、<code>devflow-postbash</code>(Bash 事後偵測)、
   <code>devtalk-guard</code>(盲原則)。想確認整套沒壞:跑

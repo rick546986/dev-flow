@@ -152,6 +152,13 @@ RED → GREEN → scope check → Verify
   `devtalk-guard`(盲原則掃描)。L1 出口 = `devflow-exec.sh allow <file> --reason`;
   L2 = `stop`。收尾 `stop` 後全部沉睡。自測:`hooks/selftest.sh`(動態發現案例,可重跑)。
   界線:紀律工具非安全沙箱,詳 `dev-setup-record.html`。
+- **守衛與並行**:守衛狀態以「當前工作樹」為單位(`.devflow/exec.json` + git-dir sentinel),
+  一個工作樹同一時間只武裝一個模組。武裝中他模組 `start` → 一律拒絕(不靜默覆寫);
+  同模組重跑 `start` = re-arm,允許(5-tasks 改動後重釘 scope 的正常路徑)。
+  **多模組並行的正解是各開 git worktree**:每個 worktree 有獨立 toplevel 與 git-dir,
+  守衛互不相見 —— 模組 A 在 worktree 甲跑 Stage 6 時,模組 B 在 worktree 乙寫 spec、
+  跑自己的 Stage 6,零互擋。同一工作樹內硬要並行做不到:武裝期間跨 feature 的
+  1/2/3/4 契約檔一律受保護(hooks 分不清寫入來自哪個 session,fail-closed)。
 - **接收審查**(G3 打回時):逐 F 驗證後才動手 —— 同意的改並一句說明為何對;
   不同意的擺論證,不盲改(禁 performative fix)。
 - **判級疑義**:分不清 L1/L2 → 一律當 L2。Diff Budget 超支本身非偏差,
