@@ -1,6 +1,7 @@
 #!/bin/bash
 # Tests for scripts/devflow-evidence-gauntlet.sh(文檔方法論層的 gauntlet 入口)。
-# 獨立新檔:不動既有 74/74 check;fixtures 住 scripts/fixtures/evidence-gauntlet/。
+# 獨立新檔:不動既有 methodology check 基線(條數動態,以該腳本自身輸出為準);
+# fixtures 住 scripts/fixtures/evidence-gauntlet/。
 # 跑法:bash scripts/test-evidence-gauntlet.sh
 set -u
 
@@ -119,6 +120,46 @@ elif ! grep -q "tool-version:" "$report" 2>/dev/null; then
 else
   echo "  ✅ stale report 清除 + 新 report 綁 run-id/SHA/tool-version"
 fi
+
+echo "== M3.malformed 表列 fail-closed(欄數≠預期 = error,禁靜默丟列)=="
+run_case "fail 列 Result 含多餘 | 整列欄數跑掉 → E13 error 非零退出" 1 "E13" \
+  "$FIX/bad-malformed-row.md"
+
+echo "== m1.SHA 綁定最短長度(<7 字元拒絕比對)=="
+run_case "宣告 SHA 僅 1 字元 → 拒絕比對(E2)" 1 "E2" \
+  "$FIX/bad-short-sha.md" --source-sha f92c1d5aaaa
+run_case "宣告 SHA 過短即便無 --source-sha 也擋(E2)" 1 "E2" "$FIX/bad-short-sha.md"
+run_case "--source-sha 值 <7 字元 → 拒絕比對(E2)" 1 "E2" \
+  "$FIX/good-evidence.md" --source-sha abc12
+
+echo "== 小項②.flag 缺值 = 用法錯誤 exit 2 =="
+run_case "--source-sha 缺值 → usage + exit 2" 2 "usage" \
+  "$FIX/good-evidence.md" --source-sha
+
+echo "== M2.文檔化命令必須機械強制 E7(模板 2c 與 example 示範命令)=="
+checks=$((checks + 1))
+if grep -q -- "--require-layer" "$ROOT/_templates/7-review.md"; then
+  echo "  ✅ 模板 2c 文檔化命令含 --require-layer(E7 機械強制)"
+else
+  fail "模板 2c 文檔化命令未帶 --require-layer(Profile 必跑層標 unverified 仍 exit 0 = E7 死路)"
+fi
+checks=$((checks + 1))
+if grep -q -- "--require-layer" "$ROOT/example/contract-expiry-reminder/7-review.md"; then
+  echo "  ✅ example 示範命令含 --require-layer(與模板 2c 同步)"
+else
+  fail "example 示範命令未帶 --require-layer(與模板 2c 不同步)"
+fi
+# 文檔化命令實跑:example 7-review 經該命令(含 required 層)必須綠
+run_case "example 7-review 經文檔化命令(--review-file + required 層)綠" 0 "-" \
+  "$ROOT/example/contract-expiry-reminder/7-review.md" --review-file \
+  --source-sha f92c1d5 \
+  --require-layer "Full test suite" \
+  --require-layer "Changed-line coverage" \
+  --require-layer "Real execution"
+# 硬要求案例:required 層在 evidence 裡標 unverified → 文檔化命令必 fail
+run_case "required 層標 unverified(example Mutation)→ 文檔化命令 fail(E7)" 1 "E7" \
+  "$ROOT/example/contract-expiry-reminder/7-review.md" --review-file \
+  --source-sha f92c1d5 --require-layer "Mutation"
 
 echo
 if [ "$failures" -gt 0 ]; then
