@@ -194,12 +194,21 @@ repo,本 repo 只定義此契約 → 外部待辦(manifest)。**
 
 **文檔方法論層(本 repo 實作,已落地)**:`scripts/devflow-evidence-gauntlet.sh`
 —— 驗一份 7-review(或任何含 Verification Evidence 節的 md)是否遵守 Evidence
-契約:E1 header 四欄、E2 SHA 綁定、E3 四值、E4 沒跑不寫 PASS+數字非形容詞、
-E5 skipped 理由、E6 fail 擋 PASS、E7 required 層須實跑、E8 changed-line 分數、
-E9 mutation survivor/error、E10 negative mapping、E11 雙軸不可替代、
-E12 stale report 清除+run-id/版本/SHA 落 report。
-測試:`scripts/test-evidence-gauntlet.sh`(21 案)+
-`scripts/fixtures/evidence-gauntlet/`(14 fixtures)。本身即依 gauntlet 原則建:
+契約:E1 header 四欄、E2 SHA 綁定(比對取宣告值前導 hex token,兩端 **≥7 字元**
+才可比對,過短拒絕 —— 防「`f` 對任何 f 開頭 SHA 互為前綴即過」)、E3 四值、
+E4 沒跑不寫 PASS+數字非形容詞、E5 skipped 理由、E6 fail 擋 PASS、
+E7 required 層須實跑、E8 changed-line 分數、E9 mutation survivor/error、
+E10 negative mapping、E11 雙軸不可替代、E12 stale report 清除+run-id/版本/SHA
+落 report、E13 malformed 表列 fail-closed(欄數 ≠ 預期 = 明確 error,禁靜默丟列;
+儲存格內勿用原生 `|`)。
+exit 碼:0 = 契約全過;1 = 有違規;2 = 用法/檔案錯誤(含值型 flag 缺值)。
+**E7 的文檔化強制(review 退回 M2 的修正,採方案①)**:7-review 執行清單 2c 的
+文檔化命令**本身逐層帶 `--require-layer <Profile Required 層>`**(example 示範
+命令同步帶具體層)—— Required 層標 unverified/n-a 或缺席時,照抄文檔命令即紅,
+機械執行、非靠紀律。單一正本化(`--profile 4-spec.md` 自動抽 Required layers)
+留為後續選項,前提是 example 4-spec 先補 Verification Profile 節。
+測試:`scripts/test-evidence-gauntlet.sh` + `scripts/fixtures/evidence-gauntlet/`
+(案數與 fixture 數以腳本輸出為準,不在文檔寫死)。本身即依 gauntlet 原則建:
 單一命令、可 CI、report 先刪後寫。
 
 ## 8. Evidence Status(四值,全域規則)
@@ -294,9 +303,9 @@ run 級 completed 另帶:`verdict`(PASS/FAIL)、`layers_total`、`layers_failed`
 
 ## 14. 本 repo 落地物清單
 
-- `scripts/devflow-evidence-gauntlet.sh` — 文檔層 gauntlet 入口(E1–E12)
-- `scripts/test-evidence-gauntlet.sh` — 21 測試案
-- `scripts/fixtures/evidence-gauntlet/` — 14 fixtures(1 good evidence、1 good
-  review、12 violation 各一類)
+- `scripts/devflow-evidence-gauntlet.sh` — 文檔層 gauntlet 入口(E1–E13)
+- `scripts/test-evidence-gauntlet.sh` — 測試(案數以輸出為準)
+- `scripts/fixtures/evidence-gauntlet/` — fixtures(1 good evidence、1 good
+  review,其餘 bad-* 違規類各一;數量以目錄為準)
 - 本檔(設計正本)
 - `notes/change-manifests/gauntlet.md` — 模板/README/plugin 的待整合清單
