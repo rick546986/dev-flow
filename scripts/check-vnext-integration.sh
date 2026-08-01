@@ -10,10 +10,12 @@
 #   C(observability):同一條事件流(run→attempt→candidate→gate→review→accepted→
 #     verification_layer→run_completed)過 `observability/devflow-obs.py validate`
 #   D(evidence gauntlet):Final Fresh Run evidence fixture 過
-#     `scripts/devflow-evidence-gauntlet.sh`(含 --source-sha 綁定)
+#     `scripts/devflow-evidence-gauntlet.sh`—— SHA 綁定驗兩向:宣告 SHA 回餵 → 過;
+#     餵不同 SHA → 必須 E2 擋下(證明綁定真的有牙)
 #
-# 獨立腳本:不動 74 條基線(check-methodology-corrections)、不動 94/133/21 各家 suite;
-# 只複用 A/C/D 的既有工具與 fixture 格式。exit 0 = 全過;exit 1 = 逐條列出失敗。
+# 獨立腳本:不動既有各家 suite(methodology/renderer/parallel/realworld/observability/
+# gauntlet)的基線;只複用 A/C/D 的既有工具與 fixture 格式。
+# exit 0 = 全過;exit 1 = 逐條列出失敗。
 set -eu
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
@@ -165,19 +167,29 @@ check(ok_chain and accepted_tasks == {"T-1", "T-2"},
       "C:run→attempt→candidate→gate→review→accepted(T-1+T-2)→verification_layer→run_completed 鏈完整",
       detail or f"accepted={sorted(accepted_tasks - {None})}")
 
-# ---- 12. D:evidence fixture 過 gauntlet(含 source SHA 綁定)----
+# ---- 12-13. D:evidence fixture 過 gauntlet(SHA 綁定驗兩向)----
 evidence = os.path.join(FIX, "evidence.md")
+GAUNTLET = os.path.join(root, "scripts", "devflow-evidence-gauntlet.sh")
 declared = ""
 if os.path.isfile(evidence):
     match = re.search(r"^- Source SHA:\s*(\S+)", read("evidence.md"), re.M)
     declared = match.group(1) if match else ""
+# 正向:宣告 SHA 回餵 → 全過
 gauntlet = subprocess.run(
-    ["bash", os.path.join(root, "scripts", "devflow-evidence-gauntlet.sh"),
-     evidence] + (["--source-sha", declared] if declared else []),
+    ["bash", GAUNTLET, evidence] + (["--source-sha", declared] if declared else []),
     capture_output=True, text=True)
 check(os.path.isfile(evidence) and gauntlet.returncode == 0,
-      "D:Final Fresh Run evidence 過 devflow-evidence-gauntlet(E1–E10 + SHA 綁定)",
+      "D:Final Fresh Run evidence 過 devflow-evidence-gauntlet(正向:宣告 SHA 相符)",
       (gauntlet.stdout + gauntlet.stderr).strip()[:400])
+# 負向:餵不同 SHA(≥7 hex)→ 必須以 E2 非零退出(stale evidence 真的被擋)
+mismatch = "1234567deadbeef" if declared != "1234567deadbeef" else "abcdef012345678"
+negative = subprocess.run(
+    ["bash", GAUNTLET, evidence, "--source-sha", mismatch],
+    capture_output=True, text=True)
+neg_out = negative.stdout + negative.stderr
+check(os.path.isfile(evidence) and negative.returncode != 0 and "E2" in neg_out,
+      "D:SHA 不符時 gauntlet 以 E2 拒絕(負向案,綁定非恆真)",
+      f"exit={negative.returncode} out={neg_out.strip()[:200]}")
 
 if failures:
     print(f"❌ vnext integration scenario: {checks - len(failures)}/{checks} passed")
