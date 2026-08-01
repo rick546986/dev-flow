@@ -130,10 +130,19 @@ def aggregate_events(events_by_run, legacy_rows=(), min_n=5):
                 runs_stage7_blocker.add(run_id)
             elif etype == "verification_layer_completed":
                 s = layer_stats.setdefault(e.get("layer", "unknown"),
-                                           {"n": 0, "fail": 0})
-                s["n"] += 1
-                if e.get("result") == "FAIL":
-                    s["fail"] += 1
+                                           {"n": 0, "fail": 0,
+                                            "status_counts": {}})
+                # ID-10:status 為正式欄;舊 result(PASS|FAIL)為相容別名
+                status = e.get("status")
+                if status is None and e.get("result") in ("PASS", "FAIL"):
+                    status = {"PASS": "pass", "FAIL": "fail"}[e["result"]]
+                if status:
+                    s["status_counts"][status] = \
+                        s["status_counts"].get(status, 0) + 1
+                if status in ("pass", "fail"):
+                    s["n"] += 1
+                    if status == "fail":
+                        s["fail"] += 1
             elif etype == "review_completed" and e.get("model") \
                     and isinstance(e.get("findings_count"), int):
                 r = reviewer_findings.setdefault(e["model"],
@@ -196,7 +205,8 @@ def aggregate_events(events_by_run, legacy_rows=(), min_n=5):
             len(runs_stage6_pass & runs_stage7_blocker),
             len(runs_stage6_pass), min_n),
         "failure_rate_by_gauntlet_layer": {
-            layer: _rate(s["fail"], s["n"], min_n)
+            layer: dict(_rate(s["fail"], s["n"], min_n),
+                        status_counts=dict(sorted(s["status_counts"].items())))
             for layer, s in sorted(layer_stats.items())},
         "reviewer_strictness_by_model": {
             model: {"mean_findings_per_review": r["findings"] / r["n"],

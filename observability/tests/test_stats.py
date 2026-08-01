@@ -41,12 +41,22 @@ def dataset():
                          result="FAIL", violation="scope"))
     events.append(fac.ev("stage_completed", stage="6-implementation",
                          verdict="PASS"))
-    # Gauntlet 層(verifier 寫)
-    for result in ("PASS", "PASS", "FAIL"):
+    # Gauntlet 層(verifier 寫;ID-10:status 為正式欄)
+    for status in ("pass", "pass", "fail"):
         events.append(fac.ev("verification_layer_completed", writer="verifier",
-                             stage="7-review", layer="unit", result=result))
+                             stage="7-review", layer="unit", status=status,
+                             command_ref="pytest -q",
+                             result_summary="17 passed", source_sha="abc1234"))
+    # 舊 result 相容別名(Wave2 fixture 形狀)仍須計入統計
     events.append(fac.ev("verification_layer_completed", writer="verifier",
                          stage="7-review", layer="mutation", result="FAIL"))
+    # unverified / n-a 不進 pass/fail 分母,只進 status_counts
+    events.append(fac.ev("verification_layer_completed", writer="verifier",
+                         stage="7-review", layer="property", status="n-a",
+                         result_summary="無 property 測試標的"))
+    events.append(fac.ev("verification_layer_completed", writer="verifier",
+                         stage="7-review", layer="property",
+                         status="unverified"))
     # Stage 7:blocker finding → stage6 PASS 後 stage7 blocker 案例
     rev7 = evtools.mkid("rev", 700)
     events.append(fac.ev("review_started", stage="7-review", review_id=rev7,
@@ -125,8 +135,15 @@ class TestAggregation(unittest.TestCase):
     def test_gauntlet_layer_failure_rate(self):
         layers = self.agg["failure_rate_by_gauntlet_layer"]
         self.assertAlmostEqual(layers["unit"]["value"], 1 / 3)
-        self.assertAlmostEqual(layers["mutation"]["value"], 1.0)
+        self.assertAlmostEqual(layers["mutation"]["value"], 1.0)  # legacy result
         self.assertTrue(layers["mutation"]["insufficient_sample"])
+        # 四值 status:unverified/n-a 不進 pass/fail 分母,另列 status_counts
+        self.assertEqual(layers["property"]["n"], 0)
+        self.assertIsNone(layers["property"]["value"])
+        self.assertEqual(layers["property"]["status_counts"],
+                         {"n-a": 1, "unverified": 1})
+        self.assertEqual(layers["unit"]["status_counts"],
+                         {"pass": 2, "fail": 1})
 
     def test_confound_dimensions_reported(self):
         # 九節:分析必須區分模型/Prompt/Context/Spec/環境/Reviewer 嚴格度/Task 風險

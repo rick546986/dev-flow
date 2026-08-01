@@ -217,6 +217,79 @@ class TestPrivacy(unittest.TestCase):
         self.assertIn("privacy_value_too_long", codes(ev.validate_event(e)))
 
 
+class TestGauntletContract(unittest.TestCase):
+    """ID-10:D/C 事件契約合流 —— final_fresh_run_* 兩事件 + 四值 status。
+    相容方案(測試釘住):status 為正式欄;舊 result(PASS|FAIL)保留為相容
+    別名(Wave2 fixture 形狀);至少擇一,兩者並存必須一致。"""
+
+    def layer_completed(self, **over):
+        e = base("verification_layer_completed", writer="verifier",
+                 stage="7-review", layer="unit",
+                 command_ref="pytest -q", result_summary="17 passed, 0 failed",
+                 artifact_ref="derived/unit-report.txt", source_sha="def5678")
+        e.update(over)
+        return e
+
+    def test_final_fresh_run_started_valid(self):
+        e = base("final_fresh_run_started", writer="verifier", stage="7-review",
+                 source_sha="def5678", round=1)
+        self.assertEqual(ev.validate_event(e), [])
+
+    def test_final_fresh_run_started_requires_source_sha(self):
+        e = base("final_fresh_run_started", writer="verifier", stage="7-review")
+        self.assertIn("missing_field", codes(ev.validate_event(e)))
+
+    def test_final_fresh_run_completed_valid(self):
+        e = base("final_fresh_run_completed", writer="verifier", stage="7-review",
+                 verdict="FAIL", layers_total=5, layers_failed=1,
+                 source_sha="def5678")
+        self.assertEqual(ev.validate_event(e), [])
+
+    def test_final_fresh_run_completed_requires_layer_counts(self):
+        e = base("final_fresh_run_completed", writer="verifier", stage="7-review",
+                 verdict="PASS", source_sha="def5678")
+        self.assertIn("missing_field", codes(ev.validate_event(e)))
+
+    def test_four_status_values_valid(self):
+        for status in ("pass", "fail", "unverified", "n-a"):
+            e = self.layer_completed(status=status)
+            self.assertEqual(ev.validate_event(e), [], msg=status)
+
+    def test_unknown_status_rejected(self):
+        e = self.layer_completed(status="maybe")
+        self.assertIn("invalid_enum", codes(ev.validate_event(e)))
+
+    def test_missing_both_status_and_result_rejected(self):
+        e = self.layer_completed()
+        self.assertIn("missing_field", codes(ev.validate_event(e)))
+
+    def test_legacy_result_only_still_valid(self):
+        # Wave2 fixture 形狀(scripts/fixtures/vnext-integration):不得破壞
+        e = base("verification_layer_completed", writer="verifier",
+                 stage="7-review", layer="full-suite", result="PASS",
+                 exit_code=0, evidence_ref="final-fresh-run.log")
+        self.assertEqual(ev.validate_event(e), [])
+
+    def test_status_result_agreement(self):
+        ok = self.layer_completed(status="fail", result="FAIL")
+        self.assertEqual(ev.validate_event(ok), [])
+        bad = self.layer_completed(status="pass", result="FAIL")
+        self.assertIn("inconsistent_fields", codes(ev.validate_event(bad)))
+        bad2 = self.layer_completed(status="unverified", result="PASS")
+        self.assertIn("inconsistent_fields", codes(ev.validate_event(bad2)))
+
+    def test_result_summary_must_be_one_short_line(self):
+        long = self.layer_completed(status="pass", result_summary="x" * 500)
+        self.assertIn("invalid_format", codes(ev.validate_event(long)))
+        multiline = self.layer_completed(status="pass",
+                                         result_summary="ok\nFAILED details...")
+        self.assertIn("invalid_format", codes(ev.validate_event(multiline)))
+
+    def test_privacy_scan_still_applies_to_gauntlet_events(self):
+        e = self.layer_completed(status="pass", x_meta={"api_token": "sk-1"})
+        self.assertIn("privacy_forbidden_key", codes(ev.validate_event(e)))
+
+
 class TestContextManifest(unittest.TestCase):
     def good(self):
         return {

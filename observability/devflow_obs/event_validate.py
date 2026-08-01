@@ -42,6 +42,17 @@ def _check_field(name, value, spec, errors):
         elif len(value) > spec.get("maxlen", 500):
             errors.append(_err("invalid_format", name,
                                f"長度 {len(value)} 超過上限 {spec['maxlen']}"))
+    elif t == "line":
+        # 單行短摘要(ID-10 result_summary/command_ref):禁換行、禁長輸出
+        if not isinstance(value, str):
+            errors.append(_err("invalid_format", name, "須為字串"))
+        elif "\n" in value or "\r" in value:
+            errors.append(_err("invalid_format", name,
+                               "須為單行(完整輸出住 artifact,不進 ledger)"))
+        elif len(value) > spec.get("maxlen", 200):
+            errors.append(_err("invalid_format", name,
+                               f"長度 {len(value)} 超過上限 {spec['maxlen']}"
+                               "(一行摘要,禁塞完整輸出)"))
     elif t == "int":
         if not isinstance(value, int) or isinstance(value, bool):
             errors.append(_err("invalid_format", name, "須為整數"))
@@ -170,6 +181,22 @@ def validate_event(event):
                         "missing_field", req,
                         f"{etype}: {cond['when_field']}={cond['equals']} 時必填"
                         "(失敗先分類再路由,README §5 驗證五律 5)"))
+
+    for group in schema.get("at_least_one_of", {}).get(etype or "", []):
+        if not any(f in event for f in group):
+            errors.append(_err("missing_field", "|".join(group),
+                               f"{etype} 至少須有其一(status 為正式欄,"
+                               "result 為相容別名,ID-10)"))
+
+    for rule in schema.get("field_consistency", {}).get(etype or "", []):
+        if not isinstance(rule, dict) or "a" not in rule:
+            continue
+        a, b = event.get(rule["a"]), event.get(rule["b"])
+        if a is not None and b is not None and rule["map"].get(a) != b:
+            errors.append(_err(
+                "inconsistent_fields", f"{rule['a']}/{rule['b']}",
+                f"{rule['a']}={a!r} 與 {rule['b']}={b!r} 不一致"
+                f"(對應表 {rule['map']};unverified/n-a 不得帶 {rule['b']})"))
 
     fields = schema["fields"]
     for key, value in event.items():

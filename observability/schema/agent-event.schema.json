@@ -37,7 +37,14 @@
     "base_sha": {"type": "string", "pattern": "^[0-9a-f]{7,40}$"},
     "candidate_sha": {"type": "string", "pattern": "^[0-9a-f]{7,40}$"},
     "result": {"type": "enum", "values": ["PASS", "FAIL", "ABORTED"]},
-    "verdict": {"type": "enum", "values": ["PASS", "REQUEST_CHANGES", "ABORTED"]},
+    "verdict": {"type": "enum", "values": ["PASS", "FAIL", "REQUEST_CHANGES", "ABORTED"]},
+    "status": {"type": "enum", "values": ["pass", "fail", "unverified", "n-a"]},
+    "command_ref": {"type": "line", "maxlen": 300},
+    "result_summary": {"type": "line", "maxlen": 200},
+    "artifact_ref": {"type": "text", "maxlen": 500},
+    "source_sha": {"type": "string", "pattern": "^[0-9a-f]{7,40}$"},
+    "layers_total": {"type": "int", "min": 0},
+    "layers_failed": {"type": "int", "min": 0},
     "review_verdict": {"type": "enum", "values": ["PASS", "FAIL"]},
     "failure_category": {"type": "enum", "values": ["SPEC", "ENV", "IMPL", "UNKNOWN"]},
     "severity": {"type": "enum", "values": ["blocker", "should_fix", "nice_to_have"]},
@@ -89,12 +96,23 @@
     "task_rework_requested": {"required": ["task_id", "attempt_id", "failure_category"], "optional": ["review_id", "reason"]},
     "task_escalated": {"required": ["task_id", "attempt_id", "from_model", "to_model", "failure_category"], "optional": ["reason", "review_id"]},
     "task_accepted": {"required": ["task_id", "attempt_id"], "optional": ["candidate_sha", "review_id"]},
-    "verification_layer_started": {"required": ["layer"], "optional": ["attempt_id", "profile"]},
-    "verification_layer_completed": {"required": ["layer", "result"], "optional": ["attempt_id", "exit_code", "failure_kind", "evidence_ref"]}
+    "verification_layer_started": {"required": ["layer"], "optional": ["attempt_id", "profile", "source_sha", "round"]},
+    "verification_layer_completed": {"required": ["layer"], "optional": ["attempt_id", "status", "result", "exit_code", "failure_kind", "evidence_ref", "command_ref", "result_summary", "artifact_ref", "source_sha", "round"]},
+    "final_fresh_run_started": {"required": ["source_sha"], "optional": ["round", "profile", "layers_total"]},
+    "final_fresh_run_completed": {"required": ["verdict", "layers_total", "layers_failed", "source_sha"], "optional": ["round"]}
   },
   "conditional_required": {
     "attempt_completed": [
       {"when_field": "result", "equals": "FAIL", "require": ["failure_category"]}
+    ]
+  },
+  "at_least_one_of": {
+    "verification_layer_completed": [["status", "result"]]
+  },
+  "field_consistency": {
+    "comment": "ID-10 相容方案:status(pass/fail/unverified/n-a)為正式欄;result(PASS|FAIL)保留為 Wave2 相容別名。兩者並存必須一致;unverified/n-a 無 result 對應,不得並存。",
+    "verification_layer_completed": [
+      {"a": "status", "b": "result", "map": {"pass": "PASS", "fail": "FAIL"}}
     ]
   },
   "privacy": {
