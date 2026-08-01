@@ -126,8 +126,10 @@ RED → GREEN → scope check → Verify
   一 commit(可逐點回滾),再把 hash、checkbox 與 review evidence 寫入 6-notes 的
   Progress Log / T Review Log。
 - **分層**:上述是 Stage 6 的逐 T acceptance seam;Stage 7 G3 仍是獨立的 feature-level
-  gate,不被 T review 取代或重複。Stage 6 只跑快速 Task-local 驗證(RED → GREEN →
-  Task Verify → Test Integrity Check → Candidate);mutation/property 等重驗證層屬
+  gate,不被 T review 取代或重複。Stage 6 只跑快速 Task-local 驗證,即上述 seam 的
+  RED → GREEN → scope check → Verify → independent T review(Test Integrity Check
+  是 T review 的檢查清單擴充,不是新階段;「Candidate」僅 parallel 模式使用,
+  sequential 案照舊 = 送 T review);mutation/property 等重驗證層屬
   feature 級 Final Fresh Run,**不逐 T 跑**。
 - **Decisions**(spec 未載明的自由選擇,如內部命名、資料結構):自己選、記一行入
   6-notes 的 Decisions 節、繼續。不屬偏差,不需回審。
