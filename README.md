@@ -211,6 +211,8 @@ RED → GREEN → scope check → Verify
 - 方塊+連線的空間關係(多層模型/時間軸/分支交錯/跨層互動)→ **inline SVG 真圖**
   (block+線條+箭頭)。拿不準 → SVG。
 禁外部庫。md 永遠留 ASCII 正本,html 依判準選渲染。
+畫法規範(顏色變數/class 約定/佈局紀律,不依賴任何 skill 或本機軟體)見
+`_templates/diagram-style.md`;新圖先抄現成範本結構再改節點。
 
 **Per-stage 規格表**:
 

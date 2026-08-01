@@ -269,6 +269,47 @@
   </code></pre>
   <!-- parity:end readme-stage6-seam-quickstart -->
 
+  <svg viewBox="0 0 1010 205" role="img" aria-label="T acceptance seam 流程圖:RED 到 commit,FAIL 迴圈與分類">
+    <defs>
+      <marker id="seam-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/>
+      </marker>
+      <marker id="seam-arrow-bad" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path class="arrowhead-bad" d="M0,0 L10,5 L0,10 Z"/>
+      </marker>
+    </defs>
+    <rect class="b" x="10" y="65" width="118" height="44" rx="6"/>
+    <text x="69" y="91" text-anchor="middle">RED 先紅</text>
+    <text x="69" y="126" class="cap" text-anchor="middle">測試先失敗</text>
+    <rect class="b" x="158" y="65" width="118" height="44" rx="6"/>
+    <text x="217" y="91" text-anchor="middle">GREEN</text>
+    <text x="217" y="126" class="cap" text-anchor="middle">最小實作到綠</text>
+    <rect class="b" x="306" y="65" width="118" height="44" rx="6"/>
+    <text x="365" y="91" text-anchor="middle">scope check</text>
+    <text x="365" y="126" class="cap" text-anchor="middle">⊆ Files 聯集</text>
+    <rect class="b" x="454" y="65" width="118" height="44" rx="6"/>
+    <text x="513" y="91" text-anchor="middle">Verify</text>
+    <text x="513" y="126" class="cap" text-anchor="middle">T 的 Verify 指令</text>
+    <rect class="hl" x="602" y="65" width="118" height="44" rx="6"/>
+    <text x="661" y="91" text-anchor="middle">獨立 T review</text>
+    <text x="661" y="126" class="cap" text-anchor="middle">reviewer ≠ 實作者</text>
+    <polygon class="b" points="790,63 814,87 790,111 766,87"/>
+    <text x="790" y="91" text-anchor="middle">PASS</text>
+    <rect class="b" x="844" y="65" width="150" height="44" rx="6"/>
+    <text x="919" y="91" text-anchor="middle">commit + 記帳</text>
+    <text x="919" y="126" class="cap" text-anchor="middle">PASS 後才准 commit</text>
+    <path class="flow" marker-end="url(#seam-arrow)" d="M128,87 L158,87"/>
+    <path class="flow" marker-end="url(#seam-arrow)" d="M276,87 L306,87"/>
+    <path class="flow" marker-end="url(#seam-arrow)" d="M424,87 L454,87"/>
+    <path class="flow" marker-end="url(#seam-arrow)" d="M572,87 L602,87"/>
+    <path class="flow" marker-end="url(#seam-arrow)" d="M720,87 L766,87"/>
+    <path class="flow" marker-end="url(#seam-arrow)" d="M814,87 L844,87"/>
+    <path class="flow" style="stroke:var(--bad)" marker-end="url(#seam-arrow-bad)"
+          d="M661,115 C560,180 320,180 221,113" fill="none"/>
+    <text x="445" y="172" class="cap" text-anchor="middle">FAIL → 先分類:SPEC→L2 停回 G2 / ENV→修環境重跑(不計)/ IMPL·UNKNOWN→升階重派</text>
+    <text x="445" y="188" class="cap" text-anchor="middle">同 T 總嘗試 ≤4(haiku 1+sonnet 2+opus 1),用盡強制 adviser —— README §5 驗證五律</text>
+  </svg>
+
   <p class="muted"><strong>過 gate 三連動</strong>:每過一個 gate,frontmatter <code>status</code> +
   <code>STATUS.md</code> + 同名 html twin 三者同步更新,禁漏一項。Stage 1 完成後就該去
   <code>STATUS.md</code> 加第一列(README §10 步驟 2):<code>| &lt;slug&gt; | full | 1-discussion | &lt;你的名字&gt; | G1⬜ G2⬜ G3⬜ | &lt;日期&gt; |</code>,
@@ -432,6 +473,28 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     <li>武裝中另一模組 <code>start</code> → <strong>拒絕</strong>並提示開 worktree 或先
       <code>stop</code>;絕不靜默覆寫已武裝模組的 scope/baseline(舊版曾有此漏洞,已修並入 selftest)。</li>
   </ul>
+
+  <svg viewBox="0 0 760 250" role="img" aria-label="worktree 隔離圖:兩個 worktree 各自守衛狀態互不相見,同工作樹雙 start 被拒">
+    <rect class="b" x="280" y="10" width="200" height="36" rx="6"/>
+    <text x="380" y="32" text-anchor="middle">同一 git repo</text>
+    <path class="flow" d="M340,46 L200,78" fill="none"/>
+    <path class="flow" d="M420,46 L560,78" fill="none"/>
+    <rect class="b" x="60" y="80" width="280" height="124" rx="10"/>
+    <text x="200" y="100" text-anchor="middle" style="font-weight:700">worktree 甲</text>
+    <rect class="m-sonnet" x="80" y="112" width="240" height="34" rx="6"/>
+    <text x="200" y="133" text-anchor="middle">模組 A · Stage 6 武裝中</text>
+    <rect class="b" x="80" y="156" width="240" height="34" rx="6"/>
+    <text x="200" y="177" text-anchor="middle">.devflow/exec.json(A)</text>
+    <rect class="b" x="420" y="80" width="280" height="124" rx="10"/>
+    <text x="560" y="100" text-anchor="middle" style="font-weight:700">worktree 乙</text>
+    <rect class="m-sonnet" x="440" y="112" width="240" height="34" rx="6"/>
+    <text x="560" y="133" text-anchor="middle">模組 B · Stage 4 寫 spec / Stage 6</text>
+    <rect class="b" x="440" y="156" width="240" height="34" rx="6"/>
+    <text x="560" y="177" text-anchor="middle">.devflow/exec.json(B)</text>
+    <path class="fenceline" d="M380,72 L380,210" fill="none"/>
+    <text x="380" y="228" text-anchor="middle" class="cap">state 互不相見 = 互不阻擋(混速並行 OK)</text>
+    <text x="380" y="244" text-anchor="middle" class="cap">同一工作樹第二個模組 start → ⛔ 拒絕(開 worktree,或先 stop)</text>
+  </svg>
   <p class="muted">守衛共四條掛載:<code>devflow-guard</code>(Edit|Write|Read)、
   <code>devflow-prebash</code>(Bash 事前)、<code>devflow-postbash</code>(Bash 事後偵測)、
   <code>devtalk-guard</code>(盲原則)。想確認整套沒壞:跑
