@@ -27,12 +27,20 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 >   直接原料;守衛只解析必填四欄,這兩欄不影響 scope。
 > - 一個 T 一個關注點:Files 超過 ~5 檔或 Verify 要跑兩套不相干指令 → 拆 T。
 >
+> **Task Context Packet 規則(真實世界互動)**:
+> - 每個 Task 只帶與該 T 有關的**最小** Operational Context 子集(從 4-spec 該 T Covers
+>   的 S 摘錄):Actor、Goal、Human decision、Authority、External dependency、
+>   Out-of-system action、Waiting/recovery、不得誤導使用者的事項(如:看過 ≠ 完成、
+>   「已續約」僅主管可標)。
+> - 禁把 1-discussion 訪談逐字稿 / 完整 Real-world Context 丟給 Haiku;執行層只吃摘錄。
+>
 > **並行選配欄位(僅 `execution.mode: parallel` 有執行效果;全部有缺省,舊檔零欄位
 > 行為完全不變;完整契約見母版 `notes/design/parallel-stage6.md`)**:
 > - `Integrate-after: T-n`(缺省 —)= **軟整合依賴**:可平行實作,但 candidate 整合
 >   順序必須在指定 T 之後。`Blocked-by:` 仍是**硬執行依賴**(前置 T 未達安全狀態,
 >   本 T 不得開始實作)。
-> - `Risk: normal|high`(缺省 normal)。high 一律 dedicated review,PASS 才進 integration。
+> - `Risk: normal|high`(缺省 normal;判準見 4-spec Verification Profile,不另設第二套
+>   分級)。high 一律 dedicated review,PASS 才進 integration。
 > - `Review-mode: wave|dedicated`(缺省:normal→wave、high→dedicated;high 明寫 wave 非法)。
 > - `Semantic-conflicts-with: T-n`(缺省 —)= 檔案不重疊但語意衝突,禁排同一 Wave。
 > - **不必手排 wave**:Wave 由引擎從 Blocked-by + Files overlap 自動派生(runtime
