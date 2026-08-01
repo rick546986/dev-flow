@@ -36,11 +36,23 @@
   .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
   .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
   .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+  details{margin:.6em 0}
+  details>summary{cursor:pointer;color:var(--muted)}
+  .del{display:block;color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,transparent)}
+  .add{display:block;color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,transparent)}
 </style>
 </head>
 <body>
 <main>
 <h1>5. 任務(tracer bullet:T-1→T-2 先打通端到端,再 T-3 加厚)</h1>
+<h2>T 依賴 DAG(Blocked-by,機械導出)</h2>
+<pre><code>T-1 --> T-2 --> T-3 --> T-4
+ |       |
+ v       +---------------+
+T-5 --> T-6              |
+ |                       v
+ +---------------------> T-7
+</code></pre>
 <h2>T-1 API:GET /contracts/expiring</h2>
 <ul>
 <li>[x] 完成</li>
@@ -72,6 +84,37 @@
 <li>Files: <code>e2e/expiring-contracts.spec.ts</code></li>
 <li>Verify: <code>npx playwright test e2e/expiring-contracts.spec.ts</code></li>
 <li>Blocked-by: T-3</li>
+</ul>
+<h2>T-5 建狀態標記 API:renewal_status migration + 歷程表 + 權限檢查</h2>
+<ul>
+<li>[x] 完成</li>
+<li>Covers: R-3 / S-4</li>
+<li>Files: <code>migrations/0007_renewal_status.sql</code>, <code>internal/handler/contract_status.go</code>, <code>internal/repo/contract_status.go</code></li>
+<li>Verify: <code>go test ./internal/... -run TestRenewalStatus_S4</code></li>
+<li>Blocked-by: T-1</li>
+<li>Risk: high</li>
+<li>Intent: 系統多了「標記處理狀態」行為:標記後狀態/下一步/最後動作時間更新,歷程新增一筆(誰/何時/舊→新);「已續約」僅主管,非主管在 API 層被拒。</li>
+<li>Boundaries: 狀態值域固定 6 值(4-spec Drafting Decisions);禁任何自動轉移狀態(僅明確標記動作);migration 只加 <code>renewal_status</code> enum 欄與歷程表,不動既有欄位。</li>
+</ul>
+<h2>T-6 歷程查詢 + 看過零副作用保證(讀取路徑不寫狀態)</h2>
+<ul>
+<li>[x] 完成</li>
+<li>Covers: R-3 / S-5</li>
+<li>Files: <code>internal/handler/contract_status.go</code>, <code>internal/repo/contract_status.go</code></li>
+<li>Verify: <code>go test ./internal/... -run TestRenewalStatus_S5</code></li>
+<li>Blocked-by: T-5</li>
+<li>Intent: 系統多了狀態歷程查詢(詳情頁時間軸資料源),且「開啟/看過」等一切讀取路徑保證零狀態寫入 —— 歷程零新增本身成為可稽核證據。</li>
+<li>Boundaries: 任何 GET 路徑不得寫入狀態或歷程;不做「已讀」記錄(看過 ≠ 處理,1-discussion Q4);不引入 Out of Scope 的自動提醒。</li>
+</ul>
+<h2>T-7 卡片列狀態欄 + 下一步欄 + 標記互動(「已續約」灰階)</h2>
+<ul>
+<li>[x] 完成</li>
+<li>Covers: R-3 / S-6</li>
+<li>Files: <code>src/components/ExpiringContractsCard.tsx</code></li>
+<li>Verify: <code>npm test -- ExpiringContractsCard</code></li>
+<li>Blocked-by: T-2, T-5</li>
+<li>Intent: 卡片列多了狀態欄/下一步欄/最後動作時間與列內標記選單;非主管看到「已續約」灰階 + 「已續約僅主管可標」提示,狀態不變。</li>
+<li>Boundaries: 照既有 ExpiringContractsCard pattern,不動 <code>src/pages/Dashboard.tsx</code>;提示文案照 4-spec S-6 寫死,不得自創。</li>
 </ul>
 </main>
 </body>
