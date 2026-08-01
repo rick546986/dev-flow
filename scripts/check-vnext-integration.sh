@@ -24,6 +24,8 @@ import re
 import subprocess
 import sys
 
+sys.dont_write_bytecode = True  # 不落 __pycache__,保持工作樹乾淨
+
 root = sys.argv[1]
 sys.path.insert(0, os.path.join(root, "tests", "parallel-stage6"))
 import contract_ref  # noqa: E402

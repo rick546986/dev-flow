@@ -273,7 +273,8 @@ check(any("integration_verdict" in e for e in C.validate_wave_review(ni["review"
 ex = C.parse_5_tasks(read("example/contract-expiry-reminder/5-tasks.md"))
 check(ex["errors"] == [], "真檔 example 5-tasks 解析零錯誤", str(ex["errors"]))
 check(ex["execution"]["mode"] == "sequential", "真檔 example 落在 sequential(行為不變)")
-check([t["id"] for t in ex["tasks"]] == ["T-1", "T-2", "T-3", "T-4"], "真檔 example 4 T 全解析")
+check([t["id"] for t in ex["tasks"]] == [f"T-{n}" for n in range(1, 8)],
+      "真檔 example 7 T 全解析(T-5~T-7 = ID-8 補 S-4~S-6)")
 req = ("covers", "files", "verify")
 check(all(t[k] for t in ex["tasks"] for k in req), "真檔 example 必填欄完整(同 runtime 驗法)")
 
