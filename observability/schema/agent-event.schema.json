@@ -1,7 +1,7 @@
 {
   "schema_id": "devflow-agent-event",
-  "schema_version": "1.0.0",
-  "comment": "DevFlow Agent Attempt 事件 schema 唯一正本。validator(devflow_obs/event_validate.py)直接解讀本檔,不另抄一份規則。追蹤單位是 Agent Attempt/Review/Tool lifecycle,不是 LLM 段落;業務鏈(R/S/T/D/F)與執行鏈(run/att/rev/fnd)ID 分離。",
+  "schema_version": "1.1",
+  "comment": "DevFlow Agent Attempt 事件 schema 唯一正本。validator(devflow_obs/event_validate.py)直接解讀本檔,不另抄一份規則。追蹤單位是 Agent Attempt/Review/Tool lifecycle,不是 LLM 段落;業務鏈(R/S/T/D/F)與執行鏈(run/att/rev/fnd)ID 分離。1.1(共享契約 §6):task_tags 受控 enum、result 標 deprecated(removed in 2.0)、欄位級長度上限;envelope schema 值新寫入用 devflow-agent-event/1.1,舊 /1(=1.0)讀取相容。",
   "envelope": {
     "required": ["schema", "seq", "timestamp", "run_id", "event_type", "writer"],
     "optional": ["stage", "task_id", "session_ref", "note"]
@@ -9,7 +9,7 @@
   "writers": ["coordinator", "hook", "verifier"],
   "hook_forbidden_fields": ["agent_role", "prompt", "model"],
   "fields": {
-    "schema": {"type": "string", "pattern": "^devflow-agent-event/1$"},
+    "schema": {"type": "string", "pattern": "^devflow-agent-event/1(\\.[0-9]+)?$"},
     "seq": {"type": "int", "min": 1},
     "timestamp": {"type": "timestamp"},
     "run_id": {"type": "string", "pattern": "^run_[0-9A-HJKMNP-TV-Z]{26}$"},

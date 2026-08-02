@@ -21,7 +21,7 @@ PROMPT = {"id": "stage6-worker", "version": "3.1.0", "hash": SHA256}
 
 def base(event_type, **extra):
     e = {
-        "schema": "devflow-agent-event/1",
+        "schema": "devflow-agent-event/1.1",
         "seq": 1,
         "timestamp": "2026-08-02T01:00:00+08:00",
         "run_id": RUN,
@@ -170,6 +170,33 @@ class TestPromptVersion(unittest.TestCase):
     def test_prompt_id_slug_pattern(self):
         e = attempt_completed(prompt={"id": "Stage 6 Worker!", "version": "3.1.0",
                                       "hash": SHA256})
+        self.assertIn("invalid_format", codes(ev.validate_event(e)))
+
+
+class TestSchemaVersion11(unittest.TestCase):
+    """1.1 版本鉤子:schema_version 與 devflow-contract.json 握手值一致;
+    envelope schema 值收 1.x(舊 /1 = 1.0 讀取相容),拒異 major。"""
+
+    HERE = os.path.dirname(os.path.abspath(__file__))
+    SCHEMA = os.path.join(HERE, "..", "schema", "agent-event.schema.json")
+    CONTRACT = os.path.join(HERE, "..", "..", "devflow-contract.json")
+
+    def test_schema_version_is_1_1_and_matches_contract(self):
+        import json
+        with open(self.SCHEMA) as f:
+            schema = json.load(f)
+        with open(self.CONTRACT) as f:
+            contract = json.load(f)
+        self.assertEqual(schema["schema_version"], "1.1")
+        self.assertEqual(contract["schema_versions"]["agent_event"], "1.1")
+
+    def test_envelope_accepts_1_1_and_legacy_1(self):
+        for value in ("devflow-agent-event/1.1", "devflow-agent-event/1"):
+            e = attempt_completed(schema=value)
+            self.assertEqual(ev.validate_event(e), [], msg=value)
+
+    def test_envelope_rejects_other_major(self):
+        e = attempt_completed(schema="devflow-agent-event/2")
         self.assertIn("invalid_format", codes(ev.validate_event(e)))
 
 

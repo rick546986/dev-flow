@@ -29,7 +29,7 @@ class EventFactory:
         self.i += 1
         self.seq += 1
         e = {
-            "schema": "devflow-agent-event/1",
+            "schema": "devflow-agent-event/1.1",
             "seq": self.seq,
             "timestamp": ts(self.i),
             "run_id": self.run_id,

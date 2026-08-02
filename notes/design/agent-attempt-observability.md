@@ -146,7 +146,12 @@ hash 進事件(`context_manifest_hash`),內容不進事件。
   完整 source code、完整 LLM transcript → schema `privacy` 區
   (forbidden_exact + forbidden_substrings,巢狀掃描,`estimated_tokens`/
   `transcript_ref` 白名單)。
-- 任何字串值 >2000 字元 → `privacy_value_too_long` 拒收(堵「整份貼進來」)。
+- 長度管制(1.1,共享契約 §6 表):以**欄位級 maxlen** 為正
+  (prompt_id≤100 / prompt_version≤40 / model≤100 / failure_reason≤500 /
+  finding_summary(title)≤1000 / command_ref≤500 / artifact_ref≤1000 /
+  result_summary≤2000 / task_tag≤50),超限逐欄報錯(訊息含欄名與上限);
+  `privacy_value_too_long`(>2000)只當 `x_` 擴充欄與未列欄的 backstop
+  (堵「整份貼進來」)。
 - transcript 要留:**獨立權限、獨立 retention 的外部儲存**,ledger 只放
   `transcript_ref`(路徑或 hash)。
 
@@ -156,7 +161,7 @@ hash 進事件(`context_manifest_hash`),內容不進事件。
 |---|---|---|
 | **Coordinator**(dev-run 主對話) | run/stage lifecycle、agent_dispatched、attempt_started/completed、candidate_created、review_*、finding_created、task_rework/escalated/accepted、derived | dev-run SKILL.md 逐 T 迴圈各步後追加「寫事件」動作;實際落盤經 `devflow-exec.sh event`(新子命令,呼叫 devflow_obs.writer;繞不開 guard 故必須 CLI 化)。start 時建 run 目錄+manifest,並把 run_id 寫進 exec.json 供 hooks 取用 |
 | **Hooks**(guard/prebash/postbash/devtalk) | mechanical_gate_completed(gate=guard-write/guard-read/prebash/postbash-detect/devtalk;violation=scope/contract/upstream_read/guard_state)、tool_completed(exit code) | hook 行程直接以 writer API append `hooks/events-<session_id>.jsonl`(hook 非 tool call,不受自家守衛限制);**不推測 agent_role/prompt/model**(schema 機械禁止 hook_forbidden_field),只帶 session_ref,歸屬留給 coordinator 事後關聯 |
-| **Verification engine**(old-coder Gauntlet,Workstream D) | final_fresh_run_started/completed、verification_layer_started/completed | 寫 `verifier/events.jsonl`,writer=`verifier`。**欄名正本 = agent-event.schema.json(ID-10 合流)**:layer 事件帶 `layer`、`status`(pass/fail/unverified/n-a,正式欄)、`command_ref`、`result_summary`(單行 ≤200,受隱私掃描)、`artifact_ref`、`source_sha`、`round?`、`exit_code?`、`failure_kind?`;舊 `result`(PASS\|FAIL)保留為相容別名(與 status 並存必須一致);run 級 completed 帶 `verdict`(PASS/FAIL)、`layers_total`、`layers_failed`、`source_sha` |
+| **Verification engine**(old-coder Gauntlet,Workstream D) | final_fresh_run_started/completed、verification_layer_started/completed | 寫 `verifier/events.jsonl`,writer=`verifier`。**欄名正本 = agent-event.schema.json(ID-10 合流)**:layer 事件帶 `layer`、`status`(pass/fail/unverified/n-a,正式欄)、`command_ref`、`result_summary`(單行 ≤2000,受隱私掃描)、`artifact_ref`、`source_sha`、`round?`、`exit_code?`、`failure_kind?`;舊 `result`(PASS\|FAIL)僅讀取相容別名(deprecated since 1.x, removed in 2.0;與 status 並存必須一致,writer API 新寫入一律只寫 status);run 級 completed 帶 `verdict`(PASS/FAIL)、`layers_total`、`layers_failed`、`source_sha` |
 
 ## 8. 失敗與結果(八節)
 
@@ -172,8 +177,10 @@ rework/escalation/分類分開呈現;ENV 失敗重跑不計升階(legacy 軌跡�
 `devflow_obs.stats`(CLI `devflow-obs.py stats`)輸出 11 項指標,每項帶
 `{value, n, insufficient_sample}`:first-pass rate、mean attempts to acceptance、
 rework rate、escalation rate、SPEC/ENV/IMPL/UNKNOWN 分佈、scope violation rate、
-test integrity violation rate、per Prompt Version 成功率、per Model(×task_type)
-成功率、Stage 6 PASS 後 Stage 7 blocker rate、per Gauntlet layer failure rate。
+test integrity violation rate、per Prompt Version 成功率、per Model(×task_tag,
+1.1:受控 enum 多選,一 attempt 進其每個 tag 的組,無 tag 歸 unspecified;舊檔
+`x_task_type` 僅讀取相容)成功率、Stage 6 PASS 後 Stage 7 blocker rate、
+per Gauntlet layer failure rate。
 另附 `reviewer_strictness_by_model`(每 review 平均 finding 數)與
 `confound_note`:解讀必須區分 **模型能力 / Prompt 品質 / Context Packet 品質 /
 Spec 品質 / 環境問題 / Reviewer 嚴格度 / Task 風險** 七維,單維差異不足以歸因。
@@ -218,5 +225,37 @@ feature 反向相容:`legacy_md.parse_execution_trace` 直接讀執行軌跡表
 | derived ledger 可重建 | test_ledger `test_derived_is_rebuildable_and_deterministic` |
 | 舊 Markdown 無 Run ID 仍能讀 | test_legacy_md + test_cli `test_stats_over_fixtures_and_legacy` |
 
-執行:`python3 -m unittest discover -s observability/tests`(83 案)。
+執行:`python3 -m unittest discover -s observability/tests`(125 案)。
 CLI:`python3 observability/devflow-obs.py {validate|validate-registry|incomplete|resume|derive|stats|recommend}`。
+
+## 13. 1.1 變更 + 2.0 移除計畫(共享契約 §6 三項六修正落地,2026-08-02)
+
+`schema_version: "1.1"`(= devflow-contract.json `schema_versions.agent_event`);
+事件 envelope `schema` 新寫入用 `devflow-agent-event/1.1`,舊 `/1`(=1.0)讀取相容,
+異 major 拒收。fixtures 已同步升 1.1。
+
+**6.3 task_tags(取代 x_task_type 承接方案)**
+- 選填 `task_tags`:受控 enum,**正本 = repo 根 `devflow-contract.json` 的
+  `task_tags`(12 值)**,schema 只留 `item_enum_source` 指標不重抄;多選陣列;
+  非 enum 值拒收(`invalid_enum`);每值 ≤50。掛在 `agent_dispatched` /
+  `attempt_started` / `attempt_completed`。
+- stats 分組改吃 task_tags(`success_by_model_task_tag`,多選 = 一 attempt 進
+  每個 tag 的組),無值歸 `unspecified`;舊檔 `x_task_type` 僅讀取相容,新寫入
+  不再產生。
+
+**6.4 result 移除計畫**
+- `verification_layer_completed.result`(PASS|FAIL):**deprecated since 1.x,
+  removed in 2.0**(schema `deprecations` 區明文)。`status` 四值為唯一正式欄。
+- 1.x 讀取端維持相容:result-only 舊檔可過;status/result 並存不一致拒收。
+- 新寫入路徑(writer API `EventWriter.append`)一律**只寫 status**:result-only
+  輸入正規化為 status,輸出不含 result;不一致或不可映射(ABORTED)拒寫。
+- 2.0:`verification_layer_completed` 移除 `result`(optional 列、
+  `at_least_one_of`、`field_consistency` 相容規則一併刪);`run_completed` /
+  `attempt_completed` / `mechanical_gate_completed` 的 `result` 非別名,不在
+  移除範圍。
+- migration tests:test_event_validate `TestResultMigration` +
+  test_writer `TestWriterStatusOnly`。
+
+**6.6 欄位級長度上限(取代單一 2000 字上限)**
+- 見 §6 隱私紅線更新:九項欄位級 maxlen 為正,超限逐欄報錯(訊息含欄名與上限);
+  `max_string_len 2000` 降為 `x_` 擴充欄/未列欄 backstop;禁載欄位黑名單維持。
