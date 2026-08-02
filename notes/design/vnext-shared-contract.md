@@ -3,19 +3,20 @@
 > 目的:四個 Plugin Workstream 使用同一套詞彙/schema/gate 條文,避免各說各話。
 > 機器可讀版:`devflow-contract.json`(repo 根)。需求正本:docs/prompts/devflow-vnext-runtime.md(衝突以其 Part 2 為準)。
 > 本檔「先確定、不完整實作」:條文在此定案,落地由各 Phase 執行。
+>
+> **正本歸屬(2026-08 補記,防第二正本漂移)**:本檔是 **Phase 1 的定案紀錄**。
+> §1/§2 的 gate 條文與 §4 的 lane 規則當初就是為了「Phase 3 裝入 README §7 / 4-spec 正本」
+> 而寫的,那次落地已完成 —— 因此**執行期正本是 README §7 與 `_templates/4-spec.md`,
+> 不是本檔**;兩邊若有出入一律以正本為準,不得拿本檔的措辭去反推 gate 條件。
+> §5(Wave Base)、§6(Event schema)、§7(exec-v2)、§8 起各節仍為其機制的現行契約說明,
+> 各自於節標題註明正本。
 
-## 1. G3 正式條件(OC-1;Phase 3 裝入 README §7 正本 + gate-consistency)
+## 1. G3 正式條件(OC-1;**條文正本 = README §7「G3 錨定義」**)
 
-G3 新增粗體錨:「**Evidence 契約全過**」,定義為(八點,全部成立):
-
-1. Final Fresh Run 綁定目前受審的 source SHA。
-2. 所有 Required Layer = pass。
-3. 所有已觸發的 Conditional Layer = pass。
-4. 不得存在任何 fail。
-5. Required Layer 不得為 unverified 或 n-a。
-6. Explicitly Excluded Layer 可為 n-a,但必須附理由。
-7. Optional Layer 可為 unverified,但必須誠實標示。
-8. Gauntlet PASS 不取代 Standards Axis / Spec Axis / Operational Walkthrough / Coverage Matrix / 真實現象複驗。
+G3 的粗體錨是「**Evidence 契約全過**」,展開為八點必須全部成立
+—— **八點全文住 `README.md` §7 的「G3 錨定義」,本檔不重抄**(重抄過的那一份與正本逐字相同,
+但沒有任何腳本盯著,只會靜默漂移)。粗體錨本身由
+`scripts/check-gate-tokens.sh` 對 README §7 釘死,改名/刪除/去粗體即紅。
 
 同步位置(缺一即 gate-consistency FAIL):README §7 G3 句、gate 摘要/quick reference、7-review 模板頂註、plugin SKILL 階段表、plugin `_gate_consistency_impl.py` 比對表與 tests。
 
@@ -37,14 +38,17 @@ G3 新增粗體錨:「**Evidence 契約全過**」,定義為(八點,全部成立
 - **Feature Risk**(Stage 4 Profile):決定 Profile 深度與 lane 升級。
 - **Task Risk**(Stage 5 逐 T `Risk:` 欄):決定 review-mode 缺省 — Task high → Dedicated Review 必要;Feature high **不**強制全 T Dedicated。
 
-## 4. Lane 規則(OC-4)
+## 4. Lane 規則(OC-4;**條文正本 = `_templates/4-spec.md`「Lane 規則」節 + README §7「G2 錨定義」**)
 
-- Full lane:完整 Profile(Feature Risk/Failure Model/Negative Constraints/Required/Conditional/Explicitly Excluded/Final Fresh Entry Point)。
-- Fast lane:最小 Profile(`Risk: normal` / `Verify:` / `Negative Constraints:` / `Advanced verification excluded:` / `Exclusion reason:`)。
-- 兩 lane 共用:`Reliability triage:` 三問(Concurrency / Idempotency / Timeout/retry,
-  各 `applicable | n-a` + 具體理由)不在 fast lane 五欄之內,但兩 lane 皆必答。
-- 自動升 Full 條件(任一命中):Risk high、schema migration、權限或資料隔離、資料刪除、不可逆資料轉換、金流/交易、核心醫療業務邏輯、並發/鎖/排程、新增 network/filesystem/subprocess/credential capability、對外 API 契約變更、高風險人機互動。
-- `lane: fast` + `Risk: high` → Runtime(start 時)、模板檢查與 Gate **一律拒絕**,除非 Owner Call 明示例外。
+OC-4 定案的內容是:Full lane 填完整 Profile、Fast lane 填最小 Profile、兩 lane 共用
+Reliability triage 三問、命中「自動升 Full」清單即不得 fast、`lane: fast` 配 `Risk: high`
+一律拒絕(除非 Owner Call 明示例外)。
+
+**五個欄位清單、自動升 Full 的完整條件、拒絕規則的全文,住
+`_templates/4-spec.md` 的「Lane 規則」節與 README §7「G2 錨定義」,本檔不重抄。**
+兩處有腳本盯著(`check-methodology-corrections.sh` 驗 4-spec 的 triage 三欄與 example
+理由非空;`check-gate-tokens.sh` 釘 README §7 的「**Verification Profile**」粗體錨),
+本檔沒有 —— 留第二份只會漂。
 
 ## 5. Wave Base 語意(OC-3)
 
