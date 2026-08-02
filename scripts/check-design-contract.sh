@@ -215,6 +215,63 @@ if readme_text is not None:
     check(SECTION in readme_text, f"README 有 {SECTION} 摘要")
     check(CANON in readme_text, f"README 連到語意正本 {CANON}")
 
+# ── 5b. Example 不得填成 canon 自己白紙黑字列出的「壞例」 ──────────────────
+# 界線宣告(重要,免得被誤讀成腳本會評分):這**不是**品質判斷,是**字面比對**。
+# canon 的 §6「好例與壞例」與 §2.4 直接寫出了幾個不合格寫法的原文;
+# 4-spec 的反模糊三律也已禁模糊詞。把這幾個**已經被文件點名**的字串擋掉,
+# 純粹是字串比對,不需要任何語意能力 —— 腳本仍然**不判斷**邊界劃得對不對。
+# 起因:2026-08 fresh review A-M1 第二組 mutation 實測 —— example 三張表填成
+# canon 自己的壞例(Forbidden 寫「無」、Test seam 寫「加測試」、
+# Known design limit 抄壞例原文「併發情況可能有問題,後續評估。」)仍 112/112 全過。
+if example_block is not None and example_applicability \
+        and example_applicability.startswith("applicable"):
+    arch_header, _ = table_of(example_block, "Architecture Boundaries")
+    design_header, _ = table_of(example_block, "Software Design")
+
+    def cells_in_column(heading, column):
+        """抽某張表某一欄的所有資料列儲存格(用來做字面壞例比對)。"""
+        match = re.search(rf"^### {re.escape(heading)}\s*\n(.*?)(?=^### |\Z)",
+                          example_block, re.M | re.S)
+        if not match:
+            return []
+        header = None
+        values = []
+        for line in match.group(1).splitlines():
+            stripped = line.strip()
+            if not stripped.startswith("|"):
+                continue
+            if re.fullmatch(r"\|(?:\s*:?-+:?\s*\|)+", stripped):
+                continue
+            parts = [c.strip() for c in stripped.strip("|").split("|")]
+            if header is None:
+                header = parts
+                continue
+            if column in header:
+                index = header.index(column)
+                if index < len(parts):
+                    values.append(parts[index])
+        return values
+
+    # canon §2.2:Forbidden dependencies 沒有時寫 `—`,不是「無」(壞例原文見 canon §6)
+    for value in cells_in_column("Architecture Boundaries", "Forbidden dependencies"):
+        check(value != "無",
+              "example Forbidden dependencies 未使用 canon 明列的壞例寫法「無」(無則寫 —)",
+              f"實得={value!r}")
+    # canon §2.4:Test seam 寫「加測試」不合格
+    for value in cells_in_column("Software Design", "Test seam"):
+        check(value not in ("加測試", "寫單元測試", "加單元測試"),
+              "example Test seam 未使用 canon 明列的不合格寫法(要指到可注入點/可觀測點)",
+              f"實得={value!r}")
+    # 4-spec 反模糊三律 + canon §6 壞例:Known design limit 不得用模糊詞打發
+    constraints = re.search(r"- Known design limit:(.*?)(?=\n## |\Z)",
+                            example_block, re.S)
+    if constraints:
+        body = constraints.group(1)
+        for vague in ("可能有問題", "後續評估", "再看看", "視情況"):
+            check(vague not in body,
+                  f"example Known design limit 未用模糊詞「{vague}」打發(反模糊三律)",
+                  "canon §6 已把這個寫法列為壞例")
+
 # ── 7b. 觸發條件兩份清單不得單邊漂移 ───────────────────────────────────────
 # 教訓來源:本輪 fresh review(A-L2 / C-4)指出「觸發條件同時存在多份無人比對的副本」
 # 正是這次剛從 notes/design/vnext-shared-contract.md 拔掉的失效模式。
