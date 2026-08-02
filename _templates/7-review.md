@@ -69,7 +69,9 @@ updated:
      機械檢查:scripts/devflow-evidence-gauntlet.sh,E1–E12)。四欄非空;
      Status 只能 pass | fail | unverified | n-a;pass 列必有非空 Command 與含數字的
      Result(數字非形容詞);unverified/n-a 必附 Skipped reason;coverage 層 Result
-     用 covered/total 分數,禁全域 % 虛榮數字 -->
+     用 changed-line covered/total 分數 —— changed-line coverage = 本次變更的主要
+     證據;global coverage % 只是趨勢指標,可與 changed-line 並記,
+     禁只靠 global % 宣稱 coverage 充分 -->
 - Source SHA:
 - Final Fresh Run ID:
 - Entry point:

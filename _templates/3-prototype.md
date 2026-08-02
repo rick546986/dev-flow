@@ -65,6 +65,10 @@ updated:
      Variant 規則(互動問題存在時):至少 2-4 個「結構不同」的 variant ——
      比較不同操作順序 / 不同資訊階層 / 不同決策點 / 不同等待與交接呈現 /
      不同錯誤恢復方式;不能只是同版面換顏色、同流程換字。
+     Demo/Variant 分離:有互動風險 → Demo 必要;方案未定(互動設計仍有多個可行
+     方向)→ 做 2-4 個結構不同 Variant 供挑選;已有核准 Pattern(互動形已定)→
+     1 個 Demo 即可,不必湊 Variant;禁湊數假 Variant(同版面換顏色、同流程換字
+     不算 Variant)。
      每個 variant 必含:主要角色、真實目標、入口、關鍵操作、等待狀態、空狀態、
      錯誤狀態、權限不足、資料過期、中斷恢復、系統外下一步 -->
 
@@ -96,6 +100,10 @@ updated:
      - Human verdict 不得由 Agent 代答(值由參與 Demo 的人類親自給)。
      - NOT_REVIEWED 不得被 Agent 當成 ACCEPTED;未 Demo = NOT_REVIEWED。
      - REVISE 必須修改後重新 Demo,直到 ACCEPTED 或人類明示中止。
+     - ACCEPTED 必須伴隨下方 Verdict attestation 行,由人類親自輸入姓名與日期;
+       Agent 禁寫/禁改/禁代填該行 —— 缺行或格式不符,runtime 機械拒收,不得過 G2。
+     - committed 範例/測試 fixture 必須含 `test-only human fixture` 字樣;正式判定
+       對含該字樣的檔一律拒收(fixture 永遠不可能誤過正式判定)。
      - 互動不確定性未解決(verdict ≠ ACCEPTED)→ 不得偷偷在 Stage 4(4-spec)把互動
        定案;本檔 frontmatter status 不得改 approved -->
 - Demo date:
@@ -109,6 +117,7 @@ updated:
 - External handoffs:
 - Required changes:
 - Human verdict: ACCEPTED | REVISE | NOT_REVIEWED
+- Verdict attestation: human:<姓名> @ <YYYY-MM-DD>
 
 ## Verdict
 <!-- 回寫 2-decision 哪一條;branch 與 Demo 產物處置(封存/刪) -->
