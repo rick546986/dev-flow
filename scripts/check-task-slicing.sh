@@ -104,10 +104,6 @@ else:
 PY
 }
 
-verdict_of() {
-  evaluate "$1" | tee /dev/stderr | grep '^VERDICT=' | cut -d= -f2
-}
-
 if [ -n "$SCAN_FILE" ]; then
   evaluate "$SCAN_FILE"
   exit 0

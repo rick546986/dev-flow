@@ -241,7 +241,8 @@ Allowed dependencies 是廢話;Forbidden 寫「無」而非 `—`,且事實上�
 
 ## 8. 機械檢查的邊界(腳本驗什麼、不驗什麼)
 
-`scripts/check-design-contract.sh` 是**結構**守衛,只驗:
+`scripts/check-design-contract.sh` 是**結構**守衛,只驗以下**八類**(每類展開成數十條逐欄斷言;
+以腳本實際輸出的計數為準,本節是分類摘要不是斷言清單):
 
 1. `_templates/4-spec.md` 有 `## Design Boundary Contract` 章節。
 2. 該章節有 `Applicability` 與 `Trigger(s)` 欄。

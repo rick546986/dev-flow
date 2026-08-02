@@ -107,8 +107,8 @@ root 相對的 `Files` scope。
 Transaction-Concurrency-Lock-Idempotency/新 capability/Risk high/三模組以上/狀態機
 —— 任一命中即必填,全未命中才可 `n-a` + 具體理由(Fast lane 不豁免觸發條件)。
 由既有 G2 一併審(gate 條件正本仍是 §7,本段不新增 gate 條件),不新增 Stage、
-不新增 Gate、不新增 ID 鏈;Stage 5 用既有
-`Boundaries:` 欄摘錄、Stage 6 在 T Review 查 drift、Stage 7 併入既有雙軸審。
+不新增 Gate、不新增 ID 鏈;Stage 5 用既有 `Boundaries:` 欄摘錄、
+Stage 6 在 T Review 查 drift、Stage 7 併入既有雙軸審。
 **觸發條件判準、欄位語意、好壞範例、`n-a` 合法與非法例的正本 =
 [`notes/design/design-boundary-contract.md`](notes/design/design-boundary-contract.md);
 填寫骨架正本 = `_templates/4-spec.md` 同名章節。** 本 README 不重抄兩者。
