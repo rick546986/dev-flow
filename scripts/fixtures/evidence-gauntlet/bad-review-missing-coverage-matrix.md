@@ -1,9 +1,4 @@
-# fixture:7-review 檔 evidence 全 pass,但缺 Spec Axis(Gauntlet 不得取代雙軸審)
-
-## Coverage Matrix
-| S-id | 測試 | 狀態 |
-|---|---|---|
-| S-1 | `test_s_1` | ✅ |
+# fixture:7-review 檔 evidence 合規、雙軸+現象證據+Walkthrough 俱在,但缺 Coverage Matrix(E11)
 
 ## Verification Evidence
 - Source SHA: abc1234def5678
@@ -18,10 +13,13 @@
 ## Negative Constraint Mapping
 | Constraint | Test/Layer | Status |
 |---|---|---|
-| 無 | — | n-a |
+| 不得破壞既有 API 簽名 | 既有整合測試(回歸列) | pass |
 
 ## Standards Axis
 - F-1 🟢 無重大發現
+
+## Spec Axis
+- R-1 符合(S-1 綠)
 
 ## Operational Walkthrough
 - reviewer 親跑 `curl -s :8080/x` → HTTP 200;與 S-1 觀測欄一致

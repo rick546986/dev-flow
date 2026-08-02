@@ -320,6 +320,10 @@ RED → GREEN → scope check → Verify
     最小 Profile(五欄,見 4-spec 模板);命中「自動升 Full」清單(見 4-spec 模板)
     仍寫 fast → 不得過。`lane: fast` 配 `Risk: high` → Runtime(start 時)、模板檢查
     與 Gate 一律拒絕,例外僅限 Owner Call 明示。
+    Reliability triage 不計入上述五個最小 Profile 欄位,但 full 與 fast lane 都必須回答
+    Concurrency、Idempotency、Timeout/retry 三問(格式與規則見 4-spec 模板);fast lane
+    多半三項皆 `n-a`,理由仍不得省。本項由本 repo 腳本驗欄位存在與理由非空,理由是否
+    成立仍是 G2 reviewer 的判斷,無 Runtime 機械強制。
   - 「Demo verdict」(條件式):無 Stage 3 trigger → N/A + 明確原因,可過 G2;
     有 trigger 且完成 Demo → 必須 `Human verdict: ACCEPTED`;REVISE → 不得過 G2,
     必須重做 Demo;NOT_REVIEWED → 不得過 G2;有 trigger 但跳過 → 必須有 Owner Call
@@ -335,13 +339,50 @@ RED → GREEN → scope check → Verify
   8. Gauntlet PASS 不取代 Standards Axis / Spec Axis / Operational Walkthrough /
      Coverage Matrix / 真實現象複驗。
 
-  八點由 `scripts/devflow-evidence-gauntlet.sh`(1.1.0,E1–E13;採用專案散發於
-  `docs/dev/tools/`)機械驗證。
+  八點中的 Evidence 文件契約由 `scripts/devflow-evidence-gauntlet.sh`(1.2.0,E1–E13;
+  採用專案散發於 `docs/dev/tools/`)機械驗證;第 2、3、5 點仍須依 Verification Profile
+  正確傳入 Required／Conditional layer(旗標漏帶會 fail-open),並由 Reviewer 核對 ——
+  詳細強制邊界見下方對照表。
 - frontmatter 是狀態機:`draft → in-review → approved → superseded/shipped`。
 - 已知限界(明文接受,不另設機制):①Stage 1 討論期的自判無獨立節(單一機制
   原則,不在 1-discussion 設節)—— 由 2-decision 步 0 接手盤點「連同討論期自判
   一併清點」承接。②OC 的「若被推翻會怎樣」在 G1 時點是預估;4-spec 展開後發現
   代價估錯 → 回頭校準該 OC 的代價欄(不改裁決)。
+
+### 強制力對照(誰在擋)
+
+本 README 用肯定語氣寫規則,但「規則存在」不等於「Runtime 會擋」。下表把每項條件
+的實際強制者分三類寫清楚,免得讀者把人工紀律誤讀成機械閘門。三類是:外部 plugin
+(`~/.claude/plugins/local/dev-flow/`,獨立 repo,本 repo 不含其程式碼)、本 repo
+腳本(只驗本 repo 的模板/範例/fixture)、人工或 fresh reviewer。
+
+讀本表前先記三句:①本 repo 的 reference test 全綠 ≠ 外部 Runtime pass —— 兩者
+用 `devflow-contract.json` 對版握手,不共用實作。②Gauntlet 只驗 Evidence 契約
+(一份 markdown 有沒有照規矩填),它自己不跑專案測試,也不會發現你根本沒跑。
+③Coverage Matrix 與 Operational Walkthrough 的內容對不對,永遠是 Reviewer 的判斷;
+E11 只驗這兩節在不在。
+
+| 條件 | 主要強制者 | 對應位置 |
+|---|---|---|
+| G1 方向與 Owner Calls 全裁決 | 人工/fresh reviewer;外部 plugin 管流程 Gate | 本節上方、`_templates/2-decision.md`、外部 plugin |
+| G2 R/S、Drafting Decisions、Verification Profile、Demo verdict | 人工/fresh reviewer;外部 plugin 管流程 Gate | 本節上方、`_templates/4-spec.md`、外部 plugin |
+| G1/G2/G3 摘要三處不漂 | 外部 plugin 機械比對本節粗體錨 | `hooks/gate-consistency.sh` |
+| Stage 3 Human verdict 不得由 Agent 代填 | 人類輸入;外部 plugin 判定觸發與拒絕代答 | `_templates/3-prototype.md`、`hooks/_stage3_impl.py` |
+| Stage 4 逐場對帳 Stage 3 ACCEPTED 場景 | 人工/fresh reviewer;完全無腳本檢查,連範例都沒有 | `_templates/4-spec.md` 步 3 |
+| Stage 4 Reliability triage 三問已填 | 本 repo 腳本驗模板欄名與範例三項有非空理由;理由對不對是 G2 reviewer 判斷 | `_templates/4-spec.md`、`scripts/check-methodology-corrections.sh` |
+| Stage 5 必填四欄與 scope 解析 | 外部 runtime;本 repo reference parser 驗 fixture | `_templates/5-tasks.md`、`tests/parallel-stage6/contract_ref.py`、`hooks/_exec_impl.py` |
+| Stage 5 不得整份按架構層切 T | 人工/fresh reviewer(判準寫在模板,無 lint) | `_templates/5-tasks.md` |
+| Stage 6 scope guard(只准動 Files 欄的檔) | 外部 plugin hooks | `hooks/devflow-exec.sh`、`devflow-guard.sh`、`devflow-prebash.sh`、`devflow-postbash.sh` |
+| Task 獨立 review(作者不自審) | 人工或 fresh Agent;外部 dev-run 編排 | `_templates/6-implementation-notes.md`、dev-run |
+| 4-spec 每個 S 被 5-tasks Covers 承接 | 本 repo 腳本只驗範例;實案靠 runtime/CI 或人工 | `scripts/check-methodology-corrections.sh` |
+| 每個 T×S 有獨立 RED→GREEN 證據 | 本 repo 腳本只驗範例;實案靠外部 runtime 與 Reviewer | `scripts/check-methodology-corrections.sh`、dev-run |
+| G3 Evidence 契約八點 | 本 repo Gauntlet 腳本(E1–E13),但第 2、3、5 點例外 | `scripts/devflow-evidence-gauntlet.sh` |
+| G3 第 2、5 點:Required Layer 全 pass、不得 unverified 或 n-a | 半自動 —— Gauntlet 讀不到 4-spec,不知道哪些層是 Required;人必須把 Profile 的 Required 層逐層寫進 `--require-layer`,E7 才會擋。旗標漏帶 = 整份 unverified 也照樣 exit 0 | 4-spec Verification Profile、`_templates/7-review.md` 步 2c(文檔化命令已內建旗標,並有測試盯著) |
+| G3 第 3 點:已觸發的 Conditional Layer 全 pass | 人工 —— 同上讀不到 4-spec,且「哪些條件層這次被觸發」還多一層判斷,比第 2、5 點更難機械化 | 4-spec Verification Profile、`_templates/7-review.md` 步 2c |
+| Coverage Matrix 與 Operational Walkthrough 內容 | Reviewer 人工判斷;E11 只驗 heading 在不在 | `_templates/7-review.md`、E11 |
+| Final Fresh Run 真的跑過 | 專案命令/Runtime/Reviewer;Gauntlet 只驗宣告與 SHA 綁定 | 4-spec Verification Profile、`_templates/7-review.md` |
+| Attempt Ledger 寫入 | 外部 runtime 寫;本 repo observability CLI 驗證與衍生 | `hooks/devflow-obs.sh`、`observability/devflow-obs.py` |
+| 方法論與 Runtime 相容 | 外部 doctor 比對契約(fail-closed) | `devflow-contract.json`、`hooks/runtime-capabilities.json`、`hooks/devflow-doctor.sh` |
 
 ## 8. 每階段呼叫的技能(AI 對照表)
 

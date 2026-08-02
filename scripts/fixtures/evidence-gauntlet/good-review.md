@@ -28,6 +28,9 @@
 ## Spec Axis
 - R-1 符合(S-1 綠)
 
+## Operational Walkthrough
+- reviewer 親跑 `curl -s :8080/x` → HTTP 200, 3 rows;與 S-1 觀測欄一致
+
 ## 現象證據(逐 S)
 | S-id | 觀測方式 | 實跑證據 | 相符? |
 |---|---|---|---|

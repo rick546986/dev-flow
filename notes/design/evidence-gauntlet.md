@@ -198,7 +198,9 @@ repo,本 repo 只定義此契約 → 外部待辦(manifest)。**
 才可比對,過短拒絕 —— 防「`f` 對任何 f 開頭 SHA 互為前綴即過」)、E3 四值、
 E4 沒跑不寫 PASS+數字非形容詞、E5 skipped 理由、E6 fail 擋 PASS、
 E7 required 層須實跑、E8 changed-line 分數、E9 mutation survivor/error、
-E10 negative mapping、E11 雙軸不可替代、E12 stale report 清除+run-id/版本/SHA
+E10 negative mapping、E11 雙軸不可替代(1.2.0 起五節:Standards Axis / Spec Axis /
+現象證據 / Operational Walkthrough / Coverage Matrix,只驗 heading 存在)、
+E12 stale report 清除+run-id/版本/SHA
 落 report、E13 malformed 表列 fail-closed(欄數 ≠ 預期 = 明確 error,禁靜默丟列;
 儲存格內勿用原生 `|`)。
 exit 碼:0 = 契約全過;1 = 有違規;2 = 用法/檔案錯誤(含值型 flag 缺值)。
@@ -266,7 +268,9 @@ subprocess / env access / credential capability?**未在 Spec 授權的新 capab
 Operational Walkthrough、fresh reviewer 鐵則、G3 重驗 3 輪+breaker。
 - Evidence Matrix(見 manifest 模板)是 7-review 的**一節**,供 reviewer 稽核;
   reviewer 仍可(高風險時應)用 entry point 親自重跑 Final Fresh Run 比對。
-- E11 機械保底:evidence 全 pass 的 review 檔仍必須有雙軸與現象證據節。
+- E11 機械保底:evidence 全 pass 的 review 檔仍必須有雙軸、現象證據、
+  Operational Walkthrough 與 Coverage Matrix 節(1.2.0 起五節齊;只驗節在不在,
+  內容是否正確仍是 Reviewer 的判斷)。
 - G3 信心 = Gauntlet Evidence + Code Review + Operational Walkthrough,三者缺一
   不成 PASS。
 

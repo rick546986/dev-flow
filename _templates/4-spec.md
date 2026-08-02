@@ -38,7 +38,9 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 > 3. 邊界收尾:Acceptance Criteria(全 S 綠+回歸+非功能;行為不變 → golden master)、
 >    Out of Scope、Diff Budget、Dependencies;同步填 Verification Profile(含 `lane:`
 >    欄,Lane 規則見該節;Risk 判準見該節;Risk: high → Failure Model 表必填)。
->    完成 = 四節齊 + Verification Profile 填畢。
+>    Stage 3 對帳:逐一核對 3-prototype Demo Script 場景。每個已 ACCEPTED 的場景
+>    必須對應至少一條 R/S,或在 Out of Scope 明列排除理由;沒有 Stage 3 時記 N/A。
+>    完成 = 四節齊 + Verification Profile 填畢 + Stage 3 對帳逐場有下落。
 > 4. Drafting Decisions 清點:草擬自拍板逐條(決策|理由|棄項|待人審);全文掃
 >    TBD/之後再說/實作再定 → 命中即轉 DD 或退回提問。完成 = 掃描零殘留。
 > 5. 自檢(反模糊掃描):逐 S 過三律(見上,含模糊詞掃);鏈檢:每條驗收雛形 ≥1 個 S
@@ -124,6 +126,14 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 - Conditional layers:(條件觸發;註明觸發條件,如「dependency set 變動 → Supply chain」)
 - Explicitly excluded layers:(明示排除 + 一句理由;禁默排)
 - Final fresh entry point:(單一 persisted 命令,CI/人類皆一條命令重跑)
+- Reliability triage:(Full 與 Fast lane 都必答;逐項二選一 + 具體理由)
+  - Concurrency: applicable | n-a — <理由;適用時指向 S／Failure Model／Out of Scope／Known limit>
+  - Idempotency: applicable | n-a — <理由;適用時指向契約或未覆蓋風險>
+  - Timeout/retry: applicable | n-a — <理由;適用時指向契約、驗證層或未覆蓋風險>
+<!-- Reliability triage 規則:①`n-a` 必附一句具體理由,不能只寫「不適用」。
+     ②`applicable` 不等於本輪一定要實作,但必須明確落到至少一處:R/S、Failure Model、
+     Negative Constraints、Required／Conditional 驗證層、Out of Scope／Known limit。
+     ③本欄只把已存在或確實相關的風險顯性化,不得據此自行新增產品行為或可靠性保證。 -->
 
 ### Lane 規則(lane 欄的填寫契約;runtime 讀 `lane:` 行與 `- Risk:` 首值)
 - Full lane = 完整 Profile:上列全欄(Feature Risk/Failure Model/Negative Constraints/
@@ -131,6 +141,9 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 - Fast lane = 最小 Profile,本節只填五欄:`Risk: normal` / `Verify:` /
   `Negative Constraints:` / `Advanced verification excluded:` / `Exclusion reason:`
   (排除的重驗證層明示 + 一句理由,禁默排)。
+- 兩 lane 共用(不受 lane 影響):`Reliability triage:` 三問必答。它**不在** fast lane
+  的五欄之內,但 fast lane 一樣要答 —— 多半三項皆 `n-a`,理由仍不得省。看到「五欄」
+  就以為 fast lane 只需五行 = 漏填,G2 視為步 3 未完成。
 - 自動升 Full(任一命中即不得 fast):Risk high、schema migration、權限或資料隔離、
   資料刪除、不可逆資料轉換、金流/交易、核心醫療業務邏輯、並發/鎖/排程、新增
   network/filesystem/subprocess/credential capability、對外 API 契約變更、

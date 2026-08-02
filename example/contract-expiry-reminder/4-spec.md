@@ -151,6 +151,12 @@ updated: 2026-07-23
 ## Out of Scope
 email/LINE 通知、自訂天數、主管彙總報表、自動寄信給法務/供應商、逾時自動升級提醒、法務簽核流程系統化。
 
+Stage 3 對帳(逐場核對 3-prototype Demo Script;第 2 輪 Human verdict: ACCEPTED)—— 下列兩場已 ACCEPTED 的場景本期不形成 R/S,理由與已知風險逐條明列,不默默刪場景:
+- 錯誤狀態:`GET /contracts/expiring` 失敗時的專用呈現與重試按鈕(3-prototype「Scenario AC-1(錯誤狀態:expiring 查詢失敗)」)。理由:本期 R-1 只把查詢成功後的「有到期合約 / 無到期合約」兩路徑展開為可測 S(S-1、S-2),失敗路徑的卡片呈現與重試互動未展開,亦不在 Diff Budget 的九檔內。已知風險:查詢失敗若退化成空狀態,業務會誤判「今天沒有到期合約」而漏跟催 —— 正是 Demo 當場提出的觀察問題;補上該 S 之前,失敗期間仍靠 1-discussion/3-prototype 記錄的 Excel 私表 workaround 兜底。S-2 觀測欄只界定「空狀態不是錯誤狀態」,不構成對錯誤呈現的要求。
+- 資料過期/併發編輯:偵測他人已改動後拒絕以過期資料標狀態、提示重新整理(3-prototype「Scenario AC-1(資料過期)」)。理由:本期狀態寫入走單一交易,Dependencies 的 migration 只加 `renewal_status` 與狀態歷程表,沒有版本欄或樂觀鎖;要做需另立衝突偵測契約,超出本次 Diff Budget。已知風險:卡片開著隔夜、期間他人改了 `end_date` 或狀態時,後手的標記會以過期畫面覆蓋,歷程雖留兩筆但無衝突提示。S-4 的 Recovery 只涵蓋「自己中斷後重開」,不涵蓋「他人同時改動」;Verification Profile 排除 Race/stress 層排除的是新增併發寫入路徑,不等於已處理本項的 stale read。
+
+Owner confirmation:rick 確認上列兩場已 ACCEPTED 的 Demo 場景明示排除於本期交付範圍(裁決留痕,不新增 R/S,亦不產生任何 TDD Evidence)。
+
 ## Diff Budget
 ≤ 9 檔 / ≤ 600 行(API handler+service+query、狀態 API+migration、前端卡片元件+route、測試)。
 
@@ -175,6 +181,10 @@ email/LINE 通知、自訂天數、主管彙總報表、自動寄信給法務/�
 - Explicitly excluded layers:Mutation(本示範 repo 未配 mutation 工具鏈;實案 Risk: high
   應評估納入 Required)、Race/stress(狀態更新走單一交易,本次無新增併發寫入路徑)
 - Final fresh entry point:`go test ./... && npm test && npx playwright test`
+- Reliability triage:(Full 與 Fast lane 都必答)
+  - Concurrency: applicable — 3-prototype 第 2 輪 ACCEPTED 的「資料過期」場景就是併發編輯:卡片開著隔夜、他人已改 `end_date` 或狀態。本期不做衝突偵測,已列 Out of Scope 並附 known risk(後手標記會以過期畫面覆蓋,歷程留兩筆但無衝突提示)。注意本節 Explicitly excluded 的 Race/stress 排除的是「新增併發寫入路徑」的壓力驗證層,與此處的 stale read 缺口不是同一件事,不得互相抵充。
+  - Idempotency: applicable — 狀態欄位採 set-to-value(enum 六值,見 Drafting Decisions),重送相同標記後最終狀態值相同、且本次不新增任何對外副作用(自動寄信給法務/供應商、email/LINE 通知皆在 Out of Scope);但每次請求可能新增一筆同值歷程,因此「狀態值收斂」不等於「完整操作冪等」—— 完整操作目前不保證冪等。本期不新增 idempotency key,也不做歷程去重,列為 known limit;此裁決只把既有性質寫明,不新增產品行為。
+  - Timeout/retry: applicable — 後端不外呼(聯絡法務與供應商皆為系統外動作,見 S-1/S-4 Operational Context),本期唯一相關面向是 `GET /contracts/expiring` 失敗時前端的重試互動;該項已列 Out of Scope 並附 known risk(失敗退化成空狀態 → 業務誤判無到期合約)。逾時自動升級提醒本就在 Out of Scope。
 
 ### Failure Model(Risk: high 必填)
 | Failure mode | 影響 | 可觀測訊號 | 驗證層 | 未覆蓋原因 |

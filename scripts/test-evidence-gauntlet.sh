@@ -99,9 +99,16 @@ echo "== 十二.dependency diff:supply chain 層 pass 也要有實跑證據 =="
 run_case "supply chain pass 無結果(E4)" 1 "E4" "$FIX/bad-supplychain-empty.md"
 
 echo "== 十五.Stage 7 不因 Gauntlet PASS 跳過雙軸審查 =="
-run_case "review 檔 evidence 全 pass 但缺 Spec Axis(E11)" 1 "E11" \
+# 每個負向 fixture 只缺一節,且 pattern 對到「缺哪一節」的訊息 —— 否則多節同時缺時,
+# 任一節的規則被刪掉測試仍會綠(E11 五節各自要能被單獨證偽)。
+run_case "review 檔 evidence 全 pass 但缺 Spec Axis(E11)" 1 "缺「## Spec Axis」" \
   "$FIX/bad-review-missing-axis.md" --review-file
-run_case "review 檔雙軸+現象證據俱在則過" 0 "-" \
+# G3 信心 = Gauntlet + Code Review + Walkthrough:雙軸在、Walkthrough 缺一樣不得過
+run_case "review 檔雙軸俱在但缺 Operational Walkthrough(E11)" 1 "缺「## Operational Walkthrough」" \
+  "$FIX/bad-review-missing-walkthrough.md" --review-file
+run_case "review 檔雙軸+Walkthrough 俱在但缺 Coverage Matrix(E11)" 1 "缺「## Coverage Matrix」" \
+  "$FIX/bad-review-missing-coverage-matrix.md" --review-file
+run_case "review 檔雙軸+現象證據+Walkthrough+Coverage Matrix 俱在則過" 0 "-" \
   "$FIX/good-review.md" --review-file --source-sha abc1234def5678
 
 echo "== 六.stale artifact 清除:舊 report 必先刪、新 report 綁本次 run =="

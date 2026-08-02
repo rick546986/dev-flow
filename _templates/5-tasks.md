@@ -16,6 +16,9 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 > 本階段固定產出:`5-tasks.md`(本模板全節)+ `5-tasks.html`(tasks 定稿供派工時
 > 必產;必含 T 依賴 DAG,ASCII 天生適合)。
 > 順序 = **tracer bullet**:先打通最薄的端到端縱切,再逐層加厚。
+> 禁整份按 DB→Repo→Service→API→UI 逐層分 T。每個 T 必須能回答:
+> 「完成後,使用者或系統多了什麼可觀測行為?」答不出即為水平切層徵兆,
+> 應與相鄰 T 合併或重新界定。
 > 每個 `## T-n` 必填 Covers、Files、Verify、Blocked-by;Covers 標 R/S id(追溯鏈)。
 > Files 一律以 Git repository root 為相對根(例:`src/api/export.ts`);可寫 `./src/a.py`(會正規化),禁絕對路徑、`..` 與 root 條目。
 >
@@ -26,6 +29,7 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 >   禁區(照哪個既有 pattern、不准動什麼),無則寫「—」。兩欄是派工 prompt 的
 >   直接原料;守衛只解析必填四欄,這兩欄不影響 scope。
 > - 一個 T 一個關注點:Files 超過 ~5 檔或 Verify 要跑兩套不相干指令 → 拆 T。
+>   超標拆分優先按子行為拆,例如讀/寫路徑、成功/例外路徑;不得優先按架構層拆。
 >
 > **Task Context Packet 規則(真實世界互動)**:
 > - 每個 Task 只帶與該 T 有關的**最小** Operational Context 子集(從 4-spec 該 T Covers

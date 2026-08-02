@@ -232,6 +232,19 @@ for block in task_blocks:
     if covers:
         expected_pairs.update((task_id, scenario) for scenario in re.findall(r"S-\d+", covers.group(1)))
 
+# 追溯鏈頂端:expected_pairs 由 5-tasks 自建,S 若整條沒被任何 Covers 承接,期望集合
+# 會跟著縮小 → 下方 evidence_pairs 對稱比對仍全綠(恆綠漏洞)。用 4-spec 的 S 全集當
+# 獨立上界,封住頂端。本檢查只保護 repo 內範例,實案追溯由 runtime/CI 或人工承接。
+spec_scenarios = set(re.findall(
+    r"^#### (S-\d+)", read("example/contract-expiry-reminder/4-spec.md"), re.M))
+# 抽取本身要能失敗:S 全集若抽成空集合,`set() <= 任何集合` 恆真,下面那條會靜默變成
+# no-op 卻照樣報綠 —— 正是 P1 要消滅的恆綠家族。先斷言抽得到東西。
+check(bool(spec_scenarios), "4-spec S 清單可抽取(空集合會讓下面的子集合檢查恆真)")
+covered_scenarios = {scenario for _task, scenario in expected_pairs}
+check(spec_scenarios <= covered_scenarios,
+      "4-spec 每個 S 都被至少一個 T 的 Covers 覆蓋",
+      f"uncovered={sorted(spec_scenarios - covered_scenarios)}")
+
 notes = read("example/contract-expiry-reminder/6-implementation-notes.md")
 evidence_pairs = set(re.findall(r"^### (T-\d+) / (S-\d+)\b", notes, re.M))
 check(evidence_pairs == expected_pairs, "每個 T × Covers S 有獨立 TDD evidence",
@@ -249,6 +262,19 @@ for task_id, scenarios in sorted({task: sorted(s for t, s in expected_pairs if t
     review_text = review.group(1) if review else ""
     check(all(f"{task_id} / {scenario}" in review_text for scenario in scenarios),
           f"{task_id} review finding 指向每筆 RED→GREEN evidence")
+
+# Reliability triage(輕量欄位存在檢查:模板有三問、範例三問各有結論與非空理由;
+# 不做語意判斷,理由「寫得對不對」仍是 G2 reviewer 的責任)
+spec_template = read("_templates/4-spec.md")
+spec_example = read("example/contract-expiry-reminder/4-spec.md")
+check("- Reliability triage:" in spec_template, "template 4-spec 有 Reliability triage 欄")
+for field in ("Concurrency", "Idempotency", "Timeout/retry"):
+    check(re.search(rf"^\s*- {re.escape(field)}: applicable \| n-a —", spec_template, re.M) is not None,
+          f"template Reliability triage 含「{field}」二選一欄")
+    filled = re.search(rf"^\s*- {re.escape(field)}: (applicable|n-a) — (\S.*)$", spec_example, re.M)
+    check(filled is not None and len(filled.group(2).strip()) >= 20,
+          f"example Reliability triage「{field}」有結論與非空理由",
+          "缺欄或格式不符" if filled is None else f"理由過短:{filled.group(2)[:30]}")
 
 review_md = read("example/contract-expiry-reminder/7-review.md")
 check("reviewer 以擁有合約 C 的 `<owner>` 登入" in review_md,
