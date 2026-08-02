@@ -333,15 +333,110 @@ class TestGauntletContract(unittest.TestCase):
         bad2 = self.layer_completed(status="unverified", result="PASS")
         self.assertIn("inconsistent_fields", codes(ev.validate_event(bad2)))
 
-    def test_result_summary_must_be_one_short_line(self):
-        long = self.layer_completed(status="pass", result_summary="x" * 500)
+    def test_result_summary_must_be_one_line_within_2000(self):
+        # 6.6:上限升為 2000(共享契約 §6 表);單行約束不變
+        long = self.layer_completed(status="pass", result_summary="x" * 2500)
         self.assertIn("invalid_format", codes(ev.validate_event(long)))
+        ok = self.layer_completed(status="pass", result_summary="x" * 500)
+        self.assertEqual(ev.validate_event(ok), [])
         multiline = self.layer_completed(status="pass",
                                          result_summary="ok\nFAILED details...")
         self.assertIn("invalid_format", codes(ev.validate_event(multiline)))
 
     def test_privacy_scan_still_applies_to_gauntlet_events(self):
         e = self.layer_completed(status="pass", x_meta={"api_token": "sk-1"})
+        self.assertIn("privacy_forbidden_key", codes(ev.validate_event(e)))
+
+
+class TestFieldLengthLimits(unittest.TestCase):
+    """6.6:欄位級長度上限(共享契約 §6 表)取代單一 2000 字上限;
+    超限逐欄報錯,訊息含欄名與上限。"""
+
+    def layer_completed(self, **over):
+        e = base("verification_layer_completed", writer="verifier",
+                 stage="7-review", layer="unit", status="pass",
+                 source_sha="def5678")
+        e.update(over)
+        return e
+
+    def limit_errs(self, event, field):
+        return [err for err in ev.validate_event(event)
+                if err["code"] == "invalid_format"
+                and err["field"] == field]
+
+    def assert_limit_error(self, event, field, limit):
+        errs = self.limit_errs(event, field)
+        self.assertTrue(errs, msg=f"{field} 超限未報錯")
+        self.assertTrue(any(str(limit) in err["msg"] and field in err["msg"]
+                            for err in errs),
+                        msg=f"{field} 錯誤訊息須含欄名與上限 {limit}: {errs}")
+
+    def test_model_le_100(self):
+        self.assertEqual(ev.validate_event(attempt_completed(model="m" * 100)),
+                         [])
+        self.assert_limit_error(attempt_completed(model="m" * 120),
+                                "model", 100)
+
+    def test_from_to_model_le_100(self):
+        e = base("task_escalated", stage="6-implementation", task_id="T-1",
+                 attempt_id=ATT, from_model="m" * 120, to_model="n" * 120,
+                 failure_category="IMPL")
+        self.assert_limit_error(e, "from_model", 100)
+        self.assert_limit_error(e, "to_model", 100)
+
+    def test_prompt_id_le_100(self):
+        ok = attempt_completed(prompt={"id": "a" * 100, "version": "3.1.0",
+                                       "hash": SHA256})
+        self.assertEqual(ev.validate_event(ok), [])
+        bad = attempt_completed(prompt={"id": "a" * 120, "version": "3.1.0",
+                                        "hash": SHA256})
+        self.assert_limit_error(bad, "prompt.id", 100)
+
+    def test_prompt_version_le_40(self):
+        bad = attempt_completed(prompt={"id": "stage6-worker",
+                                        "version": "1.0." + "0" * 50,
+                                        "hash": SHA256})
+        self.assert_limit_error(bad, "prompt.version", 40)
+
+    def test_failure_reason_le_500(self):
+        ok = base("agent_dispatched", stage="6-implementation", task_id="T-1",
+                  attempt_id=ATT, agent_role="worker", model="haiku",
+                  prompt=copy.deepcopy(PROMPT), reason="r" * 500)
+        self.assertEqual(ev.validate_event(ok), [])
+        bad = base("agent_dispatched", stage="6-implementation", task_id="T-1",
+                   attempt_id=ATT, agent_role="worker", model="haiku",
+                   prompt=copy.deepcopy(PROMPT), reason="r" * 600)
+        self.assert_limit_error(bad, "reason", 500)
+
+    def test_finding_summary_title_le_1000(self):
+        ok = base("finding_created", stage="7-review", finding_id=FND,
+                  review_id=REV, severity="blocker", title="t" * 1000)
+        self.assertEqual(ev.validate_event(ok), [])
+        bad = base("finding_created", stage="7-review", finding_id=FND,
+                   review_id=REV, severity="blocker", title="t" * 1200)
+        self.assert_limit_error(bad, "title", 1000)
+
+    def test_command_reference_le_500(self):
+        ok = self.layer_completed(command_ref="c" * 500)
+        self.assertEqual(ev.validate_event(ok), [])
+        self.assert_limit_error(self.layer_completed(command_ref="c" * 600),
+                                "command_ref", 500)
+
+    def test_artifact_reference_le_1000(self):
+        ok = self.layer_completed(artifact_ref="a" * 1000)
+        self.assertEqual(ev.validate_event(ok), [])
+        self.assert_limit_error(self.layer_completed(artifact_ref="a" * 1200),
+                                "artifact_ref", 1000)
+
+    def test_result_summary_le_2000(self):
+        ok = self.layer_completed(result_summary="s" * 2000)
+        self.assertEqual(ev.validate_event(ok), [])
+        self.assert_limit_error(self.layer_completed(result_summary="s" * 2500),
+                                "result_summary", 2000)
+
+    def test_privacy_blacklist_kept(self):
+        # 6.6 只換長度機制,禁載欄位黑名單維持
+        e = attempt_completed(x_meta={"api_token": "sk-1"})
         self.assertIn("privacy_forbidden_key", codes(ev.validate_event(e)))
 
 

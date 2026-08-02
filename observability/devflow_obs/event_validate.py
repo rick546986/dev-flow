@@ -59,12 +59,18 @@ def _check_field(name, value, spec, errors):
         if not isinstance(value, str) or not re.match(spec["pattern"], value):
             errors.append(_err("invalid_format", name,
                                f"須符合 {spec['pattern']}, 得到 {value!r}"))
+        elif "maxlen" in spec and len(value) > spec["maxlen"]:
+            # 6.6:欄位級長度上限(共享契約 §6 表),逐欄報錯含欄名與上限
+            errors.append(_err("invalid_format", name,
+                               f"{name} 長度 {len(value)} 超過上限 "
+                               f"{spec['maxlen']}"))
     elif t == "text":
         if not isinstance(value, str):
             errors.append(_err("invalid_format", name, "須為字串"))
         elif len(value) > spec.get("maxlen", 500):
             errors.append(_err("invalid_format", name,
-                               f"長度 {len(value)} 超過上限 {spec['maxlen']}"))
+                               f"{name} 長度 {len(value)} 超過上限 "
+                               f"{spec['maxlen']}"))
     elif t == "line":
         # 單行短摘要(ID-10 result_summary/command_ref):禁換行、禁長輸出
         if not isinstance(value, str):
@@ -74,8 +80,8 @@ def _check_field(name, value, spec, errors):
                                "須為單行(完整輸出住 artifact,不進 ledger)"))
         elif len(value) > spec.get("maxlen", 200):
             errors.append(_err("invalid_format", name,
-                               f"長度 {len(value)} 超過上限 {spec['maxlen']}"
-                               "(一行摘要,禁塞完整輸出)"))
+                               f"{name} 長度 {len(value)} 超過上限 "
+                               f"{spec['maxlen']}(一行摘要,禁塞完整輸出)"))
     elif t == "int":
         if not isinstance(value, int) or isinstance(value, bool):
             errors.append(_err("invalid_format", name, "須為整數"))

@@ -30,9 +30,9 @@
     "scenario_ids": {"type": "array", "item_pattern": "^S-[0-9]+$"},
     "task_tags": {"type": "array", "item_enum_source": "devflow-contract.json#task_tags", "item_maxlen": 50, "comment": "6.3:受控 enum,正本 = repo 根 devflow-contract.json 的 task_tags(12 值);多選陣列;非 enum 值拒收;每值 ≤50(取代舊 x_task_type 承接方案)"},
     "agent_role": {"type": "enum", "values": ["worker", "reviewer", "adviser", "verifier"]},
-    "model": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$"},
-    "from_model": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$"},
-    "to_model": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$"},
+    "model": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$", "maxlen": 100},
+    "from_model": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$", "maxlen": 100},
+    "to_model": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$", "maxlen": 100},
     "prompt": {"type": "prompt"},
     "context_manifest_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "base_sha": {"type": "string", "pattern": "^[0-9a-f]{7,40}$"},
@@ -40,9 +40,9 @@
     "result": {"type": "enum", "values": ["PASS", "FAIL", "ABORTED"]},
     "verdict": {"type": "enum", "values": ["PASS", "FAIL", "REQUEST_CHANGES", "ABORTED"]},
     "status": {"type": "enum", "values": ["pass", "fail", "unverified", "n-a"]},
-    "command_ref": {"type": "line", "maxlen": 300},
-    "result_summary": {"type": "line", "maxlen": 200},
-    "artifact_ref": {"type": "text", "maxlen": 500},
+    "command_ref": {"type": "line", "maxlen": 500},
+    "result_summary": {"type": "line", "maxlen": 2000},
+    "artifact_ref": {"type": "text", "maxlen": 1000},
     "source_sha": {"type": "string", "pattern": "^[0-9a-f]{7,40}$"},
     "layers_total": {"type": "int", "min": 0},
     "layers_failed": {"type": "int", "min": 0},
@@ -64,14 +64,14 @@
     "round": {"type": "int", "min": 1},
     "findings_count": {"type": "int", "min": 0},
     "reason": {"type": "text", "maxlen": 500},
-    "title": {"type": "text", "maxlen": 200}
+    "title": {"type": "text", "maxlen": 1000}
   },
   "prompt_object": {
     "required": ["id", "version", "hash"],
     "optional": ["source_sha", "rubric_version", "context_packet_version"],
     "fields": {
-      "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
-      "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+      "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "maxlen": 100},
+      "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$", "maxlen": 40},
       "hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
       "source_sha": {"type": "string", "pattern": "^[0-9a-f]{7,40}$"},
       "rubric_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
@@ -121,7 +121,7 @@
     ]
   },
   "privacy": {
-    "comment": "六節紅線:ledger 禁載個資/token/完整 log/完整 source/完整 transcript;transcript 只准 reference/hash。",
+    "comment": "六節紅線:ledger 禁載個資/token/完整 log/完整 source/完整 transcript;transcript 只准 reference/hash。6.6:長度管制以 fields/prompt_object 的欄位級 maxlen(共享契約 §6 表)為正;max_string_len 只當 x_ 擴充欄與未列欄的 backstop,禁載欄位黑名單維持。",
     "forbidden_exact": ["prompt_body", "prompt_text", "body", "transcript", "transcript_text", "conversation", "messages", "source_code", "production_log", "raw_log", "patient_record"],
     "forbidden_substrings": ["token", "secret", "password", "passwd", "api_key", "apikey", "authorization", "credential", "bearer", "patient", "ssn", "medical"],
     "allowlist_exact": ["estimated_tokens", "transcript_ref"],
