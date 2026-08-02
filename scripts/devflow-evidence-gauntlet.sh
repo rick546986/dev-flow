@@ -14,10 +14,14 @@
 #   E8  coverage 層 pass → Result 必含 covered/total 分數(禁全域 % 虛榮數字)
 #   E9  mutation 層:Result 含 ERROR 不得 pass;killed<total 且未標 equivalent 不得 pass
 #   E10 Negative Constraint Mapping 節必在、狀態合法、skipped 列不得 pass
-#   E11 --review-file 模式:Standards Axis / Spec Axis / 現象證據 三節必在
-#       (Gauntlet PASS 不得取代 Stage 7 雙軸審與現象複驗)
+#   E11 --review-file 模式:Standards Axis / Spec Axis / 現象證據 /
+#       Operational Walkthrough / Coverage Matrix 五節必在(只驗 heading 存在,
+#       內容正確性仍屬 Reviewer)—— Gauntlet PASS 不得取代 Stage 7 雙軸審、
+#       現象複驗與 Walkthrough(README §7 G3 第 8 點的五項全量)
 #   E12 --report <path>:先刪舊 report(stale artifact 清除),再寫入本次
 #       run-id / tool-version / SHA / 逐項結果
+#   E13 表列 fail-closed:欄數 ≠ 預期的表列是明確 error,不得靜默丟列
+#       (否則 fail 列多打一個 `|` 就整列被吞、E6 不觸發)
 #
 # 用法:
 #   bash scripts/devflow-evidence-gauntlet.sh <file.md> \
@@ -27,7 +31,7 @@ set -eu
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 # 版本聲明:與 devflow-contract.json 的 schema_versions.gauntlet 同步(doctor 比對用)
-GAUNTLET_VERSION="1.1.0"
+GAUNTLET_VERSION="1.2.0"
 export DEVFLOW_EG_VERSION="$GAUNTLET_VERSION"
 
 usage_error() {
@@ -223,7 +227,14 @@ if negative is not None:
 
 # ---- E11 review-file 模式:Gauntlet 不取代雙軸審 ----
 if review_mode:
-    for heading in ("Standards Axis", "Spec Axis", "現象證據"):
+    # 五節 = README §7 G3 第 8 點列舉的全量;只驗 heading 存在,內容正確性屬 Reviewer。
+    for heading in (
+        "Standards Axis",
+        "Spec Axis",
+        "現象證據",
+        "Operational Walkthrough",
+        "Coverage Matrix",
+    ):
         check("E11", re.search(rf"^## {re.escape(heading)}", source, re.M) is not None,
               f"review 檔缺「## {heading}」—— Gauntlet evidence 全 pass 也不得跳過"
               "雙軸審查與現象複驗(G3 信心 = Gauntlet + Code Review + Walkthrough)")

@@ -15,7 +15,7 @@
     "gate_result": "devflow-gate-result.v1",
     "candidate": "devflow-candidate.v1",
     "exec_state": "exec-v2",
-    "gauntlet": "1.1.0",
+    "gauntlet": "1.2.0",
     "wave_review": "devflow-wave-review.v1"
   },
   "evidence_status_values": [
