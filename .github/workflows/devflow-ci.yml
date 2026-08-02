@@ -1,0 +1,52 @@
+# DevFlow methodology repo — repository reference validation.
+#
+# 這個 workflow 只驗**本 repo 可獨立完成**的東西,也就是 `scripts/devflow-check.sh all`
+# 的範圍:方法論一致性、機器可讀契約、架構與完整性守衛、衍生檔固定點。
+#
+# 兩個層級請勿混用:
+#   REPO_REFERENCE_PASS  = 本 workflow 綠。只代表本 repo 的模板/範例/fixture/契約檔自洽。
+#   EXTERNAL_RUNTIME_PASS = 外部 plugin(~/.claude/plugins/local/dev-flow/)的
+#                           gate-consistency.sh / selftest.sh / devflow-doctor.sh 綠。
+#
+# 外部 plugin 是獨立 repo,本 repo 不含其程式碼,CI 環境也沒有它。
+# 因此本 workflow **不執行也不冒充** gate-consistency / selftest / doctor ——
+# 那三支仍由本機或已安裝 plugin 的環境執行。兩層用 devflow-contract.json 對版握手。
+#
+# 本 workflow 不依賴任何 Secret(唯讀 checkout + 純本地檢查)。
+
+name: devflow-ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  repo-reference:
+    name: REPO_REFERENCE (scripts/devflow-check.sh all)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install renderer pin (markdown-it-py, 版本由 scripts/requirements-methodology-render.txt 釘死)
+        run: python3 -m pip install -r scripts/requirements-methodology-render.txt
+
+      - name: devflow-check all
+        env:
+          # renderer 預設呼叫 `python`;GitHub runner 上只保證 `python3` 存在。
+          DEVFLOW_RENDER_PYTHON: python3
+        run: scripts/devflow-check.sh all
+
+      - name: Scope note
+        if: always()
+        run: |
+          echo "REPO_REFERENCE_PASS  = 本 job 的結果(本 repo 自洽性)。"
+          echo "EXTERNAL_RUNTIME_PASS = 外部 plugin gate-consistency / selftest / doctor,"
+          echo "                        由本機或已安裝 plugin 的環境執行,不在本 CI 範圍。"
