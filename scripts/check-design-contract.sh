@@ -482,6 +482,17 @@ if self_path and os.path.isfile(self_path):
           "原始碼中的 CURRENT_GROUP 集合 = REQUIRED_GROUPS(無未註冊/已註冊但不存在的群組)",
           f"只在原始碼={sorted(assigned - set(REQUIRED_GROUPS))} "
           f"只在 REQUIRED_GROUPS={sorted(set(REQUIRED_GROUPS) - assigned)}")
+    # (d) 斷言不得被改成恆真。2026-08 驗收實測抓到的殘留:把
+    #     `check(rows >= 1, …)` 改成 `check(True, …)` —— 檢查數不變、群組還在、
+    #     長度釘死也全過,整條斷言卻已解除武裝。長度類的釘死本質上防不到這一類,
+    #     這裡用最直接的方式擋:原始碼裡不得出現 `check(True`。
+    #     `check(False, …)` 是刻意的顯性失敗(例如下面的 else 分支),允許保留。
+    #     只掃**敘述開頭**的呼叫(`^\s*check(True`),不掃註解與字串裡的字面 ——
+    #     否則本段自己的註解與標籤文字就會被誤判成命中。
+    always_true = re.findall(r"^\s*check\(\s*True\b", own_source, re.M)
+    check(not always_true,
+          "沒有任何斷言被改成恆真(原始碼不得出現 `check(True`)",
+          f"命中 {len(always_true)} 處 —— 恆真斷言等於該檢查被靜默解除武裝")
 else:
     check(False, "取得本守衛自身路徑以做清單自我檢查", f"self_path={self_path!r}")
 

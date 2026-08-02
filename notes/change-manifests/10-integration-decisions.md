@@ -89,8 +89,8 @@
 > | 2 G2 正式條件(OC-2A/2B) | `README.md` §7「G2 錨定義」 |
 > | 3 Wave Base 語意(OC-3) | `notes/design/parallel-stage6.md` |
 > | 4 Profile lane 規則(OC-4) | `_templates/4-spec.md`「Lane 規則」節 + `README.md` §7「G2 錨定義」 |
-> | 5 Ledger Retention(OC-5) | `notes/design/observability.md` + `observability/` |
-> | 6-11(Risk/Demo/tags/status/coverage/欄位限制) | 各對應模板與 `notes/design/` 機制正本 |
+> | 5 Ledger Retention(OC-5) | `notes/design/vnext-shared-contract.md` §8「Ledger 落盤與 Retention(OC-5)」+ `observability/`(schema 與 CLI 實作) |
+> | 6-11(Risk/Demo/tags/status/coverage/欄位限制) | 各對應模板與 `notes/design/` 機制正本（Risk 二值 → `_templates/4-spec.md` Verification Profile;事件 schema 與欄位限制 → `notes/design/agent-attempt-observability.md` + `observability/schema/`） |
 > | 12 契約握手 | `devflow-contract.json` |
 >
 > 兩邊有出入一律以正本為準。**要改規則請改正本,不要改本節**——

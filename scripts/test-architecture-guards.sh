@@ -459,6 +459,20 @@ p.write_text(n, encoding="utf-8")
 PY
 expect_local fail check-gate-tokens.sh "$D" "GS-7 守衛的 G3_POINTS 被縮短(第 8 點守衛消失)"
 
+# GS-8:把一條斷言改成恆真(`check(rows >= 1, …)` → `check(True, …)`)。
+# 檢查數不變、群組還在、長度釘死也全過 —— 長度類的釘死本質上防不到這一類。
+# 這是 2026-08 驗收實測抓到的殘留,補上 guard-selfpin 的 `check(True` 掃描後才擋得住。
+D=$(seed_guard gs8 check-design-contract.sh); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "scripts" / "check-design-contract.sh"
+t = p.read_text(encoding="utf-8")
+n = t.replace('        check(rows >= 1, f"{EXAMPLE}「{heading}」表至少一列已填內容", f"資料列數={rows}")',
+              '        check(True, f"{EXAMPLE}「{heading}」表至少一列已填內容", f"資料列數={rows}")', 1)
+assert n != t, "GS-8 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-design-contract.sh "$D" "GS-8 守衛的一條斷言被改成恆真(check(True))"
+
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
 echo
