@@ -142,6 +142,44 @@ sb = C.parse_5_tasks(fixture("sequential-badref.md"))
 check(any("T-9" in e for e in sb["errors"]),
       "sequential 模式也驗新欄位引用完整性(T-9 不存在)", str(sb["errors"]))
 
+# --- 3a-2. 續行禁令:保留欄名不得被 Boundaries/Intent 續行遮蔽(fail-closed) ---
+# 舊行為是 last-write-wins:縮排的 `- Files:` 子項會靜默換掉該 T 真正的 Files,
+# errors 為空,而 Files 是 task_scope() 與 gate 的 files_within_scope 的唯一依據。
+sh = C.parse_5_tasks(fixture("boundaries-shadow.md"))
+check(any("重複保留欄" in e and "Files" in e for e in sh["errors"]),
+      "Boundaries 續行的 `- Files:` 子項被判為重複保留欄(不得靜默覆蓋)", str(sh["errors"]))
+check(any("重複保留欄" in e and "Verify" in e for e in sh["errors"]),
+      "Boundaries 續行的 `- Verify:` 子項被判為重複保留欄", str(sh["errors"]))
+check(any("重複保留欄" in e and "Risk" in e for e in sh["errors"]),
+      "Intent 續行的 `- Risk:` 子項被判為重複保留欄(Task Risk 決定 review-mode)",
+      str(sh["errors"]))
+sh_t1 = [t for t in sh["tasks"] if t["id"] == "T-1"][0]
+check(sh_t1["files"] == ["internal/handler/contract.go", "internal/service/contract.go"],
+      "遮蔽發生時保留首筆 Files,不被續行子項覆蓋", str(sh_t1["files"]))
+check(C.task_scope(sh, "T-1") == sorted(sh_t1["files"]),
+      "遮蔽發生時 task_scope 不被放寬成整目錄", str(C.task_scope(sh, "T-1")))
+sh_t2 = [t for t in sh["tasks"] if t["id"] == "T-2"][0]
+check(sh_t2["risk"] == "normal" and sh_t2["review_mode"] != "dedicated",
+      "遮蔽發生時 Task Risk / review-mode 不被續行子項改寫",
+      f"{sh_t2['risk']}/{sh_t2['review_mode']}")
+
+# 相容性對照組:合法的純文字續寫(example 用的寫法)不得被誤判
+cont = C.parse_5_tasks(fixture("boundaries-continuation.md"))
+check(cont["errors"] == [], "合法的 Boundaries 純文字續寫不被誤判為重複欄", str(cont["errors"]))
+cont_t1 = [t for t in cont["tasks"] if t["id"] == "T-1"][0]
+check(cont_t1["files"] == ["internal/handler/contract.go", "internal/service/contract.go"]
+      and cont_t1["verify"] == "go test ./internal/... -run TestExpiring",
+      "合法續寫時 Files / Verify 維持該 T 自己宣告的值",
+      f"{cont_t1['files']} / {cont_t1['verify']}")
+
+# 模板必須明文寫出續行禁令(否則作者無從得知),且保留欄清單與 FIELD_RE 一致
+_tpl5 = read("_templates/5-tasks.md")
+check("續行禁令" in _tpl5, "5-tasks 模板有「續行禁令」段落")
+for _reserved in ("- Covers:", "- Files:", "- Verify:", "- Blocked-by:", "- Risk:",
+                  "- Review-mode:", "- Intent:", "- Boundaries:", "- Owner:",
+                  "- Integrate-after:", "- Semantic-conflicts-with:"):
+    check(_reserved in _tpl5, f"續行禁令列出保留欄「{_reserved}」")
+
 # --- 3b. DAG ---
 ur = C.parse_5_tasks(fixture("unknown-ref.md"))
 check(any("T-9" in e for e in ur["errors"]), "Blocked-by 引用不存在 T 拒收", str(ur["errors"]))
