@@ -217,6 +217,10 @@
   <code>_templates/5-tasks.md</code>;可只有一個 T,但 <code>Covers</code>、<code>Files</code>、
   <code>Verify</code>、<code>Blocked-by</code> 必填,<code>devflow-exec.sh start &lt;slug&gt;</code>
   才能照常解析 scope。</p>
+  <p class="muted">lane 的選擇須記入 <code>4-spec</code> Verification Profile 的 <code>lane:</code> 欄:
+  full = 完整 Profile、fast = 最小五欄;命中「自動升 Full」清單仍寫 fast → G2 不得過;
+  <code>lane: fast</code> 配 <code>Risk: high</code> → runtime(start 時)與 G2 一律拒絕,
+  例外僅限 Owner Call 明示(條件全文見 README §7 G2 錨定義)。</p>
 
   <h2 id="docs">③ 七份文件</h2>
   <!-- parity:start readme-stage-table -->
@@ -503,8 +507,8 @@
   <div class="tablewrap"><table>
     <tr><th>動作</th><th>誰</th></tr>
     <tr><td>寫碼、跑 Verify、貼 RED/GREEN 原文輸出到回報</td><td>執行者(fresh subagent)</td></tr>
-    <tr><td>親跑 Verify 複驗、判 PASS/FAIL</td><td>reviewer(fresh sonnet)</td></tr>
-    <tr><td><strong>commit、寫 Progress Log(hash)、勾 checkbox、謄 T Review Log/TDD Evidence/Decisions/執行軌跡</strong></td><td><strong>派工者(你)</strong></td></tr>
+    <tr><td>依共用 T acceptance seam 收驗、判 PASS/FAIL</td><td>reviewer(fresh sonnet)</td></tr>
+    <tr><td><strong>PASS 後 commit、寫 Progress Log(hash)/T Review Log、勾 checkbox、謄 TDD Evidence/Decisions/執行軌跡</strong></td><td><strong>派工者(你)</strong></td></tr>
     <tr><td>判偏差級、呼叫 <code>allow</code>/<code>stop</code>、諮詢 adviser</td><td>派工者(你)</td></tr>
   </table></div>
   <p class="muted">執行者<strong>不得自行 commit</strong>(先審後 commit 是引擎順序)。文件記帳 edit 累積,
@@ -513,11 +517,15 @@
   <p><strong>逐 T 迴圈</strong>(照 Blocked-by 拓撲序,禁併 T):</p>
   <ol>
     <li><strong>派工</strong>:三件套(目標與動機/驗收條件/回報格式),驗收條件寫明不要 commit。</li>
-    <li><strong>收驗</strong>:派 fresh sonnet reviewer(給 T + S 原文 + diff + 執行者輸出,不給執行者結論)。
-        FAIL → 升階重派(失敗軌跡全帶)。PASS → 你 commit → 讀出 hash。</li>
-    <li><strong>記帳</strong>:T Review Log 留 reviewer 親跑 Verify/Covers/Files/RED→GREEN/verdict,
+    <li><strong>收驗</strong>:派 fresh sonnet reviewer(給 T + S 原文 + diff + 執行者輸出,不給執行者結論),
+        依 README §5 / 6-notes 共用 acceptance seam 裁決。FAIL → <strong>先分類再路由</strong>(README §5
+        驗證五律 5):SPEC(T/S 定義問題)→ L2 停,回 G2;ENV(環境/依賴壞)→ 修環境重跑,不計升階;
+        IMPL/UNKNOWN → 同一 T 升階重派(失敗軌跡全帶)並重新送審。<strong>同 T 總嘗試上限 4</strong>
+        (haiku 1+sonnet 2+opus 1),用盡強制問 adviser,禁無限重試。PASS → 你 commit → 讀出 hash。</li>
+    <li><strong>記帳</strong>:T Review Log 一筆(reviewer 裁決證據)、
         Progress Log 一列(日期|T-id|hash)、勾 checkbox、TDD Evidence 貼每個 T × S 的 RED/GREEN、
-        Decisions 記自由選擇、執行軌跡一列(T-id|升階史|回合數|原因;回合數 = 三層合計)。</li>
+        Decisions 記自由選擇、執行軌跡一列(T-id|失敗分類 SPEC/ENV/IMPL/UNKNOWN(無失敗填 —)|升階史|
+        回合數|原因;回合數 = 三層合計,ENV 重跑不計)。</li>
     <li><strong>偏差</strong>:L1(不動 R/S)→ 保守方案 + 記 D-n +(需要時)
         <code>devflow-exec.sh allow &lt;file&gt; --reason "D-n …"</code> + 續走;L2 或分不清 → 先問
         adviser,verdict=STOP 或仍分不清 → <code>devflow-exec.sh stop</code>,回報使用者重走 G2。
@@ -529,11 +537,32 @@
     <tr><th>角色</th><th>模型</th><th>規則</th></tr>
     <tr><td>派工者(你)</td><td>opus / fable5</td><td>派工、彙整、commit、記帳;不寫碼</td></tr>
     <tr><td>T 執行</td><td><strong>haiku 起步</strong></td><td>「錯」= reviewer 判 FAIL(或執行者自陳卡關送不出)。haiku 錯 1 次<strong>立即</strong>升 sonnet(同層不重試);sonnet 同 T 最多 2 次(換方法不歸零)才升 opus;升階時把完整失敗軌跡帶給下一階</td></tr>
-    <tr><td>T review</td><td><strong>sonnet</strong>(fresh context)</td><td><strong>親跑該 T 的 Verify 指令</strong>(不採信執行者文字輸出;衝突以 reviewer 親跑為準判 FAIL)、Covers 的 S 有 RED→GREEN 證據、改動 ⊆ <strong>該 T 自己的 Files 欄</strong>(非全 T 聯集);高風險/爭議 → opus 二審</td></tr>
+    <tr><td>T review</td><td><strong>sonnet</strong>(fresh context)</td><td>依 README §5 / 6-notes 共用 acceptance seam;高風險或爭議時由 opus 作第二 reviewer</td></tr>
     <tr><td>adviser</td><td>opus,唯讀</td><td><strong>三層皆 FAIL = 連敗</strong> → 派 adviser 診斷:是 T/5-tasks 定義問題,還是純執行問題;verdict=STOP → 走 L2 路徑</td></tr>
   </table></div>
   <p class="muted">守衛:<code>devflow-exec.sh start</code>/<code>stop</code> 標記武裝範圍,細節見下方
   <a href="#guard">⑥ 執行守衛</a>小節。</p>
+
+  <p><strong>事件寫入通道(Attempt Ledger)</strong>:執行軌跡事件由派工者經
+  <code>devflow-exec.sh event &lt;slug&gt;</code>(事件 JSON 走 stdin)寫入 Attempt Ledger
+  (devflow-obs,agent_event schema 1.1)—— 這是唯一合法落盤通道,guard/prebash 擋直改與
+  shell 重導向。6-notes「執行軌跡」與 7-review「執行記錄」由 <code>devflow-obs.sh derive</code>
+  自 ledger <strong>衍生</strong>,禁手動雙寫。誠實條件(KL-1):事件通道需 exec-v2 run_id,
+  目前僅 <code>start &lt;slug&gt; --task T-n</code>(parallel task 武裝)產生;sequential 整
+  feature start 為 v1 無 run_id,其事件步 N/A(執行記錄照舊記 6-notes 散文,禁虛構 run_id)。
+  細節見 dev-run SKILL.md「事件寫入通道」節與 <code>notes/design/agent-attempt-observability.md</code>。</p>
+
+  <p><strong>T 級並行(選配)</strong>:<code>5-tasks.md</code> frontmatter 明寫
+  <code>execution.mode: parallel</code> 才啟用(缺省 sequential,行為與既往完全相同)。
+  每 T 一個 task worktree(<code>task/&lt;slug&gt;/T-n</code>,同 Wave 同 Base SHA),守衛以
+  <code>--task</code> 釘單 T scope;流程 = Candidate(task branch,不可變)→ Mechanical Gate
+  (14 項機械檢查)→ 整合(按 integration DAG)→ Wave/Dedicated Review → ACCEPTED 才勾
+  checkbox。runtime 子命令(<code>parallel-init</code>/<code>plan</code>/<code>wave-open</code>/
+  <code>wave-close</code>/<code>task-candidate</code>/<code>gate</code>/<code>review</code> 等)
+  見 ⑥ 執行守衛。全 T ACCEPTED 後的跨階段收束(sequential/parallel 皆同):先跑
+  <strong>Final Fresh Gauntlet</strong>(綁定當下 source SHA 的 Final Fresh Run + Evidence 契約,
+  README §7 G3 錨)全過才進 G3。ASCII 正本見 README §5「T 級並行」,SVG 圖解見
+  <code>guide-quickstart.html</code> ③/⑥。</p>
 
   <h3 id="stage7">Stage 7 — 驗證(G3)</h3>
   <p>G3 出貨關卡:雙軸審(Standards 通用品質 + Spec 逐條對 4-spec)。reviewer 先自建 Coverage
@@ -591,8 +620,8 @@
   <h2 id="gates">⑤ Gate 規則卡</h2>
   <div class="cardgrid">
     <div class="card"><h4>G1 —— 方向對不對</h4><p><code>2-decision</code>:方向核准 + Owner Calls 全裁決,有未裁決 OC 不得過。</p></div>
-    <div class="card"><h4>G2 —— 契約寫得對不對</h4><p><code>4-spec</code>:R/S 全審 + Drafting Decisions 全裁決,有未裁決項不得過。</p></div>
-    <div class="card"><h4>G3 —— 做出來的對不對</h4><p><code>7-review</code>:本次 S 全綠 + 既有測試套件全綠 + 現象證據逐 S 相符;本模板另要求無 🔴 才 PASS。</p></div>
+    <div class="card"><h4>G2 —— 契約寫得對不對</h4><p><code>4-spec</code>:R/S 全審 + Drafting Decisions 全裁決 + Verification Profile(依 lane 正確填寫)+ Demo verdict(條件式),有未裁決項不得過(條件全文見 README §7)。</p></div>
+    <div class="card"><h4>G3 —— 做出來的對不對</h4><p><code>7-review</code>:本次 S 全綠 + 既有測試套件全綠 + 現象證據逐 S 相符 + Evidence 契約全過(八點定義見 README §7);本模板另要求無 🔴 才 PASS。</p></div>
     <div class="card"><h4>author ≠ approver</h4><p>G1/G2/G3 的核准者不可以是該文檔的 owner。無適格人類第二人不跳過 Agent fallback;只有前兩種 reviewer 都不可用時才記錄 owner 自審,不假裝有四眼。</p></div>
     <div class="card"><h4>審查者產生</h4>
       <!-- parity:start readme-reviewer-selection-flow -->
@@ -633,7 +662,18 @@
     <tr><td><code>allow &lt;file&gt; --reason "D-n …"</code></td><td>L1 合法出口:把檔案納入允許池
         (留 log + 提醒記 D-n);<code>--reason</code> 必填。只解「scope 外寫入」擋,解不掉契約文件的
         跨 feature 擋(檢查順序上,契約防篡改先於 allow 池判斷)。</td></tr>
+    <tr><td><code>doctor</code></td><td>契約握手(fail-closed):依 <code>devflow-contract.json</code>
+        (專案側副本 <code>docs/dev/devflow-contract.json</code>,由 dev-setup 散發)比對 runtime 能力與
+        方法論版本;verdict INCOMPATIBLE = 刻意擋下,不得繞過或改綠。舊 sequential 專案標
+        legacy compatibility mode。</td></tr>
+    <tr><td><code>event &lt;slug&gt;</code></td><td>Attempt Ledger 唯一合法落盤通道(事件 JSON 走 stdin,
+        經 <code>devflow-obs.sh</code> 寫入);直改 ledger 檔或 shell 重導向會被 guard/prebash 擋。</td></tr>
   </table></div>
+  <p class="muted">T 級並行另有一組子命令:<code>parallel-init</code> / <code>plan</code> /
+  <code>wave-open</code> / <code>wave-close</code> / <code>task-candidate</code> /
+  <code>task-state</code> / <code>task-integrate</code> / <code>task-rework</code> /
+  <code>rebuild-plan</code> / <code>review</code> / <code>candidate</code> / <code>gate</code>,
+  語意見 README §5「T 級並行」與 <code>notes/design/parallel-stage6.md</code>。</p>
 
   <div class="tablewrap"><table>
     <tr><th>hook</th><th>時機</th><th>擋什麼</th></tr>
@@ -775,7 +815,8 @@
     正本規則:<code>~/dev/dev-flow/README.md</code>;模板:<code>~/dev/dev-flow/_templates/</code>;
     路由器 skill:<code>~/.claude/plugins/local/dev-flow/skills/dev-flow/SKILL.md</code>。
     風格沿用 <code>guide-dev-talk.html</code>。疑義以 README 為準。
-    <br>對應 <code>dev-flow</code> plugin <strong>2.1.0</strong>(2026-07-28)。
+    <br>對應 <code>dev-flow</code> plugin(版本以
+    <code>~/.claude/plugins/local/dev-flow/.claude-plugin/plugin.json</code> 實值為準;本頁對版 2026-08-02)。
   </footer>
 </main>
 </body>

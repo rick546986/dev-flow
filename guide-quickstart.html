@@ -134,6 +134,10 @@
     external workflow artifacts 與 <code>CLAUDE.md</code> 的技術規則段 → 派 sonnet 掃 codebase 抓候選 → 每條標
     <code>【待確認】</code> 列給你逐條核可,見下一步</li>
     <li><code>.gitignore</code> 加一行 <code>.devflow/</code>(執行守衛的狀態檔目錄)</li>
+    <li><code>docs/dev/devflow-contract.json</code> ← cp 母版正本(<strong>版本握手契約</strong>;
+    <code>devflow-exec.sh doctor</code> 無明示指定時在此找契約,缺件必 fail-closed)</li>
+    <li><code>docs/dev/tools/devflow-evidence-gauntlet.sh</code> ← cp 母版 <code>scripts/</code>
+    並 <code>chmod +x</code>(Stage 7 Evidence 機械檢查 E1–E13;散發後跑兩道可執行驗證)</li>
   </ul>
   <p class="muted">兩個會跳出來徵你同意的動作,不是自動靜默完成:</p>
   <ul>
@@ -183,6 +187,10 @@
     <li>check 結果表</li>
     <li>還需要你決定的事(可空)</li>
   </ol>
+  <p class="muted">check 共 10 項(JSON/掛載/自測/盲掃/專案面…見 dev-setup SKILL),其中第 9 項驗
+  gauntlet 散發(存在、與母版無 diff、兩道可執行驗證),第 10 項驗<strong>版本握手</strong>:
+  <code>docs/dev/devflow-contract.json</code> 與母版無 diff,且 <code>devflow-exec.sh doctor</code>
+  可執行並看 verdict —— 報 INCOMPATIBLE 是刻意 fail-closed,不得繞過或改綠。</p>
 
   <h2 id="walkthrough">② 一個 feature 的完整走位</h2>
   <p>以下以「加一個 X 功能」為例,逐階段列出:使用者打什麼 / AI 做什麼 / 產出什麼檔 / gate 誰審 / 用什麼模型。</p>
@@ -211,9 +219,11 @@
       <td>3 原型<br><span class="muted">(選配)</span></td>
       <td><span class="badge you">跟 AI 說</span> <code>/dev-flow 繼續 &lt;slug&gt;</code></td>
       <td>mattpocock <code>prototype</code>(code 進 throwaway branch,禁進 main)
-        + visual companion(UI 多 variant 互動挑)</td>
+        + visual companion(UI 多 variant 互動挑);命中觸發判定(前端/交接/核准/等待/權限/
+        系統外/多互動設計)→ <strong>條件式必要</strong>,產可操作 Demo + User Demo Feedback</td>
       <td><code>3-prototype.md</code>;答案回寫 <code>2-decision.md</code></td>
-      <td>回寫完成即終態 approved(無獨立 gate)</td>
+      <td>回寫完成即終態 approved(無獨立 gate);Demo 的 <strong>Human verdict 由人類親填</strong>
+        (Agent 不得代填),是 G2「Demo verdict」錨的輸入</td>
       <td><span class="badge sonnet">sonnet</span></td>
     </tr>
     <tr>
@@ -397,7 +407,19 @@ cd &lt;path&gt;
         漏打 <code>--reason</code> 會直接被拒絕(理由要進 D-n,留痕強制)。</td></tr>
     <tr><td><code>stop</code></td><td><code>devflow-exec.sh stop</code></td>
         <td>撤旗標與 sentinel。收工或判定 L2 才用。</td></tr>
+    <tr><td><code>doctor</code></td><td><code>devflow-exec.sh doctor</code></td>
+        <td>契約握手(fail-closed):依專案側 <code>docs/dev/devflow-contract.json</code>
+        (dev-setup 散發)比對 runtime 能力與方法論版本;INCOMPATIBLE = 刻意擋下,
+        不得繞過或改綠;舊 sequential 專案標 legacy compatibility mode。</td></tr>
+    <tr><td><code>event</code></td><td><code>devflow-exec.sh event &lt;slug&gt;</code></td>
+        <td>Attempt Ledger 唯一合法落盤通道(事件 JSON 走 stdin,經 <code>devflow-obs.sh</code>);
+        直改 ledger 或 shell 重導向會被 guard/prebash 擋。dev-run 引擎用,手動逐 T 不需要。</td></tr>
   </table></div>
+  <p class="muted">T 級並行(<code>execution.mode: parallel</code>)另有一組子命令
+  (<code>parallel-init</code>/<code>plan</code>/<code>wave-open</code>/<code>wave-close</code>/
+  <code>task-candidate</code>/<code>task-state</code>/<code>task-integrate</code>/<code>task-rework</code>/
+  <code>rebuild-plan</code>/<code>review</code>/<code>candidate</code>/<code>gate</code>),
+  語意見 README §5「T 級並行」與下方「T 級並行」小節。</p>
 
   <h3>被擋時看到什麼、怎麼處置(三種訊息內容逐字,為版面手動折行)</h3>
   <p class="muted">下面三塊 <code>&lt;pre&gt;</code> 是 hook 原始碼裡的 f-string 逐字內容(含 ⛔ 與中文),
@@ -598,6 +620,12 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         升階時把完整失敗軌跡帶給下一階</td></tr>
     <tr><td>Stage 6 · T review</td><td><span class="badge sonnet">sonnet</span>(fresh context)</td>
         <td>親跑該 T 的 Verify 指令(不採信執行者文字輸出);高風險/爭議升 opus 二審</td></tr>
+    <tr><td>Stage 6 · Wave review<br><span class="muted">(parallel 選配)</span></td>
+        <td><span class="badge sonnet">sonnet</span>(fresh)</td>
+        <td>一次審一個 wave;<strong>必須</strong>輸出每 T 獨立 verdict + finding 歸屬 + integration verdict</td></tr>
+    <tr><td>Stage 6 · Mechanical Gate<br><span class="muted">(parallel 選配)</span></td>
+        <td>(無模型,機械)</td>
+        <td>14 項機械檢查全 PASS 才 READY_FOR_INTEGRATION</td></tr>
     <tr><td>adviser</td><td><span class="badge opus">opus</span>,唯讀</td>
         <td>T 執行/review/adviser 三層皆 FAIL = 連敗,才派來診斷是任務定義問題還是純執行問題</td></tr>
     <tr><td>其他執行活<br>(3 原型、5 任務拆解、7 產檔、html twin)</td>
