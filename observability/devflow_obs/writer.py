@@ -16,6 +16,36 @@ class AlreadyLocked(Exception):
     """同一事件檔已有寫入者(單一寫入者原則,四節)。"""
 
 
+_RESULT_TO_STATUS = {"PASS": "pass", "FAIL": "fail"}
+
+
+def _normalize_status_only(event):
+    """6.4:新寫入路徑一律只寫 status。
+
+    result(PASS|FAIL)= verification_layer_completed 的讀取相容別名
+    (deprecated since 1.x, removed in 2.0);writer API 收到舊形狀時
+    正規化為 status,輸出不含 result。不一致 / 不可映射(ABORTED)拒寫。
+    其他事件(run/attempt/gate)的 result 為正式欄,不受影響。
+    """
+    if event.get("event_type") != "verification_layer_completed" \
+            or "result" not in event:
+        return event
+    record = dict(event)
+    result = record.pop("result")
+    mapped = _RESULT_TO_STATUS.get(result)
+    if mapped is None:
+        raise ValueError(
+            f"verification_layer_completed 新寫入須用 status 四值,"
+            f"result={result!r} 無對應(result deprecated since 1.x, "
+            f"removed in 2.0)")
+    if "status" in record and record["status"] != mapped:
+        raise ValueError(
+            f"status={record['status']!r} 與 result={result!r} 不一致,"
+            f"拒寫(6.4:並存必須一致)")
+    record["status"] = mapped
+    return record
+
+
 def atomic_write_json(path, obj):
     """temp + rename 原子寫 JSON;失敗不留半成品、不毀原檔。"""
     directory = os.path.dirname(os.path.abspath(path))
@@ -81,8 +111,9 @@ class EventWriter:
         self._fh = open(self._path, "a", encoding="utf-8")
 
     def append(self, event):
-        """append 一筆事件;seq 缺時自動遞增補上。回傳實際寫入的 dict。"""
-        record = dict(event)
+        """append 一筆事件;seq 缺時自動遞增補上。回傳實際寫入的 dict。
+        verification_layer_completed 一律正規化為 status-only(6.4)。"""
+        record = dict(_normalize_status_only(event))
         self._seq += 1
         record.setdefault("seq", self._seq)
         self._fh.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")

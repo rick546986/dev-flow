@@ -345,6 +345,34 @@ class TestGauntletContract(unittest.TestCase):
         self.assertIn("privacy_forbidden_key", codes(ev.validate_event(e)))
 
 
+class TestResultMigration(unittest.TestCase):
+    """6.4 migration tests:result = deprecated since 1.x, removed in 2.0。
+    1.x 讀 result-only 舊檔可過;status/result 並存不一致拒收;
+    新寫入(writer API)一律只寫 status(見 test_writer)。"""
+
+    SCHEMA = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "..", "schema", "agent-event.schema.json")
+
+    def test_schema_declares_removal_plan(self):
+        import json
+        with open(self.SCHEMA) as f:
+            schema = json.load(f)
+        dep = schema["deprecations"]["verification_layer_completed.result"]
+        self.assertIn("deprecated since 1.x, removed in 2.0", dep)
+
+    def test_1x_reads_result_only_legacy_file(self):
+        e = base("verification_layer_completed", writer="verifier",
+                 stage="7-review", layer="full-suite", result="PASS",
+                 exit_code=0, evidence_ref="final-fresh-run.log")
+        e["schema"] = "devflow-agent-event/1"        # 舊檔 envelope
+        self.assertEqual(ev.validate_event(e), [])
+
+    def test_status_result_coexist_inconsistent_rejected(self):
+        e = base("verification_layer_completed", writer="verifier",
+                 stage="7-review", layer="unit", status="pass", result="FAIL")
+        self.assertIn("inconsistent_fields", codes(ev.validate_event(e)))
+
+
 class TestContextManifest(unittest.TestCase):
     def good(self):
         return {

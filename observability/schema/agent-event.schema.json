@@ -110,8 +110,12 @@
   "at_least_one_of": {
     "verification_layer_completed": [["status", "result"]]
   },
+  "deprecations": {
+    "comment": "6.4 移除計畫。讀取端(1.x)維持相容:result-only 舊檔可過、status/result 並存必一致;寫入端(writer API)一律只寫 status,輸出不含 result。",
+    "verification_layer_completed.result": "result: deprecated since 1.x, removed in 2.0(status 的 Wave2 相容別名;2.0 起 verification_layer_completed 不再接受 result,at_least_one_of/field_consistency 相容規則同步移除;run_completed/attempt_completed/mechanical_gate_completed 的 result 非本項範圍,仍為正式欄)"
+  },
   "field_consistency": {
-    "comment": "ID-10 相容方案:status(pass/fail/unverified/n-a)為正式欄;result(PASS|FAIL)保留為 Wave2 相容別名。兩者並存必須一致;unverified/n-a 無 result 對應,不得並存。",
+    "comment": "ID-10 相容方案:status(pass/fail/unverified/n-a)為正式欄;result(PASS|FAIL)為讀取相容別名(deprecated since 1.x, removed in 2.0,見 deprecations)。兩者並存必須一致;unverified/n-a 無 result 對應,不得並存。",
     "verification_layer_completed": [
       {"a": "status", "b": "result", "map": {"pass": "PASS", "fail": "FAIL"}}
     ]
