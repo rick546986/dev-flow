@@ -109,11 +109,14 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
      (為何需要),G2 一併審;未經本節授權的新 capability 屬 7-review finding -->
 
 ## Verification Profile(G2 一併審)
-<!-- Risk 二值的唯一定義住本節;5-tasks T 級 `Risk:` 欄沿用同一判準,不另設分級。
-     Required 層在 7-review Verification Evidence 裡只能 pass/fail,unverified/n-a
-     不滿足 Required;Excluded 層在 Evidence 記 n-a + 理由,維持層清單全量可稽核 -->
+<!-- Risk 二值的唯一定義住本節;本節 Risk = Feature Risk(決定 Profile 深度與 lane
+     升級);5-tasks T 級 `Risk:` 欄 = Task Risk(決定該 T review-mode 缺省)——
+     兩 scope 沿用同一判準,不另設第二套分級。Required 層在 7-review Verification
+     Evidence 裡只能 pass/fail,unverified/n-a 不滿足 Required;Excluded 層在
+     Evidence 記 n-a + 理由,維持層清單全量可稽核 -->
+- lane: full | fast(必填;G2 依 lane 驗 Profile 填寫,Lane 規則見下)
 - Risk: normal | high(缺省 normal;判準:涉金流/auth/資料遺失/併發/公開 API/不可逆
-  改動 → high)
+  改動 → high;此即 Feature Risk)
 - Failure model:(Risk: high 必填,normal 選配;表見下)
 - Negative constraints:(本次變更「不得」做的事,逐條;來源:Out of Scope、
   living spec 不變量、回歸義務)
@@ -121,6 +124,20 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 - Conditional layers:(條件觸發;註明觸發條件,如「dependency set 變動 → Supply chain」)
 - Explicitly excluded layers:(明示排除 + 一句理由;禁默排)
 - Final fresh entry point:(單一 persisted 命令,CI/人類皆一條命令重跑)
+
+### Lane 規則(lane 欄的填寫契約;runtime 讀 `lane:` 行與 `- Risk:` 首值)
+- Full lane = 完整 Profile:上列全欄(Feature Risk/Failure Model/Negative Constraints/
+  Required/Conditional/Explicitly Excluded/Final Fresh Entry Point)。
+- Fast lane = 最小 Profile,本節只填五欄:`Risk: normal` / `Verify:` /
+  `Negative Constraints:` / `Advanced verification excluded:` / `Exclusion reason:`
+  (排除的重驗證層明示 + 一句理由,禁默排)。
+- 自動升 Full(任一命中即不得 fast):Risk high、schema migration、權限或資料隔離、
+  資料刪除、不可逆資料轉換、金流/交易、核心醫療業務邏輯、並發/鎖/排程、新增
+  network/filesystem/subprocess/credential capability、對外 API 契約變更、
+  高風險人機互動。
+- `lane: fast` 配 `Risk: high` → Runtime(start 時)、模板檢查與 Gate 一律拒絕;
+  例外僅限 Owner Call 明示 —— 於本節留一行裁決記錄,同一行需同時含
+  owner call 字樣與該兩個值,缺一不構成例外。
 
 ### Failure Model(Risk: high 必填)
 <!-- 先答「這個改動可能如何傷害使用者/資料/權限/流程/系統」再選層;每個 mode 指到

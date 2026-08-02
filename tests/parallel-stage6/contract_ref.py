@@ -154,6 +154,9 @@ def parse_5_tasks(text):
                 files.append(canonical_scope_path(raw))
             except ValueError as e:
                 errors.append(f"{tid} Files {e}")
+        # Risk 欄 = Task Risk(scope 限單一 T;判準沿用 4-spec Verification Profile
+        # 的 Feature Risk 同一正本,不另設分級):Task high → dedicated review 必要;
+        # Feature Risk high 不強制全部 T dedicated(vnext-shared-contract §3)。
         risk = fields.get("Risk", "").strip() or "normal"
         if risk not in ("normal", "high"):
             errors.append(f"{tid} Risk 非法值:{risk}(需 normal|high)")

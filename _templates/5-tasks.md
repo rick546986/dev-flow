@@ -40,7 +40,10 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 >   順序必須在指定 T 之後。`Blocked-by:` 仍是**硬執行依賴**(前置 T 未達安全狀態,
 >   本 T 不得開始實作)。
 > - `Risk: normal|high`(缺省 normal;判準見 4-spec Verification Profile,不另設第二套
->   分級)。high 一律 dedicated review,PASS 才進 integration。
+>   分級)。本欄 = Task Risk(scope 限單一 T):Task high → 該 T 一律 dedicated review,
+>   PASS 才進 integration;4-spec 的 Feature Risk = high 只升 Profile 深度與 lane,
+>   不強制全部 T dedicated(兩 scope 判準同一正本,語意見母版
+>   `notes/design/vnext-shared-contract.md` §3)。
 > - `Review-mode: wave|dedicated`(缺省:normal→wave、high→dedicated;high 明寫 wave 非法)。
 > - `Semantic-conflicts-with: T-n`(缺省 —)= 檔案不重疊但語意衝突,禁排同一 Wave。
 > - **不必手排 wave**:Wave 由引擎從 Blocked-by + Files overlap 自動派生(runtime
