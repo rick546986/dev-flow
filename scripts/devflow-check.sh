@@ -73,6 +73,9 @@ group_architecture() {
   # 反水平切層是 warning-only heuristic:它自己絕不 exit 1(見腳本頂註),
   # 因此不會讓本聚合器紅。它印 WARNING 供人判斷,不取代 Reviewer。
   run "architecture/check-task-slicing (warning-only)" scripts/check-task-slicing.sh || return 1
+  # 負向回歸:守衛「跑得過」≠「擋得住」。這支把關鍵 mutation 釘成常設測試,
+  # 每次 PR 由 CI 重跑;不靠「某次 mutation 結果寫在 PR 說明裡」。
+  run "architecture/test-architecture-guards (負向)" scripts/test-architecture-guards.sh || return 1
 }
 
 group_render() {

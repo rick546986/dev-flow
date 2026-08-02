@@ -43,11 +43,34 @@ TABLE_HEADINGS = ["Architecture Boundaries", "Interface & Consistency Contract",
                   "Software Design"]
 
 
+# ── 必跑檢查群組(heartbeat)────────────────────────────────────────────────
+# 為什麼是「群組心跳」而不是只有一個檢查數地板:
+#   檢查數地板只能偵測「大幅縮水」,無法偵測「某一個群組整組沒跑但別的群組變多」。
+#   heartbeat 逐群組斷言「這一群至少跑過一條」,任何群組被條件式擋掉都會顯性失敗。
+REQUIRED_GROUPS = [
+    "files-exist",
+    "template-section",
+    "template-fields",
+    "template-tables",
+    "example-applicability",
+    "example-tables",
+    "example-antipattern",
+    "na-reason",
+    "readme-canonical",
+    "trigger-parity",
+    "handoff-templates",
+    "handoff-example",
+]
+CURRENT_GROUP = "files-exist"
+groups_seen = {}
+
+
 def check(condition, label, detail=""):
     global checks
     checks += 1
+    groups_seen[CURRENT_GROUP] = groups_seen.get(CURRENT_GROUP, 0) + 1
     if not condition:
-        failures.append(label + (f" — {detail}" if detail else ""))
+        failures.append(f"[{CURRENT_GROUP}] " + label + (f" — {detail}" if detail else ""))
 
 
 def read(rel):
@@ -113,10 +136,12 @@ check(example_text is not None, f"{EXAMPLE} 存在")
 check(readme_text is not None, "README.md 存在")
 check(read(CANON) is not None, f"語意正本 {CANON} 存在")
 
+CURRENT_GROUP = "template-section"
 # ── 1. Template 有 Design Boundary Contract 章節 ───────────────────────────
 template_block = section(template_text, SECTION)
 check(template_block is not None, f"{TEMPLATE} 有「## {SECTION}」章節")
 
+CURRENT_GROUP = "template-fields"
 # ── 2. Template 的 Applicability / Trigger(s) 欄存在 ───────────────────────
 template_applicability = applicability(template_block)
 check(template_applicability is not None, f"{TEMPLATE} 有 Applicability 欄")
@@ -129,6 +154,7 @@ check(template_block is not None and re.search(r"^- Trigger\(s\):", template_blo
 check(template_block is not None and re.search(r"^- Design source:", template_block, re.M) is not None,
       f"{TEMPLATE} 有 Design source 欄")
 
+CURRENT_GROUP = "template-tables"
 # ── 3. Template 三張表的必要欄位存在 ───────────────────────────────────────
 for heading, columns in (("Architecture Boundaries", ARCH_COLUMNS),
                          ("Interface & Consistency Contract", IFACE_COLUMNS),
@@ -141,6 +167,7 @@ for heading, columns in (("Architecture Boundaries", ARCH_COLUMNS),
 check(template_block is not None and "Known design limit" in template_block,
       f"{TEMPLATE} Design Constraints 有 Known design limit")
 
+CURRENT_GROUP = "example-applicability"
 # ── 4. Example 必須是 applicable(**無條件釘死**,不掛在任何可被單行編輯翻轉的條件上)──
 # 2026-08 單一編輯解除武裝實測(scratchpad/single-edit-disarm-test.sh):
 #   舊寫法把「必須 applicable」掛在 `^- Risk: high` 之下,結果只要把 example 的
@@ -164,8 +191,11 @@ check(example_applicability is not None
 check(bool(example_text and re.search(r"^- Risk: high", example_text, re.M)),
       f"{EXAMPLE} 仍是 Risk: high(範例被降級 → 觸發條件⑨消失,必須顯性失敗而非靜默跳過)")
 
+CURRENT_GROUP = "example-tables"
 # ── 5. Example 三張表的必要欄位存在 ────────────────────────────────────────
-if example_applicability and example_applicability.startswith("applicable"):
+# **無條件執行**:example 的 applicable 已在群組 example-applicability 釘死,
+# 再把表檢查掛在它之下只會製造「翻掉上游就整組消失」的第二道靜默閘門。
+if True:
     for heading, columns in (("Architecture Boundaries", ARCH_COLUMNS),
                              ("Interface & Consistency Contract", IFACE_COLUMNS),
                              ("Software Design", DESIGN_COLUMNS)):
@@ -179,6 +209,7 @@ if example_applicability and example_applicability.startswith("applicable"):
     check("Known design limit" in (example_block or ""),
           f"{EXAMPLE} 有 Known design limit")
 
+CURRENT_GROUP = "na-reason"
 # ── 6. n-a 必須有非空、非佔位的理由 ────────────────────────────────────────
 def na_reason_ok(value):
     """`n-a` 只有一種合法形式:`n-a — <非空且非佔位理由>`。"""
@@ -201,6 +232,7 @@ for rel, block in ((TEMPLATE, template_block), (EXAMPLE, example_block)):
     else:
         check(value.strip() != "", f"{rel} Applicability 非空值", f"實得={value!r}")
 
+CURRENT_GROUP = "readme-canonical"
 # ── 7. README 只保留摘要與正本連結(不得重抄表格) ───────────────────────────
 if readme_text is not None:
     for heading in TABLE_HEADINGS:
@@ -215,6 +247,7 @@ if readme_text is not None:
     check(SECTION in readme_text, f"README 有 {SECTION} 摘要")
     check(CANON in readme_text, f"README 連到語意正本 {CANON}")
 
+CURRENT_GROUP = "example-antipattern"
 # ── 5b. Example 不得填成 canon 自己白紙黑字列出的「壞例」 ──────────────────
 # 界線宣告(重要,免得被誤讀成腳本會評分):這**不是**品質判斷,是**字面比對**。
 # canon 的 §6「好例與壞例」與 §2.4 直接寫出了幾個不合格寫法的原文;
@@ -223,8 +256,9 @@ if readme_text is not None:
 # 起因:2026-08 fresh review A-M1 第二組 mutation 實測 —— example 三張表填成
 # canon 自己的壞例(Forbidden 寫「無」、Test seam 寫「加測試」、
 # Known design limit 抄壞例原文「併發情況可能有問題,後續評估。」)仍 112/112 全過。
-if example_block is not None and example_applicability \
-        and example_applicability.startswith("applicable"):
+# **無條件執行**(理由同上;example_block 為 None 時下列抽取自然得到空清單,
+# 而「章節不存在」已由 example-applicability 群組顯性報錯)
+if True:
     arch_header, _ = table_of(example_block, "Architecture Boundaries")
     design_header, _ = table_of(example_block, "Software Design")
 
@@ -272,6 +306,7 @@ if example_block is not None and example_applicability \
                   f"example Known design limit 未用模糊詞「{vague}」打發(反模糊三律)",
                   "canon §6 已把這個寫法列為壞例")
 
+CURRENT_GROUP = "trigger-parity"
 # ── 7b. 觸發條件兩份清單不得單邊漂移 ───────────────────────────────────────
 # 教訓來源:本輪 fresh review(A-L2 / C-4)指出「觸發條件同時存在多份無人比對的副本」
 # 正是這次剛從 notes/design/vnext-shared-contract.md 拔掉的失效模式。
@@ -308,6 +343,7 @@ if template_block is not None and canon_text is not None:
               "README 未出現第三份觸發條件枚舉(11 條清單的尾號 ⑨⑩⑪)",
               f"出現={leaked}")
 
+CURRENT_GROUP = "handoff-templates"
 # ── 8. Stage 5／6／7 有承接規則 ────────────────────────────────────────────
 handoffs = [
     ("_templates/5-tasks.md", ["Design Boundary", "Boundaries:"],
@@ -329,7 +365,9 @@ for rel, needles, label in handoffs:
 #  兩位對抗查核者都指出「只補 Stage 5」會讓範例更不自洽 —— 上游宣告 applicable 且已摘錄,
 #  下游卻查無此檢查。因此三個下游一起驗,不留半邊。
 #  注意 needle 不能照抄 _templates 的規則字串:範例裡是**填好的實例**,不是規則條文。)
-if example_applicability and example_applicability.startswith("applicable"):
+CURRENT_GROUP = "handoff-example"
+# **無條件執行**(理由同上)
+if True:
     example_tasks = read("example/contract-expiry-reminder/5-tasks.md")
     check(example_tasks is not None, "example 5-tasks 存在")
     if example_tasks is not None:
@@ -359,12 +397,26 @@ if example_applicability and example_applicability.startswith("applicable"):
         check("Design Boundary Contract 逐條對照 diff" in example_review,
               "example Stage 7 Spec Axis 有逐條對照 Design Boundary Contract")
 
-# 檢查數地板:防「條件式 gating 讓整組檢查靜默不跑卻照樣 exit 0」再度發生。
-# 數字是實測下限(目前 110);合法新增檢查只會讓它變大,不會變小。
+# ── 群組心跳(**主要**防線)────────────────────────────────────────────────
+# 逐群組斷言「這一群至少跑過一條」。任何群組被條件式、例外、早退擋掉都會顯性失敗,
+# 而且錯誤訊息直接點名是哪一群 —— 這才是防「整組靜默略過」的正解。
+CURRENT_GROUP = "files-exist"
+missing_groups = [g for g in REQUIRED_GROUPS if groups_seen.get(g, 0) == 0]
+if missing_groups:
+    failures.append("[heartbeat] 必跑檢查群組完全沒執行:" + ", ".join(missing_groups)
+                    + " —— 幾乎都是某個 if 把整段擋掉了")
+    checks += 1
+else:
+    checks += 1
+
+# 檢查數地板:**次級 backstop**,只用來偵測「大幅縮水」。
+# 明確不宣稱能防止所有群組被略過 —— 那是上面 heartbeat 的職責;
+# 地板抓不到「A 群組消失但 B 群組變多」這種總數持平的情況。
 MIN_CHECKS = 100
 check(checks >= MIN_CHECKS,
-      f"執行的結構檢查數 ≥ {MIN_CHECKS}(防條件式 gating 靜默跳過整組)",
-      f"實得 {checks} —— 有檢查沒跑到,先查是不是某個 if 把整段擋掉了")
+      f"(次級 backstop)結構檢查總數 ≥ {MIN_CHECKS} —— 只偵測大幅縮水,"
+      f"完整的群組覆蓋由 heartbeat 負責",
+      f"實得 {checks}")
 
 print("=== Design Boundary Contract 結構守衛 ===")
 print(f"  • root: {root}")
@@ -375,6 +427,8 @@ if failures:
     print(f"⛔ design contract 結構守衛:{len(failures)}/{checks} 失敗")
     raise SystemExit(1)
 print(f"  ✓ 結構檢查 {checks}/{checks} 全過(語意仍由 G2／G3 Reviewer 判斷)")
+print(f"  ✓ heartbeat:{len(REQUIRED_GROUPS)} 個必跑群組全部有執行 "
+      f"({', '.join(f'{g}={groups_seen.get(g, 0)}' for g in REQUIRED_GROUPS)})")
 print()
 print("✅ design contract 結構守衛:全過")
 PY
