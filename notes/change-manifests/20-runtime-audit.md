@@ -27,22 +27,22 @@
 - Parser 現況:`_exec_impl.py` 只認 `## T-\d+` 與 `Covers|Files|Verify|Blocked-by` 四必填欄;未知 `- X:` 行靜默忽略 → **新選配欄位 additive-safe**
 - exec.json 現 schema:`{slug, started, scope[], extra[], baseline{}, contract_hashes{}, contract_hash_scope:"repo-wide-v1"}`;sentinel per-worktree;雙 start 拒絕(異 slug)
 
-## Capability Matrix(2026-08-02 §11-d 更新;Runtime 證據 = plugin integration branch @ 150be0f,selftest 258/258)
+## Capability Matrix(2026-08-02 終版;Runtime=plugin integration @ 5a4cef7 selftest 292/292;E2E=round-2 真實 /dev-flow 全鏈 @ 最終 runtime)
 
 | Capability | Design | Reference | Runtime | E2E |
 |---|---|---|---|---|
-| Parallel scheduler(DAG/wave) | DESIGN_PASS | REFERENCE_PASS(contract_ref+95 檢查) | RUNTIME_PASS(P1:devflow-lib+_exec_impl,對拍 25/25) | PENDING |
-| Task-scoped guard | DESIGN_PASS | REFERENCE_PASS(契約 §7;fixtures) | RUNTIME_PASS(P1:start --task+guard 恆許變更,selftest p1) | PENDING |
-| Candidate gate(14 項) | DESIGN_PASS | REFERENCE_PASS(run_gate+10 fixtures) | RUNTIME_PASS(P1:_gate_impl.py,gate fixtures verdict 全等) | PENDING |
-| Wave review | DESIGN_PASS | REFERENCE_PASS(validate_wave_review+5 fixtures) | RUNTIME_PASS(P1:狀態機+wave review 驗證) | PENDING |
-| Operational Stage 3(trigger/Demo/verdict) | DESIGN_PASS | REFERENCE_PASS(realworld 133 檢查) | RUNTIME_PASS(P2:_stage3_impl.py,OC-2B 五分支+attestation) | PENDING |
-| Attempt ledger | DESIGN_PASS | REFERENCE_PASS(schema 1.1+devflow_obs+125 案) | RUNTIME_PASS(P3:_obs_impl.py+vendor,對拍 byte-identical) | PENDING |
-| Prompt registry | DESIGN_PASS | REFERENCE_PASS(schema+validator) | RUNTIME_PASS(P3:prompt-registry.json,approved_by 待 Owner 簽) | PENDING |
-| Final Fresh Run(gauntlet) | DESIGN_PASS | REFERENCE_PASS(E1-E13+30 案) | RUNTIME_PASS(P4:dev-setup 散發+rehearsal;dev-run Stage 7 條文) | PENDING |
-| Gate consistency(VNext G2/G3) | DESIGN_PASS(OC-1/2 條文入 §7 正本 @748fa68) | REFERENCE_PASS(P4 fixture tests 10 案) | RUNTIME_PASS(對 integration 版 14/14 全綠;live master 未部署前 2/14 紅 = 安裝面滯後) | PENDING |
-| Contract version handshake | DESIGN_PASS(devflow-contract.json 2.0.0) | REFERENCE_PASS(hermetic 契約案) | RUNTIME_PASS(P3:doctor fail-closed;六 capability 聲明) | PENDING |
+| Parallel scheduler(DAG/wave) | DESIGN_PASS | REFERENCE_PASS(contract_ref+97 檢查) | RUNTIME_PASS(P1,對拍 25/25) | E2E_PASS(r2:plan/wave-open/雙 T 整合) |
+| Task-scoped guard | DESIGN_PASS | REFERENCE_PASS(契約 §7+fixtures) | RUNTIME_PASS(P1:start --task) | E2E_PASS(r2:雙武裝樹零誤攔+scope 拒他檔) |
+| Candidate gate(14 項) | DESIGN_PASS | REFERENCE_PASS(run_gate+10 fixtures) | RUNTIME_PASS(P1:_gate_impl,verdict 全等) | E2E_PASS(r2:14/14 ×2) |
+| Wave review | DESIGN_PASS | REFERENCE_PASS(validate_wave_review+6 fixtures) | RUNTIME_PASS(P1:登記+F2 前置) | E2E_PASS(r2:F2 拒未登記實證→登記→ACCEPTED) |
+| Operational Stage 3 | DESIGN_PASS | REFERENCE_PASS(realworld 133) | RUNTIME_PASS(P2:_stage3_impl+attestation) | E2E_PASS(正向 PASS+N1 拒) |
+| Attempt ledger | DESIGN_PASS | REFERENCE_PASS(schema 1.1+125 案) | RUNTIME_PASS(P3:_obs_impl+vendor 對拍) | E2E_PASS(事件即時落盤;KL-1:sequential v1 無 run_id) |
+| Prompt registry | DESIGN_PASS | REFERENCE_PASS(schema+validator) | RUNTIME_PASS(P3;approved_by 待 Owner 簽) | E2E_PASS(真 hash 1.1.0 入事件) |
+| Final Fresh Run(gauntlet) | DESIGN_PASS | REFERENCE_PASS(E1-E13+31 案) | RUNTIME_PASS(P4:散發+--version) | E2E_PASS(fresh 22 checks;run 事件僅 task-armed=KL-1) |
+| Gate consistency(VNext G2/G3) | DESIGN_PASS(§7 正本 @748fa68) | REFERENCE_PASS(P4 fixture 10 案) | RUNTIME_PASS(live 14/14) | E2E_PASS(e2e doctor gate 行 ✓) |
+| Contract version handshake | DESIGN_PASS(contract 2.0.0) | REFERENCE_PASS(hermetic 案) | RUNTIME_PASS(P3 doctor fail-closed) | E2E_PASS(e2e COMPATIBLE;fail-closed 三情境) |
 
-> E2E 欄待 Phase 4 真實 /dev-flow 端到端(正向+4 負向)後更新;依 doc1 §2,在此之前不得宣稱 E2E_PASS。
+> E2E 欄依 round-2(最終 runtime 5a4cef7)實跑更新;負向 N1~N4 全數正確拒絕。KL-1 = 已知限制(見最終報告)。
 
 ## Risks
 
