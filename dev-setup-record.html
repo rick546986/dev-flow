@@ -43,39 +43,63 @@
 ~/.claude/plugins/local/                 &lt;- local marketplace(兩帳號共用同一目錄)
 |- .claude-plugin/marketplace.json       &lt;- 已登錄 dev-talk、dev-flow 兩 plugin
 |- dev-talk/                             &lt;- plugin 1(獨立包裝,防耦合)
-|  |- .claude-plugin/plugin.json         &lt;- v4.0.0,描述中性
-|  |- skills/dev-talk/SKILL.md           &lt;- 訪談引導 v4(單一正本)
+|  |- .claude-plugin/plugin.json         &lt;- 版本以本檔實值為準;描述中性
+|  |- skills/dev-talk/SKILL.md           &lt;- 訪談引導(單一正本;版本隨 plugin.json)
 |  |- skills/dev-talk/html-shell.html    &lt;- 視覺版殼檔
 |- dev-flow/                             &lt;- plugin 2
-   |- .claude-plugin/plugin.json         &lt;- v2.0.0
+   |- .claude-plugin/plugin.json         &lt;- 版本以本檔實值為準
    |- skills/dev-flow/SKILL.md           &lt;- 流程路由器
    |- skills/dev-run/SKILL.md            &lt;- Stage 6 執行引擎(haiku 寫碼-sonnet 審-升階)
    |- skills/dev-setup/SKILL.md          &lt;- 專案安裝器 + 基建檢查(install/upgrade/check)
    |- hooks/hooks.json                   &lt;- 四條掛載(見下表)
    |- hooks/devtalk-guard.sh             &lt;- 盲原則守衛(PostToolUse Edit|Write)
-   |- hooks/devflow-exec.sh              &lt;- 執行守衛 CLI(start/stop/status/allow)
+   |- hooks/devflow-exec.sh              &lt;- 執行守衛 CLI(start/stop/status/allow/doctor/event
+   |                                        + gate/stage3 + parallel 系列;doctor=契約握手 fail-closed)
    |- hooks/devflow-guard.sh             &lt;- 執行期硬擋(PreToolUse Edit|Write|Read)
    |- hooks/devflow-prebash.sh           &lt;- shell 圍欄(PreToolUse Bash:擋讀上游/破壞旗標)
    |- hooks/devflow-postbash.sh          &lt;- shell 寫入偵測網(PostToolUse Bash)
+   |- hooks/devflow-doctor.sh            &lt;- 契約握手 doctor(fail-closed;找 docs/dev/devflow-contract.json)
+   |- hooks/devflow-obs.sh               &lt;- Attempt Ledger CLI(event/derive/stats;schema 1.1)
+   |- hooks/devflow_obs_vendor/          &lt;- obs 工具 vendored 副本
+   |- hooks/gate-consistency.sh          &lt;- gate 摘要 vs README §7 正本一致性(check 第 8 項)
+   |- hooks/prompt-registry.json         &lt;- 派工 prompt 註冊表(id/version/hash;event 引用現值)
+   |- hooks/runtime-capabilities.json    &lt;- runtime 能力宣告(doctor 據此與契約比對)
    |- hooks/selftest.sh                  &lt;- 守衛全情境自測(動態發現案例,自建 temp repo 後自清)
    |- hooks/devflow-lib.py               &lt;- 共用邏輯(fail-closed 狀態載入/路徑判定)
-   |- hooks/_{guard,prebash,postbash,exec}_impl.py  &lt;- 四支實作(shell 為薄殼)
+   |- hooks/_{guard,prebash,postbash,exec,doctor,gate,gate_consistency,obs,stage3}_impl.py
+                                         &lt;- 九支實作(shell 為薄殼)
 
 ~/dev/dev-flow/                          &lt;- 母版文檔(不隨 plugin 走)
-|- README.md  _templates/  example/  guide-dev-talk.html  本檔
+|- README.md  _templates/  example/  devflow-contract.json(契約正本)
+|- scripts/(evidence gauntlet + fixtures + check-*.sh)  observability/  notes/  tests/  docs/
+|- guide-dev-flow.html  guide-quickstart.html  guide-dev-talk.html  本檔
   </pre>
   <p><strong>為什麼拆兩個 plugin</strong>:dev-talk 必須看不到任何下游流程字眼(盲原則);包進同一個 plugin 會讓它的 skill 識別名帶上流程前綴。拆開後 dev-talk 自成一包,描述與內容全中性。</p>
 
   <h2>② 每件用途</h2>
   <div class="tablewrap"><table>
     <tr><th>元件</th><th>用途</th></tr>
-    <tr><td><code>dev-talk@local</code></td><td>訪談引導 skill(v4:含受影響面清點、五掃複核、⚠️ 高影響決策標記)+ 視覺版殼檔。單一正本,兩帳號同時生效。</td></tr>
+    <tr><td><code>dev-talk@local</code></td><td>訪談引導 skill(版本以其 plugin.json 實值為準;含受影響面清點、五掃複核、⚠️ 高影響決策標記)+ 視覺版殼檔。單一正本,兩帳號同時生效。</td></tr>
     <tr><td><code>dev-flow@local</code></td><td>流程路由器 + dev-setup 健康檢查 + guard hook。hook 隨 plugin 啟用自動掛載(不再寫進 settings.json)。</td></tr>
     <tr><td>devtalk-guard.sh</td><td>任何 Edit/Write 後檢查:目標路徑含 <code>skills/dev-talk/</code> 才動作 → 洩漏掃描(下游階段字眼)→ 命中 <code>exit 2</code> 把錯誤直接回饋給模型要求立即修正。其他路徑靜默放行。</td></tr>
-    <tr><td>dev-setup skill</td><td>專案安裝器(install:docs/dev 模板 + <code>.claude/rules/</code> 骨架 + gitignore;upgrade:只覆蓋 README/_templates,絕不動已產 feature 檔;未識別的外部 workflow artifacts 全數保留)+ 六項健康檢查。</td></tr>
-    <tr><td><strong>執行守衛</strong><br>(devflow-exec + guard + prebash + postbash)</td><td>Stage 6 起手 <code>devflow-exec.sh start &lt;slug&gt;</code>:驗 4-spec=approved、逐 T 驗 Covers/Files/Verify/Blocked-by、把 Git root 相對 Files 正規化為 scope。scope 外真實髒檔先拒啟(不再 baseline);只有 <code>.DS_Store</code>/<code>._*</code>/<code>Thumbs.db</code>/<code>__pycache__/</code>/<code>*.pyc</code> 是 ambient。旗標存在時:<strong>PreToolUse</strong> 擋改 4-spec/1/2/3(契約防篡改+L2 強制停修審)、擋讀 1/2/3(圍欄②)、擋 scope 外寫入(附 L1/L2 提示);<strong>PostToolUse Bash</strong> 每次指令後 git status 對照 scope,shell 寫入幾秒內被抓。L1 合法出口:<code>allow &lt;file&gt; --reason</code>(留 log + 提醒記 D-n)。<code>stop</code> 撤旗標 → 全部沉睡,其他工作零干擾。</td></tr>
-    <tr><td><strong>dev-run 引擎</strong></td><td>派工者(opus/fable5 主對話,不寫碼)逐 T:haiku 執行 → sonnet fresh review → 錯誤升階(haiku→sonnet→opus,同層最多兩次);升階史記 6-notes「執行軌跡」→ 7-review.html 執行記錄表。偏差 L1 保守+記+續走,L2 才停(field guide 模式)。</td></tr>
+    <tr><td>dev-setup skill</td><td>專案安裝器(install:docs/dev 模板 + <code>devflow-contract.json</code> 散發(版本握手契約)+ evidence gauntlet 散發到 <code>docs/dev/tools/</code>(chmod +x + 兩道可執行驗證)+ <code>.claude/rules/</code> 骨架 + gitignore;upgrade:只覆蓋 README/_templates/tools/(gauntlet)/devflow-contract.json,絕不動已產 feature 檔;未識別的外部 workflow artifacts 全數保留)+ <strong>10 項健康檢查</strong>(含第 9 gauntlet 散發、第 10 版本握手+doctor)。</td></tr>
+    <tr><td><strong>執行守衛</strong><br>(devflow-exec + guard + prebash + postbash)</td><td>Stage 6 起手 <code>devflow-exec.sh start &lt;slug&gt;</code>:驗 4-spec=approved、逐 T 驗 Covers/Files/Verify/Blocked-by、把 Git root 相對 Files 正規化為 scope。scope 外真實髒檔先拒啟(不再 baseline);只有 <code>.DS_Store</code>/<code>._*</code>/<code>Thumbs.db</code>/<code>__pycache__/</code>/<code>*.pyc</code> 是 ambient。旗標存在時:<strong>PreToolUse</strong> 擋改 4-spec/1/2/3(契約防篡改+L2 強制停修審)、擋讀 1/2/3(圍欄②)、擋 scope 外寫入(附 L1/L2 提示);<strong>PostToolUse Bash</strong> 每次指令後 git status 對照 scope,shell 寫入幾秒內被抓。L1 合法出口:<code>allow &lt;file&gt; --reason</code>(留 log + 提醒記 D-n)。<code>stop</code> 撤旗標 → 全部沉睡,其他工作零干擾。另支援 Stage 6 <strong>T 級並行</strong>(5-tasks <code>execution.mode: parallel</code> 才啟用):<code>parallel-init</code>/wave 系列子命令 + <code>start --task T-n</code> 任務樹武裝(每 T 一 worktree,同 Wave 同 Base)、Mechanical Gate 14 項機械檢查、上游 candidate 被替換自動標 <code>INVALIDATED_BY_UPSTREAM</code>;<code>doctor</code> = 契約握手 fail-closed(見 ②b)。</td></tr>
+    <tr><td><strong>dev-run 引擎</strong></td><td>派工者(opus/fable5 主對話,不寫碼)逐 T:haiku 執行 → sonnet fresh review → 錯誤升階(haiku→sonnet→opus,同層最多兩次;FAIL 先分類 SPEC/ENV/IMPL/UNKNOWN 再路由,同 T 總嘗試上限 4);升階史記 6-notes「執行軌跡」→ 7-review.html 執行記錄表。逐 attempt 事件經 <code>devflow-exec.sh event</code> 寫入 <strong>Attempt Ledger</strong>(devflow-obs,agent_event schema 1.1),執行軌跡/執行記錄由 <code>devflow-obs.sh derive</code> 衍生禁雙寫(sequential v1 無 run_id → 事件步 N/A,禁虛構)。偏差 L1 保守+記+續走,L2 才停(field guide 模式)。</td></tr>
   </table></div>
+
+  <h2>②b 版本握手(devflow-contract.json + doctor)</h2>
+  <ul>
+    <li><strong>契約正本</strong>:母版 <code>~/dev/dev-flow/devflow-contract.json</code>;
+      dev-setup install/upgrade 散發副本到專案 <code>docs/dev/devflow-contract.json</code>
+      (check 第 10 項驗存在 + 與母版 diff 無差異)。</li>
+    <li><strong>doctor 找檔順序</strong>:<code>--contract &lt;path&gt;</code> 明示 →
+      <code>$DEVFLOW_CONTRACT</code> → 專案 <code>docs/dev/devflow-contract.json</code>;
+      缺件必 <strong>fail-closed</strong>,不靜默退回舊行為。</li>
+    <li>doctor 比對契約與 <code>hooks/runtime-capabilities.json</code>(runtime 能力宣告);
+      verdict <code>INCOMPATIBLE</code> = 刻意擋下,<strong>不得繞過或改綠</strong> ——
+      修它列出的不相容項、或升級 runtime/方法論後重跑;舊 sequential 專案標
+      legacy compatibility mode。</li>
+  </ul>
 
   <h2>③ 實測證據(2026-07-26 遷移當下)</h2>
   <div class="tablewrap"><table>
@@ -113,6 +137,14 @@ grep -rniE "dev-flow|2-decision|4-spec|5-tasks|7-review|G1|G2|G3|gate|twin|pipel
 # 掛載驗證(自測只證 script 邏輯,不證掛載 —— 這條才驗掛載)
 jq -e '.hooks | to_entries[] | .key as $e | .value[] | .matcher' \
   ~/.claude/plugins/local/dev-flow/hooks/hooks.json    # 應見 4 條
+
+# evidence gauntlet 散發驗證(在採用專案內跑;install 步 6 / check 第 9 項的兩道)
+bash docs/dev/tools/devflow-evidence-gauntlet.sh       # 期望:印 usage 且 exit 2
+bash docs/dev/tools/devflow-evidence-gauntlet.sh \
+  ~/dev/dev-flow/scripts/fixtures/evidence-gauntlet/good-evidence.md   # 期望:exit 0
+
+# 版本握手(在採用專案內跑;check 第 10 項)
+~/.claude/plugins/local/dev-flow/hooks/devflow-exec.sh doctor   # 看 verdict;INCOMPATIBLE 不得繞過
   </pre>
 
   <h2>⑤ 停用 / 移除</h2>
