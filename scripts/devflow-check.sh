@@ -66,6 +66,7 @@ group_contracts() {
 }
 
 group_architecture() {
+  run "architecture/check-gate-tokens"     scripts/check-gate-tokens.sh     || return 1
   run "architecture/check-design-contract" scripts/check-design-contract.sh || return 1
   run "architecture/check-adr-integrity"   scripts/check-adr-integrity.sh   || return 1
   run "architecture/check-version-sync"    scripts/check-version-sync.sh    || return 1
