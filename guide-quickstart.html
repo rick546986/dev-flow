@@ -750,6 +750,40 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   青色 = <span class="badge sonnet">sonnet</span>(執行/產檔層);Stage 6 內部另有
   <span class="badge haiku">haiku</span> 起步的 T 執行層,見④模型分層速查表。</p>
 
+  <p class="muted">Stage 6 全部 T ACCEPTED 之後的跨階段收束(sequential/parallel 皆同):
+  先跑 Final Fresh Gauntlet(綁定當下 source SHA 的 Final Fresh Run + Evidence 契約,
+  README §7 G3 錨定義),全過才進 G3。Gauntlet PASS 不取代雙軸 code review。</p>
+
+  <svg id="ffg-g3" viewBox="0 0 640 150" role="img" aria-label="跨階段收束圖:ACCEPTED Tasks 經 Final Fresh Gauntlet 到 G3">
+    <defs>
+      <marker id="ffg-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/>
+      </marker>
+    </defs>
+    <g class="node">
+      <rect x="10" y="55" width="150" height="44" rx="6" class="b"/>
+      <text x="85" y="81" text-anchor="middle">ACCEPTED Tasks</text>
+    </g>
+    <g class="node">
+      <rect x="200" y="55" width="170" height="44" rx="6" class="hl"/>
+      <text x="285" y="81" text-anchor="middle">Final Fresh Gauntlet</text>
+    </g>
+    <g class="node">
+      <rect x="410" y="49" width="80" height="56" fill="none" stroke="none"/>
+      <polygon class="b" points="410,77 450,49 490,77 450,105"/>
+      <text x="450" y="81" text-anchor="middle">G3</text>
+    </g>
+    <path class="flow edge" marker-end="url(#ffg-arrow)" d="M160,77 L200,77"/>
+    <path class="flow edge" marker-end="url(#ffg-arrow)" d="M370,77 L410,77"/>
+    <text class="cap" x="85" y="40" text-anchor="middle">Stage 6 收束</text>
+    <text class="cap" x="285" y="40" text-anchor="middle">Stage 7 前置</text>
+    <text class="cap" x="450" y="40" text-anchor="middle">Stage 7</text>
+    <text class="cap" x="85" y="122" text-anchor="middle">全部 T 已 ACCEPTED</text>
+    <text class="cap" x="285" y="122" text-anchor="middle">清 stale·綁 source SHA</text>
+    <text class="cap" x="285" y="138" text-anchor="middle">Required layers 全 pass</text>
+    <text class="cap" x="450" y="122" text-anchor="middle">Evidence 契約全過(八點)</text>
+  </svg>
+
   <footer class="foot">
     正本規則:<code>~/dev/dev-flow/README.md</code>;模板:<code>~/dev/dev-flow/_templates/</code>;
     路由器 skill:<code>~/.claude/plugins/local/dev-flow/skills/{dev-flow,dev-setup,dev-run}/SKILL.md</code>;

@@ -185,6 +185,13 @@ RED → GREEN → scope check → Verify
   → Dedicated Review(Task high,整合前)或 Wave Review(normal,整合後)
   → ACCEPTED(才勾 checkbox、才記帳)
   ```
+
+  跨階段收束(sequential/parallel 皆同;Final Fresh Gauntlet = §7 G3 錨的
+  Final Fresh Run + Evidence 契約,SVG 版見 `guide-quickstart.html` ⑥):
+
+  ```text
+  ACCEPTED Tasks → Final Fresh Gauntlet → G3
+  ```
 - **接收審查**(G3 打回時):逐 F 驗證後才動手 —— 同意的改並一句說明為何對;
   不同意的擺論證,不盲改(禁 performative fix)。
 - **判級疑義**:分不清 L1/L2 → 一律當 L2。Diff Budget 超支本身非偏差,
