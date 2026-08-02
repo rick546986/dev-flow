@@ -14,16 +14,65 @@
     "prompt_registry": "1.0",
     "gate_result": "devflow-gate-result.v1",
     "candidate": "devflow-candidate.v1",
-    "exec_state": "exec-v2"
+    "exec_state": "exec-v2",
+    "gauntlet": "1.1.0",
+    "wave_review": "devflow-wave-review.v1"
   },
-  "evidence_status_values": ["pass", "fail", "unverified", "n-a"],
-  "risk_values": ["normal", "high"],
-  "risk_scopes": ["feature", "task"],
-  "lanes": ["fast", "full"],
-  "review_modes": ["wave", "dedicated"],
-  "task_states": ["PENDING", "READY", "RUNNING", "CANDIDATE", "MECHANICAL_PASS", "QUEUED_FOR_INTEGRATION", "INTEGRATED", "IN_REVIEW", "REWORK", "ACCEPTED", "BLOCKED", "INVALIDATED_BY_UPSTREAM"],
-  "task_tags": ["api", "ui", "database", "integration", "infrastructure", "test", "documentation", "security", "authorization", "migration", "workflow", "other"],
-  "base_sha_fields": ["feature_initial_base", "wave_base_sha", "candidate_base_sha"],
+  "evidence_status_values": [
+    "pass",
+    "fail",
+    "unverified",
+    "n-a"
+  ],
+  "risk_values": [
+    "normal",
+    "high"
+  ],
+  "risk_scopes": [
+    "feature",
+    "task"
+  ],
+  "lanes": [
+    "fast",
+    "full"
+  ],
+  "review_modes": [
+    "wave",
+    "dedicated"
+  ],
+  "task_states": [
+    "PENDING",
+    "READY",
+    "RUNNING",
+    "CANDIDATE",
+    "MECHANICAL_PASS",
+    "QUEUED_FOR_INTEGRATION",
+    "INTEGRATED",
+    "IN_REVIEW",
+    "REWORK",
+    "ACCEPTED",
+    "BLOCKED",
+    "INVALIDATED_BY_UPSTREAM"
+  ],
+  "task_tags": [
+    "api",
+    "ui",
+    "database",
+    "integration",
+    "infrastructure",
+    "test",
+    "documentation",
+    "security",
+    "authorization",
+    "migration",
+    "workflow",
+    "other"
+  ],
+  "base_sha_fields": [
+    "feature_initial_base",
+    "wave_base_sha",
+    "candidate_base_sha"
+  ],
   "ledger": {
     "home_env": "DEVFLOW_LEDGER_HOME",
     "default_macos": "~/Library/Application Support/DevFlow/ledger/",
