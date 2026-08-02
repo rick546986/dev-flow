@@ -136,8 +136,10 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
   network/filesystem/subprocess/credential capability、對外 API 契約變更、
   高風險人機互動。
 - `lane: fast` 配 `Risk: high` → Runtime(start 時)、模板檢查與 Gate 一律拒絕;
-  例外僅限 Owner Call 明示 —— 於本節留一行裁決記錄,同一行需同時含
-  owner call 字樣與該兩個值,缺一不構成例外。
+  例外僅限 Owner Call 明示 —— 於本節寫**結構化專用欄**(runtime 唯一認的形):
+  `- Owner Call 例外:<非空理由>`
+  (行首 dash、「Owner Call 例外」+ 冒號 + 非空理由;雜訊行/敘述性提及不觸發,
+  理由留空不構成例外)。
 
 ### Failure Model(Risk: high 必填)
 <!-- 先答「這個改動可能如何傷害使用者/資料/權限/流程/系統」再選層;每個 mode 指到

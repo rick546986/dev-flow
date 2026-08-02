@@ -69,6 +69,12 @@ check("Execution-wave" not in tpl, "模板不得出現手工 Execution-wave 欄"
 check("Conflicts-with:" not in tpl.replace("Semantic-conflicts-with:", ""),
       "模板不得要求人工 Conflicts-with(Files overlap 由 Scheduler 判)")
 
+spec_tpl = read("_templates/4-spec.md")
+check("- Owner Call 例外:" in spec_tpl,
+      "4-spec 模板記載 runtime 唯一認的 Owner Call 例外結構欄(- Owner Call 例外:<理由>)")
+check("同一行需同時含" not in spec_tpl,
+      "4-spec 模板不得殘留舊版例外描述(同行含 owner call+fast+high),與 runtime predicate 不符")
+
 # ---------- 2. 設計文件契約錨 ----------
 design = read("notes/design/parallel-stage6.md")
 STATES = ["PENDING", "READY", "RUNNING", "CANDIDATE", "MECHANICAL_PASS",
