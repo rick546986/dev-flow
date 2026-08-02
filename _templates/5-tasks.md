@@ -31,6 +31,20 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 > - 一個 T 一個關注點:Files 超過 ~5 檔或 Verify 要跑兩套不相干指令 → 拆 T。
 >   超標拆分優先按子行為拆,例如讀/寫路徑、成功/例外路徑;不得優先按架構層拆。
 >
+> **Design Boundary 摘錄規則(條件式;沿用既有 `Boundaries:` 欄,不新增 Task 欄位)**:
+> 當 4-spec 的 Design Boundary Contract 為 `applicable` 時,每個相關 T 的 `Boundaries:`
+> 必須摘錄**與該 T 有關的最小限制**,涵蓋(該 T 用得到的才寫,用不到的不列):
+> - 允許修改的 Module。
+> - 禁止新增的依賴方向。
+> - 不得跨越的 Data Ownership。
+> - 必須維持的 Interface。
+> - Transaction／Consistency 限制。
+> - Error／State Test Seam。
+>
+> **不得把完整 Design Boundary Contract 複製進每個 T**,只摘錄該 T 的最小子集 ——
+> 執行者靠這一欄就知道自己的禁區,不必回頭讀 4-spec 全文。契約為 `n-a` 時本規則不適用,
+> `Boundaries:` 照舊(有硬約束就寫,無則 `—`)。語意正本:`notes/design/design-boundary-contract.md`。
+>
 > **Task Context Packet 規則(真實世界互動)**:
 > - 每個 Task 只帶與該 T 有關的**最小** Operational Context 子集(從 4-spec 該 T Covers
 >   的 S 摘錄):Actor、Goal、Human decision、Authority、External dependency、

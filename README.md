@@ -20,10 +20,12 @@ feature 走 7 份文檔、過 3 道 gate(G1 方向核准、G2 契約審查、G3 
   [dev-flow](https://rick546986.github.io/dev-flow/guide-dev-flow.html)、
   [dev-talk](https://rick546986.github.io/dev-flow/guide-dev-talk.html)
   ——repo 內任一 html(含 example 的 twin)都可把路徑接在 `rick546986.github.io/dev-flow/` 後線上檢視
-- `scripts/` = 機械檢查(五支檢查腳本 + `devflow-evidence-gauntlet.sh` 母版)
+- `scripts/` = 機械檢查(單一入口 `devflow-check.sh all`;方法論/契約/架構守衛各腳本
+  + `devflow-evidence-gauntlet.sh` 母版)。CI 只跑這支 = REPO_REFERENCE;外部 plugin 的
+  gate-consistency/selftest/doctor = EXTERNAL_RUNTIME,兩層不互相代表
 - `observability/` = Attempt Ledger 工具(devflow-obs)+ `agent_event` schema
 - `tests/parallel-stage6/` = T 級並行的可執行契約(contract_ref + fixtures)
-- `notes/design/` = 各機制設計正本(並行/觀測/gauntlet/real-world)
+- `notes/design/` = 各機制設計正本(並行/觀測/gauntlet/real-world/design-boundary)
 - `devflow-contract.json` = 版本握手正本(方法論 ↔ runtime capability)
 
 **採用方式**:最低配是把模板複製進專案、人工照本 README 走流程;搭配 Claude Code 的
@@ -99,6 +101,17 @@ root 相對的 `Files` scope。
 /dev-talk):①開場第一動把清單建成 todo,每步有「完成 =」客觀條件,達成才勾;
 ②交審前必過自檢步 —— 產物勾稽、附證據,不憑印象;③禁跳項、禁併項;
 ④完成條件達不成 → 回上游步驟補,不硬過。
+
+**Design Boundary Contract(4-spec 內的條件式章節,不是第八份文檔)**:跨模組/公開 API/
+跨模組 Interface/schema migration 或資料所有權變更/Queue-Event-Scheduler/外部整合/
+Transaction-Concurrency-Lock-Idempotency/新 capability/Risk high/三模組以上/狀態機
+—— 任一命中即必填,全未命中才可 `n-a` + 具體理由(Fast lane 不豁免觸發條件)。
+由既有 G2 一併審(gate 條件正本仍是 §7,本段不新增 gate 條件),不新增 Stage、
+不新增 Gate、不新增 ID 鏈;Stage 5 用既有
+`Boundaries:` 欄摘錄、Stage 6 在 T Review 查 drift、Stage 7 併入既有雙軸審。
+**觸發條件判準、欄位語意、好壞範例、`n-a` 合法與非法例的正本 =
+[`notes/design/design-boundary-contract.md`](notes/design/design-boundary-contract.md);
+填寫骨架正本 = `_templates/4-spec.md` 同名章節。** 本 README 不重抄兩者。
 
 ## 4. ID 追溯鏈
 

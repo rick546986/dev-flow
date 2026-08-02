@@ -37,10 +37,13 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 >    段段給使用者確認。完成 = 全 R 展開、每 S 有觀測欄、每段有確認(確認紀錄節留一行)。
 > 3. 邊界收尾:Acceptance Criteria(全 S 綠+回歸+非功能;行為不變 → golden master)、
 >    Out of Scope、Diff Budget、Dependencies;同步填 Verification Profile(含 `lane:`
->    欄,Lane 規則見該節;Risk 判準見該節;Risk: high → Failure Model 表必填)。
+>    欄,Lane 規則見該節;Risk 判準見該節;Risk: high → Failure Model 表必填)與
+>    Design Boundary Contract(條件式:觸發條件見該節,全未命中才可 `n-a` + 具體理由;
+>    Fast lane 不豁免觸發條件)。
 >    Stage 3 對帳:逐一核對 3-prototype Demo Script 場景。每個已 ACCEPTED 的場景
 >    必須對應至少一條 R/S,或在 Out of Scope 明列排除理由;沒有 Stage 3 時記 N/A。
->    完成 = 四節齊 + Verification Profile 填畢 + Stage 3 對帳逐場有下落。
+>    完成 = 四節齊 + Verification Profile 填畢 + Design Boundary Contract 有結論
+>    (applicable 全填 / n-a 附理由)+ Stage 3 對帳逐場有下落。
 > 4. Drafting Decisions 清點:草擬自拍板逐條(決策|理由|棄項|待人審);全文掃
 >    TBD/之後再說/實作再定 → 命中即轉 DD 或退回提問。完成 = 掃描零殘留。
 > 5. 自檢(反模糊掃描):逐 S 過三律(見上,含模糊詞掃);鏈檢:每條驗收雛形 ≥1 個 S
@@ -109,6 +112,58 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 ## Dependencies
 <!-- 依賴的其他 feature / 外部系統 / migration。每個新依賴/新工具一行 justification
      (為何需要),G2 一併審;未經本節授權的新 capability 屬 7-review finding -->
+
+## Design Boundary Contract(條件式;G2 一併審)
+<!-- 本章節是 Stage 4 的一部分,不是新 Stage、不新增 Gate、不新增 ID 鏈 ——
+     沿用既有 R/S id、Module 名與 Interface 名。詳細語意正本:
+     `notes/design/design-boundary-contract.md`(觸發條件判準、欄位語意、好壞範例、
+     n-a 合法與非法例、Architecture 與 Software Design 的分界)。
+
+     觸發條件(任一命中即必填,`Applicability: applicable`):
+       ①跨模組或跨 bounded context ②新增或修改公開 API ③新增或修改跨模組 Interface
+       ④Schema migration 或資料所有權變更 ⑤新增 Queue/Event/Scheduler/Background job
+       ⑥新增外部服務或系統整合 ⑦涉及 Transaction/Concurrency/Lock/Idempotency
+       ⑧新增 Network/Filesystem/Subprocess/Credential capability ⑨Feature Risk = high
+       ⑩三個以上模組共同參與主要行為 ⑪有狀態機或複雜錯誤恢復流程
+     全部未命中才可寫 `Applicability: n-a — <具體理由>`;不得只寫「不適用」。
+     Fast lane 預設可 n-a,但命中上列任一條仍必須填,不得因 fast lane 跳過。
+
+     寫作紀律(保持精簡,不是巨型架構文件):
+     - applicable 不代表要畫大型 UML;小型 Feature 一至兩列即可完成。
+     - 涉及資料 → 說清楚 Data owner;涉及跨模組 → 說清楚依賴方向;
+       涉及寫入 → 說清楚 Transaction/Consistency boundary;
+       涉及公開 Interface → 說清楚相容策略;涉及狀態或錯誤流程 → 留下 Test seam。
+     - 不重複 Reliability Triage 內容,只引用其結論;不重複 Failure Model,
+       只說明 Failure 在哪個 Boundary 被隔離或傳遞;不重複 Operational Context。
+     - 不得藉本章節新增未經使用者核准的產品行為(要新增行為走 R/S 與 G2)。 -->
+
+- Applicability: applicable | n-a — <理由>
+- Trigger(s): <命中的條件;n-a 時寫 —>
+- Design source: <既有 pattern／ADR／living spec;無則寫 new local design>
+
+### Architecture Boundaries
+<!-- 跨越模組邊界的事。Forbidden dependencies 沒有時寫 —,不留空 -->
+| Boundary / Module | Responsibility | Data owner | Allowed dependencies | Forbidden dependencies |
+|---|---|---|---|---|
+
+### Interface & Consistency Contract
+<!-- 涉及寫入時 Transaction / Consistency boundary 不得省略:要答得出
+     「這兩筆寫入只成功一筆會怎樣」 -->
+| Interface / Flow | Input / Output | Errors | Transaction / Consistency boundary | Compatibility |
+|---|---|---|---|---|
+
+### Software Design
+<!-- 模組內部的事。Test seam 指到可注入點/可觀測點,寫「加測試」不合格 -->
+| Component | Responsibility | Collaborators | State / Data flow | Error handling | Test seam |
+|---|---|---|---|---|---|
+
+### Design Constraints
+- 必須:
+- 禁止:
+- Extension point:
+- Known design limit:
+<!-- Known design limit = 明知做不到或不保證的事,誠實列出不扣分;
+     把已知缺口寫成「已處理」才是問題。與 7-review known limits 同一件事,不另立追蹤鏈 -->
 
 ## Verification Profile(G2 一併審)
 <!-- Risk 二值的唯一定義住本節;本節 Risk = Feature Risk(決定 Profile 深度與 lane

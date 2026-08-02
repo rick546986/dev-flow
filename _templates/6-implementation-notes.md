@@ -30,7 +30,9 @@ updated:
 >    否則 fresh-context reviewer Agent;reviewer 親跑 Verify,檢查 Covers、RED→GREEN
 >    證據與該 T 自己的 Files scope,並過 Test Integrity Check 七項(①刪 assertion
 >    ②放寬 assertion ③新增 skip/xfail ④同步改測試+實作重新定義正確性 ⑤mock 核心
->    邏輯 ⑥只追 coverage 無有意義 assertion ⑦沒跑的層寫成 PASS;任一命中 → FAIL)。
+>    邏輯 ⑥只追 coverage 無有意義 assertion ⑦沒跑的層寫成 PASS;任一命中 → FAIL);
+>    4-spec 的 Design Boundary Contract 為 `applicable` 時,另過 Design Boundary Check
+>    四問(全文見下方實作期規則)。
 >    FAIL → 回同一 T 修正並重新送審;高風險或
 >    finding 有爭議可加第二 reviewer;f PASS → commit;g hash 入 Progress Log +
 >    勾 checkbox + review evidence 入 T Review Log;h 自由選擇 → Decisions 一行續走,
@@ -39,12 +41,15 @@ updated:
 >    independent T review → PASS → commit → Progress Log + checkbox + review evidence。
 > 3. 回歸:全 T 後跑既有全套,本次 S 全綠+既有全綠;紅 → 修+依偏差級記。
 >    完成 = 全套**全綠**輸出摘要入本檔(紅字摘要不算完成)。
-> 4. 自檢(= Self-Review 節逐問作答):①每個「T × Covers S」都有含 S-id 的測試 +
+> 4. 自檢(= Self-Review 節逐問作答;Design Boundary Contract applicable 時第⑦問
+>    併查邊界 drift):①每個「T × Covers S」都有含 S-id 的測試 +
 >    該 T 自己的 RED/GREEN 證據(不得跨 T 共用)?
 >    ②每 T 在 T Review Log 有 verdict?③每個 PASS 都早於該 T commit?④每個 FAIL
 >    後有較晚 PASS,否則該 T 仍未勾、未 commit?⑤每個已完成 T 一 commit、Progress
 >    Log 每列有 hash?⑥git diff --stat 檔案 ⊆ Files 聯集、Diff Budget 內?
->    ⑦Decisions/Deviations 與 diff 對得上(無 silent drift)?⑧回歸綠?答不出 →
+>    ⑦Decisions/Deviations 與 diff 對得上(無 silent drift;契約 applicable 時併查:
+>    模組依賴、Data Owner、Interface／Transaction／Consistency Boundary 有無未經
+>    授權的改變,有則已記 L2 並回 G2)?⑧回歸綠?答不出 →
 >    回步 2/3 補。完成 = 八答落檔。
 > 5. 收尾:Files Changed 填(對照 Diff Budget)、全節齊無佔位、status 更新。
 >    完成 = 節齊 + frontmatter status 已更新。
@@ -59,6 +64,14 @@ updated:
 >   - **L2**(要改 R/S 或推翻 2-decision)→ **停**,修 4-spec → 重新 G2 → 才續。
 >     禁止 silent drift。(L1 = Anthropic field-guide 原版;L2 為本 SOP 加嚴)
 >   - 分不清 L1/L2 → **一律當 L2**,不留自由心證。
+> - **Design Boundary Check(條件式;4-spec 的 Design Boundary Contract 為 `applicable`
+>   時,每個 T 的 independent review 必過)**:不新增 Review Stage,只在既有 T Review 加四問 ——
+>   ①Diff 是否引入未授權的模組依賴?②是否改變 Data Owner?③是否改變 Interface／
+>   Transaction／Consistency Boundary?④若有改變,是否已記為 L2 並回 G2(走既有
+>   L2 路徑,不新增 gate)?
+>   四問任一為「有改變且未記 L2」→ FAIL。契約為 `n-a` 時本檢查記 `n-a`。
+>   Worker 只取得**與該 T 相關的 Design Boundary 子集**(來自 5-tasks 該 T 的
+>   `Boundaries:` 欄),**不得因本檢查要求 Worker 回讀 Stage 1～3**(圍欄自查不變)。
 
 ## T Review Log
 <!-- 每 T 一筆,逐 round 留痕:
@@ -71,6 +84,7 @@ updated:
 - Files finding:<改動是否位於該 T 自己的 Files scope>
 - RED→GREEN finding:<證據是否完整、可信>
 - Test Integrity finding:<七項檢查結果;任一命中即 FAIL,無命中記 none>
+- Design boundary finding:<Design Boundary Check 四問結果;4-spec 契約為 n-a 時記 n-a>
 - verdict:PASS | FAIL
 - correction + re-review after FAIL:<修正內容 + 後續 round 證據;無 FAIL 則 N/A>
 -->
