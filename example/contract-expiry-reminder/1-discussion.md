@@ -112,7 +112,7 @@ updated: 2026-07-23
                           └─ 無 → 空狀態「近期無到期合約」
 ```
 
-## Interview Log(三段結論)
+## Interview Log(四段結論)
 - explore:現況無任何通知/排程機制;dashboard 是最低成本的呈現面。
 - grill-with-docs:逼出「Expiring」精確定義(30 天 + 未續約),新增 CONTEXT.md 詞條 Expiring、Renewal。
 - brainstorming:方向收斂為「登入時即時查詢」優先,cron 留作後手 → 進 2-decision 比較。

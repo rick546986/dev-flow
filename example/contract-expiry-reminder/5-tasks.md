@@ -14,6 +14,8 @@ updated: 2026-07-23
 - Files: `internal/handler/contract.go`, `internal/service/contract.go`, `internal/repo/contract.go`
 - Verify: `go test ./internal/... -run TestExpiring`
 - Blocked-by: —
+- Intent: 系統多了到期查詢 API:`GET /contracts/expiring?days=30` 回傳登入者名下 30 天內到期且未續約的合約;無符合者回 200 + 空列表,不報錯。
+- Boundaries: 查詢邏輯抽在 `service.ListExpiring`(2-decision:供未來 cron 複用);複用既有 `idx_contracts_end_date`,不另建索引;`days` 參數化只為測試方便,自訂天數仍 Out of Scope。
 
 ## T-2 前端:dashboard 到期卡片(含空狀態)
 - [x] 完成
@@ -21,6 +23,8 @@ updated: 2026-07-23
 - Files: `src/components/ExpiringContractsCard.tsx`, `src/pages/Dashboard.tsx`
 - Verify: `npm test -- ExpiringContractsCard`
 - Blocked-by: T-1
+- Intent: dashboard 多了到期卡片:列出合約名稱與剩餘天數「N 天」;零筆時顯示空狀態「近期無到期合約」,不隱藏整卡、不顯示錯誤。
+- Boundaries: 空狀態文案照 4-spec S-2 寫死,不得自創;剩餘天數顯示「N 天」不含小時(4-spec Drafting Decisions)。
 
 ## T-3 卡片列點擊 → 合約詳情
 - [x] 完成
@@ -28,6 +32,8 @@ updated: 2026-07-23
 - Files: `src/components/ExpiringContractsCard.tsx`
 - Verify: `npm test -- ExpiringContractsCard`
 - Blocked-by: T-2
+- Intent: 卡片每筆合約列可點擊,導向該合約詳情頁 `/contracts/:id`。
+- Boundaries: 照既有 ExpiringContractsCard pattern,不動 `src/pages/Dashboard.tsx`。
 
 ## T-4 e2e:登入 → dashboard 看到到期合約 → 點入詳情
 - [x] 完成
@@ -35,6 +41,8 @@ updated: 2026-07-23
 - Files: `e2e/expiring-contracts.spec.ts`
 - Verify: `npx playwright test e2e/expiring-contracts.spec.ts`
 - Blocked-by: T-3
+- Intent: 系統多了可重複執行的端到端證據:真瀏覽器走完「登入 → dashboard 看到到期合約 C 與『10 天』→ 點擊導向 `/contracts/C.id`」全鏈路。
+- Boundaries: 只新增 `e2e/expiring-contracts.spec.ts`,不動實作碼;斷言取值照 4-spec S-1/S-3 觀測欄。
 
 ## T-5 建狀態標記 API:renewal_status migration + 歷程表 + 權限檢查
 - [x] 完成

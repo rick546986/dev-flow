@@ -102,6 +102,10 @@ updated: 2026-07-23
 - 07-23 | T-6 | review PASS 後提交歷程查詢 + 看過零副作用測試 | `e8b07c3`
 - 07-23 | T-7 | review PASS 後提交卡片狀態欄 + 「已續約」灰階 | `f92c1d5`
 
+## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
+(dev-run 案本節由 `devflow-obs` 從 ledger 衍生,禁手填;本例為手動實作 —— 無 dev-run
+ledger,依模板規則軌跡欄留白,不虛構模型歷史。)
+
 ## TDD Evidence
 <!-- 每個「T × Covers S」各一筆;同一 S 在不同 T/層次的 RED→GREEN 不得共用。 -->
 ### T-1 / S-1
@@ -342,3 +346,7 @@ updated: 2026-07-23
    T-5 的 `renewal_status` migration 是 4-spec Dependencies 明載的計畫內變更,非偏差),
    對應 diff 無覆蓋索引檔,R-1~R-3/S-1~S-6 均無變動。
 8. 回歸綠? → 是,`go test ./...` 與 `npm test` 既有套件全綠(摘要見上)。
+
+## Review Follow-up(G3 打回時才用)
+(本例 G3 首輪 PASS(見 7-review Verdict),無打回 F 項 —— 本節留白;F-1 🟡 走
+fast-lane follow-up,不經本節。)
