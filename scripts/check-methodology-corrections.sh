@@ -232,6 +232,16 @@ for block in task_blocks:
     if covers:
         expected_pairs.update((task_id, scenario) for scenario in re.findall(r"S-\d+", covers.group(1)))
 
+# 追溯鏈頂端:expected_pairs 由 5-tasks 自建,S 若整條沒被任何 Covers 承接,期望集合
+# 會跟著縮小 → 下方 evidence_pairs 對稱比對仍全綠(恆綠漏洞)。用 4-spec 的 S 全集當
+# 獨立上界,封住頂端。本檢查只保護 repo 內範例,實案追溯由 runtime/CI 或人工承接。
+spec_scenarios = set(re.findall(
+    r"^#### (S-\d+)", read("example/contract-expiry-reminder/4-spec.md"), re.M))
+covered_scenarios = {scenario for _task, scenario in expected_pairs}
+check(spec_scenarios <= covered_scenarios,
+      "4-spec 每個 S 都被至少一個 T 的 Covers 覆蓋",
+      f"uncovered={sorted(spec_scenarios - covered_scenarios)}")
+
 notes = read("example/contract-expiry-reminder/6-implementation-notes.md")
 evidence_pairs = set(re.findall(r"^### (T-\d+) / (S-\d+)\b", notes, re.M))
 check(evidence_pairs == expected_pairs, "每個 T × Covers S 有獨立 TDD evidence",
