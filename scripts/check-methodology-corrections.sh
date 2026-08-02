@@ -237,6 +237,9 @@ for block in task_blocks:
 # 獨立上界,封住頂端。本檢查只保護 repo 內範例,實案追溯由 runtime/CI 或人工承接。
 spec_scenarios = set(re.findall(
     r"^#### (S-\d+)", read("example/contract-expiry-reminder/4-spec.md"), re.M))
+# 抽取本身要能失敗:S 全集若抽成空集合,`set() <= 任何集合` 恆真,下面那條會靜默變成
+# no-op 卻照樣報綠 —— 正是 P1 要消滅的恆綠家族。先斷言抽得到東西。
+check(bool(spec_scenarios), "4-spec S 清單可抽取(空集合會讓下面的子集合檢查恆真)")
 covered_scenarios = {scenario for _task, scenario in expected_pairs}
 check(spec_scenarios <= covered_scenarios,
       "4-spec 每個 S 都被至少一個 T 的 Covers 覆蓋",

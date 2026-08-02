@@ -218,7 +218,8 @@
   <code>Verify</code>、<code>Blocked-by</code> 必填,<code>devflow-exec.sh start &lt;slug&gt;</code>
   才能照常解析 scope。</p>
   <p class="muted">lane 的選擇須記入 <code>4-spec</code> Verification Profile 的 <code>lane:</code> 欄:
-  full = 完整 Profile、fast = 最小五欄;命中「自動升 Full」清單仍寫 fast → G2 不得過;
+  full = 完整 Profile、fast = 最小五欄(Reliability triage 三問不計入這五欄,但兩個 lane 都要答);
+  命中「自動升 Full」清單仍寫 fast → G2 不得過;
   <code>lane: fast</code> 配 <code>Risk: high</code> → runtime(start 時)與 G2 一律拒絕,
   例外僅限 Owner Call 明示(條件全文見 README §7 G2 錨定義)。</p>
 
