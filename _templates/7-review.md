@@ -43,8 +43,10 @@ updated:
 >    禁無出處結論。完成 = 每 R 有判定、每 F 有鏈且有出處。
 > 4. 對照作者:此刻才讀 6-notes —— 自建矩陣 vs Self-Review 差異逐條裁;Deviations
 >    如實?Decisions 有無實為 L2?完成 = 差異全裁定入 Spec Axis。
-> 5. Verdict:PASS = 本次 S 全綠+既有全綠+**現象證據逐 S 相符**+無 🔴
->    (G3 正本 README §7;無 🔴 是本模板加嚴的出貨門檻,不與 §7 矛盾);否則
+> 5. Verdict:PASS = 本次 S 全綠+既有全綠+**現象證據逐 S 相符**+Evidence 契約全過
+>    (G3 錨,八點條件正本 README §7;步 2c 的 gauntlet 全綠 + Required 層全 pass
+>    即其機械面)+無 🔴(G3 正本 README §7;無 🔴 是本模板加嚴的出貨門檻,
+>    不與 §7 矛盾);否則
 >    REQUEST_CHANGES 列 🔴 →
 >    author 走 6-notes 的 Review Follow-up(同意改+一句為何對/不同意擺論證,
 >    禁 performative fix)→ 回步 1 增量重驗。**重驗迴圈上限 3 輪**;第 3 輪仍

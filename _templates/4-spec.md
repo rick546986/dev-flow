@@ -36,9 +36,9 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 >    拿什麼資料試;雛形沒寫就在此補齊,純內部行為註明「無外部現象」)。
 >    段段給使用者確認。完成 = 全 R 展開、每 S 有觀測欄、每段有確認(確認紀錄節留一行)。
 > 3. 邊界收尾:Acceptance Criteria(全 S 綠+回歸+非功能;行為不變 → golden master)、
->    Out of Scope、Diff Budget、Dependencies;同步填 Verification Profile(Risk 判準
->    見該節;Risk: high → Failure Model 表必填)。完成 = 四節齊 + Verification
->    Profile 填畢。
+>    Out of Scope、Diff Budget、Dependencies;同步填 Verification Profile(含 `lane:`
+>    欄,Lane 規則見該節;Risk 判準見該節;Risk: high → Failure Model 表必填)。
+>    完成 = 四節齊 + Verification Profile 填畢。
 > 4. Drafting Decisions 清點:草擬自拍板逐條(決策|理由|棄項|待人審);全文掃
 >    TBD/之後再說/實作再定 → 命中即轉 DD 或退回提問。完成 = 掃描零殘留。
 > 5. 自檢(反模糊掃描):逐 S 過三律(見上,含模糊詞掃);鏈檢:每條驗收雛形 ≥1 個 S
@@ -46,9 +46,11 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 >    skeleton 入 Test Skeletons 節。完成 = 逐 S 打勾+鏈檢清零。
 > 6. G2 送審:html twin(R 級行為流程圖;DD 待裁決置頂)→ in-review → reviewer。
 >    審查者依序:適格人類 reviewer → fresh-context reviewer Agent → owner 自審
->    (有記錄的最後手段)。G2 審查(條件正本見 README §7);Verification Profile 屬
->    G2 審查範圍內備審材料 —— 未填視為步 3 未完成(本清單步 3),非新增 gate 條件。
->    核准 → 三連動。
+>    (有記錄的最後手段)。G2 審查關鍵條件 = R/S 全審 + DD 全裁決
+>    + Verification Profile(依 lane 正確填寫;未填視為步 3 未完成)
+>    + Demo verdict(條件式:無 Stage 3 trigger → N/A+原因;有 trigger → 需人類
+>    ACCEPTED,REVISE/NOT_REVIEWED 不得過,跳過需 Owner Call;Agent 不得代填)——
+>    條件全文見 README §7。核准 → 三連動。
 >    完成 = verdict+三連動。
 >
 > 起草前估 S 數,單份 >~40 → 先切片(見 README §14)。

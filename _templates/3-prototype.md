@@ -17,6 +17,9 @@ updated:
 > Owner Call、記錄跳過風險;Agent 不得自行替人決定跳過。
 > 涉互動的案子不只產文件:須產**可操作 Demo**(使用者實際點/跑,不是只看靜態說明),
 > 以 Demo Script 帶使用者走過,回饋記入 User Demo Feedback,Human verdict 由人類親填。
+> Human verdict 即 G2「Demo verdict」錨的輸入(條件正本 README §7):ACCEPTED 必須由
+> 人類親填並伴隨 Verdict attestation 行;REVISE / NOT_REVIEWED 不得過 G2;Agent 不得
+> 代填,Runtime 拒絕 Agent 自產的 ACCEPTED。
 > 本階段固定產出(跑本階段才適用):`3-prototype.md`(本模板全節)+ `3-prototype.html`
 > (終態必產;必含 variant 流程/結構圖、Demo Script、User Demo Feedback、Verdict)。
 > 跳過本階段 → 兩檔皆不建,跳過決定記 2-decision 流程層 Owner Call。

@@ -85,10 +85,10 @@ root 相對的 `Files` scope。
 | 1 | `1-discussion.md` | 發散:把「不知道自己不知道」變成可收斂的問題清單。不做決定 | Open Questions 全解或明標假設 |
 | 2 | `2-decision.md` | 收斂:2-3 方案比較 → 選定 + rejected + 理由 | **G1** 方向核准 + OC 全裁決(全文見 §7) |
 | 3 | `3-prototype.md` | 選配:throwaway 實驗回答技術/UI 疑問,答案回寫 2;命中觸發判定(前端/交接/核准/等待/權限/系統外/多互動設計)→ 條件式必要,產可操作 Demo + User Demo Feedback(Human verdict 人類親填) | 答案回寫 2-decision + frontmatter 收尾同步(終態 approved) |
-| 4 | `4-spec.md` | 本次變更的可測契約(delta + GIVEN/WHEN/THEN)。SDD 真相 | **G2** R/S 全審 + DD 全裁決(全文見 §7) |
+| 4 | `4-spec.md` | 本次變更的可測契約(delta + GIVEN/WHEN/THEN)。SDD 真相 | **G2** R/S 全審 + DD 全裁決 + Verification Profile + Demo verdict(全文見 §7) |
 | 5 | `5-tasks.md` | 切成可勾選任務,tracer-bullet 順序,每 T 有 Covers/Files/Verify/Blocked-by | 每 T 欄位完整 |
 | 6 | `6-implementation-notes.md` | 實作日誌:TDD 證據 + 偏差記錄 | 每 T review PASS + 全 S 綠 |
-| 7 | `7-review.md` + `.html` | 雙軸審 + coverage matrix + Exit checklist | **G3** 本次 S 全綠 + 回歸綠 + 現象證據(全文見 §7);PASS → PR |
+| 7 | `7-review.md` + `.html` | 雙軸審 + coverage matrix + Exit checklist | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → PR |
 
 **執行清單四原則**(Stage 2/3/4/6/7;清單全文住各模板頂註,Stage 1 同款機制內建於
 /dev-talk):①開場第一動把清單建成 todo,每步有「完成 =」客觀條件,達成才勾;
@@ -278,9 +278,32 @@ RED → GREEN → scope check → Verify
 - G1 = 方向對不對(2-decision:方向核准 + **Owner Calls 全裁決**,有未裁決 OC
   不得過;下層內部技術項告知即可,但 reviewer **須抽查下層清單有無該上未上的
   誤放** —— 抽查是規則要求,不是 reviewer 自由心證)。G2 = 契約寫得對不對
-  (4-spec:**R/S 全審 + Drafting Decisions 全裁決**,有未裁決項不得過)。G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件全綠**(回歸義務)
-  **+ 現象證據逐 S 相符** —— reviewer 照 4-spec 的「觀測方式」親自實跑,測試綠不等於
-  看得到它動起來)。
+  (4-spec:**R/S 全審 + Drafting Decisions 全裁決** + **Verification Profile**
+  + **Demo verdict**,有未裁決項不得過;兩錨的條件式定義見下方「G2 錨定義」)。
+  G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件全綠**(回歸義務)
+  **+ 現象證據逐 S 相符** + **Evidence 契約全過**(八點定義見下方「G3 錨定義」)——
+  reviewer 照 4-spec 的「觀測方式」親自實跑,測試綠不等於看得到它動起來)。
+- G2 錨定義(錨句在上;此處為條件式全文):
+  - 「Verification Profile」:G2 必須確認 4-spec Verification Profile 已依 lane 正確
+    填寫 —— full lane = 完整 Profile(Feature Risk/Failure Model/Negative Constraints/
+    Required/Conditional/Explicitly Excluded/Final Fresh Entry Point);fast lane =
+    最小 Profile(五欄,見 4-spec 模板);命中「自動升 Full」清單(見 4-spec 模板)
+    仍寫 fast → 不得過。`lane: fast` 配 `Risk: high` → Runtime(start 時)、模板檢查
+    與 Gate 一律拒絕,例外僅限 Owner Call 明示。
+  - 「Demo verdict」(條件式):無 Stage 3 trigger → N/A + 明確原因,可過 G2;
+    有 trigger 且完成 Demo → 必須 `Human verdict: ACCEPTED`;REVISE → 不得過 G2,
+    必須重做 Demo;NOT_REVIEWED → 不得過 G2;有 trigger 但跳過 → 必須有 Owner Call
+    明示。Agent 不得自行填入 ACCEPTED;Runtime 必須拒絕 Agent 自產的 ACCEPTED。
+- G3 錨定義:「Evidence 契約全過」= 以下八點全部成立:
+  1. Final Fresh Run 綁定目前受審的 source SHA。
+  2. 所有 Required Layer = pass。
+  3. 所有已觸發的 Conditional Layer = pass。
+  4. 不得存在任何 fail。
+  5. Required Layer 不得為 unverified 或 n-a。
+  6. Explicitly Excluded Layer 可為 n-a,但必須附理由。
+  7. Optional Layer 可為 unverified,但必須誠實標示。
+  8. Gauntlet PASS 不取代 Standards Axis / Spec Axis / Operational Walkthrough /
+     Coverage Matrix / 真實現象複驗。
 - frontmatter 是狀態機:`draft → in-review → approved → superseded/shipped`。
 - 已知限界(明文接受,不另設機制):①Stage 1 討論期的自判無獨立節(單一機制
   原則,不在 1-discussion 設節)—— 由 2-decision 步 0 接手盤點「連同討論期自判
