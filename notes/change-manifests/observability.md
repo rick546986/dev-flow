@@ -1,7 +1,7 @@
 # Change Manifest — Workstream C:Agent Attempt Ledger 與 Prompt 優化
 
 > Branch:`devflow-vnext/observability`(base 90d30e88294ab4168871a877ef8ffc398ec3b817)
-> Worktree:`/Users/asheng/dev/dev-flow-wt-observability`
+> Worktree:`../dev-flow-wt-observability`
 > 設計正本:`notes/design/agent-attempt-observability.md`
 > 依 audit 邊界:runtime(plugin repo)一律不動,只寫 interface contract 與外部待辦。
 > 需求正本:docs/prompts/devflow-vnext-fourtrack.md「Prompt C:Agent Attempt Ledger 與 Prompt 優化」— 本檔節號引用以該正本為準。
@@ -122,7 +122,7 @@ OK
 - `9801c7f` observability: ledger 佈局/恢復 + stats 聚合 + legacy 讀取 + CLI + fixtures(TDD)
 - 設計文檔 + 本 manifest 為第三個 commit(SHA 見 `git log`,本檔無法載入自身 commit)。
 
-## 11. 外部 plugin 待辦(彙整;全在 `/Users/asheng/.claude/plugins/local/dev-flow/`)
+## 11. 外部 plugin 待辦(彙整;全在 `~/.claude/plugins/local/dev-flow/`)
 
 1. `_exec_impl.py` start:建 run 目錄 + manifest + exec.json 加 run_id(W1)。
 2. 新事件寫入子命令(W2;吃 slug+stdin JSON,內部呼叫 devflow_obs.writer)。

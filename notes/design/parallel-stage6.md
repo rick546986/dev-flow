@@ -2,7 +2,7 @@
 
 > Workstream A(devflow-vnext/execution)產出。**本檔是設計文件 + 對外部 runtime 的
 > 精確介面契約**,不是規則正本 —— 方法論正本仍是 `README.md` 與 `_templates/`;
-> 執行引擎(runtime)住 `/Users/asheng/.claude/plugins/local/dev-flow/`(獨立 repo),
+> 執行引擎(runtime)住 `~/.claude/plugins/local/dev-flow/`(獨立 repo),
 > 本 repo 一行 runtime 程式碼都不含。plugin 側落地清單見
 > `notes/change-manifests/execution.md` 的「外部 plugin 待辦」。
 >
@@ -49,7 +49,7 @@ Stage 5 Task DAG
 | dev-run skill | prompt 層引擎:opus 派工、haiku 執行、sonnet fresh review、逐 T 迴圈,**無 wave/candidate 概念** | plugin `skills/dev-run/SKILL.md` |
 | reviewer prompt | fresh sonnet,給 T + S 原文 + diff + 執行者輸出,不給結論;T Review Log 格式 | dev-run SKILL 步 2、6-notes 模板 T Review Log |
 | model escalation | haiku 錯 1 → sonnet;sonnet 同 T 錯 2 → opus;同 T 上限 4;失敗先分類 SPEC/ENV/IMPL/UNKNOWN | README §5 五律 5 + §9(:301-303) |
-| runtime 在本 repo? | **否**。引擎全在 `/Users/asheng/.claude/plugins/local/dev-flow/`(獨立 repo、無 remote);本 repo `scripts/` 是文檔校驗器 | 00-audit.md「Runtime 所在位置」 |
+| runtime 在本 repo? | **否**。引擎全在 `~/.claude/plugins/local/dev-flow/`(獨立 repo、無 remote);本 repo `scripts/` 是文檔校驗器 | 00-audit.md「Runtime 所在位置」 |
 
 推論:runtime 不在本 repo → 本檔寫**精確 external interface contract**;本 repo 只改
 模板(`_templates/5-tasks.md`)、schema、fixtures、可執行契約與設計文件;plugin 側

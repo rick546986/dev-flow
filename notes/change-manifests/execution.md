@@ -6,7 +6,7 @@
 
 ## 1. 實際 Runtime 位置(audit 覆核一致)
 
-**不在本 repo**。執行引擎全部住 `/Users/asheng/.claude/plugins/local/dev-flow/`
+**不在本 repo**。執行引擎全部住 `~/.claude/plugins/local/dev-flow/`
 (獨立 git repo、master、無 remote):
 
 - `hooks/devflow-exec.sh`(薄殼)+ `_exec_impl.py`(5-tasks parser :61-98、start/stop/status/allow)
@@ -131,7 +131,7 @@ sequential、sequential 模式 compute_waves 拒派生、必填四欄驗法與 r
 README/模板改動後由 Integrator 跑 `scripts/render-methodology-corrections.sh --write`
 重生 parity 區;本 workstream 未動任何 html。
 
-## 6. 外部 plugin 待辦(`/Users/asheng/.claude/plugins/local/dev-flow/`)
+## 6. 外部 plugin 待辦(`~/.claude/plugins/local/dev-flow/`)
 
 | # | 檔案 | 變更 | 驗收方式 |
 |---|---|---|---|

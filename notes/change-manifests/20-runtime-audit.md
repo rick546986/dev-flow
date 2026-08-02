@@ -27,20 +27,22 @@
 - Parser 現況:`_exec_impl.py` 只認 `## T-\d+` 與 `Covers|Files|Verify|Blocked-by` 四必填欄;未知 `- X:` 行靜默忽略 → **新選配欄位 additive-safe**
 - exec.json 現 schema:`{slug, started, scope[], extra[], baseline{}, contract_hashes{}, contract_hash_scope:"repo-wide-v1"}`;sentinel per-worktree;雙 start 拒絕(異 slug)
 
-## Capability Matrix
+## Capability Matrix(2026-08-02 §11-d 更新;Runtime 證據 = plugin integration branch @ 150be0f,selftest 258/258)
 
 | Capability | Design | Reference | Runtime | E2E |
 |---|---|---|---|---|
-| Parallel scheduler(DAG/wave) | DESIGN_PASS | REFERENCE_PASS(contract_ref+95 檢查) | PENDING | PENDING |
-| Task-scoped guard | DESIGN_PASS | REFERENCE_PASS(契約 §7;fixtures) | PENDING | PENDING |
-| Candidate gate(14 項) | DESIGN_PASS | REFERENCE_PASS(run_gate+10 fixtures) | PENDING | PENDING |
-| Wave review | DESIGN_PASS | REFERENCE_PASS(validate_wave_review+5 fixtures) | PENDING | PENDING |
-| Operational Stage 3(trigger/Demo/verdict) | DESIGN_PASS | REFERENCE_PASS(realworld 133 檢查) | PENDING | PENDING |
-| Attempt ledger | DESIGN_PASS | REFERENCE_PASS(schema+devflow_obs+94 案) | PENDING | PENDING |
-| Prompt registry | DESIGN_PASS | REFERENCE_PASS(schema+validator) | PENDING | PENDING |
-| Final Fresh Run(gauntlet) | DESIGN_PASS | REFERENCE_PASS(E1-E13+30 案) | PENDING | PENDING |
-| Gate consistency(VNext G2/G3) | PENDING(OC-1/2 條文未入正本) | PENDING | PENDING(現制 14 格且基線紅 1) | PENDING |
-| Contract version handshake | PENDING(本輪 §7 新增) | PENDING | PENDING | PENDING |
+| Parallel scheduler(DAG/wave) | DESIGN_PASS | REFERENCE_PASS(contract_ref+95 檢查) | RUNTIME_PASS(P1:devflow-lib+_exec_impl,對拍 25/25) | PENDING |
+| Task-scoped guard | DESIGN_PASS | REFERENCE_PASS(契約 §7;fixtures) | RUNTIME_PASS(P1:start --task+guard 恆許變更,selftest p1) | PENDING |
+| Candidate gate(14 項) | DESIGN_PASS | REFERENCE_PASS(run_gate+10 fixtures) | RUNTIME_PASS(P1:_gate_impl.py,gate fixtures verdict 全等) | PENDING |
+| Wave review | DESIGN_PASS | REFERENCE_PASS(validate_wave_review+5 fixtures) | RUNTIME_PASS(P1:狀態機+wave review 驗證) | PENDING |
+| Operational Stage 3(trigger/Demo/verdict) | DESIGN_PASS | REFERENCE_PASS(realworld 133 檢查) | RUNTIME_PASS(P2:_stage3_impl.py,OC-2B 五分支+attestation) | PENDING |
+| Attempt ledger | DESIGN_PASS | REFERENCE_PASS(schema 1.1+devflow_obs+125 案) | RUNTIME_PASS(P3:_obs_impl.py+vendor,對拍 byte-identical) | PENDING |
+| Prompt registry | DESIGN_PASS | REFERENCE_PASS(schema+validator) | RUNTIME_PASS(P3:prompt-registry.json,approved_by 待 Owner 簽) | PENDING |
+| Final Fresh Run(gauntlet) | DESIGN_PASS | REFERENCE_PASS(E1-E13+30 案) | RUNTIME_PASS(P4:dev-setup 散發+rehearsal;dev-run Stage 7 條文) | PENDING |
+| Gate consistency(VNext G2/G3) | DESIGN_PASS(OC-1/2 條文入 §7 正本 @748fa68) | REFERENCE_PASS(P4 fixture tests 10 案) | RUNTIME_PASS(對 integration 版 14/14 全綠;live master 未部署前 2/14 紅 = 安裝面滯後) | PENDING |
+| Contract version handshake | DESIGN_PASS(devflow-contract.json 2.0.0) | REFERENCE_PASS(hermetic 契約案) | RUNTIME_PASS(P3:doctor fail-closed;六 capability 聲明) | PENDING |
+
+> E2E 欄待 Phase 4 真實 /dev-flow 端到端(正向+4 負向)後更新;依 doc1 §2,在此之前不得宣稱 E2E_PASS。
 
 ## Risks
 

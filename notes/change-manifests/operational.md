@@ -78,7 +78,7 @@ Exit Checklist 是 renderer 抽取源(template7-exit-quickstart),改後須 rende
 | example/contract-expiry-reminder/4-spec.html | 4-spec.md 大改(OC/R-3/S-4~S-6)| 同上 |
 | example/contract-expiry-reminder/3-prototype.html | **原本就不存在**(模板要求終態必產);3-prototype.md 已大改 | 新建 AI 手工 twin(必含 variant 圖、Demo Script、User Demo Feedback、Verdict) |
 | guide-dev-flow.html(template3/template4 parity 區) | 僅當上節執行清單條文落地後 | renderer --write(非手改) |
-| plugin skills/dev-flow、dev-run SKILL.md | 階段動作表含 Stage 3 新義務 | 另 repo(/Users/asheng/.claude/plugins/local/dev-flow/),coordinator 另派 |
+| plugin skills/dev-flow、dev-run SKILL.md | 階段動作表含 Stage 3 新義務 | 另 repo(~/.claude/plugins/local/dev-flow/),coordinator 另派 |
 
 ## 範例變更(example/contract-expiry-reminder)
 

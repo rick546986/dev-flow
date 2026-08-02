@@ -6,7 +6,7 @@
 > 本 workstream 依附錄所有權**未改**:_templates/4-spec.md、
 > _templates/6-implementation-notes.md、_templates/7-review.md、README.md、
 > guide/HTML twin、example/ —— 對它們的全部修改建議在本檔,交 Integrator。
-> plugin repo(/Users/asheng/.claude/plugins/local/dev-flow/)一字未動 → 外部待辦。
+> plugin repo(~/.claude/plugins/local/dev-flow/)一字未動 → 外部待辦。
 
 ## 1. old-coder 已採用內容(出處 = 實讀檔案;完整對照表見設計 §1b)
 

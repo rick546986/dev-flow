@@ -2,7 +2,7 @@
 
 > DevFlow 四軌並行改造 — 開工前護欄。四個 workstream worker 開工前必讀。
 > 產出依據:5 份 reader 回報(templates / renderer / runtime / example-tests / history)+ coordinator 現場覆核(2026-08-02)。
-> 路徑省略前綴 `/Users/asheng/dev/dev-flow/`;plugin 路徑寫全。
+> 路徑為 repo 根相對;plugin 路徑寫全。
 
 - Base SHA: 90d30e88294ab4168871a877ef8ffc398ec3b817(main;coordinator 現場 `git rev-parse HEAD` 覆核。上游模板注入值為 "undefined",為變數未展開,以實測 SHA 為準,見不確定事項)
 
@@ -17,7 +17,7 @@
   - **手寫正本(非衍生)**:guide-dev-talk.html、dev-setup-record.html、_templates/html-shell.html(是生成輸入)。
   - ⚠️ renderer 抽取靠**錨字串定位**(如「執行清單(」「反模糊三律(」、README `## 3.` 表)。改造若動到錨點措辭,renderer 直接 SystemExit,須同步改 scripts/ 兩支腳本的 fragments/parity 對照表(render 腳本 :112-137)。
 
-- Runtime 所在位置:**不在本 repo**。全部執行引擎住 `/Users/asheng/.claude/plugins/local/dev-flow/`(獨立 git repo、master branch、**無 remote**;coordinator 覆核 hooks/ 目錄 14 檔實存):
+- Runtime 所在位置:**不在本 repo**。全部執行引擎住 `~/.claude/plugins/local/dev-flow/`(獨立 git repo、master branch、**無 remote**;coordinator 覆核 hooks/ 目錄 14 檔實存):
   - hooks:`devflow-exec.sh`(15 行薄殼)+ `_exec_impl.py`(209 行,含 5-tasks parser :61-98、guard state :13-45)、`_guard_impl.py` + `devflow-lib.py`(fail-closed :118-139)、`_prebash_impl.py`/`_postbash_impl.py` + 薄殼、`devtalk-guard.sh`、`selftest.sh`(332 行)、`gate-consistency.sh` + `_gate_consistency_impl.py`(303 行)、`hooks.json`(4 條掛載 :3-50)。
   - skills:dev-flow / dev-run / dev-setup 三支 SKILL.md(77/76/130 行)。scheduler、worktree 管理、review runtime 皆為 prompt 層(dev-run SKILL.md:49-63),無獨立程式碼。
   - 本 repo `ls` 實測**無 hooks/ 也無 skills/ 目錄**。本 repo 的 `scripts/` 是文檔校驗工具,非執行引擎。
@@ -26,7 +26,7 @@
 - 現有測試(基線 2026-08-02 全綠 @ 90d30e8):
   1. `bash scripts/check-methodology-corrections.sh` → `✅ methodology correction checks: 74/74 passed`(含 parity marker、example T×S evidence 配對 :226-251、actor 字串斷言 :254、renderer fixed point)。
   2. `DEVFLOW_RENDER_PYTHON=python3 bash scripts/render-methodology-corrections.sh --check` → `✅ renderer fixed point: 4/4 tracked outputs byte-identical`(依賴 markdown-it-py==4.0.0,pin 在 scripts/requirements-methodology-render.txt)。
-  3. plugin 側:`/Users/asheng/.claude/plugins/local/dev-flow/hooks/selftest.sh`(守衛自測,自建 temp 假 repo,~33 案)、`gate-consistency.sh`(從母版 README §7 動態抽 token 比對 SKILL/模板)。
+  3. plugin 側:`~/.claude/plugins/local/dev-flow/hooks/selftest.sh`(守衛自測,自建 temp 假 repo,~33 案)、`gate-consistency.sh`(從母版 README §7 動態抽 token 比對 SKILL/模板)。
   - 本 repo 無 pytest/vitest/bats。
 
 - 已存在能力(勿重造):
@@ -78,13 +78,13 @@
    renderer 追蹤 4 個:guide-dev-flow.html(9 marker 區)、guide-quickstart.html(4 marker 區)、example 6/7 兩個 html(全檔生成)——證據:scripts/render-methodology-corrections.sh:112-137(fragments 表)、:166-182(shell.replace)。AI 手工 twin:example 1/4/5 html(檔首殼註)+ 2-decision.html(來源未查證)。非衍生:guide-dev-talk.html、dev-setup-record.html(grep parity=0、無腳本引用)。
 
 3. **執行引擎是否在此 repo?**
-   **否**。本 repo `ls` 實測無 hooks/ 無 skills/ 目錄(coordinator 2026-08-02 覆核)。引擎全在 `/Users/asheng/.claude/plugins/local/dev-flow/`(獨立 repo、無 remote)。本 repo scripts/ 兩支腳本是文檔校驗器,非引擎。
+   **否**。本 repo `ls` 實測無 hooks/ 無 skills/ 目錄(coordinator 2026-08-02 覆核)。引擎全在 `~/.claude/plugins/local/dev-flow/`(獨立 repo、無 remote)。本 repo scripts/ 兩支腳本是文檔校驗器,非引擎。
 
 4. **hooks/devflow-exec.sh 是否在此 repo?**
-   **否**。位於 `/Users/asheng/.claude/plugins/local/dev-flow/hooks/devflow-exec.sh`(15 行薄殼,case 分派見 :10-14),本體 `_exec_impl.py`(209 行)。coordinator 覆核該目錄 14 檔實存。
+   **否**。位於 `~/.claude/plugins/local/dev-flow/hooks/devflow-exec.sh`(15 行薄殼,case 分派見 :10-14),本體 `_exec_impl.py`(209 行)。coordinator 覆核該目錄 14 檔實存。
 
 5. **若不在,實際位於哪個 plugin/skill/安裝路徑?**
-   `/Users/asheng/.claude/plugins/local/dev-flow/`——hooks/(devflow-exec.sh、_exec_impl.py、_guard_impl.py、devflow-lib.py、_prebash_impl.py、_postbash_impl.py、devtalk-guard.sh、selftest.sh、gate-consistency.sh、_gate_consistency_impl.py、hooks.json 等 14 檔)+ skills/{dev-flow,dev-run,dev-setup}/SKILL.md。兩帳號(.claude/.claude-team)的 known_marketplaces.json `local` marketplace 皆指向此目錄。掛載定義 hooks.json:3-50(4 條 PreToolUse/PostToolUse)。
+   `~/.claude/plugins/local/dev-flow/`——hooks/(devflow-exec.sh、_exec_impl.py、_guard_impl.py、devflow-lib.py、_prebash_impl.py、_postbash_impl.py、devtalk-guard.sh、selftest.sh、gate-consistency.sh、_gate_consistency_impl.py、hooks.json 等 14 檔)+ skills/{dev-flow,dev-run,dev-setup}/SKILL.md。兩帳號(.claude/.claude-team)的 known_marketplaces.json `local` marketplace 皆指向此目錄。掛載定義 hooks.json:3-50(4 條 PreToolUse/PostToolUse)。
 
 6. **哪些建議只能在本 repo 寫介面契約?**
    凡涉及 runtime 行為者:5-tasks parser 擴充(_exec_impl.py:61-98)、T 排程/wave 執行(dev-run SKILL.md:49)、模型升階執行(SKILL.md:40-47)、守衛 scope/start 語意(_guard_impl.py、_exec_impl.py:27-45)、ledger 實際寫入、gate-consistency 比對邏輯(_gate_consistency_impl.py)、三支 SKILL.md 的任何改動。本 repo worker 對這些只能產:schema、欄位定義、行為契約文檔、fixture。詳見上方四軌範圍表。
@@ -94,10 +94,10 @@
    - 重生衍生檔(寫檔):同腳本 `--write`。
    - 完整驗證:`bash scripts/check-methodology-corrections.sh` → 74/74 passed(基線綠)。
    - python 依賴 markdown-it-py==4.0.0(硬驗版本,render 腳本 :24-32),可 `DEVFLOW_RENDER_PYTHON` 覆寫直譯器。
-   - plugin 側(不在本 repo):`/Users/asheng/.claude/plugins/local/dev-flow/hooks/selftest.sh`(守衛自測)、`gate-consistency.sh`(gate 漂移檢查)。
+   - plugin 側(不在本 repo):`~/.claude/plugins/local/dev-flow/hooks/selftest.sh`(守衛自測)、`gate-consistency.sh`(gate 漂移檢查)。
 
 8. **現有 main 是否已有未完成的相關實作?**
-   **無**。全 repo 僅 13 commits;history reader 對 parallel/wave/candidate/attempt/gauntlet/journey/operational/demo 全零命中;devflow-vnext/* branch 與 worktree 皆不存在。僅兩個鄰近既有(是地基非半成品):fdb51ff 驗證五律(D 銜接)、4548e5c worktree 並行語意(A 的前提)。另一 worktree `/Users/asheng/dev/dev-flow-methodology-corrections`(codex/dev-flow-methodology-corrections @ 4cdd68c)是舊 docs 修正殘留,與四軌無關。
+   **無**。全 repo 僅 13 commits;history reader 對 parallel/wave/candidate/attempt/gauntlet/journey/operational/demo 全零命中;devflow-vnext/* branch 與 worktree 皆不存在。僅兩個鄰近既有(是地基非半成品):fdb51ff 驗證五律(D 銜接)、4548e5c worktree 並行語意(A 的前提)。另一 worktree `../dev-flow-methodology-corrections`(codex/dev-flow-methodology-corrections @ 4cdd68c)是舊 docs 修正殘留,與四軌無關。
 
 ## 主 worktree 髒檔現況
 

@@ -6,7 +6,7 @@
 > 定位:本檔是設計正本;可執行正本 = `observability/schema/*.schema.json` +
 > `observability/devflow_obs/`(驗證器/寫入器/讀取器/統計)。
 > runtime(dev-run 派工迴圈、hooks)在 plugin repo
-> `/Users/asheng/.claude/plugins/local/dev-flow/`,本 repo 一律只寫 **interface
+> `~/.claude/plugins/local/dev-flow/`,本 repo 一律只寫 **interface
 > contract**(§7);待辦清單見 `notes/change-manifests/observability.md`。
 
 ## 0. 核心原則
