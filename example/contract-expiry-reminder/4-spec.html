@@ -205,6 +205,11 @@
 </ul>
 <h2>Out of Scope</h2>
 <p>email/LINE 通知、自訂天數、主管彙總報表、自動寄信給法務/供應商、逾時自動升級提醒、法務簽核流程系統化。</p>
+<p>Stage 3 對帳(逐場核對 3-prototype Demo Script;第 2 輪 Human verdict: ACCEPTED)—— 下列兩場已 ACCEPTED 的場景本期不形成 R/S,理由與已知風險逐條明列,不默默刪場景:</p>
+<ul>
+<li>錯誤狀態:<code>GET /contracts/expiring</code> 失敗時的專用呈現與重試按鈕(3-prototype「Scenario AC-1(錯誤狀態:expiring 查詢失敗)」)。理由:本期 R-1 只把查詢成功後的「有到期合約 / 無到期合約」兩路徑展開為可測 S(S-1、S-2),失敗路徑的卡片呈現與重試互動未展開,亦不在 Diff Budget 的九檔內。已知風險:查詢失敗若退化成空狀態,業務會誤判「今天沒有到期合約」而漏跟催 —— 正是 Demo 當場提出的觀察問題;補上該 S 之前,失敗期間仍靠 1-discussion/3-prototype 記錄的 Excel 私表 workaround 兜底。S-2 觀測欄只界定「空狀態不是錯誤狀態」,不構成對錯誤呈現的要求。</li>
+<li>資料過期/併發編輯:偵測他人已改動後拒絕以過期資料標狀態、提示重新整理(3-prototype「Scenario AC-1(資料過期)」)。理由:本期狀態寫入走單一交易,Dependencies 的 migration 只加 <code>renewal_status</code> 與狀態歷程表,沒有版本欄或樂觀鎖;要做需另立衝突偵測契約,超出本次 Diff Budget。已知風險:卡片開著隔夜、期間他人改了 <code>end_date</code> 或狀態時,後手的標記會以過期畫面覆蓋,歷程雖留兩筆但無衝突提示。S-4 的 Recovery 只涵蓋「自己中斷後重開」,不涵蓋「他人同時改動」;Verification Profile 排除 Race/stress 層排除的是新增併發寫入路徑,不等於已處理本項的 stale read。</li>
+</ul>
 <h2>Diff Budget</h2>
 <p>≤ 9 檔 / ≤ 600 行(API handler+service+query、狀態 API+migration、前端卡片元件+route、測試)。</p>
 <h2>Dependencies</h2>
