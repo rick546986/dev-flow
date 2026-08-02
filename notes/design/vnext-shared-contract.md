@@ -41,6 +41,8 @@ G3 新增粗體錨:「**Evidence 契約全過**」,定義為(八點,全部成立
 
 - Full lane:完整 Profile(Feature Risk/Failure Model/Negative Constraints/Required/Conditional/Explicitly Excluded/Final Fresh Entry Point)。
 - Fast lane:最小 Profile(`Risk: normal` / `Verify:` / `Negative Constraints:` / `Advanced verification excluded:` / `Exclusion reason:`)。
+- 兩 lane 共用:`Reliability triage:` 三問(Concurrency / Idempotency / Timeout/retry,
+  各 `applicable | n-a` + 具體理由)不在 fast lane 五欄之內,但兩 lane 皆必答。
 - 自動升 Full 條件(任一命中):Risk high、schema migration、權限或資料隔離、資料刪除、不可逆資料轉換、金流/交易、核心醫療業務邏輯、並發/鎖/排程、新增 network/filesystem/subprocess/credential capability、對外 API 契約變更、高風險人機互動。
 - `lane: fast` + `Risk: high` → Runtime(start 時)、模板檢查與 Gate **一律拒絕**,除非 Owner Call 明示例外。
 

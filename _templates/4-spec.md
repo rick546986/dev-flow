@@ -140,8 +140,10 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
   Required/Conditional/Explicitly Excluded/Final Fresh Entry Point)。
 - Fast lane = 最小 Profile,本節只填五欄:`Risk: normal` / `Verify:` /
   `Negative Constraints:` / `Advanced verification excluded:` / `Exclusion reason:`
-  (排除的重驗證層明示 + 一句理由,禁默排)。`Reliability triage:` 三問不在
-  五欄之內但兩 lane 皆必答 —— fast lane 多半三項皆 `n-a`,理由仍不得省。
+  (排除的重驗證層明示 + 一句理由,禁默排)。
+- 兩 lane 共用(不受 lane 影響):`Reliability triage:` 三問必答。它**不在** fast lane
+  的五欄之內,但 fast lane 一樣要答 —— 多半三項皆 `n-a`,理由仍不得省。看到「五欄」
+  就以為 fast lane 只需五行 = 漏填,G2 視為步 3 未完成。
 - 自動升 Full(任一命中即不得 fast):Risk high、schema migration、權限或資料隔離、
   資料刪除、不可逆資料轉換、金流/交易、核心醫療業務邏輯、並發/鎖/排程、新增
   network/filesystem/subprocess/credential capability、對外 API 契約變更、

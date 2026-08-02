@@ -362,14 +362,16 @@ E11 只驗這兩節在不在。
 | G2 R/S、Drafting Decisions、Verification Profile、Demo verdict | 人工/fresh reviewer;外部 plugin 管流程 Gate | 本節上方、`_templates/4-spec.md`、外部 plugin |
 | G1/G2/G3 摘要三處不漂 | 外部 plugin 機械比對本節粗體錨 | `hooks/gate-consistency.sh` |
 | Stage 3 Human verdict 不得由 Agent 代填 | 人類輸入;外部 plugin 判定觸發與拒絕代答 | `_templates/3-prototype.md`、`hooks/_stage3_impl.py` |
-| Stage 4 逐場對帳 Stage 3 ACCEPTED 場景 | 人工;本 repo 腳本只驗範例照做了 | `_templates/4-spec.md` 步 3、`scripts/check-realworld.sh` |
+| Stage 4 逐場對帳 Stage 3 ACCEPTED 場景 | 人工/fresh reviewer;完全無腳本檢查,連範例都沒有 | `_templates/4-spec.md` 步 3 |
+| Stage 4 Reliability triage 三問已填 | 本 repo 腳本驗模板欄名與範例三項有非空理由;理由對不對是 G2 reviewer 判斷 | `_templates/4-spec.md`、`scripts/check-methodology-corrections.sh` |
 | Stage 5 必填四欄與 scope 解析 | 外部 runtime;本 repo reference parser 驗 fixture | `_templates/5-tasks.md`、`tests/parallel-stage6/contract_ref.py`、`hooks/_exec_impl.py` |
 | Stage 5 不得整份按架構層切 T | 人工/fresh reviewer(判準寫在模板,無 lint) | `_templates/5-tasks.md` |
 | Stage 6 scope guard(只准動 Files 欄的檔) | 外部 plugin hooks | `hooks/devflow-exec.sh`、`devflow-guard.sh`、`devflow-prebash.sh`、`devflow-postbash.sh` |
 | Task 獨立 review(作者不自審) | 人工或 fresh Agent;外部 dev-run 編排 | `_templates/6-implementation-notes.md`、dev-run |
 | 4-spec 每個 S 被 5-tasks Covers 承接 | 本 repo 腳本只驗範例;實案靠 runtime/CI 或人工 | `scripts/check-methodology-corrections.sh` |
 | 每個 T×S 有獨立 RED→GREEN 證據 | 本 repo 腳本只驗範例;實案靠外部 runtime 與 Reviewer | `scripts/check-methodology-corrections.sh`、dev-run |
-| G3 Evidence 契約八點 | 本 repo Gauntlet 腳本(E1–E13) | `scripts/devflow-evidence-gauntlet.sh` |
+| G3 Evidence 契約八點 | 本 repo Gauntlet 腳本(E1–E13),但第 3 點例外 | `scripts/devflow-evidence-gauntlet.sh` |
+| G3 第 3 點:已觸發的 Conditional Layer 全 pass | 人工 —— Gauntlet 讀不到 4-spec,不知道哪些條件層被觸發;要擋只能由人把該層逐一寫進 `--require-layer` | 4-spec Verification Profile、`_templates/7-review.md` 步 2c |
 | Coverage Matrix 與 Operational Walkthrough 內容 | Reviewer 人工判斷;E11 只驗 heading 在不在 | `_templates/7-review.md`、E11 |
 | Final Fresh Run 真的跑過 | 專案命令/Runtime/Reviewer;Gauntlet 只驗宣告與 SHA 綁定 | 4-spec Verification Profile、`_templates/7-review.md` |
 | Attempt Ledger 寫入 | 外部 runtime 寫;本 repo observability CLI 驗證與衍生 | `hooks/devflow-obs.sh`、`observability/devflow-obs.py` |
