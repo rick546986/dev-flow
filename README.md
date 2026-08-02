@@ -320,6 +320,10 @@ RED → GREEN → scope check → Verify
     最小 Profile(五欄,見 4-spec 模板);命中「自動升 Full」清單(見 4-spec 模板)
     仍寫 fast → 不得過。`lane: fast` 配 `Risk: high` → Runtime(start 時)、模板檢查
     與 Gate 一律拒絕,例外僅限 Owner Call 明示。
+    Reliability triage 不計入上述五個最小 Profile 欄位,但 full 與 fast lane 都必須回答
+    Concurrency、Idempotency、Timeout/retry 三問(格式與規則見 4-spec 模板);fast lane
+    多半三項皆 `n-a`,理由仍不得省。本項由本 repo 腳本驗欄位存在與理由非空,理由是否
+    成立仍是 G2 reviewer 的判斷,無 Runtime 機械強制。
   - 「Demo verdict」(條件式):無 Stage 3 trigger → N/A + 明確原因,可過 G2;
     有 trigger 且完成 Demo → 必須 `Human verdict: ACCEPTED`;REVISE → 不得過 G2,
     必須重做 Demo;NOT_REVIEWED → 不得過 G2;有 trigger 但跳過 → 必須有 Owner Call
