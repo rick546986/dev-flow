@@ -41,7 +41,7 @@ class EventFactory:
 
 
 def task_flow(fac, task_id, attempts, att_start_n, rev_start_n,
-              prompt=None, task_type=None):
+              prompt=None, task_tags=None):
     """產生一個 T 的完整事件流。
 
     attempts:[(model, result, failure_category|None), ...]
@@ -61,8 +61,8 @@ def task_flow(fac, task_id, attempts, att_start_n, rev_start_n,
                    "prompt": dict(prompt), "base_sha": "abc1234"}
         if j > 0:
             started["parent_attempt_id"] = att_ids[j - 1]
-        if task_type:
-            started["x_task_type"] = task_type
+        if task_tags:
+            started["task_tags"] = list(task_tags)
         events.append(fac.ev("attempt_started", **started))
         completed = {"stage": stage, "task_id": task_id, "attempt_id": att,
                      "agent_role": "worker", "model": model,

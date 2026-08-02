@@ -16,11 +16,34 @@ _SCHEMA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sc
 _cache = {}
 
 
+_CONTRACT_DIR = os.path.join(_SCHEMA_DIR, "..", "..")   # repo 根(devflow-contract.json 正本)
+
+
 def _load(name):
     if name not in _cache:
         with open(os.path.join(_SCHEMA_DIR, name)) as f:
             _cache[name] = json.load(f)
     return _cache[name]
+
+
+def _resolve_item_enum(spec):
+    """array 欄的受控 enum:item_enum_source = '<repo 根檔名>#<key>'。
+    正本住 devflow-contract.json(6.3),schema 只留指標,不重抄一份值。"""
+    src = spec.get("item_enum_source")
+    if not src:
+        return spec.get("item_enum")
+    key = "contract:" + src
+    if key not in _cache:
+        fname, _, field = src.partition("#")
+        with open(os.path.join(_CONTRACT_DIR, fname)) as f:
+            _cache[key] = json.load(f)[field]
+    return _cache[key]
+
+
+def task_tags_enum():
+    """task_tags 受控 enum 現值(唯一正本 = devflow-contract.json)。"""
+    return list(_resolve_item_enum(
+        _load("agent-event.schema.json")["fields"]["task_tags"]))
 
 
 def _err(code, field, msg):
@@ -74,8 +97,9 @@ def _check_field(name, value, spec, errors):
                                "須為含時區偏移的 ISO8601 時間"))
     elif t == "array":
         if not isinstance(value, list):
-            errors.append(_err("invalid_format", name, "須為陣列"))
+            errors.append(_err("invalid_format", name, "須為陣列(多選值請逐項列出)"))
             return
+        item_enum = _resolve_item_enum(spec)
         for i, item in enumerate(value):
             if not isinstance(item, str):
                 errors.append(_err("invalid_format", f"{name}[{i}]", "須為字串"))
@@ -83,7 +107,13 @@ def _check_field(name, value, spec, errors):
                 errors.append(_err("invalid_format", f"{name}[{i}]",
                                    f"須符合 {spec['item_pattern']}"))
             elif "item_maxlen" in spec and len(item) > spec["item_maxlen"]:
-                errors.append(_err("invalid_format", f"{name}[{i}]", "超長"))
+                errors.append(_err("invalid_format", f"{name}[{i}]",
+                                   f"{name} 值長度 {len(item)} 超過上限 "
+                                   f"{spec['item_maxlen']}"))
+            elif item_enum is not None and item not in item_enum:
+                errors.append(_err("invalid_enum", f"{name}[{i}]",
+                                   f"須為受控 enum {item_enum} 之一, "
+                                   f"得到 {item!r}(正本 = devflow-contract.json)"))
     elif t == "prompt":
         _check_prompt_object(name, value, errors)
 

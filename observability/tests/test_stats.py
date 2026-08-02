@@ -153,6 +153,50 @@ class TestAggregation(unittest.TestCase):
             self.assertIn(dim, note)
 
 
+class TestTaskTagGrouping(unittest.TestCase):
+    """6.3:分組改吃 task_tags(受控 enum、多選);無值歸 unspecified;
+    舊檔 x_task_type 以讀取相容方式併入(1.x 遷移)。"""
+
+    def build(self):
+        fac = evtools.EventFactory(RUN_A)
+        events = [fac.ev("run_started", feature_slug="feat-a",
+                         base_sha="abc1234")]
+        evs, _ = evtools.task_flow(fac, "T-1", [("haiku", "PASS", None)],
+                                   1, 1, task_tags=["api", "test"])
+        events += evs
+        evs, _ = evtools.task_flow(fac, "T-2", [("haiku", "FAIL", "IMPL"),
+                                                ("sonnet", "PASS", None)],
+                                   11, 11, task_tags=["api"])
+        events += evs
+        evs, _ = evtools.task_flow(fac, "T-3", [("haiku", "PASS", None)],
+                                   21, 21)                  # 無 tag → unspecified
+        events += evs
+        # 舊檔形狀:x_task_type 自由字串(1.x 讀取相容,遷移計入分組)
+        legacy_evs, _ = evtools.task_flow(fac, "T-4", [("haiku", "PASS", None)],
+                                          31, 31)
+        for e in legacy_evs:
+            if e["event_type"] == "attempt_started":
+                e["x_task_type"] = "hook"
+        events += legacy_evs
+        return stats.aggregate_events({RUN_A: events}, min_n=1)
+
+    def test_groups_by_each_tag_multi_membership(self):
+        groups = self.build()["success_by_model_task_tag"]
+        self.assertEqual(groups["haiku@api"]["n"], 2)       # T-1 + T-2 首攻
+        self.assertAlmostEqual(groups["haiku@api"]["value"], 1 / 2)
+        self.assertEqual(groups["haiku@test"]["n"], 1)
+        self.assertAlmostEqual(groups["haiku@test"]["value"], 1.0)
+        self.assertEqual(groups["sonnet@api"]["n"], 1)
+
+    def test_untagged_attempts_grouped_as_unspecified(self):
+        groups = self.build()["success_by_model_task_tag"]
+        self.assertEqual(groups["haiku@unspecified"]["n"], 1)
+
+    def test_legacy_x_task_type_still_readable(self):
+        groups = self.build()["success_by_model_task_tag"]
+        self.assertEqual(groups["haiku@hook"]["n"], 1)
+
+
 class TestSmallSample(unittest.TestCase):
     def test_small_dataset_flagged_insufficient(self):
         runs = dataset()

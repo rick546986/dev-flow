@@ -173,6 +173,61 @@ class TestPromptVersion(unittest.TestCase):
         self.assertIn("invalid_format", codes(ev.validate_event(e)))
 
 
+class TestTaskTags(unittest.TestCase):
+    """6.3:task_tags 受控 enum(正本 = repo 根 devflow-contract.json,12 值),
+    多選陣列,非 enum 拒收,每值 ≤50。"""
+
+    CONTRACT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "..", "..", "devflow-contract.json")
+
+    def contract_tags(self):
+        import json
+        with open(self.CONTRACT) as f:
+            return json.load(f)["task_tags"]
+
+    def test_valid_multi_select_passes_on_attempt_events(self):
+        started = base("attempt_started", stage="6-implementation",
+                       task_id="T-1", attempt_id=ATT, agent_role="worker",
+                       model="haiku", prompt=copy.deepcopy(PROMPT),
+                       base_sha="abc1234", task_tags=["api", "test"])
+        self.assertEqual(ev.validate_event(started), [])
+        dispatched = base("agent_dispatched", stage="6-implementation",
+                          task_id="T-1", attempt_id=ATT, agent_role="worker",
+                          model="haiku", prompt=copy.deepcopy(PROMPT),
+                          task_tags=["security"])
+        self.assertEqual(ev.validate_event(dispatched), [])
+        completed = attempt_completed(task_tags=["database", "migration"])
+        self.assertEqual(ev.validate_event(completed), [])
+
+    def test_all_contract_values_accepted_and_are_twelve(self):
+        tags = self.contract_tags()
+        self.assertEqual(len(tags), 12)
+        for tag in tags:
+            e = attempt_completed(task_tags=[tag])
+            self.assertEqual(ev.validate_event(e), [], msg=tag)
+
+    def test_non_enum_value_rejected(self):
+        e = attempt_completed(task_tags=["vibes"])
+        errors = ev.validate_event(e)
+        self.assertIn("invalid_enum", codes(errors))
+
+    def test_free_string_not_array_rejected(self):
+        e = attempt_completed(task_tags="api")
+        self.assertIn("invalid_format", codes(ev.validate_event(e)))
+
+    def test_overlong_tag_rejected_with_field_and_limit(self):
+        e = attempt_completed(task_tags=["z" * 60])
+        errors = ev.validate_event(e)
+        hits = [err for err in errors if err["field"].startswith("task_tags")]
+        self.assertTrue(hits)
+        self.assertTrue(any("50" in err["msg"] for err in hits
+                            if err["code"] == "invalid_format"))
+
+    def test_enum_source_is_contract_file(self):
+        # 正本防漂移:schema 解析出的 enum 必須 == devflow-contract.json 的 12 值
+        self.assertEqual(ev.task_tags_enum(), self.contract_tags())
+
+
 class TestHookWriterRestrictions(unittest.TestCase):
     """§7:不要求 hooks 推測 Agent Role 或 Prompt Version → 機械禁止其填寫。"""
 

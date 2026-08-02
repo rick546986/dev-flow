@@ -44,7 +44,7 @@ def _task_records_from_events(events):
         if etype in ("attempt_started", "attempt_completed") and att:
             meta = attempts_meta.setdefault(att, {
                 "task_id": tid, "model": None, "prompt_key": None,
-                "task_type": "unspecified", "result": None})
+                "task_tags": [], "result": None})
             if tid:
                 meta["task_id"] = tid
             if e.get("model"):
@@ -52,8 +52,12 @@ def _task_records_from_events(events):
             if isinstance(e.get("prompt"), dict):
                 p = e["prompt"]
                 meta["prompt_key"] = f"{p.get('id')}@{p.get('version')}"
-            if e.get("x_task_type"):
-                meta["task_type"] = e["x_task_type"]
+            # 6.3:task_tags(受控 enum,多選)為正式欄;舊檔 x_task_type
+            # 僅讀取相容(1.x 遷移),新寫入不再產生
+            if isinstance(e.get("task_tags"), list) and e["task_tags"]:
+                meta["task_tags"] = list(e["task_tags"])
+            elif e.get("x_task_type") and not meta["task_tags"]:
+                meta["task_tags"] = [e["x_task_type"]]
             if etype == "attempt_completed":
                 meta["result"] = e.get("result")
         if not tid:
@@ -156,17 +160,22 @@ def aggregate_events(events_by_run, legacy_rows=(), min_n=5):
     accepted = [t for t in tasks if t["accepted"]]
 
     def group_success(key_fn):
+        """key_fn 回傳 None(跳過)、單一 key、或 key list(多選 tag =
+        一 attempt 進多組)。"""
         groups = {}
         for m in all_attempts:
             if m["result"] not in ("PASS", "FAIL"):
                 continue                                 # incomplete 不算樣本
-            key = key_fn(m)
-            if key is None:
+            keys = key_fn(m)
+            if keys is None:
                 continue
-            g = groups.setdefault(key, {"n": 0, "ok": 0})
-            g["n"] += 1
-            if m["result"] == "PASS":
-                g["ok"] += 1
+            if isinstance(keys, str):
+                keys = [keys]
+            for key in keys:
+                g = groups.setdefault(key, {"n": 0, "ok": 0})
+                g["n"] += 1
+                if m["result"] == "PASS":
+                    g["ok"] += 1
         return {k: _rate(g["ok"], g["n"], min_n)
                 for k, g in sorted(groups.items())}
 
@@ -199,8 +208,10 @@ def aggregate_events(events_by_run, legacy_rows=(), min_n=5):
             tasks_n, min_n),
         "success_by_model": group_success(lambda m: m["model"]),
         "success_by_prompt_version": group_success(lambda m: m["prompt_key"]),
-        "success_by_model_task_type": group_success(
-            lambda m: f"{m['model']}@{m['task_type']}" if m["model"] else None),
+        "success_by_model_task_tag": group_success(
+            lambda m: [f"{m['model']}@{tag}"
+                       for tag in (m["task_tags"] or ["unspecified"])]
+            if m["model"] else None),
         "stage6_pass_stage7_blocker_rate": _rate(
             len(runs_stage6_pass & runs_stage7_blocker),
             len(runs_stage6_pass), min_n),
