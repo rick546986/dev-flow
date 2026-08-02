@@ -236,6 +236,13 @@ Rollback rehearsal(schema migration 觸發)—— 本次三者皆觸發,列入 F
 <li>Explicitly excluded layers:Mutation(本示範 repo 未配 mutation 工具鏈;實案 Risk: high
 應評估納入 Required)、Race/stress(狀態更新走單一交易,本次無新增併發寫入路徑)</li>
 <li>Final fresh entry point:<code>go test ./... &amp;&amp; npm test &amp;&amp; npx playwright test</code></li>
+<li>Reliability triage:(Full 與 Fast lane 都必答)
+<ul>
+<li>Concurrency: applicable — 3-prototype 第 2 輪 ACCEPTED 的「資料過期」場景就是併發編輯:卡片開著隔夜、他人已改 <code>end_date</code> 或狀態。本期不做衝突偵測,已列 Out of Scope 並附 known risk(後手標記會以過期畫面覆蓋,歷程留兩筆但無衝突提示)。注意本節 Explicitly excluded 的 Race/stress 排除的是「新增併發寫入路徑」的壓力驗證層,與此處的 stale read 缺口不是同一件事,不得互相抵充。</li>
+<li>Idempotency: n-a — 狀態標記是 enum 的 set-to-value 寫入(六值,見 Drafting Decisions),重送同一標記的最終狀態值相同;本次不新增任何對外副作用(自動寄信給法務/供應商、email/LINE 通知皆在 Out of Scope),因此沒有「重複執行產生第二次效果」的路徑。殘留:歷程可能多一筆同值記錄,屬稽核軌雜訊,不改變狀態值。</li>
+<li>Timeout/retry: applicable — 後端不外呼(聯絡法務與供應商皆為系統外動作,見 S-1/S-4 Operational Context),本期唯一相關面向是 <code>GET /contracts/expiring</code> 失敗時前端的重試互動;該項已列 Out of Scope 並附 known risk(失敗退化成空狀態 → 業務誤判無到期合約)。逾時自動升級提醒本就在 Out of Scope。</li>
+</ul>
+</li>
 </ul>
 <h3>Failure Model(Risk: high 必填)</h3>
 <div class="tablewrap"><table>

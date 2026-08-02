@@ -126,13 +126,22 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 - Conditional layers:(條件觸發;註明觸發條件,如「dependency set 變動 → Supply chain」)
 - Explicitly excluded layers:(明示排除 + 一句理由;禁默排)
 - Final fresh entry point:(單一 persisted 命令,CI/人類皆一條命令重跑)
+- Reliability triage:(Full 與 Fast lane 都必答;逐項二選一 + 具體理由)
+  - Concurrency: applicable | n-a — <理由;適用時指向 S／Failure Model／Out of Scope／Known limit>
+  - Idempotency: applicable | n-a — <理由;適用時指向契約或未覆蓋風險>
+  - Timeout/retry: applicable | n-a — <理由;適用時指向契約、驗證層或未覆蓋風險>
+<!-- Reliability triage 規則:①`n-a` 必附一句具體理由,不能只寫「不適用」。
+     ②`applicable` 不等於本輪一定要實作,但必須明確落到至少一處:R/S、Failure Model、
+     Negative Constraints、Required／Conditional 驗證層、Out of Scope／Known limit。
+     ③本欄只把已存在或確實相關的風險顯性化,不得據此自行新增產品行為或可靠性保證。 -->
 
 ### Lane 規則(lane 欄的填寫契約;runtime 讀 `lane:` 行與 `- Risk:` 首值)
 - Full lane = 完整 Profile:上列全欄(Feature Risk/Failure Model/Negative Constraints/
   Required/Conditional/Explicitly Excluded/Final Fresh Entry Point)。
 - Fast lane = 最小 Profile,本節只填五欄:`Risk: normal` / `Verify:` /
   `Negative Constraints:` / `Advanced verification excluded:` / `Exclusion reason:`
-  (排除的重驗證層明示 + 一句理由,禁默排)。
+  (排除的重驗證層明示 + 一句理由,禁默排)。`Reliability triage:` 三問不在
+  五欄之內但兩 lane 皆必答 —— fast lane 多半三項皆 `n-a`,理由仍不得省。
 - 自動升 Full(任一命中即不得 fast):Risk high、schema migration、權限或資料隔離、
   資料刪除、不可逆資料轉換、金流/交易、核心醫療業務邏輯、並發/鎖/排程、新增
   network/filesystem/subprocess/credential capability、對外 API 契約變更、

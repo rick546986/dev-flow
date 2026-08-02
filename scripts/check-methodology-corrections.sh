@@ -260,6 +260,19 @@ for task_id, scenarios in sorted({task: sorted(s for t, s in expected_pairs if t
     check(all(f"{task_id} / {scenario}" in review_text for scenario in scenarios),
           f"{task_id} review finding 指向每筆 RED→GREEN evidence")
 
+# Reliability triage(輕量欄位存在檢查:模板有三問、範例三問各有結論與非空理由;
+# 不做語意判斷,理由「寫得對不對」仍是 G2 reviewer 的責任)
+spec_template = read("_templates/4-spec.md")
+spec_example = read("example/contract-expiry-reminder/4-spec.md")
+check("- Reliability triage:" in spec_template, "template 4-spec 有 Reliability triage 欄")
+for field in ("Concurrency", "Idempotency", "Timeout/retry"):
+    check(re.search(rf"^\s*- {re.escape(field)}: applicable \| n-a —", spec_template, re.M) is not None,
+          f"template Reliability triage 含「{field}」二選一欄")
+    filled = re.search(rf"^\s*- {re.escape(field)}: (applicable|n-a) — (\S.*)$", spec_example, re.M)
+    check(filled is not None and len(filled.group(2).strip()) >= 20,
+          f"example Reliability triage「{field}」有結論與非空理由",
+          "缺欄或格式不符" if filled is None else f"理由過短:{filled.group(2)[:30]}")
+
 review_md = read("example/contract-expiry-reminder/7-review.md")
 check("reviewer 以擁有合約 C 的 `<owner>` 登入" in review_md,
       "S-1 現象證據 actor 是 <owner>")

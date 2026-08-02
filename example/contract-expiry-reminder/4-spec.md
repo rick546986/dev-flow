@@ -179,6 +179,10 @@ Stage 3 對帳(逐場核對 3-prototype Demo Script;第 2 輪 Human verdict: ACC
 - Explicitly excluded layers:Mutation(本示範 repo 未配 mutation 工具鏈;實案 Risk: high
   應評估納入 Required)、Race/stress(狀態更新走單一交易,本次無新增併發寫入路徑)
 - Final fresh entry point:`go test ./... && npm test && npx playwright test`
+- Reliability triage:(Full 與 Fast lane 都必答)
+  - Concurrency: applicable — 3-prototype 第 2 輪 ACCEPTED 的「資料過期」場景就是併發編輯:卡片開著隔夜、他人已改 `end_date` 或狀態。本期不做衝突偵測,已列 Out of Scope 並附 known risk(後手標記會以過期畫面覆蓋,歷程留兩筆但無衝突提示)。注意本節 Explicitly excluded 的 Race/stress 排除的是「新增併發寫入路徑」的壓力驗證層,與此處的 stale read 缺口不是同一件事,不得互相抵充。
+  - Idempotency: n-a — 狀態標記是 enum 的 set-to-value 寫入(六值,見 Drafting Decisions),重送同一標記的最終狀態值相同;本次不新增任何對外副作用(自動寄信給法務/供應商、email/LINE 通知皆在 Out of Scope),因此沒有「重複執行產生第二次效果」的路徑。殘留:歷程可能多一筆同值記錄,屬稽核軌雜訊,不改變狀態值。
+  - Timeout/retry: applicable — 後端不外呼(聯絡法務與供應商皆為系統外動作,見 S-1/S-4 Operational Context),本期唯一相關面向是 `GET /contracts/expiring` 失敗時前端的重試互動;該項已列 Out of Scope 並附 known risk(失敗退化成空狀態 → 業務誤判無到期合約)。逾時自動升級提醒本就在 Out of Scope。
 
 ### Failure Model(Risk: high 必填)
 | Failure mode | 影響 | 可觀測訊號 | 驗證層 | 未覆蓋原因 |
