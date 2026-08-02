@@ -2,6 +2,7 @@
 
 > Branch:`devflow-vnext/gauntlet`(base 90d30e8)。
 > 設計正本:`notes/design/evidence-gauntlet.md`(本檔引其節號)。
+> 需求正本:docs/prompts/devflow-vnext-fourtrack.md「Prompt D:吸收 old-coder 的 Gauntlet/Evidence」— 本檔節號引用以該正本為準。
 > 本 workstream 依附錄所有權**未改**:_templates/4-spec.md、
 > _templates/6-implementation-notes.md、_templates/7-review.md、README.md、
 > guide/HTML twin、example/ —— 對它們的全部修改建議在本檔,交 Integrator。

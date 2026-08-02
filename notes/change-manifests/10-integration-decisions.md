@@ -2,6 +2,8 @@
 
 > 依 Prompt 0 第七/八步:衝突與矛盾記為 Integration Decision;涉核心流程推翻視 L2 停待人類。
 > 本輪四 branch merge 零檔案衝突;以下為「語意合流」決策。日期:2026-08-02。
+> 需求正本:docs/prompts/devflow-vnext-fourtrack.md(四軌輪)、docs/prompts/devflow-vnext-runtime.md(Runtime 輪,含 Owner 決策)。
+> ⚠️ 歷史區(ID-1~ID-12 原文)回答「當時為何這樣決定」,不重寫;**現在真正生效的規則見文末「Current Decisions」**。
 
 ## 決策(ID-1 ~ ID-9)
 
@@ -50,3 +52,38 @@
 
 彙整自四 manifest:A §6(8 項)、C §11(6 項)、D §8(4 項)、B(SKILL 階段動作表)。
 前置:plugin repo 未合併 branch `codex/dev-flow-methodology-corrections` 狀態先確認。
+
+---
+
+## 決策狀態更新(2026-08-02 Runtime 輪;Owner 已於 docs/prompts/devflow-vnext-runtime.md 裁決)
+
+| ID | Status | Superseded by / Replacement | Effective date |
+|---|---|---|---|
+| ID-1 | **superseded** | OC-2B:Demo verdict 依 trigger 條件正式納入 G2 正本 | 2026-08-02 |
+| ID-2 | **superseded** | OC-1:Evidence 依 8 點精確條件正式納入 G3 正本 | 2026-08-02 |
+| ID-3 | **refined** | 六修正 6.1:Risk rubric 單一正本,但分 Feature Risk(Stage 4)/ Task Risk(Stage 5)兩個 scope | 2026-08-02 |
+| ID-4 | **refined** | 六修正 6.3:改用受控 `task_tags` enum(多選),仍不進 5-tasks 必填欄 | 2026-08-02 |
+| ID-5 | **accepted** | OC-3:以 feature_initial_base / wave_base_sha / candidate_base_sha 三層語意正式採用,含 INVALIDATED_BY_UPSTREAM | 2026-08-02 |
+| ID-6 | **accepted** | Candidate 詞彙維持 | 2026-08-02 |
+| ID-7 | **resolved** | OC-5:Git 外保存(DEVFLOW_LEDGER_HOME,macOS 預設 ~/Library/Application Support/DevFlow/ledger/),raw 180 天/aggregate 365 天,prune 手動 | 2026-08-02 |
+| ID-8 | **accepted** | example T-5~T-7 維持 | 2026-08-02 |
+| ID-9 | **refined** | OC-6:保留 sequential 圖,立即新增 parallel 圖 ×2(Stage 6 + 跨階段),不等 OC-1/2 | 2026-08-02 |
+| ID-10 | **refined** | 六修正 6.4:`result` 只留到 schema 1.x(deprecated),schema 2.0 移除;新事件一律只寫 `status` | 2026-08-02 |
+| ID-11 | **accepted** | benchmark 歷史紀錄註維持 | 2026-08-02 |
+| ID-12 | **superseded** | OC-1/OC-2:G2、G3 正式升格(含 plugin gate-consistency 同步),不再用「備審材料」過渡措辭 | 2026-08-02 |
+
+## Current Decisions(現在真正生效的規則)
+
+1. **G3 正式條件**(OC-1):Final Fresh Run 綁定受審 source SHA;Required Layer 全 pass(不得 unverified/n-a);已觸發 Conditional Layer 全 pass;不得存在 fail;Excluded 可 n-a 但附理由;Optional 可 unverified 但誠實標示;Gauntlet PASS 不取代雙軸 Review/Operational Walkthrough/Coverage Matrix/現象複驗。
+2. **G2 正式條件**(OC-2A/2B):Verification Profile 依 lane 正確填寫;Stage 3 trigger 成立時 Human verdict 必須 ACCEPTED(無 trigger → N/A+原因可過;REVISE/NOT_REVIEWED → 不得過;跳過需 Owner Call);Agent 不得自填 ACCEPTED。
+3. **Wave Base 語意**(OC-3):feature_initial_base / wave_base_sha / candidate_base_sha;同 Wave 共用 wave_base_sha;下一 Wave 以已 ACCEPTED integration HEAD 為 Base;上游變更 → 下游未整合 Candidate = INVALIDATED_BY_UPSTREAM,須從新 Wave Base 重建;integration branch 可由 wave_base_sha + ordered candidate list 重現。
+4. **Profile lane 規則**(OC-4):Full lane 填完整 Profile;Fast lane 填最小 Profile(Risk/Verify/Negative Constraints/排除聲明+理由);命中升級清單(high/migration/權限/不可逆/金流/醫療核心/並發/新 capability/對外 API/高風險互動)自動升 Full;`lane: fast` + `Risk: high` 必須拒絕(除非 Owner Call 例外)。
+5. **Ledger Retention**(OC-5):Git 外 DEVFLOW_LEDGER_HOME;raw 180 天、去識別化 aggregate 365 天、transcript/prompt body/source body 不保存;manifest 必含 repo_id/run_id/schema_version/created_at/expires_at/source_sha;`devflow-obs retention status|prune --dry-run|prune`;禁背景自動刪除、預設不雲端同步。
+6. **Risk 兩 scope**(6.1):rubric 單一正本;Feature Risk 決定 Profile 深度,Task Risk 決定 review-mode(Task high → Dedicated;Feature high 不強制全 T Dedicated)。
+7. **Demo/Variant 分離**(6.2):有互動風險 → Demo 必要;互動方案未定 → 2~4 個結構 Variant;方案已由核准 Pattern 決定 → 1 個 Demo 即可;禁湊數假 Variant。
+8. **task_tags**(6.3):受控 enum(api/ui/database/integration/infrastructure/test/documentation/security/authorization/migration/workflow/other),多選,禁自由字串。
+9. **status/result**(6.4):新事件只寫 status;result = deprecated since 1.x, removed in 2.0;需 migration tests。
+10. **Coverage 語意**(6.5):changed-line coverage 是本次變更的主要證據;global coverage 是趨勢指標,兩者並記,不得只靠 global % 宣稱充分。
+11. **Ledger 欄位級限制**(6.6):prompt_id≤100/prompt_version≤40/model≤100/failure_reason≤500/finding_summary≤1000/command_reference≤500/artifact_reference≤1000/result_summary≤2000/task_tag≤50;禁載欄位黑名單照舊;artifact/transcript 只存 reference+hash。
+12. **契約握手**(§7):devflow_contract_version 2.0.0 + required capabilities;plugin 聲明 supported versions/capabilities;doctor 指令 fail-closed;legacy 相容模式須明示。
+13. **Push 規則**(補充 §1):Runtime+E2E 完成前不更新 origin/main;遠端備份僅限 snapshot branch 且需使用者明示;一切 push 等使用者明示。

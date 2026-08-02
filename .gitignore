@@ -1,2 +1,6 @@
 .DS_Store
 dogfood-archive/
+.serena/
+# DOCX 為歷史輸入快照,不進 Git;需求正本 = docs/prompts/*.md
+docs/*.docx
+docs/**/.DS_Store

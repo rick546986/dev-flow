@@ -4,6 +4,7 @@
 > Worktree:`/Users/asheng/dev/dev-flow-wt-observability`
 > 設計正本:`notes/design/agent-attempt-observability.md`
 > 依 audit 邊界:runtime(plugin repo)一律不動,只寫 interface contract 與外部待辦。
+> 需求正本:docs/prompts/devflow-vnext-fourtrack.md「Prompt C:Agent Attempt Ledger 與 Prompt 優化」— 本檔節號引用以該正本為準。
 
 ## 1. 本 repo 實際改動(全為新檔;共享模板/README/Guide twin 零觸碰)
 

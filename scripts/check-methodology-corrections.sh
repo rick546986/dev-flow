@@ -273,6 +273,11 @@ for rel, min_tables, min_details in (
 check("變更架構圖" in read("example/contract-expiry-reminder/7-review.html"),
       "7-review HTML 含變更架構內容")
 
+serena_tracked = subprocess.run(["git", "ls-files", ".serena"], cwd=root,
+                                capture_output=True, text=True).stdout.strip()
+check(serena_tracked == "", ".serena/ 本機快取不得進版本庫", serena_tracked)
+check(".serena/" in read(".gitignore"), ".gitignore 含 .serena/ 防再犯條目")
+
 renderer = os.path.join(root, "scripts", "render-methodology-corrections.sh")
 check(os.path.isfile(renderer) and os.access(renderer, os.X_OK),
       "tracked batch renderer exists and is executable")

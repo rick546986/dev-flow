@@ -2,6 +2,7 @@
 
 > Branch:`devflow-vnext/operational`(base 90d30e88294ab4168871a877ef8ffc398ec3b817)。
 > 設計文件:`notes/design/real-world-interaction.md`。
+> 需求正本:docs/prompts/devflow-vnext-fourtrack.md「Prompt B:真實世界互動與 Stage 3 Demo」— 本檔節號引用以該正本為準。
 > 本檔給 Integrator:已落地變更清單 + 檔案所有權外的待整合條文 + 待重生 twin + 測試證據。
 
 ## 已落地(本 branch commits)

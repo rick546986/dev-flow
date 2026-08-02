@@ -1,8 +1,8 @@
 # Change Manifest — Workstream A(Stage 6 Execution Architecture)
 
 > Branch:`devflow-vnext/execution`(base 90d30e88294ab4168871a877ef8ffc398ec3b817)
-> Worktree:`/Users/asheng/dev/dev-flow-wt-execution`
 > 日期:2026-08-02
+> 需求正本:docs/prompts/devflow-vnext-fourtrack.md「Prompt A:Stage 6 執行層並行改造」— 本檔節號引用以該正本為準。
 
 ## 1. 實際 Runtime 位置(audit 覆核一致)
 
