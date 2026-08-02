@@ -339,8 +339,10 @@ RED → GREEN → scope check → Verify
   8. Gauntlet PASS 不取代 Standards Axis / Spec Axis / Operational Walkthrough /
      Coverage Matrix / 真實現象複驗。
 
-  八點由 `scripts/devflow-evidence-gauntlet.sh`(1.2.0,E1–E13;採用專案散發於
-  `docs/dev/tools/`)機械驗證。
+  八點中的 Evidence 文件契約由 `scripts/devflow-evidence-gauntlet.sh`(1.2.0,E1–E13;
+  採用專案散發於 `docs/dev/tools/`)機械驗證;第 2、3、5 點仍須依 Verification Profile
+  正確傳入 Required／Conditional layer(旗標漏帶會 fail-open),並由 Reviewer 核對 ——
+  詳細強制邊界見下方對照表。
 - frontmatter 是狀態機:`draft → in-review → approved → superseded/shipped`。
 - 已知限界(明文接受,不另設機制):①Stage 1 討論期的自判無獨立節(單一機制
   原則,不在 1-discussion 設節)—— 由 2-decision 步 0 接手盤點「連同討論期自判
