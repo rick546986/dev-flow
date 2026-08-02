@@ -141,20 +141,28 @@ for heading, columns in (("Architecture Boundaries", ARCH_COLUMNS),
 check(template_block is not None and "Known design limit" in template_block,
       f"{TEMPLATE} Design Constraints 有 Known design limit")
 
-# ── 4. Example 命中觸發條件時必須是 applicable ─────────────────────────────
-# 機械判準(只用得到不需語意的訊號):example 的 Verification Profile 寫 `Risk: high`
-# → 命中觸發條件⑨ → Applicability 必須是 applicable。
+# ── 4. Example 必須是 applicable(**無條件釘死**,不掛在任何可被單行編輯翻轉的條件上)──
+# 2026-08 單一編輯解除武裝實測(scratchpad/single-edit-disarm-test.sh):
+#   舊寫法把「必須 applicable」掛在 `^- Risk: high` 之下,結果只要把 example 的
+#   `- Risk: high` 改成 `- Risk: normal`(一行、看似無關的編輯),下面整組三張表檢查、
+#   Known design limit、Stage 5/6/7 example 承接**全部靜默略過**,腳本照樣 exit 0
+#   (檢查數 110 → 109,沒有任何一行輸出提醒你少跑了 8 組)。這正是 fresh review A-M1
+#   指的「可被一處無關編輯靜默解除武裝」。
+# 修法:example 是本 repo 的**唯一參考範例**,任務規格本來就要求它命中多條觸發條件
+#   (公開 API / schema migration / 權限 / Transaction / Concurrency / Risk high),
+#   所以它是不是 applicable 不該是「推導出來的」,而是**釘死的 fixture 前提**。
+#   Risk: high 另外單獨驗,讓「範例被降級」本身也會紅,而不是安靜地讓檢查消失。
 example_block = section(example_text, SECTION)
 check(example_block is not None, f"{EXAMPLE} 有「## {SECTION}」章節")
-example_risk_high = bool(example_text and re.search(r"^- Risk: high", example_text, re.M))
 example_applicability = applicability(example_block)
 check(example_applicability is not None, f"{EXAMPLE} 有 Applicability 欄")
-if example_risk_high:
-    check(example_applicability is not None
-          and example_applicability.startswith("applicable")
-          and "|" not in example_applicability,
-          f"{EXAMPLE} Risk: high 命中觸發條件 → Applicability 必須是 applicable",
-          f"實得={example_applicability!r}")
+check(example_applicability is not None
+      and example_applicability.startswith("applicable")
+      and "|" not in example_applicability,
+      f"{EXAMPLE} Applicability 必須是 applicable(釘死;範例命中多條觸發條件)",
+      f"實得={example_applicability!r}")
+check(bool(example_text and re.search(r"^- Risk: high", example_text, re.M)),
+      f"{EXAMPLE} 仍是 Risk: high(範例被降級 → 觸發條件⑨消失,必須顯性失敗而非靜默跳過)")
 
 # ── 5. Example 三張表的必要欄位存在 ────────────────────────────────────────
 if example_applicability and example_applicability.startswith("applicable"):
@@ -293,6 +301,13 @@ if example_applicability and example_applicability.startswith("applicable"):
                   f"example Stage 7 Standards Axis 有查「{axis_needle}」")
         check("Design Boundary Contract 逐條對照 diff" in example_review,
               "example Stage 7 Spec Axis 有逐條對照 Design Boundary Contract")
+
+# 檢查數地板:防「條件式 gating 讓整組檢查靜默不跑卻照樣 exit 0」再度發生。
+# 數字是實測下限(目前 110);合法新增檢查只會讓它變大,不會變小。
+MIN_CHECKS = 100
+check(checks >= MIN_CHECKS,
+      f"執行的結構檢查數 ≥ {MIN_CHECKS}(防條件式 gating 靜默跳過整組)",
+      f"實得 {checks} —— 有檢查沒跑到,先查是不是某個 if 把整段擋掉了")
 
 print("=== Design Boundary Contract 結構守衛 ===")
 print(f"  • root: {root}")
