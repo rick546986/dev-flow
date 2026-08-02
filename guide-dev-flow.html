@@ -556,8 +556,8 @@
     貼的文字。完成 = 每 S 有實跑證據且與觀測方式相符(無外部現象者註明理由)。
     2c. <strong>Final Fresh Run</strong>:確認 Verification Evidence 節由 4-spec Verification Profile
     指名的 entry point 一次 fresh run 產出、Source SHA = 當下 HEAD;跑
-    <code>scripts/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD) --review-file --require-layer &lt;Profile Required 層,逐層一個 flag&gt;</code> 全綠
-    (Required 層須逐層帶入命令,未實跑由機械擋下,不靠自律)。
+    <code>docs/dev/tools/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD) --review-file --require-layer &lt;Profile Required 層,逐層一個 flag&gt;</code> 全綠
+    (母版在 <code>scripts/</code>;Required 層須逐層帶入命令,未實跑由機械擋下,不靠自律)。
     完成 = gauntlet 輸出在案。
     2d. <strong>Operational Walkthrough</strong>:以各 S 的 Operational Context 為腳本親自走一遍
     「人的工作」,逐列檢查六條 —— 技術上通過但人無法完成工作 / 看得到但沒有決策權 /

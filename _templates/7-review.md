@@ -27,9 +27,9 @@ updated:
 >    貼的文字。完成 = 每 S 有實跑證據且與觀測方式相符(無外部現象者註明理由)。
 > 2c. **Final Fresh Run**:確認 Verification Evidence 節由 4-spec Verification Profile
 >    指名的 entry point 一次 fresh run 產出、Source SHA = 當下 HEAD;跑
->    `scripts/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD)
+>    `docs/dev/tools/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD)
 >    --review-file --require-layer <Profile Required 層,逐層一個 flag>` 全綠
->    (Required 層須逐層帶入命令,未實跑由機械擋下,不靠自律)。
+>    (母版在 `scripts/`;Required 層須逐層帶入命令,未實跑由機械擋下,不靠自律)。
 >    完成 = gauntlet 輸出在案。
 > 2d. **Operational Walkthrough**:以各 S 的 Operational Context 為腳本親自走一遍
 >    「人的工作」,逐列檢查六條 —— 技術上通過但人無法完成工作 / 看得到但沒有決策權 /
@@ -66,7 +66,7 @@ updated:
 
 ## Verification Evidence
 <!-- Final Fresh Run 產出(契約正本:notes/design/evidence-gauntlet.md §6/§8;
-     機械檢查:scripts/devflow-evidence-gauntlet.sh,E1–E12)。四欄非空;
+     機械檢查:scripts/devflow-evidence-gauntlet.sh,E1–E13)。四欄非空;
      Status 只能 pass | fail | unverified | n-a;pass 列必有非空 Command 與含數字的
      Result(數字非形容詞);unverified/n-a 必附 Skipped reason;coverage 層 Result
      用 changed-line covered/total 分數 —— changed-line coverage = 本次變更的主要
