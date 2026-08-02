@@ -52,8 +52,21 @@ Design Boundary Contract 補的就是這一段,且**只補這一段**:
 | 11 | 有狀態機或複雜錯誤恢復流程 | State/Data flow + Error handling + Test seam |
 
 **Fast lane 規則**:Fast lane **預設**可以 `n-a`,但命中上述任一條時**仍必須填**;
-不得以「這是 fast lane」當跳過理由。理由:觸發條件本身多與「自動升 Full」清單重疊
-(見 `_templates/4-spec.md` Lane 規則),真的全未命中的 feature 才是 fast lane 常態。
+不得以「這是 fast lane」當跳過理由。
+
+但要說清楚它與「自動升 Full」的實際關係,別給人錯誤預期(2026-08 校正:先前寫成
+「多與自動升 Full 重疊」是不準確的):
+
+| | 觸發條件 | 與 4-spec「自動升 Full」清單的關係 |
+|---|---|---|
+| 已被 lane 攔下 | ②公開 API、④schema migration、⑦Transaction/Concurrency/Lock、⑧新 capability、⑨Risk high | 命中即自動升 Full,**根本不會是 fast lane**,所以這五條對 fast lane 沒有額外負擔 |
+| lane 攔不到 | ①跨模組、③跨模組 Interface、⑤Queue/Event/Scheduler、⑥外部整合、⑩三模組以上、⑪狀態機 | **可以在合法的 fast lane 變更上命中** —— 這六條才是 fast lane 真正會遇到的 |
+
+對第二類,規則不放寬(仍必須填),但**填法明確放寬**:fast lane 命中時允許
+**最小填法** —— 三張表**只填與該變更直接相關的那一到兩列**,用不到的表寫 `—`,
+Design Constraints 只寫「禁止」與「Known design limit」兩項。
+判準:一個 ≤2 檔的 bugfix 若跨了模組邊界,它需要的是「別把依賴方向弄反」這一句,
+不是一份架構文件。要求超過這個程度就是把 fast lane 拖成 full lane,屬於設計錯誤。
 
 **與 Feature Risk 的關係**:`Risk: high` 是觸發條件之一(第 9 條),不是唯一條件。
 `Risk: normal` 但命中第 1～8、10、11 任一條,一樣要填。

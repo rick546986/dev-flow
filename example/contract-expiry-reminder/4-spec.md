@@ -193,9 +193,9 @@ Owner confirmation:rick 確認上列兩場已 ACCEPTED 的 Demo 場景明示排�
 |---|---|---|---|---|---|
 | `service.ListExpiring` | 依 `days` 與登入者算出到期未續約清單與剩餘天數 | ← handler;→ `repo.Contract` | stateless;讀 `contracts` → 回列表 | 讀取錯誤原樣往上傳,不吞成空列表 | `go test ./internal/... -run TestExpiring`(可注入固定 today 驗「10 天」) |
 | `handler.PatchContractStatus` | 解析目標狀態、強制主管授權、呼叫 store、組回應 | ← HTTP;→ `repo.ContractStatus` | stateless;授權判斷不落地 | 授權失敗 → 403 並中止(不進交易);store 錯誤往上傳 | `go test ./internal/... -run TestRenewalStatus_S4`(權限分支) |
-| `repo.ContractStatus` | 單一交易內寫狀態 + 追加歷程;唯一寫入點 | ← handler | 狀態住 DB;歷程 append-only(不覆寫、不去重) | 交易失敗整筆回滾,不留半套 | `go test ./internal/... -run TestRenewalStatus_S5`(讀取路徑歷程筆數零新增) |
+| `repo.ContractStatus` | 單一交易內寫狀態 + 追加歷程;唯一寫入點 | ← handler | 狀態住 DB;歷程 append-only(不覆寫、不去重) | 交易失敗整筆回滾,不留半套(呼叫端只看到成功或完全沒發生) | 交易邊界可測:`TestRenewalStatus_S4` 斷言「狀態值變更」與「歷程 +1」同時成立;在 repo 層注入寫入失敗即可驗回滾後狀態與歷程都不變。讀取零副作用由 `TestRenewalStatus_S5_ViewDoesNotComplete` 以歷程筆數斷言 |
 | `ExpiringContractsCard` | 卡片列渲染、空狀態文案、列內標記選單與灰階提示 | ← `Dashboard.tsx`;→ Contract API | 前端不保存狀態真相,每次以 API 回應為準(中斷後重開即為最後成功值) | API 非 2xx 時本期無專用錯誤畫面(Known design limit) | `npm test -- ExpiringContractsCard`(S-2 空狀態、S-6 灰階提示) |
-| e2e 流程 | 真瀏覽器走完登入 → 卡片 → 詳情 | 全鏈路 | — | — | `npx playwright test e2e/expiring-contracts.spec.ts` |
+| `e2e/expiring-contracts.spec.ts` | 端到端證據:真瀏覽器走完登入 → 卡片 → 詳情,證明三層接起來真的會動 | → Dashboard UI(經瀏覽器);不直呼任何內部模組 | stateless;每次自建測試資料再清掉,不依賴殘留狀態 | 失敗即中止並保留 trace,**不吞錯、不重試**(重試會把 flaky 藏起來) | 本身就是 seam:`npx playwright test e2e/expiring-contracts.spec.ts`,斷言取值照 S-1／S-3 觀測欄 |
 
 ### Design Constraints
 

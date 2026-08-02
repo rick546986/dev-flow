@@ -33,13 +33,19 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 >
 > **Design Boundary 摘錄規則(條件式;沿用既有 `Boundaries:` 欄,不新增 Task 欄位)**:
 > 當 4-spec 的 Design Boundary Contract 為 `applicable` 時,每個相關 T 的 `Boundaries:`
-> 必須摘錄**與該 T 有關的最小限制**,涵蓋(該 T 用得到的才寫,用不到的不列):
+> 必須摘錄**與該 T 有關的最小限制**,涵蓋:
 > - 允許修改的 Module。
 > - 禁止新增的依賴方向。
 > - 不得跨越的 Data Ownership。
 > - 必須維持的 Interface。
 > - Transaction／Consistency 限制。
 > - Error／State Test Seam。
+>
+> 「最小」是指**只挑與該 T 相關的那幾條**,不是「可以省略負向約束」——
+> `Forbidden dependencies`、「不得跨越」「必須維持」這類**禁區恰恰是本欄的重點**:
+> 它們正是該 T 最可能誤踩、而 Stage 6 的 Design Boundary Check ①～④要拿來對照的基準。
+> 該 T 真的碰不到的條目才略過,碰得到就必須寫進來,否則 reviewer 只能回頭讀 4-spec 全文
+> (那就違反 T 自足律)。
 >
 > **不得把完整 Design Boundary Contract 複製進每個 T**,只摘錄該 T 的最小子集 ——
 > 執行者靠這一欄就知道自己的禁區,不必回頭讀 4-spec 全文。契約為 `n-a` 時本規則不適用,

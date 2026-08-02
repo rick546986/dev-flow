@@ -101,7 +101,9 @@ done
 if [ "$STATUS" -ne 0 ]; then
   echo "  ❌ $FAILED"
   echo
-  echo "⛔ devflow-check($MODE): FAILED at 「$FAILED」"
+  # ${FAILED} 必須帶大括號:全形「」緊接 $FAILED 時,bash 會把後面的多位元組字元
+  # 一起吃進變數名(FAILED」),配上 set -u 就是 unbound variable —— 失敗訊息永遠印不出來。
+  echo "⛔ devflow-check($MODE): FAILED at 「${FAILED}」"
   echo "   fail-fast:該組之後的檢查未執行。原始錯誤輸出在上方,未被摘要覆蓋。"
   exit 1
 fi

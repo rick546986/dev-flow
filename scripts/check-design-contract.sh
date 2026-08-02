@@ -207,6 +207,42 @@ if readme_text is not None:
     check(SECTION in readme_text, f"README 有 {SECTION} 摘要")
     check(CANON in readme_text, f"README 連到語意正本 {CANON}")
 
+# ── 7b. 觸發條件兩份清單不得單邊漂移 ───────────────────────────────────────
+# 教訓來源:本輪 fresh review(A-L2 / C-4)指出「觸發條件同時存在多份無人比對的副本」
+# 正是這次剛從 notes/design/vnext-shared-contract.md 拔掉的失效模式。
+# 因此兩份保留的清單(4-spec 頂註的操作用 ①–⑪、語意正本的判準表)必須機械對帳:
+#   ①條數相同且為 11;②每條的關鍵詞在兩邊都出現。README 不得再有第三份枚舉。
+TRIGGER_KEYWORDS = [
+    "跨模組", "公開 API", "Interface", "migration", "資料所有權",
+    "Queue", "Event", "Scheduler", "Background job",
+    "外部服務", "Transaction", "Concurrency", "Lock", "Idempotency",
+    "Network", "Filesystem", "Subprocess", "Credential",
+    "Risk = high", "三個以上", "狀態機",
+]
+
+canon_text = read(CANON)
+if template_block is not None and canon_text is not None:
+    numbered = re.findall(r"[①②③④⑤⑥⑦⑧⑨⑩⑪]", template_block)
+    check(len(set(numbered)) == 11,
+          f"{TEMPLATE} 的觸發條件是 11 條(①–⑪)", f"實得 {len(set(numbered))} 個不同編號")
+    canon_rows = re.findall(r"^\| (\d+) \| ", canon_text, re.M)
+    check(len(canon_rows) >= 11 and canon_rows[:11] == [str(i) for i in range(1, 12)],
+          f"{CANON} 的觸發條件表是 11 列且編號 1–11", f"實得 {canon_rows[:12]}")
+    for keyword in TRIGGER_KEYWORDS:
+        in_template = keyword.lower() in template_block.lower()
+        in_canon = keyword.lower() in canon_text.lower()
+        check(in_template and in_canon,
+              f"觸發條件關鍵詞「{keyword}」兩份清單都有(防單邊漂移)",
+              f"4-spec={in_template} canon={in_canon}")
+    # README 只准摘要,不准第三份枚舉。README 本來就用圈號做各種小列舉(§3 四原則、
+    # §7 三處摘要…),所以不能一律禁圈號;改盯「11 條清單才會用到的尾號」——
+    # 出現 ⑨/⑩/⑪ 就代表有人在 README 又抄了一份十一條觸發條件。
+    if readme_text is not None:
+        leaked = [mark for mark in ("⑨", "⑩", "⑪") if mark in readme_text]
+        check(not leaked,
+              "README 未出現第三份觸發條件枚舉(11 條清單的尾號 ⑨⑩⑪)",
+              f"出現={leaked}")
+
 # ── 8. Stage 5／6／7 有承接規則 ────────────────────────────────────────────
 handoffs = [
     ("_templates/5-tasks.md", ["Design Boundary", "Boundaries:"],
@@ -222,6 +258,19 @@ for rel, needles, label in handoffs:
     check(text is not None, f"{rel} 存在")
     for needle in needles:
         check(text is not None and needle in text, f"{label}:{rel} 含「{needle}」")
+
+# example 端:契約為 applicable 時,5-tasks 的相關 T 必須真的有摘錄
+# (fresh review C-1:承接檢查只打 _templates,example 自相矛盾也會全綠)
+if example_applicability and example_applicability.startswith("applicable"):
+    example_tasks = read("example/contract-expiry-reminder/5-tasks.md")
+    check(example_tasks is not None, "example 5-tasks 存在")
+    if example_tasks is not None:
+        blocks = re.split(r"(?=^## T-\d+)", example_tasks, flags=re.M)[1:]
+        check(bool(blocks), "example 5-tasks 可解析出 T 區塊")
+        excerpted = [b for b in blocks if "Design Boundary" in b]
+        check(len(excerpted) == len(blocks),
+              "example 4-spec 契約為 applicable → 每個 T 的 Boundaries 都摘錄了設計邊界",
+              f"{len(excerpted)}/{len(blocks)} 個 T 有摘錄")
 
 print("=== Design Boundary Contract 結構守衛 ===")
 print(f"  • root: {root}")

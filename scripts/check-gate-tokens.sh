@@ -87,7 +87,11 @@ else:
     tail = readme[starts[0].start():]
     end = re.search(r"^### ", tail, re.M)
     if not end:
-        die("README §7 找不到區段終點(下一個 ### 子標題);不得靜默吃到檔尾")
+        die("README §7 找不到區段終點(§7 之後的第一個 `### ` 子標題,目前是"
+            "「### 強制力對照(誰在擋)」)。這個錯誤幾乎都不是 gate 條件出問題,"
+            "而是有人把該子標題改名/刪掉/升成 `## `,或在 §7 前面新增了一個 `## 7.`。"
+            "修法:恢復 §7 底下至少有一個 `### ` 子標題,或同步更新本守衛的區段規則。"
+            "不得靜默吃到檔尾 —— 那會讓 §8 之後的粗體字被誤當成 gate token。")
         section = ""
     else:
         section = tail[:end.start()]
@@ -137,6 +141,40 @@ for label in ORDER:
             die(f"{label} 多了 token:{added}")
         if not missing and not added:
             die(f"{label} token 順序變動:期望 {expected_norm},實得 {actual_norm}")
+
+# ── G3「Evidence 契約全過」八點的本體守衛 ──────────────────────────────────
+# 為什麼加(2026-08 fresh review C-7 / A-L3):粗體錨只釘住「Evidence 契約全過」這幾個字,
+# 錨底下那八點的**內容**沒有任何守衛。本輪把 notes/design/vnext-shared-contract.md 裡
+# 唯一的第二份副本收斂掉之後,README §7 成了八點的唯一存放處 —— 少一點、被改寫、
+# 或整段消失都不會有任何測試變紅。所以在這裡補一道結構斷言:條數 + 每點的關鍵詞。
+G3_POINTS = [
+    "Final Fresh Run",          # 1. 綁定目前受審的 source SHA
+    "Required Layer = pass",    # 2.
+    "Conditional Layer",        # 3. 已觸發者 = pass
+    "不得存在任何 fail",          # 4.
+    "unverified",               # 5. Required Layer 不得為 unverified 或 n-a
+    "Explicitly Excluded",      # 6. 可為 n-a 但必須附理由
+    "Optional Layer",           # 7. 可為 unverified 但須誠實標示
+    "Standards Axis",           # 8. Gauntlet PASS 不取代雙軸與 Walkthrough/Matrix
+]
+if section:
+    anchor = re.search(r"G3 錨定義", section)
+    if not anchor:
+        die("§7 找不到「G3 錨定義」段落(八點的唯一存放處)")
+    else:
+        tail_text = section[anchor.end():]
+        stop = re.search(r"^\s*八點中的", tail_text, re.M)
+        body = tail_text[:stop.start()] if stop else tail_text
+        points = re.findall(r"^\s*(\d+)\.\s", body, re.M)
+        if points != [str(i) for i in range(1, 9)]:
+            die(f"§7「G3 錨定義」的編號點不是 1–8:實得 {points}")
+        else:
+            print(f"  ✓ G3 錨定義:8 點齊(1–8)")
+        missing = [kw for kw in G3_POINTS if kw not in body]
+        if missing:
+            die(f"§7「G3 錨定義」八點缺關鍵詞(可能被改寫或刪除):{missing}")
+        else:
+            print(f"  ✓ G3 錨定義:八點關鍵詞全在")
 
 if problems:
     print()

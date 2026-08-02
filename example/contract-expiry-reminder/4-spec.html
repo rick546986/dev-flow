@@ -339,8 +339,8 @@
 <td>單一交易內寫狀態 + 追加歷程;唯一寫入點</td>
 <td>← handler</td>
 <td>狀態住 DB;歷程 append-only(不覆寫、不去重)</td>
-<td>交易失敗整筆回滾,不留半套</td>
-<td><code>go test ./internal/... -run TestRenewalStatus_S5</code>(讀取路徑歷程筆數零新增)</td>
+<td>交易失敗整筆回滾,不留半套(呼叫端只看到成功或完全沒發生)</td>
+<td>交易邊界可測:<code>TestRenewalStatus_S4</code> 斷言「狀態值變更」與「歷程 +1」同時成立;在 repo 層注入寫入失敗即可驗回滾後狀態與歷程都不變。讀取零副作用由 <code>TestRenewalStatus_S5_ViewDoesNotComplete</code> 以歷程筆數斷言</td>
 </tr>
 <tr>
 <td><code>ExpiringContractsCard</code></td>
@@ -351,12 +351,12 @@
 <td><code>npm test -- ExpiringContractsCard</code>(S-2 空狀態、S-6 灰階提示)</td>
 </tr>
 <tr>
-<td>e2e 流程</td>
-<td>真瀏覽器走完登入 → 卡片 → 詳情</td>
-<td>全鏈路</td>
-<td>—</td>
-<td>—</td>
-<td><code>npx playwright test e2e/expiring-contracts.spec.ts</code></td>
+<td><code>e2e/expiring-contracts.spec.ts</code></td>
+<td>端到端證據:真瀏覽器走完登入 → 卡片 → 詳情,證明三層接起來真的會動</td>
+<td>→ Dashboard UI(經瀏覽器);不直呼任何內部模組</td>
+<td>stateless;每次自建測試資料再清掉,不依賴殘留狀態</td>
+<td>失敗即中止並保留 trace,<strong>不吞錯、不重試</strong>(重試會把 flaky 藏起來)</td>
+<td>本身就是 seam:<code>npx playwright test e2e/expiring-contracts.spec.ts</code>,斷言取值照 S-1／S-3 觀測欄</td>
 </tr>
 </tbody>
 </table></div>
