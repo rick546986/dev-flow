@@ -502,6 +502,7 @@ migration 只加欄與加表,未改既有欄位型別或語意。</li>
 <p><strong>PASS</strong>(F-1 為 🟡,開 fast-lane follow-up,不擋出貨)</p>
 <h2>Exit Checklist</h2>
 <ul>
+<li>[x] Design Boundary finding 全數處置:契約為 <code>applicable</code>,Standards Axis 四查與 Spec Axis 逐條對照<strong>皆符合</strong>,無未經授權的 Boundary 變更 → 🔴 0 筆、🟡 0 筆,無待處置項。(三條 Known design limit 是 4-spec 已授權且本次維持未解的既有限制,不是未授權變更;仍逐條列在下方 known limits。)</li>
 <li>[x] Quiz(不可逆改動必做;其餘 full lane 選配,fast 免):本次新增對外 API endpoint(<code>GET /contracts/expiring</code>、<code>PATCH /contracts/:id/status</code>)與 <code>renewal_status</code> migration,shipped 後即成對外契約/schema,移除屬破壞性變更 → 不可逆,Quiz 必做 —— AI 出 5 題(30 天定義來源/為何不做 email/D-1 為何不加索引/空狀態行為/「已續約」為何僅主管),<code>&lt;reviewer-a&gt;</code> 全對</li>
 <li>[x] PR #142 → develop</li>
 <li>[x] 4-spec delta 已併入 <code>docs/specs/contracts.md</code>(R-1~R-3 貼入,標 source)</li>

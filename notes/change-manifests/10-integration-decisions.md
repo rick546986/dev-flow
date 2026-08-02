@@ -72,7 +72,29 @@
 | ID-11 | **accepted** | benchmark 歷史紀錄註維持 | 2026-08-02 |
 | ID-12 | **superseded** | OC-1/OC-2:G2、G3 正式升格(含 plugin gate-consistency 同步),不再用「備審材料」過渡措辭 | 2026-08-02 |
 
-## Current Decisions(現在真正生效的規則)
+## Current Decisions(歷史決策紀錄 —— **不是執行期正本**)
+
+> ⚠️ **正本歸屬(2026-08 fresh review F-7 校正)**:本節原本的標題是
+> 「現在真正生效的規則」,那個措辭讓它讀起來像規則正本 —— 但它是 **2026-08-02 那一輪
+> integration 的決策快照**,沒有任何腳本讀它、也沒有任何守衛盯它,而它**已經漂了**:
+> 下方第 4 條的「升級清單」少了正本裡的「資料刪除」一項
+> (正本 `_templates/4-spec.md`「Lane 規則」節是 11 項,這裡是 10 項)。
+>
+> 本節保留是為了回答「**當時為何這樣決定**」,不得拿來反推現行規則。
+> 逐條的執行期正本:
+>
+> | 本節條目 | 執行期正本 |
+> |---|---|
+> | 1 G3 正式條件(OC-1) | `README.md` §7「G3 錨定義」八點(由 `scripts/check-gate-tokens.sh` 釘死條數與必含片語) |
+> | 2 G2 正式條件(OC-2A/2B) | `README.md` §7「G2 錨定義」 |
+> | 3 Wave Base 語意(OC-3) | `notes/design/parallel-stage6.md` |
+> | 4 Profile lane 規則(OC-4) | `_templates/4-spec.md`「Lane 規則」節 + `README.md` §7「G2 錨定義」 |
+> | 5 Ledger Retention(OC-5) | `notes/design/observability.md` + `observability/` |
+> | 6-11(Risk/Demo/tags/status/coverage/欄位限制) | 各對應模板與 `notes/design/` 機制正本 |
+> | 12 契約握手 | `devflow-contract.json` |
+>
+> 兩邊有出入一律以正本為準。**要改規則請改正本,不要改本節**——
+> 改本節不會有任何測試變紅,那正是它不該被當正本的原因。
 
 1. **G3 正式條件**(OC-1):Final Fresh Run 綁定受審 source SHA;Required Layer 全 pass(不得 unverified/n-a);已觸發 Conditional Layer 全 pass;不得存在 fail;Excluded 可 n-a 但附理由;Optional 可 unverified 但誠實標示;Gauntlet PASS 不取代雙軸 Review/Operational Walkthrough/Coverage Matrix/現象複驗。
 2. **G2 正式條件**(OC-2A/2B):Verification Profile 依 lane 正確填寫;Stage 3 trigger 成立時 Human verdict 必須 ACCEPTED(無 trigger → N/A+原因可過;REVISE/NOT_REVIEWED → 不得過;跳過需 Owner Call);Agent 不得自填 ACCEPTED。

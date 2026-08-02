@@ -252,6 +252,7 @@ Design Boundary Contract 為 `applicable`,本軸另查四項(4-spec Design Bound
 **PASS**(F-1 為 🟡,開 fast-lane follow-up,不擋出貨)
 
 ## Exit Checklist
+- [x] Design Boundary finding 全數處置:契約為 `applicable`,Standards Axis 四查與 Spec Axis 逐條對照**皆符合**,無未經授權的 Boundary 變更 → 🔴 0 筆、🟡 0 筆,無待處置項。(三條 Known design limit 是 4-spec 已授權且本次維持未解的既有限制,不是未授權變更;仍逐條列在下方 known limits。)
 - [x] Quiz(不可逆改動必做;其餘 full lane 選配,fast 免):本次新增對外 API endpoint(`GET /contracts/expiring`、`PATCH /contracts/:id/status`)與 `renewal_status` migration,shipped 後即成對外契約/schema,移除屬破壞性變更 → 不可逆,Quiz 必做 —— AI 出 5 題(30 天定義來源/為何不做 email/D-1 為何不加索引/空狀態行為/「已續約」為何僅主管),`<reviewer-a>` 全對
 - [x] PR #142 → develop
 - [x] 4-spec delta 已併入 `docs/specs/contracts.md`(R-1~R-3 貼入,標 source)

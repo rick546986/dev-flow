@@ -142,6 +142,14 @@ updated:
 <!-- PASS / REQUEST_CHANGES(列 🔴) -->
 
 ## Exit Checklist(全勾才算 shipped)
+- [ ] **Design Boundary finding 全數處置**(契約 `applicable` 時必勾;`n-a` 時記 n-a):
+      未經授權的 Boundary 變更**不論 🔴 或 🟡 都不得帶著出貨** —— 逐條落在下列三種之一:
+      ①已修正(diff 已回到契約內);②記 **L2** 回 G2 改契約後重審;
+      ③**Owner 明示接受或 park**:寫下 owner、理由、追蹤位置
+      (STATUS 待辦或 7-review known limits,擇一,須寫得出實際落點)。
+      無記錄的 🟡 = 未處置,不得勾。理由:PASS 門檻只寫「無 🔴」,
+      而未授權 Boundary 變更的預設分級是 🟡 —— 沒有這一條它就會靜默出貨
+      (2026-08 fresh review F-5)
 - [ ] Quiz(**不可逆改動必做**;其餘 full lane 選配,fast 免):AI 就本次變更出 3-5 題考 approver(改了什麼/為何/邊界),全對才准 merge
 - [ ] PR → develop(feature branch,禁直上 master)
 - [ ] 4-spec delta 已併入 `docs/specs/<domain>.md`
