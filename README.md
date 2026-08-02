@@ -20,6 +20,11 @@ feature 走 7 份文檔、過 3 道 gate(G1 方向核准、G2 契約審查、G3 
   [dev-flow](https://rick546986.github.io/dev-flow/guide-dev-flow.html)、
   [dev-talk](https://rick546986.github.io/dev-flow/guide-dev-talk.html)
   ——repo 內任一 html(含 example 的 twin)都可把路徑接在 `rick546986.github.io/dev-flow/` 後線上檢視
+- `scripts/` = 機械檢查(五支檢查腳本 + `devflow-evidence-gauntlet.sh` 母版)
+- `observability/` = Attempt Ledger 工具(devflow-obs)+ `agent_event` schema
+- `tests/parallel-stage6/` = T 級並行的可執行契約(contract_ref + fixtures)
+- `notes/design/` = 各機制設計正本(並行/觀測/gauntlet/real-world)
+- `devflow-contract.json` = 版本握手正本(方法論 ↔ runtime capability)
 
 **採用方式**:最低配是把模板複製進專案、人工照本 README 走流程;搭配 Claude Code 的
 dev-flow / dev-talk plugin 可用 `/dev-talk`、`/dev-flow` 指令自動導引與守衛(plugin
@@ -155,7 +160,9 @@ RED → GREEN → scope check → Verify
   `devflow-postbash`(PostToolUse Bash:git status 對照 + 內容 hash,抓 shell 寫入)、
   `devtalk-guard`(盲原則掃描)。L1 出口 = `devflow-exec.sh allow <file> --reason`;
   L2 = `stop`。收尾 `stop` 後全部沉睡。自測:`hooks/selftest.sh`(動態發現案例,可重跑)。
-  界線:紀律工具非安全沙箱,詳 `dev-setup-record.html`。
+  界線:紀律工具非安全沙箱,詳 `dev-setup-record.html`。跨版本相容由
+  `devflow-exec.sh doctor` 依 `devflow-contract.json`(2.0.0)做 fail-closed 握手;
+  舊 sequential 專案 = legacy compatibility mode。
 - **守衛與並行**:守衛狀態以「當前工作樹」為單位(`.devflow/exec.json` + git-dir sentinel),
   一個工作樹同一時間只武裝一個模組。武裝中他模組 `start` → 一律拒絕(不靜默覆寫);
   同模組重跑 `start` = re-arm,允許(5-tasks 改動後重釘 scope 的正常路徑)。
@@ -192,6 +199,11 @@ RED → GREEN → scope check → Verify
   ```text
   ACCEPTED Tasks → Final Fresh Gauntlet → G3
   ```
+
+  runtime 子命令:`parallel-init` / `plan` / `wave-open` / `wave-close` /
+  `task-candidate` / `task-state` / `task-integrate` / `task-rework` /
+  `rebuild-plan` / `candidate` / `gate` / `review`,詳 `devflow-exec.sh` usage 與
+  `notes/design/parallel-stage6.md`。
 - **接收審查**(G3 打回時):逐 F 驗證後才動手 —— 同意的改並一句說明為何對;
   不同意的擺論證,不盲改(禁 performative fix)。
 - **判級疑義**:分不清 L1/L2 → 一律當 L2。Diff Budget 超支本身非偏差,
@@ -322,6 +334,9 @@ RED → GREEN → scope check → Verify
   7. Optional Layer 可為 unverified,但必須誠實標示。
   8. Gauntlet PASS 不取代 Standards Axis / Spec Axis / Operational Walkthrough /
      Coverage Matrix / 真實現象複驗。
+
+  八點由 `scripts/devflow-evidence-gauntlet.sh`(1.1.0,E1–E13;採用專案散發於
+  `docs/dev/tools/`)機械驗證。
 - frontmatter 是狀態機:`draft → in-review → approved → superseded/shipped`。
 - 已知限界(明文接受,不另設機制):①Stage 1 討論期的自判無獨立節(單一機制
   原則,不在 1-discussion 設節)—— 由 2-decision 步 0 接手盤點「連同討論期自判
@@ -366,6 +381,10 @@ RED → GREEN → scope check → Verify
 | 7 驗證產檔/coverage matrix | sonnet | medium | 雙軸審材料準備 |
 | G1/G2/G3 審查與 verdict | (不指定模型) | high | 見下條;順序正本在 §7 |
 
+- **「記帳」= Attempt Ledger**(devflow-obs,`agent_event` schema 1.1;事件經
+  `devflow-exec.sh event` 寫入):6-notes 執行軌跡由 ledger 衍生,禁手動雙寫;
+  sequential v1 無 run_id 時事件步 N/A(= KL-1)。細節見
+  `notes/design/agent-attempt-observability.md`。
 - **G1/G2/G3 審查與 verdict**:依 §7 的人類→fresh-context reviewer Agent→有記錄的
   owner 自審順序;Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。
 - **effort 定位**:low = 機械執行(照 spec 寫碼、格式轉換、抄錄);medium = 一般分析
