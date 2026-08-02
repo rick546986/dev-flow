@@ -60,6 +60,8 @@ T-5 --> T-6              |
 <li>Files: <code>internal/handler/contract.go</code>, <code>internal/service/contract.go</code>, <code>internal/repo/contract.go</code></li>
 <li>Verify: <code>go test ./internal/... -run TestExpiring</code></li>
 <li>Blocked-by: —</li>
+<li>Intent: 系統多了到期查詢 API:<code>GET /contracts/expiring?days=30</code> 回傳登入者名下 30 天內到期且未續約的合約;無符合者回 200 + 空列表,不報錯。</li>
+<li>Boundaries: 查詢邏輯抽在 <code>service.ListExpiring</code>(2-decision:供未來 cron 複用);複用既有 <code>idx_contracts_end_date</code>,不另建索引;<code>days</code> 參數化只為測試方便,自訂天數仍 Out of Scope。</li>
 </ul>
 <h2>T-2 前端:dashboard 到期卡片(含空狀態)</h2>
 <ul>
@@ -68,6 +70,8 @@ T-5 --> T-6              |
 <li>Files: <code>src/components/ExpiringContractsCard.tsx</code>, <code>src/pages/Dashboard.tsx</code></li>
 <li>Verify: <code>npm test -- ExpiringContractsCard</code></li>
 <li>Blocked-by: T-1</li>
+<li>Intent: dashboard 多了到期卡片:列出合約名稱與剩餘天數「N 天」;零筆時顯示空狀態「近期無到期合約」,不隱藏整卡、不顯示錯誤。</li>
+<li>Boundaries: 空狀態文案照 4-spec S-2 寫死,不得自創;剩餘天數顯示「N 天」不含小時(4-spec Drafting Decisions)。</li>
 </ul>
 <h2>T-3 卡片列點擊 → 合約詳情</h2>
 <ul>
@@ -76,6 +80,8 @@ T-5 --> T-6              |
 <li>Files: <code>src/components/ExpiringContractsCard.tsx</code></li>
 <li>Verify: <code>npm test -- ExpiringContractsCard</code></li>
 <li>Blocked-by: T-2</li>
+<li>Intent: 卡片每筆合約列可點擊,導向該合約詳情頁 <code>/contracts/:id</code>。</li>
+<li>Boundaries: 照既有 ExpiringContractsCard pattern,不動 <code>src/pages/Dashboard.tsx</code>。</li>
 </ul>
 <h2>T-4 e2e:登入 → dashboard 看到到期合約 → 點入詳情</h2>
 <ul>
@@ -84,6 +90,8 @@ T-5 --> T-6              |
 <li>Files: <code>e2e/expiring-contracts.spec.ts</code></li>
 <li>Verify: <code>npx playwright test e2e/expiring-contracts.spec.ts</code></li>
 <li>Blocked-by: T-3</li>
+<li>Intent: 系統多了可重複執行的端到端證據:真瀏覽器走完「登入 → dashboard 看到到期合約 C 與『10 天』→ 點擊導向 <code>/contracts/C.id</code>」全鏈路。</li>
+<li>Boundaries: 只新增 <code>e2e/expiring-contracts.spec.ts</code>,不動實作碼;斷言取值照 4-spec S-1/S-3 觀測欄。</li>
 </ul>
 <h2>T-5 建狀態標記 API:renewal_status migration + 歷程表 + 權限檢查</h2>
 <ul>

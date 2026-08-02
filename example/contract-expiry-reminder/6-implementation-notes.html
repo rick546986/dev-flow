@@ -147,6 +147,9 @@
 <li>07-23 | T-6 | review PASS 後提交歷程查詢 + 看過零副作用測試 | <code>e8b07c3</code></li>
 <li>07-23 | T-7 | review PASS 後提交卡片狀態欄 + 「已續約」灰階 | <code>f92c1d5</code></li>
 </ul>
+<h2>執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)</h2>
+<p>(dev-run 案本節由 <code>devflow-obs</code> 從 ledger 衍生,禁手填;本例為手動實作 —— 無 dev-run
+ledger,依模板規則軌跡欄留白,不虛構模型歷史。)</p>
 <h2>TDD Evidence</h2>
 <!-- 每個「T × Covers S」各一筆;同一 S 在不同 T/層次的 RED→GREEN 不得共用。 -->
 <h3>T-1 / S-1</h3>
@@ -381,6 +384,9 @@ T-5 的 <code>renewal_status</code> migration 是 4-spec Dependencies 明載的�
 對應 diff 無覆蓋索引檔,R-1~R-3/S-1~S-6 均無變動。</li>
 <li>回歸綠? → 是,<code>go test ./...</code> 與 <code>npm test</code> 既有套件全綠(摘要見上)。</li>
 </ol>
+<h2>Review Follow-up(G3 打回時才用)</h2>
+<p>(本例 G3 首輪 PASS(見 7-review Verdict),無打回 F 項 —— 本節留白;F-1 🟡 走
+fast-lane follow-up,不經本節。)</p>
 </main>
 </body>
 </html>

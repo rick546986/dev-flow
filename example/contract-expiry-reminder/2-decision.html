@@ -1,9 +1,11 @@
+<!-- html 外殼:把 md 轉出的 HTML 塞進 <main>,2. 收斂 — 到期提醒的實現方式 換成頁題。
+     自足單檔、無外部資源、深淺色自適應。 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>contract-expiry-reminder · 決策</title>
+<title>2. 收斂 — 到期提醒的實現方式</title>
 <style>
   :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
         --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;}
@@ -50,12 +52,22 @@
     <tr><td>可擴充</td><td>service 抽象保留 B 路</td><td>可加 email</td><td>最強但 overkill</td></tr>
   </table></div>
 
-  <h2>選定方案架構圖</h2>
+  <h2>方案架構圖(比較期並排;A 選定)</h2>
   <pre>
-業務登入 → Dashboard 載入 → GET /contracts/expiring?days=30
-             │                    └→ service.ListExpiring(抽象層,未來 cron 可複用)
-             │                         └→ repo 查 idx_contracts_end_date(8k 筆,p95<50ms)
-             └→ 卡片渲染(到期列表 / 空狀態)
+[A] 登入即時查(選定)
+  業務登入 → Dashboard 載入 → GET /contracts/expiring?days=30
+               │                    └→ service.ListExpiring(抽象層,未來 cron 可複用)
+               │                         └→ repo 查 idx_contracts_end_date(8k 筆,p95<50ms)
+               └→ 卡片渲染(到期列表 / 空狀態)
+
+[B] nightly cron + 通知表
+  cron(nightly) → scan contracts.end_date
+    → write notifications 表(新表)
+  Dashboard 載入 → 讀 notifications 表(可擴充 email)
+
+[C] MQ 事件驅動
+  合約異動 → publish event → MQ(新 infra,違反 constraint)
+    → consumer 判斷到期 → 通知
   </pre>
 
   <h2>Owner Calls(自判裁決區)</h2>
@@ -82,11 +94,35 @@
     <li>C:8k 筆量級用 MQ 過重,且違反「不引入新 infra」。</li>
   </ul>
 
+  <h2>Rationale</h2>
+  <p>量級小(8k 筆,索引查詢 &lt;50ms)、需求只到「看得到」,即時查是最短路徑;
+     service 抽象保住升級路。</p>
+
+  <h2>Risks &amp; Mitigations</h2>
+  <ul>
+    <li>查詢慢拖累 dashboard → prototype 前先 EXPLAIN 驗證;超過 100ms 就加覆蓋索引。</li>
+    <li>UI 形式不確定(badge? 卡片?)→ 交給 3-prototype 用 variants 挑。</li>
+  </ul>
+
   <h2>Success Criteria</h2>
   <ul>
     <li>30 天內到期未續約合約,dashboard 100% 可見。</li>
     <li>dashboard p95 延遲增加 < 100ms。</li>
   </ul>
+
+  <h2>Scope &amp; Non-Goals(定稿)</h2>
+  <ul>
+    <li>In:dashboard 卡片、API、詳情連結。</li>
+    <li>Out:email/LINE、自訂天數、主管彙總報表。</li>
+  </ul>
+
+  <h2>ADR 晉升檢查</h2>
+  <ul>
+    <li>難逆轉:否(service 抽象保住退路)</li>
+    <li>反直覺:否</li>
+    <li>真 trade-off:是</li>
+  </ul>
+  <p>→ 晉升:<strong>否</strong>(留在本檔即可)</p>
 
   <h2>確認紀錄</h2>
   <ul>
