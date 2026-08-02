@@ -18,6 +18,7 @@ updated: 2026-07-23
 - Files finding:改動僅 `internal/handler/contract.go`、`internal/service/contract.go`、`internal/repo/contract.go`。
 - RED→GREEN finding:`T-1 / S-1`、`T-1 / S-2` 各有本 T 的 RED→GREEN 證據且可追溯。
 - Test Integrity finding:none(七項無命中)
+- Design boundary finding:①未授權模組依賴:無 —— 只動 handler→service→repo 三層,方向單向。②Data Owner:未變,本 T 對 `contracts` 唯讀。③Interface/Transaction/Consistency:新增 additive 端點,無交易寫入。④Design Constraints:未違反「GET 路徑不得寫入」;無 Known design limit 被動到。⑤無改變,不需 L2。
 - verdict:PASS
 - correction + re-review after FAIL:N/A
 
@@ -30,6 +31,7 @@ updated: 2026-07-23
 - Files finding:改動僅 `src/components/ExpiringContractsCard.tsx`、`src/pages/Dashboard.tsx`。
 - RED→GREEN finding:`T-2 / S-1`、`T-2 / S-2` 各有前端層 RED→GREEN 證據且可追溯。
 - Test Integrity finding:none(七項無命中)
+- Design boundary finding:①無 —— UI 只呼叫 Contract API,未觸 DB。②未變(UI 不擁有資料)。③未變。④未違反「UI 不得直接觸 DB」。⑤無改變,不需 L2。
 - verdict:PASS
 - correction + re-review after FAIL:N/A
 
@@ -42,6 +44,7 @@ updated: 2026-07-23
 - Files finding:改動僅 `src/components/ExpiringContractsCard.tsx`。
 - RED→GREEN finding:`T-3 / S-3` 有本 T 的 RED→GREEN 證據且可追溯。
 - Test Integrity finding:none(七項無命中)
+- Design boundary finding:①無。②未變。③未變(純導覽,零寫入)。④未違反。⑤無改變,不需 L2。
 - verdict:PASS
 - correction + re-review after FAIL:N/A
 
@@ -54,6 +57,7 @@ updated: 2026-07-23
 - Files finding:改動僅 `e2e/expiring-contracts.spec.ts`。
 - RED→GREEN finding:`T-4 / S-1`、`T-4 / S-3` 各有 Playwright RED→GREEN 證據且可追溯。
 - Test Integrity finding:none(七項無命中)
+- Design boundary finding:①無(純驗證層,不新增模組依賴)。②未變。③未變。④未違反。⑤無改變,不需 L2。
 - verdict:PASS
 - correction + re-review after FAIL:N/A
 
@@ -66,6 +70,7 @@ updated: 2026-07-23
 - Files finding:改動僅 `migrations/0007_renewal_status.sql`、`internal/handler/contract_status.go`、`internal/repo/contract_status.go`。
 - RED→GREEN finding:`T-5 / S-4` 有本 T 的 RED→GREEN 證據且可追溯。
 - Test Integrity finding:none(七項無命中;特別核對④:測試與實作非同步改寫正確性)
+- Design boundary finding:①無 —— 寫入僅經 `repo.ContractStatus`,UI/service 未繞過。②**新增** owner:`renewal_status` 與狀態歷程表由 `repo.ContractStatus` 獨佔寫入 —— 此為 4-spec 契約已授權的變更,非未授權漂移。③狀態更新與歷程追加確認在同一交易(對照契約要求);migration additive,既有讀取路徑未變。④未違反「授權在 handler 層強制」;Known design limit(stale write 無衝突偵測)維持未修,未被實作悄悄補上。⑤契約已授權,不需 L2。
 - verdict:PASS
 - correction + re-review after FAIL:N/A
 
@@ -78,6 +83,7 @@ updated: 2026-07-23
 - Files finding:改動僅 `internal/handler/contract_status.go`、`internal/repo/contract_status.go`。
 - RED→GREEN finding:`T-6 / S-5` 有本 T 的 RED→GREEN 證據且可追溯。
 - Test Integrity finding:none(七項無命中;特別核對⑤:歷程零新增以真實 repo 查詢驗證,未 mock 核心邏輯)
+- Design boundary finding:①無。②未變。③讀取路徑未進入寫入分支(以歷程筆數零新增斷言)。④未違反「任何 GET 不得寫入」。⑤無改變,不需 L2。
 - verdict:PASS
 - correction + re-review after FAIL:N/A
 
@@ -90,6 +96,7 @@ updated: 2026-07-23
 - Files finding:改動僅 `src/components/ExpiringContractsCard.tsx`。
 - RED→GREEN finding:`T-7 / S-6` 有本 T 的 RED→GREEN 證據且可追溯。
 - Test Integrity finding:none(七項無命中)
+- Design boundary finding:①無。②未變。③未變。④未違反「授權正本在 handler 層,UI 灰階只是呈現」;查詢失敗無專用錯誤畫面的 Known design limit 維持未修(未擅自補)。⑤無改變,不需 L2。
 - verdict:PASS
 - correction + re-review after FAIL:N/A
 

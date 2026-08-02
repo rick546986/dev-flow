@@ -259,8 +259,11 @@ for rel, needles, label in handoffs:
     for needle in needles:
         check(text is not None and needle in text, f"{label}:{rel} 含「{needle}」")
 
-# example 端:契約為 applicable 時,5-tasks 的相關 T 必須真的有摘錄
-# (fresh review C-1:承接檢查只打 _templates,example 自相矛盾也會全綠)
+# example 端:契約為 applicable 時,Stage 5／6／7 三個下游必須**齊頭**回填。
+# (fresh review C-1 + A-M1:承接檢查只打 _templates,唯一參考範例可以自相矛盾卻全綠。
+#  兩位對抗查核者都指出「只補 Stage 5」會讓範例更不自洽 —— 上游宣告 applicable 且已摘錄,
+#  下游卻查無此檢查。因此三個下游一起驗,不留半邊。
+#  注意 needle 不能照抄 _templates 的規則字串:範例裡是**填好的實例**,不是規則條文。)
 if example_applicability and example_applicability.startswith("applicable"):
     example_tasks = read("example/contract-expiry-reminder/5-tasks.md")
     check(example_tasks is not None, "example 5-tasks 存在")
@@ -269,8 +272,27 @@ if example_applicability and example_applicability.startswith("applicable"):
         check(bool(blocks), "example 5-tasks 可解析出 T 區塊")
         excerpted = [b for b in blocks if "Design Boundary" in b]
         check(len(excerpted) == len(blocks),
-              "example 4-spec 契約為 applicable → 每個 T 的 Boundaries 都摘錄了設計邊界",
+              "example Stage 5:每個 T 的 Boundaries 都摘錄了設計邊界",
               f"{len(excerpted)}/{len(blocks)} 個 T 有摘錄")
+
+    example_notes = read("example/contract-expiry-reminder/6-implementation-notes.md")
+    check(example_notes is not None, "example 6-notes 存在")
+    if example_notes is not None:
+        reviews = re.findall(r"^- Test Integrity finding:", example_notes, re.M)
+        boundary = re.findall(r"^- Design boundary finding:", example_notes, re.M)
+        check(len(boundary) == len(reviews) and bool(reviews),
+              "example Stage 6:每筆 T Review Log 都有 Design boundary finding",
+              f"T Review Log {len(reviews)} 筆,Design boundary finding {len(boundary)} 筆")
+
+    example_review = read("example/contract-expiry-reminder/7-review.md")
+    check(example_review is not None, "example 7-review 存在")
+    if example_review is not None:
+        for axis_needle in ("Dependency Direction", "Boundary Leakage",
+                            "Data Ownership", "Interface Stability"):
+            check(axis_needle in example_review,
+                  f"example Stage 7 Standards Axis 有查「{axis_needle}」")
+        check("Design Boundary Contract 逐條對照 diff" in example_review,
+              "example Stage 7 Spec Axis 有逐條對照 Design Boundary Contract")
 
 print("=== Design Boundary Contract 結構守衛 ===")
 print(f"  • root: {root}")
