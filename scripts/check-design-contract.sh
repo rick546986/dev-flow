@@ -66,19 +66,35 @@ def section(text, name):
     return match.group(1) if match else None
 
 
-def header_cells(block, sub_heading):
-    """抽 `### <sub_heading>` 底下第一張表的表頭儲存格。"""
+def table_of(block, sub_heading):
+    """抽 `### <sub_heading>` 底下第一張表,回 (表頭儲存格, 資料列數)。
+
+    資料列 = 分隔列之後、仍以 `|` 開頭的行。分開回傳是為了讓「表頭在不在」與
+    「表有沒有被填」兩件事各自可判 —— 只數整節的 pipe 行會讓三張表互相頂替。
+    """
     if block is None:
-        return []
+        return [], 0
     match = re.search(rf"^### {re.escape(sub_heading)}\s*\n(.*?)(?=^### |\Z)",
                       block, re.M | re.S)
     if not match:
-        return []
+        return [], 0
+    header = []
+    data_rows = 0
+    seen_separator = False
     for line in match.group(1).splitlines():
         stripped = line.strip()
-        if stripped.startswith("|") and not re.fullmatch(r"\|(?:\s*:?-+:?\s*\|)+", stripped):
-            return [cell.strip() for cell in stripped.strip("|").split("|")]
-    return []
+        if not stripped.startswith("|"):
+            if header:
+                break
+            continue
+        if re.fullmatch(r"\|(?:\s*:?-+:?\s*\|)+", stripped):
+            seen_separator = True
+            continue
+        if not header:
+            header = [cell.strip() for cell in stripped.strip("|").split("|")]
+        elif seen_separator:
+            data_rows += 1
+    return header, data_rows
 
 
 def applicability(block):
@@ -117,7 +133,7 @@ check(template_block is not None and re.search(r"^- Design source:", template_bl
 for heading, columns in (("Architecture Boundaries", ARCH_COLUMNS),
                          ("Interface & Consistency Contract", IFACE_COLUMNS),
                          ("Software Design", DESIGN_COLUMNS)):
-    cells = header_cells(template_block, heading)
+    cells, _rows = table_of(template_block, heading)
     check(bool(cells), f"{TEMPLATE}「{heading}」表存在")
     for column in columns:
         check(column in cells, f"{TEMPLATE}「{heading}」表有「{column}」欄",
@@ -145,14 +161,13 @@ if example_applicability and example_applicability.startswith("applicable"):
     for heading, columns in (("Architecture Boundaries", ARCH_COLUMNS),
                              ("Interface & Consistency Contract", IFACE_COLUMNS),
                              ("Software Design", DESIGN_COLUMNS)):
-        cells = header_cells(example_block, heading)
+        cells, rows = table_of(example_block, heading)
         check(bool(cells), f"{EXAMPLE}「{heading}」表存在")
         for column in columns:
             check(column in cells, f"{EXAMPLE}「{heading}」表有「{column}」欄",
                   f"實得={cells}")
-        rows = [line for line in (example_block or "").splitlines()
-                if line.strip().startswith("|")]
-        check(len(rows) >= 3, f"{EXAMPLE} 三張表至少各有內容列", f"pipe 列數={len(rows)}")
+        # 逐表各自數資料列:只數整節的 pipe 行會讓三張表互相頂替(填滿一張就過關)
+        check(rows >= 1, f"{EXAMPLE}「{heading}」表至少一列已填內容", f"資料列數={rows}")
     check("Known design limit" in (example_block or ""),
           f"{EXAMPLE} 有 Known design limit")
 
