@@ -140,6 +140,7 @@ Variant C: 詳情頁時間軸(決策最深,留歷程)
 - External handoffs: 「下一步:電話聯絡供應商」為系統外動作;系統只記「已聯絡供應商 + 誰 + 時間」,參與者確認可追蹤、改派後接得起來
 - Required changes: 等待對象文字化、加最後動作時間欄、「已續約」權限灰階(三項均已修正並於第 2 輪複驗)
 - Human verdict: ACCEPTED(第 2 輪;第 1 輪為 REVISE,修正上列三項後重新 Demo)
+- Verdict attestation: human:業務主管 @ 2026-07-23(test-only human fixture;示範值 —— 實案由人類親填姓名與日期,檔內不得含此標記)
 
 ## Verdict
 - 回寫 2-decision Risks:UI 形式已定 → dashboard 卡片(列內標狀態 + 下一步 + 最後動作時間);

@@ -158,6 +158,8 @@ email/LINE 通知、自訂天數、主管彙總報表、自動寄信給法務/�
 需 migration:`contracts.renewal_status`(enum:未處理/等待法務/等待主管/已聯絡供應商/已續約/不續約)+ 狀態歷程表(contract_id、誰、何時、舊→新)。不依賴其他 feature。
 
 ## Verification Profile(G2 一併審)
+- lane: full(Risk: high 命中自動升 Full 清單,不得 fast;本節 Risk = Feature Risk,
+  5-tasks 逐 T `Risk:` 欄 = Task Risk,判準同一正本)
 - Risk: high(判準:公開 API(`GET /contracts/expiring`、`PATCH /contracts/:id/status`)+
   `renewal_status` migration 不可逆改動 + 權限行為(「已續約」僅主管)。T 級沿用同一判準:
   T-5(migration + 權限)標 `Risk: high`,其餘 T 缺省 normal,見 5-tasks)
