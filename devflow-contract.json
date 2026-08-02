@@ -1,0 +1,35 @@
+{
+  "devflow_contract_version": "2.0.0",
+  "required_runtime_capabilities": [
+    "task_scoped_guard",
+    "parallel_wave_execution",
+    "candidate_gate",
+    "attempt_ledger",
+    "final_fresh_run",
+    "operational_demo_gate"
+  ],
+  "schema_versions": {
+    "agent_event": "1.1",
+    "context_manifest": "1.0",
+    "prompt_registry": "1.0",
+    "gate_result": "devflow-gate-result.v1",
+    "candidate": "devflow-candidate.v1",
+    "exec_state": "exec-v2"
+  },
+  "evidence_status_values": ["pass", "fail", "unverified", "n-a"],
+  "risk_values": ["normal", "high"],
+  "risk_scopes": ["feature", "task"],
+  "lanes": ["fast", "full"],
+  "review_modes": ["wave", "dedicated"],
+  "task_states": ["PENDING", "READY", "RUNNING", "CANDIDATE", "MECHANICAL_PASS", "QUEUED_FOR_INTEGRATION", "INTEGRATED", "IN_REVIEW", "REWORK", "ACCEPTED", "BLOCKED", "INVALIDATED_BY_UPSTREAM"],
+  "task_tags": ["api", "ui", "database", "integration", "infrastructure", "test", "documentation", "security", "authorization", "migration", "workflow", "other"],
+  "base_sha_fields": ["feature_initial_base", "wave_base_sha", "candidate_base_sha"],
+  "ledger": {
+    "home_env": "DEVFLOW_LEDGER_HOME",
+    "default_macos": "~/Library/Application Support/DevFlow/ledger/",
+    "default_linux": "${XDG_STATE_HOME:-~/.local/state}/devflow/ledger/",
+    "retention_days_raw": 180,
+    "retention_days_aggregate": 365
+  },
+  "notes": "唯一機器可讀契約正本(方法論 repo)。plugin 須另行聲明 supported_contract_versions/runtime_version/capabilities;doctor 指令 fail-closed 比對。既有 exec.json 的 contract_hash_scope 是內容指紋範圍標記,非版本握手機制(audit 已證),故新設本檔。"
+}
