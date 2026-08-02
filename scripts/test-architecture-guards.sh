@@ -208,6 +208,66 @@ p.write_text(n, encoding="utf-8")
 PY
 expect fail check-gate-tokens.sh "$D" "GT-3 刪 G3 錨定義八點中的一點"
 
+# GT-4(fresh review F-3):憑空多一道 gate。措辭刻意避開會被別的守衛誤觸的字串
+# (例如 "Forbidden dependencies" 會撞 check-design-contract 的 readme-canonical 規則),
+# 確保紅燈是 check-gate-tokens 抓到的,不是別人順手擋下的。
+D=$(seed gt4); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "README.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("- G2 錨定義(錨句在上;此處為條件式全文):",
+              "- G4 = 設計邊界對不對(4-spec:**設計契約三表全填**,未過不得進入 Stage 5;\n"
+              "  核准者不得為該文檔 owner)。\n"
+              "- G2 錨定義(錨句在上;此處為條件式全文):", 1)
+assert n != t, "GT-4 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-gate-tokens.sh "$D" "GT-4 §7 憑空新增第四道 gate 標籤(G4)"
+
+# GT-5(fresh review F-4):八點的**極性**被反轉。編號仍 1–8、原本的寬鬆關鍵詞仍在,
+# 舊版守衛對這四種 mutation 全部 exit 0 —— 規則語意反過來而測試不紅。
+D=$(seed gt5a); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "README.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("Gauntlet PASS 不取代 Standards Axis", "Gauntlet PASS 取代 Standards Axis", 1)
+assert n != t, "GT-5a mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-gate-tokens.sh "$D" "GT-5a 第 8 點極性反轉(Gauntlet PASS「不」取代雙軸)"
+
+D=$(seed gt5b); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "README.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("Required Layer 不得為 unverified", "Required Layer 得為 unverified", 1)
+assert n != t, "GT-5b mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-gate-tokens.sh "$D" "GT-5b 第 5 點極性反轉(Required Layer「不得」為 unverified)"
+
+D=$(seed gt5c); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "README.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("Optional Layer 可為 unverified,但必須誠實標示",
+              "Optional Layer 可為 unverified", 1)
+assert n != t, "GT-5c mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-gate-tokens.sh "$D" "GT-5c 第 7 點刪掉「必須誠實標示」義務"
+
+D=$(seed gt5d); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "README.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("Explicitly Excluded Layer 可為 n-a,但必須附理由",
+              "Explicitly Excluded Layer 可為 n-a", 1)
+assert n != t, "GT-5d mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-gate-tokens.sh "$D" "GT-5d 第 6 點刪掉「必須附理由」義務"
+
 # ────────────────────────────── Version Sync ───────────────────────────────
 D=$(seed vs0); expect pass check-version-sync.sh "$D" "VS-0 對照組(四處一致)"
 

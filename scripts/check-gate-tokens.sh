@@ -142,20 +142,43 @@ for label in ORDER:
         if not missing and not added:
             die(f"{label} token 順序變動:期望 {expected_norm},實得 {actual_norm}")
 
+# ── Gate 標籤集合釘死(fresh review F-3)─────────────────────────────────────
+# 上面的迴圈只逐一比對 ORDER 裡的 G1/G2/G3,對「憑空多出來的標籤」完全不看:
+# 實測在 §7 插一行 `- G4 = 設計邊界對不對(…未過不得進入 Stage 5)。` → 本守衛與
+# devflow-check all 都 exit 0。既不改名也不刪除,卻**重新解釋**了整個 gate 體系,
+# 而檔頭 :12-14 宣告要防的正是「改名、刪除或重新解釋」。
+# 因此在這裡斷言 §7 出現的 gate 標籤集合**恰為** {G1, G2, G3}。
+if section:
+    declared = sorted(set(re.findall(r"G(\d+)\s*=", section)), key=int)
+    expected_labels = ["1", "2", "3"]
+    if declared != expected_labels:
+        die(f"§7 的 gate 標籤集合不是 G1/G2/G3:實得 G{'/G'.join(declared) or '(無)'} —— "
+            "要**刻意**新增或移除一道 gate:改本守衛的 ORDER/EXPECTED、"
+            "同步 §7 三處摘要(plugin SKILL.md / README §3 表 / 對應模板頂註)、"
+            "並更新外部 gate-consistency 的 GATE_TABLE。DevFlow 只有三道 gate 是 hard invariant。")
+    else:
+        print(f"  ✓ gate 標籤集合恰為 G1/G2/G3(無第四道 gate)")
+
 # ── G3「Evidence 契約全過」八點的本體守衛 ──────────────────────────────────
 # 為什麼加(2026-08 fresh review C-7 / A-L3):粗體錨只釘住「Evidence 契約全過」這幾個字,
 # 錨底下那八點的**內容**沒有任何守衛。本輪把 notes/design/vnext-shared-contract.md 裡
 # 唯一的第二份副本收斂掉之後,README §7 成了八點的唯一存放處 —— 少一點、被改寫、
 # 或整段消失都不會有任何測試變紅。所以在這裡補一道結構斷言:條數 + 每點的關鍵詞。
+#
+# 2026-08 fresh review F-4:原本每點只比一個寬鬆關鍵詞,**不含極性**。實測把第 8 點的
+# 「Gauntlet PASS **不**取代 Standards Axis」刪掉一個「不」→ 編號仍 1-8、關鍵詞
+# `Standards Axis` 仍在 → 守衛 exit 0,規則語意整個反過來。第 5/6/7 點同型。
+# 這正是註解自稱要防的「被改寫」。改成每點一組**必含片語(含極性詞)**,
+# 比對前兩邊都做 norm()(去空白),讓跨行折行不造成假警報但字面極性一字不能少。
 G3_POINTS = [
-    "Final Fresh Run",          # 1. 綁定目前受審的 source SHA
-    "Required Layer = pass",    # 2.
-    "Conditional Layer",        # 3. 已觸發者 = pass
-    "不得存在任何 fail",          # 4.
-    "unverified",               # 5. Required Layer 不得為 unverified 或 n-a
-    "Explicitly Excluded",      # 6. 可為 n-a 但必須附理由
-    "Optional Layer",           # 7. 可為 unverified 但須誠實標示
-    "Standards Axis",           # 8. Gauntlet PASS 不取代雙軸與 Walkthrough/Matrix
+    ("1", ("Final Fresh Run",)),
+    ("2", ("Required Layer = pass",)),
+    ("3", ("Conditional Layer", "pass")),
+    ("4", ("不得存在任何 fail",)),
+    ("5", ("Required Layer 不得為 unverified",)),          # 極性:不得為
+    ("6", ("Explicitly Excluded", "必須附理由")),           # 極性:必須
+    ("7", ("Optional Layer", "必須誠實標示")),              # 極性:必須
+    ("8", ("不取代 Standards Axis",)),                      # 極性:不取代
 ]
 if section:
     anchor = re.search(r"G3 錨定義", section)
@@ -170,11 +193,16 @@ if section:
             die(f"§7「G3 錨定義」的編號點不是 1–8:實得 {points}")
         else:
             print(f"  ✓ G3 錨定義:8 點齊(1–8)")
-        missing = [kw for kw in G3_POINTS if kw not in body]
+        body_norm = norm(body)
+        missing = [f"第 {n} 點「{phrase}」"
+                   for n, phrases in G3_POINTS
+                   for phrase in phrases
+                   if norm(phrase) not in body_norm]
         if missing:
-            die(f"§7「G3 錨定義」八點缺關鍵詞(可能被改寫或刪除):{missing}")
+            die("§7「G3 錨定義」八點缺必含片語(被改寫、刪除或極性被反轉):"
+                + "、".join(missing))
         else:
-            print(f"  ✓ G3 錨定義:八點關鍵詞全在")
+            print(f"  ✓ G3 錨定義:八點必含片語全在(含極性詞)")
 
 if problems:
     print()
