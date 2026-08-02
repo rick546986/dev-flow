@@ -501,6 +501,80 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   <code>devtalk-guard</code>(盲原則)。想確認整套沒壞:跑
   <code>~/.claude/plugins/local/dev-flow/hooks/selftest.sh</code>(動態發現所有案例,自建 temp repo 後自清)。</p>
 
+  <h3>T 級並行(選配):Candidate 到 ACCEPTED</h3>
+  <p><code>5-tasks.md</code> frontmatter 明寫 <code>execution.mode: parallel</code> 才啟用
+  (缺省 sequential,行為不變)。每 T 一個 task worktree(<code>task/&lt;slug&gt;/T-n</code>,
+  同 Wave 同 Base SHA),守衛以 <code>--task</code> 釘單 T scope。核心規則:未過 Review 的
+  Candidate 不得進正式 integration branch、不得標完成,只有 ACCEPTED 才勾 checkbox
+  (ASCII 正本:README §5「T 級並行」;細節 <code>notes/design/parallel-stage6.md</code>)。</p>
+
+  <svg id="par-flow" viewBox="0 0 1174 178" role="img" aria-label="Stage 6 並行流程圖:Task DAG 經 Wave Base、Task Worktrees、RED/GREEN/Verify、Candidate、Mechanical Gate、Integration DAG、Dedicated 或 Wave Review 到 ACCEPTED">
+    <defs>
+      <marker id="par-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/>
+      </marker>
+    </defs>
+    <g class="node">
+      <rect x="10" y="65" width="86" height="44" rx="6" class="b"/>
+      <text x="53" y="91" text-anchor="middle">Task DAG</text>
+    </g>
+    <g class="node">
+      <rect x="124" y="65" width="90" height="44" rx="6" class="b"/>
+      <text x="169" y="91" text-anchor="middle">Wave Base</text>
+    </g>
+    <g class="node">
+      <rect x="242" y="65" width="100" height="44" rx="6" class="b"/>
+      <text x="292" y="91" text-anchor="middle">Task Worktrees</text>
+    </g>
+    <g class="node">
+      <rect x="370" y="65" width="120" height="44" rx="6" class="b"/>
+      <text x="430" y="91" text-anchor="middle">RED/GREEN/Verify</text>
+    </g>
+    <g class="node">
+      <rect x="518" y="65" width="90" height="44" rx="6" class="b"/>
+      <text x="563" y="91" text-anchor="middle">Candidate</text>
+    </g>
+    <g class="node">
+      <rect x="636" y="57" width="120" height="60" fill="none" stroke="none"/>
+      <polygon class="b" points="636,87 696,57 756,87 696,117"/>
+      <text x="696" y="83" text-anchor="middle">Mechanical</text>
+      <text x="696" y="97" text-anchor="middle">Gate</text>
+    </g>
+    <g class="node">
+      <rect x="784" y="65" width="110" height="44" rx="6" class="b"/>
+      <text x="839" y="91" text-anchor="middle">Integration DAG</text>
+    </g>
+    <g class="node">
+      <rect x="922" y="65" width="118" height="44" rx="6" class="hl"/>
+      <text x="981" y="83" text-anchor="middle">Dedicated 或</text>
+      <text x="981" y="97" text-anchor="middle">Wave Review</text>
+    </g>
+    <g class="node">
+      <rect x="1068" y="65" width="96" height="44" rx="6" class="b"/>
+      <text x="1116" y="91" text-anchor="middle">ACCEPTED</text>
+    </g>
+    <path class="flow edge" marker-end="url(#par-arrow)" d="M96,87 L124,87"/>
+    <path class="flow edge" marker-end="url(#par-arrow)" d="M214,87 L242,87"/>
+    <path class="flow edge" marker-end="url(#par-arrow)" d="M342,87 L370,87"/>
+    <path class="flow edge" marker-end="url(#par-arrow)" d="M490,87 L518,87"/>
+    <path class="flow edge" marker-end="url(#par-arrow)" d="M608,87 L636,87"/>
+    <path class="flow edge" marker-end="url(#par-arrow)" d="M756,87 L784,87"/>
+    <path class="flow edge" marker-end="url(#par-arrow)" d="M894,87 L922,87"/>
+    <path class="flow edge" marker-end="url(#par-arrow)" d="M1040,87 L1068,87"/>
+    <text class="cap" x="53" y="130" text-anchor="middle">Blocked-by 邊</text>
+    <text class="cap" x="169" y="130" text-anchor="middle">同 Wave 同 Base</text>
+    <text class="cap" x="292" y="130" text-anchor="middle">一樹一武裝</text>
+    <text class="cap" x="292" y="146" text-anchor="middle">task/&lt;slug&gt;/T-n</text>
+    <text class="cap" x="430" y="130" text-anchor="middle">逐 T 各自跑 seam</text>
+    <text class="cap" x="563" y="130" text-anchor="middle">task branch,不可變</text>
+    <text class="cap" x="696" y="130" text-anchor="middle">14 項機械檢查</text>
+    <text class="cap" x="839" y="130" text-anchor="middle">拓撲序 cherry-pick</text>
+    <text class="cap" x="981" y="130" text-anchor="middle">high:整合前逐 T 審</text>
+    <text class="cap" x="981" y="146" text-anchor="middle">normal:整合後審整 wave</text>
+    <text class="cap" x="1116" y="130" text-anchor="middle">才勾 checkbox</text>
+    <text class="cap" x="587" y="168" text-anchor="middle">未過 Review 的 Candidate 不得進正式 integration branch;只有 ACCEPTED 才勾 checkbox</text>
+  </svg>
+
   <h2 id="models">④ 模型分層速查</h2>
   <p>對照 README §9。</p>
   <!-- parity:start readme-gate-model-quickstart -->

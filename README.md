@@ -173,7 +173,18 @@ RED → GREEN → scope check → Verify
   Review 的 Candidate 不得進正式 integration branch、不得標完成;只有 ACCEPTED
   才勾 checkbox。每 T 一個 task worktree(`task/<slug>/T-n`)+ task-scoped 守衛;
   Worker 不寫 5-tasks/6-notes/STATUS/twin(單寫者 = 派工者)。細節與欄位語意見
-  `notes/design/parallel-stage6.md`。
+  `notes/design/parallel-stage6.md`。全流程一張圖(ASCII 正本;SVG 版見
+  `guide-quickstart.html` ③):
+
+  ```text
+  Task DAG → Wave Base → Task Worktrees
+  → RED/GREEN/Verify(每 T 一個 task worktree,各自跑 seam)
+  → Candidate(task branch,不可變)
+  → Mechanical Gate(14 項機械檢查)
+  → 整合(按 integration DAG)
+  → Dedicated Review(Task high,整合前)或 Wave Review(normal,整合後)
+  → ACCEPTED(才勾 checkbox、才記帳)
+  ```
 - **接收審查**(G3 打回時):逐 F 驗證後才動手 —— 同意的改並一句說明為何對;
   不同意的擺論證,不盲改(禁 performative fix)。
 - **判級疑義**:分不清 L1/L2 → 一律當 L2。Diff Budget 超支本身非偏差,
