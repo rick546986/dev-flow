@@ -180,6 +180,24 @@ G3_POINTS = [
     ("7", ("Optional Layer", "必須誠實標示")),              # 極性:必須
     ("8", ("不取代 Standards Axis",)),                      # 極性:不取代
 ]
+
+# ── 守衛自身清單的釘死(fresh review F-2)──────────────────────────────────
+# EXPECTED 與 G3_POINTS 是本守衛的唯一正本。若它們自己被縮小 —— 例如把 G3 的一個
+# token 從 EXPECTED 刪掉、同時把 README 的該 token 也刪掉 —— 兩邊互相自洽,
+# 舊版守衛照樣全綠。這裡把長度釘死,讓「縮小必填集合」不再是一行安靜的刪除。
+# 誠實界線:同時改釘死值仍能繞過 —— 買到的是「必須動到這個一眼看得見的數字」,
+# 以及 scripts/test-architecture-guards.sh 的 GS 系列會實際變異本檔來覆蓋這件事。
+PINNED_SIZES = {"G1": 2, "G2": 3, "G3": 4}
+for _label, _want in PINNED_SIZES.items():
+    if len(EXPECTED.get(_label, [])) != _want:
+        die(f"EXPECTED[{_label}] 長度 {len(EXPECTED.get(_label, []))} ≠ 釘死值 {_want} —— "
+            "要**刻意**增減 gate token:同步改 EXPECTED、這裡的釘死值、§7 三處摘要,"
+            "並在 test-architecture-guards.sh 補負向案")
+if sorted(EXPECTED) != sorted(PINNED_SIZES):
+    die(f"EXPECTED 的 gate 標籤集合 {sorted(EXPECTED)} ≠ {sorted(PINNED_SIZES)}")
+if len(G3_POINTS) != 8:
+    die(f"G3_POINTS 長度 {len(G3_POINTS)} ≠ 8(G3 錨定義固定八點,少一點即代表守衛被改弱)")
+
 if section:
     anchor = re.search(r"G3 錨定義", section)
     if not anchor:

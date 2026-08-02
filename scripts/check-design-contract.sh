@@ -19,14 +19,21 @@ if [ -n "${1:-}" ]; then
   ROOT=$(cd "$1" && pwd) || exit 2
 fi
 
-python3 - "$ROOT" <<'PY'
+python3 - "$ROOT" "$0" <<'PY'
 import os
 import re
 import sys
 
 root = sys.argv[1]
+# argv[2] = 本守衛自己的路徑。用來自我檢查「必填清單有沒有被偷偷縮小」(見 guard-selfpin 群組)。
+# 跑在 /private/tmp 複本上時指到的就是那份複本 —— 負向 mutation 測的正是複本。
+self_path = sys.argv[2] if len(sys.argv) > 2 else ""
 checks = 0
 failures = []
+
+# 檢查數地板:**次級 backstop**,只用來偵測「大幅縮水」。定義提前到這裡,
+# 好讓 guard-selfpin 群組能把它一起釘死(否則改小一行就繞過)。
+MIN_CHECKS = 100
 
 TEMPLATE = "_templates/4-spec.md"
 EXAMPLE = "example/contract-expiry-reminder/4-spec.md"
@@ -60,6 +67,7 @@ REQUIRED_GROUPS = [
     "trigger-parity",
     "handoff-templates",
     "handoff-example",
+    "guard-selfpin",
 ]
 CURRENT_GROUP = "files-exist"
 groups_seen = {}
@@ -397,6 +405,86 @@ if True:
         check("Design Boundary Contract 逐條對照 diff" in example_review,
               "example Stage 7 Spec Axis 有逐條對照 Design Boundary Contract")
 
+CURRENT_GROUP = "guard-selfpin"
+# ── 守衛自身必填清單的釘死(fresh review F-2)──────────────────────────────
+# 為什麼要有這一組:heartbeat 只斷言「這一群跑過幾條」,MIN_CHECKS 只偵測大幅縮水。
+# 兩者都抓不到「清單被縮小」。實測(修正前):
+#   ①單行把 TRIGGER_KEYWORDS 由 21 條砍成 1 條 → 檢查數 127→107,heartbeat 仍報
+#     trigger-parity=4(>0),MIN_CHECKS=100 也還在,devflow-check all exit 0。
+#   ②兩行(停掉 handoff-example 群組 + 刪它的 REQUIRED_GROUPS 條目)→ 116/116 全綠。
+# 而常設 mutation suite(test-architecture-guards.sh)明文只變異**資料檔**,
+# 守衛本體從不被變異 —— 「守衛被改弱」整類零覆蓋。
+#
+# 兩層防法:
+#   (a) 數量釘死:單一編輯縮小任何一個必填清單即紅。
+#   (b) canon 交叉核對:三張表的欄名不是憑空寫死在 Python 裡,而是必須與語意正本
+#       notes/design/design-boundary-contract.md §2.2/2.3/2.4 的欄位表**逐字相同**。
+#       要改必填欄位,就必須同時改語意正本 —— 那是一個有意義、看得見的 diff,
+#       不是守衛原始碼裡一行安靜的刪除。
+# 誠實界線:守衛終究無法完全守住自己。這裡買到的是「單一編輯不再夠用,
+# 而兩處編輯必須包含 canon 或釘死數字」,不是「不可能被繞過」。
+PINNED_SIZES = {
+    "ARCH_COLUMNS": (len(ARCH_COLUMNS), 5),
+    "IFACE_COLUMNS": (len(IFACE_COLUMNS), 5),
+    "DESIGN_COLUMNS": (len(DESIGN_COLUMNS), 6),
+    "TABLE_HEADINGS": (len(TABLE_HEADINGS), 3),
+    "TRIGGER_KEYWORDS": (len(TRIGGER_KEYWORDS), 21),
+    "REQUIRED_GROUPS": (len(REQUIRED_GROUPS), 13),
+    "handoffs": (len(handoffs), 3),
+    "handoff needles": (sum(len(n) for _rel, n, _label in handoffs), 7),
+}
+for _name, (_actual, _want) in PINNED_SIZES.items():
+    check(_actual == _want,
+          f"守衛自身清單「{_name}」長度未被縮小(釘死 {_want})",
+          f"實得 {_actual} —— 要**刻意**增減必填項:同步改這裡的釘死值、"
+          f"改語意正本 notes/design/design-boundary-contract.md、"
+          f"並在 scripts/test-architecture-guards.sh 補對應負向案")
+check(MIN_CHECKS == 100, "MIN_CHECKS 未被調低(釘死 100)", f"實得 {MIN_CHECKS}")
+
+# (b) 三張表的欄名必須與 canon §2.2/2.3/2.4 的欄位表逐字相同
+def canon_column_names(text, start_heading, end_heading):
+    """抽 canon `### <start>` 到 `### <end>` 之間那張表的首欄資料列。"""
+    if text is None:
+        return []
+    match = re.search(rf"^### {re.escape(start_heading)}[^\n]*\n(.*?)(?=^### {re.escape(end_heading)})",
+                      text, re.M | re.S)
+    if not match:
+        return []
+    names, seen_separator = [], False
+    for line in match.group(1).splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        if re.fullmatch(r"\|(?:\s*:?-+:?\s*\|)+", stripped):
+            seen_separator = True
+            continue
+        if seen_separator:
+            names.append(stripped.strip("|").split("|")[0].strip())
+    return names
+
+
+for _heading_pair, _columns, _label in (
+        (("2.2 ", "2.3 "), ARCH_COLUMNS, "Architecture Boundaries"),
+        (("2.3 ", "2.4 "), IFACE_COLUMNS, "Interface & Consistency Contract"),
+        (("2.4 ", "2.5 "), DESIGN_COLUMNS, "Software Design")):
+    _canon_names = canon_column_names(canon_text, *_heading_pair)
+    check(_canon_names == _columns,
+          f"守衛的「{_label}」必填欄與 canon §{_heading_pair[0].strip()} 欄位表逐字相同",
+          f"canon={_canon_names} guard={_columns}")
+
+# (c) 自我檢查:原始碼裡出現的每個 CURRENT_GROUP 都必須登記在 REQUIRED_GROUPS,
+#     反之亦然 —— 防「新增一組卻忘了註冊」(那樣 heartbeat 就看不到它)。
+if self_path and os.path.isfile(self_path):
+    with open(self_path, encoding="utf-8") as stream:
+        own_source = stream.read()
+    assigned = set(re.findall(r'^CURRENT_GROUP = "([a-z-]+)"', own_source, re.M))
+    check(assigned == set(REQUIRED_GROUPS),
+          "原始碼中的 CURRENT_GROUP 集合 = REQUIRED_GROUPS(無未註冊/已註冊但不存在的群組)",
+          f"只在原始碼={sorted(assigned - set(REQUIRED_GROUPS))} "
+          f"只在 REQUIRED_GROUPS={sorted(set(REQUIRED_GROUPS) - assigned)}")
+else:
+    check(False, "取得本守衛自身路徑以做清單自我檢查", f"self_path={self_path!r}")
+
 # ── 群組心跳(**主要**防線)────────────────────────────────────────────────
 # 逐群組斷言「這一群至少跑過一條」。任何群組被條件式、例外、早退擋掉都會顯性失敗,
 # 而且錯誤訊息直接點名是哪一群 —— 這才是防「整組靜默略過」的正解。
@@ -409,10 +497,11 @@ if missing_groups:
 else:
     checks += 1
 
-# 檢查數地板:**次級 backstop**,只用來偵測「大幅縮水」。
+# 檢查數地板:**次級 backstop**,只用來偵測「大幅縮水」(值定義在檔頭,並由
+# guard-selfpin 群組釘死,免得「把地板改小」變成一行就能做到的事)。
 # 明確不宣稱能防止所有群組被略過 —— 那是上面 heartbeat 的職責;
-# 地板抓不到「A 群組消失但 B 群組變多」這種總數持平的情況。
-MIN_CHECKS = 100
+# 地板抓不到「A 群組消失但 B 群組變多」這種總數持平的情況;
+# 「清單被縮小」則由 guard-selfpin 負責。
 check(checks >= MIN_CHECKS,
       f"(次級 backstop)結構檢查總數 ≥ {MIN_CHECKS} —— 只偵測大幅縮水,"
       f"完整的群組覆蓋由 heartbeat 負責",

@@ -95,6 +95,41 @@ expect() {
   fi
 }
 
+# seed_guard <name> <guard-script…> → 同 seed(),外加把指名的**守衛本體**複製進
+# $WORK/<name>/scripts/。用於「守衛自己被改弱」這一類負向案 —— 這是原本整個缺的一類:
+# 舊版本檔只變異資料檔(見檔頭「只複製守衛會讀到的資料檔」),因此
+# 「co-edit 守衛 + 資料讓兩邊自洽」可以全綠通過。fresh review F-2。
+seed_guard() {
+  local name="${1:?seed_guard: name is empty}"; shift
+  local dst; dst=$(seed "$name")
+  local guard
+  for guard in "$@"; do
+    cp "$ROOT/scripts/$guard" "$dst/scripts/$guard"
+    chmod +x "$dst/scripts/$guard"
+  done
+  echo "$dst"
+}
+
+# expect_local <pass|fail> <guard-script> <root> <label>
+# 與 expect() 的差別:跑的是 **$root/scripts/ 底下那份複本**,不是正式 repo 的守衛。
+expect_local() {
+  local want="${1:?}" guard="${2:?}" target="${3:?}" label="${4:?}"
+  [[ "$target" == "$WORK/"* ]] || { echo "expect_local: root 逃逸 $target" >&2; exit 1; }
+  [[ -x "$target/scripts/$guard" ]] || { echo "expect_local: 找不到守衛複本 $target/scripts/$guard" >&2; exit 1; }
+  local out rc got
+  out=$("$target/scripts/$guard" "$target" 2>&1)
+  rc=$?
+  got=pass; [ "$rc" -ne 0 ] && got=fail
+  if [ "$got" = "$want" ]; then
+    RESULTS+=("  ✅ $label — 預期 $want,實得 $got")
+    PASS=$((PASS + 1))
+  else
+    RESULTS+=("  ❌ $label — 預期 $want,實得 $got (exit $rc)")
+    RESULTS+=("       $(printf '%s' "$out" | tail -3 | tr '\n' ' ')")
+    FAIL=$((FAIL + 1))
+  fi
+}
+
 # mutate <root> <<'PY' … python 片段,sys.argv[1] = root
 mutate() { python3 - "$1"; }
 
@@ -311,6 +346,119 @@ p.write_text(n, encoding="utf-8")
 PY
 expect fail check-version-sync.sh "$D" "VS-4 版本錨整行被刪(fail-closed,不得靜默略過)"
 
+# ─────────────────── 守衛本體被改弱(Guard Source;fresh review F-2)───────────────────
+# 這一整類原本零覆蓋:上面所有案例都只變異資料檔,守衛本體始終從正式 repo 執行。
+# 於是「co-edit 守衛 + 資料,讓兩邊互相自洽」可以端到端全綠。以下每一案都是
+# **改守衛自己的原始碼**,並斷言守衛必須因此變紅。
+
+D=$(seed_guard gs0 check-design-contract.sh check-gate-tokens.sh)
+expect_local pass check-design-contract.sh "$D" "GS-0a 對照組(守衛複本未變異)"
+expect_local pass check-gate-tokens.sh     "$D" "GS-0b 對照組(守衛複本未變異)"
+
+# GS-1:單行把 TRIGGER_KEYWORDS 由 21 條砍成 1 條。
+# 修正前:檢查數 127→107,heartbeat 仍報 trigger-parity>0,MIN_CHECKS=100 也還在 → 全綠。
+D=$(seed_guard gs1 check-design-contract.sh); mutate "$D" <<'PY'
+import re, sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "scripts" / "check-design-contract.sh"
+t = p.read_text(encoding="utf-8")
+n = re.sub(r"TRIGGER_KEYWORDS = \[.*?\n\]\n", 'TRIGGER_KEYWORDS = [\n    "跨模組",\n]\n',
+           t, count=1, flags=re.S)
+assert n != t, "GS-1 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-design-contract.sh "$D" "GS-1 守衛的 TRIGGER_KEYWORDS 被砍成 1 條"
+
+# GS-2:兩行 —— 停掉 handoff-example 群組 + 刪它的 REQUIRED_GROUPS 條目。
+# 修正前:116/116 全綠(heartbeat 看不到不存在的群組,總數仍 > MIN_CHECKS)。
+D=$(seed_guard gs2 check-design-contract.sh); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "scripts" / "check-design-contract.sh"
+t = p.read_text(encoding="utf-8")
+n = t.replace('    "handoff-example",\n', "", 1)
+assert n != t, "GS-2 mutation(刪 REQUIRED_GROUPS 條目)沒生效"
+marker = 'CURRENT_GROUP = "handoff-example"'
+i = n.index(marker)
+j = n.index("if True:", i)
+n = n[:j] + "if False:" + n[j + len("if True:"):]
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-design-contract.sh "$D" "GS-2 守衛停掉 handoff-example 群組並同步刪註冊條目"
+
+# GS-3:守衛與資料 co-edit —— 從 DESIGN_COLUMNS 刪掉 Test seam,同時把模板與 example
+# 的該欄一起刪掉,讓兩邊互相自洽。canon 交叉核對必須抓到(canon §2.4 仍列該欄)。
+D=$(seed_guard gs3 check-design-contract.sh); mutate "$D" <<'PY'
+import sys, pathlib
+root = pathlib.Path(sys.argv[1])
+g = root / "scripts" / "check-design-contract.sh"
+t = g.read_text(encoding="utf-8")
+n = t.replace('"State / Data flow", "Error handling", "Test seam"]',
+              '"State / Data flow", "Error handling"]', 1)
+assert n != t, "GS-3 mutation(守衛端)沒生效"
+g.write_text(n, encoding="utf-8")
+for rel in ("_templates/4-spec.md", "example/contract-expiry-reminder/4-spec.md"):
+    p = root / rel
+    s = p.read_text(encoding="utf-8")
+    s = s.replace(" | Error handling | Test seam |", " | Error handling |")
+    p.write_text(s, encoding="utf-8")
+PY
+expect_local fail check-design-contract.sh "$D" "GS-3 守衛與資料 co-edit 刪掉必填欄 Test seam(canon 交叉核對接住)"
+
+# GS-4:把 MIN_CHECKS 由 100 調到 10(讓次級 backstop 形同虛設)。
+D=$(seed_guard gs4 check-design-contract.sh); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "scripts" / "check-design-contract.sh"
+t = p.read_text(encoding="utf-8")
+n = t.replace("MIN_CHECKS = 100", "MIN_CHECKS = 10", 1)
+assert n != t, "GS-4 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-design-contract.sh "$D" "GS-4 守衛的 MIN_CHECKS 被調低"
+
+# GS-5:守衛與資料 co-edit —— 把 Stage 6 的承接 needle「Design Boundary Check」
+# 從 handoffs 清單刪掉,同時把模板裡的該檢查也刪掉。needle 數量釘死必須接住。
+D=$(seed_guard gs5 check-design-contract.sh); mutate "$D" <<'PY'
+import sys, pathlib
+root = pathlib.Path(sys.argv[1])
+g = root / "scripts" / "check-design-contract.sh"
+t = g.read_text(encoding="utf-8")
+n = t.replace('("_templates/6-implementation-notes.md", ["Design Boundary Check"],',
+              '("_templates/6-implementation-notes.md", [],', 1)
+assert n != t, "GS-5 mutation(守衛端)沒生效"
+g.write_text(n, encoding="utf-8")
+p = root / "_templates" / "6-implementation-notes.md"
+p.write_text(p.read_text(encoding="utf-8").replace("Design Boundary Check", "邊界檢查"),
+             encoding="utf-8")
+PY
+expect_local fail check-design-contract.sh "$D" "GS-5 守衛與資料 co-edit 刪掉 Stage 6 承接 needle"
+
+# GS-6:gate-tokens 的守衛與資料 co-edit —— 從 EXPECTED["G3"] 刪一個 token,
+# 同時把 README §7 的該 token 也去掉粗體。兩邊自洽,靠長度釘死才抓得到。
+D=$(seed_guard gs6 check-gate-tokens.sh); mutate "$D" <<'PY'
+import sys, pathlib
+root = pathlib.Path(sys.argv[1])
+g = root / "scripts" / "check-gate-tokens.sh"
+t = g.read_text(encoding="utf-8")
+n = t.replace('        "+ 現象證據逐 S 相符",\n', "", 1)
+assert n != t, "GS-6 mutation(守衛端)沒生效"
+g.write_text(n, encoding="utf-8")
+p = root / "README.md"
+p.write_text(p.read_text(encoding="utf-8").replace(
+    "**+ 現象證據逐 S 相符**", "+ 現象證據逐 S 相符", 1), encoding="utf-8")
+PY
+expect_local fail check-gate-tokens.sh "$D" "GS-6 守衛與 README co-edit 刪掉一個 G3 token"
+
+# GS-7:gate-tokens 的 G3_POINTS 被縮短(八點守衛被改弱),資料不動。
+D=$(seed_guard gs7 check-gate-tokens.sh); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "scripts" / "check-gate-tokens.sh"
+t = p.read_text(encoding="utf-8")
+n = t.replace('    ("8", ("不取代 Standards Axis",)),                      # 極性:不取代\n',
+              "", 1)
+assert n != t, "GS-7 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-gate-tokens.sh "$D" "GS-7 守衛的 G3_POINTS 被縮短(第 8 點守衛消失)"
+
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
 echo
@@ -327,5 +475,9 @@ if [ "$FAIL" -ne 0 ]; then
   echo "⛔ 架構守衛負向回歸測試:$FAIL 失敗 / $((PASS + FAIL)) 案"
   exit 1
 fi
-echo "✅ 架構守衛負向回歸測試:$PASS/$PASS 全過(3 對照組 + $((PASS - 3)) 個負向案例)"
+# 對照組:DC-0 / GT-0 / VS-0 / GS-0a / GS-0b —— 五個「未變異必須 pass」的錨。
+# 寫死數字而不是自動數,是為了讓「悄悄拿掉一個對照組」也會讓這行數字對不上。
+CONTROLS=5
+echo "✅ 架構守衛負向回歸測試:$PASS/$PASS 全過($CONTROLS 對照組 + $((PASS - CONTROLS)) 個負向案例;"
+echo "   其中 GS 系列 9 案是**變異守衛本體**,涵蓋「守衛被改弱」這一類)"
 exit 0
