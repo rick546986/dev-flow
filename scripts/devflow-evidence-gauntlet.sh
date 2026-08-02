@@ -26,7 +26,9 @@
 set -eu
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-export DEVFLOW_EG_VERSION="0.1.0"
+# 版本聲明:與 devflow-contract.json 的 schema_versions.gauntlet 同步(doctor 比對用)
+GAUNTLET_VERSION="1.1.0"
+export DEVFLOW_EG_VERSION="$GAUNTLET_VERSION"
 
 usage_error() {
   echo "usage error: $1" >&2
@@ -38,6 +40,7 @@ TARGET="" SOURCE_SHA="" REVIEW_FILE="0" REPORT=""
 REQUIRE_LAYERS=()
 while [ $# -gt 0 ]; do
   case "$1" in
+    --version) echo "devflow-evidence-gauntlet $GAUNTLET_VERSION"; exit 0 ;;
     --source-sha) [ $# -ge 2 ] || usage_error "$1 缺值"; SOURCE_SHA="$2"; shift 2 ;;
     --require-layer) [ $# -ge 2 ] || usage_error "$1 缺值"; REQUIRE_LAYERS+=("$2"); shift 2 ;;
     --review-file) REVIEW_FILE="1"; shift ;;
