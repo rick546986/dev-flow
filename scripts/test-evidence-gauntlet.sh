@@ -132,6 +132,11 @@ run_case "宣告 SHA 過短即便無 --source-sha 也擋(E2)" 1 "E2" "$FIX/bad-s
 run_case "--source-sha 值 <7 字元 → 拒絕比對(E2)" 1 "E2" \
   "$FIX/good-evidence.md" --source-sha abc12
 
+echo "== 版本聲明(--version 與 devflow-contract.json schema_versions.gauntlet 一致)=="
+contract_version=$(python3 -c "import json; print(json.load(open('$ROOT/devflow-contract.json'))['schema_versions']['gauntlet'])")
+run_case "--version 輸出 contract 宣告版本($contract_version)+ exit 0" 0 \
+  "$contract_version" --version
+
 echo "== 小項②.flag 缺值 = 用法錯誤 exit 2 =="
 run_case "--source-sha 缺值 → usage + exit 2" 2 "usage" \
   "$FIX/good-evidence.md" --source-sha
