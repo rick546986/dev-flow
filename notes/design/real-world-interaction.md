@@ -2,7 +2,8 @@
 
 > 狀態:設計文件(非規則正本)。規則落地位置=_templates/1-discussion.md、
 > _templates/3-prototype.md、_templates/4-spec.md;機械檢查=scripts/check-realworld.sh。
-> Stage 5/7/README/Guide 的配套變更未落地,住 notes/change-manifests/operational.md 待整合。
+> Stage 5/7/README/Guide 的配套變更已於 VNext 整合輪落地(README §5/§7 與模板現版;
+> 2026-08-02);當時清單留存 notes/change-manifests/operational.md 供考古。
 > 依據:DevFlow 四軌並行改造 Prompt B(2026-08-02)+ 00-audit.md 護欄。
 
 ## 1. 目標與動機
@@ -82,7 +83,7 @@ Audit/handoff requirement / Observation。純內部行為 S 寫「不適用 + �
 GIVEN/WHEN/THEN 照舊保留;每個重要 S 須答得出五問:系統要做什麼?人看到後要做什麼?
 誰有權決定?哪些事情不在系統內發生?外部事情沒完成時,系統顯示什麼?
 
-## 6. Stage 5/7:僅契約,未落地(正文見 manifest)
+## 6. Stage 5/7:僅契約(已於 VNext 整合輪落地,README §5/§7 與模板現版;2026-08-02。原正文見 manifest)
 
 - Stage 5:Task Context Packet 只帶該 T 相關的最小 Operational Context 子集
   (Actor/Goal/Human decision/Authority/External dependency/Out-of-system action/
@@ -122,7 +123,11 @@ GIVEN/WHEN/THEN 照舊保留;每個重要 S 須答得出五問:系統要做什�
 1. 3-prototype/4-spec **執行清單步驟增補**(觸發判定、Demo、verdict 收尾入 todo 清單)
    被 guide-dev-flow.html parity 鎖定(Guide 非本 workstream 所有權)→ 條文已備妥於
    manifest,待 integrator 改模板 checklist + renderer --write。
+   (已於 VNext 整合輪落地:模板現版清單已含;2026-08-02)
 2. example **5/6/7 未同步** S-4~S-6(檔案所有權外)→ manifest 列待整合。
+   (已於 VNext 整合輪落地:example 現版已同步 S-4~S-6;2026-08-02)
 3. README §3 Stage 3 行、§7 gate 是否納 verdict 條件 → 正本非本 workstream 所有權,
    建議文字在 manifest,由 Owner 裁決。
+   (已於 VNext 整合輪落地:README §3/§7 現版已納 Demo verdict;2026-08-02)
 4. plugin 側 dev-flow/dev-run SKILL.md 階段動作表同步 → 另 repo,coordinator 另派。
+   (已於 VNext 整合輪 P2 落地:plugin _stage3_impl + attestation;2026-08-02)

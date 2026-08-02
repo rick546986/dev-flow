@@ -90,7 +90,8 @@
    |---|---|---|
    ```
 
-   契約 = 設計 §6/§8;機械檢查 = `scripts/devflow-evidence-gauntlet.sh`(E1–E12)。
+   契約 = 設計 §6/§8;機械檢查 = `scripts/devflow-evidence-gauntlet.sh`(E1–E12;
+   1.1.0 起增 E13)。
 2. 執行清單插步(建議 2c,在現象複驗後):「Final Fresh Run:確認 evidence 節
    由 entry point 一次 fresh run 產出、SHA = 當下 HEAD;跑
    `scripts/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD)
@@ -125,7 +126,7 @@ Evidence 與 ledger 的 run_id/SHA 對不上 = stale 訊號。
   層;起手刪 stale artifacts、逐層執行、fail fast 或保存每層狀態、記工具版本、
   CI/人類皆一條命令重跑。4-spec `Final fresh entry point` 欄指名。
 - **文檔方法論層**(本 repo 已落地):`scripts/devflow-evidence-gauntlet.sh`
-  驗 Evidence 契約(E1–E12,詳設計 §7/腳本頂註);
+  驗 Evidence 契約(E1–E12,詳設計 §7/腳本頂註;1.1.0 起增 E13);
   `scripts/test-evidence-gauntlet.sh`(21 案)+
   `scripts/fixtures/evidence-gauntlet/`(14 fixtures)。
   先測試後實作:RED commit f0c77bd → GREEN commit b84acea。

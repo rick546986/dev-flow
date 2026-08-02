@@ -3,6 +3,7 @@
 > Runtime 輪 Phase 0(2026-08-02)。需求正本:docs/prompts/devflow-vnext-runtime.md。
 > 狀態分類:DESIGN_PASS / REFERENCE_PASS / RUNTIME_PASS / E2E_PASS / PENDING / BLOCKED。
 > 佐證:plugin 唯讀深掃(逐檔行號)+ coordinator 現場 git/測試實跑。
+> 本檔數字為當輪(Phase 0)快照,現值以各腳本當次輸出與 Capability Matrix 為準。
 
 ## Methodology Repository
 

@@ -78,6 +78,7 @@ feature_initial_base: "<sha>"
 - `start <slug>` 不帶 `--task` = 完全舊行為(v1 語意,sequential)。
 - `--task T-n`:scope = 該 T 的 Files(∪ extra);5-tasks/6-notes **移出恆許**(單寫者=派工者);`.devflow/task/<T-id>/` evidence 放行。
 - 異 slug 雙 start 拒絕維持;同 slug 異 task 屬不同 worktree(一樹一武裝不變)。
+- 終形注記(P1 實作後):v2 僅 `--task` 路徑寫入;sequential/feature-scope 維持 v1 無 run_id(= KL-1);實作另含 `attempt` 欄。
 
 ## 8. Ledger 落盤與 Retention(OC-5)
 

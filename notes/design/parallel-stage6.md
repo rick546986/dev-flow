@@ -235,6 +235,9 @@ sequential/feature-level 模式輸出維持現行格式(向後相容),僅允許 
 
 ### 7.4 exec.json v2(additive)
 
+> 本節為早期草案,已被 `notes/design/vnext-shared-contract.md` §7 與 P1 最終實作取代;
+> 僅留歷史脈絡,欄位以該正本為準。
+
 現有欄位全保留;task 模式新增:
 
 ```json
@@ -355,6 +358,13 @@ REWORK→RUNNING
 補充語意:`MECHANICAL_PASS→IN_REVIEW` 只限 Review-mode=dedicated;
 `IN_REVIEW→QUEUED_FOR_INTEGRATION` 只限 dedicated PASS 後;
 `QUEUED_FOR_INTEGRATION→REWORK` = 整合衝突/整合後 Verify 紅。
+
+補充狀態 `INVALIDATED_BY_UPSTREAM`(VNext 整合輪新增,語意正本 =
+`notes/design/vnext-shared-contract.md` §5、`devflow-contract.json` task_states):
+上游 Accepted Commit 變更 → 尚未整合的 candidate 一律標記此狀態,不得續審、
+不得整合;合法轉移(additive):
+`CANDIDATE|MECHANICAL_PASS|QUEUED_FOR_INTEGRATION|IN_REVIEW → INVALIDATED_BY_UPSTREAM`、
+`INVALIDATED_BY_UPSTREAM → RUNNING`(經 task-rework,自新 Wave Base 重建 candidate)。
 
 **不變量:只有 `ACCEPTED` 才能勾 5-tasks checkbox**(勾的人 = Coordinator,§11)。
 
