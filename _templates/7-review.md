@@ -37,6 +37,11 @@ updated:
 >    缺漏或多人同時操作 —— 填 Operational Walkthrough 表(無 Operational Context 的
 >    純內部 S 註明不適用)。完成 = 表逐 S 填畢。
 > 3. 雙軸審:Standards(F-id 🔴🟡🟢:位置|問題|建議)+ Spec(逐 R 符合/偏離);
+>    4-spec 的 Design Boundary Contract 為 `applicable` 時,**併入既有兩軸**(不另立
+>    Gate、不另立第三軸):Standards 加查 Dependency Direction／Boundary Leakage／
+>    Data Ownership／Interface Stability;Spec 逐條對照實際 diff 是否符合該契約 ——
+>    未經 spec 授權的 Boundary 變更至少 🟡,會改變 R/S、資料所有權、公開 Interface
+>    或一致性語意者 🔴。
 >    每 F 標影響 S/T。Agent 審時**兩軸各派一個獨立 fresh reviewer 並行**(互不看
 >    對方輸出;人類 reviewer 可自兼雙軸);彙整者只並列兩軸 finding,**禁合併重排、
 >    禁降級任一軸**(防一軸失敗被另一軸掩蓋)。每 F 必引 spec 原文或 diff hunk,
@@ -111,10 +116,19 @@ updated:
 |---|---|---|---|---|---|---|
 
 ## Standards Axis
-<!-- F-id 🔴Blocker 🟡Should-fix 🟢Nice-to-have:位置 | 問題 | 建議 -->
+<!-- F-id 🔴Blocker 🟡Should-fix 🟢Nice-to-have:位置 | 問題 | 建議。
+     Design Boundary Contract 為 applicable 時,本軸另查四項(仍屬本軸,不另立 Gate):
+     Dependency Direction(有無反向或新增未授權依賴)、Boundary Leakage(內部型別/
+     資料結構是否漏出邊界)、Data Ownership(有無非 owner 直接寫入)、
+     Interface Stability(公開介面變更是否符合契約宣告的相容策略) -->
 
 ## Spec Axis
-<!-- 逐 R 檢查符合/偏離;對照 6 的 Deviations 是否如實記錄 -->
+<!-- 逐 R 檢查符合/偏離;對照 6 的 Deviations 是否如實記錄。
+     Design Boundary Contract 為 applicable 時,逐條對照實際 diff 是否符合該契約
+     (Architecture Boundaries / Interface & Consistency / Software Design / Design Constraints)。
+     分級:未經 spec 授權的 Boundary 變更**至少 🟡**;若該變更改到 R/S、資料所有權、
+     公開 Interface 或一致性語意 → **🔴**。Known design limit 被實作悄悄「修掉」也算偏離,
+     須列 F 並回頭修契約(L2 路徑),不得默默接受 -->
 
 ## 變更架構圖
 <!-- README §6:Markdown 留 ASCII 正本;純線性/單層樹用半形 | - + > < = [ ],
@@ -128,6 +142,14 @@ updated:
 <!-- PASS / REQUEST_CHANGES(列 🔴) -->
 
 ## Exit Checklist(全勾才算 shipped)
+- [ ] **Design Boundary finding 全數處置**(契約 `applicable` 時必勾;`n-a` 時記 n-a):
+      未經授權的 Boundary 變更**不論 🔴 或 🟡 都不得帶著出貨** —— 逐條落在下列三種之一:
+      ①已修正(diff 已回到契約內);②記 **L2** 回 G2 改契約後重審;
+      ③**Owner 明示接受或 park**:寫下 owner、理由、追蹤位置
+      (STATUS 待辦或 7-review known limits,擇一,須寫得出實際落點)。
+      無記錄的 🟡 = 未處置,不得勾。理由:PASS 門檻只寫「無 🔴」,
+      而未授權 Boundary 變更的預設分級是 🟡 —— 沒有這一條它就會靜默出貨
+      (2026-08 fresh review F-5)
 - [ ] Quiz(**不可逆改動必做**;其餘 full lane 選配,fast 免):AI 就本次變更出 3-5 題考 approver(改了什麼/為何/邊界),全對才准 merge
 - [ ] PR → develop(feature branch,禁直上 master)
 - [ ] 4-spec delta 已併入 `docs/specs/<domain>.md`

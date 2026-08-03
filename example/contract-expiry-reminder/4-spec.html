@@ -215,6 +215,162 @@
 <p>≤ 9 檔 / ≤ 600 行(API handler+service+query、狀態 API+migration、前端卡片元件+route、測試)。</p>
 <h2>Dependencies</h2>
 <p>需 migration:<code>contracts.renewal_status</code>(enum:未處理/等待法務/等待主管/已聯絡供應商/已續約/不續約)+ 狀態歷程表(contract_id、誰、何時、舊→新)。不依賴其他 feature。</p>
+<h2>Design Boundary Contract(條件式;G2 一併審)</h2>
+<ul>
+<li>Applicability: applicable</li>
+<li>Trigger(s): 新增公開 API(<code>GET /contracts/expiring</code>、<code>PATCH /contracts/:id/status</code>)、schema migration 與新資料所有權(<code>contracts.renewal_status</code> + 狀態歷程表)、涉 Transaction 與 Concurrency/Idempotency(狀態與歷程同交易、stale write)、Feature Risk = high、三個以上模組共同參與(handler / service / repo / dashboard UI)</li>
+<li>Design source: 既有 pattern —— <code>internal/{handler,service,repo}</code> 三層與 <code>ExpiringContractsCard</code> 元件慣例;本次新增的狀態寫入路徑與歷程表為 new local design(無既有 ADR)</li>
+</ul>
+<h3>Architecture Boundaries</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Boundary / Module</th>
+<th>Responsibility</th>
+<th>Data owner</th>
+<th>Allowed dependencies</th>
+<th>Forbidden dependencies</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dashboard UI(<code>src/components/ExpiringContractsCard.tsx</code>、<code>src/pages/Dashboard.tsx</code>)</td>
+<td>呈現到期卡片、狀態欄/下一步欄與列內標記選單;依後端回應把「已續約」灰階並顯示提示</td>
+<td>不擁有任何資料(僅呈現)</td>
+<td>→ Contract API(HTTP)</td>
+<td>不得直接觸 DB;不得自行推導權限結論以外的狀態(權限正本在 API 層)</td>
+</tr>
+<tr>
+<td>Contract API handler(<code>internal/handler/contract.go</code>、<code>internal/handler/contract_status.go</code>)</td>
+<td>端點入口;在此層強制「已續約僅主管」授權(非主管一律拒絕);把 service/repo 的錯誤轉成 HTTP 回應</td>
+<td>不擁有資料(委派 store)</td>
+<td>→ Contract query service、→ Contract status store</td>
+<td>不得繞過 service 自行組查詢;GET 路徑不得寫入</td>
+</tr>
+<tr>
+<td>Contract query service(<code>internal/service/contract.go</code>)</td>
+<td>到期查詢邏輯 <code>service.ListExpiring</code>(抽出以供未來 cron 複用)</td>
+<td>不擁有資料(唯讀)</td>
+<td>→ Contract read repo</td>
+<td>不得寫入任何欄位或歷程</td>
+</tr>
+<tr>
+<td>Contract read repo(<code>internal/repo/contract.go</code>)</td>
+<td>讀 <code>contracts</code>,複用既有 <code>idx_contracts_end_date</code></td>
+<td>不擁有 <code>contracts</code>(既有欄位由既有合約模組擁有,本次不改)</td>
+<td>→ DB(讀)</td>
+<td>不得寫 <code>contracts</code> 既有欄位</td>
+</tr>
+<tr>
+<td>Contract status store(<code>internal/repo/contract_status.go</code>、<code>migrations/0007_renewal_status.sql</code>)</td>
+<td>唯一寫入 <code>contracts.renewal_status</code> 與狀態歷程表的地方;維持「狀態變更必留一筆歷程」的不變量</td>
+<td><strong>擁有</strong> <code>contracts.renewal_status</code> 與狀態歷程表</td>
+<td>→ DB(讀寫,單一交易)</td>
+<td>不得被 UI 或 service 繞過直呼;不得由任何 GET 路徑進入寫入分支</td>
+</tr>
+</tbody>
+</table></div>
+<h3>Interface &amp; Consistency Contract</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Interface / Flow</th>
+<th>Input / Output</th>
+<th>Errors</th>
+<th>Transaction / Consistency boundary</th>
+<th>Compatibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /contracts/expiring?days=30</code></td>
+<td>in:登入身分 + <code>days</code>;out:登入者名下 30 天內到期未續約合約列表(名稱、剩餘天數、狀態、下一步、最後動作時間);零筆 → 200 + 空列表</td>
+<td>查詢失敗回非 2xx;<strong>前端本期無專用錯誤呈現</strong>(已列 Out of Scope),錯誤與空狀態在 UI 上可能不可區分 → 見 Known design limit</td>
+<td>唯讀:不開交易寫入,任何讀取路徑對狀態與歷程零副作用(S-5 以歷程筆數斷言)</td>
+<td>additive —— 新端點,無既有呼叫端</td>
+</tr>
+<tr>
+<td><code>PATCH /contracts/:id/status</code></td>
+<td>in:合約 id + 目標狀態(6 值域之一);out:更新後狀態、下一步、最後動作時間 + 歷程新增一筆(誰/何時/舊→新)</td>
+<td>非主管標「已續約」→ 403,狀態不變、歷程零新增;UI 對應灰階選項 + 「已續約僅主管可標」提示</td>
+<td><strong>狀態更新與歷程寫入在同一交易</strong>(只成功一筆不可能發生);交易邊界止於 Contract status store,不跨模組</td>
+<td>additive —— 新端點,無既有呼叫端</td>
+</tr>
+<tr>
+<td>migration <code>0007_renewal_status</code></td>
+<td>加 <code>contracts.renewal_status</code> enum 欄 + 新建狀態歷程表</td>
+<td>演練 down/up 時 orphan rows &gt; 0 即視為失敗(見 Failure Model)</td>
+<td>schema 變更為單次 migration;既有 <code>contracts</code> 欄位不動</td>
+<td>additive —— 只加欄與加表,既有讀取路徑不受影響</td>
+</tr>
+</tbody>
+</table></div>
+<h3>Software Design</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Responsibility</th>
+<th>Collaborators</th>
+<th>State / Data flow</th>
+<th>Error handling</th>
+<th>Test seam</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>service.ListExpiring</code></td>
+<td>依 <code>days</code> 與登入者算出到期未續約清單與剩餘天數</td>
+<td>← handler;→ <code>repo.Contract</code></td>
+<td>stateless;讀 <code>contracts</code> → 回列表</td>
+<td>讀取錯誤原樣往上傳,不吞成空列表</td>
+<td><code>go test ./internal/... -run TestExpiring</code>(可注入固定 today 驗「10 天」)</td>
+</tr>
+<tr>
+<td><code>handler.PatchContractStatus</code></td>
+<td>解析目標狀態、強制主管授權、呼叫 store、組回應</td>
+<td>← HTTP;→ <code>repo.ContractStatus</code></td>
+<td>stateless;授權判斷不落地</td>
+<td>授權失敗 → 403 並中止(不進交易);store 錯誤往上傳</td>
+<td><code>go test ./internal/... -run TestRenewalStatus_S4</code>(權限分支)</td>
+</tr>
+<tr>
+<td><code>repo.ContractStatus</code></td>
+<td>單一交易內寫狀態 + 追加歷程;唯一寫入點</td>
+<td>← handler</td>
+<td>狀態住 DB;歷程 append-only(不覆寫、不去重)</td>
+<td>交易失敗整筆回滾,不留半套(呼叫端只看到成功或完全沒發生)</td>
+<td>交易邊界可測:<code>TestRenewalStatus_S4</code> 斷言「狀態值變更」與「歷程 +1」同時成立;在 repo 層注入寫入失敗即可驗回滾後狀態與歷程都不變。讀取零副作用由 <code>TestRenewalStatus_S5_ViewDoesNotComplete</code> 以歷程筆數斷言</td>
+</tr>
+<tr>
+<td><code>ExpiringContractsCard</code></td>
+<td>卡片列渲染、空狀態文案、列內標記選單與灰階提示</td>
+<td>← <code>Dashboard.tsx</code>;→ Contract API</td>
+<td>前端不保存狀態真相,每次以 API 回應為準(中斷後重開即為最後成功值)</td>
+<td>API 非 2xx 時本期無專用錯誤畫面(Known design limit)</td>
+<td><code>npm test -- ExpiringContractsCard</code>(S-2 空狀態、S-6 灰階提示)</td>
+</tr>
+<tr>
+<td><code>e2e/expiring-contracts.spec.ts</code></td>
+<td>端到端證據:真瀏覽器走完登入 → 卡片 → 詳情,證明三層接起來真的會動</td>
+<td>→ Dashboard UI(經瀏覽器);不直呼任何內部模組</td>
+<td>stateless;每次自建測試資料再清掉,不依賴殘留狀態</td>
+<td>失敗即中止並保留 trace,<strong>不吞錯、不重試</strong>(重試會把 flaky 藏起來)</td>
+<td>本身就是 seam:<code>npx playwright test e2e/expiring-contracts.spec.ts</code>,斷言取值照 S-1／S-3 觀測欄</td>
+</tr>
+</tbody>
+</table></div>
+<h3>Design Constraints</h3>
+<ul>
+<li>必須:狀態與歷程在同一交易寫入;<code>contracts.renewal_status</code> 與歷程表只由 Contract status store 寫;「已續約」授權在 API handler 層強制(UI 灰階只是呈現,不是防線);狀態值域固定 6 值。</li>
+<li>禁止:任何 GET／讀取路徑進入寫入分支(含「已讀」記錄);UI 直接觸 DB;service 繞過 Contract status store 寫入。(產品行為排除見 Negative constraints／Out of Scope。)</li>
+<li>Extension point:<code>service.ListExpiring</code> 已抽出,未來 cron 可複用同一查詢(2-decision 已裁決);歷程表結構可承接後續報表,本期不做。</li>
+<li>Known design limit:
+①<strong>Stale write 無衝突偵測</strong> —— 未設版本欄或樂觀鎖,兩人以過期畫面先後標記時後手覆蓋前手,歷程留兩筆但無衝突提示(對應 Reliability triage 的 Concurrency: applicable 結論;本期不引入衝突偵測)。
+②<strong>完整操作不保證冪等</strong> —— 重送相同標記,狀態值收斂但歷程可能新增同值一筆(歷程 append-only、不去重、無 idempotency key);「狀態值收斂」≠「操作冪等」。
+③<strong>查詢失敗的前端呈現缺口</strong> —— <code>GET /contracts/expiring</code> 失敗時無專用錯誤畫面,可能被誤讀為「今天沒有到期合約」(Stage 3 已 ACCEPTED 但本期排除的場景,理由見 Out of Scope)。
+三項皆為既有設計的顯性化,本期不新增樂觀鎖、idempotency key、重試 UI、新 API 或新 schema。</li>
+</ul>
 <h2>Verification Profile(G2 一併審)</h2>
 <ul>
 <li>lane: full(Risk: high 命中自動升 Full 清單,不得 fast;本節 Risk = Feature Risk,

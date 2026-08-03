@@ -133,7 +133,20 @@ def parse_5_tasks(text):
         if current:
             m = FIELD_RE.match(line)
             if m:
-                current["fields"][m.group(1)] = m.group(2).strip()
+                key = m.group(1)
+                # 同一 T 的保留欄不得出現兩次。FIELD_RE 前綴是 `\s*`(容許任意縮排),
+                # 所以 `Boundaries:`／`Intent:` 的續行若寫成 `  - Files: …` 子項,
+                # 會被當成該 T 的 Files 欄。舊行為是 last-write-wins:真正的 Files 被
+                # 靜默換掉、errors 為空,而 Files 正是 task_scope() 與 gate 的
+                # files_within_scope 的唯一依據 —— scope 就這樣被無聲放寬。
+                # 改為 fail-closed:記 error(errors 非空 = start 必須拒啟)並保留首筆。
+                if key in current["fields"]:
+                    errors.append(
+                        f"{current['id']} 重複保留欄「{key}」:同一 T 不得出現兩次,"
+                        f"後筆不得覆蓋前筆(常見成因:`Boundaries:`／`Intent:` 續行"
+                        f"寫成 `- {key}:` 子項;續行禁令見 _templates/5-tasks.md)")
+                    continue
+                current["fields"][key] = m.group(2).strip()
     if current:
         blocks.append(current)
     if not blocks:

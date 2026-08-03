@@ -337,6 +337,18 @@
 <li>F-1 🟡 <code>internal/handler/contract.go:41</code> | handler 未設 context timeout,慢查詢會掛住
 dashboard | 建議:<code>context.WithTimeout(ctx, 2s)</code>,下個 fast-lane 補。</li>
 </ul>
+<p>Design Boundary Contract 為 <code>applicable</code>,本軸另查四項(4-spec Design Boundary Contract):</p>
+<ul>
+<li><strong>Dependency Direction</strong>:符合 —— diff 中 handler → service → repo 單向,無反向 import;
+<code>src/</code> 無任何 DB client 引用。</li>
+<li><strong>Boundary Leakage</strong>:符合 —— API 回傳為前端專用 DTO,repo 的 row struct 未外洩到
+<code>src/components/ExpiringContractsCard.tsx</code>。</li>
+<li><strong>Data Ownership</strong>:符合 —— <code>renewal_status</code> 與狀態歷程表的寫入全部經
+<code>internal/repo/contract_status.go</code>;<code>grep -rn &quot;renewal_status&quot;</code> 在 handler/service 層
+只出現於讀取與參數傳遞,無直接 UPDATE。</li>
+<li><strong>Interface Stability</strong>:符合 —— 兩個端點皆為新增(additive),既有呼叫端零受影響;
+migration 只加欄與加表,未改既有欄位型別或語意。</li>
+</ul>
 <h2>Spec Axis</h2>
 <ul>
 <li>R-1 符合(S-1/S-2 綠;空狀態文案同 spec)。</li>
@@ -344,6 +356,19 @@ dashboard | 建議:<code>context.WithTimeout(ctx, 2s)</code>,下個 fast-lane �
 <li>R-3 符合(S-4/S-5/S-6 綠;歷程含誰/何時/舊→新,「已續約」僅主管與看過零變更行為同 spec)。</li>
 <li>D-1 已如實記錄,判定正確(不動 R/S,屬 L1;避開的是覆蓋索引 migration,
 <code>renewal_status</code> migration 為 4-spec Dependencies 明載的計畫內變更)。</li>
+<li><strong>Design Boundary Contract 逐條對照 diff:符合,無未經 spec 授權的 Boundary 變更</strong>
+(故本項無 🟡 亦無 🔴)。
+<ul>
+<li>Architecture Boundaries:五個邊界的 Allowed／Forbidden dependencies 與實際 diff 一致。</li>
+<li>Interface &amp; Consistency:<code>PATCH /contracts/:id/status</code> 的狀態更新與歷程追加確在同一交易
+(<code>internal/repo/contract_status.go</code> 單一 <code>tx</code> 內兩次寫入,測試以「狀態變更 + 歷程 +1」同時斷言)。</li>
+<li>Software Design:各元件的 Test seam 都有對應測試(<code>TestExpiring</code> / <code>TestRenewalStatus_S4</code>
+/ <code>TestRenewalStatus_S5_ViewDoesNotComplete</code> / vitest / playwright)。</li>
+<li>Design Constraints:三條 Known design limit(stale write 無衝突偵測、完整操作不保證冪等、
+查詢失敗無專用前端呈現)<strong>在本次實作中維持未解</strong>,沒有被悄悄「修掉」——
+契約與實作一致,無需回 G2。</li>
+</ul>
+</li>
 </ul>
 <h2>變更架構圖</h2>
 <pre><code class="language-text">[Dashboard.tsx]
@@ -477,6 +502,7 @@ dashboard | 建議:<code>context.WithTimeout(ctx, 2s)</code>,下個 fast-lane �
 <p><strong>PASS</strong>(F-1 為 🟡,開 fast-lane follow-up,不擋出貨)</p>
 <h2>Exit Checklist</h2>
 <ul>
+<li>[x] Design Boundary finding 全數處置:契約為 <code>applicable</code>,Standards Axis 四查與 Spec Axis 逐條對照<strong>皆符合</strong>,無未經授權的 Boundary 變更 → 🔴 0 筆、🟡 0 筆,無待處置項。(三條 Known design limit 是 4-spec 已授權且本次維持未解的既有限制,不是未授權變更;仍逐條列在下方 known limits。)</li>
 <li>[x] Quiz(不可逆改動必做;其餘 full lane 選配,fast 免):本次新增對外 API endpoint(<code>GET /contracts/expiring</code>、<code>PATCH /contracts/:id/status</code>)與 <code>renewal_status</code> migration,shipped 後即成對外契約/schema,移除屬破壞性變更 → 不可逆,Quiz 必做 —— AI 出 5 題(30 天定義來源/為何不做 email/D-1 為何不加索引/空狀態行為/「已續約」為何僅主管),<code>&lt;reviewer-a&gt;</code> 全對</li>
 <li>[x] PR #142 → develop</li>
 <li>[x] 4-spec delta 已併入 <code>docs/specs/contracts.md</code>(R-1~R-3 貼入,標 source)</li>

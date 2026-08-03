@@ -372,6 +372,14 @@ cd &lt;path&gt;
   <p>G3 PASS 之後,<code>7-review.md</code> 的 Exit Checklist 要全勾才算 shipped(逐字抄自模板):</p>
   <!-- parity:start template7-exit-quickstart -->
   <ul>
+  <li>[ ] <strong>Design Boundary finding 全數處置</strong>(契約 <code>applicable</code> 時必勾;<code>n-a</code> 時記 n-a):
+  未經授權的 Boundary 變更<strong>不論 🔴 或 🟡 都不得帶著出貨</strong> —— 逐條落在下列三種之一:
+  ①已修正(diff 已回到契約內);②記 <strong>L2</strong> 回 G2 改契約後重審;
+  ③<strong>Owner 明示接受或 park</strong>:寫下 owner、理由、追蹤位置
+  (STATUS 待辦或 7-review known limits,擇一,須寫得出實際落點)。
+  無記錄的 🟡 = 未處置,不得勾。理由:PASS 門檻只寫「無 🔴」,
+  而未授權 Boundary 變更的預設分級是 🟡 —— 沒有這一條它就會靜默出貨
+  (2026-08 fresh review F-5)</li>
   <li>[ ] Quiz(<strong>不可逆改動必做</strong>;其餘 full lane 選配,fast 免):AI 就本次變更出 3-5 題考 approver(改了什麼/為何/邊界),全對才准 merge</li>
   <li>[ ] PR → develop(feature branch,禁直上 master)</li>
   <li>[ ] 4-spec delta 已併入 <code>docs/specs/&lt;domain&gt;.md</code></li>

@@ -410,10 +410,13 @@
     段段給使用者確認。完成 = 全 R 展開、每 S 有觀測欄、每段有確認(確認紀錄節留一行)。</li>
     <li>邊界收尾:Acceptance Criteria(全 S 綠+回歸+非功能;行為不變 → golden master)、
     Out of Scope、Diff Budget、Dependencies;同步填 Verification Profile(含 <code>lane:</code>
-    欄,Lane 規則見該節;Risk 判準見該節;Risk: high → Failure Model 表必填)。
+    欄,Lane 規則見該節;Risk 判準見該節;Risk: high → Failure Model 表必填)與
+    Design Boundary Contract(條件式:觸發條件見該節,全未命中才可 <code>n-a</code> + 具體理由;
+    Fast lane 不豁免觸發條件)。
     Stage 3 對帳:逐一核對 3-prototype Demo Script 場景。每個已 ACCEPTED 的場景
     必須對應至少一條 R/S,或在 Out of Scope 明列排除理由;沒有 Stage 3 時記 N/A。
-    完成 = 四節齊 + Verification Profile 填畢 + Stage 3 對帳逐場有下落。</li>
+    完成 = 四節齊 + Verification Profile 填畢 + Design Boundary Contract 有結論
+    (applicable 全填 / n-a 附理由)+ Stage 3 對帳逐場有下落。</li>
     <li>Drafting Decisions 清點:草擬自拍板逐條(決策|理由|棄項|待人審);全文掃
     TBD/之後再說/實作再定 → 命中即轉 DD 或退回提問。完成 = 掃描零殘留。</li>
     <li>自檢(反模糊掃描):逐 S 過三律(見上,含模糊詞掃);鏈檢:每條驗收雛形 ≥1 個 S
@@ -457,7 +460,9 @@
     否則 fresh-context reviewer Agent;reviewer 親跑 Verify,檢查 Covers、RED→GREEN
     證據與該 T 自己的 Files scope,並過 Test Integrity Check 七項(①刪 assertion
     ②放寬 assertion ③新增 skip/xfail ④同步改測試+實作重新定義正確性 ⑤mock 核心
-    邏輯 ⑥只追 coverage 無有意義 assertion ⑦沒跑的層寫成 PASS;任一命中 → FAIL)。
+    邏輯 ⑥只追 coverage 無有意義 assertion ⑦沒跑的層寫成 PASS;任一命中 → FAIL);
+    4-spec 的 Design Boundary Contract 為 <code>applicable</code> 時,另過 Design Boundary Check
+    五問(全文見下方實作期規則)。
     FAIL → 回同一 T 修正並重新送審;高風險或
     finding 有爭議可加第二 reviewer;f PASS → commit;g hash 入 Progress Log +
     勾 checkbox + review evidence 入 T Review Log;h 自由選擇 → Decisions 一行續走,
@@ -466,12 +471,15 @@
     independent T review → PASS → commit → Progress Log + checkbox + review evidence。</li>
     <li>回歸:全 T 後跑既有全套,本次 S 全綠+既有全綠;紅 → 修+依偏差級記。
     完成 = 全套<strong>全綠</strong>輸出摘要入本檔(紅字摘要不算完成)。</li>
-    <li>自檢(= Self-Review 節逐問作答):①每個「T × Covers S」都有含 S-id 的測試 +
+    <li>自檢(= Self-Review 節逐問作答;Design Boundary Contract applicable 時第⑦問
+    併查邊界 drift):①每個「T × Covers S」都有含 S-id 的測試 +
     該 T 自己的 RED/GREEN 證據(不得跨 T 共用)?
     ②每 T 在 T Review Log 有 verdict?③每個 PASS 都早於該 T commit?④每個 FAIL
     後有較晚 PASS,否則該 T 仍未勾、未 commit?⑤每個已完成 T 一 commit、Progress
     Log 每列有 hash?⑥git diff --stat 檔案 ⊆ Files 聯集、Diff Budget 內?
-    ⑦Decisions/Deviations 與 diff 對得上(無 silent drift)?⑧回歸綠?答不出 →
+    ⑦Decisions/Deviations 與 diff 對得上(無 silent drift;契約 applicable 時併查:
+    模組依賴、Data Owner、Interface／Transaction／Consistency Boundary 有無未經
+    授權的改變,有則已記 L2 並回 G2)?⑧回歸綠?答不出 →
     回步 2/3 補。完成 = 八答落檔。</li>
     <li>收尾:Files Changed 填(對照 Diff Budget)、全節齊無佔位、status 更新。
     完成 = 節齊 + frontmatter status 已更新。</li>
@@ -497,6 +505,17 @@
     <li>分不清 L1/L2 → <strong>一律當 L2</strong>,不留自由心證。</li>
     </ul>
     </li>
+    <li><strong>Design Boundary Check(條件式;4-spec 的 Design Boundary Contract 為 <code>applicable</code>
+    時,每個 T 的 independent review 必過)</strong>:不新增 Review Stage,只在既有 T Review 加五問 ——
+    ①Diff 是否引入未授權的模組依賴?②是否改變 Data Owner?③是否改變 Interface／
+    Transaction／Consistency Boundary?④是否違反 Design Constraints 的「必須／禁止」,
+    或讓某個 Known design limit 被實作悄悄「修掉」而契約沒改?⑤若①～④任一為是,
+    是否已記為 L2 並回 G2(走既有 L2 路徑,不新增 gate)?
+    ①～④對應設計契約三張表與 Design Constraints 的全部四塊(Architecture Boundaries →①②、
+    Interface &amp; Consistency →③、Software Design 與 Design Constraints →④),不留半邊沒人查。
+    任一為「有改變且未記 L2」→ FAIL。契約為 <code>n-a</code> 時本檢查記 <code>n-a</code>。
+    Worker 只取得<strong>與該 T 相關的 Design Boundary 子集</strong>(來自 5-tasks 該 T 的
+    <code>Boundaries:</code> 欄),<strong>不得因本檢查要求 Worker 回讀 Stage 1～3</strong>(圍欄自查不變)。</li>
     </ul>
     </blockquote>
     <!-- parity:end template6-rules -->
@@ -597,6 +616,11 @@
     缺漏或多人同時操作 —— 填 Operational Walkthrough 表(無 Operational Context 的
     純內部 S 註明不適用)。完成 = 表逐 S 填畢。</li>
     <li>雙軸審:Standards(F-id 🔴🟡🟢:位置|問題|建議)+ Spec(逐 R 符合/偏離);
+    4-spec 的 Design Boundary Contract 為 <code>applicable</code> 時,<strong>併入既有兩軸</strong>(不另立
+    Gate、不另立第三軸):Standards 加查 Dependency Direction／Boundary Leakage／
+    Data Ownership／Interface Stability;Spec 逐條對照實際 diff 是否符合該契約 ——
+    未經 spec 授權的 Boundary 變更至少 🟡,會改變 R/S、資料所有權、公開 Interface
+    或一致性語意者 🔴。
     每 F 標影響 S/T。Agent 審時<strong>兩軸各派一個獨立 fresh reviewer 並行</strong>(互不看
     對方輸出;人類 reviewer 可自兼雙軸);彙整者只並列兩軸 finding,<strong>禁合併重排、
     禁降級任一軸</strong>(防一軸失敗被另一軸掩蓋)。每 F 必引 spec 原文或 diff hunk,

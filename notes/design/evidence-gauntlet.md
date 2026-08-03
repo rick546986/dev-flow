@@ -9,6 +9,12 @@
 > tools/gauntlet.sh, tools/mutants.py, tools/source_state.sh}、
 > .github/workflows/gauntlet.yml(2026-08-02 clone 實讀)。
 
+<!-- 版本宣告錨(scripts/check-version-sync.sh 解析下一行;四處版本必須一致:
+     本行、scripts/devflow-evidence-gauntlet.sh 的 GAUNTLET_VERSION、
+     devflow-contract.json 的 schema_versions.gauntlet、README §7 的括注)。
+     改版本時四處一起改,漏一處守衛會紅。 -->
+**現行 Gauntlet 版本:1.2.0**
+
 ## 0. 定位與邊界(先立不變量)
 
 1. **4-spec 是唯一 Spec;7-review 是唯一最終 Evidence/Verdict。**

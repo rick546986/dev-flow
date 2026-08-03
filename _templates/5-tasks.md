@@ -27,9 +27,41 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 > - 標題 = 動詞開頭的一句完成式(「建 ent schema 十二張」,不是「schema 相關」)。
 > - Intent 一句話寫「這個 T 做完,系統多了什麼可觀測行為」;Boundaries 寫硬約束/
 >   禁區(照哪個既有 pattern、不准動什麼),無則寫「—」。兩欄是派工 prompt 的
->   直接原料;守衛只解析必填四欄,這兩欄不影響 scope。
+>   直接原料;守衛只解析必填四欄,這兩欄**本身**不影響 scope —— 但見下一條的續行禁令。
+> - **續行禁令(保留欄名不得被遮蔽)**:`Intent:`／`Boundaries:` 的續行與子項
+>   **不得**以保留欄名開頭 —— `- Covers:`、`- Files:`、`- Verify:`、`- Blocked-by:`、
+>   `- Integrate-after:`、`- Risk:`、`- Review-mode:`、`- Semantic-conflicts-with:`、
+>   `- Intent:`、`- Boundaries:`、`- Owner:`(縮排幾層都算)。
+>   parser 認欄位是「行內任意縮排 + `- <欄名>:`」,寫成子項會被當作該 T 的同名欄位,
+>   把真正的 `Files:`／`Verify:` 換掉 —— `Files` 正是 Stage 6 scope guard 的唯一依據。
+>   續行請用純文字或非保留字開頭(例:`  Design Boundary(…):…`)。
+>   違反時 `contract_ref.py` 會回報「重複保留欄」並 fail-closed(start 拒啟),不再靜默覆蓋。
 > - 一個 T 一個關注點:Files 超過 ~5 檔或 Verify 要跑兩套不相干指令 → 拆 T。
 >   超標拆分優先按子行為拆,例如讀/寫路徑、成功/例外路徑;不得優先按架構層拆。
+>
+> **Design Boundary 摘錄規則(條件式;沿用既有 `Boundaries:` 欄,不新增 Task 欄位)**:
+> 當 4-spec 的 Design Boundary Contract 為 `applicable` 時,每個相關 T 的 `Boundaries:`
+> 必須摘錄**與該 T 有關的最小限制**,涵蓋:
+> - 允許修改的 Module。
+> - 禁止新增的依賴方向。
+> - 不得跨越的 Data Ownership。
+> - 必須維持的 Interface。
+> - Transaction／Consistency 限制。
+> - Error／State Test Seam。
+>
+> 「最小」是指**只挑與該 T 相關的那幾條**,不是「可以省略負向約束」——
+> `Forbidden dependencies`、「不得跨越」「必須維持」這類**禁區恰恰是本欄的重點**:
+> 它們正是該 T 最可能誤踩、而 Stage 6 的 Design Boundary Check ①～④要拿來對照的基準。
+> 該 T 真的碰不到的條目才略過,碰得到就必須寫進來,否則 reviewer 只能回頭讀 4-spec 全文
+> (那就違反 T 自足律)。
+>
+> 上列六項是**要涵蓋的內容**,不是要照抄的 bullet 標題 —— 摘錄請寫成續行純文字,
+> **不得**把「允許修改的 Module」寫成 `- Files:`、把「Test Seam」寫成 `- Verify:`
+> 之類的保留欄名子項(理由與完整清單見上方「續行禁令」)。
+>
+> **不得把完整 Design Boundary Contract 複製進每個 T**,只摘錄該 T 的最小子集 ——
+> 執行者靠這一欄就知道自己的禁區,不必回頭讀 4-spec 全文。契約為 `n-a` 時本規則不適用,
+> `Boundaries:` 照舊(有硬約束就寫,無則 `—`)。語意正本:`notes/design/design-boundary-contract.md`。
 >
 > **Task Context Packet 規則(真實世界互動)**:
 > - 每個 Task 只帶與該 T 有關的**最小** Operational Context 子集(從 4-spec 該 T Covers

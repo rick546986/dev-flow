@@ -79,12 +79,33 @@ updated: 2026-07-23
 - F-1 🟡 `internal/handler/contract.go:41` | handler 未設 context timeout,慢查詢會掛住
   dashboard | 建議:`context.WithTimeout(ctx, 2s)`,下個 fast-lane 補。
 
+Design Boundary Contract 為 `applicable`,本軸另查四項(4-spec Design Boundary Contract):
+- **Dependency Direction**:符合 —— diff 中 handler → service → repo 單向,無反向 import;
+  `src/` 無任何 DB client 引用。
+- **Boundary Leakage**:符合 —— API 回傳為前端專用 DTO,repo 的 row struct 未外洩到
+  `src/components/ExpiringContractsCard.tsx`。
+- **Data Ownership**:符合 —— `renewal_status` 與狀態歷程表的寫入全部經
+  `internal/repo/contract_status.go`;`grep -rn "renewal_status"` 在 handler/service 層
+  只出現於讀取與參數傳遞,無直接 UPDATE。
+- **Interface Stability**:符合 —— 兩個端點皆為新增(additive),既有呼叫端零受影響;
+  migration 只加欄與加表,未改既有欄位型別或語意。
+
 ## Spec Axis
 - R-1 符合(S-1/S-2 綠;空狀態文案同 spec)。
 - R-2 符合(S-3 綠)。
 - R-3 符合(S-4/S-5/S-6 綠;歷程含誰/何時/舊→新,「已續約」僅主管與看過零變更行為同 spec)。
 - D-1 已如實記錄,判定正確(不動 R/S,屬 L1;避開的是覆蓋索引 migration,
   `renewal_status` migration 為 4-spec Dependencies 明載的計畫內變更)。
+- **Design Boundary Contract 逐條對照 diff:符合,無未經 spec 授權的 Boundary 變更**
+  (故本項無 🟡 亦無 🔴)。
+  - Architecture Boundaries:五個邊界的 Allowed／Forbidden dependencies 與實際 diff 一致。
+  - Interface & Consistency:`PATCH /contracts/:id/status` 的狀態更新與歷程追加確在同一交易
+    (`internal/repo/contract_status.go` 單一 `tx` 內兩次寫入,測試以「狀態變更 + 歷程 +1」同時斷言)。
+  - Software Design:各元件的 Test seam 都有對應測試(`TestExpiring` / `TestRenewalStatus_S4`
+    / `TestRenewalStatus_S5_ViewDoesNotComplete` / vitest / playwright)。
+  - Design Constraints:三條 Known design limit(stale write 無衝突偵測、完整操作不保證冪等、
+    查詢失敗無專用前端呈現)**在本次實作中維持未解**,沒有被悄悄「修掉」——
+    契約與實作一致,無需回 G2。
 
 ## 變更架構圖
 
@@ -231,6 +252,7 @@ updated: 2026-07-23
 **PASS**(F-1 為 🟡,開 fast-lane follow-up,不擋出貨)
 
 ## Exit Checklist
+- [x] Design Boundary finding 全數處置:契約為 `applicable`,Standards Axis 四查與 Spec Axis 逐條對照**皆符合**,無未經授權的 Boundary 變更 → 🔴 0 筆、🟡 0 筆,無待處置項。(三條 Known design limit 是 4-spec 已授權且本次維持未解的既有限制,不是未授權變更;仍逐條列在下方 known limits。)
 - [x] Quiz(不可逆改動必做;其餘 full lane 選配,fast 免):本次新增對外 API endpoint(`GET /contracts/expiring`、`PATCH /contracts/:id/status`)與 `renewal_status` migration,shipped 後即成對外契約/schema,移除屬破壞性變更 → 不可逆,Quiz 必做 —— AI 出 5 題(30 天定義來源/為何不做 email/D-1 為何不加索引/空狀態行為/「已續約」為何僅主管),`<reviewer-a>` 全對
 - [x] PR #142 → develop
 - [x] 4-spec delta 已併入 `docs/specs/contracts.md`(R-1~R-3 貼入,標 source)

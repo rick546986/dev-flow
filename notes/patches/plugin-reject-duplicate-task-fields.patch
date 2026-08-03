@@ -1,0 +1,187 @@
+From 04c9389ece59bc6d724715db916dd7009d941208 Mon Sep 17 00:00:00 2001
+From: rick <rick546986@gmail.com>
+Date: Mon, 3 Aug 2026 06:53:16 +0800
+Subject: [PATCH 1/2] fix: reject duplicate reserved task fields
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+FIELD_RE 的前綴是 `\s*`,任何縮排層級的 `- <保留欄名>:` 都會被當成該 T 的欄位。
+`Boundaries:`／`Intent:` 的續行若寫成 `  - Files: …` 子項,舊的 last-write-wins
+會靜默把該 T 真正的 Files 換掉且 errors 為空 —— 而 Files 是 task_scope() 與
+gate 的 files_within_scope 的唯一依據,scope 因此被無聲放寬。
+
+實測(修正前 master):`- Files:` 子項讓 T-1 的 scope 從兩個具名 .go 檔
+變成三個整目錄,errors=[]、warn_wide 也不示警。
+
+兩處都改成 fail-closed,保留首筆值:
+- devflow-lib.py parse_5_tasks:記 error(errors 非空 = start 拒啟)。
+- _exec_impl.py legacy scope 解析:直接 die。
+
+母版對應正本:dev-flow tests/parallel-stage6/contract_ref.py 同批修正。
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HsV8qAzAe4iWHTwCTE4rW7
+---
+ hooks/_exec_impl.py  |  7 +++++++
+ hooks/devflow-lib.py | 16 +++++++++++++++-
+ 2 files changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/hooks/_exec_impl.py b/hooks/_exec_impl.py
+index 5f9ff1f..8c0f817 100644
+--- a/hooks/_exec_impl.py
++++ b/hooks/_exec_impl.py
+@@ -278,6 +278,13 @@ if cmd == "start":
+             if current:
+                 field = re.match(r"\s*-\s*(Covers|Files|Verify|Blocked-by):\s*(.*?)\s*$", line)
+                 if field:
++                    # 同一 T 的保留欄不得出現兩次(理由與 devflow-lib.parse_5_tasks 同)。
++                    # 這條 legacy 路徑直接決定 scope,必須 fail-closed 而非 last-write-wins。
++                    if field.group(1) in current["fields"]:
++                        die(f"拒絕:{current['id']} 重複保留欄「{field.group(1)}」——"
++                            f"同一 T 不得出現兩次,後筆不得覆蓋前筆"
++                            f"(常見成因:`Boundaries:`／`Intent:` 續行寫成"
++                            f" `- {field.group(1)}:` 子項)")
+                     current["fields"][field.group(1)] = field.group(2).strip()
+         if current:
+             task_blocks.append(current)
+diff --git a/hooks/devflow-lib.py b/hooks/devflow-lib.py
+index a258563..db1ed84 100644
+--- a/hooks/devflow-lib.py
++++ b/hooks/devflow-lib.py
+@@ -350,7 +350,21 @@ def parse_5_tasks(text):
+         if current:
+             m = FIELD_RE.match(line)
+             if m:
+-                current["fields"][m.group(1)] = m.group(2).strip()
++                key = m.group(1)
++                # 同一 T 的保留欄不得出現兩次。FIELD_RE 前綴是 `\s*`(容許任意縮排),
++                # 因此 `Boundaries:`／`Intent:` 的續行若寫成 `  - Files: …` 子項,
++                # 會被當成該 T 的 Files 欄。舊行為是 last-write-wins:真正的 Files 被
++                # 靜默換掉且 errors 為空,而 Files 是 task_scope() 與 gate 的
++                # files_within_scope 的唯一依據 —— scope 就這樣被無聲放寬。
++                # 改為 fail-closed:記 error(errors 非空 = start 拒啟)並保留首筆。
++                # 母版對應正本:dev-flow tests/parallel-stage6/contract_ref.py。
++                if key in current["fields"]:
++                    errors.append(
++                        f"{current['id']} 重複保留欄「{key}」:同一 T 不得出現兩次,"
++                        f"後筆不得覆蓋前筆(常見成因:`Boundaries:`／`Intent:` 續行"
++                        f"寫成 `- {key}:` 子項;續行禁令見母版 _templates/5-tasks.md)")
++                    continue
++                current["fields"][key] = m.group(2).strip()
+     if current:
+         blocks.append(current)
+     if not blocks:
+-- 
+2.43.2
+
+
+From 3d2f5b1df4c4acf7339e5ebd28de71bf2db0feb4 Mon Sep 17 00:00:00 2001
+From: rick <rick546986@gmail.com>
+Date: Mon, 3 Aug 2026 06:53:16 +0800
+Subject: [PATCH 2/2] test: prevent boundary continuation scope widening
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+兩個常設 runtime regression case(292 → 294):
+- parse-boundshadow:`Boundaries:` 續行寫成 `- Files:`／`- Verify:` 子項、
+  `Intent:` 續行寫成 `- Risk:` 子項 → 必須三筆都判「重複保留欄」,
+  且 T-1 的 files/verify/task_scope 與 T-2 的 risk/review-mode 維持首筆值。
+- parse-boundcont:母版 example 用的純文字續寫 → errors 必須為空,
+  Files/Verify 不受影響(相容性對照組,防過度攔截)。
+
+修正前的 master parser 對 boundshadow 回傳 errors=[] 且 scope 被放寬成整目錄,
+因此這兩案對舊行為是紅的。
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HsV8qAzAe4iWHTwCTE4rW7
+---
+ hooks/selftest.sh | 57 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 57 insertions(+)
+
+diff --git a/hooks/selftest.sh b/hooks/selftest.sh
+index 6d1598a..20aa549 100755
+--- a/hooks/selftest.sh
++++ b/hooks/selftest.sh
+@@ -449,6 +449,36 @@ F = {
+         ("T-5", "docs", [("Covers", "R-3 / S-5"), ("Files", "`docs/specs/x.md`"),
+                          ("Verify", "`bash c.sh`"), ("Blocked-by", "—"), ("Risk", "normal"),
+                          ("Review-mode", "dedicated"), ("Semantic-conflicts-with", "T-2")])]),
++    # 續行遮蔽:`Boundaries:`／`Intent:` 的續行寫成保留欄名子項。
++    # 舊 last-write-wins 行為會靜默把 T-1 的 Files 換成整目錄、Verify 換成散文、
++    # T-2 的 Risk 由 normal 變 high(review-mode 跟著變 dedicated),且 errors 為空。
++    "boundshadow": "\n".join([
++        "---", "feature: fx", "stage: 5-tasks", "status: approved", "---", "",
++        "## T-1 api", "- [ ] 完成",
++        "- Covers: R-1 / S-1",
++        "- Files: `internal/handler/contract.go`, `internal/service/contract.go`",
++        "- Verify: `go test ./internal/... -run TestExpiring`",
++        "- Blocked-by: —",
++        "- Boundaries: 查詢邏輯抽在 `service.ListExpiring`。",
++        "  Design Boundary(摘自 4-spec):",
++        "  - Files: `internal/handler/`, `internal/service/`, `internal/repo/`",
++        "  - Verify: 依賴方向不得反向", "",
++        "## T-2 fe", "- [ ] 完成",
++        "- Covers: R-1 / S-2", "- Files: `src/C.tsx`", "- Verify: `npm test -- C`",
++        "- Blocked-by: T-1", "- Risk: normal",
++        "- Intent: dashboard 多了到期卡片。",
++        "  補充:", "  - Risk: high", ""]),
++    # 對照組:合法的純文字續寫(母版 example 的寫法)不得被誤判。
++    "boundcont": "\n".join([
++        "---", "feature: fx", "stage: 5-tasks", "status: approved", "---", "",
++        "## T-1 api", "- [ ] 完成",
++        "- Covers: R-1 / S-1",
++        "- Files: `internal/handler/contract.go`, `internal/service/contract.go`",
++        "- Verify: `go test ./internal/... -run TestExpiring`",
++        "- Blocked-by: —",
++        "- Boundaries: 查詢邏輯抽在 `service.ListExpiring`。",
++        "  Design Boundary(摘自 4-spec,只取本 T 相關的最小子集):可動 handler／service／read repo;",
++        "  依賴方向單向 handler → service → repo,禁反向;本 T 不擁有 contracts(唯讀)。", ""]),
+     "badmode": md(["mode: turbo"], [("T-1", "甲", BASET)]),
+     "unknownkey": md(["mode: parallel", "max_parallel: 3"], [("T-1", "甲", BASET)]),
+     "highwave": md(["mode: parallel"], [("T-1", "甲", BASET + [("Risk", "high"), ("Review-mode", "wave")])]),
+@@ -550,6 +580,31 @@ def c_parse_old():
+     need(t2["integrate_after"] == [] and t2["risk"] == "normal" and t2["review_mode"] == "wave")
+ 
+ 
++def c_parse_boundshadow():
++    """續行遮蔽必須 fail-closed,且首筆值不被覆蓋(scope 不得被放寬)。"""
++    p = L.parse_5_tasks(F["boundshadow"])
++    for key in ("Files", "Verify", "Risk"):
++        need(any("重複保留欄" in e and key in e for e in p["errors"]),
++             f"{key} 遮蔽未被拒收:{p['errors']}")
++    t = {x["id"]: x for x in p["tasks"]}
++    need(t["T-1"]["files"] == ["internal/handler/contract.go",
++                               "internal/service/contract.go"], str(t["T-1"]["files"]))
++    need(L.task_scope(p, "T-1") == sorted(t["T-1"]["files"]), str(L.task_scope(p, "T-1")))
++    need(t["T-1"]["verify"] == "go test ./internal/... -run TestExpiring", t["T-1"]["verify"])
++    need(t["T-2"]["risk"] == "normal" and t["T-2"]["review_mode"] != "dedicated",
++         f"{t['T-2']['risk']}/{t['T-2']['review_mode']}")
++
++
++def c_parse_boundcont():
++    """合法的純文字續寫不得被誤判為重複欄(相容性對照組)。"""
++    p = L.parse_5_tasks(F["boundcont"])
++    need(p["errors"] == [], str(p["errors"]))
++    t = p["tasks"][0]
++    need(t["files"] == ["internal/handler/contract.go", "internal/service/contract.go"],
++         str(t["files"]))
++    need(t["verify"] == "go test ./internal/... -run TestExpiring", t["verify"])
++
++
+ def c_parse_parallel():
+     p = L.parse_5_tasks(F["par"])
+     need(p["errors"] == [], str(p["errors"]))
+@@ -909,6 +964,8 @@ echo "-- p1 契約battery:parser / DAG / wave / 狀態機 / run_id --"
+ p1_setup_battery
+ ck "p1 舊格式解析+全缺省"            0 "$(p1c parse-old)"
+ ck "p1 parallel 全欄位解析"          0 "$(p1c parse-parallel)"
++ck "p1 續行遮蔽保留欄拒收+首筆不被覆蓋" 0 "$(p1c parse-boundshadow)"
++ck "p1 合法純文字續寫不被誤判"        0 "$(p1c parse-boundcont)"
+ ck "p1 非法 mode 拒收"               0 "$(p1c parse-badmode)"
+ ck "p1 execution 未知 key 拒收"      0 "$(p1c parse-unknownkey)"
+ ck "p1 high+wave 拒收"               0 "$(p1c parse-highwave)"
+-- 
+2.43.2
+

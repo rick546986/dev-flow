@@ -152,9 +152,20 @@ def fenced_seam():
 
 
 def exit_checklist():
+    # 抽整個 `## Exit Checklist` 區段(支援多行項目的續行)。舊版只吃連續單行,
+    # 遇到第一個多行項目就停 —— 會讓 quickstart 靜默只剩第一項而 parity 仍綠。
     source = read("_templates/7-review.md")
-    match = re.search(r"^## Exit Checklist[^\n]*\n((?:- \[ \].*\n)+)", source, re.M)
-    return match.group(1) if match else ""
+    section = re.search(r"^## Exit Checklist[^\n]*\n(.*?)(?=^## |\Z)", source, re.M | re.S)
+    if not section:
+        return ""
+    body = section.group(1)
+    first = re.search(r"^- \[ \]", body, re.M)
+    return body[first.start():].rstrip("\n") + "\n" if first else ""
+
+
+def exit_checklist_items():
+    """模板 Exit Checklist 的**頂層**項目(行首 `- [ ]`,不含續行)。"""
+    return re.findall(r"^- \[ \] (.*)$", exit_checklist(), re.M)
 
 
 parity = {
@@ -189,6 +200,27 @@ for (rel, marker), source in parity.items():
     target = marker_fragment(rel, marker)
     check(norm(markdown_visible(source)) == norm(visible(target)),
           f"{rel}:{marker} normalized source parity")
+
+# ── Exit Checklist 截斷回歸(2026-08 實測缺陷)──────────────────────────────
+# 缺陷長相:模板新增一個**多行**項目 → 舊的單行 regex 只抽到第一項 →
+# guide-quickstart 靜默掉了其餘 7 項,而 renderer fixed point 與上面的 parity
+# 兩邊一起截斷、互相自洽,全綠通過。下面三條讓它不可能再靜默發生。
+_exit_items = exit_checklist_items()
+_exit_fragment = marker_fragment("guide-quickstart.html", "template7-exit-quickstart")
+check(len(_exit_items) >= 2,
+      "7-review Exit Checklist 至少有 2 個頂層項目(抽取沒被截斷)",
+      f"實得 {len(_exit_items)}")
+# ①每個頂層項目都必須出現在 quickstart(比對正規化後的可見文字)
+_exit_visible = norm(visible(_exit_fragment))
+for _item in _exit_items:
+    _head = norm(markdown_visible(_item))[:24]
+    check(_head in _exit_visible,
+          f"Exit Checklist 項目「{_item[:28]}」有進 quickstart(多行項目不得吞掉後續項目)")
+# ②模板頂層項目數 = 生成 HTML 的 <li> 數
+_li_count = len(re.findall(r"<li>", _exit_fragment))
+check(_li_count == len(_exit_items),
+      "quickstart Exit Checklist 的 <li> 數 = 模板頂層 `- [ ]` 項目數",
+      f"<li>={_li_count} 模板={len(_exit_items)}")
 
 guide_text = norm(visible(read("guide-dev-flow.html") + read("guide-quickstart.html")))
 for stale in (

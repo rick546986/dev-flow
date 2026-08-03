@@ -20,10 +20,12 @@ feature 走 7 份文檔、過 3 道 gate(G1 方向核准、G2 契約審查、G3 
   [dev-flow](https://rick546986.github.io/dev-flow/guide-dev-flow.html)、
   [dev-talk](https://rick546986.github.io/dev-flow/guide-dev-talk.html)
   ——repo 內任一 html(含 example 的 twin)都可把路徑接在 `rick546986.github.io/dev-flow/` 後線上檢視
-- `scripts/` = 機械檢查(五支檢查腳本 + `devflow-evidence-gauntlet.sh` 母版)
+- `scripts/` = 機械檢查(單一入口 `devflow-check.sh all`;方法論/契約/架構守衛各腳本
+  + `devflow-evidence-gauntlet.sh` 母版)。CI 只跑這支 = REPO_REFERENCE;外部 plugin 的
+  gate-consistency/selftest/doctor = EXTERNAL_RUNTIME,兩層不互相代表
 - `observability/` = Attempt Ledger 工具(devflow-obs)+ `agent_event` schema
 - `tests/parallel-stage6/` = T 級並行的可執行契約(contract_ref + fixtures)
-- `notes/design/` = 各機制設計正本(並行/觀測/gauntlet/real-world)
+- `notes/design/` = 各機制設計正本(並行/觀測/gauntlet/real-world/design-boundary)
 - `devflow-contract.json` = 版本握手正本(方法論 ↔ runtime capability)
 
 **採用方式**:最低配是把模板複製進專案、人工照本 README 走流程;搭配 Claude Code 的
@@ -99,6 +101,18 @@ root 相對的 `Files` scope。
 /dev-talk):①開場第一動把清單建成 todo,每步有「完成 =」客觀條件,達成才勾;
 ②交審前必過自檢步 —— 產物勾稽、附證據,不憑印象;③禁跳項、禁併項;
 ④完成條件達不成 → 回上游步驟補,不硬過。
+
+**Design Boundary Contract(4-spec 內的條件式章節,不是第八份文檔)**:補的是
+4-spec(可測契約)到 5-tasks(可勾選任務)之間缺的設計邊界 —— 責任歸哪個模組、
+資料歸誰、依賴往哪個方向、跨模組介面與一致性邊界在哪、測試接縫留在哪。
+**十一條觸發條件任一命中即必填,全未命中才可 `n-a` + 具體理由(Fast lane 不豁免)**;
+條件全文與判準**不在此重抄**,以免變成第三份會漂的清單 ——
+操作用清單在 `_templates/4-spec.md` 該節頂註(填的人就地看得到),
+語意判準與好壞範例在 [`notes/design/design-boundary-contract.md`](notes/design/design-boundary-contract.md)(唯一語意正本);
+兩份由 `scripts/check-design-contract.sh` 機械比對條數與關鍵詞,不得單邊漂移。
+由既有 G2 一併審(gate 條件正本仍是 §7,本段不新增 gate 條件),不新增 Stage、
+不新增 Gate、不新增 ID 鏈;Stage 5 用既有 `Boundaries:` 欄摘錄、
+Stage 6 在 T Review 查 drift、Stage 7 併入既有雙軸審。強制力見 §7 對照表。
 
 ## 4. ID 追溯鏈
 
@@ -371,7 +385,12 @@ E11 只驗這兩節在不在。
 | Stage 4 逐場對帳 Stage 3 ACCEPTED 場景 | 人工/fresh reviewer;完全無腳本檢查,連範例都沒有 | `_templates/4-spec.md` 步 3 |
 | Stage 4 Reliability triage 三問已填 | 本 repo 腳本驗模板欄名與範例三項有非空理由;理由對不對是 G2 reviewer 判斷 | `_templates/4-spec.md`、`scripts/check-methodology-corrections.sh` |
 | Stage 5 必填四欄與 scope 解析 | 外部 runtime;本 repo reference parser 驗 fixture | `_templates/5-tasks.md`、`tests/parallel-stage6/contract_ref.py`、`hooks/_exec_impl.py` |
-| Stage 5 不得整份按架構層切 T | 人工/fresh reviewer(判準寫在模板,無 lint) | `_templates/5-tasks.md` |
+| Stage 5 不得整份按架構層切 T | 人工/fresh reviewer 為主;本 repo 另有 **warning-only** heuristic(永不 exit 1,只提示,不能取代 reviewer) | `_templates/5-tasks.md`、`scripts/check-task-slicing.sh` |
+| Stage 4 Design Boundary Contract 該不該填、填得對不對 | **人工/G2 reviewer**。本 repo 腳本只驗結構(章節/欄位/表頭/`n-a` 有無理由/兩份觸發條件清單不漂),**不判斷**模組邊界劃得對不對、Data Owner 合不合理、Interface 設計好不好、Transaction Boundary 是否符合領域 | `_templates/4-spec.md`、`notes/design/design-boundary-contract.md`、`scripts/check-design-contract.sh` |
+| Stage 5 每個相關 T 的 `Boundaries:` 有摘錄設計邊界 | **人工** —— 無腳本檢查實案(本 repo 只驗範例的模板規則存在) | `_templates/5-tasks.md`、`example/contract-expiry-reminder/5-tasks.md` |
+| Stage 6 Design Boundary Check 五問 | **人工/fresh reviewer**;外部 plugin 尚未內建此檢查 | `_templates/6-implementation-notes.md` |
+| Stage 7 對照設計契約審 diff(🟡/🔴 分級) | **人工/fresh reviewer** —— 語意判斷,無機械強制 | `_templates/7-review.md` |
+| ADR 編號唯一、Gauntlet 版本四處同步、README §7 Gate Token 未增刪改名 | 本 repo 腳本(各有負向 fixture／mutation 佐證) | `scripts/check-adr-integrity.sh`、`check-version-sync.sh`、`check-gate-tokens.sh` |
 | Stage 6 scope guard(只准動 Files 欄的檔) | 外部 plugin hooks | `hooks/devflow-exec.sh`、`devflow-guard.sh`、`devflow-prebash.sh`、`devflow-postbash.sh` |
 | Task 獨立 review(作者不自審) | 人工或 fresh Agent;外部 dev-run 編排 | `_templates/6-implementation-notes.md`、dev-run |
 | 4-spec 每個 S 被 5-tasks Covers 承接 | 本 repo 腳本只驗範例;實案靠 runtime/CI 或人工 | `scripts/check-methodology-corrections.sh` |
