@@ -19,7 +19,8 @@ patch 未在 runtime 落地前，本 repo 的對應修正只擋得住 repo-local
 | 對應 finding | **F-1**（`Boundaries:`／`Intent:` 續行遮蔽保留欄 → 靜默覆寫 Files/Verify） |
 | 目標 repo | `~/.claude/plugins/local/dev-flow`（無 remote） |
 | 目標 base | `master` @ `522569a` |
-| 本機分支 | `fix/reject-duplicate-task-fields`（2 個 commit，已 commit 未 push） |
+| 本機分支 | `fix/reject-duplicate-task-fields`（2 個 commit：`04c9389`、`3d2f5b1`） |
+| **落地狀態** | **已 merge 進安裝來源 `master`，merge commit `71e452d`（2026-08-03）** —— 該目錄就是 Claude Code 實際載入的 plugin，故本機 runtime 已修好 |
 | 改動檔 | `hooks/devflow-lib.py`、`hooks/_exec_impl.py`、`hooks/selftest.sh` |
 | 套用驗證 | `git -C ~/.claude/plugins/local/dev-flow apply --check <本檔案>` → OK |
 | runtime regression test | `hooks/selftest.sh` 新增 `parse-boundshadow`、`parse-boundcont` 兩案（292 → **294** 全過） |
@@ -60,4 +61,20 @@ patch 把 `devflow-lib.py` 的 `parse_5_tasks` 與 `_exec_impl.py` 的 legacy sc
 - `tests/parallel-stage6/fixtures/boundaries-continuation.md`：相容性對照組（合法續寫不得誤判）。
 - `tests/parallel-stage6/run_tests.py`：+20 檢查（97 → 117）。
 
-**這些只讓 repo-local reference parser 與模板規則正確；真正在跑的 runtime 仍是舊行為，直到上面的 patch 落地。**
+### 落地與尚未關閉的部分
+
+**已落地（本機可驗證）**：patch 已 merge 進 `~/.claude/plugins/local/dev-flow` 的 `master`
+（merge commit `71e452d`，parents = `522569a` + `3d2f5b1`）。安裝來源重跑：
+`hooks/selftest.sh` **294/294**、`hooks/gate-consistency.sh` **14/14**；
+直接對安裝中的 `devflow-lib.py` 餵遮蔽 fixture，已回報「重複保留欄」且 `task_scope`
+維持兩個具名檔（未被放寬成整目錄）。
+
+**尚未關閉**：該 repo 仍**無 remote**，因此
+
+- 沒有可供他人取得的 commit URL，`71e452d` 只在本機可驗證；
+- **沒有發布／安裝流程** —— 換一台機器或重裝 plugin，拿到的仍是未修正的版本；
+- GitHub CI 不執行 plugin，`REPO_REFERENCE` 綠與這件事無關。
+
+因此 pilot 前仍須擇一：①替 plugin 建 remote 並 push `master`（讓 `71e452d` 可取得）；
+或②建立可重現的散發流程（例如把 plugin 納入 dev-setup 的版本化散發），
+讓 pilot 用到的 runtime 確實含此修正。在那之前，**F-1 只在本機關閉，不算流程上關閉。**
