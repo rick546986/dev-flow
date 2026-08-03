@@ -395,6 +395,26 @@ if True:
               "example Stage 6:每筆 T Review Log 都有 Design boundary finding",
               f"T Review Log {len(reviews)} 筆,Design boundary finding {len(boundary)} 筆")
 
+        # ── 內容檢查(2026-08 final verdict M-3)──────────────────────────────
+        # 舊版只比行數。實測(fresh reviewer 重現):把七筆全改成
+        # `- Design boundary finding:n-a` → 行數仍相等 → exit 0、141/141 全過。
+        # example 的 Design Boundary Contract 是釘死的 applicable,所以每一筆都必須是
+        # 實際作答:非空、非佔位、且五問①～⑤齊 —— 只填一個籠統結論不算。
+        # 這不是語意判斷,是「有沒有逐問作答」的結構檢查(同檔 na_reason_ok 已是同型做法)。
+        PLACEHOLDERS = ("n-a", "n/a", "na", "none", "-", "—", "todo", "tbd",
+                        "<待填>", "待填", "pending", "n-a(略)")
+        for index, raw in enumerate(
+                re.findall(r"^- Design boundary finding:(.*)$", example_notes, re.M), start=1):
+            value = raw.strip()
+            label = f"example Stage 6 第 {index} 筆 T Review Log 的 Design boundary finding"
+            check(bool(value), f"{label} 非空", "冒號後是空的")
+            check(value.lower().strip("。.") not in PLACEHOLDERS,
+                  f"{label} 不是佔位值(契約為 applicable,不得記 n-a)", f"實得={value[:40]!r}")
+            missing_marks = [m for m in "①②③④⑤" if m not in value]
+            check(not missing_marks,
+                  f"{label} 五問①～⑤齊(逐問作答,不得只給籠統結論)",
+                  f"缺 {''.join(missing_marks)};實得={value[:60]!r}")
+
     example_review = read("example/contract-expiry-reminder/7-review.md")
     check(example_review is not None, "example 7-review 存在")
     if example_review is not None:

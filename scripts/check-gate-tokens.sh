@@ -171,20 +171,28 @@ if section:
 # 這正是註解自稱要防的「被改寫」。改成每點一組**必含片語(含極性詞)**,
 # 比對前兩邊都做 norm()(去空白),讓跨行折行不造成假警報但字面極性一字不能少。
 #
-# 已知限制(2026-08 fresh review F-4 LOW,明列不修):片語是在**整個八點 body** 內搜尋,
-# 不是逐編號區塊驗證。因此「把第 5 點的片語搬到第 6 點」這種區塊間位移不會被抓到。
-# 判定為 LOW 且刻意不擴大守衛:真正的危害是片語**消失或極性反轉**,那兩種已被涵蓋;
-# 為位移再蓋一層逐區塊解析,成本高於收益。
-G3_POINTS = [
-    ("1", ("Final Fresh Run",)),
-    ("2", ("Required Layer = pass",)),
-    ("3", ("Conditional Layer", "pass")),
-    ("4", ("不得存在任何 fail",)),
-    ("5", ("Required Layer 不得為 unverified",)),          # 極性:不得為
-    ("6", ("Explicitly Excluded", "必須附理由")),           # 極性:必須
-    ("7", ("Optional Layer", "必須誠實標示")),              # 極性:必須
-    ("8", ("不取代 Standards Axis",)),                      # 極性:不取代
-]
+# 2026-08 final verdict M-1:上一版改成「必含片語」後仍不夠 —— 它是在**整個八點 body**
+# 內做子字串搜尋,所以只要把句子改成反義、同時把原片語留在同句括號裡當 decoy 就繞得過。
+# 實測(fresh reviewer 重現):把第 5 點改成
+#   「5. Required Layer 得為 unverified 或 n-a(reviewer 自行判斷即可,不需要
+#      Required Layer 不得為 unverified 的機械檢查)。」
+# → 舊守衛 exit 0 並印「八點必含片語全在(含極性詞)」。片語搬到別點也同樣抓不到。
+#
+# 改法:**逐編號解析**第 1–8 點,每一點只與**自己編號**的 canonical 全文比對,
+# 且用 norm() 後的**完整字串相等**(不是子字串搜尋)。多一句反義解釋、多一個括號
+# decoy、或把片語搬到別點,正規化後的整串都不會相等 → 一定紅。
+# 不引入任何自然語言模型或語意分析器,純字面比對。
+EXPECTED_G3_POINTS = {
+    "1": "Final Fresh Run 綁定目前受審的 source SHA。",
+    "2": "所有 Required Layer = pass。",
+    "3": "所有已觸發的 Conditional Layer = pass。",
+    "4": "不得存在任何 fail。",
+    "5": "Required Layer 不得為 unverified 或 n-a。",
+    "6": "Explicitly Excluded Layer 可為 n-a,但必須附理由。",
+    "7": "Optional Layer 可為 unverified,但必須誠實標示。",
+    "8": "Gauntlet PASS 不取代 Standards Axis / Spec Axis / Operational Walkthrough / "
+         "Coverage Matrix / 真實現象複驗。",
+}
 
 # ── 守衛自身清單的釘死(fresh review F-2)──────────────────────────────────
 # EXPECTED 與 G3_POINTS 是本守衛的唯一正本。若它們自己被縮小 —— 例如把 G3 的一個
@@ -200,8 +208,9 @@ for _label, _want in PINNED_SIZES.items():
             "並在 test-architecture-guards.sh 補負向案")
 if sorted(EXPECTED) != sorted(PINNED_SIZES):
     die(f"EXPECTED 的 gate 標籤集合 {sorted(EXPECTED)} ≠ {sorted(PINNED_SIZES)}")
-if len(G3_POINTS) != 8:
-    die(f"G3_POINTS 長度 {len(G3_POINTS)} ≠ 8(G3 錨定義固定八點,少一點即代表守衛被改弱)")
+if sorted(EXPECTED_G3_POINTS) != [str(i) for i in range(1, 9)]:
+    die(f"EXPECTED_G3_POINTS 的編號集合 {sorted(EXPECTED_G3_POINTS)} ≠ 1–8"
+        "(G3 錨定義固定八點,少一點即代表守衛被改弱)")
 
 if section:
     anchor = re.search(r"G3 錨定義", section)
@@ -211,21 +220,38 @@ if section:
         tail_text = section[anchor.end():]
         stop = re.search(r"^\s*八點中的", tail_text, re.M)
         body = tail_text[:stop.start()] if stop else tail_text
-        points = re.findall(r"^\s*(\d+)\.\s", body, re.M)
-        if points != [str(i) for i in range(1, 9)]:
-            die(f"§7「G3 錨定義」的編號點不是 1–8:實得 {points}")
+
+        # 逐編號切塊:`N.` 起,到下一個 `M.` 或 body 結尾為止(含跨行折行)。
+        starts = [(m.group(1), m.start(), m.end()) for m in re.finditer(r"^\s*(\d+)\.\s", body, re.M)]
+        numbers = [n for n, _s, _e in starts]
+        if numbers != [str(i) for i in range(1, 9)]:
+            die(f"§7「G3 錨定義」的編號點不是恰好 1–8 且順序固定:實得 {numbers}"
+                "(重複、缺號、順序錯亂都不接受)")
         else:
-            print(f"  ✓ G3 錨定義:8 點齊(1–8)")
-        body_norm = norm(body)
-        missing = [f"第 {n} 點「{phrase}」"
-                   for n, phrases in G3_POINTS
-                   for phrase in phrases
-                   if norm(phrase) not in body_norm]
-        if missing:
-            die("§7「G3 錨定義」八點缺必含片語(被改寫、刪除或極性被反轉):"
-                + "、".join(missing))
+            print(f"  ✓ G3 錨定義:8 點齊、各出現一次、順序 1–8")
+
+        blocks = {}
+        for i, (num, _s, end) in enumerate(starts):
+            tail = starts[i + 1][1] if i + 1 < len(starts) else len(body)
+            blocks[num] = body[end:tail]
+
+        # 每一點只與**自己編號**的 canonical 全文比對,且是 norm() 後的完整字串相等。
+        # 子字串搜尋會被同句 decoy 繞過(見上方註解的實測),所以這裡一律用相等。
+        bad = []
+        for num in (str(i) for i in range(1, 9)):
+            want = norm(EXPECTED_G3_POINTS[num])
+            got = norm(blocks[num])
+            if got != want:
+                bad.append(f"第 {num} 點內容與 canonical 不符\n"
+                           f"        期望(正規化)= {want}\n"
+                           f"        實得(正規化)= {got}")
+        if bad:
+            die("§7「G3 錨定義」逐點完整比對失敗(被改寫、極性反轉、加了 decoy 說明、"
+                "或片語被搬到別點):\n      " + "\n      ".join(bad)
+                + "\n      要**刻意**修改八點條文:同步改 README §7 與本守衛的 "
+                  "EXPECTED_G3_POINTS,並在 test-architecture-guards.sh 補負向案。")
         else:
-            print(f"  ✓ G3 錨定義:八點必含片語全在(含極性詞)")
+            print(f"  ✓ G3 錨定義:八點逐編號完整比對相符(非子字串搜尋)")
 
 if problems:
     print()

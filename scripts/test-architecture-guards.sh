@@ -9,10 +9,16 @@
 #   Design Contract  DC-0 對照組 / DC-1 Risk high→normal / DC-2 applicable→n-a
 #                    DC-3 刪 Data owner 欄 / DC-4 canon 壞例(Forbidden「無」+ 模糊詞)
 #                    DC-5 刪 Template Applicability / DC-6 刪 Stage 7 承接
+#                    DC-7 finding 全改 n-a / DC-8 只填① / DC-9 finding 留空
 #   Gate Token       GT-0 對照組 / GT-1 刪 G2 一個 token / GT-2 G3 token 去粗體
-#                    GT-3 刪 G3 錨定義八點中的一點
+#                    GT-3 刪 G3 錨定義八點中的一點 / GT-4 憑空新增 G4
+#                    GT-5a~d 八點極性反轉 / GT-6a 同句 decoy / GT-6b 片語搬到別點
 #   Version Sync     VS-0 對照組 / VS-1 README 9.9.9 / VS-2 contract 9.9.9
 #                    VS-3 design doc 9.9.9 / VS-4 版本錨被刪
+#   Guard Source     GS-0a/0b 對照組 / GS-1~GS-8 變異**守衛本體**(含 co-edit 守衛+資料)
+#
+# 案例數是**斷言**不是裝飾:EXPECTED_CONTROLS / EXPECTED_NEGATIVES / EXPECTED_TOTAL
+# 由 expect()/expect_local() 實際累計後比對,刪任何一案(含對照組)都會非零退出。
 #
 # 安全(fail-closed,正式 working tree 全程唯讀):
 #   - set -euo pipefail;所有變數非空檢查
@@ -58,6 +64,20 @@ trap cleanup EXIT
 PASS=0
 FAIL=0
 RESULTS=()
+# ── 精確案例數地板(2026-08 final verdict M-2)────────────────────────────────
+# 舊版只有 PASS/FAIL 兩個計數,尾聲的「5 對照組」是硬編字串、從不參與比對。
+# 實測(fresh reviewer 重現):刪掉整個 GS-8 負向案 → 仍印「30/30 全過(5 對照組…)」、exit 0;
+# 只刪 GS-0b 對照組一行 → 仍印「5 對照組」、exit 0。也就是那行摘要是裝飾,不是斷言。
+# 改法:由 expect()/expect_local() 依 want 實際累計 control 與 negative,尾聲與釘死值比對。
+CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
+NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
+EXPECTED_CONTROLS=5
+EXPECTED_NEGATIVES=31
+EXPECTED_TOTAL=36
+
+count_case() { # count_case <pass|fail>
+  if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
+}
 
 # seed <name> → 在 $WORK/<name> 建一份「守衛會讀到的資料檔」副本,印出完整路徑
 seed() {
@@ -81,6 +101,7 @@ seed() {
 expect() {
   local want="${1:?}" guard="${2:?}" target="${3:?}" label="${4:?}"
   [[ "$target" == "$WORK/"* ]] || { echo "expect: root 逃逸 $target" >&2; exit 1; }
+  count_case "$want"
   local out rc got
   out=$("$ROOT/scripts/$guard" "$target" 2>&1)
   rc=$?
@@ -116,6 +137,7 @@ expect_local() {
   local want="${1:?}" guard="${2:?}" target="${3:?}" label="${4:?}"
   [[ "$target" == "$WORK/"* ]] || { echo "expect_local: root 逃逸 $target" >&2; exit 1; }
   [[ -x "$target/scripts/$guard" ]] || { echo "expect_local: 找不到守衛複本 $target/scripts/$guard" >&2; exit 1; }
+  count_case "$want"
   local out rc got
   out=$("$target/scripts/$guard" "$target" 2>&1)
   rc=$?
@@ -210,6 +232,40 @@ p.write_text(n, encoding="utf-8")
 PY
 expect fail check-design-contract.sh "$D" "DC-6 刪 Stage 7 承接規則"
 
+# DC-7/8/9(2026-08 final verdict M-3):Stage 6 的 Design boundary finding 內容檢查。
+# 舊版只比「行數 == Test Integrity finding 行數」,填 n-a、只填①、留空都過。
+D=$(seed dc7); mutate "$D" <<'PY'
+import re, sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "example/contract-expiry-reminder/6-implementation-notes.md"
+t = p.read_text(encoding="utf-8")
+n = re.sub(r"^- Design boundary finding:.*$", "- Design boundary finding:n-a", t, flags=re.M)
+assert n != t, "DC-7 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-design-contract.sh "$D" "DC-7 example 七筆 Design boundary finding 全改 n-a"
+
+D=$(seed dc8); mutate "$D" <<'PY'
+import re, sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "example/contract-expiry-reminder/6-implementation-notes.md"
+t = p.read_text(encoding="utf-8")
+n = re.sub(r"^- Design boundary finding:.*$", "- Design boundary finding:①無。",
+           t, count=1, flags=re.M)
+assert n != t, "DC-8 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-design-contract.sh "$D" "DC-8 某一筆只有①、缺②～⑤"
+
+D=$(seed dc9); mutate "$D" <<'PY'
+import re, sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "example/contract-expiry-reminder/6-implementation-notes.md"
+t = p.read_text(encoding="utf-8")
+n = re.sub(r"^- Design boundary finding:.*$", "- Design boundary finding:",
+           t, count=1, flags=re.M)
+assert n != t, "DC-9 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-design-contract.sh "$D" "DC-9 某一筆冒號後留空"
+
 # ─────────────────────────────── Gate Token ────────────────────────────────
 D=$(seed gt0); expect pass check-gate-tokens.sh "$D" "GT-0 對照組(未變異)"
 
@@ -302,6 +358,34 @@ assert n != t, "GT-5d mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
 expect fail check-gate-tokens.sh "$D" "GT-5d 第 6 點刪掉「必須附理由」義務"
+
+# GT-6(2026-08 final verdict M-1):逐編號完整比對必須擋住 decoy 與片語搬家。
+# 舊版是在整個八點 body 做子字串搜尋,這兩種都繞得過(fresh reviewer 實測重現)。
+D=$(seed gt6a); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "README.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("  5. Required Layer 不得為 unverified 或 n-a。",
+              "  5. Required Layer 得為 unverified 或 n-a(reviewer 自行判斷即可,"
+              "不需要 Required Layer 不得為 unverified 的機械檢查)。", 1)
+assert n != t, "GT-6a mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-gate-tokens.sh "$D" "GT-6a 第 5 點反義 + 同句保留原片語當 decoy"
+
+D=$(seed gt6b); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "README.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("  5. Required Layer 不得為 unverified 或 n-a。\n"
+              "  6. Explicitly Excluded Layer 可為 n-a,但必須附理由。",
+              "  5. 由 reviewer 依 Verification Profile 判斷即可。\n"
+              "  6. Explicitly Excluded Layer 可為 n-a,但必須附理由;"
+              "Required Layer 不得為 unverified 或 n-a。", 1)
+assert n != t, "GT-6b mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-gate-tokens.sh "$D" "GT-6b 第 5 點必要句被搬到第 6 點(片語仍在 body 內)"
 
 # ────────────────────────────── Version Sync ───────────────────────────────
 D=$(seed vs0); expect pass check-version-sync.sh "$D" "VS-0 對照組(四處一致)"
@@ -452,12 +536,12 @@ D=$(seed_guard gs7 check-gate-tokens.sh); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "scripts" / "check-gate-tokens.sh"
 t = p.read_text(encoding="utf-8")
-n = t.replace('    ("8", ("不取代 Standards Axis",)),                      # 極性:不取代\n',
-              "", 1)
+n = t.replace('    "8": "Gauntlet PASS 不取代 Standards Axis / Spec Axis / Operational Walkthrough / "\n'
+              '         "Coverage Matrix / 真實現象複驗。",\n', "", 1)
 assert n != t, "GS-7 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
-expect_local fail check-gate-tokens.sh "$D" "GS-7 守衛的 G3_POINTS 被縮短(第 8 點守衛消失)"
+expect_local fail check-gate-tokens.sh "$D" "GS-7 守衛的 EXPECTED_G3_POINTS 被縮短(第 8 點守衛消失)"
 
 # GS-8:把一條斷言改成恆真(`check(rows >= 1, …)` → `check(True, …)`)。
 # 檢查數不變、群組還在、長度釘死也全過 —— 長度類的釘死本質上防不到這一類。
@@ -489,9 +573,36 @@ if [ "$FAIL" -ne 0 ]; then
   echo "⛔ 架構守衛負向回歸測試:$FAIL 失敗 / $((PASS + FAIL)) 案"
   exit 1
 fi
-# 對照組:DC-0 / GT-0 / VS-0 / GS-0a / GS-0b —— 五個「未變異必須 pass」的錨。
-# 寫死數字而不是自動數,是為了讓「悄悄拿掉一個對照組」也會讓這行數字對不上。
-CONTROLS=5
-echo "✅ 架構守衛負向回歸測試:$PASS/$PASS 全過($CONTROLS 對照組 + $((PASS - CONTROLS)) 個負向案例;"
-echo "   其中 GS 系列 9 案是**變異守衛本體**,涵蓋「守衛被改弱」這一類)"
+# ── 精確案例數地板(M-2)──────────────────────────────────────────────────────
+# CONTROL_RUN / NEGATIVE_RUN 由 expect()/expect_local() 依 want 實際累計,不是硬編字串。
+# 任何案例被刪(不論對照組或負向案)都會讓下面四條斷言其中之一對不上 → 非零退出。
+TOTAL_RUN=$((CONTROL_RUN + NEGATIVE_RUN))
+COUNT_ERR=0
+if [ "$CONTROL_RUN" -ne "$EXPECTED_CONTROLS" ]; then
+  echo "⛔ 對照組數不符:實際跑了 $CONTROL_RUN 個,釘死值 $EXPECTED_CONTROLS"
+  COUNT_ERR=1
+fi
+if [ "$NEGATIVE_RUN" -ne "$EXPECTED_NEGATIVES" ]; then
+  echo "⛔ 負向案數不符:實際跑了 $NEGATIVE_RUN 個,釘死值 $EXPECTED_NEGATIVES"
+  COUNT_ERR=1
+fi
+if [ "$TOTAL_RUN" -ne "$EXPECTED_TOTAL" ]; then
+  echo "⛔ 總案例數不符:實際跑了 $TOTAL_RUN 個,釘死值 $EXPECTED_TOTAL"
+  COUNT_ERR=1
+fi
+if [ "$((PASS + FAIL))" -ne "$TOTAL_RUN" ]; then
+  echo "⛔ PASS+FAIL($((PASS + FAIL)))≠ 實際案例數($TOTAL_RUN)—— 計數本身壞了"
+  COUNT_ERR=1
+fi
+if [ "$COUNT_ERR" -ne 0 ]; then
+  echo
+  echo "   要**刻意**增減案例:同步改本檔頂部的 EXPECTED_CONTROLS / EXPECTED_NEGATIVES /"
+  echo "   EXPECTED_TOTAL。這三個數字是真的會被比對的斷言,不是顯示用的裝飾。"
+  exit 1
+fi
+
+echo "✅ 架構守衛負向回歸測試:$PASS/$PASS 全過"
+# ⚠️ 變數必須帶大括號:全形「、」緊接 $VAR 時 bash 會把多位元組字元吃進變數名,
+#    配上 set -u 就是 unbound variable(同檔 devflow-check.sh 已記過同型教訓)。
+echo "   案例數核對通過:對照組 ${CONTROL_RUN}/${EXPECTED_CONTROLS}、負向 ${NEGATIVE_RUN}/${EXPECTED_NEGATIVES}、合計 ${TOTAL_RUN}/${EXPECTED_TOTAL}"
 exit 0
