@@ -101,12 +101,23 @@ def fenced_seam():
 
 
 def exit_checklist():
-    match = re.search(
-        r"^## Exit Checklist[^\n]*\n((?:- \[ \].*\n)+)",
-        read("_templates/7-review.md"), re.M)
-    if not match:
+    """抽 `## Exit Checklist` 到下一個 `## ` 之前的**完整**區段。
+
+    舊版用 `((?:- \\[ \\].*\\n)+)` 只吃連續的單行項目,遇到第一個多行項目
+    (續行以空白開頭)就停住 —— 2026-08 實測:7-review 新增的多行第一項
+    讓 quickstart 只剩那一項,後面 7 項全數遺失,而 renderer fixed point
+    與 parity 都不會紅(兩邊一起截斷,互相自洽)。
+    改成讀整個區段並支援續行;回歸斷言住 check-methodology-corrections.sh。
+    """
+    source = read("_templates/7-review.md")
+    section = re.search(r"^## Exit Checklist[^\n]*\n(.*?)(?=^## |\Z)", source, re.M | re.S)
+    if not section:
         raise SystemExit("_templates/7-review.md: Exit Checklist not found")
-    return match.group(1)
+    body = section.group(1)
+    first = re.search(r"^- \[ \]", body, re.M)
+    if not first:
+        raise SystemExit("_templates/7-review.md: Exit Checklist 區段內找不到任何 `- [ ]` 項目")
+    return body[first.start():].rstrip("\n") + "\n"
 
 
 fragments = {
