@@ -59,10 +59,10 @@ Design Boundary Contract 補的就是這一段,且**只補這一段**:
 
 | | 觸發條件 | 與 4-spec「自動升 Full」清單的關係 |
 |---|---|---|
-| 已被 lane 攔下 | ②公開 API、④schema migration、⑧新 capability、⑨Risk high | 命中即自動升 Full,**根本不會是 fast lane**,所以這四條對 fast lane 沒有額外負擔 |
-| lane 攔不到 | ①跨模組、③跨模組 Interface、⑤Queue/Event/Scheduler、⑥外部整合、**⑦的 Idempotency 部分**、⑩三模組以上、⑪狀態機 | **可以在合法的 fast lane 變更上命中** —— 這七條才是 fast lane 真正會遇到的 |
+| 已被 lane 攔下 | ②公開 API、④schema migration、**⑦的 Transaction／Concurrency／Lock 部分**、⑧新 capability、⑨Risk high | 命中即自動升 Full(對應 4-spec 清單的「金流/交易」與「並發/鎖/排程」),**根本不會是 fast lane**,對 fast lane 沒有額外負擔 |
+| lane 攔不到 | ①跨模組、③跨模組 Interface、⑤Queue/Event/Scheduler、⑥外部整合、**⑦的 Idempotency 部分**、⑩三模組以上、⑪狀態機 | **可以在合法的 fast lane 變更上命中** —— 自動升 Full 清單沒有「冪等」這一項,所以只碰冪等的變更仍是合法 fast lane |
 
-⚠️ **⑦是唯一被拆開的一條**(2026-08 fresh review F-6 校正):觸發條件⑦是
+⚠️ **⑦是唯一橫跨兩列的一條**(2026-08 fresh review F-6 校正;表格兩列都已明列它的對應半邊):觸發條件⑦是
 「Transaction/Concurrency/Lock/**Idempotency**」,但 `_templates/4-spec.md`
 「自動升 Full」清單只涵蓋到「並發/鎖/排程」與「金流/交易」——
 **沒有 Idempotency**。因此「只補一個 idempotency key、不涉交易與並發」這類變更
