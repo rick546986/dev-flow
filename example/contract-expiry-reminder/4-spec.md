@@ -200,7 +200,7 @@ Owner confirmation:rick 確認上列兩場已 ACCEPTED 的 Demo 場景明示排�
 ### Design Constraints
 
 - 必須:狀態與歷程在同一交易寫入;`contracts.renewal_status` 與歷程表只由 Contract status store 寫;「已續約」授權在 API handler 層強制(UI 灰階只是呈現,不是防線);狀態值域固定 6 值。
-- 禁止:任何 GET／讀取路徑寫入狀態或歷程(含「已讀」記錄);UI 直接觸 DB;service 層寫入;自動狀態轉移或逾時自動升級。
+- 禁止:任何 GET／讀取路徑進入寫入分支(含「已讀」記錄);UI 直接觸 DB;service 繞過 Contract status store 寫入。(產品行為排除見 Negative constraints／Out of Scope。)
 - Extension point:`service.ListExpiring` 已抽出,未來 cron 可複用同一查詢(2-decision 已裁決);歷程表結構可承接後續報表,本期不做。
 - Known design limit:
   ①**Stale write 無衝突偵測** —— 未設版本欄或樂觀鎖,兩人以過期畫面先後標記時後手覆蓋前手,歷程留兩筆但無衝突提示(對應 Reliability triage 的 Concurrency: applicable 結論;本期不引入衝突偵測)。
