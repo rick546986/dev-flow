@@ -38,16 +38,19 @@ updated:
 >    貼的文字。完成 = 每 S 有實跑證據且與觀測方式相符(無外部現象者註明理由)。
 > 2c. **Final Fresh Run**:確認 Verification Evidence 節由 4-spec Verification Profile
 >    指名的 entry point 一次 fresh run 產出、Source SHA = 當下 HEAD;跑
->    `<gauntlet 路徑> 7-review.md --source-sha $(git rev-parse HEAD)
+>    `docs/dev/tools/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD)
 >    --review-file --require-layer <Profile Required 層,逐層一個 flag>` 全綠
->    ⚠️ **`<gauntlet 路徑>` 要先確認它在消費 repo 真的存在**:母版住在
->    dev-flow 的 `scripts/devflow-evidence-gauntlet.sh`,**採用專案不會自動有這支**。
->    路徑寫錯或檔案不在 → 那一步**靜默跳過**,而 7-review 仍然填得完、verdict 仍然
->    寫得出來(2026-08 order-intake 實測:模板原本寫死 `docs/dev/tools/...`,
->    該目錄在採用專案根本不存在)。**開工前先 `test -x <路徑>`,不在就先安裝**:
->    `cp <dev-flow>/scripts/devflow-evidence-gauntlet.sh <本 repo 的工具目錄>/`
->    並在本檔的 Verification Evidence 節記下實際路徑。
->    裝不了 → Required 層改**逐層手動實跑**並在本檔明記「gauntlet 未跑」是**降級**,
+>    ⚠️ **開工前先 `test -x docs/dev/tools/devflow-evidence-gauntlet.sh`**。
+>    那個路徑是 `dev-setup` 的散發契約(skills/dev-setup/SKILL.md:69 明訂
+>    `mkdir -p docs/dev/tools` 後 cp 母版),**不是隨手寫的**。
+>    ⚠️ **檔案不在 = `dev-setup` 沒跑完整,不是路徑寫錯** ——
+>    正確處置是**補跑 `dev-setup`**(它同時會補上 `docs/dev/devflow-contract.json`
+>    等其他受管檔),**不要手動 `cp` 一支了事**:手動裝會繞過受管檔的版本握手,
+>    下次 `dev-setup` 比對時看到的是一個來歷不明的複本。
+>    2026-08 order-intake 實測:該專案 `docs/dev/tools/` 與 `devflow-contract.json`
+>    **兩者皆不存在**,`devflow-doctor.sh` 實跑直接 `⛔ INCOMPATIBLE(fail-closed)` ——
+>    但整條 Stage 6→7 走完**沒有任何一步要求跑 doctor**,所以沒有人被擋。
+>    補不了 → Required 層改**逐層手動實跑**並在本檔明記「gauntlet 未跑」是**降級**,
 >    不得默默當成跑過。
 >    (Required 層須逐層帶入命令,未實跑由機械擋下,不靠自律)。
 >    完成 = gauntlet 輸出在案(或降級聲明在案)。

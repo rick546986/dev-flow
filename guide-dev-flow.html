@@ -630,15 +630,18 @@
     貼的文字。完成 = 每 S 有實跑證據且與觀測方式相符(無外部現象者註明理由)。
     2c. <strong>Final Fresh Run</strong>:確認 Verification Evidence 節由 4-spec Verification Profile
     指名的 entry point 一次 fresh run 產出、Source SHA = 當下 HEAD;跑
-    <code>&lt;gauntlet 路徑&gt; 7-review.md --source-sha $(git rev-parse HEAD) --review-file --require-layer &lt;Profile Required 層,逐層一個 flag&gt;</code> 全綠
-    ⚠️ <strong><code>&lt;gauntlet 路徑&gt;</code> 要先確認它在消費 repo 真的存在</strong>:母版住在
-    dev-flow 的 <code>scripts/devflow-evidence-gauntlet.sh</code>,<strong>採用專案不會自動有這支</strong>。
-    路徑寫錯或檔案不在 → 那一步<strong>靜默跳過</strong>,而 7-review 仍然填得完、verdict 仍然
-    寫得出來(2026-08 order-intake 實測:模板原本寫死 <code>docs/dev/tools/...</code>,
-    該目錄在採用專案根本不存在)。<strong>開工前先 <code>test -x &lt;路徑&gt;</code>,不在就先安裝</strong>:
-    <code>cp &lt;dev-flow&gt;/scripts/devflow-evidence-gauntlet.sh &lt;本 repo 的工具目錄&gt;/</code>
-    並在本檔的 Verification Evidence 節記下實際路徑。
-    裝不了 → Required 層改<strong>逐層手動實跑</strong>並在本檔明記「gauntlet 未跑」是<strong>降級</strong>,
+    <code>docs/dev/tools/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD) --review-file --require-layer &lt;Profile Required 層,逐層一個 flag&gt;</code> 全綠
+    ⚠️ <strong>開工前先 <code>test -x docs/dev/tools/devflow-evidence-gauntlet.sh</code></strong>。
+    那個路徑是 <code>dev-setup</code> 的散發契約(skills/dev-setup/SKILL.md:69 明訂
+    <code>mkdir -p docs/dev/tools</code> 後 cp 母版),<strong>不是隨手寫的</strong>。
+    ⚠️ <strong>檔案不在 = <code>dev-setup</code> 沒跑完整,不是路徑寫錯</strong> ——
+    正確處置是<strong>補跑 <code>dev-setup</code></strong>(它同時會補上 <code>docs/dev/devflow-contract.json</code>
+    等其他受管檔),<strong>不要手動 <code>cp</code> 一支了事</strong>:手動裝會繞過受管檔的版本握手,
+    下次 <code>dev-setup</code> 比對時看到的是一個來歷不明的複本。
+    2026-08 order-intake 實測:該專案 <code>docs/dev/tools/</code> 與 <code>devflow-contract.json</code>
+    <strong>兩者皆不存在</strong>,<code>devflow-doctor.sh</code> 實跑直接 <code>⛔ INCOMPATIBLE(fail-closed)</code> ——
+    但整條 Stage 6→7 走完<strong>沒有任何一步要求跑 doctor</strong>,所以沒有人被擋。
+    補不了 → Required 層改<strong>逐層手動實跑</strong>並在本檔明記「gauntlet 未跑」是<strong>降級</strong>,
     不得默默當成跑過。
     (Required 層須逐層帶入命令,未實跑由機械擋下,不靠自律)。
     完成 = gauntlet 輸出在案(或降級聲明在案)。

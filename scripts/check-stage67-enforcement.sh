@@ -117,10 +117,18 @@ for base, _dirs, files in os.walk(os.path.join(root, "example")):
 src = read("_templates/7-review.md")
 need(src is not None, "A4:_templates/7-review.md 不存在")
 if src:
-    need("docs/dev/tools/devflow-evidence-gauntlet.sh" not in src,
-         "A4:_templates/7-review.md 把 gauntlet 路徑寫死成 "
-         "`docs/dev/tools/devflow-evidence-gauntlet.sh` —— 該目錄在採用專案不存在,"
-         "那一步會**靜默跳過**而 7-review 仍填得完")
+    # ⚠️ 2026-08-07 更正:`docs/dev/tools/` 是 dev-setup 的散發契約
+    # (skills/dev-setup/SKILL.md:69),路徑本身**沒有錯**。原本這裡檢查
+    # 「不得出現該路徑」是誤診 —— 真正的缺陷是「檔案不在時沒有人被擋」。
+    # 故改成:必須寫出正確路徑,且必須把補救指向**補跑 dev-setup**。
+    need("docs/dev/tools/devflow-evidence-gauntlet.sh" in src,
+         "A4:_templates/7-review.md 沒寫出 gauntlet 的正式散發路徑 "
+         "`docs/dev/tools/devflow-evidence-gauntlet.sh`(dev-setup 的散發契約)")
+    # needle 用**補救動作那句話**而不是裸的 "dev-setup":後者會被
+    # 「skills/dev-setup/SKILL.md:69」這種出處引用滿足,測不出補救被改掉。
+    need("補跑 `dev-setup`" in src,
+         "A4:_templates/7-review.md 沒把「檔案不在」的補救指向**補跑 dev-setup** —— "
+         "手動 cp 會繞過受管檔的版本握手")
     need("test -x" in src,
          "A4:_templates/7-review.md 沒要求開工前確認 gauntlet 真的存在(缺 `test -x`)")
     need("降級" in src,
@@ -150,7 +158,7 @@ if rev:
 # 負向測試 S67-6 實測:原本填 16(A1 那組恰好 8 項,24-8=16)→ 刪掉整組 A1 之後
 # 剛好等於地板,守衛照樣 exit 0。地板留餘裕 = 地板沒有牙齒。
 # 新增檢查時把這個數字一起往上調(同 test-architecture-guards.sh 的 EXPECTED_* 體例)。
-MIN_CHECKS = 24
+MIN_CHECKS = 25
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")

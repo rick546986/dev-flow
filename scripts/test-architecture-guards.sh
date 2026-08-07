@@ -606,12 +606,11 @@ mutate "$D" <<'PY'
 import pathlib, sys
 p = pathlib.Path(sys.argv[1]) / "_templates/7-review.md"
 t = p.read_text(encoding="utf-8")
-n = t.replace("`<gauntlet 路徑> 7-review.md",
-              "`docs/dev/tools/devflow-evidence-gauntlet.sh 7-review.md")
+n = t.replace("補跑 `dev-setup`", "自己想辦法裝一支")
 assert n != t, "S67-4 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
-expect fail check-stage67-enforcement.sh "$D" "S67-4 gauntlet 路徑被寫死回採用專案不存在的路徑(靜默跳過)"
+expect fail check-stage67-enforcement.sh "$D" "S67-4 gauntlet 缺件的補救不再指向補跑 dev-setup(手動 cp 會繞過版本握手)"
 
 D=$(seed s67-a5)
 mutate "$D" <<'PY'
