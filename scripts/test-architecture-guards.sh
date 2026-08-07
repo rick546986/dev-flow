@@ -71,9 +71,9 @@ RESULTS=()
 # 改法:由 expect()/expect_local() 依 want 實際累計 control 與 negative,尾聲與釘死值比對。
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
-EXPECTED_CONTROLS=5
-EXPECTED_NEGATIVES=31
-EXPECTED_TOTAL=36
+EXPECTED_CONTROLS=6
+EXPECTED_NEGATIVES=37
+EXPECTED_TOTAL=43
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -556,6 +556,86 @@ assert n != t, "GS-8 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
 expect_local fail check-design-contract.sh "$D" "GS-8 守衛的一條斷言被改成恆真(check(True))"
+
+# ── S67 群組:Stage 6/7 執行期強制條款(check-stage67-enforcement.sh)──────────
+#
+# 起因是 2026-08 order-intake 的真實執行:四條散文規則同時失效而所有產出看起來完整。
+# 這一組把「條款有沒有被刪掉」變成會紅的測試 —— 條款寫在模板裡沒人守,
+# 只有這裡的負向案能證明「守衛真的擋得住」。
+
+D=$(seed s67-control)
+expect pass check-stage67-enforcement.sh "$D" "S67-0 對照組(模板與範例未變異)"
+
+D=$(seed s67-a1)
+mutate "$D" <<'PY'
+import pathlib, sys, re
+p = pathlib.Path(sys.argv[1]) / "_templates/6-implementation-notes.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("守衛武裝自檢", "起手提醒")
+assert n != t, "S67-1 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-stage67-enforcement.sh "$D" "S67-1 Stage 6 步 0 的「守衛武裝自檢」被改名(條款名消失)"
+
+D=$(seed s67-a3-template)
+mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "_templates/5-tasks.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("=== RUN", "測試輸出")
+assert n != t, "S67-2 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-stage67-enforcement.sh "$D" "S67-2 5-tasks 模板的「數 === RUN」骨架被抽掉"
+
+D=$(seed s67-a3-example)
+mutate "$D" <<'PY'
+import pathlib, sys, re
+p = pathlib.Path(sys.argv[1]) / "example/contract-expiry-reminder/5-tasks.md"
+t = p.read_text(encoding="utf-8")
+# 把範例的 Verify 退回「只有 -run、沒有案例數斷言」的舊形狀
+n = re.sub(r"- Verify: `n=\$\(go test ([^)]*?) -run (\w+) -v 2>&1 \| grep -c '\^=== RUN'\); test \"\$n\" -ge \d+`",
+           r"- Verify: `go test \1 -run \2`", t)
+assert n != t, "S67-3 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-stage67-enforcement.sh "$D" "S67-3 範例的 Verify 退回沒有案例數斷言的形狀(-run 假綠)"
+
+D=$(seed s67-a4)
+mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "_templates/7-review.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("`<gauntlet 路徑> 7-review.md",
+              "`docs/dev/tools/devflow-evidence-gauntlet.sh 7-review.md")
+assert n != t, "S67-4 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-stage67-enforcement.sh "$D" "S67-4 gauntlet 路徑被寫死回採用專案不存在的路徑(靜默跳過)"
+
+D=$(seed s67-a5)
+mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "_templates/4-spec.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("觀測方式必須在本 repo 可執行", "觀測方式盡量具體")
+assert n != t, "S67-5 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-stage67-enforcement.sh "$D" "S67-5 4-spec 觀測欄的「必須在本 repo 可執行」被弱化成建議"
+
+D=$(seed_guard s67-guard check-stage67-enforcement.sh)
+mutate "$D" <<'PY'
+import pathlib, sys, re
+p = pathlib.Path(sys.argv[1]) / "scripts/check-stage67-enforcement.sh"
+t = p.read_text(encoding="utf-8")
+# 把 A1 整組 need() 拿掉(但不動 MIN_CHECKS)—— 應由檢查數地板接住
+n = re.sub(r'for rel in \("_templates/6-implementation-notes\.md".*?f"A1:\{rel\} 沒給可執行的自檢指令 `devflow-exec\.sh status`"\)\n',
+           'for rel in ():\n    pass\n', t, flags=re.S)
+assert n != t, "S67-6 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-stage67-enforcement.sh "$D" "S67-6 守衛自己的 A1 整組被刪(檢查數地板接住)"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"

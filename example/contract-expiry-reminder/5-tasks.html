@@ -50,7 +50,7 @@
 <li>[x] 完成</li>
 <li>Covers: R-1 / S-1, S-2</li>
 <li>Files: <code>internal/handler/contract.go</code>, <code>internal/service/contract.go</code>, <code>internal/repo/contract.go</code></li>
-<li>Verify: <code>go test ./internal/... -run TestExpiring</code></li>
+<li>Verify: <code>n=$(go test ./internal/... -run TestExpiring -v 2&gt;&amp;1 | grep -c '^=== RUN'); test &quot;$n&quot; -ge 1</code></li>
 <li>Blocked-by: —</li>
 <li>Intent: 系統多了到期查詢 API:<code>GET /contracts/expiring?days=30</code> 回傳登入者名下 30 天內到期且未續約的合約;無符合者回 200 + 空列表,不報錯。</li>
 <li>Boundaries: 查詢邏輯抽在 <code>service.ListExpiring</code>(2-decision:供未來 cron 複用);複用既有 <code>idx_contracts_end_date</code>,不另建索引;<code>days</code> 參數化只為測試方便,自訂天數仍 Out of Scope。
@@ -94,7 +94,7 @@ Design Boundary(摘自 4-spec Design Boundary Contract,只取本 T 相關的最�
 <li>[x] 完成</li>
 <li>Covers: R-3 / S-4</li>
 <li>Files: <code>migrations/0007_renewal_status.sql</code>, <code>internal/handler/contract_status.go</code>, <code>internal/repo/contract_status.go</code></li>
-<li>Verify: <code>go test ./internal/... -run TestRenewalStatus_S4</code></li>
+<li>Verify: <code>n=$(go test ./internal/... -run TestRenewalStatus_S4 -v 2&gt;&amp;1 | grep -c '^=== RUN'); test &quot;$n&quot; -ge 1</code></li>
 <li>Blocked-by: T-1</li>
 <li>Risk: high</li>
 <li>Intent: 系統多了「標記處理狀態」行為:標記後狀態/下一步/最後動作時間更新,歷程新增一筆(誰/何時/舊→新);「已續約」僅主管,非主管在 API 層被拒。</li>
@@ -106,7 +106,7 @@ Design Boundary(摘自 4-spec Design Boundary Contract,只取本 T 相關的最�
 <li>[x] 完成</li>
 <li>Covers: R-3 / S-5</li>
 <li>Files: <code>internal/handler/contract_status.go</code>, <code>internal/repo/contract_status.go</code></li>
-<li>Verify: <code>go test ./internal/... -run TestRenewalStatus_S5</code></li>
+<li>Verify: <code>n=$(go test ./internal/... -run TestRenewalStatus_S5 -v 2&gt;&amp;1 | grep -c '^=== RUN'); test &quot;$n&quot; -ge 1</code></li>
 <li>Blocked-by: T-5</li>
 <li>Intent: 系統多了狀態歷程查詢(詳情頁時間軸資料源),且「開啟/看過」等一切讀取路徑保證零狀態寫入 —— 歷程零新增本身成為可稽核證據。</li>
 <li>Boundaries: 任何 GET 路徑不得寫入狀態或歷程;不做「已讀」記錄(看過 ≠ 處理,1-discussion Q4);不引入 Out of Scope 的自動提醒。

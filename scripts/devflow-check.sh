@@ -70,6 +70,9 @@ group_architecture() {
   run "architecture/check-design-contract" scripts/check-design-contract.sh || return 1
   run "architecture/check-adr-integrity"   scripts/check-adr-integrity.sh   || return 1
   run "architecture/check-version-sync"    scripts/check-version-sync.sh    || return 1
+  # Stage 6/7 執行期強制條款(A1 守衛武裝／A3 Verify 案例數／A4 gauntlet 路徑／
+  # A5 觀測可執行性)。四條都是 2026-08 order-intake 實際失效過的散文規則。
+  run "architecture/check-stage67-enforcement" scripts/check-stage67-enforcement.sh || return 1
   # 反水平切層是 warning-only heuristic:它自己絕不 exit 1(見腳本頂註),
   # 因此不會讓本聚合器紅。它印 WARNING 供人判斷,不取代 Reviewer。
   run "architecture/check-task-slicing (warning-only)" scripts/check-task-slicing.sh || return 1

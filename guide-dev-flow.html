@@ -449,7 +449,19 @@
     <p>執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併 T):
     0. 起手式:圍欄自查 —— 只讀 4-spec/5-tasks/6-notes/CONTEXT.md/living spec,
     禁讀 1/2/3(要翻才寫得出 = spec 不完整 → 停,回 G2)。開 feature branch
-    (並行 → worktree)。完成 = 讀取清單回報+branch 就位。</p>
+    (並行 → worktree)。
+    ⚠️ <strong>守衛武裝自檢(硬關卡,第一動)</strong>:跑 <code>devflow-exec.sh status</code>,確認
+    <code>.devflow/exec.json</code> <strong>存在</strong>且 slug 正確。<strong>沒武裝就不准開工</strong> ——
+    guard hook 在 <code>.devflow/exec.json</code> 不存在時是<strong>靜默沉睡</strong>的
+    (<code>devflow-lib.py::load_state</code> → <code>return None, &quot;&quot;, &quot;&quot;</code>),
+    於是「守衛在擋」與「守衛不在」對執行者長得一模一樣:
+    圍欄②(禁讀上游)、契約防篡改、scope 守衛<strong>三道全部不會觸發</strong>,
+    而每一份產出看起來都一樣完整。
+    (2026-08 order-intake 實測:<code>devflow-exec.sh</code> 因母版 bug 啟動不了(D-9),
+    26 個 T 全程守衛沉睡,<code>Files</code> scope 是<strong>人工比對</strong>出來的 ——
+    沒有人在當下發現,因為沒有任何訊號。)
+    武裝不了 → <strong>停下回報</strong>,不要用「我會自己守 scope」代替。
+    完成 = 讀取清單回報 + branch 就位 + <strong><code>devflow-exec.sh status</code> 輸出貼進本檔</strong>。</p>
     <ol>
     <li>接手核對:4-spec approved?5-tasks 每 T 有 Verify+Covers?缺 → 停回補。
     建 todo 一 T 一項,照 Blocked-by 拓撲序。完成 = todo 與 5-tasks 一一對應。</li>
@@ -597,7 +609,18 @@
     0. 角色+防錨定起手:審查者依序:適格人類 reviewer → fresh-context reviewer Agent →
     owner 自審(有記錄的最後手段);前兩者皆須 ≠ 實作 owner。先讀
     4-spec/5-tasks/diff/測試碼,<strong>此刻禁讀 6-notes 的 Self-Review</strong>。
-    完成 = 讀取順序聲明在案。</p>
+    ⚠️ <strong>「reviewer ≠ 實作 owner」這條機械上擋不住</strong> —— hook 層沒有身分概念
+    (沒有 session id、沒有作者歸屬),加一個查 <code>owner</code> 欄位的守衛只會被
+    「打字改個名字」繞過,那比散文更糟(假保證)。真正有效的是<strong>讀取順序</strong>:
+    先自建矩陣、後讀作者主張。故本步的完成條件是<strong>可查的讀取順序</strong>,
+    不是可宣稱的身分。
+    ⚠️ <strong>走 owner 自審這條路時,必須在本檔最前面獨立一節寫明</strong>:
+    ①審查者 = 實作者 ②因此哪些結論可信(機械數字)、哪些打折(F-id 分級、
+    「沒想到的事」)③建議的補救路徑。<strong>沒有這一節的 owner 自審視同未審。</strong>
+    完成 = 讀取順序聲明在案(+ owner 自審時的限制聲明節)。
+    0b. <strong>守衛武裝自檢</strong>:同 6-notes 步 0 —— 跑 <code>devflow-exec.sh status</code> 確認
+    <code>.devflow/exec.json</code> 存在。Stage 7 若在未武裝的樹上做,scope 守衛與契約防篡改
+    同樣沉睡,reviewer 可能在不知情下改到 1/2/3/4。完成 = status 輸出在案。</p>
     <ol>
     <li>自建 Coverage Matrix:grep 測試檔 S-id ↔ 4-spec S 清單,逐列填(缺漏 ❌),
     末列固定回歸列。完成 = 矩陣全列填畢(未參考作者主張)。</li>
@@ -607,9 +630,18 @@
     貼的文字。完成 = 每 S 有實跑證據且與觀測方式相符(無外部現象者註明理由)。
     2c. <strong>Final Fresh Run</strong>:確認 Verification Evidence 節由 4-spec Verification Profile
     指名的 entry point 一次 fresh run 產出、Source SHA = 當下 HEAD;跑
-    <code>docs/dev/tools/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD) --review-file --require-layer &lt;Profile Required 層,逐層一個 flag&gt;</code> 全綠
-    (母版在 <code>scripts/</code>;Required 層須逐層帶入命令,未實跑由機械擋下,不靠自律)。
-    完成 = gauntlet 輸出在案。
+    <code>&lt;gauntlet 路徑&gt; 7-review.md --source-sha $(git rev-parse HEAD) --review-file --require-layer &lt;Profile Required 層,逐層一個 flag&gt;</code> 全綠
+    ⚠️ <strong><code>&lt;gauntlet 路徑&gt;</code> 要先確認它在消費 repo 真的存在</strong>:母版住在
+    dev-flow 的 <code>scripts/devflow-evidence-gauntlet.sh</code>,<strong>採用專案不會自動有這支</strong>。
+    路徑寫錯或檔案不在 → 那一步<strong>靜默跳過</strong>,而 7-review 仍然填得完、verdict 仍然
+    寫得出來(2026-08 order-intake 實測:模板原本寫死 <code>docs/dev/tools/...</code>,
+    該目錄在採用專案根本不存在)。<strong>開工前先 <code>test -x &lt;路徑&gt;</code>,不在就先安裝</strong>:
+    <code>cp &lt;dev-flow&gt;/scripts/devflow-evidence-gauntlet.sh &lt;本 repo 的工具目錄&gt;/</code>
+    並在本檔的 Verification Evidence 節記下實際路徑。
+    裝不了 → Required 層改<strong>逐層手動實跑</strong>並在本檔明記「gauntlet 未跑」是<strong>降級</strong>,
+    不得默默當成跑過。
+    (Required 層須逐層帶入命令,未實跑由機械擋下,不靠自律)。
+    完成 = gauntlet 輸出在案(或降級聲明在案)。
     2d. <strong>Operational Walkthrough</strong>:以各 S 的 Operational Context 為腳本親自走一遍
     「人的工作」,逐列檢查六條 —— 技術上通過但人無法完成工作 / 看得到但沒有決策權 /
     系統把等待誤標為完成 / 系統外動作無法追蹤 / 使用者中斷後無法恢復 / 資訊過期、

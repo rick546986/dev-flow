@@ -18,7 +18,18 @@ updated:
 > 0. 角色+防錨定起手:審查者依序:適格人類 reviewer → fresh-context reviewer Agent →
 >    owner 自審(有記錄的最後手段);前兩者皆須 ≠ 實作 owner。先讀
 >    4-spec/5-tasks/diff/測試碼,**此刻禁讀 6-notes 的 Self-Review**。
->    完成 = 讀取順序聲明在案。
+>    ⚠️ **「reviewer ≠ 實作 owner」這條機械上擋不住** —— hook 層沒有身分概念
+>    (沒有 session id、沒有作者歸屬),加一個查 `owner` 欄位的守衛只會被
+>    「打字改個名字」繞過,那比散文更糟(假保證)。真正有效的是**讀取順序**:
+>    先自建矩陣、後讀作者主張。故本步的完成條件是**可查的讀取順序**,
+>    不是可宣稱的身分。
+>    ⚠️ **走 owner 自審這條路時,必須在本檔最前面獨立一節寫明**:
+>    ①審查者 = 實作者 ②因此哪些結論可信(機械數字)、哪些打折(F-id 分級、
+>    「沒想到的事」)③建議的補救路徑。**沒有這一節的 owner 自審視同未審。**
+>    完成 = 讀取順序聲明在案(+ owner 自審時的限制聲明節)。
+> 0b. **守衛武裝自檢**:同 6-notes 步 0 —— 跑 `devflow-exec.sh status` 確認
+>    `.devflow/exec.json` 存在。Stage 7 若在未武裝的樹上做,scope 守衛與契約防篡改
+>    同樣沉睡,reviewer 可能在不知情下改到 1/2/3/4。完成 = status 輸出在案。
 > 1. 自建 Coverage Matrix:grep 測試檔 S-id ↔ 4-spec S 清單,逐列填(缺漏 ❌),
 >    末列固定回歸列。完成 = 矩陣全列填畢(未參考作者主張)。
 > 2. 親跑驗證:本次 S 測試+既有全套,結果入矩陣。完成 = 兩輸出在案。
@@ -27,10 +38,19 @@ updated:
 >    貼的文字。完成 = 每 S 有實跑證據且與觀測方式相符(無外部現象者註明理由)。
 > 2c. **Final Fresh Run**:確認 Verification Evidence 節由 4-spec Verification Profile
 >    指名的 entry point 一次 fresh run 產出、Source SHA = 當下 HEAD;跑
->    `docs/dev/tools/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD)
+>    `<gauntlet 路徑> 7-review.md --source-sha $(git rev-parse HEAD)
 >    --review-file --require-layer <Profile Required 層,逐層一個 flag>` 全綠
->    (母版在 `scripts/`;Required 層須逐層帶入命令,未實跑由機械擋下,不靠自律)。
->    完成 = gauntlet 輸出在案。
+>    ⚠️ **`<gauntlet 路徑>` 要先確認它在消費 repo 真的存在**:母版住在
+>    dev-flow 的 `scripts/devflow-evidence-gauntlet.sh`,**採用專案不會自動有這支**。
+>    路徑寫錯或檔案不在 → 那一步**靜默跳過**,而 7-review 仍然填得完、verdict 仍然
+>    寫得出來(2026-08 order-intake 實測:模板原本寫死 `docs/dev/tools/...`,
+>    該目錄在採用專案根本不存在)。**開工前先 `test -x <路徑>`,不在就先安裝**:
+>    `cp <dev-flow>/scripts/devflow-evidence-gauntlet.sh <本 repo 的工具目錄>/`
+>    並在本檔的 Verification Evidence 節記下實際路徑。
+>    裝不了 → Required 層改**逐層手動實跑**並在本檔明記「gauntlet 未跑」是**降級**,
+>    不得默默當成跑過。
+>    (Required 層須逐層帶入命令,未實跑由機械擋下,不靠自律)。
+>    完成 = gauntlet 輸出在案(或降級聲明在案)。
 > 2d. **Operational Walkthrough**:以各 S 的 Operational Context 為腳本親自走一遍
 >    「人的工作」,逐列檢查六條 —— 技術上通過但人無法完成工作 / 看得到但沒有決策權 /
 >    系統把等待誤標為完成 / 系統外動作無法追蹤 / 使用者中斷後無法恢復 / 資訊過期、
@@ -107,6 +127,13 @@ updated:
 | S-id | 觀測方式(引 4-spec) | 實跑證據 | 相符? |
 |---|---|---|---|
 | S-1 |  |  | ✅/❌ |
+
+⚠️ **觀測方式指向本 repo 之外(前端在另一 repo、尚未實作、需真人操作外部系統)時,
+本節結構上做不到,而它又是 PASS 條件** —— 這種情況必須在 **4-spec 定稿當下**就標
+`n-a` 並寫理由(見 4-spec 的觀測欄規則),不是留到 G3 才發現整節跑不了。
+若 4-spec 沒標而 G3 才撞到:①逐條標 `n-a` 並記為 spec 缺口 ②**至少對本 repo 內
+可執行的代表性路徑實跑**(通常是打真實 HTTP request 驗回應形狀)③verdict 不得
+因為「做不到」就當成做過。
 
 ## Operational Walkthrough
 <!-- reviewer 以各 S 的 Operational Context 為腳本,親自走一遍「人的工作」;

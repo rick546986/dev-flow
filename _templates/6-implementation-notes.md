@@ -20,7 +20,19 @@ updated:
 > 執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併 T):
 > 0. 起手式:圍欄自查 —— 只讀 4-spec/5-tasks/6-notes/CONTEXT.md/living spec,
 >    禁讀 1/2/3(要翻才寫得出 = spec 不完整 → 停,回 G2)。開 feature branch
->    (並行 → worktree)。完成 = 讀取清單回報+branch 就位。
+>    (並行 → worktree)。
+>    ⚠️ **守衛武裝自檢(硬關卡,第一動)**:跑 `devflow-exec.sh status`,確認
+>    `.devflow/exec.json` **存在**且 slug 正確。**沒武裝就不准開工** ——
+>    guard hook 在 `.devflow/exec.json` 不存在時是**靜默沉睡**的
+>    (`devflow-lib.py::load_state` → `return None, "", ""`),
+>    於是「守衛在擋」與「守衛不在」對執行者長得一模一樣:
+>    圍欄②(禁讀上游)、契約防篡改、scope 守衛**三道全部不會觸發**,
+>    而每一份產出看起來都一樣完整。
+>    (2026-08 order-intake 實測:`devflow-exec.sh` 因母版 bug 啟動不了(D-9),
+>    26 個 T 全程守衛沉睡,`Files` scope 是**人工比對**出來的 ——
+>    沒有人在當下發現,因為沒有任何訊號。)
+>    武裝不了 → **停下回報**,不要用「我會自己守 scope」代替。
+>    完成 = 讀取清單回報 + branch 就位 + **`devflow-exec.sh status` 輸出貼進本檔**。
 > 1. 接手核對:4-spec approved?5-tasks 每 T 有 Verify+Covers?缺 → 停回補。
 >    建 todo 一 T 一項,照 Blocked-by 拓撲序。完成 = todo 與 5-tasks 一一對應。
 > 2. 逐 T 循環:a 照 Covers 先寫失敗測試(名含 S-id)→ RED 輸出貼

@@ -12,7 +12,7 @@ updated: 2026-07-23
 - [x] 完成
 - Covers: R-1 / S-1, S-2
 - Files: `internal/handler/contract.go`, `internal/service/contract.go`, `internal/repo/contract.go`
-- Verify: `go test ./internal/... -run TestExpiring`
+- Verify: `n=$(go test ./internal/... -run TestExpiring -v 2>&1 | grep -c '^=== RUN'); test "$n" -ge 1`
 - Blocked-by: —
 - Intent: 系統多了到期查詢 API:`GET /contracts/expiring?days=30` 回傳登入者名下 30 天內到期且未續約的合約;無符合者回 200 + 空列表,不報錯。
 - Boundaries: 查詢邏輯抽在 `service.ListExpiring`(2-decision:供未來 cron 複用);複用既有 `idx_contracts_end_date`,不另建索引;`days` 參數化只為測試方便,自訂天數仍 Out of Scope。
@@ -52,7 +52,7 @@ updated: 2026-07-23
 - [x] 完成
 - Covers: R-3 / S-4
 - Files: `migrations/0007_renewal_status.sql`, `internal/handler/contract_status.go`, `internal/repo/contract_status.go`
-- Verify: `go test ./internal/... -run TestRenewalStatus_S4`
+- Verify: `n=$(go test ./internal/... -run TestRenewalStatus_S4 -v 2>&1 | grep -c '^=== RUN'); test "$n" -ge 1`
 - Blocked-by: T-1
 - Risk: high
 - Intent: 系統多了「標記處理狀態」行為:標記後狀態/下一步/最後動作時間更新,歷程新增一筆(誰/何時/舊→新);「已續約」僅主管,非主管在 API 層被拒。
@@ -63,7 +63,7 @@ updated: 2026-07-23
 - [x] 完成
 - Covers: R-3 / S-5
 - Files: `internal/handler/contract_status.go`, `internal/repo/contract_status.go`
-- Verify: `go test ./internal/... -run TestRenewalStatus_S5`
+- Verify: `n=$(go test ./internal/... -run TestRenewalStatus_S5 -v 2>&1 | grep -c '^=== RUN'); test "$n" -ge 1`
 - Blocked-by: T-5
 - Intent: 系統多了狀態歷程查詢(詳情頁時間軸資料源),且「開啟/看過」等一切讀取路徑保證零狀態寫入 —— 歷程零新增本身成為可稽核證據。
 - Boundaries: 任何 GET 路徑不得寫入狀態或歷程;不做「已讀」記錄(看過 ≠ 處理,1-discussion Q4);不引入 Out of Scope 的自動提醒。
