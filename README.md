@@ -5,6 +5,8 @@
 > 母版:`~/dev/dev-flow/`。新專案採用:把 `_templates/` 複製進專案 `docs/dev/_templates/`,
 > 本 README 複製為 `docs/dev/README.md`,建 `docs/dev/STATUS.md` 與 repo root `CONTEXT.md`。
 > 或直接叫 AI:`/dev-flow 初始化這個專案`。
+>
+> 裝 Claude Code plugin(hooks/skills/CLI)？先看 [`docs/PLUGIN.md`](docs/PLUGIN.md)。
 
 **這是什麼**:一套讓「討論 → 決策 → 規格 → 實作 → 驗證」全程留痕的文檔管線。每個
 feature 走 7 份文檔、過 3 道 gate(G1 方向核准、G2 契約審查、G3 驗證出貨),AI 負責
