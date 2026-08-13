@@ -1,0 +1,166 @@
+---
+name: dev-release
+description: dev-flow 自己的發版器 — 驗證通過才升版、打 tag、建 GitHub release。當使用者說「dev-release」「發版」「release dev-flow」「打 tag」「升版本」,或改完 dev-flow 要讓其他機器拿到新版時啟用。只用於 rick546986/dev-flow 這個 repo 自己,不是給一般專案發版用。
+---
+
+# dev-release — dev-flow 的發版器
+
+**為什麼需要這支**:Claude Code 判斷「plugin 有沒有新版」是比對 `plugin.json` 的
+`version` **字串**,不是比對 commit。push 了但版本沒動 → 其他機器 `/plugin update`
+回 `(no content)`,什麼都不會拉,**而且不會有任何提示**。
+
+本 skill 把三件容易漏的事機械化:
+1. 版本號**兩處**必須同步(`.claude-plugin/plugin.json` 與 `hooks/runtime-capabilities.json`)
+2. 發版前必須跑過驗證(2026-08-13 教訓:gate-consistency 壞了九天沒人知道,
+   因為沒有任何關卡強制在發版前跑它)
+3. `docs/dev/` 的散發副本要與根目錄正本一致(dev-flow repo 自己也是 dogfooding 專案)
+
+## 用法
+
+`/dev-release patch` | `minor` | `major`,或直接說「發版」由本 skill 依改動範圍建議級別。
+
+語意(對齊 semver,但這裡的「相容」指的是**方法論契約**不是 API):
+- **patch** — 修 bug、補文件、改 hooks 內部實作。契約與模板結構不變。
+- **minor** — 新增 skill / 新增檢查 / 模板加節。既有專案 `dev-setup upgrade` 後仍相容。
+- **major** — 目錄結構、契約版本、marketplace/plugin 名稱變動。既有安裝需要人工介入。
+
+## 執行清單(逐項達成「完成 =」才往下,禁跳項)
+
+### 0. 擋門(任一不過就停,不要「先發了再說」)
+
+```bash
+cd ~/dev/dev-flow
+git branch --show-current          # 必須是 main
+git status --short                 # 必須為空
+git fetch origin && git rev-list --left-right --count HEAD...origin/main   # 必須 0 0 或只領先
+```
+
+完成 = 三項都符合。有未提交改動 → 先問使用者要 commit 還是 stash,**不要自己決定**。
+
+### 1. 驗證三道(全綠才准發版)
+
+```bash
+bash hooks/selftest.sh
+# 期望:✅ 守衛自測 N/N 全過(N 以腳本輸出為準,不寫死)
+
+env -u DEVFLOW_MASTER -u DEVFLOW_PLUGIN -u CLAUDE_PLUGIN_ROOT bash hooks/gate-consistency.sh
+# 期望:✅ 全部一致(14/14 通過)、exit 0
+# 三個環境變數必須真的 unset —— 這道同時驗 __file__ fallback 沒壞
+
+bash hooks/devflow-exec.sh doctor
+# 期望:✅ devflow doctor: COMPATIBLE
+# 注意 cwd:在 ~/dev/dev-flow 跑,驗的是本 repo 自己的 docs/dev/ 散發副本
+```
+
+任一紅 → **停止發版**,回報實際輸出。不要「這條跟本次改動無關」就放行 ——
+那正是 gate-consistency 壞九天的成因。
+
+完成 = 三道輸出原文都貼出來且全綠。
+
+### 2. 散發副本同步檢查
+
+```bash
+diff -q devflow-contract.json docs/dev/devflow-contract.json
+diff -q scripts/devflow-evidence-gauntlet.sh docs/dev/tools/devflow-evidence-gauntlet.sh
+```
+
+有差異 → 用根目錄正本覆蓋 `docs/dev/` 副本(正本方向永遠是 根目錄 → docs/dev/),
+覆蓋後重跑步驟 1 的 doctor。
+
+完成 = 兩個 diff 都靜默(無輸出)。
+
+### 3. 升版號(兩處,一起改)
+
+讀 `.claude-plugin/plugin.json` 現值,依級別算出新版號,然後**同時**改:
+
+| 檔案 | 欄位 |
+|---|---|
+| `.claude-plugin/plugin.json` | `version` |
+| `hooks/runtime-capabilities.json` | `runtime_version` |
+
+**不要動** `supported_contract_versions` 與 `schema_versions` —— 那兩個跟著
+`devflow-contract.json` 的契約版本走,不隨發版遞增。契約真的要改版時,
+`devflow-contract.json` 的 `devflow_contract_version` 與 runtime 的
+`supported_contract_versions` 要一起改,那是 major。
+
+改完驗證:
+
+```bash
+jq -r .version .claude-plugin/plugin.json
+grep -o '"runtime_version": "[^"]*"' hooks/runtime-capabilities.json
+# 兩者必須是同一個字串
+```
+
+完成 = 兩處值相同且等於目標版號。
+
+### 4. 更新 `docs/dev/STATUS.md`
+
+- 本次發版對應的 feature 從 **Active** 移到 **Shipped**,填發版日期與版號。
+- 沒有對應 feature(純修 bug)→ 在 Shipped 表加一列,slug 用 `vX.Y.Z-<一句話>`。
+- Backlog 有項目在本次做掉 → 一併移除並在 Shipped 那列註明。
+
+完成 = STATUS.md 反映本次發版,沒有留在 Active 的已完成項。
+
+### 5. Commit
+
+```bash
+git add .claude-plugin/plugin.json hooks/runtime-capabilities.json docs/dev/STATUS.md
+# 若步驟 2 有覆蓋副本,一併 add docs/dev/
+git commit -m "release: vX.Y.Z — <一句話說明本次改了什麼>"
+```
+
+完成 = commit 建立,`git status --short` 為空。
+
+### 6. Push main —— **這步交給使用者自己跑**
+
+使用者的 `~/.claude/settings.json` 有 `permissions.deny: Bash(*git push*main*)`,
+這是他刻意設的護欄(對應鐵律 9)。**不要試圖繞過**(改指令形狀、改設定、用別的工具都不行)。
+
+請他在輸入框打:
+
+```
+! cd ~/dev/dev-flow && git push origin main
+```
+
+完成 = 使用者回報 push 成功,或你確認 `git rev-list --count origin/main..HEAD` 為 0。
+
+### 7. Tag + GitHub Release
+
+tag 名稱不含 `main`/`master`,所以這步不會被 deny 規則擋,可以直接跑:
+
+```bash
+cd ~/dev/dev-flow
+git tag -a vX.Y.Z -m "vX.Y.Z — <一句話>"
+git push origin vX.Y.Z
+
+gh release create vX.Y.Z \
+  --title "vX.Y.Z — <一句話>" \
+  --notes "<release notes>"
+```
+
+release notes 內容(不要只貼 commit 標題):
+- **改了什麼** — 使用者角度,不是檔案清單
+- **要不要動手** — 既有安裝需不需要重跑 `dev-setup`、要不要重新 install
+- **驗證** — 貼步驟 1 三道的實際輸出摘要
+
+完成 = `gh release view vX.Y.Z` 查得到。
+
+### 8. 告訴使用者其他機器怎麼拿
+
+```
+/plugin marketplace update dev-flow
+/plugin update dev-flow
+/reload-plugins            # 當前 session 立刻生效;或開新 session
+```
+
+到專案目錄再跑 `dev-setup`(它會偵測 stale 並提議 upgrade)。
+
+設了 `autoUpdate: true` 的機器不用打前兩行,開新 session 自動更新。
+
+## 禁止
+
+- 驗證沒過就發版,或以「這條跟本次改動無關」放行
+- 只改一處版本號
+- 繞過 push main 的 deny 規則
+- 自己決定要不要 commit 使用者的未提交改動
+- 把 `supported_contract_versions` 跟著版號一起改

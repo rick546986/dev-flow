@@ -1,0 +1,59 @@
+# EXTERNAL_RUNTIME 的機械驗證(hooks 行為)。
+#
+# 兩個層級請勿混用(與 devflow-ci.yml 對稱,兩邊都不冒充對方):
+#   EXTERNAL_RUNTIME_PASS = 本 workflow 綠。只代表 hooks/ 的行為自洽。
+#   REPO_REFERENCE_PASS   = devflow-ci workflow 綠(scripts/devflow-check.sh all),
+#                           只代表模板/範例/fixture/契約檔自洽。
+# 兩者用 devflow-contract.json 對版握手,不共用實作;一邊綠不代表另一邊綠。
+#
+# 2026-08-13 plugin 併入本 repo 後,不再需要 checkout 第二個 repo ——
+# selftest 少數 fixture 讀 $DEVFLOW_MASTER/observability,而 MASTER 現在就是 repo root。
+# gate-consistency 的比對自建暫存 fixture,不依賴外部內容。
+#
+# 本 workflow 不依賴任何 Secret(唯讀 checkout + 純本地檢查)。
+
+name: runtime-selftest
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  selftest:
+    name: EXTERNAL_RUNTIME (hooks/selftest.sh + gate-consistency.sh)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show versions
+        run: |
+          /usr/bin/python3 --version
+          git --version
+
+      # MASTER 與 PLUGIN 併repo 後指向同一處;顯式帶入而非依賴 __file__ fallback,
+      # 這樣 CI 失敗時能一眼分辨是「路徑推導壞了」還是「檢查本身紅了」。
+      - name: hooks/selftest.sh
+        env:
+          DEVFLOW_MASTER: ${{ github.workspace }}
+        run: bash hooks/selftest.sh
+
+      - name: hooks/gate-consistency.sh
+        env:
+          DEVFLOW_MASTER: ${{ github.workspace }}
+          DEVFLOW_PLUGIN: ${{ github.workspace }}
+        run: bash hooks/gate-consistency.sh
+
+      # 不帶任何環境變數再跑一次:證明 __file__ fallback 自己算得出 repo root。
+      # 這條是 2026-08-13 那次 gate-consistency 壞掉九天沒被發現的直接回歸測試。
+      - name: gate-consistency 無環境變數(__file__ fallback 回歸)
+        run: env -u DEVFLOW_MASTER -u DEVFLOW_PLUGIN -u CLAUDE_PLUGIN_ROOT bash hooks/gate-consistency.sh
+
+      - name: Scope note
+        if: always()
+        run: |
+          echo "EXTERNAL_RUNTIME_PASS = 本 job 的結果(hooks 行為)。"
+          echo "REPO_REFERENCE_PASS   = devflow-ci workflow,不在本 job 範圍。"
