@@ -5,3 +5,4 @@ dogfood-archive/
 docs/*.docx
 docs/**/.DS_Store
 __pycache__/
+**/*.docx

@@ -274,7 +274,7 @@
   <tr>
   <td>7</td>
   <td><code>7-review.md</code> + <code>.html</code></td>
-  <td>雙軸審 + coverage matrix + Exit checklist</td>
+  <td>雙軸審 + coverage matrix + Exit checklist。<strong>同 stage 只有這兩個檔</strong>,自審的家在 6-notes Self-Review;真要用 7-review 形狀寫自審則 verdict 填 <code>PRE-REVIEW</code>,獨立 reviewer 產出後<strong>就地接管同一個檔</strong>、不另存 sibling(細則見模板步 0a)</td>
   <td><strong>G3</strong> 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → PR</td>
   </tr>
   </tbody>
@@ -618,9 +618,23 @@
     ①審查者 = 實作者 ②因此哪些結論可信(機械數字)、哪些打折(F-id 分級、
     「沒想到的事」)③建議的補救路徑。<strong>沒有這一節的 owner 自審視同未審。</strong>
     完成 = 讀取順序聲明在案(+ owner 自審時的限制聲明節)。
+    0a. <strong>自審的落點與交棒</strong>(2026-08-13 補;order-intake 實際踩到):</p>
+    <ul>
+    <li>自審的<strong>預設家在 <code>6-implementation-notes.md</code> 的 Self-Review 節</strong>,不是本檔。</li>
+    <li>真的需要用 7-review 的形狀寫自審(例如要留矩陣與實跑證據給下一棒)時,
+    <strong>必須</strong>:①<code>verdict:</code> 留 <code>PRE-REVIEW</code> 不填 PASS/REQUEST_CHANGES
+    ②標題第一行寫明「不是 G3 PASS」③明列建議的 reviewer 路徑。
+    —— 這三件事做到了,自審就是合格的交接文件,不是違規。</li>
+    <li><strong>獨立 reviewer 產出後,直接接管 <code>7-review.md</code> 本身</strong>(連同 <code>.html</code> 重生),
+    把 pre-review 的獨有內容(發現、Known Limits、架構圖、diff)逐項吸收進去;
+    <strong>不另存 sibling</strong>。pre-review 的舊版留在 git 歷史即可,不需要留在工作樹。</li>
+    <li>verdict = <code>REQUEST_CHANGES</code> 時 <strong><code>7-review.md</code> 仍是 gate-of-record</strong>,
+    只是 <code>status</code> 停在 <code>draft</code>;下一輪修完就地覆蓋同一個檔,輪次寫進本檔的
+    「重驗範圍」節,不開新檔。
     0b. <strong>守衛武裝自檢</strong>:同 6-notes 步 0 —— 跑 <code>devflow-exec.sh status</code> 確認
     <code>.devflow/exec.json</code> 存在。Stage 7 若在未武裝的樹上做,scope 守衛與契約防篡改
-    同樣沉睡,reviewer 可能在不知情下改到 1/2/3/4。完成 = status 輸出在案。</p>
+    同樣沉睡,reviewer 可能在不知情下改到 1/2/3/4。完成 = status 輸出在案。</li>
+    </ul>
     <ol>
     <li>自建 Coverage Matrix:grep 測試檔 S-id ↔ 4-spec S 清單,逐列填(缺漏 ❌),
     末列固定回歸列。完成 = 矩陣全列填畢(未參考作者主張)。</li>

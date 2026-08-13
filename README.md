@@ -95,7 +95,7 @@ root 相對的 `Files` scope。
 | 4 | `4-spec.md` | 本次變更的可測契約(delta + GIVEN/WHEN/THEN)。SDD 真相 | **G2** R/S 全審 + DD 全裁決 + Verification Profile + Demo verdict(全文見 §7) |
 | 5 | `5-tasks.md` | 切成可勾選任務,tracer-bullet 順序,每 T 有 Covers/Files/Verify/Blocked-by | 每 T 欄位完整 |
 | 6 | `6-implementation-notes.md` | 實作日誌:TDD 證據 + 偏差記錄 | 每 T review PASS + 全 S 綠 |
-| 7 | `7-review.md` + `.html` | 雙軸審 + coverage matrix + Exit checklist | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → PR |
+| 7 | `7-review.md` + `.html` | 雙軸審 + coverage matrix + Exit checklist。**同 stage 只有這兩個檔**,自審的家在 6-notes Self-Review;真要用 7-review 形狀寫自審則 verdict 填 `PRE-REVIEW`,獨立 reviewer 產出後**就地接管同一個檔**、不另存 sibling(細則見模板步 0a) | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → PR |
 
 **執行清單四原則**(Stage 2/3/4/6/7;清單全文住各模板頂註,Stage 1 同款機制內建於
 /dev-talk):①開場第一動把清單建成 todo,每步有「完成 =」客觀條件,達成才勾;
@@ -292,7 +292,24 @@ RED → GREEN → scope check → Verify
 **Diff 細則**(6/7 的 html):每檔一個 `<details>` 折疊條 —— hover 顯示 stat 摘要
 (+N/−N、動到的函式),click 展開完整 diff(紅綠著色);內容必 HTML-escape;
 單檔 >400 行截斷留 stat+首段註「完整見 git」;base:6 = 該 T 的 commit,
-7 = merge-base(develop)..HEAD。
+7 = merge-base(develop)..HEAD。⚠️ **標題要寫實際用的 base** ——
+merge-base 與「feature 開工前那個 commit」常常不是同一個(order-intake 實測相差
+105 個 commit、檔數 202 vs 861),用了哪個就標哪個並寫原因,不要照抄本行的字面。
+
+**審查動線頂區**(7-review 的 html **必含**,2026-08-13 補):twin 不只是給人查的參考檔,
+它是給人**審**的。頂部固定五格,每格一句話 + 一個跳轉,審完五格才決定要不要往下讀:
+
+| 格 | 內容 |
+|---|---|
+| 判定 | verdict + 輪次(第 N 輪) |
+| 出貨 | Exit Checklist 進度 `x/8`,並點名哪幾項要 owner 親自動 |
+| 爭點 | 「附錄:本輪特有」有幾條分歧、其中幾條要 owner 裁 |
+| 風險 | Known Limits 條數 + 未處置的 🟡 幾條 |
+| 抽驗 | 隨機給一列 `檔:行`,點了直接跳到那一列 |
+
+起因:order-intake 的 7-review 長到 95k 字,owner 問「這麼雜要怎麼審、從哪開始」。
+md 側的對應規定是模板頂註的「Reviewer 閱讀動線」五步(`_templates/7-review.md`),
+**兩邊講同一件事、md 是正本**;html 只是把它做成可點的。
 
 要對外報告:跟 AI 說「這份 html 上 artifact」→ 發布成連結。
 殼檔有兩處副本(`_templates/html-shell.html` 與 dev-talk skill 目錄內),改殼須同步兩處。

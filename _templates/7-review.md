@@ -2,17 +2,38 @@
 feature: <slug>
 stage: 7-review
 status: draft
+verdict:             # PRE-REVIEW | REQUEST_CHANGES | PASS(步 0a:自審一律 PRE-REVIEW)
 owner:               # reviewer,不可 = 實作 owner
 updated:
 ---
 
 # 7. 驗證
 
+> ## Reviewer 閱讀動線(**必留;給看的人,不是給寫的人**)
+>
+> 2026-08-13 補。起因:order-intake 的 7-review 長到 95k 字,owner 問「這麼雜我要
+> 怎麼審、從哪開始」——**模板原本只有寫作順序(執行清單步 0~5),沒有閱讀順序**,
+> 所以文件沒告訴他從哪切入。以下五步固定,產文件時逐字保留、只換數字:
+>
+> | 步 | 讀哪節 | 這步問的唯一問題 |
+> |---|---|---|
+> | 1 | **Verdict** | 判定是什麼?門檻表每一格是不是都有證據? |
+> | 2 | **Exit Checklist** | 還缺什麼才能出貨?哪幾項要 owner 親自動? |
+> | 3 | **附錄:本輪特有** | 本輪的爭點/分歧在哪,誰對? |
+> | 4 | **Known Limits** | 有沒有一條是 owner 不能接受的? |
+> | 5 | **抽驗一列** | 從 Coverage Matrix / Standards Axis / Spec Axis 任挑一列,照它給的 `檔:行` 去看。對得上就信剩下的,對不上就整份退回 |
+>
+> **只做一步就做第 5 步** —— verdict 可以寫得漂亮,`檔:行` 對不上就是對不上。
+> 三大節(Spec Axis / Coverage Matrix / Standards Axis)通常佔全文四成以上,
+> 用途是**查證庫**(懷疑某一格時去查),不是通讀對象。
+>
 > 用途:**G3 出貨關卡**。雙軸審(mattpocock):Standards = 通用品質、Spec = 逐條對
 > 4-spec。本次 S 全綠 + **既有測試全綠(回歸)** + 無 🔴 才 PASS。過 gate 後產
 > 7-review.html 供報告。
 > 本階段固定產出:`7-review.md`(本模板全節)+ `7-review.html`(G3 必產;必含
 > 變更架構圖、F-id 分級表、現象證據表、全 branch diff 折疊 + 執行記錄表)。
+> **就這兩個檔,不多不少。禁止長出 `7-review-<誰>.md`、`7-self-review.md` 這類並存檔**
+> —— 兩份同 stage 產物 = gate 讀哪一份沒有定義(2026-08-13 order-intake 實際發生)。
 >
 > 執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併項):
 > 0. 角色+防錨定起手:審查者依序:適格人類 reviewer → fresh-context reviewer Agent →
@@ -27,6 +48,18 @@ updated:
 >    ①審查者 = 實作者 ②因此哪些結論可信(機械數字)、哪些打折(F-id 分級、
 >    「沒想到的事」)③建議的補救路徑。**沒有這一節的 owner 自審視同未審。**
 >    完成 = 讀取順序聲明在案(+ owner 自審時的限制聲明節)。
+> 0a. **自審的落點與交棒**(2026-08-13 補;order-intake 實際踩到):
+>    - 自審的**預設家在 `6-implementation-notes.md` 的 Self-Review 節**,不是本檔。
+>    - 真的需要用 7-review 的形狀寫自審(例如要留矩陣與實跑證據給下一棒)時,
+>      **必須**:①`verdict:` 留 `PRE-REVIEW` 不填 PASS/REQUEST_CHANGES
+>      ②標題第一行寫明「不是 G3 PASS」③明列建議的 reviewer 路徑。
+>      —— 這三件事做到了,自審就是合格的交接文件,不是違規。
+>    - **獨立 reviewer 產出後,直接接管 `7-review.md` 本身**(連同 `.html` 重生),
+>      把 pre-review 的獨有內容(發現、Known Limits、架構圖、diff)逐項吸收進去;
+>      **不另存 sibling**。pre-review 的舊版留在 git 歷史即可,不需要留在工作樹。
+>    - verdict = `REQUEST_CHANGES` 時 **`7-review.md` 仍是 gate-of-record**,
+>      只是 `status` 停在 `draft`;下一輪修完就地覆蓋同一個檔,輪次寫進本檔的
+>      「重驗範圍」節,不開新檔。
 > 0b. **守衛武裝自檢**:同 6-notes 步 0 —— 跑 `devflow-exec.sh status` 確認
 >    `.devflow/exec.json` 存在。Stage 7 若在未武裝的樹上做,scope 守衛與契約防篡改
 >    同樣沉睡,reviewer 可能在不知情下改到 1/2/3/4。完成 = status 輸出在案。
@@ -169,7 +202,17 @@ updated:
      內容放 HTML-escaped 完整 diff,刪行 class="del"、增行 class="add"。 -->
 
 ## Verdict
-<!-- PASS / REQUEST_CHANGES(列 🔴) -->
+<!-- PASS / REQUEST_CHANGES(列 🔴)。PASS ≠ shipped —— shipped 看下面的 Exit Checklist。
+     建議附一張門檻表逐格給證據(本次 S 全綠 / 既有全綠 / 現象證據 / Evidence 契約 / 無 🔴)。 -->
+
+## Known Limits
+<!-- 2026-08-13 補入節序:Exit Checklist 第 1 條的 park 分支明文指定「STATUS 待辦或
+     7-review known limits,擇一」,但這一節原本不在模板的節清單裡 —— 於是 park
+     宣稱得出來、落點寫不進去(order-intake 實際發生,F-1 宣稱 park 但 Known Limits
+     九列裡沒有它)。逐條四欄:# | 限制 | 嚴重度 | 建議處置(park 的須寫出 owner
+     與追蹤位置)。已解除的用 ~~刪除線~~ 保留,不刪列 —— 讓下一輪看得到歷程。 -->
+| # | 限制 | 嚴重度 | 建議處置 |
+|---|---|---|---|
 
 ## Exit Checklist(全勾才算 shipped)
 - [ ] **Design Boundary finding 全數處置**(契約 `applicable` 時必勾;`n-a` 時記 n-a):
@@ -187,3 +230,23 @@ updated:
 - [ ] 7-review frontmatter status: shipped;上游 artifact 可保留 approved(各自 gate 核准紀錄)
 - [ ] 7-review.html 已產生(含變更架構圖 + diff 折疊,規格見 README §6)
 - [ ] feature branch 已刪 / worktree 已清
+
+## 附錄:本輪特有
+<!-- 2026-08-13 補。**模板固定 12 節之外的內容,一律收在本節之下,不得在節序中間新開 ## 節。**
+     起因:order-intake 的 7-review 在模板 12 節外自行長出 7 個 ## 節、順序也被打亂
+     (Negative Constraint Mapping 從第 3 位掉到第 12 位),結果
+     ①owner 看不出骨架、每個 feature 形狀都不同 ②`devllow` 系機械檢查讀不到 ——
+     `scripts/devflow-evidence-gauntlet.sh` 是照固定節名與固定表格欄位解析的,
+     欄位一改就整組失效(該檔正規化前 24 checks 有 16 violation,正規化後 69 checks 全過)。
+
+     所以規則是「骨架釘死、內容自由」:
+     - 節名、節序、三張表的欄位(Coverage Matrix 3 欄 / Verification Evidence header 四欄
+       + Layer 表 5 欄 / Negative Constraint Mapping 3 欄)不得改;
+     - 本輪特有的東西(逐條分歧、Deviation 複核、額外觀測、原始輸出全文…)開 ### 放這裡;
+     - 上面三張表**只放索引**(結論 + 出處指標),長證據原文放本節,表格才維持可掃可機檢。
+
+     ⚠️ 表格儲存格內不得有原生 `|`(gauntlet 以 split("|") 切欄,E13 fail-closed);
+     含 pipeline 的指令寫 `&#124;` —— markdown 渲染成 `|`,仍可複製貼上。 -->
+
+### A1　<本輪爭點/分歧>
+### A2　<…>

@@ -7,12 +7,21 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>5. 任務(tracer bullet:T-1→T-2 先打通端到端,再 T-3 加厚)</title>
 <style>
+  /* 三態主題(2026-08-13 補)：檢視者有三種狀態,不是兩種 ——
+     明確選色會在 root 蓋 data-theme="dark"/"light",而預設的「跟隨系統」什麼都不蓋。
+     ①bare :root 定義完整淺色盤(未蓋標記時生效)
+     ②prefers-color-scheme 以 :not([data-theme="light"]) 包住,讓明確選淺色勝過深色 OS
+     ③[data-theme="dark"] 再定義一次,讓切換鈕在另一個方向也贏
+     缺 ②③ 的話,這份 html 上 artifact 後使用者按主題切換鈕會完全沒反應,只跟著 OS 走。 */
   :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
         --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;}
   @media(prefers-color-scheme:dark){
-    :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
-          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;}
+    :root:not([data-theme="light"]){
+      --bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+      --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;}
   }
+  :root[data-theme="dark"]{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+        --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);
        font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
