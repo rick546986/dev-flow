@@ -121,30 +121,30 @@ def exit_checklist():
 
 
 fragments = {
-    ("guide-dev-flow.html", "readme-stage-table"):
+    ("guides/guide-dev-flow.html", "readme-stage-table"):
         markdown_table("README.md", "## 3.", "| # |"),
-    ("guide-dev-flow.html", "template2-checklist"):
+    ("guides/guide-dev-flow.html", "template2-checklist"):
         quote_region("_templates/2-decision.md", "執行清單("),
-    ("guide-dev-flow.html", "template3-checklist"):
+    ("guides/guide-dev-flow.html", "template3-checklist"):
         quote_region("_templates/3-prototype.md", "執行清單("),
-    ("guide-dev-flow.html", "template4-laws"):
+    ("guides/guide-dev-flow.html", "template4-laws"):
         quote_region("_templates/4-spec.md", "反模糊三律(", "執行清單("),
-    ("guide-dev-flow.html", "template4-checklist"):
+    ("guides/guide-dev-flow.html", "template4-checklist"):
         quote_region("_templates/4-spec.md", "執行清單(", "起草前估"),
-    ("guide-dev-flow.html", "template6-checklist"):
+    ("guides/guide-dev-flow.html", "template6-checklist"):
         quote_region("_templates/6-implementation-notes.md", "執行清單(", "實作期規則("),
-    ("guide-dev-flow.html", "template6-rules"):
+    ("guides/guide-dev-flow.html", "template6-rules"):
         quote_region("_templates/6-implementation-notes.md", "實作期規則("),
-    ("guide-dev-flow.html", "template7-checklist"):
+    ("guides/guide-dev-flow.html", "template7-checklist"):
         quote_region("_templates/7-review.md", "執行清單("),
-    ("guide-dev-flow.html", "readme-reviewer-selection-flow"):
+    ("guides/guide-dev-flow.html", "readme-reviewer-selection-flow"):
         bullet("README.md", "審查者產生"),
-    ("guide-quickstart.html", "readme-stage6-seam-quickstart"): fenced_seam(),
-    ("guide-quickstart.html", "readme-reviewer-selection-quickstart"):
+    ("guides/guide-quickstart.html", "readme-stage6-seam-quickstart"): fenced_seam(),
+    ("guides/guide-quickstart.html", "readme-reviewer-selection-quickstart"):
         bullet("README.md", "審查者產生"),
-    ("guide-quickstart.html", "readme-gate-model-quickstart"):
+    ("guides/guide-quickstart.html", "readme-gate-model-quickstart"):
         bullet("README.md", "G1/G2/G3 審查與 verdict"),
-    ("guide-quickstart.html", "template7-exit-quickstart"): exit_checklist(),
+    ("guides/guide-quickstart.html", "template7-exit-quickstart"): exit_checklist(),
 }
 
 
