@@ -1,0 +1,130 @@
+{
+  "schema_id": "devflow-agent-event",
+  "schema_version": "1.1",
+  "comment": "DevFlow Agent Attempt 事件 schema 唯一正本。validator(devflow_obs/event_validate.py)直接解讀本檔,不另抄一份規則。追蹤單位是 Agent Attempt/Review/Tool lifecycle,不是 LLM 段落;業務鏈(R/S/T/D/F)與執行鏈(run/att/rev/fnd)ID 分離。1.1(共享契約 §6):task_tags 受控 enum、result 標 deprecated(removed in 2.0)、欄位級長度上限;envelope schema 值新寫入用 devflow-agent-event/1.1,舊 /1(=1.0)讀取相容。",
+  "envelope": {
+    "required": ["schema", "seq", "timestamp", "run_id", "event_type", "writer"],
+    "optional": ["stage", "task_id", "session_ref", "note"]
+  },
+  "writers": ["coordinator", "hook", "verifier"],
+  "hook_forbidden_fields": ["agent_role", "prompt", "model"],
+  "fields": {
+    "schema": {"type": "string", "pattern": "^devflow-agent-event/1(\\.[0-9]+)?$"},
+    "seq": {"type": "int", "min": 1},
+    "timestamp": {"type": "timestamp"},
+    "run_id": {"type": "string", "pattern": "^run_[0-9A-HJKMNP-TV-Z]{26}$"},
+    "event_type": {"type": "string", "pattern": "^[a-z_]+$"},
+    "writer": {"type": "enum", "values": ["coordinator", "hook", "verifier"]},
+    "stage": {"type": "string", "pattern": "^[1-7]-[a-z-]+$"},
+    "task_id": {"type": "string", "pattern": "^T-[0-9]+$"},
+    "session_ref": {"type": "text", "maxlen": 100},
+    "note": {"type": "text", "maxlen": 500},
+    "feature_slug": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "workspace": {"type": "text", "maxlen": 300},
+    "lane": {"type": "enum", "values": ["full", "fast"]},
+    "attempt_id": {"type": "string", "pattern": "^att_[0-9A-HJKMNP-TV-Z]{26}$"},
+    "parent_attempt_id": {"type": "string", "pattern": "^att_[0-9A-HJKMNP-TV-Z]{26}$"},
+    "review_id": {"type": "string", "pattern": "^rev_[0-9A-HJKMNP-TV-Z]{26}$"},
+    "finding_id": {"type": "string", "pattern": "^fnd_[0-9A-HJKMNP-TV-Z]{26}$"},
+    "business_finding_id": {"type": "string", "pattern": "^F-[0-9]+$"},
+    "scenario_ids": {"type": "array", "item_pattern": "^S-[0-9]+$"},
+    "task_tags": {"type": "array", "item_enum_source": "devflow-contract.json#task_tags", "item_maxlen": 50, "comment": "6.3:受控 enum,正本 = repo 根 devflow-contract.json 的 task_tags(12 值);多選陣列;非 enum 值拒收;每值 ≤50(取代舊 x_task_type 承接方案)"},
+    "agent_role": {"type": "enum", "values": ["worker", "reviewer", "adviser", "verifier"]},
+    "model": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$", "maxlen": 100},
+    "from_model": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$", "maxlen": 100},
+    "to_model": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$", "maxlen": 100},
+    "prompt": {"type": "prompt"},
+    "context_manifest_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "base_sha": {"type": "string", "pattern": "^[0-9a-f]{7,40}$"},
+    "candidate_sha": {"type": "string", "pattern": "^[0-9a-f]{7,40}$"},
+    "result": {"type": "enum", "values": ["PASS", "FAIL", "ABORTED"]},
+    "verdict": {"type": "enum", "values": ["PASS", "FAIL", "REQUEST_CHANGES", "ABORTED"]},
+    "status": {"type": "enum", "values": ["pass", "fail", "unverified", "n-a"]},
+    "command_ref": {"type": "line", "maxlen": 500},
+    "result_summary": {"type": "line", "maxlen": 2000},
+    "artifact_ref": {"type": "text", "maxlen": 1000},
+    "source_sha": {"type": "string", "pattern": "^[0-9a-f]{7,40}$"},
+    "layers_total": {"type": "int", "min": 0},
+    "layers_failed": {"type": "int", "min": 0},
+    "review_verdict": {"type": "enum", "values": ["PASS", "FAIL"]},
+    "failure_category": {"type": "enum", "values": ["SPEC", "ENV", "IMPL", "UNKNOWN"]},
+    "severity": {"type": "enum", "values": ["blocker", "should_fix", "nice_to_have"]},
+    "violation": {"type": "enum", "values": ["scope", "contract", "upstream_read", "guard_state", "test_integrity", "other"]},
+    "gate": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "layer": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "profile": {"type": "text", "maxlen": 100},
+    "failure_kind": {"type": "text", "maxlen": 200},
+    "evidence_ref": {"type": "text", "maxlen": 500},
+    "details_ref": {"type": "text", "maxlen": 500},
+    "target": {"type": "text", "maxlen": 500},
+    "tool_name": {"type": "text", "maxlen": 100},
+    "exit_code": {"type": "int"},
+    "verify_exit_code": {"type": "int"},
+    "duration_ms": {"type": "int", "min": 0},
+    "round": {"type": "int", "min": 1},
+    "findings_count": {"type": "int", "min": 0},
+    "reason": {"type": "text", "maxlen": 500},
+    "title": {"type": "text", "maxlen": 1000}
+  },
+  "prompt_object": {
+    "required": ["id", "version", "hash"],
+    "optional": ["source_sha", "rubric_version", "context_packet_version"],
+    "fields": {
+      "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "maxlen": 100},
+      "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$", "maxlen": 40},
+      "hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+      "source_sha": {"type": "string", "pattern": "^[0-9a-f]{7,40}$"},
+      "rubric_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+      "context_packet_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}
+    }
+  },
+  "events": {
+    "run_started": {"required": ["feature_slug", "base_sha"], "optional": ["workspace", "lane"]},
+    "run_completed": {"required": ["result"], "optional": ["verdict"]},
+    "stage_started": {"required": ["stage"], "optional": []},
+    "stage_completed": {"required": ["stage", "verdict"], "optional": []},
+    "agent_dispatched": {"required": ["attempt_id", "agent_role", "model", "prompt"], "optional": ["parent_attempt_id", "context_manifest_hash", "base_sha", "reason", "task_tags"]},
+    "attempt_started": {"required": ["attempt_id", "agent_role", "model", "prompt", "base_sha"], "optional": ["parent_attempt_id", "context_manifest_hash", "task_tags"]},
+    "tool_invoked": {"required": ["tool_name"], "optional": ["attempt_id", "agent_role", "model", "prompt"]},
+    "tool_completed": {"required": ["tool_name"], "optional": ["attempt_id", "agent_role", "model", "prompt", "exit_code", "duration_ms"]},
+    "attempt_completed": {"required": ["attempt_id", "result"], "optional": ["agent_role", "model", "prompt", "parent_attempt_id", "context_manifest_hash", "base_sha", "candidate_sha", "failure_category", "verify_exit_code", "duration_ms", "task_tags"]},
+    "candidate_created": {"required": ["attempt_id", "candidate_sha"], "optional": ["base_sha"]},
+    "mechanical_gate_started": {"required": ["gate"], "optional": ["attempt_id", "target"]},
+    "mechanical_gate_completed": {"required": ["gate", "result"], "optional": ["attempt_id", "target", "exit_code", "violation", "details_ref"]},
+    "review_started": {"required": ["review_id"], "optional": ["attempt_id", "agent_role", "model", "prompt", "round"]},
+    "review_completed": {"required": ["review_id", "review_verdict"], "optional": ["attempt_id", "agent_role", "model", "prompt", "round", "findings_count"]},
+    "finding_created": {"required": ["finding_id", "review_id", "severity"], "optional": ["scenario_ids", "business_finding_id", "title", "attempt_id"]},
+    "task_rework_requested": {"required": ["task_id", "attempt_id", "failure_category"], "optional": ["review_id", "reason"]},
+    "task_escalated": {"required": ["task_id", "attempt_id", "from_model", "to_model", "failure_category"], "optional": ["reason", "review_id"]},
+    "task_accepted": {"required": ["task_id", "attempt_id"], "optional": ["candidate_sha", "review_id"]},
+    "verification_layer_started": {"required": ["layer"], "optional": ["attempt_id", "profile", "source_sha", "round"]},
+    "verification_layer_completed": {"required": ["layer"], "optional": ["attempt_id", "status", "result", "exit_code", "failure_kind", "evidence_ref", "command_ref", "result_summary", "artifact_ref", "source_sha", "round"]},
+    "final_fresh_run_started": {"required": ["source_sha"], "optional": ["round", "profile", "layers_total"]},
+    "final_fresh_run_completed": {"required": ["verdict", "layers_total", "layers_failed", "source_sha"], "optional": ["round"]}
+  },
+  "conditional_required": {
+    "attempt_completed": [
+      {"when_field": "result", "equals": "FAIL", "require": ["failure_category"]}
+    ]
+  },
+  "at_least_one_of": {
+    "verification_layer_completed": [["status", "result"]]
+  },
+  "deprecations": {
+    "comment": "6.4 移除計畫。讀取端(1.x)維持相容:result-only 舊檔可過、status/result 並存必一致;寫入端(writer API)一律只寫 status,輸出不含 result。",
+    "verification_layer_completed.result": "result: deprecated since 1.x, removed in 2.0(status 的 Wave2 相容別名;2.0 起 verification_layer_completed 不再接受 result,at_least_one_of/field_consistency 相容規則同步移除;run_completed/attempt_completed/mechanical_gate_completed 的 result 非本項範圍,仍為正式欄)"
+  },
+  "field_consistency": {
+    "comment": "ID-10 相容方案:status(pass/fail/unverified/n-a)為正式欄;result(PASS|FAIL)為讀取相容別名(deprecated since 1.x, removed in 2.0,見 deprecations)。兩者並存必須一致;unverified/n-a 無 result 對應,不得並存。",
+    "verification_layer_completed": [
+      {"a": "status", "b": "result", "map": {"pass": "PASS", "fail": "FAIL"}}
+    ]
+  },
+  "privacy": {
+    "comment": "六節紅線:ledger 禁載個資/token/完整 log/完整 source/完整 transcript;transcript 只准 reference/hash。6.6:長度管制以 fields/prompt_object 的欄位級 maxlen(共享契約 §6 表)為正;max_string_len 只當 x_ 擴充欄與未列欄的 backstop,禁載欄位黑名單維持。",
+    "forbidden_exact": ["prompt_body", "prompt_text", "body", "transcript", "transcript_text", "conversation", "messages", "source_code", "production_log", "raw_log", "patient_record"],
+    "forbidden_substrings": ["token", "secret", "password", "passwd", "api_key", "apikey", "authorization", "credential", "bearer", "patient", "ssn", "medical"],
+    "allowlist_exact": ["estimated_tokens", "transcript_ref"],
+    "max_string_len": 2000
+  }
+}

@@ -1,0 +1,111 @@
+{
+ "prompts": {
+  "stage6-adviser": {
+   "current_version": "1.1.0",
+   "versions": [
+    {
+     "approved_by": "rick @ 2026-08-02",
+     "change_class": "major",
+     "changed": "初版建檔(P3 Observability):Stage 6 adviser(連敗診斷:T 定義問題 vs 執行問題;verdict=STOP → L2)",
+     "prompt_hash": "sha256:ec6b2f66471f05b81487f89386c9928879473749f6c9c04cba7b90140ec5dc0d",
+     "source_sha": "24057d5",
+     "version": "1.0.0"
+    },
+    {
+     "approved_by": "rick @ 2026-08-02",
+     "change_class": "minor",
+     "changed": "minor bump:同上(來源檔新增事件流程節);hash 重算 @eac99c1",
+     "prompt_hash": "sha256:43cfab1e97bcbba8cd511a5173f4f2f655375b148f53613b6cf2cbe7723a4df9",
+     "source_sha": "eac99c1",
+     "version": "1.1.0"
+    }
+   ]
+  },
+  "stage6-reviewer": {
+   "current_version": "1.1.0",
+   "versions": [
+    {
+     "approved_by": "rick @ 2026-08-02",
+     "change_class": "major",
+     "changed": "初版建檔(P3 Observability):Stage 6 T 收驗 reviewer(逐 T 迴圈步 2:fresh sonnet、唯讀、每 F 引 spec 原文或 diff hunk)",
+     "prompt_hash": "sha256:6d735d3bbeed6b6e3d591982b9dee1c3d386f09d92bcb778d0df289a2dda466f",
+     "source_sha": "24057d5",
+     "version": "1.0.0"
+    },
+    {
+     "approved_by": "rick @ 2026-08-02",
+     "change_class": "minor",
+     "changed": "minor bump:同上(來源檔新增事件流程節,收驗步含事件動作);hash 重算 @eac99c1",
+     "prompt_hash": "sha256:b83c04b1d49f046a9d76f5a284ad6d85ed207f3074ac2ecd0b63863795470f33",
+     "source_sha": "eac99c1",
+     "version": "1.1.0"
+    }
+   ]
+  },
+  "stage6-worker": {
+   "current_version": "1.1.0",
+   "versions": [
+    {
+     "approved_by": "rick @ 2026-08-02",
+     "change_class": "major",
+     "changed": "初版建檔(P3 Observability):Stage 6 執行者派工三件套(逐 T 迴圈步 1:目標與動機/驗收條件/回報格式)",
+     "prompt_hash": "sha256:a7b0b23b93c4178be9315e82d30fdc37e864f65eb0afcf601210d5a1095027b4",
+     "source_sha": "24057d5",
+     "version": "1.0.0"
+    },
+    {
+     "approved_by": "rick @ 2026-08-02",
+     "change_class": "minor",
+     "changed": "minor bump:dev-run SKILL 逐步新增事件寫入動作(W3)與收尾 derive/stats(W5)= 新增流程;hash 重算 @eac99c1",
+     "prompt_hash": "sha256:ec476f4996484af2211a9cdf00edb6a99b7342c3c10317a69cfafa5ff25c5873",
+     "source_sha": "eac99c1",
+     "version": "1.1.0"
+    }
+   ]
+  },
+  "stage7-spec-reviewer": {
+   "current_version": "1.0.1",
+   "versions": [
+    {
+     "approved_by": "rick @ 2026-08-02",
+     "change_class": "major",
+     "changed": "初版建檔(P3 Observability):Stage 7 Spec Axis reviewer(逐 R 對照 + 現象複驗)",
+     "prompt_hash": "sha256:e6dbd0e0a89a3cd75bdbba1cfc549ab90b7c0e95980c7990cd184a503ac95d96",
+     "source_sha": "24057d5",
+     "version": "1.0.0"
+    },
+    {
+     "approved_by": "rick @ 2026-08-02",
+     "change_class": "patch",
+     "changed": "patch bump:同上(Stage 6 路由句,無行為影響);hash 重算 @eac99c1",
+     "prompt_hash": "sha256:c7890b708a63986cd26ca773f1a4ba6db0d51b7c7deb57d8ce31dd663e649746",
+     "source_sha": "eac99c1",
+     "version": "1.0.1"
+    }
+   ]
+  },
+  "stage7-standards-reviewer": {
+   "current_version": "1.0.1",
+   "versions": [
+    {
+     "approved_by": "rick @ 2026-08-02",
+     "change_class": "major",
+     "changed": "初版建檔(P3 Observability):Stage 7 Standards Axis reviewer(雙軸審之一;先自建 coverage matrix)",
+     "prompt_hash": "sha256:b8a03e547407164b6b2820dd8d4675de81fe52a8f1620b10476f3aa754444265",
+     "source_sha": "24057d5",
+     "version": "1.0.0"
+    },
+    {
+     "approved_by": "rick @ 2026-08-02",
+     "change_class": "patch",
+     "changed": "patch bump:來源檔僅 Stage 6 並行路由句文字變動,對本 prompt 無行為影響;hash 重算 @eac99c1",
+     "prompt_hash": "sha256:0a847c010a670fc3281733f93e997a14732fdfbf779f049fc4d1e83841969e8c",
+     "source_sha": "eac99c1",
+     "version": "1.0.1"
+    }
+   ]
+  }
+ },
+ "schema": "devflow-prompt-registry/1",
+ "x_hash_method": "prompt_hash = sha256('devflow-prompt:<id>\\n' + 來源 SKILL 檔全文 bytes);來源檔:stage6-* = skills/dev-run/SKILL.md,stage7-* = skills/dev-flow/SKILL.md。SKILL 檔改動而版本未升 = 漂移訊號(五節)。"
+}

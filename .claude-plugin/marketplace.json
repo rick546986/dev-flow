@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "dev-flow",
+  "description": "DevFlow runtime —— 開發流程 SOP 路由器 + 執行引擎 + 守衛 hooks + 訪談引導",
+  "owner": {
+    "name": "rick",
+    "email": "8232011+rick546986@users.noreply.github.com"
+  },
+  "plugins": [
+    {
+      "name": "dev-flow",
+      "description": "開發流程 SOP 路由器(7 階段,SDD 主幹 + TDD 驗證,方法論內建於本 repo 根目錄)+ dev-run 執行引擎(多模型升階)+ dev-setup 專案安裝器 + dev-talk 訪談引導 + devtalk/devflow 守衛 hooks。",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

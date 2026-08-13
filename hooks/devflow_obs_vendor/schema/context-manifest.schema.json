@@ -1,0 +1,20 @@
+{
+  "schema_id": "devflow-context-manifest",
+  "schema_version": "1.0.0",
+  "comment": "每個 Attempt 的 context packet 摘要(attempts/<attempt_id>/context-manifest.json)。只記統計與 hash,不記完整內容(六節隱私紅線)。",
+  "required": ["schema", "context_packet_version", "files_count", "scenario_count", "estimated_tokens", "included_artifacts", "contract_hash", "living_spec_hash"],
+  "optional": ["task_id", "attempt_id", "rubric_version"],
+  "fields": {
+    "schema": {"type": "string", "pattern": "^devflow-context-manifest/1$"},
+    "context_packet_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "files_count": {"type": "int", "min": 0},
+    "scenario_count": {"type": "int", "min": 0},
+    "estimated_tokens": {"type": "int", "min": 0},
+    "included_artifacts": {"type": "array", "item_maxlen": 500},
+    "contract_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "living_spec_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "task_id": {"type": "string", "pattern": "^T-[0-9]+$"},
+    "attempt_id": {"type": "string", "pattern": "^att_[0-9A-HJKMNP-TV-Z]{26}$"},
+    "rubric_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}
+  }
+}
