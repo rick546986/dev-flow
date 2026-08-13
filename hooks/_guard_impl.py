@@ -48,6 +48,42 @@ state, armed, err = L.load_state(root)
 if err:
     L.die(err)
 if state is None:
+    # ── A1:守衛沉睡的**一次性**可見提醒(2026-08 order-intake 事故)────────────
+    #
+    # 背景:`.devflow/exec.json` 不存在時本守衛直接放行(load_state 的「沉睡」路徑)。
+    # 這對非 dev-flow 工作是正確的,但它讓「dev-flow 執行中但守衛沒武裝」與
+    # 「根本沒在跑 dev-flow」**在系統裡長得一模一樣** —— order-intake 那次
+    # devflow-exec.sh 因母版 bug 啟動不了(D-9),26 個 T 全程三道守衛(圍欄②/
+    # 契約防篡改/scope)一次都沒觸發,而每一份產出看起來都完整,沒有人在當下發現。
+    #
+    # 觸發條件刻意極窄:**只有**在寫 `docs/dev/<slug>/{5-tasks,6-implementation-notes}.md`
+    # 時才響 —— 那兩個檔按定義就是 Stage 6 執行中,不可能是「順手記個筆記」。
+    #
+    # ⚠️ 為什麼是 exit 2(擋一次)而不是 exit 0 + stderr:PreToolUse 在 exit 0 時
+    # stderr **不保證送到模型或使用者眼前**。一個看不見的警告比沒有警告更糟
+    # (它讓人以為有守衛)。故採「軟擋一次」:第一次擋下並說明,寫一個 session
+    # sentinel,之後同一個 repo 不再打擾。要完全靜音就去武裝,那正是本提醒的目的。
+    _fp_rel = L.rel_of(root, fp)
+    if tool in ("Write", "Edit") and _fp_rel:
+        _parts = _fp_rel.split("/")
+        _is_exec_doc = (len(_parts) >= 4 and _parts[0] == "docs" and _parts[1] == "dev"
+                        and _parts[3].startswith(("5-tasks", "6-implementation-notes")))
+        if _is_exec_doc:
+            _once = os.path.join(L.git_dir(root), "devflow-unarmed-notified")
+            if not os.path.exists(_once):
+                try:
+                    open(_once, "w").write(_fp_rel + "\n")
+                except Exception:
+                    pass          # 寫不進去就每次都提醒,寧可吵不可靜默
+                L.die(
+                    f"⚠️ devflow-guard **未武裝**,但你正在寫 {_fp_rel}(Stage 6 執行文件)。\n"
+                    f"   `.devflow/exec.json` 不存在 → 圍欄②(禁讀上游)、契約防篡改、\n"
+                    f"   scope 守衛(Files 聯集)**三道全部不會觸發**,而產出看起來一樣完整。\n"
+                    f"   → 要武裝:devflow-exec.sh start <slug>\n"
+                    f"   → 確認狀態:devflow-exec.sh status\n"
+                    f"   → 就是要無守衛執行(例:只補記帳):**再執行一次同樣的動作即放行**,\n"
+                    f"     本提醒每個 repo 只響一次。但請在 6-notes 記一行「本輪守衛未武裝」,\n"
+                    f"     否則 7-review 會把人工守 scope 誤當成守衛守出來的。")
     sys.exit(0)
 
 rel = L.rel_of(root, fp)
