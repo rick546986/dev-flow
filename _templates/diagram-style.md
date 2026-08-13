@@ -43,6 +43,6 @@
 
 ## 範本
 
-抄現成的最快:七階段全程圖 `guide-quickstart.html` ⑥(單列+gate+區間+session 框
-全部齊)、資訊圍欄圖 `guide-dev-flow.html`(圍欄紅線用法)。新圖先挑最像的抄結構,
+抄現成的最快:七階段全程圖 `guides/guide-quickstart.html` ⑥(單列+gate+區間+session 框
+全部齊)、資訊圍欄圖 `guides/guide-dev-flow.html`(圍欄紅線用法)。新圖先挑最像的抄結構,
 再改節點。

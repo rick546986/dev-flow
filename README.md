@@ -195,7 +195,7 @@ RED → GREEN → scope check → Verify
   才勾 checkbox。每 T 一個 task worktree(`task/<slug>/T-n`)+ task-scoped 守衛;
   Worker 不寫 5-tasks/6-notes/STATUS/twin(單寫者 = 派工者)。細節與欄位語意見
   `notes/design/parallel-stage6.md`。全流程一張圖(ASCII 正本;SVG 版見
-  `guide-quickstart.html` ③):
+  `guides/guide-quickstart.html` ③):
 
   ```text
   Task DAG → Wave Base → Task Worktrees
@@ -208,7 +208,7 @@ RED → GREEN → scope check → Verify
   ```
 
   跨階段收束(sequential/parallel 皆同;Final Fresh Gauntlet = §7 G3 錨的
-  Final Fresh Run + Evidence 契約,SVG 版見 `guide-quickstart.html` ⑥):
+  Final Fresh Run + Evidence 契約,SVG 版見 `guides/guide-quickstart.html` ⑥):
 
   ```text
   ACCEPTED Tasks → Final Fresh Gauntlet → G3
