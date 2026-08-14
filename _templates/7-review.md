@@ -35,6 +35,20 @@ updated:
 > **就這兩個檔,不多不少。禁止長出 `7-review-<誰>.md`、`7-self-review.md` 這類並存檔**
 > —— 兩份同 stage 產物 = gate 讀哪一份沒有定義(2026-08-13 order-intake 實際發生)。
 >
+> ## G3 twin 是**審查介面**,不是文件視覺版(README §6)
+>
+> 2026-08-15 補(與 2-decision/4-spec 兩份對齊)。上面那五步是**md 側**的閱讀動線,
+> html 側要把它做成可點的 —— **兩邊講同一件事、md 是正本**。三件事缺一不可:
+>
+> | | 要求 | 這一站的內容 |
+> |---|---|---|
+> | 1 | **動線頂區五格**,每格一句話 + 可點跳轉 | 判定(frontmatter `verdict:`)/ 出貨(Exit Checklist `x/y`)/ 爭點(「附錄:本輪特有」幾條)/ 風險(Known Limits 幾條)/ 抽驗(隨機一列 `檔:行`)—— **與上面五步一一對應** |
+> | 2 | **待審項目逐條可勾**,有進度計數 | 現象證據逐 S、Coverage Matrix 逐列、Exit Checklist 逐項 |
+> | 3 | **背景資料摺疊**(`<details>`,預設收合、內容零刪減) | Verification Evidence、雙軸、變更架構圖、Diff |
+>
+> **Verdict / Known Limits / 限制聲明一律置頂不摺疊** —— 那是判定本身與判定的前提,
+> 藏起來等於沒審。產生方式:`docs/dev/tools/build-gate-twin.py <專案根> <slug> 7-review`。
+>
 > 執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併項):
 > 0. 角色+防錨定起手:審查者依序:適格人類 reviewer → fresh-context reviewer Agent →
 >    owner 自審(有記錄的最後手段);前兩者皆須 ≠ 實作 owner。先讀
