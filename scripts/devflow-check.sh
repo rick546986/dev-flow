@@ -56,6 +56,10 @@ run() {
 group_methodology() {
   run "methodology/check-methodology-corrections" scripts/check-methodology-corrections.sh || return 1
   run "methodology/check-realworld"               scripts/check-realworld.sh               || return 1
+  # G2 機械關卡(B-9):對母版自帶的正例跑一次 —— 等於自帶回歸測試,腳本壞了這裡先紅。
+  # ⚠️ 這支是 **Gate**(exit 1 = FAIL 擋流程),與 warning-only 的 check-task-slicing 契約相反。
+  run "methodology/check-spec-gate" \
+      scripts/check-spec-gate.sh example/contract-expiry-reminder/4-spec.md || return 1
 }
 
 group_contracts() {
