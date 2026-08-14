@@ -103,6 +103,14 @@ gate 條件唯一正本 = 母版 README §7;本表 gate 欄是摘要,衝突以 �
   fixture 的 verdict 必須含 `test-only human fixture` 字樣(正式判定一律拒收該字樣)。
 - **跳過**:命中觸發仍要跳過 → 人類明示,記 2-decision「Owner Calls」節流程層 OC,
   該行同時含「Stage 3」與「跳過」字樣(供機械比對);Agent 不得代決跳過。
+- **G2 送審前先跑 spec 形狀檢查**(B-9;Stage 4 步驟 6 送審的前置動作):
+  `bash <master>/scripts/check-spec-gate.sh docs/dev/<slug>/4-spec.md`。查五項 ——
+  每個 S 有觀測欄 / Verification Profile 節在且 `- lane:` 與 `- Risk:` 可解析
+  (runtime `devflow-exec.sh start` 讀的就是這兩行)/ `lane: fast` 配 `Risk: high`
+  且無 `- Owner Call 例外:` 即拒 / 模糊詞(全文掃 TBD、之後再說、實作再定;逐 S 掃
+  反模糊三律清單)/ Drafting Decisions 無殘留「待裁決」。**exit 1 = 不得送審**
+  (這支是 Gate,不是 warning-only);exit 0 只代表**形狀**齊,R/S 寫得對不對、
+  DD 決策合不合理仍是 reviewer 的事,機械不判語意。
 - **G2 Demo verdict 條件**(條件正本 README §7;語意全文 vnext-shared-contract §2):
   無 trigger → N/A + 明確原因可過;有 trigger 完成 Demo → 須 ACCEPTED(+attestation);
   REVISE / NOT_REVIEWED → 不得過;有 trigger 但跳過 → 須 Owner Call 明示。機械檢查:
