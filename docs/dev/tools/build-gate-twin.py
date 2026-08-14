@@ -38,6 +38,11 @@ import devflow_twin_ui as ui  # noqa: E402  # type: ignore[import-not-found]
 
 STAGES = ("2-decision", "4-spec", "7-review")
 
+# 這些節**永遠不摺疊**:它們是判定本身或判定的前提,藏起來等於沒審。
+# (2026-08-15 dogfood 抓到:用本工具產自己的 7-review 時,「限制聲明」與 verdict
+#  被收進背景資料、`## Verdict` 整節消失 —— 最該先讀的三樣全不見。)
+PINNED_PAT = re.compile(r"限制聲明|Verdict|判定|Known Limits|已知限界|Reviewer 閱讀動線")
+
 INLINE_MD = re.compile(r"`([^`]+)`|\*\*([^*]+)\*\*")
 H_ANY = re.compile(r"^(#{2,6})\s+(.*?)\s*$", re.M)
 S_HEAD = re.compile(r"^#{2,6}\s*(S-\S+)\s*(.*)$", re.M)
@@ -132,6 +137,54 @@ def card(item_id, title, tag, rows, missing=None, sub=""):
 def obs_block(text):
     return (f'<div class="obs"><span class="obs-k">你要親自跑的觀測</span>'
             f'<span class="obs-v">{inline(text)}</span></div>')
+
+
+def md_block(body):
+    """把一段 md 轉成 html:表格、清單、程式碼區塊、段落。
+
+    刻意不依賴外部 markdown 套件 —— 這支工具會被散發到採用專案,多一個相依就多一個
+    「在別人機器上跑不起來」的理由。表格必須渲染成真表格:置頂節(限制聲明/Verdict/
+    Known Limits)幾乎都是表格,用 <pre> 顯示等於沒給人看。
+    """
+    out, i = [], 0
+    lines = body.strip("\n").splitlines()
+    while i < len(lines):
+        ln = lines[i]
+        if ln.startswith("```"):
+            j = i + 1
+            while j < len(lines) and not lines[j].startswith("```"):
+                j += 1
+            out.append(f'<pre><code>{html.escape(chr(10).join(lines[i + 1:j]))}</code></pre>')
+            i = j + 1
+        elif ln.startswith("|"):
+            j = i
+            rows = []
+            while j < len(lines) and lines[j].startswith("|"):
+                cells = [c.strip() for c in lines[j].strip("|").split("|")]
+                if not all(re.fullmatch(r":?-{2,}:?", c) for c in cells if c):
+                    rows.append(cells)
+                j += 1
+            if rows:
+                head = "".join(f"<th>{inline(c)}</th>" for c in rows[0])
+                body_rows = "".join(
+                    "<tr>" + "".join(f"<td>{inline(c)}</td>" for c in r) + "</tr>"
+                    for r in rows[1:])
+                out.append(f'<div class="tablewrap"><table><thead><tr>{head}</tr></thead>'
+                           f"<tbody>{body_rows}</tbody></table></div>")
+            i = j
+        elif re.match(r"^\s*[-*]\s+", ln):
+            j, items = i, []
+            while j < len(lines) and re.match(r"^\s*[-*]\s+", lines[j]):
+                items.append(re.sub(r"^\s*[-*]\s+", "", lines[j]))
+                j += 1
+            out.append("<ul>" + "".join(f"<li>{inline(x)}</li>" for x in items) + "</ul>")
+            i = j
+        elif ln.strip():
+            out.append(f"<p>{inline(ln)}</p>")
+            i += 1
+        else:
+            i += 1
+    return "".join(out)
 
 
 # ── 各 stage 的解析器:回 (cards_html, n_items, dash_cells, used_titles) ────────
@@ -257,7 +310,7 @@ def dash_cells(stage, md, n_items, n_bad):
         oc_open = len(re.findall(r"^\|\s*OC-\d+.*待", md, re.M))
         rej = len(re.findall(r"^\s*[-*]\s+", _section_text(md, "Rejected Alternatives"), re.M))
         return [
-            ("判定", _find(md, r"^##\s*Decision\s*\n+\s*(.+)$")[:40], "選了哪個方案"),
+            ("判定", _find(md, r"^##\s*Decision\s*\n+\s*([^|#\n]{2,40})", "—"), "選了哪個方案"),
             ("Owner Calls", f"{oc_total - oc_open}/{oc_total}" if oc_total else "—", "待裁決幾條"),
             ("方案", f"{n_items} 項待審", f"{rej} 條駁回理由"),
             ("狀態", _find(md, r"^status:\s*(\S+)"), "frontmatter"),
@@ -266,7 +319,7 @@ def dash_cells(stage, md, n_items, n_bad):
     known = len(re.findall(r"^\s*[-*|]\s*\S", _section_text(md, "Known Limits"), re.M))
     ec = re.findall(r"^\s*-\s*\[( |x|X)\]", _section_text(md, "Exit Checklist"), re.M)
     return [
-        ("判定", _find(md, r"^##\s*Verdict\s*\n+\s*(.+)$")[:40], "verdict + 輪次"),
+        ("判定", _find(md, r"^verdict:\s*(\S+)"), "frontmatter verdict"),
         ("出貨", f"{sum(1 for m in ec if m.lower() == 'x')}/{len(ec)}" if ec else "—",
          "Exit Checklist"),
         ("待審項目", f"{n_items} 條", "現象證據 + 出貨清單"),
@@ -347,6 +400,13 @@ def main(argv):
     print(f"NOTE: 解析到 {n_items} 條待審項目" + (f",其中 {n_bad} 條缺必填欄" if n_bad else ""),
           file=sys.stderr)
 
+    # 置頂節:判定本身與判定的前提,直接顯示在卡片之前,不摺疊
+    pinned = []
+    for lvl, title, body in secs:
+        if lvl <= 2 and PINNED_PAT.search(title) and body.strip():
+            pinned.append(f'<section class="pinned"><h2>{inline(title)}</h2>'
+                          f'<div class="doc-in">{md_block(body)}</div></section>')
+
     # 背景資料:沒被做成卡片的章節一律收進 details,內容零刪減。
     # 已經做成卡片的內容**不得重複出現** —— 章節本身被用過、或它底下含有已渲染的
     # R/S 標題(例:`## ADDED Requirements` 的 body 含全部 R 與 S),一律跳過。
@@ -358,11 +418,11 @@ def main(argv):
             continue
         if stage == "4-spec" and (R_HEAD.search(body) or S_HEAD.search(body)):
             continue
-        if any(t in used for _l, t, _b in secs if t and t in body):
-            continue
+        if PINNED_PAT.search(title):
+            continue  # 置頂節另外處理,不摺疊
         appendix.append(
             f'<details class="doc"><summary><span>{inline(title)}</span></summary>'
-            f'<div class="doc-in"><pre>{html.escape(body.strip())}</pre></div></details>')
+            f'<div class="doc-in">{md_block(body)}</div></details>')
         skipped.append(title)
     if skipped:
         print(f"NOTE: 以下章節收進背景資料(預設收合、內容零刪減):{skipped}", file=sys.stderr)
@@ -381,6 +441,7 @@ def main(argv):
   這頁隨時可重生。**審完頂區五格再決定要不要往下讀。**</p>
   <div class="dash">{cells}</div>
 </header>
+{"".join(pinned)}
 <div class="progress">
   <span>已審 <b id="done">0</b>/{n_items}</span>
   <span class="bar"><i></i></span>
