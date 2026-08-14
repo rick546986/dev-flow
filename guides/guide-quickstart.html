@@ -44,21 +44,6 @@
   .opus{background:color-mix(in srgb,var(--opus) 16%,transparent);color:var(--opus)}
   .sonnet{background:color-mix(in srgb,var(--sonnet) 16%,transparent);color:var(--sonnet)}
   .haiku{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
-  svg{max-width:100%;height:auto}
-  svg text{fill:var(--fg);font:11px -apple-system,"PingFang TC",sans-serif}
-  svg .b{fill:var(--card);stroke:var(--line)}
-  svg .hl{fill:color-mix(in srgb,var(--acc) 18%,transparent);stroke:var(--acc)}
-  svg .m-opus{fill:color-mix(in srgb,var(--opus) 16%,transparent);stroke:var(--opus)}
-  svg .m-sonnet{fill:color-mix(in srgb,var(--sonnet) 16%,transparent);stroke:var(--sonnet)}
-  svg .cap{fill:var(--muted)}
-  svg .note{fill:var(--card);stroke:var(--warn);stroke-dasharray:5 3}
-  svg .flow{fill:none;stroke:var(--muted);stroke-width:1.6}
-  svg .fenceline{stroke:var(--bad);stroke-width:1.6;stroke-dasharray:6 4}
-  svg .flagcircle{fill:var(--bg);stroke:var(--bad);stroke-width:1.4}
-  svg .flagtext{fill:var(--bad);font-weight:700}
-  svg .arrowhead{fill:var(--acc)}
-  svg .arrowhead-bad{fill:var(--bad)}
-  svg .session{fill:none;stroke:var(--acc);stroke-dasharray:4 3;stroke-width:1.6}
   .muted{color:var(--muted)}
   details{margin:.35em 0 0}
   details>summary{cursor:pointer;color:var(--acc);font-size:.85rem;user-select:none}
@@ -70,6 +55,59 @@
   .card p{margin:0;font-size:.88rem}
   .legend{font-size:.85rem;color:var(--muted);margin:.3em 0 1em}
   footer.foot{margin-top:3em;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padding-top:1em}
+
+  /* ── Phase 1(guide-dev-talk)定調的可複用 token,勿改名 ───────────── */
+  .lead{margin:.2em 0 .9em;padding:.5em .85em;border-left:3px solid var(--acc);
+        background:var(--card);border-radius:0 6px 6px 0;font-size:.92rem}
+  .figwrap{position:relative;background:var(--bg);border:1px solid var(--line);
+           border-radius:10px;padding:16px 14px 10px;margin:1em 0}
+  .figwrap::after{content:"點圖放大";position:absolute;right:10px;top:5px;
+                  font-size:.7rem;color:var(--muted)}
+  .figwrap>svg{display:block;width:100%;height:auto;cursor:zoom-in}
+  .figcap{margin:.5em 0 0;font-size:.85rem;color:var(--muted)}
+  .figzoom{position:fixed;inset:0;z-index:99;overflow:hidden;
+           background:color-mix(in srgb,var(--bg) 92%,#000);
+           display:flex;align-items:center;justify-content:center}
+  .figzoom-inner{cursor:grab}
+  .figzoom svg{width:min(96vw,1700px);height:auto;transform-origin:center center}
+  .figzoom-tip{position:fixed;bottom:14px;left:0;right:0;text-align:center;
+               font-size:.8rem;color:var(--muted)}
+  svg .b{fill:var(--card);stroke:var(--line);stroke-width:1}
+  svg .hl{fill:color-mix(in srgb,var(--acc) 16%,var(--card));stroke:var(--acc)}
+  svg .no{fill:color-mix(in srgb,var(--bad) 12%,var(--card));stroke:var(--bad)}
+  svg .go{fill:color-mix(in srgb,var(--ok) 14%,var(--card));stroke:var(--ok)}
+  svg .note{fill:var(--card);stroke:var(--warn);stroke-dasharray:5 3}
+  svg .grpbox{fill:none;stroke:var(--line);stroke-dasharray:4 4}
+  svg .edge{fill:none;stroke:var(--muted);stroke-width:1.5}
+  svg .arrowhead{fill:var(--muted)}
+  .dt{font:11px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--fg)}
+  .dm{font:11px ui-monospace,Menlo,monospace;fill:var(--fg)}
+  .dc{font:9px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--muted)}
+  .dl{font:10px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--muted)}
+
+  /* ── Phase 2(本檔)新增,Phase 3 接著用 ──────────────────────────── */
+  /* parity 區:左側色條 + 「規則正本」小標。wrapper 一律在 parity 註解「之外」 */
+  .parity{border-left:4px solid var(--ok);background:var(--card);
+          border-radius:0 8px 8px 0;padding:.1em 14px .6em;margin:1em 0}
+  .parity-tag{margin:.6em 0 .2em;font-size:.78rem;font-weight:700;color:var(--ok);
+              letter-spacing:.04em}
+  .parity pre,.parity ul{margin-top:.4em}
+  /* 模型色圖元(本檔的 opus/sonnet 分層),底色一律混 --card 保持文字對比 */
+  svg .m-opus{fill:color-mix(in srgb,var(--opus) 18%,var(--card));stroke:var(--opus)}
+  svg .m-sonnet{fill:color-mix(in srgb,var(--sonnet) 18%,var(--card));stroke:var(--sonnet)}
+  /* 紅線:FAIL 迴圈與守衛武裝區間 */
+  svg .edge-bad{fill:none;stroke:var(--bad);stroke-width:1.5}
+  svg .arrowhead-bad{fill:var(--bad)}
+  svg .fenceline{fill:none;stroke:var(--bad);stroke-width:1.6;stroke-dasharray:6 4}
+  svg .sessionbox{fill:none;stroke:var(--acc);stroke-dasharray:4 3;stroke-width:1.4}
+  .dk{font:700 10px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--acc)}
+  .dbad{font:10px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--bad)}
+  /* 可勾選 checklist(狀態存 localStorage,純 inline JS) */
+  .chk{list-style:none;padding-left:0;margin:.6em 0}
+  .chk li{display:flex;gap:8px;align-items:flex-start;padding:5px 0;
+          border-bottom:1px dashed var(--line)}
+  .chk input{margin-top:.35em;flex:0 0 auto;accent-color:var(--acc)}
+  .chk input:checked+span{color:var(--muted);text-decoration:line-through}
 </style>
 </head>
 <body>
@@ -77,13 +115,23 @@
   <h1>dev-flow 快速上手 · 新專案零到一操作導覽</h1>
   <p class="muted">給第一次在新專案跑 dev-flow 的人:照著本頁一步一步打,從裝好 plugin 到出第一個 PR。
   正本規則是 <code>README.md</code>,本頁是操作導覽,兩者不一致以 README 為準。</p>
-  <p class="muted">本頁走的是 <strong>full lane</strong>(1→7 全套)。如果你要做的其實是 bugfix / ≤2 檔小改 /
-  行為已有 spec 條目,走 <strong>fast lane</strong> 更省(4-spec 補 bug scenario → 5-tasks mini → 6-notes → 7-review mini,
-  Gate 是 G3,spec 改動大再補 G2)—— 兩軌判準與細節見 <a href="guide-dev-flow.html#lanes">guide-dev-flow.html ②兩軌</a>。</p>
-  <p class="muted">Fast lane 省略 Stage 1–3;它的 mini Stage 5 仍直接用
-  <code>_templates/5-tasks.md</code>,可只寫一個 T,但 <code>Covers</code>、<code>Files</code>、
-  <code>Verify</code>、<code>Blocked-by</code> 必填,才能供 <code>devflow-exec.sh start &lt;slug&gt;</code>
-  逐 T 驗證並照 Git repository root 相對路徑解析 scope。</p>
+  <p class="lead"><strong>先確認你走哪一軌</strong>:本頁全程示範 <strong>full lane</strong>。
+  你手上這件事若命中右欄任一條,走 <strong>fast lane</strong> 更省。</p>
+  <div class="tablewrap"><table>
+    <tr><th>　</th><th>full lane(本頁)</th><th>fast lane</th></tr>
+    <tr><td>什麼時候走</td><td>新功能、要先想清楚的事</td>
+        <td>bugfix / ≤2 檔小改 / 行為已有 spec 條目</td></tr>
+    <tr><td>走哪些階段</td><td>1→7 全套</td>
+        <td><strong>省略 Stage 1–3</strong>:4-spec 補 bug scenario → 5-tasks mini →
+            6-notes → 7-review mini</td></tr>
+    <tr><td>Gate</td><td>G1 / G2 / G3</td><td><strong>G3</strong>;spec 改動大再補 G2</td></tr>
+    <tr><td>Stage 5 要求</td><td colspan="2">兩軌相同 —— mini Stage 5 仍直接用
+        <code>_templates/5-tasks.md</code>,可只寫一個 T,但 <code>Covers</code>、<code>Files</code>、
+        <code>Verify</code>、<code>Blocked-by</code> <strong>必填</strong>,才能供
+        <code>devflow-exec.sh start &lt;slug&gt;</code> 逐 T 驗證並照 Git repository root
+        相對路徑解析 scope。</td></tr>
+  </table></div>
+  <p class="muted">兩軌判準與細節見 <a href="guide-dev-flow.html#lanes">guide-dev-flow.html ②兩軌</a>。</p>
 
   <blockquote>本頁指令分兩種管道,下文用固定標籤區分:<br>
   <span class="badge you">跟 AI 說</span> —— 對話裡打的觸發語(<code>dev-setup</code>、<code>/dev-talk …</code>、
@@ -100,7 +148,15 @@
   </nav>
 
   <h2 id="checklist">① 零到一 checklist</h2>
-  <p>新專案第一次接觸 dev-flow,依序做這五件事。</p>
+  <p class="lead">這章要你懂:<strong>裝機只有五件事,而且只有第 3 件真的要你動腦</strong> ——
+  其餘四件都是打一行、看它回報。勾一勾記錄進度(存在本機瀏覽器)。</p>
+  <ul class="chk" id="chk-zero">
+    <li><input type="checkbox" id="z0"><span><strong>0.</strong> 剛裝好或剛改過 plugin → 打 <code>/reload-plugins</code></span></li>
+    <li><input type="checkbox" id="z1"><span><strong>1.</strong> cd 進新專案 repo root → 打 <code>dev-setup</code>(不帶參數)</span></li>
+    <li><input type="checkbox" id="z2"><span><strong>2.</strong> 看它建了什麼,並回應兩個徵你同意的動作</span></li>
+    <li><input type="checkbox" id="z3"><span><strong>3.</strong> 逐條核可 <code>.claude/rules/arch-invariants.md</code> 草稿 ← <strong>唯一要動腦的一步</strong></span></li>
+    <li><input type="checkbox" id="z4"><span><strong>4.</strong> 收下 check 的固定四段回報,確認沒有異常項</span></li>
+  </ul>
 
   <h3>0. plugin 已改過就先 reload</h3>
   <p><span class="badge you">跟 AI 說</span> 如果你剛裝好、或剛改過 <code>dev-talk</code>/<code>dev-flow</code> plugin,
@@ -114,6 +170,27 @@
   <p><span class="badge you">跟 AI 說</span> cd 進新專案 repo root 後:</p>
   <pre>dev-setup</pre>
   <p>它會自動偵測現況分流,不用你自己判斷裝過沒:</p>
+
+  <div class="figwrap"><svg id="fig-setup" viewBox="0 0 880 250" role="img"
+       aria-label="dev-setup 自動偵測的四種分流:fresh、stale、current、broken">
+    <defs><marker id="ar-su" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
+    <g class="n"><rect x="20" y="84" width="170" height="46" rx="6" class="hl"/><text class="dm" x="32" y="105">dev-setup</text><text class="dc" x="32" y="120">不需參數</text></g>
+    <g class="n"><rect x="240" y="84" width="170" height="46" rx="6" class="b"/><text class="dt" x="252" y="105">自動偵測現況</text><text class="dc" x="252" y="120">不用你自己判斷裝過沒</text></g>
+    <g class="n"><rect x="460" y="16" width="400" height="36" rx="6" class="go"/><text class="dt" x="472" y="32">fresh —— 無 docs/dev/</text><text class="dc" x="472" y="46">跑 install,完成後跑 check 回報</text></g>
+    <g class="n"><rect x="460" y="60" width="400" height="36" rx="6" class="note"/><text class="dt" x="472" y="76">stale —— 有,但版本落後母版</text><text class="dc" x="472" y="90">先列 diff 摘要徵同意 → upgrade → check</text></g>
+    <g class="n"><rect x="460" y="104" width="400" height="36" rx="6" class="b"/><text class="dt" x="472" y="120">current —— 有且與母版一致</text><text class="dc" x="472" y="134">只跑 check</text></g>
+    <g class="n"><rect x="460" y="148" width="400" height="36" rx="6" class="no"/><text class="dt" x="472" y="164">broken —— check 抓到異常</text><text class="dc" x="472" y="178">列異常+修法,徵得同意後 fix</text></g>
+    <g class="n"><rect x="20" y="200" width="390" height="36" rx="6" class="b"/><text class="dt" x="32" y="216">明講子命令 → 跳過偵測</text><text class="dc" x="32" y="230">check / upgrade / install / fix / uninstall</text></g>
+    <path class="edge" marker-end="url(#ar-su)" d="M190,107 L240,107"/>
+    <path class="edge" marker-end="url(#ar-su)" d="M410,92 L435,92 L435,34 L460,34"/>
+    <path class="edge" marker-end="url(#ar-su)" d="M410,100 L435,100 L435,78 L460,78"/>
+    <path class="edge" marker-end="url(#ar-su)" d="M410,114 L435,114 L435,122 L460,122"/>
+    <path class="edge" marker-end="url(#ar-su)" d="M410,122 L435,122 L435,166 L460,166"/>
+    <path class="edge" marker-end="url(#ar-su)" d="M105,130 L105,200"/>
+  </svg></div>
+  <p class="figcap">綠 = 全新安裝、黃 = 要你先看 diff、紅 = 有異常待修。四條路都以 check 收尾。</p>
+
   <div class="tablewrap"><table>
     <tr><th>偵測</th><th>狀態</th><th>動作</th></tr>
     <tr><td>無 <code>docs/dev/</code></td><td><strong>fresh</strong></td><td>跑 install,完成後跑 check 回報</td></tr>
@@ -193,6 +270,8 @@
   可執行並看 verdict —— 報 INCOMPATIBLE 是刻意 fail-closed,不得繞過或改綠。</p>
 
   <h2 id="walkthrough">② 一個 feature 的完整走位</h2>
+  <p class="lead">這章要你懂:<strong>七個階段裡你只打四種指令</strong>,其餘都是 AI 在跑;
+  真正卡人的是 Stage 6 —— 它有一組不可調的三步順序,順序錯了安全網會失效。</p>
   <p>以下以「加一個 X 功能」為例,逐階段列出:使用者打什麼 / AI 做什麼 / 產出什麼檔 / gate 誰審 / 用什麼模型。</p>
 
   <div class="tablewrap"><table>
@@ -270,7 +349,8 @@
     </tr>
   </table></div>
 
-  <p class="muted">Stage 6 的固定 acceptance seam(README §5 正本):</p>
+  <div class="parity">
+  <p class="parity-tag">規則正本 · Stage 6 固定 acceptance seam(逐字抄自 README §5)</p>
   <!-- parity:start readme-stage6-seam-quickstart -->
   <pre><code class="language-text">RED → GREEN → scope check → Verify
   → independent T review
@@ -279,47 +359,36 @@
   → Progress Log + checkbox + review evidence
   </code></pre>
   <!-- parity:end readme-stage6-seam-quickstart -->
+  </div>
 
-  <svg viewBox="0 0 1010 205" role="img" aria-label="T acceptance seam 流程圖:RED 到 commit,FAIL 迴圈與分類">
+  <div class="figwrap"><svg id="fig-seam" viewBox="0 0 880 260" role="img"
+       aria-label="T acceptance seam:RED 到 commit,含 FAIL 回路、失敗分類與嘗試次數上限">
     <defs>
-      <marker id="seam-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-        <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/>
-      </marker>
-      <marker id="seam-arrow-bad" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-        <path class="arrowhead-bad" d="M0,0 L10,5 L0,10 Z"/>
-      </marker>
+      <marker id="ar-sm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker>
+      <marker id="ar-smb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path class="arrowhead-bad" d="M0,0 L10,5 L0,10 Z"/></marker>
     </defs>
-    <rect class="b" x="10" y="65" width="118" height="44" rx="6"/>
-    <text x="69" y="91" text-anchor="middle">RED 先紅</text>
-    <text x="69" y="126" class="cap" text-anchor="middle">測試先失敗</text>
-    <rect class="b" x="158" y="65" width="118" height="44" rx="6"/>
-    <text x="217" y="91" text-anchor="middle">GREEN</text>
-    <text x="217" y="126" class="cap" text-anchor="middle">最小實作到綠</text>
-    <rect class="b" x="306" y="65" width="118" height="44" rx="6"/>
-    <text x="365" y="91" text-anchor="middle">scope check</text>
-    <text x="365" y="126" class="cap" text-anchor="middle">⊆ Files 聯集</text>
-    <rect class="b" x="454" y="65" width="118" height="44" rx="6"/>
-    <text x="513" y="91" text-anchor="middle">Verify</text>
-    <text x="513" y="126" class="cap" text-anchor="middle">T 的 Verify 指令</text>
-    <rect class="hl" x="602" y="65" width="118" height="44" rx="6"/>
-    <text x="661" y="91" text-anchor="middle">獨立 T review</text>
-    <text x="661" y="126" class="cap" text-anchor="middle">reviewer ≠ 實作者</text>
-    <polygon class="b" points="790,63 814,87 790,111 766,87"/>
-    <text x="790" y="91" text-anchor="middle">PASS</text>
-    <rect class="b" x="844" y="65" width="150" height="44" rx="6"/>
-    <text x="919" y="91" text-anchor="middle">commit + 記帳</text>
-    <text x="919" y="126" class="cap" text-anchor="middle">PASS 後才准 commit</text>
-    <path class="flow" marker-end="url(#seam-arrow)" d="M128,87 L158,87"/>
-    <path class="flow" marker-end="url(#seam-arrow)" d="M276,87 L306,87"/>
-    <path class="flow" marker-end="url(#seam-arrow)" d="M424,87 L454,87"/>
-    <path class="flow" marker-end="url(#seam-arrow)" d="M572,87 L602,87"/>
-    <path class="flow" marker-end="url(#seam-arrow)" d="M720,87 L766,87"/>
-    <path class="flow" marker-end="url(#seam-arrow)" d="M814,87 L844,87"/>
-    <path class="flow" style="stroke:var(--bad)" marker-end="url(#seam-arrow-bad)"
-          d="M661,115 C560,180 320,180 221,113" fill="none"/>
-    <text x="445" y="172" class="cap" text-anchor="middle">FAIL → 先分類:SPEC→L2 停回 G2 / ENV→修環境重跑(不計)/ IMPL·UNKNOWN→升階重派</text>
-    <text x="445" y="188" class="cap" text-anchor="middle">同 T 總嘗試 ≤4(haiku 1+sonnet 2+opus 1),用盡強制 adviser —— README §5 驗證五律</text>
-  </svg>
+    <g class="n"><rect x="20" y="40" width="180" height="46" rx="6" class="b"/><text class="dt" x="32" y="61">RED 先紅</text><text class="dc" x="32" y="76">測試先失敗</text></g>
+    <g class="n"><rect x="230" y="40" width="180" height="46" rx="6" class="b"/><text class="dt" x="242" y="61">GREEN</text><text class="dc" x="242" y="76">最小實作到綠</text></g>
+    <g class="n"><rect x="440" y="40" width="180" height="46" rx="6" class="b"/><text class="dt" x="452" y="61">scope check</text><text class="dc" x="452" y="76">改動 ⊆ Files 聯集</text></g>
+    <g class="n"><rect x="650" y="40" width="180" height="46" rx="6" class="b"/><text class="dt" x="662" y="61">Verify</text><text class="dc" x="662" y="76">跑 T 自己的 Verify 指令</text></g>
+    <g class="n"><rect x="20" y="150" width="180" height="46" rx="6" class="hl"/><text class="dt" x="32" y="171">獨立 T review</text><text class="dc" x="32" y="186">reviewer ≠ 實作者</text></g>
+    <g class="n"><rect x="230" y="150" width="180" height="46" fill="none" stroke="none"/><polygon class="go" points="230,173 320,150 410,173 320,196"/><text class="dt" x="300" y="178">PASS</text></g>
+    <g class="n"><rect x="440" y="150" width="180" height="46" rx="6" class="b"/><text class="dt" x="452" y="171">commit + 記帳</text><text class="dc" x="452" y="186">PASS 後才准 commit</text></g>
+    <path class="edge" marker-end="url(#ar-sm)" d="M200,63 L230,63"/>
+    <path class="edge" marker-end="url(#ar-sm)" d="M410,63 L440,63"/>
+    <path class="edge" marker-end="url(#ar-sm)" d="M620,63 L650,63"/>
+    <path class="edge" marker-end="url(#ar-sm)" d="M830,63 L855,63 L855,118 L8,118 L8,173 L20,173"/>
+    <path class="edge" marker-end="url(#ar-sm)" d="M200,173 L230,173"/>
+    <path class="edge" marker-end="url(#ar-sm)" d="M410,173 L440,173"/>
+    <path class="edge-bad" marker-end="url(#ar-smb)" d="M110,150 L110,132 L320,132 L320,86"/>
+    <text class="dbad" x="340" y="146">FAIL → 回 GREEN 重來</text>
+    <text class="dl" x="20" y="222">FAIL 先分類:SPEC → L2 停回 G2 / ENV → 修環境重跑(不計次)/ IMPL·UNKNOWN → 升階重派</text>
+    <text class="dl" x="20" y="242">同 T 總嘗試 ≤4(haiku 1 + sonnet 2 + opus 1),用盡強制 adviser —— README §5 驗證五律</text>
+  </svg></div>
+  <p class="figcap">上排四步跑完才進下排的獨立審查;<strong>PASS 之前不准 commit</strong>。
+  紅線是失敗回路 —— 回頭前一定要先分類,因為 ENV 類不計入嘗試次數。</p>
 
   <p class="muted"><strong>過 gate 三連動</strong>:每過一個 gate,frontmatter <code>status</code> +
   <code>STATUS.md</code> + 同名 html twin 三者同步更新,禁漏一項。Stage 1 完成後就該去
@@ -328,6 +397,8 @@
 
   <p><strong>G1/G2/G3 誰來審(reviewer 從哪來)</strong>:author ≠ approver;核心規則描述能力與
   fallback,不指定模型或供應商。</p>
+  <div class="parity">
+  <p class="parity-tag">規則正本 · 審查者產生順序(逐字抄自 README §7)</p>
   <!-- parity:start readme-reviewer-selection-quickstart -->
   <ul>
   <li><strong>審查者產生</strong>:G1/G2/G3 一律依序選 <strong>適格人類 reviewer → fresh-context reviewer
@@ -339,6 +410,7 @@
   </li>
   </ul>
   <!-- parity:end readme-reviewer-selection-quickstart -->
+  </div>
 
   <blockquote>為什麼討論要另開 session:圍欄①「討論盲下游」—— <code>/dev-talk</code> 全文零提及後續階段,
   讀取白名單只有 CONTEXT.md / docs/specs/ / 原始碼 / 使用者指名檔案,不進其他文件資料夾。
@@ -369,7 +441,9 @@ cd &lt;path&gt;
   <code>status</code> 這一步不是可省的裝飾 —— 就是拿來核對「slug 與 cwd 相符」,提早抓到樹選錯的情況。</p>
 
   <h3>Stage 7 的 G3 + Exit checklist</h3>
-  <p>G3 PASS 之後,<code>7-review.md</code> 的 Exit Checklist 要全勾才算 shipped(逐字抄自模板):</p>
+  <p>G3 PASS 之後,<code>7-review.md</code> 的 Exit Checklist 要全勾才算 shipped:</p>
+  <div class="parity">
+  <p class="parity-tag">規則正本 · Exit Checklist(逐字抄自 <code>_templates/7-review.md</code>)</p>
   <!-- parity:start template7-exit-quickstart -->
   <ul>
   <li>[ ] <strong>Design Boundary finding 全數處置</strong>(契約 <code>applicable</code> 時必勾;<code>n-a</code> 時記 n-a):
@@ -389,8 +463,11 @@ cd &lt;path&gt;
   <li>[ ] feature branch 已刪 / worktree 已清</li>
   </ul>
   <!-- parity:end template7-exit-quickstart -->
+  </div>
 
   <h2 id="guardcheat">③ 執行守衛速查表</h2>
+  <p class="lead">這章要你懂:<strong>守衛擋你時只有三種訊息,對應三種處置</strong> ——
+  唯一要判斷的是 L1 還是 L2,而判不出來時規則已經幫你決定了(當 L2)。</p>
   <p>Stage 6 的守衛是 <code>devflow-exec.sh</code>(plugin hooks 內,無 alias,要打路徑):</p>
   <pre>~/.claude/plugins/local/dev-flow/hooks/devflow-exec.sh start &lt;slug&gt;</pre>
   <p class="muted">此檔已可執行(<code>chmod +x</code> 免打),下文一律省略路徑,單寫 <code>devflow-exec.sh</code>。</p>
@@ -464,6 +541,27 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     </div>
   </div>
 
+  <div class="figwrap"><svg id="fig-level" viewBox="0 0 880 300" role="img"
+       aria-label="被守衛擋下時的判級決策:三種訊息各自的處置,以及 L1 與 L2 的分岔">
+    <defs><marker id="ar-lv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
+    <g class="n"><rect x="20" y="30" width="260" height="46" rx="6" class="no"/><text class="dt" x="32" y="51">圍欄② 讀上游討論檔</text><text class="dc" x="32" y="66">Read 與 shell 皆擋,跨 feature 一律擋</text></g>
+    <g class="n"><rect x="20" y="100" width="260" height="46" rx="6" class="no"/><text class="dt" x="32" y="121">契約防篡改 改 1/2/3/4</text><text class="dc" x="32" y="136">保護對象含 .html twin,含 4-spec</text></g>
+    <g class="n"><rect x="20" y="170" width="260" height="46" rx="6" class="no"/><text class="dt" x="32" y="191">scope 外寫入</text><text class="dc" x="32" y="206">不在 5-tasks Files 聯集</text></g>
+    <g class="n"><rect x="330" y="170" width="230" height="46" rx="6" class="hl"/><text class="dt" x="342" y="191">有動到 R/S 嗎?</text><text class="dc" x="342" y="206">三種裡唯一有 L1 分支</text></g>
+    <g class="n"><rect x="610" y="30" width="250" height="46" rx="6" class="note"/><text class="dt" x="622" y="51">一律 stop</text><text class="dc" x="622" y="66">是 spec 完整度問題,沒有 allow 可用</text></g>
+    <g class="n"><rect x="610" y="100" width="250" height="46" rx="6" class="note"/><text class="dt" x="622" y="121">L2 → stop → 修 → 重審 → 重新 start</text><text class="dc" x="622" y="136">baseline 與契約 hash 都要重算</text></g>
+    <g class="n"><rect x="610" y="148" width="250" height="36" rx="6" class="go"/><text class="dt" x="622" y="164">否 → L1</text><text class="dc" x="622" y="178">allow 擴 scope + 記 D-n,繼續做</text></g>
+    <g class="n"><rect x="610" y="192" width="250" height="36" rx="6" class="note"/><text class="dt" x="622" y="208">是 → L2</text><text class="dc" x="622" y="222">stop,回頭走 G2</text></g>
+    <g class="n"><rect x="20" y="250" width="840" height="40" rx="6" class="hl"/><text class="dt" x="32" y="268">分不清 L1/L2 → 一律當 L2,這條沒有裁量空間</text><text class="dc" x="32" y="282">判級由實作者當下自判,但必須以 D-n 留痕(現象/保守選擇/理由/影響);T review 時 reviewer 對照 D-n 覆核 —— 自判錯誤會在 review 被打回</text></g>
+    <path class="edge" marker-end="url(#ar-lv)" d="M280,53 L610,53"/>
+    <path class="edge" marker-end="url(#ar-lv)" d="M280,123 L610,123"/>
+    <path class="edge" marker-end="url(#ar-lv)" d="M280,193 L330,193"/>
+    <path class="edge" marker-end="url(#ar-lv)" d="M560,185 L585,185 L585,166 L610,166"/>
+    <path class="edge" marker-end="url(#ar-lv)" d="M560,201 L585,201 L585,210 L610,210"/>
+  </svg></div>
+  <p class="figcap">前兩種沒有分支 —— 看到就是 <code>stop</code>。只有第三種要你判級,判不出來時最後一列已經幫你決定了。</p>
+
   <details>
     <summary>補充:其他會被擋的情況(較少見)</summary>
     <ul>
@@ -505,27 +603,24 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
       <code>stop</code>;絕不靜默覆寫已武裝模組的 scope/baseline(舊版曾有此漏洞,已修並入 selftest)。</li>
   </ul>
 
-  <svg viewBox="0 0 760 250" role="img" aria-label="worktree 隔離圖:兩個 worktree 各自守衛狀態互不相見,同工作樹雙 start 被拒">
-    <rect class="b" x="280" y="10" width="200" height="36" rx="6"/>
-    <text x="380" y="32" text-anchor="middle">同一 git repo</text>
-    <path class="flow" d="M340,46 L200,78" fill="none"/>
-    <path class="flow" d="M420,46 L560,78" fill="none"/>
-    <rect class="b" x="60" y="80" width="280" height="124" rx="10"/>
-    <text x="200" y="100" text-anchor="middle" style="font-weight:700">worktree 甲</text>
-    <rect class="m-sonnet" x="80" y="112" width="240" height="34" rx="6"/>
-    <text x="200" y="133" text-anchor="middle">模組 A · Stage 6 武裝中</text>
-    <rect class="b" x="80" y="156" width="240" height="34" rx="6"/>
-    <text x="200" y="177" text-anchor="middle">.devflow/exec.json(A)</text>
-    <rect class="b" x="420" y="80" width="280" height="124" rx="10"/>
-    <text x="560" y="100" text-anchor="middle" style="font-weight:700">worktree 乙</text>
-    <rect class="m-sonnet" x="440" y="112" width="240" height="34" rx="6"/>
-    <text x="560" y="133" text-anchor="middle">模組 B · Stage 4 寫 spec / Stage 6</text>
-    <rect class="b" x="440" y="156" width="240" height="34" rx="6"/>
-    <text x="560" y="177" text-anchor="middle">.devflow/exec.json(B)</text>
-    <path class="fenceline" d="M380,72 L380,210" fill="none"/>
-    <text x="380" y="228" text-anchor="middle" class="cap">state 互不相見 = 互不阻擋(混速並行 OK)</text>
-    <text x="380" y="244" text-anchor="middle" class="cap">同一工作樹第二個模組 start → ⛔ 拒絕(開 worktree,或先 stop)</text>
-  </svg>
+  <div class="figwrap"><svg id="fig-worktree" viewBox="0 0 880 300" role="img"
+       aria-label="worktree 隔離:兩個 worktree 各自守衛狀態互不相見,同一工作樹第二個模組 start 被拒">
+    <defs><marker id="ar-wt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
+    <g class="cluster"><rect x="40" y="90" width="380" height="140" rx="10" class="grpbox"/></g>
+    <g class="cluster"><rect x="460" y="90" width="380" height="140" rx="10" class="grpbox"/></g>
+    <g class="n"><rect x="340" y="16" width="200" height="36" rx="6" class="b"/><text class="dt" x="352" y="39">同一 git repo</text></g>
+    <g class="n"><rect x="60" y="100" width="340" height="36" rx="6" class="m-sonnet"/><text class="dt" x="72" y="116">worktree 甲</text><text class="dc" x="72" y="130">模組 A · Stage 6 武裝中</text></g>
+    <g class="n"><rect x="60" y="150" width="340" height="36" rx="6" class="b"/><text class="dm" x="72" y="166">.devflow/exec.json (A)</text><text class="dc" x="72" y="180">+ 該工作樹自己的 git-dir sentinel</text></g>
+    <g class="n"><rect x="480" y="100" width="340" height="36" rx="6" class="m-sonnet"/><text class="dt" x="492" y="116">worktree 乙</text><text class="dc" x="492" y="130">模組 B · Stage 4 寫 spec 或自己的 Stage 6</text></g>
+    <g class="n"><rect x="480" y="150" width="340" height="36" rx="6" class="b"/><text class="dm" x="492" y="166">.devflow/exec.json (B)</text><text class="dc" x="492" y="180">+ 該工作樹自己的 git-dir sentinel</text></g>
+    <g class="n"><rect x="40" y="240" width="800" height="40" rx="6" class="hl"/><text class="dt" x="52" y="258">state 互不相見 = 互不阻擋(混速並行 OK)</text><text class="dc" x="52" y="274">同一工作樹第二個模組 start → ⛔ 拒絕:開 worktree,或先 stop —— 絕不靜默覆寫已武裝模組的 scope/baseline</text></g>
+    <path class="edge" marker-end="url(#ar-wt)" d="M390,52 L390,70 L230,70 L230,100"/>
+    <path class="edge" marker-end="url(#ar-wt)" d="M490,52 L490,70 L650,70 L650,100"/>
+    <path class="fenceline" d="M440,80 L440,236"/>
+  </svg></div>
+  <p class="figcap">紅虛線是隔離面:一個工作樹同一時間只武裝一個模組,而每個 worktree 有自己的 toplevel 與 git-dir,
+  所以守衛狀態天然分開。同一工作樹內硬要並行做不到,且是刻意設計 —— hooks 分不清寫入來自哪個 session。</p>
   <p class="muted">守衛共四條掛載:<code>devflow-guard</code>(Edit|Write|Read)、
   <code>devflow-prebash</code>(Bash 事前)、<code>devflow-postbash</code>(Bash 事後偵測)、
   <code>devtalk-guard</code>(盲原則)。想確認整套沒壞:跑
@@ -538,81 +633,44 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   Candidate 不得進正式 integration branch、不得標完成,只有 ACCEPTED 才勾 checkbox
   (ASCII 正本:README §5「T 級並行」;細節 <code>notes/design/parallel-stage6.md</code>)。</p>
 
-  <svg id="par-flow" viewBox="0 0 1174 178" role="img" aria-label="Stage 6 並行流程圖:Task DAG 經 Wave Base、Task Worktrees、RED/GREEN/Verify、Candidate、Mechanical Gate、Integration DAG、Dedicated 或 Wave Review 到 ACCEPTED">
-    <defs>
-      <marker id="par-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-        <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/>
-      </marker>
-    </defs>
-    <g class="node">
-      <rect x="10" y="65" width="86" height="44" rx="6" class="b"/>
-      <text x="53" y="91" text-anchor="middle">Task DAG</text>
-    </g>
-    <g class="node">
-      <rect x="124" y="65" width="90" height="44" rx="6" class="b"/>
-      <text x="169" y="91" text-anchor="middle">Wave Base</text>
-    </g>
-    <g class="node">
-      <rect x="242" y="65" width="100" height="44" rx="6" class="b"/>
-      <text x="292" y="91" text-anchor="middle">Task Worktrees</text>
-    </g>
-    <g class="node">
-      <rect x="370" y="65" width="120" height="44" rx="6" class="b"/>
-      <text x="430" y="91" text-anchor="middle">RED/GREEN/Verify</text>
-    </g>
-    <g class="node">
-      <rect x="518" y="65" width="90" height="44" rx="6" class="b"/>
-      <text x="563" y="91" text-anchor="middle">Candidate</text>
-    </g>
-    <g class="node">
-      <rect x="636" y="57" width="120" height="60" fill="none" stroke="none"/>
-      <polygon class="b" points="636,87 696,57 756,87 696,117"/>
-      <text x="696" y="83" text-anchor="middle">Mechanical</text>
-      <text x="696" y="97" text-anchor="middle">Gate</text>
-    </g>
-    <g class="node">
-      <rect x="784" y="65" width="110" height="44" rx="6" class="b"/>
-      <text x="839" y="91" text-anchor="middle">Integration DAG</text>
-    </g>
-    <g class="node">
-      <rect x="922" y="65" width="118" height="44" rx="6" class="hl"/>
-      <text x="981" y="83" text-anchor="middle">Dedicated 或</text>
-      <text x="981" y="97" text-anchor="middle">Wave Review</text>
-    </g>
-    <g class="node">
-      <rect x="1068" y="65" width="96" height="44" rx="6" class="b"/>
-      <text x="1116" y="91" text-anchor="middle">ACCEPTED</text>
-    </g>
-    <path class="flow edge" marker-end="url(#par-arrow)" d="M96,87 L124,87"/>
-    <path class="flow edge" marker-end="url(#par-arrow)" d="M214,87 L242,87"/>
-    <path class="flow edge" marker-end="url(#par-arrow)" d="M342,87 L370,87"/>
-    <path class="flow edge" marker-end="url(#par-arrow)" d="M490,87 L518,87"/>
-    <path class="flow edge" marker-end="url(#par-arrow)" d="M608,87 L636,87"/>
-    <path class="flow edge" marker-end="url(#par-arrow)" d="M756,87 L784,87"/>
-    <path class="flow edge" marker-end="url(#par-arrow)" d="M894,87 L922,87"/>
-    <path class="flow edge" marker-end="url(#par-arrow)" d="M1040,87 L1068,87"/>
-    <text class="cap" x="53" y="130" text-anchor="middle">Blocked-by 邊</text>
-    <text class="cap" x="169" y="130" text-anchor="middle">同 Wave 同 Base</text>
-    <text class="cap" x="292" y="130" text-anchor="middle">一樹一武裝</text>
-    <text class="cap" x="292" y="146" text-anchor="middle">task/&lt;slug&gt;/T-n</text>
-    <text class="cap" x="430" y="130" text-anchor="middle">逐 T 各自跑 seam</text>
-    <text class="cap" x="563" y="130" text-anchor="middle">task branch,不可變</text>
-    <text class="cap" x="696" y="130" text-anchor="middle">14 項機械檢查</text>
-    <text class="cap" x="839" y="130" text-anchor="middle">拓撲序 cherry-pick</text>
-    <text class="cap" x="981" y="130" text-anchor="middle">high:整合前逐 T 審</text>
-    <text class="cap" x="981" y="146" text-anchor="middle">normal:整合後審整 wave</text>
-    <text class="cap" x="1116" y="130" text-anchor="middle">才勾 checkbox</text>
-    <text class="cap" x="587" y="168" text-anchor="middle">未過 Review 的 Candidate 不得進正式 integration branch;只有 ACCEPTED 才勾 checkbox</text>
-  </svg>
+  <div class="figwrap"><svg id="fig-parallel" viewBox="0 0 880 280" role="img"
+       aria-label="Stage 6 並行流程:Task DAG 經 Wave Base、Task Worktrees、seam、Candidate、Mechanical Gate、Integration DAG、Review 到 ACCEPTED">
+    <defs><marker id="ar-pl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
+    <g class="n"><rect x="10" y="40" width="160" height="60" rx="6" class="b"/><text class="dt" x="22" y="56">Task DAG</text><text class="dc" x="22" y="71">Blocked-by 邊</text></g>
+    <g class="n"><rect x="185" y="40" width="160" height="60" rx="6" class="b"/><text class="dt" x="197" y="56">Wave Base</text><text class="dc" x="197" y="71">同 Wave 同 Base SHA</text></g>
+    <g class="n"><rect x="360" y="40" width="160" height="60" rx="6" class="b"/><text class="dt" x="372" y="56">Task Worktrees</text><text class="dc" x="372" y="71">一樹一武裝</text><text class="dc" x="372" y="85">task/&lt;slug&gt;/T-n</text></g>
+    <g class="n"><rect x="535" y="40" width="160" height="60" rx="6" class="b"/><text class="dt" x="547" y="56">RED·GREEN·Verify</text><text class="dc" x="547" y="71">逐 T 各自跑 seam</text></g>
+    <g class="n"><rect x="710" y="40" width="160" height="60" rx="6" class="b"/><text class="dt" x="722" y="56">Candidate</text><text class="dc" x="722" y="71">task branch,不可變</text></g>
+    <g class="n"><rect x="710" y="170" width="160" height="60" rx="6" class="go"/><text class="dt" x="722" y="186">Mechanical Gate</text><text class="dc" x="722" y="201">14 項機械檢查</text><text class="dc" x="722" y="215">全 PASS 才 READY</text></g>
+    <g class="n"><rect x="535" y="170" width="160" height="60" rx="6" class="b"/><text class="dt" x="547" y="186">Integration DAG</text><text class="dc" x="547" y="201">拓撲序 cherry-pick</text></g>
+    <g class="n"><rect x="360" y="170" width="160" height="60" rx="6" class="hl"/><text class="dt" x="372" y="186">Dedicated / Wave Review</text><text class="dc" x="372" y="201">high:整合前逐 T 審</text><text class="dc" x="372" y="215">normal:整合後審整 wave</text></g>
+    <g class="n"><rect x="185" y="170" width="160" height="60" rx="6" class="go"/><text class="dt" x="197" y="186">ACCEPTED</text><text class="dc" x="197" y="201">才勾 checkbox</text></g>
+    <path class="edge" marker-end="url(#ar-pl)" d="M170,70 L185,70"/>
+    <path class="edge" marker-end="url(#ar-pl)" d="M345,70 L360,70"/>
+    <path class="edge" marker-end="url(#ar-pl)" d="M520,70 L535,70"/>
+    <path class="edge" marker-end="url(#ar-pl)" d="M695,70 L710,70"/>
+    <path class="edge" marker-end="url(#ar-pl)" d="M790,100 L790,170"/>
+    <path class="edge" marker-end="url(#ar-pl)" d="M710,200 L695,200"/>
+    <path class="edge" marker-end="url(#ar-pl)" d="M535,200 L520,200"/>
+    <path class="edge" marker-end="url(#ar-pl)" d="M360,200 L345,200"/>
+    <text class="dl" x="20" y="260">未過 Review 的 Candidate 不得進正式 integration branch;只有 ACCEPTED 才勾 checkbox</text>
+  </svg></div>
+  <p class="figcap">下排由右往左走。機械檢查(綠)不需要模型,但它<strong>不取代</strong> Review ——
+  只有走完 Review 拿到 ACCEPTED 才勾 checkbox。</p>
 
   <h2 id="models">④ 模型分層速查</h2>
-  <p>對照 README §9。</p>
+  <p class="lead">這章要你懂:<strong>只有執行層綁模型,審查層一律不綁</strong> ——
+  gate reviewer 要的是乾淨 context 與能力,不是某個型號。對照 README §9。</p>
+  <div class="parity">
+  <p class="parity-tag">規則正本 · Gate 審查者不指定模型(逐字抄自 README §9)</p>
   <!-- parity:start readme-gate-model-quickstart -->
   <ul>
   <li><strong>G1/G2/G3 審查與 verdict</strong>:依 §7 的人類→fresh-context reviewer Agent→有記錄的
   owner 自審順序;Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。</li>
   </ul>
   <!-- parity:end readme-gate-model-quickstart -->
+  </div>
   <div class="tablewrap"><table>
     <tr><th>角色 / 站</th><th>模型</th><th>規則</th></tr>
     <tr><td>規劃/派工層<br>(1 討論、2/4 文檔、Stage 6 派工主對話)</td>
@@ -642,6 +700,8 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   </table></div>
 
   <h2 id="faq">⑤ 常見卡關 FAQ</h2>
+  <p class="lead">這章要你懂:<strong>五種最常撞到的狀況各有固定修法</strong> ——
+  沒有一種需要你自由心證,照著走就行。</p>
 
   <h3>守衛擋住怎麼辦?</h3>
   <p>先看是③三張卡的哪一種,照對應處置走。核心原則只有一條:<strong>分不清 L1/L2 一律當 L2</strong> ——
@@ -687,100 +747,55 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   也不把它當成官方替代執行系統。</p>
 
   <h2 id="diagram">⑥ 全程圖</h2>
+  <p class="lead">這章要你懂:<strong>七個階段的全貌,加上兩件新手最常忽略的事</strong> ——
+  哪幾站要另開 session、守衛只在哪一段是醒著的。</p>
   <p>同一張七階段圖,額外標出兩個新手常忽略的地方:<strong>虛線框</strong> = 要/建議另開
   session 的站(1 討論<strong>必開</strong>;3 原型、6 實作<strong>建議另開</strong>;
   2/4/5 留在主 session,7 的隔離在 reviewer agent 層 —— 完整表見 README §10「Session 邊界」);
   <strong>紅色虛線括號</strong> = 執行守衛的武裝區間(<code>start</code> 到 <code>stop</code> 之間)。</p>
 
-  <svg viewBox="0 0 1260 210" width="1260" height="210" role="img" aria-label="dev-flow 全程圖含另開 session 與守衛武裝區間標示">
-    <defs>
-      <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-        <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/>
-      </marker>
-    </defs>
+  <div class="figwrap"><svg id="fig-flow" viewBox="0 0 880 310" role="img"
+       aria-label="dev-flow 七階段全程圖,含另開 session 的站、G1 跳過 3 的捷徑與守衛武裝區間">
+    <defs><marker id="ar-fl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
+    <g class="cluster"><rect x="148" y="58" width="142" height="74" rx="10" class="sessionbox"/></g>
+    <g class="cluster"><rect x="592" y="58" width="142" height="74" rx="10" class="sessionbox"/></g>
+    <g class="cluster"><rect x="444" y="198" width="142" height="74" rx="10" class="sessionbox"/></g>
 
-    <!-- skip arrow: G1 -> 4(略過 3) -->
-    <path class="flow" marker-end="url(#arrow)" d="M365,47 C400,5 540,5 573,65" fill="none"/>
-    <text x="470" y="16" text-anchor="middle">G1 過·無技術疑問 → 跳 3</text>
+    <g class="n"><rect x="6" y="70" width="130" height="56" rx="26" class="b"/><text class="dt" x="18" y="88">想法/需求</text><text class="dc" x="18" y="103">還沒有任何檔案</text></g>
+    <g class="n"><rect x="154" y="70" width="130" height="56" rx="6" class="m-opus"/><text class="dt" x="166" y="88">1 討論</text><text class="dc" x="166" y="103">opus</text><text class="dc" x="166" y="117">零程式碼</text></g>
+    <g class="n"><rect x="302" y="70" width="130" height="56" rx="6" class="m-opus"/><text class="dt" x="314" y="88">2 收斂</text><text class="dc" x="314" y="103">opus</text><text class="dc" x="314" y="117">2-decision.md</text></g>
+    <g class="n"><rect x="450" y="70" width="130" height="56" rx="6" class="hl"/><text class="dt" x="462" y="88">G1 方向核准</text><text class="dc" x="462" y="103">reviewer·方向</text><text class="dc" x="462" y="117">Owner Calls 全裁決</text></g>
+    <g class="n"><rect x="598" y="70" width="130" height="56" rx="6" class="m-sonnet"/><text class="dt" x="610" y="88">3 原型(選配)</text><text class="dc" x="610" y="103">sonnet</text><text class="dc" x="610" y="117">Demo verdict 人類填</text></g>
+    <g class="n"><rect x="746" y="70" width="130" height="56" rx="6" class="m-opus"/><text class="dt" x="758" y="88">4 規格</text><text class="dc" x="758" y="103">opus</text><text class="dc" x="758" y="117">4-spec.md</text></g>
 
-    <!-- session boxes: stage 1 必開, stage 3/6 建議另開 -->
-    <rect class="session" x="110" y="57" width="94" height="60" rx="10"/>
-    <text x="157" y="50" text-anchor="middle" style="fill:var(--acc);font-weight:700">必開新 session</text>
-    <rect class="session" x="422" y="55" width="94" height="58" rx="10"/>
-    <text x="469" y="48" text-anchor="middle" style="fill:var(--acc);font-weight:700">建議另開(選配)</text>
-    <rect class="session" x="838" y="55" width="94" height="58" rx="10"/>
-    <text x="885" y="48" text-anchor="middle" style="fill:var(--acc);font-weight:700">建議另開 session</text>
+    <g class="n"><rect x="746" y="210" width="130" height="56" rx="6" class="hl"/><text class="dt" x="758" y="228">G2 規格核准</text><text class="dc" x="758" y="243">reviewer·契約</text><text class="dc" x="758" y="257">R/S 全審</text></g>
+    <g class="n"><rect x="598" y="210" width="130" height="56" rx="6" class="m-sonnet"/><text class="dt" x="610" y="228">5 任務</text><text class="dc" x="610" y="243">sonnet</text><text class="dc" x="610" y="257">5-tasks.md</text></g>
+    <g class="n"><rect x="450" y="210" width="130" height="56" rx="6" class="m-opus"/><text class="dt" x="462" y="228">6 實作</text><text class="dc" x="462" y="243">opus·派工</text><text class="dc" x="462" y="257">haiku→sonnet→opus</text></g>
+    <g class="n"><rect x="302" y="210" width="130" height="56" rx="6" class="m-sonnet"/><text class="dt" x="314" y="228">7 驗證</text><text class="dc" x="314" y="243">sonnet</text><text class="dc" x="314" y="257">雙軸 code review</text></g>
+    <g class="n"><rect x="154" y="210" width="130" height="56" rx="6" class="hl"/><text class="dt" x="166" y="228">G3 出貨核准</text><text class="dc" x="166" y="243">reviewer·G3</text><text class="dc" x="166" y="257">Evidence 契約全過</text></g>
+    <g class="n"><rect x="6" y="210" width="130" height="56" rx="6" class="go"/><text class="dt" x="18" y="228">PR</text><text class="dc" x="18" y="243">→develop</text><text class="dc" x="18" y="257">→Exit checklist</text></g>
 
-    <!-- main row -->
-    <ellipse class="b" cx="50" cy="87" rx="40" ry="26"/>
-    <text x="50" y="91" text-anchor="middle">想法/需求</text>
+    <path class="edge" marker-end="url(#ar-fl)" d="M136,98 L154,98"/>
+    <path class="edge" marker-end="url(#ar-fl)" d="M284,98 L302,98"/>
+    <path class="edge" marker-end="url(#ar-fl)" d="M432,98 L450,98"/>
+    <path class="edge" marker-end="url(#ar-fl)" d="M580,98 L598,98"/>
+    <path class="edge" marker-end="url(#ar-fl)" d="M728,98 L746,98"/>
+    <path class="edge" marker-end="url(#ar-fl)" d="M811,126 L811,210"/>
+    <path class="edge" marker-end="url(#ar-fl)" d="M746,238 L728,238"/>
+    <path class="edge" marker-end="url(#ar-fl)" d="M598,238 L580,238"/>
+    <path class="edge" marker-end="url(#ar-fl)" d="M450,238 L432,238"/>
+    <path class="edge" marker-end="url(#ar-fl)" d="M302,238 L284,238"/>
+    <path class="edge" marker-end="url(#ar-fl)" d="M154,238 L136,238"/>
+    <path class="edge" marker-end="url(#ar-fl)" d="M515,70 L515,30 L811,30 L811,70"/>
+    <path class="fenceline" d="M450,278 L450,286 L580,286 L580,278"/>
 
-    <rect class="m-opus" x="118" y="65" width="78" height="44" rx="6"/>
-    <text x="157" y="91" text-anchor="middle">1 討論</text>
-
-    <rect class="m-opus" x="222" y="65" width="78" height="44" rx="6"/>
-    <text x="261" y="91" text-anchor="middle">2 收斂</text>
-
-    <polygon class="b" points="365,47 405,87 365,127 325,87"/>
-    <text x="365" y="91" text-anchor="middle">G1</text>
-
-    <rect class="m-sonnet" x="430" y="65" width="78" height="44" rx="6" stroke-dasharray="5 3"/>
-    <text x="469" y="85" text-anchor="middle">3 原型</text>
-    <text x="469" y="99" text-anchor="middle">(選配)</text>
-
-    <rect class="m-opus" x="534" y="65" width="78" height="44" rx="6"/>
-    <text x="573" y="91" text-anchor="middle">4 規格</text>
-
-    <polygon class="b" points="677,47 717,87 677,127 637,87"/>
-    <text x="677" y="91" text-anchor="middle">G2</text>
-
-    <rect class="m-sonnet" x="742" y="65" width="78" height="44" rx="6"/>
-    <text x="781" y="91" text-anchor="middle">5 任務</text>
-
-    <rect class="m-opus" x="846" y="65" width="78" height="44" rx="6"/>
-    <text x="885" y="91" text-anchor="middle">6 實作</text>
-
-    <rect class="m-sonnet" x="950" y="65" width="78" height="44" rx="6"/>
-    <text x="989" y="91" text-anchor="middle">7 驗證</text>
-
-    <polygon class="b" points="1093,47 1133,87 1093,127 1053,87"/>
-    <text x="1093" y="91" text-anchor="middle">G3</text>
-
-    <rect class="b" x="1158" y="65" width="90" height="44" rx="6"/>
-    <text x="1203" y="91" text-anchor="middle">PR</text>
-
-    <!-- arrows -->
-    <path class="flow" marker-end="url(#arrow)" d="M90,87 L118,87"/>
-    <path class="flow" marker-end="url(#arrow)" d="M196,87 L222,87"/>
-    <path class="flow" marker-end="url(#arrow)" d="M300,87 L325,87"/>
-    <path class="flow" marker-end="url(#arrow)" d="M405,87 L430,87"/>
-    <path class="flow" marker-end="url(#arrow)" d="M508,87 L534,87"/>
-    <path class="flow" marker-end="url(#arrow)" d="M612,87 L637,87"/>
-    <path class="flow" marker-end="url(#arrow)" d="M717,87 L742,87"/>
-    <path class="flow" marker-end="url(#arrow)" d="M820,87 L846,87"/>
-    <path class="flow" marker-end="url(#arrow)" d="M924,87 L950,87"/>
-    <path class="flow" marker-end="url(#arrow)" d="M1028,87 L1053,87"/>
-    <path class="flow" marker-end="url(#arrow)" d="M1133,87 L1158,87"/>
-
-    <!-- guard-armed bracket under stage 6 -->
-    <path class="fenceline" d="M846,115 L846,123 L924,123 L924,115" fill="none"/>
-    <text x="885" y="136" text-anchor="middle" class="cap">守衛武裝</text>
-    <text x="885" y="148" text-anchor="middle" class="cap">start→stop</text>
-
-    <!-- per-stage model captions -->
-    <text x="157" y="168" class="cap" text-anchor="middle">opus</text>
-    <text x="261" y="168" class="cap" text-anchor="middle">opus</text>
-    <text x="365" y="168" class="cap" text-anchor="middle">reviewer·方向</text>
-    <text x="469" y="168" class="cap" text-anchor="middle">sonnet</text>
-    <text x="573" y="168" class="cap" text-anchor="middle">opus</text>
-    <text x="677" y="168" class="cap" text-anchor="middle">reviewer·契約</text>
-    <text x="781" y="168" class="cap" text-anchor="middle">sonnet</text>
-    <text x="885" y="168" class="cap" text-anchor="middle">opus·派工</text>
-    <text x="989" y="168" class="cap" text-anchor="middle">sonnet</text>
-    <text x="1093" y="168" class="cap" text-anchor="middle">reviewer·G3</text>
-    <text x="1203" y="168" class="cap" text-anchor="middle">→develop</text>
-    <text x="1203" y="182" class="cap" text-anchor="middle">→Exit checklist</text>
-  </svg>
+    <text class="dl" x="600" y="26">G1 過·無技術疑問 → 跳 3</text>
+    <text class="dk" x="154" y="52">必開新 session</text>
+    <text class="dk" x="598" y="52">建議另開(選配)</text>
+    <text class="dk" x="450" y="192">建議另開 session</text>
+    <text class="dl" x="450" y="300">守衛武裝區間:start→stop,只有這一段守衛是醒著的</text>
+  </svg></div>
 
   <p class="legend">紫色 = <span class="badge opus">opus</span>(規劃/派工層);gate reviewer 不指定模型;
   青色 = <span class="badge sonnet">sonnet</span>(執行/產檔層);Stage 6 內部另有
@@ -790,35 +805,17 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   先跑 Final Fresh Gauntlet(綁定當下 source SHA 的 Final Fresh Run + Evidence 契約,
   README §7 G3 錨定義),全過才進 G3。Gauntlet PASS 不取代雙軸 code review。</p>
 
-  <svg id="ffg-g3" viewBox="0 0 640 150" role="img" aria-label="跨階段收束圖:ACCEPTED Tasks 經 Final Fresh Gauntlet 到 G3">
-    <defs>
-      <marker id="ffg-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-        <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/>
-      </marker>
-    </defs>
-    <g class="node">
-      <rect x="10" y="55" width="150" height="44" rx="6" class="b"/>
-      <text x="85" y="81" text-anchor="middle">ACCEPTED Tasks</text>
-    </g>
-    <g class="node">
-      <rect x="200" y="55" width="170" height="44" rx="6" class="hl"/>
-      <text x="285" y="81" text-anchor="middle">Final Fresh Gauntlet</text>
-    </g>
-    <g class="node">
-      <rect x="410" y="49" width="80" height="56" fill="none" stroke="none"/>
-      <polygon class="b" points="410,77 450,49 490,77 450,105"/>
-      <text x="450" y="81" text-anchor="middle">G3</text>
-    </g>
-    <path class="flow edge" marker-end="url(#ffg-arrow)" d="M160,77 L200,77"/>
-    <path class="flow edge" marker-end="url(#ffg-arrow)" d="M370,77 L410,77"/>
-    <text class="cap" x="85" y="40" text-anchor="middle">Stage 6 收束</text>
-    <text class="cap" x="285" y="40" text-anchor="middle">Stage 7 前置</text>
-    <text class="cap" x="450" y="40" text-anchor="middle">Stage 7</text>
-    <text class="cap" x="85" y="122" text-anchor="middle">全部 T 已 ACCEPTED</text>
-    <text class="cap" x="285" y="122" text-anchor="middle">清 stale·綁 source SHA</text>
-    <text class="cap" x="285" y="138" text-anchor="middle">Required layers 全 pass</text>
-    <text class="cap" x="450" y="122" text-anchor="middle">Evidence 契約全過(八點)</text>
-  </svg>
+  <div class="figwrap"><svg id="fig-ffg" viewBox="0 0 880 160" role="img"
+       aria-label="跨階段收束:ACCEPTED Tasks 經 Final Fresh Gauntlet 到 G3">
+    <defs><marker id="ar-fg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
+    <g class="n"><rect x="20" y="50" width="280" height="60" rx="6" class="go"/><text class="dt" x="32" y="68">ACCEPTED Tasks</text><text class="dc" x="32" y="83">Stage 6 收束</text><text class="dc" x="32" y="97">全部 T 已 ACCEPTED</text></g>
+    <g class="n"><rect x="320" y="50" width="280" height="60" rx="6" class="hl"/><text class="dt" x="332" y="68">Final Fresh Gauntlet</text><text class="dc" x="332" y="83">Stage 7 前置:清 stale·綁 source SHA</text><text class="dc" x="332" y="97">Required layers 全 pass</text></g>
+    <g class="n"><rect x="620" y="50" width="240" height="60" rx="6" class="hl"/><text class="dt" x="632" y="68">G3</text><text class="dc" x="632" y="83">Stage 7</text><text class="dc" x="632" y="97">Evidence 契約全過(八點)</text></g>
+    <path class="edge" marker-end="url(#ar-fg)" d="M300,80 L320,80"/>
+    <path class="edge" marker-end="url(#ar-fg)" d="M600,80 L620,80"/>
+    <text class="dl" x="20" y="140">Gauntlet 全過才進 G3;但 Gauntlet PASS 不取代雙軸 code review,兩者都要</text>
+  </svg></div>
 
   <footer class="foot">
     正本規則:<code>~/dev/dev-flow/README.md</code>;模板:<code>~/dev/dev-flow/_templates/</code>;
@@ -828,5 +825,42 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     風格沿用 <code>guide-dev-flow.html</code>。疑義以 README 為準。
   </footer>
 </main>
+<script>
+/* 圖表放大檢視 + 可勾選 checklist。全 inline,不連任何外部庫(CSP 安全)。
+   放大部分與 guide-dev-talk.html 同一份實作,三份導覽共用,勿改。 */
+(function(){
+  var ov=null;
+  function esc(e){ if(e.key==='Escape') close(); }
+  function close(){ if(ov){ ov.remove(); ov=null; document.removeEventListener('keydown',esc); } }
+  Array.prototype.forEach.call(document.querySelectorAll('.figwrap>svg'),function(svg){
+    svg.addEventListener('click',function(){
+      close();
+      ov=document.createElement('div'); ov.className='figzoom';
+      var box=document.createElement('div'); box.className='figzoom-inner';
+      var c=svg.cloneNode(true); c.removeAttribute('id'); box.appendChild(c);
+      var tip=document.createElement('div'); tip.className='figzoom-tip';
+      tip.textContent='滾輪縮放 · 拖曳平移 · ESC 或點背景關閉';
+      ov.appendChild(box); ov.appendChild(tip); document.body.appendChild(ov);
+      var s=1,tx=0,ty=0,drag=false,px=0,py=0;
+      function apply(){ c.style.transform='translate('+tx+'px,'+ty+'px) scale('+s+')'; }
+      ov.addEventListener('wheel',function(e){ e.preventDefault();
+        s=Math.min(6,Math.max(0.4,s*(e.deltaY<0?1.12:1/1.12))); apply(); },{passive:false});
+      box.addEventListener('mousedown',function(e){ drag=true; px=e.clientX; py=e.clientY; e.preventDefault(); });
+      window.addEventListener('mousemove',function(e){ if(!drag) return;
+        tx+=e.clientX-px; ty+=e.clientY-py; px=e.clientX; py=e.clientY; apply(); });
+      window.addEventListener('mouseup',function(){ drag=false; });
+      ov.addEventListener('click',function(e){ if(e.target===ov||e.target===tip) close(); });
+      document.addEventListener('keydown',esc);
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.chk input[type=checkbox]'),function(box){
+    var key='devflow-quickstart-'+box.id;
+    try{ box.checked = localStorage.getItem(key)==='1'; }catch(e){}
+    box.addEventListener('change',function(){
+      try{ localStorage.setItem(key, box.checked?'1':'0'); }catch(e){}
+    });
+  });
+})();
+</script>
 </body>
 </html>
