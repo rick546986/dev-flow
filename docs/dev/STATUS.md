@@ -44,4 +44,3 @@ scripts/history-append.sh --slug <代號> --what <做了什麼> --why <為什麼
 | B-4 | `doctor` 對 gauntlet 只做 `--version` 探測,不驗 ROOT 解析 | `notes/adoption-findings-2026-08-04.md:454` |
 | B-5 | `Files` 欄系統性低估(數字更正 8→10),模板沒有判準(待裁決) | `notes/adoption-findings-2026-08-04.md:841` |
 | B-6 | Diff Budget 的測試檔估法沒把補償控制算進去(比原判更嚴重;待裁決) | `notes/adoption-findings-2026-08-04.md:881` |
-| B-8 | gate twin 沒有審查介面規格 —— 2026-08-13 只修了 7-review 的審查動線,沒推廣到 G1(2-decision)/ G2(4-spec)。原型已備:`notes/patches/gate-twin-ui-prototype/`(三支 python),**形狀待 owner 拍板**(scripts 工具 / 模板規格 / skill 內建) | `notes/adoption-findings-2026-08-04.md` 第三輪 |

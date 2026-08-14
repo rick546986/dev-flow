@@ -17,6 +17,22 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 > 本階段固定產出:`4-spec.md`(本模板全節)+ `4-spec.html`(G2 必產;必含 R 級
 > 行為流程圖、Drafting Decisions 待裁決置頂)。
 >
+> ## G2 twin 是**審查介面**,不是文件視覺版(README §6)
+>
+> 2026-08-15 補。起因:owner 打開一份合規的 `4-spec.html`(md 直轉、16 個 S 攤平在
+> 單欄長文),第一句話是「這份給人看得有點雜亂」——**規範管的是「必含什麼元素」,
+> 不管「長什麼形狀」**,所以完全照規則做仍然難審。三件事缺一不可,
+> **產 html 時逐項對照,缺一項就是沒做完**:
+>
+> | | 要求 | 這一站的內容 |
+> |---|---|---|
+> | 1 | **動線頂區五格**,每格一句話 + 可點跳轉,審完五格才決定要不要往下讀 | 狀態(status)/ Gate(`check-spec-gate.sh` 過了沒)/ lane + Risk / Drafting Decisions 進度 `x/y` / Demo verdict |
+> | 2 | **待審項目逐條可勾**,有進度計數,缺必填欄的直接在卡上現形 | **每個 S 一張卡**(GIVEN/WHEN/THEN 對齊、「觀測」欄獨立標色);**解析不到「觀測」欄的 S 渲染成紅底**——那是 G3 驗收的唯一依據 |
+> | 3 | **背景資料摺疊**(`<details>`,預設收合、內容零刪減) | Bug Scenario、Acceptance Criteria、Out of Scope、Diff Budget、Verification Profile、DD 表、Test Skeletons、Known limits |
+>
+> 產生方式:`docs/dev/tools/build-gate-twin.py <專案根> <slug> 4-spec`
+> (母版在 `scripts/`)。它讀 md 逐條解析,不手抄;解析不到任何一條會直接失敗。
+>
 > 反模糊三律(防偷懶條文):
 > 1. 每條 S 必須可直接轉成**一個測試**:含具體輸入與可斷言輸出;禁模糊詞
 >    (適當/正確/合理/必要時/妥善/robust/等等/視情況)。

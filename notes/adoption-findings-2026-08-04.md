@@ -993,7 +993,7 @@ B-8 是**形狀**（gate twin 沒有審查介面規格），B-9 是**內容**（
 
 ---
 
-## B-8 — gate twin 的「審查動線」規格只綁了 7-review，G1／G2 的 twin 沒有形狀規格　⏳ 未修
+## B-8 — gate twin 的「審查動線」規格只綁了 7-review，G1／G2 的 twin 沒有形狀規格　✅ 已修（2026-08-15）
 
 ### 現象
 
@@ -1048,6 +1048,29 @@ G2（4-spec）一樣是要人逐條審的 gate，一樣會長到 owner 不知道
    對齊（md 是正本、html 做成可點的，這個分工 7-review 已經確立，照抄即可）。
 4. **可直接複用的範本**：本輪產出的 4-spec 審查介面原型已存進
    `notes/patches/spec-review-ui-prototype.py`（見下方 B-8 附錄）。
+
+### 已採用的修法（2026-08-15）
+
+owner 拍板形狀 = **先寫規格、再做工具**（其餘三個選項的問題：只做工具 → 產出物沒有規格可對；
+只寫規格 → 就是 B-9 修好之前的老毛病；做進 skill → 沒有獨立工具就沒辦法單獨測）。
+
+1. **規格**：`README.md` §6 per-stage 表加「審查形狀」欄，gate 三站標「審查介面」、其餘標「文件」；
+   〈審查動線頂區〉從 7-review 專屬升格成三站通用，並列出各站的五格內容。
+   三件必含寫死：動線頂區五格 / 待審項目逐條可勾且缺欄紅底 / 背景資料摺疊且內容零刪減。
+2. **模板**：`_templates/{2-decision,4-spec}.md` 頂註各補一節「G1（G2）twin 是審查介面」，
+   含該站的五格內容與待審項目定義，與 7-review 模板的「Reviewer 閱讀動線」對齊。
+3. **工具**：`scripts/build-gate-twin.py` + `scripts/devflow_twin_ui.py`（共用 UI 與兩種殼），
+   三站共用一支，讀 md 逐條解析不手抄。原型的寫死值（專案根、slug、期望條數、章節清單、
+   R 的嚴重度表）全部拿掉：標題 pattern 放寬到 `^#{2,6}` 與 `check-spec-gate.sh` 對齊，
+   期望條數改成設了 `DEVFLOW_EXPECT_ITEMS` 才檢查，未列到的章節自動收進背景資料。
+4. **守衛**：`scripts/check-gate-twin.sh`（21 項，含負向案：缺觀測欄要紅底、空 spec 要
+   exit 1 且不產空殼、artifact 片段不得含 doctype/html/head/body），註冊進 devflow-check
+   （17 → 18 組），三站都對母版範例實跑 = 自帶回歸。
+
+**尚未做**：附錄追加提到的第三種形狀「執行板」（5-tasks）沒有納入本輪，
+`notes/patches/gate-twin-ui-prototype/build_tasks.py` 仍是唯一實作。
+
+---
 
 ### B-8 附錄：本輪的審查介面原型（owner 2026-08-14 指定收錄）
 

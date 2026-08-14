@@ -75,3 +75,9 @@
 - 落在哪:.claude-plugin/plugin.json、hooks/runtime-capabilities.json
 - 詳細:本次為 minor:新增工具/檢查/hook,既有專案 dev-setup upgrade 後仍相容;契約版本維持 2.0.0 未動
 
+## 2026-08-15 · b8-gate-twin-review-ui
+- 做了什麼:G1/G2/G3 三站的 html 從「文件視覺版」改成「審查介面」:規格寫進 README §6 與兩份模板,並做出產生器 build-gate-twin.py(三站共用,讀 md 逐條解析不手抄)
+- 為什麼:owner 打開一份完全合規的 4-spec.html 第一句話是「這份給人看得有點雜亂」—— 規範只管「必含什麼元素」不管「長什麼形狀」,所以照規則做仍然難審;同一個病 2026-08-13 修過一次但只修了 7-review 一站
+- 落在哪:README.md §6、_templates/{2-decision,4-spec}.md、scripts/{build-gate-twin.py,devflow_twin_ui.py,check-gate-twin.sh}、scripts/fixtures/gate-twin/、docs/dev/tools/、skills/{dev-setup,dev-release}/SKILL.md
+- 詳細:形狀由 owner 拍板 = 先寫規格再做工具;devflow-check 17→18 組;守衛 21 項含負向案(缺觀測欄紅底、空 spec 不產空殼、artifact 片段不得含外殼標籤)。5-tasks 執行板未納入本輪。來源 notes/adoption-findings-2026-08-04.md 第三輪 B-8
+
