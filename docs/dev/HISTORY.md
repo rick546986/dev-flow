@@ -81,3 +81,9 @@
 - 落在哪:README.md §6、_templates/{2-decision,4-spec}.md、scripts/{build-gate-twin.py,devflow_twin_ui.py,check-gate-twin.sh}、scripts/fixtures/gate-twin/、docs/dev/tools/、skills/{dev-setup,dev-release}/SKILL.md
 - 詳細:形狀由 owner 拍板 = 先寫規格再做工具;devflow-check 17→18 組;守衛 21 項含負向案(缺觀測欄紅底、空 spec 不產空殼、artifact 片段不得含外殼標籤)。5-tasks 執行板未納入本輪。來源 notes/adoption-findings-2026-08-04.md 第三輪 B-8
 
+## 2026-08-15 · release-v3-3-0 · v3.3.0
+- 做了什麼:發布 v3.3.0:gate twin 審查介面(規格 + 三站共用產生器 + 21 項守衛),其他機器 /plugin update 後才拿得到
+- 為什麼:新增了工具與檢查,版號不動的話其他機器更新會回「無內容」且沒有任何提示
+- 落在哪:.claude-plugin/plugin.json、hooks/runtime-capabilities.json
+- 詳細:minor:既有專案 dev-setup upgrade 後相容;契約版本維持 2.0.0 未動
+
