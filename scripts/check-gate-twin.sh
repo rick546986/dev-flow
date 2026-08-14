@@ -72,35 +72,126 @@ for st in STAGES:
     local = (proj / f"{st}.html").read_text(encoding="utf-8")
     art = (proj / f"{st}-review.artifact.html").read_text(encoding="utf-8")
     check(True, f"{st}:產出成功")
-    check(local.count('<div class="cell">') == 5,
-          f"{st}:T1 動線頂區五格", f"實際 {local.count('<div class=chr(34)cell')} 格")
+    check(len(re.findall(r'<a class="cell"', local)) == 5,
+          f"{st}:T1 動線頂區五格", f"實際 {local.count(chr(60) + chr(97) + chr(32) + chr(99))} 個")
     check(local.count('class="s-card') > 0 and 'id="done"' in local,
           "  T2 待審項目逐條可勾 + 進度計數")
-    check('<details class="doc">' in local, "  T3 背景資料收進 details")
+    check('<details class="doc"' in local, "  T3 背景資料收進 details")
+    check(local.count('<div class="doc-in"></div>') == 0,
+          "  T3 背景資料不得是空殼", "有 details 但內容為空")
+    hrefs = re.findall(r'class="cell" href="#([^"]+)"', local)
+    ids = set(re.findall(r'id="([^"]+)"', local))
+    check(len(hrefs) == 5, f"{st}:T7 五格都是可點錨點", f"實際 {len(hrefs)} 個 href")
+    check(bool(hrefs) and all(h in ids for h in hrefs),
+          f"{st}:T7 每個錨點都有對應目標",
+          f"落空:{[h for h in hrefs if h not in ids]}")
     check(bool(SHELL.search(local)) and not SHELL.search(art),
           "  T4 兩種殼:本機版完整文件、artifact 片段無外殼",
           "片段含 doctype/html/head/body" if SHELL.search(art) else "本機版缺外殼")
 
+print("-- T8 五格內容對齊 README §6 規格 --")
+# 規格正本:README §6〈審查動線頂區〉的三列表。格數對了但內容答非所問 = 沒做到
+# (2026-08-15 獨立審查 H5:三站的格子內容當時與同一份 diff 新增的規格全不符)。
+EXPECT_KEYS = {
+    "2-decision": {"判定", "Owner Calls", "方案", "駁回理由", "狀態"},
+    "4-spec": {"狀態", "待審 S", "lane / Risk", "DD 進度", "Demo verdict"},
+    "7-review": {"判定", "出貨", "爭點", "風險", "待審項目"},
+}
+for st in STAGES:
+    txt = (proj / f"{st}.html").read_text(encoding="utf-8")
+    keys = set(re.findall(r'class="cell"[^>]*><span class="k">([^<]+)</span>', txt))
+    check(keys == EXPECT_KEYS[st], f"{st}:五格標籤與規格一致",
+          f"多 {sorted(keys - EXPECT_KEYS[st])} / 少 {sorted(EXPECT_KEYS[st] - keys)}")
+
+print("-- H2 負向:背景資料「內容零刪減」要真的被驗 --")
+# fixture 的每個非卡片章節都埋了 CANARY-n;渲染函式若被改成 return "",這裡必紅。
+shutil.copytree(ROOT / "scripts/fixtures/gate-twin/zero-deletion", TMP / "zd")
+r = run(TMP / "zd", "demo", "4-spec")
+check(r.returncode == 0, "零刪減 fixture 產得出來")
+if r.returncode == 0:
+    zt = (TMP / "zd/docs/dev/demo/4-spec.html").read_text(encoding="utf-8")
+    missing = [f"CANARY-{i}" for i in range(1, 6) if f"CANARY-{i}" not in zt]
+    check(not missing, "背景資料內容零刪減(5 個 canary 全在)", f"不見了:{missing}")
+    check(zt.count('class="s-card') == 1,
+          "程式碼區塊裡的假標題不得產生幻影卡", f"卡數 {zt.count(chr(34))}")
+    check("S-9.1" not in zt.split("背景資料")[0], "幻影卡 S-9.1 不在待審區")
+
 print("-- T6 置頂節:判定與其前提不得被摺疊 --")
 # 2026-08-15 dogfood 抓到的真 bug:用本工具產自己的 7-review 時,「限制聲明」被收進
 # 背景資料、`## Verdict` 整節消失(被一條過度粗暴的排除條件誤殺)——最該先讀的三樣全不見。
-loc7 = (proj / "7-review.html").read_text(encoding="utf-8")
+pin = TMP / "pin/docs/dev/demo"
+pin.mkdir(parents=True)
+(pin / "7-review.md").write_text("""---
+stage: 7-review
+verdict: PRE-REVIEW
+---
+
+# 7. 驗證
+
+## Coverage Matrix
+
+| 條款 | 證據 |
+|---|---|
+| C1 | 見某處 |
+
+## Verdict
+
+判定寫在這裡,不得被摺疊。
+
+## Known Limits
+
+- K-1 這條限界不得被摺疊
+""", encoding="utf-8")
+(pin / "2-decision.md").write_text("""---
+stage: 2-decision
+status: draft
+---
+
+# 2. 收斂
+
+## Approaches Considered
+
+| 方案 | 摘要 |
+|---|---|
+| A | 做法一 |
+
+## Decision
+
+採 A —— G1 的判定,不得被摺疊。
+
+## Rejected Alternatives
+
+- B:理由
+""", encoding="utf-8")
+r7 = run(TMP / "pin", "demo", "7-review")
+r2 = run(TMP / "pin", "demo", "2-decision")
+check(r7.returncode == 0 and r2.returncode == 0, "置頂節材料兩站都產得出來")
+loc7 = (pin / "7-review.html").read_text(encoding="utf-8")
+loc2 = (pin / "2-decision.html").read_text(encoding="utf-8")
 
 
-def visible(text, key):
-    """key 出現的位置是不是在 <details> 外面(= 打開頁面直接看得到)。"""
-    i = text.find(key)
-    if i < 0:
+def pinned_has(text, section_title):
+    """該章節是不是被渲染成置頂節(而不是摺進背景資料)。
+
+    ⚠️ 不要用「字串在 details 外面就算看得到」來判斷 —— 動線頂區的註解文字
+    也含「Known Limits」「採 A」這些字,會讓斷言恆真(2026-08-15 重跑破壞實驗
+    時實測:拿掉 PINNED_PAT 的 Decision,舊寫法照樣全綠)。改成直接查置頂節的 id。
+    """
+    sid = "sec-" + re.sub(r"[^0-9a-zA-Z\u4e00-\u9fff]+", "-", section_title).strip("-")[:48]
+    if f'id="{sid}"' not in text:
         return None
-    return text.rfind('<details class="doc">', 0, i) <= text.rfind("</details>", 0, i)
+    return f'<section class="pinned" id="{sid}"' in text
 
 
-check(loc7.count('<section class="pinned">') >= 1, "7-review:有置頂節")
+check(loc7.count('<section class="pinned"') >= 1, "7-review:有置頂節")
 for key in ("Verdict", "Known Limits"):
-    v = visible(loc7, key)
+    v = pinned_has(loc7, key)
     check(v is True, f"7-review:「{key}」直接看得到",
           "整節不見了" if v is None else "被摺疊進背景資料")
-m = re.search(r'<div class="cell"><span class="k">判定</span><span class="v">(.*?)</span>', loc7)
+v2 = pinned_has(loc2, "Decision")
+check(v2 is True, "2-decision:G1 的判定(## Decision)直接看得到",
+      "整節不見了" if v2 is None else "被摺疊進背景資料")
+m = re.search(r'<span class="k">判定</span><span class="v">(.*?)</span>', loc7)
 check(bool(m) and "|" not in (m.group(1) if m else "|"),
       "7-review:動線「判定」格取到 verdict 值,不是表格分隔線",
       f"實際「{m.group(1) if m else '(無)'}」")
@@ -113,7 +204,7 @@ check(r.returncode == 0, "缺觀測欄的 spec 仍產得出來(要讓人看見�
 if r.returncode == 0:
     t = (TMP / "fx/docs/dev/demo/4-spec.html").read_text(encoding="utf-8")
     check(t.count('class="s-card bad"') == 1, "缺「觀測」欄的那條 S 渲染成紅底",
-          f"紅底卡 {t.count('class=chr(34)s-card bad')} 張,應為 1")
+          f"紅底卡 {t.count(chr(115) + chr(45) + chr(99) + chr(97) + chr(114) + chr(100) + chr(32) + chr(98) + chr(97) + chr(100))} 張,應為 1")
     check("缺觀測欄" in t, "動線頂區點出缺幾條")
 
 print("-- T5 負向:解析不到任何待審項目要 exit 1,不產空殼 --")

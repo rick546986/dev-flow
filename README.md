@@ -418,11 +418,16 @@ twin 不只是給人查的參考檔,gate 站的 twin 是給人**審**的。這�
 3. **背景資料摺疊**:不是本次要審的東西(既有脈絡、附錄、骨架、預算表)一律收進
    `<details>`,預設收合、**內容零刪減**。摺疊是為了讓要審的浮出來,不是為了少寫。
 
-| 站 | 五格內容 |
+| 站 | 五格內容(標籤逐字釘死,由 `check-gate-twin.sh` 驗) |
 |---|---|
-| **2-decision(G1)** | 判定(選了哪個方案)/ Owner Calls 待裁決幾條 / 方案數與被駁回的理由條數 / 影響面(動到哪幾個模組)/ 抽驗:隨機一條 Rejected 的理由 |
-| **4-spec(G2)** | 狀態(status)/ Gate(G2 機械關卡過了沒)/ lane + Risk / Drafting Decisions 進度 `x/y` / Demo verdict |
-| **7-review(G3)** | 判定(verdict + 第 N 輪)/ 出貨(Exit Checklist `x/8`,點名哪幾項要 owner 親自動)/ 爭點(「附錄:本輪特有」幾條分歧、幾條要 owner 裁)/ 風險(Known Limits 條數 + 未處置的 🟡 幾條)/ 抽驗(隨機一列 `檔:行`,點了直接跳過去) |
+| **2-decision(G1)** | 判定(`## Decision` 首句)/ Owner Calls(已裁決 `x/y`)/ 方案(幾項待審)/ 駁回理由(幾條)/ 狀態(frontmatter) |
+| **4-spec(G2)** | 狀態(frontmatter)/ 待審 S(幾條 + **幾條缺觀測欄**)/ lane · Risk / DD 進度 `x/y` / Demo verdict(承接 3-prototype) |
+| **7-review(G3)** | 判定(frontmatter `verdict:`)/ 出貨(Exit Checklist `x/y`)/ 爭點(「附錄:本輪特有」幾條)/ 風險(Known Limits 幾條)/ 待審項目(幾條) |
+
+> 2026-08-15 修正:此表初版寫了三格**文件裡根本沒有那筆資料**的東西
+>(2-decision 的「影響面(動到哪幾個模組)」、4-spec 的「Gate 過了沒」、7-review 的
+> 「第 N 輪」)—— 規格自帶不可滿足,產生器只能給別的值,於是規格與產出物從第一天就對不上
+>(獨立審查 H5)。現在表內每一格都對應 md 裡真的抓得到的欄位,**標籤逐字被守衛比對**。
 
 **起因**(兩次,同一句話):order-intake 的 7-review 長到 95k 字,owner 問
 「這麼雜要怎麼審、從哪開始」→ 2026-08-13 補了 7-review 的動線頂區。

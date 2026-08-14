@@ -2,7 +2,7 @@
 feature: b8-gate-twin-review-ui
 stage: 7-review
 status: draft
-verdict: PRE-REVIEW
+verdict: REQUEST_CHANGES
 owner: rick
 updated: 2026-08-15
 ---
@@ -13,8 +13,8 @@ updated: 2026-08-15
 
 | | |
 |---|---|
-| 審查者 | **= 實作者本人**(這次的實作與這份審查是同一個 session 產出的) |
-| verdict | **`PRE-REVIEW`** —— 不是 `PASS`、不是 `REQUEST_CHANGES`。這份是**交接文件**,不是關卡判定 |
+| 審查者 | 初版 = 實作者本人;**2026-08-15 已補一輪獨立審查**(fresh-context、不同 session、先自建判斷後才准讀本檔)|
+| verdict | **`REQUEST_CHANGES`** —— 獨立審查判定。**15 條 finding(5 HIGH / 5 MED / 5 nit)全部已修,待複審**;修法逐條見附錄 A4 |
 | 更嚴重的前提 | **這次改動根本沒有走 dev-flow 的流程** —— 沒有 1-discussion、2-decision、4-spec、5-tasks、6-implementation-notes,沒過 G1/G2,第 6 站的執行守衛沒武裝。本檔是**事後補的**,補的目的是讓 owner 至少能審到「做了什麼、憑什麼說它對」 |
 
 **哪些結論可信、哪些要打折**:
@@ -133,10 +133,12 @@ _templates/4-spec.md ────┘          │                               
 | 負向案 | 有 | 5 項 | check-gate-twin 輸出 |
 | 回歸 | 既有全綠 | 297/297、6/6 byte-identical | 同上 |
 | 🔴 未處置 | 0 | 0 | — |
-| **獨立審查** | **必須 ≠ 實作者** | **❌ 沒有** | 限制聲明節 |
+| **獨立審查** | **必須 ≠ 實作者** | **✅ 已做**(2026-08-15)| 附錄 A4 |
+| **獨立審查的 finding 清空** | 全數處置 | 15/15 已修,**未複審** | 附錄 A4 |
 
-**判定:`PRE-REVIEW`。** 機械面全綠,但最後一列不成立 —— 本輪沒有獨立審查者,
-所以**不得宣告 G3 PASS**。
+**判定:`REQUEST_CHANGES`(獨立審查給的)。** 15 條全部修完並補進守衛
+(25 → **43 項**),但**修完之後沒有再被獨立看過一次**,所以仍不得宣告 G3 PASS。
+下一步只有一個:把同一份材料 + 附錄 A4 丟給獨立審查者複審。
 
 ## Known Limits
 
@@ -146,6 +148,7 @@ _templates/4-spec.md ────┘          │                               
 | K-2 | 審查者 = 實作者 | 🟡 | 盲點類發現(「有沒有想漏」)不可信,需獨立 reviewer |
 | K-3 | 5-tasks「執行板」未納入 | ⚪ | B-8 附錄提出的第三種形狀本輪沒做;`notes/patches/gate-twin-ui-prototype/build_tasks.py` 仍是唯一實作 |
 | K-4 | 2-decision / 7-review 的解析較粗 | ⚪ | 這兩站用「表格 → 每列一張卡」的通用解析,不像 4-spec 有專屬欄位(GIVEN/WHEN/THEN/觀測)。採用專案若把待審內容寫在非表格處,會被收進背景資料而不是變成卡片 |
+| K-6 | 母版範例 `example/contract-expiry-reminder/7-review.md` **不合模板** | ⚪ | 缺 `verdict:` frontmatter、缺 `## Known Limits` 節(模板兩者都有)。後果:任何以它為材料的斷言都是空的(獨立審查 M7)。本輪的守衛已改用自造材料繞開,但**範例本身沒修**——屬 diff 外,列為下一輪 |
 | K-5 | 產出物美觀度未經真人驗收 | ⚪ | 機械驗了結構(五格/卡片/摺疊/兩種殼),但「這頁好不好審」只有人打得出分數 —— **這正是本檔要 owner 做的事** |
 
 ## Exit Checklist(全勾才算 shipped)
@@ -157,7 +160,9 @@ _templates/4-spec.md ────┘          │                               
 - [x] 散發副本一致(五份)
 - [x] 既有測試全綠(回歸)
 - [x] HISTORY 追加紀錄
-- [ ] **獨立審查(≠ 實作者)** ← owner 親自動或派 fresh reviewer
+- [x] **獨立審查(≠ 實作者)** ← 2026-08-15 已做,判定 REQUEST_CHANGES
+- [x] 15 條 finding 全數修完並補守衛(25 → 43 項)
+- [ ] **複審**(修完之後要再被獨立看一次才能 PASS)
 - [ ] **owner 實際打開產出的 html,確認「好不好審」** ← 只有你能做
 - [ ] push + tag + release(owner 自己 push main)
 
@@ -201,3 +206,37 @@ owner 說「可以繼續 B-8」時,我理解成「開始實作」而不是「開
 順帶補了一個能力:背景資料與置頂節原本用 `<pre>` 顯示原始 md,表格擠成一團。
 現在有極簡的 md→html(表格/清單/程式碼/段落),**不依賴外部套件**——
 這支工具會被散發到採用專案,多一個相依就多一個「在別人機器上跑不起來」的理由。
+
+### A4　獨立審查結果與逐條修法(2026-08-15)
+
+**verdict: REQUEST_CHANGES**。審查者用 fresh context、先自建判斷才准讀本檔,並**實際做了
+破壞實驗**(把產生器改壞看守衛會不會變紅)。這是本輪最有價值的一次驗證:
+**它找到的 5 條 HIGH,沒有一條是機械檢查當時抓得到的。**
+
+| id | 級 | 缺陷一句 | 修法 |
+|---|---|---|---|
+| H1 | HIGH | 規格寫「每格必須可點跳轉」,實作**一個 `<a href="#` 都沒有**;而且 2-decision/7-review 的區塊連 `id=` 都沒有,補了 href 也無處可跳 | 五格改成 `<a class="cell" href="#…">`;置頂節/背景節/卡片區全部給穩定 id;守衛新增 T7(五格都要有錨點 + 每個錨點都要有對應目標) |
+| H2 | HIGH | **守衛假綠**:T3 只斷言 `<details>` 字串在,不驗「內容零刪減」。把 `md_block()` 改成 `return ""`(背景資料全刪光)照樣全過 25 項 | 新增 fixture `zero-deletion/`,每個非卡片章節埋 `CANARY-n`,守衛檢查全部出現;另加「details 內容不得為空」。**重跑該破壞實驗,現在 4 項失敗** |
+| H3 | HIGH | `PINNED_PAT` 沒有 `Decision` → **G1 的判定被摺進背景資料**,與規則自己寫的「藏起來等於沒審」矛盾。同一種 bug 只修了一站 | 加 `^Decision\b`(不誤中 `Drafting Decisions`/`Split Decisions`);守衛 T6 改成三站都測 |
+| H4 | HIGH | `sections()` 不排除程式碼區塊 → ```` ``` ```` 裡的 `### R-9` 被當真標題,產生幻影卡污染進度分母;4-spec 那條「body 含 R/S 就跳過」再把整節**靜默刪除** | 新增 `mask_fenced()`:掃描用等長空白遮蔽版、內容取原文(位移不變、零刪減);fixture 內含此案 |
+| H5 | HIGH | 五格**內容**與同一份 diff 新增的 README §6 規格三站皆不符 | 規格與實作互相對齊:**規格初版寫了三格文件裡根本沒有那筆資料的東西**(影響面/Gate 過了沒/第 N 輪)→ 改成 md 裡真的抓得到的欄位;守衛新增 T8 逐字比對五格標籤 |
+| M6 | MED | `_find()` 用 `(\S+)` 取值,遇括號註記整串吃進去(`'full(Risk: · high(判準:公開'`) | 取到第一個分隔符為止並清理 |
+| M7 | MED | 兩條 T6 斷言是空的:母版範例 7-review **沒有** `verdict:`、**沒有** `## Known Limits` | 守衛改用自造材料;**範例本身沒修**,列為 K-6 |
+| M8 | MED | DD 進度只認表格列,但母版模板的 Drafting Decisions 是 bullet 清單無編號 → 永遠 `—`,而規格要求 `x/y` | 兩種格式都認 |
+| M9 | MED | `.pinned` 用了 `var(--line)`/`var(--acc)`,這兩個 token **一個都沒定義** → 置頂判定區無外框、表格無格線 | 改成實際存在的 `--rule`/`--accent`,並補 `background` |
+| M10 | MED | 進度條 markup 從原型退化(缺 `.progress-in`/`.count`/`.btn`),CSS 仍照原型寫 → 進度條無高度、按鈕無樣式 | 補齊 markup |
+| n1–n5 | nit | 副標吐字面 `**`;判定格硬截斷;守衛失敗訊息裡 `chr(34)` 是字面字串;`DEVFLOW_EXPECT_ITEMS` 打錯靜默忽略;表格欄數多於表頭會截斷 | 全數修 |
+
+**守衛 25 → 43 項。** 破壞實驗複驗(每次改壞一處、跑完即還原):
+
+```
+md_block → return ""      → ❌ 4 項失敗(canary 全不見)
+PINNED_PAT 拿掉 Decision  → ❌ 1 項失敗(G1 判定被摺疊)
+五格拿掉 href             → ❌ 6 項失敗(T1 + T7)
+還原後                     → ✅ 全過(43 項)
+```
+
+⚠️ 修守衛的過程本身又抓到一個**同類的假綠**:原本用「字串出現在 `<details>` 外面就算看得到」
+判斷置頂,但動線頂區的註解文字也含「Known Limits」「採 A」這些字,斷言恆真 ——
+拿掉 `Decision` 的破壞實驗第一次跑仍然全綠。改成直接查置頂節的 `id` 才真的守得住。
+**教訓:斷言要釘在結構(id/class)上,不要釘在會出現在多處的文字上。**

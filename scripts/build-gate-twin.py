@@ -41,7 +41,11 @@ STAGES = ("2-decision", "4-spec", "7-review")
 # 這些節**永遠不摺疊**:它們是判定本身或判定的前提,藏起來等於沒審。
 # (2026-08-15 dogfood 抓到:用本工具產自己的 7-review 時,「限制聲明」與 verdict
 #  被收進背景資料、`## Verdict` 整節消失 —— 最該先讀的三樣全不見。)
-PINNED_PAT = re.compile(r"限制聲明|Verdict|判定|Known Limits|已知限界|Reviewer 閱讀動線")
+PINNED_PAT = re.compile(
+    r"限制聲明|^Decision\b|Verdict|判定|Known Limits|已知限界|Reviewer 閱讀動線")
+# `^Decision\b` 只命中 G1 的判定節,不會誤中 `Drafting Decisions` / `Split Decisions`
+#(2026-08-15 獨立審查 H3:少了這條,G1 的判定被摺進背景資料 —— 與本規則自己
+# 寫的「藏起來等於沒審」矛盾,而且是 dogfood 修過的同一種 bug 只修了一站。)
 
 INLINE_MD = re.compile(r"`([^`]+)`|\*\*([^*]+)\*\*")
 H_ANY = re.compile(r"^(#{2,6})\s+(.*?)\s*$", re.M)
@@ -70,13 +74,35 @@ def inline(text):
     return "".join(out)
 
 
+def mask_fenced(md):
+    """把 ``` 圍起來的區塊換成等長空白,讓標題/欄位 regex 掃不到裡面的假標題。
+
+    位移完全保留(等長替換),所以所有 regex 的 index 仍可直接切原文。
+    起因(2026-08-15 獨立審查 H4):`## Test Skeletons` 裡的程式碼範例寫了
+    `### R-9`/`#### S-9.1`,結果被當成真標題 —— 多出一張幻影卡污染進度分母,
+    而且整節被「body 含 R/S 就跳過」的規則靜默刪掉,C3「內容零刪減」直接破功。
+    """
+    out, fenced = [], False
+    for ln in md.splitlines(keepends=True):
+        if ln.lstrip().startswith("```"):
+            fenced = not fenced
+            out.append(" " * (len(ln) - 1) + "\n" if ln.endswith("\n") else " " * len(ln))
+            continue
+        if fenced:
+            out.append(" " * (len(ln) - 1) + "\n" if ln.endswith("\n") else " " * len(ln))
+        else:
+            out.append(ln)
+    return "".join(out)
+
+
 def sections(md):
     """依標題切段,回 [(level, title, body), ...]。
 
     body 是**含子標題**的整段(延伸到下一個同級或更高級標題為止)——
     `### R-1` 底下的 `#### S-1` 必須留在 R 的 body 裡,否則一條 S 都解析不到。
+    掃描用遮蔽版(程式碼區塊內的假標題不算),切出來的 body 用原文(零刪減)。
     """
-    heads = list(H_ANY.finditer(md))
+    heads = list(H_ANY.finditer(mask_fenced(md)))
     out = []
     for i, m in enumerate(heads):
         lvl = len(m.group(1))
@@ -198,10 +224,12 @@ def parse_spec(_md, secs):
             continue
         rid, rname = rm.group(1), rm.group(2)
         used.add(title)
-        chunks = S_HEAD.split(body)
+        chunks = S_HEAD.split(mask_fenced(body))
+        raw_chunks = S_HEAD.split(body)  # 內容取原文(零刪減),切點取遮蔽版
         inner = []
         for i in range(1, len(chunks), 3):
-            sid, stitle, sbody = chunks[i], chunks[i + 1].strip(), chunks[i + 2]
+            sid, stitle = chunks[i], chunks[i + 1].strip()
+            sbody = raw_chunks[i + 2] if i + 2 < len(raw_chunks) else chunks[i + 2]
             f = {}
             for key, pat in FIELD.items():
                 fm = pat.search(sbody)
@@ -236,7 +264,8 @@ def parse_decision(_md, secs):
                 item = cells[0] if cells else ""
                 if not item or item.startswith("<"):
                     continue
-                pairs = list(zip(header[1:], cells[1:]))
+                keys = header[1:] + [f"欄{i}" for i in range(len(header), len(cells))]
+                pairs = list(zip(keys, cells[1:]))
                 miss = None
                 if re.match(r"^OC-\d+", item):
                     st = next((v for k, v in pairs if "狀態" in k), "")
@@ -245,7 +274,8 @@ def parse_decision(_md, secs):
                 inner.append(card(item, pairs[0][1] if pairs else "", "", pairs[1:], missing=miss))
                 n += 1
             if inner:
-                cards.append(f'<section class="r-block"><div class="r-head">'
+                cards.append(f'<section class="r-block" id="{anchor_id(title)}">'
+                             f'<div class="r-head">'
                              f'<span class="r-name">{inline(title)}</span></div>'
                              f'{"".join(inner)}</section>')
     return "".join(cards), n, used
@@ -265,7 +295,8 @@ def parse_review(_md, secs):
                 item = cells[0] if cells else ""
                 if not item or item.startswith("<"):
                     continue
-                pairs = list(zip(header[1:], cells[1:]))
+                keys = header[1:] + [f"欄{i}" for i in range(len(header), len(cells))]
+                pairs = list(zip(keys, cells[1:]))
                 inner.append(card(item, pairs[0][1] if pairs else "", "", pairs[1:]))
                 n += 1
         else:
@@ -276,7 +307,8 @@ def parse_review(_md, secs):
                     inner.append(card(f"EC-{i}", text, "已勾" if mark.lower() == "x" else "", []))
                     n += 1
         if inner:
-            cards.append(f'<section class="r-block"><div class="r-head">'
+            cards.append(f'<section class="r-block" id="{anchor_id(title)}">'
+                         f'<div class="r-head">'
                          f'<span class="r-name">{inline(title)}</span></div>'
                          f'{"".join(inner)}</section>')
     return "".join(cards), n, used
@@ -288,43 +320,91 @@ PARSERS = {"4-spec": parse_spec, "2-decision": parse_decision, "7-review": parse
 # ── 動線頂區五格 ───────────────────────────────────────────────────────────────
 
 def _find(md, pattern, default="—"):
+    r"""抓一個欄位值。**只取到第一個分隔符為止** —— md 的欄位常帶括號註記
+    (`lane: full(判準:…)`)、行尾註解(`verdict:  # PRE-REVIEW | …`),
+    用 `\S+` 會把整串雜訊吃進動線格(2026-08-15 獨立審查 M6)。"""
     m = re.search(pattern, md, re.M)
-    return m.group(1).strip() if m else default
+    if not m:
+        return default
+    v = re.split(r"[()（）#|]|——|\s{2,}", m.group(1).strip())[0].strip(" `*,、。")
+    return v or default
 
 
-def dash_cells(stage, md, n_items, n_bad):
-    """五格內容依 stage 不同(README §6 的表)。格數固定五格。"""
+def anchor_id(title):
+    """章節標題 → 穩定的 html id(給動線格跳轉用)。"""
+    return "sec-" + re.sub(r"[^0-9a-zA-Z\u4e00-\u9fff]+", "-", title).strip("-")[:48]
+
+
+def _headline(text, limit=30):
+    """一段內文 → 一句摘要:去 md 粗體/清單記號,取第一句,超長截斷。"""
+    for ln in text.strip().splitlines():
+        ln = ln.strip()
+        if not ln or ln.startswith(("|", "#", ">", "<!--")):
+            continue
+        ln = re.sub(r"[*`]", "", re.sub(r"^\s*[-*]\s+", "", ln))
+        ln = re.split(r"[,。;;]", ln)[0].strip()
+        return (ln[:limit] + "…") if len(ln) > limit else (ln or "—")
+    return "—"
+
+
+def dash_cells(stage, md, n_items, n_bad, secs):
+    """五格內容依 stage 不同(README §6 的表)。**格數固定五格,每格都要有跳轉目標**。
+
+    回 [(標籤, 值, 註, 錨點), ...]。錨點是章節標題或固定 id;main 會檢查目標
+    存不存在,不存在就退回 `#cards`(待審區)—— 規格要求「每格一句話 + 一個跳轉」,
+    沒有跳轉就不算做到(2026-08-15 獨立審查 H1)。
+    """
+    def sec_anchor(*names):
+        for _l, title, _b in secs:
+            if any(title.startswith(n) for n in names):
+                return "#" + anchor_id(title)
+        return "#cards"
+
     if stage == "4-spec":
-        dd_total = len(re.findall(r"^\|\s*DD-\d+", md, re.M))
-        dd_open = len(re.findall(r"^\|\s*DD-\d+.*待裁決", md, re.M))
+        dd_sec = _section_text(md, "Drafting Decisions")
+        # DD 可能是表格(| DD-1 |)也可能是 bullet 清單(母版模板就是清單、無編號)
+        dd_rows = re.findall(r"^\|\s*DD-\d+", dd_sec, re.M) or \
+            re.findall(r"^\s*[-*]\s+\S", dd_sec, re.M)
+        dd_open = len(re.findall(r"待裁決", dd_sec))
         return [
-            ("狀態", _find(md, r"^status:\s*(\S+)"), "frontmatter"),
-            ("待審 S", f"{n_items} 條", f"{n_bad} 條缺觀測欄" if n_bad else "欄位齊全"),
+            ("狀態", _find(md, r"^status:\s*(\S+)"), "frontmatter", "#top"),
+            ("待審 S", f"{n_items} 條",
+             f"{n_bad} 條缺觀測欄" if n_bad else "欄位齊全", "#cards"),
             ("lane / Risk", f'{_find(md, r"^\s*-?\s*lane:\s*(\S+)")} · '
-                            f'{_find(md, r"^\s*-\s*Risk:\s*(\S+)")}', "Verification Profile"),
-            ("DD 進度", f"{dd_total - dd_open}/{dd_total}" if dd_total else "—", "全裁決才可送審"),
-            ("Demo verdict", _find(md, r"Human verdict:\s*(\S+)"), "來自 3-prototype"),
+                            f'{_find(md, r"^\s*-\s*Risk:\s*(\S+)")}',
+             "Verification Profile", sec_anchor("Verification Profile")),
+            ("DD 進度", f"{len(dd_rows) - dd_open}/{len(dd_rows)}" if dd_rows else "—",
+             "全裁決才可送審", sec_anchor("Drafting Decisions")),
+            ("Demo verdict", _find(md, r"Human verdict:\s*(\S+)"),
+             "來自 3-prototype", sec_anchor("Verification Profile", "Acceptance")),
         ]
     if stage == "2-decision":
-        oc_total = len(re.findall(r"^\|\s*OC-\d+", md, re.M))
-        oc_open = len(re.findall(r"^\|\s*OC-\d+.*待", md, re.M))
-        rej = len(re.findall(r"^\s*[-*]\s+", _section_text(md, "Rejected Alternatives"), re.M))
+        oc_sec = _section_text(md, "Owner Calls")
+        oc_total = len(re.findall(r"^\|\s*OC-\d+", oc_sec, re.M))
+        oc_open = len(re.findall(r"^\|\s*OC-\d+.*待", oc_sec, re.M))
+        rej_sec = _section_text(md, "Rejected Alternatives")
+        rej = len(re.findall(r"^\s*[-*]\s+\S", rej_sec, re.M))
         return [
-            ("判定", _find(md, r"^##\s*Decision\s*\n+\s*([^|#\n]{2,40})", "—"), "選了哪個方案"),
-            ("Owner Calls", f"{oc_total - oc_open}/{oc_total}" if oc_total else "—", "待裁決幾條"),
-            ("方案", f"{n_items} 項待審", f"{rej} 條駁回理由"),
-            ("狀態", _find(md, r"^status:\s*(\S+)"), "frontmatter"),
-            ("抽驗", "隨機一條 Rejected", "點下方卡片核對"),
+            ("判定", _headline(_section_text(md, "Decision")), "選了哪個方案",
+             sec_anchor("Decision")),
+            ("Owner Calls", f"{oc_total - oc_open}/{oc_total}" if oc_total else "—",
+             "待裁決幾條", "#cards"),
+            ("方案", f"{n_items} 項待審", f"{rej} 條駁回理由", "#cards"),
+            ("駁回理由", f"{rej} 條", "Rejected Alternatives", sec_anchor("Rejected")),
+            ("狀態", _find(md, r"^status:\s*(\S+)"), "frontmatter", "#top"),
         ]
-    known = len(re.findall(r"^\s*[-*|]\s*\S", _section_text(md, "Known Limits"), re.M))
+    known_sec = _section_text(md, "Known Limits")
+    known = len(re.findall(r"^\s*[-*|]\s*\S", known_sec, re.M))
     ec = re.findall(r"^\s*-\s*\[( |x|X)\]", _section_text(md, "Exit Checklist"), re.M)
+    apx = _section_text(md, "附錄")
+    disputes = len(re.findall(r"^#{3,6}\s*A\d", apx, re.M))
     return [
-        ("判定", _find(md, r"^verdict:\s*(\S+)"), "frontmatter verdict"),
+        ("判定", _find(md, r"^verdict:\s*(\S+)"), "frontmatter verdict", sec_anchor("Verdict")),
         ("出貨", f"{sum(1 for m in ec if m.lower() == 'x')}/{len(ec)}" if ec else "—",
-         "Exit Checklist"),
-        ("待審項目", f"{n_items} 條", "現象證據 + 出貨清單"),
-        ("風險", f"{known} 條", "Known Limits"),
-        ("抽驗", "隨機一列 檔:行", "對得上才信剩下的"),
+         "Exit Checklist", sec_anchor("Exit Checklist")),
+        ("爭點", f"{disputes} 條", "附錄:本輪特有", sec_anchor("附錄")),
+        ("風險", f"{known} 條", "Known Limits", sec_anchor("Known Limits")),
+        ("待審項目", f"{n_items} 條", "現象證據 + 出貨清單", "#cards"),
     ]
 
 
@@ -393,7 +473,11 @@ def main(argv):
               f"(S 標題要 `#### S-<id>`;表格要有表頭列)", file=sys.stderr)
         return 1
     expect = os.environ.get("DEVFLOW_EXPECT_ITEMS", "").strip()
-    if expect.isdigit() and n_items != int(expect):
+    if expect and not expect.isdigit():
+        print(f"拒絕:DEVFLOW_EXPECT_ITEMS 需為整數,得「{expect}」"
+              f"(打錯而被靜默忽略 = 以為釘死了其實沒有)", file=sys.stderr)
+        return 2
+    if expect and n_items != int(expect):
         print(f"ERROR: 解析到 {n_items} 條,預期 {expect}(DEVFLOW_EXPECT_ITEMS)", file=sys.stderr)
         return 1
     n_bad = cards.count('class="s-card bad"')
@@ -404,7 +488,8 @@ def main(argv):
     pinned = []
     for lvl, title, body in secs:
         if lvl <= 2 and PINNED_PAT.search(title) and body.strip():
-            pinned.append(f'<section class="pinned"><h2>{inline(title)}</h2>'
+            pinned.append(f'<section class="pinned" id="{anchor_id(title)}">'
+                          f'<h2>{inline(title)}</h2>'
                           f'<div class="doc-in">{md_block(body)}</div></section>')
 
     # 背景資料:沒被做成卡片的章節一律收進 details,內容零刪減。
@@ -416,38 +501,48 @@ def main(argv):
             continue
         if R_HEAD.match("#" * lvl + " " + title):
             continue
-        if stage == "4-spec" and (R_HEAD.search(body) or S_HEAD.search(body)):
+        masked = mask_fenced(body)
+        if stage == "4-spec" and (R_HEAD.search(masked) or S_HEAD.search(masked)):
             continue
         if PINNED_PAT.search(title):
             continue  # 置頂節另外處理,不摺疊
         appendix.append(
-            f'<details class="doc"><summary><span>{inline(title)}</span></summary>'
+            f'<details class="doc" id="{anchor_id(title)}">'
+            f'<summary><span>{inline(title)}</span></summary>'
             f'<div class="doc-in">{md_block(body)}</div></details>')
         skipped.append(title)
     if skipped:
         print(f"NOTE: 以下章節收進背景資料(預設收合、內容零刪減):{skipped}", file=sys.stderr)
 
+    raw_cells = dash_cells(stage, md + "\n" + fm_text, n_items, n_bad, secs)
+    have_ids = {anchor_id(title) for _l, title, _b in secs} | {"cards", "top"}
     cells = "".join(
-        f'<div class="cell"><span class="k">{html.escape(k)}</span>'
-        f'<span class="v">{html.escape(str(v))}</span><span class="n">{html.escape(n)}</span></div>'
-        for k, v, n in dash_cells(stage, md + "\n" + fm_text, n_items, n_bad))
+        f'<a class="cell" href="{a if a.lstrip("#") in have_ids else "#cards"}">'
+        f'<span class="k">{html.escape(k)}</span>'
+        f'<span class="v">{html.escape(str(v))}</span>'
+        f'<span class="n">{html.escape(n)}</span></a>'
+        for k, v, n, a in raw_cells)
 
     title = f"{slug} · {stage}"
-    body_html = f"""<div class="wrap">
+    body_html = f"""<div class="wrap" id="top">
 <header class="masthead">
   <p class="eyebrow">dev-flow · {html.escape(stage)} · 審查介面</p>
   <h1>{html.escape(slug)}</h1>
   <p class="sub">正本是 <code>docs/dev/{html.escape(slug)}/{html.escape(stage)}.md</code>,
-  這頁隨時可重生。**審完頂區五格再決定要不要往下讀。**</p>
+  這頁隨時可重生。<strong>審完頂區五格再決定要不要往下讀。</strong></p>
   <div class="dash">{cells}</div>
 </header>
 {"".join(pinned)}
 <div class="progress">
-  <span>已審 <b id="done">0</b>/{n_items}</span>
-  <span class="bar"><i></i></span>
-  <button id="clear" type="button">清除</button>
+  <div class="progress-in">
+    <span class="count">已審 <b id="done">0</b> / {n_items} 條</span>
+    <span class="bar"><i></i></span>
+    <button class="btn" id="clear" type="button">清除勾選</button>
+  </div>
 </div>
+<div id="cards">
 {cards}
+</div>
 <h2 class="apx-h">背景資料(預設收合,內容零刪減)</h2>
 {"".join(appendix)}
 <footer class="foot">由 <code>scripts/build-gate-twin.py</code> 從 md 正本逐條解析產生,不手抄。</footer>
