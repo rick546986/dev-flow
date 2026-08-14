@@ -69,3 +69,9 @@
 - 長期決策:0001
 - 詳細:docs/dev/_archive/ 內容摘要進本索引後移除;總檢查 16→17 組
 
+## 2026-08-14 · release-v3-2-0 · v3.2.0
+- 做了什麼:發布 v3.2.0:內含 history-index-and-adr 那筆的全部改動,其他機器 /plugin update 後才拿得到新守衛
+- 為什麼:外掛更新判斷是比對版本字串不是比對 commit —— 推上去但版號沒動,其他機器更新會回「無內容」而且不會有任何提示
+- 落在哪:.claude-plugin/plugin.json、hooks/runtime-capabilities.json
+- 詳細:本次為 minor:新增工具/檢查/hook,既有專案 dev-setup upgrade 後仍相容;契約版本維持 2.0.0 未動
+
