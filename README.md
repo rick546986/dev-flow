@@ -72,13 +72,13 @@ dev-flow/
 │     ├ devflow-guard.sh     PreToolUse 讀寫守衛(未武裝時對 Stage 6 文件軟擋一次)
 │     ├ devflow-exec.sh      執行引擎 + doctor 版本握手
 │     ├ gate-consistency.sh  從 README §7 抽 gate token,比對 SKILL/README §3/三模板
-│     ├ selftest.sh          294 案自測
+│     ├ selftest.sh          守衛自測(案數以腳本輸出為準)
 │     └ devflow_obs_vendor/  observability/ 的 vendored 副本(hooks 不能依賴 repo 相對路徑)
 │   skills/ (5)              dev-flow(路由器)/ dev-run(Stage 6 引擎)/ dev-setup(安裝器)
 │                            / dev-release(發版器)/ dev-talk(訪談引導)
 │
 ├── ── 機械檢查(CI 與本機都跑這些)─────────────────────────────
-│   scripts/ (16 + fixtures) 單一入口 devflow-check.sh all,15 組全過 = REPO_REFERENCE_PASS
+│   scripts/ (16 + fixtures) 單一入口 devflow-check.sh all,全過 = REPO_REFERENCE_PASS
 │                            devflow-evidence-gauntlet.sh 是 Stage 7 證據檢查的母版
 │   observability/ (59)      Attempt Ledger 工具(devflow-obs)+ agent_event schema
 │                            └ 讀者:selftest.sh:1539 直接讀它,刪了 p3 段就壞
