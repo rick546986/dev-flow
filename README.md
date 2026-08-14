@@ -2,37 +2,82 @@
 
 > AI 協作的開發流程。
 >
-> 母版:`~/dev/dev-flow/`。新專案採用:把 `_templates/` 複製進專案 `docs/dev/_templates/`,
-> 本 README 複製為 `docs/dev/README.md`,建 `docs/dev/STATUS.md` 與 repo root `CONTEXT.md`。
-> 或直接叫 AI:`/dev-flow 初始化這個專案`。
+> **本 repo 同時是方法論母版與 Claude Code plugin**(v3.0.0 起合併,marketplace 名、
+> plugin 名、repo 名都是 `dev-flow`)。裝法見 [`docs/PLUGIN.md`](docs/PLUGIN.md)。
 >
-> 裝 Claude Code plugin(hooks/skills/CLI)？先看 [`docs/PLUGIN.md`](docs/PLUGIN.md)。
+> 新專案採用:裝好 plugin 後在專案內打 `dev-setup`,它會把 `_templates/`、本 README、
+> `devflow-contract.json` 與 gauntlet 腳本散發進 `docs/dev/`,並建 `STATUS.md` 與
+> repo root `CONTEXT.md`。**不需要手動複製,也不需要本 repo 存在於使用者機器上。**
 
 **這是什麼**:一套讓「討論 → 決策 → 規格 → 實作 → 驗證」全程留痕的文檔管線。每個
 feature 走 7 份文檔、過 3 道 gate(G1 方向核准、G2 契約審查、G3 驗證出貨),AI 負責
 產出、人負責裁決。解決的痛:需求討論完就散、spec 與程式碼漂移、AI 改動無法審計、
 決策半年後沒人記得為什麼。
 
-**怎麼逛這個 repo**:
+**怎麼逛這個 repo**:每個目錄後面標的是「誰在讀它」——那就是它不能被刪的依據。
+想刪任何東西前先跑 `grep -rn "<路徑>" hooks/ skills/ scripts/ _templates/ README.md`,
+零命中才考慮。
 
-- 本 README = 制度正本(7 階段規則、gate 條件、切片與大案規則)——往下讀就是全部規則
-- `_templates/` = 七份階段文檔 + STATUS/CONTEXT/ADR/living-spec 模板
-- `example/contract-expiry-reminder/` = 一個 feature 從討論到驗證走完全程的真實形狀
-- 圖解導覽(線上看):[quickstart](https://rick546986.github.io/dev-flow/guide-quickstart.html)、
-  [dev-flow](https://rick546986.github.io/dev-flow/guide-dev-flow.html)、
-  [dev-talk](https://rick546986.github.io/dev-flow/guide-dev-talk.html)
-  ——repo 內任一 html(含 example 的 twin)都可把路徑接在 `rick546986.github.io/dev-flow/` 後線上檢視
-- `scripts/` = 機械檢查(單一入口 `devflow-check.sh all`;方法論/契約/架構守衛各腳本
-  + `devflow-evidence-gauntlet.sh` 母版)。CI 只跑這支 = REPO_REFERENCE;外部 plugin 的
-  gate-consistency/selftest/doctor = EXTERNAL_RUNTIME,兩層不互相代表
-- `observability/` = Attempt Ledger 工具(devflow-obs)+ `agent_event` schema
-- `tests/parallel-stage6/` = T 級並行的可執行契約(contract_ref + fixtures)
-- `notes/design/` = 各機制設計正本(並行/觀測/gauntlet/real-world/design-boundary)
-- `devflow-contract.json` = 版本握手正本(方法論 ↔ runtime capability)
+```text
+dev-flow/
+│
+├── ── 制度正本(改這裡等於改規則)──────────────────────────────
+│   README.md                本檔。§7 是 G1/G2/G3 條件的唯一正本
+│                            └ 讀者:gate-consistency.sh 每次動態抽 token 比對四處
+│   devflow-contract.json    方法論 ↔ runtime 的版本握手
+│                            └ 讀者:devflow-exec.sh doctor,缺件 fail-closed
+│   _templates/ (14)         七階段模板 + STATUS/CONTEXT/ADR/living-spec/html-shell
+│                            └ 讀者:dev-setup 散發進每個專案;parity 檢查比對 guides
+│   notes/design/ (6)        各機制設計正本(並行/觀測/gauntlet/real-world/boundary)
+│                            └ 讀者:dev-setup SKILL 指 evidence-gauntlet.md 為契約正本
+│   docs/prompts/ (2)        改造 dev-flow 本身的需求正本
+│                            └ 讀者:notes/ 底下 8 處寫「需求正本: docs/prompts/…」
+│
+├── ── Claude Code plugin(裝進使用者機器的部分)────────────────
+│   .claude-plugin/          plugin.json(版本字串=更新判斷依據)+ marketplace.json
+│   hooks/ (23)              守衛與執行引擎
+│     ├ hooks.json           4 條掛載,壞了守衛全靜默失效
+│     ├ devflow-guard.sh     PreToolUse 讀寫守衛(未武裝時對 Stage 6 文件軟擋一次)
+│     ├ devflow-exec.sh      執行引擎 + doctor 版本握手
+│     ├ gate-consistency.sh  從 README §7 抽 gate token,比對 SKILL/README §3/三模板
+│     ├ selftest.sh          294 案自測
+│     └ devflow_obs_vendor/  observability/ 的 vendored 副本(hooks 不能依賴 repo 相對路徑)
+│   skills/ (5)              dev-flow(路由器)/ dev-run(Stage 6 引擎)/ dev-setup(安裝器)
+│                            / dev-release(發版器)/ dev-talk(訪談引導)
+│
+├── ── 機械檢查(CI 與本機都跑這些)─────────────────────────────
+│   scripts/ (16 + fixtures) 單一入口 devflow-check.sh all,15 組全過 = REPO_REFERENCE_PASS
+│                            devflow-evidence-gauntlet.sh 是 Stage 7 證據檢查的母版
+│   observability/ (59)      Attempt Ledger 工具(devflow-obs)+ agent_event schema
+│                            └ 讀者:selftest.sh:1539 直接讀它,刪了 p3 段就壞
+│   tests/parallel-stage6/   T 級並行的可執行契約(contract_ref + fixtures)
+│   .github/workflows/       devflow-ci(REPO_REFERENCE)+ runtime-selftest(EXTERNAL_RUNTIME)
+│                            兩層不互相代表,一邊綠不代表另一邊綠
+│
+├── ── 給人看的 ────────────────────────────────────────────
+│   example/contract-…/ (14) 一個 feature 走完七階段的真實形狀(md + html twin 各 7 份)
+│                            └ 讀者:renderer fixed-point 檢查逐位元組比對那四份 html
+│   guides/ (4)              圖解導覽 html(GitHub Pages 指這裡)
+│   guide-*.html (3, 根目錄) redirect stub → guides/,接住已發出去的 Pages 舊網址
+│   docs/PLUGIN.md           plugin 安裝與更新說明
+│   manifests/ (4)           四軌改造的工單記錄
+│   notes/ (其餘)            稽核、導入回饋、驗證對標
+│
+└── ── 本 repo 自己的改版流程(dogfooding)──────────────────────
+    docs/dev/                本 repo 用自己的流程管自己
+      ├ STATUS.md            Active / Shipped / Backlog 三張表
+      ├ devflow-contract.json + tools/  dev-setup 的散發副本(doctor 在這裡找)
+      └ <slug>/              各次改版的七階段文檔
+```
 
-**採用方式**:最低配是把模板複製進專案、人工照本 README 走流程;搭配 Claude Code 的
-dev-flow / dev-talk plugin 可用 `/dev-talk`、`/dev-flow` 指令自動導引與守衛(plugin
-目前未隨本 repo 發佈)。
+線上看導覽:[quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html)、
+[dev-flow](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html)、
+[dev-talk](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html)。
+repo 內任一 html(含 example 的 twin)都可把路徑接在 `rick546986.github.io/dev-flow/`
+後線上檢視。
+
+**採用方式**:最低配是把模板複製進專案、人工照本 README 走流程;裝 plugin 後可用
+`/dev-talk`、`/dev-flow`、`dev-setup`、`/dev-release` 指令自動導引與守衛。
 
 ## 0. 一張圖
 
