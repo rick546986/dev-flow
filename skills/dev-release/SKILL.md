@@ -62,12 +62,13 @@ bash hooks/devflow-exec.sh doctor
 ```bash
 diff -q devflow-contract.json docs/dev/devflow-contract.json
 diff -q scripts/devflow-evidence-gauntlet.sh docs/dev/tools/devflow-evidence-gauntlet.sh
+diff -q scripts/history-append.sh docs/dev/tools/history-append.sh
 ```
 
 有差異 → 用根目錄正本覆蓋 `docs/dev/` 副本(正本方向永遠是 根目錄 → docs/dev/),
 覆蓋後重跑步驟 1 的 doctor。
 
-完成 = 兩個 diff 都靜默(無輸出)。
+完成 = 三個 diff 都靜默(無輸出)。
 
 ### 3. 升版號(兩處,一起改)
 
@@ -93,18 +94,34 @@ grep -o '"runtime_version": "[^"]*"' hooks/runtime-capabilities.json
 
 完成 = 兩處值相同且等於目標版號。
 
-### 4. 更新 `docs/dev/STATUS.md`
+### 4. 更新 `docs/dev/STATUS.md` 與 `docs/dev/HISTORY.md`
 
-- 本次發版對應的 feature 從 **Active** 移到 **Shipped**,填發版日期與版號。
-- 沒有對應 feature(純修 bug)→ 在 Shipped 表加一列,slug 用 `vX.Y.Z-<一句話>`。
-- Backlog 有項目在本次做掉 → 一併移除並在 Shipped 那列註明。
+**做完的事寫進 HISTORY.md,不留在 STATUS.md** —— 後者只回答「現在誰在做什麼、
+還有什麼沒做」。
 
-完成 = STATUS.md 反映本次發版,沒有留在 Active 的已完成項。
+```bash
+scripts/history-append.sh --slug <代號> --version vX.Y.Z \
+  --what "<可觀測的結果,一句話>" \
+  --why  "<當初的痛點,一句話>" \
+  --where "<改動落在哪些檔/目錄>" \
+  [--adr NNNN] [--detail <release 連結>]
+```
+
+**不要用 Edit/Write 直接改 `HISTORY.md`** —— 多 session 並行時會靜默覆蓋,
+`history-guard` hook 會擋下。純修 bug 沒有對應 feature 時,`--slug` 用問題編號
+(例 `a13-start-ignored-dirty`)。
+
+`STATUS.md` 這邊只要:本次做完的 feature 從 **Active** 移除;**Backlog** 有項目
+在本次做掉 → 一併移除。
+
+完成 = HISTORY.md 多一筆(`bash scripts/check-history-integrity.sh` 綠);
+STATUS.md 的 Active 沒有留下已完成項。
 
 ### 5. Commit
 
 ```bash
-git add .claude-plugin/plugin.json hooks/runtime-capabilities.json docs/dev/STATUS.md
+git add .claude-plugin/plugin.json hooks/runtime-capabilities.json \
+        docs/dev/STATUS.md docs/dev/HISTORY.md
 # 若步驟 2 有覆蓋副本,一併 add docs/dev/
 git commit -m "release: vX.Y.Z — <一句話說明本次改了什麼>"
 ```

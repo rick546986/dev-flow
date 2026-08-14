@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """5-tasks 執行介面產生器
-   輸入：docs/dev/pgs-report-batch-scope/5-tasks.md（唯一正本）
+   輸入：<專案根>/docs/dev/<slug>/5-tasks.md（唯一正本）
    輸出：本機 5-tasks.html（完整文件）+ artifact 片段
    T 由 md 逐條解析，不手抄；Boundaries 摺疊、Verify 獨立標示、DAG 用 inline SVG。
+
+   用法：build_tasks.py <專案根目錄> <slug> [artifact 輸出路徑]
+   或用環境變數：DEVFLOW_PROJECT_ROOT / DEVFLOW_SLUG / DEVFLOW_ARTIFACT_OUT
 """
 import html
+import os
 import pathlib
 import re
 import sys
@@ -14,14 +18,32 @@ import markdown
 
 import devflow_ui
 
-ROOT = pathlib.Path("/Users/asheng/dev/ivf_platform")
-SLUG = "pgs-report-batch-scope"
+_ARGV = sys.argv[1:]
+ROOT = pathlib.Path(
+    _ARGV[0] if len(_ARGV) > 0 else os.environ.get("DEVFLOW_PROJECT_ROOT", ".")
+).expanduser().resolve()
+SLUG = _ARGV[1] if len(_ARGV) > 1 else os.environ.get("DEVFLOW_SLUG", "")
+if not SLUG:
+    sys.exit("用法：build_tasks.py <專案根目錄> <slug> [artifact 輸出路徑]"
+             "（或設 DEVFLOW_PROJECT_ROOT / DEVFLOW_SLUG）")
 SRC = ROOT / "docs/dev" / SLUG / "5-tasks.md"
 OUT_LOCAL = ROOT / "docs/dev" / SLUG / "5-tasks.html"
 OUT_ART = pathlib.Path(
-    "/private/tmp/claude-501/-Users-asheng-dev-ivf-platform/"
-    "dc4f496c-c333-40b6-82ea-4359e36d5916/scratchpad/5-tasks-view.html"
-)
+    _ARGV[2] if len(_ARGV) > 2
+    else os.environ.get(
+        "DEVFLOW_ARTIFACT_OUT",
+        str(ROOT / "docs/dev" / SLUG / "5-tasks-view.artifact.html"),
+    )
+).expanduser()
+
+
+def _expect(name: str):
+    """期望條數：設了才檢查，沒設就只印實際條數（原本寫死 5，換一份任務清單必誤判）。"""
+    raw = os.environ.get(name, "").strip()
+    return int(raw) if raw.isdigit() else None
+
+
+EXPECT_T = _expect("DEVFLOW_EXPECT_T")
 TITLE = "PGS 報告批次歸屬任務板"
 
 FIELDS = ("Covers", "Files", "Verify", "Blocked-by", "Intent", "Boundaries", "Owner")
@@ -161,11 +183,15 @@ def main() -> int:
     secs = split_sections(md)
     by_title = {t: b for t, b in secs}
 
+    # 上面那份章節清單是照原始那份任務清單寫的，換一份章節名一定不同 ——
+    # 改成「自動收進附錄末尾並印出」，既不靜默丟失、也不擋住別的專案。
     known = {k for k, _, _ in APPENDIX} | {"T 依賴 DAG"}
     unmatched = [t for t, _ in secs if not re.match(r"T-\d+ ", t) and t not in known]
+    appendix_order = list(APPENDIX)
     if unmatched:
-        print(f"ERROR: md 有未收錄的章節，會被靜默丟掉：{unmatched}", file=sys.stderr)
-        return 1
+        print(f"NOTE: 以下章節不在預設附錄清單，已自動收進附錄末尾：{unmatched}",
+              file=sys.stderr)
+        appendix_order += [(t, t, "md 內原有章節（自動收錄）") for t in unmatched]
 
     cards, n_t = [], 0
     for title, body in secs:
@@ -181,16 +207,21 @@ def main() -> int:
         cards.append(task_card(m.group(1), m.group(2), f))
         n_t += 1
 
-    if n_t != 5:
-        print(f"ERROR: 解析到 {n_t} 個 T，預期 5", file=sys.stderr)
+    if n_t == 0:
+        print("ERROR: 一個 T 都沒解析到 —— 檢查 5-tasks.md 的 T 標題與欄位格式", file=sys.stderr)
         return 1
+    if EXPECT_T is not None and n_t != EXPECT_T:
+        print(f"ERROR: 解析到 {n_t} 個 T，預期 {EXPECT_T}（DEVFLOW_EXPECT_T）", file=sys.stderr)
+        return 1
+    print(f"NOTE: 解析到 {n_t} 個 T", file=sys.stderr)
 
     appendix = []
-    for key, label, hint in APPENDIX:
+    skipped = []
+    for key, label, hint in appendix_order:
         body = by_title.get(key)
         if body is None:
-            print(f"ERROR: 找不到章節「{key}」", file=sys.stderr)
-            return 1
+            skipped.append(key)
+            continue
         inner = markdown.markdown(
             body, extensions=["tables", "fenced_code", "sane_lists"], output_format="html"
         )
@@ -203,6 +234,9 @@ def main() -> int:
   <div class="doc-in">{inner}</div>
 </details>"""
         )
+
+    if skipped:
+        print(f"NOTE: 這份 md 沒有以下章節，已略過：{skipped}", file=sys.stderr)
 
     body = f"""<div class="wrap">
 <header class="masthead">

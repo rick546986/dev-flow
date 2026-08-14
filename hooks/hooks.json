@@ -13,6 +13,17 @@
         ]
       },
       {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/history-guard.sh",
+            "timeout": 15,
+            "statusMessage": "history-guard 單一寫入口"
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {

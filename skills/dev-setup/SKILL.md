@@ -39,6 +39,12 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
    `docs/dev/devflow-contract.json`**(版本握手契約;doctor 無 `--contract`/
    `$DEVFLOW_CONTRACT` 明示時在此找,缺件必 fail-closed);從模板建 `STATUS.md`;
    repo root 無 `CONTEXT.md` 則從模板建。
+   **改版歷史**:`mkdir -p docs/adr`(長期決策一決策一檔;編號唯一性由
+   `check-adr-integrity.sh` 驗)、`docs/dev/HISTORY.md` 不存在則從
+   `_templates/HISTORY.md` 建(只增不改的索引);並比照 gauntlet 散發寫入口
+   `${CLAUDE_PLUGIN_ROOT}/scripts/history-append.sh` → `docs/dev/tools/history-append.sh`
+   並 `chmod +x`(**該檔是 HISTORY.md 的唯一寫入口** —— 直接用 Edit/Write 改會在
+   多 session 並行時靜默覆蓋,由 `history-guard` hook 擋下)。
 2. `.claude/rules/arch-invariants.md`:從 `_templates/arch-invariants.md` 建檔,**並自動產草稿**
    (不留空殼):
    - 先收割既有素材:使用者指名的外部 workflow artifacts 中的架構指引
@@ -109,17 +115,19 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
 逐項驗證列表回報,異常附建議、不自動修(fresh/stale 流程末尾自動跑;broken 才問要不要 fix):
 1. **三份 JSON** jq 過:`<root>/.claude-plugin/plugin.json`(dev-flow;dev-talk 併入後
    不再有獨立 plugin.json)、`<root>/.claude-plugin/marketplace.json`(**一份、一 entry**:
-   `./`)、**`<root>/hooks/hooks.json`**。hooks.json 壞掉 → 四條掛載全靜默失效,而自測
+   `./`)、**`<root>/hooks/hooks.json`**。hooks.json 壞掉 → 五條掛載全靜默失效,而自測
    照樣全綠 → 必驗。另比對 plugin.json 的 `version` 與 installed_plugins.json 記錄的
    版本一致(不一致 = 有人改了檔沒 bump,或裝的不是最新)。
 2. 兩帳號 settings `enabledPlugins`:`dev-flow@dev-flow` 為 true(dev-talk 已
    併入,不再是獨立 enabledPlugins 項;舊值 `@local` 或 `@dev-flow-plugin` =
    尚未遷到現行 marketplace 名稱散發,應改;`known_marketplaces.json` 的 `dev-flow`
    須為 github source)。
-3. **hooks/ 六支可執行**:devtalk-guard、devflow-guard、**devflow-prebash**、
-   devflow-postbash、devflow-exec、selftest。**hooks.json 應有 4 條掛載**:
-   PreToolUse `Edit|Write|Read`→devflow-guard、PreToolUse `Bash`→devflow-prebash、
-   PostToolUse `Edit|Write`→devtalk-guard、PostToolUse `Bash`→devflow-postbash。
+3. **hooks/ 七支可執行**:devtalk-guard、devflow-guard、**devflow-prebash**、
+   devflow-postbash、devflow-exec、selftest、**history-guard**。
+   **hooks.json 應有 5 條掛載**:
+   PreToolUse `Edit|Write|Read`→devflow-guard、PreToolUse `Edit|Write`→history-guard、
+   PreToolUse `Bash`→devflow-prebash、PostToolUse `Edit|Write`→devtalk-guard、
+   PostToolUse `Bash`→devflow-postbash。
    (實作為 shell 薄殼 + `devflow-lib.py` 與 `_*_impl.py`,改動時兩層都要在。)
 4. **功能自測(可重跑)**:①執行守衛跑 `hooks/selftest.sh`(自建 temp 假 repo 後自清;
    **案數以腳本輸出為準,不在本檔寫死** —— 曾因寫死「33 案」漂移至實際 80)→ 需全過;
