@@ -14,6 +14,38 @@ feature 走 7 份文檔、過 3 道 gate(G1 方向核准、G2 契約審查、G3 
 產出、人負責裁決。解決的痛:需求討論完就散、spec 與程式碼漂移、AI 改動無法審計、
 決策半年後沒人記得為什麼。
 
+## 你是誰,該讀哪裡
+
+本檔同時是**規則正本**(gate 條件、七階段規則、切片規則)與**查詢手冊**,不是拿來
+從頭讀完的。三種讀者各有各的入口:
+
+| 你是誰 | 從這裡開始 | 不要一開始就讀 |
+|---|---|---|
+| **第一次接觸 dev-flow** | ①[quickstart 導覽](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html)(零到一,照著打)②[dev-flow 導覽](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html)(七階段圖解)③本檔 [§0 一張圖](#0-一張圖) + [§10 新 feature 快速上手](#10-新-feature-快速上手) | §5、§7 —— 那是規則正本,不是教學 |
+| **要查某條規則** | 下方「規則索引」直接跳;最高頻三處:[§7 gate 條件](#7-角色與-gate)、[§2 lane 判準](#2-兩軌lane)、[§13–14 切片](#13-大案與切片) | 從第一節順讀 |
+| **要改 dev-flow 本身** | ①下方「怎麼逛這個 repo」結構圖(每個目錄標了「誰在讀它」)②[§7 強制力對照](#強制力對照誰在擋)(哪些規則真的有人擋、哪些只是紀律)③[§7 頂註](#7-角色與-gate)的四處同步清單 | 直接改 §7 —— 先看它連動誰 |
+
+**規則索引**(問題 → 章節):
+
+| 想知道什麼 | 去哪 | 這節是正本嗎 |
+|---|---|---|
+| G1/G2/G3 各要什麼條件才過 | [§7](#7-角色與-gate) | ✅ **唯一正本**,改這裡要同步四處 |
+| 這件事該走 full 還 fast | [§2](#2-兩軌lane) | ✅ |
+| 七份文檔各放什麼、各卡哪個 gate | [§3](#3-七份文檔用途一句話骨架見-_templates填好範例見-example) | 摘要;gate 條件全文在 §7 |
+| 哪個檔放哪種資訊(CONTEXT/specs/adr/dev) | [§1](#1-文件地圖四象限-status-看板) | ✅ |
+| 實作期怎麼推進、偏差怎麼判 L1/L2 | §5 | ✅ |
+| 守衛擋我了怎麼辦 / 並行怎麼開 | §5 執行守衛、守衛與並行 | ✅ |
+| 哪一站用哪個模型、錯了怎麼升階 | [§9](#9-模型分層與-effortai-執行時) | ✅ |
+| 哪些階段要另開 session | [§10](#10-新-feature-快速上手) Session 邊界表 | ✅ |
+| 為什麼討論不能知道下游 | [§11](#11-資訊隔離anti-premature-convergence) | ✅ |
+| html twin 每站要放什麼圖 | [§6](#6-html-twin可視化-artifact) | ✅ |
+| 案子太大要不要切、能不能切 | [§13](#13-大案與切片) 訊號 / [§14](#14-spec-切片單份-4-spec-過大時) 切點判準 | ✅ |
+| R/S/T/D/F 這些 id 怎麼串 | [§4](#4-id-追溯鏈) | ✅ |
+| 某條規則到底誰在擋(機械 vs 人工) | [§7 強制力對照](#強制力對照誰在擋) | ✅ |
+| 跨 repo / 非 feature 的事怎麼辦 | [§15](#15-附錄跨-repo-與非-feature-入口) | ✅ |
+
+圖在 `guides/`,不在這裡 —— 本檔是 markdown 正本,要圖請點上表的導覽連結。
+
 **怎麼逛這個 repo**:每個目錄後面標的是「誰在讀它」——那就是它不能被刪的依據。
 想刪任何東西前先跑 `grep -rn "<路徑>" hooks/ skills/ scripts/ _templates/ README.md`,
 零命中才考慮。
@@ -40,13 +72,13 @@ dev-flow/
 │     ├ devflow-guard.sh     PreToolUse 讀寫守衛(未武裝時對 Stage 6 文件軟擋一次)
 │     ├ devflow-exec.sh      執行引擎 + doctor 版本握手
 │     ├ gate-consistency.sh  從 README §7 抽 gate token,比對 SKILL/README §3/三模板
-│     ├ selftest.sh          294 案自測
+│     ├ selftest.sh          守衛自測(案數以腳本輸出為準)
 │     └ devflow_obs_vendor/  observability/ 的 vendored 副本(hooks 不能依賴 repo 相對路徑)
 │   skills/ (5)              dev-flow(路由器)/ dev-run(Stage 6 引擎)/ dev-setup(安裝器)
 │                            / dev-release(發版器)/ dev-talk(訪談引導)
 │
 ├── ── 機械檢查(CI 與本機都跑這些)─────────────────────────────
-│   scripts/ (16 + fixtures) 單一入口 devflow-check.sh all,15 組全過 = REPO_REFERENCE_PASS
+│   scripts/ (16 + fixtures) 單一入口 devflow-check.sh all,全過 = REPO_REFERENCE_PASS
 │                            devflow-evidence-gauntlet.sh 是 Stage 7 證據檢查的母版
 │   observability/ (59)      Attempt Ledger 工具(devflow-obs)+ agent_event schema
 │                            └ 讀者:selftest.sh:1539 直接讀它,刪了 p3 段就壞
@@ -108,11 +140,17 @@ flowchart LR
 
 一句話:**CONTEXT=語言、specs=現況、adr=過去、dev/=進行中**。
 
-**歸位規則**(init 與全程):文檔不散落 `docs/` 根 —— living 規格/規則/資料字典歸
-`docs/specs/`、feature 過程檔歸 `docs/dev/<slug>/`、長命決策歸 `docs/adr/`。既有散檔
-由 /dev-flow init 偵測,徵得同意後 `git mv` + 同步全部引用(code 註解/文檔/
+**歸位規則**(init 與全程):文檔不散落 `docs/` 根。
+
+| 這種東西 | 歸到哪 |
+|---|---|
+| living 規格 / 規則 / 資料字典 | `docs/specs/` |
+| feature 過程檔(1–7) | `docs/dev/<slug>/` |
+| 長命決策 | `docs/adr/` |
+| 流程外草稿 | `docs/dev/<slug>/0-draft-<名>.md` —— **只當 Stage 2 原料,不得跳關當 spec** |
+
+既有散檔由 /dev-flow init 偵測,徵得同意後 `git mv` + 同步全部引用(code 註解/文檔/
 CLAUDE.md;舊路徑 grep 歸零才算完)。
-流程外草稿收編為 `docs/dev/<slug>/0-draft-<名>.md`,只當 Stage 2 原料,不得跳關當 spec。
 
 ## 2. 兩軌(lane)
 
@@ -121,16 +159,13 @@ CLAUDE.md;舊路徑 grep 歸零才算完)。
 | 判準 | 新能力 / 不可逆改動(schema、API 契約、跨模組介面) | bugfix / ≤2 檔小改 / 行為已有 spec 條目(可逆的跨模組小改也算) |
 | 文檔 | 1→7 全套(3 選配) | `4-spec`(補 bug scenario) → `5-tasks`(mini) → `6-implementation-notes` → `7-review`(mini) |
 | Gate | G1 G2 G3 | G3(spec 改動大再補 G2) |
+| 起手式 | Stage 1 討論(`/dev-talk`) | **診斷迴圈**(mattpocock×superpowers 聯集):重現 → 最小化 → 假設 → 驗證定位 → 修 → 回歸測試 |
+| bug scenario 從哪來 | — | 從「重現步驟」直接長出:GIVEN=重現前置 / WHEN=觸發 / THEN=正確行為。**修根因,禁 symptom patch** |
+| Stage 5 | 兩軌同一份 `_templates/5-tasks.md` | **不省略**;可只有一個 T,但 `Covers`/`Files`/`Verify`/`Blocked-by` 四欄必填 |
 
 拿不準 → Full。被流程煩到 → 檢討判準,不要繞過流程。
-
-**Fast lane 起手 = 診斷迴圈**(mattpocock×superpowers 聯集):重現 → 最小化 →
-假設 → 驗證定位 → 修 → 回歸測試。`4-spec` 的 bug scenario 從「重現步驟」直接長出
-(GIVEN=重現前置 / WHEN=觸發 / THEN=正確行為)。修根因,禁 symptom patch。
-Fast lane 仍使用同一份 `_templates/5-tasks.md`:可只有一個 T,但必須填
-`Covers`、`Files`、`Verify`、`Blocked-by`。Stage 1–3 省略,Stage 5 不省略;
-`devflow-exec.sh start <slug>` 會逐 T 驗這四欄,並從這份 `5-tasks.md` 解析 Git repository
-root 相對的 `Files` scope。
+Fast lane 省的是 Stage 1–3,不是 Stage 5:`devflow-exec.sh start <slug>` 會逐 T 驗那四欄,
+並從這份 `5-tasks.md` 解析 Git repository root 相對的 `Files` scope,少一欄就開不了工。
 
 ## 3. 七份文檔(用途一句話;骨架見 `_templates/`,填好範例見 `example/`)
 
@@ -183,6 +218,21 @@ RED → GREEN → scope check → Verify
 → commit
 → Progress Log + checkbox + review evidence
 ```
+
+本節規則速查(全節是正本,下表只是入口):
+
+| 撞到什麼 | 看哪一條 |
+|---|---|
+| 這個 T 什麼時候才算完成 | 檢查點 |
+| Stage 6 驗到哪、Stage 7 驗什麼 | 分層 |
+| spec 沒寫的細節可以自己決定嗎 | Decisions |
+| 做到一半發現跟 spec 不合 | 偏差兩級(分不清 → 判級疑義:**一律當 L2**) |
+| 要改 `Files` 以外的檔 | Scope guard → 執行守衛的 `allow` / `stop` |
+| 守衛怎麼武裝、擋什麼、怎麼收尾 | 執行守衛 |
+| 多 feature 或多 T 同時跑 | 守衛與並行(正解 = 各開 worktree)、T 級並行 |
+| G3 把我打回來了 | 接收審查 |
+| 同一個 T 一直失敗 | 驗證五律 第 5 條(先分類再路由,上限 4 次) |
+| 這件事誰有權拍板 | 自判分層表 |
 
 - **檢查點**:T 在獨立審查 PASS 前一律未完成、不得 commit。reviewer 必須不同於該
   T 的 implementer;優先由適格人類 reviewer 審,否則派 fresh-context reviewer
@@ -596,15 +646,21 @@ SDD 是脊椎(spec 驅動什麼該做),TDD 是右側驗證(測試證明做對)�
 
 ## 13. 大案與切片
 
-大案先評估切片可行性(見 §14)。≥3 個可獨立 phase、Diff Budget >15 檔、
-跨 repo,都是「可能需要切片」的訊號,不是強制切片條件;這些訊號也不證明
-必然存在合法切片接縫。切片仍必須滿足 §14 的架構接縫規則;若無法在不洩漏
-片際內部設計的情況下拆分,大 feature 可保留單一 `4 → 5 → 6 → 7` 管線。
+大案先評估切片可行性(切點判準見 §14)。
 
-長時間與跨 session 工作以 `STATUS.md`、`5-tasks.md`、
-`6-implementation-notes.md` 接力;開新 session 不需要第二套執行系統。
-無人看管的多 phase orchestration 屬專案層選擇,在 dev-flow 方法之外;
-dev-flow 不依賴也不規範外部 orchestration。
+| 訊號(命中 = 該回頭評估) | 這訊號**不**代表 |
+|---|---|
+| ≥3 個可獨立 phase | 強制切片 |
+| Diff Budget >15 檔 | 已經存在合法接縫 |
+| 跨 repo | repo 分開就自動成為接縫 |
+
+切片仍必須滿足 §14 的架構接縫規則;**若無法在不洩漏片際內部設計的情況下拆分,
+大 feature 保留單一 `4 → 5 → 6 → 7` 管線**。
+
+| 長活怎麼撐住 | 規則 |
+|---|---|
+| 跨 session 接力 | 靠 `STATUS.md` + `5-tasks.md` + `6-implementation-notes.md`;開新 session 不需要第二套執行系統 |
+| 無人看管的多 phase orchestration | 屬專案層選擇,**在 dev-flow 方法之外** —— 不依賴也不規範它 |
 
 ## 14. Spec 切片(單份 4-spec 過大時)
 
