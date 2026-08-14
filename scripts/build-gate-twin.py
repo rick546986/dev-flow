@@ -116,12 +116,19 @@ def sections(md):
 
 
 def table_rows(body):
-    """把一個章節裡的 markdown 表格拆成 [(header, [cells]), ...];沒有表格回 []。"""
-    lines = [l.rstrip() for l in body.splitlines()]
+    """把一個章節裡的 markdown 表格拆成 [(header, [cells]), ...];沒有表格回 []。
+
+    ``` 區塊裡的表格不算(2026-08-15 複審 N2:Owner Calls 節內的程式碼範例寫
+    `| OC-9 | 待裁決 |`,會多出幻影卡並把計數從 1/1 變成 1/3)。
+    遮蔽版與原文等長且行數相同,所以用遮蔽版判斷、用原文取內容。
+    """
+    raw = body.splitlines()
+    masked = mask_fenced(body).splitlines()
     header, rows = None, []
-    for i, ln in enumerate(lines):
-        if not ln.startswith("|"):
+    for i, mln in enumerate(masked):
+        if not mln.lstrip().startswith("|"):
             continue
+        ln = raw[i].rstrip()
         cells = [c.strip() for c in ln.strip("|").split("|")]
         if all(re.fullmatch(r":?-{2,}:?", c) for c in cells if c):
             continue  # 分隔列
@@ -224,16 +231,22 @@ def parse_spec(_md, secs):
             continue
         rid, rname = rm.group(1), rm.group(2)
         used.add(title)
-        chunks = S_HEAD.split(mask_fenced(body))
-        raw_chunks = S_HEAD.split(body)  # 內容取原文(零刪減),切點取遮蔽版
+        # 遮蔽版與原文**等長**,所以在遮蔽版上取到的 index 可以直接切原文。
+        # ⚠️ 不要對兩份各 split 一次再用同一個 i 取值 —— 段數不同會錯位,
+        # 結果是審查者讀到 ``` 區塊裡的假 GIVEN/WHEN/THEN 而且毫無警告
+        #(2026-08-15 複審 N1:那正是本檔前一版引入的 bug)。
+        masked_body = mask_fenced(body)
+        hits = list(S_HEAD.finditer(masked_body))
         inner = []
-        for i in range(1, len(chunks), 3):
-            sid, stitle = chunks[i], chunks[i + 1].strip()
-            sbody = raw_chunks[i + 2] if i + 2 < len(raw_chunks) else chunks[i + 2]
+        for k, hm in enumerate(hits):
+            sid, stitle = hm.group(1), hm.group(2).strip()
+            start = hm.end()
+            end = hits[k + 1].start() if k + 1 < len(hits) else len(body)
+            seg_masked = masked_body[start:end]
             f = {}
             for key, pat in FIELD.items():
-                fm = pat.search(sbody)
-                f[key] = fm.group(1).strip() if fm else ""
+                fm = pat.search(seg_masked)          # 掃遮蔽版(fence 內不算)
+                f[key] = body[start + fm.start(1):start + fm.end(1)].strip() if fm else ""
             inner.append(card(
                 sid, stitle or rname, "",
                 [("GIVEN", f["given"]), ("WHEN", f["when"]), ("THEN", f["then"])],
@@ -323,16 +336,30 @@ def _find(md, pattern, default="—"):
     r"""抓一個欄位值。**只取到第一個分隔符為止** —— md 的欄位常帶括號註記
     (`lane: full(判準:…)`)、行尾註解(`verdict:  # PRE-REVIEW | …`),
     用 `\S+` 會把整串雜訊吃進動線格(2026-08-15 獨立審查 M6)。"""
-    m = re.search(pattern, md, re.M)
+    masked = mask_fenced(md)                    # ``` 區塊裡的假欄位不算(複審 N2)
+    m = re.search(pattern, masked, re.M)
     if not m:
         return default
-    v = re.split(r"[()（）#|]|——|\s{2,}", m.group(1).strip())[0].strip(" `*,、。")
+    raw_val = md[m.start(1):m.end(1)]           # 等長遮蔽 → index 可直接切原文
+    v = re.split(r"[()（）#|]|——|\s{2,}", raw_val.strip())[0].strip(" `*,、。")
     return v or default
 
 
+_ANCHOR_SEEN = {}
+
+
 def anchor_id(title):
-    """章節標題 → 穩定的 html id(給動線格跳轉用)。"""
-    return "sec-" + re.sub(r"[^0-9a-zA-Z\u4e00-\u9fff]+", "-", title).strip("-")[:48]
+    """章節標題 → 穩定的 html id(給動線格跳轉用)。撞名補序號(複審 N6)。"""
+    base = "sec-" + re.sub(r"[^0-9a-zA-Z\u4e00-\u9fff]+", "-", title).strip("-")[:48]
+    if _ANCHOR_SEEN.get(base) == title:
+        return base                      # 同一個標題,同一個 id(冪等)
+    if base in _ANCHOR_SEEN:
+        i = 2
+        while f"{base}-{i}" in _ANCHOR_SEEN:
+            i += 1
+        base = f"{base}-{i}"
+    _ANCHOR_SEEN[base] = title
+    return base
 
 
 def _headline(text, limit=30):
@@ -348,6 +375,7 @@ def _headline(text, limit=30):
 
 
 def dash_cells(stage, md, n_items, n_bad, secs):
+    md_scan = mask_fenced(md)   # 計數一律掃遮蔽版(複審 N2)
     """五格內容依 stage 不同(README §6 的表)。**格數固定五格,每格都要有跳轉目標**。
 
     回 [(標籤, 值, 註, 錨點), ...]。錨點是章節標題或固定 id;main 會檢查目標
@@ -363,14 +391,14 @@ def dash_cells(stage, md, n_items, n_bad, secs):
     if stage == "4-spec":
         dd_sec = _section_text(md, "Drafting Decisions")
         # DD 可能是表格(| DD-1 |)也可能是 bullet 清單(母版模板就是清單、無編號)
-        dd_rows = re.findall(r"^\|\s*DD-\d+", dd_sec, re.M) or \
-            re.findall(r"^\s*[-*]\s+\S", dd_sec, re.M)
-        dd_open = len(re.findall(r"待裁決", dd_sec))
+        dd_rows = re.findall(r"^\|\s*DD-\d+", mask_fenced(dd_sec), re.M) or \
+            re.findall(r"^\s*[-*]\s+\S", mask_fenced(dd_sec), re.M)
+        dd_open = len(re.findall(r"待裁決", mask_fenced(dd_sec)))
         return [
             ("狀態", _find(md, r"^status:\s*(\S+)"), "frontmatter", "#top"),
             ("待審 S", f"{n_items} 條",
              f"{n_bad} 條缺觀測欄" if n_bad else "欄位齊全", "#cards"),
-            ("lane / Risk", f'{_find(md, r"^\s*-?\s*lane:\s*(\S+)")} · '
+            ("lane · Risk", f'{_find(md, r"^\s*-?\s*lane:\s*(\S+)")} · '
                             f'{_find(md, r"^\s*-\s*Risk:\s*(\S+)")}',
              "Verification Profile", sec_anchor("Verification Profile")),
             ("DD 進度", f"{len(dd_rows) - dd_open}/{len(dd_rows)}" if dd_rows else "—",
@@ -380,10 +408,10 @@ def dash_cells(stage, md, n_items, n_bad, secs):
         ]
     if stage == "2-decision":
         oc_sec = _section_text(md, "Owner Calls")
-        oc_total = len(re.findall(r"^\|\s*OC-\d+", oc_sec, re.M))
-        oc_open = len(re.findall(r"^\|\s*OC-\d+.*待", oc_sec, re.M))
+        oc_total = len(re.findall(r"^\|\s*OC-\d+", mask_fenced(oc_sec), re.M))
+        oc_open = len(re.findall(r"^\|\s*OC-\d+.*待", mask_fenced(oc_sec), re.M))
         rej_sec = _section_text(md, "Rejected Alternatives")
-        rej = len(re.findall(r"^\s*[-*]\s+\S", rej_sec, re.M))
+        rej = len(re.findall(r"^\s*[-*]\s+\S", mask_fenced(rej_sec), re.M))
         return [
             ("判定", _headline(_section_text(md, "Decision")), "選了哪個方案",
              sec_anchor("Decision")),
@@ -394,17 +422,17 @@ def dash_cells(stage, md, n_items, n_bad, secs):
             ("狀態", _find(md, r"^status:\s*(\S+)"), "frontmatter", "#top"),
         ]
     known_sec = _section_text(md, "Known Limits")
-    known = len(re.findall(r"^\s*[-*|]\s*\S", known_sec, re.M))
-    ec = re.findall(r"^\s*-\s*\[( |x|X)\]", _section_text(md, "Exit Checklist"), re.M)
+    known = len(re.findall(r"^\s*[-*|]\s*\S", mask_fenced(known_sec), re.M))
+    ec = re.findall(r"^\s*-\s*\[( |x|X)\]", mask_fenced(_section_text(md, "Exit Checklist")), re.M)
     apx = _section_text(md, "附錄")
-    disputes = len(re.findall(r"^#{3,6}\s*A\d", apx, re.M))
+    disputes = len(re.findall(r"^#{3,6}\s*A\d", mask_fenced(apx), re.M))
     return [
         ("判定", _find(md, r"^verdict:\s*(\S+)"), "frontmatter verdict", sec_anchor("Verdict")),
         ("出貨", f"{sum(1 for m in ec if m.lower() == 'x')}/{len(ec)}" if ec else "—",
          "Exit Checklist", sec_anchor("Exit Checklist")),
         ("爭點", f"{disputes} 條", "附錄:本輪特有", sec_anchor("附錄")),
         ("風險", f"{known} 條", "Known Limits", sec_anchor("Known Limits")),
-        ("待審項目", f"{n_items} 條", "現象證據 + 出貨清單", "#cards"),
+        ("抽驗", "隨機一列 檔:行", "對得上才信剩下的", sec_anchor("Coverage Matrix")),
     ]
 
 
@@ -468,6 +496,7 @@ def main(argv):
     secs = sections(md)
 
     cards, n_items, used = PARSERS[stage](md, secs)
+    rendered_rids = re.findall(r'<section class="r-block" id="(R-\d+)"', cards)
     if n_items == 0:
         print(f"ERROR: 一條待審項目都沒解析到 —— 檢查 {stage}.md 的標題與欄位格式"
               f"(S 標題要 `#### S-<id>`;表格要有表頭列)", file=sys.stderr)
@@ -495,14 +524,20 @@ def main(argv):
     # 背景資料:沒被做成卡片的章節一律收進 details,內容零刪減。
     # 已經做成卡片的內容**不得重複出現** —— 章節本身被用過、或它底下含有已渲染的
     # R/S 標題(例:`## ADDED Requirements` 的 body 含全部 R 與 S),一律跳過。
-    appendix, skipped = [], []
+    appendix, skipped, dropped = [], [], []
     for lvl, title, body in secs:
         if lvl > 2 or title in used or not body.strip():
             continue
         if R_HEAD.match("#" * lvl + " " + title):
             continue
         masked = mask_fenced(body)
-        if stage == "4-spec" and (R_HEAD.search(masked) or S_HEAD.search(masked)):
+        # 只跳過「已經整段被渲染成卡片」的父節(例:`## ADDED Requirements` 底下就是全部 R/S)。
+        # 判準用**已渲染的 R id**,不是任何長得像 R/S 的字 —— 否則
+        # `## Known limits` 底下寫一個 `### S-1 的已知限界` 就會讓整節連同內容消失,
+        # 而且一個字都不印(2026-08-15 複審 N3)。
+        if stage == "4-spec" and rendered_rids and all(
+                rid in masked for rid in rendered_rids):
+            dropped.append(title)
             continue
         if PINNED_PAT.search(title):
             continue  # 置頂節另外處理,不摺疊
@@ -513,6 +548,8 @@ def main(argv):
         skipped.append(title)
     if skipped:
         print(f"NOTE: 以下章節收進背景資料(預設收合、內容零刪減):{skipped}", file=sys.stderr)
+    if dropped:
+        print(f"NOTE: 以下父節的內容已整段渲染成卡片,不重複顯示:{dropped}", file=sys.stderr)
 
     raw_cells = dash_cells(stage, md + "\n" + fm_text, n_items, n_bad, secs)
     have_ids = {anchor_id(title) for _l, title, _b in secs} | {"cards", "top"}

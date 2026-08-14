@@ -76,7 +76,16 @@ for st in STAGES:
           f"{st}:T1 動線頂區五格", f"實際 {local.count(chr(60) + chr(97) + chr(32) + chr(99))} 個")
     check(local.count('class="s-card') > 0 and 'id="done"' in local,
           "  T2 待審項目逐條可勾 + 進度計數")
+    # 卡片殼在但內容全空 = 審查者什麼也看不到,而只數卡片數的斷言照樣過(複審缺口 E)
+    if st == "4-spec":
+        empty_bodies = len(re.findall(r'<div class="gwt"></div>', local))
+        check(empty_bodies == 0, "  T2 卡片內容不得為空(GIVEN/WHEN/THEN 被砍空要現形)",
+              f"{empty_bodies} 張空卡")
     check('<details class="doc"' in local, "  T3 背景資料收進 details")
+    # M10 修了但當時沒有守衛,退回缺陷態不會被抓(複審缺口 F)
+    check(all(k in local for k in ('class="progress-in"', 'class="count"',
+                                   'class="bar"', 'class="btn"')),
+          "  T2 進度條 markup 齊(progress-in/count/bar/btn)")
     check(local.count('<div class="doc-in"></div>') == 0,
           "  T3 背景資料不得是空殼", "有 details 但內容為空")
     hrefs = re.findall(r'class="cell" href="#([^"]+)"', local)
@@ -85,6 +94,9 @@ for st in STAGES:
     check(bool(hrefs) and all(h in ids for h in hrefs),
           f"{st}:T7 每個錨點都有對應目標",
           f"落空:{[h for h in hrefs if h not in ids]}")
+    # 全部指向同一個(例如都退化成 #cards)= 等於沒有跳轉,但「解析得到」照樣成立
+    check(len(set(hrefs)) >= 3, f"{st}:T7 五格指向不同段落(不得全部退化成同一個)",
+          f"只指向 {sorted(set(hrefs))}")
     check(bool(SHELL.search(local)) and not SHELL.search(art),
           "  T4 兩種殼:本機版完整文件、artifact 片段無外殼",
           "片段含 doctype/html/head/body" if SHELL.search(art) else "本機版缺外殼")
@@ -92,15 +104,31 @@ for st in STAGES:
 print("-- T8 五格內容對齊 README §6 規格 --")
 # 規格正本:README §6〈審查動線頂區〉的三列表。格數對了但內容答非所問 = 沒做到
 # (2026-08-15 獨立審查 H5:三站的格子內容當時與同一份 diff 新增的規格全不符)。
-EXPECT_KEYS = {
-    "2-decision": {"判定", "Owner Calls", "方案", "駁回理由", "狀態"},
-    "4-spec": {"狀態", "待審 S", "lane / Risk", "DD 進度", "Demo verdict"},
-    "7-review": {"判定", "出貨", "爭點", "風險", "待審項目"},
-}
+# ⚠️ 標籤集合**從 README §6 的表格解析**,不硬寫在本檔。
+# 硬寫 = 斷言釘在副本而不是正本:改 README 的規格文字,守衛照樣全綠
+#(2026-08-15 複審缺口 G;與 H2「守衛只驗字串在不在」是同一類病)。
+def readme_keys():
+    txt = (ROOT / "README.md").read_text(encoding="utf-8")
+    out = {}
+    for st in STAGES:
+        m = re.search(r"^\|\s*\*\*" + re.escape(st) + r"\(G\d\)\*\*\s*\|(.+?)\|\s*$",
+                      txt, re.M)
+        if not m:
+            continue
+        # 反引號內的 `x/y` 斜線不是分隔符,先遮蔽再切
+        cells = [c.strip() for c in re.sub(r"`[^`]*`", "``", m.group(1)).split("/")]
+        out[st] = {re.split(r"[(（]", c)[0].strip().strip("*` ") for c in cells if c.strip()}
+    return out
+
+
+EXPECT_KEYS = readme_keys()
+check(len(EXPECT_KEYS) == len(STAGES) and all(len(v) == 5 for v in EXPECT_KEYS.values()),
+      "五格標籤能從 README §6 正本解析出三站各五格",
+      f"解析到 {[(k, len(v)) for k, v in EXPECT_KEYS.items()]}")
 for st in STAGES:
     txt = (proj / f"{st}.html").read_text(encoding="utf-8")
     keys = set(re.findall(r'class="cell"[^>]*><span class="k">([^<]+)</span>', txt))
-    check(keys == EXPECT_KEYS[st], f"{st}:五格標籤與規格一致",
+    check(keys == EXPECT_KEYS.get(st, set()), f"{st}:五格標籤與 README §6 逐字一致",
           f"多 {sorted(keys - EXPECT_KEYS[st])} / 少 {sorted(EXPECT_KEYS[st] - keys)}")
 
 print("-- H2 負向:背景資料「內容零刪減」要真的被驗 --")
@@ -113,7 +141,7 @@ if r.returncode == 0:
     missing = [f"CANARY-{i}" for i in range(1, 6) if f"CANARY-{i}" not in zt]
     check(not missing, "背景資料內容零刪減(5 個 canary 全在)", f"不見了:{missing}")
     check(zt.count('class="s-card') == 1,
-          "程式碼區塊裡的假標題不得產生幻影卡", f"卡數 {zt.count(chr(34))}")
+          "程式碼區塊裡的假標題不得產生幻影卡", f"卡數 {zt.count(chr(115)+chr(45)+chr(99)+chr(97)+chr(114)+chr(100))}")
     check("S-9.1" not in zt.split("背景資料")[0], "幻影卡 S-9.1 不在待審區")
 
 print("-- T6 置頂節:判定與其前提不得被摺疊 --")
@@ -215,6 +243,14 @@ empty.mkdir(parents=True)
 r = run(TMP / "empty", "demo", "4-spec")
 check(r.returncode == 1, "空 spec → exit 1", f"實際 exit {r.returncode}")
 check(not (empty / "4-spec.html").exists(), "空 spec → 不產出空殼 html")
+
+print("-- N7 散發副本 --")
+for name in ("build-gate-twin.py", "devflow_twin_ui.py"):
+    src = ROOT / "scripts" / name
+    dist = ROOT / "docs/dev/tools" / name
+    check(dist.is_file() and src.read_text(encoding="utf-8") == dist.read_text(encoding="utf-8"),
+          f"{name}:docs/dev/tools/ 副本與正本逐字一致",
+          "缺檔" if not dist.is_file() else "內容不同(正本方向:scripts/ → docs/dev/tools/)")
 
 print("-- 用法錯誤 --")
 r = subprocess.run([sys.executable, str(BUILD)], capture_output=True, text=True)
