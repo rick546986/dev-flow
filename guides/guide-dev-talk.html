@@ -37,19 +37,45 @@
   .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
   .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
   .you{background:color-mix(in srgb,var(--acc) 14%,transparent);color:var(--acc)}
-  svg{max-width:100%;height:auto}
-  svg text{fill:var(--fg);font:11px -apple-system,"PingFang TC",sans-serif}
-  svg .b{fill:var(--card);stroke:var(--line)}
-  svg .hl{fill:color-mix(in srgb,var(--acc) 18%,transparent);stroke:var(--acc)}
-  svg .cap{fill:var(--muted)}
-  svg .note{fill:var(--card);stroke:var(--warn);stroke-dasharray:5 3}
-  svg .flow{fill:none;stroke:var(--muted);stroke-width:1.6}
-  svg .arrowhead{fill:var(--acc)}
   .muted{color:var(--muted)}
   details{margin:.35em 0 0}
   details>summary{cursor:pointer;color:var(--acc);font-size:.85rem;user-select:none}
   blockquote{margin:.5em 0 .2em;padding:.5em .9em;border-left:3px solid var(--acc);
              background:var(--card);border-radius:0 6px 6px 0;font-size:.88em}
+
+  /* ── 可複用視覺 token(三份導覽共用,勿改名) ─────────────── */
+  /* 每章導言:一句話說「這章要你懂什麼」 */
+  .lead{margin:.2em 0 .9em;padding:.5em .85em;border-left:3px solid var(--acc);
+        background:var(--card);border-radius:0 6px 6px 0;font-size:.92rem}
+  /* 圖卡:圖的容器,背景用 --bg 讓 --card 的 node 框浮出來 */
+  .figwrap{position:relative;background:var(--bg);border:1px solid var(--line);
+           border-radius:10px;padding:16px 14px 10px;margin:1em 0}
+  .figwrap::after{content:"點圖放大";position:absolute;right:10px;top:5px;
+                  font-size:.7rem;color:var(--muted)}
+  .figwrap>svg{display:block;width:100%;height:auto;cursor:zoom-in}
+  .figcap{margin:.5em 0 0;font-size:.85rem;color:var(--muted)}
+  /* 放大檢視 overlay(inline JS 驅動,不連外部庫) */
+  .figzoom{position:fixed;inset:0;z-index:99;overflow:hidden;
+           background:color-mix(in srgb,var(--bg) 92%,#000);
+           display:flex;align-items:center;justify-content:center}
+  .figzoom-inner{cursor:grab}
+  .figzoom svg{width:min(96vw,1700px);height:auto;transform-origin:center center}
+  .figzoom-tip{position:fixed;bottom:14px;left:0;right:0;text-align:center;
+               font-size:.8rem;color:var(--muted)}
+  /* SVG 圖元 token:node 框底一律 --card 系,文字一律 --fg/--muted → 深淺兩主題都有對比 */
+  svg .b{fill:var(--card);stroke:var(--line);stroke-width:1}
+  svg .hl{fill:color-mix(in srgb,var(--acc) 16%,var(--card));stroke:var(--acc)}
+  svg .no{fill:color-mix(in srgb,var(--bad) 12%,var(--card));stroke:var(--bad)}
+  svg .go{fill:color-mix(in srgb,var(--ok) 14%,var(--card));stroke:var(--ok)}
+  svg .note{fill:var(--card);stroke:var(--warn);stroke-dasharray:5 3}
+  svg .grpbox{fill:none;stroke:var(--line);stroke-dasharray:4 4}
+  svg .edge{fill:none;stroke:var(--muted);stroke-width:1.5}
+  svg .arrowhead{fill:var(--muted)}
+  /* 字級寫在 class 上(svg-diagram-lint.py 由 .cls{font:Npx} 反查,勿改成元素選擇器) */
+  .dt{font:11px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--fg)}
+  .dm{font:11px ui-monospace,Menlo,monospace;fill:var(--fg)}
+  .dc{font:9px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--muted)}
+  .dl{font:10px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--muted)}
 </style>
 </head>
 <body>
@@ -70,6 +96,7 @@
   </nav>
 
   <h2 id="quick">① 快速上手</h2>
+  <p class="lead">這章要你懂:<strong>開場只要一行指令,而它只會產三個文字檔</strong> —— 沒有前置作業,也不會有任何程式碼。</p>
   <pre>cd &lt;專案&gt;
 claude          # 建議 opus(規劃層)
 &gt; /dev-talk 我想做 &lt;一句話需求&gt;</pre>
@@ -86,60 +113,56 @@ claude          # 建議 opus(規劃層)
   </pre>
   <p class="muted">就這三個,其他一律不碰(寫入白名單)。多個需求並行 → 一 slug 一資料夾,互不干擾;<code>CONTEXT.md</code> 是唯一共用面,只增改自己本輪的詞條。</p>
 
-  <h2 id="map">② 全程地圖(11 步,藍色 = 需要你出手)</h2>
-  <svg viewBox="0 0 880 120" width="880" height="120" role="img" aria-label="11 步流程">
-    <rect class="b"  x="10"  y="30" width="66" height="40" rx="6"/><text x="43"  y="54" text-anchor="middle">0 規模</text>
-    <rect class="hl" x="86"  y="30" width="66" height="40" rx="6"/><text x="119" y="54" text-anchor="middle">1 盤現況</text>
-    <rect class="hl" x="162" y="30" width="66" height="40" rx="6"/><text x="195" y="54" text-anchor="middle">2 逼問</text>
-    <rect class="hl" x="238" y="30" width="66" height="40" rx="6"/><text x="271" y="54" text-anchor="middle">3 雛形</text>
-    <rect class="b"  x="314" y="30" width="66" height="40" rx="6"/><text x="347" y="54" text-anchor="middle">4 發散</text>
-    <rect class="hl" x="390" y="30" width="66" height="40" rx="6"/><text x="423" y="54" text-anchor="middle">5 盲點</text>
-    <rect class="b"  x="466" y="30" width="66" height="40" rx="6"/><text x="499" y="54" text-anchor="middle">6 落檔</text>
-    <rect class="b"  x="542" y="30" width="66" height="40" rx="6"/><text x="575" y="54" text-anchor="middle">7 複核</text>
-    <rect class="b"  x="618" y="30" width="66" height="40" rx="6"/><text x="651" y="54" text-anchor="middle">8 詞彙</text>
-    <rect class="b"  x="694" y="30" width="66" height="40" rx="6"/><text x="727" y="54" text-anchor="middle">9 html</text>
-    <rect class="hl" x="770" y="30" width="80" height="40" rx="6"/><text x="810" y="54" text-anchor="middle">10 過目·停</text>
-    <text x="43"  y="90" class="cap" text-anchor="middle">拆需求</text>
-    <text x="119" y="90" class="cap" text-anchor="middle">你認可事實</text>
-    <text x="195" y="90" class="cap" text-anchor="middle">你答題(循環)</text>
-    <text x="271" y="90" class="cap" text-anchor="middle">你逐條確認</text>
-    <text x="423" y="90" class="cap" text-anchor="middle">你回應清單</text>
-    <text x="810" y="90" class="cap" text-anchor="middle">你點頭 approved</text>
-  </svg>
+  <h2 id="map">② 全程地圖(11 步)</h2>
+  <p class="lead">這章要你懂:<strong>它不是一條直線走完就結束</strong> —— 步 1-5 是會反覆的逼問迴圈,步 7/9 一旦自審失敗就把你拉回步 2 重問。藍框 = 需要你出手。</p>
 
-  <h3>迴圈與回路(哪裡會反覆、哪裡會回頭)</h3>
-  <svg viewBox="0 0 880 300" width="880" height="300" role="img" aria-label="迴圈與回路流程圖">
-    <defs>
-      <marker id="loopArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-        <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/>
-      </marker>
-    </defs>
-    <rect class="note" x="16" y="12" width="210" height="52" rx="6"/>
-    <text x="121" y="34" text-anchor="middle">前提被推翻 → 立即核銷</text>
-    <text x="121" y="52" text-anchor="middle">已寫段落(步 2 內建)</text>
-    <path class="flow" marker-end="url(#loopArrow)" d="M121,64 L121,90 L178,90 L178,110"/>
+  <div class="figwrap"><svg id="fig-map" viewBox="0 0 880 400" role="img"
+       aria-label="dev-talk 全程地圖:11 步分四階段,含自迴圈與三條回步 2 的回路">
+    <defs><marker id="ar1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
 
-    <rect class="hl" x="162" y="110" width="66" height="40" rx="6"/><text x="195" y="134" text-anchor="middle">2 逼問</text>
-    <rect class="hl" x="390" y="110" width="66" height="40" rx="6"/><text x="423" y="134" text-anchor="middle">5 盲點</text>
-    <rect class="b"  x="542" y="110" width="66" height="40" rx="6"/><text x="575" y="134" text-anchor="middle">7 複核</text>
-    <rect class="b"  x="694" y="110" width="66" height="40" rx="6"/><text x="727" y="134" text-anchor="middle">9 html</text>
+    <g class="cluster"><rect x="12" y="64" width="130" height="70" rx="8" class="grpbox"/><text class="dl" x="18" y="128">校準</text></g>
+    <g class="cluster"><rect x="146" y="64" width="646" height="70" rx="8" class="grpbox"/><text class="dl" x="152" y="128">逼問迴圈 —— 有問題就回這裡</text></g>
+    <g class="cluster"><rect x="272" y="244" width="520" height="70" rx="8" class="grpbox"/><text class="dl" x="430" y="308">落檔與自審(AI 自己跑)</text></g>
+    <g class="cluster"><rect x="142" y="244" width="126" height="70" rx="8" class="grpbox"/><text class="dl" x="148" y="308">你的 gate</text></g>
 
-    <path class="flow" marker-end="url(#loopArrow)" d="M198,110 C190,75 228,75 220,110"/>
-    <text x="209" y="68" class="cap" text-anchor="middle">答 → 新題</text>
+    <g class="n"><rect x="20" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="32" y="90">0 規模</text><text class="dc" x="32" y="105">拆需求·問起點</text></g>
+    <g class="n"><rect x="150" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="162" y="90">1 盤現況</text><text class="dc" x="162" y="105">你認可事實</text></g>
+    <g class="n"><rect x="280" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="292" y="90">2 逼問</text><text class="dc" x="292" y="105">你答題·循環</text></g>
+    <g class="n"><rect x="410" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="422" y="90">3 雛形</text><text class="dc" x="422" y="105">你逐條確認</text></g>
+    <g class="n"><rect x="540" y="70" width="110" height="42" rx="6" class="b"/><text class="dt" x="552" y="90">4 發散</text><text class="dc" x="552" y="105">純 what-if</text></g>
+    <g class="n"><rect x="670" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="682" y="90">5 盲點</text><text class="dc" x="682" y="105">你回兩清單</text></g>
 
-    <path class="flow" marker-end="url(#loopArrow)" d="M423,150 L423,190 L205,190 L205,150"/>
-    <text x="314" y="186" class="cap" text-anchor="middle">盲點 → 回步 2</text>
+    <g class="n"><rect x="670" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="682" y="270">6 落檔</text><text class="dc" x="682" y="285">寫九節 md</text></g>
+    <g class="n"><rect x="540" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="552" y="270">7 複核</text><text class="dc" x="552" y="285">嚴審五掃</text></g>
+    <g class="n"><rect x="410" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="422" y="270">8 詞彙</text><text class="dc" x="422" y="285">對帳 CONTEXT</text></g>
+    <g class="n"><rect x="280" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="292" y="270">9 產 html</text><text class="dc" x="292" y="285">自核+六件</text></g>
+    <g class="n"><rect x="150" y="250" width="110" height="42" rx="6" class="hl"/><text class="dt" x="162" y="270">10 收尾</text><text class="dc" x="162" y="285">你點頭 approved</text></g>
 
-    <path class="flow" d="M575,150 L575,175"/>
-    <path class="flow" marker-end="url(#loopArrow)" d="M575,175 L648,175"/>
-    <text x="652" y="179" class="cap" text-anchor="start">改檔(直接修正)</text>
-    <path class="flow" marker-end="url(#loopArrow)" d="M575,175 L575,225 L195,225 L195,150"/>
-    <text x="385" y="221" class="cap" text-anchor="middle">複核有問題 → 回步 2</text>
+    <g class="n"><rect x="20" y="182" width="270" height="46" rx="6" class="note"/><text class="dt" x="32" y="205">前提被推翻 → 立即核銷</text><text class="dc" x="32" y="220">步 2 內建規則,不是獨立步驟</text></g>
 
-    <path class="flow" marker-end="url(#loopArrow)" d="M727,150 L727,260 L185,260 L185,150"/>
-    <text x="456" y="256" class="cap" text-anchor="middle">自核失敗 → 回步 2</text>
-  </svg>
-  <p class="muted">虛線框 = 步 2 內建的核銷規則(不是獨立步驟);其餘箭頭都是「發現問題就回頭」的實際回路,不是一次性走完就結束。</p>
+    <path class="edge" marker-end="url(#ar1)" d="M130,91 L150,91"/>
+    <path class="edge" marker-end="url(#ar1)" d="M260,91 L280,91"/>
+    <path class="edge" marker-end="url(#ar1)" d="M390,91 L410,91"/>
+    <path class="edge" marker-end="url(#ar1)" d="M520,91 L540,91"/>
+    <path class="edge" marker-end="url(#ar1)" d="M650,91 L670,91"/>
+    <path class="edge" marker-end="url(#ar1)" d="M725,112 L725,250"/>
+    <path class="edge" marker-end="url(#ar1)" d="M670,271 L650,271"/>
+    <path class="edge" marker-end="url(#ar1)" d="M540,271 L520,271"/>
+    <path class="edge" marker-end="url(#ar1)" d="M410,271 L390,271"/>
+    <path class="edge" marker-end="url(#ar1)" d="M280,271 L260,271"/>
+    <path class="edge" marker-end="url(#ar1)" d="M320,70 L320,44 L350,44 L350,70"/>
+    <path class="edge" marker-end="url(#ar1)" d="M700,112 L700,168 L335,168 L335,112"/>
+    <path class="edge" marker-end="url(#ar1)" d="M595,292 L595,330 L8,330 L8,52 L300,52 L300,70"/>
+    <path class="edge" marker-end="url(#ar1)" d="M335,292 L335,352 L862,352 L862,52 L372,52 L372,70"/>
+    <path class="edge" marker-end="url(#ar1)" d="M290,205 L360,205 L360,112"/>
+
+    <text class="dl" x="360" y="42">答完 → 新題</text>
+    <text class="dl" x="530" y="164">盲點翻案 → 回步 2</text>
+    <text class="dl" x="380" y="326">複核有問題 → 回步 2</text>
+    <text class="dl" x="620" y="348">自核失敗 → 回步 2</text>
+  </svg></div>
+  <p class="figcap">下排由右往左走(6→10)。虛線黃框 = 步 2 內建的核銷規則,不是獨立步驟;三條長回路都是「發現問題就回步 2」,不是走完一遍就結束。步 7 若只是小瑕疵則直接改檔,不必回步 2。</p>
 
   <div class="tablewrap"><table>
     <tr><th>步</th><th>AI 做什麼</th><th>你做什麼</th><th>完成條件</th></tr>
@@ -183,7 +206,43 @@ claude          # 建議 opus(規劃層)
     <tr><td>10 過目</td><td>你是唯一 gate:三態清點、假設吞不吞,點頭才算數</td><td>「Q1-Q3 全 <code>[x]</code>、無 <code>[~]</code>/<code>[&gt;]</code> —— 改 approved?」你點頭 → 停</td></tr>
   </table></div>
 
-  <h2 id="you">③ 你的 5 個介入點(步 0 也要你答;其餘步它自己跑)</h2>
+  <h2 id="you">③ 你的 5 個介入點</h2>
+  <p class="lead">這章要你懂:<strong>11 步裡只有 6 步需要你在場</strong>(步 0 + 5 個介入點),其餘 5 步它自己跑完 —— 你不必全程盯,但這 6 步缺席就沒人把關。</p>
+
+  <div class="figwrap"><svg id="fig-lanes" viewBox="0 0 880 220" role="img"
+       aria-label="責任泳道:上排是你要出手的 6 步,下排是 AI 自己跑的 5 步">
+    <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
+
+    <g class="cluster"><rect x="6" y="18" width="860" height="74" rx="8" class="grpbox"/><text class="dl" x="10" y="32">你要出手 —— 6 個點(含步 0)</text></g>
+    <g class="cluster"><rect x="6" y="132" width="860" height="68" rx="8" class="grpbox"/><text class="dl" x="10" y="194">AI 自己跑 —— 步 4/6/7/8/9</text></g>
+
+    <g class="n"><rect x="12" y="40" width="68" height="42" rx="6" class="hl"/><text class="dt" x="19" y="66">0 規模</text></g>
+    <g class="n"><rect x="90" y="40" width="68" height="42" rx="6" class="hl"/><text class="dt" x="97" y="66">1 盤現況</text></g>
+    <g class="n"><rect x="168" y="40" width="68" height="42" rx="6" class="hl"/><text class="dt" x="175" y="66">2 逼問</text></g>
+    <g class="n"><rect x="246" y="40" width="68" height="42" rx="6" class="hl"/><text class="dt" x="253" y="66">3 雛形</text></g>
+    <g class="n"><rect x="402" y="40" width="68" height="42" rx="6" class="hl"/><text class="dt" x="409" y="66">5 盲點</text></g>
+    <g class="n"><rect x="792" y="40" width="68" height="42" rx="6" class="hl"/><text class="dt" x="799" y="66">10 收尾</text></g>
+
+    <g class="n"><rect x="324" y="140" width="68" height="42" rx="6" class="b"/><text class="dt" x="331" y="166">4 發散</text></g>
+    <g class="n"><rect x="480" y="140" width="68" height="42" rx="6" class="b"/><text class="dt" x="487" y="166">6 落檔</text></g>
+    <g class="n"><rect x="558" y="140" width="68" height="42" rx="6" class="b"/><text class="dt" x="565" y="166">7 複核</text></g>
+    <g class="n"><rect x="636" y="140" width="68" height="42" rx="6" class="b"/><text class="dt" x="643" y="166">8 詞彙</text></g>
+    <g class="n"><rect x="714" y="140" width="68" height="42" rx="6" class="b"/><text class="dt" x="721" y="166">9 html</text></g>
+
+    <path class="edge" marker-end="url(#ar2)" d="M80,61 L90,61"/>
+    <path class="edge" marker-end="url(#ar2)" d="M158,61 L168,61"/>
+    <path class="edge" marker-end="url(#ar2)" d="M236,61 L246,61"/>
+    <path class="edge" marker-end="url(#ar2)" d="M280,82 L280,111 L358,111 L358,140"/>
+    <path class="edge" marker-end="url(#ar2)" d="M366,140 L366,111 L436,111 L436,82"/>
+    <path class="edge" marker-end="url(#ar2)" d="M444,82 L444,111 L514,111 L514,140"/>
+    <path class="edge" marker-end="url(#ar2)" d="M548,161 L558,161"/>
+    <path class="edge" marker-end="url(#ar2)" d="M626,161 L636,161"/>
+    <path class="edge" marker-end="url(#ar2)" d="M704,161 L714,161"/>
+    <path class="edge" marker-end="url(#ar2)" d="M748,140 L748,111 L826,111 L826,82"/>
+  </svg></div>
+  <p class="figcap">線在兩排之間上下折,就是主導權在換手。下表是每個介入點你實際要把關的東西。</p>
+
   <div class="tablewrap"><table>
     <tr><th>#</th><th>介入點</th><th>你在把關什麼</th></tr>
     <tr><td>1</td><td>步 1 認可事實清單</td><td>它對系統現況的理解錯了,後面全歪 —— 抽查帶數字的那幾條</td></tr>
@@ -195,6 +254,7 @@ claude          # 建議 opus(規劃層)
   <p class="muted">步 0 也要你答:先談哪個、起點深淺 —— 對照 ② 步驟表的「0 規模」列。</p>
 
   <h2 id="dims">④ 它問的維度(vs 刻意不問的)</h2>
+  <p class="lead">這章要你懂:<strong>它「不問」的那五類不是漏掉,是刻意留給後面階段</strong> —— 討論階段就逼你選方案,答案全是沙。</p>
   <div class="tablewrap"><table>
     <tr><th>talk 會問</th><th>talk 刻意不問(屬後續階段)</th></tr>
     <tr><td>現況地形(讀碼查證後跟你對)<br><span class="muted">例:「現在到期是誰在盯?系統裡有任何通知機制嗎?」</span></td><td rowspan="7">方案比較/取捨<br>成功判準量化<br>架構與資料流設計<br>測試策略<br>任務拆分<br><span class="muted">—— 這些在收斂/規格/實作階段才問,<br>提早問答案全是沙,也會誘導搶收斂</span></td></tr>
@@ -207,6 +267,30 @@ claude          # 建議 opus(規劃層)
   </table></div>
 
   <h2 id="states">⑤ 符號與狀態</h2>
+  <p class="lead">這章要你懂:<strong>每個 Open Question 最後只有三個出口</strong>,沒有「懸著」這個選項 —— 步 10 要能停,靠的就是三態全數落定。</p>
+
+  <div class="figwrap"><svg id="fig-states" viewBox="0 0 880 250" role="img"
+       aria-label="Open Question 的三態出口與步 10 gate">
+    <defs><marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
+
+    <g class="n"><rect x="340" y="30" width="200" height="42" rx="6" class="hl"/><text class="dt" x="352" y="50">Open Question</text><text class="dc" x="352" y="64">步 2 逼問時累積</text></g>
+
+    <g class="n"><rect x="40" y="130" width="230" height="42" rx="6" class="go"/><text class="dm" x="52" y="150">[x] 已解</text><text class="dc" x="52" y="164">你答了,有推理鏈背書</text></g>
+    <g class="n"><rect x="325" y="130" width="230" height="42" rx="6" class="note"/><text class="dm" x="337" y="150">[~] 帶假設</text><text class="dc" x="337" y="164">你說先這樣,暫定值待回頭定</text></g>
+    <g class="n"><rect x="610" y="130" width="230" height="42" rx="6" class="b"/><text class="dm" x="622" y="150">[&gt;] 移交</text><text class="dc" x="622" y="164">討論層解不了,留待後續</text></g>
+
+    <g class="n"><rect x="240" y="196" width="400" height="42" rx="6" class="hl"/><text class="dt" x="252" y="216">步 10 過目:三態全定才 approved</text><text class="dc" x="252" y="230">混入其他記號(如 [ ]) → 回步 2 定態後才產 html</text></g>
+
+    <path class="edge" marker-end="url(#ar3)" d="M400,72 L400,100 L155,100 L155,130"/>
+    <path class="edge" marker-end="url(#ar3)" d="M440,72 L440,130"/>
+    <path class="edge" marker-end="url(#ar3)" d="M480,72 L480,100 L725,100 L725,130"/>
+    <path class="edge" marker-end="url(#ar3)" d="M155,172 L155,185 L300,185 L300,196"/>
+    <path class="edge" marker-end="url(#ar3)" d="M440,172 L440,196"/>
+    <path class="edge" marker-end="url(#ar3)" d="M725,172 L725,185 L580,185 L580,196"/>
+  </svg></div>
+  <p class="figcap">三個出口互斥且窮盡。<code>[~]</code> 用黃框是因為它把決定往後推,不是解決。</p>
+
   <div class="tablewrap"><table>
     <tr><th>符號</th><th>意思</th></tr>
     <tr><td><code>[x]</code></td><td>已解 —— 你答了,有推理鏈背書</td></tr>
@@ -218,6 +302,45 @@ claude          # 建議 opus(規劃層)
   </table></div>
 
   <h2 id="whitelist">⑥ 讀取 / 寫入白名單</h2>
+  <p class="lead">這章要你懂:<strong>它讀得比寫得多很多</strong> —— 輸入端可以掃遍原始碼,輸出端卻只有三個檔;紅框那些是連碰都不碰的。</p>
+
+  <div class="figwrap"><svg id="fig-scope" viewBox="0 0 880 430" role="img"
+       aria-label="讀取白名單、寫入白名單與禁區三區關係圖">
+    <defs><marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
+
+    <g class="cluster"><rect x="8" y="20" width="242" height="252" rx="8" class="grpbox"/><text class="dl" x="12" y="36">可讀 —— 唯讀,不改</text></g>
+    <g class="cluster"><rect x="564" y="64" width="252" height="164" rx="8" class="grpbox"/><text class="dl" x="568" y="80">可寫 —— 只有這三個檔</text></g>
+    <g class="cluster"><rect x="8" y="272" width="864" height="112" rx="8" class="grpbox"/><text class="dl" x="12" y="288">不碰 —— 讀也不讀,寫也不寫</text></g>
+
+    <g class="n"><rect x="14" y="52" width="230" height="36" rx="6" class="b"/><text class="dm" x="26" y="70">CONTEXT.md</text><text class="dc" x="26" y="82">repo root 詞彙表</text></g>
+    <g class="n"><rect x="14" y="96" width="230" height="36" rx="6" class="b"/><text class="dm" x="26" y="114">docs/specs/</text><text class="dc" x="26" y="126">系統現況行為</text></g>
+    <g class="n"><rect x="14" y="140" width="230" height="36" rx="6" class="b"/><text class="dt" x="26" y="158">原始碼</text><text class="dc" x="26" y="170">可列目錄·glob·搜尋</text></g>
+    <g class="n"><rect x="14" y="184" width="230" height="36" rx="6" class="b"/><text class="dt" x="26" y="202">你指名的檔案</text><text class="dc" x="26" y="214">使用者主動點名才讀</text></g>
+    <g class="n"><rect x="14" y="228" width="230" height="36" rx="6" class="b"/><text class="dt" x="26" y="246">code-intelligence 工具</text><text class="dc" x="26" y="258">語意索引·KG·LSP,只信查詢結果</text></g>
+
+    <g class="n"><rect x="310" y="120" width="190" height="60" rx="6" class="hl"/><text class="dm" x="322" y="145">/dev-talk</text><text class="dc" x="322" y="162">只產文字,不寫程式碼</text></g>
+
+    <g class="n"><rect x="570" y="96" width="240" height="36" rx="6" class="go"/><text class="dm" x="582" y="114">1-discussion.md</text><text class="dc" x="582" y="126">討論記錄正本(九節)</text></g>
+    <g class="n"><rect x="570" y="140" width="240" height="36" rx="6" class="go"/><text class="dm" x="582" y="158">1-discussion.html</text><text class="dc" x="582" y="170">視覺版(六件)·從 md 重生</text></g>
+    <g class="n"><rect x="570" y="184" width="240" height="36" rx="6" class="go"/><text class="dm" x="582" y="202">CONTEXT.md</text><text class="dc" x="582" y="214">只增改自己本輪的詞條</text></g>
+
+    <g class="n"><rect x="14" y="296" width="420" height="36" rx="6" class="no"/><text class="dt" x="26" y="319">其他文件資料夾 —— 不進、不列目錄、不 glob</text></g>
+    <g class="n"><rect x="446" y="296" width="420" height="36" rx="6" class="no"/><text class="dt" x="458" y="319">工具附帶的記憶/筆記 —— 過往對話殘留,非原始碼</text></g>
+    <g class="n"><rect x="14" y="340" width="420" height="36" rx="6" class="no"/><text class="dt" x="26" y="363">程式碼·設定·schema·資料庫·測試 —— 一律不動</text></g>
+    <g class="n"><rect x="446" y="340" width="420" height="36" rx="6" class="no"/><text class="dt" x="458" y="363">git add/commit、migration、套件安裝 —— 不跑</text></g>
+
+    <path class="edge" marker-end="url(#ar4)" d="M244,70 L277,70 L277,130 L310,130"/>
+    <path class="edge" marker-end="url(#ar4)" d="M244,114 L277,114 L277,140 L310,140"/>
+    <path class="edge" marker-end="url(#ar4)" d="M244,158 L277,158 L277,150 L310,150"/>
+    <path class="edge" marker-end="url(#ar4)" d="M244,202 L277,202 L277,160 L310,160"/>
+    <path class="edge" marker-end="url(#ar4)" d="M244,246 L277,246 L277,170 L310,170"/>
+    <path class="edge" marker-end="url(#ar4)" d="M500,140 L535,140 L535,114 L570,114"/>
+    <path class="edge" marker-end="url(#ar4)" d="M500,150 L535,150 L535,158 L570,158"/>
+    <path class="edge" marker-end="url(#ar4)" d="M500,160 L535,160 L535,202 L570,202"/>
+  </svg></div>
+  <p class="figcap">箭頭只從左往右:讀進來的東西不會被改寫回去。紅框四類是硬邊界,不因你口頭同意而放寬。</p>
+
   <div class="tablewrap"><table>
     <tr><th>白名單</th><th>可碰</th><th>不碰</th></tr>
     <tr><td>讀取</td><td>repo root <code>CONTEXT.md</code>、<code>docs/specs/</code>(系統現況行為)、原始碼(源碼目錄可自由列目錄/glob/搜尋)、使用者主動指名的檔案;查原始碼可用 code-intelligence 工具(語意索引/knowledge graph/LSP),只信任查詢結果</td><td>其他文件類資料夾(不進、不列目錄、不 glob);工具附帶的「記憶/筆記」—— 過往對話殘留,非原始碼</td></tr>
@@ -226,6 +349,7 @@ claude          # 建議 opus(規劃層)
   <p class="muted">討論的產出是文字,不是程式碼。使用者說「開始做」「實作吧」→ 回「討論記錄已完成,實作請另開 session」,然後停。</p>
 
   <h2 id="skeleton">⑦ 產出骨架(<code>1-discussion.md</code> 九節)</h2>
+  <p class="lead">這章要你懂:<strong>九節不是模板欄位,是把前面每一步的產物固定下來</strong> —— 右欄告訴你哪一節空了要回哪一步補。</p>
   <blockquote>精簡原則:每節只寫「下一個讀者需要的最少資訊」,夠用就停;禁重複貼上下文、禁湊字數;寫完自問「能砍一半嗎?」能砍就砍(結論、推理鏈、事實與受影響面不可砍)。</blockquote>
   <div class="tablewrap"><table>
     <tr><th>節</th><th>放什麼</th><th>從哪一步長出來</th></tr>
@@ -242,6 +366,7 @@ claude          # 建議 opus(規劃層)
   </table></div>
 
   <h2 id="visual">⑧ 視覺版(html 產出)判準</h2>
+  <p class="lead">這章要你懂:<strong>html 是拋棄式的重繪,md 才是正本</strong> —— 要改內容一律回去改 md,再重生 html。</p>
   <p><code>1-discussion.html</code> 六件由上而下:摘要卡(Problem + OQ 三態 badge)→ 脈絡圖 → OQ 表 → 驗收雛形表 → Constraints + 詞條增量 → Interview Log 摘要 <span class="muted">(步 9「自核過+六件齊」= 先自核 OQ 三態,定態後這六件都要在)</span>。</p>
   <div class="tablewrap"><table>
     <tr><th>脈絡圖形狀</th><th>畫法</th></tr>
@@ -252,6 +377,7 @@ claude          # 建議 opus(規劃層)
   <p class="muted">禁外部庫(不連 CDN、不嵌外部字型/圖表套件)。md 的 ASCII 版永遠是正本,html 圖只是重繪;html 要改,先改 md 再重生。</p>
 
   <h2 id="faq">⑨ 常見狀況</h2>
+  <p class="lead">這章要你懂:<strong>你想抄捷徑時它會怎麼擋</strong> —— 六種最常見的情境與它的固定反應。</p>
   <div class="tablewrap"><table>
     <tr><th>狀況</th><th>它會怎樣</th></tr>
     <tr><td>你趕時間說「先這樣」</td><td>未解題標 <code>[~]</code> 假設收案 —— 但驗收雛形仍逐條確認,不併批</td></tr>
@@ -264,5 +390,35 @@ claude          # 建議 opus(規劃層)
 
   <p class="muted">正本規則:<code>~/dev/dev-flow/README.md</code>;skill 本體(單一正本):<code>~/.claude/plugins/local/dev-talk/skills/dev-talk/SKILL.md</code>。<span class="muted">(SKILL 版本以 <code>~/.claude/plugins/local/dev-talk/.claude-plugin/plugin.json</code> 實值為準)</span></p>
 </main>
+<script>
+/* 圖表放大檢視:點圖開全螢幕 overlay,滾輪縮放、拖曳平移、ESC/點背景關閉。
+   全 inline,不連任何外部庫(CSP 安全)。三份導覽共用,勿改。 */
+(function(){
+  var ov=null;
+  function esc(e){ if(e.key==='Escape') close(); }
+  function close(){ if(ov){ ov.remove(); ov=null; document.removeEventListener('keydown',esc); } }
+  Array.prototype.forEach.call(document.querySelectorAll('.figwrap>svg'),function(svg){
+    svg.addEventListener('click',function(){
+      close();
+      ov=document.createElement('div'); ov.className='figzoom';
+      var box=document.createElement('div'); box.className='figzoom-inner';
+      var c=svg.cloneNode(true); c.removeAttribute('id'); box.appendChild(c);
+      var tip=document.createElement('div'); tip.className='figzoom-tip';
+      tip.textContent='滾輪縮放 · 拖曳平移 · ESC 或點背景關閉';
+      ov.appendChild(box); ov.appendChild(tip); document.body.appendChild(ov);
+      var s=1,tx=0,ty=0,drag=false,px=0,py=0;
+      function apply(){ c.style.transform='translate('+tx+'px,'+ty+'px) scale('+s+')'; }
+      ov.addEventListener('wheel',function(e){ e.preventDefault();
+        s=Math.min(6,Math.max(0.4,s*(e.deltaY<0?1.12:1/1.12))); apply(); },{passive:false});
+      box.addEventListener('mousedown',function(e){ drag=true; px=e.clientX; py=e.clientY; e.preventDefault(); });
+      window.addEventListener('mousemove',function(e){ if(!drag) return;
+        tx+=e.clientX-px; ty+=e.clientY-py; px=e.clientX; py=e.clientY; apply(); });
+      window.addEventListener('mouseup',function(){ drag=false; });
+      ov.addEventListener('click',function(e){ if(e.target===ov||e.target===tip) close(); });
+      document.addEventListener('keydown',esc);
+    });
+  });
+})();
+</script>
 </body>
 </html>
