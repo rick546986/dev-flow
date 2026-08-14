@@ -45,6 +45,10 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
    `${CLAUDE_PLUGIN_ROOT}/scripts/history-append.sh` → `docs/dev/tools/history-append.sh`
    並 `chmod +x`(**該檔是 HISTORY.md 的唯一寫入口** —— 直接用 Edit/Write 改會在
    多 session 並行時靜默覆蓋,由 `history-guard` hook 擋下)。
+   **gate twin 產生器**:同樣比照散發 `${CLAUDE_PLUGIN_ROOT}/scripts/build-gate-twin.py`
+   與 `devflow_twin_ui.py` → `docs/dev/tools/`(兩支要在同一目錄,前者 import 後者)。
+   G1/G2/G3 的 html 用它產:`docs/dev/tools/build-gate-twin.py <專案根> <slug> <stage>`
+   —— 那三站的 twin 是**審查介面**不是文件視覺版(規格見母版 README §6)。
 2. `.claude/rules/arch-invariants.md`:從 `_templates/arch-invariants.md` 建檔,**並自動產草稿**
    (不留空殼):
    - 先收割既有素材:使用者指名的外部 workflow artifacts 中的架構指引

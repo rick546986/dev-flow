@@ -379,15 +379,24 @@ RED → GREEN → scope check → Verify
 
 **Per-stage 規格表**:
 
-| twin | 必含圖 | 分歧/自判區 | diff |
+| twin | 審查形狀 | 必含圖 | 分歧/自判區 | diff |
+|---|---|---|---|---|
+| 1-discussion | 文件 | 脈絡圖 | OQ+假設 badge、驗收雛形表、Real-world Context 表 | — |
+| 2-decision | **審查介面(G1)** | 方案架構圖(比較期可並排) | Approaches+Rejected、Owner Calls(待裁決置頂) | — |
+| 3-prototype | 文件 | variant 流程/結構圖 | Demo Script、User Demo Feedback(Human verdict 人類親填)、Verdict | — |
+| 4-spec | **審查介面(G2)** | 行為流程圖(R 級) | Drafting Decisions(待裁決置頂) | — |
+| 5-tasks | 文件 | T 依賴 DAG(ASCII 天生適合) | Split Decisions(選配) | — |
+| 6-notes | 文件 | progress 時間線(選配) | Decisions+Deviations 表 | ✅ 每 T commit |
+| 7-review | **審查介面(G3)** | 變更架構圖(動了哪些模組) | F-id 分級表 + **現象證據表**(逐 S 觀測 vs 實跑;前端截圖引 `evidence/`) | ✅ 全 branch |
+
+**兩種形狀的差別**(2026-08-15 補,起因見下方「審查動線頂區」):
+
+| 形狀 | 哪幾站 | 給誰用 | 規格 |
 |---|---|---|---|
-| 1-discussion | 脈絡圖 | OQ+假設 badge、驗收雛形表、Real-world Context 表 | — |
-| 2-decision | 方案架構圖(比較期可並排) | Approaches+Rejected、Owner Calls(待裁決置頂) | — |
-| 3-prototype | variant 流程/結構圖 | Demo Script、User Demo Feedback(Human verdict 人類親填)、Verdict | — |
-| 4-spec | 行為流程圖(R 級) | Drafting Decisions(待裁決置頂) | — |
-| 5-tasks | T 依賴 DAG(ASCII 天生適合) | Split Decisions(選配) | — |
-| 6-notes | progress 時間線(選配) | Decisions+Deviations 表 | ✅ 每 T commit |
-| 7-review | 變更架構圖(動了哪些模組) | F-id 分級表 + **現象證據表**(逐 S 觀測 vs 實跑;前端截圖引 `evidence/`) | ✅ 全 branch |
+| **審查介面** | 2-decision / 4-spec / 7-review —— 三個 gate 站 | 給人**審**,要逐條過並做出判定 | 動線頂區五格 + 待審項目逐條可勾 + 背景資料摺疊(見下) |
+| 文件 | 其餘四站 | 給人**查**,找得到就好 | 現行文件形狀即可 |
+
+判準一句:**這份 twin 存在的理由是不是「有人要對它做判定」** —— 是就是審查介面。
 
 **Diff 細則**(6/7 的 html):每檔一個 `<details>` 折疊條 —— hover 顯示 stat 摘要
 (+N/−N、動到的函式),click 展開完整 diff(紅綠著色);內容必 HTML-escape;
@@ -396,20 +405,38 @@ RED → GREEN → scope check → Verify
 merge-base 與「feature 開工前那個 commit」常常不是同一個(order-intake 實測相差
 105 個 commit、檔數 202 vs 861),用了哪個就標哪個並寫原因,不要照抄本行的字面。
 
-**審查動線頂區**(7-review 的 html **必含**,2026-08-13 補):twin 不只是給人查的參考檔,
-它是給人**審**的。頂部固定五格,每格一句話 + 一個跳轉,審完五格才決定要不要往下讀:
+### 審查動線頂區(**三個 gate twin 一律必含**)
 
-| 格 | 內容 |
+twin 不只是給人查的參考檔,gate 站的 twin 是給人**審**的。這三站的 html 必須做成
+審查介面,三件事缺一不可:
+
+1. **動線頂區**:頂部固定五格,每格一句話 + 一個跳轉。**審完五格才決定要不要往下讀。**
+   格子內容依 stage 不同(見下表),但格數固定五格、每格必須可點跳到對應段落。
+2. **待審項目逐條可勾**:該站要人逐條過的東西(G1 = 方案與 Owner Calls、
+   G2 = 每個 S、G3 = 每條 F-id 與逐 S 現象證據)一條一張卡,可勾、有進度計數。
+   **缺必填欄的項目要在卡上直接現形**(例:S 缺「觀測」欄 → 紅底),不要只在別處列表。
+3. **背景資料摺疊**:不是本次要審的東西(既有脈絡、附錄、骨架、預算表)一律收進
+   `<details>`,預設收合、**內容零刪減**。摺疊是為了讓要審的浮出來,不是為了少寫。
+
+| 站 | 五格內容 |
 |---|---|
-| 判定 | verdict + 輪次(第 N 輪) |
-| 出貨 | Exit Checklist 進度 `x/8`,並點名哪幾項要 owner 親自動 |
-| 爭點 | 「附錄:本輪特有」有幾條分歧、其中幾條要 owner 裁 |
-| 風險 | Known Limits 條數 + 未處置的 🟡 幾條 |
-| 抽驗 | 隨機給一列 `檔:行`,點了直接跳到那一列 |
+| **2-decision(G1)** | 判定(選了哪個方案)/ Owner Calls 待裁決幾條 / 方案數與被駁回的理由條數 / 影響面(動到哪幾個模組)/ 抽驗:隨機一條 Rejected 的理由 |
+| **4-spec(G2)** | 狀態(status)/ Gate(G2 機械關卡過了沒)/ lane + Risk / Drafting Decisions 進度 `x/y` / Demo verdict |
+| **7-review(G3)** | 判定(verdict + 第 N 輪)/ 出貨(Exit Checklist `x/8`,點名哪幾項要 owner 親自動)/ 爭點(「附錄:本輪特有」幾條分歧、幾條要 owner 裁)/ 風險(Known Limits 條數 + 未處置的 🟡 幾條)/ 抽驗(隨機一列 `檔:行`,點了直接跳過去) |
 
-起因:order-intake 的 7-review 長到 95k 字,owner 問「這麼雜要怎麼審、從哪開始」。
-md 側的對應規定是模板頂註的「Reviewer 閱讀動線」五步(`_templates/7-review.md`),
+**起因**(兩次,同一句話):order-intake 的 7-review 長到 95k 字,owner 問
+「這麼雜要怎麼審、從哪開始」→ 2026-08-13 補了 7-review 的動線頂區。
+2026-08-14 owner 打開 ivf_platform 的 `4-spec.html`(md 直轉、16 個 S 攤平在單欄長文),
+第一句話是「這份給人看得有點雜亂」—— **同一個病,只是當時規格只綁了 7-review 一站**。
+規範管的是「必含什麼元素」,不管「長什麼形狀」,所以採用端完全合規、產出仍然難審。
+
+md 側的對應規定是各模板頂註(`_templates/{2-decision,4-spec,7-review}.md`),
 **兩邊講同一件事、md 是正本**;html 只是把它做成可點的。
+
+**產生方式**:`scripts/build-gate-twin.py <專案根> <slug> <stage>`(見該檔頂註)。
+它讀 md 正本逐條解析,不手抄 —— 所以不會與正本漂移;解析不到任何一條會直接失敗,
+不會產出一份空殼。**同一份內容兩種殼**:本機 twin 要完整 html 文件,
+上 artifact 的片段**不得含** `<!doctype>`/`<html>`/`<head>`/`<body>`(發布時外層會自動包)。
 
 要對外報告:跟 AI 說「這份 html 上 artifact」→ 發布成連結。
 殼檔有兩處副本(`_templates/html-shell.html` 與 dev-talk skill 目錄內),改殼須同步兩處。

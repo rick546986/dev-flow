@@ -63,12 +63,14 @@ bash hooks/devflow-exec.sh doctor
 diff -q devflow-contract.json docs/dev/devflow-contract.json
 diff -q scripts/devflow-evidence-gauntlet.sh docs/dev/tools/devflow-evidence-gauntlet.sh
 diff -q scripts/history-append.sh docs/dev/tools/history-append.sh
+diff -q scripts/build-gate-twin.py docs/dev/tools/build-gate-twin.py
+diff -q scripts/devflow_twin_ui.py docs/dev/tools/devflow_twin_ui.py
 ```
 
 有差異 → 用根目錄正本覆蓋 `docs/dev/` 副本(正本方向永遠是 根目錄 → docs/dev/),
 覆蓋後重跑步驟 1 的 doctor。
 
-完成 = 三個 diff 都靜默(無輸出)。
+完成 = 五個 diff 都靜默(無輸出)。
 
 ### 3. 升版號(兩處,一起改)
 

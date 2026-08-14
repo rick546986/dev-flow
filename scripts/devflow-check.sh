@@ -75,6 +75,8 @@ group_architecture() {
   run "architecture/check-adr-integrity"   scripts/check-adr-integrity.sh   || return 1
   # 改版歷史索引:append-only 沒有天然保證,插到中間或手改看起來一樣正常 → 機械驗形狀
   run "architecture/check-history-integrity" scripts/check-history-integrity.sh || return 1
+  # gate twin 是審查介面不是文件視覺版(README §6):三件必含 + 兩種殼,對三站實跑
+  run "architecture/check-gate-twin"         scripts/check-gate-twin.sh         || return 1
   run "architecture/check-version-sync"    scripts/check-version-sync.sh    || return 1
   # Stage 6/7 執行期強制條款(A1 守衛武裝／A3 Verify 案例數／A4 gauntlet 路徑／
   # A5 觀測可執行性)。四條都是 2026-08 order-intake 實際失效過的散文規則。
