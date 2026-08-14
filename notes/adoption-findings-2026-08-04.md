@@ -14,10 +14,12 @@ python-prism）從舊世代模板遷移到 `2c36976`（= `devflow-pilot-v2`，pl
 > （母版 `bf0b8bf`、plugin `41ca267`），**A-11 未修**，B-5～B-7／C-3 待裁決。
 > 第一輪的 **A-0 仍未修**，並在第二輪取得追加實測（見下方追加段）。
 >
-> **第三輪追加（2026-08-14）**：ivf_platform（`pgs-report-batch-scope`，fast lane）走到 G2
-> 送審時撞到兩條 B 級 —— **B-8**（gate twin 沒有審查介面規格，2026-08-13 只修了 7-review
-> 沒推廣到 G1／G2）與 **B-9**（「每 S 有觀測欄」是模板明文完成條件卻無機械檢查，
-> 實測 16 個 S 中 5 個缺欄仍走到 G2）。兩條**皆未修**，見本檔〈第三輪〉。
+> **第三輪追加（2026-08-14）**：ivf_platform（`pgs-report-batch-scope`，fast lane）撞到
+> 一條 A 級、兩條 B 級 —— **A-13**（`start` 把 gitignore 已忽略的檔也算 scope 外髒檔，
+> 有本機開發目錄的專案一律啟動不了，**Stage 6 因此卡住**）、**B-8**（gate twin 沒有審查
+> 介面規格，2026-08-13 只修了 7-review 沒推廣到 G1／G2）、**B-9**（「每 S 有觀測欄」是
+> 模板明文完成條件卻無機械檢查，實測 16 個 S 中 5 個缺欄仍走到 G2）。三條**皆未修**，
+> 見本檔〈第三輪〉。
 > owner 2026-08-14 指示「寫進優化項目供後續處理，dev-flow 的修改另開 session 做」。
 
 ---
@@ -1066,10 +1068,104 @@ owner 評語：「這次審查介面不錯」。做法與可移植的部分：
   `[data-theme="dark"]`）、表格 `overflow-x:auto`、`prefers-reduced-motion` 全按母版
   html-shell 的既有規矩。
 
-**要注意的一點**：這支原型輸出的是 Artifact 用的片段（無 `<!doctype>/<html>/<head>/<body>`，
-發布時外層會自動包）。若要當本機 twin 用，需套 `_templates/html-shell.html` 完整外殼 ——
-本輪是兩份分開產（本機 twin 走 md 直轉、Artifact 走審查介面）。若採納 B-8，
-建議合併成單一產生器、兩種輸出模式。
+**要注意的一點**：Artifact 片段不得含 `<!doctype>/<html>/<head>/<body>`（發布時外層會自動包），
+本機 twin 則需要完整文件外殼 —— **同一份內容，兩種殼**。
+
+### B-8 附錄追加（2026-08-14 稍晚）：原型已改成單一產生器、兩種輸出
+
+第一版是兩份分開產（本機 twin 走 md 直轉、Artifact 走審查介面），owner 隨即反映
+「本機的 html 也更新成這個版本」+「Stage 5 不好閱讀」——**兩件事都是同一個缺口的下游症狀**：
+沒有共用 UI 層，所以每加一站就多一份會漂移的樣式。已改成三支：
+
+| 檔（`notes/patches/gate-twin-ui-prototype/`） | 職責 |
+|---|---|
+| `devflow_ui.py` | 共用 CSS（tokens + 動線格 + 區塊卡 + 摺疊 + 圖）與**兩種輸出殼**：`local_page()` 完整文件、`artifact_page()` 片段 |
+| `build_review.py` | 4-spec：R/S → 可勾選 S 卡、觀測欄標色、缺欄紅底 |
+| `build_tasks.py` | 5-tasks：T → 任務卡（Intent 突出、四欄表、**Boundaries 摺疊**）、DAG 用 inline SVG |
+
+`build_tasks.py` 額外驗證的東西（B-9 的同類機械檢查，可直接抄進母版腳本）：
+逐 T 檢查 Covers／Files／Verify／Blocked-by／Intent／Boundaries 六欄非空，缺 → exit 1；
+T 數不符預期 → exit 1；md 出現未收錄的 `## ` 章節 → exit 1（防新增章節被靜默丟掉，
+第一版就發生過：新加的「G2 審查記錄」節差點沒進 html）。
+
+**5-tasks 那頁「不好閱讀」的具體成因**（md 直轉時）：Boundaries 是每個 T 最長的欄位
+（本例最長 1,461 字），直轉後五個 T 的禁區全部攤平在頁面上，把 Covers／Files／Verify
+這些一眼要看到的欄位擠掉。改成摺疊後，預設看到的是「這個 T 做完多了什麼 + 四個關鍵欄」，
+禁區要動工前才展開。**這是 gate twin 與紀錄 twin 之外的第三種形狀：執行板**，
+若採納 B-8 的分類表，`5-tasks` 應歸到「執行板」而非「紀錄 twin」。
+
+⚠️ `notes/patches/spec-review-ui-prototype.py` 是**第一版單支腳本**（已被上表三支取代），
+本檔已於 `e940267` commit，本輪未刪 —— **由 dev-flow 這邊的 session 決定要不要移除**，
+採用端不代為處置。
+
+---
+
+## A-13 — `devflow-exec.sh start` 把 **.gitignore 已忽略的檔**也算成「scope 外未提交改動」，有本機開發目錄的專案一律啟動不了　⏳ 未修
+
+### 現象
+
+ivf_platform 走到 Stage 6，`devflow-exec.sh start pgs-report-batch-scope` 回：
+
+```
+⛔ 拒絕啟動:工作樹已有 56 個 scope 外未提交改動(前 10):
+  .gitignore
+  config/development/config.php
+  ...
+→ 請先 commit、還原或使用乾淨 worktree，再重新 start。
+```
+
+56 個的實際組成（`git status --porcelain=v1 -uall --ignored=traditional | awk '{print $1}' | sort | uniq -c`）：
+
+| 狀態 | 數量 | 內容 |
+|---|---|---|
+| `!!`（**已被 .gitignore 忽略**） | **44** | `.DS_Store`、`.serena/`、`_localdev_mysql/`（本機 MySQL 容器 + 11 支 relay 腳本 + init SQL + mock） |
+| `??`（untracked） | 25 | `docs/dev/` 全部（含本 feature 的 4-spec/5-tasks）、`CONTEXT.md`、`.claude/rules/` |
+| `M`（tracked modified） | 4 | `.gitignore`、`config/development/{config,database}.php`、`controllers/backend/login.php` |
+
+### 查證（唯讀）
+
+`hooks/devflow-lib.py:47-51`：
+
+```python
+def git_dirty_paths(root):
+    status = subprocess.run(
+        ["git", "status", "--porcelain=v1", "-z", "-uall", "--ignored=traditional"], ...)
+```
+
+`--ignored=traditional` 把**專案自己明確宣告要忽略的檔**一起撈出來。
+`hooks/_exec_impl.py:139-178` 的 `dirty_scan_and_baseline()` 只豁免三種：
+`.git/`、`is_ambient_path()`（僅 `.DS_Store`／`._*`／`Thumbs.db`／`*.pyc`／`__pycache__`）、
+`.devflow/` 前綴，以及「唯一差異是 `.devflow/` 行」的 `.gitignore`。
+**gitignore 的其餘內容完全不在豁免內。**
+
+### 這條的真正形狀
+
+不是「這個專案太髒」。**任何在 repo 內放本機開發環境的專案都啟動不了** ——
+本機 DB 容器、mock server、`.venv/`、`node_modules/`、IDE 目錄、editor 快取。
+這些正是 `.gitignore` 存在的理由，開發者不會、也不該為了跑 Stage 6 把它們刪掉。
+
+守衛的目的是「防止 scope 外的**版本控制內容**被改動」。已被 gitignore 的路徑
+**在定義上不會進 diff**，把它們算進去是誤判，而且是**無法排除的誤判**——
+使用者唯一的出路是刪檔或整個換乾淨 worktree（那樣本機環境也一起沒了）。
+
+對照 `dev-run` SKILL「前置(缺一不啟;順序不可調)」：規則要求必啟守衛，
+守衛在這類專案必拒 → **規定了做不到的事**，A 級。
+
+### 建議修法（未動工，需裁決）
+
+1. `git_dirty_paths()` 拿掉 `--ignored=traditional`（或另加參數只在需要時開）。
+   理由：ignored 路徑不會進 commit，不構成 scope 汙染風險。
+2. 若仍要看 ignored（例如防止 build 產物混淆），改成**只警告不拒啟**，
+   並在訊息裡分開列「tracked modified / untracked / ignored」三類，
+   讓使用者知道哪些是真的要處理、哪些是雜訊 —— 現行訊息把三類混在一起，
+   前 10 筆剛好全是前兩類，使用者根本不知道另外 44 筆是 gitignore 的東西。
+3. `untracked` 的 `docs/dev/<slug>/` 應比照 `extra_skip_shared` 豁免：
+   feature 自己的規劃文檔本來就是 Stage 6 期間會被派工者改的（記帳），
+   現行只豁免 `5-tasks` 與 `6-implementation-notes` 兩個前綴，
+   `4-spec.html`／`5-tasks.html` 等 twin 反而會擋住 re-arm。
+4. ⚠️ 採用端**不得**用 `git update-index --skip-worktree` 或刪本機目錄來繞過 ——
+   前者會讓後續真實改動被靜默忽略，後者毀掉開發環境。這條沒有安全的採用端 workaround，
+   只能改母版。
 
 ---
 
