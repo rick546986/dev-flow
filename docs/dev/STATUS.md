@@ -1,22 +1,25 @@
 # docs/dev — 改版流程索引
 
-> 本檔追蹤**方法論母版自身**的改版工作(非採用專案的 feature)。三表:
-> Active(進行中)/ Shipped(已落地)/ Backlog(待處理,多數來自採用現場回饋)。
+> 本檔追蹤**方法論母版自身**的改版工作(非採用專案的 feature)。兩表:
+> Active(進行中)/ Backlog(待處理,多數來自採用現場回饋)。
+>
+> **做完的不留在本檔** —— 一律追加到 `HISTORY.md`(只增不改的索引,最新在最下面),
+> 值得長期保存的決策另立 `docs/adr/NNNN-slug.md`。這樣本檔永遠只回答一個問題:
+> **現在誰在做什麼、還有什麼沒做。**
 
 ## Active
 
 目前無進行中的改版軌。
 
-## Shipped
+## 已完成
 
-| 軌 | 內容 | 落地位置 | 日期 |
-|---|---|---|---|
-| vnext-runtime | Stage 6 執行層並行改造(P1 執行/P2 operational/P3 observability/P4 gauntlet-gates 四軌) | `manifests/p1-execution.md` ~ `p4-gauntlet-gates.md`、`hooks/_exec_impl.py`/`_obs_impl.py`/`_doctor_impl.py` 等;需求正本 `docs/prompts/devflow-vnext-runtime.md`(指標見 `docs/dev/vnext-runtime/README.md`) | 2026-08-02 |
-| 4cap-remediation | 四能力補強執行(執行報告 + 兩份輸入文件 + audit fixes,原載於 `notes/`,本次搬入 `docs/dev/4cap-remediation/`) | `docs/dev/4cap-remediation/` | 2026-08-02 |
-| single-plugin-merge | 把 Claude Code plugin(hooks/skills/manifests/.claude-plugin)從 `dev-flow-plugin` repo 併入本 repo,repo 名 = marketplace 名 = plugin 名 統一為 `dev-flow`;`methodology/` 子目錄層收攏進 repo root;導覽 html 收進 `guides/` + 根目錄留 redirect | 本次提交(見 `docs/PLUGIN.md`) | 2026-08-13 |
-| a13-start-ignored-dirty | **修 A-0/A-13**(同一條,第一輪與第三輪各發現一次):`start` 把 gitignore 已忽略的檔算成 scope 外髒檔,有本機開發目錄的專案一律啟動不了。`git_dirty_paths(with_codes=)` 讓兩個呼叫端各取所需 —— postbash 仍看 ignored(堵 .gitignore 遮蔽),start 不再誤判。selftest 294→297 | `hooks/devflow-lib.py`、`hooks/_exec_impl.py`、`hooks/selftest.sh` | 2026-08-14 · v3.1.0 |
-| b9-spec-gate | **修 B-9**:G2 沒有任何機械關卡,「每 S 有觀測欄」等模板明文條件靠人眼。新增 `check-spec-gate.sh` 五項形狀檢查(C1 觀測欄 / C2 Profile 可解析 / C3 lane×Risk / C4 模糊詞 / C5 DD 無殘留),註冊進 devflow-check(15→16 組),模板步驟 5 改為「先跑機械關卡再做人工鏈檢」 | `scripts/check-spec-gate.sh`、`scripts/devflow-check.sh`、`skills/dev-flow/SKILL.md`、`_templates/4-spec.md` | 2026-08-14 · v3.1.0 |
-| guides-visual-rewrite | 三份導覽改成圖為主(15 張手寫 SVG 全過幾何 lint,13 個 parity 區逐字未動)+ README 重整閱讀動線(三向分流 + 15 條規則索引)。gate twin 的 parity 機制第一次實跑 `render-methodology-corrections.sh --write` | `guides/`(3 檔)、`README.md` | 2026-08-14 · v3.1.0 |
+見 `HISTORY.md`(只增不改,最新在最下面)。**不要直接編輯那個檔**,用:
+
+```bash
+scripts/history-append.sh --slug <代號> --what <做了什麼> --why <為什麼> --where <落在哪>
+```
+
+理由:同一個專案可能同時有多個 session 在寫,直接編輯會讓後寫的把先寫的蓋掉且不報錯。
 
 ## Backlog
 

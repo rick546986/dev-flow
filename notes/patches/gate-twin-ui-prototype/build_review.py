@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """4-spec 審查介面產生器
-   輸入：docs/dev/pgs-report-batch-scope/4-spec.md（唯一正本）
-   輸出：審查用 artifact html（R/S 拆成可勾選卡片，背景資料摺疊）
+   輸入：<專案根>/docs/dev/<slug>/4-spec.md（唯一正本）
+   輸出：本機 4-spec.html（完整文件）+ 審查用 artifact 片段
+        （R/S 拆成可勾選卡片，背景資料摺疊）
    R/S 內容由 md 逐條解析而來，不手抄，避免與正本漂移。
+
+   用法：build_review.py <專案根目錄> <slug> [artifact 輸出路徑]
+   或用環境變數：DEVFLOW_PROJECT_ROOT / DEVFLOW_SLUG / DEVFLOW_ARTIFACT_OUT
 """
 import html
+import os
 import pathlib
 import re
 import sys
@@ -14,14 +19,32 @@ import markdown
 
 import devflow_ui
 
-ROOT = pathlib.Path("/Users/asheng/dev/ivf_platform")
-SLUG = "pgs-report-batch-scope"
+_ARGV = sys.argv[1:]
+ROOT = pathlib.Path(
+    _ARGV[0] if len(_ARGV) > 0 else os.environ.get("DEVFLOW_PROJECT_ROOT", ".")
+).expanduser().resolve()
+SLUG = _ARGV[1] if len(_ARGV) > 1 else os.environ.get("DEVFLOW_SLUG", "")
+if not SLUG:
+    sys.exit("用法：build_review.py <專案根目錄> <slug> [artifact 輸出路徑]"
+             "（或設 DEVFLOW_PROJECT_ROOT / DEVFLOW_SLUG）")
 SRC = ROOT / "docs/dev" / SLUG / "4-spec.md"
 OUT_LOCAL = ROOT / "docs/dev" / SLUG / "4-spec.html"
 OUT_ART = pathlib.Path(
-    "/private/tmp/claude-501/-Users-asheng-dev-ivf-platform/"
-    "dc4f496c-c333-40b6-82ea-4359e36d5916/scratchpad/4-spec-review.html"
-)
+    _ARGV[2] if len(_ARGV) > 2
+    else os.environ.get(
+        "DEVFLOW_ARTIFACT_OUT",
+        str(ROOT / "docs/dev" / SLUG / "4-spec-review.artifact.html"),
+    )
+).expanduser()
+
+
+def _expect(name: str):
+    """期望條數：設了才檢查，沒設就只印實際條數（原本寫死 16，換一份 spec 必誤判）。"""
+    raw = os.environ.get(name, "").strip()
+    return int(raw) if raw.isdigit() else None
+
+
+EXPECT_S = _expect("DEVFLOW_EXPECT_S")
 TITLE = "PGS 報告批次歸屬規格"
 
 # R 的嚴重度分級（來自 4-spec 本文：R-4 明寫「嚴重度最高」，R-3 是唯一會毀資料的洞）
@@ -211,9 +234,14 @@ def main() -> int:
 </section>"""
         )
 
-    if total_s != 16:
-        print(f"ERROR: 解析到 {total_s} 個 S，預期 16", file=sys.stderr)
+    if total_s == 0:
+        print("ERROR: 一個 S 都沒解析到 —— 檢查 4-spec.md 的 S 標題與 GIVEN/WHEN/THEN 欄位格式",
+              file=sys.stderr)
         return 1
+    if EXPECT_S is not None and total_s != EXPECT_S:
+        print(f"ERROR: 解析到 {total_s} 個 S，預期 {EXPECT_S}（DEVFLOW_EXPECT_S）", file=sys.stderr)
+        return 1
+    print(f"NOTE: 解析到 {total_s} 個 S", file=sys.stderr)
 
     # --- 附錄：其餘章節原文（markdown 轉換，不刪內容）---
     appendix_order = [
@@ -227,22 +255,27 @@ def main() -> int:
         ("Test Skeletons", "測試骨架", "純函式 6 個 case"),
         ("Known limits（實作者必讀）", "已知限界", "DB 未實測、無測試環境"),
     ]
-    # 未匹配章節守衛：md 新增章節時不得被靜默丟掉
-    #（SVG 圖取代了「行為流程」，R-x 已渲染成卡片，其餘一律必須在 appendix_order 內）
+    # 未匹配章節守衛：md 新增章節時不得被靜默丟掉。
+    # 上面那份清單是照原始那份 spec 寫的，換一份 spec 章節名一定不同 ——
+    # 所以改成「自動收進附錄末尾並印出」，既不靜默丟失、也不擋住別的專案。
     known = {k for k, _, _ in appendix_order} | {"行為流程"}
     unmatched = [
         t for t, _ in secs if not re.match(r"R-\d+ · ", t) and t not in known
     ]
     if unmatched:
-        print(f"ERROR: md 有未收錄的章節，會被靜默丟掉：{unmatched}", file=sys.stderr)
-        return 1
+        print(f"NOTE: 以下章節不在預設附錄清單，已自動收進附錄末尾：{unmatched}",
+              file=sys.stderr)
+        appendix_order = appendix_order + [
+            (t, t, "md 內原有章節（自動收錄）") for t in unmatched
+        ]
 
     appendix = []
+    skipped = []
     for key, label, hint in appendix_order:
         body = by_title.get(key)
         if body is None:
-            print(f"ERROR: 找不到章節「{key}」", file=sys.stderr)
-            return 1
+            skipped.append(key)
+            continue
         inner = markdown.markdown(
             body, extensions=["tables", "fenced_code", "sane_lists"], output_format="html"
         )
@@ -255,6 +288,9 @@ def main() -> int:
   <div class="doc-in">{inner}</div>
 </details>"""
         )
+
+    if skipped:
+        print(f"NOTE: 這份 md 沒有以下章節，已略過：{skipped}", file=sys.stderr)
 
     body = f"""<div class="wrap">
 <header class="masthead">

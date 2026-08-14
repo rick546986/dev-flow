@@ -67,8 +67,8 @@ dev-flow/
 │
 ├── ── Claude Code plugin(裝進使用者機器的部分)────────────────
 │   .claude-plugin/          plugin.json(版本字串=更新判斷依據)+ marketplace.json
-│   hooks/ (23)              守衛與執行引擎
-│     ├ hooks.json           4 條掛載,壞了守衛全靜默失效
+│   hooks/ (24)              守衛與執行引擎
+│     ├ hooks.json           5 條掛載,壞了守衛全靜默失效
 │     ├ devflow-guard.sh     PreToolUse 讀寫守衛(未武裝時對 Stage 6 文件軟擋一次)
 │     ├ devflow-exec.sh      執行引擎 + doctor 版本握手
 │     ├ gate-consistency.sh  從 README §7 抽 gate token,比對 SKILL/README §3/三模板
@@ -97,9 +97,11 @@ dev-flow/
 │
 └── ── 本 repo 自己的改版流程(dogfooding)──────────────────────
     docs/dev/                本 repo 用自己的流程管自己
-      ├ STATUS.md            Active / Shipped / Backlog 三張表
+      ├ STATUS.md            Active / Backlog 兩張表(做完的不留這裡)
+      ├ HISTORY.md           改版歷史索引(只增不改;唯一寫入口 scripts/history-append.sh)
       ├ devflow-contract.json + tools/  dev-setup 的散發副本(doctor 在這裡找)
       └ <slug>/              各次改版的七階段文檔
+    docs/adr/                長期決策,一決策一檔(可被後來的 superseded)
 ```
 
 線上看導覽:[quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html)、
@@ -134,7 +136,8 @@ flowchart LR
 | `CONTEXT.md`(repo root) | 這個詞是什麼意思 | 永生 | 階段1順手維護 / 新人第一讀 |
 | `docs/specs/<domain>.md` | 系統**現在**的行為(唯一真相) | 永生,只由階段7出口併入 | 7-Exit / 動這塊前必讀 |
 | `docs/adr/NNNN-slug.md` | 當初**為何**這樣選 | 永生,可 superseded | 2-decision 晉升 / 想翻案的人 |
-| `docs/dev/STATUS.md` | 誰正在做什麼、到哪一階段 | 常駐看板 | 每過 gate 更新 / 全隊 |
+| `docs/dev/STATUS.md` | 誰正在做什麼、還有什麼沒做 | 常駐看板,做完的移出 | 每過 gate 更新 / 全隊 |
+| `docs/dev/HISTORY.md` | **做過什麼、當初為什麼做** | 永生,只增不改(append-only) | ship 時由 `history-append.sh` 追加(**禁手改**)/ 想知道某件事怎麼變成現在這樣的人 |
 | `docs/dev/<feature>/1-7` | 這次變更的完整生命週期 | ship 後封存 | 流程產出 / reviewer + 考古 |
 | `.claude/rules/*.md` | 架構不變量/技術慣例/坑(Claude Code 官方規則路徑,無 `paths` frontmatter 者每 session 自動載入) | 永生 | setup 產草稿 / 全員+執行引擎;**只放 gotchas,禁流程規則(§11),spec 不重抄**;CLAUDE.md 對應段改指標避免雙正本;檔案長大(>~100 行)或多技術棧時可用 `paths:` frontmatter 做 path-scoped 按需載入(判準見模板頂註) |
 
