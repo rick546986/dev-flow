@@ -13,6 +13,12 @@ python-prism）從舊世代模板遷移到 `2c36976`（= `devflow-pilot-v2`，pl
 > 三條 B 級、一條 C 級，見本檔後半的〈第二輪〉。其中 **A-7～A-10 已當場修好並 commit**
 > （母版 `bf0b8bf`、plugin `41ca267`），**A-11 未修**，B-5～B-7／C-3 待裁決。
 > 第一輪的 **A-0 仍未修**，並在第二輪取得追加實測（見下方追加段）。
+>
+> **第三輪追加（2026-08-14）**：ivf_platform（`pgs-report-batch-scope`，fast lane）走到 G2
+> 送審時撞到兩條 B 級 —— **B-8**（gate twin 沒有審查介面規格，2026-08-13 只修了 7-review
+> 沒推廣到 G1／G2）與 **B-9**（「每 S 有觀測欄」是模板明文完成條件卻無機械檢查，
+> 實測 16 個 S 中 5 個缺欄仍走到 G2）。兩條**皆未修**，見本檔〈第三輪〉。
+> owner 2026-08-14 指示「寫進優化項目供後續處理，dev-flow 的修改另開 session 做」。
 
 ---
 
@@ -972,6 +978,144 @@ notes/design/evidence-gauntlet.md:64
    「地板留餘裕 = 地板沒有牙齒」）。
    **這不足以推翻「不逐 T 跑」的規則**（樣本 n=1，且該 feature 的 Risk 是 high），
    但足以支持在 `Risk: high` 時把它列為**建議**而非禁止。這是 rick 的決定。
+
+---
+
+# 第三輪（2026-08-14，ivf_platform / pgs-report-batch-scope）
+
+**來源**：ivf_platform（CI2 舊系統，PHP）走 fast lane 到 G2 送審時，owner 打開 `4-spec.html`
+第一句話是「這份給人看得有點雜亂」。追下去發現兩條 B 級，**兩條互相獨立**：
+B-8 是**形狀**（gate twin 沒有審查介面規格），B-9 是**內容**（明文要求的欄位缺了沒人擋）。
+
+**性質**：同 A/B/C 分級。兩條皆**未動母版**，只記問題與建議修法。
+
+---
+
+## B-8 — gate twin 的「審查動線」規格只綁了 7-review，G1／G2 的 twin 沒有形狀規格　⏳ 未修
+
+### 現象
+
+owner 打開 `4-spec.html`（22KB md 直轉、單欄長文件、一張 R 級流程圖、DD 表在底部），
+反應是「有點雜亂」——**與 order-intake 那次 7-review 95k 字的反應是同一句話**。
+
+### 查證（全部唯讀）
+
+母版 `README.md` §6 的 per-stage 規格表，4-spec 那列只有三欄要求：
+
+| twin | 必含圖 | 分歧/自判區 | diff |
+|---|---|---|---|
+| 4-spec | 行為流程圖(R 級) | Drafting Decisions(待裁決置頂) | — |
+
+`_templates/4-spec.md` 頂註第 18-19 行同樣只列「必含什麼元素」：
+
+```
+> 本階段固定產出:`4-spec.md`(本模板全節)+ `4-spec.html`(G2 必產;必含 R 級
+> 行為流程圖、Drafting Decisions 待裁決置頂)。
+```
+
+**採用端完全合規**（兩個元素都有），產出仍然難審。因為規範管的是「必含什麼」，
+不管「長什麼形狀」。
+
+而同一份 README §6 下方有一整段獨立規格 ——
+
+> **審查動線頂區**(7-review 的 html **必含**,2026-08-13 補):twin 不只是給人查的參考檔,
+> 它是給人**審**的。頂部固定五格,每格一句話 + 一個跳轉,審完五格才決定要不要往下讀
+> …
+> 起因:order-intake 的 7-review 長到 95k 字,owner 問「這麼雜要怎麼審、從哪開始」。
+
+**同一個病 2026-08-13 修過一次，但只修了 7-review 那一站。** G1（2-decision）與
+G2（4-spec）一樣是要人逐條審的 gate，一樣會長到 owner 不知道從哪開始，規格沒跟上。
+
+### 這條的真正形狀
+
+不是「4-spec twin 少了五格」，是**規範沒有「gate twin = 審查介面」這個分類**。
+現行 §6 把 1～7 的 twin 一視同仁當「md 的視覺版」，只在 7-review 破例加了動線頂區。
+實際上兩類用途不同：
+
+| 類 | twin | 用途 | 該長的形狀 |
+|---|---|---|---|
+| gate twin | 2-decision（G1）、4-spec（G2）、7-review（G3） | 給人**審**，逐條過 | 審查介面：動線頂區 + 待審項目逐條可勾 + 背景資料摺疊 |
+| 紀錄 twin | 1-discussion、3-prototype、5-tasks、6-notes | 給人**查**，找得到就好 | 現行的文件形狀就夠 |
+
+### 建議修法（未動工，需裁決）
+
+1. `README.md` §6：把「審查動線頂區」從 7-review 專屬**升格成所有 gate twin 通用**，
+   格數與內容依 stage 調整（4-spec 建議五格：狀態／Gate／lane+Risk／DD 進度／Demo verdict）。
+2. §6 per-stage 規格表加一欄「審查形狀」，gate twin 三列填「審查介面」，其餘填「文件」。
+3. `_templates/{2-decision,4-spec}.md` 頂註各補一行，與 7-review 模板的「Reviewer 閱讀動線」
+   對齊（md 是正本、html 做成可點的，這個分工 7-review 已經確立，照抄即可）。
+4. **可直接複用的範本**：本輪產出的 4-spec 審查介面原型已存進
+   `notes/patches/spec-review-ui-prototype.py`（見下方 B-8 附錄）。
+
+### B-8 附錄：本輪的審查介面原型（owner 2026-08-14 指定收錄）
+
+owner 評語：「這次審查介面不錯」。做法與可移植的部分：
+
+- **輸入是 `4-spec.md` 本身**，R/S 逐條 regex 解析（`### S-x.y` + `- **GIVEN/WHEN/THEN/觀測**`），
+  **不手抄**，所以不會與正本漂移；解析數不符預期（16）直接 exit 1，避免默默少一條。
+- **每個 S 一張卡**：checkbox + S-id chip + 標題 + 「回歸基準線／主案例」標籤；
+  GIVEN/WHEN/THEN 用 58px 標籤欄對齊；**「觀測」欄獨立標色**（審查判準就是它）。
+- **缺欄直接紅底現形**：解析不到「觀測」的 S 渲染成紅色「缺『觀測』欄」卡
+  —— 這正是 B-9 在本輪被抓到的方式。
+- **頂部 sticky 進度條**：已審 N/16 + 百分比 bar + 清除鈕；勾選狀態存 `localStorage`
+  （純前端，不送出），關掉再開還在。
+- **背景資料全部收進 `<details>`**：Bug Scenario／AC／Out of Scope／Diff Budget／
+  Verification Profile／DD／Test Skeletons／Known limits 八節，預設收合、內容零刪減。
+- **動線五格**在頁首：狀態／Gate／lane+Risk／DD 進度／Demo verdict。
+- 三態主題（bare `:root` / `prefers-color-scheme` 加 `:not([data-theme="light"])` 守衛 /
+  `[data-theme="dark"]`）、表格 `overflow-x:auto`、`prefers-reduced-motion` 全按母版
+  html-shell 的既有規矩。
+
+**要注意的一點**：這支原型輸出的是 Artifact 用的片段（無 `<!doctype>/<html>/<head>/<body>`，
+發布時外層會自動包）。若要當本機 twin 用，需套 `_templates/html-shell.html` 完整外殼 ——
+本輪是兩份分開產（本機 twin 走 md 直轉、Artifact 走審查介面）。若採納 B-8，
+建議合併成單一產生器、兩種輸出模式。
+
+---
+
+## B-9 — 「每 S 有觀測欄」是模板明文的完成條件，卻沒有任何機械檢查　⏳ 未修
+
+### 查證
+
+`_templates/4-spec.md` 頂註執行清單步 2 寫得很清楚：
+
+```
+> 2. 逐 R 展開 S:…**每 S 承接 1-discussion 該條驗收雛形的「觀測方式」**(從哪看/
+>    看到什麼算對/拿什麼資料試;雛形沒寫就在此補齊,純內部行為註明「無外部現象」)。
+>    段段給使用者確認。完成 = 全 R 展開、**每 S 有觀測欄**、每段有確認…
+```
+
+實測：ivf_platform 的 `4-spec.md` 走到 G2 送審時，16 個 S 裡有 **5 個缺「觀測」欄**：
+
+| S | 缺什麼 |
+|---|---|
+| S-1.6 | 缺觀測 |
+| S-2.3 | 缺觀測 |
+| S-3.2 | 缺觀測 |
+| S-3.3 | 缺觀測，**同時缺 GIVEN** |
+| S-4.3 | 缺觀測 |
+
+而同一份 spec 的 Acceptance Criteria 自己寫著「**每個 S 的『觀測』由驗收者親自實跑一次**
+並記錄現象證據（不接受『程式碼看起來對』）」—— 缺觀測欄的 S 滿足不了這條，
+G3 的「現象證據逐 S 相符」也就無從驗起。
+
+### 為什麼會漏
+
+步 2 的「完成 =」只靠寫的人自覺打勾。README §7 的〈強制力對照〉自己承認過：
+Gauntlet 只驗 Evidence 契約（一份 markdown 有沒有照規矩填），不驗 4-spec 的欄位完整性。
+**在 md 直轉的長文件裡，缺一行只是「少一行」，肉眼掃不出來**；結構化成卡片之後 5 個立刻現形
+（B-8 的原型就是這樣抓到的）。這兩條因此互相放大：形狀不好審 → 內容缺漏更難發現。
+
+### 建議修法（未動工，需裁決）
+
+1. 新增 `scripts/check-spec-scenarios.sh <slug>`：解析 `4-spec.md` 的 `### S-x.y`，
+   逐條驗 GIVEN／WHEN／THEN／觀測四欄非空，缺 → exit 2 並列出 S-id。
+   接進 `devflow-check.sh all`，並在 G2 送審步（模板頂註步 6）列為前置。
+2. 同一支順帶做**反模糊三律的機械部分**：模糊詞掃描（適當/正確/合理/必要時/妥善/
+   robust/等等/視情況）與 TBD 殘留掃描 —— 目前這兩項也只寫在頂註步 5，同樣無檢查。
+3. ⚠️ 寫這支腳本時注意母版自己的教訓（本檔〈第二輪查證方法〉附錄）：
+   **先看計數再看 exit code**。解析到 0 個 S 卻回 exit 0 = 假綠，
+   與「`go test -run` 沒匹配也回 rc=0」同類。本輪原型的做法是硬比對預期條數，可照抄。
 
 ---
 
