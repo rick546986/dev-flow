@@ -46,9 +46,12 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 >    (applicable 全填 / n-a 附理由)+ Stage 3 對帳逐場有下落。
 > 4. Drafting Decisions 清點:草擬自拍板逐條(決策|理由|棄項|待人審);全文掃
 >    TBD/之後再說/實作再定 → 命中即轉 DD 或退回提問。完成 = 掃描零殘留。
-> 5. 自檢(反模糊掃描):逐 S 過三律(見上,含模糊詞掃);鏈檢:每條驗收雛形 ≥1 個 S
->    承接、每 MODIFIED 有原文引用。任一否 → 重寫該 S;(選配)每 S 產 named test
->    skeleton 入 Test Skeletons 節。完成 = 逐 S 打勾+鏈檢清零。
+> 5. 自檢(反模糊掃描):**先跑機械關卡** `scripts/check-spec-gate.sh <本檔路徑>`
+>    (C1 每 S 有觀測欄 / C2 Profile 可解析 / C3 lane×Risk 合法 / C4 模糊詞 /
+>    C5 DD 無殘留待裁決);紅了先修再往下,它擋的都是模板明文要求卻沒人擋的項。
+>    機械過了才做人工部分:鏈檢每條驗收雛形 ≥1 個 S 承接、每 MODIFIED 有原文引用。
+>    任一否 → 重寫該 S;(選配)每 S 產 named test skeleton 入 Test Skeletons 節。
+>    完成 = 機械關卡 exit 0 + 逐 S 打勾 + 鏈檢清零。
 > 6. G2 送審:html twin(R 級行為流程圖;DD 待裁決置頂)→ in-review → reviewer。
 >    審查者依序:適格人類 reviewer → fresh-context reviewer Agent → owner 自審
 >    (有記錄的最後手段)。G2 審查關鍵條件 = R/S 全審 + DD 全裁決
