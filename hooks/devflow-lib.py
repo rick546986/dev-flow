@@ -44,8 +44,19 @@ def canonical_scope_path(raw):
     return canonical
 
 
-def git_dirty_paths(root):
-    """Return every changed repo-root-relative path from porcelain v1, including rename sources."""
+def git_dirty_paths(root, with_codes=False):
+    """Return every changed repo-root-relative path from porcelain v1, including rename sources.
+
+    掃描一律帶 --ignored=traditional：那是堵「把檔案加進 .gitignore 就繞過 scope
+    守衛」的遮蔽漏洞用的,兩個呼叫端共用同一份輸出,不得拿掉。
+
+    with_codes=False(預設,postbash 偵測網用):維持既有回傳型別 list[str],ignored
+    檔照舊一起回傳、一起驗 —— 行為與本參數加入前完全相同。
+    with_codes=True(start 前置掃描用):回傳 list[(code, path)],讓呼叫端能把 `!!`
+    (被 .gitignore 忽略)與一般髒檔分流。start 不拿 ignored 檔擋開工,但仍收進
+    baseline,所以遮蔽漏洞照堵(A-13)。
+    rename/copy 的來源路徑沿用該筆記錄自己的 code,行為不變。
+    """
     status = subprocess.run(
         ["git", "status", "--porcelain=v1", "-z", "-uall", "--ignored=traditional"],
         cwd=root, capture_output=True, text=True)
@@ -53,7 +64,7 @@ def git_dirty_paths(root):
         raise RuntimeError(status.stderr.strip() or "git status failed")
 
     fields = status.stdout.split("\0")
-    paths, i = [], 0
+    entries, i = [], 0
     while i < len(fields):
         entry = fields[i]
         i += 1
@@ -64,15 +75,18 @@ def git_dirty_paths(root):
         code, path = entry[:2], entry[3:]
         if not path:
             raise RuntimeError("git status reported an empty path")
-        paths.append(path)
+        entries.append((code, path))
         if "R" in code or "C" in code:
             if i >= len(fields) or not fields[i]:
                 raise RuntimeError("git status rename/copy record is missing its source path")
             source = fields[i]
             i += 1
             if "R" in code:
-                paths.append(source)
-    return paths
+                entries.append((code, source))
+    return entries if with_codes else [path for _, path in entries]
+
+
+IGNORED_CODE = "!!"  # porcelain v1 對 --ignored 列出的忽略檔所用的 status code
 
 
 def protected_contract_hashes(root):
