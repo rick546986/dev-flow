@@ -170,6 +170,15 @@ details.doc:hover{border-color:var(--accent)}
 
 # 4-spec 的 S 卡樣式
 CSS_SPEC = """
+.pinned{border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:8px;
+        padding:14px 16px;margin:0 0 14px}
+.pinned>h2{margin:0 0 8px;font-size:1rem;letter-spacing:.01em}
+.pinned .tablewrap{overflow-x:auto}
+.pinned table{width:100%;border-collapse:collapse;font-size:.86rem}
+.pinned th,.pinned td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
+.pinned ul{margin:.3em 0 .3em 1.1em;padding:0}
+.pinned p{margin:.35em 0}
+
 .s-card{border-bottom:1px solid var(--rule-2)}
 .s-card:last-child{border-bottom:0}
 .s-head{display:flex;gap:10px;align-items:center;padding:12px 18px;cursor:pointer;

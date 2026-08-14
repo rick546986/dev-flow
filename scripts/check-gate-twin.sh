@@ -81,6 +81,30 @@ for st in STAGES:
           "  T4 兩種殼:本機版完整文件、artifact 片段無外殼",
           "片段含 doctype/html/head/body" if SHELL.search(art) else "本機版缺外殼")
 
+print("-- T6 置頂節:判定與其前提不得被摺疊 --")
+# 2026-08-15 dogfood 抓到的真 bug:用本工具產自己的 7-review 時,「限制聲明」被收進
+# 背景資料、`## Verdict` 整節消失(被一條過度粗暴的排除條件誤殺)——最該先讀的三樣全不見。
+loc7 = (proj / "7-review.html").read_text(encoding="utf-8")
+
+
+def visible(text, key):
+    """key 出現的位置是不是在 <details> 外面(= 打開頁面直接看得到)。"""
+    i = text.find(key)
+    if i < 0:
+        return None
+    return text.rfind('<details class="doc">', 0, i) <= text.rfind("</details>", 0, i)
+
+
+check(loc7.count('<section class="pinned">') >= 1, "7-review:有置頂節")
+for key in ("Verdict", "Known Limits"):
+    v = visible(loc7, key)
+    check(v is True, f"7-review:「{key}」直接看得到",
+          "整節不見了" if v is None else "被摺疊進背景資料")
+m = re.search(r'<div class="cell"><span class="k">判定</span><span class="v">(.*?)</span>', loc7)
+check(bool(m) and "|" not in (m.group(1) if m else "|"),
+      "7-review:動線「判定」格取到 verdict 值,不是表格分隔線",
+      f"實際「{m.group(1) if m else '(無)'}」")
+
 print("-- T2 負向:缺必填欄要在卡上紅底現形 --")
 fx = ROOT / "scripts/fixtures/gate-twin/missing-obs"
 shutil.copytree(fx, TMP / "fx")
