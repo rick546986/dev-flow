@@ -139,7 +139,7 @@ def descendants(parsed, tid):
 def dirty_scan_and_baseline(slug, scope, extra_skip_shared):
     """start 前置髒檔掃描 + baseline(legacy 與 task 模式共用;僅恆許前綴不同)。"""
     try:
-        dirty_paths = L.git_dirty_paths(root)
+        dirty_entries = L.git_dirty_paths(root, with_codes=True)
     except RuntimeError as e:
         die(f"拒絕:無法掃描工作樹({e})")
     baseline, outside = {}, []
@@ -147,7 +147,7 @@ def dirty_scan_and_baseline(slug, scope, extra_skip_shared):
     skip = (".devflow/",)
     if extra_skip_shared:
         skip = (".devflow/", feat + "5-tasks", feat + "6-implementation-notes")
-    for rel in dirty_paths:
+    for code, rel in dirty_entries:
         if rel.startswith(".git/") or L.is_ambient_path(rel):
             continue
         if rel.startswith(skip):
@@ -167,6 +167,14 @@ def dirty_scan_and_baseline(slug, scope, extra_skip_shared):
                     [l for l in head_lines if l.strip() != ".devflow/"]:
                 continue
             outside.append(rel)
+            continue
+        if code == L.IGNORED_CODE:
+            # A-13:被 .gitignore 忽略的檔(本機環境切換檔、IDE 產物、快取、本機
+            # 建置產物)不是「未提交改動」,不該擋開工 —— 否則有本機開發目錄的專案
+            # 一律 start 不了。但仍收進 baseline:postbash 偵測網照舊掃 ignored,
+            # 靠 baseline 的內容 hash 判「開跑前既有 / 執行期新增或被改」,
+            # .gitignore 遮蔽漏洞不因本條放寬。
+            baseline[rel] = L.sha(os.path.join(root, rel))
             continue
         if L.in_pool(rel, {"scope": scope, "extra": []}):
             baseline[rel] = L.sha(os.path.join(root, rel))

@@ -165,9 +165,19 @@ echo "ambient" > ignored/.DS_Store
 echo "ambient" > ignored/nested/Thumbs.db
 ck "開跑前 ignored parent 僅 ambient leaves → 啟動" 0 "$(x start f1)"
 cleanup_start_state
+# A-13:被 .gitignore 忽略的檔(本機環境切換檔、IDE 產物)不擋開工 —— 這條 2026-08-04
+# 前是「拒啟」,實地採用時讓「有本機開發目錄的專案一律 start 不了」。放寬的同時
+# 這些檔仍收進 baseline,所以下面兩條遮蔽測試必須照舊擋。
 echo "ignored" > ignored/nested/pre.txt
-x_capture start f1
-ck_msg "開跑前 ignored parent 有 meaningful sibling → 拒啟" 1 "ignored/nested/pre.txt" "$X_RC" "$X_OUT"
+ck "A-13:開跑前 ignored 髒檔不擋開工" 0 "$(x start f1)"
+echo "changed-after-start" > ignored/nested/pre.txt
+post_capture
+ck_msg "A-13:開跑前 ignored 檔執行期被改 → postbash 擋" 2 "ignored/nested/pre.txt" "$P_RC" "$P_OUT"
+cleanup_start_state
+ck "A-13:ignored 髒檔仍在時可重複 start" 0 "$(x start f1)"
+echo "shadowed" > ignored/nested/after-start.txt
+post_capture
+ck_msg "A-13:執行期新增 ignored 檔 → postbash 擋(遮蔽漏洞未打開)" 2 "ignored/nested/after-start.txt" "$P_RC" "$P_OUT"
 cleanup_start_state
 rm -rf ignored
 printf 'pre-start ignore\n' >> .gitignore
