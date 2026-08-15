@@ -129,6 +129,10 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
   (`README.md`、`_templates/*`、gauntlet 腳本、`devflow-contract.json` 各一份)——
   下次 upgrade 讀這份快照當「上游舊」,不得拿本地現況去猜。首次 install 無快照
   可比,全部視為①;install 步驟本身也要建立這份快照(見 install 步 1)。
+  **過渡態**:`docs/dev/.devflow-baseline/` 不存在但 `docs/dev/` 已存在(= 本規則
+  生效之前裝的既有安裝,四個採用專案的真實現況)⇒ 不得套用「無快照=全部視為①」
+  的首次 install 分支 —— 本次 upgrade **全部受管檔視為②本地客製,逐檔徵同意**,
+  完成後才建立快照,下次 upgrade 起才回到正常的三方比對。
 - **check 第 6 項的 diff 比對基準同步套用剝除規則**:比對母版時一律先對
   `${CLAUDE_PLUGIN_ROOT}/README.md` 跑與 install 步 1 相同的 sed 剝除管線再 diff,
   即 `diff <(sed -n '/<!-- devflow:master-only:start -->/,/<!-- devflow:master-only:end -->/!p' "${CLAUDE_PLUGIN_ROOT}/README.md") docs/dev/README.md`

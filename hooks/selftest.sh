@@ -248,6 +248,14 @@ pb_capture 'cat docs/dev/f1/6-implementation-notes.md'
 ck_msg "prebash 鏡像①:review 中 shell cat 6-notes → 擋,訊息指步 4 與 review-unlock" \
   2 "步 4" "$PB_RC" "$PB_OUT"
 ck_msg "prebash 鏡像①訊息含 review-unlock 出口" 2 "review-unlock" "$PB_RC" "$PB_OUT"
+# MED-1(第二批獨立審查):圍欄③鏡像改用裸檔名比對,補繞路案 —— cd 把路徑拆開、
+# 萬用字元代換 slug,兩者原本都不含連續路徑字串,舊版嚴格路徑正則抓不到。
+pb_capture 'cd docs/dev/f1 && cat 6-implementation-notes.md'
+ck_msg "prebash 鏡像③(cd 繞路):review 中 cd+cat 6-notes → 擋" \
+  2 "6-implementation-notes" "$PB_RC" "$PB_OUT"
+pb_capture 'cat docs/dev/*/6-implementation-notes.md'
+ck_msg "prebash 鏡像④(glob 繞路):review 中萬用字元讀 6-notes → 擋" \
+  2 "6-implementation-notes" "$PB_RC" "$PB_OUT"
 ck "② review 中寫 7-review.md → 放行"          0 "$(g Write docs/dev/f1/7-review.md)"
 ck "review 中寫 evidence/ → 放行"              0 "$(g Write docs/dev/f1/evidence/screenshot.png)"
 g_capture Write docs/dev/f1/5-tasks.md
@@ -257,6 +265,10 @@ ck "devflow-exec.sh review-unlock f1 → 解鎖"   0 "$(x review-unlock f1)"
 ck "④ review-unlock 後讀 6-notes → 放行"       0 "$(g Read docs/dev/f1/6-implementation-notes.md)"
 ck "prebash 鏡像②:review-unlock 後 shell cat 6-notes → 放行" \
   0 "$(pb 'cat docs/dev/f1/6-implementation-notes.md')"
+ck "prebash 鏡像③:review-unlock 後 cd+cat 6-notes → 放行" \
+  0 "$(pb 'cd docs/dev/f1 && cat 6-implementation-notes.md')"
+ck "prebash 鏡像④:review-unlock 後萬用字元讀 6-notes → 放行" \
+  0 "$(pb 'cat docs/dev/*/6-implementation-notes.md')"
 g_capture Write docs/dev/f1/5-tasks.md
 ck_msg "review-unlock 後寫 5-tasks.md 仍擋(Write 限縮維持)" 2 "圍欄③" "$G_RC" "$G_OUT"
 
@@ -843,6 +855,24 @@ def c_gate_sid_dotted_missing():
     }), "FAIL", {"s_id_present"})
 
 
+def c_gate_sid_boundary_no_overmatch():
+    """MED-2(第二批獨立審查):_sid_matched 的 (?!\\d) 尾端邊界回歸釘。S1.1 不得
+    誤配到多一位數字的測試名 Test_S_1_12_x(那其實是 S1.12,不是 S1.1)。"""
+    gate_expect(gate_bundle(**{
+        "task.s_ids": ["S1.1"],
+        "candidate.test_names": ["Test_S_1_12_x"],
+    }), "FAIL", {"s_id_present"})
+
+
+def c_gate_sid_boundary_matches_exact():
+    """對照組:候選裡若真的有精準符合的測試名(即使旁邊混了 S1.12 這種近似項),
+    仍要判定 True —— 證明上一案是邊界問題,不是規則本身失效。"""
+    gate_expect(gate_bundle(**{
+        "task.s_ids": ["S1.1"],
+        "candidate.test_names": ["Test_S_1_1_x", "Test_S_1_12_y"],
+    }), "PASS", set())
+
+
 def c_gate_schema_incomplete():
     gate_expect(gate_bundle(**{"candidate.prompt_version": "__DEL__",
                                "candidate.test_names": "__DEL__"}),
@@ -1091,6 +1121,8 @@ ck "p1 A-2 s_ids_of 點號分層非恆空"  0 "$(p1c sids-of-dotted)"
 ck "p1 A-2 s_ids_of 舊形仍通"        0 "$(p1c sids-of-legacy)"
 ck "p1 A-2 gate 點號 sid 有測試名 PASS" 0 "$(p1c gate-sid-dotted-present)"
 ck "p1 A-2 gate 點號 sid 少測試名 FAIL" 0 "$(p1c gate-sid-dotted-missing)"
+ck "p1 MED-2 _sid_matched 尾端邊界不誤配(S1.1≠Test_S_1_12_x)" 0 "$(p1c gate-sid-boundary-no-overmatch)"
+ck "p1 MED-2 _sid_matched 精準符合對照組仍判 True"           0 "$(p1c gate-sid-boundary-matches-exact)"
 ck "p1 gate schema 不完整"           0 "$(p1c gate-schema-incomplete)"
 
 echo "-- p1 wave review 驗證(對拍 review fixtures)--"

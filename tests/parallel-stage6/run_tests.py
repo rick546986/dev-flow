@@ -248,6 +248,26 @@ except C.ContractError as e:
     seq_err = e
 check(seq_err is not None, "sequential 模式不派生 wave(compute_waves 拒)")
 
+# --- 3a-3. contract_ref/devflow-lib task dict 鍵集合 parity(MED-3) ---
+# contract_ref.py 是方法論這邊的可執行契約複本;runtime 正本是 hooks/devflow-lib.py。
+# 兩邊各自維護一份 parse_5_tasks,形狀(尤其 A-6 加的 boundaries/intent/owner)
+# 必須一致 —— 否則 contract_ref 可能悄悄漏一個鍵,而兩邊各自的測試各過各的,
+# 誰都測不出「兩邊其實不一樣」。直接兩邊 import、比對同一份輸入解析出的 task
+# dict 鍵集合,釘住正本(不是憑印象寫一份鍵清單去對)。
+from importlib.machinery import SourceFileLoader as _SFL
+_lib = _SFL("devflow_lib_ref", os.path.join(ROOT, "hooks", "devflow-lib.py")).load_module()
+_lib_par = _lib.parse_5_tasks(fixture("parallel-basic.md"))
+check(_lib_par["errors"] == [], "devflow-lib parallel-basic:零錯誤(parity 前提)",
+      str(_lib_par["errors"]))
+_ref_keys = set(par["tasks"][0].keys())
+_lib_keys = set(_lib_par["tasks"][0].keys())
+check(_ref_keys == _lib_keys,
+      "contract_ref/devflow-lib task dict 鍵集合一致(parity)",
+      f"contract_ref={sorted(_ref_keys)} devflow-lib={sorted(_lib_keys)}")
+check({"boundaries", "intent", "owner"} <= _ref_keys,
+      "contract_ref task dict 含 boundaries/intent/owner 全套(A-6,釘正本)",
+      str(sorted(_ref_keys)))
+
 # --- 3d. Task scope ---
 check(C.task_scope(par, "T-2") == ["src/components/Card.tsx"],
       "task_scope = 單 T Files(task-scoped guard 契約)")

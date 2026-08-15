@@ -71,9 +71,9 @@ RESULTS=()
 # 改法:由 expect()/expect_local() 依 want 實際累計 control 與 negative,尾聲與釘死值比對。
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
-EXPECTED_CONTROLS=6
-EXPECTED_NEGATIVES=40
-EXPECTED_TOTAL=46
+EXPECTED_CONTROLS=7
+EXPECTED_NEGATIVES=43
+EXPECTED_TOTAL=50
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -677,6 +677,50 @@ assert n != t, "S67-9 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
 expect_local fail check-stage67-enforcement.sh "$D" "S67-9 守衛自己的 A1 整組被刪(檢查數地板接住)"
+
+# ── MM 群組:README master-only 標記平衡(check-readme-markers.sh;MED-4)──────
+#
+# 起因:skills/dev-setup/SKILL.md 的 install/upgrade/check 全靠 sed 抽
+# `<!-- devflow:master-only:start/end -->` 之間的區塊。這對標記若不對稱(數量不等、
+# 或巢狀/交錯),sed range 會靜默抽到檔尾或抽出錯誤內容,沒有任何報錯。
+
+D=$(seed mm-control)
+expect pass check-readme-markers.sh "$D" "MM-0 對照組(README 標記未變異)"
+
+D=$(seed mm-missing-end)
+mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "README.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("<!-- devflow:master-only:end -->\n", "", 1)
+assert n != t, "MM-1 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-readme-markers.sh "$D" "MM-1 刪掉一個 end marker(start/end 數量不對稱,sed 會跑到檔尾)"
+
+D=$(seed mm-nested-start)
+mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "README.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("<!-- devflow:master-only:start -->\n",
+              "<!-- devflow:master-only:start -->\n<!-- devflow:master-only:start -->\n", 1)
+assert n != t, "MM-2 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-readme-markers.sh "$D" "MM-2 巢狀 start(兩個 start 中間沒有 end 先閉合)"
+
+D=$(seed mm-both-removed)
+mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "README.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("<!-- devflow:master-only:start -->\n", "").replace(
+    "<!-- devflow:master-only:end -->\n", "")
+assert n != t, "MM-3 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-readme-markers.sh "$D" "MM-3 start/end 整組被刪(0 對『平衡』但 sed 剝除變無操作)"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
