@@ -137,9 +137,11 @@ _templates/4-spec.md ────┘          │                               
 | **獨立審查的 finding 清空** | 全數處置 | 15/15 已修 | 附錄 A4 |
 | **複審** | 修完要再被獨立看一次 | ✅ 已做,又找到 7 條 + 4 個守衛缺口 | 附錄 A5 |
 | **二次複審** | 同上 | ✅ 已做,再找到 6 條(含**一條已發生在出貨物上**)+ 5 個守衛變體缺口,**全數已修** | 附錄 A6 |
+| **第三次複審(第四輪)** | 解析層替換後整體重審 | ✅ 已做(2026-08-15),3 HIGH + 1 MED,全數已修並重演其破壞實驗 | 附錄 A7 |
 
-**判定:`REQUEST_CHANGES`(二次複審給的)。** 三輪獨立審查共 **28 條 finding + 9 個守衛缺口**,
-全數已修,守衛 25 → **60 項**。仍不宣告 PASS —— 這一輪的修法同樣還沒被獨立看過。
+**判定:`REQUEST_CHANGES`(維持,等 owner 驗收後親自改)。** 四輪獨立審查共 **32 條
+finding + 9 個守衛缺口**,全數已修,守衛 25 → **108 項**;解析層已換 markdown-it-py
+(A7)。剩餘未了結項只剩 owner 親手的兩件:打開 html 驗收(K-5)、push。
 
 ⚠️ 三輪的模式完全一樣:**修完我自己看很好 → 別人一看就破**。而且第二、三輪各抓到
 一條**我修上一輪時引入的 HIGH**(N1、P2)。這不是「差不多了」的訊號,是
@@ -151,10 +153,10 @@ _templates/4-spec.md ────┘          │                               
 |---|---|---|---|
 | K-1 | **本輪未走 dev-flow 流程** | 🟡 | 沒有 1~6 站文檔、沒過 G1/G2、第 6 站守衛未武裝。這份 7-review 是事後補的 |
 | K-2 | 審查者 = 實作者 | 🟡 | 盲點類發現(「有沒有想漏」)不可信,需獨立 reviewer |
-| K-3 | 5-tasks「執行板」未納入 | ⚪ | B-8 附錄提出的第三種形狀本輪沒做;`notes/patches/gate-twin-ui-prototype/build_tasks.py` 仍是唯一實作 |
-| K-4 | 2-decision / 7-review 的解析較粗 | ⚪ | 這兩站用「表格 → 每列一張卡」的通用解析,不像 4-spec 有專屬欄位(GIVEN/WHEN/THEN/觀測)。採用專案若把待審內容寫在非表格處,會被收進背景資料而不是變成卡片 |
-| K-7 | **E′ 守衛缺口未補**:只砍掉 S 卡的一個欄位(例如只砍 THEN)守衛測不到 | ⚪ | 要補得先決定「缺 GIVEN/WHEN/THEN 要不要比照缺觀測欄紅底」——那是新功能不是修 bug,本輪不做 |
-| K-6 | 母版範例 `example/contract-expiry-reminder/7-review.md` **不合模板** | ⚪ | 缺 `verdict:` frontmatter、缺 `## Known Limits` 節(模板兩者都有)。後果:任何以它為材料的斷言都是空的(獨立審查 M7)。本輪的守衛已改用自造材料繞開,但**範例本身沒修**——屬 diff 外,列為下一輪 |
+| K-3 | 5-tasks「執行板」未納入 | ⚪→✅ | **已納入(2026-08-15 A7)**:第三種形狀進 README §6,產生器支援 5-tasks(任務卡+Boundaries 摺疊+ASCII DAG),原型的寫死值全數拿掉 |
+| K-4 | 2-decision / 7-review 的解析較粗 | ⚪ | **已評估,維持現狀(2026-08-15 A7)**:markdown-it 的表格解析遵 GFM 會**截斷多於表頭的欄**——那正是 n5 修掉的缺陷,換了會回歸。表格切格維持自家遮蔽版逐行法 |
+| K-7 | **E′ 守衛缺口未補**:只砍掉 S 卡的一個欄位(例如只砍 THEN)守衛測不到 | ⚪→✅ | **已補(2026-08-15 A7)**:缺 GIVEN/WHEN/THEN/觀測任一欄即紅底(動線優先報缺觀測條數),fixture `missing-then` + 守衛 |
+| K-6 | 母版範例 `example/contract-expiry-reminder/7-review.md` **不合模板** | ⚪→✅ | **已修(2026-08-15 A7)**:補 `verdict: PASS`、`## Known Limits`、`## 附錄:本輪特有`;render 重生 html,守衛/gauntlet 全綠 |
 | K-5 | 產出物美觀度未經真人驗收 | ⚪ | 機械驗了結構(五格/卡片/摺疊/兩種殼),但「這頁好不好審」只有人打得出分數 —— **這正是本檔要 owner 做的事** |
 
 ## Exit Checklist(全勾才算 shipped)
@@ -172,8 +174,10 @@ _templates/4-spec.md ────┘          │                               
 - [x] 複審 findings 全數修完,守衛 43 → 53 項
 - [x] **二次複審**(2026-08-15,再找到 6 條 + 5 個守衛變體缺口)
 - [x] 二次複審 findings 全數修完,守衛 53 → 60 項
-- [ ] **第三次複審**(這一輪的修法還是沒被獨立看過)
-- [ ] **owner 實際打開產出的 html,確認「好不好審」** ← 只有你能做
+- [x] **第三次複審**(2026-08-15 第四輪:fresh-context 審查含 11 個自造破壞實驗,涵蓋二次複審後的全部狀態,再找到 3 HIGH + 1 MED)
+- [x] **解析層換 markdown-it-py**(A7:對母版範例 byte-identical;守衛 60 → 108 項)
+- [x] 第四輪 findings 全數修完,審查者的破壞實驗逐一重演(壞→紅→還原→綠)
+- [ ] **owner 實際打開產出的 html,確認「好不好審」** ← 只有你能做(現在多一站:5-tasks 執行板)
 - [ ] push + tag + release(owner 自己 push main)
 
 ## 附錄:本輪特有
@@ -316,3 +320,41 @@ PINNED_PAT 拿掉 Decision  → ❌ 1 項失敗(G1 判定被摺疊)
 
 > **教訓補一條:守衛要有一條是「盤點」型的 —— 產出物的章節數/內容量要對得上輸入,
 > 而不是只驗已經出現的東西長得對不對。**
+
+### A7　解析層換 markdown-it-py + 執行板納入(2026-08-15,第四輪)
+
+三輪 28 條 finding 的結論是「這類解析靠手刻正則 + 自審不可能收斂」,本輪執行那個結論:
+**fence 遮蔽與章節切割的判斷來源換成 markdown-it-py(4.0.0,repo 既有相依)的 token
+stream**,等長遮蔽 + span 切原文的骨架不變。驗收基準是對母版範例三站**六份輸出
+byte-identical**,實測達成 —— 也就是說替換本身零行為變化,變化全部來自下列明修:
+
+| 項 | 內容 |
+|---|---|
+| S_HEAD/R_HEAD 跨行 | P4 同類第三次現形:`#### S-1`(無尾隨文字)時 `\s*` 吃掉下一行,母版範例的 twin 裡 GIVEN 出現 0 次。修法比照 H_ANY(`[ \t]`),配回歸守衛 |
+| K-7 | 缺 GIVEN/WHEN/THEN/觀測任一欄即紅底(fixture `missing-then`) |
+| P5 | 7-review「抽驗」格由寫死常數改為 Coverage Matrix 決定論取中位列 |
+| K-3 | 5-tasks 執行板納入:README §6 第三種形狀、產生器支援、ASCII DAG(原型的手寫 SVG 不採——無法泛化) |
+| K-6 | 母版範例 7-review 補齊 verdict/Known Limits/附錄;dev-setup 散發段交代 markdown-it-py 相依 + 散發後驗證 |
+| 計數 | 動線「風險」格把表頭/分隔列算進條數(4 報 6),修正並加盤點守衛 |
+
+**相依 fail-loud**:缺套件或版本 ≠4.0.0 → 繁中訊息 + exit 2,不吐 traceback、不降級回正則
+(降級 = 兩邊 diverge 卻不吭聲)。K-4 評估結論:表格解析**不**換 token stream ——
+markdown-it 遵 GFM 會截斷多於表頭的欄,正是 n5 修掉的缺陷。
+
+**第四輪獨立審查(fresh-context,11 個自造破壞實驗)**:REQUEST_CHANGES,3 HIGH + 1 MED,
+全數已修並重演其破壞實驗(壞→紅→還原→綠):
+
+| id | 級 | 缺陷 | 修法 |
+|---|---|---|---|
+| H1 | HIGH | **twin/引擎解析漂移**:twin 遮 fence+吃續行,真引擎(contract_ref/hooks parse_5_tasks)不遮也無續行 —— Boundaries 下藏第二個 `- Files:` 時 twin 綠卡、引擎拒啟;fence 內 `## T-99` 時引擎長幽靈任務、twin 看不到 | twin 側現形:重複保留欄 → 紅卡+NOTE(預告引擎 fail-closed);fence 內 T 標題 → 幽靈任務警告。**引擎側(hooks)加 fence 遮蔽收 Backlog,屬 runtime 改動** |
+| H2 | HIGH | 執行板五格**值**零守衛:硬寫「99 條」照樣 94 項全綠 | 盤點守衛:期望值由守衛自己從 example md 算(任務/依賴/模式/進度) |
+| H3 | HIGH | DAG 分波正確性零守衛:全塞 Wave 1 照樣全綠 | 守衛內獨立 Kahn 實作逐 T 比對波次(不 import 產生器) |
+| M1 | MED | 守衛半路 traceback(檔案缺失/KeyError)會讓後面 90+ 項跑不到 | 讀檔防炸 + `.get()`,「紅而不炸」 |
+
+守衛 60 → **108 項**。前三輪的四次「假綠」型態(只驗殼/釘多處文字/釘副本/沒驗還在不在)
+本輪新守衛逐一對照設計;H2/H3 仍屬第 4 型(該有的正確性沒被驗),證明**盤點型守衛要跟著
+每個新資料格一起長**,不是加完功能再說。
+
+**尚未了結(交接)**:H1 的引擎側(hooks/devflow-lib.py `parse_5_tasks` 不遮 fence)
+已收 Backlog,與 A-6(Boundaries 欄丟棄)同批處理;owner 驗收(K-5)與 push 仍是
+Exit Checklist 未勾的兩項。
