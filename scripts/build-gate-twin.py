@@ -797,7 +797,11 @@ def dash_cells(stage, md, n_items, n_bad, secs, n_obs=0, dag_edges=0, dag_done=0
              "已勾 完成/總數", "#progress"),
         ]
     known_sec = _section_text(md, "Known Limits")
-    known = len(re.findall(r"^\s*[-*|]\s*\S", mask_fenced(known_sec), re.M))
+    # 條數 = 表格「資料列」+ bullet 列。舊寫法 `[-*|]` 連表頭列與 `|---|` 分隔列
+    # 都算進去(4 條限界報成 6 條)—— 這格給人的是「有幾條要看」,計數必須
+    # 對得上人打開該節數得到的條數(2026-08-15 K-6 修範例時交叉驗證抓到)。
+    known = len(table_rows(known_sec)) + \
+        len(re.findall(r"^\s*[-*]\s+\S", mask_fenced(known_sec), re.M))
     ec = re.findall(r"^\s*-\s*\[( |x|X)\]", mask_fenced(_section_text(md, "Exit Checklist")), re.M)
     apx = _section_text(md, "附錄")
     disputes = len(re.findall(r"^#{3,6}\s*A\d", mask_fenced(apx), re.M))

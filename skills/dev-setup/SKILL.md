@@ -47,8 +47,18 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
    多 session 並行時靜默覆蓋,由 `history-guard` hook 擋下)。
    **gate twin 產生器**:同樣比照散發 `${CLAUDE_PLUGIN_ROOT}/scripts/build-gate-twin.py`
    與 `devflow_twin_ui.py` → `docs/dev/tools/`(兩支要在同一目錄,前者 import 後者)。
+   支援的 stage:`2-decision | 4-spec | 7-review | 5-tasks`(執行板)。
    G1/G2/G3 的 html 用它產:`docs/dev/tools/build-gate-twin.py <專案根> <slug> <stage>`
    —— 那三站的 twin 是**審查介面**不是文件視覺版(規格見母版 README §6)。
+   相依:`markdown-it-py==4.0.0`(解析層的判斷來源是它的 CommonMark token stream,
+   不是手刻正則;缺相依或版本不符 → 不吐 traceback、不靜默降級回正則,直接 exit 2
+   fail-loud)。缺相依時安裝:`pip install 'markdown-it-py==4.0.0'`。
+   散發後**可執行驗證**(比照上面 evidence gauntlet 的兩道,任一不符即列 broken,
+   不得靜默):①無參數跑 `python3 docs/dev/tools/build-gate-twin.py` → 預期訊息含
+   「用法」且 exit 2;②相依探測:
+   `python3 -c "import markdown_it, sys; sys.exit(0 if markdown_it.__version__ == '4.0.0' else 3)"`
+   → 預期 exit 0;非 0 時把上面的 pip 安裝指令完整回報給使用者(**不代裝**,裝不裝是
+   專案自己的事,但訊息要完整)。
 2. `.claude/rules/arch-invariants.md`:從 `_templates/arch-invariants.md` 建檔,**並自動產草稿**
    (不留空殼):
    - 先收割既有素材:使用者指名的外部 workflow artifacts 中的架構指引
@@ -182,6 +192,16 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     `hooks/devflow-exec.sh doctor` 可執行並看 verdict。doctor 報 `INCOMPATIBLE`
     時的指引:fail-closed 是刻意行為,不得繞過或改綠 —— 修復它列出的不相容項、
     或升級 runtime/方法論後重跑,不靜默退回舊行為。
+11. **gate twin 產生器散發檢查**(在專案內跑時):`docs/dev/tools/build-gate-twin.py`
+    與 `docs/dev/tools/devflow_twin_ui.py` ①兩支皆存在(缺件 = broken,走 install
+    步 1 補),且 `build-gate-twin.py` 可執行(前者為 CLI 入口;`devflow_twin_ui.py`
+    僅供 import,不要求可執行位元);②與方法論 `${CLAUDE_PLUGIN_ROOT}/scripts/build-gate-twin.py`、
+    `${CLAUDE_PLUGIN_ROOT}/scripts/devflow_twin_ui.py` diff 逐字無差異(有差異 = stale,
+    走 upgrade 覆蓋 —— 專案側不得自改這兩支腳本,要改改方法論);③無參數跑
+    `python3 docs/dev/tools/build-gate-twin.py` → 訊息含「用法」且 exit 2;④相依探測:
+    `python3 -c "import markdown_it, sys; sys.exit(0 if markdown_it.__version__ == '4.0.0' else 3)"`
+    → exit 0(非 0 時把 `pip install 'markdown-it-py==4.0.0'` 回報給使用者,不代裝)。
+    任一不符 → broken,列異常+修法。
 
 ## fix / uninstall
 

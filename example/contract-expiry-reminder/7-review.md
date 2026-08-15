@@ -2,6 +2,7 @@
 feature: contract-expiry-reminder
 stage: 7-review
 status: shipped
+verdict: PASS               # G3 判定;PASS 才可 ship
 owner: <reviewer-a>         # reviewer(≠實作 owner <owner>)
 updated: 2026-07-23
 ---
@@ -251,6 +252,14 @@ Design Boundary Contract 為 `applicable`,本軸另查四項(4-spec Design Bound
 ## Verdict
 **PASS**(F-1 為 🟡,開 fast-lane follow-up,不擋出貨)
 
+## Known Limits
+| # | 限制 | 嚴重度 | 建議處置 |
+|---|---|---|---|
+| 1 | Stale write 無衝突偵測:兩人以過期畫面先後標記時,後手覆蓋前手,歷程留兩筆但無衝突提示(4-spec Design Constraints Known design limit ①;Reliability triage Concurrency: applicable) | 🟡 | Park —— owner `<owner>`;追蹤位置:4-spec Design Constraints(本期不引入樂觀鎖,待資料顯示衝突實際發生率再評估) |
+| 2 | 完整操作不保證冪等:重送相同標記,狀態值收斂但歷程可能新增同值一筆(4-spec Design Constraints Known design limit ②;Reliability triage Idempotency: applicable) | 🟡 | Park —— owner `<owner>`;追蹤位置:4-spec Design Constraints(本期不加 idempotency key、不做歷程去重) |
+| 3 | `GET /contracts/expiring` 查詢失敗時前端無專用錯誤呈現,可能被誤讀為「近期無到期合約」而漏跟催(4-spec Design Constraints Known design limit ③;Stage 3 Demo 已 ACCEPTED 但本期排除場景) | 🟡 | Park —— owner `<owner>`;追蹤位置:4-spec Out of Scope 對帳節(補上專用錯誤呈現與重試按鈕列入下一輪) |
+| 4 | `internal/handler/contract.go:41` handler 未設 context timeout,慢查詢會掛住 dashboard(Standards Axis F-1) | 🟡 | 下個 fast-lane 補(`context.WithTimeout(ctx, 2s)`);owner `<owner>`;追蹤位置:STATUS.md 待辦 |
+
 ## Exit Checklist
 - [x] Design Boundary finding 全數處置:契約為 `applicable`,Standards Axis 四查與 Spec Axis 逐條對照**皆符合**,無未經授權的 Boundary 變更 → 🔴 0 筆、🟡 0 筆,無待處置項。(三條 Known design limit 是 4-spec 已授權且本次維持未解的既有限制,不是未授權變更;仍逐條列在下方 known limits。)
 - [x] Quiz(不可逆改動必做;其餘 full lane 選配,fast 免):本次新增對外 API endpoint(`GET /contracts/expiring`、`PATCH /contracts/:id/status`)與 `renewal_status` migration,shipped 後即成對外契約/schema,移除屬破壞性變更 → 不可逆,Quiz 必做 —— AI 出 5 題(30 天定義來源/為何不做 email/D-1 為何不加索引/空狀態行為/「已續約」為何僅主管),`<reviewer-a>` 全對
@@ -260,3 +269,14 @@ Design Boundary Contract 為 `applicable`,本軸另查四項(4-spec Design Bound
 - [x] 7-review frontmatter status: shipped;上游 artifact 保留 approved(各自 gate 核准紀錄,依 7-review 模板 Exit 規則)
 - [x] 7-review.html 已產生(含變更架構圖 + diff 折疊)
 - [x] feature branch 已刪
+
+## 附錄:本輪特有
+
+### A1　D-1(不新增覆蓋索引 migration)之 L1/L2 分級複核
+6-implementation-notes 把「不新增覆蓋索引 migration」記為 D-1(L1)。本輪需要複核的
+爭點是這個分級站不站得住 —— 它動到 schema/migration,屬不可逆面,乍看容易被誤判成該回
+G2 重審的 L2。複核結論:維持 L1。理由:4-spec Dependencies 只載明 `renewal_status` 這一項
+migration,索引原本就不在計畫清單內,「不加」是留在 spec 既定範圍內,不構成新增未授權
+變更;且 EXPLAIN 實測 p95 42ms 已達 Acceptance Criteria(<100ms),取捨有實測數字支撐,
+不是省事帶過。若日後資料量成長使既有 `idx_contracts_end_date` 不足以維持 p95,才需要真的
+新增索引 migration —— 屆時才是 L2,須回 4-spec 走 Dependencies 變更流程。

@@ -136,6 +136,34 @@ for st in STAGES:
     check(keys == EXPECT_KEYS.get(st, set()), f"{st}:五格標籤與 README §6 逐字一致",
           f"多 {sorted(keys - EXPECT_KEYS[st])} / 少 {sorted(EXPECT_KEYS[st] - keys)}")
 
+print("-- 盤點:7-review 動線「風險」格條數要對得上 md 的 Known Limits 實際條數 --")
+# 舊計數把表頭列與 |---| 分隔列都算進去(4 條報成 6)。守衛自己從 example md
+# 數一次「資料列 + bullet 列」,斷言釘在正本,不釘在產生器的輸出邏輯上。
+def _limit_rows(md_text):
+    lines, in_sec = [], False
+    for ln in md_text.splitlines():
+        if re.match(r"^##\s+Known Limits", ln):
+            in_sec = True
+            continue
+        if in_sec and re.match(r"^##\s+", ln):
+            break
+        if in_sec:
+            lines.append(ln)
+    pipe = [x for x in lines if x.lstrip().startswith("|")]
+    sep = [x for x in pipe
+           if all(re.fullmatch(r":?-{2,}:?", c) for c in x.strip().strip("|").split("|") if c.strip())]
+    data = max(0, len(pipe) - len(sep) - (1 if pipe else 0))
+    bullets = len([x for x in lines if re.match(r"^\s*[-*]\s+\S", x)])
+    return data + bullets
+
+
+_exp_kl = _limit_rows((EXAMPLE / "7-review.md").read_text(encoding="utf-8"))
+_m_kl = re.search(r'<span class="k">風險</span><span class="v">([^<]*)</span>',
+                  (proj / "7-review.html").read_text(encoding="utf-8"))
+check(bool(_m_kl) and _m_kl.group(1) == f"{_exp_kl} 條",
+      "7-review:「風險」格條數 == md 實際條數(表頭/分隔列不算)",
+      f"格值「{_m_kl.group(1) if _m_kl else '(無)'}」,md 實數 {_exp_kl}")
+
 print("-- G\u2032/G\u2033 跨檔規格一致:README §6 vs 三份模板頂註 --")
 # N4 的根因:規格同時寫在 README §6 與三份模板頂註,兩邊不一致時沒有任何檢查。
 # 把模板改回舊值 → 必須紅(2026-08-15 二次複審 G\u2033)。
