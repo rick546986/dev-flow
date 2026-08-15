@@ -385,18 +385,20 @@ RED → GREEN → scope check → Verify
 | 2-decision | **審查介面(G1)** | 方案架構圖(比較期可並排) | Approaches+Rejected、Owner Calls(待裁決置頂) | — |
 | 3-prototype | 文件 | variant 流程/結構圖 | Demo Script、User Demo Feedback(Human verdict 人類親填)、Verdict | — |
 | 4-spec | **審查介面(G2)** | 行為流程圖(R 級) | Drafting Decisions(待裁決置頂) | — |
-| 5-tasks | 文件 | T 依賴 DAG(ASCII 天生適合) | Split Decisions(選配) | — |
+| 5-tasks | **執行板** | T 依賴 DAG(ASCII 天生適合) | Split Decisions(選配) | — |
 | 6-notes | 文件 | progress 時間線(選配) | Decisions+Deviations 表 | ✅ 每 T commit |
 | 7-review | **審查介面(G3)** | 變更架構圖(動了哪些模組) | F-id 分級表 + **現象證據表**(逐 S 觀測 vs 實跑;前端截圖引 `evidence/`) | ✅ 全 branch |
 
-**兩種形狀的差別**(2026-08-15 補,起因見下方「審查動線頂區」):
+**三種形狀的差別**(2026-08-15 補,起因見下方「審查動線頂區」;K-3 再補執行板一種):
 
 | 形狀 | 哪幾站 | 給誰用 | 規格 |
 |---|---|---|---|
 | **審查介面** | 2-decision / 4-spec / 7-review —— 三個 gate 站 | 給人**審**,要逐條過並做出判定 | 動線頂區五格 + 待審項目逐條可勾 + 背景資料摺疊(見下) |
-| 文件 | 其餘四站 | 給人**查**,找得到就好 | 現行文件形狀即可 |
+| **執行板** | 5-tasks | 給人**照著做**,動工前看 Intent 與四欄,動工時才展開 Boundaries | 動線頂區五格 + 任務卡逐條可勾＋缺必填欄紅底 + Boundaries 摺疊 + 依賴 DAG(見下「執行板頂區」) |
+| 文件 | 其餘三站 | 給人**查**,找得到就好 | 現行文件形狀即可 |
 
-判準一句:**這份 twin 存在的理由是不是「有人要對它做判定」** —— 是就是審查介面。
+判準一句:**這份 twin 存在的理由是不是「有人要對它做判定」** —— 是就是審查介面;
+**「有人要照它動工」** —— 是就是執行板。
 
 **Diff 細則**(6/7 的 html):每檔一個 `<details>` 折疊條 —— hover 顯示 stat 摘要
 (+N/−N、動到的函式),click 展開完整 diff(紅綠著色);內容必 HTML-escape;
@@ -414,7 +416,8 @@ twin 不只是給人查的參考檔,gate 站的 twin 是給人**審**的。這�
    格子內容依 stage 不同(見下表),但格數固定五格、每格必須可點跳到對應段落。
 2. **待審項目逐條可勾**:該站要人逐條過的東西(G1 = 方案與 Owner Calls、
    G2 = 每個 S、G3 = 每條 F-id 與逐 S 現象證據)一條一張卡,可勾、有進度計數。
-   **缺必填欄的項目要在卡上直接現形**(例:S 缺「觀測」欄 → 紅底),不要只在別處列表。
+   **缺必填欄的項目要在卡上直接現形**——4-spec 缺 GIVEN/WHEN/THEN/觀測任一欄即紅底
+   (動線頂區優先報缺觀測條數),不要只在別處列表。
 3. **背景資料摺疊**:不是本次要審的東西(既有脈絡、附錄、骨架、預算表)一律收進
    `<details>`,預設收合、**內容零刪減**。摺疊是為了讓要審的浮出來,不是為了少寫。
 
@@ -422,29 +425,51 @@ twin 不只是給人查的參考檔,gate 站的 twin 是給人**審**的。這�
 |---|---|
 | **2-decision(G1)** | 判定(`## Decision` 首句)/ Owner Calls(已裁決 `x/y`)/ 方案(幾項待審)/ 駁回理由(幾條)/ 狀態(frontmatter) |
 | **4-spec(G2)** | 狀態(frontmatter)/ 待審 S(幾條 + **幾條缺觀測欄**)/ lane · Risk / DD 進度 `x/y` / Demo verdict(承接 3-prototype) |
-| **7-review(G3)** | 判定(frontmatter `verdict:`)/ 出貨(Exit Checklist `x/y`)/ 爭點(「附錄:本輪特有」幾條)/ 風險(Known Limits 幾條)/ 抽驗(隨機一列 `檔:行`)|
+| **7-review(G3)** | 判定(frontmatter `verdict:`)/ 出貨(Exit Checklist `x/y`)/ 爭點(「附錄:本輪特有」幾條)/ 風險(Known Limits 幾條)/ 抽驗(Coverage Matrix 中位列 `檔:行`,決定論、可重現)|
+| **5-tasks(執行板)** | 狀態(frontmatter)/ 任務(幾個 T + 幾條缺必填欄)/ 模式(execution.mode,未標=sequential)/ 依賴(幾條 Blocked-by 邊)/ 進度(可勾計數) |
 
 > 2026-08-15 修正:此表初版寫了三格**文件裡根本沒有那筆資料**的東西
 >(2-decision 的「影響面(動到哪幾個模組)」、4-spec 的「Gate 過了沒」、7-review 的
 > 「第 N 輪」)—— 規格自帶不可滿足,產生器只能給別的值,於是規格與產出物從第一天就對不上
 >(獨立審查 H5)。現在表內每一格都對應 md 裡真的抓得到的欄位,**標籤逐字被守衛比對**。
+> 5-tasks(執行板)列是 K-3 追加,格式與判準同一套,只是不掛 G 編號。
 
 **起因**(兩次,同一句話):order-intake 的 7-review 長到 95k 字,owner 問
 「這麼雜要怎麼審、從哪開始」→ 2026-08-13 補了 7-review 的動線頂區。
 2026-08-14 owner 打開 ivf_platform 的 `4-spec.html`(md 直轉、16 個 S 攤平在單欄長文),
 第一句話是「這份給人看得有點雜亂」—— **同一個病,只是當時規格只綁了 7-review 一站**。
 規範管的是「必含什麼元素」,不管「長什麼形狀」,所以採用端完全合規、產出仍然難審。
+K-3(2026-08-15 再補):owner 兩次反映 5-tasks 直轉的 md **也是同一個病**——
+Boundaries 常上千字,攤平會把 Covers/Files/Verify 擠出畫面,所以執行板另外
+補了下方「執行板頂區」四件事,不是照搬 gate 站的三件事。
 
-md 側的對應規定是各模板頂註(`_templates/{2-decision,4-spec,7-review}.md`),
+md 側的對應規定是各模板頂註(`_templates/{2-decision,4-spec,7-review,5-tasks}.md`),
 **兩邊講同一件事、md 是正本**;html 只是把它做成可點的。
 
-**產生方式**:`scripts/build-gate-twin.py <專案根> <slug> <stage>`(見該檔頂註)。
-它讀 md 正本逐條解析,不手抄 —— 所以不會與正本漂移;解析不到任何一條會直接失敗,
-不會產出一份空殼。**同一份內容兩種殼**:本機 twin 要完整 html 文件,
-上 artifact 的片段**不得含** `<!doctype>`/`<html>`/`<head>`/`<body>`(發布時外層會自動包)。
+**產生方式**:`scripts/build-gate-twin.py <專案根> <slug> <stage>`(`stage ∈
+2-decision | 4-spec | 7-review | 5-tasks`;見該檔頂註)。它讀 md 正本逐條解析,
+不手抄 —— 所以不會與正本漂移;解析不到任何一條會直接失敗,不會產出一份空殼。
+**同一份內容兩種殼**:本機 twin 要完整 html 文件,上 artifact 的片段**不得含**
+`<!doctype>`/`<html>`/`<head>`/`<body>`(發布時外層會自動包)。
 
 要對外報告:跟 AI 說「這份 html 上 artifact」→ 發布成連結。
 殼檔有兩處副本(`_templates/html-shell.html` 與 dev-talk skill 目錄內),改殼須同步兩處。
+
+### 執行板頂區(**5-tasks 專屬**,K-3 追加)
+
+5-tasks 不是 gate(無 G 編號、免 reviewer 核准),但一樣要讓人**照著動工**,
+不是把 md 直轉攤平。四件事缺一不可:
+
+1. **動線頂區五格**(規格見上表新增的「5-tasks(執行板)」列)。
+2. **任務卡逐條可勾**:每個 T 一張卡,Covers/Files/Verify/Blocked-by 對齊、Intent
+   獨立標色。**六欄必填**(Covers/Files/Verify/Blocked-by/Intent/Boundaries)缺任一
+   即紅底現形,格式同 K-7(缺「X」欄);Owner 選配,`-`/`無`/空皆視為有值。
+3. **Boundaries 摺疊**:卡內 `<details>`,預設收合、**內容零刪減**。
+4. **依賴 DAG 由 Blocked-by 自動衍生**:拓撲分波(Kahn),ASCII 印在 `#dag`。
+   引用不存在的 T → 該邊列進 stderr 警告、卡不紅(欄位本身有值);有環 → stderr
+   列出環上 T、DAG 區印「(依賴有環:…)」,兩者都 fail-loud、都不擋產出。
+
+md 側對應規定是 `_templates/5-tasks.md` 頂註,**兩邊講同一件事、md 是正本**。
 
 ## 7. 角色與 Gate
 

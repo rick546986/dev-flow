@@ -8,8 +8,10 @@
   local_page()    本機直接開的完整 html 文件(有 doctype/html/head/body)
   artifact_page() 發布用片段,**不得含** doctype/html/head/body —— 發布時外層會自動包
 
-移植自 `notes/patches/gate-twin-ui-prototype/devflow_ui.py`(2026-08-14 PGS 現場原型),
-去掉了 5-tasks 執行板專用的 CSS_TASKS(那不屬 gate twin 三站)。
+CSS 移植自 `notes/patches/gate-twin-ui-prototype/devflow_ui.py`(2026-08-14 PGS 現場原型)。
+K-3(2026-08-15)母版化時把原型當參考不當範本重寫了 CSS_TASKS:原型整張寫死(標題/
+儀表數字/SVG DAG/localStorage key),這裡只留「Boundaries 摺疊 + DAG 波次」兩塊
+CSS_SPEC 沒有對應樣式的新結構,且對 CSS_SPEC 只加不改(見 CSS_TASKS 上方註解)。
 主題規則沿用母版 html-shell:淺色定義在裸 `:root`、深色只覆寫 token
 (`prefers-color-scheme` 用 `:not([data-theme="light"])` 守衛,`[data-theme="dark"]` 再覆蓋一次)。
 """
@@ -217,7 +219,32 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 }
 """
 
-# 5-tasks 的 T 卡樣式
+# 5-tasks 執行板專屬(K-3)。加法式:只加新 class,不動 CSS_SPEC 既有任何一條規則 ——
+# 三個 gate 站的 <style> 只吃 CSS_SPEC,加了新東西也不會出現在它們的輸出裡。
+# T 卡本身沿用 CSS_SPEC 的 .s-card/.gwt/.obs(card() 直接產生同一套 class,見
+# build-gate-twin.py 的 parse_tasks);這裡只補 Boundaries 的 <details> 摺疊
+# 與 DAG 波次區塊兩塊 CSS_SPEC 沒有對應樣式的新結構。
+CSS_TASKS = """
+.t-bound{border-top:1px solid var(--rule-2);margin-top:9px}
+.t-bound>summary{cursor:pointer;padding:9px 0 9px 45px;font-size:.84rem;font-weight:600;
+  color:var(--ink-2);list-style:none;display:flex;justify-content:space-between;gap:10px}
+.t-bound>summary::-webkit-details-marker{display:none}
+.t-bound>summary::after{content:"展開";font-size:.75rem;color:var(--ink-3);font-weight:500}
+.t-bound[open]>summary::after{content:"收合"}
+.t-bound .body{padding:2px 18px 13px 45px;font-size:.87rem;color:var(--ink-2);line-height:1.7}
+.t-bound .body code{font-size:.85em}
+.dag{margin:22px 0;padding:15px 17px;border:1px solid var(--rule);border-radius:10px;
+  background:var(--panel);box-shadow:var(--shadow)}
+.dag h2{margin:0 0 10px;font-size:.95rem;border:0;padding:0}
+.dag pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.82rem;
+  line-height:1.7;color:var(--ink-2);overflow-x:auto;white-space:pre}
+@media (max-width:560px){
+  .t-bound>summary{padding-left:18px}
+  .t-bound .body{padding-left:18px}
+}
+"""
+
+
 def local_page(title: str, extra_css: str, body: str, script: str = "") -> str:
     """本機直接開的完整 html 文件。"""
     js = f"<script>{script}</script>" if script else ""

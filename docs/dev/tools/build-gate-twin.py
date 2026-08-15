@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""gate twin 產生器 —— 把 gate 站的 md 正本轉成**審查介面**(README §6)。
+"""gate twin 產生器 —— 把 gate 站與 5-tasks 的 md 正本轉成**審查介面／執行板**(README §6)。
 
-三個 gate 站的 twin 不是「md 的視覺版」,是給人**審**的介面。規格見 README §6
-〈審查動線頂區〉與各模板頂註;本檔是那份規格的實作。
+三個 gate 站的 twin 不是「md 的視覺版」,是給人**審**的介面;5-tasks 的 twin 不是
+gate(無 G 編號、免 reviewer 核准),但一樣不是「md 直轉攤平」,是給人**照著動工**的
+**執行板**(K-3,README §6「三種形狀的差別」)。規格見 README §6〈審查動線頂區〉/
+〈執行板頂區〉與各模板頂註;本檔是那份規格的實作。
 
     用法:build-gate-twin.py <專案根目錄> <slug> <stage>
-         stage ∈ 2-decision | 4-spec | 7-review
+         stage ∈ 2-decision | 4-spec | 7-review | 5-tasks
 
     輸出兩份(**同一份內容,兩種殼**):
       <根>/docs/dev/<slug>/<stage>.html                  本機看的完整 html 文件
@@ -14,9 +16,12 @@
                                                           doctype/html/head/body
     也可用環境變數:DEVFLOW_PROJECT_ROOT / DEVFLOW_SLUG / DEVFLOW_ARTIFACT_OUT
 
-三件必含(缺一就不是審查介面):
+三個 gate 站三件必含(缺一就不是審查介面):
   ①動線頂區五格,每格一句話 + 可點跳轉  ②待審項目逐條可勾 + 進度計數,缺必填欄直接紅底
   ③背景資料收進 <details>,預設收合、內容零刪減
+5-tasks 執行板四件必含(README §6〈執行板頂區〉):上述①③外加
+  ②任務卡逐條可勾,六欄必填(Covers/Files/Verify/Blocked-by/Intent/Boundaries)
+  缺任一即紅底,Owner 選配  ④依賴 DAG 由 Blocked-by 自動衍生(Kahn 拓撲分波,ASCII)
 
 **不手抄**:所有卡片由 md 逐條解析而來,所以不會與正本漂移。
 解析不到任何一條待審項目 → exit 1(不產出空殼)。想釘死條數 → 設 DEVFLOW_EXPECT_ITEMS。
@@ -25,7 +30,8 @@
 `S_HEAD = ^#{2,6}\\s*S-\\S+` 對齊 —— 母版範例寫 `#### S-1`、採用專案有寫
 `### S-1.1 標題` 的,兩種都要吃得到,否則同一份 spec 會出現「G2 關卡過了但 twin 產不出來」。
 
-exit code:0 = 產出成功 / 1 = 解析不到內容或條數不符 / 2 = 用法錯誤、檔案讀不到
+exit code:0 = 產出成功 / 1 = 解析不到內容或條數不符 / 2 = 用法錯誤、檔案讀不到、
+           相依 markdown-it-py 缺失或版本不符
 """
 import html
 import os
@@ -33,10 +39,37 @@ import pathlib
 import re
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+_SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
+
+# ── 相依 gate ──────────────────────────────────────────────────────────────
+# 解析層(fence 遮蔽、章節切割)的判斷來源是 markdown-it-py 的 CommonMark
+# token stream,不是手刻正則(理由見 mask_fenced/sections 的 docstring)。
+# 這支工具會被散發到採用專案,缺相依或版本不對時**不吐 traceback、不靜默
+# 降級回正則**——降級等於讓兩邊 diverge 卻不吭聲,比直接擋下來更危險。
+_MDIT_REQUIRED = "4.0.0"
+_MDIT_REQ_FILE = _SCRIPT_DIR / "requirements-methodology-render.txt"
+# 散發副本(docs/dev/tools/build-gate-twin.py)身邊沒有 requirements-methodology-render.txt
+# ——那個檔只活在 scripts/。訊息固定指它會在散發副本上指向一個不存在的路徑,所以
+# 只有它真的在 `_SCRIPT_DIR` 旁邊時才提,否則只給通用的 pip install 一行。
+_MDIT_HINT = (
+    f"請跑 pip install -r {_MDIT_REQ_FILE}(或 pip install 'markdown-it-py==4.0.0')"
+    if _MDIT_REQ_FILE.is_file()
+    else "請跑 pip install 'markdown-it-py==4.0.0'"
+)
+try:
+    from markdown_it import MarkdownIt, __version__ as _MDIT_VERSION
+except ImportError:
+    print(f"缺相依 markdown-it-py:{_MDIT_HINT}", file=sys.stderr)
+    sys.exit(2)
+if _MDIT_VERSION != _MDIT_REQUIRED:
+    print(f"缺相依 markdown-it-py(需要 {_MDIT_REQUIRED},目前是 {_MDIT_VERSION}):{_MDIT_HINT}",
+          file=sys.stderr)
+    sys.exit(2)
+
+sys.path.insert(0, str(_SCRIPT_DIR))
 import devflow_twin_ui as ui  # noqa: E402  # type: ignore[import-not-found]
 
-STAGES = ("2-decision", "4-spec", "7-review")
+STAGES = ("2-decision", "4-spec", "7-review", "5-tasks")
 
 # 這些節**永遠不摺疊**:它們是判定本身或判定的前提,藏起來等於沒審。
 # (2026-08-15 dogfood 抓到:用本工具產自己的 7-review 時,「限制聲明」與 verdict
@@ -52,8 +85,12 @@ INLINE_MD = re.compile(r"`([^`]+)`|\*\*([^*]+)\*\*")
 # 會跨行吃到很遠,整節 body 變空字串再被靜默丟掉(2026-08-15 二次複審 P4,
 # 已實際發生在出貨的 7-review.html:`## 變更架構圖` 整節不見)。
 H_ANY = re.compile(r"^(#{2,6})[ \t]+([^\n]*?)[ \t]*$", re.M)
-S_HEAD = re.compile(r"^#{2,6}\s*(S-\S+)\s*(.*)$", re.M)
-R_HEAD = re.compile(r"^#{2,6}\s*(R-\d+)\s*[:：·]?\s*(.*)$", re.M)
+# ⚠️ 同 H_ANY 的理由,同一類 bug:用 `[ \t]` 不用 `\s` —— `#### S-1`(無尾隨標題文字)
+# 時 `\s*` 會跨行吃到下一行(通常是 `- GIVEN …`),把 GIVEN 欄整段吞進標題文字,
+# GIVEN 欄從此消失(P4 同類,2026-08-15 三次複審抓到,已實際發生在母版範例的
+# S-1:產出的 twin 裡 GIVEN 出現 0 次、卡標題是被吞的 GIVEN 文字)。
+S_HEAD = re.compile(r"^#{2,6}[ \t]*(S-\S+)[ \t]*(.*)$", re.M)
+R_HEAD = re.compile(r"^#{2,6}[ \t]*(R-\d+)[ \t]*[:：·]?[ \t]*(.*)$", re.M)
 FIELD = {
     "given": re.compile(r"^\s*-\s*\*{0,2}GIVEN\*{0,2}\s*[:：]?\s*(.*)$", re.M | re.I),
     "when": re.compile(r"^\s*-\s*\*{0,2}WHEN\*{0,2}\s*[:：]?\s*(.*)$", re.M | re.I),
@@ -61,6 +98,28 @@ FIELD = {
     # 觀測欄容許 `- 觀測(承接…):內容` 這種帶括號註記的寫法
     "observe": re.compile(r"^\s*-\s*\*{0,2}\s*觀測\*{0,2}[^：:\n]*[：:]\s*(.*)$", re.M),
 }
+
+# ── 5-tasks 執行板專用(K-3):章節/欄位判斷 ─────────────────────────────────
+# `\b` 邊界防「T-10」被 `T-1` 子字串誤吃;`[:：]?` 額外容許「T-1: 標題」這個
+# 冒號變體(規格明講兩種都要吃),這一段是**純顯示用**的裝飾切法,不影響下面
+# TASK_FIELD_LINE 的機器對齊(見其 docstring)。
+TASK_HEAD = re.compile(r"^(T-\d+)\b[:：]?\s*(.*)$")
+# `##` 兩個字面井號、不是母版三站沿用的 `#{2,6}` 寬鬆 pattern —— 這裡刻意對齊
+# `tests/parallel-stage6/contract_ref.py` 的 HEAD_RE(`^##\s+(T-\d+)\b\s*(.*)$`)。
+# 5-tasks 的 T 不像 R/S 有「同一份 spec、多層標題都合法」的採用專案差異;真正會讀
+# 這份 md 的 Stage 6 執行引擎只認 `##`,twin 若跟著放寬到 `###` 就會秀出一顆
+# 引擎根本看不到的幽靈卡片 —— 那才是最壞的「與正本漂移」。
+TASK_LEVEL = 2
+TASK_REQUIRED = ("Covers", "Files", "Verify", "Blocked-by", "Intent", "Boundaries")
+# 保留欄清單(含 parallel 選配欄)逐字照抄 contract_ref.py 的 FIELD_RE ——
+# 理由見獨立審查:twin 若用不同的「這行算不算新欄位」判準,續行邊界判斷就可能
+# 跟 Stage 6 scope guard 對同一份 md 得出不同答案(例如某行被 twin 當續行併入
+# Boundaries,却被真正的 parser 認成新的 Files 欄、fail-closed 擋下)。
+# `\s*-\s*` 而非 `^-\s*`:允許任意縮排,子項寫法一樣要被認成「新欄位」而不是續行。
+_TASK_RESERVED = ("Covers", "Files", "Verify", "Blocked-by", "Integrate-after", "Risk",
+                  "Review-mode", "Semantic-conflicts-with", "Intent", "Boundaries", "Owner")
+TASK_FIELD_LINE = re.compile(
+    r"^\s*-\s*(" + "|".join(_TASK_RESERVED) + r")\s*:\s*(.*?)\s*$")
 
 
 def inline(text):
@@ -77,47 +136,66 @@ def inline(text):
     return "".join(out)
 
 
-FENCE_OPEN = re.compile(r"^(?P<indent> {0,3})(?P<mark>`{3,}|~{3,})(?P<info>[^\n]*)$")
-
-
 def mask_fenced(md):
     """把 fenced code block 換成等長空白,讓標題/欄位 regex 掃不到裡面的假標題。
 
     位移完全保留(等長替換),所以在遮蔽版上取到的 index 可直接切原文。
 
-    支援(2026-08-15 二次複審 P1/P2/P3 逐條補上):
-      - ``` 與 ~~~ 兩種圍欄
-      - **任意長度 ≥3**;關閉圍欄必須「同種類且不短於」開啟的那個 ——
-        四個反引號包三個反引號是合法巢狀,前綴 toggle 會 parity 反轉、內層不被遮蔽
-        (本 repo 自己就有這種寫法)
-      - 開啟行的語言標籤(```python)
-      - 最多三格縮排
-      - **未閉合的圍欄**:只遮到檔尾,但**不吃掉 frontmatter 之外的東西**
-        —— 呼叫端若把 frontmatter 接在 md 後面,要各自遮蔽再接(見 main)
+    判斷來源:markdown-it-py(CommonMark 合規 parser)的 token stream —— 只信
+    `token.type == "fence"` 的 `token.map` 行範圍(含開閉圍欄行;未閉合時
+    parser 自己會把 map 一路算到檔尾,見 main 的未閉合偵測)。舊版靠手刻正則
+    逐行維護一顆 parity 開關,三輪審查抓出 P1(巢狀圍欄:四個反引號包三個
+    反引號,前綴 toggle 誤判成「內層也是 fence」)、P2(未閉合圍欄吃掉呼叫端
+    接上去的 frontmatter)、P4(正則的 `$`/`\\s` 跨行語意錯位)—— 這類「什麼
+    算 fence、收尾字元/長度對不對」的判斷,合規 parser 本來就會做對,不必
+    再刻一次正則狀態機去追平 CommonMark 的圍欄規則。
+
+    刻意選擇:只遮 `fence`(``` / ~~~ 圍欄式),**不遮 `code_block`**
+    (4 格縮排式)—— 舊版正則的 opener 判斷只認圍欄開頭字元,縮排式從來
+    沒被遮蔽過;現在若連縮排式也遮,會把「原樣保留」變成「被清空」,
+    直接打破 byte-identical 的驗收基準,所以刻意不遮。
     """
     lines = md.splitlines(keepends=True)
-    out, closer = [], None
+    fence_lines = set()
+    for tok in MarkdownIt("commonmark").parse(md):
+        if tok.type == "fence" and tok.map:
+            fence_lines.update(range(tok.map[0], tok.map[1]))
 
     def blank(ln):
         return (" " * (len(ln) - 1) + "\n") if ln.endswith("\n") else " " * len(ln)
 
-    for ln in lines:
-        body = ln.rstrip("\r\n")
-        if closer is None:
-            m = FENCE_OPEN.match(body)
-            # info string 不得含圍欄字元(``` 後面接 ``` 不是合法 opener)
-            if m and m.group("mark")[0] not in m.group("info"):
-                closer = (m.group("mark")[0], len(m.group("mark")))
-                out.append(blank(ln))
-                continue
-            out.append(ln)
-        else:
-            ch, n = closer
-            stripped = body.strip()
-            if stripped and set(stripped) == {ch} and len(stripped) >= n:
-                closer = None
-            out.append(blank(ln))
-    return "".join(out)
+    return "".join(blank(ln) if i in fence_lines else ln for i, ln in enumerate(lines))
+
+
+def _closer_ok(line, ch, n):
+    """`line` 是不是給定字元/長度的合法 fence 收尾:同種字元、長度 ≥ opener、縮排 ≤3。"""
+    body = line.rstrip("\r\n")
+    return bool(re.match(r"^ {0,3}" + re.escape(ch) + "{" + str(n) + ",}[ \t]*$", body))
+
+
+def _unclosed_fences(md):
+    """回傳『延伸到檔尾且未被合法收尾』的 fence token 清單(main 的未閉合警告用)。
+
+    取代舊版「fence opener 數 % 2」的奇偶啟發式 —— parity 只能猜「大概有幾個
+    沒收尾」,猜不出「是哪一個、收尾字元/長度對不對」,而且巢狀圍欄一多就會
+    整個猜錯。現在直接問 parser:某個 fence 的 `token.map` 一路算到檔尾,且
+    檔尾那一行不構成合法 closer(字元同種、長度 ≥ opener、縮排 ≤3),才算
+    未閉合 —— 這與『收尾字元/長度/縮排在 CommonMark 裡合不合法』用的是同一套
+    規則,不是另外猜的。
+    """
+    lines = md.splitlines(keepends=True)
+    out = []
+    for tok in MarkdownIt("commonmark").parse(md):
+        if tok.type != "fence" or not tok.map:
+            continue
+        start, end = tok.map
+        if end != len(lines):
+            continue  # 有合法收尾且非檔尾,略過
+        ch, n = tok.markup[0], len(tok.markup)
+        last_line = lines[end - 1] if end > start else ""
+        if not _closer_ok(last_line, ch, n):
+            out.append(tok)
+    return out
 
 
 def sections(md):
@@ -125,18 +203,47 @@ def sections(md):
 
     body 是**含子標題**的整段(延伸到下一個同級或更高級標題為止)——
     `### R-1` 底下的 `#### S-1` 必須留在 R 的 body 裡,否則一條 S 都解析不到。
-    掃描用遮蔽版(程式碼區塊內的假標題不算),切出來的 body 用原文(零刪減)。
+
+    候選標題來源:同一次 parse 拿到的 `heading_open` token,過濾條件是
+    (a) `token.markup` 以 `#` 開頭(排除 setext,`===`/`---` 那種)
+    (b) level 2-6。圍欄內的假標題(```/~~~ 包住的 `### 假標題`)在 parser
+    眼裡本來就不構成 heading——連 token 都不會產生,不必再靠遮蔽版排除
+    (這正是換掉手刻正則的目的:讓「什麼算標題」交給合規 parser 判斷)。
+
+    每個候選 heading 仍用既有的 H_ANY 對它**原始碼那一行**做一次 match:
+    match 不到就跳過(維持舊版對「無標題文字」這類寫法的排除行為),
+    match 到就用它取 title(語意不變,含尾隨 `##` 等裝飾)。body 的 char
+    span 演算法維持舊版:從該行 H_ANY match 的結尾切到下一個同級或更高級
+    標題的行首,沒有就切到檔尾;body 一律取原文(零刪減)。行號→char
+    offset 用行首 offset 的前綴和換算。
     """
-    heads = list(H_ANY.finditer(mask_fenced(md)))
+    lines = md.splitlines(keepends=True)
+    line_start = [0] * (len(lines) + 1)
+    for i, ln in enumerate(lines):
+        line_start[i + 1] = line_start[i] + len(ln)
+
+    heads = []  # [(lvl, title, line_head_offset, body_start_offset), ...]
+    for tok in MarkdownIt("commonmark").parse(md):
+        if tok.type != "heading_open" or not tok.markup.startswith("#") or not tok.map:
+            continue
+        lvl_tag = int(tok.tag[1:])
+        if not (2 <= lvl_tag <= 6):
+            continue
+        i = tok.map[0]
+        m = H_ANY.match(lines[i])
+        if not m:
+            continue
+        lvl = len(m.group(1))          # 層級語意維持舊版:來自 H_ANY 的 match,不是 token.tag
+        heads.append((lvl, m.group(2), line_start[i], line_start[i] + m.end()))
+
     out = []
-    for i, m in enumerate(heads):
-        lvl = len(m.group(1))
+    for idx, (lvl, title, _line_off, body_start) in enumerate(heads):
         end = len(md)
-        for nxt in heads[i + 1:]:
-            if len(nxt.group(1)) <= lvl:
-                end = nxt.start()
+        for nxt_lvl, _t, nxt_line_off, _b in heads[idx + 1:]:
+            if nxt_lvl <= lvl:
+                end = nxt_line_off
                 break
-        out.append((lvl, m.group(2), md[m.end():end]))
+        out.append((lvl, title, md[body_start:end]))
     return out
 
 
@@ -165,20 +272,49 @@ def table_rows(body):
     return [(header, r) for r in rows] if header else []
 
 
-def card(item_id, title, tag, rows, missing=None, sub=""):
-    """一張待審卡。missing 有值 → 紅底現形(缺必填欄的項目不得只在別處列表)。"""
+def card(item_id, title, tag, rows, missing=None, sub="", extra="", dup=None):
+    """一張待審卡。missing 有值 → 紅底現形(缺必填欄的項目不得只在別處列表)。
+
+    missing 可以是單一欄名字串(既有用法,如 2-decision 的「裁決」)或缺欄清單
+    (K-7:4-spec 的 GIVEN/WHEN/THEN/觀測皆必填,同一張卡可能同時缺好幾欄)——
+    清單用頓號連接,如 `缺「GIVEN、觀測」欄`;只缺一欄時仍是 `缺「觀測」欄`
+    這種單欄格式(動線頂區的 n_obs 計數靠這個字串,見 dash_cells)。
+
+    dup:同一 T 內重複保留欄的欄名清單(H-1,K-3 現形)。有值 → 卡照樣紅底
+    (即使 missing 為空),多印一段「重複欄「X」」的 flag,呼應
+    `tests/parallel-stage6/contract_ref.py` fail-closed 時用的「重複保留欄」
+    用語 —— 真正吃這份 md 的引擎會直接拒啟,twin 這裡只現形、不擋產出。
+    跟 missing 的紅底旗標**並存**(同一張卡兩種問題都要看得到,不是互斥),
+    只有兩者都沒有時才退回顯示 `sub`(既有行為不變)。
+
+    extra:K-3 加的第 4 個插槽(5-tasks 的 Boundaries `<details>`)。跟 `sub` 不同 ——
+    `sub` 缺欄時會被 `missing`/`dup` 的紅底 flag 蓋掉(同 K-7 邏輯:欄位缺就不演有值),
+    但 Boundaries 摺疊是「不論其他欄缺不缺都要在」的必含元素,所以 `extra` 永遠
+    附加在 `{flag}` 後面、不受 missing 影響。**接在同一行**(`{flag}{extra}`,
+    不另起新行)是刻意的:三個既有 gate 站從不傳 `extra`,值恆為 `""`;若各自佔一行,
+    模板裡固定的換行/縮排字元仍會印出來,即使插值是空字串也會讓三站的輸出多一行
+    空白,直接打破「三個 gate 站渲染輸出不得變動」的驗收基準。同行拼接時空字串
+    不添一字,byte-for-byte 不受影響。
+    """
     tag_html = f'<span class="tag main">{html.escape(tag)}</span>' if tag else ""
     body_rows = "".join(
         f'<div class="gwt-row"><span class="gwt-k">{html.escape(k)}</span>'
         f'<span class="gwt-v">{inline(v)}</span></div>'
         for k, v in rows if v
     )
+    flags = []
     if missing:
-        flag = (f'<div class="obs missing"><span class="obs-k">缺「{html.escape(missing)}」欄</span>'
-                f'<span class="obs-v">這條審不過 —— 沒寫清楚要看哪裡</span></div>')
-    else:
-        flag = sub
-    return f"""<article class="s-card{' bad' if missing else ''}" data-sid="{html.escape(item_id)}">
+        label = "、".join(missing) if isinstance(missing, (list, tuple)) else missing
+        flags.append(f'<div class="obs missing"><span class="obs-k">缺「{html.escape(label)}」欄</span>'
+                     f'<span class="obs-v">這條審不過 —— 沒寫清楚要看哪裡</span></div>')
+    if dup:
+        dlabel = "、".join(dup) if isinstance(dup, (list, tuple)) else dup
+        flags.append(f'<div class="obs missing"><span class="obs-k">重複欄「{html.escape(dlabel)}」</span>'
+                     f'<span class="obs-v">同一 T 內同名保留欄出現兩次 —— 引擎(contract_ref.py)'
+                     f'對此 fail-closed 拒啟,twin 僅現形不擋產出</span></div>')
+    flag = "".join(flags) if flags else sub
+    bad = bool(missing) or bool(dup)
+    return f"""<article class="s-card{' bad' if bad else ''}" data-sid="{html.escape(item_id)}">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="{html.escape(item_id)}">
     <span class="s-id">{html.escape(item_id)}</span>
@@ -187,22 +323,28 @@ def card(item_id, title, tag, rows, missing=None, sub=""):
   </label>
   <div class="s-body">
     <div class="gwt">{body_rows}</div>
-    {flag}
+    {flag}{extra}
   </div>
 </article>"""
 
 
-def obs_block(text):
-    return (f'<div class="obs"><span class="obs-k">你要親自跑的觀測</span>'
+def obs_block(text, label="你要親自跑的觀測"):
+    """高亮列(沿用 4-spec 的「觀測」樣式)。K-3 的 5-tasks Intent 借用同一個
+    class(`.obs`),只換 label,不必為執行板另刻一顆視覺一樣的 block。"""
+    return (f'<div class="obs"><span class="obs-k">{html.escape(label)}</span>'
             f'<span class="obs-v">{inline(text)}</span></div>')
 
 
 def md_block(body):
     """把一段 md 轉成 html:表格、清單、程式碼區塊、段落。
 
-    刻意不依賴外部 markdown 套件 —— 這支工具會被散發到採用專案,多一個相依就多一個
-    「在別人機器上跑不起來」的理由。表格必須渲染成真表格:置頂節(限制聲明/Verdict/
-    Known Limits)幾乎都是表格,用 <pre> 顯示等於沒給人看。
+    這個小型渲染器本身仍刻意手刻、不呼叫 markdown-it-py —— 它只做展示用的
+    表格/清單/程式碼區塊轉換,職責跟解析層(判斷 fence 邊界、切章節)不同,
+    沒必要為了展示格式也綁進 parser 的 token stream。
+    模組層級已不是「不依賴外部套件」:解析層(mask_fenced/sections/未閉合
+    偵測)判斷來源是 markdown-it-py 的 token stream,缺相依會在模組頂端的
+    gate 直接 exit 2(見檔案開頭)。表格必須渲染成真表格:置頂節(限制聲明/
+    Verdict/Known Limits)幾乎都是表格,用 <pre> 顯示等於沒給人看。
     """
     out, i = [], 0
     lines = body.strip("\n").splitlines()
@@ -268,14 +410,20 @@ def parse_spec(_md, secs):
             start = hm.end()
             end = hits[k + 1].start() if k + 1 < len(hits) else len(body)
             seg_masked = masked_body[start:end]
-            f = {}
+            # K-7:模板要求 GIVEN/WHEN/THEN/觀測四欄皆必填,缺任何一欄都要紅底現形,
+            # 不是只有「觀測」。FIELD 的 key 順序(given/when/then/observe)固定就是
+            # GIVEN、WHEN、THEN、觀測這個守衛靠的順序,不必另外排序。
+            f, missing_fields = {}, []
+            FIELD_LABEL = {"given": "GIVEN", "when": "WHEN", "then": "THEN", "observe": "觀測"}
             for key, pat in FIELD.items():
                 fm = pat.search(seg_masked)          # 掃遮蔽版(fence 內不算)
                 f[key] = body[start + fm.start(1):start + fm.end(1)].strip() if fm else ""
+                if not f[key]:
+                    missing_fields.append(FIELD_LABEL[key])
             inner.append(card(
                 sid, stitle or rname, "",
                 [("GIVEN", f["given"]), ("WHEN", f["when"]), ("THEN", f["then"])],
-                missing=None if f["observe"] else "觀測",
+                missing=missing_fields or None,
                 sub=obs_block(f["observe"]) if f["observe"] else "",
             ))
             n += 1
@@ -352,7 +500,221 @@ def parse_review(_md, secs):
     return "".join(cards), n, used
 
 
-PARSERS = {"4-spec": parse_spec, "2-decision": parse_decision, "7-review": parse_review}
+def parse_task_fields(body):
+    """把一個 T 的 body 切成欄位。回 `(fields, dups)`:`fields` 是欄名→值的 dict,
+    `dups` 是重複出現的保留欄名清單(見下方 H-1 段落)。
+
+    欄位開始行判準(`TASK_FIELD_LINE`)逐字對齊 `tests/parallel-stage6/contract_ref.py`
+    的 FIELD_RE —— 真正吃這份 md 的 Stage 6 scope guard 用同一顆正則判斷「這行是不是
+    新欄位」;twin 若判準不同,可能把 Stage 6 會擋下來的一行(例如縮排的 `- Files:`
+    子項)誤判成續行併入 Boundaries,審查者看到的字面跟引擎實際吃到的字面就不一致了。
+
+    續行:比 contract_ref.py 多做一件事 —— 把後續縮排、非新欄位的行併入目前欄位
+    (模板頂註「續行禁令」講的正是這個現象,例:範例 T-1 的 Boundaries 第二行
+    「Design Boundary(摘自…)」)。這是 **twin 專屬的顯示加值**:contract_ref.py
+    的機器消費者只讀欄位那一行(Files/Verify/Blocked-by 這些機器判準值本來就該是
+    單行),但 Boundaries/Intent 是給人看的,續行內容不顯示等於白寫 —— K-3 規格
+    明講「值含續行」,這裡刻意比機器解析更寬,不影響上面提到的欄位邊界對齊。
+    重複保留欄(同一欄名出現兩次)保留首筆、不覆蓋 —— 對齊 contract_ref.py 的
+    fail-closed 精神(它會記錯誤;twin 不擋產出,但也不能靜默選後筆)。回傳的
+    第二個值 `dups` 是偵測到的重複欄名清單(依出現順序、去重)——H-1:twin 不能
+    只默默保留首筆就算了事,還要讓這張卡紅底現形 + 讓 stderr 點名引擎會
+    fail-closed 拒啟,不然審查者看到的 twin 是綠的,引擎卻直接拒啟同一份 md。
+    掃遮蔽版(``` 區塊不算,理由同 mask_fenced);遮蔽版與原文等長,可用同一行索引切原文。
+    """
+    masked = mask_fenced(body)
+    fields, cur, dups = {}, None, []
+    for mln, rln in zip(masked.splitlines(), body.splitlines()):
+        fm = TASK_FIELD_LINE.match(mln)
+        if fm:
+            key = fm.group(1)
+            if key in fields:
+                if key not in dups:
+                    dups.append(key)
+                cur = None       # 重複保留欄:首筆已在,忽略後筆,也不再累加續行進去
+                continue
+            cur = key
+            fields[cur] = rln[fm.start(2):].strip()
+            continue
+        if cur and mln.strip() and mln[:1].isspace() and not TASK_FIELD_LINE.match(mln):
+            fields[cur] += "\n" + rln.strip()
+    return fields, dups
+
+
+def _task_sections(secs):
+    """secs 裡標題形如 `T-1 標題` / `T-1: 標題`、且標題層級為 `##`(TASK_LEVEL)的節。
+    回 [(tid, title, body), ...],依 md 出現順序(sections() 本身就是順序輸出)。
+    """
+    out = []
+    for lvl, title, body in secs:
+        if lvl != TASK_LEVEL:
+            continue
+        m = TASK_HEAD.match(title)
+        if m:
+            out.append((m.group(1), title, body))
+    return out
+
+
+def parse_tasks(_md, secs):
+    """5-tasks:每個 T 一張執行卡(README §6「執行板」,K-3)。
+
+    六欄必填(Covers/Files/Verify/Blocked-by/Intent/Boundaries)缺任一即紅底,
+    格式與機制**沿用 K-7**(card() 的 missing 清單、「缺「X」欄」字串)—— 執行板跟
+    4-spec 的審查介面一樣,「缺必填欄」不能只在別處列表,必須在卡上直接現形。
+    Owner 選配,不進 TASK_REQUIRED 就永遠不會觸發缺欄。
+    Intent 借 obs_block 的高亮樣式(標籤換成「Intent」);Boundaries 走 card() 新加的
+    `extra` 插槽,包成 `<details>`(預設收合、經 md_block 渲染、原文零刪減)——
+    這正是 owner 兩次抱怨的那件事:Boundaries 常常上千字,直接攤平會把
+    Covers/Files/Verify 擠到畫面外,摺起來才看得下去。
+
+    H-1(2026-08-15 獨立審查):同一 T 內若有保留欄重複出現(常見成因是
+    Boundaries/Intent 的續行被寫成 `- Files:` 這種子項),真正吃這份 md 的
+    Stage 6 引擎(`tests/parallel-stage6/contract_ref.py`)fail-closed 拒啟,
+    twin 卻只是「保留首筆」悄悄過關 —— 審查者看到綠卡、引擎卻拒收同一份 md。
+    這裡把 `parse_task_fields` 回傳的 `dups` 接進 `card()` 的 `dup` 參數,讓卡
+    照樣紅底 + flag 點名重複欄,並在 stderr 印一行 NOTE(見 main() 呼叫處)提醒
+    這件事引擎會 fail-closed——twin 仍不擋產出,只現形。
+    """
+    cards, n, used = [], 0, set()
+    for tid, title, body in _task_sections(secs):
+        used.add(title)
+        f, dups = parse_task_fields(body)
+        missing = [k for k in TASK_REQUIRED if not (f.get(k) or "").strip()]
+        rows = [(k, f.get(k, "")) for k in ("Covers", "Files", "Verify", "Blocked-by")]
+        intent = f.get("Intent", "").strip()
+        sub = obs_block(intent, label="Intent") if intent else ""
+        bounds = f.get("Boundaries", "").strip()
+        extra = ""
+        if bounds:
+            extra = (f'<details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區'
+                      f'</summary><div class="body">{md_block(bounds)}</div></details>')
+        rest = title[len(tid):].strip(" :：") or tid
+        cards.append(card(tid, rest, "", rows, missing=missing or None, sub=sub, extra=extra,
+                          dup=dups or None))
+        if dups:
+            print(f"NOTE: {tid} 重複保留欄「{'、'.join(dups)}」:twin 不擋產出(只現形紅底),但真正吃這份"
+                  f"md 的引擎(tests/parallel-stage6/contract_ref.py)對「重複保留欄」fail-closed 拒啟",
+                  file=sys.stderr)
+        n += 1
+    return "".join(cards), n, used
+
+
+def _task_deps(secs):
+    """每個 T 的 Blocked-by 原始文字 → 依賴的 T id 清單(依 md 出現順序)。
+
+    抽 id 用 `re.findall(r"T-\\d+", value)`,跟 contract_ref.py 的 `_extract_ids`
+    同一招:`-`/`—`/`無`/空白裡都不會有 `T-\\d+` 子字串,正則本身就回空清單,
+    不必另外維護一份「哪些字算空」的清單去追平那邊的 EMPTY_MARKS。
+    回 [(tid, [dep_id, ...]), ...]。
+    """
+    out = []
+    for tid, _title, body in _task_sections(secs):
+        f, _dups = parse_task_fields(body)
+        out.append((tid, re.findall(r"T-\d+", f.get("Blocked-by", ""))))
+    return out
+
+
+def ghost_task_warnings(md):
+    """H-1(本批只現形,不修引擎):fence 內若含行首 `## T-\\d+`,twin(靠
+    markdown-it-py 的 token stream)天生看不到它、也不會為它產卡 —— 但真正吃
+    這份 md 的 Stage 6 引擎(`tests/parallel-stage6/contract_ref.py` 的
+    `HEAD_RE = ^##\\s+(T-\\d+)\\b...`,鏡射 `hooks/devflow-lib.py`)目前**不遮蔽
+    fence**,會把這行當成真的 `## T-n` 標題,長出一顆 twin 完全看不到的幽靈任務。
+
+    只回傳偵測到的 id 清單給呼叫端印 stderr 警告 —— 不改卡片、不擋產出。引擎側
+    修復(讓它也遮蔽 fence)排在 Backlog(第二批 A-6 一帶),不在本棒範圍。
+    偵測法沿用 mask_fenced 的 fence 行範圍判斷(token.type == "fence" 的
+    token.map),但這裡要看**原始行**內容(不是遮蔽後的空白),所以另外掃一次。
+    """
+    lines = md.splitlines(keepends=True)
+    fence_lines = set()
+    for tok in MarkdownIt("commonmark").parse(md):
+        if tok.type == "fence" and tok.map:
+            fence_lines.update(range(tok.map[0], tok.map[1]))
+    ghost = re.compile(r"^##\s+(T-\d+)\b")
+    out, seen = [], set()
+    for i in sorted(fence_lines):
+        if i >= len(lines):
+            continue
+        m = ghost.match(lines[i])
+        if m and m.group(1) not in seen:
+            seen.add(m.group(1))
+            out.append(m.group(1))
+    return out
+
+
+def build_dag(secs):
+    """Blocked-by → ASCII 波次圖(Kahn 拓撲分波)。回 (html, 邊數, warnings)。
+
+    選 Kahn 拓撲而不是手畫 SVG:README §6 自己就寫「T 依賴 DAG(ASCII 天生適合)」,
+    Blocked-by 是純文字關係,拓撲序自然就是波次,不必假裝這是需要空間佈局的圖 ——
+    原型(notes/patches/gate-twin-ui-prototype)手畫一張 SVG,節點/邊換一份 5-tasks
+    就要重畫,還背著手刻座標的幾何缺陷風險,這正是母版化要避免的事。
+
+    引用不存在的 T、自我引用 → 該邊被排除且列進 warnings(fail-loud,不擋產出:
+    欄位本身有值,卡不因此變紅,K-3 規格明講「卡不紅」);排除法沿用
+    `tests/parallel-stage6/contract_ref.py` 對同一種錯誤的判法(引用不存在 id /
+    自我引用皆記錯誤,只是那邊是 fail-closed 擋 start,這裡是 fail-loud 純現形)。
+    卡在剩餘節點裡走不完波次 → 環,warnings 列出環上節點,DAG 區印
+    「(依賴有環:…)」,同樣不擋產出。
+    """
+    tasks = _task_deps(secs)
+    ids = [t for t, _ in tasks]
+    idset = set(ids)
+    warnings = []
+    deps = {}
+    for tid, raw in tasks:
+        clean = []
+        for d in raw:
+            if d == tid:
+                warnings.append(f"{tid} 的 Blocked-by 引用自己,已忽略此邊")
+                continue
+            if d not in idset:
+                warnings.append(f"{tid} 的 Blocked-by 引用不存在的 {d},已忽略此邊")
+                continue
+            clean.append(d)
+        deps[tid] = clean
+
+    remaining = {t: list(deps[t]) for t in ids}
+    resolved = set()
+    lines, wave_no = [], 0
+    while remaining:
+        wave_no += 1
+        wave = [t for t in ids if t in remaining and all(d in resolved for d in remaining[t])]
+        if not wave:
+            cyc = [t for t in ids if t in remaining]
+            warnings.append(f"依賴有環,卡在環裡走不完波次的 T:{'、'.join(cyc)}")
+            lines.append(f"(依賴有環:{'、'.join(cyc)})")
+            break
+        parts = [f"{t} ←({','.join(deps[t])})" if deps[t] else t for t in wave]
+        lines.append(f"Wave {wave_no}: " + "、".join(parts))
+        for t in wave:
+            del remaining[t]
+        resolved.update(wave)
+
+    text = "\n".join(lines) if lines else "(沒有 T,無 DAG 可畫)"
+    edge_count = sum(len(v) for v in deps.values())
+    html_out = (f'<section class="dag" id="dag"><h2>T 依賴 DAG(Blocked-by,自動衍生)</h2>'
+                f'<pre>{html.escape(text)}</pre></section>')
+    return html_out, edge_count, warnings
+
+
+def _tasks_done_count(secs):
+    """任務板進度:算「- [x] 完成」的張數,不是 SCRIPT 的即時勾選狀態(那個永遠從
+    0 起算,見 SCRIPT 的 load()/paint())。這格是 md 正本此刻的真實完成度快照 ——
+    跟 7-review「出貨」格算 Exit Checklist `- [x]` 的手法同一套(dash_cells 的
+    `known_sec`/`ec` 那段),不是另外發明的機制。"""
+    done, total = 0, 0
+    for _tid, _title, body in _task_sections(secs):
+        total += 1
+        m = re.search(r"^\s*-\s*\[( |x|X)\]", mask_fenced(body), re.M)
+        if m and m.group(1).lower() == "x":
+            done += 1
+    return done, total
+
+
+PARSERS = {"4-spec": parse_spec, "2-decision": parse_decision, "7-review": parse_review,
+           "5-tasks": parse_tasks}
 
 
 # ── 動線頂區五格 ───────────────────────────────────────────────────────────────
@@ -400,12 +762,38 @@ def _headline(text, limit=30):
     return "—"
 
 
-def dash_cells(stage, md, n_items, n_bad, secs):
+def _sample_row(md):
+    """P5:7-review「抽驗」格的值 —— 決定論從 Coverage Matrix 抽一列,不是隨機。
+
+    抽樣規則刻意不用 random/時間:同一份 md 每次重跑都要抽到同一列(產出必須
+    可重現,否則審查者兩次看到不同的「抽驗」目標,對不上就沒有意義)。抽法:
+    取 `rows[len(rows)//2]`(中位列),值 = 該列第一欄,超過 14 字截斷加「…」。
+    無表格或無列 → `"—"`。
+    """
+    rows = table_rows(_section_text(md, "Coverage Matrix"))
+    if not rows:
+        return "—"
+    _header, cells = rows[len(rows) // 2]
+    val = cells[0] if cells else ""
+    return (val[:14] + "…") if len(val) > 14 else (val or "—")
+
+
+def dash_cells(stage, md, n_items, n_bad, secs, n_obs=0, dag_edges=0, dag_done=0):
     """五格內容依 stage 不同(README §6 的表)。**格數固定五格,每格都要有跳轉目標**。
 
     回 [(標籤, 值, 註, 錨點), ...]。錨點是章節標題或固定 id;main 會檢查目標
     存不存在,不存在就退回 `#cards`(待審區)—— 規格要求「每格一句話 + 一個跳轉」,
     沒有跳轉就不算做到(2026-08-15 獨立審查 H1)。
+
+    n_obs:4-spec 專用(K-7)—— 缺「觀測」欄的張數(main 用 `cards.count('觀測」欄')`
+    算,觀測固定排最後,這個字串只在缺觀測時出現)。跟 n_bad(任何一欄缺、卡片紅底
+    的總張數)分開算,是因為「待審 S」格的註要先報缺觀測(G3 驗收的唯一依據),
+    沒有缺觀測但有其他紅卡時才退而求其次報「缺必填欄」。
+
+    dag_edges/dag_done:5-tasks 專用(K-3)。main() 只算一次 `build_dag()`/
+    `_tasks_done_count()` 並把數字傳進來,不在這裡重算 —— 否則同一份 md 的
+    DAG 警告(引用不存在的 T / 有環)會被印兩次 stderr NOTE(一次來自 main() 產
+    `#dag` 區塊,一次來自這裡重新解析),對著同一個問題喊兩次沒有增加資訊量。
     """
     def sec_anchor(*names):
         for _l, title, _b in secs:
@@ -419,10 +807,15 @@ def dash_cells(stage, md, n_items, n_bad, secs):
         dd_rows = re.findall(r"^\|\s*DD-\d+", mask_fenced(dd_sec), re.M) or \
             re.findall(r"^\s*[-*]\s+\S", mask_fenced(dd_sec), re.M)
         dd_open = len(re.findall(r"待裁決", mask_fenced(dd_sec)))
+        if n_obs:
+            s_note = f"{n_obs} 條缺觀測欄"
+        elif n_bad:
+            s_note = f"{n_bad} 條缺必填欄"
+        else:
+            s_note = "欄位齊全"
         return [
             ("狀態", _find(md, r"^status:\s*(\S+)"), "frontmatter", "#top"),
-            ("待審 S", f"{n_items} 條",
-             f"{n_bad} 條缺觀測欄" if n_bad else "欄位齊全", "#cards"),
+            ("待審 S", f"{n_items} 條", s_note, "#cards"),
             ("lane · Risk", f'{_find(md, r"^\s*-?\s*lane:\s*(\S+)")} · '
                             f'{_find(md, r"^\s*-\s*Risk:\s*(\S+)")}',
              "Verification Profile", sec_anchor("Verification Profile")),
@@ -446,8 +839,30 @@ def dash_cells(stage, md, n_items, n_bad, secs):
             ("駁回理由", f"{rej} 條", "Rejected Alternatives", sec_anchor("Rejected")),
             ("狀態", _find(md, r"^status:\s*(\S+)"), "frontmatter", "#top"),
         ]
+    if stage == "5-tasks":
+        # 執行板不是 gate(無 G 編號),但五格規格一樣釘死在 README §6〈執行板頂區〉。
+        if n_bad:
+            t_note = f"{n_bad} 條缺必填欄"
+        else:
+            t_note = "六欄齊全"
+        # 「模式」是 execution.mode(frontmatter,選配),跟「狀態」一樣沒有專屬章節可跳,
+        # 兩格都錨 #top(frontmatter 本身就在頁首)——與 2-decision/4-spec 既有慣例一致
+        # (那兩站也都有 frontmatter 衍生格錨在 #top)。
+        return [
+            ("狀態", _find(md, r"^status:\s*(\S+)"), "frontmatter", "#top"),
+            ("任務", f"{n_items} 個 T", t_note, "#cards"),
+            ("模式", _find(md, r"^\s*mode:\s*(\S+)", "sequential"),
+             "execution.mode(未標=sequential)", "#top"),
+            ("依賴", f"{dag_edges} 條", "Blocked-by 邊", "#dag"),
+            ("進度", f"{dag_done}/{n_items}" if n_items else "—",
+             "已勾 完成/總數", "#progress"),
+        ]
     known_sec = _section_text(md, "Known Limits")
-    known = len(re.findall(r"^\s*[-*|]\s*\S", mask_fenced(known_sec), re.M))
+    # 條數 = 表格「資料列」+ bullet 列。舊寫法 `[-*|]` 連表頭列與 `|---|` 分隔列
+    # 都算進去(4 條限界報成 6 條)—— 這格給人的是「有幾條要看」,計數必須
+    # 對得上人打開該節數得到的條數(2026-08-15 K-6 修範例時交叉驗證抓到)。
+    known = len(table_rows(known_sec)) + \
+        len(re.findall(r"^\s*[-*]\s+\S", mask_fenced(known_sec), re.M))
     ec = re.findall(r"^\s*-\s*\[( |x|X)\]", mask_fenced(_section_text(md, "Exit Checklist")), re.M)
     apx = _section_text(md, "附錄")
     disputes = len(re.findall(r"^#{3,6}\s*A\d", mask_fenced(apx), re.M))
@@ -457,7 +872,7 @@ def dash_cells(stage, md, n_items, n_bad, secs):
          "Exit Checklist", sec_anchor("Exit Checklist")),
         ("爭點", f"{disputes} 條", "附錄:本輪特有", sec_anchor("附錄")),
         ("風險", f"{known} 條", "Known Limits", sec_anchor("Known Limits")),
-        ("抽驗", "隨機一列 檔:行", "對得上才信剩下的", sec_anchor("Coverage Matrix")),
+        ("抽驗", _sample_row(md), "對得上才信剩下的", sec_anchor("Coverage Matrix")),
     ]
 
 
@@ -516,11 +931,13 @@ def main(argv):
         return 2
 
     md = re.sub(r"\A---\n.*?\n---\n", "", src.read_text(encoding="utf-8"), flags=re.S)
-    # 未閉合的 fence 會把其後全部內容吃成程式碼(規則正確,但不得靜默 —— 二次複審 P3)
+    # 未閉合的 fence 會把其後全部內容吃成程式碼(規則正確,但不得靜默 —— 二次複審 P3)。
+    # 判定「未閉合」用 token-based(見 _unclosed_fences);swallowed 行數計算沿用舊版
+    # (遮蔽版與原文逐行比,任何被清空的非空行都算——不只算未閉合那個 fence 自己的)。
     _mk = mask_fenced(md)
     swallowed = sum(1 for a, b in zip(md.splitlines(), _mk.splitlines())
                     if a.strip() and not b.strip())
-    if swallowed and len(re.findall(r"^\s{0,3}(?:`{3,}|~{3,})", md, re.M)) % 2 == 1:
+    if swallowed and _unclosed_fences(md):
         print(f"⚠️  偵測到**未閉合**的 code fence:其後 {swallowed} 行非空內容被當成程式碼,"
               f"不會進待審區也不會進背景資料。請補上收尾的 ``` 或 ~~~。", file=sys.stderr)
 
@@ -531,8 +948,10 @@ def main(argv):
     cards, n_items, used = PARSERS[stage](md, secs)
     rendered_rids = re.findall(r'<section class="r-block" id="(R-\d+)"', cards)
     if n_items == 0:
-        print(f"ERROR: 一條待審項目都沒解析到 —— 檢查 {stage}.md 的標題與欄位格式"
-              f"(S 標題要 `#### S-<id>`;表格要有表頭列)", file=sys.stderr)
+        hint = ("T 標題要 `## T-<id>`;必填欄要 `- Covers/Files/Verify/Blocked-by/Intent/Boundaries:`"
+                if stage == "5-tasks" else "S 標題要 `#### S-<id>`;表格要有表頭列")
+        print(f"ERROR: 一條待審項目都沒解析到 —— 檢查 {stage}.md 的標題與欄位格式({hint})",
+              file=sys.stderr)
         return 1
     expect = os.environ.get("DEVFLOW_EXPECT_ITEMS", "").strip()
     if expect and not expect.isdigit():
@@ -543,8 +962,25 @@ def main(argv):
         print(f"ERROR: 解析到 {n_items} 條,預期 {expect}(DEVFLOW_EXPECT_ITEMS)", file=sys.stderr)
         return 1
     n_bad = cards.count('class="s-card bad"')
+    n_obs = cards.count('觀測」欄')  # K-7:缺「觀測」欄的張數(觀測固定排最後,見 card())
     print(f"NOTE: 解析到 {n_items} 條待審項目" + (f",其中 {n_bad} 條缺必填欄" if n_bad else ""),
           file=sys.stderr)
+
+    # K-3:5-tasks 專屬的 DAG 區塊。只算一次(main 產 `#dag` html、把警告印到
+    # stderr),數字再傳進 dash_cells 給「依賴」「進度」兩格用 —— 見 dash_cells
+    # docstring,避免同一份 md 的警告被印兩次。
+    dag_html, dag_edges, dag_done = "", 0, 0
+    if stage == "5-tasks":
+        dag_html, dag_edges, dag_warnings = build_dag(secs)
+        for w in dag_warnings:
+            print(f"NOTE: {w}", file=sys.stderr)
+        dag_done, _dag_total = _tasks_done_count(secs)
+        # H-1:fence 內含行首 `## T-\d+` 的話,引擎(不遮蔽 fence)會長出 twin 看不到的
+        # 幽靈任務 —— 只警告、不改卡片(引擎側修復排 Backlog,不在本棒範圍)。
+        for gid in ghost_task_warnings(md):
+            print(f"NOTE: fence 內偵測到行首 `## {gid}`:引擎目前不遮蔽 fence,這段可能被解析成"
+                  f"幽靈任務 {gid};引擎側修復排在 Backlog(第二批 A-6 一帶,不在本棒)",
+                  file=sys.stderr)
 
     # 置頂節:判定本身與判定的前提,直接顯示在卡片之前,不摺疊
     pinned = []
@@ -587,8 +1023,13 @@ def main(argv):
     if dropped:
         print(f"NOTE: 以下父節的內容已整段渲染成卡片,不重複顯示:{dropped}", file=sys.stderr)
 
-    raw_cells = dash_cells(stage, fm_text + "\n" + md, n_items, n_bad, secs)
-    have_ids = {anchor_id(title) for _l, title, _b in secs} | {"cards", "top"}
+    raw_cells = dash_cells(stage, fm_text + "\n" + md, n_items, n_bad, secs, n_obs,
+                           dag_edges=dag_edges, dag_done=dag_done)
+    have_ids = ({anchor_id(title) for _l, title, _b in secs} | {"cards", "top"}
+                # `dag`/`progress` 是 5-tasks 才有的固定 id(見下方 body_html),
+                # 三個 gate 站沒有這兩個目標,加進去也不影響它們(它們的五格從不
+                # 引用 #dag/#progress,這個聯集只在 5-tasks 才真的被用到)。
+                | ({"dag", "progress"} if stage == "5-tasks" else set()))
     cells = "".join(
         f'<a class="cell" href="{a if a.lstrip("#") in have_ids else "#cards"}">'
         f'<span class="k">{html.escape(k)}</span>'
@@ -597,22 +1038,30 @@ def main(argv):
         for k, v, n, a in raw_cells)
 
     title = f"{slug} · {stage}"
+    # 執行板不是「審查介面」,措辭跟著換 —— 但這三個變數對三個 gate 站的值逐字等於
+    # 原本寫死的字串,所以那三站的輸出 byte-for-byte 不變(見下方 body_html 的
+    # f-string 插槽如何接回原字)。`progress_id`/`dag_html` 同理:gate 站永遠是空字串,
+    # 直接接在既有那一行的**行尾**(不另起新行),空字串接上去不會多一個字元。
+    kind_label = "執行板" if stage == "5-tasks" else "審查介面"
+    cta = "動工" if stage == "5-tasks" else "往下讀"
+    verb_done = "完成" if stage == "5-tasks" else "審"
+    progress_id = ' id="progress"' if stage == "5-tasks" else ""
     body_html = f"""<div class="wrap" id="top">
 <header class="masthead">
-  <p class="eyebrow">dev-flow · {html.escape(stage)} · 審查介面</p>
+  <p class="eyebrow">dev-flow · {html.escape(stage)} · {kind_label}</p>
   <h1>{html.escape(slug)}</h1>
   <p class="sub">正本是 <code>docs/dev/{html.escape(slug)}/{html.escape(stage)}.md</code>,
-  這頁隨時可重生。<strong>審完頂區五格再決定要不要往下讀。</strong></p>
+  這頁隨時可重生。<strong>審完頂區五格再決定要不要{cta}。</strong></p>
   <div class="dash">{cells}</div>
 </header>
 {"".join(pinned)}
-<div class="progress">
+<div class="progress"{progress_id}>
   <div class="progress-in">
-    <span class="count">已審 <b id="done">0</b> / {n_items} 條</span>
+    <span class="count">已{verb_done} <b id="done">0</b> / {n_items} 條</span>
     <span class="bar"><i></i></span>
     <button class="btn" id="clear" type="button">清除勾選</button>
   </div>
-</div>
+</div>{dag_html}
 <div id="cards">
 {cards}
 </div>
@@ -624,8 +1073,11 @@ def main(argv):
     out_local = root / "docs/dev" / slug / f"{stage}.html"
     out_art = pathlib.Path(os.environ.get(
         "DEVFLOW_ARTIFACT_OUT", str(root / "docs/dev" / slug / f"{stage}-review.artifact.html")))
-    out_local.write_text(ui.local_page(title, ui.CSS_SPEC, body_html, SCRIPT), encoding="utf-8")
-    out_art.write_text(ui.artifact_page(title, ui.CSS_SPEC, body_html, SCRIPT), encoding="utf-8")
+    # CSS_TASKS 只加給 5-tasks(devflow_twin_ui.py 的加法式 CSS);三個 gate 站繼續只吃
+    # CSS_SPEC,extra_css == ui.CSS_SPEC 逐字不變,style 區塊 byte-for-byte 不受影響。
+    extra_css = ui.CSS_SPEC + (ui.CSS_TASKS if stage == "5-tasks" else "")
+    out_local.write_text(ui.local_page(title, extra_css, body_html, SCRIPT), encoding="utf-8")
+    out_art.write_text(ui.artifact_page(title, extra_css, body_html, SCRIPT), encoding="utf-8")
     print(f"wrote {out_local} + {out_art} — {n_items} 條待審,{len(appendix)} 節背景資料")
     return 0
 
