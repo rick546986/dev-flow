@@ -28,10 +28,12 @@ scripts/history-append.sh --slug <代號> --what <做了什麼> --why <為什麼
 > 4cap 的 O-1~O-8 與 §7 六件亦已裁決結案(`docs/dev/4cap-remediation/4cap-audit-fixes-2026-08.md`)。
 > 以下是該輪**產生或收攏**的剩餘項。
 
+> 2026-08-16 守衛覆蓋輪:上表原 5 條中 3 條已做(引擎 fence 遮蔽 → feature
+> `engine-fence-masking` 走 fast lane 全程武裝完成,G3 PASS;devtalk-guard obs 事件;
+> postbash 圍欄③收緊),詳見 `docs/dev/b8-gate-twin-review-ui/7-review.md` 附錄 A8。
+
 | 級 | 一句 | 來源 |
 |---|---|---|
-| B | Boundaries 裡的 fenced `## T-xx` 會被 Stage 6 引擎長成幽靈任務 —— 引擎的 `parse_5_tasks` 不遮蔽 code fence(twin 已加警告現形;修引擎屬 live runtime 改動,與 contract_ref/selftest 要一起動)(`hooks/devflow-lib.py::parse_5_tasks`) | `docs/dev/b8-gate-twin-review-ui/7-review.md` 附錄 A7 H1 |
-| B | 第二個範例 feature(fast lane 或合法跳過 Stage 3),破「唯一範例自證循環」= 4cap O-3 | `docs/dev/4cap-remediation/4cap-audit-fixes-2026-08.md` O-3 裁決 |
-| C | `devtalk-guard.sh` 的 deny 沒寫 obs 事件,也無 selftest 覆蓋(observability manifest 第 4 項僅部分落地) | `notes/change-manifests/observability.md` 2026-08-15 核對註 |
-| C | 審查圍欄(圍欄③)期間 postbash 的 `allowed_prefix` 豁免未收緊 —— shell 改動 5-tasks/6-notes 仍走既有豁免 | `notes/adoption-findings-2026-08-04.md` A-11 已採用的修法 |
-| C | SDC 大表、Reference App(4cap §7 第 5 點收攏的低優先 deferred) | `docs/dev/4cap-remediation/devflow-4cap-remediation-2026-08.md` §7 |
+| B | 第二個範例 feature,破「唯一範例自證循環」= 4cap O-3。本輪不做的理由更新:`docs/dev/engine-fence-masking/` 已是母版第一份真實走完 fast lane 的流程紀錄,日後要 example 可從它清洗,不必現編 | `docs/dev/4cap-remediation/4cap-audit-fixes-2026-08.md` O-3 裁決 |
+| C | 審查圍欄的寫入白名單(7-review*/evidence/)在 guard 側有、**postbash 偵測網側沒有** —— review 期間產 7-review.md 會被當 scope 外改動(實測撞到,已依 L1 allow 處置;修法=postbash 比照 guard 豁免,配 selftest) | `docs/dev/engine-fence-masking/7-review.md` D-4 |
+| C | SDC 大表、Reference App(4cap §7 第 5 點收攏的低優先 deferred;投資未定,防守清單 #3 同邏輯) | `docs/dev/4cap-remediation/devflow-4cap-remediation-2026-08.md` §7 |
