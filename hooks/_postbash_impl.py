@@ -53,6 +53,13 @@ for _name in L.GUARDED_STATE_FILES:
 slug = state.get("slug", "")
 task = state.get("task") or ""          # exec-v2 task-scoped 模式(§7)
 feat = f"docs/dev/{slug}/"
+# A-11(exec-v3)圍欄③鏡像:review 子命令寫 phase="review"(見 _guard_impl.py 同名
+# 註解 —— 該鍵不可疊在 "mode" 上,已被 parallel/task 模式佔用)。缺鍵 = 舊
+# exec.json,phase 預設空字串 = 非 review,行為與升版前完全一致。
+phase = state.get("phase") or ""
+review_unlocked = bool(state.get("review_unlocked"))
+review_gate = phase == "review" and not review_unlocked
+review_gate_prefixes = (feat + "5-tasks", feat + "6-implementation-notes")
 if task:
     # 單寫者原則(§12):task 模式下 5-tasks/6-notes 移出恆許,shell 改動一樣抓
     allowed_prefix = (".devflow/",)
@@ -88,6 +95,17 @@ except RuntimeError as e:
     L.die(f"⛔ 偵測網:無法掃描工作樹({e})。守衛 fail-closed 擋下動作。")
 for rel in dirty_paths:
     if rel.startswith(".git/") or L.is_ambient_path(rel):
+        continue
+    # 圍欄③收緊:review 期間(未 unlock)這兩前綴的「shell 改動恆許」不適用 ——
+    # 與 _guard_impl.py 圍欄③(Write 限縮到 {feat}7-review*/evidence/)同源,堵
+    # shell 側繞過寫入限縮。git status 本就只回報真異動(不含未改動的已提交檔),
+    # 故「Stage 6 遺留未提交」與「review 期間又被 shell 動」不會混淆 —— 前者理應
+    # 已隨 Stage 6 收工提交,若進 review 後 git status 仍顯示這兩檔有異動,代表
+    # review 期間又被寫。unlock 後 / 非 review 完全不變(下方既有 allowed_prefix
+    # 邏輯照舊生效,恢復恆許)。
+    if not task and review_gate and rel.startswith(review_gate_prefixes):
+        bad.append(f"{rel}(圍欄③:review 期間 shell 改動這兩檔亦禁 —— 恆許暫停,"
+                   f"unlock 後 devflow-exec.sh review-unlock {slug or '<slug>'} 恢復)")
         continue
     if rel.startswith(allowed_prefix):
         continue

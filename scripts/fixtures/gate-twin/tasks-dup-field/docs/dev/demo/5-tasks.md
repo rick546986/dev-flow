@@ -26,7 +26,7 @@ status: draft
 - Boundaries: 下面程式碼區塊裡的 `## T-99` 是假標題,twin 不該把它解析成卡片。
 
 ```text
-## T-99 幽靈任務(fence 內,twin 不應解析成卡片,但引擎目前不遮蔽 fence)
+## T-99 幽靈任務(fence 內,twin 與引擎皆不應解析成卡片/任務)
 - Covers: R-9 / S-9
 - Files: `ghost.py`
 - Verify: `pytest -k ghost`

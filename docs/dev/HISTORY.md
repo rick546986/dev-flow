@@ -111,3 +111,15 @@
 - 落在哪:.claude-plugin/plugin.json、hooks/runtime-capabilities.json
 - 詳細:minor:既有專案 dev-setup upgrade 後相容;契約版本 exec_state 升 exec-v3(runtime 讀取雙版相容,舊 worktree 不斷線);devflow-check 18→20 組、selftest 297→326
 
+## 2026-08-16 · guard-coverage-sweep
+- 做了什麼:補 6 條守衛覆蓋缺口(通用章節對帳/地板+心跳+靜態互釘/fail-closed 路徑掃描/用法驗內容/未閉合註解警告/行號引用勘誤)+ 前輪 12 條修復的行為層補驗與三件補強
+- 為什麼:v3.4.0 獨立審查判詞:有些東西壞掉了而 108 項守衛不會發現 —— 第 4 型假綠二次發生、第 5 型(斷言被刪沒人知道)新確認
+- 落在哪:scripts/{build-gate-twin.py,check-gate-twin.sh,check-no-stale-paths.sh,check-dev-setup-discipline.sh,check-realworld.sh,check-readme-markers.sh,test-architecture-guards.sh}、hooks/selftest.sh、tests/parallel-stage6/
+- 詳細:守衛 108→133;devflow-check 20→21 組;docs/dev/b8-gate-twin-review-ui/7-review.md 附錄 A8
+
+## 2026-08-16 · engine-fence-masking
+- 做了什麼:Stage 6 引擎 parse_5_tasks 遮蔽 fenced code block(幽靈任務/fence 內假重複欄退場),contract_ref 鏡射同步;twin 幽靈警告退場 —— 母版第一個全程武裝走 dev-flow fast lane 的 feature,G3 PASS
+- 為什麼:twin 側同病已修但引擎沒修:Boundaries 裡 fenced 的 ## T-xx 會被引擎長成有 Files scope 的幽靈任務,審查者與引擎看到兩個世界(A7 H1)
+- 落在哪:hooks/devflow-lib.py、tests/parallel-stage6/contract_ref.py、hooks/selftest.sh、scripts/{build-gate-twin.py,check-gate-twin.sh};流程紀錄 docs/dev/engine-fence-masking/
+- 詳細:fast lane 全程武裝:A-7 軟提醒/圍欄③禁讀 Self-Review/postbash 偵測網都實際觸發過;dogfood 撞出 D-4 收 Backlog
+

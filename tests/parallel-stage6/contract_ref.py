@@ -62,6 +62,59 @@ FIELD_RE = re.compile(
 HEAD_RE = re.compile(r"^##\s+(T-\d+)\b\s*(.*)$")
 EMPTY_MARKS = ("", "—", "-", "－", "—(選配)")
 
+# ---------- fence 遮蔽(R-1;engine-fence-masking 4-spec)----------
+# 行首 ≤3 空白 + ```/~~~ 長度 ≥3 才算開啟;backtick 開啟行的 info string 若再含
+# ` 視為非開啟(CommonMark 規則,防 inline code span 被誤判成 fence)。
+FENCE_OPEN_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
+# 收尾:同種字元、整行只有該字元(可有行首 ≤3 縮排／行尾空白),長度另在程式比對 ≥ 開啟。
+FENCE_CLOSE_RE = re.compile(r"^ {0,3}(`+|~+)[ \t]*$")
+
+
+def _fence_mask(lines):
+    """回傳與 lines 等長的 bool list:True = 該行落在 fenced code block 內(含開啟/
+    收尾行本身),parse_5_tasks 逐行掃描時必須視而不見 —— 與 twin(markdown-it)的
+    fence 判定看齊(R-1:幽靈任務與 fence 內假重複欄兩種誤讀消失)。
+
+    ⚠️ 鏡射關係:本函式與 hooks/devflow-lib.py 同名函式逐字相同,改一邊記得同步
+    另一邊(兩檔行為必須逐字一致,是 S-1.4 的驗收對象)。
+
+    保守 stdlib 規則(runtime 端無 pip,不得 import markdown_it,不追求
+    CommonMark 完整合規):
+      - 開啟:FENCE_OPEN_RE(行首 ≤3 空白 + ```` ``` ```` 或 `~~~`,長度 ≥3)。
+      - 收尾:FENCE_CLOSE_RE 命中,且字元同種、長度 ≥ 開啟長度。
+      - 未閉合(到檔尾都沒收尾):遮到檔尾。
+    逐行迭代時直接跳過被遮蔽的行(不做等長字元佔位重建字串)——parse_5_tasks 本來
+    就逐行處理且不依賴行號回報錯誤,跳過比維持等長字串簡單、也不改變既有輸出。
+
+    已知與 twin(markdown-it/CommonMark)的邊界差異,本輪不追平(見 4-spec Out of
+    Scope):list 項目內的縮排 code block(非 fence)不遮蔽;list 項目內巢狀四反引號
+    fence 的邊界情形(部分 CommonMark 實作依縮排/info string 判法不同)未特別處理。
+    """
+    n = len(lines)
+    masked = [False] * n
+    i = 0
+    while i < n:
+        m = FENCE_OPEN_RE.match(lines[i])
+        if not m:
+            i += 1
+            continue
+        fence_run, info = m.group(1), m.group(2)
+        fence_char, fence_len = fence_run[0], len(fence_run)
+        if fence_char == "`" and "`" in info:
+            i += 1
+            continue
+        j = i
+        while j < n:
+            masked[j] = True
+            if j > i:
+                cm = FENCE_CLOSE_RE.match(lines[j])
+                if cm and cm.group(1)[0] == fence_char and len(cm.group(1)) >= fence_len:
+                    j += 1
+                    break
+            j += 1
+        i = j
+    return masked
+
 
 def _extract_ids(value):
     if value.strip() in EMPTY_MARKS:
@@ -128,7 +181,10 @@ def parse_5_tasks(text):
     execution = _parse_execution(fm_lines, errors)
 
     blocks, current = [], None
-    for line in lines:
+    fenced = _fence_mask(lines)
+    for idx, line in enumerate(lines):
+        if fenced[idx]:
+            continue
         head = HEAD_RE.match(line)
         if head:
             if current:

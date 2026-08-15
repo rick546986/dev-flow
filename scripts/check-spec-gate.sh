@@ -6,7 +6,7 @@
 # 兩個現場證據(notes/adoption-findings-2026-08-04.md 第三輪 B-9):
 #   ①一份 4-spec 整節缺 Verification Profile,一路走到準備進 Stage 6 才被發現 ——
 #     而 `lane:`/`Risk:` 正是 `devflow-exec.sh start` 會讀的欄位,缺了就開不了工。
-#   ②同一份 spec 的 16 個 S 裡有 5 個缺「觀測」欄。`_templates/4-spec.md:37` 明文
+#   ②同一份 spec 的 16 個 S 裡有 5 個缺「觀測」欄。`_templates/4-spec.md:53` 明文
 #     寫著「完成 = 全 R 展開、**每 S 有觀測欄**、每段有確認」,但沒有東西在擋。
 #
 # 定位:**過濾器,不是審查者**。它只查「規則明文要求的欄位在不在、形狀對不對」,
@@ -14,7 +14,7 @@
 # 本腳本永遠不判斷內容好壞。
 #
 # 五項檢查(逐項印結果,全過才 exit 0):
-#   C1 每個 S 都有觀測欄          _templates/4-spec.md:37(完成條件)、:78(欄位形式)
+#   C1 每個 S 都有觀測欄          _templates/4-spec.md:53(完成條件)、:99(欄位形式)
 #   C2 Verification Profile 節存在,且 `- lane:` 與 `- Risk:` 可被解析
 #                                 _templates/4-spec.md:181-182、:200(runtime 讀這兩行)
 #   C3 lane: fast + Risk: high 且無 Owner Call 例外 → FAIL

@@ -20,12 +20,29 @@
 #   Stale Paths      SP-0 對照組 / SP-1 混入過期 dev-flow 路徑 / SP-2 混入過期 dev-talk
 #                    路徑 / SP-3 混入開發者個人絕對路徑 / SP-4 混入 docs/dev/STATUS.md
 #                    (2026-08-15 補,第三批獨立審查 P1 —— 該路徑此前完全不在掃描目標
-#                    也不在可見豁免清單,塞禁字仍零命中)(check-no-stale-paths.sh)
+#                    也不在可見豁免清單,塞禁字仍零命中) / SP-5 混入 observability/
+#                    (2026-08-15 補,N-5 fail-closed 改版 —— 驗「新目錄不必補清單
+#                    就會被掃到」,不是再補一條清單項)(check-no-stale-paths.sh)
 #   Real-world       RW-0 對照組 / RW-1 Out of Scope 整段 Stage 3 對帳被刪 / RW-2 一條
 #                    場景保留但拿掉逐場點名引用(check-realworld.sh;§7 第 1 點,2026-08-15)
+#   TF(2026-08-16 補)  TF-1 模板「測試檔路徑也要列進 Files」紀律句被弱化 / TF-2
+#                    範例 T-1 的 Files 欄被拿掉測試檔路徑(check-stage67-enforcement.sh
+#                    的 D-39 紀律;對照組沿用既有 S67-0)
+#   DSD(2026-08-16 補,B-2) DSD-0 對照組 / DSD-1 過渡態處置句被刪 / DSD-2 三方比對
+#                    判別法字面被改寫(check-dev-setup-discipline.sh,dev-setup
+#                    upgrade 三方比對紀律)
+#   靜態互釘(2026-08-16 補,獨立審查 finding 4) 四支散落地板的字面值互釘 ——
+#                    hooks/selftest.sh MIN_CASES / tests/parallel-stage6/run_tests.py
+#                    EXPECTED_CHECKS / check-dev-setup-discipline.sh 與
+#                    check-gate-twin.sh 的 MIN_CHECKS。**非** seed→mutate→expect_local
+#                    的變異案例,不計入 EXPECTED_CONTROLS/NEGATIVES/TOTAL(見結果區塊
+#                    「GS-9」註解自己的說明,以及下面這行案例數地板不變的理由)。
 #
 # 案例數是**斷言**不是裝飾:EXPECTED_CONTROLS / EXPECTED_NEGATIVES / EXPECTED_TOTAL
 # 由 expect()/expect_local() 實際累計後比對,刪任何一案(含對照組)都會非零退出。
+# 四支地板的靜態互釘不是這種案例(不 seed、不 mutate、不呼叫 expect_local),不計入
+# 這三個數字 —— 加了它們之後 EXPECTED_CONTROLS/NEGATIVES/TOTAL 仍是 10/55/65,是設計
+# 如此,不是漏算。
 #
 # 安全(fail-closed,正式 working tree 全程唯讀):
 #   - set -euo pipefail;所有變數非空檢查
@@ -48,7 +65,8 @@ fingerprint() {
        "$ROOT/example" "$ROOT/notes/design" "$ROOT/scripts" \
        "$ROOT/docs/dev/tools/devflow-evidence-gauntlet.sh" \
        "$ROOT/docs/dev/STATUS.md" "$ROOT/docs/dev/devflow-contract.json" \
-       "$ROOT/docs/adr" \
+       "$ROOT/docs/adr" "$ROOT/observability/devflow-obs.py" \
+       "$ROOT/skills/dev-setup/SKILL.md" \
        -type f -exec shasum {} + 2>/dev/null | shasum | awk '{print $1}'
 }
 FP_BEFORE=$(fingerprint)
@@ -81,9 +99,9 @@ RESULTS=()
 # 改法:由 expect()/expect_local() 依 want 實際累計 control 與 negative,尾聲與釘死值比對。
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
-EXPECTED_CONTROLS=9
-EXPECTED_NEGATIVES=50
-EXPECTED_TOTAL=59
+EXPECTED_CONTROLS=10
+EXPECTED_NEGATIVES=55
+EXPECTED_TOTAL=65
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -96,7 +114,8 @@ seed() {
   [[ "$dst" == "$WORK/"* ]] || { echo "seed: 目標逃逸 $dst" >&2; exit 1; }
   safe_rm "$dst"
   mkdir -p "$dst/_templates" "$dst/example/contract-expiry-reminder" \
-           "$dst/notes/design" "$dst/scripts" "$dst/docs/dev/tools" "$dst/docs/adr"
+           "$dst/notes/design" "$dst/scripts" "$dst/docs/dev/tools" "$dst/docs/adr" \
+           "$dst/skills/dev-setup"
   cp "$ROOT/README.md" "$dst/README.md"
   cp "$ROOT/devflow-contract.json" "$dst/devflow-contract.json"
   cp "$ROOT"/_templates/{1-discussion,3-prototype,4-spec,5-tasks,6-implementation-notes,7-review}.md \
@@ -112,6 +131,9 @@ seed() {
   cp "$ROOT/docs/dev/STATUS.md" "$dst/docs/dev/STATUS.md"
   cp "$ROOT/docs/dev/devflow-contract.json" "$dst/docs/dev/devflow-contract.json"
   cp "$ROOT/docs/adr/0001-merge-plugin-into-methodology-repo.md" "$dst/docs/adr/"
+  # B-2(dev-setup 三方比對紀律)需要 skills/dev-setup/SKILL.md 在 seed 副本內才咬得到
+  # mutation;check-dev-setup-discipline.sh 讀的正是這份檔。
+  cp "$ROOT/skills/dev-setup/SKILL.md" "$dst/skills/dev-setup/SKILL.md"
   echo "$dst"
 }
 
@@ -132,6 +154,25 @@ expect() {
     RESULTS+=("       $(printf '%s' "$out" | tail -3 | tr '\n' ' ')")
     FAIL=$((FAIL + 1))
   fi
+}
+
+# seed_sp <name> → 同 seed(),另外把 $dst 初始化成一個真 git repo,並多複製一份
+# observability/ 底下的檔案。
+# 起因(2026-08-15,N-5 fail-closed 改版):check-no-stale-paths.sh 的掃描來源從
+# 「明確列入 ACTIVE_TARGETS 才掃」改成「git ls-files 全量追蹤檔 − 印出來的
+# ALLOWLIST」,目標 root 本身必須是 git working tree,單純複製的檔案樹跑
+# `git ls-files` 會直接失敗(exit 2)。多複製 observability/ 一份真檔是為了讓
+# SP-5 有一個「先前完全不在任何清單上」的活檔可用來驗 fail-closed 的核心宣稱:
+# 新目錄不用列清單就會被掃到。
+seed_sp() {
+  local name="${1:?seed_sp: name is empty}"
+  local dst; dst=$(seed "$name")
+  mkdir -p "$dst/observability"
+  cp "$ROOT/observability/devflow-obs.py" "$dst/observability/devflow-obs.py"
+  git -C "$dst" init -q
+  git -C "$dst" -c user.email=test@dev-flow.local -c user.name=test add -A
+  git -C "$dst" -c user.email=test@dev-flow.local -c user.name=test commit -q -m seed
+  echo "$dst"
 }
 
 # seed_guard <name> <guard-script…> → 同 seed(),外加把指名的**守衛本體**複製進
@@ -732,6 +773,64 @@ p.write_text(n, encoding="utf-8")
 PY
 expect_local fail check-stage67-enforcement.sh "$D" "S67-9 守衛自己的 A1 整組被刪(檢查數地板接住)"
 
+# ── TF 群組:測試檔路徑必須列進 Files(check-stage67-enforcement.sh 的 D-39 紀律)──
+#
+# 起因:D-39(order-intake 實測歸納)—— Verify 跑測試但 Files 沒列測試檔,candidate
+# 產出前就被 Stage 6 scope guard 擋死。S67-0(對照組)已涵蓋這兩項檢查的未變異
+# 基準,本群組只需要負向案。
+
+D=$(seed tf-template)
+mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "_templates/5-tasks.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("測試檔路徑也要列進 `Files`", "測試檔案盡量列進去", 1)
+assert n != t, "TF-1 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-stage67-enforcement.sh "$D" "TF-1 5-tasks 模板的「測試檔路徑也要列進 Files」紀律句被弱化"
+
+D=$(seed tf-example)
+mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "example/contract-expiry-reminder/5-tasks.md"
+t = p.read_text(encoding="utf-8")
+old = "Files: `internal/handler/contract.go`, `internal/service/contract.go`, `internal/repo/contract.go`, `internal/service/contract_test.go`, `internal/handler/contract_test.go`"
+new = "Files: `internal/handler/contract.go`, `internal/service/contract.go`, `internal/repo/contract.go`"
+n = t.replace(old, new, 1)
+assert n != t, "TF-2 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-stage67-enforcement.sh "$D" "TF-2 範例 T-1 的 Files 欄被拿掉測試檔路徑(跑測試的 T 卻沒有測試路徑)"
+
+# ── DSD 群組:dev-setup upgrade 三方比對紀律(check-dev-setup-discipline.sh;B-2)──
+#
+# 起因:skills/dev-setup/SKILL.md 的 upgrade 三方比對/baseline 快照/逐檔徵同意/
+# 過渡態/master-only 剝除/gate twin 相依全是散文規則,退回等於原地重現
+# 「upgrade 靜默蓋掉本地客製」。
+
+D=$(seed dsd0); expect pass check-dev-setup-discipline.sh "$D" "DSD-0 對照組(未變異)"
+
+D=$(seed dsd1); mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "skills/dev-setup/SKILL.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("全部受管檔視為②本地客製,逐檔徵同意", "比照一般流程處理", 1)
+assert n != t, "DSD-1 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-dev-setup-discipline.sh "$D" "DSD-1 過渡態條款的處置句被刪(全部視為②逐檔徵同意 → 比照一般流程)"
+
+D=$(seed dsd2); mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "skills/dev-setup/SKILL.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("三方比對", "比對法")
+assert n != t, "DSD-2 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-dev-setup-discipline.sh "$D" "DSD-2 三方比對判別法字面全數被改寫"
+
 # ── MM 群組:README master-only 標記平衡(check-readme-markers.sh;MED-4)──────
 #
 # 起因:skills/dev-setup/SKILL.md 的 install/upgrade/check 全靠 sed 抽
@@ -784,11 +883,14 @@ expect fail check-readme-markers.sh "$D" "MM-3 start/end 整組被刪(0 對『�
 #
 # 禁字用字串相加組出(不留連續字面)——本檔自己也落在 scripts/ 掃描範圍內,
 # 直接寫出連續禁字會讓 devflow-check 的真實掃描對本檔誤報。
+#
+# 2026-08-15 N-5 改版後,seed 副本改用 seed_sp()(見上方定義)——目標 root 必須是
+# git working tree 才能跑 `git ls-files`。
 
-D=$(seed sp0)
+D=$(seed_sp sp0)
 expect pass check-no-stale-paths.sh "$D" "SP-0 對照組(未變異)"
 
-D=$(seed sp1); mutate "$D" <<'PY'
+D=$(seed_sp sp1); mutate "$D" <<'PY'
 import pathlib, sys
 p = pathlib.Path(sys.argv[1]) / "README.md"
 t = p.read_text(encoding="utf-8")
@@ -799,7 +901,7 @@ p.write_text(n, encoding="utf-8")
 PY
 expect fail check-no-stale-paths.sh "$D" "SP-1 README 混入過期 dev-flow local marketplace 路徑"
 
-D=$(seed sp2); mutate "$D" <<'PY'
+D=$(seed_sp sp2); mutate "$D" <<'PY'
 import pathlib, sys
 p = pathlib.Path(sys.argv[1]) / "README.md"
 t = p.read_text(encoding="utf-8")
@@ -810,7 +912,7 @@ p.write_text(n, encoding="utf-8")
 PY
 expect fail check-no-stale-paths.sh "$D" "SP-2 README 混入過期 dev-talk local marketplace 路徑"
 
-D=$(seed sp3); mutate "$D" <<'PY'
+D=$(seed_sp sp3); mutate "$D" <<'PY'
 import pathlib, sys
 p = pathlib.Path(sys.argv[1]) / "devflow-contract.json"
 t = p.read_text(encoding="utf-8")
@@ -823,7 +925,7 @@ expect fail check-no-stale-paths.sh "$D" "SP-3 devflow-contract.json 混入開�
 
 # SP-4(2026-08-15 補,第三批獨立審查 P1):docs/dev/STATUS.md 此前既不在掃描目標也
 # 不在可見豁免清單,塞禁字守衛仍零命中 exit 0。本案證明補上掃描目標後真的會咬到。
-D=$(seed sp4); mutate "$D" <<'PY'
+D=$(seed_sp sp4); mutate "$D" <<'PY'
 import pathlib, sys
 p = pathlib.Path(sys.argv[1]) / "docs/dev/STATUS.md"
 t = p.read_text(encoding="utf-8")
@@ -833,6 +935,21 @@ assert n != t, "SP-4 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
 expect fail check-no-stale-paths.sh "$D" "SP-4 docs/dev/STATUS.md 混入過期 dev-flow local marketplace 路徑(P1 補:此路徑先前完全不可見)"
+
+# SP-5(2026-08-15 補,N-5 fail-closed 改版):observability/ 此前完全不在掃描目標
+# 也不在可見豁免清單,塞禁字守衛仍零命中 exit 0(獨立審查實測的破口之一)。本案
+# 證明改用 git ls-files 全量掃描 − 印出來的 ALLOWLIST 後,任意活文件目錄(不需
+# 要像 SP-4 那樣先補進清單)都會被自動掃到——這就是「新增目錄自動被掃」的驗證。
+D=$(seed_sp sp5); mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "observability/devflow-obs.py"
+t = p.read_text(encoding="utf-8")
+banned = "plugins/local/dev-" + "flow"
+n = t + "\n# 測試混入舊路徑:~/.claude/" + banned + "/hooks/devflow-exec.sh\n"
+assert n != t, "SP-5 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-no-stale-paths.sh "$D" "SP-5 observability/ 混入過期 dev-flow local marketplace 路徑(fail-closed:新目錄不必列清單就會被掃到)"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
@@ -844,6 +961,44 @@ if [ "$FP_BEFORE" != "$FP_AFTER" ]; then
   exit 1
 fi
 echo "  ✓ 正式 repo 指紋未變($FP_BEFORE)—— working tree 零污染"
+echo
+
+# ── 靜態互釘:四支散落地板(HIGH,獨立審查 2026-08-16 finding 4)────────────────
+# ⚠️ 這**不是**一個 GS 編號案例 —— 不 seed、不 mutate、不呼叫 expect_local,不計入
+# EXPECTED_CONTROLS/NEGATIVES/TOTAL(這三個數字加了它之後仍是 10/55/65,是設計如此,
+# 不是漏算;見本檔檔頭「涵蓋」清單的「靜態互釘」條目)。
+# 為什麼:MIN_CHECKS/MIN_CASES/EXPECTED_CHECKS 這類「檢查數地板」是防砍檢查的
+# 最後一道牆,但牆本身沒有牆——同時砍案例數與地板數字(連刪帶藏,兩處一起改)
+# 完全防不住。GS-4 對 check-design-contract.sh 的防法是在**該檔自己內部**釘死
+# `check(MIN_CHECKS == 100, ...)`;本輪盤點到的另外四支地板 —— hooks/selftest.sh
+# 的 MIN_CASES、tests/parallel-stage6/run_tests.py 的 EXPECTED_CHECKS、
+# check-dev-setup-discipline.sh 與 check-gate-twin.sh 的 MIN_CHECKS —— 所在檔案
+# 都沒有那層自我釘死,這批沒抄到 GS-4 的前例。這裡補上:在**另一個獨立檔案**
+#(本檔)對這四支地板的字面值各釘一條 grep 斷言 —— 這份清單本身是會被 review
+# 到的 diff,誰要調動地板就得同步改這裡,只改一邊會在這裡現形。
+# ⚠️ 誠實承認防禦邊界:連改三處(案例本身 + 地板數字 + 這裡的靜態釘)仍防不住
+# —— 這跟 GS-4 是同一個等級的防禦,防的是「單點手滑」(改了案例忘了改地板,
+# 或反過來改了地板卻忘了同步這裡的靜態釘),不是「蓄意繞過同時改三處」的攻擊者。
+STATIC_PIN_FAIL=0
+check_static_pin() { # check_static_pin <相對路徑> <期望逐字一整行> <說明>
+  local rel="$1" expect_line="$2" label="$3"
+  if grep -qxF "$expect_line" "$ROOT/$rel" 2>/dev/null; then
+    echo "  ✓ 靜態互釘:$rel 的 $label"
+  else
+    echo "  ✗ 靜態互釘:$rel 的 $label —— 找不到逐字一行「${expect_line}」" \
+         "(地板可能被調動,但這裡的靜態釘沒有同步更新,或案例被砍卻沒調地板)"
+    STATIC_PIN_FAIL=1
+  fi
+}
+check_static_pin "hooks/selftest.sh" "MIN_CASES=339" "MIN_CASES 釘死 339"
+check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "EXPECTED_CHECKS 釘死 131"
+check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 9" "MIN_CHECKS 釘死 9"
+check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 132" "MIN_CHECKS 釘死 132(finding 4b 收緊後的實得數)"
+if [ "$STATIC_PIN_FAIL" -ne 0 ]; then
+  echo "⛔ 四支地板靜態互釘:至少一處字面值與釘死清單不符"
+  exit 1
+fi
+echo "  ✓ 四支地板靜態互釘全過(hooks/selftest.sh / run_tests.py / check-dev-setup-discipline.sh / check-gate-twin.sh)"
 echo
 
 if [ "$FAIL" -ne 0 ]; then

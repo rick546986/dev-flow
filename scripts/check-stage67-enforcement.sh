@@ -184,6 +184,59 @@ for base, _dirs, files in os.walk(os.path.join(root, "example")):
              f"解析器只吃單行,寫成多行 fence 一個字都抓不到:\n"
              f"        {line.strip()}")
 
+# ── TF:測試檔路徑必須列進 Files(D-39 紀律的機械檢查)────────────────────────
+#
+# needle 挑「測試檔路徑也要列進」+ backtick 包住的「Files」:這是模板既有的紀律句
+# 本身(worker 寫測試就是寫檔,測試檔不在 Files 聯集內會被 Stage 6 scope guard
+# 當場擋死)。沿用上面 VF 段已讀過的 `src`(同一份 _templates/5-tasks.md),不重覆
+# 存在性檢查。
+if src:
+    need("測試檔路徑也要列進 `Files`" in src,
+         "TF:_templates/5-tasks.md 沒有「測試檔路徑也要列進 Files」這條紀律句 —— "
+         "worker 寫測試卻沒把測試檔列進 Files,會被 Stage 6 scope guard 當場擋死"
+         "卻找不到原因")
+
+# ── TF 的範例承接:example 逐 T,Verify 是跑測試的 T,Files 必含至少一個測試路徑 ──
+#
+# 起因:D-39(order-intake 實測歸納)—— 幾乎每個 T 的 Verify 都在跑測試,對應的
+# 測試檔(`*_test.go`／`*.test.tsx`／`*.spec.ts` 等)必須跟業務碼一起列進本 T 的
+# Files,否則 candidate 產出前就被 PreToolUse scope guard 擋死。這裡把提醒句變成
+# 對母版範例的機械檢查。pattern 依 example 實況定(不是題目字面三選項的子集)——
+# e2e 用 `.spec.ts`、go 用 `_test.go`、前端用 `.test.tsx`,三者都要認得到,否則
+# T-4(純 e2e 測試檔的 T)會被誤判違規。
+# 用同一個 need() 承接全部 T(不逐 T 各自計數)以維持 MIN_CHECKS +2 的精確地板;
+# 但同時釘 examined>=1,避免「## T-n 形狀被改、parser 一個 T 都沒解析到」時
+# violations 恆空、看起來像全過的 vacuous-truth 陷阱(同檔 RW-2 案的教訓)。
+_TEST_VERIFY_RE = re.compile(r"\btest\b", re.I)
+_TEST_FILE_RE = re.compile(r"(_test\.\w+|\.test\.\w+|\.spec\.\w+|(^|/)tests?/)", re.I)
+for base, _dirs, files in os.walk(os.path.join(root, "example")):
+    if "5-tasks.md" not in files:
+        continue
+    rel = os.path.relpath(os.path.join(base, "5-tasks.md"), root)
+    with open(os.path.join(base, "5-tasks.md"), encoding="utf-8") as fh:
+        body = fh.read()
+    blocks = re.split(r"(?m)^## (T-\d+)", body)[1:]
+    examined = 0
+    violations = []
+    for i in range(0, len(blocks), 2):
+        tid, block = blocks[i], blocks[i + 1]
+        verify_m = re.search(r"^- Verify:\s*(.+)$", block, re.M)
+        files_m = re.search(r"^- Files:\s*(.+)$", block, re.M)
+        if not verify_m or not files_m:
+            continue
+        if not _TEST_VERIFY_RE.search(verify_m.group(1)):
+            continue
+        examined += 1
+        if not _TEST_FILE_RE.search(files_m.group(1)):
+            violations.append(f"{tid}(Files={files_m.group(1).strip()})")
+    detail = ("\n".join(f"        {v}" for v in violations) if violations
+              else "        (examined=0 —— 一個跑測試的 T 都沒解析到,"
+                   "parser 對不上模板形狀,比條款失效更嚴重)")
+    need(examined >= 1 and not violations,
+         f"TF:{rel} 有跑測試的 T 但 Files 欄缺測試路徑"
+         f"(examined={examined},缺 tests/ 或 *_test.* 或 *.test.* 或 *.spec.* pattern):\n"
+         f"{detail}")
+
 # ── A4:gauntlet 路徑不得寫死成採用專案不存在的路徑 ──────────────────────────
 src = read("_templates/7-review.md")
 need(src is not None, "A4:_templates/7-review.md 不存在")
@@ -229,7 +282,8 @@ if rev:
 # 負向測試 S67-6 實測:原本填 16(A1 那組恰好 8 項,24-8=16)→ 刪掉整組 A1 之後
 # 剛好等於地板,守衛照樣 exit 0。地板留餘裕 = 地板沒有牙齒。
 # 新增檢查時把這個數字一起往上調(同 test-architecture-guards.sh 的 EXPECTED_* 體例)。
-MIN_CHECKS = 50
+# 2026-08-16 補 TF 群組(測試檔路徑必須列進 Files):+2(模板 needle 1 + 範例承接 1)。
+MIN_CHECKS = 52
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
@@ -242,5 +296,5 @@ if fails:
 
 print(f"✅ check-stage67-enforcement: Stage 6/7 強制條款齊({checks} 項檢查全過)")
 print("   A1 守衛武裝自檢 / A3 Verify 案例數斷言 / A4 gauntlet 路徑 / A5 觀測可執行性 / "
-      "VF Verify 單行純指令 / DOC doctor 必跑")
+      "VF Verify 單行純指令 / DOC doctor 必跑 / TF 測試檔路徑必列 Files")
 PY

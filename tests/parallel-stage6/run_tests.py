@@ -22,6 +22,15 @@ FIX = os.path.join(HERE, "fixtures")
 checks = 0
 failures = []
 
+# ⚠️ 第 5 型地板:一律等於當下實際檢查數(2026-08-16 起 131;engine-fence-masking
+# T-1 補 11 項:S-1.1/S-1.2/S-1.3 各自行為 + 三者對 devflow-lib 的 tasks/execution/
+# errors-有無 parity),新增檢查時同步 +。
+# 起因同 test-architecture-guards.sh 的 EXPECTED_*/hooks/selftest.sh 的 MIN_CASES:
+# `checks` 由 check() 呼叫次數自算,案例(check() 呼叫)被刪掉時 checks 跟著掉,
+# finish() 原本的「checks - len(failures)}/{checks}」比對不受影響,照樣印全過。
+# 這個常數把「checks 不得低於當下已知值」變成獨立於自算次數之外的斷言。
+EXPECTED_CHECKS = 131
+
 
 def check(cond, label, detail=""):
     global checks
@@ -46,6 +55,9 @@ def jfixture(name):
 
 
 def finish():
+    if checks < EXPECTED_CHECKS:
+        failures.append(f"⛔ 檢查數地板:實際只跑了 {checks} 項(地板 {EXPECTED_CHECKS})—— "
+                         f"可能有 check() 呼叫被刪掉,即使目前已跑的全過也不得視為全過")
     if failures:
         print(f"❌ parallel stage6 contract checks: {checks - len(failures)}/{checks} passed")
         for f in failures:
@@ -267,6 +279,93 @@ check(_ref_keys == _lib_keys,
 check({"boundaries", "intent", "owner"} <= _ref_keys,
       "contract_ref task dict 含 boundaries/intent/owner 全套(A-6,釘正本)",
       str(sorted(_ref_keys)))
+
+# --- 3a-4. fence 遮蔽(R-1):S-1.1/S-1.2/S-1.3 三種輸入,contract_ref 行為 + 與
+# devflow-lib parity(S-1.4)。三份 fixture 內嵌於本檔(與既有 `single` 內嵌案例同
+# 風格),不落地新 fixture 檔(T-1 Files 邊界只准動這四檔)。
+FENCE_GHOST_5T = """---
+feature: fx
+stage: 5-tasks
+status: approved
+---
+
+## T-1 api
+- [ ] 完成
+- Covers: R-1 / S-1
+- Files: `internal/handler/contract.go`
+- Verify: `go test ./internal/... -run TestExpiring`
+- Blocked-by: —
+- Boundaries: 範例(勿照做):
+```
+## T-99 假任務
+- Files: `不存在/path.go`
+```
+"""
+fg = C.parse_5_tasks(FENCE_GHOST_5T)
+check(fg["errors"] == [], "S-1.1:fence 內 T-99 不影響零錯誤", str(fg["errors"]))
+check([t["id"] for t in fg["tasks"]] == ["T-1"],
+      "S-1.1:fence 內 `## T-99` 標題不長成任務", str([t["id"] for t in fg["tasks"]]))
+
+FENCE_FIELD_5T = """---
+feature: fx
+stage: 5-tasks
+status: approved
+---
+
+## T-1 api
+- [ ] 完成
+- Covers: R-1 / S-1
+- Files: `internal/handler/contract.go`
+- Verify: `go test ./internal/... -run TestExpiring`
+- Blocked-by: —
+- Boundaries: 範例(勿照做):
+```
+- Files: 假的
+```
+"""
+ff = C.parse_5_tasks(FENCE_FIELD_5T)
+check(ff["errors"] == [], "S-1.2:fence 內保留欄位行不觸發重複欄 fail-closed", str(ff["errors"]))
+check(ff["tasks"][0]["files"] == ["internal/handler/contract.go"],
+      "S-1.2:fence 內假 `- Files:` 不覆蓋真值", str(ff["tasks"][0]["files"]))
+
+FENCE_DUP_OUTSIDE_5T = """---
+feature: fx
+stage: 5-tasks
+status: approved
+---
+
+## T-1 api
+- [ ] 完成
+- Covers: R-1 / S-1
+- Files: `internal/handler/contract.go`
+- Files: `internal/other/contract.go`
+- Verify: `go test ./internal/... -run TestExpiring`
+- Blocked-by: —
+"""
+fd = C.parse_5_tasks(FENCE_DUP_OUTSIDE_5T)
+check(any("重複保留欄" in e and "Files" in e for e in fd["errors"]),
+      "S-1.3(回歸):fence 外的重複保留欄仍 fail-closed", str(fd["errors"]))
+
+for _label, _text, _cref in (
+    ("S-1.1", FENCE_GHOST_5T, fg), ("S-1.2", FENCE_FIELD_5T, ff),
+    ("S-1.3", FENCE_DUP_OUTSIDE_5T, fd),
+):
+    _libp = _lib.parse_5_tasks(_text)
+    # ⚠️ 範圍聲明(非全 dict 逐字相同,故意窄化,誠實標注不冒充完整 S-1.4):比
+    # tasks/execution(遮蔽規則產出的形狀,fence 相關本輪範圍)+ errors 有/無;
+    # 不比 errors 文字本身 —— devflow-lib 與 contract_ref 的「重複保留欄」訊息有
+    # 既存措辭差異(devflow-lib 多帶「母版」二字提醒讀者回頭查方法論 repo;
+    # contract_ref 本身就在方法論 repo 內不需要該提示),此差異與 FIELD_RE/續行語意
+    # 有關、早於本輪 fence 遮蔽改動就存在,依 T-1 boundaries「不動…續行語意、其他
+    # 任何函式的行為」不在本輪修復範圍 —— 嚴格「兩者 task dict(含 errors 文字)
+    # 完全相同」目前技術上做不到,留給 owner 判斷是否要另開 ticket 追平措辭。
+    check(_cref["tasks"] == _libp["tasks"] and _cref["execution"] == _libp["execution"],
+          f"{_label}:contract_ref/devflow-lib tasks+execution 完全相同(遮蔽規則 parity;"
+          f"不含 errors 文字,見上方註記)",
+          f"contract_ref={_cref['tasks']} devflow-lib={_libp['tasks']}")
+    check((_cref["errors"] == []) == (_libp["errors"] == []),
+          f"{_label}:contract_ref/devflow-lib errors 有無一致(既存措辭差異不比對文字)",
+          f"contract_ref={_cref['errors']} devflow-lib={_libp['errors']}")
 
 # --- 3d. Task scope ---
 check(C.task_scope(par, "T-2") == ["src/components/Card.tsx"],

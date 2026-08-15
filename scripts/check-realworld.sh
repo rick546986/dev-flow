@@ -184,8 +184,11 @@ if os.path.isfile(renderer):
     check(result.returncode == 0, "舊模板/衍生檔仍可渲染(renderer --check)",
           (result.stdout + result.stderr).strip())
 else:
-    print(f"⚠️  renderer 不存在於此 root({renderer}),略過『舊模板仍可渲染』檢查 "
+    print(f"⚠️  renderer 不存在於此 root({renderer}),略過『舊模板仍可渲染』內容驗證 "
           "—— 僅限隔離測試根目錄,正式 repo 執行不會走到這條分支", file=sys.stderr)
+    # 仍要算進 checks(N-2 地板要求兩種環境下的檢查數一致,不然地板本身就會把
+    # 「renderer 不存在的隔離測試根目錄」誤判成「檢查被刪掉」)。
+    check(True, "舊模板/衍生檔仍可渲染(renderer --check,隔離測試根目錄略過內容驗證)")
 
 # ── 10. Stage 3 對帳存在性(devflow-4cap-remediation-2026-08.md §7 第 1 點,2026-08-15)──
 # 只驗「Out of Scope 節有 Stage 3 對帳段、且每場都點名」的存在性/結構,不驗語意正確性
@@ -206,10 +209,23 @@ check(bool(reconcile_bullets) and len(named_bullets) == len(reconcile_bullets),
       "Stage 3 對帳段每一條都逐場點名(引用 3-prototype「Scenario …」)",
       f"未點名 {len(reconcile_bullets) - len(named_bullets)}/{len(reconcile_bullets)} 條")
 
+# ── 檢查數地板(N-2,2026-08-15)──────────────────────────────────────────────
+# ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」——地板留餘裕=沒有
+# 牙齒(同 repo 慣例:scripts/check-stage67-enforcement.sh:232、
+# scripts/test-architecture-guards.sh 的 EXPECTED_TOTAL)。
+# 起因:刪掉整段(例如第 5 節「NOT_REVIEWED ≠ ACCEPTED」)之前,checks 只是印出來的
+# 數字,不是斷言——舊版刪光整節仍印「✅ 全過」。新增/刪除 check() 呼叫時,
+# 把這個數字一起往上/往下調。
+MIN_CHECKS = 137
+if checks < MIN_CHECKS:
+    failures.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
+                     f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
+
 if failures:
-    print(f"❌ real-world interaction checks: {checks - len(failures)}/{checks} passed")
+    print(f"❌ real-world interaction checks: {checks - len(failures)}/{checks} passed"
+          f"(地板 {MIN_CHECKS})")
     for failure in failures:
         print(f"  - {failure}")
     sys.exit(1)
-print(f"✅ real-world interaction checks: {checks}/{checks} passed")
+print(f"✅ real-world interaction checks: {checks}/{checks} passed(地板 {MIN_CHECKS})")
 PY
