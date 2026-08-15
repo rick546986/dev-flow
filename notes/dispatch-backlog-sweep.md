@@ -102,6 +102,25 @@ git rev-list --count origin/main..HEAD   # 有未推 commit 是正常的，不�
 
 ---
 
+## 第一批的附帶項（來自 `docs/dev/b8-gate-twin-review-ui/7-review.md` 的 Known Limits）
+
+那份檔案的 Known Limits 有 7 條。**其中 4 條是你的事**，換解析器時順便一起處理
+（都在同一批檔案裡，分開做要重跑兩次驗證）：
+
+| # | 是什麼 | 要做什麼 |
+|---|---|---|
+| K-3 | 5-tasks 的「執行板」形狀未納入母版 | B-8 附錄提出 gate twin／紀錄 twin 之外的**第三種形狀**：5-tasks 是給人照著做的執行板（Boundaries 摺疊、四欄表、DAG）。`notes/patches/gate-twin-ui-prototype/build_tasks.py` 仍是唯一實作。**你裁決要不要納入**；納入就進 README §6 的分類表並讓產生器支援 `5-tasks` |
+| K-4 | 2-decision／7-review 的解析比 4-spec 粗 | 這兩站用「表格 → 每列一張卡」的通用解析，沒有專屬欄位。換 markdown-it-py 之後**可能可以做得更準**（token stream 認得清單、巢狀結構），順手評估 |
+| K-6 | 母版範例 `example/contract-expiry-reminder/7-review.md` **不合模板** | 缺 `verdict:` frontmatter、缺 `## Known Limits` 節，而模板兩者都有。後果：任何以它為材料的斷言都是空的（守衛已改用自造材料繞開，但範例本身沒修）。**範例應該是正確示範** —— 修它，並確認 `check-methodology-corrections.sh` 等既有檢查仍全過 |
+| K-7 | **守衛缺口 E′：只砍掉 S 卡的一個欄位（例如只砍 THEN），60 項守衛測不到** | 要補得先決定「缺 GIVEN／WHEN／THEN 要不要比照缺觀測欄那樣紅底現形」。模板要求四個欄位都要有，所以**傾向要**。你裁決，做了就補守衛 |
+| P5 | 7-review 動線第 5 格「抽驗」的值是寫死的常數字串，不是從文件衍生 | `build-gate-twin.py` 裡那格永遠是同一串字。換解析器後看能不能真的從 Coverage Matrix 抽一列出來 |
+
+**另外 3 條不是你的任務**（K-1 本輪未走 dev-flow 流程／K-2 審查者曾等於實作者／
+K-5 產出物美觀度未經真人驗收）—— 那三條是 owner 自己要處理的，**不要動，也不要為了
+清空而宣稱它們完成**。
+
+---
+
 # 第二批：Backlog 14 條
 
 `docs/dev/STATUS.md` 的 Backlog 逐條處理。每條在
