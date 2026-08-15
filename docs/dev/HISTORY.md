@@ -105,3 +105,9 @@
 - 為什麼:外掛併入(ADR-0001)讓一批「外部 plugin 待辦/舊路徑」前提失效卻沒人回頭標;寫死的狀態與數字會誤導照導覽走的人
 - 落在哪:docs/dev/4cap-remediation/、guides/、scripts/check-no-stale-paths.sh、notes/change-manifests/、notes/adoption-findings-2026-08-04.md
 
+## 2026-08-15 · release-v3-4-0 · v3.4.0
+- 做了什麼:發布 v3.4.0:待辦清空輪全部改動(解析層換 markdown-it-py、執行板、Backlog 14 條、4cap 結案、路徑守衛),其他機器 /plugin update 後才拿得到
+- 為什麼:外掛更新判斷是比對版本字串不是 commit —— 推上去但版號沒動,其他機器更新會回無內容且不會有任何提示
+- 落在哪:.claude-plugin/plugin.json、hooks/runtime-capabilities.json
+- 詳細:minor:既有專案 dev-setup upgrade 後相容;契約版本 exec_state 升 exec-v3(runtime 讀取雙版相容,舊 worktree 不斷線);devflow-check 18→20 組、selftest 297→326
+
