@@ -25,7 +25,8 @@
 `S_HEAD = ^#{2,6}\\s*S-\\S+` 對齊 —— 母版範例寫 `#### S-1`、採用專案有寫
 `### S-1.1 標題` 的,兩種都要吃得到,否則同一份 spec 會出現「G2 關卡過了但 twin 產不出來」。
 
-exit code:0 = 產出成功 / 1 = 解析不到內容或條數不符 / 2 = 用法錯誤、檔案讀不到
+exit code:0 = 產出成功 / 1 = 解析不到內容或條數不符 / 2 = 用法錯誤、檔案讀不到、
+           相依 markdown-it-py 缺失或版本不符
 """
 import html
 import os
@@ -33,7 +34,29 @@ import pathlib
 import re
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+_SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
+
+# ── 相依 gate ──────────────────────────────────────────────────────────────
+# 解析層(fence 遮蔽、章節切割)的判斷來源是 markdown-it-py 的 CommonMark
+# token stream,不是手刻正則(理由見 mask_fenced/sections 的 docstring)。
+# 這支工具會被散發到採用專案,缺相依或版本不對時**不吐 traceback、不靜默
+# 降級回正則**——降級等於讓兩邊 diverge 卻不吭聲,比直接擋下來更危險。
+_MDIT_REQUIRED = "4.0.0"
+_MDIT_HINT = (
+    f"請跑 pip install -r {_SCRIPT_DIR}/requirements-methodology-render.txt"
+    "(或 pip install 'markdown-it-py==4.0.0')"
+)
+try:
+    from markdown_it import MarkdownIt, __version__ as _MDIT_VERSION
+except ImportError:
+    print(f"缺相依 markdown-it-py:{_MDIT_HINT}", file=sys.stderr)
+    sys.exit(2)
+if _MDIT_VERSION != _MDIT_REQUIRED:
+    print(f"缺相依 markdown-it-py(需要 {_MDIT_REQUIRED},目前是 {_MDIT_VERSION}):{_MDIT_HINT}",
+          file=sys.stderr)
+    sys.exit(2)
+
+sys.path.insert(0, str(_SCRIPT_DIR))
 import devflow_twin_ui as ui  # noqa: E402  # type: ignore[import-not-found]
 
 STAGES = ("2-decision", "4-spec", "7-review")
@@ -77,47 +100,66 @@ def inline(text):
     return "".join(out)
 
 
-FENCE_OPEN = re.compile(r"^(?P<indent> {0,3})(?P<mark>`{3,}|~{3,})(?P<info>[^\n]*)$")
-
-
 def mask_fenced(md):
     """把 fenced code block 換成等長空白,讓標題/欄位 regex 掃不到裡面的假標題。
 
     位移完全保留(等長替換),所以在遮蔽版上取到的 index 可直接切原文。
 
-    支援(2026-08-15 二次複審 P1/P2/P3 逐條補上):
-      - ``` 與 ~~~ 兩種圍欄
-      - **任意長度 ≥3**;關閉圍欄必須「同種類且不短於」開啟的那個 ——
-        四個反引號包三個反引號是合法巢狀,前綴 toggle 會 parity 反轉、內層不被遮蔽
-        (本 repo 自己就有這種寫法)
-      - 開啟行的語言標籤(```python)
-      - 最多三格縮排
-      - **未閉合的圍欄**:只遮到檔尾,但**不吃掉 frontmatter 之外的東西**
-        —— 呼叫端若把 frontmatter 接在 md 後面,要各自遮蔽再接(見 main)
+    判斷來源:markdown-it-py(CommonMark 合規 parser)的 token stream —— 只信
+    `token.type == "fence"` 的 `token.map` 行範圍(含開閉圍欄行;未閉合時
+    parser 自己會把 map 一路算到檔尾,見 main 的未閉合偵測)。舊版靠手刻正則
+    逐行維護一顆 parity 開關,三輪審查抓出 P1(巢狀圍欄:四個反引號包三個
+    反引號,前綴 toggle 誤判成「內層也是 fence」)、P2(未閉合圍欄吃掉呼叫端
+    接上去的 frontmatter)、P4(正則的 `$`/`\\s` 跨行語意錯位)—— 這類「什麼
+    算 fence、收尾字元/長度對不對」的判斷,合規 parser 本來就會做對,不必
+    再刻一次正則狀態機去追平 CommonMark 的圍欄規則。
+
+    刻意選擇:只遮 `fence`(``` / ~~~ 圍欄式),**不遮 `code_block`**
+    (4 格縮排式)—— 舊版正則的 opener 判斷只認圍欄開頭字元,縮排式從來
+    沒被遮蔽過;現在若連縮排式也遮,會把「原樣保留」變成「被清空」,
+    直接打破 byte-identical 的驗收基準,所以刻意不遮。
     """
     lines = md.splitlines(keepends=True)
-    out, closer = [], None
+    fence_lines = set()
+    for tok in MarkdownIt("commonmark").parse(md):
+        if tok.type == "fence" and tok.map:
+            fence_lines.update(range(tok.map[0], tok.map[1]))
 
     def blank(ln):
         return (" " * (len(ln) - 1) + "\n") if ln.endswith("\n") else " " * len(ln)
 
-    for ln in lines:
-        body = ln.rstrip("\r\n")
-        if closer is None:
-            m = FENCE_OPEN.match(body)
-            # info string 不得含圍欄字元(``` 後面接 ``` 不是合法 opener)
-            if m and m.group("mark")[0] not in m.group("info"):
-                closer = (m.group("mark")[0], len(m.group("mark")))
-                out.append(blank(ln))
-                continue
-            out.append(ln)
-        else:
-            ch, n = closer
-            stripped = body.strip()
-            if stripped and set(stripped) == {ch} and len(stripped) >= n:
-                closer = None
-            out.append(blank(ln))
-    return "".join(out)
+    return "".join(blank(ln) if i in fence_lines else ln for i, ln in enumerate(lines))
+
+
+def _closer_ok(line, ch, n):
+    """`line` 是不是給定字元/長度的合法 fence 收尾:同種字元、長度 ≥ opener、縮排 ≤3。"""
+    body = line.rstrip("\r\n")
+    return bool(re.match(r"^ {0,3}" + re.escape(ch) + "{" + str(n) + ",}[ \t]*$", body))
+
+
+def _unclosed_fences(md):
+    """回傳『延伸到檔尾且未被合法收尾』的 fence token 清單(main 的未閉合警告用)。
+
+    取代舊版「fence opener 數 % 2」的奇偶啟發式 —— parity 只能猜「大概有幾個
+    沒收尾」,猜不出「是哪一個、收尾字元/長度對不對」,而且巢狀圍欄一多就會
+    整個猜錯。現在直接問 parser:某個 fence 的 `token.map` 一路算到檔尾,且
+    檔尾那一行不構成合法 closer(字元同種、長度 ≥ opener、縮排 ≤3),才算
+    未閉合 —— 這與『收尾字元/長度/縮排在 CommonMark 裡合不合法』用的是同一套
+    規則,不是另外猜的。
+    """
+    lines = md.splitlines(keepends=True)
+    out = []
+    for tok in MarkdownIt("commonmark").parse(md):
+        if tok.type != "fence" or not tok.map:
+            continue
+        start, end = tok.map
+        if end != len(lines):
+            continue  # 有合法收尾且非檔尾,略過
+        ch, n = tok.markup[0], len(tok.markup)
+        last_line = lines[end - 1] if end > start else ""
+        if not _closer_ok(last_line, ch, n):
+            out.append(tok)
+    return out
 
 
 def sections(md):
@@ -125,18 +167,47 @@ def sections(md):
 
     body 是**含子標題**的整段(延伸到下一個同級或更高級標題為止)——
     `### R-1` 底下的 `#### S-1` 必須留在 R 的 body 裡,否則一條 S 都解析不到。
-    掃描用遮蔽版(程式碼區塊內的假標題不算),切出來的 body 用原文(零刪減)。
+
+    候選標題來源:同一次 parse 拿到的 `heading_open` token,過濾條件是
+    (a) `token.markup` 以 `#` 開頭(排除 setext,`===`/`---` 那種)
+    (b) level 2-6。圍欄內的假標題(```/~~~ 包住的 `### 假標題`)在 parser
+    眼裡本來就不構成 heading——連 token 都不會產生,不必再靠遮蔽版排除
+    (這正是換掉手刻正則的目的:讓「什麼算標題」交給合規 parser 判斷)。
+
+    每個候選 heading 仍用既有的 H_ANY 對它**原始碼那一行**做一次 match:
+    match 不到就跳過(維持舊版對「無標題文字」這類寫法的排除行為),
+    match 到就用它取 title(語意不變,含尾隨 `##` 等裝飾)。body 的 char
+    span 演算法維持舊版:從該行 H_ANY match 的結尾切到下一個同級或更高級
+    標題的行首,沒有就切到檔尾;body 一律取原文(零刪減)。行號→char
+    offset 用行首 offset 的前綴和換算。
     """
-    heads = list(H_ANY.finditer(mask_fenced(md)))
+    lines = md.splitlines(keepends=True)
+    line_start = [0] * (len(lines) + 1)
+    for i, ln in enumerate(lines):
+        line_start[i + 1] = line_start[i] + len(ln)
+
+    heads = []  # [(lvl, title, line_head_offset, body_start_offset), ...]
+    for tok in MarkdownIt("commonmark").parse(md):
+        if tok.type != "heading_open" or not tok.markup.startswith("#") or not tok.map:
+            continue
+        lvl_tag = int(tok.tag[1:])
+        if not (2 <= lvl_tag <= 6):
+            continue
+        i = tok.map[0]
+        m = H_ANY.match(lines[i])
+        if not m:
+            continue
+        lvl = len(m.group(1))          # 層級語意維持舊版:來自 H_ANY 的 match,不是 token.tag
+        heads.append((lvl, m.group(2), line_start[i], line_start[i] + m.end()))
+
     out = []
-    for i, m in enumerate(heads):
-        lvl = len(m.group(1))
+    for idx, (lvl, title, _line_off, body_start) in enumerate(heads):
         end = len(md)
-        for nxt in heads[i + 1:]:
-            if len(nxt.group(1)) <= lvl:
-                end = nxt.start()
+        for nxt_lvl, _t, nxt_line_off, _b in heads[idx + 1:]:
+            if nxt_lvl <= lvl:
+                end = nxt_line_off
                 break
-        out.append((lvl, m.group(2), md[m.end():end]))
+        out.append((lvl, title, md[body_start:end]))
     return out
 
 
@@ -200,9 +271,13 @@ def obs_block(text):
 def md_block(body):
     """把一段 md 轉成 html:表格、清單、程式碼區塊、段落。
 
-    刻意不依賴外部 markdown 套件 —— 這支工具會被散發到採用專案,多一個相依就多一個
-    「在別人機器上跑不起來」的理由。表格必須渲染成真表格:置頂節(限制聲明/Verdict/
-    Known Limits)幾乎都是表格,用 <pre> 顯示等於沒給人看。
+    這個小型渲染器本身仍刻意手刻、不呼叫 markdown-it-py —— 它只做展示用的
+    表格/清單/程式碼區塊轉換,職責跟解析層(判斷 fence 邊界、切章節)不同,
+    沒必要為了展示格式也綁進 parser 的 token stream。
+    模組層級已不是「不依賴外部套件」:解析層(mask_fenced/sections/未閉合
+    偵測)判斷來源是 markdown-it-py 的 token stream,缺相依會在模組頂端的
+    gate 直接 exit 2(見檔案開頭)。表格必須渲染成真表格:置頂節(限制聲明/
+    Verdict/Known Limits)幾乎都是表格,用 <pre> 顯示等於沒給人看。
     """
     out, i = [], 0
     lines = body.strip("\n").splitlines()
@@ -516,11 +591,13 @@ def main(argv):
         return 2
 
     md = re.sub(r"\A---\n.*?\n---\n", "", src.read_text(encoding="utf-8"), flags=re.S)
-    # 未閉合的 fence 會把其後全部內容吃成程式碼(規則正確,但不得靜默 —— 二次複審 P3)
+    # 未閉合的 fence 會把其後全部內容吃成程式碼(規則正確,但不得靜默 —— 二次複審 P3)。
+    # 判定「未閉合」用 token-based(見 _unclosed_fences);swallowed 行數計算沿用舊版
+    # (遮蔽版與原文逐行比,任何被清空的非空行都算——不只算未閉合那個 fence 自己的)。
     _mk = mask_fenced(md)
     swallowed = sum(1 for a, b in zip(md.splitlines(), _mk.splitlines())
                     if a.strip() and not b.strip())
-    if swallowed and len(re.findall(r"^\s{0,3}(?:`{3,}|~{3,})", md, re.M)) % 2 == 1:
+    if swallowed and _unclosed_fences(md):
         print(f"⚠️  偵測到**未閉合**的 code fence:其後 {swallowed} 行非空內容被當成程式碼,"
               f"不會進待審區也不會進背景資料。請補上收尾的 ``` 或 ~~~。", file=sys.stderr)
 
