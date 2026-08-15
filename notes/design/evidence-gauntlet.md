@@ -21,8 +21,8 @@
    不新建 old-coder 式的獨立 spec.md/evidence.md;Verification Profile 住 4-spec,
    Evidence Matrix 住 7-review(節,不是檔)。
 2. **Gauntlet 不取代 Stage 7 code review。**
-   Standards Axis、Spec Axis、架構審查、現象複驗(reviewer 親跑)、Operational
-   Walkthrough、fresh reviewer 鐵則、G3 重驗迴圈全部保留。
+   Standards Axis、Spec Axis、Operational Walkthrough、Coverage Matrix、
+   真實現象複驗(reviewer 親跑)、fresh reviewer 鐵則、G3 重驗迴圈全部保留。
    正確關係:**Gauntlet Evidence + Code Review + Operational Walkthrough = G3 信心**。
 3. **在既有地基上加層,不重造**:DevFlow 已有 TDD Evidence(RED/GREEN 貼輸出)、
    現象證據表、Coverage Matrix、驗證五律(README §5 正本)、失敗分類與升階鏈。
@@ -270,8 +270,8 @@ subprocess / env access / credential capability?**未在 Spec 授權的新 capab
 
 ## 12. 與 Stage 7 的關係(Gauntlet 不取代什麼)
 
-保留不動:Standards Axis、Spec Axis、架構審查、現象複驗(reviewer 親跑)、
-Operational Walkthrough、fresh reviewer 鐵則、G3 重驗 3 輪+breaker。
+保留不動:Standards Axis、Spec Axis、Operational Walkthrough、Coverage Matrix、
+真實現象複驗(reviewer 親跑)、fresh reviewer 鐵則、G3 重驗 3 輪+breaker。
 - Evidence Matrix(見 manifest 模板)是 7-review 的**一節**,供 reviewer 稽核;
   reviewer 仍可(高風險時應)用 entry point 親自重跑 Final Fresh Run 比對。
 - E11 機械保底:evidence 全 pass 的 review 檔仍必須有雙軸、現象證據、

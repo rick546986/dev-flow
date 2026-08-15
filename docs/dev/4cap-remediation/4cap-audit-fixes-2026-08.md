@@ -1,9 +1,17 @@
 # 四能力審查補強工單(2026-08)
 
 > 來源:2026-08-02 四能力獨立審查(基線 main @ `bf05b59`,= origin/main)。
-> 狀態:**待 rick 裁決,未動工**。本檔只列「要改什麼、改哪裡、怎麼驗」;完整審查報告見審查 session。
+> 狀態:**P1~P5 已全部落地(2026-08 執行,證據見下方註);O-1~O-8 已於 2026-08-15
+> 裁決(見文末新節)**。本檔只列「要改什麼、改哪裡、怎麼驗」;完整審查報告見審查 session。
 > 五項缺口皆有第一手實測證據(非文件推論):追溯鏈頂端恆綠、ACCEPTED 場景流失個案、
 > 水平切層 5-tasks 通過 contract_ref.py 零錯誤、E11 實際只驗 3/8、docs/specs/ 零實體。
+> 落地證據(2026-08-15 覆核,行號已重新核實,非原稿舊行號):
+> P1 `scripts/check-methodology-corrections.sh:270-278`(spec_scenarios 上界檢查,封住
+> 追溯鏈頂端恆綠);P2 人工審查項,依原裁決不做語意 parser(見該節「驗收」行;2026-08-15
+> 另補一條存在性檢查,見 `devflow-4cap-remediation-2026-08.md` §7 第 1 點註);
+> P3 `scripts/devflow-evidence-gauntlet.sh:236-242`(E11 五節 heading tuple);
+> P4 `README.md:548` 起(§7「強制力對照(誰在擋)」三欄表);
+> P5 `_templates/5-tasks.md:42`、`:85`(反水平切層判準兩處)。
 
 ---
 
@@ -157,3 +165,28 @@ scripts/render-methodology-corrections.sh --check   # 基線 4/4 byte-identical
 5. 對所有 feature 強制部署拓撲/可用性/威脅模型(與 Fast/Full lane 分級矛盾)。
 6. Gauntlet 驗 Walkthrough/架構圖「內容正確性」(存在性划算,內容檢查是過度設計線)。
 7. 外部 plugin 併回本 repo(握手機制的前提就是兩邊獨立演進)。
+
+> ⚠️ 2026-08-15 註:第 7 條已於 2026-08-13 被推翻,翻案紀錄
+> `docs/adr/0001-merge-plugin-into-methodology-repo.md`;其餘 6 條仍有效。
+> 本清單原文保留,用途不變(防未來誤補)。
+
+## O-1~O-8 裁決(2026-08-15,owner 授權 fable5)
+
+- **O-1 不採**:P1 已封母版自己的洞;通用化(`check-traceability.sh <feature-dir>`)
+  = 新工具 + 新守衛 + 散發面,等採用現場真的要對帳再做(YAGNI)。
+- **O-2 不採**:與防守清單第 3 條同邏輯 —— owner 未決定投資前雙正本必漂移;
+  目前只有一個 example feature,產實體 = 空殼。
+- **O-3 不採本輪,收 Backlog**:價值真(破自證循環)但是整組 1-7 檔的工程,超出本輪範圍。
+- **O-4 已採並落地**(2026-08-15 第二批):`_templates/7-review.md:207` 起的
+  「Design Integrity Check」節(仿 Test Integrity Check 形式;行號實查)。
+- **O-5 已由 P6 落地**:README §7 G2 錨(`README.md:519`)已含 Reliability triage 三問
+  (Concurrency/Idempotency/Timeout-retry),`scripts/check-methodology-corrections.sh:298-308`
+  機械驗欄位存在與理由非空(行號實查);重複項結案。
+- **O-6 已採並落地**(第二批):`_templates/STATUS.md:13` 起的「Known Debt」節
+  (行號實查)。
+- **O-7 採窄版**:只修 `notes/design/evidence-gauntlet.md:24,273` 的「架構審查」
+  措辭不一致(對齊 `README.md:535-536` 的 Standards Axis / Spec Axis / Operational
+  Walkthrough / Coverage Matrix / 真實現象複驗五項用語),不加 gate-consistency 錨
+  (錨集合刻意窄)。
+- **O-8 不採**:母版已有 warning-only 的 `check-task-slicing.sh`;塞進 runtime 增
+  面積,收益邊際。
