@@ -9,6 +9,9 @@ python-prism）從舊世代模板遷移到 `2c36976`（= `devflow-pilot-v2`，pl
 
 **狀態**：待處理。rick 2026-08-04 指示「先寫進母版 repo，之後一起處理」。
 
+2026-08-15：第一二輪 14 條已全數處置（A-1~A-6/A-11/A-12/B-1~B-6），見各節已採用的修法；
+A-13/B-9 已於 v3.1.0 修（見各節）。
+
 > **第二輪追加（2026-08-07）**：CRM order-intake 走完整條 Stage 6→7 之後又撞到五條 A 級、
 > 三條 B 級、一條 C 級，見本檔後半的〈第二輪〉。其中 **A-7～A-10 已當場修好並 commit**
 > （母版 `bf0b8bf`、plugin `41ca267`），**A-11 未修**，B-5～B-7／C-3 待裁決。
@@ -34,7 +37,7 @@ python-prism）從舊世代模板遷移到 `2c36976`（= `devflow-pilot-v2`，pl
 
 ---
 
-## A-1 — `docs/dev/README.md` 是母版根 README 的逐字複本，帶進 23 條死引用 + 一個跑不了的 CI 入口
+## A-1 — `docs/dev/README.md` 是母版根 README 的逐字複本，帶進 23 條死引用 + 一個跑不了的 CI 入口　✅ 已修（2026-08-15）
 
 **兩個專案的 session 獨立踩到同一件事**（report-system 與 python_scheduling_system），
 且各自算出證據後**都推薦同一個解法**。
@@ -120,9 +123,28 @@ python_scheduling_system/scripts/devflow-check.sh            不存在
 無論選哪個，`scripts/devflow-check.sh` 那句必須處理 —— 採用專案沒有那支腳本，
 它們的機械檢查入口是 `docs/dev/tools/devflow-evidence-gauntlet.sh` + 外部 plugin 的 doctor。
 
+### 已採用的修法（2026-08-15）
+
+採選項 3（母版 README 內把 repo-internal 段落標記成可剝除區塊，散發器按標記剝）：
+
+- `README.md:47`／`:107` 用 `<!-- devflow:master-only:start -->` / `<!-- devflow:master-only:end -->`
+  成對標記包住「怎麼逛這個 repo」導覽節；§7 強制力對照表**整表保留**，表內裸路徑逐一
+  加註「（母版 repo）」（不整表剝除，因為表本身對採用專案仍有查閱價值）。
+- `skills/dev-setup/SKILL.md` install 步驟改用
+  `sed -n '/<!-- devflow:master-only:start -->/,/<!-- devflow:master-only:end -->/!p'`
+  剝除後再落地 `docs/dev/README.md`，不得直接 cp 未剝除版（`SKILL.md:42`）。
+- **check 第 6 項的 diff 基準同步改成對剝除後內容比對**（`SKILL.md:132-134`）：
+  一律先對 `${CLAUDE_PLUGIN_ROOT}/README.md` 跑同一條 sed 管線再 diff，不再對未剝除原檔
+  比對——否則 master-only 區塊本身的存在,每次 upgrade 都會被判定成假 stale。
+- **C-2 的 G3 列已隨之處理**：README §7 對照表 `G3 Evidence 契約八點` 那列裸寫的
+  `scripts/devflow-evidence-gauntlet.sh` 補上「（母版 repo；採用專案的機械檢查入口是
+  `docs/dev/tools/devflow-evidence-gauntlet.sh` + doctor）」。
+
+落點：commit `825879f`（`README.md`、`skills/dev-setup/SKILL.md`）。
+
 ---
 
-## A-2 — `_gate_impl.py` 的 `s_id_present` 在實務上恆真，ID 鏈在 gate 上完全失效
+## A-2 — `_gate_impl.py` 的 `s_id_present` 在實務上恆真，ID 鏈在 gate 上完全失效　✅ 已修（2026-08-15）
 
 python-prism session 的最大發現，我已獨立複驗。
 
@@ -159,9 +181,27 @@ T-4 covers='R15 / S15.1–S15.4'                                -> s_ids= []
 
 ⚠️ 選 3 也要動，因為現況是「表上寫機械、實際不機械」—— 那是 README §7 的正確性問題。
 
+### 已採用的修法（2026-08-15）
+
+採選項 1（放寬正則，同時吃 `S-13` 與 `S13.6`）：
+
+- `hooks/_gate_impl.py:145` `_s_ids_of()` 改為
+  `re.findall(r"(?<![A-Za-z0-9])S-?\d+(?:\.\d+)*", covers)`——比裁決原案更嚴一步，
+  加 `(?<![A-Za-z0-9])` 防誤配到 `TLS1.2`／`iOS15.1` 這類黏著在字母數字後的 `S`，
+  方向仍是 fail-closed，不算放寬既有行為。
+- `hooks/_gate_impl.py:53` `_sid_matched()` 逐段拆解比對，讓 `S1.1` 吃得到
+  `Test_S_1_1_xxx` 類測試名（段落分隔可為 `.`／`_`／`-`）。
+- **known limitation（如實記在函式 docstring）**：範圍寫法 `S1.1–S1.4` 只抓兩個端點
+  token，不展開成 `S1.2`／`S1.3`——範圍中間值不會出現在 `s_ids` 裡，coverage 對帳仍需
+  人工看一眼範圍本身是否合理，gate 只驗「有抓到的端點都對得到測試名」。
+- selftest 加案例覆蓋新舊兩種寫法（297 → 304，含 python-prism 18 個 T 的實際 covers
+  字串回歸）。
+
+落點：commit `1c3e841`（`hooks/_gate_impl.py`）。
+
 ---
 
-## A-3 — `verify_command_match` 字串全等 + `FIELD_RE` 只吃行尾，但模板沒有任何警告
+## A-3 — `verify_command_match` 字串全等 + `FIELD_RE` 只吃行尾，但模板沒有任何警告　✅ 已修（2026-08-15）
 
 ```python
 # _gate_impl.py:83-84
@@ -185,9 +225,23 @@ CRM order-intake 26 個 T 原本則是把 Verify 寫成多行 ` ```sh ` fenced b
    `Verify:` 欄，若含非 ASCII 字元或以 ` ``` ` 開頭則 FAIL。
 3. 順帶提醒 `#` 會吞掉單行其後全部內容 —— 壓成單行時的已知陷阱。
 
+### 已採用的修法（2026-08-15）
+
+- `_templates/5-tasks.md:63-65` 加硬性紀律：「`Verify:` 必須是單行、可原樣貼進 shell
+  的純指令」，說明/期望輸出/前置動作一律寫在下一行，並點名 `#` 會吞掉同行其後全部
+  內容的陷阱。
+- `scripts/check-stage67-enforcement.sh`（VF 檢查，:146-176）掃 `example/*/5-tasks.md`
+  每個 `- Verify:` 值，含 CJK/全形字元或以 ` ``` ` 開頭即 FAIL；MIN_CHECKS 隨新檢查
+  一併調高（25 → 50）。
+- **runtime 不加擋**——裁決記在該守衛檔頂註（:20-27）：採用專案的 Verify 欄含中文
+  grep 字串（如 `grep -c '訂單已核准'`）是合法用法，機械層加這道檢查會誤殺；本守衛
+  只掃母版自己的 `example/`，母版範例本就該是純英文/程式碼指令。
+
+落點：commit `013e8b7`（`_templates/5-tasks.md`、`scripts/check-stage67-enforcement.sh`）。
+
 ---
 
-## A-4 — gate 的 RED/GREEN/verify 三項無條件必檢，純 migration / infra 型 T 無法通過
+## A-4 — gate 的 RED/GREEN/verify 三項無條件必檢，純 migration / infra 型 T 無法通過　✅ 已修（2026-08-15）
 
 ```python
 # _gate_impl.py:26  GATE_CHECK_IDS 含 red_present_failing / green_present_passing / verify_exit_zero
@@ -207,9 +261,23 @@ python-prism 的 T-1（純 alembic migration，Verify 原本是
 「每個 T 都必須有一個能 RED→GREEN 的測試；純 migration / infra 型 T 要配一支驗形狀的測試
 （表存在、欄位型別、索引、約束），不能只寫執行指令」，並在範例裡放一個 infra 型 T 示範。
 
+### 已採用的修法（2026-08-15）
+
+- 模板頂註（`_templates/5-tasks.md:86-93`）加硬規定：每個 T 必須有能 RED→GREEN 的測試，
+  純 migration／infra 型 T 一樣要有測試，只是測「形狀」（表/欄位/索引/約束存在與否），
+  並附完整示例句（建 `orders_status` 表 + schema 測試 + 帶計數斷言的 Verify）。
+- README §5（實作期鐵則，`README.md:254-256`）同步補一句：純 migration／infra 型 T
+  一樣要有 RED→GREEN，只是測形狀，不能只寫執行指令就算完成。
+- **不動 example feature**——裁決理由：`example/contract-expiry-reminder/` 被
+  `test-architecture-guards.sh`／`check-stage67-enforcement.sh` 等多支守衛逐檔釘著比對，
+  硬塞一個不存在於原始功能的 infra 型 T 會破壞範例的真實性；改用模板頂註內建的示例句
+  取代，不動範例本身。
+
+落點：commit `013e8b7`（`_templates/5-tasks.md`、`README.md`）。
+
 ---
 
-## A-5 — Files scope 不含測試路徑會在**寫入當下**被 hook 殺掉，模板沒提醒
+## A-5 — Files scope 不含測試路徑會在**寫入當下**被 hook 殺掉，模板沒提醒　✅ 已修（2026-08-15）
 
 ```python
 # _guard_impl.py:92-98
@@ -234,6 +302,17 @@ python-prism 18/18、CRM order-intake 26/26 的 `Files:` 欄**都不含測試路
 建議修法：`_templates/5-tasks.md` 的 `Files:` 欄說明加一句
 「**測試檔路徑也要列進來** —— worker 寫測試就是寫檔，不在 Files 聯集內會被 guard 擋死」，
 並在範例的每個 T 都示範。
+
+### 已採用的修法（2026-08-15）
+
+- `_templates/5-tasks.md:94-97` 加硬性提醒：測試檔路徑也要列進 `Files`——worker 寫測試
+  就是寫檔，不在 `Files` 聯集內會被 Stage 6 scope guard 當場擋死（PreToolUse hook 在
+  candidate 產出前就擋，不會等到 T review 或 gate 才發現）。
+- `example/contract-expiry-reminder/5-tasks.md` 六個 T（T-1、T-2、T-3、T-5、T-6、T-7）
+  的 `Files:` 欄補齊對應測試檔路徑示範（如 `internal/service/contract_test.go`、
+  `src/components/ExpiringContractsCard.test.tsx`）。
+
+落點：commit `013e8b7`（`_templates/5-tasks.md`、`example/contract-expiry-reminder/5-tasks.md`）。
 
 ---
 
@@ -392,7 +471,7 @@ if "R" in code or "C" in code:          # ← code 只在 rename/copy 時被看
 
 ---
 
-## A-6 — `Boundaries:` 欄被解析後直接丟棄，不進 task dict
+## A-6 — `Boundaries:` 欄被解析後直接丟棄，不進 task dict　✅ 已修（2026-08-15）
 
 ```
 FIELD_RE 收：Covers|Files|Verify|Blocked-by|Integrate-after|Risk|Review-mode|
@@ -414,9 +493,28 @@ FIELD_RE 收：Covers|Files|Verify|Blocked-by|Integrate-after|Risk|Review-mode|
 建議修法：要嘛 runtime 真的把它帶進 task dict 與派工 prompt，要嘛母版文件明說它是人工紀律。
 現況兩邊對不上。
 
+### 已採用的修法（2026-08-15）
+
+採「runtime 真的帶進 task dict」這條：
+
+- `hooks/devflow-lib.py:301` 新增 `_clean_optional()`（把模板寫的空值標記「—」正規化成
+  `""`），`:435-437` `parse_5_tasks()` 的 task dict 加 `boundaries`／`intent`／`owner`
+  三個鍵——選填，缺席預設空字串，不因缺席而 fail-closed（與 Covers/Files/Verify/
+  Blocked-by 必填欄不同）。
+- `hooks/_exec_impl.py:401` task-scoped `start` 寫入 `exec.json` 時帶入這三個鍵；
+  `:590-591` `plan` 子命令輸出同步露出，派工者（人/主模型）不必回頭重讀 5-tasks 就能
+  拿到 boundaries/intent/owner。
+- `tests/parallel-stage6/contract_ref.py:204-206` 同步（`contract_ref` 是獨立驗證副本，
+  需與 `devflow-lib.py` 的解析邏輯保持一致）。
+- 文件與機制現在對得上：模板寫的 `Boundaries:`／`Intent:`／`Owner:` 不再只是 prompt
+  紀律，runtime 真的會承接。
+
+落點：commit `1c3e841`（`hooks/devflow-lib.py`、`hooks/_exec_impl.py`、
+`tests/parallel-stage6/contract_ref.py`）。
+
 ---
 
-## B-1 — 母版自己的 `_templates/5-tasks.md` 過不了 `parse_5_tasks`
+## B-1 — 母版自己的 `_templates/5-tasks.md` 過不了 `parse_5_tasks`　✅ 已修（2026-08-15）
 
 report-system session 發現：母版 2.5.0 的 `_templates/5-tasks.md` 模板本身丟進
 `parse_5_tasks` 會出錯（T-2 範例欄位留空）。
@@ -424,9 +522,29 @@ report-system session 發現：母版 2.5.0 的 `_templates/5-tasks.md` 模板�
 不影響採用（沒人會 parse 模板），但若日後把 parser 拉進 CI 對模板做自檢就會紅。
 順手修比較好。
 
+### 已採用的修法（2026-08-15）
+
+`_templates/5-tasks.md` 的 `T-2` 範例補齊欄位（`Covers: R-1 / S-2`、
+`Files: <預計動的檔>`、`Intent: <做完系統多了什麼可觀測行為，一句>`）。
+
+實跑驗證（本輪重新對 `_templates/5-tasks.md` 跑一次 `parse_5_tasks`，非引用 commit
+訊息數字）：
+
+```
+tasks= 2 errors= 0
+T-1 R-1 / S-1 ['<預計動的檔>'] <指令>
+T-2 R-1 / S-2 ['<預計動的檔>'] <指令>
+```
+
+⚠️ **沒有任何 CI/機械檢查釘住這個結果**——`scripts/check-stage67-enforcement.sh` 未把
+「模板自身過 `parse_5_tasks`」列為檢查項，這只是本輪手動實跑確認，日後模板再被改壞
+不會有任何訊號。
+
+落點：commit `013e8b7`（`_templates/5-tasks.md`）。
+
 ---
 
-## B-2 — `dev-setup` 的 diff 摘要沒讓使用者看見細粒度覆蓋，在地客製被靜默沖掉
+## B-2 — `dev-setup` 的 diff 摘要沒讓使用者看見細粒度覆蓋，在地客製被靜默沖掉　✅ 已修（2026-08-15）
 
 python_scheduling_system 實例：`docs/dev/_templates/arch-invariants.md` 的範例句
 原本已在地化成排班語境「排班結果會用到舊資料」，被 upgrade **靜默還原**成母版通用版
@@ -439,9 +557,25 @@ python_scheduling_system 實例：`docs/dev/_templates/arch-invariants.md` 的�
 建議修法：`dev-setup upgrade` 的 diff 摘要要能分辨
 「母版改寫」與「本地客製被還原」兩類，後者要單獨列出來徵得同意。
 
+### 已採用的修法（2026-08-15）
+
+`skills/dev-setup/SKILL.md` 加三方比對：
+
+- **install 起建基準快照**（`SKILL.md:49-51`）：落地 `docs/dev/README.md`（已剝除版）、
+  `_templates/*`、`devflow-contract.json` 時，同時各存一份到 `docs/dev/.devflow-baseline/`，
+  當「上游舊」。
+- **upgrade 逐檔三方比對**（`SKILL.md:113-134`）：上游舊快照 vs 上游新（母版現況）
+  vs 本地現況——**本地現況 ≠ 上游舊快照即判定客製**，即使本地現況恰好與上游新版相同
+  也要列出（可註記「與新版一致，覆蓋無影響」，但仍歸類客製，不得靜默併入母版改寫）。
+  diff 摘要分兩類：①母版改寫（可直接列摘要覆蓋）②本地客製將被還原（逐檔單獨列出
+  「本地現況」與「即將覆蓋成的新內容」，徵得使用者明確同意才可覆蓋）。
+- 首次 install 無快照可比，全部視為①母版改寫。
+
+落點：commit `825879f`（`skills/dev-setup/SKILL.md`）。
+
 ---
 
-## B-3 — lane 判準與 owner 指示衝突時，母版沒說怎麼辦
+## B-3 — lane 判準與 owner 指示衝突時，母版沒說怎麼辦　✅ 已修（2026-08-15）
 
 report-system 開第一個 2.5.0 feature（`test-cleanup-pool-close`）時撞到：
 
@@ -457,9 +591,18 @@ report-system 開第一個 2.5.0 feature（`test-cleanup-pool-close`）時撞到
 「lane 由判準決定；owner 指示與判準不同時，**必須在 Verification Profile 明記偏離與理由**
 （往嚴的方向偏離也要記）」。
 
+### 已採用的修法（2026-08-15）
+
+`_templates/4-spec.md:249-251` 加條款：lane 由判準決定，不由 owner 指示決定；owner
+指示與判準不同時，必須在本節明記偏離與理由（往嚴的方向偏離——例如判準算 fast、owner
+指示走 full——也要記，不是只記「降級」那個方向）。未記偏離的 lane 選擇視為判準未確認，
+G2 視為步 3 未完成。
+
+落點：commit `013e8b7`（`_templates/4-spec.md`）。
+
 ---
 
-## B-4 — `doctor` 對 gauntlet 只做 `--version` 探測，不驗 ROOT 解析
+## B-4 — `doctor` 對 gauntlet 只做 `--version` 探測，不驗 ROOT 解析　✅ 已修（2026-08-15）
 
 母版的 gauntlet 在 `scripts/`（ROOT = repo 根），散發到採用專案的 `docs/dev/tools/`（ROOT 會變成
 `docs/dev/`）。`_doctor_impl.py:172` 只比對 `--version` 字串，
@@ -467,6 +610,20 @@ report-system 開第一個 2.5.0 feature（`test-cleanup-pool-close`）時撞到
 
 目前無實害（gauntlet 全 19 個 fixture 在 report-system 實跑正常，正負向都對），
 但檢查沒覆蓋到這個面向。
+
+### 已採用的修法（2026-08-15）
+
+- `scripts/devflow-evidence-gauntlet.sh:52` 與散發副本 `docs/dev/tools/devflow-evidence-gauntlet.sh:52`
+  同步加 `--print-root` 診斷旗標：只印出本副本自己解析到的 ROOT，**GAUNTLET_VERSION
+  不動**——裁決理由記在該行內註：版本語意是 E 檢查行為，動它會牽動 README §7 對版守衛，
+  而這是純新增的診斷旗標，零行為變化。
+- `hooks/_doctor_impl.py:220-232` doctor 補 ROOT 探測（`gauntlet-root` 檢查）：只在
+  `--version` 有回應時才跑（避免同一支壞掉的散發副本疊報兩條錯誤），實跑
+  `--print-root` 並比對散發副本解析根是否等於受測專案的 `docs/dev`，不一致即
+  fail-closed 並指向補跑 `dev-setup`。
+
+落點：commit `1c3e841`（`scripts/devflow-evidence-gauntlet.sh`、
+`docs/dev/tools/devflow-evidence-gauntlet.sh`、`hooks/_doctor_impl.py`）。
 
 ---
 
@@ -493,7 +650,7 @@ SKILL.md:8  「架構:skills 與 hooks 隨 plugin 全域生效(`~/.claude/plugin
 
 ---
 
-## C-2 — `docs/dev/README.md` 的 gauntlet 路徑三處
+## C-2 — `docs/dev/README.md` 的 gauntlet 路徑三處　✅ 已修（2026-08-15，隨 A-1）
 
 report-system session 分層：
 
@@ -527,10 +684,10 @@ Stage 1～5 與 Stage 6 前段都跑得很順，問題全在收尾與驗證層�
 | **A-8** | `Verify` 用測試篩選器時零匹配也回 exit 0 → 印出 `PASS` | ✅ 確認 | ✅ 已修 |
 | **A-9** | gauntlet 缺件時沒有人被擋 | ⚠️ **診斷更正**（見該節） | ✅ 已修（改對方向） |
 | **A-10** | 4-spec 的「觀測方式」可以寫成本 repo 做不到的事，而它是 G3 的 PASS 條件 | ✅ 確認 | ✅ 已修 |
-| **A-11** | Stage 7 的「禁讀 6-notes Self-Review」沒接到既有的圍欄機制 | ✅ 確認（+1 實作細節） | ⏳ **未修** |
-| **A-12** | `dev-setup` 沒跑完整，而**沒有任何 Stage 要求跑 doctor** | ✅ 確認（原 C-3，**升級為 A**） | ⏳ **未修** |
-| **B-5** | `Files` 欄系統性低估，模板沒有判準 | ✅ 確認（數字更正 8 → **10**） | 待裁決 |
-| **B-6** | Diff Budget 沒有任何估法指引 | ✅ 確認（**比原判更嚴重**） | 待裁決 |
+| **A-11** | Stage 7 的「禁讀 6-notes Self-Review」沒接到既有的圍欄機制 | ✅ 確認（+1 實作細節） | ✅ 已修（2026-08-15） |
+| **A-12** | `dev-setup` 沒跑完整，而**沒有任何 Stage 要求跑 doctor** | ✅ 確認（原 C-3，**升級為 A**） | ✅ 已修（2026-08-15） |
+| **B-5** | `Files` 欄系統性低估，模板沒有判準 | ✅ 確認（數字更正 8 → **10**） | ✅ 已裁決（2026-08-15） |
+| **B-6** | Diff Budget 沒有任何估法指引 | ✅ 確認（**比原判更嚴重**） | ✅ 已裁決（2026-08-15） |
 | **B-7** | ~~突變測試不在流程裡~~ | ❌ **原判錯誤，已改寫** | 見該節 |
 
 > **2026-08-07 查證輪**：rick 要求逐條確認 A-11／B-5／B-6／B-7／C-3 是不是真缺陷。
@@ -704,7 +861,7 @@ handler 測試 = 真路由 + fake service，integration 測試 = 真 DB + 無 HT
 
 ---
 
-## A-11 — Stage 7 的「禁讀 6-notes Self-Review」沒接到既有的圍欄機制　⏳ 未修
+## A-11 — Stage 7 的「禁讀 6-notes Self-Review」沒接到既有的圍欄機制　✅ 已修（2026-08-15）
 
 `_templates/7-review.md` 步 0 明文「**此刻禁讀 6-notes 的 Self-Review**」，
 步 4 才「此刻才讀」。這是防錨定的核心機制。
@@ -775,9 +932,40 @@ order-intake 的 7-review 就是走這條路產出的（verdict 標 **PRE-REVIEW
 與鐵律 4「驗證不自驗」直接衝突 —— **兩個約束無法同時滿足時，方法論該說怎麼辦，
 而目前沒說。**
 
+### 已採用的修法（2026-08-15）
+
+`devflow-exec.sh review <slug>` / `review-unlock <slug>`——圍欄③（雙擋 + 寫入限縮）：
+
+- `hooks/_exec_impl.py:902-1015`（`cmd == "review"` 分支）：`review <slug>`（無
+  `--file`/`--bundle` 旗標）武裝 exec.json 的 `phase: "review"`；`review-unlock <slug>`
+  （`:1016-1041`）解鎖步 4。事後補審（無 Stage 6 state）可直接武裝，自建最小 exec.json，
+  baseline 收全部既有髒檔避免誤判。
+- `hooks/_guard_impl.py:97-113` 圍欄③(Read)：`phase == "review"` 且未 `review_unlocked`
+  時禁讀本 slug 的 `6-implementation-notes*`（含 .html twin）；`:136-147` 圍欄③(續，
+  Write)：寫入限縮到 `7-review*`／`evidence/`，蓋過既有 5-tasks/6-notes 恆許，
+  unlock 不解除本限制。
+- `hooks/_prebash_impl.py:73-84` 圍欄③鏡像：shell（`cat`/`head`/`less`/`grep`…）讀
+  6-notes 同樣禁；非 dev-flow 檔一律不擋（誤傷比不擋糟）。
+- exec_state 升版 `exec-v2` → `exec-v3`（`devflow-contract.json:17`、
+  `docs/dev/devflow-contract.json:17`），讀取雙版相容（`hooks/_exec_impl.py:24`
+  `EXEC_SCHEMAS = ("exec-v2", "exec-v3")`）——升版前武裝的 worktree 不斷線。
+- **沒用 `mode` key**——本節上方「給實作者的地雷」（:891-895）點名的地雷：`mode` 已被
+  parallel/task 模式佔用，新開 `phase` key 承接，避免污染四處既有的
+  `execution.mode != "parallel"` 閘門。
+- 模板接上：`_templates/7-review.md:56`（步 0，建議跑 `review <slug>` 武裝）、
+  `:129-132`（步 4，讀 6-notes 前先跑 `review-unlock`）。
+- selftest 304 → 320 全過（`hooks/selftest.sh:237-` 起「Stage 7 review 圍欄③」區塊），
+  含向後相容回歸案（舊 exec.json 無 `phase` 鍵時行為與升版前一致）。
+- **postbash allowed_prefix 豁免未收緊**（既有設計，另議）——`hooks/_postbash_impl.py:58-60`
+  的 `allowed_prefix` 沒有隨圍欄③加 review 專屬邏輯，維持原樣，不在本輪範圍內。
+
+落點：commit `e68c67a`（`hooks/_exec_impl.py`、`hooks/_guard_impl.py`、
+`hooks/_prebash_impl.py`、`hooks/devflow-exec.sh`、`_templates/7-review.md`、
+`devflow-contract.json`、`docs/dev/devflow-contract.json`、`hooks/selftest.sh`）。
+
 ---
 
-## A-12 — `dev-setup` 沒跑完整，而**沒有任何 Stage 要求跑 doctor**　⏳ 未修
+## A-12 — `dev-setup` 沒跑完整，而**沒有任何 Stage 要求跑 doctor**　✅ 已修（2026-08-15）
 
 > **原編號 C-3。2026-08-07 查證後由 C 升 A** —— 原本判「不影響執行」，
 > 實跑 `devflow-doctor.sh` 直接 **fail-closed**，且它同時是 A-9 的根因。
@@ -844,9 +1032,26 @@ $ grep -rn 'doctor' _templates/*.md
    （但這會讓 A-0 之外再多一個啟動障礙，需一併考慮。）
 3. **順手**：CRM 那個專案直接補跑 `dev-setup` 把兩樣散發齊 —— 那是專案端動作，不是母版改動。
 
+### 已採用的修法（2026-08-15）
+
+採建議 1（最小）：
+
+- `_templates/6-implementation-notes.md:35-36,41` 步 0 加 `devflow-doctor.sh`
+  （或 `devflow-exec.sh doctor`）必跑：`INCOMPATIBLE` 即**停下回報**，不得略過繼續；
+  完成 = `status` 與 `doctor` 兩份輸出都貼進本檔。
+- `_templates/7-review.md:85-86` 步 0b 同步加同一條硬規定。
+- `scripts/check-stage67-enforcement.sh`（DOC 檢查，:94-112）掃兩份模板，needle 挑
+  `devflow-doctor.sh`／`INCOMPATIBLE`／`停下回報` 三者缺一即紅——三者缺一，doctor 這個
+  fail-closed 檢查就又會回到「存在但沒人跑」。
+- **不做建議 2**（`devflow-exec.sh start` 內建跑 doctor）——裁決理由：A-0／A-13 之外
+  不再添啟動障礙，維持現行「模板步驟要求、not runtime 強制」的做法。
+
+落點：commit `013e8b7`（`_templates/6-implementation-notes.md`、`_templates/7-review.md`、
+`scripts/check-stage67-enforcement.sh`）。
+
 ---
 
-## B-5 — `Files` 欄系統性低估，而模板沒有判準
+## B-5 — `Files` 欄系統性低估，而模板沒有判準　✅ 已裁決（2026-08-15）
 
 **✅ 2026-08-07 查證確認，且數字要更正：不是 8 次，是 10 條。**
 
@@ -884,9 +1089,21 @@ fake repository 之下那些規則完全看不出來（突變測試每次都全�
 真正的機械補償是 A-7 的 scope guard（它會在寫第 N+1 個檔的當下擋下來），
 前提是**它要醒著**。
 
+### 已採用的修法（2026-08-15，owner 授權 fable5 裁決）
+
+採：`_templates/5-tasks.md:98-107` 把 D-39 四象限（缺席/順序/可觀測結果/單句 SQL
+WHERE-綁定值，各自對應該用 sqlmock/白箱或 integration）寫進 `Files` 欄指引，並附
+SQL `WHERE`／`SET` 例句（規則寫在 SQL 裡 → `Files` 該含 repository 層測試檔）。
+
+**不加守衛**——裁決理由與原建議一致：這是判斷校準，機械檢查會變成 false positive
+工廠；真正的機械補償是 A-7 的 scope guard（它會在寫第 N+1 個檔的當下擋下來），
+A-13 修掉啟動障礙後它醒著。
+
+落點：commit `013e8b7`（`_templates/5-tasks.md`）。
+
 ---
 
-## B-6 — Diff Budget 的測試檔估法沒把補償控制算進去
+## B-6 — Diff Budget 的測試檔估法沒把補償控制算進去　✅ 已裁決（2026-08-15）
 
 | 區塊 | 4-spec Budget | 實得 | 偏差 |
 |---|---:|---:|---:|
@@ -918,6 +1135,16 @@ CRM 那張「ent/schema｜order｜specimen｜catalog｜migration｜測試檔」�
 ②**測試檔與非測試碼分開估**；若計畫用突變測試／對抗式驗證當補償控制，
 測試的估法要用不同係數（本輪實測約為天真估法的 **3 倍**）。
 超支判定的措辭（「超支本身不是偏差，是停下判 L1／L2 的訊號」）本身是對的，維持。
+
+### 已採用的修法（2026-08-15，同上 owner 授權裁決）
+
+採：`_templates/4-spec.md:135-146` Diff Budget 節補估法——①建議按區塊拆估（ent
+schema／handler／repo／migration／測試各自一行）；②測試檔與非測試碼分開估；
+③若計畫用突變測試／對抗式驗證當補償控制，測試檔估法要用不同係數，約為天真估法
+的 **3 倍**（order-intake 實測：天真估法 ~15 檔/~5,800 行，實得 20 檔/18,458 行，
++218%）；④「超支本身非偏差，是停下判 L1/L2 的訊號」**原句維持不變**。
+
+落點：commit `013e8b7`（`_templates/4-spec.md`）。
 
 ---
 
