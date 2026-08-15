@@ -23,13 +23,25 @@ ROOT=$(cd "$SELF_DIR/.." && pwd)
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
-DEVFLOW_ROOT="$ROOT" DEVFLOW_TMP="$TMP" python3 - <<'PY'
+DEVFLOW_ROOT="$ROOT" DEVFLOW_TMP="$TMP" python3 - "$0" <<'PY'
+import ast
+import html
 import os
 import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+try:
+    from markdown_it import MarkdownIt  # N-1 第 2 層:直接吃 repo 已釘的相依,不繞正則
+except ImportError:
+    # 本檔檔頭文件寫「exit:2 = 環境問題」——相依缺失正是這一類,不該讓它變成
+    # 沒攔到的 ImportError traceback(那樣 rc 由 python 決定,不保證是 2)。
+    print("缺相依 markdown-it-py:請跑 pip install 'markdown-it-py==4.0.0'", file=sys.stderr)
+    sys.exit(2)
+
+SELF_PATH = sys.argv[1] if len(sys.argv) > 1 else ""  # 供 guard-selfpin 群組自我核對用
 
 ROOT = Path(os.environ["DEVFLOW_ROOT"])
 TMP = Path(os.environ["DEVFLOW_TMP"])
@@ -42,10 +54,49 @@ SHELL = re.compile(r"<!doctype|<html[\s>]|<head[\s>]|<body[\s>]", re.I)
 FAILED = 0
 CHECKS = 0
 
+# ── N-2:分節心跳(照 check-design-contract.sh 的既有寫法)────────────────────
+# 檢查數地板只能偵測「大幅縮水」,抓不到「整區塊被刪、但別的區塊剛好補上檢查數」。
+# 逐區塊斷言「這一區至少跑過一條」,任何區塊被整段刪掉都會顯性失敗、點名是哪一區。
+REQUIRED_GROUPS = [
+    "gate-stage-baseline",
+    "dash-cells-readme",
+    "risk-cell-count",
+    "cross-file-parity",
+    "p4-fence-section",
+    "s-head-regression",
+    "h2-zero-deletion",
+    "t6-pinned",
+    "t2-missing-required",
+    "k7-missing-then",
+    "k3-missing-intent",
+    "k3-empty-tasks",
+    "k3-task-count",
+    "k3-boundaries-dag",
+    "high2-dash-values",
+    "high3-dag-waves",
+    "high1-dup-field",
+    "p5-sample-row",
+    "t5-empty-spec",
+    "n7-dist-copy",
+    "n1-section-fate",
+    "n4-unclosed-comment",
+    "usage-error-message",
+    "guard-selfpin",
+]
+CURRENT_GROUP = "gate-stage-baseline"
+GROUPS_SEEN = {}
+# 檢查數地板(次級 backstop):**釘死的常數**,不是跑完再回頭算 —— 回頭算等於
+# 地板永遠等於實得數,刪掉整區塊也不會低於它,等同沒有牙齒。127 是這一輪(N-1~N-4
+# 修完後)實測的檢查總數(不含這條地板斷言自己 —— 地板斷言執行當下、它自己
+# 尚未計入 CHECKS,所以比對值是「除了它自己以外」的實得數,見下方 check() 呼叫處);
+# 之後每加一條檢查不必跟著調高,只有整區塊被砍掉、實得數掉到這個值以下才會紅。
+MIN_CHECKS = 127
+
 
 def check(cond, label, detail=""):
     global FAILED, CHECKS
     CHECKS += 1
+    GROUPS_SEEN[CURRENT_GROUP] = GROUPS_SEEN.get(CURRENT_GROUP, 0) + 1
     if cond:
         print(f"  ✓ {label}")
     else:
@@ -68,6 +119,7 @@ def read_html_or_none(path):
 
 
 print("-- 三個 gate stage + 5-tasks 執行板對母版範例實跑(自帶回歸)--")
+CURRENT_GROUP = "gate-stage-baseline"
 proj = TMP / "proj/docs/dev/demo"
 proj.mkdir(parents=True)
 for st in STAGES:
@@ -80,7 +132,10 @@ for st in STAGES:
         continue
     local = (proj / f"{st}.html").read_text(encoding="utf-8")
     art = (proj / f"{st}-review.artifact.html").read_text(encoding="utf-8")
-    check(True, f"{st}:產出成功")
+    # 寫成活條件(而非硬寫 True)——雖然走到這裡當下必為真(上面已經
+    # `if r.returncode != 0: ...continue` 濾掉),但硬寫 True 會被下面新加的
+    # guard-selfpin「不得出現 check(True」自我掃描誤判成斷言被恆真化解除武裝。
+    check(r.returncode == 0, f"{st}:產出成功")
     check(len(re.findall(r'<a class="cell"', local)) == 5,
           f"{st}:T1 動線頂區五格", f"實際 {local.count(chr(60) + chr(97) + chr(32) + chr(99))} 個")
     check(local.count('class="s-card') > 0 and 'id="done"' in local,
@@ -114,6 +169,7 @@ for st in STAGES:
           "片段含 doctype/html/head/body" if SHELL.search(art) else "本機版缺外殼")
 
 print("-- T8 五格內容對齊 README §6 規格 --")
+CURRENT_GROUP = "dash-cells-readme"
 # 規格正本:README §6〈審查動線頂區〉的三列表。格數對了但內容答非所問 = 沒做到
 # (2026-08-15 獨立審查 H5:三站的格子內容當時與同一份 diff 新增的規格全不符)。
 # ⚠️ 標籤集合**從 README §6 的表格解析**,不硬寫在本檔。
@@ -153,6 +209,7 @@ for st in STAGES:
           f"多 {sorted(keys - EXPECT_KEYS.get(st, set()))} / 少 {sorted(EXPECT_KEYS.get(st, set()) - keys)}")
 
 print("-- 盤點:7-review 動線「風險」格條數要對得上 md 的 Known Limits 實際條數 --")
+CURRENT_GROUP = "risk-cell-count"
 # 舊計數把表頭列與 |---| 分隔列都算進去(4 條報成 6)。守衛自己從 example md
 # 數一次「資料列 + bullet 列」,斷言釘在正本,不釘在產生器的輸出邏輯上。
 def _limit_rows(md_text):
@@ -185,6 +242,7 @@ else:
           f"格值「{_m_kl.group(1) if _m_kl else '(無)'}」,md 實數 {_exp_kl}")
 
 print("-- G\u2032/G\u2033 跨檔規格一致:README §6 vs 三份模板頂註 --")
+CURRENT_GROUP = "cross-file-parity"
 # N4 的根因:規格同時寫在 README §6 與三份模板頂註,兩邊不一致時沒有任何檢查。
 # 把模板改回舊值 → 必須紅(2026-08-15 二次複審 G\u2033)。
 TPL = {"2-decision": "_templates/2-decision.md", "4-spec": "_templates/4-spec.md",
@@ -209,6 +267,7 @@ for st in STAGES:
           f"模板 {sorted(tk)} vs README {sorted(EXPECT_KEYS.get(st, set()))}")
 
 print("-- P4 回歸:整節只有一個 code fence 的章節不得消失 --")
+CURRENT_GROUP = "p4-fence-section"
 p4 = TMP / "p4/docs/dev/demo"
 p4.mkdir(parents=True)
 FENCE = "`" * 3
@@ -242,6 +301,7 @@ if r.returncode == 0:
           "該節被靜默丟掉(H_ANY 的 \\s 跨行吃掉了 body)")
 
 print("-- S_HEAD 回歸:`#### S-1`(無尾隨標題文字)不得吞下一行的 GIVEN --")
+CURRENT_GROUP = "s-head-regression"
 # 同 P4 那類 bug,換一個正則:S_HEAD 的 `\s*` 含換行,`#### S-1` 沒有尾隨標題文字時
 # 會跨行把下一行(通常是 `- GIVEN …`)整段吃進標題,GIVEN 欄從此消失
 #(2026-08-15 三次複審 P4 同類,母版範例的 S-1 就中招)。
@@ -278,6 +338,7 @@ if r.returncode == 0:
           f"實際標題「{m.group(1) if m else '(無)'}」")
 
 print("-- H2 負向:背景資料「內容零刪減」要真的被驗 --")
+CURRENT_GROUP = "h2-zero-deletion"
 # fixture 的每個非卡片章節都埋了 CANARY-n;渲染函式若被改成 return "",這裡必紅。
 shutil.copytree(ROOT / "scripts/fixtures/gate-twin/zero-deletion", TMP / "zd")
 r = run(TMP / "zd", "demo", "4-spec")
@@ -291,6 +352,7 @@ if r.returncode == 0:
     check("S-9.1" not in zt.split("背景資料")[0], "幻影卡 S-9.1 不在待審區")
 
 print("-- T6 置頂節:判定與其前提不得被摺疊 --")
+CURRENT_GROUP = "t6-pinned"
 # 2026-08-15 dogfood 抓到的真 bug:用本工具產自己的 7-review 時,「限制聲明」被收進
 # 背景資料、`## Verdict` 整節消失(被一條過度粗暴的排除條件誤殺)——最該先讀的三樣全不見。
 pin = TMP / "pin/docs/dev/demo"
@@ -371,6 +433,7 @@ check(bool(m) and "|" not in (m.group(1) if m else "|"),
       f"實際「{m.group(1) if m else '(無)'}」")
 
 print("-- T2 負向:缺必填欄要在卡上紅底現形 --")
+CURRENT_GROUP = "t2-missing-required"
 fx = ROOT / "scripts/fixtures/gate-twin/missing-obs"
 shutil.copytree(fx, TMP / "fx")
 r = run(TMP / "fx", "demo", "4-spec")
@@ -382,6 +445,7 @@ if r.returncode == 0:
     check("缺觀測欄" in t, "動線頂區點出缺幾條")
 
 print("-- K-7 負向:缺 THEN(非觀測)也要紅底,動線改報「缺必填欄」 --")
+CURRENT_GROUP = "k7-missing-then"
 # 模板要求 GIVEN/WHEN/THEN/觀測四欄皆必填,不是只有「觀測」——缺任何一欄都要紅底現形。
 fx2 = ROOT / "scripts/fixtures/gate-twin/missing-then"
 shutil.copytree(fx2, TMP / "fx2")
@@ -398,6 +462,7 @@ if r.returncode == 0:
           f"實際 class=\"{m.group(1) if m else '(無)'}\"")
 
 print("-- K-3 負向:5-tasks 缺 Intent 要在卡上紅底現形,其餘 T 不受牽連 --")
+CURRENT_GROUP = "k3-missing-intent"
 fxt = ROOT / "scripts/fixtures/gate-twin/tasks-missing-intent"
 shutil.copytree(fxt, TMP / "fxt")
 r = run(TMP / "fxt", "demo", "5-tasks")
@@ -412,6 +477,7 @@ if r.returncode == 0:
           f"實際 class=\"{m.group(1) if m else '(無)'}\"")
 
 print("-- K-3 負向:5-tasks 找不到任何 T → exit 1,不產空殼 --")
+CURRENT_GROUP = "k3-empty-tasks"
 empty_t = TMP / "empty-t/docs/dev/demo"
 empty_t.mkdir(parents=True)
 (empty_t / "5-tasks.md").write_text(
@@ -422,6 +488,7 @@ check(r.returncode == 1, "空 5-tasks(無任何 T) → exit 1", f"實際 exit {r
 check(not (empty_t / "5-tasks.html").exists(), "空 5-tasks → 不產出空殼 html")
 
 print("-- K-3 盤點:example 5-tasks 的 T 數 == twin 卡數 --")
+CURRENT_GROUP = "k3-task-count"
 _ex_5tasks_md = (EXAMPLE / "5-tasks.md").read_text(encoding="utf-8")
 n_t_source = len(re.findall(r"^## T-\d+", _ex_5tasks_md, re.M))
 tasks_local = read_html_or_none(proj / "5-tasks.html")
@@ -436,6 +503,7 @@ else:
           f"md {n_t_source} 個 T,twin {n_t_twin} 張卡")
 
 print("-- K-3:5-tasks 的 Boundaries 摺疊 + #dag 都在,五格標籤與 README 一致(自帶回歸)--")
+CURRENT_GROUP = "k3-boundaries-dag"
 if tasks_local is None:
     check(False, "每張 T 卡都有 Boundaries 摺疊(<details class=\"t-bound\">)", "5-tasks.html 不存在(前面已失敗)")
     check(False, "T 依賴 DAG 區塊(#dag)存在", "5-tasks.html 不存在(前面已失敗)")
@@ -448,6 +516,7 @@ else:
     check("Wave 1" in tasks_local, "DAG 至少印出第一波")
 
 print("-- HIGH-2:5-tasks 執行板五格值盤點斷言(期望值釘 example md 正本,不硬寫)--")
+CURRENT_GROUP = "high2-dash-values"
 # 審查者實測:硬寫死一個值(例如「99 條」)這種斷言現在不會紅,因為根本沒有斷言
 # 去驗五格的**值**(只驗格數、標籤)。這裡補的斷言全部由守衛自己從 example md 算,
 # 不硬寫任何數字/字串常數,釘的是「twin 值 == md 正本算出來的值」這個關係。
@@ -496,6 +565,7 @@ else:
           f"格值「{_m_prog.group(1) if _m_prog else '(無)'}」,預期分母 {_exp_n_t}")
 
 print("-- HIGH-3:5-tasks DAG 分波正確性(guard 自己寫 Kahn,不 import 產生器)--")
+CURRENT_GROUP = "high3-dag-waves"
 def _expected_waves(md_text):
     """獨立實作拓撲分波(Kahn),從 md 正本的 Blocked-by 算 —— 刻意不 import
     build-gate-twin.py 的任何函式:斷言要釘在跟正本邏輯獨立的第二套實作,不然
@@ -560,6 +630,7 @@ else:
 
 print("-- HIGH-1 負向:同一 T 內重複保留欄 → 紅卡 + flag 含「重複」;"
       "fence 內 `## T-99` → 只警告、卡數不含它 --")
+CURRENT_GROUP = "high1-dup-field"
 fxd = ROOT / "scripts/fixtures/gate-twin/tasks-dup-field"
 shutil.copytree(fxd, TMP / "fxd")
 r = run(TMP / "fxd", "demo", "5-tasks")
@@ -583,6 +654,7 @@ if r.returncode == 0:
           "stderr 對 fence 內 `## T-99` 印出幽靈任務警告", (r.stderr or "").strip())
 
 print("-- P5:抽驗格決定論抽樣(不是隨機、可重現)--")
+CURRENT_GROUP = "p5-sample-row"
 # 獨立(不呼叫 build-gate-twin.py 的 table_rows)重算 Coverage Matrix 中位列 ——
 # 斷言要釘在跟正本邏輯獨立的第二套實作,不是回頭呼叫同一顆函式驗自己。
 def _sample_expect():
@@ -622,6 +694,7 @@ else:
           f"實際「{actual_sample}」,預期「{expect_sample}」")
 
 print("-- T5 負向:解析不到任何待審項目要 exit 1,不產空殼 --")
+CURRENT_GROUP = "t5-empty-spec"
 empty = TMP / "empty/docs/dev/demo"
 empty.mkdir(parents=True)
 (empty / "4-spec.md").write_text("# 4. 規格\n\n## 沒有任何 R 或 S\n\n隨便寫點東西。\n",
@@ -631,6 +704,7 @@ check(r.returncode == 1, "空 spec → exit 1", f"實際 exit {r.returncode}")
 check(not (empty / "4-spec.html").exists(), "空 spec → 不產出空殼 html")
 
 print("-- N7 散發副本 --")
+CURRENT_GROUP = "n7-dist-copy"
 for name in ("build-gate-twin.py", "devflow_twin_ui.py"):
     src = ROOT / "scripts" / name
     dist = ROOT / "docs/dev/tools" / name
@@ -638,11 +712,166 @@ for name in ("build-gate-twin.py", "devflow_twin_ui.py"):
           f"{name}:docs/dev/tools/ 副本與正本逐字一致",
           "缺檔" if not dist.is_file() else "內容不同(正本方向:scripts/ → docs/dev/tools/)")
 
-print("-- 用法錯誤 --")
+print("-- N-1 第 2 層:通用章節下落對帳(獨立來源,防第 1 層自己被改壞)--")
+CURRENT_GROUP = "n1-section-fate"
+# 對母版範例**三站**(不是只跑合成 fixture):守衛自己用 markdown-it 數 L2 ATX 標題
+#(token 層,fence 內不算),斷言 (a) 自算節數 == 產生器盤點 NOTE 的 N,
+# (b) 逐節標題文字要出現在 html 的置頂 h2 / details summary / r-block,或出現在
+# stderr 的 dropped NOTE —— 四者皆無就是消失,列出消失的節名。
+# 刻意不 import build-gate-twin.py 的 sections()/H_ANY —— 兩層若共用同一套切法,
+# 同一個 bug(例如 appendix 迴圈裡加一條 continue)就會兩邊一起錯還一起綠,
+# 這正是 N-1 要防的「第 1 層自己被改壞」。
+
+
+def l2_atx_titles(md_text):
+    """獨立算:level-2 ATX 標題的原始標題文字(fence 內的假標題天生不會被
+    markdown-it 判成 heading,不必再遮蔽一次)。"""
+    lines = md_text.splitlines(keepends=True)
+    out = []
+    for tok in MarkdownIt("commonmark").parse(md_text):
+        if tok.type != "heading_open" or not tok.map or int(tok.tag[1:]) != 2:
+            continue
+        i = tok.map[0]
+        m = re.match(r"^##[ \t]+([^\n]*?)[ \t]*$", lines[i])
+        if m:
+            out.append(m.group(1))
+    return out
+
+
+def note_list(stderr_text, prefix):
+    """把 stderr 裡『NOTE: <prefix>:[...]』那一行的 Python list-repr 解析回標題清單,
+    找不到或解析失敗就回 []。"""
+    m = re.search(re.escape(prefix) + r":(\[.*\])\s*$", stderr_text, re.M)
+    if not m:
+        return []
+    try:
+        return list(ast.literal_eval(m.group(1)))
+    except (ValueError, SyntaxError):
+        return []
+
+
+# ⚠️ 刻意只跑三個 gate 站,**不要**直接改成 `for st in STAGES`(把 5-tasks 也塞進來)——
+# 5-tasks 的 T 卡渲染走 `<span class="s-title">`(在 `data-sid="T-n"` 的 article 裡),
+# 不是這裡認的 `r-name`/pinned h2/details summary 這三種殼,會讓所有 T 節誤判成
+# 「消失」(假紅)。5-tasks 若要接進第 2 層,需要另外加一條 s-title/data-sid 的
+# 抽取路徑,不在本輪範圍內(N-1 設計檔本身也只講「母版範例三站」)。
+#
+# ⚠️ 逐節比對用 `html.escape(title)` 而非產生器的 `inline()`(後者會把反引號轉
+# `<code>`、`**粗體**` 轉 `<strong>`)——三站母版範例目前的 L2 標題都是純文字,
+# 兩者結果剛好相同;哪天標題真的含反引號或粗體,這裡會誤報「消失」,到時候要嘛
+# 補一份獨立的 inline 轉換(不能直接 import 產生器的 inline,道理同上),要嘛
+# 放寬成子字串比對(但子字串比對本身就是本 repo 假綠型態②的溫床,取捨要謹慎)。
+for st in ("2-decision", "4-spec", "7-review"):  # 母版範例三站,不是合成 fixture
+    r = run(TMP / "proj", "demo", st)
+    md_text = re.sub(r"\A---\n.*?\n---\n", "", (EXAMPLE / f"{st}.md").read_text(encoding="utf-8"),
+                     flags=re.S)
+    titles = l2_atx_titles(md_text)
+    m_n = re.search(
+        r"NOTE: 盤點 L2 共 (\d+) 節 = 卡片節 (\d+) \+ 置頂 (\d+) \+ 背景 (\d+) \+ dropped (\d+)",
+        r.stderr or "")
+    check(bool(m_n) and int(m_n.group(1)) == len(titles),
+          f"{st}:守衛獨立數出的 L2 節數 == 產生器盤點 NOTE 的 N",
+          f"守衛獨立數 {len(titles)},產生器 NOTE「{m_n.group(1) if m_n else '(無)'}」")
+    # 只驗 N 對不對還不夠 —— N 是對 secs() 的原始節數,不受任何 continue 影響;
+    # 真正會被「加一條 continue 卻忘了記帳」打破的是四個分項加總。這裡額外驗
+    # 卡片+置頂+背景+dropped 這四個數字本身相加要等於 NOTE 宣稱的 N,
+    # 不只是字面比對總數(2026-08-15 三次複審:層 1 被自己的盤點檢查恆過蒙混時,
+    # 實測 NOTE 印出「共 13 節 = 卡片 0 + 置頂 0 + 背景 11 + dropped 1」,0+0+11+1=12≠13,
+    # 這條斷言就是專門釘這種「N 沒錯、但拆解加總對不上」的破綻)。
+    if m_n:
+        _n, _a, _b, _c, _d = (int(x) for x in m_n.groups())
+        check(_a + _b + _c + _d == _n,
+              f"{st}:NOTE 拆解的四個分項相加 == 總節數 N(算式本身要一致,不只驗總數字面)",
+              f"卡片 {_a} + 置頂 {_b} + 背景 {_c} + dropped {_d} = {_a + _b + _c + _d},"
+              f"NOTE 宣稱 N={_n}")
+    else:
+        check(False, f"{st}:NOTE 拆解的四個分項相加 == 總節數 N", "NOTE 格式解析失敗,無法比對")
+    html_local = read_html_or_none(proj / f"{st}.html")
+    if html_local is None:
+        check(False, f"{st}:每個 L2 章節都能在 html/NOTE 找到下落", "html 不存在(前面已失敗)")
+        continue
+    pinned_h2 = set(re.findall(r'<section class="pinned"[^>]*><h2>(.*?)</h2>', html_local, re.S))
+    detail_summary = set(re.findall(
+        r'<details class="doc"[^>]*><summary><span>(.*?)</span></summary>', html_local, re.S))
+    r_names = set(re.findall(r'<span class="r-name">(.*?)</span>', html_local, re.S))
+    dropped_notes = (
+        set(note_list(r.stderr or "", "以下父節的內容已整段渲染成卡片,不重複顯示"))
+        | set(note_list(r.stderr or "", "以下章節本文為空,視為 dropped(空),不進背景資料")))
+    missing = [t for t in titles
+               if html.escape(t) not in pinned_h2 and html.escape(t) not in detail_summary
+               and html.escape(t) not in r_names and t not in dropped_notes]
+    check(not missing, f"{st}:每個 L2 章節都能在 html/NOTE 找到下落(第 2 層,獨立於產生器)",
+          f"消失的章節:{missing}")
+
+print("-- N-4:未閉合的 <!-- html 註解要有警告且指出行號 --")
+CURRENT_GROUP = "n4-unclosed-comment"
+shutil.copytree(ROOT / "scripts/fixtures/gate-twin/unclosed-html-comment", TMP / "uhc")
+r = run(TMP / "uhc", "demo", "4-spec")
+check(r.returncode == 0, "未閉合 <!-- 的 fixture 仍產得出來(現形不擋產出)",
+      f"實際 exit {r.returncode}")
+check("未閉合" in (r.stderr or "") and "<!--" in (r.stderr or ""),
+      "stderr 警告未閉合的 <!-- html 註解", (r.stderr or "").strip())
+_m_line = re.search(r"從第\s*(\d+)\s*行起", r.stderr or "")
+check(bool(_m_line) and _m_line.group(1) == "17",
+      "警告指出正確的起始行號(原始檔行號,含 frontmatter;fixture 的 <!-- 在第 17 行)",
+      f"實際「{_m_line.group(1) if _m_line else '(無)'}」")
+
+print("-- 用法錯誤(驗訊息內容,不是只驗 rc)--")
+CURRENT_GROUP = "usage-error-message"
 r = subprocess.run([sys.executable, str(BUILD)], capture_output=True, text=True)
-check(r.returncode == 2, "無參數 → exit 2 並印用法", f"實際 exit {r.returncode}")
+check(r.returncode == 2, "無參數 → exit 2", f"實際 exit {r.returncode}")
+err = r.stderr or ""
+check(err.startswith("用法:"), "訊息以「用法:」開頭(與「缺相依」前綴可區分,不共用同一句話)",
+      f"實際開頭:{err[:24]!r}")
+check(all(st in err for st in STAGES), "訊息含四個 stage 名", f"缺:{[s for s in STAGES if s not in err]}")
+check("<專案根目錄> <slug> <stage>" in err, "訊息含參數順序 <專案根目錄> <slug> <stage>",
+      f"實際:{err.strip()!r}")
+# 用法錯誤與相依失敗共用同一個 exit code(2),光看 rc 分不出是哪一種 —— 訊息前綴才是
+# 唯一能區分的線索。相依失敗這條路徑在有 markdown-it-py 的環境裡跑不到(無法在不
+# 破壞環境的前提下真的觸發),改驗原始碼裡那句訊息的前綴仍是「缺相依」而非「用法:」,
+# 確保兩種錯誤的訊息前綴不會被改成一樣。
+_build_src = BUILD.read_text(encoding="utf-8")
+check('缺相依 markdown-it-py' in _build_src,
+      "原始碼:相依失敗訊息前綴仍是「缺相依」(與「用法:」可區分)",
+      "原始碼裡找不到「缺相依 markdown-it-py」這句前綴")
+
+# ── guard-selfpin:原始碼裡的 CURRENT_GROUP 賦值集合必須等於 REQUIRED_GROUPS ──
+# 心跳只能擋「刪掉一個區塊、卻忘了同時刪 REQUIRED_GROUPS 裡對應的名字」——
+# 如果兩邊一起刪(連刪帶藏),heartbeat 完全看不到缺口。這裡反過來釘死:
+# 原始碼裡實際出現的 CURRENT_GROUP 賦值,必須逐一對應 REQUIRED_GROUPS,不能只改一邊。
+# (邊界:新增一個 print("-- … --") 卻忘了配 CURRENT_GROUP,檢查會靜靜掛在上一個
+#  群組底下,這個自我掃描抓不到那種情況——老實承認,不假裝萬能。)
+CURRENT_GROUP = "guard-selfpin"
+if SELF_PATH and os.path.isfile(SELF_PATH):
+    _own_source = Path(SELF_PATH).read_text(encoding="utf-8")
+    _assigned = set(re.findall(r'^CURRENT_GROUP = "([a-z0-9-]+)"', _own_source, re.M))
+    check(_assigned == set(REQUIRED_GROUPS),
+          "原始碼中的 CURRENT_GROUP 賦值集合 = REQUIRED_GROUPS(無未註冊/已註冊但不存在的群組)",
+          f"只在原始碼={sorted(_assigned - set(REQUIRED_GROUPS))} "
+          f"只在 REQUIRED_GROUPS={sorted(set(REQUIRED_GROUPS) - _assigned)}")
+    # 斷言不得被改成恆真(照 check-design-contract.sh 的既有寫法)。
+    _always_true = re.findall(r"^\s*check\(\s*True\b", _own_source, re.M)
+    check(not _always_true,
+          "沒有任何斷言被改成恆真(原始碼不得出現 `check(True`)",
+          f"命中 {len(_always_true)} 處 —— 恆真斷言等於該檢查被靜默解除武裝")
+else:
+    check(False, "取得本守衛自身路徑以做群組清單自我檢查", f"SELF_PATH={SELF_PATH!r}")
+
+# ── N-2 收尾:群組心跳(主要防線)+ 檢查數地板(次級 backstop)────────────────
+CURRENT_GROUP = "gate-stage-baseline"
+missing_groups = [g for g in REQUIRED_GROUPS if GROUPS_SEEN.get(g, 0) == 0]
+if missing_groups:
+    FAILED += 1
+    print(f"  ✗ [heartbeat] 必跑檢查群組完全沒執行:{', '.join(missing_groups)}"
+          " —— 幾乎都是某個區塊被整段刪掉了")
+CHECKS += 1
+
+check(CHECKS >= MIN_CHECKS, f"(次級 backstop)本檔檢查總數 ≥ {MIN_CHECKS}",
+      f"實得 {CHECKS}")
 
 print()
+print(f"  • heartbeat:{len(REQUIRED_GROUPS)} 個必跑區塊全部有執行 "
+      f"({', '.join(f'{g}={GROUPS_SEEN.get(g, 0)}' for g in REQUIRED_GROUPS)})")
 if FAILED:
     print(f"❌ gate twin 產生器守衛:{FAILED} 項失敗(共 {CHECKS} 項)")
     sys.exit(1)

@@ -198,6 +198,28 @@ def _unclosed_fences(md):
     return out
 
 
+def _unclosed_html_comment(md):
+    """回傳未閉合 `<!--` 的 html_block token(沒有就回 None)—— N-4。
+
+    CommonMark 的 html_block type-2(以 `<!--` 開頭)結束條件是某一行含 `-->`;
+    找不到收尾時,parser 會把 map 一路吃到檔尾,跟 fence 未閉合是同一種病:
+    後面所有內容(含其中的 level-2 標題)被併入這個 html_block,**結構塌陷**——
+    章節數對不上,但 N-1 的對帳與 check-gate-twin.sh 的第 2 層都是用
+    markdown-it 數節,兩邊看到的是同一份「被吞過」的 token stream,對不出破綻。
+    這條警告是唯一訊號,判斷法與 _unclosed_fences 同款:直接問 token.map 是否
+    被迫延伸到檔尾,不用「開合次數奇偶」這種猜的。
+    """
+    lines = md.splitlines(keepends=True)
+    for tok in MarkdownIt("commonmark").parse(md):
+        if tok.type != "html_block" or not tok.map:
+            continue
+        if "<!--" not in tok.content or "-->" in tok.content:
+            continue
+        if tok.map[1] == len(lines):  # 被迫吃到檔尾 = 沒找到收尾的 -->
+            return tok
+    return None
+
+
 def sections(md):
     """依標題切段,回 [(level, title, body), ...]。
 
@@ -930,7 +952,14 @@ def main(argv):
         print(f"拒絕:讀不到 {src}", file=sys.stderr)
         return 2
 
-    md = re.sub(r"\A---\n.*?\n---\n", "", src.read_text(encoding="utf-8"), flags=re.S)
+    _raw_src_text = src.read_text(encoding="utf-8")
+    md = re.sub(r"\A---\n.*?\n---\n", "", _raw_src_text, flags=re.S)
+    # frontmatter 是整段**刪除**(不是等長遮蔽),md 的行號因此比原始檔少了
+    # frontmatter 的行數 —— N-4 的行號警告要對「使用者打開來看的原始檔」報,
+    # 不能對切掉 frontmatter 後的 md 報(否則每份有 frontmatter 的正式文件都會
+    # 報錯行號,直接違背這條警告存在的目的:讓人一眼找到是哪裡沒收尾)。
+    _fm_match_for_lineno = re.match(r"\A---\n.*?\n---\n", _raw_src_text, flags=re.S)
+    _fm_line_offset = _fm_match_for_lineno.group(0).count("\n") if _fm_match_for_lineno else 0
     # 未閉合的 fence 會把其後全部內容吃成程式碼(規則正確,但不得靜默 —— 二次複審 P3)。
     # 判定「未閉合」用 token-based(見 _unclosed_fences);swallowed 行數計算沿用舊版
     # (遮蔽版與原文逐行比,任何被清空的非空行都算——不只算未閉合那個 fence 自己的)。
@@ -940,6 +969,16 @@ def main(argv):
     if swallowed and _unclosed_fences(md):
         print(f"⚠️  偵測到**未閉合**的 code fence:其後 {swallowed} 行非空內容被當成程式碼,"
               f"不會進待審區也不會進背景資料。請補上收尾的 ``` 或 ~~~。", file=sys.stderr)
+
+    # N-4:未閉合的 <!-- html 註解會把其後所有 level-2 標題吞成同一個 html_block,
+    # 結構塌陷卻無 traceback、無 exit 1(N-1 的對帳也看不到,因為 markdown-it 本身
+    # 就沒切出被吞的節)——這條警告是唯一訊號,必補,且要指出起始行號。
+    _unclosed_comment = _unclosed_html_comment(md)
+    if _unclosed_comment and _unclosed_comment.map:
+        _uhc_line = _unclosed_comment.map[0] + 1 + _fm_line_offset  # 原始檔行號(含 frontmatter)
+        print(f"⚠️  偵測到**未閉合**的 <!-- html 註解:從第 {_uhc_line} 行起,"
+              f"其後內容(可能含 level-2 標題)被併入前一節,結構塌陷。請補上收尾的 -->。",
+              file=sys.stderr)
 
     fm = re.match(r"\A---\n(.*?)\n---\n", src.read_text(encoding="utf-8"), flags=re.S)
     fm_text = fm.group(1) if fm else ""
@@ -983,9 +1022,10 @@ def main(argv):
                   file=sys.stderr)
 
     # 置頂節:判定本身與判定的前提,直接顯示在卡片之前,不摺疊
-    pinned = []
+    pinned, pinned_titles = [], set()
     for lvl, title, body in secs:
         if lvl <= 2 and PINNED_PAT.search(title) and body.strip():
+            pinned_titles.add(title)
             pinned.append(f'<section class="pinned" id="{anchor_id(title)}">'
                           f'<h2>{inline(title)}</h2>'
                           f'<div class="doc-in">{md_block(body)}</div></section>')
@@ -993,11 +1033,22 @@ def main(argv):
     # 背景資料:沒被做成卡片的章節一律收進 details,內容零刪減。
     # 已經做成卡片的內容**不得重複出現** —— 章節本身被用過、或它底下含有已渲染的
     # R/S 標題(例:`## ADDED Requirements` 的 body 含全部 R 與 S),一律跳過。
-    appendix, skipped, dropped = [], [], []
+    appendix, skipped, dropped, dropped_empty = [], [], [], []
     for lvl, title, body in secs:
-        if lvl > 2 or title in used or not body.strip():
+        if lvl > 2 or title in used:
             continue
-        if R_HEAD.match("#" * lvl + " " + title):
+        if not body.strip():
+            # N-1:空節目前不進背景資料(渲染了也是空白),但仍要有下落 ——
+            # 明確歸類「dropped(空)」並列入盤點 NOTE,不算失敗(設計檔已定案的例外)。
+            dropped_empty.append(title)
+            continue
+        # 只有 4-spec 的解析器(parse_spec)會用 R_HEAD 識別「已處理」的 R 容器標題
+        # 並塞進 used;其他 stage 沒有這層機制,若讓這裡不分 stage 一律 continue,
+        # 一個湊巧長得像 `R-\d` 的標題(非 4-spec 場景)就會被吞掉且沒有任何下落
+        # ——這正是 N-1 要擋的那種消失,所以這條 continue 只在 4-spec 生效
+        #(4-spec 底下這條理論上恆假,因為同樣的 R_HEAD 判斷已經在 parse_spec 把
+        # title 塞進 used,不會走到這裡;留著只是防禦性對齊,不影響其他 stage)。
+        if stage == "4-spec" and R_HEAD.match("#" * lvl + " " + title):
             continue
         masked = mask_fenced(body)
         # 只跳過「已經整段被渲染成卡片」的父節(例:`## ADDED Requirements` 底下就是全部 R/S)。
@@ -1012,7 +1063,7 @@ def main(argv):
             dropped.append(title)
             continue
         if PINNED_PAT.search(title):
-            continue  # 置頂節另外處理,不摺疊
+            continue  # 置頂節另外處理,不摺疊 —— 下落已算進 pinned_titles,不是消失
         appendix.append(
             f'<details class="doc" id="{anchor_id(title)}">'
             f'<summary><span>{inline(title)}</span></summary>'
@@ -1022,6 +1073,31 @@ def main(argv):
         print(f"NOTE: 以下章節收進背景資料(預設收合、內容零刪減):{skipped}", file=sys.stderr)
     if dropped:
         print(f"NOTE: 以下父節的內容已整段渲染成卡片,不重複顯示:{dropped}", file=sys.stderr)
+    if dropped_empty:
+        print(f"NOTE: 以下章節本文為空,視為 dropped(空),不進背景資料:{dropped_empty}",
+              file=sys.stderr)
+
+    # N-1(HIGH,獨立審查,通用對帳,不逐處手加):輸入 md 的每一個 level-2 章節,
+    # 都要能在上面四條路徑之一找到下落 ——
+    #   ①渲染成卡片(used) ②置頂節(pinned_titles) ③背景 details(skipped)
+    #   ④明確 dropped 且已印 NOTE(dropped / dropped_empty)
+    # 四者皆非 = 靜默消失(這正是審查者實測的破口:appendix 迴圈加一條 continue,
+    # 章節數對不上卻沒有任何斷言發現)。這裡是與資料格無關的通用盤點,不看
+    # 章節名字,任何未來新增的章節/新增的 continue 分支都逃不掉這道收尾。
+    l2_titles = [title for lvl, title, _b in secs if lvl == 2]
+    accounted = used | pinned_titles | set(skipped) | set(dropped) | set(dropped_empty)
+    missing_fate = [t for t in l2_titles if t not in accounted]
+    if missing_fate:
+        print(f"盤點失敗:章節「{missing_fate[0]}」無下落"
+              + (f"(同批還有 {len(missing_fate) - 1} 節:{missing_fate[1:]})"
+                 if len(missing_fate) > 1 else "")
+              + " —— 不是卡片、不是置頂節、沒收進背景資料,也沒被列進 dropped NOTE,"
+                "在產出物裡找不到任何痕跡。", file=sys.stderr)
+        return 1
+    n_used_l2 = len({t for t in l2_titles if t in used})
+    print(f"NOTE: 盤點 L2 共 {len(l2_titles)} 節 = 卡片節 {n_used_l2}"
+          f" + 置頂 {len(pinned_titles)} + 背景 {len(skipped)}"
+          f" + dropped {len(dropped) + len(dropped_empty)}", file=sys.stderr)
 
     raw_cells = dash_cells(stage, fm_text + "\n" + md, n_items, n_bad, secs, n_obs,
                            dag_edges=dag_edges, dag_done=dag_done)
