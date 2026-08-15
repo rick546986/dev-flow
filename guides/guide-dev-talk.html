@@ -302,7 +302,7 @@ claude          # 建議 opus(規劃層)
   </table></div>
 
   <h2 id="whitelist">⑥ 讀取 / 寫入白名單</h2>
-  <p class="lead">這章要你懂:<strong>它讀得比寫得多很多</strong> —— 輸入端可以掃遍原始碼,輸出端卻只有三個檔;紅框那些是連碰都不碰的。</p>
+  <p class="lead">這章要你懂:<strong>這份白名單是 prompt 級圍欄,不是 hook 硬擋</strong> —— 它活在 UserPromptSubmit 展開的 SKILL.md 本文裡,約束的是模型行為,靠自律遵守;真正物理擋下讀寫的是 PreToolUse hook(如 <code>devflow-guard.sh</code>),那道防線在 dev-talk 階段是沉睡的。白名單本身:讀得比寫得多很多 —— 輸入端可以掃遍原始碼,輸出端卻只有三個檔;紅框那些是連碰都不碰的。</p>
 
   <div class="figwrap"><svg id="fig-scope" viewBox="0 0 880 430" role="img"
        aria-label="讀取白名單、寫入白名單與禁區三區關係圖">
@@ -347,6 +347,18 @@ claude          # 建議 opus(規劃層)
     <tr><td>寫入</td><td>僅三檔:<code>docs/dev/&lt;slug&gt;/1-discussion.md</code>、同目錄 <code>1-discussion.html</code>、repo root <code>CONTEXT.md</code></td><td>程式碼/設定/schema/資料庫/測試一律不動;不跑 git add/commit、migration、套件安裝</td></tr>
   </table></div>
   <p class="muted">討論的產出是文字,不是程式碼。使用者說「開始做」「實作吧」→ 回「討論記錄已完成,實作請另開 session」,然後停。</p>
+
+  <p class="lead">哪些有 hook 硬擋、哪些只有 prompt 約束:</p>
+  <div class="tablewrap"><table>
+    <tr><th>誰把關</th><th>攔截點</th><th>性質</th><th>擋得住什麼</th></tr>
+    <tr><td>本節讀取白名單</td><td class="muted">無 hook</td><td><span class="badge you">prompt 約束</span></td><td>寫在 SKILL.md 裡,靠模型自律;不因你口頭同意而放寬,但也沒有東西物理擋著</td></tr>
+    <tr><td>本節寫入白名單</td><td class="muted">無 hook</td><td><span class="badge you">prompt 約束</span></td><td>同上 —— dev-talk 階段 <code>devflow-guard.sh</code>(Stage 6 執行守衛)未武裝,不擋任何路徑</td></tr>
+    <tr><td><code>devtalk-guard.sh</code></td><td>PostToolUse(Edit/Write),只認 <code>*/skills/dev-talk/*</code></td><td><span class="badge warn">內容硬檢</span></td><td>dev-talk 檔案(SKILL/殼檔)寫入後掃洩漏字眼(下游階段字眼),命中 <code>exit 2</code> 回饋要求立即修正 —— 是「寫完抓到罰你改」,不是「不准你寫」</td></tr>
+    <tr><td><code>devflow-guard.sh</code> 等 Stage 6 執行守衛</td><td>PreToolUse(Edit/Write/Read)</td><td><span class="badge ok">權限硬擋</span></td><td><code>devflow-exec.sh start</code> 武裝後 fail-closed 物理擋下讀寫;dev-talk 階段這道防線不存在,只在 Stage 6 執行期生效</td></tr>
+  </table></div>
+  <p class="muted">上表「無 hook」不是漏洞、是刻意設計 —— hook 無法得知目前 session 是不是 dev-talk,全域擋寫會誤傷其他工作;誠實聲明見
+  <code>dev-setup-record.html</code> ⑥「內容硬檢,非權限硬擋」。Stage 6 執行守衛完整的武裝時機、三支 hook 攔截點與殘餘界線,見
+  <a href="guide-dev-flow.html#guard">guide-dev-flow.html ⑥ 執行守衛</a>。</p>
 
   <h2 id="skeleton">⑦ 產出骨架(<code>1-discussion.md</code> 九節)</h2>
   <p class="lead">這章要你懂:<strong>九節不是模板欄位,是把前面每一步的產物固定下來</strong> —— 右欄告訴你哪一節空了要回哪一步補。</p>
