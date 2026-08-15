@@ -88,6 +88,11 @@ group_architecture() {
   # gate twin 是審查介面不是文件視覺版(README §6):三件必含 + 兩種殼,對三站實跑
   run "architecture/check-gate-twin"         scripts/check-gate-twin.sh         || return 1
   run "architecture/check-version-sync"    scripts/check-version-sync.sh    || return 1
+  # dev-setup upgrade 三方比對紀律(B-2):skills/dev-setup/SKILL.md 的三方比對/
+  # baseline 快照/逐檔徵同意/過渡態/master-only 剝除/gate twin 相依全是散文規則,
+  # 退回等於原地重現「upgrade 靜默蓋掉本地客製」。獨立於下面的 Stage 6/7 執行期
+  # 條款(check-stage67-enforcement.sh)——那支管模板,這支管安裝器自己。
+  run "architecture/check-dev-setup-discipline" scripts/check-dev-setup-discipline.sh || return 1
   # Stage 6/7 執行期強制條款(A1 守衛武裝／A3 Verify 案例數／A4 gauntlet 路徑／
   # A5 觀測可執行性)。四條都是 2026-08 order-intake 實際失效過的散文規則。
   run "architecture/check-stage67-enforcement" scripts/check-stage67-enforcement.sh || return 1

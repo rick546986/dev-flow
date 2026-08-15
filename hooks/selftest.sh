@@ -9,6 +9,12 @@ T=$(mktemp -d "${TMPDIR:-/tmp}/devflow-selftest.XXXXXX")
 C=$(mktemp -d "${TMPDIR:-/tmp}/devflow-gate-selftest.XXXXXX")
 PASS=0; FAIL=0; FAILED=()
 TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
+# ⚠️ MIN_CASES 是釘死地板,一律等於當下實際案例數(2026-08-16 起 326)——新增案例時
+# 同步 +;絕不「大概抓個下限」。起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
+# TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
+# 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
+# 獨立於 grep 自算之外的斷言。
+MIN_CASES=326
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -1805,6 +1811,11 @@ echo
 TOTAL=$((PASS+FAIL))
 if [ "$TOTAL" != "$TOTAL_CASES" ]; then
   FAIL=$((FAIL+1)); FAILED+=("自測案例發現數 $TOTAL_CASES 與執行數 $TOTAL 不一致")
+fi
+# 第 5 型地板:TOTAL_CASES 低於釘死值 → 案例可能被刪,即使與 TOTAL 自洽也要紅。
+if [ "$TOTAL_CASES" -lt "$MIN_CASES" ]; then
+  FAIL=$((FAIL+1))
+  FAILED+=("⛔ 案例數地板:TOTAL_CASES=$TOTAL_CASES 低於釘死地板 MIN_CASES=$MIN_CASES —— 可能有測試被刪,即使執行數與發現數自洽也不得視為全過")
 fi
 if [ "$FAIL" = 0 ]; then echo "✅ 守衛自測 $PASS/$TOTAL 全過"; exit 0
 else echo "❌ 守衛自測 $PASS/$TOTAL,失敗 $FAIL 項:"; for f in "${FAILED[@]}"; do echo "   - $f"; done; exit 1; fi

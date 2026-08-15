@@ -22,6 +22,13 @@ FIX = os.path.join(HERE, "fixtures")
 checks = 0
 failures = []
 
+# ⚠️ 第 5 型地板:一律等於當下實際檢查數(2026-08-16 起 120),新增檢查時同步 +。
+# 起因同 test-architecture-guards.sh 的 EXPECTED_*/hooks/selftest.sh 的 MIN_CASES:
+# `checks` 由 check() 呼叫次數自算,案例(check() 呼叫)被刪掉時 checks 跟著掉,
+# finish() 原本的「checks - len(failures)}/{checks}」比對不受影響,照樣印全過。
+# 這個常數把「checks 不得低於當下已知值」變成獨立於自算次數之外的斷言。
+EXPECTED_CHECKS = 120
+
 
 def check(cond, label, detail=""):
     global checks
@@ -46,6 +53,9 @@ def jfixture(name):
 
 
 def finish():
+    if checks < EXPECTED_CHECKS:
+        failures.append(f"⛔ 檢查數地板:實際只跑了 {checks} 項(地板 {EXPECTED_CHECKS})—— "
+                         f"可能有 check() 呼叫被刪掉,即使目前已跑的全過也不得視為全過")
     if failures:
         print(f"❌ parallel stage6 contract checks: {checks - len(failures)}/{checks} passed")
         for f in failures:

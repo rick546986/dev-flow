@@ -25,6 +25,12 @@
 #                    就會被掃到」,不是再補一條清單項)(check-no-stale-paths.sh)
 #   Real-world       RW-0 對照組 / RW-1 Out of Scope 整段 Stage 3 對帳被刪 / RW-2 一條
 #                    場景保留但拿掉逐場點名引用(check-realworld.sh;§7 第 1 點,2026-08-15)
+#   TF(2026-08-16 補)  TF-1 模板「測試檔路徑也要列進 Files」紀律句被弱化 / TF-2
+#                    範例 T-1 的 Files 欄被拿掉測試檔路徑(check-stage67-enforcement.sh
+#                    的 D-39 紀律;對照組沿用既有 S67-0)
+#   DSD(2026-08-16 補,B-2) DSD-0 對照組 / DSD-1 過渡態處置句被刪 / DSD-2 三方比對
+#                    判別法字面被改寫(check-dev-setup-discipline.sh,dev-setup
+#                    upgrade 三方比對紀律)
 #
 # 案例數是**斷言**不是裝飾:EXPECTED_CONTROLS / EXPECTED_NEGATIVES / EXPECTED_TOTAL
 # 由 expect()/expect_local() 實際累計後比對,刪任何一案(含對照組)都會非零退出。
@@ -51,6 +57,7 @@ fingerprint() {
        "$ROOT/docs/dev/tools/devflow-evidence-gauntlet.sh" \
        "$ROOT/docs/dev/STATUS.md" "$ROOT/docs/dev/devflow-contract.json" \
        "$ROOT/docs/adr" "$ROOT/observability/devflow-obs.py" \
+       "$ROOT/skills/dev-setup/SKILL.md" \
        -type f -exec shasum {} + 2>/dev/null | shasum | awk '{print $1}'
 }
 FP_BEFORE=$(fingerprint)
@@ -83,9 +90,9 @@ RESULTS=()
 # 改法:由 expect()/expect_local() 依 want 實際累計 control 與 negative,尾聲與釘死值比對。
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
-EXPECTED_CONTROLS=9
-EXPECTED_NEGATIVES=51
-EXPECTED_TOTAL=60
+EXPECTED_CONTROLS=10
+EXPECTED_NEGATIVES=55
+EXPECTED_TOTAL=65
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -98,7 +105,8 @@ seed() {
   [[ "$dst" == "$WORK/"* ]] || { echo "seed: 目標逃逸 $dst" >&2; exit 1; }
   safe_rm "$dst"
   mkdir -p "$dst/_templates" "$dst/example/contract-expiry-reminder" \
-           "$dst/notes/design" "$dst/scripts" "$dst/docs/dev/tools" "$dst/docs/adr"
+           "$dst/notes/design" "$dst/scripts" "$dst/docs/dev/tools" "$dst/docs/adr" \
+           "$dst/skills/dev-setup"
   cp "$ROOT/README.md" "$dst/README.md"
   cp "$ROOT/devflow-contract.json" "$dst/devflow-contract.json"
   cp "$ROOT"/_templates/{1-discussion,3-prototype,4-spec,5-tasks,6-implementation-notes,7-review}.md \
@@ -114,6 +122,9 @@ seed() {
   cp "$ROOT/docs/dev/STATUS.md" "$dst/docs/dev/STATUS.md"
   cp "$ROOT/docs/dev/devflow-contract.json" "$dst/docs/dev/devflow-contract.json"
   cp "$ROOT/docs/adr/0001-merge-plugin-into-methodology-repo.md" "$dst/docs/adr/"
+  # B-2(dev-setup 三方比對紀律)需要 skills/dev-setup/SKILL.md 在 seed 副本內才咬得到
+  # mutation;check-dev-setup-discipline.sh 讀的正是這份檔。
+  cp "$ROOT/skills/dev-setup/SKILL.md" "$dst/skills/dev-setup/SKILL.md"
   echo "$dst"
 }
 
@@ -752,6 +763,64 @@ assert n != t, "S67-9 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
 expect_local fail check-stage67-enforcement.sh "$D" "S67-9 守衛自己的 A1 整組被刪(檢查數地板接住)"
+
+# ── TF 群組:測試檔路徑必須列進 Files(check-stage67-enforcement.sh 的 D-39 紀律)──
+#
+# 起因:D-39(order-intake 實測歸納)—— Verify 跑測試但 Files 沒列測試檔,candidate
+# 產出前就被 Stage 6 scope guard 擋死。S67-0(對照組)已涵蓋這兩項檢查的未變異
+# 基準,本群組只需要負向案。
+
+D=$(seed tf-template)
+mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "_templates/5-tasks.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("測試檔路徑也要列進 `Files`", "測試檔案盡量列進去", 1)
+assert n != t, "TF-1 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-stage67-enforcement.sh "$D" "TF-1 5-tasks 模板的「測試檔路徑也要列進 Files」紀律句被弱化"
+
+D=$(seed tf-example)
+mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "example/contract-expiry-reminder/5-tasks.md"
+t = p.read_text(encoding="utf-8")
+old = "Files: `internal/handler/contract.go`, `internal/service/contract.go`, `internal/repo/contract.go`, `internal/service/contract_test.go`, `internal/handler/contract_test.go`"
+new = "Files: `internal/handler/contract.go`, `internal/service/contract.go`, `internal/repo/contract.go`"
+n = t.replace(old, new, 1)
+assert n != t, "TF-2 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-stage67-enforcement.sh "$D" "TF-2 範例 T-1 的 Files 欄被拿掉測試檔路徑(跑測試的 T 卻沒有測試路徑)"
+
+# ── DSD 群組:dev-setup upgrade 三方比對紀律(check-dev-setup-discipline.sh;B-2)──
+#
+# 起因:skills/dev-setup/SKILL.md 的 upgrade 三方比對/baseline 快照/逐檔徵同意/
+# 過渡態/master-only 剝除/gate twin 相依全是散文規則,退回等於原地重現
+# 「upgrade 靜默蓋掉本地客製」。
+
+D=$(seed dsd0); expect pass check-dev-setup-discipline.sh "$D" "DSD-0 對照組(未變異)"
+
+D=$(seed dsd1); mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "skills/dev-setup/SKILL.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("全部受管檔視為②本地客製,逐檔徵同意", "比照一般流程處理", 1)
+assert n != t, "DSD-1 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-dev-setup-discipline.sh "$D" "DSD-1 過渡態條款的處置句被刪(全部視為②逐檔徵同意 → 比照一般流程)"
+
+D=$(seed dsd2); mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "skills/dev-setup/SKILL.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("三方比對", "比對法")
+assert n != t, "DSD-2 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-dev-setup-discipline.sh "$D" "DSD-2 三方比對判別法字面全數被改寫"
 
 # ── MM 群組:README master-only 標記平衡(check-readme-markers.sh;MED-4)──────
 #
