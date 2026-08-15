@@ -9,12 +9,13 @@ T=$(mktemp -d "${TMPDIR:-/tmp}/devflow-selftest.XXXXXX")
 C=$(mktemp -d "${TMPDIR:-/tmp}/devflow-gate-selftest.XXXXXX")
 PASS=0; FAIL=0; FAILED=()
 TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
-# ⚠️ MIN_CASES 是釘死地板,一律等於當下實際案例數(2026-08-16 起 326)——新增案例時
-# 同步 +;絕不「大概抓個下限」。起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
+# ⚠️ MIN_CASES 是釘死地板,一律等於當下實際案例數(2026-08-16 起 335;devtalk-guard
+# 補 5 案 + postbash A-11 圍欄③收緊補 4 案)——新增案例時同步 +;絕不「大概抓個下限」。
+# 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=326
+MIN_CASES=335
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -33,6 +34,11 @@ pb() { echo "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"$1\"}}" | "$H
 pb_capture() { PB_OUT=$(echo "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"$1\"}}" | "$H/devflow-prebash.sh" 2>&1); PB_RC=$?; }
 post() { echo '{}' | "$H/devflow-postbash.sh" >/dev/null 2>&1; echo $?; }
 post_capture() { P_OUT=$(echo '{}' | "$H/devflow-postbash.sh" 2>&1); P_RC=$?; }
+dt_capture() { # dt_capture <tool> <relpath> [ENV=VAL ...](devtalk-guard.sh 直測)
+  local dttool="$1" dtrel="$2"; shift 2
+  DT_OUT=$(echo "{\"tool_name\":\"$dttool\",\"tool_input\":{\"file_path\":\"$T/$dtrel\"}}" \
+    | env "$@" "$H/devtalk-guard.sh" 2>&1); DT_RC=$?
+}
 x() { ( cd "$T" && "$H/devflow-exec.sh" "$@" >/dev/null 2>&1; echo $? ); }
 x_capture() { X_OUT=$(cd "$T" && "$H/devflow-exec.sh" "$@" 2>&1); X_RC=$?; }
 scope_is() { /usr/bin/python3 - "$T/.devflow/exec.json" "$1" <<'PY'
@@ -245,9 +251,19 @@ ck "回歸:舊 exec.json(無 phase 鍵)讀 6-notes 放行(升版前後行為一�
   0 "$(g Read docs/dev/f1/6-implementation-notes.md)"
 ck "回歸(prebash 鏡像):舊 exec.json(無 phase 鍵)shell cat 6-notes 放行" \
   0 "$(pb 'cat docs/dev/f1/6-implementation-notes.md')"
+# postbash 鏡像③(回歸):舊 exec.json 尚無 "phase" 鍵時,5-tasks 的 shell 改動恆許
+# 不受影響 —— 5-tasks.md 此刻仍是 task() 反覆改寫留下的未提交髒檔(Stage 6 進行中
+# 的正常樣貌),postbash 必須維持升版前行為,靜默放行。
+ck "postbash 鏡像回歸:舊 exec.json(無 phase 鍵)shell 改 5-tasks 仍放行" 0 "$(post)"
 ck "基準:review 武裝前寫 7-review.md 仍受 scope 擋(對照武裝後放行)" \
   2 "$(g Write docs/dev/f1/7-review.md)"
+# 模擬 Stage 6 收工:5-tasks.md 進 review 前先提交,之後 postbash 才能分辨「review
+# 期間又被 shell 動」與「Stage 6 遺留未提交」——這兩者不是同一件事,見下方圍欄③收緊註解。
+git add docs/dev/f1/5-tasks.md && git commit -qm "selftest: pin 5-tasks before review arm" >/dev/null
 ck "devflow-exec.sh review f1 → 武裝圍欄③"    0 "$(x review f1)"
+# postbash 鏡像(canary):review 剛武裝、5-tasks 尚未被 shell 動過 → 必須沉默,否則
+# review 期間每一個 Bash 呼叫都會被誤擋(dirty-detection 而非 change-detection)。
+ck "postbash 鏡像:review 武裝後未動 5-tasks → 仍沉默" 0 "$(post)"
 g_capture Read docs/dev/f1/6-implementation-notes.md
 ck_msg "① review 中讀 6-notes → 擋,訊息指步 4" 2 "步 4" "$G_RC" "$G_OUT"
 pb_capture 'cat docs/dev/f1/6-implementation-notes.md'
@@ -266,8 +282,17 @@ ck "② review 中寫 7-review.md → 放行"          0 "$(g Write docs/dev/f1/
 ck "review 中寫 evidence/ → 放行"              0 "$(g Write docs/dev/f1/evidence/screenshot.png)"
 g_capture Write docs/dev/f1/5-tasks.md
 ck_msg "③ review 中寫 5-tasks.md → 擋"         2 "圍欄③" "$G_RC" "$G_OUT"
+# postbash 鏡像①:review 中(未 unlock)shell 側直接改 5-tasks.md(繞過 Edit/Write
+# hook)也必須被抓 —— 這正是本次收緊要堵的破口(舊碼:allowed_prefix 恆許,靜默放行)。
+echo "shell-edit-during-review" >> docs/dev/f1/5-tasks.md
+post_capture
+ck_msg "postbash 鏡像①:review 中(未 unlock)shell 改 5-tasks → 擋" 2 "圍欄③" "$P_RC" "$P_OUT"
 ck "⑥ review 中寫非 dev-flow 檔(scope 內)恆放行" 0 "$(g Write src/a.py)"
 ck "devflow-exec.sh review-unlock f1 → 解鎖"   0 "$(x review-unlock f1)"
+# postbash 鏡像②:review-unlock 後,5-tasks.md 的 shell 改動恆許恢復 —— 上一步留下
+# 的髒內容原封不動,只靠 review_unlocked 翻轉就該轉為放行(與 unlock 後既有行為
+# 完全不變一致)。
+ck "postbash 鏡像②:review-unlock 後 shell 改 5-tasks → 恢復豁免" 0 "$(post)"
 ck "④ review-unlock 後讀 6-notes → 放行"       0 "$(g Read docs/dev/f1/6-implementation-notes.md)"
 ck "prebash 鏡像②:review-unlock 後 shell cat 6-notes → 放行" \
   0 "$(pb 'cat docs/dev/f1/6-implementation-notes.md')"
@@ -334,6 +359,36 @@ ck_msg "postbash 抓 .gitignore shell 改動" 2 ".gitignore" "$P_RC" "$P_OUT"
 git add .gitignore && git commit -qm control-plane-change
 post_capture
 ck_msg "postbash 抓已 commit 的 .gitignore 改動" 2 ".gitignore" "$P_RC" "$P_OUT"
+
+echo "-- devtalk-guard(PostToolUse Edit|Write;dev-talk 盲原則 + deny 補 obs 事件)--"
+mkdir -p "$T/skills/dev-talk"
+echo "plain content, nothing forbidden here" > "$T/skills/dev-talk/plain.md"
+dt_capture Write skills/dev-talk/plain.md
+ck "devtalk-guard 無洩漏 → 放行" 0 "$DT_RC"
+echo "誤帶 5-tasks 與 gate 字眼(盲原則洩漏)" > "$T/skills/dev-talk/leaky.md"
+dt_capture Write skills/dev-talk/leaky.md
+ck_msg "① devtalk-guard 洩漏 → 擋(既有行為回歸)" 2 "盲原則洩漏" "$DT_RC" "$DT_OUT"
+# ②③ 需要真武裝的 run_id 才能驗事件落盤/obs 壞掉不影響 deny —— $T 主 fixture 全程走
+# legacy start(無 --task),不生 run_id(同 p3/pw 區塊點出的既有限制),故另開最小
+# fixture、手寫 exec-v3 exec.json(仿 p3 區塊寫法,不走 CLI)。
+DTT=$(mktemp -d "${TMPDIR:-/tmp}/devflow-dt-selftest.XXXXXX")
+DTRUN="01JG8C4V2M0000000000000DT0"; DTRUN="run_$DTRUN"
+mkdir -p "$DTT/skills/dev-talk" "$DTT/.devflow"
+( cd "$DTT" && git init -q . && git config user.email t@t && git config user.name t \
+  && git commit --allow-empty -qm init >/dev/null )
+printf '{"schema":"exec-v3","slug":"dt","run_id":"%s","scope":[],"extra":[]}\n' "$DTRUN" \
+  > "$DTT/.devflow/exec.json"
+echo "誤帶 5-tasks 與 gate 字眼(盲原則洩漏)" > "$DTT/skills/dev-talk/leaky.md"
+DT_OUT=$(echo "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$DTT/skills/dev-talk/leaky.md\"}}" \
+  | (cd "$DTT" && "$H/devtalk-guard.sh") 2>&1); DT_RC=$?
+ck_msg "devtalk-guard(獨立 fixture)洩漏仍擋" 2 "盲原則洩漏" "$DT_RC" "$DT_OUT"
+ck "② devtalk-guard deny 落 hook 事件一筆(gate=devtalk-guard)" 0 \
+  "$(grep -q '"gate": "devtalk-guard"' "$DTT/.devflow/runs/$DTRUN/hooks/events-"*.jsonl 2>/dev/null; echo $?)"
+DTBAD=$(mktemp "${TMPDIR:-/tmp}/devflow-dt-badroot.XXXXXX")   # 一般檔案,非目錄 = 不可 mkdir
+DT_OUT=$(echo "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$DTT/skills/dev-talk/leaky.md\"}}" \
+  | (cd "$DTT" && env DEVFLOW_RUNS_ROOT="$DTBAD/x" "$H/devtalk-guard.sh") 2>&1); DT_RC=$?
+ck_msg "③ devtalk-guard obs 通道壞掉(目錄不可寫):deny 判定不變" 2 "盲原則洩漏" "$DT_RC" "$DT_OUT"
+rm -f "$DTBAD"; rm -rf "$DTT"
 
 echo "-- fail-closed --"
 rm -f .devflow/exec.json
