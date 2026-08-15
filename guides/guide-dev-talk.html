@@ -388,7 +388,11 @@ claude          # 建議 opus(規劃層)
     <tr><td>需求很小(改一行)</td><td>徵你同意走精簡模式:快掃現況、發散盲點各一輪帶過,文件照產(短版)</td></tr>
   </table></div>
 
-  <p class="muted">正本規則:<code>~/dev/dev-flow/README.md</code>;skill 本體(單一正本):<code>~/.claude/plugins/local/dev-talk/skills/dev-talk/SKILL.md</code>。<span class="muted">(SKILL 版本以 <code>~/.claude/plugins/local/dev-talk/.claude-plugin/plugin.json</code> 實值為準)</span></p>
+  <p class="muted">正本規則:<code>~/dev/dev-flow/README.md</code>;skill 本體(單一正本):
+  <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/skills/dev-talk/SKILL.md</code>
+  (Windows 對應 <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\skills\dev-talk\SKILL.md</code>)。
+  <span class="muted">(dev-talk 已併入 dev-flow 單一 plugin,不再有獨立 plugin.json;SKILL 版本以同一
+  plugin 的 <code>.claude-plugin/plugin.json</code> 實值為準)</span></p>
 </main>
 <script>
 /* 圖表放大檢視:點圖開全螢幕 overlay,滾輪縮放、拖曳平移、ESC/點背景關閉。

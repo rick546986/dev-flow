@@ -1,7 +1,8 @@
 """parallel-stage6 可執行契約(executable spec)。
 
 定位:文檔校驗器(與 scripts/ 兩支同類),**不是執行引擎** —— 不派工、不碰 git、
-不長駐。plugin runtime(~/.claude/plugins/local/dev-flow/)落地
+不長駐。plugin runtime(已安裝路徑為 ~/.claude/plugins/cache/dev-flow/dev-flow/<version>/,
+見 docs/PLUGIN.md)落地
 parallel 模式時,其 parser/scheduler/gate 行為必須與本檔在
 tests/parallel-stage6/fixtures/ 上完全一致(驗收方式見 notes/change-manifests/execution.md)。
 
