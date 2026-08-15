@@ -236,7 +236,7 @@ CRM order-intake 26 個 T 原本則是把 Verify 寫成多行 ` ```sh ` fenced b
 - `scripts/check-stage67-enforcement.sh`（VF 檢查，:146-176）掃 `example/*/5-tasks.md`
   每個 `- Verify:` 值，含 CJK/全形字元或以 ` ``` ` 開頭即 FAIL；MIN_CHECKS 隨新檢查
   一併調高（25 → 50）。
-- **runtime 不加擋**——裁決記在該守衛檔頂註（:20-27）：採用專案的 Verify 欄含中文
+- **runtime 不加擋**——裁決記在該守衛檔頂註（:163-165）：採用專案的 Verify 欄含中文
   grep 字串（如 `grep -c '訂單已核准'`）是合法用法，機械層加這道檢查會誤殺；本守衛
   只掃母版自己的 `example/`，母版範例本就該是純英文/程式碼指令。
 
@@ -530,7 +530,7 @@ report-system session 發現：母版 2.5.0 的 `_templates/5-tasks.md` 模板�
 
 ### 已採用的修法（2026-08-15）
 
-`_templates/5-tasks.md` 的 `T-2` 範例補齊欄位（`Covers: R-1 / S-2`、
+`_templates/5-tasks.md:169-176` 的 `T-2` 範例補齊欄位（`Covers: R-1 / S-2`、
 `Files: <預計動的檔>`、`Intent: <做完系統多了什麼可觀測行為，一句>`）。
 
 實跑驗證（本輪重新對 `_templates/5-tasks.md` 跑一次 `parse_5_tasks`，非引用 commit
@@ -1484,7 +1484,7 @@ Gauntlet 只驗 Evidence 契約（一份 markdown 有沒有照規矩填），不
 ### 已採用的修法（v3.1.0）
 
 新增 `scripts/check-spec-gate.sh`（G2 機械關卡，五項形狀檢查，`--version` 見 tag）：
-C1 每個 S 都有觀測欄（`_templates/4-spec.md:37` 完成條件、`:78` 欄位形式）、
+C1 每個 S 都有觀測欄（`_templates/4-spec.md:53` 完成條件、`:99` 欄位形式）、
 C2 Verification Profile 節存在且 `lane:`/`Risk:` 可解析、C3 `lane: fast` + `Risk: high`
 無 Owner Call 例外即 FAIL、C4 反模糊掃描（TBD／適當／正確…）、C5 DD 表無殘留「待裁決」。
 已註冊進 `devflow-check.sh`（15 → 16 組）。
