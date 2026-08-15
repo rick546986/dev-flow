@@ -13,11 +13,20 @@
 #   ②活文件不得出現本機開發者的個人 /Users/<name> 絕對路徑。
 #
 # 「活文件」候選清單見下方 SCAN_TARGETS,其中歷史紀錄類(docs/prompts/、
-# docs/dev/4cap-remediation/、docs/dev/HISTORY.md、notes/)預設列在 ALLOWLIST、
-# 不實際掃描 —— 這些是已成事實的會議/決策/移轉紀錄,原樣保留,不因路徑改名回頭校正。
+# docs/dev/4cap-remediation/、docs/dev/HISTORY.md、docs/dev/<feature 過程目錄>、notes/)
+# 預設列在 ALLOWLIST、不實際掃描 —— 這些是已成事實的會議/決策/移轉紀錄,原樣保留,
+# 不因路徑改名回頭校正。
 # ALLOWLIST 只是「候選但豁免」,不是「路徑不存在」:移除其中任一條目,對應目錄就會
 # 併入真掃描(見 test-architecture-guards.sh 的負向案,以及本檔驗收步驟的破壞實驗——
 # 拿掉 notes/ 後對真 repo 重跑必紅,證明守衛真的在掃、不是空轉)。
+#
+# docs/dev/ 底下的分類原則(2026-08-15 補,第三批獨立審查 P1 —— 此前 docs/dev/tools/、
+# docs/dev/STATUS.md、docs/dev/devflow-contract.json、docs/adr/ 完全不在掃描目標也不在
+# 可見豁免清單,對這些路徑塞禁字守衛仍零命中,違反上一段「ALLOWLIST=候選但豁免」的語意):
+#   ①基建與看板(tools/、STATUS.md、devflow-contract.json、README.md 若存在)= 活文件,必掃。
+#   ②feature 過程檔(docs/dev/<feature>/ 各自的 1-discussion~7-review 系列)與
+#     docs/dev/HISTORY.md = 紀錄,豁免且**印出來**(見 scan_targets() 的 HISTORY_CANDIDATES,
+#     豁免到的目錄名逐一列名,不用萬用字元蓋掉,新增 feature 過程目錄需手動加入清單)。
 #
 # 本守衛腳本自己也落在 scripts/ 掃描範圍內,因此全篇**不得出現禁字的連續字面**——
 # 下面用字串相加組出禁字來解釋自己,不留給 grep/本守衛咬到的連續子字串。
@@ -111,6 +120,9 @@ banned = [
 
 # 現行「活文件」目標(README/docs/PLUGIN.md/guides/skills/hooks/scripts/tests/
 # _templates/devflow-contract.json)。
+# docs/dev/tools、docs/dev/STATUS.md、docs/dev/devflow-contract.json、docs/adr、
+# docs/dev/README.md(2026-08-15 補,第三批獨立審查 P1)—— docs/dev 底下的「基建與
+# 看板」類,是活文件,必掃(docs/dev/README.md 目前尚不存在,若存在 ≠ 不掃)。
 ACTIVE_TARGETS = [
     "README.md",
     "docs/PLUGIN.md",
@@ -121,13 +133,24 @@ ACTIVE_TARGETS = [
     "tests",
     "_templates",
     "devflow-contract.json",
+    "docs/dev/tools",
+    "docs/dev/STATUS.md",
+    "docs/dev/devflow-contract.json",
+    "docs/adr",
+    "docs/dev/README.md",
 ]
 
 # 歷史紀錄候選(不是「不存在的路徑」,是「候選但預設豁免」——見 ALLOWLIST)。
+# docs/dev/<feature>/ 的過程目錄逐一列名(1-discussion~7-review 系列是紀錄,不因
+# 併入/改名回頭校正);新增 feature 過程目錄要手動加進本清單,否則會落入
+# ACTIVE_TARGETS 之外、也不在 ALLOWLIST 之內 —— 回到本次要修的「完全不可見」問題,
+# 所以刻意不用萬用字元,逼每次新增都留下這行 diff。
 HISTORY_CANDIDATES = [
     "docs/prompts",
     "docs/dev/4cap-remediation",
     "docs/dev/HISTORY.md",
+    "docs/dev/b8-gate-twin-review-ui",
+    "docs/dev/vnext-runtime",
     "notes",
 ]
 

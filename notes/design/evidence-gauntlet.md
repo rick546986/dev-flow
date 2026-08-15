@@ -198,6 +198,9 @@ hypothesis example store)、逐層執行、fail fast 或明確保存每層狀態
 `Final fresh entry point` 欄指名它。**runtime 派工(dev-run 引擎叫它)在 plugin
 repo,本 repo 只定義此契約 → 外部待辦(manifest)。**
 
+> ⚠️ 2026-08-15 註:本段描述已因 ADR-0001(2026-08-13 外掛併入)失效 —— runtime 現在
+> 就在本 repo hooks/;原文保留供歷史對照。
+
 **文檔方法論層(本 repo 實作,已落地)**:`scripts/devflow-evidence-gauntlet.sh`
 —— 驗一份 7-review(或任何含 Verification Evidence 節的 md)是否遵守 Evidence
 契約:E1 header 四欄、E2 SHA 綁定(比對取宣告值前導 hex token,兩端 **≥7 字元**

@@ -8,6 +8,9 @@
 > runtime(dev-run 派工迴圈、hooks)在 plugin repo
 > `~/.claude/plugins/local/dev-flow/`,本 repo 一律只寫 **interface
 > contract**(§7);待辦清單見 `notes/change-manifests/observability.md`。
+>
+> ⚠️ 2026-08-15 註:本段描述已因 ADR-0001(2026-08-13 外掛併入)失效 —— runtime 現在
+> 就在本 repo hooks/;原文保留供歷史對照。
 
 ## 0. 核心原則
 
@@ -156,6 +159,9 @@ hash 進事件(`context_manifest_hash`),內容不進事件。
   `transcript_ref`(路徑或 hash)。
 
 ## 7. 事件寫入責任(七節;runtime 皆在 plugin repo → interface contract)
+
+> ⚠️ 2026-08-15 註:本節標題「runtime 皆在 plugin repo」已因 ADR-0001(2026-08-13
+> 外掛併入)失效 —— runtime 現在就在本 repo hooks/;原文保留供歷史對照。
 
 | 寫入者 | 事件 | 寫入點契約(外部待辦,詳 manifest) |
 |---|---|---|

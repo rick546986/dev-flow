@@ -6,6 +6,9 @@
 > 本 repo 一行 runtime 程式碼都不含。plugin 側落地清單見
 > `notes/change-manifests/execution.md` 的「外部 plugin 待辦」。
 >
+> ⚠️ 2026-08-15 註:本段描述已因 ADR-0001(2026-08-13 外掛併入)失效 —— runtime 現在
+> 就在本 repo hooks/;原文保留供歷史對照。
+>
 > 機械可驗部分(欄位語意、DAG/Wave、狀態機、gate 檢查、result schema)以
 > `tests/parallel-stage6/contract_ref.py` 為**可執行契約**(executable spec):
 > plugin 實作必須通過同一組 fixtures(`tests/parallel-stage6/fixtures/`)。
@@ -51,9 +54,15 @@ Stage 5 Task DAG
 | model escalation | haiku 錯 1 → sonnet;sonnet 同 T 錯 2 → opus;同 T 上限 4;失敗先分類 SPEC/ENV/IMPL/UNKNOWN | README §5 五律 5 + §9(:301-303) |
 | runtime 在本 repo? | **否**。引擎全在 `~/.claude/plugins/local/dev-flow/`(獨立 repo、無 remote);本 repo `scripts/` 是文檔校驗器 | 00-audit.md「Runtime 所在位置」 |
 
+> ⚠️ 2026-08-15 註:本段描述已因 ADR-0001(2026-08-13 外掛併入)失效 —— runtime 現在
+> 就在本 repo hooks/;原文保留供歷史對照。
+
 推論:runtime 不在本 repo → 本檔寫**精確 external interface contract**;本 repo 只改
 模板(`_templates/5-tasks.md`)、schema、fixtures、可執行契約與設計文件;plugin 側
 逐檔待辦 + 驗收方式列 manifest。**不建立假 runtime**。
+
+> ⚠️ 2026-08-15 註:本段描述已因 ADR-0001(2026-08-13 外掛併入)失效 —— runtime 現在
+> 就在本 repo hooks/;原文保留供歷史對照。
 
 ## 2. 資料契約:5-tasks.md 擴充(全部選配)
 
