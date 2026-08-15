@@ -53,6 +53,11 @@ updated:
 > 0. 角色+防錨定起手:審查者依序:適格人類 reviewer → fresh-context reviewer Agent →
 >    owner 自審(有記錄的最後手段);前兩者皆須 ≠ 實作 owner。先讀
 >    4-spec/5-tasks/diff/測試碼,**此刻禁讀 6-notes 的 Self-Review**。
+>    建議跑 `devflow-exec.sh review <slug>` 武裝機械圍欄③(選配但建議;沒有 runtime
+>    的環境照本節散文紀律):武裝後 Read 本 feature 的 6-implementation-notes.md
+>    (含 .html twin)會被 fail-closed 擋下,直到步 4 執行 review-unlock,防止手滑
+>    提早讀到 Self-Review;Write/Edit 同時限縮到 7-review*/evidence/,避免審查者
+>    順手改到別的 dev-flow 文檔。
 >    ⚠️ **「reviewer ≠ 實作 owner」這條機械上擋不住** —— hook 層沒有身分概念
 >    (沒有 session id、沒有作者歸屬),加一個查 `owner` 欄位的守衛只會被
 >    「打字改個名字」繞過,那比散文更糟(假保證)。真正有效的是**讀取順序**:
@@ -122,7 +127,9 @@ updated:
 >    禁降級任一軸**(防一軸失敗被另一軸掩蓋)。每 F 必引 spec 原文或 diff hunk,
 >    禁無出處結論。完成 = 每 R 有判定、每 F 有鏈且有出處。
 > 4. 對照作者:此刻才讀 6-notes —— 自建矩陣 vs Self-Review 差異逐條裁;Deviations
->    如實?Decisions 有無實為 L2?完成 = 差異全裁定入 Spec Axis。
+>    如實?Decisions 有無實為 L2?若步 0 有武裝圍欄③,先跑
+>    `devflow-exec.sh review-unlock <slug>` 解鎖才讀得到(Write 仍限縮於
+>    7-review*/evidence/,unlock 不解除)。完成 = 差異全裁定入 Spec Axis。
 > 5. Verdict:PASS = 本次 S 全綠+既有全綠+**現象證據逐 S 相符**+Evidence 契約全過
 >    (G3 錨,八點條件正本 README §7;步 2c 的 gauntlet 全綠 + Required 層全 pass
 >    即其機械面)+無 🔴(G3 正本 README §7;無 🔴 是本模板加嚴的出貨門檻,

@@ -69,4 +69,19 @@ if re.search(r"docs/dev/[^\s'\"]*/(1-discussion|2-decision|3-prototype)", cmd):
     _obs_deny("prebash", "upstream_read")
     L.die("⛔ 圍欄②:執行期禁讀上游討論文件(shell 亦同)。"
           "要翻上游 = spec 不完整 → devflow-exec.sh stop → 補 spec → 重審。")
+
+# ③ 圍欄③鏡像(A-11):review 期間 shell 讀本 slug 的 6-notes(cat/head/less/grep/open…)。
+# 與 _guard_impl.py 的 Read 圍欄③同源 —— phase=="review" 且未 review_unlocked 才擋;
+# 缺 phase 鍵(舊 exec.json)時 phase 預設空字串,本段恆不觸發,行為與升版前一致。
+phase = state.get("phase") or ""
+review_unlocked = bool(state.get("review_unlocked"))
+slug = state.get("slug") or ""
+if phase == "review" and not review_unlocked and slug:
+    m = re.search(r"docs/dev/" + re.escape(slug) + r"/6-implementation-notes[^\s'\"]*", cmd)
+    if m:
+        _obs_deny("prebash", "review_self_notes")
+        L.die(f"⛔ 圍欄③:Stage 7 review 期間禁讀 {m.group(0)}(shell 亦同)—— "
+              f"7-review.md 步 4 才准讀 Self-Review(防錨定:先自建矩陣、後讀作者主張)。"
+              f"要解鎖:devflow-exec.sh review-unlock {slug}。")
+
 sys.exit(0)

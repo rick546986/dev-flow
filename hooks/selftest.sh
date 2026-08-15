@@ -24,6 +24,7 @@ ck_msg() { # ck_msg <名稱> <期望exit> <輸出片段> <實際exit> <實際輸
 g() { echo "{\"tool_name\":\"$1\",\"tool_input\":{\"file_path\":\"$T/$2\"}}" | "$H/devflow-guard.sh" >/dev/null 2>&1; echo $?; }
 g_capture() { G_OUT=$(echo "{\"tool_name\":\"$1\",\"tool_input\":{\"file_path\":\"$T/$2\"}}" | "$H/devflow-guard.sh" 2>&1); G_RC=$?; }
 pb() { echo "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"$1\"}}" | "$H/devflow-prebash.sh" >/dev/null 2>&1; echo $?; }
+pb_capture() { PB_OUT=$(echo "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"$1\"}}" | "$H/devflow-prebash.sh" 2>&1); PB_RC=$?; }
 post() { echo '{}' | "$H/devflow-postbash.sh" >/dev/null 2>&1; echo $?; }
 post_capture() { P_OUT=$(echo '{}' | "$H/devflow-postbash.sh" 2>&1); P_RC=$?; }
 x() { ( cd "$T" && "$H/devflow-exec.sh" "$@" >/dev/null 2>&1; echo $? ); }
@@ -232,6 +233,32 @@ ck "放行 scope 內(檔)"        0 "$(g Write src/a.py)"
 ck "放行 scope 內(目錄前綴)"  0 "$(g Write src/lib/deep/x.py)"
 ck "放行 6-notes"              0 "$(g Write docs/dev/f1/6-implementation-notes.md)"
 ck "擋 scope 外"               2 "$(g Write src/other.py)"
+
+echo "-- Stage 7 review 圍欄③(phase=review;A-11)--"
+ck "回歸:舊 exec.json(無 phase 鍵)讀 6-notes 放行(升版前後行為一致)" \
+  0 "$(g Read docs/dev/f1/6-implementation-notes.md)"
+ck "回歸(prebash 鏡像):舊 exec.json(無 phase 鍵)shell cat 6-notes 放行" \
+  0 "$(pb 'cat docs/dev/f1/6-implementation-notes.md')"
+ck "基準:review 武裝前寫 7-review.md 仍受 scope 擋(對照武裝後放行)" \
+  2 "$(g Write docs/dev/f1/7-review.md)"
+ck "devflow-exec.sh review f1 → 武裝圍欄③"    0 "$(x review f1)"
+g_capture Read docs/dev/f1/6-implementation-notes.md
+ck_msg "① review 中讀 6-notes → 擋,訊息指步 4" 2 "步 4" "$G_RC" "$G_OUT"
+pb_capture 'cat docs/dev/f1/6-implementation-notes.md'
+ck_msg "prebash 鏡像①:review 中 shell cat 6-notes → 擋,訊息指步 4 與 review-unlock" \
+  2 "步 4" "$PB_RC" "$PB_OUT"
+ck_msg "prebash 鏡像①訊息含 review-unlock 出口" 2 "review-unlock" "$PB_RC" "$PB_OUT"
+ck "② review 中寫 7-review.md → 放行"          0 "$(g Write docs/dev/f1/7-review.md)"
+ck "review 中寫 evidence/ → 放行"              0 "$(g Write docs/dev/f1/evidence/screenshot.png)"
+g_capture Write docs/dev/f1/5-tasks.md
+ck_msg "③ review 中寫 5-tasks.md → 擋"         2 "圍欄③" "$G_RC" "$G_OUT"
+ck "⑥ review 中寫非 dev-flow 檔(scope 內)恆放行" 0 "$(g Write src/a.py)"
+ck "devflow-exec.sh review-unlock f1 → 解鎖"   0 "$(x review-unlock f1)"
+ck "④ review-unlock 後讀 6-notes → 放行"       0 "$(g Read docs/dev/f1/6-implementation-notes.md)"
+ck "prebash 鏡像②:review-unlock 後 shell cat 6-notes → 放行" \
+  0 "$(pb 'cat docs/dev/f1/6-implementation-notes.md')"
+g_capture Write docs/dev/f1/5-tasks.md
+ck_msg "review-unlock 後寫 5-tasks.md 仍擋(Write 限縮維持)" 2 "圍欄③" "$G_RC" "$G_OUT"
 
 echo "-- prebash 圍欄 --"
 ck "shell 讀上游 → 擋"         2 "$(pb 'cat docs/dev/f1/1-discussion.md')"
@@ -852,10 +879,10 @@ def c_v1_exec():
          f"legacy start 不得帶 v2 欄位:{sorted(d)}")
 
 
-def c_exec_v2():
+def c_exec_v3():
     d = json.load(open(os.path.join(ROOT, ".devflow", "exec.json")))
     h = head()
-    need(d.get("schema") == "exec-v2", "schema")
+    need(d.get("schema") == "exec-v3", "schema")
     need(bool(L.RUN_ID_RE.match(d.get("run_id", ""))), f"run_id={d.get('run_id')}")
     need(d.get("task") == "T-1" and d.get("mode") == "parallel" and d.get("state") == "RUNNING")
     need(d.get("scope") == ["src/a.py"], f"scope={d.get('scope')}(task-scoped = 單 T Files)")
@@ -1096,7 +1123,13 @@ ck_msg "p1 sequential 檔 --task → 拒" 1 "execution.mode: parallel" "$P1X_RC"
 p1x_cap start pf --task T-9
 ck_msg "p1 --task 指不存在 T → 拒"   1 "找不到 T-9" "$P1X_RC" "$P1X_OUT"
 ck "p1 start --task 啟動"            0 "$(p1x start pf --task T-1)"
-ck "p1 exec.json v2 schema+run_id+單 T scope" 0 "$(p1c exec-v2 "$P1T")"
+ck "p1 exec.json v3 schema+run_id+單 T scope" 0 "$(p1c exec-v3 "$P1T")"
+OLDSCHEMA=$(mktemp -d "${TMPDIR:-/tmp}/devflow-oldschema.XXXXXX")
+mkdir -p "$OLDSCHEMA/.devflow"
+printf '%s\n' '{"schema":"exec-v2","slug":"old","task":"T-1","mode":"parallel","scope":["src/a.py"],"extra":[],"baseline":{},"contract_hashes":{},"contract_hash_scope":"repo-wide-v1","wave":{"number":1,"wave_base_sha":"deadbeef"},"candidate_sha":null,"state":"RUNNING","attempt":0,"feature_initial_base":"deadbeef"}' > "$OLDSCHEMA/.devflow/exec.json"
+OLD_OUT=$(cd "$OLDSCHEMA" && "$H/devflow-exec.sh" status 2>&1); OLD_RC=$?
+ck_msg "回歸:舊 exec-v2 schema 字面值仍被 status 辨識為 task-scoped" 0 "task=T-1" "$OLD_RC" "$OLD_OUT"
+rm -rf "$OLDSCHEMA"
 p1x_cap status
 ck_msg "p1 status v2 顯示 task"      0 "task=T-1" "$P1X_RC" "$P1X_OUT"
 ck_msg "p1 status v2 顯示 state"     0 "state=RUNNING" "$P1X_RC" "$P1X_OUT"
@@ -1464,9 +1497,9 @@ mkdir -p "$P3T/.devflow"
 printf '{"slug":"f1","scope":[],"extra":[]}\n' > "$P3T/.devflow/exec.json"
 p3_ev '{"event_type":"run_started","writer":"coordinator","feature_slug":"f1","base_sha":"abc1234"}'
 ck_msg "p3 event v1 旗標無 run_id → 明確錯誤" 1 "exec-v2" "$P3_RC" "$P3_OUT"
-printf '{"schema":"exec-v2","slug":"f1","run_id":"%s","scope":[],"extra":[]}\n' "$P3RUN" > "$P3T/.devflow/exec.json"
+printf '{"schema":"exec-v3","slug":"f1","run_id":"%s","scope":[],"extra":[]}\n' "$P3RUN" > "$P3T/.devflow/exec.json"
 p3_ev '{"event_type":"run_started","writer":"coordinator","feature_slug":"f1","base_sha":"abc1234"}'
-ck_msg "p3 event v2 落盤成功" 0 "run_started" "$P3_RC" "$P3_OUT"
+ck_msg "p3 event v3 落盤成功" 0 "run_started" "$P3_RC" "$P3_OUT"
 ck "p3 coordinator events.jsonl 落盤" 0 "$(test -s "$P3T/.devflow/runs/$P3RUN/coordinator/events.jsonl"; echo $?)"
 ck "p3 run manifest 含 OC-5 六必填" 0 "$(p3_json_has "$P3T/.devflow/runs/$P3RUN/manifest.json" manifest; echo $?)"
 p3_ev '{"event_type":"nonsense_event","writer":"coordinator"}'
@@ -1533,7 +1566,7 @@ ck "p3 prune 刪除過期 run" 0 "$P3_RC"
 ck "p3 prune 後 run 已移除" 1 "$(test -d "$P3T/ledger/runs/$P3REPO/$P3RUN"; echo $?)"
 printf '%s\n' '{"devflow_contract_version": "2.0.0",' \
   ' "required_runtime_capabilities": ["attempt_ledger"],' \
-  ' "schema_versions": {"agent_event": "1.1", "context_manifest": "1.0", "prompt_registry": "1.0", "exec_state": "exec-v2"}}' > "$P3T/contract-ok.json"
+  ' "schema_versions": {"agent_event": "1.1", "context_manifest": "1.0", "prompt_registry": "1.0", "exec_state": "exec-v3"}}' > "$P3T/contract-ok.json"
 printf '%s\n' '{"supported_contract_versions": ["2.0.0"], "runtime_version": "2.5.0", "capabilities": ["attempt_ledger"]}' > "$P3T/caps-ok.json"
 printf '%s\n' '{"supported_contract_versions": ["1.2.0"], "runtime_version": "1.9.0", "capabilities": ["attempt_ledger"]}' > "$P3T/caps-old.json"
 printf '%s\n' '{"devflow_contract_version": "2.0.0",' \
@@ -1701,7 +1734,7 @@ ck_msg "pw event 分派可達:壞 JSON → 非 0" 1 "JSON" "$PW_RC" "$PW_OUT"
 PWCON=$(mktemp "${TMPDIR:-/tmp}/devflow-pw-contract.XXXXXX")   # 放 repo 外,免污染工作樹
 printf '%s\n' '{"devflow_contract_version": "2.0.0",' \
   ' "required_runtime_capabilities": ["task_scoped_guard", "parallel_wave_execution", "candidate_gate", "attempt_ledger", "final_fresh_run", "operational_demo_gate"],' \
-  ' "schema_versions": {"agent_event": "1.1", "context_manifest": "1.0", "prompt_registry": "1.0", "exec_state": "exec-v2"}}' > "$PWCON"
+  ' "schema_versions": {"agent_event": "1.1", "context_manifest": "1.0", "prompt_registry": "1.0", "exec_state": "exec-v3"}}' > "$PWCON"
 PW_OUT=$( (cd "$PWT" && DEVFLOW_CONTRACT="$PWCON" DEVFLOW_GATE_CMD=true "$H/devflow-exec.sh" doctor) 2>&1 ); PW_RC=$?
 ck_msg "pw doctor 分派可達(devflow-exec.sh doctor)" 0 "devflow doctor" "$PW_RC" "$PW_OUT"
 ck_msg "pw doctor 六 capability 全數聲明" 0 "全數聲明" "$PW_RC" "$PW_OUT"
@@ -1727,7 +1760,7 @@ P4DT=$(mktemp -d "${TMPDIR:-/tmp}/devflow-p4-contract.XXXXXX")
 mkdir -p "$P4DT/docs/dev"
 printf '%s\n' '{"devflow_contract_version": "2.0.0",' \
   ' "required_runtime_capabilities": ["attempt_ledger"],' \
-  ' "schema_versions": {"agent_event": "1.1", "context_manifest": "1.0", "prompt_registry": "1.0", "exec_state": "exec-v2"}}' > "$P4DT/docs/dev/devflow-contract.json"
+  ' "schema_versions": {"agent_event": "1.1", "context_manifest": "1.0", "prompt_registry": "1.0", "exec_state": "exec-v3"}}' > "$P4DT/docs/dev/devflow-contract.json"
 P4_OUT=$( (cd "$P4DT" && DEVFLOW_GATE_CMD=true "$H/devflow-exec.sh" doctor) 2>&1 ); P4_RC=$?
 ck_msg "p4_doctor 無明示指定 → 用 docs/dev 散發副本" 0 "docs/dev/devflow-contract.json" "$P4_RC" "$P4_OUT"
 rm -f "$P4DT/docs/dev/devflow-contract.json"

@@ -150,7 +150,7 @@ def run_doctor(root, contract_path="", gate_cmd=""):
             except Exception:
                 have_exec = None
             if have_exec == want_exec:
-                check(True, "exec-state", f"{have_exec}(exec-v2 已武裝)")
+                check(True, "exec-state", f"{have_exec}(已武裝)")
             else:
                 info("exec-state",
                      f"legacy compatibility mode —— exec.json 為 v1"
