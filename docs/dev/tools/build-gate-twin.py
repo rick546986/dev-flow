@@ -48,7 +48,10 @@ PINNED_PAT = re.compile(
 # 寫的「藏起來等於沒審」矛盾,而且是 dogfood 修過的同一種 bug 只修了一站。)
 
 INLINE_MD = re.compile(r"`([^`]+)`|\*\*([^*]+)\*\*")
-H_ANY = re.compile(r"^(#{2,6})\s+(.*?)\s*$", re.M)
+# ⚠️ 用 `[ \t]` 不用 `\s` —— `\s` 含換行,標題後若全是空白(fence 遮蔽後就是這樣)
+# 會跨行吃到很遠,整節 body 變空字串再被靜默丟掉(2026-08-15 二次複審 P4,
+# 已實際發生在出貨的 7-review.html:`## 變更架構圖` 整節不見)。
+H_ANY = re.compile(r"^(#{2,6})[ \t]+([^\n]*?)[ \t]*$", re.M)
 S_HEAD = re.compile(r"^#{2,6}\s*(S-\S+)\s*(.*)$", re.M)
 R_HEAD = re.compile(r"^#{2,6}\s*(R-\d+)\s*[:：·]?\s*(.*)$", re.M)
 FIELD = {
@@ -74,24 +77,46 @@ def inline(text):
     return "".join(out)
 
 
-def mask_fenced(md):
-    """把 ``` 圍起來的區塊換成等長空白,讓標題/欄位 regex 掃不到裡面的假標題。
+FENCE_OPEN = re.compile(r"^(?P<indent> {0,3})(?P<mark>`{3,}|~{3,})(?P<info>[^\n]*)$")
 
-    位移完全保留(等長替換),所以所有 regex 的 index 仍可直接切原文。
-    起因(2026-08-15 獨立審查 H4):`## Test Skeletons` 裡的程式碼範例寫了
-    `### R-9`/`#### S-9.1`,結果被當成真標題 —— 多出一張幻影卡污染進度分母,
-    而且整節被「body 含 R/S 就跳過」的規則靜默刪掉,C3「內容零刪減」直接破功。
+
+def mask_fenced(md):
+    """把 fenced code block 換成等長空白,讓標題/欄位 regex 掃不到裡面的假標題。
+
+    位移完全保留(等長替換),所以在遮蔽版上取到的 index 可直接切原文。
+
+    支援(2026-08-15 二次複審 P1/P2/P3 逐條補上):
+      - ``` 與 ~~~ 兩種圍欄
+      - **任意長度 ≥3**;關閉圍欄必須「同種類且不短於」開啟的那個 ——
+        四個反引號包三個反引號是合法巢狀,前綴 toggle 會 parity 反轉、內層不被遮蔽
+        (本 repo 自己就有這種寫法)
+      - 開啟行的語言標籤(```python)
+      - 最多三格縮排
+      - **未閉合的圍欄**:只遮到檔尾,但**不吃掉 frontmatter 之外的東西**
+        —— 呼叫端若把 frontmatter 接在 md 後面,要各自遮蔽再接(見 main)
     """
-    out, fenced = [], False
-    for ln in md.splitlines(keepends=True):
-        if ln.lstrip().startswith("```"):
-            fenced = not fenced
-            out.append(" " * (len(ln) - 1) + "\n" if ln.endswith("\n") else " " * len(ln))
-            continue
-        if fenced:
-            out.append(" " * (len(ln) - 1) + "\n" if ln.endswith("\n") else " " * len(ln))
-        else:
+    lines = md.splitlines(keepends=True)
+    out, closer = [], None
+
+    def blank(ln):
+        return (" " * (len(ln) - 1) + "\n") if ln.endswith("\n") else " " * len(ln)
+
+    for ln in lines:
+        body = ln.rstrip("\r\n")
+        if closer is None:
+            m = FENCE_OPEN.match(body)
+            # info string 不得含圍欄字元(``` 後面接 ``` 不是合法 opener)
+            if m and m.group("mark")[0] not in m.group("info"):
+                closer = (m.group("mark")[0], len(m.group("mark")))
+                out.append(blank(ln))
+                continue
             out.append(ln)
+        else:
+            ch, n = closer
+            stripped = body.strip()
+            if stripped and set(stripped) == {ch} and len(stripped) >= n:
+                closer = None
+            out.append(blank(ln))
     return "".join(out)
 
 
@@ -351,8 +376,9 @@ _ANCHOR_SEEN = {}
 def anchor_id(title):
     """章節標題 → 穩定的 html id(給動線格跳轉用)。撞名補序號(複審 N6)。"""
     base = "sec-" + re.sub(r"[^0-9a-zA-Z\u4e00-\u9fff]+", "-", title).strip("-")[:48]
-    if _ANCHOR_SEEN.get(base) == title:
-        return base                      # 同一個標題,同一個 id(冪等)
+    for k, v in _ANCHOR_SEEN.items():
+        if v == title:
+            return k                     # 同一個標題永遠同一個 id(冪等,不論被呼叫幾次)
     if base in _ANCHOR_SEEN:
         i = 2
         while f"{base}-{i}" in _ANCHOR_SEEN:
@@ -375,7 +401,6 @@ def _headline(text, limit=30):
 
 
 def dash_cells(stage, md, n_items, n_bad, secs):
-    md_scan = mask_fenced(md)   # 計數一律掃遮蔽版(複審 N2)
     """五格內容依 stage 不同(README §6 的表)。**格數固定五格,每格都要有跳轉目標**。
 
     回 [(標籤, 值, 註, 錨點), ...]。錨點是章節標題或固定 id;main 會檢查目標
@@ -491,6 +516,14 @@ def main(argv):
         return 2
 
     md = re.sub(r"\A---\n.*?\n---\n", "", src.read_text(encoding="utf-8"), flags=re.S)
+    # 未閉合的 fence 會把其後全部內容吃成程式碼(規則正確,但不得靜默 —— 二次複審 P3)
+    _mk = mask_fenced(md)
+    swallowed = sum(1 for a, b in zip(md.splitlines(), _mk.splitlines())
+                    if a.strip() and not b.strip())
+    if swallowed and len(re.findall(r"^\s{0,3}(?:`{3,}|~{3,})", md, re.M)) % 2 == 1:
+        print(f"⚠️  偵測到**未閉合**的 code fence:其後 {swallowed} 行非空內容被當成程式碼,"
+              f"不會進待審區也不會進背景資料。請補上收尾的 ``` 或 ~~~。", file=sys.stderr)
+
     fm = re.match(r"\A---\n(.*?)\n---\n", src.read_text(encoding="utf-8"), flags=re.S)
     fm_text = fm.group(1) if fm else ""
     secs = sections(md)
@@ -535,8 +568,11 @@ def main(argv):
         # 判準用**已渲染的 R id**,不是任何長得像 R/S 的字 —— 否則
         # `## Known limits` 底下寫一個 `### S-1 的已知限界` 就會讓整節連同內容消失,
         # 而且一個字都不印(2026-08-15 複審 N3)。
-        if stage == "4-spec" and rendered_rids and all(
-                rid in masked for rid in rendered_rids):
+        # 判準:該節底下**直接就是那些 R 的標題行**(例:`## ADDED Requirements`)。
+        # 不能用「內文提到 R-1」—— 那會讓任何提到需求編號的背景節整段消失,
+        # 而且 `R-1 in "R-10"` 還會子字串誤中(2026-08-15 二次複審 N3)。
+        heads_here = {m.group(1) for m in R_HEAD.finditer(masked)}
+        if stage == "4-spec" and rendered_rids and heads_here >= set(rendered_rids):
             dropped.append(title)
             continue
         if PINNED_PAT.search(title):
@@ -551,7 +587,7 @@ def main(argv):
     if dropped:
         print(f"NOTE: 以下父節的內容已整段渲染成卡片,不重複顯示:{dropped}", file=sys.stderr)
 
-    raw_cells = dash_cells(stage, md + "\n" + fm_text, n_items, n_bad, secs)
+    raw_cells = dash_cells(stage, fm_text + "\n" + md, n_items, n_bad, secs)
     have_ids = {anchor_id(title) for _l, title, _b in secs} | {"cards", "top"}
     cells = "".join(
         f'<a class="cell" href="{a if a.lstrip("#") in have_ids else "#cards"}">'

@@ -77,10 +77,13 @@ for st in STAGES:
     check(local.count('class="s-card') > 0 and 'id="done"' in local,
           "  T2 待審項目逐條可勾 + 進度計數")
     # 卡片殼在但內容全空 = 審查者什麼也看不到,而只數卡片數的斷言照樣過(複審缺口 E)
-    if st == "4-spec":
-        empty_bodies = len(re.findall(r'<div class="gwt"></div>', local))
-        check(empty_bodies == 0, "  T2 卡片內容不得為空(GIVEN/WHEN/THEN 被砍空要現形)",
-              f"{empty_bodies} 張空卡")
+    n_cards = len(re.findall(r'<article class="s-card', local))
+    empty_bodies = len(re.findall(r'<div class="gwt"></div>', local))
+    # 三站都驗:卡片殼在但內容全空 = 審查者什麼都看不到,而只數卡片數的斷言照樣過。
+    # 7-review 的 Exit Checklist 卡本來就只有標題,故允許「部分」空,但不得全空。
+    check(n_cards > 0 and empty_bodies < n_cards,
+          "  T2 卡片內容不得全空(欄位被砍空要現形)",
+          f"{empty_bodies}/{n_cards} 張空卡")
     check('<details class="doc"' in local, "  T3 背景資料收進 details")
     # M10 修了但當時沒有守衛,退回缺陷態不會被抓(複審缺口 F)
     check(all(k in local for k in ('class="progress-in"', 'class="count"',
@@ -95,7 +98,7 @@ for st in STAGES:
           f"{st}:T7 每個錨點都有對應目標",
           f"落空:{[h for h in hrefs if h not in ids]}")
     # 全部指向同一個(例如都退化成 #cards)= 等於沒有跳轉,但「解析得到」照樣成立
-    check(len(set(hrefs)) >= 3, f"{st}:T7 五格指向不同段落(不得全部退化成同一個)",
+    check(len(set(hrefs)) >= 4, f"{st}:T7 五格指向不同段落(不得退化成少數幾個)",
           f"只指向 {sorted(set(hrefs))}")
     check(bool(SHELL.search(local)) and not SHELL.search(art),
           "  T4 兩種殼:本機版完整文件、artifact 片段無外殼",
@@ -131,6 +134,63 @@ for st in STAGES:
     check(keys == EXPECT_KEYS.get(st, set()), f"{st}:五格標籤與 README §6 逐字一致",
           f"多 {sorted(keys - EXPECT_KEYS[st])} / 少 {sorted(EXPECT_KEYS[st] - keys)}")
 
+print("-- G\u2032/G\u2033 跨檔規格一致:README §6 vs 三份模板頂註 --")
+# N4 的根因:規格同時寫在 README §6 與三份模板頂註,兩邊不一致時沒有任何檢查。
+# 把模板改回舊值 → 必須紅(2026-08-15 二次複審 G\u2033)。
+TPL = {"2-decision": "_templates/2-decision.md", "4-spec": "_templates/4-spec.md",
+       "7-review": "_templates/7-review.md"}
+
+
+def tpl_keys(path):
+    txt = (ROOT / path).read_text(encoding="utf-8")
+    m = re.search(r"^>\s*\|\s*1\s*\|\s*\*\*動線頂區五格\*\*[^|]*\|(.+?)\|\s*$", txt, re.M)
+    if not m:
+        return set()
+    cell = re.sub(r"`[^`]*`", "``", m.group(1))
+    cell = re.sub(r"——.*$", "", cell)
+    return {re.split(r"[(（]", c)[0].strip().strip("*` ")
+            for c in cell.split("/") if c.strip()}
+
+
+for st in STAGES:
+    tk = tpl_keys(TPL[st])
+    check(tk == EXPECT_KEYS.get(st, set()),
+          f"{st}:模板頂註的五格與 README §6 逐字一致",
+          f"模板 {sorted(tk)} vs README {sorted(EXPECT_KEYS.get(st, set()))}")
+
+print("-- P4 回歸:整節只有一個 code fence 的章節不得消失 --")
+p4 = TMP / "p4/docs/dev/demo"
+p4.mkdir(parents=True)
+FENCE = "`" * 3
+(p4 / "4-spec.md").write_text(f"""---
+stage: 4-spec
+status: draft
+---
+
+# 4
+
+## ADDED Requirements
+
+### R-1: x
+#### S-1
+- GIVEN a
+- WHEN b
+- THEN c
+- 觀測:d
+
+## 變更架構圖
+
+{FENCE}
+一張只有程式碼區塊的圖 CANARY-P4
+{FENCE}
+""", encoding="utf-8")
+r = run(TMP / "p4", "demo", "4-spec")
+check(r.returncode == 0, "只有 fence 的章節:產得出來")
+if r.returncode == 0:
+    pt = (p4 / "4-spec.html").read_text(encoding="utf-8")
+    check("CANARY-P4" in pt, "只有 fence 的章節不得整節消失",
+          "該節被靜默丟掉(H_ANY 的 \\s 跨行吃掉了 body)")
+
 print("-- H2 負向:背景資料「內容零刪減」要真的被驗 --")
 # fixture 的每個非卡片章節都埋了 CANARY-n;渲染函式若被改成 return "",這裡必紅。
 shutil.copytree(ROOT / "scripts/fixtures/gate-twin/zero-deletion", TMP / "zd")
@@ -141,7 +201,7 @@ if r.returncode == 0:
     missing = [f"CANARY-{i}" for i in range(1, 6) if f"CANARY-{i}" not in zt]
     check(not missing, "背景資料內容零刪減(5 個 canary 全在)", f"不見了:{missing}")
     check(zt.count('class="s-card') == 1,
-          "程式碼區塊裡的假標題不得產生幻影卡", f"卡數 {zt.count(chr(115)+chr(45)+chr(99)+chr(97)+chr(114)+chr(100))}")
+          "程式碼區塊裡的假標題不得產生幻影卡", f"卡數 {len(re.findall(chr(99)+chr(108)+chr(97)+chr(115)+chr(115)+chr(61)+chr(34)+chr(115)+chr(45)+chr(99)+chr(97)+chr(114)+chr(100), zt))}")
     check("S-9.1" not in zt.split("背景資料")[0], "幻影卡 S-9.1 不在待審區")
 
 print("-- T6 置頂節:判定與其前提不得被摺疊 --")
