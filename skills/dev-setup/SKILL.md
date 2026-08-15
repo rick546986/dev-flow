@@ -34,11 +34,21 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 
 ## install(fresh)
 
-1. `docs/dev/` 建立:cp 方法論 `${CLAUDE_PLUGIN_ROOT}/README.md` → `docs/dev/README.md`、
+1. `docs/dev/` 建立:cp 方法論 `${CLAUDE_PLUGIN_ROOT}/README.md` 後**剝除 master-only 區塊**
+   再落地為 `docs/dev/README.md`(不得直接 cp 未剝除版 —— 母版 README 內
+   `<!-- devflow:master-only:start -->` / `<!-- devflow:master-only:end -->` 之間是純母版
+   repo 導覽,對散發專案是死引用):
+   ```
+   sed -n '/<!-- devflow:master-only:start -->/,/<!-- devflow:master-only:end -->/!p' \
+     "${CLAUDE_PLUGIN_ROOT}/README.md" > docs/dev/README.md
+   ```
    `_templates/` → `docs/dev/_templates/`、**`devflow-contract.json` →
    `docs/dev/devflow-contract.json`**(版本握手契約;doctor 無 `--contract`/
    `$DEVFLOW_CONTRACT` 明示時在此找,缺件必 fail-closed);從模板建 `STATUS.md`;
    repo root 無 `CONTEXT.md` 則從模板建。
+   **基準快照**:同時把剛落地的 `docs/dev/README.md`(已剝除版)、`_templates/*`、
+   `devflow-contract.json` 各存一份到 `docs/dev/.devflow-baseline/`——upgrade 段的
+   三方比對(母版改寫 vs 本地客製)靠這份快照當「上游舊」,見 upgrade 段。
    **改版歷史**:`mkdir -p docs/adr`(長期決策一決策一檔;編號唯一性由
    `check-adr-integrity.sh` 驗)、`docs/dev/HISTORY.md` 不存在則從
    `_templates/HISTORY.md` 建(只增不改的索引);並比照 gauntlet 散發寫入口
@@ -101,6 +111,29 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
   (gauntlet 腳本;覆蓋後重跑 install 步 6 的可執行驗證)與
   `docs/dev/devflow-contract.json`(版本握手契約;覆蓋後重跑 check 第 10 項)——
   先 diff 摘要給使用者過目。
+- **diff 摘要必須分兩類,不得只給一份「新舊不同」清單**(否則使用者按下「全部
+  升級」時看不到自己的在地修改要被沖掉):
+  ①**母版改寫**(上游更新):本地內容 = 上次 install/upgrade 留下的原樣,使用者
+  沒碰過 —— 可隨 upgrade 直接覆蓋,列摘要即可。
+  ②**本地客製將被還原**(受管檔在地內容 ≠ 上游舊版 = 使用者自己改過):
+  **逐檔單獨列出「本地現況」與「即將覆蓋成的新內容」,徵得使用者明確同意**
+  才可覆蓋該檔,不得併入①的摘要一筆帶過。
+  **判別法(三方比對)**:上游舊 blob(見下)、上游新 blob(這次
+  `${CLAUDE_PLUGIN_ROOT}/README.md` 剝除 master-only 區塊後的內容,或
+  `_templates/`/gauntlet 腳本/`devflow-contract.json` 原始內容)、本地現況
+  (`docs/dev/` 對應檔案現況)——**本地現況 ≠ 上游舊 blob ⇒ 判定客製**,即使本地
+  現況恰好與上游新 blob 相同也要列出(可註記「與新版一致,覆蓋無影響」,
+  但仍需在②分類下出現,不得靜默歸進①)。
+  **上游舊 blob 的來源**:每次 install/upgrade 成功覆蓋後,把當下已剝除
+  master-only 區塊的內容另存一份快照到 `docs/dev/.devflow-baseline/`
+  (`README.md`、`_templates/*`、gauntlet 腳本、`devflow-contract.json` 各一份)——
+  下次 upgrade 讀這份快照當「上游舊」,不得拿本地現況去猜。首次 install 無快照
+  可比,全部視為①;install 步驟本身也要建立這份快照(見 install 步 1)。
+- **check 第 6 項的 diff 比對基準同步套用剝除規則**:比對母版時一律先對
+  `${CLAUDE_PLUGIN_ROOT}/README.md` 跑與 install 步 1 相同的 sed 剝除管線再 diff,
+  即 `diff <(sed -n '/<!-- devflow:master-only:start -->/,/<!-- devflow:master-only:end -->/!p' "${CLAUDE_PLUGIN_ROOT}/README.md") docs/dev/README.md`
+  ——不得直接對未剝除的母版原檔跑 diff,否則 master-only 區塊本身的存在
+  就會被判定成「每次都 stale」的假漂移。
 - **絕不動 `docs/dev/<slug>/` 已產出的 feature 檔**與 STATUS/CONTEXT/rules。
 
 ## refresh(使用者說「重掃 rules」「rules 過期了」「更新架構規則」)
@@ -155,7 +188,10 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
    (`CLAUDE_PLUGIN_ROOT` 未設時用 dev-flow plugin root 的 `skills/dev-talk/` 子目錄;
    **不寫死 `~/.claude/plugins/local/dev-talk/`** —— 併入單一 plugin 後該路徑與獨立
    marketplace entry 皆不存在)。
-6. 專案面(在專案內跑時):docs/dev/README 與模板版本 vs 母版 diff;`.devflow/exec.json`
+6. 專案面(在專案內跑時):docs/dev/README 與模板版本 vs 母版 diff——**README 比對
+   基準是剝除 master-only 區塊後的母版內容,不是母版原檔**(比對管線同 upgrade
+   段:`diff <(sed -n '/<!-- devflow:master-only:start -->/,/<!-- devflow:master-only:end -->/!p' "${CLAUDE_PLUGIN_ROOT}/README.md") docs/dev/README.md`;
+   對原檔直接 diff 會把 master-only 區塊本身的存在誤判成假 stale);`.devflow/exec.json`
    陳年旗標(>24h 警告);舊 skills 目錄殘留(`~/.claude*/skills/dev-{talk,flow,setup}`)。
    模板檢查說明:4-spec 模板含 Verification Profile 節後(VNext),lane 依規則填 ——
    Full 完整 Profile、Fast 最小 Profile(`Risk: normal`/`Verify:`/`Negative
