@@ -199,6 +199,39 @@ def run_doctor(root, contract_path="", gate_cmd=""):
                       f"contract {want_gauntlet} / 散發副本 {have_g} 不一致;"
                       f"fail-closed —— 跑 dev-setup 重散發 tools/。")
 
+            # 6b'. B-4:ROOT 解析探測 —— 只比對 --version 字串測不出散發副本因
+            # 目錄深度不同(母版 scripts/ 對散發 docs/dev/tools/)造成的 ROOT
+            # 計算差異。只在 --version 有回應(have_g is not None)時才跑,避免
+            # 同一支壞掉的散發副本疊報兩條錯誤(那條已由上面的 gauntlet 檢查涵蓋)。
+            if have_g is not None:
+                root_out, root_detail = None, ""
+                try:
+                    rr = subprocess.run(["bash", gpath, "--print-root"],
+                                       capture_output=True, text=True, timeout=30)
+                    rout = (rr.stdout or "").strip()
+                    if rr.returncode == 0 and rout:
+                        root_out = rout
+                    else:
+                        root_detail = (rr.stderr or rout or "無輸出").strip().splitlines()[0]
+                except Exception as e:
+                    root_detail = str(e)
+                want_root = os.path.realpath(os.path.join(root, "docs", "dev")).rstrip("/")
+                if root_out is None:
+                    check(False, "gauntlet-root",
+                          f"散發副本不支援 --print-root 或不可執行({root_detail});"
+                          f"舊版腳本,fail-closed —— 跑 dev-setup 重散發 tools/。")
+                else:
+                    got_root = os.path.realpath(root_out).rstrip("/")
+                    if got_root == want_root:
+                        check(True, "gauntlet-root",
+                              f"散發副本解析根 {got_root} = 受測專案 docs/dev"
+                              f"(--print-root 實跑)")
+                    else:
+                        check(False, "gauntlet-root",
+                              f"散發副本解析根 {got_root} ≠ 受測專案 docs/dev "
+                              f"{want_root} —— ROOT 解析可能因目錄深度或散發位置跑掉;"
+                              f"fail-closed —— 跑 dev-setup 重散發 tools/。")
+
     # 6c. wave_review schema(M3:契約 vs runtime-capabilities 聲明;
     #     runtime 實際字串 = devflow-lib wave review 驗證所認 schema)
     want_wr = contract_schemas.get("wave_review")

@@ -392,6 +392,11 @@ if cmd == "start":
             "run_id": run_id,
             "mode": parsed["execution"]["mode"],
             "task": task,
+            # A-6:task-scoped 武裝的 exec.json 就是這個 T 的守衛狀態,派工者
+            # 讀這份物件即可拿到 boundaries/intent(不必回頭重讀 5-tasks)。
+            "boundaries": tdef["boundaries"],
+            "intent": tdef["intent"],
+            "owner": tdef["owner"],
             "wave": {"number": wave_no, "wave_base_sha": wave_base},
             "candidate_sha": None,
             "state": "RUNNING",
@@ -574,8 +579,12 @@ elif cmd == "plan":
            "waves": waves,
            "execution_edges": sorted([a, b] for a, b in L.execution_edges(parsed)),
            "integration_edges": sorted([a, b] for a, b in L.integration_edges(parsed)),
+           # A-6:plan 是派工者(人/主模型)拿 5-tasks 派工 Packet 資訊的入口之一
+           # —— boundaries/intent/owner 現在真的露出來,不再解析後就丟棄。
            "tasks": {t["id"]: {"risk": t["risk"], "review_mode": t["review_mode"],
-                               "files": t["files"], "verify": t["verify"]}
+                               "files": t["files"], "verify": t["verify"],
+                               "boundaries": t["boundaries"], "intent": t["intent"],
+                               "owner": t["owner"]}
                      for t in parsed["tasks"]}}
     print(json.dumps(out, ensure_ascii=False, indent=1))
 

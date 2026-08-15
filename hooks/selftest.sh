@@ -488,7 +488,8 @@ F = {
         "- Blocked-by: —",
         "- Boundaries: 查詢邏輯抽在 `service.ListExpiring`。",
         "  Design Boundary(摘自 4-spec,只取本 T 相關的最小子集):可動 handler／service／read repo;",
-        "  依賴方向單向 handler → service → repo,禁反向;本 T 不擁有 contracts(唯讀)。", ""]),
+        "  依賴方向單向 handler → service → repo,禁反向;本 T 不擁有 contracts(唯讀)。",
+        "- Owner: alice", ""]),
     "badmode": md(["mode: turbo"], [("T-1", "甲", BASET)]),
     "unknownkey": md(["mode: parallel", "max_parallel: 3"], [("T-1", "甲", BASET)]),
     "highwave": md(["mode: parallel"], [("T-1", "甲", BASET + [("Risk", "high"), ("Review-mode", "wave")])]),
@@ -603,6 +604,11 @@ def c_parse_boundshadow():
     need(t["T-1"]["verify"] == "go test ./internal/... -run TestExpiring", t["T-1"]["verify"])
     need(t["T-2"]["risk"] == "normal" and t["T-2"]["review_mode"] != "dedicated",
          f"{t['T-2']['risk']}/{t['T-2']['review_mode']}")
+    # A-6:即便續行遮蔽觸發 fail-closed,Boundaries/Intent 首筆值本身仍要進 task
+    # dict(不因後面被判為重複保留欄而整欄消失)。
+    need(t["T-1"]["boundaries"] == "查詢邏輯抽在 `service.ListExpiring`。",
+         t["T-1"]["boundaries"])
+    need(t["T-2"]["intent"] == "dashboard 多了到期卡片。", t["T-2"]["intent"])
 
 
 def c_parse_boundcont():
@@ -613,6 +619,9 @@ def c_parse_boundcont():
     need(t["files"] == ["internal/handler/contract.go", "internal/service/contract.go"],
          str(t["files"]))
     need(t["verify"] == "go test ./internal/... -run TestExpiring", t["verify"])
+    # A-6:Boundaries/Intent/Owner 現在真的進 task dict,不再解析後就丟棄。
+    need(t["boundaries"] == "查詢邏輯抽在 `service.ListExpiring`。", t["boundaries"])
+    need(t["owner"] == "alice", t["owner"])
 
 
 def c_parse_parallel():
@@ -778,6 +787,35 @@ def c_gate_missing_sid():
                 "FAIL", {"s_id_present"})
 
 
+def c_sids_of_dotted():
+    """A-2 ①:_s_ids_of 對點號分層 covers 非恆空(母版/實務慣例寫法,不帶連字號)。
+    範圍寫法 S1.1–S1.4 只抓兩端點,不展開成 S1.2/S1.3(known limitation)。"""
+    ids = G._s_ids_of("R1 / S1.1–S1.4、S2.5")
+    need(ids == ["S1.1", "S1.4", "S2.5"], str(ids))
+
+
+def c_sids_of_legacy():
+    """A-2 ④:舊形 S-13(連字號、無點)仍通。"""
+    need(G._s_ids_of("R1 / S-13") == ["S-13"], str(G._s_ids_of("R1 / S-13")))
+
+
+def c_gate_sid_dotted_present():
+    """A-2 ②:S1.1/S1.4/S2.5 都有對應測試名(底線續寫或原樣皆可)→ s_id_present
+    True,gate 整體 PASS。"""
+    gate_expect(gate_bundle(**{
+        "task.s_ids": ["S1.1", "S1.4", "S2.5"],
+        "candidate.test_names": ["Test_S_1_1_ok", "TestS1_4_ok", "Test_S_2_5_ok"],
+    }), "PASS", set())
+
+
+def c_gate_sid_dotted_missing():
+    """A-2 ③:少一條測試名(S2.5 沒有對應測試)→ s_id_present False。"""
+    gate_expect(gate_bundle(**{
+        "task.s_ids": ["S1.1", "S1.4", "S2.5"],
+        "candidate.test_names": ["Test_S_1_1_ok", "TestS1_4_ok"],
+    }), "FAIL", {"s_id_present"})
+
+
 def c_gate_schema_incomplete():
     gate_expect(gate_bundle(**{"candidate.prompt_version": "__DEL__",
                                "candidate.test_names": "__DEL__"}),
@@ -826,6 +864,12 @@ def c_exec_v2():
     for k in ("slug", "started", "scope", "extra", "baseline", "contract_hashes",
               "contract_hash_scope"):
         need(k in d, f"缺 v1 相容欄位 {k}")
+    # A-6:task-scoped exec.json 是派工者拿 boundaries/intent 的最小露出點之一,
+    # 不必回頭重讀 5-tasks。
+    need(d.get("boundaries") == "只能動 `src/a.py`,不得動其他檔。",
+         f"boundaries={d.get('boundaries')!r}")
+    need(d.get("intent") == "補上最小 API 回應。", f"intent={d.get('intent')!r}")
+    need(d.get("owner") == "alice", f"owner={d.get('owner')!r}")
 
 
 def c_parallel_init():
@@ -845,6 +889,14 @@ def c_plan():
     need(out["waves"] == [["T-1", "T-2"], ["T-3"]], str(out["waves"]))
     need(["T-1", "T-2"] in out["integration_edges"], str(out["integration_edges"]))
     need(["T-1", "T-3"] in out["execution_edges"], str(out["execution_edges"]))
+    # A-6:plan 輸出的 tasks 物件現在帶 boundaries/intent/owner(派工者的另一個
+    # 最小露出點);T-2 沒填 Boundaries/Intent/Owner → 缺省空字串,不是恆真。
+    t1 = out["tasks"]["T-1"]
+    need(t1["boundaries"] == "只能動 `src/a.py`,不得動其他檔。", str(t1))
+    need(t1["intent"] == "補上最小 API 回應。", str(t1))
+    need(t1["owner"] == "alice", str(t1))
+    t2 = out["tasks"]["T-2"]
+    need(t2["boundaries"] == "" and t2["intent"] == "" and t2["owner"] == "", str(t2))
 
 
 def c_wave_open1():
@@ -946,6 +998,9 @@ execution:
 - Files: `src/a.py`
 - Verify: `true`
 - Blocked-by: —
+- Boundaries: 只能動 `src/a.py`,不得動其他檔。
+- Intent: 補上最小 API 回應。
+- Owner: alice
 
 ## T-2 乙
 - [ ] 完成
@@ -1005,6 +1060,10 @@ ck "p1 gate verify 紅"               0 "$(p1c gate-verify-fail)"
 ck "p1 gate 缺 RED"                  0 "$(p1c gate-missing-red)"
 ck "p1 gate 碰保護檔+共享文件"       0 "$(p1c gate-protected)"
 ck "p1 gate 缺 S-id 測試名"          0 "$(p1c gate-missing-sid)"
+ck "p1 A-2 s_ids_of 點號分層非恆空"  0 "$(p1c sids-of-dotted)"
+ck "p1 A-2 s_ids_of 舊形仍通"        0 "$(p1c sids-of-legacy)"
+ck "p1 A-2 gate 點號 sid 有測試名 PASS" 0 "$(p1c gate-sid-dotted-present)"
+ck "p1 A-2 gate 點號 sid 少測試名 FAIL" 0 "$(p1c gate-sid-dotted-missing)"
 ck "p1 gate schema 不完整"           0 "$(p1c gate-schema-incomplete)"
 
 echo "-- p1 wave review 驗證(對拍 review fixtures)--"
@@ -1502,15 +1561,25 @@ p3_doctor "$P3T/contract-ok.json" "$P3T/caps-ok.json"
 ck_msg "p3 doctor v1 旗標 → legacy compatibility mode 明示" 0 "legacy compatibility mode" "$P3_RC" "$P3_OUT"
 # M3:gauntlet version(散發副本 --version 實跑)+ wave_review schema(caps 聲明)
 mkdir -p "$P3T/docs/dev/tools"
-p3_fake_gauntlet() { # p3_fake_gauntlet <version|none>(none = 舊版無 --version)
-  if [ "$1" = "none" ]; then
+p3_fake_gauntlet() { # p3_fake_gauntlet <version|none> [rootmode]
+  # rootmode(B-4,預設 ok):ok=印對的 root($P3T/docs/dev)、bad=印錯的 root、
+  # noroot=支援 --version 但不支援 --print-root(舊版散發副本,只加了 --version)。
+  local ver="$1" rootmode="${2:-ok}"
+  if [ "$ver" = "none" ]; then
     printf '%s\n' '#!/bin/bash' 'echo "usage error: unknown flag" >&2' 'exit 64' \
       > "$P3T/docs/dev/tools/devflow-evidence-gauntlet.sh"
-  else
-    printf '%s\n' '#!/bin/bash' \
-      "if [ \"\${1:-}\" = \"--version\" ]; then echo \"devflow-evidence-gauntlet $1\"; exit 0; fi" \
-      'exit 64' > "$P3T/docs/dev/tools/devflow-evidence-gauntlet.sh"
+    return
   fi
+  {
+    echo '#!/bin/bash'
+    echo "if [ \"\${1:-}\" = \"--version\" ]; then echo \"devflow-evidence-gauntlet $ver\"; exit 0; fi"
+    case "$rootmode" in
+      ok)     echo "if [ \"\${1:-}\" = \"--print-root\" ]; then echo \"$P3T/docs/dev\"; exit 0; fi" ;;
+      bad)    echo "if [ \"\${1:-}\" = \"--print-root\" ]; then echo \"$P3T/wrong-root\"; exit 0; fi" ;;
+      noroot) : ;;
+    esac
+    echo 'exit 64'
+  } > "$P3T/docs/dev/tools/devflow-evidence-gauntlet.sh"
 }
 printf '%s\n' '{"devflow_contract_version": "2.0.0",' \
   ' "required_runtime_capabilities": ["attempt_ledger"],' \
@@ -1533,6 +1602,18 @@ ck_msg "p3 doctor gauntlet 散發副本缺 → fail" 1 "散發副本缺" "$P3_RC
 p3_fake_gauntlet 1.1.0
 p3_doctor "$P3T/contract-g.json" "$P3T/caps-ok.json"
 ck_msg "p3 doctor wave_review 未聲明 → fail" 1 "✗ wave_review" "$P3_RC" "$P3_OUT"
+# B-4:doctor 對 gauntlet 只探 --version 驗不到散發副本因目錄深度不同(scripts/
+# 對 docs/dev/tools/)造成的 ROOT 解析差異 —— 補 --print-root 探測。
+p3_fake_gauntlet 1.1.0 ok
+p3_doctor "$P3T/contract-g.json" "$P3T/caps-wv.json"
+ck_msg "p3 doctor gauntlet-root 落在受測專案 docs/dev → ✓" 0 "✓ gauntlet-root" "$P3_RC" "$P3_OUT"
+p3_fake_gauntlet 1.1.0 bad
+p3_doctor "$P3T/contract-g.json" "$P3T/caps-wv.json"
+ck_msg "p3 doctor gauntlet-root 落點錯(ROOT 解析跑掉)→ fail" 1 "gauntlet-root" "$P3_RC" "$P3_OUT"
+p3_fake_gauntlet 1.1.0 noroot
+p3_doctor "$P3T/contract-g.json" "$P3T/caps-wv.json"
+ck_msg "p3 doctor 散發副本不支援 --print-root(舊版)→ fail" 1 "gauntlet-root" "$P3_RC" "$P3_OUT"
+p3_fake_gauntlet 1.1.0
 # nit-1:契約 schema_versions 出現 doctor 不認識的 key → 至少 info 一行,不擋
 printf '%s\n' '{"devflow_contract_version": "2.0.0",' \
   ' "required_runtime_capabilities": ["attempt_ledger"],' \

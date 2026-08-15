@@ -51,8 +51,20 @@ def _is_shared_doc(rel):
 
 
 def _sid_matched(sid, names):
-    num = sid.split("-", 1)[1]
-    pattern = re.compile(rf"S-?0*{num}(?!\d)")
+    """A-2:sid 可能是舊形 `S-13`(連字號、無點)或母版/實務慣例的點號分層形
+    `S1.1`／`S13.6`(無連字號)。拆數字段落逐段比對:S 後分隔可為 `-`／`_`／無,
+    段落間分隔可為 `.`／`_`／`-`(測試名慣例用底線續寫,如 Test_S_1_1_xxx,也有
+    人原樣寫 TestS1_1);結尾 `(?!\\d)` 避免 `S1.1` 誤配到 `Test_S_1_12` 這種
+    多一位數字的測試名。"""
+    body = re.sub(r"^[Ss]-?", "", sid)
+    parts = [p for p in body.split(".") if p != ""]
+    if not parts:
+        return False
+    segs = []
+    for i, p in enumerate(parts):
+        sep = "" if i == 0 else r"[._-]"
+        segs.append(sep + "0*" + re.escape(p))
+    pattern = re.compile(rf"S[-_]?{''.join(segs)}(?!\d)")
     return any(pattern.search(name) for name in names)
 
 
@@ -131,7 +143,16 @@ def _diff_applies(root, tip, sha):
 
 
 def _s_ids_of(covers):
-    return re.findall(r"S-\d+", covers)
+    """A-2:母版/實務慣例是點號分層 `S1.1`／`S13.6`(無連字號),舊形 `S-13`
+    (連字號、僅整數)仍支援。`(?<![A-Za-z0-9])` 防誤配到黏著在字母數字後的
+    S(如 `TLS1.2`／`iOS15.1`)——這是比裁決原案更嚴的加做,方向仍是
+    fail-closed,不算放寬既有行為。
+
+    已知限制(known limitation):範圍寫法 `S1.1–S1.4` 只會抓到兩個端點
+    token(`S1.1`、`S1.4`),不展開成 `S1.2`／`S1.3`;範圍中間值不會出現在
+    s_ids 裡,coverage 對帳仍需人工看一眼範圍本身是否合理 —— gate 只驗
+    「有抓到的端點都對得到測試名」。"""
+    return re.findall(r"(?<![A-Za-z0-9])S-?\d+(?:\.\d+)*", covers)
 
 
 def _die(msg):

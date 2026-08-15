@@ -67,6 +67,14 @@ def _extract_ids(value):
     return re.findall(r"T-\d+", value)
 
 
+def _clean_optional(value):
+    """A-6(母版對應正本:hooks/devflow-lib.py 同名函式)。選填自由文字欄
+    (Boundaries/Intent/Owner)的空值正規化:模板寫「無則 —」,原樣帶出會讓
+    派工者看到看似有值、實則佔位的欄位,故與 EMPTY_MARKS 同一組標記正規化成 ""。"""
+    v = value.strip()
+    return "" if v in EMPTY_MARKS else v
+
+
 def _parse_execution(fm_lines, errors):
     conf = {"mode": "sequential", "max_parallel_tasks": 3,
             "rebuild_integration_on_rework": True}
@@ -190,6 +198,12 @@ def parse_5_tasks(text):
             "integrate_after": _extract_ids(fields.get("Integrate-after", "")),
             "semantic_conflicts": _extract_ids(fields.get("Semantic-conflicts-with", "")),
             "risk": risk, "review_mode": review_mode,
+            # A-6(母版對應正本:hooks/devflow-lib.py parse_5_tasks,兩邊 dict
+            # 形狀須一致):Boundaries/Intent/Owner 帶進 task dict,選填欄缺席
+            # 預設空字串。
+            "boundaries": _clean_optional(fields.get("Boundaries", "")),
+            "intent": _clean_optional(fields.get("Intent", "")),
+            "owner": _clean_optional(fields.get("Owner", "")),
         })
 
     ids = {t["id"] for t in tasks}
@@ -369,8 +383,19 @@ def _is_shared_doc(rel):
 
 
 def _sid_matched(sid, names):
-    num = sid.split("-", 1)[1]
-    pattern = re.compile(rf"S-?0*{num}(?!\d)")
+    """A-2(母版對應正本:hooks/_gate_impl.py 同名函式,兩邊須同步)。
+    sid 可能是舊形 `S-13`(連字號、無點)或點號分層形 `S1.1`／`S13.6`
+    (無連字號)。拆數字段落逐段比對,結尾 `(?!\\d)` 避免 `S1.1` 誤配到
+    多一位數字的測試名(如 Test_S_1_12)。"""
+    body = re.sub(r"^[Ss]-?", "", sid)
+    parts = [p for p in body.split(".") if p != ""]
+    if not parts:
+        return False
+    segs = []
+    for i, p in enumerate(parts):
+        sep = "" if i == 0 else r"[._-]"
+        segs.append(sep + "0*" + re.escape(p))
+    pattern = re.compile(rf"S[-_]?{''.join(segs)}(?!\d)")
     return any(pattern.search(name) for name in names)
 
 
