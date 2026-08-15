@@ -249,7 +249,9 @@ RED → GREEN → scope check → Verify
   RED → GREEN → scope check → Verify → independent T review(Test Integrity Check
   是 T review 的檢查清單擴充,不是新階段;「Candidate」僅 parallel 模式使用,
   sequential 案照舊 = 送 T review);mutation/property 等重驗證層屬
-  feature 級 Final Fresh Run,**不逐 T 跑**。
+  feature 級 Final Fresh Run,**不逐 T 跑**。純 migration／infra 型 T(無業務邏輯可斷言)
+  一樣要有 RED→GREEN,只是測的是**形狀**(表/欄位/索引/約束存在與否),不能只寫執行指令
+  就算完成(細節與範例見 `_templates/5-tasks.md`)。
 - **Decisions**(spec 未載明的自由選擇,如內部命名、資料結構):自己選、記一行入
   6-notes 的 Decisions 節、繼續。不屬偏差,不需回審。
 - **偏差兩級**:

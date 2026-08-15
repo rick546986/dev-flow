@@ -60,6 +60,13 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 >   續行請用純文字或非保留字開頭(例:`  Design Boundary(…):…`)。
 >   違反時 `contract_ref.py` 會回報「重複保留欄」並 fail-closed(start 拒啟),不再靜默覆蓋。
 > - 一個 T 一個關注點:Files 超過 ~5 檔或 Verify 要跑兩套不相干指令 → 拆 T。
+> - ⚠️ **`Verify:` 必須是單行、可原樣貼進 shell 的純指令**;說明、期望輸出、
+>   前置動作一律寫在下一行,不得混進同一行。⚠️ **`#` 會吞掉同行其後全部內容**
+>   (shell 註解語法)——把「指令 + 中文說明」硬塞成一行,輕則說明文字混進指令,
+>   重則 `#` 之後原本要跑的檢查被整段吃掉、從未執行。
+>   (2026-08 python-prism 實測:18 個 T 有 17 個 `Verify:` 欄被中文說明汙染,
+>   單行夾雜指令與說明,如 `` `pytest -k "S4_ or S3_4"`;S4.1 需實檔(3.9 GB BAM) ``;
+>   另有專案把 `Verify:` 寫成多行 fenced code block,解析器只吃單行,一個字都抓不到。)
 > - ⚠️ **`Verify` 用 `-run`/`-k`/`--filter` 這類「篩選子集」的參數時,必須自帶
 >   案例數斷言** —— 篩選器**沒匹配到任何測試時 runner 回 exit 0**,於是
 >   「一個測試都沒跑」與「全部通過」在 exit code 上完全一樣。這條欄位本來是要
@@ -76,6 +83,30 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 >   ②**不可能綠**(要求的零命中在正確實作下必然命中)→ 停,修欄位,記 L1;
 >   ③**綠不了但方向對** → 正常,開工。
 >   超標拆分優先按子行為拆,例如讀/寫路徑、成功/例外路徑;不得優先按架構層拆。
+> - ⚠️ **每個 T 必須有一個能 RED→GREEN 的測試,不得只寫執行指令**——純 migration／infra
+>   型 T(建表、加欄、建索引這類無業務邏輯可斷言的 T)一樣要有測試,只是測的是**形狀**:
+>   表/欄位是否存在、型別是否正確、索引/約束是否建立,而不是「migrate 指令 exit 0 就算過」。
+>   範例(僅供閱讀對照欄位形狀,非真實任務):一個「建 `orders_status` 表」的 infra 型 T,
+>   `Files: migrations/0007_orders_status.sql, internal/repo/orders_status_schema_test.go`、
+>   `Verify: n=$(go test ./internal/repo/... -run TestOrdersStatusSchema_S5 -v 2>&1 | grep -c '^=== RUN'); test "$n" -ge 1`
+>   (該測試斷言:`orders_status` 表存在、`status` 欄位為 `text` 型別、
+>   `idx_orders_status` 索引存在、`orders_status_check` 約束存在——四項缺一即 FAIL)。
+> - ⚠️ **測試檔路徑也要列進 `Files`**——worker 寫測試就是寫檔,測試檔不在 `Files` 聯集內
+>   會被 Stage 6 scope guard 當場擋死(PreToolUse hook 在 candidate 產出前就擋,不會等到
+>   T review 或 gate 才發現)。幾乎每個 T 的 Verify 都在跑測試,對應的測試檔
+>   (`*_test.go`／`*.test.tsx`／`*.spec.ts` 等)必須跟業務碼一起列進本 T 的 `Files`。
+> - **`Files` 該含哪些測試檔的判準(D-39 四象限,order-intake 實測歸納)**:
+>
+>   | 規則性質 | 用什麼測 | 為什麼 |
+>   |---|---|---|
+>   | 缺席(沒發出某句 SQL) | sqlmock／白箱 | 真 DB 分不出「發了但 WHERE 沒命中」與「根本沒發」 |
+>   | 順序(有沒有 ORDER BY) | sqlmock／白箱 | 小資料量下 DB 幾乎總是回插入順序,真 DB 斷言恆綠 |
+>   | 可觀測的結果(讀回來有沒有那筆) | integration | 白箱佈置多句 eager-load 成本高又脆弱 |
+>   | 單句 SQL 的 WHERE／綁定值 | sqlmock／白箱 | 便宜、精確、不需要 Docker |
+>
+>   例:規則寫在 SQL 的 `WHERE`／`SET` 裡 → `Files` 該含 repository 層測試檔
+>   (如 `internal/repo/xxx_test.go`)——service 層之下用 fake repository 時,
+>   這類規則完全看不出來,突變測試會一路全綠。
 >
 > **Design Boundary 摘錄規則(條件式;沿用既有 `Boundaries:` 欄,不新增 Task 欄位)**:
 > 當 4-spec 的 Design Boundary Contract 為 `applicable` 時,每個相關 T 的 `Boundaries:`
@@ -137,11 +168,11 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 
 ## T-2 <標題>
 - [ ] 完成
-- Covers:
-- Files:
+- Covers: R-1 / S-2
+- Files: <預計動的檔>
 - Verify: `<指令>`
 - Blocked-by: T-1
-- Intent:
+- Intent: <做完系統多了什麼可觀測行為,一句>
 - Boundaries: —
 
 ## Split Decisions(拆分自判,選配)

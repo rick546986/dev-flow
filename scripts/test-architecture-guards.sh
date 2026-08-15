@@ -72,8 +72,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=6
-EXPECTED_NEGATIVES=37
-EXPECTED_TOTAL=43
+EXPECTED_NEGATIVES=40
+EXPECTED_TOTAL=46
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -623,6 +623,48 @@ p.write_text(n, encoding="utf-8")
 PY
 expect fail check-stage67-enforcement.sh "$D" "S67-5 4-spec 觀測欄的「必須在本 repo 可執行」被弱化成建議"
 
+# S67-6/7/8(2026-08-15 追加,findings A-3 = VF、findings A-12 = DOC):
+# 三案的 needle 都刻意挑**新條款獨有**的字面,不重疊 A1/A3/A4/A5 既有 needle,
+# 才能證明是新檢查抓到的,不是誤觸舊檢查(同檔頭「VF 不要跟內部代號 A3 搞混」)。
+
+D=$(seed s67-vf-template)
+mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "_templates/5-tasks.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("可原樣貼進 shell 的純指令", "盡量簡潔的指令")
+assert n != t, "S67-6 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-stage67-enforcement.sh "$D" "S67-6 5-tasks 模板的「Verify 必須單行純指令」硬紀律被弱化"
+
+D=$(seed s67-vf-example)
+mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "example/contract-expiry-reminder/5-tasks.md"
+t = p.read_text(encoding="utf-8")
+# 保留 grep -c / === RUN(不觸發舊 A3 例子檢查),只在同一行尾端混進中文說明——
+# 這正是 findings A-3 的原始成因(指令 + 說明混寫成單行)。
+old = ("- Verify: `n=$(go test ./internal/... -run TestExpiring -v 2>&1 "
+       "| grep -c '^=== RUN'); test \"$n\" -ge 1`")
+new = old + ";需先啟動測試用資料庫"
+n = t.replace(old, new, 1)
+assert n != t, "S67-7 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-stage67-enforcement.sh "$D" "S67-7 範例 T-1 的 Verify 值尾端混進中文說明(指令+說明同一行)"
+
+D=$(seed s67-doc)
+mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "_templates/6-implementation-notes.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("devflow-doctor.sh", "devflow-check.sh")
+assert n != t, "S67-8 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-stage67-enforcement.sh "$D" "S67-8 6-notes 步 0 的 doctor 必跑要求被抽掉(devflow-doctor.sh 消失)"
+
 D=$(seed_guard s67-guard check-stage67-enforcement.sh)
 mutate "$D" <<'PY'
 import pathlib, sys, re
@@ -631,10 +673,10 @@ t = p.read_text(encoding="utf-8")
 # 把 A1 整組 need() 拿掉(但不動 MIN_CHECKS)—— 應由檢查數地板接住
 n = re.sub(r'for rel in \("_templates/6-implementation-notes\.md".*?f"A1:\{rel\} 沒給可執行的自檢指令 `devflow-exec\.sh status`"\)\n',
            'for rel in ():\n    pass\n', t, flags=re.S)
-assert n != t, "S67-6 mutation 沒生效"
+assert n != t, "S67-9 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
-expect_local fail check-stage67-enforcement.sh "$D" "S67-6 守衛自己的 A1 整組被刪(檢查數地板接住)"
+expect_local fail check-stage67-enforcement.sh "$D" "S67-9 守衛自己的 A1 整組被刪(檢查數地板接住)"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"

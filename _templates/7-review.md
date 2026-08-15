@@ -76,7 +76,10 @@ updated:
 >      「重驗範圍」節,不開新檔。
 > 0b. **守衛武裝自檢**:同 6-notes 步 0 —— 跑 `devflow-exec.sh status` 確認
 >    `.devflow/exec.json` 存在。Stage 7 若在未武裝的樹上做,scope 守衛與契約防篡改
->    同樣沉睡,reviewer 可能在不知情下改到 1/2/3/4。完成 = status 輸出在案。
+>    同樣沉睡,reviewer 可能在不知情下改到 1/2/3/4。
+>    ⚠️ 同時跑 `devflow-doctor.sh`(或 `devflow-exec.sh doctor`),`INCOMPATIBLE` 即
+>    **停下回報**——沒有任何 Stage 明文要求跑它就沒有人會被 fail-closed 擋下。
+>    完成 = `status` 與 `doctor` 兩份輸出都貼進 6-notes(本站沿用同一份記錄,不另開)。
 > 1. 自建 Coverage Matrix:grep 測試檔 S-id ↔ 4-spec S 清單,逐列填(缺漏 ❌),
 >    末列固定回歸列。完成 = 矩陣全列填畢(未參考作者主張)。
 > 2. 親跑驗證:本次 S 測試+既有全套,結果入矩陣。完成 = 兩輸出在案。
@@ -111,7 +114,9 @@ updated:
 >    Gate、不另立第三軸):Standards 加查 Dependency Direction／Boundary Leakage／
 >    Data Ownership／Interface Stability;Spec 逐條對照實際 diff 是否符合該契約 ——
 >    未經 spec 授權的 Boundary 變更至少 🟡,會改變 R/S、資料所有權、公開 Interface
->    或一致性語意者 🔴。
+>    或一致性語意者 🔴。**同時過下方「Design Integrity Check」固定清單**(對稱 Test
+>    Integrity Check 的設計版,抓「看起來守住邊界、實際被繞過」的手法);命中項併入
+>    Standards/Spec Axis 的既有 finding,不另開清單、不另立軸。
 >    每 F 標影響 S/T。Agent 審時**兩軸各派一個獨立 fresh reviewer 並行**(互不看
 >    對方輸出;人類 reviewer 可自兼雙軸);彙整者只並列兩軸 finding,**禁合併重排、
 >    禁降級任一軸**(防一軸失敗被另一軸掩蓋)。每 F 必引 spec 原文或 diff hunk,
@@ -192,6 +197,30 @@ updated:
 | S-id | 角色 | 真實目標 | 系統操作 | 系統外步驟 | 等待/例外 | 結果 |
 |---|---|---|---|---|---|---|
 
+## Design Integrity Check(Design Boundary Contract 為 `applicable` 時逐項過;`n-a` 時記 n-a)
+<!-- 對稱 skills/dev-run/SKILL.md 的 Test Integrity Check(T review 七項):那七項抓
+     「測試被做成看起來驗證過,實際沒驗到」;本清單抓「實作被做成看起來守住設計邊界,
+     實際被繞過」。**不是第三軸**——命中項併入既有 Standards/Spec Axis 的 finding,
+     不另開清單、不另立 Gate(同執行清單步 3)。素材與語意正本:
+     notes/design/design-boundary-contract.md。 -->
+
+1. **依賴反向被間接繞過**:沒有直接違反宣告的依賴方向,但透過共用 util／event bus／
+   全域狀態等中介層,讓被禁止依賴的模組間接取得對方效果——依賴圖看起來乾淨,實際反向。
+2. **資料所有權被繞過寫入**:非 owner 模組不經宣告的 Interface,直接觸底層儲存
+   (直連 DB、共享 struct 直改欄位、繞過 owner 提供的寫入路徑)。
+3. **相容性破壞包成新增**:對外 Interface 的簽章或回應形狀實際改變,卻包裝成
+   「新增可選欄位」或「附加端點」,讓 Compatibility 欄看起來仍是 additive。
+4. **一致性邊界被拆解**:契約宣告同一 transaction 的多筆寫入,實作拆成兩次獨立
+   commit(或反過來,把宣告獨立的操作揉進同一 transaction 掩蓋副作用)。
+5. **宣告的 Test seam 未被使用**:契約指名的可觀測/可注入點,測試實際繞過去用更深
+   或更淺的仿造驗證,讓「聲稱驗過邊界」與「實際驗過的東西」不是同一個東西
+   (鏡像 Test Integrity Check 的「mock 掉被測物」)。
+6. **Known design limit 被實作悄悄「解決」**:契約明列的已知限制被實作意外或取巧
+   繞過,但契約未同步更新為已解決——限制與實作對不上,沒人發現。
+
+任一命中 → 至少 🟡(未經 spec 授權的邊界變更);會改變 R/S、資料所有權、公開 Interface
+或一致性語意者 → 🔴。每條 finding 一律引 spec 原文或 diff hunk,不得無出處。
+
 ## Standards Axis
 <!-- F-id 🔴Blocker 🟡Should-fix 🟢Nice-to-have:位置 | 問題 | 建議。
      Design Boundary Contract 為 applicable 時,本軸另查四項(仍屬本軸,不另立 Gate):
@@ -246,7 +275,8 @@ updated:
 - [ ] feature branch 已刪 / worktree 已清
 
 ## 附錄:本輪特有
-<!-- 2026-08-13 補。**模板固定 12 節之外的內容,一律收在本節之下,不得在節序中間新開 ## 節。**
+<!-- 2026-08-13 補,2026-08-15 加 Design Integrity Check 後節數同步更新。**模板固定
+     15 節之外的內容,一律收在本節之下,不得在節序中間新開 ## 節。**
      起因:order-intake 的 7-review 在模板 12 節外自行長出 7 個 ## 節、順序也被打亂
      (Negative Constraint Mapping 從第 3 位掉到第 12 位),結果
      ①owner 看不出骨架、每個 feature 形狀都不同 ②`devllow` 系機械檢查讀不到 ——

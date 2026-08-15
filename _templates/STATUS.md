@@ -10,6 +10,14 @@
 |---|---|---|---|---|---|
 | [<slug>](./<slug>/) | full | 1-discussion | <name> | G1⬜ G2⬜ G3⬜ | YYYY-MM-DD |
 
+## Known Debt(選配)
+<!-- 跨 feature 的技術債看板,不對應單一 feature 的 STATUS 列。逐條:# | 內容 | 來源 | 追蹤位置。
+     內容可含:D-n 技術債(park 未修的 Deviation)、Failure Model 未覆蓋的 failure mode、
+     breaker park 項(7-review 重驗迴圈第 3 輪仍 REQUEST_CHANGES 時的裁決表匯入處)。
+     不採用整節留白;已解除的用 ~~刪除線~~ 保留,不刪列。 -->
+| # | 內容 | 來源(feature/slug) | 追蹤位置 |
+|---|---|---|---|
+
 ## 已完成
 
 見 `HISTORY.md`(只增不改的索引,最新在最下面);值得長期保存的決策另立
