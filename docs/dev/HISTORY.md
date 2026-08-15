@@ -87,3 +87,21 @@
 - 落在哪:.claude-plugin/plugin.json、hooks/runtime-capabilities.json
 - 詳細:minor:既有專案 dev-setup upgrade 後相容;契約版本維持 2.0.0 未動
 
+## 2026-08-15 · gate-twin-markdown-it
+- 做了什麼:gate twin 解析層換 markdown-it-py token stream(對母版範例 byte-identical),並納入 5-tasks 執行板(第三種 twin 形狀)、缺任一必填欄即紅底、抽驗格決定論取實列;守衛 60→108 項
+- 為什麼:三輪獨立審查 28 條 finding 證明手刻正則解析 markdown 靠自審不可能收斂,其中一條已發生在出貨物上;owner 兩次反映 5-tasks md 直轉難讀
+- 落在哪:scripts/build-gate-twin.py、scripts/check-gate-twin.sh、README §6、_templates/{4-spec,5-tasks,7-review}.md、example/、skills/dev-setup/SKILL.md、docs/dev/tools/
+- 長期決策:0002
+- 詳細:docs/dev/b8-gate-twin-review-ui/7-review.md 附錄 A7
+
+## 2026-08-15 · backlog-14-sweep
+- 做了什麼:採用現場回饋 14 條(A-1~A-6/A-11/A-12/B-1~B-6)全數處置:散發 README 剝除機制、s_id 鏈恢復牙齒、Boundaries 進 task dict、Stage 7 審查圍欄(圍欄③,exec-v3)、doctor 必跑、Verify/Files/Diff Budget 紀律、upgrade 三方比對
+- 為什麼:四個採用專案的現場回饋積了兩輪沒處理,其中多條是「方法論規定了做不到的事」等級;owner 授權裁決後一次清完
+- 落在哪:hooks/、_templates/、skills/dev-setup/SKILL.md、README、tests/parallel-stage6/;裁決記錄 notes/adoption-findings-2026-08-04.md 各節
+- 詳細:selftest 297→326;check-parallel 117→120
+
+## 2026-08-15 · stale-state-cleanup
+- 做了什麼:散落過期狀態六件結案:4cap 狀態改正+O-1~O-8 裁決+§7 六件、活文件過期外掛路徑統一並新增 check-no-stale-paths 守衛(devflow-check 18→20 組)、五處外掛待辦核對標掉、A-13/B-9 標記已修、v3.1.0 release notes 數字勘誤註記
+- 為什麼:外掛併入(ADR-0001)讓一批「外部 plugin 待辦/舊路徑」前提失效卻沒人回頭標;寫死的狀態與數字會誤導照導覽走的人
+- 落在哪:docs/dev/4cap-remediation/、guides/、scripts/check-no-stale-paths.sh、notes/change-manifests/、notes/adoption-findings-2026-08-04.md
+
