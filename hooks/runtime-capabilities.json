@@ -1,6 +1,6 @@
 {
  "supported_contract_versions": ["2.0.0"],
- "runtime_version": "3.4.0",
+ "runtime_version": "3.5.0",
  "capabilities": ["task_scoped_guard", "parallel_wave_execution", "candidate_gate", "attempt_ledger", "final_fresh_run", "operational_demo_gate"],
  "schema_versions": {"agent_event": "1.1", "context_manifest": "1.0", "prompt_registry": "1.0", "exec_state": "exec-v3", "wave_review": "devflow-wave-review.v1"}
 }

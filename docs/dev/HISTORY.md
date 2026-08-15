@@ -123,3 +123,9 @@
 - 落在哪:hooks/devflow-lib.py、tests/parallel-stage6/contract_ref.py、hooks/selftest.sh、scripts/{build-gate-twin.py,check-gate-twin.sh};流程紀錄 docs/dev/engine-fence-masking/
 - 詳細:fast lane 全程武裝:A-7 軟提醒/圍欄③禁讀 Self-Review/postbash 偵測網都實際觸發過;dogfood 撞出 D-4 收 Backlog
 
+## 2026-08-16 · release-v3-5-0 · v3.5.0
+- 做了什麼:發布 v3.5.0:守衛覆蓋輪(6 條缺口+行為層補驗三補強+引擎 fence 遮蔽 fast lane),其他機器 /plugin update 後才拿得到
+- 為什麼:外掛更新比對版本字串不比 commit,版號不動其他機器拿不到
+- 落在哪:.claude-plugin/plugin.json、hooks/runtime-capabilities.json
+- 詳細:minor:新增守衛與引擎修復,既有專案相容;守衛 108→133、selftest 326→339、devflow-check 20→21 組
+
