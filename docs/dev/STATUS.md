@@ -23,24 +23,15 @@ scripts/history-append.sh --slug <代號> --what <做了什麼> --why <為什麼
 
 ## Backlog
 
-> 來源:`notes/adoption-findings-2026-08-04.md`(母版待修清單,四個採用專案的現場回饋 +
-> 對抗式查證)。**該檔本身未動、留原地**,以下僅摘要尚未處理的項目,每列附來源行號。
-> C-1/C-2 已標明「隨 A-1 一併處理」,不重複列為獨立項。原 C-3 已於 2026-08-07
-> 查證後升級為 A-12(見下)。B-7 經 2026-08-07 查證為原判錯誤,不列入。
+> 2026-08-15 待辦清空輪:原列的 14 條(A-1~A-6/A-11/A-12/B-1~B-6)已**全數處置**,
+> 逐條裁決與修法見 `notes/adoption-findings-2026-08-04.md` 各節「已採用的修法(2026-08-15)」;
+> 4cap 的 O-1~O-8 與 §7 六件亦已裁決結案(`docs/dev/4cap-remediation/4cap-audit-fixes-2026-08.md`)。
+> 以下是該輪**產生或收攏**的剩餘項。
 
-| 級 | 一句 | 來源行號 |
+| 級 | 一句 | 來源 |
 |---|---|---|
-| A-1 | `docs/dev/README.md` 是母版根 README 的逐字複本,帶進 23 條死引用 + 一個跑不了的 CI 入口(含 C-2 的三處 gauntlet 路徑,隨此併修) | `notes/adoption-findings-2026-08-04.md:29` |
-| A-2 | `_gate_impl.py` 的 `s_id_present` 在實務上恆真,ID 鏈在 gate 上完全失效 | `notes/adoption-findings-2026-08-04.md:117` |
-| A-3 | `verify_command_match` 字串全等 + `FIELD_RE` 只吃行尾,但模板沒有任何警告 | `notes/adoption-findings-2026-08-04.md:156` |
-| A-4 | gate 的 RED/GREEN/verify 三項無條件必檢,純 migration / infra 型 T 無法通過 | `notes/adoption-findings-2026-08-04.md:182` |
-| A-5 | Files scope 不含測試路徑會在寫入當下被 hook 殺掉,模板沒提醒 | `notes/adoption-findings-2026-08-04.md:204` |
-| A-6 | `Boundaries:` 欄被解析後直接丟棄,不進 task dict | `notes/adoption-findings-2026-08-04.md:387` |
-| A-11 | Stage 7 的「禁讀 6-notes Self-Review」沒接到既有的圍欄機制(⏳ 未修) | `notes/adoption-findings-2026-08-04.md:699` |
-| A-12 | `dev-setup` 沒跑完整,而沒有任何 Stage 要求跑 doctor(原 C-3,2026-08-07 升級為 A;⏳ 未修) | `notes/adoption-findings-2026-08-04.md:772` |
-| B-1 | 母版自己的 `_templates/5-tasks.md` 過不了 `parse_5_tasks` | `notes/adoption-findings-2026-08-04.md:411` |
-| B-2 | `dev-setup` 的 diff 摘要沒讓使用者看見細粒度覆蓋,在地客製被靜默沖掉 | `notes/adoption-findings-2026-08-04.md:421` |
-| B-3 | lane 判準與 owner 指示衝突時,母版沒說怎麼辦 | `notes/adoption-findings-2026-08-04.md:436` |
-| B-4 | `doctor` 對 gauntlet 只做 `--version` 探測,不驗 ROOT 解析 | `notes/adoption-findings-2026-08-04.md:454` |
-| B-5 | `Files` 欄系統性低估(數字更正 8→10),模板沒有判準(待裁決) | `notes/adoption-findings-2026-08-04.md:841` |
-| B-6 | Diff Budget 的測試檔估法沒把補償控制算進去(比原判更嚴重;待裁決) | `notes/adoption-findings-2026-08-04.md:881` |
+| B | Boundaries 裡的 fenced `## T-xx` 會被 Stage 6 引擎長成幽靈任務 —— 引擎的 `parse_5_tasks` 不遮蔽 code fence(twin 已加警告現形;修引擎屬 live runtime 改動,與 contract_ref/selftest 要一起動)(`hooks/devflow-lib.py::parse_5_tasks`) | `docs/dev/b8-gate-twin-review-ui/7-review.md` 附錄 A7 H1 |
+| B | 第二個範例 feature(fast lane 或合法跳過 Stage 3),破「唯一範例自證循環」= 4cap O-3 | `docs/dev/4cap-remediation/4cap-audit-fixes-2026-08.md` O-3 裁決 |
+| C | `devtalk-guard.sh` 的 deny 沒寫 obs 事件,也無 selftest 覆蓋(observability manifest 第 4 項僅部分落地) | `notes/change-manifests/observability.md` 2026-08-15 核對註 |
+| C | 審查圍欄(圍欄③)期間 postbash 的 `allowed_prefix` 豁免未收緊 —— shell 改動 5-tasks/6-notes 仍走既有豁免 | `notes/adoption-findings-2026-08-04.md` A-11 已採用的修法 |
+| C | SDC 大表、Reference App(4cap §7 第 5 點收攏的低優先 deferred) | `docs/dev/4cap-remediation/devflow-4cap-remediation-2026-08.md` §7 |
