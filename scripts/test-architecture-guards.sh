@@ -20,7 +20,9 @@
 #   Stale Paths      SP-0 對照組 / SP-1 混入過期 dev-flow 路徑 / SP-2 混入過期 dev-talk
 #                    路徑 / SP-3 混入開發者個人絕對路徑 / SP-4 混入 docs/dev/STATUS.md
 #                    (2026-08-15 補,第三批獨立審查 P1 —— 該路徑此前完全不在掃描目標
-#                    也不在可見豁免清單,塞禁字仍零命中)(check-no-stale-paths.sh)
+#                    也不在可見豁免清單,塞禁字仍零命中) / SP-5 混入 observability/
+#                    (2026-08-15 補,N-5 fail-closed 改版 —— 驗「新目錄不必補清單
+#                    就會被掃到」,不是再補一條清單項)(check-no-stale-paths.sh)
 #   Real-world       RW-0 對照組 / RW-1 Out of Scope 整段 Stage 3 對帳被刪 / RW-2 一條
 #                    場景保留但拿掉逐場點名引用(check-realworld.sh;§7 第 1 點,2026-08-15)
 #
@@ -48,7 +50,7 @@ fingerprint() {
        "$ROOT/example" "$ROOT/notes/design" "$ROOT/scripts" \
        "$ROOT/docs/dev/tools/devflow-evidence-gauntlet.sh" \
        "$ROOT/docs/dev/STATUS.md" "$ROOT/docs/dev/devflow-contract.json" \
-       "$ROOT/docs/adr" \
+       "$ROOT/docs/adr" "$ROOT/observability/devflow-obs.py" \
        -type f -exec shasum {} + 2>/dev/null | shasum | awk '{print $1}'
 }
 FP_BEFORE=$(fingerprint)
@@ -82,8 +84,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=9
-EXPECTED_NEGATIVES=50
-EXPECTED_TOTAL=59
+EXPECTED_NEGATIVES=51
+EXPECTED_TOTAL=60
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -132,6 +134,25 @@ expect() {
     RESULTS+=("       $(printf '%s' "$out" | tail -3 | tr '\n' ' ')")
     FAIL=$((FAIL + 1))
   fi
+}
+
+# seed_sp <name> → 同 seed(),另外把 $dst 初始化成一個真 git repo,並多複製一份
+# observability/ 底下的檔案。
+# 起因(2026-08-15,N-5 fail-closed 改版):check-no-stale-paths.sh 的掃描來源從
+# 「明確列入 ACTIVE_TARGETS 才掃」改成「git ls-files 全量追蹤檔 − 印出來的
+# ALLOWLIST」,目標 root 本身必須是 git working tree,單純複製的檔案樹跑
+# `git ls-files` 會直接失敗(exit 2)。多複製 observability/ 一份真檔是為了讓
+# SP-5 有一個「先前完全不在任何清單上」的活檔可用來驗 fail-closed 的核心宣稱:
+# 新目錄不用列清單就會被掃到。
+seed_sp() {
+  local name="${1:?seed_sp: name is empty}"
+  local dst; dst=$(seed "$name")
+  mkdir -p "$dst/observability"
+  cp "$ROOT/observability/devflow-obs.py" "$dst/observability/devflow-obs.py"
+  git -C "$dst" init -q
+  git -C "$dst" -c user.email=test@dev-flow.local -c user.name=test add -A
+  git -C "$dst" -c user.email=test@dev-flow.local -c user.name=test commit -q -m seed
+  echo "$dst"
 }
 
 # seed_guard <name> <guard-script…> → 同 seed(),外加把指名的**守衛本體**複製進
@@ -784,11 +805,14 @@ expect fail check-readme-markers.sh "$D" "MM-3 start/end 整組被刪(0 對『�
 #
 # 禁字用字串相加組出(不留連續字面)——本檔自己也落在 scripts/ 掃描範圍內,
 # 直接寫出連續禁字會讓 devflow-check 的真實掃描對本檔誤報。
+#
+# 2026-08-15 N-5 改版後,seed 副本改用 seed_sp()(見上方定義)——目標 root 必須是
+# git working tree 才能跑 `git ls-files`。
 
-D=$(seed sp0)
+D=$(seed_sp sp0)
 expect pass check-no-stale-paths.sh "$D" "SP-0 對照組(未變異)"
 
-D=$(seed sp1); mutate "$D" <<'PY'
+D=$(seed_sp sp1); mutate "$D" <<'PY'
 import pathlib, sys
 p = pathlib.Path(sys.argv[1]) / "README.md"
 t = p.read_text(encoding="utf-8")
@@ -799,7 +823,7 @@ p.write_text(n, encoding="utf-8")
 PY
 expect fail check-no-stale-paths.sh "$D" "SP-1 README 混入過期 dev-flow local marketplace 路徑"
 
-D=$(seed sp2); mutate "$D" <<'PY'
+D=$(seed_sp sp2); mutate "$D" <<'PY'
 import pathlib, sys
 p = pathlib.Path(sys.argv[1]) / "README.md"
 t = p.read_text(encoding="utf-8")
@@ -810,7 +834,7 @@ p.write_text(n, encoding="utf-8")
 PY
 expect fail check-no-stale-paths.sh "$D" "SP-2 README 混入過期 dev-talk local marketplace 路徑"
 
-D=$(seed sp3); mutate "$D" <<'PY'
+D=$(seed_sp sp3); mutate "$D" <<'PY'
 import pathlib, sys
 p = pathlib.Path(sys.argv[1]) / "devflow-contract.json"
 t = p.read_text(encoding="utf-8")
@@ -823,7 +847,7 @@ expect fail check-no-stale-paths.sh "$D" "SP-3 devflow-contract.json 混入開�
 
 # SP-4(2026-08-15 補,第三批獨立審查 P1):docs/dev/STATUS.md 此前既不在掃描目標也
 # 不在可見豁免清單,塞禁字守衛仍零命中 exit 0。本案證明補上掃描目標後真的會咬到。
-D=$(seed sp4); mutate "$D" <<'PY'
+D=$(seed_sp sp4); mutate "$D" <<'PY'
 import pathlib, sys
 p = pathlib.Path(sys.argv[1]) / "docs/dev/STATUS.md"
 t = p.read_text(encoding="utf-8")
@@ -833,6 +857,21 @@ assert n != t, "SP-4 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
 expect fail check-no-stale-paths.sh "$D" "SP-4 docs/dev/STATUS.md 混入過期 dev-flow local marketplace 路徑(P1 補:此路徑先前完全不可見)"
+
+# SP-5(2026-08-15 補,N-5 fail-closed 改版):observability/ 此前完全不在掃描目標
+# 也不在可見豁免清單,塞禁字守衛仍零命中 exit 0(獨立審查實測的破口之一)。本案
+# 證明改用 git ls-files 全量掃描 − 印出來的 ALLOWLIST 後,任意活文件目錄(不需
+# 要像 SP-4 那樣先補進清單)都會被自動掃到——這就是「新增目錄自動被掃」的驗證。
+D=$(seed_sp sp5); mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "observability/devflow-obs.py"
+t = p.read_text(encoding="utf-8")
+banned = "plugins/local/dev-" + "flow"
+n = t + "\n# 測試混入舊路徑:~/.claude/" + banned + "/hooks/devflow-exec.sh\n"
+assert n != t, "SP-5 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-no-stale-paths.sh "$D" "SP-5 observability/ 混入過期 dev-flow local marketplace 路徑(fail-closed:新目錄不必列清單就會被掃到)"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
