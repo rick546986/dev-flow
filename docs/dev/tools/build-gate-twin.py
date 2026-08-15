@@ -636,35 +636,6 @@ def _task_deps(secs):
     return out
 
 
-def ghost_task_warnings(md):
-    """H-1(本批只現形,不修引擎):fence 內若含行首 `## T-\\d+`,twin(靠
-    markdown-it-py 的 token stream)天生看不到它、也不會為它產卡 —— 但真正吃
-    這份 md 的 Stage 6 引擎(`tests/parallel-stage6/contract_ref.py` 的
-    `HEAD_RE = ^##\\s+(T-\\d+)\\b...`,鏡射 `hooks/devflow-lib.py`)目前**不遮蔽
-    fence**,會把這行當成真的 `## T-n` 標題,長出一顆 twin 完全看不到的幽靈任務。
-
-    只回傳偵測到的 id 清單給呼叫端印 stderr 警告 —— 不改卡片、不擋產出。引擎側
-    修復(讓它也遮蔽 fence)排在 Backlog(第二批 A-6 一帶),不在本棒範圍。
-    偵測法沿用 mask_fenced 的 fence 行範圍判斷(token.type == "fence" 的
-    token.map),但這裡要看**原始行**內容(不是遮蔽後的空白),所以另外掃一次。
-    """
-    lines = md.splitlines(keepends=True)
-    fence_lines = set()
-    for tok in MarkdownIt("commonmark").parse(md):
-        if tok.type == "fence" and tok.map:
-            fence_lines.update(range(tok.map[0], tok.map[1]))
-    ghost = re.compile(r"^##\s+(T-\d+)\b")
-    out, seen = [], set()
-    for i in sorted(fence_lines):
-        if i >= len(lines):
-            continue
-        m = ghost.match(lines[i])
-        if m and m.group(1) not in seen:
-            seen.add(m.group(1))
-            out.append(m.group(1))
-    return out
-
-
 def build_dag(secs):
     """Blocked-by → ASCII 波次圖(Kahn 拓撲分波)。回 (html, 邊數, warnings)。
 
@@ -1014,12 +985,6 @@ def main(argv):
         for w in dag_warnings:
             print(f"NOTE: {w}", file=sys.stderr)
         dag_done, _dag_total = _tasks_done_count(secs)
-        # H-1:fence 內含行首 `## T-\d+` 的話,引擎(不遮蔽 fence)會長出 twin 看不到的
-        # 幽靈任務 —— 只警告、不改卡片(引擎側修復排 Backlog,不在本棒範圍)。
-        for gid in ghost_task_warnings(md):
-            print(f"NOTE: fence 內偵測到行首 `## {gid}`:引擎目前不遮蔽 fence,這段可能被解析成"
-                  f"幽靈任務 {gid};引擎側修復排在 Backlog(第二批 A-6 一帶,不在本棒)",
-                  file=sys.stderr)
 
     # 置頂節:判定本身與判定的前提,直接顯示在卡片之前,不摺疊
     pinned, pinned_titles = [], set()

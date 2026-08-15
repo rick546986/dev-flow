@@ -26,6 +26,7 @@ trap 'rm -rf "$TMP"' EXIT
 DEVFLOW_ROOT="$ROOT" DEVFLOW_TMP="$TMP" python3 - "$0" <<'PY'
 import ast
 import html
+import importlib.util
 import os
 import re
 import shutil
@@ -629,7 +630,7 @@ else:
           f"實際 {_actual_wave_of},預期(獨立算){_exp_wave_of}")
 
 print("-- HIGH-1 負向:同一 T 內重複保留欄 → 紅卡 + flag 含「重複」;"
-      "fence 內 `## T-99` → 只警告、卡數不含它 --")
+      "fence 內 `## T-99` → 引擎不長出(釘引擎行為)、twin 卡數不含它 --")
 CURRENT_GROUP = "high1-dup-field"
 fxd = ROOT / "scripts/fixtures/gate-twin/tasks-dup-field"
 shutil.copytree(fxd, TMP / "fxd")
@@ -650,8 +651,27 @@ if r.returncode == 0:
     check("重複保留欄" in (r.stderr or ""),
           "stderr NOTE 引用 contract_ref 的「重複保留欄」用語(訊息一致,便於對照)",
           (r.stderr or "").strip())
-    check("T-99" in (r.stderr or "") and "幽靈任務" in (r.stderr or ""),
-          "stderr 對 fence 內 `## T-99` 印出幽靈任務警告", (r.stderr or "").strip())
+    # R-2/S-2.1:前提已消失(引擎 hooks/devflow-lib.py::parse_5_tasks 現在會遮蔽
+    # fence,T-1 已修)—— twin 不再宣稱「引擎目前不遮蔽 fence…幽靈任務」這個過期
+    # 事實。斷言改釘在引擎正本的實際行為:直接載入 hooks/devflow-lib.py,對同一份
+    # fixture 跑 parse_5_tasks,斷言 tasks 不含 T-99。不斷言 errors 全空 ——
+    # 這份 fixture 本身還有 T-1 的重複 Files 欄(非 fence 內容,H-1 回歸的一部分,
+    # 上面那條「重複保留欄」斷言驗的就是它),那條 error 本該在,不是本條要驗的
+    # 行為;這裡只額外斷言 errors 裡沒有任何提到 T-99 的訊息(fence 沒有洩漏進 errors)。
+    _engine_spec = importlib.util.spec_from_file_location(
+        "devflow_lib_selfcheck", str(ROOT / "hooks/devflow-lib.py"))
+    _engine_mod = importlib.util.module_from_spec(_engine_spec)
+    _engine_spec.loader.exec_module(_engine_mod)
+    _engine_md = (fxd / "docs/dev/demo/5-tasks.md").read_text(encoding="utf-8")
+    _engine_result = _engine_mod.parse_5_tasks(_engine_md)
+    _engine_ids = [t["id"] for t in _engine_result["tasks"]]
+    check("T-99" not in _engine_ids,
+          "引擎(hooks/devflow-lib.py::parse_5_tasks)對同輸入不長出 T-99"
+          "(fence 已遮蔽,R-2/S-2.1)",
+          f"引擎解析到的 task id:{_engine_ids}")
+    check(not any("T-99" in e for e in _engine_result["errors"]),
+          "引擎 errors 不含任何提到 T-99 的訊息(fence 內容沒有洩漏進 errors)",
+          f"errors:{_engine_result['errors']}")
 
 print("-- P5:抽驗格決定論抽樣(不是隨機、可重現)--")
 CURRENT_GROUP = "p5-sample-row"

@@ -9,13 +9,14 @@ T=$(mktemp -d "${TMPDIR:-/tmp}/devflow-selftest.XXXXXX")
 C=$(mktemp -d "${TMPDIR:-/tmp}/devflow-gate-selftest.XXXXXX")
 PASS=0; FAIL=0; FAILED=()
 TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
-# ⚠️ MIN_CASES 是釘死地板,一律等於當下實際案例數(2026-08-16 起 335;devtalk-guard
-# 補 5 案 + postbash A-11 圍欄③收緊補 4 案)——新增案例時同步 +;絕不「大概抓個下限」。
+# ⚠️ MIN_CASES 是釘死地板,一律等於當下實際案例數(2026-08-16 起 339;engine-fence-
+# masking T-1 補 4 案:fence 內 T-99 幽靈任務 / fence 內假重複欄 / fence 外重複欄
+# 回歸 / 未閉合 fence 遮到檔尾)——新增案例時同步 +;絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=335
+MIN_CASES=339
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -603,6 +604,56 @@ F = {
         ("T-1", "甲", BASET + [("Integrate-after", "T-2")]),
         ("T-2", "乙", [("Covers", "R-1 / S-2"), ("Files", "`src/b.ts`"), ("Verify", "`npm test`"),
                        ("Blocked-by", "T-1")])]),
+    # R-1(engine-fence-masking):fence 內容對引擎必須視而不見,與 twin 判定一致。
+    # S-1.1:fence 內的 `## T-99` 不長成任務。
+    "fence_ghost": "\n".join([
+        "---", "feature: fx", "stage: 5-tasks", "status: approved", "---", "",
+        "## T-1 api", "- [ ] 完成",
+        "- Covers: R-1 / S-1",
+        "- Files: `internal/handler/contract.go`",
+        "- Verify: `go test ./internal/... -run TestExpiring`",
+        "- Blocked-by: —",
+        "- Boundaries: 範例(勿照做):",
+        "```",
+        "## T-99 假任務",
+        "- Files: `不存在/path.go`",
+        "```", ""]),
+    # S-1.2:fence 內的保留欄位行(`- Files: 假的`)不觸發重複欄 fail-closed,真值不變。
+    "fence_field": "\n".join([
+        "---", "feature: fx", "stage: 5-tasks", "status: approved", "---", "",
+        "## T-1 api", "- [ ] 完成",
+        "- Covers: R-1 / S-1",
+        "- Files: `internal/handler/contract.go`",
+        "- Verify: `go test ./internal/... -run TestExpiring`",
+        "- Blocked-by: —",
+        "- Boundaries: 範例(勿照做):",
+        "```",
+        "- Files: 假的",
+        "```", ""]),
+    # S-1.3(F-1 回歸):fence 外的重複保留欄仍 fail-closed,遮蔽不得誤傷真違規。
+    "fence_dup_outside": "\n".join([
+        "---", "feature: fx", "stage: 5-tasks", "status: approved", "---", "",
+        "## T-1 api", "- [ ] 完成",
+        "- Covers: R-1 / S-1",
+        "- Files: `internal/handler/contract.go`",
+        "- Files: `internal/other/contract.go`",
+        "- Verify: `go test ./internal/... -run TestExpiring`",
+        "- Blocked-by: —", ""]),
+    # 未閉合 fence:遮到檔尾(含其後原本合法的 `## T-2`)—— 已知行為,見 _fence_mask docstring。
+    "fence_unclosed": "\n".join([
+        "---", "feature: fx", "stage: 5-tasks", "status: approved", "---", "",
+        "## T-1 api", "- [ ] 完成",
+        "- Covers: R-1 / S-1",
+        "- Files: `internal/handler/contract.go`",
+        "- Verify: `go test ./internal/... -run TestExpiring`",
+        "- Blocked-by: —",
+        "- Boundaries: 未閉合示例:",
+        "```",
+        "## T-2 fe",
+        "- Covers: R-1 / S-2",
+        "- Files: `src/C.tsx`",
+        "- Verify: `npm test -- C`",
+        "- Blocked-by: T-1", ""]),
     "overlap": md(["mode: parallel", "max_parallel_tasks: 3"], [
         ("T-1", "a", [("Covers", "R-1 / S-1"), ("Files", "`src/a.ts`"), ("Verify", "`npm test`"),
                       ("Blocked-by", "—")]),
@@ -722,6 +773,34 @@ def c_parse_boundcont():
     # A-6:Boundaries/Intent/Owner 現在真的進 task dict,不再解析後就丟棄。
     need(t["boundaries"] == "查詢邏輯抽在 `service.ListExpiring`。", t["boundaries"])
     need(t["owner"] == "alice", t["owner"])
+
+
+def c_parse_fence_ghost():
+    """S-1.1:fence 內的 `## T-99` 標題不長成任務。"""
+    p = L.parse_5_tasks(F["fence_ghost"])
+    need(p["errors"] == [], str(p["errors"]))
+    need([t["id"] for t in p["tasks"]] == ["T-1"], str([t["id"] for t in p["tasks"]]))
+
+
+def c_parse_fence_field():
+    """S-1.2:fence 內的保留欄位行不觸發重複欄 fail-closed;真值不變。"""
+    p = L.parse_5_tasks(F["fence_field"])
+    need(p["errors"] == [], str(p["errors"]))
+    need(p["tasks"][0]["files"] == ["internal/handler/contract.go"],
+         str(p["tasks"][0]["files"]))
+
+
+def c_parse_fence_dup_outside():
+    """S-1.3(F-1 回歸):fence 外的重複保留欄仍 fail-closed。"""
+    errs = L.parse_5_tasks(F["fence_dup_outside"])["errors"]
+    need(any("重複保留欄" in e and "Files" in e for e in errs), str(errs))
+
+
+def c_parse_fence_unclosed():
+    """未閉合 fence 遮到檔尾,含其後的 `## T-2`(已知行為,見 _fence_mask docstring)。"""
+    p = L.parse_5_tasks(F["fence_unclosed"])
+    need(p["errors"] == [], str(p["errors"]))
+    need([t["id"] for t in p["tasks"]] == ["T-1"], str([t["id"] for t in p["tasks"]]))
 
 
 def c_parse_parallel():
@@ -1149,6 +1228,10 @@ ck "p1 舊格式解析+全缺省"            0 "$(p1c parse-old)"
 ck "p1 parallel 全欄位解析"          0 "$(p1c parse-parallel)"
 ck "p1 續行遮蔽保留欄拒收+首筆不被覆蓋" 0 "$(p1c parse-boundshadow)"
 ck "p1 合法純文字續寫不被誤判"        0 "$(p1c parse-boundcont)"
+ck "p1 R-1 fence 內 T-99 不長成任務"  0 "$(p1c parse-fence-ghost)"
+ck "p1 R-1 fence 內假重複欄不 fail-closed" 0 "$(p1c parse-fence-field)"
+ck "p1 R-1 fence 外重複欄仍 fail-closed(回歸)" 0 "$(p1c parse-fence-dup-outside)"
+ck "p1 R-1 未閉合 fence 遮到檔尾"     0 "$(p1c parse-fence-unclosed)"
 ck "p1 非法 mode 拒收"               0 "$(p1c parse-badmode)"
 ck "p1 execution 未知 key 拒收"      0 "$(p1c parse-unknownkey)"
 ck "p1 high+wave 拒收"               0 "$(p1c parse-highwave)"
