@@ -191,6 +191,42 @@ if r.returncode == 0:
     check("CANARY-P4" in pt, "只有 fence 的章節不得整節消失",
           "該節被靜默丟掉(H_ANY 的 \\s 跨行吃掉了 body)")
 
+print("-- S_HEAD 回歸:`#### S-1`(無尾隨標題文字)不得吞下一行的 GIVEN --")
+# 同 P4 那類 bug,換一個正則:S_HEAD 的 `\s*` 含換行,`#### S-1` 沒有尾隨標題文字時
+# 會跨行把下一行(通常是 `- GIVEN …`)整段吃進標題,GIVEN 欄從此消失
+#(2026-08-15 三次複審 P4 同類,母版範例的 S-1 就中招)。
+shd = TMP / "shead/docs/dev/demo"
+shd.mkdir(parents=True)
+(shd / "4-spec.md").write_text("""---
+stage: 4-spec
+status: draft
+---
+
+# 4. 規格
+
+## ADDED Requirements
+
+### R-1: x
+
+#### S-1
+- GIVEN 這行不得被吞
+- WHEN b
+- THEN c
+- 觀測:d
+""", encoding="utf-8")
+r = run(TMP / "shead", "demo", "4-spec")
+check(r.returncode == 0, "S_HEAD 回歸 fixture:產得出來")
+if r.returncode == 0:
+    sht = (shd / "4-spec.html").read_text(encoding="utf-8")
+    # ⚠️ 不能只驗「這行不得被吞」這個子字串在不在 —— 被吞掉時,它照樣會出現,
+    # 只是出現在標題而不是 GIVEN 欄位列(H2 的病:守衛只驗字串在不在)。
+    # 要驗的是它落在**渲染出來的 GIVEN 欄位列**,不是隨便哪裡。
+    check('<span class="gwt-k">GIVEN</span><span class="gwt-v">這行不得被吞</span>' in sht,
+          "GIVEN 值渲染成 GIVEN 欄位列(不是被吞進標題)")
+    m = re.search(r'<span class="s-id">S-1</span>\s*<span class="s-title">(.*?)</span>', sht)
+    check(bool(m) and "GIVEN" not in m.group(1), "S-1 卡標題不含「GIVEN」(標題沒被跨行吃到下一行)",
+          f"實際標題「{m.group(1) if m else '(無)'}」")
+
 print("-- H2 負向:背景資料「內容零刪減」要真的被驗 --")
 # fixture 的每個非卡片章節都埋了 CANARY-n;渲染函式若被改成 return "",這裡必紅。
 shutil.copytree(ROOT / "scripts/fixtures/gate-twin/zero-deletion", TMP / "zd")
@@ -294,6 +330,56 @@ if r.returncode == 0:
     check(t.count('class="s-card bad"') == 1, "缺「觀測」欄的那條 S 渲染成紅底",
           f"紅底卡 {t.count(chr(115) + chr(45) + chr(99) + chr(97) + chr(114) + chr(100) + chr(32) + chr(98) + chr(97) + chr(100))} 張,應為 1")
     check("缺觀測欄" in t, "動線頂區點出缺幾條")
+
+print("-- K-7 負向:缺 THEN(非觀測)也要紅底,動線改報「缺必填欄」 --")
+# 模板要求 GIVEN/WHEN/THEN/觀測四欄皆必填,不是只有「觀測」——缺任何一欄都要紅底現形。
+fx2 = ROOT / "scripts/fixtures/gate-twin/missing-then"
+shutil.copytree(fx2, TMP / "fx2")
+r = run(TMP / "fx2", "demo", "4-spec")
+check(r.returncode == 0, "缺 THEN 欄的 spec 仍產得出來(要讓人看見問題,不是擋住)")
+if r.returncode == 0:
+    t2 = (TMP / "fx2/docs/dev/demo/4-spec.html").read_text(encoding="utf-8")
+    check(t2.count('class="s-card bad"') == 1, "恰 1 張紅卡(只有 S-2 缺 THEN)",
+          f"紅底卡 {t2.count(chr(115) + chr(45) + chr(99) + chr(97) + chr(114) + chr(100) + chr(32) + chr(98) + chr(97) + chr(100))} 張,應為 1")
+    check("缺「THEN」欄" in t2, "html 含「缺「THEN」欄」(守衛靠這個字串現形)")
+    check("缺必填欄" in t2, "動線頂區改報「缺必填欄」(這條沒缺觀測,缺的是 THEN)")
+    m = re.search(r'<article class="([^"]*)" data-sid="S-1">', t2)
+    check(bool(m) and "bad" not in m.group(1), "欄位齊全的 S-1 不是紅卡",
+          f"實際 class=\"{m.group(1) if m else '(無)'}\"")
+
+print("-- P5:抽驗格決定論抽樣(不是隨機、可重現)--")
+# 獨立(不呼叫 build-gate-twin.py 的 table_rows)重算 Coverage Matrix 中位列 ——
+# 斷言要釘在跟正本邏輯獨立的第二套實作,不是回頭呼叫同一顆函式驗自己。
+def _sample_expect():
+    txt = (EXAMPLE / "7-review.md").read_text(encoding="utf-8")
+    m = re.search(r"^## Coverage Matrix\s*\n(.*?)(?=\n## |\Z)", txt, re.S | re.M)
+    body = m.group(1) if m else ""
+    rows = []
+    for ln in body.splitlines():
+        ln = ln.strip()
+        if not ln.startswith("|"):
+            continue
+        cells = [c.strip() for c in ln.strip("|").split("|")]
+        if all(re.fullmatch(r":?-{2,}:?", c) for c in cells if c):
+            continue
+        rows.append(cells)
+    data_rows = rows[1:] if len(rows) > 1 else []
+    if not data_rows:
+        return "—"
+    mid = data_rows[len(data_rows) // 2]
+    val = mid[0] if mid else ""
+    return (val[:14] + "…") if len(val) > 14 else (val or "—")
+
+
+expect_sample = _sample_expect()
+txt7 = (proj / "7-review.html").read_text(encoding="utf-8")
+m = re.search(r'<span class="k">抽驗</span><span class="v">([^<]*)</span>', txt7)
+actual_sample = m.group(1) if m else None
+check(actual_sample is not None and "隨機一列" not in actual_sample,
+      "7-review:抽驗格不是舊常數「隨機一列」", f"實際「{actual_sample}」")
+check(actual_sample == expect_sample,
+      "7-review:抽驗格值 = Coverage Matrix 中位列第一欄(決定論、對正本算)",
+      f"實際「{actual_sample}」,預期「{expect_sample}」")
 
 print("-- T5 負向:解析不到任何待審項目要 exit 1,不產空殼 --")
 empty = TMP / "empty/docs/dev/demo"

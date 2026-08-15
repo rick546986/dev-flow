@@ -422,7 +422,7 @@ twin 不只是給人查的參考檔,gate 站的 twin 是給人**審**的。這�
 |---|---|
 | **2-decision(G1)** | 判定(`## Decision` 首句)/ Owner Calls(已裁決 `x/y`)/ 方案(幾項待審)/ 駁回理由(幾條)/ 狀態(frontmatter) |
 | **4-spec(G2)** | 狀態(frontmatter)/ 待審 S(幾條 + **幾條缺觀測欄**)/ lane · Risk / DD 進度 `x/y` / Demo verdict(承接 3-prototype) |
-| **7-review(G3)** | 判定(frontmatter `verdict:`)/ 出貨(Exit Checklist `x/y`)/ 爭點(「附錄:本輪特有」幾條)/ 風險(Known Limits 幾條)/ 抽驗(隨機一列 `檔:行`)|
+| **7-review(G3)** | 判定(frontmatter `verdict:`)/ 出貨(Exit Checklist `x/y`)/ 爭點(「附錄:本輪特有」幾條)/ 風險(Known Limits 幾條)/ 抽驗(Coverage Matrix 中位列 `檔:行`,決定論、可重現)|
 
 > 2026-08-15 修正:此表初版寫了三格**文件裡根本沒有那筆資料**的東西
 >(2-decision 的「影響面(動到哪幾個模組)」、4-spec 的「Gate 過了沒」、7-review 的

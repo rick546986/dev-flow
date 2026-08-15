@@ -42,9 +42,14 @@ _SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
 # 這支工具會被散發到採用專案,缺相依或版本不對時**不吐 traceback、不靜默
 # 降級回正則**——降級等於讓兩邊 diverge 卻不吭聲,比直接擋下來更危險。
 _MDIT_REQUIRED = "4.0.0"
+_MDIT_REQ_FILE = _SCRIPT_DIR / "requirements-methodology-render.txt"
+# 散發副本(docs/dev/tools/build-gate-twin.py)身邊沒有 requirements-methodology-render.txt
+# ——那個檔只活在 scripts/。訊息固定指它會在散發副本上指向一個不存在的路徑,所以
+# 只有它真的在 `_SCRIPT_DIR` 旁邊時才提,否則只給通用的 pip install 一行。
 _MDIT_HINT = (
-    f"請跑 pip install -r {_SCRIPT_DIR}/requirements-methodology-render.txt"
-    "(或 pip install 'markdown-it-py==4.0.0')"
+    f"請跑 pip install -r {_MDIT_REQ_FILE}(或 pip install 'markdown-it-py==4.0.0')"
+    if _MDIT_REQ_FILE.is_file()
+    else "請跑 pip install 'markdown-it-py==4.0.0'"
 )
 try:
     from markdown_it import MarkdownIt, __version__ as _MDIT_VERSION
@@ -75,8 +80,12 @@ INLINE_MD = re.compile(r"`([^`]+)`|\*\*([^*]+)\*\*")
 # 會跨行吃到很遠,整節 body 變空字串再被靜默丟掉(2026-08-15 二次複審 P4,
 # 已實際發生在出貨的 7-review.html:`## 變更架構圖` 整節不見)。
 H_ANY = re.compile(r"^(#{2,6})[ \t]+([^\n]*?)[ \t]*$", re.M)
-S_HEAD = re.compile(r"^#{2,6}\s*(S-\S+)\s*(.*)$", re.M)
-R_HEAD = re.compile(r"^#{2,6}\s*(R-\d+)\s*[:：·]?\s*(.*)$", re.M)
+# ⚠️ 同 H_ANY 的理由,同一類 bug:用 `[ \t]` 不用 `\s` —— `#### S-1`(無尾隨標題文字)
+# 時 `\s*` 會跨行吃到下一行(通常是 `- GIVEN …`),把 GIVEN 欄整段吞進標題文字,
+# GIVEN 欄從此消失(P4 同類,2026-08-15 三次複審抓到,已實際發生在母版範例的
+# S-1:產出的 twin 裡 GIVEN 出現 0 次、卡標題是被吞的 GIVEN 文字)。
+S_HEAD = re.compile(r"^#{2,6}[ \t]*(S-\S+)[ \t]*(.*)$", re.M)
+R_HEAD = re.compile(r"^#{2,6}[ \t]*(R-\d+)[ \t]*[:：·]?[ \t]*(.*)$", re.M)
 FIELD = {
     "given": re.compile(r"^\s*-\s*\*{0,2}GIVEN\*{0,2}\s*[:：]?\s*(.*)$", re.M | re.I),
     "when": re.compile(r"^\s*-\s*\*{0,2}WHEN\*{0,2}\s*[:：]?\s*(.*)$", re.M | re.I),
@@ -237,7 +246,13 @@ def table_rows(body):
 
 
 def card(item_id, title, tag, rows, missing=None, sub=""):
-    """一張待審卡。missing 有值 → 紅底現形(缺必填欄的項目不得只在別處列表)。"""
+    """一張待審卡。missing 有值 → 紅底現形(缺必填欄的項目不得只在別處列表)。
+
+    missing 可以是單一欄名字串(既有用法,如 2-decision 的「裁決」)或缺欄清單
+    (K-7:4-spec 的 GIVEN/WHEN/THEN/觀測皆必填,同一張卡可能同時缺好幾欄)——
+    清單用頓號連接,如 `缺「GIVEN、觀測」欄`;只缺一欄時仍是 `缺「觀測」欄`
+    這種單欄格式(動線頂區的 n_obs 計數靠這個字串,見 dash_cells)。
+    """
     tag_html = f'<span class="tag main">{html.escape(tag)}</span>' if tag else ""
     body_rows = "".join(
         f'<div class="gwt-row"><span class="gwt-k">{html.escape(k)}</span>'
@@ -245,7 +260,8 @@ def card(item_id, title, tag, rows, missing=None, sub=""):
         for k, v in rows if v
     )
     if missing:
-        flag = (f'<div class="obs missing"><span class="obs-k">缺「{html.escape(missing)}」欄</span>'
+        label = "、".join(missing) if isinstance(missing, (list, tuple)) else missing
+        flag = (f'<div class="obs missing"><span class="obs-k">缺「{html.escape(label)}」欄</span>'
                 f'<span class="obs-v">這條審不過 —— 沒寫清楚要看哪裡</span></div>')
     else:
         flag = sub
@@ -343,14 +359,20 @@ def parse_spec(_md, secs):
             start = hm.end()
             end = hits[k + 1].start() if k + 1 < len(hits) else len(body)
             seg_masked = masked_body[start:end]
-            f = {}
+            # K-7:模板要求 GIVEN/WHEN/THEN/觀測四欄皆必填,缺任何一欄都要紅底現形,
+            # 不是只有「觀測」。FIELD 的 key 順序(given/when/then/observe)固定就是
+            # GIVEN、WHEN、THEN、觀測這個守衛靠的順序,不必另外排序。
+            f, missing_fields = {}, []
+            FIELD_LABEL = {"given": "GIVEN", "when": "WHEN", "then": "THEN", "observe": "觀測"}
             for key, pat in FIELD.items():
                 fm = pat.search(seg_masked)          # 掃遮蔽版(fence 內不算)
                 f[key] = body[start + fm.start(1):start + fm.end(1)].strip() if fm else ""
+                if not f[key]:
+                    missing_fields.append(FIELD_LABEL[key])
             inner.append(card(
                 sid, stitle or rname, "",
                 [("GIVEN", f["given"]), ("WHEN", f["when"]), ("THEN", f["then"])],
-                missing=None if f["observe"] else "觀測",
+                missing=missing_fields or None,
                 sub=obs_block(f["observe"]) if f["observe"] else "",
             ))
             n += 1
@@ -475,12 +497,33 @@ def _headline(text, limit=30):
     return "—"
 
 
-def dash_cells(stage, md, n_items, n_bad, secs):
+def _sample_row(md):
+    """P5:7-review「抽驗」格的值 —— 決定論從 Coverage Matrix 抽一列,不是隨機。
+
+    抽樣規則刻意不用 random/時間:同一份 md 每次重跑都要抽到同一列(產出必須
+    可重現,否則審查者兩次看到不同的「抽驗」目標,對不上就沒有意義)。抽法:
+    取 `rows[len(rows)//2]`(中位列),值 = 該列第一欄,超過 14 字截斷加「…」。
+    無表格或無列 → `"—"`。
+    """
+    rows = table_rows(_section_text(md, "Coverage Matrix"))
+    if not rows:
+        return "—"
+    _header, cells = rows[len(rows) // 2]
+    val = cells[0] if cells else ""
+    return (val[:14] + "…") if len(val) > 14 else (val or "—")
+
+
+def dash_cells(stage, md, n_items, n_bad, secs, n_obs=0):
     """五格內容依 stage 不同(README §6 的表)。**格數固定五格,每格都要有跳轉目標**。
 
     回 [(標籤, 值, 註, 錨點), ...]。錨點是章節標題或固定 id;main 會檢查目標
     存不存在,不存在就退回 `#cards`(待審區)—— 規格要求「每格一句話 + 一個跳轉」,
     沒有跳轉就不算做到(2026-08-15 獨立審查 H1)。
+
+    n_obs:4-spec 專用(K-7)—— 缺「觀測」欄的張數(main 用 `cards.count('觀測」欄')`
+    算,觀測固定排最後,這個字串只在缺觀測時出現)。跟 n_bad(任何一欄缺、卡片紅底
+    的總張數)分開算,是因為「待審 S」格的註要先報缺觀測(G3 驗收的唯一依據),
+    沒有缺觀測但有其他紅卡時才退而求其次報「缺必填欄」。
     """
     def sec_anchor(*names):
         for _l, title, _b in secs:
@@ -494,10 +537,15 @@ def dash_cells(stage, md, n_items, n_bad, secs):
         dd_rows = re.findall(r"^\|\s*DD-\d+", mask_fenced(dd_sec), re.M) or \
             re.findall(r"^\s*[-*]\s+\S", mask_fenced(dd_sec), re.M)
         dd_open = len(re.findall(r"待裁決", mask_fenced(dd_sec)))
+        if n_obs:
+            s_note = f"{n_obs} 條缺觀測欄"
+        elif n_bad:
+            s_note = f"{n_bad} 條缺必填欄"
+        else:
+            s_note = "欄位齊全"
         return [
             ("狀態", _find(md, r"^status:\s*(\S+)"), "frontmatter", "#top"),
-            ("待審 S", f"{n_items} 條",
-             f"{n_bad} 條缺觀測欄" if n_bad else "欄位齊全", "#cards"),
+            ("待審 S", f"{n_items} 條", s_note, "#cards"),
             ("lane · Risk", f'{_find(md, r"^\s*-?\s*lane:\s*(\S+)")} · '
                             f'{_find(md, r"^\s*-\s*Risk:\s*(\S+)")}',
              "Verification Profile", sec_anchor("Verification Profile")),
@@ -532,7 +580,7 @@ def dash_cells(stage, md, n_items, n_bad, secs):
          "Exit Checklist", sec_anchor("Exit Checklist")),
         ("爭點", f"{disputes} 條", "附錄:本輪特有", sec_anchor("附錄")),
         ("風險", f"{known} 條", "Known Limits", sec_anchor("Known Limits")),
-        ("抽驗", "隨機一列 檔:行", "對得上才信剩下的", sec_anchor("Coverage Matrix")),
+        ("抽驗", _sample_row(md), "對得上才信剩下的", sec_anchor("Coverage Matrix")),
     ]
 
 
@@ -620,6 +668,7 @@ def main(argv):
         print(f"ERROR: 解析到 {n_items} 條,預期 {expect}(DEVFLOW_EXPECT_ITEMS)", file=sys.stderr)
         return 1
     n_bad = cards.count('class="s-card bad"')
+    n_obs = cards.count('觀測」欄')  # K-7:缺「觀測」欄的張數(觀測固定排最後,見 card())
     print(f"NOTE: 解析到 {n_items} 條待審項目" + (f",其中 {n_bad} 條缺必填欄" if n_bad else ""),
           file=sys.stderr)
 
@@ -664,7 +713,7 @@ def main(argv):
     if dropped:
         print(f"NOTE: 以下父節的內容已整段渲染成卡片,不重複顯示:{dropped}", file=sys.stderr)
 
-    raw_cells = dash_cells(stage, fm_text + "\n" + md, n_items, n_bad, secs)
+    raw_cells = dash_cells(stage, fm_text + "\n" + md, n_items, n_bad, secs, n_obs)
     have_ids = {anchor_id(title) for _l, title, _b in secs} | {"cards", "top"}
     cells = "".join(
         f'<a class="cell" href="{a if a.lstrip("#") in have_ids else "#cards"}">'

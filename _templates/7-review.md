@@ -42,7 +42,7 @@ updated:
 >
 > | | 要求 | 這一站的內容 |
 > |---|---|---|
-> | 1 | **動線頂區五格**,每格一句話 + 可點跳轉 | 判定(frontmatter `verdict:`)/ 出貨(Exit Checklist `x/y`)/ 爭點(「附錄:本輪特有」幾條)/ 風險(Known Limits 幾條)/ 抽驗(隨機一列 `檔:行`)—— **與上面五步一一對應** |
+> | 1 | **動線頂區五格**,每格一句話 + 可點跳轉 | 判定(frontmatter `verdict:`)/ 出貨(Exit Checklist `x/y`)/ 爭點(「附錄:本輪特有」幾條)/ 風險(Known Limits 幾條)/ 抽驗(Coverage Matrix 中位列 `檔:行`,決定論、可重現)—— **與上面五步一一對應** |
 > | 2 | **待審項目逐條可勾**,有進度計數 | 現象證據逐 S、Coverage Matrix 逐列、Exit Checklist 逐項 |
 > | 3 | **背景資料摺疊**(`<details>`,預設收合、內容零刪減) | Verification Evidence、雙軸、變更架構圖、Diff |
 >
