@@ -24,6 +24,9 @@ A-13/B-9 已於 v3.1.0 修（見各節）。
 > 模板明文完成條件卻無機械檢查，實測 16 個 S 中 5 個缺欄仍走到 G2）。三條**皆未修**，
 > 見本檔〈第三輪〉。
 > owner 2026-08-14 指示「寫進優化項目供後續處理，dev-flow 的修改另開 session 做」。
+>
+> 後續狀態（2026-08-15）：三條已全數處理 —— **B-8** 已修（見 B-8 節，2026-08-15）；
+> **A-13**／**B-9** 已於 v3.1.0 修（見各節）。
 
 ---
 
@@ -425,6 +428,9 @@ gitignored 內容：`.claude/skills/generated/*.md`、`.gitnexus/parse-cache/*.j
 （Files 清單當派工硬約束 + 人工逐筆核 + reviewer 獨立再核），已在 CRM order-intake
 的 T-1~T-4 驗證可行且抓到三個真問題（D-4 執行者繞過、D-11 新增邏輯零測試覆蓋、
 `is_active` 檢查過寬）。加速靠**批次派工**（一次跑完一整條支線再 review）而非關掉守衛。
+
+> 後續（2026-08-15 註）：A-13 已於 v3.1.0 修正 start 不再以 ignored 檔擋啟動，
+> 本節「維持原行為」的描述已過時，現況見 A-13 節。
 
 ⚠️ 目前的錯誤訊息會誤導 —— 它說「未提交改動」，但列出來的是 gitignored 檔，
 使用者第一反應是「這些不是我的，可以刪嗎」（實際案例）。無論選哪個修法，
@@ -1350,7 +1356,7 @@ T 數不符預期 → exit 1；md 出現未收錄的 `## ` 章節 → exit 1（�
 
 ---
 
-## A-13 — `devflow-exec.sh start` 把 **.gitignore 已忽略的檔**也算成「scope 外未提交改動」，有本機開發目錄的專案一律啟動不了　⏳ 未修
+## A-13 — `devflow-exec.sh start` 把 **.gitignore 已忽略的檔**也算成「scope 外未提交改動」，有本機開發目錄的專案一律啟動不了　✅ 已修（v3.1.0）
 
 ### 現象
 
@@ -1417,9 +1423,21 @@ def git_dirty_paths(root):
    前者會讓後續真實改動被靜默忽略，後者毀掉開發環境。這條沒有安全的採用端 workaround，
    只能改母版。
 
+### 已採用的修法（v3.1.0，2026-08-14 前後）
+
+`start` 不再以 gitignore 已忽略的檔擋啟動，ignored 與一般髒檔分流：
+`hooks/devflow-lib.py:47-56`（`git_dirty_paths(root, with_codes=False)`）新增
+`with_codes` 參數 —— 預設 `False` 維持既有回傳型別，`postbash` 偵測網照舊看得到
+ignored 檔（遮蔽漏洞繼續堵）；`with_codes=True` 給 `start` 前置掃描用，回傳
+`(code, path)` 讓呼叫端把 `!!`（被 .gitignore 忽略）與一般髒檔分流。
+`hooks/_exec_impl.py:146,950` 呼叫端已改用 `with_codes=True`，`start` 不再拿
+ignored 檔擋開工，但仍收進 baseline。v3.1.0 tag 訊息（`git tag -n99 v3.1.0`）：
+「v3.1.0 — G2 機械關卡 + start 不再誤判 gitignore 檔 + 導覽改圖為主」，
+release commit 訊息載明「A-0/A-13(修 bug…)」；selftest 294 → 297。
+
 ---
 
-## B-9 — 「每 S 有觀測欄」是模板明文的完成條件，卻沒有任何機械檢查　⏳ 未修
+## B-9 — 「每 S 有觀測欄」是模板明文的完成條件，卻沒有任何機械檢查　✅ 已修（v3.1.0）
 
 ### 查證
 
@@ -1462,6 +1480,20 @@ Gauntlet 只驗 Evidence 契約（一份 markdown 有沒有照規矩填），不
 3. ⚠️ 寫這支腳本時注意母版自己的教訓（本檔〈第二輪查證方法〉附錄）：
    **先看計數再看 exit code**。解析到 0 個 S 卻回 exit 0 = 假綠，
    與「`go test -run` 沒匹配也回 rc=0」同類。本輪原型的做法是硬比對預期條數，可照抄。
+
+### 已採用的修法（v3.1.0）
+
+新增 `scripts/check-spec-gate.sh`（G2 機械關卡，五項形狀檢查，`--version` 見 tag）：
+C1 每個 S 都有觀測欄（`_templates/4-spec.md:37` 完成條件、`:78` 欄位形式）、
+C2 Verification Profile 節存在且 `lane:`/`Risk:` 可解析、C3 `lane: fast` + `Risk: high`
+無 Owner Call 例外即 FAIL、C4 反模糊掃描（TBD／適當／正確…）、C5 DD 表無殘留「待裁決」。
+已註冊進 `devflow-check.sh`（15 → 16 組）。
+
+⚠️ 數字勘誤：v3.1.0 的 GitHub release notes（`gh release view v3.1.0`）把本條寫成
+「實測一份 16 個 S 的 spec 有 **13** 個缺欄」，13 為誤植（同一份 release notes 另一節
+寫「**13** 個 parity 區逐字未動」，疑似數字污染）；正確是本節記錄的 **5** 個，
+`scripts/check-spec-gate.sh:9` 原文亦寫「16 個 S 裡有 5 個缺『觀測』欄」。
+release body 待 owner 以 `gh release edit` 修正。
 
 ---
 

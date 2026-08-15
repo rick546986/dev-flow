@@ -453,3 +453,6 @@ T Review Log、Progress Log、TDD Evidence 謄錄、執行軌跡),沿用現行�
 ## 15. 外部 plugin 待辦
 
 詳列(檔案 × 變更 × 驗收)見 `notes/change-manifests/execution.md`。
+
+> ✅ 2026-08-15 核對:本節轉指 `execution.md` §6 的 8 項,已於該檔核對加註全數落地
+> 於本 repo(併入後),證據同表一,此處不重複列。
