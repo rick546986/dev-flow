@@ -369,14 +369,24 @@ repo 層不需區分 —— 修改後仍全綠。唯一既有失敗在外部 Run
    「人工/fresh reviewer;完全無腳本檢查,連範例都沒有」。這是文件 A 對 P2 的裁決
    (維持人工責任、不做語意 parser)的直接後果,不是疏漏。若下輪要收:最小做法是加一條
    「範例 Out of Scope 節含 Stage 3 對帳段且逐場點名」的存在性檢查,同 P6 風格。
+   > → 2026-08-15 處置:**已做**。本棒新增 Stage 3 對帳存在性檢查(見下方四之 1):
+   > `scripts/check-realworld.sh` 第 10 節(只驗存在性/結構,不驗場景名字面,依原裁決
+   > 不做語意 parser);`scripts/test-architecture-guards.sh` 新增 RW 群組(RW-0 對照組 +
+   > RW-1/RW-2 兩個 mutation,含「一條場景保留但拿掉逐場點名引用」的 vacuous-truth 陷阱案)。
 2. **E11 的 Standards Axis 與 現象證據 兩節無負向 fixture**(bf05b59 既有缺口)。刪掉
    規則測試仍綠。補兩個 fixture 即可,但屬本輪目標之外。
+   > → 2026-08-15 處置:**已做**。本棒補 E11 Standards Axis 與現象證據兩個負向 fixture
+   > (見下方四之 2):`scripts/fixtures/evidence-gauntlet/bad-review-missing-standards-axis.md`、
+   > `bad-review-missing-phenomena.md`,並在 `scripts/test-evidence-gauntlet.sh` 註冊。
 2b. **P2 對帳的「場景邊界」與「什麼算下落」都還沒定義**。本輪按「Demo Script 的
    `### Scenario` 標題」為對帳對象、按「有 R/S 或 Out of Scope 條目」為下落;但
    3-prototype 的 Method 走查條列也承載已 ACCEPTED 的行為(如「中斷恢復」),而
    Operational Context 的 `Recovery:` 這類欄位算不算「下落」也沒寫死。稽核用嚴格 lens
    跑就會把這類項目撈成缺口(本輪撈到一個,見 §3 P2)。下一輪要收:先在模板把這兩個
    邊界寫清楚,再談要不要機械化。
+   > → 2026-08-15 處置:**已做**。本棒在 `_templates/4-spec.md` Stage 3 對帳子項(P2 加的
+   > 那段)補兩句(見下方四之 3):「Method 走查條列也算 ACCEPTED 行為的下落來源之一;
+   > Operational Context 的 `Recovery:` 欄位內容也算下落。」
 3. ~~fast lane 五欄 vs triage 的措辭落差只修了一半~~ —— **本項已於 push-readiness closure
    完成,不再是未完成項**。`2d33910` 在 README §7 G2 錨定義段的「fast lane = 最小 Profile
    (五欄,見 4-spec 模板)」句後補了四行非粗體說明;`cfec5ac` 再把 `guide-dev-flow.html`
@@ -384,14 +394,27 @@ repo 層不需區分 —— 修改後仍全綠。唯一既有失敗在外部 Run
    且 gate token 集合逐字未變(見 §9)。
 4. **README / 設計筆記裡的版本字串無守衛**。把 `README.md:342`(HEAD 上的行號)的 1.2.0
    改成 9.9.9,五支 check 與 renderer 全綠。目前無實際漂移,屬缺守衛而非缺陷。
+   > → 2026-08-15 處置:**已做**。本棒把 gauntlet 版本字串納入 `check-version-sync.sh`
+   > (見下方四之 4):新增第五處比對點 `docs/dev/tools/devflow-evidence-gauntlet.sh` 的
+   > `GAUNTLET_VERSION`,並修掉「`len(found)==4` 提前判斷」這個會讓新增第五處比對淪為
+   > no-op 的陷阱(此前 4 處全抽到值就直接判「一致」,第 5 處抽到值與否都不影響交叉比對)。
+   > `test-architecture-guards.sh` 新增 VS-5 mutation(單獨把 docs/dev/tools 副本改 9.9.9
+   > → 紅,驗第五處確實有被比對;既有 VS-1 README 改 9.9.9 → 紅維持不變,兩案分屬不同點)。
 5. **本輪 deferred 項全數未做**(獨立 `architecture.md`、完整 Software Design Contract
    大表、Stage 5 G1.5 Gate、路徑式 layer lint、Runtime 併回、`task_tags` 必填、部署拓撲/
    可用性/威脅模型強制、Gauntlet 判斷內容正確性、通用追溯腳本、第二個完整範例、
    真實 Reference App、Living Spec 實體化)。已用 `git diff --stat bf05b59..HEAD` 佐證:
    16 檔、+216/−13 行,新檔只有兩個 gauntlet 負向 fixture;無新 Stage、無新模板、
    無新 Gate、無新頂層腳本。
+   > → 2026-08-15 處置:**收攏**(逐項見 `4cap-audit-fixes-2026-08.md` 的 O-1~O-8 裁決節):
+   > G1.5/路徑式 layer lint/`architecture.md`/`task_tags` 必填/部署拓撲·可用性·威脅模型
+   > 強制/Gauntlet 判斷內容正確性 = 防守清單 1-6 裁定不做;Runtime 併回 = ADR-0001 已翻案
+   > 完成;通用追溯腳本 = O-1 不採;Living Spec 實體化 = O-2 不採;第二個完整範例 = O-3
+   > 收 Backlog;Software Design Contract 大表/真實 Reference App = 收 Backlog(低優先)。
 6. **外部 Runtime 的 doctor 仍 INCOMPATIBLE**(既有失敗)。要全綠須在**採用專案**內跑
    `dev-setup` 重新散發 `docs/dev/tools/`,不屬本 repo 職責,也不在本輪授權內。
+   > → 2026-08-15 處置:**結案**。採用端動作,非本 repo 職責;A-12 已修(模板要求跑
+   > doctor),觸發點已存在,不需本 repo 再做任何事。
 7. ~~未 push、未開 PR~~ —— push 狀態改由 §9 記錄(本輪已授權 push branch,仍不開 PR、
    不合併 main);報告檔 `devflow-4cap-remediation-2026-08.md` 維持不 commit。
 

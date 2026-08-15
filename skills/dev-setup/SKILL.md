@@ -190,8 +190,8 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
    這份 SKILL.md 本身):
    `grep -rniE "<字詞表見 devtalk-guard.sh>" "${CLAUDE_PLUGIN_ROOT}/skills/dev-talk/"` 零命中
    (`CLAUDE_PLUGIN_ROOT` 未設時用 dev-flow plugin root 的 `skills/dev-talk/` 子目錄;
-   **不寫死 `~/.claude/plugins/local/dev-talk/`** —— 併入單一 plugin 後該路徑與獨立
-   marketplace entry 皆不存在)。
+   **不寫死舊版拆分 plugin 時代 dev-talk 專屬的 local marketplace 路徑** —— 併入單一
+   plugin 後該路徑與獨立 marketplace entry 皆不存在)。
 6. 專案面(在專案內跑時):docs/dev/README 與模板版本 vs 母版 diff——**README 比對
    基準是剝除 master-only 區塊後的母版內容,不是母版原檔**(比對管線同 upgrade
    段:`diff <(sed -n '/<!-- devflow:master-only:start -->/,/<!-- devflow:master-only:end -->/!p' "${CLAUDE_PLUGIN_ROOT}/README.md") docs/dev/README.md`;

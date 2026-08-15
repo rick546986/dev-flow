@@ -548,9 +548,12 @@ md 側對應規定是 `_templates/5-tasks.md` 頂註,**兩邊講同一件事、m
 ### 強制力對照(誰在擋)
 
 本 README 用肯定語氣寫規則,但「規則存在」不等於「Runtime 會擋」。下表把每項條件
-的實際強制者分三類寫清楚,免得讀者把人工紀律誤讀成機械閘門。三類是:外部 plugin
-(`~/.claude/plugins/local/dev-flow/`,獨立 repo,本 repo 不含其程式碼)、本 repo
-腳本(只驗本 repo 的模板/範例/fixture)、人工或 fresh reviewer。
+的實際強制者分三類寫清楚,免得讀者把人工紀律誤讀成機械閘門。三類是:plugin runtime
+(ADR-0001 之後併入本 repo 隨其散發,不再是獨立 repo;安裝後實際路徑為
+`~/.claude/plugins/cache/dev-flow/dev-flow/<version>/`,Windows 對應
+`%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\<version>\`;裝法見
+[`docs/PLUGIN.md`](docs/PLUGIN.md))、本 repo 腳本(只驗本 repo 的模板/範例/fixture)、
+人工或 fresh reviewer。
 
 讀本表前先記三句:①本 repo 的 reference test 全綠 ≠ 外部 Runtime pass —— 兩者
 用 `devflow-contract.json` 對版握手,不共用實作。②Gauntlet 只驗 Evidence 契約
@@ -564,7 +567,7 @@ E11 只驗這兩節在不在。
 | G2 R/S、Drafting Decisions、Verification Profile、Demo verdict | 人工/fresh reviewer;外部 plugin 管流程 Gate | 本節上方、`_templates/4-spec.md`、外部 plugin |
 | G1/G2/G3 摘要三處不漂 | 外部 plugin 機械比對本節粗體錨 | `hooks/gate-consistency.sh` |
 | Stage 3 Human verdict 不得由 Agent 代填 | 人類輸入;外部 plugin 判定觸發與拒絕代答 | `_templates/3-prototype.md`、`hooks/_stage3_impl.py` |
-| Stage 4 逐場對帳 Stage 3 ACCEPTED 場景 | 人工/fresh reviewer;完全無腳本檢查,連範例都沒有 | `_templates/4-spec.md` 步 3 |
+| Stage 4 逐場對帳 Stage 3 ACCEPTED 場景 | 人工/fresh reviewer 為主;本 repo 腳本驗範例的對帳段存在性與逐場點名(不判內容對錯) | `_templates/4-spec.md` 步 3、`scripts/check-realworld.sh`(母版 repo) |
 | Stage 4 Reliability triage 三問已填 | 本 repo 腳本驗模板欄名與範例三項有非空理由;理由對不對是 G2 reviewer 判斷 | `_templates/4-spec.md`、`scripts/check-methodology-corrections.sh`(母版 repo) |
 | Stage 5 必填四欄與 scope 解析 | 外部 runtime;本 repo reference parser 驗 fixture | `_templates/5-tasks.md`、`tests/parallel-stage6/contract_ref.py`(母版 repo)、`hooks/_exec_impl.py` |
 | Stage 5 不得整份按架構層切 T | 人工/fresh reviewer 為主;本 repo 另有 **warning-only** heuristic(永不 exit 1,只提示,不能取代 reviewer) | `_templates/5-tasks.md`、`scripts/check-task-slicing.sh`(母版 repo) |

@@ -108,6 +108,12 @@ run_case "review 檔雙軸俱在但缺 Operational Walkthrough(E11)" 1 "缺「##
   "$FIX/bad-review-missing-walkthrough.md" --review-file
 run_case "review 檔雙軸+Walkthrough 俱在但缺 Coverage Matrix(E11)" 1 "缺「## Coverage Matrix」" \
   "$FIX/bad-review-missing-coverage-matrix.md" --review-file
+# 2026-08-15 補(devflow-4cap-remediation-2026-08.md §7 第 2 點):Standards Axis 與
+# 現象證據兩節此前無負向 fixture(bf05b59 既有缺口),規則被刪掉測試仍綠。
+run_case "review 檔雙軸+Walkthrough+Coverage Matrix 俱在但缺 Standards Axis(E11)" 1 \
+  "缺「## Standards Axis」" "$FIX/bad-review-missing-standards-axis.md" --review-file
+run_case "review 檔雙軸+Walkthrough+Coverage Matrix 俱在但缺 現象證據(E11)" 1 \
+  "缺「## 現象證據」" "$FIX/bad-review-missing-phenomena.md" --review-file
 run_case "review 檔雙軸+現象證據+Walkthrough+Coverage Matrix 俱在則過" 0 "-" \
   "$FIX/good-review.md" --review-file --source-sha abc1234def5678
 

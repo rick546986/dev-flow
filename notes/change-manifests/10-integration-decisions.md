@@ -53,6 +53,14 @@
 彙整自四 manifest:A §6(8 項)、C §11(6 項)、D §8(4 項)、B(SKILL 階段動作表)。
 前置:plugin repo 未合併 branch `codex/dev-flow-methodology-corrections` 狀態先確認。
 
+> ✅ 2026-08-15 核對:本條彙整所指涉的 A/D 項已全數落地(詳見 `execution.md`/`gauntlet.md`
+> 各自的核對加註);C §11 6 項中 5 項已落地、第 4 項(四支 hook deny 事件)僅 3/4 落地
+> ——`hooks/_guard_impl.py:15-28`、`hooks/_prebash_impl.py:18`、`hooks/_postbash_impl.py:17`
+> 皆有 `_obs_deny` 寫 `mechanical_gate_completed` 事件,但 `hooks/devtalk-guard.sh`(24 行)
+> 無任何事件呼叫、亦無 selftest 覆蓋,詳見 `observability.md` 核對加註。B 項(操作性
+> workstream,無獨立外部 runtime 待辦清單)無涉。前置「codex branch 確認」:
+> `codex/dev-flow-methodology-corrections` 本機與 remote 均已不存在,結案。
+
 ---
 
 ## 決策狀態更新(2026-08-02 Runtime 輪;Owner 已於 docs/prompts/devflow-vnext-runtime.md 裁決)

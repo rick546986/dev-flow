@@ -37,10 +37,11 @@
 <main>
   <h1>dev-setup 安裝紀錄(plugin 版)</h1>
   <p class="muted">2026-07-25 初裝(settings hook 版)→ 2026-07-26 升級為 local plugin。目的:單一正本(兩帳號共用 local marketplace 目錄,舊「cp + md5 對檢」紀律退役)、盲原則機械守衛、健康檢查入口。</p>
+  <p class="muted">⚠️ 本頁是 2026-07-26 遷移當下的紀錄:當時 dev-talk、dev-flow 是拆開的兩個 plugin,裝在 local marketplace 目錄下。dev-talk 其後已併入 dev-flow 單一 plugin(見 <code>docs/PLUGIN.md</code>),散發方式也改為 marketplace 安裝,實際路徑為 <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/</code>(Windows 對應 <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\</code>)。下方路徑已更新為現行值,但目錄樹描述的仍是舊版兩 plugin 拆分結構,僅供歷史對照,不代表現況。</p>
 
-  <h2>① 現行架構</h2>
+  <h2>① 現行架構(舊版兩 plugin 拆分,僅供歷史對照)</h2>
   <pre>
-~/.claude/plugins/local/                 &lt;- local marketplace(兩帳號共用同一目錄)
+~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/  &lt;- 現行安裝路徑(見上方提示;下列樹狀為舊版 local marketplace 結構)
 |- .claude-plugin/marketplace.json       &lt;- 已登錄 dev-talk、dev-flow 兩 plugin
 |- dev-talk/                             &lt;- plugin 1(獨立包裝,防耦合)
 |  |- .claude-plugin/plugin.json         &lt;- 版本以本檔實值為準;描述中性
@@ -51,7 +52,7 @@
    |- skills/dev-flow/SKILL.md           &lt;- 流程路由器
    |- skills/dev-run/SKILL.md            &lt;- Stage 6 執行引擎(haiku 寫碼-sonnet 審-升階)
    |- skills/dev-setup/SKILL.md          &lt;- 專案安裝器 + 基建檢查(install/upgrade/check)
-   |- hooks/hooks.json                   &lt;- 四條掛載(見下表)
+   |- hooks/hooks.json                   &lt;- 掛載清單(條數以檔案實況為準)
    |- hooks/devtalk-guard.sh             &lt;- 盲原則守衛(PostToolUse Edit|Write)
    |- hooks/devflow-exec.sh              &lt;- 執行守衛 CLI(start/stop/status/allow/doctor/event
    |                                        + gate/stage3 + parallel 系列;doctor=契約握手 fail-closed)
@@ -82,7 +83,7 @@
     <tr><td><code>dev-talk@local</code></td><td>訪談引導 skill(版本以其 plugin.json 實值為準;含受影響面清點、五掃複核、⚠️ 高影響決策標記)+ 視覺版殼檔。單一正本,兩帳號同時生效。</td></tr>
     <tr><td><code>dev-flow@local</code></td><td>流程路由器 + dev-setup 健康檢查 + guard hook。hook 隨 plugin 啟用自動掛載(不再寫進 settings.json)。</td></tr>
     <tr><td>devtalk-guard.sh</td><td>任何 Edit/Write 後檢查:目標路徑含 <code>skills/dev-talk/</code> 才動作 → 洩漏掃描(下游階段字眼)→ 命中 <code>exit 2</code> 把錯誤直接回饋給模型要求立即修正。其他路徑靜默放行。</td></tr>
-    <tr><td>dev-setup skill</td><td>專案安裝器(install:docs/dev 模板 + <code>devflow-contract.json</code> 散發(版本握手契約)+ evidence gauntlet 散發到 <code>docs/dev/tools/</code>(chmod +x + 兩道可執行驗證)+ <code>.claude/rules/</code> 骨架 + gitignore;upgrade:只覆蓋 README/_templates/tools/(gauntlet)/devflow-contract.json,絕不動已產 feature 檔;未識別的外部 workflow artifacts 全數保留)+ <strong>10 項健康檢查</strong>(含第 9 gauntlet 散發、第 10 版本握手+doctor)。</td></tr>
+    <tr><td>dev-setup skill</td><td>專案安裝器(install:docs/dev 模板 + <code>devflow-contract.json</code> 散發(版本握手契約)+ evidence gauntlet 散發到 <code>docs/dev/tools/</code>(chmod +x + 兩道可執行驗證)+ <code>.claude/rules/</code> 骨架 + gitignore;upgrade:只覆蓋 README/_templates/tools/(gauntlet)/devflow-contract.json,絕不動已產 feature 檔(B-2 新規:改採三方比對 —— 上游舊 blob / 上游新 blob / 本地現況,本地客製過的檔逐檔徵求使用者同意才覆蓋,不再整批靜默覆蓋;見 <code>skills/dev-setup/SKILL.md</code> upgrade 節);未識別的外部 workflow artifacts 全數保留)+ <strong>健康檢查</strong>(項目數與編號以 <code>skills/dev-setup/SKILL.md</code> 的 check 節為準,含 gauntlet 散發、版本握手+doctor、gate twin 產生器散發等項)。</td></tr>
     <tr><td><strong>執行守衛</strong><br>(devflow-exec + guard + prebash + postbash)</td><td>Stage 6 起手 <code>devflow-exec.sh start &lt;slug&gt;</code>:驗 4-spec=approved、逐 T 驗 Covers/Files/Verify/Blocked-by、把 Git root 相對 Files 正規化為 scope。scope 外真實髒檔先拒啟(不再 baseline);只有 <code>.DS_Store</code>/<code>._*</code>/<code>Thumbs.db</code>/<code>__pycache__/</code>/<code>*.pyc</code> 是 ambient。旗標存在時:<strong>PreToolUse</strong> 擋改 4-spec/1/2/3(契約防篡改+L2 強制停修審)、擋讀 1/2/3(圍欄②)、擋 scope 外寫入(附 L1/L2 提示);<strong>PostToolUse Bash</strong> 每次指令後 git status 對照 scope,shell 寫入幾秒內被抓。L1 合法出口:<code>allow &lt;file&gt; --reason</code>(留 log + 提醒記 D-n)。<code>stop</code> 撤旗標 → 全部沉睡,其他工作零干擾。另支援 Stage 6 <strong>T 級並行</strong>(5-tasks <code>execution.mode: parallel</code> 才啟用):<code>parallel-init</code>/wave 系列子命令 + <code>start --task T-n</code> 任務樹武裝(每 T 一 worktree,同 Wave 同 Base)、Mechanical Gate 14 項機械檢查、上游 candidate 被替換自動標 <code>INVALIDATED_BY_UPSTREAM</code>;<code>doctor</code> = 契約握手 fail-closed(見 ②b)。</td></tr>
     <tr><td><strong>dev-run 引擎</strong></td><td>派工者(opus/fable5 主對話,不寫碼)逐 T:haiku 執行 → sonnet fresh review → 錯誤升階(haiku→sonnet→opus,同層最多兩次;FAIL 先分類 SPEC/ENV/IMPL/UNKNOWN 再路由,同 T 總嘗試上限 4);升階史記 6-notes「執行軌跡」→ 7-review.html 執行記錄表。逐 attempt 事件經 <code>devflow-exec.sh event</code> 寫入 <strong>Attempt Ledger</strong>(devflow-obs,agent_event schema 1.1),執行軌跡/執行記錄由 <code>devflow-obs.sh derive</code> 衍生禁雙寫(sequential v1 無 run_id → 事件步 N/A,禁虛構)。偏差 L1 保守+記+續走,L2 才停(field guide 模式)。</td></tr>
   </table></div>
@@ -117,26 +118,31 @@
   </table></div>
 
   <h2>④ 手動檢查指令</h2>
+  <p class="muted">下列 <code>PLUGIN</code> 為安裝後的實際路徑,版號依安裝而定(見 <code>docs/PLUGIN.md</code>);
+  Windows 對應 <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;</code>。</p>
   <pre>
+PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
+
 # plugin 結構 + 啟用
-jq '.plugins[].name' ~/.claude/plugins/local/.claude-plugin/marketplace.json
+jq '.plugins[].name' "$PLUGIN/.claude-plugin/marketplace.json"
 jq '.enabledPlugins | with_entries(select(.key|test("dev-")))' \
   ~/.claude/settings.json ~/.claude-team/settings.json
 
 # 執行守衛全情境自測(可重跑;自建 temp 假 repo 跑動態發現的案例後自清)
-~/.claude/plugins/local/dev-flow/hooks/selftest.sh        # -v 看逐案明細
+"$PLUGIN/hooks/selftest.sh"        # -v 看逐案明細
 
-# devtalk-guard 單案自測(期望:exit 0)
-echo '{"tool_input":{"file_path":"'$HOME'/.claude/plugins/local/dev-talk/skills/dev-talk/SKILL.md"}}' \
-  | ~/.claude/plugins/local/dev-flow/hooks/devtalk-guard.sh; echo exit=$?
+# devtalk-guard 單案自測(期望:exit 0;dev-talk 併入單一 plugin 後 skill 路徑同一 PLUGIN 根)
+echo '{"tool_input":{"file_path":"'$HOME'/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/skills/dev-talk/SKILL.md"}}' \
+  | "$PLUGIN/hooks/devtalk-guard.sh"; echo exit=$?
 
-# 盲掃(掃整個 plugin 目錄,含 plugin.json description;期望:無輸出)
+# 盲掃(掃整個 dev-talk skill 目錄,含 SKILL.md description;期望:無輸出;
+# dev-talk 併入後不再有獨立 plugin.json,洩漏風險全落在這份 SKILL.md)
 grep -rniE "dev-flow|2-decision|4-spec|5-tasks|7-review|G1|G2|G3|gate|twin|pipeline|規劃|plan" \
-  ~/.claude/plugins/local/dev-talk/
+  "$PLUGIN/skills/dev-talk/"
 
 # 掛載驗證(自測只證 script 邏輯,不證掛載 —— 這條才驗掛載)
 jq -e '.hooks | to_entries[] | .key as $e | .value[] | .matcher' \
-  ~/.claude/plugins/local/dev-flow/hooks/hooks.json    # 應見 4 條
+  "$PLUGIN/hooks/hooks.json"    # 條數以 skills/dev-setup/SKILL.md check 節為準
 
 # evidence gauntlet 散發驗證(在採用專案內跑;install 步 6 / check 第 9 項的兩道)
 bash docs/dev/tools/devflow-evidence-gauntlet.sh       # 期望:印 usage 且 exit 2
@@ -144,7 +150,7 @@ bash docs/dev/tools/devflow-evidence-gauntlet.sh \
   ~/dev/dev-flow/scripts/fixtures/evidence-gauntlet/good-evidence.md   # 期望:exit 0
 
 # 版本握手(在採用專案內跑;check 第 10 項)
-~/.claude/plugins/local/dev-flow/hooks/devflow-exec.sh doctor   # 看 verdict;INCOMPATIBLE 不得繞過
+"$PLUGIN/hooks/devflow-exec.sh" doctor   # 看 verdict;INCOMPATIBLE 不得繞過
   </pre>
 
   <h2>⑤ 停用 / 移除</h2>

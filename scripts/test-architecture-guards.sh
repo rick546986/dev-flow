@@ -14,8 +14,15 @@
 #                    GT-3 刪 G3 錨定義八點中的一點 / GT-4 憑空新增 G4
 #                    GT-5a~d 八點極性反轉 / GT-6a 同句 decoy / GT-6b 片語搬到別點
 #   Version Sync     VS-0 對照組 / VS-1 README 9.9.9 / VS-2 contract 9.9.9
-#                    VS-3 design doc 9.9.9 / VS-4 版本錨被刪
+#                    VS-3 design doc 9.9.9 / VS-4 版本錨被刪 / VS-5 docs/dev/tools
+#                    散發副本版本改 9.9.9(2026-08-15 補,第五處同步點)
 #   Guard Source     GS-0a/0b 對照組 / GS-1~GS-8 變異**守衛本體**(含 co-edit 守衛+資料)
+#   Stale Paths      SP-0 對照組 / SP-1 混入過期 dev-flow 路徑 / SP-2 混入過期 dev-talk
+#                    路徑 / SP-3 混入開發者個人絕對路徑 / SP-4 混入 docs/dev/STATUS.md
+#                    (2026-08-15 補,第三批獨立審查 P1 —— 該路徑此前完全不在掃描目標
+#                    也不在可見豁免清單,塞禁字仍零命中)(check-no-stale-paths.sh)
+#   Real-world       RW-0 對照組 / RW-1 Out of Scope 整段 Stage 3 對帳被刪 / RW-2 一條
+#                    場景保留但拿掉逐場點名引用(check-realworld.sh;§7 第 1 點,2026-08-15)
 #
 # 案例數是**斷言**不是裝飾:EXPECTED_CONTROLS / EXPECTED_NEGATIVES / EXPECTED_TOTAL
 # 由 expect()/expect_local() 實際累計後比對,刪任何一案(含對照組)都會非零退出。
@@ -39,6 +46,9 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd)
 fingerprint() {
   find "$ROOT/README.md" "$ROOT/devflow-contract.json" "$ROOT/_templates" \
        "$ROOT/example" "$ROOT/notes/design" "$ROOT/scripts" \
+       "$ROOT/docs/dev/tools/devflow-evidence-gauntlet.sh" \
+       "$ROOT/docs/dev/STATUS.md" "$ROOT/docs/dev/devflow-contract.json" \
+       "$ROOT/docs/adr" \
        -type f -exec shasum {} + 2>/dev/null | shasum | awk '{print $1}'
 }
 FP_BEFORE=$(fingerprint)
@@ -71,9 +81,9 @@ RESULTS=()
 # 改法:由 expect()/expect_local() 依 want 實際累計 control 與 negative,尾聲與釘死值比對。
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
-EXPECTED_CONTROLS=7
-EXPECTED_NEGATIVES=43
-EXPECTED_TOTAL=50
+EXPECTED_CONTROLS=9
+EXPECTED_NEGATIVES=50
+EXPECTED_TOTAL=59
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -86,14 +96,22 @@ seed() {
   [[ "$dst" == "$WORK/"* ]] || { echo "seed: 目標逃逸 $dst" >&2; exit 1; }
   safe_rm "$dst"
   mkdir -p "$dst/_templates" "$dst/example/contract-expiry-reminder" \
-           "$dst/notes/design" "$dst/scripts"
+           "$dst/notes/design" "$dst/scripts" "$dst/docs/dev/tools" "$dst/docs/adr"
   cp "$ROOT/README.md" "$dst/README.md"
   cp "$ROOT/devflow-contract.json" "$dst/devflow-contract.json"
-  cp "$ROOT"/_templates/{4-spec,5-tasks,6-implementation-notes,7-review}.md "$dst/_templates/"
-  cp "$ROOT"/example/contract-expiry-reminder/{4-spec,5-tasks,6-implementation-notes,7-review}.md \
+  cp "$ROOT"/_templates/{1-discussion,3-prototype,4-spec,5-tasks,6-implementation-notes,7-review}.md \
+     "$dst/_templates/"
+  cp "$ROOT"/example/contract-expiry-reminder/{1-discussion,3-prototype,4-spec,5-tasks,6-implementation-notes,7-review}.md \
      "$dst/example/contract-expiry-reminder/"
   cp "$ROOT"/notes/design/{design-boundary-contract,evidence-gauntlet}.md "$dst/notes/design/"
   cp "$ROOT/scripts/devflow-evidence-gauntlet.sh" "$dst/scripts/"
+  cp "$ROOT/docs/dev/tools/devflow-evidence-gauntlet.sh" "$dst/docs/dev/tools/"
+  # 2026-08-15 補(第三批獨立審查 P1):SP-4 需要 docs/dev/STATUS.md 在 seed 副本內才
+  # 咬得到 mutation;docs/dev/devflow-contract.json、docs/adr/ 一併補齊,對齊
+  # check-no-stale-paths.sh 新增的掃描目標。
+  cp "$ROOT/docs/dev/STATUS.md" "$dst/docs/dev/STATUS.md"
+  cp "$ROOT/docs/dev/devflow-contract.json" "$dst/docs/dev/devflow-contract.json"
+  cp "$ROOT/docs/adr/0001-merge-plugin-into-methodology-repo.md" "$dst/docs/adr/"
   echo "$dst"
 }
 
@@ -430,6 +448,42 @@ p.write_text(n, encoding="utf-8")
 PY
 expect fail check-version-sync.sh "$D" "VS-4 版本錨整行被刪(fail-closed,不得靜默略過)"
 
+D=$(seed vs5); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "docs/dev/tools/devflow-evidence-gauntlet.sh"
+t = p.read_text(encoding="utf-8")
+n = t.replace('GAUNTLET_VERSION="1.2.0"', 'GAUNTLET_VERSION="9.9.9"', 1)
+assert n != t, "VS-5 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-version-sync.sh "$D" "VS-5 docs/dev/tools 散發副本版本改 9.9.9(第 5 處單獨漂移)"
+
+# ──────────────── Real-world / Stage 3 對帳存在性(check-realworld.sh;§7 第 1 點)────────────────
+# 只驗存在性/結構(見 scripts/check-realworld.sh 第 10 節註解),不驗場景名字面。
+D=$(seed rw0); expect pass check-realworld.sh "$D" "RW-0 對照組(Stage 3 對帳段完整、逐場點名)"
+
+D=$(seed rw1); mutate "$D" <<'PY'
+import sys, re, pathlib
+p = pathlib.Path(sys.argv[1]) / "example/contract-expiry-reminder/4-spec.md"
+t = p.read_text(encoding="utf-8")
+n = re.sub(r"\nStage 3 對帳.*?(?=\n## Diff Budget)", "\n", t, flags=re.S)
+assert n != t, "RW-1 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-realworld.sh "$D" "RW-1 Out of Scope 整段 Stage 3 對帳被刪(恆綠漏洞:P6 沒有機械檢查會發現)"
+
+D=$(seed rw2); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "example/contract-expiry-reminder/4-spec.md"
+t = p.read_text(encoding="utf-8")
+old = "- 資料過期/併發編輯:偵測他人已改動後拒絕以過期資料標狀態、提示重新整理(3-prototype「Scenario AC-1(資料過期)」)。"
+new = "- 資料過期/併發編輯:偵測他人已改動後拒絕以過期資料標狀態、提示重新整理。"
+n = t.replace(old, new, 1)
+assert n != t, "RW-2 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-realworld.sh "$D" "RW-2 一條 Out of Scope 場景保留但拿掉逐場點名引用(vacuous-truth 陷阱:len>=1 抓不到,需逐條比對)"
+
 # ─────────────────── 守衛本體被改弱(Guard Source;fresh review F-2)───────────────────
 # 這一整類原本零覆蓋:上面所有案例都只變異資料檔,守衛本體始終從正式 repo 執行。
 # 於是「co-edit 守衛 + 資料,讓兩邊互相自洽」可以端到端全綠。以下每一案都是
@@ -721,6 +775,64 @@ assert n != t, "MM-3 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
 expect fail check-readme-markers.sh "$D" "MM-3 start/end 整組被刪(0 對『平衡』但 sed 剝除變無操作)"
+
+# ── SP 群組:過期外掛路徑守衛(check-no-stale-paths.sh)────────────────────────
+#
+# 起因:dev-talk 併入 dev-flow 單一 plugin 後,散發路徑從 local marketplace 改為
+# cache 安裝,活文件不得殘留舊路徑或開發者個人絕對路徑。這一組證明守衛真的會抓到
+# 混入的舊路徑/個人路徑,而不是空轉。
+#
+# 禁字用字串相加組出(不留連續字面)——本檔自己也落在 scripts/ 掃描範圍內,
+# 直接寫出連續禁字會讓 devflow-check 的真實掃描對本檔誤報。
+
+D=$(seed sp0)
+expect pass check-no-stale-paths.sh "$D" "SP-0 對照組(未變異)"
+
+D=$(seed sp1); mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "README.md"
+t = p.read_text(encoding="utf-8")
+banned = "plugins/local/dev-" + "flow"
+n = t + "\n測試混入舊路徑:~/.claude/" + banned + "/hooks/devflow-exec.sh\n"
+assert n != t, "SP-1 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-no-stale-paths.sh "$D" "SP-1 README 混入過期 dev-flow local marketplace 路徑"
+
+D=$(seed sp2); mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "README.md"
+t = p.read_text(encoding="utf-8")
+banned = "plugins/local/dev-" + "talk"
+n = t + "\n測試混入舊路徑:~/.claude/" + banned + "/skills/dev-talk/SKILL.md\n"
+assert n != t, "SP-2 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-no-stale-paths.sh "$D" "SP-2 README 混入過期 dev-talk local marketplace 路徑"
+
+D=$(seed sp3); mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "devflow-contract.json"
+t = p.read_text(encoding="utf-8")
+banned = "/Users/" + "asheng"
+n = t + "\n// debug path: " + banned + "/dev/dev-flow\n"
+assert n != t, "SP-3 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-no-stale-paths.sh "$D" "SP-3 devflow-contract.json 混入開發者個人絕對路徑"
+
+# SP-4(2026-08-15 補,第三批獨立審查 P1):docs/dev/STATUS.md 此前既不在掃描目標也
+# 不在可見豁免清單,塞禁字守衛仍零命中 exit 0。本案證明補上掃描目標後真的會咬到。
+D=$(seed sp4); mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "docs/dev/STATUS.md"
+t = p.read_text(encoding="utf-8")
+banned = "plugins/local/dev-" + "flow"
+n = t + "\n測試混入舊路徑:~/.claude/" + banned + "/hooks/devflow-exec.sh\n"
+assert n != t, "SP-4 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-no-stale-paths.sh "$D" "SP-4 docs/dev/STATUS.md 混入過期 dev-flow local marketplace 路徑(P1 補:此路徑先前完全不可見)"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"

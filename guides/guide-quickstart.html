@@ -162,9 +162,11 @@
   <p><span class="badge you">跟 AI 說</span> 如果你剛裝好、或剛改過 <code>dev-talk</code>/<code>dev-flow</code> plugin,
   在當前 session 打:</p>
   <pre>/reload-plugins</pre>
-  <p class="muted">為何:skills 與 hooks 隨 plugin 全域生效(<code>~/.claude/plugins/local/{dev-talk,dev-flow}/</code>,
-  單一正本),但執行中的 session 不會自動感知改動,要 reload 新版 skill/hook 才生效
-  (見 <code>dev-setup</code> SKILL「注意」節)。</p>
+  <p class="muted">為何:skills 與 hooks 隨 plugin 全域生效(安裝目錄
+  <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/</code>,Windows 對應
+  <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\</code>;
+  dev-talk 已併入同一 plugin,單一正本),但執行中的 session 不會自動感知改動,要 reload
+  新版 skill/hook 才生效(見 <code>dev-setup</code> SKILL「注意」節)。</p>
 
   <h3>1. 進專案打 dev-setup(不需參數)</h3>
   <p><span class="badge you">跟 AI 說</span> cd 進新專案 repo root 後:</p>
@@ -264,7 +266,8 @@
     <li>check 結果表</li>
     <li>還需要你決定的事(可空)</li>
   </ol>
-  <p class="muted">check 共 10 項(JSON/掛載/自測/盲掃/專案面…見 dev-setup SKILL),其中第 9 項驗
+  <p class="muted">check 項目數與編號以 <code>skills/dev-setup/SKILL.md</code> 的 check 節為準
+  (JSON/掛載/自測/盲掃/專案面…),其中第 9 項驗
   gauntlet 散發(存在、與母版無 diff、兩道可執行驗證),第 10 項驗<strong>版本握手</strong>:
   <code>docs/dev/devflow-contract.json</code> 與母版無 diff,且 <code>devflow-exec.sh doctor</code>
   可執行並看 verdict —— 報 INCOMPATIBLE 是刻意 fail-closed,不得繞過或改綠。</p>
@@ -430,9 +433,11 @@ git checkout -b feature/&lt;slug&gt;
 git worktree add -b feature/&lt;slug&gt; &lt;path&gt;
 cd &lt;path&gt;
 
-# 兩者接下來都一樣:
-~/.claude/plugins/local/dev-flow/hooks/devflow-exec.sh start &lt;slug&gt;
-~/.claude/plugins/local/dev-flow/hooks/devflow-exec.sh status  # 核對 slug 與 cwd 相符</pre>
+# 兩者接下來都一樣(PLUGIN = 安裝路徑,版號依安裝而定,見 docs/PLUGIN.md;
+# Windows 對應 %USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;):
+PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
+"$PLUGIN/hooks/devflow-exec.sh" start &lt;slug&gt;
+"$PLUGIN/hooks/devflow-exec.sh" status  # 核對 slug 與 cwd 相符</pre>
   <p class="muted">跟 AI 說 <code>dev-run &lt;slug&gt;</code> 才是最後一步。<code>dev-run</code> SKILL 原文:</p>
   <blockquote>守衛只武裝「start 當下所在的那棵樹」—— 先 start 再換樹 = 安全網失效。</blockquote>
   <p class="muted">原因是 git worktree 各自有獨立的 git-dir(<code>.git/worktrees/&lt;name&gt;</code>),
@@ -468,8 +473,10 @@ cd &lt;path&gt;
   <h2 id="guardcheat">③ 執行守衛速查表</h2>
   <p class="lead">這章要你懂:<strong>守衛擋你時只有三種訊息,對應三種處置</strong> ——
   唯一要判斷的是 L1 還是 L2,而判不出來時規則已經幫你決定了(當 L2)。</p>
-  <p>Stage 6 的守衛是 <code>devflow-exec.sh</code>(plugin hooks 內,無 alias,要打路徑):</p>
-  <pre>~/.claude/plugins/local/dev-flow/hooks/devflow-exec.sh start &lt;slug&gt;</pre>
+  <p>Stage 6 的守衛是 <code>devflow-exec.sh</code>(plugin hooks 內,無 alias,要打路徑;
+  安裝路徑 <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/</code>,
+  Windows 對應 <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\</code>):</p>
+  <pre>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/hooks/devflow-exec.sh start &lt;slug&gt;</pre>
   <p class="muted">此檔已可執行(<code>chmod +x</code> 免打),下文一律省略路徑,單寫 <code>devflow-exec.sh</code>。</p>
 
   <div class="tablewrap"><table>
@@ -621,10 +628,10 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   </svg></div>
   <p class="figcap">紅虛線是隔離面:一個工作樹同一時間只武裝一個模組,而每個 worktree 有自己的 toplevel 與 git-dir,
   所以守衛狀態天然分開。同一工作樹內硬要並行做不到,且是刻意設計 —— hooks 分不清寫入來自哪個 session。</p>
-  <p class="muted">守衛共四條掛載:<code>devflow-guard</code>(Edit|Write|Read)、
+  <p class="muted">守衛掛載(條數與清單以 <code>hooks/hooks.json</code> 為準,近期新增 history-guard 與 devtalk-guard):<code>devflow-guard</code>(Edit|Write|Read)、
   <code>devflow-prebash</code>(Bash 事前)、<code>devflow-postbash</code>(Bash 事後偵測)、
   <code>devtalk-guard</code>(盲原則)。想確認整套沒壞:跑
-  <code>~/.claude/plugins/local/dev-flow/hooks/selftest.sh</code>(動態發現所有案例,自建 temp repo 後自清)。</p>
+  <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/hooks/selftest.sh</code>(動態發現所有案例,自建 temp repo 後自清)。</p>
 
   <h3>T 級並行(選配):Candidate 到 ACCEPTED</h3>
   <p><code>5-tasks.md</code> frontmatter 明寫 <code>execution.mode: parallel</code> 才啟用
@@ -819,9 +826,11 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
 
   <footer class="foot">
     正本規則:<code>~/dev/dev-flow/README.md</code>;模板:<code>~/dev/dev-flow/_templates/</code>;
-    路由器 skill:<code>~/.claude/plugins/local/dev-flow/skills/{dev-flow,dev-setup,dev-run}/SKILL.md</code>;
-    討論 skill:<code>~/.claude/plugins/local/dev-talk/skills/dev-talk/SKILL.md</code>;
-    執行守衛實作:<code>~/.claude/plugins/local/dev-flow/hooks/</code>。
+    安裝路徑(PLUGIN):<code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/</code>
+    (Windows 對應 <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\</code>);
+    路由器 skill:<code>$PLUGIN/skills/{dev-flow,dev-setup,dev-run}/SKILL.md</code>;
+    討論 skill(dev-talk 已併入同一 plugin):<code>$PLUGIN/skills/dev-talk/SKILL.md</code>;
+    執行守衛實作:<code>$PLUGIN/hooks/</code>。
     風格沿用 <code>guide-dev-flow.html</code>。疑義以 README 為準。
   </footer>
 </main>

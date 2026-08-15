@@ -140,6 +140,13 @@ Evidence 與 ledger 的 run_id/SHA 對不上 = stale 訊號。
    dev-setup 複製清單(母版→專案同步機制)。
 4. Ledger 寫入 runtime(C 軌 + plugin)。
 
+> ✅ 2026-08-15 核對:以上 4 項已全數落地於本 repo(併入後),證據:
+> 1 `skills/dev-run/SKILL.md:233-246`(Final Fresh Run 派發 + `devflow-evidence-gauntlet.sh` 呼叫)、
+>   `:99`(Test Integrity Check 七項);
+> 2 `hooks/_gate_consistency_impl.py:32,58`(G3「本次 S 全綠」粗體錨、VNext 新錨同步比對表);
+> 3 `skills/dev-setup/SKILL.md:100-105,223-224`(`devflow-evidence-gauntlet.sh` 隨模板散發清單);
+> 4 `observability/devflow_obs/ledger.py`、`hooks/devflow_obs_vendor/devflow_obs/ledger.py`(ledger runtime)。
+
 ## 9. 測試輸出(原文)
 
 基線(開工前,worktree @ 90d30e8):

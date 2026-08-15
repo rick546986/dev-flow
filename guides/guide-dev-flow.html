@@ -552,6 +552,8 @@
     Fast lane 不豁免觸發條件)。
     Stage 3 對帳:逐一核對 3-prototype Demo Script 場景。每個已 ACCEPTED 的場景
     必須對應至少一條 R/S,或在 Out of Scope 明列排除理由;沒有 Stage 3 時記 N/A。
+    Method 走查條列也算 ACCEPTED 行為的下落來源之一;Operational Context 的
+    <code>Recovery:</code> 欄位內容也算下落。
     完成 = 四節齊 + Verification Profile 填畢 + Design Boundary Contract 有結論
     (applicable 全填 / n-a 附理由)+ Stage 3 對帳逐場有下落。</li>
     <li>Drafting Decisions 清點:草擬自拍板逐條(決策|理由|棄項|待人審);全文掃
@@ -688,7 +690,8 @@
 
   <h3 id="devrun">dev-run 引擎(選配執行方式)</h3>
   <p>Stage 6 除了手動逐 T,另有 <code>dev-run</code> 引擎:派工者(主對話)不下場寫碼,只派工、審驗結果、
-  commit 記帳;細節見 <code>~/.claude/plugins/local/dev-flow/skills/dev-run/SKILL.md</code>。</p>
+  commit 記帳;細節見 <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/skills/dev-run/SKILL.md</code>
+  (Windows 對應 <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\skills\dev-run\SKILL.md</code>)。</p>
 
   <p class="muted">誰做什麼(逐字,見 SKILL.md「誰做什麼(職責分配)」節):</p>
   <div class="tablewrap"><table>
@@ -960,7 +963,7 @@
   讀取側(圍欄②)一次「只讀不改」的繞過,postbash 無從察覺。</p>
   <p class="muted">Stage 6 起手式建立的機械防線,獨立於角色紀律之外(見 ⑦ 資訊圍欄圍欄②的「機械強制」);
   來源:<code>~/dev/dev-flow/dev-setup-record.html</code> 對應段落與
-  <code>~/.claude/plugins/local/dev-flow/hooks/</code> 原始碼。</p>
+  <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/hooks/</code> 原始碼。</p>
 
   <div class="tablewrap"><table>
     <tr><th><code>devflow-exec.sh</code> 動作</th><th>做什麼</th></tr>
@@ -1171,11 +1174,12 @@
 
   <footer class="foot">
     正本規則:<code>~/dev/dev-flow/README.md</code>;模板:<code>~/dev/dev-flow/_templates/</code>;
-    路由器 skill:<code>~/.claude/plugins/local/dev-flow/skills/dev-flow/SKILL.md</code>。
+    路由器 skill:<code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/skills/dev-flow/SKILL.md</code>
+    (Windows 對應 <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\skills\dev-flow\SKILL.md</code>)。
     視覺語言沿用 <code>guide-dev-talk.html</code>(Phase 1)與 <code>guide-quickstart.html</code>(Phase 2)
     的共用 token,三份導覽同一套。疑義以 README 為準。
     <br>對應 <code>dev-flow</code> plugin(版本以
-    <code>~/.claude/plugins/local/dev-flow/.claude-plugin/plugin.json</code> 實值為準;本頁對版 2026-08-02)。
+    <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/.claude-plugin/plugin.json</code> 實值為準;本頁對版 2026-08-02)。
   </footer>
 </main>
 <script>

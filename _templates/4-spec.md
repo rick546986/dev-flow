@@ -58,6 +58,8 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 >    Fast lane 不豁免觸發條件)。
 >    Stage 3 對帳:逐一核對 3-prototype Demo Script 場景。每個已 ACCEPTED 的場景
 >    必須對應至少一條 R/S,或在 Out of Scope 明列排除理由;沒有 Stage 3 時記 N/A。
+>    Method 走查條列也算 ACCEPTED 行為的下落來源之一;Operational Context 的
+>    `Recovery:` 欄位內容也算下落。
 >    完成 = 四節齊 + Verification Profile 填畢 + Design Boundary Contract 有結論
 >    (applicable 全填 / n-a 附理由)+ Stage 3 對帳逐場有下落。
 > 4. Drafting Decisions 清點:草擬自拍板逐條(決策|理由|棄項|待人審);全文掃

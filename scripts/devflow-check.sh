@@ -7,7 +7,8 @@
 #
 # 邊界宣告(誠實分界,勿混用):
 #   REPO_REFERENCE_PASS  = 本檔跑得完的東西。只驗本 repo 的模板/範例/fixture/契約檔。
-#   EXTERNAL_RUNTIME_PASS = 外部 plugin(~/.claude/plugins/local/dev-flow/)的
+#   EXTERNAL_RUNTIME_PASS = 已安裝 plugin runtime(${CLAUDE_PLUGIN_ROOT},散發時實際
+#                           路徑為 ~/.claude/plugins/cache/dev-flow/dev-flow/<version>/)的
 #                           gate-consistency.sh / selftest.sh / devflow-doctor.sh。
 #   本檔**不執行也不冒充**外部 plugin 檢查;兩者用 devflow-contract.json 對版握手,
 #   不共用實作。本檔全綠 ≠ 外部 Runtime pass。
@@ -79,6 +80,9 @@ group_architecture() {
   run "architecture/check-gate-tokens"     scripts/check-gate-tokens.sh     || return 1
   run "architecture/check-design-contract" scripts/check-design-contract.sh || return 1
   run "architecture/check-adr-integrity"   scripts/check-adr-integrity.sh   || return 1
+  # 過期外掛路徑守衛:dev-talk 已併入 dev-flow 單一 plugin,散發路徑改為 cache 形式,
+  # 活文件不得殘留舊版 local marketplace 路徑或開發者個人絕對路徑(見腳本頂註)。
+  run "architecture/check-no-stale-paths"  scripts/check-no-stale-paths.sh  || return 1
   # 改版歷史索引:append-only 沒有天然保證,插到中間或手改看起來一樣正常 → 機械驗形狀
   run "architecture/check-history-integrity" scripts/check-history-integrity.sh || return 1
   # gate twin 是審查介面不是文件視覺版(README §6):三件必含 + 兩種殼,對三站實跑

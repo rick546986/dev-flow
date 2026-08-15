@@ -149,6 +149,17 @@ README/模板改動後由 Integrator 跑 `scripts/render-methodology-corrections
 前置注意(audit 不確定事項 8):plugin repo 有未合併 branch
 `codex/dev-flow-methodology-corrections`,plugin 側開工前先確認其狀態。
 
+> ✅ 2026-08-15 核對:以下 8 項已全數落地於本 repo(併入後),證據:
+> 1 `hooks/_exec_impl.py:220`(`--task` 解析)、`:339-340`(`parse_5_tasks` 契約解析);
+> 2 `hooks/devflow-exec.sh:15`(`start` 轉發)、`:21`(`gate` 子命令分派);
+> 3 `hooks/_guard_impl.py:95,128,150-155`(task 模式恆許 `.devflow/task/<T>/`、共享文件移出恆許);
+> 4 `hooks/_prebash_impl.py:58-62`、`hooks/_postbash_impl.py:54-60`(shell 側 task scope 比對);
+> 5 `hooks/_gate_impl.py:108`(`devflow-gate-result.v1`);
+> 6 `hooks/selftest.sh`(13 處 `--task` 案例,含 gate/start/re-arm);
+> 7 `skills/dev-run/SKILL.md:120-160`(並行模式 wave 派工迴圈);
+> 8 `skills/dev-flow/SKILL.md:42`(Stage 6 列「執行 execution.mode: parallel 時走並行引擎(選配)」句)。
+> 前置「codex branch 確認」:`codex/dev-flow-methodology-corrections` 本機與 remote 均已不存在,結案。
+
 ## 7. 不採用的建議(+ 理由)
 
 1. **Prompt 七「(全 feature)同一 Base SHA」字面義** → 細化為「同 Wave 同 Base SHA」

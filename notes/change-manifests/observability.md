@@ -132,6 +132,19 @@ OK
 6. plugin 側需 vendor 或 import `devflow_obs`(writer/validate)——部署方式待
    coordinator 定(plugin repo 無 remote,同機直接 path import 亦可)。
 
+> ⚠️ 2026-08-15 核對:以下 6 項,5 項已落地於本 repo(併入後),第 4 項僅 3/4 落地,
+> 未全數落地,如實記錄不硬標:
+> 1 `hooks/_exec_impl.py:389`(`run_id = L.new_run_id()`)、`:396`(manifest 寫入 run_id);
+> 2 `hooks/devflow-obs.sh` + `observability/devflow-obs.py`(事件寫入子命令);
+> 3 `skills/dev-run/SKILL.md:53-93`(逐步「寫事件」動作,含事件寫入通道說明);
+> 4 **僅 3/4**:`hooks/_guard_impl.py:15-28`、`hooks/_prebash_impl.py:18`、
+>   `hooks/_postbash_impl.py:17` 皆有 `_obs_deny` 寫 `mechanical_gate_completed` 事件;
+>   但四支 hook 中的 `hooks/devtalk-guard.sh`(`hooks/hooks.json:44` 註冊為
+>   PostToolUse,全檔 24 行)未見任何事件呼叫或 obs 相關字串,`hooks/selftest.sh`
+>   與 `observability/` 亦無 devtalk 事件測試覆蓋 —— 此項未全數落地;
+> 5 `hooks/prompt-registry.json`(存在);
+> 6 `hooks/devflow_obs_vendor/devflow_obs/`(vendor 目錄存在)。
+
 ## 12. 逐節交代(prompt-c 十四節)
 
 | 節 | 處置 |
