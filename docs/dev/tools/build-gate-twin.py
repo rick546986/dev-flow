@@ -272,7 +272,7 @@ def table_rows(body):
     return [(header, r) for r in rows] if header else []
 
 
-def card(item_id, title, tag, rows, missing=None, sub="", extra=""):
+def card(item_id, title, tag, rows, missing=None, sub="", extra="", dup=None):
     """一張待審卡。missing 有值 → 紅底現形(缺必填欄的項目不得只在別處列表)。
 
     missing 可以是單一欄名字串(既有用法,如 2-decision 的「裁決」)或缺欄清單
@@ -280,8 +280,15 @@ def card(item_id, title, tag, rows, missing=None, sub="", extra=""):
     清單用頓號連接,如 `缺「GIVEN、觀測」欄`;只缺一欄時仍是 `缺「觀測」欄`
     這種單欄格式(動線頂區的 n_obs 計數靠這個字串,見 dash_cells)。
 
+    dup:同一 T 內重複保留欄的欄名清單(H-1,K-3 現形)。有值 → 卡照樣紅底
+    (即使 missing 為空),多印一段「重複欄「X」」的 flag,呼應
+    `tests/parallel-stage6/contract_ref.py` fail-closed 時用的「重複保留欄」
+    用語 —— 真正吃這份 md 的引擎會直接拒啟,twin 這裡只現形、不擋產出。
+    跟 missing 的紅底旗標**並存**(同一張卡兩種問題都要看得到,不是互斥),
+    只有兩者都沒有時才退回顯示 `sub`(既有行為不變)。
+
     extra:K-3 加的第 4 個插槽(5-tasks 的 Boundaries `<details>`)。跟 `sub` 不同 ——
-    `sub` 缺欄時會被 `missing` 的紅底 flag 蓋掉(同 K-7 邏輯:欄位缺就不演有值),
+    `sub` 缺欄時會被 `missing`/`dup` 的紅底 flag 蓋掉(同 K-7 邏輯:欄位缺就不演有值),
     但 Boundaries 摺疊是「不論其他欄缺不缺都要在」的必含元素,所以 `extra` 永遠
     附加在 `{flag}` 後面、不受 missing 影響。**接在同一行**(`{flag}{extra}`,
     不另起新行)是刻意的:三個既有 gate 站從不傳 `extra`,值恆為 `""`;若各自佔一行,
@@ -295,13 +302,19 @@ def card(item_id, title, tag, rows, missing=None, sub="", extra=""):
         f'<span class="gwt-v">{inline(v)}</span></div>'
         for k, v in rows if v
     )
+    flags = []
     if missing:
         label = "、".join(missing) if isinstance(missing, (list, tuple)) else missing
-        flag = (f'<div class="obs missing"><span class="obs-k">缺「{html.escape(label)}」欄</span>'
-                f'<span class="obs-v">這條審不過 —— 沒寫清楚要看哪裡</span></div>')
-    else:
-        flag = sub
-    return f"""<article class="s-card{' bad' if missing else ''}" data-sid="{html.escape(item_id)}">
+        flags.append(f'<div class="obs missing"><span class="obs-k">缺「{html.escape(label)}」欄</span>'
+                     f'<span class="obs-v">這條審不過 —— 沒寫清楚要看哪裡</span></div>')
+    if dup:
+        dlabel = "、".join(dup) if isinstance(dup, (list, tuple)) else dup
+        flags.append(f'<div class="obs missing"><span class="obs-k">重複欄「{html.escape(dlabel)}」</span>'
+                     f'<span class="obs-v">同一 T 內同名保留欄出現兩次 —— 引擎(contract_ref.py)'
+                     f'對此 fail-closed 拒啟,twin 僅現形不擋產出</span></div>')
+    flag = "".join(flags) if flags else sub
+    bad = bool(missing) or bool(dup)
+    return f"""<article class="s-card{' bad' if bad else ''}" data-sid="{html.escape(item_id)}">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="{html.escape(item_id)}">
     <span class="s-id">{html.escape(item_id)}</span>
@@ -488,7 +501,8 @@ def parse_review(_md, secs):
 
 
 def parse_task_fields(body):
-    """把一個 T 的 body 切成欄位。
+    """把一個 T 的 body 切成欄位。回 `(fields, dups)`:`fields` 是欄名→值的 dict,
+    `dups` 是重複出現的保留欄名清單(見下方 H-1 段落)。
 
     欄位開始行判準(`TASK_FIELD_LINE`)逐字對齊 `tests/parallel-stage6/contract_ref.py`
     的 FIELD_RE —— 真正吃這份 md 的 Stage 6 scope guard 用同一顆正則判斷「這行是不是
@@ -502,16 +516,21 @@ def parse_task_fields(body):
     單行),但 Boundaries/Intent 是給人看的,續行內容不顯示等於白寫 —— K-3 規格
     明講「值含續行」,這裡刻意比機器解析更寬,不影響上面提到的欄位邊界對齊。
     重複保留欄(同一欄名出現兩次)保留首筆、不覆蓋 —— 對齊 contract_ref.py 的
-    fail-closed 精神(它會記錯誤;twin 不擋產出,但也不能靜默選後筆)。
+    fail-closed 精神(它會記錯誤;twin 不擋產出,但也不能靜默選後筆)。回傳的
+    第二個值 `dups` 是偵測到的重複欄名清單(依出現順序、去重)——H-1:twin 不能
+    只默默保留首筆就算了事,還要讓這張卡紅底現形 + 讓 stderr 點名引擎會
+    fail-closed 拒啟,不然審查者看到的 twin 是綠的,引擎卻直接拒啟同一份 md。
     掃遮蔽版(``` 區塊不算,理由同 mask_fenced);遮蔽版與原文等長,可用同一行索引切原文。
     """
     masked = mask_fenced(body)
-    fields, cur = {}, None
+    fields, cur, dups = {}, None, []
     for mln, rln in zip(masked.splitlines(), body.splitlines()):
         fm = TASK_FIELD_LINE.match(mln)
         if fm:
             key = fm.group(1)
             if key in fields:
+                if key not in dups:
+                    dups.append(key)
                 cur = None       # 重複保留欄:首筆已在,忽略後筆,也不再累加續行進去
                 continue
             cur = key
@@ -519,7 +538,7 @@ def parse_task_fields(body):
             continue
         if cur and mln.strip() and mln[:1].isspace() and not TASK_FIELD_LINE.match(mln):
             fields[cur] += "\n" + rln.strip()
-    return fields
+    return fields, dups
 
 
 def _task_sections(secs):
@@ -547,11 +566,19 @@ def parse_tasks(_md, secs):
     `extra` 插槽,包成 `<details>`(預設收合、經 md_block 渲染、原文零刪減)——
     這正是 owner 兩次抱怨的那件事:Boundaries 常常上千字,直接攤平會把
     Covers/Files/Verify 擠到畫面外,摺起來才看得下去。
+
+    H-1(2026-08-15 獨立審查):同一 T 內若有保留欄重複出現(常見成因是
+    Boundaries/Intent 的續行被寫成 `- Files:` 這種子項),真正吃這份 md 的
+    Stage 6 引擎(`tests/parallel-stage6/contract_ref.py`)fail-closed 拒啟,
+    twin 卻只是「保留首筆」悄悄過關 —— 審查者看到綠卡、引擎卻拒收同一份 md。
+    這裡把 `parse_task_fields` 回傳的 `dups` 接進 `card()` 的 `dup` 參數,讓卡
+    照樣紅底 + flag 點名重複欄,並在 stderr 印一行 NOTE(見 main() 呼叫處)提醒
+    這件事引擎會 fail-closed——twin 仍不擋產出,只現形。
     """
     cards, n, used = [], 0, set()
     for tid, title, body in _task_sections(secs):
         used.add(title)
-        f = parse_task_fields(body)
+        f, dups = parse_task_fields(body)
         missing = [k for k in TASK_REQUIRED if not (f.get(k) or "").strip()]
         rows = [(k, f.get(k, "")) for k in ("Covers", "Files", "Verify", "Blocked-by")]
         intent = f.get("Intent", "").strip()
@@ -562,7 +589,12 @@ def parse_tasks(_md, secs):
             extra = (f'<details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區'
                       f'</summary><div class="body">{md_block(bounds)}</div></details>')
         rest = title[len(tid):].strip(" :：") or tid
-        cards.append(card(tid, rest, "", rows, missing=missing or None, sub=sub, extra=extra))
+        cards.append(card(tid, rest, "", rows, missing=missing or None, sub=sub, extra=extra,
+                          dup=dups or None))
+        if dups:
+            print(f"NOTE: {tid} 重複保留欄「{'、'.join(dups)}」:twin 不擋產出(只現形紅底),但真正吃這份"
+                  f"md 的引擎(tests/parallel-stage6/contract_ref.py)對「重複保留欄」fail-closed 拒啟",
+                  file=sys.stderr)
         n += 1
     return "".join(cards), n, used
 
@@ -577,8 +609,37 @@ def _task_deps(secs):
     """
     out = []
     for tid, _title, body in _task_sections(secs):
-        f = parse_task_fields(body)
+        f, _dups = parse_task_fields(body)
         out.append((tid, re.findall(r"T-\d+", f.get("Blocked-by", ""))))
+    return out
+
+
+def ghost_task_warnings(md):
+    """H-1(本批只現形,不修引擎):fence 內若含行首 `## T-\\d+`,twin(靠
+    markdown-it-py 的 token stream)天生看不到它、也不會為它產卡 —— 但真正吃
+    這份 md 的 Stage 6 引擎(`tests/parallel-stage6/contract_ref.py` 的
+    `HEAD_RE = ^##\\s+(T-\\d+)\\b...`,鏡射 `hooks/devflow-lib.py`)目前**不遮蔽
+    fence**,會把這行當成真的 `## T-n` 標題,長出一顆 twin 完全看不到的幽靈任務。
+
+    只回傳偵測到的 id 清單給呼叫端印 stderr 警告 —— 不改卡片、不擋產出。引擎側
+    修復(讓它也遮蔽 fence)排在 Backlog(第二批 A-6 一帶),不在本棒範圍。
+    偵測法沿用 mask_fenced 的 fence 行範圍判斷(token.type == "fence" 的
+    token.map),但這裡要看**原始行**內容(不是遮蔽後的空白),所以另外掃一次。
+    """
+    lines = md.splitlines(keepends=True)
+    fence_lines = set()
+    for tok in MarkdownIt("commonmark").parse(md):
+        if tok.type == "fence" and tok.map:
+            fence_lines.update(range(tok.map[0], tok.map[1]))
+    ghost = re.compile(r"^##\s+(T-\d+)\b")
+    out, seen = [], set()
+    for i in sorted(fence_lines):
+        if i >= len(lines):
+            continue
+        m = ghost.match(lines[i])
+        if m and m.group(1) not in seen:
+            seen.add(m.group(1))
+            out.append(m.group(1))
     return out
 
 
@@ -914,6 +975,12 @@ def main(argv):
         for w in dag_warnings:
             print(f"NOTE: {w}", file=sys.stderr)
         dag_done, _dag_total = _tasks_done_count(secs)
+        # H-1:fence 內含行首 `## T-\d+` 的話,引擎(不遮蔽 fence)會長出 twin 看不到的
+        # 幽靈任務 —— 只警告、不改卡片(引擎側修復排 Backlog,不在本棒範圍)。
+        for gid in ghost_task_warnings(md):
+            print(f"NOTE: fence 內偵測到行首 `## {gid}`:引擎目前不遮蔽 fence,這段可能被解析成"
+                  f"幽靈任務 {gid};引擎側修復排在 Backlog(第二批 A-6 一帶,不在本棒)",
+                  file=sys.stderr)
 
     # 置頂節:判定本身與判定的前提,直接顯示在卡片之前,不摺疊
     pinned = []

@@ -58,6 +58,15 @@ def run(root, slug, stage):
                           capture_output=True, text=True)
 
 
+def read_html_or_none(path):
+    """安全讀 twin 產出的 html。檔案不存在(通常是前面某個 stage 的 build 已經
+    失敗、或本檔上游有回歸)→ 回 None,呼叫端據此讓該組斷言 check(False, ...) 標紅
+    並跳過,不讓 .read_text() 的 FileNotFoundError 把整支守衛炸掉、後面 90+ 項
+    全部跑不到(MED,2026-08-15 獨立審查:TASK_LEVEL 2→3 這類回歸曾讓本檔中途
+    traceback 中斷,連帶讓真正該報的紅燈都沒機會印出來)。"""
+    return path.read_text(encoding="utf-8") if path.is_file() else None
+
+
 print("-- 三個 gate stage + 5-tasks 執行板對母版範例實跑(自帶回歸)--")
 proj = TMP / "proj/docs/dev/demo"
 proj.mkdir(parents=True)
@@ -131,10 +140,17 @@ check(len(EXPECT_KEYS) == len(STAGES) and all(len(v) == 5 for v in EXPECT_KEYS.v
       "五格標籤能從 README §6 正本解析出三站各五格",
       f"解析到 {[(k, len(v)) for k, v in EXPECT_KEYS.items()]}")
 for st in STAGES:
-    txt = (proj / f"{st}.html").read_text(encoding="utf-8")
+    txt = read_html_or_none(proj / f"{st}.html")
+    if txt is None:
+        check(False, f"{st}:五格標籤與 README §6 逐字一致", f"{st}.html 不存在(前面已失敗)")
+        continue
     keys = set(re.findall(r'class="cell"[^>]*><span class="k">([^<]+)</span>', txt))
+    # ⚠️ 兩處都要用 `.get(st, set())`,不能直接 `EXPECT_KEYS[st]` —— check() 的參數在
+    # 呼叫前就會全部求值,cond 是 False 不代表 detail 字串不會被算,README §6 缺列
+    # 5-tasks 那一列時 `EXPECT_KEYS[st]` 會 KeyError 中斷整支守衛(MED,2026-08-15
+    # 獨立審查實測:「刪 README §6 的 5-tasks 列」就是這個 crash)。
     check(keys == EXPECT_KEYS.get(st, set()), f"{st}:五格標籤與 README §6 逐字一致",
-          f"多 {sorted(keys - EXPECT_KEYS[st])} / 少 {sorted(EXPECT_KEYS[st] - keys)}")
+          f"多 {sorted(keys - EXPECT_KEYS.get(st, set()))} / 少 {sorted(EXPECT_KEYS.get(st, set()) - keys)}")
 
 print("-- 盤點:7-review 動線「風險」格條數要對得上 md 的 Known Limits 實際條數 --")
 # 舊計數把表頭列與 |---| 分隔列都算進去(4 條報成 6)。守衛自己從 example md
@@ -158,11 +174,15 @@ def _limit_rows(md_text):
 
 
 _exp_kl = _limit_rows((EXAMPLE / "7-review.md").read_text(encoding="utf-8"))
-_m_kl = re.search(r'<span class="k">風險</span><span class="v">([^<]*)</span>',
-                  (proj / "7-review.html").read_text(encoding="utf-8"))
-check(bool(_m_kl) and _m_kl.group(1) == f"{_exp_kl} 條",
-      "7-review:「風險」格條數 == md 實際條數(表頭/分隔列不算)",
-      f"格值「{_m_kl.group(1) if _m_kl else '(無)'}」,md 實數 {_exp_kl}")
+_kl_txt = read_html_or_none(proj / "7-review.html")
+if _kl_txt is None:
+    check(False, "7-review:「風險」格條數 == md 實際條數(表頭/分隔列不算)",
+          "7-review.html 不存在(前面已失敗)")
+else:
+    _m_kl = re.search(r'<span class="k">風險</span><span class="v">([^<]*)</span>', _kl_txt)
+    check(bool(_m_kl) and _m_kl.group(1) == f"{_exp_kl} 條",
+          "7-review:「風險」格條數 == md 實際條數(表頭/分隔列不算)",
+          f"格值「{_m_kl.group(1) if _m_kl else '(無)'}」,md 實數 {_exp_kl}")
 
 print("-- G\u2032/G\u2033 跨檔規格一致:README §6 vs 三份模板頂註 --")
 # N4 的根因:規格同時寫在 README §6 與三份模板頂註,兩邊不一致時沒有任何檢查。
@@ -402,20 +422,165 @@ check(r.returncode == 1, "空 5-tasks(無任何 T) → exit 1", f"實際 exit {r
 check(not (empty_t / "5-tasks.html").exists(), "空 5-tasks → 不產出空殼 html")
 
 print("-- K-3 盤點:example 5-tasks 的 T 數 == twin 卡數 --")
-n_t_source = len(re.findall(r"^## T-\d+", (EXAMPLE / "5-tasks.md").read_text(encoding="utf-8"), re.M))
-n_t_twin = len(re.findall(r'<article class="s-card[^"]*" data-sid="T-\d+"',
-                          (proj / "5-tasks.html").read_text(encoding="utf-8")))
-check(n_t_source > 0 and n_t_source == n_t_twin,
-      "example/contract-expiry-reminder/5-tasks.md 的 `## T-` 數 == twin 卡數",
-      f"md {n_t_source} 個 T,twin {n_t_twin} 張卡")
+_ex_5tasks_md = (EXAMPLE / "5-tasks.md").read_text(encoding="utf-8")
+n_t_source = len(re.findall(r"^## T-\d+", _ex_5tasks_md, re.M))
+tasks_local = read_html_or_none(proj / "5-tasks.html")
+if tasks_local is None:
+    check(False, "example/contract-expiry-reminder/5-tasks.md 的 `## T-` 數 == twin 卡數",
+          "5-tasks.html 不存在(前面已失敗)")
+    n_t_twin = 0
+else:
+    n_t_twin = len(re.findall(r'<article class="s-card[^"]*" data-sid="T-\d+"', tasks_local))
+    check(n_t_source > 0 and n_t_source == n_t_twin,
+          "example/contract-expiry-reminder/5-tasks.md 的 `## T-` 數 == twin 卡數",
+          f"md {n_t_source} 個 T,twin {n_t_twin} 張卡")
 
 print("-- K-3:5-tasks 的 Boundaries 摺疊 + #dag 都在,五格標籤與 README 一致(自帶回歸)--")
-tasks_local = (proj / "5-tasks.html").read_text(encoding="utf-8")
-check(tasks_local.count('class="t-bound"') == n_t_twin,
-      "每張 T 卡都有 Boundaries 摺疊(<details class=\"t-bound\">)",
-      f"details 數 {tasks_local.count('class=\"t-bound\"')},卡數 {n_t_twin}")
-check('id="dag"' in tasks_local, "T 依賴 DAG 區塊(#dag)存在")
-check("Wave 1" in tasks_local, "DAG 至少印出第一波")
+if tasks_local is None:
+    check(False, "每張 T 卡都有 Boundaries 摺疊(<details class=\"t-bound\">)", "5-tasks.html 不存在(前面已失敗)")
+    check(False, "T 依賴 DAG 區塊(#dag)存在", "5-tasks.html 不存在(前面已失敗)")
+    check(False, "DAG 至少印出第一波", "5-tasks.html 不存在(前面已失敗)")
+else:
+    check(tasks_local.count('class="t-bound"') == n_t_twin,
+          "每張 T 卡都有 Boundaries 摺疊(<details class=\"t-bound\">)",
+          f"details 數 {tasks_local.count('class=\"t-bound\"')},卡數 {n_t_twin}")
+    check('id="dag"' in tasks_local, "T 依賴 DAG 區塊(#dag)存在")
+    check("Wave 1" in tasks_local, "DAG 至少印出第一波")
+
+print("-- HIGH-2:5-tasks 執行板五格值盤點斷言(期望值釘 example md 正本,不硬寫)--")
+# 審查者實測:硬寫死一個值(例如「99 條」)這種斷言現在不會紅,因為根本沒有斷言
+# 去驗五格的**值**(只驗格數、標籤)。這裡補的斷言全部由守衛自己從 example md 算,
+# 不硬寫任何數字/字串常數,釘的是「twin 值 == md 正本算出來的值」這個關係。
+def _tasks_dash_expected(md_text):
+    """獨立算 5-tasks 執行板五格期望值,直接從 example md 正本算(不 import 產生器)。"""
+    ids = re.findall(r"^##\s+(T-\d+)\b", md_text, re.M)
+    idset = set(ids)
+    edges = 0
+    for m in re.finditer(r"^##\s+T-\d+\b.*?(?=^##\s|\Z)", md_text, re.M | re.S):
+        bm = re.search(r"^\s*-\s*Blocked-by\s*:\s*(.*)$", m.group(0), re.M)
+        val = bm.group(1).strip() if bm else ""
+        if val in ("", "—", "-", "－", "無"):
+            continue
+        edges += len([r for r in re.findall(r"T-\d+", val) if r in idset])
+    fm_m = re.match(r"\A---\n(.*?)\n---\n", md_text, re.S)
+    fm_text = fm_m.group(1) if fm_m else ""
+    mode_m = re.search(r"^\s*mode:\s*(\S+)", fm_text, re.M)
+    mode = mode_m.group(1) if mode_m else "sequential"
+    return len(ids), edges, mode
+
+
+_exp_n_t, _exp_edges, _exp_mode = _tasks_dash_expected(_ex_5tasks_md)
+if tasks_local is None:
+    for _label in ("5-tasks:「任務」格數 == md `## T-` 數(盤點,不得硬寫)",
+                   "5-tasks:「依賴」格數 == md 所有 Blocked-by 合法 T-id 引用總數(盤點)",
+                   "5-tasks:「模式」格 == frontmatter execution.mode(未標=sequential)",
+                   "5-tasks:「進度」格分母 == T 數"):
+        check(False, _label, "5-tasks.html 不存在(前面已失敗)")
+else:
+    _m_task = re.search(r'<span class="k">任務</span><span class="v">([^<]*)</span>', tasks_local)
+    check(bool(_m_task) and _m_task.group(1) == f"{_exp_n_t} 個 T",
+          "5-tasks:「任務」格數 == md `## T-` 數(盤點,不得硬寫)",
+          f"格值「{_m_task.group(1) if _m_task else '(無)'}」,md 實數 {_exp_n_t} 個 T")
+    _m_dep = re.search(r'<span class="k">依賴</span><span class="v">([^<]*)</span>', tasks_local)
+    check(bool(_m_dep) and _m_dep.group(1) == f"{_exp_edges} 條",
+          "5-tasks:「依賴」格數 == md 所有 Blocked-by 合法 T-id 引用總數(盤點)",
+          f"格值「{_m_dep.group(1) if _m_dep else '(無)'}」,md 實數 {_exp_edges} 條")
+    _m_mode = re.search(r'<span class="k">模式</span><span class="v">([^<]*)</span>', tasks_local)
+    check(bool(_m_mode) and _m_mode.group(1) == _exp_mode,
+          "5-tasks:「模式」格 == frontmatter execution.mode(未標=sequential)",
+          f"格值「{_m_mode.group(1) if _m_mode else '(無)'}」,預期「{_exp_mode}」")
+    _m_prog = re.search(r'<span class="k">進度</span><span class="v">([^<]*)</span>', tasks_local)
+    _prog_denom = _m_prog.group(1).split("/")[-1] if _m_prog else None
+    check(_prog_denom == str(_exp_n_t),
+          "5-tasks:「進度」格分母 == T 數",
+          f"格值「{_m_prog.group(1) if _m_prog else '(無)'}」,預期分母 {_exp_n_t}")
+
+print("-- HIGH-3:5-tasks DAG 分波正確性(guard 自己寫 Kahn,不 import 產生器)--")
+def _expected_waves(md_text):
+    """獨立實作拓撲分波(Kahn),從 md 正本的 Blocked-by 算 —— 刻意不 import
+    build-gate-twin.py 的任何函式:斷言要釘在跟正本邏輯獨立的第二套實作,不然
+    產生器和守衛用同一顆函式錯,兩邊會一起錯還一起綠(審查者的破壞法「DAG 全塞
+    Wave 1」必須被這裡的獨立計算抓到)。"""
+    ids = re.findall(r"^##\s+(T-\d+)\b", md_text, re.M)
+    idset = set(ids)
+    deps = {}
+    for m in re.finditer(r"^##\s+(T-\d+)\b.*?(?=^##\s|\Z)", md_text, re.M | re.S):
+        tid = m.group(1)
+        bm = re.search(r"^\s*-\s*Blocked-by\s*:\s*(.*)$", m.group(0), re.M)
+        val = bm.group(1).strip() if bm else ""
+        refs = [] if val in ("", "—", "-", "－", "無") else \
+            [r for r in re.findall(r"T-\d+", val) if r in idset and r != tid]
+        deps[tid] = refs
+    remaining = {t: list(deps[t]) for t in ids}
+    resolved, wave_of, wave_no = set(), {}, 0
+    while remaining:
+        wave_no += 1
+        wave = [t for t in ids if t in remaining and all(d in resolved for d in remaining[t])]
+        if not wave:
+            break  # 環;example md 目前無環,這裡只求不要無限迴圈
+        for t in wave:
+            wave_of[t] = wave_no
+        for t in wave:
+            del remaining[t]
+        resolved |= set(wave)
+    return deps, wave_of
+
+
+def _actual_waves(dag_text):
+    """解析 twin 印出的 `Wave N: T-x ←(...)、T-y` 這種行,回 {tid: wave_no}。
+    只取每個逗號分隔項**最前面**的 T id(← 後面括號內是依賴來源、不是它自己的波次)。"""
+    actual = {}
+    for line in dag_text.splitlines():
+        m = re.match(r"Wave (\d+): (.*)$", line.strip())
+        if not m:
+            continue
+        wn = int(m.group(1))
+        for entry in m.group(2).split("、"):
+            tm = re.match(r"(T-\d+)", entry.strip())
+            if tm:
+                actual[tm.group(1)] = wn
+    return actual
+
+
+_exp_deps, _exp_wave_of = _expected_waves(_ex_5tasks_md)
+if tasks_local is None:
+    check(False, "5-tasks:DAG 分波 —— 有依賴的 T 不得在 Wave 1", "5-tasks.html 不存在(前面已失敗)")
+    check(False, "5-tasks:DAG 分波 —— 逐 T 波次與獨立 Kahn 實作相等", "5-tasks.html 不存在(前面已失敗)")
+else:
+    _dag_sec_m = re.search(r'<section class="dag"[^>]*>.*?</section>', tasks_local, re.S)
+    _dag_sec = _dag_sec_m.group(0) if _dag_sec_m else ""
+    _dag_pre_m = re.search(r"<pre>(.*?)</pre>", _dag_sec, re.S)
+    _dag_text = _dag_pre_m.group(1) if _dag_pre_m else ""
+    _actual_wave_of = _actual_waves(_dag_text)
+    _bad_wave1 = sorted(t for t in _exp_deps if _exp_deps[t] and _actual_wave_of.get(t) == 1)
+    check(not _bad_wave1, "5-tasks:DAG 分波 —— 有依賴的 T 不得在 Wave 1",
+          f"錯誤落在 Wave 1 的 T(有 Blocked-by 卻在第一波):{_bad_wave1}")
+    check(_actual_wave_of == _exp_wave_of, "5-tasks:DAG 分波 —— 逐 T 波次與獨立 Kahn 實作相等",
+          f"實際 {_actual_wave_of},預期(獨立算){_exp_wave_of}")
+
+print("-- HIGH-1 負向:同一 T 內重複保留欄 → 紅卡 + flag 含「重複」;"
+      "fence 內 `## T-99` → 只警告、卡數不含它 --")
+fxd = ROOT / "scripts/fixtures/gate-twin/tasks-dup-field"
+shutil.copytree(fxd, TMP / "fxd")
+r = run(TMP / "fxd", "demo", "5-tasks")
+check(r.returncode == 0, "重複欄 + fence 幽靈任務 fixture 仍產得出來(現形不擋產出)")
+if r.returncode == 0:
+    td = (TMP / "fxd/docs/dev/demo/5-tasks.html").read_text(encoding="utf-8")
+    check(td.count('class="s-card bad"') == 1, "恰 1 張紅卡(重複欄的 T-1)",
+          f"紅底卡 {td.count('s-card bad')} 張,應為 1")
+    m_t1 = re.search(r'<article class="([^"]*)" data-sid="T-1">(.*?)</article>', td, re.S)
+    check(bool(m_t1) and "bad" in m_t1.group(1), "T-1(重複 Files 欄)是紅卡")
+    check(bool(m_t1) and "重複" in m_t1.group(2) and "Files" in m_t1.group(2),
+          "T-1 卡的 flag 文字含「重複」與欄名 Files")
+    m_t2 = re.search(r'<article class="([^"]*)" data-sid="T-2">', td)
+    check(bool(m_t2) and "bad" not in m_t2.group(1), "T-2(fence canary 宿主)本身欄位齊全,不是紅卡")
+    all_sids = re.findall(r'data-sid="([^"]+)"', td)
+    check("T-99" not in all_sids, "T-99(fence 內的假標題)沒有變成卡片", f"卡片 sid 清單:{sorted(set(all_sids))}")
+    check("重複保留欄" in (r.stderr or ""),
+          "stderr NOTE 引用 contract_ref 的「重複保留欄」用語(訊息一致,便於對照)",
+          (r.stderr or "").strip())
+    check("T-99" in (r.stderr or "") and "幽靈任務" in (r.stderr or ""),
+          "stderr 對 fence 內 `## T-99` 印出幽靈任務警告", (r.stderr or "").strip())
 
 print("-- P5:抽驗格決定論抽樣(不是隨機、可重現)--")
 # 獨立(不呼叫 build-gate-twin.py 的 table_rows)重算 Coverage Matrix 中位列 ——
@@ -442,14 +607,19 @@ def _sample_expect():
 
 
 expect_sample = _sample_expect()
-txt7 = (proj / "7-review.html").read_text(encoding="utf-8")
-m = re.search(r'<span class="k">抽驗</span><span class="v">([^<]*)</span>', txt7)
-actual_sample = m.group(1) if m else None
-check(actual_sample is not None and "隨機一列" not in actual_sample,
-      "7-review:抽驗格不是舊常數「隨機一列」", f"實際「{actual_sample}」")
-check(actual_sample == expect_sample,
-      "7-review:抽驗格值 = Coverage Matrix 中位列第一欄(決定論、對正本算)",
-      f"實際「{actual_sample}」,預期「{expect_sample}」")
+txt7 = read_html_or_none(proj / "7-review.html")
+if txt7 is None:
+    check(False, "7-review:抽驗格不是舊常數「隨機一列」", "7-review.html 不存在(前面已失敗)")
+    check(False, "7-review:抽驗格值 = Coverage Matrix 中位列第一欄(決定論、對正本算)",
+          "7-review.html 不存在(前面已失敗)")
+else:
+    m = re.search(r'<span class="k">抽驗</span><span class="v">([^<]*)</span>', txt7)
+    actual_sample = m.group(1) if m else None
+    check(actual_sample is not None and "隨機一列" not in actual_sample,
+          "7-review:抽驗格不是舊常數「隨機一列」", f"實際「{actual_sample}」")
+    check(actual_sample == expect_sample,
+          "7-review:抽驗格值 = Coverage Matrix 中位列第一欄(決定論、對正本算)",
+          f"實際「{actual_sample}」,預期「{expect_sample}」")
 
 print("-- T5 負向:解析不到任何待審項目要 exit 1,不產空殼 --")
 empty = TMP / "empty/docs/dev/demo"
