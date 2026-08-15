@@ -87,11 +87,18 @@ REQUIRED_GROUPS = [
 CURRENT_GROUP = "gate-stage-baseline"
 GROUPS_SEEN = {}
 # 檢查數地板(次級 backstop):**釘死的常數**,不是跑完再回頭算 —— 回頭算等於
-# 地板永遠等於實得數,刪掉整區塊也不會低於它,等同沒有牙齒。127 是這一輪(N-1~N-4
-# 修完後)實測的檢查總數(不含這條地板斷言自己 —— 地板斷言執行當下、它自己
-# 尚未計入 CHECKS,所以比對值是「除了它自己以外」的實得數,見下方 check() 呼叫處);
-# 之後每加一條檢查不必跟著調高,只有整區塊被砍掉、實得數掉到這個值以下才會紅。
-MIN_CHECKS = 127
+# 地板永遠等於實得數,刪掉整區塊也不會低於它,等同沒有牙齒。132 是這一輪
+#(finding 1/2 修完後)實測的檢查總數(不含這條地板斷言自己 —— 地板斷言執行
+# 當下、它自己尚未計入 CHECKS,所以比對值是「除了它自己以外」的實得數,見下方
+# check() 呼叫處)。
+# ⚠️ 2026-08-16 獨立審查 finding 4b:舊值 127 對實得 128 留了 1 檢查的鬆弛
+#(刪 1 條檢查、實得掉到 127 仍 `>= 127` 通過),等於地板沒有真的釘死當下實況。
+# 這個數字必須**逐次同步成實得數**,不是「大概抓個下限」——多留一點餘裕就是
+# 少一分防禦,跟本檔 REQUIRED_GROUPS/EXPECTED_ALLOWLIST_LEN 這類地板同一個道理。
+# 之後每加一條檢查都要把這裡同步調高;只有整區塊被砍掉、實得數掉到這個值以下
+# 才會紅(這是本檔唯一的次級防線,見 test-architecture-guards.sh 的 GS-9 靜態互釘
+# ——那邊另外釘了這個數字的字面值,兩處要一起改,見該檔的防禦邊界說明)。
+MIN_CHECKS = 132
 
 
 def check(cond, label, detail=""):
@@ -433,6 +440,29 @@ check(bool(m) and "|" not in (m.group(1) if m else "|"),
       "7-review:動線「判定」格取到 verdict 值,不是表格分隔線",
       f"實際「{m.group(1) if m else '(無)'}」")
 
+# finding 2(LOW,獨立審查):上面的斷言只驗「幾個關鍵字沒被摺疊」,PINNED_PAT
+# 誤吞多餘章節(桶位變寬鬆、把不該置頂的節也置頂)完全沒有守衛。這裡對母版範例
+# 三站(不是上面這份合成 fixture)釘死「置頂節 id 的精確集合」——從真正產出的
+# html 撈 `<section class="pinned" id="...">` 的 id,逐一比對下面這份釘死清單。
+# ⚠️ 這份清單是「當下實況」的字面快照,不是規格本身 —— PINNED_PAT 有意變更
+#(新增/刪除關鍵字)時,必須同步改這裡的期望值,否則這條檢查會擋下正常修改,
+# 而不是它原本要防的「誤吞/桶位擴大」。
+EXPECT_PINNED_IDS = {
+    "2-decision": {"sec-Decision"},
+    "4-spec": set(),
+    "7-review": {"sec-Verdict", "sec-Known-Limits"},
+}
+for _st in ("2-decision", "4-spec", "7-review"):
+    _html_pin = read_html_or_none(proj / f"{_st}.html")
+    if _html_pin is None:
+        check(False, f"{_st}:置頂節 id 精確集合與釘死清單一致", f"{_st}.html 不存在(前面已失敗)")
+        continue
+    _actual_ids = set(re.findall(r'<section class="pinned" id="([^"]+)"', _html_pin))
+    _expect_ids = EXPECT_PINNED_IDS[_st]
+    check(_actual_ids == _expect_ids,
+          f"{_st}:置頂節 id 精確集合與釘死清單一致(PINNED_PAT 誤吞/桶位擴大都要現形)",
+          f"多 {sorted(_actual_ids - _expect_ids)} / 少 {sorted(_expect_ids - _actual_ids)}")
+
 print("-- T2 負向:缺必填欄要在卡上紅底現形 --")
 CURRENT_GROUP = "t2-missing-required"
 fx = ROOT / "scripts/fixtures/gate-twin/missing-obs"
@@ -770,6 +800,86 @@ def note_list(stderr_text, prefix):
         return []
 
 
+def l2_sections_with_body(md_text):
+    """獨立算 L2 章節與其本文(含子標題,直到下一個 level<=2 標題或檔尾為止)。
+
+    不 import 產生器的 sections() —— 只切 L2 邊界,已足夠判斷「這節底下直接
+    含哪些子孫標題」(finding 1 的 heads_here 判準只需要這個粒度)。"""
+    lines = md_text.splitlines(keepends=True)
+    line_start = [0] * (len(lines) + 1)
+    for i, ln in enumerate(lines):
+        line_start[i + 1] = line_start[i] + len(ln)
+    heads = []
+    for tok in MarkdownIt("commonmark").parse(md_text):
+        if tok.type != "heading_open" or not tok.markup.startswith("#") or not tok.map:
+            continue
+        lvl = int(tok.tag[1:])
+        if not (2 <= lvl <= 6):
+            continue
+        i = tok.map[0]
+        m = re.match(r"^(#{2,6})[ \t]+([^\n]*?)[ \t]*$", lines[i])
+        if not m:
+            continue
+        heads.append((lvl, m.group(2), line_start[i], line_start[i] + m.end()))
+    out = []
+    for idx, (lvl, title, _line_off, body_start) in enumerate(heads):
+        if lvl != 2:
+            continue
+        end = len(md_text)
+        for nxt_lvl, _t, nxt_line_off, _b in heads[idx + 1:]:
+            if nxt_lvl <= 2:
+                end = nxt_line_off
+                break
+        out.append((title, md_text[body_start:end]))
+    return out
+
+
+def _mask_fenced_indep(md_text):
+    """獨立版 mask_fenced —— 不 import 產生器那份,語意相同:fenced code 換等長
+    空白,判準來源同樣是 markdown-it 的 fence token(不是手刻正則)。"""
+    lines = md_text.splitlines(keepends=True)
+    fence_lines = set()
+    for tok in MarkdownIt("commonmark").parse(md_text):
+        if tok.type == "fence" and tok.map:
+            fence_lines.update(range(tok.map[0], tok.map[1]))
+
+    def blank(ln):
+        return (" " * (len(ln) - 1) + "\n") if ln.endswith("\n") else " " * len(ln)
+
+    return "".join(blank(ln) if i in fence_lines else ln for i, ln in enumerate(lines))
+
+
+_R_HEAD_INDEP = re.compile(r"^#{2,6}[ \t]*(R-\d+)[ \t]*[:：·]?[ \t]*(.*)$", re.M)
+
+
+def independent_droppable_l2(md_text, rendered_rids):
+    """MED,獨立審查 finding 1:獨立重算「哪些 L2 節合法可 drop」。
+
+    判準與產生器(build-gate-twin.py :1023-1029)**同語意**:該節本身不是 R 標題、
+    本文非空、且本文底下直接就是**全部**已渲染 R 的標題行(heads_here 是
+    rendered_rids 的 superset)。刻意不 import 產生器的 sections()/mask_fenced()/
+    R_HEAD/rendered_rids 算法 —— 兩層若共用同一顆函式,產生器那行單字元 `>=`
+    被手滑改成 `<=` 這種 bug 會兩邊一起錯還一起綠,守衛就形同虛設。這裡也刻意
+    不信產生器 stderr 印的 dropped 清單字面 —— 舊版第 2 層(修這個 finding 前)
+    正是把那份自報清單直接當真相用,產生器自己算錯,舊版斷言照樣通過,3 節被
+    真的丟掉卻印假 NOTE 也偵測不到。
+    """
+    rendered = set(rendered_rids)
+    if not rendered:
+        return set()
+    result = set()
+    for title, body in l2_sections_with_body(md_text):
+        if _R_HEAD_INDEP.match("## " + title):
+            continue  # 節本身就是 R 標題,不是「父節」
+        if not body.strip():
+            continue  # 空節走 dropped_empty 這條路,不算這裡的 superset 判準
+        masked = _mask_fenced_indep(body)
+        heads_here = {m.group(1) for m in _R_HEAD_INDEP.finditer(masked)}
+        if heads_here >= rendered:
+            result.add(title)
+    return result
+
+
 # ⚠️ 刻意只跑三個 gate 站,**不要**直接改成 `for st in STAGES`(把 5-tasks 也塞進來)——
 # 5-tasks 的 T 卡渲染走 `<span class="s-title">`(在 `data-sid="T-n"` 的 article 裡),
 # 不是這裡認的 `r-name`/pinned h2/details summary 這三種殼,會讓所有 T 節誤判成
@@ -822,6 +932,22 @@ for st in ("2-decision", "4-spec", "7-review"):  # 母版範例三站,不是合�
                and html.escape(t) not in r_names and t not in dropped_notes]
     check(not missing, f"{st}:每個 L2 章節都能在 html/NOTE 找到下落(第 2 層,獨立於產生器)",
           f"消失的章節:{missing}")
+    if st == "4-spec":
+        # finding 1(MED):上面的「missing」斷言只驗『每節都有下落』,但下落若是
+        # 「產生器聲稱 dropped」而產生器自己算錯(:1027 的 `>=` 被手滑改成
+        # `<=`),第 2 層直接信那份自報清單,兩層一起綠、章節被真的丟掉卻印假
+        # NOTE。這裡不信自報清單,自己重算一次「哪些節合法可 drop」,雙向比對
+        # 產生器 NOTE 的 dropped 清單(多 drop 或少 drop 都要紅)。
+        rendered_rids_indep = set(re.findall(
+            r'<section class="r-block" id="(R-\d+)"', html_local))
+        gen_dropped = set(note_list(r.stderr or "", "以下父節的內容已整段渲染成卡片,不重複顯示"))
+        indep_dropped = independent_droppable_l2(md_text, rendered_rids_indep)
+        check(gen_dropped == indep_dropped,
+              f"{st}:產生器 NOTE 的 dropped 清單 == 守衛獨立重算的可 drop 集合"
+              "(雙向:多 drop 或少 drop 都紅)",
+              f"產生器 dropped={sorted(gen_dropped)},守衛獨立算={sorted(indep_dropped)}"
+              f" —— 產生器多算(可能誤丟真章節){sorted(gen_dropped - indep_dropped)} /"
+              f" 產生器少算(該丟沒丟,可能重複顯示){sorted(indep_dropped - gen_dropped)}")
 
 print("-- N-4:未閉合的 <!-- html 註解要有警告且指出行號 --")
 CURRENT_GROUP = "n4-unclosed-comment"

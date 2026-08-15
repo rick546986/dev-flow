@@ -233,15 +233,31 @@ if checks < MIN_CHECKS:
     hits.append(f"⛔ 實際只跑了 {checks} 條禁字規則檢查(地板 {MIN_CHECKS})—— "
                 f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
 
-# ── ALLOWLIST 大小地板(同一輪補,防「悄悄擴大豁免範圍」的假綠)────────────────
-# MIN_CHECKS 只釘「禁字規則數」,不會發現 ALLOWLIST 被偷加一條大範圍豁免
-# (例如有人加 "docs" 或 "example" 進 ALLOWLIST —— checks 仍是 3、零命中一樣印
-# 全過,但活文件掃描範圍已經被靜默吃掉一大塊)。這裡另外釘 ALLOWLIST 條目數
-# ==當下實際數,新增/刪除豁免項目時把這個數字一起調。
-EXPECTED_ALLOWLIST_LEN = 8
-if len(ALLOWLIST) != EXPECTED_ALLOWLIST_LEN:
-    hits.append(f"⛔ ALLOWLIST 條目數為 {len(ALLOWLIST)},釘死值 {EXPECTED_ALLOWLIST_LEN}"
-                f"—— 新增/刪除豁免項目時要同步調這個數字,這是防 ALLOWLIST 悄悄擴大的地板")
+# ── ALLOWLIST 內容地板(同一輪補,防「悄悄擴大豁免範圍」的假綠)────────────────
+# 舊版只釘條目**數**(EXPECTED_ALLOWLIST_LEN),抓不到「條數不變、內容被換掉」
+#(2026-08-16 獨立審查 finding 3 實測:把 "docs/dev/4cap-remediation" 換成 "docs"
+# ——條目數仍是 8、禁字規則一樣零命中,但 "docs" 這個字首豁免會多蓋掉 13 個真檔案
+# 的掃描,守衛照樣印「✅ 全過」)。改成**逐條釘死字面清單**:排序後與 ALLOWLIST
+# 的條目逐一比對,不只比對長度——多一條或少一條、或任何一條字面被換掉都要現形。
+# 新增/刪除/改名豁免項目時把下面這份清單跟著同步改。
+EXPECTED_ALLOWLIST_ENTRIES = sorted([
+    "docs/prompts",
+    "docs/dev/4cap-remediation",
+    "docs/dev/HISTORY.md",
+    "docs/dev/b8-gate-twin-review-ui",
+    "docs/dev/vnext-runtime",
+    "notes",
+    "scripts/fixtures/stale-paths",
+    "scripts/check-no-stale-paths.sh",
+])
+_actual_allowlist_entries = sorted(e for e, _ in ALLOWLIST)
+if _actual_allowlist_entries != EXPECTED_ALLOWLIST_ENTRIES:
+    hits.append(
+        f"⛔ ALLOWLIST 條目內容與釘死清單不符(不只比對條數)—— "
+        f"多:{sorted(set(_actual_allowlist_entries) - set(EXPECTED_ALLOWLIST_ENTRIES))} "
+        f"少:{sorted(set(EXPECTED_ALLOWLIST_ENTRIES) - set(_actual_allowlist_entries))}"
+        f"(新增/刪除/改名豁免項目時要同步調 EXPECTED_ALLOWLIST_ENTRIES;只釘條數會被"
+        f"「內容換掉但條數不變」繞過)")
 
 for h in hits:
     print(f"  ✗ {h}")

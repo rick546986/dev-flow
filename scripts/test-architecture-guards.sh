@@ -31,9 +31,18 @@
 #   DSD(2026-08-16 補,B-2) DSD-0 對照組 / DSD-1 過渡態處置句被刪 / DSD-2 三方比對
 #                    判別法字面被改寫(check-dev-setup-discipline.sh,dev-setup
 #                    upgrade 三方比對紀律)
+#   靜態互釘(2026-08-16 補,獨立審查 finding 4) 四支散落地板的字面值互釘 ——
+#                    hooks/selftest.sh MIN_CASES / tests/parallel-stage6/run_tests.py
+#                    EXPECTED_CHECKS / check-dev-setup-discipline.sh 與
+#                    check-gate-twin.sh 的 MIN_CHECKS。**非** seed→mutate→expect_local
+#                    的變異案例,不計入 EXPECTED_CONTROLS/NEGATIVES/TOTAL(見結果區塊
+#                    「GS-9」註解自己的說明,以及下面這行案例數地板不變的理由)。
 #
 # 案例數是**斷言**不是裝飾:EXPECTED_CONTROLS / EXPECTED_NEGATIVES / EXPECTED_TOTAL
 # 由 expect()/expect_local() 實際累計後比對,刪任何一案(含對照組)都會非零退出。
+# 四支地板的靜態互釘不是這種案例(不 seed、不 mutate、不呼叫 expect_local),不計入
+# 這三個數字 —— 加了它們之後 EXPECTED_CONTROLS/NEGATIVES/TOTAL 仍是 10/55/65,是設計
+# 如此,不是漏算。
 #
 # 安全(fail-closed,正式 working tree 全程唯讀):
 #   - set -euo pipefail;所有變數非空檢查
@@ -952,6 +961,44 @@ if [ "$FP_BEFORE" != "$FP_AFTER" ]; then
   exit 1
 fi
 echo "  ✓ 正式 repo 指紋未變($FP_BEFORE)—— working tree 零污染"
+echo
+
+# ── 靜態互釘:四支散落地板(HIGH,獨立審查 2026-08-16 finding 4)────────────────
+# ⚠️ 這**不是**一個 GS 編號案例 —— 不 seed、不 mutate、不呼叫 expect_local,不計入
+# EXPECTED_CONTROLS/NEGATIVES/TOTAL(這三個數字加了它之後仍是 10/55/65,是設計如此,
+# 不是漏算;見本檔檔頭「涵蓋」清單的「靜態互釘」條目)。
+# 為什麼:MIN_CHECKS/MIN_CASES/EXPECTED_CHECKS 這類「檢查數地板」是防砍檢查的
+# 最後一道牆,但牆本身沒有牆——同時砍案例數與地板數字(連刪帶藏,兩處一起改)
+# 完全防不住。GS-4 對 check-design-contract.sh 的防法是在**該檔自己內部**釘死
+# `check(MIN_CHECKS == 100, ...)`;本輪盤點到的另外四支地板 —— hooks/selftest.sh
+# 的 MIN_CASES、tests/parallel-stage6/run_tests.py 的 EXPECTED_CHECKS、
+# check-dev-setup-discipline.sh 與 check-gate-twin.sh 的 MIN_CHECKS —— 所在檔案
+# 都沒有那層自我釘死,這批沒抄到 GS-4 的前例。這裡補上:在**另一個獨立檔案**
+#(本檔)對這四支地板的字面值各釘一條 grep 斷言 —— 這份清單本身是會被 review
+# 到的 diff,誰要調動地板就得同步改這裡,只改一邊會在這裡現形。
+# ⚠️ 誠實承認防禦邊界:連改三處(案例本身 + 地板數字 + 這裡的靜態釘)仍防不住
+# —— 這跟 GS-4 是同一個等級的防禦,防的是「單點手滑」(改了案例忘了改地板,
+# 或反過來改了地板卻忘了同步這裡的靜態釘),不是「蓄意繞過同時改三處」的攻擊者。
+STATIC_PIN_FAIL=0
+check_static_pin() { # check_static_pin <相對路徑> <期望逐字一整行> <說明>
+  local rel="$1" expect_line="$2" label="$3"
+  if grep -qxF "$expect_line" "$ROOT/$rel" 2>/dev/null; then
+    echo "  ✓ 靜態互釘:$rel 的 $label"
+  else
+    echo "  ✗ 靜態互釘:$rel 的 $label —— 找不到逐字一行「${expect_line}」" \
+         "(地板可能被調動,但這裡的靜態釘沒有同步更新,或案例被砍卻沒調地板)"
+    STATIC_PIN_FAIL=1
+  fi
+}
+check_static_pin "hooks/selftest.sh" "MIN_CASES=339" "MIN_CASES 釘死 339"
+check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "EXPECTED_CHECKS 釘死 131"
+check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 9" "MIN_CHECKS 釘死 9"
+check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 132" "MIN_CHECKS 釘死 132(finding 4b 收緊後的實得數)"
+if [ "$STATIC_PIN_FAIL" -ne 0 ]; then
+  echo "⛔ 四支地板靜態互釘:至少一處字面值與釘死清單不符"
+  exit 1
+fi
+echo "  ✓ 四支地板靜態互釘全過(hooks/selftest.sh / run_tests.py / check-dev-setup-discipline.sh / check-gate-twin.sh)"
 echo
 
 if [ "$FAIL" -ne 0 ]; then
