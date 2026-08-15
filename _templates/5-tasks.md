@@ -15,6 +15,29 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 > 用途:把 4-spec 切成可勾選、可驗證的實作單。
 > 本階段固定產出:`5-tasks.md`(本模板全節)+ `5-tasks.html`(tasks 定稿供派工時
 > 必產;必含 T 依賴 DAG,ASCII 天生適合)。
+>
+> ## 5-tasks twin 是**執行板**,不是審查介面(README §6)
+>
+> K-3(2026-08-15)補。5-tasks 不是 gate 站(無 G 編號、免 reviewer 核准),但一樣
+> 要讓人**照著動工**,不是把 md 直轉攤平——owner 兩次反映 Boundaries 常上千字,
+> 直轉會把 Covers/Files/Verify 擠出畫面。四件事缺一不可,**產 html 時逐項對照,
+> 缺一項就是沒做完**:
+>
+> | | 要求 | 這一站的內容 |
+> |---|---|---|
+> | 1 | **動線頂區五格**,每格一句話 + 可點跳轉 | 狀態(frontmatter)/ 任務(幾個 T + 幾條缺必填欄)/ 模式(execution.mode,未標=sequential)/ 依賴(幾條 Blocked-by 邊)/ 進度(可勾計數) |
+> | 2 | **任務卡逐條可勾**,缺必填欄直接在卡上現形 | 每個 T 一張卡(Covers/Files/Verify/Blocked-by 對齊、Intent 獨立標色);**六欄必填**(Covers/Files/Verify/Blocked-by/Intent/Boundaries)缺任一即紅底,格式同 K-7;Owner 選配 |
+> | 3 | **Boundaries 摺疊**(`<details>`,預設收合、內容零刪減) | 每張 T 卡內建 `<details>`,原文零刪減 |
+> | 4 | **依賴 DAG 由 Blocked-by 自動衍生**(ASCII 波次,拓撲分波) | `#dag` 區塊;引用不存在的 T 或成環一律 fail-loud(stderr 警告),不擋產出 |
+>
+> ⚠️ twin 的「六欄必填」是**審查提示**(紅底現形),不是 Stage 6 scope guard 的機器
+> gate——機器(`contract_ref.py`)仍只吃 Covers/Files/Verify/Blocked-by 四欄
+> (下面「T 自足律」講的就是這四欄);Intent/Boundaries 缺欄不會被 Stage 6 拒絕,
+> 但 twin 仍標紅底,因為這兩欄是動工前必讀的資訊,不是機器判準。
+>
+> 產生方式:`docs/dev/tools/build-gate-twin.py <專案根> <slug> 5-tasks`
+> (母版在 `scripts/`)。它讀 md 逐條解析,不手抄;解析不到任何一個 T 會直接失敗。
+>
 > 順序 = **tracer bullet**:先打通最薄的端到端縱切,再逐層加厚。
 > 禁整份按 DB→Repo→Service→API→UI 逐層分 T。每個 T 必須能回答:
 > 「完成後,使用者或系統多了什麼可觀測行為?」答不出即為水平切層徵兆,

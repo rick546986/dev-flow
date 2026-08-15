@@ -27,7 +27,7 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 > | | 要求 | 這一站的內容 |
 > |---|---|---|
 > | 1 | **動線頂區五格**,每格一句話 + 可點跳轉,審完五格才決定要不要往下讀 | 狀態(frontmatter)/ 待審 S(幾條 + **幾條缺觀測欄**)/ lane · Risk / DD 進度 `x/y` / Demo verdict |
-> | 2 | **待審項目逐條可勾**,有進度計數,缺必填欄的直接在卡上現形 | **每個 S 一張卡**(GIVEN/WHEN/THEN 對齊、「觀測」欄獨立標色);**解析不到「觀測」欄的 S 渲染成紅底**——那是 G3 驗收的唯一依據 |
+> | 2 | **待審項目逐條可勾**,有進度計數,缺必填欄的直接在卡上現形 | **每個 S 一張卡**(GIVEN/WHEN/THEN 對齊、「觀測」欄獨立標色);**缺 GIVEN/WHEN/THEN/觀測任一欄即紅底**(動線頂區優先報缺觀測條數)——觀測是 G3 驗收的唯一依據 |
 > | 3 | **背景資料摺疊**(`<details>`,預設收合、內容零刪減) | Bug Scenario、Acceptance Criteria、Out of Scope、Diff Budget、Verification Profile、DD 表、Test Skeletons、Known limits |
 >
 > 產生方式:`docs/dev/tools/build-gate-twin.py <專案根> <slug> 4-spec`

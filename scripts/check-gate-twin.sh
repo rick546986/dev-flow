@@ -35,7 +35,7 @@ ROOT = Path(os.environ["DEVFLOW_ROOT"])
 TMP = Path(os.environ["DEVFLOW_TMP"])
 BUILD = ROOT / "scripts/build-gate-twin.py"
 EXAMPLE = ROOT / "example/contract-expiry-reminder"
-STAGES = ("2-decision", "4-spec", "7-review")
+STAGES = ("2-decision", "4-spec", "7-review", "5-tasks")
 # 完整文件外殼的判準:片段裡出現這些就是把外殼寫進片段了(<header> 不算,故要求後接空白或 >)
 SHELL = re.compile(r"<!doctype|<html[\s>]|<head[\s>]|<body[\s>]", re.I)
 
@@ -58,7 +58,7 @@ def run(root, slug, stage):
                           capture_output=True, text=True)
 
 
-print("-- 三個 gate stage 對母版範例實跑(自帶回歸)--")
+print("-- 三個 gate stage + 5-tasks 執行板對母版範例實跑(自帶回歸)--")
 proj = TMP / "proj/docs/dev/demo"
 proj.mkdir(parents=True)
 for st in STAGES:
@@ -114,7 +114,9 @@ def readme_keys():
     txt = (ROOT / "README.md").read_text(encoding="utf-8")
     out = {}
     for st in STAGES:
-        m = re.search(r"^\|\s*\*\*" + re.escape(st) + r"\(G\d\)\*\*\s*\|(.+?)\|\s*$",
+        # 5-tasks 是執行板不是 gate,標籤是「(執行板)」不是「(G\d)」——K-3 擴充,
+        # 兩種都要吃得到,不然改回只認 `(G\d)` 這條守衛對 5-tasks 就是形同虛設。
+        m = re.search(r"^\|\s*\*\*" + re.escape(st) + r"\((?:G\d|執行板)\)\*\*\s*\|(.+?)\|\s*$",
                       txt, re.M)
         if not m:
             continue
@@ -138,7 +140,7 @@ print("-- G\u2032/G\u2033 跨檔規格一致:README §6 vs 三份模板頂註 --
 # N4 的根因:規格同時寫在 README §6 與三份模板頂註,兩邊不一致時沒有任何檢查。
 # 把模板改回舊值 → 必須紅(2026-08-15 二次複審 G\u2033)。
 TPL = {"2-decision": "_templates/2-decision.md", "4-spec": "_templates/4-spec.md",
-       "7-review": "_templates/7-review.md"}
+       "7-review": "_templates/7-review.md", "5-tasks": "_templates/5-tasks.md"}
 
 
 def tpl_keys(path):
@@ -346,6 +348,46 @@ if r.returncode == 0:
     m = re.search(r'<article class="([^"]*)" data-sid="S-1">', t2)
     check(bool(m) and "bad" not in m.group(1), "欄位齊全的 S-1 不是紅卡",
           f"實際 class=\"{m.group(1) if m else '(無)'}\"")
+
+print("-- K-3 負向:5-tasks 缺 Intent 要在卡上紅底現形,其餘 T 不受牽連 --")
+fxt = ROOT / "scripts/fixtures/gate-twin/tasks-missing-intent"
+shutil.copytree(fxt, TMP / "fxt")
+r = run(TMP / "fxt", "demo", "5-tasks")
+check(r.returncode == 0, "缺 Intent 的 5-tasks 仍產得出來(要讓人看見問題,不是擋住)")
+if r.returncode == 0:
+    tt = (TMP / "fxt/docs/dev/demo/5-tasks.html").read_text(encoding="utf-8")
+    check(tt.count('class="s-card bad"') == 1, "缺 Intent 的那個 T 恰渲染成 1 張紅卡",
+          f"紅底卡 {tt.count('s-card bad')} 張,應為 1")
+    check("缺「Intent」欄" in tt, "html 含「缺「Intent」欄」(守衛靠這個字串現形)")
+    m = re.search(r'<article class="([^"]*)" data-sid="T-1">', tt)
+    check(bool(m) and "bad" not in m.group(1), "欄位齊全的 T-1 不是紅卡",
+          f"實際 class=\"{m.group(1) if m else '(無)'}\"")
+
+print("-- K-3 負向:5-tasks 找不到任何 T → exit 1,不產空殼 --")
+empty_t = TMP / "empty-t/docs/dev/demo"
+empty_t.mkdir(parents=True)
+(empty_t / "5-tasks.md").write_text(
+    "# 5. 任務\n\n## Split Decisions(拆分自判,選配)\n\n沒有任何 T,隨便寫點東西。\n",
+    encoding="utf-8")
+r = run(TMP / "empty-t", "demo", "5-tasks")
+check(r.returncode == 1, "空 5-tasks(無任何 T) → exit 1", f"實際 exit {r.returncode}")
+check(not (empty_t / "5-tasks.html").exists(), "空 5-tasks → 不產出空殼 html")
+
+print("-- K-3 盤點:example 5-tasks 的 T 數 == twin 卡數 --")
+n_t_source = len(re.findall(r"^## T-\d+", (EXAMPLE / "5-tasks.md").read_text(encoding="utf-8"), re.M))
+n_t_twin = len(re.findall(r'<article class="s-card[^"]*" data-sid="T-\d+"',
+                          (proj / "5-tasks.html").read_text(encoding="utf-8")))
+check(n_t_source > 0 and n_t_source == n_t_twin,
+      "example/contract-expiry-reminder/5-tasks.md 的 `## T-` 數 == twin 卡數",
+      f"md {n_t_source} 個 T,twin {n_t_twin} 張卡")
+
+print("-- K-3:5-tasks 的 Boundaries 摺疊 + #dag 都在,五格標籤與 README 一致(自帶回歸)--")
+tasks_local = (proj / "5-tasks.html").read_text(encoding="utf-8")
+check(tasks_local.count('class="t-bound"') == n_t_twin,
+      "每張 T 卡都有 Boundaries 摺疊(<details class=\"t-bound\">)",
+      f"details 數 {tasks_local.count('class=\"t-bound\"')},卡數 {n_t_twin}")
+check('id="dag"' in tasks_local, "T 依賴 DAG 區塊(#dag)存在")
+check("Wave 1" in tasks_local, "DAG 至少印出第一波")
 
 print("-- P5:抽驗格決定論抽樣(不是隨機、可重現)--")
 # 獨立(不呼叫 build-gate-twin.py 的 table_rows)重算 Coverage Matrix 中位列 ——
