@@ -27,6 +27,7 @@ updated: 2026-08-16
 |---|---|---|
 | D-1 | S-1.4「兩 parser task dict 完全相同」窄化為「tasks/execution 相同 + errors 有/無相同,不比錯誤文字」 | L1 —— 錯誤文案差異(devflow-lib 多帶「母版」二字)早於本輪且屬 FIELD_RE 禁區;S-1.4 的意圖是「同判」非「同文」 |
 | D-2 | Diff Budget 測試側超支:預算 ≤150 行,實際 +240(selftest 58 + run_tests 93 + contract_ref 鏡射 89) | L1 —— 超支全在 Files 宣告的測試檔內、零新檔,成因是補償控制型 fixture(B-6 教訓的預期形狀);非測試側 58 行在 ≤120 內 |
+| D-2 更正 | (2026-08-16,G3 reviewer 以 `git show dbb6d1c --numstat` 核實)實為 selftest +86、run_tests +91、contract_ref +57、check-gate-twin +23,測試側合計 **+257** —— 自報 240 漏計 check-gate-twin 且逐項數字有誤 | 分級維持 L1(超支性質不變);原行保留,本行為更正記錄 |
 | D-3 | T-2 packet 寫「errors 為空」,實作改為「errors 不含提到 T-99 的訊息」 | L1 —— fixture 的 T-1 本就含合法 H-1 錯誤(重複保留欄回歸材料),errors==[] 恆假;改法語意等價於「fence 未洩漏進 errors」 |
 
 ## 收尾驗證(實跑輸出)
