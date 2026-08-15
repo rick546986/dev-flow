@@ -23,7 +23,7 @@ feature 走 7 份文檔、過 3 道 gate(G1 方向核准、G2 契約審查、G3 
 |---|---|---|
 | **第一次接觸 dev-flow** | ①[quickstart 導覽](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html)(零到一,照著打)②[dev-flow 導覽](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html)(七階段圖解)③本檔 [§0 一張圖](#0-一張圖) + [§10 新 feature 快速上手](#10-新-feature-快速上手) | §5、§7 —— 那是規則正本,不是教學 |
 | **要查某條規則** | 下方「規則索引」直接跳;最高頻三處:[§7 gate 條件](#7-角色與-gate)、[§2 lane 判準](#2-兩軌lane)、[§13–14 切片](#13-大案與切片) | 從第一節順讀 |
-| **要改 dev-flow 本身** | ①下方「怎麼逛這個 repo」結構圖(每個目錄標了「誰在讀它」)②[§7 強制力對照](#強制力對照誰在擋)(哪些規則真的有人擋、哪些只是紀律)③[§7 頂註](#7-角色與-gate)的四處同步清單 | 直接改 §7 —— 先看它連動誰 |
+| **要改 dev-flow 本身** | ①母版「怎麼逛這個 repo」結構圖(每個目錄標了「誰在讀它」;散發版此節已依標記剝除,僅母版可見)②[§7 強制力對照](#強制力對照誰在擋)(哪些規則真的有人擋、哪些只是紀律)③[§7 頂註](#7-角色與-gate)的四處同步清單 | 直接改 §7 —— 先看它連動誰 |
 
 **規則索引**(問題 → 章節):
 
@@ -44,6 +44,7 @@ feature 走 7 份文檔、過 3 道 gate(G1 方向核准、G2 契約審查、G3 
 | 某條規則到底誰在擋(機械 vs 人工) | [§7 強制力對照](#強制力對照誰在擋) | ✅ |
 | 跨 repo / 非 feature 的事怎麼辦 | [§15](#15-附錄跨-repo-與非-feature-入口) | ✅ |
 
+<!-- devflow:master-only:start -->
 圖在 `guides/`,不在這裡 —— 本檔是 markdown 正本,要圖請點上表的導覽連結。
 
 **怎麼逛這個 repo**:每個目錄後面標的是「誰在讀它」——那就是它不能被刪的依據。
@@ -103,6 +104,7 @@ dev-flow/
       └ <slug>/              各次改版的七階段文檔
     docs/adr/                長期決策,一決策一檔(可被後來的 superseded)
 ```
+<!-- devflow:master-only:end -->
 
 線上看導覽:[quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html)、
 [dev-flow](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html)、
@@ -193,8 +195,8 @@ Fast lane 省的是 Stage 1–3,不是 Stage 5:`devflow-exec.sh start <slug>` �
 **十一條觸發條件任一命中即必填,全未命中才可 `n-a` + 具體理由(Fast lane 不豁免)**;
 條件全文與判準**不在此重抄**,以免變成第三份會漂的清單 ——
 操作用清單在 `_templates/4-spec.md` 該節頂註(填的人就地看得到),
-語意判準與好壞範例在 [`notes/design/design-boundary-contract.md`](notes/design/design-boundary-contract.md)(唯一語意正本);
-兩份由 `scripts/check-design-contract.sh` 機械比對條數與關鍵詞,不得單邊漂移。
+語意判準與好壞範例在 `notes/design/design-boundary-contract.md`(母版 repo,唯一語意正本);
+兩份由 `scripts/check-design-contract.sh`(母版 repo)機械比對條數與關鍵詞,不得單邊漂移。
 由既有 G2 一併審(gate 條件正本仍是 §7,本段不新增 gate 條件),不新增 Stage、
 不新增 Gate、不新增 ID 鏈;Stage 5 用既有 `Boundaries:` 欄摘錄、
 Stage 6 在 T Review 查 drift、Stage 7 併入既有雙軸審。強制力見 §7 對照表。
@@ -249,7 +251,9 @@ RED → GREEN → scope check → Verify
   RED → GREEN → scope check → Verify → independent T review(Test Integrity Check
   是 T review 的檢查清單擴充,不是新階段;「Candidate」僅 parallel 模式使用,
   sequential 案照舊 = 送 T review);mutation/property 等重驗證層屬
-  feature 級 Final Fresh Run,**不逐 T 跑**。
+  feature 級 Final Fresh Run,**不逐 T 跑**。純 migration／infra 型 T(無業務邏輯可斷言)
+  一樣要有 RED→GREEN,只是測的是**形狀**(表/欄位/索引/約束存在與否),不能只寫執行指令
+  就算完成(細節與範例見 `_templates/5-tasks.md`)。
 - **Decisions**(spec 未載明的自由選擇,如內部命名、資料結構):自己選、記一行入
   6-notes 的 Decisions 節、繼續。不屬偏差,不需回審。
 - **偏差兩級**:
@@ -274,7 +278,8 @@ RED → GREEN → scope check → Verify
   `devflow-postbash`(PostToolUse Bash:git status 對照 + 內容 hash,抓 shell 寫入)、
   `devtalk-guard`(盲原則掃描)。L1 出口 = `devflow-exec.sh allow <file> --reason`;
   L2 = `stop`。收尾 `stop` 後全部沉睡。自測:`hooks/selftest.sh`(動態發現案例,可重跑)。
-  界線:紀律工具非安全沙箱,詳 `dev-setup-record.html`。跨版本相容由
+  界線:紀律工具非安全沙箱,詳 `dev-setup-record.html`(plugin guides/,經
+  `${CLAUDE_PLUGIN_ROOT}` 存取,非本 repo/散發檔案)。跨版本相容由
   `devflow-exec.sh doctor` 依 `devflow-contract.json`(2.0.0)做 fail-closed 握手;
   舊 sequential 專案 = legacy compatibility mode。
 - **守衛與並行**:守衛狀態以「當前工作樹」為單位(`.devflow/exec.json` + git-dir sentinel),
@@ -294,8 +299,8 @@ RED → GREEN → scope check → Verify
   Review 的 Candidate 不得進正式 integration branch、不得標完成;只有 ACCEPTED
   才勾 checkbox。每 T 一個 task worktree(`task/<slug>/T-n`)+ task-scoped 守衛;
   Worker 不寫 5-tasks/6-notes/STATUS/twin(單寫者 = 派工者)。細節與欄位語意見
-  `notes/design/parallel-stage6.md`。全流程一張圖(ASCII 正本;SVG 版見
-  `guides/guide-quickstart.html` ③):
+  `notes/design/parallel-stage6.md`(母版 repo)。全流程一張圖(ASCII 正本;SVG 版見
+  `guides/guide-quickstart.html` ③,plugin guides/,經 `${CLAUDE_PLUGIN_ROOT}` 存取):
 
   ```text
   Task DAG → Wave Base → Task Worktrees
@@ -308,7 +313,8 @@ RED → GREEN → scope check → Verify
   ```
 
   跨階段收束(sequential/parallel 皆同;Final Fresh Gauntlet = §7 G3 錨的
-  Final Fresh Run + Evidence 契約,SVG 版見 `guides/guide-quickstart.html` ⑥):
+  Final Fresh Run + Evidence 契約,SVG 版見 `guides/guide-quickstart.html` ⑥,
+  plugin guides/,經 `${CLAUDE_PLUGIN_ROOT}` 存取):
 
   ```text
   ACCEPTED Tasks → Final Fresh Gauntlet → G3
@@ -317,7 +323,7 @@ RED → GREEN → scope check → Verify
   runtime 子命令:`parallel-init` / `plan` / `wave-open` / `wave-close` /
   `task-candidate` / `task-state` / `task-integrate` / `task-rework` /
   `rebuild-plan` / `candidate` / `gate` / `review`,詳 `devflow-exec.sh` usage 與
-  `notes/design/parallel-stage6.md`。
+  `notes/design/parallel-stage6.md`(母版 repo)。
 - **接收審查**(G3 打回時):逐 F 驗證後才動手 —— 同意的改並一句說明為何對;
   不同意的擺論證,不盲改(禁 performative fix)。
 - **判級疑義**:分不清 L1/L2 → 一律當 L2。Diff Budget 超支本身非偏差,
@@ -446,9 +452,11 @@ Boundaries 常上千字,攤平會把 Covers/Files/Verify 擠出畫面,所以執�
 md 側的對應規定是各模板頂註(`_templates/{2-decision,4-spec,7-review,5-tasks}.md`),
 **兩邊講同一件事、md 是正本**;html 只是把它做成可點的。
 
-**產生方式**:`scripts/build-gate-twin.py <專案根> <slug> <stage>`(`stage ∈
+**產生方式**:`scripts/build-gate-twin.py <專案根> <slug> <stage>`(母版 repo 路徑;
+採用專案的散發副本在 `docs/dev/tools/build-gate-twin.py`。`stage ∈
 2-decision | 4-spec | 7-review | 5-tasks`;見該檔頂註)。它讀 md 正本逐條解析,
 不手抄 —— 所以不會與正本漂移;解析不到任何一條會直接失敗,不會產出一份空殼。
+相依 `markdown-it-py==4.0.0`,缺了會 fail-loud(exit 2 附安裝指令),不靜默降級。
 **同一份內容兩種殼**:本機 twin 要完整 html 文件,上 artifact 的片段**不得含**
 `<!doctype>`/`<html>`/`<head>`/`<body>`(發布時外層會自動包)。
 
@@ -557,24 +565,24 @@ E11 只驗這兩節在不在。
 | G1/G2/G3 摘要三處不漂 | 外部 plugin 機械比對本節粗體錨 | `hooks/gate-consistency.sh` |
 | Stage 3 Human verdict 不得由 Agent 代填 | 人類輸入;外部 plugin 判定觸發與拒絕代答 | `_templates/3-prototype.md`、`hooks/_stage3_impl.py` |
 | Stage 4 逐場對帳 Stage 3 ACCEPTED 場景 | 人工/fresh reviewer;完全無腳本檢查,連範例都沒有 | `_templates/4-spec.md` 步 3 |
-| Stage 4 Reliability triage 三問已填 | 本 repo 腳本驗模板欄名與範例三項有非空理由;理由對不對是 G2 reviewer 判斷 | `_templates/4-spec.md`、`scripts/check-methodology-corrections.sh` |
-| Stage 5 必填四欄與 scope 解析 | 外部 runtime;本 repo reference parser 驗 fixture | `_templates/5-tasks.md`、`tests/parallel-stage6/contract_ref.py`、`hooks/_exec_impl.py` |
-| Stage 5 不得整份按架構層切 T | 人工/fresh reviewer 為主;本 repo 另有 **warning-only** heuristic(永不 exit 1,只提示,不能取代 reviewer) | `_templates/5-tasks.md`、`scripts/check-task-slicing.sh` |
-| Stage 4 Design Boundary Contract 該不該填、填得對不對 | **人工/G2 reviewer**。本 repo 腳本只驗結構(章節/欄位/表頭/`n-a` 有無理由/兩份觸發條件清單不漂),**不判斷**模組邊界劃得對不對、Data Owner 合不合理、Interface 設計好不好、Transaction Boundary 是否符合領域 | `_templates/4-spec.md`、`notes/design/design-boundary-contract.md`、`scripts/check-design-contract.sh` |
-| Stage 5 每個相關 T 的 `Boundaries:` 有摘錄設計邊界 | **人工** —— 無腳本檢查實案(本 repo 只驗範例的模板規則存在) | `_templates/5-tasks.md`、`example/contract-expiry-reminder/5-tasks.md` |
+| Stage 4 Reliability triage 三問已填 | 本 repo 腳本驗模板欄名與範例三項有非空理由;理由對不對是 G2 reviewer 判斷 | `_templates/4-spec.md`、`scripts/check-methodology-corrections.sh`(母版 repo) |
+| Stage 5 必填四欄與 scope 解析 | 外部 runtime;本 repo reference parser 驗 fixture | `_templates/5-tasks.md`、`tests/parallel-stage6/contract_ref.py`(母版 repo)、`hooks/_exec_impl.py` |
+| Stage 5 不得整份按架構層切 T | 人工/fresh reviewer 為主;本 repo 另有 **warning-only** heuristic(永不 exit 1,只提示,不能取代 reviewer) | `_templates/5-tasks.md`、`scripts/check-task-slicing.sh`(母版 repo) |
+| Stage 4 Design Boundary Contract 該不該填、填得對不對 | **人工/G2 reviewer**。本 repo 腳本只驗結構(章節/欄位/表頭/`n-a` 有無理由/兩份觸發條件清單不漂),**不判斷**模組邊界劃得對不對、Data Owner 合不合理、Interface 設計好不好、Transaction Boundary 是否符合領域 | `_templates/4-spec.md`、`notes/design/design-boundary-contract.md`(母版 repo)、`scripts/check-design-contract.sh`(母版 repo) |
+| Stage 5 每個相關 T 的 `Boundaries:` 有摘錄設計邊界 | **人工** —— 無腳本檢查實案(本 repo 只驗範例的模板規則存在) | `_templates/5-tasks.md`、`example/contract-expiry-reminder/5-tasks.md`(母版 repo) |
 | Stage 6 Design Boundary Check 五問 | **人工/fresh reviewer**;外部 plugin 尚未內建此檢查 | `_templates/6-implementation-notes.md` |
 | Stage 7 對照設計契約審 diff(🟡/🔴 分級) | **人工/fresh reviewer** —— 語意判斷,無機械強制 | `_templates/7-review.md` |
-| ADR 編號唯一、Gauntlet 版本四處同步、README §7 Gate Token 未增刪改名 | 本 repo 腳本(各有負向 fixture／mutation 佐證) | `scripts/check-adr-integrity.sh`、`check-version-sync.sh`、`check-gate-tokens.sh` |
+| ADR 編號唯一、Gauntlet 版本四處同步、README §7 Gate Token 未增刪改名 | 本 repo 腳本(各有負向 fixture／mutation 佐證) | `scripts/check-adr-integrity.sh`、`check-version-sync.sh`、`check-gate-tokens.sh`(以上三支母版 repo 腳本) |
 | Stage 6 scope guard(只准動 Files 欄的檔) | 外部 plugin hooks | `hooks/devflow-exec.sh`、`devflow-guard.sh`、`devflow-prebash.sh`、`devflow-postbash.sh` |
 | Task 獨立 review(作者不自審) | 人工或 fresh Agent;外部 dev-run 編排 | `_templates/6-implementation-notes.md`、dev-run |
-| 4-spec 每個 S 被 5-tasks Covers 承接 | 本 repo 腳本只驗範例;實案靠 runtime/CI 或人工 | `scripts/check-methodology-corrections.sh` |
-| 每個 T×S 有獨立 RED→GREEN 證據 | 本 repo 腳本只驗範例;實案靠外部 runtime 與 Reviewer | `scripts/check-methodology-corrections.sh`、dev-run |
-| G3 Evidence 契約八點 | 本 repo Gauntlet 腳本(E1–E13),但第 2、3、5 點例外 | `scripts/devflow-evidence-gauntlet.sh` |
+| 4-spec 每個 S 被 5-tasks Covers 承接 | 本 repo 腳本只驗範例;實案靠 runtime/CI 或人工 | `scripts/check-methodology-corrections.sh`(母版 repo) |
+| 每個 T×S 有獨立 RED→GREEN 證據 | 本 repo 腳本只驗範例;實案靠外部 runtime 與 Reviewer | `scripts/check-methodology-corrections.sh`(母版 repo)、dev-run |
+| G3 Evidence 契約八點 | 本 repo Gauntlet 腳本(E1–E13),但第 2、3、5 點例外 | `scripts/devflow-evidence-gauntlet.sh`(母版 repo;採用專案的機械檢查入口是 `docs/dev/tools/devflow-evidence-gauntlet.sh` + doctor) |
 | G3 第 2、5 點:Required Layer 全 pass、不得 unverified 或 n-a | 半自動 —— Gauntlet 讀不到 4-spec,不知道哪些層是 Required;人必須把 Profile 的 Required 層逐層寫進 `--require-layer`,E7 才會擋。旗標漏帶 = 整份 unverified 也照樣 exit 0 | 4-spec Verification Profile、`_templates/7-review.md` 步 2c(文檔化命令已內建旗標,並有測試盯著) |
 | G3 第 3 點:已觸發的 Conditional Layer 全 pass | 人工 —— 同上讀不到 4-spec,且「哪些條件層這次被觸發」還多一層判斷,比第 2、5 點更難機械化 | 4-spec Verification Profile、`_templates/7-review.md` 步 2c |
 | Coverage Matrix 與 Operational Walkthrough 內容 | Reviewer 人工判斷;E11 只驗 heading 在不在 | `_templates/7-review.md`、E11 |
 | Final Fresh Run 真的跑過 | 專案命令/Runtime/Reviewer;Gauntlet 只驗宣告與 SHA 綁定 | 4-spec Verification Profile、`_templates/7-review.md` |
-| Attempt Ledger 寫入 | 外部 runtime 寫;本 repo observability CLI 驗證與衍生 | `hooks/devflow-obs.sh`、`observability/devflow-obs.py` |
+| Attempt Ledger 寫入 | 外部 runtime 寫;本 repo observability CLI 驗證與衍生 | `hooks/devflow-obs.sh`、`observability/devflow-obs.py`(母版 repo) |
 | 方法論與 Runtime 相容 | 外部 doctor 比對契約(fail-closed) | `devflow-contract.json`、`hooks/runtime-capabilities.json`、`hooks/devflow-doctor.sh` |
 
 ## 8. 每階段呼叫的技能(AI 對照表)
@@ -618,7 +626,7 @@ E11 只驗這兩節在不在。
 - **「記帳」= Attempt Ledger**(devflow-obs,`agent_event` schema 1.1;事件經
   `devflow-exec.sh event` 寫入):6-notes 執行軌跡由 ledger 衍生,禁手動雙寫;
   sequential v1 無 run_id 時事件步 N/A(= KL-1)。細節見
-  `notes/design/agent-attempt-observability.md`。
+  `notes/design/agent-attempt-observability.md`(母版 repo)。
 - **G1/G2/G3 審查與 verdict**:依 §7 的人類→fresh-context reviewer Agent→有記錄的
   owner 自審順序;Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。
 - **effort 定位**:low = 機械執行(照 spec 寫碼、格式轉換、抄錄);medium = 一般分析
@@ -755,4 +763,4 @@ SDD 是脊椎(spec 驅動什麼該做),TDD 是右側驗證(測試證明做對)�
 
 **非 feature 入口**:架構巡檢/償債機會 → 一樣開 `/dev-talk` 討論,產物同格式。
 
-疑義以本 README 為準;範例看 `example/contract-expiry-reminder/`(填好的完整一輪)。
+疑義以本 README 為準;範例看 `example/contract-expiry-reminder/`(母版 repo,填好的完整一輪)。

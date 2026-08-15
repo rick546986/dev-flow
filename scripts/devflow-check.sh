@@ -56,6 +56,12 @@ run() {
 group_methodology() {
   run "methodology/check-methodology-corrections" scripts/check-methodology-corrections.sh || return 1
   run "methodology/check-realworld"               scripts/check-realworld.sh               || return 1
+  # MED-4(第二批獨立審查):README master-only 標記必須數量相等、逐一配對(不得巢狀/
+  # 交錯)—— 不對稱時 skills/dev-setup/SKILL.md 的 sed 抽取會靜默跑錯範圍,沒有任何
+  # 報錯,採用專案的 docs/dev/README.md 就此帶著錯誤內容。放這一群(而非
+  # check-stage67-enforcement.sh)是因為這是 README/母版一致性的方法論層問題,
+  # 與 check-stage67-enforcement.sh 專管的 Stage 6/7 模板執行期強制條款是不同關切。
+  run "methodology/check-readme-markers" scripts/check-readme-markers.sh || return 1
   # G2 機械關卡(B-9):對母版自帶的正例跑一次 —— 等於自帶回歸測試,腳本壞了這裡先紅。
   # ⚠️ 這支是 **Gate**(exit 1 = FAIL 擋流程),與 warning-only 的 check-task-slicing 契約相反。
   run "methodology/check-spec-gate" \

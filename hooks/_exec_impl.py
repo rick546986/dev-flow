@@ -18,6 +18,10 @@ PARP = os.path.join(DF, "parallel.json")
 SENT = os.path.join(L.git_dir(root), "devflow-armed")
 
 SAFE_STATES = ("INTEGRATED", "IN_REVIEW", "ACCEPTED")   # 設計 §4.2:Blocked-by 的「可開始」門檻
+# exec-v3(A-11):新武裝一律寫 exec-v3;讀取兩版都收 —— 舊 worktree 留著的
+# "exec-v2" 字面值不因這次升版斷線(candidate/status 兩處都要認得舊字面值,
+# 零回歸鐵則)。
+EXEC_SCHEMAS = ("exec-v2", "exec-v3")
 
 
 def die(msg, code=1):
@@ -388,10 +392,15 @@ if cmd == "start":
             "scope": sorted(scope), "extra": [],
             "baseline": baseline, "contract_hashes": contract,
             "contract_hash_scope": "repo-wide-v1",
-            "schema": "exec-v2",
+            "schema": "exec-v3",
             "run_id": run_id,
             "mode": parsed["execution"]["mode"],
             "task": task,
+            # A-6:task-scoped 武裝的 exec.json 就是這個 T 的守衛狀態,派工者
+            # 讀這份物件即可拿到 boundaries/intent(不必回頭重讀 5-tasks)。
+            "boundaries": tdef["boundaries"],
+            "intent": tdef["intent"],
+            "owner": tdef["owner"],
             "wave": {"number": wave_no, "wave_base_sha": wave_base},
             "candidate_sha": None,
             "state": "RUNNING",
@@ -423,7 +432,7 @@ elif cmd == "status":
         except Exception as e:
             print(f"⚠️ 旗標損壞({e}) —— hooks 現在 fail-closed 擋一切。跑 stop 後重新 start。")
             sys.exit(1)
-        if d.get("schema") == "exec-v2" and d.get("task"):
+        if d.get("schema") in EXEC_SCHEMAS and d.get("task"):
             wave = d.get("wave") or {}
             agg = L.contract_agg_hash(d.get("contract_hashes", {}))
             print(f"feature={d.get('slug')} task={d.get('task')} mode={d.get('mode')} "
@@ -490,7 +499,7 @@ elif cmd == "candidate":
         die(f"⛔ 拒絕:{msg} —— 疑遭竄改(MAJOR-C),不在其上登記 candidate;"
             f"還原檔案或重新 devflow-exec.sh start 重建。")
     d = json.load(open(EXECP))
-    if d.get("schema") != "exec-v2" or not d.get("task"):
+    if d.get("schema") not in EXEC_SCHEMAS or not d.get("task"):
         die("拒絕:candidate 只用於 task-scoped 守衛(start <slug> --task T-n)")
     full = git_out("rev-parse", "--verify", "--quiet", f"{sha}^{{commit}}")
     if not full:
@@ -574,8 +583,12 @@ elif cmd == "plan":
            "waves": waves,
            "execution_edges": sorted([a, b] for a, b in L.execution_edges(parsed)),
            "integration_edges": sorted([a, b] for a, b in L.integration_edges(parsed)),
+           # A-6:plan 是派工者(人/主模型)拿 5-tasks 派工 Packet 資訊的入口之一
+           # —— boundaries/intent/owner 現在真的露出來,不再解析後就丟棄。
            "tasks": {t["id"]: {"risk": t["risk"], "review_mode": t["review_mode"],
-                               "files": t["files"], "verify": t["verify"]}
+                               "files": t["files"], "verify": t["verify"],
+                               "boundaries": t["boundaries"], "intent": t["intent"],
+                               "owner": t["owner"]}
                      for t in parsed["tasks"]}}
     print(json.dumps(out, ensure_ascii=False, indent=1))
 
@@ -890,16 +903,75 @@ elif cmd == "review":
     args = sys.argv[3:]
     slug = ""
     bundle_path = file_path = ""
+    saw_flag = False   # 任何 --xxx token(不論是否被吃掉)都算,堵「掉字」誤觸發新分支
     i = 0
     while i < len(args):
         if args[i] == "--bundle" and i + 1 < len(args):
-            bundle_path = args[i + 1]; i += 2
+            bundle_path = args[i + 1]; saw_flag = True; i += 2
         elif args[i] == "--file" and i + 1 < len(args):
-            file_path = args[i + 1]; i += 2
+            file_path = args[i + 1]; saw_flag = True; i += 2
         elif not args[i].startswith("--"):
             slug = args[i]; i += 1
         else:
-            i += 1
+            saw_flag = True; i += 1
+    if slug and not file_path and not bundle_path and not saw_flag:
+        feat_disp = f"docs/dev/{slug}/"
+        # ── A-11:Stage 7 self-review 圍欄③武裝 ──────────────────────────
+        # ⚠️ 這不是上面 wave review(--file/--bundle)的變體,是完全不同的用途,
+        # 借同一個 "review" 子命令名安全共用:bare `review <slug>`(無任何 --flag)
+        # 在舊碼從未被使用過 —— 舊碼下這個呼叫形狀只會落到下面的 usage die,
+        # 故挪用不衝突(見 notes/adoption-findings-2026-08-04.md A-11)。
+        # ⚠️ 絕不可用 "mode" key(parallel/task 模式已佔用,四處閘門會被污染);
+        # 新開 "phase" key,值 "review"。
+        if os.path.exists(EXECP):
+            msg = L.shadow_mismatch(root, "exec.json")
+            if msg:
+                die(f"⛔ 拒絕:{msg} —— 疑遭竄改(MAJOR-C),不在其上武裝 review;"
+                    f"還原檔案或重新 devflow-exec.sh start 重建。")
+            d = json.load(open(EXECP))
+            if d.get("slug") != slug:
+                die(f"拒絕:.devflow/exec.json 屬於 {d.get('slug')},非 {slug}"
+                    f"(review 需與現行武裝的 slug 相符)。")
+            d["phase"] = "review"
+            d["review_unlocked"] = False
+            json.dump(d, open(EXECP, "w"), ensure_ascii=False, indent=1)
+            L.update_shadow(root)
+            print(f"✅ Stage 7 review 圍欄已武裝:{slug}(沿用既有 Stage 6 exec.json)")
+        else:
+            # 事後補審場景(無 Stage 6 state):自建最小 exec.json。刻意不要求
+            # 4-spec approved(補審可能發生在核准之前);slug 對應的 feature 目錄
+            # 至少要存在,免得打錯字憑空造狀態。baseline 收全部現有髒檔,避免
+            # 一武裝就被 postbash 誤判既有 WIP 為新增違規;scope 留空 —— 圍欄③
+            # 本身只管 docs/dev/<slug>/ 底下的 7-review*/evidence 限縮,不額外
+            # 放寬程式碼寫入範圍,真要動別的檔走既有 L1 allow 出口。
+            if not os.path.isdir(os.path.join(root, "docs", "dev", slug)):
+                die(f"拒絕:找不到 docs/dev/{slug}/(slug 打錯或功能目錄不存在)。")
+            try:
+                dirty_entries = L.git_dirty_paths(root, with_codes=True)
+            except RuntimeError as e:
+                die(f"拒絕:無法掃描工作樹({e})")
+            baseline = {}
+            for _code, _rel in dirty_entries:
+                if _rel.startswith(".git/") or L.is_ambient_path(_rel):
+                    continue
+                baseline[_rel] = L.sha(os.path.join(root, _rel))
+            gi = arm_common([])
+            baseline[".gitignore"] = L.sha(gi)
+            contract = L.protected_contract_hashes(root)
+            data = {"slug": slug,
+                    "started": now(),
+                    "scope": [], "extra": [],
+                    "baseline": baseline, "contract_hashes": contract,
+                    "contract_hash_scope": "repo-wide-v1",
+                    "phase": "review", "review_unlocked": False}
+            json.dump(data, open(EXECP, "w"), ensure_ascii=False, indent=1)
+            open(SENT, "w").write(slug + "\n")
+            L.update_shadow(root)
+            print(f"✅ Stage 7 review 圍欄已武裝:{slug}(事後補審 —— 無 Stage 6 state,"
+                  f"自建最小 exec.json;baseline 記錄 {len(baseline)} 個既有髒檔)")
+        print(f"Read {feat_disp}6-implementation-notes.md 現在禁讀(7-review.md 步 4 才解鎖);"
+              f"Write/Edit 限縮到 {feat_disp}7-review* 與 {feat_disp}evidence/。")
+        sys.exit(0)
     if bundle_path:
         try:
             bundle = json.load(open(bundle_path))
@@ -917,7 +989,7 @@ elif cmd == "review":
             die(f"拒絕:review 檔讀取失敗({e})")
         wave_tasks = cw["tasks"]
     else:
-        die("用法: devflow-exec.sh review <slug> --file <review.json> | review --bundle <bundle.json>")
+        die("用法: devflow-exec.sh review <slug> --file <review.json> | review --bundle <bundle.json> | review <slug>")
     errors = L.validate_wave_review(review, wave_tasks)
     if errors:
         print("⛔ wave review 無效(缺一 = 不得推進狀態):")
@@ -940,6 +1012,31 @@ elif cmd == "review":
         sys.exit(0)
     print(f"✅ wave review 結構合法({len(wave_tasks)} tasks,integration_verdict="
           f"{review.get('integration_verdict')})")
+
+elif cmd == "review-unlock":
+    # A-11:7-review.md 步 4「此刻才讀 6-notes」的解鎖動作。Write 限縮不受影響
+    # (7-review.md:「unlock 後 Read 放行,Write 限縮維持」)。
+    args = sys.argv[3:]
+    slug = args[0] if args and not args[0].startswith("--") else ""
+    if not slug:
+        die("用法: devflow-exec.sh review-unlock <slug>")
+    if not os.path.exists(EXECP):
+        die(f"拒絕:無 .devflow/exec.json —— 先跑 devflow-exec.sh review {slug} 武裝 Stage 7 圍欄。")
+    msg = L.shadow_mismatch(root, "exec.json")
+    if msg:
+        die(f"⛔ 拒絕:{msg} —— 疑遭竄改(MAJOR-C),不在其上解鎖;"
+            f"還原檔案或重新 devflow-exec.sh review {slug} 重建。")
+    d = json.load(open(EXECP))
+    if d.get("slug") != slug:
+        die(f"拒絕:.devflow/exec.json 屬於 {d.get('slug')},非 {slug}。")
+    if d.get("phase") != "review":
+        die(f"拒絕:目前 phase={d.get('phase') or '(無)'},不是 review —— "
+            f"先跑 devflow-exec.sh review {slug} 武裝 Stage 7 圍欄。")
+    d["review_unlocked"] = True
+    json.dump(d, open(EXECP, "w"), ensure_ascii=False, indent=1)
+    L.update_shadow(root)
+    print(f"✅ review-unlock:{slug} —— docs/dev/{slug}/6-implementation-notes.md 現在可讀"
+          f"(7-review.md 步 4);Write/Edit 仍限縮於 7-review*/evidence/。")
 
 else:
     die(f"未知子命令:{cmd}")

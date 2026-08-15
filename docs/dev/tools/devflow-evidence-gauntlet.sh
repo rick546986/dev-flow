@@ -45,6 +45,11 @@ REQUIRE_LAYERS=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --version) echo "devflow-evidence-gauntlet $GAUNTLET_VERSION"; exit 0 ;;
+    # B-4:診斷旗標,行為零變化 —— 只印出本副本自己解析到的 ROOT
+    # (母版在 scripts/ 下,ROOT=repo 根;散發到 docs/dev/tools/ 後 ROOT 會變成
+    # docs/dev/,深度不同)。doctor 靠這個探測散發副本的 ROOT 解析有沒有跑掉,
+    # 不改 GAUNTLET_VERSION(版本語意是 E 檢查行為,動它會牽動 README §7 對版守衛)。
+    --print-root) echo "$ROOT"; exit 0 ;;
     --source-sha) [ $# -ge 2 ] || usage_error "$1 缺值"; SOURCE_SHA="$2"; shift 2 ;;
     --require-layer) [ $# -ge 2 ] || usage_error "$1 缺值"; REQUIRE_LAYERS+=("$2"); shift 2 ;;
     --review-file) REVIEW_FILE="1"; shift ;;

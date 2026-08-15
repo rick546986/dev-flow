@@ -14,7 +14,7 @@
     "prompt_registry": "1.0",
     "gate_result": "devflow-gate-result.v1",
     "candidate": "devflow-candidate.v1",
-    "exec_state": "exec-v2",
+    "exec_state": "exec-v3",
     "gauntlet": "1.2.0",
     "wave_review": "devflow-wave-review.v1"
   },

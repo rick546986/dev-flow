@@ -32,7 +32,13 @@ updated:
 >    26 個 T 全程守衛沉睡,`Files` scope 是**人工比對**出來的 ——
 >    沒有人在當下發現,因為沒有任何訊號。)
 >    武裝不了 → **停下回報**,不要用「我會自己守 scope」代替。
->    完成 = 讀取清單回報 + branch 就位 + **`devflow-exec.sh status` 輸出貼進本檔**。
+>    ⚠️ **同一動作再跑 `devflow-doctor.sh`(或 `devflow-exec.sh doctor`)**:版本握手
+>    fail-closed,回報 `INCOMPATIBLE` 即**停下回報**,不得略過繼續。
+>    (2026-08 order-intake 實測:`dev-setup` 沒散發齊 `devflow-contract.json` 與
+>    `docs/dev/tools/`,doctor 實跑直接 `⛔ INCOMPATIBLE(fail-closed)`——但整條
+>    Stage 6→7 沒有任何一步要求跑它,所以沒有人被擋。)
+>    完成 = 讀取清單回報 + branch 就位 + **`devflow-exec.sh status` 與
+>    `devflow-doctor.sh` 兩份輸出都貼進本檔**。
 > 1. 接手核對:4-spec approved?5-tasks 每 T 有 Verify+Covers?缺 → 停回補。
 >    建 todo 一 T 一項,照 Blocked-by 拓撲序。完成 = todo 與 5-tasks 一一對應。
 > 2. 逐 T 循環:a 照 Covers 先寫失敗測試(名含 S-id)→ RED 輸出貼

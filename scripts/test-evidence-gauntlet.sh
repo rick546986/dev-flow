@@ -144,6 +144,9 @@ contract_version=$(python3 -c "import json; print(json.load(open('$ROOT/devflow-
 run_case "--version 輸出 contract 宣告版本($contract_version)+ exit 0" 0 \
   "$contract_version" --version
 
+echo "== B-4.--print-root 印出本副本解析到的 ROOT(供 doctor 探測散發副本 ROOT 解析差異)=="
+run_case "--print-root 印出母版 ROOT(repo 根,GAUNTLET_VERSION 不動)" 0 "$ROOT" --print-root
+
 echo "== 小項②.flag 缺值 = 用法錯誤 exit 2 =="
 run_case "--source-sha 缺值 → usage + exit 2" 2 "usage" \
   "$FIX/good-evidence.md" --source-sha

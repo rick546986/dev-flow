@@ -17,7 +17,19 @@
 #                7-review 步 2b 的「現象證據逐 S 相符」(PASS 條件之一)結構上做不到,
 #                到 G3 才發現。
 #
-# 本守衛不判斷內容好壞,只驗「模板與範例有沒有把這四條變成可查的硬條款」。
+# ⚠️ 上面 A1/A3/A4/A5 是**本檔內部代號**,不是 notes/adoption-findings-2026-08-04.md
+# 的條號——那份 findings 檔的對照是 A1→A-7、A3→A-8、A4→A-9、A5→A-10(findings 檔本身
+# 已註明過這個對照,勿混)。以下兩組是後續追加,**改用不同前綴避免二次混淆**:
+#
+#   VF Verify 單行純指令  findings A-3。`verify_command_match` 字串全等 + `FIELD_RE`
+#                只吃行尾,模板原本沒有任何一句警告「Verify 必須單行」。實測:採用
+#                專案 18 個 T 有 17 個 Verify 欄被中文說明汙染同一行,另有把 Verify
+#                寫成多行 fenced code block、解析器一個字都抓不到的案例。
+#   DOC doctor 必跑    findings A-12(原 C-3)。`dev-setup` 沒散發齊時 doctor 實跑
+#                fail-closed 沒問題,但沒有任何 Stage 要求跑它,於是這個 fail-closed
+#                檢查從未被觸發,缺件靜默通過整條 Stage 6→7。
+#
+# 本守衛不判斷內容好壞,只驗「模板與範例有沒有把這幾條變成可查的硬條款」。
 # 邊界:本檔只掃**本 repo 的模板與範例**;採用專案的 runtime 強制屬外部 plugin。
 #
 # 用法:
@@ -79,6 +91,24 @@ for rel in ("_templates/6-implementation-notes.md", "_templates/7-review.md"):
     need("devflow-exec.sh status" in src,
          f"A1:{rel} 沒給可執行的自檢指令 `devflow-exec.sh status`")
 
+# ── DOC:doctor 必跑(findings A-12,原 C-3)────────────────────────────────────
+#
+# needle 選 `devflow-doctor.sh`(可執行指令本身)、`INCOMPATIBLE`(doctor fail-closed
+# 時的回報字面,拿掉就變成一句沒有判準的提醒)、`停下回報`(處置動作本身,不能只是
+# 「注意一下」)。三者缺一,doctor 這個 fail-closed 檢查就又會回到「存在但沒人跑」。
+for rel in ("_templates/6-implementation-notes.md", "_templates/7-review.md"):
+    src = read(rel)
+    need(src is not None, f"DOC:{rel} 不存在")
+    if src is None:
+        continue
+    need("devflow-doctor.sh" in src,
+         f"DOC:{rel} 的守衛武裝自檢旁沒有要求跑 `devflow-doctor.sh`(或 "
+         f"`devflow-exec.sh doctor`)—— fail-closed 版本握手檢查存在,但沒有觸發點")
+    need("INCOMPATIBLE" in src,
+         f"DOC:{rel} 沒寫出 doctor 的 fail-closed 回報字面 `INCOMPATIBLE`")
+    need("停下回報" in src,
+         f"DOC:{rel} 沒把 `INCOMPATIBLE` 的處置釘死成「停下回報」,少了它會被自由心證略過")
+
 # ── A3:Verify 的篩選器假綠 ──────────────────────────────────────────────────
 src = read("_templates/5-tasks.md")
 need(src is not None, "A3:_templates/5-tasks.md 不存在")
@@ -111,6 +141,47 @@ for base, _dirs, files in os.walk(os.path.join(root, "example")):
         need("=== RUN" in line or "grep -c" in line,
              f"A3:{rel} 的 Verify 用了測試篩選器卻沒有案例數斷言 —— "
              f"沒匹配到測試時 runner 回 exit 0,該欄退化成「測試不存在也算過」:\n"
+             f"        {line.strip()}")
+
+# ── VF:Verify 必須單行純指令(findings A-3;不要跟上面的內部代號 A3 搞混,
+#    A3 = findings A-8 的篩選器假綠,VF = findings A-3 的單行純指令紀律)───────
+#
+# needle 挑「可原樣貼進 shell 的純指令」與「會吞掉同行其後全部內容」:兩句都是
+# A-3 這條紀律**獨有**的字面,不跟 A-8(=== RUN / 原樣跑一次)的 needle 重疊,
+# 才能證明這裡新加的檢查、不是誤觸別條舊檢查。
+src = read("_templates/5-tasks.md")
+need(src is not None, "VF:_templates/5-tasks.md 不存在")
+if src:
+    need("可原樣貼進 shell 的純指令" in src,
+         "VF:_templates/5-tasks.md 沒有「Verify 必須是單行、可原樣貼進 shell 的純指令」"
+         "這條硬紀律")
+    need("會吞掉同行其後全部內容" in src,
+         "VF:_templates/5-tasks.md 沒提醒「# 會吞掉同行其後全部內容」這個已知陷阱")
+
+# ── VF 的範例承接:掃 example/*/5-tasks.md 每個 `- Verify:` 值 ────────────────
+#
+# 裁決(2026-08-15,寫進本檔供日後查對):採用專案的 Verify 欄含中文 grep 字串
+# (例如 `grep -c '訂單已核准'`)是合法用法,**runtime 不加這道檢查**——會誤殺。
+# 本檔只掃**母版自己的範例**,母版範例的 Verify 值本就該是純英文/程式碼指令,
+# 出現 CJK 字元幾乎必然是「指令 + 中文說明混寫成一行」(findings A-3 的原始成因);
+# 以 ``` 開頭則是「多行 fenced code block 誤當單行欄位」的另一種成因。
+_CJK_RE = re.compile(r"[一-鿿　-〿＀-￯]")
+for base, _dirs, files in os.walk(os.path.join(root, "example")):
+    if "5-tasks.md" not in files:
+        continue
+    rel = os.path.relpath(os.path.join(base, "5-tasks.md"), root)
+    with open(os.path.join(base, "5-tasks.md"), encoding="utf-8") as fh:
+        body = fh.read()
+    for line in body.splitlines():
+        if not line.startswith("- Verify:"):
+            continue
+        value = line[len("- Verify:"):].strip()
+        need(not _CJK_RE.search(value),
+             f"VF:{rel} 的 Verify 值含 CJK/全形字元,疑似指令與說明混寫成單行:\n"
+             f"        {line.strip()}")
+        need(not value.startswith("```"),
+             f"VF:{rel} 的 Verify 值以 fenced code block(```)開頭 —— "
+             f"解析器只吃單行,寫成多行 fence 一個字都抓不到:\n"
              f"        {line.strip()}")
 
 # ── A4:gauntlet 路徑不得寫死成採用專案不存在的路徑 ──────────────────────────
@@ -158,7 +229,7 @@ if rev:
 # 負向測試 S67-6 實測:原本填 16(A1 那組恰好 8 項,24-8=16)→ 刪掉整組 A1 之後
 # 剛好等於地板,守衛照樣 exit 0。地板留餘裕 = 地板沒有牙齒。
 # 新增檢查時把這個數字一起往上調(同 test-architecture-guards.sh 的 EXPECTED_* 體例)。
-MIN_CHECKS = 25
+MIN_CHECKS = 50
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
@@ -169,6 +240,7 @@ if fails:
         print(f"  ❌ {f}")
     raise SystemExit(1)
 
-print(f"✅ check-stage67-enforcement: Stage 6/7 四條強制條款齊({checks} 項檢查全過)")
-print("   A1 守衛武裝自檢 / A3 Verify 案例數斷言 / A4 gauntlet 路徑 / A5 觀測可執行性")
+print(f"✅ check-stage67-enforcement: Stage 6/7 強制條款齊({checks} 項檢查全過)")
+print("   A1 守衛武裝自檢 / A3 Verify 案例數斷言 / A4 gauntlet 路徑 / A5 觀測可執行性 / "
+      "VF Verify 單行純指令 / DOC doctor 必跑")
 PY

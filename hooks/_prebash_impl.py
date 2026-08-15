@@ -69,4 +69,27 @@ if re.search(r"docs/dev/[^\s'\"]*/(1-discussion|2-decision|3-prototype)", cmd):
     _obs_deny("prebash", "upstream_read")
     L.die("⛔ 圍欄②:執行期禁讀上游討論文件(shell 亦同)。"
           "要翻上游 = spec 不完整 → devflow-exec.sh stop → 補 spec → 重審。")
+
+# ③ 圍欄③鏡像(A-11):review 期間 shell 讀本 slug 的 6-notes(cat/head/less/grep/open…)。
+# 與 _guard_impl.py 的 Read 圍欄③同源 —— phase=="review" 且未 review_unlocked 才擋;
+# 缺 phase 鍵(舊 exec.json)時 phase 預設空字串,本段恆不觸發,行為與升版前一致。
+# MED-1(第二批獨立審查):比對故意用**裸檔名**(不要求與 docs/dev/<slug>/ 連續出現於
+# 指令字串)。原本要求路徑連續出現會被 shell 技巧繞過 —— 例如 `cd docs/dev/<slug> &&
+# cat 6-implementation-notes.md`(cd 把路徑拆開)、`cat docs/dev/*/6-implementation-
+# notes.md`(萬用字元代換 slug),這兩種寫法字面上都不含完整連續路徑,嚴格路徑正則
+# 抓不到。裸檔名比對換來的取捨:review 期間任何 shell 指令只要**字面**出現這個檔名
+# 就會被擋,即使只是 `echo` 這個詞、跟真正讀檔無關(過度攔截)——這是可接受的取捨:
+# 命中窗口窄(僅 phase=="review" 且未 unlock 這段期間)、擋下訊息清楚說明原因,且隨時
+# 可用 `devflow-exec.sh review-unlock <slug>` 解鎖,不構成長期阻塞。
+phase = state.get("phase") or ""
+review_unlocked = bool(state.get("review_unlocked"))
+slug = state.get("slug") or ""
+if phase == "review" and not review_unlocked and slug:
+    if re.search(r"6-implementation-notes", cmd):
+        _obs_deny("prebash", "review_self_notes")
+        L.die("⛔ 圍欄③:Stage 7 review 期間禁讀 6-implementation-notes"
+              "(shell 亦同,含 cd/glob 等繞路寫法)—— "
+              "7-review.md 步 4 才准讀 Self-Review(防錨定:先自建矩陣、後讀作者主張)。"
+              f"要解鎖:devflow-exec.sh review-unlock {slug}。")
+
 sys.exit(0)

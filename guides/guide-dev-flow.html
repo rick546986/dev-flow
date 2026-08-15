@@ -604,7 +604,13 @@
     26 個 T 全程守衛沉睡,<code>Files</code> scope 是<strong>人工比對</strong>出來的 ——
     沒有人在當下發現,因為沒有任何訊號。)
     武裝不了 → <strong>停下回報</strong>,不要用「我會自己守 scope」代替。
-    完成 = 讀取清單回報 + branch 就位 + <strong><code>devflow-exec.sh status</code> 輸出貼進本檔</strong>。</p>
+    ⚠️ <strong>同一動作再跑 <code>devflow-doctor.sh</code>(或 <code>devflow-exec.sh doctor</code>)</strong>:版本握手
+    fail-closed,回報 <code>INCOMPATIBLE</code> 即<strong>停下回報</strong>,不得略過繼續。
+    (2026-08 order-intake 實測:<code>dev-setup</code> 沒散發齊 <code>devflow-contract.json</code> 與
+    <code>docs/dev/tools/</code>,doctor 實跑直接 <code>⛔ INCOMPATIBLE(fail-closed)</code>——但整條
+    Stage 6→7 沒有任何一步要求跑它,所以沒有人被擋。)
+    完成 = 讀取清單回報 + branch 就位 + <strong><code>devflow-exec.sh status</code> 與
+    <code>devflow-doctor.sh</code> 兩份輸出都貼進本檔</strong>。</p>
     <ol>
     <li>接手核對:4-spec approved?5-tasks 每 T 有 Verify+Covers?缺 → 停回補。
     建 todo 一 T 一項,照 Blocked-by 拓撲序。完成 = todo 與 5-tasks 一一對應。</li>
@@ -758,6 +764,11 @@
     0. 角色+防錨定起手:審查者依序:適格人類 reviewer → fresh-context reviewer Agent →
     owner 自審(有記錄的最後手段);前兩者皆須 ≠ 實作 owner。先讀
     4-spec/5-tasks/diff/測試碼,<strong>此刻禁讀 6-notes 的 Self-Review</strong>。
+    建議跑 <code>devflow-exec.sh review &lt;slug&gt;</code> 武裝機械圍欄③(選配但建議;沒有 runtime
+    的環境照本節散文紀律):武裝後 Read 本 feature 的 6-implementation-notes.md
+    (含 .html twin)會被 fail-closed 擋下,直到步 4 執行 review-unlock,防止手滑
+    提早讀到 Self-Review;Write/Edit 同時限縮到 7-review*/evidence/,避免審查者
+    順手改到別的 dev-flow 文檔。
     ⚠️ <strong>「reviewer ≠ 實作 owner」這條機械上擋不住</strong> —— hook 層沒有身分概念
     (沒有 session id、沒有作者歸屬),加一個查 <code>owner</code> 欄位的守衛只會被
     「打字改個名字」繞過,那比散文更糟(假保證)。真正有效的是<strong>讀取順序</strong>:
@@ -782,7 +793,10 @@
     「重驗範圍」節,不開新檔。
     0b. <strong>守衛武裝自檢</strong>:同 6-notes 步 0 —— 跑 <code>devflow-exec.sh status</code> 確認
     <code>.devflow/exec.json</code> 存在。Stage 7 若在未武裝的樹上做,scope 守衛與契約防篡改
-    同樣沉睡,reviewer 可能在不知情下改到 1/2/3/4。完成 = status 輸出在案。</li>
+    同樣沉睡,reviewer 可能在不知情下改到 1/2/3/4。
+    ⚠️ 同時跑 <code>devflow-doctor.sh</code>(或 <code>devflow-exec.sh doctor</code>),<code>INCOMPATIBLE</code> 即
+    <strong>停下回報</strong>——沒有任何 Stage 明文要求跑它就沒有人會被 fail-closed 擋下。
+    完成 = <code>status</code> 與 <code>doctor</code> 兩份輸出都貼進 6-notes(本站沿用同一份記錄,不另開)。</li>
     </ul>
     <ol>
     <li>自建 Coverage Matrix:grep 測試檔 S-id ↔ 4-spec S 清單,逐列填(缺漏 ❌),
@@ -818,13 +832,17 @@
     Gate、不另立第三軸):Standards 加查 Dependency Direction／Boundary Leakage／
     Data Ownership／Interface Stability;Spec 逐條對照實際 diff 是否符合該契約 ——
     未經 spec 授權的 Boundary 變更至少 🟡,會改變 R/S、資料所有權、公開 Interface
-    或一致性語意者 🔴。
+    或一致性語意者 🔴。<strong>同時過下方「Design Integrity Check」固定清單</strong>(對稱 Test
+    Integrity Check 的設計版,抓「看起來守住邊界、實際被繞過」的手法);命中項併入
+    Standards/Spec Axis 的既有 finding,不另開清單、不另立軸。
     每 F 標影響 S/T。Agent 審時<strong>兩軸各派一個獨立 fresh reviewer 並行</strong>(互不看
     對方輸出;人類 reviewer 可自兼雙軸);彙整者只並列兩軸 finding,<strong>禁合併重排、
     禁降級任一軸</strong>(防一軸失敗被另一軸掩蓋)。每 F 必引 spec 原文或 diff hunk,
     禁無出處結論。完成 = 每 R 有判定、每 F 有鏈且有出處。</li>
     <li>對照作者:此刻才讀 6-notes —— 自建矩陣 vs Self-Review 差異逐條裁;Deviations
-    如實?Decisions 有無實為 L2?完成 = 差異全裁定入 Spec Axis。</li>
+    如實?Decisions 有無實為 L2?若步 0 有武裝圍欄③,先跑
+    <code>devflow-exec.sh review-unlock &lt;slug&gt;</code> 解鎖才讀得到(Write 仍限縮於
+    7-review*/evidence/,unlock 不解除)。完成 = 差異全裁定入 Spec Axis。</li>
     <li>Verdict:PASS = 本次 S 全綠+既有全綠+<strong>現象證據逐 S 相符</strong>+Evidence 契約全過
     (G3 錨,八點條件正本 README §7;步 2c 的 gauntlet 全綠 + Required 層全 pass
     即其機械面)+無 🔴(G3 正本 README §7;無 🔴 是本模板加嚴的出貨門檻,

@@ -58,7 +58,7 @@
 <ul>
 <li>[x] 完成</li>
 <li>Covers: R-1 / S-1, S-2</li>
-<li>Files: <code>internal/handler/contract.go</code>, <code>internal/service/contract.go</code>, <code>internal/repo/contract.go</code></li>
+<li>Files: <code>internal/handler/contract.go</code>, <code>internal/service/contract.go</code>, <code>internal/repo/contract.go</code>, <code>internal/service/contract_test.go</code>, <code>internal/handler/contract_test.go</code></li>
 <li>Verify: <code>n=$(go test ./internal/... -run TestExpiring -v 2&gt;&amp;1 | grep -c '^=== RUN'); test &quot;$n&quot; -ge 1</code></li>
 <li>Blocked-by: —</li>
 <li>Intent: 系統多了到期查詢 API:<code>GET /contracts/expiring?days=30</code> 回傳登入者名下 30 天內到期且未續約的合約;無符合者回 200 + 空列表,不報錯。</li>
@@ -69,7 +69,7 @@ Design Boundary(摘自 4-spec Design Boundary Contract,只取本 T 相關的最�
 <ul>
 <li>[x] 完成</li>
 <li>Covers: R-1 / S-1, S-2</li>
-<li>Files: <code>src/components/ExpiringContractsCard.tsx</code>, <code>src/pages/Dashboard.tsx</code></li>
+<li>Files: <code>src/components/ExpiringContractsCard.tsx</code>, <code>src/pages/Dashboard.tsx</code>, <code>src/components/ExpiringContractsCard.test.tsx</code></li>
 <li>Verify: <code>npm test -- ExpiringContractsCard</code></li>
 <li>Blocked-by: T-1</li>
 <li>Intent: dashboard 多了到期卡片:列出合約名稱與剩餘天數「N 天」;零筆時顯示空狀態「近期無到期合約」,不隱藏整卡、不顯示錯誤。</li>
@@ -80,7 +80,7 @@ Design Boundary(摘自 4-spec Design Boundary Contract,只取本 T 相關的最�
 <ul>
 <li>[x] 完成</li>
 <li>Covers: R-2 / S-3</li>
-<li>Files: <code>src/components/ExpiringContractsCard.tsx</code></li>
+<li>Files: <code>src/components/ExpiringContractsCard.tsx</code>, <code>src/components/ExpiringContractsCard.test.tsx</code></li>
 <li>Verify: <code>npm test -- ExpiringContractsCard</code></li>
 <li>Blocked-by: T-2</li>
 <li>Intent: 卡片每筆合約列可點擊,導向該合約詳情頁 <code>/contracts/:id</code>。</li>
@@ -102,7 +102,7 @@ Design Boundary(摘自 4-spec Design Boundary Contract,只取本 T 相關的最�
 <ul>
 <li>[x] 完成</li>
 <li>Covers: R-3 / S-4</li>
-<li>Files: <code>migrations/0007_renewal_status.sql</code>, <code>internal/handler/contract_status.go</code>, <code>internal/repo/contract_status.go</code></li>
+<li>Files: <code>migrations/0007_renewal_status.sql</code>, <code>internal/handler/contract_status.go</code>, <code>internal/repo/contract_status.go</code>, <code>internal/handler/contract_status_test.go</code></li>
 <li>Verify: <code>n=$(go test ./internal/... -run TestRenewalStatus_S4 -v 2&gt;&amp;1 | grep -c '^=== RUN'); test &quot;$n&quot; -ge 1</code></li>
 <li>Blocked-by: T-1</li>
 <li>Risk: high</li>
@@ -114,7 +114,7 @@ Design Boundary(摘自 4-spec Design Boundary Contract,只取本 T 相關的最�
 <ul>
 <li>[x] 完成</li>
 <li>Covers: R-3 / S-5</li>
-<li>Files: <code>internal/handler/contract_status.go</code>, <code>internal/repo/contract_status.go</code></li>
+<li>Files: <code>internal/handler/contract_status.go</code>, <code>internal/repo/contract_status.go</code>, <code>internal/repo/contract_status_test.go</code></li>
 <li>Verify: <code>n=$(go test ./internal/... -run TestRenewalStatus_S5 -v 2&gt;&amp;1 | grep -c '^=== RUN'); test &quot;$n&quot; -ge 1</code></li>
 <li>Blocked-by: T-5</li>
 <li>Intent: 系統多了狀態歷程查詢(詳情頁時間軸資料源),且「開啟/看過」等一切讀取路徑保證零狀態寫入 —— 歷程零新增本身成為可稽核證據。</li>
@@ -125,7 +125,7 @@ Design Boundary(摘自 4-spec Design Boundary Contract,只取本 T 相關的最�
 <ul>
 <li>[x] 完成</li>
 <li>Covers: R-3 / S-6</li>
-<li>Files: <code>src/components/ExpiringContractsCard.tsx</code></li>
+<li>Files: <code>src/components/ExpiringContractsCard.tsx</code>, <code>src/components/ExpiringContractsCard.test.tsx</code></li>
 <li>Verify: <code>npm test -- ExpiringContractsCard</code></li>
 <li>Blocked-by: T-2, T-5</li>
 <li>Intent: 卡片列多了狀態欄/下一步欄/最後動作時間與列內標記選單;非主管看到「已續約」灰階 + 「已續約僅主管可標」提示,狀態不變。</li>

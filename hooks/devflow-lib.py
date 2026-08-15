@@ -298,6 +298,14 @@ def _extract_ids(value):
     return re.findall(r"T-\d+", value)
 
 
+def _clean_optional(value):
+    """選填自由文字欄(Boundaries/Intent/Owner)的空值正規化:模板寫
+    `無則 —`,若原樣帶出「—」會讓派工者看到一個看似有值、實則佔位的欄位。
+    與 EMPTY_MARKS 同一組標記,一律正規化成 ""。"""
+    v = value.strip()
+    return "" if v in EMPTY_MARKS else v
+
+
 def _parse_execution(fm_lines, errors):
     conf = {"mode": "sequential", "max_parallel_tasks": 3,
             "rebuild_integration_on_rework": True}
@@ -419,6 +427,14 @@ def parse_5_tasks(text):
             "integrate_after": _extract_ids(fields.get("Integrate-after", "")),
             "semantic_conflicts": _extract_ids(fields.get("Semantic-conflicts-with", "")),
             "risk": risk, "review_mode": review_mode,
+            # A-6:Boundaries/Intent/Owner 原本 FIELD_RE 有解析、母版模板寫得像
+            # 機械契約,但解析後直接丟棄,不進 task dict —— 派工者(plan 輸出／
+            # exec.json task 物件)拿不到。現在真的帶進來;欄位選填,缺席預設
+            # 空字串,不因缺席而 fail-closed(與 Covers/Files/Verify/Blocked-by
+            # 必填欄不同)。
+            "boundaries": _clean_optional(fields.get("Boundaries", "")),
+            "intent": _clean_optional(fields.get("Intent", "")),
+            "owner": _clean_optional(fields.get("Owner", "")),
         })
 
     ids = {t["id"] for t in tasks}
