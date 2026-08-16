@@ -238,6 +238,30 @@ def self_pin_check(path):
         problems.append(
             f"⛔ 自釘:_ls_files 呼叫總數 {n_total_calls}(應恰 2)——"
             "有呼叫被刪掉、新增或改寫,tracked_files() 的掃描來源可能被動過手腳")
+    # 二次複審實證:上面四條只顧呼叫端字面與 subprocess 的動態參數,沒顧
+    # _ls_files() 自己「回傳什麼」這一行——把 return 改寫成與一份寫死哨兵清單
+    # 取交集(例如在行尾加 `& {"README.md", ...}`),或整條換成直接回傳寫死集合,
+    # 都會讓 SENTINELS 檢查(哨兵本來就在那份清單裡)照樣綠燈,但真正的
+    # git ls-files 掃描結果完全沒被回傳——任何其他檔案塞禁字都不會被掃到,以上
+    # 四條自釘與外層 SP-3/4/5/7 都看不出來(SP-3/4/5/7 只驗掃描來源整體是否涵蓋
+    # 某個具體案例,不驗這一行的回傳邏輯本身是否被架空)。
+    # ⚠️ 實測踩過的坑:一開始只釘「return set(p for p in raw.split(」這段前綴的
+    # **子字串**存在——但「取交集」攻擊是在行尾**追加** `& {...}`,原本的 return
+    # 陳述式字面完全保留、子字串照樣命中 1 次,靜態釘完全不會叫(worktree 實測
+    # 重現:單支腳本仍印零命中、exit 0)。子字串比對不管「這行後面還接了什麼」,
+    # 追加式攻擊天生繞得過。修法:改成釘死**整行**(逐字比對整條實體行,不是子
+    # 字串搜尋)——行尾一旦被接上 `& {...}` 或整條被換掉,這一行就不再與釘死的
+    # 逐字文字相等,count 從 1 掉到 0,直接現形。識別字面同樣用字串相加組出,
+    # 避免這段檢查碼自己的原始碼被算進命中次數。
+    return_filter_line = "    return set(p for p in raw" + '.split("\\0") if p)'
+    n_return_filter = sum(1 for _line in src.splitlines() if _line == return_filter_line)
+    if n_return_filter != 1:
+        problems.append(
+            f"⛔ 自釘:_ls_files 的 return 過濾陳述式整行「{return_filter_line}」"
+            f"出現 {n_return_filter} 次(應恰 1 次)——return 可能被改寫成與寫死"
+            "哨兵清單取交集(行尾追加 `& {...}`)、或整條換成直接回傳固定集合,"
+            "讓 SENTINELS 檢查誤判為安全,實際掃描來源卻被架空"
+            "(外層 SP-3/4/5/7 會連帶紅,但本檢查要自己先紅)")
     return problems
 
 

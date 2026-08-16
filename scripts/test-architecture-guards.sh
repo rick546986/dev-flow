@@ -43,7 +43,10 @@
 #                    只有渲染規則漂移)/ FG-3(X-7 第三層)quickstart 版頁內錨點
 #                    捲動 JS 的 scrollIntoView 選項被單邊改掉 / FG-4(驗證 X-6 HIGH
 #                    深度感知抽取修復)對稱插入巢狀假 svg 後單邊改真實節點文字,
-#                    5cabf4e 版此毒是逃逸的假 PASS(check-guides-fig-sync.sh)
+#                    5cabf4e 版此毒是逃逸的假 PASS / FG-5(2026-08-17 補,二次複審
+#                    誘餌攻擊)三份 guides 的頁內錨點捲動 JS marker 後都插同一段
+#                    誘餌 <script>(逐位元組相同),真正的 JS 被推到誘餌後面再單邊
+#                    改,d1dd5b3 版此毒是逃逸的假 PASS(check-guides-fig-sync.sh)
 #   MT(2026-08-17 補,X-5a 模型分層守衛零外部變異涵蓋) MT-0 對照組 ——
 #                    對守衛複本的 scripts/fixtures/model-tiering/ 跑**自測模式**
 #                    (不帶 CLI 參數),expect pass / MT-1 負向 —— 把 bad-first-top
@@ -51,12 +54,16 @@
 #                    expect fail;此案專咬「若守衛被挖空成永遠印全過,外部呼叫路徑
 #                    (CLI 參數 real 模式)是否也一起失守」——之前只驗過 fixture 自測,
 #                    real 模式的紅路徑完全零外部變異覆蓋(check-model-tiering.sh)
-#   靜態互釘(2026-08-16 補,獨立審查 finding 4) 四支散落地板的字面值互釘 ——
-#                    hooks/selftest.sh MIN_CASES / tests/parallel-stage6/run_tests.py
-#                    EXPECTED_CHECKS / check-dev-setup-discipline.sh 與
-#                    check-gate-twin.sh 的 MIN_CHECKS。**非** seed→mutate→expect_local
-#                    的變異案例,不計入 EXPECTED_CONTROLS/NEGATIVES/TOTAL(見結果區塊
-#                    「GS-9」註解自己的說明,以及下面這行案例數地板不變的理由)。
+#   靜態互釘(2026-08-16 補,獨立審查 finding 4;2026-08-17 二次複審後補到七支)
+#                    七支散落地板/群組數的字面值互釘 —— hooks/selftest.sh
+#                    MIN_CASES / tests/parallel-stage6/run_tests.py EXPECTED_CHECKS /
+#                    check-dev-setup-discipline.sh 與 check-gate-twin.sh 的
+#                    MIN_CHECKS / check-file-map.sh 的 MIN_CHECKS / check-gate-twin.sh
+#                    的 EXPECTED_GROUPS(含 24 個群組名逐字整行釘)/
+#                    check-design-contract.sh 的 EXPECTED_CHECK_SKIP_CALLS。**非**
+#                    seed→mutate→expect_local 的變異案例,不計入
+#                    EXPECTED_CONTROLS/NEGATIVES/TOTAL(見結果區塊「GS-9」註解自己的
+#                    說明,以及下面這行案例數地板不變的理由)。
 #
 # 案例數是**斷言**不是裝飾:EXPECTED_CONTROLS / EXPECTED_NEGATIVES / EXPECTED_TOTAL
 # 由 expect()/expect_local() 實際累計後比對,刪任何一案(含對照組)都會非零退出。
@@ -121,8 +128,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=13
-EXPECTED_NEGATIVES=68
-EXPECTED_TOTAL=81
+EXPECTED_NEGATIVES=69
+EXPECTED_TOTAL=82
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -1350,6 +1357,49 @@ p.write_text(n, encoding="utf-8")
 PY
 expect fail check-guides-fig-sync.sh "$D" "FG-4 對稱插入巢狀假 svg 後單邊改真實節點文字(驗證深度感知抽取修復:5cabf4e 版此毒是逃逸的假 PASS,修復後必須 fail-closed)"
 
+# FG-5(2026-08-17,二次複審誘餌攻擊常設案例):三份 guides 的頁內錨點捲動 JS
+# marker 所在註解收尾 --> 之後,都插入同一段誘餌 <script>/* decoy */</script>
+# (三份逐位元組相同,插入本身不構成漂移),再只對 quickstart 那份、誘餌之後的
+# 真正 <script> 內容做單邊修改。
+#
+# 這一案重現的是二次複審者實測的繞法:d1dd5b3 版「找 marker 之後第一個
+# <script>」的抽取邏輯,遇到誘餌就會把誘餌本身當成「唯一」的 script 抓走——三份
+# 誘餌逐位元組相同,比對通過,真正單邊漂移的內容整段沒被抽到也沒被比對
+# (worktree 已驗證:此毒對 d1dd5b3 版是逃逸的假 PASS,exit 0)。修復後的
+# extract_anchor_scroll_js() 從收尾 </script> 反向檢查:除空白/換行外不能緊接著
+# 又是一個 <script>,偵測到誘餌+真身疊在同一個 anchor 槽位時必須 fail-closed
+# (exit 2,不猜先抓到的是誘餌還是真身)。
+D=$(seed_fg fg5); mutate "$D" <<'PY'
+import sys, pathlib
+root = pathlib.Path(sys.argv[1])
+
+PREFIX = "一般瀏覽器直開不受影響。\n-->\n"
+DECOY = "<script>/* decoy */</script>\n"
+OLD_ANCHOR = PREFIX + "<script>"
+NEW_ANCHOR = PREFIX + DECOY + "<script>"
+
+for relpath in ("guides/guide-dev-flow.html", "guides/guide-quickstart.html",
+                "guides/guide-dev-talk.html"):
+    p = root / relpath
+    t = p.read_text(encoding="utf-8")
+    assert t.count(OLD_ANCHOR) == 1, f"FG-5 插入錨點在 {relpath} 不是唯一命中"
+    n = t.replace(OLD_ANCHOR, NEW_ANCHOR, 1)
+    assert n != t, f"FG-5 誘餌插入沒生效於 {relpath}"
+    p.write_text(n, encoding="utf-8")
+
+# 單邊真漂移:只改 quickstart,位置在誘餌**之後**的真正 <script> 內容裡——這正是
+# d1dd5b3 版逃逸的關鍵,誘餌之後的內容從沒被抽到過。
+p = root / "guides/guide-quickstart.html"
+t = p.read_text(encoding="utf-8")
+DIVERGE_OLD = "var id = decodeURIComponent(href.slice(1));"
+DIVERGE_NEW = DIVERGE_OLD + " // MUTATED"
+assert t.count(DIVERGE_OLD) == 1, "FG-5 單邊漂移錨點不是唯一命中"
+n = t.replace(DIVERGE_OLD, DIVERGE_NEW, 1)
+assert n != t, "FG-5 單邊漂移沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-guides-fig-sync.sh "$D" "FG-5 三份 guides 的 marker 後都插同一段誘餌 <script>,真正的 JS 被推到誘餌後面再單邊改(二次複審誘餌攻擊重放:d1dd5b3 版此毒是逃逸的假 PASS,修復後必須 fail-closed)"
+
 # ───────────────────────────────── Model Tiering ────────────────────────────
 # X-5a HIGH:check-model-tiering.sh 先前只有 fixture 自測(scripts/fixtures/
 # model-tiering/ 內 good-*/bad-* 案由腳本自己在自測模式跑),真正對外的「正常模式」
@@ -1413,6 +1463,23 @@ check_static_pin() { # check_static_pin <相對路徑> <期望逐字一整行> <
   # ⚠️ 誠實承認邊界:這只防「加一行」這種手滑,不防同時改本檔(這條計數規則本身)
   # 的蓄意繞過者——蓄意者可以連這條計數規則一起改掉,跟 check_static_pin 原本
   # 「只防單點手滑,不防蓄意連改」的邊界完全一樣,沒有放寬也沒有收緊。
+  #
+  # ⚠️ 二次複審(X-3 再犯):上面這層原本用 `grep -cE "^VAR[[:space:]]*="` 行首
+  # 錨定計數——縮排區塊裡的重綁(例如 `if True:` 底下縮排一格再賦值一次)或同一
+  # 實體行內用 `;`/`:` 接的第二次賦值,行首都對不上錨點,舊版完全數不到第二次
+  # 賦值,等於這層防線形同虛設(worktree 實測重現:對 check-gate-twin.sh 加一行
+  # `if True: EXPECTED_GROUPS = 23`,舊版計數仍是 1,靜態釘照樣綠燈)。
+  # 修法:錨點改成「這個變數名出現在陳述式起始位置」——起始位置定義為行首(可有
+  # 縮排)或緊接在 `;`/`:` 之後(可有空白),而不要求整行只能是這個賦值。同時排除
+  # `==`(比較不算賦值)。
+  # ⚠️ 基線實測(六支釘各自的目標檔):純「排除註解行」不足夠——hooks/selftest.sh
+  # 與 check-file-map.sh 各有一行**診斷訊息**用同名變數組字串(例如
+  # `"...地板 MIN_CASES=$MIN_CASES..."`、`f"...MIN_CHECKS={MIN_CHECKS}..."`),不是
+  # 註解、也不是第二次賦值,但字面上一樣命中「VAR 後接空白再一個 =」,若只排除
+  # 註解行會被算成假紅(2 次)。這類訊息的共同特徵是「VAR=」出現在字串/訊息中段,
+  # 不在陳述式起始位置——上面這條「起始位置錨點」同時解決了這個問題,不需要另外
+  # 用「排除 $/{ 開頭的右值」這種會narrow 掉真賦值(例如 `VAR=$(cmd)`)的權宜法。
+  # 仍額外排除整行都是註解(`#` 開頭,含縮排)的行,雙重保險。
   local rel="$1" expect_line="$2" label="$3"
   local file="$ROOT/$rel"
   if ! grep -qxF "$expect_line" "$file" 2>/dev/null; then
@@ -1423,12 +1490,18 @@ check_static_pin() { # check_static_pin <相對路徑> <期望逐字一整行> <
   fi
   local varname n
   varname=$(printf '%s' "$expect_line" | grep -oE '^[A-Za-z_][A-Za-z0-9_]*')
-  n=$(grep -cE "^${varname}[[:space:]]*=" "$file" 2>/dev/null)
-  if [ "$n" -ne 1 ]; then
-    echo "  ✗ 靜態互釘:$rel 的 $label —— 變數 ${varname} 在檔案中被賦值 ${n} 次(應恰為 1)" \
-         "(疑似同名第二行賦值覆蓋前一行,Python/bash 都是後面蓋掉前面,逐字行比對本身抓不到這種漂移)"
-    STATIC_PIN_FAIL=1
-    return
+  # 群組名這類「整行釘」(見下方 REQUIRED_GROUP_NAMES 迴圈)期望行不是以識別字開頭
+  # (例如 `    "gate-stage-baseline",`),抽不出變數名——這種情況不是「VAR = 值」
+  # 宣告,不適用賦值覆蓋計數這層,只要逐字整行存在(上面已檢查過)就算過。
+  if [ -n "$varname" ]; then
+    n=$(grep -E "(^|[:;])[[:space:]]*${varname}[[:space:]]*=[^=]" "$file" 2>/dev/null \
+        | grep -vcE '^[[:space:]]*#')
+    if [ "$n" -ne 1 ]; then
+      echo "  ✗ 靜態互釘:$rel 的 $label —— 變數 ${varname} 在檔案中被賦值 ${n} 次(應恰為 1)" \
+           "(疑似同名第二次賦值覆蓋前一次,Python/bash 都是後面蓋掉前面,逐字行比對本身抓不到這種漂移)"
+      STATIC_PIN_FAIL=1
+      return
+    fi
   fi
   echo "  ✓ 靜態互釘:$rel 的 $label"
 }
@@ -1455,6 +1528,12 @@ check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 138" "MIN_CHECKS 釘
 check_static_pin "scripts/check-file-map.sh" "MIN_CHECKS = 68" "MIN_CHECKS 釘死 68(X-6 新增 check-guides-fig-sync.sh 後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 24" "EXPECTED_GROUPS 釘死 24(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
+# 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的
+# EXPECTED_CHECK_SKIP_CALLS 是「顯性跳過 check() 次數」的釘死地板(見該檔第 480、
+# 612 行的 check() 呼叫),盤點時漏掉、沒有比照其餘六支補上這裡的靜態釘,是「同型
+# 病灶在新守衛裡再犯」的一種:別的地板都有這一層外部互釘,它原本沒有。
+check_static_pin "scripts/check-design-contract.sh" "EXPECTED_CHECK_SKIP_CALLS = 1" "EXPECTED_CHECK_SKIP_CALLS 釘死 1"
+
 # X-3 HIGH-1:上面只釘了 EXPECTED_GROUPS 這個常數宣告本身,沒釘「用它的斷言」——
 # guard-selfpin 整區塊(含這兩條 meta 斷言)連同 REQUIRED_GROUPS 對應條目一起被刪掉、
 # 再補等量填充檢查湊 CHECKS 數時,EXPECTED_GROUPS 常數字面依然原封不動躺在檔案裡,
@@ -1468,11 +1547,20 @@ check_static_pin_sub "scripts/check-gate-twin.sh" "_assigned == set(REQUIRED_GRO
 
 # X-3 MED:上面兩條只釘「斷言在不在」,群組總數對不對,但 REQUIRED_GROUPS 清單裡
 # 個別群組名被改名(decoy 換掉真名、總數與賦值集合等式都不受影響)完全抓不到。這裡
-# 逐一釘死 24 個群組名的字面——清單住在本檔(誰要改名/刪名都得同步這裡,否則這裡
-# 會現形;check-gate-twin.sh 原始碼裡的順序跟這裡不必一致,只驗子字串存在)。
-# ⚠️ 誠實承認剩餘邊界:這只抓「名字被換掉」,抓不到「保留群組名、把該群組底下的
-# 檢查內容掏空換填充」——那屬語意層,由各群組對應的 fixture 正負向案例管,不是
-# 這裡的職責。
+# 逐一釘死 24 個群組名——清單住在本檔(誰要改名/刪名都得同步這裡,否則這裡會現形;
+# check-gate-twin.sh 原始碼裡的順序跟這裡不必一致,逐一比對即可)。
+# ⚠️ 二次複審(X-3 再犯):原本用 check_static_pin_sub(子字串版,只驗
+# `"名字",` 這段字面存在)——子字串比對不管這段字面出現在**哪裡**,名字被拿出
+# REQUIRED_GROUPS 清單、改藏進一行 `# "n4-unclosed-comment",` 這種註解裡,子字串
+# 「"n4-unclosed-comment",」照樣命中,靜態釘照樣綠燈(worktree 實測重現:REQUIRED_
+# GROUPS 刪掉該條目、但把同樣字面留在註解裡,舊版子字串釘不會叫)。
+# 修法:改成逐字整行釘(check_static_pin 的 grep -qxF 版),期望行是 REQUIRED_GROUPS
+# 清單裡的真實縮排(4 個空白)與尾逗號,例如 `    "gate-stage-baseline",`——名字
+# 只活在註解裡時,這行不存在,grep -qxF 找不到逐字整行,直接現形;不像子字串版,
+# 「行的其餘部分是不是清單項目」完全不驗。
+# ⚠️ 誠實承認剩餘邊界:這只抓「名字被換掉/被搬出清單」,抓不到「保留群組名、把
+# 該群組底下的檢查內容掏空換填充」——那屬語意層,由各群組對應的 fixture 正負向
+# 案例管,不是這裡的職責。
 REQUIRED_GROUP_NAMES=(
   "gate-stage-baseline" "dash-cells-readme" "risk-cell-count" "cross-file-parity"
   "p4-fence-section" "s-head-regression" "h2-zero-deletion" "t6-pinned"
@@ -1482,8 +1570,8 @@ REQUIRED_GROUP_NAMES=(
   "n1-section-fate" "n4-unclosed-comment" "usage-error-message" "guard-selfpin"
 )
 for _gname in "${REQUIRED_GROUP_NAMES[@]}"; do
-  check_static_pin_sub "scripts/check-gate-twin.sh" "\"${_gname}\"," \
-    "REQUIRED_GROUPS 群組名 ${_gname} 仍在原始碼中"
+  check_static_pin "scripts/check-gate-twin.sh" "    \"${_gname}\"," \
+    "REQUIRED_GROUPS 群組名 ${_gname} 逐字整行仍在原始碼中(非藏在註解裡)"
 done
 unset _gname
 
@@ -1491,8 +1579,8 @@ if [ "$STATIC_PIN_FAIL" -ne 0 ]; then
   echo "⛔ 靜態互釘:至少一處字面值/子字串與釘死清單不符"
   exit 1
 fi
-echo "  ✓ 六支地板/群組數靜態互釘全過(hooks/selftest.sh / run_tests.py / check-dev-setup-discipline.sh / check-gate-twin.sh MIN_CHECKS / check-file-map.sh / check-gate-twin.sh EXPECTED_GROUPS)"
-echo "  ✓ guard-selfpin 兩條斷言字面 + 24 個群組名子字串釘全過(X-3 HIGH-1/MED)"
+echo "  ✓ 七支地板/群組數靜態互釘全過(hooks/selftest.sh / run_tests.py / check-dev-setup-discipline.sh / check-gate-twin.sh MIN_CHECKS / check-file-map.sh / check-gate-twin.sh EXPECTED_GROUPS / check-design-contract.sh EXPECTED_CHECK_SKIP_CALLS)"
+echo "  ✓ guard-selfpin 兩條斷言字面 + 24 個群組名逐字整行釘全過(X-3 HIGH-1/MED,二次複審後改為整行釘)"
 echo
 
 if [ "$FAIL" -ne 0 ]; then

@@ -352,6 +352,16 @@ else:
 # 同①②的紀律(count 必須恰為 1,不唯一就 fail-closed)。抽出來的是錨點之後緊接的
 # 第一個 <script>…</script> 整塊——這段 JS 三份之間沒有預期差異(不像①的 svg id
 # 後綴、②的中文註解多寡),所以不需要正規化規則,直接逐位元組比對三份。
+#
+# ⚠️ 2026-08-17 補(二次複審誘餌攻擊):舊版「找到 marker 之後第一個 <script>」
+# 這條規則本身就是漏洞——三份 guides 的 marker 後都插同一段誘餌
+# <script>/* decoy */</script>(三份逐位元組相同),真正的 JS 被推到誘餌後面再
+# 單邊改。舊版 text.find("<script>", i) 抓到的是那段誘餌,誘餌三份相同 → 比對
+# 通過,真正單邊漂移的內容整段從沒被抽到、從沒被比對(worktree 實測重現:此攻擊
+# 對舊版是逃逸的假 PASS)。
+# 修法:①先找到 marker 所在那句 HTML 註解的收尾 -->,②斷言 --> 之後除了空白/
+# 換行以外必須緊接著 <script>——中間夾了任何其他內容(含誘餌 <script> 這種「看起來
+# 也是個 script」的東西)一律 fail-closed(exit 2),不臆測擷取窗口。
 GUIDE_PATHS = {
     "guide-dev-flow": DEVFLOW_HTML,
     "guide-quickstart": QUICKSTART_HTML,
@@ -372,13 +382,47 @@ def extract_anchor_scroll_js(path, marker):
                        '(需恰為 1)——擷取窗口不可信')
 
     i = text.find(marker)
-    script_start = text.find("<script>", i)
+    comment_close = text.find("-->", i)
+    if comment_close == -1:
+        return None, f'錨點「{marker}」所在的註解找不到收尾 -->'
+    comment_close_end = comment_close + len("-->")
+
+    script_start = text.find("<script>", comment_close_end)
     if script_start == -1:
         return None, f'錨點「{marker}」之後找不到 <script>'
+
+    gap = text[comment_close_end:script_start]
+    if gap.strip() != "":
+        return None, (f'marker 與 <script> 之間有不明內容,擷取窗口不可信:{gap!r}'
+                       '(可能是誘餌內容被插在註解與真正 <script> 之間)')
+
     script_end = text.find("</script>", script_start)
     if script_end == -1:
         return None, '找不到對應的 </script>(標籤不平衡)'
     script_end += len("</script>")
+
+    # 二次複審誘餌攻擊的關鍵補強:上面①的「--> 之後緊接 <script>」只擋得住
+    # 「誘餌前面夾了別的東西」的情況——若誘餌就是緊貼在 --> 後面的那個
+    # <script>(gap 仍是純空白,①一樣放行),①仍會把誘餌本身當成「唯一」的
+    # script 抓走,真正的 JS 被推到誘餌**後面**、整段沒被抽到也沒被比對(worktree
+    # 實測重現:只有①時此攻擊仍是逃逸的假 PASS)。這裡反過來從收尾檢查:抽到的
+    # 這個 </script> 之後,除空白/換行外不能緊接著又是一個 <script>——若有,代表
+    # anchor 槽位裡疊了不只一段 script(誘餌 + 真身),抽取窗口本身不可信,不猜
+    # 先抓到的是誘餌還是真身。
+    after_stripped = text[script_end:].lstrip()
+    if after_stripped.startswith("<script"):
+        return None, ('抽到的 </script> 收尾之後,除空白/換行外緊接著又是一個 '
+                       '<script>——anchor 槽位裡疑似疊了誘餌 + 真身兩段 script,'
+                       '擷取窗口不可信')
+
+    # ⚠️ 誠實承認邊界(worktree 實測驗證過):這條假設「anchor 槽位裡只該有一段
+    # script」——若未來有正當理由要在這個 anchor 之後**再疊一段**無關的
+    # <script>(例如新功能的另一段 JS,三份同步新增、彼此不漂移),本檢查一樣會
+    # fail-closed(exit 2),不會嘗試分辨「這段是誘餌」還是「這段是正當的新增」。
+    # 這是刻意的取捨,不是漏洞:同樣的哲學已用在①的巢狀 svg 處理(結構超出假設
+    # 就不猜、叫人來看),這裡對稱地套用在③——真要疊加第二段 script,屆時應該
+    # 修這支抽取邏輯本身(改成把整個槽位的多段 script 都納入比對,而不是放寬成
+    # 「允許多一段但不比對它」,那樣反而會放過誘餌攻擊)。
     return text[script_start:script_end], None
 
 
