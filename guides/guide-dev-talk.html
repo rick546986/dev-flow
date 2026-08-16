@@ -436,5 +436,24 @@ claude          # 建議 opus(規劃層)
   });
 })();
 </script>
+<!-- 
+  頁內錨點捲動修正：iframe/artifact 載體會把 fragment 導航當新網址，原生 #錨點 不捲動；
+  此段攔截頁內錨點點擊改用 scrollIntoView，一般瀏覽器直開不受影響。
+-->
+<script>
+  document.addEventListener('click', function(e) {
+    var a = e.target.closest('a[href^="#"]');
+    if (!a) return;
+    var href = a.getAttribute('href');
+    if (href.length <= 1) return;
+    var id = decodeURIComponent(href.slice(1));
+    var el = document.getElementById(id);
+    if (!el) return;
+    e.preventDefault();
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    history.replaceState(null, '', href);
+  });
+</script>
+
 </body>
 </html>
