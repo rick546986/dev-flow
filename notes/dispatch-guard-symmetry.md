@@ -161,6 +161,40 @@ bash scripts/render-methodology-corrections.sh --check
 
 ---
 
+# 追加項（2026-08-16,owner 指示補入,同批做）
+
+## X-5（MED,owner 裁定=固化模型分層）：先低階再高階目前只有 prompt 紀律,零機械層
+
+**現況**：分層規則住在 dev-run SKILL(haiku 寫碼→sonnet 審→錯誤升階)與 owner 的
+doctrine —— 全是 prompt 級。prompt 紀律的失效是**靜默的**(沒遵守不會有紅字,與
+「守衛沒武裝」同型);obs 事件其實記錄了每次派工的 model,但沒有任何檢查在看。
+
+**要做（兩層,a 必做、b 窄版）**：
+1. **a. 稽核型**：新檢查掃 observability ledger —— ①同一 task 的第一次 attempt
+   就用最高階模型 → 紅 ②跳級升階(低階無失敗紀錄直上兩級)→ 紅。
+   註冊進 devflow-check;負向 fixture;照家規先印計數、掃到 0 筆事件 exit 2。
+2. **b. 攔截型（窄版+豁免）**：PreToolUse 看得到派工參數的 model —— 擋「首派即
+   最高階」一種就好(升降級全邏輯需要狀態與判斷,hook 不硬做);
+   **必須有豁免通道**(allow --reason 型,例:G3 仲裁首派高階是合法的),豁免要留痕。
+3. prompt 紀律不拆(它管「該怎麼做」);機械層只管「沒照做會現形」。
+4. 驗收照本檔四步;b 的 selftest 案例含「豁免後放行+留痕」與「舊 state 行為不變」。
+
+## X-6（MED）：兩份導覽各嵌一張生命週期圖 = 雙副本,零同步守衛
+
+`guides/guide-dev-flow.html` 的 `fig-lifecycle` 與 `guides/guide-quickstart.html` 的
+`fig-lifecycle-qs` 是複製體 —— 改一張另一張靜默漂移。**這正是本檔第 6 型
+(不對稱保護)的預防案例**:要嘛補同步守衛(兩張 svg 正規化後比對,id/class 前綴差異
+白名單),要嘛宣告單正本+另一張改成縮減版並寫明取捨。不接受「先放著」。
+
+## X-7（LOW）：artifact 載體上錨點不跳,裁決 JS 要不要進正式檔
+
+guides 的頁內錨點在本機正常,在 artifact/iframe 載體點了不跳(fragment 導航被當
+新網址)。目前的捲動修正 JS 只注入在預覽產物。裁決:要不要把那段 ~8 行的
+scrollIntoView 處理進正式 guides(利:任何 iframe 載體都能用;弊:四份 html 各加一段)。
+做或不做都要寫明理由。
+
+---
+
 # 硬約束（沿用）
 
 1. **不 push**、不繞過 deny 規則。做完把「請你自己跑 `git push origin main`」列在回報。
