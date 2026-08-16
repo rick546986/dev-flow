@@ -939,6 +939,12 @@ for st in ("2-decision", "4-spec", "7-review"):  # 母版範例三站,不是合�
                and html.escape(t) not in r_names and t not in dropped_notes]
     check(not missing, f"{st}:每個 L2 章節都能在 html/NOTE 找到下落(第 2 層,獨立於產生器)",
           f"消失的章節:{missing}")
+    # ⚠️ X-1 補注(fresh 審查者第 9 輪):下面 gen_dropped / gen_dropped_empty 這兩條
+    # 斷言比對用的字面前綴,跟緊接在本區塊之前那份 dropped_notes 白名單建構時用的
+    # 字面前綴是同一組;兩者若被拆開改到不同步,措辭繞過白名單比對時,由上面那條
+    # 「missing」斷言兜底抓到「找不到下落」。重構這段時不得把白名單 / missing 斷言 /
+    # gen_dropped 斷言三者拆散到不同函式或不同 stage 分支,拆散會讓其中一段失去
+    # 另一段的兜底(行號會漂,故不寫死,以「上面/緊接在本區塊之前」相對描述)。
     # finding 1(MED,獨立審查判「不對稱保護」推廣至三站):上面的「missing」斷言
     # 只驗『每節都有下落』,但下落若是「產生器聲稱 dropped」而產生器自己算錯,
     # 第 2 層直接信那份自報清單,兩層一起綠、章節被真的丟掉卻印假 NOTE。這裡不信

@@ -49,6 +49,11 @@ if err:
 if state is None:
     sys.exit(0)
 
+# 信任模型(2026-08-17 fresh 審查 X-5b,裁決=記錄邊界不修):以下字面圍欄防手滑
+# 與紀律漂移,不防蓄意偽造 —— agent 可用不含 shell 重導向字面的直譯器(如
+# python3 -c "open(...).write(...)")寫檔繞過本圍欄,偽造豁免卡或假
+# attempt_started 事件;這與 _dispatch_impl.py 的「首派即最高階」守衛同一個
+# 信任邊界(見該檔檔頭同段落),接受並明文化,不做黑名單擴充的防禦劇場。
 # ① 守衛狀態破壞:rm/mv/直寫 .devflow 或 sentinel
 if "devflow-armed" in cmd:
     _obs_deny("prebash", "guard_state")

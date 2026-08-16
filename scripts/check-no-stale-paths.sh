@@ -111,12 +111,13 @@ PY
 
 # scan_targets <root> —— fail-closed:git ls-files 全量追蹤檔 − 印出來的 ALLOWLIST。
 scan_targets() {
-  python3 - "$1" <<'PY'
+  python3 - "$1" "$2" <<'PY'
 import os
 import subprocess
 import sys
 
 root = sys.argv[1]
+self_path = sys.argv[2]
 
 # (規則說明, 禁字字面) —— 每條各自一個獨立檢查(見下方 check_pattern),供 N-2
 # 檢查數地板使用:地板釘的是「有幾條禁字規則」,不是「掃了幾個檔案」——後者會隨
@@ -183,6 +184,68 @@ def tracked_files(root):
     untracked = _ls_files(root, "--others", "--exclude-standard")
     return sorted(tracked | untracked)
 
+
+# ── 來源自釘(F3:X-2,2026-08-17)──────────────────────────────────────────
+# 兩位審查者實測:把上面 tracked_files() 的 `--others --exclude-standard` 那條
+# 呼叫拿掉(還原成只掃已追蹤檔),或把 _ls_files 的 pathspec 縮小成只列固定幾個
+# 哨兵檔,單支腳本(不經 test-architecture-guards.sh)會靜默印「✓ 零命中」全過
+# ——SENTINELS/MIN_CHECKS/ALLOWLIST 內容地板都不看 tracked_files() 內部這兩條
+# 呼叫本身有沒有被動過手腳,只看結果數字,而攻擊 (b) 精準列出這 6 個哨兵時,
+# 結果數字剛好對得上,三層地板全部不會叫。
+# 這裡直接釘死本檔原始碼裡兩條 _ls_files 呼叫的識別字面各恰出現一次,且
+# _ls_files 呼叫(不含 def 本身)總數恰為 2 —— 少了、多了、被複製、被改參數都
+# 在讀自己原始碼這一步就現形,不依賴掃描結果剛好露餡,也不依賴外層
+# test-architecture-guards.sh 接住。
+def self_pin_check(path):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            src = f.read()
+    except OSError as e:
+        return [f"⛔ 自釘檢查:讀不到本腳本原始碼 {path}({e})"]
+    problems = []
+    # 識別字面刻意用字串相加組出(同本檔 banned/ALLOWLIST 已用的手法)——避免這段
+    # 自釘檢查程式碼自己的原始碼被自己的 src.count() 算進命中次數裡(曾實測:寫成
+    # 連續字面時,這段檢查碼本身就貢獻了額外命中,把 2 錯算成 5)。
+    call_marker = "_ls" + "_files("
+    plain_call = "tracked = " + call_marker + "root)"
+    untracked_call = ("untracked = " + call_marker
+                       + 'root, "--others", "--exclude-standard")')
+    # _ls_files() 內部 subprocess.run 的 pathspec 必須是呼叫端傳進來的
+    # *extra_args(動態),不能被換成寫死的固定清單——這條專門接住「兩個呼叫端
+    # 字面都沒動,但 _ls_files() 本體被改成永遠只查固定幾個哨兵檔路徑」這種攻擊
+    # (實測:攻擊只改這裡,call_marker/plain_call/untracked_call 三條全部維持
+    # 1 次不變,若沒有這條會被放過)。
+    dynamic_args_marker = '"-z", ' + "*extra_args"
+    n_plain = src.count(plain_call)
+    n_untracked = src.count(untracked_call)
+    n_total_calls = src.count(" = " + call_marker)
+    n_dynamic_args = src.count(dynamic_args_marker)
+    if n_dynamic_args != 1:
+        problems.append(
+            f"⛔ 自釘:_ls_files() 內 subprocess.run 的動態 pathspec 標記"
+            f"「{dynamic_args_marker}」出現 {n_dynamic_args} 次(應恰 1 次)——"
+            "git ls-files 的參數可能被換成寫死的固定清單(pathspec 攻擊),"
+            "呼叫端字面不變也會被這裡接住")
+    if n_plain != 1:
+        problems.append(
+            f"⛔ 自釘:純 tracked 呼叫「{plain_call}」出現 {n_plain} 次(應恰 1 次)"
+            "——tracked_files() 的純追蹤檔呼叫被改動或複製")
+    if n_untracked != 1:
+        problems.append(
+            f"⛔ 自釘:未追蹤呼叫「{untracked_call}」出現 {n_untracked} 次(應恰 1 次)"
+            "——--others/--exclude-standard 那條呼叫被縮小、還原或改了參數")
+    if n_total_calls != 2:
+        problems.append(
+            f"⛔ 自釘:_ls_files 呼叫總數 {n_total_calls}(應恰 2)——"
+            "有呼叫被刪掉、新增或改寫,tracked_files() 的掃描來源可能被動過手腳")
+    return problems
+
+
+self_pin_problems = self_pin_check(self_path)
+if self_pin_problems:
+    for p in self_pin_problems:
+        print(f"  {p}")
+    raise SystemExit(2)
 
 all_files = tracked_files(root)
 
@@ -320,7 +383,7 @@ if [ -n "$SCAN_ONLY" ]; then
 fi
 
 echo "=== 過期外掛路徑守衛 ==="
-scan_targets "$ROOT"
+scan_targets "$ROOT" "$SELF_DIR/check-no-stale-paths.sh"
 STATUS=$?
 
 echo

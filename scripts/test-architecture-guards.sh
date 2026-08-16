@@ -10,6 +10,9 @@
 #                    DC-3 刪 Data owner 欄 / DC-4 canon 壞例(Forbidden「無」+ 模糊詞)
 #                    DC-5 刪 Template Applicability / DC-6 刪 Stage 7 承接
 #                    DC-7 finding 全改 n-a / DC-8 只填① / DC-9 finding 留空
+#                    DC-X1/X2(2026-08-17 補,F-2 HIGH-3)跨檔恆真斷言掃描的負向覆蓋:
+#                    check-realworld.sh 混入單行 check(1 == 1, …)(DC-X1)/ 多行排版
+#                    check(\n True, …)(DC-X2),兩者都必須讓 check-design-contract.sh 失敗
 #   Gate Token       GT-0 對照組 / GT-1 刪 G2 一個 token / GT-2 G3 token 去粗體
 #                    GT-3 刪 G3 錨定義八點中的一點 / GT-4 憑空新增 G4
 #                    GT-5a~d 八點極性反轉 / GT-6a 同句 decoy / GT-6b 片語搬到別點
@@ -37,7 +40,17 @@
 #   FG(2026-08-17 補,X-6 兩份導覽生命週期圖同步守衛) FG-0 對照組(兩張圖正規化後
 #                    一致)/ FG-1 quickstart 版 svg 內一個 node 文字被改,dev-flow
 #                    版未動 / FG-2 quickstart 版畫圖 CSS 規則被改(svg 標記不動,
-#                    只有渲染規則漂移)(check-guides-fig-sync.sh)
+#                    只有渲染規則漂移)/ FG-3(X-7 第三層)quickstart 版頁內錨點
+#                    捲動 JS 的 scrollIntoView 選項被單邊改掉 / FG-4(驗證 X-6 HIGH
+#                    深度感知抽取修復)對稱插入巢狀假 svg 後單邊改真實節點文字,
+#                    5cabf4e 版此毒是逃逸的假 PASS(check-guides-fig-sync.sh)
+#   MT(2026-08-17 補,X-5a 模型分層守衛零外部變異涵蓋) MT-0 對照組 ——
+#                    對守衛複本的 scripts/fixtures/model-tiering/ 跑**自測模式**
+#                    (不帶 CLI 參數),expect pass / MT-1 負向 —— 把 bad-first-top
+#                    的 run 目錄當「真實 runs 根」以 CLI 參數餵給守衛複本的**正常模式**,
+#                    expect fail;此案專咬「若守衛被挖空成永遠印全過,外部呼叫路徑
+#                    (CLI 參數 real 模式)是否也一起失守」——之前只驗過 fixture 自測,
+#                    real 模式的紅路徑完全零外部變異覆蓋(check-model-tiering.sh)
 #   靜態互釘(2026-08-16 補,獨立審查 finding 4) 四支散落地板的字面值互釘 ——
 #                    hooks/selftest.sh MIN_CASES / tests/parallel-stage6/run_tests.py
 #                    EXPECTED_CHECKS / check-dev-setup-discipline.sh 與
@@ -48,8 +61,8 @@
 # 案例數是**斷言**不是裝飾:EXPECTED_CONTROLS / EXPECTED_NEGATIVES / EXPECTED_TOTAL
 # 由 expect()/expect_local() 實際累計後比對,刪任何一案(含對照組)都會非零退出。
 # 地板/群組數的靜態互釘不是這種案例(不 seed、不 mutate、不呼叫 expect_local),不計入
-# 這三個數字 —— 加了它們之後 EXPECTED_CONTROLS/NEGATIVES/TOTAL 仍是 10/55/65,是設計
-# 如此,不是漏算。
+# 這三個數字 —— 加了它們之後 EXPECTED_CONTROLS/NEGATIVES/TOTAL(見本檔頂部宣告值)
+# 不動,是設計如此,不是漏算。
 #
 # 安全(fail-closed,正式 working tree 全程唯讀):
 #   - set -euo pipefail;所有變數非空檢查
@@ -107,9 +120,9 @@ RESULTS=()
 # 改法:由 expect()/expect_local() 依 want 實際累計 control 與 negative,尾聲與釘死值比對。
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
-EXPECTED_CONTROLS=12
-EXPECTED_NEGATIVES=61
-EXPECTED_TOTAL=73
+EXPECTED_CONTROLS=13
+EXPECTED_NEGATIVES=68
+EXPECTED_TOTAL=81
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -142,6 +155,13 @@ seed() {
   # B-2(dev-setup 三方比對紀律)需要 skills/dev-setup/SKILL.md 在 seed 副本內才咬得到
   # mutation;check-dev-setup-discipline.sh 讀的正是這份檔。
   cp "$ROOT/skills/dev-setup/SKILL.md" "$dst/skills/dev-setup/SKILL.md"
+  # 2026-08-17 補(F-2 MED):check-design-contract.sh 的跨檔恆真斷言掃描新增了掃描
+  # 清單哨兵,要求 scripts/check-realworld.sh 與 scripts/check-gate-twin.sh 必須出現在
+  # $dst/scripts/ 底下,缺席就 exit 2。這兩支不是 DC-* 案例本來要驗的資料,是掃描的
+  # **旁證檔**——所有走 seed() 的 check-design-contract.sh 呼叫(DC-0…DC-9、DC-X1/X2 等)
+  # 都會跑到這道哨兵,不補就會讓既有 DC-0 對照組也變 exit 2。
+  cp "$ROOT/scripts/check-realworld.sh" "$dst/scripts/"
+  cp "$ROOT/scripts/check-gate-twin.sh" "$dst/scripts/"
   echo "$dst"
 }
 
@@ -255,6 +275,53 @@ expect_local() {
 # mutate <root> <<'PY' … python 片段,sys.argv[1] = root
 mutate() { python3 - "$1"; }
 
+# expect_local_self <pass|fail> <guard-script> <root> <label>
+# 與 expect_local() 的差別:跑守衛複本時**不帶任何 CLI 參數**(觸發守衛自己的
+# 自測模式,例如 check-model-tiering.sh 沒收到 runs-root 參數時會去掃自己旁邊的
+# scripts/fixtures/)。用於「守衛自測模式本身有沒有被繞過」這一類案例。
+expect_local_self() {
+  local want="${1:?}" guard="${2:?}" target="${3:?}" label="${4:?}"
+  [[ "$target" == "$WORK/"* ]] || { echo "expect_local_self: root 逃逸 $target" >&2; exit 1; }
+  [[ -x "$target/scripts/$guard" ]] || { echo "expect_local_self: 找不到守衛複本 $target/scripts/$guard" >&2; exit 1; }
+  count_case "$want"
+  local out rc got
+  out=$("$target/scripts/$guard" 2>&1)
+  rc=$?
+  got=pass; [ "$rc" -ne 0 ] && got=fail
+  if [ "$got" = "$want" ]; then
+    RESULTS+=("  ✅ $label — 預期 $want,實得 $got")
+    PASS=$((PASS + 1))
+  else
+    RESULTS+=("  ❌ $label — 預期 $want,實得 $got (exit $rc)")
+    RESULTS+=("       $(printf '%s' "$out" | tail -3 | tr '\n' ' ')")
+    FAIL=$((FAIL + 1))
+  fi
+}
+
+# expect_local_arg <pass|fail> <guard-script> <root> <cli-arg> <label>
+# 與 expect_local() 的差別:CLI 參數是呼叫方指定的 <cli-arg>(通常是 $root 之外、
+# 另外準備的一個「外部 runs 根」目錄),不是預設的 $root 本身。用於驗證守衛的
+# 正常模式(接受外部 runs-root 路徑當參數)真的有咬到給定目錄,不是只有自測模式
+# 內部的 fixture 掃描路徑被驗證過。
+expect_local_arg() {
+  local want="${1:?}" guard="${2:?}" target="${3:?}" arg="${4:?}" label="${5:?}"
+  [[ "$target" == "$WORK/"* ]] || { echo "expect_local_arg: root 逃逸 $target" >&2; exit 1; }
+  [[ -x "$target/scripts/$guard" ]] || { echo "expect_local_arg: 找不到守衛複本 $target/scripts/$guard" >&2; exit 1; }
+  count_case "$want"
+  local out rc got
+  out=$("$target/scripts/$guard" "$arg" 2>&1)
+  rc=$?
+  got=pass; [ "$rc" -ne 0 ] && got=fail
+  if [ "$got" = "$want" ]; then
+    RESULTS+=("  ✅ $label — 預期 $want,實得 $got")
+    PASS=$((PASS + 1))
+  else
+    RESULTS+=("  ❌ $label — 預期 $want,實得 $got (exit $rc)")
+    RESULTS+=("       $(printf '%s' "$out" | tail -3 | tr '\n' ' ')")
+    FAIL=$((FAIL + 1))
+  fi
+}
+
 echo "=== 架構守衛負向回歸測試 ==="
 echo "ROOT(唯讀)= $ROOT"
 echo "WORK(暫存)= $WORK"
@@ -365,6 +432,37 @@ assert n != t, "DC-9 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
 expect fail check-design-contract.sh "$D" "DC-9 某一筆冒號後留空"
+
+# DC-X1/X2(2026-08-17,F-2 HIGH-3):跨檔恆真斷言掃描本身此前零負向覆蓋 —— 掃描
+# scripts/check-realworld.sh 這件事從沒被任何案例驗過「真的抓得到別的檔」,只驗過
+# 「本檔(check-design-contract.sh 自己)被下毒會抓到」(GS-8)。這裡補別的檔中毒的案例,
+# 且刻意覆蓋單行與多行排版兩種寫法(HIGH-1 修的正是多行排版舊版抓不到)。
+# 插入點選 check-realworld.sh 的 `def read(rel):` 之前(module 層級,語法上合法但不會
+# 被執行到,因為這裡只測 check-design-contract.sh 的靜態掃描,不會真的跑
+# check-realworld.sh)。
+D=$(seed dcx1); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "scripts/check-realworld.sh"
+t = p.read_text(encoding="utf-8")
+marker = "def read(rel):"
+assert marker in t, "DC-X1: 找不到插入點"
+n = t.replace(marker, 'check(1 == 1, "poison")\n\n\n' + marker, 1)
+assert n != t, "DC-X1 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-design-contract.sh "$D" "DC-X1 check-realworld.sh 混入單行 check(1 == 1, poison)(跨檔掃描須抓到別的檔,不只自掃)"
+
+D=$(seed dcx2); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "scripts/check-realworld.sh"
+t = p.read_text(encoding="utf-8")
+marker = "def read(rel):"
+assert marker in t, "DC-X2: 找不到插入點"
+n = t.replace(marker, 'check(\n    True,\n    "poison"\n)\n\n\n' + marker, 1)
+assert n != t, "DC-X2 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-design-contract.sh "$D" "DC-X2 check-realworld.sh 混入多行排版 check(\\n    True,\\n    poison)(HIGH-1 修的正是這種逐行 match 抓不到的排版)"
 
 # ─────────────────────────────── Gate Token ────────────────────────────────
 D=$(seed gt0); expect pass check-gate-tokens.sh "$D" "GT-0 對照組(未變異)"
@@ -623,12 +721,12 @@ for rel in ("_templates/4-spec.md", "example/contract-expiry-reminder/4-spec.md"
 PY
 expect_local fail check-design-contract.sh "$D" "GS-3 守衛與資料 co-edit 刪掉必填欄 Test seam(canon 交叉核對接住)"
 
-# GS-4:把 MIN_CHECKS 由 100 調到 10(讓次級 backstop 形同虛設)。
+# GS-4:把 MIN_CHECKS 由 164 調到 10(讓次級 backstop 形同虛設)。
 D=$(seed_guard gs4 check-design-contract.sh); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "scripts" / "check-design-contract.sh"
 t = p.read_text(encoding="utf-8")
-n = t.replace("MIN_CHECKS = 100", "MIN_CHECKS = 10", 1)
+n = t.replace("MIN_CHECKS = 164", "MIN_CHECKS = 10", 1)
 assert n != t, "GS-4 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
@@ -1028,6 +1126,85 @@ assert p.exists(), "SP-7 mutation 沒生效"
 PY
 expect fail check-no-stale-paths.sh "$D" "SP-7 未追蹤檔混入過期 dev-flow local marketplace 路徑(新檔在 commit 前也受保護)"
 
+# SP-8/SP-9(F3:X-2,2026-08-17,兩位 fresh 審查者對 check-no-stale-paths.sh 提出的
+# HIGH finding,常設化)——裁決者要求先驗證外層(本檔)原本接不接得住這兩種攻擊,
+# 結論記在下面每案的註解:兩種攻擊在裁決驗證階段(對本檔尚未加 SP-8/SP-9 的舊版)
+# 跑 `bash scripts/test-architecture-guards.sh` 實測都已經是紅——攻擊 (a) 讓 SP-7
+# 從 fail 變 pass(1 案落地);攻擊 (b) 因為 seed_sp 複製的活文件散在多個不在 6 個
+# 哨兵名單內的路徑,連帶讓 SP-3/SP-4/SP-5/SP-6/SP-7 都從 fail 變 pass 或炸
+# AssertionError(5 案落地)——不是「零防禦」,是「外層本來就會炸,但只在多案
+# 連帶失敗裡間接看得出來,沒有一條案名清楚點出『pathspec 攻擊』或『untracked 呼叫
+# 被拿掉』這件事本身」。SP-8/SP-9 把這兩種攻擊各自獨立成一條具名案例,並且直接
+# 咬在**單支腳本**上(用 expect_local 跑守衛複本,不依賴 seed_sp 複製了哪些活文件
+# 這種間接旁證),使原本「靠連帶效應被動接住」變成「常設明文接住」。
+# check-no-stale-paths.sh 本體這輪加了自釘(self_pin_check):兩條 _ls_files 呼叫
+# 字面各恰一次、呼叫總數恰 2、_ls_files() 內部 subprocess.run 的動態 pathspec
+# 標記恰一次——下面兩案驗證的正是自釘接住,不是靠 seed 進去的禁字檔被掃到才紅。
+
+# SP-8:把 tracked_files() 的 `--others --exclude-standard` 那條呼叫拿掉(還原成
+# 舊版只掃已追蹤檔),同時 seed 一個未追蹤禁字檔。自釘應在讀自己原始碼那一步就
+# 現形(_ls_files 呼叫總數變 1),不需要等到真的漏放行未追蹤檔案這一步。
+D=$(seed_sp sp8)
+cp "$ROOT/scripts/check-no-stale-paths.sh" "$D/scripts/check-no-stale-paths.sh"
+chmod +x "$D/scripts/check-no-stale-paths.sh"
+mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "scripts/check-no-stale-paths.sh"
+t = p.read_text(encoding="utf-8")
+old = ('    tracked = _ls_files(root)\n'
+       '    untracked = _ls_files(root, "--others", "--exclude-standard")\n'
+       '    return sorted(tracked | untracked)')
+new = ('    tracked = _ls_files(root)\n'
+       '    return sorted(tracked)')
+assert old in t, "SP-8 mutation 沒生效:找不到 tracked_files() 的兩條呼叫"
+p.write_text(t.replace(old, new, 1), encoding="utf-8")
+untracked = pathlib.Path(sys.argv[1]) / "untracked-banned-sp8.md"
+banned = "plugins/local/dev-" + "flow"
+untracked.write_text("測試混入舊路徑(未 git add):~/.claude/" + banned + "/hooks/devflow-exec.sh\n",
+                      encoding="utf-8")
+PY
+expect_local fail check-no-stale-paths.sh "$D" "SP-8 tracked_files() 的 --others/--exclude-standard 呼叫被拿掉(還原成只掃已追蹤檔)+ seed 未追蹤禁字檔(自釘接住,單支腳本靜默綠已修)"
+
+# SP-9:把 _ls_files() 內 subprocess.run 的參數從動態 *extra_args 換成寫死的 6 個
+# 哨兵檔 pathspec(SENTINELS 斷言剛好全部命中,不會現形),同時 seed 一個不在這 6
+# 個哨兵之列的禁字檔。自釘應咬住 subprocess.run 的動態 pathspec 標記消失。
+D=$(seed_sp sp9)
+cp "$ROOT/scripts/check-no-stale-paths.sh" "$D/scripts/check-no-stale-paths.sh"
+chmod +x "$D/scripts/check-no-stale-paths.sh"
+mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "scripts/check-no-stale-paths.sh"
+t = p.read_text(encoding="utf-8")
+old = ('def _ls_files(root, *extra_args):\n'
+       '    result = subprocess.run(\n'
+       '        ["git", "-C", root, "ls-files", "-z", *extra_args],\n'
+       '        capture_output=True,\n'
+       '    )')
+new = ('SENTINEL_PATHSPEC_SP9 = [\n'
+       '    "README.md",\n'
+       '    "hooks/devflow-lib.py",\n'
+       '    "scripts/build-gate-twin.py",\n'
+       '    "guides/guide-dev-flow.html",\n'
+       '    "_templates/4-spec.md",\n'
+       '    ".claude-plugin/plugin.json",\n'
+       ']\n'
+       '\n'
+       '\n'
+       'def _ls_files(root, *extra_args):\n'
+       '    result = subprocess.run(\n'
+       '        ["git", "-C", root, "ls-files", "-z", "--", *SENTINEL_PATHSPEC_SP9],\n'
+       '        capture_output=True,\n'
+       '    )')
+assert old in t, "SP-9 mutation 沒生效:找不到 _ls_files() 的 subprocess.run 呼叫"
+p.write_text(t.replace(old, new, 1), encoding="utf-8")
+poison = pathlib.Path(sys.argv[1]) / "observability/devflow-obs.py"
+c = poison.read_text(encoding="utf-8")
+banned = "plugins/local/dev-" + "flow"
+poison.write_text(c + "\n# 測試混入舊路徑(不在 6 個哨兵之列):~/.claude/" + banned + "/hooks/devflow-exec.sh\n",
+                   encoding="utf-8")
+PY
+expect_local fail check-no-stale-paths.sh "$D" "SP-9 _ls_files() 的 pathspec 被換成寫死的 6 個哨兵(SENTINELS 剛好全過)+ seed 非哨兵禁字檔(自釘接住,單支腳本靜默綠已修)"
+
 # ── FM 群組:檔案地圖雙向盤點守衛(check-file-map.sh)────────────────────────
 #
 # guides/guide-dev-flow.html「附錄:檔案地圖」節是手寫表,手寫表必腐化。這一組證明
@@ -1068,12 +1245,17 @@ expect fail check-file-map.sh "$D" "FM-2 檔案地圖加一列指向不存在的
 # 任何既有檢查會紅(這正是本檔「假綠第⑥型:不對稱保護」要防的案例)。這一組證明
 # 守衛真的抓得到:FG-0 兩張圖同步時必須 pass;FG-1 只改 quickstart 那張圖裡一個
 # node 的文字(dev-flow 那張不動),必須 fail 並點名差異。
-seed_fg() { # seed_fg <name> → 同 seed(),另外複製兩份導覽 HTML 進 guides/
+#
+# 2026-08-17 補(X-7):守衛新增第三層(三份 guides 共用的頁內錨點捲動 JS),
+# guide-dev-talk.html 也要在場,否則新版守衛找不到第三份檔案會 exit 2——
+# seed_fg() 一併補齊,FG-0…FG-2 既有案例才不會因為這支新哨兵一起變 exit 2。
+seed_fg() { # seed_fg <name> → 同 seed(),另外複製三份導覽 HTML 進 guides/
   local name="${1:?seed_fg: name is empty}"
   local dst; dst=$(seed "$name")
   mkdir -p "$dst/guides"
   cp "$ROOT/guides/guide-dev-flow.html" "$dst/guides/guide-dev-flow.html"
   cp "$ROOT/guides/guide-quickstart.html" "$dst/guides/guide-quickstart.html"
+  cp "$ROOT/guides/guide-dev-talk.html" "$dst/guides/guide-dev-talk.html"
   echo "$dst"
 }
 
@@ -1109,6 +1291,83 @@ p.write_text(n, encoding="utf-8")
 PY
 expect fail check-guides-fig-sync.sh "$D" "FG-2 quickstart 版畫圖用的 CSS 規則被改(svg 標記本身沒動,只有渲染規則漂移,一樣必須現形)"
 
+# FG-3(X-7 第三層):三份 guides 共用的頁內錨點捲動 JS,只改其中一份的
+# scrollIntoView 選項(quickstart 那份的 behavior 從 smooth 改成 auto,dev-flow/
+# dev-talk 兩份不動)。這段 JS 在守衛新增第三層之前完全沒有任何檢查覆蓋——
+# worktree 已對舊版驗證過:單改一份 JS,devflow-check 24 組全綠(零守衛),
+# 這一案就是證明新增的第三層真的咬得到。
+D=$(seed_fg fg3); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "guides/guide-quickstart.html"
+t = p.read_text(encoding="utf-8")
+old = "{ behavior: 'smooth', block: 'start' }"
+new = "{ behavior: 'auto', block: 'start' }"
+assert t.count(old) == 1, "FG-3 anchor 不是唯一命中,mutation 目標不明確"
+n = t.replace(old, new, 1)
+assert n != t, "FG-3 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-guides-fig-sync.sh "$D" "FG-3 quickstart 版頁內錨點捲動 JS 的 scrollIntoView 選項被改(dev-flow/dev-talk 兩份未動,三份不再逐位元組一致必須現形)"
+
+# FG-4(X-6 HIGH,驗證深度感知抽取修復):對兩份導覽的 fig-lifecycle 區塊「對稱」
+# 插入同一段巢狀假 <svg>(兩邊插入點與插入內容逐位元組相同,這部分本身不是漂移),
+# 再只對 quickstart 那份、插入點**之後**的一段真實節點文字做單邊修改。
+#
+# 這一案重現的是 X-6 HIGH 那個「抽取截斷」漏洞:舊版(非貪婪 regex,認第一個
+# </svg> 就收工)在插入點就被巢狀假 svg 的 </svg> 截斷,插入點之後的內容(含這裡
+# 單邊改掉的真實文字)整段不在抽出來的比對範圍內——worktree 已對舊版驗證過:
+# 這組對稱插入+單邊真漂移的組合,舊版會給出假的 PASS(逃逸)。新版深度感知抽取
+# 掃到巢狀 <svg> 會直接 fail-closed(exit 2,不嘗試聰明處理、叫人來看),不會被
+# 誤判成「一致」,也不會误判成別的東西——這裡只驗證「不再是假 PASS」(expect fail
+# 涵蓋 exit 1 與 exit 2 兩種非零結果,見 expect() 的 got=fail 判定)。
+D=$(seed_fg fg4); mutate "$D" <<'PY'
+import sys, pathlib
+root = pathlib.Path(sys.argv[1])
+
+INSERT_ANCHOR = ">Session Start</text></g>"
+FAKE_SVG = ('<svg class="fake-icon-mut" width="1" height="1">'
+            '<rect width="1" height="1"/><text x="0" y="0">x</text></svg>')
+DIVERGE_OLD = ">InstructionsLoaded<"
+DIVERGE_NEW = ">InstructionsLoaded MUTATED<"
+
+# 對稱插入:兩份導覽的插入點與插入內容逐位元組相同,單獨看這一步不構成漂移。
+for relpath in ("guides/guide-dev-flow.html", "guides/guide-quickstart.html"):
+    p = root / relpath
+    t = p.read_text(encoding="utf-8")
+    assert t.count(INSERT_ANCHOR) == 1, f"FG-4 插入錨點在 {relpath} 不是唯一命中"
+    n = t.replace(INSERT_ANCHOR, INSERT_ANCHOR + FAKE_SVG, 1)
+    assert n != t, f"FG-4 對稱插入沒生效於 {relpath}"
+    p.write_text(n, encoding="utf-8")
+
+# 單邊真漂移:只改 quickstart,位置在對稱插入點之後——落在舊版(非貪婪 regex)
+# truncated 抽取窗口之外,這正是舊版會逃逸的原因。
+p = root / "guides/guide-quickstart.html"
+t = p.read_text(encoding="utf-8")
+assert t.count(DIVERGE_OLD) == 1, "FG-4 單邊漂移錨點不是唯一命中"
+n = t.replace(DIVERGE_OLD, DIVERGE_NEW, 1)
+assert n != t, "FG-4 單邊漂移沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-guides-fig-sync.sh "$D" "FG-4 對稱插入巢狀假 svg 後單邊改真實節點文字(驗證深度感知抽取修復:5cabf4e 版此毒是逃逸的假 PASS,修復後必須 fail-closed)"
+
+# ───────────────────────────────── Model Tiering ────────────────────────────
+# X-5a HIGH:check-model-tiering.sh 先前只有 fixture 自測(scripts/fixtures/
+# model-tiering/ 內 good-*/bad-* 案由腳本自己在自測模式跑),真正對外的「正常模式」
+# CLI 路徑(給一個 runs-root 參數去稽核真實 .devflow/runs/ 之類目錄)完全零外部
+# 變異覆蓋——若守衛被挖空成永遠印全過,自測模式可能仍會因為內建的
+# self_test_failed/断言邏輯被砍而一起失守,沒有任何獨立於守衛本體的紅路徑。
+# MT-0/MT-1 補的就是這一層:MT-0 證明「自測模式」這條路徑本身仍是對照組(正常會過);
+# MT-1 用 seed_guard 複本 + CLI 參數(而非自測模式)去掃一份外部 bad-first-top
+# fixture,證明「正常模式」這條路徑真的會抓到違規、不依賴自測模式的內部斷言。
+D=$(seed_guard mt0 check-model-tiering.sh)
+mkdir -p "$D/scripts/fixtures"
+cp -r "$ROOT/scripts/fixtures/model-tiering" "$D/scripts/fixtures/model-tiering"
+expect_local_self pass check-model-tiering.sh "$D" "MT-0 對照組(守衛複本對自己的 fixtures/model-tiering/ 跑自測模式)"
+
+D=$(seed_guard mt1 check-model-tiering.sh)
+cp -r "$ROOT/scripts/fixtures/model-tiering/bad-first-top" "$D/external-runs"
+expect_local_arg fail check-model-tiering.sh "$D" "$D/external-runs" "MT-1 把 bad-first-top 當外部真實 runs 根,以 CLI 參數餵給守衛複本的正常模式(驗證紅路徑不只活在自測模式內)"
+
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
 echo
@@ -1130,7 +1389,7 @@ echo
 # 只有這個釘死的字面數字會現形)
 # ────────────────────────────────────────────────────────────────────────────
 # ⚠️ 這**不是**一個 GS 編號案例 —— 不 seed、不 mutate、不呼叫 expect_local,不計入
-# EXPECTED_CONTROLS/NEGATIVES/TOTAL(這三個數字加了它之後仍是 10/55/65,是設計如此,
+# EXPECTED_CONTROLS/NEGATIVES/TOTAL(這三個數字加了它之後不動,是設計如此,
 # 不是漏算;見本檔檔頭「涵蓋」清單的「靜態互釘」條目)。
 # 為什麼:MIN_CHECKS/MIN_CASES/EXPECTED_CHECKS 這類「檢查數地板」是防砍檢查的
 # 最後一道牆,但牆本身沒有牆——同時砍案例數與地板數字(連刪帶藏,兩處一起改)
@@ -1146,12 +1405,46 @@ echo
 # 或反過來改了地板卻忘了同步這裡的靜態釘),不是「蓄意繞過同時改三處」的攻擊者。
 STATIC_PIN_FAIL=0
 check_static_pin() { # check_static_pin <相對路徑> <期望逐字一整行> <說明>
+  # 逐字整行存在只證明「那一行還在檔案裡」,防不住「同名變數第二行賦值覆蓋」——
+  # Python/bash 都是後面的賦值語意上蓋掉前面那行,例如在 `EXPECTED_GROUPS = 24`
+  # 下面偷加一行 `EXPECTED_GROUPS = 25`,逐字行比對兩行都在、都比對得到,完全
+  # 看不出「實際生效值」已經漂走(X-3 HIGH-2,獨立審查實測繞過)。這裡多一層:
+  # 從期望行抽出變數名,數整檔裡這個變數名被賦值幾次,必須恰為 1。
+  # ⚠️ 誠實承認邊界:這只防「加一行」這種手滑,不防同時改本檔(這條計數規則本身)
+  # 的蓄意繞過者——蓄意者可以連這條計數規則一起改掉,跟 check_static_pin 原本
+  # 「只防單點手滑,不防蓄意連改」的邊界完全一樣,沒有放寬也沒有收緊。
   local rel="$1" expect_line="$2" label="$3"
-  if grep -qxF "$expect_line" "$ROOT/$rel" 2>/dev/null; then
-    echo "  ✓ 靜態互釘:$rel 的 $label"
-  else
+  local file="$ROOT/$rel"
+  if ! grep -qxF "$expect_line" "$file" 2>/dev/null; then
     echo "  ✗ 靜態互釘:$rel 的 $label —— 找不到逐字一行「${expect_line}」" \
          "(地板可能被調動,但這裡的靜態釘沒有同步更新,或案例被砍卻沒調地板)"
+    STATIC_PIN_FAIL=1
+    return
+  fi
+  local varname n
+  varname=$(printf '%s' "$expect_line" | grep -oE '^[A-Za-z_][A-Za-z0-9_]*')
+  n=$(grep -cE "^${varname}[[:space:]]*=" "$file" 2>/dev/null)
+  if [ "$n" -ne 1 ]; then
+    echo "  ✗ 靜態互釘:$rel 的 $label —— 變數 ${varname} 在檔案中被賦值 ${n} 次(應恰為 1)" \
+         "(疑似同名第二行賦值覆蓋前一行,Python/bash 都是後面蓋掉前面,逐字行比對本身抓不到這種漂移)"
+    STATIC_PIN_FAIL=1
+    return
+  fi
+  echo "  ✓ 靜態互釘:$rel 的 $label"
+}
+# check_static_pin 要求「逐字一整行」,抓不到「識別字面只是某一行的一段子字串,
+# 該行前後還有別的字元(例如 `check(` 前綴、結尾逗號)」這種情況——這種釘法用
+# check_static_pin_sub(grep -qF 子字串版)。分工:整行不變 → check_static_pin;
+# 只保住行內某段識別字面、行的其餘部分(縮排/前綴/結尾標點)可以變 → check_static_pin_sub。
+# 子字串版天生比整行版寬鬆,不重跑「賦值覆蓋計數」那層(子字串比對的對象通常是斷言
+# 運算式或清單項目,不是「VAR = 值」這種可被第二行覆蓋的宣告,不適用同一種計數判準)。
+check_static_pin_sub() { # check_static_pin_sub <相對路徑> <期望子字串> <說明>
+  local rel="$1" expect_sub="$2" label="$3"
+  if grep -qF "$expect_sub" "$ROOT/$rel" 2>/dev/null; then
+    echo "  ✓ 靜態互釘(子字串):$rel 的 $label"
+  else
+    echo "  ✗ 靜態互釘(子字串):$rel 的 $label —— 找不到子字串「${expect_sub}」" \
+         "(識別字面可能被改寫或整段被刪)"
     STATIC_PIN_FAIL=1
   fi
 }
@@ -1161,11 +1454,45 @@ check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 9" "MIN_C
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 138" "MIN_CHECKS 釘死 138(X-3 補群組數釘之後的實得數)"
 check_static_pin "scripts/check-file-map.sh" "MIN_CHECKS = 68" "MIN_CHECKS 釘死 68(X-6 新增 check-guides-fig-sync.sh 後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 24" "EXPECTED_GROUPS 釘死 24(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
+
+# X-3 HIGH-1:上面只釘了 EXPECTED_GROUPS 這個常數宣告本身,沒釘「用它的斷言」——
+# guard-selfpin 整區塊(含這兩條 meta 斷言)連同 REQUIRED_GROUPS 對應條目一起被刪掉、
+# 再補等量填充檢查湊 CHECKS 數時,EXPECTED_GROUPS 常數字面依然原封不動躺在檔案裡,
+# 上面那條靜態釘照樣綠燈,heartbeat/guard-selfpin 兩層防線也都被連根拔起,完全看
+# 不出來。這裡直接釘兩條斷言運算式本身的識別字面(不是整行,行首縮排/前綴/結尾逗號
+# 都可能不同,故用子字串版):斷言消失 = 這裡先紅。
+check_static_pin_sub "scripts/check-gate-twin.sh" "len(REQUIRED_GROUPS) == EXPECTED_GROUPS" \
+  "群組數斷言 len(REQUIRED_GROUPS) == EXPECTED_GROUPS 仍在原始碼中"
+check_static_pin_sub "scripts/check-gate-twin.sh" "_assigned == set(REQUIRED_GROUPS)" \
+  "guard-selfpin 斷言 _assigned == set(REQUIRED_GROUPS) 仍在原始碼中"
+
+# X-3 MED:上面兩條只釘「斷言在不在」,群組總數對不對,但 REQUIRED_GROUPS 清單裡
+# 個別群組名被改名(decoy 換掉真名、總數與賦值集合等式都不受影響)完全抓不到。這裡
+# 逐一釘死 24 個群組名的字面——清單住在本檔(誰要改名/刪名都得同步這裡,否則這裡
+# 會現形;check-gate-twin.sh 原始碼裡的順序跟這裡不必一致,只驗子字串存在)。
+# ⚠️ 誠實承認剩餘邊界:這只抓「名字被換掉」,抓不到「保留群組名、把該群組底下的
+# 檢查內容掏空換填充」——那屬語意層,由各群組對應的 fixture 正負向案例管,不是
+# 這裡的職責。
+REQUIRED_GROUP_NAMES=(
+  "gate-stage-baseline" "dash-cells-readme" "risk-cell-count" "cross-file-parity"
+  "p4-fence-section" "s-head-regression" "h2-zero-deletion" "t6-pinned"
+  "t2-missing-required" "k7-missing-then" "k3-missing-intent" "k3-empty-tasks"
+  "k3-task-count" "k3-boundaries-dag" "high2-dash-values" "high3-dag-waves"
+  "high1-dup-field" "p5-sample-row" "t5-empty-spec" "n7-dist-copy"
+  "n1-section-fate" "n4-unclosed-comment" "usage-error-message" "guard-selfpin"
+)
+for _gname in "${REQUIRED_GROUP_NAMES[@]}"; do
+  check_static_pin_sub "scripts/check-gate-twin.sh" "\"${_gname}\"," \
+    "REQUIRED_GROUPS 群組名 ${_gname} 仍在原始碼中"
+done
+unset _gname
+
 if [ "$STATIC_PIN_FAIL" -ne 0 ]; then
-  echo "⛔ 六支地板/群組數靜態互釘:至少一處字面值與釘死清單不符"
+  echo "⛔ 靜態互釘:至少一處字面值/子字串與釘死清單不符"
   exit 1
 fi
 echo "  ✓ 六支地板/群組數靜態互釘全過(hooks/selftest.sh / run_tests.py / check-dev-setup-discipline.sh / check-gate-twin.sh MIN_CHECKS / check-file-map.sh / check-gate-twin.sh EXPECTED_GROUPS)"
+echo "  ✓ guard-selfpin 兩條斷言字面 + 24 個群組名子字串釘全過(X-3 HIGH-1/MED)"
 echo
 
 if [ "$FAIL" -ne 0 ]; then

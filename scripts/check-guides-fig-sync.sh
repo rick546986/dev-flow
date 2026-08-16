@@ -20,27 +20,42 @@
 #     不是同一張圖的複製體;_templates/diagram-style.md 只是提到這兩份圖當範例,
 #     不是第三份圖的複製體)。若日後任何地方再多嵌一份這張圖的複製體,必須把它
 #     一併納入本檢查,或在這裡寫明為什麼那份不算數——不接受悄悄漏掉。
-#   - 本檢查涵蓋**兩層**,不是只比 svg 標記:①svg 標記本身(見下①)②渲染這張圖用
-#     到的 CSS 規則區塊(見下②)。只比 svg、不比 CSS 的話,兩邊 svg 標記逐位元組
-#     相同、但其中一邊的 `.hk`/`.att`/`.loopscope`/`edge-*` 等規則被單獨改壞,圖會
-#     渲染成兩個不同的東西,本守衛卻還是綠燈——這正是同一種「不對稱保護」的漏洞
-#     換了一層皮再犯一次,所以兩層都要顧。
+#   - 本檢查涵蓋**三層**,不是只比 svg 標記:①svg 標記本身(見下①)②渲染這張圖用
+#     到的 CSS 規則區塊(見下②)③三份 guides 共用的頁內錨點捲動 JS(見下③)。只比
+#     svg、不比 CSS 的話,兩邊 svg 標記逐位元組相同、但其中一邊的
+#     `.hk`/`.att`/`.loopscope`/`edge-*` 等規則被單獨改壞,圖會渲染成兩個不同的
+#     東西,本守衛卻還是綠燈——這正是同一種「不對稱保護」的漏洞換了一層皮再犯
+#     一次,所以三層都要顧。
+#   - **誠實邊界**(2026-08-17 補,X-6 MED):本檢查是比較型守衛——比的是「兩邊/
+#     三邊彼此是否一致」,天生抓不到「兩邊同步同樣改壞」的情形(例如有人把
+#     dev-flow 與 quickstart 的同一段規則,同時改成同一個錯的值)。本守衛防的是
+#     **單邊漂移**(假綠第⑥型:不對稱保護,只有一邊被改、另一邊沒跟上),不防
+#     **雙邊一致的錯誤**——那是另一種問題(內容正確性),要靠別的檢查或人工審查
+#     顧,不是本檢查的職責範圍,說清楚以免誤以為本守衛=內容正確性保證。
 #
-# 做兩件事:
+# 做三件事:
 #   ①svg 標記:從兩份導覽各自抽出生命週期圖的 <svg id="...">…</svg> 區塊,正規化掉
-#     頂層 id 的預期差異後逐位元組比對。
+#     頂層 id 的預期差異後逐位元組比對。抽取本身是**深度感知**的(見 extract_svg
+#     內註解)——不是天真地找第一個 </svg> 就當結尾,巢狀 <svg> 會被 fail-closed
+#     擋下來,不會被截斷成一段看似能比對、實則漏掉真漂移的殘缺區塊。
 #   ②CSS 規則:從兩份導覽各自抽出繪這張圖專用的 CSS 區塊(以雙生註解為錨點),
 #     去掉純註解行/空白行後逐行比對規則本身(兩邊的註解文字本來就不同——dev-flow
 #     那份有逐條中文說明、quickstart 那份沒有——這是允許的差異,規則才是要顧的東西)。
-#   任一邊抽取失敗(regex 沒命中)或抽到空內容 → exit 2(NOT-PARSED,見下)。
-#   正規化/去註解後仍不同 = 真漂移 → FAIL,並印出第一個差異點的上下文,點名差在哪。
+#     錨點文字本身在各自檔案內必須恰好出現 1 次,不唯一就代表擷取窗口不可信,
+#     fail-closed,不猜是哪一次命中。
+#   ③JS 規則:從三份 guides(guide-dev-flow / guide-quickstart / guide-dev-talk)各自
+#     以頁內錨點捲動修正的 HTML 註解為錨點,抽出其後的 <script>…</script> 區塊,
+#     三份逐位元組比對必須相同(這段 JS 沒有預期差異、不需要正規化)。
+#   任一邊抽取失敗(找不到錨點、錨點不唯一、regex 沒命中)或抽到空內容
+#   → exit 2(NOT-PARSED,見下)。正規化/去註解後仍不同 = 真漂移 → FAIL,並印出
+#   第一個差異點的上下文,點名差在哪。
 #
 # 用法:
 #   scripts/check-guides-fig-sync.sh [root]   # 缺省 root = repo root
 # root 可指向 /private/tmp 下的複本,供 test-architecture-guards.sh 的 mutation 驗證。
 #
-# exit:0 = 兩層都同步 / 1 = 至少一層正規化後仍有差異(FAIL)/
-#      2 = 抽取失敗或解析到空內容(fail-closed,不猜)
+# exit:0 = 三層都同步 / 1 = 至少一層正規化後仍有差異(FAIL)/
+#      2 = 抽取失敗、錨點不唯一、或解析到空內容(fail-closed,不猜)
 
 set -uo pipefail
 
@@ -65,10 +80,11 @@ root = sys.argv[1]
 
 DEVFLOW_HTML = os.path.join(root, "guides", "guide-dev-flow.html")
 QUICKSTART_HTML = os.path.join(root, "guides", "guide-quickstart.html")
+DEVTALK_HTML = os.path.join(root, "guides", "guide-dev-talk.html")
 DEVFLOW_SVG_ID = "fig-lifecycle"
 QUICKSTART_SVG_ID = "fig-lifecycle-qs"
 
-for path in (DEVFLOW_HTML, QUICKSTART_HTML):
+for path in (DEVFLOW_HTML, QUICKSTART_HTML, DEVTALK_HTML):
     if not os.path.isfile(path):
         print(f"FATAL: 找不到 {path}", file=sys.stderr)
         sys.exit(2)
@@ -77,29 +93,74 @@ FAILURES = []  # 累積兩層各自的 FAIL 訊息,兩層都跑完才一次回�
 
 
 # ─────────────────────────────── ①svg 標記 ───────────────────────────────
+# 2026-08-17 補(X-6 HIGH,抽取截斷):舊版用非貪婪 regex
+# `<svg id="{id}"[^>]*>.*?</svg>` 找「第一個 </svg>」當結尾——如果這張圖的內容裡
+# 未來被(不管是不是惡意)塞進任何巢狀 <svg>(例如內嵌一個 icon 用的 <svg>…</svg>),
+# 非貪婪比對會在那個巢狀 svg 的收尾就停下,把外層真正的圖截斷成一小段。截斷後的
+# 殘缺區塊仍可能兩邊都「看起來一致」(因為兩邊都被同樣截斷、且截斷點之前恰好相同),
+# 於是真正的漂移(藏在截斷點之後、沒被抽到的內容裡)完全不會被比對到,守衛卻回報
+# PASS——這是實測驗證過的假綠(worktree 重現:對稱插入巢狀假 svg + 單邊真實文字
+# 漂移,舊版逃逸)。
+#
+# 修法:深度感知掃描,不再相信「第一個 </svg>」。從起始標籤之後逐一尋找
+# <svg ...> / </svg> 兩種 token,遇開頭深度 +1、遇收尾深度 -1,直到深度歸零才是
+# 真正的結尾。掃描過程中深度若曾經 > 1(代表遇到巢狀 <svg>),代表這張圖的內容
+# 結構超出本檢查抽取邏輯原先假設的「扁平、不巢狀」前提——**不嘗試聰明處理**
+# (例如硬選最後一個 </svg>、或忽略巢狀內容),直接 fail-closed:exit 2,叫人來看,
+# 因為此時「兩邊抽出來的區塊是否真的對應同一段內容」已經無法只憑這支腳本判斷。
 def extract_svg(path, svg_id):
-    """抽出 <svg id="{svg_id}" ...>...</svg> 整塊(inclusive)。
-    找不到起始標籤,或起始後找不到對應 </svg>,一律回傳 None(呼叫端視為抽取失敗)。
+    """深度感知抽出 <svg id="{svg_id}" ...>...</svg> 整塊(inclusive)。
+    回傳 (block, reason):
+      - 成功:(區塊字串, None)
+      - 失敗(找不到 / 不平衡 / 巢狀 / id 不唯一):(None, 失敗原因文字)
+    呼叫端一律把 block is None 視為抽取失敗,exit 2,不臆測「差異」。
     """
     text = open(path, encoding="utf-8").read()
-    pattern = re.compile(
-        r'<svg id="' + re.escape(svg_id) + r'"[^>]*>.*?</svg>', re.S
-    )
-    m = pattern.search(text)
-    if not m:
-        return None
-    return m.group(0)
+
+    # 先斷言:這個 id 的開始標籤在整檔恰好出現一次。不唯一就代表「抽的是哪一個」
+    # 本身就是含糊的,擷取窗口不可信,不猜是第幾個命中。
+    id_marker = f'<svg id="{svg_id}"'
+    id_count = text.count(id_marker)
+    if id_count != 1:
+        return None, (f'id="{svg_id}" 的開始標籤在整檔出現 {id_count} 次'
+                       '(需恰為 1)——擷取窗口不可信')
+
+    start_re = re.compile(re.escape(id_marker) + r'[^>]*>')
+    start_m = start_re.search(text)
+    if not start_m:
+        return None, f'找不到 <svg id="{svg_id}" ...> 開始標籤本身(屬性沒有以 > 收尾?)'
+
+    token_re = re.compile(r'<svg\b[^>]*>|</svg>')
+    pos = start_m.end()
+    depth = 1
+    max_depth = 1
+    while depth > 0:
+        m = token_re.search(text, pos)
+        if not m:
+            return None, f'<svg id="{svg_id}"> 找不到對應收尾 </svg>(標籤不平衡)'
+        if m.group(0) == '</svg>':
+            depth -= 1
+        else:
+            depth += 1
+            max_depth = max(max_depth, depth)
+        pos = m.end()
+
+    if max_depth > 1:
+        return None, (f'<svg id="{svg_id}"> 區塊內偵測到巢狀 <svg>(深度曾達 {max_depth})'
+                       '——結構不支援本檢查的扁平抽取假設,fail-closed,不嘗試聰明處理,人來看')
+
+    return text[start_m.start():pos], None
 
 
-devflow_svg = extract_svg(DEVFLOW_HTML, DEVFLOW_SVG_ID)
-quickstart_svg = extract_svg(QUICKSTART_HTML, QUICKSTART_SVG_ID)
+devflow_svg, devflow_svg_err = extract_svg(DEVFLOW_HTML, DEVFLOW_SVG_ID)
+quickstart_svg, quickstart_svg_err = extract_svg(QUICKSTART_HTML, QUICKSTART_SVG_ID)
 
 if devflow_svg is None:
-    print(f'FATAL: {DEVFLOW_HTML} 抽不到 <svg id="{DEVFLOW_SVG_ID}">…</svg>'
+    print(f'FATAL: {DEVFLOW_HTML} 抽取失敗:{devflow_svg_err}'
           '(NOT-PARSED,不是「沒有差異」)', file=sys.stderr)
     sys.exit(2)
 if quickstart_svg is None:
-    print(f'FATAL: {QUICKSTART_HTML} 抽不到 <svg id="{QUICKSTART_SVG_ID}">…</svg>'
+    print(f'FATAL: {QUICKSTART_HTML} 抽取失敗:{quickstart_svg_err}'
           '(NOT-PARSED,不是「沒有差異」)', file=sys.stderr)
     sys.exit(2)
 if not devflow_svg.strip() or not quickstart_svg.strip():
@@ -185,21 +246,35 @@ QUICKSTART_CSS_START = "fig-lifecycle-qs,雙生自"
 QUICKSTART_CSS_END = "</style>"           # quickstart 這段本來就是該 <style> 的最後一塊
 
 
+# 2026-08-17 補(紀律面 HIGH,CSS 錨點 first-hit):`text.find(marker)` 永遠只找
+# 「第一個」命中——如果這句錨點文字在檔案裡不只出現一次(例如同一句說明被複製貼到
+# 別的地方,或改版時新增了另一段內容剛好用了同樣的字眼),`find` 默默鎖定的可能是
+# 錯的那一個,抽出來的 CSS 區塊就不是本檢查以為的那一段,比對結果不可信、卻不會
+# 有任何跡象。修法:抽取前先斷言每個錨點文字在整檔的出現次數恰為 1,不唯一就
+# fail-closed(exit 2),不猜是哪一次命中。
 def extract_css_block(path, start_marker, end_marker):
     text = open(path, encoding="utf-8").read()
+
+    start_count = text.count(start_marker)
+    if start_count != 1:
+        return None, (f'起始錨點「{start_marker}」在整檔出現 {start_count} 次'
+                       '(需恰為 1)——擷取窗口不可信')
+    end_count = text.count(end_marker)
+    if end_count != 1:
+        return None, (f'結束錨點「{end_marker}」在整檔出現 {end_count} 次'
+                       '(需恰為 1)——擷取窗口不可信')
+
     i = text.find(start_marker)
-    if i == -1:
-        return None
     # 往回找到該行行首,把整條註解(含 /* ── … ──）都算進區塊,而不是從關鍵字中間截斷
     line_start = text.rfind("\n", 0, i) + 1
     j = text.find(end_marker, i)
     if j == -1:
-        return None
+        return None, f'結束錨點「{end_marker}」出現在起始錨點之前,擷取窗口為空或反向'
     # 同樣退回到 end_marker 所在行的行首,避免切斷 end_marker 前那一行本身
     # (例如 dev-flow 側的下一個 Phase 註解跟本圖註解同一行風格,若切在關鍵字
     # 中間會留下一截沒有收尾的殘破註解行,被誤判成「規則行」)。
     line_end = text.rfind("\n", 0, j) + 1
-    return text[line_start:line_end]
+    return text[line_start:line_end], None
 
 
 def css_rule_lines(block):
@@ -218,16 +293,18 @@ def css_rule_lines(block):
     return lines
 
 
-devflow_css = extract_css_block(DEVFLOW_HTML, DEVFLOW_CSS_START, DEVFLOW_CSS_END)
-quickstart_css = extract_css_block(QUICKSTART_HTML, QUICKSTART_CSS_START, QUICKSTART_CSS_END)
+devflow_css, devflow_css_err = extract_css_block(DEVFLOW_HTML, DEVFLOW_CSS_START, DEVFLOW_CSS_END)
+quickstart_css, quickstart_css_err = extract_css_block(
+    QUICKSTART_HTML, QUICKSTART_CSS_START, QUICKSTART_CSS_END
+)
 
 if devflow_css is None:
-    print(f"FATAL: {DEVFLOW_HTML} 抽不到生命週期圖的 CSS 區塊(錨點「{DEVFLOW_CSS_START}」"
-          "或「{DEVFLOW_CSS_END}」找不到,NOT-PARSED)", file=sys.stderr)
+    print(f"FATAL: {DEVFLOW_HTML} 抽不到生命週期圖的 CSS 區塊:{devflow_css_err}"
+          "(NOT-PARSED)", file=sys.stderr)
     sys.exit(2)
 if quickstart_css is None:
-    print(f"FATAL: {QUICKSTART_HTML} 抽不到生命週期圖的 CSS 區塊(錨點"
-          f"「{QUICKSTART_CSS_START}」或「{QUICKSTART_CSS_END}」找不到,NOT-PARSED)", file=sys.stderr)
+    print(f"FATAL: {QUICKSTART_HTML} 抽不到生命週期圖的 CSS 區塊:{quickstart_css_err}"
+          "(NOT-PARSED)", file=sys.stderr)
     sys.exit(2)
 
 devflow_rules = css_rule_lines(devflow_css)
@@ -263,6 +340,89 @@ else:
     FAILURES.append("\n".join(msg))
 
 
+# ─────────────────────────────── ③JS 規則(X-7)────────────────────────────
+# 2026-08-17 補(X-7 HIGH):三份 guides(guide-dev-flow / guide-quickstart /
+# guide-dev-talk)各自嵌了同一段「頁內錨點捲動修正」JS(iframe/artifact 載體不認
+# fragment 導航,原生 #錨點不捲動,靠這段 JS 攔截點擊改用 scrollIntoView)。三份是
+# 逐字複製貼上進正式檔的(裁決見 notes/dispatch-guard-symmetry.md X-7)——跟①②
+# 一樣是雙/三副本天生會漂移的案例:改一份的 scrollIntoView 選項、忘了同步另外
+# 兩份,靜默發生,先前完全沒有任何檢查會紅。
+#
+# 用該段 JS 前面的 HTML 註解(三份逐字相同的說明文字)當錨點定位,錨點唯一性斷言
+# 同①②的紀律(count 必須恰為 1,不唯一就 fail-closed)。抽出來的是錨點之後緊接的
+# 第一個 <script>…</script> 整塊——這段 JS 三份之間沒有預期差異(不像①的 svg id
+# 後綴、②的中文註解多寡),所以不需要正規化規則,直接逐位元組比對三份。
+GUIDE_PATHS = {
+    "guide-dev-flow": DEVFLOW_HTML,
+    "guide-quickstart": QUICKSTART_HTML,
+    "guide-dev-talk": DEVTALK_HTML,
+}
+JS_ANCHOR_MARKER = "頁內錨點捲動修正"
+
+
+def extract_anchor_scroll_js(path, marker):
+    """以 marker(HTML 註解裡的說明文字)定位,抽出其後第一個 <script>…</script>
+    整塊(inclusive)。回傳 (block, reason):失敗一律 block=None,reason 說明原因。
+    """
+    text = open(path, encoding="utf-8").read()
+
+    marker_count = text.count(marker)
+    if marker_count != 1:
+        return None, (f'錨點「{marker}」在整檔出現 {marker_count} 次'
+                       '(需恰為 1)——擷取窗口不可信')
+
+    i = text.find(marker)
+    script_start = text.find("<script>", i)
+    if script_start == -1:
+        return None, f'錨點「{marker}」之後找不到 <script>'
+    script_end = text.find("</script>", script_start)
+    if script_end == -1:
+        return None, '找不到對應的 </script>(標籤不平衡)'
+    script_end += len("</script>")
+    return text[script_start:script_end], None
+
+
+js_blocks = {}
+for name, path in GUIDE_PATHS.items():
+    block, err = extract_anchor_scroll_js(path, JS_ANCHOR_MARKER)
+    if block is None:
+        print(f"FATAL: {path} 抽不到頁內錨點捲動 JS:{err}(NOT-PARSED)", file=sys.stderr)
+        sys.exit(2)
+    if not block.strip():
+        print(f"FATAL: {path} 抽到的頁內錨點捲動 JS 區塊為空字串(NOT-PARSED)", file=sys.stderr)
+        sys.exit(2)
+    js_blocks[name] = block
+
+for name, block in js_blocks.items():
+    print(f"[js]   {name:<16} 頁內錨點捲動 JS bytes={len(block.encode('utf-8'))}")
+
+js_names = list(js_blocks.keys())
+reference_name = js_names[0]
+reference_block = js_blocks[reference_name]
+js_mismatches = [name for name in js_names[1:] if js_blocks[name] != reference_block]
+
+if not js_mismatches:
+    print(f"[js]   ✅ 三份 guides 的頁內錨點捲動 JS 逐位元組一致(以 {reference_name} 為參照)。")
+else:
+    msg = ["[js]   ❌ 三份 guides 的頁內錨點捲動 JS 不一致——真實漂移。"]
+    for name in js_mismatches:
+        sm = difflib.SequenceMatcher(a=reference_block, b=js_blocks[name])
+        ctx = None
+        for tag, i1, i2, j1, j2 in sm.get_opcodes():
+            if tag != "equal":
+                ctx = (reference_block[max(0, i1 - 30):i2 + 30],
+                       js_blocks[name][max(0, j1 - 30):j2 + 30])
+                break
+        msg.append(f"       {reference_name} 與 {name} 不同")
+        if ctx:
+            ctx_a, ctx_b = ctx
+            msg.append(f"       {reference_name} 側上下文: ...{ctx_a}...")
+            msg.append(f"       {name} 側上下文: ...{ctx_b}...")
+    msg.append("       修法:三份 guides 的頁內錨點捲動 JS 是逐字複製的同一段,"
+               "以其中一份為正本同步其餘兩份(只動這段 <script>,其餘內容不動)。")
+    FAILURES.append("\n".join(msg))
+
+
 # ─────────────────────────────────── 結論 ───────────────────────────────────
 if FAILURES:
     print(file=sys.stderr)
@@ -270,6 +430,7 @@ if FAILURES:
         print(f, file=sys.stderr)
     sys.exit(1)
 
-print(f"✅ PASS:svg 標記與 CSS 規則兩層皆同步(白名單套用 {len(SVG_NORMALIZE_RULES)} 條)。")
+print(f"✅ PASS:svg 標記、CSS 規則、頁內錨點捲動 JS 三層皆同步"
+      f"(svg 正規化白名單套用 {len(SVG_NORMALIZE_RULES)} 條)。")
 sys.exit(0)
 PY

@@ -64,6 +64,28 @@ extra_roots = sys.argv[3:]
 TIER_HAIKU, TIER_SONNET, TIER_TOP = 0, 1, 2
 TIER_NAMES = {TIER_HAIKU: "haiku", TIER_SONNET: "sonnet", TIER_TOP: "opus/fable"}
 
+# X-5a MED:先前 agent_role != "worker" 一律靜默跳過稽核——reviewer/adviser 首次
+# 用高階模型是制度內合法的起手式,跳過是對的;但這個判斷式分不出「合法的
+# reviewer/adviser」跟「role 字串打錯字(如 worker 誤植成 wroker)」,兩者都會被
+# 同一行 `if event.get("agent_role") != "worker": continue` 靜默吃掉,錯字角色的
+# 違規因此永遠不會被稽核到,而且沒有任何輸出讓人發現。已知集合外的 role 現在改成
+# 計數 + 顯性列出(不稽核,只是讓「有沒有東西被吃掉」對人可見)。
+KNOWN_ROLES = {"worker", "reviewer", "adviser"}
+
+
+def unknown_role_notes(all_started_events):
+    """回傳 (count, 逐筆說明字串 list) —— agent_role 不在 KNOWN_ROLES 集合的
+    attempt_started 事件。這些事件本來就不參與稽核(只有 worker 才稽核),但打錯字的
+    role 跟合法的 reviewer/adviser 對現行程式碼而言完全無法區分,因此顯性列出來,
+    避免「role 拼錯 → 靜默逃逸稽核」(假綠型⑤:斷言/檢查被繞過卻沒人知道)。"""
+    unknown = [e for e in all_started_events if e.get("agent_role") not in KNOWN_ROLES]
+    lines = [
+        f"role={e.get('agent_role')!r} run={e.get('run_id')} task={e.get('task_id')} "
+        f"attempt={e.get('attempt_id')}"
+        for e in unknown
+    ]
+    return len(unknown), lines
+
 
 def tier_of(model):
     if not model:
@@ -200,6 +222,19 @@ def report_counts(label, worker_started, all_runs, all_attempt_ids, worker_task_
           f"worker-tasks={len(worker_task_keys)}")
 
 
+def report_unknown_roles(runs_root):
+    """印出 unknown_role_notes() 的結果(若有);回傳 True 表示這次掃描確實
+    看到至少一筆未知 role(供自測模式驗證這個機制自己有沒有被觸發過)。"""
+    count, lines = unknown_role_notes(load_all_started(runs_root))
+    if count == 0:
+        return False
+    print(f"  NOTE 未知 agent_role 共 {count} 筆(不稽核,顯性化避免打錯字的 role 靜默"
+          f"逃逸稽核):")
+    for line in lines:
+        print(f"    - {line}")
+    return True
+
+
 exit_code = 0
 
 if extra_roots:
@@ -224,6 +259,7 @@ if extra_roots:
                   f"(掃描沒咬到東西,不是沒有違規)")
             exit_code = max(exit_code, 2)
             continue
+        report_unknown_roles(abs_root)
         for note in notes:
             print(f"  {note}")
         if violations:
@@ -265,6 +301,10 @@ not_parsed_failed = False  # 掃描沒咬到東西 → exit 2,跟上面兩種是
 non_worker_top_pin_seen = False  # X-5a 邊界樁:fixture corpus 裡至少一筆非 worker
                                   # 的最高層級 attempt_started,證明「worker-only」
                                   # 過濾器真的在過濾東西,不是巧合沒撞到
+unknown_role_seen = False        # X-5a MED 邊界樁:fixture corpus 裡至少一筆
+                                  # agent_role 不在 KNOWN_ROLES 的 attempt_started,
+                                  # 證明 unknown-role NOTE 機制真的被觸發過,不是
+                                  # 死碼(見假綠型⑤)
 
 for case in good_cases:
     case_root = os.path.join(fixture_dir, case)
@@ -282,9 +322,12 @@ for case in good_cases:
         for v in violations:
             print(f"    - {v}")
         self_test_failed = True
+    all_started = load_all_started(case_root)
     if any(tier_of(e.get("model")) == TIER_TOP and e.get("agent_role") != "worker"
-           for e in load_all_started(case_root)):
+           for e in all_started):
         non_worker_top_pin_seen = True
+    if report_unknown_roles(case_root):
+        unknown_role_seen = True
 
 for case in bad_cases:
     case_root = os.path.join(fixture_dir, case)
@@ -301,10 +344,17 @@ for case in bad_cases:
     else:
         for v in violations:
             print(f"  (預期紅字,已抓到) {v}")
+    if report_unknown_roles(case_root):
+        unknown_role_seen = True
 
 if not non_worker_top_pin_seen:
     print("  ❌ 自測失敗:fixture corpus 內找不到「非 worker、最高層級」的 attempt_started"
           "(邊界樁不見了 —— worker-only 過濾器可能被人拿掉卻沒人發現,見假綠型⑤)")
+    self_test_failed = True
+
+if not unknown_role_seen:
+    print("  ❌ 自測失敗:fixture corpus 內找不到 agent_role 不在 KNOWN_ROLES 的"
+          "attempt_started(未知 role 的 NOTE 機制沒被觸發過,可能是死碼,見假綠型⑤)")
     self_test_failed = True
 
 devflow_runs = os.path.join(root, ".devflow", "runs")

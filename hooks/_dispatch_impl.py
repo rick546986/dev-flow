@@ -10,6 +10,12 @@ fail-OPEN,不是 fail-closed:未武裝、schema 讀不到/對不上、或 model 
 字串,一律放行。這與 devflow-guard.sh(fail-closed)刻意不同 —— 本守衛只在
 「exec-v2/exec-v3 武裝中且顯式指名最高階模型」這一窄口徑內下判斷,窄口徑外的
 一切派工(含非 dev-flow 用途的一般 Task/Agent 呼叫)必須不受影響。
+
+信任模型(2026-08-17 fresh 審查 X-5b,裁決=記錄邊界不修):本守衛防手滑與紀律
+漂移,不防蓄意偽造 —— agent 可用不含 shell 重導向字面的直譯器寫檔繞過
+_prebash_impl 的 .devflow/ 圍欄,偽造豁免卡或假 attempt_started 事件;這與
+_prebash_impl.py 既有的字面圍欄同一個信任邊界(見該檔對應段落的互相引用),
+接受並明文化,不做黑名單擴充的防禦劇場。
 """
 import datetime
 import glob
