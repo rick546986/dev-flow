@@ -31,6 +31,9 @@
 #   DSD(2026-08-16 補,B-2) DSD-0 對照組 / DSD-1 過渡態處置句被刪 / DSD-2 三方比對
 #                    判別法字面被改寫(check-dev-setup-discipline.sh,dev-setup
 #                    upgrade 三方比對紀律)
+#   FM(2026-08-16 補,檔案地圖守衛) FM-0 對照組(表與現實同步)/ FM-1 guide 刪一列
+#                    (hooks/selftest.sh 那列被拿掉,檔案仍在 → forward 缺列)/ FM-2
+#                    guide 加一列指向不存在的檔(reverse 不存在)(check-file-map.sh)
 #   靜態互釘(2026-08-16 補,獨立審查 finding 4) 四支散落地板的字面值互釘 ——
 #                    hooks/selftest.sh MIN_CASES / tests/parallel-stage6/run_tests.py
 #                    EXPECTED_CHECKS / check-dev-setup-discipline.sh 與
@@ -65,8 +68,9 @@ fingerprint() {
        "$ROOT/example" "$ROOT/notes/design" "$ROOT/scripts" \
        "$ROOT/docs/dev/tools/devflow-evidence-gauntlet.sh" \
        "$ROOT/docs/dev/STATUS.md" "$ROOT/docs/dev/devflow-contract.json" \
-       "$ROOT/docs/adr" "$ROOT/observability/devflow-obs.py" \
+       "$ROOT/docs/adr" "$ROOT/observability" \
        "$ROOT/skills/dev-setup/SKILL.md" \
+       "$ROOT/guides/guide-dev-flow.html" "$ROOT/hooks" "$ROOT/tests/parallel-stage6" \
        -type f -exec shasum {} + 2>/dev/null | shasum | awk '{print $1}'
 }
 FP_BEFORE=$(fingerprint)
@@ -99,9 +103,9 @@ RESULTS=()
 # 改法:由 expect()/expect_local() 依 want 實際累計 control 與 negative,尾聲與釘死值比對。
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
-EXPECTED_CONTROLS=10
-EXPECTED_NEGATIVES=55
-EXPECTED_TOTAL=65
+EXPECTED_CONTROLS=11
+EXPECTED_NEGATIVES=57
+EXPECTED_TOTAL=68
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -187,6 +191,30 @@ seed_guard() {
     cp "$ROOT/scripts/$guard" "$dst/scripts/$guard"
     chmod +x "$dst/scripts/$guard"
   done
+  echo "$dst"
+}
+
+# seed_fm <name> → 同 seed(),另外把 hooks/scripts/observability/tests/parallel-stage6/
+# 整包 + guides/guide-dev-flow.html 複製進去,並初始化成一個真 git repo。
+# 起因:check-file-map.sh 用 `git ls-files --cached --others --exclude-standard` 當
+# 掃描來源(同 check-no-stale-paths.sh 的 seed_sp 模式),單純的檔案樹跑不了
+# git ls-files。額外複製根目錄 .gitignore 到複本內,確保 --exclude-standard 在複本
+# 與正式 repo 兩邊排除同一組 pattern(否則複本裡若混進 __pycache__ 之類雜物,
+# 兩邊 scanned 數會對不上)。
+seed_fm() {
+  local name="${1:?seed_fm: name is empty}"
+  local dst; dst=$(seed "$name")
+  rm -rf "$dst/scripts"
+  cp -r "$ROOT/hooks" "$dst/hooks"
+  cp -r "$ROOT/scripts" "$dst/scripts"
+  cp -r "$ROOT/observability" "$dst/observability"
+  mkdir -p "$dst/tests" "$dst/guides"
+  cp -r "$ROOT/tests/parallel-stage6" "$dst/tests/parallel-stage6"
+  cp "$ROOT/guides/guide-dev-flow.html" "$dst/guides/guide-dev-flow.html"
+  [ -f "$ROOT/.gitignore" ] && cp "$ROOT/.gitignore" "$dst/.gitignore"
+  git -C "$dst" init -q
+  git -C "$dst" -c user.email=test@dev-flow.local -c user.name=test add -A
+  git -C "$dst" -c user.email=test@dev-flow.local -c user.name=test commit -q -m seed
   echo "$dst"
 }
 
@@ -950,6 +978,38 @@ assert n != t, "SP-5 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
 expect fail check-no-stale-paths.sh "$D" "SP-5 observability/ 混入過期 dev-flow local marketplace 路徑(fail-closed:新目錄不必列清單就會被掃到)"
+
+# ── FM 群組:檔案地圖雙向盤點守衛(check-file-map.sh)────────────────────────
+#
+# guides/guide-dev-flow.html「附錄:檔案地圖」節是手寫表,手寫表必腐化。這一組證明
+# 守衛真的會抓到兩個方向的漂移:①表少列一支真實存在的檔(forward)②表多寫一個不存在
+# 的檔名(reverse)——而不是只在對照組上空轉。
+D=$(seed_fm fm0)
+expect pass check-file-map.sh "$D" "FM-0 對照組(檔案地圖與現實同步)"
+
+D=$(seed_fm fm1); mutate "$D" <<'PY'
+import re, sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "guides/guide-dev-flow.html"
+t = p.read_text(encoding="utf-8")
+n = re.sub(r'<tr><td><code>selftest\.sh</code></td>.*?</tr>\n', '', t, count=1, flags=re.S)
+assert n != t, "FM-1 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-file-map.sh "$D" "FM-1 檔案地圖刪一列(hooks/selftest.sh 那列被拿掉,檔案仍在 → forward 缺列)"
+
+D=$(seed_fm fm2); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "guides/guide-dev-flow.html"
+t = p.read_text(encoding="utf-8")
+marker = '<tr><td><code>check-file-map.sh</code></td>'
+assert marker in t, "FM-2 anchor 不見:check-file-map.sh 那列找不到"
+fake = ('<tr><td><code>scripts/does-not-exist-guard.sh</code></td>'
+        '<td>假造的檔名,測試反向盤點。</td><td>無</td></tr>\n    ')
+n = t.replace(marker, fake + marker, 1)
+assert n != t, "FM-2 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-file-map.sh "$D" "FM-2 檔案地圖加一列指向不存在的檔(reverse 找不到對應檔案)"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"

@@ -102,6 +102,10 @@ group_architecture() {
   # 負向回歸:守衛「跑得過」≠「擋得住」。這支把關鍵 mutation 釘成常設測試,
   # 每次 PR 由 CI 重跑;不靠「某次 mutation 結果寫在 PR 說明裡」。
   run "architecture/test-architecture-guards (負向)" scripts/test-architecture-guards.sh || return 1
+  # 檔案地圖雙向盤點:guides/guide-dev-flow.html「附錄:檔案地圖」是手寫表,手寫表必腐化——
+  # 新增/改名/刪除 hooks|scripts|observability|tests/parallel-stage6 底下的 *.sh/*.py 沒同步
+  # 更新那張表就紅;表裡寫了不存在的檔名也紅。
+  run "architecture/check-file-map" scripts/check-file-map.sh || return 1
 }
 
 group_render() {
