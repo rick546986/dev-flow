@@ -1317,7 +1317,8 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   藍色虛線框「EACH TURN」是使用者一次輸入到 Stop 的一整輪,內含橘色虛線框「AGENTIC LOOP」——每次工具呼叫都繞這一圈,
   橘色回邊繞回 <code>PreToolUse</code>;藍色回邊繞回 <code>UserPromptSubmit</code> 開下一輪。右側黑虛線長回邊
   「resumed sessions」是 <code>SessionEnd</code> 之後 <code>resume</code> 接續舊 session,回到 <code>SessionStart</code>——
-  這與前兩個迴圈不是同一件事。底部六格是不掛在任何一輪節點上的獨立系統事件。</p>
+  這與前兩個迴圈不是同一件事。底部六格是不掛在任何一輪節點上的獨立系統事件。每格掛了哪些檔的完整清單 →
+  <a href="#filemap">附錄:檔案地圖</a>。</p>
   <p class="muted">來源:<code>~/dev/dev-flow/dev-setup-record.html</code> 對應段落與
   <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/hooks/</code> 原始碼;
   生命週期骨架本身是 Claude Code harness 既有事件,dev-flow 只是掛客,不重新定義它們。</p>
@@ -1637,267 +1638,292 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   <h2 id="filemap">附錄:檔案地圖(每支腳本在做什麼)</h2>
   <p class="lead">這張表由 <code>scripts/check-file-map.sh</code> 雙向盤點守衛顧著:新增一支腳本沒登記進來、
   或表裡寫了一個不存在的檔名,守衛都會紅——手寫表必腐化,靠人記得同步不可靠。各檔實際掛在生命週期哪一格,
-  對照 <a href="#guard">⑥ 執行守衛</a>。</p>
+  對照 <a href="#guard">⑥ 執行守衛</a>。下面四張表(hooks/scripts/observability/tests)每列都補了一欄
+  「生命週期格」;以下先給一張迷你索引,反過來查「某一格上掛了哪些檔」。</p>
+
+  <div class="tablewrap"><table>
+    <tr><th>生命週期格</th><th>掛在這格的檔</th><th>對照</th></tr>
+    <tr><td>PreToolUse</td>
+        <td>3 組:<code>devflow-guard.sh</code>+<code>_guard_impl.py</code>、<code>history-guard.sh</code>、
+            <code>devflow-prebash.sh</code>+<code>_prebash_impl.py</code></td>
+        <td>在圖上看這格 → <a href="#guard">⑥ 生命週期圖</a></td></tr>
+    <tr><td>PostToolUse</td>
+        <td>2 支:<code>devtalk-guard.sh</code>、<code>devflow-postbash.sh</code>+<code>_postbash_impl.py</code></td>
+        <td>在圖上看這格 → <a href="#guard">⑥ 生命週期圖</a></td></tr>
+    <tr><td>Session Start(註冊)</td>
+        <td>hooks/hooks.json 本身——不是一支腳本,是把上面 5 支登記成對應事件 hook 的清單檔</td>
+        <td>在圖上看這格 → <a href="#guard">⑥ 生命週期圖</a></td></tr>
+    <tr><td>人工/CI(不在生命週期上)</td>
+        <td>其餘全部檔:<code>scripts/</code> 的守衛與工具、<code>observability/</code> 分析工具、
+            <code>tests/</code> 契約測試——不掛任何 hook,agent 不會自動觸發,離線手動或 CI 跑</td>
+        <td>不在圖上;見下方各表格「生命週期格」欄逐檔查</td></tr>
+  </table></div>
+  <p class="muted">下方四表「生命週期格」欄另有兩種寫法:「隨 <code>X.sh</code>(同格)」= 該
+  <code>_impl.py</code> 是被 <code>X.sh</code> 呼叫的實作本體,格與 <code>X.sh</code> 相同;
+  「人工(devflow-exec 子命令)」專指 <code>devflow-exec.sh</code> 本身、以及「誰呼叫它/掛在哪」欄裡
+  <strong>唯一</strong>呼叫者就是 <code>devflow-exec.sh &lt;子指令&gt;</code> 的檔(如
+  <code>devflow-doctor.sh</code>);若同一檔還有其他直接呼叫者(如 <code>devflow-obs.sh</code> 也被
+  人工/<code>dev-run</code> 直接呼叫),一律歸「人工/CI(不在生命週期上)」,不算 devflow-exec 家族。</p>
 
   <h3>hooks/(執行守衛與觀測面的 hook 本體)</h3>
   <div class="tablewrap"><table>
-    <tr><th>檔名</th><th>一句白話職責</th><th>誰呼叫它/掛在哪</th></tr>
+    <tr><th>檔名</th><th>一句白話職責</th><th>誰呼叫它/掛在哪</th><th>生命週期格</th></tr>
     <tr><td><code>devflow-prebash.sh</code></td>
         <td>你每跑一條 shell 指令前,它先擋掉兩種繞過:指令會不會讀到被圍欄禁讀的討論檔、或想不想動手腳破壞
             執行守衛的狀態檔(PreToolUse Bash 掛載)。</td>
-        <td><code>hooks.json</code> 自動掛(PreToolUse / Bash)</td></tr>
+        <td><code>hooks.json</code> 自動掛(PreToolUse / Bash)</td><td>PreToolUse(Bash)</td></tr>
     <tr><td><code>devflow-guard.sh</code></td>
         <td>你每次要讀寫檔案前,它先檢查契約文件有沒有被動過手腳、要寫的路徑在不在允許範圍內
             (PreToolUse Edit/Write/Read 掛載,執行期契約防篡改 + scope 硬擋)。</td>
-        <td><code>hooks.json</code> 自動掛(PreToolUse / Edit,Write,Read)</td></tr>
+        <td><code>hooks.json</code> 自動掛(PreToolUse / Edit,Write,Read)</td><td>PreToolUse(Edit/Write/Read)</td></tr>
     <tr><td><code>devflow-postbash.sh</code></td>
         <td>你每跑完一條 shell 指令後,它事後掃一遍整棵工作樹,看有沒有東西被偷改——就算指令本身沒被前面擋下,
             這裡仍抓得到(PostToolUse Bash 掛載,偵測網)。</td>
-        <td><code>hooks.json</code> 自動掛(PostToolUse / Bash)</td></tr>
+        <td><code>hooks.json</code> 自動掛(PostToolUse / Bash)</td><td>PostToolUse(Bash)</td></tr>
     <tr><td><code>devflow-exec.sh</code></td>
         <td>你在 Stage 6/7 打的 <code>devflow-exec.sh</code>(start/stop/status/allow/event/doctor/review…)
             全部先到這裡,它只做子指令分派,不是唯一入口以外自己藏邏輯——是整套執行守衛的總機。</td>
-        <td>人工在終端機直接打;<code>dev-run</code>/<code>dev-flow</code> skill 內部也呼叫</td></tr>
+        <td>人工在終端機直接打;<code>dev-run</code>/<code>dev-flow</code> skill 內部也呼叫</td><td>人工(devflow-exec 子命令)</td></tr>
     <tr><td><code>devflow-obs.sh</code></td>
         <td>想把一筆事件記進 Attempt Ledger、或查/清歷史紀錄時一定要走這裡——直接手改事件檔會被守衛擋下,
             這是唯一合法落盤通道的總機。</td>
-        <td><code>devflow-exec.sh event</code> 轉呼叫;人工/<code>dev-run</code> 也直接呼叫做 validate/stats 等</td></tr>
+        <td><code>devflow-exec.sh event</code> 轉呼叫;人工/<code>dev-run</code> 也直接呼叫做 validate/stats 等</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>devflow-doctor.sh</code></td>
         <td>檢查這個專案裝的 dev-flow 版本跟現在的方法論規格合不合——版本對不上就直接擋下,不會悄悄用舊
             行為將就。</td>
-        <td><code>devflow-exec.sh doctor</code> 轉呼叫</td></tr>
+        <td><code>devflow-exec.sh doctor</code> 轉呼叫</td><td>人工(devflow-exec 子命令)</td></tr>
     <tr><td><code>gate-consistency.sh</code></td>
         <td>手動跑一次,檢查 G1/G2/G3 的通關條件在三個不同地方(plugin 說明檔/README/模板)寫的是不是同一件事,
             三處對不起來就報漂移。</td>
-        <td>人工手動執行,不掛 hook</td></tr>
+        <td>人工手動執行,不掛 hook</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>history-guard.sh</code></td>
         <td>有人想直接用編輯器整檔改寫改版歷史索引時擋下來——那份檔可能同時有多個 session 在寫,整檔覆蓋會
             悄悄蓋掉別人剛寫的那筆;只認安全寫入口這一種合法寫法。</td>
-        <td><code>hooks.json</code> 自動掛(PreToolUse / Edit,Write)</td></tr>
+        <td><code>hooks.json</code> 自動掛(PreToolUse / Edit,Write)</td><td>PreToolUse(Edit/Write)</td></tr>
     <tr><td><code>selftest.sh</code></td>
         <td>自己搭一個假 repo,把所有已知的守衛情境都跑一遍再自己清乾淨,用來證明「守衛真的擋得住」而不只是
             「看起來裝了」。</td>
-        <td>人工手動執行(可重跑,不動真實專案)</td></tr>
+        <td>人工手動執行(可重跑,不動真實專案)</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>devtalk-guard.sh</code></td>
         <td>討論階段的檔案寫完之後,它掃一遍剛寫的內容有沒有偷偷提到後面幾站才該出現的字眼(像規格、gate),
             抓到就要求立刻修正,並留一筆紀錄。</td>
-        <td><code>hooks.json</code> 自動掛(PostToolUse / Edit,Write;只認討論 skill 路徑)</td></tr>
+        <td><code>hooks.json</code> 自動掛(PostToolUse / Edit,Write;只認討論 skill 路徑)</td><td>PostToolUse(Edit/Write)</td></tr>
     <tr><td><code>devflow-lib.py</code></td>
         <td>guard/postbash/prebash/exec/gate 這幾支背後真正判斷「武裝了沒、契約有沒有被動過」的規則都寫在這裡,
             其他檔案只是各自的殼,共用同一套邏輯避免各判各的。</td>
-        <td>被下列 <code>_impl.py</code> 動態載入,不單獨執行</td></tr>
+        <td>被下列 <code>_impl.py</code> 動態載入,不單獨執行</td><td>隨呼叫者同格(橫跨 Pre/Post/人工,不專屬單一格)</td></tr>
     <tr><td><code>_prebash_impl.py</code></td><td><code>devflow-prebash.sh</code> 的實作本體。</td>
-        <td><code>devflow-prebash.sh</code> 呼叫</td></tr>
+        <td><code>devflow-prebash.sh</code> 呼叫</td><td>隨 <code>devflow-prebash.sh</code>(同格)</td></tr>
     <tr><td><code>_guard_impl.py</code></td><td><code>devflow-guard.sh</code> 的實作本體。</td>
-        <td><code>devflow-guard.sh</code> 呼叫</td></tr>
+        <td><code>devflow-guard.sh</code> 呼叫</td><td>隨 <code>devflow-guard.sh</code>(同格)</td></tr>
     <tr><td><code>_postbash_impl.py</code></td><td><code>devflow-postbash.sh</code> 的實作本體。</td>
-        <td><code>devflow-postbash.sh</code> 呼叫</td></tr>
+        <td><code>devflow-postbash.sh</code> 呼叫</td><td>隨 <code>devflow-postbash.sh</code>(同格)</td></tr>
     <tr><td><code>_exec_impl.py</code></td>
         <td><code>devflow-exec.sh</code> 大部分子指令的實作本體(真正做武裝/解除/波次狀態機的地方)。</td>
-        <td><code>devflow-exec.sh</code> 呼叫</td></tr>
+        <td><code>devflow-exec.sh</code> 呼叫</td><td>隨 <code>devflow-exec.sh</code>(同格)</td></tr>
     <tr><td><code>_gate_impl.py</code></td>
         <td><code>devflow-exec.sh gate</code> 子指令的實作本體:14 項機械檢查,判一個 candidate 過不過。</td>
-        <td><code>devflow-exec.sh gate</code> 呼叫</td></tr>
+        <td><code>devflow-exec.sh gate</code> 呼叫</td><td>隨 <code>devflow-exec.sh</code>(同格)</td></tr>
     <tr><td><code>_obs_impl.py</code></td><td><code>devflow-obs.sh</code> 的實作本體:事件驗證與落盤的真正邏輯。</td>
-        <td><code>devflow-obs.sh</code> 呼叫</td></tr>
+        <td><code>devflow-obs.sh</code> 呼叫</td><td>隨 <code>devflow-obs.sh</code>(同格)</td></tr>
     <tr><td><code>_doctor_impl.py</code></td><td><code>devflow-doctor.sh</code> 的實作本體:版本握手判定。</td>
-        <td><code>devflow-doctor.sh</code> 呼叫</td></tr>
+        <td><code>devflow-doctor.sh</code> 呼叫</td><td>隨 <code>devflow-doctor.sh</code>(同格)</td></tr>
     <tr><td><code>_gate_consistency_impl.py</code></td>
         <td><code>gate-consistency.sh</code> 的實作本體:動態從 README 抽 token 比對三處摘要。</td>
-        <td><code>gate-consistency.sh</code> 呼叫</td></tr>
+        <td><code>gate-consistency.sh</code> 呼叫</td><td>隨 <code>gate-consistency.sh</code>(同格)</td></tr>
     <tr><td><code>_stage3_impl.py</code></td>
         <td><code>devflow-exec.sh stage3</code> 子指令的實作本體:Stage 3(原型)觸發判定與 Demo verdict 的
             機械檢查。</td>
-        <td><code>devflow-exec.sh stage3</code> 呼叫</td></tr>
+        <td><code>devflow-exec.sh stage3</code> 呼叫</td><td>隨 <code>devflow-exec.sh</code>(同格)</td></tr>
     <tr><td><code>hooks/devflow_obs_vendor/</code>(整包,vendor 目錄豁免)</td>
         <td><code>observability/devflow_obs/</code> 的逐位元組複製品,讓 hook 不必外部依賴就能拿到事件驗證/
             寫入邏輯;正本仍在 <code>observability/</code>,改本目錄內容視同雙正本漂移。</td>
-        <td>被 <code>_obs_impl.py</code>/<code>_doctor_impl.py</code> import;人工重新 vendor 時才會動它</td></tr>
+        <td>被 <code>_obs_impl.py</code>/<code>_doctor_impl.py</code> import;人工重新 vendor 時才會動它</td><td>人工/CI(不在生命週期上)</td></tr>
   </table></div>
 
   <h3>scripts/(方法論一致性 / 契約 / 架構守衛與工具)</h3>
   <div class="tablewrap"><table>
-    <tr><th>檔名</th><th>一句白話職責</th><th>誰呼叫它/掛在哪</th></tr>
+    <tr><th>檔名</th><th>一句白話職責</th><th>誰呼叫它/掛在哪</th><th>生命週期格</th></tr>
     <tr><td><code>check-adr-integrity.sh</code></td>
         <td>檢查 ADR 檔名格式對不對、有沒有兩份文件共用同一個編號(編號重複等於引用會指錯文件)。</td>
-        <td><code>devflow-check.sh</code> architecture 組</td></tr>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-design-contract.sh</code></td>
         <td>檢查規格文件裡的邊界表格欄位有沒有填齊,只驗形狀在不在,不判斷寫得好不好。</td>
-        <td><code>devflow-check.sh</code> architecture 組</td></tr>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-dev-setup-discipline.sh</code></td>
         <td>檢查安裝器自己的升級說明有沒有把三方比對、備份快照、逐檔徵求同意這幾條紀律講清楚,防升級流程
             改弱到悄悄蓋掉使用者本地客製。</td>
-        <td><code>devflow-check.sh</code> architecture 組</td></tr>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-gate-tokens.sh</code></td>
         <td>把三道關卡通關條件的關鍵字詞釘成一份清單,清單本身被偷改(新增/刪除/改名)就報錯——防的是
             「正本自己少了一項條件」這種連動態比對都抓不到的漏洞。</td>
-        <td><code>devflow-check.sh</code> architecture 組</td></tr>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-gate-twin.sh</code></td>
         <td>檢查給人審查用的 HTML 介面有沒有真的照規格產出——動線頂區、待審項目可勾選、本機版跟發布版
             兩種外殼有沒有搞混。</td>
-        <td><code>devflow-check.sh</code> architecture 組</td></tr>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-history-integrity.sh</code></td>
         <td>檢查只能往後加、不能改的歷史索引格式有沒有跑掉、日期有沒有倒退、有沒有人繞過安全寫入口
             直接編輯。</td>
-        <td><code>devflow-check.sh</code> architecture 組</td></tr>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-methodology-corrections.sh</code></td>
         <td>針對某一批方法論修正產出的導覽頁衍生檔,逐項驗證修正內容真的落地到渲染出來的 HTML 裡,
             不是改了正本卻沒重新渲染。</td>
-        <td><code>devflow-check.sh</code> methodology 組</td></tr>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-no-stale-paths.sh</code></td>
         <td>掃過全部有追蹤的檔案,抓裡面殘留舊版外掛安裝路徑或開發者個人電腦絕對路徑的地方——留在活文件裡,
             換一台機器或換人看就直接失效或洩漏隱私。</td>
-        <td><code>devflow-check.sh</code> architecture 組</td></tr>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-parallel-stage6.sh</code></td>
         <td>驗證 Stage 6 平行模式(一次開多個任務同時做)的模板欄位、設計文件、可執行契約有沒有兜得起來。</td>
-        <td><code>devflow-check.sh</code> contracts 組(薄殼,實際呼叫 <code>tests/parallel-stage6/run_tests.py</code>)</td></tr>
+        <td><code>devflow-check.sh</code> contracts 組(薄殼,實際呼叫 <code>tests/parallel-stage6/run_tests.py</code>)</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-readme-markers.sh</code></td>
         <td>檢查「這段只給母版看,採用專案不要」的起訖標記數量對不對、有沒有配對好——標記錯位會讓自動
             抽取腳本悄悄抽出錯誤範圍。</td>
-        <td><code>devflow-check.sh</code> methodology 組</td></tr>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-realworld.sh</code></td>
         <td>檢查範例文件有沒有把使用者實際會遇到的情境寫進去、Demo 判定和人類裁決有沒有照規則跑完,
             不是隨便勾一勾就當作驗證過。</td>
-        <td><code>devflow-check.sh</code> methodology 組</td></tr>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-spec-gate.sh</code></td>
         <td>檢查一份規格文件該有的欄位是不是真的都在——每條需求有沒有觀測欄、驗證規劃有沒有填好——這是
             契約關卡能不能過的機械檢查,不判斷內容寫得對不對。</td>
-        <td><code>devflow-check.sh</code> methodology 組(對母版自帶範例實跑)</td></tr>
+        <td><code>devflow-check.sh</code> methodology 組(對母版自帶範例實跑)</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-stage67-enforcement.sh</code></td>
         <td>檢查實作與驗證階段那些「只寫在說明文字裡、沒有機械檢查」的強制條款有沒有退化——像執行守衛
             真的有沒有武裝、驗證有沒有真的跑到測試、觀測欄寫的東西實際做不做得到。</td>
-        <td><code>devflow-check.sh</code> architecture 組</td></tr>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-task-slicing.sh</code></td>
         <td>用啟發式掃一遍任務清單,看是不是整批都按技術分層切、而不是按可觀察的使用者行為切——只印警告,
             不會擋流程。</td>
-        <td><code>devflow-check.sh</code> architecture 組(warning-only)</td></tr>
+        <td><code>devflow-check.sh</code> architecture 組(warning-only)</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-version-sync.sh</code></td>
         <td>檢查 Gauntlet 版本號在五個不同檔案裡是不是同一個數字,有一處漏改就報錯。</td>
-        <td><code>devflow-check.sh</code> architecture 組</td></tr>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-vnext-integration.sh</code></td>
         <td>拿一個最小的假 feature,走一遍平行執行、觀測事件、驗證證據三條軌是不是真的串得起來,證明
             「規格說得通」跟「機制真的兜得起來」是兩回事、而且都驗過。</td>
-        <td><code>devflow-check.sh</code> contracts 組</td></tr>
+        <td><code>devflow-check.sh</code> contracts 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>devflow-check.sh</code></td>
         <td>本 repo 所有機械檢查的總開關,依固定順序把各組守衛跑一遍,任何一組失敗就立刻停下並印出是哪一組;
             自己不重複寫任何檢查邏輯。</td>
-        <td>人工手動執行;CI 也跑同一支</td></tr>
+        <td>人工手動執行;CI 也跑同一支</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>devflow-evidence-gauntlet.sh</code></td>
         <td>檢查一份驗證證據有沒有造假空間——每個宣稱通過的項目要有真的指令與帶數字的結果,不能只寫
             「測過了」。</td>
-        <td><code>devflow-check.sh</code> contracts 組;人工驗證階段產出時也直接呼叫</td></tr>
+        <td><code>devflow-check.sh</code> contracts 組;人工驗證階段產出時也直接呼叫</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>history-append.sh</code></td>
         <td>要往歷史索引加一筆紀錄時走這裡——用目錄鎖排隊 + 只在檔尾追加,避免兩個同時在跑的 session
             互相蓋掉對方剛寫的東西。</td>
-        <td>人工/agent 在階段完成時呼叫;<code>history-guard.sh</code> 擋下直接編輯後導向這裡</td></tr>
+        <td>人工/agent 在階段完成時呼叫;<code>history-guard.sh</code> 擋下直接編輯後導向這裡</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>render-methodology-corrections.sh</code></td>
         <td>把 markdown 正本重新渲染成對外看的 HTML 導覽頁與範例雙生版,<code>--check</code> 模式只驗證
             渲染結果跟現有檔案一致、不會真的覆寫。</td>
-        <td><code>devflow-check.sh</code> render 組;人工要更新導覽頁時手動跑 <code>--write</code></td></tr>
+        <td><code>devflow-check.sh</code> render 組;人工要更新導覽頁時手動跑 <code>--write</code></td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-architecture-guards.sh</code></td>
         <td>專門測試「上面這些守衛真的擋得住壞例子」——每一條規則都故意改壞一次資料再確認守衛會報錯,
             連沒改壞的對照組也要確認會通過。</td>
-        <td><code>devflow-check.sh</code> architecture 組</td></tr>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-evidence-gauntlet.sh</code></td>
         <td>對驗證證據守衛做同樣的「故意寫壞的證據必須被抓到」測試。</td>
-        <td>人工手動執行(獨立於 <code>devflow-check.sh</code> 既有基線)</td></tr>
+        <td>人工手動執行(獨立於 <code>devflow-check.sh</code> 既有基線)</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>build-gate-twin.py</code></td>
         <td>把各站的 markdown 正本轉成人真的會拿來審查、動工的介面(本機看的完整版與發布用的片段兩種外殼)。</td>
-        <td>dev-flow 各站產生審查介面時呼叫;<code>check-gate-twin.sh</code> 對範例實跑驗證</td></tr>
+        <td>dev-flow 各站產生審查介面時呼叫;<code>check-gate-twin.sh</code> 對範例實跑驗證</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>devflow_twin_ui.py</code></td>
         <td><code>build-gate-twin.py</code> 產生介面時共用的版面樣式與外殼模板,不能單獨執行。</td>
-        <td>被 <code>build-gate-twin.py</code> import</td></tr>
+        <td>被 <code>build-gate-twin.py</code> import</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>
         <td>本節新增的守衛本身——盤點 <code>hooks/</code>/<code>scripts/</code>/<code>observability/</code>/
             <code>tests/parallel-stage6/</code> 底下每支腳本有沒有被這張表點名到,也反查表裡寫的檔名是不是
             真的存在,雙向防這張表腐化。</td>
-        <td><code>devflow-check.sh</code> architecture 組</td></tr>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>scripts/fixtures/</code>(整包,fixtures 目錄豁免)</td>
         <td>各支守衛自己的測試材料(合格/不合格範例檔)。</td>
-        <td>被同名 <code>check-*.sh</code>/<code>test-*.sh</code> 讀取當測試輸入,不單獨執行</td></tr>
+        <td>被同名 <code>check-*.sh</code>/<code>test-*.sh</code> 讀取當測試輸入,不單獨執行</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>scripts/requirements-methodology-render.txt</code></td>
         <td>釘死 <code>render-methodology-corrections.sh</code> 依賴的 markdown 轉換套件版本號,版本飄移
             會讓渲染結果不可重現。</td>
-        <td>建置渲染環境時 <code>pip install -r</code> 讀取</td></tr>
+        <td>建置渲染環境時 <code>pip install -r</code> 讀取</td><td>人工/CI(不在生命週期上)</td></tr>
   </table></div>
 
   <h3>observability/(執行紀錄的讀取/驗證/統計工具)</h3>
   <div class="tablewrap"><table>
-    <tr><th>檔名</th><th>一句白話職責</th><th>誰呼叫它/掛在哪</th></tr>
+    <tr><th>檔名</th><th>一句白話職責</th><th>誰呼叫它/掛在哪</th><th>生命週期格</th></tr>
     <tr><td><code>devflow-obs.py</code></td>
         <td>獨立一支 CLI(跟 <code>hooks/</code> 目錄那支同名 <code>.sh</code> 不是同一支):讀取/驗證/統計
             某次執行留下的事件紀錄,自己不負責寫入。</td>
-        <td>人工要驗某個 run 目錄或算統計時手動呼叫</td></tr>
+        <td>人工要驗某個 run 目錄或算統計時手動呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>__init__.py</code></td>
         <td>這個事件工具包的模組總覽說明,只列出底下幾支檔案各自負責什麼,沒有可執行邏輯。</td>
-        <td>被同目錄與 hooks vendor 副本的其他模組 import</td></tr>
+        <td>被同目錄與 hooks vendor 副本的其他模組 import</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>event_validate.py</code></td>
         <td>檢查一筆事件/一份 context manifest 的欄位對不對、有沒有漏欄或型別錯,規則抄自 schema 檔,
             自己不重新定義規則。</td>
-        <td>被 <code>devflow-obs.py</code> 與 hooks 側(經 vendor 副本)呼叫做驗證</td></tr>
+        <td>被 <code>devflow-obs.py</code> 與 hooks 側(經 vendor 副本)呼叫做驗證</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>ids.py</code></td>
         <td>產生執行追蹤用的唯一 ID,保證同一毫秒內生成也不會重複、且排序等於生成順序。</td>
-        <td>被 coordinator/runtime 呼叫產 ID,LLM 本身只負責照抄不負責生成</td></tr>
+        <td>被 coordinator/runtime 呼叫產 ID,LLM 本身只負責照抄不負責生成</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>ledger.py</code></td>
         <td>讀一個執行留下的整包紀錄目錄,判斷有沒有中途中斷、重啟後該從哪接著做。</td>
-        <td>被 <code>devflow-obs.py</code> 的 validate/derive/resume 子指令呼叫</td></tr>
+        <td>被 <code>devflow-obs.py</code> 的 validate/derive/resume 子指令呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>legacy_md.py</code></td>
         <td>讀舊格式(沒有 Run ID 那個年代)的實作筆記執行軌跡表格,讓舊專案的紀錄也能被統計工具讀懂。</td>
-        <td>被 <code>stats.py</code> 在合併新舊資料時呼叫</td></tr>
+        <td>被 <code>stats.py</code> 在合併新舊資料時呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>stats.py</code></td>
         <td>把多個 Feature 的執行紀錄彙整成統計數字(成功率、升階次數…),樣本太少會自己標注不足,
             並且只提出建議不會自動去改 Prompt。</td>
-        <td>被 <code>devflow-obs.py</code> 的 stats/recommend 子指令呼叫</td></tr>
+        <td>被 <code>devflow-obs.py</code> 的 stats/recommend 子指令呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>writer.py</code></td>
         <td>真正把事件寫進檔案的那一層——保證同時間只有一個人在寫同一個檔,寫一半當機也不會讓檔案損毀到
             讀不了。</td>
-        <td>被 hooks 側(經 vendor 副本)實際落盤時呼叫</td></tr>
+        <td>被 hooks 側(經 vendor 副本)實際落盤時呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>run-tests.sh</code></td>
         <td>一鍵跑完本目錄底下全部測試,並確保不會留下編譯產物弄髒工作樹。</td>
-        <td><code>devflow-check.sh</code> contracts 組</td></tr>
+        <td><code>devflow-check.sh</code> contracts 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>evtools.py</code></td>
         <td>給其他測試共用的假事件產生器,本身不是一份測試。</td>
-        <td>被 <code>test_stats.py</code> 等測試檔 import</td></tr>
+        <td>被 <code>test_stats.py</code> 等測試檔 import</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test_cli.py</code></td>
         <td>對 <code>devflow-obs.py</code> 這支 CLI 做煙霧測試,順便驗證測試用的假資料本身格式正確。</td>
-        <td><code>run-tests.sh</code> 執行時自動收集</td></tr>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test_event_validate.py</code></td>
         <td>驗證事件驗證器抓不抓得到壞事件(缺欄、隱私欄位、hook 不該填的欄位…)。</td>
-        <td><code>run-tests.sh</code> 執行時自動收集</td></tr>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test_ids.py</code></td>
         <td>驗證 ID 產生器排序正確、可以跨重啟延續、格式帶對前綴。</td>
-        <td><code>run-tests.sh</code> 執行時自動收集</td></tr>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test_ledger.py</code></td>
         <td>驗證 ledger 讀取在多個 worktree 同時執行、crash 中斷等情境下還能正確判斷進度。</td>
-        <td><code>run-tests.sh</code> 執行時自動收集</td></tr>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test_legacy_md.py</code></td>
         <td>驗證舊格式(沒有 Run ID)的執行軌跡表格還能被正確讀出來。</td>
-        <td><code>run-tests.sh</code> 執行時自動收集</td></tr>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test_stats.py</code></td>
         <td>驗證統計彙整、小樣本標示、以及「只建議不改 Prompt」這條原則有沒有被遵守。</td>
-        <td><code>run-tests.sh</code> 執行時自動收集</td></tr>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test_writer.py</code></td>
         <td>驗證併發安全寫入——原子寫入、單一寫入者鎖、事件序號連續不斷。</td>
-        <td><code>run-tests.sh</code> 執行時自動收集</td></tr>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>observability/fixtures/</code>(整包,fixtures 目錄豁免)</td>
         <td><code>run-tests.sh</code> 與 <code>test_cli.py</code> 用的假執行紀錄範例。</td>
-        <td>被 <code>tests/test_cli.py</code> 讀取當測試輸入</td></tr>
+        <td>被 <code>tests/test_cli.py</code> 讀取當測試輸入</td><td>人工/CI(不在生命週期上)</td></tr>
   </table></div>
 
   <h3>tests/parallel-stage6/(平行 Stage 6 可執行契約測試)</h3>
   <div class="tablewrap"><table>
-    <tr><th>檔名</th><th>一句白話職責</th><th>誰呼叫它/掛在哪</th></tr>
+    <tr><th>檔名</th><th>一句白話職責</th><th>誰呼叫它/掛在哪</th><th>生命週期格</th></tr>
     <tr><td><code>contract_ref.py</code></td>
         <td>平行 Stage 6 的機械版規則本體——判斷任務怎麼分波次、什麼時候能開始做、Gate 檢查怎麼判;
             外部 plugin 真正跑的邏輯必須跟這裡一致。</td>
-        <td>被 <code>run_tests.py</code> import 執行對拍</td></tr>
+        <td>被 <code>run_tests.py</code> import 執行對拍</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>run_tests.py</code></td>
         <td>跑三層驗證(模板有沒有選配欄位、設計文件契約錨有沒有齊、<code>contract_ref.py</code> 本身邏輯
             對不對),是整份平行執行契約的測試入口。</td>
-        <td><code>scripts/check-parallel-stage6.sh</code> 直接呼叫</td></tr>
+        <td><code>scripts/check-parallel-stage6.sh</code> 直接呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>tests/parallel-stage6/fixtures/</code>(整包,fixtures 目錄豁免)</td>
         <td>平行執行的各種情境範例(正常波次、循環依賴、gate 各種壞例…)。</td>
-        <td>被 <code>run_tests.py</code> 讀取當測試輸入</td></tr>
+        <td>被 <code>run_tests.py</code> 讀取當測試輸入</td><td>人工/CI(不在生命週期上)</td></tr>
   </table></div>
 
   <footer class="foot">
