@@ -422,7 +422,7 @@
   artifacts 與 <code>CLAUDE.md</code> 的技術規則段</strong>,再派 sonnet 掃 codebase 抓候選 ——
   <strong>留著 <code>【待確認】</code> 的條目不得被當事實引用</strong>。
   另:<code>4-spec</code> 只寫本次 delta,<strong>不重抄 rules</strong>(見 <code>_templates/4-spec.md</code> 頂註)。</p>
-  <blockquote><strong>執行清單四原則</strong>(Stage 2/3/4/6/7;清單全文住各模板頂註,Stage 1 同款機制內建於
+  <blockquote><strong>執行清單四原則</strong>(Stage 2/3/4/5/6/7;清單全文住各模板頂註,Stage 1 同款機制內建於
   /dev-talk):①開場第一動把清單建成 todo,每步有「完成 =」客觀條件,達成才勾;
   ②交審前必過自檢步 —— 產物勾稽、附證據,不憑印象;③禁跳項、禁併項;
   ④完成條件達不成 → 回上游步驟補,不硬過。</blockquote>
@@ -434,7 +434,7 @@
   規則以上方逐字原文為準。</p>
 
   <div class="figwrap"><svg id="fig-checklist" viewBox="0 0 880 210" role="img"
-       aria-label="七站中哪些有逐字收錄的執行清單區塊:5 站共 7 塊,Stage 1 與 Stage 5 不在收錄之列">
+       aria-label="七站中哪些有逐字收錄的執行清單區塊:6 站共 8 塊,Stage 1 不在收錄之列">
     <defs><marker id="ar-ck" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
 
@@ -442,7 +442,7 @@
     <g class="n"><rect x="137" y="60" width="112" height="60" rx="6" class="go"/><text class="dt" x="146" y="80">2 收斂</text><text class="dc" x="146" y="96">1 塊 · 逐字收錄</text><text class="dc" x="146" y="110">步 0–6 + G1 送審</text></g>
     <g class="n"><rect x="262" y="60" width="112" height="60" rx="6" class="go"/><text class="dt" x="271" y="80">3 原型</text><text class="dc" x="271" y="96">1 塊 · 逐字收錄</text><text class="dc" x="271" y="110">步 0–4 + 回寫</text></g>
     <g class="n"><rect x="387" y="60" width="112" height="60" rx="6" class="go"/><text class="dt" x="396" y="80">4 規格</text><text class="dc" x="396" y="96">2 塊 · 逐字收錄</text><text class="dc" x="396" y="110">反模糊三律 + 清單</text></g>
-    <g class="n"><rect x="512" y="60" width="112" height="60" rx="6" class="b"/><text class="dt" x="521" y="80">5 任務</text><text class="dc" x="521" y="96">不在收錄之列</text><text class="dc" x="521" y="110">只有 tracer-bullet</text></g>
+    <g class="n"><rect x="512" y="60" width="112" height="60" rx="6" class="go"/><text class="dt" x="521" y="80">5 任務</text><text class="dc" x="521" y="96">1 塊 · 逐字收錄</text><text class="dc" x="521" y="110">步 0–6(執行板)</text></g>
     <g class="n"><rect x="637" y="60" width="112" height="60" rx="6" class="go"/><text class="dt" x="646" y="80">6 實作</text><text class="dc" x="646" y="96">2 塊 · 逐字收錄</text><text class="dc" x="646" y="110">清單 + 實作期規則</text></g>
     <g class="n"><rect x="762" y="60" width="112" height="60" rx="6" class="go"/><text class="dt" x="771" y="80">7 驗證</text><text class="dc" x="771" y="96">1 塊 · 逐字收錄</text><text class="dc" x="771" y="110">步 0/0a/0b–5</text></g>
 
@@ -453,12 +453,12 @@
     <path class="edge" marker-end="url(#ar-ck)" d="M624,90 L637,90"/>
     <path class="edge" marker-end="url(#ar-ck)" d="M749,90 L762,90"/>
 
-    <text class="dbad" x="12" y="40">綠底 = 有逐字收錄區塊(5 站 · 共 7 塊);白底 = 本節不收錄,不代表該站沒規則</text>
+    <text class="dbad" x="12" y="40">綠底 = 有逐字收錄區塊(6 站 · 共 8 塊);白底 = 本節不收錄,不代表該站沒規則</text>
     <text class="dl" x="12" y="152">Stage 1 沒有獨立執行清單:同款「開場建 todo、逐步完成、交審前自檢」機制內建在 /dev-talk skill 本體,不住 _templates/1-discussion.md 頂註。</text>
-    <text class="dl" x="12" y="172">Stage 5 的模板頂註也沒有這套執行清單,只有 tracer-bullet 順序與「每條必有 Verify」的要求(見 _templates/5-tasks.md),故不在本節逐字收錄之列。</text>
-    <text class="dl" x="12" y="192">Stage 4 拆成「反模糊三律」+「執行清單」兩個獨立頂註區塊;Stage 6 拆成「執行清單」+「實作期規則」兩個獨立頂註區塊;其餘 3 站各一塊。</text>
+    <text class="dl" x="12" y="172">Stage 5 是執行板、不是 gate 站(無 G 編號、免 reviewer 核准),執行清單步 0–6 一樣逐字收錄自 _templates/5-tasks.md 頂註(K-3,2026-08-16 補)。</text>
+    <text class="dl" x="12" y="192">Stage 4 拆成「反模糊三律」+「執行清單」兩個獨立頂註區塊;Stage 6 拆成「執行清單」+「實作期規則」兩個獨立頂註區塊;其餘 4 站各一塊。</text>
   </svg></div>
-  <p class="figcap">本節收錄 <strong>5 站(Stage 2/3/4/6/7)、共 7 個區塊</strong>。這章是
+  <p class="figcap">本節收錄 <strong>6 站(Stage 2/3/4/5/6/7)、共 8 個區塊</strong>。這章是
   <strong>保護區,不是壓縮對象</strong> —— 底下每一塊的內容都與 <code>_templates/</code> 逐字相同,
   只在區塊外圍加了綠色標記讓你分辨「規則」與「解釋」。</p>
 
@@ -707,6 +707,88 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
   <tr><td>觀測</td><td>從 owner 的 dashboard 到期卡片看 | 看到 C 與「10 天」算對 | 用 C(end_date = today+10d,未續約)測</td><td>從哪看、看到什麼算對、拿什麼資料試——這三段合起來讓 Stage 7 能親自實跑複驗</td></tr>
   </table></div>
   <p class="src">出處:4-spec.md § R-1 / S-1</p>
+  </div>
+  </details>
+
+  <h3 id="stage5">Stage 5 — 任務(執行板,無 G 編號)</h3>
+  <p>把 4-spec 切成可勾選、可驗證的實作單;順序 = tracer bullet(先打通最薄端到端縱切,
+  再逐層加厚)。不是 gate 站,免 reviewer 核准,但一樣要讓人<strong>照著動工</strong>——
+  5-tasks twin 是<strong>執行板</strong>不是審查介面(README §6),動線頂區五格/任務卡
+  逐條可勾/Boundaries 摺疊/依賴 DAG 四件事缺一不可,細節見 <code>_templates/5-tasks.md</code>
+  頂註。</p>
+  <div class="parity">
+  <p class="parity-tag">規則正本 · Stage 5 執行清單(逐字抄自 <code>_templates/5-tasks.md</code> 頂註)</p>
+  <details>
+    <summary>展開逐字原文</summary>
+    <!-- parity:start template5-checklist -->
+    <blockquote>
+    <p>執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項併項、禁一發全生):
+    0. 前置:4-spec 須 status=approved(G2 過);讀 4-spec 全部 R/S 建立盤點基礎,
+    建 todo 一 T 一項。完成 = approved 已核對 + R/S 全集清點回報。</p>
+    <ol>
+    <li>切 T:順序 = tracer bullet(先打通最薄端到端縱切,再逐層加厚);判準見上文——
+    每個 T 必須答得出「完成後系統/使用者多了什麼可觀測行為」,答不出即水平切層
+    徵兆,應與相鄰 T 合併或重界定,不得整份按 DB→Repo→Service→API→UI 逐層分
+    (機械提示見 <code>scripts/check-task-slicing.sh</code>,warning-only、永不 exit 1,
+    不能取代 reviewer 判斷);每個 T 必須有一個能 RED→GREEN 的測試,純
+    migration／infra 型 T 一樣要測,只是測形狀(見上「T 自足律」)。
+    完成 = 每個 T 皆答得出可觀測行為、無按架構層整份切分。</li>
+    <li>填欄:Covers 標 R/S id 且全 S 皆被至少一個 T 承接(追溯鏈頂端);Files 以 Git
+    repository root 相對路徑列出,含對應測試檔(D-39 四象限判準見上「Files 該含
+    哪些測試檔」節);Verify 單行純指令,<code>-run</code>/<code>-k</code>/<code>--filter</code> 篩選器須帶案例數
+    斷言(強制形狀見上),開工前先原樣跑一次,依「①已經綠→補計數或改條件
+    ②不可能綠→停,修欄位,記 L1③綠不了但方向對→正常開工」三種結果處置;Intent
+    一句寫可觀測行為,Boundaries 寫硬約束/禁區,Design Boundary Contract 為
+    <code>applicable</code> 時比照「Design Boundary 摘錄規則」摘錄該 T 最小子集;續行不得
+    以保留欄名開頭(續行禁令見上)。
+    完成 = 四必填欄齊備、Verify 已原樣跑過一次並記錄結果、Intent/Boundaries 各
+    一句到位。</li>
+    <li>依賴:填 <code>Blocked-by</code>(硬執行依賴,拓撲序不成環);parallel 模式選配填
+    <code>Integrate-after</code>(軟整合依賴)/<code>Risk</code>/<code>Review-mode</code>/<code>Semantic-conflicts-with</code>,
+    不必手排 wave——Wave 由引擎從 Blocked-by + Files overlap 自動派生(見上「並行
+    選配欄位」)。完成 = 每個 T 的 Blocked-by 已核對、拓撲序無誤。</li>
+    <li>自檢:逐 T 核對四必填欄(Covers/Files/Verify/Blocked-by)齊全、續行未踩保留
+    欄名——缺一欄或踩中,<code>contract_ref.py</code> 的 <code>parse_5_tasks</code> 即判為 parse
+    error,<code>start</code> fail-closed 拒啟(見上「續行禁令」)。完成 = 逐 T 核對零缺欄、
+    零保留欄遮蔽。</li>
+    <li>產執行板 twin 看一眼:<code>docs/dev/tools/build-gate-twin.py &lt;專案根&gt; &lt;slug&gt; 5-tasks</code>(母版在 <code>scripts/</code>)產 <code>5-tasks.html</code>;它讀 md 逐條解析,不手抄,
+    解析不到任何一個 T 會直接失敗。核對動線頂區五格、任務卡逐條可勾(缺必填欄
+    紅底現形)、Boundaries 摺疊、依賴 DAG 四件事皆在(見上「5-tasks twin 是執行
+    板」節)。完成 = twin 產出且四件事逐項核對過。</li>
+    <li>定稿:frontmatter status 由 draft 轉 approved(5-tasks 不是 gate 站,無 G
+    編號、免 reviewer 核准,owner 自行定案即可)。完成 = status 已更新 + twin
+    與 md 一致。</li>
+    </ol>
+    </blockquote>
+    <!-- parity:end template5-checklist -->
+  </details>
+  </div>
+  <details class="plain">
+  <summary>白話對照+範例(非正本;正本=上方模板逐字)</summary>
+  <p>這一站你在做的事,一句話 = 把上一站定案的規格,拆成一張一張可以勾選、有明確驗證方法的工作單,讓人或 AI 拿到其中一張就能直接動工。</p>
+  <ul>
+  <li><strong>0.</strong> 前置:動工前先確認上一站的規格文件已經核准過,並把規格裡的每一條需求與行為描述通讀一遍,當作拆工作單的依據。</li>
+  <li><strong>1.</strong> 切工作單:順序照「先打通一條最細的端到端路徑,再逐層加厚」走,不要整批照資料庫→存取層→服務層→介面→畫面這種技術分層去切。每張工作單都要能回答「做完之後,使用者或系統多了什麼看得到的行為」,答不出來就代表切錯了,要跟旁邊的工作單合併或重新界定。就算是純粹建資料表、加欄位這種沒有明顯業務邏輯的工作單,也要有一個「做完了會變綠」的測試,只是測的是形狀對不對(表存不存在、型別對不對)。有一個小工具會提醒「疑似整批照技術分層切」的情況,但它只是提醒不會擋人,也不能取代人工判斷。</li>
+  <li><strong>2.</strong> 填欄位:每張工作單要標清楚承接了規格裡哪一條需求與行為描述(規格裡每一條都至少要被一張工作單接住,不能漏);要動的檔案要列清楚(相對路徑,連測試檔案都要列進去);驗證方法要寫成一行可以直接貼進終端機執行的指令,若用篩選條件只挑幾個測試跑,一定要順便斷言「真的跑了幾個」,不然篩選條件沒對到任何測試、指令照樣回報成功,會誤以為測試都通過了。這個驗證指令動工前要先照原樣跑一次看結果——已經是綠燈代表這條驗證沒有鑑別力,需要加強;照理說不可能綠卻已經綠了,代表哪裡有問題要停下來查;還沒綠但方向正確,才是正常狀態可以開工。另外每張工作單要一句話寫「做完後多了什麼看得到的行為」,以及有沒有不能踩的硬性限制或禁區。</li>
+  <li><strong>3.</strong> 填依賴關係:寫清楚每張工作單要等哪一張先做完(這是真正的硬性順序,不能提前做);允許同時進行的模式下還有一些選填欄位,但不需要自己手動排「誰跟誰可以同時做」,系統會自己從依賴關係與檔案有沒有重疊算出來。</li>
+  <li><strong>4.</strong> 自我檢查:逐張工作單核對四個必填欄位(承接的需求、要動的檔案、驗證方法、依賴關係)有沒有填齊,格式有沒有踩到會被系統誤判成別的欄位的陷阱——少填一項或踩到陷阱,系統在真正要開工時會直接拒絕啟動,不會讓你帶著漏洞硬做下去。</li>
+  <li><strong>5.</strong> 看一眼執行看板:用固定的工具把這份工作單文件轉成一份看板網頁,看板會自動標出整體進度概況、每張工作單卡片(缺欄位的卡片會用顏色標出來)、限制條件收合起來不佔畫面、還有依照依賴關係自動畫出的執行順序圖。四件事都要在,少一件就代表這一步沒做完。</li>
+  <li><strong>6.</strong> 定稿:把文件狀態從「草稿」改成「已核准」——這一站沒有審查關卡,不需要另外找人核准,自己確認好就可以往下一站走。</li>
+  </ul>
+  <p class="plain-tag">範例(出處:<code>example/contract-expiry-reminder/5-tasks.md</code>)</p>
+  <div class="example">
+  <p>「填欄位」(步驟 2)實際交出來的一張工作單(T-1),六個部分各自在回答什麼:</p>
+  <div class="tablewrap"><table>
+  <tr><th>欄位</th><th>實際內容</th><th>這一行在回答什麼</th></tr>
+  <tr><td>Covers</td><td>R-1 / S-1, S-2</td><td>承接規格裡哪一條需求與行為描述</td></tr>
+  <tr><td>Files</td><td><code>internal/handler/contract.go</code>、<code>internal/service/contract.go</code>、<code>internal/repo/contract.go</code>、<code>internal/service/contract_test.go</code>、<code>internal/handler/contract_test.go</code></td><td>要動的檔案,含測試檔</td></tr>
+  <tr><td>Verify</td><td><code>n=$(go test ./internal/... -run TestExpiring -v 2&gt;&amp;1 | grep -c '^=== RUN'); test "$n" -ge 1</code></td><td>先數有幾個測試真的跑了、再確認通過,不是只看指令有沒有報錯</td></tr>
+  <tr><td>Blocked-by</td><td>—(第一張工作單,不用等別人)</td><td>要等哪一張先做完</td></tr>
+  <tr><td>Intent</td><td>系統多了到期查詢 API,回傳登入者名下 30 天內到期且未續約的合約;無符合者回空列表,不報錯</td><td>做完後系統多了什麼看得到的行為</td></tr>
+  <tr><td>Boundaries</td><td>查詢邏輯抽在 <code>service.ListExpiring</code>;複用既有索引,不另建索引</td><td>不能踩的硬性限制或禁區</td></tr>
+  </table></div>
+  <p>「填依賴關係」(步驟 3)的實際樣子:T-2(前端到期卡片)的 <code>Blocked-by: T-1</code>,代表 T-2 要等 T-1(API)先做完;整份文件最後有一張由 <code>Blocked-by</code> 自動導出的依賴圖,一路排到 T-7。</p>
+  <p class="src">出處:5-tasks.md § T-1、T-2、T 依賴 DAG</p>
   </div>
   </details>
 

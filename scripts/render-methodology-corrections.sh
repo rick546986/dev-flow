@@ -131,6 +131,8 @@ fragments = {
         quote_region("_templates/4-spec.md", "反模糊三律(", "執行清單("),
     ("guides/guide-dev-flow.html", "template4-checklist"):
         quote_region("_templates/4-spec.md", "執行清單(", "起草前估"),
+    ("guides/guide-dev-flow.html", "template5-checklist"):
+        quote_region("_templates/5-tasks.md", "執行清單("),
     ("guides/guide-dev-flow.html", "template6-checklist"):
         quote_region("_templates/6-implementation-notes.md", "執行清單(", "實作期規則("),
     ("guides/guide-dev-flow.html", "template6-rules"):
