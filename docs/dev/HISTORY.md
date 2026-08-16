@@ -129,3 +129,8 @@
 - 落在哪:.claude-plugin/plugin.json、hooks/runtime-capabilities.json
 - 詳細:minor:新增守衛與引擎修復,既有專案相容;守衛 108→133、selftest 326→339、devflow-check 20→21 組
 
+## 2026-08-17 · guard-symmetry · v3.6.0
+- 做了什麼:對稱守衛輪:第 2 層對帳推廣三站、模型分層稽核+首派攔截、雙生圖三層同步守衛、恆真斷言跨檔掃、掃描來源自釘;三輪審修(9 審查者+二次複審+終驗)全部弄壞會紅
+- 為什麼:v3.5.0 獨立審查判定第 6 型假綠(不對稱保護)第三次發作:修法只套觸發實例沒推廣同類;另 prompt 級模型分層零機械層
+- 落在哪:scripts/check-*(gate-twin/model-tiering/guides-fig-sync/no-stale-paths/design-contract)、hooks/(dispatch-guard/exec/selftest)、test-architecture-guards.sh、README §5、7-review.md A9
+
