@@ -6,18 +6,18 @@
 <title>dev-flow 導覽 · 開發流程 SOP</title>
 <style>
   :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
-        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;--orange:#c2660b;
         --opus:#7c3aed;--sonnet:#0d9488;--haiku:#57606a;}
   @media(prefers-color-scheme:dark){
     :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
-          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;
+          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;--orange:#f0954a;
           --opus:#a78bfa;--sonnet:#2dd4bf;--haiku:#9aa4af;}
   }
   :root[data-theme="dark"]{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;
-        --card:#1e2023;--ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;
+        --card:#1e2023;--ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;--orange:#f0954a;
         --opus:#a78bfa;--sonnet:#2dd4bf;--haiku:#9aa4af;}
   :root[data-theme="light"]{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;
-        --card:#f7f7f8;--ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;
+        --card:#f7f7f8;--ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;--orange:#c2660b;
         --opus:#7c3aed;--sonnet:#0d9488;--haiku:#57606a;}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);
@@ -105,6 +105,26 @@
   svg .m-haiku{fill:color-mix(in srgb,var(--haiku) 18%,var(--card));stroke:var(--haiku)}
   /* parity 區內若含 details,summary 顏色改用綠系,與左側色條一致 */
   .parity>details>summary{color:var(--ok)}
+
+  /* ── Phase 4(fig-lifecycle 全還原版)新增,quickstart 的 fig-lifecycle-qs 雙生 ── */
+  /* 黃 = hook 可掛點(與既有 warn 變數同色但不用虛線,和 .note 區分) */
+  svg .hk{fill:color-mix(in srgb,var(--warn) 16%,var(--card));stroke:var(--warn)}
+  /* 灰虛線掛靠事件框(左側旁支 + 底部獨立事件,harness 觸發但非本圖主幹) */
+  svg .att{fill:var(--card);stroke:var(--muted);stroke-dasharray:4 3}
+  svg .edge-att{fill:none;stroke:var(--muted);stroke-width:1.3;stroke-dasharray:3 2}
+  /* 橘 = AGENTIC LOOP 範圍框與其回邊(新色系,和黃/hook 區分) */
+  svg .loopscope{fill:none;stroke:var(--orange);stroke-dasharray:4 4;stroke-width:1.4}
+  svg .edge-o{fill:none;stroke:var(--orange);stroke-width:1.6}
+  svg .arrowhead-o{fill:var(--orange)}
+  .dk-o{font:700 10px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--orange)}
+  /* 藍 = EACH TURN 回邊(範圍框沿用既有 .sessionbox) */
+  svg .edge-b{fill:none;stroke:var(--acc);stroke-width:1.6}
+  svg .arrowhead-b{fill:var(--acc)}
+  /* 黑虛線長回邊:SessionEnd → SessionStart(resumed sessions) */
+  svg .edge-resume{fill:none;stroke:var(--fg);stroke-width:1.4;stroke-dasharray:6 4}
+  svg .arrowhead-resume{fill:var(--fg)}
+  /* 右走廊 .cap 短引線(無 class="edge",lint 不驗證,純視覺牽引) */
+  svg .tick{stroke:var(--muted);stroke-width:1;fill:none}
 </style>
 </head>
 <body>
@@ -925,71 +945,101 @@
   「沒掛上」對執行者長得一模一樣,所以知道<strong>哪一格</strong>會醒、哪一格從來不管事,
   比背誦 hook 名字重要。</p>
 
-  <div class="figwrap"><svg id="fig-lifecycle" viewBox="0 0 880 1140" role="img"
-       aria-label="Claude Code agent 生命週期骨架:SessionStart 到 SessionEnd,中段是 agentic loop(PreToolUse、權限、工具執行、PostToolUse、SubagentStart/Stop 與 TaskCreated/Completed 繞回 PreToolUse);每一站標出 dev-flow 掛了什麼,SessionEnd 之後 resume 回到 SessionStart">
-    <defs><marker id="ar-lc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
+  <div class="figwrap"><svg id="fig-lifecycle" viewBox="0 0 1220 1230" role="img"
+       aria-label="Claude Code agent 完整生命週期:SessionStart(綠)到 SessionEnd。中央主幹依序為 UserPromptSubmit、PreToolUse、PermissionRequest、[tool executes](藍)、PostToolUse/PostToolUseFailure、PostToolBatch、SubagentStart/SubagentStop、TaskCreated、TaskCompleted——這八格圍在橘色虛線 AGENTIC LOOP 內,橘色回邊繞回 PreToolUse;UserPromptSubmit 到 Stop/StopFailure(紅)全段圍在藍色虛線 EACH TURN 內,藍色回邊繞回 UserPromptSubmit;之後接 TeammateIdle、PreCompact、PostCompact、SessionEnd,SessionEnd 另有右側黑虛線長回邊「resumed sessions」繞回 SessionStart。左側灰虛線掛靠事件:Setup、UserPrompt Expansion、Permission Denied、Elicitation、ElicitationResult、Notification,各自灰虛線箭頭指向對應主幹節點。右側文字標出 dev-flow 實際掛鉤的六格,其餘留白。底部另有六個無箭頭獨立事件框:ConfigChange、WorktreeCreate、WorktreeRemove、CwdChanged/FileChanged/DirectoryAdded、InstructionsLoaded、MessageDisplay">
+    <defs>
+    <marker id="ar-lc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker>
+    <marker id="ar-att" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker>
+    <marker id="ar-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="arrowhead-o" d="M0,0 L10,5 L0,10 Z"/></marker>
+    <marker id="ar-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="arrowhead-b" d="M0,0 L10,5 L0,10 Z"/></marker>
+    <marker id="ar-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="arrowhead-resume" d="M0,0 L10,5 L0,10 Z"/></marker>
+    </defs>
 
-    <g class="n"><rect x="60" y="20" width="760" height="64" rx="6" class="hl"/>
-      <text class="dm" x="74" y="46">SessionStart</text>
-      <text class="dc" x="74" y="66">dev-flow:skills 描述 + hooks 註冊進場(見下方 1)</text></g>
+    <g class="cluster turnbox"><rect x="258" y="88" width="554" height="696" rx="10" class="sessionbox"/><text class="dk" x="268" y="104">EACH TURN</text></g>
+    <g class="cluster loopbox"><rect x="280" y="174" width="510" height="526" rx="10" class="loopscope"/><text class="dk-o" x="290" y="190">AGENTIC LOOP</text></g>
 
-    <g class="n"><rect x="60" y="124" width="760" height="64" rx="6" class="hl"/>
-      <text class="dm" x="74" y="150">UserPromptSubmit</text>
-      <text class="dc" x="74" y="170">/dev-flow、/dev-setup 等斜線指令在此展開(見下方 2)</text></g>
+    <g class="n"><rect x="300" y="30" width="470" height="44" rx="6" class="go"/><text class="dm" x="314" y="57">Session Start</text></g>
+    <g class="n"><rect x="300" y="118" width="470" height="44" rx="6" class="hk"/><text class="dm" x="314" y="145">UserPromptSubmit</text></g>
+    <g class="n"><rect x="300" y="204" width="470" height="44" rx="6" class="hk"/><text class="dm" x="314" y="231">PreToolUse</text></g>
+    <g class="n"><rect x="300" y="266" width="470" height="44" rx="6" class="b"/><text class="dm" x="314" y="293">PermissionRequest</text></g>
+    <g class="n"><rect x="300" y="328" width="470" height="44" rx="6" class="hl"/><text class="dm" x="314" y="355">[tool executes]</text></g>
+    <g class="n"><rect x="300" y="390" width="470" height="44" rx="6" class="hk"/><text class="dm" x="314" y="417">PostToolUse / PostToolUseFailure</text></g>
+    <g class="n"><rect x="300" y="452" width="470" height="44" rx="6" class="b"/><text class="dm" x="314" y="479">PostToolBatch</text></g>
+    <g class="n"><rect x="300" y="514" width="470" height="44" rx="6" class="hk"/><text class="dm" x="314" y="541">SubagentStart / SubagentStop</text></g>
+    <g class="n"><rect x="300" y="576" width="470" height="44" rx="6" class="b"/><text class="dm" x="314" y="603">TaskCreated</text></g>
+    <g class="n"><rect x="300" y="638" width="470" height="44" rx="6" class="b"/><text class="dm" x="314" y="665">TaskCompleted</text></g>
+    <g class="n"><rect x="300" y="714" width="470" height="44" rx="6" class="no"/><text class="dm" x="314" y="741">Stop / StopFailure</text></g>
+    <g class="n"><rect x="300" y="798" width="470" height="44" rx="6" class="b"/><text class="dm" x="314" y="825">TeammateIdle</text></g>
+    <g class="n"><rect x="300" y="868" width="470" height="44" rx="6" class="hk"/><text class="dm" x="314" y="895">PreCompact</text></g>
+    <g class="n"><rect x="300" y="938" width="470" height="44" rx="6" class="hk"/><text class="dm" x="314" y="965">PostCompact</text></g>
+    <g class="n"><rect x="300" y="1008" width="470" height="44" rx="6" class="b"/><text class="dm" x="314" y="1035">SessionEnd</text></g>
 
-    <g class="cluster"><rect x="40" y="228" width="810" height="536" rx="10" class="grpbox"/>
-      <text class="dl" x="54" y="250">agentic loop —— 每次工具呼叫都繞這一圈,直到 Stop 才跳出</text></g>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,74 L535,118"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,162 L535,204"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,248 L535,266"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,310 L535,328"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,372 L535,390"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,434 L535,452"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,496 L535,514"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,558 L535,576"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,620 L535,638"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,682 L535,714"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,758 L535,798"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,842 L535,868"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,912 L535,938"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,982 L535,1008"/>
 
-    <g class="n"><rect x="60" y="280" width="760" height="64" rx="6" class="hl"/>
-      <text class="dm" x="74" y="306">PreToolUse</text>
-      <text class="dc" x="74" y="326">devflow-guard.sh + history-guard.sh + devflow-prebash.sh(見下方 3)</text></g>
+    <path class="edge-o" marker-end="url(#ar-o)" d="M770,672 L780,672 L780,214 L770,214"/>
+    <path class="edge-b" marker-end="url(#ar-b)" d="M770,748 L801,748 L801,128 L770,128"/>
+    <path class="edge-resume" marker-end="url(#ar-r)" d="M770,1018 L1195,1018 L1195,36 L770,36"/>
+    <text class="dl" x="1140" y="814">resumed</text>
+    <text class="dl" x="1140" y="827">sessions</text>
 
-    <g class="n"><rect x="60" y="380" width="760" height="64" rx="6" class="b"/>
-      <text class="dt" x="74" y="406">權限</text>
-      <text class="dc" x="74" y="426">使用者 / policy 核准或擋下 —— harness 內建,dev-flow 未掛 hook</text></g>
+    <g class="n att"><rect x="20" y="34" width="190" height="36" rx="5" class="att"/><text class="dt" x="28" y="48">Setup</text><text class="dc" x="28" y="62">(Opt-in)</text></g>
+    <path class="edge-att" marker-end="url(#ar-att)" d="M210,52 L300,52"/>
+    <g class="n att"><rect x="20" y="122" width="190" height="36" rx="5" class="att"/><text class="dt" x="28" y="136">UserPrompt Expansion</text><text class="dc" x="28" y="150">(slash commands)</text></g>
+    <path class="edge-att" marker-end="url(#ar-att)" d="M210,140 L300,140"/>
+    <g class="n att"><rect x="20" y="270" width="190" height="36" rx="5" class="att"/><text class="dt" x="28" y="284">Permission Denied</text><text class="dc" x="28" y="298">(auto-mode deny)</text></g>
+    <path class="edge-att" marker-end="url(#ar-att)" d="M210,288 L300,288"/>
+    <g class="n att"><rect x="20" y="322" width="190" height="30" rx="5" class="att"/><text class="dt" x="28" y="333">Elicitation</text><text class="dc" x="28" y="347">(MCP input)</text></g>
+    <path class="edge-att" marker-end="url(#ar-att)" d="M210,340 L300,340"/>
+    <g class="n att"><rect x="20" y="356" width="190" height="30" rx="5" class="att"/><text class="dt" x="28" y="367">ElicitationResult</text><text class="dc" x="28" y="381">(MCP input)</text></g>
+    <path class="edge-att" marker-end="url(#ar-att)" d="M210,363 L300,363"/>
+    <g class="n att"><rect x="20" y="718" width="190" height="36" rx="5" class="att"/><text class="dt" x="28" y="732">Notification</text><text class="dc" x="28" y="746">(Async)</text></g>
+    <path class="edge-att" marker-end="url(#ar-att)" d="M210,736 L300,736"/>
 
-    <g class="n"><rect x="60" y="480" width="760" height="64" rx="6" class="b"/>
-      <text class="dt" x="74" y="506">工具執行</text>
-      <text class="dc" x="74" y="526">Edit / Write / Bash / Read 實際跑 —— harness 內建,dev-flow 未掛 hook</text></g>
+    <path class="tick" d="M770,52 L850,52"/>
+    <text class="dc" x="858" y="48">skills 描述+hooks 註冊+</text>
+    <text class="dc" x="858" y="60">CLAUDE.md/rules 進場</text>
+    <path class="tick" d="M770,140 L850,140"/>
+    <text class="dc" x="858" y="143">/dev-flow 路由器在此展開</text>
+    <path class="tick" d="M770,226 L850,226"/>
+    <text class="dc" x="858" y="222">devflow-guard·history-guard·</text>
+    <text class="dc" x="858" y="234">devflow-prebash</text>
+    <path class="tick" d="M770,412 L850,412"/>
+    <text class="dc" x="858" y="415">devtalk-guard·devflow-postbash</text>
+    <path class="tick" d="M770,536 L850,536"/>
+    <text class="dc" x="858" y="532">dev-run 派工(worker/reviewer</text>
+    <text class="dc" x="858" y="544">獨立 context)</text>
+    <path class="tick" d="M770,890 L850,890"/>
+    <text class="dc" x="858" y="893">壓縮會裁內容 → 文件才是正本</text>
 
-    <g class="n"><rect x="60" y="580" width="760" height="64" rx="6" class="hl"/>
-      <text class="dm" x="74" y="606">PostToolUse</text>
-      <text class="dc" x="74" y="626">devtalk-guard.sh + devflow-postbash.sh(見下方 4)</text></g>
+    <g class="n att"><rect x="20" y="1092" width="250" height="44" rx="5" class="att"/><text class="dt" x="28" y="1110">ConfigChange</text><text class="dc" x="28" y="1124">(Async)</text></g>
+    <g class="n att"><rect x="290" y="1092" width="250" height="44" rx="5" class="att"/><text class="dt" x="298" y="1110">WorktreeCreate</text><text class="dc" x="298" y="1124">(Isolation)</text></g>
+    <g class="n att"><rect x="560" y="1092" width="250" height="44" rx="5" class="att"/><text class="dt" x="568" y="1110">WorktreeRemove</text><text class="dc" x="568" y="1124">(Teardown)</text></g>
+    <g class="n att"><rect x="20" y="1156" width="300" height="44" rx="5" class="att"/><text class="dt" x="28" y="1174">CwdChanged / FileChanged / DirectoryAdded</text><text class="dc" x="28" y="1188">(Env reactive)</text></g>
+    <g class="n att"><rect x="340" y="1156" width="225" height="44" rx="5" class="att"/><text class="dt" x="348" y="1174">InstructionsLoaded</text><text class="dc" x="348" y="1188">(Async)</text></g>
+    <g class="n att"><rect x="585" y="1156" width="225" height="44" rx="5" class="att"/><text class="dt" x="593" y="1174">MessageDisplay</text><text class="dc" x="593" y="1188">(Display)</text></g>
 
-    <g class="n"><rect x="60" y="680" width="760" height="64" rx="6" class="hl"/>
-      <text class="dm" x="74" y="706">SubagentStart / SubagentStop、TaskCreated / TaskCompleted</text>
-      <text class="dc" x="74" y="726">dev-run 派工:worker/reviewer 各自獨立 context(見下方 5)</text></g>
-
-    <g class="n"><rect x="60" y="804" width="760" height="64" rx="6" class="b"/>
-      <text class="dm" x="74" y="830">Stop</text>
-      <text class="dc" x="74" y="850">(TeammateIdle:多 agent 協作場景,dev-flow 未特化掛鉤)</text></g>
-
-    <g class="n"><rect x="60" y="908" width="760" height="64" rx="6" class="hl"/>
-      <text class="dm" x="74" y="934">PreCompact / PostCompact</text>
-      <text class="dc" x="74" y="954">文件是正本的理由 —— skill 本文被裁、描述清單不重注入(見下方 6)</text></g>
-
-    <g class="n"><rect x="60" y="1012" width="760" height="64" rx="6" class="b"/>
-      <text class="dm" x="74" y="1038">SessionEnd</text>
-      <text class="dc" x="74" y="1058">resume 回到 SessionStart —— session 記憶不可靠,md 才是正本</text></g>
-
-    <path class="edge" marker-end="url(#ar-lc)" d="M440,84 L440,124"/>
-    <path class="edge" marker-end="url(#ar-lc)" d="M440,188 L440,280"/>
-    <path class="edge" marker-end="url(#ar-lc)" d="M440,344 L440,380"/>
-    <path class="edge" marker-end="url(#ar-lc)" d="M440,444 L440,480"/>
-    <path class="edge" marker-end="url(#ar-lc)" d="M440,544 L440,580"/>
-    <path class="edge" marker-end="url(#ar-lc)" d="M440,644 L440,680"/>
-    <path class="edge" marker-end="url(#ar-lc)" d="M820,712 L838,712 L838,312 L820,312"/>
-    <path class="edge" marker-end="url(#ar-lc)" d="M440,744 L440,804"/>
-    <path class="edge" marker-end="url(#ar-lc)" d="M440,868 L440,908"/>
-    <path class="edge" marker-end="url(#ar-lc)" d="M440,972 L440,1012"/>
-    <path class="edge" marker-end="url(#ar-lc)" d="M60,1044 L25,1044 L25,52 L60,52"/>
-
-    <text class="dbad" x="60" y="1104">武裝與圍欄都掛在 PreToolUse/PostToolUse 這一圈;SessionStart 只決定「這輪 context 有什麼」,不代表守衛已醒(見下方 3 的 A-7)。</text>
+    <text class="dbad" x="20" y="1218">武裝與圍欄都掛在 PreToolUse/PostToolUse 這一圈;紅色 Stop/StopFailure 之後仍有 TeammateIdle/PreCompact/PostCompact 才到 SessionEnd。</text>
   </svg></div>
-  <p class="figcap">藍框(accent 色邊)的節點是 dev-flow 掛東西的格子;灰框的是 harness 自己的內部步驟,
-  dev-flow 不掛鉤。右側小迴圈是「回 PreToolUse 重複下一次工具呼叫」;左側大迴圈是 <code>resume</code>
-  接續舊 session —— 兩個迴圈不是同一件事,細節見下方 3 與 6。</p>
+  <p class="figcap">三條走廊由左至右:左 = 灰虛線掛靠事件(harness 會觸發、但 dev-flow 沒掛鉤的旁支);中 = 主幹
+  ——<strong>綠</strong> = session 起點、<strong>黃</strong> = dev-flow 可掛鉤的 hook 格、<strong>藍</strong> = 工具實際執行、
+  <strong>紅</strong> = Stop、<strong>灰</strong> = harness 內部無 hook 語意的段落;右 = dev-flow 實際掛鉤處(留白 = 沒掛,見下方 1-6)。
+  藍色虛線框「EACH TURN」是使用者一次輸入到 Stop 的一整輪,內含橘色虛線框「AGENTIC LOOP」——每次工具呼叫都繞這一圈,
+  橘色回邊繞回 <code>PreToolUse</code>;藍色回邊繞回 <code>UserPromptSubmit</code> 開下一輪。右側黑虛線長回邊
+  「resumed sessions」是 <code>SessionEnd</code> 之後 <code>resume</code> 接續舊 session,回到 <code>SessionStart</code>——
+  這與前兩個迴圈不是同一件事。底部六格是不掛在任何一輪節點上的獨立系統事件。</p>
   <p class="muted">來源:<code>~/dev/dev-flow/dev-setup-record.html</code> 對應段落與
   <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/hooks/</code> 原始碼;
   生命週期骨架本身是 Claude Code harness 既有事件,dev-flow 只是掛客,不重新定義它們。</p>
