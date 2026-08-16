@@ -932,15 +932,29 @@ for st in ("2-decision", "4-spec", "7-review"):  # 母版範例三站,不是合�
                and html.escape(t) not in r_names and t not in dropped_notes]
     check(not missing, f"{st}:每個 L2 章節都能在 html/NOTE 找到下落(第 2 層,獨立於產生器)",
           f"消失的章節:{missing}")
+    # finding 1(MED,獨立審查判「不對稱保護」推廣至三站):上面的「missing」斷言
+    # 只驗『每節都有下落』,但下落若是「產生器聲稱 dropped」而產生器自己算錯,
+    # 第 2 層直接信那份自報清單,兩層一起綠、章節被真的丟掉卻印假 NOTE。這裡不信
+    # 自報清單,對「cards-dropped」與「空節 dropped」兩種 NOTE 都獨立重算,雙向
+    # 比對(多報或少報都要紅)—— 舊版只對 4-spec 做,是本檔第三次「修法只套觸發
+    # 實例」的病灶(見任務書 X-1),故三站都要跑,不能只跑觸發破壞實驗的那一站。
+    #
+    # cards-dropped 三站語意不同,分開處理:
+    #   4-spec 有 R/S 兩層結構 —— `## ADDED Requirements` 這種父節,節本身不是 R
+    #   標題,但底下直接就是**全部**已渲染 R 的標題(heads_here ⊇ rendered_rids),
+    #   這是產生器合法的「父節整段被渲染成卡片,不重複顯示」路徑
+    #   (build-gate-twin.py :1027),故用 independent_droppable_l2() 依同語意重算、
+    #   雙向比對。
+    #   2-decision/7-review 沒有這層結構(S-n 卡片不是靠「父節 = 全部子卡標題」
+    #   的方式渲染),而且 build-gate-twin.py :1027 那行 `dropped.append(title)`
+    #   本身就用 `if stage == "4-spec" and ...` 包住 —— 這兩站的產生器**沒有任何
+    #   分支**會走到那個 append。既然合法路徑不存在,能斷言得比 4-spec 更嚴:自報
+    #   清單必須是空集合,一旦非空,不是產生器被改壞(誤開了一條不該有的合法路
+    #   徑),就是有人手動偽造下落,兩者都該現形。
+    gen_dropped = set(note_list(r.stderr or "", "以下父節的內容已整段渲染成卡片,不重複顯示"))
     if st == "4-spec":
-        # finding 1(MED):上面的「missing」斷言只驗『每節都有下落』,但下落若是
-        # 「產生器聲稱 dropped」而產生器自己算錯(:1027 的 `>=` 被手滑改成
-        # `<=`),第 2 層直接信那份自報清單,兩層一起綠、章節被真的丟掉卻印假
-        # NOTE。這裡不信自報清單,自己重算一次「哪些節合法可 drop」,雙向比對
-        # 產生器 NOTE 的 dropped 清單(多 drop 或少 drop 都要紅)。
         rendered_rids_indep = set(re.findall(
             r'<section class="r-block" id="(R-\d+)"', html_local))
-        gen_dropped = set(note_list(r.stderr or "", "以下父節的內容已整段渲染成卡片,不重複顯示"))
         indep_dropped = independent_droppable_l2(md_text, rendered_rids_indep)
         check(gen_dropped == indep_dropped,
               f"{st}:產生器 NOTE 的 dropped 清單 == 守衛獨立重算的可 drop 集合"
@@ -948,6 +962,39 @@ for st in ("2-decision", "4-spec", "7-review"):  # 母版範例三站,不是合�
               f"產生器 dropped={sorted(gen_dropped)},守衛獨立算={sorted(indep_dropped)}"
               f" —— 產生器多算(可能誤丟真章節){sorted(gen_dropped - indep_dropped)} /"
               f" 產生器少算(該丟沒丟,可能重複顯示){sorted(indep_dropped - gen_dropped)}")
+    else:
+        check(gen_dropped == set(),
+              f"{st}:此站產生器沒有任何合法 cards-drop 路徑,dropped 清單必須是空集合",
+              f"出現「{sorted(gen_dropped)}」—— build-gate-twin.py 的 dropped.append 只在"
+              ' stage=="4-spec" 分支內,出現此 NOTE = 產生器被改壞或有人偽造下落')
+
+    # 同型破口(finding 1 延伸,任務書第 4 點):「以下章節本文為空,視為 dropped
+    # (空)」這份自報清單,三站都從來沒人獨立重算過 —— 跟 cards-dropped 同一個
+    # 道理:自報清單不可信,才需要第 2 層。此路徑三站語意相同(空節判準不分
+    # stage,build-gate-twin.py :1005 的 `if not body.strip()` 沒有 stage 條件),
+    # 故三站共用同一套獨立重算,不像 cards-dropped 要分岔。
+    # 判準:從 md_text 用 l2_sections_with_body() 抓出本文為空的 L2 節,排除已在
+    # html 別處出現的標題(pinned_h2/detail_summary/r_names)—— 這是在鏡射產生器
+    # :1003『title in used → continue』的先行判斷,已經有下落的節不會走到「空
+    # 節」這條路,若不排除,已被其他路徑合法吸收的節會被誤判成「該是空節 dropped
+    # 卻沒被標記」的少報假紅。
+    gen_dropped_empty = set(note_list(
+        r.stderr or "", "以下章節本文為空,視為 dropped(空),不進背景資料"))
+    indep_dropped_empty = {
+        title for title, body in l2_sections_with_body(md_text)
+        if not body.strip()
+        and html.escape(title) not in pinned_h2
+        and html.escape(title) not in detail_summary
+        and html.escape(title) not in r_names
+    }
+    check(gen_dropped_empty == indep_dropped_empty,
+          f"{st}:產生器 NOTE 的『空節 dropped』清單 == 守衛獨立重算的空節集合"
+          "(雙向:多報或少報都紅)",
+          f"產生器 dropped_empty={sorted(gen_dropped_empty)},"
+          f"守衛獨立算={sorted(indep_dropped_empty)}"
+          f" —— 產生器多報(可能誤丟非空章節){sorted(gen_dropped_empty - indep_dropped_empty)} /"
+          f" 產生器少報(該標記沒標記,可能重複顯示或消失)"
+          f"{sorted(indep_dropped_empty - gen_dropped_empty)}")
 
 print("-- N-4:未閉合的 <!-- html 註解要有警告且指出行號 --")
 CURRENT_GROUP = "n4-unclosed-comment"
