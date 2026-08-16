@@ -6,18 +6,18 @@
 <title>dev-flow 快速上手 · 新專案零到一操作導覽</title>
 <style>
   :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
-        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;--orange:#c2660b;
         --opus:#7c3aed;--sonnet:#0d9488;}
   @media(prefers-color-scheme:dark){
     :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
-          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;
+          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;--orange:#f0954a;
           --opus:#a78bfa;--sonnet:#2dd4bf;}
   }
   :root[data-theme="dark"]{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;
-        --card:#1e2023;--ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;
+        --card:#1e2023;--ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;--orange:#f0954a;
         --opus:#a78bfa;--sonnet:#2dd4bf;}
   :root[data-theme="light"]{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;
-        --card:#f7f7f8;--ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;
+        --card:#f7f7f8;--ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;--orange:#c2660b;
         --opus:#7c3aed;--sonnet:#0d9488;}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);
@@ -108,6 +108,20 @@
           border-bottom:1px dashed var(--line)}
   .chk input{margin-top:.35em;flex:0 0 auto;accent-color:var(--acc)}
   .chk input:checked+span{color:var(--muted);text-decoration:line-through}
+
+  /* ── Phase 3(本檔)新增:fig-lifecycle-qs,雙生自 guide-dev-flow.html 的 fig-lifecycle ── */
+  svg .hk{fill:color-mix(in srgb,var(--warn) 16%,var(--card));stroke:var(--warn)}
+  svg .att{fill:var(--card);stroke:var(--muted);stroke-dasharray:4 3}
+  svg .edge-att{fill:none;stroke:var(--muted);stroke-width:1.3;stroke-dasharray:3 2}
+  svg .loopscope{fill:none;stroke:var(--orange);stroke-dasharray:4 4;stroke-width:1.4}
+  svg .edge-o{fill:none;stroke:var(--orange);stroke-width:1.6}
+  svg .arrowhead-o{fill:var(--orange)}
+  .dk-o{font:700 10px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--orange)}
+  svg .edge-b{fill:none;stroke:var(--acc);stroke-width:1.6}
+  svg .arrowhead-b{fill:var(--acc)}
+  svg .edge-resume{fill:none;stroke:var(--fg);stroke-width:1.4;stroke-dasharray:6 4}
+  svg .arrowhead-resume{fill:var(--fg)}
+  svg .tick{stroke:var(--muted);stroke-width:1;fill:none}
 </style>
 </head>
 <body>
@@ -445,6 +459,16 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   在主樹 start 完再 cd 進 worktree,武裝的是錯的樹,新樹完全不設防。
   <code>status</code> 這一步不是可省的裝飾 —— 就是拿來核對「slug 與 cwd 相符」,提早抓到樹選錯的情況。</p>
 
+  <p class="muted"><strong>為什麼 start 是分界點(生命週期因果)</strong>:<code>start</code> 之前,
+  <code>.devflow/exec.json</code> 不存在 —— 每次工具呼叫,掛在 <strong>PreToolUse</strong> 的
+  <code>devflow-guard.sh</code>/<code>devflow-prebash.sh</code> 讀狀態時拿到「未武裝」,對 Read 與
+  Bash 一律靜默放行,完全無感;唯一的例外訊號是 <strong>A-7 軟提醒</strong> —— 且範圍很窄:只在
+  Write/Edit 打中 <code>5-tasks</code>/<code>6-implementation-notes</code> 時才響,而且整個 repo
+  只響<strong>一次</strong>(git-dir sentinel 記過就不再提醒,不是持續警告)。<code>start</code> 把
+  baseline/scope/契約 hash 寫進 <code>.devflow/exec.json</code> 之後,<strong>PreToolUse</strong> 才有
+  依據可比對、可擋 —— 這就是三步順序不可調的生命週期理由:沒有步驟 2(<code>start</code>),
+  之後每一次 <code>PreToolUse</code> 都無米可炊,擋不了任何東西。</p>
+
   <h3>Stage 7 的 G3 + Exit checklist</h3>
   <p>G3 PASS 之後,<code>7-review.md</code> 的 Exit Checklist 要全勾才算 shipped:</p>
   <div class="parity">
@@ -471,14 +495,247 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   </div>
 
   <h2 id="guardcheat">③ 執行守衛速查表</h2>
-  <p class="lead">這章要你懂:<strong>守衛擋你時只有三種訊息,對應三種處置</strong> ——
-  唯一要判斷的是 L1 還是 L2,而判不出來時規則已經幫你決定了(當 L2)。</p>
-  <p>Stage 6 的守衛是 <code>devflow-exec.sh</code>(plugin hooks 內,無 alias,要打路徑;
+
+  <div class="figwrap"><svg id="fig-lifecycle-qs" viewBox="0 0 1220 1230" role="img"
+       aria-label="Claude Code agent 完整生命週期:SessionStart(綠)到 SessionEnd。中央主幹依序為 UserPromptSubmit、PreToolUse、PermissionRequest、[tool executes](藍)、PostToolUse/PostToolUseFailure、PostToolBatch、SubagentStart/SubagentStop、TaskCreated、TaskCompleted——這八格圍在橘色虛線 AGENTIC LOOP 內,橘色回邊繞回 PreToolUse;UserPromptSubmit 到 Stop/StopFailure(紅)全段圍在藍色虛線 EACH TURN 內,藍色回邊繞回 UserPromptSubmit;之後接 TeammateIdle、PreCompact、PostCompact、SessionEnd,SessionEnd 另有右側黑虛線長回邊「resumed sessions」繞回 SessionStart。左側灰虛線掛靠事件:Setup、UserPrompt Expansion、Permission Denied、Elicitation、ElicitationResult、Notification,各自灰虛線箭頭指向對應主幹節點。右側文字標出 dev-flow 實際掛鉤的六格,其餘留白。底部另有六個無箭頭獨立事件框:ConfigChange、WorktreeCreate、WorktreeRemove、CwdChanged/FileChanged/DirectoryAdded、InstructionsLoaded、MessageDisplay">
+    <defs>
+    <marker id="ar-lc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker>
+    <marker id="ar-att" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker>
+    <marker id="ar-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="arrowhead-o" d="M0,0 L10,5 L0,10 Z"/></marker>
+    <marker id="ar-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="arrowhead-b" d="M0,0 L10,5 L0,10 Z"/></marker>
+    <marker id="ar-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="arrowhead-resume" d="M0,0 L10,5 L0,10 Z"/></marker>
+    </defs>
+
+    <g class="cluster turnbox"><rect x="258" y="88" width="554" height="696" rx="10" class="sessionbox"/><text class="dk" x="268" y="104">EACH TURN</text></g>
+    <g class="cluster loopbox"><rect x="280" y="174" width="510" height="526" rx="10" class="loopscope"/><text class="dk-o" x="290" y="190">AGENTIC LOOP</text></g>
+
+    <g class="n"><rect x="300" y="30" width="470" height="44" rx="6" class="go"/><text class="dm" x="314" y="57">Session Start</text></g>
+    <g class="n"><rect x="300" y="118" width="470" height="44" rx="6" class="hk"/><text class="dm" x="314" y="145">UserPromptSubmit</text></g>
+    <g class="n"><rect x="300" y="204" width="470" height="44" rx="6" class="hk"/><text class="dm" x="314" y="231">PreToolUse</text></g>
+    <g class="n"><rect x="300" y="266" width="470" height="44" rx="6" class="b"/><text class="dm" x="314" y="293">PermissionRequest</text></g>
+    <g class="n"><rect x="300" y="328" width="470" height="44" rx="6" class="hl"/><text class="dm" x="314" y="355">[tool executes]</text></g>
+    <g class="n"><rect x="300" y="390" width="470" height="44" rx="6" class="hk"/><text class="dm" x="314" y="417">PostToolUse / PostToolUseFailure</text></g>
+    <g class="n"><rect x="300" y="452" width="470" height="44" rx="6" class="b"/><text class="dm" x="314" y="479">PostToolBatch</text></g>
+    <g class="n"><rect x="300" y="514" width="470" height="44" rx="6" class="hk"/><text class="dm" x="314" y="541">SubagentStart / SubagentStop</text></g>
+    <g class="n"><rect x="300" y="576" width="470" height="44" rx="6" class="b"/><text class="dm" x="314" y="603">TaskCreated</text></g>
+    <g class="n"><rect x="300" y="638" width="470" height="44" rx="6" class="b"/><text class="dm" x="314" y="665">TaskCompleted</text></g>
+    <g class="n"><rect x="300" y="714" width="470" height="44" rx="6" class="no"/><text class="dm" x="314" y="741">Stop / StopFailure</text></g>
+    <g class="n"><rect x="300" y="798" width="470" height="44" rx="6" class="b"/><text class="dm" x="314" y="825">TeammateIdle</text></g>
+    <g class="n"><rect x="300" y="868" width="470" height="44" rx="6" class="hk"/><text class="dm" x="314" y="895">PreCompact</text></g>
+    <g class="n"><rect x="300" y="938" width="470" height="44" rx="6" class="hk"/><text class="dm" x="314" y="965">PostCompact</text></g>
+    <g class="n"><rect x="300" y="1008" width="470" height="44" rx="6" class="b"/><text class="dm" x="314" y="1035">SessionEnd</text></g>
+
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,74 L535,118"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,162 L535,204"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,248 L535,266"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,310 L535,328"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,372 L535,390"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,434 L535,452"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,496 L535,514"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,558 L535,576"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,620 L535,638"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,682 L535,714"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,758 L535,798"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,842 L535,868"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,912 L535,938"/>
+    <path class="edge" marker-end="url(#ar-lc)" d="M535,982 L535,1008"/>
+
+    <path class="edge-o" marker-end="url(#ar-o)" d="M770,672 L780,672 L780,214 L770,214"/>
+    <path class="edge-b" marker-end="url(#ar-b)" d="M770,748 L801,748 L801,128 L770,128"/>
+    <path class="edge-resume" marker-end="url(#ar-r)" d="M770,1018 L1195,1018 L1195,36 L770,36"/>
+    <text class="dl" x="1140" y="814">resumed</text>
+    <text class="dl" x="1140" y="827">sessions</text>
+
+    <g class="n att"><rect x="20" y="34" width="190" height="36" rx="5" class="att"/><text class="dt" x="28" y="48">Setup</text><text class="dc" x="28" y="62">(Opt-in)</text></g>
+    <path class="edge-att" marker-end="url(#ar-att)" d="M210,52 L300,52"/>
+    <g class="n att"><rect x="20" y="122" width="190" height="36" rx="5" class="att"/><text class="dt" x="28" y="136">UserPrompt Expansion</text><text class="dc" x="28" y="150">(slash commands)</text></g>
+    <path class="edge-att" marker-end="url(#ar-att)" d="M210,140 L300,140"/>
+    <g class="n att"><rect x="20" y="270" width="190" height="36" rx="5" class="att"/><text class="dt" x="28" y="284">Permission Denied</text><text class="dc" x="28" y="298">(auto-mode deny)</text></g>
+    <path class="edge-att" marker-end="url(#ar-att)" d="M210,288 L300,288"/>
+    <g class="n att"><rect x="20" y="322" width="190" height="30" rx="5" class="att"/><text class="dt" x="28" y="333">Elicitation</text><text class="dc" x="28" y="347">(MCP input)</text></g>
+    <path class="edge-att" marker-end="url(#ar-att)" d="M210,340 L300,340"/>
+    <g class="n att"><rect x="20" y="356" width="190" height="30" rx="5" class="att"/><text class="dt" x="28" y="367">ElicitationResult</text><text class="dc" x="28" y="381">(MCP input)</text></g>
+    <path class="edge-att" marker-end="url(#ar-att)" d="M210,363 L300,363"/>
+    <g class="n att"><rect x="20" y="718" width="190" height="36" rx="5" class="att"/><text class="dt" x="28" y="732">Notification</text><text class="dc" x="28" y="746">(Async)</text></g>
+    <path class="edge-att" marker-end="url(#ar-att)" d="M210,736 L300,736"/>
+
+    <path class="tick" d="M770,52 L850,52"/>
+    <text class="dc" x="858" y="48">skills 描述+hooks 註冊+</text>
+    <text class="dc" x="858" y="60">CLAUDE.md/rules 進場</text>
+    <path class="tick" d="M770,140 L850,140"/>
+    <text class="dc" x="858" y="143">/dev-flow 路由器在此展開</text>
+    <path class="tick" d="M770,226 L850,226"/>
+    <text class="dc" x="858" y="222">devflow-guard·history-guard·</text>
+    <text class="dc" x="858" y="234">devflow-prebash</text>
+    <path class="tick" d="M770,412 L850,412"/>
+    <text class="dc" x="858" y="415">devtalk-guard·devflow-postbash</text>
+    <path class="tick" d="M770,536 L850,536"/>
+    <text class="dc" x="858" y="532">dev-run 派工(worker/reviewer</text>
+    <text class="dc" x="858" y="544">獨立 context)</text>
+    <path class="tick" d="M770,890 L850,890"/>
+    <text class="dc" x="858" y="893">壓縮會裁內容 → 文件才是正本</text>
+
+    <g class="n att"><rect x="20" y="1092" width="250" height="44" rx="5" class="att"/><text class="dt" x="28" y="1110">ConfigChange</text><text class="dc" x="28" y="1124">(Async)</text></g>
+    <g class="n att"><rect x="290" y="1092" width="250" height="44" rx="5" class="att"/><text class="dt" x="298" y="1110">WorktreeCreate</text><text class="dc" x="298" y="1124">(Isolation)</text></g>
+    <g class="n att"><rect x="560" y="1092" width="250" height="44" rx="5" class="att"/><text class="dt" x="568" y="1110">WorktreeRemove</text><text class="dc" x="568" y="1124">(Teardown)</text></g>
+    <g class="n att"><rect x="20" y="1156" width="300" height="44" rx="5" class="att"/><text class="dt" x="28" y="1174">CwdChanged / FileChanged / DirectoryAdded</text><text class="dc" x="28" y="1188">(Env reactive)</text></g>
+    <g class="n att"><rect x="340" y="1156" width="225" height="44" rx="5" class="att"/><text class="dt" x="348" y="1174">InstructionsLoaded</text><text class="dc" x="348" y="1188">(Async)</text></g>
+    <g class="n att"><rect x="585" y="1156" width="225" height="44" rx="5" class="att"/><text class="dt" x="593" y="1174">MessageDisplay</text><text class="dc" x="593" y="1188">(Display)</text></g>
+
+    <text class="dbad" x="20" y="1218">武裝與圍欄都掛在 PreToolUse/PostToolUse 這一圈;紅色 Stop/StopFailure 之後仍有 TeammateIdle/PreCompact/PostCompact 才到 SessionEnd。</text>
+  </svg></div>
+  <p class="figcap">這是 <a href="guide-dev-flow.html#guard">guide-dev-flow.html ⑥</a> 的同一張圖,放在這裡讓你先看到
+  「被擋下時你人在生命週期哪裡」的整體地圖;三走廊(左掛靠/中主幹/右 dev-flow 掛鉤)、範圍框與顏色語意的完整解說、
+  以及下面「你看到的訊息 ⇒ 是哪支 hook」14 列速查表,都以 guide-dev-flow ⑥ 為準。</p>
+
+  <p class="lead">這章要你懂:<strong>你被擋的時候,一定是 Claude agent 生命週期的 <code>PreToolUse</code> 或
+  <code>PostToolUse</code> 這兩格在擋你</strong> —— 知道是哪一格,就知道是「動手前擋下來」還是「動完了事後才查到」;
+  剩下唯一要你判斷的是 L1 還是 L2,判不出來時規則已經幫你決定了(當 L2)。</p>
+
+  <p>Claude agent 一輪的生命週期(站數以 guide-dev-flow ⑥ 的圖為準):<br>
+  <code>SessionStart</code>(hooks 註冊/skills 描述進場)→ <code>UserPromptSubmit</code>(/指令展開)→
+  <strong><code>PreToolUse</code></strong>(寫入前擋)→ 工具執行 → <strong><code>PostToolUse</code></strong>(事後偵測)→
+  <code>Stop</code> → 壓縮 → <code>SessionEnd</code>。<br>
+  dev-flow 的守衛逐字以 <code>hooks/hooks.json</code> 為準,只掛在其中<strong>兩格</strong>:
+  <strong>PreToolUse</strong> = <code>devflow-guard</code>(Edit|Write|Read)+ <code>history-guard</code>(Edit|Write)+
+  <code>devflow-prebash</code>(Bash);<strong>PostToolUse</strong> = <code>devtalk-guard</code>(Edit|Write)+
+  <code>devflow-postbash</code>(Bash)。換句話說:<strong>被 dev-flow 擋,必是這兩格之一</strong> ——
+  別處(<code>SessionStart</code> 只是 hook 註冊/skills 描述進場,<code>Stop</code>/壓縮/<code>SessionEnd</code>)
+  不會是原因。機制細節(誠實界線、fail-closed 語意、逐 hook 攻防表)見
+  <a href="guide-dev-flow.html#guard">guide-dev-flow.html ⑥</a>。</p>
+
+  <p>Stage 6 的守衛本體是 <code>devflow-exec.sh</code>(plugin hooks 內,無 alias,要打路徑;
   安裝路徑 <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/</code>,
   Windows 對應 <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\</code>):</p>
   <pre>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/hooks/devflow-exec.sh start &lt;slug&gt;</pre>
   <p class="muted">此檔已可執行(<code>chmod +x</code> 免打),下文一律省略路徑,單寫 <code>devflow-exec.sh</code>。</p>
 
+  <h3>速查表:你看到的訊息 ⇒ 是哪支 hook ⇒ 生命週期哪一格 ⇒ 為什麼 ⇒ 怎麼辦</h3>
+  <p class="muted">前三列 <code>&lt;pre&gt;</code> 是 hook 原始碼裡的 f-string 逐字內容(含 ⛔ 與中文),只為了塞進表格欄寬
+  手動折成多行 —— 不是宣稱位元組全同斷行,是宣稱「拿掉手動折行後,文字內容零差異」;這三塊訊息是<strong>驗證工具的原始輸出</strong>,
+  不是欄位對齊的示意圖,故不套用本頁 ASCII 圖表的半形字元限制。其餘標「節錄」的列只取訊息開頭一句,不是全文逐字。</p>
+  <div class="tablewrap"><table>
+    <tr><th>你看到的訊息</th><th>是哪支 hook</th><th>生命週期哪一格</th><th>為什麼</th><th>怎麼辦</th></tr>
+    <tr><td><pre>⛔ 圍欄②:執行期禁讀 &lt;path&gt;
+—— 要翻上游 = spec 不完整。
+停:devflow-exec.sh stop → 補 spec → 重審。</pre></td>
+        <td><code>devflow-guard.sh</code></td>
+        <td><code>PreToolUse</code>(Read)</td>
+        <td>要翻上游討論檔 = spec 沒寫完整,不是 scope 問題,跨 feature 一律擋</td>
+        <td><strong>一律 stop</strong> —— 沒有 allow 可用</td></tr>
+    <tr><td><pre>⛔ 契約防篡改:執行期禁改 &lt;path&gt;
+(跨 feature 一律保護)。
+改本 feature 的 spec = L2:
+devflow-exec.sh stop → 修 → 重審 → 重新 start。</pre></td>
+        <td><code>devflow-guard.sh</code></td>
+        <td><code>PreToolUse</code>(Edit|Write)</td>
+        <td>1/2/3/4(含 <code>.html</code> twin)是基準線,改了就跟著漂;跨 feature 一律保護</td>
+        <td><strong>L2</strong> → stop → 修 → 重審 → 重新 start(baseline/契約 hash 都要重算)</td></tr>
+    <tr><td><pre>⛔ scope 外寫入:&lt;path&gt; 不在 5-tasks Files 聯集。
+L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
+  --reason "..." 並記 D-n;L2 → stop。</pre></td>
+        <td><code>devflow-guard.sh</code></td>
+        <td><code>PreToolUse</code>(Edit|Write)</td>
+        <td>改動超出 5-tasks Files 聯集</td>
+        <td>三種裡<strong>唯一有 L1 分支</strong>:沒動 R/S → <code>allow</code> + 記 D-n 繼續;動了 →
+        stop 走 L2;判不清 → 一律當 L2,這條沒有裁量空間</td></tr>
+    <tr><td>節錄(fail-closed,兩種):「⛔ devflow-guard:旗標檔 .devflow/exec.json 消失,但守衛仍武裝中…」/
+        「⛔ devflow-guard:.devflow/exec.json 損壞(…)。守衛 fail-closed 擋下動作。」</td>
+        <td><code>devflow-guard.sh</code> +
+        <code>devflow-prebash.sh</code>(共用同一個狀態讀取)</td>
+        <td><code>PreToolUse</code>(Edit|Write|Read 與 Bash 皆擋)</td>
+        <td>sentinel 在但 <code>.devflow/exec.json</code> 消失或損壞 —— <strong>擋一切</strong>動作,不是自動放行</td>
+        <td><code>devflow-exec.sh</code> 是 CLI、不經 hooks,不會被自己擋:跑 <code>stop</code> 後重新
+        <code>start &lt;slug&gt;</code>;sentinel 還記得原 slug 時,直接 <code>start</code> 同 slug 亦可(re-arm 復原)</td></tr>
+    <tr><td>節錄:「⛔ 圍欄②:執行期禁讀上游討論文件(shell 亦同)。」</td>
+        <td><code>devflow-prebash.sh</code></td>
+        <td><code>PreToolUse</code>(Bash)</td>
+        <td>圍欄②的 shell 破口(<code>cat</code>/<code>grep</code> 等),等同上面 Read 版</td>
+        <td>同上一律 stop;一般指令(測試/build/git)完全不受影響</td></tr>
+    <tr><td>節錄:「⛔ 禁止經 shell 破壞守衛狀態(.devflow/ 或 sentinel)。」</td>
+        <td><code>devflow-prebash.sh</code></td>
+        <td><code>PreToolUse</code>(Bash)</td>
+        <td><code>rm</code>/<code>mv</code>/直寫 <code>.devflow/</code> 或 sentinel 會讓守衛狀態失真</td>
+        <td>正常收工用 <code>devflow-exec.sh stop</code>;要擴 scope 用 <code>allow</code>,不要手動動 JSON</td></tr>
+    <tr><td>節錄:「⛔ 禁止直接編輯守衛狀態(.devflow/)。」</td>
+        <td><code>devflow-guard.sh</code></td>
+        <td><code>PreToolUse</code>(Edit|Write)</td>
+        <td>狀態只准 CLI 動,Edit/Write 直改會跟 CLI 認知的狀態不一致</td>
+        <td>擴 scope 走 <code>devflow-exec.sh allow &lt;file&gt; --reason "..."</code></td></tr>
+    <tr><td>節錄:「⛔ 執行期禁改 .gitignore(改忽略規則會讓偵測網失明)。」</td>
+        <td><code>devflow-guard.sh</code></td>
+        <td><code>PreToolUse</code>(Edit|Write)</td>
+        <td>忽略規則一鬆,scope 外髒檔就能躲過偵測網</td>
+        <td>確有需要 → 停下回報使用者,不得自行改</td></tr>
+    <tr><td>節錄:「⛔ 契約檔內容在執行期被改(經 shell 或外部工具):」</td>
+        <td><code>devflow-postbash.sh</code></td>
+        <td><code>PostToolUse</code>(Bash)</td>
+        <td>Edit/Write 擋得住的改法,經 shell 繞過 prebash 的關鍵字比對後仍可能落地</td>
+        <td>已落地的 L2:<code>devflow-exec.sh stop</code> → 修 spec → 重審 → 重新 start</td></tr>
+    <tr><td>節錄:「⛔ 偵測網:scope 外改動出現(可能經 shell 寫入):」</td>
+        <td><code>devflow-postbash.sh</code></td>
+        <td><code>PostToolUse</code>(Bash)</td>
+        <td>事前 <code>devflow-prebash</code> 只認關鍵字/正則,擋不住刻意繞路;<code>.gitignore</code> 的 shell 改動
+        (Edit/Write 事前擋,shell 改動事前不擋)也是在這裡事後比對 baseline hash 抓到</td>
+        <td>誤寫 → 還原;L1(不動 R/S)→ <code>allow &lt;file&gt; --reason</code> 並記 D-n;L2 → stop</td></tr>
+    <tr><td>節錄:「⛔ 偵測網(tamper alarm):…守衛狀態與驗收帳只准 devflow-exec.sh 寫」</td>
+        <td><code>devflow-postbash.sh</code></td>
+        <td><code>PostToolUse</code>(Bash)</td>
+        <td>heredoc/直寫繞得過 prebash 的關鍵字比對,以 git-dir shadow hash 比對抓 out-of-band 竄改</td>
+        <td>復原:<code>exec.json</code> → 重新 <code>start</code>;<code>parallel.json</code> →
+        <code>parallel-init &lt;slug&gt; --reset</code>(或還原檔案)</td></tr>
+    <tr><td>逐字:「⛔ history-guard:不要用 Edit/Write 直接改 docs/dev/HISTORY.md。」</td>
+        <td><code>history-guard.sh</code></td>
+        <td><code>PreToolUse</code>(Edit|Write)</td>
+        <td><strong>不受 Stage 6 武裝狀態影響</strong>,一律作用:Edit/Write 整檔寫回,多 session 交錯會互相
+        蓋掉且不報錯</td>
+        <td>改用單一寫入口 <code>history-append.sh</code>(目錄鎖 + 重試 + 純追加);Read 與經 Bash 執行的
+        <code>history-append.sh</code> 皆放行</td></tr>
+    <tr><td>節錄:「⛔ devtalk-guard:盲原則洩漏 —— 剛寫入的 dev-talk 檔案含下游階段字眼(不得出現):」</td>
+        <td><code>devtalk-guard.sh</code></td>
+        <td><code>PostToolUse</code>(Edit|Write)</td>
+        <td>與本節 Stage 6 執行守衛是<strong>不同子系統,不共用武裝狀態</strong>;只認
+        <code>*/skills/dev-talk/*</code> 路徑,防 <code>/dev-talk</code> 自己洩漏下游知識</td>
+        <td>移除比對到的字眼;判定為誤報 → 回報使用者裁決</td></tr>
+    <tr><td>(不擋,無訊息)</td>
+        <td>—</td>
+        <td>—(不觸發任何一格)</td>
+        <td><strong>ambient metadata</strong>(任何深度的 <code>.DS_Store</code>、basename 為
+        <code>._*</code>、<code>Thumbs.db</code>、<code>__pycache__/</code>、<code>*.pyc</code>)不進
+        baseline,只是檔案系統雜訊</td>
+        <td>不需 <code>allow</code>;其他真正的 tracked/untracked/ignored scope 外檔仍會擋,
+        守衛不把 <code>.gitignore</code> 當成政策介面</td></tr>
+  </table></div>
+  <p class="figcap"><code>devflow-guard.sh</code> 與 <code>devflow-prebash.sh</code> 的訊息都是<strong>寫入前</strong>就擋
+  (<code>PreToolUse</code>)—— 看到就代表動作「還沒發生」;<code>devflow-postbash.sh</code> 的三種訊息是
+  <strong>事後偵測網</strong>(<code>PostToolUse</code>)—— 看到就代表改動<strong>已經落地</strong>,要先確認有沒有真的需要還原。
+  <code>history-guard</code> 與 <code>devtalk-guard</code> 是另外兩支獨立守衛(前者不受武裝狀態影響、後者不共用武裝狀態),
+  別把它們的訊息誤判成 Stage 6 的 scope 問題。</p>
+
+  <div class="figwrap"><svg id="fig-level" viewBox="0 0 880 300" role="img"
+       aria-label="被守衛擋下時的判級決策:三種訊息各自的處置,以及 L1 與 L2 的分岔">
+    <defs><marker id="ar-lv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
+    <g class="n"><rect x="20" y="30" width="260" height="46" rx="6" class="no"/><text class="dt" x="32" y="51">圍欄② 讀上游討論檔</text><text class="dc" x="32" y="66">Read 與 shell 皆擋,跨 feature 一律擋</text></g>
+    <g class="n"><rect x="20" y="100" width="260" height="46" rx="6" class="no"/><text class="dt" x="32" y="121">契約防篡改 改 1/2/3/4</text><text class="dc" x="32" y="136">保護對象含 .html twin,含 4-spec</text></g>
+    <g class="n"><rect x="20" y="170" width="260" height="46" rx="6" class="no"/><text class="dt" x="32" y="191">scope 外寫入</text><text class="dc" x="32" y="206">不在 5-tasks Files 聯集</text></g>
+    <g class="n"><rect x="330" y="170" width="230" height="46" rx="6" class="hl"/><text class="dt" x="342" y="191">有動到 R/S 嗎?</text><text class="dc" x="342" y="206">三種裡唯一有 L1 分支</text></g>
+    <g class="n"><rect x="610" y="30" width="250" height="46" rx="6" class="note"/><text class="dt" x="622" y="51">一律 stop</text><text class="dc" x="622" y="66">是 spec 完整度問題,沒有 allow 可用</text></g>
+    <g class="n"><rect x="610" y="100" width="250" height="46" rx="6" class="note"/><text class="dt" x="622" y="121">L2 → stop → 修 → 重審 → 重新 start</text><text class="dc" x="622" y="136">baseline 與契約 hash 都要重算</text></g>
+    <g class="n"><rect x="610" y="148" width="250" height="36" rx="6" class="go"/><text class="dt" x="622" y="164">否 → L1</text><text class="dc" x="622" y="178">allow 擴 scope + 記 D-n,繼續做</text></g>
+    <g class="n"><rect x="610" y="192" width="250" height="36" rx="6" class="note"/><text class="dt" x="622" y="208">是 → L2</text><text class="dc" x="622" y="222">stop,回頭走 G2</text></g>
+    <g class="n"><rect x="20" y="250" width="840" height="40" rx="6" class="hl"/><text class="dt" x="32" y="268">分不清 L1/L2 → 一律當 L2,這條沒有裁量空間</text><text class="dc" x="32" y="282">判級由實作者當下自判,但必須以 D-n 留痕(現象/保守選擇/理由/影響);T review 時 reviewer 對照 D-n 覆核 —— 自判錯誤會在 review 被打回</text></g>
+    <path class="edge" marker-end="url(#ar-lv)" d="M280,53 L610,53"/>
+    <path class="edge" marker-end="url(#ar-lv)" d="M280,123 L610,123"/>
+    <path class="edge" marker-end="url(#ar-lv)" d="M280,193 L330,193"/>
+    <path class="edge" marker-end="url(#ar-lv)" d="M560,185 L585,185 L585,166 L610,166"/>
+    <path class="edge" marker-end="url(#ar-lv)" d="M560,201 L585,201 L585,210 L610,210"/>
+  </svg></div>
+  <p class="figcap">前兩種沒有分支 —— 看到就是 <code>stop</code>。只有第三種要你判級,判不出來時最後一列已經幫你決定了。</p>
+
+  <h3><code>devflow-exec.sh</code> 指令一覽(你自己動手打的,不是被擋的訊息)</h3>
+  <p class="muted">上面速查表是「你被擋的時候看到什麼」;下面這張是「你自己主動打的指令」——
+  兩者不要混淆:指令是你的動作,速查表是 hook 對你動作的反應。</p>
   <div class="tablewrap"><table>
     <tr><th>動作</th><th>指令</th><th>用途</th></tr>
     <tr><td><code>start</code></td><td><code>devflow-exec.sh start &lt;slug&gt;</code></td>
@@ -513,89 +770,6 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   <code>rebuild-plan</code>/<code>review</code>/<code>candidate</code>/<code>gate</code>),
   語意見 README §5「T 級並行」與下方「T 級並行」小節。</p>
 
-  <h3>被擋時看到什麼、怎麼處置(三種訊息內容逐字,為版面手動折行)</h3>
-  <p class="muted">下面三塊 <code>&lt;pre&gt;</code> 是 hook 原始碼裡的 f-string 逐字內容(含 ⛔ 與中文),
-  只為了塞進卡片寬度手動折成多行 —— 不是宣稱位元組全同斷行,是宣稱「拿掉手動折行後,文字內容零差異」。
-  這三塊訊息是<strong>驗證工具的原始輸出</strong>,不是欄位對齊的示意圖,故不套用本頁 ASCII 圖表的半形字元限制
-  (該限制是為了 <code>&lt;pre&gt;</code> 欄位對齊,這裡沒有對齊需求)。</p>
-  <div class="cardgrid">
-    <div class="card">
-      <h4>圍欄②(讀上游討論檔)</h4>
-      <pre>⛔ 圍欄②:執行期禁讀 &lt;path&gt;
-—— 要翻上游 = spec 不完整。
-停:devflow-exec.sh stop → 補 spec → 重審。</pre>
-      <p>Read 工具與 shell(<code>cat</code>/<code>grep</code> 等)皆擋,跨 feature 一律擋。
-      <strong>一律 stop</strong> —— 這不是 scope 問題,是 spec 完整度問題,沒有 allow 可用。</p>
-    </div>
-    <div class="card">
-      <h4>契約防篡改(改 1/2/3/4)</h4>
-      <pre>⛔ 契約防篡改:執行期禁改 &lt;path&gt;
-(跨 feature 一律保護)。
-改本 feature 的 spec = L2:
-devflow-exec.sh stop → 修 → 重審 → 重新 start。</pre>
-      <p>保護對象含 <code>.html</code> twin,含 4-spec。<strong>L2 → stop</strong>,修完重新走 G2,
-      再重新 <code>start</code>(baseline/hash 都要重算)。</p>
-    </div>
-    <div class="card">
-      <h4>scope 外寫入</h4>
-      <pre>⛔ scope 外寫入:&lt;path&gt; 不在 5-tasks Files 聯集。
-L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
-  --reason "..." 並記 D-n;L2 → stop。</pre>
-      <p>三種裡<strong>唯一有 L1 分支</strong>的一種:沒動到 R/S → <code>allow</code> + 記 D-n 繼續;
-      動到了 → stop 走 L2。<strong>判級由誰認定</strong>:實作者當下自判,但必須以 D-n 留痕
-      (現象/保守選擇/理由/影響),T review 時 reviewer 對照 D-n 覆核判級 —— 自判錯誤會在
-      review 被打回。分不清 → 一律當 L2,這條沒有裁量空間。</p>
-    </div>
-  </div>
-
-  <div class="figwrap"><svg id="fig-level" viewBox="0 0 880 300" role="img"
-       aria-label="被守衛擋下時的判級決策:三種訊息各自的處置,以及 L1 與 L2 的分岔">
-    <defs><marker id="ar-lv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
-    <g class="n"><rect x="20" y="30" width="260" height="46" rx="6" class="no"/><text class="dt" x="32" y="51">圍欄② 讀上游討論檔</text><text class="dc" x="32" y="66">Read 與 shell 皆擋,跨 feature 一律擋</text></g>
-    <g class="n"><rect x="20" y="100" width="260" height="46" rx="6" class="no"/><text class="dt" x="32" y="121">契約防篡改 改 1/2/3/4</text><text class="dc" x="32" y="136">保護對象含 .html twin,含 4-spec</text></g>
-    <g class="n"><rect x="20" y="170" width="260" height="46" rx="6" class="no"/><text class="dt" x="32" y="191">scope 外寫入</text><text class="dc" x="32" y="206">不在 5-tasks Files 聯集</text></g>
-    <g class="n"><rect x="330" y="170" width="230" height="46" rx="6" class="hl"/><text class="dt" x="342" y="191">有動到 R/S 嗎?</text><text class="dc" x="342" y="206">三種裡唯一有 L1 分支</text></g>
-    <g class="n"><rect x="610" y="30" width="250" height="46" rx="6" class="note"/><text class="dt" x="622" y="51">一律 stop</text><text class="dc" x="622" y="66">是 spec 完整度問題,沒有 allow 可用</text></g>
-    <g class="n"><rect x="610" y="100" width="250" height="46" rx="6" class="note"/><text class="dt" x="622" y="121">L2 → stop → 修 → 重審 → 重新 start</text><text class="dc" x="622" y="136">baseline 與契約 hash 都要重算</text></g>
-    <g class="n"><rect x="610" y="148" width="250" height="36" rx="6" class="go"/><text class="dt" x="622" y="164">否 → L1</text><text class="dc" x="622" y="178">allow 擴 scope + 記 D-n,繼續做</text></g>
-    <g class="n"><rect x="610" y="192" width="250" height="36" rx="6" class="note"/><text class="dt" x="622" y="208">是 → L2</text><text class="dc" x="622" y="222">stop,回頭走 G2</text></g>
-    <g class="n"><rect x="20" y="250" width="840" height="40" rx="6" class="hl"/><text class="dt" x="32" y="268">分不清 L1/L2 → 一律當 L2,這條沒有裁量空間</text><text class="dc" x="32" y="282">判級由實作者當下自判,但必須以 D-n 留痕(現象/保守選擇/理由/影響);T review 時 reviewer 對照 D-n 覆核 —— 自判錯誤會在 review 被打回</text></g>
-    <path class="edge" marker-end="url(#ar-lv)" d="M280,53 L610,53"/>
-    <path class="edge" marker-end="url(#ar-lv)" d="M280,123 L610,123"/>
-    <path class="edge" marker-end="url(#ar-lv)" d="M280,193 L330,193"/>
-    <path class="edge" marker-end="url(#ar-lv)" d="M560,185 L585,185 L585,166 L610,166"/>
-    <path class="edge" marker-end="url(#ar-lv)" d="M560,201 L585,201 L585,210 L610,210"/>
-  </svg></div>
-  <p class="figcap">前兩種沒有分支 —— 看到就是 <code>stop</code>。只有第三種要你判級,判不出來時最後一列已經幫你決定了。</p>
-
-  <details>
-    <summary>補充:其他會被擋的情況(較少見)</summary>
-    <ul>
-      <li><code>.devflow/</code> 被直接編輯 → 擋。<strong>擋法</strong>:Edit/Write 由
-        <code>devflow-guard</code> 事前擋,shell(<code>rm</code>/覆寫)由 <code>devflow-prebash</code>
-        事前擋 —— 兩路都到不了檔案。狀態只准 CLI 動,擴 scope 走 <code>allow</code>,不要手動改 JSON</li>
-      <li><code>.gitignore</code> 執行期被改 → 擋(改忽略規則會讓偵測網失明)。<strong>擋法不同</strong>:
-        Edit/Write 事前擋;shell 改動<strong>事前不擋</strong>,由 <code>devflow-postbash</code>
-        事後比對 baseline hash 抓到(exit 2)—— 改動已落地,停下回報使用者、還原後再繼續</li>
-      <li>postbash 偵測網(每次 Bash 後跑,事後偵測):抓「經 shell 繞過」的契約 hash 變動與 scope 外改動,
-        exit 2 印到 stderr,處置同上兩張卡(契約變動 = L2 stop;scope 外 = L1 allow 或 L2 stop)</li>
-      <li><strong>ambient metadata</strong>:任何深度的 <code>.DS_Store</code>、basename 為
-        <code>._*</code>、<code>Thumbs.db</code>、<code>__pycache__/</code>、<code>*.pyc</code>
-        不進 baseline,也不擋 start 或 postbash、不需 allow;這只是檔案系統雜訊。其他真正的
-        tracked/untracked/ignored scope 外檔仍會擋,守衛不把 <code>.gitignore</code> 當成政策介面。</li>
-      <li><strong>shell 圍欄</strong>(<code>devflow-prebash.sh</code>,PreToolUse Bash,事前擋):
-        Bash 指令若含上游討論檔路徑(<code>cat docs/dev/*/1-discussion.md</code> 之類)→ 擋,
-        等同圍欄② 的 shell 版;指令若試圖 <code>rm</code>/覆寫 <code>.devflow/</code> 或 sentinel → 擋。
-        一般指令(測試、build、git)完全不受影響</li>
-      <li>fail-closed:sentinel 在但 <code>.devflow/exec.json</code> 消失或損壞 → <strong>擋一切</strong>
-        Edit/Write/Read 動作,不是自動放行。<strong>復原路徑</strong>:<code>devflow-exec.sh</code> 是
-        CLI、不經 hooks,所以不會被自己擋 —— 跑 <code>stop</code>(撤旗標與 sentinel,守衛沉睡)
-        後重新 <code>start &lt;slug&gt;</code>(baseline/契約 hash 重算);sentinel 還記得原 slug 時,
-        直接 <code>start 同slug</code> 也可(視為 re-arm 復原)</li>
-    </ul>
-  </details>
-
   <h3>並行與多模組:守衛的邊界在「工作樹」</h3>
   <ul>
     <li>守衛狀態(<code>.devflow/exec.json</code> + git-dir sentinel)以<strong>當前工作樹</strong>為
@@ -628,9 +802,10 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   </svg></div>
   <p class="figcap">紅虛線是隔離面:一個工作樹同一時間只武裝一個模組,而每個 worktree 有自己的 toplevel 與 git-dir,
   所以守衛狀態天然分開。同一工作樹內硬要並行做不到,且是刻意設計 —— hooks 分不清寫入來自哪個 session。</p>
-  <p class="muted">守衛掛載(條數與清單以 <code>hooks/hooks.json</code> 為準,近期新增 history-guard 與 devtalk-guard):<code>devflow-guard</code>(Edit|Write|Read)、
-  <code>devflow-prebash</code>(Bash 事前)、<code>devflow-postbash</code>(Bash 事後偵測)、
-  <code>devtalk-guard</code>(盲原則)。想確認整套沒壞:跑
+  <p class="muted">守衛掛載(條數與清單以 <code>hooks/hooks.json</code> 為準):<strong>PreToolUse</strong> =
+  <code>devflow-guard</code>(Edit|Write|Read)、<code>history-guard</code>(Edit|Write,不受武裝狀態影響)、
+  <code>devflow-prebash</code>(Bash 事前);<strong>PostToolUse</strong> = <code>devtalk-guard</code>(盲原則,
+  不同子系統)、<code>devflow-postbash</code>(Bash 事後偵測)。想確認整套沒壞:跑
   <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/hooks/selftest.sh</code>(動態發現所有案例,自建 temp repo 後自清)。</p>
 
   <h3>T 級並行(選配):Candidate 到 ACCEPTED</h3>

@@ -155,6 +155,43 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 >   資料,不回寫本檔);Files 重疊由 Scheduler 自動判,毋須人工維護 Conflicts 清單。
 > - parallel 模式下 checkbox 只在該 T **ACCEPTED**(獨立 review 通過)後由派工者勾,
 >   Worker 不碰本檔。
+>
+> 執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項併項、禁一發全生):
+> 0. 前置:4-spec 須 status=approved(G2 過);讀 4-spec 全部 R/S 建立盤點基礎,
+> 建 todo 一 T 一項。完成 = approved 已核對 + R/S 全集清點回報。
+> 1. 切 T:順序 = tracer bullet(先打通最薄端到端縱切,再逐層加厚);判準見上文——
+>    每個 T 必須答得出「完成後系統/使用者多了什麼可觀測行為」,答不出即水平切層
+>    徵兆,應與相鄰 T 合併或重界定,不得整份按 DB→Repo→Service→API→UI 逐層分
+>    (機械提示見 `scripts/check-task-slicing.sh`,warning-only、永不 exit 1,
+>    不能取代 reviewer 判斷);每個 T 必須有一個能 RED→GREEN 的測試,純
+>    migration／infra 型 T 一樣要測,只是測形狀(見上「T 自足律」)。
+>    完成 = 每個 T 皆答得出可觀測行為、無按架構層整份切分。
+> 2. 填欄:Covers 標 R/S id 且全 S 皆被至少一個 T 承接(追溯鏈頂端);Files 以 Git
+>    repository root 相對路徑列出,含對應測試檔(D-39 四象限判準見上「Files 該含
+>    哪些測試檔」節);Verify 單行純指令,`-run`/`-k`/`--filter` 篩選器須帶案例數
+>    斷言(強制形狀見上),開工前先原樣跑一次,依「①已經綠→補計數或改條件
+>    ②不可能綠→停,修欄位,記 L1③綠不了但方向對→正常開工」三種結果處置;Intent
+>    一句寫可觀測行為,Boundaries 寫硬約束/禁區,Design Boundary Contract 為
+>    `applicable` 時比照「Design Boundary 摘錄規則」摘錄該 T 最小子集;續行不得
+>    以保留欄名開頭(續行禁令見上)。
+>    完成 = 四必填欄齊備、Verify 已原樣跑過一次並記錄結果、Intent/Boundaries 各
+>    一句到位。
+> 3. 依賴:填 `Blocked-by`(硬執行依賴,拓撲序不成環);parallel 模式選配填
+>    `Integrate-after`(軟整合依賴)/`Risk`/`Review-mode`/`Semantic-conflicts-with`,
+>    不必手排 wave——Wave 由引擎從 Blocked-by + Files overlap 自動派生(見上「並行
+>    選配欄位」)。完成 = 每個 T 的 Blocked-by 已核對、拓撲序無誤。
+> 4. 自檢:逐 T 核對四必填欄(Covers/Files/Verify/Blocked-by)齊全、續行未踩保留
+>    欄名——缺一欄或踩中,`contract_ref.py` 的 `parse_5_tasks` 即判為 parse
+>    error,`start` fail-closed 拒啟(見上「續行禁令」)。完成 = 逐 T 核對零缺欄、
+>    零保留欄遮蔽。
+> 5. 產執行板 twin 看一眼:`docs/dev/tools/build-gate-twin.py <專案根> <slug>
+>    5-tasks`(母版在 `scripts/`)產 `5-tasks.html`;它讀 md 逐條解析,不手抄,
+>    解析不到任何一個 T 會直接失敗。核對動線頂區五格、任務卡逐條可勾(缺必填欄
+>    紅底現形)、Boundaries 摺疊、依賴 DAG 四件事皆在(見上「5-tasks twin 是執行
+>    板」節)。完成 = twin 產出且四件事逐項核對過。
+> 6. 定稿:frontmatter status 由 draft 轉 approved(5-tasks 不是 gate 站,無 G
+>    編號、免 reviewer 核准,owner 自行定案即可)。完成 = status 已更新 + twin
+>    與 md 一致。
 
 ## T-1 <標題:動詞開頭一句完成式>
 - [ ] 完成
