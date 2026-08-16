@@ -1050,7 +1050,7 @@ check_static_pin() { # check_static_pin <相對路徑> <期望逐字一整行> <
     STATIC_PIN_FAIL=1
   fi
 }
-check_static_pin "hooks/selftest.sh" "MIN_CASES=339" "MIN_CASES 釘死 339"
+check_static_pin "hooks/selftest.sh" "MIN_CASES=348" "MIN_CASES 釘死 348"
 check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "EXPECTED_CHECKS 釘死 131"
 check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 9" "MIN_CHECKS 釘死 9"
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 132" "MIN_CHECKS 釘死 132(finding 4b 收緊後的實得數)"

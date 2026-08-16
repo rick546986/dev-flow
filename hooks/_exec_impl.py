@@ -1013,6 +1013,36 @@ elif cmd == "review":
     print(f"✅ wave review 結構合法({len(wave_tasks)} tasks,integration_verdict="
           f"{review.get('integration_verdict')})")
 
+elif cmd == "tier-exempt":
+    # X-5b:「首派即最高階」窄版攔截(_dispatch_impl.py)的合法逃生門。這是唯一
+    # 准許 agent 觸發的寫入路徑 —— .devflow/ 對 Edit/Write 的既有保護
+    # (devflow-guard.sh)不需要繞過,因為寫入是這支 CLI 自己做的,不是叫 agent
+    # 直接寫檔案。一次性:核發時 used=false,guard 消耗後改 used=true+used_at,
+    # 下次同樣情境仍會擋 —— 不是常駐白名單。
+    args = sys.argv[3:]
+    reason = ""
+    i = 0
+    while i < len(args):
+        if args[i] == "--reason" and i + 1 < len(args):
+            reason = args[i + 1]; i += 2
+        else:
+            die(f'拒絕:tier-exempt 未知參數 {args[i]}(可用:--reason "...")')
+    if not reason.strip():
+        die('用法: devflow-exec.sh tier-exempt --reason "..."(理由必填非空,留痕用)')
+    os.makedirs(DF, exist_ok=True)
+    tep = os.path.join(DF, "tier-exempt.json")
+    if os.path.exists(tep):
+        try:
+            prev = json.load(open(tep))
+        except Exception:
+            prev = None
+        if isinstance(prev, dict) and prev.get("used") is False:
+            print(f"⚠️  覆蓋前一張尚未使用的豁免卡(舊理由:{prev.get('reason', '')})")
+    json.dump({"reason": reason, "created_at": now(), "used": False},
+              open(tep, "w"), ensure_ascii=False, indent=1)
+    print(f"✅ tier-exempt 已核發:{reason}")
+    print("一次性 —— 下次首派最高階模型時消耗掉(used=true+used_at),之後同樣情境仍會擋。")
+
 elif cmd == "review-unlock":
     # A-11:7-review.md 步 4「此刻才讀 6-notes」的解鎖動作。Write 限縮不受影響
     # (7-review.md:「unlock 後 Read 放行,Write 限縮維持」)。
