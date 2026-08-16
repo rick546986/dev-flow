@@ -33,6 +33,17 @@
             "statusMessage": "devflow-guard shell 圍欄"
           }
         ]
+      },
+      {
+        "matcher": "Task|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/devflow-dispatch-guard.sh",
+            "timeout": 15,
+            "statusMessage": "devflow-guard 派工分層守衛"
+          }
+        ]
       }
     ],
     "PostToolUse": [

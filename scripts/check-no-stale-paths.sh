@@ -17,10 +17,12 @@
 # 約 75 個活檔完全不在 ACTIVE_TARGETS 也不在可見豁免清單,塞禁字 exit 0、守衛看不到。
 # 這是「補清單」治不好的病:下一個新目錄一樣會漏。
 #
-# 新版倒過來:掃描來源改成 `git ls-files`(repo 全部追蹤檔),**預設全部要掃**,
+# 新版倒過來:掃描來源改成 `git ls-files`(repo 全部追蹤檔,X-2 起再併入未追蹤
+# 但未被 .gitignore 排除的檔——見 tracked_files() 註解),**預設全部要掃**,
 # 只有在下面 ALLOWLIST 裡逐條列名、附理由的路徑才豁免。新增目錄/新增檔案不用被
 # 加進任何清單就會自動進入掃描——要豁免才需要動這份清單,而清單本身逐條列印
-# (透明豁免),不是靜默跳過。
+# (透明豁免),不是靜默跳過。掃描來源本身有沒有被縮小,由下方 SENTINELS 斷言把關
+# (不用會腐化的數量地板;理由見 SENTINELS 區塊註解)。
 #
 # ALLOWLIST 只豁免這些(理由見腳本內對照表):
 #   docs/prompts、docs/dev/4cap-remediation、docs/dev/HISTORY.md、
@@ -109,12 +111,13 @@ PY
 
 # scan_targets <root> —— fail-closed:git ls-files 全量追蹤檔 − 印出來的 ALLOWLIST。
 scan_targets() {
-  python3 - "$1" <<'PY'
+  python3 - "$1" "$2" <<'PY'
 import os
 import subprocess
 import sys
 
 root = sys.argv[1]
+self_path = sys.argv[2]
 
 # (規則說明, 禁字字面) —— 每條各自一個獨立檢查(見下方 check_pattern),供 N-2
 # 檢查數地板使用:地板釘的是「有幾條禁字規則」,不是「掃了幾個檔案」——後者會隨
@@ -156,9 +159,9 @@ def allowlist_match(rel):
     return None
 
 
-def tracked_files(root):
+def _ls_files(root, *extra_args):
     result = subprocess.run(
-        ["git", "-C", root, "ls-files", "-z"],
+        ["git", "-C", root, "ls-files", "-z", *extra_args],
         capture_output=True,
     )
     if result.returncode != 0:
@@ -166,8 +169,107 @@ def tracked_files(root):
         print(f"  ⚠ git ls-files 失敗(root 必須是 git working tree):{stderr}")
         raise SystemExit(2)
     raw = result.stdout.decode("utf-8", "replace")
-    return sorted(p for p in raw.split("\0") if p)
+    return set(p for p in raw.split("\0") if p)
 
+
+def tracked_files(root):
+    """掃描來源 = 已追蹤檔 ∪ 未追蹤但未被 .gitignore 排除的檔(X-2,2026-08-17)。
+    只看 `git ls-files -z` 會漏掉尚未 `git add` 的新檔——新檔在 commit 前一樣可能
+    寫入禁字,漏掉等於這段期間完全不受保護。補上
+    `git ls-files -z --others --exclude-standard` 一起納入掃描;`--exclude-standard`
+    沿用 .gitignore/.git/info/exclude 規則,所以 .devflow/ 之類本來就該被忽略的檔
+    不會被硬拉進來。兩次查詢結果去重排序後回傳,下游(ALLOWLIST 比對、
+    check_pattern)不需要知道一個檔案是「已追蹤」還是「未追蹤」。"""
+    tracked = _ls_files(root)
+    untracked = _ls_files(root, "--others", "--exclude-standard")
+    return sorted(tracked | untracked)
+
+
+# ── 來源自釘(F3:X-2,2026-08-17)──────────────────────────────────────────
+# 兩位審查者實測:把上面 tracked_files() 的 `--others --exclude-standard` 那條
+# 呼叫拿掉(還原成只掃已追蹤檔),或把 _ls_files 的 pathspec 縮小成只列固定幾個
+# 哨兵檔,單支腳本(不經 test-architecture-guards.sh)會靜默印「✓ 零命中」全過
+# ——SENTINELS/MIN_CHECKS/ALLOWLIST 內容地板都不看 tracked_files() 內部這兩條
+# 呼叫本身有沒有被動過手腳,只看結果數字,而攻擊 (b) 精準列出這 6 個哨兵時,
+# 結果數字剛好對得上,三層地板全部不會叫。
+# 這裡直接釘死本檔原始碼裡兩條 _ls_files 呼叫的識別字面各恰出現一次,且
+# _ls_files 呼叫(不含 def 本身)總數恰為 2 —— 少了、多了、被複製、被改參數都
+# 在讀自己原始碼這一步就現形,不依賴掃描結果剛好露餡,也不依賴外層
+# test-architecture-guards.sh 接住。
+def self_pin_check(path):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            src = f.read()
+    except OSError as e:
+        return [f"⛔ 自釘檢查:讀不到本腳本原始碼 {path}({e})"]
+    problems = []
+    # 識別字面刻意用字串相加組出(同本檔 banned/ALLOWLIST 已用的手法)——避免這段
+    # 自釘檢查程式碼自己的原始碼被自己的 src.count() 算進命中次數裡(曾實測:寫成
+    # 連續字面時,這段檢查碼本身就貢獻了額外命中,把 2 錯算成 5)。
+    call_marker = "_ls" + "_files("
+    plain_call = "tracked = " + call_marker + "root)"
+    untracked_call = ("untracked = " + call_marker
+                       + 'root, "--others", "--exclude-standard")')
+    # _ls_files() 內部 subprocess.run 的 pathspec 必須是呼叫端傳進來的
+    # *extra_args(動態),不能被換成寫死的固定清單——這條專門接住「兩個呼叫端
+    # 字面都沒動,但 _ls_files() 本體被改成永遠只查固定幾個哨兵檔路徑」這種攻擊
+    # (實測:攻擊只改這裡,call_marker/plain_call/untracked_call 三條全部維持
+    # 1 次不變,若沒有這條會被放過)。
+    dynamic_args_marker = '"-z", ' + "*extra_args"
+    n_plain = src.count(plain_call)
+    n_untracked = src.count(untracked_call)
+    n_total_calls = src.count(" = " + call_marker)
+    n_dynamic_args = src.count(dynamic_args_marker)
+    if n_dynamic_args != 1:
+        problems.append(
+            f"⛔ 自釘:_ls_files() 內 subprocess.run 的動態 pathspec 標記"
+            f"「{dynamic_args_marker}」出現 {n_dynamic_args} 次(應恰 1 次)——"
+            "git ls-files 的參數可能被換成寫死的固定清單(pathspec 攻擊),"
+            "呼叫端字面不變也會被這裡接住")
+    if n_plain != 1:
+        problems.append(
+            f"⛔ 自釘:純 tracked 呼叫「{plain_call}」出現 {n_plain} 次(應恰 1 次)"
+            "——tracked_files() 的純追蹤檔呼叫被改動或複製")
+    if n_untracked != 1:
+        problems.append(
+            f"⛔ 自釘:未追蹤呼叫「{untracked_call}」出現 {n_untracked} 次(應恰 1 次)"
+            "——--others/--exclude-standard 那條呼叫被縮小、還原或改了參數")
+    if n_total_calls != 2:
+        problems.append(
+            f"⛔ 自釘:_ls_files 呼叫總數 {n_total_calls}(應恰 2)——"
+            "有呼叫被刪掉、新增或改寫,tracked_files() 的掃描來源可能被動過手腳")
+    # 二次複審實證:上面四條只顧呼叫端字面與 subprocess 的動態參數,沒顧
+    # _ls_files() 自己「回傳什麼」這一行——把 return 改寫成與一份寫死哨兵清單
+    # 取交集(例如在行尾加 `& {"README.md", ...}`),或整條換成直接回傳寫死集合,
+    # 都會讓 SENTINELS 檢查(哨兵本來就在那份清單裡)照樣綠燈,但真正的
+    # git ls-files 掃描結果完全沒被回傳——任何其他檔案塞禁字都不會被掃到,以上
+    # 四條自釘與外層 SP-3/4/5/7 都看不出來(SP-3/4/5/7 只驗掃描來源整體是否涵蓋
+    # 某個具體案例,不驗這一行的回傳邏輯本身是否被架空)。
+    # ⚠️ 實測踩過的坑:一開始只釘「return set(p for p in raw.split(」這段前綴的
+    # **子字串**存在——但「取交集」攻擊是在行尾**追加** `& {...}`,原本的 return
+    # 陳述式字面完全保留、子字串照樣命中 1 次,靜態釘完全不會叫(worktree 實測
+    # 重現:單支腳本仍印零命中、exit 0)。子字串比對不管「這行後面還接了什麼」,
+    # 追加式攻擊天生繞得過。修法:改成釘死**整行**(逐字比對整條實體行,不是子
+    # 字串搜尋)——行尾一旦被接上 `& {...}` 或整條被換掉,這一行就不再與釘死的
+    # 逐字文字相等,count 從 1 掉到 0,直接現形。識別字面同樣用字串相加組出,
+    # 避免這段檢查碼自己的原始碼被算進命中次數。
+    return_filter_line = "    return set(p for p in raw" + '.split("\\0") if p)'
+    n_return_filter = sum(1 for _line in src.splitlines() if _line == return_filter_line)
+    if n_return_filter != 1:
+        problems.append(
+            f"⛔ 自釘:_ls_files 的 return 過濾陳述式整行「{return_filter_line}」"
+            f"出現 {n_return_filter} 次(應恰 1 次)——return 可能被改寫成與寫死"
+            "哨兵清單取交集(行尾追加 `& {...}`)、或整條換成直接回傳固定集合,"
+            "讓 SENTINELS 檢查誤判為安全,實際掃描來源卻被架空"
+            "(外層 SP-3/4/5/7 會連帶紅,但本檢查要自己先紅)")
+    return problems
+
+
+self_pin_problems = self_pin_check(self_path)
+if self_pin_problems:
+    for p in self_pin_problems:
+        print(f"  {p}")
+    raise SystemExit(2)
 
 all_files = tracked_files(root)
 
@@ -180,7 +282,36 @@ for rel in all_files:
         continue
     candidates.append(rel)
 
-print(f"  • git ls-files 全量追蹤檔:{len(all_files)} 個")
+# ── 哨兵檔(X-2,2026-08-17)──────────────────────────────────────────────────
+# 不用 len(all_files)/len(candidates) 當數量地板:檔案總數逐 commit 自然漂移
+# (新增/刪除無關文件都會動到),寫死一個數字必腐化,留餘裕又等於沒有牙齒。
+# 改用哨兵:挑幾個散布在不同目錄、本來就該被掃到的代表活檔,斷言它們每一個都
+# 出現在 candidates 裡。哨兵不隨檔案總數變動——只要 ls-files 的掃描來源被縮小
+# (例如加了 "--","README.md" 這種一行 mutation)或哨兵檔本身被改名/搬移,斷言
+# 就會現形,而「檔案數地板」抓不到前者(掃描來源被縮小但 candidates 剛好還有
+# 幾個檔案,不會觸底)。
+# 選檔原則:分散在不同目錄(scripts/hooks/guides/_templates/.claude-plugin/根目錄)
+# 各一個代表,且確認都不在 ALLOWLIST 裡(哨兵必須真的落在「該被掃描」的區域,
+# 若哨兵本身被豁免,這條斷言就失去意義)。
+SENTINELS = [
+    "README.md",
+    "hooks/devflow-lib.py",
+    "scripts/build-gate-twin.py",
+    "guides/guide-dev-flow.html",
+    "_templates/4-spec.md",
+    ".claude-plugin/plugin.json",
+]
+candidate_set = set(candidates)
+missing_sentinels = [s for s in SENTINELS if s not in candidate_set]
+if missing_sentinels:
+    print(f"  • 掃描來源全量(追蹤 ∪ 未追蹤未忽略):{len(all_files)} 個")
+    print(f"  • 活文件掃描:{len(candidates)} 個檔案")
+    print(f"  ⛔ 哨兵檔缺席:{missing_sentinels}")
+    print("     掃描來源被縮小(git ls-files 的參數被動過?)或哨兵檔被改名/搬移"
+          "——兩者都要人來看,不是靜默放行。")
+    raise SystemExit(2)
+
+print(f"  • 掃描來源全量(追蹤 ∪ 未追蹤未忽略):{len(all_files)} 個")
 print("  • ALLOWLIST(逐條印出,新增目錄/檔案預設不在此列 = 會被掃到):")
 for entry, reason in ALLOWLIST:
     print(f"      - {entry}({allow_counts[entry]} 檔)— {reason}")
@@ -276,7 +407,7 @@ if [ -n "$SCAN_ONLY" ]; then
 fi
 
 echo "=== 過期外掛路徑守衛 ==="
-scan_targets "$ROOT"
+scan_targets "$ROOT" "$SELF_DIR/check-no-stale-paths.sh"
 STATUS=$?
 
 echo

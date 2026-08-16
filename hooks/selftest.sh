@@ -9,14 +9,15 @@ T=$(mktemp -d "${TMPDIR:-/tmp}/devflow-selftest.XXXXXX")
 C=$(mktemp -d "${TMPDIR:-/tmp}/devflow-gate-selftest.XXXXXX")
 PASS=0; FAIL=0; FAILED=()
 TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
-# ⚠️ MIN_CASES 是釘死地板,一律等於當下實際案例數(2026-08-16 起 339;engine-fence-
-# masking T-1 補 4 案:fence 內 T-99 幽靈任務 / fence 內假重複欄 / fence 外重複欄
-# 回歸 / 未閉合 fence 遮到檔尾)——新增案例時同步 +;絕不「大概抓個下限」。
+# ⚠️ MIN_CASES 是釘死地板,一律等於當下實際案例數(2026-08-16 起 348;X-5b 派工
+# 分層守衛補 9 案:未武裝放行 / 首派最高階擋下 / 已有低階 attempt 視為合法升階 /
+# 豁免消耗+留痕斷言 / 豁免耗盡後仍擋 / 非最高階模型放行 / exec-v2 舊字面值雙讀
+# 相容 / tool_name=Agent 與 Task 同等對待)——新增案例時同步 +;絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=339
+MIN_CASES=348
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -1943,6 +1944,90 @@ rm -f "$P4DT/docs/dev/devflow-contract.json"
 P4_OUT=$( (cd "$P4DT" && DEVFLOW_GATE_CMD=true "$H/devflow-exec.sh" doctor) 2>&1 ); P4_RC=$?
 ck_msg "p4_doctor 散發副本缺件 → fail-closed 指路 dev-setup" 1 "dev-setup" "$P4_RC" "$P4_OUT"
 rm -rf "$P4DT"
+
+echo "-- px 派工分層守衛(X-5b:PreToolUse Task|Agent「首派即最高階」窄版攔截 + 一次性豁免)--"
+PXT=$(mktemp -d "${TMPDIR:-/tmp}/devflow-px-dispatch.XXXXXX")
+px_d() { # px_d <model>
+  PX_OUT=$(cd "$PXT" && echo "{\"tool_name\":\"Task\",\"tool_input\":{\"model\":\"$1\"}}" \
+    | "$H/devflow-dispatch-guard.sh" 2>&1); PX_RC=$?
+}
+mkdir -p "$PXT/docs/dev/px" "$PXT/src"
+( cd "$PXT" && git init -q . && git config user.email t@t && git config user.name t )
+printf -- "---\nstatus: approved\n---\n" > "$PXT/docs/dev/px/4-spec.md"
+cat > "$PXT/docs/dev/px/5-tasks.md" <<'EOF'
+---
+feature: px
+stage: 5-tasks
+status: approved
+execution:
+  mode: parallel
+---
+
+# 5. 任務(px dispatch-guard fixture)
+
+## T-1 甲
+- [ ] 完成
+- Covers: R-1
+- Files: `src/a.py`
+- Verify: `true`
+- Blocked-by: —
+EOF
+echo a > "$PXT/src/a.py"
+( cd "$PXT" && git add -A >/dev/null && git commit -qm pxinit )
+
+# ① 未武裝(.devflow/exec.json 不存在)+ model=opus → 一律放行(舊 state 行為不變)
+px_d opus
+ck "px 未武裝 + model=opus → 放行" 0 "$PX_RC"
+
+( cd "$PXT" && "$H/devflow-exec.sh" start px --task T-1 >/dev/null 2>&1 )
+PXRUN=$(/usr/bin/python3 -c "import json;print(json.load(open('$PXT/.devflow/exec.json'))['run_id'])" 2>/dev/null)
+
+# ② 武裝 + 首派 model=opus,本 run 尚無任何低階 attempt → 擋(exit 2),訊息點名 tier-exempt 逃生門
+px_d opus
+ck_msg "px 武裝+首派 opus(無低階 attempt)→ exit 2 且訊息含 tier-exempt" 2 "tier-exempt" "$PX_RC" "$PX_OUT"
+
+# ③ 補一筆低階(haiku)attempt_started → 首派 opus 屬合法升階路徑,放行
+mkdir -p "$PXT/.devflow/runs/$PXRUN/attempts/att-px1"
+printf '%s\n' '{"event_type":"attempt_started","model":"haiku"}' \
+  > "$PXT/.devflow/runs/$PXRUN/attempts/att-px1/events.jsonl"
+px_d opus
+ck "px 已有 haiku attempt → 首派 opus 視為合法升階,放行" 0 "$PX_RC"
+rm -rf "$PXT/.devflow/runs/$PXRUN/attempts/att-px1"   # 清掉,回到「無低階 attempt」情境測豁免通道
+
+# ④ 豁免卡未用 + model=fable → 放行且卡片轉 used:true(留痕斷言,非只信訊息文字)
+( cd "$PXT" && "$H/devflow-exec.sh" tier-exempt --reason "G3 仲裁需要最高階首派" >/dev/null 2>&1 )
+px_d fable
+ck_msg "px 豁免未用+model=fable → 放行且訊息含「tier-exempt 已消耗」" 0 "tier-exempt 已消耗" "$PX_RC" "$PX_OUT"
+ck "px 豁免卡消耗後確實轉 used:true+留 used_at(留痕)" 0 "$(/usr/bin/python3 -c "
+import json, sys
+d = json.load(open('$PXT/.devflow/tier-exempt.json'))
+sys.exit(0 if d.get('used') is True and d.get('used_at') else 1)
+"; echo $?)"
+# 豁免一次性:耗盡後同樣情境(仍無低階 attempt)再次首派最高階 → 必須再度被擋,不得殘留放行
+px_d fable
+ck_msg "px 豁免耗盡後再次首派最高階 → 仍擋(一次性,非常駐白名單)" 2 "tier-exempt" "$PX_RC" "$PX_OUT"
+
+# ⑤ model=sonnet(非最高階)→ 與本守衛無關,放行
+px_d sonnet
+ck "px 武裝中但 model=sonnet(非最高階)→ 放行" 0 "$PX_RC"
+
+# exec-v2 舊字面值(A-11 升版前的 schema)雙讀相容:同一窄口徑情境跑一輪,結果須相同
+/usr/bin/python3 -c "
+import json
+p = '$PXT/.devflow/exec.json'
+d = json.load(open(p))
+d['schema'] = 'exec-v2'
+json.dump(d, open(p, 'w'))
+"
+px_d opus
+ck_msg "px exec-v2 舊字面值雙讀相容:同情境同結果(仍擋)" 2 "tier-exempt" "$PX_RC" "$PX_OUT"
+
+# matcher 是 "Task|Agent" 兩種 tool_name 都要接住 —— 只測 Task 會漏掉 Agent 這條路徑
+# (本檔第 6 型「不對稱保護」正是這種:同類情境只驗了觸發實例的其中一半)。
+PX_OUT=$(cd "$PXT" && echo '{"tool_name":"Agent","tool_input":{"model":"opus"}}' \
+  | "$H/devflow-dispatch-guard.sh" 2>&1); PX_RC=$?
+ck_msg "px tool_name=Agent(非 Task)同等對待 → 首派最高階仍擋" 2 "tier-exempt" "$PX_RC" "$PX_OUT"
+rm -rf "$PXT"
 
 cd / && rm -rf "$T" "$C"
 echo

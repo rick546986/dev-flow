@@ -382,3 +382,100 @@ v3.4.0 出貨後的獨立審查給了一句話判詞:「**有些東西壞掉了,
 **假綠型態表更新**:第 4 型(該有的還在不在)至此有通用對帳看守;第 5 型(斷言
 被刪沒人知道)有心跳+地板+靜態互釘。已知邊界:蓄意三點同改(案例+地板+互釘)
 仍防不住 —— 與 GS-4 同級,防手滑不防蓄意。
+
+### A9　對稱守衛輪(2026-08-17)
+
+派工單 `notes/dispatch-guard-symmetry.md`:獨立審查抓到第 6 型假綠「不對稱保護」
+(修法只套在觸發它的那個實例,沒推廣到同類其他實例)的第三次發作(X-1),另加 3 條
+不對稱缺陷(X-2~X-4)+ 3 條追加項(X-5~X-7)+ 2 件記帳問題。以下依派工單「完成之後」
+四項要求記錄。
+
+**a. X-1~X-7 逐項結果**
+
+| id | 級 | 一句(白話 + 術語) |
+|---|---|---|
+| X-1 | HIGH | 第 2 層對帳(獨立重算 dropped 節、不信產生器自報清單)原本只推廣到 4-spec 一站;本輪推廣到三站 —— 2-decision/7-review 沒有合法的「可捨棄」語意,直接斷言產生器自報 `dropped` 清單必須是空集合,並對三站都做空節獨立重算、雙向比對 |
+| X-2 | MED | 路徑守衛(`check-no-stale-paths.sh`)掃描來源補納未追蹤檔;重跑裁決驗證的兩種攻擊後發現原判「零防禦」不準 —— 兩種攻擊在完整跑 `test-architecture-guards.sh` 時本來就會被 SP-3~SP-7 連帶接住(連坐失敗或炸 `AssertionError`),不是真的零防禦,而是「單支腳本自己跑」時才是零防禦。已補 SP-8/SP-9 兩個具名案例,讓單支腳本自己就會紅,不再依賴外層連坐 |
+| X-3 | MED | 群組數這條軸(`REQUIRED_GROUPS`)原本只印計數不斷言;補地板 + GS-9 靜態互釘(`EXPECTED_GROUPS=24` 釘死並斷言、24 個群組名逐一釘),誠實記錄「不防掏空換填充」的邊界(見 d 項) |
+| X-4 | LOW | `check(True` 恆真規則原本只掃自己所在的兩個檔;推廣成跨檔掃描 `scripts/*.sh` 全部,並修掉 `check-realworld.sh:191` 那條真的恆真斷言 |
+| X-5a | MED | 新增模型分層稽核檢查:掃 observability ledger,「首派即最高階」與「跳級升階」兩種模式皆紅;自帶 MT-0(自測對照組)/MT-1(`bad-first-top` 外部真實案例)fixture |
+| X-5b | MED | PreToolUse 窄版攔截:本 run 從沒出現過低階 attempt 卻顯式指名最高階模型當第一筆派工 → 擋;補一次性、留痕的 `tier-exempt` 豁免通道(`--reason` 必填)。裁決:「偽造 `.devflow/` 記錄」這個信任邊界不修 —— 與 `_prebash_impl.py` 既有的字面圍欄同一個信任模型(防手滑與紀律漂移,不防蓄意偽造),已在兩檔檔頭互相引用明文化(見 d 項) |
+| X-6 | MED | `guide-dev-flow.html`/`guide-quickstart.html` 各自完整內嵌一張生命週期圖(雙副本)。owner 裁決:不採「單正本 + 縮減版/連結」——quickstart 讀者不見得會去翻 guide-dev-flow.html,縮減版會犧牲 quickstart 的自足性。改補 `check-guides-fig-sync.sh` 三層同步守衛(① SVG 標記逐位元組 ② 渲染用到的 CSS 規則 ③ 三份 guides 共用的錨點捲動 JS),防單邊漂移;明文記錄「不防雙邊一致的錯誤」 |
+| X-7 | LOW | 頁內錨點在 artifact/iframe 載體不跳轉的捲動修正 JS(~8 行),裁決併入正式 guides(三份同字面,SVG 區塊位元組不變),已完成 |
+
+**b. 兩件記帳問題的判定**
+
+**問題 2(11 條 vs 12 條):12 條正確。** `dispatch-guard-coverage.md` 第三部分原文
+宣稱「行為層只有 3 條有第一手證據」,但逐字只點名 2 條(A-2、A-1)—— 14 − 2 = 12,
+與 commit `2046d69`、附錄 A8「12 條、5①/7③」完全吻合。任務書的「11 條」= 14 − 3
+(沿用上游那句話的字面「3 條」),但那個「消失的第三條」本來就不存在,是
+`dispatch-guard-coverage.md` 自身的計數筆誤,不是新的錯誤來源。**A-1、A-2 兩條
+本輪未重驗** —— 沿用上一輪已有的第一手證據原樣採計,如實註記。
+
+**問題 1(12 條逐條歸類)**:
+
+| 條目(白話 + 術語) | 當初修在哪 | 守衛是誰 | 結果 | 證據關鍵行 |
+|---|---|---|---|---|
+| A-3 5-tasks 模板沒警告「Verify 必須單行純指令」 | `_templates/5-tasks.md:63`(`013e8b7`) | `check-stage67-enforcement.sh` VF 段 | ①紅 | 刪句後:`❌ VF:… 沒有「Verify 必須是單行、可原樣貼進 shell 的純指令」這條硬紀律` |
+| A-4 infra/migration 型 T 過不了 gate 三項必檢 | 文檔示例,`013e8b7` | 掃描零命中 | ③無守衛 | `grep -rn "infra.*型\|infra-T\|A-4\b"` 全部零命中 |
+| A-5 5-tasks 模板沒提醒「測試檔路徑列進 Files」 | `_templates/5-tasks.md:94`(`013e8b7`);guard 在 `2046d69` 才補 | `test-architecture-guards.sh` S67-0 + TF needle | ①紅 | 刪句後:`❌ S67-0 對照組… 預期 pass,實得 fail` |
+| A-6 Boundaries/Intent/Owner 欄被解析後丟棄 | `hooks/devflow-lib.py:488-493`(`1c3e841`) | `hooks/selftest.sh`(連坐面廣) | ①紅 | 刪三欄賦值後:`❌ 守衛自測 310/339,失敗 29 項` |
+| A-11 Stage 7 禁讀 6-notes 只是散文 | `hooks/_guard_impl.py:105-112`(`e68c67a`) | `hooks/selftest.sh` 圍欄③案例 | ①紅 | 判斷式改 `False` 後:`❌ 失敗 1 項:期望 exit 2 且含 '步 4',得 exit 0` |
+| A-12 Stage 6/7 步 0 沒要求跑 doctor | `_templates/6-implementation-notes.md:35-41`(`013e8b7`) | `check-stage67-enforcement.sh` DOC 段 | ①紅 | 改字面後:`❌ DOC:… 旁沒有要求跑 devflow-doctor.sh` |
+| B-1 母版 `_templates/5-tasks.md` 過不了 `parse_5_tasks` | 文檔修正,`013e8b7`,未加常駐檢查 | 掃描零命中(`run_tests.py` 只驗字面 `in`,未呼叫 `parse_5_tasks`) | ③無守衛 | `grep -rn "B-1\b"` 零命中 |
+| B-2 `dev-setup` upgrade 靜默蓋掉在地客製 | `skills/dev-setup/SKILL.md`(`825879f`);guard 在 `2046d69` 才補 | `check-dev-setup-discipline.sh` | ①紅(更正,見下) | 換 needle 後對下毒版重跑:`4 條失敗`,新增一條正是「沒有「判別法(三方比對)」定義」 |
+| B-3 lane 判準與 owner 指示衝突時母版沒說怎麼辦 | 文檔,`013e8b7` | 掃描零命中 | ③無守衛 | `grep -rn "B-3\b"` 零命中 |
+| B-4 doctor 對 gauntlet 只探 `--version` | `hooks/_doctor_impl.py:199-233`(`1c3e841`) | `hooks/selftest.sh` gauntlet-root 三案例 | ①紅 | 短路後:`❌ 失敗 3 項`,三筆皆 gauntlet-root 相關斷言落空 |
+| B-5 Files 欄系統性低估 | 文檔,`013e8b7`,裁決「採,不加守衛」 | 掃描零命中(與裁決一致) | ③無守衛(裁決性) | `013e8b7` message:「裁決=採,不加守衛」 |
+| B-6 Diff Budget 測試檔估法沒算補償控制 | 文檔,`013e8b7` | 掃描零命中 | ③無守衛 | `grep -rn "B-6\b\|突變係數"` 零命中 |
+
+> **B-2 更正(2026-08-17)**:原判①依據的 needle 是子字串多處命中(假綠②)——舊
+> needle 為裸字面 `"三方比對" in src`,這四字在 SKILL.md 全檔出現 3 處(install
+> 摘要句、upgrade 段判別法定義本身、過渡態收尾句)。只刪定義段落本身時,needle
+> 因殘留引用仍會命中,本應紅卻假綠;上一輪引用的失敗訊息其實來自同一次退回
+> 實驗裡**另一條** needle 先觸發,不是「三方比對」needle 自己抓到的。2026-08-17
+> 重做退回實驗:①舊 needle 對「只刪定義段落」單獨核對,確認假綠 ②換成唯一
+> 字面 `"判別法(三方比對)" in src` 後對同一份下毒版重跑,4 條失敗(含新 needle
+> 本身)③主樹套用後對未下毒版跑,9 項全過。**結論:B-2 分類維持①,但憑的是
+> 修好之後的 needle** —— 原始①判定本身踩到假綠②,詳細退回實驗記錄見
+> `notes/dispatch-guard-coverage.md`(2026-08-17 勘誤註)。
+
+**三類彙總**:①有守衛且會紅 = A-3/A-5/A-6/A-11/A-12/B-2/B-4(7 條);②假綠(本輪
+未發現)= 0 條;③無守衛 = A-4/B-1/B-3/B-5/B-6(5 條,其中 B-5 是明文裁決不加守衛,
+其餘 4 條屬單純遺漏)。7 + 0 + 5 = 12。
+
+**與 A8「5①/7③」的關係(非矛盾)**:`2046d69` 這個 commit 本身就是把 A-5、B-2
+從③補成①的那次修補 —— `2046d69` **之前**是 5①/7③(A8 記的是那個時間點),
+`2046d69` **之後**(本輪驗證所處的 HEAD)是 7①/5③,兩個數字描述同一件事的
+前後兩個時間點,都屬實。
+
+**c. 審查軌跡**
+
+一次審查 9 人(1 APPROVE + 8 REQUEST_CHANGES)→ `d1dd5b3` 六棒修復(F1~F6,對應
+X-2/X-3/X-4/X-5a/X-5b/X-6/B-2)→ 二次複審(1 HIGH 複合攻擊 + 2 MED + 1 nit)→
+`b9a0de1` 第三修(四招複合攻擊四缺二即死:`check_static_pin` 賦值計數改敘述起點
+錨定、24 群組名釘改逐字整行含縮排、fig-sync JS 層雙斷言、no-stale-paths 自釘補
+整行恰一、GS-9 補伴釘)→ 終驗重放(壞→紅→還原→綠逐條複驗)。
+
+實證翻案:**X-2「零防禦」實測為「外層 SP-7 連帶接住、單支靜默」**(見 a 項);
+B-2 needle 亦屬同類翻案(見 b 項的 B-2 更正)。
+
+**d. 裁決記錄**
+
+- **X-5b**:偽造 `.devflow/` 記錄(繞過 `_prebash_impl.py` 字面圍欄、偽造豁免卡或
+  假 `attempt_started` 事件)= 信任邊界不修,與 `_prebash_impl.py` 既有信任模型
+  同型(防手滑與紀律漂移,不防蓄意偽造),已在 `_dispatch_impl.py`/`_prebash_impl.py`
+  檔頭互相引用明文化。
+- **X-3**:語意層掏空(24 群組名保留字面、換填充內容)= 已知邊界,不在本守衛
+  防守範圍,由各群組自己的 fixture 管(誠實記錄,非遺漏)。
+
+**e. Known Limits(本輪當下,2026-08-17,活文件不寫死,數字/狀態以此刻為準)**
+
+| 限界 | 說明 |
+|---|---|
+| tier-exempt 豁免卡是 repo 級非 run 級 | `.devflow/tier-exempt.json` 不含 run_id,`devflow-exec.sh stop` 只移除 `exec.json`/sentinel,不清這張卡 —— 若核發後未消耗,會跨 run 存活,可能被不相關的下一個 run 用掉 |
+| MT-1 只咬 first-top 未咬 skip-level 的 real 模式 | `scripts/fixtures/model-tiering/bad-skip-level` 存在,但只在 `check-model-tiering.sh` 自己的自測模式內跑;`MT-1` 只把 `bad-first-top` 當外部真實 runs 根、用 CLI 參數餵給守衛複本的正常模式(驗證紅路徑不只活在自測模式);skip-level 缺這條對等案例(暫記為 MT-2 待補) |
+| B-2 needle 仍是子字串比對 | 換成 `"判別法(三方比對)" in src` 後不再被裸「三方比對」三處殘留字誤觸,但仍是 `in` 子字串比對 —— 若 SKILL.md 其他地方字面湊巧完整撞上這串字,needle 一樣會被騙過;更窄但同類的脆弱性沒有消失 |
+
+**本輪當下守衛計數**(2026-08-17,活文件不寫死,以當下輸出為準):devflow-check
+24 組、selftest 348、arch 82(13+69)、gate-twin 139、一致性 14、doctor/renderer 6。

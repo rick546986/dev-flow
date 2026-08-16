@@ -33,7 +33,24 @@ failures = []
 
 # 檢查數地板:**次級 backstop**,只用來偵測「大幅縮水」。定義提前到這裡,
 # 好讓 guard-selfpin 群組能把它一起釘死(否則改小一行就繞過)。
-MIN_CHECKS = 100
+# 地板=實得數不留餘裕(家規):這個數字必須等於當下的實際 checks 總數,不是隨手抓的
+# 下限,否則就是形同虛設的鬆散 backstop(2026-08-17 F-2 MED 裁決,同 check-realworld.sh
+# 的 N-2 慣例)。改動任何 check()/迴圈次數後,重跑本檔取得實際 checks 數並同步這裡。
+# ⚠️ 差一算法(本檔特有,check-realworld.sh 沒有這個坑):這條地板本身是用
+# `check(checks >= MIN_CHECKS, …)` 表達,而 check() 的 condition 在呼叫當下就已求值
+# ——也就是「呼叫這條地板檢查之前累積的 checks 數」在跟 MIN_CHECKS 比,這條地板檢查
+# 自己執行完才會讓 checks 再 +1,變成最終印出的總數。所以「地板=實得數」在這裡的
+# 實得數是**最終印出總數 − 1**,不是最終印出總數本身(若把 MIN_CHECKS 設成最終印出
+# 的那個數字,這條地板檢查永遠會自己讓自己失敗一格)。同步時:先跑
+# `scripts/check-design-contract.sh` 看輸出「結構檢查 N/N 全過」,MIN_CHECKS 填 N-1。
+MIN_CHECKS = 164
+
+# check_skip( 呼叫點零圍堵(2026-08-17 F-2 HIGH-2):scripts/*.sh 全體(不含定義行)
+# 允許存在的 check_skip( 呼叫點總數上限。check_skip 是「顯性跳過仍計入 checks」的
+# 合法逃生門(見 check-realworld.sh 的 check_skip 定義與其唯一呼叫點),但逃生門
+# 一多就形同讓真斷言全面下崗卻沒人管制。新增顯性跳過必須同步調高這個數字,並在
+# 呼叫處註明理由 —— 這裡的常數本身也被 guard-selfpin 釘死,不能悄悄改大。
+EXPECTED_CHECK_SKIP_CALLS = 1
 
 TEMPLATE = "_templates/4-spec.md"
 EXAMPLE = "example/contract-expiry-reminder/4-spec.md"
@@ -459,7 +476,10 @@ for _name, (_actual, _want) in PINNED_SIZES.items():
           f"實得 {_actual} —— 要**刻意**增減必填項:同步改這裡的釘死值、"
           f"改語意正本 notes/design/design-boundary-contract.md、"
           f"並在 scripts/test-architecture-guards.sh 補對應負向案")
-check(MIN_CHECKS == 100, "MIN_CHECKS 未被調低(釘死 100)", f"實得 {MIN_CHECKS}")
+check(MIN_CHECKS == 164, "MIN_CHECKS 未被調低(釘死 164;地板=實得數)", f"實得 {MIN_CHECKS}")
+check(EXPECTED_CHECK_SKIP_CALLS == 1,
+      "EXPECTED_CHECK_SKIP_CALLS 未被調整(釘死 1;check_skip 零圍堵的常數本身不得被悄悄改大)",
+      f"實得 {EXPECTED_CHECK_SKIP_CALLS}")
 
 # (b) 三張表的欄名必須與 canon §2.2/2.3/2.4 的欄位表逐字相同
 def canon_column_names(text, start_heading, end_heading):
@@ -505,16 +525,94 @@ if self_path and os.path.isfile(self_path):
     # (d) 斷言不得被改成恆真。2026-08 驗收實測抓到的殘留:把
     #     `check(rows >= 1, …)` 改成 `check(True, …)` —— 檢查數不變、群組還在、
     #     長度釘死也全過,整條斷言卻已解除武裝。長度類的釘死本質上防不到這一類,
-    #     這裡用最直接的方式擋:原始碼裡不得出現 `check(True`。
+    #     這裡用最直接的方式擋:原始碼裡不得出現 `check(True`(2026-08-17 擴成三變體
+    #     `check(True` / `check(1 == 1` / `check(not False`——獨立審查實測 `check(1 == 1`
+    #     繞得過只認字面 `True` 的舊正則,見 test-architecture-guards.sh 對應案例)。
     #     `check(False, …)` 是刻意的顯性失敗(例如下面的 else 分支),允許保留。
-    #     只掃**敘述開頭**的呼叫(`^\s*check(True`),不掃註解與字串裡的字面 ——
+    #     只掃**敘述開頭**的呼叫(`^\s*check(…`),不掃註解與字串裡的字面 ——
     #     否則本段自己的註解與標籤文字就會被誤判成命中。
-    always_true = re.findall(r"^\s*check\(\s*True\b", own_source, re.M)
+    always_true = re.findall(r"^\s*check\(\s*(?:True|1\s*==\s*1|not\s+False)\b", own_source, re.M)
     check(not always_true,
-          "沒有任何斷言被改成恆真(原始碼不得出現 `check(True`)",
+          "沒有任何斷言被改成恆真(原始碼不得出現 `check(True`/`check(1 == 1`/`check(not False`)",
           f"命中 {len(always_true)} 處 —— 恆真斷言等於該檢查被靜默解除武裝")
 else:
     check(False, "取得本守衛自身路徑以做清單自我檢查", f"self_path={self_path!r}")
+
+# (e) 跨檔恆真斷言掃描(2026-08-17,推廣自(d))——(d) 只掃本檔自己的原始碼,
+#     scripts/*.sh 底下其他檢查腳本裡的 `check(True…)` 完全沒人看(既有實例:
+#     check-realworld.sh:191,已改用 check_skip 顯性標記;此掃描是防再有下一個)。
+#     這裡改掃全體:glob root/scripts/*.sh,逐檔逐行套同一組三變體正則。
+#     防禦邊界(誠實承認,同 GS-9 的邊界寫法):這份模式清單防的是**單點手滑**——
+#     手殘把一條真斷言改成 check(True) 之類,不防**蓄意構造**的恆真式
+#     (例如 check(2 > 1, …)、check(len(x) >= 0, …)這類邏輯上恆真但語法上正常的
+#     斷言,列不完,也不是本掃描宣稱能擋的範圍)。
+#     check_skip(...) 是合法的顯性跳過(印「↷ 跳過」且仍計入 checks),呼叫字面是
+#     `check_skip(` 不是 `check(`,不落在上面兩組恆真正則的命中範圍內,不屬於恆真
+#     掃描的對象 —— 但它本身另外被下面的「零圍堵」計數盯著。
+#
+# 2026-08-17 F-2 HIGH-1 修法(獨立審查抓到的不對稱):舊版跨檔掃描是「逐行讀、
+# 逐行 re.match」,而(d)的自掃是「整檔讀入、re.M 對整份原始碼跑 re.findall」——
+# 同一套正則,兩種完全不同的用法。差別要命:正則本體的 `\s*` 涵蓋換行,能配到
+# 多行排版的 `check(\n    True,\n    "...")`,但逐行版一次只喂一行給 .match(),
+# `check(` 那一行單獨看不到 `True` 在下一行,永遠配不上 —— 多行排版的恆真斷言對
+# 別的檔案(跨檔)完全隱形,對本檔自己(d)卻抓得到,是同一份防線裡的不對稱實作。
+# 修法:跨檔掃描比照(d)整檔讀入、同一顆正則用 re.finditer 找出所有相符起點,
+# 命中行號用 `match.start()` 之前的換行數回推(而不是逐行讀取判斷)。
+CURRENT_GROUP = "guard-selfpin"
+ALWAYS_TRUE_RE = re.compile(r"^\s*check\(\s*(?:True|1\s*==\s*1|not\s+False)\b", re.M)
+# check_skip( 呼叫點計數用的正則:只認**敘述開頭**的呼叫(同 ALWAYS_TRUE_RE 的寫法),
+# 不掃註解裡提到「check_skip(」字樣的文字(本檔上面的說明段落就有,若不鎖行首會
+# 誤把自己的註解算成呼叫點)。`def check_skip(` 開頭是 `def `,不落在 `^\s*check_skip\(`
+# 命中範圍內,天生排除定義行,不需要另外過濾。
+CHECK_SKIP_CALL_RE = re.compile(r"^\s*check_skip\(", re.M)
+_scan_dir = os.path.join(root, "scripts")
+_scan_files = sorted(f for f in os.listdir(_scan_dir) if f.endswith(".sh")) if os.path.isdir(_scan_dir) else []
+print(f"掃 {len(_scan_files)} 檔(scripts/*.sh 恆真斷言跨檔掃描)")
+if len(_scan_files) == 0:
+    print("FATAL: 掃到 0 支 scripts/*.sh,跨檔掃描沒有真的跑——不是「沒有恆真斷言」",
+          file=sys.stderr)
+    sys.exit(2)
+
+# 掃描清單哨兵(2026-08-17 F-2 MED):跨檔掃描的「掃到誰」完全交給 glob 結果決定,
+# 若掃描目錄/pattern 被悄悄改窄(例如改成只掃某個子集、副檔名判斷被弱化),
+# 上面「len == 0」的防線擋不住 —— 目錄裡還有其他 .sh 檔,glob 不會回傳 0。
+# 這裡改成白名單式哨兵:check-realworld.sh(check_skip 的定義與唯一呼叫點所在)
+# 與 check-gate-twin.sh(另一支帶自己 check() 系列 helper 的常駐檢查腳本)兩支
+# 一定要出現在掃描清單裡,少一支就代表掃描來源被縮小,顯性 exit 2(不是靜默略過
+# 這批檢查,也不是留給 check() 記一筆失敗后繼續跑其他檢查 —— 掃描清單本身失格,
+# 後面所有基於這份清單算出來的統計都不可信,沒有「部分可信」這回事)。
+_required_scan_targets = ["check-realworld.sh", "check-gate-twin.sh"]
+_missing_scan_targets = [f for f in _required_scan_targets if f not in _scan_files]
+if _missing_scan_targets:
+    print(f"FATAL: 跨檔掃描清單缺 {_missing_scan_targets}(掃到 {_scan_files})"
+          " —— 掃描來源被縮小,不是這幾支檔案不存在就該悄悄跳過", file=sys.stderr)
+    sys.exit(2)
+
+_cross_hits = []
+_check_skip_hits = []
+for _fname in _scan_files:
+    _fpath = os.path.join(_scan_dir, _fname)
+    with open(_fpath, encoding="utf-8") as _stream:
+        _ftext = _stream.read()
+    for _m in ALWAYS_TRUE_RE.finditer(_ftext):
+        _lineno = _ftext.count("\n", 0, _m.start()) + 1
+        _cross_hits.append(f"scripts/{_fname}:{_lineno}")
+    for _m in CHECK_SKIP_CALL_RE.finditer(_ftext):
+        _lineno = _ftext.count("\n", 0, _m.start()) + 1
+        _check_skip_hits.append(f"scripts/{_fname}:{_lineno}")
+check(not _cross_hits,
+      "跨檔掃描:scripts/*.sh 無恆真斷言(check(True / check(1 == 1 / check(not False 三變體,"
+      "含多行排版如 check(\\n    True,\\n    ...))",
+      ("無命中" if not _cross_hits else "命中 " + ", ".join(_cross_hits)))
+
+# check_skip( 零圍堵(2026-08-17 F-2 HIGH-2):顯性跳過是合法逃生門,但逃生門一多
+# 就等於「該有真斷言的地方全面改成不驗」卻沒人管制。呼叫點總數(不含定義行)
+# 必須恰等於釘死值 EXPECTED_CHECK_SKIP_CALLS —— 多出來(新增顯性跳過卻沒同步這個
+# 常數)顯性失敗,並要求在呼叫處註明理由。
+check(len(_check_skip_hits) == EXPECTED_CHECK_SKIP_CALLS,
+      f"跨檔掃描:scripts/*.sh 的 check_skip( 呼叫點總數(不含定義行)= "
+      f"{EXPECTED_CHECK_SKIP_CALLS}(新增顯性跳過需同步此常數,並在呼叫處註明理由)",
+      f"實得 {len(_check_skip_hits)} 處:{', '.join(_check_skip_hits) or '無'}")
 
 # ── 群組心跳(**主要**防線)────────────────────────────────────────────────
 # 逐群組斷言「這一群至少跑過一條」。任何群組被條件式、例外、早退擋掉都會顯性失敗,

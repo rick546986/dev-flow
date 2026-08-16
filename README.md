@@ -282,6 +282,12 @@ RED → GREEN → scope check → Verify
   `${CLAUDE_PLUGIN_ROOT}` 存取,非本 repo/散發檔案)。跨版本相容由
   `devflow-exec.sh doctor` 依 `devflow-contract.json`(2.0.0)做 fail-closed 握手;
   舊 sequential 專案 = legacy compatibility mode。
+- **不對稱保護(第 6 型假綠)**:修法只套用在觸發它的那個實例,沒有推廣到同類的
+  其他實例 —— 這種病在本 repo 已發作過三次(PINNED_PAT 缺 `Decision` 只補一站、
+  盤點型守衛只跟著某個新資料格長、第 2 層對帳只推廣到單一 stage)。制度要求:
+  **新增任何只對某個 stage/某個檔/某個群組的保護時,必須在同一個 commit 裡說明
+  為什麼其他同類不需要;說不出來就是不對稱,要嘛推廣、要嘛寫明限制並列進
+  Backlog。**(源:`notes/dispatch-guard-symmetry.md`)
 - **守衛與並行**:守衛狀態以「當前工作樹」為單位(`.devflow/exec.json` + git-dir sentinel),
   一個工作樹同一時間只武裝一個模組。武裝中他模組 `start` → 一律拒絕(不靜默覆寫);
   同模組重跑 `start` = re-arm,允許(5-tasks 改動後重釘 scope 的正常路徑)。
