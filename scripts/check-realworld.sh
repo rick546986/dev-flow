@@ -30,6 +30,20 @@ def check(condition, label, detail=""):
         failures.append(label + (f": {detail}" if detail else ""))
 
 
+def check_skip(label, reason):
+    """顯性跳過(不是恆真斷言):某條檢查在此 root 下條件不成立、無法真的驗
+    (例如 renderer 不存在於隔離測試根目錄),但仍要計入 checks —— N-2 地板要求
+    「兩種環境下檢查數一致」,若不計入,地板會把「合法跳過」誤判成「檢查被刪掉」。
+    與 `check(True, …)` 的差別:那是把一條原本會判斷條件的斷言解除武裝、且不留痕;
+    這裡印出「↷ 跳過」讓輸出上看得出這條沒有真的驗到什麼,且呼叫字面是
+    `check_skip(` 不是 `check(`,天生不落在 check-design-contract.sh 的跨檔恆真
+    掃描(`check\\(\\s*(True|1==1|not False)`)命中範圍內 —— 這是合法的顯性跳過,
+    不是被掃描盯防的對象。"""
+    global checks
+    checks += 1
+    print(f"  ↷ 跳過:{label}({reason})")
+
+
 def read(rel):
     with open(os.path.join(root, rel), encoding="utf-8") as stream:
         return stream.read()
@@ -187,8 +201,11 @@ else:
     print(f"⚠️  renderer 不存在於此 root({renderer}),略過『舊模板仍可渲染』內容驗證 "
           "—— 僅限隔離測試根目錄,正式 repo 執行不會走到這條分支", file=sys.stderr)
     # 仍要算進 checks(N-2 地板要求兩種環境下的檢查數一致,不然地板本身就會把
-    # 「renderer 不存在的隔離測試根目錄」誤判成「檢查被刪掉」)。
-    check(True, "舊模板/衍生檔仍可渲染(renderer --check,隔離測試根目錄略過內容驗證)")
+    # 「renderer 不存在的隔離測試根目錄」誤判成「檢查被刪掉」),但用顯性的
+    # check_skip 而不是 check(True, …)——後者是恆真斷言,已被 check-design-contract.sh
+    # 的跨檔掃描列為缺陷模式(2026-08-17 家規:規則推廣跨檔,不是就地豁免)。
+    check_skip("舊模板/衍生檔仍可渲染(renderer --check)",
+                "隔離測試根目錄,renderer 不存在,略過內容驗證")
 
 # ── 10. Stage 3 對帳存在性(devflow-4cap-remediation-2026-08.md §7 第 1 點,2026-08-15)──
 # 只驗「Out of Scope 節有 Stage 3 對帳段、且每場都點名」的存在性/結構,不驗語意正確性

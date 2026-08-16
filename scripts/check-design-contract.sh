@@ -505,16 +505,48 @@ if self_path and os.path.isfile(self_path):
     # (d) 斷言不得被改成恆真。2026-08 驗收實測抓到的殘留:把
     #     `check(rows >= 1, …)` 改成 `check(True, …)` —— 檢查數不變、群組還在、
     #     長度釘死也全過,整條斷言卻已解除武裝。長度類的釘死本質上防不到這一類,
-    #     這裡用最直接的方式擋:原始碼裡不得出現 `check(True`。
+    #     這裡用最直接的方式擋:原始碼裡不得出現 `check(True`(2026-08-17 擴成三變體
+    #     `check(True` / `check(1 == 1` / `check(not False`——獨立審查實測 `check(1 == 1`
+    #     繞得過只認字面 `True` 的舊正則,見 test-architecture-guards.sh 對應案例)。
     #     `check(False, …)` 是刻意的顯性失敗(例如下面的 else 分支),允許保留。
-    #     只掃**敘述開頭**的呼叫(`^\s*check(True`),不掃註解與字串裡的字面 ——
+    #     只掃**敘述開頭**的呼叫(`^\s*check(…`),不掃註解與字串裡的字面 ——
     #     否則本段自己的註解與標籤文字就會被誤判成命中。
-    always_true = re.findall(r"^\s*check\(\s*True\b", own_source, re.M)
+    always_true = re.findall(r"^\s*check\(\s*(?:True|1\s*==\s*1|not\s+False)\b", own_source, re.M)
     check(not always_true,
-          "沒有任何斷言被改成恆真(原始碼不得出現 `check(True`)",
+          "沒有任何斷言被改成恆真(原始碼不得出現 `check(True`/`check(1 == 1`/`check(not False`)",
           f"命中 {len(always_true)} 處 —— 恆真斷言等於該檢查被靜默解除武裝")
 else:
     check(False, "取得本守衛自身路徑以做清單自我檢查", f"self_path={self_path!r}")
+
+# (e) 跨檔恆真斷言掃描(2026-08-17,推廣自(d))——(d) 只掃本檔自己的原始碼,
+#     scripts/*.sh 底下其他檢查腳本裡的 `check(True…)` 完全沒人看(既有實例:
+#     check-realworld.sh:191,已改用 check_skip 顯性標記;此掃描是防再有下一個)。
+#     這裡改掃全體:glob root/scripts/*.sh,逐檔逐行套同一組三變體正則。
+#     防禦邊界(誠實承認,同 GS-9 的邊界寫法):這份模式清單防的是**單點手滑**——
+#     手殘把一條真斷言改成 check(True) 之類,不防**蓄意構造**的恆真式
+#     (例如 check(2 > 1, …)、check(len(x) >= 0, …)這類邏輯上恆真但語法上正常的
+#     斷言,列不完,也不是本掃描宣稱能擋的範圍)。
+#     check_skip(...) 是合法的顯性跳過(印「↷ 跳過」且仍計入 checks),呼叫字面是
+#     `check_skip(` 不是 `check(`,不落在下面的正則命中範圍內,不屬於本掃描的對象。
+CURRENT_GROUP = "guard-selfpin"
+ALWAYS_TRUE_RE = re.compile(r"^\s*check\(\s*(?:True|1\s*==\s*1|not\s+False)\b")
+_scan_dir = os.path.join(root, "scripts")
+_scan_files = sorted(f for f in os.listdir(_scan_dir) if f.endswith(".sh")) if os.path.isdir(_scan_dir) else []
+print(f"掃 {len(_scan_files)} 檔(scripts/*.sh 恆真斷言跨檔掃描)")
+if len(_scan_files) == 0:
+    print("FATAL: 掃到 0 支 scripts/*.sh,跨檔掃描沒有真的跑——不是「沒有恆真斷言」",
+          file=sys.stderr)
+    sys.exit(2)
+_cross_hits = []
+for _fname in _scan_files:
+    _fpath = os.path.join(_scan_dir, _fname)
+    with open(_fpath, encoding="utf-8") as _stream:
+        for _lineno, _line in enumerate(_stream, start=1):
+            if ALWAYS_TRUE_RE.match(_line):
+                _cross_hits.append(f"scripts/{_fname}:{_lineno}")
+check(not _cross_hits,
+      "跨檔掃描:scripts/*.sh 無恆真斷言(check(True / check(1 == 1 / check(not False 三變體)",
+      ("無命中" if not _cross_hits else "命中 " + ", ".join(_cross_hits)))
 
 # ── 群組心跳(**主要**防線)────────────────────────────────────────────────
 # 逐群組斷言「這一群至少跑過一條」。任何群組被條件式、例外、早退擋掉都會顯性失敗,

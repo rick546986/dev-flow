@@ -17,10 +17,12 @@
 # 約 75 個活檔完全不在 ACTIVE_TARGETS 也不在可見豁免清單,塞禁字 exit 0、守衛看不到。
 # 這是「補清單」治不好的病:下一個新目錄一樣會漏。
 #
-# 新版倒過來:掃描來源改成 `git ls-files`(repo 全部追蹤檔),**預設全部要掃**,
+# 新版倒過來:掃描來源改成 `git ls-files`(repo 全部追蹤檔,X-2 起再併入未追蹤
+# 但未被 .gitignore 排除的檔——見 tracked_files() 註解),**預設全部要掃**,
 # 只有在下面 ALLOWLIST 裡逐條列名、附理由的路徑才豁免。新增目錄/新增檔案不用被
 # 加進任何清單就會自動進入掃描——要豁免才需要動這份清單,而清單本身逐條列印
-# (透明豁免),不是靜默跳過。
+# (透明豁免),不是靜默跳過。掃描來源本身有沒有被縮小,由下方 SENTINELS 斷言把關
+# (不用會腐化的數量地板;理由見 SENTINELS 區塊註解)。
 #
 # ALLOWLIST 只豁免這些(理由見腳本內對照表):
 #   docs/prompts、docs/dev/4cap-remediation、docs/dev/HISTORY.md、
@@ -156,9 +158,9 @@ def allowlist_match(rel):
     return None
 
 
-def tracked_files(root):
+def _ls_files(root, *extra_args):
     result = subprocess.run(
-        ["git", "-C", root, "ls-files", "-z"],
+        ["git", "-C", root, "ls-files", "-z", *extra_args],
         capture_output=True,
     )
     if result.returncode != 0:
@@ -166,7 +168,20 @@ def tracked_files(root):
         print(f"  ⚠ git ls-files 失敗(root 必須是 git working tree):{stderr}")
         raise SystemExit(2)
     raw = result.stdout.decode("utf-8", "replace")
-    return sorted(p for p in raw.split("\0") if p)
+    return set(p for p in raw.split("\0") if p)
+
+
+def tracked_files(root):
+    """掃描來源 = 已追蹤檔 ∪ 未追蹤但未被 .gitignore 排除的檔(X-2,2026-08-17)。
+    只看 `git ls-files -z` 會漏掉尚未 `git add` 的新檔——新檔在 commit 前一樣可能
+    寫入禁字,漏掉等於這段期間完全不受保護。補上
+    `git ls-files -z --others --exclude-standard` 一起納入掃描;`--exclude-standard`
+    沿用 .gitignore/.git/info/exclude 規則,所以 .devflow/ 之類本來就該被忽略的檔
+    不會被硬拉進來。兩次查詢結果去重排序後回傳,下游(ALLOWLIST 比對、
+    check_pattern)不需要知道一個檔案是「已追蹤」還是「未追蹤」。"""
+    tracked = _ls_files(root)
+    untracked = _ls_files(root, "--others", "--exclude-standard")
+    return sorted(tracked | untracked)
 
 
 all_files = tracked_files(root)
@@ -180,7 +195,36 @@ for rel in all_files:
         continue
     candidates.append(rel)
 
-print(f"  • git ls-files 全量追蹤檔:{len(all_files)} 個")
+# ── 哨兵檔(X-2,2026-08-17)──────────────────────────────────────────────────
+# 不用 len(all_files)/len(candidates) 當數量地板:檔案總數逐 commit 自然漂移
+# (新增/刪除無關文件都會動到),寫死一個數字必腐化,留餘裕又等於沒有牙齒。
+# 改用哨兵:挑幾個散布在不同目錄、本來就該被掃到的代表活檔,斷言它們每一個都
+# 出現在 candidates 裡。哨兵不隨檔案總數變動——只要 ls-files 的掃描來源被縮小
+# (例如加了 "--","README.md" 這種一行 mutation)或哨兵檔本身被改名/搬移,斷言
+# 就會現形,而「檔案數地板」抓不到前者(掃描來源被縮小但 candidates 剛好還有
+# 幾個檔案,不會觸底)。
+# 選檔原則:分散在不同目錄(scripts/hooks/guides/_templates/.claude-plugin/根目錄)
+# 各一個代表,且確認都不在 ALLOWLIST 裡(哨兵必須真的落在「該被掃描」的區域,
+# 若哨兵本身被豁免,這條斷言就失去意義)。
+SENTINELS = [
+    "README.md",
+    "hooks/devflow-lib.py",
+    "scripts/build-gate-twin.py",
+    "guides/guide-dev-flow.html",
+    "_templates/4-spec.md",
+    ".claude-plugin/plugin.json",
+]
+candidate_set = set(candidates)
+missing_sentinels = [s for s in SENTINELS if s not in candidate_set]
+if missing_sentinels:
+    print(f"  • 掃描來源全量(追蹤 ∪ 未追蹤未忽略):{len(all_files)} 個")
+    print(f"  • 活文件掃描:{len(candidates)} 個檔案")
+    print(f"  ⛔ 哨兵檔缺席:{missing_sentinels}")
+    print("     掃描來源被縮小(git ls-files 的參數被動過?)或哨兵檔被改名/搬移"
+          "——兩者都要人來看,不是靜默放行。")
+    raise SystemExit(2)
+
+print(f"  • 掃描來源全量(追蹤 ∪ 未追蹤未忽略):{len(all_files)} 個")
 print("  • ALLOWLIST(逐條印出,新增目錄/檔案預設不在此列 = 會被掃到):")
 for entry, reason in ALLOWLIST:
     print(f"      - {entry}({allow_counts[entry]} 檔)— {reason}")

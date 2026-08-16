@@ -34,6 +34,10 @@
 #   FM(2026-08-16 補,檔案地圖守衛) FM-0 對照組(表與現實同步)/ FM-1 guide 刪一列
 #                    (hooks/selftest.sh 那列被拿掉,檔案仍在 → forward 缺列)/ FM-2
 #                    guide 加一列指向不存在的檔(reverse 不存在)(check-file-map.sh)
+#   FG(2026-08-17 補,X-6 兩份導覽生命週期圖同步守衛) FG-0 對照組(兩張圖正規化後
+#                    一致)/ FG-1 quickstart 版 svg 內一個 node 文字被改,dev-flow
+#                    版未動 / FG-2 quickstart 版畫圖 CSS 規則被改(svg 標記不動,
+#                    只有渲染規則漂移)(check-guides-fig-sync.sh)
 #   靜態互釘(2026-08-16 補,獨立審查 finding 4) 四支散落地板的字面值互釘 ——
 #                    hooks/selftest.sh MIN_CASES / tests/parallel-stage6/run_tests.py
 #                    EXPECTED_CHECKS / check-dev-setup-discipline.sh 與
@@ -43,7 +47,7 @@
 #
 # 案例數是**斷言**不是裝飾:EXPECTED_CONTROLS / EXPECTED_NEGATIVES / EXPECTED_TOTAL
 # 由 expect()/expect_local() 實際累計後比對,刪任何一案(含對照組)都會非零退出。
-# 四支地板的靜態互釘不是這種案例(不 seed、不 mutate、不呼叫 expect_local),不計入
+# 地板/群組數的靜態互釘不是這種案例(不 seed、不 mutate、不呼叫 expect_local),不計入
 # 這三個數字 —— 加了它們之後 EXPECTED_CONTROLS/NEGATIVES/TOTAL 仍是 10/55/65,是設計
 # 如此,不是漏算。
 #
@@ -103,9 +107,9 @@ RESULTS=()
 # 改法:由 expect()/expect_local() 依 want 實際累計 control 與 negative,尾聲與釘死值比對。
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
-EXPECTED_CONTROLS=11
-EXPECTED_NEGATIVES=57
-EXPECTED_TOTAL=68
+EXPECTED_CONTROLS=12
+EXPECTED_NEGATIVES=61
+EXPECTED_TOTAL=73
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -168,11 +172,20 @@ expect() {
 # `git ls-files` 會直接失敗(exit 2)。多複製 observability/ 一份真檔是為了讓
 # SP-5 有一個「先前完全不在任何清單上」的活檔可用來驗 fail-closed 的核心宣稱:
 # 新目錄不用列清單就會被掃到。
+# 2026-08-17(X-2)補:守衛新增 SENTINELS 斷言(README.md、_templates/4-spec.md 已在
+# seed() 的既有複製清單內,不必再補),另外四個哨兵——hooks/devflow-lib.py、
+# scripts/build-gate-twin.py、guides/guide-dev-flow.html、.claude-plugin/plugin.json
+# ——seed() 沒有複製,不補就會讓 SP-0 對照組在 SENTINELS 檢查就先炸(哨兵缺席,
+# 不是掃描來源被縮小,是 fixture 本來就沒帶那幾個檔),所以在這裡補齊。
 seed_sp() {
   local name="${1:?seed_sp: name is empty}"
   local dst; dst=$(seed "$name")
-  mkdir -p "$dst/observability"
+  mkdir -p "$dst/observability" "$dst/hooks" "$dst/guides" "$dst/.claude-plugin"
   cp "$ROOT/observability/devflow-obs.py" "$dst/observability/devflow-obs.py"
+  cp "$ROOT/hooks/devflow-lib.py" "$dst/hooks/devflow-lib.py"
+  cp "$ROOT/scripts/build-gate-twin.py" "$dst/scripts/build-gate-twin.py"
+  cp "$ROOT/guides/guide-dev-flow.html" "$dst/guides/guide-dev-flow.html"
+  cp "$ROOT/.claude-plugin/plugin.json" "$dst/.claude-plugin/plugin.json"
   git -C "$dst" init -q
   git -C "$dst" -c user.email=test@dev-flow.local -c user.name=test add -A
   git -C "$dst" -c user.email=test@dev-flow.local -c user.name=test commit -q -m seed
@@ -979,6 +992,42 @@ p.write_text(n, encoding="utf-8")
 PY
 expect fail check-no-stale-paths.sh "$D" "SP-5 observability/ 混入過期 dev-flow local marketplace 路徑(fail-closed:新目錄不必列清單就會被掃到)"
 
+# SP-6(X-2,2026-08-17,守衛本體被弱化):把 check-no-stale-paths.sh 的
+# `git ls-files` 呼叫縮小成只認 "--","README.md" 這一個檔(mutation 只動 1 行)。
+# 舊版(N-2 地板)只釘「跑了幾條禁字規則」,candidates 只剩 1 個檔一樣能跑滿
+# MIN_CHECKS,不會現形。這是本輪補的 SENTINELS 斷言要接住的案例:哨兵
+# hooks/devflow-lib.py 不在被縮小後的掃描名單裡 → exit 2 點名。
+# 用 seed_sp(不是 seed_guard)是因為守衛本體要 git ls-files,target 必須是真 git
+# working tree;守衛複本另外用 cp 放進去(seed_sp 本身不放守衛複本)。
+D=$(seed_sp sp6)
+cp "$ROOT/scripts/check-no-stale-paths.sh" "$D/scripts/check-no-stale-paths.sh"
+chmod +x "$D/scripts/check-no-stale-paths.sh"
+mutate "$D" <<'PY'
+import re, sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "scripts/check-no-stale-paths.sh"
+t = p.read_text(encoding="utf-8")
+old = '["git", "-C", root, "ls-files", "-z", *extra_args],'
+new = '["git", "-C", root, "ls-files", "-z", "--", "README.md"],'
+assert old in t, "SP-6 mutation 沒生效:找不到 _ls_files 的 subprocess.run 呼叫"
+n = t.replace(old, new, 1)
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-no-stale-paths.sh "$D" "SP-6 守衛的 ls-files 呼叫被縮小成只掃 README.md(SENTINELS 斷言接住)"
+
+# SP-7(X-2,2026-08-17,新能力的牙):放一個**未 git add** 的檔,內含禁字。改前的
+# 舊版掃描來源只有 `git ls-files`(已追蹤檔),這種檔案完全看不到、零命中 exit 0
+# ——新檔在 commit 前不受保護。本案跑的是 $ROOT/scripts/(真正修好的版本,非
+# 守衛複本),證明 tracked_files() 併入 `--others --exclude-standard` 後真的會咬到。
+D=$(seed_sp sp7); mutate "$D" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]) / "untracked-banned.md"
+banned = "plugins/local/dev-" + "flow"
+p.write_text("測試混入舊路徑(未 git add):~/.claude/" + banned + "/hooks/devflow-exec.sh\n",
+             encoding="utf-8")
+assert p.exists(), "SP-7 mutation 沒生效"
+PY
+expect fail check-no-stale-paths.sh "$D" "SP-7 未追蹤檔混入過期 dev-flow local marketplace 路徑(新檔在 commit 前也受保護)"
+
 # ── FM 群組:檔案地圖雙向盤點守衛(check-file-map.sh)────────────────────────
 #
 # guides/guide-dev-flow.html「附錄:檔案地圖」節是手寫表,手寫表必腐化。這一組證明
@@ -1011,6 +1060,55 @@ p.write_text(n, encoding="utf-8")
 PY
 expect fail check-file-map.sh "$D" "FM-2 檔案地圖加一列指向不存在的檔(reverse 找不到對應檔案)"
 
+# ── FG 群組:兩份導覽的生命週期圖同步守衛(check-guides-fig-sync.sh,X-6)──────
+#
+# guide-dev-flow.html 的 fig-lifecycle 與 guide-quickstart.html 的 fig-lifecycle-qs
+# 是 owner 裁決保留的雙副本(quickstart 要能自足看完整圖,不接受單正本+連結取代)。
+# 雙副本天生會漂移——改一張圖裡的文字,另一張沒人會自動跟著改,且改之前完全沒有
+# 任何既有檢查會紅(這正是本檔「假綠第⑥型:不對稱保護」要防的案例)。這一組證明
+# 守衛真的抓得到:FG-0 兩張圖同步時必須 pass;FG-1 只改 quickstart 那張圖裡一個
+# node 的文字(dev-flow 那張不動),必須 fail 並點名差異。
+seed_fg() { # seed_fg <name> → 同 seed(),另外複製兩份導覽 HTML 進 guides/
+  local name="${1:?seed_fg: name is empty}"
+  local dst; dst=$(seed "$name")
+  mkdir -p "$dst/guides"
+  cp "$ROOT/guides/guide-dev-flow.html" "$dst/guides/guide-dev-flow.html"
+  cp "$ROOT/guides/guide-quickstart.html" "$dst/guides/guide-quickstart.html"
+  echo "$dst"
+}
+
+D=$(seed_fg fg0)
+expect pass check-guides-fig-sync.sh "$D" "FG-0 對照組(兩張生命週期圖正規化後一致)"
+
+D=$(seed_fg fg1); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "guides/guide-quickstart.html"
+t = p.read_text(encoding="utf-8")
+old = '>Session Start<'
+new = '>Session Start MUTATED<'
+assert t.count(old) == 1, "FG-1 anchor 不是唯一命中,mutation 目標不明確"
+n = t.replace(old, new, 1)
+assert n != t, "FG-1 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-guides-fig-sync.sh "$D" "FG-1 quickstart 版 svg 內一個 node 文字被改(dev-flow 版未動,漂移必須現形)"
+
+# FG-2:只改 CSS 規則層(svg 標記不動)。守衛顧的是「svg 標記」與「畫這張圖的 CSS
+# 規則」兩層,不是只顧其中一層——這一案專門證明 CSS 這層真的被咬到,不是只在
+# svg 那層空轉。
+D=$(seed_fg fg2); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "guides/guide-quickstart.html"
+t = p.read_text(encoding="utf-8")
+old = 'svg .hk{fill:color-mix(in srgb,var(--warn) 16%,var(--card));stroke:var(--warn)}'
+new = 'svg .hk{fill:color-mix(in srgb,var(--warn) 99%,var(--card));stroke:var(--warn)}'
+assert t.count(old) == 1, "FG-2 anchor 不是唯一命中,mutation 目標不明確"
+n = t.replace(old, new, 1)
+assert n != t, "FG-2 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-guides-fig-sync.sh "$D" "FG-2 quickstart 版畫圖用的 CSS 規則被改(svg 標記本身沒動,只有渲染規則漂移,一樣必須現形)"
+
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
 echo
@@ -1023,19 +1121,26 @@ fi
 echo "  ✓ 正式 repo 指紋未變($FP_BEFORE)—— working tree 零污染"
 echo
 
-# ── 靜態互釘:四支散落地板(HIGH,獨立審查 2026-08-16 finding 4)────────────────
+# ── 靜態互釘:五支散落地板 + check-gate-twin.sh 的群組數釘(HIGH,獨立審查
+# 2026-08-16 finding 4;check-file-map.sh 的 MIN_CHECKS 為第五支,補上是本節
+# 「對稱」主題的落實——別的地板都有靜態釘,它原本沒有;check-gate-twin.sh 的
+# EXPECTED_GROUPS 則是「群組數」這條軸第一次補上地板 + 靜態釘,對稱於檢查數軸
+# 早就有的 MIN_CHECKS + 這份清單——群組被連刪帶藏(區塊 + REQUIRED_GROUPS 條目
+# 一起刪、補填充檢查數湊 CHECKS)時,heartbeat 與 guard-selfpin 兩層都看不到,
+# 只有這個釘死的字面數字會現形)
+# ────────────────────────────────────────────────────────────────────────────
 # ⚠️ 這**不是**一個 GS 編號案例 —— 不 seed、不 mutate、不呼叫 expect_local,不計入
 # EXPECTED_CONTROLS/NEGATIVES/TOTAL(這三個數字加了它之後仍是 10/55/65,是設計如此,
 # 不是漏算;見本檔檔頭「涵蓋」清單的「靜態互釘」條目)。
 # 為什麼:MIN_CHECKS/MIN_CASES/EXPECTED_CHECKS 這類「檢查數地板」是防砍檢查的
 # 最後一道牆,但牆本身沒有牆——同時砍案例數與地板數字(連刪帶藏,兩處一起改)
 # 完全防不住。GS-4 對 check-design-contract.sh 的防法是在**該檔自己內部**釘死
-# `check(MIN_CHECKS == 100, ...)`;本輪盤點到的另外四支地板 —— hooks/selftest.sh
-# 的 MIN_CASES、tests/parallel-stage6/run_tests.py 的 EXPECTED_CHECKS、
-# check-dev-setup-discipline.sh 與 check-gate-twin.sh 的 MIN_CHECKS —— 所在檔案
-# 都沒有那層自我釘死,這批沒抄到 GS-4 的前例。這裡補上:在**另一個獨立檔案**
-#(本檔)對這四支地板的字面值各釘一條 grep 斷言 —— 這份清單本身是會被 review
-# 到的 diff,誰要調動地板就得同步改這裡,只改一邊會在這裡現形。
+# `check(MIN_CHECKS == 100, ...)`;盤點到的其餘地板 —— hooks/selftest.sh 的
+# MIN_CASES、tests/parallel-stage6/run_tests.py 的 EXPECTED_CHECKS、
+# check-dev-setup-discipline.sh、check-gate-twin.sh 與 check-file-map.sh 的
+# MIN_CHECKS —— 所在檔案都沒有那層自我釘死,沒抄到 GS-4 的前例。這裡補上:在
+# **另一個獨立檔案**(本檔)對這五支地板的字面值各釘一條 grep 斷言 —— 這份清單
+# 本身是會被 review 到的 diff,誰要調動地板就得同步改這裡,只改一邊會在這裡現形。
 # ⚠️ 誠實承認防禦邊界:連改三處(案例本身 + 地板數字 + 這裡的靜態釘)仍防不住
 # —— 這跟 GS-4 是同一個等級的防禦,防的是「單點手滑」(改了案例忘了改地板,
 # 或反過來改了地板卻忘了同步這裡的靜態釘),不是「蓄意繞過同時改三處」的攻擊者。
@@ -1053,12 +1158,14 @@ check_static_pin() { # check_static_pin <相對路徑> <期望逐字一整行> <
 check_static_pin "hooks/selftest.sh" "MIN_CASES=348" "MIN_CASES 釘死 348"
 check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "EXPECTED_CHECKS 釘死 131"
 check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 9" "MIN_CHECKS 釘死 9"
-check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 132" "MIN_CHECKS 釘死 132(finding 4b 收緊後的實得數)"
+check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 138" "MIN_CHECKS 釘死 138(X-3 補群組數釘之後的實得數)"
+check_static_pin "scripts/check-file-map.sh" "MIN_CHECKS = 68" "MIN_CHECKS 釘死 68(X-6 新增 check-guides-fig-sync.sh 後的實得數)"
+check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 24" "EXPECTED_GROUPS 釘死 24(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 if [ "$STATIC_PIN_FAIL" -ne 0 ]; then
-  echo "⛔ 四支地板靜態互釘:至少一處字面值與釘死清單不符"
+  echo "⛔ 六支地板/群組數靜態互釘:至少一處字面值與釘死清單不符"
   exit 1
 fi
-echo "  ✓ 四支地板靜態互釘全過(hooks/selftest.sh / run_tests.py / check-dev-setup-discipline.sh / check-gate-twin.sh)"
+echo "  ✓ 六支地板/群組數靜態互釘全過(hooks/selftest.sh / run_tests.py / check-dev-setup-discipline.sh / check-gate-twin.sh MIN_CHECKS / check-file-map.sh / check-gate-twin.sh EXPECTED_GROUPS)"
 echo
 
 if [ "$FAIL" -ne 0 ]; then

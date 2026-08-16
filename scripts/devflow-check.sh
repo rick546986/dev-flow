@@ -87,6 +87,9 @@ group_architecture() {
   run "architecture/check-history-integrity" scripts/check-history-integrity.sh || return 1
   # gate twin 是審查介面不是文件視覺版(README §6):三件必含 + 兩種殼,對三站實跑
   run "architecture/check-gate-twin"         scripts/check-gate-twin.sh         || return 1
+  # 模型分層是散文紀律(prompt 級),沒照做不會現形——事後從 ledger 的 attempt 事件流
+  # 稽核有沒有首派即最高階、或跳過中間層直接升階(worker 這條線,見腳本頂註的稽核邊界)
+  run "architecture/check-model-tiering"   scripts/check-model-tiering.sh   || return 1
   run "architecture/check-version-sync"    scripts/check-version-sync.sh    || return 1
   # dev-setup upgrade 三方比對紀律(B-2):skills/dev-setup/SKILL.md 的三方比對/
   # baseline 快照/逐檔徵同意/過渡態/master-only 剝除/gate twin 相依全是散文規則,
@@ -106,6 +109,10 @@ group_architecture() {
   # 新增/改名/刪除 hooks|scripts|observability|tests/parallel-stage6 底下的 *.sh/*.py 沒同步
   # 更新那張表就紅;表裡寫了不存在的檔名也紅。
   run "architecture/check-file-map" scripts/check-file-map.sh || return 1
+  # 兩份導覽各自嵌一張完整的生命週期圖(fig-lifecycle / fig-lifecycle-qs)是 owner
+  # 明確裁決的雙副本(quickstart 要能自足,不接受單正本+連結取代;見腳本頂註與
+  # notes/dispatch-guard-symmetry.md X-6)——雙副本天生會漂移,補這支同步守衛。
+  run "architecture/check-guides-fig-sync" scripts/check-guides-fig-sync.sh || return 1
 }
 
 group_render() {

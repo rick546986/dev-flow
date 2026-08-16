@@ -93,10 +93,13 @@ if scanned == 0:
     print("FATAL: 掃到 0 支必列檔,守衛沒有真的跑——不是「沒有缺陷」", file=sys.stderr)
     sys.exit(2)
 
-# 地板:2026-08-16 起實際必列檔數 = 64(hooks 20 + observability 17 + scripts 25 +
-# tests/parallel-stage6 2)。一律等於當下實際值,不是「大概抓個下限」;新增/刪除必列檔
-# 時同步改這個常數(並同步補/刪檔案地圖節對應列)。
-MIN_CHECKS = 64
+# 地板:實際必列檔數 = 68(hooks 22 + observability 17 + scripts 27 +
+# tests/parallel-stage6 2;scripts 27 = 舊 26 + 本輪新增的 check-guides-fig-sync.sh)。
+# 一律等於當下實際值,不是「大概抓個下限」;新增/刪除必列檔時同步改這個常數(並同步
+# 補/刪檔案地圖節對應列),還要同步改 test-architecture-guards.sh 的靜態互釘清單那一
+# 行——只改這裡不改那裡,砍檢查數會在那裡現形;只改那裡不改這裡,這裡的地板數字本身
+# 就跟實得數脫鉤,防線形同虛設。
+MIN_CHECKS = 68
 if scanned < MIN_CHECKS:
     print(f"FAIL: 掃到 {scanned} 支 < MIN_CHECKS={MIN_CHECKS}——若為真實刪檔,"
           f"請同步下修本常數並確認檔案地圖節同步移除對應列", file=sys.stderr)

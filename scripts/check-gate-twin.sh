@@ -84,13 +84,20 @@ REQUIRED_GROUPS = [
     "usage-error-message",
     "guard-selfpin",
 ]
+# 群組數的釘死常數(比照 MIN_CHECKS 的做法)——REQUIRED_GROUPS 被連刪帶藏
+#(區塊本體 + 清單條目一起刪、再補等量填充檢查湊數)時,heartbeat 與 guard-selfpin
+# 兩層都看不到缺口(兩者都只驗「清單裡列的東西有沒有跑」,清單本身縮水不影響它們),
+# 只有這個獨立釘死的數字會現形。逐次同步成 REQUIRED_GROUPS 的實際長度,不是抓下限
+#(理由同上方 MIN_CHECKS 說明)。這個字面值另外被 test-architecture-guards.sh 的
+# GS-9 靜態互釘釘了一份,兩處要一起改。
+EXPECTED_GROUPS = 24
 CURRENT_GROUP = "gate-stage-baseline"
 GROUPS_SEEN = {}
 # 檢查數地板(次級 backstop):**釘死的常數**,不是跑完再回頭算 —— 回頭算等於
-# 地板永遠等於實得數,刪掉整區塊也不會低於它,等同沒有牙齒。132 是這一輪
-#(finding 1/2 修完後)實測的檢查總數(不含這條地板斷言自己 —— 地板斷言執行
-# 當下、它自己尚未計入 CHECKS,所以比對值是「除了它自己以外」的實得數,見下方
-# check() 呼叫處)。
+# 地板永遠等於實得數,刪掉整區塊也不會低於它,等同沒有牙齒。這個數字必須等於
+# 「執行到這條地板斷言當下、除了它自己以外」的實得檢查數(地板斷言呼叫時,它自己
+# 尚未計入 CHECKS,所以比對值天生就是「扣掉自己」那個值,見下方 check() 呼叫處)——
+# 逐次同步成當下實測值,不是某一輪的固定數字,也不是留餘裕的下限。
 # ⚠️ 2026-08-16 獨立審查 finding 4b:舊值 127 對實得 128 留了 1 檢查的鬆弛
 #(刪 1 條檢查、實得掉到 127 仍 `>= 127` 通過),等於地板沒有真的釘死當下實況。
 # 這個數字必須**逐次同步成實得數**,不是「大概抓個下限」——多留一點餘裕就是
@@ -98,7 +105,7 @@ GROUPS_SEEN = {}
 # 之後每加一條檢查都要把這裡同步調高;只有整區塊被砍掉、實得數掉到這個值以下
 # 才會紅(這是本檔唯一的次級防線,見 test-architecture-guards.sh 的 GS-9 靜態互釘
 # ——那邊另外釘了這個數字的字面值,兩處要一起改,見該檔的防禦邊界說明)。
-MIN_CHECKS = 132
+MIN_CHECKS = 138
 
 
 def check(cond, label, detail=""):
@@ -1042,13 +1049,23 @@ if SELF_PATH and os.path.isfile(SELF_PATH):
           "原始碼中的 CURRENT_GROUP 賦值集合 = REQUIRED_GROUPS(無未註冊/已註冊但不存在的群組)",
           f"只在原始碼={sorted(_assigned - set(REQUIRED_GROUPS))} "
           f"只在 REQUIRED_GROUPS={sorted(set(REQUIRED_GROUPS) - _assigned)}")
-    # 斷言不得被改成恆真(照 check-design-contract.sh 的既有寫法)。
-    _always_true = re.findall(r"^\s*check\(\s*True\b", _own_source, re.M)
+    # 斷言不得被改成恆真(照 check-design-contract.sh 的既有寫法;2026-08-17 擴成三變體
+    # `check(True` / `check(1 == 1` / `check(not False`——只認字面 True 的舊正則繞得過
+    # `check(1 == 1, …)`,同步跟進 check-design-contract.sh 的修法)。
+    _always_true = re.findall(r"^\s*check\(\s*(?:True|1\s*==\s*1|not\s+False)\b", _own_source, re.M)
     check(not _always_true,
-          "沒有任何斷言被改成恆真(原始碼不得出現 `check(True`)",
+          "沒有任何斷言被改成恆真(原始碼不得出現 `check(True`/`check(1 == 1`/`check(not False`)",
           f"命中 {len(_always_true)} 處 —— 恆真斷言等於該檢查被靜默解除武裝")
 else:
     check(False, "取得本守衛自身路徑以做群組清單自我檢查", f"SELF_PATH={SELF_PATH!r}")
+
+# 群組被連刪帶藏(區塊 + 清單條目一起刪、補填充檢查數湊 CHECKS)時,上面的
+# guard-selfpin 只驗「賦值集合 == REQUIRED_GROUPS」——兩邊一起刪這個等式仍然成立,
+# 而 heartbeat 只驗清單裡列的東西有沒有跑,清單本身變短它也看不出來。只有這個
+# 釘死的字面數字會現形。
+check(len(REQUIRED_GROUPS) == EXPECTED_GROUPS,
+      f"REQUIRED_GROUPS 群組數 = EXPECTED_GROUPS({EXPECTED_GROUPS})",
+      f"實得 {len(REQUIRED_GROUPS)} 個群組 —— 群組被連刪帶藏時只有這個釘死數字會現形")
 
 # ── N-2 收尾:群組心跳(主要防線)+ 檢查數地板(次級 backstop)────────────────
 CURRENT_GROUP = "gate-stage-baseline"

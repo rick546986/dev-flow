@@ -1700,6 +1700,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>有人想直接用編輯器整檔改寫改版歷史索引時擋下來——那份檔可能同時有多個 session 在寫,整檔覆蓋會
             悄悄蓋掉別人剛寫的那筆;只認安全寫入口這一種合法寫法。</td>
         <td><code>hooks.json</code> 自動掛(PreToolUse / Edit,Write)</td><td>PreToolUse(Edit/Write)</td></tr>
+    <tr><td><code>devflow-dispatch-guard.sh</code></td>
+        <td>你要派工(Task/Agent)前,它檢查這次派工是不是「首派就跳最高階模型」——本 run 還沒出現過
+            haiku/sonnet 這種低階 attempt,卻直接指名 opus/fable,是分層紀律被繞過的機械徵象;fail-OPEN
+            設計,未武裝或看不懂 schema 一律放行,不擋一般派工。</td>
+        <td><code>hooks.json</code> 自動掛(PreToolUse / Task,Agent)</td><td>PreToolUse(Task|Agent 派工前)</td></tr>
     <tr><td><code>selftest.sh</code></td>
         <td>自己搭一個假 repo,把所有已知的守衛情境都跑一遍再自己清乾淨,用來證明「守衛真的擋得住」而不只是
             「看起來裝了」。</td>
@@ -1735,6 +1740,10 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td><code>devflow-exec.sh stage3</code> 子指令的實作本體:Stage 3(原型)觸發判定與 Demo verdict 的
             機械檢查。</td>
         <td><code>devflow-exec.sh stage3</code> 呼叫</td><td>隨 <code>devflow-exec.sh</code>(同格)</td></tr>
+    <tr><td><code>_dispatch_impl.py</code></td>
+        <td><code>devflow-dispatch-guard.sh</code> 的實作本體:讀本 run 的 attempt 事件流,判斷是不是
+            首派即最高階或無中間層直接跳級。</td>
+        <td><code>devflow-dispatch-guard.sh</code> 呼叫</td><td>隨 <code>devflow-dispatch-guard.sh</code>(同格)</td></tr>
     <tr><td><code>hooks/devflow_obs_vendor/</code>(整包,vendor 目錄豁免)</td>
         <td><code>observability/devflow_obs/</code> 的逐位元組複製品,讓 hook 不必外部依賴就能拿到事件驗證/
             寫入邏輯;正本仍在 <code>observability/</code>,改本目錄內容視同雙正本漂移。</td>
@@ -1770,6 +1779,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>針對某一批方法論修正產出的導覽頁衍生檔,逐項驗證修正內容真的落地到渲染出來的 HTML 裡,
             不是改了正本卻沒重新渲染。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-model-tiering.sh</code></td>
+        <td>掃 observability ledger 的 attempt 事件,查有沒有違反「先低階再高階」的模型分層規則——只稽核
+            worker 這條線的首派即最高階、或跳過中間層直接升到最高階;reviewer/adviser 的起手式不在稽核
+            範圍內。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-no-stale-paths.sh</code></td>
         <td>掃過全部有追蹤的檔案,抓裡面殘留舊版外掛安裝路徑或開發者個人電腦絕對路徑的地方——留在活文件裡,
             換一台機器或換人看就直接失效或洩漏隱私。</td>
@@ -1837,6 +1851,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>本節新增的守衛本身——盤點 <code>hooks/</code>/<code>scripts/</code>/<code>observability/</code>/
             <code>tests/parallel-stage6/</code> 底下每支腳本有沒有被這張表點名到,也反查表裡寫的檔名是不是
             真的存在,雙向防這張表腐化。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-guides-fig-sync.sh</code></td>
+        <td>本檔與 <code>guide-quickstart.html</code> 各自嵌了一張完整的生命週期圖(owner 裁決兩份導覽都要放
+            全圖,不接受單正本+連結取代);這支守衛抽出兩張 svg、正規化掉唯一預期的 id 後綴差異後逐位元組
+            比對,漂移就報錯並點名差在哪。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>scripts/fixtures/</code>(整包,fixtures 目錄豁免)</td>
         <td>各支守衛自己的測試材料(合格/不合格範例檔)。</td>
