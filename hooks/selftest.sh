@@ -14,12 +14,13 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 豁免消耗+留痕斷言 / 豁免耗盡後仍擋 / 非最高階模型放行 / exec-v2 舊字面值雙讀
 # 相容 / tool_name=Agent 與 Task 同等對待;2026-08-17 F2 大 payload ARG_MAX 補
 # 7 案 → 355;同日 G3 全形冒號 Owner Call 例外回歸 +1 → 356;同日 F4 豁免卡
-# 唯讀 fail-open +2 → 358)——新增案例時同步 +;絕不「大概抓個下限」。
+# 唯讀 fail-open +2 → 358;同日 G1 history-append 專案根 +4 → 362)——新增案例時
+# 同步 +;絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=358
+MIN_CASES=362
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -2124,6 +2125,27 @@ ck "f2 postbash + 1.1MB payload → 偵測網照跑(乾淨樹放行)" 0 "$F2_RC"
 
 ( cd "$F2T" && "$H/devflow-exec.sh" stop >/dev/null 2>&1 )
 rm -rf "$F2T"
+
+echo "-- g1 history-append 專案根解析:散發位置不得巢狀寫入(docs/dev/docs/dev)--"
+# G1(2026-08-17 採用現場):腳本曾用「自身位置/..」推專案根,散發到
+# docs/dev/tools/ 後預設輸出**靜默**寫到 docs/dev/docs/dev/HISTORY.md。
+# 修法 = git toplevel(以腳本自身位置 -C 解析)。四案釘死兩個位置 + 非 git 拒絕。
+G1T=$(mktemp -d "${TMPDIR:-/tmp}/devflow-g1-history.XXXXXX")
+mkdir -p "$G1T/docs/dev/tools"
+( cd "$G1T" && git init -q . && git config user.email t@t && git config user.name t )
+cp "$H/../scripts/history-append.sh" "$G1T/docs/dev/tools/history-append.sh"
+chmod +x "$G1T/docs/dev/tools/history-append.sh"
+( cd "$G1T" && bash docs/dev/tools/history-append.sh --slug g1 --what a --why b --where c >/dev/null 2>&1 )
+ck "g1 散發位置不帶 --file → 寫到 <root>/docs/dev/HISTORY.md" 0 "$([ -f "$G1T/docs/dev/HISTORY.md" ]; echo $?)"
+ck "g1 不得建出巢狀 docs/dev/docs 目錄(修前真的建出來)" 0 "$([ ! -e "$G1T/docs/dev/docs" ]; echo $?)"
+mkdir -p "$G1T/scripts" && cp "$H/../scripts/history-append.sh" "$G1T/scripts/history-append.sh"
+( cd "$G1T" && bash scripts/history-append.sh --slug g1b --what a --why b --where c >/dev/null 2>&1 )
+ck "g1 母版位置(scripts/)同一支腳本 → 同樣寫到 <root>/docs/dev/HISTORY.md" 0 "$(grep -q "g1b" "$G1T/docs/dev/HISTORY.md"; echo $?)"
+G1N=$(mktemp -d "${TMPDIR:-/tmp}/devflow-g1-nogit.XXXXXX")
+cp "$H/../scripts/history-append.sh" "$G1N/history-append.sh"
+G1_OUT=$(cd "$G1N" && bash history-append.sh --slug g1 --what a --why b --where c 2>&1); G1_RC=$?
+ck_msg "g1 不在 git repo 且未帶 --file → 拒絕並指路 --file" 2 "--file" "$G1_RC" "$G1_OUT"
+rm -rf "$G1T" "$G1N"
 
 cd / && rm -rf "$T" "$C"
 echo

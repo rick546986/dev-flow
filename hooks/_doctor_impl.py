@@ -232,6 +232,42 @@ def run_doctor(root, contract_path="", gate_cmd=""):
                               f"{want_root} —— ROOT 解析可能因目錄深度或散發位置跑掉;"
                               f"fail-closed —— 跑 dev-setup 重散發 tools/。")
 
+    # 6b''. G1(2026-08-17):history-append 散發副本的專案根解析探測 —— 比照 6b' 的
+    # gauntlet-root(第 6 型:同類保護一起長)。該腳本曾用「自身位置/..」推根,
+    # 散發到 docs/dev/tools/ 後預設輸出靜默寫到 docs/dev/docs/dev/HISTORY.md。
+    # 期望值與 gauntlet 不同:history-append 的根 = **專案根**(它要在根下掛
+    # docs/dev/HISTORY.md),gauntlet 的根 = docs/dev(它只找相依)。
+    hpath = os.path.join(root, "docs", "dev", "tools", "history-append.sh")
+    if os.path.exists(hpath):
+        h_out, h_detail = None, ""
+        try:
+            hr = subprocess.run(["bash", hpath, "--print-root"],
+                                capture_output=True, text=True, timeout=30)
+            hout = (hr.stdout or "").strip()
+            if hr.returncode == 0 and hout:
+                h_out = hout
+            else:
+                h_detail = (hr.stderr or hout or "無輸出").strip().splitlines()[0]
+        except Exception as e:
+            h_detail = str(e)
+        want_h = os.path.realpath(root).rstrip("/")
+        if h_out is None:
+            check(False, "history-append-root",
+                  f"散發副本不支援 --print-root 或解析不到根({h_detail});"
+                  f"舊版腳本(G1 巢狀路徑缺陷未修)—— 跑 dev-setup 重散發 tools/。")
+        elif os.path.realpath(h_out).rstrip("/") == want_h:
+            check(True, "history-append-root",
+                  f"散發副本解析根 {h_out} = 專案根(--print-root 實跑;"
+                  f"預設輸出 docs/dev/HISTORY.md 不會巢狀)")
+        else:
+            check(False, "history-append-root",
+                  f"散發副本解析根 {h_out} ≠ 專案根 {want_h} —— 預設輸出會寫錯位置"
+                  f"(G1:曾巢狀成 docs/dev/docs/dev/HISTORY.md);跑 dev-setup 重散發。")
+    else:
+        info("history-append-root",
+             "docs/dev/tools/history-append.sh 不存在 —— 未散發(舊安裝);"
+             "HISTORY 唯一寫入口建議跑 dev-setup 散發後使用。")
+
     # 6c. wave_review schema(M3:契約 vs runtime-capabilities 聲明;
     #     runtime 實際字串 = devflow-lib wave review 驗證所認 schema)
     want_wr = contract_schemas.get("wave_review")

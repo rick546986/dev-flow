@@ -55,6 +55,11 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
    `${CLAUDE_PLUGIN_ROOT}/scripts/history-append.sh` → `docs/dev/tools/history-append.sh`
    並 `chmod +x`(**該檔是 HISTORY.md 的唯一寫入口** —— 直接用 Edit/Write 改會在
    多 session 並行時靜默覆蓋,由 `history-guard` hook 擋下)。
+   散發後**可執行驗證**(G1 教訓:舊版用「自身位置/..」推根,散發到 tools/ 後
+   預設輸出靜默巢狀到 `docs/dev/docs/dev/`):跑
+   `bash docs/dev/tools/history-append.sh --print-root` → 預期輸出 = 專案根且
+   exit 0(現版以 git toplevel 解析,與散發位置無關);不符即列 broken,不得靜默。
+   doctor 亦探測同一件事(`history-append-root`)。
    **gate twin 產生器**:同樣比照散發 `${CLAUDE_PLUGIN_ROOT}/scripts/build-gate-twin.py`
    與 `devflow_twin_ui.py` → `docs/dev/tools/`(兩支要在同一目錄,前者 import 後者)。
    支援的 stage:`2-decision | 4-spec | 7-review | 5-tasks`(執行板)。
