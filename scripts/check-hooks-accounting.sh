@@ -88,7 +88,9 @@ for miss in sorted(actual - listed):
 for extra in sorted(listed - actual):
     fail(f"SKILL.md 掛載列舉多了(hooks.json 沒有):{extra[0]} `{extra[1]}`→{extra[2]}")
 
-m = re.search(r"hooks/ ([0-9一二三四五六七八九十]+) 支可執行\**[::]([^。]+)。", skill)
+# (下行的冒號字元集 [:：] = 半形+全形 —— 本檔第一版真的打成 [::] 被
+#  check-regex-charclass.sh 當場抓到,G3 通解上線首日就逮到現行犯)
+m = re.search(r"hooks/ ([0-9一二三四五六七八九十]+) 支可執行\**[:：]([^。]+)。", skill)
 if not m:
     fail("SKILL.md 找不到「hooks/ N 支可執行:…。」句 —— 記帳句本身不得被刪")
 else:
