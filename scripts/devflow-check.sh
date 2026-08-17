@@ -2,8 +2,11 @@
 # Repo-local check aggregator for the dev-flow methodology master repo.
 #
 # 這是**聚合器**,不是 Runtime,也不取代外部 plugin。它只做四件事:
-#   ①固定順序 ②fail-fast ③清楚列出哪一組失敗 ④最後輸出摘要。
+#   ①固定順序輸出 ②組內 fail-fast ③清楚列出哪一組失敗 ④最後輸出摘要。
 # 它不重寫、不複製任何既有檢查的邏輯 —— 每一項都是直接呼叫既有腳本。
+# `all` 模式四大組**平行執行**(2026-08-17 效能輪;各組輸出捕捉後按固定順序重放,
+# 不交錯),組間不再 fail-fast —— 失敗時其他組照跑,沒有檢查被少跑;
+# 要回序列版:DEVFLOW_CHECK_SEQUENTIAL=1。
 #
 # 邊界宣告(誠實分界,勿混用):
 #   REPO_REFERENCE_PASS  = 本檔跑得完的東西。只驗本 repo 的模板/範例/fixture/契約檔。
@@ -152,12 +155,60 @@ fi
 echo "=== devflow-check: $MODE (REPO_REFERENCE only;外部 plugin 檢查不在此) ==="
 echo
 
+run_all_parallel() {
+  # 效能輪(2026-08-17):四組互不相依(全部唯讀掃 repo,寫入只進各自 mktemp),
+  # `all` 改為平行跑 —— 每組以子行程跑「本腳本 <組名>」,輸出各自捕捉,結束後
+  # 按固定順序**原樣重放**(錯誤輸出仍完整、不交錯、不被摘要覆蓋)。
+  # 語意變化(誠實宣告):組間 fail-fast 改為「組內 fail-fast 不變、組間全跑」——
+  # 沒有任何檢查被少跑或放寬,失敗時反而跑得更多(其他組不因先失敗而略過)。
+  # 要回序列版(除錯用):DEVFLOW_CHECK_SEQUENTIAL=1。
+  # 防「少跑一組」:四組輸出檔逐一驗存在,缺任何一組 = 平行機制自己壞了,exit 2。
+  local tmp; tmp=$(mktemp -d "${TMPDIR:-/tmp}/devflow-check-par.XXXXXX")
+  local groups=(methodology contracts architecture render)
+  local g pid rc overall=0
+  declare -a pids=()
+  for g in "${groups[@]}"; do
+    bash "$0" "$g" > "$tmp/$g.out" 2>&1 &
+    pids+=($!)
+  done
+  local i=0
+  declare -a rcs=()
+  for g in "${groups[@]}"; do
+    wait "${pids[$i]}"; rcs[$i]=$?
+    i=$((i + 1))
+  done
+  i=0
+  for g in "${groups[@]}"; do
+    if [ ! -f "$tmp/$g.out" ]; then
+      echo "⛔ devflow-check(all/parallel):$g 組的輸出檔不存在 —— 平行機制故障,不是該組全過" >&2
+      rm -rf "$tmp"; exit 2
+    fi
+    cat "$tmp/$g.out"
+    echo
+    rc=${rcs[$i]}
+    if [ "$rc" -ne 0 ]; then
+      overall=1
+      FAILED="${FAILED:+$FAILED; }$g (exit $rc)"
+    else
+      PASSED+=("group:$g")
+    fi
+    i=$((i + 1))
+  done
+  rm -rf "$tmp"
+  return "$overall"
+}
+
 case "$MODE" in
   methodology)  group_methodology ;;
   contracts)    group_contracts ;;
   architecture) group_architecture ;;
   render)       group_render ;;
-  all)          group_methodology && group_contracts && group_architecture && group_render ;;
+  all)
+    if [ "${DEVFLOW_CHECK_SEQUENTIAL:-0}" = "1" ]; then
+      group_methodology && group_contracts && group_architecture && group_render
+    else
+      run_all_parallel
+    fi ;;
 esac
 STATUS=$?
 
