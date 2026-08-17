@@ -139,3 +139,9 @@
 - 為什麼:v3.6.0 新增的派工分層守衛只進了檔案地圖,⑥-3 敘事與速查表沒跟上;owner 另要求 hooks 註冊三要素可查且預設收合
 - 落在哪:guides/guide-dev-flow.html ⑥-3、guide-quickstart.html 速查表、兩張生命週期 SVG、README、dev-setup-record.html
 
+## 2026-08-17 · backlog-sweep · v3.7.0
+- 做了什麼:清空所有已知待辦:F1~F6(ARG_MAX 靜默自壞/第7型不對稱記帳+對帳守衛/AST恆真/豁免卡fail-open/§6快照釘死)+ Backlog 3做2留 + 採用現場 G1(history-append 巢狀路徑)/G2(dev-talk 自擋)/G3(全形冒號六處+通解掃描器)+ devflow-check 四組平行化 + 新增 dev-report skill 與 devflow-report-guard hook(第7條掛載)
+- 為什麼:獨立審查與兩個採用專案回報的缺陷一次清空;第7型『不對稱記帳』要機械層對帳,採用現場→母版的回報路徑要標準化且去識別化
+- 落在哪:hooks/(四殼+四impl+report-guard新增+selftest 348→378)、scripts/(check-hooks-accounting/check-regex-charclass/check-devtalk-selfclean/check-devtalk-guide-sync 新增,devflow-check 平行化+註冊自審)、skills/dev-report 新增、README/PLUGIN.md/guide 記帳同步
+- 詳細:docs/dev/b8-gate-twin-review-ui/7-review.md 附錄 A10;notes/dispatch-accounting-symmetry.md
+

@@ -479,3 +479,48 @@ B-2 needle 亦屬同類翻案(見 b 項的 B-2 更正)。
 
 **本輪當下守衛計數**(2026-08-17,活文件不寫死,以當下輸出為準):devflow-check
 24 組、selftest 348、arch 82(13+69)、gate-twin 139、一致性 14、doctor/renderer 6。
+
+### A10　清空輪(2026-08-17,同日第二輪)
+
+派工單 `notes/dispatch-accounting-symmetry.md`:一次清空所有已知待辦 —— 獨立審查
+6 條(F1~F6)、STATUS Backlog 5 條、效能 1 條、採用現場 3 條(G1/G2/G3)、新增
+缺陷回報 skill + 去識別化 hook。全數處置;兩條 Backlog 裁決不做(理由入 STATUS.md)。
+
+**a. 逐項結果(細節見各 commit 與派工回報)**
+
+| id | 級 | 一句(白話 + 術語) |
+|---|---|---|
+| F2 | 前輪最優先 | 三支 PreToolUse 殼層曾把整包 payload 塞環境變數再 export,>1MB 令其後每個 exec 撞 ARG_MAX → rc=126,fail-closed 守衛靜默降級 fail-open。修法 = stdin 直通 python(讀取正本 `devflow-lib.read_hook_input()`),四殼同型一起改;15.9MB payload 0.26s 走完。selftest f2 七案釘死「大 payload 該擋照擋、該放照放」 |
+| F1 | blocker | 第 7 型「不對稱記帳」:hooks 掛載長到 6 條,dev-setup 健檢清單靜默停在 5 條/七支。修文字 + 新守衛 `check-hooks-accounting.sh`(hooks.json ↔ 四份列舉文件,數量與名稱都比);第 7 型 + 通解已寫進 README 第 6 型旁。同輪加第 7 條掛載時守衛當場逼出 11 處漂移逐一同步 —— live 驗證有效 |
+| F3 | LOW | 恆真偵測黑名單外加 AST 常數運算式判定(`check(2 > 1` 類);gauntlet 的 E-ID 字串簽名與 `check(False` 顯性失敗明文豁免 |
+| F4 | LOW | 豁免卡標記寫不回(唯讀 fs)曾 die;改 fail-open 放行 + 警告,卡未消耗屬可接受降級 |
+| F5 | LOW | README §6 括號內規格語意無守衛(G′ 缺口);PINNED_ROW_SHA 四列全文 hash 釘死,改字必須同 commit 更新快照 |
+| F6 | LOW | guide hooks 註冊表寫死 timeout —— F1 守衛的 event/matcher/command/timeout 四格逐字鏡像涵蓋 |
+| G1 | HIGH(採用現場) | history-append 用「自身位置/..」推根,散發到 docs/dev/tools/ 後靜默寫到 docs/dev/docs/dev/HISTORY.md。改 git toplevel(-C 腳本位置,兩位置皆對)+ --print-root + doctor 探測 + selftest 四案;散發鏈 e2e 的 push/更新步驟交還 owner |
+| G2 | MED(採用現場) | 母版 dev-talk SKILL 頂註含禁詞,誰改誰被自家 devtalk-guard 擋死(B-1 後第二次)。沿革移 docs/PLUGIN.md + 通解 `check-devtalk-selfclean.sh`(逐檔餵真 guard,不抄字詞表) |
+| G3 | HIGH(採用現場) | 全形冒號字元集打錯(「:或：」打成兩個 0x3a)六處全修(2 處 runtime:Owner Call 例外、Stage 3 人類確認)+ 通解 `check-regex-charclass.sh`(字元集相鄰重複半形標點掃描)—— 上線首日抓到本輪新守衛自己打錯的第 7 個實例;政策裁決:結構化欄位冒號全形半形皆可 |
+| Backlog | 3 做 2 留 | D-4 postbash 審查白名單(第 6 型實例,鏡射 guard 側)、tier-exempt 改 run 級(stop 清未消耗卡)、MT-2 real-mode 案例;第二個範例與 SDC 大表裁決不做(理由入 STATUS.md) |
+| 效能 | 寬要求 | 逐組計時:test-architecture-guards 40.45s 佔 24 組總量 7 成;owner 端 4:55(CPU 15%)的等待瓶頸本機不可重現(本機序列 58s)。all 模式四組平行 → 43.7s,零檢查少跑(組間改全跑);內部平行化 83 案共享 fixture 池判定風險大於收益,不做 |
+| 第五部分 | 新增 | `dev-report` skill(去識別化回報,白名單 fail-closed,不自動開 issue)+ `devflow-report-guard` hook(第 7 條掛載:只掃 `.devflow/reports/*.md` 的結構性識別特徵,最有價值判準 =「這路徑母版存在嗎」);兩層缺一不可,不宣稱 hook 上了就安全 |
+
+**b. 盤點與雙審查**
+
+第 7 型通解盤點(fresh sonnet)另抓 4 處:docs/PLUGIN.md 漏 2 hook + 1 skill
+(並揭穿其 selftest「294/294」爛數字)、dev-setup 健檢不驗 history-append 散發、
+devflow-check 註冊無自審(新檢查漏註冊 = 永遠不跑且無紅字)、guide-dev-talk
+逐字引用漂移(實修時擴大到 14 處,含漏掉整步「真實世界互動盤點」;新守衛
+`check-devtalk-guide-sync.sh`)。
+
+兩路 fresh sonnet 對抗審查共實錘 4 HIGH + 2 MED,全數修正並以審查者自己的攻擊
+重演驗證(report-guard 非 UTF-8 crash/正則災難回溯/`..` 繞路;註冊自審被註解
+騙過;charclass 跨行盲區;平行模式訊息說謊)。裁決不改:postbash 白名單寬前綴
+(與 guard 對稱是刻意的,單邊收緊正是第 6 型)。
+
+**c. 仍未被驗證(不得宣稱「完整工作流已無缺陷」)**
+
+採用專案端的實際行為(所有審查都在母版 repo 內做);dev-flow 自己從未完整走過
+七站 full lane;G1 散發鏈 e2e 的第 3~5 步(push → plugin update → 拋棄式假專案
+實測)待 owner 執行。
+
+**本輪當下守衛計數**(2026-08-17 清空輪收工,活文件不寫死,以當下輸出為準):
+devflow-check 29 組(四組平行)、selftest 378、arch 83(13+70)、gate-twin 143。
