@@ -239,6 +239,42 @@ docs/dev/docs/dev/HISTORY.md      ← owner 端實跑複現,真的建出這個�
 ⚠️ **這條在採用端已有 workaround**（一定要帶 `--file docs/dev/HISTORY.md`），
 但那是把正確性押在人記得帶參數上 —— **不算修好**。
 
+### G1 的**真正驗收**：拋棄式假專案跑完整 dev-setup
+
+母版內的 fixture 只能模擬「腳本放在 `docs/dev/tools/`」。**真正的驗收是走一次散發鏈**：
+
+```bash
+# 1. 造一個拋棄式假專案(不要用任何真實 repo)
+mkdir -p /tmp/devflow-e2e && cd /tmp/devflow-e2e && git init -q
+echo "# fake project" > README.md && git add -A && git commit -qm init
+
+# 2. 在那裡跑 dev-setup(install 路徑),讓它真的散發一次
+#    ——「散發來源」是**已安裝的 plugin 快取**(${CLAUDE_PLUGIN_ROOT}),不是你改的工作樹
+
+# 3. 不帶 --file 跑一次,斷言寫到 <root>/docs/dev/HISTORY.md
+bash docs/dev/tools/history-append.sh --slug e2e --what a --why b --where c
+find . -name HISTORY.md          # 必須只有 docs/dev/HISTORY.md,不得有 docs/dev/docs/
+```
+
+⚠️ **這一步有個陷阱,不注意會白測**:`dev-setup` 散發的來源是
+`${CLAUDE_PLUGIN_ROOT}` = **已安裝的 plugin 快取目錄**
+(`~/.claude/plugins/cache/dev-flow/dev-flow/<版本>/`),**不是你正在改的工作樹**。
+
+所以修完 G1 之後,要走完整條鏈才驗得到:
+
+| 步 | 做什麼 | 誰做 |
+|---|---|---|
+| 1 | 母版修好 G1、加回歸案、六道全綠 | 你 |
+| 2 | 走 `/dev-release`,**停在 push 前** | 你 |
+| 3 | `git push origin main` | **owner** |
+| 4 | `/plugin marketplace update dev-flow` → `/plugin update dev-flow` → `/reload-plugins` | **owner** |
+| 5 | 在拋棄式假專案跑 dev-setup,驗上面那段 | 你或 owner |
+
+**第 2~4 步跳過的話,第 5 步散發出來的還是舊版腳本 —— 等於沒測。**
+你做到第 2 步為止,並在回報裡把第 3~5 步當作「交還給 owner 的驗收清單」寫清楚。
+
+---
+
 ## G2（MED）：母版自己的 `dev-talk` SKILL 過不了母版自己的守衛
 
 **位置**：`skills/dev-talk/SKILL.md:1`
