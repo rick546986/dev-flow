@@ -145,3 +145,8 @@
 - 落在哪:hooks/(四殼+四impl+report-guard新增+selftest 348→378)、scripts/(check-hooks-accounting/check-regex-charclass/check-devtalk-selfclean/check-devtalk-guide-sync 新增,devflow-check 平行化+註冊自審)、skills/dev-report 新增、README/PLUGIN.md/guide 記帳同步
 - 詳細:docs/dev/b8-gate-twin-review-ui/7-review.md 附錄 A10;notes/dispatch-accounting-symmetry.md
 
+## 2026-08-17 · ci-registration-audit-pipefail · v3.7.1
+- 做了什麼:修 devflow-check 註冊自審在 Linux CI 的假紅:pipefail 下 grep -q 提早退出令前段 grep 吃 SIGPIPE(141),四組同炸;改 bash 內建字串比對零管線
+- 為什麼:v3.7.0 推上去 CI 立即紅,macOS 本地因管線緩衝時序不同全綠(假陰性),擋住後續 session 的乾淨環境
+- 落在哪:scripts/devflow-check.sh 註冊自審段
+
