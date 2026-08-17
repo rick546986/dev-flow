@@ -19,7 +19,7 @@ def _obs_deny(gate, violation, target=""):
         if target:
             payload["target"] = target
         try:
-            sid = json.loads(os.environ.get("HOOK_INPUT", "{}")).get("session_id", "")
+            sid = h.get("session_id", "")   # h = 模組層已解析的 hook payload(呼叫時已存在)
         except Exception:
             sid = ""
         if sid:
@@ -34,6 +34,9 @@ def _obs_deny(gate, violation, target=""):
 
 
 root = sys.argv[1]
+# F2 同型對齊:讀掉 stdin 的 payload(舊殼層 `cat >/dev/null` 直接丟棄,session_ref
+# 永遠帶不上 obs 事件)。本 impl 不依賴 payload 內容,解析失敗照樣掃描 —— 只影響記帳。
+h = L.read_hook_input() or {}
 state, armed, err = L.load_state(root)
 if err:
     L.die(err)

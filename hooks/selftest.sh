@@ -12,12 +12,13 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # ⚠️ MIN_CASES 是釘死地板,一律等於當下實際案例數(2026-08-16 起 348;X-5b 派工
 # 分層守衛補 9 案:未武裝放行 / 首派最高階擋下 / 已有低階 attempt 視為合法升階 /
 # 豁免消耗+留痕斷言 / 豁免耗盡後仍擋 / 非最高階模型放行 / exec-v2 舊字面值雙讀
-# 相容 / tool_name=Agent 與 Task 同等對待)——新增案例時同步 +;絕不「大概抓個下限」。
+# 相容 / tool_name=Agent 與 Task 同等對待;2026-08-17 F2 大 payload ARG_MAX 補
+# 7 案 → 355)——新增案例時同步 +;絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=348
+MIN_CASES=355
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -2028,6 +2029,74 @@ PX_OUT=$(cd "$PXT" && echo '{"tool_name":"Agent","tool_input":{"model":"opus"}}'
   | "$H/devflow-dispatch-guard.sh" 2>&1); PX_RC=$?
 ck_msg "px tool_name=Agent(非 Task)同等對待 → 首派最高階仍擋" 2 "tier-exempt" "$PX_RC" "$PX_OUT"
 rm -rf "$PXT"
+
+echo "-- f2 大 payload(ARG_MAX):行為必須與小 payload 完全一致,不得 rc=126 靜默自壞 --"
+# F2(2026-08-17):舊殼層 `HOOK_INPUT=$(cat); export HOOK_INPUT` 讓 >1MB payload
+# 令其後每個 exec 撞 ARG_MAX(macOS 約 1MB)→ rc=126 —— 對宿主是「守衛自壞」,
+# 通常等同放行:fail-closed 靜默降級 fail-open。修法 = stdin 直通 python
+# (devflow-lib.read_hook_input)。這一組釘死「大 payload 的該擋照擋、該放照放」——
+# 沒有它,下次有人改回 env 傳遞不會有任何紅字。
+F2T=$(mktemp -d "${TMPDIR:-/tmp}/devflow-f2-argmax.XXXXXX")
+mkdir -p "$F2T/docs/dev/f2big" "$F2T/src"
+( cd "$F2T" && git init -q . && git config user.email t@t && git config user.name t )
+printf -- "---\nstatus: approved\n---\n" > "$F2T/docs/dev/f2big/4-spec.md"
+printf '%s\n' \
+  '## T-1 f2 fixture' \
+  '- Covers: R-1' \
+  '- Files: src/a.py' \
+  '- Verify: `true`' \
+  '- Blocked-by: —' > "$F2T/docs/dev/f2big/5-tasks.md"
+echo a > "$F2T/src/a.py"
+( cd "$F2T" && git add -A >/dev/null && git commit -qm f2init )
+
+f2_big_write() { # $1 = file_path;1.1MB content 直灌 devflow-guard.sh stdin
+  F2_OUT=$(cd "$F2T" && /usr/bin/python3 -c "import json;print(json.dumps({'tool_name':'Write','tool_input':{'file_path':'$1','content':'A'*1100000}}))" \
+    | "$H/devflow-guard.sh" 2>&1); F2_RC=$?
+}
+
+# ① 未武裝 + 1.1MB Write → 放行(與小 payload 相同;修前 rc=126)
+f2_big_write "$F2T/src/a.py"
+ck "f2 未武裝 + 1.1MB Write → 放行(修前 rc=126 自壞)" 0 "$F2_RC"
+
+( cd "$F2T" && "$H/devflow-exec.sh" start f2big >/dev/null 2>&1 )
+
+# ② 武裝 + 1.1MB Write 到 scope 內檔 → 放行(該放的照放)
+f2_big_write "$F2T/src/a.py"
+ck "f2 武裝 + 1.1MB Write scope 內 → 放行" 0 "$F2_RC"
+
+# ③ 武裝 + 1.1MB Write 到 scope 外檔 → exit 2(該擋的照擋,不得 126)
+f2_big_write "$F2T/src/outside.py"
+ck_msg "f2 武裝 + 1.1MB Write scope 外 → exit 2(硬擋不因 payload 大小失效)" 2 "scope 外寫入" "$F2_RC" "$F2_OUT"
+
+# ④ prebash:武裝 + 1.1MB 指令含 sentinel 破壞字面 → exit 2
+F2_OUT=$(cd "$F2T" && /usr/bin/python3 -c "import json;print(json.dumps({'tool_name':'Bash','tool_input':{'command':'rm .devflow/devflow-armed # '+'A'*1100000}}))" \
+  | "$H/devflow-prebash.sh" 2>&1); F2_RC=$?
+ck_msg "f2 prebash 武裝 + 1.1MB 指令含破壞字面 → exit 2" 2 "破壞守衛狀態" "$F2_RC" "$F2_OUT"
+
+# ⑤ prebash:武裝 + 1.1MB 無害指令 → 放行
+F2_OUT=$(cd "$F2T" && /usr/bin/python3 -c "import json;print(json.dumps({'tool_name':'Bash','tool_input':{'command':'echo '+'A'*1100000}}))" \
+  | "$H/devflow-prebash.sh" 2>&1); F2_RC=$?
+ck "f2 prebash 武裝 + 1.1MB 無害指令 → 放行" 0 "$F2_RC"
+
+# ⑥ dispatch-guard:exec-v2 武裝 + 首派 opus + 1.1MB prompt → exit 2(fail-open 守衛
+# 自壞 = 永遠放行,更要釘)。獨立 fixture:sequential start 寫的 exec.json 無 schema
+# 欄,dispatch-guard 窄口徑本來就放行 —— 要測 deny 路徑必須手造 exec-v2 旗標
+# (dispatch-guard 不驗 shadow hash,手造安全;同 px 段做法)。
+F2DT=$(mktemp -d "${TMPDIR:-/tmp}/devflow-f2-dispatch.XXXXXX")
+mkdir -p "$F2DT/.devflow"
+printf '%s\n' '{"schema":"exec-v2","run_id":"f2run"}' > "$F2DT/.devflow/exec.json"
+F2_OUT=$(cd "$F2DT" && /usr/bin/python3 -c "import json;print(json.dumps({'tool_name':'Task','tool_input':{'model':'opus','prompt':'A'*1100000}}))" \
+  | "$H/devflow-dispatch-guard.sh" 2>&1); F2_RC=$?
+ck_msg "f2 dispatch exec-v2 武裝 + 首派 opus + 1.1MB prompt → exit 2" 2 "tier-exempt" "$F2_RC" "$F2_OUT"
+rm -rf "$F2DT"
+
+# ⑦ postbash:1.1MB payload → 偵測網照跑(乾淨樹放行,不得 126)
+F2_OUT=$(cd "$F2T" && /usr/bin/python3 -c "import json;print(json.dumps({'tool_name':'Bash','tool_input':{'command':'echo '+'A'*1100000},'session_id':'f2-selftest'}))" \
+  | "$H/devflow-postbash.sh" 2>&1); F2_RC=$?
+ck "f2 postbash + 1.1MB payload → 偵測網照跑(乾淨樹放行)" 0 "$F2_RC"
+
+( cd "$F2T" && "$H/devflow-exec.sh" stop >/dev/null 2>&1 )
+rm -rf "$F2T"
 
 cd / && rm -rf "$T" "$C"
 echo

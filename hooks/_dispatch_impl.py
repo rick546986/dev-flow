@@ -103,9 +103,10 @@ def _iso_now():
 
 
 root = sys.argv[1]
-try:
-    h = json.loads(os.environ.get("HOOK_INPUT", "{}"))
-except ValueError:
+# F2:payload 從 stdin 讀(正本 devflow-lib.read_hook_input),不再經環境變數 ——
+# export 大 payload 會讓殼層 exec 撞 ARG_MAX;本守衛 fail-open,自壞 = 永遠放行。
+h = L.read_hook_input()
+if h is None:
     sys.exit(0)
 
 tool = h.get("tool_name", "")

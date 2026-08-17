@@ -24,7 +24,13 @@ if [ -n "$LEAK" ]; then
     echo "$LEAK"
     echo "請立即修正該檔(移除相關字眼);若判定為誤報,回報使用者裁決。"
   } >&2
-  HOOK_INPUT="$INPUT" DEVTALK_TARGET="$FILE" /usr/bin/python3 - \
+  # F2 同型:不把整包 $INPUT 塞進單次環境變數(HOOK_INPUT="$INPUT" cmd 也是 exec,
+  # 大 payload 一樣撞 ARG_MAX → obs 靜默丟失)。printf 是 builtin 不經 exec,先在
+  # shell 內抽出小小的 session_id 再傳,環境變數只載幾十 bytes。
+  SID=$(printf '%s' "$INPUT" | /usr/bin/python3 -c "import json,sys
+try: print(json.load(sys.stdin).get('session_id',''))
+except Exception: pass" 2>/dev/null)
+  DEVTALK_SID="$SID" DEVTALK_TARGET="$FILE" /usr/bin/python3 - \
     "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" "$(dirname "$0")" \
     <<'PYEOF' >/dev/null 2>&1 || true
 import json, os, subprocess, sys
@@ -38,10 +44,7 @@ payload = {"event_type": "mechanical_gate_completed", "gate": "devtalk-guard",
            "result": "FAIL", "violation": "other"}
 if target:
     payload["target"] = target
-try:
-    sid = json.loads(os.environ.get("HOOK_INPUT", "{}")).get("session_id", "")
-except Exception:
-    sid = ""
+sid = os.environ.get("DEVTALK_SID", "")
 if sid:
     payload["session_ref"] = sid
 try:
