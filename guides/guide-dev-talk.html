@@ -85,12 +85,12 @@
 
   <nav>
     <a href="#quick">① 快速上手</a>
-    <a href="#map">② 全程地圖(11 步)</a>
-    <a href="#you">③ 你的 5 個介入點</a>
+    <a href="#map">② 全程地圖(12 步)</a>
+    <a href="#you">③ 你的 6 個介入點</a>
     <a href="#dims">④ 它問的維度</a>
     <a href="#states">⑤ 符號與狀態</a>
     <a href="#whitelist">⑥ 讀取/寫入白名單</a>
-    <a href="#skeleton">⑦ 產出骨架(九節)</a>
+    <a href="#skeleton">⑦ 產出骨架(十節)</a>
     <a href="#visual">⑧ 視覺版判準</a>
     <a href="#faq">⑨ 常見狀況</a>
   </nav>
@@ -108,86 +108,90 @@ claude          # 建議 opus(規劃層)
 |- docs/
    |- dev/
       |- &lt;feature-slug&gt;/
-         |- 1-discussion.md      &lt;- 討論記錄正本(九節,見 ⑦)
-         |- 1-discussion.html    &lt;- 視覺版(六件,見 ⑧;永遠從 md 重生)
+         |- 1-discussion.md      &lt;- 討論記錄正本(十節,見 ⑦)
+         |- 1-discussion.html    &lt;- 視覺版(七件,見 ⑧;永遠從 md 重生)
   </pre>
   <p class="muted">就這三個,其他一律不碰(寫入白名單)。多個需求並行 → 一 slug 一資料夾,互不干擾;<code>CONTEXT.md</code> 是唯一共用面,只增改自己本輪的詞條。</p>
 
-  <h2 id="map">② 全程地圖(11 步)</h2>
-  <p class="lead">這章要你懂:<strong>它不是一條直線走完就結束</strong> —— 步 1-5 是會反覆的逼問迴圈,步 7/9 一旦自審失敗就把你拉回步 2 重問。藍框 = 需要你出手。</p>
+  <h2 id="map">② 全程地圖(12 步)</h2>
+  <p class="lead">這章要你懂:<strong>它不是一條直線走完就結束</strong> —— 步 1-6 是會反覆的逼問迴圈,步 8/10 一旦自審失敗就把你拉回步 3 重問。藍框 = 需要你出手。</p>
 
-  <div class="figwrap"><svg id="fig-map" viewBox="0 0 880 400" role="img"
-       aria-label="dev-talk 全程地圖:11 步分四階段,含自迴圈與三條回步 2 的回路">
+  <div class="figwrap"><svg id="fig-map" viewBox="0 0 1010 400" role="img"
+       aria-label="dev-talk 全程地圖:12 步分四階段,含自迴圈與三條回步 3 的回路">
     <defs><marker id="ar1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
 
     <g class="cluster"><rect x="12" y="64" width="130" height="70" rx="8" class="grpbox"/><text class="dl" x="18" y="128">校準</text></g>
-    <g class="cluster"><rect x="146" y="64" width="646" height="70" rx="8" class="grpbox"/><text class="dl" x="152" y="128">逼問迴圈 —— 有問題就回這裡</text></g>
-    <g class="cluster"><rect x="272" y="244" width="520" height="70" rx="8" class="grpbox"/><text class="dl" x="430" y="308">落檔與自審(AI 自己跑)</text></g>
-    <g class="cluster"><rect x="142" y="244" width="126" height="70" rx="8" class="grpbox"/><text class="dl" x="148" y="308">你的 gate</text></g>
+    <g class="cluster"><rect x="146" y="64" width="776" height="70" rx="8" class="grpbox"/><text class="dl" x="152" y="128">逼問迴圈 —— 有問題就回這裡</text></g>
+    <g class="cluster"><rect x="402" y="244" width="520" height="70" rx="8" class="grpbox"/><text class="dl" x="560" y="308">落檔與自審(AI 自己跑)</text></g>
+    <g class="cluster"><rect x="272" y="244" width="126" height="70" rx="8" class="grpbox"/><text class="dl" x="278" y="308">你的 gate</text></g>
 
     <g class="n"><rect x="20" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="32" y="90">0 規模</text><text class="dc" x="32" y="105">拆需求·問起點</text></g>
     <g class="n"><rect x="150" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="162" y="90">1 盤現況</text><text class="dc" x="162" y="105">你認可事實</text></g>
-    <g class="n"><rect x="280" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="292" y="90">2 逼問</text><text class="dc" x="292" y="105">你答題·循環</text></g>
-    <g class="n"><rect x="410" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="422" y="90">3 雛形</text><text class="dc" x="422" y="105">你逐條確認</text></g>
-    <g class="n"><rect x="540" y="70" width="110" height="42" rx="6" class="b"/><text class="dt" x="552" y="90">4 發散</text><text class="dc" x="552" y="105">純 what-if</text></g>
-    <g class="n"><rect x="670" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="682" y="90">5 盲點</text><text class="dc" x="682" y="105">你回兩清單</text></g>
+    <g class="n"><rect x="280" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="292" y="90">2 真實世界</text><text class="dc" x="292" y="105">你答真實現況</text></g>
+    <g class="n"><rect x="410" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="422" y="90">3 逼問</text><text class="dc" x="422" y="105">你答題·循環</text></g>
+    <g class="n"><rect x="540" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="552" y="90">4 雛形</text><text class="dc" x="552" y="105">你逐條確認</text></g>
+    <g class="n"><rect x="670" y="70" width="110" height="42" rx="6" class="b"/><text class="dt" x="682" y="90">5 發散</text><text class="dc" x="682" y="105">純 what-if</text></g>
+    <g class="n"><rect x="800" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="812" y="90">6 盲點</text><text class="dc" x="812" y="105">你回兩清單</text></g>
 
-    <g class="n"><rect x="670" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="682" y="270">6 落檔</text><text class="dc" x="682" y="285">寫九節 md</text></g>
-    <g class="n"><rect x="540" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="552" y="270">7 複核</text><text class="dc" x="552" y="285">嚴審五掃</text></g>
-    <g class="n"><rect x="410" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="422" y="270">8 詞彙</text><text class="dc" x="422" y="285">對帳 CONTEXT</text></g>
-    <g class="n"><rect x="280" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="292" y="270">9 產 html</text><text class="dc" x="292" y="285">自核+六件</text></g>
-    <g class="n"><rect x="150" y="250" width="110" height="42" rx="6" class="hl"/><text class="dt" x="162" y="270">10 收尾</text><text class="dc" x="162" y="285">你點頭 approved</text></g>
+    <g class="n"><rect x="800" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="812" y="270">7 落檔</text><text class="dc" x="812" y="285">寫十節 md</text></g>
+    <g class="n"><rect x="670" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="682" y="270">8 複核</text><text class="dc" x="682" y="285">嚴審七掃</text></g>
+    <g class="n"><rect x="540" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="552" y="270">9 詞彙</text><text class="dc" x="552" y="285">對帳 CONTEXT</text></g>
+    <g class="n"><rect x="410" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="422" y="270">10 產 html</text><text class="dc" x="422" y="285">自核+七件</text></g>
+    <g class="n"><rect x="280" y="250" width="110" height="42" rx="6" class="hl"/><text class="dt" x="292" y="270">11 收尾</text><text class="dc" x="292" y="285">你點頭 approved</text></g>
 
-    <g class="n"><rect x="20" y="182" width="270" height="46" rx="6" class="note"/><text class="dt" x="32" y="205">前提被推翻 → 立即核銷</text><text class="dc" x="32" y="220">步 2 內建規則,不是獨立步驟</text></g>
+    <g class="n"><rect x="20" y="182" width="270" height="46" rx="6" class="note"/><text class="dt" x="32" y="205">前提被推翻 → 立即核銷</text><text class="dc" x="32" y="220">步 3 內建規則,不是獨立步驟</text></g>
 
     <path class="edge" marker-end="url(#ar1)" d="M130,91 L150,91"/>
     <path class="edge" marker-end="url(#ar1)" d="M260,91 L280,91"/>
     <path class="edge" marker-end="url(#ar1)" d="M390,91 L410,91"/>
     <path class="edge" marker-end="url(#ar1)" d="M520,91 L540,91"/>
     <path class="edge" marker-end="url(#ar1)" d="M650,91 L670,91"/>
-    <path class="edge" marker-end="url(#ar1)" d="M725,112 L725,250"/>
+    <path class="edge" marker-end="url(#ar1)" d="M780,91 L800,91"/>
+    <path class="edge" marker-end="url(#ar1)" d="M855,112 L855,250"/>
+    <path class="edge" marker-end="url(#ar1)" d="M800,271 L780,271"/>
     <path class="edge" marker-end="url(#ar1)" d="M670,271 L650,271"/>
     <path class="edge" marker-end="url(#ar1)" d="M540,271 L520,271"/>
     <path class="edge" marker-end="url(#ar1)" d="M410,271 L390,271"/>
-    <path class="edge" marker-end="url(#ar1)" d="M280,271 L260,271"/>
-    <path class="edge" marker-end="url(#ar1)" d="M320,70 L320,44 L350,44 L350,70"/>
-    <path class="edge" marker-end="url(#ar1)" d="M700,112 L700,168 L335,168 L335,112"/>
-    <path class="edge" marker-end="url(#ar1)" d="M595,292 L595,330 L8,330 L8,52 L300,52 L300,70"/>
-    <path class="edge" marker-end="url(#ar1)" d="M335,292 L335,352 L862,352 L862,52 L372,52 L372,70"/>
-    <path class="edge" marker-end="url(#ar1)" d="M290,205 L360,205 L360,112"/>
+    <path class="edge" marker-end="url(#ar1)" d="M450,70 L450,44 L480,44 L480,70"/>
+    <path class="edge" marker-end="url(#ar1)" d="M830,112 L830,168 L465,168 L465,112"/>
+    <path class="edge" marker-end="url(#ar1)" d="M725,292 L725,330 L8,330 L8,52 L430,52 L430,70"/>
+    <path class="edge" marker-end="url(#ar1)" d="M505,292 L505,352 L992,352 L992,52 L502,52 L502,70"/>
+    <path class="edge" marker-end="url(#ar1)" d="M290,205 L490,205 L490,112"/>
 
-    <text class="dl" x="360" y="42">答完 → 新題</text>
-    <text class="dl" x="530" y="164">盲點翻案 → 回步 2</text>
-    <text class="dl" x="380" y="326">複核有問題 → 回步 2</text>
-    <text class="dl" x="620" y="348">自核失敗 → 回步 2</text>
+    <text class="dl" x="490" y="42">答完 → 新題</text>
+    <text class="dl" x="660" y="164">盲點翻案 → 回步 3</text>
+    <text class="dl" x="380" y="326">複核有問題 → 回步 3</text>
+    <text class="dl" x="770" y="348">自核失敗 → 回步 3</text>
   </svg></div>
-  <p class="figcap">下排由右往左走(6→10)。虛線黃框 = 步 2 內建的核銷規則,不是獨立步驟;三條長回路都是「發現問題就回步 2」,不是走完一遍就結束。步 7 若只是小瑕疵則直接改檔,不必回步 2。</p>
+  <p class="figcap">下排由右往左走(7→11)。虛線黃框 = 步 3 內建的核銷規則,不是獨立步驟;三條長回路都是「發現問題就回步 3」,不是走完一遍就結束。步 8 若只是小瑕疵則直接改檔,不必回步 3。</p>
 
   <div class="tablewrap"><table>
     <tr><th>步</th><th>AI 做什麼</th><th>你做什麼</th><th>完成條件</th></tr>
     <tr><td>0 規模</td><td>多需求拆 slug;同時問起點(多熟/想法走到哪)校準提問深度;微型需求提議精簡模式</td><td>選先談哪個/答起點/同意模式</td><td>slug、起點、模式三者定案</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>0. <strong>規模、範圍與起點</strong>。多個需求 → 拆,一 slug 一討論,問使用者先談哪個;<br>同時問<strong>起點</strong>:對這塊多熟、想法走到哪 —— 據此校準提問深度(只調深淺,<br>不放鬆查證與必問)。微型需求(單點小改)→ 徵使用者同意走精簡(步 1 快掃、<br>步 4/5 各一輪帶過,骨架照填可短)。完成 = slug、起點、模式三者定案。</blockquote></details></td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>0. <strong>規模、範圍與起點</strong>。多個需求 → 拆,一 slug 一討論,問使用者先談哪個;<br>同時問<strong>起點</strong>:對這塊多熟、想法走到哪 —— 據此校準提問深度(只調深淺,<br>不放鬆查證與必問)。微型需求(單點小改)→ 徵使用者同意走精簡(步 1 快掃、<br>步 2 只問 Journey 與 Workarounds、步 5/6 各一輪帶過,骨架照填可短)。<br>完成 = slug、起點、模式三者定案。</blockquote></details></td></tr>
     <tr><td>1 盤現況</td><td>讀 CONTEXT + docs/specs + 程式碼,條列事實(帶數字/檔位),含受影響面清點</td><td><span class="badge you">認可或糾正</span></td><td>認可清單 = 「已核事實」</td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>1. <strong>盤現況</strong>。讀白名單 → 條列事實(帶數字與檔案位置),<strong>含受影響面清點</strong><br>(這個想法會碰到哪些既有程式碼/檔案/介面/資料),一併回報使用者。<br>完成 = 使用者認可;<strong>認可後的清單 = 本次「已核事實」</strong>。</blockquote></details></td></tr>
-    <tr><td>2 逼問</td><td>①一次一問附推薦,多解讀禁默選;②覆述推理鏈,接不上就說卡在哪;③清單外斷言必問;④發現實為多題 → 停,提議拆分,收斂到使用者選的子題,其餘記 <code>[&gt;]</code> 移交(附建議 slug)</td><td><span class="badge you">選/答/反駁</span></td><td>連續兩輪無新題、全數三態、它能複述問題/目標/邊界而不被糾正</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>2. <strong>逐題逼問</strong>(循環)。每輪三律:①一次只問一題、附推薦答案,同題多種解讀 →<br>列差異讓使用者選、<strong>禁默選</strong>;②答後覆述推理鏈「因為(事實)→ 所以(推理)→<br>結論」,接不上就說卡在哪、不要猜;③<strong>決定必問</strong> —— 只有「已核事實」或新<br>查證後回報過的才算事實,<strong>清單外的斷言 → 問使用者或標〔假設〕,禁默默當<br>事實用</strong>。優先問會改變架構的題;關鍵決策追問一層(why/邊界/反例)。新業務<br>詞彙隨手記下(步 8 對帳)。<strong>前提被推翻 → 立即核銷</strong>:已寫的 Context/Goals/<br>雛形/詞條逐段標失效並更新,才繼續。<strong>發現實為多題</strong>(含多個可獨立交付的<br>子問題)→ 停,提議拆分:當前討論收斂到使用者選的子題,其餘各記一條 <code>[&gt;]</code><br>移交(附建議 slug 名,留待另開討論),不併成一個大題。完成 = 連續兩輪無新<br>問題、既有題全數落入三態,且你能複述問題/目標/邊界而不被糾正。</blockquote></details></td></tr>
-    <tr><td>3 雛形</td><td>每條 Goal 翻成「假設…當…則…」</td><td><span class="badge you">逐條確認</span></td><td>全數確認</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>3. <strong>驗收雛形</strong>。每條 Goal 翻成 1-3 條可驗證敘述(假設…當…則…,使用者視角、<br>不綁做法),逐條請使用者確認。完成 = 全數逐條確認。</blockquote></details></td></tr>
-    <tr><td>4 發散</td><td>what-if 推演至少一輪(純發散)</td><td>聽,有感就回</td><td>Log 有發散段</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>4. <strong>發散推演</strong>。至少一輪 what-if(「往 X 走會怎樣?」「限制 Y 不存在呢?」<br>「最極端情境?」),純發散、不收斂,結果記入 Interview Log 發散段。<br>完成 = Log 有發散段。</blockquote></details></td></tr>
-    <tr><td>5 盲點</td><td>列你沒想到要問的 unknown unknowns,逐條解釋;並列隱含預設,逐條問你確認</td><td><span class="badge you">兩份清單各至少回一句</span></td><td>兩份清單皆回應過</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>5. <strong>盲點掃描</strong>。列出「使用者沒想到要問、答案可能改變方向」的 unknown<br>unknowns,逐條解釋;並列出「使用者可能覺得顯然而沒說出口」的隱含預設,逐條問使用者確認。<br>新問題 → 步 2 重開再問。完成 = 使用者對兩份清單皆回應過(至少一句,沉默不算)。</blockquote></details></td></tr>
-    <tr><td>6 落檔</td><td>寫 1-discussion.md(九節)</td><td>—</td><td>九節齊、零佔位</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>6. <strong>落檔 md</strong>。寫 <code>1-discussion.md</code>(骨架見下)。完成 = 九節齊、無佔位符。</blockquote></details></td></tr>
-    <tr><td>7 複核</td><td>嚴格審視者五掃(AC 自洽/事實背書/矛盾/推理鏈齊/範圍未偷長)</td><td>—</td><td>五掃清零</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>7. <strong>獨立複核</strong>(換上嚴格審視者視角重讀全檔):①每條驗收敘述自洽嗎?有無<br>斷言超出可驗範圍?②所有結論都有「已核事實」或問答背書嗎?③與使用者<br>原話有無矛盾?④Interview Log 每條齊「事實→推理→結論」三段嗎?<br>⑤範圍對照步 0 的界定,有沒有悄悄長大?長大 → 問使用者拆或收。<br>發現問題 → 改檔或回步 2 補問。完成 = 五掃完畢、問題清零。</blockquote></details></td></tr>
-    <tr><td>8 詞彙</td><td>先重讀 CONTEXT.md 最新內容(其他討論可能更新過,只增改本輪詞條、不動他人詞條);浮現詞彙逐一對帳,逐詞自問「這詞條在解釋語言,還是在記方案?」——後者刪</td><td>—</td><td>逐詞打勾</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>8. <strong>詞彙對帳</strong>。先<strong>重讀 <code>CONTEXT.md</code> 最新內容</strong>(其他討論可能更新過,<br>只增改自己本輪的詞條、不動他人詞條),再把本輪浮現的業務詞彙逐一核對有獨立詞條<br>(詞條 + <em>Avoid</em>;只收語言不收解法 —— 逐詞自問「這詞條在解釋語言,還是在<br>記方案?」後者刪;未實作標【提案中】;同名異義分立互註;檔不存在就建)。<br>完成 = 逐詞打勾。</blockquote></details></td></tr>
-    <tr><td>9 html</td><td>先自核 md:Open Questions 僅含三態符號,混入其他記號(如 <code>[ ]</code>)→ 回步 2 定態;定態後才從 md 生成視覺版(六件)</td><td>—</td><td>自核過 + 六件齊</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>9. <strong>產 html</strong>。先自核 md:Open Questions 僅含三態符號,出現其他記號(如 <code>[ ]</code>)<br>→ 回步 2 定態後才產。<code>1-discussion.html</code> <strong>只從 md 生成</strong>(md 是唯一正本;<br>html 要改,先改 md 再重生)。內容與圖判準見「視覺版」。完成 = 自核過+六件齊。</blockquote></details></td></tr>
-    <tr><td>10 收尾</td><td>給你 html 過目</td><td><span class="badge you">點頭 → approved</span></td><td>status 改完,停</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>10. <strong>過目與收尾</strong>。把 html 給使用者過目(md 為正本)。Open Questions 只有<br>三態:<code>[x]</code> 已解 / <code>[~]</code> 帶假設(使用者明說先這樣)/ <code>[&gt;]</code> 移交(本討論<br>不解,標注留待後續)。使用者點頭 → status 改 approved → <strong>停</strong>。</blockquote></details></td></tr>
+    <tr><td>2 真實世界</td><td>問人現在<strong>怎麼真的</strong>完成這件工作,寫成 Actors / Current Journey / Workarounds / Exceptions / Evidence 五份記錄;優先問「最近一次真的發生時怎麼處理」,無證據的敘述標 <code>[Assumption]</code></td><td><span class="badge you">回答真實工作流程</span></td><td>五份齊,且每條可分辨「有證據」或 <code>[Assumption]</code></td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>2. <strong>真實世界互動盤點</strong>。問「人現在<strong>怎麼真的</strong>完成這件工作」,寫成五份記錄:<br>①<strong>Actors</strong> —— 誰參與、真實目標、權限、掌握哪些資訊、<strong>缺</strong>哪些資訊、用哪些<br>系統外工具;<strong>系統外角色也要列</strong>(例如只靠 Email 往返、沒有帳號的窗口),<br>權限欄寫「系統外」。<br>②<strong>Current Journey</strong> —— 沒有這個功能時的現況旅程,一步一列:誰、真實動作、<br>使用工具、<strong>等誰</strong>、系統留下什麼、痛點。<br>③<strong>Workarounds</strong> —— 實際靠什麼完成(Excel / 通訊軟體 / Email / 紙本 / 電話 /<br>口頭交接),<strong>哪些步驟完全沒留下紀錄</strong>。<br>④<strong>Exceptions</strong> —— 誰可以跳過標準做法?資料不完整怎麼辦?對方不回覆怎麼辦?<br>操作中斷怎麼恢復?會不會重複、撤回、改派、多人同時處理?<br>⑤<strong>Evidence</strong> —— 逐條列證據來源(實際案例 / 訪談 / 正式辦法文件 / 去識別化<br>log / 表單 / 畫面 / 使用者反映)。<br>三條紀律:優先問<strong>「最近一次真的發生時怎麼處理」</strong>,不只問理想做法;正式辦法<br>與實際做法不同時<strong>兩者都記</strong>、不擇一;未有證據的敘述標 <code>[Assumption]</code>,<br><strong>不得把推測寫成事實</strong>;涉醫療/個資只保存去識別化內容。<br>完成 = 五份齊,且每條敘述可分辨「有證據」或 <code>[Assumption]</code>。</blockquote></details></td></tr>
+    <tr><td>3 逼問</td><td>①一次一問附推薦,多解讀禁默選;②覆述推理鏈,接不上就說卡在哪;③清單外斷言必問;④發現實為多題 → 停,提議拆分,收斂到使用者選的子題,其餘記 <code>[&gt;]</code> 移交(附建議 slug)</td><td><span class="badge you">選/答/反駁</span></td><td>連續兩輪無新題、全數三態、它能複述問題/目標/邊界而不被糾正</td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>3. <strong>逐題逼問</strong>(循環)。每輪三律:①一次只問一題、附推薦答案,同題多種解讀 →<br>列差異讓使用者選、<strong>禁默選</strong>;②答後覆述推理鏈「因為(事實)→ 所以(推理)→<br>結論」,接不上就說卡在哪、不要猜;③<strong>決定必問</strong> —— 只有「已核事實」或新<br>查證後回報過的才算事實,<strong>清單外的斷言 → 問使用者或標〔假設〕,禁默默當<br>事實用</strong>。優先問會改變架構的題;關鍵決策追問一層(why/邊界/反例)。新業務<br>詞彙隨手記下(步 9 對帳)。<strong>前提被推翻 → 立即核銷</strong>:已寫的 Context/真實世界<br>五份/Goals/雛形/詞條逐段標失效並更新,才繼續。<strong>發現實為多題</strong>(含多個可獨立<br>交付的子問題)→ 停,提議拆分:當前討論收斂到使用者選的子題,其餘各記一條 <code>[&gt;]</code><br>移交(附建議 slug 名,留待另開討論),不併成一個大題。完成 = 連續兩輪無新<br>問題、既有題全數落入三態,且你能複述問題/目標/邊界而不被糾正。</blockquote></details></td></tr>
+    <tr><td>4 雛形</td><td>每條 Goal 翻成「假設…當…則…」</td><td><span class="badge you">逐條確認</span></td><td>全數確認</td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>4. <strong>驗收雛形</strong>。每條 Goal 翻成 1-3 條可驗證敘述(假設…當…則…,使用者視角、<br>不綁做法),每條再問出「怎麼看到」三件:①從哪裡看(畫面/端點/檔案/log)<br>②看到什麼算對(具體值、畫面上的字、狀態變化)③拿什麼試(現成的真實資料或<br>情境;沒有就問要不要造一筆)。說不出怎麼看到 = 這條其實還沒定義清楚,回步 3 問。<br>問現象不問做法 —— 「你會在哪看到它發生」可問,「該用什麼元件/回什麼 JSON」不問。<br>逐條請使用者確認。完成 = 全數逐條確認且各有觀測方式。</blockquote></details></td></tr>
+    <tr><td>5 發散</td><td>what-if 推演至少一輪(純發散)</td><td>聽,有感就回</td><td>Log 有發散段</td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>5. <strong>發散推演</strong>。至少一輪 what-if(「往 X 走會怎樣?」「限制 Y 不存在呢?」<br>「最極端情境?」),純發散、不收斂,結果記入 Interview Log 發散段。<br>完成 = Log 有發散段。</blockquote></details></td></tr>
+    <tr><td>6 盲點</td><td>列你沒想到要問的 unknown unknowns,逐條解釋;並列隱含預設,逐條問你確認</td><td><span class="badge you">兩份清單各至少回一句</span></td><td>兩份清單皆回應過</td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>6. <strong>盲點掃描</strong>。列出「使用者沒想到要問、答案可能改變方向」的 unknown unknowns,<br>逐條解釋;並列出「使用者可能覺得顯然而沒說出口」的隱含預設,逐條問使用者確認。<br>新問題 → 步 3 重開再問。完成 = 使用者對兩份清單皆回應過(至少一句,沉默不算)。</blockquote></details></td></tr>
+    <tr><td>7 落檔</td><td>寫 1-discussion.md(十節)</td><td>—</td><td>十節齊、零佔位</td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>7. <strong>落檔 md</strong>。寫 <code>1-discussion.md</code>(骨架見下)。完成 = 十節齊、無佔位符<br>(真實世界五份為其中一節,子節全在)。</blockquote></details></td></tr>
+    <tr><td>8 複核</td><td>嚴格審視者七掃(AC 自洽/事實背書/矛盾/推理鏈齊/範圍未偷長/用詞前後一致/真實世界標注 [Assumption])</td><td>—</td><td>七掃清零</td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>8. <strong>獨立複核</strong>(換上嚴格審視者視角重讀全檔):①每條驗收敘述自洽嗎?有無<br>斷言超出可驗範圍?②所有結論都有「已核事實」或問答背書嗎?③與使用者<br>原話有無矛盾?④Interview Log 每條齊「事實→推理→結論」三段嗎?<br>⑤範圍對照步 0 的界定,有沒有悄悄長大?長大 → 問使用者拆或收。⑥同一<br>名詞/事實多處出現,逐處比對數字、條件、方向一致嗎?不一致 → 統一<br>或標 Open Question。⑦真實世界五份裡,每條沒有證據的敘述都標了<br><code>[Assumption]</code> 嗎?有沒有把訪談印象寫成事實?<br>發現問題 → 改檔或回步 3 補問。完成 = 七掃完畢、問題清零。</blockquote></details></td></tr>
+    <tr><td>9 詞彙</td><td>先重讀 CONTEXT.md 最新內容(其他討論可能更新過,只增改本輪詞條、不動他人詞條);浮現詞彙逐一對帳,逐詞自問「這詞條在解釋語言,還是在記方案?」——後者刪</td><td>—</td><td>逐詞打勾</td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>9. <strong>詞彙對帳</strong>。先<strong>重讀 <code>CONTEXT.md</code> 最新內容</strong>(其他討論可能更新過,<br>只增改自己本輪的詞條、不動他人詞條),再把本輪浮現的業務詞彙逐一核對有獨立詞條<br>(詞條 + <em>Avoid</em>;只收語言不收解法 —— 逐詞自問「這詞條在解釋語言,還是在<br>記方案?」後者刪;未實作標【提案中】;同名異義分立互註;檔不存在就建)。<br>完成 = 逐詞打勾。</blockquote></details></td></tr>
+    <tr><td>10 html</td><td>先自核 md:Open Questions 僅含三態符號,混入其他記號(如 <code>[ ]</code>)→ 回步 3 定態;定態後才從 md 生成視覺版(七件)</td><td>—</td><td>自核過 + 七件齊</td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>10. <strong>產 html</strong>。先自核 md:Open Questions 僅含三態符號,出現其他記號(如 <code>[ ]</code>)<br>→ 回步 3 定態後才產。<code>1-discussion.html</code> <strong>只從 md 生成</strong>(md 是唯一正本;<br>html 要改,先改 md 再重生)。內容與圖判準見「視覺版」。完成 = 自核過+七件齊。</blockquote></details></td></tr>
+    <tr><td>11 收尾</td><td>給你 html 過目</td><td><span class="badge you">點頭 → approved</span></td><td>status 改完,停</td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>11. <strong>過目與收尾</strong>。把 html 給使用者過目(md 為正本)。Open Questions 只有<br>三態:<code>[x]</code> 已解 / <code>[~]</code> 帶假設(使用者明說先這樣)/ <code>[&gt;]</code> 移交(本討論<br>不解,標注留待後續)。使用者點頭 → status 改 approved → <strong>停</strong>。</blockquote></details></td></tr>
   </table></div>
 
   <h3>實例走一遍 —— 合約到期提醒(對照母版 <code>example/contract-expiry-reminder/</code>)</h3>
@@ -195,61 +199,65 @@ claude          # 建議 opus(規劃層)
     <tr><th>步</th><th>這步實際在幹嘛</th><th>實例(它會說/問什麼)</th></tr>
     <tr><td>0 規模</td><td>防一鍋煮:一 slug 一件事,範圍先釘死;同時問起點校準提問深度</td><td>你說「我要到期提醒,順便報表匯出」→「兩件事,拆兩個討論 —— 先談哪個?」「你對合約系統熟嗎?想法目前到哪一步?」</td></tr>
     <tr><td>1 盤現況</td><td>先對地形再談需求:防它腦補系統現況,給之後所有推理一個事實底座</td><td>「查了:<code>contracts.end_date</code> 存效期、目前無任何通知機制、活躍合約約 8,000 筆 —— 這清單對嗎?」你認可 → 成為「已核事實」</td></tr>
-    <tr><td>2 逼問</td><td>把模糊想法逼成可判定的目標/邊界;所有決定在這拍,每個答案接推理鏈</td><td>「提前幾天算即將到期?建議 30 天」你答 30 → 它覆述:「業務議約需約一個月(事實)→ 更短來不及(推理)→ Expiring = 30 天內且未續約(結論)」</td></tr>
-    <tr><td>3 雛形</td><td>先定「怎樣算解決」—— 這些句子之後直接長成驗收測試,含糊現在挑掉</td><td>「假設名下有 9/20 到期未續約合約,當業務登入 dashboard,則卡片 100% 列出該合約 —— 買單嗎?」(= 範例 AC-1)</td></tr>
-    <tr><td>4 發散</td><td>純撞方向、挖隱藏需求;不收斂、不做決定</td><td>「負責業務離職了,提醒給誰?一次到期 200 筆,卡片會爆嗎?法規改成 90 天前要通知呢?」</td></tr>
-    <tr><td>5 盲點</td><td>補「你沒想到要問」的 unknown unknowns,答案可能改變方向;另列隱含預設請你確認</td><td>「你沒提:續約後舊提醒要不要消失?—— 這決定要不要記續約狀態」「你是不是預設『合約』只指有效合約?」兩份清單你都至少回一句才過</td></tr>
-    <tr><td>6 落檔</td><td>口頭共識固化成契約文件,之後接手的人只認這份</td><td>寫出九節 <code>1-discussion.md</code>(骨架見 ⑦)</td></tr>
-    <tr><td>7 複核</td><td>換嚴格審視者視角自審,擋「想當然」</td><td>掃到「系統要好用」這種不可驗句 → 改寫或刪;結論沒「已核事實」背書 → 回頭補問</td></tr>
-    <tr><td>8 詞彙</td><td>業務語言進 <code>CONTEXT.md</code>,全隊(含之後的 AI session)講同一種話</td><td>新詞條「Expiring = end_date − today ≤ 30 且未續約;<em>Avoid:</em> 快到期、即將截止」</td></tr>
-    <tr><td>9 html</td><td>有圖有脈絡快速 review,不用啃 md</td><td>摘要卡 + 脈絡圖(登入 → 查 expiring → 卡片/空狀態)+ OQ 表…六件(判準見 ⑧)</td></tr>
-    <tr><td>10 過目</td><td>你是唯一 gate:三態清點、假設吞不吞,點頭才算數</td><td>「Q1-Q3 全 <code>[x]</code>、無 <code>[~]</code>/<code>[&gt;]</code> —— 改 approved?」你點頭 → 停</td></tr>
+    <tr><td>2 真實世界</td><td>先摸清人現在怎麼真的處理到期合約,不是問「系統該怎麼設計」;訪出來的落差往往就是題目本身</td><td>「業務現在怎麼追到期?」「自己開 Excel 記到期日,前一週打電話問窗口——沒回覆就繼續等,這段完全沒留系統紀錄」→ 寫成 Actors/Journey/Workarounds/Exceptions/Evidence 五份</td></tr>
+    <tr><td>3 逼問</td><td>把模糊想法逼成可判定的目標/邊界;所有決定在這拍,每個答案接推理鏈</td><td>「提前幾天算即將到期?建議 30 天」你答 30 → 它覆述:「業務議約需約一個月(事實)→ 更短來不及(推理)→ Expiring = 30 天內且未續約(結論)」</td></tr>
+    <tr><td>4 雛形</td><td>先定「怎樣算解決」—— 這些句子之後直接長成驗收測試,含糊現在挑掉</td><td>「假設名下有 9/20 到期未續約合約,當業務登入 dashboard,則卡片 100% 列出該合約 —— 買單嗎?」(= 範例 AC-1)</td></tr>
+    <tr><td>5 發散</td><td>純撞方向、挖隱藏需求;不收斂、不做決定</td><td>「負責業務離職了,提醒給誰?一次到期 200 筆,卡片會爆嗎?法規改成 90 天前要通知呢?」</td></tr>
+    <tr><td>6 盲點</td><td>補「你沒想到要問」的 unknown unknowns,答案可能改變方向;另列隱含預設請你確認</td><td>「你沒提:續約後舊提醒要不要消失?—— 這決定要不要記續約狀態」「你是不是預設『合約』只指有效合約?」兩份清單你都至少回一句才過</td></tr>
+    <tr><td>7 落檔</td><td>口頭共識固化成契約文件,之後接手的人只認這份</td><td>寫出十節 <code>1-discussion.md</code>(骨架見 ⑦)</td></tr>
+    <tr><td>8 複核</td><td>換嚴格審視者視角自審,擋「想當然」</td><td>掃到「系統要好用」這種不可驗句 → 改寫或刪;結論沒「已核事實」背書 → 回頭補問</td></tr>
+    <tr><td>9 詞彙</td><td>業務語言進 <code>CONTEXT.md</code>,全隊(含之後的 AI session)講同一種話</td><td>新詞條「Expiring = end_date − today ≤ 30 且未續約;<em>Avoid:</em> 快到期、即將截止」</td></tr>
+    <tr><td>10 html</td><td>有圖有脈絡快速 review,不用啃 md</td><td>摘要卡 + 脈絡圖(登入 → 查 expiring → 卡片/空狀態)+ OQ 表…七件(判準見 ⑧)</td></tr>
+    <tr><td>11 過目</td><td>你是唯一 gate:三態清點、假設吞不吞,點頭才算數</td><td>「Q1-Q3 全 <code>[x]</code>、無 <code>[~]</code>/<code>[&gt;]</code> —— 改 approved?」你點頭 → 停</td></tr>
   </table></div>
 
-  <h2 id="you">③ 你的 5 個介入點</h2>
-  <p class="lead">這章要你懂:<strong>11 步裡只有 6 步需要你在場</strong>(步 0 + 5 個介入點),其餘 5 步它自己跑完 —— 你不必全程盯,但這 6 步缺席就沒人把關。</p>
+  <h2 id="you">③ 你的 6 個介入點</h2>
+  <p class="lead">這章要你懂:<strong>12 步裡有 7 步需要你在場</strong>(步 0 + 6 個介入點),其餘 5 步它自己跑完 —— 你不必全程盯,但這 7 步缺席就沒人把關。</p>
 
-  <div class="figwrap"><svg id="fig-lanes" viewBox="0 0 880 220" role="img"
-       aria-label="責任泳道:上排是你要出手的 6 步,下排是 AI 自己跑的 5 步">
+  <div class="figwrap"><svg id="fig-lanes" viewBox="0 0 960 220" role="img"
+       aria-label="責任泳道:上排是你要出手的 7 步,下排是 AI 自己跑的 5 步">
     <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
 
-    <g class="cluster"><rect x="6" y="18" width="860" height="74" rx="8" class="grpbox"/><text class="dl" x="10" y="32">你要出手 —— 6 個點(含步 0)</text></g>
-    <g class="cluster"><rect x="6" y="132" width="860" height="68" rx="8" class="grpbox"/><text class="dl" x="10" y="194">AI 自己跑 —— 步 4/6/7/8/9</text></g>
+    <g class="cluster"><rect x="6" y="18" width="940" height="74" rx="8" class="grpbox"/><text class="dl" x="10" y="32">你要出手 —— 7 個點(含步 0)</text></g>
+    <g class="cluster"><rect x="6" y="132" width="940" height="68" rx="8" class="grpbox"/><text class="dl" x="10" y="194">AI 自己跑 —— 步 5/7/8/9/10</text></g>
 
     <g class="n"><rect x="12" y="40" width="68" height="42" rx="6" class="hl"/><text class="dt" x="19" y="66">0 規模</text></g>
     <g class="n"><rect x="90" y="40" width="68" height="42" rx="6" class="hl"/><text class="dt" x="97" y="66">1 盤現況</text></g>
-    <g class="n"><rect x="168" y="40" width="68" height="42" rx="6" class="hl"/><text class="dt" x="175" y="66">2 逼問</text></g>
-    <g class="n"><rect x="246" y="40" width="68" height="42" rx="6" class="hl"/><text class="dt" x="253" y="66">3 雛形</text></g>
-    <g class="n"><rect x="402" y="40" width="68" height="42" rx="6" class="hl"/><text class="dt" x="409" y="66">5 盲點</text></g>
-    <g class="n"><rect x="792" y="40" width="68" height="42" rx="6" class="hl"/><text class="dt" x="799" y="66">10 收尾</text></g>
+    <g class="n"><rect x="168" y="40" width="68" height="42" rx="6" class="hl"/><text class="dt" x="175" y="66">2 真實</text></g>
+    <g class="n"><rect x="246" y="40" width="68" height="42" rx="6" class="hl"/><text class="dt" x="253" y="66">3 逼問</text></g>
+    <g class="n"><rect x="324" y="40" width="68" height="42" rx="6" class="hl"/><text class="dt" x="331" y="66">4 雛形</text></g>
+    <g class="n"><rect x="480" y="40" width="68" height="42" rx="6" class="hl"/><text class="dt" x="487" y="66">6 盲點</text></g>
+    <g class="n"><rect x="870" y="40" width="68" height="42" rx="6" class="hl"/><text class="dt" x="877" y="66">11 收尾</text></g>
 
-    <g class="n"><rect x="324" y="140" width="68" height="42" rx="6" class="b"/><text class="dt" x="331" y="166">4 發散</text></g>
-    <g class="n"><rect x="480" y="140" width="68" height="42" rx="6" class="b"/><text class="dt" x="487" y="166">6 落檔</text></g>
-    <g class="n"><rect x="558" y="140" width="68" height="42" rx="6" class="b"/><text class="dt" x="565" y="166">7 複核</text></g>
-    <g class="n"><rect x="636" y="140" width="68" height="42" rx="6" class="b"/><text class="dt" x="643" y="166">8 詞彙</text></g>
-    <g class="n"><rect x="714" y="140" width="68" height="42" rx="6" class="b"/><text class="dt" x="721" y="166">9 html</text></g>
+    <g class="n"><rect x="402" y="140" width="68" height="42" rx="6" class="b"/><text class="dt" x="409" y="166">5 發散</text></g>
+    <g class="n"><rect x="558" y="140" width="68" height="42" rx="6" class="b"/><text class="dt" x="565" y="166">7 落檔</text></g>
+    <g class="n"><rect x="636" y="140" width="68" height="42" rx="6" class="b"/><text class="dt" x="643" y="166">8 複核</text></g>
+    <g class="n"><rect x="714" y="140" width="68" height="42" rx="6" class="b"/><text class="dt" x="721" y="166">9 詞彙</text></g>
+    <g class="n"><rect x="792" y="140" width="68" height="42" rx="6" class="b"/><text class="dt" x="799" y="166">10 html</text></g>
 
     <path class="edge" marker-end="url(#ar2)" d="M80,61 L90,61"/>
     <path class="edge" marker-end="url(#ar2)" d="M158,61 L168,61"/>
     <path class="edge" marker-end="url(#ar2)" d="M236,61 L246,61"/>
-    <path class="edge" marker-end="url(#ar2)" d="M280,82 L280,111 L358,111 L358,140"/>
-    <path class="edge" marker-end="url(#ar2)" d="M366,140 L366,111 L436,111 L436,82"/>
-    <path class="edge" marker-end="url(#ar2)" d="M444,82 L444,111 L514,111 L514,140"/>
-    <path class="edge" marker-end="url(#ar2)" d="M548,161 L558,161"/>
+    <path class="edge" marker-end="url(#ar2)" d="M314,61 L324,61"/>
+    <path class="edge" marker-end="url(#ar2)" d="M358,82 L358,111 L436,111 L436,140"/>
+    <path class="edge" marker-end="url(#ar2)" d="M444,140 L444,111 L514,111 L514,82"/>
+    <path class="edge" marker-end="url(#ar2)" d="M522,82 L522,111 L592,111 L592,140"/>
     <path class="edge" marker-end="url(#ar2)" d="M626,161 L636,161"/>
     <path class="edge" marker-end="url(#ar2)" d="M704,161 L714,161"/>
-    <path class="edge" marker-end="url(#ar2)" d="M748,140 L748,111 L826,111 L826,82"/>
+    <path class="edge" marker-end="url(#ar2)" d="M782,161 L792,161"/>
+    <path class="edge" marker-end="url(#ar2)" d="M826,140 L826,111 L904,111 L904,82"/>
   </svg></div>
   <p class="figcap">線在兩排之間上下折,就是主導權在換手。下表是每個介入點你實際要把關的東西。</p>
 
   <div class="tablewrap"><table>
     <tr><th>#</th><th>介入點</th><th>你在把關什麼</th></tr>
     <tr><td>1</td><td>步 1 認可事實清單</td><td>它對系統現況的理解錯了,後面全歪 —— 抽查帶數字的那幾條</td></tr>
-    <tr><td>2</td><td>步 2 答題(循環)</td><td>所有「決定」都在這拍;它給推薦,你可反駁;檢查它的推理鏈不只結論</td></tr>
-    <tr><td>3</td><td>步 3 逐條確認驗收雛形</td><td>「怎樣算解決」—— 這些敘述之後直接長成測試,含糊現在挑</td></tr>
-    <tr><td>4</td><td>步 5 回應盲點清單</td><td>它列的 unknown unknowns 有沒有真的打中你沒想到的</td></tr>
-    <tr><td>5</td><td>步 10 看 html 點頭</td><td>最終過目;OQ 三態、假設你吞不吞、圖對不對</td></tr>
+    <tr><td>2</td><td>步 2 回答真實世界互動盤點</td><td>它問的是「人現在怎麼真的做」還是理想做法;沒證據的敘述有沒有老實標 <code>[Assumption]</code></td></tr>
+    <tr><td>3</td><td>步 3 答題(循環)</td><td>所有「決定」都在這拍;它給推薦,你可反駁;檢查它的推理鏈不只結論</td></tr>
+    <tr><td>4</td><td>步 4 逐條確認驗收雛形</td><td>「怎樣算解決」—— 這些敘述之後直接長成測試,含糊現在挑</td></tr>
+    <tr><td>5</td><td>步 6 回應盲點清單</td><td>它列的 unknown unknowns 有沒有真的打中你沒想到的</td></tr>
+    <tr><td>6</td><td>步 11 看 html 點頭</td><td>最終過目;OQ 三態、假設你吞不吞、圖對不對</td></tr>
   </table></div>
   <p class="muted">步 0 也要你答:先談哪個、起點深淺 —— 對照 ② 步驟表的「0 規模」列。</p>
 
@@ -257,7 +265,8 @@ claude          # 建議 opus(規劃層)
   <p class="lead">這章要你懂:<strong>它「不問」的那五類不是漏掉,是刻意留給後面階段</strong> —— 討論階段就逼你選方案,答案全是沙。</p>
   <div class="tablewrap"><table>
     <tr><th>talk 會問</th><th>talk 刻意不問(屬後續階段)</th></tr>
-    <tr><td>現況地形(讀碼查證後跟你對)<br><span class="muted">例:「現在到期是誰在盯?系統裡有任何通知機制嗎?」</span></td><td rowspan="7">方案比較/取捨<br>成功判準量化<br>架構與資料流設計<br>測試策略<br>任務拆分<br><span class="muted">—— 這些在收斂/規格/實作階段才問,<br>提早問答案全是沙,也會誘導搶收斂</span></td></tr>
+    <tr><td>現況地形(讀碼查證後跟你對)<br><span class="muted">例:「現在到期是誰在盯?系統裡有任何通知機制嗎?」</span></td><td rowspan="8">方案比較/取捨<br>成功判準量化<br>架構與資料流設計<br>測試策略<br>任務拆分<br><span class="muted">—— 這些在收斂/規格/實作階段才問,<br>提早問答案全是沙,也會誘導搶收斂</span></td></tr>
+    <tr><td>真實世界互動盤點(Actors / Current Journey / Workarounds / Exceptions / Evidence)<br><span class="muted">例:「人現在怎麼真的完成這件事?最近一次真的發生時怎麼處理?」</span></td></tr>
     <tr><td>痛點與繞法(誰、什麼痛)<br><span class="muted">例:「漏掉續約實際損失是什麼?現在怎麼土法擋?」</span></td></tr>
     <tr><td>目標與邊界(Goals/Non-Goals)<br><span class="muted">例:「email 通知這次做不做?不做就明寫進 Non-Goals」</span></td></tr>
     <tr><td>限制(技術/時程/法規)<br><span class="muted">例:「能不能引入新 infra?release 卡哪天?」</span></td></tr>
@@ -267,20 +276,20 @@ claude          # 建議 opus(規劃層)
   </table></div>
 
   <h2 id="states">⑤ 符號與狀態</h2>
-  <p class="lead">這章要你懂:<strong>每個 Open Question 最後只有三個出口</strong>,沒有「懸著」這個選項 —— 步 10 要能停,靠的就是三態全數落定。</p>
+  <p class="lead">這章要你懂:<strong>每個 Open Question 最後只有三個出口</strong>,沒有「懸著」這個選項 —— 步 11 要能停,靠的就是三態全數落定。</p>
 
   <div class="figwrap"><svg id="fig-states" viewBox="0 0 880 250" role="img"
-       aria-label="Open Question 的三態出口與步 10 gate">
+       aria-label="Open Question 的三態出口與步 11 gate">
     <defs><marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
 
-    <g class="n"><rect x="340" y="30" width="200" height="42" rx="6" class="hl"/><text class="dt" x="352" y="50">Open Question</text><text class="dc" x="352" y="64">步 2 逼問時累積</text></g>
+    <g class="n"><rect x="340" y="30" width="200" height="42" rx="6" class="hl"/><text class="dt" x="352" y="50">Open Question</text><text class="dc" x="352" y="64">步 3 逼問時累積</text></g>
 
     <g class="n"><rect x="40" y="130" width="230" height="42" rx="6" class="go"/><text class="dm" x="52" y="150">[x] 已解</text><text class="dc" x="52" y="164">你答了,有推理鏈背書</text></g>
     <g class="n"><rect x="325" y="130" width="230" height="42" rx="6" class="note"/><text class="dm" x="337" y="150">[~] 帶假設</text><text class="dc" x="337" y="164">你說先這樣,暫定值待回頭定</text></g>
     <g class="n"><rect x="610" y="130" width="230" height="42" rx="6" class="b"/><text class="dm" x="622" y="150">[&gt;] 移交</text><text class="dc" x="622" y="164">討論層解不了,留待後續</text></g>
 
-    <g class="n"><rect x="240" y="196" width="400" height="42" rx="6" class="hl"/><text class="dt" x="252" y="216">步 10 過目:三態全定才 approved</text><text class="dc" x="252" y="230">混入其他記號(如 [ ]) → 回步 2 定態後才產 html</text></g>
+    <g class="n"><rect x="240" y="196" width="400" height="42" rx="6" class="hl"/><text class="dt" x="252" y="216">步 11 過目:三態全定才 approved</text><text class="dc" x="252" y="230">混入其他記號(如 [ ]) → 回步 3 定態後才產 html</text></g>
 
     <path class="edge" marker-end="url(#ar3)" d="M400,72 L400,100 L155,100 L155,130"/>
     <path class="edge" marker-end="url(#ar3)" d="M440,72 L440,130"/>
@@ -321,8 +330,8 @@ claude          # 建議 opus(規劃層)
 
     <g class="n"><rect x="310" y="120" width="190" height="60" rx="6" class="hl"/><text class="dm" x="322" y="145">/dev-talk</text><text class="dc" x="322" y="162">只產文字,不寫程式碼</text></g>
 
-    <g class="n"><rect x="570" y="96" width="240" height="36" rx="6" class="go"/><text class="dm" x="582" y="114">1-discussion.md</text><text class="dc" x="582" y="126">討論記錄正本(九節)</text></g>
-    <g class="n"><rect x="570" y="140" width="240" height="36" rx="6" class="go"/><text class="dm" x="582" y="158">1-discussion.html</text><text class="dc" x="582" y="170">視覺版(六件)·從 md 重生</text></g>
+    <g class="n"><rect x="570" y="96" width="240" height="36" rx="6" class="go"/><text class="dm" x="582" y="114">1-discussion.md</text><text class="dc" x="582" y="126">討論記錄正本(十節)</text></g>
+    <g class="n"><rect x="570" y="140" width="240" height="36" rx="6" class="go"/><text class="dm" x="582" y="158">1-discussion.html</text><text class="dc" x="582" y="170">視覺版(七件)·從 md 重生</text></g>
     <g class="n"><rect x="570" y="184" width="240" height="36" rx="6" class="go"/><text class="dm" x="582" y="202">CONTEXT.md</text><text class="dc" x="582" y="214">只增改自己本輪的詞條</text></g>
 
     <g class="n"><rect x="14" y="296" width="420" height="36" rx="6" class="no"/><text class="dt" x="26" y="319">其他文件資料夾 —— 不進、不列目錄、不 glob</text></g>

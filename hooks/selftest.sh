@@ -15,13 +15,13 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 相容 / tool_name=Agent 與 Task 同等對待;2026-08-17 F2 大 payload ARG_MAX 補
 # 7 案 → 355;同日 G3 全形冒號 Owner Call 例外回歸 +1 → 356;同日 F4 豁免卡
 # 唯讀 fail-open +2 → 358;同日 G1 history-append 專案根 +4 → 362;同日 Backlog
-# D-4 postbash 審查白名單 +3、C-2 stop 清未消耗豁免卡 +3 → 368)——新增案例時
-# 同步 +;絕不「大概抓個下限」。
+# D-4 postbash 審查白名單 +3、C-2 stop 清未消耗豁免卡 +3 → 368;同日 report-guard
+# 去識別化 +7 → 375)——新增案例時同步 +;絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=368
+MIN_CASES=375
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -2141,6 +2141,46 @@ ck "f2 postbash + 1.1MB payload → 偵測網照跑(乾淨樹放行)" 0 "$F2_RC"
 
 ( cd "$F2T" && "$H/devflow-exec.sh" stop >/dev/null 2>&1 )
 rm -rf "$F2T"
+
+echo "-- rg 缺陷回報去識別化守衛(只掃 .devflow/reports/*.md;結構特徵擋、語意靠人)--"
+# 第五部分(2026-08-17):dev-report skill 的機械層。正負向都要:命中要擋、
+# 非回報路徑要放行、空輸入/壞 JSON 要放行(fail-open 於環境問題)。
+RGT=$(mktemp -d "${TMPDIR:-/tmp}/devflow-rg-report.XXXXXX")
+mkdir -p "$RGT/.devflow/reports"
+rg_run() { RG_OUT=$(printf '{"tool_name":"Write","tool_input":{"file_path":"%s"}}' "$1" \
+  | "$H/devflow-report-guard.sh" 2>&1); RG_RC=$?; }
+
+cat > "$RGT/.devflow/reports/clean.md" <<'EOF'
+# 回報:觀測欄字元集不認全形冒號
+- 現象:❌ C1 每個 S 都有觀測欄(16 個 S 裡有 13 個被誤判)
+- 位置:scripts/check-spec-gate.sh:85
+- 重現:<專案根>/docs/dev/<slug>/4-spec.md 用全形冒號寫觀測欄
+- 環境:plugin 3.6.1 / 契約 2.0.0
+EOF
+rg_run "$RGT/.devflow/reports/clean.md"
+ck "rg 乾淨回報(母版路徑+泛化+版本+數量)→ 放行" 0 "$RG_RC"
+
+printf '%s\n' '重現:/Users/somebody/dev/companyapp/main.go 觸發' > "$RGT/.devflow/reports/dirty-abs.md"
+rg_run "$RGT/.devflow/reports/dirty-abs.md"
+ck_msg "rg 絕對路徑 → exit 2 並點名規則" 2 "絕對路徑" "$RG_RC" "$RG_OUT"
+
+printf '%s\n' '受影響檔:src/billing/invoice_service.go 的匯入' > "$RGT/.devflow/reports/dirty-path.md"
+rg_run "$RGT/.devflow/reports/dirty-path.md"
+ck_msg "rg 母版沒有的相對路徑 → exit 2(疑為採用專案的)" 2 "不存在於母版" "$RG_RC" "$RG_OUT"
+
+printf '%s\n' '已修於 3f2ab9c 這個提交' > "$RGT/.devflow/reports/dirty-sha.md"
+rg_run "$RGT/.devflow/reports/dirty-sha.md"
+ck_msg "rg git SHA → exit 2" 2 "git SHA" "$RG_RC" "$RG_OUT"
+
+printf '%s\n' '筆記:/Users/somebody/dev/companyapp/main.go' > "$RGT/notes.md"
+rg_run "$RGT/notes.md"
+ck "rg 非回報路徑(含識別特徵)→ 一律靜默放行" 0 "$RG_RC"
+
+RG_OUT=$(printf '' | "$H/devflow-report-guard.sh" 2>&1); RG_RC=$?
+ck "rg 空輸入 → 放行(fail-open 於環境問題)" 0 "$RG_RC"
+RG_OUT=$(printf 'not-json{{{' | "$H/devflow-report-guard.sh" 2>&1); RG_RC=$?
+ck "rg 壞 JSON → 放行(fail-open 於環境問題)" 0 "$RG_RC"
+rm -rf "$RGT"
 
 echo "-- c2 tier-exempt 豁免卡 run 級:stop 清未消耗的卡、留已消耗的卡 --"
 # Backlog C-2 裁決(2026-08-17):豁免是 run 級授權 —— stop = run 結束,未消耗的卡

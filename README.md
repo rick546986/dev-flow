@@ -278,7 +278,9 @@ RED → GREEN → scope check → Verify
   擋 scope 外寫入)、`devflow-prebash`(PreToolUse Bash:擋 shell 讀上游與破壞旗標)、
   `devflow-postbash`(PostToolUse Bash:git status 對照 + 內容 hash,抓 shell 寫入)、
   `devtalk-guard`(盲原則掃描)、`devflow-dispatch-guard`(PreToolUse Task|Agent:武裝中
-  擋「首派即最高階」派工)。L1 出口 = `devflow-exec.sh allow <file> --reason`;
+  擋「首派即最高階」派工)。另有 `devflow-report-guard`(PostToolUse Edit|Write:
+  只掃 `.devflow/reports/*.md` 缺陷回報檔的結構性識別特徵,與旗標狀態無關,
+  非回報路徑一律靜默)。L1 出口 = `devflow-exec.sh allow <file> --reason`;
   L2 = `stop`。收尾 `stop` 後全部沉睡。自測:`hooks/selftest.sh`(動態發現案例,可重跑)。
   界線:紀律工具非安全沙箱,詳 `dev-setup-record.html`(plugin guides/,經
   `${CLAUDE_PLUGIN_ROOT}` 存取,非本 repo/散發檔案)。跨版本相容由
@@ -618,6 +620,7 @@ E11 只驗這兩節在不在。
 | 5 任務 | tracer-bullet 順序 + Covers/Verify/Blocked-by(模板內建) | 內建 |
 | 6 實作 | **由 `/dev-flow` 自動接執行引擎**(對外入口一律 `/dev-flow`,定位到 Stage 6 即自動載入 `dev-run`,使用者不需記第二個指令;haiku 執行→sonnet 審→升階;守衛 `devflow-exec` start/stop)或手動逐 T;TDD 紅綠(每 S-id 先 RED 貼輸出再 GREEN)+ checkbox 追蹤 | 本 plugin / 內建 |
 | 7 驗證 | 雙軸審(Standards + Spec)+ 自建 coverage matrix(可搭 mattpocock `code-review`) | 內建 / mattpocock |
+| 隨時(踩到母版缺陷) | **`dev-report`**:產出去識別化的缺陷回報檔(issue 文 + 派工單條目,寫進 `.devflow/reports/`,`devflow-report-guard` hook 機械擋結構性識別特徵,人工確認後才貼)| 本 plugin |
 
 > **外部 skill 依賴原則**:方法一律內建於模板執行清單,外部 skill 只當**選配加分**(叫不到不影響流程)。
 > 原因:第三方 skill 常自帶終點鏈(跑完強制導向它自己的後續流程),會把本流程拖出七文檔管線;

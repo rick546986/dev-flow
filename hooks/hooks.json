@@ -59,6 +59,17 @@
         ]
       },
       {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/devflow-report-guard.sh",
+            "timeout": 15,
+            "statusMessage": "report-guard 去識別化"
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {
