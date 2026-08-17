@@ -146,10 +146,18 @@ group_render() {
 # 不保證被執行。本檔自己列舉自己要跑什麼,所以對帳守衛就放本檔開頭,每種 MODE 都先跑。
 # ⚠️ 審查 HIGH 教訓:第一版 grep 全檔,把腳本名寫在**註解**裡就能騙過(名字在、
 # run 沒跑)。現版先剝掉註解行再比對 —— 名字必須出現在會被執行的行上。
+# ⚠️ CI 教訓(2026-08-17,v3.7.0 上線即紅):不得用「grep -v | grep -q」管線比對 ——
+# 本檔 set -o pipefail,grep -q 找到就提早關管線,前段 grep 吃 SIGPIPE 回 141,
+# pipefail 把整條判失敗 = 名字越早出現越容易被誤判「沒註冊」;macOS 緩衝大不發作,
+# Linux CI 四組同炸。改為:註解剝除一次存變數,用 bash 內建字串包含比對,零管線。
+REG_SOURCE=$(grep -v '^[[:space:]]*#' "$0")
 REG_MISS=""
 for f in "$ROOT"/scripts/check-*.sh "$ROOT"/scripts/test-*.sh; do
   base=$(basename "$f")
-  grep -v '^[[:space:]]*#' "$0" | grep -q "scripts/$base" || REG_MISS="$REG_MISS $base"
+  case "$REG_SOURCE" in
+    *"scripts/$base"*) ;;
+    *) REG_MISS="$REG_MISS $base" ;;
+  esac
 done
 if [ -n "$REG_MISS" ]; then
   echo "⛔ devflow-check 註冊自審:下列檢查腳本存在但沒被本檔任何 group 執行 ——$REG_MISS" >&2
