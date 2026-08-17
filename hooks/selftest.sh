@@ -12,12 +12,17 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # ⚠️ MIN_CASES 是釘死地板,一律等於當下實際案例數(2026-08-16 起 348;X-5b 派工
 # 分層守衛補 9 案:未武裝放行 / 首派最高階擋下 / 已有低階 attempt 視為合法升階 /
 # 豁免消耗+留痕斷言 / 豁免耗盡後仍擋 / 非最高階模型放行 / exec-v2 舊字面值雙讀
-# 相容 / tool_name=Agent 與 Task 同等對待)——新增案例時同步 +;絕不「大概抓個下限」。
+# 相容 / tool_name=Agent 與 Task 同等對待;2026-08-17 F2 大 payload ARG_MAX 補
+# 7 案 → 355;同日 G3 全形冒號 Owner Call 例外回歸 +1 → 356;同日 F4 豁免卡
+# 唯讀 fail-open +2 → 358;同日 G1 history-append 專案根 +4 → 362;同日 Backlog
+# D-4 postbash 審查白名單 +3、C-2 stop 清未消耗豁免卡 +3 → 368;同日 report-guard
+# 去識別化 +7、審查修正回歸(非 UTF-8/長行回溯/.. 繞路)+3 → 378)——新增案例時
+# 同步 +;絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=348
+MIN_CASES=378
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -259,6 +264,12 @@ ck "回歸(prebash 鏡像):舊 exec.json(無 phase 鍵)shell cat 6-notes 放行"
 ck "postbash 鏡像回歸:舊 exec.json(無 phase 鍵)shell 改 5-tasks 仍放行" 0 "$(post)"
 ck "基準:review 武裝前寫 7-review.md 仍受 scope 擋(對照武裝後放行)" \
   2 "$(g Write docs/dev/f1/7-review.md)"
+# postbash 鏡像基準(D-4 白名單的負向):**非 review 期**shell 產 7-review.md →
+# 偵測網仍擋 —— 白名單只在 phase=review 生效,不得變成常駐豁免。
+echo "premature-review-notes" > docs/dev/f1/7-review.md
+post_capture
+ck_msg "postbash D-4 基準:非 review 期 shell 產 7-review.md → 仍擋" 2 "scope 外" "$P_RC" "$P_OUT"
+rm -f docs/dev/f1/7-review.md
 # 模擬 Stage 6 收工:5-tasks.md 進 review 前先提交,之後 postbash 才能分辨「review
 # 期間又被 shell 動」與「Stage 6 遺留未提交」——這兩者不是同一件事,見下方圍欄③收緊註解。
 git add docs/dev/f1/5-tasks.md && git commit -qm "selftest: pin 5-tasks before review arm" >/dev/null
@@ -282,6 +293,15 @@ ck_msg "prebash 鏡像④(glob 繞路):review 中萬用字元讀 6-notes → 擋
   2 "6-implementation-notes" "$PB_RC" "$PB_OUT"
 ck "② review 中寫 7-review.md → 放行"          0 "$(g Write docs/dev/f1/7-review.md)"
 ck "review 中寫 evidence/ → 放行"              0 "$(g Write docs/dev/f1/evidence/screenshot.png)"
+# postbash 鏡像(D-4 白名單,Backlog 第 6 型實例):guard 側放行 7-review*/evidence/
+# 的 review 期寫入,偵測網也必須放行 —— 修前這裡被當 scope 外改動(採用現場實測
+# 撞到,以 L1 allow 應急)。與 unlock 無關,同 guard 側語意。
+echo "review-notes" > docs/dev/f1/7-review.md
+mkdir -p docs/dev/f1/evidence && echo "e" > docs/dev/f1/evidence/e2e.log
+post_capture
+ck "postbash D-4 白名單:review 中 shell 產 7-review*/evidence/ → 放行(修前誤擋)" 0 "$P_RC"
+rm -rf docs/dev/f1/7-review.md docs/dev/f1/evidence
+ck "postbash D-4 清理後仍沉默(基準恢復)" 0 "$(post)"
 g_capture Write docs/dev/f1/5-tasks.md
 ck_msg "③ review 中寫 5-tasks.md → 擋"         2 "圍欄③" "$G_RC" "$G_OUT"
 # postbash 鏡像①:review 中(未 unlock)shell 側直接改 5-tasks.md(繞過 Edit/Write
@@ -1295,6 +1315,13 @@ git add docs/dev/pf2/4-spec.md && git commit -qm oc >/dev/null
 ck "p1 OC-4 owner-call 例外放行"     0 "$(p1x start pf2)"
 ck "p1 legacy start 維持 v1 exec.json" 0 "$(p1c v1-exec "$P1T")"
 "$H/devflow-exec.sh" stop >/dev/null 2>&1
+# G3 回歸(2026-08-17):**全形冒號**版的 Owner Call 例外必須同樣生效。字元集曾把
+# 「:或：」打成兩個半形冒號(0x3a×2),全形版被判成沒寫例外 → fast+high 明明寫了
+# 例外卻開不了工,而且不知道為什麼(採用專案實踩)。
+printf -- "---\nstatus: approved\n---\n- lane: fast\n- Risk: high\n- Owner Call 例外：同意 fast+high(全形冒號 fixture)\n" > docs/dev/pf2/4-spec.md
+git add docs/dev/pf2/4-spec.md && git commit -qm oc-fullwidth >/dev/null
+ck "p1 G3 回歸:全形冒號 Owner Call 例外同樣放行" 0 "$(p1x start pf2)"
+"$H/devflow-exec.sh" stop >/dev/null 2>&1
 p1x_cap start pf2 --task T-1
 ck_msg "p1 sequential 檔 --task → 拒" 1 "execution.mode: parallel" "$P1X_RC" "$P1X_OUT"
 p1x_cap start pf --task T-9
@@ -2028,6 +2055,188 @@ PX_OUT=$(cd "$PXT" && echo '{"tool_name":"Agent","tool_input":{"model":"opus"}}'
   | "$H/devflow-dispatch-guard.sh" 2>&1); PX_RC=$?
 ck_msg "px tool_name=Agent(非 Task)同等對待 → 首派最高階仍擋" 2 "tier-exempt" "$PX_RC" "$PX_OUT"
 rm -rf "$PXT"
+
+echo "-- f4 豁免卡唯讀(fail-open):有效卡標記寫不回 → 放行 + 警告,不得擋 --"
+# F4(2026-08-17):_consume_exemption 寫入遇 OSError 曾 return False → die ——
+# 但本守衛自稱 fail-open,「寫不進去」是環境問題不是違規。釘死:唯讀卡照樣放行。
+F4T=$(mktemp -d "${TMPDIR:-/tmp}/devflow-f4-exempt.XXXXXX")
+mkdir -p "$F4T/.devflow"
+printf '%s\n' '{"schema":"exec-v2","run_id":"f4run"}' > "$F4T/.devflow/exec.json"
+printf '%s\n' '{"used":false,"reason":"f4 唯讀卡 fixture","created_at":"2026-08-17T00:00:00"}' \
+  > "$F4T/.devflow/tier-exempt.json"
+chmod 444 "$F4T/.devflow/tier-exempt.json"
+F4_OUT=$(cd "$F4T" && echo '{"tool_name":"Task","tool_input":{"model":"opus"}}' \
+  | "$H/devflow-dispatch-guard.sh" 2>&1); F4_RC=$?
+ck_msg "f4 豁免卡有效但唯讀 → fail-open 放行 + 警告" 0 "標記寫入失敗" "$F4_RC" "$F4_OUT"
+ck "f4 唯讀卡未被消耗(used 仍 false —— 下次再放行一次,可接受的降級)" 0 "$(/usr/bin/python3 -c "
+import json, sys
+d = json.load(open('$F4T/.devflow/tier-exempt.json'))
+sys.exit(0 if d.get('used') is False else 1)"; echo $?)"
+chmod 644 "$F4T/.devflow/tier-exempt.json"
+rm -rf "$F4T"
+
+echo "-- f2 大 payload(ARG_MAX):行為必須與小 payload 完全一致,不得 rc=126 靜默自壞 --"
+# F2(2026-08-17):舊殼層 `HOOK_INPUT=$(cat); export HOOK_INPUT` 讓 >1MB payload
+# 令其後每個 exec 撞 ARG_MAX(macOS 約 1MB)→ rc=126 —— 對宿主是「守衛自壞」,
+# 通常等同放行:fail-closed 靜默降級 fail-open。修法 = stdin 直通 python
+# (devflow-lib.read_hook_input)。這一組釘死「大 payload 的該擋照擋、該放照放」——
+# 沒有它,下次有人改回 env 傳遞不會有任何紅字。
+F2T=$(mktemp -d "${TMPDIR:-/tmp}/devflow-f2-argmax.XXXXXX")
+mkdir -p "$F2T/docs/dev/f2big" "$F2T/src"
+( cd "$F2T" && git init -q . && git config user.email t@t && git config user.name t )
+printf -- "---\nstatus: approved\n---\n" > "$F2T/docs/dev/f2big/4-spec.md"
+printf '%s\n' \
+  '## T-1 f2 fixture' \
+  '- Covers: R-1' \
+  '- Files: src/a.py' \
+  '- Verify: `true`' \
+  '- Blocked-by: —' > "$F2T/docs/dev/f2big/5-tasks.md"
+echo a > "$F2T/src/a.py"
+( cd "$F2T" && git add -A >/dev/null && git commit -qm f2init )
+
+f2_big_write() { # $1 = file_path;1.1MB content 直灌 devflow-guard.sh stdin
+  F2_OUT=$(cd "$F2T" && /usr/bin/python3 -c "import json;print(json.dumps({'tool_name':'Write','tool_input':{'file_path':'$1','content':'A'*1100000}}))" \
+    | "$H/devflow-guard.sh" 2>&1); F2_RC=$?
+}
+
+# ① 未武裝 + 1.1MB Write → 放行(與小 payload 相同;修前 rc=126)
+f2_big_write "$F2T/src/a.py"
+ck "f2 未武裝 + 1.1MB Write → 放行(修前 rc=126 自壞)" 0 "$F2_RC"
+
+( cd "$F2T" && "$H/devflow-exec.sh" start f2big >/dev/null 2>&1 )
+
+# ② 武裝 + 1.1MB Write 到 scope 內檔 → 放行(該放的照放)
+f2_big_write "$F2T/src/a.py"
+ck "f2 武裝 + 1.1MB Write scope 內 → 放行" 0 "$F2_RC"
+
+# ③ 武裝 + 1.1MB Write 到 scope 外檔 → exit 2(該擋的照擋,不得 126)
+f2_big_write "$F2T/src/outside.py"
+ck_msg "f2 武裝 + 1.1MB Write scope 外 → exit 2(硬擋不因 payload 大小失效)" 2 "scope 外寫入" "$F2_RC" "$F2_OUT"
+
+# ④ prebash:武裝 + 1.1MB 指令含 sentinel 破壞字面 → exit 2
+F2_OUT=$(cd "$F2T" && /usr/bin/python3 -c "import json;print(json.dumps({'tool_name':'Bash','tool_input':{'command':'rm .devflow/devflow-armed # '+'A'*1100000}}))" \
+  | "$H/devflow-prebash.sh" 2>&1); F2_RC=$?
+ck_msg "f2 prebash 武裝 + 1.1MB 指令含破壞字面 → exit 2" 2 "破壞守衛狀態" "$F2_RC" "$F2_OUT"
+
+# ⑤ prebash:武裝 + 1.1MB 無害指令 → 放行
+F2_OUT=$(cd "$F2T" && /usr/bin/python3 -c "import json;print(json.dumps({'tool_name':'Bash','tool_input':{'command':'echo '+'A'*1100000}}))" \
+  | "$H/devflow-prebash.sh" 2>&1); F2_RC=$?
+ck "f2 prebash 武裝 + 1.1MB 無害指令 → 放行" 0 "$F2_RC"
+
+# ⑥ dispatch-guard:exec-v2 武裝 + 首派 opus + 1.1MB prompt → exit 2(fail-open 守衛
+# 自壞 = 永遠放行,更要釘)。獨立 fixture:sequential start 寫的 exec.json 無 schema
+# 欄,dispatch-guard 窄口徑本來就放行 —— 要測 deny 路徑必須手造 exec-v2 旗標
+# (dispatch-guard 不驗 shadow hash,手造安全;同 px 段做法)。
+F2DT=$(mktemp -d "${TMPDIR:-/tmp}/devflow-f2-dispatch.XXXXXX")
+mkdir -p "$F2DT/.devflow"
+printf '%s\n' '{"schema":"exec-v2","run_id":"f2run"}' > "$F2DT/.devflow/exec.json"
+F2_OUT=$(cd "$F2DT" && /usr/bin/python3 -c "import json;print(json.dumps({'tool_name':'Task','tool_input':{'model':'opus','prompt':'A'*1100000}}))" \
+  | "$H/devflow-dispatch-guard.sh" 2>&1); F2_RC=$?
+ck_msg "f2 dispatch exec-v2 武裝 + 首派 opus + 1.1MB prompt → exit 2" 2 "tier-exempt" "$F2_RC" "$F2_OUT"
+rm -rf "$F2DT"
+
+# ⑦ postbash:1.1MB payload → 偵測網照跑(乾淨樹放行,不得 126)
+F2_OUT=$(cd "$F2T" && /usr/bin/python3 -c "import json;print(json.dumps({'tool_name':'Bash','tool_input':{'command':'echo '+'A'*1100000},'session_id':'f2-selftest'}))" \
+  | "$H/devflow-postbash.sh" 2>&1); F2_RC=$?
+ck "f2 postbash + 1.1MB payload → 偵測網照跑(乾淨樹放行)" 0 "$F2_RC"
+
+( cd "$F2T" && "$H/devflow-exec.sh" stop >/dev/null 2>&1 )
+rm -rf "$F2T"
+
+echo "-- rg 缺陷回報去識別化守衛(只掃 .devflow/reports/*.md;結構特徵擋、語意靠人)--"
+# 第五部分(2026-08-17):dev-report skill 的機械層。正負向都要:命中要擋、
+# 非回報路徑要放行、空輸入/壞 JSON 要放行(fail-open 於環境問題)。
+RGT=$(mktemp -d "${TMPDIR:-/tmp}/devflow-rg-report.XXXXXX")
+mkdir -p "$RGT/.devflow/reports"
+rg_run() { RG_OUT=$(printf '{"tool_name":"Write","tool_input":{"file_path":"%s"}}' "$1" \
+  | "$H/devflow-report-guard.sh" 2>&1); RG_RC=$?; }
+
+cat > "$RGT/.devflow/reports/clean.md" <<'EOF'
+# 回報:觀測欄字元集不認全形冒號
+- 現象:❌ C1 每個 S 都有觀測欄(16 個 S 裡有 13 個被誤判)
+- 位置:scripts/check-spec-gate.sh:85
+- 重現:<專案根>/docs/dev/<slug>/4-spec.md 用全形冒號寫觀測欄
+- 環境:plugin 3.6.1 / 契約 2.0.0
+EOF
+rg_run "$RGT/.devflow/reports/clean.md"
+ck "rg 乾淨回報(母版路徑+泛化+版本+數量)→ 放行" 0 "$RG_RC"
+
+printf '%s\n' '重現:/Users/somebody/dev/companyapp/main.go 觸發' > "$RGT/.devflow/reports/dirty-abs.md"
+rg_run "$RGT/.devflow/reports/dirty-abs.md"
+ck_msg "rg 絕對路徑 → exit 2 並點名規則" 2 "絕對路徑" "$RG_RC" "$RG_OUT"
+
+printf '%s\n' '受影響檔:src/billing/invoice_service.go 的匯入' > "$RGT/.devflow/reports/dirty-path.md"
+rg_run "$RGT/.devflow/reports/dirty-path.md"
+ck_msg "rg 母版沒有的相對路徑 → exit 2(疑為採用專案的)" 2 "不存在於母版" "$RG_RC" "$RG_OUT"
+
+printf '%s\n' '已修於 3f2ab9c 這個提交' > "$RGT/.devflow/reports/dirty-sha.md"
+rg_run "$RGT/.devflow/reports/dirty-sha.md"
+ck_msg "rg git SHA → exit 2" 2 "git SHA" "$RG_RC" "$RG_OUT"
+
+printf '%s\n' '筆記:/Users/somebody/dev/companyapp/main.go' > "$RGT/notes.md"
+rg_run "$RGT/notes.md"
+ck "rg 非回報路徑(含識別特徵)→ 一律靜默放行" 0 "$RG_RC"
+
+RG_OUT=$(printf '' | "$H/devflow-report-guard.sh" 2>&1); RG_RC=$?
+ck "rg 空輸入 → 放行(fail-open 於環境問題)" 0 "$RG_RC"
+RG_OUT=$(printf 'not-json{{{' | "$H/devflow-report-guard.sh" 2>&1); RG_RC=$?
+ck "rg 壞 JSON → 放行(fail-open 於環境問題)" 0 "$RG_RC"
+
+# 審查修正回歸(2026-08-17 fresh sonnet 三個 HIGH):
+# ① 非 UTF-8 位元組不得 crash(曾 traceback rc=1),照掃 —— 髒內容仍要 2
+printf '\xff\xfe mojibake \n/Users/somebody/companyapp/x.go\n' > "$RGT/.devflow/reports/rawbytes.md"
+rg_run "$RGT/.devflow/reports/rawbytes.md"
+ck_msg "rg 非 UTF-8 內容不 crash,照掃出絕對路徑 → exit 2" 2 "絕對路徑" "$RG_RC" "$RG_OUT"
+# ② 32KB slash 長行不得回溯爆炸(曾 8.4s,~60KB 就吃掉 15s timeout = 掃描被殺)
+/usr/bin/python3 -c "open('$RGT/.devflow/reports/longline.md','w').write('a/'*16000 + '\n')"
+rg_run "$RGT/.devflow/reports/longline.md"
+ck "rg 32KB slash 長行 → 秒級掃完放行(線性正則,不得逾時自壞)" 0 "$RG_RC"
+# ③ 帶 .. 的等價路徑不得跳過掃描(normpath 後比對;somedir 需真實存在,
+#    否則 open 原始路徑 ENOENT 走 fail-open,測的就不是繞路而是讀不到)
+mkdir -p "$RGT/.devflow/somedir"
+printf '/Users/somebody/companyapp/x.go\n' > "$RGT/.devflow/reports/trav.md"
+RG_OUT=$(printf '{"tool_name":"Write","tool_input":{"file_path":"%s"}}' "$RGT/.devflow/somedir/../reports/trav.md" \
+  | "$H/devflow-report-guard.sh" 2>&1); RG_RC=$?
+ck_msg "rg .devflow/x/../reports/ 等價路徑 → 照掃仍擋" 2 "絕對路徑" "$RG_RC" "$RG_OUT"
+rm -rf "$RGT"
+
+echo "-- c2 tier-exempt 豁免卡 run 級:stop 清未消耗的卡、留已消耗的卡 --"
+# Backlog C-2 裁決(2026-08-17):豁免是 run 級授權 —— stop = run 結束,未消耗的卡
+# 不得跨 run 存活(會被下一個不相關 run 的首派吃掉);已消耗的卡是留痕,保留。
+C2T=$(mktemp -d "${TMPDIR:-/tmp}/devflow-c2-exempt.XXXXXX")
+( cd "$C2T" && git init -q . && git config user.email t@t && git config user.name t )
+mkdir -p "$C2T/.devflow"
+printf '%s\n' '{"schema":"exec-v2","run_id":"c2"}' > "$C2T/.devflow/exec.json"
+printf '%s\n' '{"used":false,"reason":"c2 未消耗卡"}' > "$C2T/.devflow/tier-exempt.json"
+C2_OUT=$(cd "$C2T" && "$H/devflow-exec.sh" stop 2>&1); C2_RC=$?
+ck_msg "c2 stop 訊息點名清掉未消耗豁免卡(run 級)" 0 "tier-exempt" "$C2_RC" "$C2_OUT"
+ck "c2 未消耗卡在 stop 後確實消失" 0 "$([ ! -f "$C2T/.devflow/tier-exempt.json" ]; echo $?)"
+printf '%s\n' '{"schema":"exec-v2","run_id":"c2"}' > "$C2T/.devflow/exec.json"
+printf '%s\n' '{"used":true,"used_at":"2026-08-17T00:00:00","reason":"c2 已消耗卡"}' > "$C2T/.devflow/tier-exempt.json"
+( cd "$C2T" && "$H/devflow-exec.sh" stop >/dev/null 2>&1 )
+ck "c2 已消耗卡在 stop 後保留(留痕不清)" 0 "$([ -f "$C2T/.devflow/tier-exempt.json" ]; echo $?)"
+rm -rf "$C2T"
+
+echo "-- g1 history-append 專案根解析:散發位置不得巢狀寫入(docs/dev/docs/dev)--"
+# G1(2026-08-17 採用現場):腳本曾用「自身位置/..」推專案根,散發到
+# docs/dev/tools/ 後預設輸出**靜默**寫到 docs/dev/docs/dev/HISTORY.md。
+# 修法 = git toplevel(以腳本自身位置 -C 解析)。四案釘死兩個位置 + 非 git 拒絕。
+G1T=$(mktemp -d "${TMPDIR:-/tmp}/devflow-g1-history.XXXXXX")
+mkdir -p "$G1T/docs/dev/tools"
+( cd "$G1T" && git init -q . && git config user.email t@t && git config user.name t )
+cp "$H/../scripts/history-append.sh" "$G1T/docs/dev/tools/history-append.sh"
+chmod +x "$G1T/docs/dev/tools/history-append.sh"
+( cd "$G1T" && bash docs/dev/tools/history-append.sh --slug g1 --what a --why b --where c >/dev/null 2>&1 )
+ck "g1 散發位置不帶 --file → 寫到 <root>/docs/dev/HISTORY.md" 0 "$([ -f "$G1T/docs/dev/HISTORY.md" ]; echo $?)"
+ck "g1 不得建出巢狀 docs/dev/docs 目錄(修前真的建出來)" 0 "$([ ! -e "$G1T/docs/dev/docs" ]; echo $?)"
+mkdir -p "$G1T/scripts" && cp "$H/../scripts/history-append.sh" "$G1T/scripts/history-append.sh"
+( cd "$G1T" && bash scripts/history-append.sh --slug g1b --what a --why b --where c >/dev/null 2>&1 )
+ck "g1 母版位置(scripts/)同一支腳本 → 同樣寫到 <root>/docs/dev/HISTORY.md" 0 "$(grep -q "g1b" "$G1T/docs/dev/HISTORY.md"; echo $?)"
+G1N=$(mktemp -d "${TMPDIR:-/tmp}/devflow-g1-nogit.XXXXXX")
+cp "$H/../scripts/history-append.sh" "$G1N/history-append.sh"
+G1_OUT=$(cd "$G1N" && bash history-append.sh --slug g1 --what a --why b --where c 2>&1); G1_RC=$?
+ck_msg "g1 不在 git repo 且未帶 --file → 拒絕並指路 --file" 2 "--file" "$G1_RC" "$G1_OUT"
+rm -rf "$G1T" "$G1N"
 
 cd / && rm -rf "$T" "$C"
 echo

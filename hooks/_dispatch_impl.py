@@ -88,8 +88,14 @@ def _consume_exemption(exempt_path):
     card["used_at"] = _iso_now()
     try:
         json.dump(card, open(exempt_path, "w"), ensure_ascii=False, indent=1)
-    except OSError:
-        return False
+    except OSError as exc:
+        # F4(2026-08-17):本守衛自稱 fail-open —— 「豁免卡有效但標記寫不回去」
+        # 是環境問題(唯讀檔案系統/權限),不該變成攔截。放行並印警告;代價 =
+        # 卡片沒能標記已用,下次同情境會再放行一次 —— 可接受的降級(比「持有
+        # 有效豁免卡卻被擋死」好;真要一次性就修環境讓寫入成功)。
+        print(f"⚠️ tier-exempt 有效但標記寫入失敗({exc})—— fail-open 放行;"
+              f"卡片未消耗,下次同情境仍會再放行一次。", file=sys.stderr)
+        return True
     # 這行 stderr 只是 best-effort 通知(exit 0 時 PreToolUse stderr 不保證送到眼前,
     # 見 _guard_impl.py 的 A1 註解同一件事)——真正的裁決紀錄與可回溯留痕是上面
     # 已落盤的 used=true+used_at,不是這行字。別因為偶爾沒看到這行就誤以為要把
@@ -103,9 +109,10 @@ def _iso_now():
 
 
 root = sys.argv[1]
-try:
-    h = json.loads(os.environ.get("HOOK_INPUT", "{}"))
-except ValueError:
+# F2:payload 從 stdin 讀(正本 devflow-lib.read_hook_input),不再經環境變數 ——
+# export 大 payload 會讓殼層 exec 撞 ARG_MAX;本守衛 fail-open,自壞 = 永遠放行。
+h = L.read_hook_input()
+if h is None:
     sys.exit(0)
 
 tool = h.get("tool_name", "")
@@ -138,11 +145,9 @@ if _scan_low_tier_attempt(root, run_id):
     sys.exit(0)          # 本 run 已有低階 attempt,這是合法的升階路徑
 
 exempt_path = os.path.join(root, ".devflow", "tier-exempt.json")
-# ⚠️ 已知限制(未推廣,寫明取捨而非放著不提 —— 本檔主題就是防「不對稱保護」):
-# 豁免卡是 repo 級,不是 run 級。stop 只清 exec.json/sentinel,不動這張卡 ——
-# 若 run A 核了卡沒用掉,run B 的首派最高階會消耗掉那張理由不屬於它的卡。
-# 現階段判定可接受(核發本來就要求人手動跑 CLI、留痕可回溯查 created_at 對不對得上
-# 當時的 run);要收斂就在 stop 分支順手清掉未用的卡,見 Backlog。
+# 豁免卡自 2026-08-17 起是 **run 級**:`devflow-exec.sh stop` 會清掉未消耗的卡
+# (_exec_impl.py stop 分支),不再跨 run 存活;已消耗(used=true)的卡保留當留痕。
+# 本守衛這裡只負責消耗,不管生命週期。
 if os.path.exists(exempt_path) and _consume_exemption(exempt_path):
     sys.exit(0)
 

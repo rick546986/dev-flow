@@ -278,7 +278,9 @@ RED → GREEN → scope check → Verify
   擋 scope 外寫入)、`devflow-prebash`(PreToolUse Bash:擋 shell 讀上游與破壞旗標)、
   `devflow-postbash`(PostToolUse Bash:git status 對照 + 內容 hash,抓 shell 寫入)、
   `devtalk-guard`(盲原則掃描)、`devflow-dispatch-guard`(PreToolUse Task|Agent:武裝中
-  擋「首派即最高階」派工)。L1 出口 = `devflow-exec.sh allow <file> --reason`;
+  擋「首派即最高階」派工)。另有 `devflow-report-guard`(PostToolUse Edit|Write:
+  只掃 `.devflow/reports/*.md` 缺陷回報檔的結構性識別特徵,與旗標狀態無關,
+  非回報路徑一律靜默)。L1 出口 = `devflow-exec.sh allow <file> --reason`;
   L2 = `stop`。收尾 `stop` 後全部沉睡。自測:`hooks/selftest.sh`(動態發現案例,可重跑)。
   界線:紀律工具非安全沙箱,詳 `dev-setup-record.html`(plugin guides/,經
   `${CLAUDE_PLUGIN_ROOT}` 存取,非本 repo/散發檔案)。跨版本相容由
@@ -290,6 +292,17 @@ RED → GREEN → scope check → Verify
   **新增任何只對某個 stage/某個檔/某個群組的保護時,必須在同一個 commit 裡說明
   為什麼其他同類不需要;說不出來就是不對稱,要嘛推廣、要嘛寫明限制並列進
   Backlog。**(源:`notes/dispatch-guard-symmetry.md`)
+- **不對稱記帳(第 7 型)**:保護機制長大了,所有 runtime 消費端都對,唯獨「為了
+  驗證/健檢而**列舉**它的那份文件」靜默不同步,而且沒有任何檢查在比對兩者
+  (實例:hooks 掛載長到 6 條,dev-setup 健檢清單停在 5 條 —— 採用專案照清單健檢,
+  會把線上真實存在的 hook 判成「多出來的」;更難看的是同一份檔案自己寫過「案數以
+  腳本輸出為準,不在本檔寫死」)。與第 6 型的差別:修法本身是對稱的,漏的是
+  **記帳**。制度要求(通解):**任何「為了驗證而列舉某個機械事實」的清單,必須有
+  一支守衛對著機械正本對帳(數量與名稱都比,漏列/多列/數字過期皆紅);沒有守衛
+  釘著的清單不得寫死數字。**現有對帳守衛:hooks 掛載 = `check-hooks-accounting.sh`、
+  檔案地圖 = `check-file-map.sh`、selftest 案數 = MIN_CASES 地板、散發副本 =
+  check-gate-twin N7、gauntlet 版本 = `check-version-sync.sh`。新增這類清單時,
+  要嘛納入既有對帳守衛,要嘛同 commit 補新守衛。(源:`notes/dispatch-accounting-symmetry.md`)
 - **守衛與並行**:守衛狀態以「當前工作樹」為單位(`.devflow/exec.json` + git-dir sentinel),
   一個工作樹同一時間只武裝一個模組。武裝中他模組 `start` → 一律拒絕(不靜默覆寫);
   同模組重跑 `start` = re-arm,允許(5-tasks 改動後重釘 scope 的正常路徑)。
@@ -607,6 +620,7 @@ E11 只驗這兩節在不在。
 | 5 任務 | tracer-bullet 順序 + Covers/Verify/Blocked-by(模板內建) | 內建 |
 | 6 實作 | **由 `/dev-flow` 自動接執行引擎**(對外入口一律 `/dev-flow`,定位到 Stage 6 即自動載入 `dev-run`,使用者不需記第二個指令;haiku 執行→sonnet 審→升階;守衛 `devflow-exec` start/stop)或手動逐 T;TDD 紅綠(每 S-id 先 RED 貼輸出再 GREEN)+ checkbox 追蹤 | 本 plugin / 內建 |
 | 7 驗證 | 雙軸審(Standards + Spec)+ 自建 coverage matrix(可搭 mattpocock `code-review`) | 內建 / mattpocock |
+| 隨時(踩到母版缺陷) | **`dev-report`**:產出去識別化的缺陷回報檔(issue 文 + 派工單條目,寫進 `.devflow/reports/`,`devflow-report-guard` hook 機械擋結構性識別特徵,人工確認後才貼)| 本 plugin |
 
 > **外部 skill 依賴原則**:方法一律內建於模板執行清單,外部 skill 只當**選配加分**(叫不到不影響流程)。
 > 原因:第三方 skill 常自帶終點鏈(跑完強制導向它自己的後續流程),會把本流程拖出七文檔管線;

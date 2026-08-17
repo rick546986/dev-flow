@@ -164,7 +164,8 @@ for line in e4.splitlines():
     if re.match(r"^#{2,5} ", line):
         current_heading = line
     # 只驗附著形式(- Operational Context: / ():散文提及(如確認紀錄)不算附著
-    if re.match(r"^\s*-\s*Operational Context\s*[::(]", line):
+    # G3(2026-08-17):字元集曾是兩個半形冒號 + 半形括號(本想寫全半形都收)。
+    if re.match(r"^\s*-\s*Operational Context\s*[:：(（]", line):
         check(re.match(r"^#### S-\d+", current_heading) is not None,
               "example 4-spec Operational Context 附著於 S-id",
               f"under {current_heading!r}")

@@ -27,12 +27,18 @@ plugin**：`.claude-plugin/marketplace.json` 的 `name` 與 `.claude-plugin/plug
 也一併收攏進 repo 根目錄——本 repo 根目錄現在同時是方法論正本與 runtime 來源，
 不再是兩個 repo。
 
+另一條沿革：原獨立 `dev-talk` plugin（至 5.4.0）於 2026-08-13 併入 dev-flow，
+此後 dev-talk 不再有獨立版本號，版本隨 dev-flow `plugin.json` 統一計。
+（沿革記在這裡而不是 `skills/dev-talk/SKILL.md` 的註解——那個目錄受盲原則守衛
+掃描，沿革文字必然含下游詞彙，寫在那邊等於讓母版自己的檔案過不了母版自己的守衛，
+G2 實際發生過。）
+
 ## 內容
 
 | 目錄 | 用途 |
 |---|---|
-| `hooks/` | 執行守衛與 CLI:`devflow-exec.sh`(Stage 6 task-scoped guard)、`devflow-guard.sh`、`devflow-prebash.sh`、`devflow-postbash.sh`、`devtalk-guard.sh`、`gate-consistency.sh`、`devflow-doctor.sh`、`devflow-obs.sh`、`selftest.sh` 與其 `_*_impl.py` |
-| `skills/` | `dev-flow`(7 階段路由器)、`dev-run`(Stage 6 執行引擎)、`dev-setup`(專案安裝器)、`dev-talk`(訪談引導) |
+| `hooks/` | 執行守衛與 CLI:`devflow-exec.sh`(Stage 6 task-scoped guard)、`devflow-guard.sh`、`devflow-prebash.sh`、`devflow-postbash.sh`、`devflow-dispatch-guard.sh`、`devtalk-guard.sh`、`devflow-report-guard.sh`、`history-guard.sh`、`gate-consistency.sh`、`devflow-doctor.sh`、`devflow-obs.sh`、`selftest.sh` 與其 `_*_impl.py`(本表由 `scripts/check-hooks-accounting.sh` 對帳) |
+| `skills/` | `dev-flow`(7 階段路由器)、`dev-run`(Stage 6 執行引擎)、`dev-setup`(專案安裝器)、`dev-talk`(訪談引導)、`dev-release`(母版發版器)、`dev-report`(缺陷回報產生器)(本表由 `scripts/check-hooks-accounting.sh` 對帳) |
 | `manifests/` | prompt registry 與版本聲明 |
 | `.claude-plugin/` | plugin manifest(marketplace.json + plugin.json) |
 | repo 根目錄其餘部分 | 方法論正本:`README.md`(§7 gate 條件)、`_templates/`、`example/`、`guides/`、`docs/`、`scripts/`、`notes/`、`observability/` |
@@ -41,10 +47,10 @@ plugin**：`.claude-plugin/marketplace.json` 的 `name` 與 `.claude-plugin/plug
 
 ```bash
 # 方法論已內建於本 repo 根目錄,缺省即用內建版本,無需另外 checkout:
-bash hooks/selftest.sh     # 期望 294/294
+bash hooks/selftest.sh     # 期望全過(案數以腳本輸出為準,不在本檔寫死 —— 曾寫死 294 漂移)
 
 # gate 條件三處摘要是否與 README.md §7 一致
-bash hooks/gate-consistency.sh   # 期望 14/14
+bash hooks/gate-consistency.sh   # 期望全過(項數同上,以輸出為準)
 
 # 仍可用 DEVFLOW_MASTER 覆蓋(測試/移植用途,指向另一份方法論 checkout):
 DEVFLOW_MASTER=/tmp/devflow-master bash hooks/selftest.sh

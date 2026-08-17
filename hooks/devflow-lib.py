@@ -16,6 +16,32 @@ UPSTREAM = ("1-discussion", "2-decision", "3-prototype")
 CONTRACT = UPSTREAM + ("4-spec",)
 
 
+def read_hook_input():
+    """hook payload 的唯一讀取口:stdin 正典,HOOK_INPUT 環境變數只是相容退路。
+
+    為什麼不准經環境變數主傳(F2,2026-08-17):shell 殼層曾用
+    `HOOK_INPUT=$(cat); export HOOK_INPUT` 傳遞 —— 整包 payload 進了 environ 之後,
+    **每一個 exec 都要複製整份 environ**,payload 超過 ARG_MAX(macOS 約 1MB)時
+    dirname/python3 全部 E2BIG → rc=126。對 hook 宿主而言那是「守衛自壞」,通常
+    等同放行:fail-closed 守衛就此靜默降級成 fail-open,而且沒有任何紅字。
+    stdin 沒有這個上限;殼層一律 exec python、不碰內容,由本函式在 python 端讀。
+    環境變數退路只服務「直接呼叫 impl 的測試/診斷」小 payload,不走 shell export。
+
+    回傳 dict;讀不到/解不出/非 dict → None(fail-open/closed 由各 impl 自行決定)。
+    """
+    try:
+        raw = sys.stdin.read()
+    except Exception:
+        raw = ""
+    if not raw.strip():
+        raw = os.environ.get("HOOK_INPUT", "")
+    try:
+        parsed = json.loads(raw or "{}")
+    except ValueError:
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
 def is_ambient_path(rel):
     """True for filesystem metadata the execution guard must ignore."""
     parts = rel.split("/")
@@ -685,7 +711,9 @@ def spec_profile(spec_text):
         m = re.match(r"^\s*-\s*Risk:\s*([a-z]+)\b", line)
         if m and risk is None:
             risk = m.group(1)
-        if re.match(r"^\s*-\s*Owner[- ]Call ?例外\s*[::]\s*\S", line, re.IGNORECASE):
+        # G3(2026-08-17):冒號字元集曾是兩個半形 0x3a(本想寫「:或：」),全形冒號
+        # 寫的例外欄偵測不到 → fast+high 明明寫了例外卻被擋,開不了工且不知道為什麼。
+        if re.match(r"^\s*-\s*Owner[- ]Call ?例外\s*[:：]\s*\S", line, re.IGNORECASE):
             owner_call = True
     return {"lane": lane, "risk": risk, "owner_call_fast_high": owner_call}
 

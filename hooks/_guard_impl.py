@@ -20,7 +20,7 @@ def _obs_deny(gate, violation, target=""):
         if target:
             payload["target"] = target
         try:
-            sid = json.loads(os.environ.get("HOOK_INPUT", "{}")).get("session_id", "")
+            sid = h.get("session_id", "")   # h = 模組層已解析的 hook payload(呼叫時已存在)
         except Exception:
             sid = ""
         if sid:
@@ -35,9 +35,10 @@ def _obs_deny(gate, violation, target=""):
 
 
 root = sys.argv[1]
-try:
-    h = json.loads(os.environ.get("HOOK_INPUT", "{}"))
-except Exception:
+# F2:payload 從 stdin 讀(正本 devflow-lib.read_hook_input),不再經環境變數 ——
+# export 大 payload 會讓殼層 exec 撞 ARG_MAX,守衛以 rc=126 靜默自壞。
+h = L.read_hook_input()
+if h is None:
     sys.exit(0)
 tool = h.get("tool_name", "")
 fp = h.get("tool_input", {}).get("file_path", "")

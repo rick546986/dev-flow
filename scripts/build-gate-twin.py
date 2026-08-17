@@ -750,7 +750,8 @@ def _headline(text, limit=30):
         if not ln or ln.startswith(("|", "#", ">", "<!--")):
             continue
         ln = re.sub(r"[*`]", "", re.sub(r"^\s*[-*]\s+", "", ln))
-        ln = re.split(r"[,。;;]", ln)[0].strip()
+        # G3(2026-08-17):分號曾是兩個半形 0x3b(本想寫「;或；」),全形分號不當截斷點。
+        ln = re.split(r"[,。;；]", ln)[0].strip()
         return (ln[:limit] + "…") if len(ln) > limit else (ln or "—")
     return "—"
 

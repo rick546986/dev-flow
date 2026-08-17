@@ -2,8 +2,11 @@
 # Repo-local check aggregator for the dev-flow methodology master repo.
 #
 # 這是**聚合器**,不是 Runtime,也不取代外部 plugin。它只做四件事:
-#   ①固定順序 ②fail-fast ③清楚列出哪一組失敗 ④最後輸出摘要。
+#   ①固定順序輸出 ②組內 fail-fast ③清楚列出哪一組失敗 ④最後輸出摘要。
 # 它不重寫、不複製任何既有檢查的邏輯 —— 每一項都是直接呼叫既有腳本。
+# `all` 模式四大組**平行執行**(2026-08-17 效能輪;各組輸出捕捉後按固定順序重放,
+# 不交錯),組間不再 fail-fast —— 失敗時其他組照跑,沒有檢查被少跑;
+# 要回序列版:DEVFLOW_CHECK_SEQUENTIAL=1。
 #
 # 邊界宣告(誠實分界,勿混用):
 #   REPO_REFERENCE_PASS  = 本檔跑得完的東西。只驗本 repo 的模板/範例/fixture/契約檔。
@@ -67,6 +70,19 @@ group_methodology() {
   # ⚠️ 這支是 **Gate**(exit 1 = FAIL 擋流程),與 warning-only 的 check-task-slicing 契約相反。
   run "methodology/check-spec-gate" \
       scripts/check-spec-gate.sh example/contract-expiry-reminder/4-spec.md || return 1
+  # G3 回歸(2026-08-17 採用現場):全形冒號版 fixture 必須同樣通過 —— C1 的冒號
+  # 字元集曾把「:或：」打成兩個半形,全形觀測欄被判缺欄、全形例外欄被判沒寫。
+  run "methodology/check-spec-gate (全形冒號回歸)" \
+      scripts/check-spec-gate.sh scripts/fixtures/spec-gate-fullwidth-colon/4-spec.md || return 1
+  # G3 通解:掃 scripts/ hooks/ 正則字元集內「相鄰重複半形標點」(本想寫全形的
+  # 機械徵象)。單修已知 6 處只是治標,沒有這支,下次再寫一個 [::] 又會重演。
+  run "methodology/check-regex-charclass" scripts/check-regex-charclass.sh || return 1
+  # B-1/G2 通解:母版自己的 dev-talk 產物逐檔餵真的 devtalk-guard,必須全過 ——
+  # 「母版產物過不了母版守衛」已發作兩次,寫入時才發現太晚,這裡每次先驗。
+  run "methodology/check-devtalk-selfclean" scripts/check-devtalk-selfclean.sh || return 1
+  # 第 7 型「不對稱記帳」:guide-dev-talk.html 是 skills/dev-talk/SKILL.md 的鏡像導覽,
+  # 機制(SKILL.md)改了、鏡像沒跟上會靜默漂移(曾發生漏列一整步、逐字引用錯引正本)。
+  run "methodology/check-devtalk-guide-sync" scripts/check-devtalk-guide-sync.sh || return 1
 }
 
 group_contracts() {
@@ -91,6 +107,10 @@ group_architecture() {
   # 稽核有沒有首派即最高階、或跳過中間層直接升階(worker 這條線,見腳本頂註的稽核邊界)
   run "architecture/check-model-tiering"   scripts/check-model-tiering.sh   || return 1
   run "architecture/check-version-sync"    scripts/check-version-sync.sh    || return 1
+  # hooks 記帳對帳(F1/第 7 型):hooks.json 掛載 vs 三份列舉文件(dev-setup 健檢
+  # 清單/README/guide 註冊表),數量與名稱都比 —— 曾發生掛載長到 6 條而健檢清單
+  # 靜默停在 5 條,採用專案照清單健檢會把真 hook 判成多餘。
+  run "architecture/check-hooks-accounting" scripts/check-hooks-accounting.sh || return 1
   # dev-setup upgrade 三方比對紀律(B-2):skills/dev-setup/SKILL.md 的三方比對/
   # baseline 快照/逐檔徵同意/過渡態/master-only 剝除/gate twin 相依全是散文規則,
   # 退回等於原地重現「upgrade 靜默蓋掉本地客製」。獨立於下面的 Stage 6/7 執行期
@@ -120,15 +140,80 @@ group_render() {
   run "render/git-diff-whitespace"  git diff --check                                  || return 1
 }
 
+# 註冊自審(第 7 型通解;2026-08-17 盤點抓到的洞):scripts/check-*.sh 與
+# scripts/test-*.sh 每一支都必須出現在本檔的 run 行裡 —— 新增檢查腳本卻忘了註冊,
+# 唯一的下場是「永遠沒被跑」而沒有任何紅字;check-file-map 只保證寫進檔案地圖,
+# 不保證被執行。本檔自己列舉自己要跑什麼,所以對帳守衛就放本檔開頭,每種 MODE 都先跑。
+# ⚠️ 審查 HIGH 教訓:第一版 grep 全檔,把腳本名寫在**註解**裡就能騙過(名字在、
+# run 沒跑)。現版先剝掉註解行再比對 —— 名字必須出現在會被執行的行上。
+REG_MISS=""
+for f in "$ROOT"/scripts/check-*.sh "$ROOT"/scripts/test-*.sh; do
+  base=$(basename "$f")
+  grep -v '^[[:space:]]*#' "$0" | grep -q "scripts/$base" || REG_MISS="$REG_MISS $base"
+done
+if [ -n "$REG_MISS" ]; then
+  echo "⛔ devflow-check 註冊自審:下列檢查腳本存在但沒被本檔任何 group 執行 ——$REG_MISS" >&2
+  echo "   新增檢查必須同 commit 註冊進對應 group,否則它永遠不會跑(且不會有紅字)。" >&2
+  exit 1
+fi
+
 echo "=== devflow-check: $MODE (REPO_REFERENCE only;外部 plugin 檢查不在此) ==="
 echo
+
+run_all_parallel() {
+  # 效能輪(2026-08-17):四組互不相依(全部唯讀掃 repo,寫入只進各自 mktemp),
+  # `all` 改為平行跑 —— 每組以子行程跑「本腳本 <組名>」,輸出各自捕捉,結束後
+  # 按固定順序**原樣重放**(錯誤輸出仍完整、不交錯、不被摘要覆蓋)。
+  # 語意變化(誠實宣告):組間 fail-fast 改為「組內 fail-fast 不變、組間全跑」——
+  # 沒有任何檢查被少跑或放寬,失敗時反而跑得更多(其他組不因先失敗而略過)。
+  # 要回序列版(除錯用):DEVFLOW_CHECK_SEQUENTIAL=1。
+  # 防「少跑一組」:四組輸出檔逐一驗存在,缺任何一組 = 平行機制自己壞了,exit 2。
+  local tmp; tmp=$(mktemp -d "${TMPDIR:-/tmp}/devflow-check-par.XXXXXX")
+  local groups=(methodology contracts architecture render)
+  local g pid rc overall=0
+  declare -a pids=()
+  for g in "${groups[@]}"; do
+    bash "$0" "$g" > "$tmp/$g.out" 2>&1 &
+    pids+=($!)
+  done
+  local i=0
+  declare -a rcs=()
+  for g in "${groups[@]}"; do
+    wait "${pids[$i]}"; rcs[$i]=$?
+    i=$((i + 1))
+  done
+  i=0
+  for g in "${groups[@]}"; do
+    if [ ! -f "$tmp/$g.out" ]; then
+      echo "⛔ devflow-check(all/parallel):$g 組的輸出檔不存在 —— 平行機制故障,不是該組全過" >&2
+      rm -rf "$tmp"; exit 2
+    fi
+    cat "$tmp/$g.out"
+    echo
+    rc=${rcs[$i]}
+    if [ "$rc" -ne 0 ]; then
+      overall=1
+      FAILED="${FAILED:+$FAILED; }$g (exit $rc)"
+    else
+      PASSED+=("group:$g")
+    fi
+    i=$((i + 1))
+  done
+  rm -rf "$tmp"
+  return "$overall"
+}
 
 case "$MODE" in
   methodology)  group_methodology ;;
   contracts)    group_contracts ;;
   architecture) group_architecture ;;
   render)       group_render ;;
-  all)          group_methodology && group_contracts && group_architecture && group_render ;;
+  all)
+    if [ "${DEVFLOW_CHECK_SEQUENTIAL:-0}" = "1" ]; then
+      group_methodology && group_contracts && group_architecture && group_render
+    else
+      run_all_parallel
+    fi ;;
 esac
 STATUS=$?
 
@@ -144,7 +229,11 @@ if [ "$STATUS" -ne 0 ]; then
   # ${FAILED} 必須帶大括號:全形「」緊接 $FAILED 時,bash 會把後面的多位元組字元
   # 一起吃進變數名(FAILED」),配上 set -u 就是 unbound variable —— 失敗訊息永遠印不出來。
   echo "⛔ devflow-check($MODE): FAILED at 「${FAILED}」"
-  echo "   fail-fast:該組之後的檢查未執行。原始錯誤輸出在上方,未被摘要覆蓋。"
+  if [ "$MODE" = "all" ] && [ "${DEVFLOW_CHECK_SEQUENTIAL:-0}" != "1" ]; then
+    echo "   組內 fail-fast:失敗組內的後續檢查未執行;其他組已全數跑完(輸出在上方)。"
+  else
+    echo "   fail-fast:該組之後的檢查未執行。原始錯誤輸出在上方,未被摘要覆蓋。"
+  fi
   exit 1
 fi
 

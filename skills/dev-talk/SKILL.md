@@ -1,4 +1,4 @@
-<!-- 原 dev-talk plugin 5.4.0,2026-08-13 併入 dev-flow;此後 dev-talk 不再有獨立版本號,版本隨 dev-flow plugin.json 統一計。 -->
+<!-- 版本沿革見 docs/PLUGIN.md(本 skill 自 2026-08-13 併入上層 plugin,不再有獨立版本號)。 -->
 ---
 name: dev-talk
 description: 訪談引導 — 蘇格拉底式一次一問,把模糊想法挖成清楚的討論記錄(含真實世界互動盤點)。當使用者說「dev-talk」、想討論/釐清一個需求或問題時啟用。

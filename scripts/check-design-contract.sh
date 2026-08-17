@@ -20,6 +20,7 @@ if [ -n "${1:-}" ]; then
 fi
 
 python3 - "$ROOT" "$0" <<'PY'
+import ast
 import os
 import re
 import sys
@@ -590,10 +591,12 @@ if _missing_scan_targets:
 
 _cross_hits = []
 _check_skip_hits = []
+_file_texts = {}
 for _fname in _scan_files:
     _fpath = os.path.join(_scan_dir, _fname)
     with open(_fpath, encoding="utf-8") as _stream:
         _ftext = _stream.read()
+    _file_texts[_fname] = _ftext
     for _m in ALWAYS_TRUE_RE.finditer(_ftext):
         _lineno = _ftext.count("\n", 0, _m.start()) + 1
         _cross_hits.append(f"scripts/{_fname}:{_lineno}")
@@ -604,6 +607,86 @@ check(not _cross_hits,
       "跨檔掃描:scripts/*.sh 無恆真斷言(check(True / check(1 == 1 / check(not False 三變體,"
       "含多行排版如 check(\\n    True,\\n    ...))",
       ("無命中" if not _cross_hits else "命中 " + ", ".join(_cross_hits)))
+
+# (f) F3(2026-08-17 獨立審查):恆真偵測從「可枚舉黑名單」升級成 AST 常數運算式
+# 判定。上面 (d)/(e) 的三變體字面黑名單擋不住 check(2 > 1, "poison")、
+# check("a" != "b", …) 這類「邏輯恆真但不在字面清單」的斷言 ——:546 的邊界宣告
+# 自己承認清單列不完。這裡對每個敘述開頭的 check( 呼叫點抽出第一個參數,
+# ast.parse 後全樹只含常數節點 = 常數運算式;求值為**真** → 紅。求值為**假**
+# 不紅:check(False, …) 是刻意的顯性失敗(如 else 分支),(d) 已明文允許保留。
+# 邊界(誠實承認,接續 :546 的寫法):len("x") > 0、max(1,2) >= 1 這類**含呼叫**
+# 的恆真式仍不在偵測範圍 —— 判定它們要執行任意程式碼,不做;本層擋的是
+# 「不查表也寫得出來」的常數比較式,黑名單三變體照舊保留當第一層。
+_CONST_NODES = (ast.Expression, ast.Constant, ast.Tuple, ast.List,
+                ast.UnaryOp, ast.BinOp, ast.BoolOp, ast.Compare,
+                ast.unaryop, ast.operator, ast.boolop, ast.cmpop, ast.Load)
+CHECK_CALL_RE = re.compile(r"^[ \t]*check\(", re.M)
+
+
+def _check_first_arg(text, start):
+    """start = 'check(' 的 '(' 之後;回傳第一個頂層參數原文,抽不出來回 None。"""
+    depth, i, quote, esc, buf = 0, start, None, False, []
+    while i < len(text) and i - start <= 2000:
+        ch = text[i]
+        if quote:
+            buf.append(ch)
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == quote:
+                quote = None
+        elif ch in "\"'":
+            quote = ch
+            buf.append(ch)
+        elif ch in "([{":
+            depth += 1
+            buf.append(ch)
+        elif ch in ")]}":
+            if depth == 0 and ch == ")":
+                return "".join(buf)
+            depth -= 1
+            buf.append(ch)
+        elif ch == "," and depth == 0:
+            return "".join(buf)
+        else:
+            buf.append(ch)
+        i += 1
+    return None
+
+
+def _const_truthy(src):
+    """src 是不是「全常數節點且求值為真」的運算式;解析不了/含名稱或呼叫 → False。
+
+    裸字串/bytes 常數**不算**:scripts/ 裡存在第一參數是 ID 字串的不同簽名
+    check() 家族(devflow-evidence-gauntlet.sh 的 check("E13", cond, …)),
+    對它們而言字串是識別碼不是斷言 —— 這是本判定的明文邊界;要毒化那種簽名
+    得改第二參數,那是運算式,照樣落在本判定範圍內。"""
+    try:
+        tree = ast.parse(src.strip(), mode="eval")
+    except (SyntaxError, ValueError):
+        return False
+    if not all(isinstance(n, _CONST_NODES) for n in ast.walk(tree)):
+        return False
+    if isinstance(tree.body, ast.Constant) and isinstance(tree.body.value, (str, bytes)):
+        return False
+    try:
+        return bool(eval(compile(tree, "<const-check>", "eval"), {"__builtins__": {}}, {}))
+    except Exception:
+        return False
+
+
+_const_hits = []
+for _fname, _ftext in _file_texts.items():
+    for _m in CHECK_CALL_RE.finditer(_ftext):
+        _arg = _check_first_arg(_ftext, _m.end())
+        if _arg is not None and _const_truthy(_arg):
+            _lineno = _ftext.count("\n", 0, _m.start()) + 1
+            _const_hits.append(f"scripts/{_fname}:{_lineno} check({_arg.strip()[:40]}…)")
+check(not _const_hits,
+      "跨檔掃描:check() 第一參數無「常數運算式且恆真」(AST 判定,補黑名單的洞;"
+      "check(False,…) 顯性失敗合法)",
+      ("無命中" if not _const_hits else "命中 " + ", ".join(_const_hits)))
 
 # check_skip( 零圍堵(2026-08-17 F-2 HIGH-2):顯性跳過是合法逃生門,但逃生門一多
 # 就等於「該有真斷言的地方全面改成不驗」卻沒人管制。呼叫點總數(不含定義行)

@@ -23,15 +23,23 @@
 #   --date    不給就用今天(本機時區)。
 #   --file    不給就用 `<repo root>/docs/dev/HISTORY.md`;檔案不存在會先建出檔頭。
 #   --dry-run 只把要追加的內容印到 stdout,不動檔案、不取鎖。
+#   --print-root 只印解析到的專案根後離開(診斷用,doctor 探測 ROOT 解析;
+#             解析不到印 (unresolved) 並 exit 2)。
 #
 # exit code:
-#   0 = 已追加(或 --dry-run 成功產出)
+#   0 = 已追加(或 --dry-run / --print-root 成功產出)
 #   1 = 取不到鎖(有別的 session 正在寫,已重試指定次數)
-#   2 = 用法錯誤 / 缺必填欄位 / 目標路徑不可寫
+#   2 = 用法錯誤 / 缺必填欄位 / 目標路徑不可寫 / 解析不到專案根且未帶 --file
 set -uo pipefail
 
 SELF_DIR=$(cd "$(dirname "$0")" && pwd)
-REPO_ROOT=$(cd "$SELF_DIR/.." && pwd)
+# G1(2026-08-17 採用現場):**不得**用 $SELF_DIR/.. 推專案根 —— 本腳本會被
+# dev-setup 散發到 <專案根>/docs/dev/tools/,那樣推出來的「根」是 <專案根>/docs/dev,
+# 預設輸出就靜默寫到 docs/dev/docs/dev/HISTORY.md(不報錯、不警告,owner 端實跑
+# 複現真的建出巢狀目錄)。改用 git toplevel:HISTORY.md 按定義住在 git repo 裡,
+# 以腳本自身位置(-C)解析,母版 scripts/ 與散發 docs/dev/tools/ 兩個位置都對。
+# 解析不到(不在 git repo)→ 預設路徑無從談起,要求 --file 必填並講清楚。
+REPO_ROOT=$(git -C "$SELF_DIR" rev-parse --show-toplevel 2>/dev/null || true)
 
 DATE="" SLUG="" WHAT="" WHY="" WHERE="" VERSION="" ADR="" DETAIL=""
 TARGET="" RETRIES=3 DRY_RUN=0
@@ -56,8 +64,12 @@ while [ $# -gt 0 ]; do
     --file)    need_value "$1" "${2:-}"; TARGET=$2; shift 2 ;;
     --retries) need_value "$1" "${2:-}"; RETRIES=$2; shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
-    -h|--help) sed -n '2,32p' "$0"; exit 0 ;;
-    *) die "拒絕:未知參數 $1(可用:--slug --what --why --where --date --version --adr --detail --file --retries --dry-run)" ;;
+    --print-root)
+      # 診斷:印出解析到的專案根(doctor 探測散發副本的 ROOT 解析,比照 gauntlet)
+      if [ -n "$REPO_ROOT" ]; then printf '%s\n' "$REPO_ROOT"; exit 0
+      else echo "(unresolved)"; exit 2; fi ;;
+    -h|--help) sed -n '2,34p' "$0"; exit 0 ;;
+    *) die "拒絕:未知參數 $1(可用:--slug --what --why --where --date --version --adr --detail --file --retries --dry-run --print-root)" ;;
   esac
 done
 
@@ -82,7 +94,12 @@ case "$RETRIES" in
   ''|*[!0-9]*) die "拒絕:--retries 需非負整數,得「$RETRIES」" ;;
 esac
 
-[ -n "$TARGET" ] || TARGET="$REPO_ROOT/docs/dev/HISTORY.md"
+if [ -z "$TARGET" ]; then
+  [ -n "$REPO_ROOT" ] || die "拒絕:解析不到專案根(本腳本不在 git repo 內,git rev-parse 失敗)。
+      預設輸出位置無從推導,請明帶 --file <HISTORY.md 路徑>,例:
+      --file docs/dev/HISTORY.md(相對於你的專案根)"
+  TARGET="$REPO_ROOT/docs/dev/HISTORY.md"
+fi
 
 # ── 組出這一筆(格式正本;改格式請同步 _templates/HISTORY.md 與 README §1)──
 ENTRY="## $DATE · $SLUG"

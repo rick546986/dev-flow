@@ -1421,6 +1421,13 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             一次性、用畢即失效)→ 放行。<strong>fail-OPEN</strong>:未武裝、沒顯式指名模型、或
             <code>exec.json</code> schema 讀不到一律放行 —— 只在「武裝中且顯式指名最高階」這一窄口徑內
             下判斷,不擋非 dev-flow 用途的一般派工。</td></tr>
+    <tr><td><code>devflow-report-guard.sh</code></td><td>PostToolUse(Edit/Write)</td>
+        <td>缺陷回報檔(<code>.devflow/reports/*.md</code>,dev-report skill 的產出)寫完後掃
+            <strong>結構性</strong>識別特徵:絕對路徑、git SHA、email、內網位址、分支名、
+            不存在於母版的檔案路徑(不必知道任何公司名,只問「這路徑母版有嗎」)。命中 → 擋回
+            要求先去識別化。<strong>只掃回報路徑</strong>,其他檔案一律靜默放行;公司名/業務術語
+            這類語意識別沒有結構特徵,hook 抓不到 —— 靠 skill 白名單 + 產出前人工確認,兩層缺一不可。
+            fail-open:空輸入/壞 JSON/檔案讀不到一律放行。</td></tr>
   </table></div>
 
   <blockquote><strong>誠實界線</strong>(red team 確認,刻意不修):此守衛是<strong>紀律輔助工具,不是
@@ -1433,13 +1440,13 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   start 再換樹)效果等同,不是只有「忘記 start」這一種沉睡成因。</blockquote>
 
   <details class="plain">
-  <summary>這六支掛在哪、註冊了什麼(展開看逐字設定)</summary>
+  <summary>這七支掛在哪、註冊了什麼(展開看逐字設定)</summary>
   <p>hook 有三種掛法,差在「誰的、跟誰走」:<code>~/.claude/settings.json</code> 是<strong>你個人的</strong>,
   裝在你自己電腦上,每個專案都生效;專案自己的 <code>.claude/settings.json</code> 是<strong>只這個
   repo</strong> 的,會進版控、跟著團隊走;plugin 的 <code>hooks/hooks.json</code> 是<strong>隨插件
   散發</strong>的,別人裝了這個 plugin 就自動有,<code>/plugin update</code> 升級 plugin 版本時也跟著更新。
-  dev-flow 這六支<strong>全部是第三種</strong> —— 所以你不需要在任何一份 <code>settings.json</code> 裡手動掛
-  任何一支,只要裝了 dev-flow plugin,這六支就自動註冊好了。</p>
+  dev-flow 這七支<strong>全部是第三種</strong> —— 所以你不需要在任何一份 <code>settings.json</code> 裡手動掛
+  任何一支,只要裝了 dev-flow plugin,這七支就自動註冊好了。</p>
 
   <details>
   <summary><code>devflow-guard.sh</code> —— 你讀寫檔案前的總閘門:契約防篡改 + scope 硬擋</summary>
@@ -1488,6 +1495,16 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   <tr><td><code>PostToolUse</code></td><td><code>Edit|Write</code></td>
       <td><code>${CLAUDE_PLUGIN_ROOT}/hooks/devtalk-guard.sh</code></td><td>15</td>
       <td><code>devtalk-guard 盲檢</code></td></tr>
+  </table></div>
+  </details>
+
+  <details>
+  <summary><code>devflow-report-guard.sh</code> —— 缺陷回報檔寫完之後,掃有沒有還沒去識別化的東西</summary>
+  <div class="tablewrap"><table>
+  <tr><th>event</th><th>matcher</th><th>handler(command)</th><th>timeout</th><th>statusMessage</th></tr>
+  <tr><td><code>PostToolUse</code></td><td><code>Edit|Write</code></td>
+      <td><code>${CLAUDE_PLUGIN_ROOT}/hooks/devflow-report-guard.sh</code></td><td>15</td>
+      <td><code>report-guard 去識別化</code></td></tr>
   </table></div>
   </details>
 
@@ -1793,6 +1810,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>討論階段的檔案寫完之後,它掃一遍剛寫的內容有沒有偷偷提到後面幾站才該出現的字眼(像規格、gate),
             抓到就要求立刻修正,並留一筆紀錄。</td>
         <td><code>hooks.json</code> 自動掛(PostToolUse / Edit,Write;只認討論 skill 路徑)</td><td>PostToolUse(Edit/Write)</td></tr>
+    <tr><td><code>devflow-report-guard.sh</code></td>
+        <td>缺陷回報檔寫完之後,掃有沒有還沒去識別化的結構性特徵(絕對路徑、版本雜湊、email、內網位址、
+            分支名、母版沒有的檔案路徑)——回報會被貼到公開 repo,結構特徵先機械擋一層,公司名這類
+            語意識別仍要人工確認。只認回報路徑,其他檔案一律靜默放行。</td>
+        <td><code>hooks.json</code> 自動掛(PostToolUse / Edit,Write;只認 <code>.devflow/reports/</code> 路徑)</td><td>PostToolUse(Edit/Write)</td></tr>
     <tr><td><code>devflow-lib.py</code></td>
         <td>guard/postbash/prebash/exec/gate 這幾支背後真正判斷「武裝了沒、契約有沒有被動過」的規則都寫在這裡,
             其他檔案只是各自的殼,共用同一套邏輯避免各判各的。</td>
@@ -1803,6 +1825,8 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td><code>devflow-guard.sh</code> 呼叫</td><td>隨 <code>devflow-guard.sh</code>(同格)</td></tr>
     <tr><td><code>_postbash_impl.py</code></td><td><code>devflow-postbash.sh</code> 的實作本體。</td>
         <td><code>devflow-postbash.sh</code> 呼叫</td><td>隨 <code>devflow-postbash.sh</code>(同格)</td></tr>
+    <tr><td><code>_report_impl.py</code></td><td><code>devflow-report-guard.sh</code> 的實作本體:結構性識別特徵掃描。</td>
+        <td><code>devflow-report-guard.sh</code> 呼叫</td><td>隨 <code>devflow-report-guard.sh</code>(同格)</td></tr>
     <tr><td><code>_exec_impl.py</code></td>
         <td><code>devflow-exec.sh</code> 大部分子指令的實作本體(真正做武裝/解除/波次狀態機的地方)。</td>
         <td><code>devflow-exec.sh</code> 呼叫</td><td>隨 <code>devflow-exec.sh</code>(同格)</td></tr>
@@ -1851,6 +1875,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>檢查給人審查用的 HTML 介面有沒有真的照規格產出——動線頂區、待審項目可勾選、本機版跟發布版
             兩種外殼有沒有搞混。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-hooks-accounting.sh</code></td>
+        <td>對帳 hook 掛載清單檔與三份「列舉 hook 的文件」(安裝健檢清單、README、本頁註冊表)——
+            數量與名稱都比,守衛長大了而文件靜默沒跟上就紅;曾讓採用專案把真實存在的 hook
+            判成「多出來的」。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-history-integrity.sh</code></td>
         <td>檢查只能往後加、不能改的歷史索引格式有沒有跑掉、日期有沒有倒退、有沒有人繞過安全寫入口
             直接編輯。</td>
@@ -1878,6 +1907,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <tr><td><code>check-realworld.sh</code></td>
         <td>檢查範例文件有沒有把使用者實際會遇到的情境寫進去、Demo 判定和人類裁決有沒有照規則跑完,
             不是隨便勾一勾就當作驗證過。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-regex-charclass.sh</code></td>
+        <td>掃所有檢查腳本與守衛的正則,抓「同一個字元集裡相鄰重複的半形標點」——那是本想寫
+            「半形或全形」卻兩個都打成半形的打字陷阱(全形冒號與半形冒號肉眼幾乎分不出來),
+            曾讓完整的規格書被誤判缺欄。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-spec-gate.sh</code></td>
         <td>檢查一份規格文件該有的欄位是不是真的都在——每條需求有沒有觀測欄、驗證規劃有沒有填好——這是
@@ -1927,6 +1961,16 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <tr><td><code>devflow_twin_ui.py</code></td>
         <td><code>build-gate-twin.py</code> 產生介面時共用的版面樣式與外殼模板,不能單獨執行。</td>
         <td>被 <code>build-gate-twin.py</code> import</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
+    <tr><td><code>check-devtalk-selfclean.sh</code></td>
+        <td>把討論站目錄下的每個檔案逐一餵給真的盲原則守衛,證明「母版自己的產物過得了母版
+            自己的守衛」——曾兩次發生自家檔案含禁詞、誰改誰被擋死的窘境;守衛字詞表單一正本,
+            本檢查不另抄一份。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-devtalk-guide-sync.sh</code></td>
+        <td>guide-dev-talk.html 是 SKILL.md 的鏡像導覽,兩者天生會漂移(第 7 型「不對稱記帳」):
+            這支比對 guide 內每段「原文」引用是否與 SKILL.md 現文逐字相符,並核對兩邊的步驟數
+            一致,抓「錯引正本」與「步數漂移」。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>
         <td>本節新增的守衛本身——盤點 <code>hooks/</code>/<code>scripts/</code>/<code>observability/</code>/
             <code>tests/parallel-stage6/</code> 底下每支腳本有沒有被這張表點名到,也反查表裡寫的檔名是不是

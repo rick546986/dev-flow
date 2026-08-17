@@ -19,7 +19,7 @@ def _obs_deny(gate, violation, target=""):
         if target:
             payload["target"] = target
         try:
-            sid = json.loads(os.environ.get("HOOK_INPUT", "{}")).get("session_id", "")
+            sid = h.get("session_id", "")   # h = 模組層已解析的 hook payload(呼叫時已存在)
         except Exception:
             sid = ""
         if sid:
@@ -34,6 +34,9 @@ def _obs_deny(gate, violation, target=""):
 
 
 root = sys.argv[1]
+# F2 同型對齊:讀掉 stdin 的 payload(舊殼層 `cat >/dev/null` 直接丟棄,session_ref
+# 永遠帶不上 obs 事件)。本 impl 不依賴 payload 內容,解析失敗照樣掃描 —— 只影響記帳。
+h = L.read_hook_input() or {}
 state, armed, err = L.load_state(root)
 if err:
     L.die(err)
@@ -106,6 +109,17 @@ for rel in dirty_paths:
     if not task and review_gate and rel.startswith(review_gate_prefixes):
         bad.append(f"{rel}(圍欄③:review 期間 shell 改動這兩檔亦禁 —— 恆許暫停,"
                    f"unlock 後 devflow-exec.sh review-unlock {slug or '<slug>'} 恢復)")
+        continue
+    # 圍欄③寫入白名單鏡像(Backlog D-4,第 6 型「同一條白名單只加在一側」的實例):
+    # guard 側(_guard_impl.py)在 review 期間放行 {feat}7-review* 與 {feat}evidence/
+    # 的寫入,偵測網也必須同樣放行 —— 修前 review 期間產 7-review.md 會被本迴圈當
+    # scope 外改動(採用現場實測撞到,當時以 L1 allow 應急)。與 unlock 無關,
+    # 同 guard 側語意(unlock 只放行 Read,寫入限縮/放行範圍不變)。
+    # 邊界(審查 MED,裁決 = 保持與 guard 對稱不單邊收緊):`7-review` 是寬前綴,
+    # `7-reviewer-x.md` 這類撞名檔也會被放行 —— guard 側同字面同語意(要涵蓋
+    # 7-review.md/.html twin),單邊改窄正是本檔在治的第 6 型;撞名產物會在 G3
+    # 的 git diff 現形,且窗口只存在於武裝中的 review phase。
+    if not task and phase == "review" and rel.startswith((feat + "7-review", feat + "evidence/")):
         continue
     if rel.startswith(allowed_prefix):
         continue

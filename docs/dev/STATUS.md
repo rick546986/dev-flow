@@ -33,13 +33,16 @@ scripts/history-append.sh --slug <代號> --what <做了什麼> --why <為什麼
 > postbash 圍欄③收緊),詳見 `docs/dev/b8-gate-twin-review-ui/7-review.md` 附錄 A8。
 
 > 2026-08-17 對稱守衛輪:X-1~X-7 與兩件記帳問題已處置,詳見
-> `docs/dev/b8-gate-twin-review-ui/7-review.md` 附錄 A9。以下是該輪明文列入
-> Backlog、裁決「暫不補」的兩個已知邊界。
+> `docs/dev/b8-gate-twin-review-ui/7-review.md` 附錄 A9。
+>
+> 2026-08-17 清空輪(同日第二輪):原 Backlog 5 條處置 3 條 —— postbash 審查
+> 白名單(D-4)已修(第 6 型實例,postbash 比照 guard 豁免 7-review*/evidence/,
+> selftest +3)、tier-exempt 改 run 級(stop 清未消耗卡、留已消耗卡當留痕,
+> selftest +3)、MT-2 real-mode 案例已補(test-architecture-guards 比照 MT-1)。
+> 詳見 `docs/dev/b8-gate-twin-review-ui/7-review.md` 附錄 A10。以下是仍留的兩條
+> 與各自「本輪不做」的理由。
 
 | 級 | 一句 | 來源 |
 |---|---|---|
-| B | 第二個範例 feature,破「唯一範例自證循環」= 4cap O-3。本輪不做的理由更新:`docs/dev/engine-fence-masking/` 已是母版第一份真實走完 fast lane 的流程紀錄,日後要 example 可從它清洗,不必現編 | `docs/dev/4cap-remediation/4cap-audit-fixes-2026-08.md` O-3 裁決 |
-| C | 審查圍欄的寫入白名單(7-review*/evidence/)在 guard 側有、**postbash 偵測網側沒有** —— review 期間產 7-review.md 會被當 scope 外改動(實測撞到,已依 L1 allow 處置;修法=postbash 比照 guard 豁免,配 selftest) | `docs/dev/engine-fence-masking/7-review.md` D-4 |
-| C | SDC 大表、Reference App(4cap §7 第 5 點收攏的低優先 deferred;投資未定,防守清單 #3 同邏輯) | `docs/dev/4cap-remediation/devflow-4cap-remediation-2026-08.md` §7 |
-| C | tier-exempt 豁免卡是 repo 級非 run 級,`devflow-exec.sh stop` 不清卡 —— 未消耗的豁免可能跨 run 存活 | `docs/dev/b8-gate-twin-review-ui/7-review.md` 附錄 A9 Known Limits |
-| C | MT-2:`bad-skip-level` 缺一條比照 MT-1 的 real-mode 外部案例(目前 skip-level 只在自測模式內驗) | `docs/dev/b8-gate-twin-review-ui/7-review.md` 附錄 A9 Known Limits |
+| B | 第二個範例 feature,破「唯一範例自證循環」= 4cap O-3。2026-08-17 清空輪裁決仍不做:清洗 `docs/dev/engine-fence-masking/`(母版第一份真實 fast lane 紀錄)成第二範例是 feature 級工程 —— 要讓所有掃 example/ 的機械檢查認得 fast lane 範例、且範例是機械檢查的地基,半吊子的第二範例比沒有更糟(假信心)。素材是 append-only 的歷史檔,不會腐化,無急迫性衰減;應開專屬 feature 走完整 G1-G3 來做 | `docs/dev/4cap-remediation/4cap-audit-fixes-2026-08.md` O-3 裁決 |
+| C | SDC 大表、Reference App(4cap §7 第 5 點收攏的低優先 deferred)。2026-08-17 清空輪裁決仍不做:投資未定且**零採用現場疼痛訊號**(G1/G2/G3 全是現場真踩到的,這兩件沒有);等有採用專案真的要 SDC 級指引再立案,不為清空而硬做 | `docs/dev/4cap-remediation/devflow-4cap-remediation-2026-08.md` §7 |
