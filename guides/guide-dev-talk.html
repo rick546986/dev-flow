@@ -369,26 +369,27 @@ claude          # 建議 opus(規劃層)
   <code>dev-setup-record.html</code> ⑥「內容硬檢,非權限硬擋」。Stage 6 執行守衛完整的武裝時機、三支 hook 攔截點與殘餘界線,見
   <a href="guide-dev-flow.html#guard">guide-dev-flow.html ⑥ 執行守衛</a>。</p>
 
-  <h2 id="skeleton">⑦ 產出骨架(<code>1-discussion.md</code> 九節)</h2>
-  <p class="lead">這章要你懂:<strong>九節不是模板欄位,是把前面每一步的產物固定下來</strong> —— 右欄告訴你哪一節空了要回哪一步補。</p>
-  <blockquote>精簡原則:每節只寫「下一個讀者需要的最少資訊」,夠用就停;禁重複貼上下文、禁湊字數;寫完自問「能砍一半嗎?」能砍就砍(結論、推理鏈、事實與受影響面不可砍)。</blockquote>
+  <h2 id="skeleton">⑦ 產出骨架(<code>1-discussion.md</code> 十節)</h2>
+  <p class="lead">這章要你懂:<strong>十節不是模板欄位,是把前面每一步的產物固定下來</strong> —— 右欄告訴你哪一節空了要回哪一步補。</p>
+  <blockquote>精簡原則:每節只寫「下一個讀者需要的最少資訊」,夠用就停;禁重複貼上下文、禁湊字數;寫完自問「能砍一半嗎?」能砍就砍(結論、推理鏈、事實、受影響面與真實世界證據不可砍)。</blockquote>
   <div class="tablewrap"><table>
     <tr><th>節</th><th>放什麼</th><th>從哪一步長出來</th></tr>
-    <tr><td class="muted">(frontmatter)</td><td>feature / stage / status(draft→approved)/ owner / updated</td><td>步 6 建;步 10 你點頭改 approved</td></tr>
-    <tr><td>1 Problem</td><td>誰、什麼痛、現在怎麼繞</td><td>步 2 逼問</td></tr>
-    <tr><td>2 Context(已知事實)</td><td>步 1 已核事實 + 後續查證,含程式碼引用與受影響面清單</td><td>步 1(步 2 補查證)</td></tr>
-    <tr><td>3 Goals</td><td>要達成什麼</td><td>步 2</td></tr>
-    <tr><td>4 Non-Goals</td><td>明確不做什麼(邊界)</td><td>步 2</td></tr>
-    <tr><td>5 Open Questions</td><td>三態 <code>[x]</code>/<code>[~]</code>/<code>[&gt;]</code>(定義見 ⑤)</td><td>步 2 累積;步 10 全數定態才停</td></tr>
-    <tr><td>6 Constraints</td><td>限制(技術/時程/法規)</td><td>步 2</td></tr>
-    <tr><td>7 驗收雛形</td><td>假設…當…則…,使用者視角、不綁做法</td><td>步 3 你逐條確認</td></tr>
-    <tr><td>8 邏輯圖(ASCII)</td><td>限半形 <code>| - + &gt; &lt; = [ ]</code>;中文只放行首標籤/行尾註</td><td>步 6</td></tr>
-    <tr><td>9 Interview Log</td><td>每條:Q → 事實依據 → 推理 → 結論;含發散段與盲點戰果;高影響決策標 ⚠️</td><td>步 2/4/5 全程累積</td></tr>
+    <tr><td class="muted">(frontmatter)</td><td>feature / stage / status(draft→approved)/ owner / updated</td><td>步 7 建;步 11 你點頭改 approved</td></tr>
+    <tr><td>1 Problem</td><td>誰、什麼痛、現在怎麼繞</td><td>步 3 逼問</td></tr>
+    <tr><td>2 Context(已知事實)</td><td>步 1 已核事實 + 後續查證,含程式碼引用與受影響面清單</td><td>步 1(步 3 補查證)</td></tr>
+    <tr><td>3 Real-world Context</td><td>步 2 五份子節(Actors / Current Journey / Workarounds / Exceptions / Evidence),無證據敘述就地標 <code>[Assumption]</code></td><td>步 2</td></tr>
+    <tr><td>4 Goals</td><td>要達成什麼</td><td>步 3</td></tr>
+    <tr><td>5 Non-Goals</td><td>明確不做什麼(邊界)</td><td>步 3</td></tr>
+    <tr><td>6 Open Questions</td><td>三態 <code>[x]</code>/<code>[~]</code>/<code>[&gt;]</code>(定義見 ⑤)</td><td>步 3 累積;步 11 全數定態才停</td></tr>
+    <tr><td>7 Constraints</td><td>限制(技術/時程/法規)</td><td>步 3</td></tr>
+    <tr><td>8 驗收雛形</td><td>假設…當…則…,使用者視角、不綁做法</td><td>步 4 你逐條確認</td></tr>
+    <tr><td>9 邏輯圖(ASCII)</td><td>限半形 <code>| - + &gt; &lt; = [ ]</code>;中文只放行首標籤/行尾註</td><td>步 7</td></tr>
+    <tr><td>10 Interview Log</td><td>每條:Q → 事實依據 → 推理 → 結論;含發散段與盲點戰果;高影響決策標 ⚠️</td><td>步 3/5/6 全程累積</td></tr>
   </table></div>
 
   <h2 id="visual">⑧ 視覺版(html 產出)判準</h2>
   <p class="lead">這章要你懂:<strong>html 是拋棄式的重繪,md 才是正本</strong> —— 要改內容一律回去改 md,再重生 html。</p>
-  <p><code>1-discussion.html</code> 六件由上而下:摘要卡(Problem + OQ 三態 badge)→ 脈絡圖 → OQ 表 → 驗收雛形表 → Constraints + 詞條增量 → Interview Log 摘要 <span class="muted">(步 9「自核過+六件齊」= 先自核 OQ 三態,定態後這六件都要在)</span>。</p>
+  <p><code>1-discussion.html</code> 七件由上而下:摘要卡(Problem + OQ 三態 badge)→ 脈絡圖 → Real-world 表(Actors + Current Journey 兩張;Workarounds 與 Exceptions 收要點清單)→ OQ 表 → 驗收雛形表 → Constraints + 詞條增量 → Interview Log 摘要 <span class="muted">(步 10「自核過+七件齊」= 先自核 OQ 三態,定態後這七件都要在)</span>。</p>
   <div class="tablewrap"><table>
     <tr><th>脈絡圖形狀</th><th>畫法</th></tr>
     <tr><td>純線性步驟 / 單層樹</td><td>ASCII(<code>&lt;pre&gt;</code>,只用半形 <code>| - + &gt; &lt; = [ ]</code>,中文只放行首標籤/行尾註)</td></tr>
@@ -402,11 +403,11 @@ claude          # 建議 opus(規劃層)
   <div class="tablewrap"><table>
     <tr><th>狀況</th><th>它會怎樣</th></tr>
     <tr><td>你趕時間說「先這樣」</td><td>未解題標 <code>[~]</code> 假設收案 —— 但驗收雛形仍逐條確認,不併批</td></tr>
-    <tr><td>你中途推翻前提</td><td>立即回頭核銷:已寫的 Context/Goals/雛形/詞條逐段標失效重寫,才繼續</td></tr>
+    <tr><td>你中途推翻前提</td><td>立即回頭核銷:已寫的 Context/真實世界五份/Goals/雛形/詞條逐段標失效重寫,才繼續</td></tr>
     <tr><td>你一次丟兩個需求</td><td>先拆:一 slug 一討論,問你先談哪個</td></tr>
     <tr><td>討論到一半冒出第二個問題</td><td>提議拆分,你選一題續談,其餘記 <code>[&gt;]</code> 移交附建議 slug</td></tr>
     <tr><td>你說「直接開始做」</td><td>拒絕:「討論記錄已完成,實作請另開 session」—— 它連一行程式碼都不能寫</td></tr>
-    <tr><td>需求很小(改一行)</td><td>徵你同意走精簡模式:快掃現況、發散盲點各一輪帶過,文件照產(短版)</td></tr>
+    <tr><td>需求很小(改一行)</td><td>徵你同意走精簡模式:步 1 快掃現況、步 2 只問 Journey 與 Workarounds、步 5/6 各一輪帶過,文件照產(短版)</td></tr>
   </table></div>
 
   <p class="muted">正本規則:<code>~/dev/dev-flow/README.md</code>;skill 本體(單一正本):
