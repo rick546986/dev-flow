@@ -88,8 +88,14 @@ def _consume_exemption(exempt_path):
     card["used_at"] = _iso_now()
     try:
         json.dump(card, open(exempt_path, "w"), ensure_ascii=False, indent=1)
-    except OSError:
-        return False
+    except OSError as exc:
+        # F4(2026-08-17):本守衛自稱 fail-open —— 「豁免卡有效但標記寫不回去」
+        # 是環境問題(唯讀檔案系統/權限),不該變成攔截。放行並印警告;代價 =
+        # 卡片沒能標記已用,下次同情境會再放行一次 —— 可接受的降級(比「持有
+        # 有效豁免卡卻被擋死」好;真要一次性就修環境讓寫入成功)。
+        print(f"⚠️ tier-exempt 有效但標記寫入失敗({exc})—— fail-open 放行;"
+              f"卡片未消耗,下次同情境仍會再放行一次。", file=sys.stderr)
+        return True
     # 這行 stderr 只是 best-effort 通知(exit 0 時 PreToolUse stderr 不保證送到眼前,
     # 見 _guard_impl.py 的 A1 註解同一件事)——真正的裁決紀錄與可回溯留痕是上面
     # 已落盤的 used=true+used_at,不是這行字。別因為偶爾沒看到這行就誤以為要把

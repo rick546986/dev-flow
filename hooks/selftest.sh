@@ -13,13 +13,13 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 分層守衛補 9 案:未武裝放行 / 首派最高階擋下 / 已有低階 attempt 視為合法升階 /
 # 豁免消耗+留痕斷言 / 豁免耗盡後仍擋 / 非最高階模型放行 / exec-v2 舊字面值雙讀
 # 相容 / tool_name=Agent 與 Task 同等對待;2026-08-17 F2 大 payload ARG_MAX 補
-# 7 案 → 355;同日 G3 全形冒號 Owner Call 例外回歸 +1 → 356)——新增案例時同步 +;
-# 絕不「大概抓個下限」。
+# 7 案 → 355;同日 G3 全形冒號 Owner Call 例外回歸 +1 → 356;同日 F4 豁免卡
+# 唯讀 fail-open +2 → 358)——新增案例時同步 +;絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=356
+MIN_CASES=358
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -2037,6 +2037,25 @@ PX_OUT=$(cd "$PXT" && echo '{"tool_name":"Agent","tool_input":{"model":"opus"}}'
   | "$H/devflow-dispatch-guard.sh" 2>&1); PX_RC=$?
 ck_msg "px tool_name=Agent(非 Task)同等對待 → 首派最高階仍擋" 2 "tier-exempt" "$PX_RC" "$PX_OUT"
 rm -rf "$PXT"
+
+echo "-- f4 豁免卡唯讀(fail-open):有效卡標記寫不回 → 放行 + 警告,不得擋 --"
+# F4(2026-08-17):_consume_exemption 寫入遇 OSError 曾 return False → die ——
+# 但本守衛自稱 fail-open,「寫不進去」是環境問題不是違規。釘死:唯讀卡照樣放行。
+F4T=$(mktemp -d "${TMPDIR:-/tmp}/devflow-f4-exempt.XXXXXX")
+mkdir -p "$F4T/.devflow"
+printf '%s\n' '{"schema":"exec-v2","run_id":"f4run"}' > "$F4T/.devflow/exec.json"
+printf '%s\n' '{"used":false,"reason":"f4 唯讀卡 fixture","created_at":"2026-08-17T00:00:00"}' \
+  > "$F4T/.devflow/tier-exempt.json"
+chmod 444 "$F4T/.devflow/tier-exempt.json"
+F4_OUT=$(cd "$F4T" && echo '{"tool_name":"Task","tool_input":{"model":"opus"}}' \
+  | "$H/devflow-dispatch-guard.sh" 2>&1); F4_RC=$?
+ck_msg "f4 豁免卡有效但唯讀 → fail-open 放行 + 警告" 0 "標記寫入失敗" "$F4_RC" "$F4_OUT"
+ck "f4 唯讀卡未被消耗(used 仍 false —— 下次再放行一次,可接受的降級)" 0 "$(/usr/bin/python3 -c "
+import json, sys
+d = json.load(open('$F4T/.devflow/tier-exempt.json'))
+sys.exit(0 if d.get('used') is False else 1)"; echo $?)"
+chmod 644 "$F4T/.devflow/tier-exempt.json"
+rm -rf "$F4T"
 
 echo "-- f2 大 payload(ARG_MAX):行為必須與小 payload 完全一致,不得 rc=126 靜默自壞 --"
 # F2(2026-08-17):舊殼層 `HOOK_INPUT=$(cat); export HOOK_INPUT` 讓 >1MB payload
