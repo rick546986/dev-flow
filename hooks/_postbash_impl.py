@@ -110,6 +110,13 @@ for rel in dirty_paths:
         bad.append(f"{rel}(圍欄③:review 期間 shell 改動這兩檔亦禁 —— 恆許暫停,"
                    f"unlock 後 devflow-exec.sh review-unlock {slug or '<slug>'} 恢復)")
         continue
+    # 圍欄③寫入白名單鏡像(Backlog D-4,第 6 型「同一條白名單只加在一側」的實例):
+    # guard 側(_guard_impl.py)在 review 期間放行 {feat}7-review* 與 {feat}evidence/
+    # 的寫入,偵測網也必須同樣放行 —— 修前 review 期間產 7-review.md 會被本迴圈當
+    # scope 外改動(採用現場實測撞到,當時以 L1 allow 應急)。與 unlock 無關,
+    # 同 guard 側語意(unlock 只放行 Read,寫入限縮/放行範圍不變)。
+    if not task and phase == "review" and rel.startswith((feat + "7-review", feat + "evidence/")):
+        continue
     if rel.startswith(allowed_prefix):
         continue
     if rel == ".gitignore":

@@ -128,8 +128,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=13
-EXPECTED_NEGATIVES=69
-EXPECTED_TOTAL=82
+EXPECTED_NEGATIVES=70
+EXPECTED_TOTAL=83
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -1418,6 +1418,13 @@ D=$(seed_guard mt1 check-model-tiering.sh)
 cp -r "$ROOT/scripts/fixtures/model-tiering/bad-first-top" "$D/external-runs"
 expect_local_arg fail check-model-tiering.sh "$D" "$D/external-runs" "MT-1 把 bad-first-top 當外部真實 runs 根,以 CLI 參數餵給守衛複本的正常模式(驗證紅路徑不只活在自測模式內)"
 
+# MT-2(Backlog 補齊,2026-08-17):skip-level(跳級:haiku 失敗直跳 opus,中間無
+# sonnet)先前只在自測模式內驗 —— 與 MT-1 同型的 real-mode 外部案例缺席,若正常
+# 模式的跳級判定被挖掉,自測模式可能仍綠。比照 MT-1 一字不差的做法補上。
+D=$(seed_guard mt2 check-model-tiering.sh)
+cp -r "$ROOT/scripts/fixtures/model-tiering/bad-skip-level" "$D/external-runs"
+expect_local_arg fail check-model-tiering.sh "$D" "$D/external-runs" "MT-2 把 bad-skip-level 當外部真實 runs 根,以 CLI 參數餵給守衛複本的正常模式(跳級紅路徑同樣不只活在自測模式內)"
+
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
 echo
@@ -1521,7 +1528,7 @@ check_static_pin_sub() { # check_static_pin_sub <相對路徑> <期望子字串>
     STATIC_PIN_FAIL=1
   fi
 }
-check_static_pin "hooks/selftest.sh" "MIN_CASES=348" "MIN_CASES 釘死 348"
+check_static_pin "hooks/selftest.sh" "MIN_CASES=368" "MIN_CASES 釘死 368(2026-08-17 清空輪:F2+7/G3+1/F4+2/G1+4/D-4+3/C-2+3)"
 check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "EXPECTED_CHECKS 釘死 131"
 check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 9" "MIN_CHECKS 釘死 9"
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 138" "MIN_CHECKS 釘死 138(X-3 補群組數釘之後的實得數)"

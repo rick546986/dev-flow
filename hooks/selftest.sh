@@ -14,13 +14,14 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 豁免消耗+留痕斷言 / 豁免耗盡後仍擋 / 非最高階模型放行 / exec-v2 舊字面值雙讀
 # 相容 / tool_name=Agent 與 Task 同等對待;2026-08-17 F2 大 payload ARG_MAX 補
 # 7 案 → 355;同日 G3 全形冒號 Owner Call 例外回歸 +1 → 356;同日 F4 豁免卡
-# 唯讀 fail-open +2 → 358;同日 G1 history-append 專案根 +4 → 362)——新增案例時
+# 唯讀 fail-open +2 → 358;同日 G1 history-append 專案根 +4 → 362;同日 Backlog
+# D-4 postbash 審查白名單 +3、C-2 stop 清未消耗豁免卡 +3 → 368)——新增案例時
 # 同步 +;絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=362
+MIN_CASES=368
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -262,6 +263,12 @@ ck "回歸(prebash 鏡像):舊 exec.json(無 phase 鍵)shell cat 6-notes 放行"
 ck "postbash 鏡像回歸:舊 exec.json(無 phase 鍵)shell 改 5-tasks 仍放行" 0 "$(post)"
 ck "基準:review 武裝前寫 7-review.md 仍受 scope 擋(對照武裝後放行)" \
   2 "$(g Write docs/dev/f1/7-review.md)"
+# postbash 鏡像基準(D-4 白名單的負向):**非 review 期**shell 產 7-review.md →
+# 偵測網仍擋 —— 白名單只在 phase=review 生效,不得變成常駐豁免。
+echo "premature-review-notes" > docs/dev/f1/7-review.md
+post_capture
+ck_msg "postbash D-4 基準:非 review 期 shell 產 7-review.md → 仍擋" 2 "scope 外" "$P_RC" "$P_OUT"
+rm -f docs/dev/f1/7-review.md
 # 模擬 Stage 6 收工:5-tasks.md 進 review 前先提交,之後 postbash 才能分辨「review
 # 期間又被 shell 動」與「Stage 6 遺留未提交」——這兩者不是同一件事,見下方圍欄③收緊註解。
 git add docs/dev/f1/5-tasks.md && git commit -qm "selftest: pin 5-tasks before review arm" >/dev/null
@@ -285,6 +292,15 @@ ck_msg "prebash 鏡像④(glob 繞路):review 中萬用字元讀 6-notes → 擋
   2 "6-implementation-notes" "$PB_RC" "$PB_OUT"
 ck "② review 中寫 7-review.md → 放行"          0 "$(g Write docs/dev/f1/7-review.md)"
 ck "review 中寫 evidence/ → 放行"              0 "$(g Write docs/dev/f1/evidence/screenshot.png)"
+# postbash 鏡像(D-4 白名單,Backlog 第 6 型實例):guard 側放行 7-review*/evidence/
+# 的 review 期寫入,偵測網也必須放行 —— 修前這裡被當 scope 外改動(採用現場實測
+# 撞到,以 L1 allow 應急)。與 unlock 無關,同 guard 側語意。
+echo "review-notes" > docs/dev/f1/7-review.md
+mkdir -p docs/dev/f1/evidence && echo "e" > docs/dev/f1/evidence/e2e.log
+post_capture
+ck "postbash D-4 白名單:review 中 shell 產 7-review*/evidence/ → 放行(修前誤擋)" 0 "$P_RC"
+rm -rf docs/dev/f1/7-review.md docs/dev/f1/evidence
+ck "postbash D-4 清理後仍沉默(基準恢復)" 0 "$(post)"
 g_capture Write docs/dev/f1/5-tasks.md
 ck_msg "③ review 中寫 5-tasks.md → 擋"         2 "圍欄③" "$G_RC" "$G_OUT"
 # postbash 鏡像①:review 中(未 unlock)shell 側直接改 5-tasks.md(繞過 Edit/Write
@@ -2125,6 +2141,23 @@ ck "f2 postbash + 1.1MB payload → 偵測網照跑(乾淨樹放行)" 0 "$F2_RC"
 
 ( cd "$F2T" && "$H/devflow-exec.sh" stop >/dev/null 2>&1 )
 rm -rf "$F2T"
+
+echo "-- c2 tier-exempt 豁免卡 run 級:stop 清未消耗的卡、留已消耗的卡 --"
+# Backlog C-2 裁決(2026-08-17):豁免是 run 級授權 —— stop = run 結束,未消耗的卡
+# 不得跨 run 存活(會被下一個不相關 run 的首派吃掉);已消耗的卡是留痕,保留。
+C2T=$(mktemp -d "${TMPDIR:-/tmp}/devflow-c2-exempt.XXXXXX")
+( cd "$C2T" && git init -q . && git config user.email t@t && git config user.name t )
+mkdir -p "$C2T/.devflow"
+printf '%s\n' '{"schema":"exec-v2","run_id":"c2"}' > "$C2T/.devflow/exec.json"
+printf '%s\n' '{"used":false,"reason":"c2 未消耗卡"}' > "$C2T/.devflow/tier-exempt.json"
+C2_OUT=$(cd "$C2T" && "$H/devflow-exec.sh" stop 2>&1); C2_RC=$?
+ck_msg "c2 stop 訊息點名清掉未消耗豁免卡(run 級)" 0 "tier-exempt" "$C2_RC" "$C2_OUT"
+ck "c2 未消耗卡在 stop 後確實消失" 0 "$([ ! -f "$C2T/.devflow/tier-exempt.json" ]; echo $?)"
+printf '%s\n' '{"schema":"exec-v2","run_id":"c2"}' > "$C2T/.devflow/exec.json"
+printf '%s\n' '{"used":true,"used_at":"2026-08-17T00:00:00","reason":"c2 已消耗卡"}' > "$C2T/.devflow/tier-exempt.json"
+( cd "$C2T" && "$H/devflow-exec.sh" stop >/dev/null 2>&1 )
+ck "c2 已消耗卡在 stop 後保留(留痕不清)" 0 "$([ -f "$C2T/.devflow/tier-exempt.json" ]; echo $?)"
+rm -rf "$C2T"
 
 echo "-- g1 history-append 專案根解析:散發位置不得巢狀寫入(docs/dev/docs/dev)--"
 # G1(2026-08-17 採用現場):腳本曾用「自身位置/..」推專案根,散發到

@@ -422,6 +422,22 @@ elif cmd == "stop":
     for p in (EXECP, SENT):
         if os.path.exists(p):
             os.remove(p)
+    # Backlog C-2 裁決(2026-08-17):豁免卡是 **run 級**授權,stop = run 結束 ——
+    # 未消耗的卡一併清掉,否則會跨 run 存活、被下一個不相關 run 的首派最高階吃掉
+    # (卡上的理由不屬於那個 run)。已消耗(used=true)的卡保留:它是「何時用掉
+    # 豁免」的留痕,不構成放行風險;壞卡(解析不了)視同未消耗,清掉不留不明物。
+    exemptp = os.path.join(root, ".devflow", "tier-exempt.json")
+    if os.path.exists(exemptp):
+        try:
+            _used = json.load(open(exemptp)).get("used") is True
+        except Exception:
+            _used = False
+        if not _used:
+            try:
+                os.remove(exemptp)
+                print("🧹 未消耗的 tier-exempt 豁免卡已隨 stop 清除(豁免是 run 級授權,不跨 run)。")
+            except OSError:
+                print("⚠️ 未消耗的 tier-exempt 豁免卡清除失敗(權限?)—— 它仍會跨 run 存活,請手動刪除。")
     L.update_shadow(root)
     print("🛑 執行守衛已停(旗標與 sentinel 皆撤)。")
 
