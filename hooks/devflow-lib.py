@@ -711,7 +711,9 @@ def spec_profile(spec_text):
         m = re.match(r"^\s*-\s*Risk:\s*([a-z]+)\b", line)
         if m and risk is None:
             risk = m.group(1)
-        if re.match(r"^\s*-\s*Owner[- ]Call ?例外\s*[::]\s*\S", line, re.IGNORECASE):
+        # G3(2026-08-17):冒號字元集曾是兩個半形 0x3a(本想寫「:或：」),全形冒號
+        # 寫的例外欄偵測不到 → fast+high 明明寫了例外卻被擋,開不了工且不知道為什麼。
+        if re.match(r"^\s*-\s*Owner[- ]Call ?例外\s*[:：]\s*\S", line, re.IGNORECASE):
             owner_call = True
     return {"lane": lane, "risk": risk, "owner_call_fast_high": owner_call}
 

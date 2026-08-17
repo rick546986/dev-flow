@@ -67,6 +67,13 @@ group_methodology() {
   # ⚠️ 這支是 **Gate**(exit 1 = FAIL 擋流程),與 warning-only 的 check-task-slicing 契約相反。
   run "methodology/check-spec-gate" \
       scripts/check-spec-gate.sh example/contract-expiry-reminder/4-spec.md || return 1
+  # G3 回歸(2026-08-17 採用現場):全形冒號版 fixture 必須同樣通過 —— C1 的冒號
+  # 字元集曾把「:或：」打成兩個半形,全形觀測欄被判缺欄、全形例外欄被判沒寫。
+  run "methodology/check-spec-gate (全形冒號回歸)" \
+      scripts/check-spec-gate.sh scripts/fixtures/spec-gate-fullwidth-colon/4-spec.md || return 1
+  # G3 通解:掃 scripts/ hooks/ 正則字元集內「相鄰重複半形標點」(本想寫全形的
+  # 機械徵象)。單修已知 6 處只是治標,沒有這支,下次再寫一個 [::] 又會重演。
+  run "methodology/check-regex-charclass" scripts/check-regex-charclass.sh || return 1
 }
 
 group_contracts() {

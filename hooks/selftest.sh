@@ -13,12 +13,13 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 分層守衛補 9 案:未武裝放行 / 首派最高階擋下 / 已有低階 attempt 視為合法升階 /
 # 豁免消耗+留痕斷言 / 豁免耗盡後仍擋 / 非最高階模型放行 / exec-v2 舊字面值雙讀
 # 相容 / tool_name=Agent 與 Task 同等對待;2026-08-17 F2 大 payload ARG_MAX 補
-# 7 案 → 355)——新增案例時同步 +;絕不「大概抓個下限」。
+# 7 案 → 355;同日 G3 全形冒號 Owner Call 例外回歸 +1 → 356)——新增案例時同步 +;
+# 絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=355
+MIN_CASES=356
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -1295,6 +1296,13 @@ printf -- "- Owner Call 例外:同意 fast+high(test fixture)\n" >> docs/dev/pf2
 git add docs/dev/pf2/4-spec.md && git commit -qm oc >/dev/null
 ck "p1 OC-4 owner-call 例外放行"     0 "$(p1x start pf2)"
 ck "p1 legacy start 維持 v1 exec.json" 0 "$(p1c v1-exec "$P1T")"
+"$H/devflow-exec.sh" stop >/dev/null 2>&1
+# G3 回歸(2026-08-17):**全形冒號**版的 Owner Call 例外必須同樣生效。字元集曾把
+# 「:或：」打成兩個半形冒號(0x3a×2),全形版被判成沒寫例外 → fast+high 明明寫了
+# 例外卻開不了工,而且不知道為什麼(採用專案實踩)。
+printf -- "---\nstatus: approved\n---\n- lane: fast\n- Risk: high\n- Owner Call 例外：同意 fast+high(全形冒號 fixture)\n" > docs/dev/pf2/4-spec.md
+git add docs/dev/pf2/4-spec.md && git commit -qm oc-fullwidth >/dev/null
+ck "p1 G3 回歸:全形冒號 Owner Call 例外同樣放行" 0 "$(p1x start pf2)"
 "$H/devflow-exec.sh" stop >/dev/null 2>&1
 p1x_cap start pf2 --task T-1
 ck_msg "p1 sequential 檔 --task → 拒" 1 "execution.mode: parallel" "$P1X_RC" "$P1X_OUT"

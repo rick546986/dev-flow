@@ -1879,6 +1879,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>檢查範例文件有沒有把使用者實際會遇到的情境寫進去、Demo 判定和人類裁決有沒有照規則跑完,
             不是隨便勾一勾就當作驗證過。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-regex-charclass.sh</code></td>
+        <td>掃所有檢查腳本與守衛的正則,抓「同一個字元集裡相鄰重複的半形標點」——那是本想寫
+            「半形或全形」卻兩個都打成半形的打字陷阱(全形冒號與半形冒號肉眼幾乎分不出來),
+            曾讓完整的規格書被誤判缺欄。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-spec-gate.sh</code></td>
         <td>檢查一份規格文件該有的欄位是不是真的都在——每條需求有沒有觀測欄、驗證規劃有沒有填好——這是
             契約關卡能不能過的機械檢查,不判斷內容寫得對不對。</td>

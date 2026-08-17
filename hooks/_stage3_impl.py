@@ -49,9 +49,11 @@ SCHEMA = "stage3-verdict-v1"
 TEST_FIXTURE_MARKER = "test-only human fixture"
 VERDICT_ENUM = ("ACCEPTED", "REVISE", "NOT_REVIEWED")
 PLACEHOLDER = re.compile(r"ACCEPTED\s*\|\s*REVISE\s*\|\s*NOT_REVIEWED")
-VERDICT_LINE = re.compile(r"Human verdict\s*[::]\s*(.+)$")
-ATTEST_LINE = re.compile(r"^\s*-\s*Verdict attestation\s*[::]\s*(\S.*)$")
-ATTEST_HUMAN = re.compile(r"^human\s*[::]\s*\S.*@\s*\d{4}-\d{2}-\d{2}")
+# G3(2026-08-17):三個冒號字元集曾各是兩個半形 0x3a(本想寫「:或：」),
+# 人類確認用全形冒號寫會解析不到 → 判成沒填。現值:半形 0x3a + 全形 0xff1a。
+VERDICT_LINE = re.compile(r"Human verdict\s*[:：]\s*(.+)$")
+ATTEST_LINE = re.compile(r"^\s*-\s*Verdict attestation\s*[:：]\s*(\S.*)$")
+ATTEST_HUMAN = re.compile(r"^human\s*[:：]\s*\S.*@\s*\d{4}-\d{2}-\d{2}")
 CHECKBOX = re.compile(r"^\s*-\s*\[( |x|X)\]\s*(.+?)\s*$")
 OC_SKIP_WORDS = re.compile(r"跳過|略過|skip", re.IGNORECASE)
 OC_STAGE3 = re.compile(r"Stage\s*3", re.IGNORECASE)
