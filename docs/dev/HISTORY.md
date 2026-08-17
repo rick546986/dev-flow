@@ -134,3 +134,8 @@
 - 為什麼:v3.5.0 獨立審查判定第 6 型假綠(不對稱保護)第三次發作:修法只套觸發實例沒推廣同類;另 prompt 級模型分層零機械層
 - 落在哪:scripts/check-*(gate-twin/model-tiering/guides-fig-sync/no-stale-paths/design-contract)、hooks/(dispatch-guard/exec/selftest)、test-architecture-guards.sh、README §5、7-review.md A9
 
+## 2026-08-17 · guides-hooks-registry · v3.6.1
+- 做了什麼:hooks 註冊資訊文件化(掛哪裡/event/matcher/handler 折疊區塊)+導覽補第四支 hook 敘事+README 過期計數與幽靈敘述除鏽
+- 為什麼:v3.6.0 新增的派工分層守衛只進了檔案地圖,⑥-3 敘事與速查表沒跟上;owner 另要求 hooks 註冊三要素可查且預設收合
+- 落在哪:guides/guide-dev-flow.html ⑥-3、guide-quickstart.html 速查表、兩張生命週期 SVG、README、dev-setup-record.html
+
