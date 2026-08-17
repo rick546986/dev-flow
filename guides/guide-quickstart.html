@@ -566,7 +566,7 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
     <text class="dc" x="858" y="143">/dev-flow 路由器在此展開</text>
     <path class="tick" d="M770,226 L850,226"/>
     <text class="dc" x="858" y="222">devflow-guard·history-guard·</text>
-    <text class="dc" x="858" y="234">devflow-prebash</text>
+    <text class="dc" x="858" y="234">devflow-prebash·dispatch-guard</text>
     <path class="tick" d="M770,412 L850,412"/>
     <text class="dc" x="858" y="415">devtalk-guard·devflow-postbash</text>
     <path class="tick" d="M770,536 L850,536"/>
@@ -586,7 +586,7 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   </svg></div>
   <p class="figcap">這是 <a href="guide-dev-flow.html#guard">guide-dev-flow.html ⑥</a> 的同一張圖,放在這裡讓你先看到
   「被擋下時你人在生命週期哪裡」的整體地圖;三走廊(左掛靠/中主幹/右 dev-flow 掛鉤)、範圍框與顏色語意的完整解說、
-  以及下面「你看到的訊息 ⇒ 是哪支 hook」14 列速查表,都以 guide-dev-flow ⑥ 為準。</p>
+  以及下面「你看到的訊息 ⇒ 是哪支 hook」速查表,都以 guide-dev-flow ⑥ 為準。</p>
 
   <p class="lead">這章要你懂:<strong>你被擋的時候,一定是 Claude agent 生命週期的 <code>PreToolUse</code> 或
   <code>PostToolUse</code> 這兩格在擋你</strong> —— 知道是哪一格,就知道是「動手前擋下來」還是「動完了事後才查到」;
@@ -598,7 +598,8 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   <code>Stop</code> → 壓縮 → <code>SessionEnd</code>。<br>
   dev-flow 的守衛逐字以 <code>hooks/hooks.json</code> 為準,只掛在其中<strong>兩格</strong>:
   <strong>PreToolUse</strong> = <code>devflow-guard</code>(Edit|Write|Read)+ <code>history-guard</code>(Edit|Write)+
-  <code>devflow-prebash</code>(Bash);<strong>PostToolUse</strong> = <code>devtalk-guard</code>(Edit|Write)+
+  <code>devflow-prebash</code>(Bash)+ <code>devflow-dispatch-guard</code>(Task|Agent);
+  <strong>PostToolUse</strong> = <code>devtalk-guard</code>(Edit|Write)+
   <code>devflow-postbash</code>(Bash)。換句話說:<strong>被 dev-flow 擋,必是這兩格之一</strong> ——
   別處(<code>SessionStart</code> 只是 hook 註冊/skills 描述進場,<code>Stop</code>/壓縮/<code>SessionEnd</code>)
   不會是原因。機制細節(誠實界線、fail-closed 語意、逐 hook 攻防表)見
@@ -697,6 +698,15 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>與本節 Stage 6 執行守衛是<strong>不同子系統,不共用武裝狀態</strong>;只認
         <code>*/skills/dev-talk/*</code> 路徑,防 <code>/dev-talk</code> 自己洩漏下游知識</td>
         <td>移除比對到的字眼;判定為誤報 → 回報使用者裁決</td></tr>
+    <tr><td>節錄:「⛔ 派工分層守衛:本 run 尚未出現任何低階(haiku/sonnet)attempt,首次派工卻直接指名最高階模型(&lt;model&gt;)—— 違反分層紀律…」</td>
+        <td><code>devflow-dispatch-guard.sh</code></td>
+        <td><code>PreToolUse</code>(Task|Agent,見 <a href="guide-dev-flow.html#guard-pre">guide-dev-flow ⑥-3</a>)</td>
+        <td>本 run 還沒出現過任何低階(haiku/sonnet)派工紀錄,卻第一筆就直接指名最高階模型
+        (<code>opus</code>/<code>fable</code>)—— 分層紀律(haiku 機械活、sonnet 分析實作、opus/fable
+        只做最終判斷)被繞過的機械徵象</td>
+        <td>合法情境(例如 G3 仲裁需要最高階首派)→ 跑 <code>devflow-exec.sh tier-exempt --reason
+        "G3 仲裁需要最高階首派"</code> 豁免一次(一次性,用畢即失效);其餘情境 → 先派低階
+        (haiku/sonnet)做過一次 attempt,再合法升階</td></tr>
     <tr><td>(不擋,無訊息)</td>
         <td>—</td>
         <td>—(不觸發任何一格)</td>
@@ -804,7 +814,8 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   所以守衛狀態天然分開。同一工作樹內硬要並行做不到,且是刻意設計 —— hooks 分不清寫入來自哪個 session。</p>
   <p class="muted">守衛掛載(條數與清單以 <code>hooks/hooks.json</code> 為準):<strong>PreToolUse</strong> =
   <code>devflow-guard</code>(Edit|Write|Read)、<code>history-guard</code>(Edit|Write,不受武裝狀態影響)、
-  <code>devflow-prebash</code>(Bash 事前);<strong>PostToolUse</strong> = <code>devtalk-guard</code>(盲原則,
+  <code>devflow-prebash</code>(Bash 事前)、<code>devflow-dispatch-guard</code>(Task|Agent,派工分層守衛);
+  <strong>PostToolUse</strong> = <code>devtalk-guard</code>(盲原則,
   不同子系統)、<code>devflow-postbash</code>(Bash 事後偵測)。想確認整套沒壞:跑
   <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/hooks/selftest.sh</code>(動態發現所有案例,自建 temp repo 後自清)。</p>
 

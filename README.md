@@ -59,7 +59,7 @@ dev-flow/
 │                            └ 讀者:gate-consistency.sh 每次動態抽 token 比對四處
 │   devflow-contract.json    方法論 ↔ runtime 的版本握手
 │                            └ 讀者:devflow-exec.sh doctor,缺件 fail-closed
-│   _templates/ (14)         七階段模板 + STATUS/CONTEXT/ADR/living-spec/html-shell
+│   _templates/               七階段模板 + STATUS/CONTEXT/ADR/living-spec/html-shell
 │                            └ 讀者:dev-setup 散發進每個專案;parity 檢查比對 guides
 │   notes/design/ (6)        各機制設計正本(並行/觀測/gauntlet/real-world/boundary)
 │                            └ 讀者:dev-setup SKILL 指 evidence-gauntlet.md 為契約正本
@@ -68,8 +68,8 @@ dev-flow/
 │
 ├── ── Claude Code plugin(裝進使用者機器的部分)────────────────
 │   .claude-plugin/          plugin.json(版本字串=更新判斷依據)+ marketplace.json
-│   hooks/ (24)              守衛與執行引擎
-│     ├ hooks.json           5 條掛載,壞了守衛全靜默失效
+│   hooks/                    守衛與執行引擎
+│     ├ hooks.json           掛載清單,壞了守衛全靜默失效
 │     ├ devflow-guard.sh     PreToolUse 讀寫守衛(未武裝時對 Stage 6 文件軟擋一次)
 │     ├ devflow-exec.sh      執行引擎 + doctor 版本握手
 │     ├ gate-consistency.sh  從 README §7 抽 gate token,比對 SKILL/README §3/三模板
@@ -79,9 +79,9 @@ dev-flow/
 │                            / dev-release(發版器)/ dev-talk(訪談引導)
 │
 ├── ── 機械檢查(CI 與本機都跑這些)─────────────────────────────
-│   scripts/ (16 + fixtures) 單一入口 devflow-check.sh all,全過 = REPO_REFERENCE_PASS
+│   scripts/                  單一入口 devflow-check.sh all,全過 = REPO_REFERENCE_PASS
 │                            devflow-evidence-gauntlet.sh 是 Stage 7 證據檢查的母版
-│   observability/ (59)      Attempt Ledger 工具(devflow-obs)+ agent_event schema
+│   observability/            Attempt Ledger 工具(devflow-obs)+ agent_event schema
 │                            └ 讀者:selftest.sh:1539 直接讀它,刪了 p3 段就壞
 │   tests/parallel-stage6/   T 級並行的可執行契約(contract_ref + fixtures)
 │   .github/workflows/       devflow-ci(REPO_REFERENCE)+ runtime-selftest(EXTERNAL_RUNTIME)
@@ -90,8 +90,8 @@ dev-flow/
 ├── ── 給人看的 ────────────────────────────────────────────
 │   example/contract-…/ (14) 一個 feature 走完七階段的真實形狀(md + html twin 各 7 份)
 │                            └ 讀者:renderer fixed-point 檢查逐位元組比對那四份 html
-│   guides/ (4)              圖解導覽 html(GitHub Pages 指這裡)
-│   guide-*.html (3, 根目錄) redirect stub → guides/,接住已發出去的 Pages 舊網址
+│   guides/ (4)              圖解導覽 html(GitHub Pages 指這裡;根目錄舊 redirect stub
+│                            已移除,舊 Pages 網址直接改指 guides/,見 README 上方連結)
 │   docs/PLUGIN.md           plugin 安裝與更新說明
 │   manifests/ (4)           四軌改造的工單記錄
 │   notes/ (其餘)            稽核、導入回饋、驗證對標
@@ -272,11 +272,13 @@ RED → GREEN → scope check → Verify
   scope 外的 tracked/untracked/ignored 真實改動一律拒啟,先 commit、還原或改用乾淨 worktree,
   不再收進 baseline。`.DS_Store`、`._*`、`Thumbs.db`、`__pycache__/`、`*.pyc` 是 ambient
   metadata:不進 baseline、不擋 start/post-Bash,也不需 allow;其餘路徑即使被 `.gitignore`
-  忽略仍會掃描。旗標存在期間四條 hook 生效:
+  忽略仍會掃描。旗標存在期間下列 hook 生效(另有 `history-guard` 全程守
+  `docs/dev/HISTORY.md` 單一寫入口,不受旗標狀態影響):
   `devflow-guard`(PreToolUse Edit|Write|Read:擋改任何 feature 的 1/2/3/4、擋讀 1/2/3、
   擋 scope 外寫入)、`devflow-prebash`(PreToolUse Bash:擋 shell 讀上游與破壞旗標)、
   `devflow-postbash`(PostToolUse Bash:git status 對照 + 內容 hash,抓 shell 寫入)、
-  `devtalk-guard`(盲原則掃描)。L1 出口 = `devflow-exec.sh allow <file> --reason`;
+  `devtalk-guard`(盲原則掃描)、`devflow-dispatch-guard`(PreToolUse Task|Agent:武裝中
+  擋「首派即最高階」派工)。L1 出口 = `devflow-exec.sh allow <file> --reason`;
   L2 = `stop`。收尾 `stop` 後全部沉睡。自測:`hooks/selftest.sh`(動態發現案例,可重跑)。
   界線:紀律工具非安全沙箱,詳 `dev-setup-record.html`(plugin guides/,經
   `${CLAUDE_PLUGIN_ROOT}` 存取,非本 repo/散發檔案)。跨版本相容由
