@@ -25,6 +25,7 @@ trap 'rm -rf "$TMP"' EXIT
 
 DEVFLOW_ROOT="$ROOT" DEVFLOW_TMP="$TMP" python3 - "$0" <<'PY'
 import ast
+import hashlib
 import html
 import importlib.util
 import os
@@ -210,6 +211,27 @@ EXPECT_KEYS = readme_keys()
 check(len(EXPECT_KEYS) == len(STAGES) and all(len(v) == 5 for v in EXPECT_KEYS.values()),
       "五格標籤能從 README §6 正本解析出三站各五格",
       f"解析到 {[(k, len(v)) for k, v in EXPECT_KEYS.items()]}")
+
+# F5(2026-08-17,上輪 G′ 缺口):readme_keys() 在第一個括號截斷 —— 標籤守住了,
+# 括號內的規格語意沒有(`狀態(frontmatter)` 改成 `狀態(frontmatter)X` 曾全綠)。
+# 這裡把 §6 四列的**五格全文**(含括號)hash 釘死:改 README 的規格文字必須同
+# commit 更新快照,漂移從「靜默」變「顯性」。快照不是第二正本,只是讓改動變吵
+# —— 與 EXPECTED_CHECK_SKIP_CALLS、selftest MIN_CASES 同一手法。
+PINNED_ROW_SHA = {
+    "2-decision": "71dbe8e98e5a786b",
+    "4-spec": "9fd6eced73b59343",
+    "7-review": "bef9dfc2ddea381c",
+    "5-tasks": "d780503d05ac8c0a",
+}
+_readme_txt = (ROOT / "README.md").read_text(encoding="utf-8")
+for st in STAGES:
+    _m = re.search(r"^\|\s*\*\*" + re.escape(st) + r"\((?:G\d|執行板)\)\*\*\s*\|(.+?)\|\s*$",
+                   _readme_txt, re.M)
+    _got = hashlib.sha256(_m.group(1).strip().encode()).hexdigest()[:16] if _m else "(缺列)"
+    check(_got == PINNED_ROW_SHA[st],
+          f"{st}:README §6 五格全文(含括號規格語意)與釘死快照一致",
+          f"hash {_got} ≠ 釘死 {PINNED_ROW_SHA[st]} —— 改了 §6 規格文字要同 commit "
+          f"更新本快照;現值:{_m.group(1).strip()[:80] if _m else '列不見了'}")
 for st in STAGES:
     txt = read_html_or_none(proj / f"{st}.html")
     if txt is None:
