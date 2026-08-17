@@ -115,6 +115,10 @@ for rel in dirty_paths:
     # 的寫入,偵測網也必須同樣放行 —— 修前 review 期間產 7-review.md 會被本迴圈當
     # scope 外改動(採用現場實測撞到,當時以 L1 allow 應急)。與 unlock 無關,
     # 同 guard 側語意(unlock 只放行 Read,寫入限縮/放行範圍不變)。
+    # 邊界(審查 MED,裁決 = 保持與 guard 對稱不單邊收緊):`7-review` 是寬前綴,
+    # `7-reviewer-x.md` 這類撞名檔也會被放行 —— guard 側同字面同語意(要涵蓋
+    # 7-review.md/.html twin),單邊改窄正是本檔在治的第 6 型;撞名產物會在 G3
+    # 的 git diff 現形,且窗口只存在於武裝中的 review phase。
     if not task and phase == "review" and rel.startswith((feat + "7-review", feat + "evidence/")):
         continue
     if rel.startswith(allowed_prefix):

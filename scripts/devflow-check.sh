@@ -80,6 +80,9 @@ group_methodology() {
   # B-1/G2 通解:母版自己的 dev-talk 產物逐檔餵真的 devtalk-guard,必須全過 ——
   # 「母版產物過不了母版守衛」已發作兩次,寫入時才發現太晚,這裡每次先驗。
   run "methodology/check-devtalk-selfclean" scripts/check-devtalk-selfclean.sh || return 1
+  # 第 7 型「不對稱記帳」:guide-dev-talk.html 是 skills/dev-talk/SKILL.md 的鏡像導覽,
+  # 機制(SKILL.md)改了、鏡像沒跟上會靜默漂移(曾發生漏列一整步、逐字引用錯引正本)。
+  run "methodology/check-devtalk-guide-sync" scripts/check-devtalk-guide-sync.sh || return 1
 }
 
 group_contracts() {
@@ -141,10 +144,12 @@ group_render() {
 # scripts/test-*.sh 每一支都必須出現在本檔的 run 行裡 —— 新增檢查腳本卻忘了註冊,
 # 唯一的下場是「永遠沒被跑」而沒有任何紅字;check-file-map 只保證寫進檔案地圖,
 # 不保證被執行。本檔自己列舉自己要跑什麼,所以對帳守衛就放本檔開頭,每種 MODE 都先跑。
+# ⚠️ 審查 HIGH 教訓:第一版 grep 全檔,把腳本名寫在**註解**裡就能騙過(名字在、
+# run 沒跑)。現版先剝掉註解行再比對 —— 名字必須出現在會被執行的行上。
 REG_MISS=""
 for f in "$ROOT"/scripts/check-*.sh "$ROOT"/scripts/test-*.sh; do
   base=$(basename "$f")
-  grep -q "scripts/$base" "$0" || REG_MISS="$REG_MISS $base"
+  grep -v '^[[:space:]]*#' "$0" | grep -q "scripts/$base" || REG_MISS="$REG_MISS $base"
 done
 if [ -n "$REG_MISS" ]; then
   echo "⛔ devflow-check 註冊自審:下列檢查腳本存在但沒被本檔任何 group 執行 ——$REG_MISS" >&2
@@ -224,7 +229,11 @@ if [ "$STATUS" -ne 0 ]; then
   # ${FAILED} 必須帶大括號:全形「」緊接 $FAILED 時,bash 會把後面的多位元組字元
   # 一起吃進變數名(FAILED」),配上 set -u 就是 unbound variable —— 失敗訊息永遠印不出來。
   echo "⛔ devflow-check($MODE): FAILED at 「${FAILED}」"
-  echo "   fail-fast:該組之後的檢查未執行。原始錯誤輸出在上方,未被摘要覆蓋。"
+  if [ "$MODE" = "all" ] && [ "${DEVFLOW_CHECK_SEQUENTIAL:-0}" != "1" ]; then
+    echo "   組內 fail-fast:失敗組內的後續檢查未執行;其他組已全數跑完(輸出在上方)。"
+  else
+    echo "   fail-fast:該組之後的檢查未執行。原始錯誤輸出在上方,未被摘要覆蓋。"
+  fi
   exit 1
 fi
 

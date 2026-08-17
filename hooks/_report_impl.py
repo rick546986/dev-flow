@@ -50,9 +50,22 @@ RULES = (
         r"|[\w-]+\.(?:local|internal|lan))\b")),
     ("分支名", re.compile(r"\b(?:feature|bugfix|hotfix|fix|release)/[\w./-]+")),
 )
-# 相對路徑候選:word 片段以 / 相連、最後一段帶副檔名。placeholder(<slug> 之類)
-# 的 <> 天然斷詞,不會成為候選;行尾 `:行號` 由 \b 自然切開。
-PATH_TOKEN = re.compile(r"\b[\w.-]+(?:/[\w.-]+)*/[\w-]+\.\w{1,8}\b")
+# 相對路徑候選:word 片段以 / 相連。placeholder(<slug> 之類)的 <> 天然斷詞,
+# 不會成為候選;行尾 `:行號` 由 \b 自然切開。
+# ⚠️ 審查 HIGH-2 教訓:第一版在此用「(?:/seg)*/name\.ext」形狀的正則,尾段與
+# 重複段有歧義 → 對 32KB 的 slash 長行災難性回溯 8.4 秒,~60KB 就吃掉 15s
+# timeout,掃描被殺 = fail-open。現版正則無歧義(/ 不在 [\w.-] 內,線性掃);
+# 「最後一段要有副檔名」改到 python 端判,不進正則。
+PATH_TOKEN = re.compile(r"\b[\w.-]+(?:/[\w.-]+)+\b")
+
+
+def _looks_like_file_path(token):
+    """最後一段帶 1-8 字的副檔名才當檔案路徑候選(其餘多為敘述性斜線用法)。"""
+    last = token.rsplit("/", 1)[-1]
+    if "." not in last:
+        return False
+    ext = last.rsplit(".", 1)[1]
+    return 1 <= len(ext) <= 8 and ext.isalnum()
 
 
 def scan(text):
@@ -65,7 +78,8 @@ def scan(text):
                 hits.append((lineno, rule_name, m.group(0).strip(), line.strip()[:90]))
         for m in PATH_TOKEN.finditer(line):
             token = m.group(0)
-            if not os.path.exists(os.path.join(MASTER_ROOT, token)):
+            if _looks_like_file_path(token) \
+                    and not os.path.exists(os.path.join(MASTER_ROOT, token)):
                 hits.append((lineno, "不存在於母版的路徑(疑為採用專案的)",
                              token, line.strip()[:90]))
     return hits
@@ -100,14 +114,21 @@ except Exception:
 if not isinstance(fp, str) or not fp:
     sys.exit(0)
 
-norm = fp.replace("\\", "/")
+# 審查 HIGH-3 教訓:第一版對原始字串做子字串比對,`.devflow/x/../reports/leak.md`
+# 這種帶 .. 的等價路徑會被判「非回報路徑」而跳過掃描。先 normpath 摺掉 ./..
+# 再比對(反向 `.devflow/reports/../../x.md` 摺完不含 reports/,本來就該跳過)。
+norm = os.path.normpath(fp).replace("\\", "/")
 if not norm.endswith(".md"):
     sys.exit(0)
 if "/.devflow/reports/" not in norm and not norm.startswith(".devflow/reports/"):
     sys.exit(0)                                   # 非回報路徑:一律靜默放行
 
 try:
-    with open(fp, encoding="utf-8") as stream:
+    # errors="replace":回報常貼 log,混到非 UTF-8 位元組不該讓守衛 crash
+    # (審查 HIGH-1:曾以 traceback rc=1 收場,既非 deny 也非放行)。壞位元組
+    # 換成 U+FFFD 後照掃 —— ASCII 結構特徵(路徑/SHA/email)不受影響,
+    # 比「解碼失敗就放行」更保護。
+    with open(fp, encoding="utf-8", errors="replace") as stream:
         text = stream.read()
 except OSError:
     sys.exit(0)                                   # 檔案讀不到 = 環境問題,fail-open

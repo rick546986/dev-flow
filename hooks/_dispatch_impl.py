@@ -145,11 +145,9 @@ if _scan_low_tier_attempt(root, run_id):
     sys.exit(0)          # 本 run 已有低階 attempt,這是合法的升階路徑
 
 exempt_path = os.path.join(root, ".devflow", "tier-exempt.json")
-# ⚠️ 已知限制(未推廣,寫明取捨而非放著不提 —— 本檔主題就是防「不對稱保護」):
-# 豁免卡是 repo 級,不是 run 級。stop 只清 exec.json/sentinel,不動這張卡 ——
-# 若 run A 核了卡沒用掉,run B 的首派最高階會消耗掉那張理由不屬於它的卡。
-# 現階段判定可接受(核發本來就要求人手動跑 CLI、留痕可回溯查 created_at 對不對得上
-# 當時的 run);要收斂就在 stop 分支順手清掉未用的卡,見 Backlog。
+# 豁免卡自 2026-08-17 起是 **run 級**:`devflow-exec.sh stop` 會清掉未消耗的卡
+# (_exec_impl.py stop 分支),不再跨 run 存活;已消耗(used=true)的卡保留當留痕。
+# 本守衛這裡只負責消耗,不管生命週期。
 if os.path.exists(exempt_path) and _consume_exemption(exempt_path):
     sys.exit(0)
 

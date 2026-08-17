@@ -53,18 +53,21 @@ ADJ_DUP = re.compile("(" + "|".join(re.escape(c) + "{2}" for c in PUNCT) + ")")
 def scan_text(text):
     """回傳 [(行號, 該行內容, 命中片段)]。
 
-    三層漏斗:①行要像帶正則 ②只看引號字串內 ③剝 POSIX 類與跳脫後,
-    字元集內找相鄰重複半形標點。"""
+    三層漏斗:①行要像帶正則(**本行或上一行**命中 —— 審查抓到跨行寫法
+    `re.compile(\\n    r"[…]")` 的 pattern 字串在下一行,單行過濾看不見;
+    兩行窗涵蓋最常見的跨一行排版,拆更多行仍是明文邊界)②只看引號字串內
+    ③剝 POSIX 類與跳脫後,字元集內找相鄰重複半形標點。"""
     hits = []
+    prev = ""
     for lineno, line in enumerate(text.splitlines(), 1):
-        if not REGEX_LINE.search(line):
-            continue
-        for q in QUOTED.finditer(line):
-            segment = POSIX_CLASS.sub("", q.group(0))
-            for m in BRACKET.finditer(segment):
-                dup = ADJ_DUP.search(m.group(0))
-                if dup:
-                    hits.append((lineno, line.strip()[:90], dup.group(1)))
+        if REGEX_LINE.search(line) or REGEX_LINE.search(prev):
+            for q in QUOTED.finditer(line):
+                segment = POSIX_CLASS.sub("", q.group(0))
+                for m in BRACKET.finditer(segment):
+                    dup = ADJ_DUP.search(m.group(0))
+                    if dup:
+                        hits.append((lineno, line.strip()[:90], dup.group(1)))
+        prev = line
     return hits
 
 
@@ -72,10 +75,11 @@ def scan_text(text):
 # 毒樣本用串接組出,避免本檔自己出現字面 `[::]` 被自己掃到。
 poison = "OBS = re.compile(r\"觀測[" + "::" + "]\")"          # 兩個半形冒號
 poison2 = "ln = re.split(r\"[,。" + ";;" + "]\", ln)"          # 兩個半形分號
+poison3 = "OBS = re.compile(\n    r\"觀測[" + "::" + "]\")"   # 跨行排版(審查 MED 抓到的盲區)
 legit = 'OBS = re.compile(r"觀測[:：]")'                       # 半形+全形(正確寫法)
 legit2 = 'if re.search(r"[[:space:]]+", s):'                   # POSIX 類(不得誤報)
 legit3 = "arr=${list[@]:0:2}"                                  # bash 切片(無相鄰重複)
-ok = (bool(scan_text(poison)) and bool(scan_text(poison2))
+ok = (bool(scan_text(poison)) and bool(scan_text(poison2)) and bool(scan_text(poison3))
       and not scan_text(legit) and not scan_text(legit2) and not scan_text(legit3))
 if not ok:
     print("FATAL: 掃描器自檢失敗 —— 偵測邏輯退化,本次結果不可信", file=sys.stderr)

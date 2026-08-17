@@ -16,12 +16,13 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 7 案 → 355;同日 G3 全形冒號 Owner Call 例外回歸 +1 → 356;同日 F4 豁免卡
 # 唯讀 fail-open +2 → 358;同日 G1 history-append 專案根 +4 → 362;同日 Backlog
 # D-4 postbash 審查白名單 +3、C-2 stop 清未消耗豁免卡 +3 → 368;同日 report-guard
-# 去識別化 +7 → 375)——新增案例時同步 +;絕不「大概抓個下限」。
+# 去識別化 +7、審查修正回歸(非 UTF-8/長行回溯/.. 繞路)+3 → 378)——新增案例時
+# 同步 +;絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=375
+MIN_CASES=378
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -2180,6 +2181,23 @@ RG_OUT=$(printf '' | "$H/devflow-report-guard.sh" 2>&1); RG_RC=$?
 ck "rg 空輸入 → 放行(fail-open 於環境問題)" 0 "$RG_RC"
 RG_OUT=$(printf 'not-json{{{' | "$H/devflow-report-guard.sh" 2>&1); RG_RC=$?
 ck "rg 壞 JSON → 放行(fail-open 於環境問題)" 0 "$RG_RC"
+
+# 審查修正回歸(2026-08-17 fresh sonnet 三個 HIGH):
+# ① 非 UTF-8 位元組不得 crash(曾 traceback rc=1),照掃 —— 髒內容仍要 2
+printf '\xff\xfe mojibake \n/Users/somebody/companyapp/x.go\n' > "$RGT/.devflow/reports/rawbytes.md"
+rg_run "$RGT/.devflow/reports/rawbytes.md"
+ck_msg "rg 非 UTF-8 內容不 crash,照掃出絕對路徑 → exit 2" 2 "絕對路徑" "$RG_RC" "$RG_OUT"
+# ② 32KB slash 長行不得回溯爆炸(曾 8.4s,~60KB 就吃掉 15s timeout = 掃描被殺)
+/usr/bin/python3 -c "open('$RGT/.devflow/reports/longline.md','w').write('a/'*16000 + '\n')"
+rg_run "$RGT/.devflow/reports/longline.md"
+ck "rg 32KB slash 長行 → 秒級掃完放行(線性正則,不得逾時自壞)" 0 "$RG_RC"
+# ③ 帶 .. 的等價路徑不得跳過掃描(normpath 後比對;somedir 需真實存在,
+#    否則 open 原始路徑 ENOENT 走 fail-open,測的就不是繞路而是讀不到)
+mkdir -p "$RGT/.devflow/somedir"
+printf '/Users/somebody/companyapp/x.go\n' > "$RGT/.devflow/reports/trav.md"
+RG_OUT=$(printf '{"tool_name":"Write","tool_input":{"file_path":"%s"}}' "$RGT/.devflow/somedir/../reports/trav.md" \
+  | "$H/devflow-report-guard.sh" 2>&1); RG_RC=$?
+ck_msg "rg .devflow/x/../reports/ 等價路徑 → 照掃仍擋" 2 "絕對路徑" "$RG_RC" "$RG_OUT"
 rm -rf "$RGT"
 
 echo "-- c2 tier-exempt 豁免卡 run 級:stop 清未消耗的卡、留已消耗的卡 --"
