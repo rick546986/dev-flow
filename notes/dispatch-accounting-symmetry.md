@@ -1,4 +1,4 @@
-# 派工：清空所有已知待辦（v3.6.1 獨立審查 6 條 + Backlog 5 條 + 效能 1 條）
+# 派工：清空所有已知待辦（審查 6 條 + Backlog 5 條 + 效能 1 條 + 採用現場 2 條）
 
 > owner 一句話觸發：
 > 「讀 `~/dev/dev-flow/notes/dispatch-accounting-symmetry.md` 照它跑，全程不打斷問人」。
@@ -6,7 +6,8 @@
 > 前一輪任務書 `notes/dispatch-guard-symmetry.md` 的 **X-1~X-7 七條全部做完且實測有牙**。
 >
 > **這一輪的目標是把所有已知待辦一次清空**，三部分：
-> 一、獨立審查的 6 條（F1~F6）　二、`STATUS.md` Backlog 的 5 條　三、效能 1 條。
+> 一、獨立審查的 6 條（F1~F6）　二、`STATUS.md` Backlog 的 5 條　三、效能 1 條
+> 　四、**採用現場實際踩到的 2 條母版缺陷**（G1/G2，2026-08-17 回報，owner 端已複驗）。
 > 做完之後 owner 會再驗收一次。
 
 ## 上一輪的成績（先講清楚，這輪不是打回重做）
@@ -190,6 +191,86 @@ bash scripts/devflow-check.sh  →  23.33s user  22.79s system  15% cpu  4:55.20
 
 ---
 
+# 第四部分：採用現場實際踩到的 2 條母版缺陷
+
+**這兩條的來源跟前面都不同** —— 不是審查者在母版 repo 裡找出來的，是**採用專案升級到
+plugin 3.6.1 之後真的踩到的**。owner 端已逐條複驗，兩條都屬實。
+
+## G1（HIGH）：`history-append.sh` 散發後把歷史寫到巢狀路徑
+
+**位置**：`scripts/history-append.sh:34`
+```bash
+REPO_ROOT=$(cd "$SELF_DIR/.." && pwd)
+```
+這行假設腳本住在 `<專案根>/scripts/`。但 `dev-setup` 規定散發到 **`docs/dev/tools/`**，
+於是 `REPO_ROOT` 變成 `<專案根>/docs/dev`，`:85` 的預設 target 就成了：
+
+```
+docs/dev/docs/dev/HISTORY.md      ← owner 端實跑複現,真的建出這個巢狀目錄
+```
+
+**而且是靜默的** —— 不報錯、不警告，只是寫到錯的地方。採用端是在跑 happy path
+記錄一筆真實升級時才發現。
+
+### 同型盤查（owner 端已做，結果如下 —— 你不用重做，但要確認我沒看漏）
+
+| 散發到 `docs/dev/tools/` 的檔 | 怎麼定專案根 | 有沒有同樣的問題 |
+|---|---|---|
+| `build-gate-twin.py` | **從參數傳入**（`args[0]`），`_SCRIPT_DIR` 只用來找相依與 import | **沒有** |
+| `devflow-evidence-gauntlet.sh` | 也有 `ROOT=$(dirname "$0")/..`，**但不用 ROOT 決定輸出**（吃 `<file.md>` 參數），且 B-4 已加 `--print-root` 讓 doctor 探測 ROOT 解析 | **沒有**（已知並已處理） |
+| `devflow_twin_ui.py` | 純 UI 模組，不碰路徑 | 沒有 |
+| **`history-append.sh`** | **用 `REPO_ROOT` 決定預設輸出位置** | **就是它** |
+
+**所以 repo 裡已經有兩個正確做法可抄。**
+
+### 修法要求
+
+1. 不要用 `$SELF_DIR/..` 推專案根。建議 `git rev-parse --show-toplevel`
+   （HISTORY.md 一定在 git repo 裡；解析失敗就要求 `--file` 必填並印清楚訊息）。
+   **母版與散發副本都要對** —— 同一支腳本在兩個位置都要能跑出正確的預設路徑。
+2. **加回歸案**：在 `scripts/fixtures/` 或 selftest 裡造一個「假採用專案」
+   （`<root>/docs/dev/tools/history-append.sh`），不帶 `--file` 跑一次，
+   斷言寫到 `<root>/docs/dev/HISTORY.md` **而不是** `<root>/docs/dev/docs/dev/HISTORY.md`。
+   沒有這條，下次改寫又會退回去。
+3. **比照 `gauntlet` 的 `--print-root`**：給 `history-append.sh` 加一個診斷旗標印出它
+   解析到的根，並讓 `doctor` 探測它（第 6 型的字面要求：同類保護要一起長）。
+4. 順帶查 `dev-setup` 的散發段有沒有需要補一句「這支的預設路徑依賴 X」。
+
+⚠️ **這條在採用端已有 workaround**（一定要帶 `--file docs/dev/HISTORY.md`），
+但那是把正確性押在人記得帶參數上 —— **不算修好**。
+
+## G2（MED）：母版自己的 `dev-talk` SKILL 過不了母版自己的守衛
+
+**位置**：`skills/dev-talk/SKILL.md:1`
+```html
+<!-- 原 dev-talk plugin 5.4.0,2026-08-13 併入 dev-flow;此後 dev-talk 不再有獨立版本號… -->
+```
+含 `dev-flow` 字眼 → `hooks/devtalk-guard.sh` 的盲原則掃描判 FAIL。owner 端實跑：
+
+```
+⛔ devtalk-guard:盲原則洩漏 —— 剛寫入的 dev-talk 檔案含下游階段字眼(不得出現):
+1:<!-- 原 dev-talk plugin 5.4.0,2026-08-13 併入 dev-flow;… -->
+```
+
+**現況不影響運作**（guard 只在寫入 `skills/dev-talk/` 底下的檔時觸發），
+但**只要有人改那個檔就會被自己的守衛擋死**。
+
+⚠️ **這是「母版自己的產物過不了母版自己的守衛」的第二次** ——
+第一次是 B-1（母版自己的 `_templates/5-tasks.md` 過不了 `parse_5_tasks`）。
+**同一型出現兩次，代表需要的是機械層不是逐次修文字。**
+
+### 修法要求（你裁決走哪條，但要說明理由）
+
+- (a) 改那行註解，把版本沿革移到不受掃描的位置（例如 `docs/PLUGIN.md`）
+- (b) 讓 guard 豁免 html 註解行或 frontmatter 之前的行 —— **但要小心這等於開了一個洞**
+     （真的洩漏也可以藏在註解裡）
+- (c) 兩者都做：改註解 + 加一條守衛，**對母版自己的 `skills/dev-talk/` 全部檔案跑一次
+     devtalk-guard，必須全過** —— 這條是通解，能擋住 B-1/G2 這一整型
+
+**建議 (c)**：沒有 (c) 的話，下次有人在那個檔寫下 `4-spec` 三個字又會重演。
+
+---
+
 # 這一輪之後**還會剩下什麼**（給你參考，不是任務）
 
 即使上面三部分全部清空，以下仍未被驗證過 —— **不要在回報裡宣稱「完整工作流已無缺陷」**：
@@ -218,6 +299,7 @@ bash scripts/devflow-check.sh  →  23.33s user  22.79s system  15% cpu  4:55.20
 ## 第一部分：6 條  | id | 修法一句 | 落在哪(檔案:行號) | 破壞實驗四步的輸出 |
 ## 第二部分：Backlog 5 條  | 條 | 做了/沒做 | 做法或不做的理由 | 驗證 |
 ## 第三部分：效能  | 逐組計時原始數字 | 做法 | 改後時間 | 有沒有少跑任何一組 |
+## 第四部分：採用現場 2 條  | id | 修法 | 回歸案落在哪 | 破壞實驗四步的輸出 |
 ## 待 owner 裁決(如果有)
 ## 六道回歸輸出(貼原文)
 ## 下一步：未推 commit N 個,請 owner 自己 push
