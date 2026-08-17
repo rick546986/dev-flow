@@ -1937,6 +1937,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <tr><td><code>devflow_twin_ui.py</code></td>
         <td><code>build-gate-twin.py</code> 產生介面時共用的版面樣式與外殼模板,不能單獨執行。</td>
         <td>被 <code>build-gate-twin.py</code> import</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
+    <tr><td><code>check-devtalk-selfclean.sh</code></td>
+        <td>把討論站目錄下的每個檔案逐一餵給真的盲原則守衛,證明「母版自己的產物過得了母版
+            自己的守衛」——曾兩次發生自家檔案含禁詞、誰改誰被擋死的窘境;守衛字詞表單一正本,
+            本檢查不另抄一份。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>
         <td>本節新增的守衛本身——盤點 <code>hooks/</code>/<code>scripts/</code>/<code>observability/</code>/
             <code>tests/parallel-stage6/</code> 底下每支腳本有沒有被這張表點名到,也反查表裡寫的檔名是不是

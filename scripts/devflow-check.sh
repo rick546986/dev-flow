@@ -74,6 +74,9 @@ group_methodology() {
   # G3 通解:掃 scripts/ hooks/ 正則字元集內「相鄰重複半形標點」(本想寫全形的
   # 機械徵象)。單修已知 6 處只是治標,沒有這支,下次再寫一個 [::] 又會重演。
   run "methodology/check-regex-charclass" scripts/check-regex-charclass.sh || return 1
+  # B-1/G2 通解:母版自己的 dev-talk 產物逐檔餵真的 devtalk-guard,必須全過 ——
+  # 「母版產物過不了母版守衛」已發作兩次,寫入時才發現太晚,這裡每次先驗。
+  run "methodology/check-devtalk-selfclean" scripts/check-devtalk-selfclean.sh || return 1
 }
 
 group_contracts() {
@@ -130,6 +133,21 @@ group_render() {
   run "render/renderer-fixed-point" scripts/render-methodology-corrections.sh --check || return 1
   run "render/git-diff-whitespace"  git diff --check                                  || return 1
 }
+
+# 註冊自審(第 7 型通解;2026-08-17 盤點抓到的洞):scripts/check-*.sh 與
+# scripts/test-*.sh 每一支都必須出現在本檔的 run 行裡 —— 新增檢查腳本卻忘了註冊,
+# 唯一的下場是「永遠沒被跑」而沒有任何紅字;check-file-map 只保證寫進檔案地圖,
+# 不保證被執行。本檔自己列舉自己要跑什麼,所以對帳守衛就放本檔開頭,每種 MODE 都先跑。
+REG_MISS=""
+for f in "$ROOT"/scripts/check-*.sh "$ROOT"/scripts/test-*.sh; do
+  base=$(basename "$f")
+  grep -q "scripts/$base" "$0" || REG_MISS="$REG_MISS $base"
+done
+if [ -n "$REG_MISS" ]; then
+  echo "⛔ devflow-check 註冊自審:下列檢查腳本存在但沒被本檔任何 group 執行 ——$REG_MISS" >&2
+  echo "   新增檢查必須同 commit 註冊進對應 group,否則它永遠不會跑(且不會有紅字)。" >&2
+  exit 1
+fi
 
 echo "=== devflow-check: $MODE (REPO_REFERENCE only;外部 plugin 檢查不在此) ==="
 echo

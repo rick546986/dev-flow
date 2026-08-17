@@ -5,6 +5,7 @@
 # 文件」之間的漂移 —— 數量與名稱都比,任一處漏列/多列/數字過期就紅:
 #   ① skills/dev-setup/SKILL.md:安裝健檢清單(N 支可執行、N 條掛載、逐條列舉)
 #   ② README.md:執行守衛段的 hook 名稱列舉
+#   ②' docs/PLUGIN.md:hooks 表 + skills 表(skills 對帳的機械正本 = skills/ 目錄)
 #   ③ guides/guide-dev-flow.html:hooks 註冊表(event/matcher/command/timeout 鏡像
 #      + 「這 N 支」計數字)
 #
@@ -113,6 +114,19 @@ for name in script_names:
     if base not in readme:
         fail(f"README.md 完全沒提到掛載中的 {base}(hooks.json 有,文件沒有)")
 
+# ── ②' docs/PLUGIN.md:第四份列舉副本(hooks 表 + skills 表)────────────────
+# 第一版守衛只掃三份文件,盤點當場抓到 PLUGIN.md 漏了 2 支 hook 與 1 個 skill ——
+# 「正在蓋的對帳守衛剛好漏掉一份副本」正是第 7 型自身的復發樣態,列舉副本必須全數納管。
+plugin_md = open(os.path.join(root, "docs", "PLUGIN.md"), encoding="utf-8").read()
+for name in script_names:
+    if name not in plugin_md:
+        fail(f"docs/PLUGIN.md hooks 表漏了掛載中的 {name}")
+skills_dir = os.path.join(root, "skills")
+for d in sorted(os.listdir(skills_dir)):
+    if os.path.isdir(os.path.join(skills_dir, d)) and not d.startswith("."):
+        if f"`{d}`" not in plugin_md:
+            fail(f"docs/PLUGIN.md skills 表漏了 skills/{d}(目錄存在,文件沒列)")
+
 # ── ③ guides/guide-dev-flow.html:hooks 註冊表逐格鏡像 + 計數字 ───────────
 guide = open(os.path.join(root, "guides", "guide-dev-flow.html"),
              encoding="utf-8").read()
@@ -135,12 +149,12 @@ for lineno, line in enumerate(guide.splitlines(), 1):
 
 # ── 輸出 ─────────────────────────────────────────────────────────────────
 print(f"=== hooks 記帳對帳:hooks.json {mount_count} 條掛載 / {len(script_names)} 支腳本 "
-      f"vs SKILL.md + README + guide ===")
+      f"vs SKILL.md + README + PLUGIN.md + guide ===")
 if fails:
     print(f"❌ 記帳漂移 {len(fails)} 處(第 7 型:機制長大了,列舉它的文件沒跟上):")
     for f in fails:
         print(f"   {f}")
     print("   修法:讓文件跟上 hooks.json(或 hooks.json 才是錯的那邊 —— 人判斷,守衛只報不一致)。")
     sys.exit(1)
-print("✅ 三份列舉文件與 hooks.json 一致(數量與名稱都比過)")
+print("✅ 四份列舉文件與 hooks.json/skills 目錄一致(數量與名稱都比過)")
 PY
