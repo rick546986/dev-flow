@@ -98,6 +98,10 @@ group_architecture() {
   # 稽核有沒有首派即最高階、或跳過中間層直接升階(worker 這條線,見腳本頂註的稽核邊界)
   run "architecture/check-model-tiering"   scripts/check-model-tiering.sh   || return 1
   run "architecture/check-version-sync"    scripts/check-version-sync.sh    || return 1
+  # hooks 記帳對帳(F1/第 7 型):hooks.json 掛載 vs 三份列舉文件(dev-setup 健檢
+  # 清單/README/guide 註冊表),數量與名稱都比 —— 曾發生掛載長到 6 條而健檢清單
+  # 靜默停在 5 條,採用專案照清單健檢會把真 hook 判成多餘。
+  run "architecture/check-hooks-accounting" scripts/check-hooks-accounting.sh || return 1
   # dev-setup upgrade 三方比對紀律(B-2):skills/dev-setup/SKILL.md 的三方比對/
   # baseline 快照/逐檔徵同意/過渡態/master-only 剝除/gate twin 相依全是散文規則,
   # 退回等於原地重現「upgrade 靜默蓋掉本地客製」。獨立於下面的 Stage 6/7 執行期

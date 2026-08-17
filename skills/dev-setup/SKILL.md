@@ -166,19 +166,22 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
 逐項驗證列表回報,異常附建議、不自動修(fresh/stale 流程末尾自動跑;broken 才問要不要 fix):
 1. **三份 JSON** jq 過:`<root>/.claude-plugin/plugin.json`(dev-flow;dev-talk 併入後
    不再有獨立 plugin.json)、`<root>/.claude-plugin/marketplace.json`(**一份、一 entry**:
-   `./`)、**`<root>/hooks/hooks.json`**。hooks.json 壞掉 → 五條掛載全靜默失效,而自測
+   `./`)、**`<root>/hooks/hooks.json`**。hooks.json 壞掉 → 六條掛載全靜默失效,而自測
    照樣全綠 → 必驗。另比對 plugin.json 的 `version` 與 installed_plugins.json 記錄的
    版本一致(不一致 = 有人改了檔沒 bump,或裝的不是最新)。
 2. 兩帳號 settings `enabledPlugins`:`dev-flow@dev-flow` 為 true(dev-talk 已
    併入,不再是獨立 enabledPlugins 項;舊值 `@local` 或 `@dev-flow-plugin` =
    尚未遷到現行 marketplace 名稱散發,應改;`known_marketplaces.json` 的 `dev-flow`
    須為 github source)。
-3. **hooks/ 七支可執行**:devtalk-guard、devflow-guard、**devflow-prebash**、
-   devflow-postbash、devflow-exec、selftest、**history-guard**。
-   **hooks.json 應有 5 條掛載**:
+3. **hooks/ 8 支可執行**:devtalk-guard、devflow-guard、**devflow-prebash**、
+   devflow-postbash、devflow-exec、selftest、**history-guard**、**devflow-dispatch-guard**。
+   **hooks.json 應有 6 條掛載**:
    PreToolUse `Edit|Write|Read`→devflow-guard、PreToolUse `Edit|Write`→history-guard、
-   PreToolUse `Bash`→devflow-prebash、PostToolUse `Edit|Write`→devtalk-guard、
-   PostToolUse `Bash`→devflow-postbash。
+   PreToolUse `Bash`→devflow-prebash、PreToolUse `Task|Agent`→devflow-dispatch-guard、
+   PostToolUse `Edit|Write`→devtalk-guard、PostToolUse `Bash`→devflow-postbash。
+   (本項的支數/掛載數/逐條列舉由 `scripts/check-hooks-accounting.sh` 對
+   `hooks/hooks.json` 對帳 —— 第 7 型「不對稱記帳」教訓:曾在 hooks 長到 6 條掛載
+   後,本清單靜默停在 5 條,採用專案照本清單健檢會把真實存在的 hook 判成多餘。)
    (實作為 shell 薄殼 + `devflow-lib.py` 與 `_*_impl.py`,改動時兩層都要在。)
 4. **功能自測(可重跑)**:①執行守衛跑 `hooks/selftest.sh`(自建 temp 假 repo 後自清;
    **案數以腳本輸出為準,不在本檔寫死** —— 曾因寫死「33 案」漂移至實際 80)→ 需全過;
@@ -205,7 +208,7 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
 7. **rules 未核可殘留**(在專案內跑時):`grep -c '【待確認】' .claude/rules/*.md`
    非 0 → 回報「N 條未核可,該檔每 session 自動注入,未核可條目不得當事實引用」,
    並提議**按 `##` 分節批次核可**(逐條問不現實)。
-8. **gate 摘要 vs §7 正本一致性**(手動跑,非掛載 hook,不計入第 3 項六支可執行清單):
+8. **gate 摘要 vs §7 正本一致性**(手動跑,非掛載 hook,不計入第 3 項可執行清單):
    跑 `hooks/gate-consistency.sh` —— 從母版 README §7(G1/G2/G3 唯一正本)動態抽取
    每個 gate 的關鍵 token,比對 plugin `dev-flow` SKILL.md 階段表、README §3 表、
    三份模板(2-decision/4-spec/7-review)頂註送審步是否都含該 token(同義詞如

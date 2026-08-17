@@ -290,6 +290,17 @@ RED → GREEN → scope check → Verify
   **新增任何只對某個 stage/某個檔/某個群組的保護時,必須在同一個 commit 裡說明
   為什麼其他同類不需要;說不出來就是不對稱,要嘛推廣、要嘛寫明限制並列進
   Backlog。**(源:`notes/dispatch-guard-symmetry.md`)
+- **不對稱記帳(第 7 型)**:保護機制長大了,所有 runtime 消費端都對,唯獨「為了
+  驗證/健檢而**列舉**它的那份文件」靜默不同步,而且沒有任何檢查在比對兩者
+  (實例:hooks 掛載長到 6 條,dev-setup 健檢清單停在 5 條 —— 採用專案照清單健檢,
+  會把線上真實存在的 hook 判成「多出來的」;更難看的是同一份檔案自己寫過「案數以
+  腳本輸出為準,不在本檔寫死」)。與第 6 型的差別:修法本身是對稱的,漏的是
+  **記帳**。制度要求(通解):**任何「為了驗證而列舉某個機械事實」的清單,必須有
+  一支守衛對著機械正本對帳(數量與名稱都比,漏列/多列/數字過期皆紅);沒有守衛
+  釘著的清單不得寫死數字。**現有對帳守衛:hooks 掛載 = `check-hooks-accounting.sh`、
+  檔案地圖 = `check-file-map.sh`、selftest 案數 = MIN_CASES 地板、散發副本 =
+  check-gate-twin N7、gauntlet 版本 = `check-version-sync.sh`。新增這類清單時,
+  要嘛納入既有對帳守衛,要嘛同 commit 補新守衛。(源:`notes/dispatch-accounting-symmetry.md`)
 - **守衛與並行**:守衛狀態以「當前工作樹」為單位(`.devflow/exec.json` + git-dir sentinel),
   一個工作樹同一時間只武裝一個模組。武裝中他模組 `start` → 一律拒絕(不靜默覆寫);
   同模組重跑 `start` = re-arm,允許(5-tasks 改動後重釘 scope 的正常路徑)。

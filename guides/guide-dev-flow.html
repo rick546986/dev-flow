@@ -1851,6 +1851,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>檢查給人審查用的 HTML 介面有沒有真的照規格產出——動線頂區、待審項目可勾選、本機版跟發布版
             兩種外殼有沒有搞混。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-hooks-accounting.sh</code></td>
+        <td>對帳 hook 掛載清單檔與三份「列舉 hook 的文件」(安裝健檢清單、README、本頁註冊表)——
+            數量與名稱都比,守衛長大了而文件靜默沒跟上就紅;曾讓採用專案把真實存在的 hook
+            判成「多出來的」。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-history-integrity.sh</code></td>
         <td>檢查只能往後加、不能改的歷史索引格式有沒有跑掉、日期有沒有倒退、有沒有人繞過安全寫入口
             直接編輯。</td>
