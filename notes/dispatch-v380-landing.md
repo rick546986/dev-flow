@@ -1,8 +1,12 @@
 # 派工單：讓 dev-flow 真的能被人照著用（v3.8.0 發版前最後一輪）
 
+> **收錄範圍**：A 批 3 項（會咬人）＋ B 批 5 項（守衛補強）＋ C 批 3 項（模板與文件）
+> ＋ **D 批 6 項（Windows 上整個 plugin 不能用，採用現場實際踩到）** = **十七項**。
+
 > **觸發句**：`讀 ~/dev/dev-flow/notes/dispatch-v380-landing.md 照它跑，全程不打斷問人`
 >
-> 本檔是**派工單**，讀完就照做。**十一項都已由 owner 裁決完畢，沒有要回頭問的事。**
+> 本檔是**派工單**，讀完就照做。**十七項都已由 owner 裁決完畢，沒有要回頭問的事。**
+> （D-5 的 CI 做法 A／B 由你判斷並在回報寫理由 —— 那是做法選擇，不是要你回頭問。）
 >
 > 唯一該停下回報的情況：本檔寫的東西與現場實況對不上（指定的行號找不到、
 > 指定的檔案不存在、驗收條件互相矛盾）。那種時候停下說清楚，不要自己猜著做。
@@ -19,14 +23,22 @@ HISTORY、版號 3.8.0、工作樹乾淨 —— 兩路 fresh review 與跨家族
 
 - 工具的參數打錯會**卡死終端機**（不是報錯，是掛住）
 - 安裝流程的快照拍在散發之前，**下次升級會把官方工具當成本地客製**
+- 安裝流程照順序做，前三支工具的 `cp` **會直接失敗**（目錄還沒建）
 - 導覽教的開 branch 方式，**到 Stage 7 一定卡住**（缺錨點）
 - 三支守衛有可以被繞過的洞
+- **換一台 Windows 電腦，整個 plugin 直接不能用** —— 七支 hook 全掛，
+  每次工具呼叫噴一次錯，使用者只能把 dev-flow 整個關掉才能工作
 
 這一類缺陷母版內部的 143 ＋ 378 ＋ 24 項守衛**全部看不到**，
-因為它們驗的是「檔案寫得對不對」，不是「照著做會發生什麼」。
+因為它們驗的是「檔案寫得對不對」，不是「照著做會發生什麼」、
+更不是「換一台電腦會怎樣」。
 
 **這就是 dev-flow 還沒落地的真正原因** —— 不是東西沒做完，
-是沒有人真的從頭到尾照著文件走過一次。
+是沒有人真的從頭到尾照著文件走過一次，也沒有人在第二種作業系統上跑過。
+
+D 批那條的成因跟 G1 是同一型：**所有驗證都在一種環境裡做**
+（CI 跑 `ubuntu-latest`，那裡 `/usr/bin/python3` 存在），
+缺陷只在另一種環境才顯現。
 
 ### 版本號怎麼算
 
@@ -46,13 +58,16 @@ HISTORY、版號 3.8.0、工作樹乾淨 —— 兩路 fresh review 與跨家族
 2. **不准動 Stage 1–4 的模板內容**（`_templates/1-discussion.md` ~ `_templates/4-spec.md`）。
    真實 full lane 觀測還沒跑，先動那幾份會污染觀測。
 3. **不准放寬任何檢查來讓事情變綠**。本輪明文授權修改守衛的項目是
-   **A-1、A-2、A-3、B-1~B-5、C-2**（A 批各自要動 integration wrapper／
-   dev-setup discipline guard／STATUS guard；C-2 也要收緊 STATUS guard），
-   方向一律是**收緊**，不准放寬。這九項以外的守衛一個字都不要動。
+   **A-1、A-2、A-3、B-1~B-5、C-2、D-1、D-5**（A 批各自要動 integration wrapper／
+   dev-setup discipline guard／STATUS guard；C-2 也要收緊 STATUS guard；
+   D-1 要動 `check-file-map.sh` 的常數與靜態互釘；D-5 要加 CI 回歸），
+   方向一律是**收緊**，不准放寬。這十一項以外的守衛一個字都不要動（A-1/A-2/A-3/B-1~B-5/C-2/D-1/D-5 共十一項）。
 4. **不准 bump 版號**。
-5. **不准新增任何腳本檔**。本輪全部是修既有檔 —— 所以
-   `scripts/check-file-map.sh` 的 `EXPECTED_MAPPED_FILES = 77` **不用動**。
-   如果你發現自己想新增一支 `.sh`／`.py`，**停下回報**，那表示你偏離了本檔的範圍。
+5. **本輪只准新增一個檔：`hooks/devflow-python-lib.sh`**（D-1 的共用解析邏輯，
+   權限 644）。除它以外**不准新增任何 `.sh`／`.py`** —— 想新增就是偏離範圍，停下回報。
+   ⚠️ 因為新增了這一個檔，`scripts/check-file-map.sh` 的
+   `EXPECTED_MAPPED_FILES` 要 **77 → 78**，`scripts/test-architecture-guards.sh:1535`
+   的逐字互釘要同步（D-1 的記帳表有完整清單）。**數字以實跑輸出為準**，不要照抄。
 6. `docs/dev/HISTORY.md` 只能用 `scripts/history-append.sh` 追加，不准直接編輯。
 7. **不要順手修無關的東西**。看到別的問題寫進回報問要不要處理，不要自己動手。
 
@@ -691,6 +706,187 @@ cd <worktree-path>          # 從這裡開始,後續所有指令都在這棵樹�
 
 ---
 
+---
+
+# 第四批 · Windows 上整個 plugin 不能用（採用現場實際踩到）
+
+## D-1〔擋發版〕hook 全部寫死 `/usr/bin/python3`，Windows 上七支 hook 全掛
+
+**現場回報（2026-08-18，一台 Windows 機器）**：每一次 Bash／Edit／Write 呼叫都噴一次錯：
+
+```
+PreToolUse:Bash hook error
+Failed with non-blocking status code:
+C:/Users/StorkUser/.claude/plugins/cache/dev-flow/dev-flow/3.7.1/hooks/devflow-prebash.sh:
+line 8: /usr/bin/python3: No such file or directory
+PostToolUse:Bash hook error
+... devflow-postbash.sh: line 7: /usr/bin/python3: No such file or directory
+```
+
+Windows 的 Git Bash（MSYS2）**沒有 `/usr/bin/python3` 這個路徑**。
+錯誤是 non-blocking，工具呼叫本身有跑成功 —— 所以**不是功能壞掉，是噪音把對話淹掉**，
+結果一樣：那台機器只能把整個 plugin 關掉才能工作
+（`enabledPlugins` 裡設 `"dev-flow@dev-flow": false`）。
+
+### 為什麼一直沒被發現
+
+`.github/workflows/runtime-selftest.yml` 跑在 `ubuntu-latest`，那裡 `/usr/bin/python3` 存在，
+所以自審一直是綠的。**CI 涵蓋不到「直譯器路徑不存在」這個情境。**
+
+跟 G1（散發之後才會發生的缺陷）同一型：所有驗證都在一種環境裡做，
+缺陷只在另一種環境才顯現。
+
+### 分佈（主線程實查，與現場回報完全吻合：48 處 / 20 個檔）
+
+| 檔案 | 處數 |
+|---|---|
+| `hooks/selftest.sh` | 19 |
+| `hooks/devflow-exec.sh` | 7 |
+| `hooks/devtalk-guard.sh` | 4 |
+| `manifests/p2-operational.md` | 2 |
+| `hooks/{devflow-guard,devflow-prebash,devflow-postbash,devflow-dispatch-guard,devflow-report-guard,devflow-obs,devflow-doctor,history-guard,gate-consistency}.sh` | 各 1（共 9） |
+| `hooks/_{guard,prebash,postbash,report}_impl.py` | 各 1（共 4） |
+| `manifests/{p1-execution,p3-observability}.md` | 各 1 |
+| `.github/workflows/runtime-selftest.yml` | 1 |
+
+**不要照抄這張表的數字去驗收** —— 做完自己跑
+`grep -rn "/usr/bin/python3" .` 看剩幾處、剩在哪。
+
+### ⚠️ 不准這樣改
+
+**不准換成 `#!/usr/bin/env python3`、`command -v python3` 單獨使用、或裸 `python3`。**
+
+理由：那會撿到 pyenv / conda / Homebrew 的 shim。那種直譯器可能缺標準函式庫、
+啟動慢、或在不同專案目錄下解析成不同版本。hook 是**每一次工具呼叫都跑一次**的東西，
+撿錯直譯器等於**守衛隨機自壞**。
+
+當初寫死絕對路徑很可能就是為了避開這個，只是**沒留下註解** ——
+所以這次修完**一定要把理由寫進註解**，避免下一個人又改回去。
+
+### 修法
+
+**新增一個共用解析檔 `hooks/devflow-python-lib.sh`**（權限 **644**，被 source 不被執行）：
+
+```sh
+# 直譯器解析。優先系統 python3(避免撿到 pyenv/conda/homebrew shim ——
+# 那類直譯器可能缺標準函式庫、啟動慢、或在不同目錄解析成不同版本;
+# hook 每次工具呼叫都跑,撿錯就是守衛隨機自壞),找不到才退回 PATH。
+# DEVFLOW_PYTHON 供 Windows Git Bash / 非標準環境覆寫。
+# ⚠️ 不要改成 env python3 或裸 python3 —— 那正是這段要防的事。
+DEVFLOW_PY="${DEVFLOW_PYTHON:-$([ -x /usr/bin/python3 ] && echo /usr/bin/python3 || command -v python3)}"
+```
+
+39 處 shell 的 `exec /usr/bin/python3 …` 一律改成 source 這支之後 `exec "$DEVFLOW_PY" …`。
+
+⚠️ **命名與權限都有理由，不要自己改**：
+- `-lib` 後綴跟既有的 `hooks/devflow-lib.py` 同型，一看就知道不是 hook
+- **644 不是 755** —— 它是被 source 的，給執行位元會讓人以為它是可執行的 hook
+  （`hooks/devflow_twin_ui.py` 是 644 的先例）
+- source 的路徑要用 `"$(dirname "$0")/devflow-python-lib.sh"`，不要寫絕對路徑
+  （繞了一圈又寫死就白改了）
+
+### D-1 連帶要動的記帳點（**新增檔案就會踩到，漏一個就紅**）
+
+| # | 落點 | 要做什麼 |
+|---|---|---|
+| 1 | 檔案地圖 `guides/guide-dev-flow.html` 的 `id="filemap"` 節 | 加一列（母版自用，**不散發**，不要寫「散發面」） |
+| 2 | `scripts/check-file-map.sh` 的 `EXPECTED_MAPPED_FILES` | **77 → 78**（它掃 `hooks/*.sh`）。數字以實跑輸出為準 |
+| 3 | `scripts/test-architecture-guards.sh:1535` 的靜態互釘 | 那行**逐字**釘著 `EXPECTED_MAPPED_FILES = 77`，上面改了這裡沒改會直接紅。同一個 commit 一起改 |
+
+⚠️ 主線程已實查：`scripts/check-hooks-accounting.sh` 是**從 SKILL.md 的清單反查
+`hooks/` 有沒有那個檔**，不是從目錄反查清單，所以新增一個不在清單裡的檔**不會**被它抓。
+但你做完還是要跑一次確認 —— 不要拿這句話當免驗理由。
+
+## D-2 python 那 4 處用 `sys.executable`
+
+`hooks/_{guard,prebash,postbash,report}_impl.py` 的 `subprocess` 呼叫的就是**它自己**
+這個直譯器，直接換成 `sys.executable`，不要再走一次路徑解析。
+
+同樣要留一行註解說明為什麼是 `sys.executable` 而不是重新找一次。
+
+## D-3 找不到 python3 的時候：**維持 fail-open**
+
+現在 Windows 上的實際行為是「hook 失敗但不擋工具呼叫」（non-blocking）。
+**維持這個方向**：解析不到就印一行到 stderr 然後 `exit 0`。
+
+```sh
+[ -n "$DEVFLOW_PY" ] || {
+  echo "devflow: 找不到 python3,本次守衛跳過(設 DEVFLOW_PYTHON 可指定)" >&2
+  exit 0
+}
+```
+
+⚠️ **這跟這個 repo 到處都是的 fail-closed 相反，是刻意的**，理由要寫進註解：
+守衛失效總比**把使用者的宿主卡死**好 —— 這條路徑上「擋住」的代價是整個 Claude Code
+不能用，而不是漏掉一次檢查。
+
+⚠️ 但**只有「找不到直譯器」這一種情況 fail-open**。
+找到直譯器之後，各守衛原本的 fail-closed 行為一個都不准改。
+
+## D-4 三份 manifest 是契約清單，要一起改
+
+`manifests/p1-execution.md`（1 處）、`p2-operational.md`（2 處）、
+`p3-observability.md`（1 處）寫死了舊寫法。跟程式碼一起更新，不要留舊的。
+
+## D-5 CI 要加一條**會紅**的回歸
+
+現在的 `runtime-selftest.yml` 在 ubuntu 上永遠綠，抓不到這類缺陷。
+**沒有這一條，這個缺陷修完還是會再漂回來。**
+
+兩個方向擇一，**你判斷哪個在這個 repo 比較站得住，並在回報裡寫出理由**：
+
+| | 做法 | 利 | 弊 |
+|---|---|---|---|
+| **A** | 加一個 `runs-on: windows-latest` 的 job，用 Git Bash（`shell: bash`）跑 `hooks/selftest.sh` | 驗的是真實環境，最貼近現場 | CI 時間變長；Windows runner 的環境差異可能帶來新的雜訊 |
+| **B** | 在現有 ubuntu job 加一步：把 `DEVFLOW_PYTHON` 指到不存在的路徑、或用臨時 PATH 藏掉 `/usr/bin/python3`，再跑一次自審，證明解析邏輯會退回 PATH | 快、穩定、聚焦在解析邏輯本身 | 是模擬不是真環境，抓不到 Windows 特有的其他問題 |
+
+**驗收條件（不論選哪個）**：把修改**還原成舊寫法**時，那條新測試**必須紅**。
+沒做這個反證，等於沒加測試。
+
+## D-6 說明文件一起更新（owner 明確要求）
+
+`DEVFLOW_PYTHON` 是**新增的對外介面**，不是內部細節 —— 使用者要知道它存在、什麼時候要設。
+
+| 檔案 | 要寫什麼 |
+|---|---|
+| `README.md` | 新增一小節或在既有的環境需求段落補：dev-flow 的 hook 需要 python3；解析順序（`DEVFLOW_PYTHON` → `/usr/bin/python3` → PATH）；找不到時 fail-open 只跳過守衛不擋工具；**Windows Git Bash 使用者要裝 Python 並確認 Git Bash 找得到，或設 `DEVFLOW_PYTHON`** |
+| `skills/dev-setup/SKILL.md` | 安裝前提補一句：Git Bash 環境要確認 `python3` 找得到，否則守衛會靜默跳過（不是壞掉，但等於沒有保護） |
+| `docs/PLUGIN.md`（若存在） | Windows 的安裝路徑本來就寫了 `%USERPROFILE%\…`，補上 python3 的需求 |
+| `guides/*.html` | 實查哪幾份提到 `python3` 或安裝需求，一併更新。⚠️ **改到 renderer 管轄的區塊要跑 `--write`**，改到手寫區不會紅（判斷方式見驗收節那張對照表） |
+
+⚠️ 說明文件裡**不要寫死「48 處」「20 個檔」這種數字** —— 那是這一輪的施工細節，
+會腐化。要寫的是**規則**（解析順序、覆寫方式、失效行為）。
+
+### D 批的驗收
+
+```bash
+# 1. 只剩解析邏輯與註解裡有這個字串,任何 exec/subprocess 呼叫點都不再寫死
+grep -rn "/usr/bin/python3" . | grep -v "^./notes/" | grep -v "^./docs/dev/HISTORY"
+
+# 2. 動手前先跑一次存基線,改完比對沒有新增失敗
+bash hooks/selftest.sh
+
+# 3. 含無環境變數版本
+env -u DEVFLOW_MASTER -u DEVFLOW_PLUGIN -u CLAUDE_PLUGIN_ROOT bash hooks/gate-consistency.sh
+
+# 4. devflow-ci.yml 跑的那支
+bash scripts/devflow-check.sh all
+
+# 5. 模擬 Windows(兩個方向都要測)
+DEVFLOW_PYTHON=$(command -v python3) bash hooks/selftest.sh          # 指到有效直譯器 → 全過
+DEVFLOW_PYTHON=/nonexistent/python3 bash hooks/devflow-prebash.sh </dev/null; echo "rc=$?"
+#   → 預期:印一行警告到 stderr、rc=0(fail-open),不是卡住也不是非零
+```
+
+第 1 條**不要只看「有沒有輸出」** —— 要逐行看剩下的每一處，確認它們都是
+「解析邏輯本身」或「說明為什麼的註解」，不是漏改的呼叫點。把那幾行貼進回報。
+
+**破壞實驗**：把 `hooks/devflow-prebash.sh` 的 `exec "$DEVFLOW_PY"` 改回
+`exec /usr/bin/python3`，確認 D-5 新加的 CI 測試（在本機用同樣手法跑）會紅。
+
+
+---
+
 ## 做完之後的驗收（全部都要跑，輸出貼進回報）
 
 ```bash
@@ -702,9 +898,20 @@ bash hooks/devflow-exec.sh doctor                          # COMPATIBLE
 bash scripts/check-gate-twin.sh                            # 全過
 bash scripts/check-integration-regression-guard.sh         # 全過（項數會比 24 多）
 bash scripts/check-status-policy.sh                        # 全過（項數會比 6 多）
-bash scripts/check-file-map.sh                             # scanned=77 不變（本輪不新增腳本）
+bash scripts/check-file-map.sh                             # scanned=78（D-1 新增一個檔，見下）
 bash scripts/check-dev-setup-discipline.sh                 # 全過（項數會比 9 多，見 A-2）
+
+# D 批專屬（Windows 可攜性）
+grep -rn "/usr/bin/python3" . | grep -v "^./notes/" | grep -v "^./docs/dev/HISTORY"
+#   → 剩下的每一行都要逐行看過,確認是「解析邏輯本身」或「說明註解」,
+#     不是漏改的呼叫點。把剩下那幾行貼進回報,不要只說「沒有輸出」
+DEVFLOW_PYTHON=$(command -v python3) bash hooks/selftest.sh          # 全過
+DEVFLOW_PYTHON=/nonexistent/python3 bash hooks/devflow-prebash.sh </dev/null; echo "rc=$?"
+#   → 預期:stderr 印一行警告、rc=0(fail-open),不是卡住也不是非零
 ```
+
+⚠️ **`hooks/selftest.sh` 要在動手之前先跑一次存下基線** ——
+它自己有 19 處寫死路徑，改完要比對「沒有新增失敗」，不是只看最後那行綠。
 
 ⚠️ **renderer 那道要分兩階段看，不是一句「必須綠」**：
 
@@ -723,6 +930,7 @@ bash scripts/check-dev-setup-discipline.sh                 # 全過（項數會�
 - 兩邊都還是 755
 - `git status --short` 為空
 - **版號仍是 3.8.0**（兩處都是）
+- `hooks/devflow-python-lib.sh` 權限是 **644**（不是 755 —— 它被 source，不被執行）
 - `git diff --check` 無輸出
 
 ### 手動的散發路徑演練（**這一輪必做，不准跳過**）
@@ -760,7 +968,7 @@ handoff 例外**：agent 在 `main` 完成 STATUS commit 與最終驗收後立�
 
 | # | 做什麼 | 在哪條 branch |
 |---|---|---|
-| 1 | 完成 A/B/C 十一項的實作 ＋ 所有破壞實驗 | `fix/v380-landing`（**不准碰 `docs/dev/STATUS.md`**） |
+| 1 | 完成 A/B/C/**D** 十七項的實作 ＋ 所有破壞實驗 | `fix/v380-landing`（**不准碰 `docs/dev/STATUS.md`**） |
 | 2 | 切回 `main`，先 `git fetch origin` ＋ `git pull --ff-only origin main`；不通過就停，不准在 stale main 上 merge | `main` |
 | 3 | `git merge --no-ff fix/v380-landing` 回 `main` | `main` |
 | 4 | 用唯一 writer 追加 HISTORY ＋ 改 STATUS Backlog，立刻 commit | `main` |
@@ -807,7 +1015,8 @@ push 成功前不准宣稱本輪已發布。
 
 - 不要 bump 版號到 3.8.1
 - 不要動 Stage 1–4 模板
-- **不要新增任何腳本檔**（本輪全是修既有檔；想新增就是偏離範圍，停下回報）
+- **除了 `hooks/devflow-python-lib.sh`（D-1，644）以外不要新增任何腳本檔** ——
+  想新增第二個就是偏離範圍，停下回報
 - **本輪不要修改 `_templates/7-review.md`**。B-1 改的是既有條目的守衛；節序調整是
   Backlog 那條獨立 feature 的事
 - **不准在工作 branch 上碰 `docs/dev/STATUS.md`** —— 它只在 `main` 上改，
@@ -817,13 +1026,17 @@ push 成功前不准宣稱本輪已發布。
 - 不要順手收 `docs/dev/engine-fence-masking/7-review.md` 的文書
 - 不要動 `execution.mode: parallel` 那套 T 級並行機制
 - 不要為了讓某個檢查變綠而放寬它
+- **不要把直譯器解析改成 `env python3`／裸 `python3`／單獨的 `command -v python3`**
+  —— 那會撿到 pyenv/conda shim，等於守衛隨機自壞（理由見 D-1，而且要寫進註解）
+- **不要把 D-3 的 fail-open 擴大到別的地方** —— 只有「找不到直譯器」這一種情況
+  fail-open，找到之後各守衛原本的 fail-closed 一個都不准改
 
 ---
 
 ## 回報格式
 
-1. 十一項（A-1~A-3 / B-1~B-5 / C-1~C-3）各一段：改了哪些檔（`檔案:行號`）、
-   實際跑了什麼指令、輸出原文。
+1. 十七項（A-1~A-3 / B-1~B-5 / C-1~C-3 / **D-1~D-6**）各一段：改了哪些檔
+   （`檔案:行號`）、實際跑了什麼指令、輸出原文。
 2. 驗收那十道的輸出原文全貼，renderer 要貼**改完（紅）與 `--write` 之後（綠）兩次**。
 3. **手動散發路徑演練**的每一步輸出原文 —— fresh install／exact tree parity／
    check 12／保留 local-custom 的 upgrade／上游移除工具／最後驗證失敗不污染 baseline，
@@ -835,8 +1048,17 @@ push 成功前不准宣稱本輪已發布。
    B-5 併入 A-2 第 3 條；C-2 20 個。A-2 提到的 dev-setup 地板實驗與 B-4 的
    dev-setup ②／③是同一份證據，可交叉引用，不要重跑後假裝成兩個不同 mutant。
    每個都要寫「弄壞什麼 → 有沒有真的變紅」。**沒做破壞實驗的守衛一律當成沒做**。
-5. `docs/dev/STATUS.md` 的 Backlog 整張表貼出來，說明是幾條（預期 12）。
-6. 有沒有發現本檔沒提到的問題 —— 列出來問要不要處理，**不要自己動手**。
+5. **D 批專屬**：
+   - `grep -rn "/usr/bin/python3"` 剩下的每一行**逐行貼出來**，並各寫一句
+     它為什麼可以留（解析邏輯／說明註解）。只說「沒有輸出」不算。
+   - `hooks/selftest.sh` 的**動手前基線**與改完的輸出，兩份都貼，說明有沒有新增失敗。
+   - 模擬 Windows 那兩條的實際輸出（有效直譯器 → 全過；不存在的路徑 → 警告 ＋ rc=0）。
+   - **D-5 你選了 A 還是 B、為什麼**，以及「還原成舊寫法時那條測試會紅」的實測輸出。
+   - `hooks/devflow-python-lib.sh` 的 `ls -l`（確認 644）。
+   - `check-file-map.sh` 的 `scanned=` 實際值，以及 `EXPECTED_MAPPED_FILES` 與
+     `test-architecture-guards.sh` 靜態互釘兩處都改成同一個數字的證據。
+6. `docs/dev/STATUS.md` 的 Backlog 整張表貼出來，說明是幾條。
+7. 有沒有發現本檔沒提到的問題 —— 列出來問要不要處理，**不要自己動手**。
 
 **每一個結論都要對應到你自己實際跑過的指令與看到的輸出。**
 沒跑過的就寫「未驗證」，不准用推論代替。
