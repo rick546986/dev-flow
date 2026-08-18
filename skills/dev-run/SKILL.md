@@ -109,7 +109,11 @@ sequential 收驗與並行 dedicated / wave review 的 reviewer prompt **必含*
 ## 收尾
 
 全 T 完 → **你**跑回歸(既有全套,全綠才算)→ 6-notes Self-Review 自檢(答不出 → 回補,
-必要時重派該 T)→ bookkeeping commit → `devflow-exec.sh stop` → 回報使用者進
+必要時重派該 T)→ bookkeeping commit → **發布最終成果:最後一個 bookkeeping commit
+完成後、`stop`/回報 Stage 7 之前,push feature branch 到 remote,再 `git fetch` 驗證
+remote tip 等於當下 feature HEAD;push 或驗證失敗就停在這裡,不得宣稱 Stage 6 完成**
+(STATUS 的 `Branch` 欄與 README「直接補修」算法都拿 remote ref 當座標,沒推上去 =
+其他人算聯集時看不到你的戰場)→ `devflow-exec.sh stop` → 回報使用者進
 Stage 7(送審前置派工見「Stage 7 送審前置」節)。7-review.html 須含執行記錄表
 (模型分佈/升階次數/D-n 與 allow 清單)。
 **寫事件與衍生(W5)**:回歸綠後送 `stage_completed`(stage=6)→ 跑
@@ -214,8 +218,11 @@ Out-of-system action / Waiting-timeout 與 Recovery / 不得誤導使用者事�
 
 全 T ACCEPTED → 你在 integration 樹跑回歸(全綠)→ 6-notes Self-Review → bookkeeping
 commit → 各 task worktree `devflow-exec.sh stop` + `git worktree remove`(乾淨才移,
-不 --force)→ integration branch 依 repo 慣例合回 feature branch → 回報使用者進
-Stage 7(送審前置派工見下節)。7-review 執行記錄表另加:wave 數 / gate FAIL 分佈 /
+不 --force)→ integration branch 依 repo 慣例合回 feature branch → **發布最終成果:
+integration 合回 feature branch 之後、回報 Stage 7 之前,push feature branch 到
+remote,再 `git fetch` 驗證 remote tip 等於當下 feature HEAD;push 或驗證失敗就停在
+這裡,不得宣稱 Stage 6 完成**(理由同 sequential 收尾:remote ref 是補修計算的座標)
+→ 回報使用者進 Stage 7(送審前置派工見下節)。7-review 執行記錄表另加:wave 數 / gate FAIL 分佈 /
 rework 與 invalidation 清單。
 **寫事件與衍生(W5,同 sequential 收尾)**:`stage_completed`(stage=6)→
 `devflow-obs.sh derive`(6-notes 執行軌跡與 7-review 執行記錄由 ledger 衍生,

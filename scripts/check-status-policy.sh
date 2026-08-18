@@ -28,6 +28,20 @@
 #   ⑩(B-2b)docs/dev/STATUS.md 沒有交接表:只取頂註「ship 移出 Active 由…
 #     在合併之後」那一句,actor 片語必須含「合併那個 PR 的人」且不含 owner
 #     —— 不在整份頂註找散落的「移出/Active/合併/PR」(那樣改成 owner 照樣全中)。
+#   ⑪~⑬(C-2)直接補修判準的三個正本分開 scoped:
+#     ⑪ README §7 算法段:判定順序鏈(fetch 釘整合分支 < Stage 1–5 sentinel 等值
+#       才跳過 < Stage 6 一律 fail-closed < Stage 7 才進 mode/ref/SHA < rev-parse
+#       釘 remote-tip < pinned tree 讀 5-tasks 與 6-notes < execution.mode <
+#       --is-ancestor < 聯集 < 補修者 checkout clean/無 ahead)用 index 比序;
+#       兩個 git show 必須讀同一個 <remote-tip>(中途重 resolve 就是兩份文件
+#       可能來自不同 SHA);「不是 Lane 欄」「不要求 SHA 相等」「不得只查最新
+#       一個」「parallel fail-closed」逐一釘住。
+#     ⑫ skills/dev-run/SKILL.md 發布紀律:sequential 收尾 push 的位置必須在
+#       bookkeeping 之後、stop/回報之前;parallel 在 integration 合回 feature
+#       之後、回報之前;兩邊都要有 fetch 後 remote tip == feature HEAD 驗證與
+#       「失敗不得宣稱 Stage 6 完成」—— 用順序鏈驗位置,不是只找 push 字。
+#     ⑬ _templates/STATUS.md Branch 段:兩段式發布都要在(起手=建立可查座標、
+#       不代表執行中 remote 完整;Stage 6 收尾由 dev-run 再發布最終 tip)。
 # 並各帶內建負向 fixture(把各件改壞一次,守衛必須紅 —— 不紅就是白做)。
 #
 # 掛載:scripts/devflow-check.sh group_architecture()。
@@ -73,6 +87,8 @@ template = read("_templates/STATUS.md")
 docs = read("docs/dev/STATUS.md")
 quickstart = read("guides/guide-quickstart.html")
 template6 = read("_templates/6-implementation-notes.md")
+readme = read("README.md")
+devrun = read("skills/dev-run/SKILL.md")
 
 # ①規則要點對帳:每個要點 = 一組必須同時出現的關鍵詞(不比逐字)。
 # 「ship 移出由誰做」原本也在這裡(["移出","Active","合併"]),但關鍵詞裡沒有任何
@@ -285,6 +301,97 @@ def forbidden_name_failures(quickstart_text):
     return []
 
 
+# ⑪~⑬(C-2)直接補修判準:三個正本分開 scoped,不能只驗 README。
+def readme_patch_section(readme_text):
+    m = re.search(r"「其他 feature 碰過的檔」的定義(.*?)revert 之後的坑",
+                  readme_text, re.S)
+    return m.group(1) if m else None
+
+
+def readme_patch_failures(readme_text):
+    """⑪ README 算法段:順序鏈 + 關鍵判準逐一釘住,只在算法段內找(scoped)。"""
+    sec = readme_patch_section(readme_text)
+    if sec is None:
+        return ["README 找不到直接補修算法段(「其他 feature 碰過的檔」的定義 ~ revert 之後的坑)"]
+    fails = chain_failures(sec, [
+        ("fetch 後先釘整合分支 SHA", r"`git fetch` 後先把\*\*整合分支\*\*釘成 SHA"),
+        ("Stage 1–5 sentinel 逐字等值才跳過", r"Stage 1–5 且 `Branch` 欄逐字等於 `n-a:尚未建立 branch` 才跳過"),
+        ("Stage 6 一律 fail-closed", r"Stage 6 一律 fail-closed"),
+        ("只有 Stage 7 才進 mode/ref/SHA 驗證", r"只有 Stage 7 的列才進 mode/ref/SHA 驗證"),
+        ("rev-parse --verify 釘 remote-tip", r"rev-parse --verify"),
+        ("pinned tree 讀 5-tasks", r"git show <remote-tip>:docs/dev/<slug>/5-tasks\.md"),
+        ("pinned tree 讀 6-notes", r"git show <remote-tip>:docs/dev/<slug>/6-implementation-notes\.md"),
+        ("mode 資料源 execution.mode", r"`execution\.mode`"),
+        ("parallel 一律 fail-closed", r"明寫 `parallel`[\s\S]{0,60}fail-closed"),
+        ("Progress Log 每一個 ACCEPTED", r"每一個\*\*[\s\S]{0,20}ACCEPTED"),
+        ("merge-base --is-ancestor", r"merge-base --is-ancestor"),
+        ("補修者 checkout clean", r"checkout 也必須 clean"),
+        ("無 ahead 未推", r"無 ahead 未推"),
+        ("不可觀測不准宣稱零交集", r"不准宣稱零交集"),
+    ], "README 補修算法")
+    for label, token in [
+        ("禁讀 main checkout 舊副本", "不准讀目前"),
+        ("mode 不是 Lane 欄", "不是 STATUS 的 `Lane` 欄"),
+        ("mode 缺省視為 sequential", "缺省視為 `sequential`"),
+        ("ancestor 不要求 SHA 相等", "不要求 SHA 相等"),
+        ("不得只查最新一個 ACCEPTED", "不得只查最新一個"),
+    ]:
+        if token not in sec:
+            fails.append(f"README 補修算法:缺關鍵判準「{label}」(找不到 `{token}`)")
+    tips = re.findall(r"git show ([^:`\s]+):docs/dev/<slug>/", sec)
+    if len(tips) != 2 or len(set(tips)) != 1:
+        fails.append("兩份文件必須讀同一個 pinned <remote-tip>"
+                     f"(實得 {tips};中途重新 resolve = 兩份可能來自不同 SHA)")
+    return fails
+
+
+def devrun_publish_failures(devrun_text):
+    """⑫ dev-run 發布紀律:用順序鏈驗 push 的「位置」,不是只找 push 字。"""
+    fails = []
+    m_seq = re.search(r"## 收尾(.*?)## 並行模式", devrun_text, re.S)
+    if not m_seq:
+        fails.append("dev-run 找不到 sequential 收尾節(## 收尾 ~ ## 並行模式)")
+    else:
+        fails += chain_failures(m_seq.group(1), [
+            ("bookkeeping commit", r"bookkeeping commit"),
+            ("push feature branch", r"push feature branch 到\s*remote"),
+            ("fetch 後驗證", r"`git fetch` 驗證"),
+            ("remote tip == feature HEAD", r"remote tip 等於當下 feature HEAD"),
+            ("失敗不得宣稱 Stage 6 完成", r"不得宣稱 Stage 6 完成"),
+            ("stop", r"`devflow-exec\.sh stop`"),
+            ("回報進 Stage 7", r"回報使用者進"),
+        ], "sequential 收尾")
+    m_par = re.search(r"## 並行模式(.*?)## Stage 7 送審前置", devrun_text, re.S)
+    if not m_par:
+        fails.append("dev-run 找不到並行模式節(## 並行模式 ~ ## Stage 7 送審前置)")
+    else:
+        fails += chain_failures(m_par.group(1), [
+            ("integration 合回 feature branch", r"合回 feature branch"),
+            ("push feature branch", r"push feature branch 到\s*remote"),
+            ("remote tip == feature HEAD", r"remote tip 等於當下 feature HEAD"),
+            ("失敗不得宣稱 Stage 6 完成", r"不得宣稱 Stage 6 完成"),
+            ("回報進 Stage 7", r"回報使用者進"),
+        ], "parallel 收尾")
+    return fails
+
+
+def status_branch_failures(template_text):
+    """⑬ STATUS Branch 段:兩段式發布(起手座標 + Stage 6 收尾最終 tip)都要在。"""
+    pre = preamble(template_text)
+    m = re.search(r"`Branch` 欄填法:(.*)", pre, re.S)
+    if not m:
+        return ["_templates/STATUS.md 頂註找不到「`Branch` 欄填法:」段"]
+    sec = m.group(1)
+    return [f"Branch 段缺「{label}」(找不到 `{token}`)"
+            for label, token in [
+                ("起手發布=建立可查座標", "建立可查的座標"),
+                ("不代表執行中 remote 完整", "不代表執行中的 remote 已經完整"),
+                ("Stage 6 收尾再發布最終 tip", "再發布最終"),
+                ("正本指向 dev-run 收尾", "skills/dev-run/SKILL.md"),
+                ("未發布窗口由 README 算法封住", "負責封住"),
+            ] if token not in sec]
+
+
 print("-- ①規則要點:模板 vs 母版自用 docs/dev/STATUS.md --")
 fails = policy_failures(template, docs)
 check(not fails, "規則要點兩份都在(整合分支維護/寫入紀律四組;ship actor 由⑨⑩驗)",
@@ -330,6 +437,21 @@ check(not fails, "交接表 ship 列粗體 actor 逐字=「合併那個 PR 的�
 print("-- ⑩ship 移出的 actor:docs 頂註責任句(B-2b)--")
 fails = docs_ship_actor_failures(docs)
 check(not fails, "docs 責任句 actor 含「合併那個 PR 的人」且不含 owner",
+      "; ".join(fails))
+
+print("-- ⑪直接補修算法:README 順序鏈與 pinned-tree 判準(C-2)--")
+fails = readme_patch_failures(readme)
+check(not fails, "README:S1–5 sentinel→S6 fail-closed→S7 pinned/ancestor/clean 鏈全對",
+      "; ".join(fails))
+
+print("-- ⑫Stage 6 最終發布紀律:dev-run 收尾(C-2)--")
+fails = devrun_publish_failures(devrun)
+check(not fails, "dev-run:seq 與 parallel 的 push 位置+remote-tip 驗證都在序內",
+      "; ".join(fails))
+
+print("-- ⑬STATUS Branch 段兩段式發布(C-2)--")
+fails = status_branch_failures(template)
+check(not fails, "Branch 段:起手座標與 Stage 6 收尾最終 tip 說明都在",
       "; ".join(fails))
 
 print("-- 負向 fixture(改壞必須紅,不紅就是白做)--")
@@ -381,6 +503,33 @@ mutated_template = template.replace("| n-a:尚未建立 branch |", "| feat/x(本
 check(bool(table_failures(mutated_template)),
       "負向⑪:範例列 Branch 格改別的字、頂註 sentinel 留著(欄數不變)→ 紅"
       "(舊版全檔搜尋在此假綠)")
+mutated_readme = readme.replace("Stage 6 一律 fail-closed", "Stage 6 也照 Stage 7 驗")
+check(bool(readme_patch_failures(mutated_readme)),
+      "負向⑫:README 拿掉 Stage 6 fail-closed → 紅")
+mutated_readme = readme.replace("讀出**每一個**", "讀出最新一個").replace(
+    "不得只查最新一個", "查最新一個即可")
+check(bool(readme_patch_failures(mutated_readme)),
+      "負向⑬:README 把「每一個 ACCEPTED」弱化成只查最新一個 → 紅")
+m3 = re.search(r"3\. \*\*Stage 6 一律 fail-closed\*\*[\s\S]*?(?=4\. \*\*只有 Stage 7)", readme)
+m4 = re.search(r"4\. \*\*只有 Stage 7[\s\S]*?(?=5\. 排除)", readme)
+if m3 and m4 and m3.end() <= m4.start():
+    mutated_readme = (readme[:m3.start()] + m4.group(0) + m3.group(0)
+                      + readme[m4.end():])
+else:
+    mutated_readme = readme  # 抓不到兩段 = 正向⑪早已紅;讓這條也紅出來
+check(bool(readme_patch_failures(mutated_readme)),
+      "負向⑭:README Stage 6/Stage 7 判定段倒序(內容都在,只換順序)→ 紅")
+mutated_devrun = re.sub(r"\*\*發布最終成果:最後一個 bookkeeping[\s\S]*?不得宣稱 Stage 6 完成\*\*",
+                        "", devrun, count=1)
+check(bool(devrun_publish_failures(mutated_devrun)),
+      "負向⑮:dev-run 刪 sequential 最終 push+驗證段 → 紅")
+mutated_devrun = re.sub(r"\*\*發布最終成果:\nintegration 合回[\s\S]*?不得宣稱 Stage 6 完成\*\*",
+                        "", devrun, count=1)
+check(bool(devrun_publish_failures(mutated_devrun)),
+      "負向⑯:dev-run 刪 parallel 最終 push+驗證段 → 紅")
+mutated_template = template.replace("再發布最終", "不再另外發布")
+check(bool(status_branch_failures(mutated_template)),
+      "負向⑰:STATUS Branch 段刪 Stage 6 最終 tip 發布說明 → 紅")
 
 print()
 if FAILED:

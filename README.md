@@ -631,20 +631,44 @@ base 不見了,而且是在他們下次 `git fetch` 才會發現。「直接補�
 由評估補修的人照下面的定義手動算,不憑感覺。
 
 「其他 feature 碰過的檔」的定義(判準②用):**目前列在 `docs/dev/STATUS.md` Active
-表裡的每個 feature 各自改過的檔的聯集**。算法:
+表裡的每個 feature 各自改過的檔的聯集**。逐列判定順序**寫死如下,不得跳步、不得倒序**:
 
-1. `git fetch` 後把兩端都釘成 SHA:每條 feature 的 `Branch` 欄 ref 各自
-   `git rev-parse`,**整合分支也釘一次**(它是活的 ref,算到一半被人推新東西
+1. `git fetch` 後先把**整合分支**釘成 SHA(它是活的 ref,算到一半被人推新東西
    就前後不一致)。
-2. 對每個 feature 取
-   `git diff --name-only --no-renames $(git merge-base <該SHA> <整合分支SHA>)..<該SHA>`,
-   全部取聯集;補修 diff 與聯集有交集 → 不適用「直接補修」,走上面的預設回滾。
-3. `Branch` 欄填 `n-a:尚未建立 branch` 的列跳過(Stage 1–5 還沒有程式碼改動,
-   本來就沒有戰場);**Stage 6 之後**那欄還是 sentinel 或空 → fail-closed 停下問人,
-   不當「跳過」—— 那會讓一個真的有改動的 feature 從聯集裡消失。
-4. 排除正在評估的補修自己 —— 它跟自己必然 100% 交集,不排除永遠算出「不適用」。
-5. 表裡列著但 ref 不存在(打錯字、branch 被刪)→ 停下問人,不當空集合略過 ——
+2. **Stage 1–5 且 `Branch` 欄逐字等於 `n-a:尚未建立 branch` 才跳過**(還沒有程式碼
+   改動,本來就沒有戰場);Stage 1–5 但那欄不是這個 sentinel(或空)→ fail-closed
+   停下問人,不當「跳過」。
+3. **Stage 6 一律 fail-closed**:Active 表只要還有另一個 feature 的 `Stage` 是
+   `6-implementation`(或同義的 Stage 6 值),就**不准用「直接補修」判準** ——
+   執行中的 feature 本地可能還有未 commit/未發布的工作,remote 天生不能證明完整
+   戰場。不要嘗試靠猜最新 T 補洞;走上面的預設回滾,或等它到 Stage 7。
+4. **只有 Stage 7 的列才進 mode/ref/SHA 驗證**,而且全部讀 pinned remote tree:
+   - 該列 `Branch` 的 remote ref 用 `git rev-parse --verify` 釘成單一
+     `<remote-tip>`;後續 mode、Progress Log 與 diff **全部讀這個 SHA,不准讀目前
+     main checkout 裡可能尚未合併的舊副本**。
+   - `Feature` 連結只用來導出該 feature 的相對路徑;兩份文件分別用
+     `git show <remote-tip>:docs/dev/<slug>/5-tasks.md` 與
+     `git show <remote-tip>:docs/dev/<slug>/6-implementation-notes.md` 取得。
+     任一路徑不存在、逃出 feature 目錄或讀取失敗 → fail-closed 停下問人。
+   - **mode 的唯一資料源是上面 pinned tree 讀出的 `5-tasks.md` frontmatter
+     `execution.mode`**,不是 STATUS 的 `Lane` 欄(full/fast 跟
+     sequential/parallel 是兩件事)。整塊缺省視為 `sequential`;明寫 `parallel`
+     一律 fail-closed 停下(本輪未定義 parallel 供補修計算的 canonical
+     integration ref);連結/檔案/frontmatter 無法解析也停。
+   - **sequential**:從 pinned tree 的 6-notes **Progress Log** 讀出**每一個**
+     ACCEPTED T 的 commit SHA,逐個通過
+     `git merge-base --is-ancestor <accepted-sha> <remote-tip>` 才算發布完整
+     (remote tip 可以是 bookkeeping commit 的後代,**不要求 SHA 相等**;
+     也**不得只查最新一個**)。Progress Log 缺失、SHA 解析失敗、任一 SHA 未包含
+     於 remote tip → fail-closed。
+   - 全部通過後才對該列取
+     `git diff --name-only --no-renames $(git merge-base <remote-tip> <整合分支SHA>)..<remote-tip>`,
+     全部取聯集;補修 diff 與聯集有交集 → 不適用「直接補修」,走上面的預設回滾。
+5. 排除正在評估的補修自己 —— 它跟自己必然 100% 交集,不排除永遠算出「不適用」。
+6. 表裡列著但 ref 不存在(打錯字、branch 被刪)→ 停下問人,不當空集合略過 ——
    「沒有交集」的結論不能建立在漏算上面。
+7. **執行補修者自己的 checkout 也必須 clean、無 ahead 未推的 commit**;上面任何
+   一條無法觀測(fetch 失敗、表解析不了、狀態看不到)就**不准宣稱零交集**。
 
 ⚠️ revert 之後的坑:**revert 一個 merge commit 之後,重新 merge 同一個 branch 不會
 生效** —— git 看的是祖先關係,revert 只是加一個反向 commit,不改變「那些 commit
