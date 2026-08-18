@@ -47,8 +47,10 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
    `$DEVFLOW_CONTRACT` 明示時在此找,缺件必 fail-closed);從模板建 `STATUS.md`;
    repo root 無 `CONTEXT.md` 則從模板建。
    **基準快照**:同時把剛落地的 `docs/dev/README.md`(已剝除版)、`_templates/*`、
-   `devflow-contract.json` 各存一份到 `docs/dev/.devflow-baseline/`——upgrade 段的
-   三方比對(母版改寫 vs 本地客製)靠這份快照當「上游舊」,見 upgrade 段。
+   `devflow-contract.json`、**整個 `docs/dev/tools/`(按目錄整包存,不逐檔列 ——
+   逐檔列的話下一支新工具又會漏;2026-08-18 實查:tools/ 既有四支從來不在
+   baseline 裡,是既有缺口,本次一併納入)** 各存一份到 `docs/dev/.devflow-baseline/`
+   ——upgrade 段的三方比對(母版改寫 vs 本地客製)靠這份快照當「上游舊」,見 upgrade 段。
    **改版歷史**:`mkdir -p docs/adr`(長期決策一決策一檔;編號唯一性由
    `check-adr-integrity.sh` 驗)、`docs/dev/HISTORY.md` 不存在則從
    `_templates/HISTORY.md` 建(只增不改的索引);並比照 gauntlet 散發寫入口
@@ -109,11 +111,21 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
    ①無參數跑 → 預期印 usage 且 exit 2;
    ②`bash docs/dev/tools/devflow-evidence-gauntlet.sh ${CLAUDE_PLUGIN_ROOT}/scripts/fixtures/evidence-gauntlet/good-evidence.md`
    → 預期 exit 0(checks 數以輸出為準)。
+7. **整合回歸工具散發**:cp 方法論
+   `${CLAUDE_PLUGIN_ROOT}/scripts/devflow-integration-regression.sh` →
+   `docs/dev/tools/devflow-integration-regression.sh` 並 `chmod 755`(Stage 7 Exit
+   Checklist「(條件式)整合回歸」的計算工具:只算與只判、絕不動樹;分岔點用
+   6-notes 步 0 持久化的錨點 FORK_INTEGRATION_SHA,缺錨點 fail-closed 直接擋,
+   不退回用 merge-base 猜)。散發後**可執行驗證**(任一不符即列 broken,不得靜默):
+   ①無參數跑 → 預期印用法且 exit 2;
+   ②正副本**可執行位元一致(兩邊都 755)** —— 散發時掉執行權限實際發生過;
+   母版側由 `check-integration-regression-guard.sh` 的 parity 對帳釘住同一件事。
 
 ## upgrade(stale)
 
 - 只覆蓋 `docs/dev/README.md`、`docs/dev/_templates/`、`docs/dev/tools/`
-  (gauntlet 腳本;覆蓋後重跑 install 步 6 的可執行驗證)與
+  (**整個 tools/ 目錄**;覆蓋後重跑 install 步 6 **與步 7** 的可執行驗證 ——
+  步 6 只驗 gauntlet 一支,整合回歸工具的可執行位元驗證在步 7,兩道都要)與
   `docs/dev/devflow-contract.json`(版本握手契約;覆蓋後重跑 check 第 10 項)——
   先 diff 摘要給使用者過目。
 - **diff 摘要必須分兩類,不得只給一份「新舊不同」清單**(否則使用者按下「全部
@@ -131,7 +143,8 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
   但仍需在②分類下出現,不得靜默歸進①)。
   **上游舊 blob 的來源**:每次 install/upgrade 成功覆蓋後,把當下已剝除
   master-only 區塊的內容另存一份快照到 `docs/dev/.devflow-baseline/`
-  (`README.md`、`_templates/*`、gauntlet 腳本、`devflow-contract.json` 各一份)——
+  (`README.md`、`_templates/*`、`devflow-contract.json`,加上**整個
+  `docs/dev/tools/` 按目錄整包** —— 不逐檔列,逐檔列的話下一支新工具又會漏)——
   下次 upgrade 讀這份快照當「上游舊」,不得拿本地現況去猜。首次 install 無快照
   可比,全部視為①;install 步驟本身也要建立這份快照(見 install 步 1)。
   **過渡態**:`docs/dev/.devflow-baseline/` 不存在但 `docs/dev/` 已存在(= 本規則
@@ -251,6 +264,13 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     `python3 docs/dev/tools/build-gate-twin.py` → 訊息含「用法」且 exit 2;④相依探測:
     `python3 -c "import markdown_it, sys; sys.exit(0 if markdown_it.__version__ == '4.0.0' else 3)"`
     → exit 0(非 0 時把 `pip install 'markdown-it-py==4.0.0'` 回報給使用者,不代裝)。
+    任一不符 → broken,列異常+修法。
+12. **整合回歸工具散發檢查**(在專案內跑時):
+    `docs/dev/tools/devflow-integration-regression.sh` ①存在且**可執行,且正副本
+    可執行位元一致(兩邊都 755)**(缺件 = broken,走 install 步 7 補;掉執行權限
+    實際發生過);②與方法論 `${CLAUDE_PLUGIN_ROOT}/scripts/devflow-integration-regression.sh`
+    diff 無差異(有差異 = stale,走 upgrade 覆蓋 —— 專案側不得自改此腳本,
+    要改改方法論);③無參數跑 → 訊息含「用法」且 exit 2。
     任一不符 → broken,列異常+修法。
 
 ## fix / uninstall

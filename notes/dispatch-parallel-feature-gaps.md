@@ -156,6 +156,11 @@ Stage 7 只保證「各自 branch 對整合分支的 diff 乾淨」，
          → 有交集的檔案逐個看過，交集為空才可勾
 ```
 
+> ⚠️ **2026-08-18 更正**：本節的演算法是錯的（在合併之後才算交集，兩個座標都已被
+> 污染 —— 交集要嘛灌水成「對方改的全部檔案」，要嘛 merge-base 漂移後判 n-a 假綠）。
+> 正確版本見 `notes/dispatch-v380-blockers.md` H-1（已做成散發工具
+> `devflow-integration-regression.sh`）。本段保留原文以留痕，**不要照本段實作**。
+
 **執行歧義②已澄清 —— `<base>` 是哪一個 commit**：
 
 一律用 **`git merge-base HEAD <整合分支>`** 的結果，**不是「開分支時的那個 commit」**。

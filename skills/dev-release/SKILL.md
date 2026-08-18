@@ -61,16 +61,19 @@ bash hooks/devflow-exec.sh doctor
 
 ```bash
 diff -q devflow-contract.json docs/dev/devflow-contract.json
-diff -q scripts/devflow-evidence-gauntlet.sh docs/dev/tools/devflow-evidence-gauntlet.sh
-diff -q scripts/history-append.sh docs/dev/tools/history-append.sh
-diff -q scripts/build-gate-twin.py docs/dev/tools/build-gate-twin.py
-diff -q scripts/devflow_twin_ui.py docs/dev/tools/devflow_twin_ui.py
+bash scripts/check-integration-regression-guard.sh
 ```
+
+第一行單獨留著是因為 **contract 不住在 `docs/dev/tools/`**,parity 守衛的
+expected set(檔案地圖「散發面」標註的列)涵蓋不到它 —— 併掉這行就沒有人在驗
+contract 副本。第二行的 parity 對帳**掃的是檔案地圖的散發面標註,不是寫死支數**
+(舊版在這裡寫死五個 `diff -q`,新增第六支散發工具必漏驗 —— 第 7 型「不對稱記帳」);
+它同時比對存在性、內容與**可執行位元**,正副本同時被刪也會紅。
 
 有差異 → 用根目錄正本覆蓋 `docs/dev/` 副本(正本方向永遠是 根目錄 → docs/dev/),
 覆蓋後重跑步驟 1 的 doctor。
 
-完成 = 五個 diff 都靜默(無輸出)。
+完成 = contract diff 靜默(無輸出)+ parity 守衛全過(✅)。
 
 ### 3. 升版號(兩處,一起改)
 

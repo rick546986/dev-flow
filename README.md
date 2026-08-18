@@ -612,7 +612,7 @@ E11 只驗這兩節在不在。
 | 方法論與 Runtime 相容 | 外部 doctor 比對契約(fail-closed) | `devflow-contract.json`、`hooks/runtime-capabilities.json`、`hooks/devflow-doctor.sh` |
 | STATUS.md 只在整合分支維護、worktree 內不碰 | 人工紀律為主;Stage 6 武裝期間外部 plugin scope guard 順帶擋住(STATUS.md 不在任何 T 的 Files,寫入即擋),未武裝的規劃階段無機械層 —— 為此加常駐 hook 成本大於效益,且 PR diff 混入看板變更在 review 一眼可見 | `_templates/STATUS.md` 頂註、`hooks/devflow-guard.sh` |
 | 合併後回滾走 `revert -m 1`、禁改寫整合分支歷史 | 人工紀律 —— 事發在 ship 之後,dev-flow hooks 於 `stop` 後全部沉睡,管不到;機械強制屬 git hosting 的 branch protection(各專案自理,建議開) | 本節「合併後出事怎麼辦」 |
-| Exit Checklist 整合回歸(條件式) | 人工照清單跑;半機械 —— 判定條件與檔案交集都是清單內嵌指令的輸出,無自由心證,但沒做成散發腳本:3 行指令要動散發清單+檔案地圖+N7 三處記帳,不成比例,實跑常被跳過再升級 | `_templates/7-review.md` Exit Checklist |
+| Exit Checklist 整合回歸(條件式) | 機械 —— 散發工具 `devflow-integration-regression.sh` 算與判(狀態字串+exit code,fail-closed 缺錨點即擋),人只負責照狀態做事(合併/測試由人);行為由母版 `check-integration-regression-guard.sh` 以八情境+五 mutant 釘住 | `_templates/7-review.md` Exit Checklist、`scripts/devflow-integration-regression.sh` |
 | 多 worktree 執行環境隔離檢查 | 人工 —— 母版不知道專案技術棧與啟動方式,機械檢查得實跑專案自己的環境,超出母版守備範圍(母版只驗文件與流程) | `_templates/6-implementation-notes.md` 步 0 |
 
 ### 合併後出事怎麼辦(整合分支回滾)
@@ -623,12 +623,28 @@ feature 已合進整合分支(`develop` 或 `main`,依專案)之後才發現壞�
 |---|---|
 | **預設** | `git revert -m 1 <merge commit>`,推到整合分支 |
 | **明文禁止** | 對整合分支用 `reset --hard` / `push --force` / `rebase` —— 三者都會改寫**共享**歷史 |
-| **例外:直接補修** | 只有同時滿足兩條才可以:①一個 commit 修得完;②不動其他 feature 碰過的檔 |
+| **例外:直接補修** | 一律走**短命 hotfix branch + PR**,不直接 commit 整合分支(一個 commit 的 branch 成本很低,換到的是 review 與可回滾),且同時滿足兩條:①一個 commit 修得完;②補修 diff 與「其他 feature 碰過的檔」零交集(定義與算法見表下) |
 
 理由:整合分支是**共享**的 —— 其他 worktree 都從它開分支。改寫它的歷史 = 別人的
 base 不見了,而且是在他們下次 `git fetch` 才會發現。「直接補修」不是壞選項,但沒有
-判準就會被濫用成「什麼都在整合分支上修」;上面兩條判準都可機械檢查(commit 數、
-`git diff --name-only` 的檔案交集),不是憑感覺。
+判準就會被濫用成「什麼都在整合分支上修」;上面兩條判準**可算,但目前沒做成腳本**,
+由評估補修的人照下面的定義手動算,不憑感覺。
+
+「其他 feature 碰過的檔」的定義(判準②用):**目前列在 `docs/dev/STATUS.md` Active
+表裡的每個 feature 各自改過的檔的聯集**。算法:
+
+1. `git fetch` 後把兩端都釘成 SHA:每條 feature 的 `Branch` 欄 ref 各自
+   `git rev-parse`,**整合分支也釘一次**(它是活的 ref,算到一半被人推新東西
+   就前後不一致)。
+2. 對每個 feature 取
+   `git diff --name-only --no-renames $(git merge-base <該SHA> <整合分支SHA>)..<該SHA>`,
+   全部取聯集;補修 diff 與聯集有交集 → 不適用「直接補修」,走上面的預設回滾。
+3. `Branch` 欄填 `n-a:尚未建立 branch` 的列跳過(Stage 1–5 還沒有程式碼改動,
+   本來就沒有戰場);**Stage 6 之後**那欄還是 sentinel 或空 → fail-closed 停下問人,
+   不當「跳過」—— 那會讓一個真的有改動的 feature 從聯集裡消失。
+4. 排除正在評估的補修自己 —— 它跟自己必然 100% 交集,不排除永遠算出「不適用」。
+5. 表裡列著但 ref 不存在(打錯字、branch 被刪)→ 停下問人,不當空集合略過 ——
+   「沒有交集」的結論不能建立在漏算上面。
 
 ⚠️ revert 之後的坑:**revert 一個 merge commit 之後,重新 merge 同一個 branch 不會
 生效** —— git 看的是祖先關係,revert 只是加一個反向 commit,不改變「那些 commit
@@ -700,7 +716,9 @@ base 不見了,而且是在他們下次 `git fetch` 才會發現。「直接補�
 
 1. **討論**:(建議開獨立 session)跟 AI 說 `/dev-talk 我想做 <想法>` → 一次一問
    挖到 Open Questions 收斂,產出 `docs/dev/<feature-slug>/1-discussion.md`
-2. `STATUS.md` 加一列(lane / stage / owner)
+2. `STATUS.md` 加一列(lane / stage / owner / branch —— Stage 1–5 的 `Branch` 欄
+   固定填 `n-a:尚未建立 branch`,Stage 6 開 branch 並推上去後換成 `origin/feat/<slug>`,
+   填法正本見 `_templates/STATUS.md` 頂註)
 3. 換 session 說:`/dev-flow 繼續 <feature>` → 初次接手只讀 1-discussion.md
    (續跑則讀 STATUS + frontmatter 定位),按 §8 帶你走。**之後每個階段
    (含 Stage 6 實作)都是同一句指令** —— `/dev-flow` 自動判 stage 接對應動作,

@@ -278,20 +278,24 @@ updated:
       而未授權 Boundary 變更的預設分級是 🟡 —— 沒有這一條它就會靜默出貨
       (2026-08 fresh review F-5)
 - [ ] Quiz(**不可逆改動必做**;其餘 full lane 選配,fast 免):AI 就本次變更出 3-5 題考 approver(改了什麼/為何/邊界),全對才准 merge
-- [ ] (條件式)整合回歸:先跑 `BASE=$(git merge-base HEAD <整合分支>)`(整合分支 =
-      `develop` 或 `main`,依專案),再看 `git log "$BASE..<整合分支>"` —— 為空 = 你是
-      第一個合的,沒有東西可以踩,本項記 n-a 即勾(「開分支之後有別人先合進來」
-      正好是「有東西可能踩」的充要條件,強制每次跑只是浪費;放本清單是因為
-      這正是出貨前的最後一道)。非空 → 依序:①把整合分支合進本 branch(或 rebase),
-      先在**本地**解完衝突;②跑一次全套測試;③列出共同戰場 ——
-      `comm -12 <(git diff --name-only "$BASE"..HEAD | sort) <(git diff --name-only "$BASE"..<整合分支> | sort)`,
-      交集檔案逐個看過(交集用指令算,不憑感覺 ——
-      憑感覺會漏掉「我沒想到那也算依賴組裝」的檔案;實踩:兩個模組同時改到
-      依賴組裝與路由掛載),交集為空或逐檔確認過才可勾。
-      ⚠️ `BASE` 一律取 merge-base,不是「開分支時的那個 commit」:rebase 過或
-      整合分支往前跑之後兩者常不同;要回答的問題是「我這條線跟整合分支分岔之後,
-      對方多了什麼」,那正是 merge-base 的定義,也與上方 Diff 節的 merge-base
-      基準一致
+- [ ] (條件式)整合回歸:跑
+      `docs/dev/tools/devflow-integration-regression.sh --integration origin/<整合分支> --fork-sha <6-notes 步 0 記的 FORK_INTEGRATION_SHA>`
+      (整合分支 = `develop` 或 `main`,依專案;工具自己會 fetch;工作樹必須乾淨,
+      否則它 exit 2 擋你)。⚠️ **一定要在動樹之前跑** —— 順序寫死為
+      「跑腳本算交集 → 合併 → 跑全套測試」,不是「合併 → 測試 → 算交集」:
+      合併之後 HEAD 已含對方內容、merge-base 也已漂移,兩個座標都被污染,
+      那時算出來的「沒有共同戰場」是假的。依腳本印出的 STATUS 決定:
+      · `N_A_NO_INCOMING` → 記 n-a 即勾(分岔後對方零新 commit)
+      · `SYNC_REQUIRED_NO_OVERLAP` → 合併它印的 INTEGRATION_SHA + 跑全套測試,做完才可勾
+      · `SYNC_REQUIRED_WITH_OVERLAP` → 上面兩件 + 共同戰場交集逐檔看過,做完才可勾
+      · `ALREADY_SYNCED` → 你已經合過了,這次輸出不算數:交集必須在動樹之前算,
+        拿同步後的輸出當證據就是上面說的那個假綠
+      勾的時候把腳本最後一行的結論貼進本檔(含三個 SHA 與 canonical ref)。
+      ⚠️ 合併時合的是腳本印出的 **INTEGRATION_SHA**,不是 branch 名 —— branch 名
+      會跑,中間別人再合進來,你實際併進來的內容跟剛才檢查過的就不是同一份。
+      ⚠️ 動手合併之前**無條件再跑一次腳本**(不是「隔了一段時間才跑」—— 那是
+      主觀條件,人一定會說服自己「應該還好」):兩次的 STATUS 與座標必須完全
+      相同才准動手;有任何一項不同 → 停下,照新的重算
 - [ ] PR → develop(feature branch,禁直上 master)
 - [ ] 4-spec delta 已併入 `docs/specs/<domain>.md`
 - [ ] STATUS.md 已更新為 shipped(這一步在整合分支上、PR 合併後由合併那個 PR 的人

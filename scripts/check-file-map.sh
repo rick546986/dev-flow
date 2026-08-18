@@ -93,16 +93,22 @@ if scanned == 0:
     print("FATAL: 掃到 0 支必列檔,守衛沒有真的跑——不是「沒有缺陷」", file=sys.stderr)
     sys.exit(2)
 
-# 地板:實際必列檔數 = 68(hooks 22 + observability 17 + scripts 27 +
-# tests/parallel-stage6 2;scripts 27 = 舊 26 + 本輪新增的 check-guides-fig-sync.sh)。
-# 一律等於當下實際值,不是「大概抓個下限」;新增/刪除必列檔時同步改這個常數(並同步
-# 補/刪檔案地圖節對應列),還要同步改 test-architecture-guards.sh 的靜態互釘清單那一
-# 行——只改這裡不改那裡,砍檢查數會在那裡現形;只改那裡不改這裡,這裡的地板數字本身
-# 就跟實得數脫鉤,防線形同虛設。
-MIN_CHECKS = 68
-if scanned < MIN_CHECKS:
-    print(f"FAIL: 掃到 {scanned} 支 < MIN_CHECKS={MIN_CHECKS}——若為真實刪檔,"
-          f"請同步下修本常數並確認檔案地圖節同步移除對應列", file=sys.stderr)
+# 必列檔數精確值(不是地板):它數的是「必須列進檔案地圖的檔案數」。
+# 舊版註解寫「一律等於當下實際值」但程式碼只驗「小於」—— 實得數從 68 漂到 74
+# 一路綠燈,防第 7 型(清單沒跟著長)的守衛自己成了活標本(2026-08-18 S-2)。
+# 現值 77 = hooks 22 + observability 17 + scripts 36 + tests/parallel-stage6 2
+# (scripts 36 = 舊 33 + 本輪新增 devflow-integration-regression.sh、
+#  check-integration-regression-guard.sh、check-status-policy.sh)。
+# 新增/刪除必列檔時同步改這個常數(並同步補/刪檔案地圖節對應列),還要同步改
+# test-architecture-guards.sh 的靜態互釘清單那一行 —— 只改這裡不改那裡,砍檢查數
+# 會在那裡現形;只改那裡不改這裡,這裡的數字跟實得數脫鉤,防線形同虛設。
+EXPECTED_MAPPED_FILES = 77
+if scanned != EXPECTED_MAPPED_FILES:
+    direction = ("多了 —— 若為真實新增,請同步上修本常數並補檔案地圖對應列"
+                 if scanned > EXPECTED_MAPPED_FILES
+                 else "少了 —— 若為真實刪檔,請同步下修本常數並確認檔案地圖節移除對應列")
+    print(f"FAIL: 掃到 {scanned} 支 ≠ EXPECTED_MAPPED_FILES={EXPECTED_MAPPED_FILES},"
+          f"{direction}", file=sys.stderr)
     sys.exit(1)
 
 print("── 豁免目錄(按目錄整包一列,不逐檔要求)──")

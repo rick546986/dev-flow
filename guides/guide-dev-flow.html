@@ -804,8 +804,29 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     <blockquote>
     <p>執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併 T):
     0. 起手式:圍欄自查 —— 只讀 4-spec/5-tasks/6-notes/CONTEXT.md/living spec,
-    禁讀 1/2/3(要翻才寫得出 = spec 不完整 → 停,回 G2)。開 feature branch
-    (並行 → worktree)。多 feature 並行(多 worktree)另做兩件事:
+    禁讀 1/2/3(要翻才寫得出 = spec 不完整 → 停,回 G2)。開 feature branch ——
+    <strong>開 branch 與記分岔錨點是同一個動作的兩半,中間不准插別的事</strong>,照下面四步做,
+    不可拆。錨點 <code>FORK_INTEGRATION_SHA</code> = 開這條 branch 的當下整合分支
+    (<code>develop</code> 或 <code>main</code>,依專案)的最新點;Stage 7 的整合回歸工具靠它才算得出
+    「分岔之後對方多了什麼」—— 事後回頭查會查到已經前進過的點,錨點當場失效:</p>
+    <pre><code class="language-bash">git fetch &lt;remote&gt;
+    FORK=$(git rev-parse --verify &quot;refs/remotes/&lt;remote&gt;/&lt;整合分支&gt;^{commit}&quot;)
+    git switch -c &lt;feature-branch&gt; &quot;$FORK&quot;
+    test &quot;$(git rev-parse HEAD)&quot; = &quot;$FORK&quot;   # 不相等 = 中間出過事,停下重來
+    </code></pre>
+    <p>並行(多 feature)改用 worktree 時是<strong>另一組四步,不是把上面那組改一個字</strong>:</p>
+    <pre><code class="language-bash">git fetch &lt;remote&gt;
+    FORK=$(git rev-parse --verify &quot;refs/remotes/&lt;remote&gt;/&lt;整合分支&gt;^{commit}&quot;)
+    git worktree add &lt;worktree-path&gt; -b &lt;feature-branch&gt; &quot;$FORK&quot;
+    test &quot;$(git -C &lt;worktree-path&gt; rev-parse HEAD)&quot; = &quot;$FORK&quot;
+    </code></pre>
+    <p>⚠️ 第四步一定要帶 <code>-C &lt;worktree-path&gt;</code> —— 少了它,<code>git rev-parse HEAD</code> 讀的是
+    你現在站的那個 checkout,不是剛建好的 worktree:驗證會通過,但它驗的是別人,
+    新 worktree 建在錯的點上也照樣放行。<code>git worktree add</code> 也要明示 <code>&quot;$FORK&quot;</code>,
+    不要讓它預設從當前 HEAD 建。四步跑完,把 <code>$FORK</code> 那 40 碼寫進本檔;
+    之後不管 merge/rebase 幾次都<strong>不准更新它</strong> —— 它記的是「歷史上的那個時刻」,
+    不是「現在的狀態」,一更新就退化成 merge-base,等於沒有。
+    多 feature 並行(多 worktree)另做兩件事:
     ①STATUS.md 不在 worktree 內改 —— 它只在整合分支(<code>develop</code> 或 <code>main</code>,依專案)
     上維護,規則與理由見 STATUS 模板頂註;②確認執行環境已隔離:容器名/對外 port
     (兩個 worktree 同時起得來嗎?)、<strong>資料庫</strong>(共用同一個 DB 時,migration 版本
@@ -831,7 +852,10 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     <code>docs/dev/tools/</code>,doctor 實跑直接 <code>⛔ INCOMPATIBLE(fail-closed)</code>——但整條
     Stage 6→7 沒有任何一步要求跑它,所以沒有人被擋。)
     完成 = 讀取清單回報 + branch 就位 + <strong><code>devflow-exec.sh status</code> 與
-    <code>devflow-doctor.sh</code> 兩份輸出都貼進本檔</strong>。</p>
+    <code>devflow-doctor.sh</code> 兩份輸出都貼進本檔</strong> + <strong><code>FORK_INTEGRATION_SHA</code> 已記進本檔
+    (40 碼全長)</strong> + <strong>執行環境隔離結果已貼進本檔</strong>:逐項寫容器名/對外 port/
+    資料庫/快取或佇列/檔案上傳目錄各自怎麼隔離的(實際值,不是「已隔離」三個字);
+    單一 worktree、沒有並行 → 寫 <code>n-a:本 feature 未並行</code>,理由要寫出來。</p>
     <ol>
     <li>接手核對:4-spec approved?5-tasks 每 T 有 Verify+Covers?缺 → 停回補。
     建 todo 一 T 一項,照 Blocked-by 拓撲序。完成 = todo 與 5-tasks 一一對應。</li>
@@ -1944,6 +1968,22 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>本 repo 所有機械檢查的總開關,依固定順序把各組守衛跑一遍,任何一組失敗就立刻停下並印出是哪一組;
             自己不重複寫任何檢查邏輯。</td>
         <td>人工手動執行;CI 也跑同一支</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>devflow-integration-regression.sh</code></td>
+        <td>Stage 7 出貨前在 feature branch 上跑:回答「我開分支之後整合分支多了什麼、跟我有沒有
+            共同戰場」。只算與只判、絕不動樹;分岔點用 6-notes 步 0 持久化的錨點
+            (merge-base 在已合併/已 rebase 的圖上必然算錯),缺錨點 fail-closed 直接擋。</td>
+        <td>採用專案照 <code>7-review.md</code> Exit Checklist 呼叫;
+            <code>check-integration-regression-guard.sh</code> 對它跑情境與 mutant</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
+    <tr><td><code>check-integration-regression-guard.sh</code></td>
+        <td>整合回歸工具的母版自檢:拋棄式 repo 建八個情境打正式工具驗行為、五個 mutant 驗抓得到、
+            釘模板順序(先跑工具才輪得到合併與全套測試)、對帳正本與散發副本(expected set 取自
+            本表「散發面」標註,雙向+可執行位元,正副本同刪也會紅)。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-status-policy.sh</code></td>
+        <td>STATUS 規則對帳:模板頂註的規則要點(只在整合分支維護/merger 在合併後移出 Active)
+            在母版自用的 <code>docs/dev/STATUS.md</code> 也存在;Active 表頭含 <code>Branch</code> 欄、
+            範例列欄數對得上;quickstart 的手寫範例列同步跟上。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>devflow-evidence-gauntlet.sh</code></td>
         <td>檢查一份驗證證據有沒有造假空間——每個宣稱通過的項目要有真的指令與帶數字的結果,不能只寫
             「測過了」。</td>
