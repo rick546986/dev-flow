@@ -177,3 +177,9 @@
 - 落在哪:scripts/check-integration-regression-guard.sh、scripts/test-architecture-guards.sh、.github/workflows/runtime-selftest.yml、scripts/check-file-map.sh(僅註解)
 - 詳細:notes/dispatch-v380-counterproof.md
 
+## 2026-08-19 · status-commit-landing · v3.8.0
+- 做了什麼:F-1 STATUS 寫入紀律拆成「動作/落點」兩層:動作(只改自己那一列 → 立刻落地 → 立刻推)照舊,落點(commit 走哪條 branch)改成依專案 git 紀律 —— 允許直接 commit 整合分支就直接做,有護欄擋(branch protection / pre-commit hook / 全域 hook)就開短命 branch → commit → 立刻 merge --no-ff 回去,兩條路都要滿足「窗口最短」。改四處:_templates/STATUS.md 頂註、docs/dev/STATUS.md 頂註、README §7 規劃層 git、guides/guide-dev-flow.html:1217 手寫鏡像卡片(renderer 不產它)。F-1-e check-status-policy.sh 的 POINTS 補 ("寫入窗口最短", ["窗口最短"]) 並配兩個負向 fixture,檢查數 30→32,守衛自身 MIN_CHECKS 與 test-architecture-guards.sh 逐字互釘同步。F-2 README 第 7 型補實例二(check-file-map.sh 註解的分解式過期且本來就算錯),明訂註解裡的分解式同受本條約束,並說明為什麼不另立守衛
+- 為什麼:母版三處假設「整合分支可以直接 commit」,在裝了護欄的專案上照做就違規 —— owner 這台的全域 git-flow-guard 擋 main 上的非合併 commit,反證輪的收尾表就因此撞牆三次(0d1ebe0 commit → 419b957 merge 是繞過去的痕跡)。根因是母版把手段(直接 commit)寫成了規則,規則真正要的是窗口最短。另實查發現:check-status-policy.sh 原本四條 POINTS 沒有任何一條指向寫入窗口,把「立刻推」整句刪掉守衛全綠 —— owner 最在意的那條要求原本零守衛。⚠️ 例外聲明(比照 v380-blockers 輪):本輪在 feature branch docs/status-commit-landing 上改了 docs/dev/STATUS.md,與「STATUS 只在整合分支維護」相衝 —— 但只改頂註的規則段、Active 表與 Backlog 一列都沒動,而該規則要防的是 Active 表的靜默互蓋;且當時只有一條 branch 在跑,不存在該規則要防的衝突
+- 落在哪:_templates/STATUS.md、docs/dev/STATUS.md(僅頂註規則段)、README.md、guides/guide-dev-flow.html、scripts/check-status-policy.sh、scripts/test-architecture-guards.sh
+- 詳細:notes/dispatch-status-commit-landing.md
+
