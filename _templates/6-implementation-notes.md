@@ -20,7 +20,15 @@ updated:
 > 執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併 T):
 > 0. 起手式:圍欄自查 —— 只讀 4-spec/5-tasks/6-notes/CONTEXT.md/living spec,
 >    禁讀 1/2/3(要翻才寫得出 = spec 不完整 → 停,回 G2)。開 feature branch
->    (並行 → worktree)。
+>    (並行 → worktree)。多 feature 並行(多 worktree)另做兩件事:
+>    ①STATUS.md 不在 worktree 內改 —— 它只在整合分支(`develop` 或 `main`,依專案)
+>    上維護,規則與理由見 STATUS 模板頂註;②確認執行環境已隔離:容器名/對外 port
+>    (兩個 worktree 同時起得來嗎?)、**資料庫**(共用同一個 DB 時,migration 版本
+>    紀錄表會混進兩個 feature 的版本,導致其中一邊 apply 被拒;實例:
+>    `atlas_schema_revisions`,order-intake T-2 實踩)、快取/訊息佇列/檔案上傳目錄等
+>    有狀態的外部依賴。隔離方式依專案技術棧自理,母版不規定做法 —— 母版規定了
+>    「並行用 worktree」,就要負責講清楚這個規定的代價,所以檢查項要管;
+>    但怎麼隔離是各專案技術棧的事,母版規定做法會變成「規定了但不適用」。
 >    ⚠️ **守衛武裝自檢(硬關卡,第一動)**:跑 `devflow-exec.sh status`,確認
 >    `.devflow/exec.json` **存在**且 slug 正確。**沒武裝就不准開工** ——
 >    guard hook 在 `.devflow/exec.json` 不存在時是**靜默沉睡**的

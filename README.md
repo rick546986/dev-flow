@@ -308,7 +308,9 @@ RED → GREEN → scope check → Verify
   同模組重跑 `start` = re-arm,允許(5-tasks 改動後重釘 scope 的正常路徑)。
   **多模組並行的正解是各開 git worktree**:每個 worktree 有獨立 toplevel 與 git-dir,
   守衛互不相見 —— 模組 A 在 worktree 甲跑 Stage 6 時,模組 B 在 worktree 乙寫 spec、
-  跑自己的 Stage 6,零互擋。同一工作樹內硬要並行做不到:武裝期間跨 feature 的
+  跑自己的 Stage 6,零互擋。並行時 STATUS.md 只在整合分支(`develop` 或 `main`,
+  依專案)上維護,worktree 內一律不碰 —— 規則與理由見 `_templates/STATUS.md` 頂註。
+  同一工作樹內硬要並行做不到:武裝期間跨 feature 的
   1/2/3/4 契約檔一律受保護(hooks 分不清寫入來自哪個 session,fail-closed)。
   同 feature 內 T 級並行 = 每 T 各開 task worktree(`task/<slug>/T-n`,同 Wave 同
   Base SHA),守衛以 `--task` 釘單 T scope;仍然是「一工作樹一武裝」,不破例。
@@ -608,6 +610,36 @@ E11 只驗這兩節在不在。
 | Final Fresh Run 真的跑過 | 專案命令/Runtime/Reviewer;Gauntlet 只驗宣告與 SHA 綁定 | 4-spec Verification Profile、`_templates/7-review.md` |
 | Attempt Ledger 寫入 | 外部 runtime 寫;本 repo observability CLI 驗證與衍生 | `hooks/devflow-obs.sh`、`observability/devflow-obs.py`(母版 repo) |
 | 方法論與 Runtime 相容 | 外部 doctor 比對契約(fail-closed) | `devflow-contract.json`、`hooks/runtime-capabilities.json`、`hooks/devflow-doctor.sh` |
+| STATUS.md 只在整合分支維護、worktree 內不碰 | 人工紀律為主;Stage 6 武裝期間外部 plugin scope guard 順帶擋住(STATUS.md 不在任何 T 的 Files,寫入即擋),未武裝的規劃階段無機械層 —— 為此加常駐 hook 成本大於效益,且 PR diff 混入看板變更在 review 一眼可見 | `_templates/STATUS.md` 頂註、`hooks/devflow-guard.sh` |
+| 合併後回滾走 `revert -m 1`、禁改寫整合分支歷史 | 人工紀律 —— 事發在 ship 之後,dev-flow hooks 於 `stop` 後全部沉睡,管不到;機械強制屬 git hosting 的 branch protection(各專案自理,建議開) | 本節「合併後出事怎麼辦」 |
+| Exit Checklist 整合回歸(條件式) | 人工照清單跑;半機械 —— 判定條件與檔案交集都是清單內嵌指令的輸出,無自由心證,但沒做成散發腳本:3 行指令要動散發清單+檔案地圖+N7 三處記帳,不成比例,實跑常被跳過再升級 | `_templates/7-review.md` Exit Checklist |
+| 多 worktree 執行環境隔離檢查 | 人工 —— 母版不知道專案技術棧與啟動方式,機械檢查得實跑專案自己的環境,超出母版守備範圍(母版只驗文件與流程) | `_templates/6-implementation-notes.md` 步 0 |
+
+### 合併後出事怎麼辦(整合分支回滾)
+
+feature 已合進整合分支(`develop` 或 `main`,依專案)之後才發現壞了:
+
+| 情況 | 做法 |
+|---|---|
+| **預設** | `git revert -m 1 <merge commit>`,推到整合分支 |
+| **明文禁止** | 對整合分支用 `reset --hard` / `push --force` / `rebase` —— 三者都會改寫**共享**歷史 |
+| **例外:直接補修** | 只有同時滿足兩條才可以:①一個 commit 修得完;②不動其他 feature 碰過的檔 |
+
+理由:整合分支是**共享**的 —— 其他 worktree 都從它開分支。改寫它的歷史 = 別人的
+base 不見了,而且是在他們下次 `git fetch` 才會發現。「直接補修」不是壞選項,但沒有
+判準就會被濫用成「什麼都在整合分支上修」;上面兩條判準都可機械檢查(commit 數、
+`git diff --name-only` 的檔案交集),不是憑感覺。
+
+⚠️ revert 之後的坑:**revert 一個 merge commit 之後,重新 merge 同一個 branch 不會
+生效** —— git 看的是祖先關係,revert 只是加一個反向 commit,不改變「那些 commit
+已在歷史裡」的事實。不要以為 revert 完再 merge 一次就好;要讓那個 feature 回來,
+只有兩條路:
+
+- **revert the revert**:`git revert <那個 revert commit>`,再補修。
+- 從整合分支**重新開一個 branch**,把改動重做成新 commit。
+
+(本節管的是**合併後**的整合分支;同一 feature 內合併前的逐點回滾見 §5
+「一 T 一 commit」。7-review 模板 Exit Checklist 頂註有指回本節的路標。)
 
 ## 8. 每階段呼叫的技能(AI 對照表)
 

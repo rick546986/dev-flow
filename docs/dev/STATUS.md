@@ -42,7 +42,13 @@ scripts/history-append.sh --slug <代號> --what <做了什麼> --why <為什麼
 > 詳見 `docs/dev/b8-gate-twin-review-ui/7-review.md` 附錄 A10。以下是仍留的兩條
 > 與各自「本輪不做」的理由。
 
+> 2026-08-18 並行制度空白輪:多 feature 並行的四個制度空白(STATUS 只在整合分支
+> 維護/合併後回滾走 revert -m 1/條件式整合回歸/執行環境隔離檢查項)已全數寫進
+> 母版,詳見 `notes/dispatch-parallel-feature-gaps.md` 與 HISTORY 對應條目。
+
 | 級 | 一句 | 來源 |
 |---|---|---|
+| B | 拿 dev-flow 自己跑一次完整 normal-risk full lane(1-discussion → 7-review、過 G1/G2/G3)當觀測實驗 —— owner 已排定,是下一輪的事;在那之前不動 Stage 1–4 模板內容,免得污染觀測 | `notes/dispatch-parallel-feature-gaps.md` 末節 |
+| B | 需求討論的九條制度缺口(A-1~A-7、B-1、B-2)逐條裁決 —— owner 已裁定暫緩,等上一列的 full lane 觀測跑完再對照裁決 | `notes/review-requirement-discovery-gaps.md` |
 | B | 第二個範例 feature,破「唯一範例自證循環」= 4cap O-3。2026-08-17 清空輪裁決仍不做:清洗 `docs/dev/engine-fence-masking/`(母版第一份真實 fast lane 紀錄)成第二範例是 feature 級工程 —— 要讓所有掃 example/ 的機械檢查認得 fast lane 範例、且範例是機械檢查的地基,半吊子的第二範例比沒有更糟(假信心)。素材是 append-only 的歷史檔,不會腐化,無急迫性衰減;應開專屬 feature 走完整 G1-G3 來做 | `docs/dev/4cap-remediation/4cap-audit-fixes-2026-08.md` O-3 裁決 |
 | C | SDC 大表、Reference App(4cap §7 第 5 點收攏的低優先 deferred)。2026-08-17 清空輪裁決仍不做:投資未定且**零採用現場疼痛訊號**(G1/G2/G3 全是現場真踩到的,這兩件沒有);等有採用專案真的要 SDC 級指引再立案,不為清空而硬做 | `docs/dev/4cap-remediation/devflow-4cap-remediation-2026-08.md` §7 |
