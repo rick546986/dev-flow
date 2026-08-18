@@ -990,7 +990,7 @@ push 成功前不准宣稱本輪已發布。
 
 - `scripts/history-append.sh` 追加一筆，`--version` 帶 **`v3.8.0`**
   （這一輪修的仍是一個還沒發布出去的版本，不是後續 patch）
-- **`docs/dev/STATUS.md` 的 Backlog 加兩條 B 級**（第 4 步、在 `main` 上做）：
+- **`docs/dev/STATUS.md` 的 Backlog 加三條 B 級**（第 4 步、在 `main` 上做）：
 
   > 定義 parallel feature 供「直接補修」計算的 canonical integration ref，並把它變成
   > 可由 STATUS／runtime 提供的單一座標；在這件事完成前，Active 裡只要有
@@ -1006,7 +1006,15 @@ push 成功前不准宣稱本輪已發布。
   > —— 它動的是模板節序，是母版最核心的結構，而且會影響 gate-consistency 的機械錨點，
   > 不該塞進發版前的補丁。
 
-- Backlog 補完後應該是 **12 條**（原 10 ＋ 上面兩條）。整張表貼進回報；
+  > **在真實 Windows 機器上驗證整條安裝與守衛動線**。本輪 D 批修掉了寫死的直譯器
+  > 路徑，但驗證是在 macOS 上用 `DEVFLOW_PYTHON` 模擬的（D-5 若選 B 更是如此）——
+  > 跟 G1 的教訓同一型：**模擬過不等於真環境會過**。現場那台目前把 dev-flow 整個
+  > 關掉（`enabledPlugins` 裡 `"dev-flow@dev-flow": false`），要重新打開還需要另外
+  > 裝 Python 並確認 Git Bash 找得到。**這件事要等 v3.8.0 推出去、那台
+  > `/plugin update` 之後才做得到。**
+  > 來源：本派工單 D 批。
+
+- Backlog 補完後應該是 **13 條**（原 10 ＋ 上面三條）。整張表貼進回報；
   如果不是 12，先逐列找出少了／重複了哪一條，不准硬改預期數字配合現場。
 
 ---
