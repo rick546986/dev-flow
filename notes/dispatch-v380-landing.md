@@ -327,7 +327,7 @@ git worktree add -b feature/<slug> <path> ; cd <path>
 **四件缺的**：`git fetch`、從遠端整合分支的 `$FORK` 建 branch、驗證 `HEAD` 等於 `$FORK`、
 保存 `FORK_INTEGRATION_SHA`。
 
-而同一份導覽的 `:488`（Stage 7）要求
+而同一份導覽的 Stage 7 的整合回歸條目要求
 `--fork-sha <6-notes 步 0 記的 FORK_INTEGRATION_SHA>` ——
 **照 Quickstart 做的人，到 Stage 7 會發現自己根本沒有那個值。**
 
@@ -459,7 +459,7 @@ SYNC_REQUIRED 動作都存在、唯一錯誤只有工具出現在合併／全套
 
 ## B-2 STATUS 守衛沒釘住「誰做」
 
-**位置**：`scripts/check-status-policy.sh:64`
+**位置**：`scripts/check-status-policy.sh` 的 `POINTS` 陣列（約 64-70 行）
 
 ```python
 ("ship 移出 Active 由 merger 在合併後做", ["移出", "Active", "合併"]),
@@ -967,14 +967,33 @@ handoff 例外**：agent 在 `main` 完成 STATUS commit 與最終驗收後立�
 | 5 | **從最終的 `main` HEAD 重跑一次全套驗收**（第 1 步跑過的不算，樹已經變了） | `main` |
 | 6 | **停下回報，請 owner 立刻跑 `git push origin main`** | — |
 
+⚠️ **第 2 步（`pull --ff-only` 前置檢查）是本輪新加的**，原本的動線只有五步。
+加它的理由：在 stale 的 `main` 上 merge，會把一個過時的基準帶進整輪改動，
+而且第 5 步的驗收會在錯的樹上跑。**不通過就停下問人，不要自己想辦法繞過去。**
+
 ⚠️ 第 6 步不要自己推 —— owner 的設定擋掉了 agent 推 main，那是刻意的護欄。
-在 HISTORY 那筆裡寫明本輪使用 owner-push handoff。若 owner push 被拒，**不要 force、
-不要 rebase 整合分支**（README §7 明文禁止）：把執行 session 叫回來，
-`git fetch origin` 後在本地 `main` 用一般 merge 把新的 `origin/main` 合進來；不得 reset、
-force-push 或改寫既有歷史。若有衝突，HISTORY 保留兩邊 append-only 條目，STATUS 取兩邊
-Backlog／Active 列集合的聯集並逐列核對。從這個新的 merge HEAD 重跑第 5 步；全綠後
-owner 才重試 push。若重試前 origin 又前進，就重複 fetch → merge → 核對 → 全套，
-push 成功前不准宣稱本輪已發布。
+在 HISTORY 那筆裡寫明本輪使用 owner-push handoff。
+
+#### 萬一 owner push 被拒（遠端在這段時間前進了）
+
+**做法：`git fetch origin` 之後在本地 `main` 用一般 merge 把新的 `origin/main` 合進來。**
+不得 `reset`、`push --force` 或改寫既有歷史。有衝突時：HISTORY 兩邊的 append-only
+條目都保留，STATUS 取兩邊 Backlog／Active 列集合的**聯集**並逐列核對（別把別人的列
+弄丟）。從這個新的 merge HEAD **重跑第 5 步**，全綠之後 owner 才重試 push。
+重試前 origin 又前進就再來一次。**push 成功之前不准宣稱本輪已發布。**
+
+⚠️ **這裡用 merge，跟 `docs/dev/STATUS.md` 寫的「push 被拒 → `git rebase origin/main`」
+不衝突，是情境不同**，不要拿其中一條去推翻另一條：
+
+| 情境 | 本地有什麼 | 怎麼做 |
+|---|---|---|
+| STATUS 契約講的日常情況 | 「只改自己那一列」的**單一小 commit**，還沒推出去 | `rebase` 重放很輕，歷史乾淨 |
+| 本輪的收尾 | 一整輪的改動，**含好幾個 `--no-ff` 的 merge commit** | rebase 會把合併歷史攤平（要 `--rebase-merges` 才勉強保住，容易出錯）→ 走一般 merge |
+
+⚠️ 也**不要拿 README §7 當理由說「不准 rebase」** —— §7 禁的是**改寫已經推出去、
+別人已經拿到的共享歷史**；重放自己還沒推的 commit 是另一回事，
+`_templates/STATUS.md` 頂註已經把這兩件事分清楚了。這裡選 merge 的理由是上面那張表
+（本地有 merge commit），不是 §7。
 
 ⚠️ **不打 tag、不發 release。** push 成功之後才輪到 dogfood。
 
