@@ -40,7 +40,11 @@ updated:
 >    ⚠️ 第四步一定要帶 `-C <worktree-path>` —— 少了它,`git rev-parse HEAD` 讀的是
 >    你現在站的那個 checkout,不是剛建好的 worktree:驗證會通過,但它驗的是別人,
 >    新 worktree 建在錯的點上也照樣放行。`git worktree add` 也要明示 `"$FORK"`,
->    不要讓它預設從當前 HEAD 建。四步跑完,把 `$FORK` 那 40 碼寫進本檔;
+>    不要讓它預設從當前 HEAD 建。四步跑完,立刻把 `$FORK` 那 40 碼用下面這個
+>    逐字欄位寫進本檔(Stage 7 整合回歸工具 `--fork-sha` 吃的就是這個欄位的值):
+>    ```
+>    FORK_INTEGRATION_SHA: <40 碼>
+>    ```
 >    之後不管 merge/rebase 幾次都**不准更新它** —— 它記的是「歷史上的那個時刻」,
 >    不是「現在的狀態」,一更新就退化成 merge-base,等於沒有。
 >    多 feature 並行(多 worktree)另做兩件事:
