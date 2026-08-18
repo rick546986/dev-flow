@@ -847,12 +847,16 @@ DEVFLOW_PY="${DEVFLOW_PYTHON:-$([ -x /usr/bin/python3 ] && echo /usr/bin/python3
 
 `DEVFLOW_PYTHON` 是**新增的對外介面**，不是內部細節 —— 使用者要知道它存在、什麼時候要設。
 
+⚠️ **主線程已實查：`README.md` 與 `guides/*.html` 目前完全沒有提到 `python3`**
+（`grep -n "python3" README.md guides/*.html` 零命中）。
+所以這一項是**新增資訊，不是更新既有段落** —— 不要花時間去找一個不存在的「環境需求節」。
+
 | 檔案 | 要寫什麼 |
 |---|---|
-| `README.md` | 新增一小節或在既有的環境需求段落補：dev-flow 的 hook 需要 python3；解析順序（`DEVFLOW_PYTHON` → `/usr/bin/python3` → PATH）；找不到時 fail-open 只跳過守衛不擋工具；**Windows Git Bash 使用者要裝 Python 並確認 Git Bash 找得到，或設 `DEVFLOW_PYTHON`** |
-| `skills/dev-setup/SKILL.md` | 安裝前提補一句：Git Bash 環境要確認 `python3` 找得到，否則守衛會靜默跳過（不是壞掉，但等於沒有保護） |
-| `docs/PLUGIN.md`（若存在） | Windows 的安裝路徑本來就寫了 `%USERPROFILE%\…`，補上 python3 的需求 |
-| `guides/*.html` | 實查哪幾份提到 `python3` 或安裝需求，一併更新。⚠️ **改到 renderer 管轄的區塊要跑 `--write`**，改到手寫區不會紅（判斷方式見驗收節那張對照表） |
+| `README.md` | **新增**一段環境需求：dev-flow 的 hook 需要 python3；解析順序（`DEVFLOW_PYTHON` → `/usr/bin/python3` → PATH）；找不到時 **fail-open**，只跳過守衛、不擋工具呼叫；**Windows Git Bash 要另外裝 Python 並確認找得到，或設 `DEVFLOW_PYTHON`**。放在哪一節由你判斷，但要在使用者裝之前讀得到的位置 |
+| `docs/PLUGIN.md` | **確認存在**。那份已經寫了 Windows 的安裝路徑（`%USERPROFILE%\…`），把 python3 的需求與 `DEVFLOW_PYTHON` 補在同一個脈絡裡 |
+| `skills/dev-setup/SKILL.md` | 安裝前提補一句：Git Bash 環境要確認 `python3` 找得到，否則守衛會**靜默跳過**（不是壞掉，但等於沒有保護 —— 這正是 G1 教訓裡「守衛沉睡與守衛在擋長得一樣」的同型風險） |
+| `guides/*.html` | 有提到安裝或環境的那幾份補一句 ＋ 指回 README。⚠️ **改到 renderer 管轄的區塊要跑 `--write`**，改到手寫區不會紅（判斷方式見驗收節那張對照表） |
 
 ⚠️ 說明文件裡**不要寫死「48 處」「20 個檔」這種數字** —— 那是這一輪的施工細節，
 會腐化。要寫的是**規則**（解析順序、覆寫方式、失效行為）。
