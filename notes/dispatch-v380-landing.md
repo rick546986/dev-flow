@@ -924,6 +924,7 @@ DEVFLOW_PYTHON=/nonexistent/python3 bash hooks/devflow-prebash.sh </dev/null; ec
 | **C-1**（`_templates/6-implementation-notes.md` 步 0） | ✅ **必須先紅**（`template6-checklist` 抽的就是那一段），跑 `--write` 同步 `guides/guide-dev-flow.html` 後回綠 |
 | **A-3 的 template6 固定欄位**（`_templates/6-implementation-notes.md` 步 0） | ✅ **必須先紅**，它與 C-1 同屬 `template6-checklist`；同一輪 `--write` 後回綠 |
 | **A-3 的 Quickstart 指令**（`guides/guide-quickstart.html` Stage 6 手寫區） | ❌ 單改這一面不會紅，那段不在 renderer 範圍 —— 由 STATUS guard 驗，不要為了讓 renderer 紅去改別處 |
+| **D-6 改 `guides/*.html`** | ⚠️ **要先判斷你改的那一段在不在 renderer 範圍**：改到被抽取的區塊會紅（跑 `--write`），改到手寫區不會紅（正常）。判斷方式：看 `scripts/render-methodology-corrections.sh` 的 `fragments` 字典有沒有對應的 key。**兩種情況都要在回報裡說清楚你改的是哪一種** |
 
 **C-1／A-3 template 欄改完 `--check` 沒紅 → 停下回報**，那表示 fragment 範圍跟預期不同，不要自己改 html。
 最終狀態是 `--write` 之後 `--check` 全綠。
