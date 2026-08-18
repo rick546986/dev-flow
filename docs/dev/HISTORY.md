@@ -166,3 +166,8 @@
 - 落在哪:scripts/(新 devflow-integration-regression.sh、check-integration-regression-guard.sh、check-status-policy.sh;check-file-map、test-architecture-guards、devflow-check 修)、docs/dev/tools/ 散發、_templates/{7-review,6-implementation-notes,STATUS}.md、README §5/§7、skills/{dev-setup,dev-release}/SKILL.md、guides 兩份、notes 兩份加註
 - 詳細:notes/dispatch-v380-blockers.md
 
+## 2026-08-18 · v380-landing · v3.8.0
+- 做了什麼:v3.8.0 發版前最後一輪 17 項落地修正:A 批會咬人 3(整合回歸工具參數死迴圈+用法輸出/dev-setup 安裝時序 mkdir 前移+baseline 收尾落地/Quickstart Stage 6 兩動線補完整錨點流程統一 feat/<slug>)+B 批守衛補強 5(順序守衛動作定位/STATUS actor 儲存格/sentinel 範例列/兩支新守衛地板+AST 外釘/baseline 段落綁定)+C 批 3(worktree cd 交接/直接補修判準 pinned remote tree+ancestor+dev-run 發布紀律/sentinel 冒號定案)+D 批 Windows 可攜 6(hooks 直譯器解析共用化 DEVFLOW_PYTHON→/usr/bin/python3→PATH,缺直譯器 fail-open,CI 回歸選 B 面,文件補環境需求)。62 個破壞實驗全紅、散發路徑演練六面全過。本輪使用 owner-push handoff:agent 在 main 完成 merge+HISTORY+STATUS 後停下,由 owner 跑 git push origin main
+- 為什麼:上一輪修完檔案層,這一輪修「人真的照著用」層:參數打錯卡死終端機、fresh install 照文件做就炸、Quickstart 到 Stage 7 拿不出 fork-sha、Windows 上七支 hook 全掛只能關 plugin —— 母版守衛驗的是檔案對不對,不是照著做會發生什麼
+- 落在哪:notes/dispatch-v380-landing.md(派工單)、scripts/devflow-integration-regression.sh、scripts/check-{integration-regression-guard,status-policy,dev-setup-discipline,file-map}.sh、scripts/test-architecture-guards.sh、skills/dev-setup/SKILL.md、skills/dev-run/SKILL.md、_templates/{6-implementation-notes,STATUS}.md、guides/、hooks/(新增 devflow-python-lib.sh 644)、manifests/、.github/workflows/runtime-selftest.yml
+
