@@ -155,3 +155,8 @@
 - 為什麼:第一個完整 feature 跑完後開兩模組並行,發現母版只講了 worktree 隔離、沒講隔離之後看板/回滾/整合回歸/環境四件事怎麼辦;owner 已裁定四個決定,本輪照決定落檔(notes/dispatch-parallel-feature-gaps.md)
 - 落在哪:_templates/STATUS.md、_templates/6-implementation-notes.md、_templates/7-review.md、README.md §5/§7、guides 兩份 render
 
+## 2026-08-18 · parallel-feature-gaps · v3.8.0
+- 做了什麼:v3.8.0 發版:上一條 parallel-feature-gaps 四項並行制度空白隨模板散發(minor:模板加節+README §7 新節,既有專案 dev-setup upgrade 後相容)
+- 為什麼:版本字串不動,其他機器 /plugin update 拉不到新模板
+- 落在哪:.claude-plugin/plugin.json、hooks/runtime-capabilities.json
+
