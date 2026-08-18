@@ -377,8 +377,16 @@ owner 已裁定把它做成腳本，理由見末節 D-1。以下是規格，照�
 | 正本存在 | 正本被刪了 |
 | 副本存在 | 忘記散發，或副本被刪了 |
 | 內容逐字相同 | 改了正本沒重新散發 |
-| 可執行位元相同且符合地圖上寫的 mode | 散發時掉了執行權限（實際發生過） |
+| **正本與散發副本的可執行位元相同** | 散發時掉了執行權限（實際發生過） |
 | 反向：`docs/dev/tools/` 底下有檔案**不在** expected set 裡 | 散發了但沒記進檔案地圖 |
+
+⚠️ 可執行位元只比**正副本兩邊一不一致**，**不要拿檔案地圖當 mode 的正本** ——
+檔案地圖現在沒有 mode 欄位，也沒有任何 mode 規格，硬要比就是拿一個不存在的東西當基準。
+（既有的 `devflow_twin_ui.py` 是 644，因為它只供 import；`history-append.sh` 等是 755。
+沒有一份文件在管這件事，那是完整散發清單正本要解的問題，**已列 Backlog，本輪不做**。）
+
+本輪新增的 `devflow-integration-regression.sh`，正本與散發副本**兩邊都固定 755**，
+直接寫死在守衛裡（檔名 ＋ 位置 ＋ 期望 mode 三件一組），不依賴任何外部 schema。
 
 最後那條反向檢查是關鍵 —— 有了它，正副本同時消失會讓 expected set 少一項，
 而檔案地圖那一列還在，所以**照樣會紅**。
@@ -528,19 +536,32 @@ N7 三處記帳，不成比例」。做完之後這句整句過期 —— 改成
 **步 0 的敘述要把「開 branch」寫成一個不可拆的四步動作**，不是「開好 branch 之後
 再去查一下當時的 SHA 是多少」—— 事後回頭查就會查到已經前進過的點，錨點當場失效：
 
+**一般 checkout**：
+
 ```bash
 git fetch <remote>
 FORK=$(git rev-parse --verify "refs/remotes/<remote>/<整合分支>^{commit}")
-git switch -c <feature-branch> "$FORK"        # 用 worktree 也一樣：明示從 "$FORK" 建
+git switch -c <feature-branch> "$FORK"
 test "$(git rev-parse HEAD)" = "$FORK"        # 不相等 = 中間出過事，停下重來
 ```
 
+**用 worktree 的時候是另一組四步，不是把上面那組改一個字**：
+
+```bash
+git fetch <remote>
+FORK=$(git rev-parse --verify "refs/remotes/<remote>/<整合分支>^{commit}")
+git worktree add <worktree-path> -b <feature-branch> "$FORK"
+test "$(git -C <worktree-path> rev-parse HEAD)" = "$FORK"
+```
+
+⚠️ **第四步一定要帶 `-C <worktree-path>`。** 少了它，`git rev-parse HEAD` 讀的是
+**你現在站的那個 checkout**，不是剛建好的 worktree —— 那個驗證會通過，
+但它驗的是別人。新 worktree 就算建在錯的點上也照樣放行。
+
+⚠️ `git worktree add` 一定要明示 `"$FORK"`，不要讓它預設從當前 HEAD 建。
+
 四步跑完，把 `$FORK` 那 40 碼寫進本檔。**開 branch 與記錨點是同一個動作的兩半**，
 中間不准插別的事。
-
-⚠️ 用 `git worktree add` 的時候特別容易漏 —— 一定要明示
-`git worktree add <路徑> -b <feature-branch> "$FORK"`，
-不要讓它預設從當前 HEAD 建。
 
 ⚠️ **第二件是 H-1 的地基，不是附帶的小事。** 沒有這個持久化的錨點，
 整合回歸那支腳本**在數學上就算不出正確答案**（理由見 H-1 開頭那節）——
@@ -857,7 +878,7 @@ bash scripts/check-gate-twin.sh                            # 全過
 | B | owner 親自打開 gate twin 產出的 html 驗收「好不好審」，b8 的 verdict 才能從 `REQUEST_CHANGES` 改掉 —— **這件事只有 owner 做得了** | `docs/dev/b8-gate-twin-review-ui/7-review.md:5,180,181` |
 | B | 散發清單收斂成一份正本（source／destination／mode），讓 dev-setup 的 install／check／baseline、dev-release、parity、檔案地圖全部讀同一份 | 本檔 H-1 的八個記帳點 |
 | B | STATUS 真正的單寫入者（或帶鎖的更新器）—— 本輪只縮小了窗口，沒消除同 checkout 的靜默互蓋 | `_templates/STATUS.md` 頂註、本檔 M-2 |
-| C | `engine-fence-masking` 功能早就合進 main，收尾文書沒關（狀態還是 `draft`，Exit Checklist 5 項沒勾） | `docs/dev/engine-fence-masking/7-review.md:4,106-111` |
+| C | `engine-fence-masking` 功能早就合進 main，收尾文書沒關（狀態還是 `draft`，Exit Checklist 尚未收尾，見該檔第 106–111 行）。**不要寫死未勾的項數** —— 數字會漂 | `docs/dev/engine-fence-masking/7-review.md:4,106-111` |
 | C | 用 Bash 寫檔只有「事後偵測」沒有「當場攔下」（Edit 那條路有擋），文中說要開 ticket 或記 STATUS —— 兩件都沒做 | `docs/dev/engine-fence-masking/7-review.md:100` |
 
 STATUS 裡**已經有的四條不要動**（full lane 觀測、九條需求缺口裁決、第二個範例 feature、
