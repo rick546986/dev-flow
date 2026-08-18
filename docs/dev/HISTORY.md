@@ -183,3 +183,9 @@
 - 落在哪:_templates/STATUS.md、docs/dev/STATUS.md(僅頂註規則段)、README.md、guides/guide-dev-flow.html、scripts/check-status-policy.sh、scripts/test-architecture-guards.sh
 - 詳細:notes/dispatch-status-commit-landing.md
 
+## 2026-08-19 · release-v380 · v3.8.0
+- 做了什麼:v3.8.0 正式發版(打 tag + GitHub release)。本版從 v3.7.1 起累積四輪:①並行制度空白四項(STATUS 只在整合分支維護/合併後回滾走 revert -m 1/條件式整合回歸/執行環境隔離檢查項)②v380-blockers 七項必修(整合回歸演算法工具化 devflow-integration-regression.sh、開 branch 四步不可拆並記錨點 FORK_INTEGRATION_SHA、STATUS 寫入紀律、直接補修走 hotfix branch、check-file-map 改精確計數)③v380-landing 十七項落地修正(參數死迴圈、dev-setup 安裝時序、Quickstart 兩動線、Windows 可攜 hooks 直譯器解析共用化 DEVFLOW_PYTHON→/usr/bin/python3→PATH 且缺直譯器 fail-open)④反證輪(整合回歸守衛補 M-f~M-h 三個參數解析 mutant、CI 加第 4 面驗 PATH fallback)⑤STATUS 寫入紀律拆「動作/落點」兩層。既有專案 dev-setup upgrade 後相容(minor)
+- 為什麼:v3.8.0 的版號字串在 08-18 就已就位但一直沒 tag 沒 release,對外等於不存在 —— 其他機器 /plugin update 拉不到;Windows 現場那台把 dev-flow 整個關掉,要等本版發出去才能重裝驗證
+- 落在哪:.claude-plugin/plugin.json 與 hooks/runtime-capabilities.json(版號兩處,本輪未再動,維持 3.8.0)、docs/dev/STATUS.md(Backlog 移除已完成的 A 級發版項)
+- 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.8.0
+

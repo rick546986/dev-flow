@@ -68,7 +68,6 @@ scripts/history-append.sh --slug <代號> --what <做了什麼> --why <為什麼
 
 | 級 | 一句 | 來源 |
 |---|---|---|
-| A | v3.8.0 推上去 + 打 tag + 發 release + 確認 CI 綠 —— 修完就該做,目前唯一的 A 級 | 發版流程第 6–8 步(`skills/dev-release/SKILL.md`) |
 | B | owner 親自打開 gate twin 產出的 html 驗收「好不好審」,b8 的 verdict 才能從 `REQUEST_CHANGES` 改掉 —— **這件事只有 owner 做得了** | `docs/dev/b8-gate-twin-review-ui/7-review.md:5,180,181` |
 | B | 拿 dev-flow 自己跑一次完整 normal-risk full lane(1-discussion → 7-review、過 G1/G2/G3)當觀測實驗 —— owner 已排定,是下一輪的事;在那之前不動 Stage 1–4 模板內容,免得污染觀測 | `notes/dispatch-parallel-feature-gaps.md` 末節 |
 | B | 需求討論的九條制度缺口(A-1~A-7、B-1、B-2)逐條裁決 —— owner 已裁定暫緩,等上一列的 full lane 觀測跑完再對照裁決 | `notes/review-requirement-discovery-gaps.md` |
