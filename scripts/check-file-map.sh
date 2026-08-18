@@ -96,9 +96,11 @@ if scanned == 0:
 # 必列檔數精確值(不是地板):它數的是「必須列進檔案地圖的檔案數」。
 # 舊版註解寫「一律等於當下實際值」但程式碼只驗「小於」—— 實得數從 68 漂到 74
 # 一路綠燈,防第 7 型(清單沒跟著長)的守衛自己成了活標本(2026-08-18 S-2)。
-# 現值 77 = hooks 22 + observability 17 + scripts 36 + tests/parallel-stage6 2
-# (scripts 36 = 舊 33 + 本輪新增 devflow-integration-regression.sh、
-#  check-integration-regression-guard.sh、check-status-policy.sh)。
+# 現值以實跑輸出為準:`bash scripts/check-file-map.sh` 第一行的 `scanned=` 就是它。
+# ⚠️ 這裡刻意不寫「= hooks N + observability N + scripts N + …」的分解。舊註解寫過
+# 一份,常數從 77 調到 78 時分解沒跟著改,而且它在那之前就已經算錯(hooks 實際 25
+# 卻寫 22、scripts 實際 34 卻寫 36)—— 守衛比的是常數不是註解,錯的分解照樣全綠,
+# 下一個做同樣記帳的人卻會照著它算。分解只會爛,要數字就跑一次(2026-08-18 E-3)。
 # 新增/刪除必列檔時同步改這個常數(並同步補/刪檔案地圖節對應列),還要同步改
 # test-architecture-guards.sh 的靜態互釘清單那一行 —— 只改這裡不改那裡,砍檢查數
 # 會在那裡現形;只改那裡不改這裡,這裡的數字跟實得數脫鉤,防線形同虛設。
