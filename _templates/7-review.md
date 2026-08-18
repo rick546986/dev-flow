@@ -265,6 +265,10 @@ updated:
 |---|---|---|---|
 
 ## Exit Checklist(全勾才算 shipped)
+<!-- 合併之後才發現壞了 → 回滾規則見母版 README §7「合併後出事怎麼辦(整合分支回滾)」:
+     預設 `git revert -m 1 <merge commit>`;禁止對整合分支 reset --hard / force push /
+     rebase(改寫共享歷史);revert 過的 feature 不能直接重 merge 回來(祖先關係還在),
+     兩條復原路徑見該節。 -->
 - [ ] **Design Boundary finding 全數處置**(契約 `applicable` 時必勾;`n-a` 時記 n-a):
       未經授權的 Boundary 變更**不論 🔴 或 🟡 都不得帶著出貨** —— 逐條落在下列三種之一:
       ①已修正(diff 已回到契約內);②記 **L2** 回 G2 改契約後重審;
@@ -274,9 +278,24 @@ updated:
       而未授權 Boundary 變更的預設分級是 🟡 —— 沒有這一條它就會靜默出貨
       (2026-08 fresh review F-5)
 - [ ] Quiz(**不可逆改動必做**;其餘 full lane 選配,fast 免):AI 就本次變更出 3-5 題考 approver(改了什麼/為何/邊界),全對才准 merge
+- [ ] (條件式)整合回歸:先跑 `BASE=$(git merge-base HEAD <整合分支>)`(整合分支 =
+      `develop` 或 `main`,依專案),再看 `git log "$BASE..<整合分支>"` —— 為空 = 你是
+      第一個合的,沒有東西可以踩,本項記 n-a 即勾(「開分支之後有別人先合進來」
+      正好是「有東西可能踩」的充要條件,強制每次跑只是浪費;放本清單是因為
+      這正是出貨前的最後一道)。非空 → 依序:①把整合分支合進本 branch(或 rebase),
+      先在**本地**解完衝突;②跑一次全套測試;③列出共同戰場 ——
+      `comm -12 <(git diff --name-only "$BASE"..HEAD | sort) <(git diff --name-only "$BASE"..<整合分支> | sort)`,
+      交集檔案逐個看過(交集用指令算,不憑感覺 ——
+      憑感覺會漏掉「我沒想到那也算依賴組裝」的檔案;實踩:兩個模組同時改到
+      依賴組裝與路由掛載),交集為空或逐檔確認過才可勾。
+      ⚠️ `BASE` 一律取 merge-base,不是「開分支時的那個 commit」:rebase 過或
+      整合分支往前跑之後兩者常不同;要回答的問題是「我這條線跟整合分支分岔之後,
+      對方多了什麼」,那正是 merge-base 的定義,也與上方 Diff 節的 merge-base
+      基準一致
 - [ ] PR → develop(feature branch,禁直上 master)
 - [ ] 4-spec delta 已併入 `docs/specs/<domain>.md`
-- [ ] STATUS.md 已更新為 shipped
+- [ ] STATUS.md 已更新為 shipped(這一步在整合分支上、PR 合併後由合併那個 PR 的人
+      做,不塞進本 branch 的 PR —— 動線與理由見 STATUS 模板頂註)
 - [ ] 7-review frontmatter status: shipped;上游 artifact 可保留 approved(各自 gate 核准紀錄)
 - [ ] 7-review.html 已產生(含變更架構圖 + diff 折疊,規格見 README §6)
 - [ ] feature branch 已刪 / worktree 已清
