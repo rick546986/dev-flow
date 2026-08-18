@@ -1,8 +1,8 @@
-# 派工單：v3.8.0 發版前必修（整合回歸演算法錯誤 ＋ 五條補強）
+# 派工單：v3.8.0 發版前必修（整合回歸演算法錯誤 ＋ 六條補強）
 
 > **觸發句**：`讀 ~/dev/dev-flow/notes/dispatch-v380-blockers.md 照它跑，全程不打斷問人`
 >
-> 本檔是**派工單**，讀完就照做。**全部六項都已由 owner 裁決完畢，沒有要回頭問的事。**
+> 本檔是**派工單**，讀完就照做。**全部七項都已由 owner 裁決完畢，沒有要回頭問的事。**
 > 三個曾經是決策點的東西已經定案，記在末節「owner 已裁決的三件」——
 > 那節是**紀錄**不是問題，不要停在那裡等人。
 >
@@ -151,9 +151,9 @@ git log $NEWBASE..trunk    → （空）                                      �
       ⚠️ 合併時合的是腳本印出來的 **INTEGRATION_SHA**，不是 branch 名。
       branch 名會跑，中間別人再合進來的話，你實際併進來的內容
       跟剛才檢查過的不是同一份。
-      ⚠️ 跑完腳本到實際合併之間如果隔了一段時間（別人可能又合了東西進去），
-      **重跑一次腳本**，確認 STATUS 與三個 SHA 沒變再動手。變了就照新的重來 ——
-      不要「反正差不多」。
+      ⚠️ **動手合併之前無條件再跑一次腳本**（不是「隔了一段時間才跑」——
+      那是主觀條件，人一定會自己說服自己「應該還好」）。兩次的 STATUS
+      與四個座標必須完全相同才准動手；有任何一項不同 → 停下，照新的重算。
 ```
 
 順序也要在模板寫死：**跑腳本算交集 → 合併 → 跑全套測試**，
@@ -162,16 +162,25 @@ git log $NEWBASE..trunk    → （空）                                      �
 #### 演算法規格（給寫腳本的人，不要寫進模板）
 
 ```bash
-BASE=$(git merge-base HEAD "$REF")
+FORK="$1"                                    # 從 --fork-sha 來，必填
 FEATURE_HEAD=$(git rev-parse HEAD)
 INTEGRATION_SHA=$(git rev-parse "$REF")
 
-# 四態判定見下一節。需要算交集時：
+# fail-closed：錨點必須是整合分支現況的祖先，否則它不合法（給錯了，或歷史被改寫過）
+git merge-base --is-ancestor "$FORK" "$INTEGRATION_SHA" || exit 2
+
+# 判定（照上面那張表；注意兩邊的比較基準都是 FORK，不是 merge-base）
+git merge-base --is-ancestor "$INTEGRATION_SHA" "$FEATURE_HEAD"   # 成立 → ALREADY_SYNCED
+
+# 需要算交集時：
 TMPD=$(mktemp -d); trap 'rm -rf "$TMPD"' EXIT
-git diff --name-only --no-renames "$BASE".."$FEATURE_HEAD"    | sort > "$TMPD/feature.txt"
-git diff --name-only --no-renames "$BASE".."$INTEGRATION_SHA" | sort > "$TMPD/integration.txt"
+git diff --name-only --no-renames "$FORK".."$FEATURE_HEAD"    | sort > "$TMPD/feature.txt"
+git diff --name-only --no-renames "$FORK".."$INTEGRATION_SHA" | sort > "$TMPD/integration.txt"
 comm -12 "$TMPD/feature.txt" "$TMPD/integration.txt"
 ```
+
+⚠️ **`git merge-base` 只准用在 `--is-ancestor` 這種祖先判定上，
+不准再用它算分岔點。** 分岔點一律用持久化的 `FORK`。
 
 三個容易被忽略的細節：
 
@@ -219,96 +228,120 @@ owner 已裁定把它做成腳本，理由見末節 D-1。以下是規格，照�
 會把現場弄得更糟；而它要防的問題（順序錯、座標被污染）只靠「算」就解決了。
 唯讀的腳本可以放心在任何時候重跑。
 
+#### 這支腳本需要一個「分岔錨點」，而且那個東西 git 算不出來
+
+**這是整份派工單最關鍵的一段，先把它讀懂再往下。**
+
+上一版的設計想用 `git merge-base HEAD <整合分支>` 當分岔點。**那是算不出正確答案的**，
+理由是純圖論的：只要整合分支的最新點是 `HEAD` 的祖先，`merge-base` 就**必然**等於它。
+於是這三種完全不同的處境，在 git 圖上長得一模一樣：
+
+- 你剛從最新的整合分支開分支（你是第一個合的）
+- 你已經把整合分支合進來了
+- 你 rebase 到最新的整合分支之上（rebase 完更是完全線性，連 merge commit 都沒有）
+
+**沒有任何一組 runtime 座標能區分它們**，因為區分它們需要的資訊是「歷史上的某個時刻」，
+而那個資訊在圖上已經被抹掉了。上一版寫「腳本要盡力區分、區分不出來要問人」——
+那是把一個算不出來的東西交給人猜，等於沒解。
+
+**解法：把分岔點在 feature 開工的當下記下來。**
+
+| 名字 | 是什麼 | 誰記、什麼時候記 |
+|---|---|---|
+| `FORK_INTEGRATION_SHA` | **開這條 feature branch 的當下，整合分支的最新點** | Stage 6 步 0 開 branch 的同一動，寫進 `6-implementation-notes.md` 步 0 的輸出區 |
+
+這件事併進 M-1 —— 步 0 的「完成 =」本來就要改（見 M-1），把 fork 錨點一起加進去，
+不用另外開一個機制、也不用動 runtime。
+
 #### CLI 契約
 
 ```
-用法：devflow-integration-regression.sh <整合分支的 remote-tracking ref>
-      例：devflow-integration-regression.sh origin/main
-          devflow-integration-regression.sh origin/develop
-      （在 feature branch 的工作樹裡跑）
+用法：devflow-integration-regression.sh --integration <remote-tracking ref> \
+                                        --fork-sha <FORK_INTEGRATION_SHA>
+例：devflow-integration-regression.sh --integration origin/main \
+                                      --fork-sha 3f2a1c9...
+（在 feature branch 的工作樹裡跑）
 ```
 
-⚠️ **參數收的是 `origin/main` 這種遠端追蹤 ref，不是 `main`。**
-理由：`git fetch` **不會更新你本地的 `main` 分支** —— 它更新的是 `origin/main`。
-收 `main` 的話，在沒有 checkout 過 main 的工作樹裡（並行時的常態），
-拿到的是一個可能過時好幾天的舊點，整個判定跟著錯。
-腳本收到不含 `/` 的參數（看起來像本地分支名）時，要印一句提醒說明差別，
-並且**照樣用它算**（有些專案就是這樣用），但輸出要標記「用的是本地 ref，
-可能不是最新」。腳本自己不要跑 `git fetch` —— 動網路的事交給人決定。
+⚠️ **`--fork-sha` 是必填，缺了就 exit 2**，錯誤訊息要指回 6-notes 步 0 說明去哪裡拿。
+**絕對不准在缺錨點時退回用 `merge-base` 猜，更不准判成 `N_A_NO_INCOMING`。**
+這是 fail-closed，對齊 G1 的教訓：守衛在狀態檔不存在時**靜默沉睡**，
+「守衛在擋」與「守衛不在」對執行者長得一模一樣。
 
-#### 四種判定結果（**這是這支腳本的核心，不能只有兩態**）
+⚠️ **`--integration` 必須解析到 `refs/remotes/...`，否則 exit 2。**
+不要只看參數裡有沒有 `/`（`feat/x` 也有 `/`），要實際用
+`git rev-parse --symbolic-full-name <ref>` 確認它落在 `refs/remotes/` 底下。
+理由：`git fetch` **不會更新本地的 `main`** —— 它更新的是 `origin/main`。
+收本地 ref 會在「沒有 checkout 過 main 的工作樹」（並行時的常態）拿到過時好幾天的點。
+上一版寫「警告後照樣算」是 fail-open，改掉。
 
-原本的兩態設計（「要跑／不用跑」）有一個致命洞：
-**「對方零新 commit」跟「有新 commit 但兩邊沒重疊」被混成同一個 exit 0**，
-但這兩種情況要做的事完全不同 —— 後者仍然必須合併並跑全套測試。
+⚠️ **腳本自己要跑 `git fetch <remote>`**（唯讀，不動工作樹）。
+上一版說「交給人決定」——「忘記 fetch」就成了一個沒有任何人在守的洞。
+離線環境給一個 `--no-fetch` 逃生口，但輸出必須標記「未 fetch，資料可能過時」。
 
-| 狀態字串 | 什麼情況 | exit | 人要做什麼 |
+#### 四種判定結果
+
+有了錨點之後，判定變成純粹的圖關係查詢，沒有猜的成分：
+
+| 狀態字串 | 判定式 | exit | 人要做什麼 |
 |---|---|---|---|
-| `N_A_NO_INCOMING` | 分岔之後對方零新 commit | 0 | 真的可以跳過，Exit Checklist 記 n-a |
-| `SYNC_REQUIRED_NO_OVERLAP` | 對方有新 commit，但兩邊改的檔零重疊 | 10 | **仍要**合併固定 SHA ＋ 跑全套測試。沒有共同戰場不代表不會壞（介面沒改、行為改了一樣會炸） |
-| `SYNC_REQUIRED_WITH_OVERLAP` | 對方有新 commit，且有共同戰場 | 11 | 合併 ＋ 全套測試 ＋ **交集逐檔看過** |
-| `ALREADY_SYNCED` | 對方的最新點已經是本 branch 的祖先，但它跟分岔點不同 —— 表示**你已經合過了** | 2 | **這一次的輸出不算數**。交集必須在動樹之前算；拿合併後的輸出當證據就是原本那個假綠 |
-| （環境問題） | 不在 git repo／參數錯／ref 不存在／**工作樹髒**／**merge 或 rebase 進行中** | 2 | 先處理environment，再重跑 |
+| `N_A_NO_INCOMING` | `INTEGRATION_SHA == FORK_INTEGRATION_SHA` | 0 | 真的可以跳過，Exit Checklist 記 n-a |
+| `ALREADY_SYNCED` | 整合分支往前跑了，**而且它的最新點已經是 `HEAD` 的祖先** | 2 | **你已經同步過了，這次輸出不算數**。交集必須在動樹之前算 —— 拿同步後的輸出當證據就是原本那個假綠 |
+| `SYNC_REQUIRED_NO_OVERLAP` | 整合分支往前跑了、不是 `HEAD` 的祖先，交集為空 | 10 | **仍要**合併 `INTEGRATION_SHA` ＋ 跑全套測試。沒有共同戰場不代表不會壞（介面沒改、行為改了一樣會炸） |
+| `SYNC_REQUIRED_WITH_OVERLAP` | 同上，但交集非空 | 11 | 合併 ＋ 全套測試 ＋ **交集逐檔看過** |
+| （fail-closed） | 缺 `--fork-sha`／錨點不是 `INTEGRATION_SHA` 的祖先（錨點不合法或歷史被改寫過）／`--integration` 不是遠端追蹤 ref／不在 git repo／**工作樹髒**／**merge 或 rebase 進行中** | 2 | 先處理，再重跑。**不准帶著算** |
 
 **exit 0 只有 `N_A_NO_INCOMING` 一種。** 這是整條修法的重點 ——
 舊寫法讓「有東西可能踩、只是這次沒撞到」也走 exit 0，人就會跳過合併與測試。
 
-⚠️ **工作樹髒或處在合併／rebase 中途一律 exit 2**，不准帶著算。
-理由：未提交與未追蹤的改動**不會**進入 `FEATURE_HEAD` 的計算 ——
-算出來的「我這邊改了哪些檔」會少掉正在改的那些，交集跟著漏。
-
-#### `ALREADY_SYNCED` 判不出來的那個角落
-
-`BASE == INTEGRATION_SHA` 有兩種可能，而且**合併之後這兩種在 git 圖上長得一模一樣**：
-①你是第一個合的（對方確實零新 commit）②你已經把對方合進來了。
-
-腳本要盡力區分（可以看 `$BASE..HEAD` 之間有沒有把該 ref 併進來的 merge commit），
-**區分不出來的時候不准猜成 `N_A_NO_INCOMING`** —— 要印出兩種可能並要求人確認。
-
-配套：輸出一定要帶 `FEATURE_HEAD` 的實際 SHA，7-review 貼證據時要對得上
-「動樹之前的那個 SHA」。對不上 = 這份證據是合併後才跑的，不算數。
+⚠️ **工作樹髒或處在合併／rebase 中途一律 exit 2**：未提交與未追蹤的改動
+**不會**進入 `FEATURE_HEAD` 的計算，算出來的「我這邊改了哪些檔」會少掉正在改的那些。
 
 #### 輸出格式
 
 - 第一行：`STATUS: <四個狀態字串之一>`
-- 三個座標的實際 SHA：`BASE` / `FEATURE_HEAD` / `INTEGRATION_SHA`（各印全長 40 碼）
+- 四個座標的實際 SHA（各印全長 40 碼）：
+  `FORK_INTEGRATION_SHA` / `FEATURE_HEAD` / `INTEGRATION_SHA` / `INTEGRATION_REF`
 - 共同戰場的檔案清單（一行一個），沒有就明確印 `共同戰場：無`
-- 最後一行印一句可以直接貼進 7-review 的結論，內含狀態字串與三個 SHA
+- 有沒有 fetch（`--no-fetch` 時要明確標記）
+- 最後一行印一句可以直接貼進 7-review 的結論，內含狀態字串與四個座標
 
 檔頭照這個 repo 的既有慣例寫成三段式（規格正本引用 ／ 用法 ／ exit code），
 本體用 `python3 - <<'PY'` heredoc、`check(cond, label, detail)` 累計、
 分組印 `-- 分組名 --` —— 照 `scripts/check-gate-twin.sh` 與
 `scripts/check-history-integrity.sh` 的樣子寫，**不要自創一套**。
 
-#### 新增一支散發腳本要動的記帳點（**五處，漏一個就會紅或假綠**）
+#### 本輪一共新增三支腳本（**定案，不是選項**）
+
+後面每一處記帳都要照這個拓撲算，所以先定死：
+
+| # | 檔案 | 是什麼 | 要散發嗎 |
+|---|---|---|---|
+| 1 | `scripts/devflow-integration-regression.sh` | 給採用專案跑的正式工具 | ✅ 散到 `docs/dev/tools/` |
+| 2 | `scripts/check-integration-regression-guard.sh` | H-1 的母版自檢 wrapper。**情境、mutant、模板順序守衛、正副本 parity 全部併進這一支** | ❌ 母版自用 |
+| 3 | `scripts/check-status-policy.sh` | S-1 的守衛（兩份 STATUS 對帳 ＋ `Branch` 欄 ＋ quickstart 範例列） | ❌ 母版自用 |
+
+**不要另立第四支 parity 腳本** —— parity 就住在 #2 裡。
+
+#### 新增散發腳本要動的記帳點（**八處，漏一個就會紅或假綠**）
 
 這個 repo 有「第 7 型假綠：不對稱記帳」的前科 —— 保護長大了、列舉它的清單沒跟著長。
-以下每一處都要動：
-
 **以下每一處都已經實地查過行號，不是推測的**：
 
 | # | 落點 | 要做什麼 |
 |---|---|---|
 | 1 | `skills/dev-setup/SKILL.md` **install** 散發段 | 照 `devflow-evidence-gauntlet.sh` 的寫法（104-110 行附近）加一段散發本腳本，含設 755 |
 | 2 | 同檔 **check（健檢）** 路徑 | 加一個編號檢查項：存在 ＋ 與正本 `diff` ＋ **可執行位元**。照第 9 項（232-237 行）或第 11 項（245-254 行）的樣子寫 |
-| 3 | 同檔 **baseline**（`:49-51`） | ⚠️ **這一處最容易漏**。`docs/dev/.devflow-baseline/` 是 install 時建的快照，upgrade 拿它當「上游舊版」做三方比對。它現在**只列** `README.md`、`_templates/*`、`devflow-contract.json`，**完全不含 `docs/dev/tools/` 的任何一支**。新工具要進 baseline，否則 upgrade 的三方比對永遠看不到它 |
+| 3 | 同檔 **baseline**（`:49-51`） | ⚠️ **這一處最容易漏**。`docs/dev/.devflow-baseline/` 是 install 時建的快照，upgrade 拿它當「上游舊版」做三方比對。它現在**只列** `README.md`、`_templates/*`、`devflow-contract.json`，**完全不含 `docs/dev/tools/` 的任何一支**。<br>**要納入的不只新工具** —— `docs/dev/tools/` 底下**現有的四支也全都不在 baseline 裡**，這是既有缺口。本輪把整個 `docs/dev/tools/` 一起納入（用目錄，不要逐檔列，否則下一支又會漏） |
 | 4 | 同檔 **upgrade 後的可執行驗證**（`:115-116` 指回 install 步 6，`:104-110`） | 「覆蓋整個 `docs/dev/tools/`」這句**不夠** —— 步 6 只驗 gauntlet 一支。新工具要加進 upgrade 成功後的可執行位元驗證 |
 | 5 | `skills/dev-release/SKILL.md:63-67` | 那裡**寫死五個 `diff -q`**（contract、gauntlet、`history-append.sh`、`build-gate-twin.py`、`devflow_twin_ui.py`），是靜態列舉不是掃目錄 → 新增第六支**必漏驗**。<br>**本輪授權你把它改成呼叫第 8 點那支 parity 守衛，把寫死的支數整個拿掉** —— 不要只是加第六行 diff，那只是把過期推遲到下一次 |
 | 6 | 檔案地圖 `guides/guide-dev-flow.html` 的 `id="filemap"` 節（1742 行起） | 每支母版腳本各一列；有散發雙生的，**在同一列的生命週期格附註「散發面：`docs/dev/tools/`」**（現成例子見該檔 209/213/227/230 行），**不要為散發副本另開一列** |
 | 7 | `scripts/check-version-sync.sh:65-88` | 同樣是寫死的版本錨清單。**只有在新腳本裡帶版本字串時才要動**；不帶版本字串就不動，並在回報裡說明你選了哪一種 |
-| 8 | 新增 parity 對帳守衛 | 正本與散發副本比對**內容 ＋ 可執行位元**。照 `scripts/check-history-integrity.sh:119-125`（H5）的寫法 —— 那支是目前唯一有驗可執行位元的，`check-gate-twin.sh` 的 N7 只驗內容。<br>**這支要掃目錄得出清單，不要寫死檔名** —— 第 5 點才有東西可以指過去 |
+| 8 | parity 對帳（**併進 `check-integration-regression-guard.sh`，不另立腳本**） | 正本與散發副本比對**內容 ＋ 可執行位元**。照 `scripts/check-history-integrity.sh:119-125`（H5）的寫法 —— 那支是目前唯一有驗可執行位元的，`check-gate-twin.sh` 的 N7 只驗內容。<br>**清單要掃 `docs/dev/tools/` 目錄得出，不要寫死檔名** —— 第 5 點才有東西可以指過去。<br>⚠️ 再加一個 mutant：**把正本與副本「同時」刪掉，這支守衛仍必須紅**（只掃副本目錄的話，兩邊一起消失會靜默全綠） |
 
-### ⚠️ 上一版 brief 在這裡寫錯了兩處，已更正
-
-| 上一版寫的 | 實查結果 |
-|---|---|
-| 「`check-file-map.sh:102` 的 `MIN_CHECKS = 68` 要 +1」 | **不用動。** 那個數字是**地板**不是精確計數，實跑 `bash scripts/check-file-map.sh` 現在是 `scanned=74`，早就超過 68 了。再加三支變 77，照樣綠 |
-| 「`test-architecture-guards.sh:1535` 的靜態互釘要跟著改」 | **不用動。** 它釘的是 `MIN_CHECKS = 68` 這串字，上面那格不改，這裡自然不用改 |
-
-另外實查到一件跟直覺相反的：**`check-file-map.sh` 根本不掃 `docs/dev/tools/`**
-（掃描範圍只有 `hooks/`、`scripts/`、`observability/`、`tests/parallel-stage6/`）——
-散發副本從來就不在它的盤點裡。所以「散發副本有沒有被記到」全靠第 8 點那支新守衛，
-這也是為什麼第 8 點要掃目錄而不是寫死清單。
+⚠️ **`check-file-map.sh` 根本不掃 `docs/dev/tools/`**（掃描範圍只有 `hooks/`、`scripts/`、
+`observability/`、`tests/parallel-stage6/`）—— 散發副本從來就不在它的盤點裡。
+所以「散發副本有沒有被記到」全靠第 8 點，這也是為什麼它要掃目錄而不是寫死清單。
 
 ### 掛進 `devflow-check` 要多一層 wrapper（不能直接掛）
 
@@ -320,11 +353,23 @@ owner 已裁定把它做成腳本，理由見末節 D-1。以下是規格，照�
 掛進 `group_architecture()`（95-135 行，照既有一行慣例
 `run "architecture/<name>" scripts/<name>.sh || return 1`）。它做的事是：
 
-1. 跑上面六個情境（A–F），確認正式工具在每個情境給出正確的狀態字串與 exit code
-2. 跑四個 mutant，確認每個都被對應情境抓到
+1. 跑上面八個情境（A–H），確認正式工具在每個情境給出正確的狀態字串與 exit code
+2. 跑五個 mutant（M-a~M-e），確認每個都被對應情境抓到
 3. 跑模板順序守衛（③-2）
 4. 跑正本／副本 parity（或呼叫第 8 點那支）
-5. **它自己永不非零退出，除非真的有東西壞了** —— 這是能掛進聚合器的前提
+5. 正副本 parity（含「正副本同時被刪也必須紅」那個 mutant）
+
+**wrapper 自己的 exit 契約（明寫，不要靠猜）**：
+
+| 情況 | exit |
+|---|---|
+| 全部 assertion 通過 | **0** |
+| 情境／mutant／parity／模板順序 任一條不對 | **1** |
+| 環境問題或用法錯（缺 `python3`、不在 repo 裡、正式工具檔不存在） | **2** |
+
+⚠️ **受測工具吐出來的 10 / 11 是測試資料，不是 wrapper 的退出碼。**
+wrapper 要做的是「比對正式工具在情境 A 是不是真的吐 10」——
+比對成功 → wrapper 自己 exit 0。把 10/11 直接往聚合器傳就會紅，那是最容易犯的錯。
 
 （既有的 `check-task-slicing.sh` 就是靠「自己承諾絕不非零退出」達成 warning-only，
 不是 `run()` 給的豁免。照同一個做法。）
@@ -368,18 +413,21 @@ N7 三處記帳，不成比例」。做完之後這句整句過期 —— 改成
 所以：**測試一律呼叫 `scripts/devflow-integration-regression.sh`**，
 在拋棄式的臨時 git repo（`mktemp -d`，跑完 `trap` 清掉）裡建情境，然後看它的輸出與退出碼。
 
-**六個情境**（A、B 已在沙盒實測過正確答案，其餘四個對應四態與各項防護）：
+**八個情境**（A、B 已在沙盒實測過正確答案，其餘對應四態與各項防護）。
+每個情境都要記下建圖當下的 `FORK_INTEGRATION_SHA`，用 `--fork-sha` 傳給腳本：
 
 | 情境 | 怎麼建 | 正式腳本必須給出 |
 |---|---|---|
 | A · 有 incoming、零重疊 | feature 改 `a1.txt`/`a2.txt`；整合分支改 `b1.txt`/`b2.txt` | `SYNC_REQUIRED_NO_OVERLAP`、共同戰場**無**、**exit 10** |
 | B · 有 incoming、有共同檔 | 兩邊都改 `shared.txt`，各自另有獨立檔 | `SYNC_REQUIRED_WITH_OVERLAP`、共同戰場**只有 `shared.txt`**（不可混入 `b1.txt`）、**exit 11** |
 | C · 對方零新 commit | 開分支後整合分支完全沒動 | `N_A_NO_INCOMING`、**exit 0** |
-| D · 已經合過了 | 用情境 A 的圖，**先手動 merge**，再跑腳本 | `ALREADY_SYNCED`、**exit 2** —— **不准輸出 `N_A_NO_INCOMING`**。這一態就是原始那個 bug 的正面對決 |
-| E · 工作樹髒 | 情境 A 的圖，另外留一個未提交的改動 | **exit 2**（環境問題），不准帶著算 |
+| D · 已經 merge 過了 | 用情境 A 的圖，**先手動 merge**，再跑腳本 | `ALREADY_SYNCED`、**exit 2** —— **不准輸出 `N_A_NO_INCOMING`** |
+| **G · 已經 rebase 過了** | 用情境 A 的圖，**先 `git rebase` 到整合分支最新點**，再跑腳本 | `ALREADY_SYNCED`、**exit 2`**。⚠️ **這個情境比 D 更狠** —— rebase 完的圖是**完全線性的**，連 merge commit 都沒有，任何靠「找 merge commit」的判法在這裡都會失效。只有持久化的 fork 錨點救得了 |
+| E · 工作樹髒 | 情境 A 的圖，另外留一個未提交的改動 | **exit 2**，不准帶著算 |
 | F · 改名 | feature 把 `x.txt` 改名成 `y.txt`；整合分支改 `x.txt` 的內容 | 共同戰場必須含 `x.txt` —— 這條在驗 `--no-renames` 真的有加 |
+| **H · 缺錨點 / 錨點不合法** | ①完全不給 `--fork-sha` ②給一個不是 `INTEGRATION_SHA` 祖先的 SHA ③`--integration` 給本地 ref（不是 `refs/remotes/`） | 三種都必須 **exit 2**，**不准退回用 `merge-base` 猜**，更不准判成 `N_A_NO_INCOMING` |
 
-#### ③ 破壞實驗：四個精確的 mutant（不做等於前面白做）
+#### ③ 破壞實驗：五個精確的 mutant（不做等於前面白做）
 
 破壞的對象是**腳本的臨時複本**，不是正式腳本本身。複製到臨時目錄改壞，
 再用對應情境跑那份壞的，**它必須給出錯誤答案**；如果壞掉的複本也給出正確答案，
@@ -387,20 +435,23 @@ N7 三處記帳，不成比例」。做完之後這句整句過期 —— 改成
 
 | mutant | 具體怎麼改壞 | 哪個情境要抓到它 |
 |---|---|---|
-| M-a · 兩態退化 | 把 `SYNC_REQUIRED_NO_OVERLAP` 的回傳改成 `N_A_NO_INCOMING` / exit 0 | **A** —— 不抓到就表示「有 incoming 但零重疊也叫人跳過」這個洞沒被守住 |
-| M-b · 座標污染 | 把 `"$BASE".."$FEATURE_HEAD"` 改成 `"$BASE"..HEAD`，並拿掉 `ALREADY_SYNCED` 判定 | **D** —— 這就是原始 bug 本人 |
+| M-a · 兩態退化 | 把 `SYNC_REQUIRED_NO_OVERLAP` 的回傳改成 `N_A_NO_INCOMING` / exit 0 | **A** |
+| **M-b · 座標污染（原始 bug 本人）** | 把持久化的 `FORK` 換回動態的 `BASE=$(git merge-base HEAD "$REF")`，其餘不動 | **D 與 G 兩個都要抓到**。⚠️ 上一版把 M-b 寫成「`"$BASE".."$FEATURE_HEAD"` 改成 `"$BASE"..HEAD`」是**無效的 mutant** —— 唯讀腳本裡這兩者行為相同，改了等於沒改 |
 | M-c · 改名偵測 | 拿掉 `--no-renames` | **F** |
 | M-d · 髒樹放行 | 拿掉工作樹乾淨的檢查 | **E** |
+| **M-e · fail-open 退化** | 缺 `--fork-sha` 時退回用 `merge-base` 算，而不是 exit 2 | **H** —— 這條在驗 fail-closed 沒有被寫成 fail-open |
 
 #### ③-2 另外一支守衛：釘住模板裡的順序
 
 演算法搬進腳本之後，模板剩下的責任是「**用對的順序叫它**」——
 而順序寫反正是原始 bug 的形狀，所以要有東西釘著。
 
-加一個檢查（併進第 5 個記帳點那支 parity 守衛，或另立一支都可以）：
-在 `_templates/7-review.md` 的 Exit Checklist 那一條裡，
+**定案：這個檢查併進 H-1 的 wrapper（`scripts/check-integration-regression-guard.sh`），
+不另立腳本。** 內容：在 `_templates/7-review.md` 的 Exit Checklist 那一條裡，
 **「跑 `devflow-integration-regression.sh`」這段文字必須出現在「合併」與「跑全套測試」之前**。
 順序被寫反 → 紅。
+
+同樣要做破壞實驗：把模板那條的順序調換，確認會紅。
 
 同樣要做破壞實驗：把模板那條的順序調換，確認這支守衛會紅。
 
@@ -424,11 +475,23 @@ N7 三處記帳，不成比例」。做完之後這句整句過期 —— 改成
 這正是這個 repo 自己命名過的老毛病：**宣稱得出來、落點寫不進去**
 （`_templates/7-review.md` Known Limits 節的註解就記著同一型的前科）。
 
-**修法**：`:48` 的完成條件加第四件 ——
+**修法**：`:48` 的完成條件加**兩件**（第二件是 H-1 要用的，一起做）——
 
 > ＋ **執行環境隔離結果已貼進本檔**：逐項寫容器名／對外 port／資料庫／快取或佇列／
 > 檔案上傳目錄各自怎麼隔離的（實際值，不是「已隔離」三個字）。
 > 單一 worktree、沒有並行 → 寫 `n-a：本 feature 未並行`，理由要寫出來。
+>
+> ＋ **`FORK_INTEGRATION_SHA` 已記進本檔**：開這條 branch 的當下，
+> 整合分支的最新點（`git rev-parse origin/<整合分支>` 的 40 碼全長輸出）。
+> 步 0 的敘述也要加一句說明去哪裡拿、為什麼要記。
+
+⚠️ **第二件是 H-1 的地基，不是附帶的小事。** 沒有這個持久化的錨點，
+整合回歸那支腳本**在數學上就算不出正確答案**（理由見 H-1 開頭那節）——
+它會 fail-closed 直接 exit 2，整條 Exit Checklist 卡死。
+
+錨點要用**跑一次就固定下來的值**：開 branch 的當下記一次，
+之後不管 merge 幾次、rebase 幾次都**不准更新它**。它記的是「歷史上的那個時刻」，
+不是「現在的狀態」—— 一更新就退化成 `merge-base`，等於沒有。
 
 **驗收**：`--check` 會讓 `guides/guide-dev-flow.html` 變紅（對應 `template6-checklist`），
 `--write` 之後回綠。詳見 H-1 驗收①的對照表。
@@ -525,13 +588,18 @@ N7 三處記帳，不成比例」。做完之後這句整句過期 —— 改成
    **沒有任何一欄記得住 branch 或 ref**，所以「那個 feature 的 branch 是哪一條」無從得知。
    要做的事：
 
-   - Active 表**新增一欄 `Branch`**，填該 feature 的正式 ref（例如 `feat/order-intake`），
-     worktree 也照樣填它 checkout 的那條。這一欄**開工加列時就要填**，不是事後補。
-   - 算聯集之前先 `git fetch`，然後把每一條 branch 各自 `git rev-parse` **釘成 SHA** 再算，
-     理由跟 H-1 同一個：branch ref 在你算的過程中會動。
+   - Active 表**新增一欄 `Branch`**，填**已發布的遠端 ref**（`origin/feat/order-intake`），
+     **不要填 `feat/order-intake` 這種本地名** —— 本地分支只存在於某一台機器上，
+     換一個 clone 就不存在，算出來的聯集會靜默少掉那個 feature。
+     這一欄**開工加列時就要填**，不是事後補。
+   - 算聯集之前先 `git fetch`，然後**兩端一起釘成 SHA**：每一條 feature ref 各自
+     `git rev-parse`，**整合分支也要 `git rev-parse` 釘一次**（上一版只釘了 feature 那端，
+     整合分支還是活的 ref，算到一半被別人推新東西就前後不一致）。
    - 對每個 feature：
-     `git diff --name-only --no-renames $(git merge-base <該SHA> <整合分支>)..<該SHA>`
-   - 表裡列著但 branch 已經不存在（打錯字、branch 被刪）→ **停下問人**，
+     `git diff --name-only --no-renames $(git merge-base <該SHA> <整合分支SHA>)..<該SHA>`
+   - **要排除正在評估的補修自己** —— 如果補修本身也有一條 branch 列在 Active 表裡，
+     它一定會跟自己 100% 交集，不排除就永遠算出「不適用直接補修」。
+   - 表裡列著但 ref 已經不存在（打錯字、branch 被刪）→ **停下問人**，
      不要當成空集合略過 —— 當成空集合會讓「沒有交集」這個結論建立在漏算上面。
 
    表頭改了之後，`_templates/STATUS.md` 頂註那句「開工加列」也要跟著提到新欄位。
@@ -545,8 +613,12 @@ N7 三處記帳，不成比例」。做完之後這句整句過期 —— 改成
    | `README.md` 約 703 行 | ❌ 不用 —— 實查那裡只有文字提到「STATUS.md 要更新」，**沒有表格範例列** |
 
    另外實查到：**全 repo 沒有任何守衛在檢查 STATUS 的表頭欄位名稱**。
-   所以這次改完不會有東西紅給你看，也表示下次有人改壞了同樣不會有人知道 ——
-   要不要為此補一支守衛，列進回報問 owner，**本輪不要自己加**。
+   所以這次改完不會有東西紅給你看，也表示下次有人改壞了同樣不會有人知道。
+   **已裁決：本輪就補** —— 併進 S-1 的 `scripts/check-status-policy.sh`
+   （表頭含 `Branch`、範例列欄數對得上、quickstart 範例列也跟著改），不另立腳本。
+
+   `README.md` 約 703 行雖然沒有表格，但文字提到 STATUS 要填什麼的地方
+   **也要補上 `Branch` 欄**，不要讓文字跟表頭講的不一樣。
 3. 順手把 §7 那句「兩條判準都可機械檢查」改成實話：現在是**可算但沒做成腳本**，
    誰要算、用哪個指令算，寫清楚。
 
@@ -602,10 +674,53 @@ dcca20a docs(status): 並行制度空白輪收帳      ← 在 feature branch �
 1. `docs/dev/STATUS.md` 的頂註加上同一條規則（可以精簡，但**必須包含**：
    只在整合分支維護、feature branch 不碰、ship 移出 Active 由合併 PR 的人在合併後做）。
    M-2 補的寫入紀律也要一起帶過去，兩份不要有第二種說法。
-2. **加一支守衛對帳兩份**：確認 `_templates/STATUS.md` 頂註裡的規則要點在
-   `docs/dev/STATUS.md` 也存在。**不要比對逐字**（兩份用途不同，硬釘逐字會天天假紅），
-   釘「規則要點都在」即可。掛進 `scripts/devflow-check.sh`。
-3. **破壞實驗**：把 `docs/dev/STATUS.md` 的規則段刪掉，確認守衛會紅。不紅就是白做。
+2. **加一支守衛 `scripts/check-status-policy.sh`**，做三件事：
+   - 確認 `_templates/STATUS.md` 頂註裡的規則要點在 `docs/dev/STATUS.md` 也存在。
+     **不要比對逐字**（兩份用途不同，硬釘逐字會天天假紅），釘「規則要點都在」即可。
+   - 確認 `_templates/STATUS.md` 的 Active 表頭含 `Branch` 欄，且範例列的欄數對得上。
+   - 確認 `guides/guide-quickstart.html:409-411` 的範例列欄數也跟著改了
+     （那段是手寫的，renderer 不會幫你同步 —— 見 M-3）。
+   掛進 `scripts/devflow-check.sh` 的 `group_architecture()`。
+3. **破壞實驗**（三個都要）：①把 `docs/dev/STATUS.md` 的規則段刪掉 ②把表頭的
+   `Branch` 欄拿掉 ③只改模板不改 quickstart 範例列 —— 三種都必須紅。不紅就是白做。
+
+---
+
+## S-2〔中〕防「不對稱記帳」的那支守衛，自己就是不對稱記帳的活標本
+
+實查 `scripts/check-file-map.sh` 發現的，兩個 codex 版本說法不同，實情是兩邊各對一半：
+
+```python
+# 註解（第 96-101 行）：
+#   「一律等於當下實際值，不是『大概抓個下限』；新增/刪除必列檔時同步改這個常數
+#     ……還要同步改 test-architecture-guards.sh 的靜態互釘清單那一行」
+MIN_CHECKS = 68
+if scanned < MIN_CHECKS:      # ← 但程式碼只比「小於」
+```
+
+實跑：
+
+```
+✅ PASS：forward 74 支必列檔 …… scanned=74
+```
+
+**註解說「一律等於當下實際值」，程式碼只驗地板，實際值早就漂到 74 —— 差了 6 支，
+而且一路綠燈。** 這支守衛存在的目的就是防第 7 型（清單沒跟著長），結果它自己
+就是一個活體標本，而且沒有任何東西在看它。
+
+**修法**：
+
+1. 常數改名 `EXPECTED_CHECKS`，比較改成 `!=`（精確值，不是地板）。
+   數字設成**本輪做完之後的實際值** —— 現況 74 ＋ 本輪新增三支 = **77**。
+   不要憑這裡寫的數字，**以實跑輸出為準**（做完跑一次 `bash scripts/check-file-map.sh`
+   看 `scanned=` 是多少就填多少）。
+2. `scripts/test-architecture-guards.sh:1535` 的靜態互釘釘的是 `MIN_CHECKS = 68`
+   這串字 —— **改名 ＋ 改值 = 那串字兩處都變**，同一個 commit 一起改，否則它會紅。
+   （它紅是設計如此，不是壞了 —— 但要在改的當下就處理掉。）
+3. 保留「真實刪檔時要下修」的錯誤訊息，把它擴成雙向：多了要上修、少了要下修。
+4. **破壞實驗**：改完之後，隨便在 `scripts/` 丟一個空的 `.sh`（不加進檔案地圖），
+   確認 `check-file-map.sh` **會紅**（舊版只驗地板時，多一支是不會紅的）。
+   驗完刪掉那個檔。
 
 ---
 
@@ -702,16 +817,19 @@ bash scripts/check-gate-twin.sh                            # 全過
 | B | owner 親自打開 gate twin 產出的 html 驗收「好不好審」，b8 的 verdict 才能從 `REQUEST_CHANGES` 改掉 | `docs/dev/b8-gate-twin-review-ui/7-review.md:5,180,181` |
 | C | `engine-fence-masking` 功能早就合進 main，收尾文書沒關（狀態還是 `draft`，Exit Checklist 5 項沒勾） | `docs/dev/engine-fence-masking/7-review.md:4,106-111` |
 | C | 用 Bash 寫檔只有「事後偵測」沒有「當場攔下」，文中說要開 ticket 或記 STATUS —— 兩件都沒做 | `docs/dev/engine-fence-masking/7-review.md:100` |
+| B | **散發清單收斂成一份正本**（source／destination／mode 各一列），讓 dev-setup 的 install／check／baseline、dev-release、parity、檔案地圖全部讀同一份。現在同一件事分散在五處各寫一份，是典型的「改一個東西要動五個地方」。**本輪不做**：它是既有債的重構，不擋 v3.8.0 正確，硬塞進來會讓這一輪再開一輪 | 本檔 H-1 的八個記帳點就是這個病的清單 |
+| B | **STATUS 真正的單寫入者**：現在的規則只把窗口縮小（機率降低），擋不住「同一個 checkout 上兩個 session 先後寫同一個檔、後寫的靜默蓋掉先寫的」。要嘛指定整條整合分支同一時間只有一個人能寫 STATUS，要嘛做一支像 `history-append.sh` 那樣帶鎖的更新器。**本輪不做**：這是 v3.8.0 之前就存在的風險，不是這一版帶進來的；而且做更新器等於新開一支工具 | `_templates/STATUS.md` 頂註、M-2 |
 
 ---
 
 ## 回報格式
 
-1. 每一項（H-1 / M-1 / M-2 / M-3 / L-1 / S-1）各一段：改了哪些檔（`檔案:行號`）、
+1. 每一項（H-1 / M-1 / M-2 / M-3 / L-1 / S-1 / S-2）各一段：改了哪些檔（`檔案:行號`）、
    實際跑了什麼指令、輸出原文。
 2. 驗收那六道的輸出原文全貼。
-3. 破壞實驗的結果（H-1 的兩個情境、H-1 的壞掉複本、S-1 的守衛）：
-   弄壞什麼、有沒有真的變紅。**這三個缺一不可**。
+3. 破壞實驗的結果，逐個列：H-1 的八個情境（A–H）、五個 mutant（M-a~M-e）、
+   模板順序守衛、正副本同時刪除、S-1 的三個、S-2 的一個。
+   每個都要寫「弄壞什麼 → 有沒有真的變紅」。**沒做破壞實驗的守衛一律當成沒做**。
 4. 八個記帳落點逐一交代做了什麼（特別是第 3 點 baseline 與第 5 點
    `dev-release` 的寫死五個 diff —— 這兩處最容易漏），加上 wrapper 掛進聚合器的結果。
 5. 有沒有發現本檔沒提到的問題 —— 列出來問要不要處理，**不要自己動手**。
