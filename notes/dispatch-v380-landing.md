@@ -863,30 +863,17 @@ DEVFLOW_PY="${DEVFLOW_PYTHON:-$([ -x /usr/bin/python3 ] && echo /usr/bin/python3
 
 ### D 批的驗收
 
-```bash
-# 1. 只剩解析邏輯與註解裡有這個字串,任何 exec/subprocess 呼叫點都不再寫死
-grep -rn "/usr/bin/python3" . | grep -v "^./notes/" | grep -v "^./docs/dev/HISTORY"
+**驗收指令不重複列在這裡** —— 全部併進文末「做完之後的驗收」那一節的
+「D 批專屬」區塊。同一份清單抄兩處，下次只改一邊就開始漂移
+（這正是本輪 S 級問題的同一型）。
 
-# 2. 動手前先跑一次存基線,改完比對沒有新增失敗
-bash hooks/selftest.sh
+這裡只補兩件那一節沒講的：
 
-# 3. 含無環境變數版本
-env -u DEVFLOW_MASTER -u DEVFLOW_PLUGIN -u CLAUDE_PLUGIN_ROOT bash hooks/gate-consistency.sh
-
-# 4. devflow-ci.yml 跑的那支
-bash scripts/devflow-check.sh all
-
-# 5. 模擬 Windows(兩個方向都要測)
-DEVFLOW_PYTHON=$(command -v python3) bash hooks/selftest.sh          # 指到有效直譯器 → 全過
-DEVFLOW_PYTHON=/nonexistent/python3 bash hooks/devflow-prebash.sh </dev/null; echo "rc=$?"
-#   → 預期:印一行警告到 stderr、rc=0(fail-open),不是卡住也不是非零
-```
-
-第 1 條**不要只看「有沒有輸出」** —— 要逐行看剩下的每一處，確認它們都是
-「解析邏輯本身」或「說明為什麼的註解」，不是漏改的呼叫點。把那幾行貼進回報。
-
-**破壞實驗**：把 `hooks/devflow-prebash.sh` 的 `exec "$DEVFLOW_PY"` 改回
-`exec /usr/bin/python3`，確認 D-5 新加的 CI 測試（在本機用同樣手法跑）會紅。
+- **`hooks/selftest.sh` 一定要先跑一次存基線再動手**。它自己有 19 處寫死路徑，
+  改完要比對「**沒有新增失敗**」，不是只看最後那行綠。
+- **破壞實驗**：把 `hooks/devflow-prebash.sh` 的 `exec "$DEVFLOW_PY"` 改回
+  `exec /usr/bin/python3`，確認 D-5 新加的那條 CI 測試（在本機用同樣手法跑）**會紅**。
+  不紅 = D-5 那條測試沒有鑑別力，等於沒加。
 
 
 ---
