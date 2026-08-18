@@ -43,6 +43,13 @@
 > 推上去之後,換成**已發布的遠端 ref**(如 `origin/feat/<slug>`)—— 不要填本地
 > 分支名:本地分支只存在於某一台機器,換一個 clone 算「各 feature 改過的檔」
 > (README §7「直接補修」判準)時會靜默漏掉這個 feature。
+>
+> ⚠️ 這個 ref 是**兩段式發布**:Stage 6 開始時先推一次,是為了建立可查的座標,
+> **不代表執行中的 remote 已經完整**(本地可能還有未 commit/未發布的 T);
+> Stage 6 收尾由 dev-run 在 bookkeeping 之後、回報 Stage 7 之前**再發布最終
+> feature tip** 並驗證 remote tip 等於本地 HEAD(見 `skills/dev-run/SKILL.md`
+> 收尾節)。執行中的未發布窗口由 README §7 直接補修算法負責封住:Stage 6 一律
+> fail-closed、Stage 7 逐一驗 ACCEPTED commit 是 remote tip 的祖先。
 
 ## Active
 
