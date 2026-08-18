@@ -243,6 +243,51 @@ def case_H(s):
           f"rc={rc4}")
 scenario(case_H)
 
+print("-- 情境 I:用法/參數錯(任何排列都不得死迴圈;每個子案 5 秒逾時) --")
+
+
+def run_usage_case(args, cwd):
+    """跑正式工具,5 秒逾時 —— 逾時回 (None, '');逾時即死迴圈回歸,對應子案必須紅。"""
+    env = dict(os.environ)
+    env.update({"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+                "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"})
+    try:
+        proc = subprocess.run(["bash", TOOL, *args], cwd=cwd, capture_output=True,
+                              text=True, env=env, timeout=5)
+    except subprocess.TimeoutExpired:
+        return None, ""
+    return proc.returncode, proc.stdout + proc.stderr
+
+
+def case_I(s):
+    # 在其餘座標全部有效的圖上跑(origin/trunk 存在、s.fork 是有效 SHA),
+    # 讓每個子案的唯一錯誤就是被測的那個參數 —— 空值/吞旗標被「當成能用」時,
+    # 工具會走進前置檢查而不印「用法」,子案就紅。
+    build_A(s)
+    cases = [
+        ("I① 無參數", []),
+        ("I② --integration 居末缺值", ["--integration"]),
+        ("I③ --fork-sha 居末缺值", ["--fork-sha"]),
+        ("I④ 前面成功解析、--fork-sha 居末缺值",
+         ["--integration", "origin/trunk", "--fork-sha"]),
+        ("I⑤ 前面成功解析、--integration 居末缺值",
+         ["--fork-sha", "abc", "--integration"]),
+        ("I⑥ 無值旗標先行、--integration 居末缺值", ["--no-fetch", "--integration"]),
+        ("I⑦ --fork-sha 不得吞掉 --no-fetch 當值",
+         ["--integration", "origin/trunk", "--fork-sha", "--no-fetch"]),
+        ("I⑧ 不認得的參數", ["--bogus"]),
+        ("I⑨ --integration 空字串不得當值", ["--integration", "", "--fork-sha", s.fork]),
+        ("I⑩ --fork-sha 空字串不得當值", ["--integration", "origin/trunk", "--fork-sha", ""]),
+    ]
+    for label, args in cases:
+        rc, out = run_usage_case(args, s.work)
+        if rc is None:
+            check(False, f"{label} → exit 2+印「用法」", "5 秒逾時 —— 參數解析死迴圈回歸")
+        else:
+            check(rc == 2 and "用法" in out, f"{label} → exit 2+印「用法」",
+                  f"rc={rc} 訊息含「用法」={'是' if '用法' in out else '否'}")
+scenario(case_I)
+
 print("-- mutants M-a~M-e:改壞臨時複本,對應情境必須抓到 --")
 
 MUTANTS = {
@@ -357,22 +402,67 @@ def order_violation(text):
     i_tool = body.find("devflow-integration-regression.sh")
     if i_tool < 0:
         return "條目內沒提到 devflow-integration-regression.sh"
-    i_merge = body.find("合併")
-    i_test = body.find("全套測試")
-    if i_merge >= 0 and i_tool > i_merge:
-        return "「跑工具」出現在「合併」之後 —— 順序寫反正是原始 bug 的形狀"
-    if i_test >= 0 and i_tool > i_test:
-        return "「跑工具」出現在「全套測試」之後"
+    # 「合併」「全套測試」只認 SYNC_REQUIRED_* 兩行後面接的「動作」——
+    # 條目的解說文字裡也有這兩個詞,全文 find 會被解說騙過:
+    # 把真正的動作行刪掉,解說還在,舊寫法照樣綠(第 4 型假綠)。
+    # 動作行整行不見、或動作行裡缺這兩個詞,都一律判違規(該有的還在不在)。
+    action_spans = {}
+    for marker in ("SYNC_REQUIRED_NO_OVERLAP", "SYNC_REQUIRED_WITH_OVERLAP"):
+        am = re.search(r"^\s*·\s*`" + marker + r"`.*?(?=^\s*·|\Z)", body, re.M | re.S)
+        if am is None:
+            return f"條目裡找不到必要動作:缺 {marker} 動作行"
+        action_spans[marker] = am
+    acts = "".join(s.group(0) for s in action_spans.values())
+    if "合併" not in acts:
+        return "條目裡找不到必要動作:SYNC_REQUIRED_* 動作行內沒有「合併」"
+    if "全套測試" not in acts:
+        return "條目裡找不到必要動作:SYNC_REQUIRED_* 動作行內沒有「全套測試」"
+    for span in action_spans.values():
+        local = span.group(0)
+        for word, msg in (
+                ("合併", "「跑工具」出現在「合併」之後 —— 順序寫反正是原始 bug 的形狀"),
+                ("全套測試", "「跑工具」出現在「全套測試」之後")):
+            j = local.find(word)
+            if j >= 0 and i_tool > span.start() + j:
+                return msg
     return None
 
 
 violation = order_violation(open(TEMPLATE, encoding="utf-8").read())
 check(violation is None, "7-review Exit Checklist 條目順序正確(工具先於合併與全套測試)",
       violation or "")
-BAD_ORDER = ("- [ ] (條件式)整合回歸:先把整合分支合併進來並跑全套測試,"
-             "然後跑 devflow-integration-regression.sh 算交集\n")
-check(order_violation(BAD_ORDER) is not None,
-      "順序守衛負向:順序調換的樣本會被判違規(守衛有鑑別力)")
+# BAD_ORDER:其餘完全合法(兩個 SYNC_REQUIRED 動作行都在、動作詞都在),
+# 唯一錯誤=工具出現在合併/全套測試之後 —— 只有這樣才證明「順序」檢查本身有鑑別力,
+# 而不是靠「缺動作」順帶變紅。
+BAD_ORDER = (
+    "- [ ] (條件式)整合回歸:依腳本印出的 STATUS 決定:\n"
+    "       · `SYNC_REQUIRED_NO_OVERLAP` → 合併它印的 INTEGRATION_SHA + 跑全套測試,做完才可勾\n"
+    "       · `SYNC_REQUIRED_WITH_OVERLAP` → 上面兩件 + 共同戰場交集逐檔看過,做完才可勾\n"
+    "       上面都做完之後,最後才跑 docs/dev/tools/devflow-integration-regression.sh 算交集\n")
+bad = order_violation(BAD_ORDER)
+check(bad is not None and "出現在" in (bad or ""),
+      "順序守衛負向:動作齊全、唯一錯誤是順序調換的樣本,被判的必須是順序違規",
+      f"got: {bad}")
+# 缺動作負向①:把兩行 SYNC_REQUIRED_* 動作行整段刪掉、解說文字(也含合併/全套測試)留著
+NO_ACTION_LINES = (
+    "- [ ] (條件式)整合回歸:跑 docs/dev/tools/devflow-integration-regression.sh,\n"
+    "       順序寫死為「跑腳本算交集 → 合併 → 跑全套測試」,合併之後座標被污染。\n"
+    "       · `N_A_NO_INCOMING` → 記 n-a 即勾\n"
+    "       · `ALREADY_SYNCED` → 這次輸出不算數\n")
+noact = order_violation(NO_ACTION_LINES)
+check(noact is not None and "找不到必要動作" in (noact or ""),
+      "缺動作負向①:SYNC_REQUIRED_* 動作行被整段刪掉(解說留著)必須紅",
+      f"got: {noact}")
+# 缺動作負向②:動作行還在,但「→」後面的動作詞被掏空
+NO_ACTION_WORDS = (
+    "- [ ] (條件式)整合回歸:跑 docs/dev/tools/devflow-integration-regression.sh,\n"
+    "       順序寫死為「跑腳本算交集 → 合併 → 跑全套測試」。\n"
+    "       · `SYNC_REQUIRED_NO_OVERLAP` → 做完才可勾\n"
+    "       · `SYNC_REQUIRED_WITH_OVERLAP` → 做完才可勾\n")
+nowords = order_violation(NO_ACTION_WORDS)
+check(nowords is not None and "找不到必要動作" in (nowords or ""),
+      "缺動作負向②:動作行還在但動作詞被掏空必須紅",
+      f"got: {nowords}")
 
 print("-- 正本/散發副本 parity(expected set 取自檔案地圖「散發面」標註)--")
 
@@ -458,6 +548,17 @@ try:
           f"實得 {fails}")
 finally:
     shutil.rmtree(fixture, ignore_errors=True)
+
+# ── 檢查數地板:防止情境/mutant 整段被刪後檢查數靜默縮水仍全綠(B-4)──────────
+# ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」(同 repo 慣例:
+# check-gate-twin.sh、check-dev-setup-discipline.sh 的 MIN_CHECKS);之後每加一條
+# 檢查都要同步調高。字面值與這整個 if 區塊(condition+記錄 failure+非零退出鏈)
+# 另被 test-architecture-guards.sh 靜態互釘外釘,兩處要同一個 commit 一起改。
+MIN_CHECKS = 36
+if CHECKS < MIN_CHECKS:
+    FAILED += 1
+    print(f"  ✗ 檢查數地板:實際只跑了 {CHECKS} 項(地板 {MIN_CHECKS})—— "
+          f"情境/mutant/fixture 被刪掉或迴圈跑了零圈,這比單項失效更嚴重")
 
 print()
 if FAILED:

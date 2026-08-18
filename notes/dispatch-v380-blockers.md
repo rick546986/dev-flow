@@ -684,7 +684,7 @@ test "$(git -C <worktree-path> rev-parse HEAD)" = "$FORK"
 
    | 階段 | `Branch` 欄填什麼 |
    |---|---|
-   | Stage 1–5 | 固定填 `n-a：尚未建立 branch`（**逐字這個字串**，方便機械判定） |
+   | Stage 1–5 | 固定填 `n-a:尚未建立 branch`（**逐字這個字串**，方便機械判定） |
    | Stage 6 起，branch 建立並推上去之後 | 換成 `origin/feat/<slug>` |
 
    - 算聯集時**跳過**填著那個 sentinel 的列（它們還沒有程式碼改動，本來就沒有戰場）。

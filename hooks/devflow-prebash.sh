@@ -5,4 +5,5 @@
 # ⚠️ payload 走 stdin 直通 python,殼層不碰內容(F2:env 傳遞撞 ARG_MAX → rc=126
 # 靜默自壞;見 devflow-guard.sh 同註與 devflow-lib.py read_hook_input())。
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-exec /usr/bin/python3 "$(dirname "$0")/_prebash_impl.py" "$ROOT"
+. "$(dirname "$0")/devflow-python-lib.sh"  # 直譯器解析;缺直譯器 fail-open(理由見該檔)
+exec "$DEVFLOW_PY" "$(dirname "$0")/_prebash_impl.py" "$ROOT"

@@ -54,13 +54,18 @@
 #                    expect fail;此案專咬「若守衛被挖空成永遠印全過,外部呼叫路徑
 #                    (CLI 參數 real 模式)是否也一起失守」——之前只驗過 fixture 自測,
 #                    real 模式的紅路徑完全零外部變異覆蓋(check-model-tiering.sh)
-#   靜態互釘(2026-08-16 補,獨立審查 finding 4;2026-08-17 二次複審後補到七支)
-#                    七支散落地板/群組數的字面值互釘 —— hooks/selftest.sh
+#   靜態互釘(2026-08-16 補,獨立審查 finding 4;2026-08-17 二次複審後補到七支;
+#                    v3.8.0 落地輪 B-4 補到九支)
+#                    九支散落地板/群組數的字面值互釘 —— hooks/selftest.sh
 #                    MIN_CASES / tests/parallel-stage6/run_tests.py EXPECTED_CHECKS /
-#                    check-dev-setup-discipline.sh 與 check-gate-twin.sh 的
+#                    check-dev-setup-discipline.sh、check-integration-regression-
+#                    guard.sh、check-status-policy.sh 與 check-gate-twin.sh 的
 #                    MIN_CHECKS / check-file-map.sh 的 MIN_CHECKS / check-gate-twin.sh
 #                    的 EXPECTED_GROUPS(含 24 個群組名逐字整行釘)/
-#                    check-design-contract.sh 的 EXPECTED_CHECK_SKIP_CALLS。**非**
+#                    check-design-contract.sh 的 EXPECTED_CHECK_SKIP_CALLS。另有
+#                    B-4 的三支守衛「地板 block」AST 外釘(check_floor_block:
+#                    condition+記錄 failure+非零退出必須同鏈,防「常數還在、if 整段
+#                    被刪」與「condition 保留、body 換 pass」兩型假綠)。**非**
 #                    seed→mutate→expect_local 的變異案例,不計入
 #                    EXPECTED_CONTROLS/NEGATIVES/TOTAL(見結果區塊「GS-9」註解自己的
 #                    說明,以及下面這行案例數地板不變的理由)。
@@ -1530,9 +1535,11 @@ check_static_pin_sub() { # check_static_pin_sub <相對路徑> <期望子字串>
 }
 check_static_pin "hooks/selftest.sh" "MIN_CASES=378" "MIN_CASES 釘死 378(2026-08-17 清空輪:F2+7/G3+1/F4+2/G1+4/D-4+3/C-2+3/report-guard+7/審查回歸+3)"
 check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "EXPECTED_CHECKS 釘死 131"
-check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 9" "MIN_CHECKS 釘死 9"
+check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 15" "MIN_CHECKS 釘死 15(A-2/B-5 輪:②改 scoped 拆 3 條 + ⑦⑧⑨ 新增後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 138" "MIN_CHECKS 釘死 138(X-3 補群組數釘之後的實得數)"
-check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 77" "EXPECTED_MAPPED_FILES 釘死 77(精確值,不是地板;v3.8.0 輪新增三支腳本後的實得數)"
+check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 36" "MIN_CHECKS 釘死 36(v3.8.0 落地輪 B-4:A-1 情境 I 十子案 + B-1 動作定位/負向 fixture 後的實得數)"
+check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 30" "MIN_CHECKS 釘死 30(v3.8.0 落地輪 B-4:A-3 動線鏈 + B-2/B-3 scoped + C-2 三正本後的實得數)"
+check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 78" "EXPECTED_MAPPED_FILES 釘死 78(精確值,不是地板;v3.8.0 輪 D-1 新增 devflow-python-lib.sh 後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 24" "EXPECTED_GROUPS 釘死 24(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的
@@ -1582,11 +1589,96 @@ for _gname in "${REQUIRED_GROUP_NAMES[@]}"; do
 done
 unset _gname
 
+# ── B-4:三支守衛的「地板 block」外釘(不只釘常數)─────────────────────────────
+# 只釘 `MIN_CHECKS = N` 的話:把 `if CHECKS < MIN_CHECKS:` 整段刪掉,常數還在、
+# 上面的靜態釘照樣綠,地板等於不存在(第 5 型:斷言可被整段刪除);只釘 condition
+# 也不夠:保留 `if ...:`、body 換成 `pass`,一樣假綠。這裡解析各守衛 heredoc 內的
+# Python AST,對同一個 scoped block 釘三件事:①非註解的 condition(counter <
+# MIN_CHECKS 的 If 節點 —— AST 天生不吃註解/字串,別處註解或訊息字串出現同字樣
+# 不會誤中)②該 condition 的縮排 body 真的記錄 failure(FAILED += 1 或
+# fails.append(...))③記錄的那個名字最後確實走到非零退出(`if FAILED:`/`if fails:`
+# 的 body 內含 sys.exit(1) 或 raise SystemExit(1))—— effect 必須綁在同一條鏈上,
+# 不是檔案別處剛好有 exit 1。同上方靜態釘:非變異案例,不計入
+# EXPECTED_CONTROLS/NEGATIVES/TOTAL。
+check_floor_block() { # check_floor_block <相對路徑> <counter名> <fail名> <記錄型:aug|append>
+  local rel="$1" counter="$2" failname="$3" kind="$4" out
+  out=$(REL="$rel" COUNTER="$counter" FAILNAME="$failname" KIND="$kind" PIN_ROOT="$ROOT" python3 - <<'PYFLOOR' 2>&1
+import ast, os, sys
+rel = os.environ["REL"]; counter = os.environ["COUNTER"]
+failname = os.environ["FAILNAME"]; kind = os.environ["KIND"]
+path = os.path.join(os.environ["PIN_ROOT"], rel)
+lines = open(path, encoding="utf-8").read().splitlines()
+starts = [i for i, l in enumerate(lines) if "<<'PY'" in l]
+ends = [i for i, l in enumerate(lines) if l.strip() == "PY"]
+if len(starts) != 1 or not ends:
+    print(f"heredoc 定位失敗(<<'PY' 出現 {len(starts)} 次)"); sys.exit(1)
+tree = ast.parse("\n".join(lines[starts[0] + 1:ends[-1]]))
+
+def is_floor_test(t):
+    return (isinstance(t, ast.Compare) and isinstance(t.left, ast.Name)
+            and t.left.id == counter and len(t.ops) == 1
+            and isinstance(t.ops[0], ast.Lt) and len(t.comparators) == 1
+            and isinstance(t.comparators[0], ast.Name)
+            and t.comparators[0].id == "MIN_CHECKS")
+
+def records_failure(stmt):
+    if kind == "aug":
+        return (isinstance(stmt, ast.AugAssign) and isinstance(stmt.target, ast.Name)
+                and stmt.target.id == failname and isinstance(stmt.op, ast.Add))
+    return (isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call)
+            and isinstance(stmt.value.func, ast.Attribute)
+            and stmt.value.func.attr == "append"
+            and isinstance(stmt.value.func.value, ast.Name)
+            and stmt.value.func.value.id == failname)
+
+floors = [n for n in ast.walk(tree) if isinstance(n, ast.If) and is_floor_test(n.test)]
+if not floors:
+    print(f"找不到 `if {counter} < MIN_CHECKS:` 的非註解 condition(地板 if 整段被刪或註解掉)")
+    sys.exit(1)
+if not any(any(records_failure(s) for s in f.body) for f in floors):
+    print(f"condition 還在,但其 body 裡沒有記錄 failure 的 `{failname}`(body 被換成 pass/空操作)")
+    sys.exit(1)
+
+def exits_nonzero(node):
+    if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "exit" and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "sys" and len(node.args) == 1
+            and isinstance(node.args[0], ast.Constant) and node.args[0].value == 1):
+        return True
+    if (isinstance(node, ast.Raise) and isinstance(node.exc, ast.Call)
+            and isinstance(node.exc.func, ast.Name) and node.exc.func.id == "SystemExit"
+            and len(node.exc.args) == 1 and isinstance(node.exc.args[0], ast.Constant)
+            and node.exc.args[0].value == 1):
+        return True
+    return False
+
+for n in ast.walk(tree):
+    if isinstance(n, ast.If) and isinstance(n.test, ast.Name) and n.test.id == failname:
+        for s in n.body:
+            if any(exits_nonzero(sub) for sub in ast.walk(s)):
+                sys.exit(0)
+print(f"`if {failname}:` 的 body 裡找不到 sys.exit(1)/raise SystemExit(1)"
+      " —— 地板記錄了 failure 但沒有非零退出路徑")
+sys.exit(1)
+PYFLOOR
+)
+  if [ $? -eq 0 ]; then
+    echo "  ✓ 地板 block 外釘:$rel(condition+記錄 failure+非零退出同鏈)"
+  else
+    echo "  ✗ 地板 block 外釘:$rel —— ${out}"
+    STATIC_PIN_FAIL=1
+  fi
+}
+check_floor_block "scripts/check-integration-regression-guard.sh" "CHECKS" "FAILED" "aug"
+check_floor_block "scripts/check-status-policy.sh" "CHECKS" "FAILED" "aug"
+check_floor_block "scripts/check-dev-setup-discipline.sh" "checks" "fails" "append"
+
 if [ "$STATIC_PIN_FAIL" -ne 0 ]; then
   echo "⛔ 靜態互釘:至少一處字面值/子字串與釘死清單不符"
   exit 1
 fi
-echo "  ✓ 七支地板/群組數靜態互釘全過(hooks/selftest.sh / run_tests.py / check-dev-setup-discipline.sh / check-gate-twin.sh MIN_CHECKS / check-file-map.sh / check-gate-twin.sh EXPECTED_GROUPS / check-design-contract.sh EXPECTED_CHECK_SKIP_CALLS)"
+echo "  ✓ 九支地板/群組數靜態互釘全過(hooks/selftest.sh / run_tests.py / check-dev-setup-discipline.sh / check-integration-regression-guard.sh / check-status-policy.sh / check-gate-twin.sh MIN_CHECKS / check-file-map.sh / check-gate-twin.sh EXPECTED_GROUPS / check-design-contract.sh EXPECTED_CHECK_SKIP_CALLS)"
+echo "  ✓ 三支守衛地板 block AST 外釘全過(check-integration-regression-guard.sh / check-status-policy.sh / check-dev-setup-discipline.sh;condition+記錄 failure+非零退出同鏈,B-4)"
 echo "  ✓ guard-selfpin 兩條斷言字面 + 24 個群組名逐字整行釘全過(X-3 HIGH-1/MED,二次複審後改為整行釘)"
 echo
 

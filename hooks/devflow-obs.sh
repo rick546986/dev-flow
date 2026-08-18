@@ -7,6 +7,7 @@
 set -u
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 HERE=$(cd "$(dirname "$0")" && pwd)
+. "$HERE/devflow-python-lib.sh"  # 直譯器解析;缺直譯器 fail-open(理由見該檔)
 CMD="${1:-help}"
 if [ "$CMD" = "help" ]; then
   echo "用法: devflow-obs.sh event [slug] | hook-event | context-manifest <att> |"
@@ -17,4 +18,4 @@ if [ "$CMD" = "help" ]; then
   exit 0
 fi
 shift
-PYTHONDONTWRITEBYTECODE=1 exec /usr/bin/python3 "$HERE/_obs_impl.py" "$CMD" "$ROOT" "$@"
+PYTHONDONTWRITEBYTECODE=1 exec "$DEVFLOW_PY" "$HERE/_obs_impl.py" "$CMD" "$ROOT" "$@"

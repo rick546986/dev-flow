@@ -25,7 +25,9 @@ def _obs_deny(gate, violation, target=""):
         if sid:
             payload["session_ref"] = sid
         subprocess.run(
-            ["/usr/bin/python3",
+            # sys.executable = 正在跑本檔的直譯器;不重新解析路徑,避免兩次解析在
+            # 特殊環境(pyenv/conda/Windows Git Bash)下拿到不同直譯器。
+            [sys.executable,
              os.path.join(os.path.dirname(os.path.abspath(__file__)), "_obs_impl.py"),
              "hook-event", root],
             input=json.dumps(payload), text=True, capture_output=True, timeout=5)

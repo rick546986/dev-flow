@@ -4,4 +4,5 @@
 # ⚠️ payload 走 stdin 直通 python(F2 同型對齊:impl 從 stdin 取 session_id 記 obs,
 # 舊版 `cat >/dev/null` 丟棄輸入,session_ref 永遠帶不上;env 傳遞則撞 ARG_MAX)。
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-exec /usr/bin/python3 "$(dirname "$0")/_postbash_impl.py" "$ROOT"
+. "$(dirname "$0")/devflow-python-lib.sh"  # 直譯器解析;缺直譯器 fail-open(理由見該檔)
+exec "$DEVFLOW_PY" "$(dirname "$0")/_postbash_impl.py" "$ROOT"

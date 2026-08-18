@@ -91,7 +91,7 @@ def _obs_deny(gate, violation, target=""):
         if sid:
             payload["session_ref"] = sid
         subprocess.run(
-            ["/usr/bin/python3",
+            [sys.executable,  # 呼叫自己這個直譯器;路徑解析正本 = hooks/devflow-python-lib.sh
              os.path.join(os.path.dirname(os.path.abspath(__file__)), "_obs_impl.py"),
              "hook-event", root],
             input=json.dumps(payload), text=True, capture_output=True, timeout=5)

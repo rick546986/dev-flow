@@ -13,18 +13,19 @@
 set -u
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 HERE=$(cd "$(dirname "$0")" && pwd)
+. "$HERE/devflow-python-lib.sh"  # 直譯器解析;缺直譯器 fail-open(理由見該檔)
 CMD="${1:-status}"
 case "$CMD" in
-  start)   shift; /usr/bin/python3 "$HERE/_exec_impl.py" start "$ROOT" "$@";;
-  stop)    /usr/bin/python3 "$HERE/_exec_impl.py" stop "$ROOT";;
-  status)  /usr/bin/python3 "$HERE/_exec_impl.py" status "$ROOT";;
-  allow)   /usr/bin/python3 "$HERE/_exec_impl.py" allow "$ROOT" "${2:-}" "${4:-}";;
+  start)   shift; "$DEVFLOW_PY" "$HERE/_exec_impl.py" start "$ROOT" "$@";;
+  stop)    "$DEVFLOW_PY" "$HERE/_exec_impl.py" stop "$ROOT";;
+  status)  "$DEVFLOW_PY" "$HERE/_exec_impl.py" status "$ROOT";;
+  allow)   "$DEVFLOW_PY" "$HERE/_exec_impl.py" allow "$ROOT" "${2:-}" "${4:-}";;
   candidate|parallel-init|plan|wave-open|wave-close|task-candidate|task-state|task-integrate|task-rework|rebuild-plan|review|review-unlock|tier-exempt)
-           shift; /usr/bin/python3 "$HERE/_exec_impl.py" "$CMD" "$ROOT" "$@";;
-  gate)    shift; /usr/bin/python3 "$HERE/_gate_impl.py" "$ROOT" "$@";;
+           shift; "$DEVFLOW_PY" "$HERE/_exec_impl.py" "$CMD" "$ROOT" "$@";;
+  gate)    shift; "$DEVFLOW_PY" "$HERE/_gate_impl.py" "$ROOT" "$@";;
   event)   "$HERE/devflow-obs.sh" event "${2:-}";;
   doctor)  shift; "$HERE/devflow-doctor.sh" "$@";;
-  stage3)  shift; exec /usr/bin/python3 "$HERE/_stage3_impl.py" "$@";;
+  stage3)  shift; exec "$DEVFLOW_PY" "$HERE/_stage3_impl.py" "$@";;
   *) echo "用法: devflow-exec.sh start <slug> | stop | status | allow <file> --reason \"...\""
      echo "parallel: start <slug> --task T-n [--wave N --base <sha>] | parallel-init <slug> | plan <slug>"
      echo "          wave-open|wave-close <slug> | task-candidate|task-state|task-integrate|task-rework <slug> <T-n> ..."

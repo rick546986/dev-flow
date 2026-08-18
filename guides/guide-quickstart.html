@@ -181,6 +181,9 @@
   <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\</code>;
   dev-talk 已併入同一 plugin,單一正本),但執行中的 session 不會自動感知改動,要 reload
   新版 skill/hook 才生效(見 <code>dev-setup</code> SKILL「注意」節)。</p>
+  <p class="muted">環境需求:hooks 需要 python3(找不到時守衛只印警告後跳過,不擋工具呼叫);
+  Windows Git Bash 要另外裝 Python 並確認 <code>python3</code> 找得到,或設
+  <code>DEVFLOW_PYTHON</code> 指向直譯器 —— 解析順序與細節見母版 README「環境需求」。</p>
 
   <h3>1. 進專案打 dev-setup(不需參數)</h3>
   <p><span class="badge you">跟 AI 說</span> cd 進新專案 repo root 後:</p>
@@ -439,20 +442,42 @@
   也不會讀到這份導覽頁提前偷跑下游知識,圍欄①不因本頁存在而破。</blockquote>
 
   <h3>Stage 6 三步順序為何不可調</h3>
-  <p>正確順序:<strong>先進工作樹 → <code>devflow-exec.sh start</code> → <code>status</code> 核對 → <code>dev-run</code></strong>。
-  完整可複製指令(單線用 feature branch,多 feature 並行用 worktree 互不干擾):</p>
-  <pre># 單線(不需要 cd,已經在這棵樹上):
-git checkout -b feature/&lt;slug&gt;
+  <p>正確順序:<strong>先進工作樹 → <code>devflow-exec.sh start</code> → <code>status</code> 核對 →
+  <code>devflow-doctor.sh</code> → <code>dev-run</code></strong>。
+  完整可複製指令(單線用 feature branch,多 feature 並行用 worktree 互不干擾;
+  兩條動線都含「開 branch + 持久化 <code>FORK_INTEGRATION_SHA</code> 錨點 + STATUS 交接」,
+  漏了錨點,Stage 7 的整合回歸工具就拿不到 <code>--fork-sha</code> 的輸入):</p>
+  <pre># 共用起手式(fetch 一定在取錨點之前,兩步不得拆開或倒置):
+git fetch &lt;remote&gt;
+FORK=$(git rev-parse --verify "refs/remotes/&lt;remote&gt;/&lt;整合分支&gt;^{commit}")  # 40 碼;^{commit} 驗證它是 commit
 
-# 並行(多 feature 互不干擾,建完務必 cd 進去):
-git worktree add -b feature/&lt;slug&gt; &lt;path&gt;
-cd &lt;path&gt;
+# 單線(同一棵樹;開 branch + 持久化錨點是同一個不可拆動作,中間不准插別的事):
+git switch -c feat/&lt;slug&gt; "$FORK"
+test "$(git rev-parse HEAD)" = "$FORK"  # 不相等 = 中間出過事,停下重來
+# 立刻把 $FORK 那 40 碼寫進 docs/dev/&lt;slug&gt;/6-implementation-notes.md 步 0 的固定欄,逐字格式:
+#   FORK_INTEGRATION_SHA: &lt;40 碼&gt;   ← Stage 7 整合回歸工具 --fork-sha 吃的就是這個值
+git add docs/dev/&lt;slug&gt;/6-implementation-notes.md
+git commit -m "chore(&lt;slug&gt;): 記 FORK_INTEGRATION_SHA 錨點"  # 只 commit 這個錨點,不夾其他改動
+git push -u &lt;remote&gt; feat/&lt;slug&gt;
+git switch &lt;整合分支&gt;  # STATUS 交接:該列 Branch 欄換成 &lt;remote&gt;/feat/&lt;slug&gt;,commit 並 push(STATUS 只在整合分支改)
+git switch feat/&lt;slug&gt;  # 回 feature branch,確認在這條 branch 上才准跑下面的 start
+
+# 並行(多 feature 互不干擾;另一組指令,不是把單線那組改一個字):
+git worktree add -b feat/&lt;slug&gt; &lt;path&gt; "$FORK"
+test "$(git -C &lt;path&gt; rev-parse HEAD)" = "$FORK"  # 一定要 -C,少了它驗的是你站的樹,不是新樹
+# 在新樹內把 $FORK 寫進 6-notes 步 0 固定欄(FORK_INTEGRATION_SHA: &lt;40 碼&gt;),只 commit 錨點:
+git -C &lt;path&gt; add docs/dev/&lt;slug&gt;/6-implementation-notes.md
+git -C &lt;path&gt; commit -m "chore(&lt;slug&gt;): 記 FORK_INTEGRATION_SHA 錨點"
+git -C &lt;path&gt; push -u &lt;remote&gt; feat/&lt;slug&gt;
+# 回原整合 checkout 更新 STATUS 該列 Branch 欄(commit 並 push),再進新樹:
+cd &lt;path&gt;  # 確認 cwd 已在 worktree、branch 是 feat/&lt;slug&gt;
 
 # 兩者接下來都一樣(PLUGIN = 安裝路徑,版號依安裝而定,見 docs/PLUGIN.md;
 # Windows 對應 %USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;):
 PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
 "$PLUGIN/hooks/devflow-exec.sh" start &lt;slug&gt;
-"$PLUGIN/hooks/devflow-exec.sh" status  # 核對 slug 與 cwd 相符</pre>
+"$PLUGIN/hooks/devflow-exec.sh" status  # 核對 slug 與 cwd 相符
+"$PLUGIN/hooks/devflow-doctor.sh"  # 版本握手 fail-closed,INCOMPATIBLE 即停</pre>
   <p class="muted">跟 AI 說 <code>dev-run &lt;slug&gt;</code> 才是最後一步。<code>dev-run</code> SKILL 原文:</p>
   <blockquote>守衛只武裝「start 當下所在的那棵樹」—— 先 start 再換樹 = 安全網失效。</blockquote>
   <p class="muted">原因是 git worktree 各自有獨立的 git-dir(<code>.git/worktrees/&lt;name&gt;</code>),

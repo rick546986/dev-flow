@@ -823,8 +823,11 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     <p>⚠️ 第四步一定要帶 <code>-C &lt;worktree-path&gt;</code> —— 少了它,<code>git rev-parse HEAD</code> 讀的是
     你現在站的那個 checkout,不是剛建好的 worktree:驗證會通過,但它驗的是別人,
     新 worktree 建在錯的點上也照樣放行。<code>git worktree add</code> 也要明示 <code>&quot;$FORK&quot;</code>,
-    不要讓它預設從當前 HEAD 建。四步跑完,把 <code>$FORK</code> 那 40 碼寫進本檔;
-    之後不管 merge/rebase 幾次都<strong>不准更新它</strong> —— 它記的是「歷史上的那個時刻」,
+    不要讓它預設從當前 HEAD 建。四步跑完,立刻把 <code>$FORK</code> 那 40 碼用下面這個
+    逐字欄位寫進本檔(Stage 7 整合回歸工具 <code>--fork-sha</code> 吃的就是這個欄位的值):</p>
+    <pre><code>FORK_INTEGRATION_SHA: &lt;40 碼&gt;
+    </code></pre>
+    <p>之後不管 merge/rebase 幾次都<strong>不准更新它</strong> —— 它記的是「歷史上的那個時刻」,
     不是「現在的狀態」,一更新就退化成 merge-base,等於沒有。
     多 feature 並行(多 worktree)另做兩件事:
     ①STATUS.md 不在 worktree 內改 —— 它只在整合分支(<code>develop</code> 或 <code>main</code>,依專案)
@@ -835,6 +838,12 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     有狀態的外部依賴。隔離方式依專案技術棧自理,母版不規定做法 —— 母版規定了
     「並行用 worktree」,就要負責講清楚這個規定的代價,所以檢查項要管;
     但怎麼隔離是各專案技術棧的事,母版規定做法會變成「規定了但不適用」。
+    ⚠️ <strong>worktree 交接(並行動線的最後一步)</strong>:上面兩件事(STATUS 在整合分支上改、
+    執行環境隔離確認)做完後,明確切進新樹:</p>
+    <pre><code class="language-bash">cd &lt;worktree-path&gt;          # 從這裡開始,後續所有指令都在這棵樹上跑
+    </code></pre>
+    <p>後面的 <code>devflow-exec.sh status</code> <strong>必須在這個目錄下跑</strong>,它會核對 slug 與 cwd
+    相符 —— 在原 checkout 跑會核對到別的東西。
     ⚠️ <strong>守衛武裝自檢(硬關卡,第一動)</strong>:跑 <code>devflow-exec.sh status</code>,確認
     <code>.devflow/exec.json</code> <strong>存在</strong>且 slug 正確。<strong>沒武裝就不准開工</strong> ——
     guard hook 在 <code>.devflow/exec.json</code> 不存在時是<strong>靜默沉睡</strong>的
@@ -1851,6 +1860,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>guard/postbash/prebash/exec/gate 這幾支背後真正判斷「武裝了沒、契約有沒有被動過」的規則都寫在這裡,
             其他檔案只是各自的殼,共用同一套邏輯避免各判各的。</td>
         <td>被下列 <code>_impl.py</code> 動態載入,不單獨執行</td><td>隨呼叫者同格(橫跨 Pre/Post/人工,不專屬單一格)</td></tr>
+    <tr><td><code>devflow-python-lib.sh</code></td>
+        <td>各支 shell hook 找 python 直譯器的唯一正本(順序:<code>DEVFLOW_PYTHON</code> 覆寫 →
+            系統 <code>/usr/bin/python3</code> → PATH),找不到就印一行警告後放行(只跳過守衛,
+            不擋工具呼叫 —— 擋住的代價是把宿主卡死);母版自用的共用邏輯,無執行位元。</td>
+        <td>被上列各支 <code>*.sh</code> hook source,不單獨執行</td><td>隨呼叫者同格(橫跨 Pre/Post/人工,不專屬單一格)</td></tr>
     <tr><td><code>_prebash_impl.py</code></td><td><code>devflow-prebash.sh</code> 的實作本體。</td>
         <td><code>devflow-prebash.sh</code> 呼叫</td><td>隨 <code>devflow-prebash.sh</code>(同格)</td></tr>
     <tr><td><code>_guard_impl.py</code></td><td><code>devflow-guard.sh</code> 的實作本體。</td>

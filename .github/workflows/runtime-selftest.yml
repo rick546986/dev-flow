@@ -31,7 +31,7 @@ jobs:
 
       - name: Show versions
         run: |
-          /usr/bin/python3 --version
+          . hooks/devflow-python-lib.sh && "$DEVFLOW_PY" --version
           git --version
 
       # MASTER 與 PLUGIN 併repo 後指向同一處;顯式帶入而非依賴 __file__ fallback,
@@ -51,6 +51,31 @@ jobs:
       # 這條是 2026-08-13 那次 gate-consistency 壞掉九天沒被發現的直接回歸測試。
       - name: gate-consistency 無環境變數(__file__ fallback 回歸)
         run: env -u DEVFLOW_MASTER -u DEVFLOW_PLUGIN -u CLAUDE_PLUGIN_ROOT bash hooks/gate-consistency.sh
+
+      # 直譯器解析回歸(D-1,2026-08-18 Windows 現場):hook 一律經
+      # hooks/devflow-python-lib.sh 解析直譯器(DEVFLOW_PYTHON → /usr/bin/python3 → PATH),
+      # 找不到直譯器時 fail-open(警告+exit 0),不得把使用者的宿主卡死。
+      # ubuntu 上 /usr/bin/python3 永遠存在,寫死路徑的回歸在上面的 selftest 不會紅 ——
+      # 所以這一步用「靜態禁寫死 + 缺直譯器行為 + 覆寫通道全套自測」三面把它釘死;
+      # 任何 hook 改回 exec /usr/bin/python3,第 1 面立即紅。
+      - name: 直譯器解析回歸(禁寫死路徑 + fail-open + DEVFLOW_PYTHON 覆寫)
+        run: |
+          set -eu
+          # 1) hooks/ 內除解析正本外不得再出現寫死的 /usr/bin/python3
+          if grep -rn "/usr/bin/python3" hooks/ --include="*.sh" --include="*.py" \
+               | grep -v "hooks/devflow-python-lib.sh"; then
+            echo "⛔ hooks/ 出現寫死的 /usr/bin/python3(解析正本以外)——Windows 回歸" >&2
+            exit 1
+          fi
+          # 2) 缺直譯器 fail-open:警告一行 + rc=0(舊寫法無警告直接跑 impl → 這條紅)
+          out=$(DEVFLOW_PYTHON=/nonexistent/python3 bash hooks/devflow-prebash.sh </dev/null 2>&1); rc=$?
+          [ "$rc" -eq 0 ] || { echo "⛔ fail-open 失效:rc=$rc" >&2; exit 1; }
+          case "$out" in *"找不到 python3"*) : ;; *)
+            echo "⛔ 缺直譯器未走解析邏輯(無警告輸出):$out" >&2; exit 1 ;; esac
+          # 3) DEVFLOW_PYTHON 覆寫通道跑整套自測(證明解析邏輯會退回/接受覆寫)
+          DEVFLOW_PYTHON=$(command -v python3) bash hooks/selftest.sh
+        env:
+          DEVFLOW_MASTER: ${{ github.workspace }}
 
       - name: Scope note
         if: always()

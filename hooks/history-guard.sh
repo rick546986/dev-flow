@@ -16,10 +16,12 @@
 #   比它想防的問題更危險。
 set -u
 
+. "$(dirname "$0")/devflow-python-lib.sh"  # 直譯器解析;缺直譯器 fail-open(理由見該檔)
+
 INPUT=$(cat 2>/dev/null) || exit 0
 [ -n "$INPUT" ] || exit 0
 
-FILE=$(printf '%s' "$INPUT" | /usr/bin/python3 -c "import json,sys
+FILE=$(printf '%s' "$INPUT" | "$DEVFLOW_PY" -c "import json,sys
 try: print(json.load(sys.stdin).get('tool_input',{}).get('file_path',''))
 except Exception: pass" 2>/dev/null)
 

@@ -40,7 +40,11 @@ updated:
 >    ⚠️ 第四步一定要帶 `-C <worktree-path>` —— 少了它,`git rev-parse HEAD` 讀的是
 >    你現在站的那個 checkout,不是剛建好的 worktree:驗證會通過,但它驗的是別人,
 >    新 worktree 建在錯的點上也照樣放行。`git worktree add` 也要明示 `"$FORK"`,
->    不要讓它預設從當前 HEAD 建。四步跑完,把 `$FORK` 那 40 碼寫進本檔;
+>    不要讓它預設從當前 HEAD 建。四步跑完,立刻把 `$FORK` 那 40 碼用下面這個
+>    逐字欄位寫進本檔(Stage 7 整合回歸工具 `--fork-sha` 吃的就是這個欄位的值):
+>    ```
+>    FORK_INTEGRATION_SHA: <40 碼>
+>    ```
 >    之後不管 merge/rebase 幾次都**不准更新它** —— 它記的是「歷史上的那個時刻」,
 >    不是「現在的狀態」,一更新就退化成 merge-base,等於沒有。
 >    多 feature 並行(多 worktree)另做兩件事:
@@ -52,6 +56,13 @@ updated:
 >    有狀態的外部依賴。隔離方式依專案技術棧自理,母版不規定做法 —— 母版規定了
 >    「並行用 worktree」,就要負責講清楚這個規定的代價,所以檢查項要管;
 >    但怎麼隔離是各專案技術棧的事,母版規定做法會變成「規定了但不適用」。
+>    ⚠️ **worktree 交接(並行動線的最後一步)**:上面兩件事(STATUS 在整合分支上改、
+>    執行環境隔離確認)做完後,明確切進新樹:
+>    ```bash
+>    cd <worktree-path>          # 從這裡開始,後續所有指令都在這棵樹上跑
+>    ```
+>    後面的 `devflow-exec.sh status` **必須在這個目錄下跑**,它會核對 slug 與 cwd
+>    相符 —— 在原 checkout 跑會核對到別的東西。
 >    ⚠️ **守衛武裝自檢(硬關卡,第一動)**:跑 `devflow-exec.sh status`,確認
 >    `.devflow/exec.json` **存在**且 slug 正確。**沒武裝就不准開工** ——
 >    guard hook 在 `.devflow/exec.json` 不存在時是**靜默沉睡**的

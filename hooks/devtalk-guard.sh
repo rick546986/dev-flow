@@ -8,8 +8,9 @@
 #       python,故直接用小段 inline python3 組 payload 餵同一支 CLI。
 #       ⚠️ obs 寫入失敗(例如 runs 目錄不可寫、守衛未武裝)絕不得動到 deny/放行
 #       判定 —— 整段包 || true 且吞掉 stdout/stderr,之後照樣 exit 2。
+. "$(dirname "$0")/devflow-python-lib.sh"  # 直譯器解析;缺直譯器 fail-open(理由見該檔)
 INPUT=$(cat)
-FILE=$(printf '%s' "$INPUT" | /usr/bin/python3 -c "import json,sys
+FILE=$(printf '%s' "$INPUT" | "$DEVFLOW_PY" -c "import json,sys
 try: print(json.load(sys.stdin).get('tool_input',{}).get('file_path',''))
 except Exception: pass" 2>/dev/null)
 case "$FILE" in
@@ -27,10 +28,10 @@ if [ -n "$LEAK" ]; then
   # F2 同型:不把整包 $INPUT 塞進單次環境變數(HOOK_INPUT="$INPUT" cmd 也是 exec,
   # 大 payload 一樣撞 ARG_MAX → obs 靜默丟失)。printf 是 builtin 不經 exec,先在
   # shell 內抽出小小的 session_id 再傳,環境變數只載幾十 bytes。
-  SID=$(printf '%s' "$INPUT" | /usr/bin/python3 -c "import json,sys
+  SID=$(printf '%s' "$INPUT" | "$DEVFLOW_PY" -c "import json,sys
 try: print(json.load(sys.stdin).get('session_id',''))
 except Exception: pass" 2>/dev/null)
-  DEVTALK_SID="$SID" DEVTALK_TARGET="$FILE" /usr/bin/python3 - \
+  DEVTALK_SID="$SID" DEVTALK_TARGET="$FILE" "$DEVFLOW_PY" - \
     "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" "$(dirname "$0")" \
     <<'PYEOF' >/dev/null 2>&1 || true
 import json, os, subprocess, sys
@@ -49,7 +50,9 @@ if sid:
     payload["session_ref"] = sid
 try:
     subprocess.run(
-        ["/usr/bin/python3", os.path.join(here, "_obs_impl.py"), "hook-event", root],
+        # sys.executable = 正在跑本段的直譯器(外層殼已解析過);不重新解析,避免兩次
+        # 解析在特殊環境下拿到不同直譯器。
+        [sys.executable, os.path.join(here, "_obs_impl.py"), "hook-event", root],
         input=json.dumps(payload), text=True, capture_output=True, timeout=5)
 except Exception:
     pass
