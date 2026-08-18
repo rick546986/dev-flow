@@ -12,7 +12,10 @@
 > 套用同一條規則,兩份要點由 `scripts/check-status-policy.sh` 對帳):ship 移出
 > Active 由**合併那個 PR 的人**在合併之後、於整合分支上做,不塞進 feature branch
 > 的 PR。寫入紀律:改本檔前 `git fetch` 再 `git pull --ff-only`;「只改自己那一列
-> → 立刻 commit → 立刻推」一氣做完;`push` 被拒 → `git fetch` 後
+> → 立刻落地 → 立刻推」一氣做完 —— 落點看專案 git 紀律(本 repo 的整合分支 `main`
+> 有全域 hook 擋直接 commit,所以走短命 branch → commit → 立刻 `merge --no-ff`
+> 回來;允許直接 commit 的專案就直接做),兩條路都要滿足**寫入窗口最短**這個真正
+> 的要求;`push` 被拒 → `git fetch` 後
 > `git rebase origin/main` 重放自己未發布的 commit,解完衝突再推,並核對整張表的
 > **列集合**沒有把別人的列刪掉;**不准**用 `push --force` / `reset --hard` 解決
 > 本檔的推送衝突。

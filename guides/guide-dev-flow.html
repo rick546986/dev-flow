@@ -1214,7 +1214,7 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <div class="card"><h4>author ≠ approver</h4><p>G1/G2/G3 的核准者不可以是該文檔的 owner。無適格人類第二人不跳過 Agent fallback;只有前兩種 reviewer 都不可用時才記錄 owner 自審,不假裝有四眼。</p></div>
     <div class="card"><h4>Quiz gate</h4><p><strong>不可逆改動</strong>(schema/API 契約/跨模組介面)merge 前<strong>必做</strong>:AI 出 3-5 題考 approver,全對才 merge;其餘 full lane <strong>選配</strong>(approver 可要求),fast lane <strong>免</strong>。</p></div>
     <div class="card"><h4>三連動</h4><p>每過一個 gate:frontmatter status + <code>STATUS.md</code> + 同名 html twin 三者同步更新,禁漏一項。</p></div>
-    <div class="card"><h4>規劃層 git</h4><p>接手起手先看 <code>git status</code>,與本 feature 無關的改動 → 回報使用者處置,不與文檔混流;每過一個 gate,把該階段文檔commit 一次(只含文檔)。Stage 1-5 規劃階段文檔可直接落 develop(純文檔無程式碼,低風險);Stage 6 起手式才開 feature branch。</p></div>
+    <div class="card"><h4>規劃層 git</h4><p>接手起手先看 <code>git status</code>,與本 feature 無關的改動 → 回報使用者處置,不與文檔混流;每過一個 gate,把該階段文檔commit 一次(只含文檔)。Stage 1-5 規劃階段文檔落在整合分支(<code>develop</code>)上(純文檔無程式碼,低風險);該分支有護欄擋直接 commit 時,走短命 branch → commit → 立刻 <code>merge --no-ff</code> 回去,不要把文檔混進 feature branch。Stage 6 起手式才開 feature branch。</p></div>
   </div>
 
   <div class="parity">

@@ -99,6 +99,11 @@ POINTS = [
     ("改前 pull --ff-only", ["pull --ff-only"]),
     ("push 被拒走 rebase 重放並核對列集合", ["rebase", "列集合"]),
     ("禁 force push / reset --hard", ["push --force", "reset --hard"]),
+    # 「窗口最短」= 寫入紀律真正要的東西;「立刻 commit」只是達成它的手段之一。
+    # 母版原本把手段寫成規則(在有護欄擋直接 commit 的專案上會變成「照做就違規」),
+    # 拆成「動作/落點」兩層之後,能被機械釘住的就只剩這個目的本身 —— 沒有這一條,
+    # 今天有人把整段寫入紀律刪掉只留 pull/rebase/force 三條,本守衛照樣全綠。
+    ("寫入窗口最短", ["窗口最短"]),
 ]
 
 
@@ -530,13 +535,22 @@ check(bool(devrun_publish_failures(mutated_devrun)),
 mutated_template = template.replace("再發布最終", "不再另外發布")
 check(bool(status_branch_failures(mutated_template)),
       "負向⑰:STATUS Branch 段刪 Stage 6 最終 tip 發布說明 → 紅")
+# ⑱⑲:兩份頂註各拿掉一次「窗口最短」——其餘寫入紀律(pull/rebase/force)原封不動,
+# 唯一的錯誤是把規則的目的拿掉、只留手段。兩份分開試:只釘一份的話,另一份被刪
+# 不會有任何訊號(POINTS 是對兩份各驗一次,負向也要各驗一次才對稱)。
+mutated_template = template.replace("**寫入窗口最短**", "**盡快**")
+check(bool(policy_failures(mutated_template, docs)),
+      "負向⑱:模板頂註拿掉「窗口最短」(其餘寫入紀律都還在)→ 紅")
+mutated_docs = docs.replace("**寫入窗口最短**", "**盡快**")
+check(bool(policy_failures(template, mutated_docs)),
+      "負向⑲:docs 頂註拿掉「窗口最短」→ 紅")
 
 # ── 檢查數地板:防止檢查段/負向 fixture 整段被刪後檢查數靜默縮水仍全綠(B-4)──
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」(同 repo 慣例:
 # check-gate-twin.sh、check-dev-setup-discipline.sh 的 MIN_CHECKS);之後每加一條
 # 檢查都要同步調高。字面值與這整個 if 區塊(condition+記錄 failure+非零退出鏈)
 # 另被 test-architecture-guards.sh 靜態互釘外釘,兩處要同一個 commit 一起改。
-MIN_CHECKS = 30
+MIN_CHECKS = 32
 if CHECKS < MIN_CHECKS:
     FAILED += 1
     print(f"  ✗ 檢查數地板:實際只跑了 {CHECKS} 項(地板 {MIN_CHECKS})—— "

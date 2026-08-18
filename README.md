@@ -309,7 +309,15 @@ RED → GREEN → scope check → Verify
   釘著的清單不得寫死數字。**現有對帳守衛:hooks 掛載 = `check-hooks-accounting.sh`、
   檔案地圖 = `check-file-map.sh`、selftest 案數 = MIN_CASES 地板、散發副本 =
   check-gate-twin N7、gauntlet 版本 = `check-version-sync.sh`。新增這類清單時,
-  要嘛納入既有對帳守衛,要嘛同 commit 補新守衛。(源:`notes/dispatch-accounting-symmetry.md`)
+  要嘛納入既有對帳守衛,要嘛同 commit 補新守衛。
+  **實例二(註解裡的分解式)**:`check-file-map.sh` 的註解寫過
+  「77 = hooks 22 + observability 17 + scripts 36 + tests 2」,常數從 77 調到 78 時
+  分解沒跟著改,而且那個分解在調整之前就已經算錯(hooks 實際 25、scripts 實際 34)。
+  守衛比的是常數不是註解,錯的分解照樣全綠,但下一個做同樣記帳的人會照著它算。
+  **通則的延伸:註解裡的分解式也是「為了驗證而列舉的清單」,同樣受本條約束 ——
+  沒有守衛釘著就不要寫,要數字就跑一次。**這一條不另立守衛(什麼算「分解式」機械
+  判定不出來:訂窄了沒用、訂寬了天天假陽性,而它只會誤導人、不會讓檢查變綠)。
+  (源:`notes/dispatch-accounting-symmetry.md`、`notes/dispatch-status-commit-landing.md`)
 - **守衛與並行**:守衛狀態以「當前工作樹」為單位(`.devflow/exec.json` + git-dir sentinel),
   一個工作樹同一時間只武裝一個模組。武裝中他模組 `start` → 一律拒絕(不靜默覆寫);
   同模組重跑 `start` = re-arm,允許(5-tasks 改動後重釘 scope 的正常路徑)。
@@ -526,8 +534,10 @@ md 側對應規定是 `_templates/5-tasks.md` 頂註,**兩邊講同一件事、m
 - **規劃層 git**:接手起手先看 `git status`,working tree 有與本 feature 無關的
   改動 → 回報使用者處置,不與文檔混流;每過一個 gate,把該階段文檔
   (`docs/dev/<slug>/` + STATUS + CONTEXT)commit 一次,只含文檔。尚未開
-  feature branch 的規劃階段(1-5),文檔 commit 直接落 develop(純文檔無程式碼,
-  低風險;Stage 6 起手式才開 feature branch,見 §5)。
+  feature branch 的規劃階段(1-5),文檔 commit 落在整合分支(`develop`)上(純文檔
+  無程式碼,低風險;Stage 6 起手式才開 feature branch,見 §5);該整合分支有護欄擋
+  直接 commit(branch protection / pre-commit hook)時,走短命 branch → commit →
+  立刻 `merge --no-ff` 回去,**不要因此把文檔混進 feature branch**。
 - 機械錨點註記:以下 G1/G2/G3 定義句內的粗體詞組是 gate-consistency 機械比對
   錨(dev-setup check 第 8 項);增改 gate 條件務必加粗,不加粗則不被機械驗證
   涵蓋。
