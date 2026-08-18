@@ -836,8 +836,40 @@ bash scripts/check-gate-twin.sh                            # 全過
   否則往後看歷史會以為 v3.8.0 上線過又被修
 - 硬約束 1.5 那個一次性的 bootstrap 例外（在 feature branch 上改 `docs/dev/STATUS.md`）
   的理由**要寫進這筆 HISTORY**，不要只寫在 commit message 裡
-- `docs/dev/STATUS.md` 的 Backlog 反映剩下什麼
 - **不要 push、不要 tag、不要發 release**
+
+#### 收帳的重頭戲：把「還欠什麼」收攏成一份，別再散在三個地方
+
+現在要知道 dev-flow 還欠什麼，得同時看三個地方：`docs/dev/STATUS.md` 的 Backlog、
+本檔尾節那張表、`notes/review-requirement-discovery-gaps.md`。
+**而 `docs/dev/STATUS.md` 自己開頭就寫著它的職責是回答「現在誰在做什麼、還有什麼沒做」**——
+現在它答不全，這是同一型的記帳不一致，只是規模小。
+
+**定案：`docs/dev/STATUS.md` 的 Backlog 是待辦的唯一正本。**
+本檔是一次性派工單，做完就過期，不該當長期清單。
+
+本輪收帳時，把下面這幾條**補進 `docs/dev/STATUS.md` 的 Backlog**
+（現在只活在本檔尾節，STATUS 裡沒有）：
+
+| 級 | 一句話 | 來源 |
+|---|---|---|
+| A | v3.8.0 推上去 ＋ 打 tag ＋ 發 release ＋ 確認 CI 綠 —— 本輪修完就該做，是目前唯一的 A 級 | 發版流程第 6–8 步 |
+| B | owner 親自打開 gate twin 產出的 html 驗收「好不好審」，b8 的 verdict 才能從 `REQUEST_CHANGES` 改掉 —— **這件事只有 owner 做得了** | `docs/dev/b8-gate-twin-review-ui/7-review.md:5,180,181` |
+| B | 散發清單收斂成一份正本（source／destination／mode），讓 dev-setup 的 install／check／baseline、dev-release、parity、檔案地圖全部讀同一份 | 本檔 H-1 的八個記帳點 |
+| B | STATUS 真正的單寫入者（或帶鎖的更新器）—— 本輪只縮小了窗口，沒消除同 checkout 的靜默互蓋 | `_templates/STATUS.md` 頂註、本檔 M-2 |
+| C | `engine-fence-masking` 功能早就合進 main，收尾文書沒關（狀態還是 `draft`，Exit Checklist 5 項沒勾） | `docs/dev/engine-fence-masking/7-review.md:4,106-111` |
+| C | 用 Bash 寫檔只有「事後偵測」沒有「當場攔下」（Edit 那條路有擋），文中說要開 ticket 或記 STATUS —— 兩件都沒做 | `docs/dev/engine-fence-masking/7-review.md:100` |
+
+STATUS 裡**已經有的四條不要動**（full lane 觀測、九條需求缺口裁決、第二個範例 feature、
+SDC 大表／Reference App），它們的裁決與理由都還有效。
+
+⚠️ **只是「記」進去，不是「做」**。上面六條**沒有一條**是本輪要動手的
+（其中兩條根本只有 owner 做得到）。補完之後 STATUS 的 Backlog 應該是 **10 條**：
+原有 4 ＋ 新補 6。
+
+⚠️ 順序照 A → B → C 排，同級之間把「擋住別人」的放前面。
+`notes/review-requirement-discovery-gaps.md` 那九條**不要搬全文**，
+STATUS 裡已經有一行指標指過去了，那樣就夠。
 
 ---
 
@@ -890,17 +922,22 @@ bash scripts/check-gate-twin.sh                            # 全過
 
 ---
 
-## 這一輪不做、但欠著的事（給 owner 看，不要動手）
+## 這一輪不做、但欠著的事
 
-| 級 | 一句話 | 位置 |
-|---|---|---|
-| A | v3.8.0 推上去 ＋ 打 tag ＋ 發 release ＋ 確認 CI 綠 —— **等本輪修完才做** | 發版流程第 6–8 步 |
-| B | 拿 dev-flow 自己跑一次完整七站當觀測實驗 | `docs/dev/STATUS.md:51` |
-| B | owner 親自打開 gate twin 產出的 html 驗收「好不好審」，b8 的 verdict 才能從 `REQUEST_CHANGES` 改掉 | `docs/dev/b8-gate-twin-review-ui/7-review.md:5,180,181` |
-| C | `engine-fence-masking` 功能早就合進 main，收尾文書沒關（狀態還是 `draft`，Exit Checklist 5 項沒勾） | `docs/dev/engine-fence-masking/7-review.md:4,106-111` |
-| C | 用 Bash 寫檔只有「事後偵測」沒有「當場攔下」，文中說要開 ticket 或記 STATUS —— 兩件都沒做 | `docs/dev/engine-fence-masking/7-review.md:100` |
-| B | **散發清單收斂成一份正本**（source／destination／mode 各一列），讓 dev-setup 的 install／check／baseline、dev-release、parity、檔案地圖全部讀同一份。現在同一件事分散在五處各寫一份，是典型的「改一個東西要動五個地方」。**本輪不做**：它是既有債的重構，不擋 v3.8.0 正確，硬塞進來會讓這一輪再開一輪 | 本檔 H-1 的八個記帳點就是這個病的清單 |
-| B | **STATUS 真正的單寫入者**：現在的規則只把窗口縮小（機率降低），擋不住「同一個 checkout 上兩個 session 先後寫同一個檔、後寫的靜默蓋掉先寫的」。要嘛指定整條整合分支同一時間只有一個人能寫 STATUS，要嘛做一支像 `history-append.sh` 那樣帶鎖的更新器。**本輪不做**：這是 v3.8.0 之前就存在的風險，不是這一版帶進來的；而且做更新器等於新開一支工具 | `_templates/STATUS.md` 頂註、M-2 |
+**清單不放在這裡** —— 放在「收帳」那節，而且收帳的動作就是把它們寫進
+`docs/dev/STATUS.md` 的 Backlog（待辦的唯一正本）。
+
+同一份清單抄兩個地方，下次只改一邊就開始漂移 —— 這正是本檔 S-1 在修的病，
+不要在同一份派工單裡再犯一次。
+
+兩件事在這裡補充，收帳節沒講：
+
+- **本輪不做散發清單收斂與 STATUS 單寫入者的理由**：前者是既有債的重構，
+  不擋 v3.8.0 正確，硬塞進來會讓這一輪再開一輪；後者是 v3.8.0 之前就存在的風險，
+  不是這一版帶進來的，而且做帶鎖更新器等於新開一支工具。
+- **`docs/dev/STATUS.md` 裡已經有的四條**（full lane 觀測、九條需求缺口裁決、
+  第二個範例 feature、SDC 大表／Reference App）**本輪一個字都不要動** ——
+  它們的裁決與理由都還有效。
 
 ---
 
@@ -914,7 +951,9 @@ bash scripts/check-gate-twin.sh                            # 全過
    每個都要寫「弄壞什麼 → 有沒有真的變紅」。**沒做破壞實驗的守衛一律當成沒做**。
 4. 八個記帳落點逐一交代做了什麼（特別是第 3 點 baseline 與第 5 點
    `dev-release` 的寫死五個 diff —— 這兩處最容易漏），加上 wrapper 掛進聚合器的結果。
-5. 有沒有發現本檔沒提到的問題 —— 列出來問要不要處理，**不要自己動手**。
+5. **`docs/dev/STATUS.md` 的 Backlog 補完之後貼出來**（整張表），並說明是幾條 ——
+   預期 10 條（原有 4 ＋ 新補 6）。不是 10 條就說明為什麼。
+6. 有沒有發現本檔沒提到的問題 —— 列出來問要不要處理，**不要自己動手**。
 
 **每一個結論都要對應到你自己實際跑過的指令與看到的輸出。**
 沒跑過的就寫「未驗證」，不准用推論代替。
