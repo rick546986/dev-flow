@@ -129,6 +129,12 @@ group_architecture() {
   # 新增/改名/刪除 hooks|scripts|observability|tests/parallel-stage6 底下的 *.sh/*.py 沒同步
   # 更新那張表就紅;表裡寫了不存在的檔名也紅。
   run "architecture/check-file-map" scripts/check-file-map.sh || return 1
+  # 整合回歸工具(H-1):八情境+五 mutant+模板順序+正副本 parity。正式工具的
+  # 10/11 是正常結果不是失敗,不能直接掛進本聚合器 —— wrapper 比對後自己回 0/1。
+  run "architecture/check-integration-regression-guard" scripts/check-integration-regression-guard.sh || return 1
+  # STATUS 規則對帳(S-1):模板/母版自用兩份要點、Active 表頭 Branch 欄、
+  # quickstart 手寫範例列(renderer 不同步那段,只有這支在看)。
+  run "architecture/check-status-policy" scripts/check-status-policy.sh || return 1
   # 兩份導覽各自嵌一張完整的生命週期圖(fig-lifecycle / fig-lifecycle-qs)是 owner
   # 明確裁決的雙副本(quickstart 要能自足,不接受單正本+連結取代;見腳本頂註與
   # notes/dispatch-guard-symmetry.md X-6)——雙副本天生會漂移,補這支同步守衛。

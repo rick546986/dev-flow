@@ -6,6 +6,16 @@
 > **做完的不留在本檔** —— 一律追加到 `HISTORY.md`(只增不改的索引,最新在最下面),
 > 值得長期保存的決策另立 `docs/adr/NNNN-slug.md`。這樣本檔永遠只回答一個問題:
 > **現在誰在做什麼、還有什麼沒做。**
+>
+> **本檔只在整合分支(本 repo = `main`)上維護;feature branch / worktree 內一律
+> 不碰本檔**(規則正本與完整理由見 `_templates/STATUS.md` 頂註,本段是母版自己
+> 套用同一條規則,兩份要點由 `scripts/check-status-policy.sh` 對帳):ship 移出
+> Active 由**合併那個 PR 的人**在合併之後、於整合分支上做,不塞進 feature branch
+> 的 PR。寫入紀律:改本檔前 `git fetch` 再 `git pull --ff-only`;「只改自己那一列
+> → 立刻 commit → 立刻推」一氣做完;`push` 被拒 → `git fetch` 後
+> `git rebase origin/main` 重放自己未發布的 commit,解完衝突再推,並核對整張表的
+> **列集合**沒有把別人的列刪掉;**不准**用 `push --force` / `reset --hard` 解決
+> 本檔的推送衝突。
 
 ## Active
 

@@ -19,8 +19,31 @@ updated:
 >
 > 執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併 T):
 > 0. 起手式:圍欄自查 —— 只讀 4-spec/5-tasks/6-notes/CONTEXT.md/living spec,
->    禁讀 1/2/3(要翻才寫得出 = spec 不完整 → 停,回 G2)。開 feature branch
->    (並行 → worktree)。多 feature 並行(多 worktree)另做兩件事:
+>    禁讀 1/2/3(要翻才寫得出 = spec 不完整 → 停,回 G2)。開 feature branch ——
+>    **開 branch 與記分岔錨點是同一個動作的兩半,中間不准插別的事**,照下面四步做,
+>    不可拆。錨點 `FORK_INTEGRATION_SHA` = 開這條 branch 的當下整合分支
+>    (`develop` 或 `main`,依專案)的最新點;Stage 7 的整合回歸工具靠它才算得出
+>    「分岔之後對方多了什麼」—— 事後回頭查會查到已經前進過的點,錨點當場失效:
+>    ```bash
+>    git fetch <remote>
+>    FORK=$(git rev-parse --verify "refs/remotes/<remote>/<整合分支>^{commit}")
+>    git switch -c <feature-branch> "$FORK"
+>    test "$(git rev-parse HEAD)" = "$FORK"   # 不相等 = 中間出過事,停下重來
+>    ```
+>    並行(多 feature)改用 worktree 時是**另一組四步,不是把上面那組改一個字**:
+>    ```bash
+>    git fetch <remote>
+>    FORK=$(git rev-parse --verify "refs/remotes/<remote>/<整合分支>^{commit}")
+>    git worktree add <worktree-path> -b <feature-branch> "$FORK"
+>    test "$(git -C <worktree-path> rev-parse HEAD)" = "$FORK"
+>    ```
+>    ⚠️ 第四步一定要帶 `-C <worktree-path>` —— 少了它,`git rev-parse HEAD` 讀的是
+>    你現在站的那個 checkout,不是剛建好的 worktree:驗證會通過,但它驗的是別人,
+>    新 worktree 建在錯的點上也照樣放行。`git worktree add` 也要明示 `"$FORK"`,
+>    不要讓它預設從當前 HEAD 建。四步跑完,把 `$FORK` 那 40 碼寫進本檔;
+>    之後不管 merge/rebase 幾次都**不准更新它** —— 它記的是「歷史上的那個時刻」,
+>    不是「現在的狀態」,一更新就退化成 merge-base,等於沒有。
+>    多 feature 並行(多 worktree)另做兩件事:
 >    ①STATUS.md 不在 worktree 內改 —— 它只在整合分支(`develop` 或 `main`,依專案)
 >    上維護,規則與理由見 STATUS 模板頂註;②確認執行環境已隔離:容器名/對外 port
 >    (兩個 worktree 同時起得來嗎?)、**資料庫**(共用同一個 DB 時,migration 版本
@@ -46,7 +69,10 @@ updated:
 >    `docs/dev/tools/`,doctor 實跑直接 `⛔ INCOMPATIBLE(fail-closed)`——但整條
 >    Stage 6→7 沒有任何一步要求跑它,所以沒有人被擋。)
 >    完成 = 讀取清單回報 + branch 就位 + **`devflow-exec.sh status` 與
->    `devflow-doctor.sh` 兩份輸出都貼進本檔**。
+>    `devflow-doctor.sh` 兩份輸出都貼進本檔** + **`FORK_INTEGRATION_SHA` 已記進本檔
+>    (40 碼全長)** + **執行環境隔離結果已貼進本檔**:逐項寫容器名/對外 port/
+>    資料庫/快取或佇列/檔案上傳目錄各自怎麼隔離的(實際值,不是「已隔離」三個字);
+>    單一 worktree、沒有並行 → 寫 `n-a:本 feature 未並行`,理由要寫出來。
 > 1. 接手核對:4-spec approved?5-tasks 每 T 有 Verify+Covers?缺 → 停回補。
 >    建 todo 一 T 一項,照 Blocked-by 拓撲序。完成 = todo 與 5-tasks 一一對應。
 > 2. 逐 T 循環:a 照 Covers 先寫失敗測試(名含 S-id)→ RED 輸出貼
