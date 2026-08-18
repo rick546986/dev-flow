@@ -160,3 +160,9 @@
 - 為什麼:版本字串不動,其他機器 /plugin update 拉不到新模板
 - 落在哪:.claude-plugin/plugin.json、hooks/runtime-capabilities.json
 
+## 2026-08-18 · v380-blockers · v3.8.0
+- 做了什麼:v3.8.0 發版前七項必修:H-1 整合回歸演算法工具化(模板內嵌版在合併後才算交集,座標被污染 → 交集灌水或判 n-a 假綠;改為散發工具 devflow-integration-regression.sh,分岔點用 6-notes 步 0 持久化錨點 FORK_INTEGRATION_SHA,fail-closed;母版自檢 wrapper 八情境+五 mutant+模板順序+parity 掛進 devflow-check)、M-1 開 branch=四步不可拆並記錨點、M-2 STATUS 寫入紀律(限定「分支之間」+owner/merger 交接+rebase 重放)、M-3 直接補修走 hotfix branch+PR 且判準可算(Active 表新增 Branch 欄)、S-1 母版自用 STATUS 補同一條規則+check-status-policy.sh 對帳、S-2 check-file-map 地板改精確計數 EXPECTED_MAPPED_FILES=77、L-1 九條審核檔殘留清理。版號維持 3.8.0 —— 該版從未推出、無 tag 無 release,對外不存在,故續編不 bump
+- 為什麼:v3.8.0 建好未推,跨家族三輪審+主線程盤點發現模板內嵌的整合回歸演算法本身是錯的(六輪審查都在查有沒有照抄、沒人查原文對不對),另六條為記帳與對稱補強;bootstrap 例外:「STATUS.md 只在整合分支維護」規則由本輪寫入,而本輪自己在 fix/v380-blockers branch 上改了 docs/dev/STATUS.md —— 規則要到本輪 merge 後才生效,且當時只有一條 branch 在跑,不存在該規則要防的衝突,僅此一次,下一輪起一律照新規則
+- 落在哪:scripts/(新 devflow-integration-regression.sh、check-integration-regression-guard.sh、check-status-policy.sh;check-file-map、test-architecture-guards、devflow-check 修)、docs/dev/tools/ 散發、_templates/{7-review,6-implementation-notes,STATUS}.md、README §5/§7、skills/{dev-setup,dev-release}/SKILL.md、guides 兩份、notes 兩份加註
+- 詳細:notes/dispatch-v380-blockers.md
+
