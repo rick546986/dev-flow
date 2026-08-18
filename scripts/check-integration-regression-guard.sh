@@ -6,8 +6,9 @@
 # (規格正本 notes/dispatch-v380-blockers.md H-1)。本 wrapper 把行為釘成常設測試:
 #   ①八個情境(A–H):在拋棄式 git repo 建圖,跑**正式工具本體**(不重寫演算法 ——
 #     斷言釘在副本上就是第 3 型假綠),驗狀態字串+exit code+共同戰場清單
-#   ②五個 mutant(M-a~M-e):把工具的臨時複本改壞,對應情境必須給出錯誤答案;
-#     壞複本也給正確答案 = 情境沒有鑑別力,一樣 FAIL
+#   ②八個 mutant(M-a~M-h):把工具的臨時複本改壞,對應情境必須給出錯誤答案;
+#     壞複本也給正確答案 = 情境沒有鑑別力,一樣 FAIL。M-f~M-h 釘的是參數解析
+#     (死迴圈 / 吞旗標 / 吞空值),對應情境 I 的子案
 #   ③模板順序:7-review Exit Checklist 那條裡「跑工具」必須出現在「合併」與
 #     「全套測試」之前(順序寫反正是原始 bug 的形狀)
 #   ④正本/散發副本 parity:expected set 取自檔案地圖標「散發面:docs/dev/tools/」
@@ -246,25 +247,24 @@ scenario(case_H)
 print("-- 情境 I:用法/參數錯(任何排列都不得死迴圈;每個子案 5 秒逾時) --")
 
 
-def run_usage_case(args, cwd):
-    """跑正式工具,5 秒逾時 —— 逾時回 (None, '');逾時即死迴圈回歸,對應子案必須紅。"""
+def run_usage_case(args, cwd, tool=None):
+    """跑工具(預設正式本體;mutant 傳臨時壞複本),5 秒逾時 —— 逾時回 (None, '');
+    逾時即死迴圈回歸,對應子案必須紅。"""
     env = dict(os.environ)
     env.update({"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
                 "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"})
     try:
-        proc = subprocess.run(["bash", TOOL, *args], cwd=cwd, capture_output=True,
+        proc = subprocess.run(["bash", tool or TOOL, *args], cwd=cwd, capture_output=True,
                               text=True, env=env, timeout=5)
     except subprocess.TimeoutExpired:
         return None, ""
     return proc.returncode, proc.stdout + proc.stderr
 
 
-def case_I(s):
-    # 在其餘座標全部有效的圖上跑(origin/trunk 存在、s.fork 是有效 SHA),
-    # 讓每個子案的唯一錯誤就是被測的那個參數 —— 空值/吞旗標被「當成能用」時,
-    # 工具會走進前置檢查而不印「用法」,子案就紅。
-    build_A(s)
-    cases = [
+def usage_cases(fork):
+    """情境 I 的十個子案 —— 情境 I 與 mutant M-f~M-h 共用同一份定義。兩邊各寫一份
+    會漂:子案被悄悄改寬時,mutant 那邊還以為自己釘的是原本那個行為。"""
+    return [
         ("I① 無參數", []),
         ("I② --integration 居末缺值", ["--integration"]),
         ("I③ --fork-sha 居末缺值", ["--fork-sha"]),
@@ -276,10 +276,17 @@ def case_I(s):
         ("I⑦ --fork-sha 不得吞掉 --no-fetch 當值",
          ["--integration", "origin/trunk", "--fork-sha", "--no-fetch"]),
         ("I⑧ 不認得的參數", ["--bogus"]),
-        ("I⑨ --integration 空字串不得當值", ["--integration", "", "--fork-sha", s.fork]),
+        ("I⑨ --integration 空字串不得當值", ["--integration", "", "--fork-sha", fork]),
         ("I⑩ --fork-sha 空字串不得當值", ["--integration", "origin/trunk", "--fork-sha", ""]),
     ]
-    for label, args in cases:
+
+
+def case_I(s):
+    # 在其餘座標全部有效的圖上跑(origin/trunk 存在、s.fork 是有效 SHA),
+    # 讓每個子案的唯一錯誤就是被測的那個參數 —— 空值/吞旗標被「當成能用」時,
+    # 工具會走進前置檢查而不印「用法」,子案就紅。
+    build_A(s)
+    for label, args in usage_cases(s.fork):
         rc, out = run_usage_case(args, s.work)
         if rc is None:
             check(False, f"{label} → exit 2+印「用法」", "5 秒逾時 —— 參數解析死迴圈回歸")
@@ -289,6 +296,28 @@ def case_I(s):
 scenario(case_I)
 
 print("-- mutants M-a~M-e:改壞臨時複本,對應情境必須抓到 --")
+
+# M-f 的錨:現版「先驗值再 shift」的整段(逐字取自正式工具;漂了 make_mutant 會紅)。
+PARSE_SAFE = '''\
+      [ $# -ge 2 ] || { echo "⛔ $1 後面缺值" >&2; usage; }
+      case "$2" in
+        ""|--*) echo "⛔ $1 的值不合法:'$2'(不得為空,也不得是另一個旗標)" >&2; usage ;;
+      esac
+      case "$1" in
+        --integration) INTEGRATION_ARG=$2 ;;
+        --fork-sha)    FORK_ARG=$2 ;;
+      esac
+      shift 2 ;;
+'''
+# 換回舊寫法:不預驗、靠 shift 2 的回傳值前進 —— shift 2 在只剩一個參數時回非零
+# 且**不前進**,$1 永遠是同一個旗標,任何需要值的旗標居末就原地打轉(死迴圈)。
+PARSE_OLD_BUGGY = '''\
+      case "$1" in
+        --integration) INTEGRATION_ARG=${2:-} ;;
+        --fork-sha)    FORK_ARG=${2:-} ;;
+      esac
+      shift 2 ;;
+'''
 
 MUTANTS = {
     "M-a": [('status, code = "SYNC_REQUIRED_NO_OVERLAP", 10',
@@ -301,6 +330,11 @@ MUTANTS = {
             ('rc, fork = git("rev-parse", "--verify", f"{FORK_ARG}^{{commit}}")',
              'rc, fork = (git("rev-parse", "--verify", f"{FORK_ARG}^{{commit}}") '
              'if FORK_ARG else git("merge-base", "HEAD", full_name))', 1)],
+    # M-f~M-h:參數解析(情境 I 守的東西)。M-f 把整段換回舊寫法,M-g/M-h 各只拆掉
+    # 「三件一起擋」裡的一件 —— 只拆一件就要被對應子案抓到,才叫有鑑別力。
+    "M-f": [(PARSE_SAFE, PARSE_OLD_BUGGY, 1)],
+    "M-g": [('""|--*)', '"")', 1)],
+    "M-h": [('""|--*)', '--*)', 1)],
 }
 
 
@@ -388,6 +422,50 @@ mutant_case("M-d", build_E, "情境 E",
 mutant_case("M-e", build_A, "情境 H①",
     lambda s, p: (lambda r: (r[0] == 10 and r[1] is not None,
                              f"rc={r[0]} status={r[1]}"))(s.run_tool(tool_path=p, fork=None)))
+
+print("-- mutants M-f~M-h:參數解析改壞,情境 I 的對應子案必須抓到 --")
+
+# 判定模式:
+#   "timeout" = 壞複本必須逾時(死迴圈回歸的形狀,子案在正式工具上是 5 秒內 exit 2)
+#   "wrong"   = 壞複本必須給出「非(exit 2 + 印用法)」的答案(值被吞掉/空值當成能用,
+#               工具會帶著爛座標往下走,訊息裡不會有「用法」)
+# ⚠️ 只釘實測穩定重現的子案:M-f 在其餘排列上壞複本的行為不穩定(例如
+#    `--integration origin/trunk --fork-sha` 是 rc=1 而不是逾時),把不穩的也寫成
+#    斷言只會讓守衛自己變 flaky —— 但也不准為了好寫而放寬已經穩定的那幾個。
+USAGE_MUTANT_EXPECT = {
+    "M-f": {"I②": "timeout", "I③": "timeout"},
+    "M-g": {"I⑦": "wrong"},
+    "M-h": {"I⑨": "wrong", "I⑩": "wrong"},
+}
+
+
+def usage_mutant_case(name):
+    """情境 I 是「一個情境十個子案」,跟 mutant_case() 的單一判定介面對不起來,
+    另寫一個迴圈:每個(mutant, 子案)各記一項,壞在哪個子案一眼看得出來。"""
+    path = make_mutant(name)
+    if not path:
+        return
+    try:
+        tmp = tempfile.mkdtemp(prefix="irguard.")
+        try:
+            s = Scenario(tmp)
+            build_A(s)
+            cases = {label.split()[0]: args for label, args in usage_cases(s.fork)}
+            for key, mode in USAGE_MUTANT_EXPECT[name].items():
+                rc, out = run_usage_case(cases[key], s.work, tool=path)
+                got = "逾時" if rc is None else (
+                    f"rc={rc} 訊息含「用法」={'是' if '用法' in out else '否'}")
+                ok = (rc is None) if mode == "timeout" else not (rc == 2 and "用法" in out)
+                check(ok, f"{name} 被 {key} 抓到(壞複本給出錯誤答案:{mode})",
+                      f"實得 {got}")
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+    finally:
+        os.unlink(path)
+
+
+for _mut in ("M-f", "M-g", "M-h"):
+    usage_mutant_case(_mut)
 
 print("-- 模板順序:先跑工具,才輪得到合併與全套測試 --")
 
@@ -554,7 +632,7 @@ finally:
 # check-gate-twin.sh、check-dev-setup-discipline.sh 的 MIN_CHECKS);之後每加一條
 # 檢查都要同步調高。字面值與這整個 if 區塊(condition+記錄 failure+非零退出鏈)
 # 另被 test-architecture-guards.sh 靜態互釘外釘,兩處要同一個 commit 一起改。
-MIN_CHECKS = 36
+MIN_CHECKS = 41
 if CHECKS < MIN_CHECKS:
     FAILED += 1
     print(f"  ✗ 檢查數地板:實際只跑了 {CHECKS} 項(地板 {MIN_CHECKS})—— "

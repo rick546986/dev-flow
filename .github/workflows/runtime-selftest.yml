@@ -56,8 +56,13 @@ jobs:
       # hooks/devflow-python-lib.sh 解析直譯器(DEVFLOW_PYTHON → /usr/bin/python3 → PATH),
       # 找不到直譯器時 fail-open(警告+exit 0),不得把使用者的宿主卡死。
       # ubuntu 上 /usr/bin/python3 永遠存在,寫死路徑的回歸在上面的 selftest 不會紅 ——
-      # 所以這一步用「靜態禁寫死 + 缺直譯器行為 + 覆寫通道全套自測」三面把它釘死;
+      # 所以這一步用「靜態禁寫死 + 缺直譯器行為 + 覆寫通道全套自測」三面守;
       # 任何 hook 改回 exec /usr/bin/python3,第 1 面立即紅。
+      # ⚠️ 這三面**沒有**涵蓋 PATH fallback:第 2、3 面都顯式設了 DEVFLOW_PYTHON,
+      # 直接短路 ${DEVFLOW_PYTHON:-…} 的預設值,`[ -x /usr/bin/python3 ] ||
+      # command -v python3` 這個分支從來沒被走到 —— 把解析退化成
+      # `${DEVFLOW_PYTHON:-/usr/bin/python3}`(正是 Windows 上會壞的形態)三面全綠。
+      # 那一段由下一步(第 4 面)補;兩步不得合併,合併就會像原本那樣互相掩護。
       - name: 直譯器解析回歸(禁寫死路徑 + fail-open + DEVFLOW_PYTHON 覆寫)
         run: |
           set -eu
@@ -76,6 +81,57 @@ jobs:
           DEVFLOW_PYTHON=$(command -v python3) bash hooks/selftest.sh
         env:
           DEVFLOW_MASTER: ${{ github.workspace }}
+
+      # 第 4 面(D-1 的正題):系統路徑不可用、PATH 上有可用 python3 → 解析必須退回 PATH。
+      # 跟上一步的第 2 面明確分工:第 2 面驗「真的沒有任何 python3 → fail-open」,
+      # 本步驗「系統路徑沒有、但 PATH 上有 → 要退回 PATH 並且真的用它跑起來」。
+      # ⚠️ 全程不設 DEVFLOW_PYTHON —— 設了就短路預設值,等於沒驗。
+      # 怎麼「拿掉」/usr/bin/python3:ubuntu 上它一定存在也刪不得,所以用 BASH_ENV 注入
+      # 一個只讓 `[ -x /usr/bin/python3 ]` 這一個判定回假的 `[` 覆寫(其餘一律轉交
+      # builtin),運算式其餘部分是解析正本的原文;同時把一支會留腳印的 python3 shim
+      # 前置到 PATH,解析退回 PATH 時腳印才會出現。
+      # 斷言重心在腳印不在 rc:壞版本解析到的 /usr/bin/python3 在 ubuntu 上跑得動,
+      # rc 一樣是 0,只有「PATH 上那支從沒被呼叫」能分辨。
+      - name: 直譯器解析回歸第 4 面(系統路徑不可用 → 必須退回 PATH)
+        env:
+          DEVFLOW_MASTER: ${{ github.workspace }}
+        run: |
+          set -eu
+          shim=$(mktemp -d); marker="$shim/used-by-hook"; real=$(command -v python3)
+          printf '#!/bin/sh\necho used >> "%s"\nexec "%s" "$@"\n' "$marker" "$real" \
+            > "$shim/python3"
+          chmod +x "$shim/python3"
+          cat > "$shim/mask.sh" <<'MASK'
+          [ () {
+            if builtin [ "$1" = "-x" ] && builtin [ "$2" = "/usr/bin/python3" ]; then return 1; fi
+            builtin [ "$@"
+          }
+          MASK
+          # 4a) 前提:不 mask 時解析必須是 /usr/bin/python3。這條證明「系統優先」在本機
+          #     確實是預設行為 —— 前提不成立時,4b 就不是在測它以為在測的東西。
+          sys=$(env -u DEVFLOW_PYTHON PATH="$shim:$PATH" \
+                  bash -c '. hooks/devflow-python-lib.sh; echo "$DEVFLOW_PY"')
+          [ "$sys" = "/usr/bin/python3" ] || {
+            echo "⛔ 前提不成立:未 mask 時解析成 '$sys'(預期 /usr/bin/python3)" >&2
+            exit 1; }
+          # 4b) mask 之後:hook 要成功走完,而且實際用的直譯器是 PATH 上那支
+          rm -f "$marker"; rc=0
+          out=$(env -u DEVFLOW_PYTHON PATH="$shim:$PATH" BASH_ENV="$shim/mask.sh" \
+                  bash hooks/devflow-prebash.sh </dev/null 2>&1) || rc=$?
+          [ "$rc" -eq 0 ] || { echo "⛔ 系統路徑不可用時 hook 沒走完:rc=$rc / $out" >&2; exit 1; }
+          case "$out" in *"找不到 python3"*)
+            echo "⛔ 沒退回 PATH,直接判定找不到直譯器:$out" >&2; exit 1 ;; esac
+          [ -f "$marker" ] || {
+            echo "⛔ 解析沒退回 PATH(PATH 上的 python3 從未被呼叫)—— Windows 回歸" >&2
+            exit 1; }
+          # 4c) 完全不動手腳的預設通道實跑一次(第 2、3 面都設了覆寫,預設值從沒跑過)
+          rc=0
+          out=$(env -u DEVFLOW_PYTHON bash hooks/devflow-prebash.sh </dev/null 2>&1) || rc=$?
+          [ "$rc" -eq 0 ] || { echo "⛔ 預設通道(不設 DEVFLOW_PYTHON)跑不動:rc=$rc / $out" >&2; exit 1; }
+          case "$out" in *"找不到 python3"*)
+            echo "⛔ 預設通道解析不到直譯器:$out" >&2; exit 1 ;; esac
+          rm -rf "$shim"
+          echo "✅ 第 4 面:系統路徑不可用 → 退回 PATH 並實際跑起來"
 
       - name: Scope note
         if: always()
