@@ -28,6 +28,16 @@
 用 `main`（2026-08-02 owner 裁決「續用 main，不建 develop」）。新寫的段落用
 「整合分支（`develop` 或 `main`，依專案）」，**既有那兩行不要改**（改了會動到 parity 區）。
 
+**執行歧義①已澄清 —— 模板裡到底寫哪個詞**：
+
+| 情況 | 寫什麼 |
+|---|---|
+| 你這一輪**新增**的句子 | 一律「整合分支」，第一次出現時附一次括號說明 `（develop 或 main，依專案）`，同一份檔案後續不必重複附註 |
+| 既有句子裡的 `develop`（`_templates/7-review.md:250,277` 等） | **一個字都不要動** |
+| 新句子必須舉指令當例子時 | 用 `<整合分支>` 當佔位符，例如 `git log <base>..<整合分支>`，**不要寫 `git log base..develop`** |
+
+判準一句：**這輪新寫的東西不得再引入任何一個寫死的 `develop`。**
+
 ---
 
 # 決定 1：STATUS.md 只在整合分支上維護，feature branch 一律不碰
@@ -47,6 +57,18 @@
 | 過 gate（更新階段/gate 欄） | **整合分支**上直接改並推 |
 | ship（移出 Active） | 隨 PR 合併時在整合分支上做 |
 | **feature branch / worktree 內** | **完全不碰 STATUS.md** |
+
+**執行歧義③已澄清 —— 「ship 時移出 Active」誰做、在哪做、什麼時候做**：
+
+| 問 | 答 |
+|---|---|
+| 誰做 | **合併那個 PR 的人**（也就是走完 Stage 7、按下 merge 的人），不是 reviewer |
+| 在哪做 | **整合分支上，另一個 commit** —— 不要塞進 feature branch 的 PR 裡（那會讓 PR 的 diff 混進看板變更，也會在多 worktree 下製造衝突） |
+| 什麼時候 | **PR 合併之後**，不是之前。合併前那一列還是「進行中」，這是事實 |
+| 要不要等 | 不要累積 —— 合併完就順手改掉並推。看板落後一天，下一個人就會照著錯的狀態決策 |
+
+也就是完整動線是：**PR 合併 → 切到整合分支 → 改 STATUS.md 移出該列 → 推**。
+這四步是同一個人在同一個時間點做完，不分派給別人。
 
 ## 理由（要寫進模板，母版慣例是決定與理由同處）
 
@@ -134,6 +156,23 @@ Stage 7 只保證「各自 branch 對整合分支的 diff 乾淨」，
          → 有交集的檔案逐個看過，交集為空才可勾
 ```
 
+**執行歧義②已澄清 —— `<base>` 是哪一個 commit**：
+
+一律用 **`git merge-base HEAD <整合分支>`** 的結果，**不是「開分支時的那個 commit」**。
+
+| 為什麼 | 說明 |
+|---|---|
+| 兩者常常不同 | rebase 過、或整合分支往前跑過之後，「當初開分支的點」已經不在共同祖先上 |
+| merge-base 才答得對問題 | 要問的是「**我這條線跟整合分支分岔之後，對方多了什麼**」，那正是 merge-base 的定義 |
+| 與既有規定一致 | `_templates/7-review.md:250` 的 diff 基準本來就是 `merge-base(整合分支)..HEAD` |
+
+寫進 Exit Checklist 時直接把它嵌進指令，不要讓填的人自己想 `<base>` 是什麼：
+
+```bash
+BASE=$(git merge-base HEAD <整合分支>)
+git log "$BASE..<整合分支>"          # 非空 = 你開分支後有人先合進來了
+```
+
 ## 理由（要寫進檔案）
 
 - **不是每次都跑**：你是第一個合的話沒有東西可以踩，強制跑只是浪費。
@@ -211,6 +250,10 @@ bash scripts/render-methodology-corrections.sh --check
 
 # 硬約束（沿用）
 
+0. **開工第一件事：從 `main` 開一個工作 branch**（例如 `feat/parallel-feature-gaps`），
+   所有改動都在那條 branch 上做，最後 `git merge --no-ff` 回 `main`。
+   **不要在 `main` 上直接動手** —— 這輪要改的是模板與 README，改到一半的狀態留在 `main`
+   會讓別的 session 讀到半成品。
 1. **不 push**、不繞過 deny 規則。做完把「請你自己跑 `git push origin main`」列在回報。
 2. 不直接 commit `main`：feature branch → `git merge --no-ff` 回 main，一個 commit 一件事。
 3. 不得為了讓檢查變綠而放寬檢查本身。
@@ -226,9 +269,29 @@ bash scripts/render-methodology-corrections.sh --check
 - 不要改 `_templates/7-review.md:250,277` 那兩行既有的 `develop` 措辭（會動到 parity 區）
 - 不要把這四項當成「選項還沒定」重新評估 —— **決定已定，你的工作是寫進去**
 
+# 這一輪之後的下一步（不是你的任務，寫在這裡是為了讓你知道邊界）
+
+owner 已排定：這四項做完之後，**拿 dev-flow 自己跑一次完整 normal-risk full lane**
+（1-discussion → 7-review、過 G1/G2/G3），把那次當成**觀測實驗** ——
+用實際走過的經驗去對照 `notes/review-requirement-discovery-gaps.md` 的九條，
+再決定哪幾條是真痛點。
+
+**所以這一輪不要順手改 Stage 1–4 的模板內容**（除了本檔四項明確要求的那幾處）。
+改多了會污染那次觀測 —— 到時候分不出「流程本來就有問題」還是「這輪改出來的問題」。
+
 # 完成之後
 
 - `docs/dev/STATUS.md` Backlog 反映真實剩餘
 - `docs/dev/HISTORY.md` 追加一筆
 - 屬「模板/規則變更」→ 走 `/dev-release`，級別自己判（模板加節通常是 minor），
   **停在 push 前交給 owner**
+
+---
+
+# 本輪範圍外：需求討論的九條制度缺口
+
+2026-08-17 另有一份盤點，列出 `dev-talk` 與 Stage 1–4 的九條制度缺口（A-1~A-7、B-1、B-2）。
+**那九條不在本派工單範圍，也不要在本輪處理** —— owner 已裁定暫緩，等 dev-flow 自己
+跑完一次完整 full lane 之後再逐條裁決。
+
+全文在 `notes/review-requirement-discovery-gaps.md`。**讀到這裡就停，不要打開那份照做。**
