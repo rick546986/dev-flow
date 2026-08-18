@@ -838,6 +838,12 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     有狀態的外部依賴。隔離方式依專案技術棧自理,母版不規定做法 —— 母版規定了
     「並行用 worktree」,就要負責講清楚這個規定的代價,所以檢查項要管;
     但怎麼隔離是各專案技術棧的事,母版規定做法會變成「規定了但不適用」。
+    ⚠️ <strong>worktree 交接(並行動線的最後一步)</strong>:上面兩件事(STATUS 在整合分支上改、
+    執行環境隔離確認)做完後,明確切進新樹:</p>
+    <pre><code class="language-bash">cd &lt;worktree-path&gt;          # 從這裡開始,後續所有指令都在這棵樹上跑
+    </code></pre>
+    <p>後面的 <code>devflow-exec.sh status</code> <strong>必須在這個目錄下跑</strong>,它會核對 slug 與 cwd
+    相符 —— 在原 checkout 跑會核對到別的東西。
     ⚠️ <strong>守衛武裝自檢(硬關卡,第一動)</strong>:跑 <code>devflow-exec.sh status</code>,確認
     <code>.devflow/exec.json</code> <strong>存在</strong>且 slug 正確。<strong>沒武裝就不准開工</strong> ——
     guard hook 在 <code>.devflow/exec.json</code> 不存在時是<strong>靜默沉睡</strong>的
