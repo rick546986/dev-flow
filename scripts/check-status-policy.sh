@@ -531,6 +531,17 @@ mutated_template = template.replace("再發布最終", "不再另外發布")
 check(bool(status_branch_failures(mutated_template)),
       "負向⑰:STATUS Branch 段刪 Stage 6 最終 tip 發布說明 → 紅")
 
+# ── 檢查數地板:防止檢查段/負向 fixture 整段被刪後檢查數靜默縮水仍全綠(B-4)──
+# ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」(同 repo 慣例:
+# check-gate-twin.sh、check-dev-setup-discipline.sh 的 MIN_CHECKS);之後每加一條
+# 檢查都要同步調高。字面值與這整個 if 區塊(condition+記錄 failure+非零退出鏈)
+# 另被 test-architecture-guards.sh 靜態互釘外釘,兩處要同一個 commit 一起改。
+MIN_CHECKS = 30
+if CHECKS < MIN_CHECKS:
+    FAILED += 1
+    print(f"  ✗ 檢查數地板:實際只跑了 {CHECKS} 項(地板 {MIN_CHECKS})—— "
+          f"檢查段或負向 fixture 被刪掉或迴圈跑了零圈,這比單項失效更嚴重")
+
 print()
 if FAILED:
     print(f"⛔ STATUS 規則對帳:{FAILED}/{CHECKS} 失敗")
