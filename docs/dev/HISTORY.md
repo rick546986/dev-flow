@@ -171,3 +171,9 @@
 - 為什麼:上一輪修完檔案層,這一輪修「人真的照著用」層:參數打錯卡死終端機、fresh install 照文件做就炸、Quickstart 到 Stage 7 拿不出 fork-sha、Windows 上七支 hook 全掛只能關 plugin —— 母版守衛驗的是檔案對不對,不是照著做會發生什麼
 - 落在哪:notes/dispatch-v380-landing.md(派工單)、scripts/devflow-integration-regression.sh、scripts/check-{integration-regression-guard,status-policy,dev-setup-discipline,file-map}.sh、scripts/test-architecture-guards.sh、skills/dev-setup/SKILL.md、skills/dev-run/SKILL.md、_templates/{6-implementation-notes,STATUS}.md、guides/、hooks/(新增 devflow-python-lib.sh 644)、manifests/、.github/workflows/runtime-selftest.yml
 
+## 2026-08-18 · v380-counterproof · v3.8.0
+- 做了什麼:補上兩個守衛的反證(只驗現版、沒驗壞版本):E-1 整合回歸母版自檢加三個參數解析 mutant —— M-f 把解析換回舊寫法(靠 shift 2 回傳值前進)→ 情境 I②/I③ 必須逾時、M-g 拆掉「值不得是另一個旗標」→ I⑦、M-h 拆掉「值不得為空字串」→ I⑨/I⑩;情境 I 的十個子案抽成 usage_cases() 單一正本供情境與 mutant 共用;檢查數 36→41,守衛自身 MIN_CHECKS 與 test-architecture-guards.sh 逐字互釘同步。E-2 runtime-selftest CI 加第 4 面:BASH_ENV 注入只讓 [ -x /usr/bin/python3 ] 回假的 [ 覆寫 + PATH 前置一支留腳印的 python3 shim,斷言 hook 實際用了 PATH 上那支(不設 DEVFLOW_PYTHON)。E-3 check-file-map.sh 註解改成不寫分解、數字以 scanned= 輸出為準,常數 78 未動
+- 為什麼:上一輪十七項全綠,但整合回歸守衛的情境 I 從沒對改壞的複本跑過、CI 三面都顯式設 DEVFLOW_PYTHON 而短路了預設值 —— 兩者守的正好是那一輪的兩個核心修復(參數死迴圈、Windows 可攜):把解析退化成 ${DEVFLOW_PYTHON:-/usr/bin/python3}(Windows 上會壞的形態),既有三面全綠。沒有反證的保護等於沒有保護
+- 落在哪:scripts/check-integration-regression-guard.sh、scripts/test-architecture-guards.sh、.github/workflows/runtime-selftest.yml、scripts/check-file-map.sh(僅註解)
+- 詳細:notes/dispatch-v380-counterproof.md
+
