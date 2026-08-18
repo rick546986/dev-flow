@@ -6,4 +6,5 @@
 # → rc=126,fail-closed 靜默自壞等同放行。同型四支殼(guard/prebash/postbash/
 # dispatch-guard)一起改;讀取正本 = devflow-lib.py read_hook_input()。
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-exec /usr/bin/python3 "$(dirname "$0")/_guard_impl.py" "$ROOT"
+. "$(dirname "$0")/devflow-python-lib.sh"  # 直譯器解析;缺直譯器 fail-open(理由見該檔)
+exec "$DEVFLOW_PY" "$(dirname "$0")/_guard_impl.py" "$ROOT"

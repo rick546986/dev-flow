@@ -84,7 +84,8 @@
 
 ## External dependencies
 
-- /usr/bin/python3(stdlib only;與既有 hooks 相同)
+- python3(stdlib only;與既有 hooks 相同。直譯器由 `hooks/devflow-python-lib.sh` 統一解析:
+  `DEVFLOW_PYTHON` 覆寫 → 系統 `/usr/bin/python3` → PATH;找不到時 hook fail-open 跳過守衛)
 - git ≥ 2.38(僅 live gate diff_applies;本機 2.43.2 實測)
 - 無新第三方依賴;未 import 方法論 repo 任何程式(run_id 依 §7 重寫)
 

@@ -8,6 +8,13 @@
 > 新專案採用:裝好 plugin 後在專案內打 `dev-setup`,它會把 `_templates/`、本 README、
 > `devflow-contract.json` 與 gauntlet 腳本散發進 `docs/dev/`,並建 `STATUS.md` 與
 > repo root `CONTEXT.md`。**不需要手動複製,也不需要本 repo 存在於使用者機器上。**
+>
+> **環境需求**:dev-flow 的 hook 需要 python3(僅標準函式庫)。直譯器解析順序:
+> 環境變數 `DEVFLOW_PYTHON`(顯式覆寫)→ 系統 `/usr/bin/python3` → PATH 上的
+> `python3`。**找不到時 fail-open**:hook 印一行警告後放行,只跳過守衛、不擋工具
+> 呼叫 —— 代價是那次呼叫沒有保護,不是功能壞掉。**Windows(Git Bash)沒有
+> `/usr/bin/python3`,要另外裝 Python 並確認 `python3` 在 PATH 找得到,或設
+> `DEVFLOW_PYTHON` 指向直譯器**,守衛才會真的生效。
 
 **這是什麼**:一套讓「討論 → 決策 → 規格 → 實作 → 驗證」全程留痕的文檔管線。每個
 feature 走 7 份文檔、過 3 道 gate(G1 方向核准、G2 契約審查、G3 驗證出貨),AI 負責

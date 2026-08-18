@@ -4,6 +4,7 @@
 # 用法:<plugin-root>/hooks/selftest.sh [-v](plugin-root 由安裝方式決定,勿寫死)
 set -u
 H=$(cd "$(dirname "$0")" && pwd)
+. "$H/devflow-python-lib.sh"  # 直譯器解析;缺直譯器 fail-open(理由見該檔)
 V=${1:-}
 T=$(mktemp -d "${TMPDIR:-/tmp}/devflow-selftest.XXXXXX")
 C=$(mktemp -d "${TMPDIR:-/tmp}/devflow-gate-selftest.XXXXXX")
@@ -48,7 +49,7 @@ dt_capture() { # dt_capture <tool> <relpath> [ENV=VAL ...](devtalk-guard.sh 直�
 }
 x() { ( cd "$T" && "$H/devflow-exec.sh" "$@" >/dev/null 2>&1; echo $? ); }
 x_capture() { X_OUT=$(cd "$T" && "$H/devflow-exec.sh" "$@" 2>&1); X_RC=$?; }
-scope_is() { /usr/bin/python3 - "$T/.devflow/exec.json" "$1" <<'PY'
+scope_is() { "$DEVFLOW_PY" - "$T/.devflow/exec.json" "$1" <<'PY'
 import json
 import sys
 with open(sys.argv[1]) as f:
@@ -1183,7 +1184,7 @@ sys.exit(0)
 P1PY
 }
 
-p1c() { /usr/bin/python3 "$P1D/p1check.py" "$H" "$1" "${2:-}" >/dev/null 2>&1; echo $?; }
+p1c() { "$DEVFLOW_PY" "$P1D/p1check.py" "$H" "$1" "${2:-}" >/dev/null 2>&1; echo $?; }
 p1x() { "$H/devflow-exec.sh" "$@" >/dev/null 2>&1; echo $?; }
 p1x_cap() { P1X_OUT=$("$H/devflow-exec.sh" "$@" 2>&1); P1X_RC=$?; }
 p1g() { echo "{\"tool_name\":\"$1\",\"tool_input\":{\"file_path\":\"$P1T/$2\"}}" | "$H/devflow-guard.sh" >/dev/null 2>&1; echo $?; }
@@ -1517,7 +1518,7 @@ echo impl > src/a.py && git add src/a.py && git commit -qm candidate
 P1CAND=$(git rev-parse HEAD)
 git checkout -q - 2>/dev/null
 mkdir -p .devflow/task/T-1
-P1CH=$(/usr/bin/python3 -c 'import json;print(json.load(open(".devflow/parallel.json"))["contract_hash"])')
+P1CH=$("$DEVFLOW_PY" -c 'import json;print(json.load(open(".devflow/parallel.json"))["contract_hash"])')
 cat > .devflow/task/T-1/candidate.json <<EOF
 {"schema":"devflow-candidate.v1","feature":"pf","task":"T-1","attempt":1,
  "branch":"task/pf/T-1","base_sha":"$P1BASE","candidate_sha":"$P1CAND",
@@ -1539,7 +1540,7 @@ echo "-- p1 shadow-hash 竄改偵測(MAJOR-C:.devflow 狀態檔只准 CLI 寫)--
 cd "$P1T" || exit 1
 ck "p1 shadow:re-arm(CLI 合法寫 exec.json)" 0 "$(p1x start pf --task T-1)"
 ck "p1 shadow:CLI 合法寫後 postbash 綠"  0 "$(p1post)"
-/usr/bin/python3 - <<'PY'
+"$DEVFLOW_PY" - <<'PY'
 import json
 d = json.load(open(".devflow/exec.json"))
 d["scope"] = ["src/", "docs/", "lib/"]
@@ -1550,7 +1551,7 @@ ck_msg "p1 shadow:heredoc 直改 exec.json scope → postbash 攔" 2 "exec.json"
 p1x_cap allow src/other.py --reason "tamper-test"
 ck_msg "p1 shadow:CLI 拒建立在遭竄改 exec.json 上" 1 "竄改" "$P1X_RC" "$P1X_OUT"
 ck "p1 shadow:重新 start 重建 shadow"    0 "$(p1x start pf --task T-1)"
-/usr/bin/python3 - <<'PY'
+"$DEVFLOW_PY" - <<'PY'
 import json
 p = json.load(open(".devflow/parallel.json"))
 p["tasks"]["T-3"]["state"] = "ACCEPTED"
@@ -1567,7 +1568,7 @@ ck "p1 shadow:CLI 重建(--reset)後 postbash 綠" 0 "$(p1post)"
 cd /tmp && rm -rf "$P1D" "$P1T" "$P1G"
 echo "-- p2 stage3 觸發判定/Demo verdict 機械驗證 --"
 P2=$(mktemp -d "${TMPDIR:-/tmp}/devflow-p2-stage3.XXXXXX")
-p2_s3() { S3_OUT=$(cd "$P2" && /usr/bin/python3 "$H/_stage3_impl.py" "$@" 2>&1); S3_RC=$?; }
+p2_s3() { S3_OUT=$(cd "$P2" && "$DEVFLOW_PY" "$H/_stage3_impl.py" "$@" 2>&1); S3_RC=$?; }
 p2_feature() { rm -rf "$P2/docs/dev/$1"; mkdir -p "$P2/docs/dev/$1"; }
 p2_disc_rwc() { printf '%s\n' '# 1. 討論' '## Problem' 'x' '## Real-world Context' \
   '### Actors' '| Actor | 真實目標 |' '|---|---|' '| 業務 | 跟催 |' \
@@ -1656,7 +1657,7 @@ p3_lh() { P3_OUT=$( (cd "$P3T" && env "$@" "$H/devflow-obs.sh" ledger-home) 2>&1
 p3_ret() { P3_OUT=$( (cd "$P3T" && DEVFLOW_LEDGER_HOME="$P3T/ledger" "$H/devflow-obs.sh" "$@") 2>&1 ); P3_RC=$?; }
 p3_doctor() { P3_OUT=$( (cd "$P3T" && DEVFLOW_CONTRACT="$1" DEVFLOW_RUNTIME_CAPS="$2" DEVFLOW_GATE_CMD="${3:-true}" "$H/devflow-doctor.sh") 2>&1 ); P3_RC=$?; }
 p3_json_has() { # p3_json_has <file> <manifest|registry5|caps>
-  /usr/bin/python3 - "$1" "$2" <<'PY'
+  "$DEVFLOW_PY" - "$1" "$2" <<'PY'
 import json, sys
 try:
     data = json.load(open(sys.argv[1]))
@@ -1678,7 +1679,7 @@ sys.exit(1)
 PY
 }
 p3_expire() { # 把歸檔 manifest 的 expires_at 改成過去(retention 測試用)
-  /usr/bin/python3 - "$1" <<'PY'
+  "$DEVFLOW_PY" - "$1" <<'PY'
 import json, sys
 path = sys.argv[1]
 with open(path) as f:
@@ -1946,7 +1947,7 @@ PW_OUT=$( (cd "$PWT" && "$H/devflow-exec.sh" stage3 no-such-slug) 2>&1 ); PW_RC=
 ck_msg "pw stage3 分派可達(feature 不存在 → 錯誤)" 1 "找不到" "$PW_RC" "$PW_OUT"
 
 ( cd "$PWT" && "$H/devflow-exec.sh" start pw --task T-1 >/dev/null 2>&1 )
-PWRUN=$(/usr/bin/python3 -c "import json;print(json.load(open('$PWT/.devflow/exec.json'))['run_id'])" 2>/dev/null)
+PWRUN=$("$DEVFLOW_PY" -c "import json;print(json.load(open('$PWT/.devflow/exec.json'))['run_id'])" 2>/dev/null)
 pw_g Write src/b.py
 ck_msg "pw guard deny 行為不變(scope 外仍擋)" 2 "scope 外寫入" "$PW_RC" "$PW_OUT"
 ck "pw guard deny 落 hook 事件一筆" 0 "$(grep -q mechanical_gate_completed "$PWT/.devflow/runs/$PWRUN/hooks/events-"*.jsonl 2>/dev/null; echo $?)"
@@ -2007,7 +2008,7 @@ px_d opus
 ck "px 未武裝 + model=opus → 放行" 0 "$PX_RC"
 
 ( cd "$PXT" && "$H/devflow-exec.sh" start px --task T-1 >/dev/null 2>&1 )
-PXRUN=$(/usr/bin/python3 -c "import json;print(json.load(open('$PXT/.devflow/exec.json'))['run_id'])" 2>/dev/null)
+PXRUN=$("$DEVFLOW_PY" -c "import json;print(json.load(open('$PXT/.devflow/exec.json'))['run_id'])" 2>/dev/null)
 
 # ② 武裝 + 首派 model=opus,本 run 尚無任何低階 attempt → 擋(exit 2),訊息點名 tier-exempt 逃生門
 px_d opus
@@ -2025,7 +2026,7 @@ rm -rf "$PXT/.devflow/runs/$PXRUN/attempts/att-px1"   # 清掉,回到「無低�
 ( cd "$PXT" && "$H/devflow-exec.sh" tier-exempt --reason "G3 仲裁需要最高階首派" >/dev/null 2>&1 )
 px_d fable
 ck_msg "px 豁免未用+model=fable → 放行且訊息含「tier-exempt 已消耗」" 0 "tier-exempt 已消耗" "$PX_RC" "$PX_OUT"
-ck "px 豁免卡消耗後確實轉 used:true+留 used_at(留痕)" 0 "$(/usr/bin/python3 -c "
+ck "px 豁免卡消耗後確實轉 used:true+留 used_at(留痕)" 0 "$("$DEVFLOW_PY" -c "
 import json, sys
 d = json.load(open('$PXT/.devflow/tier-exempt.json'))
 sys.exit(0 if d.get('used') is True and d.get('used_at') else 1)
@@ -2039,7 +2040,7 @@ px_d sonnet
 ck "px 武裝中但 model=sonnet(非最高階)→ 放行" 0 "$PX_RC"
 
 # exec-v2 舊字面值(A-11 升版前的 schema)雙讀相容:同一窄口徑情境跑一輪,結果須相同
-/usr/bin/python3 -c "
+"$DEVFLOW_PY" -c "
 import json
 p = '$PXT/.devflow/exec.json'
 d = json.load(open(p))
@@ -2068,7 +2069,7 @@ chmod 444 "$F4T/.devflow/tier-exempt.json"
 F4_OUT=$(cd "$F4T" && echo '{"tool_name":"Task","tool_input":{"model":"opus"}}' \
   | "$H/devflow-dispatch-guard.sh" 2>&1); F4_RC=$?
 ck_msg "f4 豁免卡有效但唯讀 → fail-open 放行 + 警告" 0 "標記寫入失敗" "$F4_RC" "$F4_OUT"
-ck "f4 唯讀卡未被消耗(used 仍 false —— 下次再放行一次,可接受的降級)" 0 "$(/usr/bin/python3 -c "
+ck "f4 唯讀卡未被消耗(used 仍 false —— 下次再放行一次,可接受的降級)" 0 "$("$DEVFLOW_PY" -c "
 import json, sys
 d = json.load(open('$F4T/.devflow/tier-exempt.json'))
 sys.exit(0 if d.get('used') is False else 1)"; echo $?)"
@@ -2095,7 +2096,7 @@ echo a > "$F2T/src/a.py"
 ( cd "$F2T" && git add -A >/dev/null && git commit -qm f2init )
 
 f2_big_write() { # $1 = file_path;1.1MB content 直灌 devflow-guard.sh stdin
-  F2_OUT=$(cd "$F2T" && /usr/bin/python3 -c "import json;print(json.dumps({'tool_name':'Write','tool_input':{'file_path':'$1','content':'A'*1100000}}))" \
+  F2_OUT=$(cd "$F2T" && "$DEVFLOW_PY" -c "import json;print(json.dumps({'tool_name':'Write','tool_input':{'file_path':'$1','content':'A'*1100000}}))" \
     | "$H/devflow-guard.sh" 2>&1); F2_RC=$?
 }
 
@@ -2114,12 +2115,12 @@ f2_big_write "$F2T/src/outside.py"
 ck_msg "f2 武裝 + 1.1MB Write scope 外 → exit 2(硬擋不因 payload 大小失效)" 2 "scope 外寫入" "$F2_RC" "$F2_OUT"
 
 # ④ prebash:武裝 + 1.1MB 指令含 sentinel 破壞字面 → exit 2
-F2_OUT=$(cd "$F2T" && /usr/bin/python3 -c "import json;print(json.dumps({'tool_name':'Bash','tool_input':{'command':'rm .devflow/devflow-armed # '+'A'*1100000}}))" \
+F2_OUT=$(cd "$F2T" && "$DEVFLOW_PY" -c "import json;print(json.dumps({'tool_name':'Bash','tool_input':{'command':'rm .devflow/devflow-armed # '+'A'*1100000}}))" \
   | "$H/devflow-prebash.sh" 2>&1); F2_RC=$?
 ck_msg "f2 prebash 武裝 + 1.1MB 指令含破壞字面 → exit 2" 2 "破壞守衛狀態" "$F2_RC" "$F2_OUT"
 
 # ⑤ prebash:武裝 + 1.1MB 無害指令 → 放行
-F2_OUT=$(cd "$F2T" && /usr/bin/python3 -c "import json;print(json.dumps({'tool_name':'Bash','tool_input':{'command':'echo '+'A'*1100000}}))" \
+F2_OUT=$(cd "$F2T" && "$DEVFLOW_PY" -c "import json;print(json.dumps({'tool_name':'Bash','tool_input':{'command':'echo '+'A'*1100000}}))" \
   | "$H/devflow-prebash.sh" 2>&1); F2_RC=$?
 ck "f2 prebash 武裝 + 1.1MB 無害指令 → 放行" 0 "$F2_RC"
 
@@ -2130,13 +2131,13 @@ ck "f2 prebash 武裝 + 1.1MB 無害指令 → 放行" 0 "$F2_RC"
 F2DT=$(mktemp -d "${TMPDIR:-/tmp}/devflow-f2-dispatch.XXXXXX")
 mkdir -p "$F2DT/.devflow"
 printf '%s\n' '{"schema":"exec-v2","run_id":"f2run"}' > "$F2DT/.devflow/exec.json"
-F2_OUT=$(cd "$F2DT" && /usr/bin/python3 -c "import json;print(json.dumps({'tool_name':'Task','tool_input':{'model':'opus','prompt':'A'*1100000}}))" \
+F2_OUT=$(cd "$F2DT" && "$DEVFLOW_PY" -c "import json;print(json.dumps({'tool_name':'Task','tool_input':{'model':'opus','prompt':'A'*1100000}}))" \
   | "$H/devflow-dispatch-guard.sh" 2>&1); F2_RC=$?
 ck_msg "f2 dispatch exec-v2 武裝 + 首派 opus + 1.1MB prompt → exit 2" 2 "tier-exempt" "$F2_RC" "$F2_OUT"
 rm -rf "$F2DT"
 
 # ⑦ postbash:1.1MB payload → 偵測網照跑(乾淨樹放行,不得 126)
-F2_OUT=$(cd "$F2T" && /usr/bin/python3 -c "import json;print(json.dumps({'tool_name':'Bash','tool_input':{'command':'echo '+'A'*1100000},'session_id':'f2-selftest'}))" \
+F2_OUT=$(cd "$F2T" && "$DEVFLOW_PY" -c "import json;print(json.dumps({'tool_name':'Bash','tool_input':{'command':'echo '+'A'*1100000},'session_id':'f2-selftest'}))" \
   | "$H/devflow-postbash.sh" 2>&1); F2_RC=$?
 ck "f2 postbash + 1.1MB payload → 偵測網照跑(乾淨樹放行)" 0 "$F2_RC"
 
@@ -2188,7 +2189,7 @@ printf '\xff\xfe mojibake \n/Users/somebody/companyapp/x.go\n' > "$RGT/.devflow/
 rg_run "$RGT/.devflow/reports/rawbytes.md"
 ck_msg "rg 非 UTF-8 內容不 crash,照掃出絕對路徑 → exit 2" 2 "絕對路徑" "$RG_RC" "$RG_OUT"
 # ② 32KB slash 長行不得回溯爆炸(曾 8.4s,~60KB 就吃掉 15s timeout = 掃描被殺)
-/usr/bin/python3 -c "open('$RGT/.devflow/reports/longline.md','w').write('a/'*16000 + '\n')"
+"$DEVFLOW_PY" -c "open('$RGT/.devflow/reports/longline.md','w').write('a/'*16000 + '\n')"
 rg_run "$RGT/.devflow/reports/longline.md"
 ck "rg 32KB slash 長行 → 秒級掃完放行(線性正則,不得逾時自壞)" 0 "$RG_RC"
 # ③ 帶 .. 的等價路徑不得跳過掃描(normpath 後比對;somedir 需真實存在,

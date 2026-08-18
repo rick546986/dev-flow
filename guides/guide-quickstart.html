@@ -181,6 +181,9 @@
   <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\</code>;
   dev-talk 已併入同一 plugin,單一正本),但執行中的 session 不會自動感知改動,要 reload
   新版 skill/hook 才生效(見 <code>dev-setup</code> SKILL「注意」節)。</p>
+  <p class="muted">環境需求:hooks 需要 python3(找不到時守衛只印警告後跳過,不擋工具呼叫);
+  Windows Git Bash 要另外裝 Python 並確認 <code>python3</code> 找得到,或設
+  <code>DEVFLOW_PYTHON</code> 指向直譯器 —— 解析順序與細節見母版 README「環境需求」。</p>
 
   <h3>1. 進專案打 dev-setup(不需參數)</h3>
   <p><span class="badge you">跟 AI 說</span> cd 進新專案 repo root 後:</p>

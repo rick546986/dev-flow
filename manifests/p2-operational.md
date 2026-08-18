@@ -11,7 +11,7 @@
   - `manifests/p2-operational.md`(本檔)
 - Tests before: selftest 80/80;gate-consistency 13/14(基線紅 1 = 母版 `_templates/4-spec.md` 頂註缺 token,20-runtime-audit 已載明,Phase 3 隨 OC-2 解)
 - Tests after: selftest **98/98**(+18 p2_ 案,先 RED 80/98 後 GREEN);gate-consistency 仍 13/14(SKILL.md 4 格全綠,無新紅)
-- External dependencies: `/usr/bin/python3`(與既有 selftest 同);條件正本 = 母版 README §7 + `notes/design/vnext-shared-contract.md` §2
+- External dependencies: python3(與既有 selftest 同;由 `hooks/devflow-python-lib.sh` 解析:`DEVFLOW_PYTHON` → `/usr/bin/python3` → PATH,缺直譯器 fail-open);條件正本 = 母版 README §7 + `notes/design/vnext-shared-contract.md` §2
 - Status: DONE(P2 範圍);跨檔條文待 Integrator(見下)
 
 ## Added capabilities(逐項)
@@ -57,7 +57,8 @@
    > 六查:技術過但人做不完 / 看得到沒決策權 / 等待誤標完成 / 系統外不可追蹤 /
    > 中斷無法恢復 / 資訊過期缺漏並發;結果記 7-review。
 3. **devflow-exec.sh(P1 檔)選配 wiring**(非必要,_stage3_impl.py 可直呼):
-   子命令分派處加一行 `stage3) shift; exec /usr/bin/python3 "$H/_stage3_impl.py" "$@" ;;`。
+   子命令分派處加一行 `stage3) shift; exec "$DEVFLOW_PY" "$H/_stage3_impl.py" "$@" ;;`
+   (直譯器經 `hooks/devflow-python-lib.sh` 解析,不寫死路徑)。
 4. **方法論模板 follow-up(Owner 裁決;方法論 repo 非 P2 所有權)**:
    `_templates/3-prototype.md` User Demo Feedback 增 `- Verdict attestation:` 欄
    (人類親填註記);`example/contract-expiry-reminder/3-prototype.md` 的示範 ACCEPTED

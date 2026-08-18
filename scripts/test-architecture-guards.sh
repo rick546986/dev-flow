@@ -1532,7 +1532,7 @@ check_static_pin "hooks/selftest.sh" "MIN_CASES=378" "MIN_CASES 釘死 378(2026-
 check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "EXPECTED_CHECKS 釘死 131"
 check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 15" "MIN_CHECKS 釘死 15(A-2/B-5 輪:②改 scoped 拆 3 條 + ⑦⑧⑨ 新增後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 138" "MIN_CHECKS 釘死 138(X-3 補群組數釘之後的實得數)"
-check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 77" "EXPECTED_MAPPED_FILES 釘死 77(精確值,不是地板;v3.8.0 輪新增三支腳本後的實得數)"
+check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 78" "EXPECTED_MAPPED_FILES 釘死 78(精確值,不是地板;v3.8.0 輪 D-1 新增 devflow-python-lib.sh 後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 24" "EXPECTED_GROUPS 釘死 24(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的

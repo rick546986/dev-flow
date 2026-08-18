@@ -34,6 +34,11 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 
 ## install(fresh)
 
+> **前提**:hooks 需要 python3(解析順序 `DEVFLOW_PYTHON` → `/usr/bin/python3` → PATH;
+> 詳見母版 README「環境需求」)——Windows Git Bash 環境安裝前先確認 `python3` 找得到
+> (或設 `DEVFLOW_PYTHON`),否則守衛會**靜默跳過**:不是壞掉,但等於沒有保護,
+> 而「守衛沉睡」與「守衛在擋」從外面看長得一樣(G1 同型風險)。
+
 1. `docs/dev/` 建立:cp 方法論 `${CLAUDE_PLUGIN_ROOT}/README.md` 後**剝除 master-only 區塊**
    再落地為 `docs/dev/README.md`(不得直接 cp 未剝除版 —— 母版 README 內
    `<!-- devflow:master-only:start -->` / `<!-- devflow:master-only:end -->` 之間是純母版

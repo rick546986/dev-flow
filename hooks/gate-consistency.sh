@@ -8,4 +8,5 @@
 # exit 0 = 三處皆一致 / 1 = 發現漂移 / 2 = 本檢查抽取失敗(anchor 不見,需人工檢查)。
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
-/usr/bin/python3 "$HERE/_gate_consistency_impl.py" "$@"
+. "$HERE/devflow-python-lib.sh"  # 直譯器解析;缺直譯器 fail-open(理由見該檔)
+"$DEVFLOW_PY" "$HERE/_gate_consistency_impl.py" "$@"

@@ -1854,6 +1854,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>guard/postbash/prebash/exec/gate 這幾支背後真正判斷「武裝了沒、契約有沒有被動過」的規則都寫在這裡,
             其他檔案只是各自的殼,共用同一套邏輯避免各判各的。</td>
         <td>被下列 <code>_impl.py</code> 動態載入,不單獨執行</td><td>隨呼叫者同格(橫跨 Pre/Post/人工,不專屬單一格)</td></tr>
+    <tr><td><code>devflow-python-lib.sh</code></td>
+        <td>各支 shell hook 找 python 直譯器的唯一正本(順序:<code>DEVFLOW_PYTHON</code> 覆寫 →
+            系統 <code>/usr/bin/python3</code> → PATH),找不到就印一行警告後放行(只跳過守衛,
+            不擋工具呼叫 —— 擋住的代價是把宿主卡死);母版自用的共用邏輯,無執行位元。</td>
+        <td>被上列各支 <code>*.sh</code> hook source,不單獨執行</td><td>隨呼叫者同格(橫跨 Pre/Post/人工,不專屬單一格)</td></tr>
     <tr><td><code>_prebash_impl.py</code></td><td><code>devflow-prebash.sh</code> 的實作本體。</td>
         <td><code>devflow-prebash.sh</code> 呼叫</td><td>隨 <code>devflow-prebash.sh</code>(同格)</td></tr>
     <tr><td><code>_guard_impl.py</code></td><td><code>devflow-guard.sh</code> 的實作本體。</td>
