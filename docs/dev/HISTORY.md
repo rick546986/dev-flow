@@ -150,3 +150,8 @@
 - 為什麼:v3.7.0 推上去 CI 立即紅,macOS 本地因管線緩衝時序不同全綠(假陰性),擋住後續 session 的乾淨環境
 - 落在哪:scripts/devflow-check.sh 註冊自審段
 
+## 2026-08-18 · parallel-feature-gaps
+- 做了什麼:多 feature 並行的四個制度空白寫進母版:STATUS.md 只在整合分支維護(STATUS 模板頂註+6-notes 步0+README 並行段)、合併後回滾走 revert -m 1 且禁改寫整合分支歷史(README §7 新節「合併後出事怎麼辦」+7-review Exit Checklist 路標)、Exit Checklist 新增條件式整合回歸(merge-base 為基準+comm 共同戰場交集)、多 worktree 執行環境隔離檢查項(6-notes 步0,含 atlas_schema_revisions 實例);四項的機械化判定入 README §7 強制力對照表
+- 為什麼:第一個完整 feature 跑完後開兩模組並行,發現母版只講了 worktree 隔離、沒講隔離之後看板/回滾/整合回歸/環境四件事怎麼辦;owner 已裁定四個決定,本輪照決定落檔(notes/dispatch-parallel-feature-gaps.md)
+- 落在哪:_templates/STATUS.md、_templates/6-implementation-notes.md、_templates/7-review.md、README.md §5/§7、guides 兩份 render
+
