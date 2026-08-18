@@ -1530,7 +1530,7 @@ check_static_pin_sub() { # check_static_pin_sub <相對路徑> <期望子字串>
 }
 check_static_pin "hooks/selftest.sh" "MIN_CASES=378" "MIN_CASES 釘死 378(2026-08-17 清空輪:F2+7/G3+1/F4+2/G1+4/D-4+3/C-2+3/report-guard+7/審查回歸+3)"
 check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "EXPECTED_CHECKS 釘死 131"
-check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 9" "MIN_CHECKS 釘死 9"
+check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 15" "MIN_CHECKS 釘死 15(A-2/B-5 輪:②改 scoped 拆 3 條 + ⑦⑧⑨ 新增後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 138" "MIN_CHECKS 釘死 138(X-3 補群組數釘之後的實得數)"
 check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 77" "EXPECTED_MAPPED_FILES 釘死 77(精確值,不是地板;v3.8.0 輪新增三支腳本後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 24" "EXPECTED_GROUPS 釘死 24(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"

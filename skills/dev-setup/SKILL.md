@@ -46,14 +46,19 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
    `docs/dev/devflow-contract.json`**(版本握手契約;doctor 無 `--contract`/
    `$DEVFLOW_CONTRACT` 明示時在此找,缺件必 fail-closed);從模板建 `STATUS.md`;
    repo root 無 `CONTEXT.md` 則從模板建。
-   **基準快照**:同時把剛落地的 `docs/dev/README.md`(已剝除版)、`_templates/*`、
-   `devflow-contract.json`、**整個 `docs/dev/tools/`(按目錄整包存,不逐檔列 ——
-   逐檔列的話下一支新工具又會漏;2026-08-18 實查:tools/ 既有四支從來不在
-   baseline 裡,是既有缺口,本次一併納入)** 各存一份到 `docs/dev/.devflow-baseline/`
-   ——upgrade 段的三方比對(母版改寫 vs 本地客製)靠這份快照當「上游舊」,見 upgrade 段。
+   **基準快照(此步只宣告,不落地)**:本次 install 結束前要快照的東西是
+   `docs/dev/README.md`(已剝除版)、`_templates/*`、`devflow-contract.json`、
+   **整個 `docs/dev/tools/`(按目錄整包存,不逐檔列 —— 逐檔列的話下一支新工具
+   又會漏)**。**實際落地在最後的收尾步(步 8),不在這裡** —— `docs/dev/tools/`
+   要到步 6、7 才散發完內容,這一步就拍會拍到空目錄,下次 upgrade 的三方比對會把
+   官方散發的工具誤判成本地客製。upgrade 段的三方比對(母版改寫 vs 本地客製)
+   靠這份快照當「上游舊」,見 upgrade 段。
    **改版歷史**:`mkdir -p docs/adr`(長期決策一決策一檔;編號唯一性由
    `check-adr-integrity.sh` 驗)、`docs/dev/HISTORY.md` 不存在則從
-   `_templates/HISTORY.md` 建(只增不改的索引);並比照 gauntlet 散發寫入口
+   `_templates/HISTORY.md` 建(只增不改的索引);再 `mkdir -p docs/dev/tools`
+   (**工具散發的 parent 目錄在此建立** —— 本步與步 6、7 的工具 cp 全落在它底下,
+   不先建目錄,本步三支工具的 cp 會直接失敗;步 6 那句 mkdir 冪等,留著無妨);
+   然後比照 gauntlet 散發寫入口
    `${CLAUDE_PLUGIN_ROOT}/scripts/history-append.sh` → `docs/dev/tools/history-append.sh`
    並 `chmod +x`(**該檔是 HISTORY.md 的唯一寫入口** —— 直接用 Edit/Write 改會在
    多 session 並行時靜默覆蓋,由 `history-guard` hook 擋下)。
@@ -120,6 +125,16 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
    ①無參數跑 → 預期印用法且 exit 2;
    ②正副本**可執行位元一致(兩邊都 755)** —— 散發時掉執行權限實際發生過;
    母版側由 `check-integration-regression-guard.sh` 的 parity 對帳釘住同一件事。
+8. **基準快照落地(收尾步;只有全部驗證成功才做)**:確認步 1、6、7 的每一項
+   散發/權限/diff/用法驗證**全部成功**之後,才把步 1 宣告的四樣 ——
+   `docs/dev/README.md`(已剝除版)、`_templates/*`、`devflow-contract.json`、
+   **整個 `docs/dev/tools/`** —— 快照到 `docs/dev/.devflow-baseline/`。
+   放在最後的理由:`docs/dev/tools/` 要到步 6、7 才有內容,拍早了會讓 upgrade 的
+   三方比對把官方散發的工具誤判成本地客製。**任一驗證失敗 → 不建立新 baseline**;
+   upgrade 情境下舊 baseline 必須原封不動 —— 不能先污染快照再報錯。
+   落地方式:先在暫存目錄把完整 baseline 新樹組好、核對成功後才整棵替換
+   `docs/dev/.devflow-baseline/`(**乾淨替換,不准 overlay** —— overlay 會在
+   上游移除工具時於 baseline 留下幽靈檔)。
 
 ## upgrade(stale)
 
@@ -141,12 +156,18 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
   (`docs/dev/` 對應檔案現況)——**本地現況 ≠ 上游舊 blob ⇒ 判定客製**,即使本地
   現況恰好與上游新 blob 相同也要列出(可註記「與新版一致,覆蓋無影響」,
   但仍需在②分類下出現,不得靜默歸進①)。
-  **上游舊 blob 的來源**:每次 install/upgrade 成功覆蓋後,把當下已剝除
-  master-only 區塊的內容另存一份快照到 `docs/dev/.devflow-baseline/`
-  (`README.md`、`_templates/*`、`devflow-contract.json`,加上**整個
-  `docs/dev/tools/` 按目錄整包** —— 不逐檔列,逐檔列的話下一支新工具又會漏)——
+  **上游舊 blob 的來源**:每次 install/upgrade 成功覆蓋後,快照的內容必須來自
+  **這次覆蓋下去的上游新內容**(upstream-new 正本:`${CLAUDE_PLUGIN_ROOT}` 側
+  已剝除 master-only 區塊的 README、`_templates/*`、`devflow-contract.json`,
+  加上這次散發的整套工具 —— 對應 `docs/dev/tools/` 按目錄整包,不逐檔列,
+  逐檔列的話下一支新工具又會漏),另存一份到 `docs/dev/.devflow-baseline/`。
+  **不准把可能已被本地改過的 `docs/dev/` 現況直接抄成 baseline** —— 抄現況的話,
+  本地客製會被記成「上游舊」,下次三方比對就分不出誰改的。快照一律先在暫存目錄
+  用本輪 upstream-new 正本組好完整新樹,核對成功後才整棵替換舊 baseline(乾淨
+  替換不 overlay,上游移除工具時才不會留幽靈檔);使用者拒絕覆蓋本地客製時,
+  只影響 `docs/dev/` 現況,**不改變 baseline 的來源**(baseline 仍取 upstream-new)。
   下次 upgrade 讀這份快照當「上游舊」,不得拿本地現況去猜。首次 install 無快照
-  可比,全部視為①;install 步驟本身也要建立這份快照(見 install 步 1)。
+  可比,全部視為①;install 收尾步也要建立這份快照(見 install 步 8)。
   **過渡態**:`docs/dev/.devflow-baseline/` 不存在但 `docs/dev/` 已存在(= 本規則
   生效之前裝的既有安裝,四個採用專案的真實現況)⇒ 不得套用「無快照=全部視為①」
   的首次 install 分支 —— 本次 upgrade **全部受管檔視為②本地客製,逐檔徵同意**,
