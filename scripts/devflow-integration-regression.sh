@@ -31,13 +31,35 @@ set -uo pipefail
 INTEGRATION_ARG=""
 FORK_ARG=""
 NO_FETCH=0
+
+# 用法輸出統一走這裡(>&2、exit 2)。dev-setup 健檢斷言「無參數 → 訊息含『用法』且 exit 2」。
+usage() {
+  cat >&2 <<USAGE
+用法:$0 --integration <remote-tracking ref> --fork-sha <FORK_INTEGRATION_SHA>
+        [--no-fetch(僅診斷,一律 exit 2)]
+USAGE
+  exit 2
+}
+
+[ $# -eq 0 ] && usage
+
+# 先驗值再 shift,不靠 shift 2 的回傳值 —— shift 2 在只剩一個參數時回非零且**不前進**,
+# $1 永遠是同一個旗標,迴圈原地打轉:任何需要值的旗標只要居末就會死迴圈卡住終端機。
 while [ $# -gt 0 ]; do
   case "$1" in
-    --integration) INTEGRATION_ARG=${2:-}; shift 2 ;;
-    --fork-sha)    FORK_ARG=${2:-};        shift 2 ;;
-    --no-fetch)    NO_FETCH=1;             shift ;;
-    *) echo "用法:$0 --integration <remote-tracking ref> --fork-sha <FORK_INTEGRATION_SHA> [--no-fetch(僅診斷,一律 exit 2)]" >&2
-       exit 2 ;;
+    --integration|--fork-sha)
+      # 三件一起擋:①後面沒東西 ②值是空字串 ③值長得像另一個旗標(被吞掉)
+      [ $# -ge 2 ] || { echo "⛔ $1 後面缺值" >&2; usage; }
+      case "$2" in
+        ""|--*) echo "⛔ $1 的值不合法:'$2'(不得為空,也不得是另一個旗標)" >&2; usage ;;
+      esac
+      case "$1" in
+        --integration) INTEGRATION_ARG=$2 ;;
+        --fork-sha)    FORK_ARG=$2 ;;
+      esac
+      shift 2 ;;
+    --no-fetch) NO_FETCH=1; shift ;;
+    *) echo "⛔ 不認得的參數:$1" >&2; usage ;;
   esac
 done
 

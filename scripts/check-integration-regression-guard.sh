@@ -243,6 +243,51 @@ def case_H(s):
           f"rc={rc4}")
 scenario(case_H)
 
+print("-- 情境 I:用法/參數錯(任何排列都不得死迴圈;每個子案 5 秒逾時) --")
+
+
+def run_usage_case(args, cwd):
+    """跑正式工具,5 秒逾時 —— 逾時回 (None, '');逾時即死迴圈回歸,對應子案必須紅。"""
+    env = dict(os.environ)
+    env.update({"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+                "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"})
+    try:
+        proc = subprocess.run(["bash", TOOL, *args], cwd=cwd, capture_output=True,
+                              text=True, env=env, timeout=5)
+    except subprocess.TimeoutExpired:
+        return None, ""
+    return proc.returncode, proc.stdout + proc.stderr
+
+
+def case_I(s):
+    # 在其餘座標全部有效的圖上跑(origin/trunk 存在、s.fork 是有效 SHA),
+    # 讓每個子案的唯一錯誤就是被測的那個參數 —— 空值/吞旗標被「當成能用」時,
+    # 工具會走進前置檢查而不印「用法」,子案就紅。
+    build_A(s)
+    cases = [
+        ("I① 無參數", []),
+        ("I② --integration 居末缺值", ["--integration"]),
+        ("I③ --fork-sha 居末缺值", ["--fork-sha"]),
+        ("I④ 前面成功解析、--fork-sha 居末缺值",
+         ["--integration", "origin/trunk", "--fork-sha"]),
+        ("I⑤ 前面成功解析、--integration 居末缺值",
+         ["--fork-sha", "abc", "--integration"]),
+        ("I⑥ 無值旗標先行、--integration 居末缺值", ["--no-fetch", "--integration"]),
+        ("I⑦ --fork-sha 不得吞掉 --no-fetch 當值",
+         ["--integration", "origin/trunk", "--fork-sha", "--no-fetch"]),
+        ("I⑧ 不認得的參數", ["--bogus"]),
+        ("I⑨ --integration 空字串不得當值", ["--integration", "", "--fork-sha", s.fork]),
+        ("I⑩ --fork-sha 空字串不得當值", ["--integration", "origin/trunk", "--fork-sha", ""]),
+    ]
+    for label, args in cases:
+        rc, out = run_usage_case(args, s.work)
+        if rc is None:
+            check(False, f"{label} → exit 2+印「用法」", "5 秒逾時 —— 參數解析死迴圈回歸")
+        else:
+            check(rc == 2 and "用法" in out, f"{label} → exit 2+印「用法」",
+                  f"rc={rc} 訊息含「用法」={'是' if '用法' in out else '否'}")
+scenario(case_I)
+
 print("-- mutants M-a~M-e:改壞臨時複本,對應情境必須抓到 --")
 
 MUTANTS = {
