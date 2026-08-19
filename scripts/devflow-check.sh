@@ -80,6 +80,9 @@ group_methodology() {
   # B-1/G2 通解:母版自己的 dev-talk 產物逐檔餵真的 devtalk-guard,必須全過 ——
   # 「母版產物過不了母版守衛」已發作兩次,寫入時才發現太晚,這裡每次先驗。
   run "methodology/check-devtalk-selfclean" scripts/check-devtalk-selfclean.sh || return 1
+  # 自判表對稱性(2026-08-19):四份自判表的「依據」欄、代價欄與上下兩層分流必須齊,
+  # 並帶一支負向 fixture 釘住 C5 的掃描範圍(DD 子節內的殘留待裁決要抓得到)。
+  run "methodology/check-selfjudgment-tables" scripts/check-selfjudgment-tables.sh || return 1
   # 第 7 型「不對稱記帳」:guide-dev-talk.html 是 skills/dev-talk/SKILL.md 的鏡像導覽,
   # 機制(SKILL.md)改了、鏡像沒跟上會靜默漂移(曾發生漏列一整步、逐字引用錯引正本)。
   run "methodology/check-devtalk-guide-sync" scripts/check-devtalk-guide-sync.sh || return 1

@@ -51,13 +51,12 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
    `docs/dev/devflow-contract.json`**(版本握手契約;doctor 無 `--contract`/
    `$DEVFLOW_CONTRACT` 明示時在此找,缺件必 fail-closed);從模板建 `STATUS.md`;
    repo root 無 `CONTEXT.md` 則從模板建。
-   **基準快照(此步只宣告,不落地)**:本次 install 結束前要快照的東西是
-   `docs/dev/README.md`(已剝除版)、`_templates/*`、`devflow-contract.json`、
-   **整個 `docs/dev/tools/`(按目錄整包存,不逐檔列 —— 逐檔列的話下一支新工具
-   又會漏)**。**實際落地在最後的收尾步(步 8),不在這裡** —— `docs/dev/tools/`
-   要到步 6、7 才散發完內容,這一步就拍會拍到空目錄,下次 upgrade 的三方比對會把
-   官方散發的工具誤判成本地客製。upgrade 段的三方比對(母版改寫 vs 本地客製)
-   靠這份快照當「上游舊」,見 upgrade 段。
+   **基準快照(此步只宣告,不落地)**:**本步只登記清單** —— 本次 install 結束前
+   要快照的東西是 `docs/dev/README.md`(已剝除版)、`_templates/*`、
+   `devflow-contract.json`、**整個 `docs/dev/tools/`(按目錄整包存,不逐檔列 ——
+   逐檔列的話下一支新工具又會漏)**。**實際落地時機在步 8,不在這裡**。
+   **原因見步 8 與 upgrade 段**(`docs/dev/tools/` 現在還沒散發完,拍早了會誤判;
+   upgrade 段的三方比對靠這份快照當「上游舊」)。
    **改版歷史**:`mkdir -p docs/adr`(長期決策一決策一檔;編號唯一性由
    `check-adr-integrity.sh` 驗)、`docs/dev/HISTORY.md` 不存在則從
    `_templates/HISTORY.md` 建(只增不改的索引);再 `mkdir -p docs/dev/tools`
@@ -210,21 +209,21 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
 逐項驗證列表回報,異常附建議、不自動修(fresh/stale 流程末尾自動跑;broken 才問要不要 fix):
 1. **三份 JSON** jq 過:`<root>/.claude-plugin/plugin.json`(dev-flow;dev-talk 併入後
    不再有獨立 plugin.json)、`<root>/.claude-plugin/marketplace.json`(**一份、一 entry**:
-   `./`)、**`<root>/hooks/hooks.json`**。hooks.json 壞掉 → 七條掛載全靜默失效,而自測
+   `./`)、**`<root>/hooks/hooks.json`**。hooks.json 壞掉 → 八條掛載全靜默失效,而自測
    照樣全綠 → 必驗。另比對 plugin.json 的 `version` 與 installed_plugins.json 記錄的
    版本一致(不一致 = 有人改了檔沒 bump,或裝的不是最新)。
 2. 兩帳號 settings `enabledPlugins`:`dev-flow@dev-flow` 為 true(dev-talk 已
    併入,不再是獨立 enabledPlugins 項;舊值 `@local` 或 `@dev-flow-plugin` =
    尚未遷到現行 marketplace 名稱散發,應改;`known_marketplaces.json` 的 `dev-flow`
    須為 github source)。
-3. **hooks/ 9 支可執行**:devtalk-guard、devflow-guard、**devflow-prebash**、
+3. **hooks/ 10 支可執行**:devtalk-guard、devflow-guard、**devflow-prebash**、
    devflow-postbash、devflow-exec、selftest、**history-guard**、**devflow-dispatch-guard**、
-   **devflow-report-guard**。
-   **hooks.json 應有 7 條掛載**:
+   **devflow-report-guard**、**devflow-plainspeak**。
+   **hooks.json 應有 8 條掛載**:
    PreToolUse `Edit|Write|Read`→devflow-guard、PreToolUse `Edit|Write`→history-guard、
    PreToolUse `Bash`→devflow-prebash、PreToolUse `Task|Agent`→devflow-dispatch-guard、
    PostToolUse `Edit|Write`→devtalk-guard、PostToolUse `Edit|Write`→devflow-report-guard、
-   PostToolUse `Bash`→devflow-postbash。
+   PostToolUse `Bash`→devflow-postbash、UserPromptSubmit `*`→devflow-plainspeak。
    (本項的支數/掛載數/逐條列舉由 `scripts/check-hooks-accounting.sh` 對
    `hooks/hooks.json` 對帳 —— 第 7 型「不對稱記帳」教訓:曾在 hooks 長到 6 條掛載
    後,本清單靜默停在 5 條,採用專案照本清單健檢會把真實存在的 hook 判成多餘。)

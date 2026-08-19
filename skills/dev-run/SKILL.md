@@ -66,21 +66,30 @@ hash 必須是 registry 內 `prompt_hash` 實值,**禁佔位 hash** / 禁自編)
 
 ## 逐 T 迴圈(照 Blocked-by 拓撲序,禁併 T)
 
-1. **派工**(三件套):
-   - 目標與動機:T 內容 + Covers 的 S **原文** + 該 S 的 **Test Skeleton**(4-spec 有就附)
-     + Verify 指令 + **該 T Files 現有檔案內容/慣例片段**(執行者只知道你給的,不靠它自行探路)
-     + `.claude/rules/` **與該 T 相關的節**(全量貼是稀釋)
-   - 驗收條件:先 RED 後 GREEN、測試名含 S-id、只動該 T 的 Files、**不要 commit**
-   - 回報格式:diff 摘要 + RED/GREEN 原文輸出 + 自由選擇清單 + 卡關點
-   - **寫事件**:派出即送 `agent_dispatched` + `attempt_started`(attempt_id /
-     agent_role / model / prompt / base_sha)。
+1. **派工**:
+   - **1a. 組派工 prompt**(三件套):
+     - 目標與動機:T 內容 + Covers 的 S **原文** + 該 S 的 **Test Skeleton**(4-spec 有就附)
+       + Verify 指令 + **該 T Files 現有檔案內容/慣例片段**(執行者只知道你給的,不靠它自行探路)
+       + `.claude/rules/` **與該 T 相關的節**(全量貼是稀釋)
+     - 驗收條件:先 RED 後 GREEN、測試名含 S-id、只動該 T 的 Files、**不要 commit**
+     - 回報格式:diff 摘要 + RED/GREEN 原文輸出 + 自由選擇清單 + 卡關點
+     完成 = 三件套齊全,prompt 已送出給執行者。
+   - **1b. 寫事件**:派出即送 `agent_dispatched` + `attempt_started`(attempt_id /
+     agent_role / model / prompt / base_sha)。完成 = 兩筆事件皆已送 ledger。
 2. **收驗**:派 fresh sonnet reviewer(給 T + S 原文 + diff + 執行者輸出,不給執行者
    結論;prompt 明令唯讀、每 F 引 spec 原文或 diff hunk),依 README §5 / 6-notes 的
    共用 seam 裁決並回傳 T Review Log 所需證據。
-   FAIL → **先分類再路由**(README §5 驗證五律 5):SPEC(T/S 定義問題)→ L2 停,
-   回 G2;ENV(環境/依賴壞)→ 修環境重跑,不計升階;IMPL/UNKNOWN → 同一 T 升階
-   重派(失敗軌跡全帶)並重新送審。**同 T 總嘗試上限 4**(haiku 1+sonnet 2+opus 1),
-   用盡強制問 adviser,禁無限重試。PASS → 你 commit → 讀出 hash。
+   FAIL → **先分類再路由**(README §5 驗證五律 5)。分三類,各走各的路:
+
+   | 分類 | 什麼算 | 怎麼走 | 計不計入嘗試上限 |
+   |---|---|---|---|
+   | SPEC | T/S 定義本身有問題 | L2 停,回 G2 | 不計(已停工) |
+   | ENV | 環境或相依壞了 | 修環境後重跑 | **不計** |
+   | IMPL / UNKNOWN | 實作沒做對,或看不出原因 | 同一 T 升階重派(失敗軌跡全帶)並重新送審 | 計入 |
+
+   **上限與強制動作**(與上表分開讀):同一個 T 總嘗試上限 4 次
+   (haiku 1 + sonnet 2 + opus 1)。用盡 4 次 → **強制問 adviser**,不得再重試。
+   PASS → 你 commit → 讀出 hash。
    **寫事件**:派 reviewer 時 `review_started`,收到裁決 `review_completed`
    (review_verdict)+ 每個 finding 一筆 `finding_created`;收裁決後補
    `attempt_completed`(result=裁決結果;**FAIL 必附 failure_category**
@@ -102,7 +111,7 @@ sequential 收驗與並行 dedicated / wave review 的 reviewer prompt **必含*
 (P4 Gauntlet+Gates 條文):
 
 1. 刪 assertion?2. 放寬 assertion(容忍度/範圍/型別)?3. 新增 skip/xfail/todo?
-4. 同一步同時改測試與實作以重新定義正確性?5. mock 掉被測物(mock 邊界可,被測物不行)?
+4. 同一步同時改測試與實作以重新定義正確性?5. mock 掉核心邏輯(mock 邊界可以,mock 被測物不行)?
 6. 只追 coverage(無有意義 assertion)?7. 沒跑的 layer 寫 PASS(對 6-notes 宣稱抽查原始輸出)?
 任一命中 → T review FAIL 回同一 T,失敗分類照驗證五律 5。
 
@@ -146,24 +155,17 @@ evidence 專區)。模型分層/升階/失敗分類/嘗試上限與 sequential �
    → 進該樹 `devflow-exec.sh start <slug> --task T-n --wave <N> --base <wave_base_sha>`
    → 回 integration 樹 `task-state <slug> T-n RUNNING` → 派 Worker(Task Context
    Packet,見下)。同 wave 成員可真並行(檔案不重疊 + 無語意衝突已由排程保證)。
-   **寫事件**:每個派出的 Worker 送 `agent_dispatched` + `attempt_started`
-   (prompt 取 registry 現值,同「事件寫入通道」節)。
 3. Worker 回報(RED/GREEN/Verify 原文齊)→ **你**在 task worktree commit candidate
    (執行者不 commit 不變;candidate 只落 task branch)→ 該樹 `devflow-exec.sh
    candidate <sha>` + integration 樹 `task-candidate <slug> T-n <sha>`。
-   **寫事件**:candidate commit 後送 `candidate_created`(candidate_sha)。
 4. **Mechanical Gate**(14 項機械檢查,無語意判斷):`devflow-exec.sh gate
    --slug <slug> --task T-n --candidate-json <task 樹>/.devflow/task/T-n/candidate.json`。
    FAIL → `task-rework <slug> T-n` + failed check 清單作 finding 回**原 Worker**
    (升階照常計);PASS → `task-state <slug> T-n MECHANICAL_PASS`。
-   **寫事件**:gate FAIL 即該 attempt 的裁決 → `attempt_completed`(result=FAIL,
-   **必附 failure_category**)+ `task_rework_requested`(升階重派 → `task_escalated`)。
 5. Review 路徑(缺省 normal→wave、high→dedicated;`Risk: high` 配 wave 是解析期錯誤):
    - dedicated:`task-state ... IN_REVIEW` → 派 fresh reviewer 單獨審(給 T + S 原文 +
      diff + 執行者輸出,不給結論)→ PASS 才 `task-state ... QUEUED_FOR_INTEGRATION`。
    - wave:直接 `task-state ... QUEUED_FOR_INTEGRATION`(review 在整合後整批做)。
-   **寫事件**(dedicated):派審 `review_started`,收 verdict `review_completed`
-   (review_verdict)+ 每 finding 一筆 `finding_created`。
 6. 整合(**你**做,按 integration DAG 拓撲序,同序位按 T 編號):在 integration 樹
    `git cherry-pick <candidate_sha>` → 跑該 T Verify → `task-integrate <slug> T-n`。
    **cherry-pick conflict 你不得親修**(五律 2):`task-rework <slug> T-n --reason
@@ -173,17 +175,36 @@ evidence 專區)。模型分層/升階/失敗分類/嘗試上限與 sequential �
    派 fresh **Wave Reviewer**,輸出必須是 `devflow-wave-review.v1`(wave 內**每 T
    獨立 verdict**、每 finding 帶 task 歸屬、`integration_verdict`;缺一 = 無效)→
    `devflow-exec.sh review <slug> --file <review.json>` 驗結構,無效 = 整份重審。
-   **寫事件**:派 Wave Reviewer 時 `review_started`,收 verdict `review_completed`
-   + 每 finding 一筆 `finding_created`(帶 task 歸屬)。
 8. 逐 T 收斂:PASS → `task-state ... IN_REVIEW` → `task-state ... ACCEPTED` →
    **你記帳**(勾 checkbox / T Review Log / Progress Log / TDD Evidence 謄錄 /
    執行軌跡 —— **只有 ACCEPTED 才勾**,單寫者 = 你);FAIL → `task-rework` +
    finding 回原 Worker(先分類 SPEC/ENV/IMPL/UNKNOWN 再路由,同 sequential)。
-   **寫事件**:PASS → `attempt_completed`(result=PASS)+ `task_accepted`;
-   FAIL → `attempt_completed`(**必附 failure_category**)+ `task_rework_requested`
-   (升階 → `task_escalated`)。
 9. `devflow-exec.sh wave-close <slug>`(REWORK 未收斂者順延下一 wave,自新 Wave Base
    重建)→ 回 1;無 wave 可開 = 全 T 完成 → 併行收尾。
+
+### 步驟 → 事件對照表(上面九步各自要寫哪些事件)
+
+上面九步只講業務動作;事件何時寫、寫哪幾筆、帶什麼必附欄位,查下表(通道規則見
+「事件寫入通道」節,prompt 物件一律取 registry 現值)。步驟 1、6、9 不寫事件。
+
+| 步驟 | 觸發時點 | 事件 | 必附欄位 / 條件 |
+|---|---|---|---|
+| 2(派 Worker) | 每個 Worker 派出時 | `agent_dispatched` + `attempt_started` | prompt 取 registry 現值(同「事件寫入通道」節) |
+| 3(commit candidate) | candidate commit 後 | `candidate_created` | 帶 `candidate_sha` |
+| 4(Mechanical Gate) | gate FAIL(即該 attempt 的裁決) | `attempt_completed` | result=FAIL,**必附 failure_category** |
+| 4(Mechanical Gate) | 同上 | `task_rework_requested` | — |
+| 4(Mechanical Gate) | 因此升階重派時 | `task_escalated` | 僅升階時 |
+| 5(Review,**僅 dedicated**) | 派 fresh reviewer 時 | `review_started` | wave 路徑不送 |
+| 5(Review,**僅 dedicated**) | 收到 verdict | `review_completed` | 帶 `review_verdict` |
+| 5(Review,**僅 dedicated**) | 收到 verdict | `finding_created` | 每個 finding 一筆 |
+| 7(Wave Reviewer) | 派 Wave Reviewer 時 | `review_started` | — |
+| 7(Wave Reviewer) | 收到 verdict | `review_completed` | — |
+| 7(Wave Reviewer) | 收到 verdict | `finding_created` | 每個 finding 一筆,帶 task 歸屬 |
+| 8(逐 T 收斂,PASS) | PASS 裁決後 | `attempt_completed` | result=PASS |
+| 8(逐 T 收斂,PASS) | 同上 | `task_accepted` | — |
+| 8(逐 T 收斂,FAIL) | FAIL 裁決後 | `attempt_completed` | **必附 failure_category** |
+| 8(逐 T 收斂,FAIL) | 同上 | `task_rework_requested` | — |
+| 8(逐 T 收斂,FAIL,若升階) | 升階時 | `task_escalated` | 僅升階時 |
 
 ### Task Context Packet(派 Worker 的 prompt;缺一不派)
 

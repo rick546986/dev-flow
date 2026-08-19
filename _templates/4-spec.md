@@ -51,18 +51,23 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 >    **每 S 承接 1-discussion 該條驗收雛形的「觀測方式」**(從哪看/看到什麼算對/
 >    拿什麼資料試;雛形沒寫就在此補齊,純內部行為註明「無外部現象」)。
 >    段段給使用者確認。完成 = 全 R 展開、每 S 有觀測欄、每段有確認(確認紀錄節留一行)。
-> 3. 邊界收尾:Acceptance Criteria(全 S 綠+回歸+非功能;行為不變 → golden master)、
->    Out of Scope、Diff Budget、Dependencies;同步填 Verification Profile(含 `lane:`
->    欄,Lane 規則見該節;Risk 判準見該節;Risk: high → Failure Model 表必填)與
->    Design Boundary Contract(條件式:觸發條件見該節,全未命中才可 `n-a` + 具體理由;
->    Fast lane 不豁免觸發條件)。
->    Stage 3 對帳:逐一核對 3-prototype Demo Script 場景。每個已 ACCEPTED 的場景
->    必須對應至少一條 R/S,或在 Out of Scope 明列排除理由;沒有 Stage 3 時記 N/A。
->    Method 走查條列也算 ACCEPTED 行為的下落來源之一;Operational Context 的
->    `Recovery:` 欄位內容也算下落。
->    完成 = 四節齊 + Verification Profile 填畢 + Design Boundary Contract 有結論
->    (applicable 全填 / n-a 附理由)+ Stage 3 對帳逐場有下落。
-> 4. Drafting Decisions 清點:草擬自拍板逐條(決策|理由|棄項|待人審);全文掃
+> 3. 邊界收尾與 Stage 3 對帳,分三小步:
+>    - **3a. 收尾四小節**:Acceptance Criteria(全 S 綠+回歸+非功能;行為不變 →
+>      golden master)、Out of Scope、Diff Budget、Dependencies。
+>      完成 = 四節齊。
+>    - **3b. Verification Profile + Design Boundary**:同步填 Verification
+>      Profile(含 `lane:` 欄,Lane 規則見該節;Risk 判準見該節;Risk: high →
+>      Failure Model 表必填)與 Design Boundary Contract(條件式:觸發條件見該節,
+>      全未命中才可 `n-a` + 具體理由;Fast lane 不豁免觸發條件)。
+>      完成 = Verification Profile 填畢 + Design Boundary Contract 有結論
+>      (applicable 全填 / n-a 附理由)。
+>    - **3c. Stage 3 對帳**:逐一核對 3-prototype Demo Script 場景。每個已
+>      ACCEPTED 的場景必須對應至少一條 R/S,或在 Out of Scope 明列排除理由;
+>      沒有 Stage 3 時記 N/A。Method 走查條列也算 ACCEPTED 行為的下落來源之一;
+>      Operational Context 的 `Recovery:` 欄位內容也算下落。
+>      完成 = Stage 3 對帳逐場有下落。
+> 4. Drafting Decisions 清點:草擬自拍板逐條進上層表(決定了什麼|為什麼|依據|
+>    若被推翻會怎樣|狀態),純內部技術選擇進下層清單;全文掃
 >    TBD/之後再說/實作再定 → 命中即轉 DD 或退回提問。完成 = 掃描零殘留。
 > 5. 自檢(反模糊掃描):**先跑機械關卡** `scripts/check-spec-gate.sh <本檔路徑>`
 >    (C1 每 S 有觀測欄 / C2 Profile 可解析 / C3 lane×Risk 合法 / C4 模糊詞 /
@@ -135,7 +140,10 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 ## Out of Scope
 
 ## Diff Budget
-<!-- 預期 ≤N 檔 / ≤M 行。超支本身非偏差,是停下判 L1/L2 的訊號;分不清一律當 L2。
+<!-- ⚠️ 本節整節是**估計**,不是事實。模板自己實測過誤差可達 3 倍(見下 ③)。
+     審的時候當預測看,不要當承諾;數字沒把握就直接標 [Assumption]。
+
+     預期 ≤N 檔 / ≤M 行。超支本身非偏差,是停下判 L1/L2 的訊號;分不清一律當 L2。
 
      估法(2026-08 order-intake 實測後補;舊版本節全文只有上面這兩句,連怎麼估都沒說):
      ① 建議按區塊拆估,不要只給一個總數(例:ent schema / handler / repo / migration /
@@ -253,14 +261,30 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
   不是只記「降級」那個方向)。未記偏離的 lane 選擇視為判準未確認,G2 視為步 3 未完成。
 
 ### Failure Model(Risk: high 必填)
-<!-- 先答「這個改動可能如何傷害使用者/資料/權限/流程/系統」再選層;每個 mode 指到
+<!-- ⚠️ 本表整表是**推測**——還沒發生的失效,不是觀測到的現象。它跟 7-review 的
+     「現象證據」表長得一樣,但那張是實際跑出來的,這張是猜的,別把兩者當同一種東西。
+
+     先答「這個改動可能如何傷害使用者/資料/權限/流程/系統」再選層;每個 mode 指到
      一個「真能抓到它」的層,蓄意不覆蓋 → 未覆蓋原因明寫並轉載 7-review known limits -->
 | Failure mode | 影響 | 可觀測訊號 | 驗證層 | 未覆蓋原因 |
 |---|---|---|---|---|
 
 ## Drafting Decisions(草擬自判,待人審)
-<!-- 模型草擬時自己拍的板,每條:決策 | 理由 | 放棄的替代項 | 狀態(待人審→✅/✗)。
-     G2 過關條件之一 = 本節全裁決;✗ 打回重寫。審後保留(審計軌跡) -->
+<!-- 模型草擬時自己拍的板。G2 過關條件之一 = 本節全裁決;✗ 打回重寫。審後保留(審計軌跡)。
+     分兩層,判準與 2-decision 的 Owner Calls 同一套:
+     - 上層:會改變使用者看得到的行為、交付範圍或流程 → 下表逐條裁決。
+     - 下層:純內部技術選擇(資料結構寫法、索引型式、命名慣例)→ 下方清單告知即可。
+     - 拿不準放哪層 → 一律放上層(同 README §5 判級疑義原則)。
+     「依據」欄:寫得出出處就寫 `檔:行` 或實際指令輸出;寫不出就寫 `[Assumption]`。
+     沒有依據不是不能寫,是不能寫得像有依據(同 1-discussion 的 [Assumption] 規則)。 -->
+
+### 逐條裁決(上層)
+| DD | 決定了什麼 | 為什麼 | 依據(`檔:行` 或 `[Assumption]`) | 若被推翻會怎樣 | 狀態(待人審→✅/✗) |
+|---|---|---|---|---|---|
+| DD-1 |  |  |  |  |  |
+
+### 內部技術選擇(下層,告知即可)
+<!-- 一行一項;approver 掃過即可,不逐條裁決 -->
 
 ## Test Skeletons(選配)
 <!-- 每 S 一個 named stub(名含 S-id,如 test_s_1_1_store_half_slot),語言隨 repo,

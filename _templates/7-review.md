@@ -102,11 +102,12 @@ updated:
 >    正確處置是**補跑 `dev-setup`**(它同時會補上 `docs/dev/devflow-contract.json`
 >    等其他受管檔),**不要手動 `cp` 一支了事**:手動裝會繞過受管檔的版本握手,
 >    下次 `dev-setup` 比對時看到的是一個來歷不明的複本。
->    2026-08 order-intake 實測:該專案 `docs/dev/tools/` 與 `devflow-contract.json`
->    **兩者皆不存在**,`devflow-doctor.sh` 實跑直接 `⛔ INCOMPATIBLE(fail-closed)` ——
->    但整條 Stage 6→7 走完**沒有任何一步要求跑 doctor**,所以沒有人被擋。
 >    補不了 → Required 層改**逐層手動實跑**並在本檔明記「gauntlet 未跑」是**降級**,
 >    不得默默當成跑過。
+>    **背景案例(佐證,不是本次要照做的事)**:2026-08 order-intake 實測,該專案
+>    `docs/dev/tools/` 與 `devflow-contract.json` 兩者皆不存在,`devflow-doctor.sh`
+>    實跑直接 `⛔ INCOMPATIBLE(fail-closed)`;但整條 Stage 6→7 走完沒有任何一步
+>    要求跑 doctor,所以沒有人被擋。
 >    (Required 層須逐層帶入命令,未實跑由機械擋下,不靠自律)。
 >    完成 = gauntlet 輸出在案(或降級聲明在案)。
 > 2d. **Operational Walkthrough**:以各 S 的 Operational Context 為腳本親自走一遍

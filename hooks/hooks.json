@@ -80,6 +80,19 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/devflow-plainspeak.sh",
+            "timeout": 5,
+            "statusMessage": "plainspeak 白話回覆提醒"
+          }
+        ]
+      }
     ]
   }
 }

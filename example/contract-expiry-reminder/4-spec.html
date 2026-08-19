@@ -453,13 +453,63 @@ Rollback rehearsal(schema migration 觸發)—— 本次三者皆觸發,列入 F
 </tbody>
 </table></div>
 <h2>Drafting Decisions(草擬自判,已裁決)</h2>
-<ul>
-<li>剩餘天數顯示「N 天」不含小時 | 理由:業務以天為單位追 | 棄項:精確到時分 | ✅</li>
-<li>S-2 空狀態文案寫死於 spec | 理由:驗收要可測,文案不可漂 | 棄項:留給前端自由 | ✅</li>
-<li>狀態值域固定 6 值(未處理/等待法務/等待主管/已聯絡供應商/已續約/不續約)| 理由:可測、可報表 | 棄項:自由文字狀態 | ✅</li>
-<li>「已續約」僅主管可標 | 理由:對應核准權(1-discussion Q5;3-prototype Demo 權限修正)| 棄項:業務可標+事後稽核 | ✅</li>
-<li>看過不改狀態(無「已讀即處理」)| 理由:防看過誤當完成(Demo AC-5 場景 3/3 確認)| 棄項:自動標已讀 | ✅</li>
-</ul>
+<h3>逐條裁決(上層)</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>DD</th>
+<th>決定了什麼</th>
+<th>為什麼</th>
+<th>依據(<code>檔:行</code> 或 <code>[Assumption]</code>)</th>
+<th>若被推翻會怎樣</th>
+<th>狀態(待人審→✅/✗)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DD-1</td>
+<td>剩餘天數顯示「N 天」不含小時(棄項:精確到時分)</td>
+<td>業務以天為單位追</td>
+<td><code>1-discussion.md:35</code> Current Journey Step 1 記業務「月初翻 Excel 私表比對到期日」= 以天為單位;顯示精度無使用者反饋 = <code>[Assumption]</code></td>
+<td>S-1 THEN 的「10 天」字樣與前端格式化都要改</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>DD-2</td>
+<td>S-2 空狀態文案寫死於 spec(棄項:留給前端自由)</td>
+<td>驗收要可測,文案不可漂</td>
+<td><code>2-decision.md:66</code> OC-3 已裁定零筆仍顯示空狀態卡片;文案逐字寫死是本階段延伸 = <code>[Assumption]</code></td>
+<td>S-2 變成不可測,7-review 現象證據那列要改判準</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>DD-3</td>
+<td>狀態值域固定 6 值:未處理/等待法務/等待主管/已聯絡供應商/已續約/不續約(棄項:自由文字狀態)</td>
+<td>可測、可報表</td>
+<td><code>1-discussion.md:36-38</code> Current Journey Step 2-4 的「等待誰」欄依序是業務主管、法務、外部窗口(供應商);「6 值剛好夠」= <code>[Assumption]</code>,未窮舉真實案例</td>
+<td>R-3 全部 S 與 migration 的 enum 都要改,已寫入的資料要轉換</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>DD-4</td>
+<td>「已續約」僅主管可標(棄項:業務可標+事後稽核)</td>
+<td>對應核准權</td>
+<td><code>1-discussion.md:77</code> Q5 已定案「已續約」僅主管可標;<code>3-prototype.md:139</code> Permission corrections 記「修正為僅主管可標」</td>
+<td>S-4 權限分支與 Failure Model 第 1 列都要改</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>DD-5</td>
+<td>看過不改狀態,無「已讀即處理」(棄項:自動標已讀)</td>
+<td>防看過誤當完成</td>
+<td><code>3-prototype.md:128</code> AC-5 場景 3/3 參與者實測確認</td>
+<td>S-5 整條反過來,Failure Model 第 2 列失效</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table></div>
+<h3>內部技術選擇(下層,告知即可)</h3>
+<p>(無 —— 本次純內部技術選擇已在 <code>2-decision.md</code> 的下層清單記過,不重複記)</p>
 <h2>Test Skeletons(選配)</h2>
 <pre><code class="language-go">func TestExpiring_S1(t *testing.T) {
 	// GIVEN 登入業務 &lt;owner&gt; 名下合約 C, end_date = today+10d, 未續約

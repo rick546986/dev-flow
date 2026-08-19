@@ -80,8 +80,13 @@ if not m:
 elif not num_matches(m.group(1), mount_count):
     fail(f"SKILL.md 掛載數寫「{m.group(1)} 條」,hooks.json 實際 {mount_count} 條")
 
-# 逐條列舉:`PreToolUse \`matcher\`→name` —— 與實際掛載集合雙向比對
-listed = set(re.findall(r"(PreToolUse|PostToolUse)\s*`([^`]+)`→([a-z0-9-]+)", skill))
+# 逐條列舉:`<event> \`matcher\`→name` —— 與實際掛載集合雙向比對。
+# 事件名不寫死成 PreToolUse|PostToolUse:hooks.json 允許非工具事件(UserPromptSubmit
+# 等),寫死會讓新掛的非工具 hook 永遠對不上、卻報成「SKILL.md 漏列」而不是
+# 「這支守衛自己認不得」—— 一樣是第 7 型,只是漂的是這支守衛本身。
+listed = set(re.findall(r"([A-Z][A-Za-z]+)\s*`([^`]+)`→([a-z0-9-]+)", skill))
+listed = {x for x in listed if x[0] in {e for e, _m, _n, _t in mounts} | {
+    "PreToolUse", "PostToolUse", "UserPromptSubmit"}}
 actual = {(e, mt, n[:-3] if n.endswith(".sh") else n) for e, mt, n, _t in mounts}
 for miss in sorted(actual - listed):
     fail(f"SKILL.md 掛載列舉漏了:{miss[0]} `{miss[1]}`→{miss[2]}")
@@ -203,6 +208,56 @@ for rel, sid in FIGS:
     probe = sorted(expected_bases)[0]
     if not fig_hook_failures(fig_texts[rel], sid, expected_bases - {probe}):
         fail(f"負向自檢失效:{rel} 的圖點名了 hooks.json 沒有的 {probe} 竟然沒被判多列")
+
+# ── ⑤ plainspeak:規則文字只准有一份正本 ──────────────────────────────────
+# 為什麼在這支:同一條「用白話回」的規則同時被 hook(每輪注入)與個人帳號的
+# plain-language-zh skill(查閱)消費。規則若被抄進實作程式碼,就變成第二份會漂的副本 ——
+# 跟本檔管的「機制 vs 列舉它的文件」是同一種病(第 7 型),所以放同一支守衛。
+# 個人帳號那份 skill 在本 repo 之外,機械上驗不到,只能靠它自己寫成指標(已改)。
+import subprocess
+
+rules_path = os.path.join(root, "hooks", "plainspeak-rules.md")
+impl_path = os.path.join(root, "hooks", "_plainspeak_impl.py")
+START, END = "<!-- devflow:inject:start -->", "<!-- devflow:inject:end -->"
+if not os.path.isfile(rules_path):
+    fail("hooks/plainspeak-rules.md 不見了 —— 規則正本被刪,hook 會靜默注入空白")
+else:
+    rules_text = open(rules_path, encoding="utf-8").read()
+    if rules_text.count(START) != 1 or rules_text.count(END) != 1:
+        fail(f"plainspeak-rules.md 的 inject 起訖標記不是各一個"
+             f"(start={rules_text.count(START)} end={rules_text.count(END)})")
+    else:
+        block_text = rules_text.split(START, 1)[1].split(END, 1)[0].strip()
+        if not block_text:
+            fail("plainspeak-rules.md 的 inject 區塊是空的")
+        # 實跑 hook,注入內容必須與正本區塊逐字相同(不是「看起來像」)
+        try:
+            proc = subprocess.run(
+                ["bash", os.path.join(root, "hooks", "devflow-plainspeak.sh")],
+                input="{}", capture_output=True, text=True,
+                env={**os.environ, "DEVFLOW_PLAINSPEAK": "1"})
+            emitted = json.loads(proc.stdout)["systemMessage"]
+        except Exception as exc:                                   # noqa: BLE001
+            emitted = None
+            fail(f"devflow-plainspeak.sh 實跑取不到注入內容:{exc}")
+        if emitted is not None and emitted != block_text:
+            fail("devflow-plainspeak.sh 注入的文字與 plainspeak-rules.md 的 inject 區塊不同 —— "
+                 "規則出現第二份副本")
+        # 關閉時必須靜默
+        off = subprocess.run(
+            ["bash", os.path.join(root, "hooks", "devflow-plainspeak.sh")],
+            input="{}", capture_output=True, text=True,
+            env={k: v for k, v in os.environ.items() if k != "DEVFLOW_PLAINSPEAK"})
+        if off.stdout.strip() or off.returncode != 0:
+            fail(f"DEVFLOW_PLAINSPEAK 未設時 devflow-plainspeak.sh 不是靜默 exit 0"
+                 f"(rc={off.returncode} stdout={off.stdout[:60]!r})")
+
+if os.path.isfile(impl_path):
+    impl_text = open(impl_path, encoding="utf-8").read()
+    for phrase in ("術語不刪", "把括號連同"):
+        if phrase in impl_text:
+            fail(f"_plainspeak_impl.py 裡出現規則正文「{phrase}」 —— "
+                 f"規則要留在 plainspeak-rules.md,程式只負責讀它")
 
 # ── 輸出 ─────────────────────────────────────────────────────────────────
 print(f"=== hooks 記帳對帳:hooks.json {mount_count} 條掛載 / {len(script_names)} 支腳本 "
