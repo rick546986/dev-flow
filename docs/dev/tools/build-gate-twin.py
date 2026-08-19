@@ -807,11 +807,16 @@ def dash_cells(stage, md, n_items, n_bad, secs, n_obs=0, dag_edges=0, dag_done=0
             s_note = f"{n_bad} 條缺必填欄"
         else:
             s_note = "欄位齊全"
+        lane_val = _find(md, r"^\s*-?\s*lane:\s*(\S+)")
+        risk_val = _find(md, r"^\s*-\s*Risk:\s*(\S+)")
         return [
             ("狀態", _find(md, r"^status:\s*(\S+)"), "frontmatter", "#top"),
             ("待審 S", f"{n_items} 條", s_note, "#cards"),
-            ("lane · Risk", f'{_find(md, r"^\s*-?\s*lane:\s*(\S+)")} · '
-                            f'{_find(md, r"^\s*-\s*Risk:\s*(\S+)")}',
+            # ⚠️ 兩個查詢先落成變數再進 f-string:Python 3.11 及更早**不允許**
+            # f-string 的表達式部分含反斜線,而正則裡有 `\s`/`\S`。寫在 f-string 裡
+            # 會在 3.9(macOS 內建 /usr/bin/python3)直接 SyntaxError —— 整支檔案讀不進去,
+            # 採用專案產不出 gate 審查頁。守衛:scripts/check-py-floor.sh。
+            ("lane · Risk", f"{lane_val} · {risk_val}",
              "Verification Profile", sec_anchor("Verification Profile")),
             ("DD 進度", f"{len(dd_rows) - dd_open}/{len(dd_rows)}" if dd_rows else "—",
              "全裁決才可送審", sec_anchor("Drafting Decisions")),

@@ -96,6 +96,10 @@ group_contracts() {
 }
 
 group_architecture() {
+  # 最低 Python 版本相容(2026-08-19 採用現場踩到):會在採用專案直譯器上跑的 .py
+  # 不得用到比宣告下限更新的語法。build-gate-twin.py 曾在 f-string 表達式寫反斜線,
+  # 3.11 及更早直接 SyntaxError,而 v3.8.0 全部既有檢查皆綠 —— 這支就是那個缺的檢查。
+  run "architecture/check-py-floor"        scripts/check-py-floor.sh        || return 1
   run "architecture/check-gate-tokens"     scripts/check-gate-tokens.sh     || return 1
   run "architecture/check-design-contract" scripts/check-design-contract.sh || return 1
   run "architecture/check-adr-integrity"   scripts/check-adr-integrity.sh   || return 1

@@ -9,7 +9,9 @@
 > `devflow-contract.json` 與 gauntlet 腳本散發進 `docs/dev/`,並建 `STATUS.md` 與
 > repo root `CONTEXT.md`。**不需要手動複製,也不需要本 repo 存在於使用者機器上。**
 >
-> **環境需求**:dev-flow 的 hook 需要 python3(僅標準函式庫)。直譯器解析順序:
+> **環境需求**:dev-flow 的 hook 需要 python3(僅標準函式庫),**最低 3.9**
+> (= macOS 內建 `/usr/bin/python3` 的版本;下限由 `scripts/check-py-floor.sh` 逐檔
+> 真編譯釘住,改下限要同時改該檔的 `PY_FLOOR`)。直譯器解析順序:
 > 環境變數 `DEVFLOW_PYTHON`(顯式覆寫)→ 系統 `/usr/bin/python3` → PATH 上的
 > `python3`。**找不到時 fail-open**:hook 印一行警告後放行,只跳過守衛、不擋工具
 > 呼叫 —— 代價是那次呼叫沒有保護,不是功能壞掉。**Windows(Git Bash)沒有

@@ -569,9 +569,12 @@ if tasks_local is None:
     check(False, "T 依賴 DAG 區塊(#dag)存在", "5-tasks.html 不存在(前面已失敗)")
     check(False, "DAG 至少印出第一波", "5-tasks.html 不存在(前面已失敗)")
 else:
-    check(tasks_local.count('class="t-bound"') == n_t_twin,
+    # ⚠️ 先落成變數再進 f-string:Python 3.11 及更早不允許 f-string 的表達式部分
+    # 含反斜線(這裡是 \" 轉義)。守衛:scripts/check-py-floor.sh
+    n_bound = tasks_local.count('class="t-bound"')
+    check(n_bound == n_t_twin,
           "每張 T 卡都有 Boundaries 摺疊(<details class=\"t-bound\">)",
-          f"details 數 {tasks_local.count('class=\"t-bound\"')},卡數 {n_t_twin}")
+          f"details 數 {n_bound},卡數 {n_t_twin}")
     check('id="dag"' in tasks_local, "T 依賴 DAG 區塊(#dag)存在")
     check("Wave 1" in tasks_local, "DAG 至少印出第一波")
 

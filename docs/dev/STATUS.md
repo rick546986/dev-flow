@@ -66,6 +66,14 @@ scripts/history-append.sh --slug <代號> --what <做了什麼> --why <為什麼
 > **本表是待辦的唯一正本**,散在派工單尾節的欠帳全數收攏進來。
 > 排序 A → B → C,同級之間「擋住別人」的在前。
 
+> 2026-08-19 採用現場回報輪:D-1/D-2/D-3 **已於同日修畢**(`b623fc0`),不再列於下表。
+> 三件的材料與重現步驟保留在 `notes/dispatch-history-template-defects.md`;
+> 守衛落在 `scripts/check-history-integrity.sh` 的 H8(寫入口路徑要含採用專案側,
+> 對帳來源動態取自 `skills/dev-setup/SKILL.md`,不寫死)與 H9(模板註解區塊外不得有
+> `## ` 條目),兩項各有弄壞會紅的實驗證據。
+> ⚠️ **已存在的採用專案裡那筆種子紀錄不會被回頭清掉** —— 升級只覆蓋受管檔,
+> 不動已產出的 `docs/dev/HISTORY.md`。要不要提供一次性清理路徑是獨立裁決,尚未排程。
+
 | 級 | 一句 | 來源 |
 |---|---|---|
 | B | owner 親自打開 gate twin 產出的 html 驗收「好不好審」,b8 的 verdict 才能從 `REQUEST_CHANGES` 改掉 —— **這件事只有 owner 做得了** | `docs/dev/b8-gate-twin-review-ui/7-review.md:5,180,181` |

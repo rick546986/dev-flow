@@ -11,6 +11,11 @@
 #   H5 唯一寫入口存在且可執行,且散發副本與正本一致
 #   H6 hooks.json 有掛 history-guard(擋 Edit/Write 直接改)
 #   H7 `_templates/HISTORY.md` 存在(採用專案要 follow 同一個格式)
+#   H8 `_templates/HISTORY.md` 內的寫入口路徑含「採用專案側」路徑(不得只有母版側
+#      `scripts/history-append.sh` —— 該路徑在散發後的採用專案不存在;比對來源動態
+#      取自 `skills/dev-setup/SKILL.md` 的散發目的地,不寫死字串,避免跟散發目的地漂移)
+#   H9 `_templates/HISTORY.md` 內不得有位於 `<!-- ... -->` 註解區塊之外的 `## ` 條目
+#      (出廠模板帶著可見的種子紀錄 = 散發後變成假資料,而 HISTORY.md 又禁止手改清掉)
 #
 # 用法:
 #   scripts/check-history-integrity.sh            # 驗本 repo + 跑 fixture battery
@@ -130,8 +135,34 @@ guard = ROOT / "hooks/history-guard.sh"
 check(guard.is_file() and os.access(guard, os.X_OK), "hooks/history-guard.sh 存在且可執行")
 
 tpl = ROOT / "_templates/HISTORY.md"
-check(tpl.is_file() and "不要直接編輯" in tpl.read_text(encoding="utf-8"),
+tpl_text = tpl.read_text(encoding="utf-8") if tpl.is_file() else ""
+check(tpl.is_file() and "不要直接編輯" in tpl_text,
       "_templates/HISTORY.md 存在且帶警語(採用專案 follow 同一格式)")
+
+print("-- 模板與寫入口路徑對齊 --")
+
+# H8:對帳來源動態取自 skills/dev-setup/SKILL.md 的散發目的地,不寫死字串。
+# SKILL.md 裡描述散發的寫法是「`${CLAUDE_PLUGIN_ROOT}/scripts/history-append.sh`
+# → `docs/dev/tools/history-append.sh`」,用「scripts/history-append.sh` → `」這個
+# 錨點定位到那一行,擷取箭頭右邊的實際散發路徑。
+skill_md = ROOT / "skills/dev-setup/SKILL.md"
+skill_text = skill_md.read_text(encoding="utf-8") if skill_md.is_file() else ""
+dist_match = re.search(r"scripts/history-append\.sh`\s*→\s*`([^`]+)`", skill_text)
+if dist_match is None:
+    check(False, "從 skills/dev-setup/SKILL.md 解析出 history-append.sh 散發目的地",
+          "找不到「scripts/history-append.sh` → `...`」這個對照 —— SKILL.md 措辭可能改了,H8 對帳來源已失效")
+else:
+    adopter_path = dist_match.group(1)
+    check(adopter_path in tpl_text,
+          f"_templates/HISTORY.md 的寫入口路徑含採用專案側路徑({adopter_path})",
+          "只教了母版側 scripts/history-append.sh,散發後的採用專案找不到這支檔")
+
+# H9:模板內不得有位於 <!-- ... --> 之外的 `## ` 條目(禁止出廠即帶可見假資料)。
+tpl_no_comments = re.sub(r"<!--.*?-->", "", tpl_text, flags=re.DOTALL)
+stray_entries = [ln for ln in tpl_no_comments.splitlines() if ln.startswith("## ")]
+check(not stray_entries,
+      "_templates/HISTORY.md 註解區塊外沒有 `## ` 條目(不帶出廠可見種子紀錄)",
+      f"發現 {len(stray_entries)} 筆:{stray_entries}")
 
 print("-- fixture battery(證明負向規則真的被覆蓋)--")
 fx = ROOT / "scripts/fixtures/history"
