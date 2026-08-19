@@ -51,13 +51,12 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
    `docs/dev/devflow-contract.json`**(版本握手契約;doctor 無 `--contract`/
    `$DEVFLOW_CONTRACT` 明示時在此找,缺件必 fail-closed);從模板建 `STATUS.md`;
    repo root 無 `CONTEXT.md` 則從模板建。
-   **基準快照(此步只宣告,不落地)**:本次 install 結束前要快照的東西是
-   `docs/dev/README.md`(已剝除版)、`_templates/*`、`devflow-contract.json`、
-   **整個 `docs/dev/tools/`(按目錄整包存,不逐檔列 —— 逐檔列的話下一支新工具
-   又會漏)**。**實際落地在最後的收尾步(步 8),不在這裡** —— `docs/dev/tools/`
-   要到步 6、7 才散發完內容,這一步就拍會拍到空目錄,下次 upgrade 的三方比對會把
-   官方散發的工具誤判成本地客製。upgrade 段的三方比對(母版改寫 vs 本地客製)
-   靠這份快照當「上游舊」,見 upgrade 段。
+   **基準快照(此步只宣告,不落地)**:**本步只登記清單** —— 本次 install 結束前
+   要快照的東西是 `docs/dev/README.md`(已剝除版)、`_templates/*`、
+   `devflow-contract.json`、**整個 `docs/dev/tools/`(按目錄整包存,不逐檔列 ——
+   逐檔列的話下一支新工具又會漏)**。**實際落地時機在步 8,不在這裡**。
+   **原因見步 8 與 upgrade 段**(`docs/dev/tools/` 現在還沒散發完,拍早了會誤判;
+   upgrade 段的三方比對靠這份快照當「上游舊」)。
    **改版歷史**:`mkdir -p docs/adr`(長期決策一決策一檔;編號唯一性由
    `check-adr-integrity.sh` 驗)、`docs/dev/HISTORY.md` 不存在則從
    `_templates/HISTORY.md` 建(只增不改的索引);再 `mkdir -p docs/dev/tools`

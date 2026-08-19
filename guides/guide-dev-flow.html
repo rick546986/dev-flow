@@ -650,17 +650,24 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     <strong>每 S 承接 1-discussion 該條驗收雛形的「觀測方式」</strong>(從哪看/看到什麼算對/
     拿什麼資料試;雛形沒寫就在此補齊,純內部行為註明「無外部現象」)。
     段段給使用者確認。完成 = 全 R 展開、每 S 有觀測欄、每段有確認(確認紀錄節留一行)。</li>
-    <li>邊界收尾:Acceptance Criteria(全 S 綠+回歸+非功能;行為不變 → golden master)、
-    Out of Scope、Diff Budget、Dependencies;同步填 Verification Profile(含 <code>lane:</code>
-    欄,Lane 規則見該節;Risk 判準見該節;Risk: high → Failure Model 表必填)與
-    Design Boundary Contract(條件式:觸發條件見該節,全未命中才可 <code>n-a</code> + 具體理由;
-    Fast lane 不豁免觸發條件)。
-    Stage 3 對帳:逐一核對 3-prototype Demo Script 場景。每個已 ACCEPTED 的場景
-    必須對應至少一條 R/S,或在 Out of Scope 明列排除理由;沒有 Stage 3 時記 N/A。
-    Method 走查條列也算 ACCEPTED 行為的下落來源之一;Operational Context 的
-    <code>Recovery:</code> 欄位內容也算下落。
-    完成 = 四節齊 + Verification Profile 填畢 + Design Boundary Contract 有結論
-    (applicable 全填 / n-a 附理由)+ Stage 3 對帳逐場有下落。</li>
+    <li>邊界收尾與 Stage 3 對帳,分三小步:
+    <ul>
+    <li><strong>3a. 收尾四小節</strong>:Acceptance Criteria(全 S 綠+回歸+非功能;行為不變 →
+    golden master)、Out of Scope、Diff Budget、Dependencies。
+    完成 = 四節齊。</li>
+    <li><strong>3b. Verification Profile + Design Boundary</strong>:同步填 Verification
+    Profile(含 <code>lane:</code> 欄,Lane 規則見該節;Risk 判準見該節;Risk: high →
+    Failure Model 表必填)與 Design Boundary Contract(條件式:觸發條件見該節,
+    全未命中才可 <code>n-a</code> + 具體理由;Fast lane 不豁免觸發條件)。
+    完成 = Verification Profile 填畢 + Design Boundary Contract 有結論
+    (applicable 全填 / n-a 附理由)。</li>
+    <li><strong>3c. Stage 3 對帳</strong>:逐一核對 3-prototype Demo Script 場景。每個已
+    ACCEPTED 的場景必須對應至少一條 R/S,或在 Out of Scope 明列排除理由;
+    沒有 Stage 3 時記 N/A。Method 走查條列也算 ACCEPTED 行為的下落來源之一;
+    Operational Context 的 <code>Recovery:</code> 欄位內容也算下落。
+    完成 = Stage 3 對帳逐場有下落。</li>
+    </ul>
+    </li>
     <li>Drafting Decisions 清點:草擬自拍板逐條進上層表(決定了什麼|為什麼|依據|
     若被推翻會怎樣|狀態),純內部技術選擇進下層清單;全文掃
     TBD/之後再說/實作再定 → 命中即轉 DD 或退回提問。完成 = 掃描零殘留。</li>
@@ -807,12 +814,15 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     <!-- parity:start template6-checklist -->
     <blockquote>
     <p>執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併 T):
-    0. 起手式:圍欄自查 —— 只讀 4-spec/5-tasks/6-notes/CONTEXT.md/living spec,
-    禁讀 1/2/3(要翻才寫得出 = spec 不完整 → 停,回 G2)。開 feature branch ——
-    <strong>開 branch 與記分岔錨點是同一個動作的兩半,中間不准插別的事</strong>,照下面四步做,
-    不可拆。錨點 <code>FORK_INTEGRATION_SHA</code> = 開這條 branch 的當下整合分支
-    (<code>develop</code> 或 <code>main</code>,依專案)的最新點;Stage 7 的整合回歸工具靠它才算得出
-    「分岔之後對方多了什麼」—— 事後回頭查會查到已經前進過的點,錨點當場失效:</p>
+    0. 起手式,分三小步(0a 開 branch 與錨點/0b worktree 隔離確認/0c 守衛與 doctor
+    自檢),各自查驗完成才算這步完成:
+    <strong>0a. 開 branch 與錨點</strong>:圍欄自查 —— 只讀 4-spec/5-tasks/6-notes/CONTEXT.md/
+    living spec,禁讀 1/2/3(要翻才寫得出 = spec 不完整 → 停,回 G2)。開 feature
+    branch —— <strong>開 branch 與記分岔錨點是同一個動作的兩半,中間不准插別的事</strong>,
+    照下面四步做,不可拆。錨點 <code>FORK_INTEGRATION_SHA</code> = 開這條 branch 的當下整合
+    分支(<code>develop</code> 或 <code>main</code>,依專案)的最新點;Stage 7 的整合回歸工具靠它才算
+    得出「分岔之後對方多了什麼」—— 事後回頭查會查到已經前進過的點,錨點當場
+    失效:</p>
     <pre><code class="language-bash">git fetch &lt;remote&gt;
     FORK=$(git rev-parse --verify &quot;refs/remotes/&lt;remote&gt;/&lt;整合分支&gt;^{commit}&quot;)
     git switch -c &lt;feature-branch&gt; &quot;$FORK&quot;
@@ -833,25 +843,31 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     </code></pre>
     <p>之後不管 merge/rebase 幾次都<strong>不准更新它</strong> —— 它記的是「歷史上的那個時刻」,
     不是「現在的狀態」,一更新就退化成 merge-base,等於沒有。
-    多 feature 並行(多 worktree)另做兩件事:
+    完成 = 讀取清單回報 + branch 就位(或 worktree 建好且 HEAD 驗證通過)+
+    <code>FORK_INTEGRATION_SHA</code> 已記進本檔(40 碼全長)。
+    <strong>0b. worktree 隔離確認</strong>:多 feature 並行(多 worktree)另做兩件事:
     ①STATUS.md 不在 worktree 內改 —— 它只在整合分支(<code>develop</code> 或 <code>main</code>,依專案)
     上維護,規則與理由見 STATUS 模板頂註;②確認執行環境已隔離:容器名/對外 port
     (兩個 worktree 同時起得來嗎?)、<strong>資料庫</strong>(共用同一個 DB 時,migration 版本
-    紀錄表會混進兩個 feature 的版本,導致其中一邊 apply 被拒;實例:
-    <code>atlas_schema_revisions</code>,order-intake T-2 實踩)、快取/訊息佇列/檔案上傳目錄等
-    有狀態的外部依賴。隔離方式依專案技術棧自理,母版不規定做法 —— 母版規定了
-    「並行用 worktree」,就要負責講清楚這個規定的代價,所以檢查項要管;
+    紀錄表會混進兩個 feature 的版本,導致其中一邊 apply 被拒)、快取/訊息佇列/
+    檔案上傳目錄等有狀態的外部依賴。隔離方式依專案技術棧自理,母版不規定做法 ——
+    母版規定了「並行用 worktree」,就要負責講清楚這個規定的代價,所以檢查項要管;
     但怎麼隔離是各專案技術棧的事,母版規定做法會變成「規定了但不適用」。
+    <strong>背景案例(佐證,不是本次要照做的事)</strong>:實例 <code>atlas_schema_revisions</code>,
+    order-intake T-2 實踩。
     ⚠️ <strong>worktree 交接(並行動線的最後一步)</strong>:上面兩件事(STATUS 在整合分支上改、
     執行環境隔離確認)做完後,明確切進新樹:</p>
     <pre><code class="language-bash">cd &lt;worktree-path&gt;          # 從這裡開始,後續所有指令都在這棵樹上跑
     </code></pre>
     <p>後面的 <code>devflow-exec.sh status</code> <strong>必須在這個目錄下跑</strong>,它會核對 slug 與 cwd
     相符 —— 在原 checkout 跑會核對到別的東西。
-    ⚠️ <strong>守衛武裝自檢(硬關卡,第一動)</strong>:跑 <code>devflow-exec.sh status</code>,確認
-    <code>.devflow/exec.json</code> <strong>存在</strong>且 slug 正確。<strong>沒武裝就不准開工</strong> ——
-    guard hook 在 <code>.devflow/exec.json</code> 不存在時是<strong>靜默沉睡</strong>的
-    (<code>devflow-lib.py::load_state</code> → <code>return None, &quot;&quot;, &quot;&quot;</code>),
+    完成 = 執行環境隔離結果已貼進本檔:逐項寫容器名/對外 port/資料庫/快取或佇列/
+    檔案上傳目錄各自怎麼隔離的(實際值,不是「已隔離」三個字);單一 worktree、
+    沒有並行 → 寫 <code>n-a:本 feature 未並行</code>,理由要寫出來。
+    <strong>0c. 守衛與 doctor 自檢</strong>:⚠️ <strong>守衛武裝自檢(硬關卡,第一動)</strong>:跑
+    <code>devflow-exec.sh status</code>,確認 <code>.devflow/exec.json</code> <strong>存在</strong>且 slug 正確。
+    <strong>沒武裝就不准開工</strong> —— guard hook 在 <code>.devflow/exec.json</code> 不存在時是
+    <strong>靜默沉睡</strong>的(<code>devflow-lib.py::load_state</code> → <code>return None, &quot;&quot;, &quot;&quot;</code>),
     於是「守衛在擋」與「守衛不在」對執行者長得一模一樣:
     圍欄②(禁讀上游)、契約防篡改、scope 守衛<strong>三道全部不會觸發</strong>,
     而每一份產出看起來都一樣完整。
@@ -864,34 +880,54 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     ②<code>dev-setup</code> 沒散發齊 <code>devflow-contract.json</code> 與 <code>docs/dev/tools/</code>,doctor 實跑
     直接 <code>⛔ INCOMPATIBLE(fail-closed)</code>,但整條 Stage 6→7 沒有任何一步要求跑它,
     所以沒有人被擋。
-    完成 = 讀取清單回報 + branch 就位 + <strong><code>devflow-exec.sh status</code> 與
-    <code>devflow-doctor.sh</code> 兩份輸出都貼進本檔</strong> + <strong><code>FORK_INTEGRATION_SHA</code> 已記進本檔
-    (40 碼全長)</strong> + <strong>執行環境隔離結果已貼進本檔</strong>:逐項寫容器名/對外 port/
-    資料庫/快取或佇列/檔案上傳目錄各自怎麼隔離的(實際值,不是「已隔離」三個字);
-    單一 worktree、沒有並行 → 寫 <code>n-a:本 feature 未並行</code>,理由要寫出來。</p>
+    完成 = <code>devflow-exec.sh status</code> 與 <code>devflow-doctor.sh</code> 兩份輸出都貼進本檔。</p>
     <ol>
-    <li>接手核對:4-spec approved?5-tasks 每 T 有 Verify+Covers?缺 → 停回補。
-    建 todo 一 T 一項,照 Blocked-by 拓撲序。完成 = todo 與 5-tasks 一一對應。</li>
-    <li>逐 T 循環:a 照 Covers 先寫失敗測試(名含 S-id)→ RED 輸出貼
-    TDD Evidence;b 最小實作到 GREEN(貼輸出)→ refactor 保綠;c scope check:
-    git status 改動檔 ⊆ 該 T 自己的 Files,超出 → L1/L2 判(定義見下);d 跑該 T
-    Verify;e independent T review:reviewer 必須不同於 T implementer,優先適格人類,
-    否則 fresh-context reviewer Agent;reviewer 親跑 Verify,檢查 Covers、RED→GREEN
-    證據與該 T 自己的 Files scope,並過 Test Integrity Check 七項(①刪 assertion
-    ②放寬 assertion ③新增 skip/xfail/todo ④同步改測試+實作重新定義正確性
-    ⑤mock 掉核心邏輯(mock 邊界可以,mock 被測物不行)⑥只追 coverage 無有意義
-    assertion ⑦沒跑的層寫成 PASS;任一命中 → FAIL);
-    4-spec 的 Design Boundary Contract 為 <code>applicable</code> 時,另過 Design Boundary Check
-    五問(全文見下方實作期規則)。
-    FAIL → 回同一 T 修正並重新送審;高風險或
-    finding 有爭議可加第二 reviewer;f PASS → commit;g hash 入 Progress Log +
-    勾 checkbox + review evidence 入 T Review Log;h 自由選擇 → Decisions 一行續走,
-    偏差 → L1/L2。完成 = 該 T reviewer PASS + checkbox ✓ + hash 在案 + Covers
-    的每個 T × S 全有該 T 自己的 RED→GREEN 證據。順序固定:RED → GREEN → scope check → Verify →
-    independent T review → PASS → commit → Progress Log + checkbox + review evidence。</li>
-    <li>回歸:全 T 後跑既有全套,本次 S 全綠+既有全綠;紅 → 修+依偏差級記。
-    完成 = 全套<strong>全綠</strong>輸出摘要入本檔(紅字摘要不算完成)。</li>
-    <li>自檢(= Self-Review 節逐問作答;Design Boundary Contract applicable 時第⑦問
+    <li>
+    <p>接手核對:4-spec approved?5-tasks 每 T 有 Verify+Covers?缺 → 停回補。
+    建 todo 一 T 一項,照 Blocked-by 拓撲序。完成 = todo 與 5-tasks 一一對應。</p>
+    </li>
+    <li>
+    <p>逐 T 循環,對齊 README §5 的驗收動線(RED → GREEN → scope check → Verify →
+    independent T review → PASS → commit → 記帳),a–h 逐段對應同一條 seam:
+    a <strong>RED</strong>:照 Covers 先寫失敗測試(名含 S-id)→ RED 輸出貼 TDD Evidence。
+    完成 = RED 輸出已貼。
+    b <strong>GREEN</strong>:最小實作到 GREEN(貼輸出)→ refactor 保綠。完成 = GREEN 輸出
+    已貼且保綠。
+    c <strong>scope check</strong>:git status 改動檔 ⊆ 該 T 自己的 Files,超出 → L1/L2 判
+    (定義見下實作期規則)。完成 = scope 已核對(在界內,或已判 L1/L2)。
+    d <strong>Verify</strong>:跑該 T Verify。完成 = Verify 已跑且結果在案。
+    e <strong>independent T review</strong>:reviewer 必須不同於 T implementer,優先適格
+    人類,否則 fresh-context reviewer Agent;reviewer 親跑 Verify,檢查 Covers、
+    RED→GREEN 證據與該 T 自己的 Files scope,並過 Test Integrity Check 七項
+    (①刪 assertion ②放寬 assertion ③新增 skip/xfail/todo ④同步改測試+實作
+    重新定義正確性 ⑤mock 掉核心邏輯(mock 邊界可以,mock 被測物不行)⑥只追
+    coverage 無有意義 assertion ⑦沒跑的層寫成 PASS;任一命中 → FAIL);4-spec 的
+    Design Boundary Contract 為 <code>applicable</code> 時,另過 Design Boundary Check 五問
+    (全文見下方實作期規則)。FAIL → 回 a 修正並重新送審;高風險或 finding 有
+    爭議可加第二 reviewer。完成 = reviewer 給出 verdict。
+    f <strong>PASS</strong>:reviewer 裁決 PASS(FAIL 已在 e 處理,不下推)。完成 = verdict = PASS。
+    g <strong>commit</strong>:PASS 後 commit、讀出 hash。完成 = commit 已建立。
+    h <strong>記帳</strong>:hash 入 Progress Log + 勾 checkbox + review evidence 入
+    T Review Log。完成 = 該 T reviewer PASS + checkbox ✓ + hash 在案 + Covers
+    的每個 T × S 全有該 T 自己的 RED→GREEN 證據。</p>
+    <p><strong>自由選擇與偏差(條件觸發,不是每個 T 都會遇到)</strong>:</p>
+    <ul>
+    <li><strong>遇到 spec 未載明的自由選擇時</strong>(如內部命名、資料結構)→ 自己選、記一行
+    Decisions、繼續(定義見下實作期規則 Decisions 條)。完成 = 未遇到則免做;
+    遇到則已記一行 Decisions。</li>
+    <li><strong>遇到偏差時</strong> → 依 L1/L2 判並處置(定義見下實作期規則偏差條,含 L1 繼續
+    執行 / L2 停 / 分不清一律當 L2)。完成 = 未遇到則免做;遇到則已判級並
+    依級處置。</li>
+    </ul>
+    <p>順序固定:RED → GREEN → scope check → Verify →
+    independent T review → PASS → commit → Progress Log + checkbox + review evidence。</p>
+    </li>
+    <li>
+    <p>回歸:全 T 後跑既有全套,本次 S 全綠+既有全綠;紅 → 修+依偏差級記。
+    完成 = 全套<strong>全綠</strong>輸出摘要入本檔(紅字摘要不算完成)。</p>
+    </li>
+    <li>
+    <p>自檢(= Self-Review 節逐問作答;Design Boundary Contract applicable 時第⑦問
     併查邊界 drift):①每個「T × Covers S」都有含 S-id 的測試 +
     該 T 自己的 RED/GREEN 證據(不得跨 T 共用)?
     ②每 T 在 T Review Log 有 verdict?③每個 PASS 都早於該 T commit?④每個 FAIL
@@ -900,9 +936,12 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     ⑦Decisions/Deviations 與 diff 對得上(無 silent drift;契約 applicable 時併查:
     模組依賴、Data Owner、Interface／Transaction／Consistency Boundary 有無未經
     授權的改變,有則已記 L2 並回 G2)?⑧回歸綠?答不出 →
-    回步 2/3 補。完成 = 八答落檔。</li>
-    <li>收尾:Files Changed 填(對照 Diff Budget)、全節齊無佔位、status 更新。
-    完成 = 節齊 + frontmatter status 已更新。</li>
+    回步 2/3 補。完成 = 八答落檔。</p>
+    </li>
+    <li>
+    <p>收尾:Files Changed 填(對照 Diff Budget)、全節齊無佔位、status 更新。
+    完成 = 節齊 + frontmatter status 已更新。</p>
+    </li>
     </ol>
     </blockquote>
     <!-- parity:end template6-checklist -->

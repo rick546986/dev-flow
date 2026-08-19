@@ -51,17 +51,21 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 >    **每 S 承接 1-discussion 該條驗收雛形的「觀測方式」**(從哪看/看到什麼算對/
 >    拿什麼資料試;雛形沒寫就在此補齊,純內部行為註明「無外部現象」)。
 >    段段給使用者確認。完成 = 全 R 展開、每 S 有觀測欄、每段有確認(確認紀錄節留一行)。
-> 3. 邊界收尾:Acceptance Criteria(全 S 綠+回歸+非功能;行為不變 → golden master)、
->    Out of Scope、Diff Budget、Dependencies;同步填 Verification Profile(含 `lane:`
->    欄,Lane 規則見該節;Risk 判準見該節;Risk: high → Failure Model 表必填)與
->    Design Boundary Contract(條件式:觸發條件見該節,全未命中才可 `n-a` + 具體理由;
->    Fast lane 不豁免觸發條件)。
->    Stage 3 對帳:逐一核對 3-prototype Demo Script 場景。每個已 ACCEPTED 的場景
->    必須對應至少一條 R/S,或在 Out of Scope 明列排除理由;沒有 Stage 3 時記 N/A。
->    Method 走查條列也算 ACCEPTED 行為的下落來源之一;Operational Context 的
->    `Recovery:` 欄位內容也算下落。
->    完成 = 四節齊 + Verification Profile 填畢 + Design Boundary Contract 有結論
->    (applicable 全填 / n-a 附理由)+ Stage 3 對帳逐場有下落。
+> 3. 邊界收尾與 Stage 3 對帳,分三小步:
+>    - **3a. 收尾四小節**:Acceptance Criteria(全 S 綠+回歸+非功能;行為不變 →
+>      golden master)、Out of Scope、Diff Budget、Dependencies。
+>      完成 = 四節齊。
+>    - **3b. Verification Profile + Design Boundary**:同步填 Verification
+>      Profile(含 `lane:` 欄,Lane 規則見該節;Risk 判準見該節;Risk: high →
+>      Failure Model 表必填)與 Design Boundary Contract(條件式:觸發條件見該節,
+>      全未命中才可 `n-a` + 具體理由;Fast lane 不豁免觸發條件)。
+>      完成 = Verification Profile 填畢 + Design Boundary Contract 有結論
+>      (applicable 全填 / n-a 附理由)。
+>    - **3c. Stage 3 對帳**:逐一核對 3-prototype Demo Script 場景。每個已
+>      ACCEPTED 的場景必須對應至少一條 R/S,或在 Out of Scope 明列排除理由;
+>      沒有 Stage 3 時記 N/A。Method 走查條列也算 ACCEPTED 行為的下落來源之一;
+>      Operational Context 的 `Recovery:` 欄位內容也算下落。
+>      完成 = Stage 3 對帳逐場有下落。
 > 4. Drafting Decisions 清點:草擬自拍板逐條進上層表(決定了什麼|為什麼|依據|
 >    若被推翻會怎樣|狀態),純內部技術選擇進下層清單;全文掃
 >    TBD/之後再說/實作再定 → 命中即轉 DD 或退回提問。完成 = 掃描零殘留。
