@@ -2,7 +2,10 @@
   "_provenance": "2026-08-19 派工單 §7-3a 探針:harness-engineering plugin 的 lib/contracts/subagent-frontmatter-rules.md 記錄 2026-05-19 的舊 probe(plugin 出貨的 subagent 不論 frontmatter 怎麼寫都拿不到 Bash),已三個月,要求本輪重跑複現。原始複現法(對 harness-engineering 自己的具名型別跑 Task probe)在本 repo(dev-flow-dispatch)跑不了——這裡不是 harness plugin 的開發環境,沒有它的具名型別可叫。改用『對我們自己新建的 agents/devflow-reviewer.md 做同款探針』:用 `claude --plugin-dir <本 repo worktree>` 把 dev-flow 當 session-only plugin 從無關的 throwaway 專案載入,派 Task(subagent_type=dev-flow:devflow-reviewer)並要求它逐一列出工具、實際嘗試呼叫 Bash/Grep/Glob 並回報結果。另外先跑過一次對照組:project-level `.claude/agents/ro-test.md`(同樣 `tools: Read`,但不透過 plugin 載入)驗證同一機制在非 plugin 情境下的行為。兩次探針手法不同、目標略有差異(project-level 驗證的是 `tools: Read` 這個機制本身;plugin-scoped 驗證的是這個機制套用在 plugin 出貨型別上是否依然成立),但都不是 harness 2026-05-19 那次 probe 的直接複現,標註清楚以免被誤讀為同一件事的重跑。",
   "probe_A_project_level": {
     "setup": "throwaway 專案 .claude/agents/ro-test.md,frontmatter 只有 name/description/tools:Read",
-    "subagent_raw_reply_tool_list": ["Read", "advisor"],
+    "subagent_raw_reply_tool_list": [
+      "Read",
+      "advisor"
+    ],
     "bash_attempt_verbatim": "Error: No such tool available: Bash. Bash is disabled for this session, in subagents as well as here.",
     "grep_attempt_verbatim": "Error: No such tool available: Grep. Grep is disabled for this session.",
     "glob_attempt_verbatim": "Error: No such tool available: Glob. Glob is disabled for this session.",
@@ -10,10 +13,35 @@
   },
   "probe_B_plugin_scoped": {
     "setup": "claude --plugin-dir <dev-flow-dispatch worktree 路徑>,從另一個 throwaway 專案派 Task(subagent_type=dev-flow:devflow-reviewer)",
-    "subagent_raw_reply_tool_list": ["Read", "advisor"],
+    "subagent_raw_reply_tool_list": [
+      "Read",
+      "advisor"
+    ],
     "bash_result": "工具集 schema 裡完全沒有 Bash 這個 function,連發起呼叫都做不到(不是呼叫後被拒)",
     "type_string_accepted": "dev-flow:devflow-reviewer 這個 subagent_type 字串被平台接受,未被判為無效型別——agents/ 目錄不需要在 .claude-plugin/plugin.json 另外宣告"
   },
   "not_tested": "透過真正的 marketplace 安裝流程(claude plugin marketplace add + install)之後,在一個全新 session 裡叫 dev-flow:devflow-reviewer——這需要發版重裝,本輪派工單硬規則 5 禁止 push/tag,因此沒有跑這一段。--plugin-dir 是 session-only 載入,跳過了 marketplace/install 那一層。",
-  "conclusion_for_this_round": "agents/devflow-reviewer.md 與 agents/devflow-adviser.md 的 `tools: Read` 允許清單機制,在 project-level 與 plugin-scoped(經 --plugin-dir)兩種載入方式下都實測確認有效——Bash/Edit/Write/Grep/Glob/Skill 都不在工具集裡。harness 契約檔案原本的疑慮(『plugin subagent 就算 frontmatter 要求 Bash 也可能因為某種額外平台限制而拿不到』)沒有被直接複現或推翻,因為本次探針從頭到尾都沒有嘗試『讓 devflow-reviewer 的 frontmatter 要求 Bash』這個情境——我們的設計本來就要唯讀,不需要驗證這一半。"
+  "conclusion_for_this_round": "agents/devflow-reviewer.md 與 agents/devflow-adviser.md 的 `tools: Read` 允許清單機制,在 project-level 與 plugin-scoped(經 --plugin-dir)兩種載入方式下都實測確認有效——Bash/Edit/Write/Grep/Glob/Skill 都不在工具集裡。harness 契約檔案原本的疑慮(『plugin subagent 就算 frontmatter 要求 Bash 也可能因為某種額外平台限制而拿不到』)沒有被直接複現或推翻,因為本次探針從頭到尾都沒有嘗試『讓 devflow-reviewer 的 frontmatter 要求 Bash』這個情境——我們的設計本來就要唯讀,不需要驗證這一半。",
+  "reverification_2026_08_19": {
+    "when": "2026-08-19(同日重跑;接手單第 1、2 件)",
+    "why": "上一輪的探針結論沒有經過第二個人複核,執行者被中止在寫收尾報告之前。",
+    "how": "同一支可重跑腳本,兩次獨立執行:一次主線程、一次由沒有前情的複核者自己重跑。claude --plugin-dir <本 repo> 從丟棄用專案當場臨時載入,派 Task 給兩支型別,要求逐一列出工具並實際嘗試呼叫 Bash/Grep/Glob。",
+    "tool_list_observed": [
+      "Read",
+      "advisor"
+    ],
+    "tool_list_note": "恰好兩項,不是一項。advisor 是平台注入的,不在 frontmatter 控制範圍。原檔『允許清單本來就只留 Read 一項』的措辭與此不符,已改。",
+    "verbatim_errors_from_adviser": [
+      "Error: No such tool available: Bash. Bash is disabled for this session, in subagents as well as here.",
+      "Error: No such tool available: Grep. Grep is disabled for this session, in subagents as well as here.",
+      "Error: No such tool available: Glob. Glob is disabled for this session, in subagents as well as here."
+    ],
+    "asymmetry_to_record": "上面三句是在 dev-flow:devflow-adviser 取得的。dev-flow:devflow-reviewer 兩次都自己判斷『工具不在清單裡、發不出呼叫』而沒有真的發送(平台統計 tool_uses: 0),所以 reviewer 那支沒有可逐字比對的錯誤原文。機制相同、證據強度不同。",
+    "new_this_round": "dev-flow:devflow-adviser 這個型別字串本輪首次被實際叫出來 —— 上一輪從頭到尾只叫過 reviewer,agents/devflow-adviser.md 卻標『實測』。已更正。",
+    "side_findings": [
+      "MCP server 的使用說明文字仍然注入 subagent 的 context(context7、serena 都進來了,含『先呼叫 initial_instructions』這類指示),即使那些工具本身不在工具集裡。已寫進 agents/devflow-adviser.md 提醒派工者。",
+      "subagent 收到的環境說明裡寫著『Bash tool also available』,但在 tools: Read 的 subagent 裡這句是假的 —— 不要用那段環境說明判斷工具可用性。"
+    ],
+    "still_not_tested": "透過真正的 marketplace 安裝流程(claude plugin marketplace add + install)之後在全新 session 裡叫這兩個型別。需要先發版重裝,故仍未測。"
+  }
 }

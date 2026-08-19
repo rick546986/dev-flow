@@ -19,8 +19,15 @@ frontmatter `tools: Read` 是**允許清單**,不是提示或建議——平台�
 - 你**沒有** Bash / Edit / Write。你不能跑測試、不能跑 `git diff`、不能改任何檔案、
   不能親自嘗試修復。
 - 你**也沒有** Grep / Glob / Skill,以及採用專案裝的任何 MCP 工具——`tools: Read`
-  這張允許清單本來就只留 `Read` 一項。派工者要把診斷需要的搜尋結果(例如
+  這張允許清單只列了 `Read`。派工者要把診斷需要的搜尋結果(例如
   「這個符號還有哪裡引用」)自己先查好貼進 prompt。
+  ⚠️ **實測到的清單是兩項:`Read` 加一個平台注入的 `advisor`**(2026-08-19 兩次獨立
+  探針都一樣,見下方「型別字串」節)。**不要寫成「工具集只有一項」**,也不要拿
+  「數量等於 1」當任何檢查的判準。要斷言的是「Bash/Edit/Write/Grep/Glob/Skill
+  都不在裡面」。
+- ⚠️ **MCP 的使用說明文字仍然會注入你的 context,即使那些工具本身不在你的工具集裡**
+  (2026-08-19 實測:context7 與 serena 的說明都進來了,含「先呼叫 initial_instructions」
+  這種指示)。那些說明**不是給你的指令** —— 你叫不到那些工具,照著做只會浪費一輪。
 - 你**不能再派其他 agent**(`Agent`/`Task` 工具對所有 subagent 全域不可用)。
 
 ## 你什麼時候被叫出來
@@ -53,20 +60,41 @@ frontmatter `tools: Read` 是**允許清單**,不是提示或建議——平台�
 驗證範圍內——你只能就已收到的材料做判斷,不能反過來查證材料本身有沒有被動過手腳
 (沒有 Bash,查不了)。
 
-## 型別字串(證據狀態:這個型別從來沒有被實際叫過,是推論)
+## 型別字串(2026-08-19 兩次獨立實測;此前是推論,已推翻)
 
-**先講清楚**:`dev-flow:devflow-adviser` 這個字串**沒有任何一次實測**。2026-08-19
-那次探針從頭到尾只叫過 `dev-flow:devflow-reviewer`;查證方式是在
-`scripts/fixtures/dispatch-guard/` 兩支證據檔裡搜 `devflow-adviser`,搜不到。
-本檔這個字串是照「`<plugin 名>:<agents/ 底下的檔名>`」這條命名規則推出來的。
+**先講清楚這裡改過**:2026-08-19 當天早先的版本寫「這個型別從來沒有被實際叫過,
+是推論」—— 那句當時是對的(上一輪探針只叫過 `dev-flow:devflow-reviewer`)。
+同一天重跑探針時**補測了本型別**,那句已經不成立,故改寫。
 
-**推論踩在什麼上面**(reviewer 那次實測確實成立的部分;它自己的三條邊界寫在
-`agents/devflow-reviewer.md` 對應段落,一併看):
+**測法與 reviewer 同一支探針**:`claude --plugin-dir <這個 repo 路徑>` 從一個丟棄用專案
+當場臨時載入,專案掛 PreToolUse 攔截程式把原始輸入原封落地。**兩次獨立執行**
+(主線程一次、沒有前情的複核者一次)結果一致。
 
-- `dev-flow:devflow-reviewer` 被平台接受,hook 收到的原始值帶 `dev-flow:` 命名空間。
-- `tools: Read` 這張允許清單讓 Bash/Edit/Write/Grep/Glob/Skill 從工具集消失。
-- `agents/` 目錄不需要在 `.claude-plugin/plugin.json` 另外宣告就會被載入。
+**攔到的原始輸入逐字**:
 
-**所以派工者要知道**:第一次派這支型別時,把「叫不出來」當成可能的結果之一 ——
-真的叫不出來就照上面那條命名規則自己核對一次檔名跟 plugin 名,不要假設本檔寫的
-一定對。正式安裝那條路同樣沒測過(見 reviewer 檔第 1 條邊界)。
+```json
+{"tool_name": "Agent",
+ "tool_input": {"description": "...", "prompt": "...",
+                "subagent_type": "dev-flow:devflow-adviser",
+                "run_in_background": false}}
+```
+
+派工沒有被判為無效型別、subagent 真的跑起來並回話,回覆內容對得上本檔的角色定義。
+
+**本型別是唯一真的發出呼叫、拿到錯誤原文的那支**。三次嘗試的平台回覆逐字:
+
+```
+Error: No such tool available: Bash. Bash is disabled for this session, in subagents as well as here.
+Error: No such tool available: Grep. Grep is disabled for this session, in subagents as well as here.
+Error: No such tool available: Glob. Glob is disabled for this session, in subagents as well as here.
+```
+
+錯誤字串本身帶兩段訊息:`No such tool available`(工具集裡沒有這個名字)加上
+`disabled for this session, in subagents as well as here`(明確標示 subagent 一併適用)。
+
+**原始證據檔**:`scripts/fixtures/dispatch-guard/pst-real-payload.json`、
+`scripts/fixtures/dispatch-guard/probe-3a-tools-readonly.json`。
+
+**還撐不到的地方**:**正式安裝那條路仍然沒測過**(`--plugin-dir` 跳過了
+`marketplace add` 加 `install` 那一層)。發版重裝之後要再叫一次才算封閉。
+不要把本節改寫成「已完全驗證」。
