@@ -1,6 +1,6 @@
 ---
 name: devflow-reviewer
-description: dev-flow Stage 6/7 收驗用的唯讀審查者(role=reviewer,沿用 observability/schema/agent-event.schema.json 與 hooks/prompt-registry.json 既有的角色詞彙,不另造新詞)。負責對派工者(主對話)餵入的材料判 PASS/FAIL 並逐條列 finding,依 README.md §5 驗證五律與 skills/dev-run/SKILL.md 的收驗 seam 執行。由派工者在 dev-run 逐 T 收驗步驟、或 Stage 7 review 時,以 subagent_type=dev-flow:devflow-reviewer(實測確認的 plugin 型別字串,見下——帶 `dev-flow:` 命名空間)明確派出 —— 不是被動觸發,派工者要主動點名這個型別。
+description: dev-flow Stage 6/7 收驗用的唯讀審查者(role=reviewer,沿用 observability/schema/agent-event.schema.json 與 hooks/prompt-registry.json 既有的角色詞彙,不另造新詞)。負責對派工者(主對話)餵入的材料判 PASS/FAIL 並逐條列 finding,依 README.md §5 驗證五律與 skills/dev-run/SKILL.md 的收驗 seam 執行。由派工者在 dev-run 逐 T 收驗步驟、或 Stage 7 review 時,以 subagent_type=dev-flow:devflow-reviewer(帶 `dev-flow:` 命名空間的 plugin 型別字串;這個字串的證據強度與未測範圍見下方「型別字串」節,不要當成已完全驗證)明確派出 —— 不是被動觸發,派工者要主動點名這個型別。
 tools: Read
 model: sonnet
 ---
@@ -60,13 +60,30 @@ frontmatter `tools: Read` 是**允許清單**,不是提示或建議 —— 平�
 (`hooks/_dispatch_impl.py` 開頭的信任模型段落是同一句,不得改寫成更強的說法,
 例如「這能防偽造」)。
 
-## 型別字串(2026-08-19 實測,不是推論)
+## 型別字串(證據狀態:單次臨時載入實測過,但沒有第二個人複核)
 
-用 `claude --plugin-dir <這個 repo 路徑>` 從另一個專案把這個 plugin 當 session-only
-外掛載入後,`Task(subagent_type="dev-flow:devflow-reviewer", ...)` 被平台接受
-(未被判為無效型別),PreToolUse hook 收到的 `tool_input.subagent_type` 原始值也確實是
-`"dev-flow:devflow-reviewer"`(帶命名空間)。同一次測試也證實 `tools: Read` 允許清單
-確實讓 Bash/Edit/Write/Grep/Glob/Skill 從工具集裡整個消失(不是呼叫後被拒,是那個
-工具在 schema 裡根本不存在)——`agents/` 目錄本身不需要在 `.claude-plugin/plugin.json`
-另外宣告就會被載入。**未測**的是透過真正的 marketplace 安裝流程(需要發版重裝,
-本輪禁止 push/tag,見派工單硬規則 5)。
+**怎麼測的**:用 `claude --plugin-dir <這個 repo 路徑>` 從另一個專案把這個 plugin
+當場臨時載入(session-only,不經正式安裝流程),再從那個專案派一次 Task。
+
+**當時觀察到什麼**:
+
+- `Task(subagent_type="dev-flow:devflow-reviewer", ...)` 被平台接受,沒有被判為無效型別。
+- 攔在 `Task|Agent` 上的 PreToolUse hook 收到的 `tool_input.subagent_type` 原始值
+  就是 `"dev-flow:devflow-reviewer"`,帶 `dev-flow:` 這段命名空間。
+- `tools: Read` 這張允許清單確實讓 Bash/Edit/Write/Grep/Glob/Skill 從工具集裡整個消失
+  (不是呼叫後被拒絕,是那個工具在工具集裡根本不存在)。
+- `agents/` 目錄不需要在 `.claude-plugin/plugin.json` 另外宣告就會被載入。
+
+**原始證據檔**(當場落地的紀錄,不是事後轉述):
+`scripts/fixtures/dispatch-guard/pst-real-payload.json`(hook 收到的原始資料)、
+`scripts/fixtures/dispatch-guard/probe-3a-tools-readonly.json`(工具集實測)。
+
+**這句話撐不到哪裡 —— 引用前先看這三條**:
+
+1. **正式安裝那條路沒測過。** `--plugin-dir` 是當場臨時載入,跳過了
+   `claude plugin marketplace add` 加 `install` 那一層。發版重裝之後要再叫一次
+   才算真的封閉(2026-08-19 接手單第 2 件)。
+2. **這次實測只有動手的人自己記錄,沒有第二個人複核過**(同上接手單)。這個字串寫錯的話,
+   未來任何拿型別當判準的檢查都會跟著錯,所以複核完成之前不要把它當定論引用。
+3. **不要把本節改寫成更強的說法。** 例如「型別字串已驗證」「這能保證叫得出來」——
+   現有證據只到「在一種載入方式下成功叫出來過一次」。
