@@ -15,6 +15,25 @@
 > 呼叫 —— 代價是那次呼叫沒有保護,不是功能壞掉。**Windows(Git Bash)沒有
 > `/usr/bin/python3`,要另外裝 Python 並確認 `python3` 在 PATH 找得到,或設
 > `DEVFLOW_PYTHON` 指向直譯器**,守衛才會真的生效。
+>
+> **維護本 repo 另外要裝一個套件**(採用專案不用)。上面那句「僅標準函式庫」只管 hook;
+> **本 repo 自己的檢查腳本**(`scripts/render-methodology-corrections.sh`、
+> `scripts/check-gate-twin.sh`、`scripts/build-gate-twin.py`)要 `markdown-it-py`,
+> **版本釘死**、裝錯版直接失敗:`pip install -r scripts/requirements-methodology-render.txt`
+> (整份就一行 `markdown-it-py==4.0.0`)。沒裝的症狀是
+> `ModuleNotFoundError: No module named 'markdown_it'`。要換直譯器跑這幾支就設
+> `DEVFLOW_RENDER_PYTHON`。hook 本身**刻意不 import 它**——採用端沒有 pip,見
+> `hooks/devflow-lib.py` 保守 stdlib 規則那段註解。
+>
+> **已知限制:Windows 上跑不出全綠**(2026-08-19 實測,已排進待修清單)。Git Bash 的
+> `/tmp` 實際指向使用者的暫存資料夾,但 Windows 原生 Python 把 `/tmp` 解成磁碟機根目錄下的
+> `\tmp` —— **測試腳本把樣本寫到一個地方、回頭驗的時候看另一個地方**。後果:
+> `hooks/selftest.sh` 321/392、`scripts/devflow-check.sh all` 四組全紅、
+> `devflow-exec.sh doctor` 判 INCOMPATIBLE。**這不是退步**:同一台機器跑 2026-08-19
+> 動工前的版本是 314/378,逐條比對「原本會過、現在失敗」為 0 條。
+> **代價是發版不能在 Windows 上做** —— `dev-release` 要求三道驗證全綠,而且明文禁止
+> 以「這條跟本次改動無關」放行。完整證據與修法排程見
+> [`notes/dispatch-windows-parity.md`](notes/dispatch-windows-parity.md)。
 
 **這是什麼**:一套讓「討論 → 決策 → 規格 → 實作 → 驗證」全程留痕的文檔管線。每個
 feature 走 7 份文檔、過 3 道 gate(G1 方向核准、G2 契約審查、G3 驗證出貨),AI 負責
