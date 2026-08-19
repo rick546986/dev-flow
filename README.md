@@ -289,6 +289,8 @@ RED → GREEN → scope check → Verify
   只掃 `.devflow/reports/*.md` 缺陷回報檔的結構性識別特徵,與旗標狀態無關,
   非回報路徑一律靜默)與 `devflow-plainspeak`(UserPromptSubmit:每輪注入一段
   「用白話繁體中文回」的提醒,讓要在 G1/G2/G3 拍板的人看得懂自己在核准什麼。
+  規則文字的**唯一正本**是 `hooks/plainspeak-rules.md`,hook 讀它、不自帶副本;
+  個人帳號那邊要用同一套規則就指回這個檔,不要另存一份。
   **預設關閉**,設 `DEVFLOW_PLAINSPEAK=1` 才啟用;不擋任何東西,與旗標狀態無關)。
   L1 出口 = `devflow-exec.sh allow <file> --reason`;
   L2 = `stop`。收尾 `stop` 後全部沉睡。自測:`hooks/selftest.sh`(動態發現案例,可重跑)。

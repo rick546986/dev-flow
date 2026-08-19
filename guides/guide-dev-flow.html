@@ -1578,6 +1578,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   <p>這支跟其他七支不一樣:<strong>它不擋任何東西</strong>,只在你每次按下送出的時候,順手塞一段
   「用白話繁體中文回、術語放括號」的提醒給模型。理由是三個關卡(G1/G2/G3)都要你拍板,
   而你要拍板得先看得懂;回覆風格設定只在對話一開始讀一次,講久了就淡掉,這支每一輪都重講一次。</p>
+  <p>那段提醒的文字<strong>不寫在程式裡</strong>,而是讀 <code>hooks/plainspeak-rules.md</code>
+  裡標好的一段(<code>devflow:inject:start</code> 到 <code>end</code> 之間)。這樣同一套規則
+  只有一份正本:hook 每輪要用、個人帳號要查閱時也指回同一個檔,不會兩邊各改各的。
+  <code>scripts/check-hooks-accounting.sh</code> 會實跑這支 hook,逐字比對它送出的文字
+  跟那個檔的內容一不一樣,不一樣就紅。</p>
   <p><strong>預設是關的</strong> —— 用 dev-flow 的人不見得講中文,不能替別人決定回覆語言。
   要打開就在你自己的 <code>~/.claude/settings.json</code> 或專案的 <code>.claude/settings.json</code>
   的 <code>"env"</code> 區塊加 <code>"DEVFLOW_PLAINSPEAK": "1"</code>;沒設就什麼都不做。</p>
@@ -1903,6 +1908,12 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td><code>devflow-postbash.sh</code> 呼叫</td><td>隨 <code>devflow-postbash.sh</code>(同格)</td></tr>
     <tr><td><code>_report_impl.py</code></td><td><code>devflow-report-guard.sh</code> 的實作本體:結構性識別特徵掃描。</td>
         <td><code>devflow-report-guard.sh</code> 呼叫</td><td>隨 <code>devflow-report-guard.sh</code>(同格)</td></tr>
+    <tr><td><code>_plainspeak_impl.py</code></td>
+        <td><code>devflow-plainspeak.sh</code> 的實作本體:讀 <code>hooks/plainspeak-rules.md</code>
+            裡標好的那一段規則,包成 hook 要的格式送出去。規則文字不寫在程式裡 ——
+            同一套規則 hook 每輪要用、個人帳號的 <code>plain-language-zh</code> 也要查,
+            各存一份必漂移,所以只留一份正本在那個 .md,這裡只負責讀它。</td>
+        <td><code>devflow-plainspeak.sh</code> 呼叫</td><td>隨 <code>devflow-plainspeak.sh</code>(同格)</td></tr>
     <tr><td><code>_exec_impl.py</code></td>
         <td><code>devflow-exec.sh</code> 大部分子指令的實作本體(真正做武裝/解除/波次狀態機的地方)。</td>
         <td><code>devflow-exec.sh</code> 呼叫</td><td>隨 <code>devflow-exec.sh</code>(同格)</td></tr>
