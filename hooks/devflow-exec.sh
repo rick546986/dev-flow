@@ -7,7 +7,8 @@
 # tier-exempt --reason "..."(X-5b):PreToolUse 派工分層守衛(devflow-dispatch-guard.sh)
 #   「首派即最高階」擋下時的一次性豁免,核發 .devflow/tier-exempt.json(used=false),
 #   guard 消耗後轉 used=true+used_at,留痕不可重複用。
-# 狀態:.devflow/exec.json(scope/baseline+hash/契約 hash;task 模式 schema = exec-v3,讀取仍收 exec-v2)+
+# 狀態:.devflow/exec.json(scope/baseline+hash/契約 hash;task 模式 schema = exec-v3,
+#   sequential/feature-scope/Stage 7 review 自建武裝 schema = exec-v4,讀取仍收 exec-v2)+
 #   .devflow/parallel.json(feature 級 wave/狀態機帳)+ <git-dir>/devflow-armed(sentinel,
 # 讓旗標被刪時 hooks 能 fail-closed 而非靜默棄守)。
 set -u

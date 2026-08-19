@@ -17,13 +17,20 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 7 案 → 355;同日 G3 全形冒號 Owner Call 例外回歸 +1 → 356;同日 F4 豁免卡
 # 唯讀 fail-open +2 → 358;同日 G1 history-append 專案根 +4 → 362;同日 Backlog
 # D-4 postbash 審查白名單 +3、C-2 stop 清未消耗豁免卡 +3 → 368;同日 report-guard
-# 去識別化 +7、審查修正回歸(非 UTF-8/長行回溯/.. 繞路)+3 → 378)——新增案例時
-# 同步 +;絕不「大概抓個下限」。
+# 去識別化 +7、審查修正回歸(非 UTF-8/長行回溯/.. 繞路)+3 → 378;2026-08-19 §7
+# 前置修復(派工單 notes/dispatch-agent-dispatch-layer.md):s7 legacy sequential
+# 真跑 start 驗證 schema=exec-v4+run_id 真的生效(schema 檢查/run_id 格式/正常
+# 派工放行/首派最高階擋下/已有低階攔升階放行/非 dev-flow 派工靜默放行 共 6 案)、
+# s7b VNext feature-scope(非 --task)同型驗證(schema+run_id 真寫出/首派最高階
+# 擋下 共 2 案)→ 378+8 = 386;同日 s7c Stage 7 review 事後補審自建武裝(第三個
+# exec.json 寫點,前兩組都沒驗過的分支)同型驗證(schema+run_id 真寫出/首派最高階
+# 擋下/已有低階攔升階放行 共 3 案)→ 386+3 = 389)——新增案例時同步 +;絕不
+# 「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=378
+MIN_CASES=389
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -1065,10 +1072,18 @@ def c_review_duplicate():
     need(any("重複" in e and "T-4" in e for e in L.validate_wave_review(r, WAVE_TASKS)))
 
 
-def c_v1_exec():
+def c_legacy_exec_v4():
+    # §7 前置修復(2026-08-19):legacy sequential start 過去不寫 schema/run_id,
+    # 派工分層守衛(_dispatch_impl.py)整支失效。現在改寫 exec-v4 + 真 run_id ——
+    # 仍不是 task-scoped(不帶 "task" 欄),v1 相容欄位(scope/baseline/契約 hash
+    # 等)原樣保留,不因補 schema/run_id 而消失。
     d = json.load(open(os.path.join(ROOT, ".devflow", "exec.json")))
-    need("schema" not in d and "run_id" not in d and "task" not in d,
-         f"legacy start 不得帶 v2 欄位:{sorted(d)}")
+    need(d.get("schema") == "exec-v4", f"schema={d.get('schema')!r}(應為 exec-v4)")
+    need(bool(L.RUN_ID_RE.match(d.get("run_id", ""))), f"run_id={d.get('run_id')!r} 格式不對")
+    need("task" not in d, f"legacy sequential 不應被判為 task-scoped:{sorted(d)}")
+    for k in ("slug", "started", "scope", "extra", "baseline", "contract_hashes",
+              "contract_hash_scope"):
+        need(k in d, f"缺 v1 相容欄位 {k}")
 
 
 def c_exec_v3():
@@ -1314,7 +1329,7 @@ ck_msg "p1 F3:例外欄無理由不生效" 1 "lane: fast + Risk: high" "$P1X_RC"
 printf -- "- Owner Call 例外:同意 fast+high(test fixture)\n" >> docs/dev/pf2/4-spec.md
 git add docs/dev/pf2/4-spec.md && git commit -qm oc >/dev/null
 ck "p1 OC-4 owner-call 例外放行"     0 "$(p1x start pf2)"
-ck "p1 legacy start 維持 v1 exec.json" 0 "$(p1c v1-exec "$P1T")"
+ck "p1 legacy start 產生 exec-v4 schema+run_id(v1 相容欄位仍在,非 task-scoped)" 0 "$(p1c legacy-exec-v4 "$P1T")"
 "$H/devflow-exec.sh" stop >/dev/null 2>&1
 # G3 回歸(2026-08-17):**全形冒號**版的 Owner Call 例外必須同樣生效。字元集曾把
 # 「:或：」打成兩個半形冒號(0x3a×2),全形版被判成沒寫例外 → fast+high 明明寫了
@@ -2056,6 +2071,141 @@ PX_OUT=$(cd "$PXT" && echo '{"tool_name":"Agent","tool_input":{"model":"opus"}}'
   | "$H/devflow-dispatch-guard.sh" 2>&1); PX_RC=$?
 ck_msg "px tool_name=Agent(非 Task)同等對待 → 首派最高階仍擋" 2 "tier-exempt" "$PX_RC" "$PX_OUT"
 rm -rf "$PXT"
+
+echo "-- s7 §7 前置修復:派工分層守衛真的在 sequential(legacy)生效(exec-v4+run_id 真跑,非手造)--"
+# 派工單 §7 裁決:legacy sequential start 過去不寫 schema,守衛整支失效(舊行為
+# 等同「窄口徑外一切放行」)。本組**全程走真的 devflow-exec.sh start**(不手造
+# exec.json),證明補 schema/run_id 之後守衛是真的在最常用的 sequential 路徑上
+# 生效,且四種情境都不誤判(正常派工放行 / 首派最高階擋下 / 已有低階攔升階放行 /
+# 非 dev-flow 派工靜默放行)。
+S7T=$(mktemp -d "${TMPDIR:-/tmp}/devflow-s7-seq.XXXXXX")
+s7_d() { # s7_d <model>
+  S7_OUT=$(cd "$S7T" && echo "{\"tool_name\":\"Task\",\"tool_input\":{\"model\":\"$1\"}}" \
+    | "$H/devflow-dispatch-guard.sh" 2>&1); S7_RC=$?
+}
+mkdir -p "$S7T/docs/dev/s7seq" "$S7T/src"
+( cd "$S7T" && git init -q . && git config user.email t@t && git config user.name t )
+printf -- "---\nstatus: approved\n---\n" > "$S7T/docs/dev/s7seq/4-spec.md"
+printf '%s\n' '## T-1 fixture' '- Covers: R-1' '- Files: src/a.py' '- Verify: `true`' \
+  '- Blocked-by: —' > "$S7T/docs/dev/s7seq/5-tasks.md"
+echo a > "$S7T/src/a.py"
+( cd "$S7T" && git add -A >/dev/null && git commit -qm s7init )
+
+# ① 真跑 legacy sequential start(無 --task、無 vnext 欄位)→ exec.json 必須真的
+#   帶 schema=exec-v4 + 格式合法的 run_id(不是手造,是 start 命令自己寫出來的)
+( cd "$S7T" && "$H/devflow-exec.sh" start s7seq >/dev/null 2>&1 )
+ck "s7 legacy sequential start 真寫出 schema=exec-v4" 0 "$("$DEVFLOW_PY" -c "
+import json, sys
+d = json.load(open('$S7T/.devflow/exec.json'))
+sys.exit(0 if d.get('schema') == 'exec-v4' and 'task' not in d else 1)
+"; echo $?)"
+S7RUN=$("$DEVFLOW_PY" -c "import json;print(json.load(open('$S7T/.devflow/exec.json'))['run_id'])" 2>/dev/null)
+ck "s7 legacy sequential start 真生格式合法的 run_id(非 task-scoped 仍要有)" 0 "$("$DEVFLOW_PY" -c "
+import re, sys
+sys.exit(0 if re.match(r'^run_[0-9A-HJKMNP-TV-Z]{26}\$', '$S7RUN' or '') else 1)
+"; echo $?)"
+
+# ② 正常派工(該放行的要放行):武裝中 + model=sonnet(非最高階)→ 與本守衛無關
+s7_d sonnet
+ck "s7 sequential 真武裝中 + model=sonnet(非最高階)→ 放行" 0 "$S7_RC"
+
+# ③ 首派就直接叫最高階模型(該擋的要擋):本 run 尚無任何低階 attempt → exit 2
+s7_d opus
+ck_msg "s7 sequential 真武裝+首派 opus(無低階 attempt)→ exit 2 且訊息含 tier-exempt" 2 "tier-exempt" "$S7_RC" "$S7_OUT"
+
+# ④ 已經有低階嘗試後再升階(該放行):補一筆 haiku attempt_started → 首派 opus
+#    視為合法升階(這條正是驗證 run_id 真的可用 —— 沒有 run_id 的話 §6.1 稽核與
+#    本守衛的「本 run 已有低階 attempt」判斷都會永遠拿不到資料,見 _scan_low_tier
+#    _attempt 的 `if not run_id: return False`,合法升階也會被誤擋)
+mkdir -p "$S7T/.devflow/runs/$S7RUN/attempts/att-s7-1"
+printf '%s\n' '{"event_type":"attempt_started","model":"haiku"}' \
+  > "$S7T/.devflow/runs/$S7RUN/attempts/att-s7-1/events.jsonl"
+s7_d opus
+ck "s7 sequential 已有 haiku attempt → 首派 opus 視為合法升階,放行" 0 "$S7_RC"
+rm -rf "$S7T/.devflow/runs/$S7RUN/attempts/att-s7-1"
+
+# ⑤ 不是 dev-flow 派工的一般呼叫(該靜默放行):真武裝中,但 tool_input 無 model 欄
+#    → 與本守衛無關,靜默放行(_dispatch_impl.py:9-12 的明文承諾,在真武裝下驗)
+S7_OUT=$(cd "$S7T" && echo '{"tool_name":"Task","tool_input":{"prompt":"一般查詢,非 dev-flow 派工"}}' \
+  | "$H/devflow-dispatch-guard.sh" 2>&1); S7_RC=$?
+ck "s7 sequential 真武裝中但一般呼叫(tool_input 無 model 欄)→ 靜默放行" 0 "$S7_RC"
+
+( cd "$S7T" && "$H/devflow-exec.sh" stop >/dev/null 2>&1 )
+rm -rf "$S7T"
+
+echo "-- s7b §7 前置修復:VNext feature-scope(非 --task)sequential 同樣真寫 schema+run_id --"
+# 與 legacy 路徑是 _exec_impl.py 裡不同的程式碼段(:352-359 附近),兩條路徑各自
+# 補的 schema/run_id 要分開驗證,不能只驗 legacy 那一條就當兩條都對。
+S7BT=$(mktemp -d "${TMPDIR:-/tmp}/devflow-s7b-vnext.XXXXXX")
+mkdir -p "$S7BT/docs/dev/s7bfeat" "$S7BT/src"
+( cd "$S7BT" && git init -q . && git config user.email t@t && git config user.name t )
+printf -- "---\nstatus: approved\n---\n" > "$S7BT/docs/dev/s7bfeat/4-spec.md"
+cat > "$S7BT/docs/dev/s7bfeat/5-tasks.md" <<'EOF'
+---
+feature: s7bfeat
+stage: 5-tasks
+status: approved
+execution:
+  mode: parallel
+  max_parallel_tasks: 2
+---
+
+# 5. 任務(s7b VNext feature-scope fixture)
+
+## T-1 甲
+- [ ] 完成
+- Covers: R-1
+- Files: `src/a.py`
+- Verify: `true`
+- Blocked-by: —
+EOF
+echo a > "$S7BT/src/a.py"
+( cd "$S7BT" && git add -A >/dev/null && git commit -qm s7binit )
+# 無 --task → 即使 5-tasks 帶 execution.mode: parallel,仍是 VNext feature-scope
+# (v1 語意)武裝,不是 task-scoped(task-scoped 只有 --task 那條路才會產生)
+( cd "$S7BT" && "$H/devflow-exec.sh" start s7bfeat >/dev/null 2>&1 )
+ck "s7b VNext feature-scope start(非 --task)真寫出 schema=exec-v4+run_id,非 task-scoped" 0 "$("$DEVFLOW_PY" -c "
+import json, sys
+d = json.load(open('$S7BT/.devflow/exec.json'))
+sys.exit(0 if d.get('schema') == 'exec-v4' and 'task' not in d and d.get('run_id') else 1)
+"; echo $?)"
+S7B_OUT=$(cd "$S7BT" && echo '{"tool_name":"Agent","tool_input":{"model":"fable"}}' \
+  | "$H/devflow-dispatch-guard.sh" 2>&1); S7B_RC=$?
+ck_msg "s7b VNext feature-scope 真武裝+首派 fable(無低階 attempt)→ exit 2" 2 "tier-exempt" "$S7B_RC" "$S7B_OUT"
+( cd "$S7BT" && "$H/devflow-exec.sh" stop >/dev/null 2>&1 )
+rm -rf "$S7BT"
+
+echo "-- s7c §7 前置修復:Stage 7 review 事後補審自建武裝(第三個寫點,無 Stage 6 state)同樣真寫 schema+run_id --"
+# 與 s7/s7b 是 _exec_impl.py 裡第三個不同的 exec.json 寫點(review 子命令,
+# 「事後補審」分支——本組 fixture 刻意不先跑 Stage 6 start,才會落到這個分支,
+# 而不是「沿用既有 exec.json」那個 reuse 分支;既有 selftest 261 行那組
+# Stage 7 圍欄測試全程都先 start 過,只驗過 reuse 分支,從沒驗過這個自建分支)。
+S7CT=$(mktemp -d "${TMPDIR:-/tmp}/devflow-s7c-review.XXXXXX")
+mkdir -p "$S7CT/docs/dev/s7creview"
+( cd "$S7CT" && git init -q . && git config user.email t@t && git config user.name t )
+echo "占位:s7c review 自建武裝 fixture" > "$S7CT/docs/dev/s7creview/4-spec.md"
+( cd "$S7CT" && git add -A >/dev/null && git commit -qm s7cinit )
+# 無 .devflow/exec.json(未跑過 Stage 6 start)→ review <slug> 走事後補審自建分支
+( cd "$S7CT" && "$H/devflow-exec.sh" review s7creview >/dev/null 2>&1 )
+ck "s7c Stage 7 review 事後補審自建武裝真寫出 schema=exec-v4+run_id(仍是 phase=review,非 task-scoped)" 0 "$("$DEVFLOW_PY" -c "
+import json, sys
+d = json.load(open('$S7CT/.devflow/exec.json'))
+sys.exit(0 if d.get('schema') == 'exec-v4' and 'task' not in d and d.get('run_id') and d.get('phase') == 'review' else 1)
+"; echo $?)"
+S7C_OUT=$(cd "$S7CT" && echo '{"tool_name":"Task","tool_input":{"model":"opus"}}' \
+  | "$H/devflow-dispatch-guard.sh" 2>&1); S7C_RC=$?
+ck_msg "s7c Stage 7 review 自建武裝+首派 opus(無低階 attempt)→ exit 2" 2 "tier-exempt" "$S7C_RC" "$S7C_OUT"
+# 已有低階 attempt → 合法升階放行(驗證這個寫點的 run_id 也是真的可用,不是只
+# 存在卻查不到——沒有 run_id 的話這條會被誤擋,見 s7 區塊④同款理由)
+S7CRUN=$("$DEVFLOW_PY" -c "import json;print(json.load(open('$S7CT/.devflow/exec.json'))['run_id'])" 2>/dev/null)
+mkdir -p "$S7CT/.devflow/runs/$S7CRUN/attempts/att-s7c-1"
+printf '%s\n' '{"event_type":"attempt_started","model":"haiku"}' \
+  > "$S7CT/.devflow/runs/$S7CRUN/attempts/att-s7c-1/events.jsonl"
+S7C_OUT=$(cd "$S7CT" && echo '{"tool_name":"Task","tool_input":{"model":"opus"}}' \
+  | "$H/devflow-dispatch-guard.sh" 2>&1); S7C_RC=$?
+ck "s7c Stage 7 review 已有 haiku attempt → 首派 opus 視為合法升階,放行" 0 "$S7C_RC"
+( cd "$S7CT" && "$H/devflow-exec.sh" stop >/dev/null 2>&1 )
+rm -rf "$S7CT"
 
 echo "-- f4 豁免卡唯讀(fail-open):有效卡標記寫不回 → 放行 + 警告,不得擋 --"
 # F4(2026-08-17):_consume_exemption 寫入遇 OSError 曾 return False → die ——

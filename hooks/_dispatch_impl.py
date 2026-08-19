@@ -8,8 +8,8 @@ attempt_started,卻顯式指名最高階模型(opus/fable)當第一筆派工,這
 
 fail-OPEN,不是 fail-closed:未武裝、schema 讀不到/對不上、或 model 參數缺席/非
 字串,一律放行。這與 devflow-guard.sh(fail-closed)刻意不同 —— 本守衛只在
-「exec-v2/exec-v3 武裝中且顯式指名最高階模型」這一窄口徑內下判斷,窄口徑外的
-一切派工(含非 dev-flow 用途的一般 Task/Agent 呼叫)必須不受影響。
+「exec-v2/exec-v3/exec-v4 武裝中且顯式指名最高階模型」這一窄口徑內下判斷,窄口徑
+外的一切派工(含非 dev-flow 用途的一般 Task/Agent 呼叫)必須不受影響。
 
 信任模型(2026-08-17 fresh 審查 X-5b,裁決=記錄邊界不修):本守衛防手滑與紀律
 漂移,不防蓄意偽造 —— agent 可用不含 shell 重導向字面的直譯器寫檔繞過
@@ -34,7 +34,11 @@ L = SourceFileLoader("devflow_lib", os.path.join(os.path.dirname(os.path.abspath
 # 腳本(讀 sys.argv[1]/[2] 當下就跑),動態載入它有副作用風險。兩處字面值是同一件
 # 事的兩份抄本 —— 新增 exec schema 版本時兩檔必須同步改,否則本守衛會把新版誤判
 # 成「未武裝」而整批放行。
-EXEC_SCHEMAS = ("exec-v2", "exec-v3")
+# exec-v4(§7 前置修復,notes/dispatch-agent-dispatch-layer.md 裁決 8/9):sequential
+# (legacy/VNext feature-scope)與 Stage 7 review 自建武裝過去不寫 schema,本守衛
+# 認不得就整支失效 —— 這是本輪要補的洞,不是新增規則:過去這三種武裝一旦被
+# _exec_impl.py 補上 schema 欄,本 tuple 就得同步認得,否則守衛照樣視為未武裝。
+EXEC_SCHEMAS = ("exec-v2", "exec-v3", "exec-v4")
 
 # 最高階與可升階兩層的判準皆用子字串、不分大小寫 —— 模型別名/版本後綴常變
 # (例:claude-opus-4-1、claude-haiku-4-5),鎖死全字串比對只會讓判準脆弱漂移;

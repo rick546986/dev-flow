@@ -1533,7 +1533,7 @@ check_static_pin_sub() { # check_static_pin_sub <相對路徑> <期望子字串>
     STATIC_PIN_FAIL=1
   fi
 }
-check_static_pin "hooks/selftest.sh" "MIN_CASES=378" "MIN_CASES 釘死 378(2026-08-17 清空輪:F2+7/G3+1/F4+2/G1+4/D-4+3/C-2+3/report-guard+7/審查回歸+3)"
+check_static_pin "hooks/selftest.sh" "MIN_CASES=389" "MIN_CASES 釘死 389(2026-08-17 清空輪 378 之後,2026-08-19 §7 前置修復:s7 legacy sequential 真跑 start 驗證+6/s7b VNext feature-scope 同型驗證+2/s7c Stage 7 review 自建武裝同型驗證+3)"
 check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "EXPECTED_CHECKS 釘死 131"
 check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 15" "MIN_CHECKS 釘死 15(A-2/B-5 輪:②改 scoped 拆 3 條 + ⑦⑧⑨ 新增後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 138" "MIN_CHECKS 釘死 138(X-3 補群組數釘之後的實得數)"

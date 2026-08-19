@@ -52,10 +52,14 @@ Minor」「計畫已決定所以不算」→ 停手重寫。大材料(diff、報
 
 ## 事件寫入通道(四軌 obs W2/W3;sequential 與並行共用)
 
-> **Runtime 現況(誠實條件)**:事件通道需 exec-v2 `run_id` —— 目前僅 `start <slug> --task T-n`
-> (parallel task 武裝)產生;sequential 整 feature start 為 v1(零回歸保證,無 run_id),
-> 其事件步 **N/A**(執行記錄照舊記 6-notes 散文,禁虛構 run_id)。Stage 7 Final Fresh Run
-> 事件同理僅 task-armed 情境可發(known limitation;schema 已備,待 sequential v2 opt-in)。
+> **Runtime 現況(誠實條件,2026-08-19 更新)**:`start <slug> --task T-n`(parallel task
+> 武裝,schema=exec-v3)與 sequential 整 feature start(legacy/VNext feature-scope,
+> schema=exec-v4)、Stage 7 review 自建武裝現在都會生 `run_id`(§7 前置修復,見
+> `notes/dispatch-agent-dispatch-layer.md` 裁決 8/9)——`run_id` 本身不再是 sequential
+> 的缺口。但本節下方的逐 T 事件寫入迴圈仍只描述 task-scoped 派工者動作;sequential
+> 是否要比照逐步寫 `agent_dispatched`/`attempt_started` 等事件是後續工作範圍,執行
+> 記錄現況仍以 6-notes 散文為準,不因 run_id 已存在就回頭幫 sequential 補寫本節
+> 未定義的事件序列。
 
 執行軌跡事件由**你**(派工者)經 `devflow-exec.sh event <slug>` 逐步寫入 run ledger
 (事件 JSON 走 **stdin**;命令列不鋪 `.devflow/` 路徑)—— 這是 coordinator 唯一合法
