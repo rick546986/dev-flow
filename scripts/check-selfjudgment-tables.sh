@@ -129,6 +129,21 @@ for rel, source, heading in (
     empty = [cells(r)[0] for r in rows if len(cells(r)) <= idx or not cells(r)[idx]]
     check(not empty, f"{rel}「{heading}」每列依據欄非空", f"空的列:{empty}")
 
+# ── 5b. 範例的 html twin 也要帶「依據」欄 ────────────────────────────────
+# 為什麼要單獨驗:example 的 twin 是**手寫**的審查介面,不是 md 直轉,renderer 的
+# fixed-point 檢查管不到它;md 加了欄、html 沒跟上時,人打開來審的那一份看不到依據,
+# 而所有機械檢查照樣全綠(獨立驗收 2026-08-19 實際抓到這個漂移)。
+twin = read("example/contract-expiry-reminder/2-decision.html")
+check("<h2>Owner Calls" in twin, "範例 2-decision.html 有 Owner Calls 節")
+oc_head = next((ln for ln in twin.splitlines()
+                if "<th>OC</th>" in ln), "")
+check("依據" in oc_head, "範例 2-decision.html 的 Owner Calls 表頭有「依據」欄",
+      f"表頭:{oc_head.strip()[:90]}")
+check(twin.count("[Assumption]") >= 3,
+      "範例 2-decision.html 至少三處標了 [Assumption](沒出處的格子要現形)",
+      f"實得 {twin.count('[Assumption]')} 處")
+check("<td>依據</td>" in twin, "範例 2-decision.html 的方案比較表有「依據」列")
+
 # ── 6. 負向 fixture:DD 子節裡的殘留必須被 C5 抓到 ────────────────────────
 gate = os.path.join(root, "scripts", "check-spec-gate.sh")
 bad = os.path.join(root, "scripts", "fixtures", "spec-gate-dd-subsection",
@@ -150,7 +165,7 @@ check(proc_ok.returncode == 0,
 # ── 檢查數地板 ─────────────────────────────────────────────────────────────
 # ⚠️ 必須等於當下實際檢查數(同 scripts/check-realworld.sh 的 MIN_CHECKS 慣例):
 # 留餘裕 = 沒有牙齒,整段被刪掉時仍會印綠。增刪 check() 時一起改這個數字。
-MIN_CHECKS = 32
+MIN_CHECKS = 36
 if checks < MIN_CHECKS:
     failures.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                     f"檢查本身被刪掉或迴圈跑了零圈")
