@@ -22,7 +22,7 @@ plugin**：`.claude-plugin/marketplace.json` 的 `name` 與 `.claude-plugin/plug
 統一解析，順序：環境變數 `DEVFLOW_PYTHON`（顯式覆寫）→ 系統 `/usr/bin/python3` →
 PATH 上的 `python3`；找不到時 **fail-open**（hook 印一行警告後放行——只跳過守衛、
 不擋工具呼叫）。**Windows（Git Bash / MSYS2）沒有 `/usr/bin/python3`**：要另外裝
-Python 並確認 Git Bash 內 `python3` 找得到，或設 `DEVFLOW_PYTHON` 指向直譯器
+Python 並確認 Git Bash 內 `python3` 找得到，或設 `DEVFLOW_PYTHON` 指向直譯器（⚠️ Windows 上裝好 Python 之後 hook 會生效，但本 repo 的驗證套件仍跑不出全綠——已知限制與待修排程見 `notes/dispatch-windows-parity.md`）
 （例：`setx DEVFLOW_PYTHON "C:/Python312/python.exe"`），否則守衛會靜默跳過。
 詳見母版 README「環境需求」。
 

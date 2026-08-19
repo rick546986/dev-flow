@@ -425,6 +425,7 @@ session 同時在寫」時成立。
 
 - §9 E `history-append.sh --amend-last`
 - 鐵律 3 的措辭（帳號層檔案，不在本 repo）
+- **Windows 上跑不出全綠**（rick 2026-08-19 裁決 5b：另立派工單）→ `notes/dispatch-windows-parity.md`。四條根因都有實測輸出；連帶處理 README 環境需求那句「裝好 Python 守衛就生效」承諾過頭的問題
 
 ---
 
