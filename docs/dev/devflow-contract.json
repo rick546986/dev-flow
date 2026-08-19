@@ -18,6 +18,7 @@
     "gauntlet": "1.2.0",
     "wave_review": "devflow-wave-review.v1"
   },
+  "exec_state_note": "上面 schema_versions.exec_state 只放得下一個值,但實際上有兩種格式並存,這裡補記(2026-08-19 rick 裁決:不動結構,只加最外層註記)。哪條路寫哪個代號:①devflow-exec.sh start <slug> --task T-n(平行執行,每個任務各自一份,檔案住在該任務的 worktree)寫 exec-v3,帶 task 欄;②同一支的 legacy sequential start、③VNext feature-scope start、④Stage 7 review 事後補審自建武裝,這三條都寫 exec-v4,不帶 task 欄(2026-08-19 派工單 §7 前置修復之前這三條根本不寫 schema,導致派工分層守衛在最常用的 sequential 路徑整支失效)。schema_versions.exec_state 的 exec-v3 對應的只是①那條。讀取端兩個代號都收(hooks/_dispatch_impl.py 與 hooks/_exec_impl.py 的 EXEC_SCHEMAS)。doctor 遇到 exec.json 寫 exec-v4 而本檔寫 exec-v3 時只印說明、不判失敗(hooks/_doctor_impl.py)。要把這個雙軌收進結構本身(拆成兩個鍵,或改成放得下多個值的清單)留給第二輪,見 notes/dispatch-agent-dispatch-layer.md 裁決 8 與接手單第 3 件。",
   "evidence_status_values": [
     "pass",
     "fail",
