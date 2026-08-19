@@ -149,14 +149,69 @@ for lineno, line in enumerate(guide.splitlines(), 1):
             if not num_matches(num, len(script_names)):
                 fail(f"guide:{lineno} 寫「這{num}支」,實際掛載 {len(script_names)} 支不同腳本")
 
+# ── ④ 兩份導覽的生命週期圖:圖上必須點名每一支掛載中的 hook ───────────────
+# 為什麼要獨立於③:③比的是文字版 hooks 註冊表(event/matcher/command/timeout 四格),
+# 生命週期圖是**另一個列舉面**,③掃不到它。而 check-guides-fig-sync.sh 只保證
+# 「兩份圖彼此一致」,不保證圖與 hooks.json 一致 —— 兩份一起漏同一支時它照樣綠。
+# 這不是假設:devflow-report-guard 2026-08-17 掛上,兩份圖都沒補,兩支守衛全綠到
+# 2026-08-19 才被人眼抓到。把圖接到機械正本上,以後漏一支就紅(第 7 型:守衛比錯軸)。
+# 圖上為排版用簡寫(dispatch-guard = devflow-dispatch-guard),兩種寫法都認。
+FIGS = (("guides/guide-dev-flow.html", "fig-lifecycle"),
+        ("guides/guide-quickstart.html", "fig-lifecycle-qs"))
+
+
+def fig_hook_failures(text, sid, expected):
+    """expected = 不含 .sh 的腳本名集合;回 failure 列表(雙向:漏列 + 多列)。"""
+    m = re.search(r'<svg id="%s".*?</svg>' % re.escape(sid), text, re.S)
+    if not m:
+        return [f'找不到 <svg id="{sid}"> —— 圖被改名或刪掉,對帳無從談起']
+    body = re.sub(r'aria-label="[^"]*"', "", m.group(0))   # 無障礙描述不算數,只看圖上的字
+    ann = re.findall(r'<text class="dc"[^>]*>([^<]*)</text>', body)
+    if not ann:
+        return [f'{sid} 沒有任何 class="dc" 標註 —— 圖上不再點名 hook,這條檢查會空轉']
+    tokens = set()
+    for a in ann:
+        for piece in a.split("·"):
+            piece = piece.strip()
+            if re.fullmatch(r"[a-z0-9-]+", piece):     # 純 ASCII 小寫才算 hook 名
+                tokens.add(piece)                       # 中文說明/(Async) 之類自然被排除
+    out = []
+    forms = {}
+    for base in sorted(expected):
+        short = base[len("devflow-"):] if base.startswith("devflow-") else base
+        forms[base] = {base, short}
+        if not (forms[base] & tokens):
+            out.append(f"{sid} 圖上沒點名掛載中的 {base}(hooks.json 有,圖沒有)")
+    known = set().union(*forms.values()) if forms else set()
+    for stray in sorted(tokens - known):
+        out.append(f"{sid} 圖上點名了 {stray},但 hooks.json 沒這支(拆掉的 hook 沒從圖上撤)")
+    return out
+
+
+expected_bases = {n[:-3] if n.endswith(".sh") else n for n in script_names}
+fig_texts = {}
+for rel, sid in FIGS:
+    fig_texts[rel] = open(os.path.join(root, *rel.split("/")), encoding="utf-8").read()
+    for msg in fig_hook_failures(fig_texts[rel], sid, expected_bases):
+        fail(f"{rel}:{msg}")
+
+# 負向自檢:證明④真的有鑑別力,不是永遠回空清單。兩份各驗一次 —— 只驗一份的話,
+# 另一份的檢查失效不會有任何訊號(而「兩份一起漏」正是這條要防的原始事故形態)。
+for rel, sid in FIGS:
+    if not fig_hook_failures(fig_texts[rel], sid, expected_bases | {"devflow-phantom-guard"}):
+        fail(f"負向自檢失效:{rel} 的圖少一支新 hook 竟然沒被判漏列 —— ④ 沒有鑑別力")
+    probe = sorted(expected_bases)[0]
+    if not fig_hook_failures(fig_texts[rel], sid, expected_bases - {probe}):
+        fail(f"負向自檢失效:{rel} 的圖點名了 hooks.json 沒有的 {probe} 竟然沒被判多列")
+
 # ── 輸出 ─────────────────────────────────────────────────────────────────
 print(f"=== hooks 記帳對帳:hooks.json {mount_count} 條掛載 / {len(script_names)} 支腳本 "
-      f"vs SKILL.md + README + PLUGIN.md + guide ===")
+      f"vs SKILL.md + README + PLUGIN.md + guide 註冊表 + 兩份生命週期圖 ===")
 if fails:
     print(f"❌ 記帳漂移 {len(fails)} 處(第 7 型:機制長大了,列舉它的文件沒跟上):")
     for f in fails:
         print(f"   {f}")
     print("   修法:讓文件跟上 hooks.json(或 hooks.json 才是錯的那邊 —— 人判斷,守衛只報不一致)。")
     sys.exit(1)
-print("✅ 四份列舉文件與 hooks.json/skills 目錄一致(數量與名稱都比過)")
+print("✅ 四份列舉文件 + 兩份生命週期圖與 hooks.json/skills 目錄一致(數量與名稱都比過,圖為雙向)")
 PY
