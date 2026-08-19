@@ -415,7 +415,7 @@ Error: No such tool available: Glob. Glob is disabled for this session, in subag
 | 查到什麼 | 為什麼要緊 |
 |---|---|
 | **`dev-flow:devflow-adviser` 上一輪從來沒被叫過** | `agents/devflow-adviser.md` 卻把它標成「實測，不是推論」。查證方式：在兩支樣本檔裡搜 `devflow-adviser`，搜不到。本輪補測，它**確實叫得出來**，該檔已改成兩次獨立實測 |
-| **工具清單實際是兩項：`Read` 加一個平台注入的 `advisor`** | 兩支 `agents/*.md` 原本寫「允許清單本來就只留 `Read` 一項」，字面上不成立。**要斷言的是「Bash/Edit/Write/Grep/Glob/Skill 都不在裡面」，不是「數量等於 1」** —— 平台注入項不在 frontmatter 控制範圍，日後可能再增減 |
+| **工具清單量到兩項：`Read` 加一個 `advisor`** | 兩支 `agents/*.md` 原本寫「允許清單本來就只留 `Read` 一項」，字面上不成立。⚠️ **但 `advisor` 的來源沒有查證** —— 合理推測是那台機器的帳號層設定注入的，不是 Claude Code 的固定行為（乾淨機器上很可能只有 `Read`）；本輪早先把它寫成「平台注入」是同一個缺陷類的復發，已改回。**可以斷言的是「Bash/Edit/Write/Grep/Glob/Skill 都不在裡面」，不是「數量等於 1」** |
 | **MCP 的使用說明文字照樣注入 subagent，工具本身卻拿不到** | 實測 `context7` 與 `serena` 的說明都進去了，含「先呼叫 `initial_instructions`」這種指示。那些說明**不是給 subagent 的指令**，照著做只會浪費一輪。已寫進 `agents/devflow-adviser.md` |
 
 另外一條小的：subagent 收到的環境說明裡寫著「Bash tool also available」，

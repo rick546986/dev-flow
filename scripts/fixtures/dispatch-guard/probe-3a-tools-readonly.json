@@ -30,7 +30,7 @@
       "Read",
       "advisor"
     ],
-    "tool_list_note": "恰好兩項,不是一項。advisor 是平台注入的,不在 frontmatter 控制範圍。原檔『允許清單本來就只留 Read 一項』的措辭與此不符,已改。",
+    "tool_list_note": "量到恰好兩項,不是一項。原檔『允許清單本來就只留 Read 一項』的措辭與此不符,已改。⚠️ advisor 的來源沒有查證 —— 合理推測是這台機器的帳號層設定注入的,不是 Claude Code 的固定行為(乾淨機器上很可能只有 Read)。本檔上方 probe_A_project_level.note 對同一件事本來就寫的是『推測』,不要把它升級成『平台注入』這種確定說法。可以斷言的是 Bash/Edit/Write/Grep/Glob/Skill 都不在工具集裡。",
     "verbatim_errors_from_adviser": [
       "Error: No such tool available: Bash. Bash is disabled for this session, in subagents as well as here.",
       "Error: No such tool available: Grep. Grep is disabled for this session, in subagents as well as here.",
