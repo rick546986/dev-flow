@@ -48,8 +48,8 @@ git status --short           # 必須為空
 git fetch origin && git rev-list --left-right --count HEAD...origin/main
 ```
 
-⚠️ 最後那行**現在會顯示領先**（這輪的四個合併還沒 push）。SKILL.md 說「必須 0 0
-或只領先」，領先是允許的。
+⚠️ 最後那行**現在會顯示領先**（這輪的合併都還沒 push；筆數會隨收尾增加，別對數字）。
+SKILL.md 說「必須 0 0 或只領先」，領先是允許的。
 
 ### 1.2 驗證三道（全綠才准發版）
 
@@ -85,16 +85,27 @@ bash scripts/check-integration-regression-guard.sh
 
 ### 1.4 這台（Windows）已經跑過、綠的部分
 
-回 Mac 之後這幾支應該照樣綠；不綠就是 Mac 上出了新問題，不是這輪的帳：
+回 Mac 之後這幾支應該照樣綠；不綠就是 Mac 上出了新問題，不是這輪的帳。
+**驗證三道裡的 `gate-consistency` 這台已經直接跑過且是綠的** —— 它在 doctor 內部顯示失敗是
+doctor 組路徑的問題，不是它本身壞（見 `notes/dispatch-windows-parity.md` §1.2）。
+所以三道裡只剩 `selftest.sh` 與 `doctor` 要靠 Mac 才驗得到：
 
 | 檢查 | Windows 結果 |
 |---|---|
+| `env -u ... bash hooks/gate-consistency.sh`（驗證三道的第二道） | ✅ 全部一致（14/14） |
+| `bash scripts/test-architecture-guards.sh` | ✅ 83/83 全過（含對契約檔做 mutation 的兩條） |
+| `bash scripts/check-model-tiering.sh` | ✅ 全過（good=3 bad=2） |
 | `bash scripts/check-file-map.sh` | ✅ PASS，83 支必列檔 + 88 個 token 全命中 |
 | `bash scripts/check-hooks-accounting.sh` | ✅ 全過 |
 | `bash scripts/check-version-sync.sh` | ✅ 全過（5 處一致，升版後要重跑） |
 | `bash scripts/check-no-stale-paths.sh` | ✅ 全過（284 檔零命中） |
 
 ⚠️ `check-version-sync.sh` **升版之後要再跑一次** —— 它比的就是版號的多處一致。
+
+**本輪的 README 改動不會影響 renderer 的定點檢查**（已查 `scripts/render-methodology-corrections.sh`）：
+它只讀 README 的四個特定區域（Stage 6 seam 的 fenced 區塊 `:97`、`## 3.` 表 `:125`、
+「審查者產生」bullet `:143/:146`、「G1/G2/G3 審查與 verdict」bullet `:148`）。
+本輪改的是頂部環境需求那個引用區塊，四個區域都不碰，所以不需要重生衍生檔。
 
 ---
 

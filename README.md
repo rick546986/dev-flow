@@ -29,7 +29,8 @@
 > `/tmp` 實際指向使用者的暫存資料夾,但 Windows 原生 Python 把 `/tmp` 解成磁碟機根目錄下的
 > `\tmp` —— **測試腳本把樣本寫到一個地方、回頭驗的時候看另一個地方**。後果:
 > `hooks/selftest.sh` 321/392、`scripts/devflow-check.sh all` 四組全紅、
-> `devflow-exec.sh doctor` 判 INCOMPATIBLE。**這不是退步**:同一台機器跑 2026-08-19
+> `devflow-exec.sh doctor` 判 INCOMPATIBLE。**紅的就是這三項，其餘照樣綠**——
+> `gate-consistency` 14/14、`test-architecture-guards` 83/83 都過。**這不是退步**:同一台機器跑 2026-08-19
 > 動工前的版本是 314/378,逐條比對「原本會過、現在失敗」為 0 條。
 > **代價是發版不能在 Windows 上做** —— `dev-release` 要求三道驗證全綠,而且明文禁止
 > 以「這條跟本次改動無關」放行。完整證據與修法排程見

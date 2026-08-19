@@ -29,6 +29,9 @@
 | `bash hooks/selftest.sh` | 321/392，**失敗 71 項** | 392/392 |
 | `bash scripts/devflow-check.sh all` | 四組全紅 | 四組全過 |
 | `bash hooks/devflow-exec.sh doctor` | INCOMPATIBLE | COMPATIBLE |
+| `env -u DEVFLOW_MASTER -u DEVFLOW_PLUGIN -u CLAUDE_PLUGIN_ROOT bash hooks/gate-consistency.sh` | ✅ 全部一致（14/14） | 14/14 |
+| `bash scripts/test-architecture-guards.sh` | ✅ 83/83 全過 | 83/83 |
+| `bash scripts/check-model-tiering.sh` | ✅ 全過（good=3 bad=2） | 全過 |
 | `bash scripts/check-file-map.sh` | ✅ PASS（83 支） | PASS |
 | `bash scripts/check-hooks-accounting.sh` | ✅ 全過 | 全過 |
 | `bash scripts/check-version-sync.sh` | ✅ 全過（5 處一致） | 全過 |
@@ -49,6 +52,17 @@
 - 多出來的 7 條全部是那一輪新增的案例（`s7` / `s7b` / `s7c` / `pst`）
 
 所以：**平台不相容是長期存在的，不是哪一輪改壞的。**
+
+### 1.2 範圍要講準：紅的是三項，不是全部
+
+⚠️ 本檔早先的說法是「Windows 上跑不出全綠」，容易被讀成「什麼都跑不動」。實跑之後**七道收尾
+清單裡只有三項紅**（`selftest.sh`、`devflow-check.sh all`、`doctor`），其餘四項照樣綠 ——
+包含 `gate-consistency.sh` 14/14 與 `test-architecture-guards.sh` 83/83 這兩支跨檔靜態釘。
+
+⚠️ 特別注意 `gate-consistency.sh`：它**只在 doctor 內部失敗**
+（`bash: line 1: D:dev-flowhooksgate-consistency.sh: command not found`），
+根因是 §2.3 那條 doctor 組路徑把反斜線吃掉，**不是這支腳本本身壞**。直接跑它是綠的。
+修 §2.3 的人不要順手去改 `gate-consistency.sh`。
 
 ---
 
