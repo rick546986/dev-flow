@@ -1993,6 +1993,12 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>檢查安裝器自己的升級說明有沒有把三方比對、備份快照、逐檔徵求同意這幾條紀律講清楚,防升級流程
             改弱到悄悄蓋掉使用者本地客製。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-py-floor.sh</code></td>
+        <td>拿一個舊版本的 Python 去讀一遍所有會在別人機器上跑的程式檔,讀不進去就判失敗。
+            起因是有一支會發給採用專案的產生器用了新版才允許的寫法,在 Mac 內建的那個版本
+            連讀都讀不進去(不是報錯,是語法錯誤直接掛),而當時所有檢查都是綠的。
+            找不到舊版本可用時**直接判失敗**,不會退回猜 —— 沒驗到就說綠比沒有檢查更糟。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-gate-tokens.sh</code></td>
         <td>把三道關卡通關條件的關鍵字詞釘成一份清單,清單本身被偷改(新增/刪除/改名)就報錯——防的是
             「正本自己少了一項條件」這種連動態比對都抓不到的漏洞。</td>
