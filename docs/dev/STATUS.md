@@ -66,8 +66,18 @@ scripts/history-append.sh --slug <代號> --what <做了什麼> --why <為什麼
 > **本表是待辦的唯一正本**,散在派工單尾節的欠帳全數收攏進來。
 > 排序 A → B → C,同級之間「擋住別人」的在前。
 
+> 2026-08-19 採用現場回報輪:一個採用專案在 v3.8.0 fresh install 當下踩到
+> `_templates/HISTORY.md` 兩個出廠缺陷(寫入口路徑未為散發位置改寫、檔尾種子紀錄
+> 需手改受守衛攔截的檔案才能清),連同「現有檢查對這兩件零覆蓋」收攏成 D-1~D-3。
+> 全部既有機械檢查在缺陷存在的情況下皆綠(selftest 378/378、gate-consistency 14/14、
+> doctor COMPATIBLE)。材料與重現步驟見 `notes/dispatch-history-template-defects.md`。
+> 級別由回報側按「現場已踩到 + 修法一行級 + 每個新採用專案必踩」判 A,owner 可改。
+
 | 級 | 一句 | 來源 |
 |---|---|---|
+| A | `_templates/HISTORY.md:11,17` 教的寫入口路徑是母版側的 `scripts/history-append.sh`,採用專案側不存在(散發到 `docs/dev/tools/`);同套 `_templates/STATUS.md:82` 與 `hooks/history-guard.sh:41-42` 都寫對了,照後者的雙行寫法修 | `notes/dispatch-history-template-defects.md` D-1 |
+| A | `_templates/HISTORY.md:34-37` 的種子紀錄不在註解區塊內,散發後成為可見假資料;該檔禁止手改且有守衛攔截(`*/docs/dev/HISTORY.md` → exit 2),清它沒有符合設計的手段 | `notes/dispatch-history-template-defects.md` D-2 |
+| A | `check-history-integrity.sh` 對上面兩件零覆蓋 —— 不補守衛,下一棒重寫模板時會靜默漂回去(第 7 型不對稱記帳同型) | `notes/dispatch-history-template-defects.md` D-3 |
 | B | owner 親自打開 gate twin 產出的 html 驗收「好不好審」,b8 的 verdict 才能從 `REQUEST_CHANGES` 改掉 —— **這件事只有 owner 做得了** | `docs/dev/b8-gate-twin-review-ui/7-review.md:5,180,181` |
 | B | 拿 dev-flow 自己跑一次完整 normal-risk full lane(1-discussion → 7-review、過 G1/G2/G3)當觀測實驗 —— owner 已排定,是下一輪的事;在那之前不動 Stage 1–4 模板內容,免得污染觀測 | `notes/dispatch-parallel-feature-gaps.md` 末節 |
 | B | 需求討論的九條制度缺口(A-1~A-7、B-1、B-2)逐條裁決 —— owner 已裁定暫緩,等上一列的 full lane 觀測跑完再對照裁決 | `notes/review-requirement-discovery-gaps.md` |
