@@ -27,8 +27,8 @@ description: 開發流程 SOP 的唯一對外入口(7 階段路由器,SDD 為主
 
 ## 1. Lane 判準
 - **full**(預設):新能力 / 不可逆改動(schema、API 契約、跨模組介面)→ 1-7 全套(3 選配)。
-- **fast**:bugfix / ≤2 檔小改 / 行為已有 spec 條目 → 4-spec(補 bug scenario) → 5-tasks(mini) → 6-implementation-notes → 7-review(mini)。Stage 1–3 省略;5-tasks 仍用同一模板,可只有一個 T,但 Covers/Files/Verify/Blocked-by 必填,供 `devflow-exec.sh start <slug>` 解析 scope。起手 = **診斷迴圈**(重現→最小化→假設→定位→修→回歸),bug scenario 從重現步驟長出。
-- **大案與切片**:≥3 個可獨立 phase / Diff Budget >15 檔 / 跨 repo 都只是切片可行性訊號。只有後片單純依賴前片對外產出時才能切;無合法接縫就保留單一 4→7 管線(全規則見 README §13–14)。
+- **fast**:bugfix / ≤2 檔小改 / 行為已有 spec 條目(可逆的跨模組小改也算)→ 4-spec(補 bug scenario) → 5-tasks(mini) → 6-implementation-notes → 7-review(mini)。Stage 1–3 省略;5-tasks 仍用同一模板,可只有一個 T,但 Covers/Files/Verify/Blocked-by 必填,供 `devflow-exec.sh start <slug>` 解析 scope。起手 = **診斷迴圈**(重現→最小化→假設→定位→修→回歸),bug scenario 從重現步驟長出。
+- **大案與切片**:訊號與可切判準一律看 README §13(要不要切)與 §14(切點在哪),本檔不重述 —— 這兩節條件多且互相牽動,摘要過就會與正本分歧。
 
 ## 2. 階段動作
 
@@ -40,7 +40,7 @@ description: 開發流程 SOP 的唯一對外入口(7 階段路由器,SDD 為主
 | 4 規格 | openspec delta 格式,**step-by-step 生成** + **反模糊三律**(S 可轉單一測試、禁模糊詞、禁 TBD);**執行清單與三律見 `_templates/4-spec.md` 頂註** | `4-spec.md`(含 Drafting Decisions) | **G2** R/S 全審 + DD 全裁決 + Verification Profile(依 lane 正確填寫)+ Demo verdict 條件(全文見 README §7;Demo verdict 語意正本見 §4 所引,機械檢查 `hooks/_stage3_impl.py`) |
 | 5 任務 | `to-tickets` 概念:tracer-bullet 順序 + Covers/Verify/Blocked-by | `5-tasks.md` | 每 T 有 Verify |
 | 6 實作 | **`dev-run` 引擎**(haiku 執行→sonnet 審→錯誤升階;守衛 `devflow-exec.sh` start/stop,詳其 SKILL;5-tasks 明寫 `execution.mode: parallel` 時走並行引擎(選配))或手動逐 T;兩者共用 README §5 的 T acceptance seam:RED→GREEN→scope check→Verify→獨立 T review→PASS→commit→記 Progress Log/checkbox/review evidence;**執行清單見 `_templates/6-implementation-notes.md` 頂註** | `6-implementation-notes.md`(含 T Review Log;執行軌跡只供 dev-run) | 每 T review PASS + 全 S 綠 |
-| 7 驗證 | 雙軸審(Standards + Spec)+ 自建 coverage matrix(可搭 mattpocock `code-review`);**執行清單見 `_templates/7-review.md` 頂註** | `7-review.md` + `7-review.html` | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 README §7);PASS → Exit checklist |
+| 7 驗證 | 雙軸審(Standards + Spec)+ 自建 coverage matrix(可搭 mattpocock `code-review`);**執行清單見 `_templates/7-review.md` 頂註** | `7-review.md` + `7-review.html` | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 README §7);PASS → Exit Checklist(PR 是其中一項) |
 
 gate 條件唯一正本 = 母版 README §7;本表 gate 欄是摘要,衝突以 §7 為準。
 
@@ -104,13 +104,17 @@ gate 條件唯一正本 = 母版 README §7;本表 gate 欄是摘要,衝突以 �
 - **跳過**:命中觸發仍要跳過 → 人類明示,記 2-decision「Owner Calls」節流程層 OC,
   該行同時含「Stage 3」與「跳過」字樣(供機械比對);Agent 不得代決跳過。
 - **G2 送審前先跑 spec 形狀檢查**(B-9;Stage 4 步驟 6 送審的前置動作):
-  `bash <master>/scripts/check-spec-gate.sh docs/dev/<slug>/4-spec.md`。查五項 ——
-  每個 S 有觀測欄 / Verification Profile 節在且 `- lane:` 與 `- Risk:` 可解析
-  (runtime `devflow-exec.sh start` 讀的就是這兩行)/ `lane: fast` 配 `Risk: high`
-  且無 `- Owner Call 例外:` 即拒 / 模糊詞(全文掃 TBD、之後再說、實作再定;逐 S 掃
-  反模糊三律清單)/ Drafting Decisions 無殘留「待裁決」。**exit 1 = 不得送審**
-  (這支是 Gate,不是 warning-only);exit 0 只代表**形狀**齊,R/S 寫得對不對、
-  DD 決策合不合理仍是 reviewer 的事,機械不判語意。
+  `bash <master>/scripts/check-spec-gate.sh docs/dev/<slug>/4-spec.md`。它查五項,
+  一項一條、五項都要過:
+  1. 每個 S 有觀測欄。
+  2. Verification Profile 節在,且 `- lane:` 與 `- Risk:` 兩行可解析
+     (runtime `devflow-exec.sh start` 讀的就是這兩行)。
+  3. 若 `lane: fast` 配 `Risk: high` —— 有 `- Owner Call 例外:` 才放行,沒有就拒。
+  4. 無模糊詞(全文掃 TBD、之後再說、實作再定;另逐 S 掃反模糊三律清單)。
+  5. Drafting Decisions 無殘留「待裁決」。
+
+  **exit 1 = 不得送審**(這支是 Gate,不是 warning-only);exit 0 只代表**形狀**齊,
+  R/S 寫得對不對、DD 決策合不合理仍是 reviewer 的事,機械不判語意。
 - **G2 Demo verdict 條件**(條件正本 README §7;語意全文 vnext-shared-contract §2):
   無 trigger → N/A + 明確原因可過;有 trigger 完成 Demo → 須 ACCEPTED(+attestation);
   REVISE / NOT_REVIEWED → 不得過;有 trigger 但跳過 → 須 Owner Call 明示。機械檢查:

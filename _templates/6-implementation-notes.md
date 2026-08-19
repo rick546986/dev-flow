@@ -70,15 +70,15 @@ updated:
 >    於是「守衛在擋」與「守衛不在」對執行者長得一模一樣:
 >    圍欄②(禁讀上游)、契約防篡改、scope 守衛**三道全部不會觸發**,
 >    而每一份產出看起來都一樣完整。
->    (2026-08 order-intake 實測:`devflow-exec.sh` 因母版 bug 啟動不了(D-9),
->    26 個 T 全程守衛沉睡,`Files` scope 是**人工比對**出來的 ——
->    沒有人在當下發現,因為沒有任何訊號。)
 >    武裝不了 → **停下回報**,不要用「我會自己守 scope」代替。
 >    ⚠️ **同一動作再跑 `devflow-doctor.sh`(或 `devflow-exec.sh doctor`)**:版本握手
 >    fail-closed,回報 `INCOMPATIBLE` 即**停下回報**,不得略過繼續。
->    (2026-08 order-intake 實測:`dev-setup` 沒散發齊 `devflow-contract.json` 與
->    `docs/dev/tools/`,doctor 實跑直接 `⛔ INCOMPATIBLE(fail-closed)`——但整條
->    Stage 6→7 沒有任何一步要求跑它,所以沒有人被擋。)
+>    **背景案例(佐證這兩條為何是硬關卡,不是本次要照做的事)**:2026-08 order-intake
+>    實測 —— ①`devflow-exec.sh` 因母版 bug 啟動不了(D-9),26 個 T 全程守衛沉睡,
+>    `Files` scope 是人工比對出來的,當下沒人發現,因為沒有任何訊號;
+>    ②`dev-setup` 沒散發齊 `devflow-contract.json` 與 `docs/dev/tools/`,doctor 實跑
+>    直接 `⛔ INCOMPATIBLE(fail-closed)`,但整條 Stage 6→7 沒有任何一步要求跑它,
+>    所以沒有人被擋。
 >    完成 = 讀取清單回報 + branch 就位 + **`devflow-exec.sh status` 與
 >    `devflow-doctor.sh` 兩份輸出都貼進本檔** + **`FORK_INTEGRATION_SHA` 已記進本檔
 >    (40 碼全長)** + **執行環境隔離結果已貼進本檔**:逐項寫容器名/對外 port/
@@ -92,8 +92,9 @@ updated:
 >    Verify;e independent T review:reviewer 必須不同於 T implementer,優先適格人類,
 >    否則 fresh-context reviewer Agent;reviewer 親跑 Verify,檢查 Covers、RED→GREEN
 >    證據與該 T 自己的 Files scope,並過 Test Integrity Check 七項(①刪 assertion
->    ②放寬 assertion ③新增 skip/xfail ④同步改測試+實作重新定義正確性 ⑤mock 核心
->    邏輯 ⑥只追 coverage 無有意義 assertion ⑦沒跑的層寫成 PASS;任一命中 → FAIL);
+>    ②放寬 assertion ③新增 skip/xfail/todo ④同步改測試+實作重新定義正確性
+>    ⑤mock 掉核心邏輯(mock 邊界可以,mock 被測物不行)⑥只追 coverage 無有意義
+>    assertion ⑦沒跑的層寫成 PASS;任一命中 → FAIL);
 >    4-spec 的 Design Boundary Contract 為 `applicable` 時,另過 Design Boundary Check
 >    五問(全文見下方實作期規則)。
 >    FAIL → 回同一 T 修正並重新送審;高風險或
@@ -174,7 +175,9 @@ Run: <run_id>
 - GREEN: `<test cmd>` → <通過輸出摘要>
 
 ## Decisions(spec 未載明的自由選擇)
-<!-- 一行一個:選了什麼 + 為何;不屬偏差,不需回審 -->
+<!-- 一行一個:選了什麼 + 為何 + 依據;不屬偏差,不需回審。
+     「依據」寫得出出處就寫 `檔:行` 或指令輸出;寫不出就寫 `[Assumption]`
+     (同 1-discussion 的 [Assumption] 規則,四份自判表同一套寫法)。 -->
 
 ## Deviations
 ### D-1(L1|L2)

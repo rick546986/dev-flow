@@ -80,8 +80,13 @@ if not m:
 elif not num_matches(m.group(1), mount_count):
     fail(f"SKILL.md 掛載數寫「{m.group(1)} 條」,hooks.json 實際 {mount_count} 條")
 
-# 逐條列舉:`PreToolUse \`matcher\`→name` —— 與實際掛載集合雙向比對
-listed = set(re.findall(r"(PreToolUse|PostToolUse)\s*`([^`]+)`→([a-z0-9-]+)", skill))
+# 逐條列舉:`<event> \`matcher\`→name` —— 與實際掛載集合雙向比對。
+# 事件名不寫死成 PreToolUse|PostToolUse:hooks.json 允許非工具事件(UserPromptSubmit
+# 等),寫死會讓新掛的非工具 hook 永遠對不上、卻報成「SKILL.md 漏列」而不是
+# 「這支守衛自己認不得」—— 一樣是第 7 型,只是漂的是這支守衛本身。
+listed = set(re.findall(r"([A-Z][A-Za-z]+)\s*`([^`]+)`→([a-z0-9-]+)", skill))
+listed = {x for x in listed if x[0] in {e for e, _m, _n, _t in mounts} | {
+    "PreToolUse", "PostToolUse", "UserPromptSubmit"}}
 actual = {(e, mt, n[:-3] if n.endswith(".sh") else n) for e, mt, n, _t in mounts}
 for miss in sorted(actual - listed):
     fail(f"SKILL.md 掛載列舉漏了:{miss[0]} `{miss[1]}`→{miss[2]}")

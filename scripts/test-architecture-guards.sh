@@ -1539,7 +1539,7 @@ check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 15" "MIN_
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 138" "MIN_CHECKS 釘死 138(X-3 補群組數釘之後的實得數)"
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 41" "MIN_CHECKS 釘死 41(反證輪 E-1:再加 M-f~M-h 五個(mutant,子案)配對後的實得數)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 32" "MIN_CHECKS 釘死 32(commit-landing 輪 F-1-e:POINTS 補「窗口最短」+ 負向⑱⑲ 兩份頂註各一後的實得數)"
-check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 78" "EXPECTED_MAPPED_FILES 釘死 78(精確值,不是地板;v3.8.0 輪 D-1 新增 devflow-python-lib.sh 後的實得數)"
+check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 80" "EXPECTED_MAPPED_FILES 釘死 80(精確值,不是地板;2026-08-19 自判表輪新增 check-selfjudgment-tables.sh 與 devflow-plainspeak.sh 後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 24" "EXPECTED_GROUPS 釘死 24(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的

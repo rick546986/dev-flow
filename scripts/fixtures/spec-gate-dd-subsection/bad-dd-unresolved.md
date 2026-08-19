@@ -1,3 +1,9 @@
+<!-- 負向 fixture(勿當範例照抄):DD 上層表裡留了一條沒裁決的 DD-5。
+     用途:釘住 check-spec-gate.sh 的 C5 掃描範圍必須含 `## Drafting Decisions`
+     底下的 `### 逐條裁決(上層)` 子節。C5 若改回只掃到子標題前(block_end),
+     這份檔會被判成綠燈 —— 那正是這支 fixture 要抓的回歸。
+     期望:check-spec-gate.sh 對本檔 exit 1,且 C5 那列為 ❌。 -->
+
 ---
 feature: contract-expiry-reminder
 stage: 4-spec
@@ -248,7 +254,7 @@ Owner confirmation:rick 確認上列兩場已 ACCEPTED 的 Demo 場景明示排�
 | DD-2 | S-2 空狀態文案寫死於 spec(棄項:留給前端自由) | 驗收要可測,文案不可漂 | `2-decision.md:66` OC-3 已裁定零筆仍顯示空狀態卡片;文案逐字寫死是本階段延伸 = `[Assumption]` | S-2 變成不可測,7-review 現象證據那列要改判準 | ✅ |
 | DD-3 | 狀態值域固定 6 值:未處理/等待法務/等待主管/已聯絡供應商/已續約/不續約(棄項:自由文字狀態) | 可測、可報表 | `1-discussion.md:37-39` Current Journey Step 3-5 涵蓋法務、主管、供應商三種等待對象;「6 值剛好夠」= `[Assumption]`,未窮舉真實案例 | R-3 全部 S 與 migration 的 enum 都要改,已寫入的資料要轉換 | ✅ |
 | DD-4 | 「已續約」僅主管可標(棄項:業務可標+事後稽核) | 對應核准權 | `1-discussion.md:77` Q5 已定案「已續約」僅主管可標;`3-prototype.md` Demo 權限修正複核過 | S-4 權限分支與 Failure Model 第 1 列都要改 | ✅ |
-| DD-5 | 看過不改狀態,無「已讀即處理」(棄項:自動標已讀) | 防看過誤當完成 | `3-prototype.md:128` AC-5 場景 3/3 參與者實測確認 | S-5 整條反過來,Failure Model 第 2 列失效 | ✅ |
+| DD-5 | 待裁決:看過不改狀態,無「已讀即處理」(棄項:自動標已讀) | 防看過誤當完成 | `3-prototype.md:128` AC-5 場景 3/3 參與者實測確認 | S-5 整條反過來,Failure Model 第 2 列失效 | ✅ |
 
 ### 內部技術選擇(下層,告知即可)
 (無 —— 本次純內部技術選擇已在 `2-decision.md` 的下層清單記過,不重複記)

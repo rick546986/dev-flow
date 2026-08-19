@@ -369,7 +369,7 @@
   <td>7</td>
   <td><code>7-review.md</code> + <code>.html</code></td>
   <td>雙軸審 + coverage matrix + Exit checklist。<strong>同 stage 只有這兩個檔</strong>,自審的家在 6-notes Self-Review;真要用 7-review 形狀寫自審則 verdict 填 <code>PRE-REVIEW</code>,獨立 reviewer 產出後<strong>就地接管同一個檔</strong>、不另存 sibling(細則見模板步 0a)</td>
-  <td><strong>G3</strong> 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → PR</td>
+  <td><strong>G3</strong> 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → Exit Checklist(PR 是其中一項)</td>
   </tr>
   </tbody>
   </table></div>
@@ -483,7 +483,8 @@
     完成 = 決策點清單經使用者確認(確認紀錄節留一行)。</p>
     <ol>
     <li>方案生成:每決策點 2-3 個 approach 填表,禁單案過場;優劣必有背書 ——
-    引 1-discussion 事實或本階段查證(留紀錄),禁憑空斷言。完成 = 表齊、每格非空。</li>
+    引 1-discussion 事實或本階段查證,寫進「依據」欄;引不出就在該欄寫
+    <code>[Assumption]</code>,不得留空、不得憑空斷言。完成 = 表齊、每格非空。</li>
     <li>壓測定案:對推薦案逼問失敗模式/邊界/最貴風險 → Risks &amp; Mitigations(每風險
     有對策);Success Criteria 逐條可量測(7-review 對照用)。完成 = 兩節齊、
     無不可量測句。</li>
@@ -660,7 +661,8 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     <code>Recovery:</code> 欄位內容也算下落。
     完成 = 四節齊 + Verification Profile 填畢 + Design Boundary Contract 有結論
     (applicable 全填 / n-a 附理由)+ Stage 3 對帳逐場有下落。</li>
-    <li>Drafting Decisions 清點:草擬自拍板逐條(決策|理由|棄項|待人審);全文掃
+    <li>Drafting Decisions 清點:草擬自拍板逐條進上層表(決定了什麼|為什麼|依據|
+    若被推翻會怎樣|狀態),純內部技術選擇進下層清單;全文掃
     TBD/之後再說/實作再定 → 命中即轉 DD 或退回提問。完成 = 掃描零殘留。</li>
     <li>自檢(反模糊掃描):<strong>先跑機械關卡</strong> <code>scripts/check-spec-gate.sh &lt;本檔路徑&gt;</code>
     (C1 每 S 有觀測欄 / C2 Profile 可解析 / C3 lane×Risk 合法 / C4 模糊詞 /
@@ -726,7 +728,8 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     0. 前置:4-spec 須 status=approved(G2 過);讀 4-spec 全部 R/S 建立盤點基礎,
     建 todo 一 T 一項。完成 = approved 已核對 + R/S 全集清點回報。</p>
     <ol>
-    <li>切 T:順序 = tracer bullet(先打通最薄端到端縱切,再逐層加厚);判準見上文——
+    <li>切 T:順序 = tracer bullet(先打通最薄端到端縱切,再逐層加厚);判準見上方
+    「一個 T 一個關注點」與「T 自足律」——
     每個 T 必須答得出「完成後系統/使用者多了什麼可觀測行為」,答不出即水平切層
     徵兆,應與相鄰 T 合併或重界定,不得整份按 DB→Repo→Service→API→UI 逐層分
     (機械提示見 <code>scripts/check-task-slicing.sh</code>,warning-only、永不 exit 1,
@@ -736,11 +739,12 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     <li>填欄:Covers 標 R/S id 且全 S 皆被至少一個 T 承接(追溯鏈頂端);Files 以 Git
     repository root 相對路徑列出,含對應測試檔(D-39 四象限判準見上「Files 該含
     哪些測試檔」節);Verify 單行純指令,<code>-run</code>/<code>-k</code>/<code>--filter</code> 篩選器須帶案例數
-    斷言(強制形狀見上),開工前先原樣跑一次,依「①已經綠→補計數或改條件
+    斷言(強制形狀見上方「篩選子集必須自帶案例數斷言」那條的骨架),開工前先原樣跑一次,
+    依「①已經綠→補計數或改條件
     ②不可能綠→停,修欄位,記 L1③綠不了但方向對→正常開工」三種結果處置;Intent
     一句寫可觀測行為,Boundaries 寫硬約束/禁區,Design Boundary Contract 為
     <code>applicable</code> 時比照「Design Boundary 摘錄規則」摘錄該 T 最小子集;續行不得
-    以保留欄名開頭(續行禁令見上)。
+    以保留欄名開頭(見上方「續行禁令」)。
     完成 = 四必填欄齊備、Verify 已原樣跑過一次並記錄結果、Intent/Boundaries 各
     一句到位。</li>
     <li>依賴:填 <code>Blocked-by</code>(硬執行依賴,拓撲序不成環);parallel 模式選配填
@@ -851,15 +855,15 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     於是「守衛在擋」與「守衛不在」對執行者長得一模一樣:
     圍欄②(禁讀上游)、契約防篡改、scope 守衛<strong>三道全部不會觸發</strong>,
     而每一份產出看起來都一樣完整。
-    (2026-08 order-intake 實測:<code>devflow-exec.sh</code> 因母版 bug 啟動不了(D-9),
-    26 個 T 全程守衛沉睡,<code>Files</code> scope 是<strong>人工比對</strong>出來的 ——
-    沒有人在當下發現,因為沒有任何訊號。)
     武裝不了 → <strong>停下回報</strong>,不要用「我會自己守 scope」代替。
     ⚠️ <strong>同一動作再跑 <code>devflow-doctor.sh</code>(或 <code>devflow-exec.sh doctor</code>)</strong>:版本握手
     fail-closed,回報 <code>INCOMPATIBLE</code> 即<strong>停下回報</strong>,不得略過繼續。
-    (2026-08 order-intake 實測:<code>dev-setup</code> 沒散發齊 <code>devflow-contract.json</code> 與
-    <code>docs/dev/tools/</code>,doctor 實跑直接 <code>⛔ INCOMPATIBLE(fail-closed)</code>——但整條
-    Stage 6→7 沒有任何一步要求跑它,所以沒有人被擋。)
+    <strong>背景案例(佐證這兩條為何是硬關卡,不是本次要照做的事)</strong>:2026-08 order-intake
+    實測 —— ①<code>devflow-exec.sh</code> 因母版 bug 啟動不了(D-9),26 個 T 全程守衛沉睡,
+    <code>Files</code> scope 是人工比對出來的,當下沒人發現,因為沒有任何訊號;
+    ②<code>dev-setup</code> 沒散發齊 <code>devflow-contract.json</code> 與 <code>docs/dev/tools/</code>,doctor 實跑
+    直接 <code>⛔ INCOMPATIBLE(fail-closed)</code>,但整條 Stage 6→7 沒有任何一步要求跑它,
+    所以沒有人被擋。
     完成 = 讀取清單回報 + branch 就位 + <strong><code>devflow-exec.sh status</code> 與
     <code>devflow-doctor.sh</code> 兩份輸出都貼進本檔</strong> + <strong><code>FORK_INTEGRATION_SHA</code> 已記進本檔
     (40 碼全長)</strong> + <strong>執行環境隔離結果已貼進本檔</strong>:逐項寫容器名/對外 port/
@@ -874,8 +878,9 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     Verify;e independent T review:reviewer 必須不同於 T implementer,優先適格人類,
     否則 fresh-context reviewer Agent;reviewer 親跑 Verify,檢查 Covers、RED→GREEN
     證據與該 T 自己的 Files scope,並過 Test Integrity Check 七項(①刪 assertion
-    ②放寬 assertion ③新增 skip/xfail ④同步改測試+實作重新定義正確性 ⑤mock 核心
-    邏輯 ⑥只追 coverage 無有意義 assertion ⑦沒跑的層寫成 PASS;任一命中 → FAIL);
+    ②放寬 assertion ③新增 skip/xfail/todo ④同步改測試+實作重新定義正確性
+    ⑤mock 掉核心邏輯(mock 邊界可以,mock 被測物不行)⑥只追 coverage 無有意義
+    assertion ⑦沒跑的層寫成 PASS;任一命中 → FAIL);
     4-spec 的 Design Boundary Contract 為 <code>applicable</code> 時,另過 Design Boundary Check
     五問(全文見下方實作期規則)。
     FAIL → 回同一 T 修正並重新送審;高風險或
@@ -1128,11 +1133,12 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     正確處置是<strong>補跑 <code>dev-setup</code></strong>(它同時會補上 <code>docs/dev/devflow-contract.json</code>
     等其他受管檔),<strong>不要手動 <code>cp</code> 一支了事</strong>:手動裝會繞過受管檔的版本握手,
     下次 <code>dev-setup</code> 比對時看到的是一個來歷不明的複本。
-    2026-08 order-intake 實測:該專案 <code>docs/dev/tools/</code> 與 <code>devflow-contract.json</code>
-    <strong>兩者皆不存在</strong>,<code>devflow-doctor.sh</code> 實跑直接 <code>⛔ INCOMPATIBLE(fail-closed)</code> ——
-    但整條 Stage 6→7 走完<strong>沒有任何一步要求跑 doctor</strong>,所以沒有人被擋。
     補不了 → Required 層改<strong>逐層手動實跑</strong>並在本檔明記「gauntlet 未跑」是<strong>降級</strong>,
     不得默默當成跑過。
+    <strong>背景案例(佐證,不是本次要照做的事)</strong>:2026-08 order-intake 實測,該專案
+    <code>docs/dev/tools/</code> 與 <code>devflow-contract.json</code> 兩者皆不存在,<code>devflow-doctor.sh</code>
+    實跑直接 <code>⛔ INCOMPATIBLE(fail-closed)</code>;但整條 Stage 6→7 走完沒有任何一步
+    要求跑 doctor,所以沒有人被擋。
     (Required 層須逐層帶入命令,未實跑由機械擋下,不靠自律)。
     完成 = gauntlet 輸出在案(或降級聲明在案)。
     2d. <strong>Operational Walkthrough</strong>:以各 S 的 Operational Context 為腳本親自走一遍
@@ -1331,7 +1337,8 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <text class="dc" x="858" y="48">skills 描述+hooks 註冊+</text>
     <text class="dc" x="858" y="60">CLAUDE.md/rules 進場</text>
     <path class="tick" d="M770,140 L850,140"/>
-    <text class="dc" x="858" y="143">/dev-flow 路由器在此展開</text>
+    <text class="dc" x="858" y="134">/dev-flow 路由器在此展開</text>
+    <text class="dc" x="858" y="146">devflow-plainspeak·(預設關)</text>
     <path class="tick" d="M770,226 L850,226"/>
     <text class="dc" x="858" y="222">devflow-guard·history-guard·</text>
     <text class="dc" x="858" y="234">devflow-prebash·dispatch-guard</text>
@@ -1482,13 +1489,13 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   start 再換樹)效果等同,不是只有「忘記 start」這一種沉睡成因。</blockquote>
 
   <details class="plain">
-  <summary>這七支掛在哪、註冊了什麼(展開看逐字設定)</summary>
+  <summary>這八支掛在哪、註冊了什麼(展開看逐字設定)</summary>
   <p>hook 有三種掛法,差在「誰的、跟誰走」:<code>~/.claude/settings.json</code> 是<strong>你個人的</strong>,
   裝在你自己電腦上,每個專案都生效;專案自己的 <code>.claude/settings.json</code> 是<strong>只這個
   repo</strong> 的,會進版控、跟著團隊走;plugin 的 <code>hooks/hooks.json</code> 是<strong>隨插件
   散發</strong>的,別人裝了這個 plugin 就自動有,<code>/plugin update</code> 升級 plugin 版本時也跟著更新。
-  dev-flow 這七支<strong>全部是第三種</strong> —— 所以你不需要在任何一份 <code>settings.json</code> 裡手動掛
-  任何一支,只要裝了 dev-flow plugin,這七支就自動註冊好了。</p>
+  dev-flow 這八支<strong>全部是第三種</strong> —— 所以你不需要在任何一份 <code>settings.json</code> 裡手動掛
+  任何一支,只要裝了 dev-flow plugin,這八支就自動註冊好了。</p>
 
   <details>
   <summary><code>devflow-guard.sh</code> —— 你讀寫檔案前的總閘門:契約防篡改 + scope 硬擋</summary>
@@ -1558,6 +1565,22 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
       <td><code>${CLAUDE_PLUGIN_ROOT}/hooks/devflow-postbash.sh</code></td><td>15</td>
       <td><code>devflow-guard 偵測網</code></td></tr>
   </table></div>
+  </details>
+
+  <details>
+  <summary><code>devflow-plainspeak.sh</code> —— 你每次送出訊息之前,提醒模型用你看得懂的話回</summary>
+  <div class="tablewrap"><table>
+  <tr><th>event</th><th>matcher</th><th>handler(command)</th><th>timeout</th><th>statusMessage</th></tr>
+  <tr><td><code>UserPromptSubmit</code></td><td><code>*</code></td>
+      <td><code>${CLAUDE_PLUGIN_ROOT}/hooks/devflow-plainspeak.sh</code></td><td>5</td>
+      <td><code>plainspeak 白話回覆提醒</code></td></tr>
+  </table></div>
+  <p>這支跟其他七支不一樣:<strong>它不擋任何東西</strong>,只在你每次按下送出的時候,順手塞一段
+  「用白話繁體中文回、術語放括號」的提醒給模型。理由是三個關卡(G1/G2/G3)都要你拍板,
+  而你要拍板得先看得懂;回覆風格設定只在對話一開始讀一次,講久了就淡掉,這支每一輪都重講一次。</p>
+  <p><strong>預設是關的</strong> —— 用 dev-flow 的人不見得講中文,不能替別人決定回覆語言。
+  要打開就在你自己的 <code>~/.claude/settings.json</code> 或專案的 <code>.claude/settings.json</code>
+  的 <code>"env"</code> 區塊加 <code>"DEVFLOW_PLAINSPEAK": "1"</code>;沒設就什麼都不做。</p>
   </details>
 
   <p class="muted">正本是 <code>hooks/hooks.json</code>,這裡只是人看的鏡像 —— 懷疑這頁跟實際行為漂移了,
@@ -1857,6 +1880,12 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             分支名、母版沒有的檔案路徑)——回報會被貼到公開 repo,結構特徵先機械擋一層,公司名這類
             語意識別仍要人工確認。只認回報路徑,其他檔案一律靜默放行。</td>
         <td><code>hooks.json</code> 自動掛(PostToolUse / Edit,Write;只認 <code>.devflow/reports/</code> 路徑)</td><td>PostToolUse(Edit/Write)</td></tr>
+    <tr><td><code>devflow-plainspeak.sh</code></td>
+        <td>你每次按下送出之前,它塞一段提醒給模型:用白話繁體中文回、術語要放在括號裡對照。
+            理由是三個關卡都要你點頭,而你要點頭得先看得懂;回覆風格只在對話開頭讀一次、講久了會淡掉,
+            這支每一輪重講一次。它不擋任何東西。<strong>預設是關的</strong>,設
+            <code>DEVFLOW_PLAINSPEAK=1</code> 才啟用 —— 用這套流程的人不見得講中文。</td>
+        <td><code>hooks.json</code> 自動掛(UserPromptSubmit;未設環境變數即靜默跳過)</td><td>UserPromptSubmit</td></tr>
     <tr><td><code>devflow-lib.py</code></td>
         <td>guard/postbash/prebash/exec/gate 這幾支背後真正判斷「武裝了沒、契約有沒有被動過」的規則都寫在這裡,
             其他檔案只是各自的殼,共用同一套邏輯避免各判各的。</td>
@@ -1959,6 +1988,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>掃所有檢查腳本與守衛的正則,抓「同一個字元集裡相鄰重複的半形標點」——那是本想寫
             「半形或全形」卻兩個都打成半形的打字陷阱(全形冒號與半形冒號肉眼幾乎分不出來),
             曾讓完整的規格書被誤判缺欄。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-selfjudgment-tables.sh</code></td>
+        <td>檢查四份文件裡「模型自己拍板、等人核可」的那幾張表長得一不一樣——有沒有寫出「這一格的說法
+            從哪來」、有沒有寫出「你要是不同意，會付出什麼代價」、有沒有把「會改到你看得到的行為」跟
+            「純內部技術選擇」分開放。少了這幾欄，查證過的跟模型猜的會排在同一張表上，看不出差別。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-spec-gate.sh</code></td>
         <td>檢查一份規格文件該有的欄位是不是真的都在——每條需求有沒有觀測欄、驗證規劃有沒有填好——這是

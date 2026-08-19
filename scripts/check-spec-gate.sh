@@ -103,6 +103,25 @@ def block_end(start):
     return len(lines)
 
 
+def head_level(i):
+    return len(lines[i]) - len(lines[i].lstrip("#"))
+
+
+def section_end(start):
+    """掃到「下一個同級或更高級標題」為止,子標題留在本節內。
+
+    ⚠️ 不可改回 block_end:`## Drafting Decisions` 底下有 `### 逐條裁決(上層)`
+    子節(_templates/4-spec.md),用 block_end 會在子標題那行就停,整張裁決表
+    完全不被掃描 —— C5 會對「表格裡還留著待裁決」照樣印綠燈。
+    負向 fixture:scripts/fixtures/spec-gate-dd-subsection/bad-dd-unresolved.md
+    """
+    lvl = head_level(start)
+    for h in heads:
+        if h > start and head_level(h) <= lvl:
+            return h
+    return len(lines)
+
+
 s_blocks = [(lines[i].strip(), i, block_end(i)) for i in heads if S_HEAD.match(lines[i])]
 
 results = []          # (code, ok, 標題, [明細行])
@@ -165,7 +184,7 @@ dd = next((i for i in heads if re.match(r"^#{2,6}\s*Drafting Decisions", lines[i
 if dd is None:
     record("C5", True, "Drafting Decisions 無殘留「待裁決」(本檔無 DD 節 = 零殘留)")
 else:
-    end = block_end(dd)
+    end = section_end(dd)
     left = [f"L{n + 1}:{lines[n].strip()[:70]}"
             for n in range(dd, end) if "待裁決" in lines[n]]
     record("C5", not left,

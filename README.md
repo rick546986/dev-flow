@@ -189,7 +189,7 @@ Fast lane 省的是 Stage 1–3,不是 Stage 5:`devflow-exec.sh start <slug>` �
 | 4 | `4-spec.md` | 本次變更的可測契約(delta + GIVEN/WHEN/THEN)。SDD 真相 | **G2** R/S 全審 + DD 全裁決 + Verification Profile + Demo verdict(全文見 §7) |
 | 5 | `5-tasks.md` | 切成可勾選任務,tracer-bullet 順序,每 T 有 Covers/Files/Verify/Blocked-by | 每 T 欄位完整 |
 | 6 | `6-implementation-notes.md` | 實作日誌:TDD 證據 + 偏差記錄 | 每 T review PASS + 全 S 綠 |
-| 7 | `7-review.md` + `.html` | 雙軸審 + coverage matrix + Exit checklist。**同 stage 只有這兩個檔**,自審的家在 6-notes Self-Review;真要用 7-review 形狀寫自審則 verdict 填 `PRE-REVIEW`,獨立 reviewer 產出後**就地接管同一個檔**、不另存 sibling(細則見模板步 0a) | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → PR |
+| 7 | `7-review.md` + `.html` | 雙軸審 + coverage matrix + Exit checklist。**同 stage 只有這兩個檔**,自審的家在 6-notes Self-Review;真要用 7-review 形狀寫自審則 verdict 填 `PRE-REVIEW`,獨立 reviewer 產出後**就地接管同一個檔**、不另存 sibling(細則見模板步 0a) | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → Exit Checklist(PR 是其中一項) |
 
 **執行清單四原則**(Stage 2/3/4/5/6/7;清單全文住各模板頂註,Stage 1 同款機制內建於
 /dev-talk):①開場第一動把清單建成 todo,每步有「完成 =」客觀條件,達成才勾;
@@ -287,7 +287,10 @@ RED → GREEN → scope check → Verify
   `devtalk-guard`(盲原則掃描)、`devflow-dispatch-guard`(PreToolUse Task|Agent:武裝中
   擋「首派即最高階」派工)。另有 `devflow-report-guard`(PostToolUse Edit|Write:
   只掃 `.devflow/reports/*.md` 缺陷回報檔的結構性識別特徵,與旗標狀態無關,
-  非回報路徑一律靜默)。L1 出口 = `devflow-exec.sh allow <file> --reason`;
+  非回報路徑一律靜默)與 `devflow-plainspeak`(UserPromptSubmit:每輪注入一段
+  「用白話繁體中文回」的提醒,讓要在 G1/G2/G3 拍板的人看得懂自己在核准什麼。
+  **預設關閉**,設 `DEVFLOW_PLAINSPEAK=1` 才啟用;不擋任何東西,與旗標狀態無關)。
+  L1 出口 = `devflow-exec.sh allow <file> --reason`;
   L2 = `stop`。收尾 `stop` 後全部沉睡。自測:`hooks/selftest.sh`(動態發現案例,可重跑)。
   界線:紀律工具非安全沙箱,詳 `dev-setup-record.html`(plugin guides/,經
   `${CLAUDE_PLUGIN_ROOT}` 存取,非本 repo/散發檔案)。跨版本相容由

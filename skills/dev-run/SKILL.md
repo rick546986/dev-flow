@@ -77,10 +77,17 @@ hash 必須是 registry 內 `prompt_hash` 實值,**禁佔位 hash** / 禁自編)
 2. **收驗**:派 fresh sonnet reviewer(給 T + S 原文 + diff + 執行者輸出,不給執行者
    結論;prompt 明令唯讀、每 F 引 spec 原文或 diff hunk),依 README §5 / 6-notes 的
    共用 seam 裁決並回傳 T Review Log 所需證據。
-   FAIL → **先分類再路由**(README §5 驗證五律 5):SPEC(T/S 定義問題)→ L2 停,
-   回 G2;ENV(環境/依賴壞)→ 修環境重跑,不計升階;IMPL/UNKNOWN → 同一 T 升階
-   重派(失敗軌跡全帶)並重新送審。**同 T 總嘗試上限 4**(haiku 1+sonnet 2+opus 1),
-   用盡強制問 adviser,禁無限重試。PASS → 你 commit → 讀出 hash。
+   FAIL → **先分類再路由**(README §5 驗證五律 5)。分三類,各走各的路:
+
+   | 分類 | 什麼算 | 怎麼走 | 計不計入嘗試上限 |
+   |---|---|---|---|
+   | SPEC | T/S 定義本身有問題 | L2 停,回 G2 | 不計(已停工) |
+   | ENV | 環境或相依壞了 | 修環境後重跑 | **不計** |
+   | IMPL / UNKNOWN | 實作沒做對,或看不出原因 | 同一 T 升階重派(失敗軌跡全帶)並重新送審 | 計入 |
+
+   **上限與強制動作**(與上表分開讀):同一個 T 總嘗試上限 4 次
+   (haiku 1 + sonnet 2 + opus 1)。用盡 4 次 → **強制問 adviser**,不得再重試。
+   PASS → 你 commit → 讀出 hash。
    **寫事件**:派 reviewer 時 `review_started`,收到裁決 `review_completed`
    (review_verdict)+ 每個 finding 一筆 `finding_created`;收裁決後補
    `attempt_completed`(result=裁決結果;**FAIL 必附 failure_category**
@@ -102,7 +109,7 @@ sequential 收驗與並行 dedicated / wave review 的 reviewer prompt **必含*
 (P4 Gauntlet+Gates 條文):
 
 1. 刪 assertion?2. 放寬 assertion(容忍度/範圍/型別)?3. 新增 skip/xfail/todo?
-4. 同一步同時改測試與實作以重新定義正確性?5. mock 掉被測物(mock 邊界可,被測物不行)?
+4. 同一步同時改測試與實作以重新定義正確性?5. mock 掉核心邏輯(mock 邊界可以,mock 被測物不行)?
 6. 只追 coverage(無有意義 assertion)?7. 沒跑的 layer 寫 PASS(對 6-notes 宣稱抽查原始輸出)?
 任一命中 → T review FAIL 回同一 T,失敗分類照驗證五律 5。
 
