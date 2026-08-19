@@ -5,7 +5,8 @@
 # 文件」之間的漂移 —— 數量與名稱都比,任一處漏列/多列/數字過期就紅:
 #   ① skills/dev-setup/SKILL.md:安裝健檢清單(N 支可執行、N 條掛載、逐條列舉)
 #   ② README.md:執行守衛段的 hook 名稱列舉
-#   ②' docs/PLUGIN.md:hooks 表 + skills 表(skills 對帳的機械正本 = skills/ 目錄)
+#   ②' docs/PLUGIN.md:hooks 表 + skills 表 + agents 表(agents 對帳的機械正本 =
+#      agents/ 目錄,2026-08-19 派工單 §4.4 第 4 項新增)
 #   ③ guides/guide-dev-flow.html:hooks 註冊表(event/matcher/command/timeout 鏡像
 #      + 「這 N 支」計數字)
 #
@@ -133,6 +134,16 @@ for d in sorted(os.listdir(skills_dir)):
     if os.path.isdir(os.path.join(skills_dir, d)) and not d.startswith("."):
         if f"`{d}`" not in plugin_md:
             fail(f"docs/PLUGIN.md skills 表漏了 skills/{d}(目錄存在,文件沒列)")
+
+# agents/ 對帳(2026-08-19 派工單 §4.4 第 4 項:與 skills 同一模式,機械正本 = agents/
+# 目錄底下的 *.md 檔——每支具名 subagent 型別的檔名都必須在 PLUGIN.md 的 agents 列出現)
+agents_dir = os.path.join(root, "agents")
+if os.path.isdir(agents_dir):
+    for f in sorted(os.listdir(agents_dir)):
+        if f.endswith(".md"):
+            name = f[:-3]
+            if f"`{name}`" not in plugin_md:
+                fail(f"docs/PLUGIN.md agents 表漏了 agents/{f}(檔案存在,文件沒列)")
 
 # ── ③ guides/guide-dev-flow.html:hooks 註冊表逐格鏡像 + 計數字 ───────────
 guide = open(os.path.join(root, "guides", "guide-dev-flow.html"),

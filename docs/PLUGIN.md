@@ -48,6 +48,7 @@ G2 實際發生過。）
 |---|---|
 | `hooks/` | 執行守衛與 CLI:`devflow-exec.sh`(Stage 6 task-scoped guard)、`devflow-guard.sh`、`devflow-prebash.sh`、`devflow-postbash.sh`、`devflow-dispatch-guard.sh`、`devtalk-guard.sh`、`devflow-report-guard.sh`、`devflow-plainspeak.sh`、`history-guard.sh`、`gate-consistency.sh`、`devflow-doctor.sh`、`devflow-obs.sh`、`selftest.sh` 與其 `_*_impl.py`(本表由 `scripts/check-hooks-accounting.sh` 對帳) |
 | `skills/` | `dev-flow`(7 階段路由器)、`dev-run`(Stage 6 執行引擎)、`dev-setup`(專案安裝器)、`dev-talk`(訪談引導)、`dev-release`(母版發版器)、`dev-report`(缺陷回報產生器)(本表由 `scripts/check-hooks-accounting.sh` 對帳) |
+| `agents/` | `devflow-reviewer`(role=reviewer,唯讀收驗)、`devflow-adviser`(role=adviser,唯讀連敗診斷)——兩者 frontmatter 皆 `tools: Read`,不給 Bash/Edit/Write;plugin 載入後型別字串帶命名空間,實測為 `dev-flow:devflow-reviewer` / `dev-flow:devflow-adviser`(本表由 `scripts/check-hooks-accounting.sh` 對帳) |
 | `manifests/` | prompt registry 與版本聲明 |
 | `.claude-plugin/` | plugin manifest(marketplace.json + plugin.json) |
 | repo 根目錄其餘部分 | 方法論正本:`README.md`(§7 gate 條件)、`_templates/`、`example/`、`guides/`、`docs/`、`scripts/`、`notes/`、`observability/` |

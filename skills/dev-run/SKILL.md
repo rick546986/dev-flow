@@ -80,9 +80,12 @@ hash 必須是 registry 內 `prompt_hash` 實值,**禁佔位 hash** / 禁自編)
      完成 = 三件套齊全,prompt 已送出給執行者。
    - **1b. 寫事件**:派出即送 `agent_dispatched` + `attempt_started`(attempt_id /
      agent_role / model / prompt / base_sha)。完成 = 兩筆事件皆已送 ledger。
-2. **收驗**:派 fresh sonnet reviewer(給 T + S 原文 + diff + 執行者輸出,不給執行者
-   結論;prompt 明令唯讀、每 F 引 spec 原文或 diff hunk),依 README §5 / 6-notes 的
-   共用 seam 裁決並回傳 T Review Log 所需證據。
+2. **收驗**:以 `subagent_type=dev-flow:devflow-reviewer`(`agents/devflow-reviewer.md`,
+   fresh sonnet、`tools: Read` 唯讀——沒有 Bash,也沒有 Grep/Glob/Skill 與專案裝的
+   MCP 工具;`git diff` 由你先跑好貼進 prompt,要搜的東西(例如「這個符號還有哪裡
+   引用」)也是你先搜好貼進去,不要指望它自己查)明確派出(給 T + S 原文 + diff +
+   執行者輸出,不給執行者結論;每 F 引 spec 原文或 diff hunk),依 README §5 /
+   6-notes 的共用 seam 裁決並回傳 T Review Log 所需證據。
    FAIL → **先分類再路由**(README §5 驗證五律 5)。分三類,各走各的路:
 
    | 分類 | 什麼算 | 怎麼走 | 計不計入嘗試上限 |
@@ -92,7 +95,10 @@ hash 必須是 registry 內 `prompt_hash` 實值,**禁佔位 hash** / 禁自編)
    | IMPL / UNKNOWN | 實作沒做對,或看不出原因 | 同一 T 升階重派(失敗軌跡全帶)並重新送審 | 計入 |
 
    **上限與強制動作**(與上表分開讀):同一個 T 總嘗試上限 4 次
-   (haiku 1 + sonnet 2 + opus 1)。用盡 4 次 → **強制問 adviser**,不得再重試。
+   (haiku 1 + sonnet 2 + opus 1)。用盡 4 次 → **強制問 adviser**(以
+   `subagent_type=dev-flow:devflow-adviser`——`agents/devflow-adviser.md`,同樣
+   `tools: Read` 唯讀——沒有 Bash,也沒有 Grep/Glob/Skill 與專案裝的 MCP 工具;
+   要它查證的東西你先查好貼進 prompt,附完整失敗軌跡),不得再重試。
    PASS → 你 commit → 讀出 hash。
    **寫事件**:派 reviewer 時 `review_started`,收到裁決 `review_completed`
    (review_verdict)+ 每個 finding 一筆 `finding_created`;收裁決後補

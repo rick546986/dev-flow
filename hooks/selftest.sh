@@ -30,7 +30,7 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=389
+MIN_CASES=392
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -2206,6 +2206,71 @@ S7C_OUT=$(cd "$S7CT" && echo '{"tool_name":"Task","tool_input":{"model":"opus"}}
 ck "s7c Stage 7 review 已有 haiku attempt → 首派 opus 視為合法升階,放行" 0 "$S7C_RC"
 ( cd "$S7CT" && "$H/devflow-exec.sh" stop >/dev/null 2>&1 )
 rm -rf "$S7CT"
+
+echo "-- pst §7-3b 探針(記錄用,不阻斷):真實 tool_input.subagent_type 欄位形狀 --"
+# 派工單 notes/dispatch-agent-dispatch-layer.md §7-3b:repo 內先前零 fixture 驗證過
+# PreToolUse 收到的 tool_input 有沒有 subagent_type 欄位、欄位名叫什麼、plugin 型別
+# 帶不帶命名空間(既有 selftest.sh 的 Task/Agent payload 全部只帶 model 欄)。
+# 2026-08-19 實測(claude --plugin-dir 把本 repo 當 session-only plugin 從另一個
+# 專案載入 + 專案層 PreToolUse hook 直接把 stdin 落地存證):真實派工的
+# tool_input 原始樣貌是
+#   {"description":"...","prompt":"...","subagent_type":"dev-flow:devflow-reviewer",
+#    "run_in_background":false}
+# 欄位名確實叫 `subagent_type`(不是 agent_type),plugin 型別確實帶
+# `<plugin>:<agent>` 命名空間——與 agents/devflow-reviewer.md 內「型別字串」節記的
+# 是同一次測試,原始 payload 另存 `scripts/fixtures/dispatch-guard/pst-real-payload.json`
+# 供人核對。R1(subagent_type 白名單攔截)已撤回(§3 裁決表),本守衛目前完全不讀
+# 這個欄位——以下三案只是**釘住現況**(有/無 subagent_type 都不改變既有判準,只看
+# tool_input.model),留給第二輪要做以型別為判準的檢查時,不必再猜欄位長相。
+PSTT=$(mktemp -d "${TMPDIR:-/tmp}/devflow-pst-subtype.XXXXXX")
+mkdir -p "$PSTT/docs/dev/pstseq" "$PSTT/src"
+( cd "$PSTT" && git init -q . && git config user.email t@t && git config user.name t )
+printf -- "---\nstatus: approved\n---\n" > "$PSTT/docs/dev/pstseq/4-spec.md"
+printf '%s\n' '## T-1 fixture' '- Covers: R-1' '- Files: src/a.py' '- Verify: `true`' \
+  '- Blocked-by: —' > "$PSTT/docs/dev/pstseq/5-tasks.md"
+echo a > "$PSTT/src/a.py"
+( cd "$PSTT" && git add -A >/dev/null && git commit -qm pstinit )
+( cd "$PSTT" && "$H/devflow-exec.sh" start pstseq >/dev/null 2>&1 )
+
+# ① 真實 payload 形狀(subagent_type 命名空間型別,無 model 欄)→ 本守衛只認
+#   tool_input.model,這裡沒有 → 與本守衛無關,靜默放行(不是「型別被判定合法」,
+#   是根本沒被本守衛檢查——記錄現況,不是背書)
+PST_OUT=$(cd "$PSTT" && "$DEVFLOW_PY" -c '
+import json
+print(json.dumps({"tool_name": "Agent", "tool_input": {
+    "description": "T review", "prompt": "審查用 prompt(節錄)",
+    "subagent_type": "dev-flow:devflow-reviewer", "run_in_background": False}}))
+' | "$H/devflow-dispatch-guard.sh" 2>&1); PST_RC=$?
+ck "pst 真實 subagent_type payload(無 model 欄)→ 本守衛不讀這欄,靜默放行" 0 "$PST_RC"
+# ⚠️ 這條①是「現況釘」,不是永久契約——它斷言的是「本守衛目前不讀
+# subagent_type」。第二輪若真的要做以型別為判準的檢查,這條會需要一起改掉,
+# 屬預期反轉(§11 分兩輪的理由是不要跟本輪的行為變更混在一起,不是說這條案例
+# 本身不能動)。
+
+# ② 同一個 payload 額外帶 model=opus(有人在指名型別的同時又顯式覆寫模型)、
+#   本 run 尚無低階 attempt → 判準仍是「有沒有 tool_input.model」,subagent_type
+#   在不在場都不改變這條——確認 subagent_type 存在不會意外繞過既有攔截
+PST_OUT=$(cd "$PSTT" && "$DEVFLOW_PY" -c '
+import json
+print(json.dumps({"tool_name": "Agent", "tool_input": {
+    "subagent_type": "dev-flow:devflow-reviewer", "model": "opus"}}))
+' | "$H/devflow-dispatch-guard.sh" 2>&1); PST_RC=$?
+ck_msg "pst 帶 subagent_type 又顯式 model=opus、無低階 attempt → 仍照舊判準擋" 2 "tier-exempt" "$PST_RC" "$PST_OUT"
+
+# ③ 已有低階 attempt 後,同款 payload(subagent_type + model=opus)→ 合法升階,
+#   放行——subagent_type 在場一樣不影響既有升階邏輯
+PSTRUN=$("$DEVFLOW_PY" -c "import json;print(json.load(open('$PSTT/.devflow/exec.json'))['run_id'])" 2>/dev/null)
+mkdir -p "$PSTT/.devflow/runs/$PSTRUN/attempts/att-pst-1"
+printf '%s\n' '{"event_type":"attempt_started","model":"haiku"}' \
+  > "$PSTT/.devflow/runs/$PSTRUN/attempts/att-pst-1/events.jsonl"
+PST_OUT=$(cd "$PSTT" && "$DEVFLOW_PY" -c '
+import json
+print(json.dumps({"tool_name": "Agent", "tool_input": {
+    "subagent_type": "dev-flow:devflow-reviewer", "model": "opus"}}))
+' | "$H/devflow-dispatch-guard.sh" 2>&1); PST_RC=$?
+ck "pst 帶 subagent_type + model=opus,已有 haiku attempt → 合法升階,放行" 0 "$PST_RC"
+( cd "$PSTT" && "$H/devflow-exec.sh" stop >/dev/null 2>&1 )
+rm -rf "$PSTT"
 
 echo "-- f4 豁免卡唯讀(fail-open):有效卡標記寫不回 → 放行 + 警告,不得擋 --"
 # F4(2026-08-17):_consume_exemption 寫入遇 OSError 曾 return False → die ——

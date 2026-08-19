@@ -2216,6 +2216,25 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>被 <code>run_tests.py</code> 讀取當測試輸入</td><td>人工/CI(不在生命週期上)</td></tr>
   </table></div>
 
+  <h3>agents/(唯讀具名 subagent 型別——role=reviewer / adviser)</h3>
+  <p class="muted">兩者 frontmatter 皆 <code>tools: Read</code>(平台層允許清單,不是提示);
+  不給 Bash/Edit/Write,也連帶沒有 Grep/Glob/Skill/MCP 工具。plugin 載入後型別字串帶
+  命名空間,實測為 <code>dev-flow:devflow-reviewer</code> / <code>dev-flow:devflow-adviser</code>。</p>
+  <div class="tablewrap"><table>
+    <tr><th>檔名</th><th>一句白話職責</th><th>誰呼叫它/掛在哪</th><th>生命週期格</th></tr>
+    <tr><td><code>devflow-reviewer.md</code></td>
+        <td>T/gate 收驗時判 PASS/FAIL、逐條列 finding(role=reviewer)——只讀派工者餵入 prompt 的材料
+            (含派工者先跑好的 <code>git diff</code>)與 repo 既有檔案,不能改檔、不能再派工。</td>
+        <td>派工者以 Task/Agent 工具明確帶 <code>subagent_type=dev-flow:devflow-reviewer</code> 派出
+            (dev-run 逐 T 收驗、Stage 7 review)</td>
+        <td>不在 hook 生命週期上(Task/Agent 動態派工,非 hook 掛載)</td></tr>
+    <tr><td><code>devflow-adviser.md</code></td>
+        <td>同一 T 三層嘗試(haiku→sonnet→opus)全部用盡仍 FAIL 時,診斷是 T/5-tasks 定義本身有問題
+            (SPEC,verdict=STOP 走 L2)還是純執行問題(role=adviser)——同樣唯讀。</td>
+        <td>派工者在連敗、嘗試上限用盡時以 <code>subagent_type=dev-flow:devflow-adviser</code> 派出</td>
+        <td>不在 hook 生命週期上(Task/Agent 動態派工,非 hook 掛載)</td></tr>
+  </table></div>
+
   <footer class="foot">
     正本規則:<code>~/dev/dev-flow/README.md</code>;模板:<code>~/dev/dev-flow/_templates/</code>;
     路由器 skill:<code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/skills/dev-flow/SKILL.md</code>

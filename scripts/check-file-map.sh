@@ -55,11 +55,16 @@ if not section.strip():
     sys.exit(2)
 
 # ── 正向掃描來源:git ls-files(含尚未 add 的新檔,不含 .gitignore 排除的東西)──────
+# `agents/*.md`(2026-08-19 派工單 §4.4 第 5 項新增):先前 PATTERNS 完全不含 `.md`,
+# 加之前實測過 `git ls-files ... 'agents/*.md'` 只命中 agents/ 目錄下兩檔(不像
+# shell glob 的 `*` 可能跨目錄漂移吃進其他 .md),才敢直接加、不必再收窄成明列
+# 兩個檔名——若之後 agents/ 底下出現子目錄,行為要重新實測,不能假設。
 PATTERNS = [
     "hooks/*.sh", "hooks/*.py",
     "scripts/*.sh", "scripts/*.py",
     "observability/*.sh", "observability/*.py",
     "tests/parallel-stage6/*.py",
+    "agents/*.md",
 ]
 out = subprocess.run(
     ["git", "ls-files", "--cached", "--others", "--exclude-standard", *PATTERNS],
@@ -104,7 +109,7 @@ if scanned == 0:
 # 新增/刪除必列檔時同步改這個常數(並同步補/刪檔案地圖節對應列),還要同步改
 # test-architecture-guards.sh 的靜態互釘清單那一行 —— 只改這裡不改那裡,砍檢查數
 # 會在那裡現形;只改那裡不改這裡,這裡的數字跟實得數脫鉤,防線形同虛設。
-EXPECTED_MAPPED_FILES = 81
+EXPECTED_MAPPED_FILES = 83
 if scanned != EXPECTED_MAPPED_FILES:
     direction = ("多了 —— 若為真實新增,請同步上修本常數並補檔案地圖對應列"
                  if scanned > EXPECTED_MAPPED_FILES
