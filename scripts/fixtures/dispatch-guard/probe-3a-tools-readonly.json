@@ -42,6 +42,39 @@
       "MCP server 的使用說明文字仍然注入 subagent 的 context(context7、serena 都進來了,含『先呼叫 initial_instructions』這類指示),即使那些工具本身不在工具集裡。已寫進 agents/devflow-adviser.md 提醒派工者。",
       "subagent 收到的環境說明裡寫著『Bash tool also available』,但在 tools: Read 的 subagent 裡這句是假的 —— 不要用那段環境說明判斷工具可用性。"
     ],
-    "still_not_tested": "透過真正的 marketplace 安裝流程(claude plugin marketplace add + install)之後在全新 session 裡叫這兩個型別。需要先發版重裝,故仍未測。"
+    "still_not_tested": "已封閉(見同層 install_path_2026_08_19)。原文保留:透過真正的 marketplace 安裝流程(claude plugin marketplace add + install)之後在全新 session 裡叫這兩個型別。"
+  },
+  "install_path_2026_08_19": {
+    "_what": "正式安裝那條路的實測紀錄。與上面兩輪的差別:上面走 --plugin-dir 當場臨時載入,這一輪走市集安裝。",
+    "load_source": {
+      "marketplace": "known_marketplaces.json → dev-flow.source = github rick546986/dev-flow, lastUpdated 2026-08-19T13:52:48Z",
+      "installed": "installed_plugins.json → dev-flow@dev-flow, version 3.9.0, installPath ~/.claude/plugins/cache/dev-flow/dev-flow/3.9.0",
+      "agents_present": [
+        "devflow-reviewer.md",
+        "devflow-adviser.md"
+      ],
+      "load_action": "/reload-plugins;harness 回報兩型別可用,名稱逐字帶 dev-flow: 命名空間",
+      "who_determined": "派工者(主對話)查安裝紀錄得出;被叫的 subagent 沒有 Bash,自己查不了載入來源,並主動如實回報這一點"
+    },
+    "invocations": [
+      {
+        "subagent_type": "dev-flow:devflow-reviewer",
+        "returned": "verdict: PASS",
+        "tools_actually_used": [
+          "Read"
+        ]
+      },
+      {
+        "subagent_type": "dev-flow:devflow-adviser",
+        "returned": "verdict: CONTINUE",
+        "tools_actually_used": [
+          "Read",
+          "advisor"
+        ],
+        "side_finding": "抓到 scripts/check-py-floor.sh 的成功訊息寫死宣告下限、沒報實際用到的版本(接受區間 3.9~3.11,只找到 3.11 時會宣稱驗過 3.9)。已修:訊息改報實際版本,版本不等於宣告下限時明講沒驗到。"
+      }
+    ],
+    "what_this_round_cannot_show": "逐字的拒絕訊息。兩支都回報 Bash/Edit/Write/Grep/Glob/Skill 根本不在工具清單裡,連呼叫都發不出去,所以產不出平台錯誤原文;上面 probe_B 那一輪才有。探針機制不同,結論相同(工具不可用)。",
+    "advisor_tool_source": "已查證:~/.claude/settings.json 有 \"advisorModel\": \"opus\",advisor 由帳號層設定注入,不是 Claude Code 的固定行為。"
   }
 }

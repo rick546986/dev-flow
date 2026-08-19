@@ -109,12 +109,23 @@ MIN_FILES = 40
 if checked < MIN_FILES:
     failures.append(f"⛔ 只驗了 {checked} 個檔(地板 {MIN_FILES})—— PATTERNS 被縮小或 repo 缺檔")
 
-print(f"=== Python 下限相容({PY_FLOOR[0]}.{PY_FLOOR[1]}):驗了 {checked} 個 .py ===")
+# ⚠️ 成功訊息一律報**實際用到的版本**,不准報 PY_FLOOR。
+# 起因(2026-08-19,由 dev-flow:devflow-adviser 唯讀複核抓到):接受區間是
+# PY_FLOOR ~ 3.11,但舊版訊息把 PY_FLOOR 寫死進 ✅ 那一行 —— 當下若只找到 3.11,
+# 實際上沒有任何東西驗過 3.9,而 gate log 抓走的通常就是 ✅ 那一行,於是
+# 「用 3.10+ 才有的語法」會照過、訊息卻宣稱 3.9 皆可解析。
+# 這正是本檔頂註在防的「沒驗到就說綠」,只是換了個地方發作。
+used = f"{floor_ver[0]}.{floor_ver[1]}"
+floor_s = f"{PY_FLOOR[0]}.{PY_FLOOR[1]}"
+gap = "" if floor_ver == PY_FLOOR else (
+    f";⚠️ 這一輪**沒有**真的驗到 {floor_s} —— 本機找不到那個版本,"
+    f"只驗到 {used}。{floor_s} 到 {used} 之間新增的語法不會被抓到")
+print(f"=== Python 下限相容(宣告下限 {floor_s},本輪實際用 {used}):驗了 {checked} 個 .py ===")
 if failures:
     print(f"❌ {len(failures)} 項不符:")
     for f in failures:
         print(f"   {f}")
     print("   修法:把值落成變數再進 f-string;或改 PY_FLOOR 並同步 README 環境需求段。")
     sys.exit(1)
-print(f"✅ {checked} 個 .py 在宣告下限 {PY_FLOOR[0]}.{PY_FLOOR[1]} 下皆可解析")
+print(f"✅ {checked} 個 .py 在 Python {used} 下皆可解析{gap}")
 PY

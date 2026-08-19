@@ -1,6 +1,6 @@
 ---
 name: devflow-reviewer
-description: dev-flow Stage 6/7 收驗用的唯讀審查者(role=reviewer,沿用 observability/schema/agent-event.schema.json 與 hooks/prompt-registry.json 既有的角色詞彙,不另造新詞)。負責對派工者(主對話)餵入的材料判 PASS/FAIL 並逐條列 finding,依 README.md §5 驗證五律與 skills/dev-run/SKILL.md 的收驗 seam 執行。由派工者在 dev-run 逐 T 收驗步驟、或 Stage 7 review 時,以 subagent_type=dev-flow:devflow-reviewer(帶 `dev-flow:` 命名空間的 plugin 型別字串;這個字串的證據強度與未測範圍見下方「型別字串」節,不要當成已完全驗證)明確派出 —— 不是被動觸發,派工者要主動點名這個型別。
+description: dev-flow Stage 6/7 收驗用的唯讀審查者(role=reviewer,沿用 observability/schema/agent-event.schema.json 與 hooks/prompt-registry.json 既有的角色詞彙,不另造新詞)。負責對派工者(主對話)餵入的材料判 PASS/FAIL 並逐條列 finding,依 README.md §5 驗證五律與 skills/dev-run/SKILL.md 的收驗 seam 執行。由派工者在 dev-run 逐 T 收驗步驟、或 Stage 7 review 時,以 subagent_type=dev-flow:devflow-reviewer(帶 `dev-flow:` 命名空間的 plugin 型別字串;臨時載入兩次、正式安裝一次都實測叫得出來,證據鏈與邊界見下方「型別字串」與「正式安裝那條路」兩節)明確派出 —— 不是被動觸發,派工者要主動點名這個型別。
 tools: Read
 model: sonnet
 ---
@@ -21,8 +21,9 @@ frontmatter `tools: Read` 是**允許清單**,不是提示或建議 —— 平�
 - 你**也沒有** Grep / Glob / Skill,以及採用專案裝的任何 MCP 工具(這些不是刻意額外
   拔掉,是 `tools: Read` 這張允許清單只列了 `Read` 的自然結果)。
   ⚠️ **清單可能不只 `Read` 一項**:2026-08-19 兩次獨立探針量到的都是兩項 ——
-  `Read` 加一個 `advisor`。**`advisor` 的來源沒有查證**,合理推測是那台機器的
-  帳號層設定注入的,**不是** Claude Code 的固定行為(乾淨機器上很可能只有 `Read`)。
+  `Read` 加一個 `advisor`。**來源已查證(2026-08-19 補)**:那台機器的帳號層設定檔
+  (`~/.claude/settings.json`)有 `"advisorModel": "opus"` 這一項,`advisor` 由它注入,
+  **不是** Claude Code 的固定行為 —— 沒有這項設定的機器上,清單只會有 `Read`。
   所以**不要寫成「工具集只有一項」**,也不要拿「數量等於 1」當任何檢查的判準。
   要斷言的是「Bash/Edit/Write/Grep/Glob/Skill 都不在裡面」—— 那句與環境無關。
   派工者要知道這個降級代價:如果你的審查需要「搜整個 repo 找某個字串」這種動作,
@@ -103,10 +104,36 @@ Error: No such tool available: Glob. Glob is disabled for this session, in subag
 **原始證據檔**:`scripts/fixtures/dispatch-guard/pst-real-payload.json`(攔到的原始輸入)、
 `scripts/fixtures/dispatch-guard/probe-3a-tools-readonly.json`(工具集實測)。
 
+### 正式安裝那條路:2026-08-19 已封閉
+
+**載入來源(由派工者查證,不是被叫的那支自己說的)**:
+
+| 查什麼 | 查到什麼 |
+|---|---|
+| 市集來源 | `~/.claude/plugins/known_marketplaces.json` → `dev-flow` 的 source 是 github `rick546986/dev-flow`,lastUpdated `2026-08-19T13:52:48Z` |
+| 安裝紀錄 | `~/.claude/plugins/installed_plugins.json` → `dev-flow@dev-flow`,version `3.9.0`,installPath `~/.claude/plugins/cache/dev-flow/dev-flow/3.9.0` |
+| 該目錄內容 | `agents/devflow-reviewer.md`、`agents/devflow-adviser.md` 兩支都在 |
+| 載入動作 | `/reload-plugins`,harness 回報兩個型別可用,名稱逐字帶 `dev-flow:` 命名空間 |
+
+**兩支都真的被叫起來並回話**(不是只出現在清單上):
+
+| 型別 | 這次派了什麼 | 回了什麼 | 實際用到的工具 |
+|---|---|---|---|
+| `dev-flow:devflow-reviewer` | 核對 `hooks/plainspeak-rules.md` 的注入區塊有沒有五個要點 | `verdict: PASS` + 逐點行號 | 只有 `Read` |
+| `dev-flow:devflow-adviser` | 判斷 `check-py-floor.sh` 的 fail-closed 是設計問題還是取捨 | `verdict: CONTINUE`,並**額外抓到一個真缺陷**(成功訊息寫死宣告下限、沒報實際用的版本 —— 已修) | `Read` 加 `advisor` |
+
+**這次拿不到、要如實記的一件事**:兩支都回報 `Bash`／`Edit`／`Write`／`Grep`／`Glob`／`Skill`
+**根本不在它們的工具清單裡**,連呼叫都發不出去,所以**本輪產不出逐字的拒絕訊息**。
+上一輪(臨時載入)是真的發出呼叫、拿到平台回的錯誤原文;**探針機制不同,結論相同**。
+不要把上一輪那三句錯誤原文說成本輪產生的。
+
+**被叫的那支自己驗不到的部分**:adviser 明確回報「我沒有 Bash,查不了 plugin 來源,
+所以無法判定本 session 是正式安裝還是臨時載入」—— 那個判定來自上表的安裝紀錄,由派工者做,
+不是它自己宣稱的。這是正確的分工,照實記。
+
 **還撐不到的地方(引用前先看)**:
 
-1. **正式安裝那條路仍然沒測過。** `--plugin-dir` 是當場臨時載入,跳過了
-   `claude plugin marketplace add` 加 `install` 那一層。發版重裝之後要再叫一次
-   才算真的封閉(2026-08-19 接手單第 2 件的後半)。
-2. **不要把本節改寫成更強的說法。** 例如「型別字串已完全驗證」「這能保證叫得出來」——
-   現有證據只到「在當場臨時載入這一種方式下,兩次獨立執行都叫出來了」。
+1. **不要把本節改寫成「這能保證叫得出來」。** 現有證據是「臨時載入兩次 + 正式安裝一次,
+   三次都叫出來了」,不是「任何環境都保證叫得出來」。換平台版本、換作業系統都要重測。
+2. **工具權限的證據強度分兩級**:「工具不在清單裡」兩支都實測過;
+   「呼叫被平台擋下的逐字訊息」只有上一輪的 adviser 有,本輪兩支都產不出。

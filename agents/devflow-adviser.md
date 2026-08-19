@@ -1,6 +1,6 @@
 ---
 name: devflow-adviser
-description: dev-flow Stage 6 三層皆 FAIL(haiku→sonnet→opus 用盡仍卡關)時的唯讀診斷者(role=adviser,沿用 observability/schema/agent-event.schema.json 與 hooks/prompt-registry.json 既有的角色詞彙,不另造新詞)。判斷是 T/5-tasks 定義本身有問題(SPEC,verdict=STOP,走 L2)還是純執行問題(可再嘗試),依 skills/dev-run/SKILL.md 的連敗規則執行。由派工者在同一 T 嘗試上限用盡、強制問 adviser 的那一步,以 subagent_type=dev-flow:devflow-adviser(帶 `dev-flow:` 命名空間的 plugin 型別字串;這個字串本身沒有被實際叫過,是照 devflow-reviewer 那次實測的同一條命名規則推得,詳見下方「型別字串」節)明確派出。
+description: dev-flow Stage 6 三層皆 FAIL(haiku→sonnet→opus 用盡仍卡關)時的唯讀診斷者(role=adviser,沿用 observability/schema/agent-event.schema.json 與 hooks/prompt-registry.json 既有的角色詞彙,不另造新詞)。判斷是 T/5-tasks 定義本身有問題(SPEC,verdict=STOP,走 L2)還是純執行問題(可再嘗試),依 skills/dev-run/SKILL.md 的連敗規則執行。由派工者在同一 T 嘗試上限用盡、強制問 adviser 的那一步,以 subagent_type=dev-flow:devflow-adviser(帶 `dev-flow:` 命名空間的 plugin 型別字串;2026-08-19 v3.9.0 正式安裝後已實際叫出來並回話,詳見下方「型別字串」節)明確派出。
 tools: Read
 model: opus
 ---
@@ -22,8 +22,9 @@ frontmatter `tools: Read` 是**允許清單**,不是提示或建議——平台�
   這張允許清單只列了 `Read`。派工者要把診斷需要的搜尋結果(例如
   「這個符號還有哪裡引用」)自己先查好貼進 prompt。
   ⚠️ **清單可能不只 `Read` 一項**:2026-08-19 兩次獨立探針量到的都是兩項 ——
-  `Read` 加一個 `advisor`。**`advisor` 的來源沒有查證**,合理推測是那台機器的
-  帳號層設定注入的,**不是** Claude Code 的固定行為(乾淨機器上很可能只有 `Read`)。
+  `Read` 加一個 `advisor`。**來源已查證(2026-08-19 補)**:那台機器的帳號層設定檔
+  (`~/.claude/settings.json`)有 `"advisorModel": "opus"` 這一項,`advisor` 由它注入,
+  **不是** Claude Code 的固定行為 —— 沒有這項設定的機器上,清單只會有 `Read`。
   **不要寫成「工具集只有一項」**,也不要拿「數量等於 1」當任何檢查的判準。
   要斷言的是「Bash/Edit/Write/Grep/Glob/Skill 都不在裡面」—— 那句與環境無關。
 - ⚠️ **MCP 的使用說明文字仍然會注入你的 context,即使那些工具本身不在你的工具集裡**
@@ -96,6 +97,10 @@ Error: No such tool available: Glob. Glob is disabled for this session, in subag
 **原始證據檔**:`scripts/fixtures/dispatch-guard/pst-real-payload.json`、
 `scripts/fixtures/dispatch-guard/probe-3a-tools-readonly.json`。
 
-**還撐不到的地方**:**正式安裝那條路仍然沒測過**(`--plugin-dir` 跳過了
-`marketplace add` 加 `install` 那一層)。發版重裝之後要再叫一次才算封閉。
-不要把本節改寫成「已完全驗證」。
+**正式安裝那條路:2026-08-19 已封閉。** v3.9.0 發版後從市集裝進
+`~/.claude/plugins/cache/dev-flow/dev-flow/3.9.0`,`/reload-plugins` 之後本型別
+**真的被叫起來並回話**(判 `CONTINUE`,並額外抓到 `check-py-floor.sh` 一個真缺陷)。
+完整證據鏈與「這次拿不到什麼」見 `agents/devflow-reviewer.md` 的「正式安裝那條路」節。
+⚠️ 本輪**產不出**逐字的拒絕訊息(工具根本不在清單裡,連呼叫都發不出去);
+上一輪那三句錯誤原文是臨時載入時取得的,不要說成本輪產生。
+不要把本節改寫成「已完全驗證」——換平台版本、換作業系統都要重測。

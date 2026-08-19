@@ -2225,9 +2225,12 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   <h3>agents/(唯讀具名 subagent 型別——role=reviewer / adviser)</h3>
   <p class="muted">兩者 frontmatter 皆 <code>tools: Read</code>(平台層允許清單,不是提示);
   不給 Bash/Edit/Write,也連帶沒有 Grep/Glob/Skill/MCP 工具。plugin 載入後型別字串帶
-  命名空間:<code>dev-flow:devflow-reviewer</code> 已在單次臨時載入下實測叫得出來,
-  <code>dev-flow:devflow-adviser</code> 沒有被叫過、是照同一條命名規則推的
-  (證據與三條邊界見 <code>agents/devflow-reviewer.md</code> 的「型別字串」節)。</p>
+  命名空間:<code>dev-flow:devflow-reviewer</code> 與 <code>dev-flow:devflow-adviser</code>
+  <strong>兩支都實測叫得出來</strong> —— 臨時載入兩次,加上 v3.9.0 從市集正式安裝之後再叫一次,
+  兩支都真的回話了。⚠️ 但那一輪<strong>產不出</strong>「呼叫被擋下」的逐字訊息:
+  那些工具根本不在它們的清單裡,連呼叫都發不出去(逐字訊息只有更早那一輪的
+  <code>devflow-adviser</code> 有)。證據鏈與邊界見
+  <code>agents/devflow-reviewer.md</code> 的「型別字串」與「正式安裝那條路」兩節。</p>
   <div class="tablewrap"><table>
     <tr><th>檔名</th><th>一句白話職責</th><th>誰呼叫它/掛在哪</th><th>生命週期格</th></tr>
     <tr><td><code>devflow-reviewer.md</code></td>
