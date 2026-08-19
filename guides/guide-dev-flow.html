@@ -2219,7 +2219,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   <h3>agents/(唯讀具名 subagent 型別——role=reviewer / adviser)</h3>
   <p class="muted">兩者 frontmatter 皆 <code>tools: Read</code>(平台層允許清單,不是提示);
   不給 Bash/Edit/Write,也連帶沒有 Grep/Glob/Skill/MCP 工具。plugin 載入後型別字串帶
-  命名空間,實測為 <code>dev-flow:devflow-reviewer</code> / <code>dev-flow:devflow-adviser</code>。</p>
+  命名空間:<code>dev-flow:devflow-reviewer</code> 已在單次臨時載入下實測叫得出來,
+  <code>dev-flow:devflow-adviser</code> 沒有被叫過、是照同一條命名規則推的
+  (證據與三條邊界見 <code>agents/devflow-reviewer.md</code> 的「型別字串」節)。</p>
   <div class="tablewrap"><table>
     <tr><th>檔名</th><th>一句白話職責</th><th>誰呼叫它/掛在哪</th><th>生命週期格</th></tr>
     <tr><td><code>devflow-reviewer.md</code></td>
