@@ -1,409 +1,438 @@
-# 派工單（草案）：把「派工／執行／審查」從叮嚀變成機制
+# 派工單（草案 v3）：把「派工／執行／審查」從叮嚀變成機制
 
-> **狀態：草案，尚未定案。** owner 會再往本檔加其他要優化的項目。
-> 末節「待裁決」全部有答案之後，本檔才算派工單，執行輪才可以動手。
+> **狀態：草案，已經過三隻 opus reviewer 審查 + 主線程裁決，設計已大幅收斂。**
+> 末節「待裁決」全部有答案之後才算派工單，執行輪才可以動手。
+>
+> **v3 相對 v2 變化很大**：三隻審查各自帶回阻斷級發現，原設計的 R1／R2 已**撤回**，
+> A 從三支具名型別縮成兩支，C 從「hook 寫 ledger」降級成「補強既有的事後稽核」。
+> 逐條處置見 §3 裁決表。v2 原案留在 git 歷史（`b32907c`），本檔不重述。
 >
 > 定案後的觸發句：
 > `讀 ~/dev/dev-flow/notes/dispatch-agent-dispatch-layer.md 照它跑，全程不打斷問人`
 >
-> **本檔寫給沒有前情的 session 看**：所有結論都附 `檔:行` 與實跑證據，
-> 不要求讀者先知道任何背景。看到「實查」兩個字就是主線程實際打開檔案看過的，
-> 不是推論。
+> **本檔寫給沒有前情的 session 看**：結論都附 `檔:行`。標「實查」= 有人實際打開檔案
+> 看過；標「未驗證」= 還沒有證據，不得當事實用。
 
 ---
 
-## 0. 名詞對照（先讀這節，後面全部用這套詞）
+## 0. 名詞對照（先讀這節）
 
 | 本檔用詞 | 指的是什麼 |
 |---|---|
-| **派工者** | 主對話本身（你）。負責讀規格、派人、收驗、commit、記帳。不寫碼 |
-| **執行者** | 被派出去寫程式的 subagent |
+| **派工者** | 主對話本身。讀規格、派人、收驗、commit、記帳。不寫碼 |
+| **執行者 / worker** | 被派出去寫程式的 subagent |
 | **reviewer** | 被派出去判 PASS/FAIL 的 subagent，唯讀 |
-| **adviser** | 三層都失敗時，被派出去診斷「是規格錯還是執行錯」的 subagent，唯讀 |
-| **具名型別** | Claude Code 原生機制：`agents/<name>.md` 定義一種 subagent，派工時用 `subagent_type: <name>` 叫它出來。被叫出來的 agent **只看得到那個 `.md` 的內容 + 你寫的 prompt**，主對話講過什麼一概看不到 |
-| **ledger／執行軌跡** | `.devflow/` 底下的事件流水帳。記「派了誰、開始了、審完了」 |
-| **自陳 vs 觀測** | 自陳＝派工者自己寫進 ledger 的；觀測＝hook 攔截到真實工具呼叫之後記下來的 |
-| **武裝中** | `.devflow/exec.json` 存在且 schema 認得，代表正在跑 Stage 6 的某個模組 |
+| **adviser** | 三層都失敗時診斷「是規格錯還是執行錯」的 subagent，唯讀 |
+| **具名型別** | Claude Code 原生機制：`agents/<name>.md` 定義一種 subagent，派工時用 `subagent_type` 叫它。被叫出來的 agent 只看得到那個 `.md` + 你寫的 prompt，主對話講過什麼一概看不到 |
+| **ledger／執行軌跡** | `.devflow/` 底下的事件流水帳 |
+| **自陳 vs 觀測** | 自陳＝派工者自己寫進 ledger；觀測＝hook 攔到真實工具呼叫後記下的 |
+| **武裝中** | `.devflow/exec.json` 存在。⚠️ 但「守衛認不認得它」另有條件，見 §2.1 |
+
+### 角色詞彙已經有兩本正本，**不要造第三本**
+
+| 正本 | 值 |
+|---|---|
+| `observability/schema/agent-event.schema.json:32` | `agent_role` enum = `["worker", "reviewer", "adviser", "verifier"]` |
+| `hooks/prompt-registry.json:3,24,45` | `stage6-adviser` / `stage6-reviewer` / `stage6-worker` |
+
+v2 曾提議把執行者命名為 `devflow-executor` —— **撤回**，一律沿用 `worker`。
+理由：`scripts/check-model-tiering.sh:140` 靠 `agent_role != "worker"` 過濾，
+誰日後為了對齊改成 executor，那支守衛的兩條紅線會**靜默死掉**（worker 事件變空 →
+零違規 → PASS）。這是第 7 型（不對稱記帳）的教科書復發形態。
 
 ---
 
-## 1. 這份要解決什麼
+## 1. 現況：規定只在文件裡，但**不是完全沒有機械面**
 
-dev-flow 現在規定「派工者不寫碼、執行者獨立、reviewer 要乾淨 context」，
-但**這些規定全部只是寫給主對話看的散文**，沒有任何機械強制。
-
-### 1.1 實查證據（2026-08-19）
+### 1.1 實查（2026-08-19）
 
 | 事實 | 證據 |
 |---|---|
-| dev-flow **沒有 `agents/` 目錄**，一支具名型別都沒有 | `find . -name "*.md" -path "*agents*"` 零命中 |
-| 職責分工只存在於文件 | `skills/dev-run/SKILL.md:30-33` 的職責表（散文） |
-| 唯一掛在 `Task\|Agent` 的 hook 只管一件窄事 | `hooks/_dispatch_impl.py:3-5`（檔頭自述「窄版」） |
-| ledger 的 `agent_dispatched` / `attempt_started` / `review_started` 全是**派工者自陳** | `_dispatch_impl.py` 只讀 ledger 不寫；`_exec_impl.py` 的 `stop` 分支不驗事件序 |
-| `gate-consistency` 只驗「文件都寫了同一套 reviewer 順序」，不驗實際做了沒 | `hooks/_gate_consistency_impl.py:223-244` |
+| dev-flow **沒有** `agents/` 目錄 | `ls agents` → No such file |
+| 職責分工只存在於散文 | `skills/dev-run/SKILL.md:30-33` |
+| 唯一掛在 `Task\|Agent` 的 hook 自稱「窄版」 | `hooks/_dispatch_impl.py:3` |
+| `gate-consistency` 只做文字 token 比對，不驗實際執行 | `hooks/_gate_consistency_impl.py:223-254` |
+| ledger 的 `agent_dispatched` / `attempt_started` 是**派工者自陳**；`stop` 不驗事件序 | `_exec_impl.py:421-442` |
 
-**後果**：派工者可以自己寫碼、自己判 PASS、再補三筆流水帳說「我派了執行者、也派了
-reviewer」—— 機械上不會有任何一支守衛紅。
+### 1.2 ⚠️ v2 說「機械上不會有任何一支守衛紅」—— **這句是錯的，已修正**
 
-### 1.2 對照組：harness-engineering 怎麼做
+`scripts/check-model-tiering.sh`（18KB，2026-08-17）**已經在做事後稽核**：從 ledger 掃
+`agent_role == "worker"` 的 `attempt_started`，釘兩條紅線（首派最高階、跳級），
+檔頭 `:11` 誠實寫明稽核邊界。
 
-路徑：`/Users/asheng/Documents/stork/Harness/harness-engineering-plugin/plugins/harness-engineering/agents/`
+**所以缺的不是「零守衛」，是「守衛看不到的地方太多」。** 這改變整份提案的定位：
+從「無中生有蓋一套」變成「補完既有機制的洞」。
 
-| agent | model | maxTurns | 禁再派 agent |
-|---|---|---|---|
-| `worker`（寫程式） | `claude-sonnet-5` | 150 | 是（`disallowedTools: Agent`） |
-| `reviewer`（唯讀審查） | `claude-opus-5` | 50 | 是 |
-| `advisor`（診斷卡關） | `claude-opus-5` | 30 | 是 |
-| `scaffolder` | `claude-sonnet-5` | 75 | 是 |
-| `coordinator`（跑主執行緒，不是 spawn 目標） | `claude-sonnet-5` | 50 | 否 |
+⚠️ 它內含**第二份寫死的分層表**：`check-model-tiering.sh:89-100` 的 `tier_of()`，
+三層（HAIKU / SONNET / TOP）。§5 的資料檔化必須同時改這裡，只改
+`_dispatch_impl.py` 就是又留一份會漂的副本。
 
-差別只有一句話：**它把角色寫成具名型別，dev-flow 只是在文件裡拜託主對話這麼做。**
+### 1.3 對照組：harness-engineering
 
-它還把身分綁在工具權限上（worker 只有 Read/Edit/Write/Bash；reviewer 唯讀），
-不是靠叮嚀。另有一節專講 context 節省
-（`lib/skill-base/coordinator-prompt.md:125`）：subagent 的輸出會回流進派工者
-context，連派幾隻就會撞壓縮，所以要求每個派工 prompt 結尾都附回報長度約束。
+路徑 `/Users/asheng/Documents/stork/Harness/harness-engineering-plugin/plugins/harness-engineering/`
 
----
-
-## 2. ⚠️ 驗證結果：「加組內順序」**不能**保證被遵守
-
-> owner 問：加了組內順序（由便宜到貴、依序取）之後，是不是就保證實作會照做？
-> **答案是不會。** 這節是實查之後的答覆，下面每一條都指得到行號。
-
-### 2.1 唯一看得到派工的 hook，在判斷之前有六個早退
-
-`hooks/_dispatch_impl.py:115-147`，依序：
-
-| # | 條件 | 行 | 後果 |
-|---|---|---|---|
-| 1 | 工具不是 `Task`/`Agent` | `:120` | 放行 |
-| 2 | `tool_input` 不是 dict | `:123` | 放行 |
-| 3 | **`model` 缺席或非字串 → 放行** | `:125-127` | 見 2.2 |
-| 4 | **`model` 不含 `opus`/`fable` → 放行** | `:129-130` | 「實作組該用 haiku 卻用了 sonnet」它**根本不看** |
-| 5 | 未武裝／`exec.json` 讀不到／schema 不認得 | `:132-141` | 放行 |
-| 6 | **本 run 已出現過任何低階 attempt → 放行** | `:144-145` | 見 2.3 |
-
-它唯一會擋的情境：**武裝中 + 顯式帶了 opus/fable + 這個 run 從沒出現過 haiku/sonnet**。
-其餘一律通過。它從頭到尾**沒有讀過任何順序**，因為現在根本沒有順序這個概念。
-
-### 2.2 第 3 個早退實務上永遠命中 —— 守衛幾乎是 no-op
-
-`skills/dev-run/SKILL.md:69-76` 的派工三件套，**從沒要求把 `model` 帶給 Task 工具**。
-它只要求把 model **寫進 ledger 事件**（`attempt_started(attempt_id / agent_role /
-model / prompt / base_sha)`）—— 那是自陳，不是工具參數。
-
-所以正常操作下 `tool_input.model` 是缺席的 → 第 3 個早退命中 → **這支守衛平常等於沒裝**。
-
-### 2.3 第 6 個早退讓「跑過一次 haiku 之後全程不設防」
-
-`_scan_low_tier_attempt()` 一旦在 ledger 掃到任何一筆 haiku/sonnet 的 `attempt_started`
-就回 True → 放行。也就是說：**這個 run 只要跑過一次低階，之後派幾次 opus 都不會被擋。**
-
-### 2.4 結論
-
-「組內順序」是**資料**，資料不會自己執行自己。要讓它被遵守，必須同時做到下面四件事。
+⚠️ **`agents/*.md` 那張表是歷史參考檔，不是 live dispatch 契約**
+（`agents/README.md:137`、`team-composition.md:19-22` 明寫「可用工具欄位是 derived
+view，非真值」；`worker.md` 自列為「不可 dispatch 的 runtime target」）。
+照那張表推論設計＝照廢契約設計。真正的契約在
+`lib/contracts/subagent-frontmatter-rules.md`，見 §2.2。
 
 ---
 
-## 3. 什麼樣的設計才真的保證得了（本檔的核心提案）
+## 2. 三個阻斷級事實（審查帶回來的，動工前必讀）
 
-### 3.1 讓「不做選擇」就是正確答案
+### 2.1 🔴 守衛在**最常見的 sequential 模式**整支失效
 
-把 model 寫進 `agents/*.md` 的 frontmatter，值 = **該組第一順位**。
+`_dispatch_impl.py:140-141`：`state.get("schema") not in EXEC_SCHEMAS` → 放行。
+`EXEC_SCHEMAS = ("exec-v2", "exec-v3")`（`:37`）。
 
-- 派工者**不帶 model** → 用 agent 定義的預設 → 天然就是第一順位 → 正確。
-- 升階時才顯式帶 `model` 覆寫。Claude Code 的 Agent 工具契約明文支援：
-  `model` 參數「Takes precedence over the agent definition's model frontmatter」。
+實查四條武裝路徑，**只有一條寫 `schema`**：
 
-這一步把「遵守」從「記得照做」變成「什麼都不做就是對的」。
-
-### 3.2 四條新規則（都在 PreToolUse 可判定）
-
-hook 在 `Task|Agent` 的 PreToolUse 拿得到 `tool_input.subagent_type` 與
-`tool_input.model`，也讀得到 ledger。所以下面四條全部可機械判定：
-
-| 規則 | 內容 | 為什麼需要 |
+| 路徑 | 寫出的 exec.json | 有 schema？ |
 |---|---|---|
-| **R1** | 武裝中的 Task 呼叫**必須**帶 `subagent_type` ∈ {executor, reviewer, adviser}，否則擋 | 沒有型別，hook 不知道這件工作該屬哪一組 |
-| **R2** | 若顯式帶了 `model`，必須落在該 `subagent_type` 對應的組 | 防「reviewer 卻指名實作組模型」 |
-| **R3** | model 不是該組第一順位時，ledger 必須找得到**前一順位在同一個 T 上的失敗紀錄**，否則擋 | 這就是「組內順序」真正被執行的地方 |
-| **R4** | **移除或收窄 2.3 那個早退**（本 run 有低階 attempt 就全放行） | 不改的話 R2/R3 一輩子跑不到 |
+| `start <slug> --task T-n`（parallel） | `_exec_impl.py:389-400` | ✅ `exec-v3` + `run_id` |
+| legacy sequential start | `:323-328` | ❌ 無 |
+| VNext feature-scope start | `:352-359` | ❌ 無 |
+| Stage 7 `review` 自建 | `:977-983` | ❌ 無 |
 
-R4 是關鍵：現行早退的目的是「允許合法升階」，但它的做法是**整個 run 從此不設防**。
-改成「逐 T 判定」即可：升階要看的是「同一個 T 前一順位失敗過沒有」，不是「整個 run
-有沒有出現過低階」。
+**後果**：sequential（預設、最常用的那條路）全程不設防。而且 exec-v3 那份住在 task
+worktree，派工者坐在 integration／主樹，hook 的 `ROOT` 取 session cwd —— parallel 的
+派工者也讀不到。
 
-### 3.3 fail-open 邊界不變
+**這件事比整份提案都優先**：不修它，A／B／C 全部落地即 no-op，犯的正是本提案在指責
+的那個病。修法見 §7。
 
-未武裝、schema 不認得、`model-tiers.json` 讀不到 → **一律放行**。
-守衛不得因為自己讀不到設定就擋人派工（這是本 repo 既有慣例，`_dispatch_impl.py:9`
-檔頭已寫明「fail-OPEN by design」）。R1 的「必須帶 subagent_type」只在**武裝中**生效。
+### 2.2 🔴 plugin 出貨的 subagent **拿不到 Bash**
+
+`harness .../lib/contracts/subagent-frontmatter-rules.md:7-13`、實測表 `:19-26`：
+
+| subagent 型別 | frontmatter 宣告 | 實測 Bash | 實測 Agent |
+|---|---|---|---|
+| plugin 出貨的 worker/reviewer/advisor | `Bash(pattern)` 22 條 | ❌ tool not available | ❌ ABSENT |
+| 同上 | **裸 `Bash`** | ❌ ABSENT | ❌ ABSENT |
+| `general-purpose`（第一方） | `*` | ✅ 全 SUCCESS | ❌ ABSENT |
+| `claude-code-guide`（內建） | 裸 `Bash` | ✅ | — |
+
+三條衍生規則（同檔 Rule 1–4）：
+
+1. **兩種寫法都無效**。v2 寫「只有裸 Bash 有效」是引到 `worker.md:9-13` 那則已被同
+   repo 契約檔推翻的舊註解 —— 已更正。
+2. **`Agent` 工具對所有 subagent 全域 block**，寫不寫 `disallowedTools: [Agent]` 一樣。
+   v2 說「不寫層級會塌掉」是空頭支票 —— 已更正為「doc signal」。
+3. **`disallowedTools` 裡的 `Bash(pattern)` 不 enforce**，真正的 deny 在
+   `.claude/settings.json` 的 `permissions.deny`。任何安全保證都要假設那些條目 inert。
+
+**這對 executor 是壞消息，對 reviewer／adviser 是好消息** —— 本輪最關鍵的裁決依據：
+
+- executor 要跑測試 → 需要 Bash → **只能用 `general-purpose`**，不能是具名型別。
+- reviewer／adviser 本來就該唯讀 → **plugin 具名型別天生沒有 Bash，正好就是真唯讀**，
+  而且是平台層強制，比任何 prompt 叮嚀都硬。
+
+⚠️ **probe 日期是 2026-05-19，今天 08-19，平台行為可能已變。**
+契約檔 `:28` 自附複現法。執行輪的**第 0 步**就是重跑（§7-3）。
+
+### 2.3 🟠 `_scan_low_tier_attempt()` 只看「起過」不看「失敗過」
+
+`_dispatch_impl.py:69-73`：掃到任何一筆 `attempt_started` 且 model 含 haiku/sonnet
+就 `return True` → 放行。
+
+v2 說它「讓整個 run 不設防」—— **範圍描述不精確**：`run_id` 只在 `--task` 分支生成
+（`_exec_impl.py:389`），一個 run 目錄實際上只裝一個 T 的 attempts。
+
+真正的缺陷是**判準**：一筆**成功**的 haiku attempt 也會永久放行後續的 opus。
+升階的前提應該是「前一順位**失敗**過」，不是「前一順位起過」。修法見 §6.2。
 
 ---
 
-## 4. A〔高〕建 `agents/`，把三個角色變成具名型別
+## 3. 裁決表（主線程對三隻審查的逐條處置）
 
-### 4.1 要建的三支
-
-harness 的 `scaffolder` 在 dev-flow 沒有對應角色；`coordinator` 對應主對話本身，
-不需要具名型別。所以是三支：
-
-| 檔案 | 角色 | 對應現況 |
+| v2 的提案 | 裁決 | 理由（附證據） |
 |---|---|---|
-| `agents/devflow-executor.md` | 寫碼、跑 Verify、貼 RED/GREEN 原文 | `dev-run/SKILL.md:30` 的「執行者(fresh subagent)」 |
-| `agents/devflow-reviewer.md` | 依共用 acceptance seam 判 PASS/FAIL，唯讀 | 同上 `:31` 的「reviewer(fresh sonnet)」 |
-| `agents/devflow-adviser.md` | 三層皆 FAIL 時診斷是 T 定義問題還是執行問題，唯讀 | 同上 `:51` 的 adviser |
-
-frontmatter 至少要有：`name` / `description` / `model` / `maxTurns` /
-`allowedTools` / `disallowedTools`。
-
-**三支都要 `disallowedTools: [Agent]`** —— 執行者與 reviewer 不得再往下派，
-否則層級會塌掉（harness 五支裡有四支這樣釘，只有 coordinator 例外）。
-
-**reviewer 與 adviser 必須唯讀**：禁 Edit/Write，禁 `git commit`／`push`／`reset`
-類命令。這是「派工者禁親修」（README §5 驗證五律 2）第一次有機械後盾。
-
-⚠️ harness 的經驗（`agents/worker.md:9-13` 註解）：**平台會把 subagent frontmatter 裡
-`Bash(pattern)` 這種帶括號的寫法吃掉**，只有裸 `Bash` 有效；真正的 deny 要靠
-`.claude/settings.json` 的 permissions。dev-flow 抄的時候別重踩，
-`disallowedTools` 裡的 `Bash(...)` 只能當文件訊號，不能當強制力。
-
-### 4.2 連帶要改
-
-1. `skills/dev-run/SKILL.md:30-33`、`:69-76`、`:77`：職責表與派工三件套從
-   「派 fresh subagent」改成「用 `subagent_type: devflow-executor` 派」，明寫型別名；
-   並補一句「**不要帶 model**，除非是升階（見 R3）」。
-2. `.claude-plugin/plugin.json`：確認 `agents/` 會被 plugin 載入（沒載入 = 型別叫不出來）。
-   **這一步要實測**：安裝後在別的專案打得出 `subagent_type: devflow-executor` 才算數。
-3. 記帳面（第 7 型「不對稱記帳」）：`agents/` 是新的一組列舉對象 ——
-   - `docs/PLUGIN.md` 現有 hooks 表與 skills 表，要加 agents 表；
-   - `scripts/check-hooks-accounting.sh` 已有「skills 目錄 vs PLUGIN.md」的對帳
-     （見該檔 ②' 節），照同一個模式加「agents 目錄 vs PLUGIN.md」；
-   - `scripts/check-file-map.sh` 的 `EXPECTED_MAPPED_FILES`（現值 78）與檔案地圖節
-     要不要納 `agents/*.md`，見待裁決 3。
+| A：建 executor / reviewer / adviser **三支**具名型別 | **部分採納 → 只建 reviewer / adviser 兩支** | §2.2：executor 需要 Bash，具名型別拿不到 |
+| §3.1「model 寫進 frontmatter，不帶 model 就天然是第一順位」 | **撤回** | `general-purpose` 無定義 model → 依工具契約繼承母層（主對話＝opus）→「什麼都不做」拿到的是**思考組**，跟意圖相反。harness v6.5 也已放棄 frontmatter model pin（`subagent-frontmatter-rules.md:55-59`） |
+| **R1**「武裝中必須帶 `subagent_type` ∈ 白名單，否則擋」 | **撤回** | ①executor 只能是 `general-purpose`，白名單擋掉唯一可行解 ②會擋掉武裝中一切無關派工（`/code-review`、Explore、查資料），直接推翻 `_dispatch_impl.py:9-12` 的明文承諾「非 dev-flow 用途的一般 Task/Agent 呼叫必須不受影響」 ③fail-closed 押在未證實的欄位名（`subagent_type` vs `agent_type`，plugin 型別還可能帶命名空間），欄位一改名武裝中每一次派工都被擋 |
+| **R2**「model 必須落在該型別對應的組」 | **撤回** | 死鎖：executor ↦ 實作組 `{haiku, sonnet}`，但 `README.md:394` 與 `dev-run/SKILL.md:89` 都釘死「同 T 上限 4 = haiku 1 + sonnet 2 + **opus 1**」。第 4 次嘗試會被 R2 擋掉，而五律 5 又要求用滿 4 次才准問 adviser → 該 T 永久卡死 |
+| **R3**「跳順位須有前一順位失敗紀錄」 | **改成事後稽核** | 它讀的是自陳 ledger，補一筆假 FAIL 就繞過。`_dispatch_impl.py:14-18` 已明文界定信任邊界「防手滑與紀律漂移，**不防蓄意偽造**」。作為攔阻規則不成立，作為稽核判準正確 → 併進 §6.2 |
+| **R4**「收窄 run 級早退」 | **採納但理由重寫** | 原理由（run vs T 範圍）是修一個不存在的缺陷（§2.3）。該改的是判準：從「起過」改成「失敗過」 |
+| **C**：hook 寫 `dispatch_observed` 進 ledger | **降級** | ①sequential 無 `run_id`，而 envelope `required` 含 `run_id` → hook 產不出合法事件 ②`_obs_impl.py:294` 按 `attempt_id` 路由落盤，PreToolUse 不知道 attempt_id ③schema 政策禁的正是 hook 做歸屬推測，`x_` 前綴只解決欄位名沒解決歸屬 ④§6.3 那張表用「防偽造」語氣賣它，超出既有信任邊界 |
+| C 的 `stop` 對帳不符就「拒絕收尾」 | **撤回** | `stop` 是三處文件指定的唯一復原動作（`_exec_impl.py:449,473`、`README.md:294`）。一次 hook 寫入失敗（唯讀 FS、換 worktree、關掉 plugin）就永久造成計數不符 → stop 拒絕 → exec.json 留著 → devflow-guard 繼續武裝 → 想手動清又被 `_prebash_impl.py:65` 擋掉 `rm .devflow/` → **變磚** |
+| B：分層改資料檔 + 組內順序 | **採納，但消費端是兩處不是一處** | v2 只點名 `_dispatch_impl.py:42-43`，漏掉 `check-model-tiering.sh:89-100` 的第二份 `tier_of()` |
+| §5.5 T review 一律升思考組 | **保留 owner 裁決，但要補說明** | 成本實算 **1.67x**（opus/sonnet 輸出單價 25/15），只作用在 review 段，不是「幾倍」。但 `dev-run/SKILL.md:50` **本來就有風險分級**（「高風險或爭議時由 opus 作第二 reviewer」）→ 依 `README.md:299-304`（不對稱保護）必須說明「原本的分級為什麼不夠」，否則是無理由的擴大 |
 
 ---
 
-## 5. B〔高〕模型分層改成「思考／實作」兩組 + 組內順序
+## 4. A′〔高〕只建兩支具名型別：reviewer / adviser
 
-### 5.1 這個分類為什麼是對的（不是新發明）
+### 4.1 為什麼是兩支不是三支
 
-owner 提的兩分法**已經是現況的機械形態**，只是被寫死在程式碼裡：
+見 §2.2。executor 需要 Bash → 只能 `general-purpose` + prompt 帶 role 規範
+（harness v6.5 的做法：prompt 內指示去讀 role 檔取規範）。
+
+### 4.2 這兩支買到什麼（整份提案唯一買得到、事後稽核買不到的東西）
+
+**工具權限**。reviewer／adviser 用 `allowedTools: [Read]`，**完全不給 Bash / Edit /
+Write**。這是「派工者禁親修」（`README.md` §5 驗證五律 2）第一次有平台層後盾 ——
+不是叮嚀，是它根本沒有那個工具。
+
+⚠️ 對應改法：reviewer 需要的 `git diff` 由**派工者先跑好、當成 prompt 內容餵進去**
+（harness `reviewer.md:50` 就是這樣）。
+
+⚠️ 降級代價要寫進文件：`allowedTools` 白名單會同時失去 Grep / Glob / Skill 與採用專案
+的 MCP 工具。reviewer 只能看派工者餵的材料 —— 這正好符合「不給執行者結論、只看產物」
+的既有規定（`dev-run/SKILL.md:77`），但要明講。
+
+### 4.3 命名
+
+`agents/devflow-reviewer.md`、`agents/devflow-adviser.md`。
+**role 值一律沿用 `reviewer` / `adviser`**（§0 的兩本正本），不要用新詞。
+
+### 4.4 連帶要改（比 v2 多兩處）
+
+1. `skills/dev-run/SKILL.md:77`：reviewer 改成用 `subagent_type` 派，明寫型別名。
+2. `.claude-plugin/plugin.json`：確認 `agents/` 被 plugin 載入。**要實測**：
+   安裝後在別的專案叫得出來才算數；並且**記下實際型別字串長什麼樣**（帶不帶
+   `dev-flow:` 命名空間）—— 這決定未來任何以型別為判準的檢查寫不寫得對。
+3. `docs/PLUGIN.md:47-53`：那是**一張** `| 目錄 | 用途 |` 表，hooks 與 skills 各佔一列
+   （`:49`、`:50`）。加 agents 是**加第三列**，不是加一張表。
+4. `scripts/check-hooks-accounting.sh:131-135`：已有「skills 目錄 vs PLUGIN.md」對帳，
+   照同一模式加 agents。
+5. `scripts/check-file-map.sh`：`PATTERNS`（`:58-63`）目前**完全不含 `.md`**，
+   `agents/*.md` 要納入必列檔得先加 pattern。現值 `EXPECTED_MAPPED_FILES = 80`
+   （`:107`，實跑 `scanned=80`），並被 `test-architecture-guards.sh:1542` 逐字釘。
+   要不要納入見待裁決 3。
+
+---
+
+## 5. B〔高〕分層改成「思考／實作」兩組 + 組內順序
+
+### 5.1 分類本身是對的（不是新發明）
+
+現況已經是兩分法，只是寫死在程式碼裡：
 
 ```python
 # hooks/_dispatch_impl.py:42-43
-TOP_TIER_MARKERS = ("opus", "fable")      # ← 這就是「思考」
-LOW_TIER_MARKERS = ("haiku", "sonnet")    # ← 這就是「實作」
+TOP_TIER_MARKERS = ("opus", "fable")      # ← 思考
+LOW_TIER_MARKERS = ("haiku", "sonnet")    # ← 實作
 ```
 
-harness 獨立演化出同一個切法（worker=sonnet 實作、reviewer/advisor=opus 思考）。
-兩套系統收斂到同一條線。
+harness 獨立演化出同一個切法（worker=sonnet、reviewer/advisor=opus）。
+跟鐵律 3 不衝突：三個角色收成兩組，組內用順序保留 haiku→sonnet 的先後。
 
-跟鐵律 3（`~/.claude/rules/ironlaws.md`：haiku 機械活、sonnet 分析實作、
-opus 只做最終判斷）**不衝突**：三個角色收成兩組，組內用順序保留 haiku→sonnet 的先後。
+### 5.2 規則三句
 
-### 5.2 規則三句話
-
-1. 一件工作只選**組**（思考／實作），不指定某個模型。
-2. 組內**由前往後**取，順序 = 由便宜到貴。第一順位就是這組的預設。
+1. 一件工作只選**組**，不指定某個模型。
+2. 組內**由前往後**取，順序 = 由便宜到貴；第一順位是預設。
 3. **升階 = 組內往後走**；組內走完才跨組。跨到「思考」= 現行的「升 opus」。
 
 ### 5.3 資料檔
 
-新增 `model-tiers.json`（位置見待裁決 2）。存**比對字串**不是完整模型 id ——
-完整 id 帶日期後綴（`claude-opus-5-20260601`），寫死會漂：
+`model-tiers.json`（位置見待裁決 2）。存**比對字串**不是完整 id
+（完整 id 帶日期後綴會漂；現行 `_has_marker` 就是 substring 比對）：
 
 ```jsonc
 {
   "schema": 1,
   "tiers": {
-    "build": ["haiku", "sonnet"],     // 實作:寫碼、跑測試、機械活。由便宜到貴
-    "think": ["opus", "fable"]        // 思考:審查、裁決、診斷。由便宜到貴
+    "build": ["haiku", "sonnet"],     // 實作。由便宜到貴
+    "think": ["opus", "fable"]        // 思考。由便宜到貴
   }
 }
 ```
 
-加 deepseek 就是往清單插字串（例：`build` 加 `"deepseek-chat"`、
-`think` 加 `"deepseek-reasoner"`），**不動任何程式碼**。剔除同理。
+加 deepseek 就是插字串，不動程式碼。
+⚠️ 字串要夠獨特，別放 `"chat"` 這種會誤命中的詞。
+⚠️ 「思考組 opus 排在 fable 前面＝由便宜到貴」目前**未驗證**，定案前查一次實際價位。
 
-⚠️ 比對用 substring：`"opus" in model.lower()`，這是現行做法
-（`_dispatch_impl.py:46-48` 的 `_has_marker`），為的就是吃得下日期後綴。
-代價是字串要夠獨特，別放 `"chat"` 這種會誤命中的詞。
+### 5.4 兩個消費端都要改（v2 只寫了一個）
 
-### 5.4 哪些工作派哪一組（這張表要進 `dev-run/SKILL.md`）
+| 檔案 | 現在寫死什麼 |
+|---|---|
+| `hooks/_dispatch_impl.py:42-43` | 兩層 marker tuple |
+| `scripts/check-model-tiering.sh:89-100` | `tier_of()`，**三層**（HAIKU/SONNET/TOP） |
 
-| 工作 | 組 | 理由 |
+兩處都改成讀 `model-tiers.json`；讀不到／解析失敗 → **fail-open**（維持現行行為）。
+⚠️ `tier_of()` 是三層，它的兩條紅線依賴三層區分（跳級＝haiku 直接跳 TOP）。
+改成「兩組＋組內順位」之後，「跳級」的定義要改寫成「跳過組內前面的順位」，
+這是行為變更，要配破壞實驗。
+
+### 5.5 哪些工作派哪一組
+
+| 工作 | 組 |
+|---|---|
+| 寫碼、改檔、跑測試、批次替換、機械搜尋 | 實作 |
+| T review 判 PASS/FAIL | 思考（owner 已裁決，見下） |
+| adviser 診斷、G1/G2/G3 裁決、派工者本身 | 思考 |
+
+**owner 2026-08-19 裁決：T review 照 harness 走，屬思考組、首選 opus。**
+
+⚠️ 落地前要補一段說明：`dev-run/SKILL.md:50` 現行是**風險分級**（「高風險或爭議時由
+opus 作第二 reviewer」），改成一律升級是擴大保護範圍，`README.md:299-304`
+（不對稱保護那條制度要求）要求同一個 commit 說明「原本的分級為什麼不夠」。
+成本實算 1.67x（只作用在 review 段）。
+
+連帶要改的**兩份**（v2 只寫一份）：`skills/dev-run/SKILL.md:50` 與 `:88-89`，
+以及 **`README.md:394`** ——「同 T 總嘗試上限 = 4(haiku 1 + sonnet 2 + opus 1)」
+這句**兩個檔都有**。
+
+### 5.6 ⚠️「任何文件都不准再列模型名」這條先不要寫進 README
+
+v2 提過這條。實查發現 `README.md:394`、`:713`、`:729-740`、`:735-736`、`:739`、`:757`
+是**完整的七階段 × 模型對照表**，`guides/guide-dev-flow.html` 的模型名還是
+**CSS token**（`:10-21`、`:44-46`、`:94-105` 的 `--opus/--sonnet/--haiku`）與
+**SVG 節點文字**（`:174-178`），`check-methodology-corrections.sh:234` 另有負向禁字
+`"fresh-contextrevieweragent(opus"`。
+
+一條「不准列模型名」會**當場讓一堆既有內容違規**。改成：
+「**新增**的機械判準不得寫死模型名，一律讀 `model-tiers.json`；既有敘述性文件不受限」。
+
+---
+
+## 6. C′〔中〕不寫新事件，改為補強既有的事後稽核
+
+v2 的 `dispatch_observed` 撤回（理由見 §3）。改成三件小事，加起來抓到的東西差不多，
+但零新增擋人規則、零 schema 變更、零復原路徑風險。
+
+### 6.1 `check-model-tiering.sh` 真實模式補一行地板
+
+它的自測模式已有同型地板，**真實模式沒有**：`worker-tasks == 0` 時只印數字不斷言 →
+ledger 是空的也會 PASS。補 `worker-tasks == 0 → exit 2`（比照
+`check-integration-regression-guard.sh` 的 `MIN_CHECKS` 慣例）。
+
+### 6.2 修 `_scan_low_tier_attempt()` 的判準
+
+`_dispatch_impl.py:69-73`：從「掃到 `attempt_started` 就放行」改成
+「前一順位要有**失敗**事件（`attempt_completed` 且帶 `result`/`failure_category`）」。
+
+⚠️ 這是行為變更，會反轉既有 pinned 測試，見 §6.4。
+
+### 6.3 誠實寫明信任邊界
+
+任何新文件都不得暗示這套防得住蓄意偽造。`_dispatch_impl.py:14-18` 已寫死
+「防手滑與紀律漂移，不防蓄意偽造」，新增內容沿用同一句，不得升級措辭。
+
+### 6.4 ⚠️ 會撞到的既有測試（v2 完全沒提測試檔）
+
+| 位置 | 內容 | 會怎樣 |
 |---|---|---|
-| 寫碼、改檔、跑測試、批次替換、機械搜尋 | **實作** | 產出責任，對錯有機械判準（測試綠不綠） |
-| T review 判 PASS/FAIL | **思考** | 判斷責任，錯了整條線都髒 |
-| 三層皆 FAIL 的診斷（adviser） | **思考** | 要判斷「是規格錯還是執行錯」 |
-| G1/G2/G3 gate 裁決 | **思考** | 同上 |
-| 派工者本身（主對話） | **思考** | 現況即如此 |
-
-### 5.5 ✅ 已裁決：T review 照 harness 走
-
-`dev-run/SKILL.md:50` 現在寫 T review 用 **fresh sonnet**，但 sonnet 在新分類裡
-屬於「實作」組。
-
-**owner 2026-08-19 裁決：照 harness 的規則走 —— reviewer 屬「思考」組，首選 opus。**
-成本上升是已知且接受的（harness 的 reviewer 正是 `claude-opus-5`）。
-
-連帶要改：`dev-run/SKILL.md:50` 的「**sonnet**(fresh context)」與 `:82` 的
-「同 T 總嘗試上限 4(haiku 1+sonnet 2+opus 1)」要一起重寫成用「組 + 順位」表達，
-不再寫死模型名。
-
-### 5.6 連帶要改
-
-- `hooks/_dispatch_impl.py:42-43`：兩個寫死的 tuple 改成讀 `model-tiers.json`；
-  讀不到／解析失敗 → **fail-open**。
-- **任何文件都不准再列模型名**，一律指向 `model-tiers.json` ——
-  否則就是又生一份會漂的清單（第 7 型）。這條要寫進 README §7。
-- 鐵律 3 的措辭在帳號層（`~/.claude/rules/ironlaws.md`、
-  `doctrine/01-model-dispatch.md` §3），不在本 repo，見待裁決 4。
+| `hooks/selftest.sh:2006-2057` | dispatch-guard 的 PX 群組八條斷言，payload 是 `{"tool_name":"Agent","tool_input":{"model":"opus"}}`（**無 subagent_type**） | `:2022`「px 已有 haiku attempt → 首派 opus 視為合法升階，放行」正是 §6.2 要改的行為 → 會紅 |
+| `hooks/selftest.sh` F4（`:2061-2069`） | 釘豁免卡 fail-open | 動豁免邏輯就會咬 |
+| `test-architecture-guards.sh:1536` | `MIN_CASES = 378` 靜態釘 | 增刪 selftest 案例要同步 |
 
 ---
 
-## 6. C〔中〕`dispatch_observed` 對帳：把自陳變成可查核的事實
+## 7. 前置修復〔阻斷〕：先讓守衛看得到 sequential
 
-**必須排在 A 之後。** 沒有具名型別，觀測只能記到「派了一隻不知道是誰的 agent」，
-抓不到「實作與審查是不是同一隻」。
+**這節排在 A′／B／C′ 之前。** 不修，後面全部是 no-op。
 
-### 6.1 改三個地方
-
-| # | 檔案 | 改什麼 | 量 |
-|---|---|---|---|
-| 1 | `hooks/_dispatch_impl.py` | 每看到一次**真的**發出的派工呼叫，往 ledger 寫一筆 `dispatch_observed`。它現在只讀不寫，要新增寫入路徑 | ~30 行 |
-| 2 | `observability/schema/agent-event.schema.json` | 新事件型別入 schema，否則事件驗證會擋掉 | 小 |
-| 3 | `hooks/_exec_impl.py` 的 `stop` 分支 | 收尾時比對「自陳的 `agent_dispatched`」vs「觀測到的 `dispatch_observed`」，數量或型別對不上 → 拒絕收尾 | ~50 行 |
-
-### 6.2 ⚠️ schema 有一條會擋路的規則（實查，設計前必讀）
-
-`observability/schema/agent-event.schema.json:10`：
-
-```json
-"hook_forbidden_fields": ["agent_role", "prompt", "model"]
-```
-
-執行者是 `observability/devflow_obs/event_validate.py:248-254`，
-錯誤訊息寫著「hooks 不得**推測** Agent Role / Prompt / model（七節）；
-歸屬由 Coordinator 在 derive 時關聯」。
-
-也就是說：**`writer: "hook"` 的事件不准帶 `model` 或 `agent_role` 這兩個欄位名。**
-`dispatch_observed` 若照直覺寫 `{"model": "...", "agent_role": "..."}` 會被驗證擋下。
-
-**解法（不必改政策）**：同一支 validator 允許 `x_` 前綴的擴充欄位
-（`:240` 註解「擴充欄位:只受隱私掃描約束」、`:242` 錯誤訊息「擴充請用 x_ 前綴」）。
-所以用 `x_observed_model` / `x_observed_subagent_type`。
-
-這也**符合原本的立法意旨**：禁的是 hook「推測」，而 `x_observed_*` 記的是
-hook 從 `tool_input` **literally 看到的字串**，不是推測。
-
-### 6.3 對帳抓得到什麼
-
-| 情況 | 現在 | 改完 |
-|---|---|---|
-| 派工者自己寫碼，卻記「派了執行者」 | 沒人管 | 紅：自陳 1、觀測 0 |
-| 跳過送審直接補一筆 PASS | 沒人管 | 紅：自陳有 review、觀測無對應派工 |
-| 實作與審查是同一次呼叫（沒換 agent） | 沒人管 | 紅：觀測 1 次、自陳 2 次 |
-| 派工者偷偷自己修（違反禁親修） | 沒人管 | 部分：重派的觀測筆數會少 |
-
-### 6.4 三個代價（要寫進實作註解）
-
-1. **hook 從「只讀」變成「會寫」**。現行四支 PreToolUse hook 都是純判斷。
-   寫入失敗必須 fail-open —— 不能因為記帳失敗就擋住派工。
-2. **只在武裝中的 run 記帳**。未武裝（一般聊天、owner 自己隨手派 agent）完全不寫，
-   否則污染 ledger，也會讓 hook 在每個專案都動作。
-3. **觀測不到「agent 做了什麼」**，只觀測到「派出去了、型別是什麼、用哪個模型」。
-   它證明不了那隻 agent 的 context 真的乾淨。
+1. `_exec_impl.py:323-328`、`:352-359`、`:977-983` 三處寫 exec.json 的路徑補上
+   `schema` 欄（新代號或沿用 `exec-v2`，見待裁決 8）。
+   ⚠️ 加了之後 `_dispatch_impl.py` 就會開始在 sequential 生效 —— 那正是目的，
+   但它是**行為變更**，要先確認現行守衛在 sequential 下不會誤擋。
+2. sequential 要不要也生 `run_id`：不生的話 §6.1 的稽核在 sequential 永遠無資料
+   （`dev-run/SKILL.md:55-58` 誠實寫著 sequential 事件步 N/A）。見待裁決 9。
+3. **平台探針（第 0 步，做完才動 §4）**：
+   - 3a. plugin 出貨的 subagent 現在拿不拿得到 Bash（§2.2 的 probe 已三個月，
+     契約檔 `:28` 附複現法）。
+   - 3b. PreToolUse 的 `tool_input` **到底有沒有** `subagent_type` 欄位、欄位名是什麼、
+     plugin 型別的字串帶不帶命名空間。
+     實查：repo 內**零 fixture**，唯二 payload 樣本（`selftest.sh:1979`、`:2055`）
+     都只有 `model`。這條在 v2 被當成已知事實用，**是全篇唯一沒有證據的關鍵宣稱**。
+   - 兩個 probe 的結果都要寫成 selftest fixture 留檔，不要只寫在回報裡。
 
 ---
 
-## 7. D〔中〕README ↔ guide 的手寫鏡像沒有守衛
+## 8. D〔中〕README ↔ guide 的手寫鏡像沒有守衛
 
-`guides/guide-dev-flow.html` 有多段是 `README.md` 的**手寫**改寫
-（例：`:1217` 的「規劃層 git」卡片抄自 `README.md:535`）。
-`scripts/check-methodology-corrections.sh` 只釘三處（`## 3.` 那張表、
-「審查者產生」、「G1/G2/G3 審查與 verdict」），其餘段落改了 README、忘了改 guide，
-**不會有任何訊號**。
+`guides/guide-dev-flow.html:1223` 的「規劃層 git」卡片是 `README.md:537-541` 的**手寫**
+改寫（v2 兩個行號都指錯，已更正）。`check-methodology-corrections.sh:171-198` 的 parity
+dict 共 15 條，其中 README 來源是**四**種（`:173` `## 3.` 表、`:191/:194` 審查者產生、
+`:196` G1/G2/G3、`:192` fenced seam），其餘段落改了 README、忘了改 guide **不會有訊號**。
 
-2026-08-19 實例：改「規劃層 git」那段時是人工比對發現的，機械沒幫上忙。
+修法二選一（待裁決 6）：逐段加進釘住清單（治標）／改成 renderer 產出（治本）。
 
-修法二選一（見待裁決 5）：
-- 把需要鏡像的段落逐一加進釘住清單（治標，清單自己會漏）；
-- 或改成「guide 不得手寫改寫 README 段落，一律由 renderer 產出」（治本，工程量大）。
-
-> 同型的成功案例可以照抄：2026-08-19 已經把兩份導覽的生命週期圖接到 `hooks.json`
-> 這個機械正本上（`scripts/check-hooks-accounting.sh` 的 ④ 節），
-> 雙向比對 + 內建負向自檢。D 項要治本的話就是同一個手法。
+> 同型的成功案例可照抄：2026-08-19 已把兩份導覽的生命週期圖接到 `hooks.json`
+> 機械正本（`check-hooks-accounting.sh` ④ 節），雙向 + 內建負向自檢。
 
 ---
 
-## 8. E〔低〕`history-append.sh` 沒有「改上一筆」的路徑
+## 9. E〔低〕`history-append.sh` 沒有 `--amend-last`
 
-`docs/dev/HISTORY.md` 規定只能用 `scripts/history-append.sh` 追加、不得手改。
-但追加完才發現內容要補時，沒有官方路徑。
-
-2026-08-19 的處置是趁 commit 前 `git checkout -- docs/dev/HISTORY.md` 再重跑一次
-append —— **只有在「還沒 commit 且沒有別的 session 同時在寫」時才成立**。
-
-修法：給腳本加 `--amend-last`（取同一把鎖、只重寫最後一個區塊、拒絕在已 commit 的
-狀態下動作），或明文寫「追加後發現要改就重跑一次 append 補一筆修正條目」。
+追加完才發現要補時沒有官方路徑。2026-08-19 的處置是趁 commit 前
+`git checkout -- docs/dev/HISTORY.md` 再重跑 append —— 只在「還沒 commit 且沒有別的
+session 同時在寫」時成立。
 
 ---
 
-## 9. 待裁決（全部答完本檔才算派工單）
+## 10. 待裁決
 
-1. ~~T review 要不要從 sonnet 升到「思考」組~~ → **✅ 2026-08-19 已裁決：照 harness 走，
-   reviewer 屬思考組、首選 opus。** 見 §5.5。
-2. **`model-tiers.json` 放哪**：repo 根目錄（跟 `devflow-contract.json` 同層）、
-   `hooks/`（離消費端最近）、還是 `.claude-plugin/`？
-   要不要散發到採用專案的 `docs/dev/tools/`（採用專案能不能自己改分層）？
-3. **`agents/*.md` 要不要納入 `check-file-map.sh` 的必列檔**？現值
-   `EXPECTED_MAPPED_FILES = 78`，只掃 `hooks/`、`scripts/`、`observability/`、
-   `tests/parallel-stage6/` 的 `.sh`/`.py`。納入的話要同步改常數與檔案地圖節，
-   還要改 `scripts/test-architecture-guards.sh` 的逐字互釘。
-4. **鐵律 3 要不要跟著改措辭**：`~/.claude/rules/ironlaws.md` 與
-   `doctrine/01-model-dispatch.md` §3 現在寫「haiku 機械活、sonnet 分析實作、
-   opus 只做最終判斷」。改成「兩組 + 組內順位」之後要不要同步？
-   （那是帳號層的檔，不在本 repo，動它要另外一輪。）
-5. **D 項走治標還是治本。**
-6. **版號**：A + B 會改 `dev-run/SKILL.md` 與新增 `agents/`，採用專案
-   `dev-setup upgrade` 後相容 → minor（v3.9.0）。C 只動 hooks 內部 → patch。
-   合成一版發，還是分兩次？
-7. **R4（§3.2）要不要一起做**。不做的話 R2/R3 永遠跑不到，B 等於只改了文件。
-   做的話會改變現行 `_dispatch_impl.py` 的放行條件 —— 是行為變更，要配破壞實驗。
+1. ~~T review 升思考組~~ → **✅ 已裁決**（§5.5），但要補「原分級為什麼不夠」的說明。
+2. `model-tiers.json` 放哪？要不要散發到採用專案（讓採用專案能自己改分層）？
+3. `agents/*.md` 要不要納入 `check-file-map.sh` 必列檔？（要先加 `.md` pattern，
+   並同步 `EXPECTED_MAPPED_FILES = 80` 與 `test-architecture-guards.sh:1542` 的逐字釘）
+4. 鐵律 3 要不要跟著改措辭？（帳號層檔案，不在本 repo，要另外一輪）
+5. **要不要接受「A′-only」這個更便宜的方案**：只做 §4（兩支唯讀具名型別）+ §6.1
+   （一行地板），B／C′／§7 全部不做。
+   代價：放棄當下攔阻換事後查核；仍只讀自陳 ledger；仍只在有 run_id 的 run 有效。
+   換到：零新增擋人規則、零 selftest 反轉、零採用專案破壞、版號安心維持 minor。
+6. D 項治標還治本。
+7. §5.4 把 `tier_of()` 從三層改兩層＋順位 —— 會改變 `check-model-tiering.sh` 兩條紅線
+   的定義，要不要一起做？
+8. §7-1 新的 exec schema 代號：沿用 `exec-v2` 還是開 `exec-v4`？
+   （沿用比較省，但語意上 sequential 與 parallel 的 exec.json 欄位不同）
+9. §7-2 sequential 要不要生 `run_id`？不生的話事後稽核在 sequential 永遠空手。
+10. **版號**：§7 是行為變更（守衛開始在 sequential 生效）+ §5.4 改守衛判準，
+    已經不只是 minor —— 要不要拆成兩版發？
 
 ---
 
-## 10. 不要做
+## 11. 不要做
 
-- **不要在待裁決全部答完之前動手** —— 本檔目前是草案不是派工單。
-- **不要讓 hook 去「發起」派工。** Claude Code 的 hook 只有放行／擋下／塞 context
-  三種出口，**技術上不能生 agent**。派工只能由主對話發 Task 呼叫。
-- **不要把模型名寫進任何文件或程式碼**，一律指向 `model-tiers.json`。
-- **不要在 `dispatch_observed` 用 `model` / `agent_role` 欄位名** —— 會被 schema 擋
-  （§6.2），用 `x_` 前綴。
-- 不要為了讓某個檢查變綠而放寬它。
+- **不要在待裁決全部答完之前動手。**
+- **不要恢復 R1／R2**（撤回理由見 §3；恢復前先解決死鎖與無關派工誤擋）。
+- **不要讓 hook 去「發起」派工。** hook 只有放行／擋下／塞 context 三種出口，
+  技術上不能生 agent。
+- **不要把執行者做成具名型別**，除非 §7-3a 的探針證明平台行為已改。
+- **不要靠 `disallowedTools: Bash(...)` 當安全保證** —— 它 inert，真正的 deny 在
+  `settings.json`。唯讀要靠 `allowedTools` 白名單（不給 Bash），不是靠 deny。
+- **不要造第三套角色詞彙**（§0）。
+- **不要讓 `stop` 拒絕收尾** —— 那是唯一的復原路徑（§3）。
+- **不要在文件裡寫「這能防偽造」** —— 超出既有信任邊界。
 - 每一支新守衛都要配**破壞實驗**：把它守的東西改壞，確認真的會紅。
-  沒有反證的保護等於沒有保護（本 repo 的既有文化，見
-  `notes/dispatch-v380-counterproof.md`）。
+  沒有反證的保護等於沒有保護（`notes/dispatch-v380-counterproof.md`）。
 
 ---
 
-## 11. 本 repo 的落點紀律（執行輪必讀）
+## 12. 本 repo 的落點紀律（執行輪必讀）
 
 - `main` 有全域 hook（`~/.claude/scripts/git-flow-guard.py`，鐵律 9）擋直接 commit。
-  每一段收尾都走：**短命 branch → commit → `merge --no-ff` 回 `main`**。
-  這條規則本身已經寫進母版（`_templates/STATUS.md` 頂註的「落點」段）。
-- `git push origin main` **由 owner 自己跑**，agent 會被擋，那是刻意的護欄。
+  每段收尾走：**短命 branch → commit → `merge --no-ff` 回 `main`**。
+- `git push origin main` **由 owner 自己跑**，agent 會被擋。
 - `docs/dev/HISTORY.md` 只能用 `scripts/history-append.sh` 追加。
-- 收尾驗收至少要跑：
+- 收尾至少要跑：
   ```bash
   bash scripts/devflow-check.sh all
   bash hooks/selftest.sh
   env -u DEVFLOW_MASTER -u DEVFLOW_PLUGIN -u CLAUDE_PLUGIN_ROOT bash hooks/gate-consistency.sh
   bash hooks/devflow-exec.sh doctor
   bash scripts/test-architecture-guards.sh
+  bash scripts/check-model-tiering.sh
   bash scripts/render-methodology-corrections.sh --check
   ```
+
+---
+
+## 附錄：v2 被查出的事實錯誤（已更正，留檔避免重犯）
+
+| v2 寫的 | 正確值 |
+|---|---|
+| `_dispatch_impl.py` 只讀不寫 | 會寫 `.devflow/tier-exempt.json`（`:90`）；`_guard_impl.py:78` 也會寫檔 |
+| 六個早退 | **八個**（漏 `:115-116` payload 讀不到、`:151-152` 豁免卡消耗） |
+| 「唯一會擋」三個條件 | **四個**（多一個「無未消耗豁免卡」） |
+| 跑過一次 haiku → 整個 run 不設防 | run≈T；真缺陷是判準只看「起過」不看「失敗過」 |
+| `EXPECTED_MAPPED_FILES = 78` | **80** |
+| guide `:1217` ← README `:535` | guide `:1223` ← README `:537-541` |
+| corrections 只釘三處 | 四種 README 來源 + 八處模板來源，parity dict 共 15 條 |
+| 四支 PreToolUse hook 都是純判斷 | 已有兩支會寫檔 |
+| `dev-run/SKILL.md:82` 是嘗試上限句 | 上限句在 `:88-89`；`README.md:394` 另有第二份 |
+| PLUGIN.md 有 hooks 表與 skills 表 | 是**同一張**目錄表的兩列（`:49`、`:50`） |
+| 「機械上不會有任何一支守衛紅」 | `scripts/check-model-tiering.sh` 已在做事後稽核 |
