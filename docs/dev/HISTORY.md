@@ -189,3 +189,20 @@
 - 落在哪:.claude-plugin/plugin.json 與 hooks/runtime-capabilities.json(版號兩處,本輪未再動,維持 3.8.0)、docs/dev/STATUS.md(Backlog 移除已完成的 A 級發版項)
 - 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.8.0
 
+## 2026-08-19 · dispatch-agent-dispatch-layer · v3.9.0
+- 做了什麼:派工分層第一輪落地 + 探針結案:①sequential 三條武裝路徑補 exec-v4 schema 與 run_id(守衛原本在最常用的那條路整支失效)②新增 agents/devflow-reviewer.md 與 devflow-adviser.md 兩支唯讀具名 subagent(tools: Read,不給 Bash/Edit/Write)③check-model-tiering.sh 補 worker-tasks == 0 → exit 2 地板④白話回覆 hook(預設關,DEVFLOW_PLAINSPEAK=1 才開)⑤四張自判表加「依據」欄⑥兩個平台探針重跑 + 第二人獨立複核結案(型別欄位名 subagent_type、plugin 型別帶 dev-flow: 命名空間)⑦契約檔最外層加 exec_state_note 記 exec-v3/exec-v4 雙軌並存⑧README 補 render 相依與 Windows 已知限制
+- 為什麼:守衛只在四條武裝路徑的其中一條生效,sequential(預設、最常用)全程不設防,不修的話派工分層做什麼都是 no-op;agents/*.md 原本把型別字串標成「實測確認」但沒有第二人複核,其中 dev-flow:devflow-adviser 一次都沒被叫過
+- 落在哪:hooks/_exec_impl.py、hooks/_dispatch_impl.py、hooks/_doctor_impl.py、hooks/selftest.sh、agents/(新增兩支)、hooks/devflow-plainspeak.sh、hooks/plainspeak-rules.md、scripts/check-model-tiering.sh、scripts/check-{file-map,hooks-accounting}.sh、devflow-contract.json 與 docs/dev/devflow-contract.json、README.md、docs/PLUGIN.md、guides/guide-dev-flow.html、scripts/fixtures/dispatch-guard/、notes/
+- 詳細:notes/dispatch-agent-dispatch-layer.md
+
+## 2026-08-19 · history-template-defects · v3.9.0
+- 做了什麼:採用現場回報的三個缺陷修畢 + 補上宣告 Python 最低版本的守衛:①_templates/HISTORY.md 教的寫入口路徑改成「採用專案側 docs/dev/tools/ 與方法論母版側 scripts/」雙行寫法(原本只寫母版側,採用專案照著打會找不到檔)②清掉檔尾那筆可見的出廠種子紀錄(該檔禁止手改且有守衛攔截,清不掉)③check-history-integrity.sh 補 H8/H9 兩項守衛,H8 的對帳來源動態取自 skills/dev-setup/SKILL.md 不寫死路徑④scripts/build-gate-twin.py 與 check-gate-twin.sh 兩處 f-string 表達式含反斜線的寫法改成先落成變數⑤新增 scripts/check-py-floor.sh 用舊版直譯器逐檔真編譯 40 個 .py,找不到舊版就 exit 2 不退回靜態掃描⑥README 環境需求段宣告最低 3.9
+- 為什麼:①②是一個採用專案在 v3.8.0 fresh install 當下踩到,而缺陷把使用者推向守衛要防的行為(照模板打指令失敗後最自然的下一步就是直接編輯那個檔);④是 scripts/build-gate-twin.py 會散發到採用專案、三個 gate 的審查頁全靠它產,但那個寫法 Python 3.12 才允許,macOS 內建 /usr/bin/python3 是 3.9 直接 SyntaxError 整支讀不進去,而挑直譯器的順序把系統內建排在 PATH 之前;上述四件在 v3.8.0 都已出貨,而當時全部既有機械檢查皆綠 —— 零覆蓋才是根因
+- 落在哪:_templates/HISTORY.md、scripts/check-history-integrity.sh、scripts/build-gate-twin.py 與 docs/dev/tools/ 副本、scripts/check-gate-twin.sh、scripts/check-py-floor.sh(新增)、scripts/devflow-check.sh、scripts/check-file-map.sh、scripts/test-architecture-guards.sh、README.md、guides/guide-dev-flow.html、docs/dev/STATUS.md
+- 詳細:notes/dispatch-history-template-defects.md
+
+## 2026-08-19 · release-v390 · v3.9.0
+- 做了什麼:記一筆偏差:需求正本 §10 裁決 10 要求「拆兩版」(§7 守衛在 sequential 生效那批單獨一版、§4 A′ 兩支審查者那批再一版),實際沒有達成 —— 兩批在同一個窗口進了 main(§7 是 812a9fb+c9411c2,A′ 是 a44b92e+f3d9e4a),3.9.0 一版全包
+- 為什麼:裁決 10 要的隔離目的是「出事時分得出是哪一批造成的」,現在分不出來了。補兩個標籤的路(3.9.0 指 c9411c2、3.10.0 指 f3d9e4a)被 owner 2026-08-19 否決:c9411c2 的 plugin.json 寫的是 3.8.0,標籤叫 3.9.0 名實不符,而發版器存在的理由正是比對那個字串 —— 補得不乾淨不如記偏差
+- 落在哪:.claude-plugin/plugin.json、hooks/runtime-capabilities.json(版號兩處)
+
