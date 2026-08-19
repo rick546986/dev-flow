@@ -52,10 +52,14 @@ Minor」「計畫已決定所以不算」→ 停手重寫。大材料(diff、報
 
 ## 事件寫入通道(四軌 obs W2/W3;sequential 與並行共用)
 
-> **Runtime 現況(誠實條件)**:事件通道需 exec-v2 `run_id` —— 目前僅 `start <slug> --task T-n`
-> (parallel task 武裝)產生;sequential 整 feature start 為 v1(零回歸保證,無 run_id),
-> 其事件步 **N/A**(執行記錄照舊記 6-notes 散文,禁虛構 run_id)。Stage 7 Final Fresh Run
-> 事件同理僅 task-armed 情境可發(known limitation;schema 已備,待 sequential v2 opt-in)。
+> **Runtime 現況(誠實條件,2026-08-19 更新)**:`start <slug> --task T-n`(parallel task
+> 武裝,schema=exec-v3)與 sequential 整 feature start(legacy/VNext feature-scope,
+> schema=exec-v4)、Stage 7 review 自建武裝現在都會生 `run_id`(§7 前置修復,見
+> `notes/dispatch-agent-dispatch-layer.md` 裁決 8/9)——`run_id` 本身不再是 sequential
+> 的缺口。但本節下方的逐 T 事件寫入迴圈仍只描述 task-scoped 派工者動作;sequential
+> 是否要比照逐步寫 `agent_dispatched`/`attempt_started` 等事件是後續工作範圍,執行
+> 記錄現況仍以 6-notes 散文為準,不因 run_id 已存在就回頭幫 sequential 補寫本節
+> 未定義的事件序列。
 
 執行軌跡事件由**你**(派工者)經 `devflow-exec.sh event <slug>` 逐步寫入 run ledger
 (事件 JSON 走 **stdin**;命令列不鋪 `.devflow/` 路徑)—— 這是 coordinator 唯一合法
@@ -76,9 +80,12 @@ hash 必須是 registry 內 `prompt_hash` 實值,**禁佔位 hash** / 禁自編)
      完成 = 三件套齊全,prompt 已送出給執行者。
    - **1b. 寫事件**:派出即送 `agent_dispatched` + `attempt_started`(attempt_id /
      agent_role / model / prompt / base_sha)。完成 = 兩筆事件皆已送 ledger。
-2. **收驗**:派 fresh sonnet reviewer(給 T + S 原文 + diff + 執行者輸出,不給執行者
-   結論;prompt 明令唯讀、每 F 引 spec 原文或 diff hunk),依 README §5 / 6-notes 的
-   共用 seam 裁決並回傳 T Review Log 所需證據。
+2. **收驗**:以 `subagent_type=dev-flow:devflow-reviewer`(`agents/devflow-reviewer.md`,
+   fresh sonnet、`tools: Read` 唯讀——沒有 Bash,也沒有 Grep/Glob/Skill 與專案裝的
+   MCP 工具;`git diff` 由你先跑好貼進 prompt,要搜的東西(例如「這個符號還有哪裡
+   引用」)也是你先搜好貼進去,不要指望它自己查)明確派出(給 T + S 原文 + diff +
+   執行者輸出,不給執行者結論;每 F 引 spec 原文或 diff hunk),依 README §5 /
+   6-notes 的共用 seam 裁決並回傳 T Review Log 所需證據。
    FAIL → **先分類再路由**(README §5 驗證五律 5)。分三類,各走各的路:
 
    | 分類 | 什麼算 | 怎麼走 | 計不計入嘗試上限 |
@@ -88,7 +95,10 @@ hash 必須是 registry 內 `prompt_hash` 實值,**禁佔位 hash** / 禁自編)
    | IMPL / UNKNOWN | 實作沒做對,或看不出原因 | 同一 T 升階重派(失敗軌跡全帶)並重新送審 | 計入 |
 
    **上限與強制動作**(與上表分開讀):同一個 T 總嘗試上限 4 次
-   (haiku 1 + sonnet 2 + opus 1)。用盡 4 次 → **強制問 adviser**,不得再重試。
+   (haiku 1 + sonnet 2 + opus 1)。用盡 4 次 → **強制問 adviser**(以
+   `subagent_type=dev-flow:devflow-adviser`——`agents/devflow-adviser.md`,同樣
+   `tools: Read` 唯讀——沒有 Bash,也沒有 Grep/Glob/Skill 與專案裝的 MCP 工具;
+   要它查證的東西你先查好貼進 prompt,附完整失敗軌跡),不得再重試。
    PASS → 你 commit → 讀出 hash。
    **寫事件**:派 reviewer 時 `review_started`,收到裁決 `review_completed`
    (review_verdict)+ 每個 finding 一筆 `finding_created`;收裁決後補

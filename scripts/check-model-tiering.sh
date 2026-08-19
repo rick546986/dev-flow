@@ -47,6 +47,13 @@
 # 存在但解析到 0 筆 attempt_started 事件 → 一律 exit 2 並印 NOT-PARSED(掃描沒咬到
 # 東西不等於沒有問題,不可以跟「掃到了、抓到違規」的 exit 1 混在一起);自測模式的
 # fixture 永遠要有資料,同樣的規則對自己的 fixture 也適用。
+#
+# 2026-08-19 派工單 §6.1:上面那條地板抓的是「attempts=0」;**真實模式**另補一條
+# 「worker-tasks=0」地板 —— attempts 不是 0(有 reviewer/adviser 起手式)但一筆
+# agent_role=="worker" 的都沒有,一樣 exit 2(稽核範圍是空的,不是零違規)。
+# 只補在真實模式:自測模式的 good-*/bad-* fixture 全部設計成至少一筆 worker
+# attempt,不需要這條;`.devflow/runs` 那條自測分支目前也不重複補,留給下一輪視需要
+# 再擴。
 set -uo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
@@ -257,6 +264,21 @@ if extra_roots:
         if len(all_attempt_ids) == 0:
             print(f"  ❌ NOT-PARSED:{runs_root} 存在但解析到 0 筆 attempt_started 事件"
                   f"(掃描沒咬到東西,不是沒有違規)")
+            exit_code = max(exit_code, 2)
+            continue
+        # 2026-08-19 派工單 §6.1 地板:上面那條只抓「整批 attempt 都是 0」;
+        # 但 all_attempt_ids 不分角色(load_events 的 docstring 講得很清楚),
+        # 一個目錄可能有 attempt(例如全是 reviewer/adviser 的起手式)、卻一筆
+        # agent_role=="worker" 的都沒有 —— worker_started 因此是空 list,
+        # audit([]) 對空輸入永遠回傳零違規,不是「稽核過確定沒事」,是「根本沒東西
+        # 可稽核」,兩者混在一起會讓這種 ledger 靜默拿到 PASS(假陽性通過)。
+        # 自測模式不需要這條地板(good-*/bad-* fixture 全部設計成至少一筆 worker
+        # attempt;真的要驗證這條地板本身有牙齒,靠下面 MT-3 的破壞實驗:餵一個
+        # 只有 adviser attempt、沒有任何 worker attempt 的真實 runs 根目錄)。
+        if len(worker_task_keys) == 0:
+            print(f"  ❌ NOT-PARSED:{runs_root} 有 attempt_started 但沒有任何 "
+                  f"agent_role==\"worker\" 的事件(worker-tasks=0,稽核範圍是空的,"
+                  f"不是零違規)")
             exit_code = max(exit_code, 2)
             continue
         report_unknown_roles(abs_root)

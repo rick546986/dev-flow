@@ -18,10 +18,19 @@ PARP = os.path.join(DF, "parallel.json")
 SENT = os.path.join(L.git_dir(root), "devflow-armed")
 
 SAFE_STATES = ("INTEGRATED", "IN_REVIEW", "ACCEPTED")   # 設計 §4.2:Blocked-by 的「可開始」門檻
-# exec-v3(A-11):新武裝一律寫 exec-v3;讀取兩版都收 —— 舊 worktree 留著的
-# "exec-v2" 字面值不因這次升版斷線(candidate/status 兩處都要認得舊字面值,
-# 零回歸鐵則)。
-EXEC_SCHEMAS = ("exec-v2", "exec-v3")
+# exec-v3(A-11):task-scoped(--task)武裝一律寫 exec-v3;讀取舊字面值 "exec-v2"
+# 也收(candidate/status 兩處都要認得舊字面值,零回歸鐵則)。
+# exec-v4(§7 前置修復,notes/dispatch-agent-dispatch-layer.md 裁決 8):sequential
+# (legacy / VNext feature-scope)與 Stage 7 review 自建武裝改寫 exec-v4——開新代號
+# 而非沿用 exec-v2/exec-v3,因為這三種武裝的欄位形狀本來就跟 task-scoped 不同,
+# 沿用會讓「認得的 schema」與「實際欄位」脫鉤。
+# ⚠️ exec-v4 從不帶 "task" 欄(只有 --task 武裝會設 task),所以收不收錄本 tuple
+# 都不影響 `status`/`candidate` 兩處子命令「是否為 task-scoped」的判斷(兩處皆以
+# `d.get("schema") in EXEC_SCHEMAS and/or d.get("task")` 合併判斷,行號本身會隨
+# 編輯漂移,故不在此釘死行號——要核對就地 grep `in EXEC_SCHEMAS`)——這裡仍然收錄
+# exec-v4,是為了與 hooks/_dispatch_impl.py 的同名常數保持同步(該檔註解明寫
+# 「新增 exec schema 版本時兩檔必須同步改」,兩份刻意重複的抄本不留分岔)。
+EXEC_SCHEMAS = ("exec-v2", "exec-v3", "exec-v4")
 
 
 def die(msg, code=1):
@@ -320,11 +329,19 @@ if cmd == "start":
         gi = arm_common(scope)
         baseline[".gitignore"] = L.sha(gi)
         contract = L.protected_contract_hashes(root)
+        # exec-v4(§7 前置修復,notes/dispatch-agent-dispatch-layer.md 裁決 8/9):
+        # legacy sequential 過去不寫 schema,派工分層守衛(_dispatch_impl.py)認不得
+        # 這份 exec.json,整條 sequential 路徑對它整支失效。補 schema 讓守衛看得到;
+        # 同時生 run_id(裁決 9)——run_id 缺席會讓守衛的「本 run 是否已有低階
+        # attempt」判斷永遠拿不到資料(見 _dispatch_impl._scan_low_tier_attempt:
+        # 沒 run_id 直接 return False),等於合法升階也會被誤擋,故兩者必須同時補。
+        run_id = L.new_run_id()
         data = {"slug": slug,
                 "started": now(),
                 "scope": sorted(scope), "extra": [],
                 "baseline": baseline, "contract_hashes": contract,
-                "contract_hash_scope": "repo-wide-v1"}
+                "contract_hash_scope": "repo-wide-v1",
+                "schema": "exec-v4", "run_id": run_id}
         json.dump(data, open(EXECP, "w"), ensure_ascii=False, indent=1)
         open(SENT, "w").write(slug + "\n")
         L.update_shadow(root)
@@ -333,6 +350,7 @@ if cmd == "start":
         for s in sorted(scope):
             print("  " + s)
         print(f"契約 hash 已釘住 {len(contract)} 檔;baseline 記錄 {len(baseline)} 個 scope 內既有髒檔(含內容 hash)")
+        print(f"run_id={run_id}")
         print("恆許:本 slug 的 5-tasks / 6-implementation-notes;收尾或 L2 → devflow-exec.sh stop")
         sys.exit(0)
 
@@ -351,11 +369,17 @@ if cmd == "start":
         gi = arm_common(scope)
         baseline[".gitignore"] = L.sha(gi)
         contract = L.protected_contract_hashes(root)
+        # exec-v4 + run_id:同上一段 legacy sequential 的理由(§7 前置修復)——
+        # 這條 VNext feature-scope(非 --task)路徑過去也不寫 schema,派工分層守衛
+        # 同樣整支失效;run_id 缺席會讓「本 run 已有低階 attempt」判斷永遠拿不到
+        # 資料,合法升階也會被誤擋,故與 schema 同時補。
+        run_id = L.new_run_id()
         data = {"slug": slug,
                 "started": now(),
                 "scope": sorted(scope), "extra": [],
                 "baseline": baseline, "contract_hashes": contract,
-                "contract_hash_scope": "repo-wide-v1"}
+                "contract_hash_scope": "repo-wide-v1",
+                "schema": "exec-v4", "run_id": run_id}
         json.dump(data, open(EXECP, "w"), ensure_ascii=False, indent=1)
         open(SENT, "w").write(slug + "\n")
         L.update_shadow(root)
@@ -363,6 +387,7 @@ if cmd == "start":
         print(f"scope({len(scope)} 項):")
         for s in sorted(scope):
             print("  " + s)
+        print(f"run_id={run_id}")
         if parsed["execution"]["mode"] == "parallel":
             print("ℹ️  execution.mode=parallel:本次為 feature-scope(v1)武裝;"
                   "wave 派工請在各 task worktree 用 start <slug> --task T-n")
@@ -974,12 +999,17 @@ elif cmd == "review":
             gi = arm_common([])
             baseline[".gitignore"] = L.sha(gi)
             contract = L.protected_contract_hashes(root)
+            # exec-v4 + run_id:同兩處 sequential 武裝同一理由(§7 前置修復)——
+            # 這條自建武裝過去也不寫 schema,派工分層守衛整支失效;run_id 缺席會讓
+            # 「本 run 已有低階 attempt」判斷永遠拿不到資料,合法升階也會被誤擋。
+            run_id = L.new_run_id()
             data = {"slug": slug,
                     "started": now(),
                     "scope": [], "extra": [],
                     "baseline": baseline, "contract_hashes": contract,
                     "contract_hash_scope": "repo-wide-v1",
-                    "phase": "review", "review_unlocked": False}
+                    "phase": "review", "review_unlocked": False,
+                    "schema": "exec-v4", "run_id": run_id}
             json.dump(data, open(EXECP, "w"), ensure_ascii=False, indent=1)
             open(SENT, "w").write(slug + "\n")
             L.update_shadow(root)

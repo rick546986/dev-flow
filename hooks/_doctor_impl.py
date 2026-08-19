@@ -151,11 +151,23 @@ def run_doctor(root, contract_path="", gate_cmd=""):
                 have_exec = None
             if have_exec == want_exec:
                 check(True, "exec-state", f"{have_exec}(已武裝)")
-            else:
+            elif have_exec is None:
+                # 真的沒有 schema 欄 = 升版前武裝的舊狀態(v1)。
                 info("exec-state",
                      f"legacy compatibility mode —— exec.json 為 v1"
-                     f"(schema={have_exec!r},契約要 {want_exec});sequential "
+                     f"(無 schema 欄,契約要 {want_exec});sequential "
                      f"舊專案可續用,但 parallel/run_id 事件鏈不可用,須明示")
+            else:
+                # 有 schema 欄但值與契約不同 —— **不是 v1**,也不代表 run_id 不可用。
+                # 2026-08-19 §7 前置修復之後,sequential 三條武裝路徑寫的是 exec-v4,
+                # 而契約的 exec_state 仍是 exec-v3(task-scoped 那條),雙軌並存是常態。
+                # 舊訊息在這種情況會印「為 v1」「run_id 不可用」,兩句都與事實相反 ——
+                # 那是誤導,不是相容性問題,所以分開講。
+                info("exec-state",
+                     f"exec.json 的 schema 是 {have_exec!r},契約 exec_state 寫 "
+                     f"{want_exec} —— 兩邊不同但都帶 schema 欄,不是 v1 舊格式。"
+                     f"可能是 runtime 比契約新(或反之);武裝本身有效,"
+                     f"是否要讓契約反映雙軌由人判斷")
         else:
             info("exec-state",
                  f"未武裝(無 exec.json);start 後須為 {want_exec}")

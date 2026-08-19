@@ -1,0 +1,30 @@
+{
+  "_provenance": "2026-08-19 派工單 §7-3b 探針的原始證據(不是手造):用 `claude --plugin-dir <本 repo worktree 路徑>` 把 dev-flow 當 session-only plugin 從另一個(與此 repo 無關的)throwaway 專案載入,該專案 .claude/settings.json 掛一支 PreToolUse(matcher=Task|Agent)hook 把 stdin 原封落地存證,再對主 session 下指令『用 Task 工具、subagent_type=dev-flow:devflow-reviewer 派一個 subagent』。下面 raw_tool_input 是那次落地檔案裡的 tool_input 欄位,逐字未改;raw_event 是同一筆事件的完整 payload(session_id/transcript_path/cwd 屬本機探針環境路徑,不代表任何正式契約)。",
+  "purpose": "留存字面證據:tool_input 的欄位名確實叫 subagent_type(不是 agent_type),plugin 型別確實帶 <plugin>:<agent> 命名空間。hooks/selftest.sh 的 pst 案例組引用同一次測試的結論(見該檔 `-- pst §7-3b 探針 --` 區塊),但案例本身用 devflow-lib 直接組 payload,不 import 這支 fixture——這支只作人工核對與留檔用途。",
+  "raw_tool_input": {
+    "description": "Single word reply test",
+    "prompt": "reply with the single word: done",
+    "subagent_type": "dev-flow:devflow-reviewer",
+    "run_in_background": false
+  },
+  "raw_event": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Agent",
+    "tool_input": {
+      "description": "Single word reply test",
+      "prompt": "reply with the single word: done",
+      "subagent_type": "dev-flow:devflow-reviewer",
+      "run_in_background": false
+    },
+    "permission_mode": "bypassPermissions"
+  },
+  "also_observed_bare_type_case": {
+    "note": "同一支探針先跑過一次 subagent_type=general-purpose(第一方型別,不帶命名空間)當對照組,payload 形狀相同、值不同,證明命名空間只出現在 plugin 型別上,不是欄位本身固定帶冒號。",
+    "tool_input": {
+      "description": "Single word reply test",
+      "prompt": "reply with the single word: done",
+      "subagent_type": "general-purpose",
+      "run_in_background": false
+    }
+  }
+}

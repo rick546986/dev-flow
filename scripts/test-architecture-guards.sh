@@ -239,13 +239,18 @@ seed_guard() {
   echo "$dst"
 }
 
-# seed_fm <name> → 同 seed(),另外把 hooks/scripts/observability/tests/parallel-stage6/
-# 整包 + guides/guide-dev-flow.html 複製進去,並初始化成一個真 git repo。
+# seed_fm <name> → 同 seed(),另外把 hooks/scripts/observability/agents/
+# tests/parallel-stage6/ 整包 + guides/guide-dev-flow.html 複製進去,並初始化成
+# 一個真 git repo。
 # 起因:check-file-map.sh 用 `git ls-files --cached --others --exclude-standard` 當
 # 掃描來源(同 check-no-stale-paths.sh 的 seed_sp 模式),單純的檔案樹跑不了
 # git ls-files。額外複製根目錄 .gitignore 到複本內,確保 --exclude-standard 在複本
 # 與正式 repo 兩邊排除同一組 pattern(否則複本裡若混進 __pycache__ 之類雜物,
 # 兩邊 scanned 數會對不上)。
+# ⚠️ 2026-08-19:PATTERNS 加了 `agents/*.md` 後,這裡漏複製 agents/ 曾讓 FM-0
+# 對照組自己變紅(seed 出來的複本掃到 81 支,EXPECTED_MAPPED_FILES 已改成 83)——
+# 這不是 check-file-map.sh 的缺陷,是本測試治具沒跟著 PATTERNS 一起長,見
+# hooks/selftest.sh 同類「記帳」教訓。以後 PATTERNS 再加新目錄,這裡也要同步加。
 seed_fm() {
   local name="${1:?seed_fm: name is empty}"
   local dst; dst=$(seed "$name")
@@ -253,6 +258,7 @@ seed_fm() {
   cp -r "$ROOT/hooks" "$dst/hooks"
   cp -r "$ROOT/scripts" "$dst/scripts"
   cp -r "$ROOT/observability" "$dst/observability"
+  cp -r "$ROOT/agents" "$dst/agents"
   mkdir -p "$dst/tests" "$dst/guides"
   cp -r "$ROOT/tests/parallel-stage6" "$dst/tests/parallel-stage6"
   cp "$ROOT/guides/guide-dev-flow.html" "$dst/guides/guide-dev-flow.html"
@@ -1533,13 +1539,13 @@ check_static_pin_sub() { # check_static_pin_sub <相對路徑> <期望子字串>
     STATIC_PIN_FAIL=1
   fi
 }
-check_static_pin "hooks/selftest.sh" "MIN_CASES=378" "MIN_CASES 釘死 378(2026-08-17 清空輪:F2+7/G3+1/F4+2/G1+4/D-4+3/C-2+3/report-guard+7/審查回歸+3)"
+check_static_pin "hooks/selftest.sh" "MIN_CASES=392" "MIN_CASES 釘死 392(2026-08-17 清空輪 378 之後,2026-08-19 §7 前置修復:s7 legacy sequential 真跑 start 驗證+6/s7b VNext feature-scope 同型驗證+2/s7c Stage 7 review 自建武裝同型驗證+3 → 389,同日 §7-3b 探針 pst 真實 subagent_type payload 形狀釘住+3 → 392)"
 check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "EXPECTED_CHECKS 釘死 131"
 check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 15" "MIN_CHECKS 釘死 15(A-2/B-5 輪:②改 scoped 拆 3 條 + ⑦⑧⑨ 新增後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 138" "MIN_CHECKS 釘死 138(X-3 補群組數釘之後的實得數)"
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 41" "MIN_CHECKS 釘死 41(反證輪 E-1:再加 M-f~M-h 五個(mutant,子案)配對後的實得數)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 32" "MIN_CHECKS 釘死 32(commit-landing 輪 F-1-e:POINTS 補「窗口最短」+ 負向⑱⑲ 兩份頂註各一後的實得數)"
-check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 81" "EXPECTED_MAPPED_FILES 釘死 81(精確值,不是地板;2026-08-19 自判表輪新增 check-selfjudgment-tables.sh、devflow-plainspeak.sh 與 _plainspeak_impl.py 後的實得數)"
+check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 83" "EXPECTED_MAPPED_FILES 釘死 83(精確值,不是地板;2026-08-19 派工單 §4.4 第 5 項新增 agents/*.md pattern,81 → 83 = 新增 agents/devflow-reviewer.md + agents/devflow-adviser.md 兩檔)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 24" "EXPECTED_GROUPS 釘死 24(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的
