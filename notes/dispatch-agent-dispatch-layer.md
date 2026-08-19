@@ -1,7 +1,11 @@
 # 派工單（草案 v3）：把「派工／執行／審查」從叮嚀變成機制
 
-> **狀態：草案，已經過三隻 opus reviewer 審查 + 主線程裁決，設計已大幅收斂。**
-> 末節「待裁決」全部有答案之後才算派工單，執行輪才可以動手。
+> **狀態：v4 —— 三隻 opus reviewer 審查 + 主線程裁決 + owner 已答完十題。
+> 這份現在是可以執行的派工單，但只執行「第一輪」（見 §13）。**
+>
+> **執行輪只做 §13 的第一輪：§7 前置修復 + §4 A′ + §6.1 一行地板。**
+> §5（B）與 §6.2（C′ 判準）留給第二輪，不要在本輪動 —— 它們會反轉八條既有測試，
+> 混在同一輪風險太集中。
 >
 > **v3 相對 v2 變化很大**：三隻審查各自帶回阻斷級發現，原設計的 R1／R2 已**撤回**，
 > A 從三支具名型別縮成兩支，C 從「hook 寫 ledger」降級成「補強既有的事後稽核」。
@@ -199,7 +203,7 @@ Write**。這是「派工者禁親修」（`README.md` §5 驗證五律 2）第�
 5. `scripts/check-file-map.sh`：`PATTERNS`（`:58-63`）目前**完全不含 `.md`**，
    `agents/*.md` 要納入必列檔得先加 pattern。現值 `EXPECTED_MAPPED_FILES = 80`
    （`:107`，實跑 `scanned=80`），並被 `test-architecture-guards.sh:1542` 逐字釘。
-   要不要納入見待裁決 3。
+   **裁決 3：納入。** 先加 `.md` pattern，再同步常數與逐字釘。
 
 ---
 
@@ -226,7 +230,8 @@ harness 獨立演化出同一個切法（worker=sonnet、reviewer/advisor=opus�
 
 ### 5.3 資料檔
 
-`model-tiers.json`（位置見待裁決 2）。存**比對字串**不是完整 id
+`model-tiers.json`（**裁決 2：放 repo 根目錄，跟 `devflow-contract.json` 同層；
+先不散發到採用專案**）。存**比對字串**不是完整 id
 （完整 id 帶日期後綴會漂；現行 `_has_marker` 就是 substring 比對）：
 
 ```jsonc
@@ -325,19 +330,23 @@ ledger 是空的也會 PASS。補 `worker-tasks == 0 → exit 2`（比照
 **這節排在 A′／B／C′ 之前。** 不修，後面全部是 no-op。
 
 1. `_exec_impl.py:323-328`、`:352-359`、`:977-983` 三處寫 exec.json 的路徑補上
-   `schema` 欄（新代號或沿用 `exec-v2`，見待裁決 8）。
+   `schema` 欄（**裁決 8：開新代號 `exec-v4`**，不沿用 `exec-v2` —— sequential 與
+   parallel 的欄位本來就不同，沿用會讓「認得的 schema」跟「實際欄位」脫鉤）。
    ⚠️ 加了之後 `_dispatch_impl.py` 就會開始在 sequential 生效 —— 那正是目的，
    但它是**行為變更**，要先確認現行守衛在 sequential 下不會誤擋。
 2. sequential 要不要也生 `run_id`：不生的話 §6.1 的稽核在 sequential 永遠無資料
-   （`dev-run/SKILL.md:55-58` 誠實寫著 sequential 事件步 N/A）。見待裁決 9。
-3. **平台探針（第 0 步，做完才動 §4）**：
+   （`dev-run/SKILL.md:55-58` 誠實寫著 sequential 事件步 N/A）。**裁決 9：要生。**
+3. **平台探針 —— 記錄用，不阻斷本輪**（R1 撤回之後，這兩件事都不再是前提）：
    - 3a. plugin 出貨的 subagent 現在拿不拿得到 Bash（§2.2 的 probe 已三個月，
      契約檔 `:28` 附複現法）。
-   - 3b. PreToolUse 的 `tool_input` **到底有沒有** `subagent_type` 欄位、欄位名是什麼、
-     plugin 型別的字串帶不帶命名空間。
-     實查：repo 內**零 fixture**，唯二 payload 樣本（`selftest.sh:1979`、`:2055`）
-     都只有 `model`。這條在 v2 被當成已知事實用，**是全篇唯一沒有證據的關鍵宣稱**。
-   - 兩個 probe 的結果都要寫成 selftest fixture 留檔，不要只寫在回報裡。
+     ⚠️ **A′ 不依賴這個結果**：探針說「還是拿不到」→ reviewer／adviser 天生唯讀，
+     正合需求；說「現在拿得到了」→ 那就在 `allowedTools` 明確**不給** Bash，
+     結果一樣。所以 A′ 可以先做，探針只是把事實記下來。
+   - 3b. PreToolUse 的 `tool_input` 有沒有 `subagent_type` 欄位、欄位名是什麼、
+     plugin 型別帶不帶命名空間。實查：repo 內**零 fixture**，唯二 payload 樣本
+     （`selftest.sh:1979`、`:2055`）都只有 `model`。
+     R1 撤回後本輪用不到，但第二輪若要做任何以型別為判準的檢查就會需要 → **順手測、
+     測完寫成 selftest fixture 留檔**，不要只寫在回報裡。
 
 ---
 
@@ -348,7 +357,8 @@ ledger 是空的也會 PASS。補 `worker-tasks == 0 → exit 2`（比照
 dict 共 15 條，其中 README 來源是**四**種（`:173` `## 3.` 表、`:191/:194` 審查者產生、
 `:196` G1/G2/G3、`:192` fenced seam），其餘段落改了 README、忘了改 guide **不會有訊號**。
 
-修法二選一（待裁決 6）：逐段加進釘住清單（治標）／改成 renderer 產出（治本）。
+**裁決 6：治標** —— 逐段加進 `check-methodology-corrections.sh` 的釘住清單。
+治本（改成 renderer 產出）工程量不成比例。**屬第二輪，本輪不做。**
 
 > 同型的成功案例可照抄：2026-08-19 已把兩份導覽的生命週期圖接到 `hooks.json`
 > 機械正本（`check-hooks-accounting.sh` ④ 節），雙向 + 內建負向自檢。
@@ -363,31 +373,65 @@ session 同時在寫」時成立。
 
 ---
 
-## 10. 待裁決
+## 10. 裁決結果（owner 2026-08-19 全部答完，這節只留紀錄）
 
-1. ~~T review 升思考組~~ → **✅ 已裁決**（§5.5），但要補「原分級為什麼不夠」的說明。
-2. `model-tiers.json` 放哪？要不要散發到採用專案（讓採用專案能自己改分層）？
-3. `agents/*.md` 要不要納入 `check-file-map.sh` 必列檔？（要先加 `.md` pattern，
-   並同步 `EXPECTED_MAPPED_FILES = 80` 與 `test-architecture-guards.sh:1542` 的逐字釘）
-4. 鐵律 3 要不要跟著改措辭？（帳號層檔案，不在本 repo，要另外一輪）
-5. **要不要接受「A′-only」這個更便宜的方案**：只做 §4（兩支唯讀具名型別）+ §6.1
-   （一行地板），B／C′／§7 全部不做。
-   代價：放棄當下攔阻換事後查核；仍只讀自陳 ledger；仍只在有 run_id 的 run 有效。
-   換到：零新增擋人規則、零 selftest 反轉、零採用專案破壞、版號安心維持 minor。
-6. D 項治標還治本。
-7. §5.4 把 `tier_of()` 從三層改兩層＋順位 —— 會改變 `check-model-tiering.sh` 兩條紅線
-   的定義，要不要一起做？
-8. §7-1 新的 exec schema 代號：沿用 `exec-v2` 還是開 `exec-v4`？
-   （沿用比較省，但語意上 sequential 與 parallel 的 exec.json 欄位不同）
-9. §7-2 sequential 要不要生 `run_id`？不生的話事後稽核在 sequential 永遠空手。
-10. **版號**：§7 是行為變更（守衛開始在 sequential 生效）+ §5.4 改守衛判準，
-    已經不只是 minor —— 要不要拆成兩版發？
+| # | 題目 | 裁決 |
+|---|---|---|
+| 1 | T review 升思考組 | ✅ 照 harness 走，屬思考組首選 opus。**但要在同一個 commit 補一段「原本的風險分級為什麼不夠」** —— `dev-run/SKILL.md:50` 現行是「高風險或爭議時由 opus 作第二 reviewer」，改成一律升級是擴大保護，`README.md:299-304` 要求說明 |
+| 2 | `model-tiers.json` 放哪、要不要散發 | **放 repo 根目錄**（跟 `devflow-contract.json` 同層）；**先不散發**到採用專案 —— 讓採用專案能自己改分層等於多一份會漂的副本 |
+| 3 | `agents/*.md` 納不納入檔案地圖必列檔 | **納入**（不納入的話新增 agent 沒人記帳）。要先在 `check-file-map.sh:58-63` 的 `PATTERNS` 加 `.md`，並同步 `EXPECTED_MAPPED_FILES` 與 `test-architecture-guards.sh:1542` 的逐字釘 |
+| 4 | 鐵律 3 要不要跟著改措辭 | **本輪不動**。那是帳號層檔案（`~/.claude/rules/ironlaws.md`、`doctrine/01-model-dispatch.md`），要另外一輪 |
+| 5 | 要不要接受 A′-only | **接受，但加做 §7**。第一輪 = §7 前置修復 + A′ + §6.1；B／C′／D 留第二輪。詳見 §13 |
+| 6 | D 治標還治本 | **治標** —— 逐段加進 `check-methodology-corrections.sh` 的釘住清單。治本（改成 renderer 產出）工程量不成比例。**第二輪做** |
+| 7 | `tier_of()` 三層改兩層 | **要做，但屬於 B** → 第二輪。不能只改 `_dispatch_impl.py` 那一份，兩份要同一個 commit 一起改 |
+| 8 | 新的 exec schema 代號 | **開 `exec-v4`**。sequential 與 parallel 的 exec.json 欄位本來就不同，沿用 `exec-v2` 會讓「認得的 schema」與「實際欄位」脫鉤 |
+| 9 | sequential 要不要生 `run_id` | **要**。不生的話 §6.1 的事後稽核在 sequential 永遠空手，等於白做 |
+| 10 | 版號拆幾版 | **拆兩版**：§7 單獨發（行為變更 —— 守衛開始在最常用的那條路生效），A′ + §6.1 再一版 |
+
+### 本輪執行時仍要當場判斷的事（不是待裁決，是實作細節）
+
+- `exec-v4` 要不要沿用 `EXEC_SCHEMAS` 這個 tuple，還是分「認得的」與「會擋的」兩張表。
+- sequential 的 `run_id` 要不要沿用 `L.new_run_id()`（parallel 用的那支）。
+- §7-1 之後現行守衛會不會在 sequential 誤擋 —— **這條一定要實跑驗證**，不能推論。
 
 ---
 
-## 11. 不要做
+## 11. 執行順序（本輪只做「第一輪」）
 
-- **不要在待裁決全部答完之前動手。**
+### 第一輪 —— 本派工單的範圍
+
+| 步 | 做什麼 | 為什麼排這個位置 |
+|---|---|---|
+| **1** | **§7-1** 三處寫 `exec.json` 的路徑補 `schema: "exec-v4"`（`_exec_impl.py:323-328`、`:352-359`、`:977-983`），並把 `exec-v4` 加進 `EXEC_SCHEMAS` | 這是**獨立的 bug**：守衛在最常用的 sequential 路徑上整支失效。跟這份提案綁不綁都該修 |
+| **2** | **§7-2** sequential 也生 `run_id` | 不生的話第 5 步的稽核在 sequential 永遠空手 |
+| **3** | 實跑驗證：加了 schema 之後，現行守衛在 sequential 下**不會誤擋** | 第 1 步是行為變更，這一步是它的安全網。誤擋就退回重想 |
+| **4** | **§4 A′** 建 `agents/devflow-reviewer.md`、`agents/devflow-adviser.md`（`allowedTools: [Read]`，完全不給 Bash / Edit / Write）＋ §4.4 的五項連帶記帳 | A′ **不依賴任何探針結果**（§7-3a 的說明），可以獨立完成 |
+| **5** | **§6.1** `check-model-tiering.sh` 真實模式補 `worker-tasks == 0 → exit 2` 地板 | 一行，補完既有稽核的最後一個洞 |
+| **6** | §7-3a／3b 兩個探針（記錄用），結果寫成 selftest fixture | 不阻斷前面五步，但要留檔給第二輪用 |
+
+**發版**：第 1–3 步（守衛開始在 sequential 生效）**單獨發一版**，第 4–6 步再一版。
+
+### 第二輪 —— 另立派工單，本輪不要碰
+
+- **§5 B** 分層資料檔 + 組內順序（含 §5.4 的 `tier_of()` 三層改兩層）
+- **§6.2 C′** 修 `_scan_low_tier_attempt()` 的判準（「起過」→「失敗過」）
+- **§8 D** README ↔ guide 鏡像段落逐段加進釘住清單（治標）
+
+⚠️ 為什麼分兩輪：B 與 C′ 都會反轉 `hooks/selftest.sh:2006-2057` 的 pinned 案例
+（§6.4），還會撞 `test-architecture-guards.sh:1536` 的 `MIN_CASES` 靜態釘。
+跟第一輪的行為變更混在同一輪，出事時分不出是誰造成的。
+
+### 第三輪以後（尚未排程）
+
+- §9 E `history-append.sh --amend-last`
+- 鐵律 3 的措辭（帳號層檔案，不在本 repo）
+
+---
+
+## 12. 不要做
+
+- **不要在本輪做第二輪的東西**（§5 B、§6.2 C′、§8 D）—— 它們會反轉八條既有
+  pinned 測試，跟第一輪的行為變更混在一起，出事時分不出是誰造成的。
 - **不要恢復 R1／R2**（撤回理由見 §3；恢復前先解決死鎖與無關派工誤擋）。
 - **不要讓 hook 去「發起」派工。** hook 只有放行／擋下／塞 context 三種出口，
   技術上不能生 agent。
@@ -402,7 +446,7 @@ session 同時在寫」時成立。
 
 ---
 
-## 12. 本 repo 的落點紀律（執行輪必讀）
+## 13. 本 repo 的落點紀律（執行輪必讀）
 
 - `main` 有全域 hook（`~/.claude/scripts/git-flow-guard.py`，鐵律 9）擋直接 commit。
   每段收尾走：**短命 branch → commit → `merge --no-ff` 回 `main`**。
