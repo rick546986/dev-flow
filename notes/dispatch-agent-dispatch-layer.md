@@ -350,6 +350,98 @@ ledger 是空的也會 PASS。補 `worker-tasks == 0 → exit 2`（比照
 
 ---
 
+## 7.1 探針結果〔已結案，第 6 步〕：2026-08-19 重跑 + 第二人獨立複核
+
+> 這節是 §7-3a／3b 兩個探針的**結論落點**（rick 2026-08-19 指定寫在本檔）。
+> 上一輪的探針把樣本檔留在 repo 裡，但**執行者被中止在寫收尾報告之前，結論沒有經過
+> 第二個人複核**（2026-08-19 接手單第 1、2 件）。本節是重跑後的結果。
+
+### 7.1.1 怎麼跑的（兩次獨立執行）
+
+用 `claude --plugin-dir <本 repo>` 從一個與本 repo 無關的丟棄用專案把 dev-flow
+**當場臨時載入**（session-only，不經正式安裝），該專案掛一支 PreToolUse 攔截程式把
+原始輸入原封落地，再從那個專案派 Task 給兩支型別。
+
+**跑了兩次，兩次互相獨立**：一次由主線程跑，一次由**沒有前情的複核者自己重跑**
+（鐵律 4：驗證不自驗）。兩次落地的資料形狀與值完全一致。
+
+⚠️ **攔截程式刻意用 Python 寫，不用 `.sh`** —— Windows 上 Python 直接執行一支 `.sh`
+會噴 `WinError 193`，那會讓探針自己壞掉、卻看起來像「平台沒有送出這個事件」。
+
+### 7.1.2 §7-3b 的結論：欄位名與命名空間（原本 repo 內零樣本）
+
+攔到的原始輸入逐字：
+
+```json
+{"tool_name": "Agent",
+ "tool_input": {"description": "...", "prompt": "...",
+                "subagent_type": "dev-flow:devflow-reviewer",
+                "run_in_background": false}}
+```
+
+| 問題 | 答案 | 強度 |
+|---|---|---|
+| 裝型別的欄位叫什麼 | **`subagent_type`** | 兩次獨立實測；兩次的落地檔裡都沒出現過 `agent_type` |
+| `tool_name` 是什麼 | **`Agent`** | 同上 |
+| `tool_input` 有哪些欄位 | `description` / `prompt` / `run_in_background` / `subagent_type` | 同上 |
+| plugin 型別帶不帶命名空間 | **帶**，逐字 `dev-flow:devflow-reviewer`、`dev-flow:devflow-adviser` | 同上 |
+| `agents/` 要不要在 `plugin.json` 另外宣告 | **不用**，放進目錄就會被載入 | 同上 |
+
+⚠️ **第一次重跑落地檔是空的，原因是探針自己寫錯，不是平台行為改變**：
+`pwd -W 2>/dev/null || pwd` 因為 shell 結合律（`A && B || C && D` 解成
+`((A && B) || C) && D`）把兩個路徑串成一條，攔截程式的路徑指向不存在的檔案。
+改成 `{ pwd -W 2>/dev/null || pwd; }` 之後才攔到。
+**留檔的意義：「沒攔到」第一個要懷疑的是探針自己。**
+
+### 7.1.3 §7-3a 的結論：`tools: Read` 真的把工具拿掉了
+
+實際嘗試呼叫拿到的平台回覆逐字：
+
+```
+Error: No such tool available: Bash. Bash is disabled for this session, in subagents as well as here.
+Error: No such tool available: Grep. Grep is disabled for this session, in subagents as well as here.
+Error: No such tool available: Glob. Glob is disabled for this session, in subagents as well as here.
+```
+
+擋的位置在**名稱解析那一層**，不是呼叫後才被拒 —— 那個工具在工具集裡根本不存在。
+
+⚠️ **證據強度不對稱，照實記**：上面三句是在 `dev-flow:devflow-adviser` 取得的。
+`dev-flow:devflow-reviewer` 兩次都自己判斷「工具不在清單裡、發不出呼叫」就沒有真的
+發送（平台統計 `tool_uses: 0`），所以**reviewer 那支沒有可逐字比對的錯誤原文**。
+機制相同，但一支有平台回話、一支只有自述。
+
+### 7.1.4 本輪新查出來的三件事（上一輪沒有的）
+
+| 查到什麼 | 為什麼要緊 |
+|---|---|
+| **`dev-flow:devflow-adviser` 上一輪從來沒被叫過** | `agents/devflow-adviser.md` 卻把它標成「實測，不是推論」。查證方式：在兩支樣本檔裡搜 `devflow-adviser`，搜不到。本輪補測，它**確實叫得出來**，該檔已改成兩次獨立實測 |
+| **工具清單實際是兩項：`Read` 加一個平台注入的 `advisor`** | 兩支 `agents/*.md` 原本寫「允許清單本來就只留 `Read` 一項」，字面上不成立。**要斷言的是「Bash/Edit/Write/Grep/Glob/Skill 都不在裡面」，不是「數量等於 1」** —— 平台注入項不在 frontmatter 控制範圍，日後可能再增減 |
+| **MCP 的使用說明文字照樣注入 subagent，工具本身卻拿不到** | 實測 `context7` 與 `serena` 的說明都進去了，含「先呼叫 `initial_instructions`」這種指示。那些說明**不是給 subagent 的指令**，照著做只會浪費一輪。已寫進 `agents/devflow-adviser.md` |
+
+另外一條小的：subagent 收到的環境說明裡寫著「Bash tool also available」，
+但在 `tools: Read` 的 subagent 裡這句是假的 —— **不要用那段環境說明判斷工具可用性。**
+
+### 7.1.5 仍然沒測的那一半（不得當已驗）
+
+**透過真正的安裝流程**（`claude plugin marketplace add` 加 `install`）之後，在一個全新
+session 裡叫這兩個型別 —— **還是沒測**。`--plugin-dir` 是當場臨時載入，跳過了安裝那一層。
+這一段要等發版重裝之後才做得了（接手單第 2 件的後半）。
+
+**引用本節時不要升級成「型別字串已完全驗證」** —— 現有證據只到「在當場臨時載入這一種
+方式下，兩次獨立執行都叫出來了」。
+
+### 7.1.6 原始證據檔
+
+| 檔案 | 內容 |
+|---|---|
+| `scripts/fixtures/dispatch-guard/pst-real-payload.json` | 攔到的原始輸入；`reverification_2026_08_19` 是本輪重跑的紀錄 |
+| `scripts/fixtures/dispatch-guard/probe-3a-tools-readonly.json` | 工具集實測；同上 |
+
+⚠️ 兩支樣本檔的**原始紀錄沒有被覆蓋**，本輪的結果是另加一個鍵。要看上一輪寫了什麼、
+本輪改了什麼判斷，兩邊都在同一個檔裡對得起來。
+
+---
+
 ## 8. D〔中〕README ↔ guide 的手寫鏡像沒有守衛
 
 `guides/guide-dev-flow.html:1223` 的「規劃層 git」卡片是 `README.md:537-541` 的**手寫**
@@ -407,7 +499,7 @@ session 同時在寫」時成立。
 | **3** | 實跑驗證：加了 schema 之後，現行守衛在 sequential 下**不會誤擋** | 第 1 步是行為變更，這一步是它的安全網。誤擋就退回重想 |
 | **4** | **§4 A′** 建 `agents/devflow-reviewer.md`、`agents/devflow-adviser.md`（`allowedTools: [Read]`，完全不給 Bash / Edit / Write）＋ §4.4 的五項連帶記帳 | A′ **不依賴任何探針結果**（§7-3a 的說明），可以獨立完成 |
 | **5** | **§6.1** `check-model-tiering.sh` 真實模式補 `worker-tasks == 0 → exit 2` 地板 | 一行，補完既有稽核的最後一個洞 |
-| **6** | §7-3a／3b 兩個探針（記錄用），結果寫成 selftest fixture | 不阻斷前面五步，但要留檔給第二輪用 |
+| **6** | §7-3a／3b 兩個探針（記錄用），結果寫成 selftest fixture | 不阻斷前面五步，但要留檔給第二輪用。**✅ 2026-08-19 已結案** —— 重跑 + 第二人獨立複核，結論見 §7.1；仍未測的那一半（正式安裝路徑）也記在該節 |
 
 **發版**：第 1–3 步（守衛開始在 sequential 生效）**單獨發一版**，第 4–6 步再一版。
 

@@ -26,5 +26,24 @@
       "subagent_type": "general-purpose",
       "run_in_background": false
     }
+  },
+  "reverification_2026_08_19": {
+    "when": "2026-08-19(同日重跑;接手單第 1、2 件)",
+    "how": "丟棄用專案的 .claude/settings.json 掛一支 PreToolUse(matcher=Task|Agent)把 stdin 原封落地。⚠️ 攔截程式刻意用 Python 而不是 .sh —— Windows 上 Python 直接 exec 一支 .sh 會噴 WinError 193,那會讓探針自己壞掉卻看起來像『沒攔到』。",
+    "runs": "兩次獨立執行(主線程一次、沒有前情的複核者一次),各落地 2 筆,形狀與值一致。",
+    "field_name_confirmed": "subagent_type",
+    "field_name_negative": "全檔沒有出現過 agent_type 這個欄位名。",
+    "tool_name_confirmed": "Agent",
+    "tool_input_keys_observed": [
+      "description",
+      "prompt",
+      "run_in_background",
+      "subagent_type"
+    ],
+    "type_strings_observed": [
+      "dev-flow:devflow-reviewer",
+      "dev-flow:devflow-adviser"
+    ],
+    "first_attempt_failed_and_why": "第一次重跑落地檔是空的。原因不是平台行為改變,是探針腳本自己的錯:`pwd -W 2>/dev/null || pwd` 這個寫法因為 shell 運算子結合律(A && B || C && D 會解成 ((A && B) || C) && D)把兩個路徑串在一起,hook 指令指向一個不存在的檔案。修成 `{ pwd -W 2>/dev/null || pwd; }` 之後才攔到。⚠️ 留檔的意義:『沒攔到』第一個要懷疑的是探針自己,不是平台。"
   }
 }

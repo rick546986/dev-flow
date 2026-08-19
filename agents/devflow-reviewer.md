@@ -19,7 +19,11 @@ frontmatter `tools: Read` 是**允許清單**,不是提示或建議 —— 平�
 
 - 你**沒有** Bash / Edit / Write。你不能跑測試、不能跑 `git diff`、不能改任何檔案。
 - 你**也沒有** Grep / Glob / Skill,以及採用專案裝的任何 MCP 工具(這些不是刻意額外
-  拔掉,是 `tools: Read` 這張允許清單本來就只留 `Read` 一項的自然結果)。
+  拔掉,是 `tools: Read` 這張允許清單只列了 `Read` 的自然結果)。
+  ⚠️ **實測到的清單是兩項:`Read` 加一個平台注入的 `advisor`**(2026-08-19 兩次獨立
+  探針都一樣,見下方「型別字串」節)。所以**不要寫成「工具集只有一項」**,也不要拿
+  「數量等於 1」當任何檢查的判準 —— 平台注入項不在 frontmatter 的控制範圍內,
+  日後可能再增減。要斷言的是「Bash/Edit/Write/Grep/Glob/Skill 都不在裡面」。
   派工者要知道這個降級代價:如果你的審查需要「搜整個 repo 找某個字串」這種動作,
   派工者要嘛自己先搜好貼進 prompt,要嘛這個審查就不適合派給你這支型別。
 - 你**不能再派其他 agent**(`Agent`/`Task` 工具對所有 subagent 全域不可用,不是本檔
@@ -60,30 +64,48 @@ frontmatter `tools: Read` 是**允許清單**,不是提示或建議 —— 平�
 (`hooks/_dispatch_impl.py` 開頭的信任模型段落是同一句,不得改寫成更強的說法,
 例如「這能防偽造」)。
 
-## 型別字串(證據狀態:單次臨時載入實測過,但沒有第二個人複核)
+## 型別字串(2026-08-19 兩次獨立實測,已經第二人複核)
 
-**怎麼測的**:用 `claude --plugin-dir <這個 repo 路徑>` 從另一個專案把這個 plugin
-當場臨時載入(session-only,不經正式安裝流程),再從那個專案派一次 Task。
+**測法**:用 `claude --plugin-dir <這個 repo 路徑>` 從另一個(與本 repo 無關的)丟棄用專案
+把這個 plugin 當場臨時載入(session-only,不經正式安裝),該專案掛一支 PreToolUse 攔截
+程式把原始輸入原封落地,再從那個專案派一次 Task。
 
-**當時觀察到什麼**:
+**兩次獨立執行,結論一致**:一次由主線程跑,一次由**沒有前情的複核者**自己重跑一遍
+(鐵律 4:驗證不自驗)。兩次落地的原始輸入形狀與值都相同。
 
-- `Task(subagent_type="dev-flow:devflow-reviewer", ...)` 被平台接受,沒有被判為無效型別。
-- 攔在 `Task|Agent` 上的 PreToolUse hook 收到的 `tool_input.subagent_type` 原始值
-  就是 `"dev-flow:devflow-reviewer"`,帶 `dev-flow:` 這段命名空間。
-- `tools: Read` 這張允許清單確實讓 Bash/Edit/Write/Grep/Glob/Skill 從工具集裡整個消失
-  (不是呼叫後被拒絕,是那個工具在工具集裡根本不存在)。
+**攔到的原始輸入逐字**:
+
+```json
+{"tool_name": "Agent",
+ "tool_input": {"description": "...", "prompt": "...",
+                "subagent_type": "dev-flow:devflow-reviewer",
+                "run_in_background": false}}
+```
+
+- 裝型別的欄位名是 **`subagent_type`**,不是 `agent_type`;`tool_name` 是 **`Agent`**。
+- plugin 提供的型別確實帶命名空間,逐字就是 `dev-flow:devflow-reviewer`。
 - `agents/` 目錄不需要在 `.claude-plugin/plugin.json` 另外宣告就會被載入。
 
-**原始證據檔**(當場落地的紀錄,不是事後轉述):
-`scripts/fixtures/dispatch-guard/pst-real-payload.json`(hook 收到的原始資料)、
+**`tools: Read` 這張允許清單真的把工具拿掉了**。同一輪對 `dev-flow:devflow-adviser`
+實際嘗試呼叫,平台回的錯誤原文逐字是:
+
+```
+Error: No such tool available: Bash. Bash is disabled for this session, in subagents as well as here.
+Error: No such tool available: Grep. Grep is disabled for this session, in subagents as well as here.
+Error: No such tool available: Glob. Glob is disabled for this session, in subagents as well as here.
+```
+
+⚠️ **這三句是在 adviser 那支取得的,不是在本型別**。本型別兩次都自己判斷「工具不在
+清單裡、發不出呼叫」就沒有真的發送,所以本型別**沒有**產出可逐字比對的錯誤原文
+(平台統計 `tool_uses: 0`)。機制相同、證據強度不同,照實記。
+
+**原始證據檔**:`scripts/fixtures/dispatch-guard/pst-real-payload.json`(攔到的原始輸入)、
 `scripts/fixtures/dispatch-guard/probe-3a-tools-readonly.json`(工具集實測)。
 
-**這句話撐不到哪裡 —— 引用前先看這三條**:
+**還撐不到的地方(引用前先看)**:
 
-1. **正式安裝那條路沒測過。** `--plugin-dir` 是當場臨時載入,跳過了
+1. **正式安裝那條路仍然沒測過。** `--plugin-dir` 是當場臨時載入,跳過了
    `claude plugin marketplace add` 加 `install` 那一層。發版重裝之後要再叫一次
-   才算真的封閉(2026-08-19 接手單第 2 件)。
-2. **這次實測只有動手的人自己記錄,沒有第二個人複核過**(同上接手單)。這個字串寫錯的話,
-   未來任何拿型別當判準的檢查都會跟著錯,所以複核完成之前不要把它當定論引用。
-3. **不要把本節改寫成更強的說法。** 例如「型別字串已驗證」「這能保證叫得出來」——
-   現有證據只到「在一種載入方式下成功叫出來過一次」。
+   才算真的封閉(2026-08-19 接手單第 2 件的後半)。
+2. **不要把本節改寫成更強的說法。** 例如「型別字串已完全驗證」「這能保證叫得出來」——
+   現有證據只到「在當場臨時載入這一種方式下,兩次獨立執行都叫出來了」。
