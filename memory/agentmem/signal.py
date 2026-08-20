@@ -40,6 +40,11 @@ HIGH_SIGNAL_KINDS = {
     "deployment_issue",
     "important_discovery",
     "conflict_detected",
+    # 修正歷史(P0-3):「以前理解成什麼、後來為什麼改」是 durable memory
+    # 最有價值的一類 —— 它正是現況視圖留不下來的東西。
+    "knowledge_corrected",
+    "fact_superseded",
+    "decision_superseded",
 }
 
 # 低訊號:一律 local only(即使有人手動標高訊號也先降級,見 gate() 的 reasons)

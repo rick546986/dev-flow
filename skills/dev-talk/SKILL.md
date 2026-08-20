@@ -22,8 +22,62 @@ code-intelligence 工具(語意索引 / knowledge graph / LSP),只信任其**查
 `${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py ask "<問題>"` ——
 `<詞> 是什麼意思`(已確認的語意)/ `目前 <東西> 是什麼`(現況)/
 `之前 <主題> 改過什麼`(歷史)/ `為什麼 <決定>`(當初的理由)。
-查不到時它回 `NO_RELIABLE_MATCH`:那是合法答案,據此說「沒有記錄」,
+狀態欄有四種:`OK`(可信)/ `NEEDS_VERIFICATION`(有記憶但當前 checkout 下
+還沒驗證,不要當成現況)/ `CONFLICT`(兩邊說法不同,兩邊都要講)/
+`NO_RELIABLE_MATCH`(沒有可信記憶)。**只讀狀態欄不夠時再讀 uncertainty**,
+但**不要看到有結果就當成 OK**。查不到就據此說「沒有記錄」,
 **不要拿相近的記憶頂替**。
+
+## 記憶指令的生命週期(開場第一動,先於執行清單第 0 步)
+
+本段是**強制順序**。不照這個順序走,這一輪聊出來的東西不會留下來 ——
+使用者以為記下了,下一個 session 卻查不到,那比沒有記憶更糟。
+
+```
+0. start    →  取得 session_id,全程重用(下稱 MEMORY_SESSION_ID)
+1. turn     →  每個重要的問與答(只留本機,永遠不進版本控制)
+2. propose  →  萃取出來的語意,登記成候選(還沒進版本控制)
+3. confirm  →  使用者明確確認的候選才 confirm
+   reject   →  使用者否定的候選 reject
+   correct  →  使用者推翻先前已記錄的理解時走這個(舊的保留、標成被取代)
+4. end      →  使用者點頭收尾;**這一步才把已確認的寫進長期記憶**
+```
+
+**第一動**(在執行清單第 0 步之前):
+
+```
+${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py talk start "<本輪主題>"
+```
+
+它回傳 `session_id` 與一份 brief(它先自己看過的既有記憶、repo 訊號、
+它不確定而想問你的具體問題)。**把 `session_id` 當本次 workflow state 保存**,
+之後每一個記憶指令都要帶它:`MEMORY_SESSION_ID=<回傳的 session id>`。
+(不必真的 export 成 shell 變數,但你必須全程用同一個值。)
+brief 的 open questions 是步 3 逐題逼問的起點之一,不是全部。
+
+**每輪對話**(使用者答完、或你做了關鍵覆述/確認提問之後):
+
+```
+dev-memory.py talk turn $MEMORY_SESSION_ID user  "<使用者說的重點>"
+dev-memory.py talk turn $MEMORY_SESSION_ID agent "<你的關鍵確認或覆述>"
+```
+
+只記**重要的輪次**:使用者的實質回答、你的關鍵確認問題與覆述。
+**不要**把每一個工具訊息、每一段思考、每一次檔案讀取寫進去 ——
+逐字稿是給萃取用的原料,不是操作日誌。逐字稿**永遠只住本機**。
+
+**沒有 `start` 就 `propose` 會被擋下來**(工具會 fail-loud)。這是刻意的:
+候選要掛在一個真實存在且仍開著的 session 上,否則收尾時找不到它。
+
+**中途結束**(使用者喊停、或這一輪聊不完):
+
+```
+dev-memory.py talk abort $MEMORY_SESSION_ID --reason "<原因>"
+```
+
+讓 session 狀態明寫 `ABORTED`。**不要就這樣不管它,也不要假裝走完了 end** ——
+留一個永遠 OPEN 的 session,下次回顧分不出「還在談」與「早就放棄」;
+而下一次 dev-talk 一律開新的 session,**絕不接上一個**。
 
 **寫入白名單**:只寫兩個檔 —— `docs/dev/<feature-slug>/1-discussion.md`、同目錄
 `1-discussion.html`;另外經 `dev-memory.py talk …` 登記語意候選(那支工具自己管
@@ -95,19 +149,26 @@ code-intelligence 工具(語意索引 / knowledge graph / LSP),只信任其**查
    發現問題 → 改檔或回步 3 補問。完成 = 七掃完畢、問題清零。
 9. **詞彙對帳**。先**查長期記憶的現況**(`dev-memory.py ask "<詞> 是什麼意思"`
    ——其他討論可能已經確認過詞條,只增改自己本輪的、不動他人的),再把本輪浮現的
-   業務詞彙逐一登記成候選(`dev-memory.py talk propose <session> --kind domain`;
+   業務詞彙逐一登記成候選(`dev-memory.py talk propose $MEMORY_SESSION_ID
+   --kind domain --payload-json '{"key":"…","title":"…","body":"…"}'`;
    詞條 + _Avoid_ 寫在同一則裡;只收語言不收解法 —— 逐詞自問「這詞條在解釋語言,
    還是在記方案?」後者刪;尚未實作的語意用 `--kind intent` 而不是 domain,
-   它不能被當成現況;同名異義分立互註)。使用者確認過的才 `talk confirm`;
-   **未確認的候選一律不寫進長期記憶**。完成 = 逐詞打勾。
+   它不能被當成現況;同名異義分立互註)。使用者明確確認的才
+   `dev-memory.py talk confirm <candidate>`;使用者否定的走
+   `dev-memory.py talk reject <candidate>`;使用者**推翻先前已記錄的理解**時走
+   `dev-memory.py talk correct $MEMORY_SESSION_ID --kind domain --key <詞>
+   --title "<新理解>" --reason "<為什麼改>"`(舊的會保留並標成被取代,
+   看得到轉折才叫記憶)。**未確認的候選一律不寫進長期記憶**。完成 = 逐詞打勾。
 10. **產 html**。先自核 md:Open Questions 僅含三態符號,出現其他記號(如 `[ ]`)
     → 回步 3 定態後才產。`1-discussion.html` **只從 md 生成**(md 是唯一正本;
     html 要改,先改 md 再重生)。內容與圖判準見「視覺版」。完成 = 自核過+七件齊。
 11. **過目與收尾**。把 html 給使用者過目(md 為正本)。Open Questions 只有
     三態:`[x]` 已解 / `[~]` 帶假設(使用者明說先這樣)/ `[>]` 移交(本討論
     不解,標注留待後續)。使用者點頭 → status 改 approved →
-    跑 `dev-memory.py talk end <session>`(這一步才把已確認的語意寫進長期記憶;
-    原始對話逐字稿只留在本機,永遠不進版本控制)→ **停**。
+    跑 `dev-memory.py talk end $MEMORY_SESSION_ID`(這一步才把已確認的語意寫進
+    長期記憶並關閉 session;原始對話逐字稿只留在本機,永遠不進版本控制)。
+    它回 `promoted: 0` 是合法結果 —— 這一輪沒有形成可確認的語意就是沒有,
+    **不要為了有東西可交而硬記一筆** → **停**。
 
 ## 產出骨架(1-discussion.md,十節)
 

@@ -8,10 +8,12 @@
   "files": {
    "src/services/db.ts": "export const currentTable = 'lab_order'\n",
    "src/services/worker.ts": "export const port = 38888\n",
-   "package.json": "{\"name\":\"eval-fixture\"}\n"
+   "package.json": "{\"name\":\"eval-fixture\"}\n",
+   "src/services/pgs_intake_registration.ts": "export const legacyTable = 'pgs_intake_registration'\n"
   },
   "mutate_files": {
-   "src/services/worker.ts": "export const port = 39999\n"
+   "src/services/worker.ts": "export const port = 39999\n",
+   "src/services/pgs_intake_registration.ts": "export const legacyTable = 'lab_order'\n"
   },
   "facts": [
    {
@@ -37,6 +39,18 @@
     ],
     "status": "VERIFIED",
     "confidence": 0.98
+   },
+   {
+    "ref": "fact-legacy",
+    "entity_type": "database",
+    "entity_key": "legacy-intake",
+    "fact_key": "legacy_table",
+    "value": "pgs_intake_registration",
+    "dependencies": [
+     "src/services/pgs_intake_registration.ts"
+    ],
+    "status": "VERIFIED",
+    "confidence": 0.97
    }
   ],
   "knowledge": [
@@ -139,6 +153,25 @@
     "body": "這筆記憶標在 feature/experimental 上",
     "occurred_at": "2026-08-01T00:00:00Z",
     "branch": "feature/experimental"
+   },
+   {
+    "ref": "evt-correction",
+    "kind": "knowledge_corrected",
+    "title": "知識更正:registration —— 原本理解成「registration = embryo-level 的送檢紀錄」,後來改為「registration = 一個客戶在 submission 內的送檢紀錄」",
+    "body": "原本:registration = embryo-level 的送檢紀錄\n改為:registration = 一個客戶在 submission 內的送檢紀錄\n原因:使用者更正,registration 永遠代表一個客戶\n這是一筆修正紀錄:先前的理解已被取代,舊版本保留於此供追溯。\n狀態:SUPERSEDED → CONFIRMED",
+    "occurred_at": "2026-07-15T00:00:00Z",
+    "branch": "main"
+   },
+   {
+    "ref": "evt-rename-invalidation",
+    "kind": "table_rename",
+    "title": "pgs_intake_registration 這支檔案被改名,依賴它的事實需要重新驗證",
+    "body": "git mv 之後舊路徑不再代表當前 checkout",
+    "occurred_at": "2026-07-20T00:00:00Z",
+    "branch": "main",
+    "paths": [
+     "src/services/pgs_intake_registration.ts"
+    ]
    }
   ]
  },
@@ -291,6 +324,58 @@
    "id": "nohit-mixed",
    "language": "mixed",
    "query": "目前 zzzz_nonexistent_table 用哪一張?",
+   "expect_status": "NO_RELIABLE_MATCH"
+  },
+  {
+   "id": "status-stale-zh",
+   "language": "zh",
+   "query": "目前 legacy-intake 的 legacy_table 是什麼?",
+   "expect_kind": "CURRENT",
+   "expect_status": "NEEDS_VERIFICATION",
+   "expect_stale": true
+  },
+  {
+   "id": "status-ok-zh",
+   "language": "zh",
+   "query": "目前 lab-order 的 current_table 是什麼?",
+   "expect_kind": "CURRENT",
+   "expect_status": "OK",
+   "expect_value": "lab_order"
+  },
+  {
+   "id": "correction-history-zh",
+   "language": "zh",
+   "query": "之前 registration 的理解改過什麼?",
+   "expect_kind": "HISTORY",
+   "expect_status": "OK",
+   "expect_refs": [
+    "evt-correction"
+   ]
+  },
+  {
+   "id": "correction-history-mixed",
+   "language": "mixed",
+   "query": "registration 之前被 corrected 過嗎?改成什麼?",
+   "expect_kind": "HISTORY",
+   "expect_refs": [
+    "evt-correction"
+   ]
+  },
+  {
+   "id": "exact-symbol-cjk",
+   "language": "mixed",
+   "query": "pgs_intake_registration 這支檔案之前發生過什麼?",
+   "expect_kind": "HISTORY",
+   "expect_status": "OK",
+   "expect_refs": [
+    "evt-rename-invalidation"
+   ]
+  },
+  {
+   "id": "false-why-zh",
+   "language": "zh",
+   "query": "為什麼 registration 的理解會被更正?",
+   "expect_kind": "WHY",
    "expect_status": "NO_RELIABLE_MATCH"
   }
  ],

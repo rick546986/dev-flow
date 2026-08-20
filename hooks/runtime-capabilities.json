@@ -18,7 +18,7 @@
   "prompt_registry": "1.0",
   "exec_state": "exec-v3",
   "wave_review": "devflow-wave-review.v1",
-  "memory_local": "1",
+  "memory_local": "2",
   "memory_durable": "1"
  }
 }

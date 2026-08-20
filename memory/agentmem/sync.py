@@ -12,9 +12,13 @@
 """
 import json
 
-from . import durable, ids, signal, store as store_mod
+from . import durable, ids, lineage, signal, store as store_mod
 
-_FACT_STATUS_DURABLE = {"VERIFIED", "CONFLICT", "SUPERSEDED", "UNKNOWN", "STALE"}
+# CANDIDATE 也進 durable:狀態欄本來就會明寫,查詢時它會被當成
+# NEEDS_VERIFICATION。把它擋在外面反而製造一個洞 —— 「觀察到但還沒驗證」
+# 的事實會完全不留痕跡,另一台機器連「有人看過這件事」都不知道。
+_FACT_STATUS_DURABLE = {"VERIFIED", "CANDIDATE", "CONFLICT", "SUPERSEDED",
+                        "UNKNOWN", "STALE"}
 
 
 # ─────────────────────────── durable → local ────────────────────────────────
@@ -165,11 +169,25 @@ def consolidate(repo_root, store, session_id=None, now=None):
     rejected = []
     entities_touched = set()
     event_records = []
+    pending_revisions = []
 
     for candidate in store.candidates(session_id=session_id,
                                       statuses=("CONFIRMED",)):
         payload = candidate["payload"]
         kind = candidate["target_kind"]
+        # 最後一道防線:候選必須掛在一個**真實存在**的 session 上。
+        # devtalk/session 層已經擋過「沒有 start 就 propose」,但 store 是內部
+        # API,直接呼叫它塞候選會繞過那一層 —— durable writer 是最後有機會
+        # 攔下來的地方,而 durable 寫入是不可逆的(進了 commit 就在歷史裡)。
+        if store.session(candidate["session_id"]) is None:
+            store.set_candidate_status(
+                candidate["candidate_id"], "LOCAL_ONLY",
+                note="session {0} 不存在 —— 候選沒有來源可追溯,不予固化".format(
+                    candidate["session_id"]), now=now)
+            rejected.append({"candidate_id": candidate["candidate_id"],
+                             "target_kind": kind,
+                             "reasons": ["session 不存在,無法追溯來源"]})
+            continue
         title = payload.get("title", "")
         body = payload.get("body", "")
         verdict = signal.gate(
@@ -185,6 +203,7 @@ def consolidate(repo_root, store, session_id=None, now=None):
             continue
 
         if kind in durable.KNOWLEDGE_DIRS:
+            previous = _supersede_previous_knowledge(store, kind, payload, now)
             knowledge_id = store.upsert_knowledge({
                 "kind": kind, "key": payload["key"], "title": title,
                 "body": body, "authority": candidate["authority"],
@@ -196,6 +215,13 @@ def consolidate(repo_root, store, session_id=None, now=None):
                 "implemented": payload.get("implemented"),
                 "durable": True})
             record = store.knowledge_row(knowledge_id)
+            if previous:
+                pending_revisions.append(lineage.build_knowledge_revision(
+                    kind, payload["key"], previous,
+                    dict(record, knowledge_id=knowledge_id),
+                    reason=payload.get("_lineage_reason", "")
+                    or payload.get("correction_reason", ""),
+                    session_id=candidate["session_id"], occurred_at=now))
             written.append(durable.write_knowledge(repo_root, {
                 "kind": kind, "key": record["key"], "title": record["title"],
                 "body": record["body"], "authority": record["authority"],
@@ -206,6 +232,7 @@ def consolidate(repo_root, store, session_id=None, now=None):
                 "implemented": (None if record["implemented"] is None
                                 else bool(record["implemented"]))}))
         elif kind == "decision":
+            previous = _supersede_previous_decision(store, payload["key"], now)
             decision_id = store.upsert_decision({
                 "key": payload["key"], "title": title,
                 "decision": payload.get("decision", ""),
@@ -218,6 +245,15 @@ def consolidate(repo_root, store, session_id=None, now=None):
                 "supersedes": payload.get("supersedes"),
                 "evidence": payload.get("evidence") or [],
                 "durable": True})
+            if previous:
+                pending_revisions.append(lineage.build_decision_revision(
+                    payload["key"], previous,
+                    {"decision_id": decision_id, "title": title,
+                     "decision": payload.get("decision", ""),
+                     "status": payload.get("status", "ACCEPTED")},
+                    reason=payload.get("supersedes_reason", "")
+                    or payload.get("correction_reason", ""),
+                    session_id=candidate["session_id"], occurred_at=now))
             written.append(durable.write_decision(repo_root, {
                 "key": payload["key"], "title": title,
                 "decision": payload.get("decision", ""),
@@ -256,7 +292,8 @@ def consolidate(repo_root, store, session_id=None, now=None):
                 # 查詢時只能降級成 CANDIDATE(無從驗證)—— 等於白宣告了依賴。
                 # 現算是正確的基準:consolidation 本來就發生在當前 checkout 上。
                 fingerprints = truth.fingerprints_for(repo_root, dependencies)
-            verified_commit = payload.get("verified_commit")
+            verified_commit = (payload.get("verified_commit")
+                               or payload.get("commit_sha"))
             record = {
                 "entity_type": payload["entity_type"],
                 "entity_key": payload["entity_key"],
@@ -266,7 +303,8 @@ def consolidate(repo_root, store, session_id=None, now=None):
                 "recorded_at": now, "effective_at": now,
                 "source_type": payload.get("source_type"),
                 "source_ref": payload.get("source_ref"),
-                "source_commit": payload.get("source_commit"),
+                "source_commit": (payload.get("source_commit")
+                                  or payload.get("commit_sha")),
                 "dependencies": dependencies,
                 "fingerprints": fingerprints}
             if record["status"] == truth.VERIFIED:
@@ -276,6 +314,8 @@ def consolidate(repo_root, store, session_id=None, now=None):
             store.upsert_fact(record)
             entities_touched.add((payload["entity_type"], payload["entity_key"]))
         elif kind == "event":
+            # observe() 已經落過本機事件時重用它的 id(把它升級成 durable),
+            # 不另產一筆 —— 否則同一件事在檢索裡會出現兩次。
             event_id = store.add_event(
                 payload.get("kind", "important_discovery"), title, body,
                 occurred_at=payload.get("occurred_at") or now,
@@ -284,7 +324,10 @@ def consolidate(repo_root, store, session_id=None, now=None):
                 session_id=candidate["session_id"], signal=signal.HIGH,
                 file_paths=payload.get("paths") or [],
                 source_type=payload.get("source_type"),
-                source_ref=payload.get("source_ref"), durable=True)
+                source_ref=payload.get("source_ref"), durable=True,
+                event_id=(payload.get("event_id")
+                          if ids.is_valid_id("event", payload.get("event_id"))
+                          else None))
             event_records.append({
                 "event_id": event_id, "kind": payload.get(
                     "kind", "important_discovery"),
@@ -313,12 +356,96 @@ def consolidate(repo_root, store, session_id=None, now=None):
         if path:
             written.append(path)
 
+    # ── revision lineage(P0-3)──────────────────────────────────────────
+    # 兩個來源:本輪固化時偵測到的 supersede,以及先前落在 local `revisions`
+    # 表裡還沒刷出去的(例如 CLI `verify` 造成的 fact supersede)。
+    # 一樣要過敏感/絕對路徑守衛 —— 系統產生的記錄不因為是系統產生就放行。
+    stored_pending = lineage.pending(store, session_id)
+    flushed_ids = []
+    for row in stored_pending:
+        pending_revisions.append(row["payload"])
+        flushed_ids.append(row["revision_id"])
+
+    revision_records = []
+    for revision in pending_revisions:
+        verdict = signal.gate(
+            revision["kind"], revision["title"], revision["body"],
+            extra_texts=[json.dumps(revision, ensure_ascii=False)])
+        if not verdict["durable_allowed"]:
+            rejected.append({"candidate_id": None,
+                             "target_kind": revision["kind"],
+                             "reasons": verdict["reasons"]})
+            continue
+        record = dict(revision)
+        record.setdefault("event_id", ids.new_id("event"))
+        revision_records.append(record)
+        store.add_event(record["kind"], record["title"], record["body"],
+                        occurred_at=record["occurred_at"],
+                        session_id=record.get("session_id") or None,
+                        signal=signal.HIGH, durable=True,
+                        source_type="revision",
+                        source_ref=record["key"],
+                        event_id=record["event_id"])
+    event_records.extend(revision_records)
+    if flushed_ids:
+        lineage.mark_durable(store, flushed_ids)
+
     if event_records:
         written.extend(durable.append_events(
             repo_root, session_id or "consolidation", event_records))
 
     return {"written": sorted(set(written)), "promoted": promoted,
-            "rejected": rejected}
+            "rejected": rejected, "revisions": len(revision_records)}
+
+
+def _supersede_previous_knowledge(store, kind, payload, now):
+    """同一個 key 已有現行記錄 → 標 SUPERSEDED,並回傳舊值快照。
+
+    兩條路都會走到這裡:`devtalk.correct()`(帶 `_lineage_previous` 快照)與
+    「同 key 再 propose 一次」(沒帶快照,從 local 現況取)。兩條都要留下 lineage,
+    否則「用哪條路更正」會決定歷史有沒有被記下來 —— 那是不可預測的失憶。
+    """
+    snapshot = payload.get("_lineage_previous")
+    rows = store.knowledge(kind=kind, key=payload["key"],
+                           statuses=("CANDIDATE", "CONFIRMED", "CONFLICT"),
+                           limit=1)
+    if not rows and not snapshot:
+        return None
+    if rows:
+        previous = dict(rows[0])
+        store.upsert_knowledge({
+            "knowledge_id": previous["knowledge_id"], "kind": kind,
+            "key": payload["key"], "title": previous["title"],
+            "body": previous["body"], "authority": previous["authority"],
+            "status": "SUPERSEDED", "confidence": previous["confidence"],
+            "recorded_at": previous["recorded_at"], "superseded_at": now,
+            "evidence": json.loads(previous["evidence_json"]),
+            "conflicts": json.loads(previous["conflicts_json"]),
+            "implemented": (None if previous["implemented"] is None
+                            else bool(previous["implemented"])),
+            "durable": bool(previous["durable"])})
+        previous["status"] = "SUPERSEDED"
+        return previous
+    return snapshot
+
+
+def _supersede_previous_decision(store, key, now):
+    rows = store.decisions(key=key, statuses=("ACCEPTED", "PROPOSED"), limit=1)
+    if not rows:
+        return None
+    previous = dict(rows[0])
+    store.upsert_decision({
+        "decision_id": previous["decision_id"], "key": key,
+        "title": previous["title"], "decision": previous["decision"],
+        "alternatives": previous["alternatives"], "reason": previous["reason"],
+        "tradeoff": previous["tradeoff"], "status": "SUPERSEDED",
+        "decided_at": previous["decided_at"],
+        "recorded_at": previous["recorded_at"],
+        "supersedes": previous["supersedes"],
+        "evidence": json.loads(previous["evidence_json"]),
+        "durable": bool(previous["durable"])})
+    previous["status"] = "SUPERSEDED"
+    return previous
 
 
 def _signal_kind_for(target_kind):

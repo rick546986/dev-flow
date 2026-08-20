@@ -59,9 +59,12 @@ def read_file(path):
         return stream.read()
 
 
-def commit_all(root, message):
+def commit_all(root, message, allow_empty=False):
     git(root, "add", "-A")
-    git(root, "commit", "-q", "-m", message)
+    args = ["commit", "-q", "-m", message]
+    if allow_empty:
+        args.insert(1, "--allow-empty")
+    git(root, *args)
     return git(root, "rev-parse", "HEAD")
 
 

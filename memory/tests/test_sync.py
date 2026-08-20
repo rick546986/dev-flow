@@ -256,3 +256,45 @@ class FactConsolidationTest(MemoryCase):
         row = self.store.facts(fact_key="current_table", limit=1)[0]
         self.assertEqual(json.loads(row["fingerprints_json"]),
                          {"src/services/db.ts": "sha256:supplied"})
+
+
+class OrphanCandidateTest(MemoryCase):
+    """候選必須掛在真實存在的 session 上 —— durable writer 是最後一道防線。
+
+    devtalk/session 層已經擋過「沒有 start 就 propose」,但 store 是內部 API,
+    直接呼叫它塞候選會繞過那一層。durable 寫入不可逆(進了 commit 就在歷史裡),
+    所以最後有機會攔下來的地方一定要攔。
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.project_id = self.project()["project_id"]
+        self.store = self.store_for(self.project_id)
+
+    def test_candidate_with_unknown_session_is_not_consolidated(self):
+        orphan = "ses_0000000000000000000000000X"
+        candidate = self.store.add_candidate(
+            orphan, "domain", {"key": "smuggled", "title": "偷渡的知識"},
+            "domain_expert")
+        self.store.set_candidate_status(candidate, "CONFIRMED")
+        result = sync.consolidate(self.repo, self.store, orphan)
+        self.assertEqual(result["promoted"], 0)
+        self.assertEqual(len(result["rejected"]), 1)
+        self.assertEqual(list(durable.iter_knowledge(self.repo)), [])
+        row = self.store.candidates(orphan, statuses=("LOCAL_ONLY",))[0]
+        self.assertIn("session", row["note"])
+
+    def test_orphan_candidate_does_not_block_valid_ones(self):
+        orphan = "ses_0000000000000000000000000X"
+        bad = self.store.add_candidate(
+            orphan, "domain", {"key": "smuggled", "title": "偷渡"},
+            "domain_expert")
+        self.store.set_candidate_status(bad, "CONFIRMED")
+        real = self.store.start_session("真的 session")
+        good = self.store.add_candidate(
+            real, "domain", {"key": "legit", "title": "正常的知識"},
+            "domain_expert")
+        self.store.set_candidate_status(good, "CONFIRMED")
+        self.assertEqual(sync.consolidate(self.repo, self.store, real)["promoted"], 1)
+        self.assertEqual([k["key"] for k in durable.iter_knowledge(self.repo)],
+                         ["legit"])

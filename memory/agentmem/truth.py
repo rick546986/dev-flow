@@ -24,7 +24,7 @@ import hashlib
 import json
 import os
 
-from . import ids, paths, store as store_mod
+from . import ids, lineage, paths, store as store_mod
 
 # ── fact status(不只靠 confidence 數字;§8)──────────────────────────────────
 CANDIDATE = "CANDIDATE"
@@ -272,7 +272,7 @@ def resolve_current(store, repo_root, entity_type, entity_key, fact_key,
 
 
 def reverify(store, repo_root, fact_id, workspace_id, observed_value,
-             source_commit=None, now=None):
+             source_commit=None, now=None, session_id=None, reason=""):
     """重新驗證的三種結果(§9 recovery):
 
       observed == 舊值   → 清掉 overlay、重算指紋、VERIFIED、verification_count+1
@@ -307,6 +307,16 @@ def reverify(store, repo_root, fact_id, workspace_id, observed_value,
     new_id = ids.new_id("fact")
     store.upsert_fact(_as_record(
         fact, status=SUPERSEDED, superseded_at=now, superseded_by=new_id))
+    # 記一筆 revision(pending):「原本 X、現在 Y、為什麼」是現況視圖留不下來的
+    # 東西 —— 少了它,另一台機器 rebuild 之後只看得到現在的值(P0-3)。
+    lineage.record_pending(store, lineage.build_fact_revision(
+        fact["entity_type"], fact["entity_key"], fact["fact_key"],
+        {"fact_id": fact_id, "value": fact["value"], "status": SUPERSEDED,
+         "source_type": fact["source_type"]},
+        {"fact_id": new_id, "value": str(observed_value), "status": VERIFIED,
+         "source_type": fact["source_type"]},
+        reason=reason, session_id=session_id, occurred_at=now,
+        evidence=[{"type": "file", "ref": dep} for dep in deps]))
     store.upsert_fact({
         "fact_id": new_id, "entity_type": fact["entity_type"],
         "entity_key": fact["entity_key"], "fact_key": fact["fact_key"],

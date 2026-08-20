@@ -26,11 +26,12 @@
 - context      Startup Context Builder(小、結構化、不讀 CONTEXT.md)
 - devtalk      Project Understanding Mode 的候選知識生命週期
 - consolidate  candidate → durable 的固化(唯一 durable 寫入時機)
+- lineage      修正歷史(knowledge/fact/decision 的 append-only revision)
 - legacy       legacy 資料遷移(project_path → project_id、CONTEXT.md 詞彙表)
 - evalharness  memory evaluation(Recall@5/MRR/Current Truth Accuracy/…)
 """
 
-LOCAL_SCHEMA_VERSION = 1
+LOCAL_SCHEMA_VERSION = 2
 """local SQLite schema 版本(migration 的目標版本;見 schema.py)。
 
 刻意與「Agent Memory v3 架構」的 3 分開編號:架構代號是對外的敘述,

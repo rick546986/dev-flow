@@ -20,6 +20,14 @@ description: dev-flow Stage 6 內部執行引擎 — 多模型派工(haiku 寫�
 3. 讀 4-spec、5-tasks、living spec、`.claude/rules/*.md`;業務語意改查長期記憶
    (`${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py ask "<詞> 是什麼意思"`),不再讀 CONTEXT.md。
    **禁讀 1/2/3**(守衛會擋,含 shell)。
+4. **開 memory session**(記憶生命週期的起點,見「記憶生命週期」節):
+   ```
+   ${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py session start \
+     --mode implementation --slug <slug>
+   ```
+   把回傳的 `session_id` 當本次 Stage 6 的 workflow state 全程重用
+   (下稱 `MEMORY_SESSION_ID`)。**不開 session = 這次實作學到的東西不會留下來**
+   —— Git 會有 commit,而記憶什麼都不知道。
 
 5-tasks frontmatter 有 `execution.mode: parallel` → 走「並行模式」節(wave 派工迴圈,
 任務樹以 `start <slug> --task T-n` 武裝);否則走下方逐 T 迴圈,行為與既往完全相同。
@@ -136,10 +144,73 @@ remote tip 等於當下 feature HEAD;push 或驗證失敗就停在這裡,不得�
 其他人算聯集時看不到你的戰場)→ `devflow-exec.sh stop` → 回報使用者進
 Stage 7(送審前置派工見「Stage 7 送審前置」節)。7-review.html 須含執行記錄表
 (模型分佈/升階次數/D-n 與 allow 清單)。
+**固化記憶(W6)**:回歸綠 + bookkeeping 完成 + 最終 commit 存在**之後**,跑
+`dev-memory.py checkpoint $MEMORY_SESSION_ID --end`(見「記憶生命週期」節)。
+時機在回歸綠之後不是之前:沒過回歸的東西還不是「這個專案現在的樣子」。
+`.dev-flow/` 的改動隨 feature branch 一起 commit/push,不另開 branch。
+
 **寫事件與衍生(W5)**:回歸綠後送 `stage_completed`(stage=6)→ 跑
 `devflow-obs.sh derive` 重建 run-events.jsonl —— 6-notes 執行軌跡列與 7-review
 執行記錄由 ledger **衍生**(禁手動雙寫),`devflow-obs.sh stats` 產模型分佈/升階
 摘要供 7-review 執行記錄表 → 最後送 `run_completed`。
+
+## 記憶生命週期(Stage 6 做完要真的「長記憶」)
+
+沒有這一節的話,Stage 6 做完只有 Git commit,**Memory 什麼都不知道** ——
+下一個 session、下一台機器、下一個人都得重新讀一次 code 才知道發生過什麼。
+
+```
+Stage 6 開工                     session start --mode implementation --slug <slug>
+   │                               (記 session_id / feature slug / branch / 起始 HEAD)
+   ▼
+每個 T PASS 之後(可選)          session observe <sid> …
+   │                               高訊號 → 累積成候選(本機);低訊號 → 只留本機
+   ▼
+回歸綠 + 記帳完成 + 最終 commit   checkpoint <sid> --end
+   │                               ← durable 寫入**只在這裡**發生
+   ▼
+.dev-flow/ 隨 feature branch commit/push
+```
+
+**每個 T PASS 之後**可以記一筆(不是義務,只在真的有東西學到時才記;
+`observe` 不會馬上寫 Git,候選累積到 checkpoint 才一次固化):
+
+```
+dev-memory.py session observe $MEMORY_SESSION_ID \
+  --kind <種類> --title "<一句話>" [--body "<細節>"] \
+  [--path-ref <repo 相對路徑>]... [--commit <sha>]
+```
+
+`--kind` 可以是**事件種類**,或 `fact` / `decision` / `skill` / `knowledge`
+(後四種各自配 `--fact-json` / `--decision-json` / `--skill-json` /
+`--knowledge-json`)。
+
+| 值得記(高訊號) | 不要記(低訊號,工具會自己擋掉) |
+|---|---|
+| 架構變更、schema 變更、表改名、API 契約變更 | 讀檔、grep、列目錄 |
+| 業務規則、bug root cause、重要設計決策 | 一般成功指令、中間 debug |
+| 驗證過的流程、breaking config、實作事實 | 暫時假設、未確認推論、raw log |
+| 發現的重要關聯 | 每輪對話逐字稿 |
+
+低訊號送進去**不是錯**:工具回 `signal: low` 並只留本機,不進 Git。
+所以拿不準時照送,由 Signal Gate 判,不要自己先過濾掉真正重要的東西。
+
+**三條硬規則**:
+
+1. **`--kind fact` 標成 VERIFIED 必須有 `dependencies`,而且那些檔要真的存在。**
+   工具會擋下「VERIFIED 但沒有任何驗證依據」的事實 —— 那種事實在查詢時只能被
+   誠實降級,等於宣稱驗過卻驗不了。沒把握就讓它是 `CANDIDATE`。
+2. **domain 語意不要用 `--kind knowledge` 自行確認。** 從程式碼推出來的語意一律
+   落成 `CANDIDATE` + `code_inference`;要成為已確認的業務語意,走 `dev-talk`
+   讓使用者點頭。
+3. **這次沒學到東西是正常的。** checkpoint 回 `promoted: 0` 是合法結果,
+   **不要為了「有記一筆」而硬記一筆「本次完成」** —— 那種紀錄沒有資訊量,
+   只會把 `.dev-flow/` 稀釋成沒人讀的流水帳。
+
+中途放棄(使用者喊停 / 走不下去):跑
+`dev-memory.py abort $MEMORY_SESSION_ID --reason "<原因>"`,
+讓 session 狀態明寫 `ABORTED`。**不要就這樣不管它** —— 留一個永遠 OPEN 的
+session,下次回顧時分不出「還在做」與「早就放棄」。
 
 ## 並行模式(execution.mode: parallel)—— wave 派工迴圈
 

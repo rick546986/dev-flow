@@ -21,9 +21,12 @@ import json
 import os
 import re
 
-from . import durable, paths, signal, store as store_mod, sync, textnorm, truth
+from . import (durable, paths, session as session_mod, signal,
+               store as store_mod, sync, textnorm, truth)
 
-MODE = "understanding"
+MODE = session_mod.UNDERSTANDING
+"""dev-talk 是 session 的 understanding 模式;原語住 session.py,
+這裡只包裝成 dev-talk 的說法(兩份實作會漂移,一份不會)。"""
 
 # probe 會去翻的檔案類型(按「這裡通常寫著 entity 語意」排序)。
 # 刻意不掃整個 repo:主動學習的價值在「問對問題」,不在「讀完所有檔案」。
@@ -45,31 +48,36 @@ class DevTalkError(RuntimeError):
 # ─────────────────────────── session ────────────────────────────────────────
 def start(store, repo_root, topic, snapshot=None, now=None):
     """開一個理解模式 session,並回傳 inspection brief(主動學習的起點)。"""
-    snapshot = snapshot or {}
-    session_id = store.start_session(
-        topic, mode=MODE, branch=snapshot.get("branch"),
-        head_sha=snapshot.get("head_sha"), now=now)
-    return {"session_id": session_id, "topic": topic,
-            "brief": probe(store, repo_root, topic)}
+    started = session_mod.start(store, repo_root, session_mod.UNDERSTANDING,
+                                topic, snapshot=snapshot, now=now)
+    started["brief"] = probe(store, repo_root, topic)
+    return started
 
 
 def record_turn(store, session_id, role, text, now=None):
     """記一輪對話 —— **只**進 local transcript,永遠不進 Git。"""
-    session = store.session(session_id)
-    if session is None:
-        raise DevTalkError("session 不存在:{0}".format(session_id))
-    if session["status"] != "OPEN":
-        raise DevTalkError(
-            "session {0} 已結束({1});要繼續請開新的 session".format(
-                session_id, session["status"]))
+    try:
+        session_mod.require_open(store, session_id)
+    except session_mod.SessionError as exc:
+        raise DevTalkError(str(exc))
     return store.add_turn(session_id, role, text, now=now)
 
 
 def end(store, repo_root, session_id, now=None):
     """收尾:先 checkpoint(固化已確認的候選),再關 session。"""
     result = checkpoint(store, repo_root, session_id, now=now)
-    store.end_session(session_id, "CLOSED", now=now)
+    store.end_session(session_id, session_mod.CLOSED, now=now)
+    result["session_status"] = session_mod.CLOSED
     return result
+
+
+def abort(store, session_id, reason="", now=None):
+    """中止:狀態明寫 ABORTED。
+
+    沒走到 `end` 的 dev-talk **不得**被當成完成 —— 下一個 dev-talk 才不會
+    接錯上一個 session,回顧時也看得出這一輪沒有收斂。
+    """
+    return session_mod.abort(store, session_id, reason=reason, now=now)
 
 
 # ─────────────────────────── 主動學習 ────────────────────────────────────────
@@ -206,6 +214,12 @@ def propose(store, session_id, target_kind, payload, authority, note="",
     敏感內容在**登記時**就先標記 —— 等到 consolidation 才發現的話,這段內容
     已經在 local 裡被當成「準備進 Git 的東西」處理過一輪了。
     """
+    # 沒有 start 就 propose 必須擋下來:候選要掛在一個真實存在且仍開著的
+    # session 上,否則 checkpoint 永遠找不到它,而使用者以為已經記下了。
+    try:
+        session_mod.require_open(store, session_id)
+    except session_mod.SessionError as exc:
+        raise DevTalkError(str(exc))
     blob = json.dumps(payload, ensure_ascii=False)
     sensitive = bool(signal.scan_sensitive(blob))
     return store.add_candidate(session_id, target_kind, payload, authority,
@@ -236,18 +250,27 @@ def correct(store, session_id, kind, key, title, body="",
     payload = {"key": key, "title": title, "body": body, "status": "CONFIRMED",
                "confidence": 0.95, "correction_reason": reason}
     if existing:
-        payload["supersedes"] = existing[0]["knowledge_id"]
+        previous = dict(existing[0])
+        payload["supersedes"] = previous["knowledge_id"]
+        # 舊值的快照隨候選一起走 —— 固化時才寫得出「原本是什麼」。
+        # 不在這裡直接寫 durable:consolidate 是唯一的 durable writer,
+        # 而且這條更正還可能被使用者反悔(候選未 confirm 就不該留下痕跡)。
+        payload["_lineage_previous"] = {
+            "knowledge_id": previous["knowledge_id"],
+            "title": previous["title"], "body": previous["body"],
+            "status": "SUPERSEDED", "authority": previous["authority"]}
+        payload["_lineage_reason"] = reason
         store.upsert_knowledge({
-            "knowledge_id": existing[0]["knowledge_id"], "kind": kind, "key": key,
-            "title": existing[0]["title"], "body": existing[0]["body"],
-            "authority": existing[0]["authority"], "status": "SUPERSEDED",
-            "confidence": existing[0]["confidence"],
-            "recorded_at": existing[0]["recorded_at"], "superseded_at": now,
-            "evidence": json.loads(existing[0]["evidence_json"]),
-            "conflicts": json.loads(existing[0]["conflicts_json"]),
-            "implemented": (None if existing[0]["implemented"] is None
-                            else bool(existing[0]["implemented"])),
-            "durable": bool(existing[0]["durable"])})
+            "knowledge_id": previous["knowledge_id"], "kind": kind, "key": key,
+            "title": previous["title"], "body": previous["body"],
+            "authority": previous["authority"], "status": "SUPERSEDED",
+            "confidence": previous["confidence"],
+            "recorded_at": previous["recorded_at"], "superseded_at": now,
+            "evidence": json.loads(previous["evidence_json"]),
+            "conflicts": json.loads(previous["conflicts_json"]),
+            "implemented": (None if previous["implemented"] is None
+                            else bool(previous["implemented"])),
+            "durable": bool(previous["durable"])})
     candidate_id = propose(store, session_id, kind, payload, authority,
                            note=reason, now=now)
     confirm(store, candidate_id, now=now)
@@ -257,22 +280,13 @@ def correct(store, session_id, kind, key, title, body="",
 # ─────────────────────────── checkpoint ─────────────────────────────────────
 def checkpoint(store, repo_root, session_id, now=None):
     """固化這個 session 已確認的候選(durable 寫入的唯一時機)。"""
-    result = sync.consolidate(repo_root, store, session_id, now=now)
-    pending = store.candidates(session_id, statuses=("PENDING",))
-    result["still_pending"] = [
-        {"candidate_id": row["candidate_id"], "target_kind": row["target_kind"],
-         "title": row["payload"].get("title", "")} for row in pending]
+    result = session_mod.checkpoint(store, repo_root, session_id, now=now)
     result["durable_root"] = os.path.basename(durable.root(repo_root))
     return result
 
 
 def status(store, session_id):
-    session = store.session(session_id)
-    if session is None:
-        raise DevTalkError("session 不存在:{0}".format(session_id))
-    counts = {}
-    for state in ("PENDING", "CONFIRMED", "REJECTED", "CONSOLIDATED",
-                  "LOCAL_ONLY"):
-        counts[state] = len(store.candidates(session_id, statuses=(state,)))
-    return {"session": session, "turns": len(store.turns(session_id)),
-            "candidates": counts}
+    try:
+        return session_mod.status(store, session_id)
+    except session_mod.SessionError as exc:
+        raise DevTalkError(str(exc))

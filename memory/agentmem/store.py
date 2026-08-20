@@ -147,16 +147,32 @@ class Store:
         rel = [paths.assert_portable(p) for p in file_paths]
         event_id = event_id or ids.new_id("event")
         with self.conn:
+            # ON CONFLICT:同一個 event_id 再寫一次 = 把本機事件**升級成 durable**
+            # (observe 先落本機、consolidate 再固化)。沒有這一條會撞主鍵,
+            # 或被迫產第二筆 —— 那正是同一件事出現兩次的來源。
             self.conn.execute(
                 "INSERT INTO events(event_id, project_id, session_id, kind, title,"
                 " body, branch, commit_sha, occurred_at, recorded_at, signal,"
                 " durable, durable_ref, paths_json, source_type, source_ref, legacy)"
-                " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+                " ON CONFLICT(event_id) DO UPDATE SET"
+                "   kind=excluded.kind, title=excluded.title, body=excluded.body,"
+                "   branch=excluded.branch, commit_sha=excluded.commit_sha,"
+                "   signal=excluded.signal, durable=excluded.durable,"
+                "   durable_ref=excluded.durable_ref,"
+                "   paths_json=excluded.paths_json,"
+                "   source_type=excluded.source_type,"
+                "   source_ref=excluded.source_ref",
                 (event_id, self.project_id, session_id, kind, title, body, branch,
                  commit_sha, occurred_at or now, now, signal,
                  1 if durable else 0, durable_ref, json.dumps(rel, ensure_ascii=False),
                  source_type, source_ref, 1 if legacy else 0))
-        self.index_item("event", event_id, title, "\n".join([title, body]),
+        # kind 一併進索引:它是這筆事件**是什麼**的一部分,不是內部欄位。
+        # `knowledge_corrected` 會被切成 knowledge / corrected,
+        # 於是「這個詞之前被 corrected 過嗎」與「有哪些 schema change」這類
+        # 以種類發問的查詢才對得上 —— 這是真的有詞面重疊,不是同義詞表。
+        self.index_item("event", event_id, title,
+                        "\n".join([kind, title, body]),
                         branch=branch, occurred_at=occurred_at or now,
                         status=signal, file_paths=rel)
         return event_id
@@ -451,14 +467,16 @@ class Store:
 
     # ── dev-talk session / transcript / candidate(全部 local only)─────────
     def start_session(self, topic, mode="understanding", branch=None,
-                      head_sha=None, session_id=None, now=None):
+                      head_sha=None, session_id=None, now=None,
+                      feature_slug=None):
         session_id = session_id or ids.new_id("session")
         with self.conn:
             self.conn.execute(
                 "INSERT INTO sessions(session_id, project_id, topic, mode, branch,"
-                " head_sha, started_at, status) VALUES(?,?,?,?,?,?,?,'OPEN')",
+                " head_sha, started_at, status, feature_slug)"
+                " VALUES(?,?,?,?,?,?,?,'OPEN',?)",
                 (session_id, self.project_id, topic, mode, branch, head_sha,
-                 now or utc_now()))
+                 now or utc_now(), feature_slug))
         return session_id
 
     def end_session(self, session_id, status="CLOSED", now=None):

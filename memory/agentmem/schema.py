@@ -300,7 +300,35 @@ _V1_TRIGRAM = [
          USING fts5(item_uid UNINDEXED, raw, tokenize='trigram')""",
 ]
 
-MIGRATIONS = {1: (_V1, {CAP_FTS5: _V1_FTS, CAP_TRIGRAM: _V1_TRIGRAM})}
+# ── v2:修正歷史(P0-3)────────────────────────────────────────────────────
+# current materialized view 只留得下「現在是什麼」;「以前理解成什麼、什麼時候
+# 改、為什麼改」需要一條 append-only 的軌。revision 先落這張表(durable=0),
+# 由 consolidation 一併刷進 `.dev-flow/events/` —— consolidate 仍是唯一
+# durable writer。
+_V2 = [
+    """CREATE TABLE revisions (
+         revision_id  TEXT PRIMARY KEY,
+         project_id   TEXT NOT NULL,
+         session_id   TEXT,
+         kind         TEXT NOT NULL,
+         memory_kind  TEXT,
+         key          TEXT NOT NULL,
+         payload_json TEXT NOT NULL,
+         occurred_at  TEXT NOT NULL,
+         durable      INTEGER NOT NULL DEFAULT 0,
+         durable_ref  TEXT
+       )""",
+    "CREATE INDEX revisions_pending ON revisions(project_id, durable, occurred_at)",
+    "CREATE INDEX revisions_key ON revisions(project_id, kind, key)",
+    # session 從「dev-talk 專用」擴成通用(P0-1):implementation 模式要記
+    # 這次 session 對應哪個 feature,回報與稽核才對得起來。
+    "ALTER TABLE sessions ADD COLUMN feature_slug TEXT",
+]
+
+MIGRATIONS = {
+    1: (_V1, {CAP_FTS5: _V1_FTS, CAP_TRIGRAM: _V1_TRIGRAM}),
+    2: (_V2, {}),
+}
 
 
 class SchemaError(RuntimeError):
@@ -317,9 +345,15 @@ def current_version(conn):
     return int(row[0]) if row else 0
 
 
-def migrate(conn, caps=None):
-    """把 DB 推到 LOCAL_SCHEMA_VERSION。回傳實際套用的版本清單(重跑 → 空清單)。"""
+def migrate(conn, caps=None, target=None):
+    """把 DB 推到 `target`(預設 LOCAL_SCHEMA_VERSION)。
+
+    回傳實際套用的版本清單(重跑 → 空清單)。`target` 讓測試能真的造出一個
+    「停在舊版本」的 DB —— 用 DROP TABLE 模擬回舊版是造不出 ALTER 過的欄位的,
+    那樣測到的是治具而不是 migration。
+    """
     caps = caps if caps is not None else detect_capabilities(conn)
+    target = LOCAL_SCHEMA_VERSION if target is None else target
     version = current_version(conn)
     if version > LOCAL_SCHEMA_VERSION:
         raise SchemaError(
@@ -327,8 +361,8 @@ def migrate(conn, caps=None):
             "不要用舊版寫入(舊寫入路徑會覆蓋掉新欄位的資料)".format(
                 version, LOCAL_SCHEMA_VERSION))
     applied = []
-    for target in range(version + 1, LOCAL_SCHEMA_VERSION + 1):
-        base, conditional = MIGRATIONS[target]
+    for step in range(version + 1, target + 1):
+        base, conditional = MIGRATIONS[step]
         with conn:
             for ddl in base:
                 conn.execute(ddl)
@@ -339,11 +373,11 @@ def migrate(conn, caps=None):
             conn.execute(
                 "INSERT INTO meta(key, value) VALUES('schema_version', ?) "
                 "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-                (str(target),))
+                (str(step),))
             for cap, enabled in caps.items():
                 conn.execute(
                     "INSERT INTO meta(key, value) VALUES(?, ?) "
                     "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
                     ("cap_" + cap, "1" if enabled else "0"))
-        applied.append(target)
+        applied.append(step)
     return applied

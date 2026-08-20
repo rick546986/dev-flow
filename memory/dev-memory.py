@@ -19,6 +19,15 @@
   dev-memory.py know --kind <domain|invariant|entity|relationship|intent>
                      --key K --title T [--body B] [--authority A]
                      [--planned | --implemented]
+  dev-memory.py session start --mode implementation --slug <feature>
+                              [--topic T]
+                | observe <session> --kind K --title T [--body B]
+                          [--path-ref P]... [--commit SHA]
+                          [--fact-json JSON | --decision-json JSON
+                           | --skill-json JSON | --knowledge-json JSON]
+                | status <session> | list
+  dev-memory.py checkpoint <session> [--end]
+  dev-memory.py abort <session> [--reason R]
   dev-memory.py talk start "<主題>" | turn <session> <role> "<文字>"
                 | propose <session> --kind K --payload-json JSON --authority A
                 | confirm <candidate> | reject <candidate> [--reason R]
@@ -40,7 +49,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from agentmem import (context as context_mod, devtalk, durable, embedding,  # noqa: E402
                       evalharness, identity, legacy, paths, query,
-                      setup as setup_mod, store as store_mod, truth)
+                      session as session_mod, setup as setup_mod,
+                      store as store_mod, truth)
 
 
 def _print(obj):
@@ -216,6 +226,63 @@ def cmd_know(args):
     return 0
 
 
+def cmd_session(args):
+    """通用 memory session —— dev-run 的 Stage 6 走這條,不必假裝是 dev-talk。"""
+    root, _project, store, _workspace_id, snapshot = _resolve(args)
+    try:
+        if args.session_cmd == "start":
+            _print(session_mod.start(
+                store, root, args.mode,
+                args.topic or "Stage 6:{0}".format(args.slug or "(未指定)"),
+                feature_slug=args.slug, snapshot=snapshot))
+        elif args.session_cmd == "observe":
+            _print(session_mod.observe(
+                store, args.session, args.kind, args.title,
+                body=args.body or "", file_paths=args.path_ref or [],
+                commit_sha=args.commit or snapshot["head_sha"],
+                evidence=json.loads(args.evidence_json) if args.evidence_json
+                else (),
+                fact=json.loads(args.fact_json) if args.fact_json else None,
+                decision=(json.loads(args.decision_json)
+                          if args.decision_json else None),
+                skill=json.loads(args.skill_json) if args.skill_json else None,
+                knowledge=(json.loads(args.knowledge_json)
+                           if args.knowledge_json else None),
+                repo_root=root))
+        elif args.session_cmd == "status":
+            _print(session_mod.status(store, args.session))
+        elif args.session_cmd == "list":
+            _print({"open": [dict(r) for r in session_mod.open_sessions(store)]})
+        else:
+            raise SystemExit("⛔ 未知的 session 子命令")
+    finally:
+        store.close()
+    return 0
+
+
+def cmd_checkpoint(args):
+    """固化本 session 已確認的候選。沒有高訊號時合法回 promoted: 0。"""
+    root, _project, store, _workspace_id, _snapshot = _resolve(args)
+    try:
+        if args.end:
+            result = session_mod.end(store, root, args.session)
+        else:
+            result = session_mod.checkpoint(store, root, args.session)
+        _print(_relativize(result, root))
+    finally:
+        store.close()
+    return 0
+
+
+def cmd_abort(args):
+    root, _project, store, _workspace_id, _snapshot = _resolve(args)
+    try:
+        _print(session_mod.abort(store, args.session, reason=args.reason or ""))
+    finally:
+        store.close()
+    return 0
+
+
 def cmd_talk(args):
     root, _project, store, _workspace_id, snapshot = _resolve(args)
     try:
@@ -243,6 +310,8 @@ def cmd_talk(args):
                                root))
         elif args.talk_cmd == "end":
             _print(_relativize(devtalk.end(store, root, args.session), root))
+        elif args.talk_cmd == "abort":
+            _print(devtalk.abort(store, args.session, args.reason or ""))
         elif args.talk_cmd == "status":
             _print(devtalk.status(store, args.session))
         else:
@@ -372,6 +441,43 @@ def build_parser():
     p.add_argument("--implemented", action="store_true")
     p.set_defaults(func=cmd_know)
 
+    p = sub.add_parser("session",
+                       help="通用 memory session(implementation / understanding)")
+    ses = p.add_subparsers(dest="session_cmd", required=True)
+    s = ses.add_parser("start")
+    s.add_argument("--mode", default=session_mod.IMPLEMENTATION,
+                   choices=list(session_mod.MODES))
+    s.add_argument("--slug", default=None, help="feature slug")
+    s.add_argument("--topic", default=None)
+    s = ses.add_parser("observe")
+    s.add_argument("session")
+    s.add_argument("--kind", required=True,
+                   help="事件種類,或 fact/decision/skill/knowledge")
+    s.add_argument("--title", required=True)
+    s.add_argument("--body", default="")
+    s.add_argument("--path-ref", action="append", default=[])
+    s.add_argument("--commit", default=None)
+    s.add_argument("--evidence-json", default=None)
+    s.add_argument("--fact-json", default=None)
+    s.add_argument("--decision-json", default=None)
+    s.add_argument("--skill-json", default=None)
+    s.add_argument("--knowledge-json", default=None)
+    s = ses.add_parser("status")
+    s.add_argument("session")
+    ses.add_parser("list")
+    p.set_defaults(func=cmd_session)
+
+    p = sub.add_parser("checkpoint",
+                       help="固化本 session 的候選(沒有高訊號時回 0 promoted)")
+    p.add_argument("session")
+    p.add_argument("--end", action="store_true", help="固化後關閉 session")
+    p.set_defaults(func=cmd_checkpoint)
+
+    p = sub.add_parser("abort", help="中止 session(狀態明寫 ABORTED)")
+    p.add_argument("session")
+    p.add_argument("--reason", default="")
+    p.set_defaults(func=cmd_abort)
+
     p = sub.add_parser("talk")
     talk = p.add_subparsers(dest="talk_cmd", required=True)
     t = talk.add_parser("start")
@@ -400,6 +506,9 @@ def build_parser():
     for name in ("checkpoint", "end", "status"):
         t = talk.add_parser(name)
         t.add_argument("session")
+    t = talk.add_parser("abort")
+    t.add_argument("session")
+    t.add_argument("--reason", default="")
     p.set_defaults(func=cmd_talk)
 
     p = sub.add_parser("reindex")

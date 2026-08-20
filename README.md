@@ -1020,7 +1020,55 @@ code symbol、表名、檔案路徑都查得到。
 on-demand。**不再有 `CONTEXT.md`**:人工維護的單一大檔一定會腐化,而且腐化時
 沒有任何機制會發現。
 
-### 16.7 寫入很吝嗇
+### 16.7 兩條記憶生命週期(都靠同一個 checkpoint)
+
+`dev-talk` 與 `dev-run` 用**同一組** session 原語 —— `dev-run` 不必假裝自己是
+`dev-talk` 才能留下記憶。durable 寫入永遠只發生在 checkpoint。
+
+```
+dev-talk(understanding)
+  talk start "<主題>"  →  turn(每個重要問答;只留本機)
+                       →  propose(萃取出來的語意 → 候選)
+                       →  confirm / reject / correct(使用者裁決)
+                       →  talk end   ← durable 寫入只在這裡
+                       ↘  talk abort(中途放棄 → 狀態明寫 ABORTED)
+
+dev-run(implementation)
+  session start --mode implementation --slug <feature>
+                       →  observe(每個 T PASS 之後;高訊號才成候選)
+                       →  (回歸綠 + 記帳完成 + 最終 commit)
+                       →  checkpoint --end   ← durable 寫入只在這裡
+                       ↘  abort(中止 → 狀態明寫 ABORTED)
+```
+
+沒走到 `end` 的 session **保持 OPEN 或標成 ABORTED**,不會被默默當成完成;
+下一次一律開新的 session,絕不接上一個。
+
+`observe` 的三條硬規則:
+1. 標成 VERIFIED 的 implementation fact **必須有 dependencies 且那些檔真的存在**
+   —— 不得產出「VERIFIED 但沒有任何驗證依據」的事實(工具會擋)。
+2. 從程式碼推出來的 domain 語意一律 `CANDIDATE` + `code_inference`;
+   **不自動 promote 使用者沒確認的業務語意**。
+3. 這次沒學到東西時,checkpoint 回 `promoted: 0` 是合法結果 ——
+   **不硬產生一筆「本次完成」**。
+
+### 16.8 修正的歷史跨機器保留
+
+現況檔(`knowledge/…yaml`、`state/…yaml`、`decisions/DEC-*.md`)是**物化視圖**,
+只留得下「現在是什麼」。所以每一次 supersede 另外寫一筆 **append-only 的修正
+紀錄**進 `events/`:
+
+| 事件種類 | 什麼時候寫 | 保存什麼 |
+|---|---|---|
+| `knowledge_corrected` | domain/invariant/intent… 被更正 | 舊/新標題與內容、舊/新 status 與 authority、原因、id、時間、session |
+| `fact_superseded` | 重新驗證後值變了 | 舊值 / 新值 / 依賴檔 / 原因 |
+| `decision_superseded` | 同一個 decision key 被新的決定取代 | 舊/新標題與決定內容、原因 |
+
+於是「現在是什麼」走現況檔,「以前怎麼理解、什麼時候改、為什麼改」走修正紀錄 ——
+**刪掉本機索引重建之後兩者都還在**。修正紀錄一樣要過敏感內容與絕對路徑守衛:
+系統產生的記錄不因為是系統產生就放行。
+
+### 16.9 寫入很吝嗇
 
 ```
 tool/對話活動 → 原始事件 → Signal Gate ─低訊號→ 只留本機
@@ -1034,7 +1082,7 @@ domain 釐清、breaking config)才可能進。另外兩道守衛:**疑似 secre
 (不做遮罩後放行 —— 遮罩靠 pattern 完整性,而 pattern 永遠不完整)、
 **內容含絕對路徑一律拒絕固化**。
 
-### 16.8 dev-talk = Project Understanding Mode
+### 16.10 dev-talk = Project Understanding Mode
 
 `dev-talk <主題>` 不是安裝指令、也不是寫程式模式。它做的是**把一個主題聊懂**:
 
@@ -1053,7 +1101,7 @@ customer-level、specimen 是 embryo-level,這三層有沒有例外?」
 3. **修正會 supersede,不會覆蓋**:你之後推翻先前的說法時,舊的標 SUPERSEDED
    留著,看得到轉折。
 
-### 16.9 跨機器
+### 16.11 跨機器
 
 ```
 git clone → dev-setup → 讀 .dev-flow/project.yaml → 同一個 project_id
@@ -1063,7 +1111,7 @@ git clone → dev-setup → 讀 .dev-flow/project.yaml → 同一個 project_id
 `project_path` 可以不同,記憶必須相同。這條有 integration test 釘住
 (`memory/tests/test_setup_legacy.py::SetupTest::test_clone_on_another_machine_rebuilds_same_memory`)。
 
-### 16.10 從舊架構遷移
+### 16.12 從舊架構遷移
 
 - **`CONTEXT.md`**(舊的人工詞彙表)→ `dev-memory.py migrate-legacy`
   匯入 `knowledge/domain/`,一律以 **CANDIDATE + documentation authority** 落地

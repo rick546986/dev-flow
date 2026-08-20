@@ -17,7 +17,7 @@
 """
 import re
 
-from . import cues, retrieval, textnorm, truth
+from . import cues, retrieval, signal as signal_mod, textnorm, truth
 
 # ── retrieval status contract(P0-4)──────────────────────────────────────────
 # 上層 agent 很容易只看 `retrieval_status` 這一個欄位。所以「其實還沒驗證」
@@ -371,13 +371,22 @@ def _why(store, plan_dict, embedder, limit, branch):
             import json
             evidence.extend(json.loads(row["evidence_json"]))
     uncertainty = _uncertain(ordered)
-    if ordered and not decisions:
-        uncertainty.append(
-            "只找到歷史事件、沒有對應的 decision —— 「當初為什麼」缺正式記錄")
-    return _envelope(plan_dict, retrieval.OK if ordered
-                     else retrieval.NO_RELIABLE_MATCH, ordered,
-                     0.8 if decisions else (0.5 if events else 0.0),
-                     evidence, uncertainty,
+    if not decisions:
+        # **沒有 decision 就沒有「為什麼」。** 事件說的是「發生了什麼」,
+        # 把它當理由回答等於拿現象冒充動機 —— 那是這個系統最該避免的一種捏造。
+        # 相關事件仍然回傳,但放在 related_events,絕不放進 results,
+        # 免得呼叫端把它當成答案。
+        if events:
+            uncertainty.append(
+                "找到 {0} 筆相關歷史事件,但**沒有任何 decision 記錄** —— "
+                "「當初為什麼這樣選」沒有被記下來。事件在 related_events,"
+                "不要拿它推測理由".format(len(events)))
+        return _envelope(plan_dict, retrieval.NO_RELIABLE_MATCH, [], 0.0,
+                         evidence, uncertainty,
+                         extra={"latency_ms": found["latency_ms"],
+                                "related_events": events})
+    return _envelope(plan_dict, retrieval.OK, ordered, 0.8, evidence,
+                     uncertainty,
                      extra={"latency_ms": found["latency_ms"]})
 
 
@@ -400,8 +409,10 @@ def _how(store, plan_dict, embedder, limit):
 
 
 def _history(store, plan_dict, embedder, limit, branch):
+    # 只回高訊號事件:「以前發生過什麼」問的是重要的事,不是我 grep 過什麼。
+    # 低訊號觀察仍留在本機、仍可用 DISCOVERY 查到,只是不該淹沒歷史問句。
     found = _search(store, plan_dict, embedder, limit, item_types=("event",),
-                    branch=branch)
+                    branch=branch, statuses=(signal_mod.HIGH,))
     results = sorted(found["results"],
                      key=lambda r: (r["occurred_at"] or "", r["score"]),
                      reverse=True)

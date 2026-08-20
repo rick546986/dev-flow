@@ -10,9 +10,39 @@ class MigrationTest(MemoryCase):
     def test_fresh_db_migrates_and_is_idempotent(self):
         conn = sqlite3.connect(":memory:")
         self.assertEqual(schema.current_version(conn), 0)
-        self.assertEqual(schema.migrate(conn), [LOCAL_SCHEMA_VERSION])
+        self.assertEqual(schema.migrate(conn),
+                         list(range(1, LOCAL_SCHEMA_VERSION + 1)))
         self.assertEqual(schema.current_version(conn), LOCAL_SCHEMA_VERSION)
         self.assertEqual(schema.migrate(conn), [])
+        conn.close()
+
+    def test_stepwise_migration_from_older_version(self):
+        """v1 → v2 要能單獨走完(不是只有「從零建到最新」那條路)。
+
+        既有安裝的 DB 停在舊版本,升級時走的是這一條;只測 fresh install
+        等於從來沒驗過 migration 本身。"""
+        conn = sqlite3.connect(":memory:")
+        # 真的只建到 v1(不是建完再 DROP —— 那造不出「沒有 ALTER 過的欄位」)
+        self.assertEqual(schema.migrate(conn, target=1), [1])
+        self.assertEqual(schema.current_version(conn), 1)
+        self.assertEqual(schema.migrate(conn), [2])
+        tables = {r[0] for r in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'")}
+        self.assertIn("revisions", tables)
+        conn.close()
+
+    def test_v2_preserves_v1_rows(self):
+        """升級不得毀掉既有資料(§29)。"""
+        conn = sqlite3.connect(":memory:")
+        schema.migrate(conn, target=1)
+        conn.execute(
+            "INSERT INTO events(event_id, project_id, kind, title,"
+            " occurred_at, recorded_at, signal) VALUES"
+            " ('evt_x','prj_x','schema_change','舊事件','2026-01-01','2026-01-01','high')")
+        conn.commit()
+        schema.migrate(conn)
+        self.assertEqual(
+            conn.execute("SELECT COUNT(*) FROM events").fetchone()[0], 1)
         conn.close()
 
     def test_future_schema_fails_loud_instead_of_downgrading(self):

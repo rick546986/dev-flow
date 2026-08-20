@@ -306,14 +306,38 @@ if not no_hit:
                           "查不到」這條沒有被量測,退回成亂撈不會現形")
 else:
     ok("評測資料集含 {0} 個 no-hit 案".format(len(no_hit)))
+# 這一輪新增的維度也要釘住(P0-1…P1-6):少了它們,退步不會現形。
+required_ids = {
+    "status-stale-zh": "STALE 不得回 OK",
+    "status-ok-zh": "已驗證的現況要回 OK",
+    "correction-history-zh": "修正歷史查得到",
+    "correction-history-mixed": "中英混合也查得到修正歷史",
+    "exact-symbol-cjk": "exact symbol + 中文",
+    "false-why-zh": "沒有 decision 時 WHY 不得硬猜",
+}
+case_ids = {case.get("id") for case in dataset["cases"]}
+missing_ids = sorted(set(required_ids) - case_ids)
+if missing_ids:
+    bad("評測新維度", "缺 {0}".format(
+        ["{0}({1})".format(i, required_ids[i]) for i in missing_ids]))
+else:
+    ok("評測資料集含本輪 6 個新維度")
+statuses_covered = {case.get("expect_status") for case in dataset["cases"]}
+for needed in ("OK", "NEEDS_VERIFICATION", "NO_RELIABLE_MATCH"):
+    if needed not in statuses_covered:
+        bad("評測 status 覆蓋", "沒有任何案例期望 {0}".format(needed))
+    else:
+        ok("評測含 expect_status={0} 的案例".format(needed))
+
 thresholds = dataset.get("thresholds") or {}
-for name in ("stale_hit_rate", "wrong_branch_rate", "no_hit_precision"):
+for name in ("stale_hit_rate", "wrong_branch_rate", "no_hit_precision",
+             "status_accuracy"):
     if name not in thresholds:
         bad("評測門檻", "缺 {0} 門檻".format(name))
     else:
         ok("評測門檻含 {0}={1}".format(name, thresholds[name]))
 
-MIN_CHECKS = 28
+MIN_CHECKS = 33
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)

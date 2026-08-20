@@ -2289,6 +2289,12 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <tr><td><code>devtalk.py</code></td>
         <td>理解模式的生命週期:先自己看一輪產出具體問題、對話只留本機、候選要確認、收尾才固化、更正會保留舊版本。</td>
         <td>被 CLI 的 talk 子指令呼叫(dev-talk skill 使用)</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>lineage.py</code></td>
+        <td>產生「知識/事實/決定被更正」的修正紀錄:現況檔只留得下現在的樣子,這一層負責保住「以前理解成什麼、什麼時候改、為什麼改」。</td>
+        <td>被 <code>devtalk.py</code>(更正)、<code>truth.py</code>(重新驗證)寫入,由 <code>sync.py</code> 固化</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>session.py</code></td>
+        <td>通用的記憶工作階段:開始、觀察、固化、中止。dev-talk 與 dev-run 共用同一組原語,實作期做完的重要變更才會真的留下來。</td>
+        <td>被 CLI 的 session/checkpoint/abort 與 <code>devtalk.py</code> 呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>legacy.py</code></td>
         <td>舊記憶載體的遷移:人工詞彙表匯入成未確認的語意、改版歷史索引只做索引不複製、舊的路徑鍵建對照表。</td>
         <td>被 setup(乾跑回報)與 CLI 的 migrate-legacy 呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
@@ -2354,6 +2360,18 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test_status_contract.py</code></td>
         <td>驗證查詢狀態四態的契約:已失效或有衝突的現況一律不得回報成 OK,含 CLI 輸出。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_lineage.py</code></td>
+        <td>驗證更正歷史會寫成獨立的修正紀錄,而且刪掉本機索引重建之後仍查得到。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_implementation.py</code></td>
+        <td>驗證實作期工作階段:高訊號才固化、低訊號只留本機、沒有依據的事實會被擋、沒學到東西時不硬記。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_skill_contract.py</code></td>
+        <td>驗證兩份 SKILL 真的把記憶指令接上了(避免程式有功能、說明書忘了寫)。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_scenarios.py</code></td>
+        <td>端對端情境:討論一輪、實作一輪、現況失效一輪,全部走命令列進出。</td>
         <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>memory/fixtures/</code>(整包,fixtures 目錄豁免)</td>
         <td>評測用的固定資料集,以及舊詞彙表格式的凍結樣本。</td>
