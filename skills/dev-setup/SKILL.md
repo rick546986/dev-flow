@@ -45,8 +45,12 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
    repo 導覽,對散發專案是死引用):
    ```
    sed -n '/<!-- devflow:master-only:start -->/,/<!-- devflow:master-only:end -->/!p' \
-     "${CLAUDE_PLUGIN_ROOT}/README.md" > docs/dev/README.md
+     "${CLAUDE_PLUGIN_ROOT}/README.md" | tr -d '\r' > docs/dev/README.md
    ```
+   **行尾一律正規化成 LF 落地(結尾那道 `tr -d '\r'`,不得省略)**:MSYS/Git Bash 的
+   GNU sed 以文字模式讀檔、輸出時會把 CR 拿掉,平台不同就寫出不同行尾 —— 讓平台決定
+   寫出什麼,等於在安裝當下就種下與比對端對不起來的不一致(upgrade/check 兩處比對
+   同步一律兩側 `tr -d '\r'` 後再比,見下方 upgrade 段與 check 第 6 項)。
    `_templates/` → `docs/dev/_templates/`、**`devflow-contract.json` →
    `docs/dev/devflow-contract.json`**(版本握手契約;doctor 無 `--contract`/
    `$DEVFLOW_CONTRACT` 明示時在此找,缺件必 fail-closed);從模板建 `STATUS.md`;
@@ -178,9 +182,13 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
   完成後才建立快照,下次 upgrade 起才回到正常的三方比對。
 - **check 第 6 項的 diff 比對基準同步套用剝除規則**:比對母版時一律先對
   `${CLAUDE_PLUGIN_ROOT}/README.md` 跑與 install 步 1 相同的 sed 剝除管線再 diff,
-  即 `diff <(sed -n '/<!-- devflow:master-only:start -->/,/<!-- devflow:master-only:end -->/!p' "${CLAUDE_PLUGIN_ROOT}/README.md") docs/dev/README.md`
+  且**兩側都要過同一道行尾正規化**,即
+  `diff <(sed -n '/<!-- devflow:master-only:start -->/,/<!-- devflow:master-only:end -->/!p' "${CLAUDE_PLUGIN_ROOT}/README.md" | tr -d '\r') <(tr -d '\r' < docs/dev/README.md)`
   ——不得直接對未剝除的母版原檔跑 diff,否則 master-only 區塊本身的存在
-  就會被判定成「每次都 stale」的假漂移。
+  就會被判定成「每次都 stale」的假漂移;**也不得只對母版側跑管線、採用專案側直接拿原檔比**,
+  否則 Windows 上母版側被 sed 剝掉 CR、採用專案側是 CRLF,每一行都差一個 CR、
+  整份被判全不同 —— check 第 6 項恆紅、每次健檢都走 upgrade 覆蓋一次,
+  把「開工前工作樹要乾淨」的前提直接弄壞。
 - **絕不動 `docs/dev/<slug>/` 已產出的 feature 檔**與 STATUS/CONTEXT/rules。
 
 ## refresh(使用者說「重掃 rules」「rules 過期了」「更新架構規則」)
@@ -242,8 +250,10 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
    plugin 後該路徑與獨立 marketplace entry 皆不存在)。
 6. 專案面(在專案內跑時):docs/dev/README 與模板版本 vs 母版 diff——**README 比對
    基準是剝除 master-only 區塊後的母版內容,不是母版原檔**(比對管線同 upgrade
-   段:`diff <(sed -n '/<!-- devflow:master-only:start -->/,/<!-- devflow:master-only:end -->/!p' "${CLAUDE_PLUGIN_ROOT}/README.md") docs/dev/README.md`;
-   對原檔直接 diff 會把 master-only 區塊本身的存在誤判成假 stale);`.devflow/exec.json`
+   段:`diff <(sed -n '/<!-- devflow:master-only:start -->/,/<!-- devflow:master-only:end -->/!p' "${CLAUDE_PLUGIN_ROOT}/README.md" | tr -d '\r') <(tr -d '\r' < docs/dev/README.md)`;
+   對原檔直接 diff 會把 master-only 區塊本身的存在誤判成假 stale;兩側的 `tr -d '\r'`
+   同樣不得省略 —— 只有母版側過管線的話,Windows 上 sed 會吃掉 CR 而採用專案側是 CRLF,
+   內容逐字相同也會判全不同、恆報 stale);`.devflow/exec.json`
    陳年旗標(>24h 警告);舊 skills 目錄殘留(`~/.claude*/skills/dev-{talk,flow,setup}`)。
    模板檢查說明:4-spec 模板含 Verification Profile 節後(VNext),lane 依規則填 ——
    Full 完整 Profile、Fast 最小 Profile(`Risk: normal`/`Verify:`/`Negative
