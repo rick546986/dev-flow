@@ -31,6 +31,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # check-py-floor 要一支「舊到會顯示出問題」的直譯器(宣告下限 3.9 ~ 3.11)才
+      # 驗得到東西,找不到就 fail-closed(exit 2)—— 它刻意不退回靜態掃描,因為那份
+      # 掃描在 3.12 上實測抓到零筆,沒驗到卻印綠比沒有檢查更糟(見該腳本頂註)。
+      # runner 只給 3.12,所以額外裝一支下限版並用 DEVFLOW_PY_FLOOR_BIN 明指。
+      #
+      # ⚠️ 順序有意義:下限版**先**裝、3.12 **後**裝 —— setup-python 會把後裝的推到
+      # PATH 前面,其餘檢查與 renderer 仍拿到 3.12。對調就會讓整個 job 跑在 3.9 上。
+      - uses: actions/setup-python@v5
+        id: pyfloor
+        with:
+          python-version: '3.9'
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -38,10 +50,26 @@ jobs:
       - name: Install renderer pin (markdown-it-py, 版本由 scripts/requirements-methodology-render.txt 釘死)
         run: python3 -m pip install -r scripts/requirements-methodology-render.txt
 
+      # 兩支直譯器都要是預期的版本才往下跑。少了這道,setup-python 的順序哪天被
+      # 對調、或下限版沒裝成,check-py-floor 會安靜地退回「只驗到 3.11」或直接紅,
+      # 而 job log 裡看不出是環境問題還是真的有檔案跑不動。
+      - name: 直譯器就位驗證(下限版 + 主版)
+        run: |
+          echo "floor: $(${{ steps.pyfloor.outputs.python-path }} --version)"
+          echo "main : $(python3 --version)"
+          ${{ steps.pyfloor.outputs.python-path }} --version 2>&1 | grep -q '^Python 3\.9\.' \
+            || { echo "::error::DEVFLOW_PY_FLOOR_BIN 不是 3.9"; exit 1; }
+          python3 --version 2>&1 | grep -q '^Python 3\.12\.' \
+            || { echo "::error::PATH 上的 python3 不是 3.12 —— setup-python 順序可能被對調"; exit 1; }
+
       - name: devflow-check all
         env:
           # renderer 預設呼叫 `python`;GitHub runner 上只保證 `python3` 存在。
           DEVFLOW_RENDER_PYTHON: python3
+          # check-py-floor 的候選順序是 $DEVFLOW_PY_FLOOR_BIN → /usr/bin/python3 →
+          # python3.9/3.10/3.11。runner 的 /usr/bin/python3 是 3.12(不在有效區間),
+          # 故必須明指,否則整支檢查取不到證據。
+          DEVFLOW_PY_FLOOR_BIN: ${{ steps.pyfloor.outputs.python-path }}
         run: scripts/devflow-check.sh all
 
       - name: Scope note
