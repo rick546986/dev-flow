@@ -556,6 +556,24 @@ elif "--get-url" not in executable_only(sync_src):
 else:
     ok("durable-check 只認別台機器上的 remote(改寫後的 URL)")
 
+# URL 形狀判定只看字面 host。一個具名的非 loopback 主機仍然可能解析回這台
+# 機器(/etc/hosts 或內網 DNS 把 remote.example.test 重映到 127.0.0.1、或這
+# 台機器自己的另一個介面),ls-remote 一樣回報正確的 SHA。所以形狀過關之後
+# 還要再解析 host、驗位址不是 loopback/link-local/本機介面。
+if obs_code is None:
+    bad("_observe_remote 抽取(endpoint 解析)", "找不到 _observe_remote 窗口")
+elif "resolve_host_ips(" not in executable_only(obs_code):
+    bad("durable-check 沒有解析 remote 的位址",
+        "_observe_remote 判過 URL 形狀之後沒有再解析 host 拿位址證據 —— "
+        "remote.example.test 這類具名主機被重映到 127.0.0.1 或本機介面時,"
+        "只看形狀會誤判成離開了這台機器")
+elif "ip_is_offmachine(" not in executable_only(obs_code):
+    bad("durable-check 解析出位址後沒有驗證",
+        "_observe_remote 呼叫了 resolve_host_ips 卻沒有把結果拿去過 "
+        "ip_is_offmachine —— 解析出位址不等於驗過它不是這台機器自己")
+else:
+    ok("durable-check 解析 remote 主機名並驗位址不是 loopback/本機介面")
+
 # 檢索命中之後,答案的內容必須用主鍵撈。拿已知主鍵去掃「最近 N 筆」是錯的:
 # 檢索索引沒有那個視窗,命中較舊的 decision/skill 時撈不到內容,而呼叫端仍然
 # 回 OK —— 聲稱有可靠答案卻沒附上構成答案的欄位,比查不到更糟。
@@ -644,7 +662,7 @@ elif i_cond < 0 or cond_line.strip() == "if changed or dirty:":
 else:
     ok("git status 解析不完整時,無指紋的依賴不得走 fast path")
 
-MIN_CHECKS = 51
+MIN_CHECKS = 52
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)

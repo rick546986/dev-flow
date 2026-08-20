@@ -160,3 +160,58 @@ class RemoteIsOffMachineTest(MemoryCase):
         """回傳值會被當成「有沒有證據」的判定,不得是一個 re.Match。"""
         for url in self.OFF_MACHINE + ("/tmp/x.git",):
             self.assertIsInstance(identity.remote_is_offmachine(url), bool)
+
+
+class HostEndpointIsOffMachineTest(MemoryCase):
+    """`remote_is_offmachine` 判的是 URL **形狀**。一個具名的非 loopback 主機
+    仍然可能解析回這台機器 —— `remote.example.test` 被 `/etc/hosts` 或 DNS
+    重映到 `127.0.0.1`,或映到這台機器自己的一個介面位址,`ls-remote` 一樣會
+    回報正確的 SHA。這裡測的是解析後的位址,不是主機名字面。
+    """
+
+    def test_loopback_address_is_not_off_machine(self):
+        for ip in ("127.0.0.1", "127.5.6.7", "::1"):
+            self.assertFalse(identity.ip_is_offmachine(ip, local_ips=frozenset()),
+                             ip)
+
+    def test_link_local_address_is_not_off_machine(self):
+        for ip in ("169.254.1.1", "fe80::1"):
+            self.assertFalse(identity.ip_is_offmachine(ip, local_ips=frozenset()),
+                             ip)
+
+    def test_unspecified_address_is_not_off_machine(self):
+        for ip in ("0.0.0.0", "::"):
+            self.assertFalse(identity.ip_is_offmachine(ip, local_ips=frozenset()),
+                             ip)
+
+    def test_address_matching_a_local_interface_is_not_off_machine(self):
+        """主機名字面不是 loopback,但解析後等於這台機器自己的介面位址 ——
+        `ssh://git@remote.example.test/…` 映到本機 LAN 位址就是這個情境。"""
+        self.assertFalse(
+            identity.ip_is_offmachine("192.168.1.50",
+                                      local_ips=frozenset({"192.168.1.50"})))
+
+    def test_unrelated_address_is_off_machine(self):
+        """不是 loopback / link-local / unspecified,也不等於本機任何介面位址
+        —— 這才是真正「別台機器」的證據。"""
+        self.assertTrue(
+            identity.ip_is_offmachine("192.0.2.10",
+                                      local_ips=frozenset({"192.168.1.50"})))
+
+    def test_unparseable_address_is_not_off_machine(self):
+        """解析不出來的字串不是合法 IP —— 分不出來不得當成證據。"""
+        for bad in ("not-an-ip", "", None):
+            self.assertFalse(identity.ip_is_offmachine(bad, local_ips=frozenset()),
+                             bad)
+
+    def test_resolve_host_ips_fails_closed_on_unresolvable_host(self):
+        """解析不到位址(host 不存在、離線、或其實是 SSH config 別名而非可解析
+        的名稱)回 None —— 呼叫端必須把它當成沒有證據,不是當成 off-machine。"""
+        self.assertIsNone(
+            identity.resolve_host_ips(
+                "this-host-does-not-resolve.invalid.example.test-devflow"))
+
+    def test_local_machine_ips_never_raises_and_returns_a_frozenset(self):
+        """盡力而為的偵測 —— 任何一種探測手法失敗都不得讓呼叫端整個炸掉。"""
+        result = identity._local_machine_ips()
+        self.assertIsInstance(result, frozenset)

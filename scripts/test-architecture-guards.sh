@@ -133,8 +133,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=96
-EXPECTED_TOTAL=110
+EXPECTED_NEGATIVES=97
+EXPECTED_TOTAL=111
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -1842,6 +1842,22 @@ p.write_text(t.replace(
     encoding="utf-8")
 PYX
 expect_local fail check-memory-architecture.sh "$D" "MEM-26 WHY 用「最近 N 筆」撈已知主鍵(視窗外的 reason 撈不到仍回 OK)"
+
+D=$(seed_mem mem27); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = "    host = identity._parse_host(url)"
+assert anchor in t, "MEM-27 anchor 不見"
+# 拿掉「host 解析後的位址是不是這台機器自己」這一問:URL 形狀判定過關的
+# remote(remote_is_offmachine 只看字面 host)可能被 /etc/hosts 或內網 DNS
+# 重映到 127.0.0.1 或這台機器自己的介面,ls-remote 一樣回報正確的 SHA。
+i = t.find(anchor)
+j = t.find("    raw = identity._git_raw(", i)
+assert j > i, "MEM-27 window 不見"
+p.write_text(t[:i] + t[j:], encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-27 durable-check 沒有解析 remote 主機名的實際位址(具名主機重映到本機仍判 PASS)"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"

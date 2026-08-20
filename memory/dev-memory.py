@@ -380,9 +380,13 @@ def cmd_durable_check(args):
     —— 追蹤 ref 是快取,別台機器改掉遠端之後它還指著我的 commit。而且那個
     remote 必須真的**在別台機器上**:本機的 bare repo、`file://`、
     `ssh://git@localhost/…` 都會讓 `ls-remote` 回報正確的 SHA,卻跟工作樹在
-    同一顆硬碟上一起壞掉。問不到遠端、或判不出它在別台機器上,一律 FAIL;
-    離線或刻意只用本機 remote 要放行請明確 `--local-only`,那時輸出的
-    `remote_observed` 是 false。
+    同一顆硬碟上一起壞掉。一個具名的非 loopback 主機也不例外——`/etc/hosts`
+    或內網 DNS 可以把 `remote.example.test` 重映到 `127.0.0.1` 或這台機器
+    自己的另一個介面,所以 URL 形狀過關之後還會再解析主機名、驗位址不是
+    loopback/link-local/本機介面(SSH config 的 Host 別名重映不在偵測範圍
+    內,是已知殘留缺口)。問不到遠端、判不出它在別台機器上、或解析不到
+    主機名的位址,一律 FAIL;離線或刻意只用本機 remote 要放行請明確
+    `--local-only`,那時輸出的 `remote_observed` 是 false。
     """
     root, _project, store, _workspace_id, _snapshot = _resolve(args)
     try:

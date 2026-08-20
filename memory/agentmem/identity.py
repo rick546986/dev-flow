@@ -13,9 +13,11 @@ commit 進 Git 的 `project.yaml`,而不是來自 filesystem path。
 remote repository 只能當 metadata/provenance(`origin` 欄),不能當 identity:
 沒有 remote、remote 改名、fork、鏡像、同一份 code 推到兩個 remote,project_id 都不變。
 """
+import ipaddress
 import os
 import platform
 import re
+import socket
 import subprocess
 
 from . import DURABLE_SCHEMA_VERSION, ids, paths, signal, yamlmini
@@ -202,24 +204,120 @@ def remote_is_offmachine(url):
     Git」,這支問「在不在別台機器上」),所以刻意不共用回傳值:一條 URL 可以
     是 off-machine 卻不可寫入(帶 token 的 https 就是)。
     """
-    if not isinstance(url, str):
-        return False
-    value = url.strip()
-    if not value or any(ch.isspace() for ch in value):
-        return False
-    if value.lower().startswith("file://"):
-        return False
-    if paths.looks_absolute(value) or "\\" in value:
-        return False
-    if value.startswith(("./", "../")):
-        return False
-    match = _SCHEME_URL.match(value) or _SCP_LIKE.match(value)
-    if not match:
-        return False
-    host = match.group("host").strip("[]").lower()
+    host = _parse_host(url)
     if not host or host in _LOOPBACK_HOSTS or host.startswith("127."):
         return False
     return "." in host
+
+
+def _parse_host(url):
+    """從 remote URL 抽出 host;抽不出來回 None。
+
+    與 `remote_is_offmachine` 共用同一套 parser(形狀判定),差別是這支只回
+    host 字串,不判斷。存在的理由:形狀判定完之後,`_observe_remote` 還要拿
+    這個 host 去做**會連網**的解析(見 `resolve_host_ips`)——那是另一個問句
+    (「解析後的位址是不是這台機器自己」),刻意留在呼叫端做,這支維持不連網。
+    """
+    if not isinstance(url, str):
+        return None
+    value = url.strip()
+    if not value or any(ch.isspace() for ch in value):
+        return None
+    if value.lower().startswith("file://"):
+        return None
+    if paths.looks_absolute(value) or "\\" in value:
+        return None
+    if value.startswith(("./", "../")):
+        return None
+    match = _SCHEME_URL.match(value) or _SCP_LIKE.match(value)
+    if not match:
+        return None
+    return match.group("host").strip("[]").lower()
+
+
+# loopback / link-local / unspecified:這三類位址不必解析錯誤就足以證明
+# 「這台機器自己」,`ipaddress` 的 is_loopback/is_link_local/is_unspecified
+# 涵蓋了 IPv4 與 IPv6 兩邊(127.0.0.0/8、169.254.0.0/16、fe80::/10、
+# 0.0.0.0、::)。**不**檢查 is_private——一個私有網段位址(192.168.x.x、
+# 10.x.x.x)完全可能是 LAN 上一台真正的別的機器,不是這台機器自己;
+# 排除它會誤傷內網自架 git server 這個合法情境。
+def ip_is_offmachine(raw_ip, local_ips=None):
+    """這個(已解析出的)IP 位址,排除得掉「其實是這台機器自己」嗎?
+
+    解析不出來的字串、loopback、link-local、unspecified,或等於
+    `local_ips`(預設用 `_local_machine_ips()` 現查)裡的任何一個 ——
+    一律 False。**分不出來不得當成證據**,與 `remote_is_offmachine` 同一條
+    紀律,這支只是把它套用到「解析後的位址」而不是「URL 的形狀」。
+    """
+    if not isinstance(raw_ip, str) or not raw_ip:
+        return False
+    try:
+        addr = ipaddress.ip_address(raw_ip.split("%", 1)[0])
+    except ValueError:
+        return False
+    if addr.is_loopback or addr.is_link_local or addr.is_unspecified:
+        return False
+    if local_ips is None:
+        local_ips = _local_machine_ips()
+    return raw_ip not in local_ips
+
+
+def resolve_host_ips(host):
+    """DNS 解析 `host`,回傳位址字串的 frozenset;解析不到回 `None`。
+
+    只給已經過 `remote_is_offmachine` 形狀檢查的 host 用。解析失敗
+    (DNS 錯、host 其實是解析不出來的 SSH config 別名、離線)一律回 `None`,
+    呼叫端要 fail closed——分不出來不得當成「離開這台機器」的證據,
+    不能因為問不到就放行(同 `_observe_remote` 對 `ls-remote` 問不到的處理)。
+    """
+    if not isinstance(host, str) or not host:
+        return None
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except (OSError, UnicodeError):
+        return None
+    ips = frozenset(info[4][0] for info in infos)
+    return ips or None
+
+
+def _local_machine_ips():
+    """盡力而為收集這台機器可能用到的位址,用來擋『解析後其實是自己』的 remote。
+
+    沒有純 stdlib、跨平台(含 Windows,本專案要求 parity)的辦法能列出所有
+    網卡位址——那要嘛是 platform-specific syscall,要嘛是新依賴,兩者都在
+    本輪範圍外。這裡用兩個**不送封包**的技巧盡力而為:
+
+    - `socket.getaddrinfo(gethostname(), None)`:本機主機名解析,常見情況
+      下會回報本機位址。
+    - UDP `connect()` 後讀 `getsockname()`:UDP 的 connect() 只是讓核心決定
+      「如果要送,會從哪個介面送出去」並不實際送出任何封包,藉此問到預設
+      對外介面的位址,不需要真的連得上對方。
+
+    兩者都是 best-effort;任何一步失敗就跳過,不當成錯誤——呼叫端本來就把
+    「解析不到 / 找不到本機位址」fail closed 到「不算離開本機的證據」,
+    所以這支查不到也不會誤放行,只會少擋一種情境(見 `ip_is_offmachine`
+    的 loopback/link-local/unspecified 檢查,那三類不靠這支也擋得住)。
+    """
+    addrs = set()
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None):
+            addrs.add(info[4][0])
+    except (OSError, UnicodeError):
+        pass
+    for family, target in ((socket.AF_INET, ("8.8.8.8", 80)),
+                           (socket.AF_INET6, ("2001:4860:4860::8888", 80))):
+        try:
+            probe = socket.socket(family, socket.SOCK_DGRAM)
+        except OSError:
+            continue
+        try:
+            probe.connect(target)
+            addrs.add(probe.getsockname()[0])
+        except OSError:
+            pass
+        finally:
+            probe.close()
+    return frozenset(addrs)
 
 
 def _git(root, *args):

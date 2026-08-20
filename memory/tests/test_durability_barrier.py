@@ -454,6 +454,16 @@ class DurableCheckCase(MemoryCase):
                 return_value="ssh://git@git.example.com/dev-flow.git")
             patcher.start()
             self.addCleanup(patcher.stop)
+            # URL 形狀通過之後,`_observe_remote` 還會再解析 host 拿位址證據
+            # (RemoteEndpointAttestationTest)。CI 沒辦法不連外地讓
+            # `git.example.com` 真的解析出一個公開位址,所以只替換「這個
+            # host 解析出哪些位址」這一問 —— ls-remote 問到的 SHA、與 HEAD
+            # 的比對全部是真的,同一條紀律。
+            resolve_patcher = mock.patch.object(
+                identity, "resolve_host_ips",
+                return_value=frozenset({"203.0.113.10"}))
+            resolve_patcher.start()
+            self.addCleanup(resolve_patcher.stop)
         return bare
 
 
@@ -714,6 +724,99 @@ class RemoteMustBeOffMachineTest(DurableCheckCase):
         self.add_remote(off_machine=False)
         result = sync.durable_check(self.repo, self.store, local_only=True)
         self.assertEqual(result["verdict"], "PASS", result["problems"])
+        self.assertFalse(result["remote_observed"])
+
+
+class RemoteEndpointAttestationTest(DurableCheckCase):
+    """主機名的**形狀**不是 loopback,不代表解析後的位址不是這台機器。
+
+    `remote.example.test` 可以被 `/etc/hosts`、內網 DNS、或 `insteadOf`
+    以外的重映機制指到 `127.0.0.1` 或這台機器自己的另一個介面 —— 這種情況下
+    `RemoteMustBeOffMachineTest` 那一關(判 URL 形狀)會放行,而 `ls-remote`
+    一樣能回報正確的 SHA。這裡多驗一層:解析後的位址本身。
+
+    解析用真的 DNS 在 CI 裡沒辦法對「映到 127.0.0.1」這種情境做出穩定實驗
+    (改 /etc/hosts 需要 root、也不portable),所以這裡替換的是
+    `identity.resolve_host_ips` 這一個問句 —— host 的形狀判定、ls-remote 問到
+    的 SHA、與 HEAD 的比對全部是真的,同一條紀律。
+    """
+
+    def _remote_with_resolved_ips(self, ips):
+        bare = self.add_remote(off_machine=False)
+        from memtools import git
+        patcher = mock.patch.object(
+            sync, "_remote_url",
+            return_value="ssh://git@remote.example.test/dev-flow.git")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        resolve_patcher = mock.patch.object(
+            identity, "resolve_host_ips", return_value=frozenset(ips))
+        resolve_patcher.start()
+        self.addCleanup(resolve_patcher.stop)
+        return bare
+
+    def test_dotted_hostname_resolving_to_loopback_is_not_off_machine_proof(self):
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self._remote_with_resolved_ips({"127.0.0.1"})
+        result = self.check()
+        self.assertEqual(result["verdict"], "FAIL", result)
+        self.assertTrue(
+            any(sync.REMOTE_ENDPOINT_LOCAL in p for p in result["problems"]),
+            result["problems"])
+        self.assertFalse(result["remote_observed"])
+
+    def test_dotted_hostname_resolving_to_a_local_interface_is_not_off_machine_proof(self):
+        """解析出的位址不是 loopback,但等於這台機器自己的一個介面位址。"""
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self._remote_with_resolved_ips({"192.168.1.50"})
+        local_ips_patcher = mock.patch.object(
+            identity, "_local_machine_ips",
+            return_value=frozenset({"192.168.1.50"}))
+        local_ips_patcher.start()
+        self.addCleanup(local_ips_patcher.stop)
+        result = self.check()
+        self.assertEqual(result["verdict"], "FAIL", result)
+        self.assertTrue(
+            any(sync.REMOTE_ENDPOINT_LOCAL in p for p in result["problems"]),
+            result["problems"])
+        self.assertFalse(result["remote_observed"])
+
+    def test_dotted_hostname_resolving_to_a_real_remote_still_passes(self):
+        """正向路徑不得被這一關擋掉 —— 解析出真正的公開位址要 PASS。"""
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self._remote_with_resolved_ips({"203.0.113.10"})
+        result = self.check()
+        self.assertEqual(result["verdict"], "PASS", result["problems"])
+        self.assertTrue(result["remote_observed"])
+
+    def test_resolution_failure_fails_closed(self):
+        """解析不到位址(DNS 錯、離線、host 其實是解析不出來的 SSH 別名)
+        —— 不得因為問不到而放行,這與問不到 ls-remote 是同一條紀律。"""
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self.add_remote(off_machine=False)
+        patcher = mock.patch.object(
+            sync, "_remote_url",
+            return_value="ssh://git@remote.example.test/dev-flow.git")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        # `resolve_host_ips` 回 None 代表解析失敗(DNS 錯、離線)。
+        resolve_patcher = mock.patch.object(identity, "resolve_host_ips",
+                                            return_value=None)
+        resolve_patcher.start()
+        self.addCleanup(resolve_patcher.stop)
+        result = self.check()
+        self.assertEqual(result["verdict"], "FAIL", result)
+        self.assertTrue(
+            any(sync.REMOTE_UNVERIFIED in p for p in result["problems"]),
+            result["problems"])
         self.assertFalse(result["remote_observed"])
 
 

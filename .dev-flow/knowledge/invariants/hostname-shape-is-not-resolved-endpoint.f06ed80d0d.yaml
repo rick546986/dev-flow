@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: hostname-shape-is-not-resolved-endpoint
+title: "主機名不是 loopback 字面,不等於解析後的位址不是這台機器自己"
+authority: domain_expert
+status: CONFIRMED
+confidence: 0.8
+body: "remote_is_offmachine() 只判 URL 的形狀(host 不在 loopback denylist、含點)。但一個具名的非 loopback 主機仍然可能解析回這台機器——本機 hosts 檔的覆寫或內網 DNS 可以把 remote.example.test 重映到 127.0.0.1 或這台機器自己的另一個介面,git ls-remote 一樣回報正確的 SHA。所以形狀判定過關之後,還要再解析主機名、驗證解析出的每一個位址都不是 loopback、link-local、unspecified、或本機介面位址(不檢查 is_private——LAN 上的另一台機器合法地可以有私網位址,排除它會誤傷自架 git server)。解析不到位址時 fail closed,同 remote_is_offmachine 的「分不出來不得當成證據」。已知殘留缺口:SSH 設定檔的 Host 別名重映需要額外呼叫 ssh -G 才能偵測,這一輪沒有做。"
+recorded_at: "2026-08-20T21:15:23Z"

@@ -524,6 +524,7 @@ PENDING_REVISION = "REVISION_STILL_PENDING"
 PENDING_FACT = "FACT_STATE_NOT_REWRITTEN"
 REMOTE_UNVERIFIED = "DURABLE_REMOTE_UNVERIFIED"
 REMOTE_LOCAL = "DURABLE_REMOTE_IS_LOCAL"
+REMOTE_ENDPOINT_LOCAL = "DURABLE_REMOTE_ENDPOINT_IS_LOCAL"
 
 
 def _remote_url(repo_root, remote):
@@ -555,6 +556,16 @@ def _observe_remote(repo_root, branch):
     所以 URL 先過 `identity.remote_is_offmachine()`,判不出是別台機器就不給
     證據 —— 見那支的註解。訊息裡只提 remote **名字**,不提 URL:URL 可能帶
     token,而這段輸出會被貼進紀錄。
+
+    形狀判定只看 URL 字面(host 長得像不像本機)——一個具名的非 loopback
+    主機仍然可能解析回這台機器:`remote.example.test` 被 `/etc/hosts` 或
+    內網 DNS 重映到 `127.0.0.1`、或這台機器自己的另一個介面,`ls-remote`
+    照樣回報正確的 SHA。所以形狀過關之後還要再解析 host 拿位址證據
+    (`identity.resolve_host_ips` + `identity.ip_is_offmachine`);解析不到
+    一律 fail closed(`REMOTE_UNVERIFIED`),不得因為問不到而放行。
+    SSH config 的 Host 別名重映(`~/.ssh/config` 的 `HostName`)不在這一關
+    的偵測範圍內 —— 那需要額外呼叫 `ssh -G` 才能拿到 SSH 實際會解析的
+    host,這裡沒有做,是已知的殘留缺口,不是沒注意到。
     """
     from . import identity
     remote = identity._git(repo_root, "config",
@@ -573,6 +584,17 @@ def _observe_remote(repo_root, branch):
                 "remote {0} 指向這台機器,或無法判定它在別台機器上 —— "
                 "本機的 bare repo / file:// / localhost 跟工作樹一起壞掉,"
                 "它不是「記憶離開這台機器」的證據".format(remote))
+    host = identity._parse_host(url)
+    ips = identity.resolve_host_ips(host) if host else None
+    if not ips:
+        return (None, REMOTE_UNVERIFIED,
+                "remote {0} 的主機名解析不到位址 —— 分不出來不得當成"
+                "離開這台機器的證據".format(remote))
+    if not all(identity.ip_is_offmachine(ip) for ip in ips):
+        return (None, REMOTE_ENDPOINT_LOCAL,
+                "remote {0} 的主機名解析後是這台機器自己(loopback / "
+                "link-local / 本機介面位址)—— 主機名長得像別台機器,"
+                "實際解析到的卻是自己".format(remote))
     raw = identity._git_raw(repo_root, "ls-remote", "--exit-code",
                             remote, merge)
     if raw is None:
