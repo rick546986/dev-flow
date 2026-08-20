@@ -133,8 +133,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=86
-EXPECTED_TOTAL=100
+EXPECTED_NEGATIVES=91
+EXPECTED_TOTAL=105
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -1693,6 +1693,75 @@ p.write_text(t.replace(anchor, '                " WHERE session_id=?",\n', 1),
              encoding="utf-8")
 PYX
 expect_local fail check-memory-architecture.sh "$D" "MEM-16 end_session 退回無條件 UPDATE(ABORTED 被覆寫成 CLOSED)"
+
+D=$(seed_mem mem17); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/durable.py"
+t = p.read_text(encoding="utf-8")
+anchor = '        _atomic_write(path, text + "".join(line + "\\n" for line in fresh))'
+assert anchor in t, "MEM-17 anchor 不見"
+# 退回 append 模式:同一個 event_id 重跑會變成第二行(JSONL 不是 keyed
+# storage),而 durable 寫入成功、local 狀態還沒前進那個視窗消不掉。
+p.write_text(t.replace(
+    anchor,
+    '        open(path, "a").write("".join(line + "\\n" for line in fresh))', 1),
+    encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-17 event append 退回 append 模式(重跑把同一筆寫成第二行)"
+
+D=$(seed_mem mem18); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = ('        record.setdefault("event_id",\n'
+          '                          _derived_id("event", row["revision_id"]))')
+assert anchor in t, "MEM-18 anchor 不見"
+# 退回隨機 id:去重的依據是 event_id,隨機 id 讓去重永遠對不上 ——
+# 同一次 supersede 會在 events/ 累積成 N 筆,每筆都聲稱是它。
+p.write_text(t.replace(
+    anchor, '        record.setdefault("event_id", ids.new_id("event"))', 1),
+    encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-18 revision event_id 退回隨機(重跑補寫成第二筆,去重對不上)"
+
+D=$(seed_mem mem19); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = ('    entities_touched.update(\n'
+          '        store.entities_pending_durable(sorted(_FACT_STATUS_DURABLE)))')
+assert anchor in t, "MEM-19 anchor 不見"
+# 只讓候選碰到的 entity 被重寫:`verify --observed` 不建候選,於是它產生的
+# 新 current truth 永遠不會離開這台機器,而 local 說它 VERIFIED。
+p.write_text(t.replace(anchor, "    pass", 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-19 consolidate 只重寫候選碰到的 entity(reverify 的新現況留在本機)"
+
+D=$(seed_mem mem20); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = ('    pending_facts = store.entities_pending_durable(\n'
+          '        sorted(_FACT_STATUS_DURABLE))')
+assert anchor in t, "MEM-20 anchor 不見"
+# durable-check 只報「歷史沒落地」:於是「revision 寫成功、現況檔沒重寫」
+# 會判 PASS —— 後者變成靜默的。
+p.write_text(t.replace(anchor, "    pending_facts = []", 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-20 durable-check 漏掉現況沒落地(只報歷史,現況靜默)"
+
+D=$(seed_mem mem21); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/truth.py"
+t = p.read_text(encoding="utf-8")
+anchor = "    if changed or dirty or unproven:"
+assert anchor in t, "MEM-21 anchor 不見"
+# 把解析不完整那一項從 STALE 判斷式裡拿掉:git status 有讀不懂的欄位時
+# dirty 清單不完整,而沒有指紋可比的依賴只剩 dirty 能證明它乾淨 ——
+# 判斷式少了它就仍然回 OK fast path。
+p.write_text(t.replace(anchor, "    if changed or dirty:", 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-21 解析不完整不進 STALE 判斷(unknown workspace 仍回 OK fast path)"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"

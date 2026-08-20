@@ -172,6 +172,7 @@ def invalidate_from_snapshot(store, repo_root, workspace_id, snapshot, now=None)
     (指紋抓得到、dirty 抓不到);剛編輯還沒 commit 則反之。
     """
     dirty = set(snapshot.get("dirty_files") or ())
+    unparsed = bool(snapshot.get("status_unparsed"))
     changed = set()
     for fact in store.facts(statuses=(VERIFIED,), limit=5000):
         stored = json.loads(fact["fingerprints_json"])
@@ -180,8 +181,9 @@ def invalidate_from_snapshot(store, repo_root, workspace_id, snapshot, now=None)
                 changed.add(dep)
         # 與 resolve_current 同一條規則:dirty 只對沒有指紋的依賴有意義
         # (兩處判準不一致的話,查詢說 VERIFIED、掃描說 STALE,誰對?)
+        # 解析不完整時「不在 dirty 裡」不再代表乾淨 —— 同上,一致才有意義。
         for dep in json.loads(fact["dependencies_json"]):
-            if dep not in stored and dep in dirty:
+            if dep not in stored and (dep in dirty or unparsed):
                 changed.add(dep)
     return invalidate_for_changes(store, workspace_id, changed, now=now)
 
@@ -250,16 +252,35 @@ def resolve_current(store, repo_root, entity_type, entity_key, fact_key,
     unfingerprinted = [dep for dep in deps if dep not in stored]
     dirty = sorted(set(unfingerprinted)
                    & set((snapshot or {}).get("dirty_files") or ()))
-    if changed or dirty:
+    # git status 有解析不出來的欄位 = **dirty 清單不完整**。
+    #
+    # parser 拒絕猜、原樣回報那些欄位是對的,但那份不確定性必須在這裡被消化,
+    # 否則系統可以同時說「這個 workspace 有一部分我看不懂」與「VERIFIED +
+    # fast_path」。少算檔案是靜默的錯,而靜默的錯會讓 agent 拿 STALE 的值
+    # 當現況回答。
+    #
+    # 範圍剛好是 dirty 那條路,不多不少:指紋相符代表驗證時看到的內容就是
+    # 現在這份,git 看不看得懂它的狀態列與那件事無關(把指紋齊全的 fact 也
+    # 打回 STALE 就是拿無關的訊號否定已經驗過的內容)。沒有指紋的依賴則
+    # 只剩 dirty 能證明它乾淨 —— 清單不完整就等於證明不了。
+    unproven = sorted(unfingerprinted) if (
+        unfingerprinted and (snapshot or {}).get("status_unparsed")) else []
+    if changed or dirty or unproven:
         reason_parts = []
         if changed:
             reason_parts.append("指紋不符:{0}".format(", ".join(changed)))
         if dirty:
             reason_parts.append(
                 "工作樹未提交改動且無指紋可比:{0}".format(", ".join(dirty)))
+        if unproven:
+            reason_parts.append(
+                "git status 有 {0} 筆無法解析,無指紋可比的依賴無從證明乾淨:"
+                "{1}".format(len((snapshot or {})["status_unparsed"]),
+                             ", ".join(unproven)))
         reason = ";".join(reason_parts)
-        store.set_overlay(fact["fact_id"], workspace_id, STALE, reason,
-                          changed_paths=sorted(set(changed) | set(dirty)))
+        store.set_overlay(
+            fact["fact_id"], workspace_id, STALE, reason,
+            changed_paths=sorted(set(changed) | set(dirty) | set(unproven)))
         return dict(base, status=STALE, fast_path=False, needs_inspect=True,
                     reasons=[reason,
                              "已在本機建立 STALE overlay;durable 側不動"])
@@ -287,7 +308,7 @@ def reverify(store, repo_root, fact_id, workspace_id, observed_value,
     deps = json.loads(fact["dependencies_json"])
 
     if observed_value is None:
-        store.upsert_fact(_as_record(fact, contradiction_count=
+        store.upsert_fact(_as_record(fact, durable=False, contradiction_count=
                                      fact["contradiction_count"] + 1))
         store.set_overlay(fact_id, workspace_id, STALE,
                           "重新驗證無法判定當前值(inspect 失敗或證據不足)",
@@ -297,7 +318,7 @@ def reverify(store, repo_root, fact_id, workspace_id, observed_value,
     if str(observed_value) == fact["value"]:
         store.clear_overlay(fact_id, workspace_id)
         store.upsert_fact(_as_record(
-            fact, status=VERIFIED, verified_at=now,
+            fact, durable=False, status=VERIFIED, verified_at=now,
             verified_commit=source_commit or fact["verified_commit"],
             verification_count=fact["verification_count"] + 1,
             fingerprints=fingerprints_for(repo_root, deps),
@@ -305,8 +326,12 @@ def reverify(store, repo_root, fact_id, workspace_id, observed_value,
         return {"outcome": "reconfirmed", "fact_id": fact_id, "status": VERIFIED}
 
     new_id = ids.new_id("fact")
+    # `durable=False`:這一列的內容變了,`.dev-flow/` 裡那份還是舊的。
+    # 旗標的語意是「現在的內容就是檔裡那份」,所以改了內容就必須打回 pending
+    # —— 否則現況檔會停在 VERIFIED/舊值,而沒有任何機制會發現。
     store.upsert_fact(_as_record(
-        fact, status=SUPERSEDED, superseded_at=now, superseded_by=new_id))
+        fact, durable=False, status=SUPERSEDED, superseded_at=now,
+        superseded_by=new_id))
     # 記一筆 revision(pending):「原本 X、現在 Y、為什麼」是現況視圖留不下來的
     # 東西 —— 少了它,另一台機器 rebuild 之後只看得到現在的值(P0-3)。
     lineage.record_pending(store, lineage.build_fact_revision(

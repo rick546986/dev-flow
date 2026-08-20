@@ -3,7 +3,7 @@ import os
 import shutil
 
 from memtools import MemoryCase
-from agentmem import durable, identity, sync
+from agentmem import durable, identity, ids, sync
 
 
 class RebuildTest(MemoryCase):
@@ -29,6 +29,7 @@ class RebuildTest(MemoryCase):
                                         "steps": ["build"],
                                         "recorded_at": "2026-08-20T00:00:00Z"})
         durable.append_events(self.repo, "ses_a", [{
+            "event_id": ids.new_id("event"),
             "kind": "schema_change", "title": "改名 pgs_intake → lab_order",
             "occurred_at": "2026-08-20T01:00:00Z", "branch": "main",
             "paths": ["migrations/001.sql"]}])

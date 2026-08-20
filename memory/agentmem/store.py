@@ -275,6 +275,26 @@ class Store:
         args.append(int(limit))
         return [dict(r) for r in self.conn.execute(" ".join(sql), args)]
 
+    def entities_pending_durable(self, statuses):
+        """還沒落進 `.dev-flow/` 的 fact 屬於哪些 entity(去重、無筆數上限)。
+
+        `durable=1` 的語意是「這一列現在的內容就是 `.dev-flow/` 裡的那份」——
+        所以 `durable=0` 的 live fact 就是一個**還沒完成的耐久操作**。
+
+        刻意下推成 SQL 的 DISTINCT 而不是撈前 N 筆再用 Python 過濾:任意
+        前綴會讓「第 N+1 筆的 entity 沒被重寫」變成一個只在記憶量大時出現、
+        而且靜默的失憶。
+        """
+        if not statuses:
+            return []
+        rows = self.conn.execute(
+            "SELECT DISTINCT entity_type, entity_key FROM facts"
+            " WHERE project_id=? AND durable=0 AND status IN ({0})"
+            " ORDER BY entity_type, entity_key".format(
+                ",".join("?" for _ in statuses)),
+            [self.project_id] + list(statuses))
+        return [(r["entity_type"], r["entity_key"]) for r in rows]
+
     # ── LVP overlay(per workspace;local only)──────────────────────────────
     def set_overlay(self, fact_id, workspace_id, status, reason,
                     changed_paths=(), now=None):

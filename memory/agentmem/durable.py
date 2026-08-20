@@ -416,23 +416,77 @@ def event_file(repo_root_path, session_id, occurred_at):
     return _path(repo_root_path, EVENT_DIR + (year, month), slug(session_id) + ".jsonl")
 
 
+def _existing_events(path):
+    """回傳 (原樣文字, 已有的 event_id 集合)。壞行一律 fail-loud。
+
+    去重需要知道檔裡已經有哪些 id,而那要逐行 parse。讀不懂的行不得被當成
+    「沒有這筆」跳過 —— 那會讓重寫把它旁邊補一筆重複的,或整檔取代時把它
+    吃掉。同 `iter_events()`:壞掉的耐久內容由人裁決,不由工具猜。
+    """
+    if not os.path.isfile(path):
+        return "", set()
+    text = _read_text(path)
+    seen = set()
+    for lineno, line in enumerate(text.splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            data = json.loads(line)
+        except ValueError as exc:
+            raise DurableError(
+                "{0}:{1} 不是合法 JSON:{2}".format(path, lineno, exc))
+        if isinstance(data, dict) and data.get("event_id"):
+            seen.add(data["event_id"])
+    if text and not text.endswith("\n"):
+        text += "\n"
+    return text, seen
+
+
 def append_events(repo_root_path, session_id, records):
-    """append 一批事件(同一 session 同一月 → 同一檔)。回傳寫入的檔案清單。"""
-    written = {}
+    """append 一批事件(同一 session 同一月 → 同一檔)。回傳寫入的檔案清單。
+
+    **以 `event_id` 去重、整檔原子取代**,不是 open("a") 直接寫。
+
+    「先寫檔、才動 local 狀態」對 deterministic 整檔取代的 writer 夠用:
+    `write_state()` 寫完後行程死掉,重跑寫的是同一份內容取代同一個檔,
+    它會收斂。append-only 的 JSONL 不是 —— 它**不是 keyed storage**,
+    所以同一個 `event_id` 重跑會變成第二行。而檔案系統與 SQLite 之間沒有
+    共同的 transaction,「append 成功、local 還沒前進」這個視窗消不掉,
+    只能讓重跑冪等:已經在檔裡的 id 就不再寫。
+
+    原子取代同時解掉第二件事:open("a") 中途斷電會留下半行,而半行讓整個
+    檔案之後都讀不出來(`iter_events` fail-loud)。
+
+    沒有 `event_id` 的事件一律拒收:認不出身分的東西無法去重,寫下去就是
+    一筆重跑必然變成兩筆的紀錄。這是刻意收緊的契約,不是防禦性檢查。
+    """
+    pending = {}
     for record in records:
         occurred_at = record.get("occurred_at")
         path = event_file(repo_root_path, session_id, occurred_at)
         payload = {k: v for k, v in record.items() if v is not None}
         _guard_paths(payload.get("paths") or ())
-        written.setdefault(path, []).append(
-            json.dumps(payload, ensure_ascii=False, sort_keys=True))
-    for path, lines in written.items():
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "a", encoding="utf-8", newline="\n") as stream:
-            for line in lines:
-                stream.write(line + "\n")
-            stream.flush()
-            os.fsync(stream.fileno())
+        event_id = payload.get("event_id")
+        if not event_id:
+            raise DurableError(
+                "event 缺 event_id({0!r})—— 沒有身分就無法在重跑時去重"
+                .format(payload.get("title")))
+        pending.setdefault(path, []).append(
+            (event_id, json.dumps(payload, ensure_ascii=False, sort_keys=True)))
+    written = []
+    for path, entries in sorted(pending.items()):
+        text, seen = _existing_events(path)
+        fresh = []
+        for event_id, line in entries:
+            if event_id in seen:
+                continue
+            seen.add(event_id)
+            fresh.append(line)
+        if not fresh:
+            # 整批都已經在檔裡:這一輪是重跑補完,不動檔案。
+            continue
+        _atomic_write(path, text + "".join(line + "\n" for line in fresh))
+        written.append(path)
     return sorted(written)
 
 

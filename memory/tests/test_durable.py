@@ -2,7 +2,7 @@
 import os
 
 from memtools import MemoryCase, read_file, write
-from agentmem import durable, paths
+from agentmem import durable, ids, paths
 
 
 def sample_fact(**over):
@@ -163,6 +163,21 @@ class EventFileTest(MemoryCase):
                  "title": "t%d" % i, "occurred_at": "2026-08-20T0%d:00:00Z" % i}])
         self.assertEqual(len(list(durable.iter_events(self.repo))), 3)
 
+    def test_appending_the_same_event_id_twice_writes_one_line(self):
+        """去重是 append-only writer 的重跑安全網(見 append_events 的註解)。"""
+        record = {"event_id": "evt_dupe", "kind": "schema_change",
+                  "title": "a", "occurred_at": "2026-08-20T01:00:00Z"}
+        durable.append_events(self.repo, "ses_a", [record])
+        written = durable.append_events(self.repo, "ses_a", [dict(record)])
+        self.assertEqual(written, [], "整批都已在檔裡時不得再動檔案")
+        self.assertEqual(len(list(durable.iter_events(self.repo))), 1)
+
+    def test_event_without_event_id_is_rejected(self):
+        """認不出身分的事件無法去重 —— 寫下去就是重跑必然變兩筆的紀錄。"""
+        with self.assertRaises(durable.DurableError):
+            durable.append_events(self.repo, "ses_a", [
+                {"title": "x", "occurred_at": "2026-08-20T00:00:00Z"}])
+
     def test_bad_timestamp_fails_loud(self):
         with self.assertRaises(durable.DurableError):
             durable.append_events(self.repo, "ses_a",
@@ -171,12 +186,14 @@ class EventFileTest(MemoryCase):
     def test_absolute_path_in_event_rejected(self):
         with self.assertRaises(paths.NonPortablePath):
             durable.append_events(self.repo, "ses_a", [
-                {"title": "x", "occurred_at": "2026-08-20T00:00:00Z",
+                {"event_id": "evt_x", "title": "x",
+                 "occurred_at": "2026-08-20T00:00:00Z",
                  "paths": ["/Users/rick/x.ts"]}])
 
     def test_corrupt_jsonl_fails_loud(self):
         durable.append_events(self.repo, "ses_a", [
-            {"title": "x", "occurred_at": "2026-08-20T00:00:00Z"}])
+            {"event_id": ids.new_id("event"), "title": "x",
+             "occurred_at": "2026-08-20T00:00:00Z"}])
         path = durable.event_file(self.repo, "ses_a", "2026-08-20T00:00:00Z")
         with open(path, "a", encoding="utf-8") as stream:
             stream.write("{not json}\n")
@@ -195,7 +212,8 @@ class InventoryTest(MemoryCase):
                                         "steps": ["build", "push"],
                                         "recorded_at": "2026-08-20T00:00:00Z"})
         durable.append_events(self.repo, "ses_a", [
-            {"title": "x", "occurred_at": "2026-08-20T00:00:00Z"}])
+            {"event_id": ids.new_id("event"), "title": "x",
+             "occurred_at": "2026-08-20T00:00:00Z"}])
         self.assertEqual(durable.inventory(self.repo),
                          {"facts": 1, "knowledge": 1, "decisions": 1,
                           "skills": 1, "events": 1, "entities": 1})

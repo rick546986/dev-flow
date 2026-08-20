@@ -461,7 +461,105 @@ elif "AND status='OPEN'" not in re.sub(r'"""[\s\S]*?"""', "", end_body):
 else:
     ok("end_session 是 OPEN → status 的 compare-and-set")
 
-MIN_CHECKS = 42
+# durable 的 event append 必須以 event_id 去重並整檔原子取代。
+# 「先寫檔、才動 local」對 deterministic 整檔取代的 writer 夠用,對 append-only
+# 的 JSONL 不夠:檔案系統與 SQLite 沒有共同 transaction,「append 成功、local
+# 還沒前進」那個視窗消不掉,而 open("a") 讓重跑把同一筆寫成第二行。
+durable_src = read("memory/agentmem/durable.py")
+i_ap = durable_src.find("def append_events(")
+i_ap_end = durable_src.find("\ndef ", i_ap + 1)
+ap_body = (durable_src[i_ap:i_ap_end] if i_ap >= 0 and i_ap_end > i_ap
+           else None)
+# docstring 不算證據(同 end_session 那條的理由):它解釋不變量,不實作它。
+ap_code = re.sub(r'"""[\s\S]*?"""', "", ap_body) if ap_body else None
+if ap_code is None:
+    bad("append_events 抽取", "找不到 append_events 窗口")
+elif '"a"' in ap_code or "'a'" in ap_code:
+    bad("event append 不是原子取代",
+        "append_events 還在用 append 模式 —— 同一個 event_id 重跑會變成第二"
+        "行(JSONL 不是 keyed storage),而斷電會留下半行讓整個檔讀不出來")
+elif "_atomic_write(" not in ap_code:
+    bad("event append 不是原子取代",
+        "append_events 沒有走 _atomic_write —— 寫到一半斷電會留下半行")
+elif "event_id" not in ap_code:
+    bad("event append 沒有去重依據",
+        "append_events 沒有碰 event_id —— 沒有身分就無法在重跑時去重")
+else:
+    ok("event append 以 event_id 去重 + 整檔原子取代(重跑冪等)")
+
+# revision 的 event_id 不得隨機:去重的依據是 event_id,而隨機 id 讓去重永遠
+# 對不上 —— 同一次 supersede 會在 events/ 累積成 N 筆,每筆都聲稱是它。
+i_rev = sync_src.find("revision_records.append(")
+window = sync_src[max(0, i_rev - 600):i_rev] if i_rev >= 0 else None
+if window is None:
+    bad("revision event_id 抽取", "找不到 revision_records 窗口")
+elif 'ids.new_id("event")' in window:
+    bad("revision event_id 是隨機的",
+        "revision 的 event_id 用 ids.new_id —— 寫檔成功而 local 還沒前進時"
+        "重跑會補寫成第二筆,而 durable 去重的依據正是 event_id")
+elif "_derived_id(" not in window:
+    bad("revision event_id 不是推導的",
+        "revision 的 event_id 沒有從 revision_id 推導 —— 重跑必須補寫同一筆")
+else:
+    ok("revision 的 event_id 由 revision_id 推導(重跑補寫同一筆)")
+
+# 候選不是進 facts 表的唯一一條路。`verify --observed`(公開 CLI)直接改值,
+# 不建候選 —— consolidate 少了這一段的話,`.dev-flow/state/` 的現況檔會停在
+# 舊值,砍掉 SQLite 再 rebuild 就退回 v1,而 local 說它 VERIFIED。
+if cons_body is None:
+    pass  # 上面已經 bad 過抽取失敗,不重複計數
+elif "entities_pending_durable(" not in cons_body:
+    bad("現況檔不會被重寫",
+        "consolidate 沒有把 durable=0 的 live fact 的 entity 納入重寫 —— "
+        "reverify 產生的新 current truth 永遠不會離開這台機器(revision 是"
+        "歷史,不是現況物化視圖的替代品)")
+else:
+    ok("consolidate 會重寫所有還沒落地的 fact entity(不只候選碰到的)")
+
+# durable-check 要分開報「歷史沒落地」與「現況沒落地」。只報前者的話,
+# 「revision 寫成功、現況檔沒重寫」會判 PASS。
+i_dc = sync_src.find("def durable_check(")
+i_dc_end = sync_src.find("\ndef ", i_dc + 1)
+dc_body = (sync_src[i_dc:i_dc_end] if i_dc >= 0 and i_dc_end > i_dc else None)
+if dc_body is None:
+    bad("durable_check 抽取", "找不到 durable_check 窗口")
+elif "entities_pending_durable(" not in dc_body:
+    bad("durable-check 漏掉現況沒落地",
+        "durable_check 沒有檢查還沒重寫的 fact entity —— 「歷史沒落地」與"
+        "「現況沒落地」是兩件事,只報前者的話後者是靜默的")
+else:
+    ok("durable-check 同時檢查現況檔還沒重寫的 entity")
+
+# git status 解析不完整必須被 Current Truth 消化。parser 拒絕猜是對的,但那份
+# 不確定性斷在 resolve_current 的話,系統會同時說「有一部分我看不懂」與
+# 「VERIFIED + fast_path」。
+truth_src = read("memory/agentmem/truth.py")
+i_rc = truth_src.find("def resolve_current(")
+i_rc_end = truth_src.find("\ndef ", i_rc + 1)
+rc_body = (truth_src[i_rc:i_rc_end] if i_rc >= 0 and i_rc_end > i_rc else None)
+# **docstring 與註解都不算證據。** 光找 "status_unparsed" 這個字串會被死碼
+# 餵飽:把判斷式改成常數 False、留著底下那個引用它的分支,字串還在而行為
+# 已經沒了。所以剝掉解釋性文字之後,還要釘住它真的參與 STALE 的判斷式。
+rc_code = re.sub(r'"""[\s\S]*?"""', "", rc_body) if rc_body else None
+rc_code = re.sub(r"(?m)#.*$", "", rc_code) if rc_code else None
+i_cond = rc_code.find("if changed or dirty") if rc_code else -1
+cond_line = (rc_code[i_cond:rc_code.find("\n", i_cond)] if i_cond >= 0 else "")
+if rc_code is None:
+    bad("resolve_current 抽取", "找不到 resolve_current 窗口")
+elif "status_unparsed" not in rc_code:
+    bad("解析不完整沒有 fail closed",
+        "resolve_current 不看 status_unparsed —— git status 有讀不懂的欄位時"
+        "dirty 清單是不完整的,而沒有指紋可比的依賴只剩 dirty 能證明它乾淨,"
+        "卻仍然回 OK fast path")
+elif i_cond < 0 or cond_line.strip() == "if changed or dirty:":
+    bad("解析不完整沒有進入 STALE 判斷",
+        "status_unparsed 出現在 resolve_current 裡,但 STALE 的判斷式仍是"
+        " `if changed or dirty` —— 那個引用是死碼,行為上仍然回 OK fast path"
+        "(守衛不能被自己要檢查的那個字串餵飽)")
+else:
+    ok("git status 解析不完整時,無指紋的依賴不得走 fast path")
+
+MIN_CHECKS = 47
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)

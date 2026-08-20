@@ -784,6 +784,177 @@ class FactAndEventCandidateBarrierTest(MemoryCase):
         self.assertEqual(self.durable_facts(), [])
 
 
+class EventAppendIsIdempotentAcrossCrashWindowTest(MemoryCase):
+    """「先寫檔、才動 local」對 **append-only writer** 還不夠。
+
+    `write_state()` 是 deterministic 整檔取代:寫檔成功後行程死掉,重跑寫的是
+    同一份內容取代同一個檔 —— 它會收斂。`append_events()` 不是:它以 append
+    模式寫進 JSONL,而 JSONL **不是 keyed storage**。所以這個視窗是不對稱的:
+
+        append_events 成功
+        ↓  ← 行程死在這裡 / SQLite 失敗
+        store.add_event(durable=True)
+        store.set_candidate_status(CONSOLIDATED)
+
+    候選留在 CONFIRMED(這是對的,重跑才補得回來),但重跑會把同一個
+    `event_id` **再 append 一次**。deterministic id 擋不住它 —— 那是去重的
+    *依據*,不是去重的*機制*。歷史從「缺」變成「重複」,而重複比缺更難發現:
+    兩行都是合法 JSON、都長得像真的,rebuild 之後同一件事被記得兩次。
+
+    既有的三案把失敗注入在 **durable writer 自己**(`append_events` 拋),
+    所以它們證明的是「寫檔失敗後救得回來」。這一組把失敗注入在
+    **append 成功之後、local 狀態前進之前** —— 那是真正無法避免的視窗,
+    因為檔案系統與 SQLite 沒有共同的 transaction。
+    """
+
+    def setUp(self):
+        super().setUp()
+        from memtools import commit_all, write
+        self.project_id = self.project()["project_id"]
+        self.store = self.store_for(self.project_id)
+        write(self.repo, "src/db.py", "URL = 'x'\n")
+        commit_all(self.repo, "dep")
+        self.session = self.store.start_session("實作一輪",
+                                                mode="implementation")
+
+    def observe_event(self, title="registrations 加了 customer_id 欄位"):
+        return session_mod.observe(
+            self.store, self.session, "schema_change", title,
+            "migration 0007 已套用", file_paths=["src/db.py"],
+            repo_root=self.repo)
+
+    def crash_after_append(self, method):
+        """append_events 成功之後、`store.<method>` 之前注入一次失敗。"""
+        original = getattr(self.store, method)
+        calls = {"n": 0}
+
+        def boom(*args, **kwargs):
+            calls["n"] += 1
+            raise IOError("模擬行程/SQLite 在 durable append 之後死掉")
+
+        setattr(self.store, method, boom)
+        try:
+            with self.assertRaises(IOError):
+                session_mod.checkpoint(self.store, self.repo, self.session)
+        finally:
+            try:
+                delattr(self.store, method)
+            except AttributeError:
+                setattr(self.store, method, original)
+        self.assertGreater(calls["n"], 0,
+                           "失敗沒有被注入到 —— 這一案沒有測到那個視窗")
+
+    def durable_event_ids(self):
+        return [e.get("event_id") for e in durable.iter_events(self.repo)]
+
+    def durable_lines(self):
+        base = os.path.join(durable.root(self.repo), "events")
+        out = []
+        for dirpath, _dirs, files in os.walk(base):
+            for name in sorted(files):
+                if not name.endswith(".jsonl"):
+                    continue
+                with open(os.path.join(dirpath, name), encoding="utf-8") as fh:
+                    out.extend(line for line in fh.read().splitlines()
+                               if line.strip())
+        return out
+
+    def test_append_already_happened_before_the_crash(self):
+        """先確立前提:這個視窗真的存在(append 成功了,local 還沒前進)。"""
+        result = self.observe_event()
+        self.crash_after_append("add_event")
+        self.assertEqual(self.durable_event_ids(), [result["event_id"]],
+                         "前提不成立:append 沒有先發生,這一組測的不是那個視窗")
+        row = self.store.conn.execute(
+            "SELECT durable FROM events WHERE event_id=?",
+            (result["event_id"],)).fetchone()
+        self.assertEqual(row["durable"], 0,
+                         "local 還沒前進 —— 這正是重跑必須補完的狀態")
+
+    def test_crash_before_local_event_then_retry_writes_exactly_one(self):
+        result = self.observe_event()
+        self.crash_after_append("add_event")
+        session_mod.checkpoint(self.store, self.repo, self.session)
+        self.assertEqual(
+            self.durable_event_ids().count(result["event_id"]), 1,
+            "同一個 event_id 在 `.dev-flow/` 出現兩次 —— append-only writer "
+            "的重跑必須以 event_id 去重,否則歷史從缺變成重複")
+
+    def test_crash_before_candidate_status_then_retry_writes_exactly_one(self):
+        result = self.observe_event()
+        self.crash_after_append("set_candidate_status")
+        session_mod.checkpoint(self.store, self.repo, self.session)
+        self.assertEqual(
+            self.durable_event_ids().count(result["event_id"]), 1,
+            "候選狀態沒前進 → 重跑 → 同一筆事件被 append 第二次")
+
+    def test_crash_with_many_events_keeps_each_id_once(self):
+        ids_seen = [self.observe_event("schema 變更 %d" % i)["event_id"]
+                    for i in range(3)]
+        self.crash_after_append("add_event")
+        session_mod.checkpoint(self.store, self.repo, self.session)
+        written = self.durable_event_ids()
+        for event_id in ids_seen:
+            self.assertEqual(written.count(event_id), 1,
+                             "多筆一起重跑時每個 event_id 仍必須剛好一次")
+        self.assertEqual(len(written), len(set(written)),
+                         "durable 事件流出現重複 id")
+
+    def test_every_durable_line_still_parses_as_json(self):
+        self.observe_event()
+        self.crash_after_append("add_event")
+        session_mod.checkpoint(self.store, self.repo, self.session)
+        for line in self.durable_lines():
+            json.loads(line)  # 去重改寫不得留下半行或壞行
+
+    def test_destructive_rebuild_sees_exactly_one_logical_event(self):
+        result = self.observe_event()
+        self.crash_after_append("add_event")
+        session_mod.checkpoint(self.store, self.repo, self.session)
+        shutil.rmtree(os.path.join(self.home, "projects", self.project_id))
+        fresh = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, fresh)
+        rows = fresh.conn.execute(
+            "SELECT COUNT(*) AS n FROM events WHERE event_id=?",
+            (result["event_id"],)).fetchone()
+        self.assertEqual(rows["n"], 1,
+                         "另一台機器只從 `.dev-flow/` 重建時,同一件事被記兩次")
+
+    def test_revision_event_id_is_stable_across_retry(self):
+        """revision 的 event_id 是 `ids.new_id()` —— 每次重跑都是新的一筆。
+
+        去重靠 event_id,而隨機 id 讓去重永遠對不上:同一筆 lineage 會在
+        `.dev-flow/events/` 累積成 N 筆,每一筆都聲稱同一次 supersede。
+        """
+        from memtools import write
+        result = session_mod.observe(
+            self.store, self.session, "architecture_change",
+            "資料庫連線池大小", "從 config 讀到的值",
+            fact={"entity_type": "database", "entity_key": "main",
+                  "fact_key": "pool", "value": "20",
+                  "status": truth.VERIFIED, "dependencies": ["src/db.py"]},
+            file_paths=["src/db.py"], repo_root=self.repo)
+        session_mod.checkpoint(self.store, self.repo, self.session)
+        fact_id = self.store.facts(entity_type="database", entity_key="main",
+                                   limit=5)[0]["fact_id"]
+        write(self.repo, "src/db.py", "URL = 'y'\n")
+        workspace = identity.workspace_key(self.project_id, self.repo)
+        self.store.register_workspace(
+            workspace, identity.workspace_snapshot(self.repo))
+        truth.reverify(self.store, self.repo, fact_id, workspace, "50",
+                       session_id=self.session, reason="config 改了")
+        self.crash_after_append("add_event")
+        session_mod.checkpoint(self.store, self.repo, self.session)
+        revisions = [e for e in durable.iter_events(self.repo)
+                     if e.get("kind") == "fact_superseded"]
+        self.assertEqual(
+            len(revisions), 1,
+            "同一次 supersede 在 durable 事件流裡出現 {0} 筆 —— revision 的 "
+            "event_id 必須由 revision_id 推導,不能每次重跑都新產"
+            .format(len(revisions)))
+        self.assertNotEqual(result["candidate_id"], None)
+
+
 class SessionLifecycleFailsClosedTest(MemoryCase):
     """finalization 一律要求 session == OPEN,否則零 durable 副作用 + 報錯。
 

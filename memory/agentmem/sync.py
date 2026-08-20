@@ -396,6 +396,18 @@ def consolidate(repo_root, store, session_id=None, now=None):
                                   now=now)
         promoted += 1
 
+    # 候選不是進 facts 表的唯一一條路,所以 `entities_touched` 不足以決定要
+    # 重寫哪些現況檔。`truth.reverify()`(公開 CLI `verify --observed`)直接
+    # 改值:它把舊列標 SUPERSEDED、插入新的 VERIFIED 列、記一筆 revision,
+    # 但**不建候選** —— 於是這一段之前沒有任何東西會把那個 entity 加進來,
+    # `.dev-flow/state/` 的現況檔停在舊值。revision 是歷史,不是現況物化視圖
+    # 的替代品:砍掉 SQLite 再 rebuild,現況就退回 v1,而 local 說它 VERIFIED。
+    #
+    # 判準用 fact 列自己的 `durable` 旗標,不是列舉「有哪些路會改 fact」——
+    # 後者要求每次新增寫入路徑的人記得回來改這裡,而忘記是靜默的。
+    entities_touched.update(
+        store.entities_pending_durable(sorted(_FACT_STATUS_DURABLE)))
+
     # ── fact 的 durable 寫入(這裡可能拋)→ 才結案 ────────────────────────
     for entity_type, entity_key in sorted(entities_touched):
         path, fact_rejected, written_ids = promote_entity_facts(
@@ -449,7 +461,12 @@ def consolidate(repo_root, store, session_id=None, now=None):
                              "reasons": verdict["reasons"]})
             continue
         record = dict(revision)
-        record.setdefault("event_id", ids.new_id("event"))
+        # event_id 由 revision_id 推導,不隨機 —— 理由同 `_derived_id` 的註解:
+        # 寫檔成功而 local 狀態還沒前進時重跑會補寫同一筆,而 durable 去重的
+        # 依據是 event_id。每次新產一個 id 等於讓去重永遠對不上:同一次
+        # supersede 會在 `.dev-flow/events/` 累積成 N 筆,每筆都聲稱是它。
+        record.setdefault("event_id",
+                          _derived_id("event", row["revision_id"]))
         revision_records.append(record)
         flushed_ids.append(row["revision_id"])
     event_records = [record for _cid, record, _extra in event_candidates]
@@ -499,6 +516,7 @@ UNCOMMITTED = "DURABLE_UNCOMMITTED"
 UNPUSHED = "DURABLE_UNPUSHED"
 OPEN_SESSION = "SESSION_STILL_OPEN"
 PENDING_REVISION = "REVISION_STILL_PENDING"
+PENDING_FACT = "FACT_STATE_NOT_REWRITTEN"
 
 
 def durable_check(repo_root, store):
@@ -570,6 +588,16 @@ def durable_check(repo_root, store):
             "{0}:{1} 筆 revision 還沒寫進 durable —— 修正歷史尚未離開本機".format(
                 PENDING_REVISION, len(pending_revisions)))
 
+    # ⑤現況檔還沒重寫的 entity(`verify --observed` 之後忘了 checkpoint)
+    # revision pending 與這一項不是同一件事:前者是歷史沒落地,後者是**現況**
+    # 沒落地。只檢查前者的話,「revision 寫成功、現況檔沒重寫」會判 PASS。
+    pending_facts = store.entities_pending_durable(
+        sorted(_FACT_STATUS_DURABLE))
+    if pending_facts:
+        problems.append(
+            "{0}:{1} 個 entity 的現況檔還沒重寫 —— 新的 current truth 還在"
+            "本機".format(PENDING_FACT, len(pending_facts)))
+
     return {
         "verdict": "FAIL" if problems else "PASS",
         "durable_root": rel_root,
@@ -580,6 +608,7 @@ def durable_check(repo_root, store):
         "pushed": pushed,
         "open_sessions": open_sessions,
         "pending_revisions": pending_revisions,
+        "pending_facts": ["{0}/{1}".format(t, k) for t, k in pending_facts],
         "problems": problems,
     }
 
