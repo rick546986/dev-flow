@@ -5,6 +5,22 @@
 set -u
 H=$(cd "$(dirname "$0")" && pwd)
 . "$H/devflow-python-lib.sh"  # 直譯器解析;缺直譯器 fail-open(理由見該檔)
+# devflow:tmpdir-normalize:start
+# 派工單 §2.1:Git Bash 的 /tmp 與 Windows 原生 Python 解讀的 /tmp 不是同一個資料夾。
+# 前者是 C:\Users\<user>\AppData\Local\Temp;後者把開頭的 / 當成「現行磁碟機根目錄
+# 底下的路徑」→ C:\tmp。而 C:\tmp 在多數機器上真的存在,所以 os.path.exists('/tmp')
+# 回 True —— 不會噴「找不到目錄」這種好認的錯,只會安靜地在空目錄裡找不到樣本,
+# 失敗訊息看起來五花八門(期望 0 得 1、期望 2 得 0),根其實是同一個。
+# cygpath -m 產出的 C:/Users/... 兩邊都認得(正斜線 + 磁碟機代號),與 issue #5 的
+# --print-root 同一招。底下所有 mktemp 都吃 ${TMPDIR:-/tmp},所以在此正規化一次
+# 即全涵蓋,不必動每一個落點。無 cygpath 的環境不進這個分支,行為零變化。
+# ⚠️ 本區塊在 hooks/selftest.sh 與 scripts/devflow-check.sh 各有一份**逐字**副本
+#    (兩支都是可獨立執行的入口,誰先跑都要正規化)。兩份必須完全一致,由
+#    test-architecture-guards.sh 的 tmpdir-normalize 對帳釘住 —— 改一邊必改兩邊。
+if command -v cygpath >/dev/null 2>&1; then
+  TMPDIR=$(cygpath -m "${TMPDIR:-/tmp}") && export TMPDIR
+fi
+# devflow:tmpdir-normalize:end
 V=${1:-}
 T=$(mktemp -d "${TMPDIR:-/tmp}/devflow-selftest.XXXXXX")
 C=$(mktemp -d "${TMPDIR:-/tmp}/devflow-gate-selftest.XXXXXX")
@@ -27,13 +43,16 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 擋下/已有低階攔升階放行 共 3 案)→ 386+3 = 389;同日 §7-3b 探針 pst 真實
 # subagent_type payload 形狀釘住 +3 → 392;2026-08-20 issue #7 路徑分隔符 w1 組 +6
 # (canonical_scope_path 反斜線檔案項/目錄項/traversal、in_pool 對舊 exec.json 的
-# 反斜線 scope、反斜線寫法走完整 guard 的圍欄②與 6-notes 恆許)→ 398)
+# 反斜線 scope、反斜線寫法走完整 guard 的圍欄②與 6-notes 恆許)→ 398;同日
+# 派工單 §2.1 TMPDIR 跨平台正規化 w2 組 +2(注入假 cygpath 的正向 + 空 PATH 的
+# 對照組)→ 400;同日 report-guard 覆蓋缺口 +2(.devflow/ 非 reports/ 仍擋 +
+# .devflow/task/ 證據區不得誤傷)→ 402)
 # ——新增案例時同步 +;絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=398
+MIN_CASES=402
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -305,6 +324,31 @@ ck "w1 in_pool 對舊 exec.json 的反斜線 scope 仍命中(升級免重新武�
 g_capture Read 'docs\\dev\\f1\\1-discussion.md'
 ck_msg "w1 反斜線寫法的上游檔 → 圍欄②仍擋(修法前靜默放行)" 2 "圍欄②" "$G_RC" "$G_OUT"
 ck "w1 反斜線寫法的 6-notes → 恆許仍放行(修法前誤判 scope 外)" 0 "$(g Write 'docs\\dev\\f1\\6-implementation-notes.md')"
+
+echo "-- w2 TMPDIR 跨平台正規化(§2.1:Git Bash 的 /tmp ≠ Windows Python 的 /tmp)--"
+# Mac/Linux 沒有 cygpath,那個分支永遠走不到 —— 不注入一支假的,這條修法在 CI 上
+# 等於完全沒被驗過(issue #5 的 5b 案同一個教訓)。這裡把本檔自己那段標記區塊的
+# **原文**抽出來跑,測的是真的會執行的那段字,不是另外抄一份會各自漂移的複本。
+# 標記刻意用變數組出來:這一行若直接寫出完整的 `...:start`/`...:end` 字面,sed 的
+# 範圍會在本行再開一次,而當行之後找不到結束標記就一路吃到檔尾 —— W2B 會變成
+# 「區塊 + 後面整份測試腳本」並在子殼真的執行起來(實測:$T 的 exec.json 被跑壞、
+# 43 案連鎖紅)。組出來的字面不含 `:start`,自我匹配不成立。
+W2MK=devflow:tmpdir-normalize
+W2B=$(sed -n "/${W2MK}:start/,/${W2MK}:end/p" "$H/selftest.sh")
+W2D=$(mktemp -d "${TMPDIR:-/tmp}/devflow-w2-cyg.XXXXXX")
+W2E=$(mktemp -d "${TMPDIR:-/tmp}/devflow-w2-nocyg.XXXXXX")
+printf '#!/bin/sh\necho "C:/faketmp"\n' > "$W2D/cygpath"; chmod +x "$W2D/cygpath"
+# bash 先解析好再改 PATH:命令前綴的 PATH 賦值會影響該命令自己的查找。
+# 對照組用**空目錄**當 PATH,不能拿現行 PATH —— Windows 上 cygpath 就在 /usr/bin,
+# 拿現行 PATH 當「沒有 cygpath」的對照,這一案在 Windows 會假紅。
+W2BASH=$(command -v bash)
+w2() { PATH="$1" TMPDIR=/tmp "$W2BASH" -c "$W2B"$'\nprintf %s "$TMPDIR"' 2>/dev/null; }
+w2v() { [ "$1" = "$2" ] && echo OK || echo "得 '$1'(期望 '$2')"; }
+ck_msg "w2 有 cygpath → TMPDIR 換成兩邊都認得的形式" 0 "OK" 0 \
+  "$(w2v "$(w2 "$W2D")" "C:/faketmp")"
+ck_msg "w2 無 cygpath → TMPDIR 原樣不動(非 Windows 行為零變化)" 0 "OK" 0 \
+  "$(w2v "$(w2 "$W2E")" "/tmp")"
+rm -rf "$W2D" "$W2E"
 
 echo "-- Stage 7 review 圍欄③(phase=review;A-11)--"
 ck "回歸:舊 exec.json(無 phase 鍵)讀 6-notes 放行(升版前後行為一致)" \
@@ -1161,7 +1205,9 @@ def c_parallel_init():
 
 
 def c_plan():
-    r = subprocess.run([os.path.join(H, "devflow-exec.sh"), "plan", "pf"],
+    # 顯式帶 bash(派工單 §2.2):Windows 沒有 shebang 機制,直接 exec .sh 會噴
+    # OSError WinError 193 而本案崩掉。
+    r = subprocess.run(["bash", os.path.join(H, "devflow-exec.sh"), "plan", "pf"],
                        cwd=ROOT, capture_output=True, text=True)
     need(r.returncode == 0, r.stdout + r.stderr)
     out = json.loads(r.stdout)
@@ -2459,6 +2505,16 @@ printf '/Users/somebody/companyapp/x.go\n' > "$RGT/.devflow/reports/trav.md"
 RG_OUT=$(printf '{"tool_name":"Write","tool_input":{"file_path":"%s"}}' "$RGT/.devflow/somedir/../reports/trav.md" \
   | "$H/devflow-report-guard.sh" 2>&1); RG_RC=$?
 ck_msg "rg .devflow/x/../reports/ 等價路徑 → 照掃仍擋" 2 "絕對路徑" "$RG_RC" "$RG_OUT"
+# ④ 覆蓋缺口(2026-08-20 現場實例):回報檔放在 .devflow/ 底下但不在 reports/,
+#    舊版整個靜默繞過 —— 帶著絕對路徑貼進 public issue 也沒人擋。
+printf '/Users/somebody/companyapp/x.go\n' > "$RGT/.devflow/verify-3.9.2-2026-08-20.md"
+rg_run "$RGT/.devflow/verify-3.9.2-2026-08-20.md"
+ck_msg "rg .devflow/ 底下非 reports/ 的回報檔 → 仍擋(舊版靜默放行)" 2 "絕對路徑" "$RG_RC" "$RG_OUT"
+#    對照組:放寬不得誤傷 Worker 的執行期證據區,否則武裝狀態下 Stage 6 直接卡死。
+mkdir -p "$RGT/.devflow/task/T-1"
+printf '/Users/somebody/companyapp/x.go\n' > "$RGT/.devflow/task/T-1/evidence.md"
+rg_run "$RGT/.devflow/task/T-1/evidence.md"
+ck "rg .devflow/task/ 的本機證據帶絕對路徑 → 放行(不得過度封鎖)" 0 "$RG_RC"
 rm -rf "$RGT"
 
 echo "-- c2 tier-exempt 豁免卡 run 級:stop 清未消耗的卡、留已消耗的卡 --"

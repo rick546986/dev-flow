@@ -195,7 +195,10 @@ check("跳過本階段 → 兩檔皆不建" in t3, "template 3-prototype 保留�
 # 明著跳過,不得靜默略過(同檔已知教訓:靜默 skip = 假綠)。
 renderer = os.path.join(root, "scripts", "render-methodology-corrections.sh")
 if os.path.isfile(renderer):
-    result = subprocess.run([renderer, "--check"], cwd=root, capture_output=True, text=True)
+    # 顯式帶 bash(派工單 §2.2):Windows 沒有 shebang 機制,直接 exec .sh 會噴
+    # OSError WinError 193 而整支檢查崩掉。
+    result = subprocess.run(["bash", renderer, "--check"], cwd=root,
+                            capture_output=True, text=True)
     check(result.returncode == 0, "舊模板/衍生檔仍可渲染(renderer --check)",
           (result.stdout + result.stderr).strip())
 else:

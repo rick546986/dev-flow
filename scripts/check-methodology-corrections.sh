@@ -342,7 +342,10 @@ renderer = os.path.join(root, "scripts", "render-methodology-corrections.sh")
 check(os.path.isfile(renderer) and os.access(renderer, os.X_OK),
       "tracked batch renderer exists and is executable")
 if os.path.isfile(renderer) and os.access(renderer, os.X_OK):
-    result = subprocess.run([renderer, "--check"], cwd=root, capture_output=True, text=True)
+    # 顯式帶 bash(派工單 §2.2):Windows 沒有 shebang 機制,直接 exec 一支 .sh
+    # 會噴 OSError WinError 193「不是有效的 Win32 應用程式」而整支檢查崩掉。
+    result = subprocess.run(["bash", renderer, "--check"], cwd=root,
+                            capture_output=True, text=True)
     check(result.returncode == 0, "renderer byte-identical fixed point",
           (result.stdout + result.stderr).strip())
 
