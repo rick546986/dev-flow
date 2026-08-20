@@ -133,8 +133,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=91
-EXPECTED_TOTAL=105
+EXPECTED_NEGATIVES=94
+EXPECTED_TOTAL=108
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -1698,13 +1698,13 @@ D=$(seed_mem mem17); mutate "$D" <<'PYX'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "memory/agentmem/durable.py"
 t = p.read_text(encoding="utf-8")
-anchor = '        _atomic_write(path, text + "".join(line + "\\n" for line in fresh))'
+anchor = '    for path, text in plans:\n        _atomic_write(path, text)'
 assert anchor in t, "MEM-17 anchor 不見"
 # 退回 append 模式:同一個 event_id 重跑會變成第二行(JSONL 不是 keyed
 # storage),而 durable 寫入成功、local 狀態還沒前進那個視窗消不掉。
 p.write_text(t.replace(
     anchor,
-    '        open(path, "a").write("".join(line + "\\n" for line in fresh))', 1),
+    '    for path, text in plans:\n        open(path, "a").write(text)', 1),
     encoding="utf-8")
 PYX
 expect_local fail check-memory-architecture.sh "$D" "MEM-17 event append 退回 append 模式(重跑把同一筆寫成第二行)"
@@ -1762,6 +1762,53 @@ assert anchor in t, "MEM-21 anchor 不見"
 p.write_text(t.replace(anchor, "    if changed or dirty:", 1), encoding="utf-8")
 PYX
 expect_local fail check-memory-architecture.sh "$D" "MEM-21 解析不完整不進 STALE 判斷(unknown workspace 仍回 OK fast path)"
+
+D=$(seed_mem mem22); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = ('    facts = store.facts(entity_type=entity_type, entity_key=entity_key,\n'
+          '                        statuses=sorted(_FACT_STATUS_DURABLE), limit=None)')
+assert anchor in t, "MEM-22 anchor 不見"
+# 把筆數視窗放回去:整檔取代會把視窗外的 fact 從 `.dev-flow/` 刪掉,而它們
+# 在 local 仍標 durable=1 —— durable-check 判 PASS 在不完整的鏡射上。
+p.write_text(t.replace(
+    anchor,
+    '    facts = [f for f in store.facts(entity_type=entity_type,\n'
+    '                                    entity_key=entity_key, limit=1000)\n'
+    '             if f["status"] in _FACT_STATUS_DURABLE]', 1),
+    encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-22 durable 現況檔整檔取代時設筆數視窗(視窗外的現行 fact 被刪掉)"
+
+D=$(seed_mem mem23); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/durable.py"
+t = p.read_text(encoding="utf-8")
+anchor = '                if seen[event_id] != line:'
+assert anchor in t, "MEM-23 anchor 不見"
+# 撞號退回靜默跳過:同 id 不同內容時第二筆永遠不存在,而呼叫端拿到成功。
+i = t.find(anchor)
+j = t.find("                continue", i)
+assert j > i, "MEM-23 window 不見"
+p.write_text(t[:i] + t[j:], encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-23 event 撞號退回靜默跳過(同 id 不同內容的第二筆永遠不存在)"
+
+D=$(seed_mem mem24); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = '        remote_head, error = _observe_remote(repo_root, branch or "")'
+assert anchor in t, "MEM-24 anchor 不見"
+# 退回本機追蹤 ref:別台機器改掉遠端之後它還指著我的 commit,於是這一關
+# 會替一個伺服器上已經不存在的 commit 背書。
+p.write_text(t.replace(
+    anchor,
+    '        remote_head, error = identity._git(\n'
+    '            repo_root, "rev-parse", upstream), None', 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-24 durable-check 退回本機追蹤 ref(遠端被改掉仍判 PASS)"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"

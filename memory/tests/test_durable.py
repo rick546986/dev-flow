@@ -172,6 +172,32 @@ class EventFileTest(MemoryCase):
         self.assertEqual(written, [], "整批都已在檔裡時不得再動檔案")
         self.assertEqual(len(list(durable.iter_events(self.repo))), 1)
 
+    def test_same_event_id_with_different_content_fails_loud(self):
+        """同 id 不同內容不是重跑,是兩件事共用一個身分 —— 不得靜默丟掉後者。
+
+        去重把「id 已經在檔裡」當成「這筆已經寫過了」。那個推論只有在 id 真的
+        決定內容時成立。推導 id 的來源(candidate_id / revision_id)撞號、或
+        推導規則有瑕疵時,第二筆的內容會被靜默丟棄 —— 而它是**不同**的事實。
+        寧可讓 checkpoint 紅掉由人裁決,不要留一筆看起來成功的假紀錄。
+        """
+        record = {"event_id": "evt_clash", "kind": "schema_change",
+                  "title": "改名 a → b", "occurred_at": "2026-08-20T01:00:00Z"}
+        durable.append_events(self.repo, "ses_a", [record])
+        clash = dict(record, title="其實是改名 c → d")
+        with self.assertRaises(durable.DurableError):
+            durable.append_events(self.repo, "ses_a", [clash])
+        events = list(durable.iter_events(self.repo))
+        self.assertEqual([e["title"] for e in events], ["改名 a → b"],
+                         "拒收之後檔案內容不得被動過")
+
+    def test_same_event_id_twice_in_one_batch_with_different_content(self):
+        """同一批裡撞號也一樣 —— 檔裡還沒有它,不代表可以只寫第一筆。"""
+        base = {"event_id": "evt_batch", "kind": "schema_change",
+                "occurred_at": "2026-08-20T01:00:00Z"}
+        with self.assertRaises(durable.DurableError):
+            durable.append_events(self.repo, "ses_a",
+                                  [dict(base, title="a"), dict(base, title="b")])
+
     def test_event_without_event_id_is_rejected(self):
         """認不出身分的事件無法去重 —— 寫下去就是重跑必然變兩筆的紀錄。"""
         with self.assertRaises(durable.DurableError):

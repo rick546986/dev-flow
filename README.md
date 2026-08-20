@@ -1090,8 +1090,12 @@ dev-run(implementation)
 - **checkpoint 必須在最終 push 之前。** 反過來的話 `.dev-flow/` 的改動永遠留在
   工作樹裡,`promoted: 3` 而 remote 上一個字都沒有 —— **而且不會有任何錯誤**。
 - `dev-memory.py durable-check` 是唯一能複驗這條鏈的東西。它擋掉四種假完成:
-  durable 檔沒 commit、HEAD 沒到 upstream、有 session 還開著沒收、有 revision
+  durable 檔沒 commit、HEAD 沒到遠端、有 session 還開著沒收、有 revision
   還沒落地。判定一律附理由,不回一個沒人能複驗的布林值。
+- **remote 那一項問的是遠端本身**(`git ls-remote`),不是本機的
+  `origin/<branch>` —— 追蹤 ref 是快取,別台機器 force-push 或刪掉那個 branch
+  之後它還指著我的 commit。問不到遠端一律 FAIL(沒有證據不等於通過);離線要
+  放行請明確 `--local-only`,那時輸出的 `remote_observed` 是 `false`。
 
 同一條原則在程式內部也成立,而且是六個實際存在過的缺陷:
 

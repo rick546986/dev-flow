@@ -532,6 +532,71 @@ class DurableCheckTest(MemoryCase):
         result = self.check()
         self.assertEqual(result["verdict"], "PASS", result["problems"])
 
+    # ── 遠端要真的被觀察到 ──────────────────────────────────────────────────
+    def test_stale_tracking_ref_cannot_prove_remote_durability(self):
+        """`origin/<branch>` 是本機快取。遠端被改掉時它還是舊值 —— 不得判 PASS。
+
+        「記憶離開這台機器了嗎」這個問句的答案只能來自遠端本身。另一台機器
+        force-push 或刪掉那個 branch 之後,本機的追蹤 ref 仍然指著我的 commit,
+        於是這一關會替一個伺服器上已經不存在的 commit 背書。
+        """
+        from memtools import commit_all, git
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        bare = self.add_remote()
+        branch = git(self.repo, "rev-parse", "--abbrev-ref", "HEAD")
+        self.assertEqual(self.check()["verdict"], "PASS")
+
+        # 另一台機器把遠端 branch 換掉;本機刻意不 fetch。
+        other = git(self.repo, "rev-parse", "HEAD~1")
+        git(bare, "update-ref", "refs/heads/" + branch, other)
+        self.assertEqual(
+            identity._git(self.repo, "rev-parse", "origin/" + branch),
+            git(self.repo, "rev-parse", "HEAD"),
+            "前置條件:追蹤 ref 必須還是舊值,否則這個測試沒在測東西")
+
+        result = self.check()
+        self.assertEqual(result["verdict"], "FAIL", result)
+        self.assertTrue(any(sync.UNPUSHED in p for p in result["problems"]),
+                        result["problems"])
+
+    def test_unreachable_remote_fails_closed(self):
+        """問不到遠端就是沒有證據 —— 不得因為問不到而放行。"""
+        from memtools import commit_all, git
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        bare = self.add_remote()
+        shutil.rmtree(bare)
+        result = self.check()
+        self.assertEqual(result["verdict"], "FAIL", result)
+        self.assertTrue(
+            any(sync.REMOTE_UNVERIFIED in p for p in result["problems"]),
+            result["problems"])
+        self.assertFalse(result["remote_observed"],
+                         "沒觀察到遠端就不得聲稱觀察過")
+
+    def test_local_only_is_explicit_and_says_so(self):
+        """離線時要能明說「這一關只驗到本機」—— 而不是假裝驗過遠端。"""
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        bare = self.add_remote()
+        shutil.rmtree(bare)
+        result = sync.durable_check(self.repo, self.store, local_only=True)
+        self.assertEqual(result["verdict"], "PASS", result["problems"])
+        self.assertFalse(result["remote_observed"],
+                         "local_only 不得聲稱觀察過遠端")
+
+    def test_remote_observed_is_recorded_on_a_real_pass(self):
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self.add_remote()
+        result = self.check()
+        self.assertEqual(result["verdict"], "PASS", result["problems"])
+        self.assertTrue(result["remote_observed"])
+        self.assertEqual(result["remote_head"], result["head"])
+
 
 class DurableWriterGatesEveryFactTest(MemoryCase):
     """durable writer 是**最後**一道防線,不是最後一個沒人看的出口。
@@ -1040,3 +1105,99 @@ class SessionLifecycleFailsClosedTest(MemoryCase):
         self.assertEqual(result["promoted"], 0,
                          "非 OPEN session 的候選不得被固化")
         self.assertEqual(self.durable_domain(), [])
+
+
+class DurableStateIsCompleteTest(MemoryCase):
+    """整檔取代的 writer 只有「全部」一種正確結果 —— 寫一部分就是把現況檔改小。
+
+    `promote_entity_facts()` 用整檔取代,因為 supersede 語意住在整組 fact 上。
+    整檔取代與「撈前 N 筆」放在一起會變成刪除:視窗外的 fact 上一輪可能已經
+    在檔裡、也已經 `durable=1`,這一輪的取代把它從檔案裡拿掉,而 local 那一列
+    仍然聲稱「我就是 `.dev-flow/` 裡的那份」。於是 `durable-check` 判 PASS,
+    砍掉 local 重建之後那些 fact 永遠回不來 —— 靜默且不可逆。
+
+    視窗還套在 status 過濾**之前**,所以連「現行 fact 只有 1 筆」都不安全:
+    夠多的 SUPERSEDED 鄰居就能把唯一的現況擠出去。
+    """
+
+    OVER_WINDOW = 1250
+
+    def setUp(self):
+        super().setUp()
+        self.project_id = self.project()["project_id"]
+        self.store = self.store_for(self.project_id)
+        self.workspace = identity.workspace_key(self.project_id, self.repo)
+        self.store.register_workspace(
+            self.workspace, identity.workspace_snapshot(self.repo))
+        from memtools import commit_all, write
+        write(self.repo, "src/db.py", "URL = 'x'\n")
+        commit_all(self.repo, "dep")
+        self.prints = truth.fingerprints_for(self.repo, ["src/db.py"])
+
+    def add_facts(self, count, status=None, stamp="2026-08-20T00:00:00Z",
+                  prefix="k"):
+        status = status or truth.VERIFIED
+        rows = []
+        for index in range(count):
+            rows.append(self.store.upsert_fact({
+                "entity_type": "database", "entity_key": "main",
+                "fact_key": "{0}{1:05d}".format(prefix, index),
+                "value": str(index), "status": status, "confidence": 0.9,
+                "recorded_at": stamp, "verified_at": stamp,
+                "verification_count": 1, "source_type": "code",
+                "dependencies": ["src/db.py"], "fingerprints": self.prints,
+                "durable": False}))
+        return rows
+
+    def durable_fact_keys(self):
+        return {fact["fact_key"]
+                for state in durable.iter_states(self.repo)
+                for fact in state["facts"]}
+
+    def promote(self):
+        return sync.promote_entity_facts(self.repo, self.store,
+                                         "database", "main")
+
+    def test_every_current_fact_reaches_the_durable_state_file(self):
+        """現行 fact 比視窗多 → 整檔取代不得只寫視窗內那些。"""
+        self.add_facts(self.OVER_WINDOW)
+        self.promote()
+        self.assertEqual(len(self.durable_fact_keys()), self.OVER_WINDOW,
+                         "現況檔漏掉了現行 fact —— 整檔取代把它們刪掉了")
+
+    def test_no_fact_is_marked_durable_without_being_in_the_file(self):
+        """`durable=1` 的語意是「檔裡就是我」。整檔取代把它刪掉 = 假宣稱。
+
+        分兩輪寫才看得到這件事:第一輪全部進檔也全部標 durable=1;第二輪加了
+        更新的 fact 之後,取代掉的那份少了第一輪最舊的那些,而它們在 local
+        仍然自稱已耐久 —— `durable-check` 從此判 PASS 在一個不完整的鏡射上。
+        """
+        self.add_facts(900, stamp="2026-08-01T00:00:00Z", prefix="first")
+        self.promote()
+        self.add_facts(400, stamp="2026-08-20T00:00:00Z", prefix="later")
+        self.promote()
+        written = self.durable_fact_keys()
+        marked = [row["fact_key"] for row in self.store.conn.execute(
+            "SELECT fact_key FROM facts WHERE project_id=? AND durable=1",
+            (self.project_id,))]
+        self.assertEqual(sorted(set(marked) - written), [],
+                         "有 fact 被標成已耐久,但 `.dev-flow/` 裡沒有它")
+
+    def test_superseded_neighbours_cannot_push_a_current_fact_out(self):
+        """視窗套在 status 過濾之前 → 舊帳把唯一的現況擠掉。"""
+        self.add_facts(1, stamp="2020-01-01T00:00:00Z", prefix="live")
+        self.add_facts(1200, status=truth.SUPERSEDED,
+                       stamp="2026-08-20T00:00:00Z", prefix="old")
+        self.promote()
+        self.assertIn("live00000", self.durable_fact_keys(),
+                      "唯一的現行 fact 被 SUPERSEDED 鄰居擠出視窗")
+
+    def test_destructive_rebuild_returns_every_current_fact(self):
+        """砍掉 local、只從 `.dev-flow/` 重建 —— local 自己說什麼不算證據。"""
+        self.add_facts(self.OVER_WINDOW)
+        self.promote()
+        shutil.rmtree(os.path.join(self.home, "projects", self.project_id))
+        fresh = self.store_for(self.project_id)
+        counts = sync.rebuild_local(self.repo, fresh)
+        self.assertEqual(counts["facts"], self.OVER_WINDOW,
+                         "重建後少了 fact —— 記憶真的不見了")

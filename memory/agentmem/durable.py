@@ -416,17 +416,25 @@ def event_file(repo_root_path, session_id, occurred_at):
     return _path(repo_root_path, EVENT_DIR + (year, month), slug(session_id) + ".jsonl")
 
 
+def _canonical(payload):
+    """去重比對用的正規形式 —— 同內容一定同字串,不同內容一定不同字串。"""
+    return json.dumps(payload, ensure_ascii=False, sort_keys=True)
+
+
 def _existing_events(path):
-    """回傳 (原樣文字, 已有的 event_id 集合)。壞行一律 fail-loud。
+    """回傳 (原樣文字, {event_id: 正規化內容})。壞行一律 fail-loud。
 
     去重需要知道檔裡已經有哪些 id,而那要逐行 parse。讀不懂的行不得被當成
     「沒有這筆」跳過 —— 那會讓重寫把它旁邊補一筆重複的,或整檔取代時把它
     吃掉。同 `iter_events()`:壞掉的耐久內容由人裁決,不由工具猜。
+
+    帶回內容(不只是 id)是因為「id 已經在檔裡」只有在 id 真的決定內容時
+    才等於「這筆已經寫過了」。撞號時要看得出來,不能猜。
     """
     if not os.path.isfile(path):
-        return "", set()
+        return "", {}
     text = _read_text(path)
-    seen = set()
+    seen = {}
     for lineno, line in enumerate(text.splitlines(), 1):
         if not line.strip():
             continue
@@ -436,7 +444,7 @@ def _existing_events(path):
             raise DurableError(
                 "{0}:{1} 不是合法 JSON:{2}".format(path, lineno, exc))
         if isinstance(data, dict) and data.get("event_id"):
-            seen.add(data["event_id"])
+            seen[data["event_id"]] = _canonical(data)
     if text and not text.endswith("\n"):
         text += "\n"
     return text, seen
@@ -459,6 +467,10 @@ def append_events(repo_root_path, session_id, records):
 
     沒有 `event_id` 的事件一律拒收:認不出身分的東西無法去重,寫下去就是
     一筆重跑必然變成兩筆的紀錄。這是刻意收緊的契約,不是防禦性檢查。
+
+    **同 id 不同內容一律拒收。**「id 已經在檔裡」只有在 id 真的決定內容時才
+    等於「這筆已經寫過了」。推導 id 的來源撞號、或推導規則有瑕疵時,靜默跳過
+    會讓第二筆(內容不同的那筆)永遠不存在,而呼叫端會拿到成功。
     """
     pending = {}
     for record in records:
@@ -471,21 +483,30 @@ def append_events(repo_root_path, session_id, records):
             raise DurableError(
                 "event 缺 event_id({0!r})—— 沒有身分就無法在重跑時去重"
                 .format(payload.get("title")))
-        pending.setdefault(path, []).append(
-            (event_id, json.dumps(payload, ensure_ascii=False, sort_keys=True)))
-    written = []
+        pending.setdefault(path, []).append((event_id, _canonical(payload)))
+    # 先把整批算完(含撞號判定)才動任何一個檔:撞號在第二個檔才發現時,
+    # 第一個檔不該已經被寫出去 —— 部分寫入的批次沒人能複驗它做到哪裡。
+    plans = []
     for path, entries in sorted(pending.items()):
         text, seen = _existing_events(path)
         fresh = []
         for event_id, line in entries:
             if event_id in seen:
+                if seen[event_id] != line:
+                    raise DurableError(
+                        "{0}:event_id {1} 已經存在但內容不同 —— 這不是重跑,"
+                        "是兩件事共用一個身分。靜默跳過會讓後者永遠不存在,"
+                        "請人裁決(推導 id 的來源撞號,或推導規則有瑕疵)"
+                        .format(path, event_id))
                 continue
-            seen.add(event_id)
+            seen[event_id] = line
             fresh.append(line)
-        if not fresh:
-            # 整批都已經在檔裡:這一輪是重跑補完,不動檔案。
-            continue
-        _atomic_write(path, text + "".join(line + "\n" for line in fresh))
+        if fresh:
+            plans.append((path, text + "".join(l + "\n" for l in fresh)))
+        # fresh 是空的:整批都已經在檔裡,這一輪是重跑補完,不動檔案。
+    written = []
+    for path, text in plans:
+        _atomic_write(path, text)
         written.append(path)
     return sorted(written)
 

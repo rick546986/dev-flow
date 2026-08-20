@@ -143,15 +143,20 @@ def promote_entity_facts(repo_root, store, entity_type, entity_key):
     候選可以前進到 CONSOLIDATED。回一個 path 不夠:整檔寫回會逐筆過 gate,
     「檔案寫成功了」與「我這一筆在裡面」是兩件事。
 
+    **不得設筆數視窗。** 整檔取代 + 撈前 N 筆 = 刪掉視窗外的那些:它們上一輪
+    已經在檔裡也已經 `durable=1`,這一輪的取代把它們拿掉,而 local 那幾列仍然
+    聲稱「我就是檔裡的那份」。`durable-check` 於是判 PASS 在一個不完整的鏡射
+    上,砍掉 local 重建之後那些 fact 永遠回不來。status 過濾也必須下推到 SQL
+    —— 套在視窗之後的話,夠多的 SUPERSEDED 鄰居就能把唯一的現況擠出去。
+
     **每一筆都要重過 Signal Gate。** 候選的 gate 檢查的是「那一筆候選」,
     而 fact 進 local DB 的路不只候選一條 —— `truth.reverify()`(公開 CLI
     `verify --observed`)直接寫值。整檔寫回時,一筆乾淨的候選會把同一個 entity
     裡未經檢查的鄰居一起帶進 Git。這裡是最後一個能攔的地方,而 durable 寫入
     不可逆(進了 commit 就在歷史裡)。
     """
-    facts = [f for f in store.facts(entity_type=entity_type,
-                                    entity_key=entity_key, limit=1000)
-             if f["status"] in _FACT_STATUS_DURABLE]
+    facts = store.facts(entity_type=entity_type, entity_key=entity_key,
+                        statuses=sorted(_FACT_STATUS_DURABLE), limit=None)
     writable = []
     rejected = []
     for fact in facts:
@@ -517,9 +522,42 @@ UNPUSHED = "DURABLE_UNPUSHED"
 OPEN_SESSION = "SESSION_STILL_OPEN"
 PENDING_REVISION = "REVISION_STILL_PENDING"
 PENDING_FACT = "FACT_STATE_NOT_REWRITTEN"
+REMOTE_UNVERIFIED = "DURABLE_REMOTE_UNVERIFIED"
 
 
-def durable_check(repo_root, store):
+def _observe_remote(repo_root, branch):
+    """向**遠端本身**問那個 branch 現在指到哪。回 `(sha, error)`。
+
+    不用 `rev-parse origin/<branch>`:那是本機快取,另一台機器 force-push 或
+    刪掉 branch 之後它仍然指著我的 commit —— 這一關會替一個伺服器上已經不存在
+    的 commit 背書,而那正是它唯一要防的事。
+
+    不用 `fetch`:這是一支判定,不該順手改本機的 ref(判定改變被判定的狀態,
+    下一次判定就不是獨立的)。`ls-remote` 是唯讀的,而且問的是伺服器。
+
+    remote 與 ref 從 `branch.<name>.remote` / `.merge` 讀,不從 `origin/xxx`
+    這個字串切 —— branch 名字本身可以有 `/`,切錯會問錯 ref 然後判 FAIL。
+    """
+    from . import identity
+    remote = identity._git(repo_root, "config",
+                           "branch.{0}.remote".format(branch))
+    merge = identity._git(repo_root, "config",
+                          "branch.{0}.merge".format(branch))
+    if not remote or not merge:
+        return None, "讀不到 branch.{0} 的 remote/merge 設定".format(branch)
+    raw = identity._git_raw(repo_root, "ls-remote", "--exit-code",
+                            remote, merge)
+    if raw is None:
+        return None, "問不到遠端 {0} 的 {1}(網路不通、無權限、或該 ref 不存在)".format(
+            remote, merge)
+    for line in raw.splitlines():
+        parts = line.split("\t")
+        if len(parts) == 2 and parts[1].strip() == merge:
+            return parts[0].strip(), None
+    return None, "遠端 {0} 沒有回報 {1}".format(remote, merge)
+
+
+def durable_check(repo_root, store, local_only=False):
     """「記憶真的離開這台機器了嗎?」—— Stage 6 收尾的最後一道機械驗證。
 
     `checkpoint` 成功只代表**檔案寫進工作樹**。工作樹不是耐久性:
@@ -531,6 +569,9 @@ def durable_check(repo_root, store):
 
     回傳 dict:verdict(PASS/FAIL)+ 逐項證據。判定一律**明說理由**,
     不回一個沒人能複驗的布林值。
+
+    `local_only=True` 時不問遠端,只比對本機追蹤 ref,並且回傳
+    `remote_observed=False` —— 離線時可以放行,但不得聲稱驗過遠端。
     """
     from . import identity
     problems = []
@@ -555,21 +596,34 @@ def durable_check(repo_root, store):
             "{0}:{1} 個 durable 檔還沒 commit —— 記憶只在工作樹裡,"
             "checkout 就沒了".format(UNCOMMITTED, len(uncommitted)))
 
-    # ②HEAD 有沒有真的到 remote(upstream 追蹤分支)
+    # ②HEAD 有沒有真的到 remote —— 問遠端本身,不問本機的追蹤 ref
     head = identity._git(repo_root, "rev-parse", "HEAD")
     upstream = identity._git(repo_root, "rev-parse", "--abbrev-ref",
                              "--symbolic-full-name", "@{upstream}")
-    remote_head = (identity._git(repo_root, "rev-parse", upstream)
-                   if upstream else None)
-    pushed = bool(head and remote_head and head == remote_head)
+    branch = identity._git(repo_root, "symbolic-ref", "--short", "HEAD")
+    remote_observed = False
+    remote_head = None
     if upstream is None:
         problems.append(
             "{0}:這個分支沒有 upstream —— 無法驗證記憶是否離開本機".format(
                 UNPUSHED))
-    elif not pushed:
+    elif local_only:
+        # 明確要求只驗本機。追蹤 ref 可能是舊的,所以**不聲稱**觀察過遠端。
+        remote_head = identity._git(repo_root, "rev-parse", upstream)
+    else:
+        remote_head, error = _observe_remote(repo_root, branch or "")
+        if error:
+            problems.append(
+                "{0}:{1} —— 問不到遠端就是沒有證據,不得因為問不到而放行"
+                "(離線時要放行請明確用 --local-only,它不會聲稱驗過遠端)"
+                .format(REMOTE_UNVERIFIED, error))
+        else:
+            remote_observed = True
+    pushed = bool(head and remote_head and head == remote_head)
+    if upstream is not None and remote_head and not pushed:
         problems.append(
-            "{0}:HEAD 與 {1} 不同 —— push 沒做或沒成功".format(
-                UNPUSHED, upstream))
+            "{0}:HEAD 與遠端的 {1} 不同 —— push 沒做、沒成功,或被別人改掉了"
+            .format(UNPUSHED, upstream))
 
     # ③還開著的 session(沒 checkpoint 也沒 abort = 這一輪的記憶懸在半空)
     from . import session as session_mod
@@ -605,6 +659,7 @@ def durable_check(repo_root, store):
         "head": head or "",
         "upstream": upstream or "",
         "remote_head": remote_head or "",
+        "remote_observed": remote_observed,
         "pushed": pushed,
         "open_sessions": open_sessions,
         "pending_revisions": pending_revisions,

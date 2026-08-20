@@ -271,8 +271,13 @@ class Store:
             sql.append("AND status IN ({0})".format(
                 ",".join("?" for _ in statuses)))
             args.extend(statuses)
-        sql.append("ORDER BY recorded_at DESC, fact_id DESC LIMIT ?")
-        args.append(int(limit))
+        sql.append("ORDER BY recorded_at DESC, fact_id DESC")
+        # limit=None = 不設視窗。整檔取代的 durable writer 需要它:撈前 N 筆
+        # 再整檔寫回等於把視窗外的 fact 從檔案裡刪掉,而任何預設值都會在
+        # 「記憶夠多」的那天變成靜默資料遺失。要窗口的呼叫端自己傳。
+        if limit is not None:
+            sql.append("LIMIT ?")
+            args.append(int(limit))
         return [dict(r) for r in self.conn.execute(" ".join(sql), args)]
 
     def entities_pending_durable(self, statuses):

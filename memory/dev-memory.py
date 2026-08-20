@@ -37,7 +37,7 @@
   dev-memory.py migrate-legacy [--path DIR] [--apply] [--promote]
   dev-memory.py eval [--path DIR] [--dataset FILE] [--json]
   dev-memory.py inventory [--path DIR]
-  dev-memory.py durable-check [--path DIR]
+  dev-memory.py durable-check [--local-only] [--path DIR]
 
 exit code:0 = 成功 / 1 = 可判定的失敗(含 doctor FAIL)/ 2 = 用法或環境錯誤。
 """
@@ -375,10 +375,16 @@ def cmd_durable_check(args):
     —— 沒 commit 會被 checkout 掉,沒 push 就只有這台機器有。這支把
     「memory commit → 最終 push → remote HEAD 驗證」變成可複驗的判定,
     而不是收尾清單上一句沒人查的話。
+
+    remote 那一項問的是**遠端本身**(`ls-remote`),不是本機的 `origin/<branch>`
+    —— 追蹤 ref 是快取,別台機器改掉遠端之後它還指著我的 commit。問不到遠端
+    一律 FAIL;離線要放行請明確 `--local-only`,那時輸出的 `remote_observed`
+    是 false。
     """
     root, _project, store, _workspace_id, _snapshot = _resolve(args)
     try:
-        result = sync.durable_check(root, store)
+        result = sync.durable_check(root, store,
+                                    local_only=getattr(args, "local_only", False))
     finally:
         store.close()
     _print(result)
@@ -408,10 +414,12 @@ def build_parser():
     sub.add_parser("doctor").set_defaults(func=cmd_doctor)
     sub.add_parser("status").set_defaults(func=cmd_status)
     sub.add_parser("inventory").set_defaults(func=cmd_inventory)
-    sub.add_parser(
+    p = sub.add_parser(
         "durable-check",
-        help="驗證 durable memory 已 commit 且已抵達 remote(Stage 6 收尾)"
-    ).set_defaults(func=cmd_durable_check)
+        help="驗證 durable memory 已 commit 且已抵達 remote(Stage 6 收尾)")
+    p.add_argument("--local-only", action="store_true",
+                   help="不問遠端(離線)。放行但不會聲稱驗過遠端")
+    p.set_defaults(func=cmd_durable_check)
 
     p = sub.add_parser("context")
     p.add_argument("--budget", type=int, default=context_mod.DEFAULT_BUDGET)

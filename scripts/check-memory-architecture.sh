@@ -383,6 +383,25 @@ elif "signal.gate(" not in pef_body:
 else:
     ok("fact 整檔寫回時逐筆重過 Signal Gate(durable writer 是最後一道防線)")
 
+# 整檔取代 + 筆數視窗 = 刪掉視窗外的那些。它們上一輪已經在檔裡也已經
+# durable=1,這一輪的取代把它們拿掉,而 local 仍聲稱「我就是檔裡的那份」
+# —— durable-check 於是判 PASS 在一個不完整的鏡射上,砍掉 local 重建後
+# 那些 fact 永遠回不來。docstring 不算證據,看的是實際呼叫。
+pef_code = (re.sub(r'"""[\s\S]*?"""', "", pef_body) if pef_body else None)
+if pef_code is None:
+    pass  # 上面已經報過抽取失敗
+elif re.search(r"store\.facts\([^)]*limit\s*=\s*(?!None)", pef_code):
+    bad("durable 現況檔會被截斷",
+        "promote_entity_facts 給 store.facts 傳了筆數視窗 —— 整檔取代會把視窗"
+        "外的 fact 從 `.dev-flow/` 刪掉,而它們在 local 仍標 durable=1。"
+        "任何預設值都會在「記憶夠多」的那天變成靜默資料遺失")
+elif "statuses=" not in pef_code:
+    bad("durable 現況檔的 status 過濾沒下推",
+        "promote_entity_facts 沒把 statuses 下推到查詢 —— 過濾套在取列之後的"
+        "話,夠多的 SUPERSEDED 鄰居就能把唯一的現況擠出去")
+else:
+    ok("durable 現況檔整檔取代時不設筆數視窗、status 下推到查詢")
+
 if "durable_check" not in sync_src:
     bad("durable-check", "sync.py 沒有 durable_check —— 「記憶真的離開這台機器"
                          "了嗎」沒有任何可複驗的判定")
@@ -484,8 +503,35 @@ elif "_atomic_write(" not in ap_code:
 elif "event_id" not in ap_code:
     bad("event append 沒有去重依據",
         "append_events 沒有碰 event_id —— 沒有身分就無法在重跑時去重")
+elif not re.search(r"seen\[event_id\]\s*!=", ap_code):
+    # 釘的是「比內容」這個機制,不是有沒有出現 DurableError —— 檔裡另一條
+    # (缺 event_id 就拒收)也會提供那個字串,守衛不能被它餵飽。
+    bad("event 撞號被靜默吃掉",
+        "append_events 看到已存在的 event_id 就跳過,沒有比對內容 —— 「id 已經"
+        "在檔裡」只有在 id 真的決定內容時才等於「這筆寫過了」,推導 id 撞號時"
+        "第二筆(內容不同的那筆)會永遠不存在而呼叫端拿到成功")
 else:
-    ok("event append 以 event_id 去重 + 整檔原子取代(重跑冪等)")
+    ok("event append 以 event_id 去重 + 整檔原子取代 + 撞號 fail closed")
+
+# durable-check 的 remote 那一項必須問遠端本身。`rev-parse origin/<branch>` 是
+# 本機快取:別台機器 force-push 或刪掉 branch 之後它還指著我的 commit,於是這
+# 一關會替一個伺服器上已經不存在的 commit 背書 —— 那正是它唯一要防的事。
+i_dchk = sync_src.find("def durable_check(")
+i_dchk_end = sync_src.find("\ndef ", i_dchk + 1)
+dchk_body = (sync_src[i_dchk:i_dchk_end] if i_dchk >= 0 and i_dchk_end > i_dchk
+             else None)
+if dchk_body is None:
+    bad("durable_check 抽取(remote 觀察)", "找不到 durable_check 窗口")
+elif "_observe_remote(" not in dchk_body:
+    bad("durable-check 沒有觀察遠端",
+        "durable_check 沒有走 _observe_remote —— 只比對本機追蹤 ref 的話,"
+        "遠端被改掉時它仍判 PASS,而這一關的問句正是「記憶離開這台機器了嗎」")
+elif "ls-remote" not in sync_src:
+    bad("durable-check 沒有問遠端",
+        "沒有任何 ls-remote —— fetch 會改本機 ref(判定改變被判定的狀態),"
+        "而 rev-parse 只問快取")
+else:
+    ok("durable-check 向遠端本身查證 HEAD(追蹤 ref 是快取,不是證據)")
 
 # revision 的 event_id 不得隨機:去重的依據是 event_id,而隨機 id 讓去重永遠
 # 對不上 —— 同一次 supersede 會在 events/ 累積成 N 筆,每筆都聲稱是它。
@@ -559,7 +605,7 @@ elif i_cond < 0 or cond_line.strip() == "if changed or dirty:":
 else:
     ok("git status 解析不完整時,無指紋的依賴不得走 fast path")
 
-MIN_CHECKS = 47
+MIN_CHECKS = 49
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)
