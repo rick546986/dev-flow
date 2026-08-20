@@ -1,0 +1,21 @@
+# A. IMPLEMENTATION TRUTH —— 程式現在實際怎麼運作(LVP current truth)。
+# dependencies/fingerprints 是失效判定的依據:依賴檔變了 → 本機先轉 STALE,重新驗證後才更新這裡。
+schema_version: 1
+entity_type: module
+entity_key: memory/agentmem/sync.py
+facts:
+  - fact_key: candidate_status_advances_after_durable_write
+    value: "fact 與 event 的候選在 promote_entity_facts / append_events 成功之後才設 CONSOLIDATED;durable 實體 id 由 candidate_id 推導以保證重試冪等"
+    status: VERIFIED
+    confidence: 0.5
+    dependencies:
+      - memory/agentmem/sync.py
+    effective_at: "2026-08-20T15:35:26Z"
+    fingerprints:
+      memory/agentmem/sync.py: "sha256:191affc3b64cc516"
+    recorded_at: "2026-08-20T15:35:26Z"
+    source_commit: d85f38d4f4a4ee4837aa72a60c71ba91de47aa47
+    source_type: current_code
+    verification_count: 1
+    verified_at: "2026-08-20T15:35:26Z"
+    verified_commit: d85f38d4f4a4ee4837aa72a60c71ba91de47aa47

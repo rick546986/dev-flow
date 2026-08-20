@@ -138,7 +138,10 @@ def promote_entity_facts(repo_root, store, entity_type, entity_key):
     整檔寫回(而不是 append 一筆)是因為 supersede 語意住在整組 fact 上:
     只寫新的那筆,舊的 VERIFIED 會留在檔裡看起來也還有效。
 
-    回傳 `(path, rejected)`;沒有可寫的 fact 時 path 為 None。
+    回傳 `(path, rejected, written_ids)`;沒有可寫的 fact 時 path 為 None。
+    `written_ids` 是**真的落進檔案**的那些 fact_id —— 呼叫端要靠它決定哪一筆
+    候選可以前進到 CONSOLIDATED。回一個 path 不夠:整檔寫回會逐筆過 gate,
+    「檔案寫成功了」與「我這一筆在裡面」是兩件事。
 
     **每一筆都要重過 Signal Gate。** 候選的 gate 檢查的是「那一筆候選」,
     而 fact 進 local DB 的路不只候選一條 —— `truth.reverify()`(公開 CLI
@@ -168,14 +171,29 @@ def promote_entity_facts(repo_root, store, entity_type, entity_key):
                              "fact_id": fact["fact_id"],
                              "reasons": verdict["reasons"]})
     if not writable:
-        return None, rejected
+        return None, rejected, set()
     durable.ensure_layout(repo_root, [durable.STATE_DIR])
     path = durable.write_state(repo_root, entity_type, entity_key, writable)
     with store.conn:
         store.conn.executemany(
             "UPDATE facts SET durable=1 WHERE fact_id=?",
             [(fact["fact_id"],) for fact in writable])
-    return path, rejected
+    return path, rejected, {fact["fact_id"] for fact in writable}
+
+
+def _derived_id(kind, candidate_id):
+    """從 candidate 推導 durable 實體 id —— 同一個候選重跑一定得到同一個 id。
+
+    retry 安全需要它。durable 寫入失敗後候選會留在 CONFIRMED 等下一次
+    checkpoint,而每次都 `ids.new_id()` 的話補寫會產生**第二筆**:歷史從「缺」
+    變成「重複」,而重複比缺更難發現(兩筆都長得像真的)。
+
+    ULID body 的字元集在各 kind 之間相同,所以換前綴就是合法 id;推導不出合法
+    id(candidate_id 不是這套格式)才退回隨機 —— 不猜、不硬湊。
+    """
+    body = candidate_id.split("_", 1)[1] if "_" in (candidate_id or "") else ""
+    derived = ids.KINDS[kind] + "_" + body
+    return derived if ids.is_valid_id(kind, derived) else ids.new_id(kind)
 
 
 def consolidate(repo_root, store, session_id=None, now=None):
@@ -184,31 +202,46 @@ def consolidate(repo_root, store, session_id=None, now=None):
     回傳 dict:written(檔案清單)/ promoted(筆數)/ rejected(逐筆理由)。
     被拒絕的候選**不會消失** —— 它留在 local,狀態改成 LOCAL_ONLY 並記下理由,
     這樣「為什麼這條沒進 Git」下次還查得到(§25 的同一種誠實)。
+
+    **候選狀態只在 durable 寫入成功之後才前進。** knowledge/decision/skill 的
+    durable 寫入就在迴圈裡(寫檔在前、動 local 在後);fact 與 event 的寫入
+    發生在迴圈**之後**(fact 要整個 entity 一起寫回、event 要整批 append),
+    所以這兩類的候選在迴圈裡只登記、不結案 —— 提早結案的話寫檔失敗就再也
+    看不到它,`.dev-flow/` 永遠缺那一筆,而 local 自洽、沒有任何測試會紅。
     """
     now = now or store_mod.utc_now()
     written = []
     promoted = 0
     rejected = []
     entities_touched = set()
-    event_records = []
+    # (candidate_id, fact_id) / (candidate_id, event record):等 durable 寫入成功
+    fact_candidates = {}
+    event_candidates = []
     pending_revisions = []
 
     for candidate in store.candidates(session_id=session_id,
                                       statuses=("CONFIRMED",)):
         payload = candidate["payload"]
         kind = candidate["target_kind"]
-        # 最後一道防線:候選必須掛在一個**真實存在**的 session 上。
+        # 最後一道防線:候選必須掛在一個**真實存在且還開著**的 session 上。
         # devtalk/session 層已經擋過「沒有 start 就 propose」,但 store 是內部
         # API,直接呼叫它塞候選會繞過那一層 —— durable writer 是最後有機會
         # 攔下來的地方,而 durable 寫入是不可逆的(進了 commit 就在歷史裡)。
-        if store.session(candidate["session_id"]) is None:
+        #
+        # 「存在」不夠:ABORTED 的 session 也存在。abort 的語意是「這一輪不算」,
+        # 它的候選還能被固化的話,「中止」就只是一個沒有效力的標籤 ——
+        # 而 `session_id=None`(全專案掃)這條路正好會撿到它們。
+        owner = store.session(candidate["session_id"])
+        if owner is None or owner["status"] != "OPEN":
+            reason = ("session {0} 不存在 —— 候選沒有來源可追溯".format(
+                candidate["session_id"]) if owner is None
+                else "session {0} 已是 {1} —— 已結束的一輪不得再固化".format(
+                    candidate["session_id"], owner["status"]))
             store.set_candidate_status(
                 candidate["candidate_id"], "LOCAL_ONLY",
-                note="session {0} 不存在 —— 候選沒有來源可追溯,不予固化".format(
-                    candidate["session_id"]), now=now)
+                note=reason + ",不予固化", now=now)
             rejected.append({"candidate_id": candidate["candidate_id"],
-                             "target_kind": kind,
-                             "reasons": ["session 不存在,無法追溯來源"]})
+                             "target_kind": kind, "reasons": [reason]})
             continue
         title = payload.get("title", "")
         body = payload.get("body", "")
@@ -314,24 +347,30 @@ def consolidate(repo_root, store, session_id=None, now=None):
                 record["verified_at"] = now
                 record["verified_commit"] = verified_commit
                 record["verification_count"] = 1
+            # fact_id 由 candidate 推導,不隨機:寫檔失敗後重跑會 UPDATE 同一列,
+            # 而不是插入第二筆同義 fact(那會被整檔寫回一起帶進 `.dev-flow/`)。
+            record["fact_id"] = _derived_id("fact", candidate["candidate_id"])
             store.upsert_fact(record)
             entities_touched.add((payload["entity_type"], payload["entity_key"]))
+            # durable 寫入在迴圈之後(整個 entity 一起寫回)—— 只登記,不結案。
+            fact_candidates.setdefault(
+                (payload["entity_type"], payload["entity_key"]), []).append(
+                    (candidate["candidate_id"], record["fact_id"]))
+            continue
         elif kind == "event":
-            # observe() 已經落過本機事件時重用它的 id(把它升級成 durable),
-            # 不另產一筆 —— 否則同一件事在檢索裡會出現兩次。
-            event_id = store.add_event(
-                payload.get("kind", "important_discovery"), title, body,
-                occurred_at=payload.get("occurred_at") or now,
-                branch=payload.get("branch"),
-                commit_sha=payload.get("commit_sha"),
-                session_id=candidate["session_id"], signal=signal.HIGH,
-                file_paths=payload.get("paths") or [],
-                source_type=payload.get("source_type"),
-                source_ref=payload.get("source_ref"), durable=True,
-                event_id=(payload.get("event_id")
-                          if ids.is_valid_id("event", payload.get("event_id"))
-                          else None))
-            event_records.append({
+            # observe() 已經落過本機事件時重用它的 id(之後把它升級成 durable),
+            # 不另產一筆 —— 否則同一件事在檢索裡會出現兩次。沒有 id 可重用時
+            # 從 candidate 推導,理由同 fact:重跑必須補寫同一筆,不是第二筆。
+            event_id = (payload.get("event_id")
+                        if ids.is_valid_id("event", payload.get("event_id"))
+                        else _derived_id("event", candidate["candidate_id"]))
+            # **這裡不呼叫 store.add_event。** 它會把 local 列標成 durable=1,
+            # 而 `.dev-flow/` 要等迴圈之後的 append_events 才寫 —— 提早標記就是
+            # 一句沒有憑據的「已耐久」(指向一個不存在的檔),而且是靜默的。
+            # durable record 的欄位一字不加:`append_events` 直接序列化拿到的
+            # 每一個 key,多帶欄位就是改了 durable 格式。local 那一筆要用的
+            # source_type / source_ref 從 payload 取,不塞進要落檔的 dict。
+            event_candidates.append((candidate["candidate_id"], {
                 "event_id": event_id, "kind": payload.get(
                     "kind", "important_discovery"),
                 "title": title, "body": body,
@@ -339,7 +378,10 @@ def consolidate(repo_root, store, session_id=None, now=None):
                 "branch": payload.get("branch"),
                 "commit_sha": payload.get("commit_sha"),
                 "session_id": candidate["session_id"], "signal": signal.HIGH,
-                "paths": payload.get("paths") or []})
+                "paths": payload.get("paths") or []},
+                {"source_type": payload.get("source_type"),
+                 "source_ref": payload.get("source_ref")}))
+            continue
         else:
             store.set_candidate_status(
                 candidate["candidate_id"], "LOCAL_ONLY",
@@ -354,12 +396,26 @@ def consolidate(repo_root, store, session_id=None, now=None):
                                   now=now)
         promoted += 1
 
+    # ── fact 的 durable 寫入(這裡可能拋)→ 才結案 ────────────────────────
     for entity_type, entity_key in sorted(entities_touched):
-        path, fact_rejected = promote_entity_facts(
+        path, fact_rejected, written_ids = promote_entity_facts(
             repo_root, store, entity_type, entity_key)
         if path:
             written.append(path)
         rejected.extend(fact_rejected)
+        for candidate_id, fact_id in fact_candidates.get(
+                (entity_type, entity_key), []):
+            if fact_id in written_ids:
+                store.set_candidate_status(candidate_id, "CONSOLIDATED",
+                                           now=now)
+                promoted += 1
+            else:
+                # 檔案寫成功了,但**這一筆**被逐筆 gate 擋在外面。
+                # 沒進 `.dev-flow/` 的候選不得記成已固化。
+                store.set_candidate_status(
+                    candidate_id, "LOCAL_ONLY",
+                    note="durable writer 逐筆檢查未通過 —— 這一筆沒有寫進 "
+                         ".dev-flow/,留在本機", now=now)
 
     # ── revision lineage(P0-3)──────────────────────────────────────────
     # **順序就是這一段的正確性**:pending → 過守衛 → 寫檔 → 才標 durable。
@@ -396,6 +452,7 @@ def consolidate(repo_root, store, session_id=None, now=None):
         record.setdefault("event_id", ids.new_id("event"))
         revision_records.append(record)
         flushed_ids.append(row["revision_id"])
+    event_records = [record for _cid, record, _extra in event_candidates]
     event_records.extend(revision_records)
 
     # 寫檔在前(這一行可能拋),狀態在後。
@@ -405,6 +462,19 @@ def consolidate(repo_root, store, session_id=None, now=None):
             repo_root, session_key, event_records))
 
     # 到這裡才算「真的寫進 .dev-flow」——才可以動 local 狀態。
+    for candidate_id, record, extra in event_candidates:
+        store.add_event(record["kind"], record["title"], record["body"],
+                        occurred_at=record["occurred_at"],
+                        branch=record.get("branch"),
+                        commit_sha=record.get("commit_sha"),
+                        session_id=record.get("session_id") or None,
+                        signal=signal.HIGH,
+                        file_paths=record.get("paths") or [],
+                        source_type=extra["source_type"],
+                        source_ref=extra["source_ref"], durable=True,
+                        event_id=record["event_id"])
+        store.set_candidate_status(candidate_id, "CONSOLIDATED", now=now)
+        promoted += 1
     for record in revision_records:
         store.add_event(record["kind"], record["title"], record["body"],
                         occurred_at=record["occurred_at"],

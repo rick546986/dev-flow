@@ -133,8 +133,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=82
-EXPECTED_TOTAL=96
+EXPECTED_NEGATIVES=86
+EXPECTED_TOTAL=100
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -1471,6 +1471,10 @@ expect_local_arg fail check-model-tiering.sh "$D" "$D/external-runs" "MT-2 把 b
 #   MEM-10 revision 的 mark_durable 挪到寫檔之前(寫檔失敗仍宣稱已耐久)
 #   MEM-11 拿掉 durable_check(「記憶真的離開這台機器了嗎」無從複驗)
 #   MEM-12 fact 整檔寫回不過 Signal Gate(secret 隨乾淨候選一起進 Git)
+#   MEM-13 fact 候選在 durable 寫入前就結案(寫檔失敗後重跑補不回來)
+#   MEM-14 event 在寫進 .dev-flow 之前就標 durable(false durability claim)
+#   MEM-15 checkpoint 拿掉 require_open(ABORTED 的一輪仍能固化候選)
+#   MEM-16 end_session 退回無條件 UPDATE(ABORTED 被覆寫成 CLOSED)
 D=$(seed_mem mem0)
 expect_local pass check-memory-architecture.sh "$D" "MEM-0 對照組(memory 架構不變量齊)"
 
@@ -1626,6 +1630,69 @@ p.write_text(t[:i] + body.replace("signal.gate(", "_no_gate(", 1) + t[j:],
              encoding="utf-8")
 PYX
 expect_local fail check-memory-architecture.sh "$D" "MEM-12 fact 整檔寫回不過 Signal Gate(同 entity 的未檢查鄰居隨乾淨候選進 Git)"
+
+D=$(seed_mem mem13); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = "            fact_candidates.setdefault(\n"
+assert anchor in t, "MEM-13 anchor 不見"
+# 把 fact 候選在 durable 寫入**之前**就結案(其餘完全不動)——
+# 這正是被修掉的缺陷:write_state 失敗後重跑再也看不到這筆候選。
+injected = ('            store.set_candidate_status(\n'
+            '                candidate["candidate_id"], "CONSOLIDATED", now=now)\n')
+p.write_text(t.replace(anchor, injected + anchor, 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-13 fact 候選在 durable 寫入前就結案(寫檔失敗後重跑補不回來)"
+
+D=$(seed_mem mem14); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+# 限定在 consolidate 窗口內:rebuild_local 也有 store.add_event(,
+# 拿全檔第一個位置比會永遠不成立。
+i_cons = t.find("def consolidate(")
+assert i_cons >= 0, "MEM-14 anchor:找不到 consolidate"
+i_add = t.find("store.add_event(", i_cons)
+i_append = t.find("durable.append_events(", i_cons)
+assert 0 <= i_append < i_add, "MEM-14 anchor 順序不符(正向早已紅)"
+anchor = "            event_candidates.append((candidate[\"candidate_id\"], {\n"
+assert anchor in t, "MEM-14 anchor 不見"
+# local 事件在 append_events 之前就被標 durable=1 —— 一句沒有憑據的「已耐久」
+injected = ('            store.add_event(\n'
+            '                payload.get("kind", "important_discovery"), title, body,\n'
+            '                session_id=candidate["session_id"], signal=signal.HIGH,\n'
+            '                durable=True, event_id=event_id)\n')
+p.write_text(t.replace(anchor, injected + anchor, 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-14 event 在寫進 .dev-flow 之前就標 durable(false durability claim)"
+
+D=$(seed_mem mem15); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/session.py"
+t = p.read_text(encoding="utf-8")
+i = t.find("def checkpoint(")
+j = t.find("\ndef ", i + 1)
+assert i >= 0 and j > i, "MEM-15 anchor 不見"
+body = t[i:j]
+assert "require_open(" in body, "MEM-15 anchor:checkpoint 本來就沒 require_open"
+# 只拔掉 checkpoint 的 fail-closed 檢查(observe 的那道原封不動)
+p.write_text(t[:i] + body.replace("    require_open(store, session_id)\n", "", 1)
+             + t[j:], encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-15 checkpoint 拿掉 require_open(ABORTED 的一輪仍能把候選寫進 Git)"
+
+D=$(seed_mem mem16); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/store.py"
+t = p.read_text(encoding="utf-8")
+anchor = "                \" WHERE session_id=? AND status='OPEN'\",\n"
+assert anchor in t, "MEM-16 anchor 不見"
+# 退回無條件 UPDATE:abort 之後的 end 會把 ABORTED 覆寫成 CLOSED
+p.write_text(t.replace(anchor, '                " WHERE session_id=?",\n', 1),
+             encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-16 end_session 退回無條件 UPDATE(ABORTED 被覆寫成 CLOSED)"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"

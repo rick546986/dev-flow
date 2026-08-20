@@ -227,8 +227,13 @@ def checkpoint(store, repo_root, session_id, now=None):
 
     沒有高訊號時合法回 `promoted: 0` —— **不硬產生一筆「本次完成」**。
     那種紀錄沒有資訊量,只會把 `.dev-flow/` 稀釋成沒人讀的流水帳。
+
+    **session 必須是 OPEN。** 一切 finalization 都是,不只 `observe()`:
+    ABORTED 之後還能 checkpoint 的話,「中止」就只是一個沒有效力的標籤 ——
+    使用者說「先不要改」,候選照樣進了 Git。CLOSED 之後再 checkpoint 則會把
+    下一輪的候選記到上一輪的帳上。不是 OPEN 一律報錯且**零 durable 副作用**。
     """
-    store.session(session_id)      # 不存在就讓呼叫端知道
+    require_open(store, session_id)
     result = sync.consolidate(repo_root, store, session_id, now=now)
     result["still_pending"] = [
         {"candidate_id": row["candidate_id"], "target_kind": row["target_kind"],
@@ -239,15 +244,29 @@ def checkpoint(store, repo_root, session_id, now=None):
 
 def end(store, repo_root, session_id, now=None):
     result = checkpoint(store, repo_root, session_id, now=now)
-    store.end_session(session_id, CLOSED, now=now)
+    close(store, session_id, CLOSED, now=now)
     result["session_status"] = CLOSED
     return result
 
 
 def abort(store, session_id, reason="", now=None):
     """中止:狀態必須看得出來是 ABORTED,**不得默默當成完成**。"""
-    store.end_session(session_id, ABORTED, now=now)
+    close(store, session_id, ABORTED, now=now)
     return {"session_id": session_id, "status": ABORTED, "reason": reason}
+
+
+def close(store, session_id, status, now=None):
+    """OPEN → status 的 compare-and-set。不是 OPEN 就丟 SessionError。
+
+    無條件 UPDATE 會讓 abort 之後的 end 把 ABORTED 覆寫成 CLOSED ——
+    回顧時看不出那一輪其實沒有收斂,而「這一輪算不算完成」是後面每一個
+    決定的前提。不存在的 session 也一樣要報錯,不能靜默 no-op。
+    """
+    if not store.end_session(session_id, status, now=now):
+        require_open(store, session_id)     # 一定會丟,並說清楚現在是什麼狀態
+        raise SessionError(
+            "session {0} 收尾失敗 —— 狀態沒有從 OPEN 變成 {1}".format(
+                session_id, status))
 
 
 def status(store, session_id):

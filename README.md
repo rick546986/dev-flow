@@ -1093,7 +1093,7 @@ dev-run(implementation)
   durable 檔沒 commit、HEAD 沒到 upstream、有 session 還開著沒收、有 revision
   還沒落地。判定一律附理由,不回一個沒人能複驗的布林值。
 
-同一條原則在程式內部也成立,而且是三個實際存在過的缺陷:
+同一條原則在程式內部也成立,而且是六個實際存在過的缺陷:
 
 | 原本 | 為什麼是錯的 |
 |---|---|
@@ -1101,11 +1101,23 @@ dev-run(implementation)
 | revision 的 `mark_durable` 在寫檔**前**執行,且不分有沒有寫出去 | 被守衛擋掉的 revision 也被標成已耐久:它不再是 pending,永遠不會再被嘗試,而 `.dev-flow/` 裡從來沒有它。**靜默且永久**的失憶 |
 | consolidate 先 supersede 再寫檔 | 寫檔失敗留下的狀態比沒寫更糟:重跑會把「新值 supersede 新值」記成 lineage,真正的 v1 → v2 那一段永久消失 —— 歷史從**缺**變成**假** |
 | `promote_entity_facts()` 整檔寫回不過 Signal Gate | fact 進 local DB 的路不只「過了 gate 的候選」一條 —— `verify --observed`(公開 CLI)直接寫值。整檔寫回時,**一筆乾淨的候選會把同一個 entity 裡未經檢查的鄰居一起帶進 Git**,包含 secret |
+| fact / event 的候選在 durable 寫入**之前**就標成 CONSOLIDATED | 這兩類的 durable 寫入發生在候選迴圈**之後**(fact 整個 entity 一起寫回、event 整批 append)。`write_state` / `append_events` 失敗時候選已經結案 —— 重跑再也看不到它,`.dev-flow/` 永遠缺那一筆,而 local 自洽、**沒有任何測試會紅** |
+| local event 在 `append_events()` 之**前**就被標 `durable=1` | 與 revision 那一條同型:一句沒有憑據的「已耐久」,指向一個從來沒被寫出去的檔。差別只在它換了一個 kind,所以上一輪的修法沒有蓋到它 |
+| `checkpoint()` 不要求 session 是 OPEN | `observe()` 有 `require_open()`,finalization 沒有。於是 `start → confirm → abort → checkpoint` 這條路是通的:使用者說「先不要改」,候選照樣進 Git ——「中止」變成一個沒有效力的標籤。`end_session()` 也不是 compare-and-set,abort 之後再 end 會把 ABORTED 覆寫成 CLOSED |
 
 修法一致:**先寫進 `.dev-flow/`,寫成功了才動 local 狀態**;沒寫成功的一律
 留在 pending 等下一次重試,並在每次 checkpoint 被重新回報(不結案、不靜默)。
 而**每一個 durable writer 都要自己過一次守衛** —— 上游擋過不算,因為進到那個
 writer 的路不只上游那一條。被擋的只擋那一筆,不連坐,並附理由。
+
+而**重試必須補寫同一筆,不是第二筆**:durable 實體的 id 由候選推導,不隨機。
+每次 `ids.new_id()` 的話,補寫會讓歷史從「缺」變成「重複」—— 而重複比缺更難
+發現,因為兩筆都長得像真的。
+
+最後,**finalization 一律 fail closed**:ABORTED / CLOSED / 不存在的 session
+一律報錯且零 durable 副作用,session 收尾是 `OPEN → CLOSED|ABORTED` 的
+compare-and-set。「這一輪算不算完成」是後面每一個決定的前提,它不能是一個
+沒有憑據的答案。
 
 ### 16.10 寫入很吝嗇
 

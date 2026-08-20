@@ -480,10 +480,18 @@ class Store:
         return session_id
 
     def end_session(self, session_id, status="CLOSED", now=None):
+        """OPEN → status 的 compare-and-set。回傳有沒有真的換到手。
+
+        `WHERE status='OPEN'` 是這支的重點:少了它,abort 之後的 end 會把
+        ABORTED 覆寫成 CLOSED,而不存在的 session 會靜默 no-op ——
+        兩種都讓「這一輪算不算完成」變成一個沒有憑據的答案。
+        """
         with self.conn:
-            self.conn.execute(
-                "UPDATE sessions SET ended_at=?, status=? WHERE session_id=?",
+            cursor = self.conn.execute(
+                "UPDATE sessions SET ended_at=?, status=?"
+                " WHERE session_id=? AND status='OPEN'",
                 (now or utc_now(), status, session_id))
+        return cursor.rowcount == 1
 
     def session(self, session_id):
         row = self.conn.execute(

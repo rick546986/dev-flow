@@ -1,0 +1,12 @@
+# F. PROCEDURAL SKILL —— 怎麼做某件事(deploy/debug/migration/release)。
+schema_version: 1
+key: guard-strip-docstring-before-matching
+title: "機械守衛比對前先剝 docstring"
+status: VERIFIED
+preconditions: "在 scripts/check-*.sh 新增或修改靜態守衛時"
+verification: "scripts/test-architecture-guards.sh 的對應負向案必須「預期 fail,實得 fail」"
+steps:
+  - "寫守衛時,先確認要比對的字面不會同時出現在被檢查函式的 docstring 或註解裡"
+  - "比對前用 re.sub(chr(34)*3 + 開頭的 docstring 模式) 剝掉,或改用只會出現在程式碼裡的字面"
+  - "一定要做變異驗證:把實作改壞,確認守衛真的紅。沒紅的守衛等於沒寫"
+recorded_at: "2026-08-20T15:35:26Z"

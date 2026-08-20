@@ -66,7 +66,7 @@ def record_turn(store, session_id, role, text, now=None):
 def end(store, repo_root, session_id, now=None):
     """收尾:先 checkpoint(固化已確認的候選),再關 session。"""
     result = checkpoint(store, repo_root, session_id, now=now)
-    store.end_session(session_id, session_mod.CLOSED, now=now)
+    session_mod.close(store, session_id, session_mod.CLOSED, now=now)
     result["session_status"] = session_mod.CLOSED
     return result
 

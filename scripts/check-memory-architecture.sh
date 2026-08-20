@@ -389,7 +389,79 @@ if "durable_check" not in sync_src:
 else:
     ok("durable_check 存在(Stage 6 W6-4 的機械驗證)")
 
-MIN_CHECKS = 38
+# fact / event 的 durable 寫入發生在 consolidate 的候選迴圈**之後**(fact 要整個
+# entity 一起寫回、event 要整批 append),所以它們的候選在迴圈裡只能登記、不能
+# 結案。提早結案 = 寫檔失敗後重跑再也看不到它,`.dev-flow/` 永遠缺那一筆。
+i_cons = sync_src.find("def consolidate(")
+i_cons_end = sync_src.find("\n# ─────", i_cons + 1)
+cons_body = (sync_src[i_cons:i_cons_end] if i_cons >= 0 and i_cons_end > i_cons
+             else None)
+if cons_body is None:
+    bad("consolidate 抽取", "找不到 consolidate 窗口")
+else:
+    i_fact = cons_body.find('elif kind == "fact":')
+    i_event = cons_body.find('elif kind == "event":')
+    i_else = cons_body.find("\n        else:", max(i_fact, i_event))
+    branch = (cons_body[min(i_fact, i_event):i_else]
+              if i_fact >= 0 and i_event >= 0 and i_else > 0 else None)
+    if branch is None:
+        bad("fact/event 分支抽取", "找不到 consolidate 的 fact / event 分支")
+    elif "CONSOLIDATED" in branch:
+        bad("fact/event 候選提早結案",
+            "consolidate 的 fact/event 分支裡出現 CONSOLIDATED —— 這兩類的"
+            "durable 寫入在迴圈之後才發生,提早結案的話 write_state /"
+            " append_events 失敗後重跑不再看到這筆候選,而 local 自洽、"
+            "沒有任何測試會紅")
+    else:
+        ok("fact/event 候選只在 durable 寫入成功後才結案")
+
+    i_add = cons_body.find("store.add_event(")
+    i_append = cons_body.find("durable.append_events(")
+    if i_add < 0 or i_append < 0:
+        bad("event 落地順序", "找不到 add_event / append_events")
+    elif i_add < i_append:
+        bad("event 落地順序",
+            "store.add_event(durable=True) 出現在 append_events 之前 —— "
+            "local 宣稱已耐久,而 .dev-flow/ 要等後面才寫。寫檔失敗時那句"
+            "「已耐久」指向一個不存在的檔,且是靜默的")
+    else:
+        ok("event 先寫進 .dev-flow 才在 local 標 durable")
+
+# finalization 一律要求 session == OPEN。ABORTED 之後還能 checkpoint 的話,
+# 「中止」就只是一個沒有效力的標籤 —— 使用者說先不要改,候選照樣進 Git。
+session_src = read("memory/agentmem/session.py")
+i_cp = session_src.find("def checkpoint(")
+i_cp_end = session_src.find("\ndef ", i_cp + 1)
+cp_body = (session_src[i_cp:i_cp_end] if i_cp >= 0 and i_cp_end > i_cp
+           else None)
+if cp_body is None:
+    bad("session.checkpoint 抽取", "找不到 checkpoint 窗口")
+elif "require_open(" not in cp_body:
+    bad("checkpoint 沒有 fail closed",
+        "session.checkpoint 沒有 require_open —— ABORTED / CLOSED / 不存在的"
+        " session 都還能走 durable path。abort 的語意是「這一輪不算」,"
+        "它之後還能把候選固化進 Git 等於中止沒有效力")
+else:
+    ok("checkpoint 要求 session == OPEN(finalization 一律 fail closed)")
+
+store_src = read("memory/agentmem/store.py")
+i_end = store_src.find("def end_session(")
+i_end_stop = store_src.find("\n    def ", i_end + 1)
+end_body = (store_src[i_end:i_end_stop] if i_end >= 0 and i_end_stop > i_end
+            else None)
+if end_body is None:
+    bad("end_session 抽取", "找不到 end_session 窗口")
+# **docstring 不算證據。** 先剝掉再比對:否則一句解釋這條不變量的註解就足以
+# 讓守衛通過,而 SQL 本身早已被改掉 —— 守衛被自己的說明文字餵飽了。
+elif "AND status='OPEN'" not in re.sub(r'"""[\s\S]*?"""', "", end_body):
+    bad("end_session 不是 compare-and-set",
+        "end_session 無條件 UPDATE —— abort 之後的 end 會把 ABORTED 覆寫成"
+        " CLOSED,回顧時看不出那一輪其實沒收斂;不存在的 session 也會靜默"
+        " no-op")
+else:
+    ok("end_session 是 OPEN → status 的 compare-and-set")
+
+MIN_CHECKS = 42
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)

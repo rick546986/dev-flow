@@ -26,7 +26,8 @@ import shutil
 
 from memtools import MemoryCase
 from agentmem import (devtalk, durable, identity, lineage, query,
-                      store as store_mod, sync, truth)
+                      session as session_mod, store as store_mod, sync,
+                      truth)
 
 
 class CorrectionDoesNotSupersedeBeforeConsolidationTest(MemoryCase):
@@ -625,3 +626,246 @@ class DurableWriterGatesEveryFactTest(MemoryCase):
                            for e in durable.iter_events(self.repo))
         self.assertNotIn("S3cr3tPassw0rd", events,
                          "revision(舊值→新值)也不得帶著 secret 落地")
+
+
+class FactAndEventCandidateBarrierTest(MemoryCase):
+    """fact / event 的候選狀態不得在 durable 寫入成功之前前進。
+
+    knowledge / decision / skill 三類在 `consolidate()` 裡是「寫檔 → 動 local」,
+    fact 與 event 卻不是:
+
+        fact   upsert_fact → candidate=CONSOLIDATED → (迴圈外) write_state
+        event  add_event(durable=True) → candidate=CONSOLIDATED → append_events
+
+    兩條都在「還沒寫進 `.dev-flow/`」的時候就把狀態推進到「已經寫進去了」——
+    這正是本檔①②③同一個病灶,只是換了兩個 kind:
+
+        ①寫檔失敗後 candidate 已是 CONSOLIDATED → 重跑不再看到它 →
+          `.dev-flow/` 永遠缺這一筆,而 local 自洽、沒有任何測試會紅。
+        ②event 的 local 列在 `append_events()` 之前就 durable=1 ——
+          明確的 false durability claim(「已耐久」指向一個不存在的檔)。
+        ③失敗後重跑若每次新產 id,補寫會變成第二筆 —— 歷史從缺變成重複。
+    """
+
+    def setUp(self):
+        super().setUp()
+        from memtools import commit_all, write
+        self.project_id = self.project()["project_id"]
+        self.store = self.store_for(self.project_id)
+        write(self.repo, "src/db.py", "URL = 'x'\n")
+        commit_all(self.repo, "dep")
+        self.session = self.store.start_session("實作一輪",
+                                                mode="implementation")
+
+    def observe_fact(self, fact_key="pool", value="20"):
+        return session_mod.observe(
+            self.store, self.session, "architecture_change",
+            "資料庫連線池大小", "從 config 讀到的值",
+            fact={"entity_type": "database", "entity_key": "main",
+                  "fact_key": fact_key, "value": value,
+                  "status": truth.VERIFIED, "dependencies": ["src/db.py"]},
+            file_paths=["src/db.py"], repo_root=self.repo)
+
+    def observe_event(self):
+        return session_mod.observe(
+            self.store, self.session, "schema_change",
+            "registrations 加了 customer_id 欄位",
+            "migration 0007 已套用", file_paths=["src/db.py"],
+            repo_root=self.repo)
+
+    def fail_once(self, attr):
+        original = getattr(durable, attr)
+        setattr(durable, attr, lambda *a, **k: (_ for _ in ()).throw(
+            IOError("模擬寫檔失敗")))
+        try:
+            with self.assertRaises(IOError):
+                session_mod.checkpoint(self.store, self.repo, self.session)
+        finally:
+            setattr(durable, attr, original)
+
+    def candidate_status(self, candidate_id):
+        row = self.store.conn.execute(
+            "SELECT status FROM candidates WHERE candidate_id=?",
+            (candidate_id,)).fetchone()
+        return row["status"]
+
+    def durable_facts(self):
+        out = []
+        for state in durable.iter_states(self.repo):
+            for fact in state.get("facts") or []:
+                out.append(fact)
+        return out
+
+    # ── fact ────────────────────────────────────────────────────────────────
+    def test_fact_write_state_failure_keeps_candidate_retryable(self):
+        """write_state 失敗 → 候選必須還是 CONFIRMED(否則重跑看不到它)。"""
+        result = self.observe_fact()
+        self.fail_once("write_state")
+        self.assertEqual(
+            self.candidate_status(result["candidate_id"]), "CONFIRMED",
+            "durable 寫入失敗,候選卻已 CONSOLIDATED —— 重跑不再看到它,"
+            "`.dev-flow/` 永遠缺這一筆")
+        self.assertEqual(self.durable_facts(), [],
+                         "寫檔失敗後 durable 側不得有任何 fact")
+
+    def test_fact_retry_after_failure_writes_exactly_one(self):
+        """失敗 → 重跑 → durable 側剛好一筆(不得 0 筆也不得 2 筆)。"""
+        self.observe_fact()
+        self.fail_once("write_state")
+        session_mod.checkpoint(self.store, self.repo, self.session)
+        facts = self.durable_facts()
+        self.assertEqual([f["fact_key"] for f in facts], ["pool"],
+                         "重跑要補得回來,而且只補一筆")
+        self.assertEqual(len(self.store.facts(entity_type="database",
+                                              entity_key="main", limit=50)), 1,
+                         "重跑不得在 local 產生第二筆同義 fact")
+
+    def test_fact_write_failure_survives_destructive_rebuild(self):
+        """砍掉 local → 只從 `.dev-flow/` 重建:失敗那一輪不得留下半個 fact。"""
+        self.observe_fact()
+        self.fail_once("write_state")
+        shutil.rmtree(os.path.join(self.home, "projects", self.project_id))
+        fresh = self.store_for(self.project_id)
+        counts = sync.rebuild_local(self.repo, fresh)
+        self.assertEqual(counts["facts"], 0,
+                         "durable 側沒有的東西,rebuild 後不得憑空出現")
+
+    # ── event ───────────────────────────────────────────────────────────────
+    def test_event_append_failure_never_marks_event_durable(self):
+        """append_events 失敗 → local event 列不得帶 durable=1。"""
+        result = self.observe_event()
+        self.fail_once("append_events")
+        row = self.store.conn.execute(
+            "SELECT durable FROM events WHERE event_id=?",
+            (result["event_id"],)).fetchone()
+        self.assertEqual(
+            row["durable"], 0,
+            "`.dev-flow/` 裡從來沒有這筆事件,local 卻宣稱它已耐久 —— "
+            "這是 false durability claim,而且是靜默的")
+        self.assertEqual(list(durable.iter_events(self.repo)), [])
+
+    def test_event_append_failure_keeps_candidate_retryable(self):
+        result = self.observe_event()
+        self.fail_once("append_events")
+        self.assertEqual(
+            self.candidate_status(result["candidate_id"]), "CONFIRMED",
+            "寫檔失敗後候選必須留在 CONFIRMED 等重試")
+
+    def test_event_retry_after_failure_writes_exactly_one(self):
+        result = self.observe_event()
+        self.fail_once("append_events")
+        session_mod.checkpoint(self.store, self.repo, self.session)
+        events = [e for e in durable.iter_events(self.repo)
+                  if e.get("kind") == "schema_change"]
+        self.assertEqual(len(events), 1,
+                         "重跑要補得回來且只有一筆(id 每次新產就會變兩筆)")
+        self.assertEqual(events[0]["event_id"], result["event_id"],
+                         "補寫的必須是同一筆事件,不是它的複製品")
+        row = self.store.conn.execute(
+            "SELECT durable FROM events WHERE event_id=?",
+            (result["event_id"],)).fetchone()
+        self.assertEqual(row["durable"], 1, "真的寫進去之後才標 durable")
+
+    # ── gate 擋掉的 fact ─────────────────────────────────────────────────────
+    def test_gate_rejected_fact_candidate_is_not_consolidated(self):
+        """被 durable writer 擋下的 fact,候選不得被記成已固化。
+
+        `promote_entity_facts()` 逐筆過 gate。被擋的那一筆從來沒進 `.dev-flow/`,
+        它的候選標成 CONSOLIDATED 就等於「已固化」指向一個不存在的東西。
+        """
+        result = self.observe_fact(
+            "url", "postgres://admin:S3cr3tPassw0rd@prod.example.com/app")
+        outcome = session_mod.checkpoint(self.store, self.repo, self.session)
+        self.assertEqual(
+            self.candidate_status(result["candidate_id"]), "LOCAL_ONLY",
+            "沒寫進 Git 的候選不得是 CONSOLIDATED —— 要留下「為什麼沒進去」")
+        self.assertEqual(outcome["promoted"], 0,
+                         "什麼都沒固化,promoted 不得回 1")
+        self.assertEqual(self.durable_facts(), [])
+
+
+class SessionLifecycleFailsClosedTest(MemoryCase):
+    """finalization 一律要求 session == OPEN,否則零 durable 副作用 + 報錯。
+
+    `observe()` 有 `require_open()`,`checkpoint()` 沒有 —— 它只呼叫
+    `store.session(session_id)` 而**丟掉回傳值**,而那支對不存在的 session
+    回 None、不丟例外。於是這條路是通的:
+
+        start → propose → confirm → abort → checkpoint → 候選照樣進 Git
+
+    abort 的語意是「這一輪不算」。它之後還能把候選固化進 Git,等於
+    「中止」只是一個沒有效力的標籤。`end_session()` 也不是 compare-and-set:
+    abort 之後再 end 會把 ABORTED 覆寫成 CLOSED,回顧時看不出這一輪沒收斂。
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.project_id = self.project()["project_id"]
+        self.store = self.store_for(self.project_id)
+        self.session = self.store.start_session("registration 語意")
+        candidate = devtalk.propose(
+            self.store, self.session, "domain",
+            {"key": "registration", "title": "registration = customer-level"},
+            "domain_expert")
+        devtalk.confirm(self.store, candidate)
+
+    def durable_domain(self):
+        return [r for r in durable.iter_knowledge(self.repo)
+                if r["key"] == "registration"]
+
+    def test_aborted_session_cannot_checkpoint(self):
+        session_mod.abort(self.store, self.session, reason="使用者說先不要")
+        with self.assertRaises(session_mod.SessionError):
+            session_mod.checkpoint(self.store, self.repo, self.session)
+
+    def test_aborted_session_checkpoint_has_zero_durable_side_effect(self):
+        session_mod.abort(self.store, self.session, reason="使用者說先不要")
+        with self.assertRaises(session_mod.SessionError):
+            session_mod.checkpoint(self.store, self.repo, self.session)
+        self.assertEqual(self.durable_domain(), [],
+                         "abort 之後 checkpoint 仍把候選寫進 Git = "
+                         "「中止」是一個沒有效力的標籤")
+
+    def test_closed_session_cannot_checkpoint(self):
+        session_mod.end(self.store, self.repo, self.session)
+        with self.assertRaises(session_mod.SessionError):
+            session_mod.checkpoint(self.store, self.repo, self.session)
+
+    def test_nonexistent_session_cannot_checkpoint(self):
+        with self.assertRaises(session_mod.SessionError):
+            session_mod.checkpoint(self.store, self.repo,
+                                   "ses_00000000000000000000000000")
+
+    def test_end_after_abort_does_not_overwrite_aborted(self):
+        session_mod.abort(self.store, self.session, reason="使用者說先不要")
+        with self.assertRaises(session_mod.SessionError):
+            session_mod.end(self.store, self.repo, self.session)
+        self.assertEqual(self.store.session(self.session)["status"],
+                         session_mod.ABORTED,
+                         "ABORTED 被覆寫成 CLOSED = 回顧時看不出這一輪沒收斂")
+
+    def test_abort_after_close_is_rejected(self):
+        session_mod.end(self.store, self.repo, self.session)
+        with self.assertRaises(session_mod.SessionError):
+            session_mod.abort(self.store, self.session, reason="反悔")
+        self.assertEqual(self.store.session(self.session)["status"],
+                         session_mod.CLOSED)
+
+    def test_devtalk_checkpoint_is_the_same_gate(self):
+        """dev-talk 不得有第二套較鬆的收尾 —— 兩條路共用同一個 state machine。"""
+        session_mod.abort(self.store, self.session, reason="先不要")
+        with self.assertRaises(session_mod.SessionError):
+            devtalk.checkpoint(self.store, self.repo, self.session)
+        self.assertEqual(self.durable_domain(), [])
+
+    def test_consolidate_refuses_candidates_of_a_non_open_session(self):
+        """durable writer 自己也要驗 —— store 是內部 API,繞得過上面那層。
+
+        `consolidate()` 原本只驗 session **存在**。ABORTED 的 session 存在,
+        於是走 `session_id=None`(全專案掃)這條路時它的候選照樣進 Git。
+        """
+        session_mod.abort(self.store, self.session, reason="先不要")
+        result = sync.consolidate(self.repo, self.store)
+        self.assertEqual(result["promoted"], 0,
+                         "非 OPEN session 的候選不得被固化")
+        self.assertEqual(self.durable_domain(), [])
