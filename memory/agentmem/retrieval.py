@@ -132,10 +132,26 @@ def channel_lexical(store, query, scope, limit):
     for row in rows:
         df[row["token"]] = df.get(row["token"], 0) + 1
 
+    def intrinsic(token):
+        """CJK n-gram 的資訊量本質上低於一個完整詞 —— 它們是**沒有分詞器時的
+        詞近似**,不是詞本身。
+
+        「改過什麼」會產出 `改過` 這個跨詞邊界的假詞;它在語料裡查不到,是因為
+        它本來就不是一個詞,不是因為記憶不相關。反過來,拉丁詞與 identifier
+        (`kubernetes`、`zzzz_nonexistent_table`)在語料裡查不到就是**強證據**
+        說明這件事沒被記錄過 —— 那正是 NO_RELIABLE_MATCH 該成立的時候。
+
+        所以折扣只給 CJK n-gram,不給拉丁詞;而且分子分母乘同一個係數,
+        這是在校正 n-gram 的證據強度,不是在放寬門檻。
+        """
+        if token.isascii():
+            return 1.0
+        return 0.35 if len(token) == 1 else 0.6
+
     def idf(token):
         # 0.5 平滑:查不到的 token 拿到最高 IDF,才會把 coverage 分母撐大 ——
         # 否則「查詢裡有一個沒人提過的關鍵詞」會被當成無所謂。
-        return math.log(1.0 + (total / (df.get(token, 0) + 0.5)))
+        return intrinsic(token) * math.log(1.0 + (total / (df.get(token, 0) + 0.5)))
 
     query_mass = sum(idf(token) for token in content) or 1.0
     scores = {}

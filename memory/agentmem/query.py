@@ -272,7 +272,8 @@ def _intent(store, plan_dict, embedder, limit):
 def _knowledge_payload(row, hit):
     import json
     return {
-        "item_type": "knowledge", "kind": row["kind"], "key": row["key"],
+        "item_type": "knowledge", "item_id": row["knowledge_id"],
+        "kind": row["kind"], "key": row["key"],
         "title": row["title"], "body": row["body"],
         "authority": row["authority"], "status": row["status"],
         "confidence": row["confidence"],

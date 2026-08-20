@@ -69,6 +69,17 @@ PURE_FRAME_CUES = (
     r"是什麼意思", r"代表什麼", r"\bmean(?:s|ing)?\b", r"\bdefinition\b",
     r"打算", r"預計", r"\bintend(?:ed|s)?\b", r"\bgoing to\b",
     r"有哪些", r"列出", r"盤點", r"\blist\b", r"\benumerate\b",
+    # 「記憶種類」的後設詞:它們說的是「你要問哪一層記憶」,不是主題本身。
+    # 「submission 的業務規則定義是什麼」的主題是 submission,
+    # 「業務規則」「定義」是在指定要查 DOMAIN 層 —— 留在內容詞裡會把 coverage
+    # 的分母撐大到永遠達不到門檻。
+    r"定義", r"術語", r"業務規則", r"語意", r"真實世界",
+    r"\bdomain\b", r"\bglossary\b", r"\bdefinition\b",
+    r"\bbusiness rule\b", r"\bmean(?:s|ing)?\b",
+    r"步驟", r"\bsteps?\b", r"\brunbook\b", r"\bprocedure\b",
+    r"藍圖", r"\broadmap\b", r"\bplanned\b", r"未來", r"將來", r"\bfuture\b",
+    r"歷史", r"\bhistory\b", r"理由", r"\brationale\b",
+    r"權衡", r"\btrade-?off\b", r"架構上", r"\barchitecture of\b",
 )
 
 # 額外的通用框架詞:單獨出現時對答案內容零貢獻。
