@@ -563,6 +563,10 @@ def _observe_remote(repo_root, branch):
     照樣回報正確的 SHA。所以形狀過關之後還要再解析 host 拿位址證據
     (`identity.resolve_host_ips` + `identity.ip_is_offmachine`);解析不到
     一律 fail closed(`REMOTE_UNVERIFIED`),不得因為問不到而放行。
+    `identity._local_machine_ips()` 本身是 best-effort、可能全部探測失敗
+    回空集合 —— 這裡明確先查一次、空集合本身就 fail closed 到
+    `REMOTE_UNVERIFIED`,不把它當成「這台機器沒有任何位址」直接丟給
+    `ip_is_offmachine` 比對(那樣任何位址都會被誤判成離開這台機器)。
     SSH config 的 Host 別名重映(`~/.ssh/config` 的 `HostName`)不在這一關
     的偵測範圍內 —— 那需要額外呼叫 `ssh -G` 才能拿到 SSH 實際會解析的
     host,這裡沒有做,是已知的殘留缺口,不是沒注意到。
@@ -590,7 +594,14 @@ def _observe_remote(repo_root, branch):
         return (None, REMOTE_UNVERIFIED,
                 "remote {0} 的主機名解析不到位址 —— 分不出來不得當成"
                 "離開這台機器的證據".format(remote))
-    if not all(identity.ip_is_offmachine(ip) for ip in ips):
+    local_ips = identity._local_machine_ips()
+    if not local_ips:
+        return (None, REMOTE_UNVERIFIED,
+                "這台機器自己的介面位址列表拿不到(best-effort 探測全部"
+                "失敗)—— 分不出來解析到的位址是不是這台機器自己,不得"
+                "因為查不到本機介面就當成離開這台機器的證據")
+    if not all(identity.ip_is_offmachine(ip, local_ips=local_ips)
+               for ip in ips):
         return (None, REMOTE_ENDPOINT_LOCAL,
                 "remote {0} 的主機名解析後是這台機器自己(loopback / "
                 "link-local / 本機介面位址)—— 主機名長得像別台機器,"

@@ -293,10 +293,13 @@ def _local_machine_ips():
       「如果要送,會從哪個介面送出去」並不實際送出任何封包,藉此問到預設
       對外介面的位址,不需要真的連得上對方。
 
-    兩者都是 best-effort;任何一步失敗就跳過,不當成錯誤——呼叫端本來就把
-    「解析不到 / 找不到本機位址」fail closed 到「不算離開本機的證據」,
-    所以這支查不到也不會誤放行,只會少擋一種情境(見 `ip_is_offmachine`
-    的 loopback/link-local/unspecified 檢查,那三類不靠這支也擋得住)。
+    兩者都是 best-effort;任何一步失敗就跳過,不當成錯誤。**回傳空集合代表
+    兩種探測手法全部失敗**,不代表「這台機器沒有任何位址」——真正的呼叫端
+    (`sync._observe_remote`)必須把空集合本身當成「這台機器的介面位址列表
+    拿不到」,fail closed 到 `REMOTE_UNVERIFIED`,不能把它當成一個正常的
+    (只是碰巧是空的)本機位址集合直接丟給 `ip_is_offmachine` 比對——那樣
+    任何非 loopback/link-local/unspecified 的位址都會被誤判成離開這台機器
+    (`GPT-P0-LOCAL-IP-INVENTORY-FAILOPEN`,已修)。
     """
     addrs = set()
     try:

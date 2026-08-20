@@ -795,6 +795,32 @@ class RemoteEndpointAttestationTest(DurableCheckCase):
         self.assertEqual(result["verdict"], "PASS", result["problems"])
         self.assertTrue(result["remote_observed"])
 
+    def test_local_ip_inventory_failure_fails_closed(self):
+        """`_local_machine_ips()` 的 best-effort 探測全部失敗時(回空
+        frozenset),不得把任何非 loopback/link-local/unspecified 位址誤判
+        成離開這台機器 —— 分不出來不得當成證據,這與問不到 DNS 是同一條紀律。
+
+        `ip_is_offmachine(ip)` 在 `local_ips=None` 時會現查
+        `_local_machine_ips()`;如果那支查失敗回空集合,`raw_ip not in
+        frozenset()` 恆真 —— 任何解析到的位址,包括這台機器自己的一個
+        `_local_machine_ips()` 沒探測到的介面,都會被判成「off machine」。
+        這是判定沒有證據卻放行,不是「少擋一種情境」。
+        """
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self._remote_with_resolved_ips({"192.168.1.50"})
+        local_ips_patcher = mock.patch.object(
+            identity, "_local_machine_ips", return_value=frozenset())
+        local_ips_patcher.start()
+        self.addCleanup(local_ips_patcher.stop)
+        result = self.check()
+        self.assertEqual(result["verdict"], "FAIL", result)
+        self.assertTrue(
+            any(sync.REMOTE_UNVERIFIED in p for p in result["problems"]),
+            result["problems"])
+        self.assertFalse(result["remote_observed"])
+
     def test_resolution_failure_fails_closed(self):
         """解析不到位址(DNS 錯、離線、host 其實是解析不出來的 SSH 別名)
         —— 不得因為問不到而放行,這與問不到 ls-remote 是同一條紀律。"""
