@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: relevance-cap-must-come-after-not-before-exact-match
+title: "精確匹配的候選產生不得有前置筆數視窗——視窗只能加在相關性排序之後"
+authority: domain_expert
+status: CONFIRMED
+confidence: 0.8
+body: "query.py::_fact_targets() 過去用 store.facts(statuses=LIVE_STATUSES, limit=500) 先撈「最近 500 筆」live fact,再對這 500 筆做 entity/fact_key 的精確匹配。「最近」是跟相關性無關的排序——只要一個 project 累積超過 500 筆 live fact,唯一正確的 CURRENT 答案只要比 500 筆別的 fact 舊,就會在比對開始之前被砍掉,查詢端會誤判成 NEEDS_VERIFICATION/查不到,而且砍法完全靜默(沒有任何錯誤或警告)。這不是效能取捨,是把「取前 N 筆」這個效能手段套在錯的位置:cap 只有在**相關性已經排好序之後**才是安全的優化(discovery/_search 那種模糊排序檢索可以這樣做);對精確匹配(exact/normalized 的 entity 或 fact_key 命中)來說,任何一筆 live fact 都可能是唯一正確答案,不能先設一個跟相關性無關的窗口再比對。修法:_fact_targets() 改成 limit=None(不設前置視窗),讓精確匹配看得到全部 live fact。這條跟 durable-full-replace-no-window(寫入端整檔取代不設視窗)是同一個根因家族在讀取端的對應版本——寫入端與讀取端都不得用「最近 N 筆」這個跟相關性無關的排序當過濾器。"
+recorded_at: "2026-08-20T23:04:55Z"

@@ -97,6 +97,20 @@ class ExecutionTest(MemoryCase):
         self.assertTrue(answer["current_truth"]["fast_path"])
         self.assertEqual(answer["current_truth"]["value"], "lab_order")
 
+    def test_current_target_beyond_row_window_still_resolves(self):
+        """GPT-P1-CURRENT-500:exact CURRENT target 不得被列數窗口擋在相關性
+        比對之前 —— 插 500 筆比它新的 live fact(把它擠出前 500 筆)之後,
+        對它的精確查詢仍要正常解出,不能因為它被排在視窗外就變成查不到。"""
+        for i in range(500):
+            truth.record_fact(
+                self.store, self.repo, "filler", "filler-{0}".format(i),
+                "noise", "value", status=truth.CANDIDATE, confidence=0.1,
+                now="2030-01-01T00:00:00Z")
+        answer = self.ask("目前 lab-order 的 current_table 是什麼?")
+        self.assertEqual(answer["retrieval_status"], retrieval.OK)
+        self.assertTrue(answer["current_truth"]["fast_path"])
+        self.assertEqual(answer["current_truth"]["value"], "lab_order")
+
     def test_current_goes_stale_when_dependency_changes(self):
         write(self.repo, "src/services/db.ts", "export const table = 'x'\n")
         snapshot = identity.workspace_snapshot(self.repo)

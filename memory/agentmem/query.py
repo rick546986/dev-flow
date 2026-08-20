@@ -266,11 +266,18 @@ def _fact_status(resolved):
 
 
 def _fact_targets(store, plan_dict):
-    """從查詢裡的 symbol/實體推出候選 fact 座標(不猜:只回真的存在的組合)。"""
+    """從查詢裡的 symbol/實體推出候選 fact 座標(不猜:只回真的存在的組合)。
+
+    **不能設列數上限。** 這裡做的是精確匹配(entity/fact key 或它們的值是否
+    命中查詢),不是模糊排序後的探索式檢索 —— 探索式檢索(`_search`)才有資格
+    在**相關性排序之後**加視窗。在這裡先套 `limit=N` 再比對,等於用「最近
+    N 筆」這個跟相關性無關的排序當篩子:唯一正確的那筆 CURRENT fact 只要
+    比 N 筆別的 live fact舊,就會在比對開始之前被砍掉,而砍法對呼叫端完全
+    不可見(`GPT-P1-CURRENT-500`)。"""
     targets = []
     seen = set()
     entities = [textnorm.normalize_symbol(e) for e in plan_dict["entities"]]
-    for row in store.facts(statuses=truth.LIVE_STATUSES, limit=500):
+    for row in store.facts(statuses=truth.LIVE_STATUSES, limit=None):
         coord = (row["entity_type"], row["entity_key"], row["fact_key"])
         if coord in seen:
             continue
