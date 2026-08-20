@@ -311,6 +311,8 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
    diff 無差異(有差異 = stale,走 upgrade 覆蓋 —— 專案側不得自改此腳本,要改改方法論);
    ③無參數跑 exit 2(usage);④對方法論 fixture `good-evidence.md` 跑 exit 0
    (同 install 步 6 的兩道可執行驗證)。任一不符 → broken,列異常+修法。
+   ⚠️ 本項與第 11/12 項只是**逐支的行為面**驗證,**不是散發集合的全集** ——
+   全集由第 13 項從檔案地圖散發面標註動態取,別拿這三項的名字當清單。
 10. **版本握手**(在專案內跑時):①`docs/dev/devflow-contract.json` 存在
     (缺件 = broken,走 install 步 1 補 —— doctor 無明示指定時就在這裡找契約,
     缺件必 fail-closed)且與方法論 `${CLAUDE_PLUGIN_ROOT}/devflow-contract.json` diff
@@ -335,7 +337,28 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     diff 無差異(有差異 = stale,走 upgrade 覆蓋 —— 專案側不得自改此腳本,
     要改改方法論);③無參數跑 → 訊息含「用法」且 exit 2。
     任一不符 → broken,列異常+修法。
-13. **Agent Memory 健檢**(在專案內跑時):跑
+13. **散發副本 parity 總表**(在專案內跑時)——**比對集合一律取自檔案地圖的
+    「散發面」標註,不得自己枚舉,也不得照第 9/11/12 項那幾支硬列的名字當全集**:
+    讀 `${CLAUDE_PLUGIN_ROOT}/guides/guide-dev-flow.html` 的「附錄:檔案地圖」節
+    (`<h2 id="filemap">` 到下一個 `<h2>` 之間),取出所有標
+    `散發面:docs/dev/tools/` 的列;對其中**每一支**驗:①專案側
+    `docs/dev/tools/<同名>` 存在;②可執行位元與正本一致;③與
+    `${CLAUDE_PLUGIN_ROOT}/scripts/<同名>` diff 逐字無差異(有差異 = stale,走
+    upgrade 覆蓋 —— 專案側不得自改任何一支,要改改方法論)。任一不符 → broken。
+    **為什麼不逐支硬列**:母版側的 parity 守衛
+    (`scripts/check-integration-regression-guard.sh` ④)早就因為「寫死五個
+    `diff -q`,新增第六支散發工具必漏驗」改成掃散發面標註了,採用專案側卻還停在
+    逐支硬列 —— 第 7 型「不對稱記帳」,而且**已經真的漏了**:`history-append.sh`
+    有散發,第 9/11/12 項卻沒有任何一項驗它(2026-08-20 現場健檢實例:健檢者手打
+    清單只點到三支,實際散發五支)。這支漏不得 —— 它是 `HISTORY.md` 的**唯一寫
+    入口**,副本過期或掉執行位元就寫不進去,而 G1 那個「靜默寫到
+    `docs/dev/docs/dev/`」的巢狀 bug 正是出在這支裡,過期副本會把它默默帶回來。
+    行為面另驗:`bash docs/dev/tools/history-append.sh` 無參數 → 訊息含「拒絕:缺
+    `--slug`」且 exit 2;`--print-root` 印出專案根且 exit 0(doctor 拿它對帳)。
+    ⚠️ **`devflow-contract.json` 不住在 `docs/dev/tools/`,散發面標註涵蓋不到它**,
+    由第 10 項單獨驗 —— 不得併進本項(併掉就沒有人在驗 contract 副本,同
+    `dev-release` 步 2 把那行 `diff -q` 單獨留著的理由)。
+14. **Agent Memory 健檢**(在專案內跑時):跑
     `python3 "${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py" doctor --path <專案根>`
     並照它的 verdict 分流(`PASS` / `WARN` / `FAIL`;exit 1 = FAIL)。它逐項回報:
     `project-identity`(`.dev-flow/project.yaml` 在不在、`project_id` 合不合法 ——

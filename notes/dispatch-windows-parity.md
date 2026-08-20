@@ -1,6 +1,13 @@
 # 派工單（第三輪）：讓 dev-flow 在 Windows 上跑得出全綠
 
-> **狀態：待執行。** rick 2026-08-19 裁決 5(b)：另立派工單排到第三輪，**不併進當前這輪**
+> **狀態：四條根因都已改完，等 Windows 複驗。**
+> §2.3a／§2.3b 修於 **v3.9.1**（issue #5，Windows 實測翻綠）；§2.4 修於 **v3.9.2**
+> （issue #7，Windows 實測 start 通、恆許通、圍欄②擋得住）；§2.1／§2.2 修於
+> **v3.10.0**（本輪，**Mac 上只驗到「注入假 cygpath 時分支確實被走到」與「顯式帶
+> bash 後不崩」，真正的 71 案翻綠必須上 Windows 才算數 —— 在那之前不得宣稱已解**）。
+> 剩下的是 §3 那句 README 措辭，要等 Windows 複驗全綠才寫得出不過期的說法。
+>
+> rick 2026-08-19 裁決 5(b)：另立派工單排到第三輪，**不併進當前這輪**
 > ——當前這輪在收派工分層第一輪的尾（探針複核、契約註記、發版），混進平台移植會讓
 > 「出事時分不出是誰造成的」。
 >
@@ -68,7 +75,18 @@
 
 ## 2. 根因（四條，逐條有實測輸出）
 
-### 2.1 🔴 兩個 `/tmp` 不是同一個資料夾（失敗數量最大的一條）
+### 2.1 ✅ 兩個 `/tmp` 不是同一個資料夾（失敗數量最大的一條）——**已修於 v3.10.0**
+
+> **採用的修法不是候選 (a)/(b)/(c) 任何一個的原樣，而是 (b) 的最小版**：底下所有
+> `mktemp` 本來就已經吃 `${TMPDIR:-/tmp}`，所以只要在**入口**把 `TMPDIR` 正規化一次
+> 就全涵蓋，不必動 29 個 `mktemp` 落點。正規化用 `cygpath -m`（產出 `C:/Users/...`，
+> 正斜線 + 磁碟機代號，Git Bash 與 Windows 原生 Python 兩邊都認得，與 §2.3b 的
+> `--print-root` 同一招）；沒有 `cygpath` 的環境不進那個分支，行為零變化。
+> 落點：`hooks/selftest.sh` 與 `scripts/devflow-check.sh` 各一份**逐字副本**（兩支都是
+> 可獨立執行的入口），由 `test-architecture-guards.sh` 的 `check_twin_block` 對帳釘住，
+> 改一邊必紅（已負向驗過）。selftest 另加 w2 兩案：注入假 `cygpath` 證明分支真的會被
+> 走到（不注入的話這條修法在 Mac/CI 上等於從沒被驗過），對照組用**空 PATH**而不是現行
+> PATH —— Windows 上 `cygpath` 就在 `/usr/bin`，拿現行 PATH 當對照會在 Windows 假紅。
 
 測試腳本用 Git Bash 的 `/tmp` 建樣本，回頭卻用 Windows 原生 Python 去讀同一個寫法。
 兩邊解出來的位置不一樣：
@@ -103,7 +121,18 @@ run_id=run_01M0CDWTJ47R0ECCDNHAF21GFF
   ⚠️ 現行寫法是 `open('$S7T/.devflow/exec.json')` 這種內插，路徑含反斜線時
   還會被 Python 當轉義字元吃掉，(c) 順便解掉這個。
 
-### 2.2 🔴 Python 直接執行 `.sh`，Windows 不認
+### 2.2 ✅ Python 直接執行 `.sh`，Windows 不認 —— **已修於 v3.10.0**
+
+> 全 repo 掃過同型寫法，實際有三處（不是一處）：
+> `scripts/check-methodology-corrections.sh`（renderer）、`scripts/check-realworld.sh`
+> （同一支 renderer）、`hooks/selftest.sh` 的 `c_plan()`（直接 exec `devflow-exec.sh`）。
+> 三處都改成 `["bash", <script>, ...]`。`hooks/_doctor_impl.py` 那幾處在 v3.9.1 修
+> §2.3a 時已經帶 bash，本輪不動。
+> ⚠️ 順帶記一筆**沒有修**的東西：`check-methodology-corrections.sh` 用
+> `os.access(renderer, os.X_OK)` 判可執行 —— Windows 的 Python 對這個旗標基本上
+> 「檔案存在就回 True」，所以那條斷言在 Windows 上等於恆過。它不會崩、也不會假綠到
+> 放行壞東西（後面緊接著真的去跑那支腳本），但它**不是**一道有效的檢查，別把它算進
+> Windows 的覆蓋率。
 
 `scripts/check-methodology-corrections.sh` 整支崩掉：
 
@@ -282,11 +311,11 @@ rick 明講這句要留給本派工單處理，不要在當輪插隊改。
 
 | 步 | 做什麼 | 為什麼排這裡 |
 |---|---|---|
-| **1** | 修 §2.2（Python 直接執行 `.sh`）| 最小、最獨立，一處寫法問題，修完 `devflow-check.sh` 的 methodology 那組就會動 |
-| **2** | 修 §2.1（兩個 `/tmp`）| 失敗數量最大的一條。修完再量一次 `selftest.sh`，用數字證明有效 |
-| **3** | 修 §2.3a（`bash -c` 轉義）與 §2.3b（`--print-root` 路徑形式）| 前兩步修完才看得清 doctor 還剩什麼紅。**兩條要分開修，任一條沒修 doctor 就仍 INCOMPATIBLE** |
-| **4** | 修 §2.4（路徑分隔符）| ~~先測再決定要不要改~~ **已測完，是硬失敗，直接改**（issue #7）。兩處必須同時改，只改一邊會把失敗搬家 |
-| **5** | 全綠之後回頭處理 §3 那句 README | 要先知道修完長什麼樣，才寫得出不過期的措辭。§2.4 修完後 README §11 圍欄②那句的 Windows 例外也要一併收 |
+| **1** | ~~修 §2.2（Python 直接執行 `.sh`）~~ | ✅ v3.10.0。實際三處同型，不是一處 |
+| **2** | ~~修 §2.1（兩個 `/tmp`）~~ | ✅ v3.10.0。**「用數字證明有效」這一步還沒做** —— Mac 上這條是 no-op，71 案翻綠要上 Windows 量 |
+| **3** | ~~修 §2.3a（`bash -c` 轉義）與 §2.3b（`--print-root` 路徑形式）~~ | ✅ v3.9.1（issue #5，Windows 實測兩項各自從 ✗ 翻 ✓，也實證了兩條是獨立成因） |
+| **4** | ~~修 §2.4（路徑分隔符）~~ | ✅ v3.9.2（issue #7）。Windows 實測 start 通、恆許前綴通、圍欄②擋得住 |
+| **5** | 全綠之後回頭處理 §3 那句 README | **還沒做,也不該現在做** —— 要先知道 Windows 複驗完長什麼樣,才寫得出不過期的措辭。README §11 圍欄②那句的 Windows 例外也在這步一併收 |
 
 ⚠️ **這個順序可以插隊，執行時自己判斷**：§2.1／§2.2／§2.3 擋的是「驗證跑不跑得出全綠」，
 **§2.4 擋的是「Windows 上的使用者根本開不了工」** —— 對真實採用專案而言它才是唯一的

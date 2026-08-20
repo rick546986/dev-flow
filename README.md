@@ -658,6 +658,7 @@ E11 只驗這兩節在不在。
 | Final Fresh Run 真的跑過 | 專案命令/Runtime/Reviewer;Gauntlet 只驗宣告與 SHA 綁定 | 4-spec Verification Profile、`_templates/7-review.md` |
 | Attempt Ledger 寫入 | 外部 runtime 寫;本 repo observability CLI 驗證與衍生 | `hooks/devflow-obs.sh`、`observability/devflow-obs.py`(母版 repo) |
 | 方法論與 Runtime 相容 | 外部 doctor 比對契約(fail-closed) | `devflow-contract.json`、`hooks/runtime-capabilities.json`、`hooks/devflow-doctor.sh` |
+| 缺陷回報貼出去之前已去識別化 | **只在寫檔那一刻擋,貼出去那一刻不擋** —— hook 掛在 PostToolUse `Edit\|Write`,掃 `.devflow/` 底下的 `.md`(`.devflow/task/` 是 Worker 本機證據區,刻意排除)。**已知限界:直接 `gh issue comment` / `gh pr comment` / 對談中貼原文完全不經過它**,那條路徑上沒有任何機械檢查,只有人工紀律(實際發生過:本 repo 維護者自己把採用專案的絕對路徑貼進 public issue 留言)。要補得做 Bash 路徑的鏡像守衛(同 `devflow-prebash` 鏡像 `devflow-guard` 的做法),尚未實作 —— 在此誠實標示,不假裝有守衛 | `hooks/devflow-report-guard.sh`、`hooks/_report_impl.py` |
 | STATUS.md 只在整合分支維護、worktree 內不碰 | 人工紀律為主;Stage 6 武裝期間外部 plugin scope guard 順帶擋住(STATUS.md 不在任何 T 的 Files,寫入即擋),未武裝的規劃階段無機械層 —— 為此加常駐 hook 成本大於效益,且 PR diff 混入看板變更在 review 一眼可見 | `_templates/STATUS.md` 頂註、`hooks/devflow-guard.sh` |
 | 合併後回滾走 `revert -m 1`、禁改寫整合分支歷史 | 人工紀律 —— 事發在 ship 之後,dev-flow hooks 於 `stop` 後全部沉睡,管不到;機械強制屬 git hosting 的 branch protection(各專案自理,建議開) | 本節「合併後出事怎麼辦」 |
 | Exit Checklist 整合回歸(條件式) | 機械 —— 散發工具 `devflow-integration-regression.sh` 算與判(狀態字串+exit code,fail-closed 缺錨點即擋),人只負責照狀態做事(合併/測試由人);行為由母版 `check-integration-regression-guard.sh` 以八情境+五 mutant 釘住 | `_templates/7-review.md` Exit Checklist、`scripts/devflow-integration-regression.sh` |

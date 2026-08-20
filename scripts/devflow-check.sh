@@ -28,6 +28,23 @@ set -uo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT" || exit 1
 
+# devflow:tmpdir-normalize:start
+# 派工單 §2.1:Git Bash 的 /tmp 與 Windows 原生 Python 解讀的 /tmp 不是同一個資料夾。
+# 前者是 C:\Users\<user>\AppData\Local\Temp;後者把開頭的 / 當成「現行磁碟機根目錄
+# 底下的路徑」→ C:\tmp。而 C:\tmp 在多數機器上真的存在,所以 os.path.exists('/tmp')
+# 回 True —— 不會噴「找不到目錄」這種好認的錯,只會安靜地在空目錄裡找不到樣本,
+# 失敗訊息看起來五花八門(期望 0 得 1、期望 2 得 0),根其實是同一個。
+# cygpath -m 產出的 C:/Users/... 兩邊都認得(正斜線 + 磁碟機代號),與 issue #5 的
+# --print-root 同一招。底下所有 mktemp 都吃 ${TMPDIR:-/tmp},所以在此正規化一次
+# 即全涵蓋,不必動每一個落點。無 cygpath 的環境不進這個分支,行為零變化。
+# ⚠️ 本區塊在 hooks/selftest.sh 與 scripts/devflow-check.sh 各有一份**逐字**副本
+#    (兩支都是可獨立執行的入口,誰先跑都要正規化)。兩份必須完全一致,由
+#    test-architecture-guards.sh 的 tmpdir-normalize 對帳釘住 —— 改一邊必改兩邊。
+if command -v cygpath >/dev/null 2>&1; then
+  TMPDIR=$(cygpath -m "${TMPDIR:-/tmp}") && export TMPDIR
+fi
+# devflow:tmpdir-normalize:end
+
 MODE=${1:-all}
 case "$MODE" in
   all|methodology|contracts|architecture|render) ;;
