@@ -49,7 +49,15 @@ while [ $# -gt 0 ]; do
     # (母版在 scripts/ 下,ROOT=repo 根;散發到 docs/dev/tools/ 後 ROOT 會變成
     # docs/dev/,深度不同)。doctor 靠這個探測散發副本的 ROOT 解析有沒有跑掉,
     # 不改 GAUNTLET_VERSION(版本語意是 E 檢查行為,動它會牽動 README §7 對版守衛)。
-    --print-root) echo "$ROOT"; exit 0 ;;
+    # issue #5:Git Bash 的 pwd 印 POSIX 形式(/d/<專案根>/docs/dev),而 doctor 端
+    # 用 Windows 原生 Python 的 os.path.realpath 去解,開頭的 `/` 會被當成「現行
+    # 磁碟機根目錄下的路徑」→ D:\d\<專案根>\docs\dev,比期望值**多一層** \d\,
+    # 於是 gauntlet-root 恆紅。有 cygpath 就先正規化成 Windows 形式再印,與同目錄
+    # history-append.sh(靠 git rev-parse --show-toplevel 取根,本來就印 D:/...)
+    # 的既有輸出對齊;非 Windows 環境沒有 cygpath,原樣印出、行為零變化。
+    --print-root)
+      if command -v cygpath >/dev/null 2>&1; then cygpath -m "$ROOT"; else echo "$ROOT"; fi
+      exit 0 ;;
     --source-sha) [ $# -ge 2 ] || usage_error "$1 缺值"; SOURCE_SHA="$2"; shift 2 ;;
     --require-layer) [ $# -ge 2 ] || usage_error "$1 缺值"; REQUIRE_LAYERS+=("$2"); shift 2 ;;
     --review-file) REVIEW_FILE="1"; shift ;;

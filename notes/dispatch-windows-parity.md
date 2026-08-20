@@ -118,18 +118,78 @@ shebang 機制，必須明確用 `["bash", "<script>"]` 起。
 
 **候選修法**：那一處（及全 repo 同型寫法）改成顯式帶 `bash`。要順手掃一遍有沒有別處同型。
 
-### 2.3 🔴 doctor 組路徑時反斜線被當轉義字元吃掉
+### 2.3 🔴 doctor 兩項紅——**兩個不同成因，兩套修法互不覆蓋**
 
 ```
 ✗ gauntlet-root: 散發副本解析根 D:\d\dev-flow\docs\dev ≠ 受測專案 docs/dev D:\dev-flow\docs\dev
 ✗ gate-consistency: exit 127(bash: line 1: D:dev-flowhooksgate-consistency.sh: command not found)
 ```
 
-第一行的 `D:\d\dev-flow` 少了東西、第二行的 `D:dev-flowhooksgate-consistency.sh`
-整條反斜線消失 —— 典型的「Windows 路徑塞進 shell 字串沒有轉義」。
+⚠️ **本節原本把這兩項寫成同一條「Windows 路徑塞進 shell 字串沒有轉義」，那是錯的**
+（見 issue #5）。只有第二項是轉義問題；第一項既不是「少了東西」、也跟轉義無關——
+整條路徑在傳遞過程中**沒有經過任何 shell**，而且是**多一層**不是少東西。
+照舊版敘述只修轉義，`gauntlet-root` 會照樣紅；doctor 是 fail-closed 的總判定，
+一項紅就整體 INCOMPATIBLE，§5 的驗收條件會直接落空。兩項要分開修。
 
 ⚠️ **這兩條在動工前的版本上一模一樣**（同樣跑 `5d09b71` 的解出副本，同樣兩項紅），
 所以確定是舊帳不是新帳。
+
+#### 2.3a 🔴 `gate-consistency`：Windows 路徑當成一整句命令交給 `bash -c`
+
+`hooks/_doctor_impl.py` 把腳本路徑丟給 `subprocess.run(["bash", "-c", cmd])`。
+`-c` 收到的是**一整句 shell 命令**，路徑裡的 `\` 於是被 shell 當轉義字元吃掉，
+`D:\dev-flow\hooks\gate-consistency.sh` 變成 `D:dev-flowhooksgate-consistency.sh`
+→ command not found（exit 127）。實測對照（同一條路徑）：
+
+| 起法 | exit |
+|---|---|
+| `bash -c "<路徑>"` | 127 |
+| `bash "<路徑>"` | 0 |
+| `bash -c "'<路徑>'"` | 0 |
+
+**修法**：cmd 是實際存在的檔案時直接當參數帶給 `bash`（`["bash", cmd]`），不走 `-c`。
+不能無條件拿掉 `-c` —— `DEVFLOW_GATE_CMD` 允許放非檔案的命令（selftest 就用 `true`），
+那些仍須走 `-c`。要順手掃一遍全 repo 有沒有別處同型。
+
+#### 2.3b 🔴 `gauntlet-root`：POSIX 路徑被 Windows Python 當成磁碟機根目錄下的路徑
+
+**與轉義完全無關**，逐條實測的成因：
+
+1. 證據檢查工具用 `ROOT=$(cd "$(dirname "$0")/.." && pwd)` 算自己的根
+   （`scripts/devflow-evidence-gauntlet.sh`），`--print-root` 直接 `echo "$ROOT"`。
+   Git Bash 上 `pwd` 印的是 POSIX 形式：
+
+   ```
+   devflow-evidence-gauntlet.sh --print-root  →  /d/<專案根>/docs/dev
+   history-append.sh            --print-root  →  D:/<專案根>          ← 這支是綠的
+   ```
+
+2. doctor 拿到字串後用 Windows 原生 Python 的 `os.path.realpath` 解
+   （`hooks/_doctor_impl.py`）。Windows 的 Python 看到開頭的 `/` 會當成
+   「現行磁碟機根目錄下的路徑」：
+
+   ```
+   realpath('/d/<專案根>/docs/dev')  =  D:\d\<專案根>\docs\dev    ← 多出一層 \d\
+   realpath('D:/<專案根>/docs/dev')  =  D:\<專案根>\docs\dev      ← 期望值
+   ```
+
+3. 期望值那一側由 `os.path.realpath(os.path.join(root, "docs", "dev"))` 算，`root` 是
+   Windows 形式 → 兩邊格式不同 → 判不等 → 紅。
+
+`history-append.sh` 同型探針之所以綠，是因為它改用 `git rev-parse --show-toplevel`
+取根，git 在 Git Bash 印出來本來就是 `D:/...` 這種 Windows 形式 —— **現成的正確範例
+就在同一個 tools 目錄裡**。
+
+**修法**：`--print-root` 輸出前正規化成 Windows 形式（有 `cygpath` 就 `cygpath -m "$ROOT"`，
+非 Windows 環境沒有 cygpath 則原樣印出、行為零變化）。正規化放在腳本端而不是 doctor 端，
+是因為 `/d/x` 到底是磁碟機路徑還是真的 POSIX 路徑，只有 cygpath 查得到實際 mount 表，
+在 Python 端猜是憑臆測。**母版與 `docs/dev/tools/` 散發副本兩份都要改。**
+
+⚠️ **分離性佐證**：把不含反斜線的路徑餵給 doctor（把 `DEVFLOW_GATE_CMD` 設成
+plugin 內 `hooks/` 下那支腳本的 POSIX 形式路徑），2.3a 立刻變
+`✓ gate-consistency: exit 0`，而 2.3b **紋風不動仍是紅的**。這就是兩者不同源最直接的
+證據。另外 doctor 只認三個環境變數（`DEVFLOW_CONTRACT` / `DEVFLOW_RUNTIME_CAPS` /
+`DEVFLOW_GATE_CMD`），2.3b 沒有任何覆寫開關可繞。
 
 ### 2.4 🟡 程式寫出的檔案清單帶反斜線（真的是程式行為，不只測試）
 
@@ -172,7 +232,7 @@ rick 明講這句要留給本派工單處理，不要在當輪插隊改。
 |---|---|---|
 | **1** | 修 §2.2（Python 直接執行 `.sh`）| 最小、最獨立，一處寫法問題，修完 `devflow-check.sh` 的 methodology 那組就會動 |
 | **2** | 修 §2.1（兩個 `/tmp`）| 失敗數量最大的一條。修完再量一次 `selftest.sh`，用數字證明有效 |
-| **3** | 修 §2.3（doctor 組路徑）| 前兩步修完才看得清 doctor 還剩什麼紅 |
+| **3** | 修 §2.3a（`bash -c` 轉義）與 §2.3b（`--print-root` 路徑形式）| 前兩步修完才看得清 doctor 還剩什麼紅。**兩條要分開修，任一條沒修 doctor 就仍 INCOMPATIBLE** |
 | **4** | 補測 §2.4（反斜線 scope 有沒有實害）| **先測再決定要不要改** —— 沒有實害就只加註解，有實害才動程式 |
 | **5** | 全綠之後回頭處理 §3 那句 README | 要先知道修完長什麼樣，才寫得出不過期的措辭 |
 

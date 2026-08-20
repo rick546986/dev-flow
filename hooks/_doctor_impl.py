@@ -307,8 +307,14 @@ def run_doctor(root, contract_path="", gate_cmd=""):
     # 7. gate-consistency 實跑
     cmd = gate_cmd or os.environ.get("DEVFLOW_GATE_CMD") \
         or os.path.join(HERE, "gate-consistency.sh")
+    # issue #5:cmd 是實際存在的腳本檔時直接當參數帶給 bash,不要走 `bash -c`——
+    # Windows 路徑(D:\dev-flow\hooks\gate-consistency.sh)交給 -c 會被當成一整句
+    # 命令,反斜線被 shell 當轉義字元吃掉 → `D:dev-flowhooksgate-consistency.sh:
+    # command not found`(exit 127)。非檔案(例:selftest 用的 `true`、帶參數的
+    # 自訂命令)照舊走 -c,保持既有語意。
+    argv = ["bash", cmd] if os.path.isfile(cmd) else ["bash", "-c", cmd]
     try:
-        r = subprocess.run(["bash", "-c", cmd], capture_output=True,
+        r = subprocess.run(argv, capture_output=True,
                            text=True, timeout=120)
         tail = (r.stdout or r.stderr).strip().splitlines()[-1:] or [""]
         check(r.returncode == 0, "gate-consistency",

@@ -327,6 +327,10 @@ if cmd == "start":
         warn_wide(scope)
         baseline = dirty_scan_and_baseline(slug, scope, extra_skip_shared=True)
         gi = arm_common(scope)
+        # issue #3:.gitignore 是守衛無條件釘入的固定成員(防有人事後改它讓
+        # 檔案脫離守衛視線),不是「開跑前既有髒檔」。對外印的計數必須在釘入
+        # **之前**取,否則乾淨工作樹永遠印不出 0。
+        dirty_n = len(baseline)
         baseline[".gitignore"] = L.sha(gi)
         contract = L.protected_contract_hashes(root)
         # exec-v4(§7 前置修復,notes/dispatch-agent-dispatch-layer.md 裁決 8/9):
@@ -349,7 +353,7 @@ if cmd == "start":
         print(f"scope({len(scope)} 項):")
         for s in sorted(scope):
             print("  " + s)
-        print(f"契約 hash 已釘住 {len(contract)} 檔;baseline 記錄 {len(baseline)} 個 scope 內既有髒檔(含內容 hash)")
+        print(f"契約 hash 已釘住 {len(contract)} 檔;baseline 記錄 {dirty_n} 個既有髒檔(含內容 hash)")
         print(f"run_id={run_id}")
         print("恆許:本 slug 的 5-tasks / 6-implementation-notes;收尾或 L2 → devflow-exec.sh stop")
         sys.exit(0)
@@ -367,6 +371,10 @@ if cmd == "start":
         warn_wide(scope)
         baseline = dirty_scan_and_baseline(slug, scope, extra_skip_shared=True)
         gi = arm_common(scope)
+        # issue #3:.gitignore 是守衛無條件釘入的固定成員(防有人事後改它讓
+        # 檔案脫離守衛視線),不是「開跑前既有髒檔」。對外印的計數必須在釘入
+        # **之前**取,否則乾淨工作樹永遠印不出 0。
+        dirty_n = len(baseline)
         baseline[".gitignore"] = L.sha(gi)
         contract = L.protected_contract_hashes(root)
         # exec-v4 + run_id:同上一段 legacy sequential 的理由(§7 前置修復)——
@@ -391,7 +399,7 @@ if cmd == "start":
         if parsed["execution"]["mode"] == "parallel":
             print("ℹ️  execution.mode=parallel:本次為 feature-scope(v1)武裝;"
                   "wave 派工請在各 task worktree 用 start <slug> --task T-n")
-        print(f"契約 hash 已釘住 {len(contract)} 檔;baseline 記錄 {len(baseline)} 個 scope 內既有髒檔(含內容 hash)")
+        print(f"契約 hash 已釘住 {len(contract)} 檔;baseline 記錄 {dirty_n} 個既有髒檔(含內容 hash)")
         print("恆許:本 slug 的 5-tasks / 6-implementation-notes;收尾或 L2 → devflow-exec.sh stop")
         sys.exit(0)
 
@@ -409,6 +417,10 @@ if cmd == "start":
         die(f"⛔ 拒絕啟動:--base {base_flag} 與本 worktree HEAD {wave_base} 不符 —— "
             f"task worktree 必須建立在該 wave 的 wave_base_sha 上(同 Wave 同 Base)。")
     gi = arm_common(scope)
+    # issue #3:.gitignore 是守衛無條件釘入的固定成員(防有人事後改它讓
+    # 檔案脫離守衛視線),不是「開跑前既有髒檔」。對外印的計數必須在釘入
+    # **之前**取,否則乾淨工作樹永遠印不出 0。
+    dirty_n = len(baseline)
     baseline[".gitignore"] = L.sha(gi)
     contract = L.protected_contract_hashes(root)
     run_id = L.new_run_id()
@@ -439,7 +451,7 @@ if cmd == "start":
     for s in sorted(scope):
         print("  " + s)
     print(f"wave={wave_no} wave_base={wave_base} run_id={run_id}")
-    print(f"契約 hash 已釘住 {len(contract)} 檔;baseline 記錄 {len(baseline)} 個 scope 內既有髒檔(含內容 hash)")
+    print(f"契約 hash 已釘住 {len(contract)} 檔;baseline 記錄 {dirty_n} 個既有髒檔(含內容 hash)")
     print(f"恆許:.devflow/task/{task}/(evidence 專區);5-tasks/6-notes 已移出恆許"
           f"(單寫者=派工者);收尾 → devflow-exec.sh stop")
 
@@ -997,6 +1009,10 @@ elif cmd == "review":
                     continue
                 baseline[_rel] = L.sha(os.path.join(root, _rel))
             gi = arm_common([])
+            # issue #3:.gitignore 是守衛無條件釘入的固定成員(防有人事後改它讓
+            # 檔案脫離守衛視線),不是「開跑前既有髒檔」。對外印的計數必須在釘入
+            # **之前**取,否則乾淨工作樹永遠印不出 0。
+            dirty_n = len(baseline)
             baseline[".gitignore"] = L.sha(gi)
             contract = L.protected_contract_hashes(root)
             # exec-v4 + run_id:同兩處 sequential 武裝同一理由(§7 前置修復)——
@@ -1014,7 +1030,7 @@ elif cmd == "review":
             open(SENT, "w").write(slug + "\n")
             L.update_shadow(root)
             print(f"✅ Stage 7 review 圍欄已武裝:{slug}(事後補審 —— 無 Stage 6 state,"
-                  f"自建最小 exec.json;baseline 記錄 {len(baseline)} 個既有髒檔)")
+                  f"自建最小 exec.json;baseline 記錄 {dirty_n} 個既有髒檔)")
         print(f"Read {feat_disp}6-implementation-notes.md 現在禁讀(7-review.md 步 4 才解鎖);"
               f"Write/Edit 限縮到 {feat_disp}7-review* 與 {feat_disp}evidence/。")
         sys.exit(0)
