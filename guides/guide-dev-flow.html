@@ -2346,6 +2346,15 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <tr><td><code>test_cli.py</code></td>
         <td>對 CLI 做端對端煙霧測試,含「沒有 init 子指令」這條。</td>
         <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_provenance.py</code></td>
+        <td>驗證 remote URL 的憑證、本機路徑、UNC、query/fragment 一律不會被寫進版本控制的專案身分檔。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_workspace_status.py</code></td>
+        <td>驗證 git 狀態解析(含改名/複製兩端路徑、含空白與中文的檔名),以及改名之後依賴舊路徑的事實會失效。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_status_contract.py</code></td>
+        <td>驗證查詢狀態四態的契約:已失效或有衝突的現況一律不得回報成 OK,含 CLI 輸出。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>memory/fixtures/</code>(整包,fixtures 目錄豁免)</td>
         <td>評測用的固定資料集,以及舊詞彙表格式的凍結樣本。</td>
         <td>被 <code>evalharness.py</code> 與 <code>test_setup_legacy.py</code> 讀取</td><td>人工/CI(不在生命週期上)</td></tr>

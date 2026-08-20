@@ -133,8 +133,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=76
-EXPECTED_TOTAL=90
+EXPECTED_NEGATIVES=78
+EXPECTED_TOTAL=92
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -1465,6 +1465,8 @@ expect_local_arg fail check-model-tiering.sh "$D" "$D/external-runs" "MT-2 把 b
 #   MEM-4 CLI 長出 init 子指令(第二個安裝器)
 #   MEM-5 把帶內容的線索「怎麼部署」塞進剝除清單(「怎麼部署?」從此查不到)
 #   MEM-6 評測資料集把中文題全部拿掉(中文檢索退步不會現形)
+#   MEM-7 契約檔拿掉 NEEDS_VERIFICATION(STALE 又能以 OK 蒙混)
+#   MEM-8 拿掉 status 嚴重度排序(多筆結果無法收斂成最嚴重的)
 D=$(seed_mem mem0)
 expect_local pass check-memory-architecture.sh "$D" "MEM-0 對照組(memory 架構不變量齊)"
 
@@ -1534,6 +1536,28 @@ assert d["cases"], "MEM-6 mutation 把案例清空了"
 p.write_text(json.dumps(d, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 PY
 expect_local fail check-memory-architecture.sh "$D" "MEM-6 評測資料集拿掉中文題(中文檢索退步不會現形)"
+
+D=$(seed_mem mem7); mutate "$D" <<'PY'
+import json, sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "devflow-contract.json"
+d = json.loads(p.read_text(encoding="utf-8"))
+values = d["memory"]["retrieval_status_values"]
+assert "NEEDS_VERIFICATION" in values, "MEM-7 anchor 不見"
+d["memory"]["retrieval_status_values"] = [v for v in values
+                                          if v != "NEEDS_VERIFICATION"]
+p.write_text(json.dumps(d, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+PY
+expect_local fail check-memory-architecture.sh "$D" "MEM-7 契約檔拿掉 NEEDS_VERIFICATION(STALE 又能以 OK 蒙混)"
+
+D=$(seed_mem mem8); mutate "$D" <<'PY'
+import re, sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/query.py"
+t = p.read_text(encoding="utf-8")
+n = re.sub(r"^_SEVERITY\s*=\s*\{", "_SEVERITY_DISABLED = {", t, count=1, flags=re.M)
+assert n != t, "MEM-8 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-memory-architecture.sh "$D" "MEM-8 拿掉 status 嚴重度排序(多筆結果無法收斂成最嚴重的)"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
@@ -1645,7 +1669,7 @@ check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 15" "MIN_
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 138" "MIN_CHECKS 釘死 138(X-3 補群組數釘之後的實得數)"
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 41" "MIN_CHECKS 釘死 41(反證輪 E-1:再加 M-f~M-h 五個(mutant,子案)配對後的實得數)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 32" "MIN_CHECKS 釘死 32(commit-landing 輪 F-1-e:POINTS 補「窗口最短」+ 負向⑱⑲ 兩份頂註各一後的實得數)"
-check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 124" "EXPECTED_MAPPED_FILES 釘死 124(精確值,不是地板;2026-08-20 memory/ 納入掃描後的實得數)"
+check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 127" "EXPECTED_MAPPED_FILES 釘死 127(精確值,不是地板;2026-08-20 memory/ 納入掃描後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 24" "EXPECTED_GROUPS 釘死 24(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的

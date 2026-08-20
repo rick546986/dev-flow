@@ -39,10 +39,11 @@ class ProjectIdTest(MemoryCase):
         # remote 只能當 provenance:第一次建立時記下,但改 remote 不影響 identity
         self.assertNotIn("origin_provenance", after)
 
-    def test_remote_recorded_as_provenance_only(self):
+    def test_remote_recorded_as_sanitized_provenance_only(self):
+        """provenance 一律先過 sanitize:`git@` 的 user 部分不留(P1-5)。"""
         git(self.repo, "remote", "add", "origin", "git@example.invalid:a/b.git")
         data = identity.ensure_project(self.repo, name="demo")[0]
-        self.assertEqual(data["origin_provenance"], "git@example.invalid:a/b.git")
+        self.assertEqual(data["origin_provenance"], "example.invalid/a/b.git")
         self.assertTrue(ids.is_valid_id("project", data["project_id"]))
         self.assertNotIn("b", data["project_id"])
 

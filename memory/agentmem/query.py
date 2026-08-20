@@ -19,6 +19,43 @@ import re
 
 from . import cues, retrieval, textnorm, truth
 
+# ── retrieval status contract(P0-4)──────────────────────────────────────────
+# 上層 agent 很容易只看 `retrieval_status` 這一個欄位。所以「其實還沒驗證」
+# 必須是一個**狀態**,不能是塞在 uncertainty 裡的一句註解 —— 註解不會被程式讀。
+#
+#   OK                  已驗證且證據仍成立
+#   NEEDS_VERIFICATION  有記憶,但當前 checkout 下還沒驗證過(STALE/未驗/只有旁證)
+#   CONFLICT            兩份證據互相矛盾 —— 不挑邊,也不算 OK
+#   NO_RELIABLE_MATCH   沒有可信命中(不是「比較差的 OK」)
+NEEDS_VERIFICATION = "NEEDS_VERIFICATION"
+CONFLICT = "CONFLICT"
+
+RETRIEVAL_STATUSES = (retrieval.OK, NEEDS_VERIFICATION, CONFLICT,
+                      retrieval.NO_RELIABLE_MATCH)
+
+# 多筆結果取**最嚴重**的那個:一筆 STALE 就足以讓整體不是 OK。
+# NO_RELIABLE_MATCH 不參與這個排序 —— 它是「沒有東西可以升級」的終態,
+# 只有在完全沒有命中時才會被選中(見 _overall_status)。
+_SEVERITY = {retrieval.OK: 0, NEEDS_VERIFICATION: 1, CONFLICT: 2}
+
+
+def severity(status):
+    """回傳狀態的嚴重度;未知狀態 fail-loud(不默默當成 OK)。"""
+    if status not in _SEVERITY:
+        raise ValueError(
+            "未知的 retrieval status:{0!r}(合法值 {1})".format(
+                status, sorted(_SEVERITY)))
+    return _SEVERITY[status]
+
+
+def _overall_status(statuses, has_any_evidence):
+    """把多筆狀態收斂成一個;沒有任何證據時才是 NO_RELIABLE_MATCH。"""
+    escalatable = [s for s in statuses if s in _SEVERITY]
+    if escalatable:
+        return max(escalatable, key=severity)
+    return retrieval.OK if has_any_evidence else retrieval.NO_RELIABLE_MATCH
+
+
 CURRENT = "CURRENT"
 HISTORY = "HISTORY"
 WHY = "WHY"
@@ -163,8 +200,13 @@ def _current(store, repo_root, plan_dict, workspace_id, snapshot, embedder,
                                        fact_key, workspace_id, snapshot)
         resolved.append(dict(result, entity_type=entity_type,
                              entity_key=entity_key, fact_key=fact_key))
+    # 每一筆 fact 的狀態各自映射成 contract 狀態,再取最嚴重的。
+    # **不是**「有 resolved 就 OK」—— 舊實作那樣做,STALE 會以 OK 回給 agent。
+    per_fact = [_fact_status(r) for r in resolved]
     fast = [r for r in resolved if r["fast_path"]]
-    if fast:
+    overall = _overall_status(per_fact, has_any_evidence=bool(resolved))
+
+    if overall == retrieval.OK and fast:
         best = max(fast, key=lambda r: r["confidence"])
         return _envelope(
             plan_dict, retrieval.OK,
@@ -178,16 +220,29 @@ def _current(store, repo_root, plan_dict, workspace_id, snapshot, embedder,
 
     needs = [r for r in resolved if r["needs_inspect"]]
     found = _search(store, plan_dict, embedder, limit, branch=branch)
-    uncertainty = _uncertain(found["results"])
+    uncertainty = []
     for record in needs:
         uncertainty.append(
             "{0}.{1}.{2} 目前是 {3}:{4}".format(
                 record["entity_type"], record["entity_key"], record["fact_key"],
                 record["status"], "; ".join(record["reasons"])))
-    status = retrieval.OK if (found["results"] or resolved) else \
-        retrieval.NO_RELIABLE_MATCH
+
+    if resolved:
+        status = overall
+    elif found["results"]:
+        # 有旁證但沒有任何已驗證的 current fact:證據照回,但**不能宣稱 OK**。
+        # 「檢索撈得到相關文字」與「這就是現在的值」是兩件事。
+        status = NEEDS_VERIFICATION
+        uncertainty.append(
+            "找到相關記憶,但沒有任何已驗證的 current fact —— "
+            "要回答現況必須先 inspect 當前原始碼並 verify")
+    else:
+        status = retrieval.NO_RELIABLE_MATCH
+        uncertainty.extend(_uncertain([]))
+
     confidence = 0.0
     if resolved:
+        # 未驗證的答案不得帶高信心:值可能還在,但「它是現況」這件事沒被證實。
         confidence = max(r["confidence"] for r in resolved) * 0.5
     elif found["results"]:
         confidence = min(0.6, found["results"][0]["score"] * 10)
@@ -197,6 +252,17 @@ def _current(store, repo_root, plan_dict, workspace_id, snapshot, embedder,
                             "needs_inspect": bool(needs),
                             "latency_ms": found["latency_ms"],
                             "channels_active": found["channels_active"]})
+
+
+def _fact_status(resolved):
+    """單筆 LVP 結果 → contract 狀態。"""
+    if resolved["status"] == truth.CONFLICT:
+        return CONFLICT
+    if resolved["fast_path"]:
+        return retrieval.OK
+    # STALE / CANDIDATE / UNKNOWN 一律是「還沒驗證」——
+    # 舊值可能還在,但沒有人證實它現在仍成立。
+    return NEEDS_VERIFICATION
 
 
 def _fact_targets(store, plan_dict):
@@ -231,8 +297,10 @@ def _domain(store, plan_dict, embedder, limit):
         if row is None or row["kind"] == "intent":
             continue
         records.append(_knowledge_payload(row, hit))
-    status = retrieval.OK if records else retrieval.NO_RELIABLE_MATCH
     conflicts = [r for r in records if r["status"] == truth.CONFLICT]
+    status = _overall_status(
+        [CONFLICT if r["status"] == truth.CONFLICT else retrieval.OK
+         for r in records], has_any_evidence=bool(records))
     uncertainty = _uncertain(records)
     for record in conflicts:
         uncertainty.append(
@@ -256,7 +324,9 @@ def _intent(store, plan_dict, embedder, limit):
         payload["implementation_state"] = (
             "implemented" if row["implemented"] else "planned")
         records.append(payload)
-    status = retrieval.OK if records else retrieval.NO_RELIABLE_MATCH
+    status = _overall_status(
+        [CONFLICT if r["status"] == truth.CONFLICT else retrieval.OK
+         for r in records], has_any_evidence=bool(records))
     uncertainty = _uncertain(records)
     planned = [r for r in records if r["implementation_state"] == "planned"]
     if planned:

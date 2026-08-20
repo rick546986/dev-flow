@@ -13,6 +13,7 @@
 #   ⑥意圖分類用的線索詞與相關性計算用的框架詞是**兩份**,且帶內容的線索
 #     (怎麼部署)不得進剝除清單(進了會讓「怎麼部署?」查不到 deploy 流程)
 #   ⑦契約/能力宣告與程式碼裡的常數必須同值
+#   ⑦b retrieval status 契約(四態)在程式碼 / 契約檔 / README 三處同值
 #   ⑧評測資料集必須涵蓋六種問句意圖與三種語言(中/英/混合)
 #
 # 這八條每一條都對應一個真實的失敗模式,而且都是「壞掉之後所有既有檢查照樣全綠」
@@ -245,6 +246,45 @@ if memory_contract.get("setup_entry") != "dev-setup":
 else:
     ok("contract.memory.setup_entry = dev-setup")
 
+# ── ⑦b retrieval status 契約:程式碼 / 契約檔 / README 三處同值 ────────────
+# 這一條防的是「狀態在程式碼裡改了,契約檔與 README 沒跟上」——
+# 外部 runtime 照契約檔實作,對不上的狀態會被當成未知值處理。
+query_src = read("memory/agentmem/query.py")
+declared = re.search(r"RETRIEVAL_STATUSES\s*=\s*\(([^)]*)\)", query_src, re.S)
+if not declared:
+    print("FATAL: query.py 抽不到 RETRIEVAL_STATUSES", file=sys.stderr)
+    sys.exit(2)
+# 元素是識別字(`retrieval.OK` / `NEEDS_VERIFICATION`),不是字面字串 ——
+# 抓引號會抓到零個而讓這條檢查靜默失效,所以抓識別字並剝掉模組前綴。
+code_statuses = {name.split(".")[-1]
+                 for name in re.findall(r"[A-Za-z_][A-Za-z0-9_.]*",
+                                        declared.group(1))}
+contract_statuses = set(memory_contract.get("retrieval_status_values") or [])
+expected_statuses = {"OK", "NEEDS_VERIFICATION", "CONFLICT", "NO_RELIABLE_MATCH"}
+if contract_statuses != expected_statuses:
+    bad("contract.retrieval_status_values",
+        "契約寫 {0},預期 {1}".format(sorted(contract_statuses),
+                                     sorted(expected_statuses)))
+else:
+    ok("contract.retrieval_status_values 四態齊")
+if code_statuses != expected_statuses:
+    bad("query.RETRIEVAL_STATUSES",
+        "程式碼寫 {0},預期 {1}".format(sorted(code_statuses),
+                                       sorted(expected_statuses)))
+else:
+    ok("query.RETRIEVAL_STATUSES 與契約同值")
+readme = read("README.md")
+missing_doc = [s for s in sorted(expected_statuses) if s not in readme]
+if missing_doc:
+    bad("README status 契約", "README 沒說明 {0}".format(missing_doc))
+else:
+    ok("README 說明了四個 retrieval status")
+# 嚴重度排序必須存在且方向正確(STALE 不得被當成 OK 的同級)
+if not re.search(r"_SEVERITY\s*=\s*\{", query_src):
+    bad("status 嚴重度", "query.py 沒有 _SEVERITY —— 多筆結果無法收斂成最嚴重的那個")
+else:
+    ok("query.py 有 status 嚴重度排序")
+
 # ── ⑧評測資料集覆蓋面 ─────────────────────────────────────────────────────
 dataset = json.loads(read("memory/fixtures/eval/dataset.json"))
 languages = {case.get("language") for case in dataset["cases"]}
@@ -273,7 +313,7 @@ for name in ("stale_hit_rate", "wrong_branch_rate", "no_hit_precision"):
     else:
         ok("評測門檻含 {0}={1}".format(name, thresholds[name]))
 
-MIN_CHECKS = 24
+MIN_CHECKS = 28
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)

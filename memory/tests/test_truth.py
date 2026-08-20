@@ -69,8 +69,12 @@ class LvpTest(MemoryCase):
         overlay = self.store.overlay(self.fact_id, self.workspace)
         self.assertEqual(overlay["status"], truth.STALE)
 
-    def test_dirty_workspace_alone_is_enough_to_go_stale(self):
-        """§26:工作樹有未提交改動就不能拿 main 的 verified 當當前答案。"""
+    def test_uncommitted_dependency_change_goes_stale(self):
+        """§26:工作樹有未提交改動就不能拿 main 的 verified 當當前答案。
+
+        誠實說明本案實際咬住的是**指紋**那條(未提交的改動讓內容與驗證時不同)。
+        「dirty 但指紋相符」與「dirty 且無指紋可比」兩種分工由
+        test_workspace_status.DirtyVersusFingerprintTest 分開釘。"""
         write(self.repo, "package.json", '{"name":"demo","version":"2"}\n')
         result = self.resolve()
         self.assertEqual(result["status"], truth.STALE)

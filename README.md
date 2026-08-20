@@ -996,9 +996,22 @@ main 的 VERIFIED 不會被當成當前 workspace 的答案**。
 embedding / entity),不是單通道 top-k,也不混原始分數。中文、英文、中英混合、
 code symbol、表名、檔案路徑都查得到。
 
-**查不到就回 `NO_RELIABLE_MATCH`** —— 那是合法答案。不會因為 FTS 掃到一筆低分
-記憶就拿它當答案。每個回答一律帶 `retrieval_status` / `confidence` / `evidence` /
-`uncertainty` 四件。
+每個回答一律帶 `retrieval_status` / `confidence` / `evidence` / `uncertainty` 四件。
+
+**`retrieval_status` 契約(四態)**——上層 agent 通常只讀這一個欄位,所以
+「其實還沒驗證」必須是**狀態**,不能是塞在 `uncertainty` 裡的一句註解:
+
+| 狀態 | 什麼時候回 |
+|---|---|
+| `OK` | fact 已 VERIFIED **且**依賴指紋在當前 checkout 下仍相符(fast path);其他意圖層則是有可信命中且無衝突 |
+| `NEEDS_VERIFICATION` | fact 原本 VERIFIED,但依賴改了 / 指紋不符 / 依賴被刪或改名;或只有旁證而沒有任何已驗證的 current fact。**舊值仍會回傳,但狀態不是 OK**,要 `verify` 成功才回 `OK` |
+| `CONFLICT` | 兩份證據互相矛盾(fact 為 CONFLICT,或 domain 與 code 對不上)。不挑邊 |
+| `NO_RELIABLE_MATCH` | 完全沒有可信命中。**這是合法答案** —— 不會因為 FTS 掃到一筆低分記憶就拿它當答案 |
+
+多筆結果取**最嚴重**的:`CONFLICT` > `NEEDS_VERIFICATION` > `OK`。
+一筆 STALE 就足以讓整體不是 `OK`。`NO_RELIABLE_MATCH` 不參與這個排序 ——
+它是「沒有東西可以升級」的終態。契約值同時登記在
+`devflow-contract.json` 的 `memory.retrieval_status_values`。
 
 ### 16.6 startup context 很小
 

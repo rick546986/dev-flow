@@ -171,11 +171,17 @@ def invalidate_from_snapshot(store, repo_root, workspace_id, snapshot, now=None)
     dirty 檔與指紋兩條都要看:branch 切換後檔案內容變了但工作樹是乾淨的
     (指紋抓得到、dirty 抓不到);剛編輯還沒 commit 則反之。
     """
-    changed = set(snapshot.get("dirty_files") or ())
+    dirty = set(snapshot.get("dirty_files") or ())
+    changed = set()
     for fact in store.facts(statuses=(VERIFIED,), limit=5000):
         stored = json.loads(fact["fingerprints_json"])
         for dep, expected in stored.items():
             if fingerprint(repo_root, dep) != expected:
+                changed.add(dep)
+        # 與 resolve_current 同一條規則:dirty 只對沒有指紋的依賴有意義
+        # (兩處判準不一致的話,查詢說 VERIFIED、掃描說 STALE,誰對?)
+        for dep in json.loads(fact["dependencies_json"]):
+            if dep not in stored and dep in dirty:
                 changed.add(dep)
     return invalidate_for_changes(store, workspace_id, changed, now=now)
 
@@ -231,13 +237,26 @@ def resolve_current(store, repo_root, entity_type, entity_key, fact_key,
     # VERIFIED:驗指紋(這是 fast path 的門票)
     changed = [dep for dep, expected in sorted(stored.items())
                if fingerprint(repo_root, dep) != expected]
-    dirty = sorted(set(deps) & set((snapshot or {}).get("dirty_files") or ()))
+    # 工作樹 dirty 只對**沒有指紋**的依賴有意義。
+    #
+    # 為什麼不是「dirty 就一律 STALE」:指紋記的是「我們驗證時看到的內容」。
+    # 內容仍與指紋相符 = 我們驗證過的就是現在這份,那筆 fact 現在就是真的 ——
+    # 它有沒有被 commit 與它是不是真的無關。若讓 dirty 無條件覆蓋相符的指紋,
+    # 重新驗證過的 fact 會永遠停在 STALE(reverify 之後再問還是 STALE),
+    # 而開發中的工作樹幾乎永遠是 dirty,fast path 就等於不存在。
+    #
+    # dirty 的價值在於**指紋缺席時的第二道**:沒有指紋可比的依賴,dirty 是唯一
+    # 能察覺「這個檔跟 HEAD 不一樣」的訊號,那種 fact 不得走 fast path。
+    unfingerprinted = [dep for dep in deps if dep not in stored]
+    dirty = sorted(set(unfingerprinted)
+                   & set((snapshot or {}).get("dirty_files") or ()))
     if changed or dirty:
         reason_parts = []
         if changed:
             reason_parts.append("指紋不符:{0}".format(", ".join(changed)))
         if dirty:
-            reason_parts.append("工作樹未提交改動:{0}".format(", ".join(dirty)))
+            reason_parts.append(
+                "工作樹未提交改動且無指紋可比:{0}".format(", ".join(dirty)))
         reason = ";".join(reason_parts)
         store.set_overlay(fact["fact_id"], workspace_id, STALE, reason,
                           changed_paths=sorted(set(changed) | set(dirty)))

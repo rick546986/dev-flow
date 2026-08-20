@@ -91,6 +91,13 @@
   "local_home_default": "~/.agentmem/projects/<project_id>/",
   "entry_point": "memory/dev-memory.py",
   "setup_entry": "dev-setup",
-  "note": "durable(進 Git)只收結構化高訊號記憶;SQLite/embedding/原始逐字稿一律只住 local。project identity 為 ULID,path-independent、不依賴 remote。memory 刻意不列入 required_runtime_capabilities —— 它不依賴 exec runtime,列入只會讓「新契約 + 舊 runtime」被誤判 INCOMPATIBLE。"
+  "note": "durable(進 Git)只收結構化高訊號記憶;SQLite/embedding/原始逐字稿一律只住 local。project identity 為 ULID,path-independent、不依賴 remote。memory 刻意不列入 required_runtime_capabilities —— 它不依賴 exec runtime,列入只會讓「新契約 + 舊 runtime」被誤判 INCOMPATIBLE。",
+  "retrieval_status_values": [
+   "OK",
+   "NEEDS_VERIFICATION",
+   "CONFLICT",
+   "NO_RELIABLE_MATCH"
+  ],
+  "retrieval_status_note": "CURRENT 查詢的狀態契約(嚴重度 CONFLICT > NEEDS_VERIFICATION > OK;完全沒有可信命中才是 NO_RELIABLE_MATCH)。STALE / 未驗證的 fact 一律回 NEEDS_VERIFICATION,不得以 OK + 提示文字帶過 —— 上層 agent 只會讀狀態欄。"
  }
 }

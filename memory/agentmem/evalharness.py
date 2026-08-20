@@ -15,6 +15,7 @@ in-memory store + 暫存檔案樹**裡跑,所以同一份 dataset 每次跑結�
   stale_hit_rate          **已失效的值被當成當前真相回答的比例(愈低愈好)**
   wrong_branch_rate       回了不屬於當前 branch 的記憶的比例(愈低愈好)
   no_hit_precision        該回 NO_RELIABLE_MATCH 時真的回了的比例(愈高愈好)
+  status_accuracy         retrieval_status 與期望相符的比例(愈高愈好;P0-4 契約)
   evidence_coverage       有答案的題目裡帶得出證據的比例(愈高愈好)
   context_size            startup context 字元數(愈小愈好,有上限)
   retrieval_latency_ms    平均延遲
@@ -141,6 +142,7 @@ def _score(dataset, store, root, workspace_id, snapshot, refs=None):
     stale_served = stale_total = 0
     wrong_branch = branch_total = 0
     nohit_hits = nohit_total = 0
+    status_hits = status_total = 0
     evidence_hits = evidence_total = 0
     latencies = []
 
@@ -153,6 +155,8 @@ def _score(dataset, store, root, workspace_id, snapshot, refs=None):
                   "language": case.get("language", "en"),
                   "expect_kind": case.get("expect_kind"),
                   "got_kind": answer["primary_intent"],
+                  "expect_status": case.get("expect_status"),
+                  "got_status": answer["retrieval_status"],
                   "status": answer["retrieval_status"], "problems": []}
 
         if case.get("expect_kind") and \
@@ -197,7 +201,20 @@ def _score(dataset, store, root, workspace_id, snapshot, refs=None):
                 wrong_branch += 1
                 record["problems"].append("回了不屬於當前 branch 的記憶")
 
-        if case.get("expect_status") == retrieval.NO_RELIABLE_MATCH:
+        expected_status = case.get("expect_status")
+        if expected_status:
+            if expected_status not in query.RETRIEVAL_STATUSES:
+                record["problems"].append(
+                    "dataset 寫了不存在的 status:{0}".format(expected_status))
+            status_total += 1
+            if answer["retrieval_status"] == expected_status:
+                status_hits += 1
+            else:
+                record["problems"].append(
+                    "status 期望 {0} 實得 {1}".format(
+                        expected_status, answer["retrieval_status"]))
+
+        if expected_status == retrieval.NO_RELIABLE_MATCH:
             nohit_total += 1
             if answer["retrieval_status"] == retrieval.NO_RELIABLE_MATCH:
                 nohit_hits += 1
@@ -225,6 +242,7 @@ def _score(dataset, store, root, workspace_id, snapshot, refs=None):
         "stale_hit_rate": _ratio(stale_served, stale_total, default=0.0),
         "wrong_branch_rate": _ratio(wrong_branch, branch_total, default=0.0),
         "no_hit_precision": _ratio(nohit_hits, nohit_total),
+        "status_accuracy": _ratio(status_hits, status_total),
         "evidence_coverage": _ratio(evidence_hits, evidence_total),
         "context_size": built["size"],
         "retrieval_latency_ms": round(
