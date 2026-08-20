@@ -24,13 +24,16 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # s7b VNext feature-scope(非 --task)同型驗證(schema+run_id 真寫出/首派最高階
 # 擋下 共 2 案)→ 378+8 = 386;同日 s7c Stage 7 review 事後補審自建武裝(第三個
 # exec.json 寫點,前兩組都沒驗過的分支)同型驗證(schema+run_id 真寫出/首派最高階
-# 擋下/已有低階攔升階放行 共 3 案)→ 386+3 = 389)——新增案例時同步 +;絕不
-# 「大概抓個下限」。
+# 擋下/已有低階攔升階放行 共 3 案)→ 386+3 = 389;同日 §7-3b 探針 pst 真實
+# subagent_type payload 形狀釘住 +3 → 392;2026-08-20 issue #7 路徑分隔符 w1 組 +6
+# (canonical_scope_path 反斜線檔案項/目錄項/traversal、in_pool 對舊 exec.json 的
+# 反斜線 scope、反斜線寫法走完整 guard 的圍欄②與 6-notes 恆許)→ 398)
+# ——新增案例時同步 +;絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=392
+MIN_CASES=398
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -260,6 +263,48 @@ ck "放行 scope 內(檔)"        0 "$(g Write src/a.py)"
 ck "放行 scope 內(目錄前綴)"  0 "$(g Write src/lib/deep/x.py)"
 ck "放行 6-notes"              0 "$(g Write docs/dev/f1/6-implementation-notes.md)"
 ck "擋 scope 外"               2 "$(g Write src/other.py)"
+
+echo "-- w1 路徑分隔符一律正斜線(issue #7:Windows 上 scope 比對全面失準)--"
+# 成因:normpath/relpath 在 Windows 吐反斜線,git porcelain 一律正斜線,守衛逐字
+# 比對永不命中 → Stage 6 開不了工、圍欄②整條靜默失效。修法(devflow-lib.to_posix)
+# **刻意不看平台**,所以在 Mac 上直接餵反斜線就能釘住 Windows 的行為 —— 以下六案
+# 在修法前於 Mac 上就是紅的,不需要 Windows 才驗得到。
+# 檔案落在 $C(非 git repo)而不是 $T:$T 是假 repo,多一個未追蹤檔會污染後面的
+# 髒樹掃描與 postbash 偵測網案例。
+cat > "$C/w1.py" <<'PY'
+import sys
+from importlib.machinery import SourceFileLoader
+L = SourceFileLoader("devflow_lib", sys.argv[1]).load_module()
+case = sys.argv[2]
+if case == "scope-file":
+    got = L.canonical_scope_path("src\\a.py")
+    assert got == "src/a.py", got
+elif case == "scope-dir":
+    got = L.canonical_scope_path("src\\lib\\")
+    assert got == "src/lib/", got
+elif case == "traversal":
+    try:
+        got = L.canonical_scope_path("..\\evil")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("..\\evil 未被擋,得 " + got)
+elif case == "legacy-pool":
+    assert L.in_pool("src/a.py", {"scope": ["src\\a.py"], "extra": []})
+else:
+    raise SystemExit("unknown case: " + case)
+PY
+w1() { "$DEVFLOW_PY" "$C/w1.py" "$H/devflow-lib.py" "$1" >/dev/null 2>&1; echo $?; }
+ck "w1 canonical_scope_path 反斜線檔案項 → 正斜線" 0 "$(w1 scope-file)"
+ck "w1 canonical_scope_path 反斜線目錄項 → 正斜線且留尾斜線" 0 "$(w1 scope-dir)"
+ck "w1 反斜線 traversal 要擋(修法前 split(/) 切不出 .. 而漏放)" 0 "$(w1 traversal)"
+ck "w1 in_pool 對舊 exec.json 的反斜線 scope 仍命中(升級免重新武裝)" 0 "$(w1 legacy-pool)"
+# 反斜線寫法走完整 guard:rel_of 出口沒轉的話這兩案判定完全相反 —— 圍欄②該擋卻
+# 放行、6-notes 該放卻被判 scope 外。檔案不必真的存在(realpath 對不存在的路徑
+# 照樣算得出 rel),所以不會在假 repo 留下反斜線檔名。
+g_capture Read 'docs\\dev\\f1\\1-discussion.md'
+ck_msg "w1 反斜線寫法的上游檔 → 圍欄②仍擋(修法前靜默放行)" 2 "圍欄②" "$G_RC" "$G_OUT"
+ck "w1 反斜線寫法的 6-notes → 恆許仍放行(修法前誤判 scope 外)" 0 "$(g Write 'docs\\dev\\f1\\6-implementation-notes.md')"
 
 echo "-- Stage 7 review 圍欄③(phase=review;A-11)--"
 ck "回歸:舊 exec.json(無 phase 鍵)讀 6-notes 放行(升版前後行為一致)" \

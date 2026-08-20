@@ -24,7 +24,9 @@ class ContractError(Exception):
 
 def canonical_scope_path(raw):
     import os
-    path = raw.strip()
+    # 兩處 replace 鏡射 devflow-lib.to_posix(issue #7):先轉再驗,否則 `..\evil`
+    # 躲得過下面只 split("/") 的 traversal 檢查。改這裡要同時改正本。
+    path = raw.strip().replace("\\", "/")
     if not path:
         raise ValueError("空路徑")
     if os.path.isabs(path):
@@ -32,7 +34,7 @@ def canonical_scope_path(raw):
     if any(part == ".." for part in path.split("/")):
         raise ValueError("不可含 .. traversal")
     is_dir = path.endswith("/")
-    canonical = os.path.normpath(path)
+    canonical = os.path.normpath(path).replace("\\", "/")
     if canonical in ("", "."):
         raise ValueError("不可為空或含糊的 repository-root 條目")
     if canonical.startswith("../"):
