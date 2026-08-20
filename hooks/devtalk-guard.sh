@@ -38,7 +38,9 @@ import json, os, subprocess, sys
 root, here = sys.argv[1], sys.argv[2]
 target = os.environ.get("DEVTALK_TARGET", "")
 try:
-    target = os.path.relpath(os.path.realpath(target), os.path.realpath(root))
+    # 正斜線化(issue #7):這欄只進 obs payload,不參與判定,但事件資料的形狀
+    # 不該隨平台而異 —— 否則同一份查詢在 Windows 產出的事件上對不起來。
+    target = os.path.relpath(os.path.realpath(target), os.path.realpath(root)).replace("\\", "/")
 except Exception:
     pass
 payload = {"event_type": "mechanical_gate_completed", "gate": "devtalk-guard",

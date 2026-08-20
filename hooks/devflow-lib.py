@@ -50,9 +50,28 @@ def is_ambient_path(rel):
             or base.endswith(".pyc") or "__pycache__" in parts)
 
 
+def to_posix(path):
+    """路徑分隔符一律轉正斜線 —— 全 repo 唯一的路徑形式正本(issue #7)。
+
+    為什麼要有這支:守衛靠字串比對判 scope 與契約,而路徑有兩個來源 ——
+    git porcelain 一律吐正斜線,`os.path.normpath`/`relpath` 在 Windows 吐反斜線。
+    兩者逐字比對永不命中,Windows 上因此 Stage 6 開不了工、圍欄②整條靜默失效。
+
+    **刻意不看平台**(不寫 `if os.sep == "\\\\"`):平台條件式會讓守衛行為隨平台而異,
+    那正是本 bug 的成因;而且 POSIX 上就測不到 Windows 分支,又退回「只有上
+    Windows 才知道有沒有壞」。代價是 POSIX 上一個真的叫 `a\\b.py` 的檔會被當成
+    `a/b.py` —— 已由 selftest 的 w1 組釘住為**刻意行為**。dev-flow 的 Files 條目
+    來自 markdown,那裡的反斜線是 Windows 路徑的機率遠高於檔名本身含反斜線。
+    """
+    return path.replace("\\", "/")
+
+
 def canonical_scope_path(raw):
     """Validate and canonicalize a Files/allow path relative to the Git root."""
-    path = raw.strip()
+    # 先轉正斜線再驗證,順序不可調換:下面的 `..` traversal 檢查只 split("/"),
+    # 不先轉的話 Windows 寫法 `..\evil` 會**兩道檢查都躲過** —— split("/") 切不出
+    # ".." 元素,normpath 又把結果留成 `..\evil` 使 startswith("../") 落空。
+    path = to_posix(raw.strip())
     if not path:
         raise ValueError("空路徑")
     if os.path.isabs(path):
@@ -60,7 +79,7 @@ def canonical_scope_path(raw):
     if any(part == ".." for part in path.split("/")):
         raise ValueError("不可含 .. traversal；Files 必須以 Git repository root 為相對根")
     is_dir = path.endswith("/")
-    canonical = os.path.normpath(path)
+    canonical = to_posix(os.path.normpath(path))
     if canonical in ("", "."):
         raise ValueError("不可為空或含糊的 repository-root 條目")
     if canonical.startswith("../"):
@@ -124,7 +143,10 @@ def protected_contract_hashes(root):
     for dirpath, _, filenames in os.walk(base):
         for filename in filenames:
             path = os.path.join(dirpath, filename)
-            rel = os.path.relpath(path, root)
+            # 不轉的話 Windows 上 rel 是反斜線,is_contract_path 的 split("/")
+            # 切不出 4 段 → 全數判非契約 → 這支**回空 dict**,start 印「釘住 0 檔」,
+            # 紅隊修的 V10(執行期 spec 被任何方式改動即抓)等於沒裝(issue #7)。
+            rel = to_posix(os.path.relpath(path, root))
             if is_contract_path(rel):
                 hashes[rel] = sha(path)
     return dict(sorted(hashes.items()))
@@ -237,19 +259,24 @@ def is_contract_path(rel, kinds=CONTRACT):
 
 
 def in_pool(rel, state):
+    # `rel` 依約定在來源處就已是正斜線(git porcelain 天生如此;rel_of 出口轉過)。
+    # 這裡只轉 pool 那側 —— 那是**磁碟上的舊資料**:issue #7 修法前武裝的
+    # exec.json 存的是反斜線 scope,升級後不重新 start 也要能對上。刻意不順手轉
+    # `rel`:那會把「某個新來源忘了正規化」這種違反不變式的情況遮起來。
     pool = list(state.get("scope", [])) + [e.get("file", "") for e in state.get("extra", [])]
     for s in pool:
         if not s:
             continue
+        s = to_posix(s)
         if (s.endswith("/") and rel.startswith(s)) or rel == s:
             return True
     return False
 
 
 def rel_of(root, fp):
-    """resolve symlink 後的 repo 相對路徑;repo 外回 None。"""
+    """resolve symlink 後的 repo 相對路徑(一律正斜線);repo 外回 None。"""
     real = os.path.realpath(fp)
-    rel = os.path.relpath(real, os.path.realpath(root))
+    rel = to_posix(os.path.relpath(real, os.path.realpath(root)))
     return None if rel.startswith("..") else rel
 
 
