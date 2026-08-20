@@ -225,7 +225,7 @@
     <li><code>docs/dev/README.md</code> ← cp 母版 <code>~/dev/dev-flow/README.md</code></li>
     <li><code>docs/dev/_templates/</code> ← cp 母版 <code>_templates/</code></li>
     <li><code>docs/dev/STATUS.md</code> ← 從模板建(進行中 feature 看板)</li>
-    <li>repo root <code>CONTEXT.md</code> ← 若無則從模板建(詞彙表)</li>
+    <li><code>.dev-flow/</code> ← Agent Memory(可 Git 同步的長期記憶;dev-setup 建置,見母版 README §18)</li>
     <li><code>.claude/rules/arch-invariants.md</code> —— <strong>自動產草稿</strong>(不是空殼):收割使用者指名的
     external workflow artifacts 與 <code>CLAUDE.md</code> 的技術規則段 → 派 sonnet 掃 codebase 抓候選 → 每條標
     <code>【待確認】</code> 列給你逐條核可,見下一步</li>
@@ -434,7 +434,7 @@
   </div>
 
   <blockquote>為什麼討論要另開 session:圍欄①「討論盲下游」—— <code>/dev-talk</code> 全文零提及後續階段,
-  讀取白名單只有 CONTEXT.md / docs/specs/ / 原始碼 / 使用者指名檔案,不進其他文件資料夾。
+  讀取白名單只有長期記憶(dev-memory.py ask)/ docs/specs/ / 原始碼 / 使用者指名檔案,不進其他文件資料夾。
   同一個 session 若接著往下走,即使 skill 邊界仍在,模型也已經看過同一段對話,
   盲從結構強制退化為紀律(README §11:「最強用法:獨立 session」)。
   <code>/dev-talk</code> 收尾時若你說「開始做」「實作吧」,它只會回「討論記錄已完成,實作請另開 session」然後停。

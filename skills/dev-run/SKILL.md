@@ -17,7 +17,8 @@ description: dev-flow Stage 6 內部執行引擎 — 多模型派工(haiku 寫�
    「start 當下所在的那棵樹」—— 先 start 再換樹 = 安全網失效。跑 `status` 確認
    slug 與 cwd 相符。被拒(4-spec 非 approved / 無可解析 Files / 4-spec Profile
    lane: fast + Risk: high 無 Owner Call)→ 停,回報使用者。
-3. 讀 4-spec、5-tasks、CONTEXT.md、living spec、`.claude/rules/*.md`。
+3. 讀 4-spec、5-tasks、living spec、`.claude/rules/*.md`;業務語意改查長期記憶
+   (`${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py ask "<詞> 是什麼意思"`),不再讀 CONTEXT.md。
    **禁讀 1/2/3**(守衛會擋,含 shell)。
 
 5-tasks frontmatter 有 `execution.mode: parallel` → 走「並行模式」節(wave 派工迴圈,

@@ -1,85 +1,96 @@
 {
-  "devflow_contract_version": "2.0.0",
-  "required_runtime_capabilities": [
-    "task_scoped_guard",
-    "parallel_wave_execution",
-    "candidate_gate",
-    "attempt_ledger",
-    "final_fresh_run",
-    "operational_demo_gate"
-  ],
-  "schema_versions": {
-    "agent_event": "1.1",
-    "context_manifest": "1.0",
-    "prompt_registry": "1.0",
-    "gate_result": "devflow-gate-result.v1",
-    "candidate": "devflow-candidate.v1",
-    "exec_state": "exec-v3",
-    "gauntlet": "1.2.0",
-    "wave_review": "devflow-wave-review.v1"
-  },
-  "exec_state_note": "上面 schema_versions.exec_state 只放得下一個值,但實際上有兩種格式並存,這裡補記(2026-08-19 rick 裁決:不動結構,只加最外層註記)。哪條路寫哪個代號:①devflow-exec.sh start <slug> --task T-n(平行執行,每個任務各自一份,檔案住在該任務的 worktree)寫 exec-v3,帶 task 欄;②同一支的 legacy sequential start、③VNext feature-scope start、④Stage 7 review 事後補審自建武裝,這三條都寫 exec-v4,不帶 task 欄(2026-08-19 派工單 §7 前置修復之前這三條根本不寫 schema,導致派工分層守衛在最常用的 sequential 路徑整支失效)。schema_versions.exec_state 的 exec-v3 對應的只是①那條。讀取端兩個代號都收(hooks/_dispatch_impl.py 與 hooks/_exec_impl.py 的 EXEC_SCHEMAS)。doctor 遇到 exec.json 寫 exec-v4 而本檔寫 exec-v3 時只印說明、不判失敗(hooks/_doctor_impl.py)。要把這個雙軌收進結構本身(拆成兩個鍵,或改成放得下多個值的清單)留給第二輪,見 notes/dispatch-agent-dispatch-layer.md 裁決 8 與接手單第 3 件。",
-  "evidence_status_values": [
-    "pass",
-    "fail",
-    "unverified",
-    "n-a"
-  ],
-  "risk_values": [
-    "normal",
-    "high"
-  ],
-  "risk_scopes": [
-    "feature",
-    "task"
-  ],
-  "lanes": [
-    "fast",
-    "full"
-  ],
-  "review_modes": [
-    "wave",
-    "dedicated"
-  ],
-  "task_states": [
-    "PENDING",
-    "READY",
-    "RUNNING",
-    "CANDIDATE",
-    "MECHANICAL_PASS",
-    "QUEUED_FOR_INTEGRATION",
-    "INTEGRATED",
-    "IN_REVIEW",
-    "REWORK",
-    "ACCEPTED",
-    "BLOCKED",
-    "INVALIDATED_BY_UPSTREAM"
-  ],
-  "task_tags": [
-    "api",
-    "ui",
-    "database",
-    "integration",
-    "infrastructure",
-    "test",
-    "documentation",
-    "security",
-    "authorization",
-    "migration",
-    "workflow",
-    "other"
-  ],
-  "base_sha_fields": [
-    "feature_initial_base",
-    "wave_base_sha",
-    "candidate_base_sha"
-  ],
-  "ledger": {
-    "home_env": "DEVFLOW_LEDGER_HOME",
-    "default_macos": "~/Library/Application Support/DevFlow/ledger/",
-    "default_linux": "${XDG_STATE_HOME:-~/.local/state}/devflow/ledger/",
-    "retention_days_raw": 180,
-    "retention_days_aggregate": 365
-  },
-  "notes": "唯一機器可讀契約正本(方法論 repo)。plugin 須另行聲明 supported_contract_versions/runtime_version/capabilities;doctor 指令 fail-closed 比對。既有 exec.json 的 contract_hash_scope 是內容指紋範圍標記,非版本握手機制(audit 已證),故新設本檔。"
+ "devflow_contract_version": "2.0.0",
+ "required_runtime_capabilities": [
+  "task_scoped_guard",
+  "parallel_wave_execution",
+  "candidate_gate",
+  "attempt_ledger",
+  "final_fresh_run",
+  "operational_demo_gate"
+ ],
+ "schema_versions": {
+  "agent_event": "1.1",
+  "context_manifest": "1.0",
+  "prompt_registry": "1.0",
+  "gate_result": "devflow-gate-result.v1",
+  "candidate": "devflow-candidate.v1",
+  "exec_state": "exec-v3",
+  "gauntlet": "1.2.0",
+  "wave_review": "devflow-wave-review.v1",
+  "memory_local": "1",
+  "memory_durable": "1"
+ },
+ "exec_state_note": "上面 schema_versions.exec_state 只放得下一個值,但實際上有兩種格式並存,這裡補記(2026-08-19 rick 裁決:不動結構,只加最外層註記)。哪條路寫哪個代號:①devflow-exec.sh start <slug> --task T-n(平行執行,每個任務各自一份,檔案住在該任務的 worktree)寫 exec-v3,帶 task 欄;②同一支的 legacy sequential start、③VNext feature-scope start、④Stage 7 review 事後補審自建武裝,這三條都寫 exec-v4,不帶 task 欄(2026-08-19 派工單 §7 前置修復之前這三條根本不寫 schema,導致派工分層守衛在最常用的 sequential 路徑整支失效)。schema_versions.exec_state 的 exec-v3 對應的只是①那條。讀取端兩個代號都收(hooks/_dispatch_impl.py 與 hooks/_exec_impl.py 的 EXEC_SCHEMAS)。doctor 遇到 exec.json 寫 exec-v4 而本檔寫 exec-v3 時只印說明、不判失敗(hooks/_doctor_impl.py)。要把這個雙軌收進結構本身(拆成兩個鍵,或改成放得下多個值的清單)留給第二輪,見 notes/dispatch-agent-dispatch-layer.md 裁決 8 與接手單第 3 件。",
+ "evidence_status_values": [
+  "pass",
+  "fail",
+  "unverified",
+  "n-a"
+ ],
+ "risk_values": [
+  "normal",
+  "high"
+ ],
+ "risk_scopes": [
+  "feature",
+  "task"
+ ],
+ "lanes": [
+  "fast",
+  "full"
+ ],
+ "review_modes": [
+  "wave",
+  "dedicated"
+ ],
+ "task_states": [
+  "PENDING",
+  "READY",
+  "RUNNING",
+  "CANDIDATE",
+  "MECHANICAL_PASS",
+  "QUEUED_FOR_INTEGRATION",
+  "INTEGRATED",
+  "IN_REVIEW",
+  "REWORK",
+  "ACCEPTED",
+  "BLOCKED",
+  "INVALIDATED_BY_UPSTREAM"
+ ],
+ "task_tags": [
+  "api",
+  "ui",
+  "database",
+  "integration",
+  "infrastructure",
+  "test",
+  "documentation",
+  "security",
+  "authorization",
+  "migration",
+  "workflow",
+  "other"
+ ],
+ "base_sha_fields": [
+  "feature_initial_base",
+  "wave_base_sha",
+  "candidate_base_sha"
+ ],
+ "ledger": {
+  "home_env": "DEVFLOW_LEDGER_HOME",
+  "default_macos": "~/Library/Application Support/DevFlow/ledger/",
+  "default_linux": "${XDG_STATE_HOME:-~/.local/state}/devflow/ledger/",
+  "retention_days_raw": 180,
+  "retention_days_aggregate": 365
+ },
+ "notes": "唯一機器可讀契約正本(方法論 repo)。plugin 須另行聲明 supported_contract_versions/runtime_version/capabilities;doctor 指令 fail-closed 比對。既有 exec.json 的 contract_hash_scope 是內容指紋範圍標記,非版本握手機制(audit 已證),故新設本檔。",
+ "memory": {
+  "durable_dir": ".dev-flow",
+  "durable_dir_env": "DEVFLOW_MEMORY_DIR",
+  "local_home_env": "AGENTMEM_HOME",
+  "local_home_default": "~/.agentmem/projects/<project_id>/",
+  "entry_point": "memory/dev-memory.py",
+  "setup_entry": "dev-setup",
+  "note": "durable(進 Git)只收結構化高訊號記憶;SQLite/embedding/原始逐字稿一律只住 local。project identity 為 ULID,path-independent、不依賴 remote。memory 刻意不列入 required_runtime_capabilities —— 它不依賴 exec runtime,列入只會讓「新契約 + 舊 runtime」被誤判 INCOMPATIBLE。"
+ }
 }

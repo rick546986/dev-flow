@@ -20,7 +20,7 @@ updated:
 > 執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併 T):
 > 0. 起手式,分三小步(0a 開 branch 與錨點/0b worktree 隔離確認/0c 守衛與 doctor
 >    自檢),各自查驗完成才算這步完成:
->    **0a. 開 branch 與錨點**:圍欄自查 —— 只讀 4-spec/5-tasks/6-notes/CONTEXT.md/
+>    **0a. 開 branch 與錨點**:圍欄自查 —— 只讀 4-spec/5-tasks/6-notes/長期記憶查詢結果/
 >    living spec,禁讀 1/2/3(要翻才寫得出 = spec 不完整 → 停,回 G2)。開 feature
 >    branch —— **開 branch 與記分岔錨點是同一個動作的兩半,中間不准插別的事**,
 >    照下面四步做,不可拆。錨點 `FORK_INTEGRATION_SHA` = 開這條 branch 的當下整合

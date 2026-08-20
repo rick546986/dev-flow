@@ -132,9 +132,9 @@ RESULTS=()
 # 改法:由 expect()/expect_local() 依 want 實際累計 control 與 negative,尾聲與釘死值比對。
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
-EXPECTED_CONTROLS=13
-EXPECTED_NEGATIVES=70
-EXPECTED_TOTAL=83
+EXPECTED_CONTROLS=14
+EXPECTED_NEGATIVES=76
+EXPECTED_TOTAL=90
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -239,7 +239,7 @@ seed_guard() {
   echo "$dst"
 }
 
-# seed_fm <name> → 同 seed(),另外把 hooks/scripts/observability/agents/
+# seed_fm <name> → 同 seed(),另外把 hooks/scripts/observability/memory/agents/
 # tests/parallel-stage6/ 整包 + guides/guide-dev-flow.html 複製進去,並初始化成
 # 一個真 git repo。
 # 起因:check-file-map.sh 用 `git ls-files --cached --others --exclude-standard` 當
@@ -258,6 +258,7 @@ seed_fm() {
   cp -r "$ROOT/hooks" "$dst/hooks"
   cp -r "$ROOT/scripts" "$dst/scripts"
   cp -r "$ROOT/observability" "$dst/observability"
+  cp -r "$ROOT/memory" "$dst/memory"
   cp -r "$ROOT/agents" "$dst/agents"
   mkdir -p "$dst/tests" "$dst/guides"
   cp -r "$ROOT/tests/parallel-stage6" "$dst/tests/parallel-stage6"
@@ -1223,6 +1224,24 @@ poison.write_text(c + "\n# 測試混入舊路徑(不在 6 個哨兵之列):~/.cl
 PY
 expect_local fail check-no-stale-paths.sh "$D" "SP-9 _ls_files() 的 pathspec 被換成寫死的 6 個哨兵(SENTINELS 剛好全過)+ seed 非哨兵禁字檔(自釘接住,單支腳本靜默綠已修)"
 
+# seed_mem <name> → 給 check-memory-architecture.sh 用的最小 seed:它讀 .gitignore、
+# memory/ 整包、skills/dev-setup/SKILL.md、devflow-contract.json、
+# hooks/runtime-capabilities.json,少任何一樣它會 exit 2(fail-closed),
+# 那會讓 MEM-0 對照組自己變紅而不是測到東西。
+# ⚠️ 守衛以後多讀一個檔,這裡也要跟著補 —— 同 seed_fm 的教訓。
+seed_mem() {
+  local name="${1:?seed_mem: name is empty}"
+  local dst; dst=$(seed "$name")
+  cp -r "$ROOT/memory" "$dst/memory"
+  mkdir -p "$dst/hooks"
+  cp "$ROOT/hooks/runtime-capabilities.json" "$dst/hooks/runtime-capabilities.json"
+  cp "$ROOT/skills/dev-setup/SKILL.md" "$dst/skills/dev-setup/SKILL.md"
+  [ -f "$ROOT/.gitignore" ] && cp "$ROOT/.gitignore" "$dst/.gitignore"
+  cp "$ROOT/scripts/check-memory-architecture.sh" "$dst/scripts/"
+  chmod +x "$dst/scripts/check-memory-architecture.sh"
+  echo "$dst"
+}
+
 # ── FM 群組:檔案地圖雙向盤點守衛(check-file-map.sh)────────────────────────
 #
 # guides/guide-dev-flow.html「附錄:檔案地圖」節是手寫表,手寫表必腐化。這一組證明
@@ -1436,6 +1455,86 @@ D=$(seed_guard mt2 check-model-tiering.sh)
 cp -r "$ROOT/scripts/fixtures/model-tiering/bad-skip-level" "$D/external-runs"
 expect_local_arg fail check-model-tiering.sh "$D" "$D/external-runs" "MT-2 把 bad-skip-level 當外部真實 runs 根,以 CLI 參數餵給守衛複本的正常模式(跳級紅路徑同樣不只活在自測模式內)"
 
+# ── MEM 群組:Agent Memory 架構不變量(check-memory-architecture.sh)────────────
+#
+# memory 的核心分界全是散文規則,退回時所有既有檢查照樣全綠。這一組證明守衛真的
+# 抓得到六種退回,而不是在對照組上空轉:
+#   MEM-1 把 `.dev-flow/` 也塞進 .gitignore(durable memory 從此完全同步不到)
+#   MEM-2 讓失效掃描去碰 knowledge(§10:改一支不相關的檔就讓業務規則變不可信)
+#   MEM-3 把 domain 的權威改成程式碼推論贏過 domain expert(全域 code > everything)
+#   MEM-4 CLI 長出 init 子指令(第二個安裝器)
+#   MEM-5 把帶內容的線索「怎麼部署」塞進剝除清單(「怎麼部署?」從此查不到)
+#   MEM-6 評測資料集把中文題全部拿掉(中文檢索退步不會現形)
+D=$(seed_mem mem0)
+expect_local pass check-memory-architecture.sh "$D" "MEM-0 對照組(memory 架構不變量齊)"
+
+D=$(seed_mem mem1); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / ".gitignore"
+p.write_text(p.read_text(encoding="utf-8") + ".dev-flow/\n", encoding="utf-8")
+PY
+expect_local fail check-memory-architecture.sh "$D" "MEM-1 .gitignore 把 .dev-flow/ 也忽略掉(durable memory 不進 Git)"
+
+D=$(seed_mem mem2); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/truth.py"
+t = p.read_text(encoding="utf-8")
+marker = "    touched = []\n"
+assert marker in t, "MEM-2 anchor 不見"
+n = t.replace(marker, marker + "    for row in store.knowledge(limit=10):\n"
+                               "        store.set_overlay(row[\"knowledge_id\"], workspace_id,\n"
+                               "                          STALE, \"leak\")\n", 1)
+assert n != t, "MEM-2 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-memory-architecture.sh "$D" "MEM-2 失效掃描去碰 knowledge(domain truth 被檔案指紋規則牽連)"
+
+D=$(seed_mem mem3); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/truth.py"
+t = p.read_text(encoding="utf-8")
+old = '"domain_expert": 100, "user_confirmed": 95, "business_requirement": 90,'
+assert old in t, "MEM-3 anchor 不見"
+n = t.replace(old, '"domain_expert": 10, "user_confirmed": 95, "business_requirement": 90,', 1)
+assert n != t, "MEM-3 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-memory-architecture.sh "$D" "MEM-3 domain 權威改成程式碼推論贏(全域 code > everything)"
+
+D=$(seed_mem mem4); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/dev-memory.py"
+t = p.read_text(encoding="utf-8")
+old = '    sub.add_parser("doctor").set_defaults(func=cmd_doctor)'
+assert old in t, "MEM-4 anchor 不見"
+n = t.replace(old, '    sub.add_parser("init").set_defaults(func=cmd_setup)\n' + old, 1)
+assert n != t, "MEM-4 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-memory-architecture.sh "$D" "MEM-4 CLI 長出 init 子指令(第二個安裝器)"
+
+D=$(seed_mem mem5); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/cues.py"
+t = p.read_text(encoding="utf-8")
+old = '    r"怎麼做", r"如何", r"\\bhow (?:to|do)\\b",'
+assert old in t, "MEM-5 anchor 不見"
+n = t.replace(old, '    r"怎麼做", r"如何", r"怎麼部署", r"\\bhow (?:to|do)\\b",', 1)
+assert n != t, "MEM-5 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-memory-architecture.sh "$D" "MEM-5 帶內容的線索進了剝除清單(「怎麼部署?」查不到)"
+
+D=$(seed_mem mem6); mutate "$D" <<'PY'
+import json, sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/fixtures/eval/dataset.json"
+d = json.loads(p.read_text(encoding="utf-8"))
+d["cases"] = [c for c in d["cases"] if c.get("language") != "zh"]
+assert d["cases"], "MEM-6 mutation 把案例清空了"
+p.write_text(json.dumps(d, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+PY
+expect_local fail check-memory-architecture.sh "$D" "MEM-6 評測資料集拿掉中文題(中文檢索退步不會現形)"
+
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
 echo
@@ -1447,6 +1546,7 @@ if [ "$FP_BEFORE" != "$FP_AFTER" ]; then
 fi
 echo "  ✓ 正式 repo 指紋未變($FP_BEFORE)—— working tree 零污染"
 echo
+
 
 # ── 靜態互釘:五支散落地板 + check-gate-twin.sh 的群組數釘(HIGH,獨立審查
 # 2026-08-16 finding 4;check-file-map.sh 的 MIN_CHECKS 為第五支,補上是本節
@@ -1545,7 +1645,7 @@ check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 15" "MIN_
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 138" "MIN_CHECKS 釘死 138(X-3 補群組數釘之後的實得數)"
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 41" "MIN_CHECKS 釘死 41(反證輪 E-1:再加 M-f~M-h 五個(mutant,子案)配對後的實得數)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 32" "MIN_CHECKS 釘死 32(commit-landing 輪 F-1-e:POINTS 補「窗口最短」+ 負向⑱⑲ 兩份頂註各一後的實得數)"
-check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 84" "EXPECTED_MAPPED_FILES 釘死 84(精確值,不是地板;2026-08-19 新增 check-py-floor.sh 後的實得數)"
+check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 124" "EXPECTED_MAPPED_FILES 釘死 124(精確值,不是地板;2026-08-20 memory/ 納入掃描後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 24" "EXPECTED_GROUPS 釘死 24(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的

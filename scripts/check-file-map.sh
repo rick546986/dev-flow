@@ -5,7 +5,7 @@
 # 手寫表必腐化——新增/改名/刪除一支腳本後,那張表不會自動跟著動,遲早變成一份好看但
 # 不可信的文件。本守衛做雙向盤點:
 #
-#   ①正向(forward):hooks/、scripts/、observability/、tests/parallel-stage6/ 底下每個
+#   ①正向(forward):hooks/、scripts/、observability/、memory/、tests/parallel-stage6/ 底下每個
 #     *.sh/*.py(以 git 為準,含尚未 git add 的新檔——用
 #     `git ls-files --cached --others --exclude-standard`,不是只認已 commit 的檔)都必須
 #     在檔案地圖節(<h2 id="filemap"> 到下一個 <h2 之間)的「檔名」欄被點名——
@@ -63,6 +63,7 @@ PATTERNS = [
     "hooks/*.sh", "hooks/*.py",
     "scripts/*.sh", "scripts/*.py",
     "observability/*.sh", "observability/*.py",
+    "memory/*.sh", "memory/*.py",
     "tests/parallel-stage6/*.py",
     "agents/*.md",
 ]
@@ -80,6 +81,7 @@ EXEMPT_PREFIXES = [
     "hooks/devflow_obs_vendor/",
     "scripts/fixtures/",
     "observability/fixtures/",
+    "memory/fixtures/",
     "tests/parallel-stage6/fixtures/",
 ]
 
@@ -109,7 +111,7 @@ if scanned == 0:
 # 新增/刪除必列檔時同步改這個常數(並同步補/刪檔案地圖節對應列),還要同步改
 # test-architecture-guards.sh 的靜態互釘清單那一行 —— 只改這裡不改那裡,砍檢查數
 # 會在那裡現形;只改那裡不改這裡,這裡的數字跟實得數脫鉤,防線形同虛設。
-EXPECTED_MAPPED_FILES = 84
+EXPECTED_MAPPED_FILES = 124
 if scanned != EXPECTED_MAPPED_FILES:
     direction = ("多了 —— 若為真實新增,請同步上修本常數並補檔案地圖對應列"
                  if scanned > EXPECTED_MAPPED_FILES
@@ -149,6 +151,7 @@ BUNDLE_TOKENS = [
     "hooks/devflow_obs_vendor/",
     "scripts/fixtures/",
     "observability/fixtures/",
+    "memory/fixtures/",
     "tests/parallel-stage6/fixtures/",
     "scripts/requirements-methodology-render.txt",
 ]

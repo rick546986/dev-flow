@@ -19,7 +19,7 @@
 # 用法:
 #   scripts/devflow-check.sh all           # 全部(預設)
 #   scripts/devflow-check.sh methodology   # 方法論一致性(README/模板/範例/guide twin)
-#   scripts/devflow-check.sh contracts     # 機器可讀契約(並行/vnext/gauntlet/observability)
+#   scripts/devflow-check.sh contracts     # 機器可讀契約(並行/vnext/gauntlet/observability/memory)
 #   scripts/devflow-check.sh architecture  # 架構與完整性守衛(design contract/ADR/版本/切片)
 #   scripts/devflow-check.sh render        # 衍生檔固定點 + 空白字元衛生
 
@@ -93,6 +93,10 @@ group_contracts() {
   run "contracts/check-vnext-integration" scripts/check-vnext-integration.sh || return 1
   run "contracts/test-evidence-gauntlet"  scripts/test-evidence-gauntlet.sh  || return 1
   run "contracts/observability"           observability/run-tests.sh         || return 1
+  # Agent Memory 的可執行契約:identity/durable 格式、LVP 失效、retrieval 相關性、
+  # dev-talk 生命週期、legacy 遷移、評測 harness —— 全部在 mktemp 的假 repo 與
+  # 暫存記憶家目錄裡跑,不碰使用者真實的 ~/.agentmem/ 與本 repo 的 .dev-flow/。
+  run "contracts/memory"                 memory/run-tests.sh                || return 1
 }
 
 group_architecture() {
@@ -133,7 +137,7 @@ group_architecture() {
   # 每次 PR 由 CI 重跑;不靠「某次 mutation 結果寫在 PR 說明裡」。
   run "architecture/test-architecture-guards (負向)" scripts/test-architecture-guards.sh || return 1
   # 檔案地圖雙向盤點:guides/guide-dev-flow.html「附錄:檔案地圖」是手寫表,手寫表必腐化——
-  # 新增/改名/刪除 hooks|scripts|observability|tests/parallel-stage6 底下的 *.sh/*.py 沒同步
+  # 新增/改名/刪除 hooks|scripts|observability|memory|tests/parallel-stage6 底下的 *.sh/*.py 沒同步
   # 更新那張表就紅;表裡寫了不存在的檔名也紅。
   run "architecture/check-file-map" scripts/check-file-map.sh || return 1
   # 整合回歸工具(H-1):八情境+五 mutant+模板順序+正副本 parity。正式工具的
@@ -146,6 +150,11 @@ group_architecture() {
   # 明確裁決的雙副本(quickstart 要能自足,不接受單正本+連結取代;見腳本頂註與
   # notes/dispatch-guard-symmetry.md X-6)——雙副本天生會漂移,補這支同步守衛。
   run "architecture/check-guides-fig-sync" scripts/check-guides-fig-sync.sh || return 1
+  # Agent Memory 架構不變量(§16):目錄進不進 Git、durable↔local 相依單向、
+  # domain 失效隔離、權威排序不對稱、唯一 setup 入口、線索詞兩份、契約與常數同值、
+  # 評測覆蓋面。八條全是「壞掉之後既有檢查照樣全綠」的型別,負向回歸在
+  # test-architecture-guards.sh 的 MEM 組。
+  run "architecture/check-memory-architecture" scripts/check-memory-architecture.sh || return 1
 }
 
 group_render() {

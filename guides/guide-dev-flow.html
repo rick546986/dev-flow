@@ -477,7 +477,7 @@
     <!-- parity:start template2-checklist -->
     <blockquote>
     <p>執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併項):
-    0. 接手盤點:只讀 1-discussion.md(對話不是契約)+ CONTEXT.md。核 status=approved、
+    0. 接手盤點:只讀 1-discussion.md(對話不是契約)+ 長期記憶查詢結果(業務語意)。核 status=approved、
     OQ 全三態;缺 → 退回討論。從 Goals/驗收雛形/[&gt;] 移交項提煉「待收斂決策點」,
     連同討論期 owner 已自拍的板一併清點。
     完成 = 決策點清單經使用者確認(確認紀錄節留一行)。</p>
@@ -816,7 +816,7 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     <p>執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併 T):
     0. 起手式,分三小步(0a 開 branch 與錨點/0b worktree 隔離確認/0c 守衛與 doctor
     自檢),各自查驗完成才算這步完成:
-    <strong>0a. 開 branch 與錨點</strong>:圍欄自查 —— 只讀 4-spec/5-tasks/6-notes/CONTEXT.md/
+    <strong>0a. 開 branch 與錨點</strong>:圍欄自查 —— 只讀 4-spec/5-tasks/6-notes/長期記憶查詢結果/
     living spec,禁讀 1/2/3(要翻才寫得出 = spec 不完整 → 停,回 G2)。開 feature
     branch —— <strong>開 branch 與記分岔錨點是同一個動作的兩半,中間不准插別的事</strong>,
     照下面四步做,不可拆。錨點 <code>FORK_INTEGRATION_SHA</code> = 開這條 branch 的當下整合
@@ -1732,7 +1732,7 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <tr><td>①</td><td>討論盲下游</td>
         <td>UserPromptSubmit(<code>/dev-talk</code> 的 <code>SKILL.md</code> 白名單,prompt 約束)+
             PostToolUse(<code>devtalk-guard.sh</code> 洩漏掃描,<a href="#guard-post">⑥-4</a>)</td>
-        <td><code>/dev-talk</code> 全文零提及後續階段;讀取白名單(CONTEXT.md / docs/specs/ / 原始碼 /
+        <td><code>/dev-talk</code> 全文零提及後續階段;讀取白名單(長期記憶 / docs/specs/ / 原始碼 /
             使用者指名),不進其他文件資料夾、不列目錄。最強用法:獨立 session。</td></tr>
     <tr><td>②</td><td>實作盲討論</td>
         <td>PreToolUse(<code>devflow-guard.sh</code>,<a href="#guard-pre">⑥-3</a>)</td>
@@ -1751,7 +1751,7 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   </table></div>
 
   <blockquote>⚠️ 本頁是給團隊看的導覽頁,講的正是「討論階段存在、之後還有 6 站」——但這件事本身不能讓
-  <code>/dev-talk</code> 知道。<code>/dev-talk</code> 執行討論時只認讀取白名單(CONTEXT.md / docs/specs / 原始碼 /
+  <code>/dev-talk</code> 知道。<code>/dev-talk</code> 執行討論時只認讀取白名單(長期記憶 / docs/specs / 原始碼 /
   使用者指名檔案),本頁 <code>guide-dev-flow.html</code> 不在白名單內,討論 agent 看不到、也不會讀到這份導覽頁的
   任何內容 —— 圍欄①不因本頁存在而破。</blockquote>
 
@@ -1843,7 +1843,7 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   <h2 id="filemap">附錄:檔案地圖(每支腳本在做什麼)</h2>
   <p class="lead">這張表由 <code>scripts/check-file-map.sh</code> 雙向盤點守衛顧著:新增一支腳本沒登記進來、
   或表裡寫了一個不存在的檔名,守衛都會紅——手寫表必腐化,靠人記得同步不可靠。各檔實際掛在生命週期哪一格,
-  對照 <a href="#guard">⑥ 執行守衛</a>。下面四張表(hooks/scripts/observability/tests)每列都補了一欄
+  對照 <a href="#guard">⑥ 執行守衛</a>。下面五張表(hooks/scripts/observability/memory/tests)每列都補了一欄
   「生命週期格」;以下先給一張迷你索引,反過來查「某一格上掛了哪些檔」。</p>
 
   <div class="tablewrap"><table>
@@ -2137,6 +2137,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <tr><td><code>scripts/fixtures/</code>(整包,fixtures 目錄豁免)</td>
         <td>各支守衛自己的測試材料(合格/不合格範例檔)。</td>
         <td>被同名 <code>check-*.sh</code>/<code>test-*.sh</code> 讀取當測試輸入,不單獨執行</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-memory-architecture.sh</code></td>
+        <td>盯住 Agent Memory 的架構分界:哪個目錄進不進 Git、durable 與本機索引的相依只能單向、失效掃描不得牽連已確認的業務語意、各類記憶的權威排序不得退化成「程式碼贏過一切」、不得長出第二個安裝器、意圖線索詞與問句框架詞必須是兩份、契約宣告與程式碼常數同值、評測資料集要涵蓋六種問句意圖與三種語言。</td>
+        <td><code>devflow-check.sh</code> architecture 組;負向回歸在 <code>test-architecture-guards.sh</code> MEM 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>scripts/requirements-methodology-render.txt</code></td>
         <td>釘死 <code>render-methodology-corrections.sh</code> 依賴的 markdown 轉換套件版本號,版本飄移
             會讓渲染結果不可重現。</td>
@@ -2222,6 +2225,131 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>被 <code>run_tests.py</code> 讀取當測試輸入</td><td>人工/CI(不在生命週期上)</td></tr>
   </table></div>
 
+  <h3>memory/(Agent Memory:可 Git 同步的長期記憶 + 本機檢索索引)</h3>
+  <p class="muted">分界一句話:<code>.dev-flow/</code> 進 Git(結構化、可攜、高訊號),<code>~/.agentmem/</code> 不進 Git(SQLite/向量/逐字稿,砍掉可重建),<code>.devflow/</code> 是本機執行期暫存(與前兩者無關)。規格見母版 README §16。</p>
+  <div class="tablewrap"><table>
+    <tr><th>檔名</th><th>一句白話職責</th><th>誰呼叫它/掛在哪</th><th>生命週期格</th></tr>
+    <tr><td><code>dev-memory.py</code></td>
+        <td>Agent Memory 的唯一 CLI:查記憶(ask)、看開場脈絡(context)、記事實/事件、理解模式對話(talk)、重建索引、legacy 遷移、跑評測。<strong>刻意沒有 init 子指令</strong>——安裝入口只有 dev-setup。</td>
+        <td>dev-setup skill 的 memory 步驟、dev-talk skill、使用者手動</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>run-tests.sh</code></td>
+        <td>一鍵跑完 memory 全部測試,並確保不留編譯產物弄髒工作樹。</td>
+        <td><code>devflow-check.sh</code> contracts 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>__init__.py</code></td>
+        <td>這個記憶套件的模組總覽,並釘住本機 schema 版本與 durable 檔案格式版本兩個常數。</td>
+        <td>被同目錄其他模組 import</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>ids.py</code></td>
+        <td>產生記憶實體的唯一 ID(project/session/event/fact…)。與 observability 那支刻意分開,兩條 ID 鏈不混用。</td>
+        <td>被 identity/store 等模組呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>paths.py</code></td>
+        <td>路徑正規化的單一入口:找 repo root、把任何路徑轉成 repo 相對的正斜線路徑、擋掉絕對路徑與逃出 repo 的路徑。</td>
+        <td>被所有會寫檔的記憶模組呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>yamlmini.py</code></td>
+        <td>受限 YAML 子集的讀寫器(不引第三方套件):同一份資料寫兩次位元相同,不支援的寫法直接報錯而不亂猜。</td>
+        <td>被 identity/durable 讀寫記憶檔時呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>identity.py</code></td>
+        <td>專案身分:讀寫 <code>.dev-flow/project.yaml</code> 的 project_id(換機器不變),以及本機 workspace 的路徑/OS/branch/HEAD 快照。</td>
+        <td>被 setup/store/context/query 呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>schema.py</code></td>
+        <td>本機 SQLite 的資料表定義與只往前走的版本遷移;FTS5/trigram 有就建、沒有就少一個檢索通道。</td>
+        <td>被 <code>store.py</code> 開檔時呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>store.py</code></td>
+        <td>本機執行期記憶的存取層(事件/事實/知識/決策/技能/候選/逐字稿/向量/檢索索引);所有過濾條件都下推 SQL,不撈全表再篩。</td>
+        <td>被幾乎所有記憶模組呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>durable.py</code></td>
+        <td><code>.dev-flow/</code> 的唯一寫入口:各類記憶的檔案格式、事件按 session 分檔、位元一致的序列化、讀到 Git 衝突標記直接報錯。</td>
+        <td>被 <code>sync.py</code> 與 legacy 遷移呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>sync.py</code></td>
+        <td>記憶的兩個搬運方向:從 <code>.dev-flow/</code> 重建本機索引,以及把已確認的候選固化回去。</td>
+        <td>被 setup(重建)與 devtalk(固化)呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>signal.py</code></td>
+        <td>決定一件事值不值得留成長期記憶,並擋掉疑似機密與絕對路徑——三道都過才允許寫進版本控制。</td>
+        <td>被 sync/devtalk/CLI 呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>textnorm.py</code></td>
+        <td>切詞與程式符號抽取:中文不會被吃掉,表名/函式名/檔案路徑/環境變數可精確比對。</td>
+        <td>被 store(建索引)與 retrieval(查詢)呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>cues.py</code></td>
+        <td>問句的意圖線索詞與框架詞的單一正本——分類用一份、剝除用一份,兩份放在同一檔互相對照,改一邊漏一邊會很難察覺。</td>
+        <td>被 query(分類)與 retrieval(算相關性)呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>embedding.py</code></td>
+        <td>向量化與版本管理:provider/model/維度/版本四件全記,換模型時算得出有幾筆要重建,不會靜默失效。</td>
+        <td>被 setup/retrieval/CLI 呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>retrieval.py</code></td>
+        <td>六通道檢索加排名融合(RRF),以及「查不到就說查不到」的門檻——不會拿低分記憶硬湊答案。</td>
+        <td>被 <code>query.py</code> 呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>truth.py</code></td>
+        <td>現況真相的快路徑與失效復原(依賴檔指紋、本機失效標記、重新驗證三種結果),外加各類記憶各自的權威排序。</td>
+        <td>被 query/context/setup/CLI 呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>query.py</code></td>
+        <td>先判問句意圖(現況/歷史/為什麼/怎麼做/語意/打算)再選檢索路徑,回答一律附狀態、信心、證據、不確定性四件。</td>
+        <td>被 CLI 的 ask 與評測harness 呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>context.py</code></td>
+        <td>組出開場要注入的最小脈絡(身分/branch/關鍵事實/不變量/未實作的打算/未解衝突/近期事件/查詢指引),有字數上限。</td>
+        <td>被 CLI 的 context 與評測harness 呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>devtalk.py</code></td>
+        <td>理解模式的生命週期:先自己看一輪產出具體問題、對話只留本機、候選要確認、收尾才固化、更正會保留舊版本。</td>
+        <td>被 CLI 的 talk 子指令呼叫(dev-talk skill 使用)</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>legacy.py</code></td>
+        <td>舊記憶載體的遷移:人工詞彙表匯入成未確認的語意、改版歷史索引只做索引不複製、舊的路徑鍵建對照表。</td>
+        <td>被 setup(乾跑回報)與 CLI 的 migrate-legacy 呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>setup.py</code></td>
+        <td>dev-setup 的 memory 階段實作(九步、可重跑不換 project_id)與健檢 doctor。<strong>不對外提供 init</strong>。</td>
+        <td>被 CLI 的 setup/doctor 呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>evalharness.py</code></td>
+        <td>記憶檢索的評測:九個指標加門檻,在隔離環境跑固定資料集所以結果可重現。</td>
+        <td>被 CLI 的 eval 與 <code>check-memory-architecture.sh</code> 呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>memtools.py</code></td>
+        <td>給記憶測試共用的隔離治具(暫存 git repo + 暫存記憶家目錄),本身不是測試。</td>
+        <td>被其他測試檔 import</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_identity.py</code></td>
+        <td>驗證換機器/換路徑/改 remote 都是同一個 project_id,且重跑不會換。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_paths.py</code></td>
+        <td>驗證絕對路徑、反斜線、逃出 repo 的路徑一律被擋。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_yamlmini.py</code></td>
+        <td>驗證記憶檔讀寫可還原、位元一致,不支援的寫法會報錯。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_textnorm.py</code></td>
+        <td>驗證中文查詢不被吃掉、程式符號抽得出來、相近表名不混淆。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_signal.py</code></td>
+        <td>驗證低訊號不進版本控制、疑似機密與絕對路徑一律拒絕固化。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_schema_store.py</code></td>
+        <td>驗證版本遷移可重跑、缺 FTS5 仍能建、過濾條件下推、舊資料不被毀。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_durable.py</code></td>
+        <td>驗證記憶檔位元一致、事件按 session 分檔、Git 衝突標記會報錯。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_sync.py</code></td>
+        <td>驗證砍掉本機索引後可從版本控制重建、且原始逐字稿不會被固化。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_truth.py</code></td>
+        <td>驗證快路徑、失效、重新驗證三種結果、branch 隔離、權威排序不對稱。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_retrieval.py</code></td>
+        <td>驗證多通道融合、中文查得到、查不到會誠實回報、換模型會被偵測。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_query.py</code></td>
+        <td>驗證問句意圖分類、打算不會冒充現況、衝突會被攤開、開場脈絡不讀舊詞彙表。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_devtalk.py</code></td>
+        <td>驗證理解模式會主動提問、對話不進版本控制、更正會保留舊版本。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_setup_legacy.py</code></td>
+        <td>驗證重跑不換 project_id、clone 到另一台可重建、舊詞彙表遷移不冒充已確認。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_eval.py</code></td>
+        <td>驗證評測本身可重現、指標齊全、門檻掉下去會紅。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_cli.py</code></td>
+        <td>對 CLI 做端對端煙霧測試,含「沒有 init 子指令」這條。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>memory/fixtures/</code>(整包,fixtures 目錄豁免)</td>
+        <td>評測用的固定資料集,以及舊詞彙表格式的凍結樣本。</td>
+        <td>被 <code>evalharness.py</code> 與 <code>test_setup_legacy.py</code> 讀取</td><td>人工/CI(不在生命週期上)</td></tr>
+  </table></div>
   <h3>agents/(唯讀具名 subagent 型別——role=reviewer / adviser)</h3>
   <p class="muted">兩者 frontmatter 皆 <code>tools: Read</code>(平台層允許清單,不是提示);
   不給 Bash/Edit/Write,也連帶沒有 Grep/Glob/Skill/MCP 工具。plugin 載入後型別字串帶
