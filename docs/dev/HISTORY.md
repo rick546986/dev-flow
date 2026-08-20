@@ -218,3 +218,9 @@
 - 落在哪:hooks/devflow-lib.py(新增 to_posix,四個出入口各過一次)、hooks/selftest.sh(w1 組 6 案,MIN_CASES 392→398)、scripts/test-architecture-guards.sh、tests/parallel-stage6/contract_ref.py、hooks/devtalk-guard.sh
 - 詳細:issue #7;https://github.com/rick546986/dev-flow/releases/tag/v3.9.2
 
+## 2026-08-20 · agent-memory-v3
+- 做了什麼:把 agent 記憶從人工維護的 Markdown 換成結構化、可 Git 同步的七類記憶(.dev-flow/),並新增本機檢索索引與 LVP 式的現況真相驗證
+- 為什麼:舊載體(CONTEXT.md/HISTORY.md)沒有 identity、沒有狀態、也分不出現況與願景;換一台機器就等於失憶,而且腐化時沒有任何機制會發現
+- 落在哪:memory/(新增)、skills/dev-setup 與 dev-talk、README §16、scripts/check-memory-architecture.sh、_templates/CONTEXT.md(移除)
+- 詳細:長期決策 docs/adr/0003-agent-memory-two-layer-split.md
+

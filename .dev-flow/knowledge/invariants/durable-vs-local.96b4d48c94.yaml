@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: durable-vs-local
+title: "durable memory 只收結構化高訊號記憶;SQLite、embedding 向量、原始對話逐字稿一律只住本機"
+authority: domain_expert
+status: CONFIRMED
+confidence: 0.98
+body: "理由:durable memory 會被 push。把可重建的東西放進 Git 換不到任何好處,只換到每次 pull 的衝突與一份沒人讀得完的雜訊檔。判準:刪掉之後跑一次 dev-setup 能不能還原?能 → 不進 Git。"
+recorded_at: "2026-08-20T10:12:06Z"

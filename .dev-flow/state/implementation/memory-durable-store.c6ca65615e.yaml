@@ -1,0 +1,20 @@
+# A. IMPLEMENTATION TRUTH —— 程式現在實際怎麼運作(LVP current truth)。
+# dependencies/fingerprints 是失效判定的依據:依賴檔變了 → 本機先轉 STALE,重新驗證後才更新這裡。
+schema_version: 1
+entity_type: memory
+entity_key: durable-store
+facts:
+  - fact_key: dir
+    value: ".dev-flow"
+    status: VERIFIED
+    confidence: 0.99
+    dependencies:
+      - memory/agentmem/identity.py
+    effective_at: "2026-08-20T10:12:07Z"
+    fingerprints:
+      memory/agentmem/identity.py: "sha256:71ed373412da6315"
+    recorded_at: "2026-08-20T10:12:07Z"
+    source_ref: memory/agentmem/identity.py
+    source_type: current_code
+    verification_count: 1
+    verified_at: "2026-08-20T10:12:07Z"

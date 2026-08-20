@@ -247,17 +247,33 @@ def consolidate(repo_root, store, session_id=None, now=None):
                 "recorded_at": now,
                 "evidence": payload.get("evidence") or []}))
         elif kind == "fact":
-            store.upsert_fact({
+            from . import truth
+            dependencies = payload.get("dependencies") or []
+            fingerprints = payload.get("fingerprints") or {}
+            if dependencies and not fingerprints:
+                # 候選只宣告了依賴、沒帶指紋時,在**固化的這一刻**對當前 checkout
+                # 現算。少了這一步,fact 會以「VERIFIED 但沒有任何指紋」落地,
+                # 查詢時只能降級成 CANDIDATE(無從驗證)—— 等於白宣告了依賴。
+                # 現算是正確的基準:consolidation 本來就發生在當前 checkout 上。
+                fingerprints = truth.fingerprints_for(repo_root, dependencies)
+            verified_commit = payload.get("verified_commit")
+            record = {
                 "entity_type": payload["entity_type"],
                 "entity_key": payload["entity_key"],
                 "fact_key": payload["fact_key"], "value": payload["value"],
                 "status": payload.get("status", "CANDIDATE"),
                 "confidence": payload.get("confidence", 0.5),
-                "recorded_at": now,
+                "recorded_at": now, "effective_at": now,
                 "source_type": payload.get("source_type"),
                 "source_ref": payload.get("source_ref"),
-                "dependencies": payload.get("dependencies") or [],
-                "fingerprints": payload.get("fingerprints") or {}})
+                "source_commit": payload.get("source_commit"),
+                "dependencies": dependencies,
+                "fingerprints": fingerprints}
+            if record["status"] == truth.VERIFIED:
+                record["verified_at"] = now
+                record["verified_commit"] = verified_commit
+                record["verification_count"] = 1
+            store.upsert_fact(record)
             entities_touched.add((payload["entity_type"], payload["entity_key"]))
         elif kind == "event":
             event_id = store.add_event(

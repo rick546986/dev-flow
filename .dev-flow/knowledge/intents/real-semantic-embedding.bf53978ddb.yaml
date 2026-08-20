@@ -1,0 +1,12 @@
+# intent knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: intent
+key: real-semantic-embedding
+title: "未來接上真正的語意 embedding provider"
+authority: architecture_decision
+status: CONFIRMED
+implemented: false
+confidence: 0.9
+body: "目前預設 provider 是 stdlib 的 token-hashing bag-of-words,它提供詞面重疊的向量化,不是語意相似度。介面已備(embedding.register_provider),但尚未接任何外部服務。"
+recorded_at: "2026-08-20T10:12:06Z"

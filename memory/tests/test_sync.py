@@ -191,3 +191,68 @@ class ConsolidateTest(MemoryCase):
         result = sync.consolidate(self.repo, self.store, self.session)
         self.assertEqual(result["promoted"], 0)
         self.assertEqual(result["rejected"][0]["target_kind"], "nonsense")
+
+
+class FactConsolidationTest(MemoryCase):
+    """fact 候選只宣告依賴、沒帶指紋時,固化當下要對當前 checkout 現算。
+
+    這條是實際踩到的缺陷:少了現算,fact 會以「VERIFIED 但沒有任何指紋」落地,
+    查詢時只能降級成 CANDIDATE(無從驗證)—— 宣告了依賴卻等於沒宣告,
+    而且 durable 檔看起來完全正常。
+    """
+
+    def setUp(self):
+        super().setUp()
+        from memtools import commit_all, write
+        self.project_id = self.project()["project_id"]
+        self.store = self.store_for(self.project_id)
+        write(self.repo, "src/services/db.ts", "export const t = 'lab_order'\n")
+        commit_all(self.repo, "seed src")
+        self.session = self.store.start_session("記錄現況事實")
+
+    def test_fingerprints_are_computed_at_consolidation(self):
+        import json
+        from agentmem import identity, truth
+        candidate = self.store.add_candidate(
+            self.session, "fact",
+            {"entity_type": "database", "entity_key": "lab-order",
+             "fact_key": "current_table", "value": "lab_order",
+             "title": "current_table = lab_order", "status": "VERIFIED",
+             "confidence": 0.99, "dependencies": ["src/services/db.ts"]},
+            "current_code")
+        self.store.set_candidate_status(candidate, "CONFIRMED")
+        sync.consolidate(self.repo, self.store, self.session)
+
+        row = self.store.facts(entity_type="database", entity_key="lab-order",
+                               fact_key="current_table", limit=1)[0]
+        fingerprints = json.loads(row["fingerprints_json"])
+        self.assertEqual(sorted(fingerprints), ["src/services/db.ts"])
+        self.assertTrue(fingerprints["src/services/db.ts"].startswith("sha256:"))
+
+        # 有指紋才拿得到 fast path(沒有指紋會被降級成 CANDIDATE)
+        workspace = identity.workspace_key(self.project_id, self.repo)
+        resolved = truth.resolve_current(
+            self.store, self.repo, "database", "lab-order", "current_table",
+            workspace, identity.workspace_snapshot(self.repo))
+        self.assertEqual(resolved["status"], truth.VERIFIED)
+        self.assertTrue(resolved["fast_path"])
+
+        # durable 檔也帶著指紋(換一台機器 rebuild 回來才驗得住)
+        data = durable.read_state(self.repo, "database", "lab-order")
+        self.assertIn("fingerprints", data["facts"][0])
+
+    def test_explicit_fingerprints_are_not_overwritten(self):
+        import json
+        candidate = self.store.add_candidate(
+            self.session, "fact",
+            {"entity_type": "database", "entity_key": "lab-order",
+             "fact_key": "current_table", "value": "lab_order",
+             "title": "t", "status": "VERIFIED",
+             "dependencies": ["src/services/db.ts"],
+             "fingerprints": {"src/services/db.ts": "sha256:supplied"}},
+            "current_code")
+        self.store.set_candidate_status(candidate, "CONFIRMED")
+        sync.consolidate(self.repo, self.store, self.session)
+        row = self.store.facts(fact_key="current_table", limit=1)[0]
+        self.assertEqual(json.loads(row["fingerprints_json"]),
+                         {"src/services/db.ts": "sha256:supplied"})

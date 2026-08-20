@@ -35,13 +35,13 @@ SECTION_LIMITS = {
 
 QUERY_INSTRUCTIONS = (
     "記憶查詢方式(不要憑印象回答,也不要要求把記憶全部載入):\n"
-    "- 現在實際怎麼運作 → `memory ask \"目前 <entity> 的 <fact> 是什麼\"`"
+    "- 現在實際怎麼運作 → `dev-memory.py ask \"目前 <entity> 的 <fact> 是什麼\"`"
     "(CURRENT;走 Current Truth fast path)\n"
-    "- 以前發生過什麼 → `memory ask \"之前 <主題> 改過什麼\"`(HISTORY)\n"
-    "- 為什麼這樣做 → `memory ask \"為什麼 <決定>\"`(WHY;decision 優先)\n"
-    "- 怎麼做某件事 → `memory ask \"怎麼 <動作>\"`(HOW;procedural skill)\n"
-    "- 這個詞什麼意思 → `memory ask \"<詞> 是什麼意思\"`(DOMAIN)\n"
-    "- 我們打算怎麼發展 → `memory ask \"未來打算 <主題>\"`(INTENT)\n"
+    "- 以前發生過什麼 → `dev-memory.py ask \"之前 <主題> 改過什麼\"`(HISTORY)\n"
+    "- 為什麼這樣做 → `dev-memory.py ask \"為什麼 <決定>\"`(WHY;decision 優先)\n"
+    "- 怎麼做某件事 → `dev-memory.py ask \"怎麼 <動作>\"`(HOW;procedural skill)\n"
+    "- 這個詞什麼意思 → `dev-memory.py ask \"<詞> 是什麼意思\"`(DOMAIN)\n"
+    "- 我們打算怎麼發展 → `dev-memory.py ask \"未來打算 <主題>\"`(INTENT)\n"
     "查不到時工具會回 NO_RELIABLE_MATCH —— 那是合法答案,請據此說「沒有記錄」,"
     "不要拿相近的記憶頂替。"
 )
