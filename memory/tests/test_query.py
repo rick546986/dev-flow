@@ -248,3 +248,135 @@ class ContextBuilderTest(MemoryCase):
 
     def test_query_instructions_are_always_present(self):
         self.assertIn("NO_RELIABLE_MATCH", self.build()["text"])
+
+
+class HydrationIsByPrimaryKeyTest(MemoryCase):
+    """檢索命中之後,答案的**內容**必須用主鍵撈回來,不能靠「最近 N 筆」列表。
+
+    WHY 的答案不是「有一筆 decision」,而是它的 `reason` / `alternatives` /
+    `tradeoff`;HOW 的答案是 `steps` / `verification`。原本的實作是
+
+        row = next((d for d in store.decisions(limit=200)
+                    if d["decision_id"] == hit["item_id"]), None)
+
+    也就是拿一個**已知的主鍵**去掃「最近 200 筆」。檢索索引沒有那個視窗,
+    所以命中一筆更舊的 decision 時 `row` 是 None —— 而 `_why()` 仍然把它算成
+    decision、仍然回 `OK`。系統於是聲稱「我有可靠的 WHY 答案」,卻沒有附上
+    構成那個答案的欄位。這比查不到更糟:查不到會回 NO_RELIABLE_MATCH,
+    呼叫端知道要去問人。
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.project_id = self.project()["project_id"]
+        self.store = self.store_for(self.project_id)
+        self.embedder = embedding.Embedder()
+        commit_all(self.repo, "seed")
+        self.workspace = identity.workspace_key(self.project_id, self.repo)
+        self.snapshot = identity.workspace_snapshot(self.repo)
+
+    def ask(self, text):
+        return query.execute(self.store, self.repo, text, self.workspace,
+                             self.snapshot, self.embedder)
+
+    def bury(self, kind, count=260):
+        """在目標之後再塞 count 筆**更新**的同類紀錄,把目標推出視窗外。"""
+        for n in range(count):
+            stamp = "2026-07-{0:02d}T{1:02d}:00:00Z".format(
+                1 + n // 24, n % 24)
+            if kind == "decision":
+                self.store.upsert_decision({
+                    "key": "unrelated-{0}".format(n),
+                    "title": "無關決策 {0}".format(n),
+                    "decision": "無關內容 {0}".format(n),
+                    "reason": "與查詢無關", "status": "ACCEPTED",
+                    "recorded_at": stamp})
+            else:
+                self.store.upsert_skill({
+                    "key": "unrelated-{0}".format(n),
+                    "title": "無關流程 {0}".format(n),
+                    "steps": ["無關步驟"], "status": "VERIFIED",
+                    "verification": "無關驗證", "recorded_at": stamp})
+
+    def test_why_hydrates_a_decision_outside_the_recent_window(self):
+        decision_id = self.store.upsert_decision({
+            "key": "share-lab-order", "title": "PGS/ECS 共用 lab order 表",
+            "decision": "合併成 lab_order", "reason": "兩邊欄位重疊九成",
+            "alternatives": "各自維護", "tradeoff": "查詢要多一個 join",
+            "status": "ACCEPTED", "recorded_at": "2026-01-01T00:00:00Z"})
+        self.bury("decision")
+        self.embedder.reindex(self.store)
+        answer = self.ask("為什麼要共用 lab order?")
+        hit = next((r for r in answer["results"]
+                    if r["item_id"] == decision_id), None)
+        self.assertIsNotNone(hit, "檢索本身要能命中它,否則這個測試沒在測東西")
+        self.assertEqual(hit.get("reason"), "兩邊欄位重疊九成")
+        self.assertEqual(hit.get("alternatives"), "各自維護")
+        self.assertEqual(hit.get("tradeoff"), "查詢要多一個 join")
+
+    def test_why_ok_always_carries_the_reason_fields(self):
+        """回 OK 就必須附上構成答案的欄位 —— 不得只回一個 decision 的殼。"""
+        self.store.upsert_decision({
+            "key": "share-lab-order", "title": "PGS/ECS 共用 lab order 表",
+            "decision": "合併成 lab_order", "reason": "兩邊欄位重疊九成",
+            "status": "ACCEPTED", "recorded_at": "2026-01-01T00:00:00Z"})
+        self.bury("decision")
+        self.embedder.reindex(self.store)
+        answer = self.ask("為什麼要共用 lab order?")
+        if answer["retrieval_status"] != retrieval.OK:
+            self.skipTest("這一案只約束 OK 的情況")
+        for hit in answer["results"]:
+            if hit["item_type"] != "decision":
+                continue
+            self.assertIn("reason", hit,
+                          "回 OK 的 decision 一定要帶 reason")
+
+    def test_why_evidence_comes_from_the_hit_row(self):
+        self.store.upsert_decision({
+            "key": "share-lab-order", "title": "PGS/ECS 共用 lab order 表",
+            "decision": "合併成 lab_order", "reason": "兩邊欄位重疊九成",
+            "status": "ACCEPTED", "recorded_at": "2026-01-01T00:00:00Z",
+            "evidence": [{"type": "adr", "ref": "docs/adr/0007.md"}]})
+        self.bury("decision")
+        self.embedder.reindex(self.store)
+        answer = self.ask("為什麼要共用 lab order?")
+        self.assertIn({"type": "adr", "ref": "docs/adr/0007.md"},
+                      answer["evidence"])
+
+    def test_how_hydrates_a_skill_outside_the_recent_window(self):
+        skill_id = self.store.upsert_skill({
+            "key": "deploy-worker", "title": "部署 worker 的流程",
+            "steps": ["跑 migration", "重啟 worker"], "status": "VERIFIED",
+            "verification": "打 /health 回 200",
+            "recorded_at": "2026-01-01T00:00:00Z"})
+        self.bury("skill")
+        self.embedder.reindex(self.store)
+        answer = self.ask("怎麼部署 worker?")
+        hit = next((r for r in answer["results"]
+                    if r["item_id"] == skill_id), None)
+        self.assertIsNotNone(hit, "檢索本身要能命中它,否則這個測試沒在測東西")
+        self.assertEqual(hit.get("steps"), ["跑 migration", "重啟 worker"])
+        self.assertEqual(hit.get("verification"), "打 /health 回 200")
+        self.assertEqual(hit.get("skill_status"), "VERIFIED")
+
+    def test_row_lookup_by_primary_key_does_not_depend_on_recency(self):
+        """store 層面的直接證據:主鍵查詢不受「最近 N 筆」影響。"""
+        decision_id = self.store.upsert_decision({
+            "key": "old", "title": "很舊的決策", "decision": "x",
+            "reason": "r", "status": "ACCEPTED",
+            "recorded_at": "2026-01-01T00:00:00Z"})
+        skill_id = self.store.upsert_skill({
+            "key": "old", "title": "很舊的流程", "steps": ["s"],
+            "status": "VERIFIED", "recorded_at": "2026-01-01T00:00:00Z"})
+        self.bury("decision")
+        self.bury("skill")
+        self.assertIsNone(
+            next((d for d in self.store.decisions(limit=200)
+                  if d["decision_id"] == decision_id), None),
+            "前置條件:目標必須真的在視窗外,否則這組測試沒在測東西")
+        self.assertEqual(
+            self.store.decision_row(decision_id)["reason"], "r")
+        self.assertEqual(
+            self.store.skill_row(skill_id)["title"], "很舊的流程")
+        self.assertIsNone(self.store.decision_row("no-such-id"))
+        self.assertIsNone(self.store.skill_row("no-such-id"))

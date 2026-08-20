@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: hydrate-known-key-by-primary-key
+title: "檢索命中之後,用已知主鍵撈內容不得經過任何「最近 N 筆」視窗"
+authority: domain_expert
+status: CONFIRMED
+confidence: 0.8
+body: "檢索索引沒有 recency 視窗,而 decisions/skills 的列表查詢有。拿一個已知主鍵去掃那個列表,命中較舊的紀錄時撈不到內容,而呼叫端仍然回 OK —— 系統聲稱有可靠答案卻沒附上構成答案的欄位(WHY 的 reason 與 alternatives 與 tradeoff、HOW 的 steps 與 verification)。那比查不到更糟:查不到會回 NO_RELIABLE_MATCH,呼叫端知道要去問人。已知主鍵一律走主鍵查詢。"
+recorded_at: "2026-08-20T20:18:13Z"

@@ -173,6 +173,55 @@ def sanitize_origin_provenance(raw):
     return candidate
 
 
+# 指向「這台機器自己」的主機名。`.` 的存在不代表另一台機器(127.0.0.1)。
+_LOOPBACK_HOSTS = frozenset((
+    "localhost", "localhost.localdomain", "ip6-localhost",
+    "0.0.0.0", "::1", "::", "[::1]"))
+
+
+def remote_is_offmachine(url):
+    """這個 git remote URL 指向的是**另一台機器**嗎?判不出來一律 False。
+
+    存在的理由:`durable-check` 問的是「記憶離開這台機器了嗎」,而
+    `git ls-remote` 成功只回答了嚴格較弱的一句話 ——「設定的 upstream 連得上
+    而且有這個 commit」。remote 不必然在別台機器上:
+
+        /Volumes/backup/mirror.git      本機路徑
+        file:///Users/rick/mirror.git   本機路徑,換個寫法
+        ssh://git@localhost/repo.git    網路 transport,但連的是自己
+
+    這三個都會讓 `ls-remote` 回報正確的 SHA。硬碟壞掉時它們跟工作樹一起消失,
+    而判定已經聲稱記憶離開了本機。
+
+    所以這裡只認**網路 transport + 具名的非 loopback 主機**,其餘(本機路徑、
+    UNC、Windows 磁碟機、未知 transport、單段主機名)一律 False。單段主機名
+    也判 False 是刻意的:`ssh://git@buildbox/…` 可能是別台機器、也可能是本機
+    的 `/etc/hosts` 別名,分不出來 —— 而**分不出來不得當成證據**。
+
+    這支與 `sanitize_origin_provenance` 問的是不同的問題(那支問「能不能寫進
+    Git」,這支問「在不在別台機器上」),所以刻意不共用回傳值:一條 URL 可以
+    是 off-machine 卻不可寫入(帶 token 的 https 就是)。
+    """
+    if not isinstance(url, str):
+        return False
+    value = url.strip()
+    if not value or any(ch.isspace() for ch in value):
+        return False
+    if value.lower().startswith("file://"):
+        return False
+    if paths.looks_absolute(value) or "\\" in value:
+        return False
+    if value.startswith(("./", "../")):
+        return False
+    match = _SCHEME_URL.match(value) or _SCP_LIKE.match(value)
+    if not match:
+        return False
+    host = match.group("host").strip("[]").lower()
+    if not host or host in _LOOPBACK_HOSTS or host.startswith("127."):
+        return False
+    return "." in host
+
+
 def _git(root, *args):
     """跑 git 並回傳 **strip 過** 的 stdout;失敗回 None。
 

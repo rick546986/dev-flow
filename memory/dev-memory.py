@@ -377,9 +377,12 @@ def cmd_durable_check(args):
     而不是收尾清單上一句沒人查的話。
 
     remote 那一項問的是**遠端本身**(`ls-remote`),不是本機的 `origin/<branch>`
-    —— 追蹤 ref 是快取,別台機器改掉遠端之後它還指著我的 commit。問不到遠端
-    一律 FAIL;離線要放行請明確 `--local-only`,那時輸出的 `remote_observed`
-    是 false。
+    —— 追蹤 ref 是快取,別台機器改掉遠端之後它還指著我的 commit。而且那個
+    remote 必須真的**在別台機器上**:本機的 bare repo、`file://`、
+    `ssh://git@localhost/…` 都會讓 `ls-remote` 回報正確的 SHA,卻跟工作樹在
+    同一顆硬碟上一起壞掉。問不到遠端、或判不出它在別台機器上,一律 FAIL;
+    離線或刻意只用本機 remote 要放行請明確 `--local-only`,那時輸出的
+    `remote_observed` 是 false。
     """
     root, _project, store, _workspace_id, _snapshot = _resolve(args)
     try:
@@ -418,7 +421,7 @@ def build_parser():
         "durable-check",
         help="驗證 durable memory 已 commit 且已抵達 remote(Stage 6 收尾)")
     p.add_argument("--local-only", action="store_true",
-                   help="不問遠端(離線)。放行但不會聲稱驗過遠端")
+                   help="不問遠端(離線、或 remote 就在本機)。放行但不會聲稱驗過遠端")
     p.set_defaults(func=cmd_durable_check)
 
     p = sub.add_parser("context")

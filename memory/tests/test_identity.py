@@ -102,3 +102,61 @@ class WorkspaceTest(MemoryCase):
         self.assertNotEqual(
             identity.workspace_key(data["project_id"], self.repo),
             identity.workspace_key(data["project_id"], other))
+
+
+class RemoteIsOffMachineTest(MemoryCase):
+    """「這個 remote 在另一台機器上嗎」—— `durable-check` 唯一的問句需要它。
+
+    一個 git remote 不必然在別台機器上。`/Volumes/backup/mirror.git`、
+    `file:///…`、`ssh://git@localhost/…` 都通得過 `ls-remote`,而硬碟壞掉時
+    它們跟工作樹一起消失。判不出來一律 False:**判不出來不得當成證據**。
+    """
+
+    OFF_MACHINE = (
+        "https://github.com/org/repo.git",
+        "http://git.internal.example/org/repo.git",
+        "ssh://git@github.com/org/repo.git",
+        "ssh://git@git.example.com:2222/org/repo.git",
+        "git://git.example.com/repo.git",
+        "git@github.com:org/repo.git",
+        "github.com:org/repo.git",
+        "https://user:token@github.com/org/repo.git",
+    )
+
+    LOCAL_OR_UNKNOWN = (
+        "/Volumes/backup/mirror.git",
+        "/tmp/origin.git",
+        "~/mirror.git",
+        "file:///Users/rick/mirror.git",
+        "file://localhost/Users/rick/mirror.git",
+        "../sibling.git",
+        "./mirror.git",
+        "sibling.git",
+        "C:\\repos\\mirror.git",
+        "\\\\server\\share\\repo.git",
+        "ssh://git@localhost/repo.git",
+        "ssh://git@localhost.localdomain/repo.git",
+        "https://127.0.0.1/repo.git",
+        "https://127.1.2.3:8080/repo.git",
+        "http://[::1]/repo.git",
+        "https://0.0.0.0/repo.git",
+        "ssh://git@internalhost/repo.git",
+        "ext::sh -c 'cat /tmp/x'",
+        "",
+        "   ",
+        None,
+        123,
+    )
+
+    def test_network_remotes_are_off_machine(self):
+        for url in self.OFF_MACHINE:
+            self.assertTrue(identity.remote_is_offmachine(url), url)
+
+    def test_local_or_undecidable_remotes_are_not_off_machine(self):
+        for url in self.LOCAL_OR_UNKNOWN:
+            self.assertFalse(identity.remote_is_offmachine(url), url)
+
+    def test_it_never_returns_a_truthy_non_bool(self):
+        """回傳值會被當成「有沒有證據」的判定,不得是一個 re.Match。"""
+        for url in self.OFF_MACHINE + ("/tmp/x.git",):
+            self.assertIsInstance(identity.remote_is_offmachine(url), bool)

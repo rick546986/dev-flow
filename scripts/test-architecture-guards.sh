@@ -133,8 +133,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=94
-EXPECTED_TOTAL=108
+EXPECTED_NEGATIVES=96
+EXPECTED_TOTAL=110
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -1799,16 +1799,49 @@ D=$(seed_mem mem24); mutate "$D" <<'PYX'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
 t = p.read_text(encoding="utf-8")
-anchor = '        remote_head, error = _observe_remote(repo_root, branch or "")'
+anchor = ('        remote_head, code, error = _observe_remote('
+          'repo_root, branch or "")')
 assert anchor in t, "MEM-24 anchor 不見"
 # 退回本機追蹤 ref:別台機器改掉遠端之後它還指著我的 commit,於是這一關
 # 會替一個伺服器上已經不存在的 commit 背書。
 p.write_text(t.replace(
     anchor,
-    '        remote_head, error = identity._git(\n'
-    '            repo_root, "rev-parse", upstream), None', 1), encoding="utf-8")
+    '        remote_head, code, error = identity._git(\n'
+    '            repo_root, "rev-parse", upstream), None, None', 1),
+    encoding="utf-8")
 PYX
 expect_local fail check-memory-architecture.sh "$D" "MEM-24 durable-check 退回本機追蹤 ref(遠端被改掉仍判 PASS)"
+
+D=$(seed_mem mem25); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = "    if not identity.remote_is_offmachine(url):"
+assert anchor in t, "MEM-25 anchor 不見"
+# 拿掉「remote 在別台機器上嗎」這一問:本機 bare repo / file:// / localhost
+# 都會讓 ls-remote 回報正確的 SHA,於是判 PASS 而記憶跟工作樹在同一顆硬碟上。
+i = t.find(anchor)
+j = t.find("    raw = identity._git_raw(", i)
+assert j > i, "MEM-25 window 不見"
+p.write_text(t[:i] + t[j:], encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-25 durable-check 收本機 remote 當離開本機的證據"
+
+D=$(seed_mem mem26); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/query.py"
+t = p.read_text(encoding="utf-8")
+anchor = '        row = store.decision_row(hit["item_id"])'
+assert anchor in t, "MEM-26 anchor 不見"
+# 退回「掃最近 200 筆找已知主鍵」:命中視窗外的 decision 時 reason 撈不到,
+# 而 _why 仍然把它算成 decision、仍然回 OK。
+p.write_text(t.replace(
+    anchor,
+    '        row = next((d for d in store.decisions(limit=200)\n'
+    '                    if d["decision_id"] == hit["item_id"]), None)', 1),
+    encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-26 WHY 用「最近 N 筆」撈已知主鍵(視窗外的 reason 撈不到仍回 OK)"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"

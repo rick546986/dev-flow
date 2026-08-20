@@ -23,6 +23,7 @@
 import json
 import os
 import shutil
+from unittest import mock
 
 from memtools import MemoryCase
 from agentmem import (devtalk, durable, identity, lineage, query,
@@ -410,14 +411,8 @@ class DurableWriteHappensBeforeStateAdvancesTest(MemoryCase):
                          "寫檔失敗後舊決定必須還是 ACCEPTED")
 
 
-class DurableCheckTest(MemoryCase):
-    """Stage 6 收尾的最後一道:記憶真的離開這台機器了嗎?
-
-    `checkpoint` 回 `promoted: 3` 只代表檔案寫進**工作樹**。工作樹不是耐久性
-    —— 沒 commit 會被 checkout 掉,沒 push 就只有這台機器有。收尾順序
-    (萃取 → checkpoint → memory commit → 最終 push → remote HEAD 驗證)
-    每一步都可能「看起來做完了」,所以要有一支能複驗的判定。
-    """
+class DurableCheckCase(MemoryCase):
+    """`durable_check` 的共用治具(本身不含測試案)。"""
 
     def setUp(self):
         super().setUp()
@@ -436,7 +431,16 @@ class DurableCheckTest(MemoryCase):
     def check(self):
         return sync.durable_check(self.repo, self.store)
 
-    def add_remote(self):
+    def add_remote(self, off_machine=True):
+        """建一個本機 bare repo 當 upstream 並 push 上去。
+
+        `off_machine=True` 時額外讓 URL 解析回報一個網路 remote。理由:
+        `durable-check` 現在會拒絕**本機** remote 當「記憶離開這台機器」的
+        證據(見 RemoteMustBeOffMachineTest),而一個真的網路 remote 沒辦法
+        在 CI 裡不連外地建起來。這裡只替換「這個 remote 的 URL 是什麼」
+        這一個問句 —— push、`ls-remote` 問到的 SHA、與 HEAD 的比對全部是真的。
+        `off_machine=False` 則完全不替換,用來驗本機 remote 真的被拒。
+        """
         from memtools import git
         bare = os.path.join(self.work, "origin.git")
         os.makedirs(bare, exist_ok=True)
@@ -444,7 +448,23 @@ class DurableCheckTest(MemoryCase):
         git(self.repo, "remote", "add", "origin", bare)
         branch = git(self.repo, "rev-parse", "--abbrev-ref", "HEAD")
         git(self.repo, "push", "-q", "-u", "origin", branch)
+        if off_machine:
+            patcher = mock.patch.object(
+                sync, "_remote_url",
+                return_value="ssh://git@git.example.com/dev-flow.git")
+            patcher.start()
+            self.addCleanup(patcher.stop)
         return bare
+
+
+class DurableCheckTest(DurableCheckCase):
+    """Stage 6 收尾的最後一道:記憶真的離開這台機器了嗎?
+
+    `checkpoint` 回 `promoted: 3` 只代表檔案寫進**工作樹**。工作樹不是耐久性
+    —— 沒 commit 會被 checkout 掉,沒 push 就只有這台機器有。收尾順序
+    (萃取 → checkpoint → memory commit → 最終 push → remote HEAD 驗證)
+    每一步都可能「看起來做完了」,所以要有一支能複驗的判定。
+    """
 
     def test_checkpoint_alone_is_not_durable(self):
         """checkpoint 成功但沒 commit → FAIL。這是最容易發生的一種假完成。"""
@@ -596,6 +616,105 @@ class DurableCheckTest(MemoryCase):
         self.assertEqual(result["verdict"], "PASS", result["problems"])
         self.assertTrue(result["remote_observed"])
         self.assertEqual(result["remote_head"], result["head"])
+
+
+class RemoteMustBeOffMachineTest(DurableCheckCase):
+    """一個 git remote 不必然在別台機器上 —— 而這一關問的正是那件事。
+
+    `durable-check` 的問句是「記憶離開這台機器了嗎」。`ls-remote` 成功只證明
+    「設定的 upstream 連得上而且有這個 commit」,那是**嚴格較弱**的一句話:
+
+        origin = /Volumes/backup/mirror.git
+        origin = file:///Users/rick/mirror.git
+        origin = ssh://git@localhost/repo.git
+
+    這三個都會讓 `ls-remote` 回報正確的 SHA,於是 verdict=PASS、
+    remote_observed=true。而硬碟壞掉時它們跟工作樹一起消失 —— 判定聲稱了
+    一件它沒有驗證的事,這正是本專案在修的同一個錯:**在耐久性真正建立之前
+    就把狀態往前推**。
+
+    離線要放行請用 `--local-only`:它會 PASS 但 `remote_observed=False`,
+    也就是**明說**這一關只驗到本機。「不得聲稱」與「不得放行」不是同一件事。
+    """
+
+    def test_local_bare_remote_is_not_off_machine_proof(self):
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self.add_remote(off_machine=False)
+        result = self.check()
+        self.assertEqual(result["verdict"], "FAIL", result)
+        self.assertTrue(
+            any(sync.REMOTE_LOCAL in p for p in result["problems"]),
+            result["problems"])
+        self.assertFalse(result["remote_observed"],
+                         "本機 remote 不得算成觀察到遠端")
+
+    def test_file_url_remote_is_not_off_machine_proof(self):
+        from memtools import commit_all, git
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        bare = self.add_remote(off_machine=False)
+        git(self.repo, "remote", "set-url", "origin",
+            "file://" + bare.replace(os.sep, "/"))
+        result = self.check()
+        self.assertEqual(result["verdict"], "FAIL", result)
+        self.assertTrue(
+            any(sync.REMOTE_LOCAL in p for p in result["problems"]),
+            result["problems"])
+
+    def test_insteadof_rewrite_to_a_local_path_is_still_local(self):
+        """判定要看 git **實際會連上去**的 URL,不是設定檔裡好看的那個。
+
+        `url.<path>.insteadOf` 會把一個網路形狀的 URL 改寫成本機路徑。只看
+        `remote.origin.url` 的話,一個實際只寫到本機目錄的 remote 會通過。
+        """
+        from memtools import commit_all, git
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        bare = self.add_remote(off_machine=False)
+        fake = "ssh://git@git.example.com/dev-flow.git"
+        git(self.repo, "config", "url.{0}.insteadOf".format(bare), fake)
+        git(self.repo, "remote", "set-url", "origin", fake)
+        self.assertEqual(
+            identity._git(self.repo, "config", "remote.origin.url"), fake,
+            "前置條件:設定值必須是網路形狀的,否則這個測試沒在測東西")
+        result = self.check()
+        self.assertEqual(result["verdict"], "FAIL", result)
+        self.assertTrue(
+            any(sync.REMOTE_LOCAL in p for p in result["problems"]),
+            result["problems"])
+
+    def test_problems_never_leak_the_remote_url(self):
+        """輸出只提 remote **名字**:URL 可能帶 token,而這段會被貼進紀錄。"""
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        bare = self.add_remote(off_machine=False)
+        result = self.check()
+        blob = json.dumps(result, ensure_ascii=False)
+        self.assertNotIn(bare, blob)
+        self.assertNotIn(self.work, blob)
+
+    def test_off_machine_remote_still_passes(self):
+        """正向路徑不得被這一條擋掉 —— 真的網路 remote 要 PASS。"""
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self.add_remote(off_machine=True)
+        result = self.check()
+        self.assertEqual(result["verdict"], "PASS", result["problems"])
+        self.assertTrue(result["remote_observed"])
+
+    def test_local_only_still_passes_without_claiming_remote(self):
+        """本機 remote + `--local-only` → 放行,但不得聲稱驗過遠端。"""
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self.add_remote(off_machine=False)
+        result = sync.durable_check(self.repo, self.store, local_only=True)
+        self.assertEqual(result["verdict"], "PASS", result["problems"])
+        self.assertFalse(result["remote_observed"])
 
 
 class DurableWriterGatesEveryFactTest(MemoryCase):

@@ -362,8 +362,10 @@ def _why(store, plan_dict, embedder, limit, branch):
     ordered = decisions + events
     evidence = []
     for hit in decisions:
-        row = next((d for d in store.decisions(limit=200)
-                    if d["decision_id"] == hit["item_id"]), None)
+        # 主鍵撈,不掃「最近 200 筆」:檢索索引沒有那個視窗,命中較舊的
+        # decision 時掃不到,而下面仍然回 OK —— 那是「聲稱有答案卻沒附上
+        # 構成答案的欄位」,比查不到更糟。
+        row = store.decision_row(hit["item_id"])
         if row:
             hit["reason"] = row["reason"]
             hit["alternatives"] = row["alternatives"]
@@ -394,8 +396,7 @@ def _how(store, plan_dict, embedder, limit):
     found = _search(store, plan_dict, embedder, limit, item_types=("skill",))
     import json
     for hit in found["results"]:
-        row = next((s for s in store.skills(limit=200)
-                    if s["skill_id"] == hit["item_id"]), None)
+        row = store.skill_row(hit["item_id"])   # 主鍵撈(理由同 _why)
         if row:
             hit["steps"] = json.loads(row["steps_json"])
             hit["verification"] = row["verification"]

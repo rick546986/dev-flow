@@ -533,6 +533,45 @@ elif "ls-remote" not in sync_src:
 else:
     ok("durable-check 向遠端本身查證 HEAD(追蹤 ref 是快取,不是證據)")
 
+# 連得上不等於在別台機器上。`origin` 可以是 /Volumes/backup/mirror.git、
+# file:///…、ssh://git@localhost/… —— 這些都會讓 ls-remote 回報正確的 SHA,
+# 而硬碟壞掉時它們跟工作樹一起消失。這一關的問句是「記憶離開這台機器了嗎」,
+# 所以 URL 必須先被判定成別台機器,而且判的要是**改寫後**的 URL。
+i_obs = sync_src.find("def _observe_remote(")
+i_obs_end = sync_src.find("\ndef ", i_obs + 1)
+obs_code = (sync_src[i_obs:i_obs_end] if i_obs >= 0 and i_obs_end > i_obs
+            else None)
+if obs_code is None:
+    bad("_observe_remote 抽取", "找不到 _observe_remote 窗口")
+elif "remote_is_offmachine(" not in executable_only(obs_code):
+    bad("本機 remote 被當成離開本機的證據",
+        "_observe_remote 沒有判定 remote 是否在別台機器上 —— 本機 bare repo、"
+        "file://、localhost 都會讓 ls-remote 回報正確的 SHA,於是 durable-check"
+        "判 PASS 而記憶其實跟工作樹在同一顆硬碟上")
+elif "--get-url" not in executable_only(sync_src):
+    bad("remote URL 判的是字面值不是實際連線目標",
+        "沒有走 ls-remote --get-url —— `url.<base>.insteadOf` 會在連線時把設定"
+        "檔裡的網路 URL 改寫成本機路徑,只讀 remote.<name>.url 的話那條路會"
+        "掛著網路形狀的名字通過判定")
+else:
+    ok("durable-check 只認別台機器上的 remote(改寫後的 URL)")
+
+# 檢索命中之後,答案的內容必須用主鍵撈。拿已知主鍵去掃「最近 N 筆」是錯的:
+# 檢索索引沒有那個視窗,命中較舊的 decision/skill 時撈不到內容,而呼叫端仍然
+# 回 OK —— 聲稱有可靠答案卻沒附上構成答案的欄位,比查不到更糟。
+hydration = re.findall(r"store\.(decisions|skills)\(limit=\d+\)", query_src)
+if hydration:
+    bad("WHY/HOW 用「最近 N 筆」撈已知主鍵",
+        "query.py 仍在 store.{0}(limit=…) 裡掃已知 id —— 命中視窗外的紀錄時"
+        "reason/steps 撈不到,而 status 仍然是 OK".format(hydration[0]))
+elif not re.search(r"store\.decision_row\(", query_src) \
+        or not re.search(r"store\.skill_row\(", query_src):
+    bad("WHY/HOW 沒有主鍵撈",
+        "query.py 沒有走 store.decision_row / store.skill_row —— 檢索命中的是"
+        "一個已知主鍵,撈它的內容不該經過任何視窗")
+else:
+    ok("WHY/HOW 的內容用主鍵撈(檢索索引沒有「最近 N 筆」這個視窗)")
+
 # revision 的 event_id 不得隨機:去重的依據是 event_id,而隨機 id 讓去重永遠
 # 對不上 —— 同一次 supersede 會在 events/ 累積成 N 筆,每筆都聲稱是它。
 i_rev = sync_src.find("revision_records.append(")
@@ -605,7 +644,7 @@ elif i_cond < 0 or cond_line.strip() == "if changed or dirty:":
 else:
     ok("git status 解析不完整時,無指紋的依賴不得走 fast path")
 
-MIN_CHECKS = 49
+MIN_CHECKS = 51
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)

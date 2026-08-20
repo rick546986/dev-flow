@@ -523,10 +523,23 @@ OPEN_SESSION = "SESSION_STILL_OPEN"
 PENDING_REVISION = "REVISION_STILL_PENDING"
 PENDING_FACT = "FACT_STATE_NOT_REWRITTEN"
 REMOTE_UNVERIFIED = "DURABLE_REMOTE_UNVERIFIED"
+REMOTE_LOCAL = "DURABLE_REMOTE_IS_LOCAL"
+
+
+def _remote_url(repo_root, remote):
+    """這個 remote **實際會連上去**的 URL。
+
+    走 `ls-remote --get-url` 而不是讀 `remote.<name>.url`:後者是設定檔裡的
+    字面值,而 `url.<base>.insteadOf` 會在連線時把它改寫掉。只看字面值的話,
+    一個實際只寫到本機目錄的 remote 可以掛著網路形狀的名字通過判定。
+    `--get-url` 不連網,它只做改寫後的解析。
+    """
+    from . import identity
+    return identity._git(repo_root, "ls-remote", "--get-url", remote)
 
 
 def _observe_remote(repo_root, branch):
-    """向**遠端本身**問那個 branch 現在指到哪。回 `(sha, error)`。
+    """向**遠端本身**問那個 branch 現在指到哪。回 `(sha, code, message)`。
 
     不用 `rev-parse origin/<branch>`:那是本機快取,另一台機器 force-push 或
     刪掉 branch 之後它仍然指著我的 commit —— 這一關會替一個伺服器上已經不存在
@@ -537,6 +550,11 @@ def _observe_remote(repo_root, branch):
 
     remote 與 ref 從 `branch.<name>.remote` / `.merge` 讀,不從 `origin/xxx`
     這個字串切 —— branch 名字本身可以有 `/`,切錯會問錯 ref 然後判 FAIL。
+
+    連得上**不等於**在別台機器上:remote 可以是 `/Volumes/backup/mirror.git`。
+    所以 URL 先過 `identity.remote_is_offmachine()`,判不出是別台機器就不給
+    證據 —— 見那支的註解。訊息裡只提 remote **名字**,不提 URL:URL 可能帶
+    token,而這段輸出會被貼進紀錄。
     """
     from . import identity
     remote = identity._git(repo_root, "config",
@@ -544,17 +562,29 @@ def _observe_remote(repo_root, branch):
     merge = identity._git(repo_root, "config",
                           "branch.{0}.merge".format(branch))
     if not remote or not merge:
-        return None, "讀不到 branch.{0} 的 remote/merge 設定".format(branch)
+        return (None, REMOTE_UNVERIFIED,
+                "讀不到 branch.{0} 的 remote/merge 設定".format(branch))
+    url = _remote_url(repo_root, remote)
+    if not url:
+        return (None, REMOTE_UNVERIFIED,
+                "讀不到 remote {0} 的 URL".format(remote))
+    if not identity.remote_is_offmachine(url):
+        return (None, REMOTE_LOCAL,
+                "remote {0} 指向這台機器,或無法判定它在別台機器上 —— "
+                "本機的 bare repo / file:// / localhost 跟工作樹一起壞掉,"
+                "它不是「記憶離開這台機器」的證據".format(remote))
     raw = identity._git_raw(repo_root, "ls-remote", "--exit-code",
                             remote, merge)
     if raw is None:
-        return None, "問不到遠端 {0} 的 {1}(網路不通、無權限、或該 ref 不存在)".format(
-            remote, merge)
+        return (None, REMOTE_UNVERIFIED,
+                "問不到遠端 {0} 的 {1}(網路不通、無權限、或該 ref 不存在)"
+                .format(remote, merge))
     for line in raw.splitlines():
         parts = line.split("\t")
         if len(parts) == 2 and parts[1].strip() == merge:
-            return parts[0].strip(), None
-    return None, "遠端 {0} 沒有回報 {1}".format(remote, merge)
+            return parts[0].strip(), None, None
+    return (None, REMOTE_UNVERIFIED,
+            "遠端 {0} 沒有回報 {1}".format(remote, merge))
 
 
 def durable_check(repo_root, store, local_only=False):
@@ -611,12 +641,12 @@ def durable_check(repo_root, store, local_only=False):
         # 明確要求只驗本機。追蹤 ref 可能是舊的,所以**不聲稱**觀察過遠端。
         remote_head = identity._git(repo_root, "rev-parse", upstream)
     else:
-        remote_head, error = _observe_remote(repo_root, branch or "")
+        remote_head, code, error = _observe_remote(repo_root, branch or "")
         if error:
             problems.append(
-                "{0}:{1} —— 問不到遠端就是沒有證據,不得因為問不到而放行"
-                "(離線時要放行請明確用 --local-only,它不會聲稱驗過遠端)"
-                .format(REMOTE_UNVERIFIED, error))
+                "{0}:{1} —— 沒有證據就是沒有證據,不得因為問不到而放行"
+                "(離線或刻意只用本機 remote 時要放行請明確用 --local-only,"
+                "它不會聲稱驗過遠端)".format(code, error))
         else:
             remote_observed = True
     pushed = bool(head and remote_head and head == remote_head)

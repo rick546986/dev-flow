@@ -441,6 +441,18 @@ class Store:
         args.append(int(limit))
         return [dict(r) for r in self.conn.execute(" ".join(sql), args)]
 
+    def decision_row(self, decision_id):
+        """主鍵查詢。檢索命中已知 id 之後要撈內容,一律走這支。
+
+        用 `decisions(limit=N)` 掃已知主鍵是錯的:檢索索引沒有那個視窗,
+        於是命中一筆較舊的 decision 時撈不到內容,而呼叫端仍然回 OK ——
+        系統聲稱有答案卻沒附上構成答案的欄位。
+        """
+        row = self.conn.execute(
+            "SELECT * FROM decisions WHERE decision_id=?",
+            (decision_id,)).fetchone()
+        return dict(row) if row else None
+
     # ── skills(F)──────────────────────────────────────────────────────────
     def upsert_skill(self, record):
         record = dict(record)
@@ -489,6 +501,12 @@ class Store:
         sql.append("ORDER BY recorded_at DESC LIMIT ?")
         args.append(int(limit))
         return [dict(r) for r in self.conn.execute(" ".join(sql), args)]
+
+    def skill_row(self, skill_id):
+        """主鍵查詢(理由同 decision_row)。"""
+        row = self.conn.execute(
+            "SELECT * FROM skills WHERE skill_id=?", (skill_id,)).fetchone()
+        return dict(row) if row else None
 
     # ── dev-talk session / transcript / candidate(全部 local only)─────────
     def start_session(self, topic, mode="understanding", branch=None,
