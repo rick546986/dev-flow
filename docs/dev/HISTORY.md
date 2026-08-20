@@ -212,3 +212,9 @@
 - 落在哪:hooks/_doctor_impl.py、hooks/_exec_impl.py、scripts/devflow-evidence-gauntlet.sh 與 docs/dev/tools/ 副本、skills/dev-setup/SKILL.md、notes/dispatch-windows-parity.md、.github/workflows/devflow-ci.yml
 - 詳細:issue #3/#4/#5;https://github.com/rick546986/dev-flow/releases/tag/v3.9.1
 
+## 2026-08-20 · issue-7-path-separator · v3.9.2
+- 做了什麼:Windows 上開得了工了:scope 內的檔不再被判成 scope 外,而且執行期禁讀上游、契約 hash 釘住這兩道原本在 Windows 靜默失效的保護真的會擋
+- 為什麼:守衛靠字串比對判範圍,但路徑有兩個來源 —— git 一律正斜線、Windows 的 Python 吐反斜線,逐字比對永不命中。過度阻擋那面(拒絕啟動)吵、看得見;保護那面(禁讀上游整條放行、契約 hash 記錄零個檔)靜默,而產出看起來完整
+- 落在哪:hooks/devflow-lib.py(新增 to_posix,四個出入口各過一次)、hooks/selftest.sh(w1 組 6 案,MIN_CASES 392→398)、scripts/test-architecture-guards.sh、tests/parallel-stage6/contract_ref.py、hooks/devtalk-guard.sh
+- 詳細:issue #7;https://github.com/rick546986/dev-flow/releases/tag/v3.9.2
+
