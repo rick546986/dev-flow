@@ -122,8 +122,18 @@ if not isinstance(fp, str) or not fp:
 norm = os.path.normpath(fp).replace("\\", "/")
 if not norm.endswith(".md"):
     sys.exit(0)
-if "/.devflow/reports/" not in norm and not norm.startswith(".devflow/reports/"):
-    sys.exit(0)                                   # 非回報路徑:一律靜默放行
+# 2026-08-20 覆蓋缺口:原本只掃 `.devflow/reports/`,把回報檔寫到 `.devflow/` 底下
+# 別的地方就整個繞過去,而且是**靜默**繞過(現場實例:健檢者把驗收報告放在
+# `.devflow/verify-<版本>-<日期>.md`,帶著本機絕對路徑一路貼進 public issue,
+# 守衛從頭到尾沒被觸發)。決定會不會被公開的是「位置」,而位置正是最容易寫錯的
+# 東西 —— 所以掃描面放寬成 `.devflow/` 底下所有 .md。
+if "/.devflow/" not in norm and not norm.startswith(".devflow/"):
+    sys.exit(0)                                   # 非 .devflow/ 底下:一律靜默放行
+# 例外:`.devflow/task/<T-id>/` 是 Worker 的執行期證據區,只在本機用、不會貼出去,
+# 裡面出現本機絕對路徑是正常的。掃它等於在武裝狀態下把 Worker 寫證據擋掉 ——
+# 那是過度封鎖,會直接卡死 Stage 6(比漏掃更嚴重,所以這條例外不能省)。
+if "/.devflow/task/" in norm or norm.startswith(".devflow/task/"):
+    sys.exit(0)
 
 try:
     # errors="replace":回報常貼 log,混到非 UTF-8 位元組不該讓守衛 crash

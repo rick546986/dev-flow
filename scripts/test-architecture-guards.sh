@@ -1539,9 +1539,9 @@ check_static_pin_sub() { # check_static_pin_sub <相對路徑> <期望子字串>
     STATIC_PIN_FAIL=1
   fi
 }
-check_static_pin "hooks/selftest.sh" "MIN_CASES=398" "MIN_CASES 釘死 398(2026-08-17 清空輪 378 之後,2026-08-19 §7 前置修復:s7 legacy sequential 真跑 start 驗證+6/s7b VNext feature-scope 同型驗證+2/s7c Stage 7 review 自建武裝同型驗證+3 → 389,同日 §7-3b 探針 pst 真實 subagent_type payload 形狀釘住+3 → 392,2026-08-20 issue #7 路徑分隔符 w1 組+6 → 398)"
+check_static_pin "hooks/selftest.sh" "MIN_CASES=402" "MIN_CASES 釘死 402(2026-08-17 清空輪 378 之後,2026-08-19 §7 前置修復:s7 legacy sequential 真跑 start 驗證+6/s7b VNext feature-scope 同型驗證+2/s7c Stage 7 review 自建武裝同型驗證+3 → 389,同日 §7-3b 探針 pst 真實 subagent_type payload 形狀釘住+3 → 392,2026-08-20 issue #7 路徑分隔符 w1 組+6 → 398,同日派工單 §2.1 TMPDIR 跨平台正規化 w2 組+2 → 400,同日 report-guard 覆蓋缺口+2 → 402)"
 check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "EXPECTED_CHECKS 釘死 131"
-check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 15" "MIN_CHECKS 釘死 15(A-2/B-5 輪:②改 scoped 拆 3 條 + ⑦⑧⑨ 新增後的實得數)"
+check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 18" "MIN_CHECKS 釘死 18(A-2/B-5 輪:②改 scoped 拆 3 條 + ⑦⑧⑨ 新增 → 15;2026-08-20 ⑩check 段散發副本 parity map-driven 拆 3 條 → 18)"
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 138" "MIN_CHECKS 釘死 138(X-3 補群組數釘之後的實得數)"
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 41" "MIN_CHECKS 釘死 41(反證輪 E-1:再加 M-f~M-h 五個(mutant,子案)配對後的實得數)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 32" "MIN_CHECKS 釘死 32(commit-landing 輪 F-1-e:POINTS 補「窗口最短」+ 負向⑱⑲ 兩份頂註各一後的實得數)"
@@ -1678,6 +1678,29 @@ PYFLOOR
 check_floor_block "scripts/check-integration-regression-guard.sh" "CHECKS" "FAILED" "aug"
 check_floor_block "scripts/check-status-policy.sh" "CHECKS" "FAILED" "aug"
 check_floor_block "scripts/check-dev-setup-discipline.sh" "checks" "fails" "append"
+
+# 雙胞胎區塊對帳(派工單 §2.1)。TMPDIR 跨平台正規化在 hooks/selftest.sh 與
+# scripts/devflow-check.sh 各有一份 —— 兩支都是可獨立執行的入口,誰先跑都要正規化,
+# 所以不能只放一份。既然是副本就得有東西釘住它們一致:只改一邊,Windows 上會變成
+# 一支正常、另一支照樣踩到 C:\tmp;而在沒有 cygpath 的機器上兩邊都不進那個分支、
+# 看起來都綠 —— 這種漂移只在某個平台現形,靠人 review 抓不住,只能機械對帳。
+check_twin_block() { # check_twin_block <相對路徑A> <相對路徑B> <起始標記> <結束標記> <說明>
+  local a="$ROOT/$1" b="$ROOT/$2" start="$3" end="$4" label="$5"
+  local ta tb
+  ta=$(sed -n "/$start/,/$end/p" "$a" 2>/dev/null)
+  tb=$(sed -n "/$start/,/$end/p" "$b" 2>/dev/null)
+  if [ -z "$ta" ] || [ -z "$tb" ]; then
+    echo "  ✗ 雙胞胎區塊:$1 或 $2 找不到標記 ${start}(整段被刪或標記被改名)"
+    STATIC_PIN_FAIL=1
+  elif [ "$ta" != "$tb" ]; then
+    echo "  ✗ 雙胞胎區塊:$1 與 $2 的「${label}」逐字不一致(改了一邊沒改另一邊)"
+    STATIC_PIN_FAIL=1
+  else
+    echo "  ✓ 雙胞胎區塊:$1 ≡ $2(${label})"
+  fi
+}
+check_twin_block "hooks/selftest.sh" "scripts/devflow-check.sh" \
+  "devflow:tmpdir-normalize:start" "devflow:tmpdir-normalize:end" "TMPDIR 跨平台正規化"
 
 if [ "$STATIC_PIN_FAIL" -ne 0 ]; then
   echo "⛔ 靜態互釘:至少一處字面值/子字串與釘死清單不符"

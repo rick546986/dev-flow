@@ -218,3 +218,9 @@
 - 落在哪:hooks/devflow-lib.py(新增 to_posix,四個出入口各過一次)、hooks/selftest.sh(w1 組 6 案,MIN_CASES 392→398)、scripts/test-architecture-guards.sh、tests/parallel-stage6/contract_ref.py、hooks/devtalk-guard.sh
 - 詳細:issue #7;https://github.com/rick546986/dev-flow/releases/tag/v3.9.2
 
+## 2026-08-20 · windows-parity-round2 · v3.10.0
+- 做了什麼:收四項:①測試腳本的 /tmp 在 Git Bash 與 Windows 原生 Python 解讀不同(後者解成 C:\tmp 且該目錄常存在,不噴錯只是安靜找不到樣本),兩個入口各正規化 TMPDIR 一次;②三處 subprocess 直接 exec .sh 改顯式帶 bash(Windows 無 shebang,WinError 193 整支崩);③dev-setup check 的散發副本比對集合改成取自檔案地圖散發面標註;④去識別化守衛掃描面從 .devflow/reports/ 放寬到 .devflow/ 全部 .md
+- 為什麼:①②是 Windows 上 selftest 71 案紅與 devflow-check 崩的根因;③母版側 parity 守衛早已 map-driven,採用專案側仍逐支硬列且已真的漏掉 history-append.sh(HISTORY.md 唯一寫入口,G1 巢狀 bug 出處)—— 第 7 型不對稱記帳;④回報檔放在 .devflow/ 但不在 reports/ 就靜默繞過,絕對路徑因此貼進 public issue
+- 落在哪:hooks/selftest.sh(TMPDIR 區塊+w2 兩案+report-guard 兩案,MIN_CASES 398→402)、scripts/devflow-check.sh(TMPDIR 逐字副本)、scripts/test-architecture-guards.sh(check_twin_block 新對帳+靜態釘)、hooks/_report_impl.py、skills/dev-setup/SKILL.md(check 第 13 項)、scripts/check-dev-setup-discipline.sh(紀律⑩,MIN_CHECKS 15→18)、scripts/check-methodology-corrections.sh、scripts/check-realworld.sh、README.md §7 已知限界
+- 詳細:notes/dispatch-windows-parity.md §2.1/§2.2
+
