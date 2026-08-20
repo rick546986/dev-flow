@@ -206,3 +206,9 @@
 - 為什麼:裁決 10 要的隔離目的是「出事時分得出是哪一批造成的」,現在分不出來了。補兩個標籤的路(3.9.0 指 c9411c2、3.10.0 指 f3d9e4a)被 owner 2026-08-19 否決:c9411c2 的 plugin.json 寫的是 3.8.0,標籤叫 3.9.0 名實不符,而發版器存在的理由正是比對那個字串 —— 補得不乾淨不如記偏差
 - 落在哪:.claude-plugin/plugin.json、hooks/runtime-capabilities.json(版號兩處)
 
+## 2026-08-20 · issue-345-fixes · v3.9.1
+- 做了什麼:doctor 在 Windows 上的兩項紅各自修掉(腳本路徑被當成一整句命令、證據工具印出的路徑形式與比對端對不上),安裝器比對 README 時兩側都先統一行尾,開工訊息不再把固定釘住的 .gitignore 算進「既有髒檔」;CI 補上檢查 Python 下限所需的舊版直譯器。⚠️ Windows 整體仍未全綠 —— 派工單 §2.1(兩個 /tmp)與 §2.2(Python 直接執行 .sh)未動
+- 為什麼:doctor 是一項紅就整體判不相容,而那兩項原本被寫成同一個成因,照著舊敘述修只會修好一半;README 比對只有母版側做正規化,Windows 上每一行都差一個換行字元、每次健檢都被判成過期並覆蓋一次
+- 落在哪:hooks/_doctor_impl.py、hooks/_exec_impl.py、scripts/devflow-evidence-gauntlet.sh 與 docs/dev/tools/ 副本、skills/dev-setup/SKILL.md、notes/dispatch-windows-parity.md、.github/workflows/devflow-ci.yml
+- 詳細:issue #3/#4/#5;https://github.com/rick546986/dev-flow/releases/tag/v3.9.1
+
