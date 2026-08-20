@@ -130,6 +130,68 @@ class DevRunSkillContractTest(unittest.TestCase):
         self.assertIn("abort $MEMORY_SESSION_ID", self.skill)
         self.assertIn("ABORTED", self.skill)
 
+    # ── W6 耐久性鏈:萃取 → checkpoint → memory commit → push → 驗證 ────────
+    def test_extraction_is_mandatory_not_optional(self):
+        """萃取是**義務**。
+
+        寫成「可選」時,agent 完成一輪 schema change 卻從不 observe 是完全
+        合規的 —— 記憶是空的而沒有任何一步失敗。義務的是「盤點」,不是
+        「產出一筆紀錄」:盤點結論可以是沒東西可記(見下一條)。
+        """
+        wrap_up = self.wrap_up()
+        self.assertIn("強制萃取", wrap_up,
+                      "收尾必須有一步明寫是強制的萃取盤點")
+        self.assertIn("不是可選的", self.skill)
+
+    def wrap_up(self):
+        return self.skill[self.skill.index("## 收尾"):
+                          self.skill.index("## 並行模式")]
+
+    def test_w6_chain_is_in_order(self):
+        """順序就是正確性:checkpoint 只寫工作樹,排在 push 之後等於白做。
+
+        這是這一整條鏈存在的理由 —— `checkpoint` 回 `promoted: 3` 而 remote
+        上一個字都沒有,**而且不會有任何錯誤訊息**。
+        """
+        wrap_up = self.wrap_up()
+        steps = ["強制萃取", "checkpoint", "memory commit",
+                 "push feature branch", "git fetch", "durable-check"]
+        positions = []
+        for step in steps:
+            self.assertIn(step, wrap_up, "收尾缺「{0}」".format(step))
+            positions.append(wrap_up.index(step))
+        self.assertEqual(positions, sorted(positions),
+                         "W6 步驟順序錯了:{0}".format(
+                             list(zip(steps, positions))))
+
+    def test_memory_commit_is_an_explicit_step(self):
+        """`.dev-flow/` 要被 commit 這件事必須是**一個步驟**,不是一句期望。
+
+        舊文字寫的是「`.dev-flow/` 的改動隨 feature branch 一起 commit/push」
+        —— 那是一個希望:收尾序列裡沒有任何一步真的去 commit 它,而 checkpoint
+        又排在最終 push 之後。結果是記憶永遠留在工作樹。
+        """
+        wrap_up = self.wrap_up()
+        self.assertIn("memory commit", wrap_up)
+        self.assertIn("工作樹不是耐久性", self.skill,
+                      "要寫明「寫進工作樹 ≠ 已保存」,否則這一步讀起來只是流程贅字")
+
+    def test_durable_check_is_the_verification_step(self):
+        wrap_up = self.wrap_up()
+        self.assertIn("durable-check", wrap_up)
+        self.assertIn("W6-4", wrap_up)
+
+    def test_parallel_wrap_up_has_the_same_chain(self):
+        """並行模式不得有第二套(較鬆的)收尾紀律。"""
+        parallel = self.skill[self.skill.index("### 收尾(並行)"):
+                              self.skill.index("## Stage 7 送審前置")]
+        positions = []
+        for step in ["強制萃取", "checkpoint", "memory commit",
+                     "push feature branch", "durable-check"]:
+            self.assertIn(step, parallel, "並行收尾缺「{0}」".format(step))
+            positions.append(parallel.index(step))
+        self.assertEqual(positions, sorted(positions), "並行收尾 W6 順序錯")
+
 
 class CliSurfaceMatchesSkillsTest(unittest.TestCase):
     """雙向:SKILL 寫的指令 CLI 收得下;CLI 的生命週期指令 SKILL 有寫。"""
@@ -147,6 +209,12 @@ class CliSurfaceMatchesSkillsTest(unittest.TestCase):
         text = cli_help("session")
         for name in self.SESSION_SUBCOMMANDS:
             self.assertIn(name, text, name)
+
+    def test_cli_exposes_durable_check(self):
+        """SKILL 的 W6-4 指名 durable-check —— CLI 必須真的收得下。"""
+        out = subprocess.run([sys.executable, CLI, "durable-check", "--help"],
+                             capture_output=True, text=True, cwd=REPO)
+        self.assertEqual(out.returncode, 0, out.stderr)
 
     def test_cli_exposes_checkpoint_and_abort(self):
         top = cli_help()

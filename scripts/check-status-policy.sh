@@ -359,10 +359,17 @@ def devrun_publish_failures(devrun_text):
     else:
         fails += chain_failures(m_seq.group(1), [
             ("bookkeeping commit", r"bookkeeping commit"),
+            # W6:記憶的耐久性鏈。順序就是正確性 —— checkpoint 只把檔案寫進
+            # 工作樹,排在 push 之後的話 `.dev-flow/` 永遠上不了 remote,
+            # 而且不會有任何錯誤訊息(這是本節被加進來的原因)。
+            ("W6-1 強制萃取", r"強制萃取\(W6-1\)"),
+            ("W6-2 checkpoint --end", r"checkpoint[\s\S]{0,4}\$MEMORY_SESSION_ID --end"),
+            ("W6-3 memory commit", r"memory commit[\s\S]{0,4}\(W6-3\)"),
             ("push feature branch", r"push feature branch 到\s*remote"),
             ("fetch 後驗證", r"`git fetch` 驗證"),
             ("remote tip == feature HEAD", r"remote tip 等於當下 feature HEAD"),
             ("失敗不得宣稱 Stage 6 完成", r"不得宣稱 Stage 6 完成"),
+            ("W6-4 durable-check", r"durable-check"),
             ("stop", r"`devflow-exec\.sh stop`"),
             ("回報進 Stage 7", r"回報使用者進"),
         ], "sequential 收尾")
@@ -372,6 +379,9 @@ def devrun_publish_failures(devrun_text):
     else:
         fails += chain_failures(m_par.group(1), [
             ("integration 合回 feature branch", r"合回 feature branch"),
+            ("W6-1 強制萃取", r"強制萃取\(W6-1\)"),
+            ("W6-2 checkpoint --end", r"checkpoint \$MEMORY_SESSION_ID --end"),
+            ("W6-3 memory commit", r"memory commit"),
             ("push feature branch", r"push feature branch 到\s*remote"),
             ("remote tip == feature HEAD", r"remote tip 等於當下 feature HEAD"),
             ("失敗不得宣稱 Stage 6 完成", r"不得宣稱 Stage 6 完成"),
@@ -524,7 +534,7 @@ else:
     mutated_readme = readme  # 抓不到兩段 = 正向⑪早已紅;讓這條也紅出來
 check(bool(readme_patch_failures(mutated_readme)),
       "負向⑭:README Stage 6/Stage 7 判定段倒序(內容都在,只換順序)→ 紅")
-mutated_devrun = re.sub(r"\*\*發布最終成果:最後一個 bookkeeping[\s\S]*?不得宣稱 Stage 6 完成\*\*",
+mutated_devrun = re.sub(r"\*\*發布最終成果:最後一個 commit[\s\S]*?不得宣稱 Stage 6 完成\*\*",
                         "", devrun, count=1)
 check(bool(devrun_publish_failures(mutated_devrun)),
       "負向⑮:dev-run 刪 sequential 最終 push+驗證段 → 紅")
@@ -545,12 +555,34 @@ mutated_docs = docs.replace("**寫入窗口最短**", "**盡快**")
 check(bool(policy_failures(template, mutated_docs)),
       "負向⑲:docs 頂註拿掉「窗口最短」→ 紅")
 
+# ⑳~㉒:W6 耐久性鏈的負向 fixture。三個 mutant 各拿掉/挪動鏈上一步,其餘原封
+# 不動 —— 對應的正是三種實際會發生的假完成:memory commit 漏掉、checkpoint 排在
+# push 之後、durable-check 被當成可省略的裝飾。
+mutated_devrun = re.sub(r"\*\*memory commit\n\(W6-3\)\*\*:[\s\S]*?→\n", "", devrun, count=1)
+check(bool(devrun_publish_failures(mutated_devrun)),
+      "負向⑳:dev-run 從 W6 鏈拿掉 memory commit(其餘步驟都在)→ 紅")
+# checkpoint 與 push 對調:兩段文字都還在,唯一的錯是順序 —— 而順序就是這條鏈的
+# 全部價值(checkpoint 只寫工作樹,排在 push 後面等於 .dev-flow 永遠上不了 remote)。
+m_ck = re.search(r"`dev-memory\.py checkpoint\n\$MEMORY_SESSION_ID --end`", devrun)
+m_push = re.search(r"push feature branch 到 remote,", devrun)
+if m_ck and m_push and m_ck.start() < m_push.start():
+    mutated_devrun = (devrun[:m_ck.start()] + m_push.group(0)
+                      + devrun[m_ck.end():m_push.start()] + m_ck.group(0)
+                      + devrun[m_push.end():])
+else:
+    mutated_devrun = devrun  # 抓不到 = 正向鏈早已紅;讓這條也紅出來
+check(bool(devrun_publish_failures(mutated_devrun)),
+      "負向㉑:dev-run 把 checkpoint 挪到最終 push 之後(內容都在,只換順序)→ 紅")
+mutated_devrun = devrun.replace("durable-check", "(略過驗證)")
+check(bool(devrun_publish_failures(mutated_devrun)),
+      "負向㉒:dev-run 拿掉 W6-4 durable-check → 紅")
+
 # ── 檢查數地板:防止檢查段/負向 fixture 整段被刪後檢查數靜默縮水仍全綠(B-4)──
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」(同 repo 慣例:
 # check-gate-twin.sh、check-dev-setup-discipline.sh 的 MIN_CHECKS);之後每加一條
 # 檢查都要同步調高。字面值與這整個 if 區塊(condition+記錄 failure+非零退出鏈)
 # 另被 test-architecture-guards.sh 靜態互釘外釘,兩處要同一個 commit 一起改。
-MIN_CHECKS = 32
+MIN_CHECKS = 35
 if CHECKS < MIN_CHECKS:
     FAILED += 1
     print(f"  ✗ 檢查數地板:實際只跑了 {CHECKS} 項(地板 {MIN_CHECKS})—— "

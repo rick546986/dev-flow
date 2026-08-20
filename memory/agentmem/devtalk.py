@@ -253,24 +253,23 @@ def correct(store, session_id, kind, key, title, body="",
         previous = dict(existing[0])
         payload["supersedes"] = previous["knowledge_id"]
         # 舊值的快照隨候選一起走 —— 固化時才寫得出「原本是什麼」。
-        # 不在這裡直接寫 durable:consolidate 是唯一的 durable writer,
-        # 而且這條更正還可能被使用者反悔(候選未 confirm 就不該留下痕跡)。
         payload["_lineage_previous"] = {
             "knowledge_id": previous["knowledge_id"],
             "title": previous["title"], "body": previous["body"],
             "status": "SUPERSEDED", "authority": previous["authority"]}
         payload["_lineage_reason"] = reason
-        store.upsert_knowledge({
-            "knowledge_id": previous["knowledge_id"], "kind": kind, "key": key,
-            "title": previous["title"], "body": previous["body"],
-            "authority": previous["authority"], "status": "SUPERSEDED",
-            "confidence": previous["confidence"],
-            "recorded_at": previous["recorded_at"], "superseded_at": now,
-            "evidence": json.loads(previous["evidence_json"]),
-            "conflicts": json.loads(previous["conflicts_json"]),
-            "implemented": (None if previous["implemented"] is None
-                            else bool(previous["implemented"])),
-            "durable": bool(previous["durable"])})
+        # **這裡刻意不把舊筆標成 SUPERSEDED。**
+        #
+        # 更正在此刻只是一個候選:它還要過 Signal Gate、還可能被使用者反悔、
+        # 還可能因為寫檔失敗而沒落地。先把舊值下架的話,一旦更正沒有成功:
+        #   local 側  這個 key 沒有任何現況(舊的 SUPERSEDED、新的還是候選)
+        #   durable 側 還是舊值(consolidate 從來沒跑成功)
+        # 「這個詞現在是什麼意思」就變成取決於這台機器有沒有 rebuild 過 ——
+        # 而更正失敗的正確語意是「現況沒有改變」,不是「現況消失了」。
+        #
+        # supersede 只發生在 `sync._supersede_previous_knowledge()`,
+        # 也就是新值真的寫進 `.dev-flow/` 的同一個時刻。consolidate 是唯一的
+        # durable writer,那裡也該是唯一的 supersede 執行點。
     candidate_id = propose(store, session_id, kind, payload, authority,
                            note=reason, now=now)
     confirm(store, candidate_id, now=now)

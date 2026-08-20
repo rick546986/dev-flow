@@ -11,6 +11,7 @@
   不在對話中每說一句話就把 repository 弄 dirty(§17)。
 """
 import json
+import os
 
 from . import durable, ids, lineage, signal, store as store_mod
 
@@ -136,24 +137,45 @@ def promote_entity_facts(repo_root, store, entity_type, entity_key):
 
     整檔寫回(而不是 append 一筆)是因為 supersede 語意住在整組 fact 上:
     只寫新的那筆,舊的 VERIFIED 會留在檔裡看起來也還有效。
+
+    回傳 `(path, rejected)`;沒有可寫的 fact 時 path 為 None。
+
+    **每一筆都要重過 Signal Gate。** 候選的 gate 檢查的是「那一筆候選」,
+    而 fact 進 local DB 的路不只候選一條 —— `truth.reverify()`(公開 CLI
+    `verify --observed`)直接寫值。整檔寫回時,一筆乾淨的候選會把同一個 entity
+    裡未經檢查的鄰居一起帶進 Git。這裡是最後一個能攔的地方,而 durable 寫入
+    不可逆(進了 commit 就在歷史裡)。
     """
     facts = [f for f in store.facts(entity_type=entity_type,
                                     entity_key=entity_key, limit=1000)
              if f["status"] in _FACT_STATUS_DURABLE]
+    writable = []
+    rejected = []
     for fact in facts:
         fact["dependencies"] = json.loads(fact["dependencies_json"])
         fact["fingerprints"] = json.loads(fact["fingerprints_json"])
-    if not facts:
-        return None
+        verdict = signal.gate(
+            "architecture_change", fact["fact_key"], str(fact["value"]),
+            extra_texts=[json.dumps(
+                {k: fact[k] for k in ("value", "source_ref", "fact_key")},
+                ensure_ascii=False)])
+        if verdict["durable_allowed"]:
+            writable.append(fact)
+        else:
+            # 只擋這一筆,不連坐:其餘 fact 照樣固化。被擋的留在 local
+            # (durable=0)—— 沒寫進去的東西不得被標成已耐久。
+            rejected.append({"candidate_id": None, "target_kind": "fact",
+                             "fact_id": fact["fact_id"],
+                             "reasons": verdict["reasons"]})
+    if not writable:
+        return None, rejected
     durable.ensure_layout(repo_root, [durable.STATE_DIR])
-    path = durable.write_state(repo_root, entity_type, entity_key, facts)
+    path = durable.write_state(repo_root, entity_type, entity_key, writable)
     with store.conn:
-        store.conn.execute(
-            "UPDATE facts SET durable=1 WHERE project_id=? AND entity_type=?"
-            " AND entity_key=? AND status IN ({0})".format(
-                ",".join("?" for _ in _FACT_STATUS_DURABLE)),
-            [store.project_id, entity_type, entity_key, *sorted(_FACT_STATUS_DURABLE)])
-    return path
+        store.conn.executemany(
+            "UPDATE facts SET durable=1 WHERE fact_id=?",
+            [(fact["fact_id"],) for fact in writable])
+    return path, rejected
 
 
 def consolidate(repo_root, store, session_id=None, now=None):
@@ -203,58 +225,33 @@ def consolidate(repo_root, store, session_id=None, now=None):
             continue
 
         if kind in durable.KNOWLEDGE_DIRS:
-            previous = _supersede_previous_knowledge(store, kind, payload, now)
-            knowledge_id = store.upsert_knowledge({
+            # **寫檔在前,supersede 在後。** 反過來的話,寫檔失敗(磁碟滿 /
+            # conflict 標記 / 路徑守衛)會留下一個比沒寫更糟的狀態:local 已經
+            # 是新值、durable 還是舊值,而下一次重跑會把「新值 supersede 新值」
+            # 記成 lineage —— 真正的 v1 → v2 那一段就永久消失了。
+            entry = {
                 "kind": kind, "key": payload["key"], "title": title,
                 "body": body, "authority": candidate["authority"],
                 "status": payload.get("status", "CONFIRMED"),
-                "confidence": payload.get("confidence", 0.8),
+                "confidence": float(payload.get("confidence", 0.8)),
                 "recorded_at": now,
                 "evidence": payload.get("evidence") or [],
                 "conflicts": payload.get("conflicts") or [],
-                "implemented": payload.get("implemented"),
-                "durable": True})
-            record = store.knowledge_row(knowledge_id)
+                "implemented": payload.get("implemented")}
+            written.append(durable.write_knowledge(repo_root, entry))
+            previous = _supersede_previous_knowledge(store, kind, payload, now)
+            knowledge_id = store.upsert_knowledge(dict(entry, durable=True))
             if previous:
                 pending_revisions.append(lineage.build_knowledge_revision(
                     kind, payload["key"], previous,
-                    dict(record, knowledge_id=knowledge_id),
+                    dict(entry, knowledge_id=knowledge_id),
                     reason=payload.get("_lineage_reason", "")
                     or payload.get("correction_reason", ""),
                     session_id=candidate["session_id"], occurred_at=now))
-            written.append(durable.write_knowledge(repo_root, {
-                "kind": kind, "key": record["key"], "title": record["title"],
-                "body": record["body"], "authority": record["authority"],
-                "status": record["status"], "confidence": record["confidence"],
-                "recorded_at": record["recorded_at"],
-                "evidence": json.loads(record["evidence_json"]),
-                "conflicts": json.loads(record["conflicts_json"]),
-                "implemented": (None if record["implemented"] is None
-                                else bool(record["implemented"]))}))
         elif kind == "decision":
-            previous = _supersede_previous_decision(store, payload["key"], now)
-            decision_id = store.upsert_decision({
-                "key": payload["key"], "title": title,
-                "decision": payload.get("decision", ""),
-                "alternatives": payload.get("alternatives", ""),
-                "reason": payload.get("reason", ""),
-                "tradeoff": payload.get("tradeoff", ""),
-                "status": payload.get("status", "ACCEPTED"),
-                "decided_at": payload.get("decided_at") or now,
-                "recorded_at": now,
-                "supersedes": payload.get("supersedes"),
-                "evidence": payload.get("evidence") or [],
-                "durable": True})
-            if previous:
-                pending_revisions.append(lineage.build_decision_revision(
-                    payload["key"], previous,
-                    {"decision_id": decision_id, "title": title,
-                     "decision": payload.get("decision", ""),
-                     "status": payload.get("status", "ACCEPTED")},
-                    reason=payload.get("supersedes_reason", "")
-                    or payload.get("correction_reason", ""),
-                    session_id=candidate["session_id"], occurred_at=now))
-            written.append(durable.write_decision(repo_root, {
+            # id 先產:durable 檔要記它,而寫檔必須發生在 DB 變更之前(同上)。
+            decision_id = ids.new_id("decision")
+            entry = {
                 "key": payload["key"], "title": title,
                 "decision": payload.get("decision", ""),
                 "alternatives": payload.get("alternatives", ""),
@@ -264,24 +261,30 @@ def consolidate(repo_root, store, session_id=None, now=None):
                 "decided_at": payload.get("decided_at") or now,
                 "decision_id": decision_id,
                 "supersedes": payload.get("supersedes"),
-                "evidence": payload.get("evidence") or []}))
+                "evidence": payload.get("evidence") or []}
+            written.append(durable.write_decision(repo_root, entry))
+            previous = _supersede_previous_decision(store, payload["key"], now)
+            store.upsert_decision(dict(entry, recorded_at=now, durable=True))
+            if previous:
+                pending_revisions.append(lineage.build_decision_revision(
+                    payload["key"], previous,
+                    {"decision_id": decision_id, "title": title,
+                     "decision": payload.get("decision", ""),
+                     "status": payload.get("status", "ACCEPTED")},
+                    reason=payload.get("supersedes_reason", "")
+                    or payload.get("correction_reason", ""),
+                    session_id=candidate["session_id"], occurred_at=now))
         elif kind == "skill":
-            store.upsert_skill({
+            entry = {
                 "key": payload["key"], "title": title,
                 "steps": payload.get("steps") or [],
                 "preconditions": payload.get("preconditions", ""),
                 "verification": payload.get("verification", ""),
                 "status": payload.get("status", "CANDIDATE"),
                 "recorded_at": now,
-                "evidence": payload.get("evidence") or [], "durable": True})
-            written.append(durable.write_skill(repo_root, {
-                "key": payload["key"], "title": title,
-                "steps": payload.get("steps") or [],
-                "preconditions": payload.get("preconditions", ""),
-                "verification": payload.get("verification", ""),
-                "status": payload.get("status", "CANDIDATE"),
-                "recorded_at": now,
-                "evidence": payload.get("evidence") or []}))
+                "evidence": payload.get("evidence") or []}
+            written.append(durable.write_skill(repo_root, entry))
+            store.upsert_skill(dict(entry, durable=True))
         elif kind == "fact":
             from . import truth
             dependencies = payload.get("dependencies") or []
@@ -352,26 +355,39 @@ def consolidate(repo_root, store, session_id=None, now=None):
         promoted += 1
 
     for entity_type, entity_key in sorted(entities_touched):
-        path = promote_entity_facts(repo_root, store, entity_type, entity_key)
+        path, fact_rejected = promote_entity_facts(
+            repo_root, store, entity_type, entity_key)
         if path:
             written.append(path)
+        rejected.extend(fact_rejected)
 
     # ── revision lineage(P0-3)──────────────────────────────────────────
-    # 兩個來源:本輪固化時偵測到的 supersede,以及先前落在 local `revisions`
-    # 表裡還沒刷出去的(例如 CLI `verify` 造成的 fact supersede)。
-    # 一樣要過敏感/絕對路徑守衛 —— 系統產生的記錄不因為是系統產生就放行。
-    stored_pending = lineage.pending(store, session_id)
-    flushed_ids = []
-    for row in stored_pending:
-        pending_revisions.append(row["payload"])
-        flushed_ids.append(row["revision_id"])
+    # **順序就是這一段的正確性**:pending → 過守衛 → 寫檔 → 才標 durable。
+    #
+    # 先前的寫法在 `append_events()` 之**前**就 mark_durable,而且不分這一筆
+    # 到底有沒有被寫出去。後果有兩種,都是靜默且永久的失憶:
+    #   ①被敏感守衛擋掉的 revision 也被標 durable=1 —— 它不再是 pending,
+    #     永遠不會再被嘗試,而 `.dev-flow/` 裡從來沒有它。
+    #   ②寫檔失敗(磁碟滿 / conflict 標記 / 路徑守衛)時例外往上拋,
+    #     但狀態已經前進了 —— 重跑也補不回來。
+    #
+    # 本輪產生的 revision 也一律先落 pending 表,和 `truth.reverify()` 走同一
+    # 條路。否則「用哪條路更正」會決定失敗時救不救得回來:reverify 的有表
+    # 撐著,correct() 的只活在記憶體裡,一次例外就消失。
+    for revision in pending_revisions:
+        lineage.record_pending(store, revision)
 
     revision_records = []
-    for revision in pending_revisions:
+    flushed_ids = []
+    for row in lineage.pending(store, session_id):
+        revision = row["payload"]
         verdict = signal.gate(
             revision["kind"], revision["title"], revision["body"],
             extra_texts=[json.dumps(revision, ensure_ascii=False)])
         if not verdict["durable_allowed"]:
+            # 留在 pending(durable=0):沒寫進 Git 的東西不得被標成已耐久。
+            # 它會在每次 checkpoint 被重新回報 —— 刻意的:一筆永遠固化不了的
+            # revision(例如舊值裡有 secret)應該一直看得見,不是被結案。
             rejected.append({"candidate_id": None,
                              "target_kind": revision["kind"],
                              "reasons": verdict["reasons"]})
@@ -379,6 +395,17 @@ def consolidate(repo_root, store, session_id=None, now=None):
         record = dict(revision)
         record.setdefault("event_id", ids.new_id("event"))
         revision_records.append(record)
+        flushed_ids.append(row["revision_id"])
+    event_records.extend(revision_records)
+
+    # 寫檔在前(這一行可能拋),狀態在後。
+    session_key = session_id or "consolidation"
+    if event_records:
+        written.extend(durable.append_events(
+            repo_root, session_key, event_records))
+
+    # 到這裡才算「真的寫進 .dev-flow」——才可以動 local 狀態。
+    for record in revision_records:
         store.add_event(record["kind"], record["title"], record["body"],
                         occurred_at=record["occurred_at"],
                         session_id=record.get("session_id") or None,
@@ -386,16 +413,115 @@ def consolidate(repo_root, store, session_id=None, now=None):
                         source_type="revision",
                         source_ref=record["key"],
                         event_id=record["event_id"])
-    event_records.extend(revision_records)
-    if flushed_ids:
-        lineage.mark_durable(store, flushed_ids)
-
-    if event_records:
-        written.extend(durable.append_events(
-            repo_root, session_id or "consolidation", event_records))
+    for revision_id, record in zip(flushed_ids, revision_records):
+        # durable_ref 記**落在哪個檔**:「已耐久」要可稽核,否則它只是一個
+        # 沒有人能驗證的布林值。
+        lineage.mark_durable(
+            store, [revision_id],
+            durable_ref=_event_ref(repo_root, session_key, record))
 
     return {"written": sorted(set(written)), "promoted": promoted,
             "rejected": rejected, "revisions": len(revision_records)}
+
+
+# ─────────────────────── durable barrier 的機械驗證 ──────────────────────────
+UNCOMMITTED = "DURABLE_UNCOMMITTED"
+UNPUSHED = "DURABLE_UNPUSHED"
+OPEN_SESSION = "SESSION_STILL_OPEN"
+PENDING_REVISION = "REVISION_STILL_PENDING"
+
+
+def durable_check(repo_root, store):
+    """「記憶真的離開這台機器了嗎?」—— Stage 6 收尾的最後一道機械驗證。
+
+    `checkpoint` 成功只代表**檔案寫進工作樹**。工作樹不是耐久性:
+    沒 commit 就 `git checkout` 會掉,沒 push 就只有這台機器有。
+    Stage 6 的收尾順序(萃取 → checkpoint → memory commit → 最終 push →
+    remote HEAD 驗證)之所以需要這一支,是因為前面每一步都可能「看起來做完了」:
+    checkpoint 回 promoted: 3 而 `.dev-flow/` 從來沒被 commit,是最容易發生的
+    一種,而它不會讓任何測試變紅。
+
+    回傳 dict:verdict(PASS/FAIL)+ 逐項證據。判定一律**明說理由**,
+    不回一個沒人能複驗的布林值。
+    """
+    from . import identity
+    problems = []
+    rel_root = os.path.relpath(durable.root(repo_root), repo_root)
+    rel_root = rel_root.replace(os.sep, "/")
+
+    # ①durable 樹有沒有未 commit 的改動(含未追蹤檔)
+    raw = identity._git_raw(repo_root, "status", "--porcelain=v1", "-z",
+                            "-uall", "--", rel_root)
+    uncommitted = []
+    if raw is None:
+        problems.append("git status 失敗 —— 無法判定 durable 樹是否已 commit")
+    else:
+        changed, unparsed = identity.parse_porcelain_z(raw)
+        uncommitted = sorted(changed)
+        if unparsed:
+            problems.append(
+                "git status 有 {0} 筆無法解析 —— 不猜,視為未判定".format(
+                    len(unparsed)))
+    if uncommitted:
+        problems.append(
+            "{0}:{1} 個 durable 檔還沒 commit —— 記憶只在工作樹裡,"
+            "checkout 就沒了".format(UNCOMMITTED, len(uncommitted)))
+
+    # ②HEAD 有沒有真的到 remote(upstream 追蹤分支)
+    head = identity._git(repo_root, "rev-parse", "HEAD")
+    upstream = identity._git(repo_root, "rev-parse", "--abbrev-ref",
+                             "--symbolic-full-name", "@{upstream}")
+    remote_head = (identity._git(repo_root, "rev-parse", upstream)
+                   if upstream else None)
+    pushed = bool(head and remote_head and head == remote_head)
+    if upstream is None:
+        problems.append(
+            "{0}:這個分支沒有 upstream —— 無法驗證記憶是否離開本機".format(
+                UNPUSHED))
+    elif not pushed:
+        problems.append(
+            "{0}:HEAD 與 {1} 不同 —— push 沒做或沒成功".format(
+                UNPUSHED, upstream))
+
+    # ③還開著的 session(沒 checkpoint 也沒 abort = 這一輪的記憶懸在半空)
+    from . import session as session_mod
+    open_sessions = [row["session_id"]
+                     for row in session_mod.open_sessions(store)]
+    if open_sessions:
+        problems.append(
+            "{0}:{1} 個 session 還是 OPEN —— 要 checkpoint --end 或 abort".format(
+                OPEN_SESSION, len(open_sessions)))
+
+    # ④還沒落地的 revision(修正歷史留在 local 就等於沒有)
+    from . import lineage
+    pending_revisions = [row["revision_id"] for row in lineage.pending(store)]
+    if pending_revisions:
+        problems.append(
+            "{0}:{1} 筆 revision 還沒寫進 durable —— 修正歷史尚未離開本機".format(
+                PENDING_REVISION, len(pending_revisions)))
+
+    return {
+        "verdict": "FAIL" if problems else "PASS",
+        "durable_root": rel_root,
+        "uncommitted": uncommitted,
+        "head": head or "",
+        "upstream": upstream or "",
+        "remote_head": remote_head or "",
+        "pushed": pushed,
+        "open_sessions": open_sessions,
+        "pending_revisions": pending_revisions,
+        "problems": problems,
+    }
+
+
+def _event_ref(repo_root, session_key, record):
+    """事件落點的 repo 相對路徑(durable 側絕不記絕對路徑)。"""
+    from . import paths
+    path = durable.event_file(repo_root, session_key, record.get("occurred_at"))
+    try:
+        return paths.to_repo_relative(path, repo_root)
+    except paths.NonPortablePath:
+        return ""
 
 
 def _supersede_previous_knowledge(store, kind, payload, now):

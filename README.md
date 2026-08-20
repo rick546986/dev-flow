@@ -1036,8 +1036,9 @@ dev-talk(understanding)
 dev-run(implementation)
   session start --mode implementation --slug <feature>
                        →  observe(每個 T PASS 之後;高訊號才成候選)
-                       →  (回歸綠 + 記帳完成 + 最終 commit)
-                       →  checkpoint --end   ← durable 寫入只在這裡
+                       →  (回歸綠 + 記帳完成)+ W6-1 強制萃取盤點
+                       →  checkpoint --end   ← durable 寫入只在這裡(寫進工作樹)
+                       →  memory commit → 最終 push → durable-check(§16.9)
                        ↘  abort(中止 → 狀態明寫 ABORTED)
 ```
 
@@ -1068,7 +1069,44 @@ dev-run(implementation)
 **刪掉本機索引重建之後兩者都還在**。修正紀錄一樣要過敏感內容與絕對路徑守衛:
 系統產生的記錄不因為是系統產生就放行。
 
-### 16.9 寫入很吝嗇
+### 16.9 耐久性屏障:寫進工作樹 ≠ 已保存
+
+這一節管的是一句話:**不得在耐久性真正建立之前把狀態往前推。**
+
+`checkpoint` 回 `promoted: 3` 只代表檔案落到**工作樹**。工作樹不是耐久性 ——
+沒 commit 會被 `git checkout` 掉,沒 push 就只有這台機器有。所以 Stage 6 收尾
+是一條有順序的鏈,而且**每一步都會單獨地「看起來已經做完」**:
+
+```
+強制萃取(W6-1) → checkpoint(W6-2) → memory commit(W6-3) → 最終 push
+                                                              ↓
+                              durable-check(W6-4)  ←  remote HEAD 驗證
+        寫進工作樹        進到本機歷史        離開本機        真的可驗證
+```
+
+- **萃取是義務,產出一筆紀錄不是。** 回歸綠之後必須真的盤點一次;結論可以是
+  「沒有值得固化的東西」(那是合法答案),不合法的是**沒盤點就 checkpoint**。
+- **checkpoint 必須在最終 push 之前。** 反過來的話 `.dev-flow/` 的改動永遠留在
+  工作樹裡,`promoted: 3` 而 remote 上一個字都沒有 —— **而且不會有任何錯誤**。
+- `dev-memory.py durable-check` 是唯一能複驗這條鏈的東西。它擋掉四種假完成:
+  durable 檔沒 commit、HEAD 沒到 upstream、有 session 還開著沒收、有 revision
+  還沒落地。判定一律附理由,不回一個沒人能複驗的布林值。
+
+同一條原則在程式內部也成立,而且是三個實際存在過的缺陷:
+
+| 原本 | 為什麼是錯的 |
+|---|---|
+| `correct()` 在 consolidation 成功**前**就把舊值標 SUPERSEDED | 更正被敏感守衛擋掉 / session 被 abort / 寫檔失敗時,local 沒有現況、durable 還是舊值 —— 同一個問題答什麼取決於這台機器有沒有 rebuild 過 |
+| revision 的 `mark_durable` 在寫檔**前**執行,且不分有沒有寫出去 | 被守衛擋掉的 revision 也被標成已耐久:它不再是 pending,永遠不會再被嘗試,而 `.dev-flow/` 裡從來沒有它。**靜默且永久**的失憶 |
+| consolidate 先 supersede 再寫檔 | 寫檔失敗留下的狀態比沒寫更糟:重跑會把「新值 supersede 新值」記成 lineage,真正的 v1 → v2 那一段永久消失 —— 歷史從**缺**變成**假** |
+| `promote_entity_facts()` 整檔寫回不過 Signal Gate | fact 進 local DB 的路不只「過了 gate 的候選」一條 —— `verify --observed`(公開 CLI)直接寫值。整檔寫回時,**一筆乾淨的候選會把同一個 entity 裡未經檢查的鄰居一起帶進 Git**,包含 secret |
+
+修法一致:**先寫進 `.dev-flow/`,寫成功了才動 local 狀態**;沒寫成功的一律
+留在 pending 等下一次重試,並在每次 checkpoint 被重新回報(不結案、不靜默)。
+而**每一個 durable writer 都要自己過一次守衛** —— 上游擋過不算,因為進到那個
+writer 的路不只上游那一條。被擋的只擋那一筆,不連坐,並附理由。
+
+### 16.10 寫入很吝嗇
 
 ```
 tool/對話活動 → 原始事件 → Signal Gate ─低訊號→ 只留本機
@@ -1082,7 +1120,7 @@ domain 釐清、breaking config)才可能進。另外兩道守衛:**疑似 secre
 (不做遮罩後放行 —— 遮罩靠 pattern 完整性,而 pattern 永遠不完整)、
 **內容含絕對路徑一律拒絕固化**。
 
-### 16.10 dev-talk = Project Understanding Mode
+### 16.11 dev-talk = Project Understanding Mode
 
 `dev-talk <主題>` 不是安裝指令、也不是寫程式模式。它做的是**把一個主題聊懂**:
 
@@ -1101,7 +1139,7 @@ customer-level、specimen 是 embryo-level,這三層有沒有例外?」
 3. **修正會 supersede,不會覆蓋**:你之後推翻先前的說法時,舊的標 SUPERSEDED
    留著,看得到轉折。
 
-### 16.11 跨機器
+### 16.12 跨機器
 
 ```
 git clone → dev-setup → 讀 .dev-flow/project.yaml → 同一個 project_id
@@ -1111,7 +1149,7 @@ git clone → dev-setup → 讀 .dev-flow/project.yaml → 同一個 project_id
 `project_path` 可以不同,記憶必須相同。這條有 integration test 釘住
 (`memory/tests/test_setup_legacy.py::SetupTest::test_clone_on_another_machine_rebuilds_same_memory`)。
 
-### 16.12 從舊架構遷移
+### 16.13 從舊架構遷移
 
 - **`CONTEXT.md`**(舊的人工詞彙表)→ `dev-memory.py migrate-legacy`
   匯入 `knowledge/domain/`,一律以 **CANDIDATE + documentation authority** 落地

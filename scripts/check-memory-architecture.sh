@@ -337,7 +337,59 @@ for name in ("stale_hit_rate", "wrong_branch_rate", "no_hit_precision",
     else:
         ok("評測門檻含 {0}={1}".format(name, thresholds[name]))
 
-MIN_CHECKS = 33
+# ⑧ 耐久性屏障(durability barrier):不得在耐久性建立之前把狀態往前推。
+# 這三條各對應一個實際發生過、而且**不會讓任何測試變紅**的缺陷 ——
+# local DB 自己是自洽的,要到另一台機器 rebuild 才發現記憶不見了。
+devtalk_src = read("memory/agentmem/devtalk.py")
+i_correct = devtalk_src.find("def correct(")
+i_after = devtalk_src.find("def checkpoint(", i_correct + 1)
+correct_body = (devtalk_src[i_correct:i_after]
+                if i_correct >= 0 and i_after > i_correct else None)
+if correct_body is None:
+    bad("devtalk.correct 抽取", "找不到 correct() ~ checkpoint() 窗口")
+elif "SUPERSEDED" in correct_body and "upsert_knowledge" in correct_body:
+    bad("correct() 提早 supersede",
+        "correct() 裡同時出現 upsert_knowledge 與 SUPERSEDED —— 更正在固化"
+        "成功之前就把舊值下架了。更正失敗(敏感內容 / abort / 寫檔失敗)時"
+        "這個 key 在 local 沒有現況、在 durable 還是舊值,答案取決於這台機器"
+        "有沒有 rebuild 過")
+else:
+    ok("correct() 不在 consolidation 成功前 supersede 現況")
+
+sync_src = read("memory/agentmem/sync.py")
+i_write = sync_src.find("durable.append_events(")
+i_mark = sync_src.find("lineage.mark_durable(")
+if i_write < 0 or i_mark < 0:
+    bad("revision 落地順序", "找不到 append_events / mark_durable")
+elif i_mark < i_write:
+    bad("revision 落地順序",
+        "mark_durable 出現在 append_events 之前 —— 寫檔失敗時 revision 已被"
+        "標成已耐久,永遠不會再被嘗試,而 .dev-flow/ 裡從來沒有它")
+else:
+    ok("revision 先寫進 .dev-flow 才標 durable")
+
+i_pef = sync_src.find("def promote_entity_facts(")
+i_pef_end = sync_src.find("\ndef ", i_pef + 1)
+pef_body = (sync_src[i_pef:i_pef_end] if i_pef >= 0 and i_pef_end > i_pef
+            else None)
+if pef_body is None:
+    bad("promote_entity_facts 抽取", "找不到 promote_entity_facts 窗口")
+elif "signal.gate(" not in pef_body:
+    bad("fact 整檔寫回沒過 Signal Gate",
+        "promote_entity_facts 整檔寫回一個 entity 的所有 fact,但沒有逐筆過"
+        "gate —— fact 進 local DB 的路不只候選一條(truth.reverify / 公開 CLI"
+        " verify --observed 直接寫值),一筆乾淨的候選會把同 entity 裡未檢查的"
+        "鄰居一起帶進 Git")
+else:
+    ok("fact 整檔寫回時逐筆重過 Signal Gate(durable writer 是最後一道防線)")
+
+if "durable_check" not in sync_src:
+    bad("durable-check", "sync.py 沒有 durable_check —— 「記憶真的離開這台機器"
+                         "了嗎」沒有任何可複驗的判定")
+else:
+    ok("durable_check 存在(Stage 6 W6-4 的機械驗證)")
+
+MIN_CHECKS = 38
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)

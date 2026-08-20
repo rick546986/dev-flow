@@ -2373,6 +2373,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <tr><td><code>test_scenarios.py</code></td>
         <td>端對端情境:討論一輪、實作一輪、現況失效一輪,全部走命令列進出。</td>
         <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_durability_barrier.py</code></td>
+        <td>驗證「還沒真的寫進 Git 就不准宣稱已保存」:更正在固化成功前不動現況、寫檔失敗後還救得回來、以及收尾時記憶是否真的已 commit 並抵達遠端。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>memory/fixtures/</code>(整包,fixtures 目錄豁免)</td>
         <td>評測用的固定資料集,以及舊詞彙表格式的凍結樣本。</td>
         <td>被 <code>evalharness.py</code> 與 <code>test_setup_legacy.py</code> 讀取</td><td>人工/CI(不在生命週期上)</td></tr>

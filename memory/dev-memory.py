@@ -37,6 +37,7 @@
   dev-memory.py migrate-legacy [--path DIR] [--apply] [--promote]
   dev-memory.py eval [--path DIR] [--dataset FILE] [--json]
   dev-memory.py inventory [--path DIR]
+  dev-memory.py durable-check [--path DIR]
 
 exit code:0 = 成功 / 1 = 可判定的失敗(含 doctor FAIL)/ 2 = 用法或環境錯誤。
 """
@@ -50,7 +51,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from agentmem import (context as context_mod, devtalk, durable, embedding,  # noqa: E402
                       evalharness, identity, legacy, paths, query,
                       session as session_mod, setup as setup_mod,
-                      store as store_mod, truth)
+                      store as store_mod, sync, truth)
 
 
 def _print(obj):
@@ -367,6 +368,23 @@ def cmd_eval(args):
         store.close()
 
 
+def cmd_durable_check(args):
+    """Stage 6 收尾的最後一道驗證:記憶真的離開這台機器了嗎?
+
+    `checkpoint` 回 promoted: 3 只代表檔案寫進**工作樹**。工作樹不是耐久性
+    —— 沒 commit 會被 checkout 掉,沒 push 就只有這台機器有。這支把
+    「memory commit → 最終 push → remote HEAD 驗證」變成可複驗的判定,
+    而不是收尾清單上一句沒人查的話。
+    """
+    root, _project, store, _workspace_id, _snapshot = _resolve(args)
+    try:
+        result = sync.durable_check(root, store)
+    finally:
+        store.close()
+    _print(result)
+    return 0 if result["verdict"] == "PASS" else 1
+
+
 def cmd_inventory(args):
     root = paths.repo_root(args.path)
     if root is None:
@@ -390,6 +408,10 @@ def build_parser():
     sub.add_parser("doctor").set_defaults(func=cmd_doctor)
     sub.add_parser("status").set_defaults(func=cmd_status)
     sub.add_parser("inventory").set_defaults(func=cmd_inventory)
+    sub.add_parser(
+        "durable-check",
+        help="驗證 durable memory 已 commit 且已抵達 remote(Stage 6 收尾)"
+    ).set_defaults(func=cmd_durable_check)
 
     p = sub.add_parser("context")
     p.add_argument("--budget", type=int, default=context_mod.DEFAULT_BUDGET)

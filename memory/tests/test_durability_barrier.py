@@ -1,0 +1,627 @@
+"""耐久性屏障:**不得在耐久性真正建立之前宣稱它已經建立**。
+
+三個缺陷同一個病灶 —— 有人在「還沒真的寫進 `.dev-flow/`」的時候就把狀態
+推進到「已經寫進去了」。它們都不會讓任何測試變紅,因為 local DB 自己是
+自洽的;要到**另一台機器 clone 後 rebuild** 才會發現記憶不見了。
+
+    ① devtalk.correct()  舊知識在 consolidation 成功**之前**就被標 SUPERSEDED。
+       更正被守衛拒絕、或 session 被 abort 時,舊值已經不是現況了,新值又從來
+       沒進 Git —— 這個 key 在 local 變成「沒有現況」,但 durable 側還是舊值。
+       同一個問題答什麼,取決於這台機器有沒有 rebuild 過。
+
+    ② revision 的 mark_durable  在 `durable.append_events()` **之前**執行,
+       而且不分「這筆到底有沒有被寫出去」。被敏感守衛擋掉的 revision 也一樣
+       被標成 durable=1 —— 它從此不再是 pending,永遠不會再被嘗試,
+       而 `.dev-flow/` 裡從來沒有它。這是**靜默且永久**的失憶。
+
+    ③ 寫檔失敗(磁碟滿、conflict 標記、路徑守衛)時,②的順序讓 revision
+       先被標 durable 才去寫檔 —— 寫檔拋出例外,狀態卻已經前進了。
+
+驗的方式一律是「破壞性重建」:刪掉 local,只從 `.dev-flow/` 重建,
+看還記不記得。local DB 自己說什麼不算證據。
+"""
+import json
+import os
+import shutil
+
+from memtools import MemoryCase
+from agentmem import (devtalk, durable, identity, lineage, query,
+                      store as store_mod, sync, truth)
+
+
+class CorrectionDoesNotSupersedeBeforeConsolidationTest(MemoryCase):
+    """①`correct()` 不得在 consolidation 成功前動到現況。"""
+
+    def setUp(self):
+        super().setUp()
+        self.project_id = self.project()["project_id"]
+        self.store = self.store_for(self.project_id)
+        self.session = self.store.start_session("registration 語意")
+        first = devtalk.propose(
+            self.store, self.session, "domain",
+            {"key": "registration", "title": "registration = embryo-level",
+             "body": "每個 embryo 一筆"}, "domain_expert")
+        devtalk.confirm(self.store, first)
+        devtalk.checkpoint(self.store, self.repo, self.session)
+
+    def current_rows(self, statuses=("CANDIDATE", "CONFIRMED", "CONFLICT")):
+        return self.store.knowledge(kind="domain", key="registration",
+                                    statuses=statuses, limit=10)
+
+    def test_old_knowledge_is_still_current_until_checkpoint(self):
+        """correct() 之後、checkpoint 之前,現況仍然是舊值。
+
+        新值此刻只是候選 —— 候選不是現況。如果 correct() 就把舊值下架,
+        中間這段時間這個 key 沒有任何現況可回答,而使用者根本沒被告知
+        「你的更正還沒生效」。
+        """
+        devtalk.correct(self.store, self.session, "domain", "registration",
+                        "registration = customer-level",
+                        reason="使用者更正")
+        rows = self.current_rows()
+        self.assertEqual(len(rows), 1, "更正尚未固化,現況應該只有舊值一筆")
+        self.assertIn("embryo-level", rows[0]["title"])
+        self.assertEqual(rows[0]["status"], "CONFIRMED",
+                         "consolidation 還沒成功,舊值不得被標 SUPERSEDED")
+
+    def test_rejected_correction_does_not_erase_the_previous_truth(self):
+        """更正被敏感守衛擋掉時,舊值必須還在 —— 不能兩邊都沒有。"""
+        devtalk.correct(self.store, self.session, "domain", "registration",
+                        "registration = customer-level",
+                        body='連線用 DB_PASSWORD = "hunter2000"',
+                        reason="順手補連線資訊")
+        result = devtalk.checkpoint(self.store, self.repo, self.session)
+        self.assertEqual(result["promoted"], 0, "含 secret 的候選不得固化")
+
+        rows = self.current_rows()
+        self.assertEqual(len(rows), 1,
+                         "更正沒有成功,現況必須維持舊值一筆(不得變成 0 筆)")
+        self.assertEqual(rows[0]["status"], "CONFIRMED")
+        self.assertIn("embryo-level", rows[0]["title"])
+
+    def test_rejected_correction_keeps_local_and_durable_in_agreement(self):
+        """被拒絕的更正之後,local 與 durable 必須回答同一件事。
+
+        這是①最惡性的後果:durable 側還是舊值,local 側卻沒有現況 ——
+        「這個詞現在是什麼意思」的答案取決於你這台機器有沒有 rebuild 過。
+        """
+        devtalk.correct(self.store, self.session, "domain", "registration",
+                        "registration = customer-level",
+                        body='API_KEY = "sk-live-abcdefghijklmnopqrst"',
+                        reason="更正")
+        devtalk.checkpoint(self.store, self.repo, self.session)
+
+        workspace = identity.workspace_key(self.project_id, self.repo)
+        snapshot = identity.workspace_snapshot(self.repo)
+        self.store.register_workspace(workspace, snapshot)
+        before = query.execute(self.store, self.repo, "registration 是什麼",
+                               workspace, snapshot=snapshot)
+        shutil.rmtree(os.path.join(self.home, "projects", self.project_id))
+        fresh = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, fresh)
+        fresh.register_workspace(workspace, snapshot)
+        after = query.execute(fresh, self.repo, "registration 是什麼",
+                              workspace, snapshot=snapshot)
+
+        titles_before = [r["title"] for r in before["results"]]
+        titles_after = [r["title"] for r in after["results"]]
+        self.assertTrue(
+            any("embryo-level" in t for t in titles_before),
+            "更正失敗後,local 仍應答得出舊值(不是兩邊都空 —— 那樣這條斷言"
+            "會**空過**,測不到任何東西)")
+        self.assertEqual(
+            titles_before, titles_after,
+            "rebuild 前後答案不同 = local 與 durable 對同一個 key 說法不一致")
+
+    def test_aborted_session_leaves_the_previous_truth_intact(self):
+        """使用者反悔(abort)時,舊值必須完好無損。"""
+        devtalk.correct(self.store, self.session, "domain", "registration",
+                        "registration = customer-level", reason="也許吧")
+        devtalk.abort(self.store, self.session, reason="使用者說先不要改")
+
+        rows = self.current_rows()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["status"], "CONFIRMED")
+        self.assertIn("embryo-level", rows[0]["title"])
+
+    def test_successful_correction_still_supersedes(self):
+        """回歸:成功固化時,supersede 與 lineage 一切照舊。"""
+        devtalk.correct(self.store, self.session, "domain", "registration",
+                        "registration = customer-level",
+                        body="一個客戶在 submission 內的送檢紀錄",
+                        reason="使用者更正:永遠代表一個客戶")
+        result = devtalk.checkpoint(self.store, self.repo, self.session)
+        self.assertEqual(result["promoted"], 1)
+
+        current = self.current_rows(statuses=("CONFIRMED",))
+        self.assertEqual(len(current), 1)
+        self.assertIn("customer-level", current[0]["title"])
+        superseded = self.current_rows(statuses=("SUPERSEDED",))
+        self.assertEqual(len(superseded), 1)
+        self.assertIn("embryo-level", superseded[0]["title"])
+
+        revisions = [e for e in durable.iter_events(self.repo)
+                     if e.get("kind") == lineage.KNOWLEDGE_CORRECTED]
+        self.assertEqual(len(revisions), 1)
+        self.assertIn("embryo-level", revisions[0]["previous_title"])
+        self.assertIn("customer-level", revisions[0]["new_title"])
+        self.assertEqual(revisions[0]["previous_status"], "SUPERSEDED")
+
+
+class RevisionMarkedDurableOnlyWhenWrittenTest(MemoryCase):
+    """②③只有**真的寫進 `.dev-flow/`** 的 revision 才能標 durable。"""
+
+    def setUp(self):
+        super().setUp()
+        self.project_id = self.project()["project_id"]
+        self.store = self.store_for(self.project_id)
+        self.workspace = identity.workspace_key(self.project_id, self.repo)
+        self.store.register_workspace(
+            self.workspace, identity.workspace_snapshot(self.repo))
+
+    def seed_fact(self, value):
+        from memtools import commit_all, write
+        write(self.repo, "src/app.py", "VALUE = 1\n")
+        commit_all(self.repo, "seed fact dep")
+        fact_id = self.store.upsert_fact({
+            "entity_type": "module", "entity_key": "app",
+            "fact_key": "value", "value": value, "status": truth.VERIFIED,
+            "confidence": 0.9, "recorded_at": store_mod.utc_now(),
+            "verified_at": store_mod.utc_now(), "verification_count": 1,
+            "source_type": "code", "dependencies": ["src/app.py"],
+            "fingerprints": truth.fingerprints_for(self.repo, ["src/app.py"]),
+            "durable": True})
+        sync.promote_entity_facts(self.repo, self.store, "module", "app")
+        return fact_id
+
+    def pending_ids(self):
+        return [row["revision_id"] for row in lineage.pending(self.store)]
+
+    def test_gate_rejected_revision_stays_pending(self):
+        """被敏感守衛擋掉的 revision **不得**被標 durable。
+
+        標了就再也不是 pending:它永遠不會被重試,而 `.dev-flow/` 裡從來沒有
+        它。內容修好之後也救不回來 —— 這是靜默且永久的失憶。
+        """
+        fact_id = self.seed_fact('token = "ghp_0123456789abcdefghijABCDEFGHIJ01234567"')
+        truth.reverify(self.store, self.repo, fact_id, self.workspace,
+                       "token 已改為由 env 注入", reason="移除硬編碼")
+        pending_before = self.pending_ids()
+        self.assertEqual(len(pending_before), 1, "reverify 應留下一筆 pending")
+
+        result = sync.consolidate(self.repo, self.store)
+
+        blob = "\n".join(json.dumps(e, ensure_ascii=False)
+                         for e in durable.iter_events(self.repo))
+        self.assertNotIn("ghp_0123456789", blob, "secret 不得寫進 Git")
+        self.assertEqual(result["revisions"], 0)
+        self.assertEqual(
+            self.pending_ids(), pending_before,
+            "沒寫進 .dev-flow 的 revision 必須留在 pending,不得標 durable")
+
+    def test_write_failure_leaves_every_revision_pending(self):
+        """`append_events` 失敗時,一筆都不准標 durable。"""
+        fact_id = self.seed_fact("value = 1")
+        truth.reverify(self.store, self.repo, fact_id, self.workspace,
+                       "value = 2", reason="改了預設值")
+        pending_before = self.pending_ids()
+        self.assertEqual(len(pending_before), 1)
+
+        original = durable.append_events
+
+        def boom(*args, **kwargs):
+            raise IOError("模擬寫檔失敗(磁碟滿 / 路徑守衛)")
+
+        durable.append_events = boom
+        try:
+            with self.assertRaises(IOError):
+                sync.consolidate(self.repo, self.store)
+        finally:
+            durable.append_events = original
+
+        self.assertEqual(
+            self.pending_ids(), pending_before,
+            "寫檔失敗後 revision 必須還是 pending,才有機會重試")
+
+    def test_retry_after_failure_actually_writes_it(self):
+        """失敗後重跑必須真的補寫進去 —— pending 不是墳墓。"""
+        fact_id = self.seed_fact("value = 1")
+        truth.reverify(self.store, self.repo, fact_id, self.workspace,
+                       "value = 2", reason="改了預設值")
+
+        original = durable.append_events
+        durable.append_events = lambda *a, **k: (_ for _ in ()).throw(
+            IOError("第一次失敗"))
+        try:
+            with self.assertRaises(IOError):
+                sync.consolidate(self.repo, self.store)
+        finally:
+            durable.append_events = original
+
+        result = sync.consolidate(self.repo, self.store)
+        self.assertEqual(result["revisions"], 1)
+        self.assertEqual(self.pending_ids(), [], "補寫成功後才清 pending")
+        revisions = [e for e in durable.iter_events(self.repo)
+                     if e.get("kind") == lineage.FACT_SUPERSEDED]
+        self.assertEqual(len(revisions), 1)
+        self.assertIn("value = 1", revisions[0]["previous_value"])
+
+    def test_durable_ref_points_at_the_file_that_holds_it(self):
+        """標 durable 時要記下**落在哪個檔** —— 「已耐久」必須可稽核。"""
+        fact_id = self.seed_fact("value = 1")
+        truth.reverify(self.store, self.repo, fact_id, self.workspace,
+                       "value = 2", reason="改了預設值")
+        sync.consolidate(self.repo, self.store)
+
+        rows = list(self.store.conn.execute(
+            "SELECT durable, durable_ref FROM revisions WHERE project_id=?",
+            (self.project_id,)))
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["durable"], 1)
+        ref = rows[0]["durable_ref"]
+        self.assertTrue(ref, "durable_ref 不得為空")
+        self.assertTrue(ref.startswith(".dev-flow/events/"), ref)
+        self.assertFalse(os.path.isabs(ref), "durable_ref 不得是絕對路徑")
+        self.assertTrue(os.path.isfile(os.path.join(self.repo, ref)),
+                        "durable_ref 指的檔案必須真的存在")
+
+    def test_rejected_revision_is_visible_not_silent(self):
+        """被拒絕的 revision 要**看得到理由**,不是無聲消失。"""
+        fact_id = self.seed_fact('password = "hunter2000-not-a-placeholder"')
+        truth.reverify(self.store, self.repo, fact_id, self.workspace,
+                       "改為由 secret manager 提供", reason="移除硬編碼")
+        result = sync.consolidate(self.repo, self.store)
+        kinds = [r["target_kind"] for r in result["rejected"]]
+        self.assertIn(lineage.FACT_SUPERSEDED, kinds)
+        reasons = [r for entry in result["rejected"]
+                   for r in entry["reasons"]]
+        self.assertTrue(reasons, "拒絕必須帶理由")
+
+
+class InLoopRevisionIsRetriableTest(MemoryCase):
+    """consolidate 當下才產生的 revision,也要走同一條 pending → 寫檔 → 標記。
+
+    否則「用哪條路更正」會決定失敗時救不救得回來:`truth.reverify()` 產生的
+    revision 有 pending 表撐著,`correct()` 產生的卻只活在記憶體裡。
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.project_id = self.project()["project_id"]
+        self.store = self.store_for(self.project_id)
+        self.session = self.store.start_session("registration 語意")
+
+    def test_knowledge_revision_survives_a_write_failure(self):
+        first = devtalk.propose(
+            self.store, self.session, "domain",
+            {"key": "registration", "title": "v1 embryo-level"},
+            "domain_expert")
+        devtalk.confirm(self.store, first)
+        devtalk.checkpoint(self.store, self.repo, self.session)
+
+        devtalk.correct(self.store, self.session, "domain", "registration",
+                        "v2 customer-level", reason="使用者更正")
+
+        original = durable.append_events
+        durable.append_events = lambda *a, **k: (_ for _ in ()).throw(
+            IOError("寫檔失敗"))
+        try:
+            with self.assertRaises(IOError):
+                devtalk.checkpoint(self.store, self.repo, self.session)
+        finally:
+            durable.append_events = original
+
+        # 重跑要補得回來:lineage 不能因為一次寫檔失敗就永久消失。
+        devtalk.checkpoint(self.store, self.repo, self.session)
+        revisions = [e for e in durable.iter_events(self.repo)
+                     if e.get("kind") == lineage.KNOWLEDGE_CORRECTED]
+        self.assertEqual(len(revisions), 1,
+                         "重跑後應補寫且只有一筆(不得重複)")
+        self.assertIn("embryo-level", revisions[0]["previous_title"])
+
+
+class DurableWriteHappensBeforeStateAdvancesTest(MemoryCase):
+    """consolidate 內部同樣不得「先動狀態、再寫檔」。
+
+    這是①的一個更窄的窗口:`correct()` 已經不再提早 supersede,但
+    consolidate 自己原本是「supersede → upsert → 寫檔」。寫檔失敗時留下的狀態
+    **比沒寫更糟**:
+        local    已經是新值
+        durable  還是舊值
+    而下一次重跑會把「新值 supersede 新值」記成 lineage —— 真正的 v1 → v2
+    那一段就永久消失,歷史被寫成假的而不只是缺的。
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.project_id = self.project()["project_id"]
+        self.store = self.store_for(self.project_id)
+        self.session = self.store.start_session("k 語意")
+
+    def seed(self, title):
+        candidate = devtalk.propose(self.store, self.session, "domain",
+                                    {"key": "k", "title": title},
+                                    "domain_expert")
+        devtalk.confirm(self.store, candidate)
+        devtalk.checkpoint(self.store, self.repo, self.session)
+
+    def fail_once(self, attr):
+        original = getattr(durable, attr)
+        setattr(durable, attr, lambda *a, **k: (_ for _ in ()).throw(
+            IOError("模擬寫檔失敗")))
+        try:
+            with self.assertRaises(IOError):
+                devtalk.checkpoint(self.store, self.repo, self.session)
+        finally:
+            setattr(durable, attr, original)
+
+    def test_knowledge_write_failure_leaves_local_and_durable_agreeing(self):
+        self.seed("v1")
+        devtalk.correct(self.store, self.session, "domain", "k", "v2",
+                        reason="使用者更正")
+        self.fail_once("write_knowledge")
+
+        local = self.store.knowledge(kind="domain", key="k",
+                                     statuses=("CANDIDATE", "CONFIRMED",
+                                               "CONFLICT"), limit=10)
+        durable_rows = [r for r in durable.iter_knowledge(self.repo)
+                        if r["key"] == "k"]
+        self.assertEqual([r["title"] for r in local], ["v1"],
+                         "寫檔失敗 = consolidation 沒成功,local 必須還是舊值")
+        self.assertEqual([r["title"] for r in durable_rows], ["v1"])
+
+    def test_retry_after_write_failure_records_the_real_transition(self):
+        self.seed("v1")
+        devtalk.correct(self.store, self.session, "domain", "k", "v2",
+                        reason="使用者更正")
+        self.fail_once("write_knowledge")
+        devtalk.checkpoint(self.store, self.repo, self.session)
+
+        revisions = [e for e in durable.iter_events(self.repo)
+                     if e.get("kind") == lineage.KNOWLEDGE_CORRECTED]
+        self.assertEqual(len(revisions), 1)
+        self.assertEqual(revisions[0]["previous_title"], "v1",
+                         "重跑不得把「v2 → v2」記成歷史 —— 那會讓真正的"
+                         " v1 → v2 永久消失,歷史從缺變成假")
+        self.assertEqual(revisions[0]["new_title"], "v2")
+        current = [r for r in durable.iter_knowledge(self.repo)
+                   if r["key"] == "k"]
+        self.assertEqual([r["title"] for r in current], ["v2"])
+
+    def test_decision_write_failure_does_not_supersede(self):
+        candidate = devtalk.propose(
+            self.store, self.session, "decision",
+            {"key": "storage", "title": "用 SQLite", "decision": "SQLite"},
+            "design_decision")
+        devtalk.confirm(self.store, candidate)
+        devtalk.checkpoint(self.store, self.repo, self.session)
+
+        second = devtalk.propose(
+            self.store, self.session, "decision",
+            {"key": "storage", "title": "改用 Postgres",
+             "decision": "Postgres"}, "design_decision")
+        devtalk.confirm(self.store, second)
+        self.fail_once("write_decision")
+
+        rows = self.store.decisions(key="storage", statuses=("ACCEPTED",),
+                                    limit=5)
+        self.assertEqual([r["title"] for r in rows], ["用 SQLite"],
+                         "寫檔失敗後舊決定必須還是 ACCEPTED")
+
+
+class DurableCheckTest(MemoryCase):
+    """Stage 6 收尾的最後一道:記憶真的離開這台機器了嗎?
+
+    `checkpoint` 回 `promoted: 3` 只代表檔案寫進**工作樹**。工作樹不是耐久性
+    —— 沒 commit 會被 checkout 掉,沒 push 就只有這台機器有。收尾順序
+    (萃取 → checkpoint → memory commit → 最終 push → remote HEAD 驗證)
+    每一步都可能「看起來做完了」,所以要有一支能複驗的判定。
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.project_id = self.project()["project_id"]
+        self.store = self.store_for(self.project_id)
+
+    def write_some_memory(self):
+        session = self.store.start_session("t")
+        candidate = devtalk.propose(
+            self.store, session, "domain",
+            {"key": "registration", "title": "一個客戶的送檢紀錄"},
+            "domain_expert")
+        devtalk.confirm(self.store, candidate)
+        devtalk.end(self.store, self.repo, session)
+
+    def check(self):
+        return sync.durable_check(self.repo, self.store)
+
+    def add_remote(self):
+        from memtools import git
+        bare = os.path.join(self.work, "origin.git")
+        os.makedirs(bare, exist_ok=True)
+        git(bare, "init", "-q", "--bare")
+        git(self.repo, "remote", "add", "origin", bare)
+        branch = git(self.repo, "rev-parse", "--abbrev-ref", "HEAD")
+        git(self.repo, "push", "-q", "-u", "origin", branch)
+        return bare
+
+    def test_checkpoint_alone_is_not_durable(self):
+        """checkpoint 成功但沒 commit → FAIL。這是最容易發生的一種假完成。"""
+        self.write_some_memory()
+        result = self.check()
+        self.assertEqual(result["verdict"], "FAIL")
+        self.assertTrue(any(sync.UNCOMMITTED in p for p in result["problems"]),
+                        result["problems"])
+        self.assertTrue(result["uncommitted"], "應列出未 commit 的 durable 檔")
+
+    def test_uncommitted_paths_are_repo_relative(self):
+        """輸出不得外洩絕對路徑(durable 側與 CLI 輸出同一條紀律)。"""
+        self.write_some_memory()
+        for rel in self.check()["uncommitted"]:
+            self.assertFalse(os.path.isabs(rel), rel)
+            self.assertNotIn("\\", rel, "路徑分隔符一律 /")
+            self.assertTrue(rel.startswith(".dev-flow/"), rel)
+
+    def test_committed_but_unpushed_still_fails(self):
+        """commit 了但沒有 upstream → 記憶還沒離開本機,不得判 PASS。"""
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        result = self.check()
+        self.assertEqual(result["verdict"], "FAIL")
+        self.assertTrue(any(sync.UNPUSHED in p for p in result["problems"]),
+                        result["problems"])
+        self.assertFalse(result["pushed"])
+
+    def test_passes_only_after_commit_and_push(self):
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self.add_remote()
+        result = self.check()
+        self.assertEqual(result["verdict"], "PASS", result["problems"])
+        self.assertTrue(result["pushed"])
+        self.assertEqual(result["head"], result["remote_head"])
+        self.assertTrue(result["upstream"])
+
+    def test_new_commit_after_push_fails_again(self):
+        """push 之後又 commit(例如補了記憶)→ 必須重新變成 FAIL。"""
+        from memtools import commit_all, write
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self.add_remote()
+        write(self.repo, "later.md", "又改了一次\n")
+        commit_all(self.repo, "後來的 commit")
+        result = self.check()
+        self.assertEqual(result["verdict"], "FAIL")
+        self.assertTrue(any(sync.UNPUSHED in p for p in result["problems"]))
+
+    def test_open_session_fails(self):
+        """還開著的 session = 這一輪的記憶懸在半空,不算收尾完成。"""
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self.add_remote()
+        self.store.start_session("忘了收的 session")
+        result = self.check()
+        self.assertEqual(result["verdict"], "FAIL")
+        self.assertTrue(any(sync.OPEN_SESSION in p for p in result["problems"]),
+                        result["problems"])
+
+    def test_pending_revision_fails(self):
+        """修正歷史還留在 local = 它還不存在,不得判 PASS。"""
+        from memtools import commit_all
+        commit_all(self.repo, "base", allow_empty=True)
+        self.add_remote()
+        lineage.record_pending(self.store, lineage.build_knowledge_revision(
+            "domain", "k", {"title": "v1"}, {"title": "v2"}, reason="更正"))
+        result = self.check()
+        self.assertEqual(result["verdict"], "FAIL")
+        self.assertTrue(
+            any(sync.PENDING_REVISION in p for p in result["problems"]),
+            result["problems"])
+
+    def test_unrelated_dirty_files_do_not_fail_it(self):
+        """只看 durable 樹 —— 手上還在改別的檔不是這一關要管的事。"""
+        from memtools import commit_all, write
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self.add_remote()
+        write(self.repo, "src/wip.py", "# 還在寫\n")
+        result = self.check()
+        self.assertEqual(result["verdict"], "PASS", result["problems"])
+
+
+class DurableWriterGatesEveryFactTest(MemoryCase):
+    """durable writer 是**最後**一道防線,不是最後一個沒人看的出口。
+
+    `promote_entity_facts()` 整檔寫回一個 entity 的所有 facts(supersede 語意住
+    在整組上)。它原本不過 Signal Gate —— 而 fact 進 local DB 的路不只有「過了
+    gate 的候選」一條:`truth.reverify()`(公開 CLI `verify --observed`)直接
+    寫值。於是這條完全走公開 CLI 的路會把 secret 寫進 Git:
+
+        verify --observed "<含憑證的觀察值>"     # 直接進 DB,沒有 gate
+        → 之後任何一個**乾淨**的 fact 候選碰到同一個 entity
+        → consolidate 把該 entity 加進 entities_touched
+        → promote_entity_facts 整檔寫回 = 連旁邊那筆 secret 一起進 Git
+
+    候選的 gate 檢查的是**那一筆候選**的內容,擋不住同一個 entity 裡的鄰居。
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.project_id = self.project()["project_id"]
+        self.store = self.store_for(self.project_id)
+        self.workspace = identity.workspace_key(self.project_id, self.repo)
+        self.store.register_workspace(
+            self.workspace, identity.workspace_snapshot(self.repo))
+        from memtools import commit_all, write
+        write(self.repo, "src/db.py", "URL = 'x'\n")
+        commit_all(self.repo, "dep")
+
+    def add_fact(self, fact_key, value, status=None):
+        from agentmem import truth as truth_mod
+        return self.store.upsert_fact({
+            "entity_type": "database", "entity_key": "main",
+            "fact_key": fact_key, "value": value,
+            "status": status or truth_mod.VERIFIED, "confidence": 0.9,
+            "recorded_at": store_mod.utc_now(),
+            "verified_at": store_mod.utc_now(), "verification_count": 1,
+            "source_type": "code", "dependencies": ["src/db.py"],
+            "fingerprints": truth.fingerprints_for(self.repo, ["src/db.py"]),
+            "durable": False})
+
+    def durable_blob(self):
+        return "\n".join(
+            json.dumps(s, ensure_ascii=False) for s in durable.iter_states(
+                self.repo))
+
+    def test_secret_bearing_fact_is_not_written_to_git(self):
+        self.add_fact("url",
+                      "postgres://admin:S3cr3tPassw0rd@prod.example.com/app")
+        sync.promote_entity_facts(self.repo, self.store, "database", "main")
+        self.assertNotIn("S3cr3tPassw0rd", self.durable_blob(),
+                         "durable writer 必須擋下含憑證的 fact")
+
+    def test_clean_siblings_are_still_written(self):
+        """只擋那一筆,不連坐 —— 其餘 fact 照樣要固化。"""
+        self.add_fact("pool", "20")
+        self.add_fact("url", 'password = "hunter2000-real-not-placeholder"')
+        sync.promote_entity_facts(self.repo, self.store, "database", "main")
+        blob = self.durable_blob()
+        self.assertIn("pool", blob, "乾淨的 fact 不得被連坐擋掉")
+        self.assertNotIn("hunter2000", blob)
+
+    def test_rejected_fact_is_not_marked_durable(self):
+        """沒寫進去的 fact 不得被標 durable(本輪的同一條紀律)。"""
+        fact_id = self.add_fact(
+            "url", "postgres://admin:S3cr3tPassw0rd@prod.example.com/app")
+        sync.promote_entity_facts(self.repo, self.store, "database", "main")
+        row = self.store.fact_row(fact_id)
+        self.assertEqual(row["durable"], 0,
+                         "沒寫進 .dev-flow 的 fact 被標成已耐久 = 靜默失憶")
+
+    def test_leak_is_unreachable_through_the_public_cli_path(self):
+        """端對端走真實路徑:reverify 塞值 → 乾淨候選碰同一 entity → checkpoint。"""
+        fact_id = self.add_fact("url", "postgres://localhost/app")
+        sync.promote_entity_facts(self.repo, self.store, "database", "main")
+        truth.reverify(
+            self.store, self.repo, fact_id, self.workspace,
+            "postgres://admin:S3cr3tPassw0rd@prod.example.com/app",
+            reason="觀察到正式環境設定")
+
+        session = self.store.start_session("x")
+        candidate = devtalk.propose(
+            self.store, session, "fact",
+            {"entity_type": "database", "entity_key": "main",
+             "fact_key": "pool", "value": "20", "status": truth.VERIFIED,
+             "dependencies": ["src/db.py"], "title": "pool size"},
+            "current_code")
+        devtalk.confirm(self.store, candidate)
+        devtalk.end(self.store, self.repo, session)
+
+        self.assertNotIn("S3cr3tPassw0rd", self.durable_blob())
+        events = "\n".join(json.dumps(e, ensure_ascii=False)
+                           for e in durable.iter_events(self.repo))
+        self.assertNotIn("S3cr3tPassw0rd", events,
+                         "revision(舊值→新值)也不得帶著 secret 落地")

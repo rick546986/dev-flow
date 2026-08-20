@@ -133,8 +133,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=78
-EXPECTED_TOTAL=92
+EXPECTED_NEGATIVES=82
+EXPECTED_TOTAL=96
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -1467,6 +1467,10 @@ expect_local_arg fail check-model-tiering.sh "$D" "$D/external-runs" "MT-2 把 b
 #   MEM-6 評測資料集把中文題全部拿掉(中文檢索退步不會現形)
 #   MEM-7 契約檔拿掉 NEEDS_VERIFICATION(STALE 又能以 OK 蒙混)
 #   MEM-8 拿掉 status 嚴重度排序(多筆結果無法收斂成最嚴重的)
+#   MEM-9  correct() 退回成「固化前就 supersede」(更正失敗時舊值連帶消失)
+#   MEM-10 revision 的 mark_durable 挪到寫檔之前(寫檔失敗仍宣稱已耐久)
+#   MEM-11 拿掉 durable_check(「記憶真的離開這台機器了嗎」無從複驗)
+#   MEM-12 fact 整檔寫回不過 Signal Gate(secret 隨乾淨候選一起進 Git)
 D=$(seed_mem mem0)
 expect_local pass check-memory-architecture.sh "$D" "MEM-0 對照組(memory 架構不變量齊)"
 
@@ -1558,6 +1562,70 @@ assert n != t, "MEM-8 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
 expect_local fail check-memory-architecture.sh "$D" "MEM-8 拿掉 status 嚴重度排序(多筆結果無法收斂成最嚴重的)"
+
+D=$(seed_mem mem9); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/devtalk.py"
+t = p.read_text(encoding="utf-8")
+anchor = '        payload["_lineage_reason"] = reason\n'
+assert anchor in t, "MEM-9 anchor 不見"
+# 把「固化成功前就把舊值標 SUPERSEDED」種回去 —— 這就是被修掉的那個缺陷本體
+injected = (
+    '        store.upsert_knowledge({\n'
+    '            "knowledge_id": previous["knowledge_id"], "kind": kind,\n'
+    '            "key": key, "title": previous["title"],\n'
+    '            "body": previous["body"],\n'
+    '            "authority": previous["authority"], "status": "SUPERSEDED",\n'
+    '            "confidence": previous["confidence"],\n'
+    '            "recorded_at": previous["recorded_at"],\n'
+    '            "superseded_at": now, "evidence": [], "conflicts": [],\n'
+    '            "implemented": None,\n'
+    '            "durable": bool(previous["durable"])})\n')
+p.write_text(t.replace(anchor, anchor + injected, 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-9 correct() 在固化成功前就 supersede 舊值(更正失敗時兩邊都沒有現況)"
+
+D=$(seed_mem mem10); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+i_write = t.find("durable.append_events(")
+i_mark = t.find("lineage.mark_durable(")
+assert 0 <= i_write < i_mark, "MEM-10 anchor 順序不符(正向早已紅)"
+# 只搬 mark_durable 那一行到 append_events 之前:內容都在,唯一的錯是順序
+line_start = t.rfind("\n", 0, i_mark) + 1
+line_end = t.find("\n", i_mark) + 1
+moved = t[line_start:line_end]
+t = t[:line_start] + t[line_end:]
+i_write = t.find("durable.append_events(")
+ins = t.rfind("\n", 0, i_write) + 1
+p.write_text(t[:ins] + moved + t[ins:], encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-10 revision 的 mark_durable 挪到寫檔之前(寫檔失敗仍宣稱已耐久)"
+
+D=$(seed_mem mem11); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+assert "durable_check" in t, "MEM-11 anchor 不見"
+p.write_text(t.replace("durable_check", "_unused_check"), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-11 拿掉 durable_check(收尾無從複驗記憶是否真的離開本機)"
+
+D=$(seed_mem mem12); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+i = t.find("def promote_entity_facts(")
+j = t.find("\ndef ", i + 1)
+assert i >= 0 and j > i, "MEM-12 anchor 不見"
+body = t[i:j]
+assert "signal.gate(" in body, "MEM-12 anchor:promote_entity_facts 本來就沒 gate"
+# 只把整檔寫回的那道 gate 拔掉(其餘 gate 原封不動)—— 這正是被修掉的洩漏路徑
+p.write_text(t[:i] + body.replace("signal.gate(", "_no_gate(", 1) + t[j:],
+             encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-12 fact 整檔寫回不過 Signal Gate(同 entity 的未檢查鄰居隨乾淨候選進 Git)"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
@@ -1668,8 +1736,8 @@ check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "E
 check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 15" "MIN_CHECKS 釘死 15(A-2/B-5 輪:②改 scoped 拆 3 條 + ⑦⑧⑨ 新增後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 138" "MIN_CHECKS 釘死 138(X-3 補群組數釘之後的實得數)"
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 41" "MIN_CHECKS 釘死 41(反證輪 E-1:再加 M-f~M-h 五個(mutant,子案)配對後的實得數)"
-check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 32" "MIN_CHECKS 釘死 32(commit-landing 輪 F-1-e:POINTS 補「窗口最短」+ 負向⑱⑲ 兩份頂註各一後的實得數)"
-check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 133" "EXPECTED_MAPPED_FILES 釘死 133(精確值,不是地板;2026-08-20 memory/ 納入掃描後的實得數)"
+check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 35" "MIN_CHECKS 釘死 35(durability-barrier 輪:W6 耐久性鏈的負向⑳㉑㉒ 三案後的實得數)"
+check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 134" "EXPECTED_MAPPED_FILES 釘死 134(精確值,不是地板;2026-08-20 memory/ 納入掃描 + test_durability_barrier.py 後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 24" "EXPECTED_GROUPS 釘死 24(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的
