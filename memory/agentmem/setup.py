@@ -18,7 +18,7 @@
 import os
 
 from . import (LOCAL_SCHEMA_VERSION, durable, embedding, identity, legacy,
-               paths, schema, store as store_mod, sync, truth)
+               paths, schema, signal, store as store_mod, sync, truth)
 
 
 class SetupError(RuntimeError):
@@ -161,6 +161,19 @@ def doctor(start_path=None):
             "fix": "" if not leaks else
                    "人工修掉 {0};durable memory 只收 repo-relative 路徑".format(
                        ", ".join(leaks[:3]))})
+        secrets = _secret_leaks(root)
+        findings.append({
+            "level": "ok" if not secrets else "error",
+            "check": "durable-secrets",
+            "detail": (
+                "durable 樹內疑似敏感內容 0 處" if not secrets else
+                "durable 樹內疑似敏感內容 {0} 處({1})".format(
+                    len(secrets),
+                    "; ".join("{0}@{1}".format(",".join(names), rel)
+                              for rel, names in secrets[:3]))),
+            "fix": "" if not secrets else
+                   "人工移出 {0};durable memory 拒絕固化敏感內容".format(
+                       ", ".join(rel for rel, _names in secrets[:3]))})
         snapshot = identity.workspace_snapshot(root)
         workspace_id = identity.workspace_key(project["project_id"],
                                               snapshot["local_path"])
@@ -196,4 +209,25 @@ def _absolute_path_leaks(root):
                 continue
             if paths.scan_absolute_paths(text):
                 leaks.append(os.path.relpath(path, root).replace("\\", "/"))
+    return leaks
+
+
+def _secret_leaks(root):
+    """掃 durable 樹的敏感 pattern。只回檔名與 pattern 名,不回命中原文。"""
+    leaks = []
+    durable_root = durable.root(root)
+    if not os.path.isdir(durable_root):
+        return leaks
+    for dirpath, _dirs, files in os.walk(durable_root):
+        for name in files:
+            path = os.path.join(dirpath, name)
+            try:
+                with open(path, encoding="utf-8") as stream:
+                    text = stream.read()
+            except (OSError, UnicodeDecodeError):
+                continue
+            hits = signal.scan_sensitive(text)
+            if hits:
+                leaks.append((os.path.relpath(path, root).replace("\\", "/"),
+                              hits))
     return leaks

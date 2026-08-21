@@ -1,4 +1,5 @@
 """dev-setup 的 memory 階段、doctor、legacy 遷移(§12/§13/§29)。"""
+import json
 import os
 import shutil
 
@@ -141,6 +142,24 @@ class DoctorTest(MemoryCase):
         os.makedirs(outside)
         self.assertEqual(setup.doctor(outside)["verdict"], "FAIL")
 
+    def test_doctor_flags_seeded_secret_without_echoing_it(self):
+        setup.run(self.repo, name="demo")
+        secret = 'API_KEY = "sk-live-seeded-do-not-echo"'
+        write(self.repo, os.path.join(".dev-flow", "knowledge", "domain",
+                                      "leak-secret.yaml"),
+              "schema_version: 1\nkind: domain\nkey: leak-secret\n"
+              'title: "prod creds"\nbody: "{0}"\n'
+              "authority: domain_expert\nstatus: CONFIRMED\n".format(secret))
+        report = setup.doctor(self.repo)
+        self.assertEqual(report["verdict"], "FAIL")
+        leaks = [f for f in report["findings"]
+                 if f["check"] == "durable-secrets"]
+        self.assertEqual(len(leaks), 1)
+        self.assertEqual(leaks[0]["level"], "error")
+        blob = json.dumps(report, ensure_ascii=False)
+        self.assertNotIn("sk-live-seeded-do-not-echo", blob)
+        self.assertIn("assigned_secret", leaks[0]["detail"])
+
 
 class LegacyTest(MemoryCase):
     CONTEXT = """# demo — CONTEXT(詞彙表 / Ubiquitous Language)
@@ -217,6 +236,45 @@ _Avoid_:<同義詞>
         for record in records:
             self.assertEqual(record["status"], legacy.LEGACY_STATUS)
             self.assertEqual(record["evidence"][0]["ref"], "CONTEXT.md")
+
+    def test_promote_rejects_secret_and_does_not_write_it(self):
+        """GPT-P0-LEGACY-PROMOTE-SECRET:promote 不得繞過敏感守衛寫進 Git。"""
+        write(self.repo, "CONTEXT.md", """# demo
+
+## 語言
+
+**Prod API**: API_KEY = "sk-live-example123456"
+""")
+        report = legacy.migrate(self.repo, self.store, apply_changes=True,
+                                promote=True)
+        self.assertEqual(report["written"], [])
+        self.assertEqual(len(report["rejected"]), 1)
+        self.assertIn("敏感", "".join(report["rejected"][0]["reasons"]))
+        blob = []
+        knowledge_root = os.path.join(durable.root(self.repo), "knowledge")
+        if os.path.isdir(knowledge_root):
+            for dirpath, _dirs, files in os.walk(knowledge_root):
+                for name in files:
+                    with open(os.path.join(dirpath, name), encoding="utf-8") as fh:
+                        blob.append(fh.read())
+        self.assertNotIn("sk-live-example123456", "\n".join(blob))
+        self.assertEqual(list(durable.iter_knowledge(self.repo)), [])
+
+    def test_promote_keeps_clean_neighbor_when_one_term_is_sensitive(self):
+        write(self.repo, "CONTEXT.md", """# demo
+
+## 語言
+
+**Contract(合約)**:客戶與本公司簽署的服務協議。
+**Prod API**: API_KEY = "sk-live-example123456"
+""")
+        report = legacy.migrate(self.repo, self.store, apply_changes=True,
+                                promote=True)
+        keys = [record["key"] for record in durable.iter_knowledge(self.repo)]
+        self.assertEqual(keys, ["Contract"])
+        self.assertEqual(len(report["written"]), 1)
+        self.assertEqual(len(report["rejected"]), 1)
+        self.assertEqual(report["rejected"][0]["key"], "Prod API")
 
     def test_history_is_indexed_locally_not_duplicated_into_durable(self):
         legacy.migrate(self.repo, self.store, apply_changes=True)

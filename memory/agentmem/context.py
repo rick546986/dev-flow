@@ -20,7 +20,7 @@
 """
 import json
 
-from . import identity, truth
+from . import identity, sync, truth
 
 DEFAULT_BUDGET = 4000
 """startup context 的字元上限(預設值刻意小)。超過就砍段落,不砍成半句。"""
@@ -50,6 +50,7 @@ QUERY_INSTRUCTIONS = (
 def build(store, repo_root, workspace_id=None, snapshot=None,
           budget=DEFAULT_BUDGET):
     """組出 startup context。回傳 dict(sections / text / size / truncated)。"""
+    sync.ensure_durable_mirror(repo_root, store)
     project = identity.read_project(repo_root)
     snapshot = snapshot or identity.workspace_snapshot(repo_root)
     workspace_id = workspace_id or identity.workspace_key(

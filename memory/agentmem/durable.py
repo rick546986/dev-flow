@@ -65,6 +65,19 @@ class DurableError(RuntimeError):
     """durable 檔案不可信(conflict 標記 / 格式錯 / 路徑不可攜)—— 一律 fail-loud。"""
 
 
+def _assert_portable_content(*texts):
+    """durable writer 邊界:敏感內容與絕對路徑不得進 Git。
+
+    這是最後一道閘。呼叫端(consolidate / legacy promote)也會先過
+    `signal.gate`,但 writer 自己必須再擋一次 —— 第二個直接呼叫者
+    不該成為第二個繞過點。
+    """
+    from . import signal
+    verdict = signal.gate("domain_clarification", extra_texts=texts)
+    if not verdict["durable_allowed"]:
+        raise DurableError("; ".join(verdict["reasons"]))
+
+
 # ─────────────────────────── 檔名 ────────────────────────────────────────────
 def slug(value):
     """把任意 key 轉成穩定、跨平台安全的檔名。
@@ -208,6 +221,7 @@ def knowledge_file(repo_root_path, kind, key):
 
 
 def write_knowledge(repo_root_path, record):
+    _assert_portable_content(record.get("title", ""), record.get("body", ""))
     kind = record["kind"]
     payload = {
         "schema_version": DURABLE_SCHEMA_VERSION,

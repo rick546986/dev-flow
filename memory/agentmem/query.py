@@ -20,7 +20,7 @@
 """
 import re
 
-from . import cues, retrieval, signal as signal_mod, textnorm, truth
+from . import cues, retrieval, signal as signal_mod, sync, textnorm, truth
 
 # ── retrieval status contract(P0-4)──────────────────────────────────────────
 # 上層 agent 很容易只看 `retrieval_status` 這一個欄位。所以「其實還沒驗證」
@@ -156,6 +156,7 @@ def _envelope(plan_dict, status, results, confidence, evidence, uncertainty,
 def execute(store, repo_root, query, workspace_id, snapshot=None, embedder=None,
             limit=5, branch=None, plan_dict=None):
     """執行查詢。回傳統一 envelope(retrieval_status/confidence/evidence/uncertainty)。"""
+    sync.ensure_durable_mirror(repo_root, store)
     plan_dict = plan_dict or plan(query, branch=branch)
     kind = plan_dict["primary"]
     branch = plan_dict["branch"] or (snapshot or {}).get("branch")

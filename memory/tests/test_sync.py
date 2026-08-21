@@ -2,8 +2,8 @@
 import os
 import shutil
 
-from memtools import MemoryCase
-from agentmem import durable, identity, ids, sync
+from memtools import MemoryCase, commit_all, git, write
+from agentmem import durable, embedding, identity, ids, query, retrieval, sync, truth
 
 
 class RebuildTest(MemoryCase):
@@ -97,6 +97,112 @@ class RebuildTest(MemoryCase):
         counts = sync.rebuild_local(clone, store)
         self.assertEqual(counts["facts"], 1)
         self.assertEqual(counts["knowledge"], 1)
+
+
+class DurableMirrorFreshnessTest(MemoryCase):
+    """GPT-P0-STALE-SQLITE:durable 樹變了之後,不得繼續用舊鏡射當 VERIFIED。"""
+
+    QUESTION = "目前 lab-order 的 current_table 是什麼?"
+
+    def _seed_source(self):
+        write(self.repo, "src/services/db.ts",
+              "export const table = 'lab_order'\n")
+        return commit_all(self.repo, "seed src")
+
+    def _write_state(self, value):
+        fps = truth.fingerprints_for(self.repo, ["src/services/db.ts"])
+        durable.write_state(self.repo, "database", "lab-order", [{
+            "fact_key": "current_table", "value": value,
+            "status": "VERIFIED", "confidence": 0.99,
+            "recorded_at": "2026-08-20T00:00:00Z",
+            "dependencies": ["src/services/db.ts"],
+            "fingerprints": fps}])
+
+    def _ask(self, store):
+        workspace = identity.workspace_key(self.project_id, self.repo)
+        snapshot = identity.workspace_snapshot(self.repo)
+        return query.execute(store, self.repo, self.QUESTION, workspace,
+                             snapshot, embedding.Embedder())
+
+    def setUp(self):
+        super().setUp()
+        self.project_id = self.project()["project_id"]
+        self._seed_source()
+
+    def test_ask_never_returns_stale_verified_after_durable_changes(self):
+        self._write_state("old")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        first = self._ask(store)
+        self.assertEqual(first["current_truth"]["value"], "old")
+        self.assertEqual(first["retrieval_status"], retrieval.OK)
+
+        self._write_state("new")
+        commit_all(self.repo, "durable pulled new value")
+        answer = self._ask(store)
+        self.assertNotEqual(answer.get("current_truth", {}).get("value"), "old")
+        self.assertEqual(answer["current_truth"]["value"], "new")
+        self.assertEqual(answer["retrieval_status"], retrieval.OK)
+
+    def test_dirty_uncommitted_durable_is_detected(self):
+        self._write_state("old")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        self._write_state("dirty-new")
+        answer = self._ask(store)
+        self.assertEqual(answer["current_truth"]["value"], "dirty-new")
+        self.assertNotEqual(answer["current_truth"]["value"], "old")
+
+    def test_unrelated_commit_does_not_force_wrong_invalidation(self):
+        self._write_state("old")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        write(self.repo, "README.unrelated", "not durable\n")
+        commit_all(self.repo, "unrelated file")
+        answer = self._ask(store)
+        self.assertEqual(answer["current_truth"]["value"], "old")
+        self.assertEqual(answer["retrieval_status"], retrieval.OK)
+
+    def test_refresh_preserves_local_only_candidates_and_sessions(self):
+        self._write_state("old")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        session_id = store.start_session("local only")
+        store.add_turn(session_id, "user", "只住 local 的一句話")
+        candidate = store.add_candidate(
+            session_id, "domain",
+            {"key": "local-only", "title": "未固化候選"}, "domain_expert")
+        self._write_state("new")
+        self._ask(store)
+        self.assertEqual(len(store.turns(session_id)), 1)
+        self.assertEqual(
+            store.candidates(session_id)[0]["candidate_id"], candidate)
+        self.assertEqual(self._ask(store)["current_truth"]["value"], "new")
+
+    def test_two_worktrees_detect_freshness_independently(self):
+        self._write_state("old")
+        commit_all(self.repo, "shared old")
+        git(self.repo, "branch", "other-wt")
+        wt_b = os.path.join(self.work, "freshness-b")
+        git(self.repo, "worktree", "add", "-q", wt_b, "other-wt")
+        store_a = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store_a)
+        store_b = self.store_for(self.project_id, root=wt_b)
+        sync.rebuild_local(wt_b, store_b)
+
+        self._write_state("new-in-a")
+        workspace_a = identity.workspace_key(self.project_id, self.repo)
+        answer_a = query.execute(
+            store_a, self.repo, self.QUESTION, workspace_a,
+            identity.workspace_snapshot(self.repo), embedding.Embedder())
+        self.assertEqual(answer_a["current_truth"]["value"], "new-in-a")
+
+        workspace_b = identity.workspace_key(self.project_id, wt_b)
+        answer_b = query.execute(
+            store_b, wt_b, self.QUESTION, workspace_b,
+            identity.workspace_snapshot(wt_b), embedding.Embedder())
+        self.assertEqual(answer_b["current_truth"]["value"], "old",
+                         "B 的 checkout 沒變,不得被 A 的本機改寫牽連")
 
 
 class ConsolidateTest(MemoryCase):

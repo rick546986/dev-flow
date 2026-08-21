@@ -10,10 +10,13 @@
   敏感守衛,只有全過的才寫進 Git。這是 durable memory 的**唯一寫入時機**:
   不在對話中每說一句話就把 repository 弄 dirty(§17)。
 """
+import hashlib
 import json
 import os
 
 from . import durable, ids, lineage, signal, store as store_mod
+
+DURABLE_GENERATION_META = "durable_generation"
 
 # CANDIDATE 也進 durable:狀態欄本來就會明寫,查詢時它會被當成
 # NEEDS_VERIFICATION。把它擋在外面反而製造一個洞 —— 「觀察到但還沒驗證」
@@ -128,7 +131,54 @@ def rebuild_local(repo_root, store, embedder=None):
 
     if embedder is not None:
         counts["embeddings"] = embedder.reindex(store)
+    store.set_meta(DURABLE_GENERATION_META, durable_generation(repo_root))
     return counts
+
+
+def durable_generation(repo_root):
+    """`.dev-flow/` 內容的確定性指紋。不看 HEAD:無關 commit 不該逼重建。"""
+    digest = hashlib.sha256()
+    root = durable.root(repo_root)
+    if not os.path.isdir(root):
+        digest.update(b"absent")
+        return digest.hexdigest()
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames.sort()
+        for name in sorted(filenames):
+            path = os.path.join(dirpath, name)
+            rel = os.path.relpath(path, root).replace(os.sep, "/")
+            digest.update(rel.encode("utf-8"))
+            digest.update(b"\0")
+            try:
+                with open(path, "rb") as stream:
+                    digest.update(stream.read())
+            except OSError:
+                digest.update(b"unreadable")
+            digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def ensure_durable_mirror(repo_root, store):
+    """讀路徑在信任 SQLite 鏡射前,確認它還對得上當前 `.dev-flow/`。
+
+    對得上 → 不動。對不上 → 同步 rebuild(local-only / session / candidate
+    由 `clear_durable_mirror` 留下)。回傳是否真的重建了。
+
+    **沒有世代紀錄時不重建,只蓋章。** 評測與多數單元測試直接把知識寫進
+    SQLite、`.dev-flow/` 是空的;當成 mismatch 去 rebuild 會先 `clear_index()`,
+    檢索通道被挖空,答案變成 NO_RELIABLE_MATCH。沒蓋過章代表還沒做過
+    「這份 SQLite 是這個 durable 樹的鏡射」—— 下一次檔案真的變了,章對不上
+    才重建。舊 DB 升級後若要立刻對齊,走 `dev-setup` / `rebuild_local`。
+    """
+    current = durable_generation(repo_root)
+    stored = store.get_meta(DURABLE_GENERATION_META)
+    if stored is None:
+        store.set_meta(DURABLE_GENERATION_META, current)
+        return False
+    if stored == current:
+        return False
+    rebuild_local(repo_root, store)
+    return True
 
 
 # ─────────────────────────── local → durable ────────────────────────────────
@@ -553,9 +603,10 @@ def _observe_remote(repo_root, branch):
     這個字串切 —— branch 名字本身可以有 `/`,切錯會問錯 ref 然後判 FAIL。
 
     連得上**不等於**在別台機器上:remote 可以是 `/Volumes/backup/mirror.git`。
-    所以 URL 先過 `identity.remote_is_offmachine()`,判不出是別台機器就不給
-    證據 —— 見那支的註解。訊息裡只提 remote **名字**,不提 URL:URL 可能帶
-    token,而這段輸出會被貼進紀錄。
+    所以 URL 先過 `identity.remote_is_offmachine()` 填預檢欄位;判不出是
+    別台機器就把 `preflight_not_known_local` 設假,**然後仍走 ls-remote**。
+    訊息裡只提 remote **名字**,不提 URL:URL 可能帶 token,而這段輸出會被
+    貼進紀錄。
 
     形狀判定只看 URL 字面(host 長得像不像本機)——一個具名的非 loopback
     主機仍然可能解析回這台機器:`remote.example.test` 被 `/etc/hosts` 或
@@ -596,41 +647,33 @@ def _observe_remote(repo_root, branch):
     if not url:
         return (None, REMOTE_UNVERIFIED,
                 "讀不到 remote {0} 的 URL".format(remote), False)
+    # 預檢是 best-effort,只填 `preflight_not_known_local`。失敗不得
+    # 當 problems、也不得跳過後面的 ls-remote(owner D-2 / GPT 0130)。
+    preflight_not_known_local = False
     if not identity.remote_is_offmachine(url):
-        return (None, REMOTE_LOCAL,
-                "remote {0} 指向這台機器,或無法判定它在別台機器上 —— "
-                "本機的 bare repo / file:// / localhost 跟工作樹一起壞掉,"
-                "它不是「記憶離開這台機器」的證據".format(remote), False)
-    host = identity._parse_host(url)
-    ips = identity.resolve_host_ips(host) if host else None
-    if not ips:
-        return (None, REMOTE_UNVERIFIED,
-                "remote {0} 的主機名解析不到位址 —— 分不出來不得當成"
-                "離開這台機器的證據".format(remote), False)
-    local_ips = identity._local_machine_ips()
-    if not local_ips:
-        return (None, REMOTE_UNVERIFIED,
-                "這台機器自己的介面位址列表拿不到(best-effort 探測全部"
-                "失敗)—— 分不出來解析到的位址是不是這台機器自己,不得"
-                "因為查不到本機介面就當成離開這台機器的證據", False)
-    if not all(identity.ip_is_offmachine(ip, local_ips=local_ips)
-               for ip in ips):
-        return (None, REMOTE_ENDPOINT_LOCAL,
-                "remote {0} 的主機名解析後是這台機器自己(loopback / "
-                "link-local / 本機介面位址)—— 主機名長得像別台機器,"
-                "實際解析到的卻是自己".format(remote), False)
+        preflight_not_known_local = False
+    else:
+        host = identity._parse_host(url)
+        ips = identity.resolve_host_ips(host) if host else None
+        if ips:
+            local_ips = identity._local_machine_ips()
+            if local_ips and all(
+                    identity.ip_is_offmachine(ip, local_ips=local_ips)
+                    for ip in ips):
+                preflight_not_known_local = True
     raw = identity._git_raw(repo_root, "ls-remote", "--exit-code",
                             remote, merge)
     if raw is None:
         return (None, REMOTE_UNVERIFIED,
                 "問不到遠端 {0} 的 {1}(網路不通、無權限、或該 ref 不存在)"
-                .format(remote, merge), True)
+                .format(remote, merge), preflight_not_known_local)
     for line in raw.splitlines():
         parts = line.split("\t")
         if len(parts) == 2 and parts[1].strip() == merge:
-            return parts[0].strip(), None, None, True
+            return parts[0].strip(), None, None, preflight_not_known_local
     return (None, REMOTE_UNVERIFIED,
-            "遠端 {0} 沒有回報 {1}".format(remote, merge), True)
+            "遠端 {0} 沒有回報 {1}".format(remote, merge),
+            preflight_not_known_local)
 
 
 def durable_check(repo_root, store, local_only=False):

@@ -72,6 +72,7 @@ def _resolve(args):
     workspace_id = identity.workspace_key(project["project_id"],
                                           snapshot["local_path"])
     store = store_mod.open_for_root(project["project_id"], root)
+    sync.ensure_durable_mirror(root, store)
     return root, project, store, workspace_id, snapshot
 
 
@@ -377,15 +378,12 @@ def cmd_durable_check(args):
     而不是收尾清單上一句沒人查的話。
 
     remote 那一項問的是**遠端本身**(`ls-remote`),不是本機的 `origin/<branch>`
-    —— 追蹤 ref 是快取,別台機器改掉遠端之後它還指著我的 commit。而且那個
-    remote 必須真的**在別台機器上**:本機的 bare repo、`file://`、
-    `ssh://git@localhost/…` 都會讓 `ls-remote` 回報正確的 SHA,卻跟工作樹在
-    同一顆硬碟上一起壞掉。一個具名的非 loopback 主機也不例外——`/etc/hosts`
-    或內網 DNS 可以把 `remote.example.test` 重映到 `127.0.0.1` 或這台機器
-    自己的另一個介面,所以 URL 形狀過關之後還會再解析主機名、驗位址不是
-    loopback/link-local/本機介面。問不到遠端、判不出它在別台機器上、或解析
-    不到主機名的位址,一律 FAIL;離線或刻意只用本機 remote 要放行請明確
-    `--local-only`。
+    —— 追蹤 ref 是快取,別台機器改掉遠端之後它還指著我的 commit。預檢
+    (`preflight_not_known_local`)只是 best-effort:本機 bare repo、`file://`、
+    解析回 loopback 的具名主機,都只讓那個欄位為假,不得因此跳過 ls-remote,
+    也不得單獨把 verdict 封成 FAIL。PASS 的條件是沒有獨立的耐久性問題,且
+    `remote_ref_matches` 為真。問不到遠端、或遠端 SHA 與 HEAD 不同,才 FAIL;
+    離線或刻意只用本機追蹤 ref 要放行請明確 `--local-only`。
 
     verdict 三值:`PASS`(遠端 ref 真的觀察過且等於本機 HEAD)/
     `LOCAL_ONLY_PASS`(本機檢查都過,但沒有遠端 ref 證據)/ `FAIL`。

@@ -118,7 +118,7 @@ def migrate(repo_root, store, apply_changes=False, promote=False, now=None):
     """
     now = now or store_mod.utc_now()
     report = {"context_md": None, "history_md": None, "applied": apply_changes,
-              "promoted": promote, "written": []}
+              "promoted": promote, "written": [], "rejected": []}
 
     context_path = os.path.join(repo_root, CONTEXT_FILE)
     if os.path.isfile(context_path):
@@ -145,20 +145,31 @@ def migrate(repo_root, store, apply_changes=False, promote=False, now=None):
                     "evidence": [{"type": "file", "ref": CONTEXT_FILE,
                                   "stance": "legacy_import"}]})
             if promote:
-                from . import durable
+                from . import durable, signal
                 for term in terms:
                     body = term["body"]
                     if term["avoid"]:
                         body += "\n禁用同義詞:" + term["avoid"]
-                    report["written"].append(durable.write_knowledge(
-                        repo_root, {
-                            "kind": "domain", "key": term["key"],
-                            "title": term["title"], "body": body,
-                            "authority": LEGACY_AUTHORITY,
-                            "status": LEGACY_STATUS, "confidence": 0.4,
-                            "recorded_at": now,
-                            "evidence": [{"type": "file", "ref": CONTEXT_FILE,
-                                          "stance": "legacy_import"}]}))
+                    verdict = signal.gate(
+                        "domain_clarification", term["title"], body)
+                    if not verdict["durable_allowed"]:
+                        report["rejected"].append({
+                            "key": term["key"], "reasons": verdict["reasons"]})
+                        continue
+                    try:
+                        report["written"].append(durable.write_knowledge(
+                            repo_root, {
+                                "kind": "domain", "key": term["key"],
+                                "title": term["title"], "body": body,
+                                "authority": LEGACY_AUTHORITY,
+                                "status": LEGACY_STATUS, "confidence": 0.4,
+                                "recorded_at": now,
+                                "evidence": [{"type": "file",
+                                              "ref": CONTEXT_FILE,
+                                              "stance": "legacy_import"}]}))
+                    except durable.DurableError as exc:
+                        report["rejected"].append({
+                            "key": term["key"], "reasons": [str(exc)]})
 
     history_path = os.path.join(repo_root, HISTORY_FILE)
     if os.path.isfile(history_path):
