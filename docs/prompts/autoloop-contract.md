@@ -405,8 +405,16 @@ owner 裁決解除篩選的**排除**、不解除**額度**(理由見該檔開�
 而且 `docs/prompts` 已在 `check-no-stale-paths.sh` 的 ALLOWLIST 裡,不必新增豁免條目
 (新增豁免要同步改 `EXPECTED_ALLOWLIST_ENTRIES`,是可以避免的 lockstep 負擔)。
 
-## 已知缺口
+## 已知缺口(2026-08-21 已消除,保留記錄)
 
-**本檔與實際執行的 prompt 之間沒有機械化的一致性檢查。** 兩份靠人 lockstep 更新。
-這正是這份契約 §4 附則在別處要求的那種 lockstep 紀律,但這一組目前沒有守衛。
-若之後迴圈的行為與本檔不符,先懷疑兩份漂了,不要先懷疑 agent 沒照做。
+**原本的缺口**:本檔與排程器注入的 prompt 是兩份拷貝,沒有機械化一致性檢查,
+靠人 lockstep 更新;漂了會很難察覺。
+
+**怎麼消掉的**:Cursor Automation 的指示文字**不複製契約內容,只指向本檔**
+(「照 `docs/prompts/autoloop-contract.md` 執行,那份是唯一正本」)。
+沒有第二份拷貝,就沒有漂移可言。這也讓改契約不必同步改 automation 設定。
+
+**新的前提(換來的代價)**:agent 必須真的讀得到本檔。它每輪開場在 `main`
+的 checkout 上,本檔在 `main` 上,所以讀得到 —— 但**本檔不能離開 `main`**。
+搬移或改名要同步改 automation 的指示文字,這是唯一剩下的 lockstep 點,
+而它比「同步兩份全文」小得多。
