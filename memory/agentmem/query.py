@@ -13,7 +13,10 @@
     MIXED      同時含多種意圖        → 主意圖優先,附上次意圖的結果
 
 每個結果一律帶四件(§25):`retrieval_status` / `confidence` / `evidence` /
-`uncertainty`。查不到就回 `NO_RELIABLE_MATCH`,不拿低分 observation 湊答案。
+`uncertainty`,外加必填的 `per_coordinate`(owner 裁決 D-4):每個已解析
+`(entity_key, fact_key)` 一列,讓呼叫端分得出「被問的那筆是 STALE」與
+「別筆是 STALE、被問的那筆其實 OK」。既有頂層欄位語意一個字都不准動。
+查不到就回 `NO_RELIABLE_MATCH`,不拿低分 observation 湊答案。
 """
 import re
 
@@ -143,6 +146,10 @@ def _envelope(plan_dict, status, results, confidence, evidence, uncertainty,
     }
     if extra:
         payload.update(extra)
+    # D-4:必填。extra 可以填內容,但不能讓欄位缺席或變成 None ——
+    # 呼叫端寫 .get() 時 None 與「空」同義,少一個欄位就靜默降級。
+    if "per_coordinate" not in payload or payload["per_coordinate"] is None:
+        payload["per_coordinate"] = []
     return payload
 
 
@@ -205,6 +212,7 @@ def _current(store, repo_root, plan_dict, workspace_id, snapshot, embedder,
     per_fact = [_fact_status(r) for r in resolved]
     fast = [r for r in resolved if r["fast_path"]]
     overall = _overall_status(per_fact, has_any_evidence=bool(resolved))
+    coords = _per_coordinate(resolved)
 
     if overall == retrieval.OK and fast:
         best = max(fast, key=lambda r: r["confidence"])
@@ -216,7 +224,7 @@ def _current(store, repo_root, plan_dict, workspace_id, snapshot, embedder,
               "value": best["value"], "fast_path": True}],
             best["confidence"], best["evidence"], [],
             extra={"current_truth": best, "resolved": resolved,
-                   "latency_ms": 0.0})
+                   "per_coordinate": coords, "latency_ms": 0.0})
 
     needs = [r for r in resolved if r["needs_inspect"]]
     found = _search(store, plan_dict, embedder, limit, branch=branch)
@@ -249,9 +257,30 @@ def _current(store, repo_root, plan_dict, workspace_id, snapshot, embedder,
     return _envelope(plan_dict, status, found["results"], confidence,
                      [e for r in resolved for e in r["evidence"]], uncertainty,
                      extra={"resolved": resolved,
+                            "per_coordinate": coords,
                             "needs_inspect": bool(needs),
                             "latency_ms": found["latency_ms"],
                             "channels_active": found["channels_active"]})
+
+
+def _per_coordinate(resolved):
+    """D-4:每個已解析座標一列。必填明細,不改既有欄位語意。
+
+    每一列同時帶 truth_status(LVP:VERIFIED/STALE/CANDIDATE/CONFLICT/UNKNOWN)
+    與 retrieval_status(契約四態),呼叫端才能在 entity-only 聚合降級時
+    指出是哪一座標造成的,而不必去猜 `resolved` 的內部形狀。
+    """
+    rows = []
+    for record in resolved:
+        rows.append({
+            "entity_type": record["entity_type"],
+            "entity_key": record["entity_key"],
+            "fact_key": record["fact_key"],
+            "truth_status": record["status"],
+            "retrieval_status": _fact_status(record),
+            "value": record["value"],
+        })
+    return rows
 
 
 def _fact_status(resolved):

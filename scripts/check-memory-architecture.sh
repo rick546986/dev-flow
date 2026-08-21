@@ -762,7 +762,44 @@ elif (re.search(r"Store\.open\(\s*project", setup_code)
 else:
     ok("setup 與 CLI 一律走 open_for_root")
 
-MIN_CHECKS = 58
+# D-4: envelope 必填 per_coordinate。選填等於呼叫端寫 .get(),None 與空同義。
+# 必須寫在 extra merge **之後**:寫在前面的話,extra 傳 None 就能把必填欄位蓋掉。
+env_i = query_src.find("def _envelope(")
+env_end = query_src.find("\ndef ", env_i + 1)
+env_body = (query_src[env_i:env_end] if env_i >= 0 and env_end > env_i
+            else None)
+env_code = executable_only(env_body) if env_body else None
+if env_code is None:
+    bad("_envelope 抽取(per_coordinate)", "找不到 _envelope 窗口")
+elif 'payload["per_coordinate"]' not in env_code:
+    bad("envelope 的 per_coordinate 不是必填",
+        "_envelope 沒有在 extra merge 之後寫 payload[\"per_coordinate\"] —— "
+        "欄位變成 extra 高興才附上,呼叫端只能 .get(),None 與空同義")
+elif ("if extra:" in env_code
+      and env_code.find("if extra:")
+      > env_code.find('payload["per_coordinate"]')):
+    bad("per_coordinate 寫在 extra merge 之前",
+        "寫在 extra.update 之前的話,extra 傳 None 就能把必填欄位蓋掉")
+else:
+    ok("envelope 必填 per_coordinate(extra merge 之後仍在)")
+
+# D-4: CURRENT 必須從 resolved 建 per_coordinate,不能靠 envelope 預設空列表。
+# 空列表在「沒有座標」時是對的;有座標卻給空列表 = 資訊損失回來。
+cur_i = query_src.find("def _current(")
+cur_end = query_src.find("\ndef ", cur_i + 1)
+cur_body = (query_src[cur_i:cur_end] if cur_i >= 0 and cur_end > cur_i
+            else None)
+cur_code = executable_only(cur_body) if cur_body else None
+if cur_code is None:
+    bad("_current 抽取(per_coordinate)", "找不到 _current 窗口")
+elif "_per_coordinate(" not in cur_code:
+    bad("CURRENT 的 per_coordinate 不是從 resolved 建的",
+        "_current 沒有呼叫 _per_coordinate —— 函式還在、字串還在都不算,"
+        "entity-only 聚合降級時呼叫端仍分不出是哪一座標造成的")
+else:
+    ok("CURRENT 從 resolved 建 per_coordinate")
+
+MIN_CHECKS = 60
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)

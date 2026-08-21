@@ -133,8 +133,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=102
-EXPECTED_TOTAL=116
+EXPECTED_NEGATIVES=104
+EXPECTED_TOTAL=118
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -1948,6 +1948,41 @@ p.write_text(t.replace(
     encoding="utf-8")
 PYX
 expect_local fail check-memory-architecture.sh "$D" "MEM-28b Store.open 缺 worktree_key 時退回專案級共用檔"
+
+D=$(seed_mem mem29); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/query.py"
+t = p.read_text(encoding="utf-8")
+anchor = '''    if extra:
+        payload.update(extra)
+    # D-4:必填。extra 可以填內容,但不能讓欄位缺席或變成 None ——
+    # 呼叫端寫 .get() 時 None 與「空」同義,少一個欄位就靜默降級。
+    if "per_coordinate" not in payload or payload["per_coordinate"] is None:
+        payload["per_coordinate"] = []
+    return payload'''
+assert anchor in t, "MEM-29 anchor 不見"
+# 拿掉 extra merge 之後的必填回填:欄位變成 extra 高興才附上,
+# 呼叫端只能 .get(),None 與空同義。
+p.write_text(t.replace(
+    anchor,
+    "    if extra:\n"
+    "        payload.update(extra)\n"
+    "    return payload", 1),
+    encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-29 envelope 拿掉必填 per_coordinate(呼叫端只能 .get())"
+
+D=$(seed_mem mem29b); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/query.py"
+t = p.read_text(encoding="utf-8")
+anchor = "    coords = _per_coordinate(resolved)"
+assert anchor in t, "MEM-29b anchor 不見"
+# 函式還在、字串還在,但 CURRENT 改寫死空列表 —— 守衛不能被自己要
+# 檢查的那個字串餵飽。entity-only 聚合降級時明細消失。
+p.write_text(t.replace(anchor, "    coords = []", 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-29b CURRENT 的 per_coordinate 寫死空列表(_per_coordinate 變死碼)"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"

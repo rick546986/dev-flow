@@ -199,6 +199,101 @@ class ExecutionTest(MemoryCase):
         self.assertEqual(resolved_keys, {("lab-order", "current_table"),
                                          ("lab-order", "migration_state")})
 
+    def test_envelope_always_has_per_coordinate(self):
+        """D-4: `per_coordinate` 必填,所有 query kind 都在,不得省略。
+        選填加 `.get()` 等於讓 None 靜默當成空 —— owner 裁決明文禁止。"""
+        for text in ("目前 lab-order 的 current_table 是什麼?",
+                     "目前 lab-order 是什麼狀況?",
+                     "為什麼改?", "怎麼部署?",
+                     "registration 是什麼意思?",
+                     "咖啡機壞了要找誰修?",
+                     "之前發生過什麼事?",
+                     "我們未來打算怎麼做 lab order?"):
+            answer = self.ask(text)
+            self.assertIn("per_coordinate", answer, text)
+            self.assertIsInstance(answer["per_coordinate"], list, text)
+            self.assertIsNotNone(answer["per_coordinate"], text)
+
+    def test_entity_only_mixed_state_per_coordinate_identifies_downgrade(self):
+        """D-4 驗收 9:lab-order.current_table=VERIFIED +
+        lab-order.migration_state=CANDIDATE。既有聚合仍是
+        NEEDS_VERIFICATION;`per_coordinate` 指出是哪一座標造成降級。"""
+        truth.record_fact(
+            self.store, self.repo, "database", "lab-order", "migration_state",
+            "pending", status=truth.CANDIDATE, confidence=0.3)
+        answer = self.ask("目前 lab-order 是什麼狀況?")
+        self.assertEqual(answer["retrieval_status"], query.NEEDS_VERIFICATION)
+        self.assertNotIn("current_truth", answer)
+        by_key = {(row["entity_key"], row["fact_key"]): row
+                  for row in answer["per_coordinate"]}
+        self.assertEqual(set(by_key), {("lab-order", "current_table"),
+                                       ("lab-order", "migration_state")})
+        table = by_key[("lab-order", "current_table")]
+        mig = by_key[("lab-order", "migration_state")]
+        self.assertEqual(table["entity_type"], "database")
+        self.assertEqual(table["truth_status"], truth.VERIFIED)
+        self.assertEqual(table["retrieval_status"], retrieval.OK)
+        self.assertEqual(table["value"], "lab_order")
+        self.assertEqual(mig["truth_status"], truth.CANDIDATE)
+        self.assertEqual(mig["retrieval_status"], query.NEEDS_VERIFICATION)
+        self.assertEqual(mig["value"], "pending")
+
+    def test_per_coordinate_distinguishes_stale_and_conflict(self):
+        """D-4 驗收 3:同一 entity 底下 STALE / CONFLICT 必須能從
+        `per_coordinate` 分開讀出來,不能只剩頂層一個嚴重狀態。"""
+        truth.record_fact(
+            self.store, self.repo, "database", "lab-order", "migration_state",
+            "pending", status=truth.STALE, confidence=0.3)
+        truth.record_fact(
+            self.store, self.repo, "database", "lab-order", "owner_team",
+            "platform", status=truth.CONFLICT, confidence=0.2)
+        answer = self.ask("目前 lab-order 是什麼狀況?")
+        self.assertEqual(answer["retrieval_status"], query.CONFLICT)
+        by_key = {(row["entity_key"], row["fact_key"]): row
+                  for row in answer["per_coordinate"]}
+        self.assertEqual(by_key[("lab-order", "current_table")]["truth_status"],
+                         truth.VERIFIED)
+        self.assertEqual(by_key[("lab-order", "current_table")]["retrieval_status"],
+                         retrieval.OK)
+        self.assertEqual(by_key[("lab-order", "migration_state")]["truth_status"],
+                         truth.STALE)
+        self.assertEqual(by_key[("lab-order", "migration_state")]["retrieval_status"],
+                         query.NEEDS_VERIFICATION)
+        self.assertEqual(by_key[("lab-order", "owner_team")]["truth_status"],
+                         truth.CONFLICT)
+        self.assertEqual(by_key[("lab-order", "owner_team")]["retrieval_status"],
+                         query.CONFLICT)
+
+    def test_named_fact_per_coordinate_does_not_reintroduce_fact_scope(self):
+        """D-4 驗收 6:指名 entity + fact_key 時,`per_coordinate` 仍只含
+        那個座標,不得把同 entity 底下沒被問的 CANDIDATE 拉回來。"""
+        truth.record_fact(
+            self.store, self.repo, "database", "lab-order", "migration_state",
+            "pending", status=truth.CANDIDATE, confidence=0.3)
+        answer = self.ask("目前 lab-order 的 current_table 是什麼?")
+        self.assertEqual(answer["retrieval_status"], retrieval.OK)
+        self.assertEqual(answer["current_truth"]["value"], "lab_order")
+        keys = {(row["entity_key"], row["fact_key"])
+                for row in answer["per_coordinate"]}
+        self.assertEqual(keys, {("lab-order", "current_table")})
+        self.assertEqual(answer["per_coordinate"][0]["truth_status"],
+                         truth.VERIFIED)
+        self.assertEqual(answer["per_coordinate"][0]["retrieval_status"],
+                         retrieval.OK)
+
+    def test_per_coordinate_covers_every_resolved_coordinate(self):
+        """D-4 驗收 8:漏掉任一已解析座標必須被抓到。`per_coordinate`
+        與 `resolved` 的座標集合必須相等 —— 一邊有、一邊沒有就是資訊損失。"""
+        truth.record_fact(
+            self.store, self.repo, "database", "lab-order", "migration_state",
+            "pending", status=truth.CANDIDATE, confidence=0.3)
+        answer = self.ask("目前 lab-order 是什麼狀況?")
+        resolved_keys = {(r["entity_key"], r["fact_key"])
+                         for r in answer["resolved"]}
+        coord_keys = {(r["entity_key"], r["fact_key"])
+                      for r in answer["per_coordinate"]}
+        self.assertEqual(coord_keys, resolved_keys)
+
     def test_current_named_fact_key_absent_on_named_entity_is_not_ok(self):
         """查詢指名的 fact_key 在被指名的 entity 底下不存在(它屬於別的
         entity)—— 不得退回「那就把這個 entity 全部 fact 都給你」,那會拿一個
