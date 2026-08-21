@@ -1,6 +1,7 @@
 """rebuild(durable → local)與 consolidate(local → durable)(§5/§13/§17/§29)。"""
 import os
 import shutil
+import unittest
 
 from memtools import MemoryCase, commit_all, git, write
 from agentmem import durable, embedding, identity, ids, query, retrieval, sync, truth
@@ -203,6 +204,119 @@ class DurableMirrorFreshnessTest(MemoryCase):
             identity.workspace_snapshot(wt_b), embedding.Embedder())
         self.assertEqual(answer_b["current_truth"]["value"], "old",
                          "B 的 checkout 沒變,不得被 A 的本機改寫牽連")
+
+    def _drop_generation(self, store):
+        """模擬升級前的 runtime DB:有鏡射列、沒有 durable_generation。"""
+        with store.conn:
+            store.conn.execute(
+                "DELETE FROM meta WHERE key=?",
+                (sync.DURABLE_GENERATION_META,))
+        self.assertIsNone(store.get_meta(sync.DURABLE_GENERATION_META))
+
+    def test_absent_generation_on_old_mirror_does_not_bless_stale_value(self):
+        """升級路徑:舊 DB 無世代章 + git pull 新樹 → 不得把 old 當 VERIFIED。"""
+        self._write_state("old")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        first = self._ask(store)
+        self.assertEqual(first["current_truth"]["value"], "old")
+        self.assertEqual(first["retrieval_status"], retrieval.OK)
+
+        self._drop_generation(store)
+        self._write_state("new")
+        commit_all(self.repo, "durable pulled new value after upgrade")
+        answer = self._ask(store)
+        self.assertNotEqual(answer.get("current_truth", {}).get("value"), "old")
+        self.assertEqual(answer["current_truth"]["value"], "new")
+        self.assertEqual(answer["retrieval_status"], retrieval.OK)
+        self.assertEqual(
+            store.get_meta(sync.DURABLE_GENERATION_META),
+            sync.durable_generation(self.repo))
+
+    def test_absent_generation_empty_mirror_may_stamp_without_rebuild(self):
+        """沒有 durable 鏡射列時,缺世代可以只蓋章,不得清掉 local-only。"""
+        store = self.store_for(self.project_id)
+        session_id = store.start_session("local only seed")
+        store.add_turn(session_id, "user", "只住 local 的一句話")
+        rebuilt = sync.ensure_durable_mirror(self.repo, store)
+        self.assertFalse(rebuilt)
+        self.assertEqual(len(store.turns(session_id)), 1)
+        self.assertIsNotNone(store.get_meta(sync.DURABLE_GENERATION_META))
+
+    def test_rebuild_does_not_certify_torn_generation(self):
+        """讀鏡射與蓋章之間樹變了 → 第一次不得蓋章,穩定後值與世代同一快照。"""
+        self._write_state("A")
+        store = self.store_for(self.project_id)
+        flipped = {"n": 0}
+
+        def mutate(_repo):
+            if flipped["n"] == 0:
+                flipped["n"] += 1
+                self._write_state("B")
+
+        sync._after_rebuild_read = mutate
+        try:
+            sync.rebuild_local(self.repo, store)
+        finally:
+            sync._after_rebuild_read = None
+
+        self.assertEqual(flipped["n"], 1)
+        rows = store.facts(entity_type="database", entity_key="lab-order",
+                           fact_key="current_table")
+        self.assertEqual(rows[0]["value"], "B")
+        self.assertEqual(
+            store.get_meta(sync.DURABLE_GENERATION_META),
+            sync.durable_generation(self.repo))
+        self.assertEqual(self._ask(store)["current_truth"]["value"], "B")
+        self.assertNotEqual(self._ask(store)["current_truth"]["value"], "A")
+
+    def test_rebuild_fails_closed_when_snapshot_never_stabilizes(self):
+        """重試耗盡仍撕開 → 不得蓋一個對不上的世代。"""
+        self._write_state("A")
+        store = self.store_for(self.project_id)
+        toggle = {"v": "A"}
+
+        def always_mutate(_repo):
+            toggle["v"] = "B" if toggle["v"] == "A" else "A"
+            self._write_state(toggle["v"])
+
+        sync._after_rebuild_read = always_mutate
+        try:
+            with self.assertRaises(sync.DurableMirrorDrift):
+                sync.rebuild_local(self.repo, store)
+        finally:
+            sync._after_rebuild_read = None
+        self.assertIsNone(store.get_meta(sync.DURABLE_GENERATION_META))
+
+
+class ContinuationProvenanceTest(unittest.TestCase):
+    """接續紀錄不得宣稱 durable-check 覆蓋了它自己尚未存在的 commit。"""
+
+    def test_differing_heads_without_uncovered_marker_are_dishonest(self):
+        text = (
+            "head == remote_head == 0e35766d338a0249937a2df407c5c87f3aefd568\n"
+            "durable-check -> PASS\n"
+        )
+        self.assertFalse(sync.continuation_claim_is_honest(
+            text,
+            checked_head="0e35766d338a0249937a2df407c5c87f3aefd568",
+            file_commit="e6cca58d34ee0a97d914cafc863e1a5ea9c6f43f"))
+
+    def test_explicit_uncovered_report_commit_is_honest(self):
+        text = (
+            "實作 commit: 929e5781dae664f01a7b3eb8d1d941c49244ee07\n"
+            "本檔 commit 不在該次檢查範圍\n"
+        )
+        self.assertTrue(sync.continuation_claim_is_honest(
+            text,
+            checked_head="929e5781dae664f01a7b3eb8d1d941c49244ee07",
+            file_commit="e6cca58d338a0249937a2df407c5c87f3aefd568"))
+
+    def test_matching_heads_are_honest_without_marker(self):
+        sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        self.assertTrue(sync.continuation_claim_is_honest(
+            "durable-check -> PASS\n",
+            checked_head=sha, file_commit=sha))
 
 
 class ConsolidateTest(MemoryCase):

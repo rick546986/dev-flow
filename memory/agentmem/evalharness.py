@@ -26,7 +26,7 @@ import shutil
 import tempfile
 
 from . import (context as context_mod, embedding, identity, query, retrieval,
-               store as store_mod, truth)
+               store as store_mod, sync, truth)
 
 DEFAULT_DATASET = os.path.join(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))), "fixtures", "eval", "dataset.json")
@@ -128,6 +128,9 @@ def _seed(store, root, seed):
             "status": record.get("status", "VERIFIED")})
         refs[record["ref"]] = "skill:" + skill_id
     embedding.Embedder().reindex(store)
+    # 評測直接把知識寫進 SQLite,不是 durable 鏡射。顯式蓋上「當前樹」的
+    # 世代,不要靠 production 的 stamp-without-proof 逃生口。
+    store.set_meta(sync.DURABLE_GENERATION_META, sync.durable_generation(root))
     return refs
 
 

@@ -167,6 +167,16 @@ class Store:
             "SELECT value FROM meta WHERE key=?", (key,)).fetchone()
         return row[0] if row else default
 
+    def has_durable_mirror(self):
+        """是否已有從 `.dev-flow/` 鏡射進來的列。缺世代時用來決定能否只蓋章。"""
+        for table in ("events", "facts", "knowledge", "decisions", "skills"):
+            row = self.conn.execute(
+                "SELECT 1 FROM " + table + " WHERE durable=1 LIMIT 1"
+            ).fetchone()
+            if row:
+                return True
+        return False
+
     # ── workspace(local metadata;project_path 住這裡)──────────────────────
     def register_workspace(self, workspace_id, snapshot, now=None):
         now = now or utc_now()

@@ -799,7 +799,39 @@ elif "_per_coordinate(" not in cur_code:
 else:
     ok("CURRENT 從 resolved 建 per_coordinate")
 
-MIN_CHECKS = 60
+# 缺世代不得只蓋章:舊 runtime DB 升級路徑會把新樹指紋貼在舊鏡射上。
+i_edm = sync_src.find("def ensure_durable_mirror(")
+i_edm_end = sync_src.find("\ndef ", i_edm + 1)
+edm_code = executable_only(sync_src[i_edm:i_edm_end]) if i_edm >= 0 and i_edm_end > i_edm else None
+if edm_code is None:
+    bad("ensure_durable_mirror 抽取", "找不到 ensure_durable_mirror 窗口")
+elif "has_durable_mirror" not in edm_code:
+    bad("缺世代只蓋章",
+        "ensure_durable_mirror 沒有問 has_durable_mirror —— 舊 DB 無世代章"
+        "時會把當前樹指紋蓋在舊鏡射上,之後世代對得上卻繼續答舊值")
+elif "rebuild_local" not in edm_code:
+    bad("缺世代不重建",
+        "ensure_durable_mirror 看到缺世代但不呼叫 rebuild_local")
+else:
+    ok("缺世代且已有鏡射列時必須 rebuild,不得只蓋章")
+
+# rebuild 與世代戳必須同一 snapshot,否則並發改 durable 會蓋錯章。
+i_rl = sync_src.find("def rebuild_local(")
+i_rl_end = sync_src.find("\ndef ", i_rl + 1)
+rl_code = executable_only(sync_src[i_rl:i_rl_end]) if i_rl >= 0 and i_rl_end > i_rl else None
+if rl_code is None:
+    bad("rebuild_local 抽取", "找不到 rebuild_local 窗口")
+elif "generation_before" not in rl_code or "generation_after" not in rl_code:
+    bad("rebuild 世代不是同一 snapshot",
+        "rebuild_local 沒有比對 generation_before / generation_after —— "
+        "讀完再雜湊一次可以把後寫入的樹認證到先讀到的舊列上")
+elif "DurableMirrorDrift" not in rl_code:
+    bad("rebuild 撕開不 fail-closed",
+        "rebuild_local 對不上 snapshot 時沒有 DurableMirrorDrift")
+else:
+    ok("rebuild 只在 generation_before == generation_after 時蓋章")
+
+MIN_CHECKS = 62
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)

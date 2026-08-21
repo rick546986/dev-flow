@@ -17,6 +17,28 @@ import os
 from . import durable, ids, lineage, signal, store as store_mod
 
 DURABLE_GENERATION_META = "durable_generation"
+REBUILD_MAX_ATTEMPTS = 3
+
+# 測試縫:rebuild 讀完 durable 檔、蓋章前呼叫。production 保持 None。
+_after_rebuild_read = None
+
+# 接續紀錄契約:checked HEAD 與檔案所在 commit 不同時,必須明寫報告 commit
+# 不在該次檢查範圍。這不是 runtime 語意,是防「證據覆蓋了後寫的 commit」。
+UNCOVERED_REPORT_MARKERS = (
+    "本檔 commit 不在該次檢查範圍",
+    "report-only successor",
+)
+
+
+class DurableMirrorDrift(RuntimeError):
+    """rebuild 與世代戳對不到同一個 snapshot,重試耗盡。"""
+
+
+def continuation_claim_is_honest(text, checked_head, file_commit):
+    """接續紀錄對 durable-check HEAD 的宣稱是否誠實。"""
+    if checked_head == file_commit:
+        return True
+    return any(marker in (text or "") for marker in UNCOVERED_REPORT_MARKERS)
 
 # CANDIDATE 也進 durable:狀態欄本來就會明寫,查詢時它會被當成
 # NEEDS_VERIFICATION。把它擋在外面反而製造一個洞 —— 「觀察到但還沒驗證」
@@ -31,7 +53,28 @@ def rebuild_local(repo_root, store, embedder=None):
 
     這支就是 §13「clone 到另一台電腦」的實作:project.yaml 給 project_id,
     其餘 durable 檔給內容,local SQLite/FTS/embedding 全部重算。
+
+    讀檔與世代戳必須是同一個 snapshot:先算 generation_before,重建,再算
+    generation_after,只在兩者相等時蓋章。對不上就丟棄重試,耗盡則
+    DurableMirrorDrift,不得蓋一個對不上的世代。
     """
+    last_counts = None
+    for _attempt in range(REBUILD_MAX_ATTEMPTS):
+        generation_before = durable_generation(repo_root)
+        last_counts = _rebuild_local_once(repo_root, store, embedder)
+        hook = _after_rebuild_read
+        if hook is not None:
+            hook(repo_root)
+        generation_after = durable_generation(repo_root)
+        if generation_before == generation_after:
+            store.set_meta(DURABLE_GENERATION_META, generation_after)
+            return last_counts
+    raise DurableMirrorDrift(
+        "durable mirror rebuild could not certify a stable snapshot "
+        "after {0} attempts".format(REBUILD_MAX_ATTEMPTS))
+
+
+def _rebuild_local_once(repo_root, store, embedder=None):
     store.clear_durable_mirror()
     store.clear_index()
     counts = {"facts": 0, "knowledge": 0, "decisions": 0, "skills": 0,
@@ -131,7 +174,6 @@ def rebuild_local(repo_root, store, embedder=None):
 
     if embedder is not None:
         counts["embeddings"] = embedder.reindex(store)
-    store.set_meta(DURABLE_GENERATION_META, durable_generation(repo_root))
     return counts
 
 
@@ -164,17 +206,20 @@ def ensure_durable_mirror(repo_root, store):
     對得上 → 不動。對不上 → 同步 rebuild(local-only / session / candidate
     由 `clear_durable_mirror` 留下)。回傳是否真的重建了。
 
-    **沒有世代紀錄時不重建,只蓋章。** 評測與多數單元測試直接把知識寫進
-    SQLite、`.dev-flow/` 是空的;當成 mismatch 去 rebuild 會先 `clear_index()`,
-    檢索通道被挖空,答案變成 NO_RELIABLE_MATCH。沒蓋過章代表還沒做過
-    「這份 SQLite 是這個 durable 樹的鏡射」—— 下一次檔案真的變了,章對不上
-    才重建。舊 DB 升級後若要立刻對齊,走 `dev-setup` / `rebuild_local`。
+    **沒有世代紀錄時不得只蓋章。** 舊 runtime DB 升級後若已有 durable 鏡射
+    列,蓋章等於把「現在這棵樹」的指紋貼在「舊鏡射」上,之後世代對得上
+    卻繼續答舊值。只在機械證明沒有 durable 鏡射列時才允許 stamp-only
+    (評測 / 單元測試把知識直接寫進 SQLite 的路徑)。有鏡射列卻沒世代 →
+    同步 rebuild,再蓋 rebuild 自己產出的世代。
     """
     current = durable_generation(repo_root)
     stored = store.get_meta(DURABLE_GENERATION_META)
     if stored is None:
-        store.set_meta(DURABLE_GENERATION_META, current)
-        return False
+        if not store.has_durable_mirror():
+            store.set_meta(DURABLE_GENERATION_META, current)
+            return False
+        rebuild_local(repo_root, store)
+        return True
     if stored == current:
         return False
     rebuild_local(repo_root, store)
