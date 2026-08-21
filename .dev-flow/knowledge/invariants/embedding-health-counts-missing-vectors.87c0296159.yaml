@@ -3,9 +3,9 @@
 schema_version: 1
 kind: invariant
 key: embedding-health-counts-missing-vectors
-title: "embedding 健康必須數 missing,不是只數 signature mismatch"
+title: "embedding 健康必須數 missing 與 orphaned"
 authority: current_code
 status: CANDIDATE
 confidence: 0.8
-body: "mismatch_report 必填 mismatched / missing / orphaned。無需 re-index 只在 mismatched==0 且 missing==0 時成立。doctor 的 embedding-version 在 missing>0 時不得 ok。孤兒向量另計,不得用 embeddings 數等於 items 數當完整。"
-recorded_at: "2026-08-21T21:18:27Z"
+body: "mismatch_report 必填 mismatched / missing / orphaned。無需 re-index 只在三者皆 0 時成立。doctor 的 embedding-version 在 missing>0 或 orphaned>0 時不得 ok。reindex 必須刪掉當前 signature 的孤兒列。Embedder.search 必須 JOIN items 再排序限額,孤兒不得佔滿候選窗口。"
+recorded_at: "2026-08-21T22:18:08Z"

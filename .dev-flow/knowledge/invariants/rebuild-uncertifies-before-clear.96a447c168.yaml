@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: rebuild-uncertifies-before-clear
+title: "破壞性 rebuild 必須先撤銷世代認證"
+authority: current_code
+status: CANDIDATE
+confidence: 0.8
+body: "_rebuild_local_once 在 clear_durable_mirror / clear_index 之前必須 persist UNCERTIFIED_GENERATION。這個哨兵永遠不等於真實 durable 世代(sha256 hex)。例外或行程重開後 store 必須保持未認證,ensure_durable_mirror 即使來源退回舊世代也要重建,不得把半殘 DB 當新鮮。成功重建並通過 snapshot 認證後才用真實世代取代哨兵。"
+recorded_at: "2026-08-21T22:18:08Z"

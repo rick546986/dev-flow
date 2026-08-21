@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: unreadable-durable-file-fails-closed
+title: "不可讀 durable 檔必須 fail-closed"
+authority: current_code
+status: CANDIDATE
+confidence: 0.8
+body: "_snapshot_durable_files 對 OSError 必須 raise DurableError,不得把 data=None 寫進快照,也不得把 b\"unreadable\" 當世代內容。不可讀不是檔案不存在:略過再跟活樹比對會讓缺那一檔的鏡射被蓋成新鮮。錯誤訊息可含 repo-relative 路徑,不得含檔案內容。"
+recorded_at: "2026-08-21T22:18:08Z"
