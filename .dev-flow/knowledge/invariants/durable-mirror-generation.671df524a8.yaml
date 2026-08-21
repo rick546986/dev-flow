@@ -7,5 +7,5 @@ title: "讀路徑必須在服務前核對 durable 世代"
 authority: current_code
 status: CANDIDATE
 confidence: 0.8
-body: "local SQLite 是 .dev-flow 的鏡射。世代對不上不得把舊 VERIFIED 當 OK。沒有世代紀錄且已有 durable 鏡射列時必須 rebuild,不得只蓋章。"
-recorded_at: "2026-08-21T19:17:44Z"
+body: "local SQLite 是 .dev-flow 的鏡射。世代對不上不得把舊 VERIFIED 當 OK。缺世代只允許 stamp-only 當兩邊都空:DB 沒有 durable 鏡射列,且當前 .dev-flow/ 也沒有可鏡射內容(project.yaml 是 identity,不算)。樹已有 knowledge/fact/decision/skill/event 時即使 DB 是空的也必須 rebuild。"
+recorded_at: "2026-08-21T20:23:06Z"

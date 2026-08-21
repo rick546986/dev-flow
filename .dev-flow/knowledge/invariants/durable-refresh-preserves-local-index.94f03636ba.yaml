@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: durable-refresh-preserves-local-index
+title: "durable 刷新不得讓 local-only 列從檢索消失"
+authority: current_code
+status: CANDIDATE
+confidence: 0.8
+body: "rebuild 會 clear_index();durable upsert 只重建 .dev-flow/ 的索引。留下的 local-only / legacy 列必須 reindex_local_rows,否則儲存還在、檢索消失。不得靠把列升級成 durable 來過測試。"
+recorded_at: "2026-08-21T20:23:06Z"

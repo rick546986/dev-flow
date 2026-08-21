@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: ask-refresh-must-reindex-embeddings
+title: "公開 ask 必須在第一次查詢前補上新 durable 項的 embedding"
+authority: current_code
+status: CANDIDATE
+confidence: 0.8
+body: "自動 freshness 若只重建列、不重建向量,新 durable 項會在 lexical 找得到、vector 通道缺席。cmd_ask 不讓 _resolve 先消耗 generation mismatch;query.execute 帶 embedder 進 ensure_durable_mirror,並對缺 embedding 的 item 再 reindex。context 觸發的 rebuild 也不得讓下一次 ask 不知道向量已過期。"
+recorded_at: "2026-08-21T20:23:06Z"
