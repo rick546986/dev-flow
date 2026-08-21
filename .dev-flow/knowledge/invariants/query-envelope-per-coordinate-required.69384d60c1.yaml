@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: query-envelope-per-coordinate-required
+title: "查詢 envelope 必填 per_coordinate;既有頂層欄位語意不變"
+authority: user_confirmed
+status: CONFIRMED
+confidence: 0.8
+body: "owner 裁決 D-4。query.py::_envelope 在 extra merge 之後必須寫 payload[\"per_coordinate\"],不得省略、不得為 None。CURRENT 從已解析的 resolved 建列(每個 (entity_type, entity_key, fact_key)一列,同時帶 truth_status 與 retrieval_status);非 CURRENT 給空列表也算在場。entity-only 查詢仍按最嚴重狀態聚合頂層 retrieval_status —— per_coordinate 只加明細,不改 current_truth / results / resolved / uncertainty / evidence。呼叫端寫 .get(\"per_coordinate\") 等於讓缺席與空同義,那正是這條要消滅的資訊損失。既有 23 案 eval 數字一個都不准變。"
+recorded_at: "2026-08-21T11:09:06Z"
