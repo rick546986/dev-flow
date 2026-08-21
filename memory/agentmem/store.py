@@ -777,6 +777,68 @@ class Store:
             for table in ("events", "facts", "knowledge", "decisions", "skills"):
                 self.conn.execute("DELETE FROM " + table + " WHERE durable=1")
 
+    def reindex_local_rows(self):
+        """把 durable=0 / legacy 列重新登記進 retrieval index。
+
+        rebuild 會 `clear_index()`;只重載 `.dev-flow/` 的話,留下的
+        local-only 列還在表裡,但 DOMAIN/DISCOVERY 已經找不到它們。
+        這支補回檢索可見性,不把列升級成 durable。
+        """
+        for row in self.conn.execute(
+                "SELECT * FROM facts WHERE project_id=? AND durable=0",
+                (self.project_id,)):
+            row = dict(row)
+            deps = json.loads(row["dependencies_json"] or "[]")
+            self.index_item(
+                "fact", row["fact_id"],
+                "{entity_type}.{entity_key}.{fact_key}".format(**row),
+                " ".join([row["entity_type"], row["entity_key"],
+                          row["fact_key"], row["value"]]),
+                status=row["status"], file_paths=deps,
+                occurred_at=row["recorded_at"])
+        for row in self.conn.execute(
+                "SELECT * FROM knowledge WHERE project_id=? AND durable=0",
+                (self.project_id,)):
+            row = dict(row)
+            self.index_item(
+                "knowledge", row["knowledge_id"], row["title"],
+                " ".join([row["kind"], row["key"], row["title"],
+                          row["body"] or ""]),
+                status=row["status"], authority=row["authority"],
+                occurred_at=row["recorded_at"])
+        for row in self.conn.execute(
+                "SELECT * FROM decisions WHERE project_id=? AND durable=0",
+                (self.project_id,)):
+            row = dict(row)
+            self.index_item(
+                "decision", row["decision_id"], row["title"],
+                " ".join([row["key"], row["title"], row["decision"],
+                          row["reason"], row["alternatives"],
+                          row["tradeoff"]]),
+                status=row["status"], occurred_at=row["recorded_at"])
+        for row in self.conn.execute(
+                "SELECT * FROM skills WHERE project_id=? AND durable=0",
+                (self.project_id,)):
+            row = dict(row)
+            steps = json.loads(row["steps_json"] or "[]")
+            self.index_item(
+                "skill", row["skill_id"], row["title"],
+                " ".join([row["key"], row["title"], " ".join(steps),
+                          row["preconditions"] or "",
+                          row["verification"] or ""]),
+                status=row["status"], occurred_at=row["recorded_at"])
+        for row in self.conn.execute(
+                "SELECT * FROM events WHERE project_id=? AND durable=0",
+                (self.project_id,)):
+            row = dict(row)
+            rel = json.loads(row["paths_json"] or "[]")
+            self.index_item(
+                "event", row["event_id"], row["title"],
+                "\n".join([row["kind"] or "", row["title"] or "",
+                           row["body"] or ""]),
+                branch=row["branch"], occurred_at=row["occurred_at"],
+                status=row["signal"], file_paths=rel)
+
     # ── embeddings(§24 版本三件套)──────────────────────────────────────────
     def put_embedding(self, uid, provider, model, dim, version, vector_bytes,
                       now=None):

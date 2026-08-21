@@ -58,8 +58,12 @@ def _print(obj):
     print(json.dumps(obj, ensure_ascii=False, indent=1, sort_keys=True))
 
 
-def _resolve(args):
-    """回傳 (root, project, store, workspace_id, snapshot);缺 identity 就 fail-loud。"""
+def _resolve(args, refresh_mirror=True):
+    """回傳 (root, project, store, workspace_id, snapshot);缺 identity 就 fail-loud。
+
+    `refresh_mirror=False` 留給查詢路徑:`query.execute` 會自己帶
+    embedder 做 freshness,避免這裡先蓋章、後面的向量重建變成空操作。
+    """
     root = paths.repo_root(getattr(args, "path", None))
     if root is None:
         raise SystemExit("⛔ 不在 git repository 內 —— memory identity 住在 Git 裡")
@@ -72,7 +76,8 @@ def _resolve(args):
     workspace_id = identity.workspace_key(project["project_id"],
                                           snapshot["local_path"])
     store = store_mod.open_for_root(project["project_id"], root)
-    sync.ensure_durable_mirror(root, store)
+    if refresh_mirror:
+        sync.ensure_durable_mirror(root, store)
     return root, project, store, workspace_id, snapshot
 
 
@@ -125,7 +130,8 @@ def cmd_context(args):
 
 
 def cmd_ask(args):
-    root, _project, store, workspace_id, snapshot = _resolve(args)
+    root, _project, store, workspace_id, snapshot = _resolve(
+        args, refresh_mirror=False)
     try:
         answer = query.execute(store, root, args.question, workspace_id,
                                snapshot, embedding.Embedder(), limit=args.limit)

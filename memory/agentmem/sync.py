@@ -172,6 +172,7 @@ def _rebuild_local_once(repo_root, store, embedder=None):
                       else None))
         counts["events"] += 1
 
+    store.reindex_local_rows()
     if embedder is not None:
         counts["embeddings"] = embedder.reindex(store)
     return counts
@@ -200,7 +201,7 @@ def durable_generation(repo_root):
     return digest.hexdigest()
 
 
-def ensure_durable_mirror(repo_root, store):
+def ensure_durable_mirror(repo_root, store, embedder=None):
     """讀路徑在信任 SQLite 鏡射前,確認它還對得上當前 `.dev-flow/`。
 
     對得上 → 不動。對不上 → 同步 rebuild(local-only / session / candidate
@@ -208,21 +209,26 @@ def ensure_durable_mirror(repo_root, store):
 
     **沒有世代紀錄時不得只蓋章。** 舊 runtime DB 升級後若已有 durable 鏡射
     列,蓋章等於把「現在這棵樹」的指紋貼在「舊鏡射」上,之後世代對得上
-    卻繼續答舊值。只在機械證明沒有 durable 鏡射列時才允許 stamp-only
-    (評測 / 單元測試把知識直接寫進 SQLite 的路徑)。有鏡射列卻沒世代 →
-    同步 rebuild,再蓋 rebuild 自己產出的世代。
+    卻繼續答舊值。缺世代只允許 stamp-only 當**兩邊都空**:
+    DB 沒有 durable 鏡射列,**而且**當前 `.dev-flow/` 也沒有可鏡射內容
+    (`durable.has_mirrorable_content`;project.yaml 不算)。
+    樹已經有 knowledge/fact/decision/skill/event 時,即使 DB 是空的
+    也必須 rebuild,否則會把新樹指紋蓋在空鏡射上,之後世代對得上卻
+    一直答空。有 embedder 就傳進 rebuild,查詢路徑才不會只重建列、
+    不重建向量。
     """
     current = durable_generation(repo_root)
     stored = store.get_meta(DURABLE_GENERATION_META)
     if stored is None:
-        if not store.has_durable_mirror():
+        if (not store.has_durable_mirror()
+                and not durable.has_mirrorable_content(repo_root)):
             store.set_meta(DURABLE_GENERATION_META, current)
             return False
-        rebuild_local(repo_root, store)
+        rebuild_local(repo_root, store, embedder)
         return True
     if stored == current:
         return False
-    rebuild_local(repo_root, store)
+    rebuild_local(repo_root, store, embedder)
     return True
 
 

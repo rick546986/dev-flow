@@ -156,7 +156,12 @@ def _envelope(plan_dict, status, results, confidence, evidence, uncertainty,
 def execute(store, repo_root, query, workspace_id, snapshot=None, embedder=None,
             limit=5, branch=None, plan_dict=None):
     """執行查詢。回傳統一 envelope(retrieval_status/confidence/evidence/uncertainty)。"""
-    sync.ensure_durable_mirror(repo_root, store)
+    rebuilt = sync.ensure_durable_mirror(repo_root, store, embedder)
+    if embedder is not None and (
+            rebuilt or store.get_meta(sync.DURABLE_GENERATION_META)):
+        # `_resolve` / context 可能已經 rebuild 過但沒帶 embedder。
+        # reindex 只補缺,完整時是一次 LEFT JOIN。
+        embedder.reindex(store)
     plan_dict = plan_dict or plan(query, branch=branch)
     kind = plan_dict["primary"]
     branch = plan_dict["branch"] or (snapshot or {}).get("branch")

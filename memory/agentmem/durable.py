@@ -213,6 +213,27 @@ def iter_states(repo_root_path):
             yield data
 
 
+def has_mirrorable_content(repo_root_path):
+    """`.dev-flow/` 是否有任何會被 rebuild 鏡射的紀錄。
+
+    project.yaml 是 identity,不是鏡射項目。空 facts 的 state 檔也不算。
+    缺世代時只有「DB 沒有 durable 列 **而且** 樹也沒有可鏡射內容」
+    才允許只蓋章。
+    """
+    for state in iter_states(repo_root_path):
+        if state.get("facts"):
+            return True
+    if any(iter_knowledge(repo_root_path)):
+        return True
+    if any(iter_decisions(repo_root_path)):
+        return True
+    if any(iter_skills(repo_root_path)):
+        return True
+    if any(iter_events(repo_root_path)):
+        return True
+    return False
+
+
 # ─────────────────────────── B/C/G. knowledge ───────────────────────────────
 def knowledge_file(repo_root_path, kind, key):
     if kind not in KNOWLEDGE_DIRS:

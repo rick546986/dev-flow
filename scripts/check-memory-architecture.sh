@@ -815,6 +815,15 @@ elif "rebuild_local" not in edm_code:
 else:
     ok("缺世代且已有鏡射列時必須 rebuild,不得只蓋章")
 
+if edm_code is None:
+    bad("缺世代樹側空性", "找不到 ensure_durable_mirror 窗口")
+elif "has_mirrorable_content" not in edm_code:
+    bad("缺世代不看樹",
+        "ensure_durable_mirror 缺世代時沒有問 has_mirrorable_content —— "
+        "舊空 DB + 新非空 .dev-flow/ 會把新樹指紋蓋在空鏡射上")
+else:
+    ok("缺世代且樹有可鏡射內容時必須 rebuild,不得只蓋章")
+
 # rebuild 與世代戳必須同一 snapshot,否則並發改 durable 會蓋錯章。
 i_rl = sync_src.find("def rebuild_local(")
 i_rl_end = sync_src.find("\ndef ", i_rl + 1)
@@ -831,7 +840,43 @@ elif "DurableMirrorDrift" not in rl_code:
 else:
     ok("rebuild 只在 generation_before == generation_after 時蓋章")
 
-MIN_CHECKS = 62
+i_rlo = sync_src.find("def _rebuild_local_once(")
+i_rlo_end = sync_src.find("\ndef ", i_rlo + 1)
+rlo_code = executable_only(sync_src[i_rlo:i_rlo_end]) if i_rlo >= 0 and i_rlo_end > i_rlo else None
+if rlo_code is None:
+    bad("_rebuild_local_once 抽取", "找不到 _rebuild_local_once 窗口")
+elif "reindex_local_rows" not in rlo_code:
+    bad("rebuild 不補 local-only 索引",
+        "_rebuild_local_once 清掉全域 index 後沒有 reindex_local_rows —— "
+        "local-only 列還在、DOMAIN/DISCOVERY 找不到")
+else:
+    ok("rebuild 清 index 後必須把留下的 local-only 列重新入索引")
+
+i_ex = query_src.find("def execute(")
+i_ex_end = query_src.find("\ndef ", i_ex + 1)
+ex_code = executable_only(query_src[i_ex:i_ex_end]) if i_ex >= 0 and i_ex_end > i_ex else None
+ask_i = cli_src.find("def cmd_ask(")
+ask_end = cli_src.find("\ndef ", ask_i + 1)
+ask_code = executable_only(cli_src[ask_i:ask_end]) if ask_i >= 0 and ask_end > ask_i else None
+if ex_code is None:
+    bad("query.execute 抽取", "找不到 execute 窗口")
+elif "embedder.reindex" not in ex_code and "ensure_durable_mirror" not in ex_code:
+    bad("查詢不補 embedding",
+        "query.execute 沒有帶 embedder 做 freshness / reindex")
+elif "embedder.reindex" not in ex_code:
+    bad("查詢不補缺 embedding",
+        "query.execute 沒有 embedder.reindex —— context/_resolve 先 rebuild "
+        "之後第一次 ask 的向量通道仍是空的")
+elif ask_code is None:
+    bad("cmd_ask 抽取", "找不到 cmd_ask 窗口")
+elif "refresh_mirror=False" not in ask_code:
+    bad("CLI ask 先消耗 mismatch",
+        "cmd_ask 仍讓 _resolve 先 refresh —— 沒帶 embedder 的 rebuild "
+        "會蓋章,後面 query.execute 看不到要補向量")
+else:
+    ok("查詢路徑補 embedding,且 CLI ask 不讓 _resolve 先消耗 mismatch")
+
+MIN_CHECKS = 65
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)

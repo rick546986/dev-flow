@@ -1,10 +1,14 @@
 """rebuild(durable → local)與 consolidate(local → durable)(§5/§13/§17/§29)。"""
+import json
 import os
 import shutil
+import subprocess
+import sys
 import unittest
 
-from memtools import MemoryCase, commit_all, git, write
+from memtools import MEMORY_DIR, MemoryCase, commit_all, git, write
 from agentmem import durable, embedding, identity, ids, query, retrieval, sync, truth
+from agentmem.store import _uid
 
 
 class RebuildTest(MemoryCase):
@@ -287,6 +291,132 @@ class DurableMirrorFreshnessTest(MemoryCase):
         finally:
             sync._after_rebuild_read = None
         self.assertIsNone(store.get_meta(sync.DURABLE_GENERATION_META))
+
+    def _write_knowledge(self, key, title, body=""):
+        durable.write_knowledge(self.repo, {
+            "kind": "domain", "key": key, "title": title, "body": body,
+            "authority": "domain_expert", "status": "CONFIRMED",
+            "recorded_at": "2026-08-20T00:00:00Z"})
+
+    def _ask_domain(self, store, question):
+        workspace = identity.workspace_key(self.project_id, self.repo)
+        snapshot = identity.workspace_snapshot(self.repo)
+        return query.execute(store, self.repo, question, workspace,
+                             snapshot, embedding.Embedder())
+
+    def _cli_ask(self, question):
+        """公開 CLI ask 路徑(經 _resolve,不是直接 query.execute)。"""
+        out = subprocess.run(
+            [sys.executable, os.path.join(MEMORY_DIR, "dev-memory.py"),
+             "--path", self.repo, "ask", question, "--json"],
+            capture_output=True, text=True, env=dict(os.environ))
+        self.assertEqual(out.returncode, 0,
+                         "stdout={0}\nstderr={1}".format(out.stdout, out.stderr))
+        return json.loads(out.stdout)
+
+    def test_absent_generation_empty_db_does_not_bless_nonempty_knowledge(self):
+        """升級路徑:舊 DB 無世代、零 durable 列,但樹已有 knowledge → 必須 rebuild。"""
+        store = self.store_for(self.project_id)
+        self.assertIsNone(store.get_meta(sync.DURABLE_GENERATION_META))
+        self.assertFalse(store.has_durable_mirror())
+        self._write_knowledge(
+            "registration",
+            "registration = customer-level 送檢紀錄",
+            "一個客戶在 submission 內的送檢紀錄")
+        answer = self._ask_domain(store, "registration 是什麼意思?")
+        keys = [row.get("key") for row in answer.get("results") or []]
+        self.assertIn("registration", keys)
+        rows = store.knowledge(kind="domain", key="registration")
+        self.assertEqual(len(rows), 1)
+        self.assertTrue(rows[0]["durable"])
+        self.assertEqual(
+            store.get_meta(sync.DURABLE_GENERATION_META),
+            sync.durable_generation(self.repo))
+
+    def test_absent_generation_empty_db_does_not_bless_nonempty_fact(self):
+        """同一升級路徑,樹裡是 fact 而不是 knowledge。"""
+        store = self.store_for(self.project_id)
+        self.assertFalse(store.has_durable_mirror())
+        self._write_state("pulled-after-upgrade")
+        answer = self._ask(store)
+        self.assertNotEqual(answer.get("retrieval_status"), retrieval.NO_RELIABLE_MATCH)
+        self.assertEqual(answer.get("current_truth", {}).get("value"),
+                         "pulled-after-upgrade")
+        self.assertEqual(answer["retrieval_status"], retrieval.OK)
+        self.assertTrue(store.has_durable_mirror())
+        self.assertEqual(
+            store.get_meta(sync.DURABLE_GENERATION_META),
+            sync.durable_generation(self.repo))
+
+    def test_refresh_preserves_local_only_knowledge_retrieval(self):
+        """durable 刷新不得讓已入索引的 local-only knowledge 從檢索消失。"""
+        self._write_state("old")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        kid = store.upsert_knowledge({
+            "kind": "domain", "key": "local-only-rule",
+            "title": "local-only 檢索可見規則",
+            "body": "這筆只住 SQLite,還沒進 .dev-flow",
+            "authority": "domain_expert", "status": "CONFIRMED",
+            "durable": False})
+        uid = _uid("knowledge", kid)
+        before = retrieval.search(
+            store, "local-only 檢索可見規則", item_types=("knowledge",),
+            embedder=embedding.Embedder())
+        self.assertTrue(any(hit["item_id"] == kid for hit in before["results"]))
+        self.assertIsNotNone(store.item(uid))
+        row_before = store.knowledge_row(kid)
+        self.assertFalse(row_before["durable"])
+
+        self._write_state("new")
+        self._ask(store)
+
+        row_after = store.knowledge_row(kid)
+        self.assertIsNotNone(row_after)
+        self.assertFalse(row_after["durable"])
+        self.assertEqual(row_after["status"], "CONFIRMED")
+        self.assertEqual(row_after["authority"], "domain_expert")
+        self.assertIsNotNone(store.item(uid))
+        after = retrieval.search(
+            store, "local-only 檢索可見規則", item_types=("knowledge",),
+            embedder=embedding.Embedder())
+        self.assertTrue(any(hit["item_id"] == kid for hit in after["results"]),
+                        "local-only 列還在,但 retrieval index 沒了")
+
+    def test_cli_ask_embeds_new_durable_item_without_explicit_reindex(self):
+        """公開 CLI ask 必須在第一次查詢前補上新 durable 項的 embedding。"""
+        self._write_state("old")
+        store = self.store_for(self.project_id)
+        embedder = embedding.Embedder()
+        sync.rebuild_local(self.repo, store, embedder=embedder)
+        old_facts = store.facts(entity_type="database", entity_key="lab-order",
+                                fact_key="current_table")
+        old_uid = _uid("fact", old_facts[0]["fact_id"])
+        self.assertIsNotNone(store.conn.execute(
+            "SELECT 1 FROM embeddings WHERE item_uid=?", (old_uid,)).fetchone())
+
+        self._write_knowledge(
+            "registration",
+            "registration = customer-level 送檢紀錄",
+            "一個客戶在 submission 內的送檢紀錄")
+        answer = self._cli_ask("registration 是什麼意思?")
+        keys = [row.get("key") for row in answer.get("results") or []]
+        self.assertIn("registration", keys)
+
+        rows = store.knowledge(kind="domain", key="registration")
+        self.assertEqual(len(rows), 1)
+        new_uid = _uid("knowledge", rows[0]["knowledge_id"])
+        self.assertIsNotNone(
+            store.conn.execute(
+                "SELECT 1 FROM embeddings WHERE item_uid=?", (new_uid,)
+            ).fetchone(),
+            "CLI ask 之後新 durable 項仍沒有 embedding")
+        embedded = {row["item_uid"] for row in store.conn.execute(
+            "SELECT item_uid FROM embeddings")}
+        self.assertIn(new_uid, embedded)
+        self.assertNotIn("knowledge:removed-durable-uid", embedded)
+        hits, _skipped = embedder.search(store, "registration 是什麼意思?")
+        self.assertIn(new_uid, [uid for uid, _score in hits])
 
 
 class ContinuationProvenanceTest(unittest.TestCase):
