@@ -8,8 +8,8 @@
 > envelope 一次性注入 session,不在任何 repo 檔案或 system prompt 裡。本檔是 2026-08-21
 > 由 owner 從 session context 逐字取出後落檔的第一份正本。
 
-> **本檔相對原文有四處修正**,原因是執行環境從 Claude 排程任務遷移到 Cursor Automation
-> (沒有 Google Drive 寫入能力),以及三處原文留白由 owner 裁決補上。
+> **本檔相對原文有五處修正**,原因是執行環境從 Claude 排程任務遷移到 Cursor Automation
+> (沒有 Google Drive 寫入能力),以及四處原文留白由 owner 裁決補上。
 > 每一處都在附錄 A 逐條記帳,對應的節內也標了 `【修正 N】`。**不要憑印象假設某一節是原文** ——
 > 想知道哪裡被改過,看附錄 A,不要看語氣。
 
@@ -310,6 +310,15 @@ bash hooks/selftest.sh                      # 見下方
 
 ## 8. 什麼時候停下來問人(不要硬幹)
 
+**【修正 5】每輪開場先讀 owner 的答案**:
+`git show origin/main:docs/prompts/autoloop-owner-decisions.md`
+
+那份檔是 owner 對「需要 owner 裁決」項目的回答通道(append-only)。
+**已在該檔裁決的項目不得再列進「需要 owner 裁決」** —— 要嘛照裁決做,
+要嘛依第 4 節額度列進「本輪未處理」並說明為什麼這輪排不進去。
+owner 裁決只解除第 4 節篩選第 3 條的**排除**,不解除第 2 條的**額度**
+(一輪最多 3 條)。
+
 **不要改程式碼**,寫進回覆並標 `需要 owner 裁決`:
 
 - finding 要求推翻既有架構決策(`docs/adr/` 裡有的)
@@ -376,6 +385,25 @@ bash hooks/selftest.sh                      # 見下方
 `raw.githubusercontent.com` 的網址 —— 這跟原文自己的哲學一致(「git 是正本,
 Drive 是給 GPT 讀的副本」),副本的產生方式不該是硬性關卡。原文只處理「Drive 寫入
 這個動作失敗」,完全沒有討論「環境本來就沒有 Drive 寫入能力」,那是真空白不是漏看。
+
+## 修正 5 — §8 補上 owner 的回答通道(2026-08-21)
+
+**原文空白**:§6 有「需要 owner 裁決」讓 agent 提問、§8 規定何時該停下來問,
+但**沒有任何一節說 agent 該去哪裡讀 owner 的回答**。
+
+**後果(實測)**:同一批裁決項連續被列出 3~7 輪 —— `GPT-P0-WORKTREE-SHARED-STORE`
+7 輪、`GPT-P1-LOCAL-ONLY-PASS` 5 輪、`GPT-P0-REMOTE-ATTESTATION-UNSOUND` 3 輪。
+不是 agent 沒照做,是契約沒有回流路徑。
+
+**改成**:§8 開頭要求每輪開場讀
+`git show origin/main:docs/prompts/autoloop-owner-decisions.md`,
+並明訂已裁決項目不得再列回「需要 owner 裁決」。同時釘死一個原文沒寫的規則:
+owner 裁決解除篩選的**排除**、不解除**額度**(理由見該檔開頭)。
+
+**為什麼放 `docs/prompts/` 而不是 `docs/dev/autoloop/`**:後者的檔名被 §1 與 §3
+用 `*-claude.md` 掃描來推導接續狀態,放非輪次紀錄進去會讓那個目錄有兩種語意的檔;
+而且 `docs/prompts` 已在 `check-no-stale-paths.sh` 的 ALLOWLIST 裡,不必新增豁免條目
+(新增豁免要同步改 `EXPECTED_ALLOWLIST_ENTRIES`,是可以避免的 lockstep 負擔)。
 
 ## 已知缺口
 
