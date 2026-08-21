@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: read-must-revalidate-durable-generation
+title: "query/context 讀後必須再驗證世代"
+authority: current_code
+status: CANDIDATE
+confidence: 0.8
+body: "ensure_durable_mirror 只證明檢查當下鏡射新鮮。query.execute 與 context.build 組完答案後必須再比對活樹世代;對不上就丟棄、rebuild、有界重試。耗盡則 DurableMirrorDrift,不得把過期 VERIFIED 當 OK 送出。"
+recorded_at: "2026-08-21T23:18:12Z"

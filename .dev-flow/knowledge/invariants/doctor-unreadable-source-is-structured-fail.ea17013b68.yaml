@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: doctor-unreadable-source-is-structured-fail
+title: "doctor 必須把不可讀 durable 來源收成 structured FAIL"
+authority: current_code
+status: CANDIDATE
+confidence: 0.8
+body: "doctor 呼叫 durable_generation 必須接 OSError/DurableError/ValueError,回傳 verdict=FAIL 與 check=durable-source-readable,不得往外拋。不得在 doctor 裡 rebuild。錯誤可含 repo-relative 路徑,不得含檔案內容。其餘安全檢查繼續跑。"
+recorded_at: "2026-08-21T23:18:12Z"

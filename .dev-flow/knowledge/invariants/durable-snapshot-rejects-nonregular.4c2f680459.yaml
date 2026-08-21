@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: durable-snapshot-rejects-nonregular
+title: "durable snapshot 必須 lstat 且只接受一般檔"
+authority: current_code
+status: CANDIDATE
+confidence: 0.8
+body: "_snapshot_durable_files 對每個發現的路徑必須 lstat,只接受 S_ISREG 一般檔(目錄必須是真實目錄)。symlink / FIFO / device / socket 一律 DurableError。不得用 open() 跟著走把 .dev-flow/ 外的位元組蓋進世代章。錯誤只報 repo-relative 路徑,不含目標內容。"
+recorded_at: "2026-08-21T23:18:12Z"
