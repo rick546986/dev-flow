@@ -111,6 +111,43 @@ class ExecutionTest(MemoryCase):
         self.assertTrue(answer["current_truth"]["fast_path"])
         self.assertEqual(answer["current_truth"]["value"], "lab_order")
 
+    def test_current_target_scope_excludes_unnamed_entity_with_same_fact_key(self):
+        """GPT-P1-CURRENT-TARGET-SCOPE:不同 entity 共用同一個 fact_key
+        (兩個都有 `current_table`)時,查詢只指名其中一個 entity,不能因為
+        另一個 entity 剛好共用 fact_key 就把它也拉進同一筆聚合查詢——它的
+        CANDIDATE 狀態不該去拖累被指名 entity 的 VERIFIED 精確答案。"""
+        truth.record_fact(
+            self.store, self.repo, "database", "audit", "current_table",
+            "audit_log", status=truth.CANDIDATE, confidence=0.3)
+        answer = self.ask("目前 lab-order 的 current_table 是什麼?")
+        self.assertEqual(answer["retrieval_status"], retrieval.OK)
+        self.assertTrue(answer["current_truth"]["fast_path"])
+        self.assertEqual(answer["current_truth"]["value"], "lab_order")
+        resolved_keys = {(r["entity_key"], r["fact_key"])
+                         for r in answer["resolved"]}
+        self.assertEqual(resolved_keys, {("lab-order", "current_table")})
+
+    def test_current_target_scope_excludes_unnamed_entity_when_stale(self):
+        """同上,另一個沒被指名的 entity 是 STALE 而不是 CANDIDATE —— 一樣
+        不能被拉進同一筆聚合查詢去拖累被指名 entity 的答案。"""
+        truth.record_fact(
+            self.store, self.repo, "database", "audit", "current_table",
+            "audit_log", status=truth.STALE, confidence=0.3)
+        answer = self.ask("目前 lab-order 的 current_table 是什麼?")
+        self.assertEqual(answer["retrieval_status"], retrieval.OK)
+        self.assertEqual(answer["current_truth"]["value"], "lab_order")
+
+    def test_current_target_scope_ambiguous_fact_key_without_entity(self):
+        """查詢完全沒有指名任何 entity,只給了一個兩個 entity 都有的
+        fact_key —— 不能悄悄選一個當成唯一 CURRENT 答案;必須不是
+        fast-path OK(落到 NEEDS_VERIFICATION 或更嚴重)。"""
+        truth.record_fact(
+            self.store, self.repo, "database", "audit", "current_table",
+            "audit_log", status=truth.VERIFIED, confidence=0.9)
+        answer = self.ask("current_table 現在是什麼?")
+        self.assertNotEqual(answer["retrieval_status"], retrieval.OK)
+        self.assertNotIn("current_truth", answer)
+
     def test_current_goes_stale_when_dependency_changes(self):
         write(self.repo, "src/services/db.ts", "export const table = 'x'\n")
         snapshot = identity.workspace_snapshot(self.repo)

@@ -273,25 +273,60 @@ def _fact_targets(store, plan_dict):
     在**相關性排序之後**加視窗。在這裡先套 `limit=N` 再比對,等於用「最近
     N 筆」這個跟相關性無關的排序當篩子:唯一正確的那筆 CURRENT fact 只要
     比 N 筆別的 live fact舊,就會在比對開始之前被砍掉,而砍法對呼叫端完全
-    不可見(`GPT-P1-CURRENT-500`)。"""
-    targets = []
-    seen = set()
+    不可見(`GPT-P1-CURRENT-500`)。
+
+    **座標感知,不能只靠共用的 fact_key/value 做 OR 比對。** 如果查詢已經
+    指名了某個目前存在的 entity(entity_key 的文字出現在查詢裡),就只在
+    這個 entity 底下找 fact —— 不能因為另一個沒被指名的 entity 剛好共用
+    同一個 fact_key(例如兩個 entity 都有 `current_table`)就把它也拉進
+    同一筆聚合查詢,讓它的 STALE/CANDIDATE 狀態去拖累被指名 entity 的
+    精確答案(`GPT-P1-CURRENT-TARGET-SCOPE`)。如果查詢完全沒有指名任何
+    entity,只能靠 fact_key/value 反查,而命中的 entity 不只一個 —— 代表
+    查詢本身是歧義的,不猜一個當答案,回空列表讓上層退到模糊檢索與
+    `NEEDS_VERIFICATION`。"""
     entities = [textnorm.normalize_symbol(e) for e in plan_dict["entities"]]
-    for row in store.facts(statuses=truth.LIVE_STATUSES, limit=None):
+    query_norm = textnorm.normalize_symbol(plan_dict["query"])
+    rows = list(store.facts(statuses=truth.LIVE_STATUSES, limit=None))
+
+    def named(token):
+        return bool(token) and (token in query_norm or token in entities)
+
+    entity_named = {row["entity_key"] for row in rows
+                    if named(textnorm.normalize_symbol(row["entity_key"]))}
+
+    seen = set()
+    targets = []
+    if entity_named:
+        for row in rows:
+            if row["entity_key"] not in entity_named:
+                continue
+            coord = (row["entity_type"], row["entity_key"], row["fact_key"])
+            if coord in seen:
+                continue
+            seen.add(coord)
+            targets.append(coord)
+        return targets
+
+    fact_key_entities = {}
+    candidates = []
+    for row in rows:
         coord = (row["entity_type"], row["entity_key"], row["fact_key"])
         if coord in seen:
             continue
-        haystack = textnorm.normalize_symbol(
-            "{0} {1} {2} {3}".format(*coord, row["value"]))
-        query_norm = textnorm.normalize_symbol(plan_dict["query"])
-        hit = any(e and e in haystack for e in entities)
-        if not hit:
-            hit = textnorm.normalize_symbol(row["entity_key"]) in query_norm \
-                or textnorm.normalize_symbol(row["fact_key"]) in query_norm
-        if hit:
+        if named(textnorm.normalize_symbol(row["value"])):
             seen.add(coord)
-            targets.append(coord)
-    return targets
+            candidates.append((coord, None))
+            continue
+        fact_key_norm = textnorm.normalize_symbol(row["fact_key"])
+        if named(fact_key_norm):
+            seen.add(coord)
+            candidates.append((coord, fact_key_norm))
+            fact_key_entities.setdefault(fact_key_norm, set()).add(
+                row["entity_key"])
+
+    ambiguous = {key for key, ents in fact_key_entities.items()
+                if len(ents) > 1}
+    return [coord for coord, key in candidates if key not in ambiguous]
 
 
 # ── DOMAIN / INTENT ─────────────────────────────────────────────────────────
