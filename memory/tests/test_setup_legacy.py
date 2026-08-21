@@ -74,7 +74,7 @@ class SetupTest(MemoryCase):
                          identity.read_project(self.repo)["project_id"])
         self.assertEqual(report["rebuilt"]["facts"], 1)
         self.assertEqual(report["rebuilt"]["knowledge"], 1)
-        cloned = self.store_for(report["project_id"])
+        cloned = self.store_for(report["project_id"], root=clone)
         self.assertEqual(cloned.facts()[0]["value"], "lab_order")
         self.assertEqual(cloned.knowledge()[0]["key"], "registration")
         # workspace 是新的一筆,project 仍是同一個

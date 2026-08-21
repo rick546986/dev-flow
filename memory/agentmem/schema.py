@@ -1,6 +1,7 @@
 """local SQLite schema 與 forward-only migration。
 
-**這個 DB 是可丟棄的**:它住 `~/.agentmem/projects/<project_id>/`,不進 Git。
+**這個 DB 是可丟棄的**:它住
+`~/.agentmem/projects/<project_id>/worktrees/<worktree_key>/`,不進 Git。
 整包刪掉 → dev-setup → 從 `.dev-flow/` 重建,durable 記憶不損失(§13 的測試案)。
 所以這裡的 migration 目標不是「保住資料」,而是:
 ①**不破壞既有 local 資料**(§29:legacy observation/state 不得被毀)

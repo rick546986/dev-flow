@@ -2367,6 +2367,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <tr><td><code>test_implementation.py</code></td>
         <td>驗證實作期工作階段:高訊號才固化、低訊號只留本機、沒有依據的事實會被擋、沒學到東西時不硬記。</td>
         <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_worktree_store.py</code></td>
+        <td>驗證 runtime SQLite 是 per-worktree:真的 git worktree add 之後兩份 DB 實體隔離,checkpoint/rebuild 互不污染,branch 切換不另開 DB。</td>
+        <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test_skill_contract.py</code></td>
         <td>驗證兩份 SKILL 真的把記憶指令接上了(避免程式有功能、說明書忘了寫)。</td>
         <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>

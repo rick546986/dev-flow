@@ -133,8 +133,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=100
-EXPECTED_TOTAL=114
+EXPECTED_NEGATIVES=102
+EXPECTED_TOTAL=116
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -1907,6 +1907,48 @@ p.write_text(t[:i] + t[j:], encoding="utf-8")
 PYX
 expect_local fail check-memory-architecture.sh "$D" "MEM-27 durable-check 沒有解析 remote 主機名的實際位址(具名主機重映到本機仍判 PASS)"
 
+D=$(seed_mem mem28); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/store.py"
+t = p.read_text(encoding="utf-8")
+anchor = '''def db_path(project_id, worktree_key):
+    return os.path.join(project_home(project_id), WORKTREE_DIR,
+                        _require_worktree_key(worktree_key), DB_NAME)'''
+assert anchor in t, "MEM-28 anchor 不見"
+# 簽名還收 worktree_key,路徑卻退回專案級共用檔:兩個 worktree 再次寫進
+# 同一份 memory.db,而呼叫端看起來已經「傳了 worktree」。
+p.write_text(t.replace(
+    anchor,
+    "def db_path(project_id, worktree_key):\n"
+    "    return os.path.join(project_home(project_id), DB_NAME)", 1),
+    encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-28 db_path 收下 worktree_key 卻仍指向專案級共用檔"
+
+D=$(seed_mem mem28b); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/store.py"
+t = p.read_text(encoding="utf-8")
+anchor = '''        if path is None:
+            if worktree_key is None:
+                raise ValueError(
+                    "Store.open 必須給 worktree_key 或 path——"
+                    "只給 project_id 會讓兩個 worktree 共用同一份可變 SQLite")
+            target = db_path(project_id, worktree_key)
+        else:
+            target = path'''
+assert anchor in t, "MEM-28b anchor 不見"
+# 缺 worktree_key 時退回舊的專案級路徑:一個忘記改的呼叫點就讓隔離失效。
+p.write_text(t.replace(
+    anchor,
+    "        if path is None:\n"
+    "            target = legacy_shared_db_path(project_id)\n"
+    "        else:\n"
+    "            target = path", 1),
+    encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-28b Store.open 缺 worktree_key 時退回專案級共用檔"
+
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
 echo
@@ -2017,7 +2059,7 @@ check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 18" "MIN_
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 138" "MIN_CHECKS 釘死 138(X-3 補群組數釘之後的實得數)"
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 41" "MIN_CHECKS 釘死 41(反證輪 E-1:再加 M-f~M-h 五個(mutant,子案)配對後的實得數)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 35" "MIN_CHECKS 釘死 35(durability-barrier 輪:W6 耐久性鏈的負向⑳㉑㉒ 三案後的實得數)"
-check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 134" "EXPECTED_MAPPED_FILES 釘死 134(精確值,不是地板;2026-08-20 memory/ 納入掃描 + test_durability_barrier.py 後的實得數)"
+check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 135" "EXPECTED_MAPPED_FILES 釘死 135(精確值,不是地板;2026-08-21 D-1 加 test_worktree_store.py 後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 24" "EXPECTED_GROUPS 釘死 24(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的

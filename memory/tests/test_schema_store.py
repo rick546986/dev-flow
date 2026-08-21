@@ -83,10 +83,12 @@ class StoreTest(MemoryCase):
         self.store = self.store_for(self.project_id)
 
     def test_db_lives_under_project_id_not_path(self):
+        key = identity.workspace_key(self.project_id, self.repo)
         expected = os.path.join(self.home, "projects", self.project_id,
-                                store.DB_NAME)
-        self.assertEqual(store.db_path(self.project_id), expected)
+                                store.WORKTREE_DIR, key, store.DB_NAME)
+        self.assertEqual(store.db_path(self.project_id, key), expected)
         self.assertTrue(os.path.isfile(expected))
+        self.assertNotIn(os.path.realpath(self.repo), expected)
 
     def test_workspace_registration_holds_local_path(self):
         snapshot = identity.workspace_snapshot(self.repo)

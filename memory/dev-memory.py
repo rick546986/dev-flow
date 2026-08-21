@@ -71,7 +71,7 @@ def _resolve(args):
     snapshot = identity.workspace_snapshot(root)
     workspace_id = identity.workspace_key(project["project_id"],
                                           snapshot["local_path"])
-    store = store_mod.Store.open(project["project_id"])
+    store = store_mod.open_for_root(project["project_id"], root)
     return root, project, store, workspace_id, snapshot
 
 
@@ -98,7 +98,7 @@ def cmd_status(args):
             "durable_inventory": durable.inventory(root),
             "workspace": snapshot, "workspace_id": workspace_id,
             "workspaces_known": len(store.workspaces()),
-            "local_db": store_mod.db_path(project["project_id"]),
+            "local_db": store_mod.runtime_db_path(project["project_id"], root),
             "indexed_items": store.item_count(),
             "capabilities": {k: bool(v) for k, v in store.caps.items()},
             "overlays": len(store.overlays(workspace_id)),

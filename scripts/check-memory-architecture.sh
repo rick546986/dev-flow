@@ -710,7 +710,59 @@ elif i_cond < 0 or cond_line.strip() == "if changed or dirty:":
 else:
     ok("git status 解析不完整時,無指紋的依賴不得走 fast path")
 
-MIN_CHECKS = 55
+# D-1: runtime DB 必須把 worktree 編進路徑,而且沒帶 worktree 的 open 要
+# fail-loud。docstring / 註解都不算證據 —— 守衛要的是函式本體還在做這件事。
+store_src = read("memory/agentmem/store.py")
+i_db = store_src.find("def db_path(")
+i_db_end = store_src.find("\ndef ", i_db + 1)
+db_body = (store_src[i_db:i_db_end] if i_db >= 0 and i_db_end > i_db else None)
+db_code = re.sub(r'"""[\s\S]*?"""', "", db_body) if db_body else None
+db_code = re.sub(r"(?m)#.*$", "", db_code) if db_code else None
+store_code = re.sub(r'"""[\s\S]*?"""', "", store_src)
+store_code = re.sub(r"(?m)#.*$", "", store_code)
+if db_code is None:
+    bad("db_path 抽取", "找不到 db_path 窗口")
+elif 'WORKTREE_DIR = "worktrees"' not in store_code:
+    bad("runtime DB 不是 per-worktree",
+        "WORKTREE_DIR 不再是 worktrees —— 目錄名被改掉等於換回專案級共用檔")
+elif "WORKTREE_DIR" not in db_code or "worktree_key" not in db_code:
+    bad("runtime DB 不是 per-worktree",
+        "db_path 沒有把 worktree_key 編進 WORKTREE_DIR —— 兩個 worktree "
+        "會再共用同一份 memory.db(owner 裁決 D-1 要消滅的正是這個共用檔)")
+else:
+    ok("db_path 把 worktree_key 編進獨立目錄")
+
+i_open = store_src.find("    def open(")
+i_open_end = store_src.find("\n    def ", i_open + 1)
+open_body = (store_src[i_open:i_open_end] if i_open >= 0 and i_open_end > i_open
+             else None)
+open_code = re.sub(r'"""[\s\S]*?"""', "", open_body) if open_body else None
+open_code = re.sub(r"(?m)#.*$", "", open_code) if open_code else None
+if open_code is None:
+    bad("Store.open 抽取", "找不到 Store.open 窗口")
+elif "worktree_key" not in open_code or "raise ValueError" not in open_code:
+    bad("Store.open 仍接受 project-only",
+        "沒有 worktree_key / path 時不 raise —— 一個忘記改的呼叫點就回到共用 DB")
+else:
+    ok("Store.open 沒有 worktree_key 或 path 時 fail-loud")
+
+def _prod_code(src):
+    code = re.sub(r'"""[\s\S]*?"""', "", src)
+    return re.sub(r"(?m)#.*$", "", code)
+
+setup_code = _prod_code(read("memory/agentmem/setup.py"))
+cli_code = _prod_code(read("memory/dev-memory.py"))
+if "open_for_root(" not in setup_code or "open_for_root(" not in cli_code:
+    bad("生產路徑沒走 open_for_root",
+        "setup 或 CLI 少一處 per-worktree open 就夠讓兩個 worktree 漏回共用檔")
+elif (re.search(r"Store\.open\(\s*project", setup_code)
+      or re.search(r"Store\.open\(\s*project", cli_code)):
+    bad("生產路徑仍有 project-only Store.open",
+        "setup/CLI 還在 Store.open(project_id) —— 那正是 D-1 要消滅的入口")
+else:
+    ok("setup 與 CLI 一律走 open_for_root")
+
+MIN_CHECKS = 58
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)

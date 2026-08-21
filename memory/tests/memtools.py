@@ -102,7 +102,7 @@ class MemoryCase(unittest.TestCase):
         data, _created = identity.ensure_project(root or self.repo, name=name)
         return data
 
-    def store_for(self, project_id):
-        opened = store.Store.open(project_id)
+    def store_for(self, project_id, root=None):
+        opened = store.open_for_root(project_id, root or self.repo)
         self.addCleanup(opened.close)
         return opened

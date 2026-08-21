@@ -157,7 +157,7 @@ class DestructiveRebuildTest(MemoryCase):
         self.project_id = self.project()["project_id"]
 
     def build_history(self):
-        store = store_mod.Store.open(self.project_id)
+        store = store_mod.open_for_root(self.project_id, self.repo)
         session = store.start_session("registration 語意")
         first = devtalk.propose(
             store, session, "domain",

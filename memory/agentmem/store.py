@@ -1,13 +1,21 @@
 """local runtime store(SQLite;不進 Git)。
 
-位置:`~/.agentmem/projects/<project_id>/memory.db`
-覆寫:`AGENTMEM_HOME`(整個 home 根)。**永遠以 project_id 分目錄,不以路徑分** ——
-同一個 project 在同一台機器上的兩個 clone(或兩個 worktree)共用同一份 local index,
-差異由 workspaces / fact_overlay 表承載。
+位置:`~/.agentmem/projects/<project_id>/worktrees/<worktree_key>/memory.db`
+覆寫:`AGENTMEM_HOME`(整個 home 根)。**project_id 仍是 durable identity**,
+但 runtime DB 是 **per-worktree**:同一個 project 在同一台機器上的兩個
+clone / linked worktree 各有自己的 SQLite,互不共用 `-wal` / `-shm` /
+OPEN session / candidate / overlay。記憶內容的共用走 `.dev-flow/` + git
+(owner 裁決 D-1)。branch 切換不是新 worktree —— worktree_key 綁的是
+本機路徑,不是分支名。
 
-這個 DB 可以整包刪掉:dev-setup 會從 `.dev-flow/` 重建(§13)。所以任何**只**存在
-這裡而不在 `.dev-flow/` 的東西,定義上就是「可丟棄的」——raw transcript、embedding、
-候選知識、本機失效 overlay、retrieval metrics 都屬於這一類,這是刻意的。
+這個 DB 可以整包刪掉:dev-setup 會從**當前 checkout** 的 `.dev-flow/` 重建
+(§13)。所以任何**只**存在這裡而不在 `.dev-flow/` 的東西,定義上就是
+「可丟棄的」——raw transcript、embedding、候選知識、本機失效 overlay、
+retrieval metrics 都屬於這一類,這是刻意的。
+
+舊佈局 `~/.agentmem/projects/<project_id>/memory.db`(專案級共用檔)不再
+被打開。第一次碰到時 archive 成 `memory.db.legacy-shared`,不把舊的
+OPEN session / candidate 扇出到各個新 worktree DB。
 
 §33 效能紀律:所有查詢的 project_id / branch / 時間 / limit 都下推到 SQL,
 不做「先撈全表再用 Python filter」。
@@ -22,6 +30,8 @@ from . import ids, paths, schema, textnorm
 HOME_ENV = "AGENTMEM_HOME"
 DEFAULT_HOME = os.path.join("~", ".agentmem")
 DB_NAME = "memory.db"
+WORKTREE_DIR = "worktrees"
+LEGACY_SHARED_SUFFIX = ".legacy-shared"
 
 
 def home_root():
@@ -34,8 +44,58 @@ def project_home(project_id):
     return os.path.join(home_root(), "projects", project_id)
 
 
-def db_path(project_id):
+def _require_worktree_key(worktree_key):
+    if not isinstance(worktree_key, str) or not worktree_key:
+        raise ValueError(
+            "worktree_key 必填 —— runtime DB 是 per-worktree,"
+            "只給 project_id 會讓兩個 worktree 共用同一份可變 SQLite")
+    if "/" in worktree_key or "\\" in worktree_key or worktree_key in (".", ".."):
+        raise ValueError("worktree_key 不合法:{0!r}".format(worktree_key))
+    return worktree_key
+
+
+def db_path(project_id, worktree_key):
+    return os.path.join(project_home(project_id), WORKTREE_DIR,
+                        _require_worktree_key(worktree_key), DB_NAME)
+
+
+def legacy_shared_db_path(project_id):
+    """v3 早期的專案級共用 DB。不再作為 runtime 入口。"""
     return os.path.join(project_home(project_id), DB_NAME)
+
+
+def archive_legacy_shared_db(project_id):
+    """把舊的專案級 `memory.db` 改名封存,不複製進任何 worktree DB。
+
+    回傳封存後的路徑;沒有舊檔回 None。`-wal` / `-shm` 一併改名,
+    避免 SQLite 下一次誤把殘留 WAL 當現行檔。
+    """
+    src = legacy_shared_db_path(project_id)
+    if not os.path.isfile(src):
+        return None
+    dest = src + LEGACY_SHARED_SUFFIX
+    suffix = 2
+    while os.path.exists(dest):
+        dest = "{0}{1}.{2}".format(src, LEGACY_SHARED_SUFFIX, suffix)
+        suffix += 1
+    os.rename(src, dest)
+    for extra in ("-wal", "-shm"):
+        leftover = src + extra
+        if os.path.isfile(leftover):
+            os.rename(leftover, dest + extra)
+    return dest
+
+
+def open_for_root(project_id, repo_root, path=None):
+    """依當前 worktree 的本機路徑打開 runtime DB。生產路徑應走這支。"""
+    from . import identity
+    key = identity.workspace_key(project_id, repo_root)
+    return Store.open(project_id, path=path, worktree_key=key)
+
+
+def runtime_db_path(project_id, repo_root):
+    from . import identity
+    return db_path(project_id, identity.workspace_key(project_id, repo_root))
 
 
 def utc_now():
@@ -61,8 +121,15 @@ class Store:
 
     # ── lifecycle ────────────────────────────────────────────────────────────
     @classmethod
-    def open(cls, project_id, path=None):
-        target = path or db_path(project_id)
+    def open(cls, project_id, path=None, worktree_key=None):
+        if path is None:
+            if worktree_key is None:
+                raise ValueError(
+                    "Store.open 必須給 worktree_key 或 path——"
+                    "只給 project_id 會讓兩個 worktree 共用同一份可變 SQLite")
+            target = db_path(project_id, worktree_key)
+        else:
+            target = path
         if target != ":memory:":
             os.makedirs(os.path.dirname(os.path.abspath(target)), exist_ok=True)
         conn = sqlite3.connect(target)

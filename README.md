@@ -921,9 +921,12 @@ SDD 是脊椎(spec 驅動什麼該做),TDD 是右側驗證(測試證明做對)�
 `docs/dev/` 的東西不要搬進去,`.dev-flow/` 的東西也不要用 Markdown 另抄一份給人看:
 同一份內容兩個正本必然漂移。
 
-本機還有一層**不進 Git** 的執行期記憶:`~/.agentmem/projects/<project_id>/`
+本機還有一層**不進 Git** 的執行期記憶:
+`~/.agentmem/projects/<project_id>/worktrees/<worktree_key>/`
 (SQLite 索引、FTS、embedding 向量、原始對話逐字稿、候選知識、本機失效 overlay、
-檢索指標)。它可以整包刪掉 —— 跑一次 `dev-setup` 就從 `.dev-flow/` 重建。
+檢索指標)。**同一個 project 的兩個 worktree 各有一份**,不共用 SQLite。
+共用已確認的知識走 `.dev-flow/` + git,不靠同一份可變檔。
+它可以整包刪掉 —— 跑一次 `dev-setup` 就從**當前 checkout** 的 `.dev-flow/` 重建。
 **SQLite / 向量 / 逐字稿一律不進 Git。**
 
 ### 16.2 project identity 不是路徑

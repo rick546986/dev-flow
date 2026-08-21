@@ -40,7 +40,8 @@ def run(start_path=None, rebuild=True, reindex_embeddings=True,
                                           snapshot["local_path"])
 
     created_dirs = durable.ensure_layout(root, [durable.STATE_DIR])
-    store = store_mod.Store.open(project["project_id"])
+    archived_legacy = store_mod.archive_legacy_shared_db(project["project_id"])
+    store = store_mod.open_for_root(project["project_id"], root)
     try:
         store.register_workspace(workspace_id, snapshot)
         if migrate_legacy:
@@ -68,7 +69,8 @@ def run(start_path=None, rebuild=True, reindex_embeddings=True,
                                      for d in created_dirs],
             "workspace_id": workspace_id,
             "workspace": snapshot,
-            "local_db": store_mod.db_path(project["project_id"]),
+            "local_db": store_mod.runtime_db_path(project["project_id"], root),
+            "legacy_shared_db_archived": archived_legacy,
             "schema_version": LOCAL_SCHEMA_VERSION,
             "capabilities": {k: bool(v) for k, v in store.caps.items()},
             "durable_inventory": durable.inventory(root),
@@ -113,7 +115,14 @@ def doctor(start_path=None):
             "detail": "project.yaml 的 schema_version 與本工具不同",
             "fix": "升級 dev-flow 後重跑 dev-setup"})
 
-    db = store_mod.db_path(project["project_id"])
+    leftover = store_mod.legacy_shared_db_path(project["project_id"])
+    if os.path.isfile(leftover):
+        findings.append({
+            "level": "warn", "check": "legacy-shared-db",
+            "detail": "發現舊的專案級共用 DB,不會再被打開:{0}".format(leftover),
+            "fix": "跑 dev-setup:會把它改名封存,不把舊 OPEN session 扇出到各 worktree"})
+
+    db = store_mod.runtime_db_path(project["project_id"], root)
     if not os.path.isfile(db):
         findings.append({
             "level": "warn", "check": "local-db",
@@ -122,7 +131,7 @@ def doctor(start_path=None):
         return {"verdict": "WARN", "findings": findings,
                 "project_id": project["project_id"]}
 
-    store = store_mod.Store.open(project["project_id"])
+    store = store_mod.open_for_root(project["project_id"], root)
     try:
         version = schema.current_version(store.conn)
         findings.append({

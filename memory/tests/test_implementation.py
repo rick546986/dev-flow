@@ -243,7 +243,7 @@ class ImplementationRebuildTest(MemoryCase):
         return session.observe(store, sid, *args, **kwargs)
 
     def build_feature(self):
-        store = store_mod.Store.open(self.project_id)
+        store = store_mod.open_for_root(self.project_id, self.repo)
         snapshot = identity.workspace_snapshot(self.repo)
         sid = session.start(store, self.repo, mode=session.IMPLEMENTATION,
                             topic="Stage 6:lab-order-merge",
@@ -306,7 +306,7 @@ class ImplementationRebuildTest(MemoryCase):
 
     def test_why_without_decision_evidence_is_no_reliable_match(self):
         """沒有 decision 證據時,WHY 不得拿 event 硬猜理由。"""
-        store = store_mod.Store.open(self.project_id)
+        store = store_mod.open_for_root(self.project_id, self.repo)
         snapshot = identity.workspace_snapshot(self.repo)
         sid = session.start(store, self.repo, mode=session.IMPLEMENTATION,
                             topic="Stage 6:no-decision",

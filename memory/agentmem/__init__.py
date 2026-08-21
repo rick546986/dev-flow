@@ -5,9 +5,11 @@
   ①**durable memory**(`.dev-flow/`,進 Git)—— 高訊號、可攜、路徑無關。
     只放結構化知識:project identity / implementation truth / domain knowledge /
     intent / historical event / decision / procedural skill。
-  ②**local runtime memory**(`~/.agentmem/projects/<project_id>/`,不進 Git)——
+  ②**local runtime memory**
+    (`~/.agentmem/projects/<project_id>/worktrees/<worktree_key>/`,不進 Git)——
     SQLite 索引、FTS、embedding、原始 transcript、候選知識、本機失效 overlay。
-    可以整包刪掉再從 ①重建,刪掉不損失 durable 記憶。
+    **per-worktree**:兩個 worktree 不共用這份可變檔。可以整包刪掉再從 ①重建,
+    刪掉不損失 durable 記憶。
 
 模組:
 - ids          ULID(project/session/event/fact… 前綴分類;path-independent identity)
