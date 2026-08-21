@@ -148,6 +148,68 @@ class ExecutionTest(MemoryCase):
         self.assertNotEqual(answer["retrieval_status"], retrieval.OK)
         self.assertNotIn("current_truth", answer)
 
+    def test_current_fact_scope_excludes_unnamed_fact_on_named_entity(self):
+        """GPT-P1-CURRENT-FACT-SCOPE:查詢同時指名 entity 與 fact_key 時,
+        同一個 entity 底下**沒被指名**的其他 fact 不得進候選 —— 否則它的
+        CANDIDATE 狀態會把精確答案從 OK 拖成 NEEDS_VERIFICATION。"""
+        truth.record_fact(
+            self.store, self.repo, "database", "lab-order", "migration_state",
+            "pending", status=truth.CANDIDATE, confidence=0.3)
+        answer = self.ask("目前 lab-order 的 current_table 是什麼?")
+        self.assertEqual(answer["retrieval_status"], retrieval.OK)
+        self.assertTrue(answer["current_truth"]["fast_path"])
+        self.assertEqual(answer["current_truth"]["value"], "lab_order")
+        resolved_keys = {(r["entity_key"], r["fact_key"])
+                         for r in answer["resolved"]}
+        self.assertEqual(resolved_keys, {("lab-order", "current_table")})
+
+    def test_current_fact_scope_unnamed_stale_fact_does_not_downgrade(self):
+        """同上,沒被指名的同 entity fact 是 STALE —— 一樣不得拖累精確答案。"""
+        truth.record_fact(
+            self.store, self.repo, "database", "lab-order", "migration_state",
+            "pending", status=truth.STALE, confidence=0.3)
+        answer = self.ask("目前 lab-order 的 current_table 是什麼?")
+        self.assertEqual(answer["retrieval_status"], retrieval.OK)
+        self.assertEqual(answer["current_truth"]["value"], "lab_order")
+
+    def test_current_fact_scope_unnamed_conflict_fact_does_not_escalate(self):
+        """沒被指名的同 entity fact 是 CONFLICT —— 不得把精確查詢升級成
+        CONFLICT。CONFLICT 是最嚴重狀態,誤報的代價比 NEEDS_VERIFICATION 更高:
+        呼叫端會以為「兩個來源互相矛盾」,而實際上被問的那個座標沒有矛盾。"""
+        truth.record_fact(
+            self.store, self.repo, "database", "lab-order", "migration_state",
+            "pending", status=truth.CONFLICT, confidence=0.3)
+        answer = self.ask("目前 lab-order 的 current_table 是什麼?")
+        self.assertEqual(answer["retrieval_status"], retrieval.OK)
+        self.assertEqual(answer["current_truth"]["value"], "lab_order")
+
+    def test_current_entity_only_query_still_aggregates_all_facts(self):
+        """查詢只指名 entity、沒指名任何 fact_key 時,**刻意保留**「回傳這個
+        entity 底下全部 fact」的既有語意 —— 被問的座標就是 entity 本身,所以
+        每一筆都在範圍內,整體降級是對的而不是污染。這一案把這個語意明寫成
+        斷言(GPT 要求「explicitly verify the intended product behavior」),
+        免得它只是實作的副作用、被下一次重構默默改掉。"""
+        truth.record_fact(
+            self.store, self.repo, "database", "lab-order", "migration_state",
+            "pending", status=truth.CANDIDATE, confidence=0.3)
+        answer = self.ask("目前 lab-order 是什麼狀況?")
+        self.assertEqual(answer["retrieval_status"], query.NEEDS_VERIFICATION)
+        resolved_keys = {(r["entity_key"], r["fact_key"])
+                         for r in answer["resolved"]}
+        self.assertEqual(resolved_keys, {("lab-order", "current_table"),
+                                         ("lab-order", "migration_state")})
+
+    def test_current_named_fact_key_absent_on_named_entity_is_not_ok(self):
+        """查詢指名的 fact_key 在被指名的 entity 底下不存在(它屬於別的
+        entity)—— 不得退回「那就把這個 entity 全部 fact 都給你」,那會拿一個
+        沒被問的座標當答案。空候選 → 上層落到模糊檢索,狀態不得是 OK。"""
+        truth.record_fact(
+            self.store, self.repo, "database", "audit", "retention_days",
+            "90", status=truth.VERIFIED, confidence=0.9)
+        answer = self.ask("目前 lab-order 的 retention_days 是什麼?")
+        self.assertNotEqual(answer["retrieval_status"], retrieval.OK)
+        self.assertNotIn("current_truth", answer)
+
     def test_current_goes_stale_when_dependency_changes(self):
         write(self.repo, "src/services/db.ts", "export const table = 'x'\n")
         snapshot = identity.workspace_snapshot(self.repo)

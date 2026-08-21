@@ -283,7 +283,29 @@ def _fact_targets(store, plan_dict):
     精確答案(`GPT-P1-CURRENT-TARGET-SCOPE`)。如果查詢完全沒有指名任何
     entity,只能靠 fact_key/value 反查,而命中的 entity 不只一個 —— 代表
     查詢本身是歧義的,不猜一個當答案,回空列表讓上層退到模糊檢索與
-    `NEEDS_VERIFICATION`。"""
+    `NEEDS_VERIFICATION`。
+
+    **座標的兩個分量都要收,不只 entity。** 只按 entity 收斂還不夠:一個
+    entity 天生擁有很多 fact(`current_table` / `port` / `version` …),
+    只按 entity 篩會讓查詢明確指名的那個座標被同 entity 底下**沒被問到**的
+    fact 拖累 —— 一筆不相關的 CANDIDATE 就足以把精確答案從 OK 降成
+    NEEDS_VERIFICATION,一筆 CONFLICT 更會直接升級成 CONFLICT
+    (`GPT-P1-CURRENT-FACT-SCOPE`)。所以 entity 被指名時再分三種:
+
+    - 查詢也指名了 fact_key,且該 fact_key 存在於被指名的 entity 底下 →
+      只收這個**交集**。
+    - 查詢指名了 fact_key,但它只存在於別的 entity 底下 → 被問的座標不存在,
+      回空。**不得**退回「那就把這個 entity 全部 fact 都給你」—— 那是拿一個
+      沒被問的座標當答案。
+    - 查詢完全沒指名任何 fact_key → 被問的座標就是 entity 本身,這時整個
+      entity 底下每一筆都在範圍內,整體降級是對的(這是**刻意保留**的既有
+      語意,由 `test_current_entity_only_query_still_aggregates_all_facts`
+      釘住)。
+
+    已知界線:「有沒有指名 fact_key」只認得**目前存在於 store 裡的** fact_key。
+    查詢寫了一個 store 裡不存在的 fact_key(打錯字、還沒記錄過)時無從辨識,
+    會落到第三種當成 entity-level 查詢。這是「不猜」的直接後果 —— 要辨識它就得
+    先假設查詢裡的哪個 token 是 fact_key,而那正是本函式拒絕做的猜測。"""
     entities = [textnorm.normalize_symbol(e) for e in plan_dict["entities"]]
     query_norm = textnorm.normalize_symbol(plan_dict["query"])
     rows = list(store.facts(statuses=truth.LIVE_STATUSES, limit=None))
@@ -293,13 +315,17 @@ def _fact_targets(store, plan_dict):
 
     entity_named = {row["entity_key"] for row in rows
                     if named(textnorm.normalize_symbol(row["entity_key"]))}
+    fact_key_named = {row["fact_key"] for row in rows
+                      if named(textnorm.normalize_symbol(row["fact_key"]))}
 
     seen = set()
     targets = []
     if entity_named:
-        for row in rows:
-            if row["entity_key"] not in entity_named:
-                continue
+        scoped = [row for row in rows if row["entity_key"] in entity_named]
+        if fact_key_named:
+            scoped = [row for row in scoped
+                      if row["fact_key"] in fact_key_named]
+        for row in scoped:
             coord = (row["entity_type"], row["entity_key"], row["fact_key"])
             if coord in seen:
                 continue
