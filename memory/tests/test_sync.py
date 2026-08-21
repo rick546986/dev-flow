@@ -339,7 +339,9 @@ class DurableMirrorFreshnessTest(MemoryCase):
                 sync.rebuild_local(self.repo, store)
         finally:
             sync._after_rebuild_read = None
-        self.assertIsNone(store.get_meta(sync.DURABLE_GENERATION_META))
+        stamped = store.get_meta(sync.DURABLE_GENERATION_META)
+        self.assertNotEqual(stamped, sync.durable_generation(self.repo))
+        self.assertIn(stamped, (None, sync.UNCERTIFIED_GENERATION))
 
     def _write_knowledge(self, key, title, body=""):
         durable.write_knowledge(self.repo, {
@@ -431,6 +433,95 @@ class DurableMirrorFreshnessTest(MemoryCase):
             embedder=embedding.Embedder())
         self.assertTrue(any(hit["item_id"] == kid for hit in after["results"]),
                         "local-only 列還在,但 retrieval index 沒了")
+
+    def test_rebuild_fails_closed_on_unreadable_durable_file(self):
+        """不可讀的 durable 檔不得被當成「檔案不存在」來蓋章。
+
+        舊實作把 OSError 收成 data=None、世代雜湊 b"unreadable"、物化時略過,
+        活樹同一檔仍不可讀 → 兩端雜湊對得上,缺那一檔的鏡射被蓋成新鮮。
+        """
+        self._write_knowledge(
+            "keep-me", "title-keep", "body-keep-visible")
+        self._write_knowledge(
+            "must-remain", "title-remain", "UNIQUE-BODY-MUST-NOT-LEAK")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        stamped = store.get_meta(sync.DURABLE_GENERATION_META)
+        self.assertIsNotNone(stamped)
+        self.assertEqual(
+            {row["key"] for row in store.knowledge()},
+            {"keep-me", "must-remain"})
+
+        target = durable.knowledge_file(self.repo, "domain", "must-remain")
+        rel = os.path.relpath(target, durable.root(self.repo))
+        rel = rel.replace(os.sep, "/")
+        self._write_knowledge("keep-me", "title-keep-B", "body-keep-B")
+        sync._unreadable_durable_rels = {rel}
+        try:
+            with self.assertRaises(durable.DurableError) as ctx:
+                sync.rebuild_local(self.repo, store)
+            msg = str(ctx.exception)
+            self.assertIn(rel, msg)
+            self.assertNotIn("UNIQUE-BODY-MUST-NOT-LEAK", msg)
+        finally:
+            sync._unreadable_durable_rels = None
+
+        self.assertEqual(store.get_meta(sync.DURABLE_GENERATION_META), stamped)
+        titles = {row["key"]: row["title"] for row in store.knowledge()}
+        self.assertEqual(titles.get("keep-me"), "title-keep")
+        self.assertEqual(titles.get("must-remain"), "title-remain")
+
+        sync.rebuild_local(self.repo, store)
+        self.assertEqual(
+            store.get_meta(sync.DURABLE_GENERATION_META),
+            sync.durable_generation(self.repo))
+        recovered = {row["key"]: row["title"] for row in store.knowledge()}
+        self.assertEqual(recovered.get("keep-me"), "title-keep-B")
+        self.assertEqual(recovered.get("must-remain"), "title-remain")
+
+    def test_failed_rebuild_does_not_keep_old_generation_stamp(self):
+        """破壞性 rebuild 中途失敗後,舊世代章不得繼續證明那份鏡射。
+
+        舊實作先清再蓋章:例外發生在蓋章前,章還是 A;來源退回 A 之後
+        ensure_durable_mirror 看見章對得上就跳過,半殘 / 錯代的 DB 被當新鮮。
+        """
+        self._write_state("A")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        gen_a = store.get_meta(sync.DURABLE_GENERATION_META)
+        self.assertEqual(gen_a, sync.durable_generation(self.repo))
+        self.assertEqual(
+            store.facts(entity_type="database", entity_key="lab-order",
+                        fact_key="current_table")[0]["value"], "A")
+
+        self._write_state("B")
+
+        def boom(_repo):
+            raise RuntimeError("injected failure after rebuild read")
+
+        sync._after_rebuild_read = boom
+        try:
+            with self.assertRaises(RuntimeError):
+                sync.rebuild_local(self.repo, store)
+        finally:
+            sync._after_rebuild_read = None
+
+        store.close()
+        store2 = self.store_for(self.project_id)
+        self._write_state("A")
+        rebuilt = sync.ensure_durable_mirror(self.repo, store2)
+        self.assertTrue(
+            rebuilt,
+            "old A stamp must not bless a DB that was already destroyed")
+        self.assertEqual(
+            store2.facts(entity_type="database", entity_key="lab-order",
+                         fact_key="current_table")[0]["value"], "A")
+        self.assertEqual(
+            store2.get_meta(sync.DURABLE_GENERATION_META),
+            sync.durable_generation(self.repo))
+        self.assertNotEqual(
+            store2.get_meta(sync.DURABLE_GENERATION_META),
+            getattr(sync, "UNCERTIFIED_GENERATION", "uncertified"))
 
     def test_cli_ask_embeds_new_durable_item_without_explicit_reindex(self):
         """公開 CLI ask 必須在第一次查詢前補上新 durable 項的 embedding。"""

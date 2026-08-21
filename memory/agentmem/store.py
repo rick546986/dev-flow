@@ -900,6 +900,16 @@ class Store:
                 (provider, model, version, int(dim)))
         return cur.rowcount
 
+    def drop_orphaned_embeddings(self, provider, model, version, dim):
+        """刪掉當前 signature、但 items 列已經不在的 embedding。"""
+        with self.conn:
+            cur = self.conn.execute(
+                "DELETE FROM embeddings WHERE item_uid NOT IN"
+                " (SELECT item_uid FROM items)"
+                " AND provider=? AND model=? AND version=? AND dim=?",
+                (provider, model, version, int(dim)))
+        return cur.rowcount
+
     # ── metrics ─────────────────────────────────────────────────────────────
     def record_metric(self, query_kind, status, latency_ms, hits, now=None):
         with self.conn:

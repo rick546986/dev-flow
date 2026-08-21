@@ -181,3 +181,57 @@ class EmbeddingVersionTest(RetrievalCase):
         provider = embedding.HashingProvider()
         self.assertEqual(provider.embed("registration 送檢紀錄"),
                          provider.embed("registration 送檢紀錄"))
+
+
+class OrphanEmbeddingTest(MemoryCase):
+    """孤兒向量不得佔滿排名窗口,也不得被標成健康。"""
+
+    QUERY = "zzzzorphan-unique-token"
+
+    def setUp(self):
+        super().setUp()
+        self.project_id = self.project()["project_id"]
+        self.store = self.store_for(self.project_id)
+        self.embedder = embedding.Embedder()
+
+    def _valid_uid(self):
+        from agentmem.store import _uid
+        kid = self.store.upsert_knowledge({
+            "kind": "domain", "key": "valid-hit",
+            "title": self.QUERY + " valid-survivor",
+            "body": "this valid item must remain eligible",
+            "authority": "domain_expert", "status": "CONFIRMED"})
+        uid = _uid("knowledge", kid)
+        self.embedder.embed_item(
+            self.store, uid, self.QUERY + " valid-survivor")
+        return uid
+
+    def _plant_orphans(self, n):
+        for i in range(n):
+            fake = "knowledge:orphan-starve-{0}".format(i)
+            self.embedder.embed_item(self.store, fake, self.QUERY)
+
+    def test_orphan_vectors_do_not_starve_valid_hits(self):
+        uid = self._valid_uid()
+        self._plant_orphans(70)
+        report = self.embedder.mismatch_report(self.store)
+        self.assertGreater(report["orphaned"], 0)
+        self.assertIn("re-index", report["action"])
+
+        hits, _skipped = self.embedder.search(self.store, self.QUERY, limit=60)
+        self.assertIn(uid, [hit_uid for hit_uid, _score in hits])
+
+        scoped, _skipped = retrieval.channel_vector(
+            self.store, self.QUERY, self.embedder, {}, 20)
+        self.assertIn(uid, scoped)
+
+    def test_reindex_deletes_orphan_embeddings(self):
+        self._valid_uid()
+        self._plant_orphans(5)
+        self.assertGreater(self.embedder.mismatch_report(self.store)["orphaned"], 0)
+        self.embedder.reindex(self.store)
+        repaired = self.embedder.mismatch_report(self.store)
+        self.assertEqual(repaired["orphaned"], 0)
+        self.assertEqual(repaired["mismatched"], 0)
+        self.assertEqual(repaired["missing"], 0)
+        self.assertEqual(repaired["action"], "無需 re-index")

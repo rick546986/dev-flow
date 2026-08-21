@@ -137,15 +137,15 @@ class Embedder:
     def mismatch_report(self, store):
         """回報向量通道健康:簽章不符、缺列、孤兒,三個數字都必填。
 
-        「無需 re-index」只在 mismatched==0 **且** missing==0 時成立。
-        既有向量簽章正確但有 item 沒向量,仍然是不完整的索引。
+        「無需 re-index」只在 mismatched==0 **且** missing==0 **且**
+        orphaned==0 時成立。孤兒向量會在排名限額前佔滿候選,必須當不健康。
         """
         sig = (self.provider.name, self.provider.model,
                self.provider.version, self.provider.dim)
         mismatched = store.embedding_mismatch(*sig)
         missing = store.embedding_missing(*sig)
         orphaned = store.embedding_orphaned(*sig)
-        needs = bool(mismatched or missing)
+        needs = bool(mismatched or missing or orphaned)
         return {"mismatched": mismatched, "missing": missing,
                 "orphaned": orphaned, "signature": self.signature,
                 "action": ("re-index 需要:跑 dev-setup 或 `memory reindex`"
@@ -162,6 +162,9 @@ class Embedder:
                 self.provider.name, self.provider.model, self.provider.version,
                 self.provider.dim)
             del dropped
+        store.drop_orphaned_embeddings(
+            self.provider.name, self.provider.model, self.provider.version,
+            self.provider.dim)
         rows = store.conn.execute(
             "SELECT i.item_uid, i.title, i.text FROM items i"
             " LEFT JOIN embeddings e ON e.item_uid = i.item_uid"
@@ -184,8 +187,9 @@ class Embedder:
         skipped = 0
         scored = []
         for row in store.conn.execute(
-                "SELECT item_uid, dim, vector FROM embeddings"
-                " WHERE provider=? AND model=? AND version=?",
+                "SELECT e.item_uid, e.dim, e.vector FROM embeddings e"
+                " INNER JOIN items i ON i.item_uid = e.item_uid"
+                " WHERE e.provider=? AND e.model=? AND e.version=?",
                 (self.provider.name, self.provider.model,
                  self.provider.version)):
             try:

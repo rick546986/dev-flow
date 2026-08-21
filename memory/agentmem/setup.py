@@ -148,12 +148,13 @@ def doctor(start_path=None):
                 "fix": "" if enabled else
                        "換一個帶 FTS5 的 python3(不影響正確性,只影響排序品質)"})
         report = embedding.Embedder().mismatch_report(store)
-        embedding_ok = (not report["mismatched"] and not report["missing"])
+        embedding_ok = (not report["mismatched"] and not report["missing"]
+                        and not report["orphaned"])
         findings.append({
             "level": "ok" if embedding_ok else "warn",
             "check": "embedding-version",
-            "detail": "{0} 筆 signature 不符,{1} 筆缺向量".format(
-                report["mismatched"], report["missing"]),
+            "detail": "{0} 筆 signature 不符,{1} 筆缺向量,{2} 筆孤兒向量".format(
+                report["mismatched"], report["missing"], report["orphaned"]),
             "fix": "" if embedding_ok else report["action"]})
         current = sync.durable_generation(root)
         stored = store.get_meta(sync.DURABLE_GENERATION_META)

@@ -256,6 +256,33 @@ class DoctorTest(MemoryCase):
             self._finding(setup.doctor(self.repo), "embedding-version")["level"],
             "ok")
 
+    def test_doctor_not_ok_when_orphaned_embeddings_exist(self):
+        """孤兒向量存在時,embedding-version 不得 ok,reindex 必須清掉。"""
+        setup.run(self.repo, name="demo")
+        store = self.store_for(identity.read_project(self.repo)["project_id"])
+        embedder = embedding.Embedder()
+        self._write_domain("keep", "keep = present item", "keep-body")
+        sync.rebuild_local(self.repo, store, embedder=embedder)
+        embedder.embed_item(store, "knowledge:orphan-doc", "orphan text")
+        report = embedder.mismatch_report(store)
+        self.assertGreater(report["orphaned"], 0)
+        self.assertEqual(report["mismatched"], 0)
+        self.assertEqual(report["missing"], 0)
+        self.assertIn("re-index", report["action"])
+        doctor = setup.doctor(self.repo)
+        self.assertNotEqual(
+            self._finding(doctor, "embedding-version")["level"], "ok")
+        self.assertNotEqual(doctor["verdict"], "PASS")
+
+        embedder.reindex(store)
+        repaired = embedder.mismatch_report(store)
+        self.assertEqual(repaired["orphaned"], 0)
+        self.assertEqual(repaired["missing"], 0)
+        self.assertEqual(repaired["mismatched"], 0)
+        self.assertEqual(
+            self._finding(setup.doctor(self.repo), "embedding-version")["level"],
+            "ok")
+
     def test_doctor_flags_seeded_secret_without_echoing_it(self):
         setup.run(self.repo, name="demo")
         secret = 'API_KEY = "sk-live-seeded-do-not-echo"'

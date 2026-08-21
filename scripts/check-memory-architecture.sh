@@ -920,7 +920,61 @@ elif '"missing"' not in mr_code:
 else:
     ok("embedding 健康必須數 missing,不是只數 signature mismatch")
 
-MIN_CHECKS = 68
+i_snap = sync_src.find("def _snapshot_durable_files(")
+i_snap_end = sync_src.find("\ndef ", i_snap + 1)
+snap_code = executable_only(sync_src[i_snap:i_snap_end]) if i_snap >= 0 and i_snap_end > i_snap else None
+i_gen = sync_src.find("def _generation_of(")
+i_gen_end = sync_src.find("\ndef ", i_gen + 1)
+gen_code = executable_only(sync_src[i_gen:i_gen_end]) if i_gen >= 0 and i_gen_end > i_gen else None
+if snap_code is None:
+    bad("snapshot 抽取", "找不到 _snapshot_durable_files 窗口")
+elif "DurableError" not in snap_code or "data = None" in snap_code:
+    bad("不可讀檔可蓋章",
+        "_snapshot_durable_files 對 OSError 沒有 DurableError、或仍把 "
+        "data = None 當可蓋章內容")
+elif gen_code is not None and (
+        'b"unreadable"' in gen_code or "b'unreadable'" in gen_code):
+    bad("unreadable 合成標記可蓋章",
+        "_generation_of 仍把 b'unreadable' 當世代內容 —— 不可讀檔會被認證")
+else:
+    ok("不可讀 durable 檔必須 fail-closed,不得收成可蓋章的缺檔")
+
+if rlo_code is None:
+    bad("撤章抽取", "找不到 _rebuild_local_once 窗口")
+else:
+    uncertify_at = rlo_code.find("UNCERTIFIED_GENERATION")
+    clear_at = rlo_code.find("clear_durable_mirror")
+    if uncertify_at < 0 or clear_at < 0 or uncertify_at > clear_at:
+        bad("破壞性 rebuild 未先撤章",
+            "_rebuild_local_once 沒有在 clear_durable_mirror 之前寫入 "
+            "UNCERTIFIED_GENERATION —— 中途失敗後舊章仍證明半殘鏡射")
+    else:
+        ok("rebuild 在第一次破壞性變更前必須撤銷世代認證")
+
+i_search = embedding_src.find("def search(")
+i_search_end = embedding_src.find("\n    def ", i_search + 1)
+if i_search_end < 0:
+    i_search_end = embedding_src.find("\ndef ", i_search + 1)
+if i_search_end < 0:
+    i_search_end = len(embedding_src)
+search_code = (executable_only(embedding_src[i_search:i_search_end])
+               if i_search >= 0 and i_search_end > i_search else None)
+if mr_code is None:
+    bad("孤兒健康抽取", "找不到 mismatch_report 窗口")
+elif "missing or orphaned" not in mr_code:
+    bad("孤兒不觸發 reindex",
+        "mismatch_report 的 needs 沒有 missing or orphaned —— "
+        "孤兒向量仍可宣稱無需 re-index")
+elif search_code is None or "JOIN items" not in search_code:
+    bad("search 先限後濾孤兒",
+        "Embedder.search 沒有 JOIN items —— 孤兒會在 limit 前佔滿排名")
+elif doc_code is None or 'report["orphaned"]' not in doc_code:
+    bad("doctor 不看孤兒",
+        "doctor 的 embedding-version 沒有讀 report[\"orphaned\"]")
+else:
+    ok("孤兒向量必須不健康、可清理、且不得在 join 前佔滿排名")
+
+MIN_CHECKS = 71
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)

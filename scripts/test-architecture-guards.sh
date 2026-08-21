@@ -133,8 +133,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=108
-EXPECTED_TOTAL=122
+EXPECTED_NEGATIVES=111
+EXPECTED_TOTAL=125
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -2040,6 +2040,45 @@ assert n != t, "MEM-32 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PYX
 expect_local fail check-memory-architecture.sh "$D" "MEM-32 mismatch_report 不再呼叫 embedding_missing"
+
+D=$(seed_mem mem33); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = '                raise durable.DurableError(\n                    "unreadable durable file {0}".format(rel)) from exc'
+assert anchor in t, "MEM-33 anchor 不見"
+n = t.replace(
+    anchor,
+    "                data = None",
+    1)
+assert n != t, "MEM-33 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-33 snapshot 把 OSError 收成 data=None"
+
+D=$(seed_mem mem34); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = "    store.set_meta(DURABLE_GENERATION_META, UNCERTIFIED_GENERATION)\n"
+assert anchor in t, "MEM-34 anchor 不見"
+n = t.replace(anchor, "", 1)
+assert n != t, "MEM-34 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-34 rebuild 不再先撤銷世代認證"
+
+D=$(seed_mem mem35); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/embedding.py"
+t = p.read_text(encoding="utf-8")
+anchor = "        needs = bool(mismatched or missing or orphaned)"
+assert anchor in t, "MEM-35 anchor 不見"
+n = t.replace(anchor, "        needs = bool(mismatched or missing)", 1)
+assert n != t, "MEM-35 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-35 mismatch_report 不再把 orphaned 算進 needs"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"

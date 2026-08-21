@@ -19,10 +19,14 @@ import tempfile
 from . import durable, ids, lineage, signal, store as store_mod
 
 DURABLE_GENERATION_META = "durable_generation"
+UNCERTIFIED_GENERATION = "uncertified"
 REBUILD_MAX_ATTEMPTS = 3
 
 # 測試縫:rebuild 讀完 durable 檔、蓋章前呼叫。production 保持 None。
 _after_rebuild_read = None
+
+# 測試縫:snapshot 讀這些 repo-relative 路徑時丟 OSError。production 保持 None。
+_unreadable_durable_rels = None
 
 # 接續紀錄契約:checked HEAD 與檔案所在 commit 不同時,必須明寫報告 commit
 # 不在該次檢查範圍。這不是 runtime 語意,是防「證據覆蓋了後寫的 commit」。
@@ -62,6 +66,10 @@ def rebuild_local(repo_root, store, embedder=None):
     只比對活樹兩端雜湊不夠 —— ABA(A→B→A)會讓兩端相等、中間讀到的卻是
     混鏡射。對不上就丟棄重試,耗盡則 DurableMirrorDrift,不得蓋一個
     對不上的世代。
+
+    任一 durable 檔讀失敗必須 fail-closed:不可讀不是「檔案不存在」,
+    不得用合成標記當成可蓋章內容。第一次破壞性變更之前必須先把世代
+    章改成 UNCERTIFIED_GENERATION,失敗或中斷後舊章不得繼續證明那份鏡射。
     """
     last_counts = None
     for _attempt in range(REBUILD_MAX_ATTEMPTS):
@@ -85,6 +93,7 @@ def rebuild_local(repo_root, store, embedder=None):
 
 
 def _rebuild_local_once(repo_root, store, embedder=None):
+    store.set_meta(DURABLE_GENERATION_META, UNCERTIFIED_GENERATION)
     store.clear_durable_mirror()
     store.clear_index()
     counts = {"facts": 0, "knowledge": 0, "decisions": 0, "skills": 0,
@@ -189,10 +198,11 @@ def _rebuild_local_once(repo_root, store, embedder=None):
 
 
 def _snapshot_durable_files(repo_root):
-    """一次讀完整棵 `.dev-flow/`。回傳 (kind, [(rel, bytes|None), ...])。
+    """一次讀完整棵 `.dev-flow/`。回傳 (kind, [(rel, bytes), ...])。
 
     kind=`absent` 與「目錄在但零檔」必須分開:後者是空專案,前者是還沒
     ensure_layout。雜湊規則與 `durable_generation` 同一套,不另發明。
+    讀失敗是 DurableError,不是「這檔不存在」—— 不可讀不得被蓋章。
     """
     root = durable.root(repo_root)
     if not os.path.isdir(root):
@@ -203,11 +213,15 @@ def _snapshot_durable_files(repo_root):
         for name in sorted(filenames):
             path = os.path.join(dirpath, name)
             rel = os.path.relpath(path, root).replace(os.sep, "/")
+            forced = _unreadable_durable_rels
             try:
+                if forced is not None and rel in forced:
+                    raise OSError(13, "Permission denied")
                 with open(path, "rb") as stream:
                     data = stream.read()
-            except OSError:
-                data = None
+            except OSError as exc:
+                raise durable.DurableError(
+                    "unreadable durable file {0}".format(rel)) from exc
             entries.append((rel, data))
     return "present", entries
 
@@ -220,7 +234,7 @@ def _generation_of(kind, entries):
     for rel, data in entries:
         digest.update(rel.encode("utf-8"))
         digest.update(b"\0")
-        digest.update(data if data is not None else b"unreadable")
+        digest.update(data)
         digest.update(b"\0")
     return digest.hexdigest()
 
@@ -233,8 +247,6 @@ def _materialize_snapshot(kind, entries):
         for rel, data in entries:
             path = os.path.join(dest, rel.replace("/", os.sep))
             os.makedirs(os.path.dirname(path), exist_ok=True)
-            if data is None:
-                continue
             with open(path, "wb") as stream:
                 stream.write(data)
     return tmp
