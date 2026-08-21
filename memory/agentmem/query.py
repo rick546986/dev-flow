@@ -156,13 +156,30 @@ def _envelope(plan_dict, status, results, confidence, evidence, uncertainty,
 def execute(store, repo_root, query, workspace_id, snapshot=None, embedder=None,
             limit=5, branch=None, plan_dict=None):
     """執行查詢。回傳統一 envelope(retrieval_status/confidence/evidence/uncertainty)。"""
-    rebuilt = sync.ensure_durable_mirror(repo_root, store, embedder)
-    if embedder is not None and (
-            rebuilt or store.get_meta(sync.DURABLE_GENERATION_META)):
-        # `_resolve` / context 可能已經 rebuild 過但沒帶 embedder。
-        # reindex 只補缺,完整時是一次 LEFT JOIN。
-        embedder.reindex(store)
     plan_dict = plan_dict or plan(query, branch=branch)
+    for _attempt in range(sync.READ_MAX_ATTEMPTS):
+        rebuilt, certified = sync.observe_certified_generation(
+            repo_root, store, embedder)
+        if embedder is not None and (rebuilt or certified):
+            # `_resolve` / context 可能已經 rebuild 過但沒帶 embedder。
+            # reindex 只補缺,完整時是一次 LEFT JOIN。
+            embedder.reindex(store)
+        answer = _execute_prepared(
+            store, repo_root, plan_dict, workspace_id, snapshot, embedder,
+            limit)
+        if sync.generation_still_certified(repo_root, certified):
+            store.record_metric(plan_dict["kind"], answer["retrieval_status"],
+                                answer.get("latency_ms", 0.0),
+                                len(answer["results"]))
+            return answer
+    raise sync.DurableMirrorDrift(
+        "query could not certify a stable durable generation "
+        "after {0} attempts".format(sync.READ_MAX_ATTEMPTS))
+
+
+def _execute_prepared(store, repo_root, plan_dict, workspace_id, snapshot,
+                      embedder, limit):
+    """在已認定的世代上組答案。呼叫端負責讀後驗證。"""
     kind = plan_dict["primary"]
     branch = plan_dict["branch"] or (snapshot or {}).get("branch")
 
@@ -184,8 +201,6 @@ def execute(store, repo_root, query, workspace_id, snapshot=None, embedder=None,
 
     if plan_dict["secondary"]:
         answer["secondary_intents"] = plan_dict["secondary"]
-    store.record_metric(plan_dict["kind"], answer["retrieval_status"],
-                        answer.get("latency_ms", 0.0), len(answer["results"]))
     return answer
 
 

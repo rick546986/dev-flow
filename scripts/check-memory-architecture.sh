@@ -974,7 +974,49 @@ elif doc_code is None or 'report["orphaned"]' not in doc_code:
 else:
     ok("孤兒向量必須不健康、可清理、且不得在 join 前佔滿排名")
 
-MIN_CHECKS = 71
+context_src = read("memory/agentmem/context.py")
+i_ctx = context_src.find("def build(")
+i_ctx_end = context_src.find("\ndef ", i_ctx + 1)
+ctx_code = (executable_only(context_src[i_ctx:i_ctx_end])
+            if i_ctx >= 0 and i_ctx_end > i_ctx else None)
+if ex_code is None:
+    bad("讀後驗證抽取", "找不到 query.execute 窗口")
+elif "generation_still_certified" not in ex_code:
+    bad("查詢沒有讀後世代驗證",
+        "query.execute 組完答案沒有 generation_still_certified —— "
+        "freshness 檢查與答案離開行程之間的 TOCTOU 會把舊 VERIFIED 當 OK")
+elif ctx_code is None or "generation_still_certified" not in ctx_code:
+    bad("context 沒有讀後世代驗證",
+        "context.build 組完沒有 generation_still_certified —— "
+        "startup context 會洩漏檢查後已過期的鏡射")
+else:
+    ok("query/context 讀後必須再驗證世代,對不上就丟棄重試")
+
+if snap_code is None:
+    bad("symlink 抽取", "找不到 _snapshot_durable_files 窗口")
+elif "expect_dir=False" not in snap_code:
+    bad("snapshot 不拒絕非一般檔",
+        "_snapshot_durable_files 沒有對檔案呼叫 expect_dir=False —— "
+        "symlink 會被 open() 跟著走並蓋進世代章")
+elif "lstat" not in sync_src or "S_ISREG" not in sync_src:
+    bad("snapshot 不 lstat/S_ISREG",
+        "拒絕函式沒有 lstat 或 S_ISREG —— 非一般檔仍可被當成 durable 內容蓋章")
+else:
+    ok("durable snapshot 必須 lstat 且只接受一般檔,不得跟隨 symlink")
+
+if doc_code is None:
+    bad("doctor 不可讀抽取", "找不到 doctor 窗口")
+elif '"check": "durable-source-readable"' not in doc_code:
+    bad("doctor 不可讀來源會往外拋",
+        "doctor 沒有 check=durable-source-readable —— "
+        "不可讀 durable 檔會讓診斷指令拋例外而不是 structured FAIL")
+elif "DurableError" not in doc_code:
+    bad("doctor 不接 DurableError",
+        "doctor 提到 readable 卻沒接 DurableError")
+else:
+    ok("doctor 必須把不可讀 durable 來源收成 structured FAIL")
+
+MIN_CHECKS = 74
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)

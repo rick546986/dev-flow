@@ -133,8 +133,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=111
-EXPECTED_TOTAL=125
+EXPECTED_NEGATIVES=114
+EXPECTED_TOTAL=128
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -2079,6 +2079,42 @@ assert n != t, "MEM-35 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PYX
 expect_local fail check-memory-architecture.sh "$D" "MEM-35 mismatch_report 不再把 orphaned 算進 needs"
+
+D=$(seed_mem mem36); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/query.py"
+t = p.read_text(encoding="utf-8")
+anchor = "        if sync.generation_still_certified(repo_root, certified):"
+assert anchor in t, "MEM-36 anchor 不見"
+n = t.replace(anchor, "        if True:", 1)
+assert n != t, "MEM-36 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-36 query.execute 拿掉讀後世代驗證"
+
+D=$(seed_mem mem37); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = "                _require_regular_or_dir(path, rel, expect_dir=False)\n"
+assert anchor in t, "MEM-37 anchor 不見"
+n = t.replace(anchor, "", 1)
+assert n != t, "MEM-37 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-37 snapshot 不再 lstat/S_ISREG 拒絕 symlink"
+
+D=$(seed_mem mem38); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/setup.py"
+t = p.read_text(encoding="utf-8")
+anchor = '"check": "durable-source-readable"'
+assert anchor in t, "MEM-38 anchor 不見"
+n = t.replace(anchor, '"check": "durable-source-exists"', 1)
+assert n != t, "MEM-38 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-38 doctor 拿掉 durable-source-readable"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"

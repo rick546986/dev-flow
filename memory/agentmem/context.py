@@ -50,7 +50,19 @@ QUERY_INSTRUCTIONS = (
 def build(store, repo_root, workspace_id=None, snapshot=None,
           budget=DEFAULT_BUDGET):
     """組出 startup context。回傳 dict(sections / text / size / truncated)。"""
-    sync.ensure_durable_mirror(repo_root, store)
+    for _attempt in range(sync.READ_MAX_ATTEMPTS):
+        _rebuilt, certified = sync.observe_certified_generation(repo_root, store)
+        payload = _build_prepared(
+            store, repo_root, workspace_id, snapshot, budget)
+        if sync.generation_still_certified(repo_root, certified):
+            return payload
+    raise sync.DurableMirrorDrift(
+        "context could not certify a stable durable generation "
+        "after {0} attempts".format(sync.READ_MAX_ATTEMPTS))
+
+
+def _build_prepared(store, repo_root, workspace_id, snapshot, budget):
+    """在已認定的世代上組 context。呼叫端負責讀後驗證。"""
     project = identity.read_project(repo_root)
     snapshot = snapshot or identity.workspace_snapshot(repo_root)
     workspace_id = workspace_id or identity.workspace_key(

@@ -156,9 +156,21 @@ def doctor(start_path=None):
             "detail": "{0} 筆 signature 不符,{1} 筆缺向量,{2} 筆孤兒向量".format(
                 report["mismatched"], report["missing"], report["orphaned"]),
             "fix": "" if embedding_ok else report["action"]})
-        current = sync.durable_generation(root)
+        try:
+            current = sync.durable_generation(root)
+        except (OSError, durable.DurableError, ValueError) as exc:
+            findings.append({
+                "level": "error", "check": "durable-source-readable",
+                "detail": str(exc),
+                "fix": "修復 .dev-flow/ 內不可讀或非一般檔後重跑 doctor"})
+            current = None
         stored = store.get_meta(sync.DURABLE_GENERATION_META)
-        if stored == current:
+        if current is None:
+            freshness_level, freshness_detail, freshness_fix = (
+                "warn",
+                "durable source is unreadable; freshness not certified",
+                "先排除 durable-source-readable")
+        elif stored == current:
             freshness_level, freshness_detail, freshness_fix = (
                 "ok", "local mirror generation matches .dev-flow/", "")
         elif stored is None:

@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import shutil
+import stat
 import tempfile
 
 from . import durable, ids, lineage, signal, store as store_mod
@@ -21,12 +22,16 @@ from . import durable, ids, lineage, signal, store as store_mod
 DURABLE_GENERATION_META = "durable_generation"
 UNCERTIFIED_GENERATION = "uncertified"
 REBUILD_MAX_ATTEMPTS = 3
+READ_MAX_ATTEMPTS = 3
 
 # 測試縫:rebuild 讀完 durable 檔、蓋章前呼叫。production 保持 None。
 _after_rebuild_read = None
 
 # 測試縫:snapshot 讀這些 repo-relative 路徑時丟 OSError。production 保持 None。
 _unreadable_durable_rels = None
+
+# 測試縫:freshness 檢查剛結束、讀取尚未組答案時呼叫。production 保持 None。
+_after_freshness_check = None
 
 # 接續紀錄契約:checked HEAD 與檔案所在 commit 不同時,必須明寫報告 commit
 # 不在該次檢查範圍。這不是 runtime 語意,是防「證據覆蓋了後寫的 commit」。
@@ -203,6 +208,8 @@ def _snapshot_durable_files(repo_root):
     kind=`absent` 與「目錄在但零檔」必須分開:後者是空專案,前者是還沒
     ensure_layout。雜湊規則與 `durable_generation` 同一套,不另發明。
     讀失敗是 DurableError,不是「這檔不存在」—— 不可讀不得被蓋章。
+    每一筆必須是 `.dev-flow/` 底下的一般檔:`lstat` 不是 `S_ISREG` 就
+    fail-closed(symlink / FIFO / device / socket 都不得被 `open()` 跟著走)。
     """
     root = durable.root(repo_root)
     if not os.path.isdir(root):
@@ -210,6 +217,10 @@ def _snapshot_durable_files(repo_root):
     entries = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames.sort()
+        for dname in list(dirnames):
+            dpath = os.path.join(dirpath, dname)
+            drel = os.path.relpath(dpath, root).replace(os.sep, "/")
+            _require_regular_or_dir(dpath, drel, expect_dir=True)
         for name in sorted(filenames):
             path = os.path.join(dirpath, name)
             rel = os.path.relpath(path, root).replace(os.sep, "/")
@@ -217,6 +228,7 @@ def _snapshot_durable_files(repo_root):
             try:
                 if forced is not None and rel in forced:
                     raise OSError(13, "Permission denied")
+                _require_regular_or_dir(path, rel, expect_dir=False)
                 with open(path, "rb") as stream:
                     data = stream.read()
             except OSError as exc:
@@ -224,6 +236,23 @@ def _snapshot_durable_files(repo_root):
                     "unreadable durable file {0}".format(rel)) from exc
             entries.append((rel, data))
     return "present", entries
+
+
+def _require_regular_or_dir(path, rel, expect_dir):
+    """`lstat` 後只接受一般檔或真實目錄;symlink 與其他非一般節點一律拒絕。"""
+    try:
+        mode = os.lstat(path).st_mode
+    except OSError as exc:
+        raise durable.DurableError(
+            "unreadable durable file {0}".format(rel)) from exc
+    if expect_dir:
+        if stat.S_ISLNK(mode) or not stat.S_ISDIR(mode):
+            raise durable.DurableError(
+                "non-regular durable file {0}".format(rel))
+        return
+    if not stat.S_ISREG(mode):
+        raise durable.DurableError(
+            "non-regular durable file {0}".format(rel))
 
 
 def _generation_of(kind, entries):
@@ -287,6 +316,27 @@ def ensure_durable_mirror(repo_root, store, embedder=None):
         return False
     rebuild_local(repo_root, store, embedder)
     return True
+
+
+def observe_certified_generation(repo_root, store, embedder=None):
+    """讀路徑入口:先確保鏡射,再回傳這次讀取所認定的世代。
+
+    呼叫端組完答案之後必須再跑 `generation_still_certified`;對不上就丟棄
+    重試,不得把檢查當下的快照當成答案離開行程時仍成立。
+    """
+    rebuilt = ensure_durable_mirror(repo_root, store, embedder)
+    certified = store.get_meta(DURABLE_GENERATION_META)
+    hook = _after_freshness_check
+    if hook is not None:
+        hook(repo_root)
+    return rebuilt, certified
+
+
+def generation_still_certified(repo_root, certified):
+    """活樹世代是否仍是這次讀取蓋過章的那一個。"""
+    if not certified or certified == UNCERTIFIED_GENERATION:
+        return False
+    return durable_generation(repo_root) == certified
 
 
 # ─────────────────────────── local → durable ────────────────────────────────

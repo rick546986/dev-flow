@@ -198,6 +198,69 @@ class DoctorTest(MemoryCase):
         self.assertNotEqual(freshness["level"], "ok")
         self.assertNotEqual(report["verdict"], "PASS")
 
+    def test_doctor_returns_structured_fail_on_unreadable_durable_source(self):
+        """不可讀 durable 來源必須是 structured FAIL,不得從 doctor 往外拋。"""
+        import io
+        import sys
+        import importlib.util
+        setup.run(self.repo, name="demo")
+        self._write_domain("keep-me", "keep-me = regular",
+                           "UNIQUE-BODY-MUST-NOT-LEAK")
+        store = self.store_for(identity.read_project(self.repo)["project_id"])
+        sync.ensure_durable_mirror(self.repo, store)
+        target = durable.knowledge_file(self.repo, "domain", "keep-me")
+        rel = os.path.relpath(target, durable.root(self.repo)).replace(os.sep, "/")
+
+        sync._unreadable_durable_rels = {rel}
+        try:
+            report = setup.doctor(self.repo)
+        except Exception as exc:
+            sync._unreadable_durable_rels = None
+            self.fail("doctor raised {0}: {1}".format(type(exc).__name__, exc))
+        self.assertEqual(report["verdict"], "FAIL")
+        readable = [row for row in report["findings"]
+                    if row["check"] == "durable-source-readable"]
+        self.assertEqual(len(readable), 1, report["findings"])
+        self.assertEqual(readable[0]["level"], "error")
+        self.assertIn(rel, readable[0]["detail"])
+        blob = json.dumps(report, ensure_ascii=False)
+        self.assertNotIn("UNIQUE-BODY-MUST-NOT-LEAK", blob)
+
+        cli_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "dev-memory.py")
+        spec = importlib.util.spec_from_file_location(
+            "dev_memory_cli", cli_path)
+        cli = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cli)
+
+        class _Args:
+            path = self.repo
+
+        captured = io.StringIO()
+        old_out = sys.stdout
+        try:
+            sys.stdout = captured
+            code = cli.cmd_doctor(_Args())
+        except Exception as exc:
+            sys.stdout = old_out
+            self.fail("CLI doctor raised {0}: {1}".format(
+                type(exc).__name__, exc))
+        finally:
+            sys.stdout = old_out
+            sync._unreadable_durable_rels = None
+        self.assertEqual(code, 1)
+        cli_report = json.loads(captured.getvalue())
+        self.assertEqual(cli_report["verdict"], "FAIL")
+        self.assertNotIn("UNIQUE-BODY-MUST-NOT-LEAK", captured.getvalue())
+        self.assertNotIn("Traceback", captured.getvalue())
+
+        report_ok = setup.doctor(self.repo)
+        readable_ok = [row for row in report_ok["findings"]
+                       if row["check"] == "durable-source-readable"]
+        self.assertEqual(readable_ok, [])
+        self.assertNotEqual(report_ok["verdict"], "FAIL")
+
     def test_doctor_sees_uncertified_state_after_drift(self):
         setup.run(self.repo, name="demo")
         self._write_domain("registration", "registration = customer-level")

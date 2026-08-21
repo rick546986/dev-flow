@@ -134,6 +134,75 @@ class DurableMirrorFreshnessTest(MemoryCase):
         self.project_id = self.project()["project_id"]
         self._seed_source()
 
+    def _after_ensure(self, hook):
+        """在 freshness 檢查剛結束時注入。舊實作沒有讀後驗證,hook 一跑就會露餡。"""
+        original = sync.ensure_durable_mirror
+
+        def wrapped(repo_root, store, embedder=None):
+            rebuilt = original(repo_root, store, embedder)
+            hook(repo_root)
+            return rebuilt
+
+        sync.ensure_durable_mirror = wrapped
+        self.addCleanup(lambda: setattr(sync, "ensure_durable_mirror", original))
+
+    def test_ask_does_not_return_stale_ok_when_source_changes_after_freshness_check(self):
+        """freshness 檢查後、答案離開行程前,durable 樹換成 B 不得把 A 當 OK。"""
+        self._write_state("old-A")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        flipped = {"n": 0}
+
+        def mutate(_repo):
+            if flipped["n"] == 0:
+                flipped["n"] += 1
+                self._write_state("new-B")
+
+        self._after_ensure(mutate)
+        answer = self._ask(store)
+        self.assertGreaterEqual(flipped["n"], 1)
+        self.assertNotEqual(answer.get("current_truth", {}).get("value"), "old-A")
+        self.assertEqual(answer["current_truth"]["value"], "new-B")
+        self.assertEqual(answer["retrieval_status"], retrieval.OK)
+
+    def test_ask_fails_closed_when_durable_never_stabilizes_during_read(self):
+        """讀取期間來源一直在變 → 不得把任一中間快照當 OK。"""
+        self._write_state("old-A")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        flipped = {"n": 0}
+
+        def always_mutate(_repo):
+            flipped["n"] += 1
+            self._write_state("drift-{0}".format(flipped["n"]))
+
+        self._after_ensure(always_mutate)
+        with self.assertRaises(sync.DurableMirrorDrift):
+            self._ask(store)
+        self.assertGreaterEqual(flipped["n"], 2)
+
+    def test_context_does_not_expose_stale_snapshot_when_source_changes_after_check(self):
+        """startup context 同樣不得在 freshness 檢查後洩漏世代 A 的 VERIFIED 值。"""
+        from agentmem import context as context_mod
+        self._write_state("old-A")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        flipped = {"n": 0}
+
+        def mutate(_repo):
+            if flipped["n"] == 0:
+                flipped["n"] += 1
+                self._write_state("new-B")
+
+        self._after_ensure(mutate)
+        workspace = identity.workspace_key(self.project_id, self.repo)
+        payload = context_mod.build(
+            store, self.repo, workspace, identity.workspace_snapshot(self.repo))
+        text = payload["text"]
+        self.assertGreaterEqual(flipped["n"], 1)
+        self.assertNotIn("old-A", text)
+        self.assertIn("new-B", text)
+
     def test_ask_never_returns_stale_verified_after_durable_changes(self):
         self._write_state("old")
         store = self.store_for(self.project_id)
@@ -789,3 +858,92 @@ class OrphanCandidateTest(MemoryCase):
         self.assertEqual(sync.consolidate(self.repo, self.store, real)["promoted"], 1)
         self.assertEqual([k["key"] for k in durable.iter_knowledge(self.repo)],
                          ["legit"])
+
+
+class DurableSymlinkRejectionTest(MemoryCase):
+    """snapshot 不得跟隨 symlink 把 .dev-flow/ 外的位元組蓋進世代章。"""
+
+    SECRET = "SMUGGLED-EXTERNAL-BYTES-MUST-NOT-BECOME-DURABLE"
+
+    def setUp(self):
+        super().setUp()
+        self.project_id = self.project()["project_id"]
+
+    def _can_symlink(self):
+        probe = os.path.join(self.work, "symlink-probe-src")
+        dest = os.path.join(self.work, "symlink-probe-dst")
+        with open(probe, "w", encoding="utf-8") as stream:
+            stream.write("x")
+        try:
+            os.symlink(probe, dest)
+        except (OSError, NotImplementedError, AttributeError):
+            return False
+        return True
+
+    def _write_regular_knowledge(self, key, title):
+        durable.write_knowledge(self.repo, {
+            "kind": "domain", "key": key, "title": title,
+            "body": "regular-file-positive-control",
+            "authority": "domain_expert", "status": "CONFIRMED",
+            "recorded_at": "2026-08-20T00:00:00Z"})
+
+    def _plant_symlink(self, key):
+        outside = os.path.join(self.work, "local-memory.yaml")
+        with open(outside, "w", encoding="utf-8", newline="\n") as stream:
+            stream.write(
+                "schema_version: 1\n"
+                "kind: domain\n"
+                "key: {0}\n"
+                "title: smuggled = {1}\n"
+                "body: {1}\n"
+                "authority: domain_expert\n"
+                "status: CONFIRMED\n"
+                "recorded_at: 2026-08-20T00:00:00Z\n".format(key, self.SECRET))
+        dest = durable.knowledge_file(self.repo, "domain", key)
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        # 目標用絕對路徑:相對路徑在不同 cwd 下會指錯,那不是這條要測的。
+        os.symlink(os.path.realpath(outside), dest)
+        return dest, outside
+
+    def test_symlink_durable_file_fails_closed_and_cannot_import_external_bytes(self):
+        if not self._can_symlink():
+            self.skipTest("this platform cannot create symlinks")
+        self._write_regular_knowledge("keep-me", "keep-me = regular")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        stamped = store.get_meta(sync.DURABLE_GENERATION_META)
+        dest, outside = self._plant_symlink("smuggled")
+        rel = os.path.relpath(dest, durable.root(self.repo)).replace(os.sep, "/")
+
+        with self.assertRaises(durable.DurableError) as ctx:
+            sync.durable_generation(self.repo)
+        msg = str(ctx.exception)
+        self.assertIn(rel, msg)
+        self.assertNotIn(self.SECRET, msg)
+
+        with self.assertRaises(durable.DurableError):
+            sync.rebuild_local(self.repo, store)
+        self.assertEqual(store.get_meta(sync.DURABLE_GENERATION_META), stamped)
+        keys = {row["key"] for row in store.knowledge()}
+        self.assertNotIn("smuggled", keys)
+        self.assertNotIn(self.SECRET, json.dumps(
+            [row["title"] + row["body"] for row in store.knowledge()]))
+
+        with open(outside, "w", encoding="utf-8") as stream:
+            stream.write("schema_version: 1\nkind: domain\nkey: smuggled\n"
+                         "title: mutated-target\nauthority: domain_expert\n"
+                         "status: CONFIRMED\nrecorded_at: 2026-08-20T00:00:00Z\n")
+        with self.assertRaises(durable.DurableError):
+            sync.ensure_durable_mirror(self.repo, store)
+        self.assertNotIn(
+            "mutated-target",
+            " ".join(row["title"] for row in store.knowledge()))
+
+    def test_regular_durable_file_still_rebuilds(self):
+        self._write_regular_knowledge("keep-me", "keep-me = regular")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        rows = store.knowledge(kind="domain", key="keep-me")
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["title"], "keep-me = regular")
+        self.assertTrue(rows[0]["durable"])
