@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: doctor-must-report-durable-mirror-freshness
+title: "doctor 必須報告 durable-mirror-freshness,且不得順便修好"
+authority: current_code
+status: CANDIDATE
+confidence: 0.8
+body: "doctor 不走 _resolve。必須比較 store 的 durable_generation 與當前 .dev-flow/ 指紋。stored==current 才 ok;缺章且有可鏡射內容或已有鏡射列、或 stored!=current,必須 WARN durable-mirror-freshness。空專案不得假紅。doctor 不得默默 rebuild。"
+recorded_at: "2026-08-21T21:18:27Z"
