@@ -13,6 +13,8 @@
 import hashlib
 import json
 import os
+import shutil
+import tempfile
 
 from . import durable, ids, lineage, signal, store as store_mod
 
@@ -54,14 +56,22 @@ def rebuild_local(repo_root, store, embedder=None):
     這支就是 §13「clone 到另一台電腦」的實作:project.yaml 給 project_id,
     其餘 durable 檔給內容,local SQLite/FTS/embedding 全部重算。
 
-    讀檔與世代戳必須是同一個 snapshot:先算 generation_before,重建,再算
-    generation_after,只在兩者相等時蓋章。對不上就丟棄重試,耗盡則
-    DurableMirrorDrift,不得蓋一個對不上的世代。
+    讀檔與世代戳必須是同一個 snapshot:先把 `.dev-flow/` **整棵讀進記憶體**,
+    用那些位元組算 generation_before,從那份不可變副本重建,再算
+    generation_after。只在「載入的位元組」與「當前活樹」同一世代時蓋章。
+    只比對活樹兩端雜湊不夠 —— ABA(A→B→A)會讓兩端相等、中間讀到的卻是
+    混鏡射。對不上就丟棄重試,耗盡則 DurableMirrorDrift,不得蓋一個
+    對不上的世代。
     """
     last_counts = None
     for _attempt in range(REBUILD_MAX_ATTEMPTS):
-        generation_before = durable_generation(repo_root)
-        last_counts = _rebuild_local_once(repo_root, store, embedder)
+        kind, entries = _snapshot_durable_files(repo_root)
+        generation_before = _generation_of(kind, entries)
+        snap_repo = _materialize_snapshot(kind, entries)
+        try:
+            last_counts = _rebuild_local_once(snap_repo, store, embedder)
+        finally:
+            shutil.rmtree(snap_repo, ignore_errors=True)
         hook = _after_rebuild_read
         if hook is not None:
             hook(repo_root)
@@ -178,27 +188,62 @@ def _rebuild_local_once(repo_root, store, embedder=None):
     return counts
 
 
-def durable_generation(repo_root):
-    """`.dev-flow/` 內容的確定性指紋。不看 HEAD:無關 commit 不該逼重建。"""
-    digest = hashlib.sha256()
+def _snapshot_durable_files(repo_root):
+    """一次讀完整棵 `.dev-flow/`。回傳 (kind, [(rel, bytes|None), ...])。
+
+    kind=`absent` 與「目錄在但零檔」必須分開:後者是空專案,前者是還沒
+    ensure_layout。雜湊規則與 `durable_generation` 同一套,不另發明。
+    """
     root = durable.root(repo_root)
     if not os.path.isdir(root):
-        digest.update(b"absent")
-        return digest.hexdigest()
+        return "absent", []
+    entries = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames.sort()
         for name in sorted(filenames):
             path = os.path.join(dirpath, name)
             rel = os.path.relpath(path, root).replace(os.sep, "/")
-            digest.update(rel.encode("utf-8"))
-            digest.update(b"\0")
             try:
                 with open(path, "rb") as stream:
-                    digest.update(stream.read())
+                    data = stream.read()
             except OSError:
-                digest.update(b"unreadable")
-            digest.update(b"\0")
+                data = None
+            entries.append((rel, data))
+    return "present", entries
+
+
+def _generation_of(kind, entries):
+    digest = hashlib.sha256()
+    if kind == "absent":
+        digest.update(b"absent")
+        return digest.hexdigest()
+    for rel, data in entries:
+        digest.update(rel.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(data if data is not None else b"unreadable")
+        digest.update(b"\0")
     return digest.hexdigest()
+
+
+def _materialize_snapshot(kind, entries):
+    """把記憶體快照寫成暫時 repo root,給 `_rebuild_local_once` 讀。"""
+    tmp = tempfile.mkdtemp(prefix="durable-snap-")
+    if kind == "present":
+        dest = durable.root(tmp)
+        for rel, data in entries:
+            path = os.path.join(dest, rel.replace("/", os.sep))
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            if data is None:
+                continue
+            with open(path, "wb") as stream:
+                stream.write(data)
+    return tmp
+
+
+def durable_generation(repo_root):
+    """`.dev-flow/` 內容的確定性指紋。不看 HEAD:無關 commit 不該逼重建。"""
+    kind, entries = _snapshot_durable_files(repo_root)
+    return _generation_of(kind, entries)
 
 
 def ensure_durable_mirror(repo_root, store, embedder=None):

@@ -840,6 +840,16 @@ elif "DurableMirrorDrift" not in rl_code:
 else:
     ok("rebuild 只在 generation_before == generation_after 時蓋章")
 
+if rl_code is None:
+    bad("rebuild 快照抽取", "找不到 rebuild_local 窗口")
+elif "_snapshot_durable_files" not in rl_code \
+        or "_generation_of" not in rl_code:
+    bad("rebuild 蓋章只看活樹兩端",
+        "rebuild_local 沒有從載入的位元組算世代 —— ABA(A→B→A)會把"
+        "混鏡射蓋成同一個 generation")
+else:
+    ok("rebuild 蓋章用載入位元組的世代,不是活樹兩端雜湊")
+
 i_rlo = sync_src.find("def _rebuild_local_once(")
 i_rlo_end = sync_src.find("\ndef ", i_rlo + 1)
 rlo_code = executable_only(sync_src[i_rlo:i_rlo_end]) if i_rlo >= 0 and i_rlo_end > i_rlo else None
@@ -876,7 +886,41 @@ elif "refresh_mirror=False" not in ask_code:
 else:
     ok("查詢路徑補 embedding,且 CLI ask 不讓 _resolve 先消耗 mismatch")
 
-MIN_CHECKS = 65
+setup_src = read("memory/agentmem/setup.py")
+i_doc = setup_src.find("def doctor(")
+i_doc_end = setup_src.find("\ndef ", i_doc + 1)
+doc_code = executable_only(setup_src[i_doc:i_doc_end]) if i_doc >= 0 and i_doc_end > i_doc else None
+if doc_code is None:
+    bad("doctor 抽取", "找不到 doctor 窗口")
+elif "durable-mirror-freshness" not in doc_code:
+    bad("doctor 看不見鏡射新鮮度",
+        "doctor 沒有 durable-mirror-freshness —— 世代過期或未蓋章"
+        "時仍可報健康")
+elif "DURABLE_GENERATION_META" not in doc_code:
+    bad("doctor 新鮮度沒讀世代章",
+        "doctor 提到 freshness 卻沒讀 DURABLE_GENERATION_META")
+else:
+    ok("doctor 必須檢查 durable-mirror-freshness")
+
+embedding_src = read("memory/agentmem/embedding.py")
+i_mr = embedding_src.find("def mismatch_report(")
+i_mr_end = embedding_src.find("\n    def ", i_mr + 1)
+if i_mr_end < 0:
+    i_mr_end = embedding_src.find("\ndef ", i_mr + 1)
+mr_code = executable_only(embedding_src[i_mr:i_mr_end]) if i_mr >= 0 and i_mr_end > i_mr else None
+if mr_code is None:
+    bad("mismatch_report 抽取", "找不到 mismatch_report 窗口")
+elif "embedding_missing" not in mr_code:
+    bad("embedding 健康不數缺列",
+        "mismatch_report 沒有 embedding_missing —— 既有向量簽章對"
+        "就會宣稱無需 re-index")
+elif '"missing"' not in mr_code:
+    bad("embedding 健康不回 missing",
+        "mismatch_report 沒有回傳 missing 欄位")
+else:
+    ok("embedding 健康必須數 missing,不是只數 signature mismatch")
+
+MIN_CHECKS = 68
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)

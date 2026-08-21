@@ -274,6 +274,55 @@ class DurableMirrorFreshnessTest(MemoryCase):
         self.assertEqual(self._ask(store)["current_truth"]["value"], "B")
         self.assertNotEqual(self._ask(store)["current_truth"]["value"], "A")
 
+    def test_rebuild_does_not_certify_aba_mixed_snapshot(self):
+        """讀檔途中 A→B→A:不得把混鏡射蓋成世代 A。
+
+        既有撕裂測試只覆蓋單向 A→B,以及 generation_before != after。
+        ABA 是兩端雜湊相同、中間讀到的位元組卻不屬於任一端。
+        """
+        self._write_knowledge("aaa-one", "title-A1", "body-A1")
+        self._write_knowledge("zzz-two", "title-A2", "body-A2")
+        store = self.store_for(self.project_id)
+        original = durable.iter_knowledge
+        seen = {"n": 0}
+
+        def mutating_iter(repo_root):
+            for record in original(repo_root):
+                yield record
+                seen["n"] += 1
+                if seen["n"] == 1:
+                    self._write_knowledge("aaa-one", "title-B1", "body-B1")
+                    self._write_knowledge("zzz-two", "title-B2", "body-B2")
+
+        def restore_a(_repo):
+            self._write_knowledge("aaa-one", "title-A1", "body-A1")
+            self._write_knowledge("zzz-two", "title-A2", "body-A2")
+
+        durable.iter_knowledge = mutating_iter
+        sync._after_rebuild_read = restore_a
+        try:
+            drifted = False
+            try:
+                sync.rebuild_local(self.repo, store)
+            except sync.DurableMirrorDrift:
+                drifted = True
+            titles = {row["key"]: row["title"] for row in store.knowledge()}
+            mixed = (titles.get("aaa-one") == "title-A1"
+                     and titles.get("zzz-two") == "title-B2")
+            stamped = store.get_meta(sync.DURABLE_GENERATION_META)
+            live = sync.durable_generation(self.repo)
+            self.assertFalse(
+                mixed and stamped == live,
+                "mixed A1+B2 stamped as generation A")
+            if not drifted:
+                pair = (titles.get("aaa-one"), titles.get("zzz-two"))
+                self.assertIn(pair, (("title-A1", "title-A2"),
+                                     ("title-B1", "title-B2")))
+                self.assertEqual(stamped, live)
+        finally:
+            durable.iter_knowledge = original
+            sync._after_rebuild_read = None
+
     def test_rebuild_fails_closed_when_snapshot_never_stabilizes(self):
         """重試耗盡仍撕開 → 不得蓋一個對不上的世代。"""
         self._write_state("A")

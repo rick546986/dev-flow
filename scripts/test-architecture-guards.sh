@@ -133,8 +133,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=105
-EXPECTED_TOTAL=119
+EXPECTED_NEGATIVES=108
+EXPECTED_TOTAL=122
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -2000,6 +2000,46 @@ assert anchor in t, "MEM-29b anchor 不見"
 p.write_text(t.replace(anchor, "    coords = []", 1), encoding="utf-8")
 PYX
 expect_local fail check-memory-architecture.sh "$D" "MEM-29b CURRENT 的 per_coordinate 寫死空列表(_per_coordinate 變死碼)"
+
+D=$(seed_mem mem30); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = "        kind, entries = _snapshot_durable_files(repo_root)"
+assert anchor in t, "MEM-30 anchor 不見"
+# 退回只觀察活樹兩端:函式還在、字串還在,但 rebuild_local 不再消費快照。
+n = t.replace(anchor, "        kind, entries = None, None", 1)
+n = n.replace(
+    "        generation_before = _generation_of(kind, entries)",
+    "        generation_before = durable_generation(repo_root)", 1)
+assert n != t, "MEM-30 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-30 rebuild 退回只比對活樹兩端雜湊(ABA 混鏡射可蓋章)"
+
+D=$(seed_mem mem31); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/setup.py"
+t = p.read_text(encoding="utf-8")
+anchor = '            "level": freshness_level, "check": "durable-mirror-freshness",'
+assert anchor in t, "MEM-31 anchor 不見"
+n = t.replace(anchor, '            "level": freshness_level, "check": "durable-mirror-stale",', 1)
+assert n != t, "MEM-31 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-31 doctor 拿掉 durable-mirror-freshness 檢查名"
+
+D=$(seed_mem mem32); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/embedding.py"
+t = p.read_text(encoding="utf-8")
+anchor = "        missing = store.embedding_missing(*sig)"
+assert anchor in t, "MEM-32 anchor 不見"
+n = t.replace(anchor, "        missing = 0", 1)
+assert n != t, "MEM-32 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-32 mismatch_report 不再呼叫 embedding_missing"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"

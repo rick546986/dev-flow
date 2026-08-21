@@ -4,7 +4,9 @@ import os
 import shutil
 
 from memtools import MemoryCase, commit_all, git, read_file, write
-from agentmem import durable, identity, legacy, setup, store as store_mod
+from agentmem import durable, embedding, identity, legacy, setup, store as store_mod
+from agentmem import context as context_mod
+from agentmem import sync
 
 
 class SetupTest(MemoryCase):
@@ -141,6 +143,118 @@ class DoctorTest(MemoryCase):
         outside = os.path.join(self.work, "nope")
         os.makedirs(outside)
         self.assertEqual(setup.doctor(outside)["verdict"], "FAIL")
+
+    def _finding(self, report, check):
+        hits = [row for row in report["findings"] if row["check"] == check]
+        self.assertEqual(len(hits), 1, "missing check {0}: {1}".format(
+            check, [row["check"] for row in report["findings"]]))
+        return hits[0]
+
+    def _write_domain(self, key, title, body=""):
+        durable.write_knowledge(self.repo, {
+            "kind": "domain", "key": key, "title": title, "body": body,
+            "authority": "domain_expert", "status": "CONFIRMED",
+            "recorded_at": "2026-08-20T00:00:00Z"})
+
+    def test_doctor_flags_stale_durable_mirror_without_rebuilding(self):
+        """doctor 必須看見世代過期,且不得順便修好。"""
+        setup.run(self.repo, name="demo")
+        self._write_domain("registration", "registration = customer-level")
+        before = setup.doctor(self.repo)
+        freshness = self._finding(before, "durable-mirror-freshness")
+        self.assertNotEqual(freshness["level"], "ok")
+        self.assertNotEqual(before["verdict"], "PASS")
+        store = self.store_for(identity.read_project(self.repo)["project_id"])
+        self.assertNotEqual(
+            store.get_meta(sync.DURABLE_GENERATION_META),
+            sync.durable_generation(self.repo))
+
+    def test_doctor_freshness_ok_after_ensure_and_empty_project_is_not_fail(self):
+        setup.run(self.repo, name="demo")
+        fresh = setup.doctor(self.repo)
+        self.assertEqual(self._finding(fresh, "durable-mirror-freshness")["level"],
+                         "ok")
+        self._write_domain("registration", "registration = customer-level")
+        stale = setup.doctor(self.repo)
+        self.assertNotEqual(
+            self._finding(stale, "durable-mirror-freshness")["level"], "ok")
+        store = self.store_for(identity.read_project(self.repo)["project_id"])
+        sync.ensure_durable_mirror(self.repo, store)
+        after = setup.doctor(self.repo)
+        self.assertEqual(self._finding(after, "durable-mirror-freshness")["level"],
+                         "ok")
+
+    def test_doctor_flags_missing_generation_when_durable_content_exists(self):
+        setup.run(self.repo, name="demo")
+        self._write_domain("registration", "registration = customer-level")
+        store = self.store_for(identity.read_project(self.repo)["project_id"])
+        sync.ensure_durable_mirror(self.repo, store)
+        with store.conn:
+            store.conn.execute(
+                "DELETE FROM meta WHERE key=?",
+                (sync.DURABLE_GENERATION_META,))
+        report = setup.doctor(self.repo)
+        freshness = self._finding(report, "durable-mirror-freshness")
+        self.assertNotEqual(freshness["level"], "ok")
+        self.assertNotEqual(report["verdict"], "PASS")
+
+    def test_doctor_sees_uncertified_state_after_drift(self):
+        setup.run(self.repo, name="demo")
+        self._write_domain("registration", "registration = customer-level")
+        store = self.store_for(identity.read_project(self.repo)["project_id"])
+        toggle = {"v": 0}
+
+        def always_mutate(_repo):
+            toggle["v"] += 1
+            self._write_domain("registration", "mutated-{0}".format(toggle["v"]))
+
+        sync._after_rebuild_read = always_mutate
+        try:
+            with self.assertRaises(sync.DurableMirrorDrift):
+                sync.rebuild_local(self.repo, store)
+        finally:
+            sync._after_rebuild_read = None
+        # 失敗不得蓋新章;舊章若還在,也必須跟活樹對不上,doctor 才看得到。
+        self.assertNotEqual(
+            store.get_meta(sync.DURABLE_GENERATION_META),
+            sync.durable_generation(self.repo))
+        report = setup.doctor(self.repo)
+        freshness = self._finding(report, "durable-mirror-freshness")
+        self.assertNotEqual(freshness["level"], "ok")
+
+    def test_doctor_embedding_not_ok_when_vectors_missing_after_context_refresh(self):
+        """context/_resolve 無 embedder 刷新後,缺向量不得報 embedding OK。"""
+        setup.run(self.repo, name="demo")
+        store = self.store_for(identity.read_project(self.repo)["project_id"])
+        embedder = embedding.Embedder()
+        self._write_domain("alpha", "alpha = first durable item", "first")
+        sync.rebuild_local(self.repo, store, embedder=embedder)
+        complete = embedder.mismatch_report(store)
+        self.assertEqual(complete["mismatched"], 0)
+        self.assertEqual(complete["missing"], 0)
+
+        self._write_domain("bravo", "bravo = second durable item", "second")
+        workspace = identity.workspace_key(
+            identity.read_project(self.repo)["project_id"], self.repo)
+        snapshot = identity.workspace_snapshot(self.repo)
+        context_mod.build(store, self.repo, workspace, snapshot)
+
+        incomplete = embedder.mismatch_report(store)
+        self.assertEqual(incomplete["mismatched"], 0)
+        self.assertGreater(incomplete["missing"], 0)
+        self.assertIn("re-index", incomplete["action"])
+        doctor = setup.doctor(self.repo)
+        embedding_check = self._finding(doctor, "embedding-version")
+        self.assertNotEqual(embedding_check["level"], "ok")
+        self.assertNotEqual(doctor["verdict"], "PASS")
+
+        embedder.reindex(store)
+        repaired = embedder.mismatch_report(store)
+        self.assertEqual(repaired["missing"], 0)
+        self.assertEqual(repaired["mismatched"], 0)
+        self.assertEqual(
+            self._finding(setup.doctor(self.repo), "embedding-version")["level"],
+            "ok")
 
     def test_doctor_flags_seeded_secret_without_echoing_it(self):
         setup.run(self.repo, name="demo")

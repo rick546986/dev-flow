@@ -148,11 +148,42 @@ def doctor(start_path=None):
                 "fix": "" if enabled else
                        "換一個帶 FTS5 的 python3(不影響正確性,只影響排序品質)"})
         report = embedding.Embedder().mismatch_report(store)
+        embedding_ok = (not report["mismatched"] and not report["missing"])
         findings.append({
-            "level": "ok" if not report["mismatched"] else "warn",
+            "level": "ok" if embedding_ok else "warn",
             "check": "embedding-version",
-            "detail": "{0} 筆與當前 signature 不符".format(report["mismatched"]),
-            "fix": report["action"] if report["mismatched"] else ""})
+            "detail": "{0} 筆 signature 不符,{1} 筆缺向量".format(
+                report["mismatched"], report["missing"]),
+            "fix": "" if embedding_ok else report["action"]})
+        current = sync.durable_generation(root)
+        stored = store.get_meta(sync.DURABLE_GENERATION_META)
+        if stored == current:
+            freshness_level, freshness_detail, freshness_fix = (
+                "ok", "local mirror generation matches .dev-flow/", "")
+        elif stored is None:
+            has_rows = store.has_durable_mirror()
+            try:
+                has_content = durable.has_mirrorable_content(root)
+            except (OSError, durable.DurableError, ValueError):
+                has_content = True
+            if not has_content and not has_rows:
+                freshness_level, freshness_detail, freshness_fix = (
+                    "ok", "empty project, no durable mirror to certify", "")
+            else:
+                freshness_level, freshness_detail, freshness_fix = (
+                    "warn",
+                    "missing durable-generation stamp while durable content or "
+                    "mirror rows exist — local mirror is uncertified",
+                    "跑 dev-setup 重建鏡射")
+        else:
+            freshness_level, freshness_detail, freshness_fix = (
+                "warn",
+                "durable source changed; local mirror needs refresh "
+                "(stored generation != current .dev-flow/)",
+                "跑 dev-setup 或一次 ask 重建鏡射")
+        findings.append({
+            "level": freshness_level, "check": "durable-mirror-freshness",
+            "detail": freshness_detail, "fix": freshness_fix})
         leaks = _absolute_path_leaks(root)
         findings.append({
             "level": "ok" if not leaks else "error",

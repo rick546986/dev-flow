@@ -869,6 +869,29 @@ class Store:
             " (provider=? AND model=? AND version=? AND dim=?)",
             (provider, model, version, int(dim))).fetchone()[0]
 
+    def embedding_missing(self, provider, model, version, dim):
+        """現行 items 裡,沒有「當前 signature」那一列 embedding 的筆數。
+
+        與 `embedding_mismatch` 正交:mismatch 數的是**已存在但簽章錯**的
+        向量;missing 數的是**這個 item 根本沒有可用向量**。只看前者會把
+        「向量通道不完整」說成健康。
+        """
+        return self.conn.execute(
+            "SELECT COUNT(*) FROM items i LEFT JOIN embeddings e"
+            " ON e.item_uid = i.item_uid"
+            " AND e.provider=? AND e.model=? AND e.version=? AND e.dim=?"
+            " WHERE e.item_uid IS NULL",
+            (provider, model, version, int(dim))).fetchone()[0]
+
+    def embedding_orphaned(self, provider, model, version, dim):
+        """有當前 signature 的 embedding、但 items 列已經不在的筆數。"""
+        return self.conn.execute(
+            "SELECT COUNT(*) FROM embeddings e LEFT JOIN items i"
+            " ON i.item_uid = e.item_uid"
+            " WHERE i.item_uid IS NULL"
+            " AND e.provider=? AND e.model=? AND e.version=? AND e.dim=?",
+            (provider, model, version, int(dim))).fetchone()[0]
+
     def drop_mismatched_embeddings(self, provider, model, version, dim):
         with self.conn:
             cur = self.conn.execute(

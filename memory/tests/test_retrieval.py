@@ -146,6 +146,8 @@ class EmbeddingVersionTest(RetrievalCase):
         newer = embedding.Embedder(OtherProvider())
         report = newer.mismatch_report(self.store)
         self.assertGreater(report["mismatched"], 0)
+        self.assertIn("missing", report)
+        self.assertIn("orphaned", report)
         self.assertIn("re-index", report["action"])
 
     def test_reindex_after_model_change_restores_vector_channel(self):
@@ -154,7 +156,9 @@ class EmbeddingVersionTest(RetrievalCase):
 
         newer = embedding.Embedder(OtherProvider())
         self.assertGreater(newer.reindex(self.store), 0)
-        self.assertEqual(newer.mismatch_report(self.store)["mismatched"], 0)
+        repaired = newer.mismatch_report(self.store)
+        self.assertEqual(repaired["mismatched"], 0)
+        self.assertEqual(repaired["missing"], 0)
         result = retrieval.search(self.store, "registration", embedder=newer)
         self.assertIn("vector", result["channels_active"])
 

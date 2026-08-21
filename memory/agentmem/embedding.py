@@ -135,13 +135,21 @@ class Embedder:
         return vector
 
     def mismatch_report(self, store):
-        """回報與當前 signature 不符的 embedding 筆數(不自動砍)。"""
-        count = store.embedding_mismatch(
-            self.provider.name, self.provider.model, self.provider.version,
-            self.provider.dim)
-        return {"mismatched": count, "signature": self.signature,
+        """回報向量通道健康:簽章不符、缺列、孤兒,三個數字都必填。
+
+        「無需 re-index」只在 mismatched==0 **且** missing==0 時成立。
+        既有向量簽章正確但有 item 沒向量,仍然是不完整的索引。
+        """
+        sig = (self.provider.name, self.provider.model,
+               self.provider.version, self.provider.dim)
+        mismatched = store.embedding_mismatch(*sig)
+        missing = store.embedding_missing(*sig)
+        orphaned = store.embedding_orphaned(*sig)
+        needs = bool(mismatched or missing)
+        return {"mismatched": mismatched, "missing": missing,
+                "orphaned": orphaned, "signature": self.signature,
                 "action": ("re-index 需要:跑 dev-setup 或 `memory reindex`"
-                           if count else "無需 re-index")}
+                           if needs else "無需 re-index")}
 
     def reindex(self, store, force=False):
         """對缺 embedding(或 signature 不符)的 item 重算。回傳處理筆數。"""
