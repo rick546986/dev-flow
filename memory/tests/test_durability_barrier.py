@@ -613,7 +613,8 @@ class DurableCheckTest(DurableCheckCase):
         bare = self.add_remote()
         shutil.rmtree(bare)
         result = sync.durable_check(self.repo, self.store, local_only=True)
-        self.assertEqual(result["verdict"], "PASS", result["problems"])
+        self.assertEqual(result["verdict"], "LOCAL_ONLY_PASS",
+                         result["problems"])
         self.assertFalse(result["remote_observed"],
                          "local_only 不得聲稱觀察過遠端")
 
@@ -643,8 +644,9 @@ class RemoteMustBeOffMachineTest(DurableCheckCase):
     一件它沒有驗證的事,這正是本專案在修的同一個錯:**在耐久性真正建立之前
     就把狀態往前推**。
 
-    離線要放行請用 `--local-only`:它會 PASS 但 `remote_observed=False`,
-    也就是**明說**這一關只驗到本機。「不得聲稱」與「不得放行」不是同一件事。
+    離線要放行請用 `--local-only`:它回 `LOCAL_ONLY_PASS` 且
+    `remote_observed=False`,也就是**明說**這一關只驗到本機。
+    「不得聲稱」與「不得放行」不是同一件事。
     """
 
     def test_local_bare_remote_is_not_off_machine_proof(self):
@@ -723,7 +725,8 @@ class RemoteMustBeOffMachineTest(DurableCheckCase):
         commit_all(self.repo, "memory commit")
         self.add_remote(off_machine=False)
         result = sync.durable_check(self.repo, self.store, local_only=True)
-        self.assertEqual(result["verdict"], "PASS", result["problems"])
+        self.assertEqual(result["verdict"], "LOCAL_ONLY_PASS",
+                         result["problems"])
         self.assertFalse(result["remote_observed"])
 
 
@@ -1449,3 +1452,113 @@ class DurableStateIsCompleteTest(MemoryCase):
         counts = sync.rebuild_local(self.repo, fresh)
         self.assertEqual(counts["facts"], self.OVER_WINDOW,
                          "重建後少了 fact —— 記憶真的不見了")
+
+
+class DurableVerdictHonestyTest(DurableCheckCase):
+    """verdict 只准宣稱它真的證明得到的東西(owner 裁決 D-2 / D-3)。
+
+    這一關原本用同一個 `PASS` 蓋住兩種強度差很多的結論:
+
+        --local-only:比對本機追蹤 ref,**從沒問過伺服器**
+        正常路徑:  ls-remote 問到伺服器,ref 等於本機 HEAD
+
+    只讀 `verdict` 的呼叫端分不出這兩者,而「記憶離開這台機器了嗎」的答案
+    完全取決於分得出來 —— 前者連「遠端上有這個 commit」都沒有證據。
+
+    另一半是宣稱過強:原本的 verdict 讀起來像是證明了**跨機器物理耐久性**,
+    但實際證據只有兩件可機械複驗的事 —— 伺服器回報的 ref 等於本機 HEAD
+    (`remote_ref_matches`),以及預檢時解析到的位址不在**已知的**本機位址
+    集合裡(`preflight_not_known_local`)。後者是 best-effort 集合的否定
+    成員測試,而且 SSH config 的 `HostName` 重映不在偵測範圍內,所以它證明
+    不了「Git transport 實際連上的那一端在別台機器上」。裁決是把證據拆成
+    這兩個欄位誠實回報,而不是繼續往負向啟發式上疊東西。
+    """
+
+    def test_local_only_gets_its_own_verdict_not_the_generic_pass(self):
+        """`--local-only` 不得回一般的 `PASS` —— 它跳過的正是唯一的遠端證據。"""
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self.add_remote(off_machine=False)
+        result = sync.durable_check(self.repo, self.store, local_only=True)
+        self.assertEqual(result["verdict"], "LOCAL_ONLY_PASS",
+                         result["problems"])
+        self.assertNotEqual(result["verdict"], "PASS",
+                            "local-only 與遠端觀察過不得共用同一個 verdict 值")
+
+    def test_local_only_does_not_claim_remote_ref_matches(self):
+        """`pushed` 為真也不代表遠端 ref 被比對過 —— 追蹤 ref 是本機快取。
+
+        這一案釘的正是舊契約最容易誤導的地方:`--local-only` 的
+        `remote_head` 來自 `rev-parse <upstream>`,所以 `pushed` 會是 True,
+        而伺服器從頭到尾沒被問過。
+        """
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self.add_remote(off_machine=False)
+        result = sync.durable_check(self.repo, self.store, local_only=True)
+        self.assertTrue(result["pushed"], "前置條件:追蹤 ref 必須等於 HEAD")
+        self.assertFalse(result["remote_ref_matches"],
+                         "沒問過伺服器就不得宣稱遠端 ref 對上了")
+        self.assertFalse(result["remote_observed"])
+
+    def test_real_remote_pass_reports_remote_ref_matches(self):
+        """正向路徑:真的問到伺服器且 ref 相等 → PASS 且欄位為真。"""
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self.add_remote(off_machine=True)
+        result = self.check()
+        self.assertEqual(result["verdict"], "PASS", result["problems"])
+        self.assertTrue(result["remote_ref_matches"])
+        self.assertTrue(result["remote_observed"])
+
+    def test_off_machine_preflight_is_its_own_field(self):
+        """預檢結論獨立成欄位,不再被 verdict 吞掉當成更強的宣稱。"""
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self.add_remote(off_machine=True)
+        self.assertTrue(self.check()["preflight_not_known_local"])
+
+    def test_local_remote_does_not_claim_preflight_not_known_local(self):
+        """本機 remote 被預檢擋下 → 那個欄位必須是假,不能只在 problems 裡。"""
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self.add_remote(off_machine=False)
+        result = self.check()
+        self.assertEqual(result["verdict"], "FAIL", result)
+        self.assertFalse(result["preflight_not_known_local"])
+        self.assertFalse(result["remote_ref_matches"])
+
+    def test_local_only_does_not_claim_preflight_not_known_local(self):
+        """`--local-only` 連預檢都沒跑 —— 不得回報預檢通過。"""
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self.add_remote(off_machine=True)
+        result = sync.durable_check(self.repo, self.store, local_only=True)
+        self.assertFalse(result["preflight_not_known_local"])
+
+    def test_verdict_dict_always_exposes_the_honest_fields(self):
+        """兩個誠實欄位是**必填**,不是成功時才附上的裝飾。
+
+        選填的話,呼叫端就得寫 `result.get("remote_ref_matches")`,而
+        `None` 在布林語境下與 `False` 同義 —— 少一個欄位會靜默降級成
+        「當它沒證明」或「當它證明了」,取決於呼叫端怎麼寫。必填才有牙齒。
+        """
+        from memtools import commit_all
+        self.write_some_memory()
+        for result in (self.check(),
+                       sync.durable_check(self.repo, self.store,
+                                          local_only=True)):
+            for field in ("remote_ref_matches", "preflight_not_known_local",
+                          "remote_observed"):
+                self.assertIn(field, result)
+                self.assertIsInstance(result[field], bool)
+        commit_all(self.repo, "memory commit")
+        self.add_remote(off_machine=True)
+        for field in ("remote_ref_matches", "preflight_not_known_local"):
+            self.assertIsInstance(self.check()[field], bool)

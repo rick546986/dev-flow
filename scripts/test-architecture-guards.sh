@@ -133,8 +133,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=97
-EXPECTED_TOTAL=111
+EXPECTED_NEGATIVES=100
+EXPECTED_TOTAL=114
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -1799,18 +1799,66 @@ D=$(seed_mem mem24); mutate "$D" <<'PYX'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
 t = p.read_text(encoding="utf-8")
-anchor = ('        remote_head, code, error = _observe_remote('
-          'repo_root, branch or "")')
+anchor = ('        remote_head, code, error, preflight_not_known_local = '
+          '_observe_remote(\n            repo_root, branch or "")')
 assert anchor in t, "MEM-24 anchor 不見"
 # 退回本機追蹤 ref:別台機器改掉遠端之後它還指著我的 commit,於是這一關
 # 會替一個伺服器上已經不存在的 commit 背書。
 p.write_text(t.replace(
     anchor,
-    '        remote_head, code, error = identity._git(\n'
-    '            repo_root, "rev-parse", upstream), None, None', 1),
+    '        remote_head, code, error, preflight_not_known_local = (\n'
+    '            identity._git(repo_root, "rev-parse", upstream),\n'
+    '            None, None, True)', 1),
     encoding="utf-8")
 PYX
 expect_local fail check-memory-architecture.sh "$D" "MEM-24 durable-check 退回本機追蹤 ref(遠端被改掉仍判 PASS)"
+
+D=$(seed_mem mem24b); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = '''    if problems:
+        verdict = "FAIL"
+    elif remote_ref_matches:
+        verdict = "PASS"
+    else:
+        verdict = "LOCAL_ONLY_PASS"'''
+assert anchor in t, "MEM-24b anchor 不見"
+# 把三值壓回兩值:--local-only(走本機追蹤 ref,伺服器從沒被問過)與真的
+# 觀察過遠端共用同一個 PASS,只讀 verdict 的呼叫端因此分不出兩者。
+p.write_text(t.replace(anchor, '''    if problems:
+        verdict = "FAIL"
+    else:
+        verdict = "PASS"''', 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-24b durable-check verdict 把 local-only 壓回一般 PASS(呼叫端分不出強弱)"
+
+D=$(seed_mem mem24c); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = "    elif remote_ref_matches:"
+assert anchor in t, "MEM-24c anchor 不見"
+# LOCAL_ONLY_PASS 這個字串留著,但 PASS 改由呼叫端傳進來的旗標決定 ——
+# remote_ref_matches 退化成只是附註的死碼(守衛不能被自己要檢查的字串餵飽)。
+p.write_text(t.replace(anchor, "    elif not local_only:", 1),
+             encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-24c durable-check 的 PASS 改由 local_only 旗標決定(誠實欄位變死碼)"
+
+D=$(seed_mem mem24d); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = ('        "remote_ref_matches": remote_ref_matches,\n'
+          '        "preflight_not_known_local": '
+          'bool(preflight_not_known_local),\n')
+assert anchor in t, "MEM-24d anchor 不見"
+# 兩個誠實欄位從回傳 dict 拿掉:呼叫端只能 .get(),而 None 在布林語境下
+# 與 False 同義 —— 少一個欄位會靜默降級成某一邊,取決於呼叫端怎麼寫。
+p.write_text(t.replace(anchor, "", 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-24d durable-check 的誠實欄位從必填降成缺席(呼叫端靜默降級)"
 
 D=$(seed_mem mem25); mutate "$D" <<'PYX'
 import sys, pathlib

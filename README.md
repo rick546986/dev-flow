@@ -1095,7 +1095,19 @@ dev-run(implementation)
 - **remote 那一項問的是遠端本身**(`git ls-remote`),不是本機的
   `origin/<branch>` —— 追蹤 ref 是快取,別台機器 force-push 或刪掉那個 branch
   之後它還指著我的 commit。問不到遠端一律 FAIL(沒有證據不等於通過);離線要
-  放行請明確 `--local-only`,那時輸出的 `remote_observed` 是 `false`。
+  放行請明確 `--local-only`。
+- **verdict 三值,而且只宣稱它證明得到的事。** `PASS` = 沒有 problems **且**
+  真的問過伺服器、它回報的 ref 等於本機 HEAD;`LOCAL_ONLY_PASS` = 本機檢查都
+  過但沒有遠端 ref 證據(`--local-only` 走的是本機追蹤 ref,所以 `pushed` 會
+  是 `true` 而伺服器從頭到尾沒被問過);`FAIL` = 有 problems。**兩種 pass 的
+  退出碼都是 0** —— 要區分強弱請讀 `verdict` 或 `remote_ref_matches`,退出碼
+  只有兩個值,承載不了三值語意。
+- **它不宣稱跨機器物理耐久性。** 實際證據拆成兩個必填欄位:`remote_ref_matches`
+  (伺服器回報的 ref 等於本機 HEAD,可機械複驗)與 `preflight_not_known_local`
+  (預檢解析到的位址不在**已知的**本機位址集合裡)。後者刻意弱:本機介面清單是
+  best-effort、非空也可能不完整,而且 SSH config 的 `HostName` 重映不在偵測範圍
+  內、預檢解析到的位址與 Git transport 實際連上的位址之間沒有綁定。**能證明的
+  就寫成欄位,證明不到的就不要寫進 verdict** —— 這跟本節其他每一條是同一條紀律。
 
 同一條原則在程式內部也成立,而且是六個實際存在過的缺陷:
 

@@ -574,6 +574,54 @@ elif "ip_is_offmachine(" not in executable_only(obs_code):
 else:
     ok("durable-check 解析 remote 主機名並驗位址不是 loopback/本機介面")
 
+# verdict 不得再把「只驗到本機」與「遠端真的觀察過」壓成同一個 PASS
+# (owner 裁決 D-3)。--local-only 走的是 rev-parse <upstream> —— 本機快取,
+# 所以 `pushed` 會是 True 而伺服器從頭到尾沒被問過;只讀 verdict 的呼叫端
+# 因此分不出兩者,而「記憶離開這台機器了嗎」的答案完全取決於分得出來。
+if dchk_body is None:
+    bad("durable_check 抽取(verdict 三值)", "找不到 durable_check 窗口")
+elif "LOCAL_ONLY_PASS" not in executable_only(dchk_body):
+    bad("local-only 與遠端觀察過共用同一個 verdict",
+        "durable_check 沒有回 LOCAL_ONLY_PASS —— --local-only 跳過的正是"
+        "唯一的遠端證據,卻與真的觀察過遠端拿到同一個 PASS,呼叫端無從分辨")
+else:
+    ok("durable-check verdict 把 local-only 與遠端觀察過分開(LOCAL_ONLY_PASS)")
+
+# PASS 必須由**證據**推導,不得由呼叫端傳進來的 local_only 旗標推導
+# (owner 裁決 D-2)。旗標說的是「呼叫端要求了什麼」,remote_ref_matches
+# 說的是「實際拿到什麼證據」。釘證據那一側才擋得住「未來多一條也拿不到
+# 遠端證據的路徑,忘了加分支就靜默回 PASS」。
+if dchk_body is None:
+    bad("durable_check 抽取(PASS 推導來源)", "找不到 durable_check 窗口")
+elif "remote_ref_matches" not in executable_only(dchk_body):
+    bad("durable-check 沒有 remote_ref_matches 這個誠實欄位",
+        "durable_check 沒有算出/回報 remote_ref_matches —— 呼叫端只剩 `pushed`"
+        "可讀,而 local-only 路徑的 pushed 來自本機追蹤 ref,它為真並不代表"
+        "伺服器被問過")
+elif not re.search(r"elif\s+remote_ref_matches\s*:", executable_only(dchk_body)):
+    bad("PASS 不是從遠端 ref 證據推導出來的",
+        "durable_check 有 remote_ref_matches 這個欄位,但 PASS 那一支不是"
+        "由它決定 —— 欄位變成只是附註,verdict 仍可能在沒有遠端證據時說 PASS"
+        "(守衛不能被自己要檢查的那個字串餵飽)")
+else:
+    ok("durable-check 的 PASS 由 remote_ref_matches 推導,不由 local_only 旗標")
+
+# 兩個誠實欄位是必填,不是成功時才附上的裝飾。選填的話呼叫端得寫 .get(),
+# 而 None 在布林語境下與 False 同義 —— 少一個欄位會靜默降級成某一邊,
+# 取決於呼叫端怎麼寫,而不是取決於實際證據。
+if dchk_body is None:
+    bad("durable_check 抽取(誠實欄位必填)", "找不到 durable_check 窗口")
+else:
+    missing = [f for f in ("remote_ref_matches", "preflight_not_known_local")
+               if '"{0}":'.format(f) not in dchk_body]
+    if missing:
+        bad("durable-check 的誠實欄位不是必填",
+            "回傳 dict 裡沒有 {0} —— 呼叫端只能 .get(),而 None 與 False "
+            "在布林語境下同義,少一個欄位就靜默降級".format("/".join(missing)))
+    else:
+        ok("durable-check 必填回報 remote_ref_matches 與 "
+           "preflight_not_known_local")
+
 # 檢索命中之後,答案的內容必須用主鍵撈。拿已知主鍵去掃「最近 N 筆」是錯的:
 # 檢索索引沒有那個視窗,命中較舊的 decision/skill 時撈不到內容,而呼叫端仍然
 # 回 OK —— 聲稱有可靠答案卻沒附上構成答案的欄位,比查不到更糟。
@@ -662,7 +710,7 @@ elif i_cond < 0 or cond_line.strip() == "if changed or dirty:":
 else:
     ok("git status 解析不完整時,無指紋的依賴不得走 fast path")
 
-MIN_CHECKS = 52
+MIN_CHECKS = 55
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)

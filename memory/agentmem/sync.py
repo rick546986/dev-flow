@@ -567,9 +567,22 @@ def _observe_remote(repo_root, branch):
     回空集合 —— 這裡明確先查一次、空集合本身就 fail closed 到
     `REMOTE_UNVERIFIED`,不把它當成「這台機器沒有任何位址」直接丟給
     `ip_is_offmachine` 比對(那樣任何位址都會被誤判成離開這台機器)。
-    SSH config 的 Host 別名重映(`~/.ssh/config` 的 `HostName`)不在這一關
-    的偵測範圍內 —— 那需要額外呼叫 `ssh -G` 才能拿到 SSH 實際會解析的
-    host,這裡沒有做,是已知的殘留缺口,不是沒注意到。
+
+    **這一段預檢證明得到什麼、證明不到什麼(owner 裁決 D-2)。**
+    它證明得到的是一句有邊界的話:*預檢時解析到的位址,不在這台機器
+    「已知的」位址集合裡*。回傳的第四個值就叫這件事
+    (`preflight_not_known_local`),不叫「在別台機器上」。差別有兩處是
+    真的、不是措辭潔癖:
+
+    1. `_local_machine_ips()` 是 best-effort,非空也可能不完整 —— 對一個
+       不完整集合做否定成員測試,結論只能弱到「不在已知集合裡」。
+    2. SSH config 的 Host 別名重映(`~/.ssh/config` 的 `HostName`)不在
+       偵測範圍內,而且預檢解析的位址與後續 Git transport 實際連上的
+       位址之間沒有綁定 —— 中間可以換掉。
+
+    所以這裡不再往負向啟發式上疊東西(裁決明確否掉那個方向),而是把
+    「預檢結論」與「伺服器回報的 ref 等於本機 HEAD」拆成兩個各自可複驗的
+    事實,交給呼叫端自己決定要相信到哪裡。
     """
     from . import identity
     remote = identity._git(repo_root, "config",
@@ -578,46 +591,46 @@ def _observe_remote(repo_root, branch):
                           "branch.{0}.merge".format(branch))
     if not remote or not merge:
         return (None, REMOTE_UNVERIFIED,
-                "讀不到 branch.{0} 的 remote/merge 設定".format(branch))
+                "讀不到 branch.{0} 的 remote/merge 設定".format(branch), False)
     url = _remote_url(repo_root, remote)
     if not url:
         return (None, REMOTE_UNVERIFIED,
-                "讀不到 remote {0} 的 URL".format(remote))
+                "讀不到 remote {0} 的 URL".format(remote), False)
     if not identity.remote_is_offmachine(url):
         return (None, REMOTE_LOCAL,
                 "remote {0} 指向這台機器,或無法判定它在別台機器上 —— "
                 "本機的 bare repo / file:// / localhost 跟工作樹一起壞掉,"
-                "它不是「記憶離開這台機器」的證據".format(remote))
+                "它不是「記憶離開這台機器」的證據".format(remote), False)
     host = identity._parse_host(url)
     ips = identity.resolve_host_ips(host) if host else None
     if not ips:
         return (None, REMOTE_UNVERIFIED,
                 "remote {0} 的主機名解析不到位址 —— 分不出來不得當成"
-                "離開這台機器的證據".format(remote))
+                "離開這台機器的證據".format(remote), False)
     local_ips = identity._local_machine_ips()
     if not local_ips:
         return (None, REMOTE_UNVERIFIED,
                 "這台機器自己的介面位址列表拿不到(best-effort 探測全部"
                 "失敗)—— 分不出來解析到的位址是不是這台機器自己,不得"
-                "因為查不到本機介面就當成離開這台機器的證據")
+                "因為查不到本機介面就當成離開這台機器的證據", False)
     if not all(identity.ip_is_offmachine(ip, local_ips=local_ips)
                for ip in ips):
         return (None, REMOTE_ENDPOINT_LOCAL,
                 "remote {0} 的主機名解析後是這台機器自己(loopback / "
                 "link-local / 本機介面位址)—— 主機名長得像別台機器,"
-                "實際解析到的卻是自己".format(remote))
+                "實際解析到的卻是自己".format(remote), False)
     raw = identity._git_raw(repo_root, "ls-remote", "--exit-code",
                             remote, merge)
     if raw is None:
         return (None, REMOTE_UNVERIFIED,
                 "問不到遠端 {0} 的 {1}(網路不通、無權限、或該 ref 不存在)"
-                .format(remote, merge))
+                .format(remote, merge), True)
     for line in raw.splitlines():
         parts = line.split("\t")
         if len(parts) == 2 and parts[1].strip() == merge:
-            return parts[0].strip(), None, None
+            return parts[0].strip(), None, None, True
     return (None, REMOTE_UNVERIFIED,
-            "遠端 {0} 沒有回報 {1}".format(remote, merge))
+            "遠端 {0} 沒有回報 {1}".format(remote, merge), True)
 
 
 def durable_check(repo_root, store, local_only=False):
@@ -630,11 +643,33 @@ def durable_check(repo_root, store, local_only=False):
     checkpoint 回 promoted: 3 而 `.dev-flow/` 從來沒被 commit,是最容易發生的
     一種,而它不會讓任何測試變紅。
 
-    回傳 dict:verdict(PASS/FAIL)+ 逐項證據。判定一律**明說理由**,
-    不回一個沒人能複驗的布林值。
+    回傳 dict:verdict + 逐項證據。判定一律**明說理由**,不回一個沒人能
+    複驗的布林值。
 
-    `local_only=True` 時不問遠端,只比對本機追蹤 ref,並且回傳
-    `remote_observed=False` —— 離線時可以放行,但不得聲稱驗過遠端。
+    **verdict 三值,而且由證據推導,不由呼叫端的旗標決定(owner 裁決
+    D-2/D-3)**:
+
+    - `FAIL` —— 有 problems。
+    - `PASS` —— 沒有 problems **且** `remote_ref_matches` 為真,也就是真的
+      問過伺服器、它回報的 ref 等於本機 HEAD。
+    - `LOCAL_ONLY_PASS` —— 沒有 problems,但沒有遠端 ref 證據。
+
+    為什麼要拆出第三個值:`--local-only` 走的是 `rev-parse <upstream>`,
+    那是**本機快取**,所以 `pushed` 會是 True 而伺服器從頭到尾沒被問過。
+    舊契約讓這種情況與「遠端真的觀察過」共用同一個 `PASS`,只讀 verdict 的
+    呼叫端分不出兩者,而「記憶離開這台機器了嗎」的答案完全取決於分得出來。
+
+    為什麼 verdict 從 `remote_ref_matches` 推導、不從 `local_only` 這個
+    參數推導:參數說的是「呼叫端要求了什麼」,欄位說的是「實際拿到什麼
+    證據」。這道判定應該只認後者 —— 未來若有別的路徑也拿不到遠端證據,
+    它自動落在 `LOCAL_ONLY_PASS`,不必記得多加一個分支(fail-closed)。
+
+    **verdict 不宣稱跨機器物理耐久性。** 它宣稱的就是上面那三句話。實際
+    證據拆成兩個可複驗的必填欄位:`remote_ref_matches`(伺服器回報的 ref
+    等於本機 HEAD)與 `preflight_not_known_local`(預檢解析到的位址不在
+    **已知的**本機位址集合裡;界線見 `_observe_remote`)。兩者都是必填而
+    不是成功時才附上 —— 選填會讓呼叫端寫 `.get()`,而 `None` 在布林語境
+    下與 `False` 同義,少一個欄位就靜默降級成某一邊。
     """
     from . import identity
     problems = []
@@ -666,15 +701,18 @@ def durable_check(repo_root, store, local_only=False):
     branch = identity._git(repo_root, "symbolic-ref", "--short", "HEAD")
     remote_observed = False
     remote_head = None
+    preflight_not_known_local = False
     if upstream is None:
         problems.append(
             "{0}:這個分支沒有 upstream —— 無法驗證記憶是否離開本機".format(
                 UNPUSHED))
     elif local_only:
-        # 明確要求只驗本機。追蹤 ref 可能是舊的,所以**不聲稱**觀察過遠端。
+        # 明確要求只驗本機。追蹤 ref 可能是舊的,所以**不聲稱**觀察過遠端,
+        # 預檢也根本沒跑 —— 兩個誠實欄位都留在 False。
         remote_head = identity._git(repo_root, "rev-parse", upstream)
     else:
-        remote_head, code, error = _observe_remote(repo_root, branch or "")
+        remote_head, code, error, preflight_not_known_local = _observe_remote(
+            repo_root, branch or "")
         if error:
             problems.append(
                 "{0}:{1} —— 沒有證據就是沒有證據,不得因為問不到而放行"
@@ -715,14 +753,26 @@ def durable_check(repo_root, store, local_only=False):
             "{0}:{1} 個 entity 的現況檔還沒重寫 —— 新的 current truth 還在"
             "本機".format(PENDING_FACT, len(pending_facts)))
 
+    # 遠端 ref 證據:問過伺服器**而且**它回報的 ref 等於本機 HEAD。
+    # `pushed` 單獨不夠 —— local_only 路徑的 remote_head 來自本機追蹤 ref。
+    remote_ref_matches = bool(remote_observed and pushed)
+    if problems:
+        verdict = "FAIL"
+    elif remote_ref_matches:
+        verdict = "PASS"
+    else:
+        verdict = "LOCAL_ONLY_PASS"
+
     return {
-        "verdict": "FAIL" if problems else "PASS",
+        "verdict": verdict,
         "durable_root": rel_root,
         "uncommitted": uncommitted,
         "head": head or "",
         "upstream": upstream or "",
         "remote_head": remote_head or "",
         "remote_observed": remote_observed,
+        "remote_ref_matches": remote_ref_matches,
+        "preflight_not_known_local": bool(preflight_not_known_local),
         "pushed": pushed,
         "open_sessions": open_sessions,
         "pending_revisions": pending_revisions,

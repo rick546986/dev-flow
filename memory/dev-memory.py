@@ -383,10 +383,18 @@ def cmd_durable_check(args):
     同一顆硬碟上一起壞掉。一個具名的非 loopback 主機也不例外——`/etc/hosts`
     或內網 DNS 可以把 `remote.example.test` 重映到 `127.0.0.1` 或這台機器
     自己的另一個介面,所以 URL 形狀過關之後還會再解析主機名、驗位址不是
-    loopback/link-local/本機介面(SSH config 的 Host 別名重映不在偵測範圍
-    內,是已知殘留缺口)。問不到遠端、判不出它在別台機器上、或解析不到
-    主機名的位址,一律 FAIL;離線或刻意只用本機 remote 要放行請明確
-    `--local-only`,那時輸出的 `remote_observed` 是 false。
+    loopback/link-local/本機介面。問不到遠端、判不出它在別台機器上、或解析
+    不到主機名的位址,一律 FAIL;離線或刻意只用本機 remote 要放行請明確
+    `--local-only`。
+
+    verdict 三值:`PASS`(遠端 ref 真的觀察過且等於本機 HEAD)/
+    `LOCAL_ONLY_PASS`(本機檢查都過,但沒有遠端 ref 證據)/ `FAIL`。
+    **退出碼把兩種 pass 都當成 0** —— `--local-only` 是呼叫端明確要求的
+    合法用法,讓它退非零等於逼人忽略退出碼。要區分強弱的呼叫端讀
+    `verdict` 或 `remote_ref_matches`,那才是機器可讀的分辨點;退出碼只有
+    兩個值,承載不了三值語意。**需要強保證的關卡必須讀 verdict 或
+    `remote_ref_matches`,不能只看退出碼**(autoloop 契約 §7 第 6 步的通過
+    集合就只有 `PASS`)。
     """
     root, _project, store, _workspace_id, _snapshot = _resolve(args)
     try:
@@ -395,7 +403,7 @@ def cmd_durable_check(args):
     finally:
         store.close()
     _print(result)
-    return 0 if result["verdict"] == "PASS" else 1
+    return 0 if result["verdict"] in ("PASS", "LOCAL_ONLY_PASS") else 1
 
 
 def cmd_inventory(args):
