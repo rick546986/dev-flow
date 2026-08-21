@@ -168,9 +168,11 @@ class WorktreeStoreIsolationTest(MemoryCase):
         other = os.path.join(self.work, "alt-home")
         self._set_env("AGENTMEM_HOME", other)
         report = setup.run(self.repo, name="demo")
-        self.assertTrue(report["local_db"].startswith(os.path.realpath(other)
-                                                      if os.path.isdir(other)
-                                                      else other))
+        # 兩邊都要 realpath:macOS 的 TMPDIR 走 /var/folders,而 /var 是
+        # /private/var 的 symlink,只正規化其中一邊會永遠不相等(Linux CI 上
+        # /tmp 不是 symlink 所以照樣綠,這種紅只在 macOS 出現)。
+        self.assertTrue(os.path.realpath(report["local_db"]).startswith(
+            os.path.realpath(other)))
         self.assertIn(os.path.join("projects", report["project_id"],
                                    "worktrees"),
                       report["local_db"].replace("\\", "/"))
