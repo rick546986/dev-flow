@@ -224,3 +224,10 @@
 - 落在哪:hooks/selftest.sh(TMPDIR 區塊+w2 兩案+report-guard 兩案,MIN_CASES 398→402)、scripts/devflow-check.sh(TMPDIR 逐字副本)、scripts/test-architecture-guards.sh(check_twin_block 新對帳+靜態釘)、hooks/_report_impl.py、skills/dev-setup/SKILL.md(check 第 13 項)、scripts/check-dev-setup-discipline.sh(紀律⑩,MIN_CHECKS 15→18)、scripts/check-methodology-corrections.sh、scripts/check-realworld.sh、README.md §7 已知限界
 - 詳細:notes/dispatch-windows-parity.md §2.1/§2.2
 
+## 2026-08-20 · agent-memory-v3
+- 做了什麼:把 agent 記憶從人工維護的 Markdown 換成結構化、可 Git 同步的七類記憶(.dev-flow/),並新增本機檢索索引與 LVP 式的現況真相驗證
+- 為什麼:舊載體(CONTEXT.md/HISTORY.md)沒有 identity、沒有狀態、也分不出現況與願景;換一台機器就等於失憶,而且腐化時沒有任何機制會發現
+- 落在哪:memory/(新增)、skills/dev-setup 與 dev-run 與 dev-talk、README §16、scripts/check-memory-architecture.sh、scripts/check-status-policy.sh(W6 順序鏈)、_templates/CONTEXT.md(移除)
+- 另含耐久性屏障:更正在固化成功前不動現況、revision 只有真的寫進 .dev-flow 才標 durable、fact 整檔寫回逐筆過 Signal Gate、Stage 6 收尾補 memory commit 與 durable-check
+- 詳細:長期決策 docs/adr/0003-agent-memory-two-layer-split.md
+

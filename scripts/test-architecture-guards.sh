@@ -132,9 +132,9 @@ RESULTS=()
 # 改法:由 expect()/expect_local() 依 want 實際累計 control 與 negative,尾聲與釘死值比對。
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
-EXPECTED_CONTROLS=13
-EXPECTED_NEGATIVES=70
-EXPECTED_TOTAL=83
+EXPECTED_CONTROLS=14
+EXPECTED_NEGATIVES=104
+EXPECTED_TOTAL=118
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -239,7 +239,7 @@ seed_guard() {
   echo "$dst"
 }
 
-# seed_fm <name> → 同 seed(),另外把 hooks/scripts/observability/agents/
+# seed_fm <name> → 同 seed(),另外把 hooks/scripts/observability/memory/agents/
 # tests/parallel-stage6/ 整包 + guides/guide-dev-flow.html 複製進去,並初始化成
 # 一個真 git repo。
 # 起因:check-file-map.sh 用 `git ls-files --cached --others --exclude-standard` 當
@@ -258,6 +258,7 @@ seed_fm() {
   cp -r "$ROOT/hooks" "$dst/hooks"
   cp -r "$ROOT/scripts" "$dst/scripts"
   cp -r "$ROOT/observability" "$dst/observability"
+  cp -r "$ROOT/memory" "$dst/memory"
   cp -r "$ROOT/agents" "$dst/agents"
   mkdir -p "$dst/tests" "$dst/guides"
   cp -r "$ROOT/tests/parallel-stage6" "$dst/tests/parallel-stage6"
@@ -1223,6 +1224,24 @@ poison.write_text(c + "\n# 測試混入舊路徑(不在 6 個哨兵之列):~/.cl
 PY
 expect_local fail check-no-stale-paths.sh "$D" "SP-9 _ls_files() 的 pathspec 被換成寫死的 6 個哨兵(SENTINELS 剛好全過)+ seed 非哨兵禁字檔(自釘接住,單支腳本靜默綠已修)"
 
+# seed_mem <name> → 給 check-memory-architecture.sh 用的最小 seed:它讀 .gitignore、
+# memory/ 整包、skills/dev-setup/SKILL.md、devflow-contract.json、
+# hooks/runtime-capabilities.json,少任何一樣它會 exit 2(fail-closed),
+# 那會讓 MEM-0 對照組自己變紅而不是測到東西。
+# ⚠️ 守衛以後多讀一個檔,這裡也要跟著補 —— 同 seed_fm 的教訓。
+seed_mem() {
+  local name="${1:?seed_mem: name is empty}"
+  local dst; dst=$(seed "$name")
+  cp -r "$ROOT/memory" "$dst/memory"
+  mkdir -p "$dst/hooks"
+  cp "$ROOT/hooks/runtime-capabilities.json" "$dst/hooks/runtime-capabilities.json"
+  cp "$ROOT/skills/dev-setup/SKILL.md" "$dst/skills/dev-setup/SKILL.md"
+  [ -f "$ROOT/.gitignore" ] && cp "$ROOT/.gitignore" "$dst/.gitignore"
+  cp "$ROOT/scripts/check-memory-architecture.sh" "$dst/scripts/"
+  chmod +x "$dst/scripts/check-memory-architecture.sh"
+  echo "$dst"
+}
+
 # ── FM 群組:檔案地圖雙向盤點守衛(check-file-map.sh)────────────────────────
 #
 # guides/guide-dev-flow.html「附錄:檔案地圖」節是手寫表,手寫表必腐化。這一組證明
@@ -1436,6 +1455,535 @@ D=$(seed_guard mt2 check-model-tiering.sh)
 cp -r "$ROOT/scripts/fixtures/model-tiering/bad-skip-level" "$D/external-runs"
 expect_local_arg fail check-model-tiering.sh "$D" "$D/external-runs" "MT-2 把 bad-skip-level 當外部真實 runs 根,以 CLI 參數餵給守衛複本的正常模式(跳級紅路徑同樣不只活在自測模式內)"
 
+# ── MEM 群組:Agent Memory 架構不變量(check-memory-architecture.sh)────────────
+#
+# memory 的核心分界全是散文規則,退回時所有既有檢查照樣全綠。這一組證明守衛真的
+# 抓得到六種退回,而不是在對照組上空轉:
+#   MEM-1 把 `.dev-flow/` 也塞進 .gitignore(durable memory 從此完全同步不到)
+#   MEM-2 讓失效掃描去碰 knowledge(§10:改一支不相關的檔就讓業務規則變不可信)
+#   MEM-3 把 domain 的權威改成程式碼推論贏過 domain expert(全域 code > everything)
+#   MEM-4 CLI 長出 init 子指令(第二個安裝器)
+#   MEM-5 把帶內容的線索「怎麼部署」塞進剝除清單(「怎麼部署?」從此查不到)
+#   MEM-6 評測資料集把中文題全部拿掉(中文檢索退步不會現形)
+#   MEM-7 契約檔拿掉 NEEDS_VERIFICATION(STALE 又能以 OK 蒙混)
+#   MEM-8 拿掉 status 嚴重度排序(多筆結果無法收斂成最嚴重的)
+#   MEM-9  correct() 退回成「固化前就 supersede」(更正失敗時舊值連帶消失)
+#   MEM-10 revision 的 mark_durable 挪到寫檔之前(寫檔失敗仍宣稱已耐久)
+#   MEM-11 拿掉 durable_check(「記憶真的離開這台機器了嗎」無從複驗)
+#   MEM-12 fact 整檔寫回不過 Signal Gate(secret 隨乾淨候選一起進 Git)
+#   MEM-13 fact 候選在 durable 寫入前就結案(寫檔失敗後重跑補不回來)
+#   MEM-14 event 在寫進 .dev-flow 之前就標 durable(false durability claim)
+#   MEM-15 checkpoint 拿掉 require_open(ABORTED 的一輪仍能固化候選)
+#   MEM-16 end_session 退回無條件 UPDATE(ABORTED 被覆寫成 CLOSED)
+D=$(seed_mem mem0)
+expect_local pass check-memory-architecture.sh "$D" "MEM-0 對照組(memory 架構不變量齊)"
+
+D=$(seed_mem mem1); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / ".gitignore"
+p.write_text(p.read_text(encoding="utf-8") + ".dev-flow/\n", encoding="utf-8")
+PY
+expect_local fail check-memory-architecture.sh "$D" "MEM-1 .gitignore 把 .dev-flow/ 也忽略掉(durable memory 不進 Git)"
+
+D=$(seed_mem mem2); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/truth.py"
+t = p.read_text(encoding="utf-8")
+marker = "    touched = []\n"
+assert marker in t, "MEM-2 anchor 不見"
+n = t.replace(marker, marker + "    for row in store.knowledge(limit=10):\n"
+                               "        store.set_overlay(row[\"knowledge_id\"], workspace_id,\n"
+                               "                          STALE, \"leak\")\n", 1)
+assert n != t, "MEM-2 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-memory-architecture.sh "$D" "MEM-2 失效掃描去碰 knowledge(domain truth 被檔案指紋規則牽連)"
+
+D=$(seed_mem mem3); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/truth.py"
+t = p.read_text(encoding="utf-8")
+old = '"domain_expert": 100, "user_confirmed": 95, "business_requirement": 90,'
+assert old in t, "MEM-3 anchor 不見"
+n = t.replace(old, '"domain_expert": 10, "user_confirmed": 95, "business_requirement": 90,', 1)
+assert n != t, "MEM-3 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-memory-architecture.sh "$D" "MEM-3 domain 權威改成程式碼推論贏(全域 code > everything)"
+
+D=$(seed_mem mem4); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/dev-memory.py"
+t = p.read_text(encoding="utf-8")
+old = '    sub.add_parser("doctor").set_defaults(func=cmd_doctor)'
+assert old in t, "MEM-4 anchor 不見"
+n = t.replace(old, '    sub.add_parser("init").set_defaults(func=cmd_setup)\n' + old, 1)
+assert n != t, "MEM-4 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-memory-architecture.sh "$D" "MEM-4 CLI 長出 init 子指令(第二個安裝器)"
+
+D=$(seed_mem mem5); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/cues.py"
+t = p.read_text(encoding="utf-8")
+old = '    r"怎麼做", r"如何", r"\\bhow (?:to|do)\\b",'
+assert old in t, "MEM-5 anchor 不見"
+n = t.replace(old, '    r"怎麼做", r"如何", r"怎麼部署", r"\\bhow (?:to|do)\\b",', 1)
+assert n != t, "MEM-5 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-memory-architecture.sh "$D" "MEM-5 帶內容的線索進了剝除清單(「怎麼部署?」查不到)"
+
+D=$(seed_mem mem6); mutate "$D" <<'PY'
+import json, sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/fixtures/eval/dataset.json"
+d = json.loads(p.read_text(encoding="utf-8"))
+d["cases"] = [c for c in d["cases"] if c.get("language") != "zh"]
+assert d["cases"], "MEM-6 mutation 把案例清空了"
+p.write_text(json.dumps(d, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+PY
+expect_local fail check-memory-architecture.sh "$D" "MEM-6 評測資料集拿掉中文題(中文檢索退步不會現形)"
+
+D=$(seed_mem mem7); mutate "$D" <<'PY'
+import json, sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "devflow-contract.json"
+d = json.loads(p.read_text(encoding="utf-8"))
+values = d["memory"]["retrieval_status_values"]
+assert "NEEDS_VERIFICATION" in values, "MEM-7 anchor 不見"
+d["memory"]["retrieval_status_values"] = [v for v in values
+                                          if v != "NEEDS_VERIFICATION"]
+p.write_text(json.dumps(d, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+PY
+expect_local fail check-memory-architecture.sh "$D" "MEM-7 契約檔拿掉 NEEDS_VERIFICATION(STALE 又能以 OK 蒙混)"
+
+D=$(seed_mem mem8); mutate "$D" <<'PY'
+import re, sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/query.py"
+t = p.read_text(encoding="utf-8")
+n = re.sub(r"^_SEVERITY\s*=\s*\{", "_SEVERITY_DISABLED = {", t, count=1, flags=re.M)
+assert n != t, "MEM-8 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-memory-architecture.sh "$D" "MEM-8 拿掉 status 嚴重度排序(多筆結果無法收斂成最嚴重的)"
+
+D=$(seed_mem mem9); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/devtalk.py"
+t = p.read_text(encoding="utf-8")
+anchor = '        payload["_lineage_reason"] = reason\n'
+assert anchor in t, "MEM-9 anchor 不見"
+# 把「固化成功前就把舊值標 SUPERSEDED」種回去 —— 這就是被修掉的那個缺陷本體
+injected = (
+    '        store.upsert_knowledge({\n'
+    '            "knowledge_id": previous["knowledge_id"], "kind": kind,\n'
+    '            "key": key, "title": previous["title"],\n'
+    '            "body": previous["body"],\n'
+    '            "authority": previous["authority"], "status": "SUPERSEDED",\n'
+    '            "confidence": previous["confidence"],\n'
+    '            "recorded_at": previous["recorded_at"],\n'
+    '            "superseded_at": now, "evidence": [], "conflicts": [],\n'
+    '            "implemented": None,\n'
+    '            "durable": bool(previous["durable"])})\n')
+p.write_text(t.replace(anchor, anchor + injected, 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-9 correct() 在固化成功前就 supersede 舊值(更正失敗時兩邊都沒有現況)"
+
+D=$(seed_mem mem10); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+i_write = t.find("durable.append_events(")
+i_mark = t.find("lineage.mark_durable(")
+assert 0 <= i_write < i_mark, "MEM-10 anchor 順序不符(正向早已紅)"
+# 只搬 mark_durable 那一行到 append_events 之前:內容都在,唯一的錯是順序
+line_start = t.rfind("\n", 0, i_mark) + 1
+line_end = t.find("\n", i_mark) + 1
+moved = t[line_start:line_end]
+t = t[:line_start] + t[line_end:]
+i_write = t.find("durable.append_events(")
+ins = t.rfind("\n", 0, i_write) + 1
+p.write_text(t[:ins] + moved + t[ins:], encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-10 revision 的 mark_durable 挪到寫檔之前(寫檔失敗仍宣稱已耐久)"
+
+D=$(seed_mem mem11); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+assert "durable_check" in t, "MEM-11 anchor 不見"
+p.write_text(t.replace("durable_check", "_unused_check"), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-11 拿掉 durable_check(收尾無從複驗記憶是否真的離開本機)"
+
+D=$(seed_mem mem12); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+i = t.find("def promote_entity_facts(")
+j = t.find("\ndef ", i + 1)
+assert i >= 0 and j > i, "MEM-12 anchor 不見"
+body = t[i:j]
+assert "signal.gate(" in body, "MEM-12 anchor:promote_entity_facts 本來就沒 gate"
+# 只把整檔寫回的那道 gate 拔掉(其餘 gate 原封不動)—— 這正是被修掉的洩漏路徑
+p.write_text(t[:i] + body.replace("signal.gate(", "_no_gate(", 1) + t[j:],
+             encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-12 fact 整檔寫回不過 Signal Gate(同 entity 的未檢查鄰居隨乾淨候選進 Git)"
+
+D=$(seed_mem mem13); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = "            fact_candidates.setdefault(\n"
+assert anchor in t, "MEM-13 anchor 不見"
+# 把 fact 候選在 durable 寫入**之前**就結案(其餘完全不動)——
+# 這正是被修掉的缺陷:write_state 失敗後重跑再也看不到這筆候選。
+injected = ('            store.set_candidate_status(\n'
+            '                candidate["candidate_id"], "CONSOLIDATED", now=now)\n')
+p.write_text(t.replace(anchor, injected + anchor, 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-13 fact 候選在 durable 寫入前就結案(寫檔失敗後重跑補不回來)"
+
+D=$(seed_mem mem14); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+# 限定在 consolidate 窗口內:rebuild_local 也有 store.add_event(,
+# 拿全檔第一個位置比會永遠不成立。
+i_cons = t.find("def consolidate(")
+assert i_cons >= 0, "MEM-14 anchor:找不到 consolidate"
+i_add = t.find("store.add_event(", i_cons)
+i_append = t.find("durable.append_events(", i_cons)
+assert 0 <= i_append < i_add, "MEM-14 anchor 順序不符(正向早已紅)"
+anchor = "            event_candidates.append((candidate[\"candidate_id\"], {\n"
+assert anchor in t, "MEM-14 anchor 不見"
+# local 事件在 append_events 之前就被標 durable=1 —— 一句沒有憑據的「已耐久」
+injected = ('            store.add_event(\n'
+            '                payload.get("kind", "important_discovery"), title, body,\n'
+            '                session_id=candidate["session_id"], signal=signal.HIGH,\n'
+            '                durable=True, event_id=event_id)\n')
+p.write_text(t.replace(anchor, injected + anchor, 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-14 event 在寫進 .dev-flow 之前就標 durable(false durability claim)"
+
+D=$(seed_mem mem15); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/session.py"
+t = p.read_text(encoding="utf-8")
+i = t.find("def checkpoint(")
+j = t.find("\ndef ", i + 1)
+assert i >= 0 and j > i, "MEM-15 anchor 不見"
+body = t[i:j]
+assert "require_open(" in body, "MEM-15 anchor:checkpoint 本來就沒 require_open"
+# 只拔掉 checkpoint 的 fail-closed 檢查(observe 的那道原封不動)
+p.write_text(t[:i] + body.replace("    require_open(store, session_id)\n", "", 1)
+             + t[j:], encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-15 checkpoint 拿掉 require_open(ABORTED 的一輪仍能把候選寫進 Git)"
+
+D=$(seed_mem mem16); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/store.py"
+t = p.read_text(encoding="utf-8")
+anchor = "                \" WHERE session_id=? AND status='OPEN'\",\n"
+assert anchor in t, "MEM-16 anchor 不見"
+# 退回無條件 UPDATE:abort 之後的 end 會把 ABORTED 覆寫成 CLOSED
+p.write_text(t.replace(anchor, '                " WHERE session_id=?",\n', 1),
+             encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-16 end_session 退回無條件 UPDATE(ABORTED 被覆寫成 CLOSED)"
+
+D=$(seed_mem mem17); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/durable.py"
+t = p.read_text(encoding="utf-8")
+anchor = '    for path, text in plans:\n        _atomic_write(path, text)'
+assert anchor in t, "MEM-17 anchor 不見"
+# 退回 append 模式:同一個 event_id 重跑會變成第二行(JSONL 不是 keyed
+# storage),而 durable 寫入成功、local 狀態還沒前進那個視窗消不掉。
+p.write_text(t.replace(
+    anchor,
+    '    for path, text in plans:\n        open(path, "a").write(text)', 1),
+    encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-17 event append 退回 append 模式(重跑把同一筆寫成第二行)"
+
+D=$(seed_mem mem18); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = ('        record.setdefault("event_id",\n'
+          '                          _derived_id("event", row["revision_id"]))')
+assert anchor in t, "MEM-18 anchor 不見"
+# 退回隨機 id:去重的依據是 event_id,隨機 id 讓去重永遠對不上 ——
+# 同一次 supersede 會在 events/ 累積成 N 筆,每筆都聲稱是它。
+p.write_text(t.replace(
+    anchor, '        record.setdefault("event_id", ids.new_id("event"))', 1),
+    encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-18 revision event_id 退回隨機(重跑補寫成第二筆,去重對不上)"
+
+D=$(seed_mem mem19); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = ('    entities_touched.update(\n'
+          '        store.entities_pending_durable(sorted(_FACT_STATUS_DURABLE)))')
+assert anchor in t, "MEM-19 anchor 不見"
+# 只讓候選碰到的 entity 被重寫:`verify --observed` 不建候選,於是它產生的
+# 新 current truth 永遠不會離開這台機器,而 local 說它 VERIFIED。
+p.write_text(t.replace(anchor, "    pass", 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-19 consolidate 只重寫候選碰到的 entity(reverify 的新現況留在本機)"
+
+D=$(seed_mem mem20); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = ('    pending_facts = store.entities_pending_durable(\n'
+          '        sorted(_FACT_STATUS_DURABLE))')
+assert anchor in t, "MEM-20 anchor 不見"
+# durable-check 只報「歷史沒落地」:於是「revision 寫成功、現況檔沒重寫」
+# 會判 PASS —— 後者變成靜默的。
+p.write_text(t.replace(anchor, "    pending_facts = []", 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-20 durable-check 漏掉現況沒落地(只報歷史,現況靜默)"
+
+D=$(seed_mem mem21); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/truth.py"
+t = p.read_text(encoding="utf-8")
+anchor = "    if changed or dirty or unproven:"
+assert anchor in t, "MEM-21 anchor 不見"
+# 把解析不完整那一項從 STALE 判斷式裡拿掉:git status 有讀不懂的欄位時
+# dirty 清單不完整,而沒有指紋可比的依賴只剩 dirty 能證明它乾淨 ——
+# 判斷式少了它就仍然回 OK fast path。
+p.write_text(t.replace(anchor, "    if changed or dirty:", 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-21 解析不完整不進 STALE 判斷(unknown workspace 仍回 OK fast path)"
+
+D=$(seed_mem mem22); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = ('    facts = store.facts(entity_type=entity_type, entity_key=entity_key,\n'
+          '                        statuses=sorted(_FACT_STATUS_DURABLE), limit=None)')
+assert anchor in t, "MEM-22 anchor 不見"
+# 把筆數視窗放回去:整檔取代會把視窗外的 fact 從 `.dev-flow/` 刪掉,而它們
+# 在 local 仍標 durable=1 —— durable-check 判 PASS 在不完整的鏡射上。
+p.write_text(t.replace(
+    anchor,
+    '    facts = [f for f in store.facts(entity_type=entity_type,\n'
+    '                                    entity_key=entity_key, limit=1000)\n'
+    '             if f["status"] in _FACT_STATUS_DURABLE]', 1),
+    encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-22 durable 現況檔整檔取代時設筆數視窗(視窗外的現行 fact 被刪掉)"
+
+D=$(seed_mem mem23); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/durable.py"
+t = p.read_text(encoding="utf-8")
+anchor = '                if seen[event_id] != line:'
+assert anchor in t, "MEM-23 anchor 不見"
+# 撞號退回靜默跳過:同 id 不同內容時第二筆永遠不存在,而呼叫端拿到成功。
+i = t.find(anchor)
+j = t.find("                continue", i)
+assert j > i, "MEM-23 window 不見"
+p.write_text(t[:i] + t[j:], encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-23 event 撞號退回靜默跳過(同 id 不同內容的第二筆永遠不存在)"
+
+D=$(seed_mem mem24); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = ('        remote_head, code, error, preflight_not_known_local = '
+          '_observe_remote(\n            repo_root, branch or "")')
+assert anchor in t, "MEM-24 anchor 不見"
+# 退回本機追蹤 ref:別台機器改掉遠端之後它還指著我的 commit,於是這一關
+# 會替一個伺服器上已經不存在的 commit 背書。
+p.write_text(t.replace(
+    anchor,
+    '        remote_head, code, error, preflight_not_known_local = (\n'
+    '            identity._git(repo_root, "rev-parse", upstream),\n'
+    '            None, None, True)', 1),
+    encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-24 durable-check 退回本機追蹤 ref(遠端被改掉仍判 PASS)"
+
+D=$(seed_mem mem24b); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = '''    if problems:
+        verdict = "FAIL"
+    elif remote_ref_matches:
+        verdict = "PASS"
+    else:
+        verdict = "LOCAL_ONLY_PASS"'''
+assert anchor in t, "MEM-24b anchor 不見"
+# 把三值壓回兩值:--local-only(走本機追蹤 ref,伺服器從沒被問過)與真的
+# 觀察過遠端共用同一個 PASS,只讀 verdict 的呼叫端因此分不出兩者。
+p.write_text(t.replace(anchor, '''    if problems:
+        verdict = "FAIL"
+    else:
+        verdict = "PASS"''', 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-24b durable-check verdict 把 local-only 壓回一般 PASS(呼叫端分不出強弱)"
+
+D=$(seed_mem mem24c); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = "    elif remote_ref_matches:"
+assert anchor in t, "MEM-24c anchor 不見"
+# LOCAL_ONLY_PASS 這個字串留著,但 PASS 改由呼叫端傳進來的旗標決定 ——
+# remote_ref_matches 退化成只是附註的死碼(守衛不能被自己要檢查的字串餵飽)。
+p.write_text(t.replace(anchor, "    elif not local_only:", 1),
+             encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-24c durable-check 的 PASS 改由 local_only 旗標決定(誠實欄位變死碼)"
+
+D=$(seed_mem mem24d); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = ('        "remote_ref_matches": remote_ref_matches,\n'
+          '        "preflight_not_known_local": '
+          'bool(preflight_not_known_local),\n')
+assert anchor in t, "MEM-24d anchor 不見"
+# 兩個誠實欄位從回傳 dict 拿掉:呼叫端只能 .get(),而 None 在布林語境下
+# 與 False 同義 —— 少一個欄位會靜默降級成某一邊,取決於呼叫端怎麼寫。
+p.write_text(t.replace(anchor, "", 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-24d durable-check 的誠實欄位從必填降成缺席(呼叫端靜默降級)"
+
+D=$(seed_mem mem25); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = "    if not identity.remote_is_offmachine(url):"
+assert anchor in t, "MEM-25 anchor 不見"
+# 拿掉「remote 在別台機器上嗎」這一問:本機 bare repo / file:// / localhost
+# 都會讓 ls-remote 回報正確的 SHA,於是判 PASS 而記憶跟工作樹在同一顆硬碟上。
+i = t.find(anchor)
+j = t.find("    raw = identity._git_raw(", i)
+assert j > i, "MEM-25 window 不見"
+p.write_text(t[:i] + t[j:], encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-25 durable-check 收本機 remote 當離開本機的證據"
+
+D=$(seed_mem mem26); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/query.py"
+t = p.read_text(encoding="utf-8")
+anchor = '        row = store.decision_row(hit["item_id"])'
+assert anchor in t, "MEM-26 anchor 不見"
+# 退回「掃最近 200 筆找已知主鍵」:命中視窗外的 decision 時 reason 撈不到,
+# 而 _why 仍然把它算成 decision、仍然回 OK。
+p.write_text(t.replace(
+    anchor,
+    '        row = next((d for d in store.decisions(limit=200)\n'
+    '                    if d["decision_id"] == hit["item_id"]), None)', 1),
+    encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-26 WHY 用「最近 N 筆」撈已知主鍵(視窗外的 reason 撈不到仍回 OK)"
+
+D=$(seed_mem mem27); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = "    host = identity._parse_host(url)"
+assert anchor in t, "MEM-27 anchor 不見"
+# 拿掉「host 解析後的位址是不是這台機器自己」這一問:URL 形狀判定過關的
+# remote(remote_is_offmachine 只看字面 host)可能被 /etc/hosts 或內網 DNS
+# 重映到 127.0.0.1 或這台機器自己的介面,ls-remote 一樣回報正確的 SHA。
+i = t.find(anchor)
+j = t.find("    raw = identity._git_raw(", i)
+assert j > i, "MEM-27 window 不見"
+p.write_text(t[:i] + t[j:], encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-27 durable-check 沒有解析 remote 主機名的實際位址(具名主機重映到本機仍判 PASS)"
+
+D=$(seed_mem mem28); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/store.py"
+t = p.read_text(encoding="utf-8")
+anchor = '''def db_path(project_id, worktree_key):
+    return os.path.join(project_home(project_id), WORKTREE_DIR,
+                        _require_worktree_key(worktree_key), DB_NAME)'''
+assert anchor in t, "MEM-28 anchor 不見"
+# 簽名還收 worktree_key,路徑卻退回專案級共用檔:兩個 worktree 再次寫進
+# 同一份 memory.db,而呼叫端看起來已經「傳了 worktree」。
+p.write_text(t.replace(
+    anchor,
+    "def db_path(project_id, worktree_key):\n"
+    "    return os.path.join(project_home(project_id), DB_NAME)", 1),
+    encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-28 db_path 收下 worktree_key 卻仍指向專案級共用檔"
+
+D=$(seed_mem mem28b); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/store.py"
+t = p.read_text(encoding="utf-8")
+anchor = '''        if path is None:
+            if worktree_key is None:
+                raise ValueError(
+                    "Store.open 必須給 worktree_key 或 path——"
+                    "只給 project_id 會讓兩個 worktree 共用同一份可變 SQLite")
+            target = db_path(project_id, worktree_key)
+        else:
+            target = path'''
+assert anchor in t, "MEM-28b anchor 不見"
+# 缺 worktree_key 時退回舊的專案級路徑:一個忘記改的呼叫點就讓隔離失效。
+p.write_text(t.replace(
+    anchor,
+    "        if path is None:\n"
+    "            target = legacy_shared_db_path(project_id)\n"
+    "        else:\n"
+    "            target = path", 1),
+    encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-28b Store.open 缺 worktree_key 時退回專案級共用檔"
+
+D=$(seed_mem mem29); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/query.py"
+t = p.read_text(encoding="utf-8")
+anchor = '''    if extra:
+        payload.update(extra)
+    # D-4:必填。extra 可以填內容,但不能讓欄位缺席或變成 None ——
+    # 呼叫端寫 .get() 時 None 與「空」同義,少一個欄位就靜默降級。
+    if "per_coordinate" not in payload or payload["per_coordinate"] is None:
+        payload["per_coordinate"] = []
+    return payload'''
+assert anchor in t, "MEM-29 anchor 不見"
+# 拿掉 extra merge 之後的必填回填:欄位變成 extra 高興才附上,
+# 呼叫端只能 .get(),None 與空同義。
+p.write_text(t.replace(
+    anchor,
+    "    if extra:\n"
+    "        payload.update(extra)\n"
+    "    return payload", 1),
+    encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-29 envelope 拿掉必填 per_coordinate(呼叫端只能 .get())"
+
+D=$(seed_mem mem29b); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/query.py"
+t = p.read_text(encoding="utf-8")
+anchor = "    coords = _per_coordinate(resolved)"
+assert anchor in t, "MEM-29b anchor 不見"
+# 函式還在、字串還在,但 CURRENT 改寫死空列表 —— 守衛不能被自己要
+# 檢查的那個字串餵飽。entity-only 聚合降級時明細消失。
+p.write_text(t.replace(anchor, "    coords = []", 1), encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-29b CURRENT 的 per_coordinate 寫死空列表(_per_coordinate 變死碼)"
+
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
 echo
@@ -1447,6 +1995,7 @@ if [ "$FP_BEFORE" != "$FP_AFTER" ]; then
 fi
 echo "  ✓ 正式 repo 指紋未變($FP_BEFORE)—— working tree 零污染"
 echo
+
 
 # ── 靜態互釘:五支散落地板 + check-gate-twin.sh 的群組數釘(HIGH,獨立審查
 # 2026-08-16 finding 4;check-file-map.sh 的 MIN_CHECKS 為第五支,補上是本節
@@ -1544,8 +2093,8 @@ check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "E
 check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 18" "MIN_CHECKS 釘死 18(A-2/B-5 輪:②改 scoped 拆 3 條 + ⑦⑧⑨ 新增 → 15;2026-08-20 ⑩check 段散發副本 parity map-driven 拆 3 條 → 18)"
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 138" "MIN_CHECKS 釘死 138(X-3 補群組數釘之後的實得數)"
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 41" "MIN_CHECKS 釘死 41(反證輪 E-1:再加 M-f~M-h 五個(mutant,子案)配對後的實得數)"
-check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 32" "MIN_CHECKS 釘死 32(commit-landing 輪 F-1-e:POINTS 補「窗口最短」+ 負向⑱⑲ 兩份頂註各一後的實得數)"
-check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 84" "EXPECTED_MAPPED_FILES 釘死 84(精確值,不是地板;2026-08-19 新增 check-py-floor.sh 後的實得數)"
+check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 35" "MIN_CHECKS 釘死 35(durability-barrier 輪:W6 耐久性鏈的負向⑳㉑㉒ 三案後的實得數)"
+check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 135" "EXPECTED_MAPPED_FILES 釘死 135(精確值,不是地板;2026-08-21 D-1 加 test_worktree_store.py 後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 24" "EXPECTED_GROUPS 釘死 24(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的

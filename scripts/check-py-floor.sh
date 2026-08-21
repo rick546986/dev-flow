@@ -41,7 +41,8 @@ PY_FLOOR = (3, 9)
 # 全部收:hooks/ 與 docs/dev/tools/ 是採用專案真的會跑的;scripts/ 與 observability/
 # 雖然只在母版跑,但同一個寫法在這裡出現過就會被抄到會散發的檔案裡(2026-08-19 實際
 # 就是 scripts/ 與 docs/dev/tools/ 各一份同時中),所以一起釘。
-PATTERNS = ["hooks/*.py", "scripts/*.py", "observability/*.py", "docs/dev/tools/*.py"]
+PATTERNS = ["hooks/*.py", "scripts/*.py", "observability/*.py",
+            "memory/*.py", "docs/dev/tools/*.py"]
 out = subprocess.run(
     ["git", "ls-files", "--cached", "--others", "--exclude-standard", *PATTERNS],
     cwd=root, capture_output=True, text=True)

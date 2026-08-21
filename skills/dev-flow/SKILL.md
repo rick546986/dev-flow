@@ -11,7 +11,8 @@ description: 開發流程 SOP 的唯一對外入口(7 階段路由器,SDD 為主
 ## 0. 定位與自動路由
 讀專案 `docs/dev/STATUS.md` + feature 資料夾各檔 frontmatter → 判斷目前 stage 與 lane。
 專案沒有 `docs/dev/` → 初始化:複製方法論 `README.md`、`_templates/` 進 `docs/dev/`,
-從 `_templates/STATUS.md` 建 STATUS,repo root 沒 `CONTEXT.md` 則從模板建。
+從 `_templates/STATUS.md` 建 STATUS。**業務語言不再靠 repo root 的 `CONTEXT.md`**——
+已確認的語意住可 Git 同步的長期記憶,由 dev-setup 建置、`dev-memory.py ask` 查詢。
 
 **定位後直接接手該 stage 的動作,不要求使用者記第二個指令**:
 - stage 1~5、7 → 按 §2 表執行對應階段。
@@ -46,7 +47,7 @@ gate 條件唯一正本 = 母版 README §7;本表 gate 欄是摘要,衝突以 �
 
 ## 3. 鐵則
 - **資訊圍欄**(anti-premature-convergence):①討論全盲下游(/dev-talk 不知有後續)。
-  ②實作者只准讀 `4-spec`+`5-tasks`+`6-notes`+`CONTEXT.md`+living spec,**禁讀 1/2/3**;
+  ②實作者只准讀 `4-spec`+`5-tasks`+`6-notes`+長期記憶查詢結果+living spec,**禁讀 1/2/3**;
   需要翻討論記錄才寫得出來 = spec 不完整 → 停,回 G2 補 spec。③reviewer 先自建
   coverage matrix,才准看 6 的 Self-Review(防錨定)。④任何派工 context(含 Task
   Context Packet)**禁塞完整訪談逐字稿**;操作脈絡只帶 4-spec Operational Context

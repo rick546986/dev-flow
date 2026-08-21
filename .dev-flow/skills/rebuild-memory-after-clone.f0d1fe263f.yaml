@@ -1,0 +1,14 @@
+# F. PROCEDURAL SKILL —— 怎麼做某件事(deploy/debug/migration/release)。
+schema_version: 1
+key: rebuild-memory-after-clone
+title: "clone 到新機器後怎麼讓記憶可用"
+status: VERIFIED
+preconditions: "python3 >= 3.9;.dev-flow/ 已隨 repo 一起 clone 下來"
+verification: "doctor verdict 非 FAIL,且 ask 一個已知問題回 OK 而不是 NO_RELIABLE_MATCH"
+steps:
+  - "git clone"
+  - "在 repo 內打 dev-setup(唯一入口)"
+  - "確認輸出的 project_id 與其他機器相同"
+  - "dev-memory.py doctor 看 verdict"
+  - "dev-memory.py ask 試一個已知問題"
+recorded_at: "2026-08-20T10:12:06Z"

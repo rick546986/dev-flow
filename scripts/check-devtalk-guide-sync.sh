@@ -89,15 +89,28 @@ guide_text = open(GUIDE_PATH, encoding="utf-8").read()
 # ─────────────────────────── 正規化(assertion A 共用)───────────────────────
 def normalize_skill(text):
     """去 markdown 強調記號(**粗體**/`code`/_斜體_)再去全部空白。
-    只認這三種記號,理由見頂註——SKILL.md 全文檢查過,`_..._` 僅出現一次
-    (_Avoid_),沒有其他合法底線用途會被誤傷;若未來 SKILL.md 新增底線用法
-    (例如檔名內底線),這條正規化規則需要一併檢視,不是本檢查的隱藏假設。
+
+    **強調記號只在 code span 之外剝除。** 舊版對全文一律套 `_([^_]+)_`,
+    於是 `$MEMORY_SESSION_ID` 這種**識別字內的底線**會被當成斜體記號吃掉,
+    變成 `$MEMORYSESSIONID`;guide 那側是真 HTML、底線原樣保留,兩側就永遠
+    對不上 —— 而它報出來的是「錯引正本」,把人指向錯誤的修法(改 guide),
+    實際上 guide 是對的。舊版 docstring 已經預告過這個假設:
+    「若未來 SKILL.md 新增底線用法(例如檔名內底線),這條正規化規則需要一併
+    檢視」—— 2026-08-20 dev-talk 引入 `$MEMORY_SESSION_ID` 後就到了那一天。
+
+    做法:先按 backtick 切段,奇數段是 code span(內容逐字保留、只去掉
+    backtick 本身),偶數段才套強調記號剝除。
     """
-    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text, flags=re.DOTALL)
-    text = re.sub(r"`([^`]*)`", r"\1", text)
-    text = re.sub(r"_([^_]+)_", r"\1", text)
-    text = re.sub(r"\s+", "", text)
-    return text
+    segments = text.split("`")
+    out = []
+    for index, segment in enumerate(segments):
+        if index % 2 == 1:                      # code span:內容逐字保留
+            out.append(segment)
+            continue
+        segment = re.sub(r"\*\*(.+?)\*\*", r"\1", segment, flags=re.DOTALL)
+        segment = re.sub(r"_([^_]+)_", r"\1", segment)
+        out.append(segment)
+    return re.sub(r"\s+", "", "".join(out))
 
 
 def normalize_guide_fragment(frag):

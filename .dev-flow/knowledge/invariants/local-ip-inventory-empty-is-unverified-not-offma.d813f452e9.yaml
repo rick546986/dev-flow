@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: local-ip-inventory-empty-is-unverified-not-offmachine
+title: "本機介面位址列表拿不到,不是離開這台機器的證據"
+authority: domain_expert
+status: CONFIRMED
+confidence: 0.85
+body: "ip_is_offmachine(ip) 在 local_ips=None 時會現查 _local_machine_ips()。那支是 best-effort(gethostname 解析 + UDP connect 讀 getsockname,兩者都不送封包),任何一步失敗就跳過而不是報錯,失敗到底時回空 frozenset()。舊實作把這個空集合直接丟給 ip_is_offmachine 比對——raw_ip not in frozenset() 恆真,於是任何非 loopback/link-local/unspecified 的位址(包括這台機器自己一個沒被探測到的介面)都被判成離開這台機器,durable-check 因此可以在完全沒有本機介面證據的情況下 PASS。修法:sync._observe_remote() 現在明確先查一次 _local_machine_ips(),空集合本身就 fail closed 到 REMOTE_UNVERIFIED,不當成『這台機器沒有任何位址』的正常結果去比對。空集合代表探測全部失敗,不代表機器沒有位址——這兩者不可混淆。"
+recorded_at: "2026-08-20T22:07:06Z"

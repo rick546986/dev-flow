@@ -112,6 +112,39 @@ P0,D-4 是 P1 且有明確的非破壞性做法,不急。
 
 ---
 
+## 2026-08-22 · 常駐限制:這個迴圈看不到 macOS
+
+**不是 finding,是一條 agent 必須知道的執行環境事實。**
+
+autoloop 跑在 Linux 容器,GPT 不跑測試,所以**只在 macOS 出現的紅色永遠不會被
+這個迴圈發現**。CI 也是 Linux,同樣看不到。這一段唯一的偵測者是 owner 在本機跑
+§5,而那不是每輪都會發生。
+
+**已實際踩到一次(2026-08-22)**:`memory/tests/test_worktree_store.py`
+`test_agentmem_home_still_owns_the_layout` 對期望值做了 `realpath`、對實際值沒做。
+macOS 的 `TMPDIR` 在 `/var/folders/…`,而 `/var` 是 `/private/var` 的 symlink,
+兩邊永遠不相等;Linux 的 `/tmp` 不是 symlink,所以 CI 一路綠。D-1 那一輪因此帶著
+一個 macOS 專屬的紅進到 PR,連跑四輪、GPT 標了 READY FOR MERGE 都沒人發現,
+最後是 owner 合併前在 macOS 上跑 §5 才抓到。
+
+**因此,寫測試時**:
+
+1. **凡是比對路徑,兩邊都要 `os.path.realpath()`。** 只正規化一邊等於假設
+   `TMPDIR` 不是 symlink,那個假設在 macOS 上是錯的。
+   `test_worktree_store.py` 自己第 43-44、151-152 行本來就是對的寫法,
+   出事的那一行是漏寫,不是刻意。
+2. **不要在測試裡比對路徑字串的字面形式**,除非那正是被測的行為。要斷言的
+   通常是「前綴關係」或「兩者不同」,不是「長得一模一樣」。
+3. 這條紀律在 shell 那側早就存在(`hooks/selftest.sh` 與
+   `scripts/devflow-check.sh` 的「TMPDIR 跨平台正規化」雙胞胎區塊,由
+   `scripts/test-architecture-guards.sh` 釘住)。Python 這側目前**沒有**
+   對應的守衛,所以只能靠紀律。
+
+**驗證五律的推論**:接續紀錄裡的「§5 十項全綠」只證明**在 Linux 上**全綠。
+不要把它寫成或讀成「跨平台全綠」—— 那又是一次宣稱比證據強。
+
+---
+
 ## 2026-08-21 · 契約本身的四處修正
 
 這四條不是 finding 裁決,是契約條文的修正,已直接寫進

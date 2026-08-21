@@ -1,0 +1,12 @@
+# F. PROCEDURAL SKILL —— 怎麼做某件事(deploy/debug/migration/release)。
+schema_version: 1
+key: verify-py-floor-with-a-downloaded-interpreter
+title: "check-py-floor.sh 在只有新版 Python 的容器裡怎麼真的驗到宣告下限"
+status: VERIFIED
+verification: "2026-08-21 實跑:88 個 .py 在真的 Python 3.9.25 下皆可解析,輸出沒有「這一輪沒有真的驗到 3.9」那段警告。在此之前每一輪都只驗到 3.11 或直接 exit 2。"
+steps:
+  - "pip install uv"
+  - "uv python install 3.9(下載 standalone build,約 27MB,不動系統 Python)"
+  - "export DEVFLOW_PY_FLOOR_BIN=$(uv python find 3.9)"
+  - "bash scripts/check-py-floor.sh —— 訊息要出現「本輪實際用 3.9」且沒有 ⚠️ gap 那一段"
+recorded_at: "2026-08-21T07:37:20Z"

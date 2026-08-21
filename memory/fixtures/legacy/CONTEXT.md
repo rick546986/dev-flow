@@ -1,3 +1,6 @@
+<!-- 凍結樣本:舊架構 repo root `CONTEXT.md`(人工維護詞彙表)的格式。
+     本 repo 已停止散發這個模板(改用 .dev-flow/knowledge/domain/),但採用專案的
+     既有檔案還在,parser 必須繼續讀得懂 —— 所以樣本留在 fixtures,不留在 _templates/。 -->
 # <專案名> — CONTEXT(詞彙表 / Ubiquitous Language)
 
 > 用途:團隊 + AI 共用的業務語言。程式碼命名、文檔用詞、對話都必須用這裡的字。

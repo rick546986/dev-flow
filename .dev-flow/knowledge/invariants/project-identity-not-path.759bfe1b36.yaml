@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: project-identity-not-path
+title: "project identity 一律來自 .dev-flow/project.yaml 的 ULID,不得由 filesystem path 或 git remote 推導"
+authority: domain_expert
+status: CONFIRMED
+confidence: 0.99
+body: "Mac、Windows、Linux 的路徑一定不同;remote 會改名、會 fork、可能不存在。任何以路徑或 remote 為鍵的記憶,換一台機器就查不到,而且不會報錯。"
+recorded_at: "2026-08-20T10:12:06Z"

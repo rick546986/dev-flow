@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: durable-full-replace-no-window
+title: "整檔取代的 durable writer 不得有筆數視窗"
+authority: domain_expert
+status: CONFIRMED
+confidence: 0.8
+body: "write_state() 是整檔取代(supersede 語意住在整組 fact 上)。取代 + 撈前 N 筆 = 刪掉視窗外的那些:它們上一輪已經在檔裡也已經 durable=1,這一輪的取代把它們拿掉,而 local 仍聲稱「我就是檔裡的那份」。durable-check 於是判 PASS 在不完整的鏡射上。status 過濾也必須下推到查詢 —— 套在視窗之後的話,夠多的 SUPERSEDED 鄰居就能把唯一的現況擠出去(1 筆現行 + 1000 筆更正歷史即可觸發)。"
+recorded_at: "2026-08-20T19:18:05Z"

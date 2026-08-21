@@ -17,8 +17,17 @@ description: dev-flow Stage 6 內部執行引擎 — 多模型派工(haiku 寫�
    「start 當下所在的那棵樹」—— 先 start 再換樹 = 安全網失效。跑 `status` 確認
    slug 與 cwd 相符。被拒(4-spec 非 approved / 無可解析 Files / 4-spec Profile
    lane: fast + Risk: high 無 Owner Call)→ 停,回報使用者。
-3. 讀 4-spec、5-tasks、CONTEXT.md、living spec、`.claude/rules/*.md`。
+3. 讀 4-spec、5-tasks、living spec、`.claude/rules/*.md`;業務語意改查長期記憶
+   (`${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py ask "<詞> 是什麼意思"`),不再讀 CONTEXT.md。
    **禁讀 1/2/3**(守衛會擋,含 shell)。
+4. **開 memory session**(記憶生命週期的起點,見「記憶生命週期」節):
+   ```
+   ${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py session start \
+     --mode implementation --slug <slug>
+   ```
+   把回傳的 `session_id` 當本次 Stage 6 的 workflow state 全程重用
+   (下稱 `MEMORY_SESSION_ID`)。**不開 session = 這次實作學到的東西不會留下來**
+   —— Git 會有 commit,而記憶什麼都不知道。
 
 5-tasks frontmatter 有 `execution.mode: parallel` → 走「並行模式」節(wave 派工迴圈,
 任務樹以 `start <slug> --task T-n` 武裝);否則走下方逐 T 迴圈,行為與既往完全相同。
@@ -128,17 +137,115 @@ sequential 收驗與並行 dedicated / wave review 的 reviewer prompt **必含*
 ## 收尾
 
 全 T 完 → **你**跑回歸(既有全套,全綠才算)→ 6-notes Self-Review 自檢(答不出 → 回補,
-必要時重派該 T)→ bookkeeping commit → **發布最終成果:最後一個 bookkeeping commit
-完成後、`stop`/回報 Stage 7 之前,push feature branch 到 remote,再 `git fetch` 驗證
-remote tip 等於當下 feature HEAD;push 或驗證失敗就停在這裡,不得宣稱 Stage 6 完成**
+必要時重派該 T)→ bookkeeping commit → **強制萃取(W6-1)**:回歸綠之後,對這一輪做
+一次萃取盤點,把該記的送進 `session observe`(見「記憶生命週期」節;**這一步不是
+可選的**,盤點完的結論可以是「沒有值得固化的東西」)→ `dev-memory.py checkpoint
+$MEMORY_SESSION_ID --end`(**W6-2**;durable 寫入只在這裡)→ **memory commit
+(W6-3)**:把 checkpoint 寫出的 `.dev-flow/` 改動 commit 進 feature branch
+(不另開 branch;`checkpoint` 只把檔案寫進工作樹,**工作樹不是耐久性**)→
+**發布最終成果:最後一個 commit(含 memory commit)完成後、`stop`/回報 Stage 7
+之前,push feature branch 到 remote,
+再 `git fetch` 驗證 remote tip 等於當下 feature HEAD;
+push 或驗證失敗就停在這裡,不得宣稱 Stage 6 完成**
 (STATUS 的 `Branch` 欄與 README「直接補修」算法都拿 remote ref 當座標,沒推上去 =
-其他人算聯集時看不到你的戰場)→ `devflow-exec.sh stop` → 回報使用者進
+其他人算聯集時看不到你的戰場)→ **`dev-memory.py durable-check`(W6-4)**:
+PASS 才算記憶真的離開這台機器,FAIL 就回上一步修到 PASS →
+`devflow-exec.sh stop` → 回報使用者進
 Stage 7(送審前置派工見「Stage 7 送審前置」節)。7-review.html 須含執行記錄表
 (模型分佈/升階次數/D-n 與 allow 清單)。
+
+**W6 的順序不能換**,而且**每一步都會單獨地「看起來已經做完」**:
+
+```
+強制萃取 → checkpoint → memory commit → 最終 push → remote HEAD 驗證
+                ↑              ↑              ↑            ↑
+        寫進工作樹      進到本機歷史      離開本機     真的可驗證
+```
+
+- checkpoint **在回歸綠之後**不是之前:沒過回歸的東西還不是「這個專案現在的樣子」。
+- checkpoint **在 push 之前**:反過來的話 `.dev-flow/` 的改動永遠留在工作樹裡 ——
+  `checkpoint` 回 `promoted: 3` 而 remote 上一個字都沒有,而且**不會有任何錯誤**。
+  這是這一整節存在的理由。
+- `durable-check` 是唯一能複驗上面四步的東西。它同時擋掉三種假完成:
+  durable 檔沒 commit、HEAD 沒到 upstream、有 session 還開著沒收(或還有 revision
+  沒落地)。**不要用「我記得我 push 過」代替它。**
+
 **寫事件與衍生(W5)**:回歸綠後送 `stage_completed`(stage=6)→ 跑
 `devflow-obs.sh derive` 重建 run-events.jsonl —— 6-notes 執行軌跡列與 7-review
 執行記錄由 ledger **衍生**(禁手動雙寫),`devflow-obs.sh stats` 產模型分佈/升階
 摘要供 7-review 執行記錄表 → 最後送 `run_completed`。
+
+## 記憶生命週期(Stage 6 做完要真的「長記憶」)
+
+沒有這一節的話,Stage 6 做完只有 Git commit,**Memory 什麼都不知道** ——
+下一個 session、下一台機器、下一個人都得重新讀一次 code 才知道發生過什麼。
+
+```
+Stage 6 開工                     session start --mode implementation --slug <slug>
+   │                               (記 session_id / feature slug / branch / 起始 HEAD)
+   ▼
+每個 T PASS 之後(隨手)          session observe <sid> …
+   │                               高訊號 → 累積成候選(本機);低訊號 → 只留本機
+   ▼
+回歸綠 + 記帳完成              W6-1 強制萃取盤點(**不是可選的**)
+   │                               把這一輪該記的補齊,再往下走
+   ▼
+                               W6-2 checkpoint <sid> --end
+   │                               ← durable 寫入**只在這裡**發生(寫進工作樹)
+   ▼
+                               W6-3 memory commit(.dev-flow/ 進 feature branch)
+   │                               ← 工作樹不是耐久性
+   ▼
+                               最終 push + `git fetch` 驗證 remote tip
+   │                               ← 到這裡記憶才離開這台機器
+   ▼
+                               W6-4 dev-memory.py durable-check → PASS
+```
+
+**強制萃取(W6-1)是義務,產出一筆紀錄不是。** 回歸綠之後必須真的做一次盤點:
+這一輪改了什麼架構/schema/契約?踩到什麼 root cause?做了什麼設計決策?
+盤點的結論可以是「沒有值得固化的東西」——**那是合法答案**(見下方硬規則 3)。
+不合法的是**沒盤點就 checkpoint**:那等於用「我沒想到要記」當作「沒有東西可記」。
+
+**每個 T PASS 之後**也可以隨手記(那是機會,不是義務;真正的義務在 W6-1)。
+`observe` 不會馬上寫 Git,候選累積到 checkpoint 才一次固化:
+
+```
+dev-memory.py session observe $MEMORY_SESSION_ID \
+  --kind <種類> --title "<一句話>" [--body "<細節>"] \
+  [--path-ref <repo 相對路徑>]... [--commit <sha>]
+```
+
+`--kind` 可以是**事件種類**,或 `fact` / `decision` / `skill` / `knowledge`
+(後四種各自配 `--fact-json` / `--decision-json` / `--skill-json` /
+`--knowledge-json`)。
+
+| 值得記(高訊號) | 不要記(低訊號,工具會自己擋掉) |
+|---|---|
+| 架構變更、schema 變更、表改名、API 契約變更 | 讀檔、grep、列目錄 |
+| 業務規則、bug root cause、重要設計決策 | 一般成功指令、中間 debug |
+| 驗證過的流程、breaking config、實作事實 | 暫時假設、未確認推論、raw log |
+| 發現的重要關聯 | 每輪對話逐字稿 |
+
+低訊號送進去**不是錯**:工具回 `signal: low` 並只留本機,不進 Git。
+所以拿不準時照送,由 Signal Gate 判,不要自己先過濾掉真正重要的東西。
+
+**三條硬規則**:
+
+1. **`--kind fact` 標成 VERIFIED 必須有 `dependencies`,而且那些檔要真的存在。**
+   工具會擋下「VERIFIED 但沒有任何驗證依據」的事實 —— 那種事實在查詢時只能被
+   誠實降級,等於宣稱驗過卻驗不了。沒把握就讓它是 `CANDIDATE`。
+2. **domain 語意不要用 `--kind knowledge` 自行確認。** 從程式碼推出來的語意一律
+   落成 `CANDIDATE` + `code_inference`;要成為已確認的業務語意,走 `dev-talk`
+   讓使用者點頭。
+3. **這次沒學到東西是正常的。** checkpoint 回 `promoted: 0` 是合法結果,
+   **不要為了「有記一筆」而硬記一筆「本次完成」** —— 那種紀錄沒有資訊量,
+   只會把 `.dev-flow/` 稀釋成沒人讀的流水帳。
+
+中途放棄(使用者喊停 / 走不下去):跑
+`dev-memory.py abort $MEMORY_SESSION_ID --reason "<原因>"`,
+讓 session 狀態明寫 `ABORTED`。**不要就這樣不管它** —— 留一個永遠 OPEN 的
+session,下次回顧時分不出「還在做」與「早就放棄」。
 
 ## 並行模式(execution.mode: parallel)—— wave 派工迴圈
 
@@ -249,11 +356,16 @@ Out-of-system action / Waiting-timeout 與 Recovery / 不得誤導使用者事�
 
 全 T ACCEPTED → 你在 integration 樹跑回歸(全綠)→ 6-notes Self-Review → bookkeeping
 commit → 各 task worktree `devflow-exec.sh stop` + `git worktree remove`(乾淨才移,
-不 --force)→ integration branch 依 repo 慣例合回 feature branch → **發布最終成果:
+不 --force)→ integration branch 依 repo 慣例合回 feature branch → **強制萃取(W6-1)**
+→ `dev-memory.py checkpoint $MEMORY_SESSION_ID --end`(**W6-2**)→ **memory commit
+(W6-3)** → **發布最終成果:
 integration 合回 feature branch 之後、回報 Stage 7 之前,push feature branch 到
 remote,再 `git fetch` 驗證 remote tip 等於當下 feature HEAD;push 或驗證失敗就停在
 這裡,不得宣稱 Stage 6 完成**(理由同 sequential 收尾:remote ref 是補修計算的座標)
-→ 回報使用者進 Stage 7(送審前置派工見下節)。7-review 執行記錄表另加:wave 數 / gate FAIL 分佈 /
+→ **`dev-memory.py durable-check`(W6-4)** → 回報使用者進 Stage 7(送審前置派工見下節)。
+W6 一律在 integration 合回 feature branch **之後**做:記憶要跟著最終落地的那個
+branch 走,寫在 integration 樹裡再被合掉一次只會多一次漂移機會。
+7-review 執行記錄表另加:wave 數 / gate FAIL 分佈 /
 rework 與 invalidation 清單。
 **寫事件與衍生(W5,同 sequential 收尾)**:`stage_completed`(stage=6)→
 `devflow-obs.sh derive`(6-notes 執行軌跡與 7-review 執行記錄由 ledger 衍生,

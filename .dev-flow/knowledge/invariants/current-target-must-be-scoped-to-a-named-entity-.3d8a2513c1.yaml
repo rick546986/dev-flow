@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: current-target-must-be-scoped-to-a-named-entity-not
+title: "CURRENT target 生成必須用「查詢有沒有指名這個 entity」當篩子,不能只靠共用的 fact_key/value 做 OR 比對"
+authority: domain_expert
+status: CONFIRMED
+confidence: 0.8
+body: "query.py::_fact_targets() 修完 GPT-P1-CURRENT-500(移除前置筆數視窗)之後,比對邏輯本身仍是「symbol 是否出現在 entity_type+entity_key+fact_key+value 串接的 haystack 裡」OR「entity_key/fact_key 是否出現在查詢文字裡」——三個條件互相獨立地 OR 在一起,而不是要求同一個 entity_key。結果:兩個不同 entity 共用同一個 fact_key(例如 database.lab-order.current_table 與 database.audit.current_table)時,查詢裡只要出現這個共用的 fact_key 文字(例如「current_table」),兩個 entity 的座標都會被選成 target,即使查詢明確指名的是 lab-order。CURRENT 的整體狀態是取多筆座標裡最嚴重的一個(CONFLICT > NEEDS_VERIFICATION > OK),於是沒被指名的 audit 若是 CANDIDATE/STALE,會把明確指名且已 VERIFIED 的 lab-order 答案拖成 NEEDS_VERIFICATION——這不是理論上的排序瑕疵,是精確查詢被跟它无关的另一個 entity 悄悄污染。修法:先算出查詢文字裡有指名到哪些「目前存在的 entity_key」(entity_named);如果 entity_named 非空,candidate 座標一律限定在這些 entity 底下,不管其他 entity 是否共用 fact_key/value 文字。如果 entity_named 是空的(查詢完全沒指名任何 entity,只靠 fact_key/value 反查),而命中的結果落在不只一個 entity 上,代表查詢本身有歧義——不悄悄選一個當答案,回空 target 列表讓上層退到模糊檢索與 NEEDS_VERIFICATION,不偽稱有精確答案。這跟 relevance-cap-must-come-after-not-before-exact-match 是同一個 _fact_targets() 函式裡的下一層根因:那條修的是「筆數視窗」這個跟相關性無關的過濾器,這條修的是「跨 entity 的 OR 比對」這個跟座標無關的過濾器——兩者都是精確匹配被跟精確性無關的東西污染。"
+recorded_at: "2026-08-21T00:06:49Z"

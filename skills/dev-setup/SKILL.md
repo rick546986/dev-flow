@@ -53,8 +53,10 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
    同步一律兩側 `tr -d '\r'` 後再比,見下方 upgrade 段與 check 第 6 項)。
    `_templates/` → `docs/dev/_templates/`、**`devflow-contract.json` →
    `docs/dev/devflow-contract.json`**(版本握手契約;doctor 無 `--contract`/
-   `$DEVFLOW_CONTRACT` 明示時在此找,缺件必 fail-closed);從模板建 `STATUS.md`;
-   repo root 無 `CONTEXT.md` 則從模板建。
+   `$DEVFLOW_CONTRACT` 明示時在此找,缺件必 fail-closed);從模板建 `STATUS.md`。
+   **不再建 repo root `CONTEXT.md`**(v3.10.0 起):業務語言的正本改為
+   `.dev-flow/knowledge/domain/`,由步 1b 建置;既有專案的 `CONTEXT.md` 由
+   步 1b 的遷移處理,**不刪、不重新產生**。
    **基準快照(此步只宣告,不落地)**:**本步只登記清單** —— 本次 install 結束前
    要快照的東西是 `docs/dev/README.md`(已剝除版)、`_templates/*`、
    `devflow-contract.json`、**整個 `docs/dev/tools/`(按目錄整包存,不逐檔列 ——
@@ -89,6 +91,32 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
    `python3 -c "import markdown_it, sys; sys.exit(0 if markdown_it.__version__ == '4.0.0' else 3)"`
    → 預期 exit 0;非 0 時把上面的 pip 安裝指令完整回報給使用者(**不代裝**,裝不裝是
    專案自己的事,但訊息要完整)。
+1b. **Agent Memory 建置**(v3.10.0 起;`dev-setup` 是唯一入口,**不得新增
+   `dev-flow init` 之類的第二個安裝器**)。跑:
+   ```
+   python3 "${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py" setup --path <專案根>
+   ```
+   它做九件事,全部冪等(輸出是 JSON,直接鋪進回報表):
+   ①找 repository root;②`.dev-flow/project.yaml` 不存在 → 建 `project_id`
+   (ULID,**path-independent**:不含任何檔案路徑成分、不依賴 GitHub remote)
+   + 最低限度 `.dev-flow/` 結構(lazy-create,不鋪空目錄);③已存在 →
+   **reuse 既有 `project_id`**;④註冊本機 workspace(local path / OS / branch /
+   HEAD / worktree —— 這些是**本機 metadata**,住本機 SQLite,不進 Git);
+   ⑤initialize/migrate 本機 DB;⑥從 `.dev-flow/` 重建本機索引;⑦重建 FTS;
+   ⑧需要時 re-index embeddings(換 model 會被偵測出來,不會靜默失效);
+   ⑨掛既有 legacy 資料的 `project_path → project_id` 對照。
+   **重複執行不得產生新的 `project_id`** —— 這條有測試釘住
+   (`memory/tests/test_setup_legacy.py`)。
+   `.dev-flow/` **要 commit 進 Git**(它是可攜的長期記憶);
+   `.devflow/`(無連字號)是本機執行期暫存,已在 `.gitignore`,兩者不要混。
+   **既有專案的 legacy 遷移**(有 repo root `CONTEXT.md` 時):先跑
+   `dev-memory.py migrate-legacy`(預設 dry-run,只回報會做什麼),把詞條數與
+   目標分類回報給使用者;使用者同意後跑 `--apply --promote`,詞條會以
+   **CANDIDATE + documentation authority** 落地(不標成已確認 —— 沒有人在遷移
+   那一刻重新確認過那些詞條)。遷移完成且使用者確認後才可刪 `CONTEXT.md`,
+   **dev-setup 不自動刪別人的檔**。
+   `docs/dev/HISTORY.md` 只被**索引**進本機記憶(查得到「之前發生過什麼」),
+   不複製進 `.dev-flow/events/` —— 同一份內容兩個 durable 正本必然漂移。
 2. `.claude/rules/arch-invariants.md`:從 `_templates/arch-invariants.md` 建檔,**並自動產草稿**
    (不留空殼):
    - 先收割既有素材:使用者指名的外部 workflow artifacts 中的架構指引
@@ -330,6 +358,19 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     ⚠️ **`devflow-contract.json` 不住在 `docs/dev/tools/`,散發面標註涵蓋不到它**,
     由第 10 項單獨驗 —— 不得併進本項(併掉就沒有人在驗 contract 副本,同
     `dev-release` 步 2 把那行 `diff -q` 單獨留著的理由)。
+14. **Agent Memory 健檢**(在專案內跑時):跑
+    `python3 "${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py" doctor --path <專案根>`
+    並照它的 verdict 分流(`PASS` / `WARN` / `FAIL`;exit 1 = FAIL)。它逐項回報:
+    `project-identity`(`.dev-flow/project.yaml` 在不在、`project_id` 合不合法 ——
+    缺件 = broken,走 install 步 1b 補)、`local-schema`(本機 DB schema 版本)、
+    `capability/fts5` 與 `capability/fts5_trigram`(不可用 = WARN:retrieval 少一個
+    通道,**不影響正確性**,不要當成壞掉)、`embedding-version`(與當前 signature
+    不符的筆數 → 跑 `dev-memory.py reindex`)、`durable-relative-paths`
+    (**`.dev-flow/` 內出現絕對路徑 = FAIL**,那份記憶換一台機器就對不上,要人工修)、
+    `current-truth-overlay`(本機有幾筆事實處於 STALE/CONFLICT —— 這是**預期行為**
+    不是故障:依賴檔在本機改過,查詢時會要求重新確認)。
+    另外跑 `dev-memory.py eval` 可用內建的小型確定性 dataset 驗檢索沒退步
+    (非必跑;它不需要大型 benchmark,exit 1 = 有指標掉到門檻以下)。
 
 ## fix / uninstall
 

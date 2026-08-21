@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: reachable-is-not-offmachine
+title: "「連得上」不等於「在別台機器上」——耐久性判定必須分類 transport,不只驗可達"
+authority: domain_expert
+status: CONFIRMED
+confidence: 0.8
+body: "durable-check 問的是「記憶離開這台機器了嗎」。git ls-remote 成功只回答了嚴格較弱的一句話:設定的 upstream 連得上而且有這個 commit。remote 不必然在別台機器上 —— 本機 bare repo、file:// URL、指向 localhost 的 ssh URL 都會回報正確的 SHA,而硬碟壞掉時它們跟工作樹一起消失。所以判定必須額外分類 remote 的 transport,而且要判改寫後的 URL(insteadOf 設定會把網路形狀的 URL 改寫成本機路徑)。判不出來一律不給證據 —— 分不出來不得當成證據。"
+recorded_at: "2026-08-20T20:18:13Z"

@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: no-arbitrary-memory-fallback
+title: "查不到就回 NO_RELIABLE_MATCH;不得用低分結果頂替"
+authority: domain_expert
+status: CONFIRMED
+confidence: 0.97
+body: "「找不到相關記憶」與「沒有記憶」對使用者是同一個畫面,但對正確性是兩件事。相關性門檻由 coverage(命中的內容詞佔查詢資訊量的比例)把關,問句框架詞不算進分母。"
+recorded_at: "2026-08-20T10:12:06Z"

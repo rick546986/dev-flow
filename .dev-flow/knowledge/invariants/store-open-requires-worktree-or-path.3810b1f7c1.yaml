@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: store-open-requires-worktree-or-path
+title: "Store.open 沒有 worktree_key 或 path 必須 fail-loud,不得退回專案級共用檔"
+authority: user_confirmed
+status: CONFIRMED
+confidence: 0.8
+body: "一個忘記改的呼叫點就夠讓兩個 worktree 漏回同一份 memory.db。生產路徑(setup.run / setup.doctor / CLI _resolve / status.local_db)一律走 open_for_root。測試的 path= 覆寫與 :memory: 仍合法。守衛釘的是函式本體含 worktree_key + raise ValueError,docstring 不算證據。"
+recorded_at: "2026-08-21T10:13:40Z"

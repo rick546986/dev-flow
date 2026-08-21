@@ -6,8 +6,9 @@
 > plugin 名、repo 名都是 `dev-flow`)。裝法見 [`docs/PLUGIN.md`](docs/PLUGIN.md)。
 >
 > 新專案採用:裝好 plugin 後在專案內打 `dev-setup`,它會把 `_templates/`、本 README、
-> `devflow-contract.json` 與 gauntlet 腳本散發進 `docs/dev/`,並建 `STATUS.md` 與
-> repo root `CONTEXT.md`。**不需要手動複製,也不需要本 repo 存在於使用者機器上。**
+> `devflow-contract.json` 與 gauntlet 腳本散發進 `docs/dev/`、建 `STATUS.md`,
+> 並建置 **Agent Memory**(`.dev-flow/` 可 Git 同步的長期記憶 + 本機索引;見 §18)。
+> **不需要手動複製,也不需要本 repo 存在於使用者機器上。**
 >
 > **環境需求**:dev-flow 的 hook 需要 python3(僅標準函式庫),**最低 3.9**
 > (= macOS 內建 `/usr/bin/python3` 的版本;下限由 `scripts/check-py-floor.sh` 逐檔
@@ -61,7 +62,7 @@ feature 走 7 份文檔、過 3 道 gate(G1 方向核准、G2 契約審查、G3 
 | G1/G2/G3 各要什麼條件才過 | [§7](#7-角色與-gate) | ✅ **唯一正本**,改這裡要同步四處 |
 | 這件事該走 full 還 fast | [§2](#2-兩軌lane) | ✅ |
 | 七份文檔各放什麼、各卡哪個 gate | [§3](#3-七份文檔用途一句話骨架見-_templates填好範例見-example) | 摘要;gate 條件全文在 §7 |
-| 哪個檔放哪種資訊(CONTEXT/specs/adr/dev) | [§1](#1-文件地圖四象限-status-看板) | ✅ |
+| 哪個檔放哪種資訊(記憶/specs/adr/dev) | [§1](#1-文件地圖四象限-status-看板) | ✅ |
 | 實作期怎麼推進、偏差怎麼判 L1/L2 | §5 | ✅ |
 | 守衛擋我了怎麼辦 / 並行怎麼開 | §5 執行守衛、守衛與並行 | ✅ |
 | 哪一站用哪個模型、錯了怎麼升階 | [§9](#9-模型分層與-effortai-執行時) | ✅ |
@@ -71,7 +72,8 @@ feature 走 7 份文檔、過 3 道 gate(G1 方向核准、G2 契約審查、G3 
 | 案子太大要不要切、能不能切 | [§13](#13-大案與切片) 訊號 / [§14](#14-spec-切片單份-4-spec-過大時) 切點判準 | ✅ |
 | R/S/T/D/F 這些 id 怎麼串 | [§4](#4-id-追溯鏈) | ✅ |
 | 某條規則到底誰在擋(機械 vs 人工) | [§7 強制力對照](#強制力對照誰在擋) | ✅ |
-| 跨 repo / 非 feature 的事怎麼辦 | [§15](#15-附錄跨-repo-與非-feature-入口) | ✅ |
+| Agent 的長期記憶怎麼運作(`.dev-flow/`)| [§16](#16-agent-memorydev-flow) | ✅ |
+| 跨 repo / 非 feature 的事怎麼辦 | [§17](#17-附錄跨-repo-與非-feature-入口) | ✅ |
 
 <!-- devflow:master-only:start -->
 圖在 `guides/`,不在這裡 —— 本檔是 markdown 正本,要圖請點上表的導覽連結。
@@ -88,7 +90,7 @@ dev-flow/
 │                            └ 讀者:gate-consistency.sh 每次動態抽 token 比對四處
 │   devflow-contract.json    方法論 ↔ runtime 的版本握手
 │                            └ 讀者:devflow-exec.sh doctor,缺件 fail-closed
-│   _templates/               七階段模板 + STATUS/CONTEXT/ADR/living-spec/html-shell
+│   _templates/               七階段模板 + STATUS/ADR/living-spec/html-shell
 │                            └ 讀者:dev-setup 散發進每個專案;parity 檢查比對 guides
 │   notes/design/ (6)        各機制設計正本(並行/觀測/gauntlet/real-world/boundary)
 │                            └ 讀者:dev-setup SKILL 指 evidence-gauntlet.md 為契約正本
@@ -164,7 +166,7 @@ flowchart LR
 
 | 檔 | 回答什麼 | 生命週期 | 誰寫 / 誰讀 |
 |---|---|---|---|
-| `CONTEXT.md`(repo root) | 這個詞是什麼意思 | 永生 | 階段1順手維護 / 新人第一讀 |
+| `.dev-flow/`(repo root) | **Agent Memory**:這個詞是什麼意思(domain)、現在實際怎麼運作(implementation truth)、打算往哪走(intent)、當初為何這樣選(decision)、怎麼做某件事(skill)、以前發生過什麼(event) | 永生,可 Git 同步 | dev-talk 確認後由 `dev-memory.py` 寫入(**禁手改**)/ 全隊 + 每個 AI session(見 §18) |
 | `docs/specs/<domain>.md` | 系統**現在**的行為(唯一真相) | 永生,只由階段7出口併入 | 7-Exit / 動這塊前必讀 |
 | `docs/adr/NNNN-slug.md` | 當初**為何**這樣選 | 永生,可 superseded | 2-decision 晉升 / 想翻案的人 |
 | `docs/dev/STATUS.md` | 誰正在做什麼、還有什麼沒做 | 常駐看板,做完的移出 | 每過 gate 更新 / 全隊 |
@@ -172,7 +174,9 @@ flowchart LR
 | `docs/dev/<feature>/1-7` | 這次變更的完整生命週期 | ship 後封存 | 流程產出 / reviewer + 考古 |
 | `.claude/rules/*.md` | 架構不變量/技術慣例/坑(Claude Code 官方規則路徑,無 `paths` frontmatter 者每 session 自動載入) | 永生 | setup 產草稿 / 全員+執行引擎;**只放 gotchas,禁流程規則(§11),spec 不重抄**;CLAUDE.md 對應段改指標避免雙正本;檔案長大(>~100 行)或多技術棧時可用 `paths:` frontmatter 做 path-scoped 按需載入(判準見模板頂註) |
 
-一句話:**CONTEXT=語言、specs=現況、adr=過去、dev/=進行中**。
+一句話:**.dev-flow=Agent 記憶、specs=現況、adr=過去、dev/=進行中**。
+(`.dev-flow/` 與 `docs/dev/` 分工見 §18:前者是給 Agent 的結構化記憶,
+後者是給人看的專案文檔;`.devflow/`(無連字號)是本機執行期暫存,不進 Git。)
 
 **歸位規則**(init 與全程):文檔不散落 `docs/` 根。
 
@@ -560,7 +564,7 @@ md 側對應規定是 `_templates/5-tasks.md` 頂註,**兩邊講同一件事、m
   + 檔內留 round 紀錄。owner 自審僅能作為**有記錄的最後手段**,不假裝有四眼。
 - **規劃層 git**:接手起手先看 `git status`,working tree 有與本 feature 無關的
   改動 → 回報使用者處置,不與文檔混流;每過一個 gate,把該階段文檔
-  (`docs/dev/<slug>/` + STATUS + CONTEXT)commit 一次,只含文檔。尚未開
+  (`docs/dev/<slug>/` + STATUS + `.dev-flow/` 的記憶更新)commit 一次,只含文檔。尚未開
   feature branch 的規劃階段(1-5),文檔 commit 落在整合分支(`develop`)上(純文檔
   無程式碼,低風險;Stage 6 起手式才開 feature branch,見 §5);該整合分支有護欄擋
   直接 commit(branch protection / pre-commit hook)時,走短命 branch → commit →
@@ -803,7 +807,7 @@ base 不見了,而且是在他們下次 `git fetch` 才會發現。「直接補�
 | 2 收斂 | 回主 session | 讀 1-discussion 接手(對話不是契約) |
 | 3 原型(選配) | **建議獨立 session** | throwaway 心態,實驗過程不進主線 context,答案只回寫文檔 |
 | 4 規格、5 任務 | 同一規劃 session 連走 | G1 後的連續規劃思路 |
-| 6 實作 | **建議另開 session** | 規劃 context 不帶入執行;執行者只讀 4/5/6+CONTEXT+living spec(圍欄②機械強制) |
+| 6 實作 | **建議另開 session** | 規劃 context 不帶入執行;執行者只讀 4/5/6+長期記憶查詢結果+living spec(圍欄②機械強制) |
 | 7 驗證 | 可同 session | reviewer 本來就是 fresh-context agent(§9 鐵則),隔離在 agent 層,不靠 user session |
 | 中斷續跑 | 任何階段可換 | 靠 STATUS.md + frontmatter 定位接力(§13) |
 
@@ -812,10 +816,10 @@ base 不見了,而且是在他們下次 `git fetch` 才會發現。「直接補�
 LLM 知道「終點要產 plan」就會引導式提問、提早收斂。對策:階段間只用文件交接,
 對上游隱藏下游。四道圍欄:
 
-1. **討論盲下游**:`/dev-talk` 全文零提及後續階段;讀取白名單(CONTEXT.md /
+1. **討論盲下游**:`/dev-talk` 全文零提及後續階段;讀取白名單(長期記憶 /
    docs/specs/ / 原始碼 / 使用者指名),不進其他文件資料夾、不列目錄 —— 第二個
    feature 起專案內已有 pipeline 檔案,盲靠圍欄不靠運氣。最強用法:獨立 session。
-2. **實作盲討論**:implementer 只讀 4/5/6 + CONTEXT + living spec,**禁讀 1/2/3**;
+2. **實作盲討論**:implementer 只讀 4/5/6 + 長期記憶查詢結果 + living spec,**禁讀 1/2/3**;
    要翻討論才寫得出來 = spec 不完整 → 回 G2(用隔離測 spec 完整度)。
    誠實界定:此欄對「換人 / fresh subagent 實作」可機械強制;同一人從討論做到
    實作時退化為紀律 —— 一切以 spec 為準,不得引討論內容當依據。
@@ -900,7 +904,299 @@ SDD 是脊椎(spec 驅動什麼該做),TDD 是右側驗證(測試證明做對)�
   所有依賴該產出的後片逐一 impact review,受影響 R/S 一併重審,不可只改
   前片不通知後片。
 
-## 15. 附錄:跨 repo 與非 feature 入口
+## 16. Agent Memory(`.dev-flow/`)
+
+> v3.10.0 起。安裝與重建入口**只有 `dev-setup`**;查詢與寫入入口只有
+> `${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py`。不要手改記憶檔。
+
+### 16.1 三個容易搞混的目錄
+
+| 目錄 | 是什麼 | 進 Git? | 誰讀 |
+|---|---|---|---|
+| `docs/dev/` | **人的專案文檔**:七階段產物、plans/specs/tasks、README、STATUS、HISTORY | ✅ | 人 + reviewer |
+| `.dev-flow/` | **Agent 的長期記憶**:結構化、可攜、跨機器一致 | ✅ | `dev-memory.py`(人只在 review diff 時看) |
+| `.devflow/` | **本機執行期暫存**:exec 旗標、runs/、reports/ | ❌(`.gitignore`) | hooks |
+
+`.dev-flow/` 不是「另一個文件資料夾」——它是**可攜的 project brain**。
+`docs/dev/` 的東西不要搬進去,`.dev-flow/` 的東西也不要用 Markdown 另抄一份給人看:
+同一份內容兩個正本必然漂移。
+
+本機還有一層**不進 Git** 的執行期記憶:
+`~/.agentmem/projects/<project_id>/worktrees/<worktree_key>/`
+(SQLite 索引、FTS、embedding 向量、原始對話逐字稿、候選知識、本機失效 overlay、
+檢索指標)。**同一個 project 的兩個 worktree 各有一份**,不共用 SQLite。
+共用已確認的知識走 `.dev-flow/` + git,不靠同一份可變檔。
+它可以整包刪掉 —— 跑一次 `dev-setup` 就從**當前 checkout** 的 `.dev-flow/` 重建。
+**SQLite / 向量 / 逐字稿一律不進 Git。**
+
+### 16.2 project identity 不是路徑
+
+`.dev-flow/project.yaml` 裡的 `project_id` 是 ULID:不含任何檔案路徑成分、
+不依賴 GitHub remote(remote 只當 provenance)。所以
+
+```
+Mac      /Users/rick/dev/project
+Windows  D:\dev\project
+Linux    /home/rick/project
+```
+
+是**同一個專案**。本機路徑 / OS / branch / HEAD / worktree 是 **workspace metadata**,
+住本機 SQLite,不進 Git。`.dev-flow/` 裡的檔案引用一律是
+**repo-root-relative POSIX 路徑**(`src/services/db.ts`,不是 `/Users/rick/...`);
+寫入時有守衛擋、`dev-memory.py doctor` 也會複驗(命中 = FAIL,不是警告)。
+
+### 16.3 七種記憶,不是一種 chunk
+
+| 類型 | 回答什麼 | 住哪 | 誰有權威 |
+|---|---|---|---|
+| **Implementation truth** | 程式**現在**實際怎麼運作 | `state/implementation/<entity>.yaml` | 當前程式碼 / 設定 / schema / migration / runtime 證據 |
+| **Domain knowledge** | 這個詞在真實世界代表什麼 | `knowledge/{domain,entities,relationships,invariants}/` | domain expert / 使用者確認 / 正式業務需求 |
+| **Intent** | 我們**打算**往哪走(≠ 現況) | `knowledge/intents/` | 產品/架構決策 / 核可過的計畫 |
+| **Historical event** | 以前發生過什麼 | `events/YYYY/MM/<session>.jsonl` | append-only,帶 branch/commit 出處 |
+| **Decision** | 當初**為什麼**這樣選 | `decisions/DEC-*.md` | ADR / PR / commit / 明確討論 |
+| **Procedural skill** | 怎麼做某件事 | `skills/*.yaml` | 驗證過的流程 |
+| **Unknown / Conflict** | 「不知道」與「兩邊說法不同」 | 上面各類的 status 欄 | —— 它們是**合法答案**,不是缺陷 |
+
+**沒有全域的 `code > everything` 排序。** implementation truth 由程式碼說話;
+domain truth 由人說話 —— 程式碼只能 **SUPPORT** 或 **CONFLICT** 已確認的業務語意,
+**不能覆寫**。真的對不上時建立 CONFLICT,兩邊都留著讓後面的人看得到。
+
+### 16.4 Current Truth 的失效與復原(LVP-inspired)
+
+借的是 last-known-value 那套機制的形狀:**last value + confidence + validation +
+invalidation + recovery**,只作用在 implementation truth 上。
+
+```
+VERIFIED + 依賴檔指紋全符 + 工作樹沒改它  → fast path,不重讀原始碼
+依賴檔改了(指紋不符 或 工作樹 dirty)    → 本機建 STALE overlay
+                                          (durable/Git 側**不動**)
+查到 STALE → 必須重新 inspect 當前原始碼
+  重驗結果相同 → 回 VERIFIED(verification_count +1)
+  重驗結果不同 → 舊筆 SUPERSEDED + 新筆 VERIFIED
+  判不出來     → 留 STALE、contradiction_count +1、**不寫新值**
+```
+
+為什麼 overlay 只在本機:直接改 shared state 會讓「我這台改了一支檔」變成
+「所有機器的事實都失效」。也因此 **feature branch 改了依賴的程式碼時,
+main 的 VERIFIED 不會被當成當前 workspace 的答案**。
+
+**domain knowledge 不套這組規則**:改一支不相關的 TypeScript 不會讓
+「registration 代表一個客戶」變成不可信 —— 它的權威來自人,不來自檔案指紋。
+
+### 16.5 查詢:先分類,再檢索
+
+`dev-memory.py ask "<問題>"` 會先判意圖再選路徑:
+
+| 意圖 | 走哪 |
+|---|---|
+| CURRENT(現在怎麼運作) | Current Truth fast path;STALE/CONFLICT/UNKNOWN 則要求重新 inspect |
+| HISTORY(以前發生什麼) | events + 時間序 |
+| WHY(為什麼) | decisions 優先,再補 events |
+| HOW(怎麼做) | procedural skills |
+| DOMAIN(什麼意思) | 已確認的 domain knowledge 與 invariant |
+| INTENT(打算怎麼走) | intent,並**明確標 planned / implemented** |
+
+檢索是**六通道 + RRF fusion**(exact symbol / lexical / FTS unicode61 / trigram /
+embedding / entity),不是單通道 top-k,也不混原始分數。中文、英文、中英混合、
+code symbol、表名、檔案路徑都查得到。
+
+每個回答一律帶 `retrieval_status` / `confidence` / `evidence` / `uncertainty` 四件。
+
+**`retrieval_status` 契約(四態)**——上層 agent 通常只讀這一個欄位,所以
+「其實還沒驗證」必須是**狀態**,不能是塞在 `uncertainty` 裡的一句註解:
+
+| 狀態 | 什麼時候回 |
+|---|---|
+| `OK` | fact 已 VERIFIED **且**依賴指紋在當前 checkout 下仍相符(fast path);其他意圖層則是有可信命中且無衝突 |
+| `NEEDS_VERIFICATION` | fact 原本 VERIFIED,但依賴改了 / 指紋不符 / 依賴被刪或改名;或只有旁證而沒有任何已驗證的 current fact。**舊值仍會回傳,但狀態不是 OK**,要 `verify` 成功才回 `OK` |
+| `CONFLICT` | 兩份證據互相矛盾(fact 為 CONFLICT,或 domain 與 code 對不上)。不挑邊 |
+| `NO_RELIABLE_MATCH` | 完全沒有可信命中。**這是合法答案** —— 不會因為 FTS 掃到一筆低分記憶就拿它當答案 |
+
+多筆結果取**最嚴重**的:`CONFLICT` > `NEEDS_VERIFICATION` > `OK`。
+一筆 STALE 就足以讓整體不是 `OK`。`NO_RELIABLE_MATCH` 不參與這個排序 ——
+它是「沒有東西可以升級」的終態。契約值同時登記在
+`devflow-contract.json` 的 `memory.retrieval_status_values`。
+
+### 16.6 startup context 很小
+
+開場注入的只有:project identity、當前 branch/HEAD、關鍵已驗證事實、關鍵不變量、
+未實作的 intent、未解衝突、近期重要事件、**怎麼查記憶的指引**。其餘一律
+on-demand。**不再有 `CONTEXT.md`**:人工維護的單一大檔一定會腐化,而且腐化時
+沒有任何機制會發現。
+
+### 16.7 兩條記憶生命週期(都靠同一個 checkpoint)
+
+`dev-talk` 與 `dev-run` 用**同一組** session 原語 —— `dev-run` 不必假裝自己是
+`dev-talk` 才能留下記憶。durable 寫入永遠只發生在 checkpoint。
+
+```
+dev-talk(understanding)
+  talk start "<主題>"  →  turn(每個重要問答;只留本機)
+                       →  propose(萃取出來的語意 → 候選)
+                       →  confirm / reject / correct(使用者裁決)
+                       →  talk end   ← durable 寫入只在這裡
+                       ↘  talk abort(中途放棄 → 狀態明寫 ABORTED)
+
+dev-run(implementation)
+  session start --mode implementation --slug <feature>
+                       →  observe(每個 T PASS 之後;高訊號才成候選)
+                       →  (回歸綠 + 記帳完成)+ W6-1 強制萃取盤點
+                       →  checkpoint --end   ← durable 寫入只在這裡(寫進工作樹)
+                       →  memory commit → 最終 push → durable-check(§16.9)
+                       ↘  abort(中止 → 狀態明寫 ABORTED)
+```
+
+沒走到 `end` 的 session **保持 OPEN 或標成 ABORTED**,不會被默默當成完成;
+下一次一律開新的 session,絕不接上一個。
+
+`observe` 的三條硬規則:
+1. 標成 VERIFIED 的 implementation fact **必須有 dependencies 且那些檔真的存在**
+   —— 不得產出「VERIFIED 但沒有任何驗證依據」的事實(工具會擋)。
+2. 從程式碼推出來的 domain 語意一律 `CANDIDATE` + `code_inference`;
+   **不自動 promote 使用者沒確認的業務語意**。
+3. 這次沒學到東西時,checkpoint 回 `promoted: 0` 是合法結果 ——
+   **不硬產生一筆「本次完成」**。
+
+### 16.8 修正的歷史跨機器保留
+
+現況檔(`knowledge/…yaml`、`state/…yaml`、`decisions/DEC-*.md`)是**物化視圖**,
+只留得下「現在是什麼」。所以每一次 supersede 另外寫一筆 **append-only 的修正
+紀錄**進 `events/`:
+
+| 事件種類 | 什麼時候寫 | 保存什麼 |
+|---|---|---|
+| `knowledge_corrected` | domain/invariant/intent… 被更正 | 舊/新標題與內容、舊/新 status 與 authority、原因、id、時間、session |
+| `fact_superseded` | 重新驗證後值變了 | 舊值 / 新值 / 依賴檔 / 原因 |
+| `decision_superseded` | 同一個 decision key 被新的決定取代 | 舊/新標題與決定內容、原因 |
+
+於是「現在是什麼」走現況檔,「以前怎麼理解、什麼時候改、為什麼改」走修正紀錄 ——
+**刪掉本機索引重建之後兩者都還在**。修正紀錄一樣要過敏感內容與絕對路徑守衛:
+系統產生的記錄不因為是系統產生就放行。
+
+### 16.9 耐久性屏障:寫進工作樹 ≠ 已保存
+
+這一節管的是一句話:**不得在耐久性真正建立之前把狀態往前推。**
+
+`checkpoint` 回 `promoted: 3` 只代表檔案落到**工作樹**。工作樹不是耐久性 ——
+沒 commit 會被 `git checkout` 掉,沒 push 就只有這台機器有。所以 Stage 6 收尾
+是一條有順序的鏈,而且**每一步都會單獨地「看起來已經做完」**:
+
+```
+強制萃取(W6-1) → checkpoint(W6-2) → memory commit(W6-3) → 最終 push
+                                                              ↓
+                              durable-check(W6-4)  ←  remote HEAD 驗證
+        寫進工作樹        進到本機歷史        離開本機        真的可驗證
+```
+
+- **萃取是義務,產出一筆紀錄不是。** 回歸綠之後必須真的盤點一次;結論可以是
+  「沒有值得固化的東西」(那是合法答案),不合法的是**沒盤點就 checkpoint**。
+- **checkpoint 必須在最終 push 之前。** 反過來的話 `.dev-flow/` 的改動永遠留在
+  工作樹裡,`promoted: 3` 而 remote 上一個字都沒有 —— **而且不會有任何錯誤**。
+- `dev-memory.py durable-check` 是唯一能複驗這條鏈的東西。它擋掉四種假完成:
+  durable 檔沒 commit、HEAD 沒到遠端、有 session 還開著沒收、有 revision
+  還沒落地。判定一律附理由,不回一個沒人能複驗的布林值。
+- **remote 那一項問的是遠端本身**(`git ls-remote`),不是本機的
+  `origin/<branch>` —— 追蹤 ref 是快取,別台機器 force-push 或刪掉那個 branch
+  之後它還指著我的 commit。問不到遠端一律 FAIL(沒有證據不等於通過);離線要
+  放行請明確 `--local-only`。
+- **verdict 三值,而且只宣稱它證明得到的事。** `PASS` = 沒有 problems **且**
+  真的問過伺服器、它回報的 ref 等於本機 HEAD;`LOCAL_ONLY_PASS` = 本機檢查都
+  過但沒有遠端 ref 證據(`--local-only` 走的是本機追蹤 ref,所以 `pushed` 會
+  是 `true` 而伺服器從頭到尾沒被問過);`FAIL` = 有 problems。**兩種 pass 的
+  退出碼都是 0** —— 要區分強弱請讀 `verdict` 或 `remote_ref_matches`,退出碼
+  只有兩個值,承載不了三值語意。
+- **它不宣稱跨機器物理耐久性。** 實際證據拆成兩個必填欄位:`remote_ref_matches`
+  (伺服器回報的 ref 等於本機 HEAD,可機械複驗)與 `preflight_not_known_local`
+  (預檢解析到的位址不在**已知的**本機位址集合裡)。後者刻意弱:本機介面清單是
+  best-effort、非空也可能不完整,而且 SSH config 的 `HostName` 重映不在偵測範圍
+  內、預檢解析到的位址與 Git transport 實際連上的位址之間沒有綁定。**能證明的
+  就寫成欄位,證明不到的就不要寫進 verdict** —— 這跟本節其他每一條是同一條紀律。
+
+同一條原則在程式內部也成立,而且是六個實際存在過的缺陷:
+
+| 原本 | 為什麼是錯的 |
+|---|---|
+| `correct()` 在 consolidation 成功**前**就把舊值標 SUPERSEDED | 更正被敏感守衛擋掉 / session 被 abort / 寫檔失敗時,local 沒有現況、durable 還是舊值 —— 同一個問題答什麼取決於這台機器有沒有 rebuild 過 |
+| revision 的 `mark_durable` 在寫檔**前**執行,且不分有沒有寫出去 | 被守衛擋掉的 revision 也被標成已耐久:它不再是 pending,永遠不會再被嘗試,而 `.dev-flow/` 裡從來沒有它。**靜默且永久**的失憶 |
+| consolidate 先 supersede 再寫檔 | 寫檔失敗留下的狀態比沒寫更糟:重跑會把「新值 supersede 新值」記成 lineage,真正的 v1 → v2 那一段永久消失 —— 歷史從**缺**變成**假** |
+| `promote_entity_facts()` 整檔寫回不過 Signal Gate | fact 進 local DB 的路不只「過了 gate 的候選」一條 —— `verify --observed`(公開 CLI)直接寫值。整檔寫回時,**一筆乾淨的候選會把同一個 entity 裡未經檢查的鄰居一起帶進 Git**,包含 secret |
+| fact / event 的候選在 durable 寫入**之前**就標成 CONSOLIDATED | 這兩類的 durable 寫入發生在候選迴圈**之後**(fact 整個 entity 一起寫回、event 整批 append)。`write_state` / `append_events` 失敗時候選已經結案 —— 重跑再也看不到它,`.dev-flow/` 永遠缺那一筆,而 local 自洽、**沒有任何測試會紅** |
+| local event 在 `append_events()` 之**前**就被標 `durable=1` | 與 revision 那一條同型:一句沒有憑據的「已耐久」,指向一個從來沒被寫出去的檔。差別只在它換了一個 kind,所以上一輪的修法沒有蓋到它 |
+| `checkpoint()` 不要求 session 是 OPEN | `observe()` 有 `require_open()`,finalization 沒有。於是 `start → confirm → abort → checkpoint` 這條路是通的:使用者說「先不要改」,候選照樣進 Git ——「中止」變成一個沒有效力的標籤。`end_session()` 也不是 compare-and-set,abort 之後再 end 會把 ABORTED 覆寫成 CLOSED |
+
+修法一致:**先寫進 `.dev-flow/`,寫成功了才動 local 狀態**;沒寫成功的一律
+留在 pending 等下一次重試,並在每次 checkpoint 被重新回報(不結案、不靜默)。
+而**每一個 durable writer 都要自己過一次守衛** —— 上游擋過不算,因為進到那個
+writer 的路不只上游那一條。被擋的只擋那一筆,不連坐,並附理由。
+
+而**重試必須補寫同一筆,不是第二筆**:durable 實體的 id 由候選推導,不隨機。
+每次 `ids.new_id()` 的話,補寫會讓歷史從「缺」變成「重複」—— 而重複比缺更難
+發現,因為兩筆都長得像真的。
+
+最後,**finalization 一律 fail closed**:ABORTED / CLOSED / 不存在的 session
+一律報錯且零 durable 副作用,session 收尾是 `OPEN → CLOSED|ABORTED` 的
+compare-and-set。「這一輪算不算完成」是後面每一個決定的前提,它不能是一個
+沒有憑據的答案。
+
+### 16.10 寫入很吝嗇
+
+```
+tool/對話活動 → 原始事件 → Signal Gate ─低訊號→ 只留本機
+                                       └高訊號→ 結構化萃取 → 候選
+                                                 → 確認/授權 → 固化 → .dev-flow
+```
+
+低訊號(讀檔、grep、列目錄、一般成功指令)**不進 Git**。
+高訊號(架構變更、schema 變更、bug root cause、業務規則、重要決策、驗證過的流程、
+domain 釐清、breaking config)才可能進。另外兩道守衛:**疑似 secret 一律拒絕固化**
+(不做遮罩後放行 —— 遮罩靠 pattern 完整性,而 pattern 永遠不完整)、
+**內容含絕對路徑一律拒絕固化**。
+
+### 16.11 dev-talk = Project Understanding Mode
+
+`dev-talk <主題>` 不是安裝指令、也不是寫程式模式。它做的是**把一個主題聊懂**:
+
+```
+dev-talk 我今天想聊聊 PGS 在真實世界的送檢流程
+```
+
+它會**先自己看一輪**(schema / model / migration / 既有記憶),把不確定的地方變成
+具體問題再問你 —— 例如「我的理解是 submission 是院所批次、registration 是
+customer-level、specimen 是 embryo-level,這三層有沒有例外?」
+
+紀律三條:
+1. **原始對話逐字稿只留本機**,永遠不進 Git;進 Git 的是萃取後的結構化知識。
+2. **不是每說一句話就寫檔**:過程中只登記候選,`talk checkpoint` / `talk end`
+   才固化 —— 對話不把工作樹弄 dirty。
+3. **修正會 supersede,不會覆蓋**:你之後推翻先前的說法時,舊的標 SUPERSEDED
+   留著,看得到轉折。
+
+### 16.12 跨機器
+
+```
+git clone → dev-setup → 讀 .dev-flow/project.yaml → 同一個 project_id
+         → 建立本機 workspace 對照 → 重建 SQLite / FTS / embeddings → 可用
+```
+
+`project_path` 可以不同,記憶必須相同。這條有 integration test 釘住
+(`memory/tests/test_setup_legacy.py::SetupTest::test_clone_on_another_machine_rebuilds_same_memory`)。
+
+### 16.13 從舊架構遷移
+
+- **`CONTEXT.md`**(舊的人工詞彙表)→ `dev-memory.py migrate-legacy`
+  匯入 `knowledge/domain/`,一律以 **CANDIDATE + documentation authority** 落地
+  (沒有人在遷移那一刻重新確認過那些詞條,標成已確認就是把猜測當成已驗證)。
+  遷移並確認後可刪原檔;本 repo 已停止散發 `_templates/CONTEXT.md`。
+- **`docs/dev/HISTORY.md`** → **留在原地**。它是人的變更紀錄(有唯一寫入口、
+  append-only 守衛、發版流程在用),不是 agent memory 的載體。memory 只**索引**它,
+  讓「之前發生過什麼」查得到,**不**複製進 `.dev-flow/events/`。
+- **legacy 以 `project_path` 為鍵的本機資料** → 建 `project_path → project_id`
+  對照,既有資料一列都不刪。不可靠的 legacy 記憶留本機並標 legacy/unverified,
+  不 promotion 成 verified durable memory。
+
+---
+
+## 17. 附錄:跨 repo 與非 feature 入口
 
 **跨 repo feature**(如前後端成對 repo):feature 資料夾住**主 repo**(通常後端),
 配對 repo 的 `docs/dev/STATUS.md` 加一列連結過去,不重複建檔。

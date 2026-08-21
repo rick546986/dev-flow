@@ -1,0 +1,25 @@
+# A. IMPLEMENTATION TRUTH —— 程式現在實際怎麼運作(LVP current truth)。
+# dependencies/fingerprints 是失效判定的依據:依賴檔變了 → 本機先轉 STALE,重新驗證後才更新這裡。
+schema_version: 1
+entity_type: module
+entity_key: memory/agentmem/session.py
+facts:
+  - fact_key: finalization_requires_open_session
+    value: "checkpoint/end/abort 一律先 require_open;store.end_session 是 OPEN→status 的 compare-and-set 並回傳是否換到手;sync.consolidate 另驗 owning session 為 OPEN"
+    status: VERIFIED
+    confidence: 0.5
+    dependencies:
+      - memory/agentmem/session.py
+      - memory/agentmem/store.py
+      - memory/agentmem/sync.py
+    effective_at: "2026-08-20T15:35:26Z"
+    fingerprints:
+      memory/agentmem/session.py: "sha256:2207aa15c1acd1e7"
+      memory/agentmem/store.py: "sha256:88769bf49c7c6363"
+      memory/agentmem/sync.py: "sha256:191affc3b64cc516"
+    recorded_at: "2026-08-20T15:35:26Z"
+    source_commit: d85f38d4f4a4ee4837aa72a60c71ba91de47aa47
+    source_type: current_code
+    verification_count: 1
+    verified_at: "2026-08-20T15:35:26Z"
+    verified_commit: d85f38d4f4a4ee4837aa72a60c71ba91de47aa47

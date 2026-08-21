@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: code-cannot-override-domain
+title: "程式碼只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能覆寫它"
+authority: domain_expert
+status: CONFIRMED
+confidence: 0.98
+body: "程式寫錯業務規則是常態。若讓 code 自動覆寫已確認的語意,記憶會跟著錯,而且錯得看起來很有根據(有檔案有行號)。對不上時建 CONFLICT,兩邊都留。"
+recorded_at: "2026-08-20T10:12:06Z"

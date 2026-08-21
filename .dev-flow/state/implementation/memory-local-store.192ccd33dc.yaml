@@ -1,0 +1,41 @@
+# A. IMPLEMENTATION TRUTH —— 程式現在實際怎麼運作(LVP current truth)。
+# dependencies/fingerprints 是失效判定的依據:依賴檔變了 → 本機先轉 STALE,重新驗證後才更新這裡。
+schema_version: 1
+entity_type: memory
+entity_key: local-store
+facts:
+  - fact_key: backend
+    value: sqlite3-stdlib
+    status: VERIFIED
+    confidence: 0.99
+    dependencies:
+      - memory/agentmem/schema.py
+      - memory/agentmem/store.py
+    effective_at: "2026-08-20T10:12:07Z"
+    fingerprints:
+      memory/agentmem/schema.py: "sha256:76d5b78b9978c512"
+      memory/agentmem/store.py: "sha256:5f283334755ddf10"
+    recorded_at: "2026-08-20T10:12:07Z"
+    source_ref: memory/agentmem/schema.py
+    source_type: current_code
+    verification_count: 2
+    verified_at: "2026-08-20T11:31:42Z"
+    verified_commit: 45797e9ed1c4b23bc60ed6d8a99cb815b947a1a7
+  - fact_key: schema_version
+    value: "2"
+    status: VERIFIED
+    confidence: 0.5
+    dependencies:
+      - memory/agentmem/__init__.py
+      - memory/agentmem/schema.py
+    effective_at: "2026-08-20T11:32:24Z"
+    fingerprints:
+      memory/agentmem/__init__.py: "sha256:3aa4dc13d9acc01a"
+      memory/agentmem/schema.py: "sha256:76d5b78b9978c512"
+    recorded_at: "2026-08-20T11:32:24Z"
+    source_commit: 45797e9ed1c4b23bc60ed6d8a99cb815b947a1a7
+    source_ref: memory/agentmem/schema.py
+    source_type: current_code
+    verification_count: 1
+    verified_at: "2026-08-20T11:32:24Z"
+    verified_commit: 45797e9ed1c4b23bc60ed6d8a99cb815b947a1a7

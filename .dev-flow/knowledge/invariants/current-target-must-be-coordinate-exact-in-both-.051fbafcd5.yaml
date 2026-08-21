@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: current-target-must-be-coordinate-exact-in-both-dimensions
+title: "CURRENT target 生成要座標精確到 (entity_key, fact_key) 兩個分量;只按 entity 收斂不等於座標精確"
+authority: domain_expert
+status: CONFIRMED
+confidence: 0.8
+body: "query.py::_fact_targets() 修完 current-target-must-be-scoped-to-a-named-entity(把跨 entity 的 OR 比對收斂成「只在被指名的 entity 底下找」)之後,named-entity 那條分支仍然把該 entity 底下**全部**的 live fact 都回成 target —— 沒有 fact_key 篩子。一個 entity 天生擁有多筆 fact(current_table / port / version / status …),而 _current() 對多筆座標取最嚴重狀態(CONFLICT > NEEDS_VERIFICATION > OK),所以同一個 entity 底下**沒被問到**的那些 fact 照樣會污染精確查詢:一筆不相關的 CANDIDATE/STALE 把答案從 OK 拖成 NEEDS_VERIFICATION,一筆 CONFLICT 直接升級成 CONFLICT(誤報 CONFLICT 的代價更高 —— 呼叫端會以為兩個來源互相矛盾,而被問的那個座標根本沒有矛盾)。教訓的形狀:座標有兩個分量,收斂了一個分量不等於收斂了座標;「比上一版精確」與「精確」是兩件事,而中間那一段長得像已經修好了。修法:entity 被指名時再分三種 —— 也指名了存在於該 entity 底下的 fact_key 就只收交集;指名的 fact_key 只存在於別的 entity 就回空(被問的座標不存在,不得退回「整個 entity 都給你」,那是拿一個沒被問的座標當答案);完全沒指名 fact_key 才保留「整個 entity 聚合」的既有語意,因為那時被問的座標就是 entity 本身。已知界線:只認得目前存在於 store 裡的 fact_key,查詢寫了一個不存在的 fact_key 時無從辨識,會落到第三種 —— 要辨識它就得先猜查詢裡哪個 token 是 fact_key,而那正是這支函式拒絕做的猜測。"
+recorded_at: "2026-08-21T07:37:20Z"
