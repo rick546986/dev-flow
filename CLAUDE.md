@@ -19,3 +19,10 @@
 **範圍僅限這個資料夾**。Drive 其他位置照原本規矩走 —— `.claude/settings.json`
 的 `permissions.allow` 只能按工具名放行、無法按資料夾收斂,所以真正的邊界是這一節,
 不是那份設定。
+
+**這一節只服務本機的互動 session。** autoloop 那個每小時的 Cursor Automation
+跑在雲端、沒有 Google 認證,它讀這個資料夾走的是公開連結的純 HTTP
+(`embeddedfolderview` + `uc?export=download`,見
+`docs/prompts/autoloop-contract.md` §1),完全不經過這裡列的 MCP 工具。
+**不要以為那個迴圈依賴本節或 `.claude/settings.json`** —— 拿掉它們迴圈照跑,
+壞掉的只會是本機 session 的便利性。
