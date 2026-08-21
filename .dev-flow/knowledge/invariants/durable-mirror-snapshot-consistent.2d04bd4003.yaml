@@ -2,10 +2,10 @@
 # code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
 schema_version: 1
 kind: invariant
-key: durable-mirror-generation
-title: "讀路徑必須在服務前核對 durable 世代"
+key: durable-mirror-snapshot-consistent
+title: "rebuild 與世代戳必須同一 snapshot"
 authority: current_code
 status: CANDIDATE
 confidence: 0.8
-body: "local SQLite 是 .dev-flow 的鏡射。世代對不上不得把舊 VERIFIED 當 OK。沒有世代紀錄且已有 durable 鏡射列時必須 rebuild,不得只蓋章。"
+body: "rebuild 先算 generation_before,讀完再算 generation_after,只在兩者相等時蓋章。對不上就重試,耗盡則 DurableMirrorDrift,不得認證撕開的鏡射。"
 recorded_at: "2026-08-21T19:17:44Z"
