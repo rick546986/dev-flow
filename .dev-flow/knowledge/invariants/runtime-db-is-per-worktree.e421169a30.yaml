@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: runtime-db-is-per-worktree
+title: "runtime SQLite 是 per-worktree;已確認知識的共用走 .dev-flow + git,不靠同一份可變檔"
+authority: user_confirmed
+status: CONFIRMED
+confidence: 0.8
+body: "owner 裁決 D-1。兩個 git worktree(同一 project_id、不同本機目錄)必須打開不同的 memory.db,也不得共用 WAL/SHM/OPEN session/candidate/overlay。worktree_key 綁的是本機路徑(workspace_key=project_id+hostname+realpath),不是分支名,所以同一工作樹切 branch 仍用同一份 DB。舊的專案級共用檔(projects/<project_id>/memory.db,沒有 worktrees 那一層)第一次碰到就改名封存,不把舊 OPEN session 扇出到各個新 worktree。刪掉一份 worktree 的 DB 再 setup,只從該 worktree 當前 checkout 的 .dev-flow 重建,不得清掉另一份。"
+recorded_at: "2026-08-21T10:13:46Z"
