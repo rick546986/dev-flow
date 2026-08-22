@@ -41,7 +41,7 @@ description: 開發流程 SOP 的唯一對外入口(7 階段路由器,SDD 為主
 | 4 規格 | openspec delta 格式,**step-by-step 生成** + **反模糊三律**(S 可轉單一測試、禁模糊詞、禁 TBD);**執行清單與三律見 `_templates/4-spec.md` 頂註** | `4-spec.md`(含 Drafting Decisions) | **G2** R/S 全審 + DD 全裁決 + Verification Profile(依 lane 正確填寫)+ Demo verdict 條件(全文見 README §7;Demo verdict 語意正本見 §4 所引,機械檢查 `hooks/_stage3_impl.py`) |
 | 5 任務 | `to-tickets` 概念:tracer-bullet 順序 + Covers/Verify/Blocked-by | `5-tasks.md` | 每 T 有 Verify |
 | 6 實作 | **`dev-run` 引擎**(haiku 執行→sonnet 審→錯誤升階;守衛 `devflow-exec.sh` start/stop,詳其 SKILL;5-tasks 明寫 `execution.mode: parallel` 時走並行引擎(選配))或手動逐 T;兩者共用 README §5 的 T acceptance seam:RED→GREEN→scope check→Verify→獨立 T review→PASS→commit→記 Progress Log/checkbox/review evidence;**執行清單見 `_templates/6-implementation-notes.md` 頂註** | `6-implementation-notes.md`(含 T Review Log;執行軌跡只供 dev-run) | 每 T review PASS + 全 S 綠 |
-| 7 驗證 | 雙軸審(Standards + Spec)+ 自建 coverage matrix(可搭 mattpocock `code-review`);整合回歸在 Final Fresh 之前(出貨樹=審過的樹);**執行清單見 `_templates/7-review.md` 頂註** | `7-review.md` + `7-review.html` | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 README §7);PASS → Exit Checklist(PR 是其中一項) |
+| 7 驗證 | 雙軸審(Standards + Spec)+ 自建 coverage matrix(可搭 mattpocock `code-review`);整合回歸在 Final Fresh 之前(出貨樹=審過的樹);4-spec Required layers 欄必須在(可寫「無」/none);**執行清單見 `_templates/7-review.md` 頂註** | `7-review.md` + `7-review.html` | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 README §7);PASS → Exit Checklist(PR 是其中一項) |
 
 gate 條件唯一正本 = 母版 README §7;本表 gate 欄是摘要,衝突以 §7 為準。
 

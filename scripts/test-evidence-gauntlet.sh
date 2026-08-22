@@ -114,10 +114,9 @@ run_case "review 檔雙軸+Walkthrough+Coverage Matrix 俱在但缺 Standards Ax
   "缺「## Standards Axis」" "$FIX/bad-review-missing-standards-axis.md" --review-file
 run_case "review 檔雙軸+Walkthrough+Coverage Matrix 俱在但缺 現象證據(E11)" 1 \
   "缺「## 現象證據」" "$FIX/bad-review-missing-phenomena.md" --review-file
-# 1230-P0:無 sibling 4-spec 時必須靠 --profile,不能再退回 1.2.0 漏帶即綠。
-run_case "review 檔雙軸+現象證據+Walkthrough+Coverage Matrix 俱在且有 --profile 則過" 0 "-" \
-  "$FIX/good-review.md" --review-file --source-sha abc1234def5678 \
-  --profile "$FIX/profile-pass/4-spec.md"
+# 1630-P1 起 --profile 不得指向別份 feature;E11 正案改用 sibling 4-spec。
+run_case "review 檔雙軸+現象證據+Walkthrough+Coverage Matrix 俱在且 sibling 4-spec 則過" 0 "-" \
+  "$FIX/profile-pass/7-review.md" --review-file --source-sha abc1234def5678
 
 echo "== 六.stale artifact 清除:舊 report 必先刪、新 report 綁本次 run =="
 checks=$((checks + 1))
@@ -185,7 +184,8 @@ echo "== 1230-P0.--review-file 找不到 Profile 不得退回 1.2.0=="
 # good-review 漏帶 --require-layer 仍 exit 0 / 27 checks(假綠)。
 run_case "review-file 無 sibling 4-spec 也無 --profile → E7 紅" 1 "E7" \
   "$FIX/good-review.md" --review-file --source-sha abc1234def5678
-run_case "review-file 以 --profile 指向有效 4-spec(無 sibling)仍綠" 0 "-" \
+# 1630-P1:無 sibling 時 --profile 指向別份不得再當逃生口(舊 1.3.1 綠)。
+run_case "review-file 無 sibling、--profile 指向別份 4-spec → E7 紅" 1 "E7" \
   "$FIX/good-review.md" --review-file --source-sha abc1234def5678 \
   --profile "$FIX/profile-pass/4-spec.md"
 # 檔在但沒有 Verification Profile 節 = 一樣找不到 Profile
@@ -195,6 +195,10 @@ printf '# fixture:有 4-spec 檔但沒有 Verification Profile 節\n\n## ADDED R
   > "$TMP/no-section/4-spec.md"
 run_case "review-file sibling 4-spec 無 Verification Profile 節 → E7 紅" 1 "E7" \
   "$TMP/no-section/7-review.md" --review-file --source-sha abc1234def5678
+# 顯式 --profile 指向自己的 sibling 仍綠
+run_case "review-file --profile 指向自己的 sibling 4-spec 仍綠" 0 "-" \
+  "$FIX/profile-pass/7-review.md" --review-file --source-sha abc1234def5678 \
+  --profile "$FIX/profile-pass/4-spec.md"
 
 echo "== 1230-P1.docs/dev/<feature>/7-review.md 顯式 SHA 也必須 = HEAD=="
 # 舊實作:顯式 --source-sha 只比對該值。live feature 宣告=abc1234、HEAD 已走,
@@ -228,6 +232,41 @@ open(path, "w", encoding="utf-8").write(text)
 PY
 run_case "docs/dev/<feature>/7-review 宣告=HEAD 且顯式也傳 HEAD → 綠" 0 "-" \
   "$live/docs/dev/live-feature/7-review.md" --review-file --source-sha "$live_head"
+
+echo "== 1630-P0.Verification Profile 缺 Required layers 欄不得當零層放行=="
+# 舊實作:有 ## Verification Profile 但沒有 Required layers 那列 → required=[]
+# → E7 不擋,exit 0 / 27 checks(假綠)。缺欄必須紅;明示「無」/none 才是零層。
+run_case "review-file sibling Profile 缺 Required layers 欄 → E7 紅" 1 "E7" \
+  "$FIX/profile-no-required-row/7-review.md" --review-file --source-sha abc1234def5678
+run_case "review-file Required layers:無(明示零層)→ 綠" 0 "-" \
+  "$FIX/profile-required-none/7-review.md" --review-file --source-sha abc1234def5678
+mkdir -p "$TMP/req-none-en"
+cp "$FIX/profile-required-none/7-review.md" "$TMP/req-none-en/7-review.md"
+printf '%s\n' \
+  '## Verification Profile(G2 一併審)' \
+  '- lane: full' \
+  '- Risk: normal' \
+  '- Required layers:none' \
+  '- Explicitly excluded layers:Mutation' \
+  '- Final fresh entry point:`pytest -q`' \
+  > "$TMP/req-none-en/4-spec.md"
+run_case "review-file Required layers:none(明示零層)→ 綠" 0 "-" \
+  "$TMP/req-none-en/7-review.md" --review-file --source-sha abc1234def5678
+
+echo "== 1630-P1.--review-file 的 --profile 只准本 feature,不得跨份覆寫=="
+# 舊實作:profile-unverified 的 sibling 會 E7 紅,但 --profile 指向
+# profile-pass(Required 皆 pass)仍 exit 0 / 31 checks(假綠)。
+run_case "review-file --profile 指向別份 feature 的 4-spec → E7 紅" 1 "E7" \
+  "$FIX/profile-unverified/7-review.md" --review-file --source-sha abc1234def5678 \
+  --profile "$FIX/profile-pass/4-spec.md"
+# 同一 feature 目錄:7-review 在 docs/dev/<slug>/nested/,4-spec 在 slug 根
+mkdir -p "$TMP/same-feat/docs/dev/feat-a/nested"
+cp "$FIX/profile-pass/7-review.md" "$TMP/same-feat/docs/dev/feat-a/nested/7-review.md"
+cp "$FIX/profile-pass/4-spec.md" "$TMP/same-feat/docs/dev/feat-a/4-spec.md"
+run_case "review-file --profile 指向同一 feature 目錄的 4-spec 仍綠" 0 "-" \
+  "$TMP/same-feat/docs/dev/feat-a/nested/7-review.md" --review-file \
+  --source-sha abc1234def5678 \
+  --profile "$TMP/same-feat/docs/dev/feat-a/4-spec.md"
 
 echo "== P0-1.模板節序:整合回歸必須在 Final Fresh 之前=="
 # 舊模板:Final Fresh 在執行清單 2c,整合回歸在 Exit Checklist(Verdict 之後)。

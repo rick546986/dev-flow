@@ -10,11 +10,15 @@
 #   E4  pass 列必有非空 Command + 非空 Result,且 Result 含數字(數字非形容詞)
 #   E5  unverified / n-a 列必有 Skipped reason
 #   E6  任一層 fail → 整體非零退出(Gauntlet 失敗不得宣告 PASS)
-#   E7  Required 層必須 pass:預設讀 sibling(或 --profile)4-spec Verification
-#       Profile;--require-layer 只能加嚴,不能把 Required 拿掉。已列入 Evidence
+#   E7  Required 層必須 pass:預設讀 sibling 4-spec Verification Profile;
+#       --require-layer 只能加嚴,不能把 Required 拿掉。已列入 Evidence
 #       且非 n-a 的 Conditional 層同樣必須 pass。漏帶旗標不再 fail-open。
-#       --review-file 找不到 Profile(無 sibling、無 --profile、或檔內無該節)
+#       --review-file 找不到 Profile(無 sibling、或檔內無該節)
 #       → E7 fail-closed,不得退回 1.2.0。
+#       --review-file 時 Verification Profile 必須有 Required layers 欄
+#       (可寫「無」/none;缺欄不得當零層放行)。
+#       --review-file 的 --profile 只准 sibling 或同一 feature 目錄的 4-spec,
+#       只能加嚴同一份,不得用別份 feature 覆寫。
 #   E8  coverage 層 pass → Result 必含 covered/total 分數(禁全域 % 虛榮數字)
 #   E9  mutation 層:Result 含 ERROR 不得 pass;killed<total 且未標 equivalent 不得 pass
 #   E10 Negative Constraint Mapping 節必在、狀態合法、skipped 列不得 pass
@@ -36,7 +40,7 @@ set -eu
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 # 版本聲明:與 devflow-contract.json 的 schema_versions.gauntlet 同步(doctor 比對用)
-GAUNTLET_VERSION="1.3.1"
+GAUNTLET_VERSION="1.3.2"
 export DEVFLOW_EG_VERSION="$GAUNTLET_VERSION"
 
 usage_error() {
@@ -95,7 +99,8 @@ if [ "$REVIEW_FILE" = "1" ]; then
   fi
 fi
 
-# 4-spec 正本:顯式 --profile 優先,否則 sibling 4-spec.md。
+# 4-spec 正本:預設 sibling 4-spec.md。--review-file 時 --profile 只能指向
+# 同一份(sibling 或同一 feature 目錄的 4-spec),用來明示/加嚴,不能換檔。
 # --review-file 找不到檔就不讀、退回 1.2.0 = 假綠;改為 E7 fail-closed。
 PROFILE_MISSING=0
 if [ -n "$PROFILE" ]; then
@@ -183,17 +188,22 @@ def table_rows(body, expected_cols, table_label):
     return rows[1:] if rows else []  # rows[0] = 表頭
 
 
+EMPTY_LAYER = re.compile(r"^(無|無層|none|n/?a|n-a)$", re.I)
+
+
 def parse_profile_layers(spec_text):
     """從 4-spec Verification Profile 抽出 Required / Conditional / Excluded 層名。
 
     層名分隔認頓號、逗號、分號、換行、空白夾著的 /。括號條件與「——」「(=」
     之後的說明丟掉。認不到 Verification Profile 節就當沒有。
+    回傳 (required, conditional, excluded, required_field_present)。
+    「無」/none 是明示零層,不是缺欄。
     """
     match = re.search(
         r"^##[ \t]+Verification Profile[^\n]*\n(.*?)(?=^## |\Z)",
         spec_text, re.M | re.S)
     if not match:
-        return [], [], []
+        return [], [], [], False
     body = match.group(1)
     key_re = re.compile(
         r"^-\s*(Required layers|Conditional layers|Explicitly excluded layers|"
@@ -232,6 +242,8 @@ def parse_profile_layers(spec_text):
             name = re.sub(r"\([^)]*\)\s*$", "", name).strip().strip("`")
             if not name or name.lower() == "final fresh run 必跑":
                 continue
+            if EMPTY_LAYER.match(name):
+                continue
             out.append(name)
         return out
 
@@ -245,19 +257,45 @@ def parse_profile_layers(spec_text):
         pick("required layers"),
         pick("conditional layers"),
         pick("explicitly excluded layers", "explicitly excluded"),
+        "required layers" in fields,
     )
+
+
+def is_allowed_review_profile(review_path, spec_path):
+    """--review-file 只准 sibling 4-spec.md,或同一 docs/dev/<slug>/ 的 4-spec.md。"""
+    review_real = os.path.realpath(review_path)
+    spec_real = os.path.realpath(spec_path)
+    sibling = os.path.join(os.path.dirname(review_real), "4-spec.md")
+    if os.path.isfile(sibling) and os.path.samefile(spec_real, sibling):
+        return True
+    parts = review_real.split(os.sep)
+    for i, part in enumerate(parts[:-2]):
+        if part == "docs" and parts[i + 1] == "dev":
+            slug_root = os.sep.join(parts[: i + 3])
+            feature_spec = os.path.join(slug_root, "4-spec.md")
+            if os.path.isfile(feature_spec) and os.path.samefile(spec_real, feature_spec):
+                return True
+            break
+    return False
 
 
 spec_required, spec_conditional, spec_excluded = [], [], []
 profile_section_missing = False
+required_field_missing = False
+profile_cross = False
 if profile_path:
-    with open(profile_path, encoding="utf-8") as spec_stream:
-        spec_text = spec_stream.read()
-    if not re.search(r"^##[ \t]+Verification Profile", spec_text, re.M):
-        profile_section_missing = True
+    if review_mode and not is_allowed_review_profile(target, profile_path):
+        profile_cross = True
     else:
-        spec_required, spec_conditional, spec_excluded = parse_profile_layers(
-            spec_text)
+        with open(profile_path, encoding="utf-8") as spec_stream:
+            spec_text = spec_stream.read()
+        if not re.search(r"^##[ \t]+Verification Profile", spec_text, re.M):
+            profile_section_missing = True
+        else:
+            (spec_required, spec_conditional, spec_excluded,
+             required_present) = parse_profile_layers(spec_text)
+            if review_mode and not required_present:
+                required_field_missing = True
 # 旗標只能加嚴:4-spec Required ∪ --require-layer,不能用旗標把 Required 拿掉。
 required_layers = []
 seen_req = set()
@@ -348,11 +386,21 @@ for name, command, status, result, reason in layers:
 # Required = 必須 pass。unverified/n-a/缺席都不滿足(fail 另由 E6 擋)。
 # 來源:4-spec Required layers ∪ --require-layer(旗標只能加嚴)。
 # --review-file 找不到 Profile → fail-closed,不得退回 1.2.0 漏帶即綠。
+# --review-file 缺 Required layers 欄 → fail-closed(可寫「無」/none,不能省略)。
+# --review-file 的 --profile 跨 feature → fail-closed,不得用別份覆寫。
 if review_mode and (profile_missing or profile_section_missing):
     check("E7", False,
           "--review-file 找不到 4-spec Verification Profile"
-          "(無 sibling 4-spec.md、無 --profile、或檔內無該節);"
+          "(無 sibling 4-spec.md、或檔內無該節);"
           "不得退回 1.2.0 讓漏帶 --require-layer 仍綠")
+if review_mode and required_field_missing:
+    check("E7", False,
+          "--review-file 的 Verification Profile 缺 Required layers 欄"
+          "(可寫「無」/none;缺欄不得當零層必跑放行)")
+if review_mode and profile_cross:
+    check("E7", False,
+          "--review-file 的 --profile 只能指向本 feature 的 4-spec"
+          "(sibling 或同一 docs/dev/<slug>/4-spec.md),不得用別份 feature 覆寫")
 for wanted in required_layers:
     passed = any(wanted.lower() in row[0].lower() and row[2] == "pass"
                  for row in layers)

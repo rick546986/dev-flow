@@ -17,6 +17,8 @@ updated: 2026-08-22
 | S-2.2 | 已綠(無 Required 可擋) | 仍綠 |
 | S-3.1 | good-review `--review-file` 不帶 SHA exit 0(25 checks passed,假綠) | exit 1,E2 |
 | S-2.4 | good-review `--review-file` 無 Profile exit 0(27 checks,假綠);無 Profile 節同 27 | exit 1,E7 |
+| S-2.5 | profile-no-required-row exit 0(27 checks,假綠);`無`/`none` 被當層名 exit 1 | 缺欄 E7 紅;`無`/`none` 綠 |
+| S-2.6 | `--profile` 指向 profile-pass 蓋過 sibling → exit 0(31 checks,假綠) | E7 紅 |
 | S-3.2 | docs/dev/live-feature 顯式 stale SHA exit 0(29 checks,假綠) | exit 1,E2 |
 
 舊實作數字是先補測試、未改 gauntlet 之前跑出來的,不是回憶。1230 兩條舊實作下
@@ -30,9 +32,12 @@ updated: 2026-08-22
 - D-3:`--review-file` 才預設 HEAD;顯式 `--source-sha` 在 example/ 與
   scripts/fixtures/ 仍只比對該值。`docs/dev/<feature>/7-review.md` 即使顯式
   傳 SHA 也強制 HEAD(owner 1230 裁)。
-- D-4:Gauntlet 1.2.0 → 1.3.0 → 1.3.1,五處版本錨 lockstep。
+- D-4:Gauntlet 1.2.0 → 1.3.0 → 1.3.1 → 1.3.2,五處版本錨 lockstep。
 - D-5:`--review-file` 找不到 Verification Profile 即 E7 fail-closed,不得退回
   1.2.0(owner 1230 裁)。
+- D-6:Required layers 欄必須在;「無」/none 是明示零層(owner 1630 裁)。
+- D-7:`--review-file` 的 `--profile` 只准 sibling 或同一 feature 目錄,不得跨份
+  覆寫(owner 1630 裁)。
 
 ## Deviations
 無。未改 `docs/dev/STATUS.md`。未動 `memory/`、`docs/dev/autoloop/`、PR #15。

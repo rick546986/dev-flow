@@ -56,6 +56,18 @@ updated: 2026-08-22
 - THEN: exit 1,輸出含 E7;不得退回 1.2.0 漏帶即綠
 - 觀測: `bash scripts/test-evidence-gauntlet.sh` 1230-P0
 
+#### S-2.5 Profile 缺 Required layers 欄 → E7 紅
+- GIVEN: `scripts/fixtures/evidence-gauntlet/profile-no-required-row/`
+- WHEN: gauntlet `--review-file`
+- THEN: exit 1,輸出含 E7。`Required layers:無` / `none` 為明示零層,綠
+- 觀測: `bash scripts/test-evidence-gauntlet.sh` 1630-P0
+
+#### S-2.6 --profile 不得指向別份 feature
+- GIVEN: profile-unverified 的 7-review + profile-pass 的 4-spec
+- WHEN: `--review-file --profile <別份 4-spec>`
+- THEN: exit 1,輸出含 E7。sibling 或同一 `docs/dev/<slug>/4-spec.md` 仍綠
+- 觀測: `bash scripts/test-evidence-gauntlet.sh` 1630-P1
+
 ### R-3: --review-file 漏帶 --source-sha 綁 HEAD
 
 #### S-3.1 宣告 SHA ≠ HEAD → E2 紅

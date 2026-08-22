@@ -117,9 +117,11 @@ updated:
 >    指名的 entry point 一次 fresh run 產出、Source SHA = 當下 HEAD = 送審樹;跑
 >    `docs/dev/tools/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD)
 >    --review-file --require-layer <Profile Required 層,逐層一個 flag>` 全綠
->    (Gauntlet 1.3.1 起自己讀 sibling 4-spec 的 Required layers;漏帶旗標不再
->    fail-open;找不到 Profile 即 E7 紅。旗標只能加嚴,不能把 Required 拿掉。
->    `docs/dev/<feature>/7-review.md` 即使帶 `--source-sha` 也必須等於 HEAD。)
+>    (Gauntlet 1.3.2 起自己讀 sibling 4-spec 的 Required layers;漏帶旗標不再
+>    fail-open;找不到 Profile 或缺 Required layers 欄即 E7 紅(可寫「無」/none)。
+>    `--profile` 只准本 feature 的 4-spec,不得跨份覆寫。旗標只能加嚴,不能把
+>    Required 拿掉。`docs/dev/<feature>/7-review.md` 即使帶 `--source-sha` 也必須
+>    等於 HEAD。)
 >    ⚠️ **開工前先 `test -x docs/dev/tools/devflow-evidence-gauntlet.sh`**。
 >    那個路徑是 `dev-setup` 的散發契約(skills/dev-setup/SKILL.md:69 明訂
 >    `mkdir -p docs/dev/tools` 後 cp 母版),**不是隨手寫的**。
