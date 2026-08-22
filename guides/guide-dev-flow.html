@@ -2155,6 +2155,14 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             這支比對 guide 內每段「原文」引用是否與 SKILL.md 現文逐字相符,並核對兩邊的步驟數
             一致,抓「錯引正本」與「步數漂移」。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-devtalk-graph.sh</code></td>
+        <td>Stage 1 第一刀的機械契約:四個節點檔必須可單獨當入口、graph 下一跳與節點檔一致、
+            重跑落檔不得另存第二份討論檔、游標已在 N3 時不得重開 session。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-devtalk-graph.sh</code></td>
+        <td>上面那支的負向牙:舊實作(單一 SKILL、沒有 graph)必須紅;缺進條件、下一跳不一致、
+            雙正本、另存、N3 重開 session、N9 寫程式或 talk end 各打一槍。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>
         <td>本節新增的守衛本身——盤點 <code>hooks/</code>/<code>scripts/</code>/<code>observability/</code>/
             <code>tests/parallel-stage6/</code> 底下每支腳本有沒有被這張表點名到,也反查表裡寫的檔名是不是

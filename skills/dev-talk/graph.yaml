@@ -1,0 +1,48 @@
+# 下一跳唯一正本。本機游標不進 Git。
+entry: N1-start
+nodes:
+  N1-start:
+    file: nodes/N1-start.md
+    next: N3-probe
+    via: skill-legacy-0-2
+    allow:
+      - talk_start
+    forbid:
+      - write_knowledge
+      - talk_end
+      - write_code
+  N3-probe:
+    file: nodes/N3-probe.md
+    next: N9-write-md
+    via: skill-legacy-4-6
+    allow:
+      - talk_turn
+      - talk_propose
+    forbid:
+      - talk_start_if_session
+      - write_knowledge
+      - talk_end
+      - write_code
+  N9-write-md:
+    file: nodes/N9-write-md.md
+    next: N13-end
+    via: skill-legacy-8-10
+    write:
+      - docs/dev/<slug>/1-discussion.md
+    write_mode: overwrite
+    allow:
+      - write_discussion_md
+    forbid:
+      - talk_end
+      - write_code
+      - write_knowledge
+      - talk_start
+  N13-end:
+    file: nodes/N13-end.md
+    next: ""
+    allow:
+      - talk_end
+    forbid:
+      - talk_start
+      - write_code
+      - write_knowledge
