@@ -22,6 +22,8 @@ updated: 2026-08-22
 | S-3.2 | docs/dev/live-feature 顯式 stale SHA exit 0(29 checks,假綠) | exit 1,E2 |
 | S-2.7 | Required layers 空值 / 只有空白 exit 0(27 checks,假綠) | E7 紅 |
 | S-2.8 | Required `unit` 被 `unit-smoke` pass 滿足 exit 0(28 checks,假綠) | E7 紅;全等與尾端括號仍綠 |
+| S-2.9 | 散發副本一律 E7 時既有 DIST 三負向仍 66/66 | 正案 `req-exact` 打散發副本;變異 67/68 |
+| S-2.10 | py-floor exit 2 無條件 fail-fast,後續檢查 0 次 | 缺席記紅、組內繼續;語法超下限仍 fail-fast |
 
 舊實作數字是先補測試、未改 gauntlet 之前跑出來的,不是回憶。1230 兩條舊實作下
 `test-evidence-gauntlet` 48/51。1830 三條舊實作下 `test-evidence-gauntlet` 59/62。
@@ -44,6 +46,8 @@ updated: 2026-08-22
   (owner 1830 裁)。
 - D-9:Required / Conditional 層名 strip 後大小寫不敏感全等,可先去掉尾端括號;
   禁止 substring(owner 1830 裁)。
+- D-10:py-floor 直譯器缺席(exit 2)該項記紅、組內繼續;語法超下限(exit 1)
+  仍 fail-fast。不改 WARN(owner 2130 裁)。
 
 ## Deviations
 無。未改 `docs/dev/STATUS.md`。未動 `memory/`、`docs/dev/autoloop/`、PR #15。

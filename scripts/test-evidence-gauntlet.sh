@@ -359,6 +359,10 @@ run_case_on "$DIST_TOOL" "散發副本 Required layers 只有空白 → E7 紅" 
   "$TMP/req-ws/7-review.md" --review-file --source-sha abc1234def5678
 run_case_on "$DIST_TOOL" "散發副本 Required unit 被 unit-smoke 滿足 → E7 紅" 1 "E7" \
   "$TMP/req-substr/7-review.md" --review-file --source-sha abc1234def5678
+# 2130-P0:三案全是負向。散發副本若被改成 --review-file 一律 E7 紅,三案仍過。
+# 正案才證明確實在比對,不是入口壞掉。複用上面的 $TMP/req-exact。
+run_case_on "$DIST_TOOL" "散發副本 Required unit 對 evidence unit pass → 綠" 0 "-" \
+  "$TMP/req-exact/7-review.md" --review-file --source-sha abc1234def5678
 
 echo "== 2030-P1.group_architecture 必須先跑 parity 再跑 py-floor=="
 # 本機缺 3.9–3.11 時 check-py-floor exit 2,組內 fail-fast 吃掉後面的
@@ -389,6 +393,58 @@ then
   echo "  ✅ group_architecture:parity 在 py-floor 之前"
 else
   fail "group_architecture 仍先跑 py-floor,缺席時 fail-fast 吃掉 parity"
+fi
+
+echo "== 2130-P1.py-floor 缺席記紅、組內繼續;語法超下限仍 fail-fast=="
+# 舊實作:run "architecture/check-py-floor" … || return 1
+# 任何非零(含缺席 exit 2)都 fail-fast,後面的 stage67 / test-architecture-guards
+# 本機永遠看不到。2030 只把 parity 挪到前面,沒修這個。
+# 完成:exit 2 該項記紅、組內繼續;exit 1(語法超下限)仍 fail-fast。
+# 不把 check-py-floor 改 WARN。
+checks=$((checks + 1))
+if python3 - "$ROOT/scripts/devflow-check.sh" "$ROOT/scripts/check-py-floor.sh" <<'PY'
+import sys
+check = open(sys.argv[1], encoding="utf-8").read()
+floor = open(sys.argv[2], encoding="utf-8").read()
+start = check.find("group_architecture()")
+end = check.find("\ngroup_render()")
+if start < 0 or end <= start:
+    print("找不到 group_architecture")
+    raise SystemExit(1)
+body = check[start:end]
+code = "\n".join(ln.split("#", 1)[0] for ln in body.splitlines())
+# 舊形狀:同一條可執行行上 run … check-py-floor.sh … || return 1
+old = False
+for ln in code.splitlines():
+    if "check-py-floor.sh" in ln and "||" in ln and "return 1" in ln:
+        old = True
+        print(f"舊 fail-fast:{ln.strip()}")
+if old:
+    raise SystemExit(1)
+# 必須能分辨 2(缺席,繼續)與 1(語法,中止)
+if ' -eq 2' not in code and ' == 2' not in code:
+    print("group_architecture 沒有對 py-floor exit 2 的繼續分支")
+    raise SystemExit(1)
+if ' -eq 1' not in code and ' == 1' not in code and ' -ne 2' not in code:
+    print("group_architecture 沒有對 py-floor exit 1 / 非 2 的 fail-fast")
+    raise SystemExit(1)
+# 組在繼續之後仍要因 FAILED 紅,否則後面全過會把缺席當綠
+if 'FAILED' not in code:
+    print("group_architecture 繼續後沒有看 FAILED,缺席會被後面的綠蓋掉")
+    raise SystemExit(1)
+# 不把 py-floor 本身改 WARN / exit 0
+if 'sys.exit(2)' not in floor:
+    print("check-py-floor.sh 缺席路徑不再 exit 2")
+    raise SystemExit(1)
+if 'WARN' in floor and '找不到 Python' in floor:
+    print("check-py-floor.sh 把缺席改成 WARN 了")
+    raise SystemExit(1)
+print("py-floor 缺席記紅繼續;語法超下限 fail-fast;腳本本身仍 exit 2")
+PY
+then
+  echo "  ✅ group_architecture:py-floor 缺席記紅繼續、語法超下限 fail-fast"
+else
+  fail "group_architecture 仍對 py-floor 無條件 fail-fast,或缺席被改 WARN"
 fi
 
 echo "== 1630-P1.--review-file 的 --profile 只准本 feature,不得跨份覆寫=="
