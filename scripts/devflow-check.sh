@@ -117,6 +117,10 @@ group_contracts() {
 }
 
 group_architecture() {
+  # 2030-P1:parity 必須在 py-floor 之前。本機缺 3.9–3.11 時 check-py-floor
+  # exit 2,組內 fail-fast 會吃掉後面所有檢查 —— 1930 散發副本漂移就是這樣
+  # 本機看不見的。不把 py-floor 缺席改 WARN(門檻不降);只把這張網挪到前面。
+  run "architecture/check-integration-regression-guard" scripts/check-integration-regression-guard.sh || return 1
   # 最低 Python 版本相容(2026-08-19 採用現場踩到):會在採用專案直譯器上跑的 .py
   # 不得用到比宣告下限更新的語法。build-gate-twin.py 曾在 f-string 表達式寫反斜線,
   # 3.11 及更早直接 SyntaxError,而 v3.8.0 全部既有檢查皆綠 —— 這支就是那個缺的檢查。
@@ -157,9 +161,6 @@ group_architecture() {
   # 新增/改名/刪除 hooks|scripts|observability|memory|tests/parallel-stage6 底下的 *.sh/*.py 沒同步
   # 更新那張表就紅;表裡寫了不存在的檔名也紅。
   run "architecture/check-file-map" scripts/check-file-map.sh || return 1
-  # 整合回歸工具(H-1):八情境+五 mutant+模板順序+正副本 parity。正式工具的
-  # 10/11 是正常結果不是失敗,不能直接掛進本聚合器 —— wrapper 比對後自己回 0/1。
-  run "architecture/check-integration-regression-guard" scripts/check-integration-regression-guard.sh || return 1
   # STATUS 規則對帳(S-1):模板/母版自用兩份要點、Active 表頭 Branch 欄、
   # quickstart 手寫範例列(renderer 不同步那段,只有這支在看)。
   run "architecture/check-status-policy" scripts/check-status-policy.sh || return 1

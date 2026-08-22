@@ -7,6 +7,7 @@ set -u
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 TOOL="$ROOT/scripts/devflow-evidence-gauntlet.sh"
+DIST_TOOL="$ROOT/docs/dev/tools/devflow-evidence-gauntlet.sh"
 FIX="$ROOT/scripts/fixtures/evidence-gauntlet"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
@@ -19,13 +20,13 @@ fail() {
   echo "  ❌ $1"
 }
 
-# run_case <label> <expected_exit> <required_output_pattern|-> [tool args...]
-run_case() {
-  local label="$1" expected_exit="$2" pattern="$3"
-  shift 3
+# run_case_on <tool> <label> <expected_exit> <required_output_pattern|-> [tool args...]
+run_case_on() {
+  local tool="$1" label="$2" expected_exit="$3" pattern="$4"
+  shift 4
   checks=$((checks + 1))
   local out rc
-  out=$("$TOOL" "$@" 2>&1)
+  out=$("$tool" "$@" 2>&1)
   rc=$?
   if [ "$rc" -ne "$expected_exit" ]; then
     fail "$label: exit $rc(預期 $expected_exit)"
@@ -40,8 +41,17 @@ run_case() {
   echo "  ✅ $label"
 }
 
+# run_case <label> <expected_exit> <required_output_pattern|-> [tool args...]
+run_case() {
+  run_case_on "$TOOL" "$@"
+}
+
 if [ ! -x "$TOOL" ]; then
   echo "❌ evidence gauntlet tests: tool 不存在或不可執行:$TOOL"
+  exit 1
+fi
+if [ ! -x "$DIST_TOOL" ]; then
+  echo "❌ evidence gauntlet tests: 散發副本不存在或不可執行:$DIST_TOOL"
   exit 1
 fi
 
@@ -340,6 +350,46 @@ printf '%s\n' \
   > "$TMP/req-paren/4-spec.md"
 run_case "Required unit 對 evidence Unit (fast) pass → 綠" 0 "-" \
   "$TMP/req-paren/7-review.md" --review-file --source-sha abc1234def5678
+
+echo "== 2030-P0.1830 空欄/substring 三案必須打散發副本=="
+# 1846/1930:母版 62/62 綠、散發副本仍是 if False / substring。parity 不是唯一網。
+run_case_on "$DIST_TOOL" "散發副本 Required layers 空值 → E7 紅" 1 "E7" \
+  "$TMP/req-blank/7-review.md" --review-file --source-sha abc1234def5678
+run_case_on "$DIST_TOOL" "散發副本 Required layers 只有空白 → E7 紅" 1 "E7" \
+  "$TMP/req-ws/7-review.md" --review-file --source-sha abc1234def5678
+run_case_on "$DIST_TOOL" "散發副本 Required unit 被 unit-smoke 滿足 → E7 紅" 1 "E7" \
+  "$TMP/req-substr/7-review.md" --review-file --source-sha abc1234def5678
+
+echo "== 2030-P1.group_architecture 必須先跑 parity 再跑 py-floor=="
+# 本機缺 3.9–3.11 時 check-py-floor exit 2,組內 fail-fast 吃掉後面的
+# check-integration-regression-guard → 1930 那種散發副本漂移本機永遠看不見。
+checks=$((checks + 1))
+if python3 - "$ROOT/scripts/devflow-check.sh" <<'PY'
+import sys
+text = open(sys.argv[1], encoding="utf-8").read()
+start = text.find("group_architecture()")
+end = text.find("\ngroup_render()")
+if start < 0 or end < 0 or end <= start:
+    print("找不到 group_architecture / group_render")
+    raise SystemExit(1)
+body = text[start:end]
+# 只看會執行的行,註解裡寫「py-floor 之前」不能算已換序
+code = "\n".join(ln.split("#", 1)[0] for ln in body.splitlines())
+i_parity = code.find("scripts/check-integration-regression-guard.sh")
+i_floor = code.find("scripts/check-py-floor.sh")
+if i_parity < 0 or i_floor < 0:
+    print("group_architecture 缺 parity 或 py-floor 的 run 行")
+    raise SystemExit(1)
+if i_parity > i_floor:
+    print(f"舊序:py-floor@{i_floor} 在 parity@{i_parity} 之前")
+    raise SystemExit(1)
+print("parity 在 py-floor 之前")
+PY
+then
+  echo "  ✅ group_architecture:parity 在 py-floor 之前"
+else
+  fail "group_architecture 仍先跑 py-floor,缺席時 fail-fast 吃掉 parity"
+fi
 
 echo "== 1630-P1.--review-file 的 --profile 只准本 feature,不得跨份覆寫=="
 # 舊實作:profile-unverified 的 sibling 會 E7 紅,但 --profile 指向
