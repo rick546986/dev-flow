@@ -117,8 +117,9 @@ updated:
 >    指名的 entry point 一次 fresh run 產出、Source SHA = 當下 HEAD = 送審樹;跑
 >    `docs/dev/tools/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD)
 >    --review-file --require-layer <Profile Required 層,逐層一個 flag>` 全綠
->    (Gauntlet 1.3.2 起自己讀 sibling 4-spec 的 Required layers;漏帶旗標不再
->    fail-open;找不到 Profile 或缺 Required layers 欄即 E7 紅(可寫「無」/none)。
+>    (Gauntlet 1.3.3 起自己讀 sibling 4-spec 的 Required layers;漏帶旗標不再
+>    fail-open;找不到 Profile、缺 Required layers 欄、或該欄空值即 E7 紅(只有
+>    「無」/none/n-a 是明示零層)。層名 strip 後全等,不得 substring。
 >    `--profile` 只准本 feature 的 4-spec,不得跨份覆寫。旗標只能加嚴,不能把
 >    Required 拿掉。`docs/dev/<feature>/7-review.md` 即使帶 `--source-sha` 也必須
 >    等於 HEAD。)

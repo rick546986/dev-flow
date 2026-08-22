@@ -611,7 +611,7 @@ D=$(seed vs1); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "README.md"
 t = p.read_text(encoding="utf-8")
-n = t.replace("devflow-evidence-gauntlet.sh`(1.3.2,", "devflow-evidence-gauntlet.sh`(9.9.9,", 1)
+n = t.replace("devflow-evidence-gauntlet.sh`(1.3.3,", "devflow-evidence-gauntlet.sh`(9.9.9,", 1)
 assert n != t, "VS-1 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
@@ -621,7 +621,7 @@ D=$(seed vs2); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "devflow-contract.json"
 t = p.read_text(encoding="utf-8")
-n = t.replace('"gauntlet": "1.3.2"', '"gauntlet": "9.9.9"', 1)
+n = t.replace('"gauntlet": "1.3.3"', '"gauntlet": "9.9.9"', 1)
 assert n != t, "VS-2 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
@@ -631,7 +631,7 @@ D=$(seed vs3); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "notes/design/evidence-gauntlet.md"
 t = p.read_text(encoding="utf-8")
-n = t.replace("**現行 Gauntlet 版本:1.3.2**", "**現行 Gauntlet 版本:9.9.9**", 1)
+n = t.replace("**現行 Gauntlet 版本:1.3.3**", "**現行 Gauntlet 版本:9.9.9**", 1)
 assert n != t, "VS-3 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
@@ -641,7 +641,7 @@ D=$(seed vs4); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "notes/design/evidence-gauntlet.md"
 t = p.read_text(encoding="utf-8")
-n = t.replace("**現行 Gauntlet 版本:1.3.2**\n", "", 1)
+n = t.replace("**現行 Gauntlet 版本:1.3.3**\n", "", 1)
 assert n != t, "VS-4 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
@@ -651,7 +651,7 @@ D=$(seed vs5); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "docs/dev/tools/devflow-evidence-gauntlet.sh"
 t = p.read_text(encoding="utf-8")
-n = t.replace('GAUNTLET_VERSION="1.3.2"', 'GAUNTLET_VERSION="9.9.9"', 1)
+n = t.replace('GAUNTLET_VERSION="1.3.3"', 'GAUNTLET_VERSION="9.9.9"', 1)
 assert n != t, "VS-5 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY

@@ -20,9 +20,11 @@ updated: 2026-08-22
 | S-2.5 | profile-no-required-row exit 0(27 checks,假綠);`無`/`none` 被當層名 exit 1 | 缺欄 E7 紅;`無`/`none` 綠 |
 | S-2.6 | `--profile` 指向 profile-pass 蓋過 sibling → exit 0(31 checks,假綠) | E7 紅 |
 | S-3.2 | docs/dev/live-feature 顯式 stale SHA exit 0(29 checks,假綠) | exit 1,E2 |
+| S-2.7 | Required layers 空值 / 只有空白 exit 0(27 checks,假綠) | E7 紅 |
+| S-2.8 | Required `unit` 被 `unit-smoke` pass 滿足 exit 0(28 checks,假綠) | E7 紅;全等與尾端括號仍綠 |
 
 舊實作數字是先補測試、未改 gauntlet 之前跑出來的,不是回憶。1230 兩條舊實作下
-`test-evidence-gauntlet` 48/51。
+`test-evidence-gauntlet` 48/51。1830 三條舊實作下 `test-evidence-gauntlet` 59/62。
 
 ## Decisions
 - D-1:不新增粗體 G3 token。出貨樹收進 Evidence 契約第 1 點全文 + 模板節序,避免
@@ -32,12 +34,16 @@ updated: 2026-08-22
 - D-3:`--review-file` 才預設 HEAD;顯式 `--source-sha` 在 example/ 與
   scripts/fixtures/ 仍只比對該值。`docs/dev/<feature>/7-review.md` 即使顯式
   傳 SHA 也強制 HEAD(owner 1230 裁)。
-- D-4:Gauntlet 1.2.0 → 1.3.0 → 1.3.1 → 1.3.2,五處版本錨 lockstep。
+- D-4:Gauntlet 1.2.0 → 1.3.0 → 1.3.1 → 1.3.2 → 1.3.3,五處版本錨 lockstep。
 - D-5:`--review-file` 找不到 Verification Profile 即 E7 fail-closed,不得退回
   1.2.0(owner 1230 裁)。
 - D-6:Required layers 欄必須在;「無」/none 是明示零層(owner 1630 裁)。
 - D-7:`--review-file` 的 `--profile` 只准 sibling 或同一 feature 目錄,不得跨份
   覆寫(owner 1630 裁)。
+- D-8:Required layers 空值 / 只有空白 = E7 紅;只有「無」/none/n-a 是明示零層
+  (owner 1830 裁)。
+- D-9:Required / Conditional 層名 strip 後大小寫不敏感全等,可先去掉尾端括號;
+  禁止 substring(owner 1830 裁)。
 
 ## Deviations
 無。未改 `docs/dev/STATUS.md`。未動 `memory/`、`docs/dev/autoloop/`、PR #15。

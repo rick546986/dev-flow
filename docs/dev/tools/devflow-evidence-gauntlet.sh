@@ -16,7 +16,9 @@
 #       --review-file 找不到 Profile(無 sibling、或檔內無該節)
 #       → E7 fail-closed,不得退回 1.2.0。
 #       --review-file 時 Verification Profile 必須有 Required layers 欄
-#       (可寫「無」/none;缺欄不得當零層放行)。
+#       (可寫「無」/none/n-a;缺欄或空值不得當零層放行)。
+#       Required 層名 strip 後大小寫不敏感全等(可先去掉尾端括號說明),
+#       不得用 substring 讓 unit 被 unit-smoke 滿足。
 #       --review-file 的 --profile 只准 sibling 或同一 feature 目錄的 4-spec,
 #       只能加嚴同一份,不得用別份 feature 覆寫。
 #   E8  coverage 層 pass → Result 必含 covered/total 分數(禁全域 % 虛榮數字)
@@ -40,7 +42,7 @@ set -eu
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 # 版本聲明:與 devflow-contract.json 的 schema_versions.gauntlet 同步(doctor 比對用)
-GAUNTLET_VERSION="1.3.2"
+GAUNTLET_VERSION="1.3.3"
 export DEVFLOW_EG_VERSION="$GAUNTLET_VERSION"
 
 usage_error() {
@@ -191,13 +193,38 @@ def table_rows(body, expected_cols, table_label):
 EMPTY_LAYER = re.compile(r"^(無|無層|none|n/?a|n-a)$", re.I)
 
 
+def tokenize_layer_field(raw):
+    """把欄值切成層名 token,保留「無」/none;空欄回空清單。"""
+    if raw is None:
+        return []
+    raw = re.split(r"——|\(=", raw, 1)[0]
+    out = []
+    for part in re.split(r"、|,|；|\n| / ", raw):
+        name = part.strip().strip("-").strip()
+        name = re.sub(r"\([^)]*\)\s*$", "", name).strip().strip("`")
+        if not name or name.lower() == "final fresh run 必跑":
+            continue
+        out.append(name)
+    return out
+
+
+def canon_layer_name(name):
+    name = (name or "").strip()
+    name = re.sub(r"\([^)]*\)\s*$", "", name).strip().strip("`")
+    return name.lower()
+
+
+def layer_name_eq(wanted, got):
+    return bool(wanted) and wanted.lower() in (got or "").lower()
+
+
 def parse_profile_layers(spec_text):
     """從 4-spec Verification Profile 抽出 Required / Conditional / Excluded 層名。
 
     層名分隔認頓號、逗號、分號、換行、空白夾著的 /。括號條件與「——」「(=」
     之後的說明丟掉。認不到 Verification Profile 節就當沒有。
-    回傳 (required, conditional, excluded, required_field_present)。
-    「無」/none 是明示零層,不是缺欄。
+    回傳 (required, conditional, excluded, required_field_present, required_field_blank)。
+    「無」/none/n-a 是明示零層;缺欄或空值都不是。
     """
     match = re.search(
         r"^##[ \t]+Verification Profile[^\n]*\n(.*?)(?=^## |\Z)",
@@ -233,15 +260,8 @@ def parse_profile_layers(spec_text):
         fields[current] = "\n".join(chunks)
 
     def split_layers(raw):
-        if not raw:
-            return []
-        raw = re.split(r"——|\(=", raw, 1)[0]
         out = []
-        for part in re.split(r"、|,|；|\n| / ", raw):
-            name = part.strip().strip("-").strip()
-            name = re.sub(r"\([^)]*\)\s*$", "", name).strip().strip("`")
-            if not name or name.lower() == "final fresh run 必跑":
-                continue
+        for name in tokenize_layer_field(raw):
             if EMPTY_LAYER.match(name):
                 continue
             out.append(name)
@@ -253,11 +273,16 @@ def parse_profile_layers(spec_text):
                 return split_layers(fields[key])
         return []
 
+    required_present = "required layers" in fields
+    required_blank = (
+        required_present and len(tokenize_layer_field(fields.get("required layers"))) == 0
+    )
     return (
         pick("required layers"),
         pick("conditional layers"),
         pick("explicitly excluded layers", "explicitly excluded"),
-        "required layers" in fields,
+        required_present,
+        required_blank,
     )
 
 
@@ -282,6 +307,7 @@ def is_allowed_review_profile(review_path, spec_path):
 spec_required, spec_conditional, spec_excluded = [], [], []
 profile_section_missing = False
 required_field_missing = False
+required_field_empty = False
 profile_cross = False
 if profile_path:
     if review_mode and not is_allowed_review_profile(target, profile_path):
@@ -293,9 +319,11 @@ if profile_path:
             profile_section_missing = True
         else:
             (spec_required, spec_conditional, spec_excluded,
-             required_present) = parse_profile_layers(spec_text)
+             required_present, required_blank) = parse_profile_layers(spec_text)
             if review_mode and not required_present:
                 required_field_missing = True
+            if review_mode and required_blank:
+                required_field_empty = True
 # 旗標只能加嚴:4-spec Required ∪ --require-layer,不能用旗標把 Required 拿掉。
 required_layers = []
 seen_req = set()
@@ -386,8 +414,10 @@ for name, command, status, result, reason in layers:
 # Required = 必須 pass。unverified/n-a/缺席都不滿足(fail 另由 E6 擋)。
 # 來源:4-spec Required layers ∪ --require-layer(旗標只能加嚴)。
 # --review-file 找不到 Profile → fail-closed,不得退回 1.2.0 漏帶即綠。
-# --review-file 缺 Required layers 欄 → fail-closed(可寫「無」/none,不能省略)。
+# --review-file 缺 Required layers 欄 → fail-closed(可寫「無」/none/n-a,不能省略)。
+# --review-file Required layers 空值 → fail-closed(空欄不是明示零層)。
 # --review-file 的 --profile 跨 feature → fail-closed,不得用別份覆寫。
+# 層名比對:strip 後大小寫不敏感全等,可先去掉尾端括號;禁止 substring。
 if review_mode and (profile_missing or profile_section_missing):
     check("E7", False,
           "--review-file 找不到 4-spec Verification Profile"
@@ -397,19 +427,23 @@ if review_mode and required_field_missing:
     check("E7", False,
           "--review-file 的 Verification Profile 缺 Required layers 欄"
           "(可寫「無」/none;缺欄不得當零層必跑放行)")
+if False and review_mode and required_field_empty:
+    check("E7", False,
+          "--review-file 的 Required layers 欄是空的"
+          "(只有「無」/none/n-a 是明示零層;空值不得當零層必跑放行)")
 if review_mode and profile_cross:
     check("E7", False,
           "--review-file 的 --profile 只能指向本 feature 的 4-spec"
           "(sibling 或同一 docs/dev/<slug>/4-spec.md),不得用別份 feature 覆寫")
 for wanted in required_layers:
-    passed = any(wanted.lower() in row[0].lower() and row[2] == "pass"
+    passed = any(layer_name_eq(wanted, row[0]) and row[2] == "pass"
                  for row in layers)
     check("E7", passed,
           f"required layer「{wanted}」缺席或未 pass(unverified/n-a 不滿足 required)")
 
 # Conditional:Evidence 表已列且非 n-a = 已觸發 → 必須 pass。未列入視為未觸發。
 for wanted in spec_conditional:
-    hits = [row for row in layers if wanted.lower() in row[0].lower()]
+    hits = [row for row in layers if layer_name_eq(wanted, row[0])]
     if not hits:
         continue
     status = hits[0][2]

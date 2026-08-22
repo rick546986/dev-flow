@@ -1186,8 +1186,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     2d. <strong>Final Fresh Run</strong>:確認 Verification Evidence 節由 4-spec Verification Profile
     指名的 entry point 一次 fresh run 產出、Source SHA = 當下 HEAD = 送審樹;跑
     <code>docs/dev/tools/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD) --review-file --require-layer &lt;Profile Required 層,逐層一個 flag&gt;</code> 全綠
-    (Gauntlet 1.3.2 起自己讀 sibling 4-spec 的 Required layers;漏帶旗標不再
-    fail-open;找不到 Profile 或缺 Required layers 欄即 E7 紅(可寫「無」/none)。
+    (Gauntlet 1.3.3 起自己讀 sibling 4-spec 的 Required layers;漏帶旗標不再
+    fail-open;找不到 Profile、缺 Required layers 欄、或該欄空值即 E7 紅(只有
+    「無」/none/n-a 是明示零層)。層名 strip 後全等,不得 substring。
     <code>--profile</code> 只准本 feature 的 4-spec,不得跨份覆寫。旗標只能加嚴,不能把
     Required 拿掉。<code>docs/dev/&lt;feature&gt;/7-review.md</code> 即使帶 <code>--source-sha</code> 也必須
     等於 HEAD。)

@@ -253,6 +253,94 @@ printf '%s\n' \
 run_case "review-file Required layers:none(明示零層)→ 綠" 0 "-" \
   "$TMP/req-none-en/7-review.md" --review-file --source-sha abc1234def5678
 
+echo "== 1830-P0.Required layers 欄在但值空不得當零層放行=="
+# 舊實作:欄在、值空/空白 → required=[]、required_present=True → E7 不擋。
+# 1630 只擋缺欄;空值仍當「零層必跑」假綠。只有「無」/none/n-a 是明示零層。
+mkdir -p "$TMP/req-blank"
+cp "$FIX/profile-pass/7-review.md" "$TMP/req-blank/7-review.md"
+printf '%s\n' \
+  '## Verification Profile(G2 一併審)' \
+  '- lane: full' \
+  '- Risk: normal' \
+  '- Required layers:' \
+  '- Explicitly excluded layers:Mutation' \
+  '- Final fresh entry point:`pytest -q`' \
+  > "$TMP/req-blank/4-spec.md"
+run_case "review-file Required layers 空值 → E7 紅" 1 "E7" \
+  "$TMP/req-blank/7-review.md" --review-file --source-sha abc1234def5678
+mkdir -p "$TMP/req-ws"
+cp "$FIX/profile-pass/7-review.md" "$TMP/req-ws/7-review.md"
+printf '%s\n' \
+  '## Verification Profile(G2 一併審)' \
+  '- lane: full' \
+  '- Risk: normal' \
+  '- Required layers:   ' \
+  '- Explicitly excluded layers:Mutation' \
+  '- Final fresh entry point:`pytest -q`' \
+  > "$TMP/req-ws/4-spec.md"
+run_case "review-file Required layers 只有空白 → E7 紅" 1 "E7" \
+  "$TMP/req-ws/7-review.md" --review-file --source-sha abc1234def5678
+
+echo "== 1830-P1.Required 層名必須全等,不得 substring 誤配=="
+# 舊實作:wanted.lower() in row[0].lower()。Required unit 被 unit-smoke pass 滿足。
+mkdir -p "$TMP/req-substr"
+cp "$FIX/profile-pass/7-review.md" "$TMP/req-substr/7-review.md"
+python3 - "$TMP/req-substr/7-review.md" <<'PY'
+import sys
+text = open(sys.argv[1], encoding="utf-8").read()
+text = text.replace("| Full test suite |", "| unit-smoke |")
+text = text.replace("| Real execution |", "| other-layer |")
+open(sys.argv[1], "w", encoding="utf-8").write(text)
+PY
+printf '%s\n' \
+  '## Verification Profile(G2 一併審)' \
+  '- lane: full' \
+  '- Risk: normal' \
+  '- Required layers:unit' \
+  '- Explicitly excluded layers:Mutation' \
+  '- Final fresh entry point:`pytest -q`' \
+  > "$TMP/req-substr/4-spec.md"
+run_case "Required unit 被 unit-smoke pass 滿足 → E7 紅" 1 "E7" \
+  "$TMP/req-substr/7-review.md" --review-file --source-sha abc1234def5678
+mkdir -p "$TMP/req-exact"
+cp "$FIX/profile-pass/7-review.md" "$TMP/req-exact/7-review.md"
+python3 - "$TMP/req-exact/7-review.md" <<'PY'
+import sys
+text = open(sys.argv[1], encoding="utf-8").read()
+text = text.replace("| Full test suite |", "| unit |")
+text = text.replace("| Real execution |", "| other-layer |")
+open(sys.argv[1], "w", encoding="utf-8").write(text)
+PY
+printf '%s\n' \
+  '## Verification Profile(G2 一併審)' \
+  '- lane: full' \
+  '- Risk: normal' \
+  '- Required layers:unit' \
+  '- Explicitly excluded layers:Mutation' \
+  '- Final fresh entry point:`pytest -q`' \
+  > "$TMP/req-exact/4-spec.md"
+run_case "Required unit 對 evidence unit pass → 綠" 0 "-" \
+  "$TMP/req-exact/7-review.md" --review-file --source-sha abc1234def5678
+mkdir -p "$TMP/req-paren"
+cp "$FIX/profile-pass/7-review.md" "$TMP/req-paren/7-review.md"
+python3 - "$TMP/req-paren/7-review.md" <<'PY'
+import sys
+text = open(sys.argv[1], encoding="utf-8").read()
+text = text.replace("| Full test suite |", "| Unit (fast) |")
+text = text.replace("| Real execution |", "| other-layer |")
+open(sys.argv[1], "w", encoding="utf-8").write(text)
+PY
+printf '%s\n' \
+  '## Verification Profile(G2 一併審)' \
+  '- lane: full' \
+  '- Risk: normal' \
+  '- Required layers:unit' \
+  '- Explicitly excluded layers:Mutation' \
+  '- Final fresh entry point:`pytest -q`' \
+  > "$TMP/req-paren/4-spec.md"
+run_case "Required unit 對 evidence Unit (fast) pass → 綠" 0 "-" \
+  "$TMP/req-paren/7-review.md" --review-file --source-sha abc1234def5678
+
 echo "== 1630-P1.--review-file 的 --profile 只准本 feature,不得跨份覆寫=="
 # 舊實作:profile-unverified 的 sibling 會 E7 紅,但 --profile 指向
 # profile-pass(Required 皆 pass)仍 exit 0 / 31 checks(假綠)。
