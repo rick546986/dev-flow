@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: durable-root-lstat-only-enoent-is-absent
+title: "durable root 只有 ENOENT 能當 absent"
+authority: current_code
+status: CANDIDATE
+confidence: 0.8
+body: "classify_durable_root 的 lstat 失敗只有 FileNotFoundError 或 errno.ENOENT 回 absent。EACCES/EPERM/EIO/ESTALE 必須 DurableError。snapshot/has_mirrorable_content/rebuild/doctor 共用這一支,不可讀根不得被蓋成空世代、不得清既有鏡射。doctor 收成 durable-source-readable structured FAIL。"
+recorded_at: "2026-08-22T01:17:20Z"

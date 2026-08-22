@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: durable-writer-must-confine-to-real-devflow
+title: "durable writer 必須禁閉在真實 .dev-flow 樹內"
+authority: current_code
+status: CANDIDATE
+confidence: 0.8
+body: "abspath 是字面展開,不拒絕 symlink。_atomic_write 必須從 .dev-flow 往下 lstat 每一層既有祖先、用 O_NOFOLLOW dirfd 建暫存檔,最終落點不得離開真實 durable root。symlink 的 domain/state/decisions/skills/events 或 .dev-flow 根一律 DurableError,樹外目錄保持不變。"
+recorded_at: "2026-08-22T00:18:41Z"

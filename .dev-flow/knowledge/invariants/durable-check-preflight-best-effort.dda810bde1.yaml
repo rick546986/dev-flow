@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: durable-check-preflight-best-effort
+title: "預檢失敗不得單獨讓 durable-check FAIL"
+authority: current_code
+status: CANDIDATE
+confidence: 0.8
+body: "preflight_not_known_local 是獨立弱欄位。PASS 只認 remote_ref_matches 與其他獨立耐久性問題。"
+recorded_at: "2026-08-21T18:26:35Z"

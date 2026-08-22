@@ -2,7 +2,7 @@
 import os
 
 from memtools import MemoryCase, read_file, write
-from agentmem import durable, ids, paths
+from agentmem import durable, identity, ids, paths
 
 
 def sample_fact(**over):
@@ -243,3 +243,220 @@ class InventoryTest(MemoryCase):
         self.assertEqual(durable.inventory(self.repo),
                          {"facts": 1, "knowledge": 1, "decisions": 1,
                           "skills": 1, "events": 1, "entities": 1})
+
+
+def _can_symlink(work):
+    probe = os.path.join(work, "symlink-probe-src")
+    dest = os.path.join(work, "symlink-probe-dst")
+    with open(probe, "w", encoding="utf-8") as stream:
+        stream.write("x")
+    try:
+        os.symlink(probe, dest)
+    except (OSError, NotImplementedError, AttributeError):
+        return False
+    return True
+
+
+class DurableWriterConfinementTest(MemoryCase):
+    """durable writer 不得跟隨 symlink 把檔寫出 repo 邊界。"""
+
+    def _outside(self, name):
+        path = os.path.join(self.work, name)
+        os.makedirs(path, exist_ok=True)
+        marker = os.path.join(path, "UNCHANGED-MARKER")
+        with open(marker, "w", encoding="utf-8") as stream:
+            stream.write("keep")
+        return path
+
+    def _outside_names(self, path):
+        return set(os.listdir(path))
+
+    def _knowledge(self, key="confine-k"):
+        return {
+            "kind": "domain", "key": key, "title": "confine title",
+            "body": "benign-domain-body", "authority": "domain_expert",
+            "status": "CONFIRMED", "recorded_at": "2026-08-20T00:00:00Z"}
+
+    def test_write_knowledge_refuses_symlinked_domain_dir(self):
+        if not _can_symlink(self.work):
+            self.skipTest("this platform cannot create symlinks")
+        identity.ensure_project(self.repo, name="fixture")
+        outside = self._outside("outside-domain")
+        before = self._outside_names(outside)
+        dest = os.path.join(durable.root(self.repo), "knowledge", "domain")
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        os.symlink(os.path.realpath(outside), dest)
+        with self.assertRaises(durable.DurableError):
+            durable.write_knowledge(self.repo, self._knowledge())
+        self.assertEqual(self._outside_names(outside), before)
+
+    def test_write_state_refuses_symlinked_state_dir(self):
+        if not _can_symlink(self.work):
+            self.skipTest("this platform cannot create symlinks")
+        identity.ensure_project(self.repo, name="fixture")
+        outside = self._outside("outside-state")
+        before = self._outside_names(outside)
+        dest = os.path.join(durable.root(self.repo), "state", "implementation")
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        os.symlink(os.path.realpath(outside), dest)
+        with self.assertRaises(durable.DurableError):
+            durable.write_state(self.repo, "database", "memory-store",
+                                [sample_fact()])
+        self.assertEqual(self._outside_names(outside), before)
+
+    def test_write_decision_refuses_symlinked_decisions_dir(self):
+        if not _can_symlink(self.work):
+            self.skipTest("this platform cannot create symlinks")
+        identity.ensure_project(self.repo, name="fixture")
+        outside = self._outside("outside-decisions")
+        before = self._outside_names(outside)
+        dest = os.path.join(durable.root(self.repo), "decisions")
+        os.makedirs(durable.root(self.repo), exist_ok=True)
+        os.symlink(os.path.realpath(outside), dest)
+        with self.assertRaises(durable.DurableError):
+            durable.write_decision(self.repo, DecisionFileTest.RECORD)
+        self.assertEqual(self._outside_names(outside), before)
+
+    def test_write_skill_refuses_symlinked_skills_dir(self):
+        if not _can_symlink(self.work):
+            self.skipTest("this platform cannot create symlinks")
+        identity.ensure_project(self.repo, name="fixture")
+        outside = self._outside("outside-skills")
+        before = self._outside_names(outside)
+        dest = os.path.join(durable.root(self.repo), "skills")
+        os.makedirs(durable.root(self.repo), exist_ok=True)
+        os.symlink(os.path.realpath(outside), dest)
+        with self.assertRaises(durable.DurableError):
+            durable.write_skill(self.repo, {
+                "key": "deploy", "title": "部署", "steps": ["build"],
+                "recorded_at": "2026-08-20T00:00:00Z"})
+        self.assertEqual(self._outside_names(outside), before)
+
+    def test_append_events_refuses_symlinked_events_dir(self):
+        if not _can_symlink(self.work):
+            self.skipTest("this platform cannot create symlinks")
+        identity.ensure_project(self.repo, name="fixture")
+        outside = self._outside("outside-events")
+        before = self._outside_names(outside)
+        dest = os.path.join(durable.root(self.repo), "events")
+        os.makedirs(durable.root(self.repo), exist_ok=True)
+        os.symlink(os.path.realpath(outside), dest)
+        with self.assertRaises(durable.DurableError):
+            durable.append_events(self.repo, "ses_a", [{
+                "event_id": ids.new_id("event"), "title": "x",
+                "occurred_at": "2026-08-20T00:00:00Z"}])
+        self.assertEqual(self._outside_names(outside), before)
+
+    def test_every_writer_refuses_symlinked_devflow_root(self):
+        if not _can_symlink(self.work):
+            self.skipTest("this platform cannot create symlinks")
+        data, _created = identity.ensure_project(self.repo, name="fixture")
+        outside = self._outside("outside-root")
+        before = self._outside_names(outside)
+        real = durable.root(self.repo)
+        os.rename(real, real + ".bak")
+        os.symlink(os.path.realpath(outside), real)
+        writers = [
+            lambda: durable.write_knowledge(self.repo, self._knowledge("root-k")),
+            lambda: durable.write_state(
+                self.repo, "database", "memory-store", [sample_fact()]),
+            lambda: durable.write_decision(self.repo, DecisionFileTest.RECORD),
+            lambda: durable.write_skill(self.repo, {
+                "key": "deploy", "title": "部署", "steps": ["build"],
+                "recorded_at": "2026-08-20T00:00:00Z"}),
+            lambda: durable.append_events(self.repo, "ses_a", [{
+                "event_id": ids.new_id("event"), "title": "x",
+                "occurred_at": "2026-08-20T00:00:00Z"}]),
+            lambda: identity.write_project(self.repo, data),
+        ]
+        for writer in writers:
+            with self.assertRaises(durable.DurableError):
+                writer()
+        self.assertEqual(self._outside_names(outside), before)
+
+    def test_regular_directories_still_write(self):
+        identity.ensure_project(self.repo, name="fixture")
+        path = durable.write_knowledge(self.repo, self._knowledge("regular-k"))
+        self.assertTrue(os.path.isfile(path))
+        self.assertTrue(os.path.realpath(path).startswith(
+            os.path.realpath(durable.root(self.repo))))
+
+    def test_ancestor_swapped_to_symlink_between_check_and_write_cannot_escape(self):
+        if not _can_symlink(self.work):
+            self.skipTest("this platform cannot create symlinks")
+        identity.ensure_project(self.repo, name="fixture")
+        durable.write_knowledge(self.repo, self._knowledge("first"))
+        outside = self._outside("outside-swapped")
+        before = self._outside_names(outside)
+        domain = os.path.join(durable.root(self.repo), "knowledge", "domain")
+
+        def swap(_repo, _path):
+            parked = domain + ".parked"
+            if os.path.isdir(domain) and not os.path.islink(domain):
+                os.rename(domain, parked)
+                os.symlink(os.path.realpath(outside), domain)
+
+        durable._after_write_confine = swap
+        try:
+            with self.assertRaises(durable.DurableError):
+                durable.write_knowledge(self.repo, self._knowledge("second"))
+        finally:
+            durable._after_write_confine = None
+        self.assertEqual(self._outside_names(outside), before)
+
+    def _yaml_under(self, path):
+        found = []
+        for dirpath, _dirs, files in os.walk(path):
+            for name in files:
+                if name.endswith(".yaml"):
+                    found.append(os.path.relpath(
+                        os.path.join(dirpath, name), path).replace(os.sep, "/"))
+        return found
+
+    def test_late_ancestor_swap_of_knowledge_cannot_escape(self):
+        """最終 realpath 之後把中間祖先換成 symlink:O_NOFOLLOW 只守最後一段。"""
+        if not _can_symlink(self.work):
+            self.skipTest("this platform cannot create symlinks")
+        identity.ensure_project(self.repo, name="fixture")
+        durable.write_knowledge(self.repo, self._knowledge("first"))
+        outside = self._outside("outside-late-knowledge")
+        os.makedirs(os.path.join(outside, "domain"), exist_ok=True)
+        before = self._yaml_under(outside)
+        knowledge = os.path.join(durable.root(self.repo), "knowledge")
+
+        def swap(_repo, _path):
+            if os.path.isdir(knowledge) and not os.path.islink(knowledge):
+                os.rename(knowledge, knowledge + ".parked")
+                os.symlink(os.path.realpath(outside), knowledge)
+
+        durable._after_write_validate = swap
+        try:
+            with self.assertRaises(durable.DurableError):
+                durable.write_knowledge(self.repo, self._knowledge("late-k"))
+        finally:
+            durable._after_write_validate = None
+        self.assertEqual(self._yaml_under(outside), before)
+
+    def test_late_ancestor_swap_two_levels_above_parent_cannot_escape(self):
+        """最終 realpath 之後把 .dev-flow 根換成 symlink(parent 的上兩層)。"""
+        if not _can_symlink(self.work):
+            self.skipTest("this platform cannot create symlinks")
+        identity.ensure_project(self.repo, name="fixture")
+        durable.write_knowledge(self.repo, self._knowledge("first"))
+        outside = self._outside("outside-late-root")
+        os.makedirs(os.path.join(outside, "knowledge", "domain"), exist_ok=True)
+        before = self._yaml_under(outside)
+        real = durable.root(self.repo)
+
+        def swap(_repo, _path):
+            if os.path.isdir(real) and not os.path.islink(real):
+                os.rename(real, real + ".parked")
+                os.symlink(os.path.realpath(outside), real)
+
+        durable._after_write_validate = swap
+        try:
+            with self.assertRaises(durable.DurableError):
+                durable.write_knowledge(self.repo, self._knowledge("late-root"))
+        finally:
+            durable._after_write_validate = None
+        self.assertEqual(self._yaml_under(outside), before)

@@ -142,6 +142,20 @@ class StoreTest(MemoryCase):
         self.assertEqual(
             self.store.drop_mismatched_embeddings("hashing", "m2", "1", 64), 1)
 
+    def test_embedding_missing_and_orphaned_are_countable(self):
+        """完整性:沒有向量的 item、沒有 item 的向量,都要數得出來。"""
+        keep = self.store.index_item("event", "evt_keep", "keep", "body")
+        gone = self.store.index_item("event", "evt_gone", "gone", "body")
+        missing = self.store.index_item("event", "evt_miss", "miss", "body")
+        self.store.put_embedding(keep, "hashing", "m1", 64, "1", b"\x00" * 8)
+        self.store.put_embedding(gone, "hashing", "m1", 64, "1", b"\x00" * 8)
+        with self.store.conn:
+            self.store.conn.execute(
+                "DELETE FROM items WHERE item_uid=?", (gone,))
+        self.assertEqual(self.store.embedding_missing("hashing", "m1", "1", 64), 1)
+        self.assertEqual(self.store.embedding_orphaned("hashing", "m1", "1", 64), 1)
+        self.assertEqual(self.store.embedding_mismatch("hashing", "m1", "1", 64), 0)
+
     def test_legacy_path_mapping_recorded(self):
         self.store.map_legacy_path(self.repo, note="pre-v3 observations")
         rows = self.store.legacy_paths()

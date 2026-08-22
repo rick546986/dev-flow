@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: embedding-health-counts-missing-vectors
+title: "embedding 健康必須數 missing 與 orphaned"
+authority: current_code
+status: CANDIDATE
+confidence: 0.8
+body: "mismatch_report 必填 mismatched / missing / orphaned。無需 re-index 只在三者皆 0 時成立。doctor 的 embedding-version 在 missing>0 或 orphaned>0 時不得 ok。reindex 必須刪掉當前 signature 的孤兒列。Embedder.search 必須 JOIN items 再排序限額,孤兒不得佔滿候選窗口。"
+recorded_at: "2026-08-21T22:18:08Z"

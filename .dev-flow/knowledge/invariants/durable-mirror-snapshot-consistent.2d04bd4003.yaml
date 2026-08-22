@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: durable-mirror-snapshot-consistent
+title: "rebuild 與世代戳必須同一 snapshot"
+authority: current_code
+status: CANDIDATE
+confidence: 0.8
+body: "rebuild 先把 .dev-flow/ 整棵讀進記憶體,用那些位元組算 generation_before,從不可變副本重建,再算 generation_after。只在載入位元組與活樹同一世代時蓋章。只比對活樹兩端雜湊不夠:ABA(A→B→A)會讓兩端相等、中間讀到的卻是混鏡射。對不上就重試,耗盡則 DurableMirrorDrift。"
+recorded_at: "2026-08-21T21:18:27Z"

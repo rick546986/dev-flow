@@ -162,10 +162,52 @@ class Store:
                 "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
                 (key, str(value)))
 
+    def increment_int_meta(self, key):
+        """原子 +1 並回傳新值。兩個 Store 連線不得讀到同一個舊值再各寫一次。
+
+        `get_meta` + `set_meta` 是兩段交易。BEGIN IMMEDIATE 在讀之前先拿
+        reserved lock,第二個連線會等到第一個 commit 後才讀到新值。
+        """
+        old_isolation = self.conn.isolation_level
+        try:
+            self.conn.isolation_level = None
+            self.conn.execute("BEGIN IMMEDIATE")
+            try:
+                row = self.conn.execute(
+                    "SELECT value FROM meta WHERE key=?", (key,)).fetchone()
+                current = 0
+                if row is not None:
+                    try:
+                        current = int(row[0])
+                    except (TypeError, ValueError):
+                        current = 0
+                nxt = current + 1
+                self.conn.execute(
+                    "INSERT INTO meta(key, value) VALUES(?, ?) "
+                    "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                    (key, str(nxt)))
+                self.conn.commit()
+                return nxt
+            except Exception:
+                self.conn.rollback()
+                raise
+        finally:
+            self.conn.isolation_level = old_isolation
+
     def get_meta(self, key, default=None):
         row = self.conn.execute(
             "SELECT value FROM meta WHERE key=?", (key,)).fetchone()
         return row[0] if row else default
+
+    def has_durable_mirror(self):
+        """是否已有從 `.dev-flow/` 鏡射進來的列。缺世代時用來決定能否只蓋章。"""
+        for table in ("events", "facts", "knowledge", "decisions", "skills"):
+            row = self.conn.execute(
+                "SELECT 1 FROM " + table + " WHERE durable=1 LIMIT 1"
+            ).fetchone()
+            if row:
+                return True
+        return False
 
     # ── workspace(local metadata;project_path 住這裡)──────────────────────
     def register_workspace(self, workspace_id, snapshot, now=None):
@@ -767,6 +809,68 @@ class Store:
             for table in ("events", "facts", "knowledge", "decisions", "skills"):
                 self.conn.execute("DELETE FROM " + table + " WHERE durable=1")
 
+    def reindex_local_rows(self):
+        """把 durable=0 / legacy 列重新登記進 retrieval index。
+
+        rebuild 會 `clear_index()`;只重載 `.dev-flow/` 的話,留下的
+        local-only 列還在表裡,但 DOMAIN/DISCOVERY 已經找不到它們。
+        這支補回檢索可見性,不把列升級成 durable。
+        """
+        for row in self.conn.execute(
+                "SELECT * FROM facts WHERE project_id=? AND durable=0",
+                (self.project_id,)):
+            row = dict(row)
+            deps = json.loads(row["dependencies_json"] or "[]")
+            self.index_item(
+                "fact", row["fact_id"],
+                "{entity_type}.{entity_key}.{fact_key}".format(**row),
+                " ".join([row["entity_type"], row["entity_key"],
+                          row["fact_key"], row["value"]]),
+                status=row["status"], file_paths=deps,
+                occurred_at=row["recorded_at"])
+        for row in self.conn.execute(
+                "SELECT * FROM knowledge WHERE project_id=? AND durable=0",
+                (self.project_id,)):
+            row = dict(row)
+            self.index_item(
+                "knowledge", row["knowledge_id"], row["title"],
+                " ".join([row["kind"], row["key"], row["title"],
+                          row["body"] or ""]),
+                status=row["status"], authority=row["authority"],
+                occurred_at=row["recorded_at"])
+        for row in self.conn.execute(
+                "SELECT * FROM decisions WHERE project_id=? AND durable=0",
+                (self.project_id,)):
+            row = dict(row)
+            self.index_item(
+                "decision", row["decision_id"], row["title"],
+                " ".join([row["key"], row["title"], row["decision"],
+                          row["reason"], row["alternatives"],
+                          row["tradeoff"]]),
+                status=row["status"], occurred_at=row["recorded_at"])
+        for row in self.conn.execute(
+                "SELECT * FROM skills WHERE project_id=? AND durable=0",
+                (self.project_id,)):
+            row = dict(row)
+            steps = json.loads(row["steps_json"] or "[]")
+            self.index_item(
+                "skill", row["skill_id"], row["title"],
+                " ".join([row["key"], row["title"], " ".join(steps),
+                          row["preconditions"] or "",
+                          row["verification"] or ""]),
+                status=row["status"], occurred_at=row["recorded_at"])
+        for row in self.conn.execute(
+                "SELECT * FROM events WHERE project_id=? AND durable=0",
+                (self.project_id,)):
+            row = dict(row)
+            rel = json.loads(row["paths_json"] or "[]")
+            self.index_item(
+                "event", row["event_id"], row["title"],
+                "\n".join([row["kind"] or "", row["title"] or "",
+                           row["body"] or ""]),
+                branch=row["branch"], occurred_at=row["occurred_at"],
+                status=row["signal"], file_paths=rel)
+
     # ── embeddings(§24 版本三件套)──────────────────────────────────────────
     def put_embedding(self, uid, provider, model, dim, version, vector_bytes,
                       now=None):
@@ -797,11 +901,44 @@ class Store:
             " (provider=? AND model=? AND version=? AND dim=?)",
             (provider, model, version, int(dim))).fetchone()[0]
 
+    def embedding_missing(self, provider, model, version, dim):
+        """現行 items 裡,沒有「當前 signature」那一列 embedding 的筆數。
+
+        與 `embedding_mismatch` 正交:mismatch 數的是**已存在但簽章錯**的
+        向量;missing 數的是**這個 item 根本沒有可用向量**。只看前者會把
+        「向量通道不完整」說成健康。
+        """
+        return self.conn.execute(
+            "SELECT COUNT(*) FROM items i LEFT JOIN embeddings e"
+            " ON e.item_uid = i.item_uid"
+            " AND e.provider=? AND e.model=? AND e.version=? AND e.dim=?"
+            " WHERE e.item_uid IS NULL",
+            (provider, model, version, int(dim))).fetchone()[0]
+
+    def embedding_orphaned(self, provider, model, version, dim):
+        """有當前 signature 的 embedding、但 items 列已經不在的筆數。"""
+        return self.conn.execute(
+            "SELECT COUNT(*) FROM embeddings e LEFT JOIN items i"
+            " ON i.item_uid = e.item_uid"
+            " WHERE i.item_uid IS NULL"
+            " AND e.provider=? AND e.model=? AND e.version=? AND e.dim=?",
+            (provider, model, version, int(dim))).fetchone()[0]
+
     def drop_mismatched_embeddings(self, provider, model, version, dim):
         with self.conn:
             cur = self.conn.execute(
                 "DELETE FROM embeddings WHERE NOT"
                 " (provider=? AND model=? AND version=? AND dim=?)",
+                (provider, model, version, int(dim)))
+        return cur.rowcount
+
+    def drop_orphaned_embeddings(self, provider, model, version, dim):
+        """刪掉當前 signature、但 items 列已經不在的 embedding。"""
+        with self.conn:
+            cur = self.conn.execute(
+                "DELETE FROM embeddings WHERE item_uid NOT IN"
+                " (SELECT item_uid FROM items)"
+                " AND provider=? AND model=? AND version=? AND dim=?",
                 (provider, model, version, int(dim)))
         return cur.rowcount
 

@@ -435,11 +435,12 @@ class DurableCheckCase(MemoryCase):
         """建一個本機 bare repo 當 upstream 並 push 上去。
 
         `off_machine=True` 時額外讓 URL 解析回報一個網路 remote。理由:
-        `durable-check` 現在會拒絕**本機** remote 當「記憶離開這台機器」的
-        證據(見 RemoteMustBeOffMachineTest),而一個真的網路 remote 沒辦法
-        在 CI 裡不連外地建起來。這裡只替換「這個 remote 的 URL 是什麼」
-        這一個問句 —— push、`ls-remote` 問到的 SHA、與 HEAD 的比對全部是真的。
-        `off_machine=False` 則完全不替換,用來驗本機 remote 真的被拒。
+        預檢欄位 `preflight_not_known_local` 需要一個「看起來不在已知本機
+        位址集合裡」的 URL;一個真的網路 remote 沒辦法在 CI 裡不連外地建起來。
+        這裡只替換「這個 remote 的 URL 是什麼」這一個問句 —— push、
+        `ls-remote` 問到的 SHA、與 HEAD 的比對全部是真的。
+        `off_machine=False` 則完全不替換,用來驗本機 remote 的預檢欄位為假
+        但仍能走到 ls-remote。
         """
         from memtools import git
         bare = os.path.join(self.work, "origin.git")
@@ -630,23 +631,12 @@ class DurableCheckTest(DurableCheckCase):
 
 
 class RemoteMustBeOffMachineTest(DurableCheckCase):
-    """一個 git remote 不必然在別台機器上 —— 而這一關問的正是那件事。
+    """預檢只負責 `preflight_not_known_local`,不得單獨把 PASS 封死。
 
-    `durable-check` 的問句是「記憶離開這台機器了嗎」。`ls-remote` 成功只證明
-    「設定的 upstream 連得上而且有這個 commit」,那是**嚴格較弱**的一句話:
-
-        origin = /Volumes/backup/mirror.git
-        origin = file:///Users/rick/mirror.git
-        origin = ssh://git@localhost/repo.git
-
-    這三個都會讓 `ls-remote` 回報正確的 SHA,於是 verdict=PASS、
-    remote_observed=true。而硬碟壞掉時它們跟工作樹一起消失 —— 判定聲稱了
-    一件它沒有驗證的事,這正是本專案在修的同一個錯:**在耐久性真正建立之前
-    就把狀態往前推**。
-
-    離線要放行請用 `--local-only`:它回 `LOCAL_ONLY_PASS` 且
-    `remote_observed=False`,也就是**明說**這一關只驗到本機。
-    「不得聲稱」與「不得放行」不是同一件事。
+    owner D-2:verdict 不再宣稱跨機器物理耐久性。本機 remote / file:// /
+    localhost 仍必須把 `preflight_not_known_local` 設成假 —— 那是它們能
+    證明的全部。`ls-remote` 問得到且 SHA 等於 HEAD 時,`remote_ref_matches`
+    可以為真,verdict 可以是 PASS。預檢失敗不得再寫進 `problems`。
     """
 
     def test_local_bare_remote_is_not_off_machine_proof(self):
@@ -655,12 +645,11 @@ class RemoteMustBeOffMachineTest(DurableCheckCase):
         commit_all(self.repo, "memory commit")
         self.add_remote(off_machine=False)
         result = self.check()
-        self.assertEqual(result["verdict"], "FAIL", result)
-        self.assertTrue(
-            any(sync.REMOTE_LOCAL in p for p in result["problems"]),
-            result["problems"])
-        self.assertFalse(result["remote_observed"],
-                         "本機 remote 不得算成觀察到遠端")
+        self.assertFalse(result["preflight_not_known_local"], result)
+        self.assertFalse(any(sync.REMOTE_LOCAL in p for p in result["problems"]),
+                         result["problems"])
+        self.assertTrue(result["remote_ref_matches"], result)
+        self.assertEqual(result["verdict"], "PASS", result)
 
     def test_file_url_remote_is_not_off_machine_proof(self):
         from memtools import commit_all, git
@@ -670,17 +659,13 @@ class RemoteMustBeOffMachineTest(DurableCheckCase):
         git(self.repo, "remote", "set-url", "origin",
             "file://" + bare.replace(os.sep, "/"))
         result = self.check()
-        self.assertEqual(result["verdict"], "FAIL", result)
-        self.assertTrue(
-            any(sync.REMOTE_LOCAL in p for p in result["problems"]),
-            result["problems"])
+        self.assertFalse(result["preflight_not_known_local"], result)
+        self.assertFalse(any(sync.REMOTE_LOCAL in p for p in result["problems"]),
+                         result["problems"])
+        self.assertEqual(result["verdict"], "PASS", result)
 
     def test_insteadof_rewrite_to_a_local_path_is_still_local(self):
-        """判定要看 git **實際會連上去**的 URL,不是設定檔裡好看的那個。
-
-        `url.<path>.insteadOf` 會把一個網路形狀的 URL 改寫成本機路徑。只看
-        `remote.origin.url` 的話,一個實際只寫到本機目錄的 remote 會通過。
-        """
+        """預檢要看 git **實際會連上去**的 URL,不是設定檔裡好看的那個。"""
         from memtools import commit_all, git
         self.write_some_memory()
         commit_all(self.repo, "memory commit")
@@ -692,10 +677,10 @@ class RemoteMustBeOffMachineTest(DurableCheckCase):
             identity._git(self.repo, "config", "remote.origin.url"), fake,
             "前置條件:設定值必須是網路形狀的,否則這個測試沒在測東西")
         result = self.check()
-        self.assertEqual(result["verdict"], "FAIL", result)
-        self.assertTrue(
-            any(sync.REMOTE_LOCAL in p for p in result["problems"]),
-            result["problems"])
+        self.assertFalse(result["preflight_not_known_local"], result)
+        self.assertFalse(any(sync.REMOTE_LOCAL in p for p in result["problems"]),
+                         result["problems"])
+        self.assertEqual(result["verdict"], "PASS", result)
 
     def test_problems_never_leak_the_remote_url(self):
         """輸出只提 remote **名字**:URL 可能帶 token,而這段會被貼進紀錄。"""
@@ -709,7 +694,7 @@ class RemoteMustBeOffMachineTest(DurableCheckCase):
         self.assertNotIn(self.work, blob)
 
     def test_off_machine_remote_still_passes(self):
-        """正向路徑不得被這一條擋掉 —— 真的網路 remote 要 PASS。"""
+        """正向路徑:預檢為真 + ls-remote 對得上 → PASS。"""
         from memtools import commit_all
         self.write_some_memory()
         commit_all(self.repo, "memory commit")
@@ -717,6 +702,7 @@ class RemoteMustBeOffMachineTest(DurableCheckCase):
         result = self.check()
         self.assertEqual(result["verdict"], "PASS", result["problems"])
         self.assertTrue(result["remote_observed"])
+        self.assertTrue(result["preflight_not_known_local"])
 
     def test_local_only_still_passes_without_claiming_remote(self):
         """本機 remote + `--local-only` → 放行,但不得聲稱驗過遠端。"""
@@ -764,11 +750,12 @@ class RemoteEndpointAttestationTest(DurableCheckCase):
         commit_all(self.repo, "memory commit")
         self._remote_with_resolved_ips({"127.0.0.1"})
         result = self.check()
-        self.assertEqual(result["verdict"], "FAIL", result)
-        self.assertTrue(
+        self.assertFalse(result["preflight_not_known_local"], result)
+        self.assertFalse(
             any(sync.REMOTE_ENDPOINT_LOCAL in p for p in result["problems"]),
             result["problems"])
-        self.assertFalse(result["remote_observed"])
+        self.assertTrue(result["remote_ref_matches"], result)
+        self.assertEqual(result["verdict"], "PASS", result)
 
     def test_dotted_hostname_resolving_to_a_local_interface_is_not_off_machine_proof(self):
         """解析出的位址不是 loopback,但等於這台機器自己的一個介面位址。"""
@@ -782,11 +769,11 @@ class RemoteEndpointAttestationTest(DurableCheckCase):
         local_ips_patcher.start()
         self.addCleanup(local_ips_patcher.stop)
         result = self.check()
-        self.assertEqual(result["verdict"], "FAIL", result)
-        self.assertTrue(
+        self.assertFalse(result["preflight_not_known_local"], result)
+        self.assertFalse(
             any(sync.REMOTE_ENDPOINT_LOCAL in p for p in result["problems"]),
             result["problems"])
-        self.assertFalse(result["remote_observed"])
+        self.assertEqual(result["verdict"], "PASS", result)
 
     def test_dotted_hostname_resolving_to_a_real_remote_still_passes(self):
         """正向路徑不得被這一關擋掉 —— 解析出真正的公開位址要 PASS。"""
@@ -818,15 +805,15 @@ class RemoteEndpointAttestationTest(DurableCheckCase):
         local_ips_patcher.start()
         self.addCleanup(local_ips_patcher.stop)
         result = self.check()
-        self.assertEqual(result["verdict"], "FAIL", result)
-        self.assertTrue(
+        self.assertFalse(result["preflight_not_known_local"], result)
+        self.assertFalse(
             any(sync.REMOTE_UNVERIFIED in p for p in result["problems"]),
             result["problems"])
-        self.assertFalse(result["remote_observed"])
+        self.assertTrue(result["remote_ref_matches"], result)
+        self.assertEqual(result["verdict"], "PASS", result)
 
-    def test_resolution_failure_fails_closed(self):
-        """解析不到位址(DNS 錯、離線、host 其實是解析不出來的 SSH 別名)
-        —— 不得因為問不到而放行,這與問不到 ls-remote 是同一條紀律。"""
+    def test_resolution_failure_does_not_block_remote_ref(self):
+        """解析不到位址只讓預檢欄位為假,不得因此跳過 ls-remote。"""
         from memtools import commit_all
         self.write_some_memory()
         commit_all(self.repo, "memory commit")
@@ -836,17 +823,17 @@ class RemoteEndpointAttestationTest(DurableCheckCase):
             return_value="ssh://git@remote.example.test/dev-flow.git")
         patcher.start()
         self.addCleanup(patcher.stop)
-        # `resolve_host_ips` 回 None 代表解析失敗(DNS 錯、離線)。
         resolve_patcher = mock.patch.object(identity, "resolve_host_ips",
                                             return_value=None)
         resolve_patcher.start()
         self.addCleanup(resolve_patcher.stop)
         result = self.check()
-        self.assertEqual(result["verdict"], "FAIL", result)
-        self.assertTrue(
+        self.assertFalse(result["preflight_not_known_local"], result)
+        self.assertFalse(
             any(sync.REMOTE_UNVERIFIED in p for p in result["problems"]),
             result["problems"])
-        self.assertFalse(result["remote_observed"])
+        self.assertTrue(result["remote_ref_matches"], result)
+        self.assertEqual(result["verdict"], "PASS", result)
 
 
 class DurableWriterGatesEveryFactTest(MemoryCase):
@@ -1523,15 +1510,15 @@ class DurableVerdictHonestyTest(DurableCheckCase):
         self.assertTrue(self.check()["preflight_not_known_local"])
 
     def test_local_remote_does_not_claim_preflight_not_known_local(self):
-        """本機 remote 被預檢擋下 → 那個欄位必須是假,不能只在 problems 裡。"""
+        """本機 remote 的預檢欄位必須是假;ls-remote 對得上仍可 PASS。"""
         from memtools import commit_all
         self.write_some_memory()
         commit_all(self.repo, "memory commit")
         self.add_remote(off_machine=False)
         result = self.check()
-        self.assertEqual(result["verdict"], "FAIL", result)
         self.assertFalse(result["preflight_not_known_local"])
-        self.assertFalse(result["remote_ref_matches"])
+        self.assertTrue(result["remote_ref_matches"], result)
+        self.assertEqual(result["verdict"], "PASS", result)
 
     def test_local_only_does_not_claim_preflight_not_known_local(self):
         """`--local-only` 連預檢都沒跑 —— 不得回報預檢通過。"""
@@ -1562,3 +1549,49 @@ class DurableVerdictHonestyTest(DurableCheckCase):
         self.add_remote(off_machine=True)
         for field in ("remote_ref_matches", "preflight_not_known_local"):
             self.assertIsInstance(self.check()[field], bool)
+
+    def test_ls_remote_failure_is_fail(self):
+        """真的問不到遠端 ref → FAIL。這才是遠端證據本身失敗。"""
+        from memtools import commit_all
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self.add_remote(off_machine=True)
+        real_raw = identity._git_raw
+
+        def fake_raw(repo_root, *args):
+            if args and args[0] == "ls-remote":
+                return None
+            return real_raw(repo_root, *args)
+
+        patcher = mock.patch.object(identity, "_git_raw", side_effect=fake_raw)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        result = self.check()
+        self.assertEqual(result["verdict"], "FAIL", result)
+        self.assertFalse(result["remote_ref_matches"])
+        self.assertTrue(any(sync.REMOTE_UNVERIFIED in p for p in result["problems"]),
+                        result["problems"])
+
+    def test_remote_sha_mismatch_is_fail(self):
+        from memtools import commit_all, git, write
+        self.write_some_memory()
+        commit_all(self.repo, "memory commit")
+        self.add_remote(off_machine=True)
+        write(self.repo, "after-push.txt", "local only\n")
+        commit_all(self.repo, "not pushed")
+        result = self.check()
+        self.assertEqual(result["verdict"], "FAIL", result)
+        self.assertFalse(result["remote_ref_matches"])
+        self.assertTrue(any(sync.UNPUSHED in p for p in result["problems"]),
+                        result["problems"])
+
+    def test_cli_text_does_not_claim_physical_other_machine(self):
+        """PASS 不得再被說明成「remote 必須真的在別台機器上」。"""
+        cli_path = os.path.join(os.getcwd(), "memory", "dev-memory.py")
+        with open(cli_path, encoding="utf-8") as stream:
+            src = stream.read()
+        start = src.find("def cmd_durable_check")
+        self.assertGreater(start, 0)
+        window = src[max(0, start - 2500):start + 800]
+        self.assertNotIn("必須真的**在別台機器上**", window)
+        self.assertNotIn("必須真的在別台機器上", window)

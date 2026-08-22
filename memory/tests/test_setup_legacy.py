@@ -1,9 +1,12 @@
 """dev-setup 的 memory 階段、doctor、legacy 遷移(§12/§13/§29)。"""
+import json
 import os
 import shutil
 
 from memtools import MemoryCase, commit_all, git, read_file, write
-from agentmem import durable, identity, legacy, setup, store as store_mod
+from agentmem import durable, embedding, identity, legacy, setup, store as store_mod
+from agentmem import context as context_mod
+from agentmem import sync
 
 
 class SetupTest(MemoryCase):
@@ -141,6 +144,226 @@ class DoctorTest(MemoryCase):
         os.makedirs(outside)
         self.assertEqual(setup.doctor(outside)["verdict"], "FAIL")
 
+    def _finding(self, report, check):
+        hits = [row for row in report["findings"] if row["check"] == check]
+        self.assertEqual(len(hits), 1, "missing check {0}: {1}".format(
+            check, [row["check"] for row in report["findings"]]))
+        return hits[0]
+
+    def _write_domain(self, key, title, body=""):
+        durable.write_knowledge(self.repo, {
+            "kind": "domain", "key": key, "title": title, "body": body,
+            "authority": "domain_expert", "status": "CONFIRMED",
+            "recorded_at": "2026-08-20T00:00:00Z"})
+
+    def test_doctor_flags_stale_durable_mirror_without_rebuilding(self):
+        """doctor 必須看見世代過期,且不得順便修好。"""
+        setup.run(self.repo, name="demo")
+        self._write_domain("registration", "registration = customer-level")
+        before = setup.doctor(self.repo)
+        freshness = self._finding(before, "durable-mirror-freshness")
+        self.assertNotEqual(freshness["level"], "ok")
+        self.assertNotEqual(before["verdict"], "PASS")
+        store = self.store_for(identity.read_project(self.repo)["project_id"])
+        self.assertNotEqual(
+            store.get_meta(sync.DURABLE_GENERATION_META),
+            sync.durable_generation(self.repo))
+
+    def test_doctor_freshness_ok_after_ensure_and_empty_project_is_not_fail(self):
+        setup.run(self.repo, name="demo")
+        fresh = setup.doctor(self.repo)
+        self.assertEqual(self._finding(fresh, "durable-mirror-freshness")["level"],
+                         "ok")
+        self._write_domain("registration", "registration = customer-level")
+        stale = setup.doctor(self.repo)
+        self.assertNotEqual(
+            self._finding(stale, "durable-mirror-freshness")["level"], "ok")
+        store = self.store_for(identity.read_project(self.repo)["project_id"])
+        sync.ensure_durable_mirror(self.repo, store)
+        after = setup.doctor(self.repo)
+        self.assertEqual(self._finding(after, "durable-mirror-freshness")["level"],
+                         "ok")
+
+    def test_doctor_flags_missing_generation_when_durable_content_exists(self):
+        setup.run(self.repo, name="demo")
+        self._write_domain("registration", "registration = customer-level")
+        store = self.store_for(identity.read_project(self.repo)["project_id"])
+        sync.ensure_durable_mirror(self.repo, store)
+        with store.conn:
+            store.conn.execute(
+                "DELETE FROM meta WHERE key=?",
+                (sync.DURABLE_GENERATION_META,))
+        report = setup.doctor(self.repo)
+        freshness = self._finding(report, "durable-mirror-freshness")
+        self.assertNotEqual(freshness["level"], "ok")
+        self.assertNotEqual(report["verdict"], "PASS")
+
+    def test_doctor_returns_structured_fail_on_unreadable_durable_source(self):
+        """不可讀 durable 來源必須是 structured FAIL,不得從 doctor 往外拋。"""
+        import io
+        import sys
+        import importlib.util
+        setup.run(self.repo, name="demo")
+        self._write_domain("keep-me", "keep-me = regular",
+                           "UNIQUE-BODY-MUST-NOT-LEAK")
+        store = self.store_for(identity.read_project(self.repo)["project_id"])
+        sync.ensure_durable_mirror(self.repo, store)
+        target = durable.knowledge_file(self.repo, "domain", "keep-me")
+        rel = os.path.relpath(target, durable.root(self.repo)).replace(os.sep, "/")
+
+        sync._unreadable_durable_rels = {rel}
+        try:
+            report = setup.doctor(self.repo)
+        except Exception as exc:
+            sync._unreadable_durable_rels = None
+            self.fail("doctor raised {0}: {1}".format(type(exc).__name__, exc))
+        self.assertEqual(report["verdict"], "FAIL")
+        readable = [row for row in report["findings"]
+                    if row["check"] == "durable-source-readable"]
+        self.assertEqual(len(readable), 1, report["findings"])
+        self.assertEqual(readable[0]["level"], "error")
+        self.assertIn(rel, readable[0]["detail"])
+        blob = json.dumps(report, ensure_ascii=False)
+        self.assertNotIn("UNIQUE-BODY-MUST-NOT-LEAK", blob)
+
+        cli_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "dev-memory.py")
+        spec = importlib.util.spec_from_file_location(
+            "dev_memory_cli", cli_path)
+        cli = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cli)
+
+        class _Args:
+            path = self.repo
+
+        captured = io.StringIO()
+        old_out = sys.stdout
+        try:
+            sys.stdout = captured
+            code = cli.cmd_doctor(_Args())
+        except Exception as exc:
+            sys.stdout = old_out
+            self.fail("CLI doctor raised {0}: {1}".format(
+                type(exc).__name__, exc))
+        finally:
+            sys.stdout = old_out
+            sync._unreadable_durable_rels = None
+        self.assertEqual(code, 1)
+        cli_report = json.loads(captured.getvalue())
+        self.assertEqual(cli_report["verdict"], "FAIL")
+        self.assertNotIn("UNIQUE-BODY-MUST-NOT-LEAK", captured.getvalue())
+        self.assertNotIn("Traceback", captured.getvalue())
+
+        report_ok = setup.doctor(self.repo)
+        readable_ok = [row for row in report_ok["findings"]
+                       if row["check"] == "durable-source-readable"]
+        self.assertEqual(readable_ok, [])
+        self.assertNotEqual(report_ok["verdict"], "FAIL")
+
+    def test_doctor_sees_uncertified_state_after_drift(self):
+        setup.run(self.repo, name="demo")
+        self._write_domain("registration", "registration = customer-level")
+        store = self.store_for(identity.read_project(self.repo)["project_id"])
+        toggle = {"v": 0}
+
+        def always_mutate(_repo):
+            toggle["v"] += 1
+            self._write_domain("registration", "mutated-{0}".format(toggle["v"]))
+
+        sync._after_rebuild_read = always_mutate
+        try:
+            with self.assertRaises(sync.DurableMirrorDrift):
+                sync.rebuild_local(self.repo, store)
+        finally:
+            sync._after_rebuild_read = None
+        # 失敗不得蓋新章;舊章若還在,也必須跟活樹對不上,doctor 才看得到。
+        self.assertNotEqual(
+            store.get_meta(sync.DURABLE_GENERATION_META),
+            sync.durable_generation(self.repo))
+        report = setup.doctor(self.repo)
+        freshness = self._finding(report, "durable-mirror-freshness")
+        self.assertNotEqual(freshness["level"], "ok")
+
+    def test_doctor_embedding_not_ok_when_vectors_missing_after_context_refresh(self):
+        """context/_resolve 無 embedder 刷新後,缺向量不得報 embedding OK。"""
+        setup.run(self.repo, name="demo")
+        store = self.store_for(identity.read_project(self.repo)["project_id"])
+        embedder = embedding.Embedder()
+        self._write_domain("alpha", "alpha = first durable item", "first")
+        sync.rebuild_local(self.repo, store, embedder=embedder)
+        complete = embedder.mismatch_report(store)
+        self.assertEqual(complete["mismatched"], 0)
+        self.assertEqual(complete["missing"], 0)
+
+        self._write_domain("bravo", "bravo = second durable item", "second")
+        workspace = identity.workspace_key(
+            identity.read_project(self.repo)["project_id"], self.repo)
+        snapshot = identity.workspace_snapshot(self.repo)
+        context_mod.build(store, self.repo, workspace, snapshot)
+
+        incomplete = embedder.mismatch_report(store)
+        self.assertEqual(incomplete["mismatched"], 0)
+        self.assertGreater(incomplete["missing"], 0)
+        self.assertIn("re-index", incomplete["action"])
+        doctor = setup.doctor(self.repo)
+        embedding_check = self._finding(doctor, "embedding-version")
+        self.assertNotEqual(embedding_check["level"], "ok")
+        self.assertNotEqual(doctor["verdict"], "PASS")
+
+        embedder.reindex(store)
+        repaired = embedder.mismatch_report(store)
+        self.assertEqual(repaired["missing"], 0)
+        self.assertEqual(repaired["mismatched"], 0)
+        self.assertEqual(
+            self._finding(setup.doctor(self.repo), "embedding-version")["level"],
+            "ok")
+
+    def test_doctor_not_ok_when_orphaned_embeddings_exist(self):
+        """孤兒向量存在時,embedding-version 不得 ok,reindex 必須清掉。"""
+        setup.run(self.repo, name="demo")
+        store = self.store_for(identity.read_project(self.repo)["project_id"])
+        embedder = embedding.Embedder()
+        self._write_domain("keep", "keep = present item", "keep-body")
+        sync.rebuild_local(self.repo, store, embedder=embedder)
+        embedder.embed_item(store, "knowledge:orphan-doc", "orphan text")
+        report = embedder.mismatch_report(store)
+        self.assertGreater(report["orphaned"], 0)
+        self.assertEqual(report["mismatched"], 0)
+        self.assertEqual(report["missing"], 0)
+        self.assertIn("re-index", report["action"])
+        doctor = setup.doctor(self.repo)
+        self.assertNotEqual(
+            self._finding(doctor, "embedding-version")["level"], "ok")
+        self.assertNotEqual(doctor["verdict"], "PASS")
+
+        embedder.reindex(store)
+        repaired = embedder.mismatch_report(store)
+        self.assertEqual(repaired["orphaned"], 0)
+        self.assertEqual(repaired["missing"], 0)
+        self.assertEqual(repaired["mismatched"], 0)
+        self.assertEqual(
+            self._finding(setup.doctor(self.repo), "embedding-version")["level"],
+            "ok")
+
+    def test_doctor_flags_seeded_secret_without_echoing_it(self):
+        setup.run(self.repo, name="demo")
+        secret = 'API_KEY = "sk-live-seeded-do-not-echo"'
+        write(self.repo, os.path.join(".dev-flow", "knowledge", "domain",
+                                      "leak-secret.yaml"),
+              "schema_version: 1\nkind: domain\nkey: leak-secret\n"
+              'title: "prod creds"\nbody: "{0}"\n'
+              "authority: domain_expert\nstatus: CONFIRMED\n".format(secret))
+        report = setup.doctor(self.repo)
+        self.assertEqual(report["verdict"], "FAIL")
+        leaks = [f for f in report["findings"]
+                 if f["check"] == "durable-secrets"]
+        self.assertEqual(len(leaks), 1)
+        self.assertEqual(leaks[0]["level"], "error")
+        blob = json.dumps(report, ensure_ascii=False)
+        self.assertNotIn("sk-live-seeded-do-not-echo", blob)
+        self.assertIn("assigned_secret", leaks[0]["detail"])
+
 
 class LegacyTest(MemoryCase):
     CONTEXT = """# demo — CONTEXT(詞彙表 / Ubiquitous Language)
@@ -217,6 +440,45 @@ _Avoid_:<同義詞>
         for record in records:
             self.assertEqual(record["status"], legacy.LEGACY_STATUS)
             self.assertEqual(record["evidence"][0]["ref"], "CONTEXT.md")
+
+    def test_promote_rejects_secret_and_does_not_write_it(self):
+        """GPT-P0-LEGACY-PROMOTE-SECRET:promote 不得繞過敏感守衛寫進 Git。"""
+        write(self.repo, "CONTEXT.md", """# demo
+
+## 語言
+
+**Prod API**: API_KEY = "sk-live-example123456"
+""")
+        report = legacy.migrate(self.repo, self.store, apply_changes=True,
+                                promote=True)
+        self.assertEqual(report["written"], [])
+        self.assertEqual(len(report["rejected"]), 1)
+        self.assertIn("敏感", "".join(report["rejected"][0]["reasons"]))
+        blob = []
+        knowledge_root = os.path.join(durable.root(self.repo), "knowledge")
+        if os.path.isdir(knowledge_root):
+            for dirpath, _dirs, files in os.walk(knowledge_root):
+                for name in files:
+                    with open(os.path.join(dirpath, name), encoding="utf-8") as fh:
+                        blob.append(fh.read())
+        self.assertNotIn("sk-live-example123456", "\n".join(blob))
+        self.assertEqual(list(durable.iter_knowledge(self.repo)), [])
+
+    def test_promote_keeps_clean_neighbor_when_one_term_is_sensitive(self):
+        write(self.repo, "CONTEXT.md", """# demo
+
+## 語言
+
+**Contract(合約)**:客戶與本公司簽署的服務協議。
+**Prod API**: API_KEY = "sk-live-example123456"
+""")
+        report = legacy.migrate(self.repo, self.store, apply_changes=True,
+                                promote=True)
+        keys = [record["key"] for record in durable.iter_knowledge(self.repo)]
+        self.assertEqual(keys, ["Contract"])
+        self.assertEqual(len(report["written"]), 1)
+        self.assertEqual(len(report["rejected"]), 1)
+        self.assertEqual(report["rejected"][0]["key"], "Prod API")
 
     def test_history_is_indexed_locally_not_duplicated_into_durable(self):
         legacy.migrate(self.repo, self.store, apply_changes=True)

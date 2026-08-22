@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: autoloop-report-commit-not-covered
+title: "接續紀錄不得宣稱覆蓋後寫的 commit"
+authority: current_code
+status: CANDIDATE
+confidence: 0.8
+body: "durable-check 的 checked HEAD 若與接續紀錄所在 commit 不同,紀錄必須明寫本檔 commit 不在該次檢查範圍。不得把後寫的報告 commit 說成已被先跑的檢查覆蓋。"
+recorded_at: "2026-08-21T19:17:44Z"

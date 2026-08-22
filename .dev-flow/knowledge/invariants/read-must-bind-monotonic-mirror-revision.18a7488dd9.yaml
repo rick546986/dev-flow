@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: read-must-bind-monotonic-mirror-revision
+title: "讀取認證必須綁單調 mirror revision"
+authority: current_code
+status: CANDIDATE
+confidence: 0.8
+body: "內容世代是雜湊,A→B→A 會回來。per-worktree SQLite 上並發 rebuild 可以讓讀取拿到 B 列卻用 A 的世代通過。rebuild 破壞性變更前先推進 mirror_revision;observe 回傳 (generation, revision);讀後驗證三者都要對:活樹世代、store 世代、revision。"
+recorded_at: "2026-08-22T00:18:41Z"

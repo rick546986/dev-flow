@@ -10,10 +10,47 @@
   敏感守衛,只有全過的才寫進 Git。這是 durable memory 的**唯一寫入時機**:
   不在對話中每說一句話就把 repository 弄 dirty(§17)。
 """
+import hashlib
 import json
 import os
+import shutil
+import stat
+import tempfile
 
 from . import durable, ids, lineage, signal, store as store_mod
+
+DURABLE_GENERATION_META = "durable_generation"
+MIRROR_REVISION_META = "mirror_revision"
+UNCERTIFIED_GENERATION = "uncertified"
+REBUILD_MAX_ATTEMPTS = 3
+READ_MAX_ATTEMPTS = 3
+
+# 測試縫:rebuild 讀完 durable 檔、蓋章前呼叫。production 保持 None。
+_after_rebuild_read = None
+
+# 測試縫:snapshot 讀這些 repo-relative 路徑時丟 OSError。production 保持 None。
+_unreadable_durable_rels = None
+
+# 測試縫:freshness 檢查剛結束、讀取尚未組答案時呼叫。production 保持 None。
+_after_freshness_check = None
+
+# 接續紀錄契約:checked HEAD 與檔案所在 commit 不同時,必須明寫報告 commit
+# 不在該次檢查範圍。這不是 runtime 語意,是防「證據覆蓋了後寫的 commit」。
+UNCOVERED_REPORT_MARKERS = (
+    "本檔 commit 不在該次檢查範圍",
+    "report-only successor",
+)
+
+
+class DurableMirrorDrift(RuntimeError):
+    """rebuild 與世代戳對不到同一個 snapshot,重試耗盡。"""
+
+
+def continuation_claim_is_honest(text, checked_head, file_commit):
+    """接續紀錄對 durable-check HEAD 的宣稱是否誠實。"""
+    if checked_head == file_commit:
+        return True
+    return any(marker in (text or "") for marker in UNCOVERED_REPORT_MARKERS)
 
 # CANDIDATE 也進 durable:狀態欄本來就會明寫,查詢時它會被當成
 # NEEDS_VERIFICATION。把它擋在外面反而製造一個洞 —— 「觀察到但還沒驗證」
@@ -28,7 +65,56 @@ def rebuild_local(repo_root, store, embedder=None):
 
     這支就是 §13「clone 到另一台電腦」的實作:project.yaml 給 project_id,
     其餘 durable 檔給內容,local SQLite/FTS/embedding 全部重算。
+
+    讀檔與世代戳必須是同一個 snapshot:先把 `.dev-flow/` **整棵讀進記憶體**,
+    用那些位元組算 generation_before,從那份不可變副本重建,再算
+    generation_after。只在「載入的位元組」與「當前活樹」同一世代時蓋章。
+    只比對活樹兩端雜湊不夠 —— ABA(A→B→A)會讓兩端相等、中間讀到的卻是
+    混鏡射。對不上就丟棄重試,耗盡則 DurableMirrorDrift,不得蓋一個
+    對不上的世代。
+
+    任一 durable 檔讀失敗必須 fail-closed:不可讀不是「檔案不存在」,
+    不得用合成標記當成可蓋章內容。第一次破壞性變更之前必須先把世代
+    章改成 UNCERTIFIED_GENERATION,失敗或中斷後舊章不得繼續證明那份鏡射。
     """
+    last_counts = None
+    for _attempt in range(REBUILD_MAX_ATTEMPTS):
+        kind, entries = _snapshot_durable_files(repo_root)
+        generation_before = _generation_of(kind, entries)
+        snap_repo = _materialize_snapshot(kind, entries)
+        try:
+            last_counts = _rebuild_local_once(snap_repo, store, embedder)
+        finally:
+            shutil.rmtree(snap_repo, ignore_errors=True)
+        hook = _after_rebuild_read
+        if hook is not None:
+            hook(repo_root)
+        generation_after = durable_generation(repo_root)
+        if generation_before == generation_after:
+            store.set_meta(DURABLE_GENERATION_META, generation_after)
+            return last_counts
+    raise DurableMirrorDrift(
+        "durable mirror rebuild could not certify a stable snapshot "
+        "after {0} attempts".format(REBUILD_MAX_ATTEMPTS))
+
+
+def current_mirror_revision(store):
+    raw = store.get_meta(MIRROR_REVISION_META)
+    if raw is None:
+        return 0
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _advance_mirror_revision(store):
+    return store.increment_int_meta(MIRROR_REVISION_META)
+
+
+def _rebuild_local_once(repo_root, store, embedder=None):
+    _advance_mirror_revision(store)
+    store.set_meta(DURABLE_GENERATION_META, UNCERTIFIED_GENERATION)
     store.clear_durable_mirror()
     store.clear_index()
     counts = {"facts": 0, "knowledge": 0, "decisions": 0, "skills": 0,
@@ -126,9 +212,160 @@ def rebuild_local(repo_root, store, embedder=None):
                       else None))
         counts["events"] += 1
 
+    store.reindex_local_rows()
     if embedder is not None:
         counts["embeddings"] = embedder.reindex(store)
     return counts
+
+
+def _snapshot_durable_files(repo_root):
+    """一次讀完整棵 `.dev-flow/`。回傳 (kind, [(rel, bytes), ...])。
+
+    kind=`absent` 與「目錄在但零檔」必須分開:後者是空專案,前者是還沒
+    ensure_layout。雜湊規則與 `durable_generation` 同一套,不另發明。
+    讀失敗是 DurableError,不是「這檔不存在」—— 不可讀不得被蓋章。
+    每一筆必須是 `.dev-flow/` 底下的一般檔:`lstat` 不是 `S_ISREG` 就
+    fail-closed(symlink / FIFO / device / socket 都不得被 `open()` 跟著走)。
+    `.dev-flow` 自己也必須是真實目錄:根是 symlink 時 child 全是普通檔,
+    上一輪的 child `lstat` 會全過,外部 brain 仍被蓋進世代章。
+    """
+    if durable.classify_durable_root(repo_root) == "absent":
+        return "absent", []
+    root = durable.root(repo_root)
+    entries = []
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames.sort()
+        for dname in list(dirnames):
+            dpath = os.path.join(dirpath, dname)
+            drel = os.path.relpath(dpath, root).replace(os.sep, "/")
+            _require_regular_or_dir(dpath, drel, expect_dir=True)
+        for name in sorted(filenames):
+            path = os.path.join(dirpath, name)
+            rel = os.path.relpath(path, root).replace(os.sep, "/")
+            forced = _unreadable_durable_rels
+            try:
+                if forced is not None and rel in forced:
+                    raise OSError(13, "Permission denied")
+                _require_regular_or_dir(path, rel, expect_dir=False)
+                with open(path, "rb") as stream:
+                    data = stream.read()
+            except OSError as exc:
+                raise durable.DurableError(
+                    "unreadable durable file {0}".format(rel)) from exc
+            entries.append((rel, data))
+    return "present", entries
+
+
+def _require_regular_or_dir(path, rel, expect_dir):
+    """`lstat` 後只接受一般檔或真實目錄;symlink 與其他非一般節點一律拒絕。"""
+    try:
+        mode = os.lstat(path).st_mode
+    except OSError as exc:
+        raise durable.DurableError(
+            "unreadable durable file {0}".format(rel)) from exc
+    if expect_dir:
+        if stat.S_ISLNK(mode) or not stat.S_ISDIR(mode):
+            raise durable.DurableError(
+                "non-regular durable file {0}".format(rel))
+        return
+    if not stat.S_ISREG(mode):
+        raise durable.DurableError(
+            "non-regular durable file {0}".format(rel))
+
+
+def _generation_of(kind, entries):
+    digest = hashlib.sha256()
+    if kind == "absent":
+        digest.update(b"absent")
+        return digest.hexdigest()
+    for rel, data in entries:
+        digest.update(rel.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(data)
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def _materialize_snapshot(kind, entries):
+    """把記憶體快照寫成暫時 repo root,給 `_rebuild_local_once` 讀。"""
+    tmp = tempfile.mkdtemp(prefix="durable-snap-")
+    if kind == "present":
+        dest = durable.root(tmp)
+        for rel, data in entries:
+            path = os.path.join(dest, rel.replace("/", os.sep))
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "wb") as stream:
+                stream.write(data)
+    return tmp
+
+
+def durable_generation(repo_root):
+    """`.dev-flow/` 內容的確定性指紋。不看 HEAD:無關 commit 不該逼重建。"""
+    kind, entries = _snapshot_durable_files(repo_root)
+    return _generation_of(kind, entries)
+
+
+def ensure_durable_mirror(repo_root, store, embedder=None):
+    """讀路徑在信任 SQLite 鏡射前,確認它還對得上當前 `.dev-flow/`。
+
+    對得上 → 不動。對不上 → 同步 rebuild(local-only / session / candidate
+    由 `clear_durable_mirror` 留下)。回傳是否真的重建了。
+
+    **沒有世代紀錄時不得只蓋章。** 舊 runtime DB 升級後若已有 durable 鏡射
+    列,蓋章等於把「現在這棵樹」的指紋貼在「舊鏡射」上,之後世代對得上
+    卻繼續答舊值。缺世代只允許 stamp-only 當**兩邊都空**:
+    DB 沒有 durable 鏡射列,**而且**當前 `.dev-flow/` 也沒有可鏡射內容
+    (`durable.has_mirrorable_content`;project.yaml 不算)。
+    樹已經有 knowledge/fact/decision/skill/event 時,即使 DB 是空的
+    也必須 rebuild,否則會把新樹指紋蓋在空鏡射上,之後世代對得上卻
+    一直答空。有 embedder 就傳進 rebuild,查詢路徑才不會只重建列、
+    不重建向量。
+    """
+    current = durable_generation(repo_root)
+    stored = store.get_meta(DURABLE_GENERATION_META)
+    if stored is None:
+        if (not store.has_durable_mirror()
+                and not durable.has_mirrorable_content(repo_root)):
+            store.set_meta(DURABLE_GENERATION_META, current)
+            return False
+        rebuild_local(repo_root, store, embedder)
+        return True
+    if stored == current:
+        return False
+    rebuild_local(repo_root, store, embedder)
+    return True
+
+
+def observe_certified_generation(repo_root, store, embedder=None):
+    """讀路徑入口:先確保鏡射,再回傳這次讀取所認定的(世代, mirror revision)。
+
+    呼叫端組完答案之後必須再跑 `generation_still_certified`;對不上就丟棄
+    重試,不得把檢查當下的快照當成答案離開行程時仍成立。
+    revision 是 per-worktree 單調計數,每次破壞性 rebuild 之前先推進,
+    所以 A→B→A 的內容世代可以回來,舊的讀取 token 不能。
+    """
+    rebuilt = ensure_durable_mirror(repo_root, store, embedder)
+    certified = store.get_meta(DURABLE_GENERATION_META)
+    revision = current_mirror_revision(store)
+    hook = _after_freshness_check
+    if hook is not None:
+        hook(repo_root)
+    return rebuilt, certified, revision
+
+
+def generation_still_certified(repo_root, certified, store, revision):
+    """活樹世代、store 世代、mirror revision 是否仍是這次讀取蓋過章的那組。"""
+    if not certified or certified == UNCERTIFIED_GENERATION:
+        return False
+    try:
+        revision = int(revision)
+    except (TypeError, ValueError):
+        return False
+    if durable_generation(repo_root) != certified:
+        return False
+    if store.get_meta(DURABLE_GENERATION_META) != certified:
+        return False
+    return current_mirror_revision(store) == revision
 
 
 # ─────────────────────────── local → durable ────────────────────────────────
@@ -553,9 +790,10 @@ def _observe_remote(repo_root, branch):
     這個字串切 —— branch 名字本身可以有 `/`,切錯會問錯 ref 然後判 FAIL。
 
     連得上**不等於**在別台機器上:remote 可以是 `/Volumes/backup/mirror.git`。
-    所以 URL 先過 `identity.remote_is_offmachine()`,判不出是別台機器就不給
-    證據 —— 見那支的註解。訊息裡只提 remote **名字**,不提 URL:URL 可能帶
-    token,而這段輸出會被貼進紀錄。
+    所以 URL 先過 `identity.remote_is_offmachine()` 填預檢欄位;判不出是
+    別台機器就把 `preflight_not_known_local` 設假,**然後仍走 ls-remote**。
+    訊息裡只提 remote **名字**,不提 URL:URL 可能帶 token,而這段輸出會被
+    貼進紀錄。
 
     形狀判定只看 URL 字面(host 長得像不像本機)——一個具名的非 loopback
     主機仍然可能解析回這台機器:`remote.example.test` 被 `/etc/hosts` 或
@@ -596,41 +834,33 @@ def _observe_remote(repo_root, branch):
     if not url:
         return (None, REMOTE_UNVERIFIED,
                 "讀不到 remote {0} 的 URL".format(remote), False)
+    # 預檢是 best-effort,只填 `preflight_not_known_local`。失敗不得
+    # 當 problems、也不得跳過後面的 ls-remote(owner D-2 / GPT 0130)。
+    preflight_not_known_local = False
     if not identity.remote_is_offmachine(url):
-        return (None, REMOTE_LOCAL,
-                "remote {0} 指向這台機器,或無法判定它在別台機器上 —— "
-                "本機的 bare repo / file:// / localhost 跟工作樹一起壞掉,"
-                "它不是「記憶離開這台機器」的證據".format(remote), False)
-    host = identity._parse_host(url)
-    ips = identity.resolve_host_ips(host) if host else None
-    if not ips:
-        return (None, REMOTE_UNVERIFIED,
-                "remote {0} 的主機名解析不到位址 —— 分不出來不得當成"
-                "離開這台機器的證據".format(remote), False)
-    local_ips = identity._local_machine_ips()
-    if not local_ips:
-        return (None, REMOTE_UNVERIFIED,
-                "這台機器自己的介面位址列表拿不到(best-effort 探測全部"
-                "失敗)—— 分不出來解析到的位址是不是這台機器自己,不得"
-                "因為查不到本機介面就當成離開這台機器的證據", False)
-    if not all(identity.ip_is_offmachine(ip, local_ips=local_ips)
-               for ip in ips):
-        return (None, REMOTE_ENDPOINT_LOCAL,
-                "remote {0} 的主機名解析後是這台機器自己(loopback / "
-                "link-local / 本機介面位址)—— 主機名長得像別台機器,"
-                "實際解析到的卻是自己".format(remote), False)
+        preflight_not_known_local = False
+    else:
+        host = identity._parse_host(url)
+        ips = identity.resolve_host_ips(host) if host else None
+        if ips:
+            local_ips = identity._local_machine_ips()
+            if local_ips and all(
+                    identity.ip_is_offmachine(ip, local_ips=local_ips)
+                    for ip in ips):
+                preflight_not_known_local = True
     raw = identity._git_raw(repo_root, "ls-remote", "--exit-code",
                             remote, merge)
     if raw is None:
         return (None, REMOTE_UNVERIFIED,
                 "問不到遠端 {0} 的 {1}(網路不通、無權限、或該 ref 不存在)"
-                .format(remote, merge), True)
+                .format(remote, merge), preflight_not_known_local)
     for line in raw.splitlines():
         parts = line.split("\t")
         if len(parts) == 2 and parts[1].strip() == merge:
-            return parts[0].strip(), None, None, True
+            return parts[0].strip(), None, None, preflight_not_known_local
     return (None, REMOTE_UNVERIFIED,
-            "遠端 {0} 沒有回報 {1}".format(remote, merge), True)
+            "遠端 {0} 沒有回報 {1}".format(remote, merge),
+            preflight_not_known_local)
 
 
 def durable_check(repo_root, store, local_only=False):

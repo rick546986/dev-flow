@@ -18,7 +18,7 @@
 import os
 
 from . import (LOCAL_SCHEMA_VERSION, durable, embedding, identity, legacy,
-               paths, schema, store as store_mod, sync, truth)
+               paths, schema, signal, store as store_mod, sync, truth)
 
 
 class SetupError(RuntimeError):
@@ -96,6 +96,15 @@ def doctor(start_path=None):
              "detail": "不在 git repository 內",
              "fix": "在 repo 內執行,或先 git init"}]}
 
+    try:
+        durable.classify_durable_root(root)
+    except durable.DurableError as exc:
+        findings.append({
+            "level": "error", "check": "durable-source-readable",
+            "detail": str(exc),
+            "fix": "修復 .dev-flow/ 內不可讀或非一般檔後重跑 doctor"})
+        return {"verdict": "FAIL", "findings": findings}
+
     project_path = identity.project_file(root)
     if not os.path.isfile(project_path):
         findings.append({
@@ -148,11 +157,55 @@ def doctor(start_path=None):
                 "fix": "" if enabled else
                        "換一個帶 FTS5 的 python3(不影響正確性,只影響排序品質)"})
         report = embedding.Embedder().mismatch_report(store)
+        embedding_ok = (not report["mismatched"] and not report["missing"]
+                        and not report["orphaned"])
         findings.append({
-            "level": "ok" if not report["mismatched"] else "warn",
+            "level": "ok" if embedding_ok else "warn",
             "check": "embedding-version",
-            "detail": "{0} 筆與當前 signature 不符".format(report["mismatched"]),
-            "fix": report["action"] if report["mismatched"] else ""})
+            "detail": "{0} 筆 signature 不符,{1} 筆缺向量,{2} 筆孤兒向量".format(
+                report["mismatched"], report["missing"], report["orphaned"]),
+            "fix": "" if embedding_ok else report["action"]})
+        try:
+            current = sync.durable_generation(root)
+        except (OSError, durable.DurableError, ValueError) as exc:
+            findings.append({
+                "level": "error", "check": "durable-source-readable",
+                "detail": str(exc),
+                "fix": "修復 .dev-flow/ 內不可讀或非一般檔後重跑 doctor"})
+            current = None
+        stored = store.get_meta(sync.DURABLE_GENERATION_META)
+        if current is None:
+            freshness_level, freshness_detail, freshness_fix = (
+                "warn",
+                "durable source is unreadable; freshness not certified",
+                "先排除 durable-source-readable")
+        elif stored == current:
+            freshness_level, freshness_detail, freshness_fix = (
+                "ok", "local mirror generation matches .dev-flow/", "")
+        elif stored is None:
+            has_rows = store.has_durable_mirror()
+            try:
+                has_content = durable.has_mirrorable_content(root)
+            except (OSError, durable.DurableError, ValueError):
+                has_content = True
+            if not has_content and not has_rows:
+                freshness_level, freshness_detail, freshness_fix = (
+                    "ok", "empty project, no durable mirror to certify", "")
+            else:
+                freshness_level, freshness_detail, freshness_fix = (
+                    "warn",
+                    "missing durable-generation stamp while durable content or "
+                    "mirror rows exist — local mirror is uncertified",
+                    "跑 dev-setup 重建鏡射")
+        else:
+            freshness_level, freshness_detail, freshness_fix = (
+                "warn",
+                "durable source changed; local mirror needs refresh "
+                "(stored generation != current .dev-flow/)",
+                "跑 dev-setup 或一次 ask 重建鏡射")
+        findings.append({
+            "level": freshness_level, "check": "durable-mirror-freshness",
+            "detail": freshness_detail, "fix": freshness_fix})
         leaks = _absolute_path_leaks(root)
         findings.append({
             "level": "ok" if not leaks else "error",
@@ -161,6 +214,19 @@ def doctor(start_path=None):
             "fix": "" if not leaks else
                    "人工修掉 {0};durable memory 只收 repo-relative 路徑".format(
                        ", ".join(leaks[:3]))})
+        secrets = _secret_leaks(root)
+        findings.append({
+            "level": "ok" if not secrets else "error",
+            "check": "durable-secrets",
+            "detail": (
+                "durable 樹內疑似敏感內容 0 處" if not secrets else
+                "durable 樹內疑似敏感內容 {0} 處({1})".format(
+                    len(secrets),
+                    "; ".join("{0}@{1}".format(",".join(names), rel)
+                              for rel, names in secrets[:3]))),
+            "fix": "" if not secrets else
+                   "人工移出 {0};durable memory 拒絕固化敏感內容".format(
+                       ", ".join(rel for rel, _names in secrets[:3]))})
         snapshot = identity.workspace_snapshot(root)
         workspace_id = identity.workspace_key(project["project_id"],
                                               snapshot["local_path"])
@@ -196,4 +262,25 @@ def _absolute_path_leaks(root):
                 continue
             if paths.scan_absolute_paths(text):
                 leaks.append(os.path.relpath(path, root).replace("\\", "/"))
+    return leaks
+
+
+def _secret_leaks(root):
+    """掃 durable 樹的敏感 pattern。只回檔名與 pattern 名,不回命中原文。"""
+    leaks = []
+    durable_root = durable.root(root)
+    if not os.path.isdir(durable_root):
+        return leaks
+    for dirpath, _dirs, files in os.walk(durable_root):
+        for name in files:
+            path = os.path.join(dirpath, name)
+            try:
+                with open(path, encoding="utf-8") as stream:
+                    text = stream.read()
+            except (OSError, UnicodeDecodeError):
+                continue
+            hits = signal.scan_sensitive(text)
+            if hits:
+                leaks.append((os.path.relpath(path, root).replace("\\", "/"),
+                              hits))
     return leaks

@@ -20,7 +20,7 @@
 """
 import json
 
-from . import identity, truth
+from . import identity, sync, truth
 
 DEFAULT_BUDGET = 4000
 """startup context 的字元上限(預設值刻意小)。超過就砍段落,不砍成半句。"""
@@ -50,6 +50,20 @@ QUERY_INSTRUCTIONS = (
 def build(store, repo_root, workspace_id=None, snapshot=None,
           budget=DEFAULT_BUDGET):
     """組出 startup context。回傳 dict(sections / text / size / truncated)。"""
+    for _attempt in range(sync.READ_MAX_ATTEMPTS):
+        _rebuilt, certified, revision = sync.observe_certified_generation(
+            repo_root, store)
+        payload = _build_prepared(
+            store, repo_root, workspace_id, snapshot, budget)
+        if sync.generation_still_certified(repo_root, certified, store, revision):
+            return payload
+    raise sync.DurableMirrorDrift(
+        "context could not certify a stable durable generation "
+        "after {0} attempts".format(sync.READ_MAX_ATTEMPTS))
+
+
+def _build_prepared(store, repo_root, workspace_id, snapshot, budget):
+    """在已認定的世代上組 context。呼叫端負責讀後驗證。"""
     project = identity.read_project(repo_root)
     snapshot = snapshot or identity.workspace_snapshot(repo_root)
     workspace_id = workspace_id or identity.workspace_key(

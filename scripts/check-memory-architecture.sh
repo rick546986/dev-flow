@@ -799,7 +799,332 @@ elif "_per_coordinate(" not in cur_code:
 else:
     ok("CURRENT 從 resolved 建 per_coordinate")
 
-MIN_CHECKS = 60
+# 缺世代不得只蓋章:舊 runtime DB 升級路徑會把新樹指紋貼在舊鏡射上。
+i_edm = sync_src.find("def ensure_durable_mirror(")
+i_edm_end = sync_src.find("\ndef ", i_edm + 1)
+edm_code = executable_only(sync_src[i_edm:i_edm_end]) if i_edm >= 0 and i_edm_end > i_edm else None
+if edm_code is None:
+    bad("ensure_durable_mirror 抽取", "找不到 ensure_durable_mirror 窗口")
+elif "has_durable_mirror" not in edm_code:
+    bad("缺世代只蓋章",
+        "ensure_durable_mirror 沒有問 has_durable_mirror —— 舊 DB 無世代章"
+        "時會把當前樹指紋蓋在舊鏡射上,之後世代對得上卻繼續答舊值")
+elif "rebuild_local" not in edm_code:
+    bad("缺世代不重建",
+        "ensure_durable_mirror 看到缺世代但不呼叫 rebuild_local")
+else:
+    ok("缺世代且已有鏡射列時必須 rebuild,不得只蓋章")
+
+if edm_code is None:
+    bad("缺世代樹側空性", "找不到 ensure_durable_mirror 窗口")
+elif "has_mirrorable_content" not in edm_code:
+    bad("缺世代不看樹",
+        "ensure_durable_mirror 缺世代時沒有問 has_mirrorable_content —— "
+        "舊空 DB + 新非空 .dev-flow/ 會把新樹指紋蓋在空鏡射上")
+else:
+    ok("缺世代且樹有可鏡射內容時必須 rebuild,不得只蓋章")
+
+# rebuild 與世代戳必須同一 snapshot,否則並發改 durable 會蓋錯章。
+i_rl = sync_src.find("def rebuild_local(")
+i_rl_end = sync_src.find("\ndef ", i_rl + 1)
+rl_code = executable_only(sync_src[i_rl:i_rl_end]) if i_rl >= 0 and i_rl_end > i_rl else None
+if rl_code is None:
+    bad("rebuild_local 抽取", "找不到 rebuild_local 窗口")
+elif "generation_before" not in rl_code or "generation_after" not in rl_code:
+    bad("rebuild 世代不是同一 snapshot",
+        "rebuild_local 沒有比對 generation_before / generation_after —— "
+        "讀完再雜湊一次可以把後寫入的樹認證到先讀到的舊列上")
+elif "DurableMirrorDrift" not in rl_code:
+    bad("rebuild 撕開不 fail-closed",
+        "rebuild_local 對不上 snapshot 時沒有 DurableMirrorDrift")
+else:
+    ok("rebuild 只在 generation_before == generation_after 時蓋章")
+
+if rl_code is None:
+    bad("rebuild 快照抽取", "找不到 rebuild_local 窗口")
+elif "_snapshot_durable_files" not in rl_code \
+        or "_generation_of" not in rl_code:
+    bad("rebuild 蓋章只看活樹兩端",
+        "rebuild_local 沒有從載入的位元組算世代 —— ABA(A→B→A)會把"
+        "混鏡射蓋成同一個 generation")
+else:
+    ok("rebuild 蓋章用載入位元組的世代,不是活樹兩端雜湊")
+
+i_rlo = sync_src.find("def _rebuild_local_once(")
+i_rlo_end = sync_src.find("\ndef ", i_rlo + 1)
+rlo_code = executable_only(sync_src[i_rlo:i_rlo_end]) if i_rlo >= 0 and i_rlo_end > i_rlo else None
+if rlo_code is None:
+    bad("_rebuild_local_once 抽取", "找不到 _rebuild_local_once 窗口")
+elif "reindex_local_rows" not in rlo_code:
+    bad("rebuild 不補 local-only 索引",
+        "_rebuild_local_once 清掉全域 index 後沒有 reindex_local_rows —— "
+        "local-only 列還在、DOMAIN/DISCOVERY 找不到")
+else:
+    ok("rebuild 清 index 後必須把留下的 local-only 列重新入索引")
+
+i_ex = query_src.find("def execute(")
+i_ex_end = query_src.find("\ndef ", i_ex + 1)
+ex_code = executable_only(query_src[i_ex:i_ex_end]) if i_ex >= 0 and i_ex_end > i_ex else None
+ask_i = cli_src.find("def cmd_ask(")
+ask_end = cli_src.find("\ndef ", ask_i + 1)
+ask_code = executable_only(cli_src[ask_i:ask_end]) if ask_i >= 0 and ask_end > ask_i else None
+if ex_code is None:
+    bad("query.execute 抽取", "找不到 execute 窗口")
+elif "embedder.reindex" not in ex_code and "ensure_durable_mirror" not in ex_code:
+    bad("查詢不補 embedding",
+        "query.execute 沒有帶 embedder 做 freshness / reindex")
+elif "embedder.reindex" not in ex_code:
+    bad("查詢不補缺 embedding",
+        "query.execute 沒有 embedder.reindex —— context/_resolve 先 rebuild "
+        "之後第一次 ask 的向量通道仍是空的")
+elif ask_code is None:
+    bad("cmd_ask 抽取", "找不到 cmd_ask 窗口")
+elif "refresh_mirror=False" not in ask_code:
+    bad("CLI ask 先消耗 mismatch",
+        "cmd_ask 仍讓 _resolve 先 refresh —— 沒帶 embedder 的 rebuild "
+        "會蓋章,後面 query.execute 看不到要補向量")
+else:
+    ok("查詢路徑補 embedding,且 CLI ask 不讓 _resolve 先消耗 mismatch")
+
+setup_src = read("memory/agentmem/setup.py")
+i_doc = setup_src.find("def doctor(")
+i_doc_end = setup_src.find("\ndef ", i_doc + 1)
+doc_code = executable_only(setup_src[i_doc:i_doc_end]) if i_doc >= 0 and i_doc_end > i_doc else None
+if doc_code is None:
+    bad("doctor 抽取", "找不到 doctor 窗口")
+elif "durable-mirror-freshness" not in doc_code:
+    bad("doctor 看不見鏡射新鮮度",
+        "doctor 沒有 durable-mirror-freshness —— 世代過期或未蓋章"
+        "時仍可報健康")
+elif "DURABLE_GENERATION_META" not in doc_code:
+    bad("doctor 新鮮度沒讀世代章",
+        "doctor 提到 freshness 卻沒讀 DURABLE_GENERATION_META")
+else:
+    ok("doctor 必須檢查 durable-mirror-freshness")
+
+embedding_src = read("memory/agentmem/embedding.py")
+i_mr = embedding_src.find("def mismatch_report(")
+i_mr_end = embedding_src.find("\n    def ", i_mr + 1)
+if i_mr_end < 0:
+    i_mr_end = embedding_src.find("\ndef ", i_mr + 1)
+mr_code = executable_only(embedding_src[i_mr:i_mr_end]) if i_mr >= 0 and i_mr_end > i_mr else None
+if mr_code is None:
+    bad("mismatch_report 抽取", "找不到 mismatch_report 窗口")
+elif "embedding_missing" not in mr_code:
+    bad("embedding 健康不數缺列",
+        "mismatch_report 沒有 embedding_missing —— 既有向量簽章對"
+        "就會宣稱無需 re-index")
+elif '"missing"' not in mr_code:
+    bad("embedding 健康不回 missing",
+        "mismatch_report 沒有回傳 missing 欄位")
+else:
+    ok("embedding 健康必須數 missing,不是只數 signature mismatch")
+
+i_snap = sync_src.find("def _snapshot_durable_files(")
+i_snap_end = sync_src.find("\ndef ", i_snap + 1)
+snap_code = executable_only(sync_src[i_snap:i_snap_end]) if i_snap >= 0 and i_snap_end > i_snap else None
+i_gen = sync_src.find("def _generation_of(")
+i_gen_end = sync_src.find("\ndef ", i_gen + 1)
+gen_code = executable_only(sync_src[i_gen:i_gen_end]) if i_gen >= 0 and i_gen_end > i_gen else None
+if snap_code is None:
+    bad("snapshot 抽取", "找不到 _snapshot_durable_files 窗口")
+elif "DurableError" not in snap_code or "data = None" in snap_code:
+    bad("不可讀檔可蓋章",
+        "_snapshot_durable_files 對 OSError 沒有 DurableError、或仍把 "
+        "data = None 當可蓋章內容")
+elif gen_code is not None and (
+        'b"unreadable"' in gen_code or "b'unreadable'" in gen_code):
+    bad("unreadable 合成標記可蓋章",
+        "_generation_of 仍把 b'unreadable' 當世代內容 —— 不可讀檔會被認證")
+else:
+    ok("不可讀 durable 檔必須 fail-closed,不得收成可蓋章的缺檔")
+
+if rlo_code is None:
+    bad("撤章抽取", "找不到 _rebuild_local_once 窗口")
+else:
+    uncertify_at = rlo_code.find("UNCERTIFIED_GENERATION")
+    clear_at = rlo_code.find("clear_durable_mirror")
+    if uncertify_at < 0 or clear_at < 0 or uncertify_at > clear_at:
+        bad("破壞性 rebuild 未先撤章",
+            "_rebuild_local_once 沒有在 clear_durable_mirror 之前寫入 "
+            "UNCERTIFIED_GENERATION —— 中途失敗後舊章仍證明半殘鏡射")
+    else:
+        ok("rebuild 在第一次破壞性變更前必須撤銷世代認證")
+
+i_search = embedding_src.find("def search(")
+i_search_end = embedding_src.find("\n    def ", i_search + 1)
+if i_search_end < 0:
+    i_search_end = embedding_src.find("\ndef ", i_search + 1)
+if i_search_end < 0:
+    i_search_end = len(embedding_src)
+search_code = (executable_only(embedding_src[i_search:i_search_end])
+               if i_search >= 0 and i_search_end > i_search else None)
+if mr_code is None:
+    bad("孤兒健康抽取", "找不到 mismatch_report 窗口")
+elif "missing or orphaned" not in mr_code:
+    bad("孤兒不觸發 reindex",
+        "mismatch_report 的 needs 沒有 missing or orphaned —— "
+        "孤兒向量仍可宣稱無需 re-index")
+elif search_code is None or "JOIN items" not in search_code:
+    bad("search 先限後濾孤兒",
+        "Embedder.search 沒有 JOIN items —— 孤兒會在 limit 前佔滿排名")
+elif doc_code is None or 'report["orphaned"]' not in doc_code:
+    bad("doctor 不看孤兒",
+        "doctor 的 embedding-version 沒有讀 report[\"orphaned\"]")
+else:
+    ok("孤兒向量必須不健康、可清理、且不得在 join 前佔滿排名")
+
+context_src = read("memory/agentmem/context.py")
+i_ctx = context_src.find("def build(")
+i_ctx_end = context_src.find("\ndef ", i_ctx + 1)
+ctx_code = (executable_only(context_src[i_ctx:i_ctx_end])
+            if i_ctx >= 0 and i_ctx_end > i_ctx else None)
+if ex_code is None:
+    bad("讀後驗證抽取", "找不到 query.execute 窗口")
+elif "generation_still_certified" not in ex_code:
+    bad("查詢沒有讀後世代驗證",
+        "query.execute 組完答案沒有 generation_still_certified —— "
+        "freshness 檢查與答案離開行程之間的 TOCTOU 會把舊 VERIFIED 當 OK")
+elif ctx_code is None or "generation_still_certified" not in ctx_code:
+    bad("context 沒有讀後世代驗證",
+        "context.build 組完沒有 generation_still_certified —— "
+        "startup context 會洩漏檢查後已過期的鏡射")
+else:
+    ok("query/context 讀後必須再驗證世代,對不上就丟棄重試")
+
+if snap_code is None:
+    bad("symlink 抽取", "找不到 _snapshot_durable_files 窗口")
+elif "expect_dir=False" not in snap_code:
+    bad("snapshot 不拒絕非一般檔",
+        "_snapshot_durable_files 沒有對檔案呼叫 expect_dir=False —— "
+        "symlink 會被 open() 跟著走並蓋進世代章")
+elif "lstat" not in sync_src or "S_ISREG" not in sync_src:
+    bad("snapshot 不 lstat/S_ISREG",
+        "拒絕函式沒有 lstat 或 S_ISREG —— 非一般檔仍可被當成 durable 內容蓋章")
+else:
+    ok("durable snapshot 必須 lstat 且只接受一般檔,不得跟隨 symlink")
+
+if doc_code is None:
+    bad("doctor 不可讀抽取", "找不到 doctor 窗口")
+elif '"check": "durable-source-readable"' not in doc_code:
+    bad("doctor 不可讀來源會往外拋",
+        "doctor 沒有 check=durable-source-readable —— "
+        "不可讀 durable 檔會讓診斷指令拋例外而不是 structured FAIL")
+elif "DurableError" not in doc_code:
+    bad("doctor 不接 DurableError",
+        "doctor 提到 readable 卻沒接 DurableError")
+else:
+    ok("doctor 必須把不可讀 durable 來源收成 structured FAIL")
+
+i_aw = durable_src.find("def _atomic_write(")
+i_aw_end = durable_src.find("\ndef ", i_aw + 1)
+aw_code = (executable_only(durable_src[i_aw:i_aw_end])
+           if i_aw >= 0 and i_aw_end > i_aw else None)
+if aw_code is None:
+    bad("writer 禁閉抽取", "找不到 _atomic_write 窗口")
+elif "repo_root_path" not in aw_code.split(")", 1)[0]:
+    bad("writer 不收 repo_root",
+        "_atomic_write 不再收 repo_root_path —— 禁閉檢查沒有 durable root 可對")
+elif "_mkdirs_confined" not in aw_code:
+    bad("writer 不禁閉建目錄",
+        "_atomic_write 沒有 _mkdirs_confined —— makedirs 會跟隨 symlink 寫出 repo")
+elif "O_NOFOLLOW" not in aw_code and "_require_real_dir" not in aw_code:
+    bad("writer 不拒絕 symlink 祖先",
+        "_atomic_write 沒有 O_NOFOLLOW 也沒有 _require_real_dir")
+else:
+    ok("durable writer 必須禁閉在真實 .dev-flow 樹內,不得跟隨 symlink")
+
+if snap_code is None:
+    bad("root symlink 抽取", "找不到 _snapshot_durable_files 窗口")
+elif "classify_durable_root" not in snap_code:
+    bad("snapshot 不驗證 durable root",
+        "_snapshot_durable_files 沒有 classify_durable_root —— "
+        "isdir 會跟隨 .dev-flow symlink 把樹外當正本")
+else:
+    ok("durable snapshot 必須先驗證 .dev-flow 自己是真實目錄")
+
+i_gsc = sync_src.find("def generation_still_certified(")
+i_gsc_end = sync_src.find("\ndef ", i_gsc + 1)
+gsc_code = (executable_only(sync_src[i_gsc:i_gsc_end])
+            if i_gsc >= 0 and i_gsc_end > i_gsc else None)
+if rlo_code is None:
+    bad("mirror revision rebuild 抽取", "找不到 _rebuild_local_once 窗口")
+elif "_advance_mirror_revision" not in rlo_code:
+    bad("rebuild 不推進 mirror revision",
+        "_rebuild_local_once 破壞性變更前沒有 _advance_mirror_revision —— "
+        "A→B→A 的舊讀取 token 會再通過")
+elif gsc_code is None:
+    bad("mirror revision 讀後驗證抽取", "找不到 generation_still_certified 窗口")
+elif "current_mirror_revision" not in gsc_code:
+    bad("讀後驗證不看 mirror revision",
+        "generation_still_certified 沒有 current_mirror_revision —— "
+        "同 worktree 並發 rebuild ABA 仍可把外來列當認證過")
+elif "get_meta" not in gsc_code:
+    bad("讀後驗證不看 store 世代",
+        "generation_still_certified 沒有再讀 store generation")
+else:
+    ok("讀取認證必須綁世代與單調 mirror revision")
+
+i_walk = durable_src.find("def _open_confined_dirfd(")
+i_walk_end = durable_src.find("\ndef ", i_walk + 1)
+walk_code = (executable_only(durable_src[i_walk:i_walk_end])
+             if i_walk >= 0 and i_walk_end > i_walk else None)
+i_dirfd = durable_src.find("def _atomic_write_dirfd(")
+i_dirfd_end = durable_src.find("\ndef ", i_dirfd + 1)
+dirfd_code = (executable_only(durable_src[i_dirfd:i_dirfd_end])
+              if i_dirfd >= 0 and i_dirfd_end > i_dirfd else None)
+if walk_code is None or dirfd_code is None:
+    bad("writer dirfd 走訪抽取",
+        "找不到 _open_confined_dirfd 或 _atomic_write_dirfd")
+elif "_open_confined_dirfd" not in dirfd_code:
+    bad("writer 不走 confined dirfd",
+        "_atomic_write_dirfd 沒有 _open_confined_dirfd —— "
+        "會用絕對路徑重開 parent,O_NOFOLLOW 只守最後一段")
+elif "os.open(parent" in dirfd_code:
+    bad("writer 用絕對路徑重開 parent",
+        "_atomic_write_dirfd 對 parent 做 os.open(parent)")
+elif "dir_fd=" not in walk_code:
+    bad("confined walk 沒有 dir_fd",
+        "_open_confined_dirfd 沒有 dir_fd= —— 沒有 openat")
+else:
+    ok("durable writer 必須用已開啟的 dirfd 逐層走,不得重開絕對 parent")
+
+i_adv = sync_src.find("def _advance_mirror_revision(")
+i_adv_end = sync_src.find("\ndef ", i_adv + 1)
+adv_code = (executable_only(sync_src[i_adv:i_adv_end])
+            if i_adv >= 0 and i_adv_end > i_adv else None)
+if adv_code is None:
+    bad("原子 revision 抽取", "找不到 _advance_mirror_revision 窗口")
+elif "increment_int_meta" not in adv_code:
+    bad("revision 推進不是原子 increment",
+        "_advance_mirror_revision 沒有 increment_int_meta —— "
+        "兩個 Store 連線會讀到同一個舊值")
+elif "current_mirror_revision" in adv_code:
+    bad("revision 推進仍讀再寫",
+        "_advance_mirror_revision 仍呼叫 current_mirror_revision")
+elif "BEGIN IMMEDIATE" not in store_src:
+    bad("Store 沒有 BEGIN IMMEDIATE",
+        "increment_int_meta 缺少 BEGIN IMMEDIATE —— 讀之前沒拿 reserved lock")
+else:
+    ok("mirror revision 推進必須在單一 SQLite 交易內原子 +1")
+
+i_cls = durable_src.find("def classify_durable_root(")
+i_cls_end = durable_src.find("\ndef ", i_cls + 1)
+cls_code = (executable_only(durable_src[i_cls:i_cls_end])
+            if i_cls >= 0 and i_cls_end > i_cls else None)
+if cls_code is None:
+    bad("root 分類抽取", "找不到 classify_durable_root 窗口")
+elif "FileNotFoundError" not in cls_code and "ENOENT" not in cls_code:
+    bad("root 分類不區分 ENOENT",
+        "classify_durable_root 沒有 FileNotFoundError/ENOENT —— "
+        "EACCES/EIO 會被當成 absent 並蓋空章")
+elif "DurableError" not in cls_code:
+    bad("root 分類不 raise DurableError",
+        "非 ENOENT 的 lstat 失敗沒有 DurableError")
+else:
+    ok("durable root 只有 ENOENT 能當 absent,其餘 lstat 失敗必須 fail-closed")
+
+MIN_CHECKS = 80
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)
