@@ -133,8 +133,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=104
-EXPECTED_TOTAL=118
+EXPECTED_NEGATIVES=105
+EXPECTED_TOTAL=119
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -815,6 +815,9 @@ expect_local fail check-design-contract.sh "$D" "GS-8 守衛的一條斷言被�
 # 起因是 2026-08 order-intake 的真實執行:四條散文規則同時失效而所有產出看起來完整。
 # 這一組把「條款有沒有被刪掉」變成會紅的測試 —— 條款寫在模板裡沒人守,
 # 只有這裡的負向案能證明「守衛真的擋得住」。
+# S67-ST(2026-08-22):頂註執行清單拿掉「整合回歸」必須紅 —— 舊節序
+# (Final Fresh 在整合回歸之前)的假綠。加案後 EXPECTED_NEGATIVES 104→105、
+# EXPECTED_TOTAL 118→119。
 
 D=$(seed s67-control)
 expect pass check-stage67-enforcement.sh "$D" "S67-0 對照組(模板與範例未變異)"
