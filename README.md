@@ -606,12 +606,14 @@ md 側對應規定是 `_templates/5-tasks.md` 頂註,**兩邊講同一件事、m
   8. Gauntlet PASS 不取代 Standards Axis / Spec Axis / Operational Walkthrough /
      Coverage Matrix / 真實現象複驗。
 
-  八點中的 Evidence 文件契約由 `scripts/devflow-evidence-gauntlet.sh`(1.3.0,E1–E13;
+  八點中的 Evidence 文件契約由 `scripts/devflow-evidence-gauntlet.sh`(1.3.1,E1–E13;
   採用專案散發於 `docs/dev/tools/`)機械驗證;第 2、5 點由 Gauntlet 讀 4-spec
   Verification Profile 的 Required layers(旗標 `--require-layer` 只能加嚴,不能拿掉
-  Required;漏帶不再 fail-open)。第 3 點:Evidence 表已列且非 n-a 的 Conditional
+  Required;漏帶不再 fail-open;`--review-file` 找不到 Profile 亦不得退回 1.2.0)。
+  第 3 點:Evidence 表已列且非 n-a 的 Conditional
   必須 pass;未列入視為未觸發,仍由 Reviewer 核對 Profile 條件。第 1 點的 HEAD
-  綁定在 `--review-file` 且未顯式傳 `--source-sha` 時由 Gauntlet 預設當下 HEAD。
+  綁定:`--review-file` 漏帶 `--source-sha` 時預設當下 HEAD;`docs/dev/<feature>/7-review.md`
+  即使顯式傳 `--source-sha` 也必須等於 HEAD(example/ 與 scripts/fixtures/ 不套)。
   詳細強制邊界見下方對照表。
 - frontmatter 是狀態機:`draft → in-review → approved → superseded/shipped`。
 - 已知限界(明文接受,不另設機制):①Stage 1 討論期的自判無獨立節(單一機制
@@ -655,7 +657,7 @@ E11 只驗這兩節在不在。
 | 4-spec 每個 S 被 5-tasks Covers 承接 | 本 repo 腳本只驗範例;實案靠 runtime/CI 或人工 | `scripts/check-methodology-corrections.sh`(母版 repo) |
 | 每個 T×S 有獨立 RED→GREEN 證據 | 本 repo 腳本只驗範例;實案靠外部 runtime 與 Reviewer | `scripts/check-methodology-corrections.sh`(母版 repo)、dev-run |
 | G3 Evidence 契約八點 | 本 repo Gauntlet 腳本(E1–E13);第 2、5 點讀 4-spec,第 3 點讀已列入的 Conditional | `scripts/devflow-evidence-gauntlet.sh`(母版 repo;採用專案的機械檢查入口是 `docs/dev/tools/devflow-evidence-gauntlet.sh` + doctor) |
-| G3 第 2、5 點:Required Layer 全 pass、不得 unverified 或 n-a | 機械 —— Gauntlet 讀 sibling(或 `--profile`)4-spec Verification Profile 的 Required layers;漏帶 `--require-layer` 不再 fail-open。旗標只能加嚴,不能把 Required 拿掉 | 4-spec Verification Profile、`_templates/7-review.md` 步 2d、`scripts/devflow-evidence-gauntlet.sh` E7 |
+| G3 第 2、5 點:Required Layer 全 pass、不得 unverified 或 n-a | 機械 —— Gauntlet 讀 sibling(或 `--profile`)4-spec Verification Profile 的 Required layers;漏帶 `--require-layer` 不再 fail-open;`--review-file` 找不到 Profile 即 E7 紅。旗標只能加嚴,不能把 Required 拿掉 | 4-spec Verification Profile、`_templates/7-review.md` 步 2d、`scripts/devflow-evidence-gauntlet.sh` E7 |
 | G3 第 3 點:已觸發的 Conditional Layer 全 pass | 半自動 —— Evidence 表已列且非 n-a 的 Conditional 必須 pass(E7);「這次有沒有觸發」若根本沒列入,仍由 Reviewer 對 Profile 條件核對 | 4-spec Verification Profile、`_templates/7-review.md` 步 2d |
 | Coverage Matrix 與 Operational Walkthrough 內容 | Reviewer 人工判斷;E11 只驗 heading 在不在 | `_templates/7-review.md`、E11 |
 | Final Fresh Run 真的跑過 | 專案命令/Runtime/Reviewer;Gauntlet 只驗宣告與 SHA 綁定 | 4-spec Verification Profile、`_templates/7-review.md` |

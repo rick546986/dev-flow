@@ -50,6 +50,12 @@ updated: 2026-08-22
 - THEN: exit 1,輸出含 E7
 - 觀測: 同上
 
+#### S-2.4 --review-file 找不到 Profile → E7 紅
+- GIVEN: 無 sibling 4-spec、無 `--profile`,或 4-spec 沒有 Verification Profile 節
+- WHEN: gauntlet `--review-file`
+- THEN: exit 1,輸出含 E7;不得退回 1.2.0 漏帶即綠
+- 觀測: `bash scripts/test-evidence-gauntlet.sh` 1230-P0
+
 ### R-3: --review-file 漏帶 --source-sha 綁 HEAD
 
 #### S-3.1 宣告 SHA ≠ HEAD → E2 紅
@@ -57,6 +63,12 @@ updated: 2026-08-22
 - WHEN: `--review-file` 不帶 `--source-sha`
 - THEN: exit 1,輸出含 E2
 - 觀測: `bash scripts/test-evidence-gauntlet.sh` P0-3
+
+#### S-3.2 docs/dev/<feature>/7-review 顯式 SHA 也必須 = HEAD
+- GIVEN: `docs/dev/<feature>/7-review.md`(排除 example/ 與 scripts/fixtures/)
+- WHEN: `--review-file --source-sha <與宣告相符但 ≠ HEAD>`
+- THEN: exit 1,輸出含 E2
+- 觀測: `bash scripts/test-evidence-gauntlet.sh` 1230-P1
 
 ## Verification Profile
 - lane: fast

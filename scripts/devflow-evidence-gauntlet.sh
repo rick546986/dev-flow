@@ -13,6 +13,8 @@
 #   E7  Required 層必須 pass:預設讀 sibling(或 --profile)4-spec Verification
 #       Profile;--require-layer 只能加嚴,不能把 Required 拿掉。已列入 Evidence
 #       且非 n-a 的 Conditional 層同樣必須 pass。漏帶旗標不再 fail-open。
+#       --review-file 找不到 Profile(無 sibling、無 --profile、或檔內無該節)
+#       → E7 fail-closed,不得退回 1.2.0。
 #   E8  coverage 層 pass → Result 必含 covered/total 分數(禁全域 % 虛榮數字)
 #   E9  mutation 層:Result 含 ERROR 不得 pass;killed<total 且未標 equivalent 不得 pass
 #   E10 Negative Constraint Mapping 節必在、狀態合法、skipped 列不得 pass
@@ -34,7 +36,7 @@ set -eu
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 # 版本聲明:與 devflow-contract.json 的 schema_versions.gauntlet 同步(doctor 比對用)
-GAUNTLET_VERSION="1.3.0"
+GAUNTLET_VERSION="1.3.1"
 export DEVFLOW_EG_VERSION="$GAUNTLET_VERSION"
 
 usage_error() {
@@ -76,23 +78,34 @@ if [ -z "$TARGET" ] || [ ! -f "$TARGET" ]; then
 fi
 
 # --review-file 漏帶 --source-sha → 預設當下 HEAD。宣告 SHA ≠ HEAD = stale,
-# 作廢 G3(程式碼 commit 後未重跑 Final Fresh)。顯式 --source-sha 仍只比對該值
-# (fixture / 歷史 7-review 用)。
-if [ "$REVIEW_FILE" = "1" ] && [ -z "$SOURCE_SHA" ]; then
+# 作廢 G3(程式碼 commit 後未重跑 Final Fresh)。
+# docs/dev/<feature>/7-review.md(排除 example/ 與 scripts/fixtures/):即使
+# 顯式 --source-sha 也強制當下 HEAD —— 出貨樹機械作廢不能靠帶舊 SHA 繞過。
+# 其他路徑(fixture / example / 歷史示範)顯式 --source-sha 仍只比對該值。
+if [ "$REVIEW_FILE" = "1" ]; then
   target_dir=$(cd "$(dirname "$TARGET")" && pwd)
   if git -C "$target_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    SOURCE_SHA=$(git -C "$target_dir" rev-parse HEAD)
+    prefix=$(git -C "$target_dir" rev-parse --show-prefix)
+    rel="${prefix}$(basename "$TARGET")"
+    if [[ "$rel" =~ ^docs/dev/[^/]+/7-review\.md$ ]]; then
+      SOURCE_SHA=$(git -C "$target_dir" rev-parse HEAD)
+    elif [ -z "$SOURCE_SHA" ]; then
+      SOURCE_SHA=$(git -C "$target_dir" rev-parse HEAD)
+    fi
   fi
 fi
 
-# 4-spec 正本:顯式 --profile 優先,否則 sibling 4-spec.md。找不到就不讀,
-# 旗標行為與 1.2.0 相同(只有 --require-layer 的層會進 E7)。
+# 4-spec 正本:顯式 --profile 優先,否則 sibling 4-spec.md。
+# --review-file 找不到檔就不讀、退回 1.2.0 = 假綠;改為 E7 fail-closed。
+PROFILE_MISSING=0
 if [ -n "$PROFILE" ]; then
   [ -f "$PROFILE" ] || usage_error "--profile 不是檔案:$PROFILE"
 else
   sibling="$(cd "$(dirname "$TARGET")" && pwd)/4-spec.md"
   if [ -f "$sibling" ]; then
     PROFILE="$sibling"
+  elif [ "$REVIEW_FILE" = "1" ]; then
+    PROFILE_MISSING=1
   fi
 fi
 
@@ -106,6 +119,7 @@ export DEVFLOW_EG_SOURCE_SHA="$SOURCE_SHA"
 export DEVFLOW_EG_REVIEW_FILE="$REVIEW_FILE"
 export DEVFLOW_EG_REPORT="$REPORT"
 export DEVFLOW_EG_PROFILE="$PROFILE"
+export DEVFLOW_EG_PROFILE_MISSING="$PROFILE_MISSING"
 export DEVFLOW_EG_REQUIRE_LAYERS="$(printf '%s\n' "${REQUIRE_LAYERS[@]+"${REQUIRE_LAYERS[@]}"}")"
 
 python3 <<'PY'
@@ -121,6 +135,7 @@ expected_sha = os.environ["DEVFLOW_EG_SOURCE_SHA"]
 review_mode = os.environ["DEVFLOW_EG_REVIEW_FILE"] == "1"
 report_path = os.environ["DEVFLOW_EG_REPORT"]
 profile_path = os.environ.get("DEVFLOW_EG_PROFILE", "")
+profile_missing = os.environ.get("DEVFLOW_EG_PROFILE_MISSING", "0") == "1"
 flag_layers = [l for l in os.environ["DEVFLOW_EG_REQUIRE_LAYERS"].splitlines() if l.strip()]
 
 with open(target, encoding="utf-8") as stream:
@@ -234,10 +249,15 @@ def parse_profile_layers(spec_text):
 
 
 spec_required, spec_conditional, spec_excluded = [], [], []
+profile_section_missing = False
 if profile_path:
     with open(profile_path, encoding="utf-8") as spec_stream:
+        spec_text = spec_stream.read()
+    if not re.search(r"^##[ \t]+Verification Profile", spec_text, re.M):
+        profile_section_missing = True
+    else:
         spec_required, spec_conditional, spec_excluded = parse_profile_layers(
-            spec_stream.read())
+            spec_text)
 # 旗標只能加嚴:4-spec Required ∪ --require-layer,不能用旗標把 Required 拿掉。
 required_layers = []
 seen_req = set()
@@ -327,6 +347,12 @@ for name, command, status, result, reason in layers:
 # ---- E7 required / triggered-conditional(對照 4-spec Verification Profile)----
 # Required = 必須 pass。unverified/n-a/缺席都不滿足(fail 另由 E6 擋)。
 # 來源:4-spec Required layers ∪ --require-layer(旗標只能加嚴)。
+# --review-file 找不到 Profile → fail-closed,不得退回 1.2.0 漏帶即綠。
+if review_mode and (profile_missing or profile_section_missing):
+    check("E7", False,
+          "--review-file 找不到 4-spec Verification Profile"
+          "(無 sibling 4-spec.md、無 --profile、或檔內無該節);"
+          "不得退回 1.2.0 讓漏帶 --require-layer 仍綠")
 for wanted in required_layers:
     passed = any(wanted.lower() in row[0].lower() and row[2] == "pass"
                  for row in layers)

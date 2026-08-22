@@ -114,8 +114,10 @@ run_case "review 檔雙軸+Walkthrough+Coverage Matrix 俱在但缺 Standards Ax
   "缺「## Standards Axis」" "$FIX/bad-review-missing-standards-axis.md" --review-file
 run_case "review 檔雙軸+Walkthrough+Coverage Matrix 俱在但缺 現象證據(E11)" 1 \
   "缺「## 現象證據」" "$FIX/bad-review-missing-phenomena.md" --review-file
-run_case "review 檔雙軸+現象證據+Walkthrough+Coverage Matrix 俱在則過" 0 "-" \
-  "$FIX/good-review.md" --review-file --source-sha abc1234def5678
+# 1230-P0:無 sibling 4-spec 時必須靠 --profile,不能再退回 1.2.0 漏帶即綠。
+run_case "review 檔雙軸+現象證據+Walkthrough+Coverage Matrix 俱在且有 --profile 則過" 0 "-" \
+  "$FIX/good-review.md" --review-file --source-sha abc1234def5678 \
+  --profile "$FIX/profile-pass/4-spec.md"
 
 echo "== 六.stale artifact 清除:舊 report 必先刪、新 report 綁本次 run =="
 checks=$((checks + 1))
@@ -178,6 +180,55 @@ echo "== P0-3.--review-file 漏帶 --source-sha 預設當下 HEAD,宣告不符�
 run_case "review-file 不帶 --source-sha 且宣告 SHA ≠ HEAD → E2 紅" 1 "E2" \
   "$FIX/good-review.md" --review-file
 
+echo "== 1230-P0.--review-file 找不到 Profile 不得退回 1.2.0=="
+# 舊實作:找不到 sibling 4-spec 也不帶 --profile → 旗標行為退回 1.2.0,
+# good-review 漏帶 --require-layer 仍 exit 0 / 27 checks(假綠)。
+run_case "review-file 無 sibling 4-spec 也無 --profile → E7 紅" 1 "E7" \
+  "$FIX/good-review.md" --review-file --source-sha abc1234def5678
+run_case "review-file 以 --profile 指向有效 4-spec(無 sibling)仍綠" 0 "-" \
+  "$FIX/good-review.md" --review-file --source-sha abc1234def5678 \
+  --profile "$FIX/profile-pass/4-spec.md"
+# 檔在但沒有 Verification Profile 節 = 一樣找不到 Profile
+mkdir -p "$TMP/no-section"
+cp "$FIX/good-review.md" "$TMP/no-section/7-review.md"
+printf '# fixture:有 4-spec 檔但沒有 Verification Profile 節\n\n## ADDED Requirements\n- none\n' \
+  > "$TMP/no-section/4-spec.md"
+run_case "review-file sibling 4-spec 無 Verification Profile 節 → E7 紅" 1 "E7" \
+  "$TMP/no-section/7-review.md" --review-file --source-sha abc1234def5678
+
+echo "== 1230-P1.docs/dev/<feature>/7-review.md 顯式 SHA 也必須 = HEAD=="
+# 舊實作:顯式 --source-sha 只比對該值。live feature 宣告=abc1234、HEAD 已走,
+# 仍 exit 0 / 29 checks(假綠)。example/ 與 scripts/fixtures/ 不套這條。
+live="$TMP/live-repo"
+mkdir -p "$live/docs/dev/live-feature" "$live/example/demo" \
+  "$live/scripts/fixtures/evidence-gauntlet/x"
+cp "$FIX/profile-pass/7-review.md" "$live/docs/dev/live-feature/7-review.md"
+cp "$FIX/profile-pass/4-spec.md" "$live/docs/dev/live-feature/4-spec.md"
+cp "$FIX/profile-pass/7-review.md" "$live/example/demo/7-review.md"
+cp "$FIX/profile-pass/4-spec.md" "$live/example/demo/4-spec.md"
+cp "$FIX/profile-pass/7-review.md" "$live/scripts/fixtures/evidence-gauntlet/x/7-review.md"
+cp "$FIX/profile-pass/4-spec.md" "$live/scripts/fixtures/evidence-gauntlet/x/4-spec.md"
+git -C "$live" init -q
+git -C "$live" add docs example scripts
+git -C "$live" -c user.email=t@t -c user.name=t commit -qm seed
+live_head=$(git -C "$live" rev-parse HEAD)
+run_case "docs/dev/<feature>/7-review 顯式 --source-sha ≠ HEAD → E2 紅" 1 "E2" \
+  "$live/docs/dev/live-feature/7-review.md" --review-file --source-sha abc1234def5678
+run_case "example/ 顯式 stale SHA 仍綠(不套 live 規則)" 0 "-" \
+  "$live/example/demo/7-review.md" --review-file --source-sha abc1234def5678
+run_case "scripts/fixtures/ 顯式 stale SHA 仍綠(不套 live 規則)" 0 "-" \
+  "$live/scripts/fixtures/evidence-gauntlet/x/7-review.md" --review-file \
+  --source-sha abc1234def5678
+# 宣告改成當下 HEAD 後,顯式也傳 HEAD → 綠(證明不是一律殺 --source-sha)
+python3 - "$live/docs/dev/live-feature/7-review.md" "$live_head" <<'PY'
+import sys
+path, head = sys.argv[1], sys.argv[2]
+text = open(path, encoding="utf-8").read().replace("abc1234def5678", head)
+open(path, "w", encoding="utf-8").write(text)
+PY
+run_case "docs/dev/<feature>/7-review 宣告=HEAD 且顯式也傳 HEAD → 綠" 0 "-" \
+  "$live/docs/dev/live-feature/7-review.md" --review-file --source-sha "$live_head"
+
 echo "== P0-1.模板節序:整合回歸必須在 Final Fresh 之前=="
 # 舊模板:Final Fresh 在執行清單 2c,整合回歸在 Exit Checklist(Verdict 之後)。
 # 檢查住 check-stage67-enforcement.sh 的 ST 組;此處釘「頂註執行清單」字面順序。
@@ -232,7 +283,7 @@ run_case "example 7-review 經文檔化命令(--review-file + required 層)綠" 
   --require-layer "Full test suite" \
   --require-layer "Changed-line coverage" \
   --require-layer "Real execution"
-# 1.3.0:sibling 4-spec 已列 Required,漏旗標不得再 fail-open,也不得誤紅
+# 1.3.1:sibling 4-spec 已列 Required,漏旗標不得再 fail-open,也不得誤紅
 run_case "example 7-review 不帶 --require-layer(讀 4-spec Required)仍綠" 0 "-" \
   "$ROOT/example/contract-expiry-reminder/7-review.md" --review-file \
   --source-sha f92c1d5

@@ -13,7 +13,7 @@
      本行、scripts/devflow-evidence-gauntlet.sh 的 GAUNTLET_VERSION、
      devflow-contract.json 的 schema_versions.gauntlet、README §7 的括注)。
      改版本時四處一起改,漏一處守衛會紅。 -->
-**現行 Gauntlet 版本:1.3.0**
+**現行 Gauntlet 版本:1.3.1**
 
 ## 0. 定位與邊界(先立不變量)
 
@@ -213,10 +213,13 @@ E12 stale report 清除+run-id/版本/SHA
 落 report、E13 malformed 表列 fail-closed(欄數 ≠ 預期 = 明確 error,禁靜默丟列;
 儲存格內勿用原生 `|`)。
 exit 碼:0 = 契約全過;1 = 有違規;2 = 用法/檔案錯誤(含值型 flag 缺值)。
-**E7 的 4-spec 正本(1.3.0)**:Gauntlet 預設讀 sibling `4-spec.md`(可用 `--profile`
+**E7 的 4-spec 正本(1.3.1)**:Gauntlet 預設讀 sibling `4-spec.md`(可用 `--profile`
 覆寫)的 Verification Profile Required layers;未 pass → E7 紅。`--require-layer`
-只能加嚴,不能把 Required 拿掉。漏帶旗標不再 fail-open。已列入 Evidence 且非
-n-a 的 Conditional 層同樣必須 pass。文檔化命令仍可帶旗標當明示/加嚴。
+只能加嚴,不能把 Required 拿掉。漏帶旗標不再 fail-open。`--review-file` 找不到
+Profile(無 sibling、無 `--profile`、或檔內無該節)→ E7 fail-closed,不得退回
+1.2.0。已列入 Evidence 且非 n-a 的 Conditional 層同樣必須 pass。
+`docs/dev/<feature>/7-review.md` 即使顯式 `--source-sha` 也必須等於 HEAD
+(example/ 與 scripts/fixtures/ 不套)。文檔化命令仍可帶旗標當明示/加嚴。
 測試:`scripts/test-evidence-gauntlet.sh` + `scripts/fixtures/evidence-gauntlet/`
 (案數與 fixture 數以腳本輸出為準,不在文檔寫死)。本身即依 gauntlet 原則建:
 單一命令、可 CI、report 先刪後寫。

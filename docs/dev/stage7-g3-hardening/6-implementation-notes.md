@@ -16,17 +16,23 @@ updated: 2026-08-22
 | S-2.1 / S-2.3 | profile-unverified 漏旗標 exit 0(29 checks passed,假綠) | exit 1,E7 |
 | S-2.2 | 已綠(無 Required 可擋) | 仍綠 |
 | S-3.1 | good-review `--review-file` 不帶 SHA exit 0(25 checks passed,假綠) | exit 1,E2 |
+| S-2.4 | good-review `--review-file` 無 Profile exit 0(27 checks,假綠);無 Profile 節同 27 | exit 1,E7 |
+| S-3.2 | docs/dev/live-feature 顯式 stale SHA exit 0(29 checks,假綠) | exit 1,E2 |
 
-舊實作數字是本輪先補測試、未改 gauntlet / 7-review 之前跑出來的,不是回憶。
+舊實作數字是先補測試、未改 gauntlet 之前跑出來的,不是回憶。1230 兩條舊實作下
+`test-evidence-gauntlet` 48/51。
 
 ## Decisions
 - D-1:不新增粗體 G3 token。出貨樹收進 Evidence 契約第 1 點全文 + 模板節序,避免
   gate-consistency / EXPECTED token 集合膨脹。
 - D-2:Conditional「已觸發」= Evidence 表已列且非 n-a。未列入視為未觸發,仍靠
   Reviewer 對 Profile 條件。不把 Gauntlet 變成去跑專案測試。
-- D-3:`--review-file` 才預設 HEAD;顯式 `--source-sha` 維持只比對該值,歷史
-  example / fixture 不因此被現在的 repo HEAD 誤殺。
-- D-4:Gauntlet 1.2.0 → 1.3.0,五處版本錨 lockstep。
+- D-3:`--review-file` 才預設 HEAD;顯式 `--source-sha` 在 example/ 與
+  scripts/fixtures/ 仍只比對該值。`docs/dev/<feature>/7-review.md` 即使顯式
+  傳 SHA 也強制 HEAD(owner 1230 裁)。
+- D-4:Gauntlet 1.2.0 → 1.3.0 → 1.3.1,五處版本錨 lockstep。
+- D-5:`--review-file` 找不到 Verification Profile 即 E7 fail-closed,不得退回
+  1.2.0(owner 1230 裁)。
 
 ## Deviations
 無。未改 `docs/dev/STATUS.md`。未動 `memory/`、`docs/dev/autoloop/`、PR #15。
