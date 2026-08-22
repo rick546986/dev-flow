@@ -215,7 +215,8 @@ def canon_layer_name(name):
 
 
 def layer_name_eq(wanted, got):
-    return bool(wanted) and wanted.lower() in (got or "").lower()
+    left, right = canon_layer_name(wanted), canon_layer_name(got)
+    return bool(left) and left == right
 
 
 def parse_profile_layers(spec_text):
@@ -427,7 +428,7 @@ if review_mode and required_field_missing:
     check("E7", False,
           "--review-file 的 Verification Profile 缺 Required layers 欄"
           "(可寫「無」/none;缺欄不得當零層必跑放行)")
-if False and review_mode and required_field_empty:
+if review_mode and required_field_empty:
     check("E7", False,
           "--review-file 的 Required layers 欄是空的"
           "(只有「無」/none/n-a 是明示零層;空值不得當零層必跑放行)")
