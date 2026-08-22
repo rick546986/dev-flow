@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: durable-writer-must-walk-via-nofollow-dirfd
+title: "durable writer 必須用已開啟的 dirfd 逐層走"
+authority: current_code
+status: CANDIDATE
+confidence: 0.8
+body: "O_NOFOLLOW 只守 pathname 最後一段。_atomic_write_dirfd 不得 os.open(abs_parent)。必須從已驗證的 .dev-flow 根握著 dirfd,用 openat + O_NOFOLLOW 逐層走到 parent,再相對該 dirfd 建暫存與 replace。檢查後把 knowledge 或 .dev-flow 換成 symlink 都必須 DurableError,樹外不得出現 yaml。"
+recorded_at: "2026-08-22T01:17:20Z"

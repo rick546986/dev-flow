@@ -1,0 +1,11 @@
+# invariant knowledge —— authority 決定誰能覆寫誰(見 truth.py)。
+# code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,不能直接 override。
+schema_version: 1
+kind: invariant
+key: mirror-revision-increment-must-be-atomic
+title: "mirror revision 推進必須在單一交易內原子 +1"
+authority: current_code
+status: CANDIDATE
+confidence: 0.8
+body: "_advance_mirror_revision 不得先 current_mirror_revision 再 set_meta。必須走 Store.increment_int_meta:BEGIN IMMEDIATE 拿到 reserved lock,讀、+1、寫在同一交易。兩個獨立 Store 連線從同一值推進必須得到兩個不同的新值;失敗的 rebuild 也要先消耗一個 revision。"
+recorded_at: "2026-08-22T01:17:20Z"
