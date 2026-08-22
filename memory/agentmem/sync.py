@@ -20,6 +20,7 @@ import tempfile
 from . import durable, ids, lineage, signal, store as store_mod
 
 DURABLE_GENERATION_META = "durable_generation"
+MIRROR_REVISION_META = "mirror_revision"
 UNCERTIFIED_GENERATION = "uncertified"
 REBUILD_MAX_ATTEMPTS = 3
 READ_MAX_ATTEMPTS = 3
@@ -97,7 +98,24 @@ def rebuild_local(repo_root, store, embedder=None):
         "after {0} attempts".format(REBUILD_MAX_ATTEMPTS))
 
 
+def current_mirror_revision(store):
+    raw = store.get_meta(MIRROR_REVISION_META)
+    if raw is None:
+        return 0
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _advance_mirror_revision(store):
+    nxt = current_mirror_revision(store) + 1
+    store.set_meta(MIRROR_REVISION_META, nxt)
+    return nxt
+
+
 def _rebuild_local_once(repo_root, store, embedder=None):
+    _advance_mirror_revision(store)
     store.set_meta(DURABLE_GENERATION_META, UNCERTIFIED_GENERATION)
     store.clear_durable_mirror()
     store.clear_index()
@@ -210,10 +228,12 @@ def _snapshot_durable_files(repo_root):
     讀失敗是 DurableError,不是「這檔不存在」—— 不可讀不得被蓋章。
     每一筆必須是 `.dev-flow/` 底下的一般檔:`lstat` 不是 `S_ISREG` 就
     fail-closed(symlink / FIFO / device / socket 都不得被 `open()` 跟著走)。
+    `.dev-flow` 自己也必須是真實目錄:根是 symlink 時 child 全是普通檔,
+    上一輪的 child `lstat` 會全過,外部 brain 仍被蓋進世代章。
     """
-    root = durable.root(repo_root)
-    if not os.path.isdir(root):
+    if durable.classify_durable_root(repo_root) == "absent":
         return "absent", []
+    root = durable.root(repo_root)
     entries = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames.sort()
@@ -319,24 +339,35 @@ def ensure_durable_mirror(repo_root, store, embedder=None):
 
 
 def observe_certified_generation(repo_root, store, embedder=None):
-    """讀路徑入口:先確保鏡射,再回傳這次讀取所認定的世代。
+    """讀路徑入口:先確保鏡射,再回傳這次讀取所認定的(世代, mirror revision)。
 
     呼叫端組完答案之後必須再跑 `generation_still_certified`;對不上就丟棄
     重試,不得把檢查當下的快照當成答案離開行程時仍成立。
+    revision 是 per-worktree 單調計數,每次破壞性 rebuild 之前先推進,
+    所以 A→B→A 的內容世代可以回來,舊的讀取 token 不能。
     """
     rebuilt = ensure_durable_mirror(repo_root, store, embedder)
     certified = store.get_meta(DURABLE_GENERATION_META)
+    revision = current_mirror_revision(store)
     hook = _after_freshness_check
     if hook is not None:
         hook(repo_root)
-    return rebuilt, certified
+    return rebuilt, certified, revision
 
 
-def generation_still_certified(repo_root, certified):
-    """活樹世代是否仍是這次讀取蓋過章的那一個。"""
+def generation_still_certified(repo_root, certified, store, revision):
+    """活樹世代、store 世代、mirror revision 是否仍是這次讀取蓋過章的那組。"""
     if not certified or certified == UNCERTIFIED_GENERATION:
         return False
-    return durable_generation(repo_root) == certified
+    try:
+        revision = int(revision)
+    except (TypeError, ValueError):
+        return False
+    if durable_generation(repo_root) != certified:
+        return False
+    if store.get_meta(DURABLE_GENERATION_META) != certified:
+        return False
+    return current_mirror_revision(store) == revision
 
 
 # ─────────────────────────── local → durable ────────────────────────────────

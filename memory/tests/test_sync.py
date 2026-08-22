@@ -947,3 +947,196 @@ class DurableSymlinkRejectionTest(MemoryCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["title"], "keep-me = regular")
         self.assertTrue(rows[0]["durable"])
+
+
+class DurableRootSymlinkRejectionTest(MemoryCase):
+    """`.dev-flow` 自己是 symlink 時,讀取/健康路徑不得把樹外當正本。"""
+
+    SECRET = "EXTERNAL-BRAIN-MUST-NOT-BE-IMPORTED"
+
+    def setUp(self):
+        super().setUp()
+        self.project_id = self.project()["project_id"]
+
+    def _can_symlink(self):
+        probe = os.path.join(self.work, "root-symlink-probe-src")
+        dest = os.path.join(self.work, "root-symlink-probe-dst")
+        with open(probe, "w", encoding="utf-8") as stream:
+            stream.write("x")
+        try:
+            os.symlink(probe, dest)
+        except (OSError, NotImplementedError, AttributeError):
+            return False
+        return True
+
+    def _write_regular(self, key, title):
+        durable.write_knowledge(self.repo, {
+            "kind": "domain", "key": key, "title": title,
+            "body": "regular-root-positive-control",
+            "authority": "domain_expert", "status": "CONFIRMED",
+            "recorded_at": "2026-08-20T00:00:00Z"})
+
+    def _plant_root_symlink(self):
+        outside_repo = os.path.join(self.work, "fake-repo")
+        os.makedirs(outside_repo, exist_ok=True)
+        durable.write_knowledge(outside_repo, {
+            "kind": "domain", "key": "smuggled",
+            "title": "smuggled = {0}".format(self.SECRET),
+            "body": self.SECRET, "authority": "domain_expert",
+            "status": "CONFIRMED", "recorded_at": "2026-08-20T00:00:00Z"})
+        identity.ensure_project(outside_repo, name="fake")
+        real = durable.root(self.repo)
+        parked = real + ".parked"
+        os.rename(real, parked)
+        os.symlink(os.path.realpath(durable.root(outside_repo)), real)
+        return durable.root(outside_repo)
+
+    def test_symlinked_devflow_root_fails_closed_and_cannot_import(self):
+        if not self._can_symlink():
+            self.skipTest("this platform cannot create symlinks")
+        self._write_regular("keep-me", "keep-me = regular")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        stamped = store.get_meta(sync.DURABLE_GENERATION_META)
+        self._plant_root_symlink()
+
+        with self.assertRaises(durable.DurableError):
+            sync.durable_generation(self.repo)
+        with self.assertRaises(durable.DurableError):
+            sync.rebuild_local(self.repo, store)
+        with self.assertRaises(durable.DurableError):
+            durable.has_mirrorable_content(self.repo)
+        self.assertEqual(store.get_meta(sync.DURABLE_GENERATION_META), stamped)
+        keys = {row["key"] for row in store.knowledge()}
+        self.assertNotIn("smuggled", keys)
+        self.assertNotIn(self.SECRET, json.dumps(
+            [row["title"] + row["body"] for row in store.knowledge()]))
+
+        workspace = identity.workspace_key(self.project_id, self.repo)
+        snapshot = identity.workspace_snapshot(self.repo)
+        with self.assertRaises(durable.DurableError):
+            query.execute(store, self.repo, "smuggled 是什麼意思",
+                          workspace, snapshot)
+        with self.assertRaises(durable.DurableError):
+            from agentmem import context
+            context.build(store, self.repo, workspace, snapshot)
+
+        from agentmem import setup
+        report = setup.doctor(self.repo)
+        self.assertEqual(report["verdict"], "FAIL")
+        readable = [row for row in report["findings"]
+                    if row["check"] == "durable-source-readable"]
+        self.assertEqual(len(readable), 1, report["findings"])
+        self.assertEqual(readable[0]["level"], "error")
+        blob = json.dumps(report, ensure_ascii=False)
+        self.assertNotIn(self.SECRET, blob)
+
+    def test_regular_devflow_root_still_rebuilds(self):
+        self._write_regular("keep-me", "keep-me = regular")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        rows = store.knowledge(kind="domain", key="keep-me")
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["title"], "keep-me = regular")
+
+    def test_absent_devflow_keeps_absent_semantics(self):
+        empty = self.new_repo("no-devflow")
+        kind, entries = sync._snapshot_durable_files(empty)
+        self.assertEqual(kind, "absent")
+        self.assertEqual(entries, [])
+        self.assertFalse(durable.has_mirrorable_content(empty))
+        self.assertEqual(
+            sync.durable_generation(empty),
+            sync._generation_of("absent", []))
+
+
+class MirrorRevisionCertificationTest(MemoryCase):
+    """讀取認證必須綁 per-worktree 單調 mirror revision,否則 ABA 會過。"""
+
+    def setUp(self):
+        super().setUp()
+        self.project_id = self.project()["project_id"]
+
+    def _write(self, key, title):
+        durable.write_knowledge(self.repo, {
+            "kind": "domain", "key": key, "title": title,
+            "body": title, "authority": "domain_expert",
+            "status": "CONFIRMED", "recorded_at": "2026-08-20T00:00:00Z"})
+
+    def _second_store(self):
+        from agentmem import store as store_mod
+        opened = store_mod.open_for_root(self.project_id, self.repo)
+        self.addCleanup(opened.close)
+        return opened
+
+    def test_same_worktree_rebuild_aba_rejects_stale_read_token(self):
+        self._write("topic", "title-A")
+        store1 = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store1)
+        _rebuilt, certified, revision = sync.observe_certified_generation(
+            self.repo, store1)
+        token_gen = certified
+        token_rev = revision
+
+        store2 = self._second_store()
+        self._write("topic", "title-B")
+        sync.rebuild_local(self.repo, store2)
+        self._write("topic", "title-A")
+
+        self.assertEqual(sync.durable_generation(self.repo), token_gen)
+        self.assertFalse(sync.generation_still_certified(
+            self.repo, token_gen, store1, token_rev))
+
+    def test_aba_two_completed_rebuilds_invalidates_original_token(self):
+        self._write("topic", "title-A")
+        store1 = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store1)
+        _rebuilt, certified, revision = sync.observe_certified_generation(
+            self.repo, store1)
+
+        store2 = self._second_store()
+        self._write("topic", "title-B")
+        sync.rebuild_local(self.repo, store2)
+        self._write("topic", "title-A")
+        sync.rebuild_local(self.repo, store2)
+
+        self.assertEqual(
+            store2.get_meta(sync.DURABLE_GENERATION_META), certified)
+        self.assertEqual(sync.durable_generation(self.repo), certified)
+        self.assertFalse(sync.generation_still_certified(
+            self.repo, certified, store1, revision))
+
+    def test_ask_does_not_return_foreign_mirror_after_aba_rebuild(self):
+        self._write("registration", "title-A")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        flipped = {"n": 0}
+
+        def hijack(_repo):
+            if flipped["n"] != 0:
+                return
+            flipped["n"] += 1
+            other = self._second_store()
+            self._write("registration", "title-B")
+            sync.rebuild_local(self.repo, other)
+            self._write("registration", "title-A")
+
+        original = sync.observe_certified_generation
+
+        def wrapped(repo_root, store_obj, embedder=None):
+            result = original(repo_root, store_obj, embedder)
+            hijack(repo_root)
+            return result
+
+        sync.observe_certified_generation = wrapped
+        self.addCleanup(lambda: setattr(
+            sync, "observe_certified_generation", original))
+
+        workspace = identity.workspace_key(self.project_id, self.repo)
+        snapshot = identity.workspace_snapshot(self.repo)
+        answer = query.execute(
+            store, self.repo, "registration 是什麼意思", workspace, snapshot)
+        self.assertGreaterEqual(flipped["n"], 1)
+        blob = json.dumps(answer, ensure_ascii=False)
+        self.assertNotIn("title-B", blob)
+        self.assertIn("title-A", blob)

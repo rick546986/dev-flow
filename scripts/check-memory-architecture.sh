@@ -1016,7 +1016,56 @@ elif "DurableError" not in doc_code:
 else:
     ok("doctor 必須把不可讀 durable 來源收成 structured FAIL")
 
-MIN_CHECKS = 74
+i_aw = durable_src.find("def _atomic_write(")
+i_aw_end = durable_src.find("\ndef ", i_aw + 1)
+aw_code = (executable_only(durable_src[i_aw:i_aw_end])
+           if i_aw >= 0 and i_aw_end > i_aw else None)
+if aw_code is None:
+    bad("writer 禁閉抽取", "找不到 _atomic_write 窗口")
+elif "repo_root_path" not in aw_code.split(")", 1)[0]:
+    bad("writer 不收 repo_root",
+        "_atomic_write 不再收 repo_root_path —— 禁閉檢查沒有 durable root 可對")
+elif "_mkdirs_confined" not in aw_code:
+    bad("writer 不禁閉建目錄",
+        "_atomic_write 沒有 _mkdirs_confined —— makedirs 會跟隨 symlink 寫出 repo")
+elif "O_NOFOLLOW" not in aw_code and "_require_real_dir" not in aw_code:
+    bad("writer 不拒絕 symlink 祖先",
+        "_atomic_write 沒有 O_NOFOLLOW 也沒有 _require_real_dir")
+else:
+    ok("durable writer 必須禁閉在真實 .dev-flow 樹內,不得跟隨 symlink")
+
+if snap_code is None:
+    bad("root symlink 抽取", "找不到 _snapshot_durable_files 窗口")
+elif "classify_durable_root" not in snap_code:
+    bad("snapshot 不驗證 durable root",
+        "_snapshot_durable_files 沒有 classify_durable_root —— "
+        "isdir 會跟隨 .dev-flow symlink 把樹外當正本")
+else:
+    ok("durable snapshot 必須先驗證 .dev-flow 自己是真實目錄")
+
+i_gsc = sync_src.find("def generation_still_certified(")
+i_gsc_end = sync_src.find("\ndef ", i_gsc + 1)
+gsc_code = (executable_only(sync_src[i_gsc:i_gsc_end])
+            if i_gsc >= 0 and i_gsc_end > i_gsc else None)
+if rlo_code is None:
+    bad("mirror revision rebuild 抽取", "找不到 _rebuild_local_once 窗口")
+elif "_advance_mirror_revision" not in rlo_code:
+    bad("rebuild 不推進 mirror revision",
+        "_rebuild_local_once 破壞性變更前沒有 _advance_mirror_revision —— "
+        "A→B→A 的舊讀取 token 會再通過")
+elif gsc_code is None:
+    bad("mirror revision 讀後驗證抽取", "找不到 generation_still_certified 窗口")
+elif "current_mirror_revision" not in gsc_code:
+    bad("讀後驗證不看 mirror revision",
+        "generation_still_certified 沒有 current_mirror_revision —— "
+        "同 worktree 並發 rebuild ABA 仍可把外來列當認證過")
+elif "get_meta" not in gsc_code:
+    bad("讀後驗證不看 store 世代",
+        "generation_still_certified 沒有再讀 store generation")
+else:
+    ok("讀取認證必須綁世代與單調 mirror revision")
+
+MIN_CHECKS = 77
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)

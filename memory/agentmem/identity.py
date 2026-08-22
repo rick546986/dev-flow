@@ -460,27 +460,10 @@ def ensure_project(repo_root_path, name=None, now=None, create=True):
 
 def write_project(repo_root_path, data):
     """deterministic 寫入 project.yaml(atomic;同目錄 temp + rename)。"""
-    root = durable_root(repo_root_path)
-    os.makedirs(root, exist_ok=True)
+    from . import durable
     payload = {k: v for k, v in data.items() if k != "schema_version_mismatch"}
     text = yamlmini.dump(payload, key_order=_PROJECT_KEY_ORDER, header=_HEADER)
-    _atomic_write_text(project_file(repo_root_path), text)
-
-
-def _atomic_write_text(path, text):
-    import tempfile
-    directory = os.path.dirname(os.path.abspath(path))
-    os.makedirs(directory, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(prefix=".tmp-", dir=directory)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as stream:
-            stream.write(text)
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(tmp, path)
-    finally:
-        if os.path.exists(tmp):
-            os.remove(tmp)
+    durable._atomic_write(repo_root_path, project_file(repo_root_path), text)
 
 
 def _utc_now():

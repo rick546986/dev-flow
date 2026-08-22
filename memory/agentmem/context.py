@@ -51,10 +51,11 @@ def build(store, repo_root, workspace_id=None, snapshot=None,
           budget=DEFAULT_BUDGET):
     """組出 startup context。回傳 dict(sections / text / size / truncated)。"""
     for _attempt in range(sync.READ_MAX_ATTEMPTS):
-        _rebuilt, certified = sync.observe_certified_generation(repo_root, store)
+        _rebuilt, certified, revision = sync.observe_certified_generation(
+            repo_root, store)
         payload = _build_prepared(
             store, repo_root, workspace_id, snapshot, budget)
-        if sync.generation_still_certified(repo_root, certified):
+        if sync.generation_still_certified(repo_root, certified, store, revision):
             return payload
     raise sync.DurableMirrorDrift(
         "context could not certify a stable durable generation "

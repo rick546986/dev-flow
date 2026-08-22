@@ -96,6 +96,15 @@ def doctor(start_path=None):
              "detail": "不在 git repository 內",
              "fix": "在 repo 內執行,或先 git init"}]}
 
+    try:
+        durable.classify_durable_root(root)
+    except durable.DurableError as exc:
+        findings.append({
+            "level": "error", "check": "durable-source-readable",
+            "detail": str(exc),
+            "fix": "修復 .dev-flow/ 內不可讀或非一般檔後重跑 doctor"})
+        return {"verdict": "FAIL", "findings": findings}
+
     project_path = identity.project_file(root)
     if not os.path.isfile(project_path):
         findings.append({

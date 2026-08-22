@@ -133,8 +133,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=114
-EXPECTED_TOTAL=128
+EXPECTED_NEGATIVES=117
+EXPECTED_TOTAL=131
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -1715,7 +1715,7 @@ D=$(seed_mem mem17); mutate "$D" <<'PYX'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "memory/agentmem/durable.py"
 t = p.read_text(encoding="utf-8")
-anchor = '    for path, text in plans:\n        _atomic_write(path, text)'
+anchor = '    for path, text in plans:\n        _atomic_write(repo_root_path, path, text)'
 assert anchor in t, "MEM-17 anchor 不見"
 # 退回 append 模式:同一個 event_id 重跑會變成第二行(JSONL 不是 keyed
 # storage),而 durable 寫入成功、local 狀態還沒前進那個視窗消不掉。
@@ -2084,7 +2084,7 @@ D=$(seed_mem mem36); mutate "$D" <<'PYX'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "memory/agentmem/query.py"
 t = p.read_text(encoding="utf-8")
-anchor = "        if sync.generation_still_certified(repo_root, certified):"
+anchor = "        if sync.generation_still_certified(repo_root, certified, store, revision):"
 assert anchor in t, "MEM-36 anchor 不見"
 n = t.replace(anchor, "        if True:", 1)
 assert n != t, "MEM-36 mutation 沒生效"
@@ -2110,11 +2110,47 @@ p = pathlib.Path(sys.argv[1]) / "memory/agentmem/setup.py"
 t = p.read_text(encoding="utf-8")
 anchor = '"check": "durable-source-readable"'
 assert anchor in t, "MEM-38 anchor 不見"
-n = t.replace(anchor, '"check": "durable-source-exists"', 1)
+n = t.replace(anchor, '"check": "durable-source-exists"')
 assert n != t, "MEM-38 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PYX
 expect_local fail check-memory-architecture.sh "$D" "MEM-38 doctor 拿掉 durable-source-readable"
+
+D=$(seed_mem mem39); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/durable.py"
+t = p.read_text(encoding="utf-8")
+anchor = "    parent = _mkdirs_confined(repo_root_path, os.path.dirname(dest))\n"
+assert anchor in t, "MEM-39 anchor 不見"
+n = t.replace(anchor, "    parent = os.path.dirname(dest)\n    os.makedirs(parent, exist_ok=True)\n", 1)
+assert n != t, "MEM-39 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-39 writer 不再 _mkdirs_confined"
+
+D=$(seed_mem mem40); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = "    if durable.classify_durable_root(repo_root) == \"absent\":\n"
+assert anchor in t, "MEM-40 anchor 不見"
+n = t.replace(anchor, "    if not os.path.isdir(durable.root(repo_root)):\n", 1)
+assert n != t, "MEM-40 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-40 snapshot 不再驗證 durable root"
+
+D=$(seed_mem mem41); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = "    return current_mirror_revision(store) == revision\n"
+assert anchor in t, "MEM-41 anchor 不見"
+n = t.replace(anchor, "    return True\n", 1)
+assert n != t, "MEM-41 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-41 讀後驗證不再比 mirror revision"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"

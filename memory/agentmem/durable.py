@@ -30,9 +30,14 @@ import hashlib
 import json
 import os
 import re
+import secrets
+import stat
 import tempfile
 
 from . import DURABLE_SCHEMA_VERSION, identity, paths, yamlmini
+
+# 測試縫:writer 完成路徑禁閉檢查、真正落檔前呼叫。production 保持 None。
+_after_write_confine = None
 
 STATE_DIR = ("state", "implementation")
 KNOWLEDGE_DIRS = {
@@ -116,16 +121,172 @@ def _read_text(path):
     return text
 
 
-def _atomic_write(path, text):
-    directory = os.path.dirname(os.path.abspath(path))
-    os.makedirs(directory, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(prefix=".tmp-", dir=directory)
+def classify_durable_root(repo_root_path):
+    """`.dev-flow` 根的身分:absent / present。symlink 與非目錄 → DurableError。
+
+    `os.path.isdir` 會跟隨 symlink,不能當這條的判準。讀取、盤點、寫入
+    共用這一支,避免各路徑對「symlink 根算不算正本」給出不同答案。
+    """
+    path = root(repo_root_path)
+    rel = identity.memory_dir_name()
+    try:
+        mode = os.lstat(path).st_mode
+    except OSError:
+        return "absent"
+    if stat.S_ISLNK(mode) or not stat.S_ISDIR(mode):
+        raise DurableError("non-regular durable file {0}".format(rel))
+    return "present"
+
+
+def _require_real_dir(path, rel):
+    try:
+        mode = os.lstat(path).st_mode
+    except OSError as exc:
+        raise DurableError("unreadable durable file {0}".format(rel)) from exc
+    if stat.S_ISLNK(mode) or not stat.S_ISDIR(mode):
+        raise DurableError("non-regular durable file {0}".format(rel))
+
+
+def _lexical_under(path, root_path):
+    path = os.path.abspath(path)
+    root_path = os.path.abspath(root_path)
+    if path == root_path:
+        return True
+    prefix = root_path if root_path.endswith(os.sep) else root_path + os.sep
+    return path.startswith(prefix)
+
+
+def _mkdirs_confined(repo_root_path, dest_dir):
+    """從 `.dev-flow` 往下逐層建真實目錄;既有節點必須是非 symlink 目錄。"""
+    root_path = os.path.abspath(root(repo_root_path))
+    dest_dir = os.path.abspath(dest_dir)
+    if not _lexical_under(dest_dir, root_path):
+        raise DurableError("durable write escapes {0}".format(
+            identity.memory_dir_name()))
+    if not os.path.lexists(root_path):
+        os.mkdir(root_path)
+    _require_real_dir(root_path, identity.memory_dir_name())
+    rel = os.path.relpath(dest_dir, root_path)
+    current = root_path
+    if rel not in (os.curdir, ""):
+        for part in rel.split(os.sep):
+            if part in ("", os.curdir):
+                continue
+            if part == os.pardir:
+                raise DurableError("durable write escapes {0}".format(
+                    identity.memory_dir_name()))
+            current = os.path.join(current, part)
+            rel_cur = os.path.relpath(current, root_path).replace(os.sep, "/")
+            if os.path.lexists(current):
+                _require_real_dir(current, rel_cur)
+            else:
+                os.mkdir(current)
+                _require_real_dir(current, rel_cur)
+    return current
+
+
+def _atomic_write(repo_root_path, path, text):
+    """原子寫入,且最終落點必須停在已驗證的真實 `.dev-flow` 樹內。
+
+    `abspath` 是字面展開,不拒絕 symlink。禁閉是 writer 邊界不變量,
+    不是呼叫端約定 —— 每一條 durable 寫入都走這裡。
+    """
+    dest = os.path.abspath(path)
+    root_path = os.path.abspath(root(repo_root_path))
+    if not _lexical_under(dest, root_path):
+        raise DurableError("durable write escapes {0}".format(
+            identity.memory_dir_name()))
+    parent = _mkdirs_confined(repo_root_path, os.path.dirname(dest))
+    hook = _after_write_confine
+    if hook is not None:
+        hook(repo_root_path, dest)
+    rel_parent = os.path.relpath(parent, root_path).replace(os.sep, "/")
+    _require_real_dir(parent, rel_parent)
+    _require_real_dir(root_path, identity.memory_dir_name())
+    if not _lexical_under(os.path.realpath(parent),
+                          os.path.realpath(root_path)):
+        raise DurableError("durable write escapes {0}".format(
+            identity.memory_dir_name()))
+    payload = text.encode("utf-8")
+    flags = os.O_RDONLY
+    if hasattr(os, "O_DIRECTORY"):
+        flags |= os.O_DIRECTORY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+        return _atomic_write_dirfd(root_path, parent, dest, payload)
+    _atomic_write_fallback(root_path, parent, dest, text)
+
+
+def _atomic_write_dirfd(root_path, parent, dest, payload):
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    rel_parent = os.path.relpath(parent, root_path).replace(os.sep, "/")
+    try:
+        dirfd = os.open(parent, flags)
+    except OSError as exc:
+        raise DurableError(
+            "non-regular durable file {0}".format(rel_parent)) from exc
+    tmp_name = None
+    fd = None
+    try:
+        for _ in range(64):
+            candidate = ".tmp-" + secrets.token_hex(8)
+            try:
+                fd = os.open(candidate, os.O_CREAT | os.O_EXCL | os.O_WRONLY,
+                             0o600, dir_fd=dirfd)
+                tmp_name = candidate
+                break
+            except FileExistsError:
+                continue
+        if fd is None:
+            raise DurableError("could not create confined temp file")
+        written = 0
+        while written < len(payload):
+            written += os.write(fd, payload[written:])
+        os.fsync(fd)
+        os.close(fd)
+        fd = None
+        dest_name = os.path.basename(dest)
+        try:
+            existing = os.lstat(dest_name, dir_fd=dirfd)
+        except OSError:
+            existing = None
+        if existing is not None and not stat.S_ISREG(existing.st_mode):
+            raise DurableError("non-regular durable file {0}".format(
+                os.path.relpath(dest, root_path).replace(os.sep, "/")))
+        os.replace(tmp_name, dest_name, src_dir_fd=dirfd, dst_dir_fd=dirfd)
+        tmp_name = None
+    finally:
+        if fd is not None:
+            os.close(fd)
+        if tmp_name is not None:
+            try:
+                os.unlink(tmp_name, dir_fd=dirfd)
+            except OSError:
+                pass
+        os.close(dirfd)
+
+
+def _atomic_write_fallback(root_path, parent, dest, text):
+    """沒有 O_NOFOLLOW 時:寫完立刻再 lstat,symlink 祖先不得 replace。"""
+    fd, tmp = tempfile.mkstemp(prefix=".tmp-", dir=parent)
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as stream:
             stream.write(text)
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(tmp, path)
+        _require_real_dir(
+            parent, os.path.relpath(parent, root_path).replace(os.sep, "/"))
+        _require_real_dir(root_path, identity.memory_dir_name())
+        if os.path.lexists(dest):
+            mode = os.lstat(dest).st_mode
+            if not stat.S_ISREG(mode):
+                raise DurableError("non-regular durable file {0}".format(
+                    os.path.relpath(dest, root_path).replace(os.sep, "/")))
+        if not _lexical_under(os.path.realpath(parent),
+                              os.path.realpath(root_path)):
+            raise DurableError("durable write escapes {0}".format(
+                identity.memory_dir_name()))
+        os.replace(tmp, dest)
     finally:
         if os.path.exists(tmp):
             os.remove(tmp)
@@ -197,7 +358,7 @@ def write_state(repo_root_path, entity_type, entity_key, facts):
                "dependencies/fingerprints 是失效判定的依據:依賴檔變了 → 本機先轉 STALE,"
                "重新驗證後才更新這裡。")
     path = state_file(repo_root_path, entity_type, entity_key)
-    _atomic_write(path, text)
+    _atomic_write(repo_root_path, path, text)
     return path
 
 
@@ -219,7 +380,11 @@ def has_mirrorable_content(repo_root_path):
     project.yaml 是 identity,不是鏡射項目。空 facts 的 state 檔也不算。
     缺世代時只有「DB 沒有 durable 列 **而且** 樹也沒有可鏡射內容」
     才允許只蓋章。
+    symlink 根不是「有內容」—— 那是樹外位元組,這支與 snapshot 同一條
+    根驗證,不得各走各的。
     """
+    if classify_durable_root(repo_root_path) == "absent":
+        return False
     for state in iter_states(repo_root_path):
         if state.get("facts"):
             return True
@@ -275,7 +440,7 @@ def write_knowledge(repo_root_path, record):
                "code 只能 SUPPORT 或 CONFLICT 已確認的 domain truth,"
                "不能直接 override。".format(kind))
     path = knowledge_file(repo_root_path, kind, record["key"])
-    _atomic_write(path, text)
+    _atomic_write(repo_root_path, path, text)
     return path
 
 
@@ -353,7 +518,7 @@ def write_decision(repo_root_path, record):
         "",
     ]
     path = decision_file(repo_root_path, record["key"])
-    _atomic_write(path, "\n".join(body))
+    _atomic_write(repo_root_path, path, "\n".join(body))
     return path
 
 
@@ -421,7 +586,7 @@ def write_skill(repo_root_path, record):
         payload, key_order=_SKILL_KEY_ORDER,
         header="F. PROCEDURAL SKILL —— 怎麼做某件事(deploy/debug/migration/release)。")
     path = skill_file(repo_root_path, record["key"])
-    _atomic_write(path, text)
+    _atomic_write(repo_root_path, path, text)
     return path
 
 
@@ -541,7 +706,7 @@ def append_events(repo_root_path, session_id, records):
         # fresh 是空的:整批都已經在檔裡,這一輪是重跑補完,不動檔案。
     written = []
     for path, text in plans:
-        _atomic_write(path, text)
+        _atomic_write(repo_root_path, path, text)
         written.append(path)
     return sorted(written)
 
@@ -572,9 +737,11 @@ def ensure_layout(repo_root_path, kinds=()):
     created = []
     for parts in kinds:
         target = _path(repo_root_path, parts)
-        if not os.path.isdir(target):
-            os.makedirs(target, exist_ok=True)
-            created.append(target)
+        if os.path.lexists(target):
+            _require_real_dir(target, "/".join(parts))
+            continue
+        _mkdirs_confined(repo_root_path, target)
+        created.append(target)
     return created
 
 
