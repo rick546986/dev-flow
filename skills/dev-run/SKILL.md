@@ -390,12 +390,13 @@ G3 前對涉互動 feature 派 fresh-context reviewer 做 Operational Walkthroug
    = stale,E2 機械擋)。
 4. **單一入口**:用 4-spec Verification Profile `Final fresh entry point` 指名的
    persisted 一條命令跑完整驗證;所有 Evidence 數字出自這一次 run,禁混入舊結果。
-5. **`--require-layer` 逐層**:Profile Required layers 逐層一個 flag 帶入(同
-   7-review 執行清單 2c 的文檔化命令;Required 層 unverified/n-a/缺席 = E7 機械擋)。
+5. **Required 層以 4-spec 為準**:Gauntlet 自己讀 sibling 4-spec Verification
+   Profile;`--require-layer` 只能加嚴,漏帶不再 fail-open。Required 層
+   unverified/n-a/缺席 = E7 機械擋(同 7-review 執行清單 2d)。
 6. **Evidence 節驗證**:送審前跑
-   `bash docs/dev/tools/devflow-evidence-gauntlet.sh <7-review.md> --source-sha $(git rev-parse HEAD) --review-file --require-layer <Required 層,逐層>`
-   全綠;`--review-file` 驗 Standards Axis / Spec Axis / 現象證據 三節在場
+   `bash docs/dev/tools/devflow-evidence-gauntlet.sh <7-review.md> --source-sha $(git rev-parse HEAD) --review-file`
+   全綠(可加 `--require-layer` 加嚴);`--review-file` 驗 Standards Axis / Spec Axis / 現象證據 三節在場
    (E11:Gauntlet PASS 不取代雙軸審與現象複驗 —— G3 信心 = Gauntlet + Code Review
-   + Operational Walkthrough)。
+   + Operational Walkthrough)。`--review-file` 未帶 `--source-sha` 時預設當下 HEAD。
 7. **run-id 對帳**:run 產 run_id;Evidence header 與 ledger 事件同 id 同 SHA
    (經 P3 CLI 通道);對不上 = stale 訊號,依 E2 精神擋。

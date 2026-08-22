@@ -215,7 +215,7 @@ Fast lane 省的是 Stage 1–3,不是 Stage 5:`devflow-exec.sh start <slug>` �
 | 4 | `4-spec.md` | 本次變更的可測契約(delta + GIVEN/WHEN/THEN)。SDD 真相 | **G2** R/S 全審 + DD 全裁決 + Verification Profile + Demo verdict(全文見 §7) |
 | 5 | `5-tasks.md` | 切成可勾選任務,tracer-bullet 順序,每 T 有 Covers/Files/Verify/Blocked-by | 每 T 欄位完整 |
 | 6 | `6-implementation-notes.md` | 實作日誌:TDD 證據 + 偏差記錄 | 每 T review PASS + 全 S 綠 |
-| 7 | `7-review.md` + `.html` | 雙軸審 + coverage matrix + Exit checklist。**同 stage 只有這兩個檔**,自審的家在 6-notes Self-Review;真要用 7-review 形狀寫自審則 verdict 填 `PRE-REVIEW`,獨立 reviewer 產出後**就地接管同一個檔**、不另存 sibling(細則見模板步 0a) | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → Exit Checklist(PR 是其中一項) |
+| 7 | `7-review.md` + `.html` | 雙軸審 + coverage matrix + Exit checklist。**同 stage 只有這兩個檔**,自審的家在 6-notes Self-Review;真要用 7-review 形狀寫自審則 verdict 填 `PRE-REVIEW`,獨立 reviewer 產出後**就地接管同一個檔**、不另存 sibling(細則見模板步 0a)。出貨樹=審過的樹 | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → Exit Checklist(PR 是其中一項) |
 
 **執行清單四原則**(Stage 2/3/4/5/6/7;清單全文住各模板頂註,Stage 1 同款機制內建於
 /dev-talk):①開場第一動把清單建成 todo,每步有「完成 =」客觀條件,達成才勾;
@@ -596,7 +596,7 @@ md 側對應規定是 `_templates/5-tasks.md` 頂註,**兩邊講同一件事、m
     必須重做 Demo;NOT_REVIEWED → 不得過 G2;有 trigger 但跳過 → 必須有 Owner Call
     明示。Agent 不得自行填入 ACCEPTED;Runtime 必須拒絕 Agent 自產的 ACCEPTED。
 - G3 錨定義:「Evidence 契約全過」= 以下八點全部成立:
-  1. Final Fresh Run 綁定目前受審的 source SHA。
+  1. Final Fresh Run 綁定目前受審的 source SHA,且該 SHA 必須等於送審當下 HEAD;之後任何程式碼 commit 作廢 G3,必須重跑 Final Fresh。
   2. 所有 Required Layer = pass。
   3. 所有已觸發的 Conditional Layer = pass。
   4. 不得存在任何 fail。
@@ -606,9 +606,17 @@ md 側對應規定是 `_templates/5-tasks.md` 頂註,**兩邊講同一件事、m
   8. Gauntlet PASS 不取代 Standards Axis / Spec Axis / Operational Walkthrough /
      Coverage Matrix / 真實現象複驗。
 
-  八點中的 Evidence 文件契約由 `scripts/devflow-evidence-gauntlet.sh`(1.2.0,E1–E13;
-  採用專案散發於 `docs/dev/tools/`)機械驗證;第 2、3、5 點仍須依 Verification Profile
-  正確傳入 Required／Conditional layer(旗標漏帶會 fail-open),並由 Reviewer 核對 ——
+  八點中的 Evidence 文件契約由 `scripts/devflow-evidence-gauntlet.sh`(1.3.3,E1–E13;
+  採用專案散發於 `docs/dev/tools/`)機械驗證;第 2、5 點由 Gauntlet 讀 4-spec
+  Verification Profile 的 Required layers(旗標 `--require-layer` 只能加嚴,不能拿掉
+  Required;漏帶不再 fail-open;`--review-file` 找不到 Profile 亦不得退回 1.2.0;
+  Profile 必須有 Required layers 欄,可寫「無」/none/n-a;缺欄或空值都紅;層名
+  strip 後全等,不得 substring;`--profile` 只准本 feature
+  的 4-spec,不得跨份覆寫)。
+  第 3 點:Evidence 表已列且非 n-a 的 Conditional
+  必須 pass;未列入視為未觸發,仍由 Reviewer 核對 Profile 條件。第 1 點的 HEAD
+  綁定:`--review-file` 漏帶 `--source-sha` 時預設當下 HEAD;`docs/dev/<feature>/7-review.md`
+  即使顯式傳 `--source-sha` 也必須等於 HEAD(example/ 與 scripts/fixtures/ 不套)。
   詳細強制邊界見下方對照表。
 - frontmatter 是狀態機:`draft → in-review → approved → superseded/shipped`。
 - 已知限界(明文接受,不另設機制):①Stage 1 討論期的自判無獨立節(單一機制
@@ -651,9 +659,9 @@ E11 只驗這兩節在不在。
 | Task 獨立 review(作者不自審) | 人工或 fresh Agent;外部 dev-run 編排 | `_templates/6-implementation-notes.md`、dev-run |
 | 4-spec 每個 S 被 5-tasks Covers 承接 | 本 repo 腳本只驗範例;實案靠 runtime/CI 或人工 | `scripts/check-methodology-corrections.sh`(母版 repo) |
 | 每個 T×S 有獨立 RED→GREEN 證據 | 本 repo 腳本只驗範例;實案靠外部 runtime 與 Reviewer | `scripts/check-methodology-corrections.sh`(母版 repo)、dev-run |
-| G3 Evidence 契約八點 | 本 repo Gauntlet 腳本(E1–E13),但第 2、3、5 點例外 | `scripts/devflow-evidence-gauntlet.sh`(母版 repo;採用專案的機械檢查入口是 `docs/dev/tools/devflow-evidence-gauntlet.sh` + doctor) |
-| G3 第 2、5 點:Required Layer 全 pass、不得 unverified 或 n-a | 半自動 —— Gauntlet 讀不到 4-spec,不知道哪些層是 Required;人必須把 Profile 的 Required 層逐層寫進 `--require-layer`,E7 才會擋。旗標漏帶 = 整份 unverified 也照樣 exit 0 | 4-spec Verification Profile、`_templates/7-review.md` 步 2c(文檔化命令已內建旗標,並有測試盯著) |
-| G3 第 3 點:已觸發的 Conditional Layer 全 pass | 人工 —— 同上讀不到 4-spec,且「哪些條件層這次被觸發」還多一層判斷,比第 2、5 點更難機械化 | 4-spec Verification Profile、`_templates/7-review.md` 步 2c |
+| G3 Evidence 契約八點 | 本 repo Gauntlet 腳本(E1–E13);第 2、5 點讀 4-spec,第 3 點讀已列入的 Conditional | `scripts/devflow-evidence-gauntlet.sh`(母版 repo;採用專案的機械檢查入口是 `docs/dev/tools/devflow-evidence-gauntlet.sh` + doctor) |
+| G3 第 2、5 點:Required Layer 全 pass、不得 unverified 或 n-a | 機械 —— Gauntlet 讀 sibling 4-spec Verification Profile 的 Required layers;漏帶 `--require-layer` 不再 fail-open;`--review-file` 找不到 Profile、缺 Required layers 欄、或該欄空值即 E7 紅(只有「無」/none/n-a 是明示零層)。層名 strip 後大小寫不敏感全等(可先去掉尾端括號),不得 substring。`--profile` 只准本 feature 的 4-spec,只能加嚴同一份。旗標只能加嚴,不能把 Required 拿掉 | 4-spec Verification Profile、`_templates/7-review.md` 步 2d、`scripts/devflow-evidence-gauntlet.sh` E7 |
+| G3 第 3 點:已觸發的 Conditional Layer 全 pass | 半自動 —— Evidence 表已列且非 n-a 的 Conditional 必須 pass(E7);「這次有沒有觸發」若根本沒列入,仍由 Reviewer 對 Profile 條件核對 | 4-spec Verification Profile、`_templates/7-review.md` 步 2d |
 | Coverage Matrix 與 Operational Walkthrough 內容 | Reviewer 人工判斷;E11 只驗 heading 在不在 | `_templates/7-review.md`、E11 |
 | Final Fresh Run 真的跑過 | 專案命令/Runtime/Reviewer;Gauntlet 只驗宣告與 SHA 綁定 | 4-spec Verification Profile、`_templates/7-review.md` |
 | Attempt Ledger 寫入 | 外部 runtime 寫;本 repo observability CLI 驗證與衍生 | `hooks/devflow-obs.sh`、`observability/devflow-obs.py`(母版 repo) |
@@ -661,7 +669,7 @@ E11 只驗這兩節在不在。
 | 缺陷回報貼出去之前已去識別化 | **只在寫檔那一刻擋,貼出去那一刻不擋** —— hook 掛在 PostToolUse `Edit\|Write`,掃 `.devflow/` 底下的 `.md`(`.devflow/task/` 是 Worker 本機證據區,刻意排除)。**已知限界:直接 `gh issue comment` / `gh pr comment` / 對談中貼原文完全不經過它**,那條路徑上沒有任何機械檢查,只有人工紀律(實際發生過:本 repo 維護者自己把採用專案的絕對路徑貼進 public issue 留言)。要補得做 Bash 路徑的鏡像守衛(同 `devflow-prebash` 鏡像 `devflow-guard` 的做法),尚未實作 —— 在此誠實標示,不假裝有守衛 | `hooks/devflow-report-guard.sh`、`hooks/_report_impl.py` |
 | STATUS.md 只在整合分支維護、worktree 內不碰 | 人工紀律為主;Stage 6 武裝期間外部 plugin scope guard 順帶擋住(STATUS.md 不在任何 T 的 Files,寫入即擋),未武裝的規劃階段無機械層 —— 為此加常駐 hook 成本大於效益,且 PR diff 混入看板變更在 review 一眼可見 | `_templates/STATUS.md` 頂註、`hooks/devflow-guard.sh` |
 | 合併後回滾走 `revert -m 1`、禁改寫整合分支歷史 | 人工紀律 —— 事發在 ship 之後,dev-flow hooks 於 `stop` 後全部沉睡,管不到;機械強制屬 git hosting 的 branch protection(各專案自理,建議開) | 本節「合併後出事怎麼辦」 |
-| Exit Checklist 整合回歸(條件式) | 機械 —— 散發工具 `devflow-integration-regression.sh` 算與判(狀態字串+exit code,fail-closed 缺錨點即擋),人只負責照狀態做事(合併/測試由人);行為由母版 `check-integration-regression-guard.sh` 以八情境+五 mutant 釘住 | `_templates/7-review.md` Exit Checklist、`scripts/devflow-integration-regression.sh` |
+| Exit Checklist 整合回歸(條件式) | 機械 —— 散發工具 `devflow-integration-regression.sh` 算與判;順序強制在 Final Fresh **之前**(出貨樹=審過的樹)。Exit 不得再改碼;改了 G3 作廢,必須重跑 Final Fresh。行為由母版 `check-integration-regression-guard.sh` 以八情境+五 mutant 釘住 | `_templates/7-review.md` 步 2c、`scripts/devflow-integration-regression.sh` |
 | 多 worktree 執行環境隔離檢查 | 人工 —— 母版不知道專案技術棧與啟動方式,機械檢查得實跑專案自己的環境,超出母版守備範圍(母版只驗文件與流程) | `_templates/6-implementation-notes.md` 步 0 |
 
 ### 合併後出事怎麼辦(整合分支回滾)

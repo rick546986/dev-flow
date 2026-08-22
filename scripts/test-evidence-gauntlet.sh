@@ -7,6 +7,7 @@ set -u
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 TOOL="$ROOT/scripts/devflow-evidence-gauntlet.sh"
+DIST_TOOL="$ROOT/docs/dev/tools/devflow-evidence-gauntlet.sh"
 FIX="$ROOT/scripts/fixtures/evidence-gauntlet"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
@@ -19,13 +20,13 @@ fail() {
   echo "  ❌ $1"
 }
 
-# run_case <label> <expected_exit> <required_output_pattern|-> [tool args...]
-run_case() {
-  local label="$1" expected_exit="$2" pattern="$3"
-  shift 3
+# run_case_on <tool> <label> <expected_exit> <required_output_pattern|-> [tool args...]
+run_case_on() {
+  local tool="$1" label="$2" expected_exit="$3" pattern="$4"
+  shift 4
   checks=$((checks + 1))
   local out rc
-  out=$("$TOOL" "$@" 2>&1)
+  out=$("$tool" "$@" 2>&1)
   rc=$?
   if [ "$rc" -ne "$expected_exit" ]; then
     fail "$label: exit $rc(預期 $expected_exit)"
@@ -40,8 +41,17 @@ run_case() {
   echo "  ✅ $label"
 }
 
+# run_case <label> <expected_exit> <required_output_pattern|-> [tool args...]
+run_case() {
+  run_case_on "$TOOL" "$@"
+}
+
 if [ ! -x "$TOOL" ]; then
   echo "❌ evidence gauntlet tests: tool 不存在或不可執行:$TOOL"
+  exit 1
+fi
+if [ ! -x "$DIST_TOOL" ]; then
+  echo "❌ evidence gauntlet tests: 散發副本不存在或不可執行:$DIST_TOOL"
   exit 1
 fi
 
@@ -114,8 +124,9 @@ run_case "review 檔雙軸+Walkthrough+Coverage Matrix 俱在但缺 Standards Ax
   "缺「## Standards Axis」" "$FIX/bad-review-missing-standards-axis.md" --review-file
 run_case "review 檔雙軸+Walkthrough+Coverage Matrix 俱在但缺 現象證據(E11)" 1 \
   "缺「## 現象證據」" "$FIX/bad-review-missing-phenomena.md" --review-file
-run_case "review 檔雙軸+現象證據+Walkthrough+Coverage Matrix 俱在則過" 0 "-" \
-  "$FIX/good-review.md" --review-file --source-sha abc1234def5678
+# 1630-P1 起 --profile 不得指向別份 feature;E11 正案改用 sibling 4-spec。
+run_case "review 檔雙軸+現象證據+Walkthrough+Coverage Matrix 俱在且 sibling 4-spec 則過" 0 "-" \
+  "$FIX/profile-pass/7-review.md" --review-file --source-sha abc1234def5678
 
 echo "== 六.stale artifact 清除:舊 report 必先刪、新 report 綁本次 run =="
 checks=$((checks + 1))
@@ -157,6 +168,334 @@ echo "== 小項②.flag 缺值 = 用法錯誤 exit 2 =="
 run_case "--source-sha 缺值 → usage + exit 2" 2 "usage" \
   "$FIX/good-evidence.md" --source-sha
 
+echo "== P0-2.Gauntlet 讀 sibling 4-spec Required;漏帶旗標不再 fail-open=="
+# 舊實作不讀 4-spec:漏帶 --require-layer 時 Race/stress=unverified 仍 exit 0。
+# 新實作以 4-spec 為準,Required 沒有 pass → E7 紅。
+run_case "sibling 4-spec Required=Race/stress 標 unverified、漏旗標 → E7 紅" 1 "E7" \
+  "$FIX/profile-unverified/7-review.md" --review-file --source-sha abc1234def5678
+run_case "sibling 4-spec Required 皆 pass、漏旗標 → 綠" 0 "-" \
+  "$FIX/profile-pass/7-review.md" --review-file --source-sha abc1234def5678
+# 已列入 Evidence 且非 n-a 的 Conditional 必須 pass(本 fixture 的 Supply chain=unverified)
+run_case "已觸發 Conditional(Supply chain unverified)→ E7 紅" 1 "E7" \
+  "$FIX/profile-unverified/7-review.md" --review-file --source-sha abc1234def5678
+# 旗標只能加嚴:4-spec 沒列 Mutation,人硬加 --require-layer Mutation → 仍紅
+run_case "旗標加嚴(Mutation unverified)仍 E7 紅,不能當覆寫拿掉 Required" 1 "E7" \
+  "$FIX/profile-unverified/7-review.md" --review-file --source-sha abc1234def5678 \
+  --require-layer "Mutation"
+
+echo "== P0-3.--review-file 漏帶 --source-sha 預設當下 HEAD,宣告不符即紅=="
+# 舊實作:不帶 --source-sha 只驗宣告存在 → good-review(SHA=abc1234)仍綠。
+# 新實作:--review-file 預設 git HEAD,abc1234 ≠ HEAD → E2 stale。
+run_case "review-file 不帶 --source-sha 且宣告 SHA ≠ HEAD → E2 紅" 1 "E2" \
+  "$FIX/good-review.md" --review-file
+
+echo "== 1230-P0.--review-file 找不到 Profile 不得退回 1.2.0=="
+# 舊實作:找不到 sibling 4-spec 也不帶 --profile → 旗標行為退回 1.2.0,
+# good-review 漏帶 --require-layer 仍 exit 0 / 27 checks(假綠)。
+run_case "review-file 無 sibling 4-spec 也無 --profile → E7 紅" 1 "E7" \
+  "$FIX/good-review.md" --review-file --source-sha abc1234def5678
+# 1630-P1:無 sibling 時 --profile 指向別份不得再當逃生口(舊 1.3.1 綠)。
+run_case "review-file 無 sibling、--profile 指向別份 4-spec → E7 紅" 1 "E7" \
+  "$FIX/good-review.md" --review-file --source-sha abc1234def5678 \
+  --profile "$FIX/profile-pass/4-spec.md"
+# 檔在但沒有 Verification Profile 節 = 一樣找不到 Profile
+mkdir -p "$TMP/no-section"
+cp "$FIX/good-review.md" "$TMP/no-section/7-review.md"
+printf '# fixture:有 4-spec 檔但沒有 Verification Profile 節\n\n## ADDED Requirements\n- none\n' \
+  > "$TMP/no-section/4-spec.md"
+run_case "review-file sibling 4-spec 無 Verification Profile 節 → E7 紅" 1 "E7" \
+  "$TMP/no-section/7-review.md" --review-file --source-sha abc1234def5678
+# 顯式 --profile 指向自己的 sibling 仍綠
+run_case "review-file --profile 指向自己的 sibling 4-spec 仍綠" 0 "-" \
+  "$FIX/profile-pass/7-review.md" --review-file --source-sha abc1234def5678 \
+  --profile "$FIX/profile-pass/4-spec.md"
+
+echo "== 1230-P1.docs/dev/<feature>/7-review.md 顯式 SHA 也必須 = HEAD=="
+# 舊實作:顯式 --source-sha 只比對該值。live feature 宣告=abc1234、HEAD 已走,
+# 仍 exit 0 / 29 checks(假綠)。example/ 與 scripts/fixtures/ 不套這條。
+live="$TMP/live-repo"
+mkdir -p "$live/docs/dev/live-feature" "$live/example/demo" \
+  "$live/scripts/fixtures/evidence-gauntlet/x"
+cp "$FIX/profile-pass/7-review.md" "$live/docs/dev/live-feature/7-review.md"
+cp "$FIX/profile-pass/4-spec.md" "$live/docs/dev/live-feature/4-spec.md"
+cp "$FIX/profile-pass/7-review.md" "$live/example/demo/7-review.md"
+cp "$FIX/profile-pass/4-spec.md" "$live/example/demo/4-spec.md"
+cp "$FIX/profile-pass/7-review.md" "$live/scripts/fixtures/evidence-gauntlet/x/7-review.md"
+cp "$FIX/profile-pass/4-spec.md" "$live/scripts/fixtures/evidence-gauntlet/x/4-spec.md"
+git -C "$live" init -q
+git -C "$live" add docs example scripts
+git -C "$live" -c user.email=t@t -c user.name=t commit -qm seed
+live_head=$(git -C "$live" rev-parse HEAD)
+run_case "docs/dev/<feature>/7-review 顯式 --source-sha ≠ HEAD → E2 紅" 1 "E2" \
+  "$live/docs/dev/live-feature/7-review.md" --review-file --source-sha abc1234def5678
+run_case "example/ 顯式 stale SHA 仍綠(不套 live 規則)" 0 "-" \
+  "$live/example/demo/7-review.md" --review-file --source-sha abc1234def5678
+run_case "scripts/fixtures/ 顯式 stale SHA 仍綠(不套 live 規則)" 0 "-" \
+  "$live/scripts/fixtures/evidence-gauntlet/x/7-review.md" --review-file \
+  --source-sha abc1234def5678
+# 宣告改成當下 HEAD 後,顯式也傳 HEAD → 綠(證明不是一律殺 --source-sha)
+python3 - "$live/docs/dev/live-feature/7-review.md" "$live_head" <<'PY'
+import sys
+path, head = sys.argv[1], sys.argv[2]
+text = open(path, encoding="utf-8").read().replace("abc1234def5678", head)
+open(path, "w", encoding="utf-8").write(text)
+PY
+run_case "docs/dev/<feature>/7-review 宣告=HEAD 且顯式也傳 HEAD → 綠" 0 "-" \
+  "$live/docs/dev/live-feature/7-review.md" --review-file --source-sha "$live_head"
+
+echo "== 1630-P0.Verification Profile 缺 Required layers 欄不得當零層放行=="
+# 舊實作:有 ## Verification Profile 但沒有 Required layers 那列 → required=[]
+# → E7 不擋,exit 0 / 27 checks(假綠)。缺欄必須紅;明示「無」/none 才是零層。
+run_case "review-file sibling Profile 缺 Required layers 欄 → E7 紅" 1 "E7" \
+  "$FIX/profile-no-required-row/7-review.md" --review-file --source-sha abc1234def5678
+run_case "review-file Required layers:無(明示零層)→ 綠" 0 "-" \
+  "$FIX/profile-required-none/7-review.md" --review-file --source-sha abc1234def5678
+mkdir -p "$TMP/req-none-en"
+cp "$FIX/profile-required-none/7-review.md" "$TMP/req-none-en/7-review.md"
+printf '%s\n' \
+  '## Verification Profile(G2 一併審)' \
+  '- lane: full' \
+  '- Risk: normal' \
+  '- Required layers:none' \
+  '- Explicitly excluded layers:Mutation' \
+  '- Final fresh entry point:`pytest -q`' \
+  > "$TMP/req-none-en/4-spec.md"
+run_case "review-file Required layers:none(明示零層)→ 綠" 0 "-" \
+  "$TMP/req-none-en/7-review.md" --review-file --source-sha abc1234def5678
+
+echo "== 1830-P0.Required layers 欄在但值空不得當零層放行=="
+# 舊實作:欄在、值空/空白 → required=[]、required_present=True → E7 不擋。
+# 1630 只擋缺欄;空值仍當「零層必跑」假綠。只有「無」/none/n-a 是明示零層。
+mkdir -p "$TMP/req-blank"
+cp "$FIX/profile-pass/7-review.md" "$TMP/req-blank/7-review.md"
+printf '%s\n' \
+  '## Verification Profile(G2 一併審)' \
+  '- lane: full' \
+  '- Risk: normal' \
+  '- Required layers:' \
+  '- Explicitly excluded layers:Mutation' \
+  '- Final fresh entry point:`pytest -q`' \
+  > "$TMP/req-blank/4-spec.md"
+run_case "review-file Required layers 空值 → E7 紅" 1 "E7" \
+  "$TMP/req-blank/7-review.md" --review-file --source-sha abc1234def5678
+mkdir -p "$TMP/req-ws"
+cp "$FIX/profile-pass/7-review.md" "$TMP/req-ws/7-review.md"
+printf '%s\n' \
+  '## Verification Profile(G2 一併審)' \
+  '- lane: full' \
+  '- Risk: normal' \
+  '- Required layers:   ' \
+  '- Explicitly excluded layers:Mutation' \
+  '- Final fresh entry point:`pytest -q`' \
+  > "$TMP/req-ws/4-spec.md"
+run_case "review-file Required layers 只有空白 → E7 紅" 1 "E7" \
+  "$TMP/req-ws/7-review.md" --review-file --source-sha abc1234def5678
+
+echo "== 1830-P1.Required 層名必須全等,不得 substring 誤配=="
+# 舊實作:wanted.lower() in row[0].lower()。Required unit 被 unit-smoke pass 滿足。
+mkdir -p "$TMP/req-substr"
+cp "$FIX/profile-pass/7-review.md" "$TMP/req-substr/7-review.md"
+python3 - "$TMP/req-substr/7-review.md" <<'PY'
+import sys
+text = open(sys.argv[1], encoding="utf-8").read()
+text = text.replace("| Full test suite |", "| unit-smoke |")
+text = text.replace("| Real execution |", "| other-layer |")
+open(sys.argv[1], "w", encoding="utf-8").write(text)
+PY
+printf '%s\n' \
+  '## Verification Profile(G2 一併審)' \
+  '- lane: full' \
+  '- Risk: normal' \
+  '- Required layers:unit' \
+  '- Explicitly excluded layers:Mutation' \
+  '- Final fresh entry point:`pytest -q`' \
+  > "$TMP/req-substr/4-spec.md"
+run_case "Required unit 被 unit-smoke pass 滿足 → E7 紅" 1 "E7" \
+  "$TMP/req-substr/7-review.md" --review-file --source-sha abc1234def5678
+mkdir -p "$TMP/req-exact"
+cp "$FIX/profile-pass/7-review.md" "$TMP/req-exact/7-review.md"
+python3 - "$TMP/req-exact/7-review.md" <<'PY'
+import sys
+text = open(sys.argv[1], encoding="utf-8").read()
+text = text.replace("| Full test suite |", "| unit |")
+text = text.replace("| Real execution |", "| other-layer |")
+open(sys.argv[1], "w", encoding="utf-8").write(text)
+PY
+printf '%s\n' \
+  '## Verification Profile(G2 一併審)' \
+  '- lane: full' \
+  '- Risk: normal' \
+  '- Required layers:unit' \
+  '- Explicitly excluded layers:Mutation' \
+  '- Final fresh entry point:`pytest -q`' \
+  > "$TMP/req-exact/4-spec.md"
+run_case "Required unit 對 evidence unit pass → 綠" 0 "-" \
+  "$TMP/req-exact/7-review.md" --review-file --source-sha abc1234def5678
+mkdir -p "$TMP/req-paren"
+cp "$FIX/profile-pass/7-review.md" "$TMP/req-paren/7-review.md"
+python3 - "$TMP/req-paren/7-review.md" <<'PY'
+import sys
+text = open(sys.argv[1], encoding="utf-8").read()
+text = text.replace("| Full test suite |", "| Unit (fast) |")
+text = text.replace("| Real execution |", "| other-layer |")
+open(sys.argv[1], "w", encoding="utf-8").write(text)
+PY
+printf '%s\n' \
+  '## Verification Profile(G2 一併審)' \
+  '- lane: full' \
+  '- Risk: normal' \
+  '- Required layers:unit' \
+  '- Explicitly excluded layers:Mutation' \
+  '- Final fresh entry point:`pytest -q`' \
+  > "$TMP/req-paren/4-spec.md"
+run_case "Required unit 對 evidence Unit (fast) pass → 綠" 0 "-" \
+  "$TMP/req-paren/7-review.md" --review-file --source-sha abc1234def5678
+
+echo "== 2030-P0.1830 空欄/substring 三案必須打散發副本=="
+# 1846/1930:母版 62/62 綠、散發副本仍是 if False / substring。parity 不是唯一網。
+run_case_on "$DIST_TOOL" "散發副本 Required layers 空值 → E7 紅" 1 "E7" \
+  "$TMP/req-blank/7-review.md" --review-file --source-sha abc1234def5678
+run_case_on "$DIST_TOOL" "散發副本 Required layers 只有空白 → E7 紅" 1 "E7" \
+  "$TMP/req-ws/7-review.md" --review-file --source-sha abc1234def5678
+run_case_on "$DIST_TOOL" "散發副本 Required unit 被 unit-smoke 滿足 → E7 紅" 1 "E7" \
+  "$TMP/req-substr/7-review.md" --review-file --source-sha abc1234def5678
+# 2130-P0:三案全是負向。散發副本若被改成 --review-file 一律 E7 紅,三案仍過。
+# 正案才證明確實在比對,不是入口壞掉。複用上面的 $TMP/req-exact。
+run_case_on "$DIST_TOOL" "散發副本 Required unit 對 evidence unit pass → 綠" 0 "-" \
+  "$TMP/req-exact/7-review.md" --review-file --source-sha abc1234def5678
+
+echo "== 2030-P1.group_architecture 必須先跑 parity 再跑 py-floor=="
+# 本機缺 3.9–3.11 時 check-py-floor exit 2,組內 fail-fast 吃掉後面的
+# check-integration-regression-guard → 1930 那種散發副本漂移本機永遠看不見。
+checks=$((checks + 1))
+if python3 - "$ROOT/scripts/devflow-check.sh" <<'PY'
+import sys
+text = open(sys.argv[1], encoding="utf-8").read()
+start = text.find("group_architecture()")
+end = text.find("\ngroup_render()")
+if start < 0 or end < 0 or end <= start:
+    print("找不到 group_architecture / group_render")
+    raise SystemExit(1)
+body = text[start:end]
+# 只看會執行的行,註解裡寫「py-floor 之前」不能算已換序
+code = "\n".join(ln.split("#", 1)[0] for ln in body.splitlines())
+i_parity = code.find("scripts/check-integration-regression-guard.sh")
+i_floor = code.find("scripts/check-py-floor.sh")
+if i_parity < 0 or i_floor < 0:
+    print("group_architecture 缺 parity 或 py-floor 的 run 行")
+    raise SystemExit(1)
+if i_parity > i_floor:
+    print(f"舊序:py-floor@{i_floor} 在 parity@{i_parity} 之前")
+    raise SystemExit(1)
+print("parity 在 py-floor 之前")
+PY
+then
+  echo "  ✅ group_architecture:parity 在 py-floor 之前"
+else
+  fail "group_architecture 仍先跑 py-floor,缺席時 fail-fast 吃掉 parity"
+fi
+
+echo "== 2130-P1.py-floor 缺席記紅、組內繼續;語法超下限仍 fail-fast=="
+# 舊實作:run "architecture/check-py-floor" … || return 1
+# 任何非零(含缺席 exit 2)都 fail-fast,後面的 stage67 / test-architecture-guards
+# 本機永遠看不到。2030 只把 parity 挪到前面,沒修這個。
+# 完成:exit 2 該項記紅、組內繼續;exit 1(語法超下限)仍 fail-fast。
+# 不把 check-py-floor 改 WARN。
+checks=$((checks + 1))
+if python3 - "$ROOT/scripts/devflow-check.sh" "$ROOT/scripts/check-py-floor.sh" <<'PY'
+import sys
+check = open(sys.argv[1], encoding="utf-8").read()
+floor = open(sys.argv[2], encoding="utf-8").read()
+start = check.find("group_architecture()")
+end = check.find("\ngroup_render()")
+if start < 0 or end <= start:
+    print("找不到 group_architecture")
+    raise SystemExit(1)
+body = check[start:end]
+code = "\n".join(ln.split("#", 1)[0] for ln in body.splitlines())
+# 舊形狀:同一條可執行行上 run … check-py-floor.sh … || return 1
+old = False
+for ln in code.splitlines():
+    if "check-py-floor.sh" in ln and "||" in ln and "return 1" in ln:
+        old = True
+        print(f"舊 fail-fast:{ln.strip()}")
+if old:
+    raise SystemExit(1)
+# 必須能分辨 2(缺席,繼續)與 1(語法,中止)
+if ' -eq 2' not in code and ' == 2' not in code:
+    print("group_architecture 沒有對 py-floor exit 2 的繼續分支")
+    raise SystemExit(1)
+if ' -eq 1' not in code and ' == 1' not in code and ' -ne 2' not in code:
+    print("group_architecture 沒有對 py-floor exit 1 / 非 2 的 fail-fast")
+    raise SystemExit(1)
+# 組在繼續之後仍要因 FAILED 紅,否則後面全過會把缺席當綠
+if 'FAILED' not in code:
+    print("group_architecture 繼續後沒有看 FAILED,缺席會被後面的綠蓋掉")
+    raise SystemExit(1)
+# 不把 py-floor 本身改 WARN / exit 0
+if 'sys.exit(2)' not in floor:
+    print("check-py-floor.sh 缺席路徑不再 exit 2")
+    raise SystemExit(1)
+if 'WARN' in floor and '找不到 Python' in floor:
+    print("check-py-floor.sh 把缺席改成 WARN 了")
+    raise SystemExit(1)
+print("py-floor 缺席記紅繼續;語法超下限 fail-fast;腳本本身仍 exit 2")
+PY
+then
+  echo "  ✅ group_architecture:py-floor 缺席記紅繼續、語法超下限 fail-fast"
+else
+  fail "group_architecture 仍對 py-floor 無條件 fail-fast,或缺席被改 WARN"
+fi
+
+echo "== 1630-P1.--review-file 的 --profile 只准本 feature,不得跨份覆寫=="
+# 舊實作:profile-unverified 的 sibling 會 E7 紅,但 --profile 指向
+# profile-pass(Required 皆 pass)仍 exit 0 / 31 checks(假綠)。
+run_case "review-file --profile 指向別份 feature 的 4-spec → E7 紅" 1 "E7" \
+  "$FIX/profile-unverified/7-review.md" --review-file --source-sha abc1234def5678 \
+  --profile "$FIX/profile-pass/4-spec.md"
+# 同一 feature 目錄:7-review 在 docs/dev/<slug>/nested/,4-spec 在 slug 根
+mkdir -p "$TMP/same-feat/docs/dev/feat-a/nested"
+cp "$FIX/profile-pass/7-review.md" "$TMP/same-feat/docs/dev/feat-a/nested/7-review.md"
+cp "$FIX/profile-pass/4-spec.md" "$TMP/same-feat/docs/dev/feat-a/4-spec.md"
+run_case "review-file --profile 指向同一 feature 目錄的 4-spec 仍綠" 0 "-" \
+  "$TMP/same-feat/docs/dev/feat-a/nested/7-review.md" --review-file \
+  --source-sha abc1234def5678 \
+  --profile "$TMP/same-feat/docs/dev/feat-a/4-spec.md"
+
+echo "== P0-1.模板節序:整合回歸必須在 Final Fresh 之前=="
+# 舊模板:Final Fresh 在執行清單 2c,整合回歸在 Exit Checklist(Verdict 之後)。
+# 檢查住 check-stage67-enforcement.sh 的 ST 組;此處釘「頂註執行清單」字面順序。
+checks=$((checks + 1))
+if python3 - "$ROOT/_templates/7-review.md" <<'PY'
+import re, sys
+text = open(sys.argv[1], encoding="utf-8").read()
+header = re.split(r"\n##[ \t]", text, 1)[0]
+integ = header.find("整合回歸")
+fresh = header.find("Final Fresh Run")
+if integ < 0:
+    print("頂註執行清單沒有整合回歸")
+    raise SystemExit(1)
+if fresh < 0:
+    print("頂註執行清單沒有 Final Fresh Run")
+    raise SystemExit(1)
+if integ > fresh:
+    print(f"舊節序:整合回歸@{integ} 在 Final Fresh@{fresh} 之後")
+    raise SystemExit(1)
+print("新節序:整合回歸在 Final Fresh 之前")
+PY
+then
+  echo "  ✅ 模板頂註:整合回歸在 Final Fresh 之前"
+else
+  fail "模板頂註仍是舊節序(Final Fresh → Verdict → Exit 才整合回歸)"
+fi
+checks=$((checks + 1))
+if grep -q "重跑 Final Fresh" "$ROOT/_templates/7-review.md" \
+   && grep -q "作廢 G3" "$ROOT/_templates/7-review.md"; then
+  echo "  ✅ 模板有 ALREADY_SYNCED 恢復路徑 + Verdict 後改碼作廢 G3"
+else
+  fail "模板缺 ALREADY_SYNCED 恢復路徑(重跑 Final Fresh)或作廢 G3"
+fi
+
 echo "== M2.文檔化命令必須機械強制 E7(模板 2c 與 example 示範命令)=="
 checks=$((checks + 1))
 if grep -q -- "--require-layer" "$ROOT/_templates/7-review.md"; then
@@ -177,6 +516,10 @@ run_case "example 7-review 經文檔化命令(--review-file + required 層)綠" 
   --require-layer "Full test suite" \
   --require-layer "Changed-line coverage" \
   --require-layer "Real execution"
+# 1.3.1:sibling 4-spec 已列 Required,漏旗標不得再 fail-open,也不得誤紅
+run_case "example 7-review 不帶 --require-layer(讀 4-spec Required)仍綠" 0 "-" \
+  "$ROOT/example/contract-expiry-reminder/7-review.md" --review-file \
+  --source-sha f92c1d5
 # 硬要求案例:required 層在 evidence 裡標 unverified → 文檔化命令必 fail
 run_case "required 層標 unverified(example Mutation)→ 文檔化命令 fail(E7)" 1 "E7" \
   "$ROOT/example/contract-expiry-reminder/7-review.md" --review-file \

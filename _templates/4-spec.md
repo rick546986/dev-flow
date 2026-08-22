@@ -225,7 +225,7 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 - Failure model:(Risk: high 必填,normal 選配;表見下)
 - Negative constraints:(本次變更「不得」做的事,逐條;來源:Out of Scope、
   living spec 不變量、回歸義務)
-- Required layers:(Final Fresh Run 必跑)
+- Required layers:(Final Fresh Run 必跑;本欄必須在,可寫「無」/none,缺欄 = E7 紅。Gauntlet 讀本欄,漏帶 `--require-layer` 不再 fail-open。旗標只能加嚴;`--profile` 不得指向別份 feature)
 - Conditional layers:(條件觸發;註明觸發條件,如「dependency set 變動 → Supply chain」)
 - Explicitly excluded layers:(明示排除 + 一句理由;禁默排)
 - Final fresh entry point:(單一 persisted 命令,CI/人類皆一條命令重跑)

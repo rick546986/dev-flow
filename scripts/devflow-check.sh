@@ -58,6 +58,7 @@ esac
 
 PASSED=()
 FAILED=""
+CONTINUED_AFTER_RED=""
 
 # run <label> <cmd...>
 # 直接把子命令的 stdout/stderr 原樣放行(不吞、不改寫、不摘要),再記錄 exit code。
@@ -117,10 +118,30 @@ group_contracts() {
 }
 
 group_architecture() {
+  # 2030-P1:parity 必須在 py-floor 之前。本機缺 3.9–3.11 時 check-py-floor
+  # exit 2 —— 1930 散發副本漂移就是這樣本機看不見的。
+  # 2130-P1:直譯器缺席(exit 2)該項記紅、組內繼續;語法超下限(exit 1)仍
+  # fail-fast。不把 py-floor 改 WARN(門檻不降)。
+  run "architecture/check-integration-regression-guard" scripts/check-integration-regression-guard.sh || return 1
   # 最低 Python 版本相容(2026-08-19 採用現場踩到):會在採用專案直譯器上跑的 .py
   # 不得用到比宣告下限更新的語法。build-gate-twin.py 曾在 f-string 表達式寫反斜線,
   # 3.11 及更早直接 SyntaxError,而 v3.8.0 全部既有檢查皆綠 —— 這支就是那個缺的檢查。
-  run "architecture/check-py-floor"        scripts/check-py-floor.sh        || return 1
+  echo "── architecture/check-py-floor ─────────────────────────────────────────"
+  scripts/check-py-floor.sh
+  floor_rc=$?
+  if [ "$floor_rc" -eq 0 ]; then
+    PASSED+=("architecture/check-py-floor")
+  elif [ "$floor_rc" -eq 2 ]; then
+    FAILED="architecture/check-py-floor (exit $floor_rc)"
+    echo "   ❌ architecture/check-py-floor 直譯器缺席(exit 2):該項記紅,組內繼續。"
+    CONTINUED_AFTER_RED=1
+  elif [ "$floor_rc" -eq 1 ]; then
+    FAILED="architecture/check-py-floor (exit $floor_rc)"
+    return 1
+  else
+    FAILED="architecture/check-py-floor (exit $floor_rc)"
+    return 1
+  fi
   run "architecture/check-gate-tokens"     scripts/check-gate-tokens.sh     || return 1
   run "architecture/check-design-contract" scripts/check-design-contract.sh || return 1
   run "architecture/check-adr-integrity"   scripts/check-adr-integrity.sh   || return 1
@@ -157,9 +178,6 @@ group_architecture() {
   # 新增/改名/刪除 hooks|scripts|observability|memory|tests/parallel-stage6 底下的 *.sh/*.py 沒同步
   # 更新那張表就紅;表裡寫了不存在的檔名也紅。
   run "architecture/check-file-map" scripts/check-file-map.sh || return 1
-  # 整合回歸工具(H-1):八情境+五 mutant+模板順序+正副本 parity。正式工具的
-  # 10/11 是正常結果不是失敗,不能直接掛進本聚合器 —— wrapper 比對後自己回 0/1。
-  run "architecture/check-integration-regression-guard" scripts/check-integration-regression-guard.sh || return 1
   # STATUS 規則對帳(S-1):模板/母版自用兩份要點、Active 表頭 Branch 欄、
   # quickstart 手寫範例列(renderer 不同步那段,只有這支在看)。
   run "architecture/check-status-policy" scripts/check-status-policy.sh || return 1
@@ -172,6 +190,8 @@ group_architecture() {
   # 評測覆蓋面。八條全是「壞掉之後既有檢查照樣全綠」的型別,負向回歸在
   # test-architecture-guards.sh 的 MEM 組。
   run "architecture/check-memory-architecture" scripts/check-memory-architecture.sh || return 1
+  # 2130-P1:py-floor 缺席時後面的 run 都過了,不能讓函式以 0 結束把缺席當綠。
+  [ -z "$FAILED" ] || return 1
 }
 
 group_render() {
@@ -276,7 +296,11 @@ if [ "$STATUS" -ne 0 ]; then
   # ${FAILED} 必須帶大括號:全形「」緊接 $FAILED 時,bash 會把後面的多位元組字元
   # 一起吃進變數名(FAILED」),配上 set -u 就是 unbound variable —— 失敗訊息永遠印不出來。
   echo "⛔ devflow-check($MODE): FAILED at 「${FAILED}」"
-  if [ "$MODE" = "all" ] && [ "${DEVFLOW_CHECK_SEQUENTIAL:-0}" != "1" ]; then
+  if [ -n "$CONTINUED_AFTER_RED" ] && [ "$FAILED" = "architecture/check-py-floor (exit 2)" ]; then
+    echo "   組內有項記紅(直譯器缺席),後續檢查已繼續跑完。原始錯誤輸出在上方。"
+  elif [ -n "$CONTINUED_AFTER_RED" ]; then
+    echo "   直譯器缺席已記紅並繼續;之後在「${FAILED}」fail-fast。原始錯誤輸出在上方。"
+  elif [ "$MODE" = "all" ] && [ "${DEVFLOW_CHECK_SEQUENTIAL:-0}" != "1" ]; then
     echo "   組內 fail-fast:失敗組內的後續檢查未執行;其他組已全數跑完(輸出在上方)。"
   else
     echo "   fail-fast:該組之後的檢查未執行。原始錯誤輸出在上方,未被摘要覆蓋。"

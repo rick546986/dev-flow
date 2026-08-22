@@ -9,8 +9,9 @@
 #   ②八個 mutant(M-a~M-h):把工具的臨時複本改壞,對應情境必須給出錯誤答案;
 #     壞複本也給正確答案 = 情境沒有鑑別力,一樣 FAIL。M-f~M-h 釘的是參數解析
 #     (死迴圈 / 吞旗標 / 吞空值),對應情境 I 的子案
-#   ③模板順序:7-review Exit Checklist 那條裡「跑工具」必須出現在「合併」與
-#     「全套測試」之前(順序寫反正是原始 bug 的形狀)
+#   ③模板順序:7-review 步 2c(Final Fresh 之前)那條裡「跑工具」必須出現在
+#     「合併」與「全套測試」之前。P0-1 之後整合回歸不住 Exit Checklist ——
+#     Exit 只准確認已完成,再叫人在 Verdict 後跑工具/合併就是原始 bug 的形狀
 #   ④正本/散發副本 parity:expected set 取自檔案地圖標「散發面:docs/dev/tools/」
 #     的列(不只掃副本目錄 —— 正副本同時被刪時,掃目錄的清單會少一項而全綠,
 #     第 4 型假綠);雙向比對存在性+內容+可執行位元,並含負向 fixture 驗證
@@ -467,19 +468,28 @@ def usage_mutant_case(name):
 for _mut in ("M-f", "M-g", "M-h"):
     usage_mutant_case(_mut)
 
-print("-- 模板順序:先跑工具,才輪得到合併與全套測試 --")
+print("-- 模板順序:步 2c 先跑工具,才輪得到合併與全套測試(在 Final Fresh 之前) --")
 
 TEMPLATE = os.path.join(ROOT, "_templates", "7-review.md")
 
 
+def strip_quote(text):
+    # 頂註執行清單是 blockquote。負向樣本沒有 `>`。兩邊都要能跑同一套判斷。
+    return re.sub(r"^>\s?", "", text, flags=re.M)
+
+
 def order_violation(text):
-    m = re.search(r"^- \[ \] \(條件式\)整合回歸.*?(?=^- \[ \]|^## |\Z)", text, re.M | re.S)
+    text = strip_quote(text)
+    # P0-1:程序在步 2c,不在 Exit Checklist。Exit 那條只確認「已在 Final Fresh 之前
+    # 完成」,裡面不再出現腳本檔名 —— 舊寫法找 Exit 條目會永遠紅,或更糟,把確認句
+    # 誤當成程序。
+    m = re.search(r"2c\.\s*\*\*整合回歸\*\*.*?(?=2d\.|^## |\Z)", text, re.S)
     if not m:
-        return "找不到「(條件式)整合回歸」條目"
+        return "找不到步 2c「整合回歸」"
     body = m.group(0)
     i_tool = body.find("devflow-integration-regression.sh")
     if i_tool < 0:
-        return "條目內沒提到 devflow-integration-regression.sh"
+        return "步 2c 內沒提到 devflow-integration-regression.sh"
     # 「合併」「全套測試」只認 SYNC_REQUIRED_* 兩行後面接的「動作」——
     # 條目的解說文字裡也有這兩個詞,全文 find 會被解說騙過:
     # 把真正的動作行刪掉,解說還在,舊寫法照樣綠(第 4 型假綠)。
@@ -488,13 +498,13 @@ def order_violation(text):
     for marker in ("SYNC_REQUIRED_NO_OVERLAP", "SYNC_REQUIRED_WITH_OVERLAP"):
         am = re.search(r"^\s*·\s*`" + marker + r"`.*?(?=^\s*·|\Z)", body, re.M | re.S)
         if am is None:
-            return f"條目裡找不到必要動作:缺 {marker} 動作行"
+            return f"步 2c 找不到必要動作:缺 {marker} 動作行"
         action_spans[marker] = am
     acts = "".join(s.group(0) for s in action_spans.values())
     if "合併" not in acts:
-        return "條目裡找不到必要動作:SYNC_REQUIRED_* 動作行內沒有「合併」"
+        return "步 2c 找不到必要動作:SYNC_REQUIRED_* 動作行內沒有「合併」"
     if "全套測試" not in acts:
-        return "條目裡找不到必要動作:SYNC_REQUIRED_* 動作行內沒有「全套測試」"
+        return "步 2c 找不到必要動作:SYNC_REQUIRED_* 動作行內沒有「全套測試」"
     for span in action_spans.values():
         local = span.group(0)
         for word, msg in (
@@ -507,36 +517,39 @@ def order_violation(text):
 
 
 violation = order_violation(open(TEMPLATE, encoding="utf-8").read())
-check(violation is None, "7-review Exit Checklist 條目順序正確(工具先於合併與全套測試)",
+check(violation is None, "7-review 步 2c 順序正確(工具先於合併與全套測試,且在 Final Fresh 之前)",
       violation or "")
 # BAD_ORDER:其餘完全合法(兩個 SYNC_REQUIRED 動作行都在、動作詞都在),
 # 唯一錯誤=工具出現在合併/全套測試之後 —— 只有這樣才證明「順序」檢查本身有鑑別力,
 # 而不是靠「缺動作」順帶變紅。
 BAD_ORDER = (
-    "- [ ] (條件式)整合回歸:依腳本印出的 STATUS 決定:\n"
-    "       · `SYNC_REQUIRED_NO_OVERLAP` → 合併它印的 INTEGRATION_SHA + 跑全套測試,做完才可勾\n"
-    "       · `SYNC_REQUIRED_WITH_OVERLAP` → 上面兩件 + 共同戰場交集逐檔看過,做完才可勾\n"
-    "       上面都做完之後,最後才跑 docs/dev/tools/devflow-integration-regression.sh 算交集\n")
+    "2c. **整合回歸**(條件式):依腳本印出的 STATUS 決定:\n"
+    "    · `SYNC_REQUIRED_NO_OVERLAP` → 合併它印的 INTEGRATION_SHA + 跑全套測試,做完才可過\n"
+    "    · `SYNC_REQUIRED_WITH_OVERLAP` → 上面兩件 + 共同戰場交集逐檔看過,做完才可過\n"
+    "    上面都做完之後,最後才跑 docs/dev/tools/devflow-integration-regression.sh 算交集\n"
+    "2d. **Final Fresh Run**:下一步\n")
 bad = order_violation(BAD_ORDER)
 check(bad is not None and "出現在" in (bad or ""),
       "順序守衛負向:動作齊全、唯一錯誤是順序調換的樣本,被判的必須是順序違規",
       f"got: {bad}")
 # 缺動作負向①:把兩行 SYNC_REQUIRED_* 動作行整段刪掉、解說文字(也含合併/全套測試)留著
 NO_ACTION_LINES = (
-    "- [ ] (條件式)整合回歸:跑 docs/dev/tools/devflow-integration-regression.sh,\n"
-    "       順序寫死為「跑腳本算交集 → 合併 → 跑全套測試」,合併之後座標被污染。\n"
-    "       · `N_A_NO_INCOMING` → 記 n-a 即勾\n"
-    "       · `ALREADY_SYNCED` → 這次輸出不算數\n")
+    "2c. **整合回歸**(條件式):跑 docs/dev/tools/devflow-integration-regression.sh,\n"
+    "    順序寫死為「跑腳本算交集 → 合併 → 跑全套測試」,合併之後座標被污染。\n"
+    "    · `N_A_NO_INCOMING` → 記 n-a 即過\n"
+    "    · `ALREADY_SYNCED` → 這次輸出不算數\n"
+    "2d. **Final Fresh Run**:下一步\n")
 noact = order_violation(NO_ACTION_LINES)
 check(noact is not None and "找不到必要動作" in (noact or ""),
       "缺動作負向①:SYNC_REQUIRED_* 動作行被整段刪掉(解說留著)必須紅",
       f"got: {noact}")
 # 缺動作負向②:動作行還在,但「→」後面的動作詞被掏空
 NO_ACTION_WORDS = (
-    "- [ ] (條件式)整合回歸:跑 docs/dev/tools/devflow-integration-regression.sh,\n"
-    "       順序寫死為「跑腳本算交集 → 合併 → 跑全套測試」。\n"
-    "       · `SYNC_REQUIRED_NO_OVERLAP` → 做完才可勾\n"
-    "       · `SYNC_REQUIRED_WITH_OVERLAP` → 做完才可勾\n")
+    "2c. **整合回歸**(條件式):跑 docs/dev/tools/devflow-integration-regression.sh,\n"
+    "    順序寫死為「跑腳本算交集 → 合併 → 跑全套測試」。\n"
+    "    · `SYNC_REQUIRED_NO_OVERLAP` → 做完才可過\n"
+    "    · `SYNC_REQUIRED_WITH_OVERLAP` → 做完才可過\n"
+    "2d. **Final Fresh Run**:下一步\n")
 nowords = order_violation(NO_ACTION_WORDS)
 check(nowords is not None and "找不到必要動作" in (nowords or ""),
       "缺動作負向②:動作行還在但動作詞被掏空必須紅",

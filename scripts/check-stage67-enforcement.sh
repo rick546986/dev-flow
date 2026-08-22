@@ -277,13 +277,39 @@ if rev:
     need("結構上做不到" in rev,
          "A5:_templates/7-review.md 的現象證據節沒呼應「觀測指向本 repo 之外時」的處置")
 
+# ── ST:審過的樹 = 出貨的樹(整合回歸在 Final Fresh 之前;Exit 不得再改碼)────
+# 舊節序:Final Fresh(步 2c)→ Verdict → Exit 才合併 INTEGRATION_SHA。
+# 核准的 SHA 不是最後出貨的 SHA。本組驗模板頂註執行清單的字面順序與恢復路徑。
+rev = read("_templates/7-review.md")
+need(rev is not None, "ST:_templates/7-review.md 不存在")
+if rev:
+    header = re.split(r"\n##[ \t]", rev, 1)[0]
+    integ = header.find("整合回歸")
+    fresh = header.find("Final Fresh Run")
+    need(integ >= 0, "ST:7-review 頂註執行清單沒有「整合回歸」(必須在 Final Fresh 之前)")
+    need(fresh >= 0, "ST:7-review 頂註執行清單沒有 Final Fresh Run")
+    need(integ >= 0 and fresh >= 0 and integ < fresh,
+         "ST:頂註執行清單裡整合回歸必須在 Final Fresh Run 之前"
+         f"(出貨樹=審過的樹;實得 integ={integ} fresh={fresh})")
+    need("作廢 G3" in rev,
+         "ST:7-review 沒寫 Verdict 之後改碼「作廢 G3」")
+    need("重跑 Final Fresh" in rev,
+         "ST:ALREADY_SYNCED 沒有恢復路徑(必須可重跑 Final Fresh 綁新 SHA)")
+    exit_m = re.search(r"^## Exit Checklist.*", rev, re.M | re.S)
+    exit_sec = exit_m.group(0) if exit_m else ""
+    need("不得再改程式碼" in exit_sec or "不准再碰程式" in exit_sec,
+         "ST:Exit Checklist 沒有禁止 Verdict 之後再改程式碼")
+    need("合併它印的" not in exit_sec,
+         "ST:Exit Checklist 仍在 Verdict 之後合併 INTEGRATION_SHA"
+         "(程式碼動作必須停在 Final Fresh 之前)")
+
 # ── 檢查數地板:防止有人把上面整段刪成空迴圈仍然 exit 0 ──────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」。
 # 負向測試 S67-6 實測:原本填 16(A1 那組恰好 8 項,24-8=16)→ 刪掉整組 A1 之後
 # 剛好等於地板,守衛照樣 exit 0。地板留餘裕 = 地板沒有牙齒。
 # 新增檢查時把這個數字一起往上調(同 test-architecture-guards.sh 的 EXPECTED_* 體例)。
 # 2026-08-16 補 TF 群組(測試檔路徑必須列進 Files):+2(模板 needle 1 + 範例承接 1)。
-MIN_CHECKS = 52
+MIN_CHECKS = 60
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
@@ -296,5 +322,6 @@ if fails:
 
 print(f"✅ check-stage67-enforcement: Stage 6/7 強制條款齊({checks} 項檢查全過)")
 print("   A1 守衛武裝自檢 / A3 Verify 案例數斷言 / A4 gauntlet 路徑 / A5 觀測可執行性 / "
-      "VF Verify 單行純指令 / DOC doctor 必跑 / TF 測試檔路徑必列 Files")
+      "VF Verify 單行純指令 / DOC doctor 必跑 / TF 測試檔路徑必列 Files / "
+      "ST 出貨樹=審過的樹")
 PY
