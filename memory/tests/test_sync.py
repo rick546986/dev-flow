@@ -1,9 +1,11 @@
 """rebuild(durable → local)與 consolidate(local → durable)(§5/§13/§17/§29)。"""
+import errno
 import json
 import os
 import shutil
 import subprocess
 import sys
+import threading
 import unittest
 
 from memtools import MEMORY_DIR, MemoryCase, commit_all, git, write
@@ -1140,3 +1142,172 @@ class MirrorRevisionCertificationTest(MemoryCase):
         blob = json.dumps(answer, ensure_ascii=False)
         self.assertNotIn("title-B", blob)
         self.assertIn("title-A", blob)
+
+    def test_two_store_connections_cannot_lose_a_revision_increment(self):
+        """兩個 Store 連線從同一 revision 推進必須得到兩個不同值。"""
+        from agentmem import store as store_mod
+        self._write("topic", "title-A")
+        seed = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, seed)
+        start = sync.current_mirror_revision(seed)
+        barrier = threading.Barrier(2)
+        results = []
+        errors = []
+
+        def worker():
+            opened = store_mod.open_for_root(self.project_id, self.repo)
+            try:
+                orig = opened.get_meta
+
+                def hooked(key, default=None):
+                    value = orig(key, default)
+                    if key == sync.MIRROR_REVISION_META:
+                        barrier.wait(timeout=5)
+                    return value
+
+                opened.get_meta = hooked
+                results.append(sync._advance_mirror_revision(opened))
+            except Exception as exc:
+                errors.append(exc)
+            finally:
+                opened.close()
+
+        threads = [threading.Thread(target=worker), threading.Thread(target=worker)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=10)
+        self.assertEqual(errors, [])
+        self.assertEqual(len(results), 2, results)
+        self.assertEqual(len(set(results)), 2, results)
+        self.assertEqual(sorted(results), [start + 1, start + 2])
+        fresh = self._second_store()
+        self.assertEqual(sync.current_mirror_revision(fresh), start + 2)
+
+    def test_failed_rebuild_consumes_revision_and_invalidates_token(self):
+        self._write("topic", "title-A")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        _rebuilt, certified, revision = sync.observe_certified_generation(
+            self.repo, store)
+        before = sync.current_mirror_revision(store)
+
+        def boom():
+            raise RuntimeError("injected rebuild failure")
+
+        store.clear_durable_mirror = boom
+        with self.assertRaises(RuntimeError):
+            sync.rebuild_local(self.repo, store)
+        self.assertEqual(sync.current_mirror_revision(store), before + 1)
+        self.assertEqual(sync.durable_generation(self.repo), certified)
+        self.assertFalse(sync.generation_still_certified(
+            self.repo, certified, store, revision))
+
+
+class DurableRootClassificationTest(MemoryCase):
+    """根的 lstat 失敗只有 ENOENT 能當 absent;其餘必須 fail-closed。"""
+
+    def setUp(self):
+        super().setUp()
+        self.project_id = self.project()["project_id"]
+
+    def _write(self, key, title):
+        durable.write_knowledge(self.repo, {
+            "kind": "domain", "key": key, "title": title,
+            "body": title, "authority": "domain_expert",
+            "status": "CONFIRMED", "recorded_at": "2026-08-20T00:00:00Z"})
+
+    def _inject_root_lstat(self, exc):
+        real = os.lstat
+        # 比對用 abspath,不用 realpath:realpath 自己會再呼叫 os.lstat,hook 會遞迴。
+        root_abs = os.path.abspath(durable.root(self.repo))
+
+        def hooked(path, *args, **kwargs):
+            if os.path.abspath(str(path)) == root_abs:
+                raise exc
+            return real(path, *args, **kwargs)
+
+        return real, hooked
+
+    def test_missing_root_is_still_absent(self):
+        empty = self.new_repo("no-devflow")
+        self.assertEqual(durable.classify_durable_root(empty), "absent")
+        kind, entries = sync._snapshot_durable_files(empty)
+        self.assertEqual(kind, "absent")
+        self.assertEqual(entries, [])
+
+    def test_regular_root_is_present(self):
+        self.assertEqual(durable.classify_durable_root(self.repo), "present")
+
+    def test_permission_error_on_root_is_not_absent(self):
+        real, hooked = self._inject_root_lstat(
+            PermissionError(errno.EACCES, "denied"))
+        os.lstat = hooked
+        try:
+            with self.assertRaises(durable.DurableError):
+                durable.classify_durable_root(self.repo)
+            with self.assertRaises(durable.DurableError):
+                sync._snapshot_durable_files(self.repo)
+            with self.assertRaises(durable.DurableError):
+                durable.has_mirrorable_content(self.repo)
+        finally:
+            os.lstat = real
+
+    def test_eio_on_root_does_not_clear_or_stamp_absent(self):
+        self._write("keep-me", "keep-me = regular")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        stamped = store.get_meta(sync.DURABLE_GENERATION_META)
+        keys_before = {row["key"] for row in store.knowledge()}
+        self.assertIn("keep-me", keys_before)
+
+        real, hooked = self._inject_root_lstat(OSError(errno.EIO, "io error"))
+        os.lstat = hooked
+        try:
+            with self.assertRaises(durable.DurableError):
+                sync.rebuild_local(self.repo, store)
+        finally:
+            os.lstat = real
+        self.assertEqual(store.get_meta(sync.DURABLE_GENERATION_META), stamped)
+        self.assertEqual({row["key"] for row in store.knowledge()}, keys_before)
+
+    def test_estale_on_root_is_not_absent(self):
+        stale = getattr(errno, "ESTALE", errno.EIO)
+        real, hooked = self._inject_root_lstat(OSError(stale, "stale"))
+        os.lstat = hooked
+        try:
+            with self.assertRaises(durable.DurableError):
+                durable.classify_durable_root(self.repo)
+        finally:
+            os.lstat = real
+
+    def test_doctor_structured_fail_on_unreadable_root(self):
+        from agentmem import setup
+        real, hooked = self._inject_root_lstat(
+            PermissionError(errno.EACCES, "denied"))
+        os.lstat = hooked
+        try:
+            report = setup.doctor(self.repo)
+        finally:
+            os.lstat = real
+        self.assertEqual(report["verdict"], "FAIL")
+        readable = [row for row in report["findings"]
+                    if row["check"] == "durable-source-readable"]
+        self.assertEqual(len(readable), 1, report["findings"])
+        self.assertEqual(readable[0]["level"], "error")
+
+    def test_transient_root_error_leaves_records_rebuildable(self):
+        self._write("keep-me", "keep-me = regular")
+        store = self.store_for(self.project_id)
+        sync.rebuild_local(self.repo, store)
+        real, hooked = self._inject_root_lstat(OSError(errno.EIO, "io error"))
+        os.lstat = hooked
+        try:
+            with self.assertRaises(durable.DurableError):
+                sync.rebuild_local(self.repo, store)
+        finally:
+            os.lstat = real
+        sync.rebuild_local(self.repo, store)
+        rows = store.knowledge(kind="domain", key="keep-me")
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["title"], "keep-me = regular")

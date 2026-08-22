@@ -26,6 +26,7 @@
 - 讀檔時偵測 Git conflict 標記 → **fail-loud**。同一個 fact 真的衝突時不得
   靜默 last-write-wins,那會讓兩台機器的記憶悄悄分岔。
 """
+import errno
 import hashlib
 import json
 import os
@@ -38,6 +39,8 @@ from . import DURABLE_SCHEMA_VERSION, identity, paths, yamlmini
 
 # 測試縫:writer 完成路徑禁閉檢查、真正落檔前呼叫。production 保持 None。
 _after_write_confine = None
+# 測試縫:最終 lstat/realpath 之後、以路徑重開 parent 之前。production 保持 None。
+_after_write_validate = None
 
 STATE_DIR = ("state", "implementation")
 KNOWLEDGE_DIRS = {
@@ -124,6 +127,8 @@ def _read_text(path):
 def classify_durable_root(repo_root_path):
     """`.dev-flow` 根的身分:absent / present。symlink 與非目錄 → DurableError。
 
+    只有「真的找不到」才是 absent。EACCES / EIO / ESTALE 與其他 lstat
+    失敗是不可讀,必須 fail-closed —— 不可讀不得被蓋成空世代章。
     `os.path.isdir` 會跟隨 symlink,不能當這條的判準。讀取、盤點、寫入
     共用這一支,避免各路徑對「symlink 根算不算正本」給出不同答案。
     """
@@ -131,8 +136,12 @@ def classify_durable_root(repo_root_path):
     rel = identity.memory_dir_name()
     try:
         mode = os.lstat(path).st_mode
-    except OSError:
+    except FileNotFoundError:
         return "absent"
+    except OSError as exc:
+        if exc.errno == errno.ENOENT:
+            return "absent"
+        raise DurableError("unreadable durable root {0}".format(rel)) from exc
     if stat.S_ISLNK(mode) or not stat.S_ISDIR(mode):
         raise DurableError("non-regular durable file {0}".format(rel))
     return "present"
@@ -207,6 +216,9 @@ def _atomic_write(repo_root_path, path, text):
                           os.path.realpath(root_path)):
         raise DurableError("durable write escapes {0}".format(
             identity.memory_dir_name()))
+    late_hook = _after_write_validate
+    if late_hook is not None:
+        late_hook(repo_root_path, dest)
     payload = text.encode("utf-8")
     flags = os.O_RDONLY
     if hasattr(os, "O_DIRECTORY"):
@@ -217,14 +229,47 @@ def _atomic_write(repo_root_path, path, text):
     _atomic_write_fallback(root_path, parent, dest, text)
 
 
-def _atomic_write_dirfd(root_path, parent, dest, payload):
+def _open_confined_dirfd(root_path, dest_dir):
+    """從已驗證的 `.dev-flow` 根用 O_NOFOLLOW 逐層 openat,不重開絕對路徑。
+
+    `os.open(abs_parent, O_NOFOLLOW)` 只守最後一段。祖先在檢查後被換成
+    symlink 時,核心仍會跟著走。必須握著上一層的 dirfd 再打開下一層。
+    """
     flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
-    rel_parent = os.path.relpath(parent, root_path).replace(os.sep, "/")
+    root_path = os.path.abspath(root_path)
+    dest_dir = os.path.abspath(dest_dir)
+    rel = os.path.relpath(dest_dir, root_path)
     try:
-        dirfd = os.open(parent, flags)
+        fd = os.open(root_path, flags)
     except OSError as exc:
-        raise DurableError(
-            "non-regular durable file {0}".format(rel_parent)) from exc
+        raise DurableError("non-regular durable file {0}".format(
+            identity.memory_dir_name())) from exc
+    if rel in (os.curdir, ""):
+        return fd
+    walked = []
+    try:
+        for part in rel.split(os.sep):
+            if part in ("", os.curdir):
+                continue
+            if part == os.pardir:
+                raise DurableError("durable write escapes {0}".format(
+                    identity.memory_dir_name()))
+            walked.append(part)
+            try:
+                next_fd = os.open(part, flags, dir_fd=fd)
+            except OSError as exc:
+                raise DurableError("non-regular durable file {0}".format(
+                    "/".join(walked))) from exc
+            os.close(fd)
+            fd = next_fd
+        return fd
+    except Exception:
+        os.close(fd)
+        raise
+
+
+def _atomic_write_dirfd(root_path, parent, dest, payload):
+    dirfd = _open_confined_dirfd(root_path, parent)
     tmp_name = None
     fd = None
     try:

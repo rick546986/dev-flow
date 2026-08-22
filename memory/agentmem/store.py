@@ -162,6 +162,38 @@ class Store:
                 "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
                 (key, str(value)))
 
+    def increment_int_meta(self, key):
+        """原子 +1 並回傳新值。兩個 Store 連線不得讀到同一個舊值再各寫一次。
+
+        `get_meta` + `set_meta` 是兩段交易。BEGIN IMMEDIATE 在讀之前先拿
+        reserved lock,第二個連線會等到第一個 commit 後才讀到新值。
+        """
+        old_isolation = self.conn.isolation_level
+        try:
+            self.conn.isolation_level = None
+            self.conn.execute("BEGIN IMMEDIATE")
+            try:
+                row = self.conn.execute(
+                    "SELECT value FROM meta WHERE key=?", (key,)).fetchone()
+                current = 0
+                if row is not None:
+                    try:
+                        current = int(row[0])
+                    except (TypeError, ValueError):
+                        current = 0
+                nxt = current + 1
+                self.conn.execute(
+                    "INSERT INTO meta(key, value) VALUES(?, ?) "
+                    "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                    (key, str(nxt)))
+                self.conn.commit()
+                return nxt
+            except Exception:
+                self.conn.rollback()
+                raise
+        finally:
+            self.conn.isolation_level = old_isolation
+
     def get_meta(self, key, default=None):
         row = self.conn.execute(
             "SELECT value FROM meta WHERE key=?", (key,)).fetchone()

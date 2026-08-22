@@ -133,8 +133,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=117
-EXPECTED_TOTAL=131
+EXPECTED_NEGATIVES=120
+EXPECTED_TOTAL=134
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -2151,6 +2151,42 @@ assert n != t, "MEM-41 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PYX
 expect_local fail check-memory-architecture.sh "$D" "MEM-41 讀後驗證不再比 mirror revision"
+
+D=$(seed_mem mem42); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/durable.py"
+t = p.read_text(encoding="utf-8")
+anchor = "    dirfd = _open_confined_dirfd(root_path, parent)\n"
+assert anchor in t, "MEM-42 anchor 不見"
+n = t.replace(anchor, "    dirfd = os.open(parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)\n", 1)
+assert n != t, "MEM-42 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-42 writer 用絕對路徑重開 parent"
+
+D=$(seed_mem mem43); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/sync.py"
+t = p.read_text(encoding="utf-8")
+anchor = "    return store.increment_int_meta(MIRROR_REVISION_META)\n"
+assert anchor in t, "MEM-43 anchor 不見"
+n = t.replace(anchor, "    nxt = current_mirror_revision(store) + 1\n    store.set_meta(MIRROR_REVISION_META, nxt)\n    return nxt\n", 1)
+assert n != t, "MEM-43 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-43 revision 推進退回讀再寫"
+
+D=$(seed_mem mem44); mutate "$D" <<'PYX'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "memory/agentmem/durable.py"
+t = p.read_text(encoding="utf-8")
+anchor = "    except FileNotFoundError:\n        return \"absent\"\n    except OSError as exc:\n        if exc.errno == errno.ENOENT:\n            return \"absent\"\n        raise DurableError(\"unreadable durable root {0}\".format(rel)) from exc\n"
+assert anchor in t, "MEM-44 anchor 不見"
+n = t.replace(anchor, "    except OSError:\n        return \"absent\"\n", 1)
+assert n != t, "MEM-44 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PYX
+expect_local fail check-memory-architecture.sh "$D" "MEM-44 root 分類把所有 lstat 失敗當 absent"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"

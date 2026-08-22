@@ -403,3 +403,60 @@ class DurableWriterConfinementTest(MemoryCase):
         finally:
             durable._after_write_confine = None
         self.assertEqual(self._outside_names(outside), before)
+
+    def _yaml_under(self, path):
+        found = []
+        for dirpath, _dirs, files in os.walk(path):
+            for name in files:
+                if name.endswith(".yaml"):
+                    found.append(os.path.relpath(
+                        os.path.join(dirpath, name), path).replace(os.sep, "/"))
+        return found
+
+    def test_late_ancestor_swap_of_knowledge_cannot_escape(self):
+        """最終 realpath 之後把中間祖先換成 symlink:O_NOFOLLOW 只守最後一段。"""
+        if not _can_symlink(self.work):
+            self.skipTest("this platform cannot create symlinks")
+        identity.ensure_project(self.repo, name="fixture")
+        durable.write_knowledge(self.repo, self._knowledge("first"))
+        outside = self._outside("outside-late-knowledge")
+        os.makedirs(os.path.join(outside, "domain"), exist_ok=True)
+        before = self._yaml_under(outside)
+        knowledge = os.path.join(durable.root(self.repo), "knowledge")
+
+        def swap(_repo, _path):
+            if os.path.isdir(knowledge) and not os.path.islink(knowledge):
+                os.rename(knowledge, knowledge + ".parked")
+                os.symlink(os.path.realpath(outside), knowledge)
+
+        durable._after_write_validate = swap
+        try:
+            with self.assertRaises(durable.DurableError):
+                durable.write_knowledge(self.repo, self._knowledge("late-k"))
+        finally:
+            durable._after_write_validate = None
+        self.assertEqual(self._yaml_under(outside), before)
+
+    def test_late_ancestor_swap_two_levels_above_parent_cannot_escape(self):
+        """最終 realpath 之後把 .dev-flow 根換成 symlink(parent 的上兩層)。"""
+        if not _can_symlink(self.work):
+            self.skipTest("this platform cannot create symlinks")
+        identity.ensure_project(self.repo, name="fixture")
+        durable.write_knowledge(self.repo, self._knowledge("first"))
+        outside = self._outside("outside-late-root")
+        os.makedirs(os.path.join(outside, "knowledge", "domain"), exist_ok=True)
+        before = self._yaml_under(outside)
+        real = durable.root(self.repo)
+
+        def swap(_repo, _path):
+            if os.path.isdir(real) and not os.path.islink(real):
+                os.rename(real, real + ".parked")
+                os.symlink(os.path.realpath(outside), real)
+
+        durable._after_write_validate = swap
+        try:
+            with self.assertRaises(durable.DurableError):
+                durable.write_knowledge(self.repo, self._knowledge("late-root"))
+        finally:
+            durable._after_write_validate = None
+        self.assertEqual(self._yaml_under(outside), before)

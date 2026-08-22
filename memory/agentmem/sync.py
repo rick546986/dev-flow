@@ -109,9 +109,7 @@ def current_mirror_revision(store):
 
 
 def _advance_mirror_revision(store):
-    nxt = current_mirror_revision(store) + 1
-    store.set_meta(MIRROR_REVISION_META, nxt)
-    return nxt
+    return store.increment_int_meta(MIRROR_REVISION_META)
 
 
 def _rebuild_local_once(repo_root, store, embedder=None):

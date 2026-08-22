@@ -1065,7 +1065,66 @@ elif "get_meta" not in gsc_code:
 else:
     ok("讀取認證必須綁世代與單調 mirror revision")
 
-MIN_CHECKS = 77
+i_walk = durable_src.find("def _open_confined_dirfd(")
+i_walk_end = durable_src.find("\ndef ", i_walk + 1)
+walk_code = (executable_only(durable_src[i_walk:i_walk_end])
+             if i_walk >= 0 and i_walk_end > i_walk else None)
+i_dirfd = durable_src.find("def _atomic_write_dirfd(")
+i_dirfd_end = durable_src.find("\ndef ", i_dirfd + 1)
+dirfd_code = (executable_only(durable_src[i_dirfd:i_dirfd_end])
+              if i_dirfd >= 0 and i_dirfd_end > i_dirfd else None)
+if walk_code is None or dirfd_code is None:
+    bad("writer dirfd 走訪抽取",
+        "找不到 _open_confined_dirfd 或 _atomic_write_dirfd")
+elif "_open_confined_dirfd" not in dirfd_code:
+    bad("writer 不走 confined dirfd",
+        "_atomic_write_dirfd 沒有 _open_confined_dirfd —— "
+        "會用絕對路徑重開 parent,O_NOFOLLOW 只守最後一段")
+elif "os.open(parent" in dirfd_code:
+    bad("writer 用絕對路徑重開 parent",
+        "_atomic_write_dirfd 對 parent 做 os.open(parent)")
+elif "dir_fd=" not in walk_code:
+    bad("confined walk 沒有 dir_fd",
+        "_open_confined_dirfd 沒有 dir_fd= —— 沒有 openat")
+else:
+    ok("durable writer 必須用已開啟的 dirfd 逐層走,不得重開絕對 parent")
+
+i_adv = sync_src.find("def _advance_mirror_revision(")
+i_adv_end = sync_src.find("\ndef ", i_adv + 1)
+adv_code = (executable_only(sync_src[i_adv:i_adv_end])
+            if i_adv >= 0 and i_adv_end > i_adv else None)
+if adv_code is None:
+    bad("原子 revision 抽取", "找不到 _advance_mirror_revision 窗口")
+elif "increment_int_meta" not in adv_code:
+    bad("revision 推進不是原子 increment",
+        "_advance_mirror_revision 沒有 increment_int_meta —— "
+        "兩個 Store 連線會讀到同一個舊值")
+elif "current_mirror_revision" in adv_code:
+    bad("revision 推進仍讀再寫",
+        "_advance_mirror_revision 仍呼叫 current_mirror_revision")
+elif "BEGIN IMMEDIATE" not in store_src:
+    bad("Store 沒有 BEGIN IMMEDIATE",
+        "increment_int_meta 缺少 BEGIN IMMEDIATE —— 讀之前沒拿 reserved lock")
+else:
+    ok("mirror revision 推進必須在單一 SQLite 交易內原子 +1")
+
+i_cls = durable_src.find("def classify_durable_root(")
+i_cls_end = durable_src.find("\ndef ", i_cls + 1)
+cls_code = (executable_only(durable_src[i_cls:i_cls_end])
+            if i_cls >= 0 and i_cls_end > i_cls else None)
+if cls_code is None:
+    bad("root 分類抽取", "找不到 classify_durable_root 窗口")
+elif "FileNotFoundError" not in cls_code and "ENOENT" not in cls_code:
+    bad("root 分類不區分 ENOENT",
+        "classify_durable_root 沒有 FileNotFoundError/ENOENT —— "
+        "EACCES/EIO 會被當成 absent 並蓋空章")
+elif "DurableError" not in cls_code:
+    bad("root 分類不 raise DurableError",
+        "非 ENOENT 的 lstat 失敗沒有 DurableError")
+else:
+    ok("durable root 只有 ENOENT 能當 absent,其餘 lstat 失敗必須 fail-closed")
+
+MIN_CHECKS = 80
 if checks < MIN_CHECKS:
     print("FATAL: 只跑了 {0} 項檢查(地板 {1})—— 抽取窗口可能壞了".format(
         checks, MIN_CHECKS), file=sys.stderr)
