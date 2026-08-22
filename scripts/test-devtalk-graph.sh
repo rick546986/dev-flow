@@ -24,6 +24,7 @@ FIX="$SELF_DIR/fixtures/devtalk-graph"
 [ -d "$FIX/old-skill" ] || { echo "FATAL: 找不到 $FIX/old-skill" >&2; exit 2; }
 
 python3 - "$ROOT" "$CHECK" "$FIX" <<'PY'
+import json
 import os
 import shutil
 import subprocess
@@ -99,7 +100,7 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
     seed(case)
     graph = os.path.join(case, "skills", "dev-talk", "graph.yaml")
     text = open(graph, encoding="utf-8").read().replace(
-        "N3-probe:\n    file: nodes/N3-probe.md\n    next: N9-write-md",
+        "N3-probe:\n    file: nodes/N3-probe.md\n    next: skill-legacy-4-6",
         "N3-probe:\n    file: nodes/N3-probe.md\n    next: N13-end",
     )
     open(graph, "w", encoding="utf-8").write(text)
@@ -172,12 +173,77 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
         extra=["--action", os.path.join(actions, "n13-end-ok.json")],
     )
 
+    case = os.path.join(tmpbase, "skip-legacy")
+    seed(case)
+    graph = os.path.join(case, "skills", "dev-talk", "graph.yaml")
+    text = open(graph, encoding="utf-8").read()
+    text = text.replace("    next: skill-legacy-4-6\n", "    next: N9-write-md\n")
+    open(graph, "w", encoding="utf-8").write(text)
+    n3 = os.path.join(case, "skills", "dev-talk", "nodes", "N3-probe.md")
+    n3text = open(n3, encoding="utf-8").read().replace(
+        "skill-legacy-4-6", "N9-write-md"
+    )
+    open(n3, "w", encoding="utf-8").write(n3text)
+    expect("0030-P0 N3 next 跨過暫留步 4–6 必須紅", case, 1, "暫留")
+
+    case = os.path.join(tmpbase, "action-unwired")
+    seed(case)
+    hooks = os.path.join(case, "hooks")
+    os.makedirs(hooks, exist_ok=True)
+    open(os.path.join(hooks, "_prebash_impl.py"), "w", encoding="utf-8").write(
+        "# fixture:有 hooks 但沒接 check-devtalk-graph --action\n"
+    )
+    expect("0030-P1 hooks 沒接 --action 必須紅", case, 1, "--action")
+
+    prebash = os.path.join(root, "hooks", "devflow-prebash.sh")
+    cursor = os.path.join(root, ".devtalk-cursor.json")
+    if os.path.isfile(prebash):
+        payload = json.dumps({
+            "tool_name": "Bash",
+            "tool_input": {
+                "command": "memory/dev-memory.py talk start topic"
+            },
+        })
+        try:
+            open(cursor, "w", encoding="utf-8").write(json.dumps({
+                "node": "N3-probe",
+                "MEMORY_SESSION_ID": "sess-n3",
+            }))
+            proc = subprocess.run(
+                ["bash", prebash],
+                input=payload,
+                capture_output=True,
+                text=True,
+                cwd=root,
+            )
+            blob = (proc.stdout or "") + "\n" + (proc.stderr or "")
+            ok = proc.returncode == 2 and (
+                "talk start" in blob or "talk_start" in blob or "--action" in blob
+            )
+            if ok:
+                passed += 1
+                print("  ✓ 0030-P1 prebash:游標在 N3 再 talk start 必須擋")
+            else:
+                failed += 1
+                print(
+                    f"  ✗ 0030-P1 prebash N3 talk start "
+                    f"(rc={proc.returncode} want=2)",
+                    file=sys.stderr,
+                )
+                print(blob[-800:], file=sys.stderr)
+        finally:
+            if os.path.isfile(cursor):
+                os.remove(cursor)
+    else:
+        failed += 1
+        print("  ✗ 0030-P1 找不到 hooks/devflow-prebash.sh", file=sys.stderr)
+
 total = passed + failed
 print(f"=== test-devtalk-graph:{passed}/{total} ===")
 if failed:
     print(f"⛔ {failed} 案未依預期", file=sys.stderr)
     sys.exit(1)
-if total < 12:
+if total < 17:
     print(f"FATAL: 只跑了 {total} 案,治具沒有真的跑完", file=sys.stderr)
     sys.exit(2)
 print("✅ PASS:graph 負向牙全過")

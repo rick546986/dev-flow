@@ -191,7 +191,7 @@ claude          # 建議 opus(規劃層)
     <tr><td>10 html</td><td>先自核 md:Open Questions 僅含三態符號,混入其他記號(如 <code>[ ]</code>)→ 回步 3 定態;定態後才從 md 生成視覺版(七件)</td><td>—</td><td>自核過 + 七件齊</td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>10. <strong>產 html</strong>。先自核 md:Open Questions 僅含三態符號,出現其他記號(如 <code>[ ]</code>)<br>→ 回步 3 定態後才產。<code>1-discussion.html</code> <strong>只從 md 生成</strong>(md 是唯一正本;<br>html 要改,先改 md 再重生)。內容與圖判準見「視覺版」。完成 = 自核過+七件齊。</blockquote></details></td></tr>
     <tr><td>11 收尾</td><td>給你 html 過目</td><td><span class="badge you">點頭 → approved</span></td><td>status 改完,停</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>11. <strong>過目與收尾</strong>。正本:<code>nodes/N13-end.md</code>。html 過目後,使用者點頭才<br>    <code>talk end</code>。完成條件見該節點。</blockquote></details></td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>11. <strong>過目與收尾</strong>。正本:<code>nodes/N13-end.md</code>。html 過目後,使用者點頭才<br>    跑 <code>dev-memory.py talk end $MEMORY_SESSION_ID</code>。它回 <code>promoted: 0</code> 是合法結果。完成條件見該節點。</blockquote></details></td></tr>
   </table></div>
 
   <h3>實例走一遍 —— 合約到期提醒(對照母版 <code>example/contract-expiry-reminder/</code>)</h3>

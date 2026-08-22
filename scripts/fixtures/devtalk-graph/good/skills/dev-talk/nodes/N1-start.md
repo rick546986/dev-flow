@@ -22,4 +22,4 @@
 
 ## 下一跳
 
-N3-probe
+skill-legacy-0-2

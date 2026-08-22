@@ -40,5 +40,5 @@ turn / propose 不得直接改長期記憶檔。
 
 ## 下一跳
 
-N9-write-md
-(先走入口檔暫留正文步 4–6,完成後進 N9)
+skill-legacy-4-6
+(入口檔暫留正文步 4–6;完成後進 N9-write-md)

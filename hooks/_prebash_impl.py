@@ -46,6 +46,61 @@ cmd = h.get("tool_input", {}).get("command", "")
 if not cmd:
     sys.exit(0)
 
+
+def _devtalk_graph_action(command):
+    """Stage 1 graph:把 talk start/end / 知識目錄寫入接到 check-devtalk-graph --action。
+
+    /dev-talk 通常未武裝,必須在 load_state 早退之前跑,否則 --action 永遠只活在測試。
+    沒有本機游標 = 新場或非 graph 模式,放行。
+    """
+    action = None
+    if re.search(r"dev-memory\.py\s+talk\s+start\b", command):
+        action = "talk_start"
+    elif re.search(r"dev-memory\.py\s+talk\s+end\b", command):
+        action = "talk_end"
+    elif re.search(r"\.dev-flow/.+knowledge", command):
+        action = "write_knowledge"
+    if not action:
+        return
+    cursor_path = os.path.join(root, ".devtalk-cursor.json")
+    if not os.path.isfile(cursor_path):
+        return
+    try:
+        cursor = json.load(open(cursor_path, encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    if not cursor.get("node"):
+        return
+    check = os.path.join(root, "scripts", "check-devtalk-graph.sh")
+    if not os.path.isfile(check):
+        return
+    import tempfile
+    payload_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".json", delete=False, encoding="utf-8"
+        ) as handle:
+            json.dump({"cursor": cursor, "action": action}, handle)
+            payload_path = handle.name
+        proc = subprocess.run(
+            ["bash", check, "--action", payload_path, root],
+            capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return
+    finally:
+        if payload_path:
+            try:
+                os.unlink(payload_path)
+            except OSError:
+                pass
+    if proc.returncode != 0:
+        reason = (proc.stdout or proc.stderr or "action denied").strip()
+        _obs_deny("devtalk-graph", action)
+        L.die("⛔ dev-talk graph --action deny:" + reason)
+
+
+_devtalk_graph_action(cmd)
+
 state, armed, err = L.load_state(root)
 if err:
     L.die(err)

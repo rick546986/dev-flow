@@ -46,9 +46,18 @@ code-intelligence 工具(語意索引 / knowledge graph / LSP),只信任其**查
 ```
 
 **第一動**(在執行清單第 0 步之前):正本 `nodes/N1-start.md`。
-新場才 `talk start`;本機游標(現在節點、MEMORY_SESSION_ID)不進 Git。
+
+```
+${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py talk start "<本輪主題>"
+```
+
+它回傳 `session_id` 與一份 brief。**把 `session_id` 當本次 workflow state 保存**,
+之後每一個記憶指令都要帶它:`MEMORY_SESSION_ID=<回傳的 session id>`。
+新場才跑這一動;本機游標(現在節點、MEMORY_SESSION_ID)不進 Git。
 重跑從現在節點繼續,不重開 talk start。
 下一次 /dev-talk 一律新 session,絕不接上一場。
+Bash 的 talk start / talk end 會被 `devflow-prebash` 拿去跑
+`scripts/check-devtalk-graph.sh --action`(游標在時)。
 
 **每輪對話**(使用者答完、或你做了關鍵覆述/確認提問之後):
 
@@ -147,7 +156,7 @@ dev-memory.py talk abort $MEMORY_SESSION_ID --reason "<原因>"
     → 回步 3 定態後才產。`1-discussion.html` **只從 md 生成**(md 是唯一正本;
     html 要改,先改 md 再重生)。內容與圖判準見「視覺版」。完成 = 自核過+七件齊。
 11. **過目與收尾**。正本:`nodes/N13-end.md`。html 過目後,使用者點頭才
-    `talk end`。完成條件見該節點。
+    跑 `dev-memory.py talk end $MEMORY_SESSION_ID`。它回 `promoted: 0` 是合法結果。完成條件見該節點。
 
 ## 產出骨架(1-discussion.md,十節)
 

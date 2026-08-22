@@ -24,4 +24,4 @@ MEMORY_SESSION_ID 已在。步 0–2 已完成。游標在 N3 或剛從步 2 進
 
 ## 下一跳
 
-N9-write-md
+skill-legacy-4-6

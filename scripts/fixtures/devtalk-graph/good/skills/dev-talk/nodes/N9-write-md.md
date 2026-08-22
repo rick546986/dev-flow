@@ -22,4 +22,4 @@
 
 ## 下一跳
 
-N13-end
+skill-legacy-8-10

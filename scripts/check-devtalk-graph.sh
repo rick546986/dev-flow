@@ -64,9 +64,14 @@ LOCKED_ACTIONS = (
     "write_knowledge",
     "write_discussion_md",
 )
-NEXT_ID_RE = re.compile(r"N\d+-[A-Za-z0-9-]+")
+NEXT_ID_RE = re.compile(r"(?:skill-legacy-\d+-\d+|N\d+-[A-Za-z0-9-]+)")
 BAD_DISCUSSION_RE = re.compile(
     r"1-discussion(?:-[A-Za-z0-9]+)+\.md"
+)
+LEGACY_HOPS = (
+    ("N1-start", "skill-legacy-0-2", "N3-probe", "0-2"),
+    ("N3-probe", "skill-legacy-4-6", "N9-write-md", "4-6"),
+    ("N9-write-md", "skill-legacy-8-10", "N13-end", "8-10"),
 )
 
 
@@ -262,6 +267,63 @@ def scan_live_discussion_dupes():
     return failures
 
 
+def check_action_runtime_wired():
+    """P1:--action 必須接到 hook,不能只活在 test fixture。"""
+    hooks = os.path.join(root, "hooks")
+    if not os.path.isdir(hooks):
+        return []
+    for dirpath, dirnames, filenames in os.walk(hooks):
+        dirnames[:] = [d for d in dirnames if d != "devflow_obs_vendor"]
+        for name in filenames:
+            if not name.endswith((".py", ".sh")):
+                continue
+            path = os.path.join(dirpath, name)
+            try:
+                text = open(path, encoding="utf-8").read()
+            except OSError:
+                continue
+            code = "\n".join(
+                line.split("#", 1)[0] for line in text.splitlines()
+            )
+            if "check-devtalk-graph" in code and "--action" in code:
+                return []
+    return ["P1 --action 沒接到 runtime:hooks 沒有呼叫 check-devtalk-graph.sh --action"]
+
+
+def check_legacy_hops(nodes, failures):
+    """P0:next 不得跨過暫留步。via 若還在,必須是真節點。"""
+    for src, hop, dest, steps in LEGACY_HOPS:
+        spec = nodes.get(src) if isinstance(nodes, dict) else None
+        if not isinstance(spec, dict):
+            continue
+        via = spec.get("via")
+        if via and via not in nodes:
+            failures.append(
+                f"P0 {src} via={via!r} 只是字串,不是真節點 —— 暫留步會被跳過"
+            )
+        actual = spec.get("next") or ""
+        if actual == dest:
+            failures.append(
+                f"P0 {src} next 跨過暫留步 {steps}:直接跳到 {dest},"
+                f"必須先經 {hop}"
+            )
+            continue
+        if actual != hop:
+            failures.append(
+                f"P0 {src} next 必須是暫留入口 {hop},實際是 {actual!r}"
+            )
+            continue
+        hop_spec = nodes.get(hop)
+        if not isinstance(hop_spec, dict):
+            failures.append(f"P0 缺暫留節點 {hop}(via 做成真節點,不要只當字串)")
+            continue
+        hop_next = hop_spec.get("next") or ""
+        if hop_next != dest:
+            failures.append(
+                f"P0 {hop} next 必須是 {dest},實際是 {hop_next!r}"
+            )
+
+
 def check_live(graph):
     failures = []
     skill_text = ""
@@ -381,6 +443,8 @@ def check_live(graph):
         if "write_discussion_md" in allow and node_id != "N9-write-md":
             failures.append(f"P0-1 {node_id} 不得 allow write_discussion_md")
 
+    check_legacy_hops(nodes, failures)
+    failures.extend(check_action_runtime_wired())
     failures.extend(scan_live_discussion_dupes())
     return failures
 
