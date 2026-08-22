@@ -368,7 +368,7 @@
   <tr>
   <td>7</td>
   <td><code>7-review.md</code> + <code>.html</code></td>
-  <td>雙軸審 + coverage matrix + Exit checklist。<strong>同 stage 只有這兩個檔</strong>,自審的家在 6-notes Self-Review;真要用 7-review 形狀寫自審則 verdict 填 <code>PRE-REVIEW</code>,獨立 reviewer 產出後<strong>就地接管同一個檔</strong>、不另存 sibling(細則見模板步 0a)</td>
+  <td>雙軸審 + coverage matrix + Exit checklist。<strong>同 stage 只有這兩個檔</strong>,自審的家在 6-notes Self-Review;真要用 7-review 形狀寫自審則 verdict 填 <code>PRE-REVIEW</code>,獨立 reviewer 產出後<strong>就地接管同一個檔</strong>、不另存 sibling(細則見模板步 0a)。出貨樹=審過的樹</td>
   <td><strong>G3</strong> 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → Exit Checklist(PR 是其中一項)</td>
   </tr>
   </tbody>
@@ -1162,9 +1162,32 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     2b. <strong>現象複驗</strong>:照 4-spec 每 S 的「觀測方式」<strong>親自實跑一次</strong>(後端打真實請求、
     前端截圖存 <code>evidence/</code>、批次看 log/產出檔),填「現象證據」表。不採信 6-notes
     貼的文字。完成 = 每 S 有實跑證據且與觀測方式相符(無外部現象者註明理由)。
-    2c. <strong>Final Fresh Run</strong>:確認 Verification Evidence 節由 4-spec Verification Profile
-    指名的 entry point 一次 fresh run 產出、Source SHA = 當下 HEAD;跑
+    2c. <strong>整合回歸</strong>(條件式;這是最後一次准許改程式碼 / 改 HEAD):跑
+    <code>docs/dev/tools/devflow-integration-regression.sh --integration origin/&lt;整合分支&gt; --fork-sha &lt;6-notes 步 0 記的 FORK_INTEGRATION_SHA&gt;</code>
+    (整合分支 = <code>develop</code> 或 <code>main</code>,依專案;工具自己會 fetch;工作樹必須乾淨,
+    否則它 exit 2 擋你)。⚠️ <strong>一定要在 Final Fresh 之前跑</strong> —— 順序寫死為
+    「跑腳本算交集 → 合併 → 跑全套測試 → 再進 2d Final Fresh」,不是
+    「Final Fresh → Verdict → Exit 才合併」:合併之後 HEAD 變了,核准的樹
+    就不是出貨的樹。依腳本印出的 STATUS 決定:
+    · <code>N_A_NO_INCOMING</code> → 記 n-a 即過(分岔後對方零新 commit)
+    · <code>SYNC_REQUIRED_NO_OVERLAP</code> → 合併它印的 INTEGRATION_SHA + 跑全套測試,做完才可過
+    · <code>SYNC_REQUIRED_WITH_OVERLAP</code> → 上面兩件 + 共同戰場交集逐檔看過,做完才可過
+    · <code>ALREADY_SYNCED</code> → 交集證據作廢(你已經合過了,merge-base 被污染)。
+    恢復路徑二選一:①<strong>重跑 Final Fresh</strong> 綁當下 HEAD(下一步 2d;共同戰場必須
+    人工重看,不得用這次輸出當「沒有共同戰場」的證據)②本項 FAIL,停下來從
+    乾淨座標重算。不得只寫「證據不算數」就過。
+    勾/過的時候把腳本最後一行的結論貼進本檔(含三個 SHA 與 canonical ref)。
+    ⚠️ 合併時合的是腳本印出的 <strong>INTEGRATION_SHA</strong>,不是 branch 名 —— branch 名
+    會跑,中間別人再合進來,你實際併進來的內容跟剛才檢查過的就不是同一份。
+    ⚠️ 動手合併之前<strong>無條件再跑一次腳本</strong>(不是「隔了一段時間才跑」—— 那是
+    主觀條件,人一定會說服自己「應該還好」):兩次的 STATUS 與座標必須完全
+    相同才准動手;有任何一項不同 → 停下,照新的重算。
+    完成 = 整合同步已落在 Final Fresh 之前;HEAD 已是送審樹。
+    2d. <strong>Final Fresh Run</strong>:確認 Verification Evidence 節由 4-spec Verification Profile
+    指名的 entry point 一次 fresh run 產出、Source SHA = 當下 HEAD = 送審樹;跑
     <code>docs/dev/tools/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD) --review-file --require-layer &lt;Profile Required 層,逐層一個 flag&gt;</code> 全綠
+    (Gauntlet 1.3.0 起自己讀 sibling 4-spec 的 Required layers;漏帶旗標不再
+    fail-open。旗標只能加嚴,不能把 Required 拿掉。)
     ⚠️ <strong>開工前先 <code>test -x docs/dev/tools/devflow-evidence-gauntlet.sh</code></strong>。
     那個路徑是 <code>dev-setup</code> 的散發契約(skills/dev-setup/SKILL.md:69 明訂
     <code>mkdir -p docs/dev/tools</code> 後 cp 母版),<strong>不是隨手寫的</strong>。
@@ -1178,9 +1201,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <code>docs/dev/tools/</code> 與 <code>devflow-contract.json</code> 兩者皆不存在,<code>devflow-doctor.sh</code>
     實跑直接 <code>⛔ INCOMPATIBLE(fail-closed)</code>;但整條 Stage 6→7 走完沒有任何一步
     要求跑 doctor,所以沒有人被擋。
-    (Required 層須逐層帶入命令,未實跑由機械擋下,不靠自律)。
-    完成 = gauntlet 輸出在案(或降級聲明在案)。
-    2d. <strong>Operational Walkthrough</strong>:以各 S 的 Operational Context 為腳本親自走一遍
+    (Required 層以 4-spec 為準,未 pass 由機械擋下,不靠自律)。
+    完成 = gauntlet 輸出在案(或降級聲明在案);Source SHA = 當下 HEAD。
+    2e. <strong>Operational Walkthrough</strong>:以各 S 的 Operational Context 為腳本親自走一遍
     「人的工作」,逐列檢查六條 —— 技術上通過但人無法完成工作 / 看得到但沒有決策權 /
     系統把等待誤標為完成 / 系統外動作無法追蹤 / 使用者中斷後無法恢復 / 資訊過期、
     缺漏或多人同時操作 —— 填 Operational Walkthrough 表(無 Operational Context 的
@@ -1202,7 +1225,7 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <code>devflow-exec.sh review-unlock &lt;slug&gt;</code> 解鎖才讀得到(Write 仍限縮於
     7-review*/evidence/,unlock 不解除)。完成 = 差異全裁定入 Spec Axis。</li>
     <li>Verdict:PASS = 本次 S 全綠+既有全綠+<strong>現象證據逐 S 相符</strong>+Evidence 契約全過
-    (G3 錨,八點條件正本 README §7;步 2c 的 gauntlet 全綠 + Required 層全 pass
+    (G3 錨,八點條件正本 README §7;步 2d 的 gauntlet 全綠 + Required 層全 pass
     即其機械面)+無 🔴(G3 正本 README §7;無 🔴 是本模板加嚴的出貨門檻,
     不與 §7 矛盾);否則
     REQUEST_CHANGES 列 🔴 →
@@ -1210,8 +1233,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     禁 performative fix)→ 回步 1 增量重驗。<strong>重驗迴圈上限 3 輪</strong>;第 3 輪仍
     REQUEST_CHANGES → <strong>breaker</strong>:逐 F 強制裁決(立即修/park 記入 STATUS 待辦/
     BLOCKED 停案),裁決表寫入本檔,禁 silent discard、禁無記錄續圈。
+    ⚠️ <strong>Verdict 之後禁止再改程式碼</strong>。任何程式碼 commit <strong>作廢 G3</strong>,必須回
+    步 2c/2d 重跑整合回歸(若 HEAD 又動了)與 Final Fresh。出貨樹必須就是審過的樹。
     完成 = verdict 落檔(含輪次數;走到 breaker 則含裁決表)。</li>
-    <li>Exit:逐勾 Exit Checklist。完成 = 全勾才 shipped;僅 Stage 7 frontmatter 改為
+    <li>Exit:逐勾 Exit Checklist。<strong>本節只准文件／PR／living spec,不准再碰程式。</strong>
+    完成 = 全勾才 shipped;僅 Stage 7 frontmatter 改為
     <code>shipped</code>,上游 artifact 保留 <code>approved</code> 作為各自 gate 核准紀錄。</li>
     </ol>
     </blockquote>
@@ -1228,8 +1254,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   <li><strong>1.</strong> 自建 Coverage Matrix:自己動手,把測試檔裡每個編號跟規格文件裡的行為描述清單一一對照,逐列填成一張表(有缺漏的地方標叉),最後固定加一列給既有測試套件的回歸結果;這個當下還不能去看原作者主張了什麼。</li>
   <li><strong>2.</strong> 親跑驗證:親自把這次新增的行為測試,跟原本就有的整套測試都跑一遍,結果記進上面那張表。</li>
   <li><strong>2b.</strong> 現象複驗:照規格文件每一條行為描述寫的「觀測方式」,自己真的動手做一次——後端就打一次真實請求、前端就截圖存起來、批次類的就去看實際紀錄或產出檔案,不能只相信實作筆記裡貼的文字說法,結果填進「現象證據」表;每一條都要有實跑證據且跟規格寫的觀測方式對得上(真的沒有外部現象可看的要註明原因)。</li>
-  <li><strong>2c.</strong> Final Fresh Run:確認驗證證據那節,是照規格文件指定的入口指令,在當下這個版本重新完整跑一次產生出來的(不是抄舊的),Source SHA 對應到目前這個 commit(<code>git rev-parse HEAD</code>);然後跑一個叫做證據關卡的檢查指令(<code>docs/dev/tools/devflow-evidence-gauntlet.sh</code>),把規格要求的每個驗證層級都當作一個開關逐一打開,全部通過才算數。開工前先確認這個檢查指令真的存在、可以執行;如果不存在,代表專案的安裝步驟沒有跑完整,正確做法是回去把安裝步驟補跑一遍(它會順便把其他缺的受管檔案也補齊),而不是自己手動複製一支腳本了事。如果實在補不了,就把規格要求的每個驗證層級改成自己逐層手動實跑,並在文件裡清楚寫明「這是降級處理,證據關卡沒有真的跑過」,不能悄悄假裝跑過了。</li>
-  <li><strong>2d.</strong> Operational Walkthrough:拿規格文件裡每條行為描述寫的「實際工作情境」當劇本,自己走一遍「人真正要做的事」,逐一檢查六種常見的坑——表面上系統功能是通的但人根本沒辦法完成工作;看得到資訊但沒有決定權;系統把「還在等」誤標成「已經完成」;系統外面發生的動作沒辦法追蹤;使用者操作到一半中斷後回不去;資訊過期、缺漏,或多人同時在動同一筆資料。把結果填進走查表(純系統內部、沒有實際工作情境可言的行為就標不適用)。</li>
+  <li><strong>2c.</strong> 整合回歸(條件式;最後一次准許改程式碼):在 Final Fresh 之前先跟整合分支對齊。合併之後 HEAD 會變,所以必須先合再跑 Final Fresh,核准的樹才是出貨的樹。<code>ALREADY_SYNCED</code> 不能只寫「證據不算數」——要嘛重跑 Final Fresh 綁當下 HEAD,要嘛本項失敗。</li>
+  <li><strong>2d.</strong> Final Fresh Run:確認驗證證據那節,是照規格文件指定的入口指令,在當下這個版本重新完整跑一次產生出來的(不是抄舊的),Source SHA 對應到目前這個 commit(<code>git rev-parse HEAD</code>);然後跑一個叫做證據關卡的檢查指令(<code>docs/dev/tools/devflow-evidence-gauntlet.sh</code>)。Gauntlet 自己讀規格文件的必跑層級,漏帶開關不再假裝通過。開工前先確認這個檢查指令真的存在、可以執行;如果不存在,代表專案的安裝步驟沒有跑完整,正確做法是回去把安裝步驟補跑一遍,而不是自己手動複製一支腳本了事。如果實在補不了,就把規格要求的每個驗證層級改成自己逐層手動實跑,並在文件裡清楚寫明「這是降級處理」,不能悄悄假裝跑過了。</li>
+  <li><strong>2e.</strong> Operational Walkthrough:拿規格文件裡每條行為描述寫的「實際工作情境」當劇本,自己走一遍「人真正要做的事」,逐一檢查六種常見的坑——表面上系統功能是通的但人根本沒辦法完成工作;看得到資訊但沒有決定權;系統把「還在等」誤標成「已經完成」;系統外面發生的動作沒辦法追蹤;使用者操作到一半中斷後回不去;資訊過期、缺漏,或多人同時在動同一筆資料。把結果填進走查表(純系統內部、沒有實際工作情境可言的行為就標不適用)。</li>
   <li><strong>3.</strong> 雙軸審:從兩個角度審這次的改動——一個角度看整體工程品質(發現問題按嚴重度標紅黃綠燈,寫清楚位置、問題、建議),另一個角度逐條核對是不是真的做到規格要求(每條需求都判定符合或偏離)。如果上一站規格有標記「系統邊界契約需要審查」,不另開新的關卡或第三個角度,而是併進這兩個角度裡一起查:工程品質那邊多查有沒有引入不該有的模組依賴、內部細節有沒有外洩、資料歸屬有沒有變、對外介面穩不穩定;規格那邊逐條核對實際改動符不符合這份邊界約定,並過一份「看起來守住邊界、其實被繞過」的檢查清單(<code>Design Integrity Check</code>),抓到的問題併進上面兩邊的發現裡。每個發現都要標明影響了哪些行為描述或任務。如果是 AI 在審查,兩個角度要各自派一個獨立、沒看過對方在查什麼的乾淨腦袋 agent 同時進行(真人審查者可以一人身兼兩個角度);彙整的人只能把兩邊發現的問題並排列出來,不能合併重排、也不能為了讓其中一邊好看而降低問題的嚴重度。每個問題都要引用規格原文或程式碼改動的具體出處撐腰,不能憑空下結論。</li>
   <li><strong>4.</strong> 對照作者:到這一步才可以去讀實作筆記裡的「自我審查」章節——把自己一路查出來的矩陣,拿去跟原作者寫的自我審查逐條比對差異並裁定;同時檢查原作者記的偏離是不是誠實記錄、他自己選的判斷有沒有其實嚴重到該算是需要回頭重審。如果第 0 步有先把「不准讀實作筆記」這道機械限制打開,現在要先跑解鎖指令(<code>devflow-exec.sh review-unlock &lt;slug&gt;</code>)才讀得到內容(解鎖不代表可以改動別的檔案,寫入範圍仍然限縮住)。</li>
   <li><strong>5.</strong> Verdict:這次新增的行為測試全綠、既有測試也全綠、每條行為的現象證據都跟預期相符、上面的證據關卡全部通過、而且工程品質那邊沒有任何紅燈,才算過關;只要有紅燈,就判定打回修改,列出每個紅燈項目交回實作者處理——同意的話改掉並寫一句為什麼現在對了,不同意的話要擺出論證,不能做表面功夫應付。改完後回到步驟 1 只驗證改動的部分,不用整個重來。這個打回—修改—重驗的迴圈最多只能繞三輪,第三輪還是打回修改的話,就要對每一個問題強制做出裁決(立刻修、記進待辦清單暫緩、或整個案子先停下來),裁決結果要寫進文件裡,不准悄悄不了了之、也不准不記錄就繼續繞下一輪。</li>

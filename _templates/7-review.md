@@ -28,8 +28,9 @@ updated:
 > 用途是**查證庫**(懷疑某一格時去查),不是通讀對象。
 >
 > 用途:**G3 出貨關卡**。雙軸審(mattpocock):Standards = 通用品質、Spec = 逐條對
-> 4-spec。本次 S 全綠 + **既有測試全綠(回歸)** + 無 🔴 才 PASS。過 gate 後產
-> 7-review.html 供報告。
+> 4-spec。本次 S 全綠 + **既有測試全綠(回歸)** + 無 🔴 才 PASS。
+> **出貨樹=審過的樹**:整合回歸(改 HEAD)必須在 Final Fresh 之前;Verdict 後改碼
+> 作廢 G3。過 gate 後產 7-review.html 供報告。
 > 本階段固定產出:`7-review.md`(本模板全節)+ `7-review.html`(G3 必產;必含
 > 變更架構圖、F-id 分級表、現象證據表、全 branch diff 折疊 + 執行記錄表)。
 > **就這兩個檔,不多不少。禁止長出 `7-review-<誰>.md`、`7-self-review.md` 這類並存檔**
@@ -91,10 +92,33 @@ updated:
 > 2b. **現象複驗**:照 4-spec 每 S 的「觀測方式」**親自實跑一次**(後端打真實請求、
 >    前端截圖存 `evidence/`、批次看 log/產出檔),填「現象證據」表。不採信 6-notes
 >    貼的文字。完成 = 每 S 有實跑證據且與觀測方式相符(無外部現象者註明理由)。
-> 2c. **Final Fresh Run**:確認 Verification Evidence 節由 4-spec Verification Profile
->    指名的 entry point 一次 fresh run 產出、Source SHA = 當下 HEAD;跑
+> 2c. **整合回歸**(條件式;這是最後一次准許改程式碼 / 改 HEAD):跑
+>    `docs/dev/tools/devflow-integration-regression.sh --integration origin/<整合分支> --fork-sha <6-notes 步 0 記的 FORK_INTEGRATION_SHA>`
+>    (整合分支 = `develop` 或 `main`,依專案;工具自己會 fetch;工作樹必須乾淨,
+>    否則它 exit 2 擋你)。⚠️ **一定要在 Final Fresh 之前跑** —— 順序寫死為
+>    「跑腳本算交集 → 合併 → 跑全套測試 → 再進 2d Final Fresh」,不是
+>    「Final Fresh → Verdict → Exit 才合併」:合併之後 HEAD 變了,核准的樹
+>    就不是出貨的樹。依腳本印出的 STATUS 決定:
+>    · `N_A_NO_INCOMING` → 記 n-a 即過(分岔後對方零新 commit)
+>    · `SYNC_REQUIRED_NO_OVERLAP` → 合併它印的 INTEGRATION_SHA + 跑全套測試,做完才可過
+>    · `SYNC_REQUIRED_WITH_OVERLAP` → 上面兩件 + 共同戰場交集逐檔看過,做完才可過
+>    · `ALREADY_SYNCED` → 交集證據作廢(你已經合過了,merge-base 被污染)。
+>      恢復路徑二選一:①**重跑 Final Fresh** 綁當下 HEAD(下一步 2d;共同戰場必須
+>      人工重看,不得用這次輸出當「沒有共同戰場」的證據)②本項 FAIL,停下來從
+>      乾淨座標重算。不得只寫「證據不算數」就過。
+>    勾/過的時候把腳本最後一行的結論貼進本檔(含三個 SHA 與 canonical ref)。
+>    ⚠️ 合併時合的是腳本印出的 **INTEGRATION_SHA**,不是 branch 名 —— branch 名
+>    會跑,中間別人再合進來,你實際併進來的內容跟剛才檢查過的就不是同一份。
+>    ⚠️ 動手合併之前**無條件再跑一次腳本**(不是「隔了一段時間才跑」—— 那是
+>    主觀條件,人一定會說服自己「應該還好」):兩次的 STATUS 與座標必須完全
+>    相同才准動手;有任何一項不同 → 停下,照新的重算。
+>    完成 = 整合同步已落在 Final Fresh 之前;HEAD 已是送審樹。
+> 2d. **Final Fresh Run**:確認 Verification Evidence 節由 4-spec Verification Profile
+>    指名的 entry point 一次 fresh run 產出、Source SHA = 當下 HEAD = 送審樹;跑
 >    `docs/dev/tools/devflow-evidence-gauntlet.sh 7-review.md --source-sha $(git rev-parse HEAD)
 >    --review-file --require-layer <Profile Required 層,逐層一個 flag>` 全綠
+>    (Gauntlet 1.3.0 起自己讀 sibling 4-spec 的 Required layers;漏帶旗標不再
+>    fail-open。旗標只能加嚴,不能把 Required 拿掉。)
 >    ⚠️ **開工前先 `test -x docs/dev/tools/devflow-evidence-gauntlet.sh`**。
 >    那個路徑是 `dev-setup` 的散發契約(skills/dev-setup/SKILL.md:69 明訂
 >    `mkdir -p docs/dev/tools` 後 cp 母版),**不是隨手寫的**。
@@ -108,9 +132,9 @@ updated:
 >    `docs/dev/tools/` 與 `devflow-contract.json` 兩者皆不存在,`devflow-doctor.sh`
 >    實跑直接 `⛔ INCOMPATIBLE(fail-closed)`;但整條 Stage 6→7 走完沒有任何一步
 >    要求跑 doctor,所以沒有人被擋。
->    (Required 層須逐層帶入命令,未實跑由機械擋下,不靠自律)。
->    完成 = gauntlet 輸出在案(或降級聲明在案)。
-> 2d. **Operational Walkthrough**:以各 S 的 Operational Context 為腳本親自走一遍
+>    (Required 層以 4-spec 為準,未 pass 由機械擋下,不靠自律)。
+>    完成 = gauntlet 輸出在案(或降級聲明在案);Source SHA = 當下 HEAD。
+> 2e. **Operational Walkthrough**:以各 S 的 Operational Context 為腳本親自走一遍
 >    「人的工作」,逐列檢查六條 —— 技術上通過但人無法完成工作 / 看得到但沒有決策權 /
 >    系統把等待誤標為完成 / 系統外動作無法追蹤 / 使用者中斷後無法恢復 / 資訊過期、
 >    缺漏或多人同時操作 —— 填 Operational Walkthrough 表(無 Operational Context 的
@@ -132,7 +156,7 @@ updated:
 >    `devflow-exec.sh review-unlock <slug>` 解鎖才讀得到(Write 仍限縮於
 >    7-review*/evidence/,unlock 不解除)。完成 = 差異全裁定入 Spec Axis。
 > 5. Verdict:PASS = 本次 S 全綠+既有全綠+**現象證據逐 S 相符**+Evidence 契約全過
->    (G3 錨,八點條件正本 README §7;步 2c 的 gauntlet 全綠 + Required 層全 pass
+>    (G3 錨,八點條件正本 README §7;步 2d 的 gauntlet 全綠 + Required 層全 pass
 >    即其機械面)+無 🔴(G3 正本 README §7;無 🔴 是本模板加嚴的出貨門檻,
 >    不與 §7 矛盾);否則
 >    REQUEST_CHANGES 列 🔴 →
@@ -140,8 +164,11 @@ updated:
 >    禁 performative fix)→ 回步 1 增量重驗。**重驗迴圈上限 3 輪**;第 3 輪仍
 >    REQUEST_CHANGES → **breaker**:逐 F 強制裁決(立即修/park 記入 STATUS 待辦/
 >    BLOCKED 停案),裁決表寫入本檔,禁 silent discard、禁無記錄續圈。
+>    ⚠️ **Verdict 之後禁止再改程式碼**。任何程式碼 commit **作廢 G3**,必須回
+>    步 2c/2d 重跑整合回歸(若 HEAD 又動了)與 Final Fresh。出貨樹必須就是審過的樹。
 >    完成 = verdict 落檔(含輪次數;走到 breaker 則含裁決表)。
-> 6. Exit:逐勾 Exit Checklist。完成 = 全勾才 shipped;僅 Stage 7 frontmatter 改為
+> 6. Exit:逐勾 Exit Checklist。**本節只准文件／PR／living spec,不准再碰程式。**
+>    完成 = 全勾才 shipped;僅 Stage 7 frontmatter 改為
 >    `shipped`,上游 artifact 保留 `approved` 作為各自 gate 核准紀錄。
 
 ## Coverage Matrix
@@ -279,24 +306,10 @@ updated:
       而未授權 Boundary 變更的預設分級是 🟡 —— 沒有這一條它就會靜默出貨
       (2026-08 fresh review F-5)
 - [ ] Quiz(**不可逆改動必做**;其餘 full lane 選配,fast 免):AI 就本次變更出 3-5 題考 approver(改了什麼/為何/邊界),全對才准 merge
-- [ ] (條件式)整合回歸:跑
-      `docs/dev/tools/devflow-integration-regression.sh --integration origin/<整合分支> --fork-sha <6-notes 步 0 記的 FORK_INTEGRATION_SHA>`
-      (整合分支 = `develop` 或 `main`,依專案;工具自己會 fetch;工作樹必須乾淨,
-      否則它 exit 2 擋你)。⚠️ **一定要在動樹之前跑** —— 順序寫死為
-      「跑腳本算交集 → 合併 → 跑全套測試」,不是「合併 → 測試 → 算交集」:
-      合併之後 HEAD 已含對方內容、merge-base 也已漂移,兩個座標都被污染,
-      那時算出來的「沒有共同戰場」是假的。依腳本印出的 STATUS 決定:
-      · `N_A_NO_INCOMING` → 記 n-a 即勾(分岔後對方零新 commit)
-      · `SYNC_REQUIRED_NO_OVERLAP` → 合併它印的 INTEGRATION_SHA + 跑全套測試,做完才可勾
-      · `SYNC_REQUIRED_WITH_OVERLAP` → 上面兩件 + 共同戰場交集逐檔看過,做完才可勾
-      · `ALREADY_SYNCED` → 你已經合過了,這次輸出不算數:交集必須在動樹之前算,
-        拿同步後的輸出當證據就是上面說的那個假綠
-      勾的時候把腳本最後一行的結論貼進本檔(含三個 SHA 與 canonical ref)。
-      ⚠️ 合併時合的是腳本印出的 **INTEGRATION_SHA**,不是 branch 名 —— branch 名
-      會跑,中間別人再合進來,你實際併進來的內容跟剛才檢查過的就不是同一份。
-      ⚠️ 動手合併之前**無條件再跑一次腳本**(不是「隔了一段時間才跑」—— 那是
-      主觀條件,人一定會說服自己「應該還好」):兩次的 STATUS 與座標必須完全
-      相同才准動手;有任何一項不同 → 停下,照新的重算
+- [ ] (條件式)整合回歸已在 Final Fresh **之前**完成:步 2c 的結論(含三個 SHA 與
+      canonical ref)貼在本檔;Source SHA 仍等於當下 HEAD。Verdict 之後若有任何
+      程式碼 commit → G3 已作廢,回步 2c/2d 重跑,**不得再改程式碼**、不得在本節
+      補碼或合併 INTEGRATION_SHA。
 - [ ] PR → develop(feature branch,禁直上 master)
 - [ ] 4-spec delta 已併入 `docs/specs/<domain>.md`
 - [ ] STATUS.md 已更新為 shipped(這一步在整合分支上、PR 合併後由合併那個 PR 的人

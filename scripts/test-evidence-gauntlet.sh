@@ -157,6 +157,61 @@ echo "== 小項②.flag 缺值 = 用法錯誤 exit 2 =="
 run_case "--source-sha 缺值 → usage + exit 2" 2 "usage" \
   "$FIX/good-evidence.md" --source-sha
 
+echo "== P0-2.Gauntlet 讀 sibling 4-spec Required;漏帶旗標不再 fail-open=="
+# 舊實作不讀 4-spec:漏帶 --require-layer 時 Race/stress=unverified 仍 exit 0。
+# 新實作以 4-spec 為準,Required 沒有 pass → E7 紅。
+run_case "sibling 4-spec Required=Race/stress 標 unverified、漏旗標 → E7 紅" 1 "E7" \
+  "$FIX/profile-unverified/7-review.md" --review-file --source-sha abc1234def5678
+run_case "sibling 4-spec Required 皆 pass、漏旗標 → 綠" 0 "-" \
+  "$FIX/profile-pass/7-review.md" --review-file --source-sha abc1234def5678
+# 已列入 Evidence 且非 n-a 的 Conditional 必須 pass(本 fixture 的 Supply chain=unverified)
+run_case "已觸發 Conditional(Supply chain unverified)→ E7 紅" 1 "E7" \
+  "$FIX/profile-unverified/7-review.md" --review-file --source-sha abc1234def5678
+# 旗標只能加嚴:4-spec 沒列 Mutation,人硬加 --require-layer Mutation → 仍紅
+run_case "旗標加嚴(Mutation unverified)仍 E7 紅,不能當覆寫拿掉 Required" 1 "E7" \
+  "$FIX/profile-unverified/7-review.md" --review-file --source-sha abc1234def5678 \
+  --require-layer "Mutation"
+
+echo "== P0-3.--review-file 漏帶 --source-sha 預設當下 HEAD,宣告不符即紅=="
+# 舊實作:不帶 --source-sha 只驗宣告存在 → good-review(SHA=abc1234)仍綠。
+# 新實作:--review-file 預設 git HEAD,abc1234 ≠ HEAD → E2 stale。
+run_case "review-file 不帶 --source-sha 且宣告 SHA ≠ HEAD → E2 紅" 1 "E2" \
+  "$FIX/good-review.md" --review-file
+
+echo "== P0-1.模板節序:整合回歸必須在 Final Fresh 之前=="
+# 舊模板:Final Fresh 在執行清單 2c,整合回歸在 Exit Checklist(Verdict 之後)。
+# 檢查住 check-stage67-enforcement.sh 的 ST 組;此處釘「頂註執行清單」字面順序。
+checks=$((checks + 1))
+if python3 - "$ROOT/_templates/7-review.md" <<'PY'
+import re, sys
+text = open(sys.argv[1], encoding="utf-8").read()
+header = re.split(r"\n##[ \t]", text, 1)[0]
+integ = header.find("整合回歸")
+fresh = header.find("Final Fresh Run")
+if integ < 0:
+    print("頂註執行清單沒有整合回歸")
+    raise SystemExit(1)
+if fresh < 0:
+    print("頂註執行清單沒有 Final Fresh Run")
+    raise SystemExit(1)
+if integ > fresh:
+    print(f"舊節序:整合回歸@{integ} 在 Final Fresh@{fresh} 之後")
+    raise SystemExit(1)
+print("新節序:整合回歸在 Final Fresh 之前")
+PY
+then
+  echo "  ✅ 模板頂註:整合回歸在 Final Fresh 之前"
+else
+  fail "模板頂註仍是舊節序(Final Fresh → Verdict → Exit 才整合回歸)"
+fi
+checks=$((checks + 1))
+if grep -q "重跑 Final Fresh" "$ROOT/_templates/7-review.md" \
+   && grep -q "作廢 G3" "$ROOT/_templates/7-review.md"; then
+  echo "  ✅ 模板有 ALREADY_SYNCED 恢復路徑 + Verdict 後改碼作廢 G3"
+else
+  fail "模板缺 ALREADY_SYNCED 恢復路徑(重跑 Final Fresh)或作廢 G3"
+fi
+
 echo "== M2.文檔化命令必須機械強制 E7(模板 2c 與 example 示範命令)=="
 checks=$((checks + 1))
 if grep -q -- "--require-layer" "$ROOT/_templates/7-review.md"; then
@@ -177,6 +232,10 @@ run_case "example 7-review 經文檔化命令(--review-file + required 層)綠" 
   --require-layer "Full test suite" \
   --require-layer "Changed-line coverage" \
   --require-layer "Real execution"
+# 1.3.0:sibling 4-spec 已列 Required,漏旗標不得再 fail-open,也不得誤紅
+run_case "example 7-review 不帶 --require-layer(讀 4-spec Required)仍綠" 0 "-" \
+  "$ROOT/example/contract-expiry-reminder/7-review.md" --review-file \
+  --source-sha f92c1d5
 # 硬要求案例:required 層在 evidence 裡標 unverified → 文檔化命令必 fail
 run_case "required 層標 unverified(example Mutation)→ 文檔化命令 fail(E7)" 1 "E7" \
   "$ROOT/example/contract-expiry-reminder/7-review.md" --review-file \

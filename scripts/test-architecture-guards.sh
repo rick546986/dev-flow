@@ -611,7 +611,7 @@ D=$(seed vs1); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "README.md"
 t = p.read_text(encoding="utf-8")
-n = t.replace("devflow-evidence-gauntlet.sh`(1.2.0,", "devflow-evidence-gauntlet.sh`(9.9.9,", 1)
+n = t.replace("devflow-evidence-gauntlet.sh`(1.3.0,", "devflow-evidence-gauntlet.sh`(9.9.9,", 1)
 assert n != t, "VS-1 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
@@ -621,7 +621,7 @@ D=$(seed vs2); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "devflow-contract.json"
 t = p.read_text(encoding="utf-8")
-n = t.replace('"gauntlet": "1.2.0"', '"gauntlet": "9.9.9"', 1)
+n = t.replace('"gauntlet": "1.3.0"', '"gauntlet": "9.9.9"', 1)
 assert n != t, "VS-2 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
@@ -631,7 +631,7 @@ D=$(seed vs3); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "notes/design/evidence-gauntlet.md"
 t = p.read_text(encoding="utf-8")
-n = t.replace("**現行 Gauntlet 版本:1.2.0**", "**現行 Gauntlet 版本:9.9.9**", 1)
+n = t.replace("**現行 Gauntlet 版本:1.3.0**", "**現行 Gauntlet 版本:9.9.9**", 1)
 assert n != t, "VS-3 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
@@ -641,7 +641,7 @@ D=$(seed vs4); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "notes/design/evidence-gauntlet.md"
 t = p.read_text(encoding="utf-8")
-n = t.replace("**現行 Gauntlet 版本:1.2.0**\n", "", 1)
+n = t.replace("**現行 Gauntlet 版本:1.3.0**\n", "", 1)
 assert n != t, "VS-4 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
@@ -651,7 +651,7 @@ D=$(seed vs5); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "docs/dev/tools/devflow-evidence-gauntlet.sh"
 t = p.read_text(encoding="utf-8")
-n = t.replace('GAUNTLET_VERSION="1.2.0"', 'GAUNTLET_VERSION="9.9.9"', 1)
+n = t.replace('GAUNTLET_VERSION="1.3.0"', 'GAUNTLET_VERSION="9.9.9"', 1)
 assert n != t, "VS-5 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
@@ -930,6 +930,20 @@ assert n != t, "S67-9 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
 expect_local fail check-stage67-enforcement.sh "$D" "S67-9 守衛自己的 A1 整組被刪(檢查數地板接住)"
+
+# ST:舊節序(Final Fresh 在整合回歸之前)必須紅。把頂註裡的「整合回歸」抽掉,
+# 模擬 2026-08 當時「整合回歸只住 Exit Checklist」的形狀。
+D=$(seed s67-st); mutate "$D" <<'PY'
+import sys, pathlib, re
+p = pathlib.Path(sys.argv[1]) / "_templates/7-review.md"
+t = p.read_text(encoding="utf-8")
+header, rest = re.split(r"\n##[ \t]", t, 1)
+header = header.replace("整合回歸", "INTEGRATION_PLACEHOLDER")
+n = header + "\n## " + rest
+assert n != t, "S67-ST mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-stage67-enforcement.sh "$D" "S67-ST 頂註執行清單拿掉整合回歸(舊節序假綠)"
 
 # ── TF 群組:測試檔路徑必須列進 Files(check-stage67-enforcement.sh 的 D-39 紀律)──
 #

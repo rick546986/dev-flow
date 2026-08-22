@@ -13,7 +13,7 @@
      本行、scripts/devflow-evidence-gauntlet.sh 的 GAUNTLET_VERSION、
      devflow-contract.json 的 schema_versions.gauntlet、README §7 的括注)。
      改版本時四處一起改,漏一處守衛會紅。 -->
-**現行 Gauntlet 版本:1.2.0**
+**現行 Gauntlet 版本:1.3.0**
 
 ## 0. 定位與邊界(先立不變量)
 
@@ -213,11 +213,10 @@ E12 stale report 清除+run-id/版本/SHA
 落 report、E13 malformed 表列 fail-closed(欄數 ≠ 預期 = 明確 error,禁靜默丟列;
 儲存格內勿用原生 `|`)。
 exit 碼:0 = 契約全過;1 = 有違規;2 = 用法/檔案錯誤(含值型 flag 缺值)。
-**E7 的文檔化強制(review 退回 M2 的修正,採方案①)**:7-review 執行清單 2c 的
-文檔化命令**本身逐層帶 `--require-layer <Profile Required 層>`**(example 示範
-命令同步帶具體層)—— Required 層標 unverified/n-a 或缺席時,照抄文檔命令即紅,
-機械執行、非靠紀律。單一正本化(`--profile 4-spec.md` 自動抽 Required layers)
-留為後續選項,前提是 example 4-spec 先補 Verification Profile 節。
+**E7 的 4-spec 正本(1.3.0)**:Gauntlet 預設讀 sibling `4-spec.md`(可用 `--profile`
+覆寫)的 Verification Profile Required layers;未 pass → E7 紅。`--require-layer`
+只能加嚴,不能把 Required 拿掉。漏帶旗標不再 fail-open。已列入 Evidence 且非
+n-a 的 Conditional 層同樣必須 pass。文檔化命令仍可帶旗標當明示/加嚴。
 測試:`scripts/test-evidence-gauntlet.sh` + `scripts/fixtures/evidence-gauntlet/`
 (案數與 fixture 數以腳本輸出為準,不在文檔寫死)。本身即依 gauntlet 原則建:
 單一命令、可 CI、report 先刪後寫。

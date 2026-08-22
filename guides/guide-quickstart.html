@@ -510,24 +510,10 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   而未授權 Boundary 變更的預設分級是 🟡 —— 沒有這一條它就會靜默出貨
   (2026-08 fresh review F-5)</li>
   <li>[ ] Quiz(<strong>不可逆改動必做</strong>;其餘 full lane 選配,fast 免):AI 就本次變更出 3-5 題考 approver(改了什麼/為何/邊界),全對才准 merge</li>
-  <li>[ ] (條件式)整合回歸:跑
-  <code>docs/dev/tools/devflow-integration-regression.sh --integration origin/&lt;整合分支&gt; --fork-sha &lt;6-notes 步 0 記的 FORK_INTEGRATION_SHA&gt;</code>
-  (整合分支 = <code>develop</code> 或 <code>main</code>,依專案;工具自己會 fetch;工作樹必須乾淨,
-  否則它 exit 2 擋你)。⚠️ <strong>一定要在動樹之前跑</strong> —— 順序寫死為
-  「跑腳本算交集 → 合併 → 跑全套測試」,不是「合併 → 測試 → 算交集」:
-  合併之後 HEAD 已含對方內容、merge-base 也已漂移,兩個座標都被污染,
-  那時算出來的「沒有共同戰場」是假的。依腳本印出的 STATUS 決定:
-  · <code>N_A_NO_INCOMING</code> → 記 n-a 即勾(分岔後對方零新 commit)
-  · <code>SYNC_REQUIRED_NO_OVERLAP</code> → 合併它印的 INTEGRATION_SHA + 跑全套測試,做完才可勾
-  · <code>SYNC_REQUIRED_WITH_OVERLAP</code> → 上面兩件 + 共同戰場交集逐檔看過,做完才可勾
-  · <code>ALREADY_SYNCED</code> → 你已經合過了,這次輸出不算數:交集必須在動樹之前算,
-  拿同步後的輸出當證據就是上面說的那個假綠
-  勾的時候把腳本最後一行的結論貼進本檔(含三個 SHA 與 canonical ref)。
-  ⚠️ 合併時合的是腳本印出的 <strong>INTEGRATION_SHA</strong>,不是 branch 名 —— branch 名
-  會跑,中間別人再合進來,你實際併進來的內容跟剛才檢查過的就不是同一份。
-  ⚠️ 動手合併之前<strong>無條件再跑一次腳本</strong>(不是「隔了一段時間才跑」—— 那是
-  主觀條件,人一定會說服自己「應該還好」):兩次的 STATUS 與座標必須完全
-  相同才准動手;有任何一項不同 → 停下,照新的重算</li>
+  <li>[ ] (條件式)整合回歸已在 Final Fresh <strong>之前</strong>完成:步 2c 的結論(含三個 SHA 與
+  canonical ref)貼在本檔;Source SHA 仍等於當下 HEAD。Verdict 之後若有任何
+  程式碼 commit → G3 已作廢,回步 2c/2d 重跑,<strong>不得再改程式碼</strong>、不得在本節
+  補碼或合併 INTEGRATION_SHA。</li>
   <li>[ ] PR → develop(feature branch,禁直上 master)</li>
   <li>[ ] 4-spec delta 已併入 <code>docs/specs/&lt;domain&gt;.md</code></li>
   <li>[ ] STATUS.md 已更新為 shipped(這一步在整合分支上、PR 合併後由合併那個 PR 的人

@@ -183,7 +183,7 @@ if section:
 # decoy、或把片語搬到別點,正規化後的整串都不會相等 → 一定紅。
 # 不引入任何自然語言模型或語意分析器,純字面比對。
 EXPECTED_G3_POINTS = {
-    "1": "Final Fresh Run 綁定目前受審的 source SHA。",
+    "1": "Final Fresh Run 綁定目前受審的 source SHA,且該 SHA 必須等於送審當下 HEAD;之後任何程式碼 commit 作廢 G3,必須重跑 Final Fresh。",
     "2": "所有 Required Layer = pass。",
     "3": "所有已觸發的 Conditional Layer = pass。",
     "4": "不得存在任何 fail。",
