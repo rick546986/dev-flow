@@ -5,6 +5,7 @@
 這是新場:沒有 MEMORY_SESSION_ID,本機也沒有「現在節點」。
 下一次 `/dev-talk` 一律新 session,絕不接上一場。
 若本機已有 MEMORY_SESSION_ID(重跑),本節點不是入口 —— 從現在節點繼續,不要進本檔。
+**已有 MEMORY_SESSION_ID 再進本節點,不得呼叫 talk start。**
 
 ## 讀什麼
 

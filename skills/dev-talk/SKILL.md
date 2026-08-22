@@ -57,7 +57,8 @@ ${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py talk start "<本輪主題>"
 重跑從現在節點繼續,不重開 talk start。
 下一次 /dev-talk 一律新 session,絕不接上一場。
 Bash 的 talk start / talk end 會被 `devflow-prebash` 拿去跑
-`scripts/check-devtalk-graph.sh --action`(游標在時)。
+`scripts/check-devtalk-graph.sh --action`(游標在時;沒游標但已有 OPEN
+session 再 talk start 仍擋)。
 
 **每輪對話**(使用者答完、或你做了關鍵覆述/確認提問之後):
 

@@ -3,6 +3,7 @@
 ## 進條件
 
 新場。沒有 MEMORY_SESSION_ID。0-11 todo 尚未建立。
+已有 MEMORY_SESSION_ID 再進本節點,不得呼叫 talk start。
 
 ## 讀什麼
 

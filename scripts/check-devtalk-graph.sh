@@ -213,8 +213,12 @@ def evaluate_action(graph, payload):
     node_id = cursor.get("node")
     session = cursor.get("MEMORY_SESSION_ID")
     action = payload.get("action")
-    if not node_id or not action:
-        return "error", "action JSON 缺 cursor.node 或 action"
+    if not action:
+        return "error", "action JSON 缺 action"
+    if not node_id:
+        if action == "talk_start" and session:
+            return "deny", "沒有游標但已有 MEMORY_SESSION_ID,不得 talk start"
+        return "error", "action JSON 缺 cursor.node"
     spec = (graph.get("nodes") or {}).get(node_id)
     if not isinstance(spec, dict):
         return "error", f"graph.yaml 沒有節點 {node_id}"
@@ -428,6 +432,8 @@ def check_live(graph):
             continue
         allow = set(as_list(spec.get("allow")))
         forbid = set(as_list(spec.get("forbid")))
+        if node_id == "N1-start" and "talk_start_if_session" not in forbid:
+            failures.append("P0-3 graph.yaml N1-start 必須 forbid talk_start_if_session")
         if node_id == "N3-probe" and "talk_start_if_session" not in forbid:
             failures.append("P0-3 graph.yaml N3-probe 必須 forbid talk_start_if_session")
         if node_id == "N9-write-md":

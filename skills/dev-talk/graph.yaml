@@ -8,6 +8,7 @@ nodes:
     allow:
       - talk_start
     forbid:
+      - talk_start_if_session
       - write_knowledge
       - talk_end
       - write_code

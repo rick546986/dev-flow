@@ -166,6 +166,41 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
         extra=["--action", os.path.join(actions, "n1-start-ok.json")],
     )
     expect(
+        "0130-P0 游標在 N1-start 且已有 session → talk start 必須紅",
+        good,
+        1,
+        "talk start",
+        extra=["--action", os.path.join(actions, "n1-restart.json")],
+    )
+    expect(
+        "0130-P0 沒游標檔但已有 session → talk start 必須紅",
+        good,
+        1,
+        "talk start",
+        extra=["--action", os.path.join(actions, "no-cursor-open-session.json")],
+    )
+
+    case = os.path.join(tmpbase, "n1-no-forbid-if-session")
+    seed(case)
+    graph = os.path.join(case, "skills", "dev-talk", "graph.yaml")
+    text = open(graph, encoding="utf-8").read()
+    # 舊實作:N1 只有 allow talk_start,沒有 forbid talk_start_if_session
+    if "talk_start_if_session" in text:
+        text = text.replace(
+            "  N1-start:\n    file: nodes/N1-start.md\n    next: skill-legacy-0-2\n"
+            "    allow:\n      - talk_start\n    forbid:\n"
+            "      - talk_start_if_session\n",
+            "  N1-start:\n    file: nodes/N1-start.md\n    next: skill-legacy-0-2\n"
+            "    allow:\n      - talk_start\n    forbid:\n",
+        )
+        open(graph, "w", encoding="utf-8").write(text)
+    expect(
+        "0130-P0 N1 缺 talk_start_if_session 必須紅",
+        case,
+        1,
+        "talk_start_if_session",
+    )
+    expect(
         "P0-3 N13 → talk end 必須綠",
         good,
         0,
@@ -234,6 +269,57 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
         finally:
             if os.path.isfile(cursor):
                 os.remove(cursor)
+
+        # 0130-P0:沒游標檔 + 已有 OPEN session → talk start 必須擋
+        mem = os.path.join(root, "memory", "dev-memory.py")
+        home = tempfile.mkdtemp(prefix="agentmem-0130-")
+        env = os.environ.copy()
+        env["AGENTMEM_HOME"] = home
+        try:
+            start = subprocess.run(
+                [sys.executable, mem, "talk", "start", "0130-p0-open-session"],
+                cwd=root, capture_output=True, text=True, env=env, timeout=30,
+            )
+            if os.path.isfile(cursor):
+                os.remove(cursor)
+            proc = subprocess.run(
+                ["bash", prebash],
+                input=payload,
+                capture_output=True,
+                text=True,
+                cwd=root,
+                env=env,
+            )
+            blob = (proc.stdout or "") + "\n" + (proc.stderr or "")
+            ok = (
+                start.returncode == 0
+                and proc.returncode == 2
+                and (
+                    "talk start" in blob
+                    or "talk_start" in blob
+                    or "OPEN" in blob
+                    or "session" in blob
+                )
+            )
+            if ok:
+                passed += 1
+                print("  ✓ 0130-P0 prebash:沒游標但已有 OPEN session 再 talk start 必須擋")
+            else:
+                failed += 1
+                print(
+                    f"  ✗ 0130-P0 prebash 沒游標+OPEN session talk start "
+                    f"(start_rc={start.returncode} rc={proc.returncode} want=2)",
+                    file=sys.stderr,
+                )
+                print((start.stderr or start.stdout or "")[-400:], file=sys.stderr)
+                print(blob[-800:], file=sys.stderr)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            failed += 1
+            print(f"  ✗ 0130-P0 prebash 建 OPEN session 失敗:{exc}", file=sys.stderr)
+        finally:
+            if os.path.isfile(cursor):
+                os.remove(cursor)
+            shutil.rmtree(home, ignore_errors=True)
     else:
         failed += 1
         print("  ✗ 0030-P1 找不到 hooks/devflow-prebash.sh", file=sys.stderr)
@@ -243,7 +329,7 @@ print(f"=== test-devtalk-graph:{passed}/{total} ===")
 if failed:
     print(f"⛔ {failed} 案未依預期", file=sys.stderr)
     sys.exit(1)
-if total < 17:
+if total < 21:
     print(f"FATAL: 只跑了 {total} 案,治具沒有真的跑完", file=sys.stderr)
     sys.exit(2)
 print("✅ PASS:graph 負向牙全過")
