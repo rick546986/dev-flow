@@ -6,6 +6,7 @@
 # 另有一份「舊實作(單一 SKILL、沒有 graph)」fixture,必須紅 ——
 # 這就是「先寫測試、舊實作先紅」的永久牙齒,不是散文。
 # 第二刀:skill-legacy 團塊必須紅;S3 才准 write_decision。
+# 第三刀:--action 接到 prebash;guide 第 3 站開頭對上九節點鏈。
 #
 # 用法:scripts/test-devstage3-graph.sh [root]
 # exit:0 = 全過 / 1 = 案例未依預期 / 2 = 治具故障
@@ -285,13 +286,163 @@ with tempfile.TemporaryDirectory(prefix="devstage3-graph-test-") as tmpbase:
     open(graph, "w", encoding="utf-8").write(text)
     expect("P0 S3 缺 allow write_decision 必須紅", case, 1, "S3-writeback")
 
+    case = os.path.join(tmpbase, "guide-stale")
+    seed(case)
+    os.makedirs(os.path.join(case, "guides"), exist_ok=True)
+    open(os.path.join(case, "guides", "guide-dev-flow.html"), "w", encoding="utf-8").write(
+        '<h3 id="stage3">Stage 3 — 原型(選配)</h3>\n'
+        "<p>N1-trigger N-skip S0-question S1-experiment S2-evidence "
+        "N3-write-md S3-writeback S4-close N5-end</p>\n"
+        "<p>Stage 3 還在單一 SKILL</p>\n"
+        "<h3 id=\"stage4\">Stage 4</h3>\n"
+    )
+    expect("P0 guide 出現「Stage 3 還在單一 SKILL」必須紅", case, 1, "單一 SKILL")
+
+    case = os.path.join(tmpbase, "guide-no-chain")
+    seed(case)
+    os.makedirs(os.path.join(case, "guides"), exist_ok=True)
+    open(os.path.join(case, "guides", "guide-dev-flow.html"), "w", encoding="utf-8").write(
+        '<h3 id="stage3">Stage 3 — 原型(選配)</h3>\n'
+        "<p>throwaway 實驗回答 2-decision 遺留的技術/UI 疑問。</p>\n"
+        "<h3 id=\"stage4\">Stage 4</h3>\n"
+    )
+    expect("P0 guide 第 3 站開頭沒九節點鏈必須紅", case, 1, "缺節點")
+
+    case = os.path.join(tmpbase, "action-unwired")
+    seed(case)
+    hooks = os.path.join(case, "hooks")
+    os.makedirs(hooks, exist_ok=True)
+    open(os.path.join(hooks, "_prebash_impl.py"), "w", encoding="utf-8").write(
+        "# fixture:有 hooks 但沒接 check-devstage3-graph --action\n"
+    )
+    expect("P0 hooks 沒接 --action 必須紅", case, 1, "--action")
+
+    prebash = os.path.join(root, "hooks", "devflow-prebash.sh")
+    cursor = os.path.join(root, ".devstage3-cursor.json")
+    stage2_cursor = os.path.join(root, ".devstage2-cursor.json")
+    if os.path.isfile(prebash):
+        def run_prebash(command):
+            payload = json.dumps({
+                "tool_name": "Bash",
+                "tool_input": {"command": command},
+            })
+            return subprocess.run(
+                ["bash", prebash],
+                input=payload,
+                capture_output=True,
+                text=True,
+                cwd=root,
+            )
+
+        def expect_prebash(label, command, want_rc, needle=None):
+            global passed, failed
+            proc = run_prebash(command)
+            blob = (proc.stdout or "") + "\n" + (proc.stderr or "")
+            ok = proc.returncode == want_rc
+            if ok and needle and needle not in blob:
+                ok = False
+                blob += f"\n[test] 期望輸出含 {needle!r}"
+            if ok:
+                passed += 1
+                print(f"  ✓ {label}")
+            else:
+                failed += 1
+                print(
+                    f"  ✗ {label} (rc={proc.returncode} want={want_rc})",
+                    file=sys.stderr,
+                )
+                print(blob[-800:], file=sys.stderr)
+
+        saved_stage2 = None
+        if os.path.isfile(stage2_cursor):
+            saved_stage2 = open(stage2_cursor, encoding="utf-8").read()
+            os.remove(stage2_cursor)
+        if os.path.isfile(cursor):
+            os.remove(cursor)
+        expect_prebash(
+            "P0 prebash:沒游標寫 3-prototype.md 不得編成(不是沙盒)",
+            "echo x > docs/dev/fixture-slug/3-prototype.md",
+            0,
+        )
+
+        tmp_slug = os.path.join(root, "docs", "dev", "stage3-prebash-tmp")
+        try:
+            os.makedirs(tmp_slug, exist_ok=True)
+            open(os.path.join(tmp_slug, "2-decision.md"), "w", encoding="utf-8").write(
+                "---\nfeature: stage3-prebash-tmp\nstage: 2-decision\n"
+                "status: approved\n---\n\n# fixture\n"
+            )
+            open(os.path.join(tmp_slug, "3-prototype.md"), "w", encoding="utf-8").write(
+                ZERO_HIT.replace("fixture-slug", "stage3-prebash-tmp").replace(
+                    "- [ ] 有新的前端流程",
+                    "- [x] 有新的前端流程",
+                )
+            )
+            open(cursor, "w", encoding="utf-8").write(json.dumps({
+                "node": "N1-trigger",
+                "slug": "stage3-prebash-tmp",
+            }))
+            expect_prebash(
+                "P0 prebash:游標 N1 寫 3-prototype.md 必須擋",
+                "echo x > docs/dev/stage3-prebash-tmp/3-prototype.md",
+                2,
+                "3-prototype",
+            )
+            open(cursor, "w", encoding="utf-8").write(json.dumps({
+                "node": "N3-write-md",
+                "slug": "stage3-prebash-tmp",
+            }))
+            expect_prebash(
+                "P0 prebash:游標 N3 寫 3-prototype.md 必須放行",
+                "echo x > docs/dev/stage3-prebash-tmp/3-prototype.md",
+                0,
+            )
+            open(cursor, "w", encoding="utf-8").write(json.dumps({
+                "node": "S3-writeback",
+                "slug": "stage3-prebash-tmp",
+            }))
+            expect_prebash(
+                "P0 prebash:游標 S3 寫 2-decision.md 必須放行",
+                "echo x > docs/dev/stage3-prebash-tmp/2-decision.md",
+                0,
+            )
+            open(cursor, "w", encoding="utf-8").write(json.dumps({
+                "node": "N3-write-md",
+                "slug": "stage3-prebash-tmp",
+            }))
+            expect_prebash(
+                "P0 prebash:游標 N3 寫 4-spec.md 必須擋",
+                "echo x > docs/dev/stage3-prebash-tmp/4-spec.md",
+                2,
+                "4-spec",
+            )
+            open(cursor, "w", encoding="utf-8").write(json.dumps({
+                "node": "N1-trigger",
+                "slug": "stage3-prebash-tmp",
+            }))
+            expect_prebash(
+                "P0 prebash:游標 N1 寫 2-decision.md 必須擋",
+                "echo x > docs/dev/stage3-prebash-tmp/2-decision.md",
+                2,
+                "2-decision",
+            )
+        finally:
+            if os.path.isfile(cursor):
+                os.remove(cursor)
+            if saved_stage2 is not None:
+                open(stage2_cursor, "w", encoding="utf-8").write(saved_stage2)
+            shutil.rmtree(tmp_slug, ignore_errors=True)
+    else:
+        failed += 1
+        print("  ✗ 找不到 hooks/devflow-prebash.sh", file=sys.stderr)
+
 total = passed + failed
 print(f"=== test-devstage3-graph:{passed}/{total} ===")
 if failed:
     print(f"⛔ {failed} 案未依預期", file=sys.stderr)
     sys.exit(1)
-if total < 16:
-    print(f"⛔ 案例數 {total} < 16,牙齒沒跑齊", file=sys.stderr)
+if total < 28:
+    print(f"⛔ 案例數 {total} < 28,牙齒沒跑齊", file=sys.stderr)
     sys.exit(2)
 sys.exit(0)
 PY

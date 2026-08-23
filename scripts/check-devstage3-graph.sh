@@ -1,5 +1,5 @@
 #!/bin/bash
-# check-devstage3-graph.sh — Stage 3 第二刀的機械契約
+# check-devstage3-graph.sh — Stage 3 第三刀的機械契約
 #
 # 為什麼需要:把第 3 站切成可單獨重跑的節點之後,有幾件事不能只靠散文 —
 #   1. 沒有 stage3/graph.yaml 必須紅:舊實作(單一 SKILL、沒有 graph)無法證明
@@ -8,18 +8,19 @@
 #   3. 同 slug 第二份 3-prototype*.md 必須紅:產物仍是一份。
 #   4. write_mode≠overwrite 必須紅:重跑 N3 覆寫同一檔,不另存。
 #   5. 九條觸發全未命中,卻存在 3-prototype.md 必須紅:0 命中走 N-skip,不准建檔。
-#   6. 有命中、無 skip OC、游標不在第 3 站允許節點,卻 write_spec(寫 4-spec.md)
-#      必須紅:第 3 站還沒結束不准搶跑第 4 站。
-#      --action 先只活在本腳本;prebash 第三刀再接。
+#   6. 有命中、無 skip OC、未 approved,卻 write_spec(寫 4-spec.md)
+#      必須紅:第 3 站必要還沒結束不准搶跑第 4 站。
 #   7. 第二刀:legacy 0／1／2／3／4 必須是真節點檔。skill-legacy 團塊必須紅。
 #      每個真節點「做什麼」必須 --write-cursor <本節點 id>。
 #      fork_required 必須是 S0-question。S3-writeback 才 allow write_decision
 #      (同一份 2-decision.md,overwrite)。不要放寬 N1／N-skip／S0／S1／S2／N3／N5。
+#   8. 第三刀:--action 必須接到 prebash。guide 第 3 站開頭必須對上九節點鏈。
+#      出現「Stage 3 還在單一 SKILL」必須紅。不改第 2 站 write_spec 編成。
 #
 # graph.yaml 是下一跳的唯一正本。分叉用 next + fork_required,禁止 via。
 # 本機游標 .devstage3-cursor.json 不進 Git。
 # 不改 check-devtalk-graph.sh / check-devstage2-graph.sh。
-# 不改 _templates/3-prototype.md 正文。本刀不掃 prebash、不掃 guide #stage3。
+# 不改 _templates/3-prototype.md 正文。
 #
 # 用法:
 #   scripts/check-devstage3-graph.sh [root]
@@ -134,8 +135,10 @@ EXPECTED_NEXT = {
     "S4-close": "N5-end",
     "N5-end": "",
 }
-# 第 3 站允許 write_spec 的節點:本刀空集合(第 4 站還沒開始)
+# 第 3 站允許 write_spec 的節點:永遠空集合(第 4 站另有游標)
 SPEC_ALLOWED_NODES = frozenset()
+GUIDE_PATH = os.path.join(root, "guides", "guide-dev-flow.html")
+STALE_GUIDE = "Stage 3 還在單一 SKILL"
 NEXT_ID_RE = re.compile(
     r"(?:S\d+-[A-Za-z0-9-]+|N(?:\d+)?-[A-Za-z0-9-]+|skill-legacy-\d+(?:-\d+)?)"
 )
@@ -315,6 +318,24 @@ def has_skip_oc(slug):
     return False
 
 
+def frontmatter_status(text):
+    if not text.startswith("---"):
+        return ""
+    end = text.find("\n---", 3)
+    block = text[:end] if end != -1 else text
+    match = STATUS_RE.search(block)
+    return match.group(1).strip() if match else ""
+
+
+def proto_is_approved(slug):
+    if not slug:
+        return False
+    path = os.path.join(DOCS_DEV, slug, "3-prototype.md")
+    if not os.path.isfile(path):
+        return False
+    return frontmatter_status(open(path, encoding="utf-8").read()) == "approved"
+
+
 def evaluate_action(graph, payload):
     cursor = payload.get("cursor") or {}
     node_id = cursor.get("node")
@@ -330,16 +351,19 @@ def evaluate_action(graph, payload):
     if action == "write_spec":
         hits = slug_has_hits(slug)
         skip = has_skip_oc(slug)
-        if hits and not skip and node_id not in SPEC_ALLOWED_NODES:
+        approved = proto_is_approved(slug)
+        if hits and not skip and not approved:
             return "deny", (
-                f"{node_id} 有命中、無 skip OC、游標不在第 3 站允許節點,"
+                f"{node_id} 有命中、無 skip OC、未 approved,"
                 f"卻 write_spec（寫 4-spec.md）"
             )
+        if approved or skip or node_id == "N-skip":
+            return "allow", f"{node_id} Stage 3 已結束或選配,不擋 write_spec"
         return "deny", f"{node_id} 未允許 write_spec（寫 4-spec.md）"
     if action == "write_prototype" and node_id in ("N1-trigger", "N-skip"):
-        return "deny", f"{node_id} 禁止 write_prototype"
+        return "deny", f"{node_id} 禁止 write_prototype（寫 3-prototype.md）"
     if action == "write_decision" and node_id != WRITE_DECISION_NODE:
-        return "deny", f"{node_id} 不得 write_decision(回寫在 S3)"
+        return "deny", f"{node_id} 不得 write_decision(回寫在 S3,寫 2-decision.md)"
     allow = set(as_list(spec.get("allow")))
     forbid = set(as_list(spec.get("forbid")))
     if action in forbid:
@@ -594,6 +618,54 @@ def check_live(graph):
     check_fork_and_next(nodes, failures)
     failures.extend(scan_live_prototype_dupes())
     failures.extend(scan_zero_hit_prototypes())
+    failures.extend(check_action_runtime_wired())
+    failures.extend(check_guide(graph))
+    return failures
+
+
+def check_action_runtime_wired():
+    """第三刀:--action 必須接到 prebash,不能只活在 test fixture。"""
+    hooks = os.path.join(root, "hooks")
+    if not os.path.isdir(hooks):
+        return []
+    for dirpath, dirnames, filenames in os.walk(hooks):
+        dirnames[:] = [d for d in dirnames if d != "devflow_obs_vendor"]
+        for name in filenames:
+            if not name.endswith((".py", ".sh")):
+                continue
+            path = os.path.join(dirpath, name)
+            try:
+                text = open(path, encoding="utf-8").read()
+            except OSError:
+                continue
+            code = "\n".join(
+                line.split("#", 1)[0] for line in text.splitlines()
+            )
+            if "check-devstage3-graph" in code and "--action" in code:
+                return []
+    return [
+        "P0 --action 沒接到 runtime:hooks 沒有呼叫 check-devstage3-graph.sh --action"
+    ]
+
+
+def check_guide(_graph):
+    """第 3 站開頭對上九節點鏈;舊句「還在單一 SKILL」必須紅。"""
+    if not os.path.isfile(GUIDE_PATH):
+        return []
+    text = open(GUIDE_PATH, encoding="utf-8").read()
+    failures = []
+    if STALE_GUIDE in text:
+        failures.append(f"P0 guide 出現「{STALE_GUIDE}」")
+    match = re.search(r'<h3 id="stage3">.*?(?=<h3 |\Z)', text, re.S)
+    if not match:
+        failures.append("P0 guide 找不到第 3 站 <h3 id=\"stage3\">")
+        return failures
+    head = match.group(0)[:2500]
+    missing = [node_id for node_id in REQUIRED_NODES if node_id not in head]
+    if missing:
+        failures.append(
+            "P0 guide 第 3 站開頭缺節點:" + ",".join(missing)
+        )
     return failures
 
 
@@ -627,6 +699,6 @@ if failures:
         print(f"  - {item}", file=sys.stderr)
     sys.exit(1)
 
-print("✅ PASS:Stage 3 graph 九真節點 / 觸發分叉 / 單產物 / 覆寫 / S3 回寫 / 第 4 站不准搶跑 全過")
+print("✅ PASS:Stage 3 graph 九真節點 / 觸發分叉 / 單產物 / 覆寫 / S3 回寫 / prebash / guide 全過")
 sys.exit(0)
 PY
