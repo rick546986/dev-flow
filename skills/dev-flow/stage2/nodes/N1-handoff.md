@@ -29,5 +29,4 @@ owner 已自拍的板一併清點,給人確認。
 
 ## 下一跳
 
-skill-legacy-1-2
-(先走模板頂註步 1–2,完成後進 N3)
+S1-approaches

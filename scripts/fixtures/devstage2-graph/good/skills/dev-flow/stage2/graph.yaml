@@ -1,31 +1,42 @@
 # 下一跳唯一正本(本 fixture 只給檢查當對照組)
-# 暫留步是真 hop(skill-legacy-*),不是 via 裝飾字串。正本仍在模板頂註 0–7。
+# 1/2/4/5/6 是真節點檔,不是 skill-legacy 團塊。正本仍在模板頂註 0–7。
 entry: N1-handoff
 nodes:
   N1-handoff:
     file: nodes/N1-handoff.md
-    next: skill-legacy-1-2
+    next: S1-approaches
     forbid:
       - write_decision
-  skill-legacy-1-2:
-    kind: skill-legacy
-    entry: _templates/2-decision.md
-    steps: "1-2"
+  S1-approaches:
+    file: nodes/S1-approaches.md
+    next: S2-stress
+    forbid:
+      - write_decision
+  S2-stress:
+    file: nodes/S2-stress.md
     next: N3-write-md
     forbid:
       - write_decision
   N3-write-md:
     file: nodes/N3-write-md.md
-    next: skill-legacy-4-6
+    next: S4-oc
     write:
       - docs/dev/<slug>/2-decision.md
     write_mode: overwrite
     allow:
       - write_decision
-  skill-legacy-4-6:
-    kind: skill-legacy
-    entry: _templates/2-decision.md
-    steps: "4-6"
+  S4-oc:
+    file: nodes/S4-oc.md
+    next: S5-adr
+    forbid:
+      - write_decision
+  S5-adr:
+    file: nodes/S5-adr.md
+    next: S6-selfcheck
+    forbid:
+      - write_decision
+  S6-selfcheck:
+    file: nodes/S6-selfcheck.md
     next: N7-g1
     forbid:
       - write_decision

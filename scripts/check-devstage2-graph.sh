@@ -1,5 +1,5 @@
 #!/bin/bash
-# check-devstage2-graph.sh — Stage 2 第一刀的機械契約
+# check-devstage2-graph.sh — Stage 2 節點鏈的機械契約
 #
 # 為什麼需要:把第 2 站切成可單獨重跑的節點之後,有幾件事不能只靠散文 —
 #   1. 沒有 stage2/graph.yaml 必須紅:舊實作(單一 SKILL、沒有 graph)無法證明
@@ -9,6 +9,9 @@
 #   4. write_mode≠overwrite 必須紅:重跑 N3 覆寫同一檔,不另存。
 #   5. N1 在 1-discussion 未 approved 時寫 2-decision 必須紅。
 #      --action 先只活在本腳本;prebash 第三刀再接。
+#   6. 第二刀:legacy 1／2／4／5／6 必須是真節點檔。skill-legacy 團塊必須紅。
+#      每個真節點「做什麼」必須 --write-cursor <本節點 id>。
+#      N7／N8／S1 缺這一行必須紅。N1 已核准仍不得寫 2-decision。
 #
 # graph.yaml 是下一跳的唯一正本。本機游標 .devstage2-cursor.json 不進 Git。
 # 不改 check-devtalk-graph.sh。不改 _templates/2-decision.md 正文。
@@ -89,15 +92,23 @@ DOCS_DEV = os.path.join(root, "docs", "dev")
 
 REQUIRED_NODES = (
     "N1-handoff",
+    "S1-approaches",
+    "S2-stress",
     "N3-write-md",
+    "S4-oc",
+    "S5-adr",
+    "S6-selfcheck",
     "N7-g1",
     "N8-end",
 )
 REQUIRED_CHAIN = (
     "N1-handoff",
-    "skill-legacy-1-2",
+    "S1-approaches",
+    "S2-stress",
     "N3-write-md",
-    "skill-legacy-4-6",
+    "S4-oc",
+    "S5-adr",
+    "S6-selfcheck",
     "N7-g1",
     "N8-end",
 )
@@ -106,7 +117,7 @@ TEETH_HEADINGS = ("進條件", "完成條件")
 CANONICAL_MD = "docs/dev/<slug>/2-decision.md"
 LOCKED_ACTIONS = ("write_decision",)
 NEXT_ID_RE = re.compile(
-    r"(?:N\d+-[A-Za-z0-9-]+|skill-legacy-\d+(?:-\d+)?)"
+    r"(?:S\d+-[A-Za-z0-9-]+|N\d+-[A-Za-z0-9-]+|skill-legacy-\d+(?:-\d+)?)"
 )
 BAD_DECISION_RE = re.compile(r"2-decision(?:-[A-Za-z0-9]+)+\.md")
 STATUS_RE = re.compile(r"^status:\s*(\S+)", re.M)
@@ -298,7 +309,7 @@ def evaluate_action(graph, payload):
         if ok is not True:
             return "deny", reason
         if node_id == "N1-handoff":
-            return "deny", "N1-handoff 在 1-discussion 未進入寫檔節點,不得寫 2-decision"
+            return "deny", "N1-handoff 不得寫 2-decision(寫檔在 N3)"
     if not node_id:
         return "error", "action JSON 缺 cursor.node"
     spec = (graph.get("nodes") or {}).get(node_id)
@@ -467,9 +478,9 @@ def check_live(graph):
         allow = set(as_list(spec.get("allow")))
         if "write_decision" in allow and node_id != "N3-write-md":
             failures.append(f"P0 {node_id} 不得 allow write_decision")
-        if spec.get("kind") == "skill-legacy" and spec.get("file"):
+        if spec.get("kind") == "skill-legacy":
             failures.append(
-                f"P0 {node_id} 是 skill-legacy,第一刀不要當真節點檔"
+                f"P0 {node_id} 仍是 skill-legacy 團塊,必須拆成有節點檔的 hop"
             )
 
     check_chain(nodes, failures)
@@ -507,6 +518,6 @@ if failures:
         print(f"  - {item}", file=sys.stderr)
     sys.exit(1)
 
-print("✅ PASS:Stage 2 graph 四真節點 / 單產物 / 覆寫 / N1 未核准不得寫檔 全過")
+print("✅ PASS:Stage 2 graph 九真節點 / 單產物 / 覆寫 / 游標寫入 / N1 不得寫檔 全過")
 sys.exit(0)
 PY

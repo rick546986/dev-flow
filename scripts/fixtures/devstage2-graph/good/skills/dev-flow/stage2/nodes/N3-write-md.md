@@ -24,4 +24,4 @@
 
 ## 下一跳
 
-skill-legacy-4-6
+S4-oc

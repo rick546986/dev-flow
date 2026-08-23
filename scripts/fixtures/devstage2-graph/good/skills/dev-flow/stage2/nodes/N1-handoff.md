@@ -26,4 +26,4 @@ Open Questions 全三態(`[x]` / `[~]` / `[>]`)。缺 → 退回討論,不要進
 
 ## 下一跳
 
-skill-legacy-1-2
+S1-approaches
