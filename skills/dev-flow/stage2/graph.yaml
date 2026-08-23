@@ -1,0 +1,64 @@
+# 下一跳唯一正本。本機游標不進 Git。
+# 1/2/4/5/6 是真節點檔,不是 skill-legacy 團塊。乘客清單正本仍是
+# `_templates/2-decision.md` 頂註 0–7,本檔不抄步原文。
+entry: N1-handoff
+nodes:
+  N1-handoff:
+    file: nodes/N1-handoff.md
+    next: S1-approaches
+    forbid:
+      - write_decision
+  S1-approaches:
+    file: nodes/S1-approaches.md
+    next: S2-stress
+    forbid:
+      - write_decision
+  S2-stress:
+    file: nodes/S2-stress.md
+    next: N3-write-md
+    forbid:
+      - write_decision
+  N3-write-md:
+    file: nodes/N3-write-md.md
+    next: S4-oc
+    write:
+      - docs/dev/<slug>/2-decision.md
+    write_mode: overwrite
+    allow:
+      - write_decision
+  S4-oc:
+    file: nodes/S4-oc.md
+    next: S5-adr
+    write:
+      - docs/dev/<slug>/2-decision.md
+    write_mode: overwrite
+    allow:
+      - write_decision
+  S5-adr:
+    file: nodes/S5-adr.md
+    next: S6-selfcheck
+    write:
+      - docs/dev/<slug>/2-decision.md
+    write_mode: overwrite
+    allow:
+      - write_decision
+  S6-selfcheck:
+    file: nodes/S6-selfcheck.md
+    next: N7-g1
+    write:
+      - docs/dev/<slug>/2-decision.md
+    write_mode: overwrite
+    allow:
+      - write_decision
+  N7-g1:
+    file: nodes/N7-g1.md
+    next: N8-end
+    forbid:
+      - write_decision
+  N8-end:
+    file: nodes/N8-end.md
+    next: ""
+    forbid:
+      - write_decision
+    allow:
+      - write_spec

@@ -107,6 +107,9 @@ group_methodology() {
   # Stage 1:節點鏈可單獨當入口、重跑 N9 不得另存、沒游標檔 --action 仍擋、重跑不得重開 session。
   run "methodology/check-devtalk-graph"       scripts/check-devtalk-graph.sh     || return 1
   run "methodology/test-devtalk-graph"        scripts/test-devtalk-graph.sh      || return 1
+  # Stage 2:九真節點;單產物 2-decision.md;N1 不得寫檔;每個 hop --write-cursor。
+  run "methodology/check-devstage2-graph"     scripts/check-devstage2-graph.sh   || return 1
+  run "methodology/test-devstage2-graph"      scripts/test-devstage2-graph.sh    || return 1
 }
 
 group_contracts() {
