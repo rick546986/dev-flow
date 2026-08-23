@@ -517,6 +517,22 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
             ("redirect >>", "echo n9-append >> n9-append.txt"),
             ("tee", "echo n9-tee | tee n9-tee.txt"),
         )
+        extra_dir = tempfile.mkdtemp(prefix="devtalk-wc-extra-")
+        write_py = os.path.join(extra_dir, "write_file.py")
+        read_py = os.path.join(extra_dir, "read_only.py")
+        open(write_py, "w", encoding="utf-8").write(
+            "open('/tmp/devtalk-wc-script-out','w').write('x')\n"
+        )
+        open(read_py, "w", encoding="utf-8").write("print('ok')\n")
+        extra_cmds = (
+            ("python3 script.py", f"python3 {write_py}"),
+            ("python script.py", f"python {write_py}"),
+            (
+                "heredoc",
+                "cat > /tmp/devtalk-wc-here.txt <<'EOF'\nhello\nEOF",
+            ),
+            ("sed -i", f"sed -i 's/a/b/' {write_py}"),
+        )
         try:
             open(cursor, "w", encoding="utf-8").write(json.dumps({
                 "node": "N9-write-md",
@@ -542,6 +558,19 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
                     cmd,
                     0,
                 )
+
+            for label, cmd in extra_cmds:
+                expect_prebash(
+                    f"1238-P0 prebash:游標 N9 {label} 必須擋",
+                    cmd,
+                    2,
+                    "write_code",
+                )
+            expect_prebash(
+                "1238-P0 prebash:游標 N9 python3 只讀腳本不得誤編",
+                f"python3 {read_py}",
+                0,
+            )
         finally:
             if os.path.isfile(cursor):
                 os.remove(cursor)
@@ -574,6 +603,14 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
                         "write_code",
                         env=env,
                     )
+                for label, cmd in extra_cmds:
+                    expect_prebash(
+                        f"1238-P0 prebash:沒游標+OPEN session {label} 必須擋",
+                        cmd,
+                        2,
+                        "write_code",
+                        env=env,
+                    )
         except (OSError, subprocess.TimeoutExpired) as exc:
             failed += 1
             print(f"  ✗ P0-1 prebash 建 OPEN session 失敗:{exc}", file=sys.stderr)
@@ -581,6 +618,7 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
             if os.path.isfile(cursor):
                 os.remove(cursor)
             shutil.rmtree(home, ignore_errors=True)
+            shutil.rmtree(extra_dir, ignore_errors=True)
     else:
         failed += 1
         print("  ✗ 0030-P1 找不到 hooks/devflow-prebash.sh", file=sys.stderr)
@@ -632,7 +670,7 @@ print(f"=== test-devtalk-graph:{passed}/{total} ===")
 if failed:
     print(f"⛔ {failed} 案未依預期", file=sys.stderr)
     sys.exit(1)
-if total < 54:
+if total < 63:
     print(f"FATAL: 只跑了 {total} 案,治具沒有真的跑完", file=sys.stderr)
     sys.exit(2)
 print("✅ PASS:graph 負向牙全過")
