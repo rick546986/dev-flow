@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>長期決策 · ADR</title>
+<style>
+:root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;}
+  @media(prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+      --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  }
+  :root[data-theme="dark"]{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+        --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+  main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
+  h2{font-size:1.15rem;margin-top:2em}
+  h3{font-size:1rem;margin-top:1.5em}
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:1em 0}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+  th{background:var(--card)}
+  code,pre{background:var(--card);border-radius:4px;
+           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
+  pre{padding:12px;overflow-x:auto}
+  code{padding:1px 5px}
+  blockquote{margin:1em 0;padding:.5em 1em;border-left:3px solid var(--line);color:var(--muted)}
+  ul,ol{padding-left:1.4em}
+  .meta{color:var(--muted);font-size:.85rem;margin-bottom:2em}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;
+         font-size:.8rem;font-weight:600;border:1px solid transparent}
+  .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+  .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+  details{margin:.6em 0}
+  details>summary{cursor:pointer;color:var(--muted)}
+  a{color:var(--acc)}
+  nav{background:var(--card);border:1px solid var(--line);border-radius:10px;
+      padding:10px 16px;margin:1em 0;display:flex;flex-wrap:wrap;gap:6px 16px}
+  nav a{text-decoration:none;font-size:.9rem}
+  .lead{margin:.2em 0 .9em;padding:.5em .85em;border-left:3px solid var(--acc);
+        background:var(--card);border-radius:0 6px 6px 0;font-size:.92rem}
+  .foot{margin-top:3em;font-size:.85rem;color:var(--muted);
+        border-top:1px solid var(--line);padding-top:1em}
+</style>
+</head>
+<body>
+<main>
+<h1>長期決策</h1>
+<p class="lead">人要看為什麼當初這樣選,走這裡。yaml / <code>.dev-flow/decisions</code> 不是給人讀的頁。</p>
+<nav><a href="../dev/HISTORY.html">改版歷史</a><a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html">dev-flow 導覽</a><a href="https://github.com/rick546986/dev-flow/tree/main/docs/adr">md 正本</a></nav>
+<div class="tablewrap"><table>
+<thead><tr><th>編號</th><th>標題</th><th>狀態</th><th>為什麼</th></tr></thead>
+<tbody>
+<tr><td>0001</td><td><a href="0001-merge-plugin-into-methodology-repo.html">外掛併回方法論 repo,兩者不再獨立演進</a></td><td><span class="badge ok">accepted</span></td><td>方法論(README、模板、檢查腳本)住在 <code>dev-flow</code> repo;實際在跑的執行程式 (hooks、skills)住在另一個 <code>dev-flow-plugin</code> 目錄。</td></tr>
+<tr><td>0002</td><td><a href="0002-markdown-it-py-for-twin-parsing.html">gate twin 解析層採用 markdown-it-py(推翻散發工具零相依立場)</a></td><td><span class="badge ok">accepted</span></td><td><code>build-gate-twin.py</code> 會被 dev-setup 散發到採用專案,原始立場是零外部相依 (「多一個相依就多一個在別人機器上跑不起來的理由」,寫進了工具 docstring)。</td></tr>
+<tr><td>0003</td><td><a href="0003-agent-memory-two-layer-split.html">Agent Memory 分兩層:`.dev-flow/` 進 Git、本機索引不進 Git</a></td><td><span class="badge ok">accepted</span></td><td>舊架構的 agent 記憶載體有兩個,都是人工維護的 Markdown:repo root <code>CONTEXT.md</code> (業務詞彙表)與 <code>docs/dev/HISTORY.md</code>(改版歷史索引)。</td></tr>
+</tbody></table></div>
+
+<p class="foot">md 是 git 正本。本頁由 <code>scripts/build-public-docs.py</code> 重生。不是 Agent Memory,不要把正文抄進 <code>.dev-flow/decisions</code>。</p>
+</main>
+</body>
+</html>

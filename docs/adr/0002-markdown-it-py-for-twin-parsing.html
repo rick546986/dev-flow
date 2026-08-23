@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>0002. gate twin 解析層採用 markdown-it-py(推翻散發工具零相依立場)</title>
+<style>
+:root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;}
+  @media(prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+      --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  }
+  :root[data-theme="dark"]{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+        --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+  main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
+  h2{font-size:1.15rem;margin-top:2em}
+  h3{font-size:1rem;margin-top:1.5em}
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:1em 0}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+  th{background:var(--card)}
+  code,pre{background:var(--card);border-radius:4px;
+           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
+  pre{padding:12px;overflow-x:auto}
+  code{padding:1px 5px}
+  blockquote{margin:1em 0;padding:.5em 1em;border-left:3px solid var(--line);color:var(--muted)}
+  ul,ol{padding-left:1.4em}
+  .meta{color:var(--muted);font-size:.85rem;margin-bottom:2em}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;
+         font-size:.8rem;font-weight:600;border:1px solid transparent}
+  .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+  .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+  details{margin:.6em 0}
+  details>summary{cursor:pointer;color:var(--muted)}
+  a{color:var(--acc)}
+  nav{background:var(--card);border:1px solid var(--line);border-radius:10px;
+      padding:10px 16px;margin:1em 0;display:flex;flex-wrap:wrap;gap:6px 16px}
+  nav a{text-decoration:none;font-size:.9rem}
+  .lead{margin:.2em 0 .9em;padding:.5em .85em;border-left:3px solid var(--acc);
+        background:var(--card);border-radius:0 6px 6px 0;font-size:.92rem}
+  .foot{margin-top:3em;font-size:.85rem;color:var(--muted);
+        border-top:1px solid var(--line);padding-top:1em}
+</style>
+</head>
+<body>
+<main>
+<h1>0002. gate twin 解析層採用 markdown-it-py(推翻散發工具零相依立場)</h1>
+<p class="meta"><span class="badge ok">accepted</span> · 2026-08-15 · 出處:docs/dev/b8-gate-twin-review-ui/7-review.md(附錄 A7)</p>
+<nav><a href="index.html">決策列表</a><a href="0002-markdown-it-py-for-twin-parsing.md">md 正本</a><a href="../dev/HISTORY.html">改版歷史</a></nav>
+<h2>Context</h2>
+<p><code>build-gate-twin.py</code> 會被 dev-setup 散發到採用專案,原始立場是零外部相依 (「多一個相依就多一個在別人機器上跑不起來的理由」,寫進了工具 docstring)。 但手刻正則解析 markdown(fence 遮蔽、章節切割)在三輪獨立審查共爆 28 條 finding, 其中兩條是修上一輪時引入的新 HIGH、一條已發生在出貨物上(P4:整節從產出 html 消失而 60 項守衛全綠)。每補一個邊界就冒出下一個,靠自審不可能收斂。</p>
+<h2>Decision</h2>
+<p>解析層(什麼算 fence、什麼算標題)的判斷來源改用 markdown-it-py==4.0.0 的 CommonMark token stream;等長遮蔽 + span 切原文的骨架不變。<strong>渲染層維持零相依</strong> (md_block 的極簡轉換不動)。相依 fail-loud:缺套件或版本不符 → 繁中訊息 + exit 2, 不吐 traceback、不靜默降級回正則(降級 = 兩邊 diverge 卻不吭聲)。</p>
+<p>反直覺點:散發工具通常避免相依 —— 但這個 repo 的 renderer 已釘死同一套件同一版本 (scripts/requirements-methodology-render.txt),「散發到別人機器跑不起來」的顧慮 由 fail-loud + dev-setup 散發段的相依交代與散發後探測承接,不再成立。</p>
+<h2>Considered Options</h2>
+<ol><li>繼續手刻正則補邊界 —— 已被三輪審查證偽(28 條 finding,每輪都有新破口)。</li><li>表格解析也換 token stream(K-4)—— 否決:markdown-it 遵 GFM 會截斷多於表頭的欄, 正是 n5 修掉的缺陷,換了會回歸。表格切格維持遮蔽版逐行法。</li><li>hooks runtime 也吃 markdown-it —— 否決:hooks 在採用端經 plugin cache 直跑、 無 pip 環節,核心 Stage 6 runtime 綁 pip 相依是不同量級的採用負擔。 引擎側 fence 問題(幽靈任務)以 twin 警告現形,引擎修法另列 Backlog。</li></ol>
+<h2>Consequences</h2>
+<ul><li>換到:fence/標題判斷這一整類 bug 的來源消失(P1/P2/P4/N1/N3 同類); 對母版範例三站 byte-identical 完成替換,行為零漂移。</li><li>付出:採用專案跑 twin 需 <code>pip install &#x27;markdown-it-py==4.0.0&#x27;</code>(缺了 exit 2 並印安裝指令);版本釘死,升版要同時動 requirements、render 檢查與本工具。</li><li>回滾成本高:回到正則等於重新接受那 28 條 finding 的失敗模式 —— 這正是「難逆轉」。</li></ul>
+
+<p class="foot">md 是 git 正本。本頁由 <code>scripts/build-public-docs.py</code> 重生。不是 Agent Memory,不要把正文抄進 <code>.dev-flow/decisions</code>。</p>
+</main>
+</body>
+</html>
