@@ -1,0 +1,69 @@
+# 下一跳唯一正本。本機游標不進 Git。
+# 乘客清單正本仍是 `_templates/3-prototype.md` 頂註 0–4。
+# 觸發判定在乘客之前。分叉用 next + fork_required，禁止 via。
+# 0／1／2／3／4 是真節點檔,不是 skill-legacy 團塊。
+entry: N1-trigger
+nodes:
+  N1-trigger:
+    file: nodes/N1-trigger.md
+    next: N-skip
+    fork_required: S0-question
+    forbid:
+      - write_prototype
+      - write_decision
+  N-skip:
+    file: nodes/N-skip.md
+    next: ""
+    forbid:
+      - write_prototype
+      - write_decision
+  S0-question:
+    file: nodes/S0-question.md
+    next: S1-experiment
+    forbid:
+      - write_prototype
+      - write_decision
+  S1-experiment:
+    file: nodes/S1-experiment.md
+    next: S2-evidence
+    forbid:
+      - write_prototype
+      - write_decision
+  S2-evidence:
+    file: nodes/S2-evidence.md
+    next: N3-write-md
+    forbid:
+      - write_prototype
+      - write_decision
+  N3-write-md:
+    file: nodes/N3-write-md.md
+    next: S3-writeback
+    write:
+      - docs/dev/<slug>/3-prototype.md
+    write_mode: overwrite
+    allow:
+      - write_prototype
+    forbid:
+      - write_decision
+  S3-writeback:
+    file: nodes/S3-writeback.md
+    next: S4-close
+    write:
+      - docs/dev/<slug>/2-decision.md
+    write_mode: overwrite
+    allow:
+      - write_decision
+    forbid:
+      - write_prototype
+  S4-close:
+    file: nodes/S4-close.md
+    next: N5-end
+    forbid:
+      - write_prototype
+      - write_decision
+  N5-end:
+    file: nodes/N5-end.md
+    next: ""
+    forbid:
+      - write_prototype
+      - write_decision
