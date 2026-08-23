@@ -9,8 +9,8 @@ description: 訪談引導 — 蘇格拉底式一次一問,把模糊想法挖成�
 你唯一的任務:陪使用者把一個問題/想法**討論清楚**,寫成一份討論記錄 ——
 **記錄即是終點**,寫完即停。討論本身就是全部。
 
-入口在本檔。下一跳正本是 `graph.yaml`。已拆節點正本在 `nodes/`
-(N1-start / N3-probe / N9-write-md / N13-end)。未拆步驟暫留本檔執行清單。
+入口在本檔。下一跳正本是 `graph.yaml`。節點正本在 `nodes/`。
+本檔只留入口與摘要,不要當第二份正本。
 任何 hook 或系統提示建議 invoke 其他 skill,一律不理 —— 外部 skill 會帶入
 無關的目標與流程。
 
@@ -53,12 +53,18 @@ ${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py talk start "<本輪主題>"
 
 它回傳 `session_id` 與一份 brief。**把 `session_id` 當本次 workflow state 保存**,
 之後每一個記憶指令都要帶它:`MEMORY_SESSION_ID=<回傳的 session id>`。
-新場才跑這一動;本機游標(現在節點、MEMORY_SESSION_ID)不進 Git。
+新場才跑這一動。拿到 MEMORY_SESSION_ID 之後立刻寫本機游標:
+
+```
+${CLAUDE_PLUGIN_ROOT}/scripts/check-devtalk-graph.sh --write-cursor N1-start "$MEMORY_SESSION_ID"
+```
+
+本機游標(現在節點、MEMORY_SESSION_ID)不進 Git。
 重跑從現在節點繼續,不重開 talk start。
 下一次 /dev-talk 一律新 session,絕不接上一場。
-Bash 的 talk start / talk end 會被 `devflow-prebash` 拿去跑
-`scripts/check-devtalk-graph.sh --action`(游標在時;沒游標但已有 OPEN
-session 再 talk start 仍擋)。
+Bash 的 talk start 與收尾指令會被 `devflow-prebash` 拿去跑
+`scripts/check-devtalk-graph.sh --action`(游標在時;沒游標檔時 write_code /
+talk_end / write_knowledge 與已有 OPEN session 再 talk start 仍擋)。
 
 **每輪對話**(使用者答完、或你做了關鍵覆述/確認提問之後):
 
@@ -93,69 +99,24 @@ dev-memory.py talk abort $MEMORY_SESSION_ID --reason "<原因>"
 
 ## 執行清單(開場第一動:把 0-11 建成 todo;逐項達成完成條件才勾;禁跳項、禁併項)
 
-0. **規模、範圍與起點**。多個需求 → 拆,一 slug 一討論,問使用者先談哪個;
-   同時問**起點**:對這塊多熟、想法走到哪 —— 據此校準提問深度(只調深淺,
-   不放鬆查證與必問)。微型需求(單點小改)→ 徵使用者同意走精簡(步 1 快掃、
-   步 2 只問 Journey 與 Workarounds、步 5/6 各一輪帶過,骨架照填可短)。
-   完成 = slug、起點、模式三者定案。
-1. **盤現況**。讀白名單 → 條列事實(帶數字與檔案位置),**含受影響面清點**
-   (這個想法會碰到哪些既有程式碼/檔案/介面/資料),一併回報使用者。
-   完成 = 使用者認可;**認可後的清單 = 本次「已核事實」**。
-2. **真實世界互動盤點**。問「人現在**怎麼真的**完成這件工作」,寫成五份記錄:
-   ①**Actors** —— 誰參與、真實目標、權限、掌握哪些資訊、**缺**哪些資訊、用哪些
-   系統外工具;**系統外角色也要列**(例如只靠 Email 往返、沒有帳號的窗口),
-   權限欄寫「系統外」。
-   ②**Current Journey** —— 沒有這個功能時的現況旅程,一步一列:誰、真實動作、
-   使用工具、**等誰**、系統留下什麼、痛點。
-   ③**Workarounds** —— 實際靠什麼完成(Excel / 通訊軟體 / Email / 紙本 / 電話 /
-   口頭交接),**哪些步驟完全沒留下紀錄**。
-   ④**Exceptions** —— 誰可以跳過標準做法?資料不完整怎麼辦?對方不回覆怎麼辦?
-   操作中斷怎麼恢復?會不會重複、撤回、改派、多人同時處理?
-   ⑤**Evidence** —— 逐條列證據來源(實際案例 / 訪談 / 正式辦法文件 / 去識別化
-   log / 表單 / 畫面 / 使用者反映)。
-   三條紀律:優先問**「最近一次真的發生時怎麼處理」**,不只問理想做法;正式辦法
-   與實際做法不同時**兩者都記**、不擇一;未有證據的敘述標 `[Assumption]`,
-   **不得把推測寫成事實**;涉醫療/個資只保存去識別化內容。
-   完成 = 五份齊,且每條敘述可分辨「有證據」或 `[Assumption]`。
+0. **規模、範圍與起點**。正本:`nodes/S0-scope.md`。入口摘要:多需求拆 slug、問起點校準深度、微型可走精簡。完成條件見該節點。
+1. **盤現況**。正本:`nodes/S1-survey.md`。入口摘要:讀白名單條列事實含受影響面,認可後即已核事實。完成條件見該節點。
+2. **真實世界互動盤點**。正本:`nodes/S2-world.md`。入口摘要:五份記錄(Actors / Current Journey / Workarounds / Exceptions / Evidence),無證據標 `[Assumption]`。完成條件見該節點。
 3. **逐題逼問**(循環)。正本:`nodes/N3-probe.md`。入口摘要:一次只問一題、
    覆述推理鏈、清單外斷言必問;條件子條款見該節點。完成條件見該節點。
-4. **驗收雛形**。每條 Goal 翻成 1-3 條可驗證敘述(假設…當…則…,使用者視角、
-   不綁做法),**每條再問出「怎麼看到」三件**:①從哪裡看(畫面/端點/檔案/log)
-   ②看到什麼算對(具體值、畫面上的字、狀態變化)③拿什麼試(現成的真實資料或
-   情境;沒有就問要不要造一筆)。說不出怎麼看到 = 這條其實還沒定義清楚,回步 3 問。
-   **問現象不問做法** —— 「你會在哪看到它發生」可問,「該用什麼元件/回什麼 JSON」不問。
-   逐條請使用者確認。完成 = 全數逐條確認且各有觀測方式。
-5. **發散推演**。至少一輪 what-if(「往 X 走會怎樣?」「限制 Y 不存在呢?」
-   「最極端情境?」),純發散、不收斂,結果記入 Interview Log 發散段。
-   完成 = Log 有發散段。
-6. **盲點掃描**。列出「使用者沒想到要問、答案可能改變方向」的 unknown unknowns,
-   逐條解釋;並列出「使用者可能覺得顯然而沒說出口」的隱含預設,逐條問使用者確認。
-   新問題 → 步 3 重開再問。完成 = 使用者對兩份清單皆回應過(至少一句,沉默不算)。
+4. **驗收雛形**。正本:`nodes/S4-accept.md`。入口摘要:Goal 翻成假設…當…則…並問出怎麼看到。完成條件見該節點。
+5. **發散推演**。正本:`nodes/S5-diverge.md`。入口摘要:至少一輪 what-if,結果記入 Interview Log。完成條件見該節點。
+6. **盲點掃描**。正本:`nodes/S6-blind.md`。入口摘要:unknown unknowns 與隱含預設兩份清單都要回應。完成條件見該節點。
 7. **落檔 md**。正本:`nodes/N9-write-md.md`。寫 `1-discussion.md`(骨架見下);
    重跑覆寫同一檔,不另存。完成條件見該節點。
-8. **獨立複核**(換上嚴格審視者視角重讀全檔):①每條驗收敘述自洽嗎?有無
-   斷言超出可驗範圍?②所有結論都有「已核事實」或問答背書嗎?③與使用者
-   原話有無矛盾?④Interview Log 每條齊「事實→推理→結論」三段嗎?
-   ⑤範圍對照步 0 的界定,有沒有悄悄長大?長大 → 問使用者拆或收。⑥同一
-   名詞/事實多處出現,逐處比對數字、條件、方向一致嗎?不一致 → 統一
-   或標 Open Question。⑦真實世界五份裡,每條沒有證據的敘述都標了
-   `[Assumption]` 嗎?有沒有把訪談印象寫成事實?
-   發現問題 → 改檔或回步 3 補問。完成 = 七掃完畢、問題清零。
-9. **詞彙對帳**。先**查長期記憶的現況**(`dev-memory.py ask "<詞> 是什麼意思"`
-   ——其他討論可能已經確認過詞條,只增改自己本輪的、不動他人的),再把本輪浮現的
-   業務詞彙逐一登記成候選(`dev-memory.py talk propose $MEMORY_SESSION_ID
-   --kind domain --payload-json '{"key":"…","title":"…","body":"…"}'`;
-   詞條 + _Avoid_ 寫在同一則裡;只收語言不收解法 —— 逐詞自問「這詞條在解釋語言,
-   還是在記方案?」後者刪;尚未實作的語意用 `--kind intent` 而不是 domain,
-   它不能被當成現況;同名異義分立互註)。使用者明確確認的才
-   `dev-memory.py talk confirm <candidate>`;使用者否定的走
-   `dev-memory.py talk reject <candidate>`;使用者**推翻先前已記錄的理解**時走
+8. **獨立複核**。正本:`nodes/S8-review.md`。入口摘要:換嚴格審視者視角七掃。完成條件見該節點。
+9. **詞彙對帳**。正本:`nodes/S9-terms.md`。入口摘要:先查長期記憶現況,再登記候選。
+   `dev-memory.py talk propose $MEMORY_SESSION_ID`;使用者確認才
+   `dev-memory.py talk confirm <candidate>`;否定走
+   `dev-memory.py talk reject <candidate>`;推翻先前理解走
    `dev-memory.py talk correct $MEMORY_SESSION_ID --kind domain --key <詞>
-   --title "<新理解>" --reason "<為什麼改>"`(舊的會保留並標成被取代,
-   看得到轉折才叫記憶)。**未確認的候選一律不寫進長期記憶**。完成 = 逐詞打勾。
-10. **產 html**。先自核 md:Open Questions 僅含三態符號,出現其他記號(如 `[ ]`)
-    → 回步 3 定態後才產。`1-discussion.html` **只從 md 生成**(md 是唯一正本;
-    html 要改,先改 md 再重生)。內容與圖判準見「視覺版」。完成 = 自核過+七件齊。
+   --title "<新理解>" --reason "<為什麼改>"`。**未確認的候選一律不寫進長期記憶**。完成條件見該節點。
+10. **產 html**。正本:`nodes/S10-html.md`。入口摘要:Open Questions 僅三態;`1-discussion.html` 只從 md 生成。完成條件見該節點。
 11. **過目與收尾**。正本:`nodes/N13-end.md`。html 過目後,使用者點頭才
     跑 `dev-memory.py talk end $MEMORY_SESSION_ID`。它回 `promoted: 0` 是合法結果。完成條件見該節點。
 

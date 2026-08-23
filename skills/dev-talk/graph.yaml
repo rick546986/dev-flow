@@ -1,10 +1,10 @@
 # 下一跳唯一正本。本機游標不進 Git。
-# 暫留步是真節點(skill-legacy-*),不是 via 裝飾字串。正本仍在 SKILL.md。
+# 0/1/2/4/5/6/8/9/10 是真節點檔,不是 skill-legacy 團塊。SKILL.md 只留入口與摘要。
 entry: N1-start
 nodes:
   N1-start:
     file: nodes/N1-start.md
-    next: skill-legacy-0-2
+    next: S0-scope
     allow:
       - talk_start
     forbid:
@@ -12,10 +12,26 @@ nodes:
       - write_knowledge
       - talk_end
       - write_code
-  skill-legacy-0-2:
-    kind: skill-legacy
-    entry: SKILL.md
-    steps: "0-2"
+  S0-scope:
+    file: nodes/S0-scope.md
+    next: S1-survey
+    forbid:
+      - talk_start
+      - talk_end
+      - write_code
+      - write_knowledge
+      - write_discussion_md
+  S1-survey:
+    file: nodes/S1-survey.md
+    next: S2-world
+    forbid:
+      - talk_start
+      - talk_end
+      - write_code
+      - write_knowledge
+      - write_discussion_md
+  S2-world:
+    file: nodes/S2-world.md
     next: N3-probe
     forbid:
       - talk_start
@@ -25,7 +41,7 @@ nodes:
       - write_discussion_md
   N3-probe:
     file: nodes/N3-probe.md
-    next: skill-legacy-4-6
+    next: S4-accept
     allow:
       - talk_turn
       - talk_propose
@@ -34,10 +50,26 @@ nodes:
       - write_knowledge
       - talk_end
       - write_code
-  skill-legacy-4-6:
-    kind: skill-legacy
-    entry: SKILL.md
-    steps: "4-6"
+  S4-accept:
+    file: nodes/S4-accept.md
+    next: S5-diverge
+    forbid:
+      - talk_start
+      - talk_end
+      - write_code
+      - write_knowledge
+      - write_discussion_md
+  S5-diverge:
+    file: nodes/S5-diverge.md
+    next: S6-blind
+    forbid:
+      - talk_start
+      - talk_end
+      - write_code
+      - write_knowledge
+      - write_discussion_md
+  S6-blind:
+    file: nodes/S6-blind.md
     next: N9-write-md
     forbid:
       - talk_start
@@ -47,7 +79,7 @@ nodes:
       - write_discussion_md
   N9-write-md:
     file: nodes/N9-write-md.md
-    next: skill-legacy-8-10
+    next: S8-review
     write:
       - docs/dev/<slug>/1-discussion.md
     write_mode: overwrite
@@ -58,10 +90,29 @@ nodes:
       - write_code
       - write_knowledge
       - talk_start
-  skill-legacy-8-10:
-    kind: skill-legacy
-    entry: SKILL.md
-    steps: "8-10"
+  S8-review:
+    file: nodes/S8-review.md
+    next: S9-terms
+    forbid:
+      - talk_start
+      - talk_end
+      - write_code
+      - write_knowledge
+      - write_discussion_md
+  S9-terms:
+    file: nodes/S9-terms.md
+    next: S10-html
+    allow:
+      - talk_propose
+      - talk_confirm
+    forbid:
+      - talk_start
+      - talk_end
+      - write_code
+      - write_knowledge
+      - write_discussion_md
+  S10-html:
+    file: nodes/S10-html.md
     next: N13-end
     forbid:
       - talk_start

@@ -71,7 +71,7 @@ def expect(label, tree, want_rc, needle=None, extra=None):
 with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
     good = os.path.join(tmpbase, "good")
     shutil.copytree(os.path.join(fix, "good"), good)
-    expect("G-0 對照組(合法四節點 graph)必須綠", good, 0)
+    expect("G-0 對照組(合法節點鏈 graph)必須綠", good, 0)
 
     old = os.path.join(tmpbase, "old")
     shutil.copytree(os.path.join(fix, "old-skill"), old)
@@ -100,7 +100,7 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
     seed(case)
     graph = os.path.join(case, "skills", "dev-talk", "graph.yaml")
     text = open(graph, encoding="utf-8").read().replace(
-        "N3-probe:\n    file: nodes/N3-probe.md\n    next: skill-legacy-4-6",
+        "N3-probe:\n    file: nodes/N3-probe.md\n    next: S4-accept",
         "N3-probe:\n    file: nodes/N3-probe.md\n    next: N13-end",
     )
     open(graph, "w", encoding="utf-8").write(text)
@@ -187,10 +187,10 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
     # 舊實作:N1 只有 allow talk_start,沒有 forbid talk_start_if_session
     if "talk_start_if_session" in text:
         text = text.replace(
-            "  N1-start:\n    file: nodes/N1-start.md\n    next: skill-legacy-0-2\n"
+            "  N1-start:\n    file: nodes/N1-start.md\n    next: S0-scope\n"
             "    allow:\n      - talk_start\n    forbid:\n"
             "      - talk_start_if_session\n",
-            "  N1-start:\n    file: nodes/N1-start.md\n    next: skill-legacy-0-2\n"
+            "  N1-start:\n    file: nodes/N1-start.md\n    next: S0-scope\n"
             "    allow:\n      - talk_start\n    forbid:\n",
         )
         open(graph, "w", encoding="utf-8").write(text)
@@ -207,16 +207,108 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
         "allow",
         extra=["--action", os.path.join(actions, "n13-end-ok.json")],
     )
+    expect(
+        "0947-P0 沒游標檔 → write_code --action 必須紅",
+        good,
+        1,
+        "write_code",
+        extra=["--action", os.path.join(actions, "no-cursor-write-code.json")],
+    )
+    expect(
+        "0947-P0 沒游標檔 → talk_end --action 必須紅",
+        good,
+        1,
+        "talk_end",
+        extra=["--action", os.path.join(actions, "no-cursor-talk-end.json")],
+    )
+    expect(
+        "0947-P0 沒游標檔 → write_knowledge --action 必須紅",
+        good,
+        1,
+        "write_knowledge",
+        extra=["--action", os.path.join(actions, "no-cursor-write-knowledge.json")],
+    )
+
+    case = os.path.join(tmpbase, "skill-no-cursor-call")
+    seed(case)
+    skill = os.path.join(case, "skills", "dev-talk", "SKILL.md")
+    text = open(skill, encoding="utf-8").read().replace("--write-cursor", "--no-cursor-call")
+    open(skill, "w", encoding="utf-8").write(text)
+    expect("0947-P0 SKILL 缺 --write-cursor 必須紅", case, 1, "--write-cursor")
+
+    case = os.path.join(tmpbase, "n1-no-cursor-call")
+    seed(case)
+    n1 = os.path.join(case, "skills", "dev-talk", "nodes", "N1-start.md")
+    text = open(n1, encoding="utf-8").read().replace("--write-cursor", "--no-cursor-call")
+    open(n1, "w", encoding="utf-8").write(text)
+    expect("0947-P0 N1 缺 --write-cursor 必須紅", case, 1, "--write-cursor")
+
+    case = os.path.join(tmpbase, "missing-s0")
+    seed(case)
+    os.remove(os.path.join(case, "skills", "dev-talk", "nodes", "S0-scope.md"))
+    expect("0947-P0 缺 S0-scope 節點檔必須紅", case, 1, "S0-scope")
+
+    case = os.path.join(tmpbase, "s4-no-entry")
+    seed(case)
+    s4 = os.path.join(case, "skills", "dev-talk", "nodes", "S4-accept.md")
+    text = open(s4, encoding="utf-8").read().replace("## 進條件", "## 入口備註")
+    open(s4, "w", encoding="utf-8").write(text)
+    expect("0947-P0 leftover 缺進條件必須紅", case, 1, "進條件")
+
+    case = os.path.join(tmpbase, "skip-s4")
+    seed(case)
+    graph = os.path.join(case, "skills", "dev-talk", "graph.yaml")
+    text = open(graph, encoding="utf-8").read().replace(
+        "N3-probe:\n    file: nodes/N3-probe.md\n    next: S4-accept",
+        "N3-probe:\n    file: nodes/N3-probe.md\n    next: S5-diverge",
+    )
+    open(graph, "w", encoding="utf-8").write(text)
+    n3 = os.path.join(case, "skills", "dev-talk", "nodes", "N3-probe.md")
+    open(n3, "w", encoding="utf-8").write(
+        open(n3, encoding="utf-8").read().replace("S4-accept", "S5-diverge")
+    )
+    expect("0947-P0 N3 next 跳過 S4 必須紅", case, 1, "暫留")
+
+    case = os.path.join(tmpbase, "dual-s2")
+    seed(case)
+    skill = os.path.join(case, "skills", "dev-talk", "SKILL.md")
+    open(skill, "a", encoding="utf-8").write("\n系統外角色也要列\n")
+    expect("0947-P0 SKILL 與 S2 雙正本必須紅", case, 1, "雙正本")
+
+    wrote = os.path.join(tmpbase, "cursor-out")
+    os.makedirs(wrote)
+    proc = subprocess.run(
+        ["bash", check, "--write-cursor", "N1-start", "sess-write", wrote],
+        capture_output=True, text=True,
+    )
+    cursor_path = os.path.join(wrote, ".devtalk-cursor.json")
+    got = {}
+    if os.path.isfile(cursor_path):
+        got = json.load(open(cursor_path, encoding="utf-8"))
+    ok = (
+        proc.returncode == 0
+        and got.get("node") == "N1-start"
+        and got.get("MEMORY_SESSION_ID") == "sess-write"
+    )
+    if ok:
+        passed += 1
+        print("  ✓ 0947-P0 --write-cursor 真的寫出 node + MEMORY_SESSION_ID")
+    else:
+        failed += 1
+        print(
+            f"  ✗ 0947-P0 --write-cursor (rc={proc.returncode} got={got})",
+            file=sys.stderr,
+        )
 
     case = os.path.join(tmpbase, "skip-legacy")
     seed(case)
     graph = os.path.join(case, "skills", "dev-talk", "graph.yaml")
     text = open(graph, encoding="utf-8").read()
-    text = text.replace("    next: skill-legacy-4-6\n", "    next: N9-write-md\n")
+    text = text.replace("    next: S4-accept\n", "    next: N9-write-md\n")
     open(graph, "w", encoding="utf-8").write(text)
     n3 = os.path.join(case, "skills", "dev-talk", "nodes", "N3-probe.md")
     n3text = open(n3, encoding="utf-8").read().replace(
-        "skill-legacy-4-6", "N9-write-md"
+        "S4-accept", "N9-write-md"
     )
     open(n3, "w", encoding="utf-8").write(n3text)
     expect("0030-P0 N3 next 跨過暫留步 4–6 必須紅", case, 1, "暫留")
@@ -320,6 +412,43 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
             if os.path.isfile(cursor):
                 os.remove(cursor)
             shutil.rmtree(home, ignore_errors=True)
+
+        if os.path.isfile(cursor):
+            os.remove(cursor)
+        for label, cmd, needle in (
+            ("talk end", "memory/dev-memory.py talk end sess-x", "talk_end"),
+            (
+                "write knowledge",
+                "echo x > .dev-flow/projects/x/knowledge/foo.md",
+                "write_knowledge",
+            ),
+        ):
+            payload = json.dumps({
+                "tool_name": "Bash",
+                "tool_input": {"command": cmd},
+            })
+            proc = subprocess.run(
+                ["bash", prebash],
+                input=payload,
+                capture_output=True,
+                text=True,
+                cwd=root,
+            )
+            blob = (proc.stdout or "") + "\n" + (proc.stderr or "")
+            ok = proc.returncode == 2 and (
+                needle in blob or "游標" in blob or "--action" in blob
+            )
+            if ok:
+                passed += 1
+                print(f"  ✓ 0947-P0 prebash:沒游標 {label} 必須擋")
+            else:
+                failed += 1
+                print(
+                    f"  ✗ 0947-P0 prebash 沒游標 {label} "
+                    f"(rc={proc.returncode} want=2)",
+                    file=sys.stderr,
+                )
+                print(blob[-800:], file=sys.stderr)
     else:
         failed += 1
         print("  ✗ 0030-P1 找不到 hooks/devflow-prebash.sh", file=sys.stderr)
@@ -329,7 +458,7 @@ print(f"=== test-devtalk-graph:{passed}/{total} ===")
 if failed:
     print(f"⛔ {failed} 案未依預期", file=sys.stderr)
     sys.exit(1)
-if total < 21:
+if total < 33:
     print(f"FATAL: 只跑了 {total} 案,治具沒有真的跑完", file=sys.stderr)
     sys.exit(2)
 print("✅ PASS:graph 負向牙全過")

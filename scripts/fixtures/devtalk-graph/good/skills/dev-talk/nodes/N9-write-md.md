@@ -22,4 +22,4 @@
 
 ## 下一跳
 
-skill-legacy-8-10
+S8-review

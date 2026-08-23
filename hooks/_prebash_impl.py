@@ -82,7 +82,8 @@ def _devtalk_graph_action(command):
     """Stage 1 graph:把 talk start/end / 知識目錄寫入接到 check-devtalk-graph --action。
 
     /dev-talk 通常未武裝,必須在 load_state 早退之前跑,否則 --action 永遠只活在測試。
-    沒有本機游標 = 新場,放行;但已有 OPEN session 再 talk start 仍擋。
+    沒有本機游標 = 新場 talk start 仍放行;已有 OPEN session 再 talk start 仍擋。
+    沒游標檔時 talk_end / write_knowledge / write_code 仍送 --action,必須 deny。
     """
     action = None
     if re.search(r"dev-memory\.py\s+talk\s+start\b", command):
@@ -103,12 +104,15 @@ def _devtalk_graph_action(command):
         if cursor and not cursor.get("node"):
             cursor = None
     if cursor is None:
-        if action != "talk_start":
+        if action == "talk_start":
+            sid = _open_talk_session_id()
+            if not sid:
+                return
+            cursor = {"MEMORY_SESSION_ID": sid}
+        elif action in ("talk_end", "write_knowledge", "write_code"):
+            cursor = {}
+        else:
             return
-        sid = _open_talk_session_id()
-        if not sid:
-            return
-        cursor = {"MEMORY_SESSION_ID": sid}
     check = os.path.join(root, "scripts", "check-devtalk-graph.sh")
     if not os.path.isfile(check):
         return

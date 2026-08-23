@@ -15,7 +15,8 @@
 
 ## 做什麼
 
-跑 `dev-memory.py talk start`。把 0-11 建成 todo。本機記下游標 = N1-start。
+跑 `dev-memory.py talk start`。把 0-11 建成 todo。
+跑 `scripts/check-devtalk-graph.sh --write-cursor N1-start "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 
@@ -23,4 +24,4 @@
 
 ## 下一跳
 
-skill-legacy-0-2
+S0-scope
