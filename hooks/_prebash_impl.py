@@ -78,12 +78,95 @@ def _open_talk_session_id():
     return None
 
 
+def _python_script_writes(command):
+    """python3 script.py / python script.py:腳本裡有 open( 或 .write( 才算寫檔。
+
+    不是 -c。旗標在 .py 前也算(python3 -u / python -B)。
+    檔不存在就不編(沒東西可讀)。只讀腳本(只有 print)不編。
+    """
+    match = re.search(
+        r"\bpython3?(?:\s+-[A-Za-z0-9]+)*\s+([^\s-]\S*\.py)\b",
+        command,
+    )
+    if not match:
+        return False
+    path = match.group(1).strip("'\"")
+    if not os.path.isabs(path):
+        path = os.path.join(root, path)
+    if not os.path.isfile(path):
+        return False
+    try:
+        text = open(path, encoding="utf-8").read(1 << 20)
+    except OSError:
+        return False
+    return "open(" in text or ".write(" in text
+
+
+def _copy_like_writes(command):
+    """cp / mv / install:開頭附近、看得到來源+目標兩個 operand 才編成。
+
+    不掃 rsync / ln / install -d 建目錄。
+    cp --help / mv --version / install --help、只有一個 operand 不編。
+    """
+    match = re.search(
+        r"(?:^|[;&|\n]\s*)(cp|mv|install)\b((?:\s+-\S+)*)\s*(.*)$",
+        command,
+    )
+    if not match:
+        return False
+    verb, flags, rest = match.group(1), match.group(2) or "", match.group(3)
+    blob = flags + " " + rest
+    if re.search(r"--help|--version", blob):
+        return False
+    if verb == "install" and re.search(r"(?:^|\s)-d\b", flags):
+        return False
+    operands = [tok for tok in rest.split() if not tok.startswith("-")]
+    return len(operands) >= 2
+
+
+def _looks_like_write_code(command):
+    """最小編成:會改檔的 shell → write_code。不是沙盒、不是黑名單劇場。
+
+    只認這幾種字面(負向測真跑指令字串):
+    - python3 -c / python -c 裡有 open( 或 .write(
+    - python3 - << / python - <<(stdin 餵)同一字串有 open( 或 .write(
+    - python3 script.py / python script.py,腳本裡有 open( 或 .write(
+      (旗標在 .py 前也算:python3 -u / python -B)
+    - > / >> 寫到檔(/dev/null 與 2>&1 這類 fd 複製除外)
+    - heredoc 寫檔(cat > file <<EOF;有 > 的那種已被上一條咬到)
+    - tee 寫到檔(/dev/null 除外)
+    - sed -i / sed --in-place 改檔
+    - cp / mv / install 有來源+目標兩個 operand(不含 --help/--version、install -d)
+    只讀(cat / rg / ls)與 talk turn/propose 不會進這裡。
+    不掃整段 shell 的任意 python+open((會誤咬 rg "open(" && python3 read.py)。
+    """
+    if re.search(r"\bpython3?\s+-c\b", command):
+        if "open(" in command or ".write(" in command:
+            return True
+    if re.search(r"\bpython3?(?:\s+-)?\s*<<", command):
+        if "open(" in command or ".write(" in command:
+            return True
+    if _python_script_writes(command):
+        return True
+    if re.search(r"(?:>>|>)\s*(?!/dev/null\b)(?!\&)[A-Za-z0-9_./~-]+", command):
+        return True
+    if re.search(r"\btee\b(?:\s+-[a-zA-Z]+)*\s+(?!/dev/null\b)\S+", command):
+        return True
+    if re.search(r"\bsed\s+(?:-i(?:[.\s=']|$)|--in-place\b)", command):
+        return True
+    if _copy_like_writes(command):
+        return True
+    return False
+
+
 def _devtalk_graph_action(command):
-    """Stage 1 graph:把 talk start/end / 知識目錄寫入接到 check-devtalk-graph --action。
+    """Stage 1 graph:把 talk start/end / 知識目錄寫入 / 會改檔的 shell 接到 --action。
 
     /dev-talk 通常未武裝,必須在 load_state 早退之前跑,否則 --action 永遠只活在測試。
     沒有本機游標 = 新場 talk start 仍放行;已有 OPEN session 再 talk start 仍擋。
     沒游標檔時 talk_end / write_knowledge / write_code 仍送 --action,必須 deny。
+    write_code 只在本機有游標檔或已有 OPEN talk session 時才編成 —— 未開場的
+    普通寫檔不要誤咬。Stage 6 武裝期對 .devflow 偽造的 X-5b 信任邊界不動。
     """
     action = None
     if re.search(r"dev-memory\.py\s+talk\s+start\b", command):
@@ -92,6 +175,10 @@ def _devtalk_graph_action(command):
         action = "talk_end"
     elif re.search(r"\.dev-flow/.+knowledge", command):
         action = "write_knowledge"
+    elif _looks_like_write_code(command):
+        cursor_path = os.path.join(root, ".devtalk-cursor.json")
+        if os.path.isfile(cursor_path) or _open_talk_session_id():
+            action = "write_code"
     if not action:
         return
     cursor_path = os.path.join(root, ".devtalk-cursor.json")

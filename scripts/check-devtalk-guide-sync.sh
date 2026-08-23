@@ -235,6 +235,9 @@ skill_step_count = skill_range_count
 guide_step_count = guide_heading_count
 step_count_mismatch = skill_step_count != guide_step_count
 
+STALE_FOUR_ONLY = "只拆了四個" in guide_text
+STALE_BODY_IN_SKILL = "正文還在 SKILL.md" in guide_text
+
 
 # ─────────────────────────────────── 結論 ───────────────────────────────────
 FAILURES = []
@@ -257,6 +260,15 @@ if step_count_mismatch:
     )
 else:
     print(f"[steps] ✅ SKILL.md 與 guide 步數一致,皆為 {skill_step_count} 步。")
+
+if STALE_FOUR_ONLY:
+    FAILURES.append(
+        "[nodes] ❌ guide 仍寫「只拆了四個」——13 節點已落地,這段是假綠導覽"
+    )
+if STALE_BODY_IN_SKILL:
+    FAILURES.append(
+        "[nodes] ❌ guide 仍寫「正文還在 SKILL.md」——每步已有節點檔,不要把正本指回 SKILL"
+    )
 
 if FAILURES:
     print(file=sys.stderr)

@@ -15,6 +15,7 @@ MEMORY_SESSION_ID 已在。游標在 S1-survey。不得 talk start。
 ## 做什麼
 
 盤現況。認可後的清單 = 本次「已核事實」。
+跑 `scripts/check-devtalk-graph.sh --write-cursor S1-survey "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

@@ -255,6 +255,27 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
     open(s4, "w", encoding="utf-8").write(text)
     expect("0947-P0 leftover 缺進條件必須紅", case, 1, "進條件")
 
+    case = os.path.join(tmpbase, "n3-no-cursor-call")
+    seed(case)
+    n3 = os.path.join(case, "skills", "dev-talk", "nodes", "N3-probe.md")
+    text = open(n3, encoding="utf-8").read().replace("--write-cursor", "--no-cursor-call")
+    open(n3, "w", encoding="utf-8").write(text)
+    expect("P0-2 N3 缺 --write-cursor 必須紅", case, 1, "--write-cursor")
+
+    case = os.path.join(tmpbase, "n13-no-cursor-call")
+    seed(case)
+    n13 = os.path.join(case, "skills", "dev-talk", "nodes", "N13-end.md")
+    text = open(n13, encoding="utf-8").read().replace("--write-cursor", "--no-cursor-call")
+    open(n13, "w", encoding="utf-8").write(text)
+    expect("P0-2 N13 缺 --write-cursor 必須紅", case, 1, "--write-cursor")
+
+    case = os.path.join(tmpbase, "s0-no-cursor-call")
+    seed(case)
+    s0 = os.path.join(case, "skills", "dev-talk", "nodes", "S0-scope.md")
+    text = open(s0, encoding="utf-8").read().replace("--write-cursor", "--no-cursor-call")
+    open(s0, "w", encoding="utf-8").write(text)
+    expect("P0-2 S0-scope 缺 --write-cursor 必須紅", case, 1, "--write-cursor")
+
     case = os.path.join(tmpbase, "skip-s4")
     seed(case)
     graph = os.path.join(case, "skills", "dev-talk", "graph.yaml")
@@ -449,16 +470,290 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
                     file=sys.stderr,
                 )
                 print(blob[-800:], file=sys.stderr)
+
+        def run_prebash(command, env=None):
+            payload = json.dumps({
+                "tool_name": "Bash",
+                "tool_input": {"command": command},
+            })
+            return subprocess.run(
+                ["bash", prebash],
+                input=payload,
+                capture_output=True,
+                text=True,
+                cwd=root,
+                env=env,
+            )
+
+        def expect_prebash(label, command, want_rc, needle=None, env=None):
+            global passed, failed
+            proc = run_prebash(command, env=env)
+            blob = (proc.stdout or "") + "\n" + (proc.stderr or "")
+            ok = proc.returncode == want_rc
+            if ok and needle and needle not in blob:
+                ok = False
+                blob += f"\n[test] 期望輸出含 {needle!r}"
+            if ok:
+                passed += 1
+                print(f"  ✓ {label}")
+            else:
+                failed += 1
+                print(
+                    f"  ✗ {label} (rc={proc.returncode} want={want_rc})",
+                    file=sys.stderr,
+                )
+                print(blob[-800:], file=sys.stderr)
+
+        write_cmds = (
+            (
+                "python3 -c open/write",
+                "python3 -c \"open('n9-w.txt','w').write('x')\"",
+            ),
+            (
+                "python -c open",
+                "python -c \"open('n9-w2.txt','w')\"",
+            ),
+            ("redirect >", "echo n9-write > n9-redirect.txt"),
+            ("redirect >>", "echo n9-append >> n9-append.txt"),
+            ("tee", "echo n9-tee | tee n9-tee.txt"),
+        )
+        extra_dir = tempfile.mkdtemp(prefix="devtalk-wc-extra-")
+        write_py = os.path.join(extra_dir, "write_file.py")
+        read_py = os.path.join(extra_dir, "read_only.py")
+        open(write_py, "w", encoding="utf-8").write(
+            "open('/tmp/devtalk-wc-script-out','w').write('x')\n"
+        )
+        open(read_py, "w", encoding="utf-8").write("print('ok')\n")
+        extra_cmds = (
+            ("python3 script.py", f"python3 {write_py}"),
+            ("python script.py", f"python {write_py}"),
+            (
+                "heredoc",
+                "cat > /tmp/devtalk-wc-here.txt <<'EOF'\nhello\nEOF",
+            ),
+            ("sed -i", f"sed -i 's/a/b/' {write_py}"),
+        )
+        stdin_write = (
+            "python3 - <<'PY'\n"
+            "open('/tmp/x','w').write('x')\n"
+            "PY"
+        )
+        stdin_write_py = (
+            "python - <<'PY'\n"
+            "open('/tmp/x','w').write('x')\n"
+            "PY"
+        )
+        stdin_read = (
+            "python3 - <<'PY'\n"
+            "print('ok')\n"
+            "PY"
+        )
+        stdin_cmds = (
+            ("python3 - << write", stdin_write),
+            ("python - << write", stdin_write_py),
+        )
+        flag_cmds = (
+            ("python3 -u script.py", f"python3 -u {write_py}"),
+            ("python -B script.py", f"python -B {write_py}"),
+        )
+        copy_cmds = (
+            ("cp SRC DST", "cp README.md /tmp/devtalk-wc-cp.txt"),
+            ("cp -f", "cp -f README.md /tmp/devtalk-wc-cpf.txt"),
+            ("cp -a", "cp -a README.md /tmp/devtalk-wc-cpa.txt"),
+            ("mv SRC DST", "mv /tmp/devtalk-wc-mv-src /tmp/devtalk-wc-mv-dst"),
+            ("mv -f", "mv -f /tmp/devtalk-wc-mvf-src /tmp/devtalk-wc-mvf-dst"),
+            ("install SRC DST", "install README.md /tmp/devtalk-wc-inst.txt"),
+            ("install -m 644", "install -m 644 README.md /tmp/devtalk-wc-instm.txt"),
+        )
+        try:
+            open(cursor, "w", encoding="utf-8").write(json.dumps({
+                "node": "N9-write-md",
+                "MEMORY_SESSION_ID": "sess-n9",
+            }))
+            for label, cmd in write_cmds:
+                expect_prebash(
+                    f"P0-1 prebash:游標 N9 {label} 必須擋",
+                    cmd,
+                    2,
+                    "write_code",
+                )
+            for label, cmd in (
+                ("cat", "cat n9-redirect.txt"),
+                ("rg", "rg n9-write"),
+                ("ls", "ls"),
+                ("talk turn", "memory/dev-memory.py talk turn sess-n9"),
+                ("talk propose", "memory/dev-memory.py talk propose sess-n9"),
+                ("> /dev/null", "echo n9-null > /dev/null"),
+            ):
+                expect_prebash(
+                    f"P0-1 prebash:游標 N9 {label} 不得編成 write_code",
+                    cmd,
+                    0,
+                )
+
+            for label, cmd in extra_cmds:
+                expect_prebash(
+                    f"1238-P0 prebash:游標 N9 {label} 必須擋",
+                    cmd,
+                    2,
+                    "write_code",
+                )
+            expect_prebash(
+                "1238-P0 prebash:游標 N9 python3 只讀腳本不得誤編",
+                f"python3 {read_py}",
+                0,
+            )
+            for label, cmd in stdin_cmds + flag_cmds:
+                expect_prebash(
+                    f"1438-P0 prebash:游標 N9 {label} 必須擋",
+                    cmd,
+                    2,
+                    "write_code",
+                )
+            expect_prebash(
+                "1438-P0 prebash:游標 N9 python3 - << 只讀不得誤編",
+                stdin_read,
+                0,
+            )
+            expect_prebash(
+                "1438-P0 prebash:游標 N9 rg open( && python3 只讀不得誤編",
+                f'rg "open(" && python3 {read_py}',
+                0,
+            )
+            for label, cmd in copy_cmds:
+                expect_prebash(
+                    f"0941-P0 prebash:游標 N9 {label} 必須擋",
+                    cmd,
+                    2,
+                    "write_code",
+                )
+            for label, cmd in (
+                ("cp --help", "cp --help"),
+                ("mv --version", "mv --version"),
+                ("install --help", "install --help"),
+                ("cp 單 operand", "cp README.md"),
+            ):
+                expect_prebash(
+                    f"0941-P0 prebash:游標 N9 {label} 不得編成 write_code",
+                    cmd,
+                    0,
+                )
+        finally:
+            if os.path.isfile(cursor):
+                os.remove(cursor)
+
+        home = tempfile.mkdtemp(prefix="agentmem-p01-")
+        env = os.environ.copy()
+        env["AGENTMEM_HOME"] = home
+        mem = os.path.join(root, "memory", "dev-memory.py")
+        try:
+            start = subprocess.run(
+                [sys.executable, mem, "talk", "start", "p01-open-session"],
+                cwd=root, capture_output=True, text=True, env=env, timeout=30,
+            )
+            if os.path.isfile(cursor):
+                os.remove(cursor)
+            if start.returncode != 0:
+                failed += 1
+                print(
+                    f"  ✗ P0-1 建 OPEN session 失敗 "
+                    f"(rc={start.returncode})",
+                    file=sys.stderr,
+                )
+                print((start.stderr or start.stdout or "")[-400:], file=sys.stderr)
+            else:
+                for label, cmd in write_cmds:
+                    expect_prebash(
+                        f"P0-1 prebash:沒游標+OPEN session {label} 必須擋",
+                        cmd,
+                        2,
+                        "write_code",
+                        env=env,
+                    )
+                for label, cmd in extra_cmds:
+                    expect_prebash(
+                        f"1238-P0 prebash:沒游標+OPEN session {label} 必須擋",
+                        cmd,
+                        2,
+                        "write_code",
+                        env=env,
+                    )
+                for label, cmd in stdin_cmds + flag_cmds:
+                    expect_prebash(
+                        f"1438-P0 prebash:沒游標+OPEN session {label} 必須擋",
+                        cmd,
+                        2,
+                        "write_code",
+                        env=env,
+                    )
+                for label, cmd in copy_cmds:
+                    expect_prebash(
+                        f"0941-P0 prebash:沒游標+OPEN session {label} 必須擋",
+                        cmd,
+                        2,
+                        "write_code",
+                        env=env,
+                    )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            failed += 1
+            print(f"  ✗ P0-1 prebash 建 OPEN session 失敗:{exc}", file=sys.stderr)
+        finally:
+            if os.path.isfile(cursor):
+                os.remove(cursor)
+            shutil.rmtree(home, ignore_errors=True)
+            shutil.rmtree(extra_dir, ignore_errors=True)
     else:
         failed += 1
         print("  ✗ 0030-P1 找不到 hooks/devflow-prebash.sh", file=sys.stderr)
+
+    guide_check = os.path.join(os.path.dirname(check), "check-devtalk-guide-sync.sh")
+    if os.path.isfile(guide_check):
+        live_skill = os.path.join(root, "skills", "dev-talk", "SKILL.md")
+        live_guide = os.path.join(root, "guides", "guide-dev-talk.html")
+        for label, phrase in (
+            ("只拆了四個", "只拆了四個"),
+            ("正文還在 SKILL.md", "正文還在 SKILL.md"),
+        ):
+            case = os.path.join(tmpbase, f"guide-stale-{label}")
+            os.makedirs(os.path.join(case, "skills", "dev-talk"), exist_ok=True)
+            os.makedirs(os.path.join(case, "guides"), exist_ok=True)
+            shutil.copy(live_skill, os.path.join(case, "skills", "dev-talk", "SKILL.md"))
+            dest = os.path.join(case, "guides", "guide-dev-talk.html")
+            text = open(live_guide, encoding="utf-8").read()
+            if phrase not in text:
+                text = text.replace(
+                    '<h2 id="map">② 全程地圖(12 步)</h2>',
+                    f'<h2 id="map">② 全程地圖(12 步)</h2>\n  <p>{phrase}</p>',
+                )
+            open(dest, "w", encoding="utf-8").write(text)
+            proc = subprocess.run(
+                ["bash", guide_check, case],
+                capture_output=True,
+                text=True,
+            )
+            blob = (proc.stdout or "") + "\n" + (proc.stderr or "")
+            ok = proc.returncode == 1 and phrase in blob
+            if ok:
+                passed += 1
+                print(f"  ✓ P1 guide 出現「{label}」必須紅")
+            else:
+                failed += 1
+                print(
+                    f"  ✗ P1 guide 「{label}」 "
+                    f"(rc={proc.returncode} want=1)",
+                    file=sys.stderr,
+                )
+                print(blob[-800:], file=sys.stderr)
+    else:
+        failed += 1
+        print("  ✗ P1 找不到 scripts/check-devtalk-guide-sync.sh", file=sys.stderr)
 
 total = passed + failed
 print(f"=== test-devtalk-graph:{passed}/{total} ===")
 if failed:
     print(f"⛔ {failed} 案未依預期", file=sys.stderr)
     sys.exit(1)
-if total < 33:
+if total < 91:
     print(f"FATAL: 只跑了 {total} 案,治具沒有真的跑完", file=sys.stderr)
     sys.exit(2)
 print("✅ PASS:graph 負向牙全過")

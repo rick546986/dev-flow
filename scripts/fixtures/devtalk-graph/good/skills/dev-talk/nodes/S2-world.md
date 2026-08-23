@@ -15,6 +15,7 @@ MEMORY_SESSION_ID 已在。游標在 S2-world。不得 talk start。
 ## 做什麼
 
 真實世界。系統外角色也要列。
+跑 `scripts/check-devtalk-graph.sh --write-cursor S2-world "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

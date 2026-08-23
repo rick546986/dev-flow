@@ -17,6 +17,7 @@ MEMORY_SESSION_ID 已在。步 0–2 已完成。游標在 N3 或剛從步 2 進
 每輪三律:一次一問、覆述推理鏈、清單外斷言必問。
 3a. 前提被推翻 → 核銷後才繼續。
 3b. 發現實為多題 → 停,提議拆分。
+跑 `scripts/check-devtalk-graph.sh --write-cursor N3-probe "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

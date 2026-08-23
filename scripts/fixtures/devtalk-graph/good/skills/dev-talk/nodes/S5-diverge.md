@@ -15,6 +15,7 @@ MEMORY_SESSION_ID 已在。游標在 S5-diverge。不得 talk start。
 ## 做什麼
 
 發散。純發散、不收斂。
+跑 `scripts/check-devtalk-graph.sh --write-cursor S5-diverge "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

@@ -15,6 +15,7 @@ MEMORY_SESSION_ID 已在。游標在 S10-html。不得 talk start。
 ## 做什麼
 
 產 html。html 要改,先改 md 再重生。
+跑 `scripts/check-devtalk-graph.sh --write-cursor S10-html "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

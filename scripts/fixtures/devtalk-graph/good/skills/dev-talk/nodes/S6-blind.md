@@ -15,6 +15,7 @@ MEMORY_SESSION_ID 已在。游標在 S6-blind。不得 talk start。
 ## 做什麼
 
 盲點。沉默不算。
+跑 `scripts/check-devtalk-graph.sh --write-cursor S6-blind "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 
