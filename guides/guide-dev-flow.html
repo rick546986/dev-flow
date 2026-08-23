@@ -145,8 +145,8 @@
 <body>
 <main>
   <h1>dev-flow 導覽 · 開發流程 SOP</h1>
-  <p class="muted">給 4-6 人團隊 + AI 協作的開發流程乘客手冊 —— 七個階段怎麼走、三道 gate 卡哪裡、
-  哪站該用哪個模型、每站進場先做什麼。正本是 <code>README.md</code>,本頁是導覽,兩者不一致以 README 為準。</p>
+  <p class="muted">七個階段怎麼走、三道 gate 卡哪裡、哪站用哪個模型。規則在 <code>README.md</code>。
+  本頁跟 README 打架,以 README 為準。</p>
 
   <nav>
     <a href="#flow">① 七階段流程圖</a>
@@ -162,8 +162,10 @@
   </nav>
 
   <h2 id="flow">① 七階段流程圖(含 Gate 與模型分層)</h2>
-  <p class="lead">這章要你懂:<strong>七站是一條單行道,只有三個地方會被人擋下來</strong>(G1/G2/G3)——
-  而每一站用哪個模型不是自由心證,是綁死的。唯一的捷徑是 G1 過且無技術疑問時跳過選配的 3。</p>
+  <p class="lead">這章要你懂:<strong>七站單行,只有 G1 / G2 / G3 會被人擋</strong>。
+  哪站用哪個模型是綁死的。G1 過且沒技術疑問,可以跳過選配的 3。
+  Stage 1 本身是可重跑的節點鏈,下一跳看 <code>graph.yaml</code>,細節見
+  <a href="guide-dev-talk.html#map">guide-dev-talk 全程地圖</a>。</p>
 
   <div class="figwrap"><svg id="fig-flow" viewBox="0 0 880 330" role="img"
        aria-label="dev-flow 七階段全程圖:上排 1 討論到 4 規格,下排 G2 到 PR,含 G1 跳過 3 的捷徑與模型分層配色">
@@ -422,16 +424,14 @@
   artifacts 與 <code>CLAUDE.md</code> 的技術規則段</strong>,再派 sonnet 掃 codebase 抓候選 ——
   <strong>留著 <code>【待確認】</code> 的條目不得被當事實引用</strong>。
   另:<code>4-spec</code> 只寫本次 delta,<strong>不重抄 rules</strong>(見 <code>_templates/4-spec.md</code> 頂註)。</p>
-  <blockquote><strong>執行清單四原則</strong>(Stage 2/3/4/5/6/7;清單全文住各模板頂註,Stage 1 同款機制內建於
-  /dev-talk):①開場第一動把清單建成 todo,每步有「完成 =」客觀條件,達成才勾;
+  <blockquote><strong>執行清單四原則</strong>(Stage 2/3/4/5/6/7;清單全文住各模板頂註。Stage 1 同款機制內建於
+  /dev-talk,而且是節點鏈,下一跳看 <code>graph.yaml</code>):①開場第一動把清單建成 todo,每步有「完成 =」客觀條件,達成才勾;
   ②交審前必過自檢步 —— 產物勾稽、附證據,不憑印象;③禁跳項、禁併項;
   ④完成條件達不成 → 回上游步驟補,不硬過。</blockquote>
 
   <h2 id="checklists">④ 每站執行清單(逐字收錄自 <code>_templates/</code> 頂註)</h2>
-  <p class="lead">這章要你懂:<strong>本章不是解釋,是規則正本的複本</strong> —— 綠色左邊條的每一塊都是
-  逐字抄來的,一個字都沒改寫。要看某一站進場先做什麼,展開該站的區塊照著做就對了。
-  每個綠色區塊下方另外附一塊灰色的「白話對照+範例」,是幫助理解用的伴讀,不是正本——
-  規則以上方逐字原文為準。</p>
+  <p class="lead">這章要你懂:<strong>綠條是規則原文,一個字沒改</strong>。灰條是伴讀。打架以綠條為準。
+  Stage 1 不在這裡:12 步與節點鏈見 <a href="guide-dev-talk.html#map">guide-dev-talk</a>。</p>
 
   <div class="figwrap"><svg id="fig-checklist" viewBox="0 0 880 210" role="img"
        aria-label="七站中哪些有逐字收錄的執行清單區塊:6 站共 8 塊,Stage 1 不在收錄之列">
@@ -454,7 +454,7 @@
     <path class="edge" marker-end="url(#ar-ck)" d="M749,90 L762,90"/>
 
     <text class="dbad" x="12" y="40">綠底 = 有逐字收錄區塊(6 站 · 共 8 塊);白底 = 本節不收錄,不代表該站沒規則</text>
-    <text class="dl" x="12" y="152">Stage 1 沒有獨立執行清單:同款「開場建 todo、逐步完成、交審前自檢」機制內建在 /dev-talk skill 本體,不住 _templates/1-discussion.md 頂註。</text>
+    <text class="dl" x="12" y="152">Stage 1 沒有獨立執行清單:12 步住 /dev-talk;下一跳看 graph.yaml。未拆的步仍是真 hop,不能跳。</text>
     <text class="dl" x="12" y="172">Stage 5 是執行板、不是 gate 站(無 G 編號、免 reviewer 核准),執行清單步 0–6 一樣逐字收錄自 _templates/5-tasks.md 頂註(K-3,2026-08-16 補)。</text>
     <text class="dl" x="12" y="192">Stage 4 拆成「反模糊三律」+「執行清單」兩個獨立頂註區塊;Stage 6 拆成「執行清單」+「實作期規則」兩個獨立頂註區塊;其餘 4 站各一塊。</text>
   </svg></div>
@@ -1767,7 +1767,7 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             使用者指名),不進其他文件資料夾、不列目錄。最強用法:獨立 session。</td></tr>
     <tr><td>②</td><td>實作盲討論</td>
         <td>PreToolUse(<code>devflow-guard.sh</code>,<a href="#guard-pre">⑥-3</a>)</td>
-        <td>implementer 只讀 4/5/6 + CONTEXT + living spec,<strong>禁讀 1/2/3</strong>;要翻討論才寫得出來
+        <td>implementer 只讀 4/5/6 + 長期記憶查詢結果 + living spec,<strong>禁讀 1/2/3</strong>;要翻討論才寫得出來
             = spec 不完整 → 回 G2。同一人從討論做到實作時退化為紀律,機械圍欄管不到腦內記憶。機械細節
             (擋讀/擋改哪些文件、shell 破口)不重複列,見 <a href="#guard-pre">⑥-3</a>。</td></tr>
     <tr><td>③</td><td>審查防錨定</td>
@@ -2156,8 +2156,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             一致,抓「錯引正本」與「步數漂移」。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-devtalk-graph.sh</code></td>
-        <td>Stage 1 第一刀的機械契約:四個節點檔必須可單獨當入口、graph 下一跳與節點檔一致、
-            重跑落檔不得另存第二份討論檔、游標已在 N3 時不得重開 session。</td>
+        <td>乘客不用跑它。它管 Stage 1 節點鏈:下一跳以 graph.yaml 為準、重跑 N9 只能覆寫同一份
+            討論檔、已有 OPEN 場不得再 talk start。prebash 在 talk start / end 與知識寫入時會帶
+            <code>--action</code> 問它。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-devtalk-graph.sh</code></td>
         <td>上面那支的負向牙:舊實作(單一 SKILL、沒有 graph)必須紅;缺進條件、下一跳不一致、
@@ -2265,7 +2266,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   </table></div>
 
   <h3>memory/(Agent Memory:可 Git 同步的長期記憶 + 本機檢索索引)</h3>
-  <p class="muted">分界一句話:<code>.dev-flow/</code> 進 Git(結構化、可攜、高訊號),<code>~/.agentmem/</code> 不進 Git(SQLite/向量/逐字稿,砍掉可重建),<code>.devflow/</code> 是本機執行期暫存(與前兩者無關)。規格見母版 README §16。</p>
+  <p class="muted"><code>.dev-flow/</code> 進 Git,是正本。<code>~/.agentmem/…/worktrees/</code> 的 SQLite 是這棵樹的快取,不進 Git。
+  <code>git pull</code> 之後下一句 ask / context 會核對 generation,舊了就重建;不必每次 pull 都重跑 <code>dev-setup</code>。
+  新 clone / 新機器才打一次 <code>dev-setup</code>。<code>.devflow/</code> 是執行期暫存,跟前兩者無關。規格見母版 README §16。</p>
   <div class="tablewrap"><table>
     <tr><th>檔名</th><th>一句白話職責</th><th>誰呼叫它/掛在哪</th><th>生命週期格</th></tr>
     <tr><td><code>dev-memory.py</code></td>

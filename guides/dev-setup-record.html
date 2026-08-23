@@ -36,11 +36,10 @@
 <body>
 <main>
   <h1>dev-setup 安裝紀錄(plugin 版)</h1>
-  <p class="muted">2026-07-25 初裝(settings hook 版)→ 2026-07-26 升級為 local plugin。目的:單一正本(兩帳號共用 local marketplace 目錄,舊「cp + md5 對檢」紀律退役)、盲原則機械守衛、健康檢查入口。</p>
-  <p class="muted">⚠️ 本頁是 2026-07-26 遷移當下的紀錄:當時 dev-talk、dev-flow 是拆開的兩個 plugin,裝在 local marketplace 目錄下。dev-talk 其後已併入 dev-flow 單一 plugin(見 <code>docs/PLUGIN.md</code>),散發方式也改為 marketplace 安裝,實際路徑為 <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/</code>(Windows 對應 <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\</code>)。下方路徑已更新為現行值,但目錄樹描述的仍是舊版兩 plugin 拆分結構,僅供歷史對照,不代表現況。
-  另:hooks 需要 python3(解析順序 <code>DEVFLOW_PYTHON</code> → <code>/usr/bin/python3</code> → PATH,
-  找不到時守衛警告後跳過、不擋工具呼叫;Windows Git Bash 要另外裝 Python 或設
-  <code>DEVFLOW_PYTHON</code>),詳見母版 README「環境需求」。</p>
+  <p><strong>現況</strong>:現在只有一個 plugin,叫 <code>dev-flow</code>。裝法見 <code>docs/PLUGIN.md</code>。
+  進專案打 <code>dev-setup</code>。記憶正本是 <code>.dev-flow/</code>(進 Git);本機 SQLite 是快取。
+  新機器重建打 <code>dev-setup</code>;之後 <code>git pull</code> 不必重跑 setup。下方目錄樹是 2026-07 的舊拆分,不要照著裝。</p>
+  <p class="muted">2026-07-25 初裝(settings hook 版)→ 2026-07-26 升級為 local plugin。當時 dev-talk 與 dev-flow 還是兩個 plugin。其後已併成單一 plugin,路徑是 <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/</code>。hooks 要 python3,找不到就警告後放行。詳見母版 README「環境需求」。</p>
 
   <h2>① 現行架構(舊版兩 plugin 拆分,僅供歷史對照)</h2>
   <pre>

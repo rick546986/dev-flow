@@ -127,8 +127,8 @@
 <body>
 <main>
   <h1>dev-flow 快速上手 · 新專案零到一操作導覽</h1>
-  <p class="muted">給第一次在新專案跑 dev-flow 的人:照著本頁一步一步打,從裝好 plugin 到出第一個 PR。
-  正本規則是 <code>README.md</code>,本頁是操作導覽,兩者不一致以 README 為準。</p>
+  <p class="muted">第一次在新專案跑:照著打,從裝 plugin 到出第一個 PR。
+  規則在 <code>README.md</code>。本頁跟它打架,以 README 為準。</p>
   <p class="lead"><strong>先確認你走哪一軌</strong>:本頁全程示範 <strong>full lane</strong>。
   你手上這件事若命中右欄任一條,走 <strong>fast lane</strong> 更省。</p>
   <div class="tablewrap"><table>
@@ -162,8 +162,7 @@
   </nav>
 
   <h2 id="checklist">① 零到一 checklist</h2>
-  <p class="lead">這章要你懂:<strong>裝機只有五件事,而且只有第 3 件真的要你動腦</strong> ——
-  其餘四件都是打一行、看它回報。勾一勾記錄進度(存在本機瀏覽器)。</p>
+  <p class="lead">這章要你懂:<strong>裝機五件事,只有第 3 件要你動腦</strong>。其餘打一行、看回報。</p>
   <ul class="chk" id="chk-zero">
     <li><input type="checkbox" id="z0"><span><strong>0.</strong> 剛裝好或剛改過 plugin → 打 <code>/reload-plugins</code></span></li>
     <li><input type="checkbox" id="z1"><span><strong>1.</strong> cd 進新專案 repo root → 打 <code>dev-setup</code>(不帶參數)</span></li>
@@ -225,7 +224,9 @@
     <li><code>docs/dev/README.md</code> ← cp 母版 <code>~/dev/dev-flow/README.md</code></li>
     <li><code>docs/dev/_templates/</code> ← cp 母版 <code>_templates/</code></li>
     <li><code>docs/dev/STATUS.md</code> ← 從模板建(進行中 feature 看板)</li>
-    <li><code>.dev-flow/</code> ← Agent Memory(可 Git 同步的長期記憶;dev-setup 建置,見母版 README §18)</li>
+    <li><code>.dev-flow/</code> ← Agent Memory 正本(進 Git)。本機 SQLite 是這棵樹的快取。
+    新機器打 <code>dev-setup</code> 重建;之後 <code>git pull</code> 不必重跑 setup,下一句 ask / context
+    會核對 generation(見母版 README §16)</li>
     <li><code>.claude/rules/arch-invariants.md</code> —— <strong>自動產草稿</strong>(不是空殼):收割使用者指名的
     external workflow artifacts 與 <code>CLAUDE.md</code> 的技術規則段 → 派 sonnet 掃 codebase 抓候選 → 每條標
     <code>【待確認】</code> 列給你逐條核可,見下一步</li>
@@ -300,8 +301,9 @@
       <td>1 討論</td>
       <td><span class="badge you">跟 AI 說</span>(<strong>建議另開新 session</strong>)<br>
         <code>/dev-talk 我想做 X</code></td>
-      <td>蘇格拉底式一次一問:盤現況 → 逐題逼問 → 驗收雛形 → 發散推演 → 盲點掃描 → 詞彙對帳,
-        寫完 <code>1-discussion.md</code> 即停</td>
+      <td>一次一問。乘客地圖 12 步,執行是節點鏈(下一跳看 <code>graph.yaml</code>)。
+        只覆寫一份 <code>1-discussion.md</code>。已有 OPEN 場不要再 <code>talk start</code>。
+        細節見 <a href="guide-dev-talk.html#map">guide-dev-talk</a></td>
       <td><code>docs/dev/&lt;slug&gt;/1-discussion.md</code> + <code>.html</code></td>
       <td>Open Questions 全解或明標假設(無人工簽核,是自我完成條件)</td>
       <td><span class="badge opus">opus</span></td>
@@ -349,7 +351,7 @@
         2. <code>devflow-exec.sh start &lt;slug&gt;</code><br>
         3. <code>devflow-exec.sh status</code> 核對<br>
         <span class="badge you">跟 AI 說</span> 4. <code>dev-run &lt;slug&gt;</code></td>
-      <td>派工者(opus)讀 4-spec/5-tasks/CONTEXT/living spec,逐 T 派工(haiku 起步)
+      <td>派工者(opus)讀 4-spec/5-tasks/長期記憶/living spec,逐 T 派工(haiku 起步)
         → fresh sonnet 審(親跑 Verify)→ 錯誤升階 → 派工者 commit + 記帳</td>
       <td><code>6-implementation-notes.md</code> + 逐 T commit</td>
       <td>每 T review PASS + 全 S 綠;PASS 前不得 commit</td>

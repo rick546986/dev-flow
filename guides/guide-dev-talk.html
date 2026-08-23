@@ -81,7 +81,7 @@
 <body>
 <main>
   <h1>dev-talk 使用導覽 · 互動維度全景</h1>
-  <p class="muted">討論引導 skill 的乘客手冊 —— 它會做什麼、你要在哪些點出手、產出長什麼樣。</p>
+  <p class="muted">討論引導的乘客手冊。它會問什麼、你要在哪裡出手、最後只留下哪幾個檔。</p>
 
   <nav>
     <a href="#quick">① 快速上手</a>
@@ -96,11 +96,11 @@
   </nav>
 
   <h2 id="quick">① 快速上手</h2>
-  <p class="lead">這章要你懂:<strong>開場只要一行指令,而它只會產三個文字檔</strong> —— 沒有前置作業,也不會有任何程式碼。</p>
+  <p class="lead">這章要你懂:<strong>開場打一行,它只產文字</strong>。不要先建資料夾。叫它「開始做」它會拒絕。</p>
   <pre>cd &lt;專案&gt;
 claude          # 建議 opus(規劃層)
 &gt; /dev-talk 我想做 &lt;一句話需求&gt;</pre>
-  <p>什麼都不用先建。它只會寫兩個檔:<code>1-discussion.md</code>、<code>1-discussion.html</code>,加上經 <code>dev-memory.py talk</code> 登記的語意候選(記憶檔由那支工具自己管)—— <strong>零程式碼</strong>,叫它「開始做」它會拒絕。</p>
+  <p>它會寫 <code>1-discussion.md</code> 與同目錄 html。語意候選走 <code>dev-memory.py talk</code>,你點頭收尾才寫進長期記憶。<strong>零程式碼</strong>。</p>
   <h3>產出檔案結構</h3>
   <pre>
 &lt;repo root&gt;
@@ -114,7 +114,23 @@ claude          # 建議 opus(規劃層)
   <p class="muted">就這些,其他一律不碰(寫入白名單)。多個需求並行 → 一 slug 一資料夾,互不干擾;長期記憶是唯一共用面,只增改自己本輪確認過的語意。</p>
 
   <h2 id="map">② 全程地圖(12 步)</h2>
-  <p class="lead">這章要你懂:<strong>它不是一條直線走完就結束</strong> —— 步 1-6 是會反覆的逼問迴圈,步 8/10 一旦自審失敗就把你拉回步 3 重問。藍框 = 需要你出手。</p>
+  <p class="lead">這章要你懂兩件事。第一,乘客地圖還是 0–11 共 12 步。第二,執行時不是只能從頭跑的直線 —— 下一跳看 <code>skills/dev-talk/graph.yaml</code>。走錯一步,重跑那一節,不要整場重來。藍框 = 要你出手。</p>
+
+  <p>節點鏈(現況只拆了四個;沒拆的暫留步仍是真的 hop,不能跳):</p>
+  <pre>N1-start → 暫留 0–2 → N3-probe → 暫留 4–6 → N9-write-md → 暫留 8–10 → N13-end</pre>
+  <div class="tablewrap"><table>
+    <tr><th>節點</th><th>對應乘客步</th><th>會怎樣</th></tr>
+    <tr><td><code>N1-start</code></td><td>開場</td><td><code>talk start</code>,建 0–11 todo。已有 OPEN 場就不要再 start</td></tr>
+    <tr><td>暫留 0–2</td><td>0–2</td><td>正文還在 SKILL.md</td></tr>
+    <tr><td><code>N3-probe</code></td><td>3</td><td>一次一問</td></tr>
+    <tr><td>暫留 4–6</td><td>4–6</td><td>正文還在 SKILL.md</td></tr>
+    <tr><td><code>N9-write-md</code></td><td>7</td><td>覆寫同一份 <code>1-discussion.md</code>,不另存</td></tr>
+    <tr><td>暫留 8–10</td><td>8–10</td><td>正文還在 SKILL.md</td></tr>
+    <tr><td><code>N13-end</code></td><td>11</td><td>你點頭才 <code>talk end</code>;長期記憶只在這裡寫進 <code>.dev-flow/</code></td></tr>
+  </table></div>
+  <p>本機游標 <code>.devtalk-cursor.json</code>(現在節點 + <code>MEMORY_SESSION_ID</code>)不進 Git。
+  Bash 的 talk start / talk end / 知識寫入,會被 prebash 拿去跑 <code>check-devtalk-graph.sh --action</code>。
+  不要以為 0–11 都拆成節點了。</p>
 
   <div class="figwrap"><svg id="fig-map" viewBox="0 0 1010 400" role="img"
        aria-label="dev-talk 全程地圖:12 步分四階段,含自迴圈與三條回步 3 的回路">
@@ -136,7 +152,7 @@ claude          # 建議 opus(規劃層)
 
     <g class="n"><rect x="800" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="812" y="270">7 落檔</text><text class="dc" x="812" y="285">寫十節 md</text></g>
     <g class="n"><rect x="670" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="682" y="270">8 複核</text><text class="dc" x="682" y="285">嚴審七掃</text></g>
-    <g class="n"><rect x="540" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="552" y="270">9 詞彙</text><text class="dc" x="552" y="285">對帳 CONTEXT</text></g>
+    <g class="n"><rect x="540" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="552" y="270">9 詞彙</text><text class="dc" x="552" y="285">對帳長期記憶</text></g>
     <g class="n"><rect x="410" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="422" y="270">10 產 html</text><text class="dc" x="422" y="285">自核+七件</text></g>
     <g class="n"><rect x="280" y="250" width="110" height="42" rx="6" class="hl"/><text class="dt" x="292" y="270">11 收尾</text><text class="dc" x="292" y="285">你點頭 approved</text></g>
 
@@ -170,7 +186,7 @@ claude          # 建議 opus(規劃層)
     <tr><th>步</th><th>AI 做什麼</th><th>你做什麼</th><th>完成條件</th></tr>
     <tr><td>0 規模</td><td>多需求拆 slug;同時問起點(多熟/想法走到哪)校準提問深度;微型需求提議精簡模式</td><td>選先談哪個/答起點/同意模式</td><td>slug、起點、模式三者定案</td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>0. <strong>規模、範圍與起點</strong>。多個需求 → 拆,一 slug 一討論,問使用者先談哪個;<br>同時問<strong>起點</strong>:對這塊多熟、想法走到哪 —— 據此校準提問深度(只調深淺,<br>不放鬆查證與必問)。微型需求(單點小改)→ 徵使用者同意走精簡(步 1 快掃、<br>步 2 只問 Journey 與 Workarounds、步 5/6 各一輪帶過,骨架照填可短)。<br>完成 = slug、起點、模式三者定案。</blockquote></details></td></tr>
-    <tr><td>1 盤現況</td><td>讀 CONTEXT + docs/specs + 程式碼,條列事實(帶數字/檔位),含受影響面清點</td><td><span class="badge you">認可或糾正</span></td><td>認可清單 = 「已核事實」</td></tr>
+    <tr><td>1 盤現況</td><td>讀長期記憶 + docs/specs + 程式碼,條列事實(帶數字/檔位),含受影響面清點。不讀過期的 CONTEXT.md</td><td><span class="badge you">認可或糾正</span></td><td>認可清單 = 「已核事實」</td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>1. <strong>盤現況</strong>。讀白名單 → 條列事實(帶數字與檔案位置),<strong>含受影響面清點</strong><br>(這個想法會碰到哪些既有程式碼/檔案/介面/資料),一併回報使用者。<br>完成 = 使用者認可;<strong>認可後的清單 = 本次「已核事實」</strong>。</blockquote></details></td></tr>
     <tr><td>2 真實世界</td><td>問人現在<strong>怎麼真的</strong>完成這件工作,寫成 Actors / Current Journey / Workarounds / Exceptions / Evidence 五份記錄;優先問「最近一次真的發生時怎麼處理」,無證據的敘述標 <code>[Assumption]</code></td><td><span class="badge you">回答真實工作流程</span></td><td>五份齊,且每條可分辨「有證據」或 <code>[Assumption]</code></td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>2. <strong>真實世界互動盤點</strong>。問「人現在<strong>怎麼真的</strong>完成這件工作」,寫成五份記錄:<br>①<strong>Actors</strong> —— 誰參與、真實目標、權限、掌握哪些資訊、<strong>缺</strong>哪些資訊、用哪些<br>系統外工具;<strong>系統外角色也要列</strong>(例如只靠 Email 往返、沒有帳號的窗口),<br>權限欄寫「系統外」。<br>②<strong>Current Journey</strong> —— 沒有這個功能時的現況旅程,一步一列:誰、真實動作、<br>使用工具、<strong>等誰</strong>、系統留下什麼、痛點。<br>③<strong>Workarounds</strong> —— 實際靠什麼完成(Excel / 通訊軟體 / Email / 紙本 / 電話 /<br>口頭交接),<strong>哪些步驟完全沒留下紀錄</strong>。<br>④<strong>Exceptions</strong> —— 誰可以跳過標準做法?資料不完整怎麼辦?對方不回覆怎麼辦?<br>操作中斷怎麼恢復?會不會重複、撤回、改派、多人同時處理?<br>⑤<strong>Evidence</strong> —— 逐條列證據來源(實際案例 / 訪談 / 正式辦法文件 / 去識別化<br>log / 表單 / 畫面 / 使用者反映)。<br>三條紀律:優先問<strong>「最近一次真的發生時怎麼處理」</strong>,不只問理想做法;正式辦法<br>與實際做法不同時<strong>兩者都記</strong>、不擇一;未有證據的敘述標 <code>[Assumption]</code>,<br><strong>不得把推測寫成事實</strong>;涉醫療/個資只保存去識別化內容。<br>完成 = 五份齊,且每條敘述可分辨「有證據」或 <code>[Assumption]</code>。</blockquote></details></td></tr>
@@ -190,7 +206,7 @@ claude          # 建議 opus(規劃層)
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>9. <strong>詞彙對帳</strong>。先<strong>查長期記憶的現況</strong>(<code>dev-memory.py ask "&lt;詞&gt; 是什麼意思"</code><br>   ——其他討論可能已經確認過詞條,只增改自己本輪的、不動他人的),再把本輪浮現的<br>   業務詞彙逐一登記成候選(<code>dev-memory.py talk propose $MEMORY_SESSION_ID<br>   --kind domain --payload-json '{"key":"…","title":"…","body":"…"}'</code>;<br>   詞條 + <em>Avoid</em> 寫在同一則裡;只收語言不收解法 —— 逐詞自問「這詞條在解釋語言,<br>   還是在記方案?」後者刪;尚未實作的語意用 <code>--kind intent</code> 而不是 domain,<br>   它不能被當成現況;同名異義分立互註)。使用者明確確認的才<br>   <code>dev-memory.py talk confirm &lt;candidate&gt;</code>;使用者否定的走<br>   <code>dev-memory.py talk reject &lt;candidate&gt;</code>;使用者<strong>推翻先前已記錄的理解</strong>時走<br>   <code>dev-memory.py talk correct $MEMORY_SESSION_ID --kind domain --key &lt;詞&gt;<br>   --title "&lt;新理解&gt;" --reason "&lt;為什麼改&gt;"</code>(舊的會保留並標成被取代,<br>   看得到轉折才叫記憶)。<strong>未確認的候選一律不寫進長期記憶</strong>。完成 = 逐詞打勾。</blockquote></details></td></tr>
     <tr><td>10 html</td><td>先自核 md:Open Questions 僅含三態符號,混入其他記號(如 <code>[ ]</code>)→ 回步 3 定態;定態後才從 md 生成視覺版(七件)</td><td>—</td><td>自核過 + 七件齊</td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>10. <strong>產 html</strong>。先自核 md:Open Questions 僅含三態符號,出現其他記號(如 <code>[ ]</code>)<br>→ 回步 3 定態後才產。<code>1-discussion.html</code> <strong>只從 md 生成</strong>(md 是唯一正本;<br>html 要改,先改 md 再重生)。內容與圖判準見「視覺版」。完成 = 自核過+七件齊。</blockquote></details></td></tr>
-    <tr><td>11 收尾</td><td>給你 html 過目</td><td><span class="badge you">點頭 → approved</span></td><td>status 改完,停</td></tr>
+    <tr><td>11 收尾</td><td>給你 html 過目;你點頭才 <code>talk end</code></td><td><span class="badge you">點頭 → approved</span></td><td>status 改完,長期記憶寫入,停</td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>11. <strong>過目與收尾</strong>。正本:<code>nodes/N13-end.md</code>。html 過目後,使用者點頭才<br>    跑 <code>dev-memory.py talk end $MEMORY_SESSION_ID</code>。它回 <code>promoted: 0</code> 是合法結果。完成條件見該節點。</blockquote></details></td></tr>
   </table></div>
 
@@ -204,15 +220,15 @@ claude          # 建議 opus(規劃層)
     <tr><td>4 雛形</td><td>先定「怎樣算解決」—— 這些句子之後直接長成驗收測試,含糊現在挑掉</td><td>「假設名下有 9/20 到期未續約合約,當業務登入 dashboard,則卡片 100% 列出該合約 —— 買單嗎?」(= 範例 AC-1)</td></tr>
     <tr><td>5 發散</td><td>純撞方向、挖隱藏需求;不收斂、不做決定</td><td>「負責業務離職了,提醒給誰?一次到期 200 筆,卡片會爆嗎?法規改成 90 天前要通知呢?」</td></tr>
     <tr><td>6 盲點</td><td>補「你沒想到要問」的 unknown unknowns,答案可能改變方向;另列隱含預設請你確認</td><td>「你沒提:續約後舊提醒要不要消失?—— 這決定要不要記續約狀態」「你是不是預設『合約』只指有效合約?」兩份清單你都至少回一句才過</td></tr>
-    <tr><td>7 落檔</td><td>口頭共識固化成契約文件,之後接手的人只認這份</td><td>寫出十節 <code>1-discussion.md</code>(骨架見 ⑦)</td></tr>
+    <tr><td>7 落檔</td><td>把共識寫進同一份 <code>1-discussion.md</code>;重跑覆寫,不另存</td><td>寫出十節(骨架見 ⑦)</td></tr>
     <tr><td>8 複核</td><td>換嚴格審視者視角自審,擋「想當然」</td><td>掃到「系統要好用」這種不可驗句 → 改寫或刪;結論沒「已核事實」背書 → 回頭補問</td></tr>
     <tr><td>9 詞彙</td><td>業務語言進長期記憶(可 Git 同步、跨機器一致),全隊(含之後的 AI session)講同一種話</td><td>新詞條「Expiring = end_date − today ≤ 30 且未續約;<em>Avoid:</em> 快到期、即將截止」</td></tr>
     <tr><td>10 html</td><td>有圖有脈絡快速 review,不用啃 md</td><td>摘要卡 + 脈絡圖(登入 → 查 expiring → 卡片/空狀態)+ OQ 表…七件(判準見 ⑧)</td></tr>
-    <tr><td>11 過目</td><td>你是唯一 gate:三態清點、假設吞不吞,點頭才算數</td><td>「Q1-Q3 全 <code>[x]</code>、無 <code>[~]</code>/<code>[&gt;]</code> —— 改 approved?」你點頭 → 停</td></tr>
+    <tr><td>11 過目</td><td>你是唯一 gate:三態清點、假設吞不吞。點頭才 <code>talk end</code></td><td>「Q1-Q3 全 <code>[x]</code> —— 改 approved?」你點頭 → 長期記憶寫入 → 停</td></tr>
   </table></div>
 
   <h2 id="you">③ 你的 6 個介入點</h2>
-  <p class="lead">這章要你懂:<strong>12 步裡有 7 步需要你在場</strong>(步 0 + 6 個介入點),其餘 5 步它自己跑完 —— 你不必全程盯,但這 7 步缺席就沒人把關。</p>
+  <p class="lead">這章要你懂:<strong>12 步裡有 7 步要你在場</strong>。其餘它自己跑。這 7 步你不在,就沒人把關。</p>
 
   <div class="figwrap"><svg id="fig-lanes" viewBox="0 0 960 220" role="img"
        aria-label="責任泳道:上排是你要出手的 7 步,下排是 AI 自己跑的 5 步">
@@ -262,7 +278,7 @@ claude          # 建議 opus(規劃層)
   <p class="muted">步 0 也要你答:先談哪個、起點深淺 —— 對照 ② 步驟表的「0 規模」列。</p>
 
   <h2 id="dims">④ 它問的維度(vs 刻意不問的)</h2>
-  <p class="lead">這章要你懂:<strong>它「不問」的那五類不是漏掉,是刻意留給後面階段</strong> —— 討論階段就逼你選方案,答案全是沙。</p>
+  <p class="lead">這章要你懂:<strong>它不問方案、不問架構</strong>。那些留給後面。現在就逼你選做法,答案會是沙。</p>
   <div class="tablewrap"><table>
     <tr><th>talk 會問</th><th>talk 刻意不問(屬後續階段)</th></tr>
     <tr><td>現況地形(讀碼查證後跟你對)<br><span class="muted">例:「現在到期是誰在盯?系統裡有任何通知機制嗎?」</span></td><td rowspan="8">方案比較/取捨<br>成功判準量化<br>架構與資料流設計<br>測試策略<br>任務拆分<br><span class="muted">—— 這些在收斂/規格/實作階段才問,<br>提早問答案全是沙,也會誘導搶收斂</span></td></tr>
@@ -276,7 +292,7 @@ claude          # 建議 opus(規劃層)
   </table></div>
 
   <h2 id="states">⑤ 符號與狀態</h2>
-  <p class="lead">這章要你懂:<strong>每個 Open Question 最後只有三個出口</strong>,沒有「懸著」這個選項 —— 步 11 要能停,靠的就是三態全數落定。</p>
+  <p class="lead">這章要你懂:<strong>每個 Open Question 只有三個出口</strong>。沒有「先懸著」。步 11 要停,三態都要定。</p>
 
   <div class="figwrap"><svg id="fig-states" viewBox="0 0 880 250" role="img"
        aria-label="Open Question 的三態出口與步 11 gate">
@@ -311,7 +327,7 @@ claude          # 建議 opus(規劃層)
   </table></div>
 
   <h2 id="whitelist">⑥ 讀取 / 寫入白名單</h2>
-  <p class="lead">這章要你懂:<strong>這份白名單是 prompt 級圍欄,不是 hook 硬擋</strong> —— 它活在 UserPromptSubmit 展開的 SKILL.md 本文裡,約束的是模型行為,靠自律遵守;真正物理擋下讀寫的是 PreToolUse hook(如 <code>devflow-guard.sh</code>),那道防線在 dev-talk 階段是沉睡的。白名單本身:讀得比寫得多很多 —— 輸入端可以掃遍原始碼,輸出端卻只有三個檔;紅框那些是連碰都不碰的。</p>
+  <p class="lead">這章要你懂:<strong>這份名單寫在 skill 裡,不是 hook 硬擋</strong>。討論階段 Stage 6 守衛還在睡。它讀得很多、寫得很少:原始碼可以掃,輸出只有討論檔 + 記憶工具。</p>
 
   <div class="figwrap"><svg id="fig-scope" viewBox="0 0 880 430" role="img"
        aria-label="讀取白名單、寫入白名單與禁區三區關係圖">
@@ -370,7 +386,7 @@ claude          # 建議 opus(規劃層)
   <a href="guide-dev-flow.html#guard">guide-dev-flow.html ⑥ 執行守衛</a>。</p>
 
   <h2 id="skeleton">⑦ 產出骨架(<code>1-discussion.md</code> 十節)</h2>
-  <p class="lead">這章要你懂:<strong>十節不是模板欄位,是把前面每一步的產物固定下來</strong> —— 右欄告訴你哪一節空了要回哪一步補。</p>
+  <p class="lead">這章要你懂:<strong>十節是把前面每一步釘下來</strong>。哪一節空了,回右欄那一步補。</p>
   <blockquote>精簡原則:每節只寫「下一個讀者需要的最少資訊」,夠用就停;禁重複貼上下文、禁湊字數;寫完自問「能砍一半嗎?」能砍就砍(結論、推理鏈、事實、受影響面與真實世界證據不可砍)。</blockquote>
   <div class="tablewrap"><table>
     <tr><th>節</th><th>放什麼</th><th>從哪一步長出來</th></tr>
@@ -388,7 +404,7 @@ claude          # 建議 opus(規劃層)
   </table></div>
 
   <h2 id="visual">⑧ 視覺版(html 產出)判準</h2>
-  <p class="lead">這章要你懂:<strong>html 是拋棄式的重繪,md 才是正本</strong> —— 要改內容一律回去改 md,再重生 html。</p>
+  <p class="lead">這章要你懂:<strong>要改內容就改 md,再重生 html</strong>。html 可以丟,md 不能丟。</p>
   <p><code>1-discussion.html</code> 七件由上而下:摘要卡(Problem + OQ 三態 badge)→ 脈絡圖 → Real-world 表(Actors + Current Journey 兩張;Workarounds 與 Exceptions 收要點清單)→ OQ 表 → 驗收雛形表 → Constraints + 詞條增量 → Interview Log 摘要 <span class="muted">(步 10「自核過+七件齊」= 先自核 OQ 三態,定態後這七件都要在)</span>。</p>
   <div class="tablewrap"><table>
     <tr><th>脈絡圖形狀</th><th>畫法</th></tr>
@@ -399,15 +415,18 @@ claude          # 建議 opus(規劃層)
   <p class="muted">禁外部庫(不連 CDN、不嵌外部字型/圖表套件)。md 的 ASCII 版永遠是正本,html 圖只是重繪;html 要改,先改 md 再重生。</p>
 
   <h2 id="faq">⑨ 常見狀況</h2>
-  <p class="lead">這章要你懂:<strong>你想抄捷徑時它會怎麼擋</strong> —— 六種最常見的情境與它的固定反應。</p>
+  <p class="lead">這章要你懂:<strong>你想抄捷徑時它會怎樣</strong>。</p>
   <div class="tablewrap"><table>
     <tr><th>狀況</th><th>它會怎樣</th></tr>
-    <tr><td>你趕時間說「先這樣」</td><td>未解題標 <code>[~]</code> 假設收案 —— 但驗收雛形仍逐條確認,不併批</td></tr>
-    <tr><td>你中途推翻前提</td><td>立即回頭核銷:已寫的 Context/真實世界五份/Goals/雛形/詞條逐段標失效重寫,才繼續</td></tr>
-    <tr><td>你一次丟兩個需求</td><td>先拆:一 slug 一討論,問你先談哪個</td></tr>
-    <tr><td>討論到一半冒出第二個問題</td><td>提議拆分,你選一題續談,其餘記 <code>[&gt;]</code> 移交附建議 slug</td></tr>
-    <tr><td>你說「直接開始做」</td><td>拒絕:「討論記錄已完成,實作請另開 session」—— 它連一行程式碼都不能寫</td></tr>
-    <tr><td>需求很小(改一行)</td><td>徵你同意走精簡模式:步 1 快掃現況、步 2 只問 Journey 與 Workarounds、步 5/6 各一輪帶過,文件照產(短版)</td></tr>
+    <tr><td>你趕時間說「先這樣」</td><td>未解題標 <code>[~]</code>。驗收雛形仍逐條確認,不併批</td></tr>
+    <tr><td>你中途推翻前提</td><td>已寫的段落標失效再改,才繼續</td></tr>
+    <tr><td>你一次丟兩個需求</td><td>先拆,一 slug 一場,問你先談哪個</td></tr>
+    <tr><td>討論到一半冒出第二個問題</td><td>你選一題續談,其餘記 <code>[&gt;]</code> 移交</td></tr>
+    <tr><td>你說「直接開始做」</td><td>拒絕。它連一行程式碼都不能寫</td></tr>
+    <tr><td>需求很小(改一行)</td><td>徵你同意走精簡:步 1 快掃、步 2 只問 Journey 與 Workarounds、步 5/6 帶過,文件仍產</td></tr>
+    <tr><td>這場做到一半斷了</td><td>從現在節點繼續。不要再 <code>talk start</code></td></tr>
+    <tr><td>已有 OPEN 討論場</td><td>不要再開一場(就算沒有游標檔也一樣)</td></tr>
+    <tr><td>重跑落檔</td><td>覆寫同一份 <code>1-discussion.md</code>,不會生第二份</td></tr>
   </table></div>
 
   <p class="muted">正本規則:<code>~/dev/dev-flow/README.md</code>;skill 本體(單一正本):

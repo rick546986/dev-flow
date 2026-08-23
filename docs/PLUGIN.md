@@ -1,46 +1,33 @@
 # dev-flow plugin — 安裝與 Runtime 說明
 
-> 本檔取代舊 `dev-flow-plugin` repo 的 README。2026-08 該 repo 併入本 repo
-> （方法論母版 + runtime plugin 合一，見下），原 repo 已 archive、不再更新。
+> 舊的 `dev-flow-plugin` repo 已併進來,原 repo 已 archive。
 
-`dev-flow` 是一個 Claude Code plugin marketplace，**本 repo 本身就是 marketplace 也是
-plugin**：`.claude-plugin/marketplace.json` 的 `name` 與 `.claude-plugin/plugin.json`
-的 `name` 皆為 `dev-flow`，repo 名亦為 `dev-flow`，三名合一。
+`dev-flow` 是一個 Claude Code plugin marketplace。這個 repo 本身就是 marketplace,也是 plugin。三個名字都叫 `dev-flow`。
 
-安裝：
+## 安裝
 
 ```
 /plugin marketplace add rick546986/dev-flow
 /plugin install dev-flow@dev-flow
 ```
 
-安裝後實際路徑為 `~/.claude/plugins/cache/dev-flow/dev-flow/<version>/`（勿寫死於腳本，
-一律用 `${CLAUDE_PLUGIN_ROOT}` 或由自身位置推導；Windows 上同構，位於
-`%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\<version>\`）。
+裝完實際路徑是 `~/.claude/plugins/cache/dev-flow/dev-flow/<version>/`。
+不要把版本路徑寫死在腳本裡。用 `${CLAUDE_PLUGIN_ROOT}`,或從自己的位置推。
+Windows 同構,在 `%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\<version>\`。
 
-**環境需求：python3**（僅標準函式庫）。hooks 的直譯器由 `hooks/devflow-python-lib.sh`
-統一解析，順序：環境變數 `DEVFLOW_PYTHON`（顯式覆寫）→ 系統 `/usr/bin/python3` →
-PATH 上的 `python3`；找不到時 **fail-open**（hook 印一行警告後放行——只跳過守衛、
-不擋工具呼叫）。**Windows（Git Bash / MSYS2）沒有 `/usr/bin/python3`**：要另外裝
-Python 並確認 Git Bash 內 `python3` 找得到，或設 `DEVFLOW_PYTHON` 指向直譯器（⚠️ Windows 上裝好 Python 之後 hook 會生效，但本 repo 的驗證套件仍跑不出全綠——已知限制與待修排程見 `notes/dispatch-windows-parity.md`）
-（例：`setx DEVFLOW_PYTHON "C:/Python312/python.exe"`），否則守衛會靜默跳過。
-詳見母版 README「環境需求」。
+**環境**:hooks 要 python3(只吃標準函式庫)。找直譯器的順序是 `DEVFLOW_PYTHON` → `/usr/bin/python3` → PATH 上的 `python3`。找不到就印警告後放行 —— 那次呼叫沒有守衛,不是功能壞掉。
 
-## 併入前的分工（歷史脈絡）
+Windows(Git Bash)沒有 `/usr/bin/python3`。另外裝 Python,或設 `DEVFLOW_PYTHON`(例:`setx DEVFLOW_PYTHON "C:/Python312/python.exe"`)。裝好之後 hook 會生效,但本 repo 的驗證套件在 Windows 上仍跑不全綠。見 `notes/dispatch-windows-parity.md`。
 
-併入之前，方法論正本（README §7 gate 條件、`_templates/`、`example/`、`notes/design/`）
-與 runtime（實際執行的 hooks/skills/CLI）分屬兩個 repo：母版 `rick546986/dev-flow`
-與 runtime plugin `rick546986/dev-flow-plugin`。兩者互不冒充：母版 CI 綠 =
-`REPO_REFERENCE_PASS`（模板/範例/fixture/契約檔自洽），plugin CI 綠 =
-`EXTERNAL_RUNTIME_PASS`（守衛與 CLI 行為）。2026-08 合併後，`methodology/` 子目錄層
-也一併收攏進 repo 根目錄——本 repo 根目錄現在同時是方法論正本與 runtime 來源，
-不再是兩個 repo。
+細節見母版 README「環境需求」。
 
-另一條沿革：原獨立 `dev-talk` plugin（至 5.4.0）於 2026-08-13 併入 dev-flow，
-此後 dev-talk 不再有獨立版本號，版本隨 dev-flow `plugin.json` 統一計。
-（沿革記在這裡而不是 `skills/dev-talk/SKILL.md` 的註解——那個目錄受盲原則守衛
-掃描，沿革文字必然含下游詞彙，寫在那邊等於讓母版自己的檔案過不了母版自己的守衛，
-G2 實際發生過。）
+新專案裝好後,進專案打 `dev-setup`。它會建 `.dev-flow/`(進 Git 的記憶正本)與本機快取。之後 `git pull` 不必重跑 setup;下一句 ask / context 會核對 generation。見 README §16。
+
+## 沿革(維護者才需要)
+
+以前方法論與 runtime 拆兩個 repo,名字還很像,安裝常裝錯。後來合回來。
+
+`dev-talk` 也曾是獨立 plugin,2026-08-13 併入。它不再有自己的版本號。沿革寫在這裡,不寫進 `skills/dev-talk/SKILL.md`(那邊受盲原則掃描,寫下游詞會過不了自己的守衛)。
 
 ## 內容
 
@@ -56,32 +43,14 @@ G2 實際發生過。）
 ## 跑測試
 
 ```bash
-# 方法論已內建於本 repo 根目錄,缺省即用內建版本,無需另外 checkout:
-bash hooks/selftest.sh     # 期望全過(案數以腳本輸出為準,不在本檔寫死 —— 曾寫死 294 漂移)
+# 用本 repo 內建的方法論,不必另外 checkout:
+bash hooks/selftest.sh     # 期望全過(案數以腳本輸出為準,不在本檔寫死)
 
 # gate 條件三處摘要是否與 README.md §7 一致
-bash hooks/gate-consistency.sh   # 期望全過(項數同上,以輸出為準)
+bash hooks/gate-consistency.sh   # 期望全過(項數以輸出為準)
 
-# 仍可用 DEVFLOW_MASTER 覆蓋(測試/移植用途,指向另一份方法論 checkout):
+# 測試時要指向另一份方法論 checkout,才設這個:
 DEVFLOW_MASTER=/tmp/devflow-master bash hooks/selftest.sh
 ```
 
-CI(`.github/workflows/selftest.yml`)在每次 push / PR 跑上述 selftest。
-
-## 為什麼曾經拆成兩個 repo、又為什麼合回來
-
-原本 `dev-flow-plugin` 只是本機 local plugin、無 remote。2026-08 的 fresh review 抓到一個
-**跨 repo 缺陷(F-1)**:`5-tasks.md` 的 `Boundaries:` / `Intent:` 續行若寫成
-`- Files:` 之類的保留欄名子項,`FIELD_RE`(前綴 `\s*` 而非 `^`)會把它當成該 T 的欄位,
-配上 last-write-wins 就**靜默覆寫**該 T 真正的 `Files` —— 而 `Files` 是
-`task_scope()` 與 gate `files_within_scope` 的唯一依據,Stage 6 的允許寫入範圍因此被無聲放寬。
-
-修正在 `04c9389`(`devflow-lib.py` + `_exec_impl.py` 改 fail-closed、保留首筆值)與
-`3d2f5b1`(`selftest.sh` 兩個常設 regression case:`parse-boundshadow` / `parse-boundcont`,
-292 → 294)。
-
-沒有 remote 就無法讓 reviewer 直接檢查 commit 與測試,因此 `dev-flow-plugin` repo 當時
-上線,讓 `EXTERNAL_RUNTIME` 這一半也能被獨立核對。但兩個同義相似名(`dev-flow` /
-`dev-flow-plugin`)造成長期的指令混淆(使用者多次搞混該用哪個名字安裝/更新),
-加上 GitHub Pages 本就架在 `rick546986/dev-flow`,2026-08 的 single-plugin-merge
-決定把 plugin 併回母版 repo,單一名稱、單一 remote,`dev-flow-plugin` repo 之後 archive。
+CI(`.github/workflows/selftest.yml`)在每次 push / PR 跑 selftest。
