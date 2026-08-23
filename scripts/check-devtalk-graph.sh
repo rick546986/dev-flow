@@ -10,8 +10,9 @@
 #   P0-3 重跑不得重開 session:游標已在 N3 且 MEMORY_SESSION_ID 已在 → 不得
 #        talk start;游標在 N9 → 不得寫程式碼、不得 talk end;N13 之前任何
 #        節點直接寫入知識目錄 → 紅。
-#   P0-4 本機游標:N1 / SKILL 必須呼叫 --write-cursor;沒游標檔時 write_code /
-#        talk_end / write_knowledge 走 --action 必須 deny。檔不進 Git。
+#   P0-4 本機游標:每個節點檔「做什麼」必須呼叫 --write-cursor <本節點 id>;
+#        N1 / SKILL 仍要有。沒游標檔時 write_code / talk_end / write_knowledge
+#        走 --action 必須 deny。檔不進 Git。
 #
 # graph.yaml 是下一跳的唯一正本。本機游標不進 Git。
 #
@@ -487,11 +488,19 @@ def check_live(graph):
 
     if skill_text and "--write-cursor" not in skill_text:
         failures.append("P0 SKILL.md 必須呼叫 --write-cursor(N1 寫本機游標)")
-    n1_path = node_path("N1-start", nodes.get("N1-start") or {})
-    if os.path.isfile(n1_path):
-        n1_text = open(n1_path, encoding="utf-8").read()
-        if "--write-cursor" not in n1_text:
-            failures.append("P0 nodes/N1-start.md 必須呼叫 --write-cursor")
+    for node_id in REQUIRED_NODES:
+        spec = nodes.get(node_id) if isinstance(nodes, dict) else None
+        path = node_path(node_id, spec or {})
+        if not os.path.isfile(path):
+            continue
+        sections = split_sections(open(path, encoding="utf-8").read())
+        do_body = sections.get("做什麼", "")
+        token = f"--write-cursor {node_id}"
+        if token not in do_body:
+            rel = os.path.relpath(path, root)
+            failures.append(
+                f"P0 {rel} 做什麼必須呼叫 --write-cursor {node_id}"
+            )
 
     if graph is None:
         failures.append(

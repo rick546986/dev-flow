@@ -15,6 +15,7 @@
 ## 做什麼
 
 給使用者過目。點頭後跑 `talk end`,關閉 session。
+跑 `scripts/check-devtalk-graph.sh --write-cursor N13-end "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

@@ -15,6 +15,7 @@
 ## 做什麼
 
 按骨架寫十節。重跑本節點仍覆寫同一檔。
+跑 `scripts/check-devtalk-graph.sh --write-cursor N9-write-md "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

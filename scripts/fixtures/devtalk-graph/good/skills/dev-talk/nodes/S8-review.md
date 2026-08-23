@@ -15,6 +15,7 @@ MEMORY_SESSION_ID 已在。游標在 S8-review。不得 talk start。
 ## 做什麼
 
 獨立複核。嚴格審視者視角重讀全檔。
+跑 `scripts/check-devtalk-graph.sh --write-cursor S8-review "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

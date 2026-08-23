@@ -15,6 +15,7 @@ MEMORY_SESSION_ID 已在。游標在 S4-accept。不得 talk start。
 ## 做什麼
 
 驗收雛形。問現象不問做法。
+跑 `scripts/check-devtalk-graph.sh --write-cursor S4-accept "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

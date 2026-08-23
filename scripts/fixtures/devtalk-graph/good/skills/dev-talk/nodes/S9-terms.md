@@ -15,6 +15,7 @@ MEMORY_SESSION_ID 已在。游標在 S9-terms。不得 talk start。
 ## 做什麼
 
 詞彙對帳。同名異義分立互註。
+跑 `scripts/check-devtalk-graph.sh --write-cursor S9-terms "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

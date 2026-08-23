@@ -78,12 +78,33 @@ def _open_talk_session_id():
     return None
 
 
+def _looks_like_write_code(command):
+    """最小編成:會改檔的 shell → write_code。不是沙盒、不是黑名單劇場。
+
+    只認這幾種字面(負向測真跑指令字串):
+    - python3 -c / python -c 裡有 open( 或 .write(
+    - > / >> 寫到檔(/dev/null 與 2>&1 這類 fd 複製除外)
+    - tee 寫到檔(/dev/null 除外)
+    只讀(cat / rg / ls)與 talk turn/propose 不會進這裡。
+    """
+    if re.search(r"\bpython3?\s+-c\b", command):
+        if "open(" in command or ".write(" in command:
+            return True
+    if re.search(r"(?:>>|>)\s*(?!/dev/null\b)(?!\&)[A-Za-z0-9_./~-]+", command):
+        return True
+    if re.search(r"\btee\b(?:\s+-[a-zA-Z]+)*\s+(?!/dev/null\b)\S+", command):
+        return True
+    return False
+
+
 def _devtalk_graph_action(command):
-    """Stage 1 graph:把 talk start/end / 知識目錄寫入接到 check-devtalk-graph --action。
+    """Stage 1 graph:把 talk start/end / 知識目錄寫入 / 會改檔的 shell 接到 --action。
 
     /dev-talk 通常未武裝,必須在 load_state 早退之前跑,否則 --action 永遠只活在測試。
     沒有本機游標 = 新場 talk start 仍放行;已有 OPEN session 再 talk start 仍擋。
     沒游標檔時 talk_end / write_knowledge / write_code 仍送 --action,必須 deny。
+    write_code 只在本機有游標檔或已有 OPEN talk session 時才編成 —— 未開場的
+    普通寫檔不要誤咬。Stage 6 武裝期對 .devflow 偽造的 X-5b 信任邊界不動。
     """
     action = None
     if re.search(r"dev-memory\.py\s+talk\s+start\b", command):
@@ -92,6 +113,10 @@ def _devtalk_graph_action(command):
         action = "talk_end"
     elif re.search(r"\.dev-flow/.+knowledge", command):
         action = "write_knowledge"
+    elif _looks_like_write_code(command):
+        cursor_path = os.path.join(root, ".devtalk-cursor.json")
+        if os.path.isfile(cursor_path) or _open_talk_session_id():
+            action = "write_code"
     if not action:
         return
     cursor_path = os.path.join(root, ".devtalk-cursor.json")

@@ -116,21 +116,26 @@ claude          # 建議 opus(規劃層)
   <h2 id="map">② 全程地圖(12 步)</h2>
   <p class="lead">這章要你懂兩件事。第一,乘客地圖還是 0–11 共 12 步。第二,執行時不是只能從頭跑的直線 —— 下一跳看 <code>skills/dev-talk/graph.yaml</code>。走錯一步,重跑那一節,不要整場重來。藍框 = 要你出手。</p>
 
-  <p>節點鏈(現況只拆了四個;沒拆的暫留步仍是真的 hop,不能跳):</p>
-  <pre>N1-start → 暫留 0–2 → N3-probe → 暫留 4–6 → N9-write-md → 暫留 8–10 → N13-end</pre>
+  <p>節點鏈(每步都有節點檔,下一跳看 <code>graph.yaml</code>,不能跳):</p>
+  <pre>N1-start → S0 → S1 → S2 → N3-probe → S4 → S5 → S6 → N9-write-md → S8 → S9 → S10 → N13-end</pre>
   <div class="tablewrap"><table>
     <tr><th>節點</th><th>對應乘客步</th><th>會怎樣</th></tr>
-    <tr><td><code>N1-start</code></td><td>開場</td><td><code>talk start</code>,建 0–11 todo。已有 OPEN 場就不要再 start</td></tr>
-    <tr><td>暫留 0–2</td><td>0–2</td><td>正文還在 SKILL.md</td></tr>
-    <tr><td><code>N3-probe</code></td><td>3</td><td>一次一問</td></tr>
-    <tr><td>暫留 4–6</td><td>4–6</td><td>正文還在 SKILL.md</td></tr>
-    <tr><td><code>N9-write-md</code></td><td>7</td><td>覆寫同一份 <code>1-discussion.md</code>,不另存</td></tr>
-    <tr><td>暫留 8–10</td><td>8–10</td><td>正文還在 SKILL.md</td></tr>
-    <tr><td><code>N13-end</code></td><td>11</td><td>你點頭才 <code>talk end</code>;長期記憶只在這裡寫進 <code>.dev-flow/</code></td></tr>
+    <tr><td><code>N1-start</code></td><td>開場</td><td><code>talk start</code>,建 0–11 todo。已有 OPEN 場就不要再 start。節點檔 <code>nodes/N1-start.md</code></td></tr>
+    <tr><td><code>S0-scope</code></td><td>0</td><td>規模、範圍與起點。節點檔 <code>nodes/S0-scope.md</code></td></tr>
+    <tr><td><code>S1-survey</code></td><td>1</td><td>盤現況。節點檔 <code>nodes/S1-survey.md</code></td></tr>
+    <tr><td><code>S2-world</code></td><td>2</td><td>真實世界五份。節點檔 <code>nodes/S2-world.md</code></td></tr>
+    <tr><td><code>N3-probe</code></td><td>3</td><td>一次一問。節點檔 <code>nodes/N3-probe.md</code></td></tr>
+    <tr><td><code>S4-accept</code></td><td>4</td><td>驗收雛形。節點檔 <code>nodes/S4-accept.md</code></td></tr>
+    <tr><td><code>S5-diverge</code></td><td>5</td><td>發散。節點檔 <code>nodes/S5-diverge.md</code></td></tr>
+    <tr><td><code>S6-blind</code></td><td>6</td><td>盲點。節點檔 <code>nodes/S6-blind.md</code></td></tr>
+    <tr><td><code>N9-write-md</code></td><td>7</td><td>覆寫同一份 <code>1-discussion.md</code>,不另存。節點檔 <code>nodes/N9-write-md.md</code></td></tr>
+    <tr><td><code>S8-review</code></td><td>8</td><td>獨立複核。節點檔 <code>nodes/S8-review.md</code></td></tr>
+    <tr><td><code>S9-terms</code></td><td>9</td><td>詞彙對帳。節點檔 <code>nodes/S9-terms.md</code></td></tr>
+    <tr><td><code>S10-html</code></td><td>10</td><td>產 html。節點檔 <code>nodes/S10-html.md</code></td></tr>
+    <tr><td><code>N13-end</code></td><td>11</td><td>你點頭才 <code>talk end</code>;長期記憶只在這裡寫進 <code>.dev-flow/</code>。節點檔 <code>nodes/N13-end.md</code></td></tr>
   </table></div>
   <p>本機游標 <code>.devtalk-cursor.json</code>(現在節點 + <code>MEMORY_SESSION_ID</code>)不進 Git。
-  Bash 的 talk start / talk end / 知識寫入,會被 prebash 拿去跑 <code>check-devtalk-graph.sh --action</code>。
-  不要以為 0–11 都拆成節點了。</p>
+  Bash 的 talk start / talk end / 知識寫入 / 會改檔的 shell,會被 prebash 拿去跑 <code>check-devtalk-graph.sh --action</code>。</p>
 
   <div class="figwrap"><svg id="fig-map" viewBox="0 0 1010 400" role="img"
        aria-label="dev-talk 全程地圖:12 步分四階段,含自迴圈與三條回步 3 的回路">

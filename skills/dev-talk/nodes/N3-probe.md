@@ -33,6 +33,7 @@ turn / propose 不得直接改長期記憶檔。
 - **3b. 發現實為多題**(觸發:當前題目其實含多個可獨立交付的子問題)→ 停,
   提議拆分:當前討論收斂到使用者選的子題,其餘各記一條 `[>]` 移交(附建議
   slug 名,留待另開討論),不併成一個大題。
+跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devtalk-graph.sh --write-cursor N3-probe "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

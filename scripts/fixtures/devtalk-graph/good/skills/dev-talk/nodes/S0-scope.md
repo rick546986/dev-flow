@@ -15,6 +15,7 @@ MEMORY_SESSION_ID 已在。游標在 S0-scope。不得 talk start。
 ## 做什麼
 
 規模。不放鬆查證與必問。
+跑 `scripts/check-devtalk-graph.sh --write-cursor S0-scope "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 
