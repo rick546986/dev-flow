@@ -30,7 +30,7 @@
 
 | 你是誰 | 從這裡開始 | 先別讀 |
 |---|---|---|
-| **第一次用** | ①[quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html) ②[七階段圖](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html) ③本檔 [§0](#0-一張圖) + [§10](#10-新-feature-快速上手) | §5、§7(那是規則,不是教學) |
+| **第一次用** | ①[quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html) ②[七階段圖](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html) ③本檔 [§0](#0-一張圖) + [§1 人/Agent 分界](#1-文件地圖四象限-status-看板) | §5、§7(那是規則,不是教學) |
 | **要查一條規則** | 下表直接跳。[§7 gate](#7-角色與-gate)、[§2 兩軌](#2-兩軌lane)、[§13–14 切片](#13-大案與切片) 最常被問 | 從第一節順讀 |
 | **要改 dev-flow 本身** | 母版結構圖(散發版會剝掉)→ [§7 誰在擋](#強制力對照誰在擋) → §7 頂註的同步清單 | 直接改 §7 |
 
@@ -41,7 +41,7 @@
 | G1/G2/G3 各要什麼條件才過 | [§7](#7-角色與-gate) | ✅ **唯一正本**,改這裡要同步四處 |
 | 這件事該走 full 還 fast | [§2](#2-兩軌lane) | ✅ |
 | 七份文檔各放什麼、各卡哪個 gate | [§3](#3-七份文檔用途一句話骨架見-_templates填好範例見-example) | 摘要;gate 條件全文在 §7 |
-| 哪個檔放哪種資訊(記憶/specs/adr/dev) | [§1](#1-文件地圖四象限-status-看板) | ✅ |
+| 哪個檔給人看、哪個給 Agent | [§1](#1-文件地圖四象限-status-看板) | ✅ 不要融合 |
 | 實作期怎麼推進、偏差怎麼判 L1/L2 | §5 | ✅ |
 | 守衛擋我了怎麼辦 / 並行怎麼開 | §5 執行守衛、守衛與並行 | ✅ |
 | 哪一站用哪個模型、錯了怎麼升階 | [§9](#9-模型分層與-effortai-執行時) | ✅ |
@@ -110,52 +110,73 @@ dev-flow/
     docs/dev/                本 repo 用自己的流程管自己
       ├ STATUS.md            Active / Backlog 兩張表(做完的不留這裡)
       ├ HISTORY.md           改版歷史索引(只增不改;唯一寫入口 scripts/history-append.sh)
+      ├ HISTORY.html         人頁(衍生,scripts/build-public-docs.py 重生)
       ├ devflow-contract.json + tools/  dev-setup 的散發副本(doctor 在這裡找)
       └ <slug>/              各次改版的七階段文檔
-    docs/adr/                長期決策,一決策一檔(可被後來的 superseded)
+    docs/adr/                長期決策 md 正本 + 人頁 html(index.html;重生同上)
 ```
 <!-- devflow:master-only:end -->
 
-線上看導覽:[quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html)、
-[dev-flow](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html)、
-[dev-talk](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html)。
-repo 內任一 html(含 example 的 twin)都可把路徑接在 `rick546986.github.io/dev-flow/`
-後線上檢視。
+線上看:[quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html)、
+[七階段圖](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html)、
+[dev-talk](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html)、
+[決策列表](https://rick546986.github.io/dev-flow/docs/adr/)、
+[改版歷史](https://rick546986.github.io/dev-flow/docs/dev/HISTORY.html)。
+repo 內任一 html 都可把路徑接在 `rick546986.github.io/dev-flow/` 後打開。
 
 **採用方式**:最低配是把模板複製進專案、人工照本 README 走流程;裝 plugin 後可用
 `/dev-talk`、`/dev-flow`、`dev-setup`、`/dev-release` 指令自動導引與守衛。
 
 ## 0. 一張圖
 
-```mermaid
-flowchart LR
-    idea([需求/想法]) --> s1[1 討論<br/>發散]
-    s1 --> s2[2 收斂<br/>決策]
-    s2 -- G1 過 --> s3{{3 原型<br/>選配}}
-    s3 --> s4[4 規格<br/>change spec]
-    s2 -- G1 過·無技術疑問 --> s4
-    s4 -- G2 reviewer 核准 --> s5[5 任務]
-    s5 --> s6[6 實作<br/>TDD]
-    s6 --> s7[7 驗證]
-    s7 -- G3 PASS --> pr[PR → develop]
-    pr --> merge[延伸 living spec<br/>docs/specs/]
+七站一條路,三道閘。3 是選配。真圖在導覽,手機不要讀 mermaid。
+
+[七階段 SVG](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow)
+· [quickstart 圖](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html)
+· [訪談圖](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html)
+
+```text
+[想法] -> [1 討論] -> [2 決策] -> [G1]
+                                    |
+                                    +-> [3 原型] -> [4 規格] -> [G2]
+                                                                 |
+                                    +----------------------------+
+                                    |
+                                    +-> [5 任務] -> [6 實作] -> [7 驗證] -> [G3] -> [PR]
 ```
 
 ## 1. 文件地圖(四象限 + STATUS 看板)
+
+人看的跟 Agent 看的是兩套出口。同一個意思不要抄兩份。
+
+```text
+[人看]  ----------------------+
+                              |
+                              +  不要融合。一個意思兩個出口。
+                              |
+[Agent] ----------------------+
+```
+
+| 給誰 | 放哪 | 幹嘛 |
+|---|---|---|
+| **人** | `docs/dev/<slug>/1–7`、`STATUS.md`、`HISTORY.md`、`docs/adr/`、`docs/specs/` | 討論、拍板、考古、看現況 |
+| **Agent** | `.dev-flow/`(進 Git)+ 本機 SQLite 快取 | 長期記憶。禁手改。細節 [§16](#16-agent-memorydev-flow) |
+
+可點的人頁:[決策列表](https://rick546986.github.io/dev-flow/docs/adr/) · [改版歷史](https://rick546986.github.io/dev-flow/docs/dev/HISTORY.html)。
+`*.md` 才是 git 正本。html 用 `python3 scripts/build-public-docs.py` 重生。
+不要把 ADR 正文抄進 `.dev-flow/decisions`,也不要把 yaml 當成人頁。
 
 | 檔 | 回答什麼 | 生命週期 | 誰寫 / 誰讀 |
 |---|---|---|---|
 | `.dev-flow/`(repo root) | **Agent Memory**:這個詞是什麼意思(domain)、現在實際怎麼運作(implementation truth)、打算往哪走(intent)、當初為何這樣選(decision)、怎麼做某件事(skill)、以前發生過什麼(event) | 永生,可 Git 同步 | dev-talk 確認後由 `dev-memory.py` 寫入(**禁手改**)/ 全隊 + 每個 AI session(見 [§16](#16-agent-memorydev-flow)) |
 | `docs/specs/<domain>.md` | 系統**現在**的行為(唯一真相) | 永生,只由階段7出口併入 | 7-Exit / 動這塊前必讀 |
-| `docs/adr/NNNN-slug.md` | 當初**為何**這樣選 | 永生,可 superseded | 2-decision 晉升 / 想翻案的人 |
+| `docs/adr/NNNN-slug.md` | 當初**為何**這樣選。人頁見 [決策列表](https://rick546986.github.io/dev-flow/docs/adr/) | 永生,可 superseded | 2-decision 晉升 / 想翻案的人 |
 | `docs/dev/STATUS.md` | 誰正在做什麼、還有什麼沒做 | 常駐看板,做完的移出 | 每過 gate 更新 / 全隊 |
-| `docs/dev/HISTORY.md` | **做過什麼、當初為什麼做** | 永生,只增不改(append-only) | ship 時由 `history-append.sh` 追加(**禁手改**)/ 想知道某件事怎麼變成現在這樣的人 |
+| `docs/dev/HISTORY.md` | **做過什麼、當初為什麼做**。人頁見 [改版歷史](https://rick546986.github.io/dev-flow/docs/dev/HISTORY.html) | 永生,只增不改(append-only) | ship 時由 `history-append.sh` 追加(**禁手改**)/ 想知道某件事怎麼變成現在這樣的人 |
 | `docs/dev/<feature>/1-7` | 這次變更的完整生命週期 | ship 後封存 | 流程產出 / reviewer + 考古 |
 | `.claude/rules/*.md` | 架構不變量/技術慣例/坑(Claude Code 官方規則路徑,無 `paths` frontmatter 者每 session 自動載入) | 永生 | setup 產草稿 / 全員+執行引擎;**只放 gotchas,禁流程規則(§11),spec 不重抄**;CLAUDE.md 對應段改指標避免雙正本;檔案長大(>~100 行)或多技術棧時可用 `paths:` frontmatter 做 path-scoped 按需載入(判準見模板頂註) |
 
-一句話:**`.dev-flow/` 給 Agent 記,`docs/specs/` 記現況,`docs/adr/` 記當初為什麼,`docs/dev/` 記進行中**。
-本機 SQLite 是 `.dev-flow/` 的快取,不是第二份正本(見 [§16](#16-agent-memorydev-flow))。
-`.devflow/`(少一個連字號)是執行期暫存,不進 Git。
+`.devflow/`(少一個連字號)是執行期暫存,不進 Git。本機 SQLite 是快取,不是第二份正本。
 
 **歸位規則**(init 與全程):文檔不散落 `docs/` 根。
 
@@ -914,6 +935,7 @@ SDD 是脊椎(spec 驅動什麼該做),TDD 是右側驗證(測試證明做對)�
 會怎樣:`.dev-flow/` 在,快取砍掉也能重建。
 不要怎樣:不要把 `docs/dev/` 抄進 `.dev-flow/`,也不要另寫一份 Markdown 給人看。
 兩份正本一定會漂。
+人看 ADR / HISTORY 走 html 人頁,那不是 Agent Memory,不要把正文抄進 `.dev-flow/decisions`。
 
 ### 16.2 專案身分不是路徑
 
@@ -1042,6 +1064,7 @@ Stage 6
 - 舊的 `CONTEXT.md` → `dev-memory.py migrate-legacy`,落地是候選,不是已確認。
   確認後可刪原檔。本 repo 已不散發那份模板。
 - `docs/dev/HISTORY.md` 留在原地。那是給人看的改版紀錄,memory 只索引它。
+  人頁是 `docs/dev/HISTORY.html`(衍生)。不要抄進 `.dev-flow/events/`。
 - 舊的以路徑當鍵的本機資料會對到新的 `project_id`,一列都不刪。不可靠的
   標 unverified,不自動升級成已確認。
 

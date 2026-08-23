@@ -159,6 +159,8 @@
     <a href="#large-work">⑧ 大案與切片</a>
     <a href="#example">⑨ 範例</a>
     <a href="#filemap">附錄 檔案地圖</a>
+    <a href="../docs/adr/index.html">決策列表</a>
+    <a href="../docs/dev/HISTORY.html">改版歷史</a>
   </nav>
 
   <h2 id="flow">① 七階段流程圖(含 Gate 與模型分層)</h2>
@@ -317,6 +319,10 @@
   <p class="lead">這章要你懂:<strong>七份文件跟著 feature 生死,<code>.claude/rules/</code> 不跟</strong> ——
   前者過完 gate 就封存,後者永生且每 session 自動注入。搞混會出事:把流程規則寫進 rules,
   圍欄② 的「盲」會全滅。</p>
+  <p>人要翻長期決策或改版歷史,不要讀生 md:
+  <a href="../docs/adr/index.html">決策列表</a> ·
+  <a href="../docs/dev/HISTORY.html">改版歷史</a>。
+  md 仍是 git 正本。這兩頁不是 Agent Memory。</p>
 
   <div class="parity">
   <p class="parity-tag">規則正本 · 七份文件與各自的 Gate(逐字抄自 README 階段表)</p>
@@ -2046,6 +2052,14 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <tr><td><code>check-history-integrity.sh</code></td>
         <td>檢查只能往後加、不能改的歷史索引格式有沒有跑掉、日期有沒有倒退、有沒有人繞過安全寫入口
             直接編輯。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>build-public-docs.py</code></td>
+        <td>把 <code>docs/adr/*.md</code> 與 <code>docs/dev/HISTORY.md</code> 轉成給人點的 html。
+            md 是正本,html 隨時可重生。不是 Agent Memory。</td>
+        <td>人工要更新人頁時跑;<code>check-public-docs.sh</code> 用 <code>--check</code> 驗過期</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-public-docs.sh</code></td>
+        <td>檢查 adr / HISTORY 的人頁有沒有跟 md 標題、條目脫節。新增 ADR 或追加 HISTORY 之後
+            沒重生就紅。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-methodology-corrections.sh</code></td>
         <td>針對某一批方法論修正產出的導覽頁衍生檔,逐項驗證修正內容真的落地到渲染出來的 HTML 裡,

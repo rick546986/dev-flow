@@ -153,6 +153,9 @@ group_architecture() {
   run "architecture/check-no-stale-paths"  scripts/check-no-stale-paths.sh  || return 1
   # 改版歷史索引:append-only 沒有天然保證,插到中間或手改看起來一樣正常 → 機械驗形狀
   run "architecture/check-history-integrity" scripts/check-history-integrity.sh || return 1
+  # adr / HISTORY 人頁:md 是正本,html 過期就紅。新增 ADR 跑
+  # scripts/build-public-docs.py,不要手改 html。
+  run "architecture/check-public-docs" scripts/check-public-docs.sh || return 1
   # gate twin 是審查介面不是文件視覺版(README §6):三件必含 + 兩種殼,對三站實跑
   run "architecture/check-gate-twin"         scripts/check-gate-twin.sh         || return 1
   # 模型分層是散文紀律(prompt 級),沒照做不會現形——事後從 ledger 的 attempt 事件流

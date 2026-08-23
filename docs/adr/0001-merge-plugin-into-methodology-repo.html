@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>0001. 外掛併回方法論 repo,兩者不再獨立演進</title>
+<style>
+:root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;}
+  @media(prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+      --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  }
+  :root[data-theme="dark"]{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+        --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+  main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
+  h2{font-size:1.15rem;margin-top:2em}
+  h3{font-size:1rem;margin-top:1.5em}
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:1em 0}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+  th{background:var(--card)}
+  code,pre{background:var(--card);border-radius:4px;
+           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
+  pre{padding:12px;overflow-x:auto}
+  code{padding:1px 5px}
+  blockquote{margin:1em 0;padding:.5em 1em;border-left:3px solid var(--line);color:var(--muted)}
+  ul,ol{padding-left:1.4em}
+  .meta{color:var(--muted);font-size:.85rem;margin-bottom:2em}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;
+         font-size:.8rem;font-weight:600;border:1px solid transparent}
+  .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+  .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+  details{margin:.6em 0}
+  details>summary{cursor:pointer;color:var(--muted)}
+  a{color:var(--acc)}
+  nav{background:var(--card);border:1px solid var(--line);border-radius:10px;
+      padding:10px 16px;margin:1em 0;display:flex;flex-wrap:wrap;gap:6px 16px}
+  nav a{text-decoration:none;font-size:.9rem}
+  .lead{margin:.2em 0 .9em;padding:.5em .85em;border-left:3px solid var(--acc);
+        background:var(--card);border-radius:0 6px 6px 0;font-size:.92rem}
+  .foot{margin-top:3em;font-size:.85rem;color:var(--muted);
+        border-top:1px solid var(--line);padding-top:1em}
+</style>
+</head>
+<body>
+<main>
+<h1>0001. 外掛併回方法論 repo,兩者不再獨立演進</h1>
+<p class="meta"><span class="badge ok">accepted</span> · 2026-08-13 · 出處:<code>docs/dev/HISTORY.md</code> 的 <code>2026-08-13 · single-plugin-merge</code>;</p>
+<nav><a href="index.html">決策列表</a><a href="0001-merge-plugin-into-methodology-repo.md">md 正本</a><a href="../dev/HISTORY.html">改版歷史</a></nav>
+<h2>Context</h2>
+<p>方法論(README、模板、檢查腳本)住在 <code>dev-flow</code> repo;實際在跑的執行程式 (hooks、skills)住在另一個 <code>dev-flow-plugin</code> 目錄。兩邊各自演進,靠一個 「版本握手」機制(<code>devflow-contract.json</code> + <code>runtime-capabilities.json</code>)確認相容。</p>
+<p>2026-08-02 的四能力審查明確把「外部外掛併回本 repo」列進<strong>防守清單</strong> (= 明確裁定不要做,防止未來有人誤補),理由寫的是: <strong>「握手機制的前提就是兩邊獨立演進。」</strong></p>
+<p>十一天後(2026-08-13,commit <code>7b5d65c</code>)併了。</p>
+<h2>Decision</h2>
+<p><strong>併。</strong> 外掛的 <code>hooks/</code>、<code>skills/</code>、<code>manifests/</code>、<code>.claude-plugin/</code> 全部進入方法論 repo, repo 名 = 市集名 = 外掛名統一為 <code>dev-flow</code>;<code>methodology/</code> 那層子目錄收攏進 repo 根目錄。</p>
+<p>握手機制<strong>保留不動</strong> —— 它的用途從「兩個 repo 對版」轉為「<strong>已安裝到使用者機器上的版本</strong> 與<strong>採用專案裡的散發副本</strong>對版」,那個落差在併 repo 之後依然存在(使用者不會每次都更新外掛)。</p>
+<h2>Considered Options</h2>
+<div class="tablewrap"><table><thead><tr><th>選項</th><th>利</th><th>弊</th></tr></thead><tbody><tr><td>維持兩個 repo(2026-08-02 的裁決)</td><td>兩邊可各自發版;握手機制的語意最單純</td><td>外掛那個目錄<strong>沒有任何遠端</strong>,改動進不了版本控制、無法開 PR、無法 review —— 修正只能以 patch 檔暫存(見 <code>notes/patches/README.md</code>);而且方法論改了規則、外掛沒跟上時,兩邊版本永遠對不齊</td></tr><tr><td><strong>併成一個 repo(採用)</strong></td><td>規則與執行它的程式同一次提交、同一個版本號、同一輪 CI;安裝時使用者拿到的一定是配對過的組合</td><td>使用者安裝外掛時會連稽核紀錄、設計筆記一起下載(repo 即外掛,<code>marketplace.json</code> 的 <code>source: &quot;./&quot;</code> 沒有排除清單);外掛的改動也會綁上方法論的發版節奏</td></tr></tbody></table></div>
+<h2>Consequences</h2>
+<p><strong>換到了什麼</strong>:單一版本號、單一 CI、單一 review 動線。原本卡在「無遠端所以無法 review」 的 runtime 修正(F-1 那類)之後可以正常走 PR。</p>
+<p><strong>付出了什麼</strong>:</p>
+<ol><li><strong>安裝 = 下載整個 repo。</strong> 外掛設定的來源是 <code>./</code>,沒有檔案排除清單,所以 <code>notes/</code>(內部稽核紀錄)也會進到每個安裝者的外掛快取目錄。已於 2026-08-14 確認 owner 接受(repo 本來就是公開的),但這個代價當初沒有被寫下來。</li><li><strong>原裁決的理由沒有被反駁,只是被繞過。</strong> 「兩邊獨立演進」確實是握手機制的原始前提; 併了之後握手仍有意義(對的是「安裝版 vs 專案散發副本」),但這個語意轉換 當時沒有寫進任何文件 —— 直到這筆 ADR。</li><li>若日後要把外掛拆回獨立 repo,本筆標記為 superseded,並在 <code>docs/dev/HISTORY.md</code> 追加新的一筆說明原因。<strong>不要回頭改這一筆。</strong></li></ol>
+
+<p class="foot">md 是 git 正本。本頁由 <code>scripts/build-public-docs.py</code> 重生。不是 Agent Memory,不要把正文抄進 <code>.dev-flow/decisions</code>。</p>
+</main>
+</body>
+</html>
