@@ -556,6 +556,15 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
             ("python3 -u script.py", f"python3 -u {write_py}"),
             ("python -B script.py", f"python -B {write_py}"),
         )
+        copy_cmds = (
+            ("cp SRC DST", "cp README.md /tmp/devtalk-wc-cp.txt"),
+            ("cp -f", "cp -f README.md /tmp/devtalk-wc-cpf.txt"),
+            ("cp -a", "cp -a README.md /tmp/devtalk-wc-cpa.txt"),
+            ("mv SRC DST", "mv /tmp/devtalk-wc-mv-src /tmp/devtalk-wc-mv-dst"),
+            ("mv -f", "mv -f /tmp/devtalk-wc-mvf-src /tmp/devtalk-wc-mvf-dst"),
+            ("install SRC DST", "install README.md /tmp/devtalk-wc-inst.txt"),
+            ("install -m 644", "install -m 644 README.md /tmp/devtalk-wc-instm.txt"),
+        )
         try:
             open(cursor, "w", encoding="utf-8").write(json.dumps({
                 "node": "N9-write-md",
@@ -611,6 +620,24 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
                 f'rg "open(" && python3 {read_py}',
                 0,
             )
+            for label, cmd in copy_cmds:
+                expect_prebash(
+                    f"0941-P0 prebash:游標 N9 {label} 必須擋",
+                    cmd,
+                    2,
+                    "write_code",
+                )
+            for label, cmd in (
+                ("cp --help", "cp --help"),
+                ("mv --version", "mv --version"),
+                ("install --help", "install --help"),
+                ("cp 單 operand", "cp README.md"),
+            ):
+                expect_prebash(
+                    f"0941-P0 prebash:游標 N9 {label} 不得編成 write_code",
+                    cmd,
+                    0,
+                )
         finally:
             if os.path.isfile(cursor):
                 os.remove(cursor)
@@ -654,6 +681,14 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
                 for label, cmd in stdin_cmds + flag_cmds:
                     expect_prebash(
                         f"1438-P0 prebash:沒游標+OPEN session {label} 必須擋",
+                        cmd,
+                        2,
+                        "write_code",
+                        env=env,
+                    )
+                for label, cmd in copy_cmds:
+                    expect_prebash(
+                        f"0941-P0 prebash:沒游標+OPEN session {label} 必須擋",
                         cmd,
                         2,
                         "write_code",
@@ -718,7 +753,7 @@ print(f"=== test-devtalk-graph:{passed}/{total} ===")
 if failed:
     print(f"⛔ {failed} 案未依預期", file=sys.stderr)
     sys.exit(1)
-if total < 73:
+if total < 91:
     print(f"FATAL: 只跑了 {total} 案,治具沒有真的跑完", file=sys.stderr)
     sys.exit(2)
 print("✅ PASS:graph 負向牙全過")
