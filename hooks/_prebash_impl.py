@@ -81,9 +81,13 @@ def _open_talk_session_id():
 def _python_script_writes(command):
     """python3 script.py / python script.py:腳本裡有 open( 或 .write( 才算寫檔。
 
-    不是 -c。檔不存在就不編(沒東西可讀)。只讀腳本(只有 print)不編。
+    不是 -c。旗標在 .py 前也算(python3 -u / python -B)。
+    檔不存在就不編(沒東西可讀)。只讀腳本(只有 print)不編。
     """
-    match = re.search(r"\bpython3?\s+([^\s-]\S*\.py)\b", command)
+    match = re.search(
+        r"\bpython3?(?:\s+-[A-Za-z0-9]+)*\s+([^\s-]\S*\.py)\b",
+        command,
+    )
     if not match:
         return False
     path = match.group(1).strip("'\"")
@@ -103,14 +107,20 @@ def _looks_like_write_code(command):
 
     只認這幾種字面(負向測真跑指令字串):
     - python3 -c / python -c 裡有 open( 或 .write(
+    - python3 - << / python - <<(stdin 餵)同一字串有 open( 或 .write(
     - python3 script.py / python script.py,腳本裡有 open( 或 .write(
+      (旗標在 .py 前也算:python3 -u / python -B)
     - > / >> 寫到檔(/dev/null 與 2>&1 這類 fd 複製除外)
     - heredoc 寫檔(cat > file <<EOF;有 > 的那種已被上一條咬到)
     - tee 寫到檔(/dev/null 除外)
     - sed -i / sed --in-place 改檔
     只讀(cat / rg / ls)與 talk turn/propose 不會進這裡。
+    不掃整段 shell 的任意 python+open((會誤咬 rg "open(" && python3 read.py)。
     """
     if re.search(r"\bpython3?\s+-c\b", command):
+        if "open(" in command or ".write(" in command:
+            return True
+    if re.search(r"\bpython3?(?:\s+-)?\s*<<", command):
         if "open(" in command or ".write(" in command:
             return True
     if _python_script_writes(command):

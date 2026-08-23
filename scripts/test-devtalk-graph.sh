@@ -533,6 +533,29 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
             ),
             ("sed -i", f"sed -i 's/a/b/' {write_py}"),
         )
+        stdin_write = (
+            "python3 - <<'PY'\n"
+            "open('/tmp/x','w').write('x')\n"
+            "PY"
+        )
+        stdin_write_py = (
+            "python - <<'PY'\n"
+            "open('/tmp/x','w').write('x')\n"
+            "PY"
+        )
+        stdin_read = (
+            "python3 - <<'PY'\n"
+            "print('ok')\n"
+            "PY"
+        )
+        stdin_cmds = (
+            ("python3 - << write", stdin_write),
+            ("python - << write", stdin_write_py),
+        )
+        flag_cmds = (
+            ("python3 -u script.py", f"python3 -u {write_py}"),
+            ("python -B script.py", f"python -B {write_py}"),
+        )
         try:
             open(cursor, "w", encoding="utf-8").write(json.dumps({
                 "node": "N9-write-md",
@@ -571,6 +594,23 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
                 f"python3 {read_py}",
                 0,
             )
+            for label, cmd in stdin_cmds + flag_cmds:
+                expect_prebash(
+                    f"1438-P0 prebash:游標 N9 {label} 必須擋",
+                    cmd,
+                    2,
+                    "write_code",
+                )
+            expect_prebash(
+                "1438-P0 prebash:游標 N9 python3 - << 只讀不得誤編",
+                stdin_read,
+                0,
+            )
+            expect_prebash(
+                "1438-P0 prebash:游標 N9 rg open( && python3 只讀不得誤編",
+                f'rg "open(" && python3 {read_py}',
+                0,
+            )
         finally:
             if os.path.isfile(cursor):
                 os.remove(cursor)
@@ -606,6 +646,14 @@ with tempfile.TemporaryDirectory(prefix="devtalk-graph-test-") as tmpbase:
                 for label, cmd in extra_cmds:
                     expect_prebash(
                         f"1238-P0 prebash:沒游標+OPEN session {label} 必須擋",
+                        cmd,
+                        2,
+                        "write_code",
+                        env=env,
+                    )
+                for label, cmd in stdin_cmds + flag_cmds:
+                    expect_prebash(
+                        f"1438-P0 prebash:沒游標+OPEN session {label} 必須擋",
                         cmd,
                         2,
                         "write_code",
@@ -670,7 +718,7 @@ print(f"=== test-devtalk-graph:{passed}/{total} ===")
 if failed:
     print(f"⛔ {failed} 案未依預期", file=sys.stderr)
     sys.exit(1)
-if total < 63:
+if total < 73:
     print(f"FATAL: 只跑了 {total} 案,治具沒有真的跑完", file=sys.stderr)
     sys.exit(2)
 print("✅ PASS:graph 負向牙全過")
