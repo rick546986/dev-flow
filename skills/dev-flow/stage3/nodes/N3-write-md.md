@@ -27,5 +27,5 @@ code 進 throwaway branch,禁進 main。`write_mode: overwrite`。
 
 ## 下一跳
 
-skill-legacy-3-4
-(先走模板頂註步 3 回寫 2-decision、步 4 收尾;本節點不搶寫 2-decision)
+S3-writeback
+(本節點不搶寫 2-decision;回寫在 S3、收尾在 S4)

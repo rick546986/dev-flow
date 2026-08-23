@@ -1,10 +1,11 @@
 #!/bin/bash
 # test-devstage3-graph.sh — check-devstage3-graph.sh 的負向牙
 #
-# 對照組是一份最小合法 graph(四真節點 + 分叉 skill-legacy)。
+# 對照組是一份最小合法 graph(九真節點 + 分叉 S0-question)。
 # 每個案例把對照組改壞一次,確認檢查真的紅。
 # 另有一份「舊實作(單一 SKILL、沒有 graph)」fixture,必須紅 ——
 # 這就是「先寫測試、舊實作先紅」的永久牙齒,不是散文。
+# 第二刀:skill-legacy 團塊必須紅;S3 才准 write_decision。
 #
 # 用法:scripts/test-devstage3-graph.sh [root]
 # exit:0 = 全過 / 1 = 案例未依預期 / 2 = 治具故障
@@ -93,7 +94,7 @@ status: draft
 with tempfile.TemporaryDirectory(prefix="devstage3-graph-test-") as tmpbase:
     good = os.path.join(tmpbase, "good")
     shutil.copytree(os.path.join(fix, "good"), good)
-    expect("G-0 對照組(四真節點 + 分叉)必須綠", good, 0)
+    expect("G-0 對照組(九真節點)必須綠", good, 0)
 
     old = os.path.join(tmpbase, "old")
     shutil.copytree(os.path.join(fix, "old-skill"), old)
@@ -198,13 +199,99 @@ with tempfile.TemporaryDirectory(prefix="devstage3-graph-test-") as tmpbase:
         print("  ✗ G-cursor --write-cursor 沒寫出游標檔", file=sys.stderr)
         print((proc.stdout or "") + (proc.stderr or ""), file=sys.stderr)
 
+    case = os.path.join(tmpbase, "s0-no-cursor-call")
+    seed(case)
+    s0 = os.path.join(
+        case, "skills", "dev-flow", "stage3", "nodes", "S0-question.md"
+    )
+    text = open(s0, encoding="utf-8").read().replace("--write-cursor", "--no-cursor-call")
+    open(s0, "w", encoding="utf-8").write(text)
+    expect("P0 S0 缺 --write-cursor 必須紅", case, 1, "--write-cursor")
+
+    case = os.path.join(tmpbase, "s3-no-cursor-call")
+    seed(case)
+    s3 = os.path.join(
+        case, "skills", "dev-flow", "stage3", "nodes", "S3-writeback.md"
+    )
+    text = open(s3, encoding="utf-8").read().replace("--write-cursor", "--no-cursor-call")
+    open(s3, "w", encoding="utf-8").write(text)
+    expect("P0 S3 缺 --write-cursor 必須紅", case, 1, "--write-cursor")
+
+    case = os.path.join(tmpbase, "missing-s0")
+    seed(case)
+    os.remove(
+        os.path.join(case, "skills", "dev-flow", "stage3", "nodes", "S0-question.md")
+    )
+    expect("P0 缺 S0-question 節點檔必須紅", case, 1, "S0-question")
+
+    case = os.path.join(tmpbase, "legacy-blob")
+    seed(case)
+    graph = os.path.join(case, "skills", "dev-flow", "stage3", "graph.yaml")
+    text = open(graph, encoding="utf-8").read()
+    text = text.replace(
+        "    fork_required: S0-question\n",
+        "    fork_required: skill-legacy-0-2\n",
+    )
+    text = text.replace(
+        "  S0-question:\n    file: nodes/S0-question.md\n    next: S1-experiment\n"
+        "    forbid:\n      - write_prototype\n      - write_decision\n",
+        "  skill-legacy-0-2:\n    kind: skill-legacy\n    next: S1-experiment\n"
+        "    forbid:\n      - write_prototype\n",
+    )
+    open(graph, "w", encoding="utf-8").write(text)
+    expect("P0 skill-legacy 團塊仍在必須紅", case, 1, "skill-legacy")
+
+    expect(
+        "P0 S3 + 有命中 → write_decision 必須綠",
+        good,
+        0,
+        "allow",
+        extra=["--action", os.path.join(actions, "s3-write-decision-ok.json")],
+    )
+    expect(
+        "P0 N1 不得 write_decision",
+        good,
+        1,
+        "N1-trigger",
+        extra=["--action", os.path.join(actions, "n1-write-decision.json")],
+    )
+    expect(
+        "P0 N3 不得 write_decision",
+        good,
+        1,
+        "N3-write-md",
+        extra=["--action", os.path.join(actions, "n3-write-decision.json")],
+    )
+    expect(
+        "P0 S0 不得 write_decision",
+        good,
+        1,
+        "S0-question",
+        extra=["--action", os.path.join(actions, "s0-write-decision.json")],
+    )
+
+    case = os.path.join(tmpbase, "s3-no-allow")
+    seed(case)
+    graph = os.path.join(case, "skills", "dev-flow", "stage3", "graph.yaml")
+    text = open(graph, encoding="utf-8").read()
+    text = text.replace(
+        "  S3-writeback:\n    file: nodes/S3-writeback.md\n    next: S4-close\n"
+        "    write:\n      - docs/dev/<slug>/2-decision.md\n"
+        "    write_mode: overwrite\n    allow:\n      - write_decision\n"
+        "    forbid:\n      - write_prototype\n",
+        "  S3-writeback:\n    file: nodes/S3-writeback.md\n    next: S4-close\n"
+        "    forbid:\n      - write_decision\n",
+    )
+    open(graph, "w", encoding="utf-8").write(text)
+    expect("P0 S3 缺 allow write_decision 必須紅", case, 1, "S3-writeback")
+
 total = passed + failed
 print(f"=== test-devstage3-graph:{passed}/{total} ===")
 if failed:
     print(f"⛔ {failed} 案未依預期", file=sys.stderr)
     sys.exit(1)
-if total < 8:
-    print(f"⛔ 案例數 {total} < 8,牙齒沒跑齊", file=sys.stderr)
+if total < 16:
+    print(f"⛔ 案例數 {total} < 16,牙齒沒跑齊", file=sys.stderr)
     sys.exit(2)
 sys.exit(0)
 PY

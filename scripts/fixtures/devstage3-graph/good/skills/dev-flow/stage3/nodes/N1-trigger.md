@@ -23,4 +23,4 @@
 
 ## 下一跳
 
-0 命中 → N-skip;任一命中 → skill-legacy-0-2。
+0 命中 → N-skip;任一命中 → S0-question。

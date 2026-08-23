@@ -23,4 +23,4 @@ N1 任一命中,且步 0–2 完成(Question／Method／Result 已能落檔)。
 
 ## 下一跳
 
-skill-legacy-3-4
+S3-writeback

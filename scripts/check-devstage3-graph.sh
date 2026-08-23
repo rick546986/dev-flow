@@ -1,5 +1,5 @@
 #!/bin/bash
-# check-devstage3-graph.sh — Stage 3 第一刀的機械契約
+# check-devstage3-graph.sh — Stage 3 第二刀的機械契約
 #
 # 為什麼需要:把第 3 站切成可單獨重跑的節點之後,有幾件事不能只靠散文 —
 #   1. 沒有 stage3/graph.yaml 必須紅:舊實作(單一 SKILL、沒有 graph)無法證明
@@ -11,6 +11,10 @@
 #   6. 有命中、無 skip OC、游標不在第 3 站允許節點,卻 write_spec(寫 4-spec.md)
 #      必須紅:第 3 站還沒結束不准搶跑第 4 站。
 #      --action 先只活在本腳本;prebash 第三刀再接。
+#   7. 第二刀:legacy 0／1／2／3／4 必須是真節點檔。skill-legacy 團塊必須紅。
+#      每個真節點「做什麼」必須 --write-cursor <本節點 id>。
+#      fork_required 必須是 S0-question。S3-writeback 才 allow write_decision
+#      (同一份 2-decision.md,overwrite)。不要放寬 N1／N-skip／S0／S1／S2／N3／N5。
 #
 # graph.yaml 是下一跳的唯一正本。分叉用 next + fork_required,禁止 via。
 # 本機游標 .devstage3-cursor.json 不進 Git。
@@ -94,27 +98,46 @@ DOCS_DEV = os.path.join(root, "docs", "dev")
 REQUIRED_NODES = (
     "N1-trigger",
     "N-skip",
+    "S0-question",
+    "S1-experiment",
+    "S2-evidence",
     "N3-write-md",
+    "S3-writeback",
+    "S4-close",
     "N5-end",
 )
 REQUIRED_HEADINGS = ("進條件", "讀什麼", "寫哪裡", "做什麼", "完成條件", "下一跳")
 TEETH_HEADINGS = ("進條件", "完成條件")
 CANONICAL_MD = "docs/dev/<slug>/3-prototype.md"
-LOCKED_ACTIONS = ("write_prototype", "write_spec")
+CANONICAL_DECISION_MD = "docs/dev/<slug>/2-decision.md"
+LOCKED_ACTIONS = ("write_prototype", "write_spec", "write_decision")
 WRITE_PROTOTYPE_NODE = "N3-write-md"
+WRITE_DECISION_NODE = "S3-writeback"
+WRITE_DECISION_FORBIDDEN = (
+    "N1-trigger",
+    "N-skip",
+    "S0-question",
+    "S1-experiment",
+    "S2-evidence",
+    "N3-write-md",
+    "N5-end",
+)
 N1_NEXT = "N-skip"
-N1_FORK = "skill-legacy-0-2"
+N1_FORK = "S0-question"
 EXPECTED_NEXT = {
     "N-skip": "",
-    "skill-legacy-0-2": "N3-write-md",
-    "N3-write-md": "skill-legacy-3-4",
-    "skill-legacy-3-4": "N5-end",
+    "S0-question": "S1-experiment",
+    "S1-experiment": "S2-evidence",
+    "S2-evidence": "N3-write-md",
+    "N3-write-md": "S3-writeback",
+    "S3-writeback": "S4-close",
+    "S4-close": "N5-end",
     "N5-end": "",
 }
 # 第 3 站允許 write_spec 的節點:本刀空集合(第 4 站還沒開始)
 SPEC_ALLOWED_NODES = frozenset()
 NEXT_ID_RE = re.compile(
-    r"(?:N(?:\d+)?-[A-Za-z0-9-]+|skill-legacy-\d+(?:-\d+)?)"
+    r"(?:S\d+-[A-Za-z0-9-]+|N(?:\d+)?-[A-Za-z0-9-]+|skill-legacy-\d+(?:-\d+)?)"
 )
 BAD_PROTO_RE = re.compile(r"3-prototype(?:-[A-Za-z0-9]+)+\.md")
 STATUS_RE = re.compile(r"^status:\s*(\S+)", re.M)
@@ -315,6 +338,8 @@ def evaluate_action(graph, payload):
         return "deny", f"{node_id} 未允許 write_spec（寫 4-spec.md）"
     if action == "write_prototype" and node_id in ("N1-trigger", "N-skip"):
         return "deny", f"{node_id} 禁止 write_prototype"
+    if action == "write_decision" and node_id != WRITE_DECISION_NODE:
+        return "deny", f"{node_id} 不得 write_decision(回寫在 S3)"
     allow = set(as_list(spec.get("allow")))
     forbid = set(as_list(spec.get("forbid")))
     if action in forbid:
@@ -532,12 +557,37 @@ def check_live(graph):
             failures.append(
                 f"P0 {node_id} 用 via 當 hop,必須是 next / fork_required 真節點"
             )
+        if spec.get("kind") == "skill-legacy":
+            failures.append(
+                f"P0 {node_id} 仍是 skill-legacy 團塊,必須拆成有節點檔的 hop"
+            )
         allow = set(as_list(spec.get("allow")))
         if node_id == WRITE_PROTOTYPE_NODE:
             if "write_prototype" not in allow:
                 failures.append("P0 N3-write-md 必須 allow write_prototype")
         elif "write_prototype" in allow:
             failures.append(f"P0 {node_id} 不得 allow write_prototype")
+        if node_id == WRITE_DECISION_NODE:
+            if "write_decision" not in allow:
+                failures.append(
+                    "P0 S3-writeback 必須 allow write_decision"
+                    "(同一份 2-decision.md,overwrite)"
+                )
+            if spec.get("write_mode") != "overwrite":
+                failures.append(
+                    "P0 S3-writeback allow write_decision 時 write_mode "
+                    "必須是 overwrite"
+                )
+            write_dec = as_list(spec.get("write"))
+            if write_dec != [CANONICAL_DECISION_MD]:
+                failures.append(
+                    f"P0 graph.yaml S3 write 必須剛好是 "
+                    f"{[CANONICAL_DECISION_MD]},實際是 {write_dec}"
+                )
+        elif "write_decision" in allow:
+            failures.append(f"P0 {node_id} 不得 allow write_decision")
+        if node_id in WRITE_DECISION_FORBIDDEN and "write_decision" in allow:
+            failures.append(f"P0 {node_id} 不得放寬 write_decision")
         if "write_spec" in allow:
             failures.append(f"P0 {node_id} 不得 allow write_spec")
 
@@ -577,6 +627,6 @@ if failures:
         print(f"  - {item}", file=sys.stderr)
     sys.exit(1)
 
-print("✅ PASS:Stage 3 graph 四真節點 / 觸發分叉 / 單產物 / 覆寫 / 第 4 站不准搶跑 全過")
+print("✅ PASS:Stage 3 graph 九真節點 / 觸發分叉 / 單產物 / 覆寫 / S3 回寫 / 第 4 站不准搶跑 全過")
 sys.exit(0)
 PY
