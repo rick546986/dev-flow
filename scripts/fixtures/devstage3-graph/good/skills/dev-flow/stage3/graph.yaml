@@ -1,0 +1,43 @@
+# 下一跳唯一正本(本 fixture 只給檢查當對照組)
+# 乘客清單正本仍是 `_templates/3-prototype.md` 頂註 0–4。
+# 觸發判定在乘客之前。分叉用 next + fork_required,禁止 via。
+entry: N1-trigger
+nodes:
+  N1-trigger:
+    file: nodes/N1-trigger.md
+    next: N-skip
+    fork_required: skill-legacy-0-2
+    forbid:
+      - write_prototype
+  N-skip:
+    file: nodes/N-skip.md
+    next: ""
+    forbid:
+      - write_prototype
+  skill-legacy-0-2:
+    kind: skill-legacy
+    entry: _templates/3-prototype.md
+    steps: "0-2"
+    next: N3-write-md
+    forbid:
+      - write_prototype
+  N3-write-md:
+    file: nodes/N3-write-md.md
+    next: skill-legacy-3-4
+    write:
+      - docs/dev/<slug>/3-prototype.md
+    write_mode: overwrite
+    allow:
+      - write_prototype
+  skill-legacy-3-4:
+    kind: skill-legacy
+    entry: _templates/3-prototype.md
+    steps: "3-4"
+    next: N5-end
+    forbid:
+      - write_prototype
+  N5-end:
+    file: nodes/N5-end.md
+    next: ""
+    forbid:
+      - write_prototype

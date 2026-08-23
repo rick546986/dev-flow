@@ -2198,6 +2198,20 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             <code>write_mode≠overwrite</code>、未核准就寫決策檔、S4 缺 allow、
             G1 前寫 <code>4-spec</code>、guide 還寫單一 SKILL 各打一槍。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-devstage3-graph.sh</code></td>
+        <td>乘客不用跑它。它管 Stage 3 第一刀:觸發判定 + 跳過 hop。下一跳以
+            <code>skills/dev-flow/stage3/graph.yaml</code> 為準、0 命中不准建
+            <code>3-prototype.md</code>、重跑只能覆寫同一份、N1／N-skip 不得寫檔、
+            第 3 站結束前不得寫 <code>4-spec.md</code>。
+            本機游標 <code>.devstage3-cursor.json</code> 不進 Git。
+            <code>--action</code> 本刀只活在檢查腳本,不接 prebash。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-devstage3-graph.sh</code></td>
+        <td>上面那支的負向牙:舊實作(單一 SKILL、沒有 graph)必須紅;真節點缺進條件或
+            完成條件、同 slug 第二份 <code>3-prototype*.md</code>、
+            <code>write_mode≠overwrite</code>、九條全未命中卻建檔、
+            N1／N-skip 寫原型、有命中仍寫 <code>4-spec</code> 各打一槍。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>
         <td>本節新增的守衛本身——盤點 <code>hooks/</code>/<code>scripts/</code>/<code>observability/</code>/
             <code>tests/parallel-stage6/</code> 底下每支腳本有沒有被這張表點名到,也反查表裡寫的檔名是不是
