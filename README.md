@@ -722,7 +722,7 @@ base 不見了,而且是在他們下次 `git fetch` 才會發現。「直接補�
 
 | 階段 | 呼叫 | 來源 |
 |---|---|---|
-| 1 討論 | **`/dev-talk`**(獨立 skill,盲下游)。乘客地圖仍是 0–11 共 12 步;執行時是可重跑的節點鏈,下一跳看 `skills/dev-talk/graph.yaml`,不是只看 SKILL.md。已拆出 N1-start / N3-probe / N9-write-md / N13-end;未拆的步仍在 SKILL.md,是真的 hop,不能跳。走錯一步就重跑那一節,不要整場重來。細節見 [guide-dev-talk](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html) | openspec / mattpocock / superpowers |
+| 1 討論 | **`/dev-talk`**(獨立 skill,盲下游)。乘客地圖仍是 0–11 共 12 步;執行時是可重跑的節點鏈,下一跳看 `skills/dev-talk/graph.yaml`,不是只看 SKILL.md。每步都有節點檔,graph next 不得跳過;SKILL.md 只留入口與摘要。走錯一步就重跑那一節,不要整場重來。細節見 [guide-dev-talk](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html) | openspec / mattpocock / superpowers |
 | 2 收斂 | 2-3 方案並排比較 + 壓測定案(方法內建於 `_templates/2-decision.md` 清單;可搭 mattpocock `grill-me`) | 內建 / mattpocock |
 | 3 原型 | throwaway 實驗(code→throwaway branch、資料實驗→scratchpad);UI 疑問做 2-4 個結構不同 variant | 內建 / mattpocock `prototype` |
 | 4 規格 | openspec delta 格式手寫(模板已內建) | openspec |

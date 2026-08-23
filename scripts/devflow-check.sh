@@ -104,7 +104,7 @@ group_methodology() {
   # 第 7 型「不對稱記帳」:guide-dev-talk.html 是 skills/dev-talk/SKILL.md 的鏡像導覽,
   # 機制(SKILL.md)改了、鏡像沒跟上會靜默漂移(曾發生漏列一整步、逐字引用錯引正本)。
   run "methodology/check-devtalk-guide-sync" scripts/check-devtalk-guide-sync.sh || return 1
-  # Stage 1 第一刀:四節點可單獨當入口、重跑 N9 不得另存、重跑不得重開 session。
+  # Stage 1:節點鏈可單獨當入口、重跑 N9 不得另存、沒游標檔 --action 仍擋、重跑不得重開 session。
   run "methodology/check-devtalk-graph"       scripts/check-devtalk-graph.sh     || return 1
   run "methodology/test-devtalk-graph"        scripts/test-devtalk-graph.sh      || return 1
 }

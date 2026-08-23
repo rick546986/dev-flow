@@ -1,17 +1,19 @@
 #!/bin/bash
-# check-devtalk-graph.sh — Stage 1 第一刀的機械契約(P0-1 / P0-2 / P0-3)
+# check-devtalk-graph.sh — Stage 1 節點鏈的機械契約
 #
-# 為什麼需要:把 /dev-talk 切成可單獨重跑的節點之後,有三件事不能只靠散文 —
+# 為什麼需要:把 /dev-talk 切成可單獨重跑的節點之後,有幾件事不能只靠散文 —
 #   P0-1 產物仍是一份:graph 跑完或重跑 N9,docs/dev/<slug>/ 不得長出第二份
 #        1-discussion*.md;禁止每個節點再生討論檔。
-#   P0-2 四個節點檔必須可單獨當入口:缺「進條件 / 完成條件 / 下一跳」→ 紅;
-#        graph.yaml 的 next 與節點檔下一跳不一致 → 紅;SKILL.md 若把 N3 完整
-#        步驟正文再抄一份 → 紅(入口可摘要,正本只准一處)。
+#   P0-2 每個 hop 必須有節點檔、可單獨當入口:缺「進條件 / 做什麼 / 完成條件 /
+#        下一跳」→ 紅;graph.yaml 的 next 不得跳過;SKILL.md 只留入口與摘要,
+#        正本只准一處。
 #   P0-3 重跑不得重開 session:游標已在 N3 且 MEMORY_SESSION_ID 已在 → 不得
 #        talk start;游標在 N9 → 不得寫程式碼、不得 talk end;N13 之前任何
 #        節點直接寫入知識目錄 → 紅。
+#   P0-4 本機游標:N1 / SKILL 必須呼叫 --write-cursor;沒游標檔時 write_code /
+#        talk_end / write_knowledge 走 --action 必須 deny。檔不進 Git。
 #
-# graph.yaml 是下一跳的唯一正本。本機游標不進 Git,本檢查不讀、不寫游標檔。
+# graph.yaml 是下一跳的唯一正本。本機游標不進 Git。
 #
 # 用法:
 #   scripts/check-devtalk-graph.sh [root]          # 驗該 root 的 skills/dev-talk
@@ -19,6 +21,8 @@
 #       FILE 是一份 JSON:{cursor:{node,MEMORY_SESSION_ID},action}
 #       依 graph.yaml 的 allow/forbid 判定 allow 或 deny(stdout 一行)。
 #       deny → exit 1;allow → exit 0;契約缺失 → exit 2。
+#   scripts/check-devtalk-graph.sh --write-cursor NODE SESSION [root]
+#       把 .devtalk-cursor.json 寫成 {node, MEMORY_SESSION_ID}。不改 .dev-flow。
 #
 # exit:0 = 全過 / 1 = 真違規 / 2 = 檢查自身故障(NOT-PARSED)
 
@@ -26,17 +30,29 @@ set -uo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 ACTION_FILE=""
+WRITE_NODE=""
+WRITE_SESSION=""
 if [ "${1:-}" = "--action" ]; then
   ACTION_FILE=${2:-}
   [ -n "$ACTION_FILE" ] || { echo "FATAL: --action 需要 JSON 路徑" >&2; exit 2; }
   if [ -n "${3:-}" ]; then
     ROOT=$(cd "$3" && pwd) || exit 2
   fi
+elif [ "${1:-}" = "--write-cursor" ]; then
+  WRITE_NODE=${2:-}
+  WRITE_SESSION=${3:-}
+  [ -n "$WRITE_NODE" ] && [ -n "$WRITE_SESSION" ] || {
+    echo "FATAL: --write-cursor 需要 NODE 與 SESSION" >&2
+    exit 2
+  }
+  if [ -n "${4:-}" ]; then
+    ROOT=$(cd "$4" && pwd) || exit 2
+  fi
 elif [ -n "${1:-}" ]; then
   ROOT=$(cd "$1" && pwd) || exit 2
 fi
 
-python3 - "$ROOT" "$ACTION_FILE" <<'PY'
+python3 - "$ROOT" "$ACTION_FILE" "$WRITE_NODE" "$WRITE_SESSION" <<'PY'
 import json
 import os
 import re
@@ -47,15 +63,56 @@ sys.stderr.reconfigure(line_buffering=True)
 
 root = sys.argv[1]
 action_file = sys.argv[2]
+write_node = sys.argv[3] if len(sys.argv) > 3 else ""
+write_session = sys.argv[4] if len(sys.argv) > 4 else ""
+
+if write_node:
+    dest = os.path.join(root, ".devtalk-cursor.json")
+    tmp = dest + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as handle:
+        json.dump(
+            {"node": write_node, "MEMORY_SESSION_ID": write_session},
+            handle,
+            ensure_ascii=False,
+        )
+        handle.write("\n")
+    os.replace(tmp, dest)
+    print(f"wrote {dest} node={write_node}")
+    sys.exit(0)
 
 TALK = os.path.join(root, "skills", "dev-talk")
 GRAPH_PATH = os.path.join(TALK, "graph.yaml")
 SKILL_PATH = os.path.join(TALK, "SKILL.md")
 DOCS_DEV = os.path.join(root, "docs", "dev")
 
-REQUIRED_NODES = ("N1-start", "N3-probe", "N9-write-md", "N13-end")
+REQUIRED_NODES = (
+    "N1-start",
+    "S0-scope",
+    "S1-survey",
+    "S2-world",
+    "N3-probe",
+    "S4-accept",
+    "S5-diverge",
+    "S6-blind",
+    "N9-write-md",
+    "S8-review",
+    "S9-terms",
+    "S10-html",
+    "N13-end",
+)
 REQUIRED_HEADINGS = ("進條件", "讀什麼", "寫哪裡", "做什麼", "完成條件", "下一跳")
 N3_MARKERS = ("每輪三律", "3a. 前提被推翻", "3b. 發現實為多題")
+LEFTOVER_DUAL = (
+    ("S0-scope", ("不放鬆查證與必問",)),
+    ("S1-survey", ("認可後的清單 = 本次「已核事實」",)),
+    ("S2-world", ("系統外角色也要列",)),
+    ("S4-accept", ("問現象不問做法",)),
+    ("S5-diverge", ("純發散、不收斂",)),
+    ("S6-blind", ("沉默不算",)),
+    ("S8-review", ("嚴格審視者視角重讀全檔",)),
+    ("S9-terms", ("同名異義分立互註",)),
+    ("S10-html", ("html 要改,先改 md 再重生",)),
+)
 CANONICAL_MD = "docs/dev/<slug>/1-discussion.md"
 LOCKED_ACTIONS = (
     "talk_start",
@@ -64,14 +121,26 @@ LOCKED_ACTIONS = (
     "write_knowledge",
     "write_discussion_md",
 )
-NEXT_ID_RE = re.compile(r"(?:skill-legacy-\d+-\d+|N\d+-[A-Za-z0-9-]+)")
+NEXT_ID_RE = re.compile(
+    r"(?:S\d+-[A-Za-z0-9-]+|N\d+-[A-Za-z0-9-]+|skill-legacy-\d+(?:-\d+)?)"
+)
 BAD_DISCUSSION_RE = re.compile(
     r"1-discussion(?:-[A-Za-z0-9]+)+\.md"
 )
-LEGACY_HOPS = (
-    ("N1-start", "skill-legacy-0-2", "N3-probe", "0-2"),
-    ("N3-probe", "skill-legacy-4-6", "N9-write-md", "4-6"),
-    ("N9-write-md", "skill-legacy-8-10", "N13-end", "8-10"),
+REQUIRED_CHAIN = (
+    "N1-start",
+    "S0-scope",
+    "S1-survey",
+    "S2-world",
+    "N3-probe",
+    "S4-accept",
+    "S5-diverge",
+    "S6-blind",
+    "N9-write-md",
+    "S8-review",
+    "S9-terms",
+    "S10-html",
+    "N13-end",
 )
 
 
@@ -216,6 +285,8 @@ def evaluate_action(graph, payload):
     if not action:
         return "error", "action JSON 缺 action"
     if not node_id:
+        if action in ("write_code", "talk_end", "write_knowledge"):
+            return "deny", f"沒有游標檔,不得 {action}"
         if action == "talk_start" and session:
             return "deny", "沒有游標但已有 MEMORY_SESSION_ID,不得 talk start"
         return "error", "action JSON 缺 cursor.node"
@@ -295,36 +366,39 @@ def check_action_runtime_wired():
 
 
 def check_legacy_hops(nodes, failures):
-    """P0:next 不得跨過暫留步。via 若還在,必須是真節點。"""
-    for src, hop, dest, steps in LEGACY_HOPS:
-        spec = nodes.get(src) if isinstance(nodes, dict) else None
+    """P0:next 不得跳過任何 hop。舊 skill-legacy 團塊不再算真節點。"""
+    if not isinstance(nodes, dict):
+        return
+    for node_id, spec in nodes.items():
         if not isinstance(spec, dict):
             continue
+        if spec.get("kind") == "skill-legacy":
+            failures.append(
+                f"P0 {node_id} 仍是 skill-legacy 團塊,必須拆成有節點檔的 hop"
+            )
         via = spec.get("via")
         if via and via not in nodes:
             failures.append(
-                f"P0 {src} via={via!r} 只是字串,不是真節點 —— 暫留步會被跳過"
+                f"P0 {node_id} via={via!r} 只是字串,不是真節點 —— 暫留步會被跳過"
             )
+    for index, src in enumerate(REQUIRED_CHAIN[:-1]):
+        dest = REQUIRED_CHAIN[index + 1]
+        spec = nodes.get(src)
+        if not isinstance(spec, dict):
+            failures.append(f"P0 graph.yaml 缺節點 {src}")
+            continue
         actual = spec.get("next") or ""
         if actual == dest:
+            continue
+        later = set(REQUIRED_CHAIN[index + 2:])
+        if actual in later:
             failures.append(
-                f"P0 {src} next 跨過暫留步 {steps}:直接跳到 {dest},"
-                f"必須先經 {hop}"
+                f"P0 {src} next 跨過暫留步 {dest}:直接跳到 {actual},"
+                f"必須先經 {dest}"
             )
-            continue
-        if actual != hop:
+        else:
             failures.append(
-                f"P0 {src} next 必須是暫留入口 {hop},實際是 {actual!r}"
-            )
-            continue
-        hop_spec = nodes.get(hop)
-        if not isinstance(hop_spec, dict):
-            failures.append(f"P0 缺暫留節點 {hop}(via 做成真節點,不要只當字串)")
-            continue
-        hop_next = hop_spec.get("next") or ""
-        if hop_next != dest:
-            failures.append(
-                f"P0 {hop} next 必須是 {dest},實際是 {hop_next!r}"
+                f"P0 {src} next 必須是 {dest},實際是 {actual!r}"
             )
 
 
@@ -398,6 +472,26 @@ def check_live(graph):
             failures.append(
                 "P0-2 SKILL.md 仍複製 N3 完整步驟正文,與 nodes/N3-probe.md 雙正本"
             )
+
+    for node_id, markers in LEFTOVER_DUAL:
+        path = node_path(node_id, nodes.get(node_id) or {})
+        if not (skill_text and os.path.isfile(path)):
+            continue
+        node_text = open(path, encoding="utf-8").read()
+        if all(m in skill_text for m in markers) and all(
+            m in node_text for m in markers
+        ):
+            failures.append(
+                f"P0-2 SKILL.md 仍複製 {node_id} 完整步驟正文,與 {os.path.relpath(path, root)} 雙正本"
+            )
+
+    if skill_text and "--write-cursor" not in skill_text:
+        failures.append("P0 SKILL.md 必須呼叫 --write-cursor(N1 寫本機游標)")
+    n1_path = node_path("N1-start", nodes.get("N1-start") or {})
+    if os.path.isfile(n1_path):
+        n1_text = open(n1_path, encoding="utf-8").read()
+        if "--write-cursor" not in n1_text:
+            failures.append("P0 nodes/N1-start.md 必須呼叫 --write-cursor")
 
     if graph is None:
         failures.append(
@@ -483,6 +577,6 @@ if failures:
         print(f"  - {item}", file=sys.stderr)
     sys.exit(1)
 
-print("✅ PASS:dev-talk graph 四節點契約 / 單產物 / 重跑不重開 session 全過")
+print("✅ PASS:dev-talk graph 節點鏈 / 單產物 / 游標寫入 / 重跑不重開 session 全過")
 sys.exit(0)
 PY
