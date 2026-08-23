@@ -2178,6 +2178,18 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>上面那支的負向牙:舊實作(單一 SKILL、沒有 graph)必須紅;缺進條件、下一跳不一致、
             雙正本、另存、N3 重開 session、N9 寫程式或 talk end 各打一槍。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-devstage2-graph.sh</code></td>
+        <td>乘客不用跑它。它管 Stage 2 第一刀節點鏈:下一跳以
+            <code>skills/dev-flow/stage2/graph.yaml</code> 為準、重跑 N3 只能覆寫同一份
+            <code>2-decision.md</code>、N1 在 1-discussion 未 approved 時不得寫決策檔。
+            本機游標 <code>.devstage2-cursor.json</code> 不進 Git。prebash 第三刀再接
+            <code>--action</code>。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-devstage2-graph.sh</code></td>
+        <td>上面那支的負向牙:舊實作(單一 SKILL、沒有 graph)必須紅;真節點缺進條件或
+            完成條件、同 slug 第二份 <code>2-decision*.md</code>、
+            <code>write_mode≠overwrite</code>、N1 未核准就寫決策檔各打一槍。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>
         <td>本節新增的守衛本身——盤點 <code>hooks/</code>/<code>scripts/</code>/<code>observability/</code>/
             <code>tests/parallel-stage6/</code> 底下每支腳本有沒有被這張表點名到,也反查表裡寫的檔名是不是

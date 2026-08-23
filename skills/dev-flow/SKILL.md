@@ -36,7 +36,7 @@ description: 開發流程 SOP 的唯一對外入口(7 階段路由器,SDD 為主
 | stage | 呼叫技能 | 產出 | gate |
 |---|---|---|---|
 | 1 討論 | **本 skill 不執行**。討論由 `/dev-talk` 專職(資訊隔離:討論 agent 不知道有後續階段,防直奔結論;最好開獨立 session)。使用者在此要求討論 → 請他改跑 `/dev-talk`,並提醒:討論須收集 **Real-world Context**(人怎麼真的完成這件工作) | `1-discussion.md`(接手時**只讀此檔**,對話不是契約);必含 Real-world Context 節(Actors/Current Journey/Workarounds/Exceptions/Evidence)—— Stage 3 觸發判定與 4-spec Operational Context 的輸入;接手時缺此節 = legacy 檔(§4) | Open Questions 全解或明標假設 |
-| 2 收斂 | 2-3 方案並排比較 + 壓測定案(方法內建;可搭 mattpocock `grill-me`);**執行清單見 `_templates/2-decision.md` 頂註** | `2-decision.md`;三條件中→抄 `docs/adr/` | **G1** 方向核准 + OC 全裁決(全文見 README §7) |
+| 2 收斂 | 2-3 方案並排比較 + 壓測定案(方法內建;可搭 mattpocock `grill-me`);**執行清單見 `_templates/2-decision.md` 頂註**;節點鏈見 `skills/dev-flow/stage2/` | `2-decision.md`;三條件中→抄 `docs/adr/` | **G1** 方向核准 + OC 全裁決(全文見 README §7) |
 | 3 原型(選配;命中觸發判定 → 條件式必要) | 開場第一動先做**觸發判定**(§4);throwaway 實驗(code 進 throwaway branch,禁進 main;純資料實驗 → scratchpad);Demo 必要性與 Variant 數量規則見 §4;**執行清單見 `_templates/3-prototype.md` 頂註** | `3-prototype.md`(涉互動 → 含可操作 Demo + User Demo Feedback,Human verdict 人類親填 + attestation,見 §4) | 答案回寫 2-decision + frontmatter 收尾同步 |
 | 4 規格 | openspec delta 格式,**step-by-step 生成** + **反模糊三律**(S 可轉單一測試、禁模糊詞、禁 TBD);**執行清單與三律見 `_templates/4-spec.md` 頂註** | `4-spec.md`(含 Drafting Decisions) | **G2** R/S 全審 + DD 全裁決 + Verification Profile(依 lane 正確填寫)+ Demo verdict 條件(全文見 README §7;Demo verdict 語意正本見 §4 所引,機械檢查 `hooks/_stage3_impl.py`) |
 | 5 任務 | `to-tickets` 概念:tracer-bullet 順序 + Covers/Verify/Blocked-by | `5-tasks.md` | 每 T 有 Verify |

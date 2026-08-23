@@ -1,0 +1,42 @@
+# 下一跳唯一正本。本機游標不進 Git。
+# 暫留步是真 hop(skill-legacy-*),不是 via 裝飾字串。乘客清單正本仍是
+# `_templates/2-decision.md` 頂註 0–7,本檔不抄步原文。
+entry: N1-handoff
+nodes:
+  N1-handoff:
+    file: nodes/N1-handoff.md
+    next: skill-legacy-1-2
+    forbid:
+      - write_decision
+  skill-legacy-1-2:
+    kind: skill-legacy
+    entry: _templates/2-decision.md
+    steps: "1-2"
+    next: N3-write-md
+    forbid:
+      - write_decision
+  N3-write-md:
+    file: nodes/N3-write-md.md
+    next: skill-legacy-4-6
+    write:
+      - docs/dev/<slug>/2-decision.md
+    write_mode: overwrite
+    allow:
+      - write_decision
+  skill-legacy-4-6:
+    kind: skill-legacy
+    entry: _templates/2-decision.md
+    steps: "4-6"
+    next: N7-g1
+    forbid:
+      - write_decision
+  N7-g1:
+    file: nodes/N7-g1.md
+    next: N8-end
+    forbid:
+      - write_decision
+  N8-end:
+    file: nodes/N8-end.md
+    next: ""
+    forbid:
+      - write_decision
