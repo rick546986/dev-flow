@@ -29,17 +29,26 @@ nodes:
   S4-oc:
     file: nodes/S4-oc.md
     next: S5-adr
-    forbid:
+    write:
+      - docs/dev/<slug>/2-decision.md
+    write_mode: overwrite
+    allow:
       - write_decision
   S5-adr:
     file: nodes/S5-adr.md
     next: S6-selfcheck
-    forbid:
+    write:
+      - docs/dev/<slug>/2-decision.md
+    write_mode: overwrite
+    allow:
       - write_decision
   S6-selfcheck:
     file: nodes/S6-selfcheck.md
     next: N7-g1
-    forbid:
+    write:
+      - docs/dev/<slug>/2-decision.md
+    write_mode: overwrite
+    allow:
       - write_decision
   N7-g1:
     file: nodes/N7-g1.md
@@ -51,3 +60,5 @@ nodes:
     next: ""
     forbid:
       - write_decision
+    allow:
+      - write_spec

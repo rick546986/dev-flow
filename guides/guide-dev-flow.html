@@ -475,6 +475,11 @@
   是宣稱「拿掉格式標記後,文字內容零差異」。</p>
 
   <h3 id="stage2">Stage 2 — 收斂(G1)</h3>
+  <p>節點鏈正本 <code>skills/dev-flow/stage2/graph.yaml</code>:
+  <code>N1-handoff</code> → <code>S1-approaches</code> → <code>S2-stress</code> →
+  <code>N3-write-md</code> → <code>S4-oc</code> → <code>S5-adr</code> →
+  <code>S6-selfcheck</code> → <code>N7-g1</code> → <code>N8-end</code>。
+  乘客清單仍是下方模板頂註 0–7。</p>
   <p>把 1 的發散收成一個選定方案;完成後依 README §7 的 reviewer fallback 取得 G1 核准才進 4。</p>
   <div class="parity">
   <p class="parity-tag">規則正本 · Stage 2 執行清單(逐字抄自 <code>_templates/2-decision.md</code> 頂註)</p>
@@ -2179,16 +2184,19 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             雙正本、另存、N3 重開 session、N9 寫程式或 talk end 各打一槍。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-devstage2-graph.sh</code></td>
-        <td>乘客不用跑它。它管 Stage 2 第一刀節點鏈:下一跳以
-            <code>skills/dev-flow/stage2/graph.yaml</code> 為準、重跑 N3 只能覆寫同一份
-            <code>2-decision.md</code>、N1 在 1-discussion 未 approved 時不得寫決策檔。
-            本機游標 <code>.devstage2-cursor.json</code> 不進 Git。prebash 第三刀再接
+        <td>乘客不用跑它。它管 Stage 2 九真節點鏈:下一跳以
+            <code>skills/dev-flow/stage2/graph.yaml</code> 為準、重跑只能覆寫同一份
+            <code>2-decision.md</code>、N1／S1／S2／N7／N8 不得寫決策檔、
+            G1 前不得寫 <code>4-spec.md</code>。
+            本機游標 <code>.devstage2-cursor.json</code> 不進 Git。prebash 在寫
+            <code>2-decision.md</code>／<code>4-spec.md</code> 時會帶
             <code>--action</code>。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-devstage2-graph.sh</code></td>
         <td>上面那支的負向牙:舊實作(單一 SKILL、沒有 graph)必須紅;真節點缺進條件或
             完成條件、同 slug 第二份 <code>2-decision*.md</code>、
-            <code>write_mode≠overwrite</code>、N1 未核准就寫決策檔各打一槍。</td>
+            <code>write_mode≠overwrite</code>、未核准就寫決策檔、S4 缺 allow、
+            G1 前寫 <code>4-spec</code>、guide 還寫單一 SKILL 各打一槍。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>
         <td>本節新增的守衛本身——盤點 <code>hooks/</code>/<code>scripts/</code>/<code>observability/</code>/

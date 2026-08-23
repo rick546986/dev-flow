@@ -8,10 +8,13 @@
 #   3. 同 slug 第二份 2-decision*.md 必須紅:產物仍是一份。
 #   4. write_mode≠overwrite 必須紅:重跑 N3 覆寫同一檔,不另存。
 #   5. N1 在 1-discussion 未 approved 時寫 2-decision 必須紅。
-#      --action 先只活在本腳本;prebash 第三刀再接。
+#      --action 第三刀接到 prebash;不是沙盒,不重做第 1 站 write_code 編成。
 #   6. 第二刀:legacy 1／2／4／5／6 必須是真節點檔。skill-legacy 團塊必須紅。
 #      每個真節點「做什麼」必須 --write-cursor <本節點 id>。
 #      N7／N8／S1 缺這一行必須紅。N1 已核准仍不得寫 2-decision。
+#   7. 第三刀:S4／S5／S6 必須 allow write_decision(仍 overwrite、禁止第二份)。
+#      不要放寬 N1／S1／S2／N7／N8。寫 4-spec.md 在 N8 過 G1 之前必須紅。
+#      guide 第 2 站開頭必須對上九節點鏈。出現「Stage 2 還在單一 SKILL」必須紅。
 #
 # graph.yaml 是下一跳的唯一正本。本機游標 .devstage2-cursor.json 不進 Git。
 # 不改 check-devtalk-graph.sh。不改 _templates/2-decision.md 正文。
@@ -115,7 +118,15 @@ REQUIRED_CHAIN = (
 REQUIRED_HEADINGS = ("進條件", "讀什麼", "寫哪裡", "做什麼", "完成條件", "下一跳")
 TEETH_HEADINGS = ("進條件", "完成條件")
 CANONICAL_MD = "docs/dev/<slug>/2-decision.md"
-LOCKED_ACTIONS = ("write_decision",)
+LOCKED_ACTIONS = ("write_decision", "write_spec")
+WRITE_DECISION_NODES = (
+    "N3-write-md",
+    "S4-oc",
+    "S5-adr",
+    "S6-selfcheck",
+)
+GUIDE_PATH = os.path.join(root, "guides", "guide-dev-flow.html")
+STALE_GUIDE = "Stage 2 還在單一 SKILL"
 NEXT_ID_RE = re.compile(
     r"(?:S\d+-[A-Za-z0-9-]+|N\d+-[A-Za-z0-9-]+|skill-legacy-\d+(?:-\d+)?)"
 )
@@ -310,6 +321,11 @@ def evaluate_action(graph, payload):
             return "deny", reason
         if node_id == "N1-handoff":
             return "deny", "N1-handoff 不得寫 2-decision(寫檔在 N3)"
+    if action == "write_spec":
+        if node_id != "N8-end":
+            return "deny", (
+                f"{node_id or '無游標'} 未過 G1(N8),不得寫 4-spec"
+            )
     if not node_id:
         return "error", "action JSON 缺 cursor.node"
     spec = (graph.get("nodes") or {}).get(node_id)
@@ -476,8 +492,22 @@ def check_live(graph):
         if not isinstance(spec, dict):
             continue
         allow = set(as_list(spec.get("allow")))
-        if "write_decision" in allow and node_id != "N3-write-md":
+        if node_id in WRITE_DECISION_NODES:
+            if "write_decision" not in allow:
+                failures.append(
+                    f"P0 {node_id} 必須 allow write_decision"
+                    "(同一份 2-decision.md,overwrite)"
+                )
+            if spec.get("write_mode") != "overwrite":
+                failures.append(
+                    f"P0 {node_id} allow write_decision 時 write_mode 必須是 overwrite"
+                )
+        elif "write_decision" in allow:
             failures.append(f"P0 {node_id} 不得 allow write_decision")
+        if node_id == "N8-end" and "write_spec" not in allow:
+            failures.append("P0 N8-end 必須 allow write_spec(過 G1 後才准寫 4-spec)")
+        if "write_spec" in allow and node_id != "N8-end":
+            failures.append(f"P0 {node_id} 不得 allow write_spec")
         if spec.get("kind") == "skill-legacy":
             failures.append(
                 f"P0 {node_id} 仍是 skill-legacy 團塊,必須拆成有節點檔的 hop"
@@ -485,6 +515,54 @@ def check_live(graph):
 
     check_chain(nodes, failures)
     failures.extend(scan_live_decision_dupes())
+    failures.extend(check_action_runtime_wired())
+    failures.extend(check_guide(graph))
+    return failures
+
+
+def check_action_runtime_wired():
+    """第三刀:--action 必須接到 prebash,不能只活在 test fixture。"""
+    hooks = os.path.join(root, "hooks")
+    if not os.path.isdir(hooks):
+        return []
+    for dirpath, dirnames, filenames in os.walk(hooks):
+        dirnames[:] = [d for d in dirnames if d != "devflow_obs_vendor"]
+        for name in filenames:
+            if not name.endswith((".py", ".sh")):
+                continue
+            path = os.path.join(dirpath, name)
+            try:
+                text = open(path, encoding="utf-8").read()
+            except OSError:
+                continue
+            code = "\n".join(
+                line.split("#", 1)[0] for line in text.splitlines()
+            )
+            if "check-devstage2-graph" in code and "--action" in code:
+                return []
+    return [
+        "P0 --action 沒接到 runtime:hooks 沒有呼叫 check-devstage2-graph.sh --action"
+    ]
+
+
+def check_guide(_graph):
+    """第 2 站開頭對上九節點鏈;舊句「還在單一 SKILL」必須紅。"""
+    if not os.path.isfile(GUIDE_PATH):
+        return []
+    text = open(GUIDE_PATH, encoding="utf-8").read()
+    failures = []
+    if STALE_GUIDE in text:
+        failures.append(f"P0 guide 出現「{STALE_GUIDE}」")
+    match = re.search(r'<h3 id="stage2">.*?(?=<h3 |\Z)', text, re.S)
+    if not match:
+        failures.append("P0 guide 找不到第 2 站 <h3 id=\"stage2\">")
+        return failures
+    head = match.group(0)[:2500]
+    missing = [node_id for node_id in REQUIRED_NODES if node_id not in head]
+    if missing:
+        failures.append(
+            "P0 guide 第 2 站開頭缺節點:" + ",".join(missing)
+        )
     return failures
 
 

@@ -228,7 +228,78 @@ def _devtalk_graph_action(command):
         L.die("⛔ dev-talk graph --action deny:" + reason)
 
 
+def _writes_named_md(command, name):
+    """最小編成:指令像在寫這個檔名才算。不是沙盒、不重做 write_code 黑名單。"""
+    if name not in command:
+        return False
+    escaped = re.escape(name)
+    if re.search(rf"(?:>>?|tee\b)\s+\S*{escaped}", command):
+        return True
+    if re.search(rf"open\([^)]*{escaped}", command):
+        return True
+    return False
+
+
+def _devstage2_graph_action(command):
+    """Stage 2 graph:本機有 .devstage2-cursor.json 才編成 2-decision / 4-spec。
+
+    必須在 load_state 早退之前跑。沒游標檔不攔截 —— 不是沙盒。
+    不重做第 1 站 write_code 編成。
+    """
+    import tempfile
+
+    cursor_path = os.path.join(root, ".devstage2-cursor.json")
+    if not os.path.isfile(cursor_path):
+        return
+    action = None
+    if _writes_named_md(command, "2-decision.md"):
+        action = "write_decision"
+    elif _writes_named_md(command, "4-spec.md"):
+        action = "write_spec"
+    if not action:
+        return
+    try:
+        cursor = json.load(open(cursor_path, encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        cursor = {}
+    if not isinstance(cursor, dict):
+        cursor = {}
+    check = os.path.join(root, "scripts", "check-devstage2-graph.sh")
+    if not os.path.isfile(check):
+        return
+    payload_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".json", delete=False, encoding="utf-8"
+        ) as handle:
+            json.dump(
+                {
+                    "cursor": cursor,
+                    "action": action,
+                    "slug": cursor.get("slug") or "",
+                },
+                handle,
+            )
+            payload_path = handle.name
+        proc = subprocess.run(
+            ["bash", check, "--action", payload_path, root],
+            capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return
+    finally:
+        if payload_path:
+            try:
+                os.unlink(payload_path)
+            except OSError:
+                pass
+    if proc.returncode != 0:
+        reason = (proc.stdout or proc.stderr or "action denied").strip()
+        _obs_deny("devstage2-graph", action)
+        L.die("⛔ Stage 2 graph --action deny:" + reason)
+
+
 _devtalk_graph_action(cmd)
+_devstage2_graph_action(cmd)
 
 state, armed, err = L.load_state(root)
 if err:
