@@ -33,32 +33,35 @@
 
 | 層 | 做什麼 | 去哪 |
 |---|---|---|
-| **本檔** | 入口／索引。契約句留在這裡(Gate token、seam、五格、補修算法) | 下表直接跳 |
-| **quickstart** | 新手手怎麼走、守衛怎麼辦 | [guide-quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html) |
-| **flow guide** | 各站清單、Gate 全文、檔案地圖 | [guide-dev-flow](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html) |
-| **talk guide** | 第 1 站 12 步、write_code、白名單 | [guide-dev-talk](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html) |
-| **`skills/dev-flow/SKILL.md`** | 執行入口,不是教學。不要當手冊讀 | plugin 裡那份 |
+| **本檔** | 入口。契約句留這裡 | 下表跳 |
+| **quickstart** | 怎麼走、守衛怎麼辦 | [guide-quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html) |
+| **flow guide** | 各站清單、Gate、檔案地圖 | [guide-dev-flow](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html) |
+| **talk guide** | 第 1 站 12 步、白名單 | [guide-dev-talk](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html) |
+| **`skills/dev-flow/SKILL.md`** | 執行入口,不是手冊 | plugin 裡那份 |
 
-| 你是誰／想知道什麼 | 去哪 | 先別讀 |
+| 你是誰 | 從這裡開始 | 先別讀 |
 |---|---|---|
-| **第一次用** | ①[quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html) ②[七階段圖](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow) ③本檔 [§0](#0-一張圖) + [§1](#1-文件地圖四象限-status-看板) | 本檔 §5 之後的契約句 |
-| **要查一條規則** | 下表直接跳。Gate → [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates);兩軌 → [§2](#2-兩軌lane);切片 → [flow `#large-work`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#large-work) | 從第一節順讀 |
-| **要改 dev-flow 本身** | 母版結構圖(散發版會剝掉;見 [§17](#17-附錄跨-repo-與非-feature-入口))→ [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates) → 本檔 §7 契約句 | 直接改 §7 而不看 guide |
-| G1/G2/G3 各要什麼條件才過 | 本檔 [§7](#7-角色與-gate) 一句 + [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates) 全文 | — |
-| 這件事該走 full 還 fast | [§2](#2-兩軌lane) | — |
-| 七份文檔各放什麼 | [§3](#3-七份文檔用途一句話骨架見-_templates填好範例見-example) | — |
-| 哪個檔給人看、哪個給 Agent | [§1](#1-文件地圖四象限-status-看板) | — |
-| 實作期怎麼推進、偏差怎麼判 | [flow `#stage6`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage6) · [quickstart Stage 6](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html#walkthrough) | — |
-| 守衛擋我了怎麼辦 / 並行怎麼開 | [quickstart ③](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html#guardcheat) | — |
-| 哪一站用哪個模型 | [quickstart ④](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html#models) · [flow `#flow`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow) | — |
-| 哪些階段要另開 session | [quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html) | — |
-| 為什麼討論不能知道下游 | [flow `#fence`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#fence) | — |
-| html twin 每站要放什麼圖 | [§6](#6-html-twin可視化-artifact) 五格 + [flow `#filemap`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#filemap) | — |
-| 案子太大要不要切 | [flow `#large-work`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#large-work) | — |
-| R/S/T/D/F 這些 id 怎麼串 | [§4](#4-id-追溯鏈) | — |
-| 某條規則到底誰在擋 | [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates) | — |
-| Agent 的長期記憶怎麼運作 | [§16](#16-agent-memorydev-flow) | — |
-| 跨 repo / 非 feature 的事怎麼辦 | [§17](#17-附錄跨-repo-與非-feature-入口) | — |
+| **第一次用** | [quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html) · [七階段圖](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow) · [§0](#0-一張圖) | §5 之後的契約句 |
+| **要查一條規則** | 下表跳 | 從頭順讀 |
+| **要改 dev-flow 本身** | [§17](#17-附錄跨-repo-與非-feature-入口) 結構圖 → [§7](#7-角色與-gate) | 不看 guide 就改 §7 |
+
+**想知道什麼**:
+
+- G1/G2/G3 各要什麼條件才過 → [§7](#7-角色與-gate)
+- 這件事該走 full 還 fast → [§2](#2-兩軌lane)
+- 七份文檔各放什麼 → [§3](#3-七份文檔用途一句話骨架見-_templates填好範例見-example)
+- 哪個檔給人看、哪個給 Agent → [§1](#1-文件地圖四象限-status-看板)
+- 實作期怎麼推進、偏差怎麼判 → [flow `#stage6`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage6)
+- 守衛擋我了怎麼辦 / 並行怎麼開 → [quickstart ③](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html#guardcheat)
+- 哪一站用哪個模型 → [quickstart ④](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html#models)
+- 哪些階段要另開 session → [quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html)
+- 為什麼討論不能知道下游 → [flow `#fence`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#fence)
+- html twin 每站要放什麼圖 → [§6](#6-html-twin可視化-artifact)
+- 案子太大要不要切 → [flow `#large-work`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#large-work)
+- R/S/T/D/F 這些 id 怎麼串 → [§4](#4-id-追溯鏈)
+- 某條規則到底誰在擋 → [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)
+- Agent 的長期記憶怎麼運作 → [§16](#16-agent-memorydev-flow)
+- 跨 repo / 非 feature 的事怎麼辦 → [§17](#17-附錄跨-repo-與非-feature-入口)
 
 母版 `dev-flow/` ASCII 目錄樹在 [§17 附錄](#17-附錄跨-repo-與非-feature-入口)(手機可跳;樹內路徑字串沒改)。
 
@@ -74,20 +77,28 @@ repo 內任一 html 都可把路徑接在 `rick546986.github.io/dev-flow/` 後�
 
 ## 0. 一張圖
 
-七站一條路,三道閘。3 是選配。真圖在導覽,手機不要讀 mermaid。
+七站一條路,三道閘。3 是選配。
 
 去哪:[七階段 SVG](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow)
-· [quickstart 圖](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html)
-· [訪談圖](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html)
 
 ```text
-[想法] -> [1 討論] -> [2 決策] -> [G1]
-                                    |
-                                    +-> [3 原型] -> [4 規格] -> [G2]
-                                                                 |
-                                    +----------------------------+
-                                    |
-                                    +-> [5 任務] -> [6 實作] -> [7 驗證] -> [G3] -> [PR]
+想法
+  ↓
+1 討論
+  ↓
+2 決策  → G1
+  ↓
+3 原型(選配)
+  ↓
+4 規格  → G2
+  ↓
+5 任務
+  ↓
+6 實作
+  ↓
+7 驗證  → G3
+  ↓
+PR
 ```
 
 ## 1. 文件地圖(四象限 + STATUS 看板)
@@ -95,14 +106,6 @@ repo 內任一 html 都可把路徑接在 `rick546986.github.io/dev-flow/` 後�
 人看的跟 Agent 看的是兩套出口。同一個意思不要抄兩份。
 
 去哪:[flow `#filemap`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#filemap)
-
-```text
-[人看]  ----------------------+
-                              |
-                              +  不要融合。一個意思兩個出口。
-                              |
-[Agent] ----------------------+
-```
 
 | 給誰 | 放哪 | 幹嘛 |
 |---|---|---|
@@ -169,11 +172,11 @@ CLAUDE.md;舊路徑 grep 歸零才算完)。
 |---|---|---|---|
 | 1 | `1-discussion.md` | 發散:把「不知道自己不知道」變成可收斂的問題清單。不做決定 | Open Questions 全解或明標假設 |
 | 2 | `2-decision.md` | 收斂:2-3 方案比較 → 選定 + rejected + 理由 | **G1** 方向核准 + OC 全裁決(全文見 §7) |
-| 3 | `3-prototype.md` | 選配:throwaway 實驗回答技術/UI 疑問,答案回寫 2;命中觸發判定(前端/交接/核准/等待/權限/系統外/多互動設計)→ 條件式必要,產可操作 Demo + User Demo Feedback(Human verdict 人類親填) | 答案回寫 2-decision + frontmatter 收尾同步(終態 approved) |
+| 3 | `3-prototype.md` | 選配:throwaway 實驗回答技術/UI 疑問,答案回寫 2-decision。 | 答案回寫 2-decision + frontmatter 收尾同步(終態 approved) |
 | 4 | `4-spec.md` | 本次變更的可測契約(delta + GIVEN/WHEN/THEN)。SDD 真相 | **G2** R/S 全審 + DD 全裁決 + Verification Profile + Demo verdict(全文見 §7) |
 | 5 | `5-tasks.md` | 切成可勾選任務,tracer-bullet 順序,每 T 有 Covers/Files/Verify/Blocked-by | 每 T 欄位完整 |
 | 6 | `6-implementation-notes.md` | 實作日誌:TDD 證據 + 偏差記錄 | 每 T review PASS + 全 S 綠 |
-| 7 | `7-review.md` + `.html` | 雙軸審 + coverage matrix + Exit checklist。**同 stage 只有這兩個檔**,自審的家在 6-notes Self-Review;真要用 7-review 形狀寫自審則 verdict 填 `PRE-REVIEW`,獨立 reviewer 產出後**就地接管同一個檔**、不另存 sibling(細則見模板步 0a)。出貨樹=審過的樹 | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → Exit Checklist(PR 是其中一項) |
+| 7 | `7-review.md` + `.html` | 雙軸審 + coverage matrix + Exit checklist;出貨樹=審過的樹。 | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → Exit Checklist(PR 是其中一項) |
 
 **執行清單四原則**正本在 [flow guide 清單章](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#checklists)(①todo ②自檢 ③禁跳併 ④達不成回上游)。清單全文住各模板頂註。Stage 1 同款機制內建於 `/dev-talk`,下一跳看 `graph.yaml`,見 [§8](#8-每階段呼叫的技能ai-對照表)。
 
