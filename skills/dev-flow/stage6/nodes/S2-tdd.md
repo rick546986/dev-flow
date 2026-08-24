@@ -12,7 +12,7 @@ N2-handoff 完成:todo 與 5-tasks 一一對應。已武裝
 只讀 `4-spec.md`、`5-tasks.md`、已落檔的 `6-implementation-notes.md`。
 禁讀 1/2/3(圍欄②;本節點不改守衛,只遵守)。
 逐 T 動線正本是 README §5,本檔不抄原文。乘客清單步 2 正本是
-`_templates/6-implementation-notes.md` 頂註,本檔不重抄。
+相對 DEVFLOW_ROOT 的 `_templates/6-implementation-notes.md` 頂註,本檔不重抄。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡
@@ -30,7 +30,7 @@ T Review Log／Progress Log),不另存。禁止第二份
 **不是一 T 一 hop** —— 不准為每個 T-id 長一顆 graph 節點;拓撲序
 仍由引擎／Blocked-by 跑,本 hop 只是那條動線的入口。
 不在這裡另寫第二套執行器。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage6-graph.sh --write-cursor S2-tdd`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage6-graph.sh --write-cursor S2-tdd`。
 
 ## 完成條件
 

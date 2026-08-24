@@ -15,3 +15,8 @@ __pycache__/
 .devstage5-cursor.json
 .devstage6-cursor.json
 .devstage7-cursor.json
+# 採用專案才掛技能整棵連結(setup 寫 .cursor/skills 與 .agents/skills)。
+# 方法包正本在 skills/;本機若建了連結不進 Git(symlink→目錄不能當文字檔掃)。
+.cursor/skills/
+.agents/skills/
+.codex/skills/

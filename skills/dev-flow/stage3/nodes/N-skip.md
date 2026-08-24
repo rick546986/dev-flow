@@ -17,7 +17,7 @@ N1 判定結果(九條皆未勾)。不重抄九條條文。`graph.yaml` 是下�
 
 維持選配、兩檔都不建。人類若要在「必要」時仍跳過 → 必須已有 2-decision
 流程層 Owner Call,該行同時含「Stage 3」與「跳過」;Agent 不得代決。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage3-graph.sh --write-cursor N-skip`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage3-graph.sh --write-cursor N-skip`。
 
 ## 完成條件
 

@@ -8,7 +8,7 @@ N1-matrix 完成:coverage matrix 全列填畢(未參考作者主張)。游標在
 ## 讀什麼
 
 只讀 `4-spec.md` 的 S 清單與測試檔。禁讀 `6-implementation-notes.md` 的 Self-Review。
-步 2 完成條件正本是 `_templates/7-review.md` 頂註第 2 步,本檔不抄乘客步原文。
+步 2 完成條件正本是相對 DEVFLOW_ROOT 的 `_templates/7-review.md` 頂註第 2 步,本檔不抄乘客步原文。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡
@@ -21,7 +21,7 @@ N1-matrix 完成:coverage matrix 全列填畢(未參考作者主張)。游標在
 
 親跑本次 S 測試 + 既有全套,兩份輸出入同一份 `7-review.md`。
 不在這裡讀 Self-Review、不另開檔。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage7-graph.sh --write-cursor S2-run`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage7-graph.sh --write-cursor S2-run`。
 
 ## 完成條件
 

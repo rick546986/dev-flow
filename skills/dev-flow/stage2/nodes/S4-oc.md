@@ -7,7 +7,7 @@ N3 已覆寫同一份 `2-decision.md`。游標在 S4。
 
 ## 讀什麼
 
-已落檔的 `2-decision.md`。步 4 清單正本是 `_templates/2-decision.md` 頂註,
+已落檔的 `2-decision.md`。步 4 清單正本是相對 DEVFLOW_ROOT 的 `_templates/2-decision.md` 頂註,
 本檔不抄乘客步原文。
 
 ## 寫哪裡
@@ -18,7 +18,7 @@ N3 已覆寫同一份 `2-decision.md`。游標在 S4。
 ## 做什麼
 
 依模板頂註步 4 清點 Owner Calls。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage2-graph.sh --write-cursor S4-oc`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage2-graph.sh --write-cursor S4-oc`。
 
 ## 完成條件
 

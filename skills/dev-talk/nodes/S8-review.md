@@ -25,7 +25,7 @@ N9 已完成(`1-discussion.md` 已在)。MEMORY_SESSION_ID 仍在。游標在 S8
 或標 Open Question。⑦真實世界五份裡,每條沒有證據的敘述都標了
 `[Assumption]` 嗎?有沒有把訪談印象寫成事實?
 發現問題 → 改檔或回步 3 補問。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S8-review "$MEMORY_SESSION_ID"`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S8-review "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

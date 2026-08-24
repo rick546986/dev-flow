@@ -31,7 +31,7 @@ S8 已完成。MEMORY_SESSION_ID 仍在。游標在 S9。
 `dev-memory.py talk correct $MEMORY_SESSION_ID --kind domain --key <詞>
 --title "<新理解>" --reason "<為什麼改>"`(舊的會保留並標成被取代,
 看得到轉折才叫記憶)。未確認的候選一律不寫進長期記憶。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S9-terms "$MEMORY_SESSION_ID"`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S9-terms "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

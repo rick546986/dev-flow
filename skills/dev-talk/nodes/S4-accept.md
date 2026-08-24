@@ -22,7 +22,7 @@ Goals、已核事實、Interview Log。不讀白名單外的文件類資料夾�
 情境;沒有就問要不要造一筆)。說不出怎麼看到 = 這條其實還沒定義清楚,回步 3 問。
 問現象不問做法 —— 「你會在哪看到它發生」可問,「該用什麼元件/回什麼 JSON」不問。
 逐條請使用者確認。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S4-accept "$MEMORY_SESSION_ID"`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S4-accept "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

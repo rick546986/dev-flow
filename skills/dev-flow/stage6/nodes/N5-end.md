@@ -18,7 +18,7 @@ N4-selfcheck 完成。不要新開檔,不要寫 `7-review.md`。
 ## 做什麼
 
 核 Files Changed、全節齊無佔位、frontmatter status 已更新。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage6-graph.sh --write-cursor N5-end`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage6-graph.sh --write-cursor N5-end`。
 
 ## 完成條件
 

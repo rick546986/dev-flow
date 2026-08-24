@@ -17,7 +17,7 @@ G2 條件正本 README §7。`graph.yaml` 是下一跳正本。
 ## 做什麼
 
 核 status=approved 且三連動一致(frontmatter／`STATUS.md`／html twin)。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage4-graph.sh --write-cursor N7-end`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage4-graph.sh --write-cursor N7-end`。
 
 ## 完成條件
 

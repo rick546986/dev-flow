@@ -12,7 +12,7 @@
 
 只讀 `1-discussion.md`(驗收雛形／Open Questions／Real-world Context)與
 `2-decision.md`(Decision／Scope／Success Criteria)。對話不是契約。
-乘客清單正本是 `_templates/4-spec.md` 頂註 0–6,本檔不重抄步原文。
+乘客清單正本是相對 DEVFLOW_ROOT 的 `_templates/4-spec.md` 頂註 0–6,本檔不重抄步原文。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡
@@ -24,7 +24,7 @@
 
 核前站:G1 是否過、第 3 站 findings 是否已回寫且 frontmatter 收尾,再清點雙源
 (驗收雛形 N 條、living spec 受影響條文)給人確認。完成 = 前站核對過。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage4-graph.sh --write-cursor N1-handoff`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage4-graph.sh --write-cursor N1-handoff`。
 
 ## 完成條件
 

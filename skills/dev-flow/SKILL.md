@@ -5,8 +5,11 @@ description: 開發流程 SOP 的唯一對外入口(7 階段路由器,SDD 為主
 
 # dev-flow 路由器
 
-方法論:`${CLAUDE_PLUGIN_ROOT}/`(`README.md` = 完整規則;`_templates/` = 模板;
+方法包根目錄叫 `DEVFLOW_ROOT`（舊名 `CLAUDE_PLUGIN_ROOT` 當別名，不准刪）。找不到就停，不准猜。
+
+方法論:`${DEVFLOW_ROOT}/`(`README.md` = 完整規則;`_templates/` = 模板;
 `example/contract-expiry-reminder/` = 填好的完整範例)。細節疑義**先讀方法論 README**,以它為準。
+乘客清單正本一律相對 DEVFLOW_ROOT 的 `_templates/<檔>`。採用專案的 `docs/dev/_templates/` 是散發副本，不是正本。
 
 ## 0. 定位與自動路由
 讀專案 `docs/dev/STATUS.md` + feature 資料夾各檔 frontmatter → 判斷目前 stage 與 lane。
@@ -16,9 +19,10 @@ description: 開發流程 SOP 的唯一對外入口(7 階段路由器,SDD 為主
 
 **定位後直接接手該 stage 的動作,不要求使用者記第二個指令**:
 - stage 1~5、7 → 按 §2 表執行對應階段。
-- stage = 6(5-tasks approved、實作未完)→ **用 Skill tool 自動載入 `dev-run` 引擎**
-  接手逐 T 執行;使用者只需說「/dev-flow 繼續 <slug>」。dev-run 是內部引擎,
-  對外文件不要求使用者學它;使用者直接喊「dev-run <slug>」仍相容。
+- stage = 6(5-tasks approved、實作未完)→ **讀 `skills/dev-run/SKILL.md`**
+  （Claude 別名：Skill tool 載入 `dev-run`）接手逐 T 執行;使用者只需說
+  「/dev-flow 繼續 <slug>」。dev-run 是內部引擎,對外文件不要求使用者學它;
+  使用者直接喊「dev-run <slug>」仍相容。
 - 模型與 effort 依 README §9 對照表自動採用,**不因使用者一句「換個模型」就偏離**:
   偏離(表內建升降階除外)需使用者明示同意,並記入該階段文檔。
 

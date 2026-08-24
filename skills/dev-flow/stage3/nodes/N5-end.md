@@ -15,7 +15,7 @@
 ## 做什麼
 
 核 status=approved 且註解與內文零矛盾(本站無 G)。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage3-graph.sh --write-cursor N5-end`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage3-graph.sh --write-cursor N5-end`。
 
 ## 完成條件
 

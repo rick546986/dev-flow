@@ -8,7 +8,7 @@ Out of Scope 還沒定就填 Negative Constraints = 兩邊會對不上,退回 S3
 ## 讀什麼
 
 已落檔的 R／S 與四小節。lane 規則、Risk 判準、Failure Model 必填條件、
-Design Boundary Contract 的十一條觸發條件,正本都在 `_templates/4-spec.md`
+Design Boundary Contract 的十一條觸發條件,正本都在相對 DEVFLOW_ROOT 的 `_templates/4-spec.md`
 該節頂註;語意詳解在 `notes/design/design-boundary-contract.md`。
 本檔不抄乘客步原文。`graph.yaml` 是下一跳正本。
 
@@ -23,7 +23,7 @@ Design Boundary Contract 兩節,不另存。禁止第二份 `4-spec*.md`。
 同步填兩節:Profile 的 `lane:` 依判準決定(不由指示決定,偏離要在本節明記理由),
 Risk: high 時 Failure Model 表必填,Reliability triage 三問兩 lane 都要答;
 Design Boundary Contract 觸發條件全未命中才可 `n-a` 附具體理由,fast lane 不豁免。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage4-graph.sh --write-cursor S3b-profile`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage4-graph.sh --write-cursor S3b-profile`。
 
 ## 完成條件
 

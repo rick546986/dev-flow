@@ -21,7 +21,7 @@ S9 已完成。`1-discussion.md` 已在。MEMORY_SESSION_ID 仍在。游標在 S
 先自核 md:Open Questions 僅含三態符號,出現其他記號(如 `[ ]`)
 → 回步 3 定態後才產。`1-discussion.html` 只從 md 生成。
 內容與圖判準見入口檔「視覺版」。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S10-html "$MEMORY_SESSION_ID"`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S10-html "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

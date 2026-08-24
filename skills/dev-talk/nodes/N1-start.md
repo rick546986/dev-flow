@@ -1,5 +1,7 @@
 # N1-start — 開場
 
+方法包根目錄叫 `DEVFLOW_ROOT`（舊名 `CLAUDE_PLUGIN_ROOT` 當別名，不准刪）。找不到就停，不准猜。
+
 ## 進條件
 
 這是新場:沒有 MEMORY_SESSION_ID,本機也沒有「現在節點」。
@@ -19,11 +21,11 @@
 
 ## 做什麼
 
-1. 跑 `${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py talk start "<本輪主題>"`。
+1. 跑 `${DEVFLOW_ROOT}/memory/dev-memory.py talk start "<本輪主題>"`。
    它回 `session_id` 與 brief。把 `session_id` 當 MEMORY_SESSION_ID,**全程重用**。
    brief 的 open questions 是 N3 逐題逼問的起點之一,不是全部。
 2. 把執行清單 0-11 建成 todo(開場第一動;逐項達成完成條件才勾;禁跳項、禁併項)。
-3. 跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devtalk-graph.sh --write-cursor N1-start "$MEMORY_SESSION_ID"`。
+3. 跑 `${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor N1-start "$MEMORY_SESSION_ID"`。
    把本機游標寫成現在節點 N1-start + MEMORY_SESSION_ID。檔不進 Git。
 
 ## 完成條件

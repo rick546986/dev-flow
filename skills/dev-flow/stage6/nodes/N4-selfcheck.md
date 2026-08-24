@@ -8,7 +8,7 @@ S2-tdd 完成:逐 T 已走完 README §5 動線,回歸全綠摘要已在案。
 ## 讀什麼
 
 已落檔的 `6-implementation-notes.md` 與 `5-tasks.md`。
-自檢八問正本是 `_templates/6-implementation-notes.md` 頂註步 4,本檔不重抄。
+自檢八問正本是相對 DEVFLOW_ROOT 的 `_templates/6-implementation-notes.md` 頂註步 4,本檔不重抄。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡
@@ -20,7 +20,7 @@ S2-tdd 完成:逐 T 已走完 README §5 動線,回歸全綠摘要已在案。
 
 對模板步 4 的八問逐項核對。答不出 → 退回 S2-tdd(README §5 動線),
 不是在這裡發明第二套引擎。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage6-graph.sh --write-cursor N4-selfcheck`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage6-graph.sh --write-cursor N4-selfcheck`。
 
 ## 完成條件
 

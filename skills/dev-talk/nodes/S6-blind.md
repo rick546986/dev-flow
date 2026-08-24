@@ -19,7 +19,7 @@ S5 已完成。MEMORY_SESSION_ID 仍在。游標在 S6。
 列出「使用者沒想到要問、答案可能改變方向」的 unknown unknowns,
 逐條解釋;並列出「使用者可能覺得顯然而沒說出口」的隱含預設,逐條問使用者確認。
 新問題 → 步 3 重開再問。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S6-blind "$MEMORY_SESSION_ID"`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S6-blind "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

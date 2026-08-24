@@ -6,7 +6,7 @@ S1 已完成。游標在 S2。不要寫第二份 `3-prototype*.md`。
 
 ## 讀什麼
 
-實驗結果。步 2 清單正本是 `_templates/3-prototype.md` 頂註,
+實驗結果。步 2 清單正本是相對 DEVFLOW_ROOT 的 `_templates/3-prototype.md` 頂註,
 本檔不抄乘客步原文。
 
 ## 寫哪裡
@@ -17,7 +17,7 @@ S1 已完成。游標在 S2。不要寫第二份 `3-prototype*.md`。
 ## 做什麼
 
 依模板頂註步 2 收證,給後續 N3 落檔。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage3-graph.sh --write-cursor S2-evidence`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage3-graph.sh --write-cursor S2-evidence`。
 
 ## 完成條件
 

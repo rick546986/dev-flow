@@ -9,7 +9,7 @@
 
 只讀 `4-spec.md` 的 R/S 全集(含 Verification Profile 與 Design Boundary
 Contract 狀態)。對話不是契約,不讀 1/2/3。
-乘客清單正本是 `_templates/5-tasks.md` 頂註 0–6,本檔不重抄步原文。
+乘客清單正本是相對 DEVFLOW_ROOT 的 `_templates/5-tasks.md` 頂註 0–6,本檔不重抄步原文。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡
@@ -21,7 +21,7 @@ Contract 狀態)。對話不是契約,不讀 1/2/3。
 
 核前站:G2 是否過(4-spec status=approved),再把 R/S 全集清點回報 —— 建 todo
 一 T 一項的盤點基礎在這裡打底,不是在切 T 的時候邊想邊補。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage5-graph.sh --write-cursor N1-handoff`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage5-graph.sh --write-cursor N1-handoff`。
 
 ## 完成條件
 

@@ -9,7 +9,7 @@
 ## 讀什麼
 
 只讀 `4-spec.md` 與 `5-tasks.md`。禁讀 1/2/3(圍欄②;本節點不改守衛,只遵守)。
-乘客清單正本是 `_templates/6-implementation-notes.md` 頂註 0a／0b／0c,
+乘客清單正本是相對 DEVFLOW_ROOT 的 `_templates/6-implementation-notes.md` 頂註 0a／0b／0c,
 本檔不重抄步原文。`graph.yaml` 是下一跳正本。
 
 ## 寫哪裡
@@ -23,7 +23,7 @@
 0a 開 branch 與錨點、0b worktree 隔離確認、0c 守衛與 doctor 自檢 ——
 細節走模板頂註,這裡不重抄。把 `FORK_INTEGRATION_SHA` 以 40 碼小寫 hex
 寫進本檔固定欄;寫了不准改。沒武裝(本節點未完成)不准開工。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage6-graph.sh --write-cursor N1-arm`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage6-graph.sh --write-cursor N1-arm`。
 
 ## 完成條件
 

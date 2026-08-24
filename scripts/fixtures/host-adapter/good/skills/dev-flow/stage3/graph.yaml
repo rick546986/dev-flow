@@ -1,0 +1,5 @@
+entry: N1-trigger
+nodes:
+  N1-trigger:
+    file: nodes/N1-trigger.md
+    next: ""

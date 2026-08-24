@@ -9,7 +9,7 @@ S2d-fresh 完成:Final Fresh 已綁當下 HEAD。游標在 S2d-fresh。
 
 各 S 的 Operational Context,以及已落檔的 `7-review.md`。
 禁讀 `6-implementation-notes.md` 的 Self-Review。
-步 2e 正本是 `_templates/7-review.md` 頂註,本檔不抄乘客步原文。
+步 2e 正本是相對 DEVFLOW_ROOT 的 `_templates/7-review.md` 頂註,本檔不抄乘客步原文。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡
@@ -23,7 +23,7 @@ S2d-fresh 完成:Final Fresh 已綁當下 HEAD。游標在 S2d-fresh。
 以各 S 的 Operational Context 為腳本親自走一遍「人的工作」,表入同一份
 `7-review.md`。無 Operational Context 的純內部 S 註明不適用。
 不在這裡讀 Self-Review。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage7-graph.sh --write-cursor S2e-walkthrough`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage7-graph.sh --write-cursor S2e-walkthrough`。
 
 ## 完成條件
 

@@ -26,7 +26,7 @@ Open Questions 只有三態:`[x]` 已解 / `[~]` 帶假設(使用者明說先這
 永遠不進版本控制)。
 它回 `promoted: 0` 是合法結果 —— 這一輪沒有形成可確認的語意就是沒有,
 **不要為了有東西可交而硬記一筆** → **停**。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devtalk-graph.sh --write-cursor N13-end "$MEMORY_SESSION_ID"`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor N13-end "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

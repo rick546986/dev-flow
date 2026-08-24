@@ -18,7 +18,7 @@ Goals、驗收雛形、已核事實。不讀白名單外的文件類資料夾。
 
 至少一輪 what-if(「往 X 走會怎樣?」「限制 Y 不存在呢?」
 「最極端情境?」),純發散、不收斂,結果記入 Interview Log 發散段。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S5-diverge "$MEMORY_SESSION_ID"`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S5-diverge "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

@@ -8,7 +8,7 @@ Final Fresh 綁 SHA。不要寫 `7-review.md`(本節點不落檔;寫檔在 S2-* 
 ## 讀什麼
 
 已落檔的驗證輸出與 4-spec。禁讀 6-notes Self-Review。
-雙軸條文正本是 `_templates/7-review.md` 頂註 3,本檔不重抄。
+雙軸條文正本是相對 DEVFLOW_ROOT 的 `_templates/7-review.md` 頂註 3,本檔不重抄。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡
@@ -18,7 +18,7 @@ Final Fresh 綁 SHA。不要寫 `7-review.md`(本節點不落檔;寫檔在 S2-* 
 ## 做什麼
 
 做 Standards + Spec 雙軸審。整合回歸／Verdict 後改碼作廢 G3 由現有工具釘住,不重寫。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage7-graph.sh --write-cursor N3-axes`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage7-graph.sh --write-cursor N3-axes`。
 
 ## 完成條件
 

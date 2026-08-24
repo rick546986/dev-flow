@@ -9,7 +9,7 @@ S2b-phenomena 完成:現象證據已在同一份 `7-review.md`。游標在 S2b-p
 
 現有整合回歸工具的契約與已落檔的 `7-review.md`。
 禁讀 `6-implementation-notes.md` 的 Self-Review。
-步 2c 正本是 `_templates/7-review.md` 頂註,本檔不抄乘客步原文、不重寫那支腳本。
+步 2c 正本是相對 DEVFLOW_ROOT 的 `_templates/7-review.md` 頂註,本檔不抄乘客步原文、不重寫那支腳本。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡
@@ -24,7 +24,7 @@ S2b-phenomena 完成:現象證據已在同一份 `7-review.md`。游標在 S2b-p
 `scripts/devflow-integration-regression.sh`)。**必須在 Final Fresh 之前** —
 順序寫死為整合回歸 → 再進 S2d-fresh,不是 Fresh 完才合併。
 不重寫那支腳本。Verdict 後改碼作廢 G3 由現有工具釘住,本節點不另寫通過條件。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage7-graph.sh --write-cursor S2c-integration`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage7-graph.sh --write-cursor S2c-integration`。
 
 ## 完成條件
 

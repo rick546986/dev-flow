@@ -8,7 +8,7 @@ N3-axes 完成。本節點才准讀 6-notes。
 
 此刻才讀 `6-implementation-notes.md`(含 Self-Review)—— 對應
 `devflow-exec.sh review-unlock`。先自建矩陣、後讀作者主張。
-乘客清單正本是 `_templates/7-review.md` 頂註 4,本檔不重抄。
+乘客清單正本是相對 DEVFLOW_ROOT 的 `_templates/7-review.md` 頂註 4,本檔不重抄。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡
@@ -19,7 +19,7 @@ N3-axes 完成。本節點才准讀 6-notes。
 ## 做什麼
 
 把 0–3 的內容與對照作者結果寫進同一份 `7-review.md`。重跑 = 覆寫同一路徑。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage7-graph.sh --write-cursor N4-author`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage7-graph.sh --write-cursor N4-author`。
 
 ## 完成條件
 

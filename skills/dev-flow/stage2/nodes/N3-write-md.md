@@ -8,7 +8,7 @@
 ## 讀什麼
 
 已確認的決策點、步 1–2 的方案與壓測結果。
-定稿清單正本是 `_templates/2-decision.md` 頂註步 3,本檔不抄原文。
+定稿清單正本是相對 DEVFLOW_ROOT 的 `_templates/2-decision.md` 頂註步 3,本檔不抄原文。
 
 ## 寫哪裡
 
@@ -19,7 +19,7 @@
 ## 做什麼
 
 按模板定稿節寫同一份 `2-decision.md`。重跑本節點 = 覆寫同一路徑,不是另存一份。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage2-graph.sh --write-cursor N3-write-md`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage2-graph.sh --write-cursor N3-write-md`。
 
 ## 完成條件
 

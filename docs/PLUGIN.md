@@ -12,7 +12,7 @@
 ```
 
 裝完實際路徑是 `~/.claude/plugins/cache/dev-flow/dev-flow/<version>/`。
-不要把版本路徑寫死在腳本裡。用 `${CLAUDE_PLUGIN_ROOT}`,或從自己的位置推。
+不要把版本路徑寫死在腳本裡。用 `${DEVFLOW_ROOT}`（舊名 `${CLAUDE_PLUGIN_ROOT}` 當別名）,或從自己的位置推。
 Windows 同構,在 `%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\<version>\`。
 
 **環境**:hooks 要 python3(只吃標準函式庫)。找直譯器的順序是 `DEVFLOW_PYTHON` → `/usr/bin/python3` → PATH 上的 `python3`。找不到就印警告後放行 —— 那次呼叫沒有守衛,不是功能壞掉。

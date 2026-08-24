@@ -9,7 +9,7 @@ S1-slice 完成(T 已切、順序是 tracer bullet)。游標在 S1-slice。
 
 `4-spec.md` 的 R/S id(追溯鏈頂端)、Design Boundary Contract 狀態與該 T 相關的
 Operational Context。四必填欄、續行禁令、`Verify` 三律的條文正本是
-`_templates/5-tasks.md` 頂註,本檔不重抄。`graph.yaml` 是下一跳正本。
+相對 DEVFLOW_ROOT 的 `_templates/5-tasks.md` 頂註,本檔不重抄。`graph.yaml` 是下一跳正本。
 
 ## 寫哪裡
 
@@ -25,7 +25,7 @@ root 為相對根,含對應測試檔)、Verify(單行純指令;用 `-run`／`-k`
 最小子集,不整份複製。
 續行與子項不得以保留欄名開頭 —— 寫成 `- Files:` 之類會被 parser 當同名欄位,把真正
 的 `Files:` 換掉。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage5-graph.sh --write-cursor S2-fields`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage5-graph.sh --write-cursor S2-fields`。
 
 ## 完成條件
 

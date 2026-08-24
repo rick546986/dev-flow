@@ -5,9 +5,11 @@ description: dev-flow Stage 6 內部執行引擎 — 多模型派工(haiku 寫�
 
 # dev-run — Stage 6 執行引擎
 
+方法包根目錄叫 `DEVFLOW_ROOT`（舊名 `CLAUDE_PLUGIN_ROOT` 當別名，不准刪）。找不到就停，不准猜。
+
 你是**派工者**(主對話,opus/fable5 層):讀 spec、派 T、收驗、**commit 與記帳** ——
 不下場寫碼。逐 T acceptance seam 的唯一核心規則在 README §5,執行順序與證據
-格式以 `_templates/6-implementation-notes.md` 頂註清單 / T Review Log 為準;
+格式以相對 DEVFLOW_ROOT 的 `_templates/6-implementation-notes.md` 頂註清單 / T Review Log 為準;
 本檔只定義 `dev-run` 的派工、模型升階與職責適配,不另立第二套 review policy。
 
 ## 前置(缺一不啟;順序不可調)
@@ -18,11 +20,11 @@ description: dev-flow Stage 6 內部執行引擎 — 多模型派工(haiku 寫�
    slug 與 cwd 相符。被拒(4-spec 非 approved / 無可解析 Files / 4-spec Profile
    lane: fast + Risk: high 無 Owner Call)→ 停,回報使用者。
 3. 讀 4-spec、5-tasks、living spec、`.claude/rules/*.md`;業務語意改查長期記憶
-   (`${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py ask "<詞> 是什麼意思"`),不再讀 CONTEXT.md。
+   (`${DEVFLOW_ROOT}/memory/dev-memory.py ask "<詞> 是什麼意思"`),不再讀 CONTEXT.md。
    **禁讀 1/2/3**(守衛會擋,含 shell)。
 4. **開 memory session**(記憶生命週期的起點,見「記憶生命週期」節):
    ```
-   ${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py session start \
+   ${DEVFLOW_ROOT}/memory/dev-memory.py session start \
      --mode implementation --slug <slug>
    ```
    把回傳的 `session_id` 當本次 Stage 6 的 workflow state 全程重用
@@ -89,7 +91,7 @@ hash 必須是 registry 內 `prompt_hash` 實值,**禁佔位 hash** / 禁自編)
      完成 = 三件套齊全,prompt 已送出給執行者。
    - **1b. 寫事件**:派出即送 `agent_dispatched` + `attempt_started`(attempt_id /
      agent_role / model / prompt / base_sha)。完成 = 兩筆事件皆已送 ledger。
-2. **收驗**:以 `subagent_type=dev-flow:devflow-reviewer`(`agents/devflow-reviewer.md`,
+2. **收驗**:讀 `agents/devflow-reviewer.md`（Claude 別名：`subagent_type=dev-flow:devflow-reviewer`；
    fresh sonnet、`tools: Read` 唯讀——沒有 Bash,也沒有 Grep/Glob/Skill 與專案裝的
    MCP 工具;`git diff` 由你先跑好貼進 prompt,要搜的東西(例如「這個符號還有哪裡
    引用」)也是你先搜好貼進去,不要指望它自己查)明確派出(給 T + S 原文 + diff +
@@ -104,8 +106,8 @@ hash 必須是 registry 內 `prompt_hash` 實值,**禁佔位 hash** / 禁自編)
    | IMPL / UNKNOWN | 實作沒做對,或看不出原因 | 同一 T 升階重派(失敗軌跡全帶)並重新送審 | 計入 |
 
    **上限與強制動作**(與上表分開讀):同一個 T 總嘗試上限 4 次
-   (haiku 1 + sonnet 2 + opus 1)。用盡 4 次 → **強制問 adviser**(以
-   `subagent_type=dev-flow:devflow-adviser`——`agents/devflow-adviser.md`,同樣
+   (haiku 1 + sonnet 2 + opus 1)。用盡 4 次 → **強制問 adviser**（讀
+   `agents/devflow-adviser.md`；Claude 別名：`subagent_type=dev-flow:devflow-adviser`；同樣
    `tools: Read` 唯讀——沒有 Bash,也沒有 Grep/Glob/Skill 與專案裝的 MCP 工具;
    要它查證的東西你先查好貼進 prompt,附完整失敗軌跡),不得再重試。
    PASS → 你 commit → 讀出 hash。

@@ -9,7 +9,7 @@ S4-selfcheck 完成:`parse_5_tasks` 的 `errors` 為空 —— 逐 T 四必填�
 ## 讀什麼
 
 已落檔的 `5-tasks.md`。執行板四要求(動線頂區五格／任務卡逐條可勾／Boundaries
-摺疊／依賴 DAG)正本在 `_templates/5-tasks.md` 頂註,本檔不重抄條文。
+摺疊／依賴 DAG)正本在相對 DEVFLOW_ROOT 的 `_templates/5-tasks.md` 頂註,本檔不重抄條文。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡
@@ -24,7 +24,7 @@ S4-selfcheck 完成:`parse_5_tasks` 的 `errors` 為空 —— 逐 T 四必填�
 失敗,那就是回頭修 `5-tasks.md`、不是改工具。切 T 的機械提示
 `scripts/check-task-slicing.sh` 是 warning-only、永不 exit 1,本節點照舊只呼叫,
 不改它的退出碼;四必填欄的機器判準仍是既有 `hooks/contract_ref.py`,一併不改。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage5-graph.sh --write-cursor N5-twin`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage5-graph.sh --write-cursor N5-twin`。
 
 ## 完成條件
 

@@ -1,0 +1,5 @@
+entry: N1-start
+nodes:
+  N1-start:
+    file: nodes/N1-start.md
+    next: ""

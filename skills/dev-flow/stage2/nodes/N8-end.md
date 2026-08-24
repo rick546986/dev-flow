@@ -17,7 +17,7 @@ G1 verdict。`2-decision.md` frontmatter。`docs/dev/STATUS.md`。同名 html tw
 ## 做什麼
 
 過 G1 後做三連動(frontmatter / STATUS / twin)。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage2-graph.sh --write-cursor N8-end`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage2-graph.sh --write-cursor N8-end`。
 
 ## 完成條件
 
