@@ -113,6 +113,9 @@ group_methodology() {
   # Stage 3:觸發判定 + 跳過 hop;單產物 3-prototype.md;N1／N-skip 不得寫檔。
   run "methodology/check-devstage3-graph"     scripts/check-devstage3-graph.sh   || return 1
   run "methodology/test-devstage3-graph"      scripts/test-devstage3-graph.sh    || return 1
+  # Stage 4:四真節點 + 兩暫留 hop;單產物 4-spec.md;只有 N5 可寫;G2 前不寫 5-tasks。
+  run "methodology/check-devstage4-graph"     scripts/check-devstage4-graph.sh   || return 1
+  run "methodology/test-devstage4-graph"      scripts/test-devstage4-graph.sh    || return 1
 }
 
 group_contracts() {

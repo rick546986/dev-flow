@@ -358,9 +358,70 @@ def _devstage3_graph_action(command):
         L.die("⛔ Stage 3 graph --action deny:" + reason)
 
 
+def _devstage4_graph_action(command):
+    """Stage 4 graph:本機有 .devstage4-cursor.json 才編成 4-spec / 5-tasks。
+
+    必須在 load_state 早退之前跑。沒游標檔不攔截 —— 不是沙盒。
+    不重做第 1 站 write_code 編成。不改第 2／3 站的 write_spec 編成 ——
+    那兩站各認自己的游標檔,三份游標同時在場時各自送自己的 --action。
+    5-tasks.md 在這裡一律送 write_tasks,由檢查器擋掉 G2 前搶跑第 5 站。
+    """
+    import tempfile
+
+    cursor_path = os.path.join(root, ".devstage4-cursor.json")
+    if not os.path.isfile(cursor_path):
+        return
+    action = None
+    if _writes_named_md(command, "4-spec.md"):
+        action = "write_spec"
+    elif _writes_named_md(command, "5-tasks.md"):
+        action = "write_tasks"
+    if not action:
+        return
+    try:
+        cursor = json.load(open(cursor_path, encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        cursor = {}
+    if not isinstance(cursor, dict):
+        cursor = {}
+    check = os.path.join(root, "scripts", "check-devstage4-graph.sh")
+    if not os.path.isfile(check):
+        return
+    payload_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".json", delete=False, encoding="utf-8"
+        ) as handle:
+            json.dump(
+                {
+                    "cursor": cursor,
+                    "action": action,
+                    "slug": cursor.get("slug") or "",
+                },
+                handle,
+            )
+            payload_path = handle.name
+        proc = subprocess.run(
+            ["bash", check, "--action", payload_path, root],
+            capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return
+    finally:
+        if payload_path:
+            try:
+                os.unlink(payload_path)
+            except OSError:
+                pass
+    if proc.returncode != 0:
+        reason = (proc.stdout or proc.stderr or "action denied").strip()
+        _obs_deny("devstage4-graph", action)
+        L.die("⛔ Stage 4 graph --action deny:" + reason)
+
+
 _devtalk_graph_action(cmd)
 _devstage2_graph_action(cmd)
 _devstage3_graph_action(cmd)
+_devstage4_graph_action(cmd)
 
 state, armed, err = L.load_state(root)
 if err:
