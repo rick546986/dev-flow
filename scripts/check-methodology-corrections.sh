@@ -169,8 +169,6 @@ def exit_checklist_items():
 
 
 parity = {
-    ("guides/guide-dev-flow.html", "readme-stage-table"):
-        markdown_table("README.md", "## 3.", "| # |"),
     ("guides/guide-dev-flow.html", "template2-checklist"):
         quote_region("_templates/2-decision.md", "執行清單("),
     ("guides/guide-dev-flow.html", "template3-checklist"):
@@ -241,6 +239,27 @@ for line in markdown_table("README.md", "## 3.", "| # |").splitlines()[2:]:
     cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
     if cells and cells[0].isdigit():
         readme_stage_rows[cells[0]] = cells
+# README §3 用途是一句摘要;細節住 guide。不再要求用途欄與 guide 表逐字相同。
+# 只釘 # / 檔 / Gate,讓 gate-consistency 抽得到的粗體 token 兩邊仍對得上。
+_stage_html = marker_fragment("guides/guide-dev-flow.html", "readme-stage-table")
+_guide_stage_rows = {}
+for _row in re.findall(r"<tr>(.*?)</tr>", _stage_html, re.S):
+    _cells = re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", _row, re.S)
+    if _cells:
+        _stage = re.match(r"\s*([1-7])\b", visible(_cells[0]))
+        if _stage:
+            _guide_stage_rows[_stage.group(1)] = _cells
+check(set(readme_stage_rows) == set("1234567"),
+      "README §3 表有 1–7 列")
+check(set(_guide_stage_rows) == set("1234567"),
+      "guide readme-stage-table 有 1–7 列")
+for _stage in "1234567":
+    _rm = readme_stage_rows.get(_stage, ["", "", "", ""])
+    _gd = _guide_stage_rows.get(_stage, ["", "", "", ""])
+    check(norm(markdown_visible(_rm[1])) == norm(visible(_gd[1])),
+          f"README §3 / guide 第 {_stage} 列檔名一致")
+    check(norm(markdown_visible(_rm[3])) == norm(visible(_gd[3])),
+          f"README §3 / guide 第 {_stage} 列 Gate 一致(用途欄不比)")
 walkthrough = re.search(
     r'<h2 id="walkthrough".*?<table>(.*?)</table>', read("guides/guide-quickstart.html"), re.S)
 walkthrough_rows = {}
