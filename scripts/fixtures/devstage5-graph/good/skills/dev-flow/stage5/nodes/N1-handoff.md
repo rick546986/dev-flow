@@ -29,4 +29,4 @@ G2 過(approved 已核對)+ R/S 全集清點回報過。本機游標在 N1-hando
 
 ## 下一跳
 
-skill-legacy-1-3
+S1-slice

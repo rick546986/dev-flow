@@ -2,8 +2,9 @@
 
 ## 進條件
 
-步 4 自檢過:逐 T 四必填欄(Covers／Files／Verify／Blocked-by)齊、續行未踩
-保留欄名。`5-tasks.md` 已落檔。不要寫 `5-tasks.md`。
+S4-selfcheck 完成:`parse_5_tasks` 的 `errors` 為空 —— 逐 T 四必填欄
+(Covers／Files／Verify／Blocked-by)齊、續行未踩保留欄名。
+`5-tasks.md` 已落檔。不要寫 `5-tasks.md`。
 
 ## 讀什麼
 

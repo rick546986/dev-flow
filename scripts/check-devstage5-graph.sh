@@ -1,27 +1,36 @@
 #!/bin/bash
-# check-devstage5-graph.sh — Stage 5 第一刀的機械契約
+# check-devstage5-graph.sh — Stage 5 第二刀的機械契約
 #
 # 為什麼需要:把第 5 站切成可單獨重跑的節點之後,有幾件事不能只靠散文 —
 #   1. 沒有 stage5/graph.yaml 必須紅:舊實作(單一 SKILL、沒有 graph)無法證明
 #      下一跳與重跑契約。
 #   2. 真節點缺「進條件」或「完成條件」必須紅:節點不能單獨當入口。
 #   3. 同 slug 第二份 5-tasks*.md 必須紅:產物仍是一份。
-#   4. write_mode≠overwrite 必須紅:重跑 N4 覆寫同一檔,不另存。
-#   5. 缺 N4-write-md 必須紅:第一刀必須有寫檔節點,不要只做 handoff。
+#   4. write_mode≠overwrite 必須紅:重跑寫檔節點覆寫同一檔,不另存。
+#   5. 缺 N4-write-md 必須紅:必須有寫檔節點,不要只做 handoff。
 #   6. 未過 G2(4-spec 不是 approved)卻 write_tasks(寫 5-tasks.md)必須紅:
 #      第 4 站還沒核准不准搶跑第 5 站。
 #   7. 5-tasks 未 approved 卻 write_notes(寫 6-implementation-notes.md)必須紅:
 #      第 6 站還沒開始。
+#   8. 第二刀:乘客步 1／2／3／4 必須是真節點檔。kind: skill-legacy 團塊必須紅 ——
+#      第一刀的暫留 hop 到這一刀就沒有存在理由了。
+#      每個真節點「做什麼」必須 --write-cursor <本節點 id>。
+#      S1-slice／S2-fields／S3-deps／S4-selfcheck 與 N4-write-md 才 allow
+#      write_tasks(同一份 5-tasks.md,overwrite);不要放寬 N1-handoff／
+#      N5-twin／N6-end。
+#   9. 第二刀:四必填欄(Covers／Files／Verify／Blocked-by)缺一必須紅 —— 判準呼叫
+#      現有 parser 的 parse_5_tasks,本檔不再寫第二套解析,也不改那支 parser。
+#      S4-selfcheck 的「做什麼」必須點名它。
 #
-# graph.yaml 是下一跳的唯一正本。暫留步是 kind: skill-legacy 的真 hop,禁止 via
+# graph.yaml 是下一跳的唯一正本。分叉與暫留一律用 next 指到的真節點,禁止 via
 # (第 1 站 0030 的假綠就是 via 字串當 hop 換來的)。
-# 本刀 kind: skill-legacy 合法;第二刀才改成「仍是 skill-legacy 必須紅」。
 # 本機游標 .devstage5-cursor.json 不進 Git。
 # 不改 check-devtalk-graph.sh / check-devstage2-graph.sh / check-devstage3-graph.sh /
 # check-devstage4-graph.sh。
 # 不改 _templates/5-tasks.md 正文(乘客清單正本是它的頂註 0–6)。
-# 不改 hooks/contract_ref.py、不把 scripts/check-task-slicing.sh 改成 exit 1、
-# 不改 scripts/build-gate-twin.py(一律只呼叫)。
+# 不改 contract_ref.py / hooks/devflow-lib.py 的 parse_5_tasks、不把
+# scripts/check-task-slicing.sh 改成 exit 1、不改 scripts/build-gate-twin.py
+# (一律只呼叫)。
 # 本刀不掃 prebash、不掃 guide #stage5 節點鏈 —— 那是第三刀。
 #
 # 用法:
@@ -100,31 +109,63 @@ DOCS_DEV = os.path.join(root, "docs", "dev")
 
 ENTRY_NODE = "N1-handoff"
 WRITE_TASKS_NODE = "N4-write-md"
-# 第一刀:四個真節點檔 + 兩個 skill-legacy 暫留 hop。
-REQUIRED_NODES = ("N1-handoff", "N4-write-md", "N5-twin", "N6-end")
-LEGACY_NODES = ("skill-legacy-1-3", "skill-legacy-4")
+SELFCHECK_NODE = "S4-selfcheck"
+# 第二刀:八個真節點檔,沒有 skill-legacy 團塊。
 CHAIN = (
     "N1-handoff",
-    "skill-legacy-1-3",
+    "S1-slice",
+    "S2-fields",
+    "S3-deps",
     "N4-write-md",
-    "skill-legacy-4",
+    "S4-selfcheck",
     "N5-twin",
     "N6-end",
 )
+REQUIRED_NODES = CHAIN
 EXPECTED_NEXT = {
-    "N1-handoff": "skill-legacy-1-3",
-    "skill-legacy-1-3": "N4-write-md",
-    "N4-write-md": "skill-legacy-4",
-    "skill-legacy-4": "N5-twin",
+    "N1-handoff": "S1-slice",
+    "S1-slice": "S2-fields",
+    "S2-fields": "S3-deps",
+    "S3-deps": "N4-write-md",
+    "N4-write-md": "S4-selfcheck",
+    "S4-selfcheck": "N5-twin",
     "N5-twin": "N6-end",
     "N6-end": "",
 }
 REQUIRED_HEADINGS = ("進條件", "讀什麼", "寫哪裡", "做什麼", "完成條件", "下一跳")
 CANONICAL_MD = "docs/dev/<slug>/5-tasks.md"
-LEGACY_ENTRY = "_templates/5-tasks.md"
 LOCKED_ACTIONS = ("write_tasks", "write_notes")
-# write_tasks 只有 N4-write-md 可以 allow。write_notes 本刀任何節點都不得 allow。
+# 乘客步 1／2／3／4 與定稿節點共寫同一份 5-tasks.md(overwrite)。
+# write_notes 本刀任何節點都不得 allow。
+TASKS_ALLOWED_NODES = (
+    "S1-slice",
+    "S2-fields",
+    "S3-deps",
+    "N4-write-md",
+    "S4-selfcheck",
+)
 TASKS_FORBIDDEN_NODES = ("N1-handoff", "N5-twin", "N6-end")
+# 四必填欄的機器判準:現有 parser,不在本檔另寫一套解析。
+PARSER_PATHS = (
+    os.path.join("hooks", "devflow-lib.py"),
+    os.path.join("tests", "parallel-stage6", "contract_ref.py"),
+)
+PARSER_REF = "contract_ref.py"
+PARSER_FUNC = "parse_5_tasks"
+REQUIRED_FIELDS = ("Covers", "Files", "Verify", "Blocked-by")
+PROBE_TASKS = """---
+feature: probe-slug
+stage: 5-tasks
+status: approved
+---
+
+## T-1 建 probe 用的最小 T
+- [ ] 完成
+- Covers: R-1 / S-1
+- Files: src/probe.py, src/probe_test.py
+- Verify: `pytest -q tests/probe`
+- Blocked-by: —
+"""
 
 NEXT_ID_RE = re.compile(
     r"(?:S\d+-[A-Za-z0-9-]+|N(?:\d+)?-[A-Za-z0-9-]+|skill-legacy-\d+(?:-\d+)?)"
@@ -314,10 +355,10 @@ def evaluate_action(graph, payload):
             f"5-tasks 未定案不准開第 6 站"
         )
     if action == "write_tasks":
-        if node_id != WRITE_TASKS_NODE:
+        if node_id not in TASKS_ALLOWED_NODES:
             return "deny", (
                 f"{node_id} 未允許 write_tasks（寫 5-tasks.md）—— "
-                f"只有 {WRITE_TASKS_NODE} 可寫"
+                f"只有 {'／'.join(TASKS_ALLOWED_NODES)} 可寫"
             )
         if not spec_approved(slug):
             return "deny", (
@@ -331,6 +372,62 @@ def evaluate_action(graph, payload):
     if action in LOCKED_ACTIONS and action not in allow:
         return "deny", f"{node_id} 未允許 {action}"
     return "allow", f"{node_id} 允許 {action}"
+
+
+def load_parser(path):
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("devstage5_parser_probe", path)
+    if spec is None or spec.loader is None:
+        return None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def drop_field(text, field):
+    return "\n".join(
+        line for line in text.splitlines() if not line.startswith(f"- {field}:")
+    )
+
+
+def check_required_fields_parser():
+    """第二刀:四必填欄缺一必須紅 —— 判準是現有 parser,本檔只呼叫、不重寫。"""
+    failures = []
+    for rel in PARSER_PATHS:
+        path = os.path.join(root, rel)
+        if not os.path.isfile(path):
+            continue
+        try:
+            module = load_parser(path)
+        except Exception as exc:  # noqa: BLE001 — parser 壞了就是紅,不吞
+            failures.append(f"P0 既有 parser {rel} 載不起來:{exc}")
+            continue
+        parse = getattr(module, PARSER_FUNC, None) if module else None
+        if parse is None:
+            failures.append(f"P0 既有 parser {rel} 沒有 {PARSER_FUNC}()")
+            continue
+        try:
+            baseline = parse(PROBE_TASKS).get("errors") or []
+        except Exception as exc:  # noqa: BLE001
+            failures.append(f"P0 {rel} {PARSER_FUNC}() 對四欄齊備的 T 就爆:{exc}")
+            continue
+        if baseline:
+            failures.append(
+                f"P0 {rel} 對四欄齊備的 T 仍報錯:{baseline} —— 判準失真"
+            )
+        for field in REQUIRED_FIELDS:
+            try:
+                errors = parse(drop_field(PROBE_TASKS, field)).get("errors") or []
+            except Exception as exc:  # noqa: BLE001
+                failures.append(f"P0 {rel} 缺 {field} 時 {PARSER_FUNC}() 爆掉:{exc}")
+                continue
+            if not any(field in str(item) for item in errors):
+                failures.append(
+                    f"P0 {rel} 缺必填欄 {field} 卻沒判紅 —— 四必填欄缺一必須紅"
+                    f"(S4-selfcheck 的機器判準)"
+                )
+    return failures
 
 
 def simulate_n4_rerun(write_paths, write_mode):
@@ -392,7 +489,7 @@ def check_chain(nodes, failures):
         if not isinstance(spec, dict):
             if node_id == WRITE_TASKS_NODE:
                 failures.append(
-                    "P0 graph.yaml 缺節點 N4-write-md —— 第一刀必須有寫檔節點,"
+                    "P0 graph.yaml 缺節點 N4-write-md —— 必須有寫檔節點,"
                     "不要只做 handoff"
                 )
             else:
@@ -403,21 +500,6 @@ def check_chain(nodes, failures):
             failures.append(
                 f"P0 {node_id} next 必須是 {expected!r},實際是 {actual!r}"
             )
-    for node_id in LEGACY_NODES:
-        spec = nodes.get(node_id) if isinstance(nodes, dict) else None
-        if not isinstance(spec, dict):
-            continue
-        if spec.get("kind") != "skill-legacy":
-            failures.append(
-                f"P0 {node_id} 必須是 kind: skill-legacy 真節點,不准用 via 字串當 hop"
-            )
-        if spec.get("entry") != LEGACY_ENTRY:
-            failures.append(
-                f"P0 {node_id} entry 必須是 {LEGACY_ENTRY},"
-                f"實際是 {spec.get('entry')!r}"
-            )
-        if not str(spec.get("steps") or "").strip():
-            failures.append(f"P0 {node_id} 缺 steps(暫留哪幾步說不清)")
 
 
 def check_live(graph):
@@ -473,6 +555,13 @@ def check_live(graph):
         token = f"--write-cursor {node_id}"
         if token not in do_body:
             failures.append(f"P0 {rel} 做什麼必須呼叫 --write-cursor {node_id}")
+        if node_id == SELFCHECK_NODE and (
+            PARSER_REF not in do_body or PARSER_FUNC not in do_body
+        ):
+            failures.append(
+                f"P0 {rel} 做什麼必須呼叫既有 {PARSER_REF} 的 {PARSER_FUNC}"
+                f"(四必填欄的機器判準,不改那支 parser)"
+            )
         if node_id == WRITE_TASKS_NODE:
             if "5-tasks.md" not in write_body:
                 failures.append(f"P0 {rel} 寫哪裡必須點名 5-tasks.md")
@@ -484,7 +573,11 @@ def check_live(graph):
 
     if graph is None:
         failures.append(
-            "P0 舊實作缺 N4-write-md —— 第一刀必須有寫檔節點,不要只做 handoff"
+            "P0 舊實作缺 N4-write-md —— 必須有寫檔節點,不要只做 handoff"
+        )
+        failures.append(
+            "P0 舊實作把乘客步 1／2／3／4 留在單一 SKILL —— 必須是真節點檔,"
+            "不是 skill-legacy 團塊"
         )
         failures.append(
             "P0 舊實作無法證明同 slug 第二份 5-tasks*.md 會被擋"
@@ -502,25 +595,30 @@ def check_live(graph):
         )
         failures.extend(scan_live_tasks_dupes())
         failures.extend(scan_g2_entry_block())
+        failures.extend(check_required_fields_parser())
         return failures
 
-    n4 = nodes.get(WRITE_TASKS_NODE) or {}
-    write_paths = as_list(n4.get("write"))
-    write_mode = n4.get("write_mode") or ""
-    if write_paths != [CANONICAL_MD]:
-        failures.append(
-            f"P0 graph.yaml N4 write 必須剛好是 {[CANONICAL_MD]},"
-            f"實際是 {write_paths}"
-        )
-    if write_mode != "overwrite":
-        failures.append(
-            f"P0 graph.yaml N4 write_mode 必須是 overwrite,實際是 {write_mode!r}"
-        )
-    found = simulate_n4_rerun(write_paths or [CANONICAL_MD], write_mode)
-    if found != ["5-tasks.md"]:
-        failures.append(
-            f"P0 模擬重跑 N4 後 5-tasks*.md = {found},必須只剩正本一份"
-        )
+    for node_id in TASKS_ALLOWED_NODES:
+        spec = nodes.get(node_id)
+        if not isinstance(spec, dict):
+            continue
+        write_paths = as_list(spec.get("write"))
+        write_mode = spec.get("write_mode") or ""
+        if write_paths != [CANONICAL_MD]:
+            failures.append(
+                f"P0 graph.yaml {node_id} write 必須剛好是 {[CANONICAL_MD]},"
+                f"實際是 {write_paths}"
+            )
+        if write_mode != "overwrite":
+            failures.append(
+                f"P0 graph.yaml {node_id} write_mode 必須是 overwrite,"
+                f"實際是 {write_mode!r}"
+            )
+        found = simulate_n4_rerun(write_paths or [CANONICAL_MD], write_mode)
+        if found != ["5-tasks.md"]:
+            failures.append(
+                f"P0 模擬重跑 {node_id} 後 5-tasks*.md = {found},必須只剩正本一份"
+            )
 
     for node_id, spec in nodes.items():
         if not isinstance(spec, dict):
@@ -529,11 +627,15 @@ def check_live(graph):
             failures.append(
                 f"P0 {node_id} 用 via 當 hop,必須是 next 指到的真節點"
             )
+        if spec.get("kind") == "skill-legacy":
+            failures.append(
+                f"P0 {node_id} 仍是 skill-legacy 團塊,必須拆成有節點檔的 hop"
+            )
         allow = set(as_list(spec.get("allow")))
-        if node_id == WRITE_TASKS_NODE:
+        if node_id in TASKS_ALLOWED_NODES:
             if "write_tasks" not in allow:
                 failures.append(
-                    "P0 N4-write-md 必須 allow write_tasks"
+                    f"P0 {node_id} 必須 allow write_tasks"
                     "(同一份 5-tasks.md,overwrite)"
                 )
         elif "write_tasks" in allow:
@@ -555,6 +657,7 @@ def check_live(graph):
     check_chain(nodes, failures)
     failures.extend(scan_live_tasks_dupes())
     failures.extend(scan_g2_entry_block())
+    failures.extend(check_required_fields_parser())
     return failures
 
 
@@ -588,6 +691,9 @@ if failures:
         print(f"  - {item}", file=sys.stderr)
     sys.exit(1)
 
-print("✅ PASS:Stage 5 graph 四真節點 / 兩暫留 hop / 單產物 / 覆寫 / G2 前不搶跑 / 未定案不寫 6-notes 全過")
+print(
+    "✅ PASS:Stage 5 graph 八真節點 / 無 skill-legacy 團塊 / 單產物 / 覆寫 / "
+    "四必填欄缺一即紅 / G2 前不搶跑 / 未定案不寫 6-notes 全過"
+)
 sys.exit(0)
 PY

@@ -1,25 +1,18 @@
 # 下一跳唯一正本。本機游標不進 Git。
 # 乘客清單正本仍是 `_templates/5-tasks.md` 頂註 0–6。
-# 第一刀必須有 N4-write-md。暫留步是 skill-legacy 真 hop,禁止 via。
+# 第二刀:乘客步 1／2／3／4 都是真節點檔,沒有 skill-legacy 團塊,禁止 via。
+# S1–S4 與 N4-write-md 共寫同一份 5-tasks.md(overwrite);N1／N5／N6 不放寬。
 entry: N1-handoff
 nodes:
   N1-handoff:
     file: nodes/N1-handoff.md
-    next: skill-legacy-1-3
+    next: S1-slice
     forbid:
       - write_tasks
       - write_notes
-  skill-legacy-1-3:
-    kind: skill-legacy
-    entry: _templates/5-tasks.md
-    steps: "1-3"
-    next: N4-write-md
-    forbid:
-      - write_tasks
-      - write_notes
-  N4-write-md:
-    file: nodes/N4-write-md.md
-    next: skill-legacy-4
+  S1-slice:
+    file: nodes/S1-slice.md
+    next: S2-fields
     write:
       - docs/dev/<slug>/5-tasks.md
     write_mode: overwrite
@@ -27,13 +20,45 @@ nodes:
       - write_tasks
     forbid:
       - write_notes
-  skill-legacy-4:
-    kind: skill-legacy
-    entry: _templates/5-tasks.md
-    steps: "4"
-    next: N5-twin
-    forbid:
+  S2-fields:
+    file: nodes/S2-fields.md
+    next: S3-deps
+    write:
+      - docs/dev/<slug>/5-tasks.md
+    write_mode: overwrite
+    allow:
       - write_tasks
+    forbid:
+      - write_notes
+  S3-deps:
+    file: nodes/S3-deps.md
+    next: N4-write-md
+    write:
+      - docs/dev/<slug>/5-tasks.md
+    write_mode: overwrite
+    allow:
+      - write_tasks
+    forbid:
+      - write_notes
+  N4-write-md:
+    file: nodes/N4-write-md.md
+    next: S4-selfcheck
+    write:
+      - docs/dev/<slug>/5-tasks.md
+    write_mode: overwrite
+    allow:
+      - write_tasks
+    forbid:
+      - write_notes
+  S4-selfcheck:
+    file: nodes/S4-selfcheck.md
+    next: N5-twin
+    write:
+      - docs/dev/<slug>/5-tasks.md
+    write_mode: overwrite
+    allow:
+      - write_tasks
+    forbid:
       - write_notes
   N5-twin:
     file: nodes/N5-twin.md
