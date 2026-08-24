@@ -27,5 +27,5 @@ html twin 不在本節點產(N5-twin 才呼叫現有工具)。`write_mode: overw
 
 ## 下一跳
 
-skill-legacy-4
-(步 4 自檢在下一個 hop;本節點不跑 `contract_ref.py`、不改它)
+S4-selfcheck
+(四必填欄自檢在下一個節點;本節點不跑 `contract_ref.py`、不改它)
