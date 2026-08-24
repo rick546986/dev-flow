@@ -270,7 +270,7 @@ md 是 git 正本,html twin 是給人審的殼。gate 時必產。
 > 改任何 gate 條件先改這裡的粗體 token 與錨定義,再同步三處摘要:①plugin `dev-flow`
 > SKILL.md 階段動作表 ②本 README §3 七份文檔表 ③對應模板頂註。衝突以本節為準。
 
-契約 / 檢查器抽(審查者產生與四眼;下列 `- **審查者產生**` 原文勿改):
+契約 / 檢查器抽(四眼與 reviewer 選法;下列第一條 `- ` 原文勿改):
 
 - **author ≠ approver**:G1/G2/G3 的核准者不可以是該文檔的 owner(四眼原則)。
 - **審查者產生**:G1/G2/G3 一律依序選 **適格人類 reviewer → fresh-context reviewer
@@ -286,11 +286,11 @@ md 是 git 正本,html twin 是給人審的殼。gate 時必產。
 
 去哪:[flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)
 
-> **契約 / 檢查器抽**
->
-> G1 = 方向對不對(2-decision:方向核准 + **Owner Calls 全裁決**,有未裁決 OC
-> 不得過;下層內部技術項告知即可,但 reviewer **須抽查下層清單有無該上未上的
-> 誤放** —— 抽查是規則要求,不是 reviewer 自由心證)。
+契約 / 檢查器抽:
+
+G1 = 方向對不對(2-decision:方向核准 + **Owner Calls 全裁決**,有未裁決 OC
+  不得過;下層內部技術項告知即可,但 reviewer **須抽查下層清單有無該上未上的
+  誤放** —— 抽查是規則要求,不是 reviewer 自由心證)。
 
  ### G2
 
@@ -298,11 +298,11 @@ md 是 git 正本,html twin 是給人審的殼。gate 時必產。
 
 去哪:[flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)
 
-> **契約 / 檢查器抽**
->
-> G2 = 契約寫得對不對
-> (4-spec:**R/S 全審 + Drafting Decisions 全裁決** + **Verification Profile**
-> + **Demo verdict**,有未裁決項不得過;兩錨的條件式定義見下方「G2 錨定義」)。
+契約 / 檢查器抽:
+
+G2 = 契約寫得對不對
+  (4-spec:**R/S 全審 + Drafting Decisions 全裁決** + **Verification Profile**
+  + **Demo verdict**,有未裁決項不得過;兩錨的條件式定義見下方「G2 錨定義」)。
 
 - G2 錨定義(錨句在上;此處為條件式全文):
   - 「Verification Profile」:G2 必須確認 4-spec Verification Profile 已依 lane 正確
@@ -326,11 +326,11 @@ md 是 git 正本,html twin 是給人審的殼。gate 時必產。
 
 去哪:[flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)
 
-> **契約 / 檢查器抽**
->
-> G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件全綠**(回歸義務)
-> **+ 現象證據逐 S 相符** + **Evidence 契約全過**(八點定義見下方「G3 錨定義」)——
-> reviewer 照 4-spec 的「觀測方式」親自實跑,測試綠不等於看得到它動起來)。
+契約 / 檢查器抽:
+
+G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件全綠**(回歸義務)
+  **+ 現象證據逐 S 相符** + **Evidence 契約全過**(八點定義見下方「G3 錨定義」)——
+  reviewer 照 4-spec 的「觀測方式」親自實跑,測試綠不等於看得到它動起來)。
 
 契約 / 檢查器抽(G3 錨定義八點;Gauntlet 版本句原文勿改):
 
