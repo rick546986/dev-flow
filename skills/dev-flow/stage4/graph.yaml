@@ -1,25 +1,18 @@
 # 下一跳唯一正本。本機游標不進 Git。
 # 乘客清單正本仍是 `_templates/4-spec.md` 頂註 0–6。
-# 第一刀必須有 N5-write-md。暫留步是 skill-legacy 真 hop,禁止 via。
+# 第二刀:乘客步 1／2／3a-c／4／5 都是真節點檔,沒有 skill-legacy 團塊,禁止 via。
+# S1–S5 與 N5-write-md 共寫同一份 4-spec.md(overwrite);N1／N6／N7 不放寬。
 entry: N1-handoff
 nodes:
   N1-handoff:
     file: nodes/N1-handoff.md
-    next: skill-legacy-1-4
+    next: S1-requirements
     forbid:
       - write_spec
       - write_tasks
-  skill-legacy-1-4:
-    kind: skill-legacy
-    entry: _templates/4-spec.md
-    steps: "1-4"
-    next: N5-write-md
-    forbid:
-      - write_spec
-      - write_tasks
-  N5-write-md:
-    file: nodes/N5-write-md.md
-    next: skill-legacy-5
+  S1-requirements:
+    file: nodes/S1-requirements.md
+    next: S2-scenarios
     write:
       - docs/dev/<slug>/4-spec.md
     write_mode: overwrite
@@ -27,13 +20,75 @@ nodes:
       - write_spec
     forbid:
       - write_tasks
-  skill-legacy-5:
-    kind: skill-legacy
-    entry: _templates/4-spec.md
-    steps: "5"
-    next: N6-g2
-    forbid:
+  S2-scenarios:
+    file: nodes/S2-scenarios.md
+    next: S3a-close
+    write:
+      - docs/dev/<slug>/4-spec.md
+    write_mode: overwrite
+    allow:
       - write_spec
+    forbid:
+      - write_tasks
+  S3a-close:
+    file: nodes/S3a-close.md
+    next: S3b-profile
+    write:
+      - docs/dev/<slug>/4-spec.md
+    write_mode: overwrite
+    allow:
+      - write_spec
+    forbid:
+      - write_tasks
+  S3b-profile:
+    file: nodes/S3b-profile.md
+    next: S3c-stage3
+    write:
+      - docs/dev/<slug>/4-spec.md
+    write_mode: overwrite
+    allow:
+      - write_spec
+    forbid:
+      - write_tasks
+  S3c-stage3:
+    file: nodes/S3c-stage3.md
+    next: S4-dd
+    write:
+      - docs/dev/<slug>/4-spec.md
+    write_mode: overwrite
+    allow:
+      - write_spec
+    forbid:
+      - write_tasks
+  S4-dd:
+    file: nodes/S4-dd.md
+    next: N5-write-md
+    write:
+      - docs/dev/<slug>/4-spec.md
+    write_mode: overwrite
+    allow:
+      - write_spec
+    forbid:
+      - write_tasks
+  N5-write-md:
+    file: nodes/N5-write-md.md
+    next: S5-gate
+    write:
+      - docs/dev/<slug>/4-spec.md
+    write_mode: overwrite
+    allow:
+      - write_spec
+    forbid:
+      - write_tasks
+  S5-gate:
+    file: nodes/S5-gate.md
+    next: N6-g2
+    write:
+      - docs/dev/<slug>/4-spec.md
+    write_mode: overwrite
+    allow:
+      - write_spec
+    forbid:
       - write_tasks
   N6-g2:
     file: nodes/N6-g2.md

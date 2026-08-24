@@ -32,4 +32,4 @@ G1 過;第 3 站若必要則已 approved 或有 skip OC。本機游標在 N1-han
 
 ## 下一跳
 
-skill-legacy-1-4
+S1-requirements
