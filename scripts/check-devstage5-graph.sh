@@ -1,5 +1,5 @@
 #!/bin/bash
-# check-devstage5-graph.sh — Stage 5 第二刀的機械契約
+# check-devstage5-graph.sh — Stage 5 第三刀的機械契約
 #
 # 為什麼需要:把第 5 站切成可單獨重跑的節點之後,有幾件事不能只靠散文 —
 #   1. 沒有 stage5/graph.yaml 必須紅:舊實作(單一 SKILL、沒有 graph)無法證明
@@ -21,6 +21,9 @@
 #   9. 第二刀:四必填欄(Covers／Files／Verify／Blocked-by)缺一必須紅 —— 判準呼叫
 #      現有 parser 的 parse_5_tasks,本檔不再寫第二套解析,也不改那支 parser。
 #      S4-selfcheck 的「做什麼」必須點名它。
+#  10. 第三刀:--action 必須接到 prebash,不能只活在 test fixture。guide 第 5 站
+#      開頭必須對上八節點鏈。出現「Stage 5 還在單一 SKILL」必須紅。
+#      不改第 1／2／3／4 站的編成。
 #
 # 本檔唯讀:探測既有 parser 是 import,而 import 預設寫 __pycache__,那份 .pyc
 # 會落在 hooks/ 與 tests/parallel-stage6/ —— 正好在 test-architecture-guards 收尾
@@ -36,7 +39,8 @@
 # 不改 contract_ref.py / hooks/devflow-lib.py 的 parse_5_tasks、不把
 # scripts/check-task-slicing.sh 改成 exit 1、不改 scripts/build-gate-twin.py
 # (一律只呼叫)。
-# 本刀不掃 prebash、不掃 guide #stage5 節點鏈 —— 那是第三刀。
+# 不改 hooks/devflow-exec.sh 的 start:未過 G2 拒啟是它本來就有的行為,
+# test-devstage5-graph.sh 只把它釘住,不在這裡重寫一套。
 #
 # 用法:
 #   scripts/check-devstage5-graph.sh [root]
@@ -157,6 +161,8 @@ PARSER_PATHS = (
 )
 PARSER_REF = "contract_ref.py"
 PARSER_FUNC = "parse_5_tasks"
+GUIDE_PATH = os.path.join(root, "guides", "guide-dev-flow.html")
+STALE_GUIDE = "Stage 5 還在單一 SKILL"
 REQUIRED_FIELDS = ("Covers", "Files", "Verify", "Blocked-by")
 PROBE_TASKS = """---
 feature: probe-slug
@@ -672,6 +678,50 @@ def check_live(graph):
     failures.extend(scan_live_tasks_dupes())
     failures.extend(scan_g2_entry_block())
     failures.extend(check_required_fields_parser())
+    failures.extend(check_action_runtime_wired())
+    failures.extend(check_guide())
+    return failures
+
+
+def check_action_runtime_wired():
+    """第三刀:--action 必須接到 prebash,不能只活在 test fixture。"""
+    hooks = os.path.join(root, "hooks")
+    if not os.path.isdir(hooks):
+        return []
+    for dirpath, dirnames, filenames in os.walk(hooks):
+        dirnames[:] = [d for d in dirnames if d != "devflow_obs_vendor"]
+        for name in filenames:
+            if not name.endswith((".py", ".sh")):
+                continue
+            path = os.path.join(dirpath, name)
+            try:
+                text = open(path, encoding="utf-8").read()
+            except OSError:
+                continue
+            code = "\n".join(line.split("#", 1)[0] for line in text.splitlines())
+            if "check-devstage5-graph" in code and "--action" in code:
+                return []
+    return [
+        "P0 --action 沒接到 runtime:hooks 沒有呼叫 check-devstage5-graph.sh --action"
+    ]
+
+
+def check_guide():
+    """第 5 站開頭對上八節點鏈;舊句「還在單一 SKILL」必須紅。"""
+    if not os.path.isfile(GUIDE_PATH):
+        return []
+    text = open(GUIDE_PATH, encoding="utf-8").read()
+    failures = []
+    if STALE_GUIDE in text:
+        failures.append(f"P0 guide 出現「{STALE_GUIDE}」")
+    match = re.search(r'<h3 id="stage5">.*?(?=<h3 |\Z)', text, re.S)
+    if not match:
+        failures.append('P0 guide 找不到第 5 站 <h3 id="stage5">')
+        return failures
+    head = match.group(0)[:2500]
+    missing = [node_id for node_id in CHAIN if node_id not in head]
+    if missing:
+        failures.append("P0 guide 第 5 站開頭缺節點:" + ",".join(missing))
     return failures
 
 
@@ -707,7 +757,7 @@ if failures:
 
 print(
     "✅ PASS:Stage 5 graph 八真節點 / 無 skill-legacy 團塊 / 單產物 / 覆寫 / "
-    "四必填欄缺一即紅 / G2 前不搶跑 / 未定案不寫 6-notes 全過"
+    "四必填欄缺一即紅 / G2 前不搶跑 / 未定案不寫 6-notes / prebash / guide 全過"
 )
 sys.exit(0)
 PY
