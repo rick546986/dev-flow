@@ -122,6 +122,9 @@ group_methodology() {
   # Stage 6:四真節點 + 一暫留 hop;單產物 6-implementation-notes.md;只有 N1-arm 可寫;沒武裝不寫 6-notes。
   run "methodology/check-devstage6-graph"     scripts/check-devstage6-graph.sh   || return 1
   run "methodology/test-devstage6-graph"      scripts/test-devstage6-graph.sh    || return 1
+  # Stage 7:五真節點 + 一暫留 hop;單產物 7-review.md;只有 N4-author 可寫;N4 才准讀 6-notes。
+  run "methodology/check-devstage7-graph"     scripts/check-devstage7-graph.sh   || return 1
+  run "methodology/test-devstage7-graph"      scripts/test-devstage7-graph.sh    || return 1
 }
 
 group_contracts() {

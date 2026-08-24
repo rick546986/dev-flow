@@ -1,0 +1,102 @@
+# 下一跳唯一正本。本機游標不進 Git。
+# 乘客清單正本仍是 `_templates/7-review.md` 頂註 0–5。
+# 第二刀:乘客步 2／2b／2c／2d／2e 必須是真節點檔。kind: skill-legacy 必須紅。
+# 整合回歸(S2c)在 Final Fresh(S2d)之前。Verdict 後改碼作廢 G3 —— 釘現有行為,不重寫工具。
+# S2-* 與 N4-author 共寫同一份 7-review.md(overwrite)。不要放寬 N0／N1／N3／N5。
+# 只有 N4-author 可 read_notes(對應 review-unlock)。write_notes 一律 deny。禁止 via。
+entry: N0-role
+nodes:
+  N0-role:
+    file: nodes/N0-role.md
+    next: N1-matrix
+    forbid:
+      - write_review
+      - read_notes
+      - write_notes
+  N1-matrix:
+    file: nodes/N1-matrix.md
+    next: S2-run
+    forbid:
+      - write_review
+      - read_notes
+      - write_notes
+  S2-run:
+    file: nodes/S2-run.md
+    next: S2b-phenomena
+    write:
+      - docs/dev/<slug>/7-review.md
+    write_mode: overwrite
+    allow:
+      - write_review
+    forbid:
+      - read_notes
+      - write_notes
+  S2b-phenomena:
+    file: nodes/S2b-phenomena.md
+    next: S2c-integration
+    write:
+      - docs/dev/<slug>/7-review.md
+    write_mode: overwrite
+    allow:
+      - write_review
+    forbid:
+      - read_notes
+      - write_notes
+  S2c-integration:
+    file: nodes/S2c-integration.md
+    next: S2d-fresh
+    write:
+      - docs/dev/<slug>/7-review.md
+    write_mode: overwrite
+    allow:
+      - write_review
+    forbid:
+      - read_notes
+      - write_notes
+  S2d-fresh:
+    file: nodes/S2d-fresh.md
+    next: S2e-walkthrough
+    write:
+      - docs/dev/<slug>/7-review.md
+    write_mode: overwrite
+    allow:
+      - write_review
+    forbid:
+      - read_notes
+      - write_notes
+  S2e-walkthrough:
+    file: nodes/S2e-walkthrough.md
+    next: N3-axes
+    write:
+      - docs/dev/<slug>/7-review.md
+    write_mode: overwrite
+    allow:
+      - write_review
+    forbid:
+      - read_notes
+      - write_notes
+  N3-axes:
+    file: nodes/N3-axes.md
+    next: N4-author
+    forbid:
+      - write_review
+      - read_notes
+      - write_notes
+  N4-author:
+    file: nodes/N4-author.md
+    next: N5-verdict
+    write:
+      - docs/dev/<slug>/7-review.md
+    write_mode: overwrite
+    allow:
+      - write_review
+      - read_notes
+    forbid:
+      - write_notes
+  N5-verdict:
+    file: nodes/N5-verdict.md
+    next: ""
+    forbid:
+      - write_review
+      - read_notes
+      - write_notes
