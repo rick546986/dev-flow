@@ -135,7 +135,8 @@ claude          # 建議 opus(規劃層)
     <tr><td><code>N13-end</code></td><td>11</td><td>你點頭才 <code>talk end</code>;長期記憶只在這裡寫進 <code>.dev-flow/</code>。節點檔 <code>nodes/N13-end.md</code></td></tr>
   </table></div>
   <p>本機游標 <code>.devtalk-cursor.json</code>(現在節點 + <code>MEMORY_SESSION_ID</code>)不進 Git。
-  Bash 的 talk start / talk end / 知識寫入 / 會改檔的 shell,會被 prebash 拿去跑 <code>check-devtalk-graph.sh --action</code>。</p>
+  Bash 的 talk start / talk end / 知識寫入,會被 prebash 拿去跑 <code>check-devtalk-graph.sh --action</code>。
+  已開場(有游標或 OPEN talk)時,寫檔的 shell 會編成 <code>write_code</code> 再送同一支;沒開場就不攔截。這不是沙盒 —— 編成與已知缺口以 <code>hooks/_prebash_impl.py</code> 的 <code>_looks_like_write_code</code> 與 <code>scripts/check-devtalk-graph.sh</code> 為準,這裡不另開黑名單。</p>
 
   <div class="figwrap"><svg id="fig-map" viewBox="0 0 1010 400" role="img"
        aria-label="dev-talk 全程地圖:12 步分四階段,含自迴圈與三條回步 3 的回路">
