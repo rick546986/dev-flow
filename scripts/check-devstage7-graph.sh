@@ -1,5 +1,5 @@
 #!/bin/bash
-# check-devstage7-graph.sh — Stage 7 第二刀的機械契約
+# check-devstage7-graph.sh — Stage 7 第三刀的機械契約
 #
 # 為什麼需要:把第 7 站切成可單獨重跑的節點之後,有幾件事不能只靠散文 —
 #   1. 沒有 stage7/graph.yaml 必須紅:舊實作(單一 SKILL、沒有 graph)無法證明
@@ -23,7 +23,9 @@
 #      S2c 必須點名現有 devflow-integration-regression.sh,且在 Final Fresh 之前。
 #      S2d 必須點名現有 devflow-evidence-gauntlet.sh,且綁 SHA。不准重寫那些工具。
 #      write_notes 一律 deny。有 via 必須紅。
-#  11. 第三刀才接 prebash 與 guide #stage7 正文鏈。本刀不掃這兩項。
+#  11. 第三刀:--action 必須接到 prebash,不能只活在 test fixture。
+#      guide 第 7 站開頭必須對上十節點鏈。出現「Stage 7 還在單一 SKILL」必須紅。
+#      不改第 1–6 站的編成。不改鬆圍欄③。不重開 hardening。
 #
 # graph.yaml 是下一跳的唯一正本。分叉與暫留一律用 next 指到的真節點,禁止 via
 # (第 1 站 0030 的假綠就是 via 字串當 hop 換來的)。
@@ -106,6 +108,8 @@ STAGE7 = os.path.join(root, "skills", "dev-flow", "stage7")
 GRAPH_PATH = os.path.join(STAGE7, "graph.yaml")
 SKILL_PATH = os.path.join(root, "skills", "dev-flow", "SKILL.md")
 DOCS_DEV = os.path.join(root, "docs", "dev")
+GUIDE_PATH = os.path.join(root, "guides", "guide-dev-flow.html")
+STALE_GUIDE = "Stage 7 還在單一 SKILL"
 
 ENTRY_NODE = "N0-role"
 WRITE_REVIEW_NODE = "N4-author"
@@ -674,6 +678,50 @@ def check_live(graph):
     failures.extend(scan_live_review_dupes())
     failures.extend(scan_g2_entry_block())
     failures.extend(scan_owner_self_review())
+    failures.extend(check_action_runtime_wired())
+    failures.extend(check_guide())
+    return failures
+
+
+def check_action_runtime_wired():
+    """第三刀:--action 必須接到 prebash,不能只活在 test fixture。"""
+    hooks = os.path.join(root, "hooks")
+    if not os.path.isdir(hooks):
+        return []
+    for dirpath, dirnames, filenames in os.walk(hooks):
+        dirnames[:] = [d for d in dirnames if d != "devflow_obs_vendor"]
+        for name in filenames:
+            if not name.endswith((".py", ".sh")):
+                continue
+            path = os.path.join(dirpath, name)
+            try:
+                text = open(path, encoding="utf-8").read()
+            except OSError:
+                continue
+            code = "\n".join(line.split("#", 1)[0] for line in text.splitlines())
+            if "check-devstage7-graph" in code and "--action" in code:
+                return []
+    return [
+        "P0 --action 沒接到 runtime:hooks 沒有呼叫 check-devstage7-graph.sh --action"
+    ]
+
+
+def check_guide():
+    """第 7 站開頭對上十節點鏈;舊句「還在單一 SKILL」必須紅。"""
+    if not os.path.isfile(GUIDE_PATH):
+        return []
+    text = open(GUIDE_PATH, encoding="utf-8").read()
+    failures = []
+    if STALE_GUIDE in text:
+        failures.append(f"P0 guide 出現「{STALE_GUIDE}」")
+    match = re.search(r'<h3 id="stage7">.*?(?=<h3 |\Z)', text, re.S)
+    if not match:
+        failures.append('P0 guide 找不到第 7 站 <h3 id="stage7">')
+        return failures
+    head = match.group(0)[:2500]
+    missing = [node_id for node_id in CHAIN if node_id not in head]
+    if missing:
+        failures.append("P0 guide 第 7 站開頭缺節點:" + ",".join(missing))
     return failures
 
 
@@ -707,6 +755,6 @@ if failures:
         print(f"  - {item}", file=sys.stderr)
     sys.exit(1)
 
-print("✅ PASS:Stage 7 graph 十真節點 / 無 skill-legacy 團塊 / 單產物 7-review.md / 覆寫 / 整合回歸在 Fresh 前 / N4 才讀 6-notes 全過")
+print("✅ PASS:Stage 7 graph 十真節點 / 無 skill-legacy 團塊 / 單產物 7-review.md / 覆寫 / 整合回歸在 Fresh 前 / N4 才讀 6-notes / prebash / guide 全過")
 sys.exit(0)
 PY
