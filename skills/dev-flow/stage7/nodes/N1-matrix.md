@@ -7,7 +7,7 @@ N0-role 完成。本節點不寫 `7-review.md`(寫檔在 S2-* 與 N4-author)。
 ## 讀什麼
 
 只讀 `4-spec.md` 的 S 清單與測試檔 S-id。禁讀 6-notes Self-Review。
-乘客清單正本是 `_templates/7-review.md` 頂註 1,本檔不重抄。
+乘客清單正本是相對 DEVFLOW_ROOT 的 `_templates/7-review.md` 頂註 1,本檔不重抄。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

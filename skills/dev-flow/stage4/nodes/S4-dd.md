@@ -8,7 +8,7 @@ Stage 3 對帳逐場有下落。游標在 S3c-stage3。
 ## 讀什麼
 
 全份已落檔內容(R／S／四小節／Profile／Design Boundary／對帳結果)。
-兩層分級判準與「依據」欄的寫法正本在 `_templates/4-spec.md` Drafting Decisions
+兩層分級判準與「依據」欄的寫法正本在相對 DEVFLOW_ROOT 的 `_templates/4-spec.md` Drafting Decisions
 節頂註,本檔不抄乘客步原文。`graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

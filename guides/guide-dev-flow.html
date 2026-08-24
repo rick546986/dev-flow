@@ -1934,8 +1934,17 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td><code>.agents/skills/&lt;名&gt;</code>；若社群還用
             <code>.codex/skills/</code>，兩處都指同一包，或先探測再掛。</td></tr>
   </table></div>
-  <p>採用專案的 <code>AGENTS.md</code> 只准這一行指標（setup 真寫是第二刀，本刀只定文案）：
+  <p>採用專案的 <code>AGENTS.md</code> 只准這一行指標（dev-setup 寫入；已有就只補這一行，不准灌流程）：
   「這專案用 DevFlow。技能在方法包 skills/。開工讀該技能 SKILL.md，下一跳看 graph.yaml。不要把流程規則貼進本檔。」</p>
+  <p>dev-setup 跑完之後，被採用的產品 repo 必須：有上面那行 <code>AGENTS.md</code>；
+  Cursor 的 <code>.cursor/skills/&lt;名&gt;</code> 與 Codex 的
+  <code>.agents/skills/&lt;名&gt;</code> 指向 <code>$DEVFLOW_ROOT/skills/&lt;名&gt;</code>
+  （整棵目錄；<code>dev-flow</code> 要看得到 stage2–stage7）。探測到
+  <code>.codex/skills/</code> 也指同一包。Grok 技能庫掛整棵，不要假裝能從產品 repo
+  自動灌進。節點找的乘客清單是相對 <code>DEVFLOW_ROOT</code> 的
+  <code>_templates/&lt;檔&gt;</code>；<code>docs/dev/_templates/</code> 是散發副本。
+  <code>DEVFLOW_ROOT</code> 解析失敗 → setup 大聲停，不准只散發 <code>docs/dev/</code>
+  就當成功。不要把節點 MD 複製進採用專案。</p>
   <p>路由器／派工：<code>dev-run</code> → 讀
   <code>skills/dev-run/SKILL.md</code>；reviewer → 讀
   <code>agents/devflow-reviewer.md</code>。舊字串當 Claude 別名，不要當唯一入口。
@@ -2389,12 +2398,18 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             <code>SKILL.md</code>+<code>graph.yaml</code>+<code>nodes/</code>、
             graph 的 <code>file:</code> 與 <code>skill-legacy</code> 的
             <code>entry</code> 打不打得開、節點不得只寫死 Claude 專用叫法。
-            不重寫第 1–7 站編成,不改鬆 <code>--action</code>。</td>
+            第二刀再管採用專案：setup 宣稱成功卻推不到方法包必須紅；
+            <code>.cursor/skills</code>／<code>.agents/skills</code> 只有 SKILL.md
+            必須紅；<code>AGENTS.md</code> 灌流程必須紅；乘客清單只找產品
+            <code>docs/dev/_templates/</code> 必須紅。不重寫第 1–7 站編成,不改鬆
+            <code>--action</code>。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-host-adapter.sh</code></td>
         <td>上面那支的負向牙:只有 <code>SKILL.md</code> 沒 graph／nodes 必須紅;
             推不到根必須紅;寫死 <code>CLAUDE_PLUGIN_ROOT</code> 沒宣告別名必須紅;
             只設 <code>DEVFLOW_ROOT</code> 讀得到 talk N1-start 與第 4／6／7 站真節點必須綠。
+            第二刀:產品沒 <code>skills/</code> 但 <code>DEVFLOW_ROOT</code> 指向方法包
+            必須綠;setup 宣稱成功卻沒掛整棵必須紅;四個 DV 連結目標都是整棵目錄必須綠。
             案例數下限寫死,少於下限 exit 2。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>

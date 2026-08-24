@@ -8,7 +8,7 @@ S2-fields 完成(Covers／Files／Verify 已填,Intent／Boundaries 各一句)�
 ## 讀什麼
 
 已填欄的各 T,以及 `4-spec.md` 的 Verification Profile —— `Risk` 判準同一正本,
-本站不另設第二套分級。並行選配欄位的契約正本是 `_templates/5-tasks.md` 頂註與
+本站不另設第二套分級。並行選配欄位的契約正本是相對 DEVFLOW_ROOT 的 `_templates/5-tasks.md` 頂註與
 `notes/design/parallel-stage6.md`,本檔不重抄。`graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

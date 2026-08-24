@@ -10,7 +10,7 @@
 先讀 `4-spec.md`／`5-tasks.md`／diff／測試。
 **此刻禁讀** `6-implementation-notes.md` 的 Self-Review。
 owner 自審必須有獨立「限制聲明」節;沒有這一節的 owner 自審視同未審。
-乘客清單正本是 `_templates/7-review.md` 頂註 0,本檔不重抄步原文。
+乘客清單正本是相對 DEVFLOW_ROOT 的 `_templates/7-review.md` 頂註 0,本檔不重抄步原文。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

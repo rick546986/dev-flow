@@ -8,7 +8,7 @@ Out of Scope 還沒定就填 Negative Constraints = 兩邊會對不上,退回 S3
 ## 讀什麼
 
 已落檔的 R／S 與四小節。lane 規則、Risk 判準、Failure Model 必填條件、
-Design Boundary Contract 的十一條觸發條件,正本都在 `_templates/4-spec.md`
+Design Boundary Contract 的十一條觸發條件,正本都在相對 DEVFLOW_ROOT 的 `_templates/4-spec.md`
 該節頂註;語意詳解在 `notes/design/design-boundary-contract.md`。
 本檔不抄乘客步原文。`graph.yaml` 是下一跳正本。
 

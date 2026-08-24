@@ -8,7 +8,7 @@
 ## 讀什麼
 
 已確認的決策點、步 1–2 的方案與壓測結果。
-定稿清單正本是 `_templates/2-decision.md` 頂註步 3,本檔不抄原文。
+定稿清單正本是相對 DEVFLOW_ROOT 的 `_templates/2-decision.md` 頂註步 3,本檔不抄原文。
 
 ## 寫哪裡
 

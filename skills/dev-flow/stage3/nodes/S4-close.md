@@ -7,7 +7,7 @@ S3 已回寫。游標在 S4。不要另存第二份 `3-prototype*.md`。
 ## 讀什麼
 
 `3-prototype.md` 與 2-decision 回寫痕跡。步 4 清單正本是
-`_templates/3-prototype.md` 頂註,本檔不抄乘客步原文。
+相對 DEVFLOW_ROOT 的 `_templates/3-prototype.md` 頂註,本檔不抄乘客步原文。
 
 ## 寫哪裡
 

@@ -8,7 +8,7 @@ S 還沒展開完就收邊界 = 收一個不完整的範圍,退回 S2。
 ## 讀什麼
 
 已落檔的 R／S、`2-decision.md` 的 Scope 與 Success Criteria。
-四小節的內容要求正本是 `_templates/4-spec.md` 頂註第 3a 步與各節頂註
+四小節的內容要求正本是相對 DEVFLOW_ROOT 的 `_templates/4-spec.md` 頂註第 3a 步與各節頂註
 (Diff Budget 的估法、Dependencies 的 justification),本檔不抄乘客步原文。
 `graph.yaml` 是下一跳正本。
 

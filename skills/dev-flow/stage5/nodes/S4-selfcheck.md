@@ -7,7 +7,7 @@ N4-write-md 完成:`docs/dev/<slug>/5-tasks.md` 已落檔,而且只有一份。
 
 ## 讀什麼
 
-已落檔的 `5-tasks.md`。四必填欄與續行禁令的條文正本是 `_templates/5-tasks.md`
+已落檔的 `5-tasks.md`。四必填欄與續行禁令的條文正本是相對 DEVFLOW_ROOT 的 `_templates/5-tasks.md`
 頂註,本檔不重抄。`graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

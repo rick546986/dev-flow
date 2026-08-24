@@ -9,7 +9,7 @@ description: dev-flow Stage 6 內部執行引擎 — 多模型派工(haiku 寫�
 
 你是**派工者**(主對話,opus/fable5 層):讀 spec、派 T、收驗、**commit 與記帳** ——
 不下場寫碼。逐 T acceptance seam 的唯一核心規則在 README §5,執行順序與證據
-格式以 `_templates/6-implementation-notes.md` 頂註清單 / T Review Log 為準;
+格式以相對 DEVFLOW_ROOT 的 `_templates/6-implementation-notes.md` 頂註清單 / T Review Log 為準;
 本檔只定義 `dev-run` 的派工、模型升階與職責適配,不另立第二套 review policy。
 
 ## 前置(缺一不啟;順序不可調)

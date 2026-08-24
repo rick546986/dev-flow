@@ -9,7 +9,7 @@
 
 只讀 `4-spec.md` 的 R/S 全集(含 Verification Profile 與 Design Boundary
 Contract 狀態)。對話不是契約,不讀 1/2/3。
-乘客清單正本是 `_templates/5-tasks.md` 頂註 0–6,本檔不重抄步原文。
+乘客清單正本是相對 DEVFLOW_ROOT 的 `_templates/5-tasks.md` 頂註 0–6,本檔不重抄步原文。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

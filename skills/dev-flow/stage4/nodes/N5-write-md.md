@@ -8,7 +8,7 @@ S1／S2／S3a／S3b／S3c／S4 都完成(R 清單經確認、S 逐 R 展開且�
 
 ## 讀什麼
 
-S1–S4 已落檔的內容。執行清單正本仍是 `_templates/4-spec.md` 頂註 1–4;
+S1–S4 已落檔的內容。執行清單正本仍是相對 DEVFLOW_ROOT 的 `_templates/4-spec.md` 頂註 1–4;
 本檔不抄乘客步原文。`graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

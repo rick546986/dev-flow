@@ -7,7 +7,7 @@ N1 任一命中,且步 0–2 完成(Question／Method／Result 已能落檔)。
 
 ## 讀什麼
 
-步 0–2 已能落檔的內容。執行清單正本仍是 `_templates/3-prototype.md` 頂註 0–2;
+步 0–2 已能落檔的內容。執行清單正本仍是相對 DEVFLOW_ROOT 的 `_templates/3-prototype.md` 頂註 0–2;
 本檔不抄乘客步原文。`graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

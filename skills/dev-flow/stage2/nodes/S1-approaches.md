@@ -8,7 +8,7 @@ N1 已完成。確認紀錄節有一行。游標在 S1。
 ## 讀什麼
 
 N1 確認過的決策點。`1-discussion.md` 事實與 `[Assumption]`。
-步 1 清單正本是 `_templates/2-decision.md` 頂註,本檔不抄乘客步原文。
+步 1 清單正本是相對 DEVFLOW_ROOT 的 `_templates/2-decision.md` 頂註,本檔不抄乘客步原文。
 
 ## 寫哪裡
 

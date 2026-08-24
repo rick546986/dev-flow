@@ -7,7 +7,7 @@ S1 已完成。游標在 S2。`1-discussion.md` 仍是 approved。
 
 ## 讀什麼
 
-S1 的方案表。步 2 清單正本是 `_templates/2-decision.md` 頂註,本檔不抄乘客步原文。
+S1 的方案表。步 2 清單正本是相對 DEVFLOW_ROOT 的 `_templates/2-decision.md` 頂註,本檔不抄乘客步原文。
 
 ## 寫哪裡
 

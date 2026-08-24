@@ -7,7 +7,7 @@ S4 已完成。游標在 S5。同一份 `2-decision.md` 仍在。
 
 ## 讀什麼
 
-已落檔的 `2-decision.md`。步 5 清單正本是 `_templates/2-decision.md` 頂註,
+已落檔的 `2-decision.md`。步 5 清單正本是相對 DEVFLOW_ROOT 的 `_templates/2-decision.md` 頂註,
 本檔不抄乘客步原文。三條件中才抄 `docs/adr/`。
 
 ## 寫哪裡

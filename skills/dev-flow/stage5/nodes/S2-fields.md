@@ -9,7 +9,7 @@ S1-slice 完成(T 已切、順序是 tracer bullet)。游標在 S1-slice。
 
 `4-spec.md` 的 R/S id(追溯鏈頂端)、Design Boundary Contract 狀態與該 T 相關的
 Operational Context。四必填欄、續行禁令、`Verify` 三律的條文正本是
-`_templates/5-tasks.md` 頂註,本檔不重抄。`graph.yaml` 是下一跳正本。
+相對 DEVFLOW_ROOT 的 `_templates/5-tasks.md` 頂註,本檔不重抄。`graph.yaml` 是下一跳正本。
 
 ## 寫哪裡
 

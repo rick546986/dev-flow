@@ -7,7 +7,7 @@ N3 已覆寫同一份 `3-prototype.md`。游標在 S3。
 
 ## 讀什麼
 
-已落檔的 `3-prototype.md`。步 3 清單正本是 `_templates/3-prototype.md` 頂註,
+已落檔的 `3-prototype.md`。步 3 清單正本是相對 DEVFLOW_ROOT 的 `_templates/3-prototype.md` 頂註,
 本檔不抄乘客步原文。
 
 ## 寫哪裡

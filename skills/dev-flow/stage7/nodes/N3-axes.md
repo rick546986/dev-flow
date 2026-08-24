@@ -8,7 +8,7 @@ Final Fresh 綁 SHA。不要寫 `7-review.md`(本節點不落檔;寫檔在 S2-* 
 ## 讀什麼
 
 已落檔的驗證輸出與 4-spec。禁讀 6-notes Self-Review。
-雙軸條文正本是 `_templates/7-review.md` 頂註 3,本檔不重抄。
+雙軸條文正本是相對 DEVFLOW_ROOT 的 `_templates/7-review.md` 頂註 3,本檔不重抄。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

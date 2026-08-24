@@ -9,7 +9,7 @@ S2-run 完成:本次 S 測試與既有全套的輸出已在同一份 `7-review.m
 
 只讀 `4-spec.md` 每 S 的觀測方式,以及已落檔的測試輸出。
 禁讀 `6-implementation-notes.md` 的 Self-Review;不採信 6-notes 貼的文字。
-步 2b 正本是 `_templates/7-review.md` 頂註,本檔不抄乘客步原文。
+步 2b 正本是相對 DEVFLOW_ROOT 的 `_templates/7-review.md` 頂註,本檔不抄乘客步原文。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

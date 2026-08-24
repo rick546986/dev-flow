@@ -7,7 +7,7 @@ S0 已完成。游標在 S1。code 進 throwaway branch,禁進 main。
 
 ## 讀什麼
 
-S0 已定義的疑問。步 1 清單正本是 `_templates/3-prototype.md` 頂註,
+S0 已定義的疑問。步 1 清單正本是相對 DEVFLOW_ROOT 的 `_templates/3-prototype.md` 頂註,
 本檔不抄乘客步原文。純資料實驗 → scratchpad。
 
 ## 寫哪裡

@@ -8,7 +8,7 @@ N1-handoff 完成(G1 過、第 3 站若必要已收尾、雙源清點已回報)�
 ## 讀什麼
 
 `1-discussion.md` 的驗收雛形逐條、living spec 受本次變更影響的條文原文。
-步 1 的完成條件正本是 `_templates/4-spec.md` 頂註第 1 步,本檔不抄乘客步原文。
+步 1 的完成條件正本是相對 DEVFLOW_ROOT 的 `_templates/4-spec.md` 頂註第 1 步,本檔不抄乘客步原文。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

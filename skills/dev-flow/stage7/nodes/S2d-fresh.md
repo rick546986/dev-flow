@@ -10,7 +10,7 @@ S2c-integration 完成:整合回歸已落在 Final Fresh 之前。游標在 S2c-
 
 `4-spec.md` 的 Verification Profile,以及已落檔的 `7-review.md`。
 禁讀 `6-implementation-notes.md` 的 Self-Review。
-步 2d 正本是 `_templates/7-review.md` 頂註,本檔不抄乘客步原文、不重寫 Gauntlet。
+步 2d 正本是相對 DEVFLOW_ROOT 的 `_templates/7-review.md` 頂註,本檔不抄乘客步原文、不重寫 Gauntlet。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

@@ -9,6 +9,7 @@ description: 開發流程 SOP 的唯一對外入口(7 階段路由器,SDD 為主
 
 方法論:`${DEVFLOW_ROOT}/`(`README.md` = 完整規則;`_templates/` = 模板;
 `example/contract-expiry-reminder/` = 填好的完整範例)。細節疑義**先讀方法論 README**,以它為準。
+乘客清單正本一律相對 DEVFLOW_ROOT 的 `_templates/<檔>`。採用專案的 `docs/dev/_templates/` 是散發副本，不是正本。
 
 ## 0. 定位與自動路由
 讀專案 `docs/dev/STATUS.md` + feature 資料夾各檔 frontmatter → 判斷目前 stage 與 lane。

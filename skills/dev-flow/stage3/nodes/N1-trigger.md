@@ -8,7 +8,7 @@
 ## 讀什麼
 
 只讀 `1-discussion.md` 的 Real-world Context(對話不是契約)。
-九條正本在 `_templates/3-prototype.md`「Stage 3 觸發判定」,本檔不重抄條文。
+九條正本在相對 DEVFLOW_ROOT 的 `_templates/3-prototype.md`「Stage 3 觸發判定」,本檔不重抄條文。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

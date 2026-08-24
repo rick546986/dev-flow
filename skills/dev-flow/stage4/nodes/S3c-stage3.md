@@ -9,7 +9,7 @@ S3b-profile 完成:Verification Profile 與 Design Boundary Contract 有結論�
 
 `3-prototype.md` 的 Demo Script 場景與 verdict、Method 走查條列、
 Operational Context 的 `Recovery:` 欄位;以及已落檔的 R／S 與 Out of Scope。
-對帳判準正本是 `_templates/4-spec.md` 頂註第 3c 步,本檔不抄乘客步原文。
+對帳判準正本是相對 DEVFLOW_ROOT 的 `_templates/4-spec.md` 頂註第 3c 步,本檔不抄乘客步原文。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

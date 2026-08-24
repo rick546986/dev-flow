@@ -7,6 +7,26 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 
 方法包根目錄叫 `DEVFLOW_ROOT`（舊名 `CLAUDE_PLUGIN_ROOT` 當別名，不准刪）。找不到就停，不准猜。
 
+## 主機掛整棵(P0)
+
+**開場先解析 DEVFLOW_ROOT。DEVFLOW_ROOT 解析失敗 → setup 大聲停，不准默默略過，不准只散發 docs/dev/ 就當成功。**
+
+掛的技能至少：`dev-setup` / `dev-talk` / `dev-flow` / `dev-run`。
+`dev-flow` 的薄殼必須讓 Agent 看得到 `skills/dev-flow/stage2`–`stage7`（整棵 stage 目錄），不能只指到 `SKILL.md`。
+不要把節點 MD 複製進採用專案。正本仍在方法包。
+
+依主機掛整棵（連結，不是單檔）：
+
+- Cursor：`mkdir -p .cursor/skills` 後 `ln -s "${DEVFLOW_ROOT}/skills/<名>" .cursor/skills/<名>`（整棵目錄）。
+- Codex：`mkdir -p .agents/skills` 後同樣指方法包 `.agents/skills/<名>`。若已有 `.codex/skills/`，兩處都指同一包。
+- Grok：技能庫掛整棵，不是單檔。不要假裝能從產品 repo 自動灌進 Grok 技能庫；把 `DEVFLOW_ROOT` 與本節發現清單回報給人，由人在 Grok 技能庫掛整棵。
+
+`AGENTS.md`：沒有就寫入；已有就只補這一行，不准灌流程：
+「這專案用 DevFlow。技能在方法包 skills/。開工讀該技能 SKILL.md，下一跳看 graph.yaml。不要把流程規則貼進本檔。」
+
+乘客模板：節點找的正本是相對 DEVFLOW_ROOT 的 `_templates/<檔>`。
+採用專案的 `docs/dev/_templates/` 仍是散發副本，不是節點要找的正本。
+
 架構:skills 與 hooks 隨 plugin 全域生效(單一正本,**專案不需要裝任何 hook**);
 本 skill 負責把「文檔面」裝進專案並保持可升級。
 散發方式:`dev-flow` 單一 plugin,內含 `dev-talk` skill 與方法論(repo 根目錄即方法論母版)
@@ -41,6 +61,9 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 > (或設 `DEVFLOW_PYTHON`),否則守衛會**靜默跳過**:不是壞掉,但等於沒有保護,
 > 而「守衛沉睡」與「守衛在擋」從外面看長得一樣(G1 同型風險)。
 
+0. **解析 DEVFLOW_ROOT + 掛整棵(P0，先於散發)**：先完成本檔「主機掛整棵」節。
+   `DEVFLOW_ROOT` 解析失敗 → setup 大聲停，不准進入步 1。
+   不准只散發 docs/dev/ 就當成功。不要把節點 MD 複製進採用專案。
 1. `docs/dev/` 建立:cp 方法論 `${DEVFLOW_ROOT}/README.md` 後**剝除 master-only 區塊**
    再落地為 `docs/dev/README.md`(不得直接 cp 未剝除版 —— 母版 README 內
    `<!-- devflow:master-only:start -->` / `<!-- devflow:master-only:end -->` 之間是純母版
@@ -373,6 +396,14 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     不是故障:依賴檔在本機改過,查詢時會要求重新確認)。
     另外跑 `dev-memory.py eval` 可用內建的小型確定性 dataset 驗檢索沒退步
     (非必跑;它不需要大型 benchmark,exit 1 = 有指標掉到門檻以下)。
+15. **主機掛整棵**(在專案內跑時):`DEVFLOW_ROOT` 仍解析得到。
+    `AGENTS.md` 只有一行指標 +「不要把流程規則貼進本檔」。
+    `.cursor/skills/<名>` 與 `.agents/skills/<名>` 四個 DV
+    (`dev-setup` / `dev-talk` / `dev-flow` / `dev-run`)都是整棵目錄
+    （setup／run 可只有 SKILL；`dev-flow` 必須看得到 stage2–stage7）；
+    若有 `.codex/skills/` 也指同一包。
+    只散發 docs/dev/、技能連結只有 SKILL.md → broken，不是成功。
+    Grok 不在產品 repo 自動灌；技能庫掛整棵由人做。
 
 ## fix / uninstall
 

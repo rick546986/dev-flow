@@ -12,7 +12,7 @@
 
 只讀 `1-discussion.md`(驗收雛形／Open Questions／Real-world Context)與
 `2-decision.md`(Decision／Scope／Success Criteria)。對話不是契約。
-乘客清單正本是 `_templates/4-spec.md` 頂註 0–6,本檔不重抄步原文。
+乘客清單正本是相對 DEVFLOW_ROOT 的 `_templates/4-spec.md` 頂註 0–6,本檔不重抄步原文。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

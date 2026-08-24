@@ -10,7 +10,7 @@
 
 只讀 `4-spec.md`(R/S 與 Verification Profile)與 `5-tasks.md`(每 T 的
 Verify／Covers／Files／Blocked-by)。禁讀 1/2/3(圍欄②)。
-乘客清單正本是 `_templates/6-implementation-notes.md` 頂註步 1,本檔不重抄。
+乘客清單正本是相對 DEVFLOW_ROOT 的 `_templates/6-implementation-notes.md` 頂註步 1,本檔不重抄。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

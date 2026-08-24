@@ -9,7 +9,7 @@
 ## 讀什麼
 
 只讀 `4-spec.md` 與 `5-tasks.md`。禁讀 1/2/3(圍欄②;本節點不改守衛,只遵守)。
-乘客清單正本是 `_templates/6-implementation-notes.md` 頂註 0a／0b／0c,
+乘客清單正本是相對 DEVFLOW_ROOT 的 `_templates/6-implementation-notes.md` 頂註 0a／0b／0c,
 本檔不重抄步原文。`graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

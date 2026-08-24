@@ -8,7 +8,7 @@ N1 任一命中。游標在 S0。不要寫 `3-prototype.md`(寫檔在 N3)。
 ## 讀什麼
 
 `2-decision.md` 的 Risk / open point。步 0 清單正本是
-`_templates/3-prototype.md` 頂註,本檔不抄乘客步原文。
+相對 DEVFLOW_ROOT 的 `_templates/3-prototype.md` 頂註,本檔不抄乘客步原文。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

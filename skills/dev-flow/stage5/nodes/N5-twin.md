@@ -9,7 +9,7 @@ S4-selfcheck 完成:`parse_5_tasks` 的 `errors` 為空 —— 逐 T 四必填�
 ## 讀什麼
 
 已落檔的 `5-tasks.md`。執行板四要求(動線頂區五格／任務卡逐條可勾／Boundaries
-摺疊／依賴 DAG)正本在 `_templates/5-tasks.md` 頂註,本檔不重抄條文。
+摺疊／依賴 DAG)正本在相對 DEVFLOW_ROOT 的 `_templates/5-tasks.md` 頂註,本檔不重抄條文。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

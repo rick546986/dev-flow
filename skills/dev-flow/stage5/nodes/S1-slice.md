@@ -8,7 +8,7 @@ N1-handoff 完成(G2 過、4-spec 的 R/S 全集已清點回報)。游標在 N1-
 ## 讀什麼
 
 `4-spec.md` 的 R/S 原文與 Verification Profile。
-步 1 的完成條件正本是 `_templates/5-tasks.md` 頂註第 1 步,本檔不抄乘客步原文。
+步 1 的完成條件正本是相對 DEVFLOW_ROOT 的 `_templates/5-tasks.md` 頂註第 1 步,本檔不抄乘客步原文。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

@@ -1,5 +1,7 @@
 #!/bin/bash
-# test-host-adapter.sh — check-host-adapter.sh 的負向牙(第一刀)
+# test-host-adapter.sh — check-host-adapter.sh 的負向牙
+# 第一刀:DEVFLOW_ROOT + 薄殼 + 節點可讀
+# 第二刀:採用專案掛整棵(setup 宣稱 / AGENTS.md / 技能連結 / 乘客清單)
 #
 # 對照組是一份最小合法方法包(DEVFLOW_ROOT 形狀齊、talk/flow 掛整棵)。
 # 每個案例把對照組改壞一次,確認檢查真的紅。
@@ -24,6 +26,7 @@ FIX="$SELF_DIR/fixtures/host-adapter"
 [ -d "$FIX/good" ] || { echo "FATAL: 找不到 $FIX/good" >&2; exit 2; }
 [ -d "$FIX/skill-only" ] || { echo "FATAL: 找不到 $FIX/skill-only" >&2; exit 2; }
 [ -d "$FIX/no-root" ] || { echo "FATAL: 找不到 $FIX/no-root" >&2; exit 2; }
+[ -d "$FIX/setup-claimed" ] || { echo "FATAL: 找不到 $FIX/setup-claimed" >&2; exit 2; }
 
 python3 - "$ROOT" "$CHECK" "$FIX" <<'PY'
 import os
@@ -38,7 +41,7 @@ sys.stderr.reconfigure(line_buffering=True)
 root, check, fix = sys.argv[1], sys.argv[2], sys.argv[3]
 passed = 0
 failed = 0
-MIN_CASES = 16
+MIN_CASES = 24
 
 
 def run_check(tree, extra_env=None, drop=None):
@@ -168,10 +171,136 @@ with tempfile.TemporaryDirectory(prefix="host-adapter-test-") as tmpbase:
         extra_env={"DEVFLOW_ROOT": good},
     )
     expect(
+        "G-adopter-s4 產品沒 skills/、DEVFLOW_ROOT 指向方法包 → 讀得到第 4 站 N1-handoff.md",
+        adopter,
+        0,
+        "stage4/nodes/N1-handoff.md",
+        extra_env={"DEVFLOW_ROOT": good},
+    )
+    expect(
         "R-adopter-silent 沒有 DEVFLOW_ROOT、產品也沒方法包必須大聲失敗",
         adopter,
         1,
         "方法包沒掛上",
+    )
+
+    claimed = os.path.join(tmpbase, "setup-claimed")
+    shutil.copytree(os.path.join(fix, "setup-claimed"), claimed)
+    expect(
+        "R-setup-claimed setup 宣稱成功但 DEVFLOW_ROOT 推不到、產品也沒方法包必須紅",
+        claimed,
+        1,
+        "setup 宣稱成功",
+    )
+
+    case = os.path.join(tmpbase, "cursor-thin")
+    shutil.copytree(os.path.join(fix, "no-root"), case)
+    thin = os.path.join(case, ".cursor", "skills", "dev-talk")
+    os.makedirs(thin)
+    open(os.path.join(thin, "SKILL.md"), "w", encoding="utf-8").write("# talk\n")
+    expect(
+        "R-cursor-thin .cursor/skills/dev-talk 只有 SKILL.md、沒有 graph.yaml／nodes 必須紅",
+        case,
+        1,
+        "SKILL.md",
+        extra_env={"DEVFLOW_ROOT": good},
+    )
+
+    case = os.path.join(tmpbase, "agents-thin")
+    shutil.copytree(os.path.join(fix, "no-root"), case)
+    thin = os.path.join(case, ".agents", "skills", "dev-talk")
+    os.makedirs(thin)
+    open(os.path.join(thin, "SKILL.md"), "w", encoding="utf-8").write("# talk\n")
+    expect(
+        "R-agents-thin .agents/skills/dev-talk 只有 SKILL.md、沒有 graph.yaml／nodes 必須紅",
+        case,
+        1,
+        "SKILL.md",
+        extra_env={"DEVFLOW_ROOT": good},
+    )
+
+    case = os.path.join(tmpbase, "agents-dump")
+    seed(case)
+    open(os.path.join(case, "AGENTS.md"), "w", encoding="utf-8").write(
+        "# 流程規則\n\n"
+        "這專案用 DevFlow。技能在方法包 skills/。開工讀該技能 SKILL.md，"
+        "下一跳看 graph.yaml。不要把流程規則貼進本檔。\n\n"
+        "## G1\n盲原則。AskUserQuestion。enabledPlugins。執行清單 0-11。\n"
+        "skill-legacy 團塊。G2 G3。\n"
+    )
+    expect(
+        "R-agents-md-dump AGENTS.md 被灌進流程規則必須紅",
+        case,
+        1,
+        "AGENTS.md",
+    )
+
+    case = os.path.join(tmpbase, "passenger")
+    seed(case)
+    n1 = os.path.join(
+        case, "skills", "dev-flow", "stage4", "nodes", "N1-handoff.md"
+    )
+    open(n1, "w", encoding="utf-8").write(
+        "# N1-handoff\n"
+        "乘客清單正本是 `docs/dev/_templates/4-spec.md` 頂註 0–6。\n"
+    )
+    expect(
+        "R-passenger 節點把乘客清單寫成只找產品 docs/dev/_templates/ 必須紅",
+        case,
+        1,
+        "docs/dev/_templates",
+    )
+
+    case = os.path.join(tmpbase, "setup-skip")
+    seed(case)
+    setup = os.path.join(case, "skills", "dev-setup", "SKILL.md")
+    open(setup, "a", encoding="utf-8").write(
+        "\n## install\n只散發 docs/dev/ 就算成功。不解析 DEVFLOW_ROOT。\n"
+    )
+    expect(
+        "R-setup-skill-skip setup ## install 不寫解析失敗要大聲停必須紅",
+        case,
+        1,
+        "大聲停",
+    )
+
+    case = os.path.join(tmpbase, "setup-done-no-links")
+    shutil.copytree(os.path.join(fix, "setup-claimed"), case)
+    expect(
+        "R-setup-done-no-links setup 宣稱成功（有 DEVFLOW_ROOT）但沒掛整棵必須紅",
+        case,
+        1,
+        "不是整棵目錄",
+        extra_env={"DEVFLOW_ROOT": good},
+    )
+
+    linked = os.path.join(tmpbase, "adopter-linked")
+    shutil.copytree(os.path.join(fix, "setup-claimed"), linked)
+    open(os.path.join(linked, "AGENTS.md"), "w", encoding="utf-8").write(
+        "這專案用 DevFlow。技能在方法包 skills/。開工讀該技能 SKILL.md，"
+        "下一跳看 graph.yaml。不要把流程規則貼進本檔。\n"
+    )
+    for host in (".cursor/skills", ".agents/skills"):
+        base = os.path.join(linked, host)
+        os.makedirs(base, exist_ok=True)
+        for name in ("dev-setup", "dev-talk", "dev-flow", "dev-run"):
+            os.symlink(
+                os.path.join(good, "skills", name),
+                os.path.join(base, name),
+            )
+    expect(
+        "G-dv-links 四個 DV 的連結目標都是整棵目錄必須綠",
+        linked,
+        0,
+        "link-whole: .cursor/skills/dev-flow",
+        extra_env={"DEVFLOW_ROOT": good},
+    )
+    expect(
+        "G-agents-pointer 採用專案 AGENTS.md 一行指標必須綠",
+        linked,
+        0,
+        "agents-pointer: ok",
+        extra_env={"DEVFLOW_ROOT": good},
     )
 
     case = os.path.join(tmpbase, "missing-file")
