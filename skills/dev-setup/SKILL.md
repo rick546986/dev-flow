@@ -27,6 +27,26 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 乘客模板：節點找的正本是相對 DEVFLOW_ROOT 的 `_templates/<檔>`。
 採用專案的 `docs/dev/_templates/` 仍是散發副本，不是節點要找的正本。
 
+## 主機探測(P1)
+
+**dev-setup 先探測主機，再選檢查。** 不要一進場就把 Claude 專用核可套到所有主機。
+
+| 主機 | 怎麼認 | 健檢走哪條 |
+|---|---|---|
+| Claude | 有 `.claude/`、或人明說在 Claude Code | 舊的 AskUserQuestion／enabledPlugins／hooks.json 仍可走 |
+| Cursor | 有 `.cursor/`、或人明說 | 不要把這三個當唯一核可。改查技能目錄在不在、是不是整棵、`DEVFLOW_ROOT` 對不對 |
+| Codex | 有 `.agents/` 或 `.codex/` | 同上 |
+| Grok | 人明說／技能庫掛整棵 | 同上。不要假裝能從產品 repo 自動灌 |
+
+Cursor／Grok／Codex 三邊都沒有 Claude PreToolUse。**誰開工誰先跑**該站
+`scripts/check-devtalk-graph.sh --action` 或 `scripts/check-devstageN-graph.sh --action`。
+**不准為了別的主機改鬆 `--action`。**
+
+`.claude/rules/` 不會被 Cursor／Codex 自動吃。架構不變量用 setup 依主機寫對應指標：
+- Cursor：寫 `.cursor/rules/` 一行指標（指向架構不變量，不是流程規則）。
+- Codex：仍只准 AGENTS.md 一行。流程規則仍不准進 AGENTS.md。
+- Claude：維持 `.claude/rules/`。
+
 架構:skills 與 hooks 隨 plugin 全域生效(單一正本,**專案不需要裝任何 hook**);
 本 skill 負責把「文檔面」裝進專案並保持可升級。
 散發方式:`dev-flow` 單一 plugin,內含 `dev-talk` skill 與方法論(repo 根目錄即方法論母版)
@@ -61,7 +81,7 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 > (或設 `DEVFLOW_PYTHON`),否則守衛會**靜默跳過**:不是壞掉,但等於沒有保護,
 > 而「守衛沉睡」與「守衛在擋」從外面看長得一樣(G1 同型風險)。
 
-0. **解析 DEVFLOW_ROOT + 掛整棵(P0，先於散發)**：先完成本檔「主機掛整棵」節。
+0. **解析 DEVFLOW_ROOT + 掛整棵(P0，先於散發)**：先完成本檔「主機掛整棵」節，並先探測主機（見「主機探測」）。
    `DEVFLOW_ROOT` 解析失敗 → setup 大聲停，不准進入步 1。
    不准只散發 docs/dev/ 就當成功。不要把節點 MD 複製進採用專案。
 1. `docs/dev/` 建立:cp 方法論 `${DEVFLOW_ROOT}/README.md` 後**剝除 master-only 區塊**
@@ -155,6 +175,9 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
      不得一句「其餘都 OK」帶過 —— 這檔錯一條會長期誤導每個 session,值得逐條看。
      問法:用 AskUserQuestion **按 `##` 分節、每題 ≤4 條 multiSelect**(勾選 = 收錄,
      沒勾 = 砍),節與節之間停;使用者明說「這節全收/全砍」可整節裁決。
+     **僅 Claude 走 AskUserQuestion**。其他主機不要把這三個當唯一核可；
+     Cursor 另寫 `.cursor/rules/` 一行指標指到架構不變量（不要灌流程）；
+     Codex 仍只准 AGENTS.md 一行。
      裁決後拿掉標記;**未經裁決的條目一律保留標記**(有標記 = 不可當事實引用),
      check 第 7 項會計數殘留並提醒回頭補裁。
    - **去重(避免雙正本)**:收割來源若是專案 `CLAUDE.md`,把該段落**改成一行指標**
@@ -268,12 +291,15 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
 ## check(每種分流結尾都跑)
 
 逐項驗證列表回報,異常附建議、不自動修(fresh/stale 流程末尾自動跑;broken 才問要不要 fix):
-1. **三份 JSON** jq 過:`<root>/.claude-plugin/plugin.json`(dev-flow;dev-talk 併入後
+**先探測主機，再選檢查**（見「主機探測」）。Claude：下列 1–3 與 AskUserQuestion 核可仍可走。
+其他主機：不要把這三個當唯一核可；改查技能目錄在不在、是不是整棵、DEVFLOW_ROOT 對不對
+（第 15／16 項）。
+1. **三份 JSON**(僅 Claude；其他主機不要把本項當唯一核可) jq 過:`<root>/.claude-plugin/plugin.json`(dev-flow;dev-talk 併入後
    不再有獨立 plugin.json)、`<root>/.claude-plugin/marketplace.json`(**一份、一 entry**:
    `./`)、**`<root>/hooks/hooks.json`**。hooks.json 壞掉 → 八條掛載全靜默失效,而自測
    照樣全綠 → 必驗。另比對 plugin.json 的 `version` 與 installed_plugins.json 記錄的
    版本一致(不一致 = 有人改了檔沒 bump,或裝的不是最新)。
-2. 兩帳號 settings `enabledPlugins`:`dev-flow@dev-flow` 為 true(dev-talk 已
+2. 兩帳號 settings `enabledPlugins`(僅 Claude；其他主機不要把本項當唯一核可):`dev-flow@dev-flow` 為 true(dev-talk 已
    併入,不再是獨立 enabledPlugins 項;舊值 `@local` 或 `@dev-flow-plugin` =
    尚未遷到現行 marketplace 名稱散發,應改;`known_marketplaces.json` 的 `dev-flow`
    須為 github source)。
@@ -404,6 +430,13 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     若有 `.codex/skills/` 也指同一包。
     只散發 docs/dev/、技能連結只有 SKILL.md → broken，不是成功。
     Grok 不在產品 repo 自動灌；技能庫掛整棵由人做。
+16. **主機探測與 --action**(所有主機):先探測主機再選 1–3。
+    非 Claude 不要把 AskUserQuestion／enabledPlugins／hooks.json 當唯一進條件。
+    三邊都沒有 Claude PreToolUse。誰開工誰先跑該站
+    `scripts/check-devtalk-graph.sh --action` 或 `scripts/check-devstageN-graph.sh --action`。
+    不准為了別的主機改鬆 `--action`。
+    Cursor：`.cursor/rules/` 寫架構不變量指標（不是流程）。
+    Codex：仍只准 AGENTS.md 一行。
 
 ## fix / uninstall
 

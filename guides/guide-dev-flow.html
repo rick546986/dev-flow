@@ -1949,6 +1949,17 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   <code>skills/dev-run/SKILL.md</code>；reviewer → 讀
   <code>agents/devflow-reviewer.md</code>。舊字串當 Claude 別名，不要當唯一入口。
   「讀到」= 走到那一跳打得開，不是開場灌完全部。</p>
+  <p>dev-setup 先探測主機，再選檢查。Claude：AskUserQuestion／enabledPlugins／
+  hooks.json 仍可走。其他主機：不要把這三個當唯一核可；改查技能目錄在不在、
+  是不是整棵、<code>DEVFLOW_ROOT</code> 對不對。</p>
+  <p>Cursor／Grok／Codex 三邊都沒有 Claude PreToolUse。
+  <strong>誰開工誰先跑</strong>該站
+  <code>check-devtalk-graph.sh --action</code> 或
+  <code>check-devstageN-graph.sh --action</code>。
+  不准為了別的主機改鬆 <code>--action</code>。</p>
+  <p><code>.claude/rules/</code> 不會被 Cursor／Codex 自動吃。架構不變量由
+  setup 依主機寫對應指標：Cursor 寫 <code>.cursor/rules/</code> 一行指標；
+  Codex 仍只准 AGENTS.md 一行。流程規則仍不准進 AGENTS.md。</p>
 
   <h2 id="filemap">附錄:檔案地圖(每支腳本在做什麼)</h2>
   <p class="lead">這張表由 <code>scripts/check-file-map.sh</code> 雙向盤點守衛顧著:新增一支腳本沒登記進來、
@@ -2401,7 +2412,10 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             第二刀再管採用專案：setup 宣稱成功卻推不到方法包必須紅；
             <code>.cursor/skills</code>／<code>.agents/skills</code> 只有 SKILL.md
             必須紅；<code>AGENTS.md</code> 灌流程必須紅；乘客清單只找產品
-            <code>docs/dev/_templates/</code> 必須紅。不重寫第 1–7 站編成,不改鬆
+            <code>docs/dev/_templates/</code> 必須紅。
+            第三刀：非 Claude 仍把 AskUserQuestion／enabledPlugins 當唯一進條件必須紅；
+            guide 沒有 <code>#host</code> 說明三邊發現 + 誰跑 <code>--action</code> 必須紅；
+            README 灌進刀序必須紅。不重寫第 1–7 站編成,不准為了別的主機改鬆
             <code>--action</code>。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-host-adapter.sh</code></td>
@@ -2410,6 +2424,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             只設 <code>DEVFLOW_ROOT</code> 讀得到 talk N1-start 與第 4／6／7 站真節點必須綠。
             第二刀:產品沒 <code>skills/</code> 但 <code>DEVFLOW_ROOT</code> 指向方法包
             必須綠;setup 宣稱成功卻沒掛整棵必須紅;四個 DV 連結目標都是整棵目錄必須綠。
+            第三刀:Claude fixture 舊檢查仍可走必須綠;Cursor／Codex／Grok 只靠技能目錄
+            + <code>DEVFLOW_ROOT</code> 必須綠;第 2–7 站既有 <code>--action</code>
+            deny 案例必須仍紅。
             案例數下限寫死,少於下限 exit 2。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>

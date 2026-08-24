@@ -1,12 +1,14 @@
 #!/bin/bash
 # check-host-adapter.sh — 第一刀:DEVFLOW_ROOT + 三邊發現 + 節點可讀
 #                       第二刀:採用專案掛整棵(AGENTS.md / 技能連結 / 乘客清單)
+#                       第三刀:主機探測 + 誰跑 --action(不改鬆圍欄)
 #
 # 為什麼需要:方法包要給 Cursor / Grok / Codex 跑,不能只靠 Claude 的
 # CLAUDE_PLUGIN_ROOT。薄殼若只掛 SKILL.md,graph 與 nodes 全部讀不到(P0)。
 # 採用專案沒有方法包時,正本仍在方法包;setup 必須掛整棵連結,不准只散發
-# docs/dev/ 就當成功。本檔把這些變成機械契約。不重寫 1–7 站編成,不碰
-# --action 圍欄。
+# docs/dev/ 就當成功。非 Claude 主機沒有 AskUserQuestion／enabledPlugins／
+# PreToolUse;把這三個當唯一進條件會假紅或卡住(P1)。本檔把這些變成機械
+# 契約。不重寫 1–7 站編成,不准為了別的主機改鬆 --action 圍欄。
 #
 # 根目錄叫 DEVFLOW_ROOT。CLAUDE_PLUGIN_ROOT 當別名,不准刪。找不到就停,不准猜。
 # 檢查腳本無參數時 dirname 推本 repo 根;有參數時只看那棵樹 + 環境變數,
@@ -100,6 +102,31 @@ SETUP_INSTALL_NEEDLES = (
     "散發副本",
     "stage2",
     "stage7",
+)
+HOST_PROBE_NEEDLES = (
+    "先探測主機",
+    "AskUserQuestion",
+    "enabledPlugins",
+    "hooks.json",
+    "不要把這三個當唯一核可",
+    "技能目錄",
+    "整棵",
+    "誰開工誰先跑",
+    "--action",
+    "不准為了別的主機改鬆",
+    ".cursor/rules/",
+    "AGENTS.md 一行",
+)
+README_DUMP_NEEDLES = ("第一刀", "第二刀", "第三刀", "刀序")
+HOST_MARKERS = ("claude", "cursor", "codex", "grok")
+ACTION_SCRIPTS = (
+    "scripts/check-devtalk-graph.sh",
+    "scripts/check-devstage2-graph.sh",
+    "scripts/check-devstage3-graph.sh",
+    "scripts/check-devstage4-graph.sh",
+    "scripts/check-devstage5-graph.sh",
+    "scripts/check-devstage6-graph.sh",
+    "scripts/check-devstage7-graph.sh",
 )
 
 
@@ -273,6 +300,67 @@ def iter_host_mounts(tree):
 def passenger_canon_ok(text):
     if "相對 DEVFLOW_ROOT" in text or "${DEVFLOW_ROOT}/_templates" in text:
         return True
+    return False
+
+
+def detect_host(tree):
+    if not tree:
+        return ""
+    marker = os.path.join(tree, ".devflow-host")
+    if os.path.isfile(marker):
+        val = open(marker, encoding="utf-8").read().strip().lower()
+        if val in HOST_MARKERS:
+            return val
+    if os.path.isdir(os.path.join(tree, ".cursor")):
+        return "cursor"
+    if os.path.isdir(os.path.join(tree, ".agents")) or os.path.isdir(
+        os.path.join(tree, ".codex")
+    ):
+        return "codex"
+    if os.path.isdir(os.path.join(tree, ".grok")):
+        return "grok"
+    if os.path.isdir(os.path.join(tree, ".claude")):
+        return "claude"
+    return ""
+
+
+def other_hosts_still_require_claude_gates(text):
+    """非 Claude 仍把 AskUserQuestion／enabledPlugins 當唯一進條件。"""
+    if "AskUserQuestion" not in text or "enabledPlugins" not in text:
+        return False
+    branched = ("不要把這三個當唯一核可" in text) and ("先探測主機" in text)
+    return not branched
+
+
+def extract_html_section(html, anchor):
+    m = re.search(
+        rf'<h2 id="{re.escape(anchor)}">.*?(?=<h2\b|\Z)',
+        html,
+        re.S,
+    )
+    return m.group(0) if m else ""
+
+
+def cursor_rules_pointer_ok(tree):
+    rules = os.path.join(tree, ".cursor", "rules")
+    if not os.path.isdir(rules):
+        return False
+    try:
+        names = os.listdir(rules)
+    except OSError:
+        return False
+    for name in names:
+        path = os.path.join(rules, name)
+        if not os.path.isfile(path):
+            continue
+        text = open(path, encoding="utf-8").read()
+        dumped = any(n in text for n in AGENTS_DUMP_NEEDLES) and (
+            "不要把流程" not in text
+        )
+        if dumped:
+            return False
+        if "架構不變量" in text or "arch-invariants" in text:
+            return True
     return False
 
 
@@ -464,6 +552,7 @@ def main():
 
     # ── 第二刀:setup SKILL 真寫(有 ## install 才驗,迷你 fixture 不灌全文)
     setup_skill = os.path.join(pack, "skills", "dev-setup", "SKILL.md")
+    setup_text = ""
     if os.path.isfile(setup_skill):
         setup_text = open(setup_skill, encoding="utf-8").read()
         if "## install" in setup_text:
@@ -473,6 +562,21 @@ def main():
                         f"skills/dev-setup/SKILL.md ## install 缺「{needle}」"
                         "（DEVFLOW_ROOT 解析失敗要大聲停,不准只散發 docs/dev/ 就當成功）"
                     )
+        # 第三刀:有 ## 主機探測或完整 ## check 才驗(迷你 fixture 不灌全文)
+        if "## 主機探測" in setup_text or (
+            "## check" in setup_text and "enabledPlugins" in setup_text
+        ):
+            for needle in HOST_PROBE_NEEDLES:
+                if needle not in setup_text:
+                    fail(
+                        f"skills/dev-setup/SKILL.md 主機探測缺「{needle}」"
+                        "（先探測主機再選檢查;非 Claude 不要把 AskUserQuestion／"
+                        "enabledPlugins 當唯一進條件）"
+                    )
+            if other_hosts_still_require_claude_gates(setup_text):
+                fail(
+                    "非 Claude 仍把 AskUserQuestion／enabledPlugins 當唯一進條件"
+                )
 
     # ── 第二刀:節點乘客清單必須相對 DEVFLOW_ROOT,不准只找產品 docs/dev/_templates
     for path in iter_md(pack, os.path.join("skills", "dev-flow")):
@@ -555,12 +659,111 @@ def main():
                         f"setup 宣稱成功，探測到 .codex/skills/ 但 {name} 不是整棵"
                     )
 
+    # ── 第三刀:主機探測 + guide #host + README 一行 + 不改鬆 --action
+    host = detect_host(tree) if tree else ""
+    if host:
+        print(f"host={host}")
+
+    if setup_text and other_hosts_still_require_claude_gates(setup_text):
+        if host in ("cursor", "codex", "grok"):
+            fail(
+                "非 Claude fixture 仍把 AskUserQuestion／enabledPlugins 當唯一進條件"
+            )
+
+    if host == "claude":
+        if setup_text and (
+            "AskUserQuestion" in setup_text
+            and "enabledPlugins" in setup_text
+            and "hooks.json" in setup_text
+        ):
+            print("old-checks: ok")
+        elif setup_text and "## check" in setup_text:
+            fail("Claude fixture 舊檢查(AskUserQuestion／enabledPlugins／hooks.json)走不了")
+        else:
+            print("old-checks: ok")
+
+    if host in ("cursor", "codex", "grok"):
+        print("setup-health: skill-dirs+DEVFLOW_ROOT")
+        if is_adopter and looks_like_setup_done(tree) and host == "cursor":
+            if not cursor_rules_pointer_ok(tree):
+                fail(
+                    "Cursor setup 宣稱成功，但沒有 .cursor/rules/ 架構不變量指標"
+                    "（或指標被灌進流程規則）"
+                )
+
+    guide_path = os.path.join(pack, "guides", "guide-dev-flow.html")
+    if os.path.isfile(guide_path):
+        guide_text = open(guide_path, encoding="utf-8").read()
+        host_sec = extract_html_section(guide_text, "host")
+        if not host_sec:
+            fail("guide 沒有 #host（或同等錨點）說明三邊發現 + 誰跑 --action")
+        else:
+            missing = []
+            for needle in (
+                "Cursor",
+                "Grok",
+                "Codex",
+                "--action",
+                "誰開工",
+                "PreToolUse",
+            ):
+                if needle not in host_sec:
+                    missing.append(needle)
+            if missing:
+                fail(
+                    "guide #host 沒說明三邊發現 + 誰跑 --action:"
+                    + "、".join(missing)
+                )
+            else:
+                print("guide-host: ok")
+
+    readme_path = os.path.join(pack, "README.md")
+    if os.path.isfile(readme_path):
+        readme = open(readme_path, encoding="utf-8").read()
+        looks_index = (
+            "guide-dev-flow" in readme
+            or "#host" in readme
+            or ("Cursor" in readme and "Codex" in readme)
+        )
+        if looks_index:
+            if "#host" not in readme:
+                fail("README 沒有一行入口指到 guide #host")
+            dumped = [n for n in README_DUMP_NEEDLES if n in readme]
+            if dumped:
+                fail("README 灌進流程／刀序（只准一行入口）:" + "、".join(dumped))
+            if ".cursor/skills" in readme and ".agents/skills" in readme:
+                fail("README 灌進發現清單（只准一行入口）")
+            if "AskUserQuestion" in readme:
+                fail("README 灌進流程（AskUserQuestion 不該出現在 README）")
+            print("readme-host-entry: ok")
+
+    # 對照組:第 2–7 站（+ talk）既有 --action 入口還在。不准改鬆圍欄。
+    # 實際 deny 案例仍紅由 test-host-adapter.sh 跑既有 fixture。
+    action_scan_root = pack if os.path.isdir(os.path.join(pack, "scripts")) else ""
+    if action_scan_root:
+        loosened = []
+        for rel in ACTION_SCRIPTS:
+            path = os.path.join(action_scan_root, rel)
+            if not os.path.isfile(path):
+                loosened.append(f"{rel} 不見了")
+                continue
+            text = open(path, encoding="utf-8").read()
+            if '[ "${1:-}" = "--action" ]' not in text:
+                loosened.append(f"{rel} 不再接 --action")
+        if loosened:
+            fail("有人改鬆既有 --action 圍欄:" + "; ".join(loosened))
+        else:
+            print("action-fence: intact")
+
     if fails:
         print(f"FAIL: host-adapter {len(fails)} 項", file=sys.stderr)
         for item in fails:
             print(f"  - {item}", file=sys.stderr)
         sys.exit(1)
-    print("PASS: host-adapter DEVFLOW_ROOT / 節點可讀 / 別名 / 採用專案掛整棵")
+    print(
+        "PASS: host-adapter DEVFLOW_ROOT / 節點可讀 / 別名 / 採用專案掛整棵"
+        " / 主機探測 / --action"
+    )
     sys.exit(0)
 
 

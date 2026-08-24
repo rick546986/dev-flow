@@ -2,6 +2,7 @@
 # test-host-adapter.sh — check-host-adapter.sh 的負向牙
 # 第一刀:DEVFLOW_ROOT + 薄殼 + 節點可讀
 # 第二刀:採用專案掛整棵(setup 宣稱 / AGENTS.md / 技能連結 / 乘客清單)
+# 第三刀:主機探測 + 誰跑 --action(非 Claude 不當唯一進條件;既有 deny 仍紅)
 #
 # 對照組是一份最小合法方法包(DEVFLOW_ROOT 形狀齊、talk/flow 掛整棵)。
 # 每個案例把對照組改壞一次,確認檢查真的紅。
@@ -30,6 +31,7 @@ FIX="$SELF_DIR/fixtures/host-adapter"
 
 python3 - "$ROOT" "$CHECK" "$FIX" <<'PY'
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -41,7 +43,7 @@ sys.stderr.reconfigure(line_buffering=True)
 root, check, fix = sys.argv[1], sys.argv[2], sys.argv[3]
 passed = 0
 failed = 0
-MIN_CASES = 24
+MIN_CASES = 36
 
 
 def run_check(tree, extra_env=None, drop=None):
@@ -86,6 +88,78 @@ def patch(path, old, new):
         print(f"FATAL: 治具找不到待改字串 {old!r} in {path}", file=sys.stderr)
         sys.exit(2)
     open(path, "w", encoding="utf-8").write(text.replace(old, new, 1))
+
+
+def write_host(tree, name):
+    open(os.path.join(tree, ".devflow-host"), "w", encoding="utf-8").write(
+        name + "\n"
+    )
+
+
+def link_dv(tree, pack, hosts):
+    for host in hosts:
+        base = os.path.join(tree, host)
+        os.makedirs(base, exist_ok=True)
+        for name in ("dev-setup", "dev-talk", "dev-flow", "dev-run"):
+            dest = os.path.join(base, name)
+            if os.path.lexists(dest):
+                continue
+            os.symlink(os.path.join(pack, "skills", name), dest)
+
+
+def write_cursor_rules(tree):
+    rules = os.path.join(tree, ".cursor", "rules")
+    os.makedirs(rules, exist_ok=True)
+    open(os.path.join(rules, "devflow-arch.mdc"), "w", encoding="utf-8").write(
+        "架構不變量見方法包 `_templates/arch-invariants.md`。"
+        "不要把流程規則貼進本檔。\n"
+    )
+
+
+def write_agents_pointer(tree):
+    open(os.path.join(tree, "AGENTS.md"), "w", encoding="utf-8").write(
+        "這專案用 DevFlow。技能在方法包 skills/。開工讀該技能 SKILL.md，"
+        "下一跳看 graph.yaml。不要把流程規則貼進本檔。\n"
+    )
+
+
+def expect_stage_deny(label, script_rel, fixture_rel, action_rel, needle):
+    global passed, failed
+    script = os.path.join(root, script_rel)
+    src = os.path.join(root, fixture_rel)
+    action = os.path.join(root, action_rel)
+    if not (
+        os.path.isfile(script) and os.path.isdir(src) and os.path.isfile(action)
+    ):
+        failed += 1
+        print(f"  ✗ {label} (治具缺檔)", file=sys.stderr)
+        return
+    tree = os.path.join(
+        tmpbase, "deny-" + re.sub(r"[^A-Za-z0-9]+", "-", label)
+    )
+    if os.path.exists(tree):
+        shutil.rmtree(tree)
+    shutil.copytree(src, tree)
+    proc = subprocess.run(
+        ["bash", script, "--action", action, tree],
+        capture_output=True,
+        text=True,
+    )
+    blob = (proc.stdout or "") + "\n" + (proc.stderr or "")
+    ok = proc.returncode == 1
+    if ok and needle and needle not in blob:
+        ok = False
+        blob += f"\n[test] 期望輸出含 {needle!r}"
+    if ok:
+        passed += 1
+        print(f"  ✓ {label}")
+    else:
+        failed += 1
+        print(
+            f"  ✗ {label} (rc={proc.returncode} want=1)",
+            file=sys.stderr,
+        )
+        print(blob[-1200:], file=sys.stderr)
 
 
 with tempfile.TemporaryDirectory(prefix="host-adapter-test-") as tmpbase:
@@ -276,18 +350,13 @@ with tempfile.TemporaryDirectory(prefix="host-adapter-test-") as tmpbase:
 
     linked = os.path.join(tmpbase, "adopter-linked")
     shutil.copytree(os.path.join(fix, "setup-claimed"), linked)
-    open(os.path.join(linked, "AGENTS.md"), "w", encoding="utf-8").write(
-        "這專案用 DevFlow。技能在方法包 skills/。開工讀該技能 SKILL.md，"
-        "下一跳看 graph.yaml。不要把流程規則貼進本檔。\n"
+    write_agents_pointer(linked)
+    link_dv(
+        linked,
+        good,
+        (".cursor/skills", ".agents/skills"),
     )
-    for host in (".cursor/skills", ".agents/skills"):
-        base = os.path.join(linked, host)
-        os.makedirs(base, exist_ok=True)
-        for name in ("dev-setup", "dev-talk", "dev-flow", "dev-run"):
-            os.symlink(
-                os.path.join(good, "skills", name),
-                os.path.join(base, name),
-            )
+    write_cursor_rules(linked)
     expect(
         "G-dv-links 四個 DV 的連結目標都是整棵目錄必須綠",
         linked,
@@ -374,6 +443,146 @@ with tempfile.TemporaryDirectory(prefix="host-adapter-test-") as tmpbase:
         case,
         1,
         "devflow-reviewer",
+    )
+
+    case = os.path.join(tmpbase, "non-claude-gates")
+    seed(case)
+    setup = os.path.join(case, "skills", "dev-setup", "SKILL.md")
+    open(setup, "a", encoding="utf-8").write(
+        "\n## 主機探測\n"
+        "所有主機健檢都必須 AskUserQuestion 與 enabledPlugins。"
+        "hooks.json 是唯一進條件。不先探測主機。\n"
+    )
+    write_host(case, "cursor")
+    expect(
+        "R-non-claude-gates 非 Claude 仍把 AskUserQuestion／enabledPlugins 當唯一進條件必須紅",
+        case,
+        1,
+        "AskUserQuestion",
+    )
+
+    case = os.path.join(tmpbase, "guide-no-host")
+    seed(case)
+    gdir = os.path.join(case, "guides")
+    os.makedirs(gdir)
+    open(os.path.join(gdir, "guide-dev-flow.html"), "w", encoding="utf-8").write(
+        "<html><h2 id=\"filemap\">檔案地圖</h2><p>沒有主機節。</p></html>\n"
+    )
+    expect(
+        "R-guide-no-host guide 沒有 #host 必須紅",
+        case,
+        1,
+        "#host",
+    )
+
+    case = os.path.join(tmpbase, "readme-dump")
+    seed(case)
+    open(os.path.join(case, "README.md"), "w", encoding="utf-8").write(
+        "# 流程刀序\n"
+        "第一刀 第二刀 第三刀。Cursor 與 Codex。\n"
+        "AskUserQuestion。`.cursor/skills` 與 `.agents/skills`。\n"
+    )
+    expect(
+        "R-readme-dump README 灌進流程／刀序必須紅",
+        case,
+        1,
+        "刀序",
+    )
+
+    claude = os.path.join(tmpbase, "host-claude")
+    shutil.copytree(os.path.join(fix, "no-root"), claude)
+    write_host(claude, "claude")
+    os.makedirs(os.path.join(claude, ".claude"), exist_ok=True)
+    open(
+        os.path.join(claude, ".claude", "settings.json"),
+        "w",
+        encoding="utf-8",
+    ).write('{"enabledPlugins":{"dev-flow@dev-flow":true}}\n')
+    expect(
+        "G-claude Claude fixture 舊檢查仍可走必須綠",
+        claude,
+        0,
+        "old-checks: ok",
+        extra_env={"DEVFLOW_ROOT": root},
+    )
+
+    cursor = os.path.join(tmpbase, "host-cursor")
+    shutil.copytree(os.path.join(fix, "no-root"), cursor)
+    write_host(cursor, "cursor")
+    link_dv(cursor, good, (".cursor/skills",))
+    expect(
+        "G-cursor Cursor fixture 只靠技能目錄 + DEVFLOW_ROOT 必須綠",
+        cursor,
+        0,
+        "setup-health: skill-dirs+DEVFLOW_ROOT",
+        extra_env={"DEVFLOW_ROOT": root},
+    )
+
+    codex = os.path.join(tmpbase, "host-codex")
+    shutil.copytree(os.path.join(fix, "no-root"), codex)
+    write_host(codex, "codex")
+    link_dv(codex, good, (".agents/skills",))
+    expect(
+        "G-codex Codex fixture 只靠技能目錄 + DEVFLOW_ROOT 必須綠",
+        codex,
+        0,
+        "host=codex",
+        extra_env={"DEVFLOW_ROOT": root},
+    )
+
+    grok = os.path.join(tmpbase, "host-grok")
+    shutil.copytree(os.path.join(fix, "no-root"), grok)
+    write_host(grok, "grok")
+    os.makedirs(os.path.join(grok, ".grok"), exist_ok=True)
+    expect(
+        "G-grok Grok fixture 只靠技能目錄 + DEVFLOW_ROOT 必須綠",
+        grok,
+        0,
+        "host=grok",
+        extra_env={"DEVFLOW_ROOT": root},
+    )
+
+    expect_stage_deny(
+        "R-action-s2 第 2 站既有 deny（N1 write_decision）必須仍紅",
+        "scripts/check-devstage2-graph.sh",
+        "scripts/fixtures/devstage2-graph/good",
+        "scripts/fixtures/devstage2-graph/actions/n1-write-decision.json",
+        "N1-handoff",
+    )
+    expect_stage_deny(
+        "R-action-s3 第 3 站既有 deny（N1 write_prototype）必須仍紅",
+        "scripts/check-devstage3-graph.sh",
+        "scripts/fixtures/devstage3-graph/good",
+        "scripts/fixtures/devstage3-graph/actions/n1-write-prototype.json",
+        "N1-trigger",
+    )
+    expect_stage_deny(
+        "R-action-s4 第 4 站既有 deny（N1 write_spec）必須仍紅",
+        "scripts/check-devstage4-graph.sh",
+        "scripts/fixtures/devstage4-graph/good",
+        "scripts/fixtures/devstage4-graph/actions/n1-write-spec.json",
+        "N1-handoff",
+    )
+    expect_stage_deny(
+        "R-action-s5 第 5 站既有 deny（N1 write_tasks）必須仍紅",
+        "scripts/check-devstage5-graph.sh",
+        "scripts/fixtures/devstage5-graph/good",
+        "scripts/fixtures/devstage5-graph/actions/n1-write-tasks.json",
+        "N1-handoff",
+    )
+    expect_stage_deny(
+        "R-action-s6 第 6 站既有 deny（N2 write_notes）必須仍紅",
+        "scripts/check-devstage6-graph.sh",
+        "scripts/fixtures/devstage6-graph/good",
+        "scripts/fixtures/devstage6-graph/actions/n2-write-notes.json",
+        "N2-handoff",
+    )
+    expect_stage_deny(
+        "R-action-s7 第 7 站既有 deny（N0 write_review）必須仍紅",
+        "scripts/check-devstage7-graph.sh",
+        "scripts/fixtures/devstage7-graph/good",
+        "scripts/fixtures/devstage7-graph/actions/n0-write-review.json",
+        "N0-role",
     )
 
     expect(
