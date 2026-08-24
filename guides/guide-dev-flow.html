@@ -832,6 +832,11 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
   </details>
 
   <h3 id="stage6">Stage 6 — 實作(TDD)</h3>
+  <p>節點鏈正本 <code>skills/dev-flow/stage6/graph.yaml</code>:
+  <code>N1-arm</code> → <code>N2-handoff</code> → <code>S2-tdd</code> →
+  <code>N4-selfcheck</code> → <code>N5-end</code>。
+  乘客清單仍是下方模板頂註 0–4。逐 T 仍走引擎(README §5 動線 / 現有引擎),
+  不是一 T 一 hop。</p>
   <p>實作期唯一日誌:每個 T × Covers S 先 RED 後 GREEN;scope check 與 Verify 後由不同
   implementer 的 reviewer 獨立審查,review PASS 才一 T 一 commit。偏差分 L1(保守方案續走)/
   L2(停,回 4-spec 重 G2)兩級,分不清一律當 L2。</p>
@@ -2293,7 +2298,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             <code>FORK_INTEGRATION_SHA</code> 缺或被改寫必須紅。
             <code>kind: skill-legacy</code> 團塊必須紅;<code>S2-tdd</code> 是一顆 hop
             (指向 README §5 動線,逐 T 不是一 T 一 hop),有 <code>via</code> 就紅。
-            本機游標 <code>.devstage6-cursor.json</code> 不進 Git。</td>
+            本機游標 <code>.devstage6-cursor.json</code> 不進 Git。prebash 在寫
+            <code>6-implementation-notes.md</code> 時會帶 <code>--action</code>。
+            guide <code>#stage6</code> 開頭必須對上五節點鏈並寫明逐 T 仍走引擎。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-devstage6-graph.sh</code></td>
         <td>上面那支的負向牙:舊實作(單一 SKILL、沒有 graph)必須紅;真節點缺進條件或
@@ -2303,7 +2310,8 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             <code>FORK_INTEGRATION_SHA</code> 缺或被改寫、<code>via</code> 當 hop、
             <code>kind: skill-legacy</code> 回頭、一 T 一 hop、entry 不對、鏈斷、
             缺 <code>--write-cursor</code>、<code>S2-tdd</code> 沒點名 README §5
-            各打一槍。</td>
+            各打一槍;guide 還寫單一 SKILL、hooks 沒接 <code>--action</code> 各打一槍;
+            prebash 另有實跑一輪。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>
         <td>本節新增的守衛本身——盤點 <code>hooks/</code>/<code>scripts/</code>/<code>observability/</code>/
