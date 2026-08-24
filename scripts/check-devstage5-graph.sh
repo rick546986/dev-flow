@@ -22,6 +22,11 @@
 #      現有 parser 的 parse_5_tasks,本檔不再寫第二套解析,也不改那支 parser。
 #      S4-selfcheck 的「做什麼」必須點名它。
 #
+# 本檔唯讀:探測既有 parser 是 import,而 import 預設寫 __pycache__,那份 .pyc
+# 會落在 hooks/ 與 tests/parallel-stage6/ —— 正好在 test-architecture-guards 收尾
+# 比對的檔案指紋範圍內,檢查於是自己成了污染源(2026-08-24 CI 實證)。load_parser
+# 因此關掉位元碼寫入;test-devstage5-graph.sh 的 G-readonly 用整棵樹的 sha256 釘死。
+#
 # graph.yaml 是下一跳的唯一正本。分叉與暫留一律用 next 指到的真節點,禁止 via
 # (第 1 站 0030 的假綠就是 via 字串當 hop 換來的)。
 # 本機游標 .devstage5-cursor.json 不進 Git。
@@ -381,7 +386,16 @@ def load_parser(path):
     if spec is None or spec.loader is None:
         return None
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    # import 預設會寫 __pycache__。那份 .pyc 會落在 hooks/ 與
+    # tests/parallel-stage6/ —— 正好在 test-architecture-guards 收尾比對的檔案
+    # 指紋範圍內,於是這支唯讀檢查自己變成污染源(2026-08-24 CI 實證)。
+    # 探測既有 parser 只要它的行為,不要它的位元碼快取。
+    saved = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = saved
     return module
 
 
