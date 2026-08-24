@@ -24,7 +24,7 @@ N1-handoff 完成(G2 過、4-spec 的 R/S 全集已清點回報)。游標在 N1-
 合併或重新界定,不得整份按 DB→Repo→Service→API→UI 逐層分。
 機械提示 `scripts/check-task-slicing.sh` 是 warning-only、永不 exit 1,本節點只
 呼叫、不改它的退出碼,也不拿它取代 reviewer 判斷。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage5-graph.sh --write-cursor S1-slice`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage5-graph.sh --write-cursor S1-slice`。
 
 ## 完成條件
 

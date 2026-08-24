@@ -24,7 +24,7 @@
 
 核前站:G1 是否過、第 3 站 findings 是否已回寫且 frontmatter 收尾,再清點雙源
 (驗收雛形 N 條、living spec 受影響條文)給人確認。完成 = 前站核對過。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage4-graph.sh --write-cursor N1-handoff`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage4-graph.sh --write-cursor N1-handoff`。
 
 ## 完成條件
 

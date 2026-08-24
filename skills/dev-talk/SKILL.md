@@ -6,6 +6,8 @@ description: 訪談引導 — 蘇格拉底式一次一問,把模糊想法挖成�
 
 # dev-talk — 討論引導
 
+方法包根目錄叫 `DEVFLOW_ROOT`（舊名 `CLAUDE_PLUGIN_ROOT` 當別名，不准刪）。找不到就停，不准猜。
+
 你唯一的任務:陪使用者把一個問題/想法**討論清楚**,寫成一份討論記錄 ——
 **記錄即是終點**,寫完即停。討論本身就是全部。
 
@@ -21,7 +23,7 @@ code-intelligence 工具(語意索引 / knowledge graph / LSP),只信任其**查
 那些工具附帶的「記憶/筆記」是它們自己的對話殘留、不是本專案的長期記憶,不在白名單內。
 
 **長期記憶怎麼查**(不要憑印象、也不要要求把記憶全部載入):
-`${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py ask "<問題>"` ——
+`${DEVFLOW_ROOT}/memory/dev-memory.py ask "<問題>"` ——
 `<詞> 是什麼意思`(已確認的語意)/ `目前 <東西> 是什麼`(現況)/
 `之前 <主題> 改過什麼`(歷史)/ `為什麼 <決定>`(當初的理由)。
 狀態欄有四種:`OK`(可信)/ `NEEDS_VERIFICATION`(有記憶但當前 checkout 下
@@ -48,7 +50,7 @@ code-intelligence 工具(語意索引 / knowledge graph / LSP),只信任其**查
 **第一動**(在執行清單第 0 步之前):正本 `nodes/N1-start.md`。
 
 ```
-${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py talk start "<本輪主題>"
+${DEVFLOW_ROOT}/memory/dev-memory.py talk start "<本輪主題>"
 ```
 
 它回傳 `session_id` 與一份 brief。**把 `session_id` 當本次 workflow state 保存**,
@@ -56,7 +58,7 @@ ${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py talk start "<本輪主題>"
 新場才跑這一動。拿到 MEMORY_SESSION_ID 之後立刻寫本機游標:
 
 ```
-${CLAUDE_PLUGIN_ROOT}/scripts/check-devtalk-graph.sh --write-cursor N1-start "$MEMORY_SESSION_ID"
+${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor N1-start "$MEMORY_SESSION_ID"
 ```
 
 本機游標(現在節點、MEMORY_SESSION_ID)不進 Git。

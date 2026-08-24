@@ -20,7 +20,7 @@ S2-tdd 完成:逐 T 已走完 README §5 動線,回歸全綠摘要已在案。
 
 對模板步 4 的八問逐項核對。答不出 → 退回 S2-tdd(README §5 動線),
 不是在這裡發明第二套引擎。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage6-graph.sh --write-cursor N4-selfcheck`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage6-graph.sh --write-cursor N4-selfcheck`。
 
 ## 完成條件
 

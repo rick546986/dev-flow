@@ -18,7 +18,7 @@ S0 已定義的疑問。步 1 清單正本是 `_templates/3-prototype.md` 頂註
 ## 做什麼
 
 依模板頂註步 1 做實驗,給後續 N3 落檔。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage3-graph.sh --write-cursor S1-experiment`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage3-graph.sh --write-cursor S1-experiment`。
 
 ## 完成條件
 

@@ -20,7 +20,7 @@
 
 逐條判定九條,命中打 `[x]`(判定紀錄可記在確認紀錄,或本機游標旁的判定結果;
 0 命中不准建 `3-prototype.md`)。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage3-graph.sh --write-cursor N1-trigger`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage3-graph.sh --write-cursor N1-trigger`。
 
 ## 完成條件
 

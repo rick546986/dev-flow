@@ -24,7 +24,7 @@ S4-selfcheck 完成:`parse_5_tasks` 的 `errors` 為空 —— 逐 T 四必填�
 失敗,那就是回頭修 `5-tasks.md`、不是改工具。切 T 的機械提示
 `scripts/check-task-slicing.sh` 是 warning-only、永不 exit 1,本節點照舊只呼叫,
 不改它的退出碼;四必填欄的機器判準仍是既有 `hooks/contract_ref.py`,一併不改。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage5-graph.sh --write-cursor N5-twin`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage5-graph.sh --write-cursor N5-twin`。
 
 ## 完成條件
 

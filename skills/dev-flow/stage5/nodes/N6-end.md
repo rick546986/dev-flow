@@ -21,7 +21,7 @@ reviewer 核准),定案權在 owner 自己。
 owner 自行定案:frontmatter status 由 draft 轉 approved,並核 twin 與 md 一致。
 定案前不得動工 —— `devflow-exec.sh start` 的 fail-closed 由既有守衛負責,本節點
 只核形狀、不重寫那支工具。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage5-graph.sh --write-cursor N6-end`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage5-graph.sh --write-cursor N6-end`。
 
 ## 完成條件
 

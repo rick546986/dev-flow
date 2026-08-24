@@ -19,7 +19,7 @@ N1 任一命中。游標在 S0。不要寫 `3-prototype.md`(寫檔在 N3)。
 ## 做什麼
 
 依模板頂註步 0 定義疑問,給後續 N3 落檔。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage3-graph.sh --write-cursor S0-question`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage3-graph.sh --write-cursor S0-question`。
 
 ## 完成條件
 

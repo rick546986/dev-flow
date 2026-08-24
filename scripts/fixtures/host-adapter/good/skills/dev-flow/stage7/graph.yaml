@@ -1,0 +1,32 @@
+entry: N0-role
+nodes:
+  N0-role:
+    file: nodes/N0-role.md
+    next: N1-matrix
+  N1-matrix:
+    file: nodes/N1-matrix.md
+    next: S2-run
+  S2-run:
+    file: nodes/S2-run.md
+    next: S2b-phenomena
+  S2b-phenomena:
+    file: nodes/S2b-phenomena.md
+    next: S2c-integration
+  S2c-integration:
+    file: nodes/S2c-integration.md
+    next: S2d-fresh
+  S2d-fresh:
+    file: nodes/S2d-fresh.md
+    next: S2e-walkthrough
+  S2e-walkthrough:
+    file: nodes/S2e-walkthrough.md
+    next: N3-axes
+  N3-axes:
+    file: nodes/N3-axes.md
+    next: N4-author
+  N4-author:
+    file: nodes/N4-author.md
+    next: N5-verdict
+  N5-verdict:
+    file: nodes/N5-verdict.md
+    next: ""

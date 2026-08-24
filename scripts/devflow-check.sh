@@ -125,6 +125,9 @@ group_methodology() {
   # Stage 7:五真節點 + 一暫留 hop;單產物 7-review.md;只有 N4-author 可寫;N4 才准讀 6-notes。
   run "methodology/check-devstage7-graph"     scripts/check-devstage7-graph.sh   || return 1
   run "methodology/test-devstage7-graph"      scripts/test-devstage7-graph.sh    || return 1
+  # 主機轉接:DEVFLOW_ROOT + 三邊發現 + 節點可讀。不重寫 1–7 站編成。
+  run "methodology/check-host-adapter"        scripts/check-host-adapter.sh      || return 1
+  run "methodology/test-host-adapter"         scripts/test-host-adapter.sh       || return 1
 }
 
 group_contracts() {

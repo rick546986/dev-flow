@@ -21,7 +21,7 @@ Open Questions 全三態(`[x]` 已解 / `[~]` 帶假設 / `[>]` 移交)。
 
 從 Goals / 驗收雛形 / `[>]` 移交項提煉「待收斂決策點」,連同討論期
 owner 已自拍的板一併清點,給人確認。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage2-graph.sh --write-cursor N1-handoff`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage2-graph.sh --write-cursor N1-handoff`。
 
 ## 完成條件
 

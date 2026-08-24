@@ -18,7 +18,7 @@ S4 已完成。游標在 S5。同一份 `2-decision.md` 仍在。
 ## 做什麼
 
 依模板頂註步 5 做 ADR 晉升檢查。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage2-graph.sh --write-cursor S5-adr`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage2-graph.sh --write-cursor S5-adr`。
 
 ## 完成條件
 

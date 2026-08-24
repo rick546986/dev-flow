@@ -21,7 +21,7 @@ N4-write-md 完成:`docs/dev/<slug>/5-tasks.md` 已落檔,而且只有一份。
 (Covers／Files／Verify／Blocked-by):`errors` 非空就是缺欄,或續行踩了保留欄名
 把真欄位遮蔽掉 —— 兩種都會讓 `start` fail-closed 拒啟。回頭補 `5-tasks.md`,
 不改那支 parser,也不在本站另寫第二套解析。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage5-graph.sh --write-cursor S4-selfcheck`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage5-graph.sh --write-cursor S4-selfcheck`。
 
 ## 完成條件
 

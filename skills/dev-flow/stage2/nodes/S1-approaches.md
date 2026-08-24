@@ -18,7 +18,7 @@ N1 確認過的決策點。`1-discussion.md` 事實與 `[Assumption]`。
 ## 做什麼
 
 依模板頂註步 1 產出方案表,給後續 N3 落檔。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage2-graph.sh --write-cursor S1-approaches`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage2-graph.sh --write-cursor S1-approaches`。
 
 ## 完成條件
 

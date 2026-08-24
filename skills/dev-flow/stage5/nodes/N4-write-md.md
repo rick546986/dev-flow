@@ -19,7 +19,7 @@ html twin 不在本節點產(N5-twin 才呼叫現有工具)。`write_mode: overw
 ## 做什麼
 
 把步 1–3 的內容寫進同一檔。重跑本節點 = 覆寫同一路徑,不是另存一份。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage5-graph.sh --write-cursor N4-write-md`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage5-graph.sh --write-cursor N4-write-md`。
 
 ## 完成條件
 

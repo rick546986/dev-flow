@@ -60,6 +60,7 @@
 - 案子太大要不要切 → [flow `#large-work`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#large-work)
 - R/S/T/D/F 這些 id 怎麼串 → [§4](#4-id-追溯鏈)
 - 某條規則到底誰在擋 → [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)
+- Cursor／Grok／Codex 怎麼發現技能 → [flow `#host`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#host)
 - Agent 的長期記憶怎麼運作 → [§16](#16-agent-memorydev-flow)
 - 跨 repo / 非 feature 的事怎麼辦 → [§17](#17-附錄跨-repo-與非-feature-入口)
 

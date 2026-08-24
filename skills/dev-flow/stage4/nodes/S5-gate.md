@@ -23,7 +23,7 @@ N5-write-md 完成:步 1–4 的內容全在同一份 `4-spec.md`。游標在 N5
 先跑既有機械關卡 `scripts/check-spec-gate.sh <本檔路徑>`,紅了先修再往下。
 機械過了才做人工部分:鏈檢每條驗收雛形 ≥1 個 S 承接、每 MODIFIED 有原文引用;
 任一否就重寫該 S。修完重跑本節點 = 覆寫同一份,不是另存一份修正版。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage4-graph.sh --write-cursor S5-gate`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage4-graph.sh --write-cursor S5-gate`。
 
 ## 完成條件
 

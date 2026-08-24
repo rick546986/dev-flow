@@ -23,7 +23,7 @@
 0a 開 branch 與錨點、0b worktree 隔離確認、0c 守衛與 doctor 自檢 ——
 細節走模板頂註,這裡不重抄。把 `FORK_INTEGRATION_SHA` 以 40 碼小寫 hex
 寫進本檔固定欄;寫了不准改。沒武裝(本節點未完成)不准開工。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage6-graph.sh --write-cursor N1-arm`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage6-graph.sh --write-cursor N1-arm`。
 
 ## 完成條件
 

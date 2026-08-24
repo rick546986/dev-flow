@@ -1,0 +1,17 @@
+entry: N1-arm
+nodes:
+  N1-arm:
+    file: nodes/N1-arm.md
+    next: N2-handoff
+  N2-handoff:
+    file: nodes/N2-handoff.md
+    next: S2-tdd
+  S2-tdd:
+    file: nodes/S2-tdd.md
+    next: N4-selfcheck
+  N4-selfcheck:
+    file: nodes/N4-selfcheck.md
+    next: N5-end
+  N5-end:
+    file: nodes/N5-end.md
+    next: ""

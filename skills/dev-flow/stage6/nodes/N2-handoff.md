@@ -22,7 +22,7 @@ Verify／Covers／Files／Blocked-by)。禁讀 1/2/3(圍欄②)。
 
 核前站:4-spec／5-tasks 是否齊(每 T 有 Verify+Covers)。缺 → 停回補。
 建 todo 一 T 一項,照 Blocked-by 拓撲序 —— 這是盤點,不是一 T 一 hop。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage6-graph.sh --write-cursor N2-handoff`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage6-graph.sh --write-cursor N2-handoff`。
 
 ## 完成條件
 

@@ -19,7 +19,7 @@ N3-axes 完成。本節點才准讀 6-notes。
 ## 做什麼
 
 把 0–3 的內容與對照作者結果寫進同一份 `7-review.md`。重跑 = 覆寫同一路徑。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage7-graph.sh --write-cursor N4-author`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage7-graph.sh --write-cursor N4-author`。
 
 ## 完成條件
 

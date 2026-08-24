@@ -18,7 +18,7 @@ Final Fresh 綁 SHA。不要寫 `7-review.md`(本節點不落檔;寫檔在 S2-* 
 ## 做什麼
 
 做 Standards + Spec 雙軸審。整合回歸／Verdict 後改碼作廢 G3 由現有工具釘住,不重寫。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage7-graph.sh --write-cursor N3-axes`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage7-graph.sh --write-cursor N3-axes`。
 
 ## 完成條件
 

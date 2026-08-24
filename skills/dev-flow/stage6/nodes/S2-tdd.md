@@ -30,7 +30,7 @@ T Review Log／Progress Log),不另存。禁止第二份
 **不是一 T 一 hop** —— 不准為每個 T-id 長一顆 graph 節點;拓撲序
 仍由引擎／Blocked-by 跑,本 hop 只是那條動線的入口。
 不在這裡另寫第二套執行器。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage6-graph.sh --write-cursor S2-tdd`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage6-graph.sh --write-cursor S2-tdd`。
 
 ## 完成條件
 

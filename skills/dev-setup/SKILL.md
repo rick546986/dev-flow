@@ -5,6 +5,8 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 
 # dev-setup — 專案安裝器 + 基建檢查(plugin 版)
 
+方法包根目錄叫 `DEVFLOW_ROOT`（舊名 `CLAUDE_PLUGIN_ROOT` 當別名，不准刪）。找不到就停，不准猜。
+
 架構:skills 與 hooks 隨 plugin 全域生效(單一正本,**專案不需要裝任何 hook**);
 本 skill 負責把「文檔面」裝進專案並保持可升級。
 散發方式:`dev-flow` 單一 plugin,內含 `dev-talk` skill 與方法論(repo 根目錄即方法論母版)
@@ -13,8 +15,8 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 `/plugin install dev-flow@dev-flow`(裝一次,dev-talk 隨附,不再是獨立 plugin);
 更新 = `/plugin marketplace update dev-flow` + `/plugin update dev-flow`。
 **實際 plugin root = `~/.claude/plugins/cache/dev-flow/dev-flow/<version>/`**
-——會隨版本改變,腳本與檢查一律用 `${CLAUDE_PLUGIN_ROOT}` 或由自身位置推導,禁寫死。
-說明書:`${CLAUDE_PLUGIN_ROOT}/guides/dev-setup-record.html`。
+——會隨版本改變,腳本與檢查一律用 `${DEVFLOW_ROOT}` 或由自身位置推導,禁寫死。
+說明書:`${DEVFLOW_ROOT}/guides/dev-setup-record.html`。
 
 ## 開場第一動:偵測 → 分流(使用者只打「dev-setup」時的預設行為)
 
@@ -23,7 +25,7 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 | 偵測 | 狀態 | 動作 |
 |---|---|---|
 | 無 `docs/dev/` | **fresh** | 跑 install(見下);完成後跑 check 回報 |
-| 有 `docs/dev/`,但 README/模板與方法論母版 `${CLAUDE_PLUGIN_ROOT}/` 有差異 | **stale** | 跑 upgrade(先列 diff 摘要徵同意)→ check |
+| 有 `docs/dev/`,但 README/模板與方法論母版 `${DEVFLOW_ROOT}/` 有差異 | **stale** | 跑 upgrade(先列 diff 摘要徵同意)→ check |
 | 有 `docs/dev/` 且與母版一致 | **current** | 只跑 check |
 | check 抓到異常(缺件/殘留/陳年旗標/盲掃命中) | **broken** | 列異常+修法,**徵得同意後**跑 fix |
 
@@ -39,13 +41,13 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 > (或設 `DEVFLOW_PYTHON`),否則守衛會**靜默跳過**:不是壞掉,但等於沒有保護,
 > 而「守衛沉睡」與「守衛在擋」從外面看長得一樣(G1 同型風險)。
 
-1. `docs/dev/` 建立:cp 方法論 `${CLAUDE_PLUGIN_ROOT}/README.md` 後**剝除 master-only 區塊**
+1. `docs/dev/` 建立:cp 方法論 `${DEVFLOW_ROOT}/README.md` 後**剝除 master-only 區塊**
    再落地為 `docs/dev/README.md`(不得直接 cp 未剝除版 —— 母版 README 內
    `<!-- devflow:master-only:start -->` / `<!-- devflow:master-only:end -->` 之間是純母版
    repo 導覽,對散發專案是死引用):
    ```
    sed -n '/<!-- devflow:master-only:start -->/,/<!-- devflow:master-only:end -->/!p' \
-     "${CLAUDE_PLUGIN_ROOT}/README.md" | tr -d '\r' > docs/dev/README.md
+     "${DEVFLOW_ROOT}/README.md" | tr -d '\r' > docs/dev/README.md
    ```
    **行尾一律正規化成 LF 落地(結尾那道 `tr -d '\r'`,不得省略)**:MSYS/Git Bash 的
    GNU sed 以文字模式讀檔、輸出時會把 CR 拿掉,平台不同就寫出不同行尾 —— 讓平台決定
@@ -69,7 +71,7 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
    (**工具散發的 parent 目錄在此建立** —— 本步與步 6、7 的工具 cp 全落在它底下,
    不先建目錄,本步三支工具的 cp 會直接失敗;步 6 那句 mkdir 冪等,留著無妨);
    然後比照 gauntlet 散發寫入口
-   `${CLAUDE_PLUGIN_ROOT}/scripts/history-append.sh` → `docs/dev/tools/history-append.sh`
+   `${DEVFLOW_ROOT}/scripts/history-append.sh` → `docs/dev/tools/history-append.sh`
    並 `chmod +x`(**該檔是 HISTORY.md 的唯一寫入口** —— 直接用 Edit/Write 改會在
    多 session 並行時靜默覆蓋,由 `history-guard` hook 擋下)。
    散發後**可執行驗證**(G1 教訓:舊版用「自身位置/..」推根,散發到 tools/ 後
@@ -77,7 +79,7 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
    `bash docs/dev/tools/history-append.sh --print-root` → 預期輸出 = 專案根且
    exit 0(現版以 git toplevel 解析,與散發位置無關);不符即列 broken,不得靜默。
    doctor 亦探測同一件事(`history-append-root`)。
-   **gate twin 產生器**:同樣比照散發 `${CLAUDE_PLUGIN_ROOT}/scripts/build-gate-twin.py`
+   **gate twin 產生器**:同樣比照散發 `${DEVFLOW_ROOT}/scripts/build-gate-twin.py`
    與 `devflow_twin_ui.py` → `docs/dev/tools/`(兩支要在同一目錄,前者 import 後者)。
    支援的 stage:`2-decision | 4-spec | 7-review | 5-tasks`(執行板)。
    G1/G2/G3 的 html 用它產:`docs/dev/tools/build-gate-twin.py <專案根> <slug> <stage>`
@@ -94,7 +96,7 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 1b. **Agent Memory 建置**(v3.10.0 起;`dev-setup` 是唯一入口,**不得新增
    `dev-flow init` 之類的第二個安裝器**)。跑:
    ```
-   python3 "${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py" setup --path <專案根>
+   python3 "${DEVFLOW_ROOT}/memory/dev-memory.py" setup --path <專案根>
    ```
    它做九件事,全部冪等(輸出是 JSON,直接鋪進回報表):
    ①找 repository root;②`.dev-flow/project.yaml` 不存在 → 建 `project_id`
@@ -145,15 +147,15 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 5. 未識別的既有外部 workflow artifacts 與目錄**一律保留**:不移動、
    不覆蓋、不刪除。dev-setup 只安裝 dev-flow 的文檔面,不轉換也不接管外部 workflow。
 6. **evidence gauntlet 散發**:`mkdir -p docs/dev/tools` 後 cp 方法論
-   `${CLAUDE_PLUGIN_ROOT}/scripts/devflow-evidence-gauntlet.sh` →
+   `${DEVFLOW_ROOT}/scripts/devflow-evidence-gauntlet.sh` →
    `docs/dev/tools/devflow-evidence-gauntlet.sh` 並 `chmod +x`(Stage 7 Final Fresh
    Run 的文檔層機械檢查 E1–E13;契約正本 = 方法論 `notes/design/evidence-gauntlet.md`)。
    散發後**可執行驗證**(兩道都跑,任一不符即列 broken,不得靜默):
    ①無參數跑 → 預期印 usage 且 exit 2;
-   ②`bash docs/dev/tools/devflow-evidence-gauntlet.sh ${CLAUDE_PLUGIN_ROOT}/scripts/fixtures/evidence-gauntlet/good-evidence.md`
+   ②`bash docs/dev/tools/devflow-evidence-gauntlet.sh ${DEVFLOW_ROOT}/scripts/fixtures/evidence-gauntlet/good-evidence.md`
    → 預期 exit 0(checks 數以輸出為準)。
 7. **整合回歸工具散發**:cp 方法論
-   `${CLAUDE_PLUGIN_ROOT}/scripts/devflow-integration-regression.sh` →
+   `${DEVFLOW_ROOT}/scripts/devflow-integration-regression.sh` →
    `docs/dev/tools/devflow-integration-regression.sh` 並 `chmod 755`(Stage 7 Exit
    Checklist「(條件式)整合回歸」的計算工具:只算與只判、絕不動樹;分岔點用
    6-notes 步 0 持久化的錨點 FORK_INTEGRATION_SHA,缺錨點 fail-closed 直接擋,
@@ -187,13 +189,13 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
   **逐檔單獨列出「本地現況」與「即將覆蓋成的新內容」,徵得使用者明確同意**
   才可覆蓋該檔,不得併入①的摘要一筆帶過。
   **判別法(三方比對)**:上游舊 blob(見下)、上游新 blob(這次
-  `${CLAUDE_PLUGIN_ROOT}/README.md` 剝除 master-only 區塊後的內容,或
+  `${DEVFLOW_ROOT}/README.md` 剝除 master-only 區塊後的內容,或
   `_templates/`/gauntlet 腳本/`devflow-contract.json` 原始內容)、本地現況
   (`docs/dev/` 對應檔案現況)——**本地現況 ≠ 上游舊 blob ⇒ 判定客製**,即使本地
   現況恰好與上游新 blob 相同也要列出(可註記「與新版一致,覆蓋無影響」,
   但仍需在②分類下出現,不得靜默歸進①)。
   **上游舊 blob 的來源**:每次 install/upgrade 成功覆蓋後,快照的內容必須來自
-  **這次覆蓋下去的上游新內容**(upstream-new 正本:`${CLAUDE_PLUGIN_ROOT}` 側
+  **這次覆蓋下去的上游新內容**(upstream-new 正本:`${DEVFLOW_ROOT}` 側
   已剝除 master-only 區塊的 README、`_templates/*`、`devflow-contract.json`,
   加上這次散發的整套工具 —— 對應 `docs/dev/tools/` 按目錄整包,不逐檔列,
   逐檔列的話下一支新工具又會漏),另存一份到 `docs/dev/.devflow-baseline/`。
@@ -209,9 +211,9 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
   的首次 install 分支 —— 本次 upgrade **全部受管檔視為②本地客製,逐檔徵同意**,
   完成後才建立快照,下次 upgrade 起才回到正常的三方比對。
 - **check 第 6 項的 diff 比對基準同步套用剝除規則**:比對母版時一律先對
-  `${CLAUDE_PLUGIN_ROOT}/README.md` 跑與 install 步 1 相同的 sed 剝除管線再 diff,
+  `${DEVFLOW_ROOT}/README.md` 跑與 install 步 1 相同的 sed 剝除管線再 diff,
   且**兩側都要過同一道行尾正規化**,即
-  `diff <(sed -n '/<!-- devflow:master-only:start -->/,/<!-- devflow:master-only:end -->/!p' "${CLAUDE_PLUGIN_ROOT}/README.md" | tr -d '\r') <(tr -d '\r' < docs/dev/README.md)`
+  `diff <(sed -n '/<!-- devflow:master-only:start -->/,/<!-- devflow:master-only:end -->/!p' "${DEVFLOW_ROOT}/README.md" | tr -d '\r') <(tr -d '\r' < docs/dev/README.md)`
   ——不得直接對未剝除的母版原檔跑 diff,否則 master-only 區塊本身的存在
   就會被判定成「每次都 stale」的假漂移;**也不得只對母版側跑管線、採用專案側直接拿原檔比**,
   否則 Windows 上母版側被 sed 剝掉 CR、採用專案側是 CRLF,每一行都差一個 CR、
@@ -272,13 +274,13 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
    description —— 使用者在 skill 清單直接看到,洩漏槓桿最高;dev-talk 併入單一
    plugin 後不再有自己的 plugin.json/marketplace entry,description 洩漏風險全落在
    這份 SKILL.md 本身):
-   `grep -rniE "<字詞表見 devtalk-guard.sh>" "${CLAUDE_PLUGIN_ROOT}/skills/dev-talk/"` 零命中
+   `grep -rniE "<字詞表見 devtalk-guard.sh>" "${DEVFLOW_ROOT}/skills/dev-talk/"` 零命中
    (`CLAUDE_PLUGIN_ROOT` 未設時用 dev-flow plugin root 的 `skills/dev-talk/` 子目錄;
    **不寫死舊版拆分 plugin 時代 dev-talk 專屬的 local marketplace 路徑** —— 併入單一
    plugin 後該路徑與獨立 marketplace entry 皆不存在)。
 6. 專案面(在專案內跑時):docs/dev/README 與模板版本 vs 母版 diff——**README 比對
    基準是剝除 master-only 區塊後的母版內容,不是母版原檔**(比對管線同 upgrade
-   段:`diff <(sed -n '/<!-- devflow:master-only:start -->/,/<!-- devflow:master-only:end -->/!p' "${CLAUDE_PLUGIN_ROOT}/README.md" | tr -d '\r') <(tr -d '\r' < docs/dev/README.md)`;
+   段:`diff <(sed -n '/<!-- devflow:master-only:start -->/,/<!-- devflow:master-only:end -->/!p' "${DEVFLOW_ROOT}/README.md" | tr -d '\r') <(tr -d '\r' < docs/dev/README.md)`;
    對原檔直接 diff 會把 master-only 區塊本身的存在誤判成假 stale;兩側的 `tr -d '\r'`
    同樣不得省略 —— 只有母版側過管線的話,Windows 上 sed 會吃掉 CR 而採用專案側是 CRLF,
    內容逐字相同也會判全不同、恆報 stale);`.devflow/exec.json`
@@ -307,7 +309,7 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
    兩種寫法(selftest p4_ fixture 案為證)。條文未落地前,live 檢查行為不變。
 9. **evidence gauntlet 散發檢查**(在專案內跑時):
    `docs/dev/tools/devflow-evidence-gauntlet.sh` ①存在且可執行(缺件 = broken,
-   走 install 步 6 補);②與方法論 `${CLAUDE_PLUGIN_ROOT}/scripts/devflow-evidence-gauntlet.sh`
+   走 install 步 6 補);②與方法論 `${DEVFLOW_ROOT}/scripts/devflow-evidence-gauntlet.sh`
    diff 無差異(有差異 = stale,走 upgrade 覆蓋 —— 專案側不得自改此腳本,要改改方法論);
    ③無參數跑 exit 2(usage);④對方法論 fixture `good-evidence.md` 跑 exit 0
    (同 install 步 6 的兩道可執行驗證)。任一不符 → broken,列異常+修法。
@@ -315,7 +317,7 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
    全集由第 13 項從檔案地圖散發面標註動態取,別拿這三項的名字當清單。
 10. **版本握手**(在專案內跑時):①`docs/dev/devflow-contract.json` 存在
     (缺件 = broken,走 install 步 1 補 —— doctor 無明示指定時就在這裡找契約,
-    缺件必 fail-closed)且與方法論 `${CLAUDE_PLUGIN_ROOT}/devflow-contract.json` diff
+    缺件必 fail-closed)且與方法論 `${DEVFLOW_ROOT}/devflow-contract.json` diff
     無差異(有差異 = stale,走 upgrade 覆蓋);②在專案內跑
     `hooks/devflow-exec.sh doctor` 可執行並看 verdict。doctor 報 `INCOMPATIBLE`
     時的指引:fail-closed 是刻意行為,不得繞過或改綠 —— 修復它列出的不相容項、
@@ -323,8 +325,8 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
 11. **gate twin 產生器散發檢查**(在專案內跑時):`docs/dev/tools/build-gate-twin.py`
     與 `docs/dev/tools/devflow_twin_ui.py` ①兩支皆存在(缺件 = broken,走 install
     步 1 補),且 `build-gate-twin.py` 可執行(前者為 CLI 入口;`devflow_twin_ui.py`
-    僅供 import,不要求可執行位元);②與方法論 `${CLAUDE_PLUGIN_ROOT}/scripts/build-gate-twin.py`、
-    `${CLAUDE_PLUGIN_ROOT}/scripts/devflow_twin_ui.py` diff 逐字無差異(有差異 = stale,
+    僅供 import,不要求可執行位元);②與方法論 `${DEVFLOW_ROOT}/scripts/build-gate-twin.py`、
+    `${DEVFLOW_ROOT}/scripts/devflow_twin_ui.py` diff 逐字無差異(有差異 = stale,
     走 upgrade 覆蓋 —— 專案側不得自改這兩支腳本,要改改方法論);③無參數跑
     `python3 docs/dev/tools/build-gate-twin.py` → 訊息含「用法」且 exit 2;④相依探測:
     `python3 -c "import markdown_it, sys; sys.exit(0 if markdown_it.__version__ == '4.0.0' else 3)"`
@@ -333,17 +335,17 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
 12. **整合回歸工具散發檢查**(在專案內跑時):
     `docs/dev/tools/devflow-integration-regression.sh` ①存在且**可執行,且正副本
     可執行位元一致(兩邊都 755)**(缺件 = broken,走 install 步 7 補;掉執行權限
-    實際發生過);②與方法論 `${CLAUDE_PLUGIN_ROOT}/scripts/devflow-integration-regression.sh`
+    實際發生過);②與方法論 `${DEVFLOW_ROOT}/scripts/devflow-integration-regression.sh`
     diff 無差異(有差異 = stale,走 upgrade 覆蓋 —— 專案側不得自改此腳本,
     要改改方法論);③無參數跑 → 訊息含「用法」且 exit 2。
     任一不符 → broken,列異常+修法。
 13. **散發副本 parity 總表**(在專案內跑時)——**比對集合一律取自檔案地圖的
     「散發面」標註,不得自己枚舉,也不得照第 9/11/12 項那幾支硬列的名字當全集**:
-    讀 `${CLAUDE_PLUGIN_ROOT}/guides/guide-dev-flow.html` 的「附錄:檔案地圖」節
+    讀 `${DEVFLOW_ROOT}/guides/guide-dev-flow.html` 的「附錄:檔案地圖」節
     (`<h2 id="filemap">` 到下一個 `<h2>` 之間),取出所有標
     `散發面:docs/dev/tools/` 的列;對其中**每一支**驗:①專案側
     `docs/dev/tools/<同名>` 存在;②可執行位元與正本一致;③與
-    `${CLAUDE_PLUGIN_ROOT}/scripts/<同名>` diff 逐字無差異(有差異 = stale,走
+    `${DEVFLOW_ROOT}/scripts/<同名>` diff 逐字無差異(有差異 = stale,走
     upgrade 覆蓋 —— 專案側不得自改任何一支,要改改方法論)。任一不符 → broken。
     **為什麼不逐支硬列**:母版側的 parity 守衛
     (`scripts/check-integration-regression-guard.sh` ④)早就因為「寫死五個
@@ -359,7 +361,7 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     由第 10 項單獨驗 —— 不得併進本項(併掉就沒有人在驗 contract 副本,同
     `dev-release` 步 2 把那行 `diff -q` 單獨留著的理由)。
 14. **Agent Memory 健檢**(在專案內跑時):跑
-    `python3 "${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py" doctor --path <專案根>`
+    `python3 "${DEVFLOW_ROOT}/memory/dev-memory.py" doctor --path <專案根>`
     並照它的 verdict 分流(`PASS` / `WARN` / `FAIL`;exit 1 = FAIL)。它逐項回報:
     `project-identity`(`.dev-flow/project.yaml` 在不在、`project_id` 合不合法 ——
     缺件 = broken,走 install 步 1b 補)、`local-schema`(本機 DB schema 版本)、

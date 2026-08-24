@@ -17,7 +17,7 @@ S1 已完成。游標在 S2。不要寫第二份 `3-prototype*.md`。
 ## 做什麼
 
 依模板頂註步 2 收證,給後續 N3 落檔。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage3-graph.sh --write-cursor S2-evidence`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage3-graph.sh --write-cursor S2-evidence`。
 
 ## 完成條件
 

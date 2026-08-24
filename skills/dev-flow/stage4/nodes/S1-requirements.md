@@ -21,7 +21,7 @@ N1-handoff 完成(G1 過、第 3 站若必要已收尾、雙源清點已回報)�
 
 驗收雛形逐條升 ADDED;living spec 受影響條文升 MODIFIED／REMOVED 並引原條文。
 R 清單的範圍要拿給使用者確認,確認紀錄節留一行。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage4-graph.sh --write-cursor S1-requirements`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage4-graph.sh --write-cursor S1-requirements`。
 
 ## 完成條件
 

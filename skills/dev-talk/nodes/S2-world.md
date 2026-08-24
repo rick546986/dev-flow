@@ -32,7 +32,7 @@ log / 表單 / 畫面 / 使用者反映)。
 三條紀律:優先問「最近一次真的發生時怎麼處理」,不只問理想做法;正式辦法
 與實際做法不同時兩者都記、不擇一;未有證據的敘述標 `[Assumption]`,
 不得把推測寫成事實;涉醫療/個資只保存去識別化內容。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S2-world "$MEMORY_SESSION_ID"`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S2-world "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

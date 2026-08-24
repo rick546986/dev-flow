@@ -22,7 +22,7 @@ S2-fields 完成(Covers／Files／Verify 已填,Intent／Boundaries 各一句)�
 不成環、不指向不存在的 T。`execution.mode: parallel` 才補
 `Integrate-after`(軟整合依賴)／`Risk`／`Review-mode`／`Semantic-conflicts-with`;
 Wave 由既有引擎從 `Blocked-by` + Files overlap 自動派生,不在本檔手排,也不動平行引擎。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage5-graph.sh --write-cursor S3-deps`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage5-graph.sh --write-cursor S3-deps`。
 
 ## 完成條件
 

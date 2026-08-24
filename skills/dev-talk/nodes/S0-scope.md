@@ -21,7 +21,7 @@ N1 已完成。MEMORY_SESSION_ID 已在。游標在 S0,或剛從 N1 進來。
 同時問起點:對這塊多熟、想法走到哪 —— 據此校準提問深度(只調深淺,
 不放鬆查證與必問)。微型需求(單點小改)→ 徵使用者同意走精簡(步 1 快掃、
 步 2 只問 Journey 與 Workarounds、步 5/6 各一輪帶過,骨架照填可短)。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S0-scope "$MEMORY_SESSION_ID"`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S0-scope "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

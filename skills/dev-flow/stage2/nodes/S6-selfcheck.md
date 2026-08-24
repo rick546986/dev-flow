@@ -18,7 +18,7 @@ S5 已完成。游標在 S6。同一份 `2-decision.md` 仍在。
 ## 做什麼
 
 依模板頂註步 6 自檢。問題 → 改同一檔或退回對應節點。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage2-graph.sh --write-cursor S6-selfcheck`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage2-graph.sh --write-cursor S6-selfcheck`。
 
 ## 完成條件
 

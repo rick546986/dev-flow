@@ -25,7 +25,7 @@ Evidence 契約、空欄擋、層名全等、「出貨樹=審過的樹」、Fina
 呼叫現有 `docs/dev/tools/devflow-evidence-gauntlet.sh`(或
 `scripts/devflow-evidence-gauntlet.sh`)。Source SHA = 當下 HEAD = 送審樹。
 不重寫 Gauntlet,不另寫通過條件。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage7-graph.sh --write-cursor S2d-fresh`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage7-graph.sh --write-cursor S2d-fresh`。
 
 ## 完成條件
 

@@ -23,7 +23,7 @@ Design Boundary Contract 兩節,不另存。禁止第二份 `4-spec*.md`。
 同步填兩節:Profile 的 `lane:` 依判準決定(不由指示決定,偏離要在本節明記理由),
 Risk: high 時 Failure Model 表必填,Reliability triage 三問兩 lane 都要答;
 Design Boundary Contract 觸發條件全未命中才可 `n-a` 附具體理由,fast lane 不豁免。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage4-graph.sh --write-cursor S3b-profile`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage4-graph.sh --write-cursor S3b-profile`。
 
 ## 完成條件
 

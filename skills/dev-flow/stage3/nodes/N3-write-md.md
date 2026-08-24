@@ -19,7 +19,7 @@ code 進 throwaway branch,禁進 main。`write_mode: overwrite`。
 ## 做什麼
 
 把 0–2 的內容寫進同一檔。重跑本節點 = 覆寫同一路徑,不是另存一份。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage3-graph.sh --write-cursor N3-write-md`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage3-graph.sh --write-cursor N3-write-md`。
 
 ## 完成條件
 

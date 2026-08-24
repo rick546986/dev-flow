@@ -22,7 +22,7 @@ Diff Budget／Dependencies 四節,不另存。禁止第二份 `4-spec*.md`。
 
 四節逐節填齊:驗收打包(全 S 綠 + 回歸 + 非功能;行為不變類走 golden master)、
 範圍外、差異預算(按區塊拆估,測試檔與非測試碼分開)、依賴逐項一行理由。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage4-graph.sh --write-cursor S3a-close`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage4-graph.sh --write-cursor S3a-close`。
 
 ## 完成條件
 

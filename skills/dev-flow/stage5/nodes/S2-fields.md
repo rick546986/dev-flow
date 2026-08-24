@@ -25,7 +25,7 @@ root 為相對根,含對應測試檔)、Verify(單行純指令;用 `-run`／`-k`
 最小子集,不整份複製。
 續行與子項不得以保留欄名開頭 —— 寫成 `- Files:` 之類會被 parser 當同名欄位,把真正
 的 `Files:` 換掉。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage5-graph.sh --write-cursor S2-fields`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage5-graph.sh --write-cursor S2-fields`。
 
 ## 完成條件
 

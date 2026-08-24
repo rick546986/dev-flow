@@ -21,7 +21,7 @@ Stage 3 對帳逐場有下落。游標在 S3c-stage3。
 草擬時自己拍的板逐條進上層表(決定了什麼|為什麼|依據|若被推翻會怎樣|狀態),
 純內部技術選擇進下層清單,拿不準放哪層一律放上層。
 全文掃 TBD／之後再說／實作再定 —— 命中即轉 DD 或退回提問,不准留在正文。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage4-graph.sh --write-cursor S4-dd`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage4-graph.sh --write-cursor S4-dd`。
 
 ## 完成條件
 

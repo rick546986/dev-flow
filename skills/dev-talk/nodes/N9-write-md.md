@@ -21,7 +21,7 @@
 舊執行清單步 7:按骨架寫 `1-discussion.md`。十節齊、無佔位符
 (真實世界五份為其中一節,子節全在)。
 重跑本節點 = 覆寫同一路徑,不是另存一份。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devtalk-graph.sh --write-cursor N9-write-md "$MEMORY_SESSION_ID"`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor N9-write-md "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

@@ -18,7 +18,7 @@ N3 已覆寫同一份 `2-decision.md`。游標在 S4。
 ## 做什麼
 
 依模板頂註步 4 清點 Owner Calls。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage2-graph.sh --write-cursor S4-oc`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage2-graph.sh --write-cursor S4-oc`。
 
 ## 完成條件
 

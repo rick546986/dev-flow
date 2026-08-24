@@ -21,7 +21,7 @@ N1-matrix 完成:coverage matrix 全列填畢(未參考作者主張)。游標在
 
 親跑本次 S 測試 + 既有全套,兩份輸出入同一份 `7-review.md`。
 不在這裡讀 Self-Review、不另開檔。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage7-graph.sh --write-cursor S2-run`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage7-graph.sh --write-cursor S2-run`。
 
 ## 完成條件
 

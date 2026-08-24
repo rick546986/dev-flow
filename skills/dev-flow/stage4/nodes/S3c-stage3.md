@@ -23,7 +23,7 @@ Operational Context 的 `Recovery:` 欄位;以及已落檔的 R／S 與 Out of S
 逐一核對每個 ACCEPTED 場景:對應至少一條 R／S,或在 Out of Scope 明列排除理由。
 Human verdict ≠ ACCEPTED 的互動 S 不得定案 —— 列 Drafting Decisions 待裁決,
 或退回第 3 站重新 Demo。沒有 Stage 3 時整節記 N/A。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage4-graph.sh --write-cursor S3c-stage3`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage4-graph.sh --write-cursor S3c-stage3`。
 
 ## 完成條件
 

@@ -22,7 +22,7 @@ S2-run 完成:本次 S 測試與既有全套的輸出已在同一份 `7-review.m
 
 照每 S 的觀測方式親自實跑一次,證據入同一份 `7-review.md`。
 無外部現象的 S 註明理由。不在這裡讀 Self-Review。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage7-graph.sh --write-cursor S2b-phenomena`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage7-graph.sh --write-cursor S2b-phenomena`。
 
 ## 完成條件
 

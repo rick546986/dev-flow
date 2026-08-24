@@ -21,7 +21,7 @@ owner 自審必須有獨立「限制聲明」節;沒有這一節的 owner 自審
 ## 做什麼
 
 核前站 G2、聲明閱讀順序、若走 owner 自審則寫限制聲明節。不要讀 6-notes。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage7-graph.sh --write-cursor N0-role`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage7-graph.sh --write-cursor N0-role`。
 
 ## 完成條件
 

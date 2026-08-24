@@ -19,7 +19,7 @@ Final Fresh 綁 SHA)。本檔不另寫通過條件、不重寫那些工具。
 ## 做什麼
 
 核 status／verdict 與現有 G3 機械檢查一致;html twin 用現有 `build-gate-twin.py`,不改它。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage7-graph.sh --write-cursor N5-verdict`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage7-graph.sh --write-cursor N5-verdict`。
 
 ## 完成條件
 

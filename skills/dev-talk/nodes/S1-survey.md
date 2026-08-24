@@ -20,7 +20,7 @@ S0 已完成(slug / 起點 / 模式已定)。MEMORY_SESSION_ID 仍在。游標�
 
 讀白名單,條列事實並一併回報使用者。
 認可後的清單 = 本次「已核事實」。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S1-survey "$MEMORY_SESSION_ID"`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S1-survey "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 

@@ -17,7 +17,7 @@ S1 的方案表。步 2 清單正本是 `_templates/2-decision.md` 頂註,本檔
 ## 做什麼
 
 依模板頂註步 2 壓測定案,給後續 N3 落檔。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage2-graph.sh --write-cursor S2-stress`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage2-graph.sh --write-cursor S2-stress`。
 
 ## 完成條件
 

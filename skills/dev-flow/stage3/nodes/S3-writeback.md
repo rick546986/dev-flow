@@ -19,7 +19,7 @@ N3 已覆寫同一份 `3-prototype.md`。游標在 S3。
 ## 做什麼
 
 依模板頂註步 3 回寫同一份 `2-decision.md`。本節點不搶寫整份決策檔。
-跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage3-graph.sh --write-cursor S3-writeback`。
+跑 `${DEVFLOW_ROOT}/scripts/check-devstage3-graph.sh --write-cursor S3-writeback`。
 
 ## 完成條件
 
