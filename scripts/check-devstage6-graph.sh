@@ -1,29 +1,35 @@
 #!/bin/bash
-# check-devstage6-graph.sh — Stage 6 第一刀的機械契約
+# check-devstage6-graph.sh — Stage 6 第二刀的機械契約
 #
 # 為什麼需要:把第 6 站切成可單獨重跑的節點之後,有幾件事不能只靠散文 —
 #   1. 沒有 stage6/graph.yaml 必須紅:舊實作(單一 SKILL、沒有 graph)無法證明
 #      下一跳與重跑契約。
 #   2. 真節點缺「進條件」或「完成條件」必須紅:節點不能單獨當入口。
 #   3. 同 slug 第二份 6-implementation-notes*.md 必須紅:產物仍是一份。
-#   4. write_mode≠overwrite 必須紅:重跑 N1-arm 覆寫同一檔,不另存。
-#   5. 缺 N1-arm 必須紅:第一刀必須有寫檔節點,不要只做 handoff。
+#   4. write_mode≠overwrite 必須紅:重跑 N1-arm／S2-tdd 覆寫同一檔,不另存。
+#   5. 缺 N1-arm 必須紅:必須有寫檔節點,不要只做 handoff。
 #   6. 5-tasks 不是 approved 卻 write_notes(寫 6-implementation-notes.md)必須紅:
 #      第 5 站還沒定案不准搶跑第 6 站。
-#   7. 沒武裝(游標不是 N1-arm)卻 write_notes 必須紅;6-notes 已落檔卻
-#      FORK_INTEGRATION_SHA 缺或被改寫必須紅。錨點一旦寫入不准更新。
+#   7. 沒武裝卻 write_notes 必須紅;6-notes 已落檔卻 FORK_INTEGRATION_SHA 缺或
+#      被改寫必須紅。錨點一旦寫入不准更新。N1-arm 是落錨點的那一筆;
+#      S2-tdd 寫 TDD 證據之前必須已經武裝。
+#   8. 第二刀:乘客步 2(逐 T)必須是真節點檔 S2-tdd。kind: skill-legacy 團塊
+#      必須紅 —— 第一刀的暫留 hop 到這一刀就沒有存在理由了。
+#      每個真節點「做什麼」必須 --write-cursor <本節點 id>。
+#      N1-arm 與 S2-tdd 才 allow write_notes(同一份 6-implementation-notes.md,
+#      overwrite);不要放寬 N2-handoff／N4-selfcheck／N5-end。
+#      S2-tdd 是一顆 hop,不是一 T 一 hop —— 逐 T 仍走 README §5 動線 / 引擎。
+#      做什麼必須點名 README §5,且寫明「不是一 T 一 hop」。
 #
-# graph.yaml 是下一跳的唯一正本。暫留步是 kind: skill-legacy 的真 hop,禁止 via
+# graph.yaml 是下一跳的唯一正本。分叉與暫留一律用 next 指到的真節點,禁止 via
 # (第 1 站 0030 的假綠就是 via 字串當 hop 換來的)。
-# 本刀 kind: skill-legacy 合法;第二刀才改成「仍是 skill-legacy 必須紅」。
-# skill-legacy-T 是一顆 hop,不是一 T 一 hop —— 逐 T 仍走 README §5 動線 / 引擎。
 # 本機游標 .devstage6-cursor.json 不進 Git。
 # 不改 check-devtalk-graph.sh / check-devstage2-graph.sh / check-devstage3-graph.sh /
 # check-devstage4-graph.sh / check-devstage5-graph.sh。
 # 不改 _templates/6-implementation-notes.md 正文(乘客清單正本是它的頂註 0–4)。
 # 不改 hooks/devflow-exec.sh、hooks/_guard_impl.py、Gauntlet、平行引擎。
 # 圍欄②一個字不改鬆。
-# 本刀不掃 prebash、不掃 guide #stage6 節點鏈 —— 那是後兩刀。
+# 本刀不掃 prebash、不掃 guide #stage6 節點鏈 —— 那是第三刀。
 #
 # 用法:
 #   scripts/check-devstage6-graph.sh [root]
@@ -101,27 +107,34 @@ DOCS_DEV = os.path.join(root, "docs", "dev")
 
 ENTRY_NODE = "N1-arm"
 WRITE_NOTES_NODE = "N1-arm"
-REQUIRED_NODES = ("N1-arm", "N2-handoff", "N4-selfcheck", "N5-end")
-LEGACY_NODES = ("skill-legacy-T",)
+TDD_NODE = "S2-tdd"
+# 第二刀:五個真節點檔,沒有 skill-legacy 團塊。逐 T 仍是一顆 hop。
 CHAIN = (
     "N1-arm",
     "N2-handoff",
-    "skill-legacy-T",
+    "S2-tdd",
     "N4-selfcheck",
     "N5-end",
 )
+REQUIRED_NODES = CHAIN
 EXPECTED_NEXT = {
     "N1-arm": "N2-handoff",
-    "N2-handoff": "skill-legacy-T",
-    "skill-legacy-T": "N4-selfcheck",
+    "N2-handoff": "S2-tdd",
+    "S2-tdd": "N4-selfcheck",
     "N4-selfcheck": "N5-end",
     "N5-end": "",
 }
 REQUIRED_HEADINGS = ("進條件", "讀什麼", "寫哪裡", "做什麼", "完成條件", "下一跳")
 CANONICAL_MD = "docs/dev/<slug>/6-implementation-notes.md"
-LEGACY_ENTRY = "_templates/6-implementation-notes.md"
 LOCKED_ACTIONS = ("write_notes",)
+# 落錨點(N1)與逐 T 證據(S2)共寫同一份 6-notes(overwrite)。
+# N2／N4／N5 不放寬。
+NOTES_ALLOWED_NODES = (
+    "N1-arm",
+    "S2-tdd",
+)
 NOTES_FORBIDDEN_NODES = ("N2-handoff", "N4-selfcheck", "N5-end")
+PER_T_HOP_RE = re.compile(r"^T-?\d+$")
 STAGE_KEY = "6-implementation"
 SHA_LINE_RE = re.compile(
     r"^FORK_INTEGRATION_SHA:\s*([0-9a-f]{40})\s*$", re.M
@@ -303,6 +316,19 @@ def tasks_approved(slug):
     return doc_status(slug, "5-tasks.md") == "approved"
 
 
+def notes_text(slug):
+    if not slug:
+        return ""
+    path = os.path.join(DOCS_DEV, slug, "6-implementation-notes.md")
+    if not os.path.isfile(path):
+        return ""
+    return open(path, encoding="utf-8").read()
+
+
+def is_armed(slug):
+    return bool(SHA_LINE_RE.search(notes_text(slug)))
+
+
 def is_graph_notes(text):
     return frontmatter_stage(text) == STAGE_KEY
 
@@ -320,15 +346,20 @@ def evaluate_action(graph, payload):
     if not isinstance(spec, dict):
         return "error", f"graph.yaml 沒有節點 {node_id}"
     if action == "write_notes":
-        if node_id != WRITE_NOTES_NODE:
+        if node_id not in NOTES_ALLOWED_NODES:
             return "deny", (
-                f"{node_id} 沒武裝不得 write_notes(寫 6-implementation-notes.md)"
-                f"—— 只有 {WRITE_NOTES_NODE} 可寫第一筆錨點"
+                f"{node_id} 未允許 write_notes(寫 6-implementation-notes.md)—— "
+                f"只有 {'／'.join(NOTES_ALLOWED_NODES)} 可寫"
             )
         if not tasks_approved(slug):
             return "deny", (
                 f"{node_id} 5-tasks 不是 approved 卻 write_notes"
                 f"(寫 6-implementation-notes.md)—— 退回第 5 站"
+            )
+        if node_id != WRITE_NOTES_NODE and not is_armed(slug):
+            return "deny", (
+                f"{node_id} 沒武裝不得 write_notes(寫 6-implementation-notes.md)"
+                f"—— 缺 FORK_INTEGRATION_SHA,退回 {WRITE_NOTES_NODE}"
             )
     allow = set(as_list(spec.get("allow")))
     forbid = set(as_list(spec.get("forbid")))
@@ -339,11 +370,11 @@ def evaluate_action(graph, payload):
     return "allow", f"{node_id} 允許 {action}"
 
 
-def simulate_n1_rerun(write_paths, write_mode):
+def simulate_notes_rerun(write_paths, write_mode):
     import tempfile
     from pathlib import Path
 
-    with tempfile.TemporaryDirectory(prefix="devstage6-n1-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="devstage6-notes-") as tmp:
         slug = Path(tmp) / "docs" / "dev" / "sim-slug"
         slug.mkdir(parents=True)
         (slug / "6-implementation-notes.md").write_text("first\n", encoding="utf-8")
@@ -444,8 +475,13 @@ def check_chain(nodes, failures):
         if not isinstance(spec, dict):
             if node_id == WRITE_NOTES_NODE:
                 failures.append(
-                    "P0 graph.yaml 缺節點 N1-arm —— 第一刀必須有寫檔節點,"
+                    "P0 graph.yaml 缺節點 N1-arm —— 必須有寫檔節點,"
                     "不要只做 handoff"
+                )
+            elif node_id == TDD_NODE:
+                failures.append(
+                    "P0 graph.yaml 缺節點 S2-tdd —— 第二刀必須把 "
+                    "skill-legacy-T 拆成真節點,逐 T 不是一 T 一 hop"
                 )
             else:
                 failures.append(f"P0 graph.yaml 缺節點 {node_id}")
@@ -455,21 +491,6 @@ def check_chain(nodes, failures):
             failures.append(
                 f"P0 {node_id} next 必須是 {expected!r},實際是 {actual!r}"
             )
-    for node_id in LEGACY_NODES:
-        spec = nodes.get(node_id) if isinstance(nodes, dict) else None
-        if not isinstance(spec, dict):
-            continue
-        if spec.get("kind") != "skill-legacy":
-            failures.append(
-                f"P0 {node_id} 必須是 kind: skill-legacy 真節點,不准用 via 字串當 hop"
-            )
-        if spec.get("entry") != LEGACY_ENTRY:
-            failures.append(
-                f"P0 {node_id} entry 必須是 {LEGACY_ENTRY},"
-                f"實際是 {spec.get('entry')!r}"
-            )
-        if not str(spec.get("steps") or "").strip():
-            failures.append(f"P0 {node_id} 缺 steps(暫留哪幾步說不清)")
 
 
 def check_live(graph):
@@ -525,7 +546,18 @@ def check_live(graph):
         token = f"--write-cursor {node_id}"
         if token not in do_body:
             failures.append(f"P0 {rel} 做什麼必須呼叫 --write-cursor {node_id}")
-        if node_id == WRITE_NOTES_NODE:
+        if node_id == TDD_NODE:
+            if "README §5" not in do_body:
+                failures.append(
+                    f"P0 {rel} 做什麼必須點名 README §5"
+                    "(逐 T 動線正本,不抄原文、不另寫引擎)"
+                )
+            if "不是一 T 一 hop" not in do_body:
+                failures.append(
+                    f"P0 {rel} 做什麼必須寫明「不是一 T 一 hop」"
+                    "—— 逐 T 仍走現有引擎,不准每個 T 一顆 hop"
+                )
+        if node_id in NOTES_ALLOWED_NODES:
             if "6-implementation-notes.md" not in write_body:
                 failures.append(
                     f"P0 {rel} 寫哪裡必須點名 6-implementation-notes.md"
@@ -537,6 +569,7 @@ def check_live(graph):
                     failures.append(
                         f"P0 {rel} 必須禁止第二份 6-implementation-notes*.md"
                     )
+        if node_id == WRITE_NOTES_NODE:
             if "FORK_INTEGRATION_SHA" not in do_body:
                 failures.append(
                     f"P0 {rel} 做什麼必須點名 FORK_INTEGRATION_SHA(40 碼錨點)"
@@ -545,6 +578,10 @@ def check_live(graph):
     if graph is None:
         failures.append(
             "P0 舊實作缺 N1-arm —— 第一刀必須有寫檔節點,不要只做 handoff"
+        )
+        failures.append(
+            "P0 舊實作把乘客步 2(逐 T)留在單一 SKILL —— 必須是真節點檔 S2-tdd,"
+            "不是 skill-legacy 團塊;逐 T 不是一 T 一 hop"
         )
         failures.append(
             "P0 舊實作無法證明同 slug 第二份 6-implementation-notes*.md 會被擋"
@@ -565,24 +602,28 @@ def check_live(graph):
         failures.extend(scan_live_notes_dupes())
         return failures
 
-    n1 = nodes.get(WRITE_NOTES_NODE) or {}
-    write_paths = as_list(n1.get("write"))
-    write_mode = n1.get("write_mode") or ""
-    if write_paths != [CANONICAL_MD]:
-        failures.append(
-            f"P0 graph.yaml N1-arm write 必須剛好是 {[CANONICAL_MD]},"
-            f"實際是 {write_paths}"
-        )
-    if write_mode != "overwrite":
-        failures.append(
-            f"P0 graph.yaml N1-arm write_mode 必須是 overwrite,實際是 {write_mode!r}"
-        )
-    found = simulate_n1_rerun(write_paths or [CANONICAL_MD], write_mode)
-    if found != ["6-implementation-notes.md"]:
-        failures.append(
-            f"P0 模擬重跑 N1-arm 後 6-implementation-notes*.md = {found},"
-            f"必須只剩正本一份"
-        )
+    for node_id in NOTES_ALLOWED_NODES:
+        spec = nodes.get(node_id)
+        if not isinstance(spec, dict):
+            continue
+        write_paths = as_list(spec.get("write"))
+        write_mode = spec.get("write_mode") or ""
+        if write_paths != [CANONICAL_MD]:
+            failures.append(
+                f"P0 graph.yaml {node_id} write 必須剛好是 {[CANONICAL_MD]},"
+                f"實際是 {write_paths}"
+            )
+        if write_mode != "overwrite":
+            failures.append(
+                f"P0 graph.yaml {node_id} write_mode 必須是 overwrite,"
+                f"實際是 {write_mode!r}"
+            )
+        found = simulate_notes_rerun(write_paths or [CANONICAL_MD], write_mode)
+        if found != ["6-implementation-notes.md"]:
+            failures.append(
+                f"P0 模擬重跑 {node_id} 後 6-implementation-notes*.md = {found},"
+                f"必須只剩正本一份"
+            )
 
     for node_id, spec in nodes.items():
         if not isinstance(spec, dict):
@@ -591,12 +632,21 @@ def check_live(graph):
             failures.append(
                 f"P0 {node_id} 用 via 當 hop,必須是 next 指到的真節點"
             )
+        if spec.get("kind") == "skill-legacy":
+            failures.append(
+                f"P0 {node_id} 仍是 skill-legacy 團塊,必須拆成有節點檔的 hop"
+            )
+        if PER_T_HOP_RE.match(str(node_id)):
+            failures.append(
+                f"P0 {node_id} 是一 T 一 hop,逐 T 必須仍走 README §5 動線 / "
+                f"引擎,不准每個 T 一顆 hop"
+            )
         allow = set(as_list(spec.get("allow")))
-        if node_id == WRITE_NOTES_NODE:
+        if node_id in NOTES_ALLOWED_NODES:
             if "write_notes" not in allow:
                 failures.append(
-                    "P0 N1-arm 必須 allow write_notes"
-                    "(同一份 6-implementation-notes.md,overwrite;落 FORK_INTEGRATION_SHA)"
+                    f"P0 {node_id} 必須 allow write_notes"
+                    "(同一份 6-implementation-notes.md,overwrite)"
                 )
         elif "write_notes" in allow:
             failures.append(f"P0 {node_id} 不得 allow write_notes")
@@ -647,8 +697,8 @@ if failures:
     sys.exit(1)
 
 print(
-    "✅ PASS:Stage 6 graph 四真節點 / 一暫留 hop / 單產物 / 覆寫 / "
-    "未定案不寫 6-notes / 沒武裝不寫 / SHA 錨點全過"
+    "✅ PASS:Stage 6 graph 五真節點 / 無 skill-legacy / 單產物 / 覆寫 / "
+    "未定案不寫 6-notes / 沒武裝不寫 / SHA 錨點 / 逐 T 不是一 T 一 hop 全過"
 )
 sys.exit(0)
 PY
