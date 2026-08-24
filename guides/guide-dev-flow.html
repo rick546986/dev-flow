@@ -2250,14 +2250,17 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             hooks 沒接 <code>--action</code> 各打一槍;prebash 另有實跑一輪。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-devstage5-graph.sh</code></td>
-        <td>乘客不用跑它。它管 Stage 5 的節點鏈:下一跳以
+        <td>乘客不用跑它。它管 Stage 5 八真節點鏈:下一跳以
             <code>skills/dev-flow/stage5/graph.yaml</code> 為準、必須有寫檔節點
-            <code>N4-write-md</code>(第一刀不能只做 handoff)、重跑只能覆寫同一份
-            <code>5-tasks.md</code>、只有 N4 可寫(<code>N1-handoff</code>／
+            <code>N4-write-md</code>、重跑只能覆寫同一份 <code>5-tasks.md</code>、
+            只有 <code>S1-slice</code>／<code>S2-fields</code>／<code>S3-deps</code>／
+            <code>S4-selfcheck</code> 與 N4 可寫(<code>N1-handoff</code>／
             <code>N5-twin</code>／<code>N6-end</code> 一律不得寫)、未過 G2
             (<code>4-spec</code> 不是 approved)不得寫 <code>5-tasks.md</code>、
-            5-tasks 未定案不得寫 <code>6-implementation-notes.md</code>。暫留步必須是
-            <code>kind: skill-legacy</code> 真節點,有 <code>via</code> 就紅。
+            5-tasks 未定案不得寫 <code>6-implementation-notes.md</code>。
+            四必填欄(Covers／Files／Verify／Blocked-by)缺一必須紅 —— 判準是呼叫現有
+            <code>parse_5_tasks</code>,不另寫第二套解析。
+            <code>kind: skill-legacy</code> 團塊與 <code>via</code> 都紅。
             本機游標 <code>.devstage5-cursor.json</code> 不進 Git。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-devstage5-graph.sh</code></td>
@@ -2265,8 +2268,10 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             完成條件、同 slug 第二份 <code>5-tasks*.md</code>、
             <code>write_mode≠overwrite</code>、缺 <code>N4-write-md</code>、
             未過 G2 仍寫 <code>5-tasks</code>、未定案就寫
-            <code>6-implementation-notes</code>、<code>via</code> 當 hop、entry 不對、
-            鏈斷、缺 <code>--write-cursor</code> 各打一槍。</td>
+            <code>6-implementation-notes</code>、<code>via</code> 當 hop、
+            <code>kind: skill-legacy</code> 回頭、entry 不對、鏈斷、
+            缺 <code>--write-cursor</code>、<code>S4-selfcheck</code> 沒點名
+            <code>parse_5_tasks</code>、換成不判缺欄的 parser 各打一槍。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>
         <td>本節新增的守衛本身——盤點 <code>hooks/</code>/<code>scripts/</code>/<code>observability/</code>/
