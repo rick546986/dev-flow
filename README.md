@@ -81,25 +81,7 @@ repo 內任一 html 都可把路徑接在 `rick546986.github.io/dev-flow/` 後�
 
 去哪:[七階段 SVG](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow)
 
-```text
-想法
-  ↓
-1 討論
-  ↓
-2 決策  → G1
-  ↓
-3 原型(選配)
-  ↓
-4 規格  → G2
-  ↓
-5 任務
-  ↓
-6 實作
-  ↓
-7 驗證  → G3
-  ↓
-PR
-```
+![七站一條路](guides/fig-readme-flow.svg)
 
 ## 1. 文件地圖(四象限 + STATUS 看板)
 
