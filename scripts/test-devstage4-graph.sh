@@ -1,5 +1,5 @@
 #!/bin/bash
-# test-devstage4-graph.sh — check-devstage4-graph.sh 的負向牙
+# test-devstage4-graph.sh — check-devstage4-graph.sh 的負向牙(第三刀)
 #
 # 對照組是一份最小合法 graph(第二刀:十一個真節點,沒有 skill-legacy 團塊)。
 # 每個案例把對照組改壞一次,確認檢查真的紅。
@@ -10,7 +10,10 @@
 # S1–S5 與 N5-write-md 才 allow write_spec(同一份 4-spec.md,overwrite);
 # 不放寬 N1-handoff／N6-g2／N7-end;write_tasks 一律 deny;有 via 必須紅;
 # S5-gate 必須呼叫既有 check-spec-gate.sh。
-# 本刀不測 prebash、不測 guide #stage4 鏈 —— 那是第三刀。
+# 第三刀:hooks 沒接 --action(或只寫在註解)必須紅;guide 第 4 站開頭缺十一節點鏈
+# 或出現「Stage 4 還在單一 SKILL」必須紅;prebash 實跑 —— 沒游標不攔截,
+# 有游標時 N1／N7 寫 4-spec.md 擋、N5／S1 放行、未過 G1 擋、G2 前寫 5-tasks 擋,
+# 且不搶第 2／3 站的 2-decision.md／3-prototype.md。
 #
 # 用法:scripts/test-devstage4-graph.sh [root]
 # exit:0 = 全過 / 1 = 案例未依預期 / 2 = 治具故障
@@ -366,6 +369,76 @@ with tempfile.TemporaryDirectory(prefix="devstage4-graph-test-") as tmpbase:
     ).write(STAGE3_HIT.replace("status: draft", "status: approved"))
     expect("G-stage3 已 approved 時 N1 當入口必須綠", case, 0)
 
+    case = os.path.join(tmpbase, "guide-stale")
+    seed(case)
+    os.makedirs(os.path.join(case, "guides"), exist_ok=True)
+    open(
+        os.path.join(case, "guides", "guide-dev-flow.html"), "w", encoding="utf-8"
+    ).write(
+        '<h3 id="stage4">Stage 4 — 規格(G2)</h3>\n'
+        "<p>N1-handoff S1-requirements S2-scenarios S3a-close S3b-profile "
+        "S3c-stage3 S4-dd N5-write-md S5-gate N6-g2 N7-end</p>\n"
+        "<p>Stage 4 還在單一 SKILL</p>\n"
+        '<h3 id="stage5">Stage 5</h3>\n'
+    )
+    expect("P0 guide 出現「Stage 4 還在單一 SKILL」必須紅", case, 1, "單一 SKILL")
+
+    case = os.path.join(tmpbase, "guide-no-chain")
+    seed(case)
+    os.makedirs(os.path.join(case, "guides"), exist_ok=True)
+    open(
+        os.path.join(case, "guides", "guide-dev-flow.html"), "w", encoding="utf-8"
+    ).write(
+        '<h3 id="stage4">Stage 4 — 規格(G2)</h3>\n'
+        "<p>本次變更的可測契約(openspec delta 格式)。</p>\n"
+        '<h3 id="stage5">Stage 5</h3>\n'
+    )
+    expect("P0 guide 第 4 站開頭沒十一節點鏈必須紅", case, 1, "缺節點")
+
+    case = os.path.join(tmpbase, "guide-chain-ok")
+    seed(case)
+    os.makedirs(os.path.join(case, "guides"), exist_ok=True)
+    open(
+        os.path.join(case, "guides", "guide-dev-flow.html"), "w", encoding="utf-8"
+    ).write(
+        '<h3 id="stage4">Stage 4 — 規格(G2)</h3>\n'
+        "<p>節點鏈正本 skills/dev-flow/stage4/graph.yaml:N1-handoff → "
+        "S1-requirements → S2-scenarios → S3a-close → S3b-profile → "
+        "S3c-stage3 → S4-dd → N5-write-md → S5-gate → N6-g2 → N7-end。</p>\n"
+        '<h3 id="stage5">Stage 5</h3>\n'
+    )
+    expect("G-guide 第 4 站開頭對上十一節點鏈必須綠", case, 0)
+
+    case = os.path.join(tmpbase, "action-unwired")
+    seed(case)
+    hooks_dir = os.path.join(case, "hooks")
+    os.makedirs(hooks_dir, exist_ok=True)
+    open(
+        os.path.join(hooks_dir, "_prebash_impl.py"), "w", encoding="utf-8"
+    ).write("# fixture:有 hooks 但沒接 check-devstage4-graph --action\n")
+    expect("P0 hooks 沒接 --action 必須紅", case, 1, "--action")
+
+    case = os.path.join(tmpbase, "action-wired")
+    seed(case)
+    hooks_dir = os.path.join(case, "hooks")
+    os.makedirs(hooks_dir, exist_ok=True)
+    open(
+        os.path.join(hooks_dir, "_prebash_impl.py"), "w", encoding="utf-8"
+    ).write(
+        'subprocess.run(["bash", "scripts/check-devstage4-graph.sh",\n'
+        '               "--action", payload_path, root])\n'
+    )
+    expect("G-wired hooks 接了 --action 必須綠", case, 0)
+
+    case = os.path.join(tmpbase, "action-comment-only")
+    seed(case)
+    hooks_dir = os.path.join(case, "hooks")
+    os.makedirs(hooks_dir, exist_ok=True)
+    open(
+        os.path.join(hooks_dir, "_prebash_impl.py"), "w", encoding="utf-8"
+    ).write("# check-devstage4-graph.sh --action 只寫在註解不算接線\n")
+    expect("P0 --action 只寫在註解必須紅", case, 1, "--action")
+
     actions = os.path.join(fix, "actions")
 
     for label, name, needle in (
@@ -456,15 +529,156 @@ with tempfile.TemporaryDirectory(prefix="devstage4-graph-test-") as tmpbase:
         print("  ✗ G-cursor --write-cursor 沒寫出游標檔", file=sys.stderr)
         print((proc.stdout or "") + (proc.stderr or ""), file=sys.stderr)
 
+    prebash = os.path.join(root, "hooks", "devflow-prebash.sh")
+    cursor = os.path.join(root, ".devstage4-cursor.json")
+    # 三份游標同時在場會互相搶同一個檔名(第 2／3 站也編成 4-spec.md);
+    # 這裡只驗第 4 站自己的編成,先把別站游標收走,finally 原樣放回。
+    other_cursors = [
+        os.path.join(root, ".devtalk-cursor.json"),
+        os.path.join(root, ".devstage2-cursor.json"),
+        os.path.join(root, ".devstage3-cursor.json"),
+    ]
+    if os.path.isfile(prebash):
+        def run_prebash(command):
+            payload = json.dumps({
+                "tool_name": "Bash",
+                "tool_input": {"command": command},
+            })
+            return subprocess.run(
+                ["bash", prebash],
+                input=payload,
+                capture_output=True,
+                text=True,
+                cwd=root,
+            )
+
+        def expect_prebash(label, command, want_rc, needle=None):
+            global passed, failed
+            proc = run_prebash(command)
+            blob = (proc.stdout or "") + "\n" + (proc.stderr or "")
+            ok = proc.returncode == want_rc
+            if ok and needle and needle not in blob:
+                ok = False
+                blob += f"\n[test] 期望輸出含 {needle!r}"
+            if ok:
+                passed += 1
+                print(f"  ✓ {label}")
+            else:
+                failed += 1
+                print(
+                    f"  ✗ {label} (rc={proc.returncode} want={want_rc})",
+                    file=sys.stderr,
+                )
+                print(blob[-800:], file=sys.stderr)
+
+        saved = {}
+        for path in other_cursors:
+            if os.path.isfile(path):
+                saved[path] = open(path, encoding="utf-8").read()
+                os.remove(path)
+        if os.path.isfile(cursor):
+            os.remove(cursor)
+        expect_prebash(
+            "P0 prebash:沒游標寫 4-spec.md 不得編成(不是沙盒)",
+            "echo x > docs/dev/fixture-slug/4-spec.md",
+            0,
+        )
+        expect_prebash(
+            "P0 prebash:沒游標寫 5-tasks.md 不得編成(不是沙盒)",
+            "echo x > docs/dev/fixture-slug/5-tasks.md",
+            0,
+        )
+
+        ok_slug = os.path.join(root, "docs", "dev", "stage4-prebash-ok")
+        pending_slug = os.path.join(root, "docs", "dev", "stage4-prebash-pending")
+        try:
+            for slug_dir, status in (
+                (ok_slug, "approved"),
+                (pending_slug, "draft"),
+            ):
+                os.makedirs(slug_dir, exist_ok=True)
+                open(
+                    os.path.join(slug_dir, "2-decision.md"), "w", encoding="utf-8"
+                ).write(
+                    f"---\nfeature: {os.path.basename(slug_dir)}\n"
+                    f"stage: 2-decision\nstatus: {status}\n---\n\n# fixture\n"
+                )
+
+            def point(node, slug):
+                open(cursor, "w", encoding="utf-8").write(
+                    json.dumps({"node": node, "slug": slug})
+                )
+
+            point("N1-handoff", "stage4-prebash-ok")
+            expect_prebash(
+                "P0 prebash:游標 N1-handoff 寫 4-spec.md 必須擋",
+                "echo x > docs/dev/stage4-prebash-ok/4-spec.md",
+                2,
+                "4-spec",
+            )
+            point("N7-end", "stage4-prebash-ok")
+            expect_prebash(
+                "P0 prebash:游標 N7-end 寫 4-spec.md 必須擋",
+                "echo x > docs/dev/stage4-prebash-ok/4-spec.md",
+                2,
+                "N7-end",
+            )
+            point("N5-write-md", "stage4-prebash-ok")
+            expect_prebash(
+                "G-prebash 游標 N5-write-md + G1 已過寫 4-spec.md 必須放行",
+                "echo x > docs/dev/stage4-prebash-ok/4-spec.md",
+                0,
+            )
+            point("S1-requirements", "stage4-prebash-ok")
+            expect_prebash(
+                "G-prebash 游標 S1-requirements 寫 4-spec.md 必須放行",
+                "cat > docs/dev/stage4-prebash-ok/4-spec.md <<'EOF'\nx\nEOF",
+                0,
+            )
+            point("N5-write-md", "stage4-prebash-pending")
+            expect_prebash(
+                "P0 prebash:未過 G1 寫 4-spec.md 必須擋",
+                "echo x > docs/dev/stage4-prebash-pending/4-spec.md",
+                2,
+                "G1",
+            )
+            point("N5-write-md", "stage4-prebash-ok")
+            expect_prebash(
+                "P0 prebash:G2 前寫 5-tasks.md 必須擋",
+                "echo x > docs/dev/stage4-prebash-ok/5-tasks.md",
+                2,
+                "5-tasks",
+            )
+            expect_prebash(
+                "G-prebash 只有第 4 站游標時 2-decision.md 不被第 4 站編成",
+                "echo x > docs/dev/stage4-prebash-ok/2-decision.md",
+                0,
+            )
+            expect_prebash(
+                "G-prebash 只有第 4 站游標時 3-prototype.md 不被第 4 站編成",
+                "echo x > docs/dev/stage4-prebash-ok/3-prototype.md",
+                0,
+            )
+        finally:
+            if os.path.isfile(cursor):
+                os.remove(cursor)
+            for path, text in saved.items():
+                open(path, "w", encoding="utf-8").write(text)
+            shutil.rmtree(ok_slug, ignore_errors=True)
+            shutil.rmtree(pending_slug, ignore_errors=True)
+    else:
+        failed += 1
+        print("  ✗ 找不到 hooks/devflow-prebash.sh", file=sys.stderr)
+
 total = passed + failed
 print(f"=== test-devstage4-graph:{passed}/{total} ===")
 if failed:
     print(f"⛔ {failed} 案未依預期", file=sys.stderr)
     sys.exit(1)
-# 下限跟第 2／3 站對齊(28)。第一刀是 8,第二刀節點多了一倍多,
+# 第一刀 8、第二刀 28、第三刀再加 guide 鏈與 prebash 實跑。
 # 下限不跟著上修等於留一個「少跑一半照樣綠」的洞。
-if total < 28:
-    print(f"⛔ 案例數 {total} < 28,牙齒沒跑齊", file=sys.stderr)
+if total < 56:
+    print(f"⛔ 案例數 {total} < 56,牙齒沒跑齊", file=sys.stderr)
     sys.exit(2)
 sys.exit(0)
 PY

@@ -1,5 +1,5 @@
 #!/bin/bash
-# check-devstage4-graph.sh — Stage 4 第二刀的機械契約
+# check-devstage4-graph.sh — Stage 4 第三刀的機械契約
 #
 # 為什麼需要:把第 4 站切成可單獨重跑的節點之後,有幾件事不能只靠散文 —
 #   1. 沒有 stage4/graph.yaml 必須紅:舊實作(單一 SKILL、沒有 graph)無法證明
@@ -17,6 +17,9 @@
 #      S1–S5 與 N5-write-md 才 allow write_spec(同一份 4-spec.md,overwrite);
 #      不要放寬 N1-handoff／N6-g2／N7-end。S5-gate 只呼叫既有
 #      scripts/check-spec-gate.sh,不改那支腳本。
+#   9. 第三刀:--action 必須接到 prebash,不能只活在 test fixture。guide 第 4 站
+#      開頭必須對上十一節點鏈。出現「Stage 4 還在單一 SKILL」必須紅。
+#      不改第 1／2／3 站的編成。
 #
 # graph.yaml 是下一跳的唯一正本。分叉與暫留一律用 next 指到的真節點,禁止 via
 # (第 1 站 0030 的假綠就是 via 字串當 hop 換來的)。
@@ -24,7 +27,6 @@
 # 不改 check-devtalk-graph.sh / check-devstage2-graph.sh / check-devstage3-graph.sh。
 # 不改 _templates/4-spec.md 正文(乘客清單正本是它的頂註 0–6)。
 # 不改 scripts/check-spec-gate.sh / scripts/build-gate-twin.py(呼叫即可)。
-# 本刀不掃 prebash、不掃 guide #stage4 節點鏈 —— 那是第三刀。
 #
 # 用法:
 #   scripts/check-devstage4-graph.sh [root]
@@ -148,6 +150,8 @@ SPEC_ALLOWED_NODES = (
     "S5-gate",
 )
 SPEC_FORBIDDEN_NODES = ("N1-handoff", "N6-g2", "N7-end")
+GUIDE_PATH = os.path.join(root, "guides", "guide-dev-flow.html")
+STALE_GUIDE = "Stage 4 還在單一 SKILL"
 
 NEXT_ID_RE = re.compile(
     r"(?:S\d+[a-z]?-[A-Za-z0-9-]+|N(?:\d+)?-[A-Za-z0-9-]+|skill-legacy-\d+(?:-\d+)?)"
@@ -613,6 +617,50 @@ def check_live(graph):
     check_chain(nodes, failures)
     failures.extend(scan_live_spec_dupes())
     failures.extend(scan_stage3_entry_block())
+    failures.extend(check_action_runtime_wired())
+    failures.extend(check_guide())
+    return failures
+
+
+def check_action_runtime_wired():
+    """第三刀:--action 必須接到 prebash,不能只活在 test fixture。"""
+    hooks = os.path.join(root, "hooks")
+    if not os.path.isdir(hooks):
+        return []
+    for dirpath, dirnames, filenames in os.walk(hooks):
+        dirnames[:] = [d for d in dirnames if d != "devflow_obs_vendor"]
+        for name in filenames:
+            if not name.endswith((".py", ".sh")):
+                continue
+            path = os.path.join(dirpath, name)
+            try:
+                text = open(path, encoding="utf-8").read()
+            except OSError:
+                continue
+            code = "\n".join(line.split("#", 1)[0] for line in text.splitlines())
+            if "check-devstage4-graph" in code and "--action" in code:
+                return []
+    return [
+        "P0 --action 沒接到 runtime:hooks 沒有呼叫 check-devstage4-graph.sh --action"
+    ]
+
+
+def check_guide():
+    """第 4 站開頭對上十一節點鏈;舊句「還在單一 SKILL」必須紅。"""
+    if not os.path.isfile(GUIDE_PATH):
+        return []
+    text = open(GUIDE_PATH, encoding="utf-8").read()
+    failures = []
+    if STALE_GUIDE in text:
+        failures.append(f"P0 guide 出現「{STALE_GUIDE}」")
+    match = re.search(r'<h3 id="stage4">.*?(?=<h3 |\Z)', text, re.S)
+    if not match:
+        failures.append('P0 guide 找不到第 4 站 <h3 id="stage4">')
+        return failures
+    head = match.group(0)[:2500]
+    missing = [node_id for node_id in CHAIN if node_id not in head]
+    if missing:
+        failures.append("P0 guide 第 4 站開頭缺節點:" + ",".join(missing))
     return failures
 
 
@@ -648,7 +696,7 @@ if failures:
 
 print(
     "✅ PASS:Stage 4 graph 十一真節點 / 無 skill-legacy 團塊 / 單產物 / 覆寫 / "
-    "G1 前不搶跑 / G2 前不寫 5-tasks 全過"
+    "G1 前不搶跑 / G2 前不寫 5-tasks / prebash / guide 全過"
 )
 sys.exit(0)
 PY
