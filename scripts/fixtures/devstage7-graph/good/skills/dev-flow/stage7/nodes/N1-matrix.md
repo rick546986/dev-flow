@@ -2,7 +2,7 @@
 
 ## 進條件
 
-N0-role 完成。不要寫 `7-review.md`(本刀寫檔只在 N4-author)。
+N0-role 完成。本節點不寫 `7-review.md`(寫檔在 S2-* 與 N4-author)。
 
 ## 讀什麼
 
@@ -16,7 +16,7 @@ N0-role 完成。不要寫 `7-review.md`(本刀寫檔只在 N4-author)。
 
 ## 做什麼
 
-自建 Coverage Matrix(未參考作者主張)。內容本刀先備著,落檔在 N4。
+自建 Coverage Matrix(未參考作者主張)。內容先備著,落檔從 S2-run 起覆寫同一份。
 跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage7-graph.sh --write-cursor N1-matrix`。
 
 ## 完成條件
@@ -25,4 +25,4 @@ N0-role 完成。不要寫 `7-review.md`(本刀寫檔只在 N4-author)。
 
 ## 下一跳
 
-skill-legacy-2
+S2-run

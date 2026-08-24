@@ -1,28 +1,37 @@
 #!/bin/bash
-# check-devstage7-graph.sh — Stage 7 第一刀的機械契約
+# check-devstage7-graph.sh — Stage 7 第二刀的機械契約
 #
 # 為什麼需要:把第 7 站切成可單獨重跑的節點之後,有幾件事不能只靠散文 —
 #   1. 沒有 stage7/graph.yaml 必須紅:舊實作(單一 SKILL、沒有 graph)無法證明
 #      下一跳與重跑契約。
 #   2. 真節點缺「進條件」或「完成條件」必須紅:節點不能單獨當入口。
 #   3. 同 slug 第二份 7-review*.md 必須紅:產物仍是一份。
-#   4. write_mode≠overwrite 必須紅:重跑 N4 覆寫同一檔,不另存。
-#   5. 缺 N4-author 必須紅:第一刀必須有寫檔節點,不要只做 handoff。
+#   4. write_mode≠overwrite 必須紅:重跑寫檔節點覆寫同一檔,不另存。
+#   5. 缺 N4-author 必須紅:必須有寫檔節點,不要只做 handoff。
 #   6. 未過 G2(4-spec 不是 approved)卻 write_review(寫 7-review.md)必須紅:
 #      第 4 站還沒核准不准搶跑第 7 站。
-#   7. N0／N1／N3／N5 做 read_notes(讀 6-notes)必須紅:N4 才准讀(對應 review-unlock)。
+#   7. N0／N1／N3／N5／S2-* 做 read_notes(讀 6-notes)必須紅:N4 才准讀
+#      (對應 review-unlock)。S2 禁讀 Self-Review。
 #   8. 7-self-review.md／7-review-*.md 必須紅:產物只有一份 7-review.md。
 #   9. owner 自審無限制聲明節視同未審。
+#  10. 第二刀:乘客步 2／2b／2c／2d／2e 必須是真節點檔。kind: skill-legacy
+#      團塊必須紅 —— 第一刀的暫留 hop 到這一刀就沒有存在理由了。
+#      每個真節點「做什麼」必須 --write-cursor <本節點 id>。
+#      S2-run／S2b-phenomena／S2c-integration／S2d-fresh／S2e-walkthrough
+#      與 N4-author 才 allow write_review(同一份 7-review.md,overwrite);
+#      不要放寬 N0-role／N1-matrix／N3-axes／N5-verdict。
+#      S2c 必須點名現有 devflow-integration-regression.sh,且在 Final Fresh 之前。
+#      S2d 必須點名現有 devflow-evidence-gauntlet.sh,且綁 SHA。不准重寫那些工具。
+#      write_notes 一律 deny。有 via 必須紅。
+#  11. 第三刀才接 prebash 與 guide #stage7 正文鏈。本刀不掃這兩項。
 #
-# graph.yaml 是下一跳的唯一正本。暫留步是 kind: skill-legacy 的真 hop,禁止 via
+# graph.yaml 是下一跳的唯一正本。分叉與暫留一律用 next 指到的真節點,禁止 via
 # (第 1 站 0030 的假綠就是 via 字串當 hop 換來的)。
-# 本刀 kind: skill-legacy 合法;第二刀才改成「仍是 skill-legacy 必須紅」。
 # 本機游標 .devstage7-cursor.json 不進 Git。
 # 不改 check-devtalk-graph.sh / check-devstage2-graph.sh / check-devstage3-graph.sh /
 # check-devstage4-graph.sh / check-devstage5-graph.sh / check-devstage6-graph.sh。
 # 不改 _templates/7-review.md 正文(乘客清單正本是它的頂註 0–5)。
 # 不改 Gauntlet、Evidence 契約、空欄擋、層名全等、「出貨樹=審過的樹」、Final Fresh 綁 SHA。
-# 本刀不掃 prebash、不掃 guide #stage7 節點鏈 —— 那是第三刀。
 #
 # 用法:
 #   scripts/check-devstage7-graph.sh [root]
@@ -100,34 +109,52 @@ DOCS_DEV = os.path.join(root, "docs", "dev")
 
 ENTRY_NODE = "N0-role"
 WRITE_REVIEW_NODE = "N4-author"
-# 第一刀:五個真節點檔 + 一個 skill-legacy 暫留 hop。
-REQUIRED_NODES = ("N0-role", "N1-matrix", "N3-axes", "N4-author", "N5-verdict")
-LEGACY_NODES = ("skill-legacy-2",)
+INTEGRATION_NODE = "S2c-integration"
+FRESH_NODE = "S2d-fresh"
+INTEGRATION_SCRIPT = "devflow-integration-regression.sh"
+GAUNTLET_SCRIPT = "devflow-evidence-gauntlet.sh"
+# 第二刀:十個真節點檔,沒有 skill-legacy 團塊。
 CHAIN = (
     "N0-role",
     "N1-matrix",
-    "skill-legacy-2",
+    "S2-run",
+    "S2b-phenomena",
+    "S2c-integration",
+    "S2d-fresh",
+    "S2e-walkthrough",
     "N3-axes",
     "N4-author",
     "N5-verdict",
 )
+REQUIRED_NODES = CHAIN
 EXPECTED_NEXT = {
     "N0-role": "N1-matrix",
-    "N1-matrix": "skill-legacy-2",
-    "skill-legacy-2": "N3-axes",
+    "N1-matrix": "S2-run",
+    "S2-run": "S2b-phenomena",
+    "S2b-phenomena": "S2c-integration",
+    "S2c-integration": "S2d-fresh",
+    "S2d-fresh": "S2e-walkthrough",
+    "S2e-walkthrough": "N3-axes",
     "N3-axes": "N4-author",
     "N4-author": "N5-verdict",
     "N5-verdict": "",
 }
 REQUIRED_HEADINGS = ("進條件", "讀什麼", "寫哪裡", "做什麼", "完成條件", "下一跳")
 CANONICAL_MD = "docs/dev/<slug>/7-review.md"
-LEGACY_ENTRY = "_templates/7-review.md"
 LOCKED_ACTIONS = ("write_review", "read_notes", "write_notes")
-# write_review／read_notes 只有 N4-author 可以 allow。write_notes 本刀任何節點都不得 allow。
+# S2-* 與 N4 共寫同一份 7-review.md。read_notes 只有 N4。write_notes 一律不得 allow。
+REVIEW_ALLOWED_NODES = (
+    "S2-run",
+    "S2b-phenomena",
+    "S2c-integration",
+    "S2d-fresh",
+    "S2e-walkthrough",
+    "N4-author",
+)
 REVIEW_FORBIDDEN_NODES = ("N0-role", "N1-matrix", "N3-axes", "N5-verdict")
 
 NEXT_ID_RE = re.compile(
-    r"(?:S\d+-[A-Za-z0-9-]+|N(?:\d+)?-[A-Za-z0-9-]+|skill-legacy-\d+(?:-\d+)?)"
+    r"(?:S\d+[a-z]?-[A-Za-z0-9-]+|N(?:\d+)?-[A-Za-z0-9-]+|skill-legacy-\d+(?:-\d+)?)"
 )
 BAD_REVIEW_RE = re.compile(r"7-review(?:-[A-Za-z0-9]+)+\.md")
 STATUS_RE = re.compile(r"^status:\s*(\S+)", re.M)
@@ -314,10 +341,10 @@ def evaluate_action(graph, payload):
             f"審查期不准改寫第 6 站筆記"
         )
     if action == "write_review":
-        if node_id != WRITE_REVIEW_NODE:
+        if node_id not in REVIEW_ALLOWED_NODES:
             return "deny", (
                 f"{node_id} 未允許 write_review（寫 7-review.md）—— "
-                f"只有 {WRITE_REVIEW_NODE} 可寫"
+                f"只有 {'／'.join(REVIEW_ALLOWED_NODES)} 可寫"
             )
         if not spec_approved(slug):
             return "deny", (
@@ -430,7 +457,7 @@ def check_chain(nodes, failures):
         if not isinstance(spec, dict):
             if node_id == WRITE_REVIEW_NODE:
                 failures.append(
-                    "P0 graph.yaml 缺節點 N4-author —— 第一刀必須有寫檔節點,"
+                    "P0 graph.yaml 缺節點 N4-author —— 必須有寫檔節點,"
                     "不要只做 handoff"
                 )
             else:
@@ -441,21 +468,6 @@ def check_chain(nodes, failures):
             failures.append(
                 f"P0 {node_id} next 必須是 {expected!r},實際是 {actual!r}"
             )
-    for node_id in LEGACY_NODES:
-        spec = nodes.get(node_id) if isinstance(nodes, dict) else None
-        if not isinstance(spec, dict):
-            continue
-        if spec.get("kind") != "skill-legacy":
-            failures.append(
-                f"P0 {node_id} 必須是 kind: skill-legacy 真節點,不准用 via 字串當 hop"
-            )
-        if spec.get("entry") != LEGACY_ENTRY:
-            failures.append(
-                f"P0 {node_id} entry 必須是 {LEGACY_ENTRY},"
-                f"實際是 {spec.get('entry')!r}"
-            )
-        if not str(spec.get("steps") or "").strip():
-            failures.append(f"P0 {node_id} 缺 steps(暫留哪幾步說不清)")
 
 
 def check_live(graph):
@@ -521,7 +533,7 @@ def check_live(graph):
                 failures.append(
                     f"P0 {rel} 必須寫明 owner 自審無限制聲明節視同未審"
                 )
-        if node_id == WRITE_REVIEW_NODE:
+        if node_id in REVIEW_ALLOWED_NODES:
             if "7-review.md" not in write_body:
                 failures.append(f"P0 {rel} 寫哪裡必須點名 7-review.md")
             if not re.search(r"覆寫|不另存", write_body):
@@ -529,10 +541,36 @@ def check_live(graph):
             if re.search(r"7-review\*\.md|第二份", write_body):
                 if not re.search(r"禁止|不得|禁", write_body):
                     failures.append(f"P0 {rel} 必須禁止第二份 7-review*.md")
+        if node_id == WRITE_REVIEW_NODE:
             if "6-implementation-notes" not in read_body and "6-notes" not in read_body:
                 failures.append(f"P0 {rel} 讀什麼必須點名 6-notes(步 4 才准讀)")
             if "review-unlock" not in read_body:
                 failures.append(f"P0 {rel} 讀什麼必須點名 review-unlock")
+        if node_id.startswith("S2"):
+            if "Self-Review" not in read_body or not re.search(r"禁", read_body):
+                failures.append(
+                    f"P0 {rel} 讀什麼必須禁讀 6-notes Self-Review"
+                )
+        if node_id == INTEGRATION_NODE:
+            if INTEGRATION_SCRIPT not in do_body:
+                failures.append(
+                    f"P0 {rel} 做什麼必須點名現有 {INTEGRATION_SCRIPT},"
+                    f"不准另寫整合回歸工具"
+                )
+            if "Final Fresh" not in do_body or "前" not in do_body:
+                failures.append(
+                    f"P0 {rel} 做什麼必須寫明整合回歸在 Final Fresh 之前"
+                )
+        if node_id == FRESH_NODE:
+            if GAUNTLET_SCRIPT not in do_body:
+                failures.append(
+                    f"P0 {rel} 做什麼必須點名現有 {GAUNTLET_SCRIPT},"
+                    f"不准另寫 Gauntlet"
+                )
+            if "SHA" not in do_body and "HEAD" not in do_body:
+                failures.append(
+                    f"P0 {rel} 做什麼必須寫明 Final Fresh 綁 SHA／HEAD"
+                )
         if node_id == "N5-verdict":
             if "G3" not in do_body:
                 failures.append(
@@ -567,23 +605,28 @@ def check_live(graph):
         failures.extend(scan_owner_self_review())
         return failures
 
-    n4 = nodes.get(WRITE_REVIEW_NODE) or {}
-    write_paths = as_list(n4.get("write"))
-    write_mode = n4.get("write_mode") or ""
-    if write_paths != [CANONICAL_MD]:
-        failures.append(
-            f"P0 graph.yaml N4 write 必須剛好是 {[CANONICAL_MD]},"
-            f"實際是 {write_paths}"
-        )
-    if write_mode != "overwrite":
-        failures.append(
-            f"P0 graph.yaml N4 write_mode 必須是 overwrite,實際是 {write_mode!r}"
-        )
-    found = simulate_n4_rerun(write_paths or [CANONICAL_MD], write_mode)
-    if found != ["7-review.md"]:
-        failures.append(
-            f"P0 模擬重跑 N4 後 7-review*.md = {found},必須只剩正本一份"
-        )
+    for node_id in REVIEW_ALLOWED_NODES:
+        spec = nodes.get(node_id) or {}
+        if not isinstance(spec, dict):
+            continue
+        write_paths = as_list(spec.get("write"))
+        write_mode = spec.get("write_mode") or ""
+        if write_paths != [CANONICAL_MD]:
+            failures.append(
+                f"P0 graph.yaml {node_id} write 必須剛好是 {[CANONICAL_MD]},"
+                f"實際是 {write_paths}"
+            )
+        if write_mode != "overwrite":
+            failures.append(
+                f"P0 graph.yaml {node_id} write_mode 必須是 overwrite,"
+                f"實際是 {write_mode!r}"
+            )
+        found = simulate_n4_rerun(write_paths or [CANONICAL_MD], write_mode)
+        if found != ["7-review.md"]:
+            failures.append(
+                f"P0 模擬重跑 {node_id} 後 7-review*.md = {found},"
+                f"必須只剩正本一份"
+            )
 
     for node_id, spec in nodes.items():
         if not isinstance(spec, dict):
@@ -592,23 +635,27 @@ def check_live(graph):
             failures.append(
                 f"P0 {node_id} 用 via 當 hop,必須是 next 指到的真節點"
             )
+        if spec.get("kind") == "skill-legacy":
+            failures.append(
+                f"P0 {node_id} 仍是 skill-legacy 團塊,必須拆成有節點檔的 hop"
+            )
         allow = set(as_list(spec.get("allow")))
-        if node_id == WRITE_REVIEW_NODE:
+        if node_id in REVIEW_ALLOWED_NODES:
             if "write_review" not in allow:
                 failures.append(
-                    "P0 N4-author 必須 allow write_review"
+                    f"P0 {node_id} 必須 allow write_review"
                     "(同一份 7-review.md,overwrite)"
                 )
+        elif "write_review" in allow:
+            failures.append(f"P0 {node_id} 不得 allow write_review")
+        if node_id == WRITE_REVIEW_NODE:
             if "read_notes" not in allow:
                 failures.append(
                     "P0 N4-author 必須 allow read_notes"
                     "(N4 才准讀 6-notes,對應 review-unlock)"
                 )
-        else:
-            if "write_review" in allow:
-                failures.append(f"P0 {node_id} 不得 allow write_review")
-            if "read_notes" in allow:
-                failures.append(f"P0 {node_id} 不得 allow read_notes")
+        elif "read_notes" in allow:
+            failures.append(f"P0 {node_id} 不得 allow read_notes")
         if node_id in REVIEW_FORBIDDEN_NODES and "write_review" in allow:
             failures.append(f"P0 {node_id} 不得放寬 write_review")
         if "write_notes" in allow:
@@ -660,6 +707,6 @@ if failures:
         print(f"  - {item}", file=sys.stderr)
     sys.exit(1)
 
-print("✅ PASS:Stage 7 graph 五真節點 / 一暫留 hop / 單產物 7-review.md / 覆寫 / G2 前不搶跑 / N4 才讀 6-notes 全過")
+print("✅ PASS:Stage 7 graph 十真節點 / 無 skill-legacy 團塊 / 單產物 7-review.md / 覆寫 / 整合回歸在 Fresh 前 / N4 才讀 6-notes 全過")
 sys.exit(0)
 PY

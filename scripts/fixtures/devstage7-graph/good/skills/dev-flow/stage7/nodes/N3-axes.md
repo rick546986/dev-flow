@@ -2,8 +2,8 @@
 
 ## 進條件
 
-skill-legacy-2(模板 2／2b／2c／2d／2e)完成:親跑驗證、現象複驗、
-整合回歸在 Final Fresh 之前、Final Fresh 綁 SHA。不要寫 `7-review.md`。
+S2e-walkthrough 完成:親跑驗證、現象複驗、整合回歸在 Final Fresh 之前、
+Final Fresh 綁 SHA。不要寫 `7-review.md`(本節點不落檔;寫檔在 S2-* 與 N4)。
 
 ## 讀什麼
 
