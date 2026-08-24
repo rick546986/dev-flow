@@ -63,23 +63,6 @@ def quote_region(rel, start, stop=None):
     return "\n".join(selected) + "\n"
 
 
-def markdown_table(rel, heading, first_cell):
-    lines = read(rel).splitlines()
-    in_section = False
-    selected = []
-    for line in lines:
-        if line.startswith("## "):
-            in_section = line.startswith(heading)
-        if in_section and line.startswith("|"):
-            if selected or first_cell in line:
-                selected.append(line)
-        elif selected:
-            break
-    if not selected:
-        raise SystemExit(f"{rel}: table under {heading!r} not found")
-    return "\n".join(selected) + "\n"
-
-
 def bullet(rel, anchor):
     lines = read(rel).splitlines()
     starts = [i for i, line in enumerate(lines) if line.startswith("- ") and anchor in line]
@@ -120,9 +103,9 @@ def exit_checklist():
     return body[first.start():].rstrip("\n") + "\n"
 
 
+# README §3 用途欄是一句摘要;細節住 guide 各站,不再把整表當 README 衍生副本。
+# Gate 欄仍由 gate-consistency 與 check-methodology-corrections 抽 README。
 fragments = {
-    ("guides/guide-dev-flow.html", "readme-stage-table"):
-        markdown_table("README.md", "## 3.", "| # |"),
     ("guides/guide-dev-flow.html", "template2-checklist"):
         quote_region("_templates/2-decision.md", "執行清單("),
     ("guides/guide-dev-flow.html", "template3-checklist"):
