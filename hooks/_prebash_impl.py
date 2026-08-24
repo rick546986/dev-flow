@@ -418,10 +418,73 @@ def _devstage4_graph_action(command):
         L.die("⛔ Stage 4 graph --action deny:" + reason)
 
 
+def _devstage5_graph_action(command):
+    """Stage 5 graph:本機有 .devstage5-cursor.json 才編成 5-tasks / 6-notes。
+
+    必須在 load_state 早退之前跑。沒游標檔不攔截 —— 不是沙盒。
+    不重做第 1 站 write_code 編成。不改第 2／3／4 站的編成 —— 那三站各認自己的
+    游標檔,四份游標同時在場時各自送自己的 --action(第 4 站也編成 5-tasks.md,
+    但它讀的是 .devstage4-cursor.json,兩邊不互相拆掉)。
+    6-implementation-notes.md 在這裡一律送 write_notes,由檢查器擋掉
+    5-tasks 未定案就搶跑第 6 站。
+    """
+    import tempfile
+
+    cursor_path = os.path.join(root, ".devstage5-cursor.json")
+    if not os.path.isfile(cursor_path):
+        return
+    action = None
+    if _writes_named_md(command, "5-tasks.md"):
+        action = "write_tasks"
+    elif _writes_named_md(command, "6-implementation-notes.md"):
+        action = "write_notes"
+    if not action:
+        return
+    try:
+        cursor = json.load(open(cursor_path, encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        cursor = {}
+    if not isinstance(cursor, dict):
+        cursor = {}
+    check = os.path.join(root, "scripts", "check-devstage5-graph.sh")
+    if not os.path.isfile(check):
+        return
+    payload_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".json", delete=False, encoding="utf-8"
+        ) as handle:
+            json.dump(
+                {
+                    "cursor": cursor,
+                    "action": action,
+                    "slug": cursor.get("slug") or "",
+                },
+                handle,
+            )
+            payload_path = handle.name
+        proc = subprocess.run(
+            ["bash", check, "--action", payload_path, root],
+            capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return
+    finally:
+        if payload_path:
+            try:
+                os.unlink(payload_path)
+            except OSError:
+                pass
+    if proc.returncode != 0:
+        reason = (proc.stdout or proc.stderr or "action denied").strip()
+        _obs_deny("devstage5-graph", action)
+        L.die("⛔ Stage 5 graph --action deny:" + reason)
+
+
 _devtalk_graph_action(cmd)
 _devstage2_graph_action(cmd)
 _devstage3_graph_action(cmd)
 _devstage4_graph_action(cmd)
+_devstage5_graph_action(cmd)
 
 state, armed, err = L.load_state(root)
 if err:

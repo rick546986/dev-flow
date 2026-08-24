@@ -743,6 +743,11 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
   </details>
 
   <h3 id="stage5">Stage 5 — 任務(執行板,無 G 編號)</h3>
+  <p>節點鏈正本 <code>skills/dev-flow/stage5/graph.yaml</code>:
+  <code>N1-handoff</code> → <code>S1-slice</code> → <code>S2-fields</code> →
+  <code>S3-deps</code> → <code>N4-write-md</code> → <code>S4-selfcheck</code> →
+  <code>N5-twin</code> → <code>N6-end</code>。
+  乘客清單仍是下方模板頂註 0–6。</p>
   <p>把 4-spec 切成可勾選、可驗證的實作單;順序 = tracer bullet(先打通最薄端到端縱切,
   再逐層加厚)。不是 gate 站,免 reviewer 核准,但一樣要讓人<strong>照著動工</strong>——
   5-tasks twin 是<strong>執行板</strong>不是審查介面(README §6),動線頂區五格/任務卡
@@ -2261,7 +2266,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             四必填欄(Covers／Files／Verify／Blocked-by)缺一必須紅 —— 判準是呼叫現有
             <code>parse_5_tasks</code>,不另寫第二套解析。
             <code>kind: skill-legacy</code> 團塊與 <code>via</code> 都紅。
-            本機游標 <code>.devstage5-cursor.json</code> 不進 Git。</td>
+            本機游標 <code>.devstage5-cursor.json</code> 不進 Git。prebash 在寫
+            <code>5-tasks.md</code>／<code>6-implementation-notes.md</code> 時會帶
+            <code>--action</code>。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-devstage5-graph.sh</code></td>
         <td>上面那支的負向牙:舊實作(單一 SKILL、沒有 graph)必須紅;真節點缺進條件或
@@ -2271,7 +2278,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             <code>6-implementation-notes</code>、<code>via</code> 當 hop、
             <code>kind: skill-legacy</code> 回頭、entry 不對、鏈斷、
             缺 <code>--write-cursor</code>、<code>S4-selfcheck</code> 沒點名
-            <code>parse_5_tasks</code>、換成不判缺欄的 parser 各打一槍。</td>
+            <code>parse_5_tasks</code>、換成不判缺欄的 parser、guide 還寫單一 SKILL、
+            hooks 沒接 <code>--action</code> 各打一槍;prebash 另有實跑一輪,
+            <code>devflow-exec.sh start</code> 未過 G2 拒啟則是釘住既有行為。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>
         <td>本節新增的守衛本身——盤點 <code>hooks/</code>/<code>scripts/</code>/<code>observability/</code>/
