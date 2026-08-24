@@ -30,4 +30,4 @@ todo 與 5-tasks 一一對應。本機游標在 N2-handoff。
 
 ## 下一跳
 
-skill-legacy-T
+S2-tdd

@@ -2,8 +2,8 @@
 
 ## 進條件
 
-逐 T 循環(README §5 動線)已走完,回歸全綠摘要已在案。不要寫
-`6-implementation-notes.md`(本刀寫檔只在 N1-arm)。
+S2-tdd 完成:逐 T 已走完 README §5 動線,回歸全綠摘要已在案。
+不要寫 `6-implementation-notes.md`(寫檔只在 N1-arm／S2-tdd)。
 
 ## 讀什麼
 
@@ -18,7 +18,7 @@
 
 ## 做什麼
 
-對模板步 4 的八問逐項核對。答不出 → 退回 skill-legacy-T(README §5 動線),
+對模板步 4 的八問逐項核對。答不出 → 退回 S2-tdd(README §5 動線),
 不是在這裡發明第二套引擎。
 跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage6-graph.sh --write-cursor N4-selfcheck`。
 
