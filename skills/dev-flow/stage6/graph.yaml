@@ -1,0 +1,38 @@
+# 下一跳唯一正本。本機游標不進 Git。
+# 乘客清單正本仍是 `_templates/6-implementation-notes.md` 頂註 0–4。
+# 第二刀:乘客步 2(逐 T)是真節點檔 S2-tdd,沒有 skill-legacy 團塊,禁止 via。
+# N1-arm 與 S2-tdd 共寫同一份 6-implementation-notes.md(overwrite);
+# N2／N4／N5 不放寬。S2-tdd 是一顆 hop,不是一 T 一 hop。
+entry: N1-arm
+nodes:
+  N1-arm:
+    file: nodes/N1-arm.md
+    next: N2-handoff
+    write:
+      - docs/dev/<slug>/6-implementation-notes.md
+    write_mode: overwrite
+    allow:
+      - write_notes
+  N2-handoff:
+    file: nodes/N2-handoff.md
+    next: S2-tdd
+    forbid:
+      - write_notes
+  S2-tdd:
+    file: nodes/S2-tdd.md
+    next: N4-selfcheck
+    write:
+      - docs/dev/<slug>/6-implementation-notes.md
+    write_mode: overwrite
+    allow:
+      - write_notes
+  N4-selfcheck:
+    file: nodes/N4-selfcheck.md
+    next: N5-end
+    forbid:
+      - write_notes
+  N5-end:
+    file: nodes/N5-end.md
+    next: ""
+    forbid:
+      - write_notes
