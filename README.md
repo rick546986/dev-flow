@@ -288,7 +288,7 @@ L1 出口 = `devflow-exec.sh allow`;L2 = `stop`。
 ## 6. HTML twin(可視化)+ Artifact
 
 細則:[flow `#filemap`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#filemap)
-· 各站審查形狀見 [flow `#stage2`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage2)–`#stage7`
+· 各站審查形狀見 [flow `#stage2`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage2)–[`#stage7`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage7)
 · 討論站視覺版見 [talk `#visual`](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#visual)。
 md = git 正本,html twin = 衍生,gate 時必產。
 
@@ -430,7 +430,7 @@ md = git 正本,html twin = 衍生,gate 時必產。
 
 | 階段 | 一句 | graph.yaml | guide |
 |---|---|---|---|
-| 1 討論 | `/dev-talk`:盲下游,12 步,走錯重跑那一節 | `skills/dev-talk/graph.yaml` | [talk `#map`](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map) · [write_code](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html) · [白名單](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#whitelist) |
+| 1 討論 | `/dev-talk`:盲下游,12 步,走錯重跑那一節 | `skills/dev-talk/graph.yaml` | [talk `#map`](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map)(含 write_code) · [白名單](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#whitelist) |
 | 2 收斂 | 2-3 方案比較 + 壓測定案,過 G1 | `skills/dev-flow/stage2/graph.yaml` | [flow `#stage2`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage2) |
 | 3 原型 | throwaway 實驗,答案回寫 2;選配 | `skills/dev-flow/stage3/graph.yaml` | [flow `#stage3`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage3) |
 | 4 規格 | openspec delta,過 G2 | (main 尚無獨立 graph,不要假造) | [flow `#stage4`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage4) |
