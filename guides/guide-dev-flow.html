@@ -2313,6 +2313,28 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             各打一槍;guide 還寫單一 SKILL、hooks 沒接 <code>--action</code> 各打一槍;
             prebash 另有實跑一輪。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-devstage7-graph.sh</code></td>
+        <td>乘客不用跑它。它管 Stage 7 的節點鏈:下一跳以
+            <code>skills/dev-flow/stage7/graph.yaml</code> 為準、必須有寫檔節點
+            <code>N4-author</code>(第一刀不能只做 handoff)、重跑只能覆寫同一份
+            <code>7-review.md</code>、只有 <code>N4-author</code> 可寫
+            <code>7-review.md</code> 與讀 6-notes(<code>N0-role</code>／
+            <code>N1-matrix</code>／<code>N3-axes</code>／<code>N5-verdict</code>
+            一律不得寫、不得讀 6-notes)、未過 G2 不得寫 <code>7-review.md</code>、
+            <code>7-self-review.md</code>／<code>7-review-*.md</code> 必須紅。
+            暫留步必須是 <code>kind: skill-legacy</code> 真節點(模板 2／2b／2c／2d／2e),
+            有 <code>via</code> 就紅。本機游標
+            <code>.devstage7-cursor.json</code> 不進 Git。本刀不接 prebash、
+            不改 guide <code>#stage7</code> 正文。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-devstage7-graph.sh</code></td>
+        <td>上面那支的負向牙:舊實作(單一 SKILL、沒有 graph)必須紅;真節點缺進條件或
+            完成條件、同 slug 第二份 <code>7-review*.md</code>、
+            <code>write_mode≠overwrite</code>、缺 <code>N4-author</code>、未過 G2
+            仍寫 <code>7-review</code>、N0 讀 6-notes、<code>via</code> 當 hop、
+            entry 不對、鏈斷、缺 <code>--write-cursor</code>、
+            <code>7-self-review.md</code> 各打一槍。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>
         <td>本節新增的守衛本身——盤點 <code>hooks/</code>/<code>scripts/</code>/<code>observability/</code>/
             <code>tests/parallel-stage6/</code> 底下每支腳本有沒有被這張表點名到,也反查表裡寫的檔名是不是
