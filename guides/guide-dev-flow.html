@@ -2283,24 +2283,27 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             <code>devflow-exec.sh start</code> 未過 G2 拒啟則是釘住既有行為。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-devstage6-graph.sh</code></td>
-        <td>乘客不用跑它。它管 Stage 6 的節點鏈:下一跳以
+        <td>乘客不用跑它。它管 Stage 6 五真節點鏈:下一跳以
             <code>skills/dev-flow/stage6/graph.yaml</code> 為準、必須有寫檔節點
-            <code>N1-arm</code>(第一刀不能只做 handoff)、重跑只能覆寫同一份
-            <code>6-implementation-notes.md</code>、只有 N1 可寫(<code>N2-handoff</code>／
+            <code>N1-arm</code>、重跑只能覆寫同一份
+            <code>6-implementation-notes.md</code>、只有 <code>N1-arm</code> 與
+            <code>S2-tdd</code> 可寫(<code>N2-handoff</code>／
             <code>N4-selfcheck</code>／<code>N5-end</code> 一律不得寫)、5-tasks
             未定案不得寫 <code>6-implementation-notes.md</code>、沒武裝不得寫、
-            <code>FORK_INTEGRATION_SHA</code> 缺或被改寫必須紅。暫留步必須是
-            <code>kind: skill-legacy</code> 真節點(指向 README §5 動線,逐 T 不是
-            一 T 一 hop),有 <code>via</code> 就紅。
+            <code>FORK_INTEGRATION_SHA</code> 缺或被改寫必須紅。
+            <code>kind: skill-legacy</code> 團塊必須紅;<code>S2-tdd</code> 是一顆 hop
+            (指向 README §5 動線,逐 T 不是一 T 一 hop),有 <code>via</code> 就紅。
             本機游標 <code>.devstage6-cursor.json</code> 不進 Git。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-devstage6-graph.sh</code></td>
         <td>上面那支的負向牙:舊實作(單一 SKILL、沒有 graph)必須紅;真節點缺進條件或
             完成條件、同 slug 第二份 <code>6-implementation-notes*.md</code>、
-            <code>write_mode≠overwrite</code>、缺 <code>N1-arm</code>、未定案仍寫
-            <code>6-notes</code>、沒武裝寫 6-notes、<code>FORK_INTEGRATION_SHA</code>
-            缺或被改寫、<code>via</code> 當 hop、entry 不對、鏈斷、
-            缺 <code>--write-cursor</code> 各打一槍。</td>
+            <code>write_mode≠overwrite</code>、缺 <code>N1-arm</code>／<code>S2-tdd</code>、
+            未定案仍寫 <code>6-notes</code>、沒武裝寫 6-notes、
+            <code>FORK_INTEGRATION_SHA</code> 缺或被改寫、<code>via</code> 當 hop、
+            <code>kind: skill-legacy</code> 回頭、一 T 一 hop、entry 不對、鏈斷、
+            缺 <code>--write-cursor</code>、<code>S2-tdd</code> 沒點名 README §5
+            各打一槍。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>
         <td>本節新增的守衛本身——盤點 <code>hooks/</code>/<code>scripts/</code>/<code>observability/</code>/
