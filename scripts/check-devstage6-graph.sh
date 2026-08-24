@@ -1,5 +1,5 @@
 #!/bin/bash
-# check-devstage6-graph.sh — Stage 6 第二刀的機械契約
+# check-devstage6-graph.sh — Stage 6 第三刀的機械契約
 #
 # 為什麼需要:把第 6 站切成可單獨重跑的節點之後,有幾件事不能只靠散文 —
 #   1. 沒有 stage6/graph.yaml 必須紅:舊實作(單一 SKILL、沒有 graph)無法證明
@@ -20,6 +20,9 @@
 #      overwrite);不要放寬 N2-handoff／N4-selfcheck／N5-end。
 #      S2-tdd 是一顆 hop,不是一 T 一 hop —— 逐 T 仍走 README §5 動線 / 引擎。
 #      做什麼必須點名 README §5,且寫明「不是一 T 一 hop」。
+#   9. 第三刀:--action 必須接到 prebash,不能只活在 test fixture。guide 第 6 站
+#      開頭必須對上五節點鏈,並寫明「逐 T 仍走引擎」。出現「Stage 6 還在單一 SKILL」
+#      必須紅。不改第 1／2／3／4／5 站的編成。圍欄②一個字不改鬆。
 #
 # graph.yaml 是下一跳的唯一正本。分叉與暫留一律用 next 指到的真節點,禁止 via
 # (第 1 站 0030 的假綠就是 via 字串當 hop 換來的)。
@@ -29,7 +32,6 @@
 # 不改 _templates/6-implementation-notes.md 正文(乘客清單正本是它的頂註 0–4)。
 # 不改 hooks/devflow-exec.sh、hooks/_guard_impl.py、Gauntlet、平行引擎。
 # 圍欄②一個字不改鬆。
-# 本刀不掃 prebash、不掃 guide #stage6 節點鏈 —— 那是第三刀。
 #
 # 用法:
 #   scripts/check-devstage6-graph.sh [root]
@@ -104,6 +106,9 @@ STAGE6 = os.path.join(root, "skills", "dev-flow", "stage6")
 GRAPH_PATH = os.path.join(STAGE6, "graph.yaml")
 SKILL_PATH = os.path.join(root, "skills", "dev-flow", "SKILL.md")
 DOCS_DEV = os.path.join(root, "docs", "dev")
+GUIDE_PATH = os.path.join(root, "guides", "guide-dev-flow.html")
+STALE_GUIDE = "Stage 6 還在單一 SKILL"
+ENGINE_PHRASE = "逐 T 仍走引擎"
 
 ENTRY_NODE = "N1-arm"
 WRITE_NOTES_NODE = "N1-arm"
@@ -663,6 +668,52 @@ def check_live(graph):
     failures.extend(scan_live_notes_dupes())
     failures.extend(scan_tasks_entry_block())
     failures.extend(scan_sha())
+    failures.extend(check_action_runtime_wired())
+    failures.extend(check_guide())
+    return failures
+
+
+def check_action_runtime_wired():
+    """第三刀:--action 必須接到 prebash,不能只活在 test fixture。"""
+    hooks = os.path.join(root, "hooks")
+    if not os.path.isdir(hooks):
+        return []
+    for dirpath, dirnames, filenames in os.walk(hooks):
+        dirnames[:] = [d for d in dirnames if d != "devflow_obs_vendor"]
+        for name in filenames:
+            if not name.endswith((".py", ".sh")):
+                continue
+            path = os.path.join(dirpath, name)
+            try:
+                text = open(path, encoding="utf-8").read()
+            except OSError:
+                continue
+            code = "\n".join(line.split("#", 1)[0] for line in text.splitlines())
+            if "check-devstage6-graph" in code and "--action" in code:
+                return []
+    return [
+        "P0 --action 沒接到 runtime:hooks 沒有呼叫 check-devstage6-graph.sh --action"
+    ]
+
+
+def check_guide():
+    """第 6 站開頭對上五節點鏈,並寫明逐 T 仍走引擎;舊句「還在單一 SKILL」必須紅。"""
+    if not os.path.isfile(GUIDE_PATH):
+        return []
+    text = open(GUIDE_PATH, encoding="utf-8").read()
+    failures = []
+    if STALE_GUIDE in text:
+        failures.append(f"P0 guide 出現「{STALE_GUIDE}」")
+    match = re.search(r'<h3 id="stage6">.*?(?=<h3 |\Z)', text, re.S)
+    if not match:
+        failures.append('P0 guide 找不到第 6 站 <h3 id="stage6">')
+        return failures
+    head = match.group(0)[:2500]
+    missing = [node_id for node_id in CHAIN if node_id not in head]
+    if missing:
+        failures.append("P0 guide 第 6 站開頭缺節點:" + ",".join(missing))
+    if ENGINE_PHRASE not in head:
+        failures.append(f"P0 guide 第 6 站開頭缺「{ENGINE_PHRASE}」")
     return failures
 
 
@@ -698,7 +749,8 @@ if failures:
 
 print(
     "✅ PASS:Stage 6 graph 五真節點 / 無 skill-legacy / 單產物 / 覆寫 / "
-    "未定案不寫 6-notes / 沒武裝不寫 / SHA 錨點 / 逐 T 不是一 T 一 hop 全過"
+    "未定案不寫 6-notes / 沒武裝不寫 / SHA 錨點 / 逐 T 不是一 T 一 hop / "
+    "prebash / guide 全過"
 )
 sys.exit(0)
 PY
