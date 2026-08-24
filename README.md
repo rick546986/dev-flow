@@ -27,7 +27,9 @@
 
 ## 你是誰,該讀哪裡
 
-四層各做一件事,不要搶同一句話:
+本檔是入口。先認四層,再按下表跳,不要從頭讀。
+
+去哪:[quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html) · [七階段圖](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow)
 
 | 層 | 做什麼 | 去哪 |
 |---|---|---|
@@ -37,94 +39,28 @@
 | **talk guide** | 第 1 站 12 步、write_code、白名單 | [guide-dev-talk](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html) |
 | **`skills/dev-flow/SKILL.md`** | 執行入口,不是教學。不要當手冊讀 | plugin 裡那份 |
 
-| 你是誰 | 從這裡開始 | 先別讀 |
+| 你是誰／想知道什麼 | 去哪 | 先別讀 |
 |---|---|---|
 | **第一次用** | ①[quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html) ②[七階段圖](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow) ③本檔 [§0](#0-一張圖) + [§1](#1-文件地圖四象限-status-看板) | 本檔 §5 之後的契約句 |
 | **要查一條規則** | 下表直接跳。Gate → [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates);兩軌 → [§2](#2-兩軌lane);切片 → [flow `#large-work`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#large-work) | 從第一節順讀 |
-| **要改 dev-flow 本身** | 母版結構圖(散發版會剝掉)→ [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates) → 本檔 §7 契約句 | 直接改 §7 而不看 guide |
+| **要改 dev-flow 本身** | 母版結構圖(散發版會剝掉;見 [§17](#17-附錄跨-repo-與非-feature-入口))→ [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates) → 本檔 §7 契約句 | 直接改 §7 而不看 guide |
+| G1/G2/G3 各要什麼條件才過 | 本檔 [§7](#7-角色與-gate) 一句 + [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates) 全文 | — |
+| 這件事該走 full 還 fast | [§2](#2-兩軌lane) | — |
+| 七份文檔各放什麼 | [§3](#3-七份文檔用途一句話骨架見-_templates填好範例見-example) | — |
+| 哪個檔給人看、哪個給 Agent | [§1](#1-文件地圖四象限-status-看板) | — |
+| 實作期怎麼推進、偏差怎麼判 | [flow `#stage6`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage6) · [quickstart Stage 6](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html#walkthrough) | — |
+| 守衛擋我了怎麼辦 / 並行怎麼開 | [quickstart ③](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html#guardcheat) | — |
+| 哪一站用哪個模型 | [quickstart ④](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html#models) · [flow `#flow`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow) | — |
+| 哪些階段要另開 session | [quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html) | — |
+| 為什麼討論不能知道下游 | [flow `#fence`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#fence) | — |
+| html twin 每站要放什麼圖 | [§6](#6-html-twin可視化-artifact) 五格 + [flow `#filemap`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#filemap) | — |
+| 案子太大要不要切 | [flow `#large-work`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#large-work) | — |
+| R/S/T/D/F 這些 id 怎麼串 | [§4](#4-id-追溯鏈) | — |
+| 某條規則到底誰在擋 | [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates) | — |
+| Agent 的長期記憶怎麼運作 | [§16](#16-agent-memorydev-flow) | — |
+| 跨 repo / 非 feature 的事怎麼辦 | [§17](#17-附錄跨-repo-與非-feature-入口) | — |
 
-**規則索引**(問題 → 哪一層):
-
-| 想知道什麼 | 去哪 |
-|---|---|
-| G1/G2/G3 各要什麼條件才過 | 本檔 [§7](#7-角色與-gate) 一句 + [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates) 全文 |
-| 這件事該走 full 還 fast | [§2](#2-兩軌lane) |
-| 七份文檔各放什麼 | [§3](#3-七份文檔用途一句話骨架見-_templates填好範例見-example) |
-| 哪個檔給人看、哪個給 Agent | [§1](#1-文件地圖四象限-status-看板) |
-| 實作期怎麼推進、偏差怎麼判 | [flow `#stage6`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage6) · [quickstart Stage 6](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html#walkthrough) |
-| 守衛擋我了怎麼辦 / 並行怎麼開 | [quickstart ③](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html#guardcheat) |
-| 哪一站用哪個模型 | [quickstart ④](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html#models) · [flow `#flow`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow) |
-| 哪些階段要另開 session | [quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html) |
-| 為什麼討論不能知道下游 | [flow `#fence`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#fence) |
-| html twin 每站要放什麼圖 | [§6](#6-html-twin可視化-artifact) 五格 + [flow `#filemap`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#filemap) |
-| 案子太大要不要切 | [flow `#large-work`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#large-work) |
-| R/S/T/D/F 這些 id 怎麼串 | [§4](#4-id-追溯鏈) |
-| 某條規則到底誰在擋 | [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates) |
-| Agent 的長期記憶怎麼運作 | [§16](#16-agent-memorydev-flow) |
-| 跨 repo / 非 feature 的事怎麼辦 | [§17](#17-附錄跨-repo-與非-feature-入口) |
-
-<!-- devflow:master-only:start -->
-圖在 `guides/`,不在這裡 —— 本檔是索引,要圖請點上表的導覽連結。
-
-**怎麼逛這個 repo**:每個目錄後面標的是「誰在讀它」——那就是它不能被刪的依據。
-想刪任何東西前先跑 `grep -rn "<路徑>" hooks/ skills/ scripts/ _templates/ README.md`,
-零命中才考慮。
-
-```text
-dev-flow/
-│
-├── ── 制度正本(改這裡等於改規則)──────────────────────────────
-│   README.md                本檔。入口／索引。Gate 契約句在 §7,全文見 guide #gates
-│                            └ 讀者:gate-consistency.sh 每次動態抽 token 比對四處
-│   devflow-contract.json    方法論 ↔ runtime 的版本握手
-│                            └ 讀者:devflow-exec.sh doctor,缺件 fail-closed
-│   _templates/               七階段模板 + STATUS/ADR/living-spec/html-shell
-│                            └ 讀者:dev-setup 散發進每個專案;parity 檢查比對 guides
-│   notes/design/ (6)        各機制設計正本(並行/觀測/gauntlet/real-world/boundary)
-│                            └ 讀者:dev-setup SKILL 指 evidence-gauntlet.md 為契約正本
-│   docs/prompts/ (2)        改造 dev-flow 本身的需求正本
-│                            └ 讀者:notes/ 底下 8 處寫「需求正本: docs/prompts/…」
-│
-├── ── Claude Code plugin(裝進使用者機器的部分)────────────────
-│   .claude-plugin/          plugin.json(版本字串=更新判斷依據)+ marketplace.json
-│   hooks/                    守衛與執行引擎
-│     ├ hooks.json           掛載清單,壞了守衛全靜默失效
-│     ├ devflow-guard.sh     PreToolUse 讀寫守衛(未武裝時對 Stage 6 文件軟擋一次)
-│     ├ devflow-exec.sh      執行引擎 + doctor 版本握手
-│     ├ gate-consistency.sh  從 README §7 抽 gate token,比對 SKILL/README §3/三模板
-│     ├ selftest.sh          守衛自測(案數以腳本輸出為準)
-│     └ devflow_obs_vendor/  observability/ 的 vendored 副本(hooks 不能依賴 repo 相對路徑)
-│   skills/ (5)              dev-flow(路由器)/ dev-run(Stage 6 引擎)/ dev-setup(安裝器)
-│                            / dev-release(發版器)/ dev-talk(訪談引導)
-│
-├── ── 機械檢查(CI 與本機都跑這些)─────────────────────────────
-│   scripts/                  單一入口 devflow-check.sh all,全過 = REPO_REFERENCE_PASS
-│                            devflow-evidence-gauntlet.sh 是 Stage 7 證據檢查的母版
-│   observability/            Attempt Ledger 工具(devflow-obs)+ agent_event schema
-│                            └ 讀者:selftest.sh:1539 直接讀它,刪了 p3 段就壞
-│   tests/parallel-stage6/   T 級並行的可執行契約(contract_ref + fixtures)
-│   .github/workflows/       devflow-ci(REPO_REFERENCE)+ runtime-selftest(EXTERNAL_RUNTIME)
-│                            兩層不互相代表,一邊綠不代表另一邊綠
-│
-├── ── 給人看的 ────────────────────────────────────────────
-│   example/contract-…/ (14) 一個 feature 走完七階段的真實形狀(md + html twin 各 7 份)
-│                            └ 讀者:renderer fixed-point 檢查逐位元組比對那四份 html
-│   guides/ (4)              圖解導覽 html(GitHub Pages 指這裡;根目錄舊 redirect stub
-│                            已移除,舊 Pages 網址直接改指 guides/,見 README 上方連結)
-│   docs/PLUGIN.md           plugin 安裝與更新說明
-│   manifests/ (4)           四軌改造的工單記錄
-│   notes/ (其餘)            稽核、導入回饋、驗證對標
-│
-└── ── 本 repo 自己的改版流程(dogfooding)──────────────────────
-    docs/dev/                本 repo 用自己的流程管自己
-      ├ STATUS.md            Active / Backlog 兩張表(做完的不留這裡)
-      ├ HISTORY.md           改版歷史索引(只增不改;唯一寫入口 scripts/history-append.sh)
-      ├ HISTORY.html         人頁(衍生,scripts/build-public-docs.py 重生)
-      ├ devflow-contract.json + tools/  dev-setup 的散發副本(doctor 在這裡找)
-      └ <slug>/              各次改版的七階段文檔
-    docs/adr/                長期決策 md 正本 + 人頁 html(index.html;重生同上)
-```
-<!-- devflow:master-only:end -->
+母版 `dev-flow/` ASCII 目錄樹在 [§17 附錄](#17-附錄跨-repo-與非-feature-入口)(手機可跳;樹內路徑字串沒改)。
 
 線上看:[quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html)、
 [七階段圖](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html)、
@@ -140,7 +76,7 @@ repo 內任一 html 都可把路徑接在 `rick546986.github.io/dev-flow/` 後�
 
 七站一條路,三道閘。3 是選配。真圖在導覽,手機不要讀 mermaid。
 
-[七階段 SVG](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow)
+去哪:[七階段 SVG](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow)
 · [quickstart 圖](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html)
 · [訪談圖](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html)
 
@@ -157,6 +93,8 @@ repo 內任一 html 都可把路徑接在 `rick546986.github.io/dev-flow/` 後�
 ## 1. 文件地圖(四象限 + STATUS 看板)
 
 人看的跟 Agent 看的是兩套出口。同一個意思不要抄兩份。
+
+去哪:[flow `#filemap`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#filemap)
 
 ```text
 [人看]  ----------------------+
@@ -201,8 +139,14 @@ CLAUDE.md;舊路徑 grep 歸零才算完)。
 
 ## 2. 兩軌(lane)
 
-**Full**:新能力 / 不可逆改動 → 1→7 全套(3 選配),過 G1 G2 G3。
-**Fast**:bugfix / ≤2 檔小改 / 行為已有 spec → `4-spec` → `5-tasks` → `6-notes` → `7-review`,過 G3(spec 改動大再補 G2)。
+拿不準就走 Full。Fast 省的是 Stage 1–3,不是 Stage 5。
+
+去哪:[flow `#flow`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow)
+
+> **契約**
+>
+> **Full**:新能力 / 不可逆改動 → 1→7 全套(3 選配),過 G1 G2 G3。
+> **Fast**:bugfix / ≤2 檔小改 / 行為已有 spec → `4-spec` → `5-tasks` → `6-notes` → `7-review`,過 G3(spec 改動大再補 G2)。
 
 | | Full lane | Fast lane |
 |---|---|---|
@@ -216,6 +160,10 @@ CLAUDE.md;舊路徑 grep 歸零才算完)。
 拿不準 → Full。Fast 省的是 Stage 1–3,不是 Stage 5:`devflow-exec.sh start` 少一欄就開不了工。
 
 ## 3. 七份文檔(用途一句話;骨架見 `_templates/`,填好範例見 `example/`)
+
+七份檔,各卡一道閘。表是摘要;Gate 條件全文在 §7。
+
+去哪:[flow `#checklists`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#checklists) · [flow `#stage2`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage2)–[`#stage7`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage7)
 
 | # | 檔 | 用途 | Gate |
 |---|---|---|---|
@@ -239,6 +187,10 @@ CLAUDE.md;舊路徑 grep 歸零才算完)。
 
 ## 4. ID 追溯鏈
 
+每張票用同一個 id 串起來,裁決用的 OC/DD 不進這條鏈。
+
+去哪:[flow `#filemap`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#filemap)
+
 `R-n`(requirement,4-spec)→ `S-n`(scenario,4-spec)→ `T-n`(task,5-tasks,標 Covers)
 → 測試名含 S-id(6 實作)→ `D-n`(deviation,6)→ `F-n`(finding,7,標影響的 S/T)。
 
@@ -246,11 +198,13 @@ CLAUDE.md;舊路徑 grep 歸零才算完)。
 
 ## 5. 實作期鐵則
 
-細節:[flow `#stage6`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage6)
+每個 T 同一條路:紅 → 綠 → 審查 PASS 才算做完。
+
+去哪:[flow `#stage6`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage6)
 · [quickstart Stage 6](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html#walkthrough)
 · 守衛怎麼辦見 [quickstart ③](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html#guardcheat)。
 
-每個 T 一律照同一條 acceptance seam(契約,檢查器抽這段):
+契約 / 檢查器抽(Stage 6 seam):
 
 ```text
 RED → GREEN → scope check → Verify
@@ -261,6 +215,9 @@ RED → GREEN → scope check → Verify
 ```
 
 T 在獨立審查 PASS 前一律未完成。分不清 L1/L2 → 一律當 L2。
+
+契約 / 檢查器抽(七支掛載 hook 名):
+
 掛載中的 hook 必須被點名:`devflow-guard`、`devflow-prebash`、
 `devflow-dispatch-guard`、`devtalk-guard`、`devflow-report-guard`、
 `devflow-postbash`、`devflow-plainspeak`(另有 `history-guard` 守 HISTORY,不受旗標影響)。
@@ -287,12 +244,13 @@ L1 出口 = `devflow-exec.sh allow`;L2 = `stop`。
 
 ## 6. HTML twin(可視化)+ Artifact
 
-細則:[flow `#filemap`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#filemap)
+md 是 git 正本,html twin 是給人審的殼。gate 時必產。
+
+去哪:[flow `#filemap`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#filemap)
 · 各站審查形狀見 [flow `#stage2`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage2)–[`#stage7`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage7)
 · 討論站視覺版見 [talk `#visual`](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#visual)。
-md = git 正本,html twin = 衍生,gate 時必產。
 
-**審查動線頂區**(三個 gate twin + 5-tasks 執行板;標籤逐字釘死,由 `check-gate-twin.sh` 驗):
+契約 / 檢查器抽(審查動線頂區五格;標籤逐字釘死,由 `check-gate-twin.sh` 驗):
 
 | 站 | 五格內容(標籤逐字釘死,由 `check-gate-twin.sh` 驗) |
 |---|---|
@@ -303,10 +261,16 @@ md = git 正本,html twin = 衍生,gate 時必產。
 
 ## 7. 角色與 Gate
 
+三道閘。粗體詞是過關條件,檢查器在抽,不要改字。
+
+去哪:[flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)
+
 > **本節 = gate 條件(G1/G2/G3)的契約句**。各一句過關條件在下;全文、強制力對照、回滾導覽見
 > [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)。
 > 改任何 gate 條件先改這裡的粗體 token 與錨定義,再同步三處摘要:①plugin `dev-flow`
 > SKILL.md 階段動作表 ②本 README §3 七份文檔表 ③對應模板頂註。衝突以本節為準。
+
+契約 / 檢查器抽(審查者產生與四眼;下列 `- **審查者產生**` 原文勿改):
 
 - **author ≠ approver**:G1/G2/G3 的核准者不可以是該文檔的 owner(四眼原則)。
 - **審查者產生**:G1/G2/G3 一律依序選 **適格人類 reviewer → fresh-context reviewer
@@ -315,14 +279,31 @@ md = git 正本,html twin = 衍生,gate 時必產。
   + 檔內留 round 紀錄。owner 自審僅能作為**有記錄的最後手段**,不假裝有四眼。
 - **規劃層 git**:每過一個 gate,把該階段文檔 commit 一次,只含文檔。Stage 1–5 落在整合分支;Stage 6 才開 feature branch。細節見 [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)。
 - 機械錨點註記:以下 G1/G2/G3 定義句內的粗體詞組是 gate-consistency 機械比對錨;增改 gate 條件務必加粗。
-- G1 = 方向對不對(2-decision:方向核准 + **Owner Calls 全裁決**,有未裁決 OC
-  不得過;下層內部技術項告知即可,但 reviewer **須抽查下層清單有無該上未上的
-  誤放** —— 抽查是規則要求,不是 reviewer 自由心證)。G2 = 契約寫得對不對
-  (4-spec:**R/S 全審 + Drafting Decisions 全裁決** + **Verification Profile**
-  + **Demo verdict**,有未裁決項不得過;兩錨的條件式定義見下方「G2 錨定義」)。
-  G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件全綠**(回歸義務)
-  **+ 現象證據逐 S 相符** + **Evidence 契約全過**(八點定義見下方「G3 錨定義」)——
-  reviewer 照 4-spec 的「觀測方式」親自實跑,測試綠不等於看得到它動起來)。
+
+ ### G1
+
+方向對不對。2-decision 過了才能往規格走。
+
+去哪:[flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)
+
+> **契約 / 檢查器抽**
+>
+> G1 = 方向對不對(2-decision:方向核准 + **Owner Calls 全裁決**,有未裁決 OC
+> 不得過;下層內部技術項告知即可,但 reviewer **須抽查下層清單有無該上未上的
+> 誤放** —— 抽查是規則要求,不是 reviewer 自由心證)。
+
+ ### G2
+
+契約寫得對不對。4-spec 的 R/S、DD、Profile、Demo 都要過。
+
+去哪:[flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)
+
+> **契約 / 檢查器抽**
+>
+> G2 = 契約寫得對不對
+> (4-spec:**R/S 全審 + Drafting Decisions 全裁決** + **Verification Profile**
+> + **Demo verdict**,有未裁決項不得過;兩錨的條件式定義見下方「G2 錨定義」)。
+
 - G2 錨定義(錨句在上;此處為條件式全文):
   - 「Verification Profile」:G2 必須確認 4-spec Verification Profile 已依 lane 正確
     填寫 —— full lane = 完整 Profile(Feature Risk/Failure Model/Negative Constraints/
@@ -338,6 +319,21 @@ md = git 正本,html twin = 衍生,gate 時必產。
     有 trigger 且完成 Demo → 必須 `Human verdict: ACCEPTED`;REVISE → 不得過 G2,
     必須重做 Demo;NOT_REVIEWED → 不得過 G2;有 trigger 但跳過 → 必須有 Owner Call
     明示。Agent 不得自行填入 ACCEPTED;Runtime 必須拒絕 Agent 自產的 ACCEPTED。
+
+ ### G3
+
+做出來的對不對。測試綠不夠,還要現象證據跟 Evidence 八點。
+
+去哪:[flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)
+
+> **契約 / 檢查器抽**
+>
+> G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件全綠**(回歸義務)
+> **+ 現象證據逐 S 相符** + **Evidence 契約全過**(八點定義見下方「G3 錨定義」)——
+> reviewer 照 4-spec 的「觀測方式」親自實跑,測試綠不等於看得到它動起來)。
+
+契約 / 檢查器抽(G3 錨定義八點;Gauntlet 版本句原文勿改):
+
 - G3 錨定義:「Evidence 契約全過」= 以下八點全部成立:
   1. Final Fresh Run 綁定目前受審的 source SHA,且該 SHA 必須等於送審當下 HEAD;之後任何程式碼 commit 作廢 G3,必須重跑 Final Fresh。
   2. 所有 Required Layer = pass。
@@ -364,17 +360,26 @@ md = git 正本,html twin = 衍生,gate 時必產。
 
 ### 強制力對照(誰在擋)
 
-「規則存在」不等於「Runtime 會擋」。誰在擋、機械 vs 人工,全文見
-[flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)。
+「規則存在」不等於「Runtime 會擋」。
+
+去哪:[flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)
+
 本 repo 的 reference test 全綠 ≠ 外部 Runtime pass。Gauntlet 只驗 Evidence 契約,
 自己不跑專案測試。
 
-### 合併後出事怎麼辦(整合分支回滾)
+### 合併後出事怎麼辦(整合分支回滾) · 機械契約,可跳
 
-回滾預設與禁令見 [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)。
-契約句:預設 `git revert -m 1 <merge commit>`;禁對整合分支 `reset --hard` /
-`push --force` / `rebase`。例外「直接補修」必須同時滿足:①一個 commit 修得完;
-②補修 diff 與「其他 feature 碰過的檔」零交集。
+合併後出事,預設 revert,不要硬補。下面算法只在「直接補修」例外才用,可跳。
+
+去哪:[flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)
+
+> **契約 / 檢查器抽**
+>
+> 預設 `git revert -m 1 <merge commit>`;禁對整合分支 `reset --hard` /
+> `push --force` / `rebase`。例外「直接補修」必須同時滿足:①一個 commit 修得完;
+> ②補修 diff 與「其他 feature 碰過的檔」零交集。
+
+契約 / 檢查器抽(直接補修算法;順序與原文勿改):
 
 「其他 feature 碰過的檔」的定義(判準②用):**目前列在 `docs/dev/STATUS.md` Active
 表裡的每個 feature 各自改過的檔的聯集**。逐列判定順序**寫死如下,不得跳步、不得倒序**:
@@ -428,6 +433,8 @@ md = git 正本,html twin = 衍生,gate 時必產。
 
 每站一句。節點鏈正本是 `graph.yaml`,不要在這裡列整條鏈。
 
+去哪:[talk `#map`](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map) · [flow `#stage2`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage2)–[`#stage7`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage7)
+
 | 階段 | 一句 | graph.yaml | guide |
 |---|---|---|---|
 | 1 討論 | `/dev-talk`:盲下游,12 步,走錯重跑那一節 | `skills/dev-talk/graph.yaml` | [talk `#map`](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map)(含 write_code) · [白名單](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#whitelist) |
@@ -443,14 +450,21 @@ md = git 正本,html twin = 衍生,gate 時必產。
 
 ## 9. 模型分層與 effort(AI 執行時)
 
-表與升降階:[quickstart ④](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html#models)
-· [flow `#flow`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow)。
 預設照表;要偏離(表內建的升降階除外)須使用者明示同意。
+
+去哪:[quickstart ④](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html#models)
+· [flow `#flow`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow)。
+
+契約 / 檢查器抽:
 
 - **G1/G2/G3 審查與 verdict**:依 §7 的人類→fresh-context reviewer Agent→有記錄的
   owner 自審順序;Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。
 
 ## 10. 新 feature 快速上手
+
+從 `/dev-talk` 開一張討論,再用 `/dev-flow` 走完全程。
+
+去哪:[quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html)
 
 1. `/dev-talk 我想做 <想法>` → 只覆寫一份 `1-discussion.md`。
 2. `STATUS.md` 加一列;`/dev-flow 繼續 <feature>` 走完全程。
@@ -461,28 +475,36 @@ md = git 正本,html twin = 衍生,gate 時必產。
 
 ## 11. 資訊隔離(anti-premature-convergence)
 
-四道圍欄(討論盲下游 / 實作盲討論 / 審查防錨定 / Quiz gate)全文見
-[flow `#fence`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#fence)。
-白名單見 [talk `#whitelist`](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#whitelist)。
+討論不能偷看下游,否則答案會被下游形狀帶跑。
+
+去哪:[flow `#fence`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#fence)
+· [talk `#whitelist`](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#whitelist)
+
+四道圍欄(討論盲下游 / 實作盲討論 / 審查防錨定 / Quiz gate)全文見上。
 
 ⚠️ **禁把流程規則寫進專案 CLAUDE.md / AGENTS.md**(每 session 自動注入 = 盲全滅)。
 規則只住 `docs/dev/README.md`,由 /dev-flow 需要時自己讀。
 
 ## 12. SDD × TDD 雙迴圈(V 對應)
 
-SDD 是脊椎,TDD 是右側驗證。外圈:每個 S-id → 失敗的驗收測試 → 打綠。
+SDD 是脊椎,TDD 是右側驗證。每個 S 先寫失敗的驗收測試再打綠。
+
+去哪:[flow `#stage6`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#stage6) · [§7](#7-角色與-gate)
+
 回歸義務見 §7(G3 定義)。
 
 ## 13. 大案與切片
 
-訊號、切點、管線語義、片序全文見
-[flow `#large-work`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#large-work)。
 找不到合法接縫就不切,保留單一 `4 → 5 → 6 → 7`。
+
+去哪:[flow `#large-work`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#large-work)
 
 ## 16. Agent Memory(`.dev-flow/`)
 
-安裝與重建入口只有 `dev-setup`。查詢與寫入只有
-`${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py`。不要手改記憶檔。
+長期記憶進 Git。不要手改記憶檔。
+
+去哪:本節各小標。安裝與重建入口只有 `dev-setup`。查詢與寫入只有
+`${CLAUDE_PLUGIN_ROOT}/memory/dev-memory.py`。
 
 ### 16.1 三個目錄,不要搞混
 
@@ -532,6 +554,8 @@ VERIFIED + 依賴檔沒變          → 直接用,不重讀原始碼
 feature branch 改了依賴檔,不能拿 main 上的舊 VERIFIED 當這棵樹的答案。
 
 ### 16.5 先問意圖,再查
+
+契約 / 檢查器抽(四個 retrieval status 名):
 
 `dev-memory.py ask "<問題>"` 先分類再走路徑。每個答案都帶狀態。上層 agent 通常只看 `retrieval_status`:
 
@@ -612,9 +636,76 @@ decision / skill / event 時,即使 DB 是空的也要重建。
 
 ## 17. 附錄:跨 repo 與非 feature 入口
 
+跨 repo 只建一份 feature 檔;非 feature 也走 `/dev-talk`。母版目錄樹在本節末(手機可跳)。
+
+去哪:[flow `#large-work`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#large-work) · [quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html)
+
 **跨 repo feature**(如前後端成對 repo):feature 資料夾住**主 repo**(通常後端),
 配對 repo 的 `docs/dev/STATUS.md` 加一列連結過去,不重複建檔。
 
 **非 feature 入口**:架構巡檢/償債機會 → 一樣開 `/dev-talk` 討論,產物同格式。
 
 疑義以本 README 契約句為準;細節跟 guide 鏈走。範例看 `example/contract-expiry-reminder/`。
+
+<!-- devflow:master-only:start -->
+圖在 `guides/`,不在這裡 —— 本檔是索引,要圖請點上表的導覽連結。
+
+**怎麼逛這個 repo**(手機可跳):每個目錄後面標的是「誰在讀它」——那就是它不能被刪的依據。
+想刪任何東西前先跑 `grep -rn "<路徑>" hooks/ skills/ scripts/ _templates/ README.md`,
+零命中才考慮。
+
+```text
+dev-flow/
+│
+├── ── 制度正本(改這裡等於改規則)──────────────────────────────
+│   README.md                本檔。入口／索引。Gate 契約句在 §7,全文見 guide #gates
+│                            └ 讀者:gate-consistency.sh 每次動態抽 token 比對四處
+│   devflow-contract.json    方法論 ↔ runtime 的版本握手
+│                            └ 讀者:devflow-exec.sh doctor,缺件 fail-closed
+│   _templates/               七階段模板 + STATUS/ADR/living-spec/html-shell
+│                            └ 讀者:dev-setup 散發進每個專案;parity 檢查比對 guides
+│   notes/design/ (6)        各機制設計正本(並行/觀測/gauntlet/real-world/boundary)
+│                            └ 讀者:dev-setup SKILL 指 evidence-gauntlet.md 為契約正本
+│   docs/prompts/ (2)        改造 dev-flow 本身的需求正本
+│                            └ 讀者:notes/ 底下 8 處寫「需求正本: docs/prompts/…」
+│
+├── ── Claude Code plugin(裝進使用者機器的部分)────────────────
+│   .claude-plugin/          plugin.json(版本字串=更新判斷依據)+ marketplace.json
+│   hooks/                    守衛與執行引擎
+│     ├ hooks.json           掛載清單,壞了守衛全靜默失效
+│     ├ devflow-guard.sh     PreToolUse 讀寫守衛(未武裝時對 Stage 6 文件軟擋一次)
+│     ├ devflow-exec.sh      執行引擎 + doctor 版本握手
+│     ├ gate-consistency.sh  從 README §7 抽 gate token,比對 SKILL/README §3/三模板
+│     ├ selftest.sh          守衛自測(案數以腳本輸出為準)
+│     └ devflow_obs_vendor/  observability/ 的 vendored 副本(hooks 不能依賴 repo 相對路徑)
+│   skills/ (5)              dev-flow(路由器)/ dev-run(Stage 6 引擎)/ dev-setup(安裝器)
+│                            / dev-release(發版器)/ dev-talk(訪談引導)
+│
+├── ── 機械檢查(CI 與本機都跑這些)─────────────────────────────
+│   scripts/                  單一入口 devflow-check.sh all,全過 = REPO_REFERENCE_PASS
+│                            devflow-evidence-gauntlet.sh 是 Stage 7 證據檢查的母版
+│   observability/            Attempt Ledger 工具(devflow-obs)+ agent_event schema
+│                            └ 讀者:selftest.sh:1539 直接讀它,刪了 p3 段就壞
+│   tests/parallel-stage6/   T 級並行的可執行契約(contract_ref + fixtures)
+│   .github/workflows/       devflow-ci(REPO_REFERENCE)+ runtime-selftest(EXTERNAL_RUNTIME)
+│                            兩層不互相代表,一邊綠不代表另一邊綠
+│
+├── ── 給人看的 ────────────────────────────────────────────
+│   example/contract-…/ (14) 一個 feature 走完七階段的真實形狀(md + html twin 各 7 份)
+│                            └ 讀者:renderer fixed-point 檢查逐位元組比對那四份 html
+│   guides/ (4)              圖解導覽 html(GitHub Pages 指這裡;根目錄舊 redirect stub
+│                            已移除,舊 Pages 網址直接改指 guides/,見 README 上方連結)
+│   docs/PLUGIN.md           plugin 安裝與更新說明
+│   manifests/ (4)           四軌改造的工單記錄
+│   notes/ (其餘)            稽核、導入回饋、驗證對標
+│
+└── ── 本 repo 自己的改版流程(dogfooding)──────────────────────
+    docs/dev/                本 repo 用自己的流程管自己
+      ├ STATUS.md            Active / Backlog 兩張表(做完的不留這裡)
+      ├ HISTORY.md           改版歷史索引(只增不改;唯一寫入口 scripts/history-append.sh)
+      ├ HISTORY.html         人頁(衍生,scripts/build-public-docs.py 重生)
+      ├ devflow-contract.json + tools/  dev-setup 的散發副本(doctor 在這裡找)
+      └ <slug>/              各次改版的七階段文檔
+    docs/adr/                長期決策 md 正本 + 人頁 html(index.html;重生同上)
+```
+<!-- devflow:master-only:end -->
