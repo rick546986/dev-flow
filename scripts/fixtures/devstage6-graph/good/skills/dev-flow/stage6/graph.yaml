@@ -1,0 +1,36 @@
+# 下一跳唯一正本。本機游標不進 Git。
+# 乘客清單正本仍是 `_templates/6-implementation-notes.md` 頂註 0–4。
+# 第一刀必須有 N1-arm。暫留步是 skill-legacy 真 hop,禁止 via。
+# skill-legacy-T 指向 README §5 動線(逐 T 不是一 T 一 hop),不抄原文。
+entry: N1-arm
+nodes:
+  N1-arm:
+    file: nodes/N1-arm.md
+    next: N2-handoff
+    write:
+      - docs/dev/<slug>/6-implementation-notes.md
+    write_mode: overwrite
+    allow:
+      - write_notes
+  N2-handoff:
+    file: nodes/N2-handoff.md
+    next: skill-legacy-T
+    forbid:
+      - write_notes
+  skill-legacy-T:
+    kind: skill-legacy
+    entry: _templates/6-implementation-notes.md
+    steps: "T"
+    next: N4-selfcheck
+    forbid:
+      - write_notes
+  N4-selfcheck:
+    file: nodes/N4-selfcheck.md
+    next: N5-end
+    forbid:
+      - write_notes
+  N5-end:
+    file: nodes/N5-end.md
+    next: ""
+    forbid:
+      - write_notes
