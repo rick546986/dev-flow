@@ -34,6 +34,7 @@ FIX="$SELF_DIR/fixtures/devstage5-graph"
 [ -d "$FIX/actions" ] || { echo "FATAL: 找不到 $FIX/actions" >&2; exit 2; }
 
 python3 - "$ROOT" "$CHECK" "$FIX" <<'PY'
+import hashlib
 import json
 import os
 import shutil
@@ -136,6 +137,27 @@ def put_parser(case, body):
     os.makedirs(hooks, exist_ok=True)
     with open(os.path.join(hooks, "devflow-lib.py"), "w", encoding="utf-8") as fh:
         fh.write(body)
+
+
+def put_contract_ref(case, body):
+    """第二個探測路徑:tests/parallel-stage6/contract_ref.py。"""
+    pkg = os.path.join(case, "tests", "parallel-stage6")
+    os.makedirs(pkg, exist_ok=True)
+    with open(os.path.join(pkg, "contract_ref.py"), "w", encoding="utf-8") as fh:
+        fh.write(body)
+
+
+def tree_snapshot(case):
+    """整棵樹的 相對路徑 → sha256,用來證明檢查沒有動它看的那棵樹。"""
+    snap = {}
+    for base, dirs, files in os.walk(case):
+        dirs.sort()
+        for name in sorted(files):
+            full = os.path.join(base, name)
+            with open(full, "rb") as fh:
+                digest = hashlib.sha256(fh.read()).hexdigest()
+            snap[os.path.relpath(full, case)] = digest
+    return snap
 
 
 with tempfile.TemporaryDirectory(prefix="devstage5-graph-test-") as tmpbase:
@@ -294,6 +316,34 @@ with tempfile.TemporaryDirectory(prefix="devstage5-graph-test-") as tmpbase:
     seed(case)
     put_parser(case, FAITHFUL_PARSER)
     expect("G-parser 四必填欄缺一會判紅的 parser 必須綠", case, 0)
+
+    # 探測既有 parser 是 import,import 預設會寫 __pycache__。那份 .pyc 落在
+    # hooks/ 與 tests/parallel-stage6/ —— 正好在 test-architecture-guards 收尾
+    # 比對的檔案指紋範圍內,於是「檢查」自己成了污染源(2026-08-24 CI 實證:
+    # architecture/test-architecture-guards 案例全過,收尾卻報「正式 repo 指紋
+    # 改變了」)。唯讀的檢查不准改它在看的樹,這條用整棵樹的 sha256 釘死。
+    case = os.path.join(tmpbase, "probe-readonly")
+    seed(case)
+    put_parser(case, FAITHFUL_PARSER)
+    put_contract_ref(case, FAITHFUL_PARSER)
+    before = tree_snapshot(case)
+    proc = run_check(case)
+    after = tree_snapshot(case)
+    added = sorted(set(after) - set(before))
+    changed = sorted(k for k in set(after) & set(before) if after[k] != before[k])
+    removed = sorted(set(before) - set(after))
+    ok = proc.returncode == 0 and not added and not changed and not removed
+    if ok:
+        passed += 1
+        print("  ✓ G-readonly 探測 parser 不得在被檢查的樹裡留下 __pycache__")
+    else:
+        failed += 1
+        print(
+            "  ✗ G-readonly 檢查污染了它在看的樹"
+            f"(rc={proc.returncode} 多出={added} 變動={changed} 消失={removed})",
+            file=sys.stderr,
+        )
+        print(((proc.stdout or "") + (proc.stderr or ""))[-800:], file=sys.stderr)
 
     case = os.path.join(tmpbase, "n1-allow-tasks")
     seed(case)
@@ -471,9 +521,10 @@ print(f"=== test-devstage5-graph:{passed}/{total} ===")
 if failed:
     print(f"⛔ {failed} 案未依預期", file=sys.stderr)
     sys.exit(1)
-# 第一刀 27、第二刀 44。下限不跟著上修等於留一個「少跑一半照樣綠」的洞。
-if total < 44:
-    print(f"⛔ 案例數 {total} < 44,牙齒沒跑齊", file=sys.stderr)
+# 第一刀 27、第二刀 44、加上 G-readonly 45。下限不跟著上修等於留一個
+# 「少跑一半照樣綠」的洞。
+if total < 45:
+    print(f"⛔ 案例數 {total} < 45,牙齒沒跑齊", file=sys.stderr)
     sys.exit(2)
 sys.exit(0)
 PY
