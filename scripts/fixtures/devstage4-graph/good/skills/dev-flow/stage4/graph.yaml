@@ -1,0 +1,49 @@
+# 下一跳唯一正本。本機游標不進 Git。
+# 乘客清單正本仍是 `_templates/4-spec.md` 頂註 0–6。
+# 第一刀必須有 N5-write-md。暫留步是 skill-legacy 真 hop,禁止 via。
+entry: N1-handoff
+nodes:
+  N1-handoff:
+    file: nodes/N1-handoff.md
+    next: skill-legacy-1-4
+    forbid:
+      - write_spec
+      - write_tasks
+  skill-legacy-1-4:
+    kind: skill-legacy
+    entry: _templates/4-spec.md
+    steps: "1-4"
+    next: N5-write-md
+    forbid:
+      - write_spec
+      - write_tasks
+  N5-write-md:
+    file: nodes/N5-write-md.md
+    next: skill-legacy-5
+    write:
+      - docs/dev/<slug>/4-spec.md
+    write_mode: overwrite
+    allow:
+      - write_spec
+    forbid:
+      - write_tasks
+  skill-legacy-5:
+    kind: skill-legacy
+    entry: _templates/4-spec.md
+    steps: "5"
+    next: N6-g2
+    forbid:
+      - write_spec
+      - write_tasks
+  N6-g2:
+    file: nodes/N6-g2.md
+    next: N7-end
+    forbid:
+      - write_spec
+      - write_tasks
+  N7-end:
+    file: nodes/N7-end.md
+    next: ""
+    forbid:
+      - write_spec
+      - write_tasks
