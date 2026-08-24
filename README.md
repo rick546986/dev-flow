@@ -218,7 +218,7 @@ Fast lane 省的是 Stage 1–3,不是 Stage 5:`devflow-exec.sh start <slug>` �
 | 7 | `7-review.md` + `.html` | 雙軸審 + coverage matrix + Exit checklist。**同 stage 只有這兩個檔**,自審的家在 6-notes Self-Review;真要用 7-review 形狀寫自審則 verdict 填 `PRE-REVIEW`,獨立 reviewer 產出後**就地接管同一個檔**、不另存 sibling(細則見模板步 0a)。出貨樹=審過的樹 | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → Exit Checklist(PR 是其中一項) |
 
 **執行清單四原則**(Stage 2/3/4/5/6/7;清單全文住各模板頂註。Stage 1 同款機制內建於
-`/dev-talk`,而且是節點鏈:下一跳看 `graph.yaml`,不是只能從頭跑的直線;詳 [§8](#8-每階段呼叫的技能ai-對照表)):
+`/dev-talk`;Stage 1/2/3 都是節點鏈:下一跳看各自的 `graph.yaml`,不是只能從頭跑的直線;詳 [§8](#8-每階段呼叫的技能ai-對照表)):
 ①開場第一動把清單建成 todo,每步有「完成 =」客觀條件,達成才勾;
 ②交審前必過自檢步 —— 產物勾稽、附證據,不憑印象;③禁跳項、禁併項;
 ④完成條件達不成 → 回上游步驟補,不硬過。
@@ -744,13 +744,18 @@ base 不見了,而且是在他們下次 `git fetch` 才會發現。「直接補�
 | 階段 | 呼叫 | 來源 |
 |---|---|---|
 | 1 討論 | **`/dev-talk`**(獨立 skill,盲下游)。乘客地圖仍是 0–11 共 12 步;執行時是可重跑的節點鏈,下一跳看 `skills/dev-talk/graph.yaml`,不是只看 SKILL.md。每步都有節點檔,graph next 不得跳過;SKILL.md 只留入口與摘要。走錯一步就重跑那一節,不要整場重來。細節見 [guide-dev-talk](https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html) | openspec / mattpocock / superpowers |
-| 2 收斂 | 2-3 方案並排比較 + 壓測定案(方法內建於 `_templates/2-decision.md` 清單;可搭 mattpocock `grill-me`) | 內建 / mattpocock |
-| 3 原型 | throwaway 實驗(code→throwaway branch、資料實驗→scratchpad);UI 疑問做 2-4 個結構不同 variant | 內建 / mattpocock `prototype` |
+| 2 收斂 | 2-3 方案並排比較 + 壓測定案(方法內建於 `_templates/2-decision.md` 清單;可搭 mattpocock `grill-me`)。執行時是可重跑的節點鏈,下一跳看 `skills/dev-flow/stage2/graph.yaml`,不是只看 SKILL.md。乘客清單仍是模板頂註。走錯一步就重跑那一節,不要整場重來。 | 內建 / mattpocock |
+| 3 原型 | throwaway 實驗(code→throwaway branch、資料實驗→scratchpad);UI 疑問做 2-4 個結構不同 variant。執行時是可重跑的節點鏈,下一跳看 `skills/dev-flow/stage3/graph.yaml`,不是只看 SKILL.md。乘客清單仍是模板頂註。走錯一步就重跑那一節,不要整場重來。 | 內建 / mattpocock `prototype` |
 | 4 規格 | openspec delta 格式手寫(模板已內建) | openspec |
 | 5 任務 | tracer-bullet 順序 + Covers/Verify/Blocked-by(模板內建) | 內建 |
 | 6 實作 | **由 `/dev-flow` 自動接執行引擎**(對外入口一律 `/dev-flow`,定位到 Stage 6 即自動載入 `dev-run`,使用者不需記第二個指令;haiku 執行→sonnet 審→升階;守衛 `devflow-exec` start/stop)或手動逐 T;TDD 紅綠(每 S-id 先 RED 貼輸出再 GREEN)+ checkbox 追蹤 | 本 plugin / 內建 |
 | 7 驗證 | 雙軸審(Standards + Spec)+ 自建 coverage matrix(可搭 mattpocock `code-review`) | 內建 / mattpocock |
 | 隨時(踩到母版缺陷) | **`dev-report`**:產出去識別化的缺陷回報檔(issue 文 + 派工單條目,寫進 `.devflow/reports/`,`devflow-report-guard` hook 機械擋結構性識別特徵,人工確認後才貼)| 本 plugin |
+
+Stage 2 節點鏈(正本 `skills/dev-flow/stage2/graph.yaml`):
+`N1-handoff` → `S1-approaches` → `S2-stress` → `N3-write-md` → `S4-oc` → `S5-adr` → `S6-selfcheck` → `N7-g1` → `N8-end`。
+Stage 3 節點鏈(正本 `skills/dev-flow/stage3/graph.yaml`):
+`N1-trigger` → `N-skip`(九條全未命中);任一命中 → `S0-question` → `S1-experiment` → `S2-evidence` → `N3-write-md` → `S3-writeback` → `S4-close` → `N5-end`。
 
 > **外部 skill 依賴原則**:方法一律內建於模板執行清單,外部 skill 只當**選配加分**(叫不到不影響流程)。
 > 原因:第三方 skill 常自帶終點鏈(跑完強制導向它自己的後續流程),會把本流程拖出七文檔管線;
@@ -803,7 +808,8 @@ base 不見了,而且是在他們下次 `git fetch` 才會發現。「直接補�
    固定填 `n-a:尚未建立 branch`,Stage 6 開 branch 並推上去後換成 `origin/feat/<slug>`,
    填法正本見 `_templates/STATUS.md` 頂註)
 3. 換 session 說:`/dev-flow 繼續 <feature>` → 初次接手只讀 1-discussion.md
-   (續跑則讀 STATUS + frontmatter 定位),按 §8 帶你走。**之後每個階段
+   (續跑則讀 STATUS + frontmatter 定位),按 §8 帶你走。Stage 2/3 也是節點鏈,不是
+   只能從頭跑的直線;下一跳看各自的 `graph.yaml`。**之後每個階段
    (含 Stage 6 實作)都是同一句指令** —— `/dev-flow` 自動判 stage 接對應動作,
    Stage 6 由它自動載入執行引擎,不需要學 `dev-run`
 4. 每過 gate:更新 frontmatter status + STATUS.md + 產 html twin
