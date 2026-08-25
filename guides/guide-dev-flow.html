@@ -2267,6 +2267,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             順序跟 next 鏈一致;掃頁樣張六件齊。改 hop 不改圖必須紅。不對帳各 feature 的
             現況圖,也不對帳生命週期圖。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-devtalk-fig-journey.sh</code></td>
+        <td>feature 討論的現況圖必須對上 Actors／Current Journey:誰／工具／步序一致,
+            md 現況圖與 html #scan-now 指紋相同。改 Journey 不改圖必須紅。
+            這顆牙不管 skill hop,也不取代 check-devtalk-fig-graph.sh。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-devstage2-graph.sh</code></td>
         <td>乘客不用跑它。它管 Stage 2 九真節點鏈:下一跳以
             <code>skills/dev-flow/stage2/graph.yaml</code> 為準、重跑只能覆寫同一份

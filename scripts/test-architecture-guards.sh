@@ -2298,7 +2298,7 @@ check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 18" "MIN_
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 176" "MIN_CHECKS 釘死 176(7-review 審查卡形狀:判定／出貨／爭點／風險／抽驗列 2–3 問 +9 後的實得數)"
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 41" "MIN_CHECKS 釘死 41(反證輪 E-1:再加 M-f~M-h 五個(mutant,子案)配對後的實得數)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 35" "MIN_CHECKS 釘死 35(durability-barrier 輪:W6 耐久性鏈的負向⑳㉑㉒ 三案後的實得數)"
-check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 154" "EXPECTED_MAPPED_FILES 釘死 154(精確值,不是地板;2026-08-25 talk-html-scan 第二刀加 check-devtalk-fig-graph.sh 後的實得數)"
+check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 155" "EXPECTED_MAPPED_FILES 釘死 155(精確值,不是地板;2026-08-25 talk-fig-journey 第二刀加 check-devtalk-fig-journey.sh 後的實得數)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 28" "EXPECTED_GROUPS 釘死 28(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的
