@@ -222,8 +222,8 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 # 4-spec 審查卡加料(作業脈絡在 R、S 的「你要審什麼」)。只加新 class,不改上面
 # CSS_SPEC 任何一條。這塊只接在 4-spec 上,跟 CSS_SPEC2 / CSS_TASKS / CSS_TASKS5
-# 同一招 —— 2-decision 吃 CSS_SPEC2、5-tasks 吃 CSS_TASKS+CSS_TASKS5、
-# 7-review 仍只吃 CSS_SPEC,各站 <style> 不互污染。
+# / CSS_REVIEW7 同一招 —— 2-decision 吃 CSS_SPEC2、5-tasks 吃 CSS_TASKS+CSS_TASKS5、
+# 7-review 吃 CSS_REVIEW7,各站 <style> 不互污染。
 CSS_SPEC4 = """
 .g2-chk-hint{font-size:.86rem;color:var(--ink-2);margin:18px 0 0}
 .r-oc{padding:12px 18px 14px;background:var(--sunk);border-bottom:1px solid var(--rule-2);
@@ -312,6 +312,20 @@ CSS_TASKS5 = """
 .t-ask li{display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:.9rem;
   color:var(--ink)}
 .t-ask .qmark{color:var(--accent);font-weight:700;flex:none;line-height:1.5}
+"""
+
+# 7-review 審查卡加料(每列「你要審什麼」)。只加新 class,不改 CSS_SPEC。
+# 這塊只接在 7-review 上,class 名用 g3-* 前綴,不跟 CSS_SPEC4 的 s-ask、
+# CSS_SPEC2 的 g1-ask、CSS_TASKS5 的 t-ask 混進同一份 <style>。
+CSS_REVIEW7 = """
+.g3-chk-hint{font-size:.86rem;color:var(--ink-2);margin:18px 0 0}
+.g3-ask{margin:0 0 12px}
+.g3-ask-h{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-3);margin:0 0 6px}
+.g3-ask ul{margin:0;padding:0;list-style:none}
+.g3-ask li{display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:.9rem;
+  color:var(--ink)}
+.g3-ask .qmark{color:var(--accent);font-weight:700;flex:none;line-height:1.5}
 """
 
 

@@ -319,8 +319,8 @@ def card(item_id, title, tag, rows, missing=None, sub="", extra="", dup=None, le
     空白,直接打破「三個 gate 站渲染輸出不得變動」的驗收基準。同行拼接時空字串
     不添一字,byte-for-byte 不受影響。
 
-    lead:「你要審什麼」插槽,插在 GWT **前面**。4-spec / 2-decision / 5-tasks 傳;
-    7-review 不傳,預設 `""`,與 `extra` 同一招:接在 `<div class="gwt">` 同一行前面,
+    lead:「你要審什麼」插槽,插在 GWT **前面**。4-spec / 2-decision / 5-tasks /
+    7-review 傳。預設 `""`,與 `extra` 同一招:接在 `<div class="gwt">` 同一行前面,
     空字串不添一字。
     """
     tag_html = f'<span class="tag main">{html.escape(tag)}</span>' if tag else ""
@@ -608,7 +608,8 @@ def review_questions(fields, oc, md):
 
 
 def render_ask(questions, box_class="s-ask", head_class="s-ask-h"):
-    """「你要審什麼」清單。4-spec 預設 s-ask;2-decision 傳 g1-ask;5-tasks 傳 t-ask。"""
+    """「你要審什麼」清單。4-spec 預設 s-ask;2-decision 傳 g1-ask;
+    5-tasks 傳 t-ask;7-review 傳 g3-ask。"""
     if not questions:
         return ""
     items = "".join(
@@ -904,37 +905,268 @@ def parse_decision(md, secs):
     return hint + render_g1_oc(md) + "".join(cards), n, used
 
 
-def parse_review(_md, secs):
-    """7-review:逐 S 現象證據 + Exit Checklist 逐項。"""
-    cards, n, used = [], 0, set()
-    for _lvl, title, body in secs:
-        if not re.match(r"^(現象證據|Exit Checklist|Coverage Matrix)", title):
+_G3_FILE_LINE = re.compile(
+    r"([A-Za-z0-9_./-]+\.[A-Za-z][A-Za-z0-9]+):(\d+)")
+
+
+def _g3_file_lines(text):
+    """從一列正文抽 `檔:行`。問「只靠標的檔:行能不能判失敗」時用,不把整列搬進問題。"""
+    return [f"{a}:{b}" for a, b in _G3_FILE_LINE.findall(text or "")]
+
+
+def _g3_verdict(md):
+    """## Verdict 的判定詞(PASS / REQUEST_CHANGES / PRE-REVIEW / FAIL)與正文。"""
+    body = _section_text(md, "Verdict")
+    m = re.search(r"\b(PASS|REQUEST_CHANGES|PRE-REVIEW|FAIL)\b", body)
+    return (m.group(1) if m else ""), body
+
+
+def _g3_matrix(md):
+    """Coverage Matrix 資料列 → [(sid, test, status), ...]。"""
+    out = []
+    for header, cells in table_rows(_section_text(md, "Coverage Matrix")):
+        if not cells or not cells[0] or cells[0].startswith("<"):
             continue
-        rows = table_rows(body)
-        inner = []
-        if rows:
+        out.append((cells[0],
+                    cells[1] if len(cells) > 1 else "",
+                    cells[2] if len(cells) > 2 else ""))
+    return out
+
+
+def _g3_r_block(title, inner):
+    if not inner:
+        return ""
+    return (f'<section class="r-block" id="{anchor_id(title)}">'
+            f'<div class="r-head">'
+            f'<span class="r-name">{inline(title)}</span></div>'
+            f'{"".join(inner)}</section>')
+
+
+def g3_review_questions(kind, sid, blob, extra_banned, ctx, used_qs):
+    """從 7-review 這一列的洞抽 2–3 問。必須是問題,不重述正本欄;禁止跨卡同一句。
+
+    洞來自標的檔:行(這列能不能只靠它判失敗)與 Coverage Matrix
+    (verdict 有沒有被 matrix 授權)。used_qs 是本頁已出過的問題。
+    """
+    qs = []
+    verdict = ctx.get("verdict") or "verdict"
+    fls = _g3_file_lines(blob)
+    fl = fls[0] if fls else ""
+    banned = [x for x in (extra_banned or ()) if x and len(x) >= 8]
+
+    def add(q):
+        q = (q or "").strip()
+        if not q:
+            return
+        if not q.endswith("？") and not q.endswith("?"):
+            q += "？"
+        if any(part and len(part) >= 8 and part in q for part in banned):
+            return
+        if q in qs or q in used_qs:
+            return
+        qs.append(q)
+
+    if kind == "verdict":
+        add(f"判定寫 {verdict}，Coverage Matrix 每一列都授權了嗎")
+        if fl:
+            add(f"只靠 {fl} 就能判這個 {verdict} 失敗嗎")
+        else:
+            add(f"判定正文沒有檔:行，不打開 7-review.md 能判 {verdict} 失敗嗎")
+        if re.search(r"🟡|F-\d+", blob or ""):
+            add(f"帶著 🟡 仍 {verdict}，Matrix 授權這樣出貨了嗎")
+        else:
+            add(f"Matrix 若有一列其實沒綠，這個 {verdict} 還算被授權嗎")
+    elif kind == "matrix":
+        if fl:
+            add(f"{sid} 這列只靠 {fl} 能判失敗嗎")
+        else:
+            add(f"{sid} 這列沒寫檔:行，只靠測試名能判失敗嗎")
+        add(f"{sid} 這列的結果，有沒有授權 Verdict 的 {verdict}")
+        if re.match(r"S-\d+", sid or ""):
+            add(f"{sid} 這列測試打得到 4-spec 那條觀測嗎")
+        else:
+            add(f"{sid} 這列若其實沒綠，{verdict} 還被 Matrix 授權嗎")
+    elif kind == "exit":
+        add(f"{sid} 這項只靠標的檔:行能判沒做完嗎")
+        add(f"{sid} 沒勾完的話，{verdict} 還被 Matrix 授權嗎")
+        if re.search(r"Quiz|不可逆", blob or ""):
+            add(f"{sid} 標了不可逆，Quiz 沒過能否決出貨嗎")
+        elif re.search(r"PR|develop|branch", blob or "", re.I):
+            add(f"{sid} 這項跟 Matrix 綠不綠無關，沒做完 {verdict} 仍算授權嗎")
+        else:
+            add(f"{sid} 只改文件、測試沒綠，{verdict} 還被 Matrix 授權嗎")
+    elif kind == "limit":
+        if fl:
+            add(f"{sid} 只靠 {fl} 能判這條限界還在嗎")
+        else:
+            add(f"{sid} 這條沒有檔:行，只靠敘述能判它還在嗎")
+        add(f"{sid} 這條 🟡 還讓 {verdict} 站得住嗎")
+        add(f"{sid} 帶著這條限界出貨，Matrix 有授權嗎")
+    elif kind == "dispute":
+        add(f"{sid} 這則爭點只靠標的檔:行能判分級站不住嗎")
+        add(f"{sid} 若其實該回 G2，{verdict} 還被 Matrix 授權嗎")
+        if re.search(r"L1|L2", blob or ""):
+            add(f"{sid} 的 L1 分級，4-spec Dependencies 還罩得住嗎")
+        else:
+            add(f"{sid} 這則若成立，Coverage Matrix 還授權 {verdict} 嗎")
+    else:
+        if fl:
+            add(f"現象 {sid} 只靠 {fl} 能判這列失敗嗎")
+        else:
+            add(f"現象 {sid} 沒寫檔:行，只靠敘述能判失敗嗎")
+        add(f"現象 {sid} 相符，有沒有出現在 Matrix 裡授權 {verdict}")
+        add(f"現象 {sid} 這列跟 4-spec 觀測對得上嗎")
+
+    if len(qs) < 2:
+        add(f"{sid} 這列不打開 7-review.md、只靠標的檔:行能判失敗嗎")
+    if len(qs) < 2:
+        add(f"{sid} 這列的結論，有沒有被 Coverage Matrix 授權")
+    out = qs[:3]
+    used_qs.update(out)
+    return out
+
+
+def parse_review(md, secs):
+    """7-review:卡是判定／出貨／爭點／風險／抽驗列。
+
+    卡形狀(套 4-spec 已合骨架):每列加 2–3 條「你要審什麼」(這列能不能只靠
+    標的檔:行判失敗、verdict 有沒有被 matrix 授權)。問題從該列 md 洞抽,
+    禁止三張同一句。作業脈絡通常不必。禁止「這一點在說什麼」。
+    勾選 = 這列只靠標的檔:行就能判失敗,不是整份已過 G3。
+
+    模板仍要求現象證據逐 S 可勾,所以那批卡留著,不改 L2 下落
+    (Verdict / Known Limits 仍置頂;附錄仍進背景)。
+    """
+    cards, n, used = [], 0, set()
+    used_qs = set()
+    verdict, vbody = _g3_verdict(md)
+    ctx = {
+        "verdict": verdict or "verdict",
+        "matrix": _g3_matrix(md),
+    }
+
+    def lead(kind, sid, blob, extra):
+        return render_ask(
+            g3_review_questions(kind, sid, blob, extra, ctx, used_qs),
+            "g3-ask", "g3-ask-h")
+
+    def emit(title, inner, mark_used=False):
+        nonlocal n
+        if not inner:
+            return
+        if mark_used:
             used.add(title)
-            for header, cells in rows:
+        n += len(inner)
+        cards.append(_g3_r_block(title, inner))
+
+    # 判定(不進 used:## Verdict 仍置頂)
+    v_inner = []
+    if (vbody or "").strip() or verdict:
+        blob = vbody or verdict
+        v_inner.append(card(
+            "判定", verdict or "Verdict", "判定",
+            [("判定", verdict or _headline(vbody))],
+            lead=lead("verdict", "判定", blob, [blob, verdict]),
+        ))
+    emit("判定", v_inner)
+
+    # 出貨 / 抽驗 / 現象證據:L2 標題進 used,下落仍是卡片節
+    exit_inner, mx_inner, ev_inner = [], [], []
+    exit_title = mx_title = ev_title = None
+    for _lvl, title, body in secs:
+        if re.match(r"^Exit Checklist", title):
+            exit_title = title
+            checks = re.findall(r"^\s*-\s*\[( |x|X)\]\s*(.+)$", body, re.M)
+            for i, (mark, text) in enumerate(checks, 1):
+                sid = f"EC-{i}"
+                exit_inner.append(card(
+                    sid, text, "已勾" if mark.lower() == "x" else "出貨", [],
+                    lead=lead("exit", sid, text, [text]),
+                ))
+        elif re.match(r"^Coverage Matrix", title):
+            mx_title = title
+            for header, cells in table_rows(body):
                 item = cells[0] if cells else ""
                 if not item or item.startswith("<"):
                     continue
                 keys = header[1:] + [f"欄{i}" for i in range(len(header), len(cells))]
                 pairs = list(zip(keys, cells[1:]))
-                inner.append(card(item, pairs[0][1] if pairs else "", "", pairs[1:]))
-                n += 1
-        else:
-            checks = re.findall(r"^\s*-\s*\[( |x|X)\]\s*(.+)$", body, re.M)
-            if checks:
-                used.add(title)
-                for i, (mark, text) in enumerate(checks, 1):
-                    inner.append(card(f"EC-{i}", text, "已勾" if mark.lower() == "x" else "", []))
-                    n += 1
-        if inner:
-            cards.append(f'<section class="r-block" id="{anchor_id(title)}">'
-                         f'<div class="r-head">'
-                         f'<span class="r-name">{inline(title)}</span></div>'
-                         f'{"".join(inner)}</section>')
-    return "".join(cards), n, used
+                blob = " ".join([item] + list(cells[1:]))
+                extra = [v for _k, v in pairs]
+                mx_inner.append(card(
+                    item, pairs[0][1] if pairs else item, "抽驗", pairs[1:],
+                    lead=lead("matrix", item, blob, extra),
+                ))
+        elif re.match(r"^現象證據", title):
+            ev_title = title
+            for header, cells in table_rows(body):
+                item = cells[0] if cells else ""
+                if not item or item.startswith("<"):
+                    continue
+                keys = header[1:] + [f"欄{i}" for i in range(len(header), len(cells))]
+                pairs = list(zip(keys, cells[1:]))
+                blob = " ".join([item] + list(cells[1:]))
+                extra = [v for _k, v in pairs]
+                ev_inner.append(card(
+                    item, pairs[0][1] if pairs else item, "", pairs[1:],
+                    lead=lead("evidence", item, blob, extra),
+                ))
+
+    emit(exit_title or "Exit Checklist", exit_inner, mark_used=True)
+    # 爭點(H3 A-n;父節「附錄」不進 used,仍收進背景)
+    d_inner = []
+    for lvl, title, body in secs:
+        if lvl < 3:
+            continue
+        m = re.match(r"^(A\d+)", title)
+        if not m:
+            continue
+        sid = m.group(1)
+        rest = title[len(sid):].strip(" 　:：") or sid
+        blob = title + "\n" + (body or "")
+        d_inner.append(card(
+            sid, rest, "爭點",
+            [("爭點", _headline(body, limit=72))],
+            lead=lead("dispute", sid, blob, [rest, body]),
+        ))
+    emit("爭點", d_inner)
+
+    # 風險(不進 used:## Known Limits 仍置頂)
+    l_inner = []
+    kl_body = _section_text(md, "Known Limits")
+    kl_rows = table_rows(kl_body)
+    if kl_rows:
+        for header, cells in kl_rows:
+            if not cells or not cells[0] or cells[0].startswith("<"):
+                continue
+            num = cells[0]
+            sid = f"KL-{num}"
+            keys = header[1:] + [f"欄{i}" for i in range(len(header), len(cells))]
+            pairs = list(zip(keys, cells[1:]))
+            blob = " ".join(cells)
+            extra = [v for _k, v in pairs]
+            l_inner.append(card(
+                sid, pairs[0][1] if pairs else sid, "風險", pairs[1:],
+                lead=lead("limit", sid, blob, extra),
+            ))
+    else:
+        for i, m in enumerate(
+                re.finditer(r"^\s*[-*]\s+(\S+)\s+(.+)$", mask_fenced(kl_body), re.M),
+                1):
+            raw_id, text = m.group(1), m.group(2).strip()
+            sid = raw_id if re.match(r"^(K|KL)-\d+", raw_id) else f"KL-{i}"
+            blob = raw_id + " " + text
+            l_inner.append(card(
+                sid, text, "風險", [],
+                lead=lead("limit", sid, blob, [text]),
+            ))
+    emit("風險", l_inner)
+    emit(mx_title or "Coverage Matrix", mx_inner, mark_used=True)
+    emit(ev_title or "現象證據", ev_inner, mark_used=True)
+
+    hint = ('<p class="g3-chk-hint">勾選 = 這列只靠標的檔:行就能判失敗,不是整份已過 G3。'
+            '</p>') if n else ""
+    return hint + "".join(cards), n, used
 
 
 def parse_task_fields(body):
@@ -1643,11 +1875,12 @@ def main(argv):
 
     out_local = root / "docs/dev" / slug / f"{stage}.html"
     # CSS_SPEC4 只加給 4-spec、CSS_SPEC2 只加給 2-decision、
-    # CSS_TASKS+CSS_TASKS5 只加給 5-tasks(都是加法式新 class)。
-    # 7-review 的 extra_css 仍是 CSS_SPEC。
+    # CSS_TASKS+CSS_TASKS5 只加給 5-tasks、CSS_REVIEW7 只加給 7-review
+    # (都是加法式新 class)。
     extra_css = ui.CSS_SPEC + (ui.CSS_SPEC4 if stage == "4-spec" else "") + (
         ui.CSS_SPEC2 if stage == "2-decision" else "") + (
-        (ui.CSS_TASKS + ui.CSS_TASKS5) if stage == "5-tasks" else "")
+        (ui.CSS_TASKS + ui.CSS_TASKS5) if stage == "5-tasks" else "") + (
+        ui.CSS_REVIEW7 if stage == "7-review" else "")
     out_local.write_text(ui.local_page(title, extra_css, body_html, SCRIPT), encoding="utf-8")
     # 片段是 opt-in:只有呼叫端明確設定 DEVFLOW_ARTIFACT_OUT 才寫。空字串 / 空白
     # 視同未設,避免「變數在、值是空的」仍落到預設 sidecar。
