@@ -10,10 +10,11 @@ gate(無 G 編號、免 reviewer 核准),但一樣不是「md 直轉攤平」,�
     用法:build-gate-twin.py <專案根目錄> <slug> <stage>
          stage ∈ 2-decision | 4-spec | 7-review | 5-tasks
 
-    輸出兩份(**同一份內容,兩種殼**):
-      <根>/docs/dev/<slug>/<stage>.html                  本機看的完整 html 文件
-      <根>/docs/dev/<slug>/<stage>-review.artifact.html  發布用片段,**無**
-                                                          doctype/html/head/body
+    預設只寫一份本機完整文件:
+      <根>/docs/dev/<slug>/<stage>.html
+    發布用片段是 opt-in:只有明確設定 DEVFLOW_ARTIFACT_OUT 才呼叫
+    artifact_page() 寫出(Claude Code 發布路徑);未設定時不得產出
+    <stage>-review.artifact.html。片段**無** doctype/html/head/body。
     也可用環境變數:DEVFLOW_PROJECT_ROOT / DEVFLOW_SLUG / DEVFLOW_ARTIFACT_OUT
 
 三個 gate 站三件必含(缺一就不是審查介面):
@@ -1118,14 +1119,20 @@ def main(argv):
 </div>"""
 
     out_local = root / "docs/dev" / slug / f"{stage}.html"
-    out_art = pathlib.Path(os.environ.get(
-        "DEVFLOW_ARTIFACT_OUT", str(root / "docs/dev" / slug / f"{stage}-review.artifact.html")))
     # CSS_TASKS 只加給 5-tasks(devflow_twin_ui.py 的加法式 CSS);三個 gate 站繼續只吃
     # CSS_SPEC,extra_css == ui.CSS_SPEC 逐字不變,style 區塊 byte-for-byte 不受影響。
     extra_css = ui.CSS_SPEC + (ui.CSS_TASKS if stage == "5-tasks" else "")
     out_local.write_text(ui.local_page(title, extra_css, body_html, SCRIPT), encoding="utf-8")
-    out_art.write_text(ui.artifact_page(title, extra_css, body_html, SCRIPT), encoding="utf-8")
-    print(f"wrote {out_local} + {out_art} — {n_items} 條待審,{len(appendix)} 節背景資料")
+    # 片段是 opt-in:只有呼叫端明確設定 DEVFLOW_ARTIFACT_OUT 才寫。空字串 / 空白
+    # 視同未設,避免「變數在、值是空的」仍落到預設 sidecar。
+    art_out = os.environ.get("DEVFLOW_ARTIFACT_OUT", "").strip()
+    if art_out:
+        out_art = pathlib.Path(art_out)
+        out_art.parent.mkdir(parents=True, exist_ok=True)
+        out_art.write_text(ui.artifact_page(title, extra_css, body_html, SCRIPT), encoding="utf-8")
+        print(f"wrote {out_local} + {out_art} — {n_items} 條待審,{len(appendix)} 節背景資料")
+    else:
+        print(f"wrote {out_local} — {n_items} 條待審,{len(appendix)} 節背景資料")
     return 0
 
 

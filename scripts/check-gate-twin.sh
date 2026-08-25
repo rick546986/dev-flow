@@ -7,8 +7,9 @@
 #   T2 待審項目逐條可勾 + 進度計數;**缺必填欄的項目要在卡上直接紅底現形**
 #   T3 背景資料收進 <details>(預設收合、內容零刪減)
 # 外加兩條產生器自身的契約:
-#   T4 **同一份內容兩種殼**:本機版是完整 html 文件;artifact 片段**不得含**
-#      doctype/html/head/body(發布時外層會自動包)。這條錯了不會報錯,只會靜靜壞掉。
+#   T4 **預設只寫本機完整文件**:`{stage}.html` 必須是完整 html;預設不得產出
+#      `{stage}-review.artifact.html`。設了 DEVFLOW_ARTIFACT_OUT 才寫片段,且
+#      片段**不得含** doctype/html/head/body(發布時外層會自動包)。
 #   T5 解析不到任何待審項目 → exit 1,**不產出空殼**(空殼會讓人以為審過了)
 #
 # 三個 stage 都對母版自帶範例 `example/contract-expiry-reminder/` 實跑 —— 等於自帶回歸:
@@ -106,7 +107,7 @@ GROUPS_SEEN = {}
 # 之後每加一條檢查都要把這裡同步調高;只有整區塊被砍掉、實得數掉到這個值以下
 # 才會紅(這是本檔唯一的次級防線,見 test-architecture-guards.sh 的 GS-9 靜態互釘
 # ——那邊另外釘了這個數字的字面值,兩處要一起改,見該檔的防禦邊界說明)。
-MIN_CHECKS = 138
+MIN_CHECKS = 143
 
 
 def check(cond, label, detail=""):
@@ -120,9 +121,15 @@ def check(cond, label, detail=""):
         print(f"  ✗ {label}" + (f" — {detail}" if detail else ""))
 
 
-def run(root, slug, stage):
+def run(root, slug, stage, extra_env=None):
+    # 預設路徑必須在「沒有 DEVFLOW_ARTIFACT_OUT」下跑,否則本守衛自己的環境
+    # 若剛好帶了這個變數,T4 的 sidecar-absent 斷言會被外部環境汙染。
+    env = os.environ.copy()
+    env.pop("DEVFLOW_ARTIFACT_OUT", None)
+    if extra_env:
+        env.update(extra_env)
     return subprocess.run([sys.executable, str(BUILD), str(root), slug, stage],
-                          capture_output=True, text=True)
+                          capture_output=True, text=True, env=env)
 
 
 def read_html_or_none(path):
@@ -147,7 +154,7 @@ for st in STAGES:
         check(False, f"{st}:產出成功", (r.stderr or r.stdout).strip().splitlines()[-1:] or "無輸出")
         continue
     local = (proj / f"{st}.html").read_text(encoding="utf-8")
-    art = (proj / f"{st}-review.artifact.html").read_text(encoding="utf-8")
+    sidecar = proj / f"{st}-review.artifact.html"
     # 寫成活條件(而非硬寫 True)——雖然走到這裡當下必為真(上面已經
     # `if r.returncode != 0: ...continue` 濾掉),但硬寫 True 會被下面新加的
     # guard-selfpin「不得出現 check(True」自我掃描誤判成斷言被恆真化解除武裝。
@@ -180,9 +187,23 @@ for st in STAGES:
     # 全部指向同一個(例如都退化成 #cards)= 等於沒有跳轉,但「解析得到」照樣成立
     check(len(set(hrefs)) >= 4, f"{st}:T7 五格指向不同段落(不得退化成少數幾個)",
           f"只指向 {sorted(set(hrefs))}")
-    check(bool(SHELL.search(local)) and not SHELL.search(art),
-          "  T4 兩種殼:本機版完整文件、artifact 片段無外殼",
-          "片段含 doctype/html/head/body" if SHELL.search(art) else "本機版缺外殼")
+    check(bool(SHELL.search(local)) and not sidecar.exists(),
+          "  T4 預設只寫完整本機版、不寫 sidecar artifact",
+          "寫了 sidecar" if sidecar.exists() else "本機版缺外殼")
+
+# T4 opt-in:明確設定 DEVFLOW_ARTIFACT_OUT 才寫片段,且片段仍不得含外殼
+# (舊 T4 片段半邊)。留在同一群組,避免動 EXPECTED_GROUPS / 群組名靜態釘。
+art_out = TMP / "optin-art" / "4-spec-review.artifact.html"
+r_art = run(TMP / "proj", "demo", "4-spec",
+            extra_env={"DEVFLOW_ARTIFACT_OUT": str(art_out)})
+art_txt = art_out.read_text(encoding="utf-8") if art_out.is_file() else ""
+check(r_art.returncode == 0 and art_out.is_file() and not SHELL.search(art_txt)
+      and not (proj / "4-spec-review.artifact.html").exists(),
+      "T4 opt-in:DEVFLOW_ARTIFACT_OUT 寫出無外殼片段、且不寫預設 sidecar",
+      ("片段含 doctype/html/head/body" if SHELL.search(art_txt) else
+       "沒寫到 DEVFLOW_ARTIFACT_OUT" if not art_out.is_file() else
+       "寫了預設 sidecar" if (proj / "4-spec-review.artifact.html").exists() else
+       f"exit {r_art.returncode}"))
 
 print("-- T8 五格內容對齊 README §6 規格 --")
 CURRENT_GROUP = "dash-cells-readme"

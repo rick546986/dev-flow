@@ -2125,8 +2125,8 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             「正本自己少了一項條件」這種連動態比對都抓不到的漏洞。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-gate-twin.sh</code></td>
-        <td>檢查給人審查用的 HTML 介面有沒有真的照規格產出——動線頂區、待審項目可勾選、本機版跟發布版
-            兩種外殼有沒有搞混。</td>
+        <td>檢查給人審查用的 HTML 介面有沒有真的照規格產出——動線頂區、待審項目可勾選、預設只寫本機完整文件、
+            設了 DEVFLOW_ARTIFACT_OUT 才寫的發布片段不得含外殼。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-hooks-accounting.sh</code></td>
         <td>對帳 hook 掛載清單檔與三份「列舉 hook 的文件」(安裝健檢清單、README、本頁註冊表)——
@@ -2238,7 +2238,7 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>對驗證證據守衛做同樣的「故意寫壞的證據必須被抓到」測試。</td>
         <td>人工手動執行(獨立於 <code>devflow-check.sh</code> 既有基線)</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>build-gate-twin.py</code></td>
-        <td>把各站的 markdown 正本轉成人真的會拿來審查、動工的介面(本機看的完整版與發布用的片段兩種外殼)。</td>
+        <td>把各站的 markdown 正本轉成人真的會拿來審查、動工的介面(預設只寫本機完整版;發布片段要設 DEVFLOW_ARTIFACT_OUT 才寫)。</td>
         <td>dev-flow 各站產生審查介面時呼叫;<code>check-gate-twin.sh</code> 對範例實跑驗證</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>devflow_twin_ui.py</code></td>
         <td><code>build-gate-twin.py</code> 產生介面時共用的版面樣式與外殼模板,不能單獨執行。</td>
