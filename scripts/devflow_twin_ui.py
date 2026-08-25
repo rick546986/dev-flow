@@ -220,6 +220,34 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 }
 """
 
+# 4-spec 審查卡加料(作業脈絡在 R、S 的「你要審什麼」)。只加新 class,不改上面
+# CSS_SPEC 任何一條。2/7 的 extra_css 仍只吃 CSS_SPEC,這塊只接在 4-spec 上,
+# 跟 CSS_TASKS 同一招 —— 另兩站的 <style> 一個字都不變。
+CSS_SPEC4 = """
+.g2-chk-hint{font-size:.86rem;color:var(--ink-2);margin:18px 0 0}
+.r-oc{padding:12px 18px 14px;background:var(--sunk);border-bottom:1px solid var(--rule-2);
+  font-size:.9rem;color:var(--ink-2)}
+.r-oc-h{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-3);margin:0 0 8px}
+.r-oc-na{margin:0}
+.r-oc-row{display:grid;grid-template-columns:4.6em 1fr;gap:8px 12px;align-items:baseline;
+  margin:3px 0}
+.r-oc-k{font-size:.78rem;color:var(--ink-3);font-weight:650;white-space:nowrap}
+.r-oc-v{font-size:.9rem;color:var(--ink-2)}
+.s-ask{margin:0 0 12px}
+.s-ask-h{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-3);margin:0 0 6px}
+.s-ask ul{margin:0;padding:0;list-style:none}
+.s-ask li{display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:.9rem;
+  color:var(--ink)}
+.s-ask .qmark{color:var(--accent);font-weight:700;flex:none;line-height:1.5}
+.s-delta{margin:10px 0 0;font-size:.88rem;color:var(--ink)}
+.s-delta strong{font-weight:700}
+@media (max-width:560px){
+  .r-oc-row{grid-template-columns:1fr;gap:2px}
+}
+"""
+
 # 5-tasks 執行板專屬(K-3)。加法式:只加新 class,不動 CSS_SPEC 既有任何一條規則 ——
 # 三個 gate 站的 <style> 只吃 CSS_SPEC,加了新東西也不會出現在它們的輸出裡。
 # T 卡本身沿用 CSS_SPEC 的 .s-card/.gwt/.obs(card() 直接產生同一套 class,見
