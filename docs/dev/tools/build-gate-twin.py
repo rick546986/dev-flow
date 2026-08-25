@@ -295,7 +295,7 @@ def table_rows(body):
     return [(header, r) for r in rows] if header else []
 
 
-def card(item_id, title, tag, rows, missing=None, sub="", extra="", dup=None):
+def card(item_id, title, tag, rows, missing=None, sub="", extra="", dup=None, lead=""):
     """一張待審卡。missing 有值 → 紅底現形(缺必填欄的項目不得只在別處列表)。
 
     missing 可以是單一欄名字串(既有用法,如 2-decision 的「裁決」)或缺欄清單
@@ -318,6 +318,9 @@ def card(item_id, title, tag, rows, missing=None, sub="", extra="", dup=None):
     模板裡固定的換行/縮排字元仍會印出來,即使插值是空字串也會讓三站的輸出多一行
     空白,直接打破「三個 gate 站渲染輸出不得變動」的驗收基準。同行拼接時空字串
     不添一字,byte-for-byte 不受影響。
+
+    lead:4-spec 加的第 5 個插槽(「你要審什麼」)。插在 GWT **前面**。2/5/7 不傳,
+    預設 `""`,與 `extra` 同一招:接在 `<div class="gwt">` 同一行前面,空字串不添一字。
     """
     tag_html = f'<span class="tag main">{html.escape(tag)}</span>' if tag else ""
     body_rows = "".join(
@@ -345,7 +348,7 @@ def card(item_id, title, tag, rows, missing=None, sub="", extra="", dup=None):
     {tag_html}
   </label>
   <div class="s-body">
-    <div class="gwt">{body_rows}</div>
+    {lead}<div class="gwt">{body_rows}</div>
     {flag}{extra}
   </div>
 </article>"""
@@ -410,10 +413,226 @@ def md_block(body):
     return "".join(out)
 
 
+# ── 4-spec 審查卡:作業脈絡在 R、S 是問題 + GWT + 觀測 ────────────────────────
+# 人要能只看 HTML 審每一條 S。作業脈絡從該 R 下各 S 的 Operational Context 合併,
+# 只在 R 頭貼一次;S 卡禁止再貼一份,也禁止「這一點在說什麼」那種複寫 GWT 的 claim。
+# ⚠️ `[ \t]*` 不用 `\s*` —— `\s` 含換行,` - Operational Context:` 後面若直接換行,
+# `\s*` 會把下一行 `- Actor:…` 整段吃進 rest,「誰在用」從此消失。
+OC_HEAD = re.compile(r"^\s*-\s*Operational Context\s*[:：][ \t]*(.*)$", re.M)
+OC_FIELD = re.compile(r"^[ \t]+-\s*([^:：\n]+)[:：]\s*(.*)$")
+# 樣張五列(不是把 13 欄 OC 全攤)。空值不佔列,避免「不適用」長成空段六列。
+OC_SHOW = (
+    ("誰在用", ("Actor",)),
+    ("他要幹嘛", ("Goal",)),
+    ("他不知道", ("Missing information",)),
+    ("系統外", ("Out-of-system action", "External dependency")),
+    ("等待", ("Waiting/timeout behavior",)),
+)
+# 「這條才變的」優先看這些欄 —— 人審時真正會改判定的差,不是 Situation 換句話說。
+OC_DELTA_KEYS = (
+    "Goal", "Human decision", "Authority", "Actor",
+    "Waiting/timeout behavior", "Out-of-system action", "Observation",
+)
+
+
+def _oc_norm(text):
+    return re.sub(r"\s+", " ", (text or "").strip())
+
+
+def parse_oc(seg):
+    """從一條 S 的本文抽出 Operational Context。
+
+    回 None(沒寫)、`{"na": 理由}`(md 寫不適用)、或欄名→值的 dict。
+    掃原文即可:OC 是給人看的欄位表,不會合法出現在 fence 裡;GWT 的 fence 遮蔽
+    仍由呼叫端的 FIELD 掃描負責。
+    """
+    m = OC_HEAD.search(seg)
+    if not m:
+        return None
+    rest = m.group(1).strip()
+    if rest.startswith("不適用"):
+        return {"na": rest}
+    fields = {}
+    for ln in seg[m.end():].splitlines():
+        if not ln.strip():
+            continue
+        fm = OC_FIELD.match(ln)
+        if not fm:
+            if re.match(r"^\s*-\s+\S", ln) and not ln.startswith((" ", "\t")):
+                break
+            if fields and ln[:1].isspace():
+                last = next(reversed(fields))
+                fields[last] += " " + ln.strip()
+            continue
+        fields[fm.group(1).strip()] = fm.group(2).strip()
+    return fields or None
+
+
+def merge_r_oc(ocs):
+    """一條 R 的作業脈絡:有一份完整 OC 就用第一份當共用底;全是不適用就一行不適用。"""
+    filled = [o for o in ocs if o and "na" not in o]
+    if filled:
+        return dict(filled[0])
+    nas = [o for o in ocs if o and "na" in o]
+    if nas:
+        return {"na": nas[0]["na"]}
+    return None
+
+
+def render_r_oc(oc):
+    """R 頭底下的作業脈絡。不適用 = 一行,不要空表。"""
+    if not oc:
+        return ""
+    if "na" in oc:
+        reason = oc["na"]
+        if reason == "不適用":
+            body = "不適用。"
+        else:
+            body = reason if reason.startswith("不適用") else "不適用。" + reason
+        return f'<div class="r-oc"><p class="r-oc-na">{inline(body)}</p></div>'
+    rows = []
+    for label, keys in OC_SHOW:
+        val = ""
+        for k in keys:
+            v = (oc.get(k) or "").strip()
+            if v and v not in ("無", "不適用"):
+                val = v
+                break
+        if not val:
+            continue
+        rows.append(
+            f'<div class="r-oc-row"><span class="r-oc-k">{html.escape(label)}</span>'
+            f'<span class="r-oc-v">{inline(val)}</span></div>')
+    if not rows:
+        return ""
+    return (f'<div class="r-oc"><div class="r-oc-h">作業脈絡(整條 R 共用)</div>'
+            f'{"".join(rows)}</div>')
+
+
+def oc_delta_line(s_oc, r_oc):
+    """S 相對 R 共用脈絡只補 1 句。沒差就空字串 —— 不要為了填格子而貼。"""
+    if not s_oc or not r_oc or "na" in s_oc or "na" in r_oc:
+        return ""
+    # 空狀態 vs 錯誤是常見洞:Observation 在講這個時,優先於 Goal 換句話說。
+    sv_obs, rv_obs = _oc_norm(s_oc.get("Observation", "")), _oc_norm(r_oc.get("Observation", ""))
+    if sv_obs and sv_obs != rv_obs and re.search(r"空狀態|錯誤狀態|不是錯", sv_obs):
+        sent = re.split(r"[。；\n]", sv_obs, 1)[0].strip()
+        if sent:
+            return sent
+    for key in OC_DELTA_KEYS:
+        sv, rv = _oc_norm(s_oc.get(key, "")), _oc_norm(r_oc.get(key, ""))
+        if sv and sv != rv:
+            sent = re.split(r"[。；\n]", sv, 1)[0].strip()
+            if sent:
+                return sent
+    return ""
+
+
+def _obs_surface(obs):
+    """觀測欄「從哪看」那段,用來問能不能離開 DB 驗。"""
+    part = (obs or "").split("|")[0].strip()
+    part = re.sub(r"^從\s*", "", part)
+    part = re.sub(r"\s*看\s*$", "", part).strip()
+    return part or "觀測欄寫的畫面"
+
+
+def _precision_token(text):
+    """THEN/觀測裡的精度字樣(「10 天」、30 天、p95 < 100ms)。"""
+    m = re.search(r"「([^」]{1,16})」", text or "")
+    if m and re.search(r"\d", m.group(1)):
+        return m.group(1)
+    m = re.search(r"(\d+\s*天|\d+\s*ms|p95)", text or "", re.I)
+    return m.group(1) if m else ""
+
+
+def _dd_for_precision(md, token):
+    """精度字樣對得上哪一條 DD。對不到就只問「跟 DD 對得上嗎」,不寫死樣張的 DD-1。"""
+    if not token or not md:
+        return ""
+    needle = re.sub(r"\d+", "N", token)
+    for row in re.finditer(r"^\|\s*(DD-\d+)\s*\|([^|]+)\|", mask_fenced(md), re.M):
+        did, what = row.group(1), row.group(2)
+        if any(p in what for p in (token, needle, "精度", "天", "小時")):
+            return did
+    return ""
+
+
+def review_questions(fields, oc, md):
+    """從這條 S 的洞抽 2–3 個問題。必須是問題,不能重述 GWT。"""
+    given, when, then = fields.get("given", ""), fields.get("when", ""), fields.get("then", "")
+    obs = fields.get("observe", "")
+    # 精度只看 THEN(斷言語)——觀測第三段常寫「用 30 天內…測」,那是測資不是精度契約。
+    # 權限/歷程只看本條 THEN+觀測,不掃整份 OC(R 共用 Authority 會誤給每張 S 貼權限題)。
+    own = " ".join((then, obs))
+    qs = []
+
+    def add(q):
+        q = (q or "").strip()
+        if not q:
+            return
+        if not q.endswith("？") and not q.endswith("?"):
+            q += "？"
+        # 禁複寫 GWT:問題不得整段搬 GIVEN/WHEN/THEN
+        gwt = (given, when, then)
+        if any(part and len(part) >= 8 and part in q for part in gwt):
+            return
+        if q not in qs:
+            qs.append(q)
+
+    surface = _obs_surface(obs)
+    if obs and not re.search(r"\bDB\b|資料庫|SQL|EXPLAIN", obs, re.I):
+        add(f"只看「{surface}」、不對 DB,能不能判定這條對錯")
+    token = _precision_token(then)
+    if token:
+        dd = _dd_for_precision(md, token)
+        if dd:
+            add(f"「{token}」的精度是寫死的嗎?跟 {dd} 對得上嗎")
+        else:
+            add(f"「{token}」的精度是寫死的嗎?跟 Drafting Decisions 對得上嗎")
+    if re.search(r"空狀態|不顯示錯誤|無到期|零筆|空列表", own):
+        add("空狀態跟查詢失敗,觀測上分得出來嗎")
+    if re.search(r"灰階|拒絕|權限|僅主管|403|授權", own):
+        add("權限防線在 API,還是只在 UI 灰階")
+    if re.search(r"歷程", own):
+        add("只看 UI 上的歷程,能不能驗這條")
+    if oc and "na" in oc:
+        add("這條是單純導覽/內部行為,寫不適用的理由站得住嗎")
+    if len(qs) < 2 and obs:
+        add("這條觀測寫的「從哪看 / 看到什麼算對」不打開 md 能獨立判定嗎")
+    if len(qs) < 2:
+        add("這條不打開 4-spec.md、只看這一卡,寫到可以過 G2 了嗎")
+    if len(qs) < 2:
+        add("觀測離開 DB 還能單獨驗嗎?空狀態跟失敗分得出來嗎")
+    return qs[:3]
+
+
+def render_ask(questions):
+    if not questions:
+        return ""
+    items = "".join(
+        f'<li><span class="qmark">?</span><span>{inline(q)}</span></li>'
+        for q in questions)
+    return (f'<div class="s-ask"><div class="s-ask-h">你要審什麼</div>'
+            f"<ul>{items}</ul></div>")
+
+
+def s_tag(fields, oc):
+    """標籤從本條 THEN/觀測抽,不寫死 S-id,也不吃 R 共用 Authority(會誤標整組)。"""
+    blob = " ".join((fields.get("then", ""), fields.get("observe", "")))
+    if re.search(r"灰階|僅主管|權限|拒絕|403|授權", blob):
+        return "權限"
+    return ""
+
+
 # ── 各 stage 的解析器:回 (cards_html, n_items, dash_cells, used_titles) ────────
 
-def parse_spec(_md, secs):
-    """4-spec:每個 S 一張卡,缺「觀測」欄紅底。"""
+def parse_spec(md, secs):
+    """4-spec:每個 S 一張卡,缺「觀測」欄紅底。
+
+    卡形狀(G2 給人審,不是 md 直轉):R 頭 + 作業脈絡一次;S = 勾選 / id / 標題 /
+    2–3 條「你要審什麼」+ 既有 GWT + 既有觀測 + 可選的「這條才變的」一句。
+    勾選語意 = 這條寫到可以過 G2,不是審查者已跑過觀測。
+    """
     cards, n, used = [], 0, set()
     for lvl, title, body in secs:
         rm = R_HEAD.match("#" * lvl + " " + title)
@@ -427,12 +646,13 @@ def parse_spec(_md, secs):
         #(2026-08-15 複審 N1:那正是本檔前一版引入的 bug)。
         masked_body = mask_fenced(body)
         hits = list(S_HEAD.finditer(masked_body))
-        inner = []
+        parsed = []
         for k, hm in enumerate(hits):
             sid, stitle = hm.group(1), hm.group(2).strip()
             start = hm.end()
             end = hits[k + 1].start() if k + 1 < len(hits) else len(body)
             seg_masked = masked_body[start:end]
+            seg_raw = body[start:end]
             # K-7:模板要求 GIVEN/WHEN/THEN/觀測四欄皆必填,缺任何一欄都要紅底現形,
             # 不是只有「觀測」。FIELD 的 key 順序(given/when/then/observe)固定就是
             # GIVEN、WHEN、THEN、觀測這個守衛靠的順序,不必另外排序。
@@ -443,11 +663,23 @@ def parse_spec(_md, secs):
                 f[key] = body[start + fm.start(1):start + fm.end(1)].strip() if fm else ""
                 if not f[key]:
                     missing_fields.append(FIELD_LABEL[key])
+            parsed.append((sid, stitle, f, missing_fields, parse_oc(seg_raw)))
+        r_oc = merge_r_oc([p[4] for p in parsed])
+        inner = []
+        for sid, stitle, f, missing_fields, s_oc in parsed:
+            qs = review_questions(f, s_oc, md)
+            delta = oc_delta_line(s_oc, r_oc)
+            extra = ""
+            if delta:
+                extra = (f'<p class="s-delta"><strong>這條才變的：</strong>'
+                         f"{inline(delta)}</p>")
             inner.append(card(
-                sid, stitle or rname, "",
+                sid, stitle or rname, s_tag(f, s_oc),
                 [("GIVEN", f["given"]), ("WHEN", f["when"]), ("THEN", f["then"])],
                 missing=missing_fields or None,
                 sub=obs_block(f["observe"]) if f["observe"] else "",
+                extra=extra,
+                lead=render_ask(qs),
             ))
             n += 1
         if inner:
@@ -455,8 +687,11 @@ def parse_spec(_md, secs):
                 f'<section class="r-block" id="{html.escape(rid)}">'
                 f'<div class="r-head"><span class="r-id">{html.escape(rid)}</span>'
                 f'<span><span class="r-name">{inline(rname)}</span></span></div>'
+                f'{render_r_oc(r_oc)}'
                 f'{"".join(inner)}</section>')
-    return "".join(cards), n, used
+    hint = ('<p class="g2-chk-hint">勾選 = 這條寫到可以過 G2,不是你已跑過觀測。'
+            '</p>') if cards else ""
+    return hint + "".join(cards), n, used
 
 
 def parse_decision(_md, secs):
@@ -1119,9 +1354,10 @@ def main(argv):
 </div>"""
 
     out_local = root / "docs/dev" / slug / f"{stage}.html"
-    # CSS_TASKS 只加給 5-tasks(devflow_twin_ui.py 的加法式 CSS);三個 gate 站繼續只吃
-    # CSS_SPEC,extra_css == ui.CSS_SPEC 逐字不變,style 區塊 byte-for-byte 不受影響。
-    extra_css = ui.CSS_SPEC + (ui.CSS_TASKS if stage == "5-tasks" else "")
+    # CSS_SPEC4 只加給 4-spec、CSS_TASKS 只加給 5-tasks(都是加法式新 class)。
+    # 2-decision / 7-review 的 extra_css 仍是 CSS_SPEC,style 區塊一個字不變。
+    extra_css = ui.CSS_SPEC + (ui.CSS_SPEC4 if stage == "4-spec" else "") + (
+        ui.CSS_TASKS if stage == "5-tasks" else "")
     out_local.write_text(ui.local_page(title, extra_css, body_html, SCRIPT), encoding="utf-8")
     # 片段是 opt-in:只有呼叫端明確設定 DEVFLOW_ARTIFACT_OUT 才寫。空字串 / 空白
     # 視同未設,避免「變數在、值是空的」仍落到預設 sidecar。

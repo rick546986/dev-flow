@@ -84,6 +84,7 @@ REQUIRED_GROUPS = [
     "n1-section-fate",
     "n4-unclosed-comment",
     "usage-error-message",
+    "spec-review-shape",
     "guard-selfpin",
 ]
 # 群組數的釘死常數(比照 MIN_CHECKS 的做法)——REQUIRED_GROUPS 被連刪帶藏
@@ -92,7 +93,7 @@ REQUIRED_GROUPS = [
 # 只有這個獨立釘死的數字會現形。逐次同步成 REQUIRED_GROUPS 的實際長度,不是抓下限
 #(理由同上方 MIN_CHECKS 說明)。這個字面值另外被 test-architecture-guards.sh 的
 # GS-9 靜態互釘釘了一份,兩處要一起改。
-EXPECTED_GROUPS = 24
+EXPECTED_GROUPS = 25
 CURRENT_GROUP = "gate-stage-baseline"
 GROUPS_SEEN = {}
 # 檢查數地板(次級 backstop):**釘死的常數**,不是跑完再回頭算 —— 回頭算等於
@@ -107,7 +108,7 @@ GROUPS_SEEN = {}
 # 之後每加一條檢查都要把這裡同步調高;只有整區塊被砍掉、實得數掉到這個值以下
 # 才會紅(這是本檔唯一的次級防線,見 test-architecture-guards.sh 的 GS-9 靜態互釘
 # ——那邊另外釘了這個數字的字面值,兩處要一起改,見該檔的防禦邊界說明)。
-MIN_CHECKS = 143
+MIN_CHECKS = 151
 
 
 def check(cond, label, detail=""):
@@ -1086,6 +1087,94 @@ _build_src = BUILD.read_text(encoding="utf-8")
 check('缺相依 markdown-it-py' in _build_src,
       "原始碼:相依失敗訊息前綴仍是「缺相依」(與「用法:」可區分)",
       "原始碼裡找不到「缺相依 markdown-it-py」這句前綴")
+
+print("-- 4-spec 審查卡形狀:作業脈絡在 R、S 是問題+GWT+觀測、禁止 claim --")
+CURRENT_GROUP = "spec-review-shape"
+# 人要能只看 HTML 審每一條 S。兩種退回舊形狀都要紅:
+#   (1) 又長出複寫 GWT 的 claim /「這一點在說什麼」
+#   (2) 作業脈絡又貼回每一張 S(R 上合併一次才是樣張)
+_spec4 = read_html_or_none(proj / "4-spec.html")
+if _spec4 is None:
+    for _lab in (
+        "4-spec:不得出現複寫 GWT 的 claim /「這一點在說什麼」",
+        "4-spec:作業脈絡在 R 上,不在每張 S 裡",
+        "4-spec:每張 S 有 2–3 條「你要審什麼」(問題,不重述 GWT)",
+        "4-spec:S 仍有 GWT + 觀測",
+        "4-spec:R 寫不適用時是一行,不是空表",
+        "2/5/7:卡本體沒被加進 4-spec 的審題/作業脈絡",
+    ):
+        check(False, _lab, "4-spec.html 不存在(前面已失敗)")
+else:
+    _s_cards = re.findall(r'<article class="s-card.*?</article>', _spec4, re.S)
+    _r_blocks = re.findall(r'<section class="r-block".*?</section>', _spec4, re.S)
+    _claim_hit = re.search(
+        r"這一點在說什麼|class=\"claim\"|class=\"s-claim\"|s-claim", _spec4)
+    check(not _claim_hit,
+          "4-spec:不得出現複寫 GWT 的 claim /「這一點在說什麼」",
+          f"命中 {_claim_hit.group(0) if _claim_hit else ''}")
+    _oc_in_s = [re.search(r'data-sid="([^"]+)"', c).group(1)
+                for c in _s_cards
+                if 'class="r-oc"' in c or "作業脈絡" in c
+                or re.search(r"Actor:|誰在用", c)]
+    check(not _oc_in_s,
+          "4-spec:作業脈絡在 R 上,不在每張 S 裡",
+          f"S 卡內出現作業脈絡:{_oc_in_s}")
+    check(all('class="r-oc"' in r for r in _r_blocks) and len(_r_blocks) >= 1,
+          "4-spec:每張 R 有一份作業脈絡(合併一次)",
+          f"{sum('class=\"r-oc\"' in r for r in _r_blocks)}/{len(_r_blocks)} 張 R 有 r-oc")
+    _ask_ok = True
+    _ask_detail = []
+    for c in _s_cards:
+        sid = (re.search(r'data-sid="([^"]+)"', c) or type("M", (), {"group": lambda *_: "?"})()).group(1)
+        qs = re.findall(
+            r'<li><span class="qmark">\?</span><span>(.*?)</span></li>', c, re.S)
+        qs_txt = [re.sub(r"<[^>]+>", "", q) for q in qs]
+        gwt = re.findall(r'<span class="gwt-v">(.*?)</span>', c, re.S)
+        gwt_txt = [re.sub(r"<[^>]+>", "", v) for v in gwt]
+        if not (2 <= len(qs) <= 3):
+            _ask_ok = False
+            _ask_detail.append(f"{sid} 問題數 {len(qs)}")
+            continue
+        if any("？" not in q and "?" not in q for q in qs_txt):
+            _ask_ok = False
+            _ask_detail.append(f"{sid} 有不是問題的條目")
+        if any(g and len(g) >= 8 and any(g in q for q in qs_txt) for g in gwt_txt):
+            _ask_ok = False
+            _ask_detail.append(f"{sid} 問題重述 GWT")
+        if "你要審什麼" not in c:
+            _ask_ok = False
+            _ask_detail.append(f"{sid} 缺「你要審什麼」")
+    check(_ask_ok and len(_s_cards) >= 1,
+          "4-spec:每張 S 有 2–3 條「你要審什麼」(問題,不重述 GWT)",
+          "; ".join(_ask_detail) or "沒有 S 卡")
+    check(all('<span class="gwt-k">GIVEN</span>' in c
+              and '<span class="gwt-k">WHEN</span>' in c
+              and '<span class="gwt-k">THEN</span>' in c
+              for c in _s_cards) and any('class="obs"' in c for c in _s_cards),
+          "4-spec:S 仍有 GWT + 觀測",
+          "GWT 或觀測欄被抽掉")
+    _r2 = next((r for r in _r_blocks if 'id="R-2"' in r), "")
+    check(bool(_r2) and 'class="r-oc-na"' in _r2 and "不適用" in _r2
+          and 'class="r-oc-row"' not in _r2,
+          "4-spec:R 寫不適用時是一行,不是空表",
+          "R-2 沒有 r-oc-na 一行,或仍長出空列")
+    _delta_n = sum("這條才變的" in c for c in _s_cards)
+    check(0 < _delta_n < len(_s_cards),
+          "4-spec:「這條才變的」只補有差的 S,不是每張都貼",
+          f"{_delta_n}/{len(_s_cards)} 張有 delta")
+    _other_ok = True
+    _other_detail = []
+    for _st in ("2-decision", "7-review", "5-tasks"):
+        _oh = read_html_or_none(proj / f"{_st}.html")
+        if _oh is None:
+            _other_ok = False
+            _other_detail.append(f"{_st}.html 不存在")
+            continue
+        if any(x in _oh for x in ("你要審什麼", 'class="r-oc"', 'class="s-ask"', "這條才變的")):
+            _other_ok = False
+            _other_detail.append(f"{_st} 卡被加了 4-spec 審查塊")
+    check(_other_ok, "2/5/7:卡本體沒被加進 4-spec 的審題/作業脈絡",
+          "; ".join(_other_detail))
 
 # ── guard-selfpin:原始碼裡的 CURRENT_GROUP 賦值集合必須等於 REQUIRED_GROUPS ──
 # 心跳只能擋「刪掉一個區塊、卻忘了同時刪 REQUIRED_GROUPS 裡對應的名字」——

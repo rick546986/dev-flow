@@ -61,7 +61,7 @@
 #                    check-dev-setup-discipline.sh、check-integration-regression-
 #                    guard.sh、check-status-policy.sh 與 check-gate-twin.sh 的
 #                    MIN_CHECKS / check-file-map.sh 的 MIN_CHECKS / check-gate-twin.sh
-#                    的 EXPECTED_GROUPS(含 24 個群組名逐字整行釘)/
+#                    的 EXPECTED_GROUPS(含 25 個群組名逐字整行釘)/
 #                    check-design-contract.sh 的 EXPECTED_CHECK_SKIP_CALLS。另有
 #                    B-4 的三支守衛「地板 block」AST 外釘(check_floor_block:
 #                    condition+記錄 failure+非零退出必須同鏈,防「常數還在、if 整段
@@ -2295,11 +2295,11 @@ check_static_pin_sub() { # check_static_pin_sub <相對路徑> <期望子字串>
 check_static_pin "hooks/selftest.sh" "MIN_CASES=402" "MIN_CASES 釘死 402(2026-08-17 清空輪 378 之後,2026-08-19 §7 前置修復:s7 legacy sequential 真跑 start 驗證+6/s7b VNext feature-scope 同型驗證+2/s7c Stage 7 review 自建武裝同型驗證+3 → 389,同日 §7-3b 探針 pst 真實 subagent_type payload 形狀釘住+3 → 392,2026-08-20 issue #7 路徑分隔符 w1 組+6 → 398,同日派工單 §2.1 TMPDIR 跨平台正規化 w2 組+2 → 400,同日 report-guard 覆蓋缺口+2 → 402)"
 check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "EXPECTED_CHECKS 釘死 131"
 check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 18" "MIN_CHECKS 釘死 18(A-2/B-5 輪:②改 scoped 拆 3 條 + ⑦⑧⑨ 新增 → 15;2026-08-20 ⑩check 段散發副本 parity map-driven 拆 3 條 → 18)"
-check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 143" "MIN_CHECKS 釘死 143(T4 預設不寫 sidecar + opt-in 片段無外殼後的實得數)"
+check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 151" "MIN_CHECKS 釘死 151(4-spec 審查卡形狀:禁 claim、作業脈絡不進 S +8 後的實得數)"
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 41" "MIN_CHECKS 釘死 41(反證輪 E-1:再加 M-f~M-h 五個(mutant,子案)配對後的實得數)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 35" "MIN_CHECKS 釘死 35(durability-barrier 輪:W6 耐久性鏈的負向⑳㉑㉒ 三案後的實得數)"
 check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 153" "EXPECTED_MAPPED_FILES 釘死 153(精確值,不是地板;2026-08-24 host-adapter 第一刀加 check-host-adapter.sh + test-host-adapter.sh 後的實得數)"
-check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 24" "EXPECTED_GROUPS 釘死 24(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
+check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 25" "EXPECTED_GROUPS 釘死 25(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的
 # EXPECTED_CHECK_SKIP_CALLS 是「顯性跳過 check() 次數」的釘死地板(見該檔第 480、
@@ -2320,7 +2320,7 @@ check_static_pin_sub "scripts/check-gate-twin.sh" "_assigned == set(REQUIRED_GRO
 
 # X-3 MED:上面兩條只釘「斷言在不在」,群組總數對不對,但 REQUIRED_GROUPS 清單裡
 # 個別群組名被改名(decoy 換掉真名、總數與賦值集合等式都不受影響)完全抓不到。這裡
-# 逐一釘死 24 個群組名——清單住在本檔(誰要改名/刪名都得同步這裡,否則這裡會現形;
+# 逐一釘死 25 個群組名——清單住在本檔(誰要改名/刪名都得同步這裡,否則這裡會現形;
 # check-gate-twin.sh 原始碼裡的順序跟這裡不必一致,逐一比對即可)。
 # ⚠️ 二次複審(X-3 再犯):原本用 check_static_pin_sub(子字串版,只驗
 # `"名字",` 這段字面存在)——子字串比對不管這段字面出現在**哪裡**,名字被拿出
@@ -2340,7 +2340,8 @@ REQUIRED_GROUP_NAMES=(
   "t2-missing-required" "k7-missing-then" "k3-missing-intent" "k3-empty-tasks"
   "k3-task-count" "k3-boundaries-dag" "high2-dash-values" "high3-dag-waves"
   "high1-dup-field" "p5-sample-row" "t5-empty-spec" "n7-dist-copy"
-  "n1-section-fate" "n4-unclosed-comment" "usage-error-message" "guard-selfpin"
+  "n1-section-fate" "n4-unclosed-comment" "usage-error-message" "spec-review-shape"
+  "guard-selfpin"
 )
 for _gname in "${REQUIRED_GROUP_NAMES[@]}"; do
   check_static_pin "scripts/check-gate-twin.sh" "    \"${_gname}\"," \
@@ -2461,7 +2462,7 @@ if [ "$STATIC_PIN_FAIL" -ne 0 ]; then
 fi
 echo "  ✓ 九支地板/群組數靜態互釘全過(hooks/selftest.sh / run_tests.py / check-dev-setup-discipline.sh / check-integration-regression-guard.sh / check-status-policy.sh / check-gate-twin.sh MIN_CHECKS / check-file-map.sh / check-gate-twin.sh EXPECTED_GROUPS / check-design-contract.sh EXPECTED_CHECK_SKIP_CALLS)"
 echo "  ✓ 三支守衛地板 block AST 外釘全過(check-integration-regression-guard.sh / check-status-policy.sh / check-dev-setup-discipline.sh;condition+記錄 failure+非零退出同鏈,B-4)"
-echo "  ✓ guard-selfpin 兩條斷言字面 + 24 個群組名逐字整行釘全過(X-3 HIGH-1/MED,二次複審後改為整行釘)"
+echo "  ✓ guard-selfpin 兩條斷言字面 + 25 個群組名逐字整行釘全過(X-3 HIGH-1/MED,二次複審後改為整行釘)"
 echo
 
 if [ "$FAIL" -ne 0 ]; then
