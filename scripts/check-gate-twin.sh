@@ -1125,7 +1125,8 @@ else:
     _ask_ok = True
     _ask_detail = []
     for c in _s_cards:
-        sid = (re.search(r'data-sid="([^"]+)"', c) or type("M", (), {"group": lambda *_: "?"})()).group(1)
+        sid_m = re.search(r'data-sid="([^"]+)"', c)
+        sid = sid_m.group(1) if sid_m else "?"
         qs = re.findall(
             r'<li><span class="qmark">\?</span><span>(.*?)</span></li>', c, re.S)
         qs_txt = [re.sub(r"<[^>]+>", "", q) for q in qs]
