@@ -21,6 +21,8 @@
 #
 # 破壞實驗(本檔每次跑,除非 --skip-mutation):
 #   改 Journey 的工具不改圖必須紅;改圖上的角色不改 Journey 必須紅;好樣本必須綠。
+#   收尾假綠防護:改 html #scan-now 不改 md 必須紅;拿掉現況圖標題、把現況步塞進
+#   「邏輯圖」必須 NOT-PARSED(不准拿明天系統流槽充現況圖)。
 #
 # 用法:
 #   scripts/check-devtalk-fig-journey.sh [root]
@@ -371,6 +373,16 @@ def bite(label, plain, actors, actor_tools, steps, vocab):
                     % (label, index)
                 )
             prev_tool_pos = here
+        for action in step["actions"]:
+            if action not in norm:
+                failures.append(
+                    "%s 缺 Journey 第 %d 步的動作「%s」" % (label, index, action)
+                )
+        for pain in step["pains"]:
+            if pain not in norm:
+                failures.append(
+                    "%s 缺 Journey 第 %d 步的痛點「%s」" % (label, index, pain)
+                )
     extra = leftovers(norm, vocab)
     for token in extra:
         if token in known_people or token in known_tools:
@@ -443,7 +455,7 @@ def child_rc(tree):
     return proc.returncode, (proc.stdout or "") + "\n" + (proc.stderr or "")
 
 
-def replace_in_section(text, heading_substr, old, new, label):
+def replace_in_section(text, heading_substr, old, new, label, replace_all=False):
     found = headings(text)
     for index, (start, end, title) in enumerate(found):
         if heading_substr not in title:
@@ -452,7 +464,10 @@ def replace_in_section(text, heading_substr, old, new, label):
         body = text[end:body_end]
         if old not in body:
             raise Mismatch("破壞實驗 %s 找不到 %r" % (label, old))
-        body = body.replace(old, new, 1)
+        if replace_all:
+            body = body.replace(old, new)
+        else:
+            body = body.replace(old, new, 1)
         return text[:end] + body + text[body_end:]
     raise Mismatch("破壞實驗找不到節 %s" % label)
 
@@ -499,7 +514,7 @@ def run_mutations():
         text = open(path, encoding="utf-8").read()
         try:
             text = replace_in_section(
-                text, "現況圖", "負責業務", "倉管", "現況圖角色"
+                text, "現況圖", "負責業務", "倉管", "現況圖角色", replace_all=True
             )
         except Mismatch as exc:
             failures.append(str(exc))
@@ -511,6 +526,52 @@ def run_mutations():
             else:
                 failures.append(
                     "改圖上的角色不改 Journey 必須 exit 1,實際 rc=%s\n%s"
+                    % (rc, blob[-1200:])
+                )
+
+    with tempfile.TemporaryDirectory(prefix="devtalk-fj-html-") as tmp:
+        copy_tree(tmp)
+        path = os.path.join(
+            tmp, "scripts", "fixtures", "devtalk-fig-journey", "good",
+            "1-discussion.html",
+        )
+        text = open(path, encoding="utf-8").read()
+        if "負責業務" not in text:
+            failures.append("破壞實驗 html #scan-now 找不到 負責業務")
+        else:
+            open(path, "w", encoding="utf-8").write(
+                text.replace("負責業務", "倉管", 1)
+            )
+            rc, blob = child_rc(tmp)
+            if rc == 1:
+                print("[mut] ✓ 改 html #scan-now 不改 md 必須紅")
+            else:
+                failures.append(
+                    "改 html #scan-now 不改 md 必須 exit 1,實際 rc=%s\n%s"
+                    % (rc, blob[-1200:])
+                )
+
+    with tempfile.TemporaryDirectory(prefix="devtalk-fj-logic-") as tmp:
+        copy_tree(tmp)
+        path = os.path.join(
+            tmp, "scripts", "fixtures", "devtalk-fig-journey", "good", "1-discussion.md"
+        )
+        text = open(path, encoding="utf-8").read()
+        if "## 現況圖" not in text or "## 邏輯圖" not in text:
+            failures.append("破壞實驗找不到 ## 現況圖 / ## 邏輯圖")
+        else:
+            now_title, now_body = diagram_body_md(text)
+            text = text.replace("## 現況圖", "## 附錄說明", 1)
+            text = text.replace(
+                "登入 -> dashboard -> 列出到期", now_body.strip(), 1
+            )
+            open(path, "w", encoding="utf-8").write(text)
+            rc, blob = child_rc(tmp)
+            if rc == 2:
+                print("[mut] ✓ 現況圖改名、步序塞進邏輯圖必須 NOT-PARSED")
+            else:
+                failures.append(
+                    "拿邏輯圖充現況圖必須 exit 2,實際 rc=%s\n%s"
                     % (rc, blob[-1200:])
                 )
 
