@@ -199,7 +199,7 @@ claude          # 建議 opus(規劃層)
     <tr><td>2 真實世界</td><td>問人現在<strong>怎麼真的</strong>完成這件工作,寫成 Actors / Current Journey / Workarounds / Exceptions / Evidence 五份記錄;優先問「最近一次真的發生時怎麼處理」,無證據的敘述標 <code>[Assumption]</code></td><td><span class="badge you">回答真實工作流程</span></td><td>五份齊,且每條可分辨「有證據」或 <code>[Assumption]</code></td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>2. <strong>真實世界互動盤點</strong>。正本:<code>nodes/S2-world.md</code>。入口摘要:五份記錄(Actors / Current Journey / Workarounds / Exceptions / Evidence),無證據標 <code>[Assumption]</code>。完成條件見該節點。</blockquote></details></td></tr>
     <tr><td>3 逼問</td><td>①一次一問附推薦,多解讀禁默選;②覆述推理鏈,接不上就說卡在哪;③清單外斷言必問;④發現實為多題 → 停,提議拆分,收斂到使用者選的子題,其餘記 <code>[&gt;]</code> 移交(附建議 slug)</td><td><span class="badge you">選/答/反駁</span></td><td>連續兩輪無新題、全數三態、它能複述問題/目標/邊界而不被糾正</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>3. <strong>逐題逼問</strong>(循環)。正本:<code>nodes/N3-probe.md</code>。入口摘要:一次只問一題、<br>覆述推理鏈、清單外斷言必問;條件子條款見該節點。完成條件見該節點。</blockquote></details></td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>3. <strong>逐題逼問</strong>(循環)。正本:<code>nodes/N3-probe.md</code>。入口摘要:一次只問一題、<br>覆述推理鏈、清單外斷言必問;3a 核銷五份時同步改現況圖;其餘子條款見該節點。完成條件見該節點。</blockquote></details></td></tr>
     <tr><td>4 雛形</td><td>每條 Goal 翻成「假設…當…則…」</td><td><span class="badge you">逐條確認</span></td><td>全數確認</td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>4. <strong>驗收雛形</strong>。正本:<code>nodes/S4-accept.md</code>。入口摘要:Goal 翻成假設…當…則…並問出怎麼看到。完成條件見該節點。</blockquote></details></td></tr>
     <tr><td>5 發散</td><td>what-if 推演至少一輪(純發散)</td><td>聽,有感就回</td><td>Log 有發散段</td></tr>
@@ -207,13 +207,13 @@ claude          # 建議 opus(規劃層)
     <tr><td>6 盲點</td><td>列你沒想到要問的 unknown unknowns,逐條解釋;並列隱含預設,逐條問你確認</td><td><span class="badge you">兩份清單各至少回一句</span></td><td>兩份清單皆回應過</td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>6. <strong>盲點掃描</strong>。正本:<code>nodes/S6-blind.md</code>。入口摘要:unknown unknowns 與隱含預設兩份清單都要回應。完成條件見該節點。</blockquote></details></td></tr>
     <tr><td>7 落檔</td><td>寫 1-discussion.md(十節)</td><td>—</td><td>十節齊、零佔位</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>7. <strong>落檔 md</strong>。正本:<code>nodes/N9-write-md.md</code>。寫 <code>1-discussion.md</code>(骨架見下);<br>重跑覆寫同一檔,不另存。完成條件見該節點。</blockquote></details></td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>7. <strong>落檔 md</strong>。正本:<code>nodes/N9-write-md.md</code>。寫 <code>1-discussion.md</code>(骨架見下);<br>現況圖從 Actors＋Current Journey 長出來,不准另發明天系統流卻叫現況圖;<br>重跑覆寫同一檔,不另存。完成條件見該節點。</blockquote></details></td></tr>
     <tr><td>8 複核</td><td>嚴格審視者七掃(AC 自洽/事實背書/矛盾/推理鏈齊/範圍未偷長/用詞前後一致/真實世界標注 [Assumption])</td><td>—</td><td>七掃清零</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>8. <strong>獨立複核</strong>。正本:<code>nodes/S8-review.md</code>。入口摘要:換嚴格審視者視角七掃。完成條件見該節點。</blockquote></details></td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>8. <strong>獨立複核</strong>。正本:<code>nodes/S8-review.md</code>。入口摘要:換嚴格審視者視角七掃,再加第 ⑧ 掃「圖 vs Journey」。完成條件見該節點。</blockquote></details></td></tr>
     <tr><td>9 詞彙</td><td>先查長期記憶的現況(其他討論可能已確認過詞條,只增改本輪的、不動他人的);浮現詞彙逐一登記成候選,逐詞自問「這詞條在解釋語言,還是在記方案?」——後者刪;使用者確認過的才 confirm</td><td>—</td><td>逐詞打勾</td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>9. <strong>詞彙對帳</strong>。正本:<code>nodes/S9-terms.md</code>。入口摘要:先查長期記憶現況,再登記候選。<br>   <code>dev-memory.py talk propose $MEMORY_SESSION_ID</code>;使用者確認才<br>   <code>dev-memory.py talk confirm &lt;candidate&gt;</code>;否定走<br>   <code>dev-memory.py talk reject &lt;candidate&gt;</code>;推翻先前理解走<br>   <code>dev-memory.py talk correct $MEMORY_SESSION_ID --kind domain --key &lt;詞&gt;<br>   --title "&lt;新理解&gt;" --reason "&lt;為什麼改&gt;"</code>。<strong>未確認的候選一律不寫進長期記憶</strong>。完成條件見該節點。</blockquote></details></td></tr>
     <tr><td>10 html</td><td>先自核 md:Open Questions 僅含三態符號,混入其他記號(如 <code>[ ]</code>)→ 回步 3 定態;定態後才從 md 生成掃頁六件</td><td>—</td><td>自核過 + 掃頁六件齊</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>10. <strong>產 html</strong>。正本:<code>nodes/S10-html.md</code>。入口摘要:Open Questions 僅三態;<code>1-discussion.html</code> 只從 md 生成掃頁六件。完成條件見該節點。</blockquote></details></td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>10. <strong>產 html</strong>。正本:<code>nodes/S10-html.md</code>。入口摘要:Open Questions 僅三態;<code>1-discussion.html</code> 只從 md 生成掃頁六件;#scan-now 只從 md 現況圖重生。完成條件見該節點。</blockquote></details></td></tr>
     <tr><td>11 收尾</td><td>給你 html 過目;你點頭才 <code>talk end</code></td><td><span class="badge you">點頭 → approved</span></td><td>status 改完,長期記憶寫入,停</td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>11. <strong>過目與收尾</strong>。正本:<code>nodes/N13-end.md</code>。html 過目後,使用者點頭才<br>    跑 <code>dev-memory.py talk end $MEMORY_SESSION_ID</code>。它回 <code>promoted: 0</code> 是合法結果。完成條件見該節點。</blockquote></details></td></tr>
   </table></div>

@@ -27,6 +27,8 @@ S9 已完成。`1-discussion.md` 已在。MEMORY_SESSION_ID 仍在。游標在 S
 4. 題目(每列一題 + 著落:已解／假設／移交)
 5. 驗收一小表(假設…當…則…｜從哪看｜看到什麼)
 6. 問答摘要預設摺著(`<details>`);Constraints／詞條不佔第一屏
+html `#scan-now`(svg 或 pre)只從 md 現況圖重生;兩邊抽出的誰／工具／動作／痛點
+指紋不同就紅。不准拿明天系統流充 `#scan-now`。
 跑 `${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S10-html "$MEMORY_SESSION_ID"`。
 
 ## 完成條件

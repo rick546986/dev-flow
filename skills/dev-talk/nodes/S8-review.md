@@ -24,12 +24,15 @@ N9 已完成(`1-discussion.md` 已在)。MEMORY_SESSION_ID 仍在。游標在 S8
 名詞/事實多處出現,逐處比對數字、條件、方向一致嗎?不一致 → 統一
 或標 Open Question。⑦真實世界五份裡,每條沒有證據的敘述都標了
 `[Assumption]` 嗎?有沒有把訪談印象寫成事實?
+⑧圖 vs Journey:Actors 名字與 Current Journey 每步的誰／工具必須在現況圖上;
+圖上多出來的人／工具必須對得上 Actors／Journey;步序一致。
+對不上 → 改圖或回 N3。不准拿明天系統流來對 Journey。
 發現問題 → 改檔或回步 3 補問。
 跑 `${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S8-review "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 
-七掃完畢、問題清零。本機游標在 S8-review。
+七掃與第 ⑧ 掃完畢、問題清零。本機游標在 S8-review。
 
 ## 下一跳
 

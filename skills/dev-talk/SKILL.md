@@ -105,20 +105,21 @@ dev-memory.py talk abort $MEMORY_SESSION_ID --reason "<原因>"
 1. **盤現況**。正本:`nodes/S1-survey.md`。入口摘要:讀白名單條列事實含受影響面,認可後即已核事實。完成條件見該節點。
 2. **真實世界互動盤點**。正本:`nodes/S2-world.md`。入口摘要:五份記錄(Actors / Current Journey / Workarounds / Exceptions / Evidence),無證據標 `[Assumption]`。完成條件見該節點。
 3. **逐題逼問**(循環)。正本:`nodes/N3-probe.md`。入口摘要:一次只問一題、
-   覆述推理鏈、清單外斷言必問;條件子條款見該節點。完成條件見該節點。
+   覆述推理鏈、清單外斷言必問;3a 核銷五份時同步改現況圖;其餘子條款見該節點。完成條件見該節點。
 4. **驗收雛形**。正本:`nodes/S4-accept.md`。入口摘要:Goal 翻成假設…當…則…並問出怎麼看到。完成條件見該節點。
 5. **發散推演**。正本:`nodes/S5-diverge.md`。入口摘要:至少一輪 what-if,結果記入 Interview Log。完成條件見該節點。
 6. **盲點掃描**。正本:`nodes/S6-blind.md`。入口摘要:unknown unknowns 與隱含預設兩份清單都要回應。完成條件見該節點。
 7. **落檔 md**。正本:`nodes/N9-write-md.md`。寫 `1-discussion.md`(骨架見下);
+   現況圖從 Actors＋Current Journey 長出來,不准另發明天系統流卻叫現況圖;
    重跑覆寫同一檔,不另存。完成條件見該節點。
-8. **獨立複核**。正本:`nodes/S8-review.md`。入口摘要:換嚴格審視者視角七掃。完成條件見該節點。
+8. **獨立複核**。正本:`nodes/S8-review.md`。入口摘要:換嚴格審視者視角七掃,再加第 ⑧ 掃「圖 vs Journey」。完成條件見該節點。
 9. **詞彙對帳**。正本:`nodes/S9-terms.md`。入口摘要:先查長期記憶現況,再登記候選。
    `dev-memory.py talk propose $MEMORY_SESSION_ID`;使用者確認才
    `dev-memory.py talk confirm <candidate>`;否定走
    `dev-memory.py talk reject <candidate>`;推翻先前理解走
    `dev-memory.py talk correct $MEMORY_SESSION_ID --kind domain --key <詞>
    --title "<新理解>" --reason "<為什麼改>"`。**未確認的候選一律不寫進長期記憶**。完成條件見該節點。
-10. **產 html**。正本:`nodes/S10-html.md`。入口摘要:Open Questions 僅三態;`1-discussion.html` 只從 md 生成掃頁六件。完成條件見該節點。
+10. **產 html**。正本:`nodes/S10-html.md`。入口摘要:Open Questions 僅三態;`1-discussion.html` 只從 md 生成掃頁六件;#scan-now 只從 md 現況圖重生。完成條件見該節點。
 11. **過目與收尾**。正本:`nodes/N13-end.md`。html 過目後,使用者點頭才
     跑 `dev-memory.py talk end $MEMORY_SESSION_ID`。它回 `promoted: 0` 是合法結果。完成條件見該節點。
 
