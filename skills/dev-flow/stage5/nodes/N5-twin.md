@@ -20,7 +20,8 @@ S4-selfcheck 完成:`parse_5_tasks` 的 `errors` 為空 —— 逐 T 四必填�
 ## 做什麼
 
 只呼叫現有 `docs/dev/tools/build-gate-twin.py`(母版在 `scripts/`)產
-`5-tasks.html` —— 不改那支腳本。它讀 md 逐條解析,解析不到任何一個 T 會直接
+`5-tasks.html` —— 不改那支腳本。html `#dag` 必須由各 T 的 Blocked-by 衍生;改 Blocked-by 不重產 `#dag` 不得過。
+它讀 md 逐條解析,解析不到任何一個 T 會直接
 失敗,那就是回頭修 `5-tasks.md`、不是改工具。切 T 的機械提示
 `scripts/check-task-slicing.sh` 是 warning-only、永不 exit 1,本節點照舊只呼叫,
 不改它的退出碼;四必填欄的機器判準仍是既有 `hooks/contract_ref.py`,一併不改。

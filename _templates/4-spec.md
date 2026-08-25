@@ -131,7 +131,8 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 
 ## 行為流程圖(R 級)
 <!-- 每個主要 R 一張行為流程(輸入 → 分支 → 輸出);判準同 README §6:
-     純線性 → ASCII 半形;多分支/跨層 → html 用 SVG(md 留 ASCII 正本)。gate 前必有 -->
+     純線性 → ASCII 半形;多分支/跨層 → html 用 SVG(md 留 ASCII 正本)。gate 前必有。
+     每個 R-id 必須在圖上,該 R 標題 SHALL 後的行為詞至少一個在圖上;改行為詞必須改圖。 -->
 
 ## Acceptance Criteria
 <!-- 打包驗收:全部 S 綠 + 既有測試全綠(回歸)+ 非功能(效能/相容/安全)。

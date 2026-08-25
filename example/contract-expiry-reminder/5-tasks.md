@@ -88,3 +88,10 @@ T-5 --> T-6              |
  |                       v
  +---------------------> T-7
 ```
+
+<section class="dag" id="dag">
+Wave 1: T-1
+Wave 2: T-2 ←(T-1)、T-5 ←(T-1)
+Wave 3: T-3 ←(T-2)、T-6 ←(T-5)、T-7 ←(T-2,T-5)
+Wave 4: T-4 ←(T-3)
+</section>

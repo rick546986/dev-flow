@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="zh-TW"><head><meta charset="utf-8"><title>2 圖對文字樣張</title></head>
+<body>
+<main>
+<h2>方案架構圖</h2>
+<pre>
+[A] 登入即時查(選定)
+  業務登入 -> Dashboard -> GET /contracts/expiring
+
+[B] nightly cron + 通知表
+  cron -> notifications 表
+
+[C] MQ 事件驅動
+  異動 -> MQ
+</pre>
+</main>
+</body></html>
