@@ -4,8 +4,9 @@
 
 由 `build-gate-twin.py` import,不單獨執行。
 
-**兩種殼**(這是最容易錯的一件事,錯了不會報錯只會靜靜壞掉):
-  local_page()    本機直接開的完整 html 文件(有 doctype/html/head/body)
+**兩種殼**(函式都留著;預設只寫 local_page(),artifact_page() 只在
+DEVFLOW_ARTIFACT_OUT 明確設定時才被寫出。錯了不會報錯只會靜靜壞掉):
+  local_page()    本機直接開的完整 html 文件(有 doctype/html/head/body);預設唯一產出
   artifact_page() 發布用片段,**不得含** doctype/html/head/body —— 發布時外層會自動包
 
 CSS 移植自 `notes/patches/gate-twin-ui-prototype/devflow_ui.py`(2026-08-14 PGS 現場原型)。

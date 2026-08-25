@@ -178,7 +178,7 @@ group_architecture() {
   # adr / HISTORY 人頁:md 是正本,html 過期就紅。新增 ADR 跑
   # scripts/build-public-docs.py,不要手改 html。
   run "architecture/check-public-docs" scripts/check-public-docs.sh || return 1
-  # gate twin 是審查介面不是文件視覺版(README §6):三件必含 + 兩種殼,對三站實跑
+  # gate twin 是審查介面不是文件視覺版(README §6):三件必含 + 預設只寫本機完整文件,對四站實跑
   run "architecture/check-gate-twin"         scripts/check-gate-twin.sh         || return 1
   # 模型分層是散文紀律(prompt 級),沒照做不會現形——事後從 ledger 的 attempt 事件流
   # 稽核有沒有首派即最高階、或跳過中間層直接升階(worker 這條線,見腳本頂註的稽核邊界)

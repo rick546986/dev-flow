@@ -245,6 +245,8 @@ md 是 git 正本,html twin 是給人審的殼。gate 時必產。
 | **7-review(G3)** | 判定(frontmatter `verdict:`)/ 出貨(Exit Checklist `x/y`)/ 爭點(「附錄:本輪特有」幾條)/ 風險(Known Limits 幾條)/ 抽驗(Coverage Matrix 中位列 `檔:行`,決定論、可重現)|
 | **5-tasks(執行板)** | 狀態(frontmatter)/ 任務(幾個 T + 幾條缺必填欄)/ 模式(execution.mode,未標=sequential)/ 依賴(幾條 Blocked-by 邊)/ 進度(可勾計數) |
 
+預設只寫 `docs/dev/<slug>/{stage}.html`(完整本機頁)。發布用片段要設 `DEVFLOW_ARTIFACT_OUT` 才寫,不預設產出 `{stage}-review.artifact.html`。
+
 ## 7. 角色與 Gate
 
 三道閘。粗體詞是過關條件,檢查器在抽,不要改字。
