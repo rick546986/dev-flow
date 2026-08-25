@@ -110,6 +110,9 @@ group_methodology() {
   # 方法流程圖對 hop:guide 全程地圖必須對上 graph.yaml next 鏈;掃頁樣張六件齊。
   # 不拆不放寬 check-devtalk-graph / check-devtalk-guide-sync / check-guides-fig-sync。
   run "methodology/check-devtalk-fig-graph"   scripts/check-devtalk-fig-graph.sh || return 1
+  # feature 現況圖對 Journey／Actors:改誰／工具不改圖必須紅。這顆牙不管 skill hop,
+  # 不取代 check-devtalk-fig-graph.sh。
+  run "methodology/check-devtalk-fig-journey" scripts/check-devtalk-fig-journey.sh || return 1
   # Stage 2:九真節點;單產物 2-decision.md;N1 不得寫檔;每個 hop --write-cursor。
   run "methodology/check-devstage2-graph"     scripts/check-devstage2-graph.sh   || return 1
   run "methodology/test-devstage2-graph"      scripts/test-devstage2-graph.sh    || return 1

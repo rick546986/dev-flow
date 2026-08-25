@@ -1,0 +1,39 @@
+<!-- 現況圖對 Journey 樣張:Actors + Current Journey 的誰／工具／動作／痛點必須在 #scan-now。 -->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<title>1. 討論 — 現況圖對 Journey 樣張</title>
+<style>
+  :root{--bg:#fff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;}
+  svg text{font:11px sans-serif;fill:var(--fg)}
+  svg .b{fill:var(--card);stroke:var(--line)}
+  svg .hl{fill:color-mix(in srgb,var(--acc) 16%,var(--card));stroke:var(--acc)}
+  svg .no{fill:color-mix(in srgb,var(--bad) 12%,var(--card));stroke:var(--bad)}
+  svg .flow{fill:none;stroke:var(--muted);stroke-width:1.6}
+  svg .cap{fill:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+<svg id="scan-now" viewBox="0 0 200 420" role="img" aria-label="現況:誰、用什麼、做什麼、痛在哪">
+  <rect class="hl" x="40" y="8" width="120" height="28" rx="6"/>
+  <text x="52" y="26">負責業務</text>
+  <text x="52" y="52">Excel</text>
+  <text x="52" y="72">翻私表</text>
+  <text class="cap" x="52" y="92">常漏</text>
+  <rect class="hl" x="40" y="112" width="120" height="28" rx="6"/>
+  <text x="52" y="130">負責業務</text>
+  <text x="52" y="156">LINE</text>
+  <text x="52" y="176">問主管</text>
+  <text class="cap" x="52" y="196">無紀錄</text>
+  <rect class="b" x="40" y="216" width="120" height="28" rx="6"/>
+  <text x="52" y="234">業務主管</text>
+  <text x="52" y="260">Email</text>
+  <text x="52" y="280">回覆續約</text>
+  <text class="no" x="52" y="300">進度不可見</text>
+</svg>
+</main>
+</body>
+</html>
