@@ -113,6 +113,9 @@ group_methodology() {
   # feature 現況圖對 Journey／Actors:改誰／工具不改圖必須紅。這顆牙不管 skill hop,
   # 不取代 check-devtalk-fig-graph.sh。
   run "methodology/check-devtalk-fig-journey" scripts/check-devtalk-fig-journey.sh || return 1
+  # 2／3／4／5／7 站圖對文字:選定標／variant／SHALL 行為詞／Blocked-by／Diff
+  # 改了、該站圖沒改必須紅。第 6 站無必產圖槽、本輪不開。不取代 hop／Journey 牙。
+  run "methodology/check-devstage-fig-text"  scripts/check-devstage-fig-text.sh  || return 1
   # Stage 2:九真節點;單產物 2-decision.md;N1 不得寫檔;每個 hop --write-cursor。
   run "methodology/check-devstage2-graph"     scripts/check-devstage2-graph.sh   || return 1
   run "methodology/test-devstage2-graph"      scripts/test-devstage2-graph.sh    || return 1

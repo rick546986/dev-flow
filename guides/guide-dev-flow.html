@@ -2272,6 +2272,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             md 現況圖與 html #scan-now 指紋相同。改 Journey 不改圖必須紅。
             這顆牙不管 skill hop,也不取代 check-devtalk-fig-graph.sh。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-devstage-fig-text.sh</code></td>
+        <td>2／3／4／5／7 站圖必須對上該站關鍵文字:選定標、variant、SHALL 行為詞、
+            Blocked-by 邊、Diff 檔名／端點。改文字不改圖必須紅。第 6 站無必產圖槽、本牙不咬。
+            不管 skill hop,也不取代 Journey 牙。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-devstage2-graph.sh</code></td>
         <td>乘客不用跑它。它管 Stage 2 九真節點鏈:下一跳以
             <code>skills/dev-flow/stage2/graph.yaml</code> 為準、重跑只能覆寫同一份
