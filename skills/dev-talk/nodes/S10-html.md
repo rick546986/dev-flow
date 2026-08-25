@@ -20,12 +20,18 @@ S9 已完成。`1-discussion.md` 已在。MEMORY_SESSION_ID 仍在。游標在 S
 
 先自核 md:Open Questions 僅含三態符號,出現其他記號(如 `[ ]`)
 → 回步 3 定態後才產。`1-discussion.html` 只從 md 生成。
-內容與圖判準見入口檔「視覺版」。
+內容與圖判準見入口檔「視覺版」。掃頁六件,不多不少:
+1. 摘要卡(痛 + 現在怎麼繞 + Open Questions 三態 badge)
+2. 直式現況圖(直線 `<pre>`;有人、分支、痛點用 inline SVG;直式,不要橫排;禁 mermaid／外連圖／外部庫)
+3. 人與土法(誰／要什麼／缺什麼;[Assumption] 看得見)
+4. 題目(每列一題 + 著落:已解／假設／移交)
+5. 驗收一小表(假設…當…則…｜從哪看｜看到什麼)
+6. 問答摘要預設摺著(`<details>`);Constraints／詞條不佔第一屏
 跑 `${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S10-html "$MEMORY_SESSION_ID"`。
 
 ## 完成條件
 
-自核過+七件齊。本機游標在 S10-html。
+自核過+掃頁六件齊。本機游標在 S10-html。
 
 ## 下一跳
 

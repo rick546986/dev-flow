@@ -1,0 +1,88 @@
+<!-- 掃頁樣張:六件齊、問答摺著。機械檢查只認這份,不是把 md 十節倒進去。 -->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1. 討論 — 掃頁樣張</title>
+<style>
+  :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;}
+  @media(prefers-color-scheme:dark){
+    :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+  main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+  table{border-collapse:collapse;width:100%;margin:1em 0}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
+  th{background:var(--card)}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;
+         font-size:.8rem;font-weight:600;border:1px solid transparent}
+  .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+  .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+  .sum{background:var(--card);border:1px solid var(--line);border-radius:10px;
+       padding:14px 16px;margin:1em 0}
+  .sum .pain{font-weight:600;margin:0 0 .4em}
+  details{margin:.6em 0}
+  details>summary{cursor:pointer;color:var(--muted);user-select:none}
+  svg{max-width:220px;height:auto}
+  svg text{font:11px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--fg)}
+  svg .b{fill:var(--card);stroke:var(--line);stroke-width:1}
+  svg .hl{fill:color-mix(in srgb,var(--acc) 16%,var(--card));stroke:var(--acc)}
+  svg .no{fill:color-mix(in srgb,var(--bad) 12%,var(--card));stroke:var(--bad)}
+  svg .flow{fill:none;stroke:var(--muted);stroke-width:1.6}
+  svg .cap{fill:var(--muted);font:11px -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+</style>
+</head>
+<body>
+<main>
+<section class="sum" id="scan-sum">
+  <p class="pain">痛:業務靠記憶追到期,每季漏續約。</p>
+  <p>現在怎麼繞:Excel 私表 + 電話催。</p>
+  <span class="badge ok">已解 1</span>
+  <span class="badge warn">假設 1</span>
+  <span class="badge">移交 1</span>
+</section>
+
+<svg id="scan-now" viewBox="0 0 160 260" role="img" aria-label="現況:誰、怎麼做、痛在哪">
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 Z" style="fill:var(--muted)"/></marker></defs>
+  <rect class="hl" x="30" y="8" width="100" height="36" rx="6"/>
+  <text x="48" y="30">業務</text>
+  <path class="flow" marker-end="url(#arrow)" d="M80,44 L80,68"/>
+  <rect class="b" x="30" y="70" width="100" height="36" rx="6"/>
+  <text x="48" y="92">Excel</text>
+  <path class="flow" marker-end="url(#arrow)" d="M80,106 L80,130"/>
+  <rect class="no" x="30" y="132" width="100" height="36" rx="6"/>
+  <text x="42" y="154">漏續約</text>
+  <text class="cap" x="42" y="186">痛在這</text>
+</svg>
+
+<table id="scan-people">
+  <tr><th>誰</th><th>要什麼</th><th>缺什麼</th></tr>
+  <tr><td>業務</td><td>到期不漏</td><td>[Assumption] 主管不看私表</td></tr>
+</table>
+
+<table id="scan-qs">
+  <tr><th>題目</th><th>著落</th></tr>
+  <tr><td>提前幾天算即將到期?</td><td>已解</td></tr>
+  <tr><td>離職後提醒給誰?</td><td>假設</td></tr>
+  <tr><td>一次 200 筆怎麼看?</td><td>移交</td></tr>
+</table>
+
+<table id="scan-ac">
+  <tr><th>假設…當…則…</th><th>從哪看</th><th>看到什麼</th></tr>
+  <tr><td>假設名下有 30 天內未續約,當業務打開看板,則該筆在清單</td><td>看板</td><td>合約編號出現</td></tr>
+</table>
+
+<details id="scan-log">
+  <summary>問答摘要</summary>
+  <p>Q:提前幾天? 事實:議約約一個月 → 結論:30 天。</p>
+</details>
+</main>
+</body>
+</html>

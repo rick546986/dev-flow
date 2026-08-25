@@ -2262,6 +2262,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>上面那支的負向牙:舊實作(單一 SKILL、沒有 graph)必須紅;缺進條件、下一跳不一致、
             雙正本、另存、N3 重開 session、N9 寫程式或 talk end 各打一槍。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-devtalk-fig-graph.sh</code></td>
+        <td>討論站方法流程圖必須對上 graph.yaml 的 hop 鏈:guide 全程地圖的 hop id 集合與
+            順序跟 next 鏈一致;掃頁樣張六件齊。改 hop 不改圖必須紅。不對帳各 feature 的
+            現況圖,也不對帳生命週期圖。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-devstage2-graph.sh</code></td>
         <td>乘客不用跑它。它管 Stage 2 九真節點鏈:下一跳以
             <code>skills/dev-flow/stage2/graph.yaml</code> 為準、重跑只能覆寫同一份
