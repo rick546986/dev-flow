@@ -8,10 +8,10 @@
 <title>{{TITLE}}</title>
 <style>
   :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
-        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;}
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;}
   @media(prefers-color-scheme:dark){
     :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
-          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;}
+          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);
@@ -36,6 +36,19 @@
   .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
   .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
   .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+  /* 掃頁:摘要卡、直式 svg 節點、問答 details。舊 class 語意不動。 */
+  .sum{background:var(--card);border:1px solid var(--line);border-radius:10px;
+       padding:14px 16px;margin:1em 0}
+  .sum .pain{font-weight:600;margin:0 0 .4em}
+  details{margin:.6em 0}
+  details>summary{cursor:pointer;color:var(--muted);user-select:none}
+  svg{max-width:100%;height:auto}
+  svg text{font:11px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--fg)}
+  svg .b{fill:var(--card);stroke:var(--line);stroke-width:1}
+  svg .hl{fill:color-mix(in srgb,var(--acc) 16%,var(--card));stroke:var(--acc)}
+  svg .no{fill:color-mix(in srgb,var(--bad) 12%,var(--card));stroke:var(--bad)}
+  svg .flow{fill:none;stroke:var(--muted);stroke-width:1.6}
+  svg .cap{fill:var(--muted);font:11px -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
 </style>
 </head>
 <body>

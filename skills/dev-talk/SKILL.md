@@ -118,7 +118,7 @@ dev-memory.py talk abort $MEMORY_SESSION_ID --reason "<原因>"
    `dev-memory.py talk reject <candidate>`;推翻先前理解走
    `dev-memory.py talk correct $MEMORY_SESSION_ID --kind domain --key <詞>
    --title "<新理解>" --reason "<為什麼改>"`。**未確認的候選一律不寫進長期記憶**。完成條件見該節點。
-10. **產 html**。正本:`nodes/S10-html.md`。入口摘要:Open Questions 僅三態;`1-discussion.html` 只從 md 生成。完成條件見該節點。
+10. **產 html**。正本:`nodes/S10-html.md`。入口摘要:Open Questions 僅三態;`1-discussion.html` 只從 md 生成掃頁六件。完成條件見該節點。
 11. **過目與收尾**。正本:`nodes/N13-end.md`。html 過目後,使用者點頭才
     跑 `dev-memory.py talk end $MEMORY_SESSION_ID`。它回 `promoted: 0` 是合法結果。完成條件見該節點。
 
@@ -153,10 +153,12 @@ feature: <slug>  stage: 1-discussion  status: draft→approved  owner:  updated:
 ```
 
 ## 視覺版(html)
-七件由上而下:摘要卡(Problem + OQ 三態 badge)/ 脈絡圖 / **Real-world 表**
-(Actors + Current Journey 兩張;Workarounds 與 Exceptions 收要點清單,
-`[Assumption]` 項用可辨識的樣式標出)/ OQ 表 / 驗收雛形表 /
-Constraints + 詞條增量 / Interview Log 摘要。
-脈絡圖判準看關係形狀:純線性步驟 / 單層樹 → ASCII(`<pre>`,半形);
-**方塊+連線的空間關係(多層模型 / 時間軸 / 分支交錯)→ inline SVG 真圖**;
-拿不準 → SVG。禁外部庫。md 永遠留 ASCII 版當正本。
+html 是掃頁臉,不是把 md 十節整份倒進去。md 仍是正本、十節骨架不准刪。
+六件由上而下,不多不少:
+1. 摘要卡:痛 + 現在怎麼繞 + Open Questions 三態 badge(已解／假設／移交)
+2. 直式現況圖:誰 → 現在怎麼做 → 痛在哪。直線用 `<pre>`;有人、分支、痛點用 inline SVG。直式,不要橫排。禁 mermaid、禁外連圖、禁外部庫。md 留 ASCII。
+3. 人與土法:誰／要什麼／缺什麼(從 Actors + Workarounds 收)。`[Assumption]` 看得見。
+4. 題目:每列一題 + 著落(已解／假設／移交)。不要長 claim。
+5. 驗收一小表:假設…當…則…｜從哪看｜看到什麼。
+6. 問答摘要預設摺著(`<details>`)。Constraints／詞條不要佔第一屏。
+SVG 用既有圖表 class:.b .hl .no .flow .cap,顏色只用 CSS 變數(含 --acc)。字 11px、標籤 ≤6 字。

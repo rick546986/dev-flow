@@ -109,7 +109,7 @@ claude          # 建議 opus(規劃層)
    |- dev/
       |- &lt;feature-slug&gt;/
          |- 1-discussion.md      &lt;- 討論記錄正本(十節,見 ⑦)
-         |- 1-discussion.html    &lt;- 視覺版(七件,見 ⑧;永遠從 md 重生)
+         |- 1-discussion.html    &lt;- 掃頁六件(見 ⑧;永遠從 md 重生)
   </pre>
   <p class="muted">就這些,其他一律不碰(寫入白名單)。多個需求並行 → 一 slug 一資料夾,互不干擾;長期記憶是唯一共用面,只增改自己本輪確認過的語意。</p>
 
@@ -159,7 +159,7 @@ claude          # 建議 opus(規劃層)
     <g class="n"><rect x="800" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="812" y="270">7 落檔</text><text class="dc" x="812" y="285">寫十節 md</text></g>
     <g class="n"><rect x="670" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="682" y="270">8 複核</text><text class="dc" x="682" y="285">嚴審七掃</text></g>
     <g class="n"><rect x="540" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="552" y="270">9 詞彙</text><text class="dc" x="552" y="285">對帳長期記憶</text></g>
-    <g class="n"><rect x="410" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="422" y="270">10 產 html</text><text class="dc" x="422" y="285">自核+七件</text></g>
+    <g class="n"><rect x="410" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="422" y="270">10 產 html</text><text class="dc" x="422" y="285">自核+六件</text></g>
     <g class="n"><rect x="280" y="250" width="110" height="42" rx="6" class="hl"/><text class="dt" x="292" y="270">11 收尾</text><text class="dc" x="292" y="285">你點頭 approved</text></g>
 
     <g class="n"><rect x="20" y="182" width="270" height="46" rx="6" class="note"/><text class="dt" x="32" y="205">前提被推翻 → 立即核銷</text><text class="dc" x="32" y="220">步 3 內建規則,不是獨立步驟</text></g>
@@ -210,8 +210,8 @@ claude          # 建議 opus(規劃層)
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>8. <strong>獨立複核</strong>。正本:<code>nodes/S8-review.md</code>。入口摘要:換嚴格審視者視角七掃。完成條件見該節點。</blockquote></details></td></tr>
     <tr><td>9 詞彙</td><td>先查長期記憶的現況(其他討論可能已確認過詞條,只增改本輪的、不動他人的);浮現詞彙逐一登記成候選,逐詞自問「這詞條在解釋語言,還是在記方案?」——後者刪;使用者確認過的才 confirm</td><td>—</td><td>逐詞打勾</td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>9. <strong>詞彙對帳</strong>。正本:<code>nodes/S9-terms.md</code>。入口摘要:先查長期記憶現況,再登記候選。<br>   <code>dev-memory.py talk propose $MEMORY_SESSION_ID</code>;使用者確認才<br>   <code>dev-memory.py talk confirm &lt;candidate&gt;</code>;否定走<br>   <code>dev-memory.py talk reject &lt;candidate&gt;</code>;推翻先前理解走<br>   <code>dev-memory.py talk correct $MEMORY_SESSION_ID --kind domain --key &lt;詞&gt;<br>   --title "&lt;新理解&gt;" --reason "&lt;為什麼改&gt;"</code>。<strong>未確認的候選一律不寫進長期記憶</strong>。完成條件見該節點。</blockquote></details></td></tr>
-    <tr><td>10 html</td><td>先自核 md:Open Questions 僅含三態符號,混入其他記號(如 <code>[ ]</code>)→ 回步 3 定態;定態後才從 md 生成視覺版(七件)</td><td>—</td><td>自核過 + 七件齊</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>10. <strong>產 html</strong>。正本:<code>nodes/S10-html.md</code>。入口摘要:Open Questions 僅三態;<code>1-discussion.html</code> 只從 md 生成。完成條件見該節點。</blockquote></details></td></tr>
+    <tr><td>10 html</td><td>先自核 md:Open Questions 僅含三態符號,混入其他記號(如 <code>[ ]</code>)→ 回步 3 定態;定態後才從 md 生成掃頁六件</td><td>—</td><td>自核過 + 掃頁六件齊</td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>10. <strong>產 html</strong>。正本:<code>nodes/S10-html.md</code>。入口摘要:Open Questions 僅三態;<code>1-discussion.html</code> 只從 md 生成掃頁六件。完成條件見該節點。</blockquote></details></td></tr>
     <tr><td>11 收尾</td><td>給你 html 過目;你點頭才 <code>talk end</code></td><td><span class="badge you">點頭 → approved</span></td><td>status 改完,長期記憶寫入,停</td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>11. <strong>過目與收尾</strong>。正本:<code>nodes/N13-end.md</code>。html 過目後,使用者點頭才<br>    跑 <code>dev-memory.py talk end $MEMORY_SESSION_ID</code>。它回 <code>promoted: 0</code> 是合法結果。完成條件見該節點。</blockquote></details></td></tr>
   </table></div>
@@ -229,7 +229,7 @@ claude          # 建議 opus(規劃層)
     <tr><td>7 落檔</td><td>把共識寫進同一份 <code>1-discussion.md</code>;重跑覆寫,不另存</td><td>寫出十節(骨架見 ⑦)</td></tr>
     <tr><td>8 複核</td><td>換嚴格審視者視角自審,擋「想當然」</td><td>掃到「系統要好用」這種不可驗句 → 改寫或刪;結論沒「已核事實」背書 → 回頭補問</td></tr>
     <tr><td>9 詞彙</td><td>業務語言進長期記憶(可 Git 同步、跨機器一致),全隊(含之後的 AI session)講同一種話</td><td>新詞條「Expiring = end_date − today ≤ 30 且未續約;<em>Avoid:</em> 快到期、即將截止」</td></tr>
-    <tr><td>10 html</td><td>有圖有脈絡快速 review,不用啃 md</td><td>摘要卡 + 脈絡圖(登入 → 查 expiring → 卡片/空狀態)+ OQ 表…七件(判準見 ⑧)</td></tr>
+    <tr><td>10 html</td><td>有圖有脈絡快速 review,不用啃 md</td><td>摘要卡 + 直式現況圖 + 人表 + 題表 + 驗收表 + 摺著問答(判準見 ⑧)</td></tr>
     <tr><td>11 過目</td><td>你是唯一 gate:三態清點、假設吞不吞。點頭才 <code>talk end</code></td><td>「Q1-Q3 全 <code>[x]</code> —— 改 approved?」你點頭 → 長期記憶寫入 → 停</td></tr>
   </table></div>
 
@@ -353,7 +353,7 @@ claude          # 建議 opus(規劃層)
     <g class="n"><rect x="310" y="120" width="190" height="60" rx="6" class="hl"/><text class="dm" x="322" y="145">/dev-talk</text><text class="dc" x="322" y="162">只產文字,不寫程式碼</text></g>
 
     <g class="n"><rect x="570" y="96" width="240" height="36" rx="6" class="go"/><text class="dm" x="582" y="114">1-discussion.md</text><text class="dc" x="582" y="126">討論記錄正本(十節)</text></g>
-    <g class="n"><rect x="570" y="140" width="240" height="36" rx="6" class="go"/><text class="dm" x="582" y="158">1-discussion.html</text><text class="dc" x="582" y="170">視覺版(七件)·從 md 重生</text></g>
+    <g class="n"><rect x="570" y="140" width="240" height="36" rx="6" class="go"/><text class="dm" x="582" y="158">1-discussion.html</text><text class="dc" x="582" y="170">掃頁六件·從 md 重生</text></g>
     <g class="n"><rect x="570" y="184" width="240" height="36" rx="6" class="go"/><text class="dm" x="582" y="202">長期記憶</text><text class="dc" x="582" y="214">只增改自己本輪確認過的</text></g>
 
     <g class="n"><rect x="14" y="296" width="420" height="36" rx="6" class="no"/><text class="dt" x="26" y="319">其他文件資料夾 —— 不進、不列目錄、不 glob</text></g>
@@ -410,15 +410,15 @@ claude          # 建議 opus(規劃層)
   </table></div>
 
   <h2 id="visual">⑧ 視覺版(html 產出)判準</h2>
-  <p class="lead">這章要你懂:<strong>要改內容就改 md,再重生 html</strong>。html 可以丟,md 不能丟。</p>
-  <p><code>1-discussion.html</code> 七件由上而下:摘要卡(Problem + OQ 三態 badge)→ 脈絡圖 → Real-world 表(Actors + Current Journey 兩張;Workarounds 與 Exceptions 收要點清單)→ OQ 表 → 驗收雛形表 → Constraints + 詞條增量 → Interview Log 摘要 <span class="muted">(步 10「自核過+七件齊」= 先自核 OQ 三態,定態後這七件都要在)</span>。</p>
+  <p class="lead">這章要你懂:<strong>html 是掃頁臉</strong>。要改內容就改 md,再重生 html。html 可以丟,md 不能丟。Constraints／詞條不要佔第一屏。</p>
+  <p><code>1-discussion.html</code> 六件由上而下,不多不少:摘要卡 → 直式現況圖 → 人與土法 → 題目 → 驗收一小表 → 問答摘要摺著。<span class="muted">步 10「自核過+掃頁六件齊」= 先自核 OQ 三態,定態後這六件都要在。</span></p>
+  <details><summary>原文</summary><blockquote>html 是掃頁臉,不是把 md 十節整份倒進去。md 仍是正本、十節骨架不准刪。<br>六件由上而下,不多不少:<br>1. 摘要卡:痛 + 現在怎麼繞 + Open Questions 三態 badge(已解／假設／移交)<br>2. 直式現況圖:誰 → 現在怎麼做 → 痛在哪。直線用 <code>&lt;pre&gt;</code>;有人、分支、痛點用 inline SVG。直式,不要橫排。禁 mermaid、禁外連圖、禁外部庫。md 留 ASCII。<br>3. 人與土法:誰／要什麼／缺什麼(從 Actors + Workarounds 收)。<code>[Assumption]</code> 看得見。<br>4. 題目:每列一題 + 著落(已解／假設／移交)。不要長 claim。<br>5. 驗收一小表:假設…當…則…｜從哪看｜看到什麼。<br>6. 問答摘要預設摺著(<code>&lt;details&gt;</code>)。Constraints／詞條不要佔第一屏。<br>SVG 用既有圖表 class:.b .hl .no .flow .cap,顏色只用 CSS 變數(含 --acc)。字 11px、標籤 ≤6 字。</blockquote></details>
   <div class="tablewrap"><table>
-    <tr><th>脈絡圖形狀</th><th>畫法</th></tr>
-    <tr><td>純線性步驟 / 單層樹</td><td>ASCII(<code>&lt;pre&gt;</code>,只用半形 <code>| - + &gt; &lt; = [ ]</code>,中文只放行首標籤/行尾註)</td></tr>
-    <tr><td>方塊+連線的空間關係(多層模型/時間軸/分支交錯)</td><td>inline SVG 真圖</td></tr>
-    <tr><td>拿不準</td><td>SVG</td></tr>
+    <tr><th>現況圖形狀</th><th>畫法</th></tr>
+    <tr><td>直線(誰 → 現在怎麼做 → 痛在哪)</td><td>ASCII(<code>&lt;pre&gt;</code>,半形)</td></tr>
+    <tr><td>有人、分支、痛點</td><td>inline SVG 真圖;直式,不要橫排</td></tr>
   </table></div>
-  <p class="muted">禁外部庫(不連 CDN、不嵌外部字型/圖表套件)。md 的 ASCII 版永遠是正本,html 圖只是重繪;html 要改,先改 md 再重生。</p>
+  <p class="muted">禁 mermaid、禁外連圖、禁外部庫。md 留 ASCII 當正本;html 圖只是掃頁臉。</p>
 
   <h2 id="faq">⑨ 常見狀況</h2>
   <p class="lead">這章要你懂:<strong>你想抄捷徑時它會怎樣</strong>。</p>
