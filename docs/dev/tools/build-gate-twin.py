@@ -606,13 +606,15 @@ def review_questions(fields, oc, md):
     return qs[:3]
 
 
-def render_ask(questions):
+def render_ask(questions, box_class="s-ask", head_class="s-ask-h"):
+    """「你要審什麼」清單。4-spec 預設 s-ask;2-decision 傳 g1-ask,class 分站。"""
     if not questions:
         return ""
     items = "".join(
         f'<li><span class="qmark">?</span><span>{inline(q)}</span></li>'
         for q in questions)
-    return (f'<div class="s-ask"><div class="s-ask-h">你要審什麼</div>'
+    return (f'<div class="{html.escape(box_class)}">'
+            f'<div class="{html.escape(head_class)}">你要審什麼</div>'
             f"<ul>{items}</ul></div>")
 
 
@@ -694,35 +696,211 @@ def parse_spec(md, secs):
     return hint + "".join(cards), n, used
 
 
-def parse_decision(_md, secs):
-    """2-decision:每個 Approach 一張卡、每條 Owner Call 一張卡。"""
+def _chosen_letter(md):
+    """## Decision 選定哪一案(A/B/C)。對不到就空字串,不寫死樣張的 A。"""
+    text = _section_text(md, "Decision")
+    m = re.search(r"採\s*\*+([A-Z])", text)
+    if m:
+        return m.group(1)
+    m = re.search(r"採\s+([A-Z])\b", text)
+    return m.group(1) if m else ""
+
+
+def _rejected_by_letter(md):
+    """Rejected Alternatives 條列 → {字母: 一句棄因}。"""
+    sec = _section_text(md, "Rejected Alternatives")
+    out = {}
+    for m in re.finditer(r"^\s*[-*]\s+([A-Z])\s*[:：]\s*(.+)$", mask_fenced(sec), re.M):
+        out[m.group(1)] = m.group(2).strip()
+    return out
+
+
+def _bind_stage(blob):
+    """從「若被推翻會怎樣」等文字判綁到哪一站,不寫死樣張 id。"""
+    found = []
+    for name, pat in (
+        ("4-spec", r"4-spec|S-\d+|R-\d+"),
+        ("3-prototype", r"3-prototype"),
+        ("5-tasks", r"5-tasks|\bT-\d+"),
+        ("7-review", r"7-review"),
+        ("Success Criteria", r"Success Criteria"),
+        ("Scope", r"\bScope\b|範圍擴大"),
+    ):
+        if re.search(pat, blob or ""):
+            found.append(name)
+    return "、".join(found)
+
+
+def _oc_rejected(decided, status):
+    """OC 的否決項:推翻 / 棄項括號 / 不X / 只處理 Y;寫不出就標未寫棄項。"""
+    if re.search(r"✗", status or ""):
+        return "原裁決被推翻"
+    plain = re.sub(r"[*`]", "", decided or "")
+    m = re.search(r"[（(]棄項[:：]([^)）]+)[)）]", plain)
+    if m:
+        return m.group(1).strip()
+    m = re.search(r"不(列入|隱藏|另建|引入|做)([^，。；]{0,12})", plain)
+    if m:
+        return "對立面：" + m.group(1) + m.group(2).strip()
+    m = re.search(r"只處理([^。；（(]{2,24})", plain)
+    if m:
+        return "不在範圍：" + m.group(1).strip()
+    return "未寫棄項"
+
+
+def render_g1_oc(md):
+    """頁上一次作業脈絡。從 Decision / Scope / Success Criteria 抽,沒有就不貼。"""
+    rows = []
+    dec = _headline(_section_text(md, "Decision"), limit=72)
+    if dec and dec != "—":
+        rows.append(("選定", dec))
+    scope = _section_text(md, "Scope")
+    in_m = re.search(r"In\s*[:：]\s*(.+)", scope)
+    out_m = re.search(r"Out\s*[:：]\s*(.+)", scope)
+    if in_m:
+        rows.append(("範圍", in_m.group(1).strip()))
+    if out_m:
+        rows.append(("不做", out_m.group(1).strip()))
+    sc = _headline(_section_text(md, "Success Criteria"), limit=60)
+    if sc and sc != "—":
+        rows.append(("成功長這樣", sc))
+    if not rows:
+        return ""
+    body = "".join(
+        f'<div class="g1-oc-row"><span class="g1-oc-k">{html.escape(k)}</span>'
+        f'<span class="g1-oc-v">{inline(v)}</span></div>'
+        for k, v in rows)
+    return (f'<div class="g1-oc"><div class="g1-oc-h">作業脈絡(本頁一次)</div>'
+            f"{body}</div>")
+
+
+def decision_review_questions(kind, decided, rejected, bind, status, extra_banned, md):
+    """從 2-decision 的洞抽 2–3 問。必須是問題,不重述裁決/否決項/綁到哪一站。"""
+    qs = []
+    banned = [x for x in ((decided, rejected, bind) + tuple(extra_banned or ())) if x]
+
+    def add(q):
+        q = (q or "").strip()
+        if not q:
+            return
+        if not q.endswith("？") and not q.endswith("?"):
+            q += "？"
+        if any(part and len(part) >= 8 and part in q for part in banned):
+            return
+        if q not in qs:
+            qs.append(q)
+
+    if kind == "approach":
+        if status == "選定":
+            add("選定這案之後還退得回去嗎")
+            add("4-spec 還要走這條實作路嗎")
+            add("被駁回的案在後站有沒有又被寫回來")
+        else:
+            add("這案被駁了,4-spec 還寫著它嗎")
+            add("否決原因現在還站得住嗎")
+            add("這扇門關死了,還是以後能升級回來")
+    else:
+        if re.search(r"✗", status or "") or "推翻" in (status or ""):
+            add("原裁決已被推翻,4-spec 還留著舊寫法嗎")
+        else:
+            adr = _section_text(md, "ADR")
+            if re.search(r"難逆轉\s*[:：]\s*是", adr):
+                add("這條標了難逆轉,翻案代價還真實嗎")
+            else:
+                add("這條翻案只改文件,還是已經不可逆")
+        if bind and "4-spec" in bind:
+            add("4-spec 還依賴這條嗎?拿掉它哪一條會垮")
+        else:
+            add("4-spec 還要這條裁決嗎,還是只活在本站")
+        add("這條否掉的做法,後站有沒有又開回來")
+    if len(qs) < 2:
+        add("不打開 2-decision.md、只看這一卡,G1 審得過嗎")
+    if len(qs) < 2:
+        add("否決項在後站是不是真的關了")
+    return qs[:3]
+
+
+def parse_decision(md, secs):
+    """2-decision:每個 Approach 一張卡、每條 Owner Call 一張卡。
+
+    卡形狀(G1 給人審,不是 md 直轉):頁上一次作業脈絡;每張卡留裁決、否決項、
+    綁到哪一站,加 2–3 條「你要審什麼」(可不可逆、4-spec 還要不要它、否決項
+    是否真的關了)。禁止「這一點在說什麼」。勾選 = 這條可以過 G1,不是已寫進 4-spec。
+    """
     cards, n, used = [], 0, set()
+    chosen = _chosen_letter(md)
+    rejected_map = _rejected_by_letter(md)
     for _lvl, title, body in secs:
+        # 只吃 L2:模板的「逐條裁決」是 Owner Calls 底下的 H3,再吃一次會複製 OC 卡。
+        if _lvl != 2:
+            continue
         if re.match(r"^(Approaches Considered|Owner Calls|逐條裁決)", title):
             rows = table_rows(body)
             if not rows:
                 continue
             used.add(title)
             inner = []
+            is_oc = bool(re.match(r"^(Owner Calls|逐條裁決)", title))
             for header, cells in rows:
                 item = cells[0] if cells else ""
                 if not item or item.startswith("<"):
                     continue
                 keys = header[1:] + [f"欄{i}" for i in range(len(header), len(cells))]
                 pairs = list(zip(keys, cells[1:]))
-                miss = None
-                if re.match(r"^OC-\d+", item):
+                extra_banned = [v for _k, v in pairs]
+                if is_oc:
+                    decided = pairs[0][1] if pairs else ""
                     st = next((v for k, v in pairs if "狀態" in k), "")
-                    if not st or "待" in st:
-                        miss = "裁決"
-                inner.append(card(item, pairs[0][1] if pairs else "", "", pairs[1:], missing=miss))
+                    miss = None if (st and "待" not in st) else "裁決"
+                    overturn = next((v for k, v in pairs if "推翻" in k), "")
+                    bind = _bind_stage(" ".join((decided, overturn))) or "本站"
+                    rejected = _oc_rejected(decided, st)
+                    if re.search(r"✗", st):
+                        ruling, tag = "推翻", "推翻"
+                    elif miss:
+                        ruling, tag = "待人審", ""
+                    else:
+                        ruling, tag = "已裁決", ""
+                    qs = decision_review_questions(
+                        "oc", decided, rejected, bind, st, extra_banned, md)
+                    inner.append(card(
+                        item, decided or item, tag,
+                        [("裁決", ruling), ("否決項", rejected), ("綁到哪一站", bind)],
+                        missing=miss,
+                        lead=render_ask(qs, "g1-ask", "g1-ask-h"),
+                    ))
+                else:
+                    letter_m = re.match(r"([A-Z])\b", item)
+                    letter = letter_m.group(1) if letter_m else ""
+                    is_chosen = bool(letter) and letter == chosen
+                    summary = pairs[0][1] if pairs else item
+                    rej_reason = rejected_map.get(letter, "")
+                    if is_chosen:
+                        ruling, tag = "選定", "選定"
+                        others = "；".join(
+                            f"{k}:{v}" for k, v in rejected_map.items() if k != letter)
+                        rejected = others or "未列 Rejected Alternatives"
+                        bind = "4-spec"
+                    else:
+                        ruling, tag = "駁回", ""
+                        rejected = rej_reason or "未列 Rejected Alternatives"
+                        bind = _bind_stage(rej_reason) or "本站"
+                    qs = decision_review_questions(
+                        "approach", summary, rejected, bind, ruling, extra_banned, md)
+                    inner.append(card(
+                        item, summary or item, tag,
+                        [("裁決", ruling), ("否決項", rejected), ("綁到哪一站", bind)],
+                        lead=render_ask(qs, "g1-ask", "g1-ask-h"),
+                    ))
                 n += 1
             if inner:
                 cards.append(f'<section class="r-block" id="{anchor_id(title)}">'
                              f'<div class="r-head">'
                              f'<span class="r-name">{inline(title)}</span></div>'
                              f'{"".join(inner)}</section>')
-    return "".join(cards), n, used
+    hint = ('<p class="g1-chk-hint">勾選 = 這條裁決可以過 G1,不是已寫進 4-spec。'
+            '</p>') if cards else ""
+    return hint + render_g1_oc(md) + "".join(cards), n, used
 
 
 def parse_review(_md, secs):
@@ -1354,9 +1532,10 @@ def main(argv):
 </div>"""
 
     out_local = root / "docs/dev" / slug / f"{stage}.html"
-    # CSS_SPEC4 只加給 4-spec、CSS_TASKS 只加給 5-tasks(都是加法式新 class)。
-    # 2-decision / 7-review 的 extra_css 仍是 CSS_SPEC,style 區塊一個字不變。
+    # CSS_SPEC4 只加給 4-spec、CSS_SPEC2 只加給 2-decision、CSS_TASKS 只加給
+    # 5-tasks(都是加法式新 class)。7-review 的 extra_css 仍是 CSS_SPEC。
     extra_css = ui.CSS_SPEC + (ui.CSS_SPEC4 if stage == "4-spec" else "") + (
+        ui.CSS_SPEC2 if stage == "2-decision" else "") + (
         ui.CSS_TASKS if stage == "5-tasks" else "")
     out_local.write_text(ui.local_page(title, extra_css, body_html, SCRIPT), encoding="utf-8")
     # 片段是 opt-in:只有呼叫端明確設定 DEVFLOW_ARTIFACT_OUT 才寫。空字串 / 空白

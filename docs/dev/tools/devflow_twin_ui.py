@@ -221,8 +221,9 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 """
 
 # 4-spec 審查卡加料(作業脈絡在 R、S 的「你要審什麼」)。只加新 class,不改上面
-# CSS_SPEC 任何一條。2/7 的 extra_css 仍只吃 CSS_SPEC,這塊只接在 4-spec 上,
-# 跟 CSS_TASKS 同一招 —— 另兩站的 <style> 一個字都不變。
+# CSS_SPEC 任何一條。這塊只接在 4-spec 上,跟 CSS_SPEC2 / CSS_TASKS 同一招 ——
+# 2-decision 吃 CSS_SPEC2、5-tasks 吃 CSS_TASKS、7-review 仍只吃 CSS_SPEC,
+# 各站 <style> 不互污染。
 CSS_SPEC4 = """
 .g2-chk-hint{font-size:.86rem;color:var(--ink-2);margin:18px 0 0}
 .r-oc{padding:12px 18px 14px;background:var(--sunk);border-bottom:1px solid var(--rule-2);
@@ -245,6 +246,31 @@ CSS_SPEC4 = """
 .s-delta strong{font-weight:700}
 @media (max-width:560px){
   .r-oc-row{grid-template-columns:1fr;gap:2px}
+}
+"""
+
+# 2-decision 審查卡加料(頁上一次作業脈絡、每張卡「你要審什麼」)。只加新 class,
+# 不改 CSS_SPEC。這塊只接在 2-decision 上,class 名用 g1-* 前綴,不跟 CSS_SPEC4
+# 的 r-oc/s-ask 混進同一份 <style>。
+CSS_SPEC2 = """
+.g1-chk-hint{font-size:.86rem;color:var(--ink-2);margin:18px 0 0}
+.g1-oc{padding:12px 18px 14px;background:var(--sunk);border:1px solid var(--rule);
+  border-radius:12px;margin:18px 0 8px;font-size:.9rem;color:var(--ink-2)}
+.g1-oc-h{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-3);margin:0 0 8px}
+.g1-oc-row{display:grid;grid-template-columns:5.4em 1fr;gap:8px 12px;align-items:baseline;
+  margin:3px 0}
+.g1-oc-k{font-size:.78rem;color:var(--ink-3);font-weight:650;white-space:nowrap}
+.g1-oc-v{font-size:.9rem;color:var(--ink-2)}
+.g1-ask{margin:0 0 12px}
+.g1-ask-h{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-3);margin:0 0 6px}
+.g1-ask ul{margin:0;padding:0;list-style:none}
+.g1-ask li{display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:.9rem;
+  color:var(--ink)}
+.g1-ask .qmark{color:var(--accent);font-weight:700;flex:none;line-height:1.5}
+@media (max-width:560px){
+  .g1-oc-row{grid-template-columns:1fr;gap:2px}
 }
 """
 

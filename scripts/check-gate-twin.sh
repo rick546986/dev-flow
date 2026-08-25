@@ -85,6 +85,7 @@ REQUIRED_GROUPS = [
     "n4-unclosed-comment",
     "usage-error-message",
     "spec-review-shape",
+    "decision-review-shape",
     "guard-selfpin",
 ]
 # 群組數的釘死常數(比照 MIN_CHECKS 的做法)——REQUIRED_GROUPS 被連刪帶藏
@@ -93,7 +94,7 @@ REQUIRED_GROUPS = [
 # 只有這個獨立釘死的數字會現形。逐次同步成 REQUIRED_GROUPS 的實際長度,不是抓下限
 #(理由同上方 MIN_CHECKS 說明)。這個字面值另外被 test-architecture-guards.sh 的
 # GS-9 靜態互釘釘了一份,兩處要一起改。
-EXPECTED_GROUPS = 25
+EXPECTED_GROUPS = 26
 CURRENT_GROUP = "gate-stage-baseline"
 GROUPS_SEEN = {}
 # 檢查數地板(次級 backstop):**釘死的常數**,不是跑完再回頭算 —— 回頭算等於
@@ -108,7 +109,7 @@ GROUPS_SEEN = {}
 # 之後每加一條檢查都要把這裡同步調高;只有整區塊被砍掉、實得數掉到這個值以下
 # 才會紅(這是本檔唯一的次級防線,見 test-architecture-guards.sh 的 GS-9 靜態互釘
 # ——那邊另外釘了這個數字的字面值,兩處要一起改,見該檔的防禦邊界說明)。
-MIN_CHECKS = 151
+MIN_CHECKS = 159
 
 
 def check(cond, label, detail=""):
@@ -1171,11 +1172,107 @@ else:
             _other_ok = False
             _other_detail.append(f"{_st}.html 不存在")
             continue
-        if any(x in _oh for x in ("你要審什麼", 'class="r-oc"', 'class="s-ask"', "這條才變的")):
+        # 4-spec 專用 class 仍不得漏進另三站。<style> 分站接:2-decision 用 g1-ask,
+        # 不是 s-ask/r-oc。「你要審什麼」5/7 本刀還不准有(下一刀才套)。
+        if any(x in _oh for x in ('class="r-oc"', 'class="s-ask"', "這條才變的")):
             _other_ok = False
             _other_detail.append(f"{_st} 卡被加了 4-spec 審查塊")
-    check(_other_ok, "2/5/7:卡本體沒被加進 4-spec 的審題/作業脈絡",
+        if _st != "2-decision" and "你要審什麼" in _oh:
+            _other_ok = False
+            _other_detail.append(f"{_st} 卡被加了審題")
+    check(_other_ok, "2/5/7:卡本體沒被加進 4-spec 的 s-ask/r-oc/delta",
           "; ".join(_other_detail))
+
+print("-- 2-decision 審查卡形狀:頁上一次脈絡,卡留裁決/否決/繫站 + 2–3 問 --")
+CURRENT_GROUP = "decision-review-shape"
+# 套 4-spec 已合的骨架,但 class 分站(g1-*),4-spec 形狀不准退。
+_dec2 = read_html_or_none(proj / "2-decision.html")
+if _dec2 is None:
+    for _lab in (
+        "2-decision:不得出現「這一點在說什麼」/claim",
+        "2-decision:作業脈絡頁上一次,不進每張卡",
+        "2-decision:每張卡 2–3 條「你要審什麼」(問題,不重述正本欄)",
+        "2-decision:每張卡留裁決、否決項、綁到哪一站",
+        "2-decision:用 g1-ask,不是 4-spec 的 s-ask",
+        "4-spec:沒有 2-decision 的 g1-ask/g1-oc(已合形狀不准退)",
+        "5-tasks:還沒套審題塊(本刀只咬 2-decision)",
+        "7-review:還沒套審題塊(本刀只咬 2-decision)",
+    ):
+        check(False, _lab, "2-decision.html 不存在(前面已失敗)")
+else:
+    _d_cards = re.findall(r'<article class="s-card.*?</article>', _dec2, re.S)
+    _claim2 = re.search(
+        r"這一點在說什麼|class=\"claim\"|class=\"s-claim\"|s-claim", _dec2)
+    check(not _claim2,
+          "2-decision:不得出現「這一點在說什麼」/claim",
+          f"命中 {_claim2.group(0) if _claim2 else ''}")
+    _oc_n = _dec2.count('class="g1-oc"')
+    _oc_in_card = [re.search(r'data-sid="([^"]+)"', c).group(1)
+                   for c in _d_cards if 'class="g1-oc"' in c or 'class="r-oc"' in c]
+    check(_oc_n == 1 and not _oc_in_card,
+          "2-decision:作業脈絡頁上一次,不進每張卡",
+          f"g1-oc {_oc_n} 次,卡內:{_oc_in_card}")
+    _ask2_ok = True
+    _ask2_detail = []
+    for c in _d_cards:
+        sid_m = re.search(r'data-sid="([^"]+)"', c)
+        sid = sid_m.group(1) if sid_m else "?"
+        qs = re.findall(
+            r'<li><span class="qmark">\?</span><span>(.*?)</span></li>', c, re.S)
+        qs_txt = [re.sub(r"<[^>]+>", "", q) for q in qs]
+        gwt = re.findall(r'<span class="gwt-v">(.*?)</span>', c, re.S)
+        gwt_txt = [re.sub(r"<[^>]+>", "", v) for v in gwt]
+        if not (2 <= len(qs) <= 3):
+            _ask2_ok = False
+            _ask2_detail.append(f"{sid} 問題數 {len(qs)}")
+            continue
+        if any("？" not in q and "?" not in q for q in qs_txt):
+            _ask2_ok = False
+            _ask2_detail.append(f"{sid} 有不是問題的條目")
+        if any(g and len(g) >= 8 and any(g in q for q in qs_txt) for g in gwt_txt):
+            _ask2_ok = False
+            _ask2_detail.append(f"{sid} 問題重述正本欄")
+        if "你要審什麼" not in c or 'class="g1-ask"' not in c:
+            _ask2_ok = False
+            _ask2_detail.append(f"{sid} 缺 g1-ask")
+    check(_ask2_ok and len(_d_cards) >= 1,
+          "2-decision:每張卡 2–3 條「你要審什麼」(問題,不重述正本欄)",
+          "; ".join(_ask2_detail) or "沒有卡")
+    _fields_ok = all(
+        '<span class="gwt-k">裁決</span>' in c
+        and '<span class="gwt-k">否決項</span>' in c
+        and '<span class="gwt-k">綁到哪一站</span>' in c
+        for c in _d_cards)
+    check(_fields_ok and len(_d_cards) >= 1,
+          "2-decision:每張卡留裁決、否決項、綁到哪一站",
+          "有卡缺這三欄")
+    check('class="g1-ask"' in _dec2 and 'class="s-ask"' not in _dec2
+          and 'class="r-oc"' not in _dec2,
+          "2-decision:用 g1-ask,不是 4-spec 的 s-ask",
+          "s-ask/r-oc 漏進 2-decision 或缺 g1-ask")
+    _sids = [re.search(r'data-sid="([^"]+)"', c).group(1) for c in _d_cards]
+    check(any(s.startswith("OC-") for s in _sids)
+          and any(re.match(r"^[A-Z]( |$)", s) for s in _sids),
+          "2-decision:Approach 卡與 Owner Call 卡都在(模板兩種待審都還在)",
+          f"sid={_sids}")
+    _spec4b = read_html_or_none(proj / "4-spec.html")
+    check(bool(_spec4b) and "g1-ask" not in _spec4b and "g1-oc" not in _spec4b
+          and 'class="s-ask"' in (_spec4b or ""),
+          "4-spec:沒有 2-decision 的 g1-ask/g1-oc(已合形狀不准退)",
+          "4-spec 被加了 g1-* 或丟了 s-ask")
+    _later_ok = True
+    _later_detail = []
+    for _st in ("5-tasks", "7-review"):
+        _oh = read_html_or_none(proj / f"{_st}.html")
+        if _oh is None:
+            _later_ok = False
+            _later_detail.append(f"{_st}.html 不存在")
+            continue
+        if any(x in _oh for x in ("你要審什麼", "g1-ask", "g1-oc", 'class="s-ask"')):
+            _later_ok = False
+            _later_detail.append(f"{_st} 被提前套了審題")
+    check(_later_ok, "5/7:還沒套審題塊(本刀只咬 2-decision)",
+          "; ".join(_later_detail))
 
 # ── guard-selfpin:原始碼裡的 CURRENT_GROUP 賦值集合必須等於 REQUIRED_GROUPS ──
 # 心跳只能擋「刪掉一個區塊、卻忘了同時刪 REQUIRED_GROUPS 裡對應的名字」——
