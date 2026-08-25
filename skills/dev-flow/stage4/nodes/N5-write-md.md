@@ -20,6 +20,7 @@ html twin 不在本節點產(N6 才呼叫現有工具)。`write_mode: overwrite`
 ## 做什麼
 
 把 S1–S4 的內容定稿在同一檔:全節到齊、行為流程圖(R 級)在、frontmatter 補上。
+行為流程圖必須含每個 R-id 與該 R 的 SHALL 行為詞;改行為詞不改圖不得過。
 重跑本節點 = 覆寫同一路徑,不是另存一份。
 跑 `${DEVFLOW_ROOT}/scripts/check-devstage4-graph.sh --write-cursor N5-write-md`。
 

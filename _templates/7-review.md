@@ -277,7 +277,8 @@ updated:
 
 ## 變更架構圖
 <!-- README §6:Markdown 留 ASCII 正本;純線性/單層樹用半形 | - + > < = [ ],
-     空間關係複雜才在 HTML 改 SVG。 -->
+     空間關係複雜才在 HTML 改 SVG。必須對上 Diff 的檔名 basename 與公開端點／新表名;
+     改 Diff 必須改圖。不要拿 F-id／現象證據 S-id 當圖上的模組。 -->
 
 ## Diff(merge-base(develop)..HEAD,逐檔折疊)
 <!-- README §6 要求每檔一個 details。summary 的 title/文字列 +N/-N 與函式;

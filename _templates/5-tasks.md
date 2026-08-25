@@ -202,6 +202,8 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 - Files: <預計動的檔>
 - Verify: `<指令>`
 - Blocked-by: —
+<!-- 改 Blocked-by 必須重產 html #dag。圖對文字牙比的是各 T-id＋Blocked-by 邊集合
+     對 #dag 裡的 T-n／←(T-n),不比手畫的 T-1 連到 T-2。 -->
 - Intent: <做完系統多了什麼可觀測行為,一句>
 - Boundaries: <硬約束/禁區;無則 —>
 - Owner:(多人才填)

@@ -19,6 +19,7 @@
 ## 做什麼
 
 按模板定稿節寫同一份 `2-decision.md`。重跑本節點 = 覆寫同一路徑,不是另存一份。
+方案架構圖必須把選定案標「選定」;Decision／Rejected 改選定、圖沒改不得過。
 跑 `${DEVFLOW_ROOT}/scripts/check-devstage2-graph.sh --write-cursor N3-write-md`。
 
 ## 完成條件
