@@ -118,7 +118,7 @@ claude          # 建議 opus(規劃層)
 
   <p>節點鏈(每步都有節點檔,下一跳看 <code>graph.yaml</code>,不能跳):</p>
   <pre>N1-start → S0 → S1 → S2 → N3-probe → S4 → S5 → S6 → N9-write-md → S8 → S9 → S10 → N13-end</pre>
-  <div class="tablewrap"><table>
+  <div class="tablewrap"><table id="map-hops">
     <tr><th>節點</th><th>對應乘客步</th><th>會怎樣</th></tr>
     <tr><td><code>N1-start</code></td><td>開場</td><td><code>talk start</code>,建 0–11 todo。已有 OPEN 場就不要再 start。節點檔 <code>nodes/N1-start.md</code></td></tr>
     <tr><td><code>S0-scope</code></td><td>0</td><td>規模、範圍與起點。節點檔 <code>nodes/S0-scope.md</code></td></tr>
@@ -139,7 +139,7 @@ claude          # 建議 opus(規劃層)
   已開場(有游標或 OPEN talk)時,寫檔的 shell 會編成 <code>write_code</code> 再送同一支;沒開場就不攔截。這不是沙盒 —— 編成與已知缺口以 <code>hooks/_prebash_impl.py</code> 的 <code>_looks_like_write_code</code> 與 <code>scripts/check-devtalk-graph.sh</code> 為準,這裡不另開黑名單。</p>
 
   <div class="figwrap"><svg id="fig-map" viewBox="0 0 1010 400" role="img"
-       aria-label="dev-talk 全程地圖:12 步分四階段,含自迴圈與三條回步 3 的回路">
+       aria-label="dev-talk 全程地圖:開場到收尾,乘客 0-11 步,含自迴圈與回步 3">
     <defs><marker id="ar1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
 
@@ -148,19 +148,21 @@ claude          # 建議 opus(規劃層)
     <g class="cluster"><rect x="402" y="244" width="520" height="70" rx="8" class="grpbox"/><text class="dl" x="560" y="308">落檔與自審(AI 自己跑)</text></g>
     <g class="cluster"><rect x="272" y="244" width="126" height="70" rx="8" class="grpbox"/><text class="dl" x="278" y="308">你的 gate</text></g>
 
-    <g class="n"><rect x="20" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="32" y="90">0 規模</text><text class="dc" x="32" y="105">拆需求·問起點</text></g>
-    <g class="n"><rect x="150" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="162" y="90">1 盤現況</text><text class="dc" x="162" y="105">你認可事實</text></g>
-    <g class="n"><rect x="280" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="292" y="90">2 真實世界</text><text class="dc" x="292" y="105">你答真實現況</text></g>
-    <g class="n"><rect x="410" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="422" y="90">3 逼問</text><text class="dc" x="422" y="105">你答題·循環</text></g>
-    <g class="n"><rect x="540" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="552" y="90">4 雛形</text><text class="dc" x="552" y="105">你逐條確認</text></g>
-    <g class="n"><rect x="670" y="70" width="110" height="42" rx="6" class="b"/><text class="dt" x="682" y="90">5 發散</text><text class="dc" x="682" y="105">純 what-if</text></g>
-    <g class="n"><rect x="800" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="812" y="90">6 盲點</text><text class="dc" x="812" y="105">你回兩清單</text></g>
+    <g class="n"><rect x="20" y="16" width="110" height="36" rx="6" class="hl"/><text class="dt" x="32" y="32">開場</text><text class="dc" x="32" y="46">N1-start</text></g>
+    <path class="edge" marker-end="url(#ar1)" d="M75,52 L75,70"/>
+    <g class="n"><rect x="20" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="32" y="90">0 規模</text><text class="dc" x="32" y="105">S0-scope</text></g>
+    <g class="n"><rect x="150" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="162" y="90">1 盤現況</text><text class="dc" x="162" y="105">S1-survey</text></g>
+    <g class="n"><rect x="280" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="292" y="90">2 真實世界</text><text class="dc" x="292" y="105">S2-world</text></g>
+    <g class="n"><rect x="410" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="422" y="90">3 逼問</text><text class="dc" x="422" y="105">N3-probe</text></g>
+    <g class="n"><rect x="540" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="552" y="90">4 雛形</text><text class="dc" x="552" y="105">S4-accept</text></g>
+    <g class="n"><rect x="670" y="70" width="110" height="42" rx="6" class="b"/><text class="dt" x="682" y="90">5 發散</text><text class="dc" x="682" y="105">S5-diverge</text></g>
+    <g class="n"><rect x="800" y="70" width="110" height="42" rx="6" class="hl"/><text class="dt" x="812" y="90">6 盲點</text><text class="dc" x="812" y="105">S6-blind</text></g>
 
-    <g class="n"><rect x="800" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="812" y="270">7 落檔</text><text class="dc" x="812" y="285">寫十節 md</text></g>
-    <g class="n"><rect x="670" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="682" y="270">8 複核</text><text class="dc" x="682" y="285">嚴審七掃</text></g>
-    <g class="n"><rect x="540" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="552" y="270">9 詞彙</text><text class="dc" x="552" y="285">對帳長期記憶</text></g>
-    <g class="n"><rect x="410" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="422" y="270">10 產 html</text><text class="dc" x="422" y="285">自核+六件</text></g>
-    <g class="n"><rect x="280" y="250" width="110" height="42" rx="6" class="hl"/><text class="dt" x="292" y="270">11 收尾</text><text class="dc" x="292" y="285">你點頭 approved</text></g>
+    <g class="n"><rect x="800" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="812" y="270">7 落檔</text><text class="dc" x="812" y="285">N9-write-md</text></g>
+    <g class="n"><rect x="670" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="682" y="270">8 複核</text><text class="dc" x="682" y="285">S8-review</text></g>
+    <g class="n"><rect x="540" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="552" y="270">9 詞彙</text><text class="dc" x="552" y="285">S9-terms</text></g>
+    <g class="n"><rect x="410" y="250" width="110" height="42" rx="6" class="b"/><text class="dt" x="422" y="270">10 產 html</text><text class="dc" x="422" y="285">S10-html</text></g>
+    <g class="n"><rect x="280" y="250" width="110" height="42" rx="6" class="hl"/><text class="dt" x="292" y="270">11 收尾</text><text class="dc" x="292" y="285">N13-end</text></g>
 
     <g class="n"><rect x="20" y="182" width="270" height="46" rx="6" class="note"/><text class="dt" x="32" y="205">前提被推翻 → 立即核銷</text><text class="dc" x="32" y="220">步 3 內建規則,不是獨立步驟</text></g>
 
@@ -186,7 +188,7 @@ claude          # 建議 opus(規劃層)
     <text class="dl" x="380" y="326">複核有問題 → 回步 3</text>
     <text class="dl" x="770" y="348">自核失敗 → 回步 3</text>
   </svg></div>
-  <p class="figcap">下排由右往左走(7→11)。虛線黃框 = 步 3 內建的核銷規則,不是獨立步驟;三條長回路都是「發現問題就回步 3」,不是走完一遍就結束。步 8 若只是小瑕疵則直接改檔,不必回步 3。</p>
+  <p class="figcap">節點第二行是 graph.yaml hop id。下排由右往左走(7→11)。虛線黃框 = 步 3 內建的核銷規則,不是獨立步驟;三條長回路都是「發現問題就回步 3」,不是走完一遍就結束。步 8 若只是小瑕疵則直接改檔,不必回步 3。</p>
 
   <div class="tablewrap"><table>
     <tr><th>步</th><th>AI 做什麼</th><th>你做什麼</th><th>完成條件</th></tr>
