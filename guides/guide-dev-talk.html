@@ -117,7 +117,7 @@ claude          # 建議 opus(規劃層)
   <p class="lead">這章要你懂兩件事。第一,乘客地圖還是 0–11 共 12 步。第二,執行時不是只能從頭跑的直線 —— 下一跳看 <code>skills/dev-talk/graph.yaml</code>。走錯一步,重跑那一節,不要整場重來。藍框 = 要你出手。</p>
 
   <p>節點鏈(每步都有節點檔,下一跳看 <code>graph.yaml</code>,不能跳):</p>
-  <pre>N1-start → S0 → S1 → S2 → N3-probe → S4 → S5 → S6 → N9-write-md → S8 → S9 → S10 → N13-end</pre>
+  <pre id="map-chain">N1-start → S0-scope → S1-survey → S2-world → N3-probe → S4-accept → S5-diverge → S6-blind → N9-write-md → S8-review → S9-terms → S10-html → N13-end</pre>
   <div class="tablewrap"><table id="map-hops">
     <tr><th>節點</th><th>對應乘客步</th><th>會怎樣</th></tr>
     <tr><td><code>N1-start</code></td><td>開場</td><td><code>talk start</code>,建 0–11 todo。已有 OPEN 場就不要再 start。節點檔 <code>nodes/N1-start.md</code></td></tr>

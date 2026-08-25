@@ -9,7 +9,7 @@
 # 正本:skills/dev-talk/graph.yaml,從 entry 沿 next 走到空,那一串 hop id 就是流程。
 #
 # 必須對帳(只這些,「在講這技能怎麼走」):
-#   - guides/guide-dev-talk.html #fig-map(svg)與 #map-hops(表)
+#   - guides/guide-dev-talk.html #fig-map(svg)、#map-hops(表)、#map-chain(節點鏈 pre)
 #   - 若 SKILL.md 或 html-shell.html 出現 <svg>(方法流程圖),一併納入
 # 不准對帳(對了反而錯):
 #   - 各 feature 的 1-discussion.html「現在怎麼走」(使用者世界,不是 skill hop)
@@ -73,7 +73,7 @@ SHELL = os.path.join(root, "skills", "dev-talk", "html-shell.html")
 FIXTURE = os.path.join(
     root, "scripts", "fixtures", "devtalk-html-scan", "good", "1-discussion.html"
 )
-REQUIRED_FIG_IDS = ("fig-map", "map-hops")
+REQUIRED_FIG_IDS = ("fig-map", "map-hops", "map-chain")
 FORBIDDEN_FIG_IDS = ("fig-lifecycle", "fig-lifecycle-qs")
 
 
@@ -214,6 +214,28 @@ def hops_from_table(block):
     return ordered
 
 
+def hops_from_pre(block):
+    plain = html.unescape(re.sub(r"<[^>]+>", "", block))
+    ordered = HOP_RE.findall(plain)
+    if not ordered:
+        raise NotParsed("pre 解析到 0 個 hop")
+    if len(ordered) != len(set(ordered)):
+        raise NotParsed("pre hop id 不唯一:%s" % ordered)
+    return ordered
+
+
+def extract_pre(text, pre_id):
+    marker = '<pre id="%s"' % pre_id
+    n = text.count(marker)
+    if n != 1:
+        raise NotParsed('pre id="%s" 在檔內出現 %d 次(需恰為 1)' % (pre_id, n))
+    start = text.find(marker)
+    end = text.find("</pre>", start)
+    if end < 0:
+        raise NotParsed('pre id="%s" 找不到 </pre>' % pre_id)
+    return text[start:end + len("</pre>")]
+
+
 def optional_svg_hops(path, label):
     if not os.path.isfile(path):
         return None
@@ -245,6 +267,7 @@ def account_figures(chain):
             )
     figures.append(("guide#fig-map", hops_from_svg(extract_svg(guide, "fig-map"))))
     figures.append(("guide#map-hops", hops_from_table(extract_table(guide, "map-hops"))))
+    figures.append(("guide#map-chain", hops_from_pre(extract_pre(guide, "map-chain"))))
     for path, label in ((SKILL, "SKILL.md"), (SHELL, "html-shell.html")):
         extra = optional_svg_hops(path, label)
         if extra:
@@ -281,43 +304,122 @@ def viewbox_hw(svg):
         return None
 
 
+def inner_text(block):
+    return html.unescape(re.sub(r"<[^>]+>", "", block))
+
+
+def first_block(text, pattern):
+    m = re.search(pattern, text, re.S)
+    return m.group(0) if m else ""
+
+
 def check_fixture():
     if not os.path.isfile(FIXTURE):
         raise NotParsed("缺掃頁樣張 scripts/fixtures/devtalk-html-scan/good/1-discussion.html")
     text = open(FIXTURE, encoding="utf-8").read()
     missing = []
-    if not re.search(r'class="[^"]*\bsum\b', text):
+    sum_block = first_block(
+        text, r'<section[^>]*class="[^"]*\bsum\b[^"]*"[^>]*>.*?</section>'
+    )
+    if not sum_block:
+        sum_block = first_block(
+            text, r'<div[^>]*class="[^"]*\bsum\b[^"]*"[^>]*>.*?</div>'
+        )
+    if not sum_block:
         missing.append("摘要卡(.sum)")
+    else:
+        blob = inner_text(sum_block)
+        for token in ("已解", "假設", "移交"):
+            if token not in blob:
+                missing.append("摘要卡缺 OQ 三態「%s」" % token)
+        if len(re.findall(r'class="badge', sum_block)) < 3:
+            missing.append("摘要卡 OQ 三態 badge 少於 3")
     svgs = re.findall(r"<svg\b.*?</svg>", text, re.S)
-    pres = re.findall(r"<pre\b.*?</pre>", text, re.S)
     vertical = False
     for block in svgs:
         hw = viewbox_hw(block)
         if hw and hw[1] > hw[0]:
             vertical = True
             break
-    if not vertical and not pres:
-        missing.append("直式 svg 或 pre")
-    if 'id="scan-people"' not in text:
+    nonempty_pre = False
+    for m in re.finditer(r"<pre\b[^>]*>(.*?)</pre>", text, re.S):
+        if inner_text(m.group(1)).strip():
+            nonempty_pre = True
+            break
+    if not vertical and not nonempty_pre:
+        missing.append("直式 svg 或非空 pre")
+    if svgs:
+        blob = "".join(svgs)
+        if not re.search(r'class="(?:[^"]*\s)?(?:b|hl|no)(?:\s[^"]*)?"', blob):
+            missing.append("svg 缺 .b/.hl/.no")
+        if not re.search(r'class="(?:[^"]*\s)?(?:flow|cap)(?:\s[^"]*)?"', blob):
+            missing.append("svg 缺 .flow/.cap")
+    people = first_block(text, r'<table[^>]*id="scan-people"[^>]*>.*?</table>')
+    if not people:
         missing.append("人表(#scan-people)")
-    if 'id="scan-qs"' not in text:
+    else:
+        blob = inner_text(people)
+        for token in ("誰", "要什麼", "缺什麼"):
+            if token not in blob:
+                missing.append("人表缺欄「%s」" % token)
+        if "[Assumption]" not in people:
+            missing.append("人表 [Assumption] 看不見")
+    qs = first_block(text, r'<table[^>]*id="scan-qs"[^>]*>.*?</table>')
+    if not qs:
         missing.append("題表(#scan-qs)")
-    if 'id="scan-ac"' not in text:
+    elif "著落" not in inner_text(qs):
+        missing.append("題表缺著落欄")
+    ac = first_block(text, r'<table[^>]*id="scan-ac"[^>]*>.*?</table>')
+    if not ac:
         missing.append("驗收表(#scan-ac)")
-    details = re.findall(r"<details\b([^>]*)>", text)
+    else:
+        blob = inner_text(ac)
+        for token in ("假設", "從哪看", "看到什麼"):
+            if token not in blob:
+                missing.append("驗收表缺「%s」" % token)
+    details = re.findall(r"<details\b([^>]*)>(.*?)</details>", text, re.S)
     if not details:
         missing.append("details 問答")
     else:
-        for attrs in details:
+        for attrs, body in details:
             if re.search(r"(^|\s)open(\s|=|>|$)", attrs):
                 missing.append("問答 details 必須預設摺著(不准 open)")
+                break
+            if "問答" not in inner_text(body):
+                missing.append("details 不是問答摘要")
                 break
     if "mermaid" in text.lower():
         missing.append("樣張禁 mermaid")
     if re.search(r'<img[^>]+src="https?://', text):
         missing.append("樣張禁外連圖")
-    if missing:
-        raise Mismatch("掃頁樣張缺件:" + "、".join(missing))
+    if "--acc" not in text:
+        missing.append("樣張顏色缺 --acc")
+    order = [
+        ("摘要卡", text.find('class="sum"')),
+        ("現況圖", text.find('id="scan-now"') if 'id="scan-now"' in text else text.find("<pre")),
+        ("人表", text.find('id="scan-people"')),
+        ("題表", text.find('id="scan-qs"')),
+        ("驗收表", text.find('id="scan-ac"')),
+        ("問答", text.find("<details")),
+    ]
+    prev_name, prev_pos = None, -1
+    for name, pos in order:
+        if pos < 0:
+            continue
+        if pos < prev_pos:
+            missing.append("掃頁順序錯:%s 在 %s 前面" % (name, prev_name))
+            break
+        prev_name, prev_pos = name, pos
+    # 去重但保序
+    seen = set()
+    uniq = []
+    for item in missing:
+        if item in seen:
+            continue
+        seen.add(item)
+        uniq.append(item)
+    if uniq:
+        raise Mismatch("掃頁樣張缺件:" + "、".join(uniq))
     print("[scan] fixture 六件齊,問答摺著")
 
 
@@ -424,6 +526,24 @@ def run_mutations():
             failures.append(
                 "樣張拿掉 details 必須 exit 1,實際 rc=%s\n%s" % (rc, blob[-1200:])
             )
+
+    with tempfile.TemporaryDirectory(prefix="devtalk-fig-noassume-") as tmp:
+        copy_tree(tmp)
+        fpath = os.path.join(
+            tmp, "scripts", "fixtures", "devtalk-html-scan", "good", "1-discussion.html"
+        )
+        text = open(fpath, encoding="utf-8").read()
+        if "[Assumption]" not in text:
+            failures.append("破壞實驗樣張找不到 [Assumption]")
+        else:
+            open(fpath, "w", encoding="utf-8").write(text.replace("[Assumption]", "", 1))
+            rc, blob = child_rc(tmp)
+            if rc == 1:
+                print("[mut] ✓ 樣張拿掉 [Assumption] 必須紅")
+            else:
+                failures.append(
+                    "樣張拿掉 [Assumption] 必須 exit 1,實際 rc=%s\n%s" % (rc, blob[-1200:])
+                )
 
     if failures:
         raise Mismatch("破壞實驗沒咬到:\n" + "\n".join(failures))
