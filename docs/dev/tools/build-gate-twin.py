@@ -319,8 +319,9 @@ def card(item_id, title, tag, rows, missing=None, sub="", extra="", dup=None, le
     空白,直接打破「三個 gate 站渲染輸出不得變動」的驗收基準。同行拼接時空字串
     不添一字,byte-for-byte 不受影響。
 
-    lead:4-spec 加的第 5 個插槽(「你要審什麼」)。插在 GWT **前面**。2/5/7 不傳,
-    預設 `""`,與 `extra` 同一招:接在 `<div class="gwt">` 同一行前面,空字串不添一字。
+    lead:「你要審什麼」插槽,插在 GWT **前面**。4-spec / 2-decision / 5-tasks /
+    7-review 傳。預設 `""`,與 `extra` 同一招:接在 `<div class="gwt">` 同一行前面,
+    空字串不添一字。
     """
     tag_html = f'<span class="tag main">{html.escape(tag)}</span>' if tag else ""
     body_rows = "".join(
@@ -606,13 +607,16 @@ def review_questions(fields, oc, md):
     return qs[:3]
 
 
-def render_ask(questions):
+def render_ask(questions, box_class="s-ask", head_class="s-ask-h"):
+    """「你要審什麼」清單。4-spec 預設 s-ask;2-decision 傳 g1-ask;
+    5-tasks 傳 t-ask;7-review 傳 g3-ask。"""
     if not questions:
         return ""
     items = "".join(
         f'<li><span class="qmark">?</span><span>{inline(q)}</span></li>'
         for q in questions)
-    return (f'<div class="s-ask"><div class="s-ask-h">你要審什麼</div>'
+    return (f'<div class="{html.escape(box_class)}">'
+            f'<div class="{html.escape(head_class)}">你要審什麼</div>'
             f"<ul>{items}</ul></div>")
 
 
@@ -694,68 +698,475 @@ def parse_spec(md, secs):
     return hint + "".join(cards), n, used
 
 
-def parse_decision(_md, secs):
-    """2-decision:每個 Approach 一張卡、每條 Owner Call 一張卡。"""
+def _chosen_letter(md):
+    """## Decision 選定哪一案(A/B/C)。對不到就空字串,不寫死樣張的 A。"""
+    text = _section_text(md, "Decision")
+    m = re.search(r"採\s*\*+([A-Z])", text)
+    if m:
+        return m.group(1)
+    m = re.search(r"採\s+([A-Z])\b", text)
+    return m.group(1) if m else ""
+
+
+def _rejected_by_letter(md):
+    """Rejected Alternatives 條列 → {字母: 一句棄因}。"""
+    sec = _section_text(md, "Rejected Alternatives")
+    out = {}
+    for m in re.finditer(r"^\s*[-*]\s+([A-Z])\s*[:：]\s*(.+)$", mask_fenced(sec), re.M):
+        out[m.group(1)] = m.group(2).strip()
+    return out
+
+
+def _bind_stage(blob):
+    """從「若被推翻會怎樣」等文字判綁到哪一站,不寫死樣張 id。"""
+    found = []
+    for name, pat in (
+        ("4-spec", r"4-spec|S-\d+|R-\d+"),
+        ("3-prototype", r"3-prototype"),
+        ("5-tasks", r"5-tasks|\bT-\d+"),
+        ("7-review", r"7-review"),
+        ("Success Criteria", r"Success Criteria"),
+        ("Scope", r"\bScope\b|範圍擴大"),
+    ):
+        if re.search(pat, blob or ""):
+            found.append(name)
+    return "、".join(found)
+
+
+def _oc_rejected(decided, status):
+    """OC 的否決項:推翻 / 棄項括號 / 不X / 只處理 Y;寫不出就標未寫棄項。"""
+    if re.search(r"✗", status or ""):
+        return "原裁決被推翻"
+    plain = re.sub(r"[*`]", "", decided or "")
+    m = re.search(r"[（(]棄項[:：]([^)）]+)[)）]", plain)
+    if m:
+        return m.group(1).strip()
+    m = re.search(r"不(列入|隱藏|另建|引入|做)([^，。；]{0,12})", plain)
+    if m:
+        return "對立面：" + m.group(1) + m.group(2).strip()
+    m = re.search(r"只處理([^。；（(]{2,24})", plain)
+    if m:
+        return "不在範圍：" + m.group(1).strip()
+    return "未寫棄項"
+
+
+def render_g1_oc(md):
+    """頁上一次作業脈絡。從 Decision / Scope / Success Criteria 抽,沒有就不貼。"""
+    rows = []
+    dec = _headline(_section_text(md, "Decision"), limit=72)
+    if dec and dec != "—":
+        rows.append(("選定", dec))
+    scope = _section_text(md, "Scope")
+    in_m = re.search(r"In\s*[:：]\s*(.+)", scope)
+    out_m = re.search(r"Out\s*[:：]\s*(.+)", scope)
+    if in_m:
+        rows.append(("範圍", in_m.group(1).strip()))
+    if out_m:
+        rows.append(("不做", out_m.group(1).strip()))
+    sc = _headline(_section_text(md, "Success Criteria"), limit=60)
+    if sc and sc != "—":
+        rows.append(("成功長這樣", sc))
+    if not rows:
+        return ""
+    body = "".join(
+        f'<div class="g1-oc-row"><span class="g1-oc-k">{html.escape(k)}</span>'
+        f'<span class="g1-oc-v">{inline(v)}</span></div>'
+        for k, v in rows)
+    return (f'<div class="g1-oc"><div class="g1-oc-h">作業脈絡(本頁一次)</div>'
+            f"{body}</div>")
+
+
+def decision_review_questions(kind, decided, rejected, bind, status, extra_banned, md):
+    """從 2-decision 的洞抽 2–3 問。必須是問題,不重述裁決/否決項/綁到哪一站。"""
+    qs = []
+    banned = [x for x in ((decided, rejected, bind) + tuple(extra_banned or ())) if x]
+
+    def add(q):
+        q = (q or "").strip()
+        if not q:
+            return
+        if not q.endswith("？") and not q.endswith("?"):
+            q += "？"
+        if any(part and len(part) >= 8 and part in q for part in banned):
+            return
+        if q not in qs:
+            qs.append(q)
+
+    if kind == "approach":
+        if status == "選定":
+            add("選定這案之後還退得回去嗎")
+            add("4-spec 還要走這條實作路嗎")
+            add("被駁回的案在後站有沒有又被寫回來")
+        else:
+            add("這案被駁了,4-spec 還寫著它嗎")
+            add("否決原因現在還站得住嗎")
+            add("這扇門關死了,還是以後能升級回來")
+    else:
+        if re.search(r"✗", status or "") or "推翻" in (status or ""):
+            add("原裁決已被推翻,4-spec 還留著舊寫法嗎")
+        else:
+            adr = _section_text(md, "ADR")
+            if re.search(r"難逆轉\s*[:：]\s*是", adr):
+                add("這條標了難逆轉,翻案代價還真實嗎")
+            else:
+                add("這條翻案只改文件,還是已經不可逆")
+        if bind and "4-spec" in bind:
+            add("4-spec 還依賴這條嗎?拿掉它哪一條會垮")
+        else:
+            add("4-spec 還要這條裁決嗎,還是只活在本站")
+        add("這條否掉的做法,後站有沒有又開回來")
+    if len(qs) < 2:
+        add("不打開 2-decision.md、只看這一卡,G1 審得過嗎")
+    if len(qs) < 2:
+        add("否決項在後站是不是真的關了")
+    return qs[:3]
+
+
+def parse_decision(md, secs):
+    """2-decision:每個 Approach 一張卡、每條 Owner Call 一張卡。
+
+    卡形狀(G1 給人審,不是 md 直轉):頁上一次作業脈絡;每張卡留裁決、否決項、
+    綁到哪一站,加 2–3 條「你要審什麼」(可不可逆、4-spec 還要不要它、否決項
+    是否真的關了)。禁止「這一點在說什麼」。勾選 = 這條可以過 G1,不是已寫進 4-spec。
+    """
     cards, n, used = [], 0, set()
+    chosen = _chosen_letter(md)
+    rejected_map = _rejected_by_letter(md)
     for _lvl, title, body in secs:
+        # 只吃 L2:模板的「逐條裁決」是 Owner Calls 底下的 H3,再吃一次會複製 OC 卡。
+        if _lvl != 2:
+            continue
         if re.match(r"^(Approaches Considered|Owner Calls|逐條裁決)", title):
             rows = table_rows(body)
             if not rows:
                 continue
             used.add(title)
             inner = []
+            is_oc = bool(re.match(r"^(Owner Calls|逐條裁決)", title))
             for header, cells in rows:
                 item = cells[0] if cells else ""
                 if not item or item.startswith("<"):
                     continue
                 keys = header[1:] + [f"欄{i}" for i in range(len(header), len(cells))]
                 pairs = list(zip(keys, cells[1:]))
-                miss = None
-                if re.match(r"^OC-\d+", item):
+                extra_banned = [v for _k, v in pairs]
+                if is_oc:
+                    decided = pairs[0][1] if pairs else ""
                     st = next((v for k, v in pairs if "狀態" in k), "")
-                    if not st or "待" in st:
-                        miss = "裁決"
-                inner.append(card(item, pairs[0][1] if pairs else "", "", pairs[1:], missing=miss))
+                    miss = None if (st and "待" not in st) else "裁決"
+                    overturn = next((v for k, v in pairs if "推翻" in k), "")
+                    bind = _bind_stage(" ".join((decided, overturn))) or "本站"
+                    rejected = _oc_rejected(decided, st)
+                    if re.search(r"✗", st):
+                        ruling, tag = "推翻", "推翻"
+                    elif miss:
+                        ruling, tag = "待人審", ""
+                    else:
+                        ruling, tag = "已裁決", ""
+                    qs = decision_review_questions(
+                        "oc", decided, rejected, bind, st, extra_banned, md)
+                    inner.append(card(
+                        item, decided or item, tag,
+                        [("裁決", ruling), ("否決項", rejected), ("綁到哪一站", bind)],
+                        missing=miss,
+                        lead=render_ask(qs, "g1-ask", "g1-ask-h"),
+                    ))
+                else:
+                    letter_m = re.match(r"([A-Z])\b", item)
+                    letter = letter_m.group(1) if letter_m else ""
+                    is_chosen = bool(letter) and letter == chosen
+                    summary = pairs[0][1] if pairs else item
+                    rej_reason = rejected_map.get(letter, "")
+                    if is_chosen:
+                        ruling, tag = "選定", "選定"
+                        others = "；".join(
+                            f"{k}:{v}" for k, v in rejected_map.items() if k != letter)
+                        rejected = others or "未列 Rejected Alternatives"
+                        bind = "4-spec"
+                    else:
+                        ruling, tag = "駁回", ""
+                        rejected = rej_reason or "未列 Rejected Alternatives"
+                        bind = _bind_stage(rej_reason) or "本站"
+                    qs = decision_review_questions(
+                        "approach", summary, rejected, bind, ruling, extra_banned, md)
+                    inner.append(card(
+                        item, summary or item, tag,
+                        [("裁決", ruling), ("否決項", rejected), ("綁到哪一站", bind)],
+                        lead=render_ask(qs, "g1-ask", "g1-ask-h"),
+                    ))
                 n += 1
             if inner:
                 cards.append(f'<section class="r-block" id="{anchor_id(title)}">'
                              f'<div class="r-head">'
                              f'<span class="r-name">{inline(title)}</span></div>'
                              f'{"".join(inner)}</section>')
-    return "".join(cards), n, used
+    hint = ('<p class="g1-chk-hint">勾選 = 這條裁決可以過 G1,不是已寫進 4-spec。'
+            '</p>') if cards else ""
+    return hint + render_g1_oc(md) + "".join(cards), n, used
 
 
-def parse_review(_md, secs):
-    """7-review:逐 S 現象證據 + Exit Checklist 逐項。"""
-    cards, n, used = [], 0, set()
-    for _lvl, title, body in secs:
-        if not re.match(r"^(現象證據|Exit Checklist|Coverage Matrix)", title):
+_G3_FILE_LINE = re.compile(
+    r"([A-Za-z0-9_./-]+\.[A-Za-z][A-Za-z0-9]+):(\d+)")
+
+
+def _g3_file_lines(text):
+    """從一列正文抽 `檔:行`。問「只靠標的檔:行能不能判失敗」時用,不把整列搬進問題。"""
+    return [f"{a}:{b}" for a, b in _G3_FILE_LINE.findall(text or "")]
+
+
+def _g3_verdict(md):
+    """## Verdict 的判定詞(PASS / REQUEST_CHANGES / PRE-REVIEW / FAIL)與正文。"""
+    body = _section_text(md, "Verdict")
+    m = re.search(r"\b(PASS|REQUEST_CHANGES|PRE-REVIEW|FAIL)\b", body)
+    return (m.group(1) if m else ""), body
+
+
+def _g3_matrix(md):
+    """Coverage Matrix 資料列 → [(sid, test, status), ...]。"""
+    out = []
+    for header, cells in table_rows(_section_text(md, "Coverage Matrix")):
+        if not cells or not cells[0] or cells[0].startswith("<"):
             continue
-        rows = table_rows(body)
-        inner = []
-        if rows:
+        out.append((cells[0],
+                    cells[1] if len(cells) > 1 else "",
+                    cells[2] if len(cells) > 2 else ""))
+    return out
+
+
+def _g3_r_block(title, inner):
+    if not inner:
+        return ""
+    return (f'<section class="r-block" id="{anchor_id(title)}">'
+            f'<div class="r-head">'
+            f'<span class="r-name">{inline(title)}</span></div>'
+            f'{"".join(inner)}</section>')
+
+
+def g3_review_questions(kind, sid, blob, extra_banned, ctx, used_qs):
+    """從 7-review 這一列的洞抽 2–3 問。必須是問題,不重述正本欄;禁止跨卡同一句。
+
+    洞來自標的檔:行(這列能不能只靠它判失敗)與 Coverage Matrix
+    (verdict 有沒有被 matrix 授權)。used_qs 是本頁已出過的問題。
+    """
+    qs = []
+    verdict = ctx.get("verdict") or "verdict"
+    fls = _g3_file_lines(blob)
+    fl = fls[0] if fls else ""
+    banned = [x for x in (extra_banned or ()) if x and len(x) >= 8]
+
+    def add(q):
+        q = (q or "").strip()
+        if not q:
+            return
+        if not q.endswith("？") and not q.endswith("?"):
+            q += "？"
+        if any(part and len(part) >= 8 and part in q for part in banned):
+            return
+        if q in qs or q in used_qs:
+            return
+        qs.append(q)
+
+    if kind == "verdict":
+        add(f"判定寫 {verdict}，Coverage Matrix 每一列都授權了嗎")
+        if fl:
+            add(f"只靠 {fl} 就能判這個 {verdict} 失敗嗎")
+        else:
+            add(f"判定正文沒有檔:行，不打開 7-review.md 能判 {verdict} 失敗嗎")
+        if re.search(r"🟡|F-\d+", blob or ""):
+            add(f"帶著 🟡 仍 {verdict}，Matrix 授權這樣出貨了嗎")
+        else:
+            add(f"Matrix 若有一列其實沒綠，這個 {verdict} 還算被授權嗎")
+    elif kind == "matrix":
+        if fl:
+            add(f"{sid} 這列只靠 {fl} 能判失敗嗎")
+        else:
+            add(f"{sid} 這列沒寫檔:行，只靠測試名能判失敗嗎")
+        add(f"{sid} 這列的結果，有沒有授權 Verdict 的 {verdict}")
+        if re.match(r"S-\d+", sid or ""):
+            add(f"{sid} 這列測試打得到 4-spec 那條觀測嗎")
+        else:
+            add(f"{sid} 這列若其實沒綠，{verdict} 還被 Matrix 授權嗎")
+    elif kind == "exit":
+        add(f"{sid} 這項只靠標的檔:行能判沒做完嗎")
+        add(f"{sid} 沒勾完的話，{verdict} 還被 Matrix 授權嗎")
+        if re.search(r"Quiz|不可逆", blob or ""):
+            add(f"{sid} 標了不可逆，Quiz 沒過能否決出貨嗎")
+        elif re.search(r"PR|develop|branch", blob or "", re.I):
+            add(f"{sid} 這項跟 Matrix 綠不綠無關，沒做完 {verdict} 仍算授權嗎")
+        else:
+            add(f"{sid} 只改文件、測試沒綠，{verdict} 還被 Matrix 授權嗎")
+    elif kind == "limit":
+        if fl:
+            add(f"{sid} 只靠 {fl} 能判這條限界還在嗎")
+        else:
+            add(f"{sid} 這條沒有檔:行，只靠敘述能判它還在嗎")
+        add(f"{sid} 這條 🟡 還讓 {verdict} 站得住嗎")
+        add(f"{sid} 帶著這條限界出貨，Matrix 有授權嗎")
+    elif kind == "dispute":
+        add(f"{sid} 這則爭點只靠標的檔:行能判分級站不住嗎")
+        add(f"{sid} 若其實該回 G2，{verdict} 還被 Matrix 授權嗎")
+        if re.search(r"L1|L2", blob or ""):
+            add(f"{sid} 的 L1 分級，4-spec Dependencies 還罩得住嗎")
+        else:
+            add(f"{sid} 這則若成立，Coverage Matrix 還授權 {verdict} 嗎")
+    else:
+        if fl:
+            add(f"現象 {sid} 只靠 {fl} 能判這列失敗嗎")
+        else:
+            add(f"現象 {sid} 沒寫檔:行，只靠敘述能判失敗嗎")
+        add(f"現象 {sid} 相符，有沒有出現在 Matrix 裡授權 {verdict}")
+        add(f"現象 {sid} 這列跟 4-spec 觀測對得上嗎")
+
+    if len(qs) < 2:
+        add(f"{sid} 這列不打開 7-review.md、只靠標的檔:行能判失敗嗎")
+    if len(qs) < 2:
+        add(f"{sid} 這列的結論，有沒有被 Coverage Matrix 授權")
+    out = qs[:3]
+    used_qs.update(out)
+    return out
+
+
+def parse_review(md, secs):
+    """7-review:卡是判定／出貨／爭點／風險／抽驗列。
+
+    卡形狀(套 4-spec 已合骨架):每列加 2–3 條「你要審什麼」(這列能不能只靠
+    標的檔:行判失敗、verdict 有沒有被 matrix 授權)。問題從該列 md 洞抽,
+    禁止三張同一句。作業脈絡通常不必。禁止「這一點在說什麼」。
+    勾選 = 這列只靠標的檔:行就能判失敗,不是整份已過 G3。
+
+    模板仍要求現象證據逐 S 可勾,所以那批卡留著,不改 L2 下落
+    (Verdict / Known Limits 仍置頂;附錄仍進背景)。
+    """
+    cards, n, used = [], 0, set()
+    used_qs = set()
+    verdict, vbody = _g3_verdict(md)
+    ctx = {
+        "verdict": verdict or "verdict",
+        "matrix": _g3_matrix(md),
+    }
+
+    def lead(kind, sid, blob, extra):
+        return render_ask(
+            g3_review_questions(kind, sid, blob, extra, ctx, used_qs),
+            "g3-ask", "g3-ask-h")
+
+    def emit(title, inner, mark_used=False):
+        nonlocal n
+        if not inner:
+            return
+        if mark_used:
             used.add(title)
-            for header, cells in rows:
+        n += len(inner)
+        cards.append(_g3_r_block(title, inner))
+
+    # 判定(不進 used:## Verdict 仍置頂)
+    v_inner = []
+    if (vbody or "").strip() or verdict:
+        blob = vbody or verdict
+        v_inner.append(card(
+            "判定", verdict or "Verdict", "判定",
+            [("判定", verdict or _headline(vbody))],
+            lead=lead("verdict", "判定", blob, [blob, verdict]),
+        ))
+    emit("判定", v_inner)
+
+    # 出貨 / 抽驗 / 現象證據:L2 標題進 used,下落仍是卡片節
+    exit_inner, mx_inner, ev_inner = [], [], []
+    exit_title = mx_title = ev_title = None
+    for _lvl, title, body in secs:
+        if re.match(r"^Exit Checklist", title):
+            exit_title = title
+            checks = re.findall(r"^\s*-\s*\[( |x|X)\]\s*(.+)$", body, re.M)
+            for i, (mark, text) in enumerate(checks, 1):
+                sid = f"EC-{i}"
+                exit_inner.append(card(
+                    sid, text, "已勾" if mark.lower() == "x" else "出貨", [],
+                    lead=lead("exit", sid, text, [text]),
+                ))
+        elif re.match(r"^Coverage Matrix", title):
+            mx_title = title
+            for header, cells in table_rows(body):
                 item = cells[0] if cells else ""
                 if not item or item.startswith("<"):
                     continue
                 keys = header[1:] + [f"欄{i}" for i in range(len(header), len(cells))]
                 pairs = list(zip(keys, cells[1:]))
-                inner.append(card(item, pairs[0][1] if pairs else "", "", pairs[1:]))
-                n += 1
-        else:
-            checks = re.findall(r"^\s*-\s*\[( |x|X)\]\s*(.+)$", body, re.M)
-            if checks:
-                used.add(title)
-                for i, (mark, text) in enumerate(checks, 1):
-                    inner.append(card(f"EC-{i}", text, "已勾" if mark.lower() == "x" else "", []))
-                    n += 1
-        if inner:
-            cards.append(f'<section class="r-block" id="{anchor_id(title)}">'
-                         f'<div class="r-head">'
-                         f'<span class="r-name">{inline(title)}</span></div>'
-                         f'{"".join(inner)}</section>')
-    return "".join(cards), n, used
+                blob = " ".join([item] + list(cells[1:]))
+                extra = [v for _k, v in pairs]
+                mx_inner.append(card(
+                    item, pairs[0][1] if pairs else item, "抽驗", pairs[1:],
+                    lead=lead("matrix", item, blob, extra),
+                ))
+        elif re.match(r"^現象證據", title):
+            ev_title = title
+            for header, cells in table_rows(body):
+                item = cells[0] if cells else ""
+                if not item or item.startswith("<"):
+                    continue
+                keys = header[1:] + [f"欄{i}" for i in range(len(header), len(cells))]
+                pairs = list(zip(keys, cells[1:]))
+                blob = " ".join([item] + list(cells[1:]))
+                extra = [v for _k, v in pairs]
+                ev_inner.append(card(
+                    item, pairs[0][1] if pairs else item, "", pairs[1:],
+                    lead=lead("evidence", item, blob, extra),
+                ))
+
+    emit(exit_title or "Exit Checklist", exit_inner, mark_used=True)
+    # 爭點(H3 A-n;父節「附錄」不進 used,仍收進背景)
+    d_inner = []
+    for lvl, title, body in secs:
+        if lvl < 3:
+            continue
+        m = re.match(r"^(A\d+)", title)
+        if not m:
+            continue
+        sid = m.group(1)
+        rest = title[len(sid):].strip(" 　:：") or sid
+        blob = title + "\n" + (body or "")
+        d_inner.append(card(
+            sid, rest, "爭點",
+            [("爭點", _headline(body, limit=72))],
+            lead=lead("dispute", sid, blob, [rest, body]),
+        ))
+    emit("爭點", d_inner)
+
+    # 風險(不進 used:## Known Limits 仍置頂)
+    l_inner = []
+    kl_body = _section_text(md, "Known Limits")
+    kl_rows = table_rows(kl_body)
+    if kl_rows:
+        for header, cells in kl_rows:
+            if not cells or not cells[0] or cells[0].startswith("<"):
+                continue
+            num = cells[0]
+            sid = f"KL-{num}"
+            keys = header[1:] + [f"欄{i}" for i in range(len(header), len(cells))]
+            pairs = list(zip(keys, cells[1:]))
+            blob = " ".join(cells)
+            extra = [v for _k, v in pairs]
+            l_inner.append(card(
+                sid, pairs[0][1] if pairs else sid, "風險", pairs[1:],
+                lead=lead("limit", sid, blob, extra),
+            ))
+    else:
+        for i, m in enumerate(
+                re.finditer(r"^\s*[-*]\s+(\S+)\s+(.+)$", mask_fenced(kl_body), re.M),
+                1):
+            raw_id, text = m.group(1), m.group(2).strip()
+            sid = raw_id if re.match(r"^(K|KL)-\d+", raw_id) else f"KL-{i}"
+            blob = raw_id + " " + text
+            l_inner.append(card(
+                sid, text, "風險", [],
+                lead=lead("limit", sid, blob, [text]),
+            ))
+    emit("風險", l_inner)
+    emit(mx_title or "Coverage Matrix", mx_inner, mark_used=True)
+    emit(ev_title or "現象證據", ev_inner, mark_used=True)
+
+    hint = ('<p class="g3-chk-hint">勾選 = 這列只靠標的檔:行就能判失敗,不是整份已過 G3。'
+            '</p>') if n else ""
+    return hint + "".join(cards), n, used
 
 
 def parse_task_fields(body):
@@ -813,6 +1224,103 @@ def _task_sections(secs):
     return out
 
 
+_BLOCKED_EMPTY = {"", "—", "-", "－", "無", "n/a", "N/A", "none", "None"}
+
+
+def _task_cover_sids(covers):
+    """Covers 欄裡的 S-id。問「4-spec 觀測還在不在」時用,不把整欄搬進問題。"""
+    return re.findall(r"S-\d+(?:\.\d+)*", covers or "")
+
+
+def _task_file_stem(files):
+    """Files 第一個路徑的檔名。用來問「不開口能不能開工」,不重述整欄。"""
+    m = re.search(r"`([^`]+)`", files or "")
+    path = m.group(1) if m else ""
+    if not path:
+        path = re.split(r"[,，]", files or "", 1)[0].strip().strip("`")
+    base = path.rstrip("/").rsplit("/", 1)[-1]
+    return base[:48]
+
+
+def task_review_questions(tid, fields, missing, all_tids, used_qs):
+    """從這張 T 的洞抽 2–3 問。必須是問題,不重述正本欄;禁止跨 T 同一句。
+
+    洞來自缺欄、Blocked-by(是不是真的 T)、Covers 的 S(4-spec 觀測還在不在)。
+    used_qs 是本頁已出過的問題,避免三張 T 套同一句。
+    """
+    qs = []
+    covers = (fields.get("Covers") or "").strip()
+    files = (fields.get("Files") or "").strip()
+    verify = (fields.get("Verify") or "").strip()
+    blocked = (fields.get("Blocked-by") or "").strip()
+    intent = (fields.get("Intent") or "").strip()
+    bounds = (fields.get("Boundaries") or "").strip()
+    banned = [x for x in (covers, files, verify, blocked, intent, bounds) if len(x) >= 8]
+    miss = list(missing or [])
+    cited = re.findall(r"T-\d+", blocked)
+    sids = _task_cover_sids(covers)
+
+    def add(q):
+        q = (q or "").strip()
+        if not q:
+            return
+        if not q.endswith("？") and not q.endswith("?"):
+            q += "？"
+        if any(part and len(part) >= 8 and part in q for part in banned):
+            return
+        if q in qs or q in used_qs:
+            return
+        qs.append(q)
+
+    if miss:
+        add(f"{tid} 缺「{'、'.join(miss)}」，不補欄能不能開工")
+    stem = _task_file_stem(files)
+    if stem and "Files" not in miss:
+        add(f"只看 {tid} 的 Files 第一個檔 {stem}，不打開 md 能不能開工")
+    elif "Files" not in miss and files:
+        add(f"{tid} 不打開 5-tasks.md、只看 Files 跟 Verify，能不能開工")
+
+    if "Blocked-by" in miss:
+        add(f"{tid} 沒寫 Blocked-by，開工引擎會當成沒有前置嗎")
+    elif blocked.strip() in _BLOCKED_EMPTY:
+        add(f"{tid} 的 Blocked-by 沒點名任何 T，真的可以立刻開工嗎")
+    elif not cited:
+        add(f"{tid} 的 Blocked-by 沒寫 T-id，開工引擎認成真的 T 嗎")
+    else:
+        ghosts = [t for t in cited if t not in all_tids]
+        real = [t for t in cited if t in all_tids and t != tid]
+        if tid in cited:
+            add(f"{tid} 的 Blocked-by 寫了自己，這條邊是真的 T 嗎")
+        if ghosts:
+            add(f"{tid} 的 Blocked-by 點了 {ghosts[0]}，這份 5-tasks 裡有這張 T 嗎")
+        if len(real) >= 2:
+            add(f"{tid} 同時等 {real[0]} 跟 {real[1]}，兩張都是這份表裡的真 T 嗎")
+        elif real:
+            add(f"{tid} 的 Blocked-by 寫 {real[0]}，那是這份 5-tasks 裡的真 T 嗎")
+
+    if sids:
+        if re.search(r"觀測", bounds) and len(sids) >= 2:
+            add(f"{tid} Boundaries 要照觀測取值，{sids[0]} 跟 {sids[1]} 那欄在 4-spec 還在嗎")
+        elif re.search(r"觀測", bounds):
+            add(f"{tid} Boundaries 要照觀測取值，{sids[0]} 那欄在 4-spec 還在嗎")
+        elif len(sids) >= 2:
+            add(f"{tid} 蓋的 {sids[0]}、{sids[1]} 觀測欄，4-spec 還在嗎")
+        else:
+            add(f"{tid} 蓋的 {sids[0]} 觀測欄，4-spec 還在嗎")
+    elif re.search(r"4-spec|觀測", bounds + intent):
+        add(f"{tid} 正文提到 4-spec／觀測，那欄還在嗎")
+
+    if len(qs) < 2:
+        add(f"{tid} 不打開 5-tasks.md、只看這一卡，能不能開工")
+    if len(qs) < 2:
+        add(f"{tid} 的 Blocked-by 寫的東西，開工引擎認成 T 嗎")
+    if len(qs) < 2:
+        add(f"{tid} 蓋住的 S 觀測，4-spec 還留著嗎")
+    out = qs[:3]
+    used_qs.update(out)
+    return out
+
+
 def parse_tasks(_md, secs):
     """5-tasks:每個 T 一張執行卡(README §6「執行板」,K-3)。
 
@@ -825,6 +1333,11 @@ def parse_tasks(_md, secs):
     這正是 owner 兩次抱怨的那件事:Boundaries 常常上千字,直接攤平會把
     Covers/Files/Verify 擠到畫面外,摺起來才看得下去。
 
+    卡形狀(套 4-spec 已合骨架):每張 T 加 2–3 條「你要審什麼」(不開口能不能開工、
+    Blocked-by 是不是真的 T、4-spec 觀測還在不在)。問題從該 T 的洞抽,禁止三張 T
+    同一句。作業脈絡通常不必。禁止「這一點在說什麼」。勾選 = 這張 T 不開口也能
+    開工,不是已做完。
+
     H-1(2026-08-15 獨立審查):同一 T 內若有保留欄重複出現(常見成因是
     Boundaries/Intent 的續行被寫成 `- Files:` 這種子項),真正吃這份 md 的
     Stage 6 引擎(`tests/parallel-stage6/contract_ref.py`)fail-closed 拒啟,
@@ -834,7 +1347,10 @@ def parse_tasks(_md, secs):
     這件事引擎會 fail-closed——twin 仍不擋產出,只現形。
     """
     cards, n, used = [], 0, set()
-    for tid, title, body in _task_sections(secs):
+    task_secs = _task_sections(secs)
+    all_tids = [tid for tid, _title, _body in task_secs]
+    used_qs = set()
+    for tid, title, body in task_secs:
         used.add(title)
         f, dups = parse_task_fields(body)
         missing = [k for k in TASK_REQUIRED if not (f.get(k) or "").strip()]
@@ -847,14 +1363,18 @@ def parse_tasks(_md, secs):
             extra = (f'<details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區'
                       f'</summary><div class="body">{md_block(bounds)}</div></details>')
         rest = title[len(tid):].strip(" :：") or tid
+        qs = task_review_questions(tid, f, missing, all_tids, used_qs)
         cards.append(card(tid, rest, "", rows, missing=missing or None, sub=sub, extra=extra,
-                          dup=dups or None))
+                          dup=dups or None,
+                          lead=render_ask(qs, "t-ask", "t-ask-h")))
         if dups:
             print(f"NOTE: {tid} 重複保留欄「{'、'.join(dups)}」:twin 不擋產出(只現形紅底),但真正吃這份"
                   f"md 的引擎(tests/parallel-stage6/contract_ref.py)對「重複保留欄」fail-closed 拒啟",
                   file=sys.stderr)
         n += 1
-    return "".join(cards), n, used
+    hint = ('<p class="t-chk-hint">勾選 = 這張 T 不開口也能開工,不是已做完。'
+            '</p>') if cards else ""
+    return hint + "".join(cards), n, used
 
 
 def _task_deps(secs):
@@ -1354,10 +1874,13 @@ def main(argv):
 </div>"""
 
     out_local = root / "docs/dev" / slug / f"{stage}.html"
-    # CSS_SPEC4 只加給 4-spec、CSS_TASKS 只加給 5-tasks(都是加法式新 class)。
-    # 2-decision / 7-review 的 extra_css 仍是 CSS_SPEC,style 區塊一個字不變。
+    # CSS_SPEC4 只加給 4-spec、CSS_SPEC2 只加給 2-decision、
+    # CSS_TASKS+CSS_TASKS5 只加給 5-tasks、CSS_REVIEW7 只加給 7-review
+    # (都是加法式新 class)。
     extra_css = ui.CSS_SPEC + (ui.CSS_SPEC4 if stage == "4-spec" else "") + (
-        ui.CSS_TASKS if stage == "5-tasks" else "")
+        ui.CSS_SPEC2 if stage == "2-decision" else "") + (
+        (ui.CSS_TASKS + ui.CSS_TASKS5) if stage == "5-tasks" else "") + (
+        ui.CSS_REVIEW7 if stage == "7-review" else "")
     out_local.write_text(ui.local_page(title, extra_css, body_html, SCRIPT), encoding="utf-8")
     # 片段是 opt-in:只有呼叫端明確設定 DEVFLOW_ARTIFACT_OUT 才寫。空字串 / 空白
     # 視同未設,避免「變數在、值是空的」仍落到預設 sidecar。
