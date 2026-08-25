@@ -221,9 +221,9 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 """
 
 # 4-spec 審查卡加料(作業脈絡在 R、S 的「你要審什麼」)。只加新 class,不改上面
-# CSS_SPEC 任何一條。這塊只接在 4-spec 上,跟 CSS_SPEC2 / CSS_TASKS 同一招 ——
-# 2-decision 吃 CSS_SPEC2、5-tasks 吃 CSS_TASKS、7-review 仍只吃 CSS_SPEC,
-# 各站 <style> 不互污染。
+# CSS_SPEC 任何一條。這塊只接在 4-spec 上,跟 CSS_SPEC2 / CSS_TASKS / CSS_TASKS5
+# 同一招 —— 2-decision 吃 CSS_SPEC2、5-tasks 吃 CSS_TASKS+CSS_TASKS5、
+# 7-review 仍只吃 CSS_SPEC,各站 <style> 不互污染。
 CSS_SPEC4 = """
 .g2-chk-hint{font-size:.86rem;color:var(--ink-2);margin:18px 0 0}
 .r-oc{padding:12px 18px 14px;background:var(--sunk);border-bottom:1px solid var(--rule-2);
@@ -279,6 +279,7 @@ CSS_SPEC2 = """
 # T 卡本身沿用 CSS_SPEC 的 .s-card/.gwt/.obs(card() 直接產生同一套 class,見
 # build-gate-twin.py 的 parse_tasks);這裡只補 Boundaries 的 <details> 摺疊
 # 與 DAG 波次區塊兩塊 CSS_SPEC 沒有對應樣式的新結構。
+# 審題 class(t-ask)不寫進這裡 —— .t-bound / .dag 是鎖定 class,審題加料見 CSS_TASKS5。
 CSS_TASKS = """
 .t-bound{border-top:1px solid var(--rule-2);margin-top:9px}
 .t-bound>summary{cursor:pointer;padding:9px 0 9px 45px;font-size:.84rem;font-weight:600;
@@ -297,6 +298,20 @@ CSS_TASKS = """
   .t-bound>summary{padding-left:18px}
   .t-bound .body{padding-left:18px}
 }
+"""
+
+# 5-tasks 審查卡加料(每張 T「你要審什麼」)。只加新 class,不改 CSS_TASKS 的
+# .t-bound / .dag(那兩塊是鎖定 class)。這塊只接在 5-tasks 上,class 名用 t-*
+# 前綴,不跟 CSS_SPEC4 的 s-ask、CSS_SPEC2 的 g1-ask 混進同一份 <style>。
+CSS_TASKS5 = """
+.t-chk-hint{font-size:.86rem;color:var(--ink-2);margin:18px 0 0}
+.t-ask{margin:0 0 12px}
+.t-ask-h{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-3);margin:0 0 6px}
+.t-ask ul{margin:0;padding:0;list-style:none}
+.t-ask li{display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:.9rem;
+  color:var(--ink)}
+.t-ask .qmark{color:var(--accent);font-weight:700;flex:none;line-height:1.5}
 """
 
 

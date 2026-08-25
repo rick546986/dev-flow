@@ -319,8 +319,9 @@ def card(item_id, title, tag, rows, missing=None, sub="", extra="", dup=None, le
     空白,直接打破「三個 gate 站渲染輸出不得變動」的驗收基準。同行拼接時空字串
     不添一字,byte-for-byte 不受影響。
 
-    lead:4-spec 加的第 5 個插槽(「你要審什麼」)。插在 GWT **前面**。2/5/7 不傳,
-    預設 `""`,與 `extra` 同一招:接在 `<div class="gwt">` 同一行前面,空字串不添一字。
+    lead:「你要審什麼」插槽,插在 GWT **前面**。4-spec / 2-decision / 5-tasks 傳;
+    7-review 不傳,預設 `""`,與 `extra` 同一招:接在 `<div class="gwt">` 同一行前面,
+    空字串不添一字。
     """
     tag_html = f'<span class="tag main">{html.escape(tag)}</span>' if tag else ""
     body_rows = "".join(
@@ -607,7 +608,7 @@ def review_questions(fields, oc, md):
 
 
 def render_ask(questions, box_class="s-ask", head_class="s-ask-h"):
-    """「你要審什麼」清單。4-spec 預設 s-ask;2-decision 傳 g1-ask,class 分站。"""
+    """「你要審什麼」清單。4-spec 預設 s-ask;2-decision 傳 g1-ask;5-tasks 傳 t-ask。"""
     if not questions:
         return ""
     items = "".join(
@@ -991,6 +992,103 @@ def _task_sections(secs):
     return out
 
 
+_BLOCKED_EMPTY = {"", "—", "-", "－", "無", "n/a", "N/A", "none", "None"}
+
+
+def _task_cover_sids(covers):
+    """Covers 欄裡的 S-id。問「4-spec 觀測還在不在」時用,不把整欄搬進問題。"""
+    return re.findall(r"S-\d+(?:\.\d+)*", covers or "")
+
+
+def _task_file_stem(files):
+    """Files 第一個路徑的檔名。用來問「不開口能不能開工」,不重述整欄。"""
+    m = re.search(r"`([^`]+)`", files or "")
+    path = m.group(1) if m else ""
+    if not path:
+        path = re.split(r"[,，]", files or "", 1)[0].strip().strip("`")
+    base = path.rstrip("/").rsplit("/", 1)[-1]
+    return base[:48]
+
+
+def task_review_questions(tid, fields, missing, all_tids, used_qs):
+    """從這張 T 的洞抽 2–3 問。必須是問題,不重述正本欄;禁止跨 T 同一句。
+
+    洞來自缺欄、Blocked-by(是不是真的 T)、Covers 的 S(4-spec 觀測還在不在)。
+    used_qs 是本頁已出過的問題,避免三張 T 套同一句。
+    """
+    qs = []
+    covers = (fields.get("Covers") or "").strip()
+    files = (fields.get("Files") or "").strip()
+    verify = (fields.get("Verify") or "").strip()
+    blocked = (fields.get("Blocked-by") or "").strip()
+    intent = (fields.get("Intent") or "").strip()
+    bounds = (fields.get("Boundaries") or "").strip()
+    banned = [x for x in (covers, files, verify, blocked, intent, bounds) if len(x) >= 8]
+    miss = list(missing or [])
+    cited = re.findall(r"T-\d+", blocked)
+    sids = _task_cover_sids(covers)
+
+    def add(q):
+        q = (q or "").strip()
+        if not q:
+            return
+        if not q.endswith("？") and not q.endswith("?"):
+            q += "？"
+        if any(part and len(part) >= 8 and part in q for part in banned):
+            return
+        if q in qs or q in used_qs:
+            return
+        qs.append(q)
+
+    if miss:
+        add(f"{tid} 缺「{'、'.join(miss)}」，不補欄能不能開工")
+    stem = _task_file_stem(files)
+    if stem and "Files" not in miss:
+        add(f"只看 {tid} 的 Files 第一個檔 {stem}，不打開 md 能不能開工")
+    elif "Files" not in miss and files:
+        add(f"{tid} 不打開 5-tasks.md、只看 Files 跟 Verify，能不能開工")
+
+    if "Blocked-by" in miss:
+        add(f"{tid} 沒寫 Blocked-by，開工引擎會當成沒有前置嗎")
+    elif blocked.strip() in _BLOCKED_EMPTY:
+        add(f"{tid} 的 Blocked-by 沒點名任何 T，真的可以立刻開工嗎")
+    elif not cited:
+        add(f"{tid} 的 Blocked-by 沒寫 T-id，開工引擎認成真的 T 嗎")
+    else:
+        ghosts = [t for t in cited if t not in all_tids]
+        real = [t for t in cited if t in all_tids and t != tid]
+        if tid in cited:
+            add(f"{tid} 的 Blocked-by 寫了自己，這條邊是真的 T 嗎")
+        if ghosts:
+            add(f"{tid} 的 Blocked-by 點了 {ghosts[0]}，這份 5-tasks 裡有這張 T 嗎")
+        if len(real) >= 2:
+            add(f"{tid} 同時等 {real[0]} 跟 {real[1]}，兩張都是這份表裡的真 T 嗎")
+        elif real:
+            add(f"{tid} 的 Blocked-by 寫 {real[0]}，那是這份 5-tasks 裡的真 T 嗎")
+
+    if sids:
+        if re.search(r"觀測", bounds) and len(sids) >= 2:
+            add(f"{tid} Boundaries 要照觀測取值，{sids[0]} 跟 {sids[1]} 那欄在 4-spec 還在嗎")
+        elif re.search(r"觀測", bounds):
+            add(f"{tid} Boundaries 要照觀測取值，{sids[0]} 那欄在 4-spec 還在嗎")
+        elif len(sids) >= 2:
+            add(f"{tid} 蓋的 {sids[0]}、{sids[1]} 觀測欄，4-spec 還在嗎")
+        else:
+            add(f"{tid} 蓋的 {sids[0]} 觀測欄，4-spec 還在嗎")
+    elif re.search(r"4-spec|觀測", bounds + intent):
+        add(f"{tid} 正文提到 4-spec／觀測，那欄還在嗎")
+
+    if len(qs) < 2:
+        add(f"{tid} 不打開 5-tasks.md、只看這一卡，能不能開工")
+    if len(qs) < 2:
+        add(f"{tid} 的 Blocked-by 寫的東西，開工引擎認成 T 嗎")
+    if len(qs) < 2:
+        add(f"{tid} 蓋住的 S 觀測，4-spec 還留著嗎")
+    out = qs[:3]
+    used_qs.update(out)
+    return out
+
+
 def parse_tasks(_md, secs):
     """5-tasks:每個 T 一張執行卡(README §6「執行板」,K-3)。
 
@@ -1003,6 +1101,11 @@ def parse_tasks(_md, secs):
     這正是 owner 兩次抱怨的那件事:Boundaries 常常上千字,直接攤平會把
     Covers/Files/Verify 擠到畫面外,摺起來才看得下去。
 
+    卡形狀(套 4-spec 已合骨架):每張 T 加 2–3 條「你要審什麼」(不開口能不能開工、
+    Blocked-by 是不是真的 T、4-spec 觀測還在不在)。問題從該 T 的洞抽,禁止三張 T
+    同一句。作業脈絡通常不必。禁止「這一點在說什麼」。勾選 = 這張 T 不開口也能
+    開工,不是已做完。
+
     H-1(2026-08-15 獨立審查):同一 T 內若有保留欄重複出現(常見成因是
     Boundaries/Intent 的續行被寫成 `- Files:` 這種子項),真正吃這份 md 的
     Stage 6 引擎(`tests/parallel-stage6/contract_ref.py`)fail-closed 拒啟,
@@ -1012,7 +1115,10 @@ def parse_tasks(_md, secs):
     這件事引擎會 fail-closed——twin 仍不擋產出,只現形。
     """
     cards, n, used = [], 0, set()
-    for tid, title, body in _task_sections(secs):
+    task_secs = _task_sections(secs)
+    all_tids = [tid for tid, _title, _body in task_secs]
+    used_qs = set()
+    for tid, title, body in task_secs:
         used.add(title)
         f, dups = parse_task_fields(body)
         missing = [k for k in TASK_REQUIRED if not (f.get(k) or "").strip()]
@@ -1025,14 +1131,18 @@ def parse_tasks(_md, secs):
             extra = (f'<details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區'
                       f'</summary><div class="body">{md_block(bounds)}</div></details>')
         rest = title[len(tid):].strip(" :：") or tid
+        qs = task_review_questions(tid, f, missing, all_tids, used_qs)
         cards.append(card(tid, rest, "", rows, missing=missing or None, sub=sub, extra=extra,
-                          dup=dups or None))
+                          dup=dups or None,
+                          lead=render_ask(qs, "t-ask", "t-ask-h")))
         if dups:
             print(f"NOTE: {tid} 重複保留欄「{'、'.join(dups)}」:twin 不擋產出(只現形紅底),但真正吃這份"
                   f"md 的引擎(tests/parallel-stage6/contract_ref.py)對「重複保留欄」fail-closed 拒啟",
                   file=sys.stderr)
         n += 1
-    return "".join(cards), n, used
+    hint = ('<p class="t-chk-hint">勾選 = 這張 T 不開口也能開工,不是已做完。'
+            '</p>') if cards else ""
+    return hint + "".join(cards), n, used
 
 
 def _task_deps(secs):
@@ -1532,11 +1642,12 @@ def main(argv):
 </div>"""
 
     out_local = root / "docs/dev" / slug / f"{stage}.html"
-    # CSS_SPEC4 只加給 4-spec、CSS_SPEC2 只加給 2-decision、CSS_TASKS 只加給
-    # 5-tasks(都是加法式新 class)。7-review 的 extra_css 仍是 CSS_SPEC。
+    # CSS_SPEC4 只加給 4-spec、CSS_SPEC2 只加給 2-decision、
+    # CSS_TASKS+CSS_TASKS5 只加給 5-tasks(都是加法式新 class)。
+    # 7-review 的 extra_css 仍是 CSS_SPEC。
     extra_css = ui.CSS_SPEC + (ui.CSS_SPEC4 if stage == "4-spec" else "") + (
         ui.CSS_SPEC2 if stage == "2-decision" else "") + (
-        ui.CSS_TASKS if stage == "5-tasks" else "")
+        (ui.CSS_TASKS + ui.CSS_TASKS5) if stage == "5-tasks" else "")
     out_local.write_text(ui.local_page(title, extra_css, body_html, SCRIPT), encoding="utf-8")
     # 片段是 opt-in:只有呼叫端明確設定 DEVFLOW_ARTIFACT_OUT 才寫。空字串 / 空白
     # 視同未設,避免「變數在、值是空的」仍落到預設 sidecar。
