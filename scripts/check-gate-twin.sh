@@ -1434,6 +1434,19 @@ else:
           "別名 ## 駁回：置頂可見且 2B／2C 仍標駁回(舊 Rejected Alternatives 形不改)",
           f"pinned={pinned_has(_alias_html, '駁回')} 駁回={sorted(_alias_rej)}")
 
+# 抽不到唯一解 → 刀失敗,不猜。10A 在決策點 1:`startswith("1")` 會誤收成 10A。
+_up_root = TMP / "dp-unparseable"
+shutil.copytree(ROOT / "scripts/fixtures/gate-twin/decision-points-unparseable", _up_root)
+_up_run = run(_up_root, "demo", "2-decision")
+check(_up_run.returncode == 1,
+      "決策點列抽不到唯一 id → exit 1(刀失敗,不猜)",
+      f"實際 exit {_up_run.returncode} stderr={(_up_run.stderr or '').strip()[-180:]}")
+check(not (_up_root / "docs/dev/demo/2-decision.html").exists(),
+      "抽不到唯一 id → 不產出猜測卡")
+check("抽 id 失敗" in (_up_run.stderr or ""),
+      "stderr 點名抽 id 失敗(不猜)",
+      (_up_run.stderr or "").strip())
+
 print("-- 5-tasks 審查卡形狀:T 卡 2–3 問,缺欄照舊紅底,作業脈絡通常不必 --")
 CURRENT_GROUP = "tasks-review-shape"
 # 套 4-spec 已合的骨架,但 class 分站(t-*),4-spec/2-decision 形狀不准退。

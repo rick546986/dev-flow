@@ -767,14 +767,17 @@ def _skip_header_row(cells, header):
 
 
 def _scheme_id(item, point_num=None):
-    """第一欄 → 卡 id。有決策點編號就組 1A;沒有就維持 A。抽不到就空字串(不猜)。"""
+    """第一欄 → 卡 id。有決策點編號就組 1A;沒有就維持 A。抽不到就空字串(不猜)。
+
+    編號必須整段相等:決策點 1 的 `10A` 不是 1A(`startswith` 會誤吃)。
+    """
     text = re.sub(r"[*`]", "", item or "").strip()
-    m = re.match(r"(\d+[A-Z])\b", text)
+    m = re.match(r"(\d+)([A-Z])\b", text)
     if m:
-        cid = m.group(1)
-        if point_num is not None and not cid.startswith(str(point_num)):
+        num, letter = m.group(1), m.group(2)
+        if point_num is not None and num != str(point_num):
             return ""
-        return cid
+        return num + letter
     m = _BARE_LETTER.match(text)
     if not m:
         return ""
@@ -1018,9 +1021,6 @@ def parse_decision(md, secs):
         if not sid:
             parse_failed.append(item)
             return None
-        if point_num is not None and re.fullmatch(r"[A-Z]", sid):
-            parse_failed.append(sid)
-            return None
         if sid in emitted:
             parse_failed.append("撞號 " + sid)
             return None
@@ -1100,6 +1100,8 @@ def parse_decision(md, secs):
                             inner.append(c)
                     if inner:
                         cards.append(_r_block(dp_title, inner))
+                    else:
+                        parse_failed.append(dp_title)
             else:
                 inner = []
                 tables = list(_iter_md_tables(body))
@@ -1140,7 +1142,8 @@ def parse_decision(md, secs):
                 cards.append(_r_block(title, inner))
 
     if parse_failed:
-        print("NOTE: 決策點抽 id 失敗(不猜):%s" % parse_failed, file=sys.stderr)
+        print("ERROR: 決策點抽 id 失敗(不猜):%s" % parse_failed, file=sys.stderr)
+        sys.exit(1)
 
     hint = ('<p class="g1-chk-hint">勾選 = 這條裁決可以過 G1,不是已寫進 4-spec。'
             '</p>') if cards else ""
