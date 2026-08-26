@@ -807,16 +807,22 @@ def _unique_ids(seq):
     return out
 
 
+# 選／採 後面那一串複合 id(1A+2A 或 1A、2A)。不掃整節其餘 \d+[A-Z]。
+_CHOSEN_COMPOUND_RUN = re.compile(
+    r"(?:選|採)\s*\**((?:\d+[A-Z])(?:\s*[+、,/／]\s*\d+[A-Z])*)")
+
+
 def _chosen_ids(md):
     """## Decision 抽複合 id:1A、2A、或 1A+2A+3A+4A。不要只認單字母「採 A」。
 
-    有編號複合 id 就只用那些;沒有才退回單字母「採 A／選 A」(contract-expiry)。
+    只吃「選／採」後面那一串。節裡其他地方出現的 3A 不算選定(不猜)。
+    沒有複合串才退回單字母「採 A／選 A」(contract-expiry)。
     抽不到 → 空清單,不猜。
     """
     text = _section_text(md, "Decision")
-    numbered = _COMPOUND_ID.findall(text)
-    if numbered:
-        return _unique_ids(numbered)
+    m = _CHOSEN_COMPOUND_RUN.search(text)
+    if m:
+        return _unique_ids(_COMPOUND_ID.findall(m.group(1)))
     m = re.search(r"(?:採|選)\s*\*+([A-Z])", text)
     if m:
         return [m.group(1)]
@@ -1024,6 +1030,7 @@ def parse_decision(md, secs):
         extra_banned = [v for _k, v in pairs]
         summary = pairs[0][1] if pairs else item
         is_chosen = sid in chosen
+        is_rejected = sid in rejected_map
         rej_reason = rejected_map.get(sid, "")
         if is_chosen:
             ruling, tag = "選定", "選定"
@@ -1031,8 +1038,14 @@ def parse_decision(md, secs):
                 f"{k}:{v}" for k, v in rejected_map.items() if k not in chosen)
             rejected = others or "未列 Rejected Alternatives"
             bind = "4-spec"
-        else:
+        elif is_rejected:
+            # .tag.rej 只給 Rejected 節點名的 id。不發明「先不開」。
             ruling, tag = "駁回", "駁回"
+            rejected = rej_reason or "未列 Rejected Alternatives"
+            bind = _bind_stage(rej_reason) or "本站"
+        else:
+            # 不在 Decision、也不在 Rejected → 不掛選定/駁回標(不猜第三態名稱)
+            ruling, tag = "駁回", ""
             rejected = rej_reason or "未列 Rejected Alternatives"
             bind = _bind_stage(rej_reason) or "本站"
         qs = decision_review_questions(

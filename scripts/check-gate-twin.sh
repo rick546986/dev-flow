@@ -1384,7 +1384,9 @@ _mis_root = TMP / "dp-mismatch"
 shutil.copytree(ROOT / "scripts/fixtures/gate-twin/decision-points", _mis_root)
 _mis_md = _mis_root / "docs/dev/demo/2-decision.md"
 _mis_txt = _mis_md.read_text(encoding="utf-8")
-_mis_md.write_text(_mis_txt.replace("選 1A+2A+3A+4A。", "選 1B+2A。"), encoding="utf-8")
+# 「不提 3A」是陷阱:整節 findall \d+[A-Z] 會把 3A 當選定。只准吃「選／採」後面那串。
+_mis_md.write_text(
+    _mis_txt.replace("選 1A+2A+3A+4A。", "選 1B+2A。不提 3A。"), encoding="utf-8")
 _mis_run = run(_mis_root, "demo", "2-decision")
 check(_mis_run.returncode == 0, "選定破壞 fixture 產得出來",
       ((_mis_run.stderr or _mis_run.stdout).strip().splitlines()[-1:] or ["無輸出"])[0])
@@ -1392,15 +1394,25 @@ _mis_html = read_html_or_none(_mis_root / "docs/dev/demo/2-decision.html")
 if _mis_html is None:
     check(False, "破壞:選定集合 == Decision 的 1B+2A,圖仍留 1A 選定",
           "2-decision.html 不存在")
+    check(False, "破壞:駁回標仍跟 Rejected 節(1A 未點名、1B 已改選定)",
+          "2-decision.html 不存在")
 else:
     _mis_sel = set(_tagged_sids(_mis_html, 'class="tag main">選定</span>'))
+    _mis_rej = set(_tagged_sids(_mis_html, 'class="tag rej">駁回</span>'))
     _mis_fig = re.search(
         r'<section class="pinned" id="sec-方案架構圖".*?</section>', _mis_html, re.S)
     _mis_fig_txt = _mis_fig.group(0) if _mis_fig else ""
     check(_mis_sel == {"1B", "2A"}
+          and "3A" not in _mis_sel
           and "[1A] 做(選定)" in _mis_fig_txt,
-          "破壞:選定集合 == Decision 的 1B+2A,圖仍留 1A 選定(人眼看得出沒跟上)",
+          "破壞:選定集合 == Decision 的 1B+2A(3A 只是正文提到也不算),圖仍留 1A 選定",
           f"選定={sorted(_mis_sel)}")
+    # 駁回標跟 Rejected 節,不跟「沒被選定」。1B 已改選定所以摘掉;
+    # 1A／3A／4A 不在 Rejected 點名裡,不得掛 .tag.rej。
+    check(_mis_rej == {"2B", "2C", "3B", "4B"}
+          and "1A" not in _mis_rej and "1B" not in _mis_rej,
+          "破壞:駁回標仍跟 Rejected 節(1A 未點名、1B 已改選定)",
+          f"駁回={sorted(_mis_rej)}")
 
 # 別名:## 駁回 與 ## Rejected Alternatives 同義。只加別名,不改舊節名形。
 _alias_root = TMP / "dp-rej-alias"
