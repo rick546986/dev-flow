@@ -199,6 +199,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600;flex:none}
 .tag.base{background:var(--sunk);color:var(--ink-3)}
 .tag.main{background:var(--warn-soft);color:var(--warn)}
+.tag.rej{background:var(--bad-soft);color:var(--bad)}
 .s-card.done{background:var(--ok-soft)}
 .s-card.done .s-title{color:var(--ink-2)}
 .s-body{padding:0 18px 15px 45px}
