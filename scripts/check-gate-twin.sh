@@ -1402,6 +1402,26 @@ else:
           "破壞:選定集合 == Decision 的 1B+2A,圖仍留 1A 選定(人眼看得出沒跟上)",
           f"選定={sorted(_mis_sel)}")
 
+# 別名:## 駁回 與 ## Rejected Alternatives 同義。只加別名,不改舊節名形。
+_alias_root = TMP / "dp-rej-alias"
+shutil.copytree(ROOT / "scripts/fixtures/gate-twin/decision-points", _alias_root)
+_alias_md = _alias_root / "docs/dev/demo/2-decision.md"
+_alias_md.write_text(
+    _alias_md.read_text(encoding="utf-8").replace("## Rejected\n", "## 駁回\n"),
+    encoding="utf-8")
+_alias_run = run(_alias_root, "demo", "2-decision")
+check(_alias_run.returncode == 0, "駁回別名 fixture 產得出來",
+      ((_alias_run.stderr or _alias_run.stdout).strip().splitlines()[-1:] or ["無輸出"])[0])
+_alias_html = read_html_or_none(_alias_root / "docs/dev/demo/2-decision.html")
+if _alias_html is None:
+    check(False, "別名 ## 駁回：置頂可見且 2B／2C 仍標駁回", "2-decision.html 不存在")
+else:
+    _alias_rej = set(_tagged_sids(_alias_html, 'class="tag rej">駁回</span>'))
+    check(bool(pinned_has(_alias_html, "駁回"))
+          and _alias_rej == {"1B", "2B", "2C", "3B", "4B"},
+          "別名 ## 駁回：置頂可見且 2B／2C 仍標駁回(舊 Rejected Alternatives 形不改)",
+          f"pinned={pinned_has(_alias_html, '駁回')} 駁回={sorted(_alias_rej)}")
+
 print("-- 5-tasks 審查卡形狀:T 卡 2–3 問,缺欄照舊紅底,作業脈絡通常不必 --")
 CURRENT_GROUP = "tasks-review-shape"
 # 套 4-spec 已合的骨架,但 class 分站(t-*),4-spec/2-decision 形狀不准退。
