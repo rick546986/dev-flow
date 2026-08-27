@@ -2,6 +2,7 @@
 # check-host-adapter.sh — 第一刀:DEVFLOW_ROOT + 三邊發現 + 節點可讀
 #                       第二刀:採用專案掛整棵(AGENTS.md / 技能連結 / 乘客清單)
 #                       第三刀:主機探測 + 誰跑 --action(不改鬆圍欄)
+#                       第四刀:--probe 掛載句 + Grok／Codex 沒技能樹就紅
 #
 # 為什麼需要:方法包要給 Cursor / Grok / Codex 跑,不能只靠 Claude 的
 # CLAUDE_PLUGIN_ROOT。薄殼若只掛 SKILL.md,graph 與 nodes 全部讀不到(P0)。
@@ -16,6 +17,9 @@
 #
 # 用法:
 #   scripts/check-host-adapter.sh [root]
+#   scripts/check-host-adapter.sh --probe [root]
+# --probe = 開工探針:只驗 DEVFLOW_ROOT + 本機技能樹,缺了印一句掛載句就停。
+# 不是第 2–7 站的 --action,不准拿這支去改鬆那些圍欄。
 # exit:0 = 全過 / 1 = 真違規 / 2 = 檢查自身故障
 #
 # 不改 check-devtalk-graph.sh / check-devstage2–7-graph.sh。
@@ -25,11 +29,25 @@ set -uo pipefail
 
 SELF_DIR=$(cd "$(dirname "$0")" && pwd)
 GIVEN_ROOT=""
-if [ -n "${1:-}" ]; then
-  GIVEN_ROOT=$(cd "$1" && pwd) || exit 2
-fi
+PROBE=0
+for arg in "$@"; do
+  case "$arg" in
+    --probe) PROBE=1 ;;
+    --*)
+      echo "FATAL: 未知旗標 $arg（只收 --probe）" >&2
+      exit 2
+      ;;
+    *)
+      if [ -n "$GIVEN_ROOT" ]; then
+        echo "FATAL: 多餘參數 $arg" >&2
+        exit 2
+      fi
+      GIVEN_ROOT=$(cd "$arg" && pwd) || exit 2
+      ;;
+  esac
+done
 
-python3 - "$SELF_DIR" "$GIVEN_ROOT" <<'PY'
+python3 - "$SELF_DIR" "$GIVEN_ROOT" "$PROBE" <<'PY'
 import os
 import re
 import sys
@@ -39,6 +57,7 @@ sys.stderr.reconfigure(line_buffering=True)
 
 self_dir = sys.argv[1]
 given_root = sys.argv[2] or ""
+probe_mode = (sys.argv[3] == "1") if len(sys.argv) > 3 else False
 script_repo = os.path.dirname(self_dir)
 
 PACK_MARKERS = ("skills", "hooks", "_templates", "README.md")
@@ -70,7 +89,13 @@ ADVISER_TYPE_RE = re.compile(
     r"subagent_type\s*=\s*dev-flow:devflow-adviser"
 )
 HOST_SKILLS = ("dev-setup", "dev-talk", "dev-flow", "dev-run")
-HOST_MOUNT_DIRS = (".cursor/skills", ".agents/skills", ".codex/skills")
+HOST_MOUNT_DIRS = (
+    ".cursor/skills",
+    ".agents/skills",
+    ".codex/skills",
+    ".grok/skills",
+)
+HANG_SKILLS = "{dev-setup,dev-talk,dev-flow,dev-run}"
 AGENTS_POINTER = (
     "這專案用 DevFlow。技能在方法包 skills/。"
     "開工讀該技能 SKILL.md，下一跳看 graph.yaml。"
@@ -95,6 +120,7 @@ SETUP_INSTALL_NEEDLES = (
     ".cursor/skills/",
     ".agents/skills/",
     ".codex/skills/",
+    ".grok/skills/",
     "技能庫掛整棵",
     "不要假裝能從產品 repo 自動灌進 Grok",
     "不要把節點 MD 複製",
@@ -113,6 +139,7 @@ HOST_PROBE_NEEDLES = (
     "整棵",
     "誰開工誰先跑",
     "--action",
+    "--probe",
     "不准為了別的主機改鬆",
     ".cursor/rules/",
     "AGENTS.md 一行",
@@ -324,6 +351,104 @@ def detect_host(tree):
     return ""
 
 
+def hang_sentence(host, pack):
+    """開工卡住時只印一句:缺什麼、掛到哪、不要複製正文。"""
+    root = pack or "${DEVFLOW_ROOT}"
+    if host == "grok":
+        return (
+            f"Grok 把 {root}/skills/{HANG_SKILLS} 整棵掛進 .grok/skills"
+            "（連結，不要複製 SKILL.md 正文）。"
+        )
+    if host == "codex":
+        return (
+            f"Codex 把 {root}/skills/{HANG_SKILLS} 整棵掛進 .agents/skills"
+            "；若有 .codex/skills 必須掛同一包，不要只留薄殼 SKILL.md。"
+        )
+    return (
+        "DEVFLOW_ROOT 不對，停：設成同時有 skills/、hooks/、_templates/、"
+        "README.md 的方法包根，再把 skills/"
+        f"{HANG_SKILLS} 整棵掛進主機技能目錄，不要複製 SKILL.md。"
+    )
+
+
+def four_dv_whole(base):
+    found = {}
+    if not os.path.isdir(base):
+        return found
+    for name in HOST_SKILLS:
+        path = os.path.join(base, name)
+        if os.path.islink(path) or os.path.isdir(path):
+            found[name] = mount_is_whole_tree(path, name)
+    return found
+
+
+def mounts_complete(found):
+    return all(found.get(name) for name in HOST_SKILLS)
+
+
+def mount_targets(base):
+    out = {}
+    for name in HOST_SKILLS:
+        path = os.path.join(base, name)
+        if os.path.lexists(path):
+            out[name] = os.path.realpath(path)
+    return out
+
+
+def thin_mount_gaps(tree):
+    gaps = []
+    for host, name, path in iter_host_mounts(tree):
+        if not mount_is_whole_tree(path, name):
+            gaps.append(
+                f"{host}/{name} 只有 SKILL.md、沒有 graph.yaml／nodes/"
+                "（setup／run 除外）"
+            )
+    return gaps
+
+
+def host_start_gaps(tree, host, pack, is_adopter):
+    """Grok／Codex 採用專案開工前必須看得到技能樹。回 (缺項, 掛載句或空)。"""
+    if not tree or not is_adopter or host not in ("grok", "codex"):
+        return [], ""
+
+    if host == "grok":
+        found = four_dv_whole(os.path.join(tree, ".grok", "skills"))
+        if mounts_complete(found):
+            return [], ""
+        gaps = []
+        for name in HOST_SKILLS:
+            if not found.get(name):
+                gaps.append(
+                    f".grok/skills/{name} 不是整棵（Grok 開工會沒有技能樹）"
+                )
+        return gaps, hang_sentence("grok", pack)
+
+    agents = os.path.join(tree, ".agents", "skills")
+    codex = os.path.join(tree, ".codex", "skills")
+    agents_found = four_dv_whole(agents)
+    gaps = []
+    if not mounts_complete(agents_found):
+        for name in HOST_SKILLS:
+            if not agents_found.get(name):
+                gaps.append(
+                    f".agents/skills/{name} 不是整棵（Codex 開工會沒有技能樹）"
+                )
+    if os.path.isdir(codex):
+        codex_found = four_dv_whole(codex)
+        if not mounts_complete(codex_found):
+            gaps.append(
+                ".codex/skills 在但不是整棵／同一包（Codex 雙路會掛錯）"
+            )
+        elif mounts_complete(agents_found):
+            if mount_targets(agents) != mount_targets(codex):
+                gaps.append(
+                    ".agents/skills 與 .codex/skills 不是同一棵技能樹"
+                )
+    if gaps:
+        return gaps, hang_sentence("codex", pack)
+    return [], ""
+
+
 def other_hosts_still_require_claude_gates(text):
     """非 Claude 仍把 AskUserQuestion／enabledPlugins 當唯一進條件。"""
     if "AskUserQuestion" not in text or "enabledPlugins" not in text:
@@ -375,10 +500,29 @@ def main():
                 "setup 宣稱成功，但 DEVFLOW_ROOT 推不到、產品樹也沒有方法包"
                 f"（{msg}）"
             )
+        print(f"hang: {hang_sentence('', '')}")
         print(f"FAIL: {msg}", file=sys.stderr)
         sys.exit(1)
 
     print(f"DEVFLOW_ROOT={pack}")
+    is_adopter = bool(tree) and os.path.abspath(tree) != os.path.abspath(pack)
+    detected_host = detect_host(tree) if tree else ""
+    start_gaps, start_hang = host_start_gaps(
+        tree, detected_host, pack, is_adopter
+    )
+    if probe_mode:
+        missing = thin_mount_gaps(tree) + start_gaps
+        for item in missing:
+            print(f"missing: {item}")
+        if missing:
+            print(
+                f"hang: {start_hang or hang_sentence(detected_host, pack)}"
+            )
+            print(f"FAIL: probe {len(missing)} 項", file=sys.stderr)
+            sys.exit(1)
+        print("probe: ok")
+        sys.exit(0)
+
     fails = []
 
     def fail(msg):
@@ -628,7 +772,6 @@ def main():
             print("agents-pointer: ok")
 
     # ── 第二刀:主機技能連結若在,必須是整棵;setup 宣稱成功還要四個 DV 都掛上
-    is_adopter = bool(tree) and os.path.abspath(tree) != os.path.abspath(pack)
     found_mounts = {host: {} for host in HOST_MOUNT_DIRS}
     mount_scan = tree if tree else pack
     for host, name, path in iter_host_mounts(mount_scan):
@@ -660,9 +803,14 @@ def main():
                     )
 
     # ── 第三刀:主機探測 + guide #host + README 一行 + 不改鬆 --action
-    host = detect_host(tree) if tree else ""
+    # 第四刀:Grok／Codex 採用專案開工沒技能樹必須紅,並印一句掛載句
+    host = detected_host
     if host:
         print(f"host={host}")
+    for item in start_gaps:
+        fail(item)
+    if start_hang:
+        print(f"hang: {start_hang}")
 
     if setup_text and other_hosts_still_require_claude_gates(setup_text):
         if host in ("cursor", "codex", "grok"):
@@ -704,6 +852,7 @@ def main():
                 "Grok",
                 "Codex",
                 "--action",
+                "--probe",
                 "誰開工",
                 "PreToolUse",
             ):
@@ -762,7 +911,7 @@ def main():
         sys.exit(1)
     print(
         "PASS: host-adapter DEVFLOW_ROOT / 節點可讀 / 別名 / 採用專案掛整棵"
-        " / 主機探測 / --action"
+        " / 主機探測 / --action / --probe"
     )
     sys.exit(0)
 

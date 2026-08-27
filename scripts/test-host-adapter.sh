@@ -3,6 +3,7 @@
 # 第一刀:DEVFLOW_ROOT + 薄殼 + 節點可讀
 # 第二刀:採用專案掛整棵(setup 宣稱 / AGENTS.md / 技能連結 / 乘客清單)
 # 第三刀:主機探測 + 誰跑 --action(非 Claude 不當唯一進條件;既有 deny 仍紅)
+# 第四刀:Grok／Codex 沒技能樹必須紅;--probe 印一句掛載句
 #
 # 對照組是一份最小合法方法包(DEVFLOW_ROOT 形狀齊、talk/flow 掛整棵)。
 # 每個案例把對照組改壞一次,確認檢查真的紅。
@@ -43,10 +44,10 @@ sys.stderr.reconfigure(line_buffering=True)
 root, check, fix = sys.argv[1], sys.argv[2], sys.argv[3]
 passed = 0
 failed = 0
-MIN_CASES = 36
+MIN_CASES = 46
 
 
-def run_check(tree, extra_env=None, drop=None):
+def run_check(tree, extra_env=None, drop=None, probe=False):
     env = os.environ.copy()
     env.pop("DEVFLOW_ROOT", None)
     env.pop("CLAUDE_PLUGIN_ROOT", None)
@@ -56,6 +57,8 @@ def run_check(tree, extra_env=None, drop=None):
     if extra_env:
         env.update(extra_env)
     cmd = ["bash", check]
+    if probe:
+        cmd.append("--probe")
     if tree:
         cmd.append(tree)
     return subprocess.run(cmd, capture_output=True, text=True, env=env)
@@ -65,9 +68,9 @@ def seed(tmp):
     shutil.copytree(os.path.join(fix, "good"), tmp, dirs_exist_ok=True)
 
 
-def expect(label, tree, want_rc, needle=None, extra_env=None):
+def expect(label, tree, want_rc, needle=None, extra_env=None, probe=False):
     global passed, failed
-    proc = run_check(tree, extra_env=extra_env)
+    proc = run_check(tree, extra_env=extra_env, probe=probe)
     blob = (proc.stdout or "") + "\n" + (proc.stderr or "")
     ok = proc.returncode == want_rc
     if ok and needle and needle not in blob:
@@ -530,16 +533,127 @@ with tempfile.TemporaryDirectory(prefix="host-adapter-test-") as tmpbase:
         extra_env={"DEVFLOW_ROOT": root},
     )
 
+    grok_bare = os.path.join(tmpbase, "host-grok-bare")
+    shutil.copytree(os.path.join(fix, "no-root"), grok_bare)
+    write_host(grok_bare, "grok")
+    os.makedirs(os.path.join(grok_bare, ".grok"), exist_ok=True)
+    expect(
+        "R-grok-no-tree Grok 開工沒掛 .grok/skills 整棵必須紅",
+        grok_bare,
+        1,
+        "Grok 把",
+        extra_env={"DEVFLOW_ROOT": root},
+    )
+    expect(
+        "R-probe-grok-hang --probe 在 Grok 沒技能樹時印一句掛載句",
+        grok_bare,
+        1,
+        "hang: Grok 把",
+        extra_env={"DEVFLOW_ROOT": root},
+        probe=True,
+    )
+
     grok = os.path.join(tmpbase, "host-grok")
     shutil.copytree(os.path.join(fix, "no-root"), grok)
     write_host(grok, "grok")
-    os.makedirs(os.path.join(grok, ".grok"), exist_ok=True)
+    link_dv(grok, good, (".grok/skills",))
     expect(
-        "G-grok Grok fixture 只靠技能目錄 + DEVFLOW_ROOT 必須綠",
+        "G-grok Grok fixture 技能目錄整棵 + DEVFLOW_ROOT 必須綠",
         grok,
         0,
         "host=grok",
         extra_env={"DEVFLOW_ROOT": root},
+    )
+    expect(
+        "G-probe-grok-ok --probe 在 Grok 已掛整棵時必須綠",
+        grok,
+        0,
+        "probe: ok",
+        extra_env={"DEVFLOW_ROOT": root},
+        probe=True,
+    )
+
+    expect(
+        "G-probe-cursor-ok --probe 不改 Cursor 薄殼（整棵連結）必須綠",
+        cursor,
+        0,
+        "probe: ok",
+        extra_env={"DEVFLOW_ROOT": root},
+        probe=True,
+    )
+
+    expect(
+        "G-probe-claude-ok --probe 不改 Claude 舊路必須綠",
+        claude,
+        0,
+        "probe: ok",
+        extra_env={"DEVFLOW_ROOT": root},
+        probe=True,
+    )
+
+    codex_bare = os.path.join(tmpbase, "host-codex-bare")
+    shutil.copytree(os.path.join(fix, "no-root"), codex_bare)
+    write_host(codex_bare, "codex")
+    os.makedirs(os.path.join(codex_bare, ".codex"), exist_ok=True)
+    expect(
+        "R-codex-no-tree Codex 開工沒掛 .agents/skills 整棵必須紅",
+        codex_bare,
+        1,
+        "Codex 把",
+        extra_env={"DEVFLOW_ROOT": root},
+    )
+
+    codex_legacy = os.path.join(tmpbase, "host-codex-legacy")
+    shutil.copytree(os.path.join(fix, "no-root"), codex_legacy)
+    write_host(codex_legacy, "codex")
+    link_dv(codex_legacy, good, (".codex/skills",))
+    expect(
+        "R-codex-legacy-only 只掛 .codex/skills、沒有 .agents/skills 必須紅",
+        codex_legacy,
+        1,
+        "hang: Codex 把",
+        extra_env={"DEVFLOW_ROOT": root},
+    )
+
+    codex_split = os.path.join(tmpbase, "host-codex-split")
+    shutil.copytree(os.path.join(fix, "no-root"), codex_split)
+    write_host(codex_split, "codex")
+    link_dv(codex_split, good, (".agents/skills",))
+    thin = os.path.join(codex_split, ".codex", "skills", "dev-talk")
+    os.makedirs(thin)
+    open(os.path.join(thin, "SKILL.md"), "w", encoding="utf-8").write("# talk\n")
+    expect(
+        "R-codex-dual-split .codex/skills 薄殼與 .agents/skills 不是同一包必須紅",
+        codex_split,
+        1,
+        "同一包",
+        extra_env={"DEVFLOW_ROOT": root},
+    )
+
+    codex_dual = os.path.join(tmpbase, "host-codex-dual")
+    shutil.copytree(os.path.join(fix, "no-root"), codex_dual)
+    write_host(codex_dual, "codex")
+    link_dv(codex_dual, good, (".agents/skills", ".codex/skills"))
+    expect(
+        "G-codex-dual .agents/skills 與 .codex/skills 掛同一棵必須綠",
+        codex_dual,
+        0,
+        "host=codex",
+        extra_env={"DEVFLOW_ROOT": root},
+    )
+
+    bad_root = os.path.join(tmpbase, "not-pack")
+    os.makedirs(bad_root)
+    open(os.path.join(bad_root, "README.md"), "w", encoding="utf-8").write(
+        "not a pack\n"
+    )
+    expect(
+        "R-probe-bad-root --probe 遇上錯的 DEVFLOW_ROOT 必須紅且印 hang",
+        grok_bare,
+        1,
+        "hang: DEVFLOW_ROOT 不對",
+        extra_env={"DEVFLOW_ROOT": bad_root},
+        probe=True,
     )
 
     expect_stage_deny(
