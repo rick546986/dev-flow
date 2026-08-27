@@ -19,7 +19,11 @@ S9 已完成。`1-discussion.md` 已在。MEMORY_SESSION_ID 仍在。游標在 S
 ## 做什麼
 
 先自核 md:Open Questions 僅含三態符號,出現其他記號(如 `[ ]`)
-→ 回步 3 定態後才產。`1-discussion.html` 只從 md 生成。
+→ 回步 3 定態後才產。不准手寫 `1-discussion.html`。跑
+`${DEVFLOW_ROOT}/scripts/build-scan-html.py --action` 指向本場 md
+(或 `python3 ${DEVFLOW_ROOT}/scripts/build-scan-html.py <md路徑>`)。
+產生器從 md 產出掃頁六件,殼用 `skills/dev-talk/html-shell.html`。
+html 要改,先改 md 再重生。
 內容與圖判準見入口檔「視覺版」。掃頁六件,不多不少:
 1. 摘要卡(痛 + 現在怎麼繞 + Open Questions 三態 badge)
 2. 直式現況圖(直線 `<pre>`;有人、分支、痛點用 inline SVG;直式,不要橫排;禁 mermaid／外連圖／外部庫)

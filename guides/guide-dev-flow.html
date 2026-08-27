@@ -2244,6 +2244,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <tr><td><code>build-gate-twin.py</code></td>
         <td>把各站的 markdown 正本轉成人真的會拿來審查、動工的介面(預設只寫本機完整版;發布片段要設 DEVFLOW_ARTIFACT_OUT 才寫)。</td>
         <td>dev-flow 各站產生審查介面時呼叫;<code>check-gate-twin.sh</code> 對範例實跑驗證</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
+    <tr><td><code>build-scan-html.py</code></td>
+        <td>Stage 1 掃頁產生器:從 <code>1-discussion.md</code> 產出六件套
+            <code>1-discussion.html</code>(摘要卡／置中現況圖／人表／題表／驗收表／摺疊問答)。
+            殼繼承 <code>skills/dev-talk/html-shell.html</code>,不手寫、不攤成 twin 卡。</td>
+        <td>S10 收尾呼叫;<code>check-devtalk-fig-graph.sh</code> 對樣張 md 實跑驗證</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>devflow_twin_ui.py</code></td>
         <td><code>build-gate-twin.py</code> 產生介面時共用的版面樣式與外殼模板,不能單獨執行。</td>
         <td>被 <code>build-gate-twin.py</code> import</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
@@ -2268,7 +2273,8 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-devtalk-fig-graph.sh</code></td>
         <td>討論站方法流程圖必須對上 graph.yaml 的 hop 鏈:guide 全程地圖的 hop id 集合與
-            順序跟 next 鏈一致;掃頁樣張六件齊。改 hop 不改圖必須紅。不對帳各 feature 的
+            順序跟 next 鏈一致;掃頁樣張六件齊;從 md 生成的掃頁也要六件齊且現況圖
+            有限寬置中。改 hop 不改圖必須紅。不對帳各 feature 的
             現況圖,也不對帳生命週期圖。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-devtalk-fig-journey.sh</code></td>
