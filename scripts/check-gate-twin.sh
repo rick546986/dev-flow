@@ -502,7 +502,7 @@ check(bool(m) and "|" not in (m.group(1) if m else "|"),
 #(新增/刪除關鍵字)時,必須同步改這裡的期望值,否則這條檢查會擋下正常修改,
 # 而不是它原本要防的「誤吞/桶位擴大」。
 EXPECT_PINNED_IDS = {
-    "2-decision": {"sec-Decision"},
+    "2-decision": {"sec-Decision", "sec-方案架構圖", "sec-Rejected-Alternatives"},
     "4-spec": set(),
     "7-review": {"sec-Verdict", "sec-Known-Limits"},
 }
@@ -1277,6 +1277,175 @@ else:
         _later_detail.append("7-review 吃了 2-decision/4-spec/5-tasks 的審題 class")
     check(_later_ok, "5-tasks 不用 g1-*／s-ask；7-review 不用 g1/s/t-ask",
           "; ".join(_later_detail))
+    _ex_sel = [c for c in _d_cards if 'class="tag main">選定</span>' in c]
+    _ex_sel_ids = [re.search(r'data-sid="([^"]+)"', c).group(1) for c in _ex_sel]
+    check(any(s.startswith("A") for s in _ex_sel_ids) and len(_ex_sel_ids) == 1,
+          "contract-expiry 單表選定仍是 A(不得被新抽法弄壞)",
+          f"選定 sid={_ex_sel_ids}")
+    check(any(re.match(r"^A ", s) or s == "A" for s in _sids)
+          and any(re.match(r"^B ", s) or s == "B" for s in _sids)
+          and any(re.match(r"^C ", s) or s == "C" for s in _sids),
+          "contract-expiry 單表 id 仍是 A/B/C 一組",
+          f"sid={_sids}")
+    check('class="tag rej">駁回</span>' in _dec2,
+          "contract-expiry 駁回卡有 .tag.rej(舊 Rejected Alternatives 形仍吃得到)")
+    _oc_cell = re.search(
+        r'<span class="k">Owner Calls</span><span class="v">([^<]+)</span>', _dec2)
+    check(bool(_oc_cell) and _oc_cell.group(1) != "—",
+          "contract-expiry 頂區 Owner Calls 不是「—」",
+          f"實際「{_oc_cell.group(1) if _oc_cell else '(無)'}」")
+
+print("-- 2-decision 決策點分組(多表不得攤成平卡＋假表頭)--")
+# 留在 decision-review-shape:不准新開 CURRENT_GROUP(EXPECTED_GROUPS / 靜態釘不動)。
+
+
+def _card_sids(html_text):
+    return [re.search(r'data-sid="([^"]+)"', c).group(1)
+            for c in re.findall(r'<article class="s-card.*?</article>', html_text, re.S)
+            if re.search(r'data-sid="([^"]+)"', c)]
+
+
+def _tagged_sids(html_text, needle):
+    out = []
+    for c in re.findall(r'<article class="s-card.*?</article>', html_text, re.S):
+        if needle in c:
+            m = re.search(r'data-sid="([^"]+)"', c)
+            if m:
+                out.append(m.group(1))
+    return out
+
+
+def _r_names(html_text):
+    return re.findall(r'<span class="r-name">(.*?)</span>', html_text, re.S)
+
+
+_dp_root = TMP / "dp"
+shutil.copytree(ROOT / "scripts/fixtures/gate-twin/decision-points", _dp_root)
+_dp_run = run(_dp_root, "demo", "2-decision")
+check(_dp_run.returncode == 0, "多決策點 fixture 產得出來",
+      ((_dp_run.stderr or _dp_run.stdout).strip().splitlines()[-1:] or ["無輸出"])[0])
+_dp_html = read_html_or_none(_dp_root / "docs/dev/demo/2-decision.html")
+if _dp_html is None:
+    for _lab in (
+        "多決策點:4 個決策點 r-block",
+        "多決策點:無方案／摘要假卡",
+        "多決策點:id 為 1A…且無裸 A/B/C 撞號",
+        "多決策點:選定集合 == Decision 的 1A+2A+3A+4A",
+        "多決策點:Rejected 置頂可見",
+        "多決策點:OC 條列有卡且頂區不是 —",
+        "多決策點:方案架構圖置頂且仍是 pre、不是 SVG",
+        "多決策點:駁回卡 .tag.rej",
+    ):
+        check(False, _lab, "2-decision.html 不存在")
+else:
+    _dp_r = _r_names(_dp_html)
+    _dp_dp_blocks = [t for t in _dp_r if "決策點" in t]
+    check(len(_dp_dp_blocks) == 4, "多決策點:4 個決策點 r-block",
+          f"r-name={_dp_r}")
+    _dp_sids = _card_sids(_dp_html)
+    check(not any(re.match(r"^(方案|摘要)$", s) for s in _dp_sids),
+          "多決策點:無方案／摘要假卡", f"sid={_dp_sids}")
+    _expect_ids = {"1A", "1B", "2A", "2B", "2C", "3A", "3B", "4A", "4B"}
+    _got_ids = set(_dp_sids)
+    check(_expect_ids <= _got_ids
+          and not any(re.fullmatch(r"[A-Z]", s) for s in _dp_sids)
+          and len(_dp_sids) == len(set(_dp_sids)),
+          "多決策點:id 為 1A…且無裸 A/B/C 撞號",
+          f"sid={_dp_sids}")
+    _sel = set(_tagged_sids(_dp_html, 'class="tag main">選定</span>'))
+    check(_sel == {"1A", "2A", "3A", "4A"},
+          "多決策點:選定集合 == Decision 的 1A+2A+3A+4A",
+          f"選定={sorted(_sel)}")
+    check(bool(pinned_has(_dp_html, "Rejected")),
+          "多決策點:Rejected 置頂可見(別名,不摺進背景)",
+          "整節不見了" if pinned_has(_dp_html, "Rejected") is None
+          else "被摺疊進背景資料")
+    _oc_sids = [s for s in _dp_sids if s.startswith("OC-")]
+    _oc_cell2 = re.search(
+        r'<span class="k">Owner Calls</span><span class="v">([^<]+)</span>', _dp_html)
+    check(len(_oc_sids) == 2 and bool(_oc_cell2) and _oc_cell2.group(1) != "—",
+          "多決策點:OC 條列有卡且頂區不是 —",
+          f"OC sid={_oc_sids} 格值「{_oc_cell2.group(1) if _oc_cell2 else '(無)'}」")
+    _fig = pinned_has(_dp_html, "方案架構圖")
+    _fig_sec = re.search(
+        r'<section class="pinned" id="sec-方案架構圖".*?</section>', _dp_html, re.S)
+    _fig_html = _fig_sec.group(0) if _fig_sec else ""
+    check(_fig is True and "<pre>" in _fig_html and "<svg" not in _fig_html,
+          "多決策點:方案架構圖置頂且仍是 pre、不是 SVG",
+          "整節不見了" if _fig is None else (
+              "被摺疊" if _fig is False else "缺 pre 或出現 svg"))
+    _rej_ids = set(_tagged_sids(_dp_html, 'class="tag rej">駁回</span>'))
+    check(_rej_ids == {"1B", "2B", "2C", "3B", "4B"},
+          "多決策點:駁回卡 .tag.rej(含 2B／2C 拆開)",
+          f"駁回={sorted(_rej_ids)}")
+
+# 破壞:Decision 改成 選 1B+2A,圖仍寫 1A 選定 → 卡的選定必須跟 Decision,圖原文不動。
+_mis_root = TMP / "dp-mismatch"
+shutil.copytree(ROOT / "scripts/fixtures/gate-twin/decision-points", _mis_root)
+_mis_md = _mis_root / "docs/dev/demo/2-decision.md"
+_mis_txt = _mis_md.read_text(encoding="utf-8")
+# 「不提 3A」是陷阱:整節 findall \d+[A-Z] 會把 3A 當選定。只准吃「選／採」後面那串。
+_mis_md.write_text(
+    _mis_txt.replace("選 1A+2A+3A+4A。", "選 1B+2A。不提 3A。"), encoding="utf-8")
+_mis_run = run(_mis_root, "demo", "2-decision")
+check(_mis_run.returncode == 0, "選定破壞 fixture 產得出來",
+      ((_mis_run.stderr or _mis_run.stdout).strip().splitlines()[-1:] or ["無輸出"])[0])
+_mis_html = read_html_or_none(_mis_root / "docs/dev/demo/2-decision.html")
+if _mis_html is None:
+    check(False, "破壞:選定集合 == Decision 的 1B+2A,圖仍留 1A 選定",
+          "2-decision.html 不存在")
+    check(False, "破壞:駁回標仍跟 Rejected 節(1A 未點名、1B 已改選定)",
+          "2-decision.html 不存在")
+else:
+    _mis_sel = set(_tagged_sids(_mis_html, 'class="tag main">選定</span>'))
+    _mis_rej = set(_tagged_sids(_mis_html, 'class="tag rej">駁回</span>'))
+    _mis_fig = re.search(
+        r'<section class="pinned" id="sec-方案架構圖".*?</section>', _mis_html, re.S)
+    _mis_fig_txt = _mis_fig.group(0) if _mis_fig else ""
+    check(_mis_sel == {"1B", "2A"}
+          and "3A" not in _mis_sel
+          and "[1A] 做(選定)" in _mis_fig_txt,
+          "破壞:選定集合 == Decision 的 1B+2A(3A 只是正文提到也不算),圖仍留 1A 選定",
+          f"選定={sorted(_mis_sel)}")
+    # 駁回標跟 Rejected 節,不跟「沒被選定」。1B 已改選定所以摘掉;
+    # 1A／3A／4A 不在 Rejected 點名裡,不得掛 .tag.rej。
+    check(_mis_rej == {"2B", "2C", "3B", "4B"}
+          and "1A" not in _mis_rej and "1B" not in _mis_rej,
+          "破壞:駁回標仍跟 Rejected 節(1A 未點名、1B 已改選定)",
+          f"駁回={sorted(_mis_rej)}")
+
+# 別名:## 駁回 與 ## Rejected Alternatives 同義。只加別名,不改舊節名形。
+_alias_root = TMP / "dp-rej-alias"
+shutil.copytree(ROOT / "scripts/fixtures/gate-twin/decision-points", _alias_root)
+_alias_md = _alias_root / "docs/dev/demo/2-decision.md"
+_alias_md.write_text(
+    _alias_md.read_text(encoding="utf-8").replace("## Rejected\n", "## 駁回\n"),
+    encoding="utf-8")
+_alias_run = run(_alias_root, "demo", "2-decision")
+check(_alias_run.returncode == 0, "駁回別名 fixture 產得出來",
+      ((_alias_run.stderr or _alias_run.stdout).strip().splitlines()[-1:] or ["無輸出"])[0])
+_alias_html = read_html_or_none(_alias_root / "docs/dev/demo/2-decision.html")
+if _alias_html is None:
+    check(False, "別名 ## 駁回：置頂可見且 2B／2C 仍標駁回", "2-decision.html 不存在")
+else:
+    _alias_rej = set(_tagged_sids(_alias_html, 'class="tag rej">駁回</span>'))
+    check(bool(pinned_has(_alias_html, "駁回"))
+          and _alias_rej == {"1B", "2B", "2C", "3B", "4B"},
+          "別名 ## 駁回：置頂可見且 2B／2C 仍標駁回(舊 Rejected Alternatives 形不改)",
+          f"pinned={pinned_has(_alias_html, '駁回')} 駁回={sorted(_alias_rej)}")
+
+# 抽不到唯一解 → 刀失敗,不猜。10A 在決策點 1:`startswith("1")` 會誤收成 10A。
+_up_root = TMP / "dp-unparseable"
+shutil.copytree(ROOT / "scripts/fixtures/gate-twin/decision-points-unparseable", _up_root)
+_up_run = run(_up_root, "demo", "2-decision")
+check(_up_run.returncode == 1,
+      "決策點列抽不到唯一 id → exit 1(刀失敗,不猜)",
+      f"實際 exit {_up_run.returncode} stderr={(_up_run.stderr or '').strip()[-180:]}")
+check(not (_up_root / "docs/dev/demo/2-decision.html").exists(),
+      "抽不到唯一 id → 不產出猜測卡")
+check("抽 id 失敗" in (_up_run.stderr or ""),
+      "stderr 點名抽 id 失敗(不猜)",
+      (_up_run.stderr or "").strip())
 
 print("-- 5-tasks 審查卡形狀:T 卡 2–3 問,缺欄照舊紅底,作業脈絡通常不必 --")
 CURRENT_GROUP = "tasks-review-shape"
