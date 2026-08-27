@@ -24,10 +24,17 @@
 # 掃頁樣張(同檔第二節,免得漏掛):
 #   scripts/fixtures/devtalk-html-scan/good/1-discussion.html
 #   必須有:摘要卡(.sum)、直式 svg 或 pre、人表、題表、驗收表、details 問答(預設摺著)
+#   現況圖必須有限寬且欄內置中(width:220px + .figwrap justify-content:center)
+#
+# 掃頁產生器(同檔第三節):
+#   scripts/build-scan-html.py --action 從同目錄 1-discussion.md 產出六件套。
+#   生成頁必須過同一套六件／置中契約;缺一件或現況圖貼左／撐滿欄必須紅。
+#   不准攤成 twin 卡,不加 g1-ask／「你要審什麼」／勾選講義。
 #
 # 破壞實驗(本檔每次跑,除非 --skip-mutation):
 #   複本刪掉圖上一個 hop → 必須紅;graph.yaml 多一個 hop 不改圖 → 必須紅;
-#   樣張拿掉 details → 必須紅;樣張圖改回撐滿欄 → 必須紅;好樣本必須綠。
+#   樣張拿掉 details → 必須紅;樣張圖改回撐滿欄 → 必須紅;好樣本必須綠;
+#   生成頁拿掉人表 → 必須紅;生成頁圖改撐滿欄 → 必須紅。
 #
 # 用法:
 #   scripts/check-devtalk-fig-graph.sh [root]
@@ -73,6 +80,10 @@ SHELL = os.path.join(root, "skills", "dev-talk", "html-shell.html")
 FIXTURE = os.path.join(
     root, "scripts", "fixtures", "devtalk-html-scan", "good", "1-discussion.html"
 )
+FIXTURE_MD = os.path.join(
+    root, "scripts", "fixtures", "devtalk-html-scan", "good", "1-discussion.md"
+)
+BUILD = os.path.join(root, "scripts", "build-scan-html.py")
 REQUIRED_FIG_IDS = ("fig-map", "map-hops", "map-chain")
 FORBIDDEN_FIG_IDS = ("fig-lifecycle", "fig-lifecycle-qs")
 
@@ -330,10 +341,7 @@ def scan_fig_center_gaps(text, label):
     return gaps
 
 
-def check_fixture():
-    if not os.path.isfile(FIXTURE):
-        raise NotParsed("缺掃頁樣張 scripts/fixtures/devtalk-html-scan/good/1-discussion.html")
-    text = open(FIXTURE, encoding="utf-8").read()
+def check_scan_page(text, label):
     missing = []
     sum_block = first_block(
         text, r'<section[^>]*class="[^"]*\bsum\b[^"]*"[^>]*>.*?</section>'
@@ -406,11 +414,17 @@ def check_fixture():
                 missing.append("details 不是問答摘要")
                 break
     if "mermaid" in text.lower():
-        missing.append("樣張禁 mermaid")
+        missing.append("%s禁 mermaid" % label)
     if re.search(r'<img[^>]+src="https?://', text):
-        missing.append("樣張禁外連圖")
+        missing.append("%s禁外連圖" % label)
     if "--acc" not in text:
-        missing.append("樣張顏色缺 --acc")
+        missing.append("%s顏色缺 --acc" % label)
+    if "g1-ask" in text or "你要審什麼" in text:
+        missing.append("%s不准出現 g1-ask／你要審什麼" % label)
+    if re.search(r'class="(?:r-block|s-card)"', text):
+        missing.append("%s不准攤成 twin 卡" % label)
+    if 'type="checkbox"' in text.lower():
+        missing.append("%s不准出現審查勾選" % label)
     order = [
         ("摘要卡", text.find('class="sum"')),
         ("現況圖", text.find('id="scan-now"') if 'id="scan-now"' in text else text.find("<pre")),
@@ -427,13 +441,13 @@ def check_fixture():
             missing.append("掃頁順序錯:%s 在 %s 前面" % (name, prev_name))
             break
         prev_name, prev_pos = name, pos
-    missing.extend(scan_fig_center_gaps(text, "樣張"))
+    missing.extend(scan_fig_center_gaps(text, label))
     if not re.search(
         r'<div class="figwrap">\s*<svg\b[^>]*\bid="scan-now"', text, re.S
     ) and not re.search(
         r'<div class="figwrap">\s*<pre\b[^>]*\bid="scan-now"', text, re.S
     ):
-        missing.append("樣張 #scan-now 沒包 .figwrap")
+        missing.append("%s #scan-now 沒包 .figwrap" % label)
     # 去重但保序
     seen = set()
     uniq = []
@@ -443,9 +457,51 @@ def check_fixture():
         seen.add(item)
         uniq.append(item)
     if uniq:
-        raise Mismatch("掃頁樣張缺件:" + "、".join(uniq))
+        raise Mismatch("%s缺件:" % label + "、".join(uniq))
+
+
+def check_fixture():
+    if not os.path.isfile(FIXTURE):
+        raise NotParsed("缺掃頁樣張 scripts/fixtures/devtalk-html-scan/good/1-discussion.html")
+    check_scan_page(open(FIXTURE, encoding="utf-8").read(), "掃頁樣張")
     print("[scan] fixture 六件齊,問答摺著")
     print("[scan] fixture 現況圖有限寬且欄內置中")
+
+
+def generate_scan(md_path, out_path):
+    if not os.path.isfile(BUILD):
+        raise NotParsed("缺 scripts/build-scan-html.py")
+    proc = subprocess.run(
+        [sys.executable, BUILD, "--action", md_path, "--out", out_path],
+        capture_output=True,
+        text=True,
+    )
+    blob = (proc.stdout or "") + "\n" + (proc.stderr or "")
+    if proc.returncode != 0:
+        raise Mismatch(
+            "產生器對樣張 md 必須綠,實際 rc=%s\n%s" % (proc.returncode, blob[-1200:])
+        )
+    if not os.path.isfile(out_path):
+        raise Mismatch("產生器沒寫出 %s" % out_path)
+    return open(out_path, encoding="utf-8").read()
+
+
+def check_generated():
+    if not os.path.isfile(FIXTURE_MD):
+        raise NotParsed(
+            "缺掃頁樣張 md scripts/fixtures/devtalk-html-scan/good/1-discussion.md"
+        )
+    fd, out = tempfile.mkstemp(suffix=".html", prefix="scan-gen-")
+    os.close(fd)
+    try:
+        text = generate_scan(FIXTURE_MD, out)
+        check_scan_page(text, "生成頁")
+    finally:
+        try:
+            os.remove(out)
+        except OSError:
+            pass
+    print("[scan] 從 md 生成的掃頁六件齊,現況圖有限寬且欄內置中")
 
 
 def check_live():
@@ -463,6 +519,7 @@ def check_live():
     if shell_gaps:
         raise Mismatch("掃頁母版圖未置中:" + "、".join(shell_gaps))
     print("[scan] html-shell 現況圖有限寬且欄內置中")
+    check_generated()
 
 
 def copy_tree(dst):
@@ -474,6 +531,10 @@ def copy_tree(dst):
         (FIXTURE, os.path.join(
             dst, "scripts", "fixtures", "devtalk-html-scan", "good", "1-discussion.html"
         )),
+        (FIXTURE_MD, os.path.join(
+            dst, "scripts", "fixtures", "devtalk-html-scan", "good", "1-discussion.md"
+        )),
+        (BUILD, os.path.join(dst, "scripts", "build-scan-html.py")),
     ]
     for src, dest in mapping:
         if not os.path.isfile(src):
@@ -598,6 +659,30 @@ def run_mutations():
                     "樣張圖改回撐滿欄必須 exit 1,實際 rc=%s\n%s" % (rc, blob[-1200:])
                 )
 
+    with tempfile.TemporaryDirectory(prefix="devtalk-fig-gen-") as tmp:
+        out = os.path.join(tmp, "1-discussion.html")
+        try:
+            text = generate_scan(FIXTURE_MD, out)
+            check_scan_page(text, "生成頁")
+            print("[mut] ✓ 樣張 md 生成頁綠")
+        except (Mismatch, NotParsed) as exc:
+            failures.append("樣張 md 生成頁必須綠:%s" % exc)
+        else:
+            broken = re.sub(
+                r'<table[^>]*id="scan-people".*?</table>', "", text, count=1, flags=re.S
+            )
+            try:
+                check_scan_page(broken, "生成頁")
+                failures.append("生成頁拿掉人表必須紅,卻綠了")
+            except Mismatch:
+                print("[mut] ✓ 生成頁拿掉人表必須紅")
+            stretched = text.replace("width:220px", "width:100%", 1)
+            try:
+                check_scan_page(stretched, "生成頁")
+                failures.append("生成頁圖改撐滿欄必須紅,卻綠了")
+            except Mismatch:
+                print("[mut] ✓ 生成頁圖改撐滿欄必須紅")
+
     if failures:
         raise Mismatch("破壞實驗沒咬到:\n" + "\n".join(failures))
 
@@ -618,6 +703,6 @@ if not skip_mutation:
         print("❌ FAIL:%s" % exc, file=sys.stderr)
         sys.exit(1)
 
-print("✅ PASS:方法流程圖 hop 對帳 + 掃頁樣張六件 + 破壞實驗全過")
+print("✅ PASS:方法流程圖 hop 對帳 + 掃頁樣張六件 + 生成頁六件／置中 + 破壞實驗全過")
 sys.exit(0)
 PY

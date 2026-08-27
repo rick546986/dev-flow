@@ -119,7 +119,7 @@ dev-memory.py talk abort $MEMORY_SESSION_ID --reason "<原因>"
    `dev-memory.py talk reject <candidate>`;推翻先前理解走
    `dev-memory.py talk correct $MEMORY_SESSION_ID --kind domain --key <詞>
    --title "<新理解>" --reason "<為什麼改>"`。**未確認的候選一律不寫進長期記憶**。完成條件見該節點。
-10. **產 html**。正本:`nodes/S10-html.md`。入口摘要:Open Questions 僅三態;`1-discussion.html` 只從 md 生成掃頁六件;#scan-now 只從 md 現況圖重生。完成條件見該節點。
+10. **產 html**。正本:`nodes/S10-html.md`。入口摘要:Open Questions 僅三態;跑 `scripts/build-scan-html.py --action` 從 md 生成掃頁六件,不准手寫 html;#scan-now 只從 md 現況圖重生。完成條件見該節點。
 11. **過目與收尾**。正本:`nodes/N13-end.md`。html 過目後,使用者點頭才
     跑 `dev-memory.py talk end $MEMORY_SESSION_ID`。它回 `promoted: 0` 是合法結果。完成條件見該節點。
 
