@@ -1929,7 +1929,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td><code>.cursor/skills/&lt;名&gt;</code> 指向方法包
             <code>skills/&lt;名&gt;</code>（整棵目錄，不是單檔）</td></tr>
     <tr><td>Grok</td>
-        <td>技能庫掛整棵，不是單檔。本刀不假裝能從產品 repo 自動灌進 Grok 技能庫。</td></tr>
+        <td>技能庫掛整棵，不是單檔。本刀不假裝能從產品 repo 自動灌進 Grok 技能庫。
+            由人把 <code>$DEVFLOW_ROOT/skills/&lt;名&gt;</code> 整棵掛進
+            <code>.grok/skills/&lt;名&gt;</code>。</td></tr>
     <tr><td>Codex</td>
         <td><code>.agents/skills/&lt;名&gt;</code>；若社群還用
             <code>.codex/skills/</code>，兩處都指同一包，或先探測再掛。</td></tr>
@@ -1952,7 +1954,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   <p>dev-setup 先探測主機，再選檢查。Claude：AskUserQuestion／enabledPlugins／
   hooks.json 仍可走。其他主機：不要把這三個當唯一核可；改查技能目錄在不在、
   是不是整棵、<code>DEVFLOW_ROOT</code> 對不對。</p>
-  <p>Cursor／Grok／Codex 三邊都沒有 Claude PreToolUse。
+  <p>開工先跑 <code>scripts/check-host-adapter.sh --probe</code>。
+  缺技能樹或 <code>DEVFLOW_ROOT</code> 不對會印一句掛載句並紅。
+  Cursor／Grok／Codex 三邊都沒有 Claude PreToolUse。
   <strong>誰開工誰先跑</strong>該站
   <code>check-devtalk-graph.sh --action</code> 或
   <code>check-devstageN-graph.sh --action</code>。
@@ -2431,7 +2435,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             第三刀：非 Claude 仍把 AskUserQuestion／enabledPlugins 當唯一進條件必須紅；
             guide 沒有 <code>#host</code> 說明三邊發現 + 誰跑 <code>--action</code> 必須紅；
             README 灌進刀序必須紅。不重寫第 1–7 站編成,不准為了別的主機改鬆
-            <code>--action</code>。</td>
+            <code>--action</code>。
+            第四刀：Grok／Codex 開工沒技能樹必須紅；
+            <code>--probe</code> 印一句掛載句（連結整棵，不要複製 SKILL.md 正文）。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-host-adapter.sh</code></td>
         <td>上面那支的負向牙:只有 <code>SKILL.md</code> 沒 graph／nodes 必須紅;
@@ -2442,6 +2448,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             第三刀:Claude fixture 舊檢查仍可走必須綠;Cursor／Codex／Grok 只靠技能目錄
             + <code>DEVFLOW_ROOT</code> 必須綠;第 2–7 站既有 <code>--action</code>
             deny 案例必須仍紅。
+            第四刀:Grok 沒掛 <code>.grok/skills</code>、Codex 沒掛
+            <code>.agents/skills</code> 或雙路不是同一包必須紅；
+            <code>--probe</code> 在掛載路徑印一句。
             案例數下限寫死,少於下限 exit 2。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>

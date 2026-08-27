@@ -19,7 +19,7 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 
 - Cursor：`mkdir -p .cursor/skills` 後 `ln -s "${DEVFLOW_ROOT}/skills/<名>" .cursor/skills/<名>`（整棵目錄）。
 - Codex：`mkdir -p .agents/skills` 後同樣指方法包 `.agents/skills/<名>`。若已有 `.codex/skills/`，兩處都指同一包。
-- Grok：技能庫掛整棵，不是單檔。不要假裝能從產品 repo 自動灌進 Grok 技能庫；把 `DEVFLOW_ROOT` 與本節發現清單回報給人，由人在 Grok 技能庫掛整棵。
+- Grok：技能庫掛整棵，不是單檔。不要假裝能從產品 repo 自動灌進 Grok 技能庫；把 `DEVFLOW_ROOT` 與本節發現清單回報給人，由人把 `${DEVFLOW_ROOT}/skills/<名>` 整棵掛進 `.grok/skills/<名>`。
 
 `AGENTS.md`：沒有就寫入；已有就只補這一行，不准灌流程：
 「這專案用 DevFlow。技能在方法包 skills/。開工讀該技能 SKILL.md，下一跳看 graph.yaml。不要把流程規則貼進本檔。」
@@ -38,7 +38,9 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 | Codex | 有 `.agents/` 或 `.codex/` | 同上 |
 | Grok | 人明說／技能庫掛整棵 | 同上。不要假裝能從產品 repo 自動灌 |
 
-Cursor／Grok／Codex 三邊都沒有 Claude PreToolUse。**誰開工誰先跑**該站
+Cursor／Grok／Codex 開工先跑 `scripts/check-host-adapter.sh --probe`。
+缺技能樹或 `DEVFLOW_ROOT` 不對會印一句掛載句並紅。
+三邊都沒有 Claude PreToolUse。**誰開工誰先跑**該站
 `scripts/check-devtalk-graph.sh --action` 或 `scripts/check-devstageN-graph.sh --action`。
 **不准為了別的主機改鬆 `--action`。**
 
@@ -429,8 +431,10 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     （setup／run 可只有 SKILL；`dev-flow` 必須看得到 stage2–stage7）；
     若有 `.codex/skills/` 也指同一包。
     只散發 docs/dev/、技能連結只有 SKILL.md → broken，不是成功。
-    Grok 不在產品 repo 自動灌；技能庫掛整棵由人做。
+    Grok 不在產品 repo 自動灌；技能庫掛整棵由人做，掛 `.grok/skills/<名>`。
 16. **主機探測與 --action**(所有主機):先探測主機再選 1–3。
+    開工先跑 `scripts/check-host-adapter.sh --probe`；缺技能樹或 DEVFLOW_ROOT 不對
+    會印一句掛載句並紅。
     非 Claude 不要把 AskUserQuestion／enabledPlugins／hooks.json 當唯一進條件。
     三邊都沒有 Claude PreToolUse。誰開工誰先跑該站
     `scripts/check-devtalk-graph.sh --action` 或 `scripts/check-devstageN-graph.sh --action`。
