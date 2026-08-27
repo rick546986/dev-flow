@@ -2295,7 +2295,7 @@ check_static_pin_sub() { # check_static_pin_sub <相對路徑> <期望子字串>
 check_static_pin "hooks/selftest.sh" "MIN_CASES=402" "MIN_CASES 釘死 402(2026-08-17 清空輪 378 之後,2026-08-19 §7 前置修復:s7 legacy sequential 真跑 start 驗證+6/s7b VNext feature-scope 同型驗證+2/s7c Stage 7 review 自建武裝同型驗證+3 → 389,同日 §7-3b 探針 pst 真實 subagent_type payload 形狀釘住+3 → 392,2026-08-20 issue #7 路徑分隔符 w1 組+6 → 398,同日派工單 §2.1 TMPDIR 跨平台正規化 w2 組+2 → 400,同日 report-guard 覆蓋缺口+2 → 402)"
 check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "EXPECTED_CHECKS 釘死 131"
 check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 18" "MIN_CHECKS 釘死 18(A-2/B-5 輪:②改 scoped 拆 3 條 + ⑦⑧⑨ 新增 → 15;2026-08-20 ⑩check 段散發副本 parity map-driven 拆 3 條 → 18)"
-check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 176" "MIN_CHECKS 釘死 176(7-review 審查卡形狀:判定／出貨／爭點／風險／抽驗列 2–3 問 +9 後的實得數)"
+check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 178" "MIN_CHECKS 釘死 178(圖置中:twin 母版有限寬＋.pinned pre 置中 +2 後的實得數)"
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 41" "MIN_CHECKS 釘死 41(反證輪 E-1:再加 M-f~M-h 五個(mutant,子案)配對後的實得數)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 35" "MIN_CHECKS 釘死 35(durability-barrier 輪:W6 耐久性鏈的負向⑳㉑㉒ 三案後的實得數)"
 check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 156" "EXPECTED_MAPPED_FILES 釘死 156(精確值,不是地板;2026-08-25 stage-fig-text 第三刀加 check-devstage-fig-text.sh 後的實得數)"
