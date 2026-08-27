@@ -29,7 +29,10 @@
   .sum .pain{font-weight:600;margin:0 0 .4em}
   details{margin:.6em 0}
   details>summary{cursor:pointer;color:var(--muted);user-select:none}
-  svg{max-width:220px;height:auto}
+  /* 直式現況圖:有限寬、欄內水平置中。禁 width:100% 把畫布撐滿而圖貼左。 */
+  .figwrap{display:flex;justify-content:center;width:100%;margin:1.2em 0}
+  svg#scan-now,.figwrap>svg{display:block;width:220px;max-width:100%;height:auto;margin:0 auto}
+  pre#scan-now,.figwrap>pre{display:block;width:max-content;max-width:100%;margin:0 auto}
   svg text{font:11px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--fg)}
   svg .b{fill:var(--card);stroke:var(--line);stroke-width:1}
   svg .hl{fill:color-mix(in srgb,var(--acc) 16%,var(--card));stroke:var(--acc)}
@@ -48,6 +51,7 @@
   <span class="badge">移交 1</span>
 </section>
 
+<div class="figwrap">
 <svg id="scan-now" viewBox="0 0 160 260" role="img" aria-label="現況:誰、怎麼做、痛在哪">
   <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
     <path d="M0,0 L10,5 L0,10 Z" style="fill:var(--muted)"/></marker></defs>
@@ -61,6 +65,7 @@
   <text x="42" y="154">漏續約</text>
   <text class="cap" x="42" y="186">痛在這</text>
 </svg>
+</div>
 
 <table id="scan-people">
   <tr><th>誰</th><th>要什麼</th><th>缺什麼</th></tr>

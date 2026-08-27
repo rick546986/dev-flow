@@ -42,7 +42,10 @@
   .sum .pain{font-weight:600;margin:0 0 .4em}
   details{margin:.6em 0}
   details>summary{cursor:pointer;color:var(--muted);user-select:none}
-  svg{max-width:100%;height:auto}
+  /* 直式現況圖:有限寬、欄內水平置中。禁 width:100% 把畫布撐滿而圖貼左。 */
+  .figwrap{display:flex;justify-content:center;width:100%;margin:1.2em 0}
+  svg#scan-now,.figwrap>svg{display:block;width:220px;max-width:100%;height:auto;margin:0 auto}
+  pre#scan-now,.figwrap>pre{display:block;width:max-content;max-width:100%;margin:0 auto}
   svg text{font:11px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--fg)}
   svg .b{fill:var(--card);stroke:var(--line);stroke-width:1}
   svg .hl{fill:color-mix(in srgb,var(--acc) 16%,var(--card));stroke:var(--acc)}

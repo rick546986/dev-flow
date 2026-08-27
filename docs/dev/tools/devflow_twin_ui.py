@@ -120,9 +120,13 @@ h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-
 .r-rule b{color:var(--ink)}
 
 /* ---- 圖 ---- */
+/* 直式現況圖／方案架構圖:外層撐滿欄、圖本身有限寬,水平置中。
+   禁 svg/pre width:100% —— 畫布撐滿時狹長圖會貼左。 */
 .fig{margin:26px 0;padding:17px;border:1px solid var(--rule);border-radius:12px;
-  background:var(--panel);box-shadow:var(--shadow)}
-.fig svg{display:block;width:100%;max-width:700px;margin:0 auto;height:auto}
+  background:var(--panel);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}
+.fig svg,.fig pre{display:block;width:auto;max-width:220px;margin:0;height:auto}
+.pinned pre{display:block;width:max-content;max-width:100%;margin-left:auto;margin-right:auto}
 .cap{color:var(--ink-3);font-size:.82rem;line-height:1.6;margin-top:11px;text-align:center}
 svg .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.4}
 svg .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}

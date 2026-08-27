@@ -111,7 +111,7 @@ GROUPS_SEEN = {}
 # 之後每加一條檢查都要把這裡同步調高;只有整區塊被砍掉、實得數掉到這個值以下
 # 才會紅(這是本檔唯一的次級防線,見 test-architecture-guards.sh 的 GS-9 靜態互釘
 # ——那邊另外釘了這個數字的字面值,兩處要一起改,見該檔的防禦邊界說明)。
-MIN_CHECKS = 176
+MIN_CHECKS = 178
 
 
 def check(cond, label, detail=""):
@@ -1294,6 +1294,20 @@ else:
     check(bool(_oc_cell) and _oc_cell.group(1) != "—",
           "contract-expiry 頂區 Owner Calls 不是「—」",
           f"實際「{_oc_cell.group(1) if _oc_cell else '(無)'}」")
+    _ui_css = (ROOT / "scripts/devflow_twin_ui.py").read_text(encoding="utf-8")
+    check(
+        ".fig svg{display:block;width:100%;max-width:700px;margin:0 auto;height:auto}"
+        not in _ui_css
+        and "align-items:center" in _ui_css
+        and "max-width:220px" in _ui_css,
+        "twin 母版:圖有限寬且欄內置中,不得 width:100% 撐滿",
+        "仍是 .fig svg width:100% 或缺 align-items:center / max-width:220px",
+    )
+    check(
+        bool(re.search(r"\.pinned pre\{[^}]*margin-left:auto", _ui_css, re.S)),
+        "twin 母版:.pinned pre(方案架構圖)水平置中",
+        "缺 .pinned pre{…margin-left:auto}",
+    )
 
 print("-- 2-decision 決策點分組(多表不得攤成平卡＋假表頭)--")
 # 留在 decision-review-shape:不准新開 CURRENT_GROUP(EXPECTED_GROUPS / 靜態釘不動)。

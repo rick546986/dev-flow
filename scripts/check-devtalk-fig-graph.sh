@@ -27,7 +27,7 @@
 #
 # 破壞實驗(本檔每次跑,除非 --skip-mutation):
 #   複本刪掉圖上一個 hop → 必須紅;graph.yaml 多一個 hop 不改圖 → 必須紅;
-#   樣張拿掉 details → 必須紅;好樣本必須綠。
+#   樣張拿掉 details → 必須紅;樣張圖改回撐滿欄 → 必須紅;好樣本必須綠。
 #
 # 用法:
 #   scripts/check-devtalk-fig-graph.sh [root]
@@ -313,6 +313,23 @@ def first_block(text, pattern):
     return m.group(0) if m else ""
 
 
+def scan_fig_center_gaps(text, label):
+    """直式現況圖必須有限寬且欄內水平置中。width:100% / max-width:100% 會把
+    畫布撐滿、狹長圖貼左 —— 那正是要擋的。"""
+    style = first_block(text, r"<style\b[^>]*>.*?</style>")
+    compact = re.sub(r"\s+", "", style)
+    gaps = []
+    if "justify-content:center" not in compact:
+        gaps.append("%s 缺 .figwrap justify-content:center" % label)
+    if "width:220px" not in compact:
+        gaps.append("%s 圖缺有限寬 width:220px" % label)
+    if "width:max-content" not in compact:
+        gaps.append("%s pre 圖缺 width:max-content" % label)
+    if "svg{max-width:100%" in compact:
+        gaps.append("%s svg 仍是 max-width:100%(會撐滿欄、圖貼左)" % label)
+    return gaps
+
+
 def check_fixture():
     if not os.path.isfile(FIXTURE):
         raise NotParsed("缺掃頁樣張 scripts/fixtures/devtalk-html-scan/good/1-discussion.html")
@@ -410,6 +427,13 @@ def check_fixture():
             missing.append("掃頁順序錯:%s 在 %s 前面" % (name, prev_name))
             break
         prev_name, prev_pos = name, pos
+    missing.extend(scan_fig_center_gaps(text, "樣張"))
+    if not re.search(
+        r'<div class="figwrap">\s*<svg\b[^>]*\bid="scan-now"', text, re.S
+    ) and not re.search(
+        r'<div class="figwrap">\s*<pre\b[^>]*\bid="scan-now"', text, re.S
+    ):
+        missing.append("樣張 #scan-now 沒包 .figwrap")
     # 去重但保序
     seen = set()
     uniq = []
@@ -421,6 +445,7 @@ def check_fixture():
     if uniq:
         raise Mismatch("掃頁樣張缺件:" + "、".join(uniq))
     print("[scan] fixture 六件齊,問答摺著")
+    print("[scan] fixture 現況圖有限寬且欄內置中")
 
 
 def check_live():
@@ -430,6 +455,14 @@ def check_live():
         raise NotParsed("graph.yaml hop 鏈短於 2,解析不可信")
     account_figures(chain)
     check_fixture()
+    if not os.path.isfile(SHELL):
+        raise NotParsed("缺 skills/dev-talk/html-shell.html")
+    shell_gaps = scan_fig_center_gaps(
+        open(SHELL, encoding="utf-8").read(), "html-shell"
+    )
+    if shell_gaps:
+        raise Mismatch("掃頁母版圖未置中:" + "、".join(shell_gaps))
+    print("[scan] html-shell 現況圖有限寬且欄內置中")
 
 
 def copy_tree(dst):
@@ -543,6 +576,26 @@ def run_mutations():
             else:
                 failures.append(
                     "樣張拿掉 [Assumption] 必須 exit 1,實際 rc=%s\n%s" % (rc, blob[-1200:])
+                )
+
+    with tempfile.TemporaryDirectory(prefix="devtalk-fig-stretch-") as tmp:
+        copy_tree(tmp)
+        fpath = os.path.join(
+            tmp, "scripts", "fixtures", "devtalk-html-scan", "good", "1-discussion.html"
+        )
+        text = open(fpath, encoding="utf-8").read()
+        if "width:220px" not in text:
+            failures.append("破壞實驗樣張找不到 width:220px")
+        else:
+            open(fpath, "w", encoding="utf-8").write(
+                text.replace("width:220px", "width:100%", 1)
+            )
+            rc, blob = child_rc(tmp)
+            if rc == 1:
+                print("[mut] ✓ 樣張圖改回撐滿欄必須紅")
+            else:
+                failures.append(
+                    "樣張圖改回撐滿欄必須 exit 1,實際 rc=%s\n%s" % (rc, blob[-1200:])
                 )
 
     if failures:
