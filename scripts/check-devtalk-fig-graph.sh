@@ -29,6 +29,8 @@
 # 掃頁產生器(同檔第三節):
 #   scripts/build-scan-html.py --action 從同目錄 1-discussion.md 產出六件套。
 #   生成頁必須過同一套六件／置中契約;缺一件或現況圖貼左／撐滿欄必須紅。
+#   現況圖必須長手樣三框:一行一框、每框四行(誰／做什麼／工具／痛點)、
+#   三步時 viewBox="0 0 200 420",不裁字、不拆成十幾個小格、不高 viewBox。
 #   不准攤成 twin 卡,不加 g1-ask／「你要審什麼」／勾選講義。
 #
 # 破壞實驗(本檔每次跑,除非 --skip-mutation):
@@ -341,6 +343,81 @@ def scan_fig_center_gaps(text, label):
     return gaps
 
 
+def diagram_src_lines(md_text):
+    """現況圖 fence 裡的內容行。一行 = 一框,不准再拆成小格。"""
+    m = re.search(r"^#{2,3}\s+現況圖\s*$", md_text or "", re.M)
+    if not m:
+        return []
+    rest = md_text[m.end() :]
+    nxt = re.search(r"^#{2,3}\s+", rest, re.M)
+    body = rest[: nxt.start()] if nxt else rest
+    fences = re.findall(r"```[^\n]*\n(.*?)```", body, re.S)
+    blob = "\n".join(fences).strip() if fences else body
+    lines = []
+    for raw in blob.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if re.fullmatch(r"[-+|\\/\s]+", line):
+            continue
+        lines.append(line)
+    return lines
+
+
+def scan_now_svg(text):
+    m = re.search(
+        r'<svg\b[^>]*\bid="scan-now"[^>]*>.*?</svg>', text or "", re.S
+    )
+    if m:
+        return m.group(0)
+    m = re.search(r'<svg\b[^>]*id="scan-now"[^>]*>.*?</svg>', text or "", re.S)
+    return m.group(0) if m else ""
+
+
+def check_scan_now_shape(text, label, md_text):
+    """咬手樣三框,擋舊產生器:拆很多小格 / viewBox 160×高 / 標籤裁成 6 字。"""
+    svg = scan_now_svg(text)
+    if not svg:
+        raise Mismatch("%s 缺 svg#scan-now" % label)
+    hw = viewbox_hw(svg)
+    if not hw:
+        raise Mismatch("%s #scan-now 沒有 viewBox" % label)
+    width, height = hw
+    gaps = []
+    if width != 200:
+        gaps.append(
+            "%s viewBox 寬是 %s,手樣是 200(舊產生器是 160)" % (label, int(width))
+        )
+    src_lines = diagram_src_lines(md_text)
+    rects = re.findall(r"<rect\b[^>]*>", svg)
+    if src_lines and len(rects) != len(src_lines):
+        gaps.append(
+            "%s 現況圖 %d 行卻畫了 %d 格(不准拆小格)"
+            % (label, len(src_lines), len(rects))
+        )
+    if len(src_lines) == 3:
+        if 'viewBox="0 0 200 420"' not in svg:
+            gaps.append(
+                '%s 三步必須 viewBox="0 0 200 420",實得 %s'
+                % (label, re.search(r'viewBox="[^"]+"', svg).group(0) if re.search(r'viewBox="[^"]+"', svg) else "無")
+            )
+        if height >= 700:
+            gaps.append("%s viewBox 高 %s,舊產生器那種 780 不准回來" % (label, int(height)))
+    if "痛在最後一步" not in inner_text(svg):
+        gaps.append("%s 圖下缺小字「痛在最後一步」" % label)
+    rect_classes = re.findall(r'<rect class="([^"]+)"', svg)
+    if rect_classes and rect_classes[-1] != "no":
+        gaps.append("%s 最後一框要用痛的強調色 class=\"no\"" % label)
+    long_needles = ("建補助案、填申請日", "新增附表五、選 A–F", "口頭對 OPU／FBT")
+    for needle in long_needles:
+        if needle in (md_text or "") and needle not in svg:
+            gaps.append("%s 裁字了,手樣要完整「%s」" % (label, needle))
+    if "痛在這" in inner_text(svg) and "痛在最後一步" not in inner_text(svg):
+        gaps.append("%s 還在寫舊caption「痛在這」" % label)
+    if gaps:
+        raise Mismatch("%s現況圖形狀:" % label + "、".join(gaps))
+
+
 def check_scan_page(text, label):
     missing = []
     sum_block = first_block(
@@ -463,9 +540,17 @@ def check_scan_page(text, label):
 def check_fixture():
     if not os.path.isfile(FIXTURE):
         raise NotParsed("缺掃頁樣張 scripts/fixtures/devtalk-html-scan/good/1-discussion.html")
-    check_scan_page(open(FIXTURE, encoding="utf-8").read(), "掃頁樣張")
+    if not os.path.isfile(FIXTURE_MD):
+        raise NotParsed(
+            "缺掃頁樣張 md scripts/fixtures/devtalk-html-scan/good/1-discussion.md"
+        )
+    html_text = open(FIXTURE, encoding="utf-8").read()
+    md_text = open(FIXTURE_MD, encoding="utf-8").read()
+    check_scan_page(html_text, "掃頁樣張")
+    check_scan_now_shape(html_text, "掃頁樣張", md_text)
     print("[scan] fixture 六件齊,問答摺著")
     print("[scan] fixture 現況圖有限寬且欄內置中")
+    print("[scan] fixture 現況圖三框手樣形狀")
 
 
 def generate_scan(md_path, out_path):
@@ -496,6 +581,10 @@ def check_generated():
     try:
         text = generate_scan(FIXTURE_MD, out)
         check_scan_page(text, "生成頁")
+        check_scan_now_shape(
+            text, "生成頁", open(FIXTURE_MD, encoding="utf-8").read()
+        )
+        print("[scan] 生成頁現況圖三框手樣形狀")
     finally:
         try:
             os.remove(out)
@@ -663,11 +752,27 @@ def run_mutations():
         out = os.path.join(tmp, "1-discussion.html")
         try:
             text = generate_scan(FIXTURE_MD, out)
+            md_text = open(FIXTURE_MD, encoding="utf-8").read()
             check_scan_page(text, "生成頁")
+            check_scan_now_shape(text, "生成頁", md_text)
             print("[mut] ✓ 樣張 md 生成頁綠")
         except (Mismatch, NotParsed) as exc:
             failures.append("樣張 md 生成頁必須綠:%s" % exc)
         else:
+            old_shape = text.replace(
+                'viewBox="0 0 200 420"', 'viewBox="0 0 160 780"', 1
+            )
+            try:
+                check_scan_now_shape(old_shape, "生成頁", md_text)
+                failures.append("生成頁改回 160×780 必須紅,卻綠了")
+            except Mismatch:
+                print("[mut] ✓ 生成頁改回 160×780 必須紅")
+            clipped = text.replace("建補助案、填申請日", "建補助案", 1)
+            try:
+                check_scan_now_shape(clipped, "生成頁", md_text)
+                failures.append("生成頁裁掉長標籤必須紅,卻綠了")
+            except Mismatch:
+                print("[mut] ✓ 生成頁裁掉長標籤必須紅")
             broken = re.sub(
                 r'<table[^>]*id="scan-people".*?</table>', "", text, count=1, flags=re.S
             )

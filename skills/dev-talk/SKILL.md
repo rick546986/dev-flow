@@ -157,9 +157,9 @@ feature: <slug>  stage: 1-discussion  status: draft→approved  owner:  updated:
 html 是掃頁臉,不是把 md 十節整份倒進去。md 仍是正本、十節骨架不准刪。
 六件由上而下,不多不少:
 1. 摘要卡:痛 + 現在怎麼繞 + Open Questions 三態 badge(已解／假設／移交)
-2. 直式現況圖:誰 → 現在怎麼做 → 痛在哪。直線用 `<pre>`;有人、分支、痛點用 inline SVG。直式,不要橫排。禁 mermaid、禁外連圖、禁外部庫。md 留 ASCII。
+2. 直式現況圖:誰／做什麼／工具／痛點,直式三框(每框四行)。有人、分支、痛點用 inline SVG。直式,不要橫排。禁 mermaid、禁外連圖、禁外部庫。md 留 ASCII。
 3. 人與土法:誰／要什麼／缺什麼(從 Actors + Workarounds 收)。`[Assumption]` 看得見。
 4. 題目:每列一題 + 著落(已解／假設／移交)。不要長 claim。
 5. 驗收一小表:假設…當…則…｜從哪看｜看到什麼。
 6. 問答摘要預設摺著(`<details>`)。Constraints／詞條不要佔第一屏。
-SVG 用既有圖表 class:.b .hl .no .flow .cap,顏色只用 CSS 變數(含 --acc)。字 11px、標籤 ≤6 字。
+SVG 用既有圖表 class:.b .hl .no .flow .cap,顏色只用 CSS 變數(含 --acc)。字 11px。現況圖不裁字;三步時 viewBox="0 0 200 420",外層 width:220px 置中,圖下小字「痛在最後一步」,最後一框用痛的強調色。
