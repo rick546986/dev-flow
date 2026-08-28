@@ -2325,6 +2325,15 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>要往歷史索引加一筆紀錄時走這裡——用目錄鎖排隊 + 只在檔尾追加,避免兩個同時在跑的 session
             互相蓋掉對方剛寫的東西。</td>
         <td>人工/agent 在階段完成時呼叫;<code>history-guard.sh</code> 擋下直接編輯後導向這裡</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
+    <tr><td><code>devflow-upgrade-leftovers.sh</code></td>
+        <td>upgrade 時刪掉目前方法包不再出貨的受管殘件(例:<code>_templates/CONTEXT.md</code>
+            與 baseline 複本)。不准刪專案根或採用專案正在用的 <code>docs/dev/CONTEXT.md</code>。
+            預設 dry-run,帶 <code>--apply</code> 才刪;必須在換 baseline 之前跑。</td>
+        <td>dev-setup upgrade 呼叫;<code>test-upgrade-leftovers.sh</code> 種殘件實跑</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-upgrade-leftovers.sh</code></td>
+        <td>種一棵假採用樹,證明 upgrade 殘件腳本會刪退役模板、不動 live／專案根
+            <code>CONTEXT.md</code>,而且 dry-run 不刪檔。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>render-methodology-corrections.sh</code></td>
         <td>把 markdown 正本重新渲染成對外看的 HTML 導覽頁與範例雙生版,<code>--check</code> 模式只驗證
             渲染結果跟現有檔案一致、不會真的覆寫。</td>
