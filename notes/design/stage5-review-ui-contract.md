@@ -12,12 +12,12 @@
 
 ## 版面鎖死(已拍板)
 
-1. **chrome 同一套**:灰底(`--ground`)、強調色卡片(`.cell`／`--accent`)、
-   區塊用 `.r-block`。不要白底長文直轉。
+1. **chrome 同一套**:必須點名 `--ground`、`--panel`、`--accent`,加 `.r-block`
+   (灰底／卡片底／強調色／區塊卡)。不要白底長文直轉。
 2. **任務總表**:T 編號欄、狀態欄同一行,`white-space:nowrap`。
    表太寬就橫滑(`.tablewrap`／`overflow-x:auto`),不要擠窄前兩欄。
-3. **頂區摘要卡若是連結**:標題／數字／小字都不要底線
-   (`a.cell{text-decoration:none}`)。hover 只改邊框,不加底線。
+3. **頂區摘要卡若是連結**:標題／數字／小字都不要底線,也不要繼承成強調色底線字
+   (`a.cell{text-decoration:none;color:inherit}`)。hover 只改邊框,不加底線。
 4. **內文撐滿卡寬再折**:不要 `max-width:62ch` 卡住,也不要硬 `<br>` 斷行。
 
 類名沿用既有審查介面(`.r-block`、`.cell`、`a.cell`、`.tablewrap`),

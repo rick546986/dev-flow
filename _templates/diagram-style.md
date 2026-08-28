@@ -90,9 +90,10 @@
 
 ## 第 5 站審查頁 chrome(另一家族)
 
-第 5 站給人看的頁(灰底、強調色卡、`.r-block`、任務總表 nowrap、摘要卡連結無底線、
-內文撐滿卡寬)走 `notes/design/stage5-review-ui-contract.md`。不是上面的直式步驟
-方塊,也不是本檔的橫式／三走廊圖。本輪不改 twin、不產第 3–7 站 HTML。
+第 5 站給人看的頁(`--ground`／`--panel`／`--accent`、`.r-block`、任務總表 nowrap、
+`a.cell` 無底線且 `color:inherit`、內文撐滿卡寬)走
+`notes/design/stage5-review-ui-contract.md`。不是上面的直式步驟方塊,也不是本檔
+的橫式／三走廊圖。本輪不改 twin、不產第 3–7 站 HTML。
 
 ## 範本
 
