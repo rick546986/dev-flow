@@ -209,10 +209,25 @@ if src:
 # violations 恆空、看起來像全過的 vacuous-truth 陷阱(同檔 RW-2 案的教訓)。
 _TEST_VERIFY_RE = re.compile(r"\btest\b", re.I)
 _TEST_FILE_RE = re.compile(r"(_test\.\w+|\.test\.\w+|\.spec\.\w+|(^|/)tests?/)", re.I)
+# 手樣無測試套件者不進 TF 範例承接。Verify 是 grep 形狀,7-review 已標
+# 「本 repo 無補助金額自動化測試」。禁止在 Files 捏一個 tests/ 騙過 examined>=1。
+# 新增豁免必須寫進這兩份集合(內容地板,不是只釘條數)。
+_TF_SKIP = {
+    "example/subsidy-3-0-plus/5-tasks.md",
+}
+EXPECTED_TF_SKIP = {
+    "example/subsidy-3-0-plus/5-tasks.md",
+}
+need(_TF_SKIP == EXPECTED_TF_SKIP,
+     "TF:skip 集合與釘死清單不符 —— "
+     f"多:{sorted(_TF_SKIP - EXPECTED_TF_SKIP)} "
+     f"少:{sorted(EXPECTED_TF_SKIP - _TF_SKIP)}")
 for base, _dirs, files in os.walk(os.path.join(root, "example")):
     if "5-tasks.md" not in files:
         continue
     rel = os.path.relpath(os.path.join(base, "5-tasks.md"), root)
+    if rel in _TF_SKIP:
+        continue
     with open(os.path.join(base, "5-tasks.md"), encoding="utf-8") as fh:
         body = fh.read()
     blocks = re.split(r"(?m)^## (T-\d+)", body)[1:]
