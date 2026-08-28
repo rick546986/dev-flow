@@ -155,6 +155,10 @@ group_methodology() {
   # 不重寫 1–7 站編成,不准為了別的主機改鬆 --action。
   run "methodology/check-host-adapter"        scripts/check-host-adapter.sh      || return 1
   run "methodology/test-host-adapter"         scripts/test-host-adapter.sh       || return 1
+  # 三邊 plugin 薄殼:Claude／Cursor／Codex 各自官方 manifest,skills 整棵,
+  # Claude 舊 /plugin 指令不准改;Grok 不准發明 marketplace。
+  run "methodology/check-plugin-hosts"        scripts/check-plugin-hosts.sh      || return 1
+  run "methodology/test-plugin-hosts"         scripts/test-plugin-hosts.sh       || return 1
 }
 
 group_contracts() {

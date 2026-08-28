@@ -1,0 +1,17 @@
+{
+  "name": "dev-flow",
+  "owner": {
+    "name": "rick",
+    "email": "8232011+rick546986@users.noreply.github.com"
+  },
+  "metadata": {
+    "description": "DevFlow runtime —— 開發流程 SOP 路由器 + 執行引擎 + 守衛 hooks + 訪談引導"
+  },
+  "plugins": [
+    {
+      "name": "dev-flow",
+      "source": "./",
+      "description": "開發流程 SOP 路由器(7 階段,SDD 主幹 + TDD 驗證,方法論內建於本 repo 根目錄)+ dev-run 執行引擎 + dev-setup + dev-talk + 守衛 hooks。"
+    }
+  ]
+}
