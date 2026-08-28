@@ -145,8 +145,8 @@
 <body>
 <main>
   <h1>dev-flow 導覽 · 開發流程 SOP</h1>
-  <p class="muted">七個階段怎麼走、三道 gate 卡哪裡、哪站用哪個模型。規則在 <code>README.md</code>。
-  本頁跟 README 打架,以 README 為準。</p>
+  <p class="muted">七個階段怎麼走、三道 gate 卡哪裡、哪站用哪個模型。入口是 repo 根
+  <code>README.md</code>（只當第一屏）。契約句檢查器仍抽那份的機械正本；人看本頁。</p>
 
   <nav>
     <a href="#flow">① 七階段流程圖</a>
@@ -159,6 +159,7 @@
     <a href="#large-work">⑧ 大案與切片</a>
     <a href="#example">⑨ 範例</a>
     <a href="#host">主機發現</a>
+    <a href="#memory">Agent Memory</a>
     <a href="#filemap">附錄 檔案地圖</a>
     <a href="../docs/adr/index.html">決策列表</a>
     <a href="../docs/dev/HISTORY.html">改版歷史</a>
@@ -324,6 +325,9 @@
   <a href="../docs/adr/index.html">決策列表</a> ·
   <a href="../docs/dev/HISTORY.html">改版歷史</a>。
   md 仍是 git 正本。這兩頁不是 Agent Memory。</p>
+  <p>ID 追溯鏈:<code>R-n</code>(4-spec)→ <code>S-n</code>(4-spec)→ <code>T-n</code>(5-tasks,標 Covers)
+  → 測試名含 S-id(6 實作)→ <code>D-n</code>(deviation,6)→ <code>F-n</code>(finding,7,標影響的 S/T)。
+  裁決用 ID 不入鏈:<code>OC-n</code>(2-decision)、<code>DD-n</code>(4-spec)不被 T 實作。</p>
 
   <div class="parity">
   <p class="parity-tag">規則正本 · 七份文件與各自的 Gate(逐字抄自 README 階段表)</p>
@@ -1972,6 +1976,27 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   <p><code>.claude/rules/</code> 不會被 Cursor／Codex 自動吃。架構不變量由
   setup 依主機寫對應指標：Cursor 寫 <code>.cursor/rules/</code> 一行指標；
   Codex 仍只准 AGENTS.md 一行。流程規則仍不准進 AGENTS.md。</p>
+
+  <h2 id="memory">Agent Memory（<code>.dev-flow/</code>）</h2>
+  <p class="lead">長期記憶進 Git。不要手改記憶檔。安裝與重建入口只有 <code>dev-setup</code>。
+  查詢與寫入只有 <code>${DEVFLOW_ROOT}/memory/dev-memory.py</code>。</p>
+  <div class="tablewrap"><table>
+    <tr><th>目錄</th><th>是什麼</th><th>進 Git?</th></tr>
+    <tr><td><code>docs/dev/</code></td><td>給人看的七階段文檔、STATUS、HISTORY</td><td>是</td></tr>
+    <tr><td><code>.dev-flow/</code></td><td>Agent 要帶走的長期記憶。這才是正本</td><td>是</td></tr>
+    <tr><td><code>.devflow/</code></td><td>執行期暫存（旗標、runs、reports）</td><td>否</td></tr>
+  </table></div>
+  <p>本機 SQLite 快取不進 Git。不要把 <code>docs/dev/</code> 抄進 <code>.dev-flow/</code>。
+  <code>.dev-flow/project.yaml</code> 的 <code>project_id</code> 是 ULID，不是路徑。
+  檔案引用一律是 repo 相對路徑。現在沒有 <code>CONTEXT.md</code>；詞彙住
+  <code>.dev-flow/knowledge/domain/</code>。</p>
+  <p>四個 retrieval status（程式碼／契約檔／此處同值）：
+  <code>OK</code>、<code>NEEDS_VERIFICATION</code>、<code>CONFLICT</code>、
+  <code>NO_RELIABLE_MATCH</code>。多筆取最嚴重的：
+  <code>CONFLICT</code> &gt; <code>NEEDS_VERIFICATION</code> &gt; <code>OK</code>。</p>
+  <p>新 clone／新機器打一次 <code>dev-setup</code> 重建這棵樹的 SQLite 快取。
+  已經在用的機器 <code>git pull</code> 把 <code>.dev-flow/</code> 拉下來就夠，不必再跑 setup。
+  舊的 <code>CONTEXT.md</code> → <code>dev-memory.py migrate-legacy</code>，落地是候選，不是已確認。</p>
 
   <h2 id="filemap">附錄:檔案地圖(每支腳本在做什麼)</h2>
   <p class="lead">這張表由 <code>scripts/check-file-map.sh</code> 雙向盤點守衛顧著:新增一支腳本沒登記進來、

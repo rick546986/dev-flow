@@ -1,117 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 400" role="img"
-     aria-labelledby="fig-readme-flow-title" xml:lang="zh-Hant">
-  <title id="fig-readme-flow-title">七站一條路 · 三道閘 · 3 是選配</title>
-  <desc>上排左到右:想法 → 1 討論 → 2 收斂 → G1 → 3 原型(選配) → 4 規格;下排右到左:G2 → 5 任務 → 6 實作 → 7 驗證 → G3 → PR → living spec。G1 上方跳線可跳過選配的 3。</desc>
-  <defs>
-    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M0,0 L10,5 L0,10 Z" fill="#666666"/>
-    </marker>
-  </defs>
-  <text x="440" y="18" text-anchor="middle"
-        font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif"
-        font-size="14" font-weight="700" fill="#1a1a1a">七站一條路 · 三道閘 · 3 是選配</text>
-  <g transform="translate(0,16)">
-    <g>
-      <rect x="6" y="70" width="130" height="56" rx="26" fill="#ffffff" stroke="#e2e2e2" stroke-width="1.4"/>
-      <text x="18" y="88" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="11" fill="#1a1a1a">想法 / 需求</text>
-      <text x="18" y="103" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">還沒有任何檔案</text>
-    </g>
-    <g>
-      <rect x="154" y="70" width="130" height="56" rx="6" fill="#e0d5f6" stroke="#7c3aed" stroke-width="1.6"/>
-      <text x="166" y="88" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="11" fill="#1a1a1a">1 討論</text>
-      <text x="166" y="103" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">opus · /dev-talk</text>
-      <text x="166" y="117" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">1-discussion.md</text>
-    </g>
-    <g>
-      <rect x="302" y="70" width="130" height="56" rx="6" fill="#e0d5f6" stroke="#7c3aed" stroke-width="1.6"/>
-      <text x="314" y="88" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="11" fill="#1a1a1a">2 收斂</text>
-      <text x="314" y="103" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">opus</text>
-      <text x="314" y="117" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">2-decision.md</text>
-    </g>
-    <g>
-      <rect x="450" y="70" width="130" height="56" rx="6" fill="#d5dff6" stroke="#2563eb" stroke-width="1.6"/>
-      <text x="462" y="88" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="11" fill="#1a1a1a">G1 方向核准</text>
-      <text x="462" y="103" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">reviewer · 不指定模型</text>
-      <text x="462" y="117" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">Owner Calls 全裁決</text>
-    </g>
-    <g>
-      <rect x="598" y="70" width="130" height="56" rx="6" fill="#cde5e4" stroke="#0d9488" stroke-width="1.6"/>
-      <text x="610" y="88" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="11" fill="#1a1a1a">3 原型 (選配)</text>
-      <text x="610" y="103" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">sonnet</text>
-      <text x="610" y="117" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">答案回寫 2-decision</text>
-    </g>
-    <g>
-      <rect x="746" y="70" width="130" height="56" rx="6" fill="#e0d5f6" stroke="#7c3aed" stroke-width="1.6"/>
-      <text x="758" y="88" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="11" fill="#1a1a1a">4 規格</text>
-      <text x="758" y="103" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">opus</text>
-      <text x="758" y="117" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">4-spec.md</text>
-    </g>
-    <g>
-      <rect x="746" y="210" width="130" height="56" rx="6" fill="#d5dff6" stroke="#2563eb" stroke-width="1.6"/>
-      <text x="758" y="228" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="11" fill="#1a1a1a">G2 契約核准</text>
-      <text x="758" y="243" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">reviewer · 契約</text>
-      <text x="758" y="257" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">R/S 全審 + DD 全裁決</text>
-    </g>
-    <g>
-      <rect x="598" y="210" width="130" height="56" rx="6" fill="#cde5e4" stroke="#0d9488" stroke-width="1.6"/>
-      <text x="610" y="228" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="11" fill="#1a1a1a">5 任務</text>
-      <text x="610" y="243" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">sonnet</text>
-      <text x="610" y="257" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">5-tasks.md</text>
-    </g>
-    <g>
-      <rect x="450" y="210" width="130" height="56" rx="6" fill="#dadbde" stroke="#57606a" stroke-width="1.6"/>
-      <text x="462" y="228" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="11" fill="#1a1a1a">6 實作</text>
-      <text x="462" y="243" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">haiku 起步 · dev-run</text>
-      <text x="462" y="257" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">6-notes + 逐 T commit</text>
-    </g>
-    <g>
-      <rect x="302" y="210" width="130" height="56" rx="6" fill="#cde5e4" stroke="#0d9488" stroke-width="1.6"/>
-      <text x="314" y="228" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="11" fill="#1a1a1a">7 驗證</text>
-      <text x="314" y="243" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">sonnet · 產檔</text>
-      <text x="314" y="257" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">7-review.md</text>
-    </g>
-    <g>
-      <rect x="154" y="210" width="130" height="56" rx="6" fill="#d5dff6" stroke="#2563eb" stroke-width="1.6"/>
-      <text x="166" y="228" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="11" fill="#1a1a1a">G3 出貨核准</text>
-      <text x="166" y="243" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">reviewer · 驗收</text>
-      <text x="166" y="257" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">S 全綠 + Evidence 契約</text>
-    </g>
-    <g>
-      <rect x="6" y="210" width="130" height="56" rx="6" fill="#d6e6dc" stroke="#0a7d33" stroke-width="1.6"/>
-      <text x="18" y="228" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="11" fill="#1a1a1a">PR → develop</text>
-      <text x="18" y="243" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">PASS 才准開</text>
-    </g>
-    <g>
-      <rect x="6" y="286" width="130" height="40" rx="6" fill="#f7f7f8" stroke="#c2660b" stroke-width="1.4" stroke-dasharray="5 3"/>
-      <text x="18" y="304" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="11" fill="#1a1a1a">延伸 living spec</text>
-      <text x="18" y="318" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="9" fill="#666666">docs/specs/</text>
-    </g>
-    <path fill="none" stroke="#666666" stroke-width="1.5" marker-end="url(#ar)" d="M136,98 L154,98"/>
-    <path fill="none" stroke="#666666" stroke-width="1.5" marker-end="url(#ar)" d="M284,98 L302,98"/>
-    <path fill="none" stroke="#666666" stroke-width="1.5" marker-end="url(#ar)" d="M432,98 L450,98"/>
-    <path fill="none" stroke="#666666" stroke-width="1.5" marker-end="url(#ar)" d="M580,98 L598,98"/>
-    <path fill="none" stroke="#666666" stroke-width="1.5" marker-end="url(#ar)" d="M728,98 L746,98"/>
-    <path fill="none" stroke="#666666" stroke-width="1.5" marker-end="url(#ar)" d="M811,126 L811,210"/>
-    <path fill="none" stroke="#666666" stroke-width="1.5" marker-end="url(#ar)" d="M746,238 L728,238"/>
-    <path fill="none" stroke="#666666" stroke-width="1.5" marker-end="url(#ar)" d="M598,238 L580,238"/>
-    <path fill="none" stroke="#666666" stroke-width="1.5" marker-end="url(#ar)" d="M450,238 L432,238"/>
-    <path fill="none" stroke="#666666" stroke-width="1.5" marker-end="url(#ar)" d="M302,238 L284,238"/>
-    <path fill="none" stroke="#666666" stroke-width="1.5" marker-end="url(#ar)" d="M154,238 L136,238"/>
-    <path fill="none" stroke="#666666" stroke-width="1.5" marker-end="url(#ar)" d="M71,266 L71,286"/>
-    <path fill="none" stroke="#666666" stroke-width="1.5" marker-end="url(#ar)" d="M515,70 L515,30 L811,30 L811,70"/>
-    <text x="560" y="24" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="10" fill="#666666">G1 過 · 無技術疑問 → 跳過選配的 3</text>
-  </g>
-  <g transform="translate(150,368)">
-    <rect x="0" y="0" width="10" height="10" rx="2" fill="#e0d5f6" stroke="#7c3aed"/>
-    <text x="14" y="9" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="10" fill="#666666">opus 規劃</text>
-    <rect x="90" y="0" width="10" height="10" rx="2" fill="#cde5e4" stroke="#0d9488"/>
-    <text x="104" y="9" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="10" fill="#666666">sonnet 執行</text>
-    <rect x="190" y="0" width="10" height="10" rx="2" fill="#dadbde" stroke="#57606a"/>
-    <text x="204" y="9" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="10" fill="#666666">haiku 起步</text>
-    <rect x="284" y="0" width="10" height="10" rx="2" fill="#d5dff6" stroke="#2563eb"/>
-    <text x="298" y="9" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="10" fill="#666666">gate 審</text>
-    <rect x="360" y="0" width="10" height="10" rx="2" fill="#d6e6dc" stroke="#0a7d33"/>
-    <text x="374" y="9" font-family="-apple-system,'PingFang TC','Noto Sans TC','WenQuanYi Micro Hei','Droid Sans Fallback',sans-serif" font-size="10" fill="#666666">PR</text>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 628" role="img"
+     aria-label="七站開發流程：1 討論、2 收斂、3 原型、4 規格、5 任務、6 實作、7 驗證"
+     style="display:block;max-width:360px;margin:0 auto;height:auto">
+  <title>七站開發流程</title>
+  <style>
+    .b { fill: #f7f7f8; stroke: #e2e2e2; stroke-width: 1.4; }
+    .hl { fill: #e8f0fe; stroke: #2563eb; stroke-width: 1.6; }
+    .wn { fill: #fff8e6; stroke: #b57700; stroke-width: 1.6; }
+    .nl { font: 700 13px -apple-system, "PingFang TC", "Noto Sans TC", "WenQuanYi Micro Hei", sans-serif; fill: #1a1a1a; }
+    .sm { font: 11px -apple-system, "PingFang TC", "Noto Sans TC", "WenQuanYi Micro Hei", sans-serif; fill: #666666; }
+  </style>
+  <rect class="b" x="40" y="10" width="200" height="68" rx="6"/>
+  <text class="nl" x="140" y="34" text-anchor="middle">1 討論</text>
+  <text class="sm" x="140" y="48" text-anchor="middle">/dev-talk</text>
+  <text class="sm" x="140" y="62" text-anchor="middle">1-discussion.md</text>
+  <line x1="140" y1="78" x2="140" y2="100" stroke="#666666" stroke-width="1.4"/>
+  <rect class="b" x="40" y="100" width="200" height="68" rx="6"/>
+  <text class="nl" x="140" y="124" text-anchor="middle">2 收斂</text>
+  <text class="sm" x="140" y="138" text-anchor="middle">G1 方向核准</text>
+  <text class="sm" x="140" y="152" text-anchor="middle">2-decision.md</text>
+  <line x1="140" y1="168" x2="140" y2="190" stroke="#666666" stroke-width="1.4"/>
+  <rect class="wn" x="40" y="190" width="200" height="68" rx="6"/>
+  <text class="nl" x="140" y="214" text-anchor="middle">3 原型</text>
+  <text class="sm" x="140" y="228" text-anchor="middle">選配</text>
+  <text class="sm" x="140" y="242" text-anchor="middle">答案回寫 2</text>
+  <line x1="140" y1="258" x2="140" y2="280" stroke="#666666" stroke-width="1.4"/>
+  <rect class="b" x="40" y="280" width="200" height="68" rx="6"/>
+  <text class="nl" x="140" y="304" text-anchor="middle">4 規格</text>
+  <text class="sm" x="140" y="318" text-anchor="middle">G2 契約核准</text>
+  <text class="sm" x="140" y="332" text-anchor="middle">4-spec.md</text>
+  <line x1="140" y1="348" x2="140" y2="370" stroke="#666666" stroke-width="1.4"/>
+  <rect class="b" x="40" y="370" width="200" height="68" rx="6"/>
+  <text class="nl" x="140" y="394" text-anchor="middle">5 任務</text>
+  <text class="sm" x="140" y="408" text-anchor="middle">tracer-bullet</text>
+  <text class="sm" x="140" y="422" text-anchor="middle">5-tasks.md</text>
+  <line x1="140" y1="438" x2="140" y2="460" stroke="#666666" stroke-width="1.4"/>
+  <rect class="hl" x="40" y="460" width="200" height="68" rx="6"/>
+  <text class="nl" x="140" y="484" text-anchor="middle">6 實作</text>
+  <text class="sm" x="140" y="498" text-anchor="middle">agent 跑、人握方向</text>
+  <text class="sm" x="140" y="512" text-anchor="middle">6-notes</text>
+  <line x1="140" y1="528" x2="140" y2="550" stroke="#666666" stroke-width="1.4"/>
+  <rect class="b" x="40" y="550" width="200" height="68" rx="6"/>
+  <text class="nl" x="140" y="574" text-anchor="middle">7 驗證</text>
+  <text class="sm" x="140" y="588" text-anchor="middle">G3 出貨核准</text>
+  <text class="sm" x="140" y="602" text-anchor="middle">7-review.md</text>
 </svg>
