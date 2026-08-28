@@ -80,13 +80,14 @@ GATE_STAGES = ("2-decision", "4-spec", "7-review")
 #  被收進背景資料、`## Verdict` 整節消失 —— 最該先讀的三樣全不見。)
 PINNED_PAT = re.compile(
     r"限制聲明|^Decision\b|Verdict|判定|Known Limits|已知限界|Reviewer 閱讀動線"
-    r"|方案架構圖|^Rejected\b|駁回")
+    r"|方案架構圖|行為流程圖|^Rejected\b|駁回")
 # `^Decision\b` 只命中 G1 的判定節,不會誤中 `Drafting Decisions` / `Split Decisions`
 #(2026-08-15 獨立審查 H3:少了這條,G1 的判定被摺進背景資料 —— 與本規則自己
 # 寫的「藏起來等於沒審」矛盾,而且是 dogfood 修過的同一種 bug 只修了一站。)
-# 方案架構圖 / Rejected(含 Rejected Alternatives) / 駁回:G1 的圖與駁回清單
-# 不得摺進背景。圖今晚仍走 md_block/<pre>,只動位置。`^Rejected\b` 同時吃
-# `Rejected` 與 `Rejected Alternatives`,不改舊節名。
+# 方案架構圖／行為流程圖 / Rejected(含 Rejected Alternatives) / 駁回:G1／G2
+# 的圖與駁回清單不得摺進背景。圖走直式 SVG(置中 max-width 360px),不是
+# mermaid、也不是橫向 ASCII <pre>。`^Rejected\b` 同時吃 `Rejected` 與
+# `Rejected Alternatives`,不改舊節名。
 
 INLINE_MD = re.compile(r"`([^`]+)`|\*\*([^*]+)\*\*")
 # ⚠️ 用 `[ \t]` 不用 `\s` —— `\s` 含換行,標題後若全是空白(fence 遮蔽後就是這樣)
@@ -2149,14 +2150,37 @@ def main(argv):
             print(f"NOTE: {w}", file=sys.stderr)
         dag_done, _dag_total = _tasks_done_count(secs)
 
-    # 置頂節:判定本身與判定的前提,直接顯示在卡片之前,不摺疊
+    # 置頂節:判定本身與判定的前提,直接顯示在卡片之前,不摺疊。
+    # 方案架構圖插在 Decision 後面(鎖定手樣);行為流程圖走行為槽置頂 SVG。
     pinned, pinned_titles = [], set()
+    fig_html = {}
     for lvl, title, body in secs:
         if lvl <= 2 and PINNED_PAT.search(title) and body.strip():
             pinned_titles.add(title)
-            pinned.append(f'<section class="pinned" id="{anchor_id(title)}">'
-                          f'<h2>{inline(title)}</h2>'
-                          f'<div class="doc-in">{md_block(body)}</div></section>')
+            if re.search(r"方案架構圖|行為流程圖", title):
+                steps = ui.ascii_fig_steps(body)
+                if not steps:
+                    steps = [("b", title.strip() or "圖", ["步驟"])]
+                svg = ui.render_vbox_svg(title, steps)
+                fig_html[title] = (
+                    f'<section class="pinned" id="{anchor_id(title)}">'
+                    f'<h2>{inline(title)}</h2>'
+                    f'<div class="fig">{svg}</div></section>'
+                )
+                continue
+            block = (
+                f'<section class="pinned" id="{anchor_id(title)}">'
+                f'<h2>{inline(title)}</h2>'
+                f'<div class="doc-in">{md_block(body)}</div></section>'
+            )
+            pinned.append(block)
+            if re.search(r"^Decision\b", title):
+                for key in list(fig_html):
+                    if "方案架構圖" in key:
+                        pinned.append(fig_html.pop(key))
+                        break
+    for key in list(fig_html):
+        pinned.append(fig_html.pop(key))
 
     # 背景資料:沒被做成卡片的章節一律收進 details,內容零刪減。
     # 已經做成卡片的內容**不得重複出現** —— 章節本身被用過、或它底下含有已渲染的

@@ -66,7 +66,8 @@
 # exit:0 = 全過 / 1 = 真漂移 / 2 = NOT-PARSED
 #
 # 不改 check-devtalk-fig-graph.sh / check-devtalk-fig-journey.sh /
-# check-guides-fig-sync.sh / check-gate-twin.sh / build-gate-twin.py。
+# check-guides-fig-sync.sh。gate-twin 2／4 站圖改直式 SVG 時,本檔與
+# check-gate-twin.sh 必須一起改(舊契約「圖 dump 進 pre」已廢)。
 
 set -uo pipefail
 
