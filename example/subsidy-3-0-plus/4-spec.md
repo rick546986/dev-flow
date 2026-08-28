@@ -116,13 +116,13 @@ PLUS 表本身是三筆（取卵、形成、植入），畫面上只出現兩格
 ### R-5 測試掛載
 27004 等另一 session 測完再把 bind 從主目錄改掛本 worktree。此前只寫本 worktree。
 
-27004 是測試機容器，現在 bind 主目錄 `/Users/asheng/dev/ivf_platform`（ERP 分支）。本 feat 碼在 subsidy worktree；不切掛載時 27004 看不到 PLUS。等另一 session 測完再把 bind 改掛本 worktree；切之前只寫 worktree、不動主目錄、不開第二容器。
+27004 是測試機容器，現在 bind 主目錄 `/path/to/ivf_platform`（ERP 分支）。本 feat 碼在 subsidy worktree；不切掛載時 27004 看不到 PLUS。等另一 session 測完再把 bind 改掛本 worktree；切之前只寫 worktree、不動主目錄、不開第二容器。
 
 **審的時候看什麼**
 27004 現在掛的是主目錄 ERP 分支，不是本 worktree。這輪改 PHP 只寫 worktree，27004 重整畫面應維持 ERP 行為。不切 bind、不動主目錄、不另開第二個容器。PLUS 畫面要等另一 session 測完、改掛本 worktree 之後才會出現。切掛載之前，27004 看不到 PLUS 是對的。
 
 #### S-5.1 未切前
-- GIVEN 27004 仍掛 `/Users/asheng/dev/ivf_platform`
+- GIVEN 27004 仍掛 `/path/to/ivf_platform`
 - WHEN 本 worktree 改 PHP
 - THEN 27004 畫面不變（另一 session 不受影響）
 - 觀測：27004 重整仍是 ERP 分支行為。
