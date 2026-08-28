@@ -35,7 +35,7 @@ Windows 同構,在 `%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\<versi
 1. Dashboard → Plugins → Import from Repo → `rick546986/dev-flow`
 2. Customize → 找到 `dev-flow` → Install（user 或 project）
 
-更新:Dashboard → Plugins → Refresh,或開 Auto Refresh。
+更新:Refresh 在 Dashboard → Plugins **已匯入的 rick546986/dev-flow 那一列**,不是 plugin 詳情卡。或開 Auto Refresh。
 本機試裝:`ln -s <clone> ~/.cursor/plugins/local/<name>`（`<name>` = plugin.json 的 `name`）
 
 產品 repo 技能樹仍可掛整棵 `.cursor/skills`(dev-setup)。流程規則不准灌進 AGENTS.md。Cursor 只准 `.cursor/rules/` 一行架構不變量指標。

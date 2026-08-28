@@ -368,6 +368,10 @@ def run_doctor(root, contract_path="", gate_cmd=""):
                   f"{exe} Python {ver[0]}.{ver[1]} ≥ "
                   f"{PRINTER_PY_FLOOR[0]}.{PRINTER_PY_FLOOR[1]}{extra}")
 
+    info("host-install",
+         "四邊下一指令見 docs/PLUGIN.md；本機探針 "
+         "scripts/check-host-adapter.sh --probe")
+
     # 6c. wave_review schema(M3:契約 vs runtime-capabilities 聲明;
     #     runtime 實際字串 = devflow-lib wave review 驗證所認 schema)
     want_wr = contract_schemas.get("wave_review")

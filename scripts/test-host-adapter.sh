@@ -568,7 +568,7 @@ with tempfile.TemporaryDirectory(prefix="host-adapter-test-") as tmpbase:
         "G-probe-grok-ok --probe 在 Grok 已掛整棵時必須綠",
         grok,
         0,
-        "probe: ok",
+        "不要發明 Grok marketplace",
         extra_env={"DEVFLOW_ROOT": root},
         probe=True,
     )
@@ -577,7 +577,7 @@ with tempfile.TemporaryDirectory(prefix="host-adapter-test-") as tmpbase:
         "G-probe-cursor-ok --probe 不改 Cursor 薄殼（整棵連結）必須綠",
         cursor,
         0,
-        "probe: ok",
+        "已匯入的 rick546986/dev-flow",
         extra_env={"DEVFLOW_ROOT": root},
         probe=True,
     )
@@ -586,7 +586,7 @@ with tempfile.TemporaryDirectory(prefix="host-adapter-test-") as tmpbase:
         "G-probe-claude-ok --probe 不改 Claude 舊路必須綠",
         claude,
         0,
-        "probe: ok",
+        "/plugin marketplace add rick546986/dev-flow",
         extra_env={"DEVFLOW_ROOT": root},
         probe=True,
     )

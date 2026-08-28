@@ -1974,7 +1974,8 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   hooks.json 仍可走。其他主機：不要把這三個當唯一核可；改查技能目錄在不在、
   是不是整棵、<code>DEVFLOW_ROOT</code> 對不對。</p>
   <p>開工先跑 <code>scripts/check-host-adapter.sh --probe</code>。
-  缺技能樹或 <code>DEVFLOW_ROOT</code> 不對會印一句掛載句並紅。
+  綠的時候會印該主機下一句安裝／更新指令；缺技能樹或 <code>DEVFLOW_ROOT</code>
+  不對會印一句掛載句並紅。
   Cursor／Grok／Codex 三邊都沒有 Claude PreToolUse。
   <strong>誰開工誰先跑</strong>該站
   <code>check-devtalk-graph.sh --action</code> 或
@@ -1998,7 +1999,7 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             <code>skills</code> 整棵 <code>./skills/</code>）。
             官方（docs.cursor.com/docs/plugins）：Dashboard → Plugins → Import from Repo
             <code>rick546986/dev-flow</code>；Customize → Install。
-            更新：Dashboard Refresh 或 Auto Refresh。
+            更新：Refresh 在 Dashboard → Plugins <strong>已匯入的 rick546986/dev-flow 那一列</strong>，不是 plugin 詳情卡。或開 Auto Refresh。
             本機試裝：<code>ln -s &lt;clone&gt; ~/.cursor/plugins/local/&lt;name&gt;</code>
             （name = plugin.json 的 name）。
             產品 repo 只准 <code>.cursor/rules/</code> 一行架構不變量指標；流程規則不准灌 AGENTS.md。</td></tr>
