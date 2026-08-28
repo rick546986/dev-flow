@@ -67,6 +67,8 @@ Windows(Git Bash)沒有 `/usr/bin/python3`。另外裝 Python 3.12+,或設 `DEVF
 
 細節見母版 README「環境需求」。
 
+feat worktree 產的 `docs/dev` html/md 併回整合線(常是 `develop`／`testing`)是預期,不是污染;HISTORY 種子列也會跟著走。不要把雙生頁只留在 worktree。
+
 新專案裝好後,進專案打 `dev-setup`。它會建 `.dev-flow/`(進 Git 的記憶正本)與本機快取。之後 `git pull` 不必重跑 setup;下一句 ask / context 會核對 generation。見 README §16。
 
 ## 沿革(維護者才需要)
