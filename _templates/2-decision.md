@@ -27,8 +27,8 @@ updated:
 >
 > 產生方式:`docs/dev/tools/build-gate-twin.py <專案根> <slug> 2-decision`
 > (母版在 `scripts/`)。它讀 md 逐條解析,不手抄;解析不到任何一條會直接失敗。
-> 審頁(分組卡 + Decision 後直式 SVG 置中 max-width:360px,背景摺疊)另一支:
-> `scripts/build-stage2-html.py`(--action 授權)。正本
+> 審頁(分組卡:Decision 置頂 + 直式 SVG 置中 max-width:360px + 每決策點 `.r-block`
+> 內表格 A/B/C 卡,背景摺疊)另一支:`scripts/build-stage2-html.py`(--action 授權)。正本
 > `notes/design/stage2-review-ui-contract.md`。不要「勾選提示」「你要審什麼」
 > Rejected 釘頂那版,不要手包 html-shell。
 >

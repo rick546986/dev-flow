@@ -21,8 +21,9 @@
 1. **頂區摘要**:`.sum#scan-sum` 必須有痛、繞(現在怎麼繞)、徽章
    已解／假設／移交(Open Questions 三態計數)。
 2. **直式三框現況圖**:`#scan-now` 是 SVG,`viewBox="0 0 200 420"`,
-   每框 `height="88"`,外層置中 `max-width:360` 這級。不是珠鏈、不是 mermaid、
-   不是橫 ASCII、不是 `<pre>` 當圖。
+   每框 `height="88"`,外層 `.now-wrap` 置中 `max-width:360` 這級。
+   現況圖吃無標籤四行堆,`|` 是分隔不是第四框;有 `誰:` 標籤的也吃。
+   不是珠鏈、不是 mermaid、不是橫 ASCII、不是 `<pre>` 當圖。
 3. **人表**:`#scan-people` 表(誰／要什麼／缺什麼)。
 4. **chrome**:必須點名 `--ground`、`--panel`、`--accent`,加 `--ok-soft`／
    `--bad-soft`;`.masthead` `.dash` `.cell` `.r-block`。不要白底長文直轉。

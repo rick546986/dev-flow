@@ -41,7 +41,8 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 > 審查頁 chrome／任務總表版面正本:`notes/design/stage5-review-ui-contract.md`
 > (與 `notes/design/vbox-fig-contract.md` 並列;本輪不改 twin)。
 > 審頁產檔器:`scripts/build-stage5-html.py`(--action 授權;`.r-block` 卡、
-> 標題不要底線、T-n 與未完成同行 nowrap、卡文全寬 wrap)。不要在 5-tasks
+> 標題不要底線、T-n＋標題＋未完成同一 `.r-head` nowrap、任務總表前兩欄
+> nowrap、有前提節就出前提卡、卡文全寬 wrap)。不要在 5-tasks
 > 加「提交判定」,不要手包 html-shell。
 >
 > 順序 = **tracer bullet**:先打通最薄的端到端縱切,再逐層加厚。

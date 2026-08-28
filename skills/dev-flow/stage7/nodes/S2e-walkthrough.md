@@ -10,7 +10,7 @@ S2d-fresh 完成:Final Fresh 已綁當下 HEAD。游標在 S2d-fresh。
 各 S 的 Operational Context,以及已落檔的 `7-review.md`。
 禁讀 `6-implementation-notes.md` 的 Self-Review。
 步 2e 正本是相對 DEVFLOW_ROOT 的 `_templates/7-review.md` 頂註,本檔不抄乘客步原文。
-審查頁截圖槽(分組／data-shot／shots/／進場／lightbox／chrome)正本
+審查頁截圖槽(分組／data-shot／shots/／進場／.lb lightbox／.e2e／chrome)正本
 `notes/design/stage7-review-ui-contract.md`,本檔不重抄。
 產檔器 `scripts/build-stage7-html.py --action` 指向本場 `7-review.md`
 (不要手包 html-shell,不改 twin)。

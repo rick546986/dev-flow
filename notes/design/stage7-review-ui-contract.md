@@ -14,9 +14,10 @@
 
 ## 版面鎖死(已拍板)
 
-下列七條是鎖死,不是口味、不是選配。產檔器吃 md 的 `## 截圖槽`:
-`scripts/build-stage7-html.py` 吐分組槽／`data-shot`／lightbox／e2e 掛點。
-授權 `--action`。不包 markdown-it + html-shell。
+下列七條是鎖死,不是口味、不是選配。產檔器吃 md 的 `## 截圖槽`,
+沒有該標題時改吃 `shots/`／`data-shot`／`![](shots/…)` 定名:
+`scripts/build-stage7-html.py` 吐分組槽／`data-shot`／`.lb` lightbox／`.e2e` 掛點。
+不要只認字面 `lightbox`／`hang-point`。授權 `--action`。不包 markdown-it + html-shell。
 寫法落點:`_templates/7-review.md`(本檔是正本,不另開家族、不進 README 第一屏)。
 
 1. **同型分組**:同類型畫面收進槽,不要一坨傾倒。

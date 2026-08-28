@@ -2305,17 +2305,20 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>第 1 站審頁產生器:吃 <code>1-discussion.md</code> 的 Problem／Open Questions／
             現況圖／Actors,吐 <code>.sum#scan-sum</code>／直式三框
             <code>#scan-now</code>(<code>viewBox 200×420</code>、每框 height 88、
-            置中 max-width 360)／<code>#scan-people</code>。
+            <code>.now-wrap</code> 置中 max-width 360)／<code>#scan-people</code>。
+            現況圖吃無標籤四行堆＋<code>|</code> 分隔。
             不改 <code>build-scan-html.py</code>,不進 gate-twin STAGES,不包 html-shell。</td>
         <td><code>--action</code>／<code>--fixture</code>;<code>check-stage1-now-contract.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>build-stage2-html.py</code></td>
-        <td>第 2 站審頁產生器:吃 Approaches／Decision／方案架構圖,吐分組卡 +
-            Decision 後直式 SVG(置中 <code>max-width:360px</code>)、背景摺疊。
+        <td>第 2 站審頁產生器:吃 Approaches 表或 <code>#### A</code>、Decision、方案架構圖,
+            吐 Decision 置頂 + 直式 SVG(置中 <code>max-width:360px</code>) +
+            每決策點 <code>.r-block</code> 內 A/B/C 卡、背景摺疊。
             不要勾選提示／你要審什麼／Rejected 釘頂。不進 gate-twin STAGES。</td>
         <td><code>--action</code>／<code>--fixture</code>;<code>check-stage2-card-contract.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>build-stage5-html.py</code></td>
         <td>第 5 站審頁產生器:吃 <code>## T-n</code>,吐 <code>.r-block</code> 卡
-            (標題無底線、T-n 與未完成同行 nowrap、卡文全寬 wrap)。不加提交判定。
+            (標題無底線、T-n＋標題＋未完成同一 <code>.r-head</code> nowrap、
+            任務總表前兩欄 nowrap、前提卡、卡文全寬 wrap)。不加提交判定。
             不進 gate-twin STAGES,不包 html-shell。</td>
         <td><code>--action</code>／<code>--fixture</code>;<code>check-stage5-card-contract.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>build-stage6-html.py</code></td>
@@ -2327,8 +2330,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             不進 <code>build-gate-twin.py</code> STAGES,不包 markdown-it + html-shell。</td>
         <td>S2-tdd bookkeeping 前呼叫;<code>check-stage6-hunk-contract.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>build-stage7-html.py</code></td>
-        <td>第 7 站審頁產生器:吃 <code>## 截圖槽</code>,吐同型分組／
-            <code>data-shot</code>／<code>shots/</code>／lightbox／hang-point。
+        <td>第 7 站審頁產生器:吃 <code>## 截圖槽</code>,沒有該標題時改吃
+            <code>shots/</code>／<code>data-shot</code>／<code>![](shots/…)</code>,
+            吐同型分組／<code>.lb</code> lightbox／<code>.e2e</code> 掛點。
             提交判定寫 md 頂欄 <code>verdict:</code>(接 #60)。不進 gate-twin STAGES。</td>
         <td><code>--action</code>／<code>--fixture</code>;<code>check-stage7-shot-contract.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>devflow_twin_ui.py</code></td>

@@ -19,9 +19,10 @@
 授權 `--action`。不包 markdown-it + html-shell。
 寫法落點:`_templates/2-decision.md`(本檔是正本,不另開家族)。
 
-1. **分組卡**:方案按決策點收進分組卡(`.r-block`／`.group`),不要一坨傾倒。
-2. **Decision 後面直式 SVG**:`## Decision` 後面是直式 SVG 方塊,置中
-   `max-width:360px`。不是 mermaid、不是橫 ASCII、不是 ASCII `<pre>` 當圖。
+1. **分組卡**:方案按決策點收進分組卡(每決策點一個 `.r-block`,內 A/B/C 卡)。
+   Approaches 是表格也要吃,不要只認 `#### A`。不要一坨傾倒。四組不得皆 0 張卡。
+2. **Decision 置頂後直式 SVG**:順序是 Decision 置頂 → 直式 SVG 方塊,置中
+   `max-width:360px` → 每決策點卡。不是 mermaid、不是橫 ASCII、不是 ASCII `<pre>` 當圖。
 3. **背景摺疊**:既有脈絡／Rationale／風險等背景進 `<details>`,預設收合。
 4. **chrome 同一套**:必須點名 `--ground`、`--panel`、`--accent`,加
    `--ok-soft`／`--bad-soft`;`.masthead` `.dash` `.cell` `.r-block`。

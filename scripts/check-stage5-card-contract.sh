@@ -32,6 +32,7 @@ TEMPLATE = "_templates/5-tasks.md"
 HOP = "skills/dev-flow/stage5/nodes/N5-twin.md"
 BUILDER = "scripts/build-stage5-html.py"
 FIXTURE = "scripts/fixtures/stage5-html/tasks-page.md"
+SUBSIDY = "scripts/fixtures/stage5-html/subsidy-page.md"
 GATE = "scripts/build-gate-twin.py"
 CHECKER = "scripts/devflow-check.sh"
 
@@ -89,6 +90,8 @@ SECTION_NEEDLES = (
     "--action",
     "html-shell",
     "62ch",
+    "前提卡",
+    ".r-head",
 )
 
 FORBIDDEN = (
@@ -124,6 +127,8 @@ OUTPUT_NEEDLES = (
     "dash",
     "cell",
     "t-line",
+    "t-title",
+    "task-index",
 )
 
 
@@ -197,6 +202,7 @@ check(template_text is not None, "模板存在 " + TEMPLATE)
 check(hop_text is not None, "hop 存在 " + HOP)
 check(builder_text is not None, "產檔器存在 " + BUILDER)
 check(os.path.isfile(os.path.join(root, FIXTURE)), "fixture 存在 " + FIXTURE)
+check(os.path.isfile(os.path.join(root, SUBSIDY)), "補助寫法 fixture 存在 " + SUBSIDY)
 
 for item in judge(contract_text, template_text, hop_text):
     check(False, item)
@@ -249,7 +255,35 @@ if os.path.isfile(builder):
     ok, detail = judge_html(html_out, "fixture 輸出形狀")
     check(ok, detail)
     check(html_out.count("t-line") >= 2, "fixture 至少兩張 T 卡同行 nowrap")
+    check("t-title" in html_out, "T-n 標題在 .r-head 不掉進卡文")
+    check("task-index" in html_out, "fixture 有任務總表")
     check(not has_verdict_submit(html_out), "fixture 不加提交判定器")
+    subsidy = subprocess.run(
+        [sys.executable, builder, os.path.join(root, SUBSIDY), "--out",
+         os.path.join(root, "scripts/fixtures/stage5-html/_subsidy.out.html")],
+        cwd=root, capture_output=True, text=True,
+    )
+    check(subsidy.returncode == 0, "產檔器吃補助 T-n＋標題寫法 exit 0")
+    sub_path = os.path.join(root, "scripts/fixtures/stage5-html/_subsidy.out.html")
+    sub_html = ""
+    if os.path.isfile(sub_path):
+        with open(sub_path, encoding="utf-8") as stream:
+            sub_html = stream.read()
+        os.remove(sub_path)
+    sub_ok, sub_detail = judge_html(sub_html, "補助寫法輸出形狀")
+    check(sub_ok, sub_detail)
+    head_ok = bool(re.search(
+        r't-line"><span class="tid">T-1</span>'
+        r'<span class="t-title">查詢入口</span>'
+        r'<span class="st">未完成</span>',
+        sub_html,
+    ))
+    check(head_ok, "補助寫法 T-1＋標題＋未完成同一 .r-head")
+    check('id="task-index"' in sub_html, "補助寫法有任務總表")
+    check("nth-child(1)" in sub_html and "nowrap" in sub_html,
+          "補助寫法總表前兩欄 nowrap")
+    check('id="premise"' in sub_html, "補助寫法有前提卡")
+    check(not has_verdict_submit(sub_html), "補助寫法不加提交判定")
     fake = html_out + '<button type="button">提交判定</button>'
     fake_ok, _ = judge_html(fake, "加提交判定")
     check(not fake_ok, "牙咬:5-tasks 加提交判定必須紅")

@@ -33,6 +33,7 @@ CONTRACT = "notes/design/stage1-review-ui-contract.md"
 TEMPLATE = "_templates/1-discussion.md"
 BUILDER = "scripts/build-stage1-html.py"
 FIXTURE = "scripts/fixtures/stage1-html/scan-page.md"
+SUBSIDY = "scripts/fixtures/stage1-html/subsidy-page.md"
 SCAN = "scripts/build-scan-html.py"
 GATE = "scripts/build-gate-twin.py"
 CHECKER = "scripts/devflow-check.sh"
@@ -85,6 +86,8 @@ CONTRACT_NEEDLES = (
     "--accent",
     ".r-block",
     ".masthead",
+    ".now-wrap",
+    "無標籤",
     "不併進",
 )
 
@@ -102,6 +105,7 @@ TEMPLATE_NEEDLES = (
     "scan-sum",
     "scan-now",
     "scan-people",
+    "now-wrap",
 )
 
 OUTPUT_NEEDLES = (
@@ -119,6 +123,7 @@ OUTPUT_NEEDLES = (
     "--accent",
     "masthead",
     "r-block",
+    "now-wrap",
 )
 
 
@@ -182,6 +187,7 @@ check(contract_text is not None, "契約存在 " + CONTRACT)
 check(template_text is not None, "模板存在 " + TEMPLATE)
 check(builder_text is not None, "產檔器存在 " + BUILDER)
 check(os.path.isfile(os.path.join(root, FIXTURE)), "fixture 存在 " + FIXTURE)
+check(os.path.isfile(os.path.join(root, SUBSIDY)), "補助寫法 fixture 存在 " + SUBSIDY)
 
 for item in judge(contract_text, template_text):
     check(False, item)
@@ -251,6 +257,24 @@ if os.path.isfile(builder):
     missing = html_out.replace('id="scan-now"', 'id="scan-old"')
     missing_ok, _ = judge_html(missing, "刪 scan-now")
     check(not missing_ok, "牙咬:輸出刪 scan-now 必須紅")
+    subsidy = subprocess.run(
+        [sys.executable, builder, os.path.join(root, SUBSIDY), "--out",
+         os.path.join(root, "scripts/fixtures/stage1-html/_subsidy.out.html")],
+        cwd=root, capture_output=True, text=True,
+    )
+    check(subsidy.returncode == 0, "產檔器吃補助無標籤四行＋| 寫法 exit 0")
+    sub_html = ""
+    sub_path = os.path.join(root, "scripts/fixtures/stage1-html/_subsidy.out.html")
+    if os.path.isfile(sub_path):
+        with open(sub_path, encoding="utf-8") as stream:
+            sub_html = stream.read()
+        os.remove(sub_path)
+    sub_ok, sub_detail = judge_html(sub_html, "補助寫法輸出形狀")
+    check(sub_ok, sub_detail)
+    check(sub_html.count("<rect") == 3, "補助寫法正好三框,不含 |")
+    check("now-wrap" in sub_html, "補助寫法有 .now-wrap 置中")
+    check(">|</text>" not in sub_html and ">|</text>" not in sub_html,
+          "補助寫法不把 | 印成一框")
 else:
     check(False, "產檔器存在且可跑 " + BUILDER)
 

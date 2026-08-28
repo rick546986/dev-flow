@@ -30,6 +30,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 FIXTURE = ROOT / "scripts" / "fixtures" / "stage5-html" / "tasks-page.md"
 
 FM_RE = re.compile(r"\A---\n(.*?)\n---\n", re.S)
+H2_RE = re.compile(r"^##[ \t]+(.+?)\s*$", re.M)
 T_HEAD_RE = re.compile(r"^##[ \t]+(T-\d+\S*)\b[ \t]*(.*)$", re.M)
 FIELD_RE = re.compile(
     r"^[-*][ \t]+\*{0,2}(Covers|Files|Verify|Blocked-by|Intent|Boundaries)\*{0,2}[ \t]*[:：][ \t]*(.*)$",
@@ -73,11 +74,16 @@ a.cell:hover{border-color:var(--accent);text-decoration:none}
 .r-head{display:flex;gap:10px;align-items:center;padding:15px 18px;
   border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
 .r-name,.t-line{font-weight:650;text-decoration:none;white-space:nowrap}
-.t-line{display:inline-flex;gap:8px;align-items:center}
-.tid,.st{white-space:nowrap}
+.t-line{display:inline-flex;gap:8px;align-items:center;white-space:nowrap}
+.tid,.t-title,.st{white-space:nowrap}
 .r-body{padding:14px 18px 16px;overflow-wrap:anywhere;word-break:break-word}
 .r-body p{margin:0 0 8px}
 .tablewrap{overflow-x:auto}
+.task-index{width:100%;border-collapse:collapse;font-size:.92rem}
+.task-index th,.task-index td{border-bottom:1px solid var(--rule-2);
+  text-align:left;padding:8px 6px}
+.task-index th:nth-child(1),.task-index th:nth-child(2),
+.task-index td:nth-child(1),.task-index td:nth-child(2){white-space:nowrap}
 .src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
 """
 
@@ -116,6 +122,37 @@ def parse_frontmatter(text):
     return meta, text[match.end():]
 
 
+def section_named(text, names):
+    wanted = {name.lower() for name in names}
+    found = list(H2_RE.finditer(text or ""))
+    for i, match in enumerate(found):
+        title = match.group(1).strip()
+        key = title.split("(", 1)[0].strip().lower()
+        if key not in wanted and title.lower() not in wanted:
+            if not any(title.lower().startswith(n) for n in wanted):
+                continue
+        stop = found[i + 1].start() if i + 1 < len(found) else len(text)
+        return title, text[match.end():stop]
+    return None, ""
+
+
+def parse_premise(text):
+    title, body = section_named(text, ("前提", "執行前提", "開工前提"))
+    prose = " ".join(
+        line.strip()
+        for line in (body or "").splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    )
+    if not prose:
+        return ""
+    return (
+        '<section class="r-block" id="premise">'
+        '<div class="r-head"><span class="r-name">%s</span></div>'
+        '<div class="r-body"><p>%s</p></div></section>'
+        % (esc(title or "前提"), esc(prose))
+    )
+
+
 def parse_tasks(text):
     found = list(T_HEAD_RE.finditer(text or ""))
     tasks = []
@@ -152,18 +189,21 @@ def render_task(task):
         if key in fields:
             bits.append("<p><strong>%s</strong> %s</p>" % (esc(key), esc(fields[key])))
     body = "".join(bits) or "<p>—</p>"
+    title = task["title"] or "—"
     return (
         '<section class="r-block" id="%s">'
         '<div class="r-head"><span class="r-name t-line">'
-        '<span class="tid">%s</span><span class="st">%s</span>'
+        '<span class="tid">%s</span>'
+        '<span class="t-title">%s</span>'
+        '<span class="st">%s</span>'
         "</span></div>"
-        '<div class="r-body">%s%s</div>'
+        '<div class="r-body">%s</div>'
         "</section>"
     ) % (
         esc(task["id"]),
         esc(task["id"]),
+        esc(title),
         esc(task["status"]),
-        ("<p>%s</p>" % esc(task["title"])) if task["title"] else "",
         body,
     )
 
@@ -176,6 +216,21 @@ def build_html(text):
     if not tasks:
         die(1, "解析不到 ## T-n")
     open_n = sum(1 for t in tasks if t["status"] != "完成")
+    premise = parse_premise(body)
+    index_rows = []
+    for task in tasks:
+        index_rows.append(
+            "<tr><td>%s</td><td>%s</td><td>%s</td></tr>"
+            % (esc(task["id"]), esc(task["status"]), esc(task["title"] or "—"))
+        )
+    index_table = (
+        '<section class="r-block" id="task-index">'
+        '<div class="r-head"><span class="r-name">任務總表</span></div>'
+        '<div class="r-body"><div class="tablewrap"><table class="task-index">'
+        "<tr><th>T</th><th>狀態</th><th>標題</th></tr>%s"
+        "</table></div></div></section>"
+        % "".join(index_rows)
+    )
     dash = (
         '<div class="dash">'
         '<a class="cell" href="#T-1"><span class="k">狀態</span>'
@@ -200,9 +255,9 @@ def build_html(text):
   <p class="sub">正本是 md。這頁是審頁任務卡,不是執行板,不加提交判定。</p>
   %s
 </header>
-<div class="tablewrap">
 %s
-</div>
+%s
+%s
 <p class="src">由 <code>scripts/build-stage5-html.py</code> 從 md 解析產生,不包 html-shell。</p>
 </div>
 </body>
@@ -212,6 +267,8 @@ def build_html(text):
         CSS,
         esc(slug),
         dash,
+        premise,
+        index_table,
         "\n".join(render_task(t) for t in tasks),
     )
     return page

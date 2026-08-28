@@ -25,8 +25,9 @@
    `--bad-soft`;`.masthead` `.dash` `.cell` `.r-block`
    (灰底／卡片底／強調色／區塊卡)。不要白底長文直轉。
 2. **任務總表**:T 編號欄、狀態欄同一行,`white-space:nowrap`。
-   T-n 與未完成同行 `nowrap`。表太寬就橫滑(`.tablewrap`／`overflow-x:auto`),
-   不要擠窄前兩欄。
+   T-n＋標題＋未完成同一 `.r-head` 同行 `nowrap`,標題不要掉進卡文。
+   表太寬就橫滑(`.tablewrap`／`overflow-x:auto`),不要擠窄前兩欄。
+   有前提／執行前提節就出前提卡。
 3. **頂區摘要卡若是連結**:標題／數字／小字都不要底線,也不要繼承成強調色底線字
    (`a.cell{text-decoration:none;color:inherit}`)。hover 只改邊框,不加底線。
    `.r-block` 標題不要底線。

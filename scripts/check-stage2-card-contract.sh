@@ -33,6 +33,7 @@ TEMPLATE = "_templates/2-decision.md"
 HOP = "skills/dev-flow/stage2/nodes/N7-g1.md"
 BUILDER = "scripts/build-stage2-html.py"
 FIXTURE = "scripts/fixtures/stage2-html/decision-page.md"
+SUBSIDY = "scripts/fixtures/stage2-html/subsidy-page.md"
 GATE = "scripts/build-gate-twin.py"
 CHECKER = "scripts/devflow-check.sh"
 
@@ -82,6 +83,8 @@ CONTRACT_NEEDLES = (
     "build-stage2-html.py",
     "--action",
     "html-shell",
+    "置頂",
+    "表格",
 )
 
 FORBIDDEN = (
@@ -105,7 +108,7 @@ HOP_NEEDLES = (
 
 OUTPUT_NEEDLES = (
     "r-block",
-    "group",
+    "class=\"card\"",
     "max-width:360px",
     "<svg",
     "viewBox",
@@ -195,6 +198,7 @@ check(template_text is not None, "模板存在 " + TEMPLATE)
 check(hop_text is not None, "hop 存在 " + HOP)
 check(builder_text is not None, "產檔器存在 " + BUILDER)
 check(os.path.isfile(os.path.join(root, FIXTURE)), "fixture 存在 " + FIXTURE)
+check(os.path.isfile(os.path.join(root, SUBSIDY)), "補助寫法 fixture 存在 " + SUBSIDY)
 
 for item in judge(contract_text, template_text, hop_text):
     check(False, item)
@@ -212,8 +216,9 @@ if builder_text is not None:
 if gate_text is not None:
     stages = re.search(r"^STAGES\s*=\s*\((.*?)\)", gate_text, re.S | re.M)
     stage_blob = stages.group(1) if stages else ""
-    check(stage_blob.count("2-decision") == 1 or "2-decision" in stage_blob,
-          "build-gate-twin.py STAGES 仍是 gate 卡,審頁不另塞一筆")
+    names = re.findall(r'"([^"]+)"', stage_blob)
+    check(names == ["2-decision", "4-spec", "7-review", "5-tasks"],
+          "build-gate-twin.py STAGES 仍是四站 gate 卡,審頁不另塞一筆")
 
 if check_text is not None:
     check("check-stage2-card-contract.sh" in check_text,
@@ -245,10 +250,35 @@ if os.path.isfile(builder):
     html_out = good.stdout
     ok, detail = judge_html(html_out, "fixture 輸出形狀")
     check(ok, detail)
-    check(html_out.count('class="group"') >= 2 or html_out.count("<h3>") >= 2,
-          "fixture 至少兩組分組卡")
+    check(html_out.count('class="card"') >= 4,
+          "fixture 至少四張方案卡")
     check("<svg" in html_out and "max-width:360px" in html_out,
           "Decision 後直式 SVG 置中 360")
+    dec = html_out.find('id="decision"')
+    point = html_out.find('id="point-1"')
+    check(dec >= 0 and point >= 0 and dec < point,
+          "Decision 置頂在決策點卡前面")
+    subsidy = subprocess.run(
+        [sys.executable, builder, os.path.join(root, SUBSIDY), "--out",
+         os.path.join(root, "scripts/fixtures/stage2-html/_subsidy.out.html")],
+        cwd=root, capture_output=True, text=True,
+    )
+    check(subsidy.returncode == 0, "產檔器吃補助 Approaches 表寫法 exit 0")
+    sub_path = os.path.join(root, "scripts/fixtures/stage2-html/_subsidy.out.html")
+    sub_html = ""
+    if os.path.isfile(sub_path):
+        with open(sub_path, encoding="utf-8") as stream:
+            sub_html = stream.read()
+        os.remove(sub_path)
+    sub_ok, sub_detail = judge_html(sub_html, "補助表寫法輸出形狀")
+    check(sub_ok, sub_detail)
+    check(sub_html.count('id="point-') == 4, "補助表寫法四個決策點 r-block")
+    check(sub_html.count('class="card"') >= 12, "補助表寫法每點有 A/B/C 卡")
+    check(sub_html.find('id="decision"') < sub_html.find('id="point-1"'),
+          "補助表寫法 Decision 置頂")
+    check("<details" in sub_html, "補助表寫法背景摺疊")
+    check("<pre" not in sub_html and "mermaid" not in sub_html.lower(),
+          "補助表寫法禁 mermaid／ASCII pre")
     old_fake = (
         "<!DOCTYPE html><html><body><div>你要審什麼</div>"
         "<div>勾選提示</div><pre>[A]->[B]->[C]</pre></body></html>"

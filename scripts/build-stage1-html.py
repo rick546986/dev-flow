@@ -33,6 +33,7 @@ FM_RE = re.compile(r"\A---\n(.*?)\n---\n", re.S)
 H2_RE = re.compile(r"^##[ \t]+(.+?)\s*$", re.M)
 OQ_RE = re.compile(r"^[-*]\s*\[(x|~|>)\]\s*(.+)$", re.M)
 SEP_LINE_RE = re.compile(r"^(?:--+>|→|->|↓|▼)+$")
+RULE_LINE_RE = re.compile(r"^[-+|\\/\s]+$")
 FIELD_LABELS = (
     (re.compile(r"^(?:誰|Actor)[:：]\s*", re.I), "who"),
     (re.compile(r"^(?:做什麼|動作|真實動作)[:：]\s*"), "action"),
@@ -90,7 +91,7 @@ a.cell:hover{border-color:var(--accent)}
 .badge.ok{background:var(--ok-soft);color:var(--ok)}
 .badge.warn{background:var(--warn-soft);color:var(--warn)}
 .badge.base{background:var(--sunk);color:var(--ink-3)}
-.figwrap{display:flex;justify-content:center;margin:12px 0}
+.now-wrap,.figwrap{display:flex;justify-content:center;margin:12px 0}
 #scan-now{width:100%;max-width:360px;height:auto;display:block}
 #scan-now .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
 #scan-now .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
@@ -212,52 +213,57 @@ def parse_oq(body):
     return items
 
 
+def _strip_field_label(line):
+    for pat, key in FIELD_LABELS:
+        new, n = pat.subn("", line, count=1)
+        if n:
+            return key, new.strip()
+    return None, line
+
+
+def frame_from_stack(lines):
+    """四行堆疊:有標籤按標籤,無標籤按序。`|` 不是一框。"""
+    labeled = []
+    for line in lines:
+        key, val = _strip_field_label(line)
+        if key:
+            labeled.append((key, val))
+    if labeled and len(labeled) == len(lines):
+        slot = {"who": "", "action": "", "tool": "", "pain": ""}
+        for key, val in labeled:
+            slot[key] = val
+        return slot["who"], slot["action"], slot["tool"], slot["pain"]
+    padded = list(lines) + ["", "", "", ""]
+    who, action, tool, pain = padded[0], padded[1], padded[2], padded[3]
+    pain = re.sub(r"^痛[:：]\s*", "", pain)
+    return who, action, tool, pain
+
+
 def parse_frames(body):
+    raw_lines = []
+    for raw in (body or "").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or line.startswith("```"):
+            continue
+        if RULE_LINE_RE.match(line):
+            continue
+        raw_lines.append(line)
     frames = []
     buf = []
 
-    def frame_from_stack(lines):
-        who = action = tool = pain = ""
-        leftovers = []
-        for raw in lines:
-            line = raw.strip()
-            if not line:
-                continue
-            hit = False
-            for pat, key in FIELD_LABELS:
-                if pat.search(line):
-                    val = pat.sub("", line).strip()
-                    if key == "who":
-                        who = val
-                    elif key == "action":
-                        action = val
-                    elif key == "tool":
-                        tool = val
-                    else:
-                        pain = val
-                    hit = True
-                    break
-            if not hit:
-                leftovers.append(line)
-        if not who and leftovers:
-            who = leftovers[0]
-        return (who, action, tool, pain)
+    def flush():
+        if buf:
+            frames.append(frame_from_stack(buf))
+            del buf[:]
 
-    for raw in (body or "").splitlines():
-        line = raw.strip()
-        if not line:
-            continue
+    for line in raw_lines:
         if SEP_LINE_RE.match(line):
-            if buf:
-                frames.append(frame_from_stack(buf))
-                buf = []
+            flush()
             continue
         buf.append(line)
         if len(buf) == 4:
-            frames.append(frame_from_stack(buf))
-            buf = []
-    if buf:
-        frames.append(frame_from_stack(buf))
+            flush()
+    flush()
     return [f for f in frames if any(part.strip() for part in f)]
 
 
@@ -380,7 +386,7 @@ def build_html(text):
 <section class="r-block" id="now-card">
   <div class="r-head"><span class="r-name">現況</span></div>
   <div class="r-body">
-    <div class="figwrap">
+    <div class="now-wrap">
 %s
     </div>
   </div>

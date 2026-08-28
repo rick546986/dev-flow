@@ -164,6 +164,39 @@ def parse_groups(approaches):
     return groups
 
 
+def parse_table(body):
+    rows = []
+    header = None
+    for raw in (body or "").splitlines():
+        line = raw.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if not cells:
+            continue
+        if set(cells[0]) <= set("-: "):
+            continue
+        if header is None:
+            header = cells
+            continue
+        rows.append(cells)
+    return header or [], rows
+
+
+def col_index(header, *needles):
+    for i, name in enumerate(header):
+        compact = name.replace(" ", "")
+        if any(n in compact for n in needles):
+            return i
+    return -1
+
+
+def cell(row, idx):
+    if idx < 0 or idx >= len(row):
+        return ""
+    return row[idx].strip()
+
+
 def parse_cards(blob):
     cards = []
     h4 = list(H4_RE.finditer(blob or ""))
@@ -178,12 +211,33 @@ def parse_cards(blob):
             )
             cards.append((title, body))
         return cards
-    for raw in (blob or "").splitlines():
-        line = raw.strip()
-        if line.startswith("|") and "方案" not in line and set(line.strip("|").split("|")[0].strip()) > set("-: "):
-            cells = [c.strip() for c in line.strip("|").split("|")]
-            if cells and cells[0] and set(cells[0]) > set("-: "):
-                cards.append((cells[0], "／".join(cells[1:3])))
+    header, rows = parse_table(blob)
+    if rows:
+        name_i = col_index(header, "方案", "Approach")
+        if name_i < 0:
+            name_i = 0
+        sum_i = col_index(header, "摘要")
+        pro_i = col_index(header, "優")
+        con_i = col_index(header, "劣")
+        for row in rows:
+            name = cell(row, name_i)
+            if not name or set(name) <= set("-: "):
+                continue
+            bits = []
+            summary = cell(row, sum_i)
+            if summary:
+                bits.append(summary)
+            pro = cell(row, pro_i)
+            con = cell(row, con_i)
+            if pro:
+                bits.append("優:" + pro)
+            if con:
+                bits.append("劣:" + con)
+            if not bits:
+                extras = [c for i, c in enumerate(row) if i != name_i and c]
+                bits.append("／".join(extras[:3]))
+            cards.append((name, " ".join(bits)))
+        return cards
     return cards
 
 
@@ -260,15 +314,22 @@ def build_html(text):
     _, context = section_named(body, ("既有脈絡",))
     _, risks = section_named(body, ("Risks & Mitigations", "Risks"))
 
+    empty_groups = [title for title, cards in groups if not cards]
+    if empty_groups:
+        die(1, "決策點沒有方案卡:" + "、".join(empty_groups))
+
     group_html = []
-    for title, cards in groups:
+    for idx, (title, cards) in enumerate(groups):
         cards_html = "".join(
             '<div class="card"><strong>%s</strong><p>%s</p></div>'
             % (esc(name), esc(blurb or "—"))
             for name, blurb in cards
         )
         group_html.append(
-            '<div class="group"><h3>%s</h3>%s</div>' % (esc(title), cards_html)
+            '<section class="r-block" id="point-%d">'
+            '<div class="r-head"><span class="r-name">%s</span></div>'
+            '<div class="r-body">%s</div></section>'
+            % (idx + 1, esc(title), cards_html)
         )
 
     bg_bits = []
@@ -276,6 +337,7 @@ def build_html(text):
         ("既有脈絡", context),
         ("Rationale", rationale),
         ("風險", risks),
+        ("未採", rejected),
     ):
         prose = first_sentence(blob)
         if prose:
@@ -285,16 +347,6 @@ def build_html(text):
         bg_html = (
             '<details class="bg"><summary>背景</summary>%s</details>'
             % "".join(bg_bits)
-        )
-
-    rejected_html = ""
-    rejected_text = first_sentence(rejected)
-    if rejected_text:
-        rejected_html = (
-            '<section class="r-block" id="rejected">'
-            '<div class="r-head"><span class="r-name">未採</span></div>'
-            '<div class="r-body"><p>%s</p></div></section>'
-            % esc(rejected_text)
         )
 
     dash = (
@@ -325,10 +377,6 @@ def build_html(text):
   <p class="sub">正本是 md。這頁是審頁分組卡,不是 gate-twin 勾選卡。</p>
   %s
 </header>
-<section class="r-block" id="approaches">
-  <div class="r-head"><span class="r-name">方案分組</span></div>
-  <div class="r-body">%s</div>
-</section>
 <section class="r-block" id="decision">
   <div class="r-head"><span class="r-name">Decision</span></div>
   <div class="r-body">
@@ -349,15 +397,10 @@ def build_html(text):
         CSS,
         esc(slug),
         dash,
-        "".join(group_html),
         esc(decision_text),
         render_vbox(steps),
-        rejected_html,
-        bg_html and (
-            '<section class="r-block" id="background">'
-            '<div class="r-head"><span class="r-name">背景</span></div>'
-            '<div class="r-body">%s</div></section>' % bg_html
-        ),
+        "\n".join(group_html),
+        bg_html,
     )
     return page
 

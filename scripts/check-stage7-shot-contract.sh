@@ -36,6 +36,7 @@ TEMPLATE = "_templates/7-review.md"
 HOP = "skills/dev-flow/stage7/nodes/S2e-walkthrough.md"
 BUILDER = "scripts/build-stage7-html.py"
 FIXTURE = "scripts/fixtures/stage7-html/review-page.md"
+SUBSIDY = "scripts/fixtures/stage7-html/subsidy-page.md"
 GATE = "scripts/build-gate-twin.py"
 CHECKER = "scripts/devflow-check.sh"
 VERDICT = "notes/design/gate-verdict-write.md"
@@ -94,6 +95,8 @@ CONTRACT_NEEDLES = (
     "--action",
     "lightbox",
     "hang-point",
+    ".lb",
+    ".e2e",
     "提交判定",
     "verdict:",
 )
@@ -139,8 +142,8 @@ OUTPUT_NEEDLES = (
     "data-shot",
     "shots/",
     "進場",
-    "lightbox",
-    "hang-point",
+    'class="lb',
+    'class="e2e',
     "佔位",
     "提交判定",
     "verdict:",
@@ -211,7 +214,7 @@ def judge(contract_text, template_text, hop_text):
 
 
 def looks_like_shell_article(html_text):
-    if "data-shot" in html_text and "lightbox" in html_text:
+    if "data-shot" in html_text and ('class="lb' in html_text or "lightbox" in html_text):
         return False
     return "html-shell" in html_text or "<article" in html_text
 
@@ -247,6 +250,7 @@ check(template_text is not None, "模板存在 " + TEMPLATE)
 check(hop_text is not None, "hop 存在 " + HOP)
 check(builder_text is not None, "產檔器存在 " + BUILDER)
 check(os.path.isfile(os.path.join(root, FIXTURE)), "fixture 存在 " + FIXTURE)
+check(os.path.isfile(os.path.join(root, SUBSIDY)), "補助寫法 fixture 存在 " + SUBSIDY)
 
 for item in judge(contract_text, template_text, hop_text):
     check(False, item)
@@ -319,9 +323,36 @@ if os.path.isfile(builder):
     ok, detail = judge_html(html_out, "fixture 輸出形狀")
     check(ok, detail)
     check("未掛" not in html_out, "fixture 不留未掛")
-    check("lightbox" in html_out and "hang-point" in html_out,
-          "fixture 含 lightbox 與 hang-point")
+    check('class="lb' in html_out and 'class="e2e' in html_out,
+          "fixture 含 .lb lightbox 與 .e2e 掛點")
     check("提交判定" in html_out, "fixture 含提交判定")
+    subsidy = subprocess.run(
+        [sys.executable, builder, os.path.join(root, SUBSIDY), "--out",
+         os.path.join(root, "scripts/fixtures/stage7-html/_subsidy.out.html")],
+        cwd=root, capture_output=True, text=True,
+    )
+    check(subsidy.returncode == 0, "產檔器吃無 ## 截圖槽 的補助 md exit 0")
+    sub_path = os.path.join(root, "scripts/fixtures/stage7-html/_subsidy.out.html")
+    sub_html = ""
+    if os.path.isfile(sub_path):
+        with open(sub_path, encoding="utf-8") as stream:
+            sub_html = stream.read()
+        os.remove(sub_path)
+    sub_ok, sub_detail = judge_html(sub_html, "補助寫法輸出形狀")
+    check(sub_ok, sub_detail)
+    named = re.findall(r'data-shot="([^"]+)"', sub_html)
+    check(len(named) == 7, "補助寫法七張定名 data-shot")
+    check(sub_html.count('class="r-block"') >= 5, "補助寫法五組 r-block")
+    for name in (
+        "form6-list", "open-existing", "form5-ready",
+        "list-check", "detail-view", "detail-fields", "empty-state",
+    ):
+        check('data-shot="%s"' % name in sub_html, "補助寫法吃到定名 %s" % name)
+    check('class="lb' in sub_html and 'class="e2e' in sub_html,
+          "補助寫法是 .lb／.e2e,不是只認字面 lightbox")
+    check("未掛" not in sub_html, "補助寫法不留未掛")
+    check(not re.search(r"""href=["'][^"']*edit""", sub_html, re.I),
+          "補助寫法不發明 edit URL")
     stale = html_out.replace("佔位", "未掛")
     stale_ok, _ = judge_html(stale, "改成未掛")
     check(not stale_ok, "牙咬:輸出改成未掛必須紅")
