@@ -41,9 +41,14 @@ FIELD_RE = re.compile(
     re.M,
 )
 SLOT_ORDER = ("新生", "改行為", "退役", "不動")
+# 補助實寫:新生（這輪沒有）：／改行為（相關一格）：／退役：／不動：
+# 括號可有可無,全形／半形都算。不要只認「新生：」。
 SLOT_RE = re.compile(
-    r"^(?:[-*]\s*)?(新生|改行為|退役|不動)\s*[:：]\s*(.+)$"
+    r"^(?:[-*]\s*)?(新生|改行為|退役|不動)"
+    r"(?:\s*[（(][^）)]*[）)])?\s*[:：]\s*(.+)$"
 )
+EMPTY_SLOT = ("", "沒有", "不加欄")
+TOKEN_RE = re.compile(r"[A-Za-z0-9._-]+|[^A-Za-z0-9._-]")
 LIFE_KEYS = (
     "補助模組生命週期",
     "模組生命週期",
@@ -316,10 +321,14 @@ def parse_requirements(text):
 
 
 def collapse_cell(raw):
-    """有關聯的收成一格,不拆檔名。"""
+    """有關聯的收成一格,不拆檔名。空字才改寫「沒有」;「不加欄」原樣留。"""
     text = re.sub(r"\s+", " ", (raw or "").strip())
     text = re.sub(r"[`]+", "", text)
     return text or "沒有"
+
+
+def slot_blank(val):
+    return collapse_cell(val).rstrip("。.") in EMPTY_SLOT
 
 
 def parse_lifecycle(body):
@@ -356,27 +365,46 @@ def parse_lifecycle(body):
 
 
 def pick_hl(slots):
+    """這輪新功能落點。.hl 不釘在「沒有／不加欄」空格。"""
     for name in SLOT_ORDER:
         val = slots.get(name, "")
+        if slot_blank(val):
+            continue
         if "這輪" in val or "新功能" in val:
             return name
-    if slots.get("改行為") and slots["改行為"] != "沒有":
+    if not slot_blank(slots.get("改行為", "")):
         return "改行為"
+    for name in SLOT_ORDER:
+        if not slot_blank(slots.get(name, "")):
+            return name
     return "改行為"
 
 
 def wrap_lines(text, width=14):
+    """直式小字。數字／代號(如 27004)整段留下,不從中間折。"""
     text = collapse_cell(text)
     if len(text) <= width:
         return [text]
-    parts = []
-    buf = text
-    while buf and len(parts) < 3:
-        parts.append(buf[:width])
-        buf = buf[width:]
-    if buf and parts:
-        parts[-1] = parts[-1][: max(0, width - 1)] + "…"
-    return parts or ["沒有"]
+    tokens = TOKEN_RE.findall(text)
+    lines = []
+    cur = ""
+    for tok in tokens:
+        if not cur:
+            cur = tok
+            continue
+        if len(cur) + len(tok) <= width:
+            cur += tok
+            continue
+        lines.append(cur)
+        cur = tok
+        if len(lines) == 2:
+            used = "".join(lines)
+            rest = text[len(used):]
+            lines.append(rest or cur)
+            return [part for part in lines if part][:3] or ["沒有"]
+    if cur:
+        lines.append(cur)
+    return [part for part in lines if part][:3] or ["沒有"]
 
 
 def render_lifecycle_svg(slots):

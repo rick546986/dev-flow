@@ -87,6 +87,11 @@ CONTRACT_NEEDLES = (
     "html-shell",
     "mermaid",
     "不拆檔名",
+    "括號可有可無",
+    "不加欄",
+    "不中折",
+    "新生（",
+    "相關一格",
 )
 
 FORBIDDEN = (
@@ -158,6 +163,24 @@ def judge(contract_text, template_text, hop_text):
             if needle not in hop_text:
                 local.append("N6-g2 含「%s」" % needle)
     return local
+
+
+def svg_slots(html_text):
+    start = html_text.find("<svg")
+    stop = html_text.find("</svg>")
+    if start < 0 or stop < 0:
+        return {}
+    svg = html_text[start:stop]
+    texts = re.findall(r'<text class="(nl|sm)"[^>]*>(.*?)</text>', svg)
+    slots = {}
+    current = None
+    for cls, val in texts:
+        if cls == "nl" and val in ("新生", "改行為", "退役", "不動"):
+            current = val
+            slots[current] = []
+        elif cls == "sm" and current is not None:
+            slots[current].append(val)
+    return slots
 
 
 def looks_like_shell_article(html_text):
@@ -245,6 +268,9 @@ if contract_text is not None and template_text is not None and hop_text is not N
     stripped_life = contract_text.replace("補助模組生命週期", "")
     check(bool(judge(stripped_life, template_text, hop_text)),
           "牙咬:契約刪「補助模組生命週期」必須紅")
+    stripped_paren = contract_text.replace("括號可有可無", "")
+    check(bool(judge(stripped_paren, template_text, hop_text)),
+          "牙咬:契約刪「括號可有可無」必須紅")
     poisoned = contract_text + "\n形成併取卵\n"
     check(bool(judge(poisoned, template_text, hop_text)),
           "牙咬:契約寫入補助產品詞必須紅")
@@ -284,7 +310,34 @@ if os.path.isfile(builder):
     check(sub_ok, sub_detail)
     check(sub_html.count("<rect") == 4, "補助標題正好四格,不拆檔名")
     check("新生" in sub_html and "改行為" in sub_html, "補助四條印成新生／改行為／退役／不動")
-    check("查詢入口" in sub_html, "補助改行為格吃到四條正文")
+    subsidy_src = read(SUBSIDY) or ""
+    check("新生（" in subsidy_src and "改行為（" in subsidy_src,
+          "補助 fixture 用有括號的槽名,不是只寫 新生：")
+    check("新生（這輪沒有）：" in subsidy_src, "補助 fixture 含 新生（這輪沒有）：")
+    check("改行為（相關一格）：" in subsidy_src, "補助 fixture 含 改行為（相關一格）：")
+    slots = svg_slots(sub_html)
+    born = "".join(slots.get("新生") or [])
+    change = "".join(slots.get("改行為") or [])
+    retire = "".join(slots.get("退役") or [])
+    stay = "".join(slots.get("不動") or [])
+    check("不加欄" in born or born == "沒有", "補助新生格印不加欄／沒有")
+    check("PLUS" in change and "切表" in change and "OPU" in change,
+          "補助改行為格印 PLUS 切表／兩格／OPU 小字")
+    check("沒有" not in change, "補助改行為格不是空的沒有")
+    check("形成金額" in retire, "補助退役格印形成金額第三格")
+    check(any("27004" in line for line in (slots.get("不動") or [])),
+          "補助不動格 27004 同一行、不中折")
+    note_html = ""
+    n0 = sub_html.find('id="lifecycle-note"')
+    if n0 >= 0:
+        n1 = sub_html.find("</section>", n0)
+        note_html = sub_html[n0:n1] if n1 > n0 else ""
+    check("PLUS" not in note_html and "PLUS" in change,
+          "PLUS 切表在改行為格,不是掉進說明卡")
+    rects = re.findall(r'<rect class="(hl|b)"', sub_html)
+    check(len(rects) == 4 and rects[1] == "hl",
+          "補助 .hl 在改行為格,不釘空的新生")
+    check("[（(]" in (builder_text or ""), "產檔器 SLOT_RE 認括號槽名")
     check("<pre" not in sub_html and "mermaid" not in sub_html.lower(),
           "補助寫法禁 mermaid／ASCII pre")
     check('id="gv-submit"' in sub_html, "補助寫法有提交判定")

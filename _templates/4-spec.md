@@ -38,6 +38,7 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 > (--action 授權)。正本 `notes/design/stage4-review-ui-contract.md`。
 > 不進 gate-twin STAGES,不包 html-shell。生命週期四格吃
 > `## 補助模組生命週期（預覽）` 四條,不只認自創標題。
+> 槽名括號可有可無(`新生（這輪沒有）：`／`改行為（相關一格）：`)。
 >
 > 反模糊三律(防偷懶條文):
 > 1. 每條 S 必須可直接轉成**一個測試**:含具體輸入與可斷言輸出;禁模糊詞
