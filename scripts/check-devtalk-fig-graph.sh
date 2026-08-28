@@ -25,6 +25,7 @@
 #   scripts/fixtures/devtalk-html-scan/good/1-discussion.html
 #   必須有:摘要卡(.sum)、直式 svg 或 pre、人表、題表、驗收表、details 問答(預設摺著)
 #   現況圖必須有限寬且欄內置中(width:220px + .figwrap justify-content:center)
+#   題表必須有長題目列;#scan-qs 末欄(著落)與 #scan-ac 短欄必須 white-space:nowrap
 #
 # 掃頁產生器(同檔第三節):
 #   scripts/build-scan-html.py --action 從同目錄 1-discussion.md 產出六件套。
@@ -39,7 +40,8 @@
 #   複本刪掉圖上一個 hop → 必須紅;graph.yaml 多一個 hop 不改圖 → 必須紅;
 #   樣張拿掉 details → 必須紅;樣張圖改回撐滿欄 → 必須紅;好樣本必須綠;
 #   生成頁拿掉人表 → 必須紅;生成頁圖改撐滿欄必須紅;
-#   框高改 28／每框少一行／痛空／堆疊拆很多小格 → 必須紅。
+#   框高改 28／每框少一行／痛空／堆疊拆很多小格 → 必須紅;
+#   殼或樣張拿掉 #scan-qs 末欄 nowrap → 必須紅;生成頁拿掉 nowrap → 必須紅。
 #
 # 用法:
 #   scripts/check-devtalk-fig-graph.sh [root]
@@ -346,6 +348,79 @@ def scan_fig_center_gaps(text, label):
     return gaps
 
 
+def css_rules(compact):
+    return [
+        (m.group(1), m.group(2))
+        for m in re.finditer(r"([^{]+)\{([^}]*)\}", compact)
+    ]
+
+
+def selector_nowrap_missing(compact, needles):
+    missing = []
+    rules = css_rules(compact)
+    for needle in needles:
+        bodies = [body for sel, body in rules if needle in sel]
+        if not bodies or not any("white-space:nowrap" in body for body in bodies):
+            missing.append(needle)
+    return missing
+
+
+def scan_short_col_nowrap_gaps(text, label):
+    """#scan-qs 末欄(著落)與 #scan-ac 短欄(從哪看／看到什麼)必須 nowrap。
+    表 width:100% 時中文會逐字斷,短欄被擠成一字一行。"""
+    style = first_block(text, r"<style\b[^>]*>.*?</style>")
+    compact = re.sub(r"\s+", "", style)
+    gaps = []
+    qs_needles = ("#scan-qsth:last-child", "#scan-qstd:last-child")
+    ac_needles = (
+        "#scan-acth:nth-child(2)",
+        "#scan-actd:nth-child(2)",
+        "#scan-acth:last-child",
+        "#scan-actd:last-child",
+    )
+    if selector_nowrap_missing(compact, qs_needles):
+        gaps.append("%s #scan-qs 末欄缺 white-space:nowrap" % label)
+    ac_n2 = any(
+        "white-space:nowrap" in body
+        and "#scan-ac" in sel
+        and "nth-child(n+2)" in sel
+        for sel, body in css_rules(compact)
+    )
+    if selector_nowrap_missing(compact, ac_needles) and not ac_n2:
+        gaps.append("%s #scan-ac 短欄(從哪看／看到什麼)缺 white-space:nowrap" % label)
+    return gaps
+
+
+LONG_Q_MIN = 28
+
+
+def scan_qs_long_landing_gaps(text, label):
+    """樣張／生成頁必須有一列長題目,著落仍是已解／假設／移交(nowrap 才擋得住直排)。"""
+    qs = first_block(text, r'<table[^>]*id="scan-qs"[^>]*>.*?</table>')
+    if not qs:
+        return []
+    gaps = []
+    long_ok = False
+    for row in re.findall(r"<tr>(.*?)</tr>", qs, re.S):
+        if "<th>" in row:
+            continue
+        cells = re.findall(r"<td>(.*?)</td>", row, re.S)
+        if len(cells) < 2:
+            continue
+        q = inner_text(cells[0]).strip()
+        landing = inner_text(cells[-1]).strip()
+        if landing not in ("已解", "假設", "移交"):
+            gaps.append("%s 題表著落不是已解／假設／移交" % label)
+            break
+        if len(q) >= LONG_Q_MIN:
+            long_ok = True
+    if not long_ok:
+        gaps.append(
+            "%s 題表缺長題目列(著落短欄擠壓樣張,至少 %d 字)" % (label, LONG_Q_MIN)
+        )
+    return gaps
+
+
 def diagram_src_lines(md_text):
     """現況圖 fence 裡的內容行(含 ↓ 分隔)。"""
     m = re.search(r"^#{2,3}\s+現況圖\s*$", md_text or "", re.M)
@@ -547,6 +622,8 @@ def check_scan_page(text, label):
         missing.append("題表(#scan-qs)")
     elif "著落" not in inner_text(qs):
         missing.append("題表缺著落欄")
+    else:
+        missing.extend(scan_qs_long_landing_gaps(text, label))
     ac = first_block(text, r'<table[^>]*id="scan-ac"[^>]*>.*?</table>')
     if not ac:
         missing.append("驗收表(#scan-ac)")
@@ -595,6 +672,7 @@ def check_scan_page(text, label):
             break
         prev_name, prev_pos = name, pos
     missing.extend(scan_fig_center_gaps(text, label))
+    missing.extend(scan_short_col_nowrap_gaps(text, label))
     if not re.search(
         r'<div class="figwrap">\s*<svg\b[^>]*\bid="scan-now"', text, re.S
     ) and not re.search(
@@ -627,6 +705,7 @@ def check_fixture():
     print("[scan] fixture 六件齊,問答摺著")
     print("[scan] fixture 現況圖有限寬且欄內置中")
     print("[scan] fixture 現況圖三框手樣形狀")
+    print("[scan] fixture 長題目列 + 著落／驗收短欄 nowrap")
 
 
 def generate_scan(md_path, out_path):
@@ -667,6 +746,7 @@ def check_generated():
         except OSError:
             pass
     print("[scan] 從 md 生成的掃頁六件齊,現況圖有限寬且欄內置中")
+    print("[scan] 生成頁長題目列 + 著落／驗收短欄 nowrap")
 
 
 def check_live():
@@ -678,12 +758,15 @@ def check_live():
     check_fixture()
     if not os.path.isfile(SHELL):
         raise NotParsed("缺 skills/dev-talk/html-shell.html")
-    shell_gaps = scan_fig_center_gaps(
-        open(SHELL, encoding="utf-8").read(), "html-shell"
-    )
+    shell_text = open(SHELL, encoding="utf-8").read()
+    shell_gaps = scan_fig_center_gaps(shell_text, "html-shell")
     if shell_gaps:
         raise Mismatch("掃頁母版圖未置中:" + "、".join(shell_gaps))
     print("[scan] html-shell 現況圖有限寬且欄內置中")
+    nowrap_gaps = scan_short_col_nowrap_gaps(shell_text, "html-shell")
+    if nowrap_gaps:
+        raise Mismatch("掃頁母版短欄未 nowrap:" + "、".join(nowrap_gaps))
+    print("[scan] html-shell #scan-qs 末欄與 #scan-ac 短欄 nowrap")
     check_generated()
 
 
@@ -824,6 +907,44 @@ def run_mutations():
                     "樣張圖改回撐滿欄必須 exit 1,實際 rc=%s\n%s" % (rc, blob[-1200:])
                 )
 
+    with tempfile.TemporaryDirectory(prefix="devtalk-fig-nowrap-shell-") as tmp:
+        copy_tree(tmp)
+        spath = os.path.join(tmp, "skills", "dev-talk", "html-shell.html")
+        text = open(spath, encoding="utf-8").read()
+        if "white-space:nowrap" not in text:
+            failures.append("破壞實驗殼找不到 white-space:nowrap")
+        else:
+            open(spath, "w", encoding="utf-8").write(
+                text.replace("white-space:nowrap", "white-space:normal")
+            )
+            rc, blob = child_rc(tmp)
+            if rc == 1:
+                print("[mut] ✓ 殼拿掉 nowrap 必須紅")
+            else:
+                failures.append(
+                    "殼拿掉 nowrap 必須 exit 1,實際 rc=%s\n%s" % (rc, blob[-1200:])
+                )
+
+    with tempfile.TemporaryDirectory(prefix="devtalk-fig-nowrap-fix-") as tmp:
+        copy_tree(tmp)
+        fpath = os.path.join(
+            tmp, "scripts", "fixtures", "devtalk-html-scan", "good", "1-discussion.html"
+        )
+        text = open(fpath, encoding="utf-8").read()
+        if "white-space:nowrap" not in text:
+            failures.append("破壞實驗樣張找不到 white-space:nowrap")
+        else:
+            open(fpath, "w", encoding="utf-8").write(
+                text.replace("white-space:nowrap", "white-space:normal")
+            )
+            rc, blob = child_rc(tmp)
+            if rc == 1:
+                print("[mut] ✓ 樣張拿掉 nowrap 必須紅")
+            else:
+                failures.append(
+                    "樣張拿掉 nowrap 必須 exit 1,實際 rc=%s\n%s" % (rc, blob[-1200:])
+                )
+
     with tempfile.TemporaryDirectory(prefix="devtalk-fig-gen-") as tmp:
         out = os.path.join(tmp, "1-discussion.html")
         try:
@@ -892,6 +1013,24 @@ def run_mutations():
                 failures.append("生成頁圖改撐滿欄必須紅,卻綠了")
             except Mismatch:
                 print("[mut] ✓ 生成頁圖改撐滿欄必須紅")
+            no_wrap = text.replace("white-space:nowrap", "white-space:normal")
+            try:
+                check_scan_page(no_wrap, "生成頁")
+                failures.append("生成頁拿掉 nowrap 必須紅,卻綠了")
+            except Mismatch:
+                print("[mut] ✓ 生成頁拿掉 nowrap 必須紅")
+            short_q = re.sub(
+                r'(<table[^>]*id="scan-qs"[^>]*>.*?<tr><td>)[^<]{28,}(</td>)',
+                r"\1短題\2",
+                text,
+                count=1,
+                flags=re.S,
+            )
+            try:
+                check_scan_page(short_q, "生成頁")
+                failures.append("生成頁拿掉長題目列必須紅,卻綠了")
+            except Mismatch:
+                print("[mut] ✓ 生成頁拿掉長題目列必須紅")
 
     if failures:
         raise Mismatch("破壞實驗沒咬到:\n" + "\n".join(failures))
@@ -913,6 +1052,6 @@ if not skip_mutation:
         print("❌ FAIL:%s" % exc, file=sys.stderr)
         sys.exit(1)
 
-print("✅ PASS:方法流程圖 hop 對帳 + 掃頁樣張六件 + 生成頁六件／置中 + 破壞實驗全過")
+print("✅ PASS:方法流程圖 hop 對帳 + 掃頁樣張六件 + 生成頁六件／置中 + 短欄 nowrap + 破壞實驗全過")
 sys.exit(0)
 PY
