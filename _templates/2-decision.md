@@ -2,6 +2,7 @@
 feature: <slug>
 stage: 2-decision
 status: draft
+verdict:             # 空 | PASS | REQUEST_CHANGES | HOLD(Human 判定;全勾不算 PASS)
 owner:
 reviewers: []        # G1 核准者,不可 = owner
 updated:

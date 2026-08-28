@@ -2140,6 +2140,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>檢查給人審查用的 HTML 介面有沒有真的照規格產出——動線頂區、待審項目可勾選、預設只寫本機完整文件、
             設了 DEVFLOW_ARTIFACT_OUT 才寫的發布片段不得含外殼。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-gate-verdict-write.sh</code></td>
+        <td>Human gate verdict 寫入契約牙:正本 <code>notes/design/gate-verdict-write.md</code>
+            丟了「提交判定」／全勾不算 PASS／md 頂欄 <code>verdict:</code> 是正本／
+            sidecar 不是正本／md 勝／不得手改必須紅。並實跑 write + serve POST。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-hooks-accounting.sh</code></td>
         <td>對帳 hook 掛載清單檔與三份「列舉 hook 的文件」(安裝健檢清單、README、本頁註冊表)——
             數量與名稱都比,守衛長大了而文件靜默沒跟上就紅;曾讓採用專案把真實存在的 hook
@@ -2252,6 +2257,12 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <tr><td><code>build-gate-twin.py</code></td>
         <td>把各站的 markdown 正本轉成人真的會拿來審查、動工的介面(預設只寫本機完整版;發布片段要設 DEVFLOW_ARTIFACT_OUT 才寫)。</td>
         <td>dev-flow 各站產生審查介面時呼叫;<code>check-gate-twin.sh</code> 對範例實跑驗證</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
+    <tr><td><code>devflow_gate.py</code></td>
+        <td>Human gate verdict 寫入器。<code>dev-flow gate serve</code>／<code>write</code>
+            把判定寫進同目錄 md 頂欄 <code>verdict:</code>(PASS／REQUEST_CHANGES／HOLD)。
+            全勾不算 PASS。sidecar 是選配、不是正本;與 md 衝突時 md 勝。</td>
+        <td>twin 頁尾「提交判定」POST;<code>check-gate-verdict-write.sh</code> 實跑</td>
+        <td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>build-scan-html.py</code></td>
         <td>Stage 1 掃頁產生器:從 <code>1-discussion.md</code> 產出六件套
             <code>1-discussion.html</code>(摘要卡／置中現況圖／人表／題表／驗收表／摺疊問答)。

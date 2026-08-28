@@ -79,6 +79,10 @@ gate 條件唯一正本 = 母版 README §7;本表 gate 欄是摘要,衝突以 �
   low/medium/high)。偏離表格(內建升降階除外)需使用者明示同意並記入該階段文檔。
 - **G1/G2/G3 審查與 verdict**:依 README §7 的人類→fresh-context reviewer Agent→
   有記錄的 owner 自審順序；Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。
+  Human 判定正本是同目錄 md 頂欄 `verdict:`(PASS／REQUEST_CHANGES／HOLD)。
+  若已寫入,該 gate 已關,feature agent 不得手改該檔來記錄判定;尚無寫入 → 才准在
+  chat 問人。全勾不算 PASS;只有頁尾「提交判定」才落盤。sidecar 不是正本,與 md
+  衝突時 md 勝。
 - **author ≠ approver**(G1/G2/G3 四眼原則)。審查者依序:適格人類 reviewer →
   fresh-context reviewer Agent → owner 自審(有記錄的最後手段);身分記 reviewers 欄
   (產生程序見 README §7)。

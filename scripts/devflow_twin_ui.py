@@ -333,6 +333,23 @@ CSS_REVIEW7 = """
 .g3-ask .qmark{color:var(--accent);font-weight:700;flex:none;line-height:1.5}
 """
 
+# Human 判定頁尾。只加新 class,不改上面任何一條。只接在 G1／G2／G3,
+# 不接 5-tasks。正本是 md 頂欄 verdict:,不是這塊 UI。
+CSS_VERDICT = """
+.gate-verdict{margin:34px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);padding:18px 20px;box-shadow:var(--shadow)}
+.gate-verdict .gv-canon{margin:0 0 12px;color:var(--ink-2);font-size:.9rem}
+.gv-row{display:flex;flex-wrap:wrap;gap:12px 18px;margin:0 0 12px}
+.gv-row label{display:flex;gap:6px;align-items:center;font-weight:600}
+.gv-field{display:block;margin:0 0 8px;color:var(--ink-2);font-size:.88rem}
+.gv-field input{margin-left:8px;min-width:16rem;max-width:100%;padding:4px 8px;
+  border:1px solid var(--rule);border-radius:6px;background:var(--sunk);color:var(--ink);
+  font:inherit}
+.gate-verdict .btn{margin-top:6px;background:var(--accent);color:#fff;border-color:var(--accent)}
+.gate-verdict .btn:hover{filter:brightness(1.05)}
+.gv-status{margin:10px 0 0;font-size:.86rem;color:var(--ink-2)}
+"""
+
 
 def local_page(title: str, extra_css: str, body: str, script: str = "") -> str:
     """本機直接開的完整 html 文件。"""

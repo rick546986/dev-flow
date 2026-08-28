@@ -125,6 +125,8 @@ group_methodology() {
   # 第 7 站審查頁截圖槽:契約丟了分組／data-shot／shots/／進場／lightbox／chrome
   # 句子必須紅。不產 HTML、不發明產檔器、不改 twin。
   run "methodology/check-stage7-shot-contract" scripts/check-stage7-shot-contract.sh || return 1
+  # Human gate verdict 寫入:正本是 md 頂欄 verdict:,全勾不算 PASS,sidecar 不是正本。
+  run "methodology/check-gate-verdict-write" scripts/check-gate-verdict-write.sh || return 1
   # Stage 2:九真節點;單產物 2-decision.md;N1 不得寫檔;每個 hop --write-cursor。
   run "methodology/check-devstage2-graph"     scripts/check-devstage2-graph.sh   || return 1
   run "methodology/test-devstage2-graph"      scripts/test-devstage2-graph.sh    || return 1

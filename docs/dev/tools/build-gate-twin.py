@@ -71,6 +71,9 @@ sys.path.insert(0, str(_SCRIPT_DIR))
 import devflow_twin_ui as ui  # noqa: E402  # type: ignore[import-not-found]
 
 STAGES = ("2-decision", "4-spec", "7-review", "5-tasks")
+# Human 判定只掛 G1／G2／G3。5-tasks 是執行板,不加「提交判定」。
+# 不要把判定做成 STAGES 的第六個 stage。
+GATE_STAGES = ("2-decision", "4-spec", "7-review")
 
 # 這些節**永遠不摺疊**:它們是判定本身或判定的前提,藏起來等於沒審。
 # (2026-08-15 dogfood 抓到:用本工具產自己的 7-review 時,「限制聲明」與 verdict
@@ -1916,6 +1919,157 @@ SCRIPT = """
 """
 
 
+def _git_sha(root):
+    try:
+        import subprocess
+        run = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "HEAD"],
+            capture_output=True, text=True, timeout=5, check=False,
+        )
+        if run.returncode == 0:
+            return run.stdout.strip()
+    except (OSError, Exception):
+        pass
+    return ""
+
+
+def _verdict_footer(slug, stage, source_sha):
+    md_name = f"{stage}.md"
+    return f"""<footer class="foot gate-verdict" id="gate-verdict"
+  data-slug="{html.escape(slug)}" data-stage="{html.escape(stage)}"
+  data-source-sha="{html.escape(source_sha)}">
+  <p class="gv-canon">正本是同目錄 <code>{html.escape(md_name)}</code> 頂欄
+  <code>verdict:</code>。勾選只是瀏覽器草稿。全勾不算 PASS。
+  只有「提交判定」才寫入 Human verdict。sidecar／HTML／localStorage 都不是正本;
+  sidecar 與 md 衝突時 md 勝。</p>
+  <div class="gv-row" role="radiogroup" aria-label="Human verdict">
+    <label><input type="radio" name="gv-verdict" value="PASS"> PASS</label>
+    <label><input type="radio" name="gv-verdict" value="REQUEST_CHANGES"> REQUEST_CHANGES</label>
+    <label><input type="radio" name="gv-verdict" value="HOLD"> HOLD</label>
+  </div>
+  <label class="gv-field">備註 <input id="gv-notes" type="text" maxlength="200"></label>
+  <label class="gv-field">審查者 <input id="gv-reviewer" type="text" maxlength="80"></label>
+  <button type="button" class="btn" id="gv-submit">提交判定</button>
+  <p id="gv-status" class="gv-status"></p>
+</footer>"""
+
+
+SCRIPT_VERDICT = r"""
+(function(){
+  var panel = document.getElementById('gate-verdict');
+  if (!panel) return;
+  var statusEl = document.getElementById('gv-status');
+  function status(msg){ if (statusEl) statusEl.textContent = msg; }
+  function checkedIds(){
+    return [].slice.call(document.querySelectorAll('.s-chk')).filter(function(b){
+      return b.checked;
+    }).map(function(b){ return b.dataset.sid; });
+  }
+  function patchMd(text, verdict, notes){
+    if (text.slice(0, 4) !== '---\n') throw new Error('no frontmatter');
+    var end = text.indexOf('\n---\n', 3);
+    if (end < 0) throw new Error('unclosed frontmatter');
+    var fm = text.slice(4, end);
+    var rest = text.slice(end + 5);
+    if (/^verdict:\s*/m.test(fm)) {
+      fm = fm.replace(/^verdict:\s*.*$/m, 'verdict: ' + verdict);
+    } else if (/^status:\s*/m.test(fm)) {
+      fm = fm.replace(/^(status:\s*.*)$/m, '$1\nverdict: ' + verdict);
+    } else {
+      fm = 'verdict: ' + verdict + '\n' + fm;
+    }
+    if (notes) {
+      var line = '- Human verdict note: ' + notes.split('\n')[0];
+      if (/^- Human verdict note:/m.test(rest)) {
+        rest = rest.replace(/^- Human verdict note:.*$/m, line);
+      } else {
+        rest = line + '\n' + rest;
+      }
+    }
+    return '---\n' + fm + '\n---\n' + rest;
+  }
+  function payload(verdict){
+    return {
+      slug: panel.dataset.slug,
+      gate: panel.dataset.stage,
+      verdict: verdict,
+      notes: ((document.getElementById('gv-notes') || {}).value || '').trim(),
+      reviewer: ((document.getElementById('gv-reviewer') || {}).value || '').trim(),
+      checked: checkedIds(),
+      source_sha: panel.dataset.sourceSha || '',
+      sidecar: true
+    };
+  }
+  function postVerdict(body){
+    var urls = ['/devflow-gate/verdict'];
+    if (location.protocol === 'file:') {
+      urls.push('http://127.0.0.1:8765/devflow-gate/verdict');
+    }
+    var i = 0;
+    function next(){
+      if (i >= urls.length) return Promise.reject(new Error('no serve'));
+      var url = urls[i++];
+      return fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      }).then(function(r){
+        if (!r.ok) throw new Error('http ' + r.status);
+        return r.json();
+      }).catch(function(){ return next(); });
+    }
+    return next();
+  }
+  async function writeViaFsa(body){
+    if (!window.showDirectoryPicker) {
+      throw new Error('no File System Access');
+    }
+    var dir = await window.showDirectoryPicker({id: 'devflow-gate-' + body.slug});
+    var mdName = body.gate + '.md';
+    var fh = await dir.getFileHandle(mdName);
+    var file = await fh.getFile();
+    var next = patchMd(await file.text(), body.verdict, body.notes);
+    var w = await fh.createWritable();
+    await w.write(next);
+    await w.close();
+    try {
+      var sh = await dir.getFileHandle(body.gate + '.verdict.json', {create: true});
+      var sw = await sh.createWritable();
+      await sw.write(JSON.stringify({
+        gate: body.gate, verdict: body.verdict, notes: body.notes,
+        checked: body.checked, source_sha: body.source_sha,
+        timestamp: new Date().toISOString(), reviewer: body.reviewer
+      }, null, 2) + '\n');
+      await sw.close();
+    } catch (e) {}
+    return mdName;
+  }
+  var submit = document.getElementById('gv-submit');
+  if (!submit) return;
+  submit.addEventListener('click', function(){
+    var picked = document.querySelector('input[name="gv-verdict"]:checked');
+    if (!picked) {
+      status('請先選 PASS / REQUEST_CHANGES / HOLD。全勾不算 PASS。');
+      return;
+    }
+    var body = payload(picked.value);
+    status('寫入中…');
+    postVerdict(body).then(function(res){
+      status('已寫入 ' + (res.path || (body.gate + '.md')) +
+        ' 的 verdict: ' + body.verdict + '。正本是 md，不是勾選、不是 sidecar。');
+    }).catch(function(){
+      writeViaFsa(body).then(function(name){
+        status('已用 File System Access 寫入 ' + name +
+          ' 的 verdict: ' + body.verdict + '。正本是 md。');
+      }).catch(function(){
+        status('寫不進 md。請跑 python3 scripts/devflow_gate.py serve <專案根> 再開這頁,或用 File System Access 選 feature 資料夾。勾選不是判定。');
+      });
+    });
+  });
+})();
+"""
+
+
 def main(argv):
     args = [a for a in argv if not a.startswith("--")]
     root = pathlib.Path(args[0] if len(args) > 0
@@ -2117,7 +2271,8 @@ def main(argv):
 </div>
 <h2 class="apx-h">背景資料(預設收合,內容零刪減)</h2>
 {"".join(appendix)}
-<footer class="foot">由 <code>scripts/build-gate-twin.py</code> 從 md 正本逐條解析產生,不手抄。</footer>
+{_verdict_footer(slug, stage, _git_sha(root)) if stage in GATE_STAGES else
+ '<footer class="foot">由 <code>scripts/build-gate-twin.py</code> 從 md 正本逐條解析產生,不手抄。</footer>'}
 </div>"""
 
     out_local = root / "docs/dev" / slug / f"{stage}.html"
@@ -2128,14 +2283,16 @@ def main(argv):
         ui.CSS_SPEC2 if stage == "2-decision" else "") + (
         (ui.CSS_TASKS + ui.CSS_TASKS5) if stage == "5-tasks" else "") + (
         ui.CSS_REVIEW7 if stage == "7-review" else "")
-    out_local.write_text(ui.local_page(title, extra_css, body_html, SCRIPT), encoding="utf-8")
+    page_script = SCRIPT + (SCRIPT_VERDICT if stage in GATE_STAGES else "")
+    extra_css = extra_css + (ui.CSS_VERDICT if stage in GATE_STAGES else "")
+    out_local.write_text(ui.local_page(title, extra_css, body_html, page_script), encoding="utf-8")
     # 片段是 opt-in:只有呼叫端明確設定 DEVFLOW_ARTIFACT_OUT 才寫。空字串 / 空白
     # 視同未設,避免「變數在、值是空的」仍落到預設 sidecar。
     art_out = os.environ.get("DEVFLOW_ARTIFACT_OUT", "").strip()
     if art_out:
         out_art = pathlib.Path(art_out)
         out_art.parent.mkdir(parents=True, exist_ok=True)
-        out_art.write_text(ui.artifact_page(title, extra_css, body_html, SCRIPT), encoding="utf-8")
+        out_art.write_text(ui.artifact_page(title, extra_css, body_html, page_script), encoding="utf-8")
         print(f"wrote {out_local} + {out_art} — {n_items} 條待審,{len(appendix)} 節背景資料")
     else:
         print(f"wrote {out_local} — {n_items} 條待審,{len(appendix)} 節背景資料")

@@ -111,7 +111,7 @@ GROUPS_SEEN = {}
 # 之後每加一條檢查都要把這裡同步調高;只有整區塊被砍掉、實得數掉到這個值以下
 # 才會紅(這是本檔唯一的次級防線,見 test-architecture-guards.sh 的 GS-9 靜態互釘
 # ——那邊另外釘了這個數字的字面值,兩處要一起改,見該檔的防禦邊界說明)。
-MIN_CHECKS = 178
+MIN_CHECKS = 179
 
 
 def check(cond, label, detail=""):
@@ -812,7 +812,7 @@ check(not (empty / "4-spec.html").exists(), "空 spec → 不產出空殼 html")
 
 print("-- N7 散發副本 --")
 CURRENT_GROUP = "n7-dist-copy"
-for name in ("build-gate-twin.py", "devflow_twin_ui.py"):
+for name in ("build-gate-twin.py", "devflow_twin_ui.py", "devflow_gate.py"):
     src = ROOT / "scripts" / name
     dist = ROOT / "docs/dev/tools" / name
     check(dist.is_file() and src.read_text(encoding="utf-8") == dist.read_text(encoding="utf-8"),
