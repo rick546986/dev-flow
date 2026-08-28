@@ -241,3 +241,8 @@
 - 為什麼:Claude /plugin update 只看 version 字串；停在 3.20.0 會靜默不拉 #65。
 - 落在哪:.claude-plugin/ .cursor-plugin/ .codex-plugin/ hooks/runtime-capabilities.json example/subsidy-3-0-plus/ notes/prompt-html-gap-loop.md docs/dev/HISTORY.md
 
+## 2026-08-28 · field-fixes-six
+- 做了什麼:六項現場修復:upgrade 刪 pack 停出殘件、產圖 Python 3.12+ venv、gate-twin 2/4 站直式 SVG、worktree 雙生頁併回整合線、HISTORY 出廠種子選配清理、主機 --probe 印下一句安裝指令
+- 為什麼:採用樹仍留 _templates/CONTEXT.md、macOS 3.9 靜默裝不出 markdown-it-py 4、審查頁仍吐橫 ASCII pre、worktree 雙生頁不知該併哪條線、出廠 HISTORY 種子清不掉、Codex/Grok/Cursor 更新指令對不上現場
+- 落在哪:scripts/devflow-upgrade-leftovers.sh scripts/test-upgrade-leftovers.sh hooks/_doctor_impl.py scripts/build-gate-twin.py scripts/devflow_twin_ui.py scripts/history-append.sh scripts/check-host-adapter.sh skills/dev-setup/SKILL.md docs/PLUGIN.md _templates/
+
