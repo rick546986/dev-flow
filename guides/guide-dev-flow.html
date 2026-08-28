@@ -1983,6 +1983,41 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   <p><code>.claude/rules/</code> 不會被 Cursor／Codex 自動吃。架構不變量由
   setup 依主機寫對應指標：Cursor 寫 <code>.cursor/rules/</code> 一行指標；
   Codex 仍只准 AGENTS.md 一行。流程規則仍不准進 AGENTS.md。</p>
+  <p>四邊用各自的 plugin install 裝方法包。正本仍一份 <code>skills/</code>；
+  三邊 manifest 是薄殼。產品 repo 技能樹掛整棵的規則上面那張表仍在。</p>
+  <div class="tablewrap"><table>
+    <tr><th>主機</th><th>怎麼裝／怎麼更新</th></tr>
+    <tr><td>Claude</td>
+        <td>裝：<code>/plugin marketplace add rick546986/dev-flow</code> 後
+            <code>/plugin install dev-flow@dev-flow</code>。
+            更新：<code>/plugin marketplace update dev-flow</code> +
+            <code>/plugin update dev-flow</code>。語意不准改。</td></tr>
+    <tr><td>Cursor</td>
+        <td>清單 <code>.cursor-plugin/plugin.json</code>，市集
+            <code>.cursor-plugin/marketplace.json</code>（<code>source</code> 指本 repo 根，
+            <code>skills</code> 整棵 <code>./skills/</code>）。
+            官方（docs.cursor.com/docs/plugins）：Dashboard → Plugins → Import from Repo
+            <code>rick546986/dev-flow</code>；Customize → Install。
+            更新：Dashboard Refresh 或 Auto Refresh。
+            本機試裝：<code>ln -s &lt;clone&gt; ~/.cursor/plugins/local/&lt;name&gt;</code>
+            （name = plugin.json 的 name）。
+            產品 repo 只准 <code>.cursor/rules/</code> 一行架構不變量指標；流程規則不准灌 AGENTS.md。</td></tr>
+    <tr><td>Codex</td>
+        <td>清單 <code>.codex-plugin/plugin.json</code>，<code>skills: "./skills/"</code>
+            （整棵真目錄，不是 symlink；安裝會跳過 symlink）。
+            市集走官方 legacy <code>.claude-plugin/marketplace.json</code>，不另造第三套假目錄。
+            實測（Codex CLI 0.150.1 <code>plugin --help</code>）：沒有
+            <code>codex plugin install</code>／<code>codex plugin update</code>。
+            加市集：<code>codex plugin marketplace add rick546986/dev-flow</code>。
+            安裝：<code>codex plugin add dev-flow@dev-flow</code>。
+            更新市集：<code>codex plugin marketplace upgrade dev-flow</code>。
+            更新 plugin：再跑一次 <code>codex plugin add dev-flow@dev-flow</code>。
+            TUI：<code>/plugins</code>。</td></tr>
+    <tr><td>Grok</td>
+        <td>不要發明 Grok marketplace。Grok Bot 吃 Cursor 帳裝好的同一包
+            （<code>plugins/cache/dev-flow/...</code>）。本機技能庫仍可掛整棵
+            <code>.grok/skills</code>。不要假裝能從產品 repo 自動灌進 Grok。</td></tr>
+  </table></div>
 
   <h2 id="memory">Agent Memory（<code>.dev-flow/</code>）</h2>
   <p class="lead">長期記憶進 Git。不要手改記憶檔。安裝與重建入口只有 <code>dev-setup</code>。
@@ -2628,6 +2663,27 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             <code>.agents/skills</code> 或雙路不是同一包必須紅；
             <code>--probe</code> 在掛載路徑印一句。
             案例數下限寫死,少於下限 exit 2。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-plugin-hosts.sh</code></td>
+        <td>三邊 plugin 薄殼牙:Claude／Cursor／Codex 的 manifest 必須在,
+            <code>skills</code> 必須是整棵 <code>./skills/</code> 不是 <code>SKILL.md</code>,
+            三邊 <code>version</code> 互釘,Cursor／Claude marketplace <code>source</code>
+            指本 repo 根。拿掉 Cursor／Codex manifest 必須紅。
+            <code>docs/PLUGIN.md</code> 仍要有 Claude 舊
+            <code>/plugin marketplace add rick546986/dev-flow</code> 與
+            <code>/plugin install dev-flow@dev-flow</code>。
+            Codex 寫的是實測動詞 <code>codex plugin add</code>／
+            <code>marketplace upgrade</code>,不准抄 Claude 的 <code>/plugin</code>。
+            Grok 必須鎖「不要假裝能從產品 repo 自動灌進 Grok」。
+            README 第一屏灌進安裝手冊必須紅。禁 <code>check(True)</code>。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-plugin-hosts.sh</code></td>
+        <td>上面那支的負向牙:拿掉 <code>.cursor-plugin/plugin.json</code> 或
+            <code>.codex-plugin/plugin.json</code> 必須紅;skills 欄改成只掛
+            <code>SKILL.md</code> 必須紅;<code>dev-talk</code> 只留入口檔必須紅;
+            改掉 Claude 舊指令必須紅;三邊 version 漂了必須紅;薄殼抄了
+            <code>skills/</code> 必須紅;拿掉或正面宣稱 Grok 自動灌必須紅;
+            README 第一屏灌安裝指令必須紅。案例數下限寫死,少於下限 exit 2。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>
         <td>本節新增的守衛本身——盤點 <code>hooks/</code>/<code>scripts/</code>/<code>observability/</code>/

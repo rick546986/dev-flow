@@ -56,6 +56,7 @@ Cursor／Grok／Codex 開工先跑 `scripts/check-host-adapter.sh --probe`。
 安裝 = `/plugin marketplace add rick546986/dev-flow` 後
 `/plugin install dev-flow@dev-flow`(裝一次,dev-talk 隨附,不再是獨立 plugin);
 更新 = `/plugin marketplace update dev-flow` + `/plugin update dev-flow`。
+Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的 `/plugin`）。
 **實際 plugin root = `~/.claude/plugins/cache/dev-flow/dev-flow/<version>/`**
 ——會隨版本改變,腳本與檢查一律用 `${DEVFLOW_ROOT}` 或由自身位置推導,禁寫死。
 說明書:`${DEVFLOW_ROOT}/guides/dev-setup-record.html`。

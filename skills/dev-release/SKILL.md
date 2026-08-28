@@ -10,7 +10,7 @@ description: dev-flow 自己的發版器 — 驗證通過才升版、打 tag、�
 回 `(no content)`,什麼都不會拉,**而且不會有任何提示**。
 
 本 skill 把三件容易漏的事機械化:
-1. 版本號**兩處**必須同步(`.claude-plugin/plugin.json` 與 `hooks/runtime-capabilities.json`)
+1. 版本號必須同步(`.claude-plugin/plugin.json`、`.cursor-plugin/plugin.json`、`.codex-plugin/plugin.json` 與 `hooks/runtime-capabilities.json`)
 2. 發版前必須跑過驗證(2026-08-13 教訓:gate-consistency 壞了九天沒人知道,
    因為沒有任何關卡強制在發版前跑它)
 3. `docs/dev/` 的散發副本要與根目錄正本一致(dev-flow repo 自己也是 dogfooding 專案)
@@ -82,6 +82,8 @@ contract 副本。第二行的 parity 對帳**掃的是檔案地圖的散發面�
 | 檔案 | 欄位 |
 |---|---|
 | `.claude-plugin/plugin.json` | `version` |
+| `.cursor-plugin/plugin.json` | `version` |
+| `.codex-plugin/plugin.json` | `version` |
 | `hooks/runtime-capabilities.json` | `runtime_version` |
 
 **不要動** `supported_contract_versions` 與 `schema_versions` —— 那兩個跟著
@@ -93,8 +95,10 @@ contract 副本。第二行的 parity 對帳**掃的是檔案地圖的散發面�
 
 ```bash
 jq -r .version .claude-plugin/plugin.json
+jq -r .version .cursor-plugin/plugin.json
+jq -r .version .codex-plugin/plugin.json
 grep -o '"runtime_version": "[^"]*"' hooks/runtime-capabilities.json
-# 兩者必須是同一個字串
+# 四處必須是同一個字串
 ```
 
 完成 = 兩處值相同且等於目標版號。
@@ -125,7 +129,8 @@ STATUS.md 的 Active 沒有留下已完成項。
 ### 5. Commit
 
 ```bash
-git add .claude-plugin/plugin.json hooks/runtime-capabilities.json \
+git add .claude-plugin/plugin.json .cursor-plugin/plugin.json \
+        .codex-plugin/plugin.json hooks/runtime-capabilities.json \
         docs/dev/STATUS.md docs/dev/HISTORY.md
 # 若步驟 2 有覆蓋副本,一併 add docs/dev/
 git commit -m "release: vX.Y.Z — <一句話說明本次改了什麼>"

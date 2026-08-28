@@ -32,6 +32,7 @@ Agent 跑站與驗證；人只在方向、契約、出貨三道閘拍板。
 
 hook 要 python3（只吃標準函式庫，最低 3.9）。找直譯器的順序是
 `DEVFLOW_PYTHON` → `/usr/bin/python3` → PATH 上的 `python3`。
+四邊安裝／更新 → [docs/PLUGIN.md](docs/PLUGIN.md)。
 主機發現 → [guide `#host`](guides/guide-dev-flow.html#host)。
 
 ## 3. 七份文檔(用途一句話;骨架見 `_templates/`,填好範例見 `example/`)
