@@ -1,0 +1,20 @@
+# Gitea Pages 薄殼(Actions 或把 public/ 掛到 pages branch)。
+# 正文是 publish-pages.sh,不要在這裡再抄複製清單。
+# 契約:notes/design/pages-hosting.md
+name: pages
+on:
+  push:
+    branches: [main]
+jobs:
+  pages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: assemble public/
+        run: |
+          ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel)}"
+          if [ -x "$ROOT/scripts/publish-pages.sh" ]; then
+            bash "$ROOT/scripts/publish-pages.sh" --root "$ROOT"
+          else
+            bash "$ROOT/docs/dev/tools/publish-pages.sh" --root "$ROOT"
+          fi

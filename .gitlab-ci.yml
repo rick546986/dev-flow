@@ -1,0 +1,17 @@
+# GitLab Pages 薄殼。正文是 publish-pages.sh,不要在這裡再抄複製清單。
+# 契約:notes/design/pages-hosting.md
+pages:
+  stage: deploy
+  script:
+    - |
+      ROOT="${CI_PROJECT_DIR:-$(git rev-parse --show-toplevel)}"
+      if [ -x "$ROOT/scripts/publish-pages.sh" ]; then
+        bash "$ROOT/scripts/publish-pages.sh" --root "$ROOT"
+      else
+        bash "$ROOT/docs/dev/tools/publish-pages.sh" --root "$ROOT"
+      fi
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

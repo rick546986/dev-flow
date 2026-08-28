@@ -128,6 +128,9 @@ group_methodology() {
   run "methodology/check-stage7-shot-contract" scripts/check-stage7-shot-contract.sh || return 1
   # Human gate verdict 寫入:正本是 md 頂欄 verdict:,全勾不算 PASS,sidecar 不是正本。
   run "methodology/check-gate-verdict-write" scripts/check-gate-verdict-write.sh || return 1
+  # 站審 html 掛 Pages:三邊食譜都在;拿掉 pages job 或漏掛 7-review.html／shots 必須紅。
+  # 本機對應是既有 serve --root,不另開伺服器。
+  run "methodology/check-pages-hosting" scripts/check-pages-hosting.sh || return 1
   # Stage 2:九真節點;單產物 2-decision.md;N1 不得寫檔;每個 hop --write-cursor。
   run "methodology/check-devstage2-graph"     scripts/check-devstage2-graph.sh   || return 1
   run "methodology/test-devstage2-graph"      scripts/test-devstage2-graph.sh    || return 1

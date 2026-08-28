@@ -1165,7 +1165,12 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   Matrix,此刻禁讀 6-notes 的 Self-Review(防錨定),親跑驗證後才對照作者。
   審查頁截圖槽(分組／data-shot／shots/／進場／lightbox)正本
   <code>notes/design/stage7-review-ui-contract.md</code>。
-  審頁產檔器 <code>scripts/build-stage7-html.py</code>。不改 twin。</p>
+  審頁產檔器 <code>scripts/build-stage7-html.py</code>。不改 twin。
+  站審 html 掛 Pages(真的 html 頁):正本
+  <code>notes/design/pages-hosting.md</code>;
+  GitHub 超連 <code>https://&lt;owner&gt;.github.io/&lt;repo&gt;/&lt;path-to-html&gt;</code>,
+  不要改 source path。本機
+  <code>python3 scripts/devflow_gate.py serve --root .</code>,不要另開伺服器。</p>
   <div class="parity">
   <p class="parity-tag">規則正本 · Stage 7 執行清單(逐字抄自 <code>_templates/7-review.md</code> 頂註)</p>
   <details>
@@ -2189,6 +2194,21 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>檢查 adr / HISTORY 的人頁有沒有跟 md 標題、條目脫節。新增 ADR 或追加 HISTORY 之後
             沒重生就紅。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>publish-pages.sh</code></td>
+        <td>GitLab／Gitea Pages 食譜正文:把站審 html
+            (<code>1-discussion</code>／<code>2-decision</code>／<code>5-tasks</code>／
+            <code>6-implementation-notes</code>／<code>7-review</code>,example 同名)
+            + 相對路 <code>shots/</code> + <code>guides/</code> 組進 <code>public/</code>,
+            保相對路徑。CLI 用 <code>--root</code>。GitHub 母版已用根目錄 Pages,不走這支。
+            本機對應是 <code>devflow_gate.py serve --root</code>,不另開伺服器。</td>
+        <td>GitLab／Gitea 薄殼呼叫;<code>check-pages-hosting.sh</code> 對 fixture 實跑</td>
+        <td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
+    <tr><td><code>check-pages-hosting.sh</code></td>
+        <td>站審 html 掛 Pages 契約牙:正本 <code>notes/design/pages-hosting.md</code>
+            丟了檔名／<code>shots/</code>／相對路／github.io 超連／<code>serve --root</code>
+            必須紅;拿掉 pages job 或組樹漏 <code>7-review.html</code>／<code>shots</code>
+            也必須紅。三邊薄殼不抄正文。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-methodology-corrections.sh</code></td>
         <td>針對某一批方法論修正產出的導覽頁衍生檔,逐項驗證修正內容真的落地到渲染出來的 HTML 裡,
             不是改了正本卻沒重新渲染。</td>

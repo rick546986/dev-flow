@@ -104,6 +104,7 @@ L1 出口 = `devflow-exec.sh allow`;L2 = `stop`。
 
 審頁產檔器 `scripts/build-stage{1,2,5,7}-html.py`;第 6 站 `scripts/build-stage6-html.py`。
 正本 `notes/design/stageN-review-ui-contract.md`。不進 gate-twin STAGES。
+站審 html 掛 Pages(真的 html 頁,不是倉庫原始碼):正本 `notes/design/pages-hosting.md`。本機 `python3 scripts/devflow_gate.py serve --root .`。
 
 ## 7. 角色與 Gate
 

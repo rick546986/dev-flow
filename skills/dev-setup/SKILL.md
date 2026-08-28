@@ -138,6 +138,14 @@ Cursor／Grok／Codex 開工先跑 `scripts/check-host-adapter.sh --probe`。
    `python3 -c "import markdown_it, sys; sys.exit(0 if markdown_it.__version__ == '4.0.0' else 3)"`
    → 預期 exit 0;非 0 時把上面的 pip 安裝指令完整回報給使用者(**不代裝**,裝不裝是
    專案自己的事,但訊息要完整)。
+   **pages 食譜**:同樣比照散發 `${DEVFLOW_ROOT}/scripts/publish-pages.sh` →
+   `docs/dev/tools/publish-pages.sh` 並 `chmod 755`。這支是 GitLab／Gitea 組
+   `public/` 的正文(站審 html + `shots/` + `guides/`,保相對路徑);三邊薄殼不抄
+   正文。專案根沒有 `.gitlab-ci.yml` 才從方法包抄;沒有
+   `.gitea/workflows/pages.yml` 才抄。已有不覆蓋。GitHub 超連
+   `https://<owner>.github.io/<repo>/<path-to-html>`,不要改 source path。
+   本機:`python3 scripts/devflow_gate.py serve --root .`(不要另開伺服器)。
+   散發後**可執行驗證**:無參數或 `--help` → 用法且 exit 2。
 1b. **Agent Memory 建置**(v3.10.0 起;`dev-setup` 是唯一入口,**不得新增
    `dev-flow init` 之類的第二個安裝器**)。跑:
    ```
