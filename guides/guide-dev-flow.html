@@ -2334,6 +2334,10 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>種一棵假採用樹,證明 upgrade 殘件腳本會刪退役模板、不動 live／專案根
             <code>CONTEXT.md</code>,而且 dry-run 不刪檔。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-history-seed-cleanup.sh</code></td>
+        <td>證明 <code>history-append.sh --action factory-seed-cleanup</code> 只刪可見
+            出廠種子四行,真紀錄與註解範例留下,長得像但不是原文就 fail-closed。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>render-methodology-corrections.sh</code></td>
         <td>把 markdown 正本重新渲染成對外看的 HTML 導覽頁與範例雙生版,<code>--check</code> 模式只驗證
             渲染結果跟現有檔案一致、不會真的覆寫。</td>

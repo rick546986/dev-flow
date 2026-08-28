@@ -78,7 +78,7 @@ updated:
 >    **worktree 合併(預期,不是 bug)**:feat worktree 產的 `docs/dev` html/md
 >    會跟著 branch 走。要併回專案真正在用的整合線(常是 `develop` 與 `testing`),
 >    不要把雙生頁只留在 worktree。HISTORY 出廠種子列也會跟著走,可能衝突;
->    清種子用 `history-append.sh --action factory-seed-cleanup`,不要手改。
+>    清種子用 history-append 的一次性清理(不要每次 upgrade 自動跑),不要手改。
 >    完成 = 執行環境隔離結果已貼進本檔:逐項寫容器名/對外 port/資料庫/快取或佇列/
 >    檔案上傳目錄各自怎麼隔離的(實際值,不是「已隔離」三個字);單一 worktree、
 >    沒有並行 → 寫 `n-a:本 feature 未並行`,理由要寫出來。

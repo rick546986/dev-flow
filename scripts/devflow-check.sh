@@ -224,6 +224,7 @@ group_architecture() {
   # 條款(check-stage67-enforcement.sh)——那支管模板,這支管安裝器自己。
   run "architecture/check-dev-setup-discipline" scripts/check-dev-setup-discipline.sh || return 1
   run "architecture/test-upgrade-leftovers" scripts/test-upgrade-leftovers.sh || return 1
+  run "architecture/test-history-seed-cleanup" scripts/test-history-seed-cleanup.sh || return 1
   # Stage 6/7 執行期強制條款(A1 守衛武裝／A3 Verify 案例數／A4 gauntlet 路徑／
   # A5 觀測可執行性)。四條都是 2026-08 order-intake 實際失效過的散文規則。
   run "architecture/check-stage67-enforcement" scripts/check-stage67-enforcement.sh || return 1

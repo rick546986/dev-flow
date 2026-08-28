@@ -291,6 +291,8 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
 - **產圖 Python 地板**:upgrade／doctor 必須查 `printer-python`(3.12+ 專案 venv
   或 `DEVFLOW_PYTHON`)。系統 python 是 3.9 時不准默默 `pip install` 出
   markdown-it-py 3.x,也**不要覆寫** Apple／系統 Python。
+- **HISTORY 出廠種子清理是選配**:`docs/dev/tools/history-append.sh --action factory-seed-cleanup`
+  只刪可見的出廠四行。認不出種子 vs 真紀錄 → fail-closed。**不准每次 upgrade 自動跑**。
 - **絕不動 `docs/dev/<slug>/` 已產出的 feature 檔**與 STATUS/CONTEXT/rules。
 
 ## refresh(使用者說「重掃 rules」「rules 過期了」「更新架構規則」)

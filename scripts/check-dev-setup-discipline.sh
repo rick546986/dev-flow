@@ -215,11 +215,14 @@ if src:
     need("不要覆寫" in src,
          "SKILL.md 沒寫「不要覆寫」Apple／系統 Python —— 現場會被教去改 "
          "/usr/bin/python3")
+    need("不准每次 upgrade 自動跑" in src,
+         "SKILL.md 沒把 HISTORY 種子清理釘成「不准每次 upgrade 自動跑」——"
+         "upgrade 若自動重寫 HISTORY 會吃掉真紀錄")
 
 # ── 檢查數地板:防止有人把上面整段刪成空迴圈仍然 exit 0 ──────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」(同 repo 慣例:
 # check-stage67-enforcement.sh:232、check-no-stale-paths.sh 的 MIN_CHECKS)。
-MIN_CHECKS = 25
+MIN_CHECKS = 26
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
