@@ -24,6 +24,13 @@
   table{border-collapse:collapse;width:100%;margin:1em 0}
   th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
   th{background:var(--card)}
+  /* 掃頁短欄:表撐滿後中文會逐字斷。著落／從哪看／看到什麼必須橫排。 */
+  #scan-qs th:last-child,
+  #scan-qs td:last-child{white-space:nowrap;word-break:keep-all}
+  #scan-ac th:nth-child(2),
+  #scan-ac td:nth-child(2),
+  #scan-ac th:last-child,
+  #scan-ac td:last-child{white-space:nowrap;word-break:keep-all}
   code,pre{background:var(--card);border-radius:4px;
            font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
   pre{padding:12px;overflow-x:auto}
