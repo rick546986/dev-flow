@@ -51,6 +51,10 @@ updated:
 > 藏起來等於沒審。產生方式:`docs/dev/tools/build-gate-twin.py <專案根> <slug> 7-review`。
 > 審查頁截圖槽(分組／data-shot／shots/／進場已存在不准新增／lightbox／chrome)
 > 正本 `notes/design/stage7-review-ui-contract.md`。本檔是 twin,不重抄契約。
+> 審頁產檔器:`scripts/build-stage7-html.py`(--action 授權;吃 `## 截圖槽`,
+> 吐分組槽／lightbox／hang-point)。進場打開已存在紀錄,不准新增、不准發明
+> 編輯 URL。缺檔顯示佔位,不得留過期「未掛」句。Human verdict 正本是本檔頂欄
+> `verdict:`,只「提交判定」才寫(接 #60,不重做 sidecar)。不要手包 html-shell。
 >
 > 執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併項):
 > 0. 角色+防錨定起手:審查者依序:適格人類 reviewer → fresh-context reviewer Agent →
@@ -230,6 +234,17 @@ updated:
 若 4-spec 沒標而 G3 才撞到:①逐條標 `n-a` 並記為 spec 缺口 ②**至少對本 repo 內
 可執行的代表性路徑實跑**(通常是打真實 HTTP request 驗回應形狀)③verdict 不得
 因為「做不到」就當成做過。
+
+## 截圖槽
+<!-- 同型分組。每槽鎖定 data-shot + shots/<name>.png;缺檔顯示佔位,不得寫未掛。
+     進場:從列表打開已存在紀錄。不准新增、不准發明編輯 URL。
+     點圖走 lightbox;槽旁寫 hang-point(e2e 掛點,不是完整 runner)。 -->
+### 進場
+- data-shot:
+- src: shots/<name>.png
+- caption:
+- 進場:從列表打開已存在紀錄。不准新增。
+- hang-point:
 
 ## Operational Walkthrough
 <!-- reviewer 以各 S 的 Operational Context 為腳本,親自走一遍「人的工作」;

@@ -759,7 +759,8 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
   逐條可勾/Boundaries 摺疊/依賴 DAG 四件事缺一不可,細節見 <code>_templates/5-tasks.md</code>
   頂註。審查頁 chrome／任務總表版面正本
   <code>notes/design/stage5-review-ui-contract.md</code>(與
-  <code>notes/design/vbox-fig-contract.md</code> 並列;本輪不改 twin)。</p>
+  <code>notes/design/vbox-fig-contract.md</code> 並列;本輪不改 twin)。
+  審頁產檔器 <code>scripts/build-stage5-html.py</code>。</p>
   <div class="parity">
   <p class="parity-tag">規則正本 · Stage 5 執行清單(逐字抄自 <code>_templates/5-tasks.md</code> 頂註)</p>
   <details>
@@ -1163,7 +1164,8 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   <p>G3 出貨關卡:雙軸審(Standards 通用品質 + Spec 逐條對 4-spec)。reviewer 先自建 Coverage
   Matrix,此刻禁讀 6-notes 的 Self-Review(防錨定),親跑驗證後才對照作者。
   審查頁截圖槽(分組／data-shot／shots/／進場／lightbox)正本
-  <code>notes/design/stage7-review-ui-contract.md</code>。本輪不產 HTML、不改 twin。</p>
+  <code>notes/design/stage7-review-ui-contract.md</code>。
+  審頁產檔器 <code>scripts/build-stage7-html.py</code>。不改 twin。</p>
   <div class="parity">
   <p class="parity-tag">規則正本 · Stage 7 執行清單(逐字抄自 <code>_templates/7-review.md</code> 頂註)</p>
   <details>
@@ -2299,6 +2301,23 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             第 2／4 站及同類圖走這支,不是掃頁三框,也不是七站三走廊圖。
             契約 <code>notes/design/vbox-fig-contract.md</code>。</td>
         <td>各站畫直式步驟方塊時呼叫;<code>check-vbox-fig.sh</code> 對 lifecycle fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>build-stage1-html.py</code></td>
+        <td>第 1 站審頁產生器:吃 <code>1-discussion.md</code> 的 Problem／Open Questions／
+            現況圖／Actors,吐 <code>.sum#scan-sum</code>／直式三框
+            <code>#scan-now</code>(<code>viewBox 200×420</code>、每框 height 88、
+            置中 max-width 360)／<code>#scan-people</code>。
+            不改 <code>build-scan-html.py</code>,不進 gate-twin STAGES,不包 html-shell。</td>
+        <td><code>--action</code>／<code>--fixture</code>;<code>check-stage1-now-contract.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>build-stage2-html.py</code></td>
+        <td>第 2 站審頁產生器:吃 Approaches／Decision／方案架構圖,吐分組卡 +
+            Decision 後直式 SVG(置中 <code>max-width:360px</code>)、背景摺疊。
+            不要勾選提示／你要審什麼／Rejected 釘頂。不進 gate-twin STAGES。</td>
+        <td><code>--action</code>／<code>--fixture</code>;<code>check-stage2-card-contract.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>build-stage5-html.py</code></td>
+        <td>第 5 站審頁產生器:吃 <code>## T-n</code>,吐 <code>.r-block</code> 卡
+            (標題無底線、T-n 與未完成同行 nowrap、卡文全寬 wrap)。不加提交判定。
+            不進 gate-twin STAGES,不包 html-shell。</td>
+        <td><code>--action</code>／<code>--fixture</code>;<code>check-stage5-card-contract.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>build-stage6-html.py</code></td>
         <td>第 6 站審碼頁產生器:吃 <code>6-implementation-notes.md</code> 的
             <code>## Diff</code> 重複塊,吐鎖定 chrome
@@ -2307,6 +2326,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             (<code>hunk-why</code>／<code>hunk-rel</code>／<code>.ln.add</code>)。
             不進 <code>build-gate-twin.py</code> STAGES,不包 markdown-it + html-shell。</td>
         <td>S2-tdd bookkeeping 前呼叫;<code>check-stage6-hunk-contract.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>build-stage7-html.py</code></td>
+        <td>第 7 站審頁產生器:吃 <code>## 截圖槽</code>,吐同型分組／
+            <code>data-shot</code>／<code>shots/</code>／lightbox／hang-point。
+            提交判定寫 md 頂欄 <code>verdict:</code>(接 #60)。不進 gate-twin STAGES。</td>
+        <td><code>--action</code>／<code>--fixture</code>;<code>check-stage7-shot-contract.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>devflow_twin_ui.py</code></td>
         <td><code>build-gate-twin.py</code> 產生介面時共用的版面樣式與外殼模板,不能單獨執行。</td>
         <td>被 <code>build-gate-twin.py</code> import</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
@@ -2351,6 +2375,22 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             <code>&lt;pre&gt;</code>／沒 viewBox／沒置中字必須紅。
             不塞 hop graph,不取代 fig-text／Journey／guides-fig-sync。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-stage1-now-contract.sh</code></td>
+        <td>第 1 站審頁三框契約牙:正本 <code>notes/design/stage1-review-ui-contract.md</code>
+            丟了 <code>scan-sum</code>／<code>scan-now</code>／<code>scan-people</code>／
+            viewBox 200×420／height 88／chrome 必須紅;產檔器吐 html-shell 或珠鏈也必須紅。
+            不改 <code>build-scan-html.py</code>、不塞 gate-twin STAGES。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-stage2-card-contract.sh</code></td>
+        <td>第 2 站審頁分組卡契約牙:正本 <code>notes/design/stage2-review-ui-contract.md</code>
+            丟了分組卡／Decision 後直式 SVG／<code>max-width:360px</code>／背景摺疊／
+            不要勾選提示必須紅。不改 twin、不塞 gate-twin STAGES。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-stage5-card-contract.sh</code></td>
+        <td>第 5 站審頁任務卡契約牙:正本 <code>notes/design/stage5-review-ui-contract.md</code>
+            §版面鎖死 丟了 <code>.r-block</code>／nowrap／T-n 與未完成同行／不要底線／
+            不加提交判定必須紅。不改 twin、不塞 gate-twin STAGES。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-stage6-hunk-contract.sh</code></td>
         <td>第 6 站審碼 hunk 顯示契約牙:正本 <code>notes/design/stage5-review-ui-contract.md</code>
             §第6站審碼 丟了「改什麼」／<code>T-n</code>／關聯／<code>.ln.add</code>／
@@ -2362,8 +2402,8 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>第 7 站審查頁截圖槽契約牙:正本 <code>notes/design/stage7-review-ui-contract.md</code>
             丟了分組／<code>data-shot</code>／<code>shots/</code>／進場／已存在／不准新增／
             未掛／佔位／不准發明／lightbox 或點圖／chrome 三件／<code>.r-block</code>／
-            mermaid 禁／ASCII 禁必須紅。
-            不產 HTML、不改 twin、不發明產檔器。</td>
+            mermaid 禁／ASCII 禁必須紅。產檔器消失或吐未掛／發明 edit URL 也必須紅。
+            不改 twin、不塞 gate-twin STAGES。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-devstage2-graph.sh</code></td>
         <td>乘客不用跑它。它管 Stage 2 九真節點鏈:下一跳以

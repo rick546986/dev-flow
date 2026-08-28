@@ -12,6 +12,7 @@ S4-selfcheck 完成:`parse_5_tasks` 的 `errors` 為空 —— 逐 T 四必填�
 摺疊／依賴 DAG)正本在相對 DEVFLOW_ROOT 的 `_templates/5-tasks.md` 頂註,本檔不重抄條文。
 審查頁 chrome／任務總表版面正本在相對 DEVFLOW_ROOT 的
 `notes/design/stage5-review-ui-contract.md`,本檔不重抄、不改 twin 產生器。
+審頁產檔器 `scripts/build-stage5-html.py --action`(`.r-block` 卡;不加提交判定)。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡

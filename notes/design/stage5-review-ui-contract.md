@@ -4,24 +4,36 @@
 > `_templates/5-tasks.md` 頂註),不是 G1／G2／G3 審查介面;本檔只鎖**頁面樣子**。
 > 第 6 站審碼 hunk 顯示也鎖在本檔 §第6站審碼(不另開家族)。
 > 直式步驟方塊見並列的 `notes/design/vbox-fig-contract.md`(不改那份)。
-> 本刀產第 6 站 HTML(`scripts/build-stage6-html.py`)。不產第 3／7 站 HTML、
-> 不改 `build-gate-twin.py` STAGES(那支只產 2-decision | 4-spec | 7-review | 5-tasks)。
+> 本刀產第 5 站審頁(`scripts/build-stage5-html.py`)與第 6 站 HTML
+> (`scripts/build-stage6-html.py`)。不改 `build-gate-twin.py` STAGES
+> (那支只產 2-decision | 4-spec | 7-review | 5-tasks 的 gate 卡／執行板)。
 
 ## 何時用
 
-寫或改第 5 站給人看的頁(執行板／任務總表)時。chrome 跟第 2／4 站同一套,
+寫或改第 5 站給人看的頁(執行板／任務總表)時。chrome 跟第 2／4／6／7 站同一套,
 不要另發明殼、不要另發明 class 名。
 寫或改第 6 站給人看的審碼頁時,看 §第6站審碼。
 
 ## 版面鎖死(已拍板)
 
-1. **chrome 同一套**:必須點名 `--ground`、`--panel`、`--accent`,加 `.r-block`
+下列五條是鎖死,不是口味、不是選配。產檔器吃 md 的 `## T-n`:
+`scripts/build-stage5-html.py` 吐 `.r-block` 卡。授權 `--action`。
+不包 markdown-it + html-shell。不要在 5-tasks 加「提交判定」。
+寫法落點:`_templates/5-tasks.md`(本檔是正本,不另開家族)。
+
+1. **chrome 同一套**:必須點名 `--ground`、`--panel`、`--accent`,加 `--ok-soft`／
+   `--bad-soft`;`.masthead` `.dash` `.cell` `.r-block`
    (灰底／卡片底／強調色／區塊卡)。不要白底長文直轉。
 2. **任務總表**:T 編號欄、狀態欄同一行,`white-space:nowrap`。
-   表太寬就橫滑(`.tablewrap`／`overflow-x:auto`),不要擠窄前兩欄。
+   T-n 與未完成同行 `nowrap`。表太寬就橫滑(`.tablewrap`／`overflow-x:auto`),
+   不要擠窄前兩欄。
 3. **頂區摘要卡若是連結**:標題／數字／小字都不要底線,也不要繼承成強調色底線字
    (`a.cell{text-decoration:none;color:inherit}`)。hover 只改邊框,不加底線。
+   `.r-block` 標題不要底線。
 4. **內文撐滿卡寬再折**:不要 `max-width:62ch` 卡住,也不要硬 `<br>` 斷行。
+   卡文全寬 wrap。
+5. **不是 gate**:5-tasks 是執行板,不要加「提交判定」。不准把審頁塞進
+   `build-gate-twin.py` STAGES 當第六個 stage。
 
 類名沿用既有審查介面(`.r-block`、`.cell`、`a.cell`、`.tablewrap`),
 不准另發明一套。
@@ -54,8 +66,10 @@ markdown-it + html-shell。寫法落點:`_templates/6-implementation-notes.md`
 |---|---|
 | 直式步驟方塊 | `notes/design/vbox-fig-contract.md` |
 | 第 1 站掃頁 | `scripts/build-scan-html.py` |
+| 第 1 站審頁三框 | `notes/design/stage1-review-ui-contract.md` |
 | G1／G2／G3 五格標籤 | README §6 + `scripts/check-gate-twin.sh` |
-| 5-tasks 執行板四件事 | `_templates/5-tasks.md` 頂註 |
+| 5-tasks 執行板四件事 | `_templates/5-tasks.md` 頂註 + `scripts/build-gate-twin.py` |
+| 第 5 站審頁 | `scripts/build-stage5-html.py` |
 | 第 6 站審碼頁 | `scripts/build-stage6-html.py`(吃 `## Diff`) |
 
-不改 twin、不產第 3／7 站 HTML、不改 gate-twin STAGES、不進 `--action` 圍欄。
+不改 twin、不改 gate-twin STAGES。
