@@ -845,7 +845,8 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
   L2(停,回 4-spec 重 G2)兩級,分不清一律當 L2。
   審碼:<code>6-implementation-notes</code> 每個這輪改過的函式必須自己一塊色碼 hunk,
   標題帶 T-n,上方「改什麼」＋一行關聯;不能只列函式名＋行號,不要整檔貼上。
-  產檔器這輪不做。正本 <code>notes/design/stage5-review-ui-contract.md</code> §第6站審碼。</p>
+  產檔器吃 <code>## Diff</code>(<code>scripts/build-stage6-html.py</code>),不包 html-shell。
+  正本 <code>notes/design/stage5-review-ui-contract.md</code> §第6站審碼。</p>
   <div class="parity">
   <p class="parity-tag">規則正本 · Stage 6 執行清單(逐字抄自 <code>_templates/6-implementation-notes.md</code> 頂註)</p>
   <details>
@@ -2262,6 +2263,14 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             第 2／4 站及同類圖走這支,不是掃頁三框,也不是七站三走廊圖。
             契約 <code>notes/design/vbox-fig-contract.md</code>。</td>
         <td>各站畫直式步驟方塊時呼叫;<code>check-vbox-fig.sh</code> 對 lifecycle fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>build-stage6-html.py</code></td>
+        <td>第 6 站審碼頁產生器:吃 <code>6-implementation-notes.md</code> 的
+            <code>## Diff</code> 重複塊,吐鎖定 chrome
+            (<code>--ground</code>／<code>--panel</code>／<code>--accent</code>、
+            <code>.r-block</code>)＋每函式一塊 <code>details.hunk</code>
+            (<code>hunk-why</code>／<code>hunk-rel</code>／<code>.ln.add</code>)。
+            不進 <code>build-gate-twin.py</code> STAGES,不包 markdown-it + html-shell。</td>
+        <td>S2-tdd bookkeeping 前呼叫;<code>check-stage6-hunk-contract.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>devflow_twin_ui.py</code></td>
         <td><code>build-gate-twin.py</code> 產生介面時共用的版面樣式與外殼模板,不能單獨執行。</td>
         <td>被 <code>build-gate-twin.py</code> import</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
@@ -2309,8 +2318,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <tr><td><code>check-stage6-hunk-contract.sh</code></td>
         <td>第 6 站審碼 hunk 顯示契約牙:正本 <code>notes/design/stage5-review-ui-contract.md</code>
             §第6站審碼 丟了「改什麼」／<code>T-n</code>／關聯／<code>.ln.add</code>／
-            <code>--ok-soft</code>／不准發明 minus／chrome 三件必須紅。
-            不產 HTML、不改 twin、不發明產檔器。</td>
+            <code>--ok-soft</code>／不准發明 minus／chrome 三件必須紅;
+            產檔器消失或不再吐 <code>details.hunk</code>／<code>hunk-why</code>／
+            <code>.ln.add</code> 也必須紅。不改 twin、不塞 gate-twin STAGES。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-stage7-shot-contract.sh</code></td>
         <td>第 7 站審查頁截圖槽契約牙:正本 <code>notes/design/stage7-review-ui-contract.md</code>

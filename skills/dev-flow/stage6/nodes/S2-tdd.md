@@ -41,6 +41,7 @@ T Review Log／Progress Log),不另存。禁止第二份
 只有一份 `6-implementation-notes.md`。錨點未被改寫。本機游標在 S2-tdd。
 缺「改什麼」／標題 T-n／關聯／色碼 hunk 的審碼塊 = 未完成
 (正本 `notes/design/stage5-review-ui-contract.md` §第6站審碼,本檔不重抄)。
+bookkeeping commit 前跑 `scripts/build-stage6-html.py` 產審碼頁,不要手包 html-shell。
 
 ## 下一跳
 

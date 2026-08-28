@@ -4,7 +4,8 @@
 > `_templates/5-tasks.md` 頂註),不是 G1／G2／G3 審查介面;本檔只鎖**頁面樣子**。
 > 第 6 站審碼 hunk 顯示也鎖在本檔 §第6站審碼(不另開家族)。
 > 直式步驟方塊見並列的 `notes/design/vbox-fig-contract.md`(不改那份)。
-> 本輪不產第 3–7 站 HTML、不改 twin。
+> 本刀產第 6 站 HTML(`scripts/build-stage6-html.py`)。不產第 3／7 站 HTML、
+> 不改 `build-gate-twin.py` STAGES(那支只產 2-decision | 4-spec | 7-review | 5-tasks)。
 
 ## 何時用
 
@@ -29,7 +30,10 @@
 
 `6-implementation-notes` 給人看的頁,**每個這輪改過的函式**必須自己一塊 hunk,
 不是只列函式名＋行號表。下列七條是鎖死,不是口味、不是選配。
-產檔器這輪不做。寫法落點:`_templates/6-implementation-notes.md`
+產檔器吃 ## Diff:`scripts/build-stage6-html.py` 讀 md 的 `## Diff` 重複塊,
+吐 `details.hunk`／`p.hunk-why`／`p.hunk-rel`／`.ln.add`(舊行已知才畫
+`.ln.del`,不准發明 minus)。不進 `build-gate-twin.py` STAGES,不包
+markdown-it + html-shell。寫法落點:`_templates/6-implementation-notes.md`
 (本檔是正本,不另開家族)。不要整檔貼上,不要變成第二份正本。
 
 1. **一函式一塊**:每個這輪改過的函式自己一個 hunk 區塊。不得用「名＋行號表」充數。
@@ -52,5 +56,6 @@
 | 第 1 站掃頁 | `scripts/build-scan-html.py` |
 | G1／G2／G3 五格標籤 | README §6 + `scripts/check-gate-twin.sh` |
 | 5-tasks 執行板四件事 | `_templates/5-tasks.md` 頂註 |
+| 第 6 站審碼頁 | `scripts/build-stage6-html.py`(吃 `## Diff`) |
 
-本輪不改 twin、不產第 3–7 站 HTML、不進 `--action` 圍欄。
+不改 twin、不產第 3／7 站 HTML、不改 gate-twin STAGES、不進 `--action` 圍欄。
