@@ -2,7 +2,7 @@
 feature: <slug>
 stage: 7-review
 status: draft
-verdict:             # PRE-REVIEW | REQUEST_CHANGES | PASS(步 0a:自審一律 PRE-REVIEW)
+verdict:             # PRE-REVIEW | REQUEST_CHANGES | PASS | HOLD(步 0a:自審一律 PRE-REVIEW;Human 判定才是 PASS/REQUEST_CHANGES/HOLD;全勾不算 PASS)
 owner:               # reviewer,不可 = 實作 owner
 updated:
 ---
