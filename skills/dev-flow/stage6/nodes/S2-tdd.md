@@ -13,6 +13,8 @@ N2-handoff 完成:todo 與 5-tasks 一一對應。已武裝
 禁讀 1/2/3(圍欄②;本節點不改守衛,只遵守)。
 逐 T 動線正本是 README §5,本檔不抄原文。乘客清單步 2 正本是
 相對 DEVFLOW_ROOT 的 `_templates/6-implementation-notes.md` 頂註,本檔不重抄。
+審碼(函式要帶實際改到的 hunk／關鍵分支,不能只列函式名＋行號)正本同一份
+頂註 + `notes/design/stage5-review-ui-contract.md`,本檔不重抄。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡
