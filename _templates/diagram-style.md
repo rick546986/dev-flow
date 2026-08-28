@@ -79,9 +79,17 @@
    hook 語意、純狀態推進的節點。這五色只描述**節點本身的性質**,節點是否已被
    實際掛上東西是右走廊的註記負責的另一件事,兩者不要混為一談。
 
+## 直式置中方塊圖(另一家族)
+
+第 2 站方案架構、第 4 站模組生命週期、以及其他「直式步驟方塊」走
+`notes/design/vbox-fig-contract.md` + `scripts/build-vbox-fig.py`。
+那是 280 畫布、框寬 200、`max-width:360px` 的直式 SVG,不是上面「直式生命週期
+版式」的三走廊圖,也不是第 1 站 `#scan-now` 三框。不要手抄、不要 mermaid。
+
 ## 範本
 
 抄現成的最快:七階段全程圖 `guides/guide-quickstart.html` ⑥(單列+gate+區間+session 框
 全部齊)、資訊圍欄圖 `guides/guide-dev-flow.html`(圍欄紅線用法)、直式生命週期全還原圖
 `guides/guide-dev-flow.html` ⑥ `fig-lifecycle`(三走廊+雙層範圍框+多色主幹,上面「直式
 生命週期版式」整節即以此圖定案)。新圖先挑最像的抄結構,再改節點。
+直式步驟方塊另見 `notes/design/vbox-fig-contract.md`。
