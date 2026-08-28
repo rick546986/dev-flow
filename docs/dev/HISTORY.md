@@ -231,3 +231,8 @@
 - 另含耐久性屏障:更正在固化成功前不動現況、revision 只有真的寫進 .dev-flow 才標 durable、fact 整檔寫回逐筆過 Signal Gate、Stage 6 收尾補 memory commit 與 durable-check
 - 詳細:長期決策 docs/adr/0003-agent-memory-two-layer-split.md
 
+## 2026-08-28 · v320-host-plugins · v3.20.0
+- 做了什麼:Cursor／Codex／Grok 各自 plugin 安裝；補助手樣進 example/subsidy-3-0-plus；七站審頁產器與 Pages 已在 main。
+- 為什麼:Claude 以外只能 git pull + 手掛；plugin.json 字串不動，其他機器 update 會靜默不拉。
+- 落在哪:.claude-plugin/ .cursor-plugin/ .codex-plugin/ hooks/runtime-capabilities.json example/subsidy-3-0-plus/ notes/prompt-html-gap-loop.md
+
