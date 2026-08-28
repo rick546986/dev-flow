@@ -2335,6 +2335,19 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             每決策點 <code>.r-block</code> 內 A/B/C 卡、背景摺疊。
             不要勾選提示／你要審什麼／Rejected 釘頂。不進 gate-twin STAGES。</td>
         <td><code>--action</code>／<code>--fixture</code>;<code>check-stage2-card-contract.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>build-stage3-html.py</code></td>
+        <td>第 3 站審頁產生器:吃 <code>3-prototype.md</code> 的觸發判定／Demo Script／
+            Result／Verdict,吐觸發判定 + Demo + 答案回寫 <code>2-decision</code>。
+            feat 沒有 <code>3-prototype.md</code> 就 n-a／跳過,不要當硬缺。
+            自足單檔、深淺色。不進 gate-twin STAGES,不包 html-shell。</td>
+        <td><code>--action</code>／<code>--fixture</code>;<code>check-stage3-proto-contract.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>build-stage4-html.py</code></td>
+        <td>第 4 站審頁產生器:吃 R/S 與生命週期節,吐 R/S 卡
+            (審的時候看什麼 + GIVEN／WHEN／THEN)+ 直式四格 SVG
+            (新生 → 改行為 → 退役 → 不動,置中 <code>max-width:360px</code>)。
+            <code>## 補助模組生命週期（預覽）</code> 四條也要能印成圖。
+            提交判定寫 md 頂欄 <code>verdict:</code>(接 #60)。不進 gate-twin STAGES。</td>
+        <td><code>--action</code>／<code>--fixture</code>;<code>check-stage4-rs-contract.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>build-stage5-html.py</code></td>
         <td>第 5 站審頁產生器:吃 <code>## T-n</code>,吐 <code>.r-block</code> 卡
             (標題無底線、T-n＋標題＋未完成同一 <code>.r-head</code> nowrap、
@@ -2410,6 +2423,19 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>第 2 站審頁分組卡契約牙:正本 <code>notes/design/stage2-review-ui-contract.md</code>
             丟了分組卡／Decision 後直式 SVG／<code>max-width:360px</code>／背景摺疊／
             不要勾選提示必須紅。不改 twin、不塞 gate-twin STAGES。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-stage3-proto-contract.sh</code></td>
+        <td>第 3 站審頁契約牙:正本 <code>notes/design/stage3-review-ui-contract.md</code>
+            丟了觸發判定／Demo／回寫 <code>2-decision</code>／n-a／chrome／深淺色必須紅;
+            產檔器把缺 <code>3-prototype.md</code> 當硬缺、或吐 html-shell 也必須紅。
+            不改 twin、不塞 gate-twin STAGES。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-stage4-rs-contract.sh</code></td>
+        <td>第 4 站審頁 R/S 卡／生命週期契約牙:正本
+            <code>notes/design/stage4-review-ui-contract.md</code>
+            丟了審的時候看什麼／GIVEN／WHEN／THEN／新生 → 改行為 → 退役 → 不動／
+            補助模組生命週期／<code>max-width:360px</code>／提交判定必須紅。
+            只認自創標題、吐 mermaid／html-shell 也必須紅。不改 twin、不塞 gate-twin STAGES。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-stage5-card-contract.sh</code></td>
         <td>第 5 站審頁任務卡契約牙:正本 <code>notes/design/stage5-review-ui-contract.md</code>

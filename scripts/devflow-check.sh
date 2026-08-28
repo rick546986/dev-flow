@@ -119,10 +119,12 @@ group_methodology() {
   # 直式置中方塊圖母版:腳本壞了或吐 mermaid／pre／沒 viewBox／沒置中字必須紅。
   # 不塞 hop graph,不取代 fig-text／Journey／guides-fig-sync,不改 --action。
   run "methodology/check-vbox-fig"           scripts/check-vbox-fig.sh         || return 1
-  # 第 1／2／5／6／7 站審頁:契約丟了鎖死句子或產檔器吐錯形必須紅。
+  # 第 1／2／3／4／5／6／7 站審頁:契約丟了鎖死句子或產檔器吐錯形必須紅。
   # 不改 twin、不塞 gate-twin STAGES、不改 build-scan-html.py／build-stage6-html.py。
   run "methodology/check-stage1-now-contract" scripts/check-stage1-now-contract.sh || return 1
   run "methodology/check-stage2-card-contract" scripts/check-stage2-card-contract.sh || return 1
+  run "methodology/check-stage3-proto-contract" scripts/check-stage3-proto-contract.sh || return 1
+  run "methodology/check-stage4-rs-contract" scripts/check-stage4-rs-contract.sh || return 1
   run "methodology/check-stage5-card-contract" scripts/check-stage5-card-contract.sh || return 1
   run "methodology/check-stage6-hunk-contract" scripts/check-stage6-hunk-contract.sh || return 1
   run "methodology/check-stage7-shot-contract" scripts/check-stage7-shot-contract.sh || return 1
