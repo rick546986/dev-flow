@@ -13,8 +13,9 @@ N2-handoff 完成:todo 與 5-tasks 一一對應。已武裝
 禁讀 1/2/3(圍欄②;本節點不改守衛,只遵守)。
 逐 T 動線正本是 README §5,本檔不抄原文。乘客清單步 2 正本是
 相對 DEVFLOW_ROOT 的 `_templates/6-implementation-notes.md` 頂註,本檔不重抄。
-審碼(函式要帶實際改到的 hunk／關鍵分支,不能只列函式名＋行號)正本同一份
-頂註 + `notes/design/stage5-review-ui-contract.md`,本檔不重抄。
+審碼(每個這輪改過的函式自己一塊色碼 hunk,要有改什麼／T-n／關聯)
+正本同一份頂註 + `notes/design/stage5-review-ui-contract.md` §第6站審碼,
+本檔不重抄七條。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡
@@ -38,6 +39,8 @@ T Review Log／Progress Log),不另存。禁止第二份
 
 全 T 已依 README §5 走完(證據在同一份 `6-implementation-notes.md`)。
 只有一份 `6-implementation-notes.md`。錨點未被改寫。本機游標在 S2-tdd。
+缺「改什麼」／標題 T-n／關聯／色碼 hunk 的審碼塊 = 未完成
+(正本 `notes/design/stage5-review-ui-contract.md` §第6站審碼,本檔不重抄)。
 
 ## 下一跳
 

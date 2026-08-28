@@ -843,9 +843,9 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
   <p>實作期唯一日誌:每個 T × Covers S 先 RED 後 GREEN;scope check 與 Verify 後由不同
   implementer 的 reviewer 獨立審查,review PASS 才一 T 一 commit。偏差分 L1(保守方案續走)/
   L2(停,回 4-spec 重 G2)兩級,分不清一律當 L2。
-  審碼:<code>6-implementation-notes</code> 不能只列函式名＋行號,每個這輪改過的函式要帶
-  實際改到的那段(hunk／關鍵分支);不要整檔貼上,不要變成第二份正本。產檔器這輪不做。
-  正本 <code>notes/design/stage5-review-ui-contract.md</code>。</p>
+  審碼:<code>6-implementation-notes</code> 每個這輪改過的函式必須自己一塊色碼 hunk,
+  標題帶 T-n,上方「改什麼」＋一行關聯;不能只列函式名＋行號,不要整檔貼上。
+  產檔器這輪不做。正本 <code>notes/design/stage5-review-ui-contract.md</code> §第6站審碼。</p>
   <div class="parity">
   <p class="parity-tag">規則正本 · Stage 6 執行清單(逐字抄自 <code>_templates/6-implementation-notes.md</code> 頂註)</p>
   <details>
@@ -2303,6 +2303,12 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             lifecycle fixture 必須吐直式 SVG 且含 <code>.hl</code>;吐 mermaid／
             <code>&lt;pre&gt;</code>／沒 viewBox／沒置中字必須紅。
             不塞 hop graph,不取代 fig-text／Journey／guides-fig-sync。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-stage6-hunk-contract.sh</code></td>
+        <td>第 6 站審碼 hunk 顯示契約牙:正本 <code>notes/design/stage5-review-ui-contract.md</code>
+            §第6站審碼 丟了「改什麼」／<code>T-n</code>／關聯／<code>.ln.add</code>／
+            <code>--ok-soft</code>／不准發明 minus／chrome 三件必須紅。
+            不產 HTML、不改 twin、不發明產檔器。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-devstage2-graph.sh</code></td>
         <td>乘客不用跑它。它管 Stage 2 九真節點鏈:下一跳以

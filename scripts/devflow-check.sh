@@ -119,6 +119,9 @@ group_methodology() {
   # 直式置中方塊圖母版:腳本壞了或吐 mermaid／pre／沒 viewBox／沒置中字必須紅。
   # 不塞 hop graph,不取代 fig-text／Journey／guides-fig-sync,不改 --action。
   run "methodology/check-vbox-fig"           scripts/check-vbox-fig.sh         || return 1
+  # 第 6 站審碼 hunk 顯示:契約丟了改什麼／T-n／關聯／色碼 hunk 句子必須紅。
+  # 不產 HTML、不發明產檔器、不改 twin。
+  run "methodology/check-stage6-hunk-contract" scripts/check-stage6-hunk-contract.sh || return 1
   # Stage 2:九真節點;單產物 2-decision.md;N1 不得寫檔;每個 hop --write-cursor。
   run "methodology/check-devstage2-graph"     scripts/check-devstage2-graph.sh   || return 1
   run "methodology/test-devstage2-graph"      scripts/test-devstage2-graph.sh    || return 1
