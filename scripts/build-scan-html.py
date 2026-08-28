@@ -10,8 +10,10 @@
 殼只繼承 skills/dev-talk/html-shell.html(置中／有限寬 CSS 已在母版)。
 這是掃頁臉,不是 gate twin:不准攤成審查卡、不加 g1-ask／「你要審什麼」／勾選講義。
 #scan-now 只從 md「現況圖」節重生,不准拿邏輯圖／明天系統流充這個槽。
-現況圖:一行一框,每框四行(誰／做什麼／工具／痛點);三步時 viewBox="0 0 200 420"。
-不裁字、不拆小格。最後一框 .no,圖下小字「痛在最後一步」。
+現況圖:一框 = 誰／做什麼／工具／痛點 四行。吃「一行四欄」也吃「四行堆疊」;
+不准把堆疊拆成很多小格。三步時 viewBox="0 0 200 420"。框 x=20 width=160
+height=88,字 text-anchor="middle" x=100。不裁字。最後一框 .no,中框 .b,
+框間 .flow,圖下小字「痛在最後一步」。痛不准空。
 
 exit:0 = 寫出 / 1 = md 缺六件原料或現況圖抽不到 / 2 = 用法錯誤、檔案讀不到
 """
@@ -32,14 +34,22 @@ OQ_RE = re.compile(r"^[-*]\s*\[(x|~|>)\]\s*(.+)$", re.M)
 ARROW_TOKEN_RE = re.compile(r"--([^-\n>]+)-->")
 ARROW_SPLIT_RE = re.compile(r"\s*(?:--+>|→|->|↓|▼)\s*")
 PAIN_RE = re.compile(r"^痛[:：]")
-PAIN_ARROW_RE = re.compile(r"--痛[:：]\s*([^>]+?)-->")
+PAIN_ARROW_RE = re.compile(r"--痛[:：]\s*([^>\n]+?)(?:-->|(?=\s*$))")
+SEP_LINE_RE = re.compile(r"^(?:--+>|→|->|↓|▼)+$")
+ARROWISH_RE = re.compile(r"→|->|--[^>\n]+-->")
 FM_RE = re.compile(r"\A---\n.*?\n---\n", re.S)
 FRAME_TOP = 8
 FRAME_PITCH = 104
 CAPTION_EXTRA = 100
 VB_W = 200
-RECT_X, RECT_W, RECT_H = 40, 120, 28
-TEXT_X = 52
+RECT_X, RECT_W, RECT_H = 20, 160, 88
+TEXT_X = 100
+FIELD_LABELS = (
+    (re.compile(r"^(?:誰|Actor)[:：]\s*", re.I), "who"),
+    (re.compile(r"^(?:做什麼|動作|真實動作)[:：]\s*"), "action"),
+    (re.compile(r"^(?:工具|用什麼|使用工具)[:：]\s*"), "tool"),
+    (re.compile(r"^(?:痛點|痛)[:：]\s*"), "pain"),
+)
 
 
 def usage():
@@ -264,7 +274,7 @@ def parse_frame_line(line):
     line = (line or "").strip()
     if not line or line.startswith("#"):
         return None
-    if re.fullmatch(r"[-+|\\/\s]+", line):
+    if re.fullmatch(r"[-+|\\/\s]+", line) or SEP_LINE_RE.match(line):
         return None
     pain = ""
     match = PAIN_ARROW_RE.search(line)
@@ -309,18 +319,69 @@ def parse_frame_line(line):
     return (who, action, tool, pain)
 
 
+def _strip_field_label(line):
+    for pat, key in FIELD_LABELS:
+        new, n = pat.subn("", line, count=1)
+        if n:
+            return key, new.strip()
+    return None, line
+
+
+def frame_from_stack(lines):
+    """四行堆疊 → (誰, 做什麼, 工具, 痛點)。有標籤就按標籤,沒有就按序。"""
+    labeled = []
+    for line in lines:
+        key, val = _strip_field_label(line)
+        if key:
+            labeled.append((key, val))
+    if labeled and len(labeled) == len(lines):
+        slot = {"who": "", "action": "", "tool": "", "pain": ""}
+        for key, val in labeled:
+            slot[key] = val
+        return slot["who"], slot["action"], slot["tool"], slot["pain"]
+    padded = list(lines) + ["", "", "", ""]
+    who, action, tool, pain = padded[0], padded[1], padded[2], padded[3]
+    pain = re.sub(r"^痛[:：]\s*", "", pain)
+    return who, action, tool, pain
+
+
 def parse_frames(ascii_text):
-    frames = []
+    """一框四行。四行堆疊(可夾 ↓)與一行四欄都算一框,不准一行一格。"""
+    raw_lines = []
     for raw in (ascii_text or "").splitlines():
-        frame = parse_frame_line(raw)
-        if frame is None:
+        line = raw.strip()
+        if not line or line.startswith("#"):
             continue
-        frames.append(frame)
-    return frames
+        if re.fullmatch(r"[-+|\\/\s]+", line):
+            continue
+        raw_lines.append(line)
+    frames = []
+    buf = []
+
+    def flush():
+        if buf:
+            frames.append(frame_from_stack(buf))
+            del buf[:]
+
+    for line in raw_lines:
+        if SEP_LINE_RE.match(line):
+            flush()
+            continue
+        if ARROWISH_RE.search(line):
+            flush()
+            one = parse_frame_line(line)
+            if one is not None:
+                frames.append(one)
+            continue
+        buf.append(line)
+        if len(buf) == 4:
+            flush()
+    flush()
+    return [f for f in frames if f and any(part.strip() for part in f)]
 
 
 def render_svg(frames):
-    """手樣結構:直式三框, viewBox 0 0 200 420,每框四行,最後一框痛色。"""
+    """手樣結構:直式三框, viewBox 0 0 200 420,每框四行進 88 高的卡。"""
     if not frames:
         raise ValueError("現況圖抽不到節點")
     n = len(frames)
@@ -331,22 +392,38 @@ def render_svg(frames):
     ]
     for i, (who, action, tool, pain) in enumerate(frames):
         y = FRAME_TOP + i * FRAME_PITCH
-        kind = "no" if i == n - 1 else "hl"
+        if i == n - 1:
+            kind = "no"
+        elif i == 0:
+            kind = "hl"
+        else:
+            kind = "b"
         parts.append(
             '  <rect class="%s" x="%d" y="%d" width="%d" height="%d" rx="6"/>'
             % (kind, RECT_X, y, RECT_W, RECT_H)
         )
-        parts.append('  <text x="%d" y="%d">%s</text>' % (TEXT_X, y + 18, esc(who)))
-        parts.append('  <text x="%d" y="%d">%s</text>' % (TEXT_X, y + 44, esc(action)))
-        parts.append('  <text x="%d" y="%d">%s</text>' % (TEXT_X, y + 64, esc(tool)))
-        pain_cls = "no" if i == n - 1 else "cap"
-        parts.append(
-            '  <text class="%s" x="%d" y="%d">%s</text>'
-            % (pain_cls, TEXT_X, y + 84, esc(pain))
+        rows = (
+            (18, "", who),
+            (44, "", action),
+            (64, "", tool),
+            (84, "no" if i == n - 1 else "cap", pain),
         )
+        for dy, cls, val in rows:
+            cls_attr = ' class="%s"' % cls if cls else ""
+            parts.append(
+                '  <text%s text-anchor="middle" x="%d" y="%d">%s</text>'
+                % (cls_attr, TEXT_X, y + dy, esc(val))
+            )
+        if i < n - 1:
+            y1 = y + RECT_H
+            y2 = y + FRAME_PITCH
+            parts.append(
+                '  <path class="flow" d="M%d,%d L%d,%d"/>' % (TEXT_X, y1, TEXT_X, y2)
+            )
     cap_y = FRAME_TOP + n * FRAME_PITCH + 12
     parts.append(
-        '  <text class="cap" x="%d" y="%d">痛在最後一步</text>' % (TEXT_X, cap_y)
+        '  <text class="cap" text-anchor="middle" x="%d" y="%d">痛在最後一步</text>'
+        % (TEXT_X, cap_y)
     )
     parts.append("</svg>")
     return "\n".join(parts)

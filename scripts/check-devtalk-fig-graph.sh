@@ -29,14 +29,17 @@
 # 掃頁產生器(同檔第三節):
 #   scripts/build-scan-html.py --action 從同目錄 1-discussion.md 產出六件套。
 #   生成頁必須過同一套六件／置中契約;缺一件或現況圖貼左／撐滿欄必須紅。
-#   現況圖必須長手樣三框:一行一框、每框四行(誰／做什麼／工具／痛點)、
-#   三步時 viewBox="0 0 200 420",不裁字、不拆成十幾個小格、不高 viewBox。
+#   現況圖必須長手樣三框:每框四行(誰／做什麼／工具／痛點,痛不准空)、
+#   框 x=20 width=160 height=88、字 text-anchor="middle" x=100、
+#   三步時 viewBox="0 0 200 420",不裁字、不把四行堆疊拆成很多小格、
+#   框高≠88／每框 text<4／痛空 必須紅。
 #   不准攤成 twin 卡,不加 g1-ask／「你要審什麼」／勾選講義。
 #
 # 破壞實驗(本檔每次跑,除非 --skip-mutation):
 #   複本刪掉圖上一個 hop → 必須紅;graph.yaml 多一個 hop 不改圖 → 必須紅;
 #   樣張拿掉 details → 必須紅;樣張圖改回撐滿欄 → 必須紅;好樣本必須綠;
-#   生成頁拿掉人表 → 必須紅;生成頁圖改撐滿欄 → 必須紅。
+#   生成頁拿掉人表 → 必須紅;生成頁圖改撐滿欄必須紅;
+#   框高改 28／每框少一行／痛空／堆疊拆很多小格 → 必須紅。
 #
 # 用法:
 #   scripts/check-devtalk-fig-graph.sh [root]
@@ -344,7 +347,7 @@ def scan_fig_center_gaps(text, label):
 
 
 def diagram_src_lines(md_text):
-    """現況圖 fence 裡的內容行。一行 = 一框,不准再拆成小格。"""
+    """現況圖 fence 裡的內容行(含 ↓ 分隔)。"""
     m = re.search(r"^#{2,3}\s+現況圖\s*$", md_text or "", re.M)
     if not m:
         return []
@@ -364,6 +367,23 @@ def diagram_src_lines(md_text):
     return lines
 
 
+def expected_frame_count(lines):
+    """獨立數框:全是箭頭行 → 一行一框;否則四行堆疊一框。不准跟產生器同一套拆法。"""
+    content = [
+        ln for ln in lines if not re.fullmatch(r"(?:--+>|→|->|↓|▼)+", ln)
+    ]
+    if not content:
+        return 0
+    arrowish = [ln for ln in content if re.search(r"→|->|--[^>\n]+-->", ln)]
+    if arrowish and len(arrowish) == len(content):
+        return len(content)
+    if len(content) % 4 == 0:
+        return len(content) // 4
+    if arrowish:
+        return len(arrowish)
+    return len(content)
+
+
 def scan_now_svg(text):
     m = re.search(
         r'<svg\b[^>]*\bid="scan-now"[^>]*>.*?</svg>', text or "", re.S
@@ -375,7 +395,7 @@ def scan_now_svg(text):
 
 
 def check_scan_now_shape(text, label, md_text):
-    """咬手樣三框,擋舊產生器:拆很多小格 / viewBox 160×高 / 標籤裁成 6 字。"""
+    """咬手樣三框:88 高、每框四行、痛不准空、堆疊 md 不准拆很多小格。"""
     svg = scan_now_svg(text)
     if not svg:
         raise Mismatch("%s 缺 svg#scan-now" % label)
@@ -389,13 +409,14 @@ def check_scan_now_shape(text, label, md_text):
             "%s viewBox 寬是 %s,手樣是 200(舊產生器是 160)" % (label, int(width))
         )
     src_lines = diagram_src_lines(md_text)
+    want = expected_frame_count(src_lines)
     rects = re.findall(r"<rect\b[^>]*>", svg)
-    if src_lines and len(rects) != len(src_lines):
+    if want and len(rects) != want:
         gaps.append(
-            "%s 現況圖 %d 行卻畫了 %d 格(不准拆小格)"
-            % (label, len(src_lines), len(rects))
+            "%s 現況圖應 %d 框卻畫了 %d 格(堆疊四行不准拆小格)"
+            % (label, want, len(rects))
         )
-    if len(src_lines) == 3:
+    if want == 3:
         if 'viewBox="0 0 200 420"' not in svg:
             gaps.append(
                 '%s 三步必須 viewBox="0 0 200 420",實得 %s'
@@ -403,15 +424,70 @@ def check_scan_now_shape(text, label, md_text):
             )
         if height >= 700:
             gaps.append("%s viewBox 高 %s,舊產生器那種 780 不准回來" % (label, int(height)))
+    for i, rect in enumerate(rects, 1):
+        hm = re.search(r'\bheight="(\d+)"', rect)
+        xm = re.search(r'\bx="(\d+)"', rect)
+        wm = re.search(r'\bwidth="(\d+)"', rect)
+        if not hm or hm.group(1) != "88":
+            gaps.append(
+                "%s 第 %d 框高是 %s,手樣是 88"
+                % (label, i, hm.group(1) if hm else "無")
+            )
+        if not xm or xm.group(1) != "20":
+            gaps.append(
+                "%s 第 %d 框 x 是 %s,手樣是 20"
+                % (label, i, xm.group(1) if xm else "無")
+            )
+        if not wm or wm.group(1) != "160":
+            gaps.append(
+                "%s 第 %d 框寬是 %s,手樣是 160"
+                % (label, i, wm.group(1) if wm else "無")
+            )
+    body = re.sub(
+        r'<text\b[^>]*>痛在最後一步</text>', "", svg
+    )
+    texts = re.findall(r"<text\b[^>]*>.*?</text>", body)
+    if rects and len(texts) != 4 * len(rects):
+        gaps.append(
+            "%s 每框要四行 text(誰／做什麼／工具／痛),實得 %d 框 %d 行"
+            % (label, len(rects), len(texts))
+        )
+    else:
+        for i in range(len(rects)):
+            group = texts[i * 4 : (i + 1) * 4]
+            if len(group) < 4:
+                gaps.append("%s 第 %d 框 text 少於 4" % (label, i + 1))
+                continue
+            for j, node in enumerate(group, 1):
+                if 'text-anchor="middle"' not in node:
+                    gaps.append(
+                        "%s 第 %d 框第 %d 行缺 text-anchor=\"middle\""
+                        % (label, i + 1, j)
+                    )
+                if not re.search(r'\bx="100"', node):
+                    gaps.append(
+                        "%s 第 %d 框第 %d 行 x 不是 100" % (label, i + 1, j)
+                    )
+            pain_inner = inner_text(group[3]).strip()
+            if not pain_inner:
+                gaps.append("%s 第 %d 框痛是空的" % (label, i + 1))
     if "痛在最後一步" not in inner_text(svg):
         gaps.append("%s 圖下缺小字「痛在最後一步」" % label)
     rect_classes = re.findall(r'<rect class="([^"]+)"', svg)
     if rect_classes and rect_classes[-1] != "no":
         gaps.append("%s 最後一框要用痛的強調色 class=\"no\"" % label)
+    if len(rect_classes) >= 3 and rect_classes[1] != "b":
+        gaps.append("%s 中框要用 class=\"b\"" % label)
+    if len(rects) >= 2 and not re.search(r'<path\b[^>]*class="flow"', svg):
+        gaps.append("%s 框間缺 .flow" % label)
     long_needles = ("建補助案、填申請日", "新增附表五、選 A–F", "口頭對 OPU／FBT")
     for needle in long_needles:
         if needle in (md_text or "") and needle not in svg:
             gaps.append("%s 裁字了,手樣要完整「%s」" % (label, needle))
+    pain_needles = ("PLUS 還不會自動切", "看不到 2PN", "完整額只能猜")
+    for needle in pain_needles:
+        if needle in (md_text or "") and needle not in svg:
+            gaps.append("%s 缺痛「%s」" % (label, needle))
     if "痛在這" in inner_text(svg) and "痛在最後一步" not in inner_text(svg):
         gaps.append("%s 還在寫舊caption「痛在這」" % label)
     if gaps:
@@ -773,6 +849,35 @@ def run_mutations():
                 failures.append("生成頁裁掉長標籤必須紅,卻綠了")
             except Mismatch:
                 print("[mut] ✓ 生成頁裁掉長標籤必須紅")
+            short = re.sub(r'\bheight="88"', 'height="28"', text)
+            try:
+                check_scan_now_shape(short, "生成頁", md_text)
+                failures.append("生成頁框高改 28 必須紅,卻綠了")
+            except Mismatch:
+                print("[mut] ✓ 生成頁框高≠88 必須紅")
+            few = re.sub(
+                r'<text\b[^>]*>行政</text>\s*',
+                "",
+                text,
+                count=1,
+            )
+            try:
+                check_scan_now_shape(few, "生成頁", md_text)
+                failures.append("生成頁每框 text<4 必須紅,卻綠了")
+            except Mismatch:
+                print("[mut] ✓ 生成頁每框 text<4 必須紅")
+            empty_pain = text.replace("PLUS 還不會自動切", "", 1)
+            try:
+                check_scan_now_shape(empty_pain, "生成頁", md_text)
+                failures.append("生成頁痛空必須紅,卻綠了")
+            except Mismatch:
+                print("[mut] ✓ 生成頁痛空必須紅")
+            many = re.sub(r"(<rect\b[^>]*>)", r"\1\1\1\1", text, count=3)
+            try:
+                check_scan_now_shape(many, "生成頁", md_text)
+                failures.append("堆疊 md 拆成很多小格必須紅,卻綠了")
+            except Mismatch:
+                print("[mut] ✓ 堆疊 md 拆成很多小格必須紅")
             broken = re.sub(
                 r'<table[^>]*id="scan-people".*?</table>', "", text, count=1, flags=re.S
             )
