@@ -10,6 +10,8 @@ S2d-fresh 完成:Final Fresh 已綁當下 HEAD。游標在 S2d-fresh。
 各 S 的 Operational Context,以及已落檔的 `7-review.md`。
 禁讀 `6-implementation-notes.md` 的 Self-Review。
 步 2e 正本是相對 DEVFLOW_ROOT 的 `_templates/7-review.md` 頂註,本檔不抄乘客步原文。
+審查頁截圖槽(分組／data-shot／shots/／進場／lightbox／chrome)正本
+`notes/design/stage7-review-ui-contract.md`,本檔不重抄、不產 HTML。
 `graph.yaml` 是下一跳正本。
 
 ## 寫哪裡
@@ -28,6 +30,8 @@ S2d-fresh 完成:Final Fresh 已綁當下 HEAD。游標在 S2d-fresh。
 ## 完成條件
 
 表逐 S 填畢(或不適用)。只有一份 `7-review.md`。本機游標在 S2e-walkthrough。
+缺進場(已存在、不准新增)／槽檔名鎖定(data-shot／shots/) = 未完成
+(正本 `notes/design/stage7-review-ui-contract.md`,本檔不重抄)。
 
 ## 下一跳
 
