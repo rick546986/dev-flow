@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>subsidy-3-0-plus · 6-implementation-notes</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  -webkit-font-smoothing:antialiased}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px;color:var(--ink-2)}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem;max-width:62ch}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;
+  border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
+.r-block.is-ok .r-head{border-left-color:var(--ok)}
+.r-id{font-weight:700;font-size:.95rem;letter-spacing:.02em;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.r-name{font-weight:650}
+.r-risk{display:block;font-size:.83rem;color:var(--ink-2);margin-top:3px}
+.tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600;flex:none;white-space:nowrap}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+.tag.base{background:var(--sunk);color:var(--ink-3)}
+.body{padding:14px 18px 18px;color:var(--ink-2);font-size:.94rem}
+.body p{margin:.4em 0}
+.body ul{padding-left:1.4em;margin:.4em 0}
+.table-wrap{overflow-x:auto;margin:22px 0}
+table{border-collapse:collapse;width:100%;min-width:720px;margin:0;background:var(--panel);
+  border:1px solid var(--rule);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+th,td{border-bottom:1px solid var(--rule-2);padding:9px 11px;text-align:left;vertical-align:top}
+th{background:var(--sunk);color:var(--ink-3);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase}
+th:nth-child(1),td:nth-child(1),
+th:nth-child(2),td:nth-child(2){white-space:nowrap}
+tr:last-child td{border-bottom:0}
+h2{font-size:1rem;margin:28px 0 8px;color:var(--ink)}
+.note{color:var(--ink-3);font-size:.86rem}
+
+details.hunk{margin:10px 0}
+details.hunk>summary{cursor:pointer;font-weight:650;color:var(--ink)}
+.hunk-why{margin:10px 0 8px;color:var(--ink);font-size:.92rem}
+.hunk-rel{margin:0 0 8px;font-size:.84rem;color:var(--ink-2)}
+.hunk-rel .tag{margin-right:6px}
+details.hunk>summary .tag{margin-left:8px;font-weight:600}
+.diff{margin:0;padding:6px 0;background:var(--sunk);border-radius:8px;overflow-x:auto;
+  font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ln{padding:1px 12px;white-space:pre}
+.ln .m{display:inline-block;width:1.2em}
+.ln.add{background:var(--ok-soft);color:var(--ok)}
+.ln.add .m{color:var(--ok)}
+.ln.del{background:var(--bad-soft);color:var(--bad)}
+.ln.del .m{color:var(--bad)}
+.ln.ctx{color:var(--ink-2)}
+.ln.ctx .m{color:var(--ink-3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 6-implementation-notes · 審查介面</p>
+  <h1>subsidy-3-0-plus</h1>
+  <p class="sub">審查稿。feat 正本未改。updated 2026-08-26。</p>
+</header>
+
+<section class="r-block">
+  <div class="r-head"><span class="r-id">摘要</span></div>
+  <div class="body">
+    <p>只寫 worktree <code>/Users/asheng/dev/ivf_platform_subsidy-3-0-plus</code>。未碰主目錄、27004、191、180。</p>
+    <p>T-1 切日＋兩格。T-2 兩格手改不蓋、<code>#embryo_subsidy_wrap</code> hidden。T-3 年齡鎖。T-4 OPU 小字在上限格。</p>
+    <span class="tag warn">draft</span>
+    <span class="tag base">2026-08-26 鎖定：形成併取卵</span>
+  </div>
+</section>
+
+<section class="r-block">
+  <div class="r-head"><span class="r-id">T-1</span><span><span class="r-name">三處金額同一張表</span></span></div>
+  <div class="body">
+    <ul>
+      <li>PLUS 只看主檔 <code>apply_date &gt;= 2026-09-01</code>（ROC 115/9/1）。沒有 today 開關。</li>
+      <li>三函式共用基數＋方案拆分：JS <code>calculateSubsidy3Amount</code>、<code>calculateSubsidy3AmountAdd</code>、PHP <code>calculateSubsidy3AmountForSchedule5</code>。</li>
+      <li>3.0（申請日 &lt; 9/1）維持原 39 切兩格數字。</li>
+      <li>PLUS 內部三欄基數不變：未滿 40 第1次 10+0+5；第2–3次 6+5+4；第4–6次 4+0+2。滿 40 第1次 7+1+5；第2–3次 4+5+4。</li>
+      <li>方案拆分後把形成併入取卵，畫面只留兩格。完整 A/B：未滿40 15／15／6 萬；滿40 13／13 萬。只取卵走官方取卵欄；只植入走官方植入欄。</li>
+      <li>低收入仍 10+5=15，再依方案拆。</li>
+      <li>方案：A/B 完整（最高額）；C 僅植入；D/E/F／無法植入 僅取卵；方案 1 看 <code>inside_operation</code>。</li>
+      <li><code>subsidy_version</code> 仍寫 <code>3.0</code>。</li>
+    </ul>
+  </div>
+</section>
+
+<section class="r-block">
+  <div class="r-head"><span class="r-id">T-2</span><span><span class="r-name">兩格＋手改不蓋（2026-08-26 鎖定：形成併取卵）</span></span></div>
+  <div class="body">
+    <ul>
+      <li>PLUS 與 3.0 畫面都是 取卵＋植入。PLUS 兩格可手改（readonly false）；3.0 仍 readonly。<code>#embryo_subsidy_wrap</code> 永不顯示。</li>
+      <li>形成不落新欄：<code>subsidy_limit = 取卵+植入</code>（形成已在計算時併入取卵）。載入不還原第三格。</li>
+      <li>手改設 hidden <code>subsidy_amount_manual=1</code>。PLUS 存檔若 POST 已有取卵／植入／上限則保留，不重算覆蓋。3.0 仍後端覆寫。</li>
+    </ul>
+  </div>
+</section>
+
+<section class="r-block">
+  <div class="r-head"><span class="r-id">T-3</span><span><span class="r-name">年齡鎖</span></span></div>
+  <div class="body">
+    <p><code>calcSchedule5AgeAndAmount</code>：<code>#first_subsidy_age_input</code> 已有值就不覆寫，改用該值算金額。</p>
+  </div>
+</section>
+
+<h2>關鍵行號</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>檔</th><th>行</th><th>做什麼</th></tr>
+  <tr><td><code>controllers/backend/ivf.php</code></td><td>1455–1470</td><td>add_schedule5：PLUS 保留 POST 金額</td></tr>
+  <tr><td><code>controllers/backend/ivf.php</code></td><td>1618–1636</td><td>update_schedule5：同上</td></tr>
+  <tr><td><code>controllers/backend/ivf.php</code></td><td>7436–7448</td><td>公開 <code>calculateSubsidy3Amount</code> 也吃 apply_date</td></tr>
+  <tr><td><code>controllers/backend/ivf.php</code></td><td>7489–7496</td><td><code>isSubsidy3PlusByApplyDate</code>（2026-09-01）</td></tr>
+  <tr><td><code>controllers/backend/ivf.php</code></td><td>7537–7604</td><td>3.0／PLUS 基數表</td></tr>
+  <tr><td><code>controllers/backend/ivf.php</code></td><td>7640–7663</td><td><code>calculateSubsidy3AmountForSchedule5</code></td></tr>
+  <tr><td><code>views/backend/ivf_subsidy_edit.php</code></td><td>subsidy3_fields</td><td>PLUS／3.0 兩格；形成格 hidden</td></tr>
+  <tr><td><code>views/backend/ivf_subsidy_edit.php</code></td><td>2590–2795</td><td>JS 切日＋<code>calculateSubsidy3Amount</code></td></tr>
+  <tr><td><code>views/backend/ivf_subsidy_edit.php</code></td><td>3004–3028</td><td><code>calcSchedule5AgeAndAmount</code> 不覆寫 first_subsidy_age</td></tr>
+  <tr><td><code>views/backend/ivf_subsidy_edit.php</code></td><td>3077–3110</td><td><code>calculateSubsidy3AmountAdd</code></td></tr>
+</table>
+</div>
+
+<section class="r-block">
+  <div class="r-head"><span class="r-id">風險</span></div>
+  <div class="body">
+    <ul>
+      <li>PLUS 滿 40 第 4–6 次規格沒給，基數維持 0（40+ 實務最多 3 次）。</li>
+      <li>PLUS 存檔以畫面 POST 為準；若 JS 算錯會原樣寫入。3.0 仍後端重算。</li>
+      <li><code>apply_date</code> 沒 POST 時會查主表（<code>flush_cache</code>）。查不到就當 3.0。</li>
+      <li>形成已併入取卵；不再用上限−取卵−植入還原第三格。</li>
+      <li>附表五編輯 dialog 的金額 input id 本來就重複（foreach），這輪沒拆。</li>
+      <li>27004 未掛本樹，畫面未在此 session 人工回歸。</li>
+      <li>PHP 5.3：新碼只用 <code>array()</code> / <code>isset()? :</code>，無 <code>[]</code>、<code>??</code>、<code>fn()</code>。</li>
+    </ul>
+  </div>
+</section>
+
+<section class="r-block">
+  <div class="r-head"><span class="r-id">T-4</span><span><span class="r-name">附表五列出形成胚胎 OPU</span></span></div>
+  <div class="body">
+    <ul>
+      <li>只讀 SELECT，不寫 <code>ivf_fbt</code> / <code>ivf_opu</code>，不擋存檔，不依 2PN 改金額。</li>
+      <li>不是獨立列：小字放在「補助金額上限」格內、取卵／植入兩格下方（灰字 11px）。3.0 與 PLUS 新增／編輯都顯示。方案 C 仍僅植入，有對到仍列出 OPU；2PN=0 也列。</li>
+      <li>路徑：附表五 <code>fbt_date</code> + 主檔 <code>cNumber</code> → <code>ivf_fbt.bt_date</code>（同日多筆取 <code>id DESC</code> 最新）→ <code>opu_ivf_no</code> → <code>ivf_opu</code>（必帶 <code>cNumber</code>）的 <code>ivf_no</code> / <code>opu_date</code> / <code>sum_2pn</code>。</li>
+      <li>FBT 對不到且畫面已有 <code>opu_date</code> 時，改用 <code>ivf_opu.cNumber + opu_date</code>。無 <code>fbt_date</code> 或都對不到：顯示「未對到」。</li>
+      <li>AJAX：<code>POST /backend/ivf/lookupFormingEmbryoOpu</code>；改 <code>fbt_date</code>（或 <code>opu_date</code>）會重查。</li>
+    </ul>
+  </div>
+</section>
+
+<h2>關鍵行號（T-4）</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>檔</th><th>行</th><th>做什麼</th></tr>
+  <tr><td><code>controllers/backend/ivf.php</code></td><td>7667–7676</td><td><code>lookupFormingEmbryoOpu</code> JSON（只讀）</td></tr>
+  <tr><td><code>controllers/backend/ivf.php</code></td><td>7726–7740</td><td><code>ivf_fbt</code>：<code>cNumber</code> + <code>bt_date</code>，同日最新</td></tr>
+  <tr><td><code>controllers/backend/ivf.php</code></td><td>7774–7805</td><td><code>ivf_opu</code>：<code>cNumber</code> + <code>ivf_no</code>／<code>opu_date</code>，取 <code>sum_2pn</code></td></tr>
+  <tr><td><code>views/backend/ivf_subsidy_edit.php</code></td><td>補助金額上限格內</td><td>新增／編輯 OPU 小字</td></tr>
+  <tr><td><code>views/backend/ivf_subsidy_edit.php</code></td><td>3001–3005</td><td>改 <code>fbt_date</code> 觸發查詢</td></tr>
+  <tr><td><code>views/backend/ivf_subsidy_edit.php</code></td><td>3132–3175</td><td>顯示 <code>ivf_no</code>／取卵日／<code>sum_2pn</code></td></tr>
+</table>
+</div>
+
+<section class="r-block">
+  <div class="r-head"><span class="r-id">鎖定</span><span><span class="r-name">2026-08-26 鎖定：形成金額併入取卵</span></span></div>
+  <div class="body">
+    <ul>
+      <li>基數表內部仍可有 ovum／embryo／implant。<code>applySubsidy3PlanSplit</code>（及 JS <code>applySubsidy3PlanToParts</code>）之後：<code>ovum += embryo</code>、<code>embryo = 0</code>、<code>total = ovum + implant</code>。</li>
+      <li>最高額只在取卵＋植入都在（完整 A/B）。只取卵或只植入走官方 PLUS 欄，不把形成加回去。</li>
+      <li>畫面回到兩格；形成胚胎 OPU 查詢與 <code>lookupFormingEmbryoOpu</code> 保留，改為金額格內小字。</li>
+    </ul>
+  </div>
+</section>
+<section class="r-block" id="hunks">
+  <div class="r-head"><span class="r-id">hunk</span><span><span class="r-name">這輪改過的函式</span><span class="r-risk">只放關鍵分支，不是整檔。正本仍在 worktree。</span></span></div>
+  <div class="body">
+<details class="hunk" open>
+  <summary>isSubsidy3PlusByApplyDate · <code>ivf.php</code> 7491–7499 <span class="tag base">T-1</span></summary>
+  <p class="hunk-why">改什麼：PLUS 只看申請日 &gt;= 2026-09-01；空日當 3.0；沒有 today 開關。整段是新函式。</p>
+  <p class="hunk-rel"><span class="tag base">T-1 切日</span>對 JS <code>isSubsidy3Plus</code>。被 <code>calculateSubsidy3Amount</code>、<code>calculateSubsidy3AmountForSchedule5</code> 叫。</p>
+  <div class="diff" role="img" aria-label="diff">
+    <div class="ln ctx"><span class="m"> </span>// PLUS iff 主檔 apply_date &gt;= 2026-09-01（ROC 115/9/1）；無 today 開關</div>
+    <div class="ln ctx"><span class="m"> </span>private function isSubsidy3PlusByApplyDate($applyDate)</div>
+    <div class="ln ctx"><span class="m"> </span>{</div>
+    <div class="ln ctx"><span class="m"> </span>    if ($applyDate === null || $applyDate === '') {</div>
+    <div class="ln ctx"><span class="m"> </span>        return false;</div>
+    <div class="ln ctx"><span class="m"> </span>    }</div>
+    <div class="ln ctx"><span class="m"> </span>    $applyDate = substr(trim($applyDate), 0, 10);</div>
+    <div class="ln add"><span class="m">+</span>    return (strcmp($applyDate, '2026-09-01') &gt;= 0);</div>
+    <div class="ln ctx"><span class="m"> </span>}</div>
+  </div>
+</details>
+<details class="hunk" open>
+  <summary>isSubsidy3Plus（JS 同一把尺） · <code>ivf_subsidy_edit.php</code> 2591–2597 <span class="tag base">T-1</span></summary>
+  <p class="hunk-why">改什麼：同一把尺。空日 false。</p>
+  <p class="hunk-rel"><span class="tag base">T-1 切日</span>對 PHP <code>isSubsidy3PlusByApplyDate</code>。被 <code>calculateSubsidy3AmountAdd</code>、頁上 <code>calculateSubsidy3Amount</code> 叫。</p>
+  <div class="diff" role="img" aria-label="diff">
+    <div class="ln ctx"><span class="m"> </span>function isSubsidy3Plus(applyDate) {</div>
+    <div class="ln ctx"><span class="m"> </span>    if (typeof applyDate === 'undefined' || applyDate === null) {</div>
+    <div class="ln ctx"><span class="m"> </span>        applyDate = getMainApplyDate();</div>
+    <div class="ln ctx"><span class="m"> </span>    }</div>
+    <div class="ln ctx"><span class="m"> </span>    if (!applyDate) return false;</div>
+    <div class="ln add"><span class="m">+</span>    return String(applyDate).substring(0, 10) &gt;= '2026-09-01';</div>
+    <div class="ln ctx"><span class="m"> </span>}</div>
+  </div>
+</details>
+<details class="hunk" open>
+  <summary>calculateSubsidy3Amount（PHP：形成併入取卵） · <code>ivf.php</code> 7436–7455 <span class="tag base">T-1</span></summary>
+  <p class="hunk-why">改什麼：改吃 POST apply_date 切 PLUS；形成併入取卵後 embryo=0。此入口仍沒做方案拆分。</p>
+  <p class="hunk-rel"><span class="tag base">T-1 切日＋形成併取卵</span>叫 <code>isSubsidy3PlusByApplyDate</code>。這入口沒走 <code>applySubsidy3PlanSplit</code>；附表五存檔走的是下面那支 ForSchedule5。</p>
+  <div class="diff" role="img" aria-label="diff">
+    <div class="ln ctx"><span class="m"> </span>public function calculateSubsidy3Amount()</div>
+    <div class="ln ctx"><span class="m"> </span>{</div>
+    <div class="ln ctx"><span class="m"> </span>    $age = intval($this-&gt;input-&gt;post('age'));</div>
+    <div class="ln ctx"><span class="m"> </span>    $times = intval($this-&gt;input-&gt;post('times'));</div>
+    <div class="ln ctx"><span class="m"> </span>    $isLowIncome = $this-&gt;input-&gt;post('low_income') == '是';</div>
+    <div class="ln add"><span class="m">+</span>    $applyDate = $this-&gt;input-&gt;post('apply_date');</div>
+    <div class="ln add"><span class="m">+</span>    $isPlus = $this-&gt;isSubsidy3PlusByApplyDate($applyDate);</div>
+    <div class="ln ctx"><span class="m"> </span>    $parts = $this-&gt;getSubsidy3BaseAmounts($age, $times, $isLowIncome, $isPlus);</div>
+    <div class="ln add"><span class="m">+</span>    $ovum = intval($parts["ovum"]) + intval($parts["embryo"]);</div>
+    <div class="ln ctx"><span class="m"> </span>    $implant = intval($parts["implant"]);</div>
+    <div class="ln ctx"><span class="m"> </span>    $result = array(</div>
+    <div class="ln ctx"><span class="m"> </span>        "total_amount" =&gt; $ovum + $implant,</div>
+    <div class="ln ctx"><span class="m"> </span>        "ovum" =&gt; $ovum,</div>
+    <div class="ln add"><span class="m">+</span>        "embryo" =&gt; 0,</div>
+    <div class="ln ctx"><span class="m"> </span>        "implant" =&gt; $implant</div>
+    <div class="ln ctx"><span class="m"> </span>    );</div>
+    <div class="ln ctx"><span class="m"> </span>    echo json_encode($result);</div>
+    <div class="ln ctx"><span class="m"> </span>}</div>
+  </div>
+</details>
+<details class="hunk" open>
+  <summary>applySubsidy3PlanSplit（方案拆完再併形成） · <code>ivf.php</code> 7609–7642 <span class="tag base">T-1</span> <span class="tag base">T-2</span></summary>
+  <p class="hunk-why">改什麼：方案拆完才 ovum+=embryo。只取卵／只植入時形成已先清 0，不會加回去。</p>
+  <p class="hunk-rel"><span class="tag base">T-1 同一張表</span> <span class="tag base">T-2 兩格</span>對 JS <code>applySubsidy3PlanToParts</code>。被 <code>calculateSubsidy3AmountForSchedule5</code> 叫。方案 C／D／E／F／1. 在這裡清欄，然後形成併進取卵。</p>
+  <div class="diff" role="img" aria-label="diff">
+    <div class="ln ctx"><span class="m"> </span>private function applySubsidy3PlanSplit($ovum, $embryo, $implant, $applyPlan, $insideOperation)</div>
+    <div class="ln ctx"><span class="m"> </span>{</div>
+    <div class="ln ctx"><span class="m"> </span>    if (strpos($applyPlan, 'C.') !== false) {</div>
+    <div class="ln ctx"><span class="m"> </span>        $ovum = 0; $embryo = 0;</div>
+    <div class="ln ctx"><span class="m"> </span>    } else if (strpos($applyPlan, 'D.') !== false || strpos($applyPlan, 'E.') !== false</div>
+    <div class="ln ctx"><span class="m"> </span>            || strpos($applyPlan, 'F.') !== false) {</div>
+    <div class="ln ctx"><span class="m"> </span>        $implant = 0; $embryo = 0;</div>
+    <div class="ln ctx"><span class="m"> </span>    } else if (strpos($applyPlan, '1.') !== false) {</div>
+    <div class="ln ctx"><span class="m"> </span>        if ($insideOperation === '取卵') { $implant = 0; $embryo = 0; }</div>
+    <div class="ln ctx"><span class="m"> </span>        else if ($insideOperation === '植入') { $ovum = 0; $embryo = 0; }</div>
+    <div class="ln ctx"><span class="m"> </span>        else { $ovum = 0; $embryo = 0; $implant = 0; }</div>
+    <div class="ln ctx"><span class="m"> </span>    }</div>
+    <div class="ln ctx"><span class="m"> </span>    // 形成併入取卵；只取卵／只植入時上面已把形成清 0</div>
+    <div class="ln add"><span class="m">+</span>    $ovum = intval($ovum) + intval($embryo);</div>
+    <div class="ln add"><span class="m">+</span>    $embryo = 0;</div>
+    <div class="ln add"><span class="m">+</span>    $implant = intval($implant);</div>
+    <div class="ln ctx"><span class="m"> </span>    return array("ovum"=&gt;$ovum,"embryo"=&gt;$embryo,"implant"=&gt;$implant,"total"=&gt;$ovum+$implant);</div>
+    <div class="ln ctx"><span class="m"> </span>}</div>
+  </div>
+</details>
+<details class="hunk" open>
+  <summary>calculateSubsidy3AmountForSchedule5 · <code>ivf.php</code> 7646–7669 <span class="tag base">T-1</span></summary>
+  <p class="hunk-why">改什麼：申請日先 POST，否則查主檔；再 plus + plan split。</p>
+  <p class="hunk-rel"><span class="tag base">T-1 三處同一張表</span>對 JS <code>calculateSubsidy3AmountAdd</code>。叫 <code>isSubsidy3PlusByApplyDate</code> → <code>applySubsidy3PlanSplit</code>。add／update_schedule5 走這支。</p>
+  <div class="diff" role="img" aria-label="diff">
+    <div class="ln ctx"><span class="m"> </span>private function calculateSubsidy3AmountForSchedule5($data) {</div>
+    <div class="ln add"><span class="m">+</span>    $applyDate = isset($data['apply_date']) ? $data['apply_date']</div>
+    <div class="ln add"><span class="m">+</span>        : $this-&gt;resolveSubsidyApplyDateFromPostOrMain($data);</div>
+    <div class="ln add"><span class="m">+</span>    $isPlus = $this-&gt;isSubsidy3PlusByApplyDate($applyDate);</div>
+    <div class="ln ctx"><span class="m"> </span>    $parts = $this-&gt;getSubsidy3BaseAmounts($age, $times, $isLowIncome, $isPlus);</div>
+    <div class="ln add"><span class="m">+</span>    $split = $this-&gt;applySubsidy3PlanSplit($parts['ovum'], $parts['embryo'], $parts['implant'], $applyPlan, $insideOperation);</div>
+    <div class="ln ctx"><span class="m"> </span>    return array('ovum'=&gt;$split['ovum'],'embryo'=&gt;$split['embryo'],'implant'=&gt;$split['implant'],'total'=&gt;$split['total']);</div>
+    <div class="ln ctx"><span class="m"> </span>}</div>
+  </div>
+</details>
+<details class="hunk" open>
+  <summary>calculateSubsidy3AmountAdd（新增附表五） · <code>ivf_subsidy_edit.php</code> 3076–3106 <span class="tag base">T-1</span></summary>
+  <p class="hunk-why">改什麼：新增附表五走同一張表（主檔申請日 + 方案拆）。</p>
+  <p class="hunk-rel"><span class="tag base">T-1 三處同一張表</span>對 PHP <code>calculateSubsidy3AmountForSchedule5</code>。叫 <code>isSubsidy3Plus</code> → <code>applySubsidy3PlanToParts</code>。也被 T-3 的 <code>calcSchedule5AgeAndAmount</code> 叫去算金額。</p>
+  <div class="diff" role="img" aria-label="diff">
+    <div class="ln ctx"><span class="m"> </span>function calculateSubsidy3AmountAdd() {</div>
+    <div class="ln add"><span class="m">+</span>    var applyDate = getMainApplyDate();</div>
+    <div class="ln add"><span class="m">+</span>    var isPlus = isSubsidy3Plus(applyDate);</div>
+    <div class="ln ctx"><span class="m"> </span>    var parts = getSubsidy3BaseAmounts(age, times, isLowIncome, isPlus);</div>
+    <div class="ln add"><span class="m">+</span>    var split = applySubsidy3PlanToParts(parts, applyPlan, $('#inside_operation_input_add').val());</div>
+    <div class="ln add"><span class="m">+</span>    $('#ovum_subsidy_limit_add').val(split.ovum);</div>
+    <div class="ln add"><span class="m">+</span>    $('#embryo_subsidy_limit_add').val(split.embryo);</div>
+    <div class="ln add"><span class="m">+</span>    $('#implant_subsidy_limit_add').val(split.implant);</div>
+    <div class="ln add"><span class="m">+</span>    $('#subsidy_limit_add').val(split.total);</div>
+    <div class="ln ctx"><span class="m"> </span>}</div>
+  </div>
+</details>
+<details class="hunk" open>
+  <summary>calcSchedule5AgeAndAmount（已有年齡不覆寫） · <code>ivf_subsidy_edit.php</code> 3003–3016 <span class="tag base">T-3</span></summary>
+  <p class="hunk-why">改什麼：first_subsidy_age 已有值就不覆寫，只抄到 schedule5 再算金額。</p>
+  <p class="hunk-rel"><span class="tag base">T-3 年齡鎖</span>金額仍交給 <code>calculateSubsidy3AmountAdd</code>（T-1）。不改切日、不改 OPU。</p>
+  <div class="diff" role="img" aria-label="diff">
+    <div class="ln ctx"><span class="m"> </span>function calcSchedule5AgeAndAmount() {</div>
+    <div class="ln ctx"><span class="m"> </span>    var existingFirstAge = '';</div>
+    <div class="ln ctx"><span class="m"> </span>    if ($('#first_subsidy_age_input').length) {</div>
+    <div class="ln ctx"><span class="m"> </span>        existingFirstAge = $.trim($('#first_subsidy_age_input').val());</div>
+    <div class="ln ctx"><span class="m"> </span>    }</div>
+    <div class="ln add"><span class="m">+</span>    if (existingFirstAge !== '') {</div>
+    <div class="ln add"><span class="m">+</span>        $('#schedule5_3_0_age').val(existingFirstAge);</div>
+    <div class="ln add"><span class="m">+</span>        calculateSubsidy3AmountAdd();</div>
+    <div class="ln add"><span class="m">+</span>        return;</div>
+    <div class="ln add"><span class="m">+</span>    }</div>
+    <div class="ln ctx"><span class="m"> </span>    // … 沒有值才去算年齡</div>
+    <div class="ln ctx"><span class="m"> </span>}</div>
+  </div>
+</details>
+<details class="hunk" open>
+  <summary>lookupFormingEmbryoOpu（只讀） · <code>ivf.php</code> 7673–7682 <span class="tag base">T-4</span></summary>
+  <p class="hunk-why">改什麼：新只讀 JSON 入口，不寫 fbt/opu、不改金額。</p>
+  <p class="hunk-rel"><span class="tag base">T-4 OPU 小字</span>真正對表在 <code>findFormingEmbryoOpu</code>。畫面 <code>.forming-embryo-opu-line</code>。不改 T-1 金額。</p>
+  <div class="diff" role="img" aria-label="diff">
+    <div class="ln add"><span class="m">+</span>public function lookupFormingEmbryoOpu()</div>
+    <div class="ln add"><span class="m">+</span>{</div>
+    <div class="ln add"><span class="m">+</span>    $cNumber = trim((string) $this-&gt;input-&gt;post('cNumber'));</div>
+    <div class="ln add"><span class="m">+</span>    $fbtDate = trim((string) $this-&gt;input-&gt;post('fbt_date'));</div>
+    <div class="ln add"><span class="m">+</span>    $opuDate = trim((string) $this-&gt;input-&gt;post('opu_date'));</div>
+    <div class="ln add"><span class="m">+</span>    $result = $this-&gt;findFormingEmbryoOpu($cNumber, $fbtDate, $opuDate, $location);</div>
+    <div class="ln add"><span class="m">+</span>    header('Content-Type: application/json');</div>
+    <div class="ln add"><span class="m">+</span>    echo json_encode($result);</div>
+    <div class="ln add"><span class="m">+</span>}</div>
+  </div>
+</details>
+  </div>
+</section>
+</div>
+</body>
+</html>

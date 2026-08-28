@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1. 討論 — 試管補助 3.0 PLUS</title>
+<style>
+  :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;}
+  @media(prefers-color-scheme:dark){
+    :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+  main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+  table{border-collapse:collapse;width:100%;margin:1em 0}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+  th{background:var(--card)}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;
+         font-size:.8rem;font-weight:600;border:1px solid transparent;margin-right:4px}
+  .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+  .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+  .sum{background:var(--card);border:1px solid var(--line);border-radius:10px;
+       padding:14px 16px;margin:1em 0}
+  .sum .pain{font-weight:600;margin:0 0 .4em}
+  details{margin:.6em 0}
+  details>summary{cursor:pointer;color:var(--muted);user-select:none}
+  .now-wrap{display:flex;justify-content:center;width:100%;margin:1.2em 0}
+  #scan-now{width:220px;max-width:100%;height:auto;display:block;flex:none}
+  svg text{font:11px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--fg)}
+  svg .b{fill:var(--card);stroke:var(--line);stroke-width:1}
+  svg .hl{fill:color-mix(in srgb,var(--acc) 16%,var(--card));stroke:var(--acc)}
+  svg .no{fill:color-mix(in srgb,var(--bad) 12%,var(--card));stroke:var(--bad)}
+  svg .flow{fill:none;stroke:var(--muted);stroke-width:1.6}
+  svg .cap{fill:var(--muted);font:11px -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+</style>
+</head>
+<body>
+<main>
+<section class="sum" id="scan-sum">
+  <p class="pain">痛：諮詢／行政要依 115/9/1 PLUS 金額表與 115.4.1 植入顆數算補助。現行程式還是 3.0（39 歲切、第 2～3 次 10／8 萬），顆數沒硬擋。完整療程要「取卵+形成胚胎+植入」，附表五現在看不到形成胚胎的 OPU。</p>
+  <p>現在怎麼繞：對完 OPU／FBT 再手選方案。形成胚胎沒留在附表五。</p>
+  <span class="badge ok">已解 14</span>
+  <span class="badge warn">假設 0</span>
+  <span class="badge">移交 1</span>
+</section>
+
+<div class="now-wrap">
+<svg id="scan-now" viewBox="0 0 200 420" role="img" aria-label="現況：行政誰、用什麼工具、做什麼、痛在哪">
+  <rect class="hl" x="20" y="8" width="160" height="88" rx="6"/>
+  <text x="100" y="30" text-anchor="middle">行政</text>
+  <text x="100" y="48" text-anchor="middle">建補助案、填申請日</text>
+  <text x="100" y="66" text-anchor="middle">後台</text>
+  <text class="cap" x="100" y="84" text-anchor="middle">PLUS 還不會自動切</text>
+  <path class="flow" d="M100,96 L100,118"/>
+  <rect class="b" x="20" y="118" width="160" height="88" rx="6"/>
+  <text x="100" y="140" text-anchor="middle">行政</text>
+  <text x="100" y="158" text-anchor="middle">新增附表五、選 A–F</text>
+  <text x="100" y="176" text-anchor="middle">後台</text>
+  <text class="cap" x="100" y="194" text-anchor="middle">看不到 2PN</text>
+  <path class="flow" d="M100,206 L100,228"/>
+  <rect class="no" x="20" y="228" width="160" height="88" rx="6"/>
+  <text x="100" y="250" text-anchor="middle">行政</text>
+  <text x="100" y="268" text-anchor="middle">口頭對 OPU／FBT</text>
+  <text x="100" y="286" text-anchor="middle">另開單</text>
+  <text class="cap" x="100" y="304" text-anchor="middle">完整額只能猜</text>
+  <text class="cap" x="100" y="348" text-anchor="middle">痛在最後一步</text>
+  <text class="cap" x="100" y="366" text-anchor="middle">現況旅程 · 不是明天 PLUS 切表</text>
+</svg>
+</div>
+
+<table id="scan-people">
+  <tr><th>誰</th><th>要什麼</th><th>缺什麼</th></tr>
+  <tr><td>諮詢／行政</td><td>算對補助、填附表五</td><td>這次有沒有形成胚胎。[Assumption] 第 2 次仍未滿 39 的完整 15 萬是由表 + 第一組例推的</td></tr>
+  <tr><td>醫師／胚胎師</td><td>做完取卵植入</td><td>補助欄位怎麼切</td></tr>
+  <tr><td>病患</td><td>知道能拿多少</td><td>三欄差異</td></tr>
+</table>
+
+<table id="scan-qs">
+  <tr><th>題目</th><th>著落（已解／假設／移交）</th></tr>
+  <tr><td>PLUS 只看主檔 apply_date ≥ 115/9/1；沒有 today ≥ 9/1 開關</td><td>已解</td></tr>
+  <tr><td>9/1 前立案整案維持 3.0（含之後附表五／第 2 次）</td><td>已解</td></tr>
+  <tr><td>first_subsidy_age 跟首次 apply_date，永不重判</td><td>已解</td></tr>
+  <tr><td>完整三欄互斥；第 2 次完整是 15，不是 6+4</td><td>已解</td></tr>
+  <tr><td>附表五用 fbt_date→FBT→OPU 列形成胚胎的 OPU</td><td>已解</td></tr>
+  <tr><td>這輪不硬擋顆數、不改 38 文案</td><td>已解</td></tr>
+  <tr><td>低收入不變；次數上限已切 40</td><td>已解</td></tr>
+  <tr><td>第 2 次完整 15 萬：多一格胚胎形成，三格加總＝該次上限</td><td>已解</td></tr>
+  <tr><td>三格都先列（取卵／胚胎形成／植入）；看過不好再收回兩格</td><td>已解</td></tr>
+  <tr><td>三格先自動填（形成＝完整−取卵無法植入−僅植入），人可手改</td><td>已解</td></tr>
+  <tr><td>存檔不要蓋手改（現況取卵／植入是 readonly，這輪要打開）</td><td>已解</td></tr>
+  <tr><td>次數看 first_time_subsidy_age、金額看 first_subsidy_age（兩顆分開）</td><td>已解</td></tr>
+  <tr><td>申請日實務不改；新增附表五重算當保險，不覆寫已存 first_subsidy_age</td><td>已解</td></tr>
+  <tr><td>申請滿（6 或 3）再來＝新開一筆；舊案不動；新案當第一次重算兩格年齡</td><td>已解</td></tr>
+  <tr><td>正式國健署條文若與 briefing 衝突，另開討論</td><td>移交</td></tr>
+</table>
+
+<table id="scan-ac">
+  <tr><th>假設…當…則…</th><th>從哪看</th><th>看到什麼</th></tr>
+  <tr><td>假設申請日 115/9/1、未滿 40 第一次完整，當選 A/B 且本次 OPU 2PN&gt;0，則上限 15 萬，且畫面同時看到取卵／胚胎形成／植入三格</td><td>附表五金額欄</td><td>三格＋上限 15 萬（測試案）</td></tr>
+  <tr><td>假設 3.0 已有第一次、9/1 後同一案再辦第 2 次仍未滿 39 且完整，則仍走 3.0（10 萬），不是 PLUS 15</td><td>同一案第二次附表五</td><td>3.0 的 10 萬，不是 PLUS 15</td></tr>
+  <tr><td>假設有 fbt_date 且對到 OPU，則附表五看得到該 ivf_no／取卵日／2PN</td><td>附表五畫面</td><td>該 ivf_no／取卵日／2PN</td></tr>
+  <tr><td>假設術日 115.4.2、未滿 38、選 2 顆，則仍可存（這輪不硬擋）</td><td>附表五存檔</td><td>存檔成功</td></tr>
+</table>
+
+<details>
+  <summary>問答摘要</summary>
+  <p>問答（討論期逐題，預設摺著）：</p>
+  <p>Q 歸零系統怎麼開？ → 事實：使用者「新開一筆，舊資料就不會再動了」→ 新主檔、新申請日、兩格年齡重算；舊案凍結。</p>
+  <p>Q 數字怎麼進三格？ → 事實：使用者「先自動填，人可以手動改」→ 自動＋可手改，存檔留著手改。</p>
+  <p>Q 15 萬兩格怎麼填？ → 事實：使用者 2026-08-25 → 多一格胚胎形成，三格加總＝該次上限，才不會像少一格。</p>
+  <p>Q 自動拆還是手填？ → 事實：使用者「至少三格都列出來，看過不好再恢復成兩格」→ 先上三格。</p>
+  <p>Q 數字怎麼進三格？ → 事實：使用者「先自動填，人可以手動改，跟現在一樣」→ 要自動＋可手改。現況取卵／植入其實是 readonly、存檔後端覆寫；手改是新行為。</p>
+  <p>Q 第 2／3 次還看第一次幾歲？ → 事實：次數讀主表 first_time_subsidy_age；金額編輯讀 first_subsidy_age，新增附表五會用畫面申請日重算 → 次數穩；金額在申請日被改時會偏離不重判。</p>
+  <p>Q 9/1 誰走 PLUS → 事實：使用者 A 與 But Example → 新申請 + 再次申請走 PLUS，舊年齡不重算 → 切 apply_date。</p>
+  <p>Q 未滿 39 第 2 次最高？ → 事實：But Example 再次走 PLUS + 表第 2～3 次完整 15 → 15 萬。</p>
+  <p>Q 6+4？ → 事實：表三欄互斥 → 完整 15，6／4 是另兩種。</p>
+  <p>Q 形成胚胎？ → 事實：附表五無欄、OPU 有 sum_2pn → 用 fbt_date 對 FBT 再列 OPU。</p>
+  <p>Q 顆數有硬擋？ → 事實：validator 無呼叫；使用者後改「這輪不加」→ 不硬擋、不改 38 文案。</p>
+  <p>Q 3.0 後第 2 次？ → 事實：使用者重鎖定 → 只看主檔 apply_date；9/1 前立案之後第 2 次仍 3.0。</p>
+  <p>發散：正式條文若與 briefing 不同，以條文重開。</p>
+  <p>盲點：金額年齡算到月；方案 C 有植入日但不是完整；第 2 次完整 15 萬沒拆取卵／植入格。</p>
+</details>
+</main>
+</body>
+</html>

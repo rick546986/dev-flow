@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>subsidy-3-0-plus · 7-review</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  -webkit-font-smoothing:antialiased}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;font-variant-numeric:tabular-nums}
+code{background:var(--sunk);border-radius:3px;padding:1px 5px;color:var(--ink-2)}
+a{color:var(--accent)}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+
+/* ---- 頁首 ---- */
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem;max-width:62ch}
+
+/* ---- 動線格 ---- */
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:20px 0 4px}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:11px 13px;box-shadow:var(--shadow)}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;display:block;margin-bottom:5px}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+.cell .n{font-size:.78rem;color:var(--ink-2);display:block;margin-top:3px}
+.cell.is-bad .v{color:var(--bad)} .cell.is-ok .v{color:var(--ok)}
+.cell.is-warn .v{color:var(--warn)} .cell.is-accent .v{color:var(--accent)}
+
+/* ---- sticky 進度 ---- */
+.progress{position:sticky;top:0;z-index:20;background:var(--ground);
+  border-bottom:1px solid var(--rule);padding:11px 0;margin:22px 0 0}
+.progress-in{max-width:900px;margin:0 auto;padding:0 20px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.bar{flex:1 1 200px;height:7px;background:var(--sunk);border-radius:99px;overflow:hidden;
+  min-width:140px}
+.bar i{display:block;height:100%;width:0;background:var(--accent);
+  transition:width .25s ease;border-radius:99px}
+.count{font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.count b{color:var(--accent)}
+.btn{border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);
+  border-radius:7px;padding:5px 11px;font-size:.82rem;cursor:pointer;font-family:inherit}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---- 提示框 ---- */
+.criterion{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 26%,transparent);
+  border-radius:10px;padding:15px 17px;margin:26px 0}
+.criterion h2{margin:0 0 7px;font-size:.95rem;letter-spacing:.02em;border:0;padding:0}
+.criterion p{margin:0;color:var(--ink-2);font-size:.9rem}
+.criterion .ex{margin-top:9px;padding-top:9px;
+  border-top:1px dashed color-mix(in srgb,var(--accent) 30%,transparent);font-size:.85rem}
+
+/* ---- 區塊卡（R / T 共用）---- */
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;
+  border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
+.r-block.danger .r-head{border-left-color:var(--bad)}
+.r-id{font-weight:700;font-size:.95rem;letter-spacing:.02em;white-space:nowrap;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.r-block.danger .r-id{color:var(--bad)}
+.r-block.core .r-id{color:var(--accent)}
+.r-name{font-weight:650}
+.r-risk{display:block;font-size:.83rem;color:var(--ink-2);margin-top:3px}
+.r-rule{padding:12px 18px;background:var(--sunk);font-size:.9rem;color:var(--ink-2);
+  border-bottom:1px solid var(--rule-2)}
+.r-rule b{color:var(--ink)}
+
+/* ---- 圖 ---- */
+.fig{margin:26px 0;padding:17px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);box-shadow:var(--shadow)}
+.fig svg{display:block;width:100%;max-width:700px;margin:0 auto;height:auto}
+.cap{color:var(--ink-3);font-size:.82rem;line-height:1.6;margin-top:11px;text-align:center}
+svg .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.4}
+svg .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+svg .wn{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.4}
+svg .bd{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.4}
+svg .nl{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--ink)}
+svg .sm{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--ink-3)}
+svg .edge{fill:none;stroke:var(--ink-3);stroke-width:1.6}
+svg .ahead{fill:var(--ink-3);stroke:none}
+
+/* ---- 摺疊 ---- */
+.appendix{margin-top:42px;border-top:1px solid var(--rule);padding-top:22px}
+.appendix > h2{font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 13px;border:0;padding:0}
+details.doc{border:1px solid var(--rule);border-radius:9px;margin-bottom:9px;
+  background:var(--panel);overflow:hidden}
+details.doc > summary{cursor:pointer;padding:11px 15px;font-weight:600;font-size:.9rem;
+  list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:center}
+details.doc > summary::-webkit-details-marker{display:none}
+details.doc > summary::after{content:"展開";font-size:.76rem;color:var(--ink-3);font-weight:500}
+details.doc[open] > summary::after{content:"收合"}
+details.doc[open] > summary{border-bottom:1px solid var(--rule-2)}
+details.doc:hover{border-color:var(--accent)}
+.doc-in{padding:4px 17px 15px;font-size:.9rem;color:var(--ink-2)}
+.doc-in h2,.doc-in h3{color:var(--ink);font-size:.95rem;margin:16px 0 7px;border:0;padding:0}
+.doc-in table{border-collapse:collapse;width:100%;margin:11px 0;font-size:.84rem}
+.doc-in th,.doc-in td{border:1px solid var(--rule);padding:6px 9px;text-align:left;
+  vertical-align:top}
+.doc-in th{background:var(--sunk);font-weight:650;color:var(--ink)}
+.doc-in pre{background:var(--sunk);padding:11px;border-radius:7px;overflow-x:auto;
+  font-size:.82rem;line-height:1.5}
+.doc-in blockquote{margin:11px 0;padding:.4em 1em;border-left:3px solid var(--rule);
+  color:var(--ink-3)}
+.doc-in ul,.doc-in ol{padding-left:1.35em}
+.doc-in li{margin:4px 0}
+.tablewrap{overflow-x:auto}
+
+/* ---- 收尾 ---- */
+.verdict{margin-top:34px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);padding:19px 21px;box-shadow:var(--shadow)}
+.verdict h2{margin:0 0 9px;font-size:1rem;border:0;padding:0}
+.verdict p{margin:0 0 9px;color:var(--ink-2);font-size:.91rem}
+.verdict p:last-child{margin-bottom:0}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:560px){h1{font-size:1.35rem}}
+
+.pinned{border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:8px;
+        padding:14px 16px;margin:0 0 14px;background:var(--panel)}
+.pinned>h2{margin:0 0 8px;font-size:1rem;letter-spacing:.01em}
+.pinned .tablewrap{overflow-x:auto}
+.pinned table{width:100%;border-collapse:collapse;font-size:.86rem}
+.pinned th,.pinned td{border:1px solid var(--rule);padding:5px 8px;text-align:left;vertical-align:top}
+.pinned ul{margin:.3em 0 .3em 1.1em;padding:0}
+.pinned p{margin:.35em 0}
+a.cell{cursor:pointer;text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.s-card{border-bottom:1px solid var(--rule-2)}
+.s-card:last-child{border-bottom:0}
+.s-head{display:flex;gap:10px;align-items:center;padding:12px 18px;cursor:pointer;
+  flex-wrap:wrap}
+.s-head:hover{background:var(--sunk)}
+.s-chk{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex:none}
+.s-chk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.s-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.83rem;
+  font-weight:650;color:var(--accent);background:var(--accent-soft);
+  padding:2px 7px;border-radius:5px;flex:none}
+.s-title{font-weight:600;font-size:.94rem}
+.tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600;flex:none}
+.tag.base{background:var(--sunk);color:var(--ink-3)}
+.tag.main{background:var(--warn-soft);color:var(--warn)}
+.s-card.done{background:var(--ok-soft)}
+.s-card.done .s-title{color:var(--ink-2)}
+.s-body{padding:0 18px 15px 45px}
+.gwt{display:grid;gap:5px;margin-bottom:11px}
+.gwt-row{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:baseline}
+.gwt-k{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.71rem;
+  font-weight:700;color:var(--ink-3);letter-spacing:.06em}
+.gwt-v{font-size:.9rem;color:var(--ink-2)}
+.obs{background:var(--sunk);border-left:3px solid var(--accent);border-radius:0 7px 7px 0;
+  padding:9px 13px}
+.obs.missing{border-left-color:var(--bad);background:var(--bad-soft)}
+.obs-k{display:block;font-size:.71rem;letter-spacing:.08em;text-transform:uppercase;
+  font-weight:700;color:var(--accent);margin-bottom:3px}
+.obs.missing .obs-k{color:var(--bad)}
+.obs-v{font-size:.88rem;color:var(--ink-2)}
+@media (max-width:560px){
+  .s-body{padding-left:18px}
+  .gwt-row{grid-template-columns:1fr;gap:2px}
+}
+
+.shot-grid{display:grid;gap:12px;margin:10px 0 4px}
+@media (min-width:720px){.shot-grid{grid-template-columns:1fr 1fr}}
+figure.shot{margin:0}
+.shot-ph{min-height:160px;border:1px dashed var(--rule);border-radius:8px;background:var(--sunk);
+  color:var(--ink-3);display:flex;align-items:center;justify-content:center;text-align:center;
+  padding:16px;font-size:.86rem}
+figure.shot img{display:none;width:100%;border-radius:8px;border:1px solid var(--rule)}
+figure.shot img.is-on{display:block;cursor:zoom-in}
+figure.shot img.is-on + .shot-ph{display:none}
+
+figure.shot img{cursor:zoom-in}
+.lb{display:none;position:fixed;inset:0;z-index:80;background:rgba(16,20,28,.78);
+  align-items:center;justify-content:center;padding:28px;cursor:zoom-out}
+.lb.on{display:flex}
+.lb img{max-width:min(1100px,96vw);max-height:92vh;border-radius:8px;
+  box-shadow:0 12px 40px rgba(0,0,0,.35)}
+figure.shot figcaption{margin-top:6px;font-size:.82rem;color:var(--ink-3)}
+.e2e{margin:8px 0 0;font-size:.84rem;color:var(--ink-2)}
+.e2e code{font-size:.84em}
+.grp{margin:16px 0 22px}
+.grp>h3{margin:0 0 6px;font-size:.98rem}
+.grp>p{margin:0 0 8px}
+#sec-shots .shot-in{padding:4px 18px 10px}
+</style>
+</head>
+<body>
+<div class="wrap" id="top">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 7-review · 審查介面</p>
+  <h1>subsidy-3-0-plus</h1>
+  <p class="sub">正本是 <code>docs/dev/subsidy-3-0-plus/7-review.md</code>,
+  這頁隨時可重生。<strong>審完頂區五格再決定要不要往下讀。</strong></p>
+  <div class="dash"><a class="cell" href="#sec-Verdict"><span class="k">判定</span><span class="v">PRE-REVIEW</span><span class="n">frontmatter verdict</span></a><a class="cell" href="#sec-Exit-Checklist"><span class="k">出貨</span><span class="v">0/9</span><span class="n">Exit Checklist</span></a><a class="cell" href="#sec-附錄-本輪特有"><span class="k">爭點</span><span class="v">3 條</span><span class="n">附錄:本輪特有</span></a><a class="cell" href="#sec-Known-Limits"><span class="k">風險</span><span class="v">10 條</span><span class="n">Known Limits</span></a><a class="cell" href="#sec-Coverage-Matrix"><span class="k">抽驗</span><span class="v">S-3.1</span><span class="n">對得上才信剩下的</span></a></div>
+</header>
+<section class="pinned" id="sec-Verdict"><h2>Verdict</h2><div class="doc-in"><p><strong>PRE-REVIEW</strong>（輪次 1）。不是 G3 PASS。Human verdict 請你勾。</p><div class="tablewrap"><table><thead><tr><th>門檻</th><th>證據</th><th>過?</th></tr></thead><tbody><tr><td>本次 S 全綠</td><td>靜態對得上；畫面除 S-5.1 皆未跑</td><td>否（缺現象）</td></tr><tr><td>既有全綠</td><td>無自動化回歸</td><td>n-a</td></tr><tr><td>現象證據逐 S 相符</td><td>畫面已截</td><td>否</td></tr><tr><td>Evidence 契約</td><td>gauntlet 降級</td><td>降級</td></tr><tr><td>無 🔴</td><td>T-review + 獨立 G3 皆無 🔴</td><td>是</td></tr></tbody></table></div><p>建議：七張圖在 shots/。進場：附表六 → 已生成附表五。Human verdict 請你勾。</p></div></section><section class="pinned" id="sec-Known-Limits"><h2>Known Limits</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>#</th><th>限制</th><th>嚴重度</th><th>建議處置</th></tr></thead><tbody><tr><td>1</td><td>27004 用 PHP 覆寫截完七張後已還原；S 以 shots/ 為現象</td><td>高</td><td>圖已齊。manual-keep 已存再開</td></tr><tr><td>2</td><td>未 commit，無 Source SHA</td><td>中</td><td>你點頭才 commit</td></tr><tr><td>3</td><td>形成靠上限還原，無新欄</td><td>低</td><td>規格允許，park</td></tr><tr><td>4</td><td>keep 不看 manual 旗標（F-8）</td><td>中</td><td>對齊 tasks 或承認「PLUS 一律 keep POST」</td></tr><tr><td>5</td><td>改方案／次數會先蓋手改（F-9）</td><td>中</td><td>掛樹後看要不要改</td></tr><tr><td>6</td><td>OPU：location 未用、opu_date fallback、max 2PN（F-11）</td><td>低</td><td>寫進 spec 或拿掉</td></tr><tr><td>7</td><td>滿40第4–6次基數 0</td><td>低</td><td>次數上限 3，park</td></tr><tr><td>8</td><td>髒資料形成可能負</td><td>低</td><td>park</td></tr><tr><td>9</td><td>畫面申請日空白時 JS 當 3.0、後端查主檔再 keep</td><td>低</td><td>正常畫面申請日會在；park</td></tr><tr><td>10</td><td>S-3.2 歸零＝人工新開</td><td>—</td><td>本輪不實作</td></tr></tbody></table></div></div></section>
+<section class="r-block" id="sec-shots"><div class="r-head"><div><span class="r-name">畫面分組</span><span class="r-risk">依功能類型，不是依 S-id。檔名鎖死在 <code>shots/</code>。進場：附表六 → 已生成附表五，禁止按新增附表五。點圖放大。</span></div></div>
+<div class="shot-in">
+<div class="grp">
+  <h3>切日＋金額兩格 <code>S-1.1</code> <code>S-1.2</code> <code>S-1.3</code> <code>S-2.1</code> <code>S-2.3</code></h3>
+  <p>看什麼：申請日 9/1 起走 PLUS，取卵／植入兩格可改。申請日 8/31 仍是 3.0，同一兩格 readonly、後端會覆寫。形成金額已併進取卵，<code>#embryo_subsidy_wrap</code> 永不顯示——本 feat 鎖定兩格，不是三格。</p>
+  <div class="shot-grid">
+    <figure class="shot" data-shot="plus-two-cells.png">
+      <img src="shots/plus-two-cells.png" alt="PLUS 兩格可改">
+      <div class="shot-ph">待截 <code>shots/plus-two-cells.png</code><br>PLUS 9/1 · 兩格可改</div>
+      <figcaption><code>shots/plus-two-cells.png</code> · 進場：附表六 → 已生成附表五 · PLUS 兩格可改</figcaption>
+    </figure>
+    <figure class="shot" data-shot="v30-two-cells.png">
+      <img src="shots/v30-two-cells.png" alt="3.0 兩格 readonly">
+      <div class="shot-ph">待截 <code>shots/v30-two-cells.png</code><br>3.0 8/31 · 兩格 readonly</div>
+      <figcaption><code>shots/v30-two-cells.png</code> · 進場：附表六 → 已生成附表五 · 3.0 兩格 readonly</figcaption>
+    </figure>
+  </div>
+  <p class="e2e">建議 e2e：assert <code>#ovum_subsidy_limit</code> visible / <code>#implant_subsidy_limit</code> visible / <code>#embryo_subsidy_wrap</code> hidden；PLUS 兩格非 readonly，3.0 兩格 readonly。新增列用 <code>#ovum_subsidy_limit_add</code>／<code>#implant_subsidy_limit_add</code>／<code>#embryo_subsidy_wrap_add</code>。</p>
+</div>
+<div class="grp">
+  <h3>手改不蓋 <code>S-2.2</code></h3>
+  <p>看什麼：PLUS 下手改取卵或植入後存檔再開，兩格還是你改的數字，不要被基數表蓋回去。改方案／次數會先重算（Known Limits #5），那條不在這組。</p>
+  <div class="shot-grid">
+    <figure class="shot" data-shot="manual-keep.png">
+      <img src="shots/manual-keep.png" alt="手改不蓋">
+      <div class="shot-ph">待截 <code>shots/manual-keep.png</code><br>手改取卵或植入 · 存再開還在</div>
+      <figcaption><code>shots/manual-keep.png</code> · 進場：附表六 → 已生成附表五 · 手改不蓋</figcaption>
+    </figure>
+  </div>
+  <p class="e2e">建議 e2e：assert <code>#ovum_subsidy_limit</code> value 仍是手改 / <code>#implant_subsidy_limit</code> value 仍是手改 / <code>#subsidy_limit2</code> = 兩格加總。新增列用 <code>#ovum_subsidy_limit_add</code>／<code>#implant_subsidy_limit_add</code>／<code>#subsidy_limit_add</code>。</p>
+</div>
+<div class="grp">
+  <h3>年齡鎖 <code>S-3.1</code></h3>
+  <p>看什麼：主檔 <code>#first_subsidy_age_input</code> 已有值時再開附表五，不要覆寫。隱藏欄 <code>#schedule5_3_0_age</code> 只抄現值給金額表。空白才寫入。改申請日仍會 refresh（Known Limits，非本組）。</p>
+  <div class="shot-grid">
+    <figure class="shot" data-shot="age-lock.png">
+      <img src="shots/age-lock.png" alt="年齡鎖">
+      <div class="shot-ph">待截 <code>shots/age-lock.png</code><br>first_subsidy_age 已有值 · 不覆寫</div>
+      <figcaption><code>shots/age-lock.png</code> · 進場：附表六 → 已生成附表五 · 年齡鎖</figcaption>
+    </figure>
+  </div>
+  <p class="e2e">建議 e2e：assert <code>#first_subsidy_age_input</code> value 未變 / <code>#schedule5_3_0_age</code> value 等於該現值。</p>
+</div>
+<div class="grp">
+  <h3>OPU 小字 <code>S-4.1</code></h3>
+  <p>看什麼：上限格裡那行灰色小字是只讀 lookup。對到顯示 ivf_no／取卵日／2PN；對不到寫「取卵：未對到」。不改金額、不擋存。掛在 <code>#subsidy_limit_td_add</code>／<code>#subsidy_limit_td2</code> 內，不是獨立欄。</p>
+  <div class="shot-grid">
+    <figure class="shot" data-shot="opu-note.png">
+      <img src="shots/opu-note.png" alt="OPU 小字">
+      <div class="shot-ph">待截 <code>shots/opu-note.png</code><br>上限格內只讀 ivf_no／取卵日／2PN</div>
+      <figcaption><code>shots/opu-note.png</code> · 進場：附表六 → 已生成附表五 · OPU 小字</figcaption>
+    </figure>
+  </div>
+  <p class="e2e">建議 e2e：assert <code>#subsidy_limit_td2 .forming-embryo-opu-line</code> visible（新增列 <code>#subsidy_limit_td_add .forming-embryo-opu-line</code>）；對到含 ivf_no／取卵日／2PN，對不到文字為「取卵：未對到」。</p>
+</div>
+<div class="grp">
+  <h3>方案拆 <code>S-4.2</code></h3>
+  <p>看什麼：方案 C 清取卵、只留植入；D／E／F 清植入、只留取卵。形成已併進取卵，畫面上仍是兩格。<code>#inside_operation_input_add</code> 只在方案 1. 才出現，C／D／E／F 應 hidden。</p>
+  <div class="shot-grid">
+    <figure class="shot" data-shot="plan-split-c.png">
+      <img src="shots/plan-split-c.png" alt="方案 C 只植入">
+      <div class="shot-ph">待截 <code>shots/plan-split-c.png</code><br>方案 C · 只植入</div>
+      <figcaption><code>shots/plan-split-c.png</code> · 進場：附表六 → 已生成附表五 · 方案 C</figcaption>
+    </figure>
+    <figure class="shot" data-shot="plan-split-def.png">
+      <img src="shots/plan-split-def.png" alt="方案 D E F 只取卵">
+      <div class="shot-ph">待截 <code>shots/plan-split-def.png</code><br>方案 D／E／F · 只取卵</div>
+      <figcaption><code>shots/plan-split-def.png</code> · 進場：附表六 → 已生成附表五 · 方案 D／E／F</figcaption>
+    </figure>
+  </div>
+  <p class="e2e">建議 e2e：方案 C assert <code>#ovum_subsidy_limit</code> value 0 / <code>#implant_subsidy_limit</code> 有值 / <code>#inside_operation_input_add</code> hidden；D／E／F assert <code>#implant_subsidy_limit</code> value 0 / <code>#ovum_subsidy_limit</code> 有值。新增列用 <code>#ovum_subsidy_limit_add</code>／<code>#implant_subsidy_limit_add</code>／<code>#subsidy_limit_add</code>。</p>
+</div>
+</div>
+</section>
+
+<div class="progress">
+  <div class="progress-in">
+    <span class="count">已審 <b id="done">0</b> / 32 條</span>
+    <span class="bar"><i></i></span>
+    <button class="btn" id="clear" type="button">清除勾選</button>
+  </div>
+</div>
+<div id="cards">
+<section class="r-block" id="sec-Coverage-Matrix"><div class="r-head"><span class="r-name">Coverage Matrix</span></div><article class="s-card" data-sid="S-1.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.1">
+    <span class="s-id">S-1.1</span>
+    <span class="s-title">靜態 <code>ivf.php:7553-7557</code> 未滿40第1次 100000／0／50000。畫面未跑</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">unverified</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.2">
+    <span class="s-id">S-1.2</span>
+    <span class="s-title">靜態 <code>ivf.php:7578-7590</code> 3.0 未滿39第2次 60000／40000；非 PLUS 不 keep。畫面未跑</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">unverified</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.3">
+    <span class="s-id">S-1.3</span>
+    <span class="s-title">靜態 <code>ivf.php:7558-7561</code> 第2–3次 60000／50000／40000。畫面未跑</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">unverified</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.1">
+    <span class="s-id">S-2.1</span>
+    <span class="s-title">同 S-1.3；<code>ivf_subsidy_edit.php:2721-2726</code> PLUS 三格解 readonly。畫面未跑</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">unverified</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.2">
+    <span class="s-id">S-2.2</span>
+    <span class="s-title">靜態 happy path：手改重算 limit、keep POST、再開 derive。畫面未跑</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">unverified</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.3">
+    <span class="s-id">S-2.3</span>
+    <span class="s-title">抽驗：<code>controllers/backend/ivf.php:7568-7571</code> 滿40第1次 70000／10000／50000</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">unverified</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.1">
+    <span class="s-id">S-3.1</span>
+    <span class="s-title">靜態 <code>ivf_subsidy_edit.php:3030-3038</code> 已有 first_subsidy_age 不覆寫。畫面未跑</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">unverified</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.2">
+    <span class="s-id">S-3.2</span>
+    <span class="s-title">歸零＝人工新開，本輪無碼</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">n-a</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.1">
+    <span class="s-id">S-4.1</span>
+    <span class="s-title">靜態 <code>ivf.php:7666-7676</code> 只讀 lookup。畫面未跑</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">unverified</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.2">
+    <span class="s-id">S-4.2</span>
+    <span class="s-title">靜態 <code>ivf.php:7609-7611</code> 方案 C 清取卵／形成。畫面未跑</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">unverified</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-5.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-5.1">
+    <span class="s-id">S-5.1</span>
+    <span class="s-title"><code>docker inspect</code>：27004 仍掛 <code>/Users/asheng/dev/ivf_platform</code></span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="既有測試套件(回歸)">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="既有測試套件(回歸)">
+    <span class="s-id">既有測試套件(回歸)</span>
+    <span class="s-title">本 repo 無補助金額自動化測試</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">n-a</span></div></div>
+    
+  </div>
+</article></section><section class="r-block" id="sec-現象證據"><div class="r-head"><span class="r-name">現象證據</span></div><article class="s-card" data-sid="S-1.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.1">
+    <span class="s-id">S-1.1</span>
+    <span class="s-title">附表五三格＋上限。申請日填 9/1</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">見 shots/。靜態：<code>ivf.php:7553-7557</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">❌</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.2">
+    <span class="s-id">S-1.2</span>
+    <span class="s-title">同一舊案第二次附表五</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">未跑。靜態：3.0 6+4、不 keep</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">❌</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.3">
+    <span class="s-id">S-1.3</span>
+    <span class="s-title">三格加總 15 萬</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">未跑。靜態：<code>7558-7561</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">❌</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.1">
+    <span class="s-id">S-2.1</span>
+    <span class="s-title">附表五 6／5／4</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">未跑。靜態：同 S-1.3 + <code>2721-2726</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">❌</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.2">
+    <span class="s-id">S-2.2</span>
+    <span class="s-title">存檔後重整形成仍 30000</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">未跑。靜態 happy path 可還原</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">❌</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.3">
+    <span class="s-id">S-2.3</span>
+    <span class="s-title">三格 7／1／5 萬</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">未跑。抽驗列：<code>7568-7571</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">❌</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.1">
+    <span class="s-id">S-3.1</span>
+    <span class="s-title">主檔年齡欄仍 35</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">未跑。靜態：<code>3030-3038</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">❌</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.2">
+    <span class="s-id">S-3.2</span>
+    <span class="s-title">兩筆主檔</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">人工新開，本輪無碼</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">n-a</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.1">
+    <span class="s-id">S-4.1</span>
+    <span class="s-title">看得到 OPU ivf_no／取卵日／2PN</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">未跑。靜態：<code>7666-7676</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">❌</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.2">
+    <span class="s-id">S-4.2</span>
+    <span class="s-title">上限＝植入格</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">未跑。靜態：<code>7609-7611</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">❌</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-5.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-5.1">
+    <span class="s-id">S-5.1</span>
+    <span class="s-title">27004 重整仍是 ERP</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">docker 仍掛主目錄</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article></section><section class="r-block" id="sec-Exit-Checklist"><div class="r-head"><span class="r-name">Exit Checklist</span></div><article class="s-card" data-sid="EC-1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-1">
+    <span class="s-id">EC-1</span>
+    <span class="s-title"><strong>Design Boundary finding 全數處置</strong>：無未授權 Boundary。🟡 尚未 owner 接受或 park 落點逐條簽名</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-2">
+    <span class="s-id">EC-2</span>
+    <span class="s-title">Quiz：掛樹實跑後再出</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-3">
+    <span class="s-id">EC-3</span>
+    <span class="s-title">整合回歸：未跑。工作樹 dirty</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-4">
+    <span class="s-id">EC-4</span>
+    <span class="s-title">PR → develop：未開</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-5">
+    <span class="s-id">EC-5</span>
+    <span class="s-title">4-spec delta 已併入 <code>docs/specs/</code>：未做</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-6">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-6">
+    <span class="s-id">EC-6</span>
+    <span class="s-title">STATUS.md 已更新為 shipped：否</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-7">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-7">
+    <span class="s-id">EC-7</span>
+    <span class="s-title">7-review frontmatter status: shipped：否</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-8">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-8">
+    <span class="s-id">EC-8</span>
+    <span class="s-title">7-review.html 已產生：本輪重產</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-9">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-9">
+    <span class="s-id">EC-9</span>
+    <span class="s-title">feature branch 已刪／worktree 已清：否</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="gwt"></div>
+    
+  </div>
+</article></section>
+</div>
+<h2 class="apx-h">背景資料(預設收合,內容零刪減)</h2>
+<details class="doc" id="sec-讀取順序聲明"><summary><span>讀取順序聲明</span></summary><div class="doc-in"><p>1. 獨立審查（≠ 實作 owner IVF後台）先讀 <code>4-spec.md</code>、<code>5-tasks.md</code>、worktree vs <code>fe927c0</code> 的兩支 PHP，<strong>未先讀</strong> <code>6-implementation-notes.md</code>。</p><p>2. 另有獨立 T-review：T-1～T-4 靜態 PASS，無必須修。</p><p>3. 彙整者不降級任何 F。無 🔴。</p><p>4. 27004 仍掛主目錄（<code>docker inspect</code> 已證）。未 commit。畫面未跑。</p></div></details><details class="doc" id="sec-Verification-Evidence"><summary><span>Verification Evidence</span></summary><div class="doc-in"><ul><li>Source SHA: 未 commit（worktree dirty，基底 <code>fe927c0</code>）</li><li>Final Fresh Run ID: n-a（gauntlet 降級）</li><li>Entry point: 獨立碼審 + T-review + grep 形狀</li><li>Toolchain: 人工；PHP 5.3 靜態掃</li></ul><div class="tablewrap"><table><thead><tr><th>Layer</th><th>Command</th><th>Status</th><th>Result</th><th>Skipped reason</th></tr></thead><tbody><tr><td>grep T-1 cutoff</td><td><code>rg -n &quot;2026-09-01&quot; controllers/backend/ivf.php views/backend/ivf_subsidy_edit.php</code></td><td>pass</td><td>4 處</td><td></td></tr><tr><td>grep T-2 三格</td><td><code>rg -n &quot;胚胎形成&quot; views/backend/ivf_subsidy_edit.php</code></td><td>pass</td><td>3 處</td><td></td></tr><tr><td>grep T-3 年齡</td><td><code>rg</code> 對 <code>calcSchedule5AgeAndAmount</code> + <code>first_subsidy_age</code></td><td>pass</td><td>1 處（註解行）</td><td></td></tr><tr><td>grep T-4 2PN</td><td><code>rg -n &quot;sum_2pn&quot;</code></td><td>pass</td><td>11 處（含舊碼）</td><td></td></tr><tr><td>docker bind</td><td><code>docker inspect</code> 27004 volume</td><td>pass</td><td>仍主目錄</td><td></td></tr><tr><td>Full test suite</td><td></td><td>n-a</td><td></td><td>無補助金額自動化測試</td></tr><tr><td>Real execution</td><td>27004 掛本樹後走 S-1.1～S-4.2</td><td>unverified</td><td></td><td>另一 session 占用</td></tr><tr><td>Evidence gauntlet</td><td></td><td>n-a</td><td></td><td>4-spec 未列 Required layers</td></tr></tbody></table></div></div></details><details class="doc" id="sec-Negative-Constraint-Mapping"><summary><span>Negative Constraint Mapping</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>Constraint</th><th>Test/Layer</th><th>Status</th></tr></thead><tbody><tr><td>無 today 開關</td><td><code>isSubsidy3PlusByApplyDate</code> 只比 <code>2026-09-01</code></td><td>pass</td></tr><tr><td>3.0 舊案後端覆寫</td><td>非 PLUS 時 <code>shouldKeepPosted</code> 回 false</td><td>pass</td></tr><tr><td>低收入仍 15 萬</td><td>基數 10+0+5</td><td>pass（static）</td></tr><tr><td>顆數不硬擋</td><td>本輪無 embryo-count block</td><td>pass</td></tr><tr><td>正式區／191 無寫入</td><td>只寫 worktree</td><td>pass</td></tr><tr><td>180 不加欄</td><td><code>unset embryo_subsidy_amount</code>（<code>1504</code>、<code>1650</code>）</td><td>pass</td></tr><tr><td>不寫 ivf_fbt／ivf_opu</td><td>lookup 只有 select+get</td><td>pass</td></tr></tbody></table></div></div></details><details class="doc" id="sec-執行記錄"><summary><span>執行記錄</span></summary><div class="doc-in"><p>手動實作，無 dev-run。</p></div></details><details class="doc" id="sec-Operational-Walkthrough"><summary><span>Operational Walkthrough</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>S-id</th><th>角色</th><th>真實目標</th><th>系統操作</th><th>系統外步驟</th><th>等待／例外</th><th>結果</th></tr></thead><tbody><tr><td>S-1.1</td><td>補助行政</td><td>9／1 新案算出 10+0+5</td><td>開附表五、選方案 A</td><td>申請日在主檔</td><td>未實跑</td><td>靜態數字對</td></tr><tr><td>S-2.2</td><td>補助行政</td><td>手改形成後再打開還在</td><td>改三格、存、重整</td><td>無</td><td>改方案／次數會先重算蓋手改（F-9）</td><td>存再開走 derive，未實跑</td></tr><tr><td>S-3.1</td><td>補助行政</td><td>第2次不要改金額年齡</td><td>新增附表五</td><td>無</td><td>改申請日仍會 refresh 年齡（F-10，非 S-3.1）</td><td>靜態符合</td></tr><tr><td>S-4.1</td><td>補助行政</td><td>看形成胚胎那張 OPU</td><td>填 fbt_date</td><td>對不到仍可存</td><td>location 未過濾；多 ivf_no 取 max 2PN（F-11）</td><td>只讀，不擋存</td></tr><tr><td>S-5.1</td><td>開發</td><td>另一 session 不受影響</td><td>只寫 worktree</td><td>等對方測完再掛</td><td>無</td><td>符合</td></tr></tbody></table></div></div></details><details class="doc" id="sec-Design-Integrity-Check"><summary><span>Design Integrity Check</span></summary><div class="doc-in"><p>契約：只動補助編輯／附表五金額。不碰 PGS／報告。當 applicable。</p><p>1. 依賴反向：未命中。</p><p>2. 資料所有權：未命中。FBT／OPU 只讀。</p><p>3. 相容性破壞包成新增：未命中。<code>subsidy_version</code> 仍 <code>3.0</code>。形成不落新欄。</p><p>4. 一致性：JS／PHP 方案拆分不完全同一套（F-18）。PLUS keep 以畫面 POST 為準。🟡，非 🔴。</p><p>5. Test seam：觀測是畫面，本輪無自動化。Coverage unverified。</p><p>6. Known limit 被悄悄解決：未命中。畫面已截、180 不加欄。</p></div></details><details class="doc" id="sec-Standards-Axis"><summary><span>Standards Axis</span></summary><div class="doc-in"><p>T-review 與獨立 G3 預審並列。無 🔴。</p><ul><li>F-1 🟢 新 PHP 只用 <code>array()</code>／<code>isset ? :</code>，無 <code>[]</code>／<code>??</code>／<code>fn()</code></li><li>F-2 🟢 切日只有 <code>2026-09-01</code>，無 today（<code>ivf.php:7496</code>、view <code>2609</code>）</li><li>F-3 🟢 PLUS 三格可改；3.0 兩格 readonly＋後端覆寫</li><li>F-4 🟢 已有 <code>first_subsidy_age</code> 不覆寫（view <code>3030-3051</code>）</li><li>F-5 🟢 OPU 只讀、帶 cNumber、同日 <code>id DESC</code>、不擋存、不改金額</li><li>F-6 🟢 3.0 39 切兩格數字不變；低收入 15 萬</li><li>F-7 🟢 180 未加 <code>embryo_subsidy_amount</code>（<code>1504</code>、<code>1650</code>）</li><li>F-8 🟡 <code>shouldKeepPostedSubsidy3Amounts</code>（<code>ivf.php:7520-7533</code>）不理 <code>subsidy_amount_manual</code>。T-2 寫要看旗標；實作是 PLUS＋三欄有值就 keep（對 S-2.2 更寬）。建議對齊 tasks 或改成只看 manual</li><li>F-9 🟡 <code>calculateSubsidy3Amount</code> 會 <code>resetSubsidyAmountManual</code> 並重算。PLUS 改申請日／次數／方案會先蓋手改；存再開仍走 derive</li><li>F-10 🟡 <code>refreshFirstSubsidyAgeFromApply</code>（view <code>1906-1926</code>）改申請日／生日仍覆寫年齡。S-3.1 申請日沒改時安全</li><li>F-11 🟡 <code>$location</code> 傳了沒用；FBT 對不到改走 form <code>opu_date</code>；多 <code>ivf_no</code> 用 <code>pickOpuWithMost2pn</code>（<code>7756-7770</code>）。只影響顯示</li><li>F-12 🟡 編輯 dialog 金額 id 重複（舊帳）。<code>query2</code> 只抓進行中（通常一筆）</li><li>F-13 🟡 形成＝limit−ovum−implant，髒資料可能負</li><li>F-14 🟡 公開 <code>calculateSubsidy3Amount</code> AJAX 吃 apply_date 但不做 plan split。本頁已不打它</li><li>F-15 🟡 <code>5-tasks.md</code> T-1／T-2／T-3 仍未勾；notes 當都做了</li><li>F-16 🟡 T-4 verify 的 <code>sum_2pn</code> 含舊碼</li><li>F-17 🟢 27004 仍主目錄</li><li>F-18 🟡 JS 對非方案 <code>1.</code> 仍吃 <code>inside_operation</code>；PHP 只在方案 <code>1.</code> 吃。PLUS keep 以 JS 為準</li></ul><p>另：畫面 <code>apply_date</code> 空白時 JS 當 3.0、後端空白才查主檔再 keep。獨立 G3 與 T-review 都不列 🔴（正常畫面申請日會在）。列入 Known Limits。</p></div></details><details class="doc" id="sec-Spec-Axis"><summary><span>Spec Axis</span></summary><div class="doc-in"><ul><li>R-1 切表 — <strong>符合（靜態）</strong>。<code>isSubsidy3PlusByApplyDate</code> 只比主檔／POST <code>apply_date</code> 與 <code>2026-09-01</code>。無 today。空值當 3.0；空白才查主檔。</li><li>R-2 三格 — <strong>符合（靜態）</strong>。PLUS 解 readonly＋形成格。3.0 兩格＋後端覆寫。形成不落庫。手改存檔 keep POST。T-2 旗標字面有偏差（F-8），行為仍「手改不蓋」。</li><li>R-3 年齡鎖 — <strong>符合 S-3.1（靜態）</strong>。已有值不覆寫。S-3.2 無碼。改申請日仍 refresh（F-10），不在 S-3.1 GIVEN。</li><li>R-4 形成胚胎 OPU — <strong>符合（靜態結構）</strong>。只讀、cNumber、id DESC、不擋存、不改金額。方案 C 走拆分。額外 heuristic 見 F-11。</li><li>R-5 測試掛載 — <strong>符合</strong>。畫面已截本樹。</li></ul><p>T-review：T-1～T-4 皆 PASS，無必須修。</p><p>對照 6-notes（步 4 才讀）：作者多數自述與碼相符。未寫 location 死參數、<code>pickOpuWithMost2pn</code>、改 times／plan 會蓋手改、公開 AJAX 無 plan split。T-2 keep 不看 flag，notes 比 tasks 誠實。行號略舊。</p></div></details><details class="doc" id="sec-變更架構圖"><summary><span>變更架構圖</span></summary><div class="doc-in"><pre><code>主檔 apply_date &gt;= 2026-09-01 ?
+        |
+        +-- 是 PLUS：三格可改；後端 keep POST（三欄有值）
+        +-- 否 3.0：兩格 readonly；後端重算
+附表五 fbt_date + cNumber --&gt; ivf_fbt (id DESC) --&gt; ivf_opu（只讀列，不進金額）</code></pre><p>靜態金額（A／B、非低收入）：</p><div class="tablewrap"><table><thead><tr><th>案例</th><th>取卵</th><th>形成</th><th>植入</th><th>上限</th></tr></thead><tbody><tr><td>S-1.1 PLUS 35 首次</td><td>100000</td><td>0</td><td>50000</td><td>150000</td></tr><tr><td>S-1.2 3.0 35 第2</td><td>60000</td><td>（隱藏）</td><td>40000</td><td>100000</td></tr><tr><td>S-1.3／S-2.1 PLUS 35 第2</td><td>60000</td><td>50000</td><td>40000</td><td>150000</td></tr><tr><td>S-2.3 PLUS 40 首次</td><td>70000</td><td>10000</td><td>50000</td><td>130000</td></tr></tbody></table></div></div></details><details class="doc" id="sec-Diff"><summary><span>Diff</span></summary><div class="doc-in"><p>未 commit。相對 <code>fe927c0</code>：</p><ul><li><code>controllers/backend/ivf.php</code>：add／update keep、切日、基數表、方案拆、<code>lookupFormingEmbryoOpu</code></li><li><code>views/backend/ivf_subsidy_edit.php</code>：三格、PLUS JS、年齡鎖、OPU AJAX</li><li><code>docs/dev/STATUS.md</code> 看板一列</li></ul><p>抽驗請看 <code>ivf.php:7568-7571</code>。</p></div></details><details class="doc" id="sec-附錄-本輪特有"><summary><span>附錄:本輪特有</span></summary><div class="doc-in"><p>### A1　為什麼不是 REQUEST_CHANGES</p><p>上一份 HTML 把「畫面申請日空白 + keepPosted」列 🔴。獨立 G3 與 T-review 重看後：正常編輯申請日在主檔也在畫面；<code>query2</code> 進行中通常一筆；四 T 靜態 PASS。沒有 🔴，改回 PRE-REVIEW。那條改列 Known Limits #9。</p><p>### A2　掛樹後先走這五條</p><p>S-1.1（9／1 三格 10+0+5）、S-1.2（8／31 仍 3.0 兩格）、S-1.3（第2次 6+5+4）、S-2.2（手改形成存再開）、S-4.1（fbt_date 列出 OPU）。</p><p>### A3　對照作者 6-notes</p><p>多數相符。沒寫 F-9／F-11／F-14。T-2 keep 不看 flag，notes 比 5-tasks 準。T-1～T-3 檔案未勾。</p></div></details>
+<footer class="foot">由 <code>scripts/build-gate-twin.py</code> 從 md 正本逐條解析產生,不手抄。</footer>
+</div>
+<script>
+(function(){
+  var boxes = [].slice.call(document.querySelectorAll('.s-chk'));
+  if (!boxes.length) return;
+  var bar = document.querySelector('.bar i'), done = document.getElementById('done');
+  var KEY = 'devflow-gate-twin:' + document.title;
+  function load(){ try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ return {}; } }
+  function save(s){ try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e){} }
+  var state = load();
+  function paint(){
+    var n = 0;
+    boxes.forEach(function(b){
+      var card = b.closest('.s-card');
+      if (b.checked){ n++; card.classList.add('done'); } else { card.classList.remove('done'); }
+    });
+    if (done) done.textContent = n;
+    if (bar) bar.style.width = (n / boxes.length * 100) + '%';
+  }
+  boxes.forEach(function(b){
+    if (state[b.dataset.sid]) b.checked = true;
+    b.addEventListener('change', function(){ state[b.dataset.sid] = b.checked; save(state); paint(); });
+  });
+  var clr = document.getElementById('clear');
+  if (clr) clr.addEventListener('click', function(){
+    state = {}; save(state); boxes.forEach(function(b){ b.checked = false; }); paint();
+  });
+  paint();
+})();
+
+(function(){
+  var lb = document.createElement('div');
+  lb.className = 'lb';
+  lb.setAttribute('role','dialog');
+  lb.innerHTML = '<img alt="">';
+  document.body.appendChild(lb);
+  var img = lb.querySelector('img');
+  function close(){ lb.classList.remove('on'); img.removeAttribute('src'); }
+  lb.addEventListener('click', close);
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+  document.querySelectorAll('figure.shot img').forEach(function(el){
+    el.addEventListener('click', function(){
+      img.src = el.currentSrc || el.src;
+      img.alt = el.alt || '';
+      lb.classList.add('on');
+    });
+  });
+})();
+
+(function(){
+  document.querySelectorAll('figure.shot img').forEach(function(img){
+    function on(){ img.classList.add('is-on'); }
+    if (img.complete && img.naturalWidth) on();
+    img.addEventListener('load', on);
+  });
+})();
+</script>
+</body>
+</html>
