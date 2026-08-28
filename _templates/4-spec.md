@@ -33,6 +33,12 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 >
 > 產生方式:`docs/dev/tools/build-gate-twin.py <專案根> <slug> 4-spec`
 > (母版在 `scripts/`)。它讀 md 逐條解析,不手抄;解析不到任何一條會直接失敗。
+> 審頁(R/S 卡 + 生命週期直式 SVG 置中 max-width:360px + 審的時候看什麼 +
+> GIVEN/WHEN/THEN,提交判定寫頂欄 verdict:)另一支:`scripts/build-stage4-html.py`
+> (--action 授權)。正本 `notes/design/stage4-review-ui-contract.md`。
+> 不進 gate-twin STAGES,不包 html-shell。生命週期四格吃
+> `## 補助模組生命週期（預覽）` 四條,不只認自創標題。
+> 槽名括號可有可無(`新生（這輪沒有）：`／`改行為（相關一格）：`)。
 >
 > 反模糊三律(防偷懶條文):
 > 1. 每條 S 必須可直接轉成**一個測試**:含具體輸入與可斷言輸出;禁模糊詞

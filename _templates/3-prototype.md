@@ -23,6 +23,10 @@ updated:
 > 本階段固定產出(跑本階段才適用):`3-prototype.md`(本模板全節)+ `3-prototype.html`
 > (終態必產;必含 variant 流程/結構圖、Demo Script、User Demo Feedback、Verdict)。
 > 跳過本階段 → 兩檔皆不建,跳過決定記 2-decision 流程層 Owner Call。
+> 審頁產檔器:`scripts/build-stage3-html.py`(--action 授權;有 `3-prototype.md`
+> 才印頁,沒有就 n-a／跳過,不要當硬缺)。正本
+> `notes/design/stage3-review-ui-contract.md`。觸發判定／Demo／答案回寫
+> 2-decision。不要手包 html-shell 當正式審頁。
 >
 > 執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併項):
 > 0. 定義疑問:引 2-decision 的哪個 Risk/open point;寫清「答案長什麼樣才算回答了」。

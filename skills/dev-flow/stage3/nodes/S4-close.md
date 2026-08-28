@@ -18,6 +18,9 @@ S3 已回寫。游標在 S4。不要另存第二份 `3-prototype*.md`。
 
 依模板頂註步 4 收尾(frontmatter 與內文零矛盾)。
 結構圖必須標出 Method 裡的選定 variant;改 variant 名不改圖不得過。
+審頁產檔器 `scripts/build-stage3-html.py --action`(正本
+`notes/design/stage3-review-ui-contract.md`):有 `3-prototype.md` 才印頁,
+沒有就 n-a,不建 html。不改 twin、不進 gate-twin STAGES。
 跑 `${DEVFLOW_ROOT}/scripts/check-devstage3-graph.sh --write-cursor S4-close`。
 
 ## 完成條件
