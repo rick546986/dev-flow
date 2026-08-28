@@ -247,7 +247,8 @@ md 是 git 正本,html twin 是給人審的殼。gate 時必產。
 
 第 5 站審查頁 chrome／任務總表版面正本 `notes/design/stage5-review-ui-contract.md`
 (本輪不改 twin)。第 6 站審碼同一份:每個這輪改過的函式一塊色碼 hunk,要有
-改什麼／T-n／關聯;不能只列名＋行號。第 7 站審查頁截圖槽正本
+改什麼／T-n／關聯;不能只列名＋行號。產檔器 `scripts/build-stage6-html.py` 吃 `## Diff`,
+不進 gate-twin STAGES、不包 html-shell。第 7 站審查頁截圖槽正本
 `notes/design/stage7-review-ui-contract.md`(本輪不產 HTML)。
 
 預設只寫 `docs/dev/<slug>/{stage}.html`(完整本機頁)。發布用片段要設 `DEVFLOW_ARTIFACT_OUT` 才寫,不預設產出 `{stage}-review.artifact.html`。

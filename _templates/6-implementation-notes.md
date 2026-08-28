@@ -15,7 +15,8 @@ updated:
 > 審碼(鎖死,不是口味):本檔不能只列函式名＋行號表。每個這輪改過的函式必須
 > 自己一塊 hunk:標題帶 T-n、上方一句「改什麼」、底下一行「關聯」、
 > 然後才是色碼 hunk(綠 `.ln.add`／`--ok-soft`;舊行未知不准發明 minus)。
-> 不要整檔貼上,不要變成第二份正本。產檔器這輪不做。
+> 不要整檔貼上,不要變成第二份正本。產檔器吃 ## Diff:
+> `scripts/build-stage6-html.py`(bookkeeping commit 前跑;不要手包 html-shell)。
 > 正本:`notes/design/stage5-review-ui-contract.md` §第6站審碼。
 > TDD 規則(superpowers):每個 S-id **先寫失敗測試**(RED,貼輸出摘要)→ 最小實作到
 > GREEN → refactor 保綠。沒看過測試失敗 = 不知道它測對東西。
@@ -217,13 +218,22 @@ Run: <run_id>
 <!-- 對照 4-spec Diff Budget -->
 
 ## Diff(各 T commit,逐檔折疊)
-<!-- README §6 要求每檔一個 details。summary 的 title/文字列 +N/-N 與函式;
-     內容放 HTML-escaped 完整 diff,刪行 class="del"、增行 class="add"。
+<!-- 產檔器吃本節。每個這輪改過的函式自己一塊(可重複),產檔器
+     `scripts/build-stage6-html.py` 解析後吐 details.hunk。schema:
+
+     ### <fn> · `<file>` <lines>  T-n
+     改什麼：<一句,這輪改了什麼,不是複述整函式>
+     關聯：<對語函式／誰叫它／它叫誰;沒有就寫 —;不傾倒呼叫圖>
+     ```diff
+      context
+     +added
+     -deleted-only-if-known
+     ```
+
      審碼(鎖死,正本 notes/design/stage5-review-ui-contract.md §第6站審碼):
      每個這輪改過的函式自己一塊,不是只列名＋行號表。標題含 T-n。
-       改什麼:<一句,這輪改了什麼,不是複述整函式>
-       關聯:<對語函式／誰叫它／它叫誰;沒有就寫 —;不傾倒呼叫圖>
-       然後才是色碼 hunk(綠 .ln.add／--ok-soft;上下文淡;舊行未知不准發明 minus)
+     一塊 hunk 真的同時服務兩個 T 才准帶兩個 T。
+     然後才是色碼 hunk(綠 .ln.add／--ok-soft;上下文淡;舊行未知不准發明 minus)
      不要整檔貼上、不要當第二份正本。chrome 跟 2／4／5 站同一套。 -->
 
 ## Self-Review
