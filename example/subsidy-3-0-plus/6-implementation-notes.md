@@ -7,7 +7,7 @@ updated: 2026-08-26
 ---
 # 6. 實作筆記 — 試管補助 3.0 PLUS（T-1～T-4）
 
-只寫 worktree `/Users/asheng/dev/ivf_platform_subsidy-3-0-plus`。未碰主目錄、27004、191、180。T-4 形成胚胎 OPU 只讀小字放在補助金額上限格內（3.0 與 PLUS 都顯示；非獨立列）。
+只寫 worktree `/path/to/ivf_platform_subsidy-3-0-plus`。未碰主目錄、27004、191、180。T-4 形成胚胎 OPU 只讀小字放在補助金額上限格內（3.0 與 PLUS 都顯示；非獨立列）。
 
 ## 改了什麼
 

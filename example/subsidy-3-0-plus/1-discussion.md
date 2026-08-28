@@ -49,7 +49,7 @@ updated: 2026-08-25
 - 這輪不硬擋顆數、不改 38 文案。
 
 ## Non-Goals
-- 實作只寫 subsidy worktree；主目錄 `/Users/asheng/dev/ivf_platform` 不動。
+- 實作只寫 subsidy worktree；主目錄 `/path/to/ivf_platform` 不動。
 - 不改低收入。
 - 不重算舊案 `first_subsidy_age`。
 - 不做報告退版 Revised。

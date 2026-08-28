@@ -153,7 +153,7 @@ h2{font-size:1rem;margin:28px 0 8px;color:var(--ink)}
   <div class="body">
     <p>PLUS 看得到取卵／胚胎形成／植入；手改後存檔再打開數字還在。</p>
     <p>3.0 舊案維持兩格 readonly＋後端覆寫。PLUS 打開可改；後端若 POST 帶 <code>subsidy_amount_manual=1</code> 就用畫面值，不算回去。形成不新增 DB 欄。27004 不掛本樹。</p>
-    <p>Verify：<code>rg -n "胚胎形成|embryo_subsidy" views/backend/ivf_subsidy_edit.php | grep -c "胚胎形成"</code></p>
+    <p>Verify：<code>rg -n "embryo_subsidy" views/backend/ivf_subsidy_edit.php | grep -c "embryo_subsidy"</code></p>
   </div>
 </section>
 

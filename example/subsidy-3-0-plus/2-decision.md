@@ -36,7 +36,7 @@ updated: 2026-08-26
 ### 決策點 4：本機怎麼給人測
 | 方案 | 摘要 | 優 | 劣 | 成本 | 依據 |
 |---|---|---|---|---|---|
-| A | `ivf-platform-develop-dev`（27004）bind 改掛到該 feature 的 worktree，要測哪支就切掛載 | 主目錄可留在別的 feature；worktree 互不踩 | 同時只能掛一棵；切的時候要重掛容器 | 低 | docker inspect：現掛 `/Users/asheng/dev/ivf_platform` |
+| A | `ivf-platform-develop-dev`（27004）bind 改掛到該 feature 的 worktree，要測哪支就切掛載 | 主目錄可留在別的 feature；worktree 互不踩 | 同時只能掛一棵；切的時候要重掛容器 | 低 | docker inspect：現掛 `/path/to/ivf_platform` |
 | B | 把 PLUS 合進主目錄的 `testing` 分支 | 跟以前 merge testing 一樣 | 主目錄現在在 `fix/erp-detection-official-prices`，會攪在一起 | 中 | 主目錄 `git status` |
 | C | 另開第二個容器掛 worktree | 可同時測兩支 | 要再佔埠、兩套登入 | 中 | `[Assumption]` 尚未做 |
 

@@ -36,7 +36,7 @@ tracer：先讓 PLUS 金額三格在畫面＋存檔對（T-1→T-2），再鎖�
 - [ ] 未完成
 - Covers: R-2 / S-2.1, S-2.2
 - Files: views/backend/ivf_subsidy_edit.php, controllers/backend/ivf.php
-- Verify: `rg -n "胚胎形成|embryo_subsidy" views/backend/ivf_subsidy_edit.php | grep -c "胚胎形成"`
+- Verify: `rg -n "embryo_subsidy" views/backend/ivf_subsidy_edit.php | grep -c "embryo_subsidy"`
 - Intent: PLUS 看得到取卵／胚胎形成／植入；手改後存檔再打開數字還在。
 - Boundaries: 3.0 舊案維持兩格 readonly＋後端覆寫。PLUS 打開可改；後端若 POST 帶 subsidy_amount_manual=1 就用畫面值，不算回去。形成不新增 DB 欄。27004 不掛本樹。
 - Blocked-by: T-1

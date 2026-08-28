@@ -42,7 +42,7 @@ updated: 2026-08-28
 | S-3.2 | 歸零＝人工新開，本輪無碼 | n-a |
 | S-4.1 | 靜態 `ivf.php:7666-7676` 只讀 lookup。畫面未跑 | unverified |
 | S-4.2 | 靜態 `ivf.php:7609-7611` 方案 C 清取卵／形成。畫面未跑 | unverified |
-| S-5.1 | `docker inspect`：27004 仍掛 `/Users/asheng/dev/ivf_platform` | ✅ |
+| S-5.1 | `docker inspect`：27004 仍掛 `/path/to/ivf_platform` | ✅ |
 | 既有測試套件(回歸) | 本 repo 無補助金額自動化測試 | n-a |
 
 5-tasks Verify 形狀（本輪有跑）：T-1 `2026-09-01`×4；T-2 `胚胎形成`×3；T-3 `calcSchedule5AgeAndAmount` 對 first_subsidy_age×1（註解行，形狀弱）；T-4 `sum_2pn`×11（含舊 OPU 碼）。
