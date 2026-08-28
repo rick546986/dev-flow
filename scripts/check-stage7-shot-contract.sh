@@ -2,8 +2,8 @@
 # check-stage7-shot-contract.sh — 第 7 站審查頁截圖槽契約牙
 #
 # 咬什麼:notes/design/stage7-review-ui-contract.md 丟了鎖死句子
-# (分組／data-shot／shots/／進場／已存在／不准新增／lightbox 或點圖／
-# chrome 三件／.r-block／mermaid 禁／ASCII 禁),
+# (分組／data-shot／shots/／進場／已存在／不准新增／未掛／佔位／
+# 不准發明／lightbox 或點圖／chrome 三件／.r-block／mermaid 禁／ASCII 禁),
 # 或模板／S2e-walkthrough 不再點名進場+檔名,必須紅。
 #
 # 不產 HTML、不發明產檔器、不改 twin、不取代 check-vbox-fig.sh／
@@ -75,6 +75,9 @@ CONTRACT_NEEDLES = (
     "進場",
     "已存在",
     "不准新增",
+    "未掛",
+    "佔位",
+    "不准發明",
     "--ground",
     "--panel",
     "--accent",
@@ -204,6 +207,15 @@ if contract_text is not None and template_text is not None and hop_text is not N
     stripped_entry = contract_text.replace("進場", "")
     check(bool(judge(stripped_entry, template_text, hop_text)),
           "牙咬:契約刪「進場」必須紅")
+    stripped_stale = contract_text.replace("未掛", "")
+    check(bool(judge(stripped_stale, template_text, hop_text)),
+          "牙咬:契約刪「未掛」必須紅")
+    stripped_ph = contract_text.replace("佔位", "")
+    check(bool(judge(stripped_ph, template_text, hop_text)),
+          "牙咬:契約刪「佔位」必須紅")
+    stripped_invent = contract_text.replace("不准發明", "")
+    check(bool(judge(stripped_invent, template_text, hop_text)),
+          "牙咬:契約刪「不准發明」必須紅")
     poisoned = contract_text + "\nPLUS\n"
     check(bool(judge(poisoned, template_text, hop_text)),
           "牙咬:契約寫入補助產品詞必須紅")
