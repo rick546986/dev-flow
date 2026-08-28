@@ -49,6 +49,8 @@ updated:
 >
 > **Verdict / Known Limits / 限制聲明一律置頂不摺疊** —— 那是判定本身與判定的前提,
 > 藏起來等於沒審。產生方式:`docs/dev/tools/build-gate-twin.py <專案根> <slug> 7-review`。
+> 審查頁截圖槽(分組／data-shot／shots/／進場已存在不准新增／lightbox／chrome)
+> 正本 `notes/design/stage7-review-ui-contract.md`。本檔是 twin,不重抄契約。
 >
 > 執行清單(開場第一動建成 todo;逐步達成「完成 =」才勾;禁跳項、禁併項):
 > 0. 角色+防錨定起手:審查者依序:適格人類 reviewer → fresh-context reviewer Agent →
