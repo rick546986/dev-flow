@@ -102,6 +102,9 @@ L1 出口 = `devflow-exec.sh allow`;L2 = `stop`。
 | **7-review(G3)** | 判定(frontmatter `verdict:`)/ 出貨(Exit Checklist `x/y`)/ 爭點(「附錄:本輪特有」幾條)/ 風險(Known Limits 幾條)/ 抽驗(Coverage Matrix 中位列 `檔:行`,決定論、可重現)|
 | **5-tasks(執行板)** | 狀態(frontmatter)/ 任務(幾個 T + 幾條缺必填欄)/ 模式(execution.mode,未標=sequential)/ 依賴(幾條 Blocked-by 邊)/ 進度(可勾計數) |
 
+審頁產檔器 `scripts/build-stage{1,2,5,7}-html.py`;第 6 站 `scripts/build-stage6-html.py`。
+正本 `notes/design/stageN-review-ui-contract.md`。不進 gate-twin STAGES。
+
 ## 7. 角色與 Gate
 
 三道閘。粗體詞是過關條件,檢查器在抽,不要改字。

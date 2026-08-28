@@ -52,6 +52,7 @@
 | 別用本家族 | 走哪條 |
 |---|---|
 | 第 1 站現況圖(`#scan-now`,三框／四行卡) | `scripts/build-scan-html.py` |
+| 第 1 站審頁三框 | `notes/design/stage1-review-ui-contract.md` + `scripts/build-stage1-html.py` |
 | 導覽七站圖／Claude agent 三走廊生命週期 | `fig-lifecycle` + `check-guides-fig-sync.sh` |
 | G1／G2／G3 審查介面 | `scripts/build-gate-twin.py` |
 | 2／3／4／5／7「圖對文字」指紋 | `scripts/check-devstage-fig-text.sh`(本牙不取代它) |

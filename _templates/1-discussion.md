@@ -14,6 +14,12 @@ updated:
 > 本階段固定產出:`1-discussion.md`(本模板全節)+ `1-discussion.html`(/dev-talk 收尾
 > 即產;必含脈絡圖、OQ+假設 badge、驗收雛形表、Real-world Context 表)。
 > 不多不少,不 free-form 增刪產物。
+> 掃頁六件仍走 `scripts/build-scan-html.py`(S10,html-shell)。審頁另一支:
+> `scripts/build-stage1-html.py`(--action 授權;吐 `.sum#scan-sum`／`#scan-now`
+> 直式三框 viewBox 200×420／`.now-wrap` 置中／`#scan-people`;現況圖吃無標籤
+> 四行堆＋`|` 分隔)。正本
+> `notes/design/stage1-review-ui-contract.md`。不要改掃頁產生器來充審頁,
+> 不要手包 html-shell。
 
 ## Problem
 <!-- 1-3 句:誰、遇到什麼痛、現在怎麼繞過 -->

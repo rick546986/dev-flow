@@ -93,7 +93,7 @@
 第 5 站給人看的頁(`--ground`／`--panel`／`--accent`、`.r-block`、任務總表 nowrap、
 `a.cell` 無底線且 `color:inherit`、內文撐滿卡寬)走
 `notes/design/stage5-review-ui-contract.md`。不是上面的直式步驟方塊,也不是本檔
-的橫式／三走廊圖。本輪不改 twin、不產第 3–7 站 HTML。
+的橫式／三走廊圖。本輪不改 twin。審頁產檔器 `scripts/build-stage5-html.py`。
 
 ## 範本
 
