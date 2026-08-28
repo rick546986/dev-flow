@@ -1,0 +1,12 @@
+{
+  "aria": "七站開發流程：1 討論、2 收斂、3 原型、4 規格、5 任務、6 實作、7 驗證",
+  "steps": [
+    {"kind": "b", "title": "1 討論", "lines": ["/dev-talk", "1-discussion.md"]},
+    {"kind": "b", "title": "2 收斂", "lines": ["G1 方向核准", "2-decision.md"]},
+    {"kind": "wn", "title": "3 原型", "lines": ["選配", "答案回寫 2"]},
+    {"kind": "b", "title": "4 規格", "lines": ["G2 契約核准", "4-spec.md"]},
+    {"kind": "b", "title": "5 任務", "lines": ["tracer-bullet", "5-tasks.md"]},
+    {"kind": "hl", "title": "6 實作", "lines": ["agent 跑、人握方向", "6-notes"]},
+    {"kind": "b", "title": "7 驗證", "lines": ["G3 出貨核准", "7-review.md"]}
+  ]
+}
