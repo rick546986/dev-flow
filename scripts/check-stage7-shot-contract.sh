@@ -10,7 +10,7 @@
 # 產檔器:`scripts/build-stage7-html.py`。不改 twin、不把第 7 站審頁
 # 塞進 build-gate-twin.py STAGES、不包 markdown-it + html-shell。
 # 補助產品詞不得當通用規則寫進契約。
-# 不要求 IVF 檔名(那些留在 example/subsidy-3-0-plus)。
+# 七個定名與五組已鎖在契約;補助產品詞(PLUS／表五／表六)仍禁當通用規則。
 #
 # 用法:
 #   scripts/check-stage7-shot-contract.sh [root]
@@ -27,8 +27,10 @@ fi
 python3 - "$ROOT" <<'PY'
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 
 root = sys.argv[1]
 CONTRACT = "notes/design/stage7-review-ui-contract.md"
@@ -99,6 +101,24 @@ CONTRACT_NEEDLES = (
     ".e2e",
     "提交判定",
     "verdict:",
+    "五組",
+    "plus-two-cells",
+    "v30-two-cells",
+    "manual-keep",
+    "age-lock",
+    "opu-note",
+    "plan-split-c",
+    "plan-split-def",
+)
+
+LOCKED_SHOTS = (
+    "plus-two-cells",
+    "v30-two-cells",
+    "manual-keep",
+    "age-lock",
+    "opu-note",
+    "plan-split-c",
+    "plan-split-def",
 )
 
 FORBIDDEN = (
@@ -251,6 +271,16 @@ check(hop_text is not None, "hop 存在 " + HOP)
 check(builder_text is not None, "產檔器存在 " + BUILDER)
 check(os.path.isfile(os.path.join(root, FIXTURE)), "fixture 存在 " + FIXTURE)
 check(os.path.isfile(os.path.join(root, SUBSIDY)), "補助寫法 fixture 存在 " + SUBSIDY)
+sub_md = read(SUBSIDY)
+check(sub_md is not None and "## 截圖槽" not in sub_md, "補助 fixture 無 ## 截圖槽")
+check(sub_md is not None and "![" not in sub_md, "補助 fixture 無 ![]")
+check(sub_md is not None and "shots/" not in sub_md, "補助 fixture 無 shots/ 路徑")
+check(sub_md is not None and "data-shot" not in sub_md, "補助 fixture 無 data-shot")
+shots_dir = os.path.join(root, "scripts/fixtures/stage7-html/shots")
+check(os.path.isdir(shots_dir), "補助 fixture 有同目錄 shots/")
+for name in LOCKED_SHOTS:
+    check(os.path.isfile(os.path.join(shots_dir, name + ".png")),
+          "補助 fixture 有 shots/%s.png" % name)
 
 for item in judge(contract_text, template_text, hop_text):
     check(False, item)
@@ -306,6 +336,12 @@ if contract_text is not None and template_text is not None and hop_text is not N
     hop_stripped = hop_text.replace("未完成", "", 1)
     check(bool(judge(contract_text, template_text, hop_stripped)),
           "牙咬:S2e-walkthrough 完成條件刪「未完成」必須紅")
+    stripped_groups = contract_text.replace("五組", "")
+    check(bool(judge(stripped_groups, template_text, hop_text)),
+          "牙咬:契約刪「五組」必須紅")
+    stripped_name = contract_text.replace("plus-two-cells", "")
+    check(bool(judge(stripped_name, template_text, hop_text)),
+          "牙咬:契約刪「plus-two-cells」必須紅")
 
 builder = os.path.join(root, BUILDER)
 if os.path.isfile(builder):
@@ -331,7 +367,7 @@ if os.path.isfile(builder):
          os.path.join(root, "scripts/fixtures/stage7-html/_subsidy.out.html")],
         cwd=root, capture_output=True, text=True,
     )
-    check(subsidy.returncode == 0, "產檔器吃無 ## 截圖槽 的補助 md exit 0")
+    check(subsidy.returncode == 0, "產檔器吃無 ## 截圖槽、只有 shots/ 七張的補助 md exit 0")
     sub_path = os.path.join(root, "scripts/fixtures/stage7-html/_subsidy.out.html")
     sub_html = ""
     if os.path.isfile(sub_path):
@@ -342,17 +378,38 @@ if os.path.isfile(builder):
     check(sub_ok, sub_detail)
     named = re.findall(r'data-shot="([^"]+)"', sub_html)
     check(len(named) == 7, "補助寫法七張定名 data-shot")
-    check(sub_html.count('class="r-block"') >= 5, "補助寫法五組 r-block")
-    for name in (
-        "form6-list", "open-existing", "form5-ready",
-        "list-check", "detail-view", "detail-fields", "empty-state",
-    ):
+    check(sub_html.count('class="r-block"') == 5, "補助寫法正好五組 r-block")
+    for name in LOCKED_SHOTS:
         check('data-shot="%s"' % name in sub_html, "補助寫法吃到定名 %s" % name)
+        check('src="shots/%s.png"' % name in sub_html,
+              "補助寫法 img src=shots/%s.png" % name)
+    blocks = re.findall(r'<section class="r-block"[^>]*>.*?</section>', sub_html, re.S)
+    check(len(blocks) == 5, "補助寫法五組 section.r-block")
+    check(any('data-shot="plus-two-cells"' in block
+              and 'data-shot="v30-two-cells"' in block for block in blocks),
+          "補助寫法 plus-two-cells 與 v30-two-cells 同組")
+    check(any('data-shot="plan-split-c"' in block
+              and 'data-shot="plan-split-def"' in block for block in blocks),
+          "補助寫法 plan-split-c 與 plan-split-def 同組")
     check('class="lb' in sub_html and 'class="e2e' in sub_html,
           "補助寫法是 .lb／.e2e,不是只認字面 lightbox")
     check("未掛" not in sub_html, "補助寫法不留未掛")
     check(not re.search(r"""href=["'][^"']*edit""", sub_html, re.I),
           "補助寫法不發明 edit URL")
+    check("進場" in sub_html and "附表六 → 已生成附表五" in sub_html,
+          "補助寫法進場句是打開已生成紀錄")
+    tmpdir = tempfile.mkdtemp(prefix="stage7-harvest-")
+    try:
+        dest_md = os.path.join(tmpdir, "7-review.md")
+        shutil.copy2(os.path.join(root, SUBSIDY), dest_md)
+        no_shots = subprocess.run(
+            [sys.executable, builder, dest_md, "--out",
+             os.path.join(tmpdir, "out.html")],
+            cwd=root, capture_output=True, text=True,
+        )
+        check(no_shots.returncode == 1, "牙咬:補助寫法拿掉 shots/ 必須紅")
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
     stale = html_out.replace("佔位", "未掛")
     stale_ok, _ = judge_html(stale, "改成未掛")
     check(not stale_ok, "牙咬:輸出改成未掛必須紅")

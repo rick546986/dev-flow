@@ -15,14 +15,19 @@
 ## 版面鎖死(已拍板)
 
 下列七條是鎖死,不是口味、不是選配。產檔器吃 md 的 `## 截圖槽`,
-沒有該標題時改吃 `shots/`／`data-shot`／`![](shots/…)` 定名:
+沒有該標題時改吃 md 內 `shots/`／`data-shot`／`![](shots/…)` 定名;
+再沒有就掃同目錄 `shots/` 七個定名,收成**五組**(不是七個散框):
+`plus-two-cells`＋`v30-two-cells`、`manual-keep`、`age-lock`、`opu-note`、
+`plan-split-c`＋`plan-split-def`。
 `scripts/build-stage7-html.py` 吐分組槽／`data-shot`／`.lb` lightbox／`.e2e` 掛點。
 不要只認字面 `lightbox`／`hang-point`。授權 `--action`。不包 markdown-it + html-shell。
 寫法落點:`_templates/7-review.md`(本檔是正本,不另開家族、不進 README 第一屏)。
 
-1. **同型分組**:同類型畫面收進槽,不要一坨傾倒。
+1. **同型分組**:同類型畫面收進槽,不要一坨傾倒。定名七張收成五組。
 2. **檔名鎖定**:每個槽有 `data-shot` + `img src="shots/<name>.png"`。
    缺檔顯示佔位,檔案在了就不得再留過期「未掛」句。
+   七個定名:`plus-two-cells` `v30-two-cells` `manual-keep` `age-lock`
+   `opu-note` `plan-split-c` `plan-split-def`。
 3. **進場**:從列表打開**已存在**紀錄。不准發明編輯 URL。
    **不准新增**只為了截一張圖。進場是打開已生成紀錄,不是新增一張。
 4. **lightbox／點圖放大**:截圖可點開放大。

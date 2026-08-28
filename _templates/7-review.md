@@ -52,7 +52,8 @@ updated:
 > 審查頁截圖槽(分組／data-shot／shots/／進場已存在不准新增／lightbox／chrome)
 > 正本 `notes/design/stage7-review-ui-contract.md`。本檔是 twin,不重抄契約。
 > 審頁產檔器:`scripts/build-stage7-html.py`(--action 授權;吃 `## 截圖槽`,
-> 沒有該標題時改吃 `shots/`／`data-shot`／`![](shots/…)`,吐分組槽／`.lb`
+> 沒有該標題時改吃 md 內 `shots/`／`data-shot`／`![](shots/…)`,再沒有就掃
+> 同目錄 `shots/` 七個定名收成五組,吐分組槽／`.lb`
 > lightbox／`.e2e` 掛點)。進場打開已存在紀錄,不准新增、不准發明
 > 編輯 URL。缺檔顯示佔位,不得留過期「未掛」句。Human verdict 正本是本檔頂欄
 > `verdict:`,只「提交判定」才寫(接 #60,不重做 sidecar)。不要手包 html-shell。

@@ -2330,8 +2330,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             不進 <code>build-gate-twin.py</code> STAGES,不包 markdown-it + html-shell。</td>
         <td>S2-tdd bookkeeping 前呼叫;<code>check-stage6-hunk-contract.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>build-stage7-html.py</code></td>
-        <td>第 7 站審頁產生器:吃 <code>## 截圖槽</code>,沒有該標題時改吃
+        <td>第 7 站審頁產生器:吃 <code>## 截圖槽</code>,沒有該標題時改吃 md 內
             <code>shots/</code>／<code>data-shot</code>／<code>![](shots/…)</code>,
+            再沒有就掃同目錄 <code>shots/</code> 七個定名收成五組,
             吐同型分組／<code>.lb</code> lightbox／<code>.e2e</code> 掛點。
             提交判定寫 md 頂欄 <code>verdict:</code>(接 #60)。不進 gate-twin STAGES。</td>
         <td><code>--action</code>／<code>--fixture</code>;<code>check-stage7-shot-contract.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
@@ -2406,7 +2407,8 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>第 7 站審查頁截圖槽契約牙:正本 <code>notes/design/stage7-review-ui-contract.md</code>
             丟了分組／<code>data-shot</code>／<code>shots/</code>／進場／已存在／不准新增／
             未掛／佔位／不准發明／lightbox 或點圖／chrome 三件／<code>.r-block</code>／
-            mermaid 禁／ASCII 禁必須紅。產檔器消失或吐未掛／發明 edit URL 也必須紅。
+            mermaid 禁／ASCII 禁／五組／七個定名必須紅。產檔器消失、吐未掛、發明
+            edit URL、或補助散文 md 拿掉同目錄 <code>shots/</code> 也必須紅。
             不改 twin、不塞 gate-twin STAGES。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-devstage2-graph.sh</code></td>

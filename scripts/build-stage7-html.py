@@ -9,8 +9,8 @@
 (那支是 G3 五格卡)。不包 markdown-it + html-shell。
 Human verdict 接 #60:正本是同目錄 md 頂欄 verdict:,只「提交判定」才寫。
 不准發明編輯 URL。缺檔顯示佔位,不得留過期「未掛」句。不發明產品規則。
-補助手樣常常沒有 ## 截圖槽:改吃 md 裡的 shots/／data-shot／![](shots/…)
-與分組標題。吐 .lb lightbox 與 .e2e 掛點,不要只認字面 hang-point。
+補助手樣常常沒有 ## 截圖槽、也沒有 ![]:md 內圖若有就用,沒有就掃同目錄
+shots/ 七個定名收成五組。吐 .lb lightbox 與 .e2e 掛點,不要只認字面 hang-point。
 
 用法:
   scripts/build-stage7-html.py <7-review.md> [--out PATH]
@@ -52,6 +52,25 @@ E2E_LINE_RE = re.compile(
     r"\b(e2e/[A-Za-z0-9._/-]+\.ts)\b",
     re.I,
 )
+
+# 契約鎖死的七個定名,收成五組。標題是輸出,不是契約句。
+LOCKED_SHOTS = (
+    "plus-two-cells",
+    "v30-two-cells",
+    "manual-keep",
+    "age-lock",
+    "opu-note",
+    "plan-split-c",
+    "plan-split-def",
+)
+LOCKED_GROUPS = (
+    ("PLUS／3.0 兩格", ("plus-two-cells", "v30-two-cells")),
+    ("手改不蓋", ("manual-keep",)),
+    ("年齡鎖", ("age-lock",)),
+    ("OPU 小字", ("opu-note",)),
+    ("方案拆", ("plan-split-c", "plan-split-def")),
+)
+HARVEST_ENTRY = "進場:附表六 → 已生成附表五。不准新增。不准發明編輯 URL。"
 
 CSS = """
 :root{
@@ -358,6 +377,33 @@ def parse_image_slots(body):
     return slots
 
 
+def harvest_sibling_shots(md_path):
+    if md_path is None:
+        return []
+    shots_dir = pathlib.Path(md_path).parent / "shots"
+    if not shots_dir.is_dir():
+        return []
+    found = {}
+    for stem in LOCKED_SHOTS:
+        path = shots_dir / ("%s.png" % stem)
+        if path.is_file():
+            found[stem] = "shots/%s.png" % stem
+    if len(found) != len(LOCKED_SHOTS):
+        return []
+    slots = []
+    for title, stems in LOCKED_GROUPS:
+        for stem in stems:
+            slots.append({
+                "title": title,
+                "shot": stem,
+                "src": found[stem],
+                "caption": title,
+                "entry": HARVEST_ENTRY,
+                "hang": "e2e/%s.spec.ts" % stem,
+            })
+    return slots
+
+
 def harvest_sibling_html(md_path):
     if md_path is None:
         return []
@@ -394,9 +440,11 @@ def parse_slots(body, md_path=None):
     if not slots:
         slots = parse_image_slots(body)
     if not slots:
+        slots = harvest_sibling_shots(md_path)
+    if not slots:
         slots = harvest_sibling_html(md_path)
     if not slots:
-        die(1, "解析不到截圖槽(md 沒有 ## 截圖槽 時改吃 shots／data-shot／![] )")
+        die(1, "解析不到截圖槽(md 沒有 ## 截圖槽 與 ![] 時改掃同目錄 shots/ 七個定名)")
     return slots
 
 

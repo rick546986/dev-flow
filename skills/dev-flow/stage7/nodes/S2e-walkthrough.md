@@ -34,6 +34,7 @@ S2d-fresh 完成:Final Fresh 已綁當下 HEAD。游標在 S2d-fresh。
 表逐 S 填畢(或不適用)。只有一份 `7-review.md`。本機游標在 S2e-walkthrough。
 缺進場(已存在、不准新增)／槽檔名鎖定(data-shot／shots/) = 未完成
 (正本 `notes/design/stage7-review-ui-contract.md`,本檔不重抄)。
+md 沒有 `## 截圖槽`、也沒有 `![]` 時,產檔器掃同目錄 `shots/` 七個定名收成五組。
 走查填完跑 `scripts/build-stage7-html.py --action` 產審頁,不要手包 html-shell。
 
 ## 下一跳
