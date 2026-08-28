@@ -116,6 +116,9 @@ group_methodology() {
   # 2／3／4／5／7 站圖對文字:選定標／variant／SHALL 行為詞／Blocked-by／Diff
   # 改了、該站圖沒改必須紅。第 6 站無必產圖槽、本輪不開。不取代 hop／Journey 牙。
   run "methodology/check-devstage-fig-text"  scripts/check-devstage-fig-text.sh  || return 1
+  # 直式置中方塊圖母版:腳本壞了或吐 mermaid／pre／沒 viewBox／沒置中字必須紅。
+  # 不塞 hop graph,不取代 fig-text／Journey／guides-fig-sync,不改 --action。
+  run "methodology/check-vbox-fig"           scripts/check-vbox-fig.sh         || return 1
   # Stage 2:九真節點;單產物 2-decision.md;N1 不得寫檔;每個 hop --write-cursor。
   run "methodology/check-devstage2-graph"     scripts/check-devstage2-graph.sh   || return 1
   run "methodology/test-devstage2-graph"      scripts/test-devstage2-graph.sh    || return 1

@@ -1,0 +1,9 @@
+{
+  "aria": "模組生命週期",
+  "steps": [
+    {"kind": "b", "title": "新生", "lines": ["沒有"]},
+    {"kind": "hl", "title": "改行為", "lines": ["這輪新功能落點"]},
+    {"kind": "b", "title": "退役", "lines": ["沒有"]},
+    {"kind": "b", "title": "不動", "lines": ["其餘既有模組"]}
+  ]
+}

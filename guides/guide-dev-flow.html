@@ -2249,6 +2249,12 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             <code>1-discussion.html</code>(摘要卡／置中現況圖／人表／題表／驗收表／摺疊問答)。
             殼繼承 <code>skills/dev-talk/html-shell.html</code>,不手寫、不攤成 twin 卡。</td>
         <td>S10 收尾呼叫;<code>check-devtalk-fig-graph.sh</code> 對樣張 md 實跑驗證</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>build-vbox-fig.py</code></td>
+        <td>直式置中方塊圖產圖器:抽象步驟列(kind／標題／一到三行小字)→ 完整
+            <code>&lt;svg viewBox&gt;</code>(框寬 200、畫布 280、max-width 360px)。
+            第 2／4 站及同類圖走這支,不是掃頁三框,也不是七站三走廊圖。
+            契約 <code>notes/design/vbox-fig-contract.md</code>。</td>
+        <td>各站畫直式步驟方塊時呼叫;<code>check-vbox-fig.sh</code> 對 lifecycle fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>devflow_twin_ui.py</code></td>
         <td><code>build-gate-twin.py</code> 產生介面時共用的版面樣式與外殼模板,不能單獨執行。</td>
         <td>被 <code>build-gate-twin.py</code> import</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
@@ -2286,6 +2292,12 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>2／3／4／5／7 站圖必須對上該站關鍵文字:選定標、variant、SHALL 行為詞、
             Blocked-by 邊、Diff 檔名／端點。改文字不改圖必須紅。第 6 站無必產圖槽、本牙不咬。
             不管 skill hop,也不取代 Journey 牙。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-vbox-fig.sh</code></td>
+        <td>直式置中方塊圖產圖器的小牙:無參數／<code>--help</code> 必須 exit 2;
+            lifecycle fixture 必須吐直式 SVG 且含 <code>.hl</code>;吐 mermaid／
+            <code>&lt;pre&gt;</code>／沒 viewBox／沒置中字必須紅。
+            不塞 hop graph,不取代 fig-text／Journey／guides-fig-sync。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-devstage2-graph.sh</code></td>
         <td>乘客不用跑它。它管 Stage 2 九真節點鏈:下一跳以
