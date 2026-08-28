@@ -414,11 +414,11 @@ claude          # 建議 opus(規劃層)
   <h2 id="visual">⑧ 視覺版(html 產出)判準</h2>
   <p class="lead">這章要你懂:<strong>html 是掃頁臉</strong>。要改內容就改 md,再重生 html。html 可以丟,md 不能丟。Constraints／詞條不要佔第一屏。</p>
   <p><code>1-discussion.html</code> 六件由上而下,不多不少:摘要卡 → 直式現況圖 → 人與土法 → 題目 → 驗收一小表 → 問答摘要摺著。<span class="muted">步 10「自核過+掃頁六件齊」= 先自核 OQ 三態,定態後這六件都要在。</span></p>
-  <details><summary>原文</summary><blockquote>html 是掃頁臉,不是把 md 十節整份倒進去。md 仍是正本、十節骨架不准刪。<br>六件由上而下,不多不少:<br>1. 摘要卡:痛 + 現在怎麼繞 + Open Questions 三態 badge(已解／假設／移交)<br>2. 直式現況圖:誰 → 現在怎麼做 → 痛在哪。直線用 <code>&lt;pre&gt;</code>;有人、分支、痛點用 inline SVG。直式,不要橫排。禁 mermaid、禁外連圖、禁外部庫。md 留 ASCII。<br>3. 人與土法:誰／要什麼／缺什麼(從 Actors + Workarounds 收)。<code>[Assumption]</code> 看得見。<br>4. 題目:每列一題 + 著落(已解／假設／移交)。不要長 claim。<br>5. 驗收一小表:假設…當…則…｜從哪看｜看到什麼。<br>6. 問答摘要預設摺著(<code>&lt;details&gt;</code>)。Constraints／詞條不要佔第一屏。<br>SVG 用既有圖表 class:.b .hl .no .flow .cap,顏色只用 CSS 變數(含 --acc)。字 11px、標籤 ≤6 字。</blockquote></details>
+  <details><summary>原文</summary><blockquote>html 是掃頁臉,不是把 md 十節整份倒進去。md 仍是正本、十節骨架不准刪。<br>六件由上而下,不多不少:<br>1. 摘要卡:痛 + 現在怎麼繞 + Open Questions 三態 badge(已解／假設／移交)<br>2. 直式現況圖:誰／做什麼／工具／痛點,直式三框(每框四行)。有人、分支、痛點用 inline SVG。直式,不要橫排。禁 mermaid、禁外連圖、禁外部庫。md 留 ASCII。<br>3. 人與土法:誰／要什麼／缺什麼(從 Actors + Workarounds 收)。<code>[Assumption]</code> 看得見。<br>4. 題目:每列一題 + 著落(已解／假設／移交)。不要長 claim。<br>5. 驗收一小表:假設…當…則…｜從哪看｜看到什麼。<br>6. 問答摘要預設摺著(<code>&lt;details&gt;</code>)。Constraints／詞條不要佔第一屏。<br>SVG 用既有圖表 class:.b .hl .no .flow .cap,顏色只用 CSS 變數(含 --acc)。字 11px。現況圖不裁字;三步時 viewBox="0 0 200 420",外層 width:220px 置中,圖下小字「痛在最後一步」,最後一框用痛的強調色。</blockquote></details>
   <div class="tablewrap"><table>
     <tr><th>現況圖形狀</th><th>畫法</th></tr>
-    <tr><td>直線(誰 → 現在怎麼做 → 痛在哪)</td><td>ASCII(<code>&lt;pre&gt;</code>,半形)</td></tr>
-    <tr><td>有人、分支、痛點</td><td>inline SVG 真圖;直式,不要橫排</td></tr>
+    <tr><td>直式三框(誰／做什麼／工具／痛點)</td><td>inline SVG;viewBox 200×420;不裁字</td></tr>
+    <tr><td>痛在最後一框</td><td>第三框強調色 + 圖下「痛在最後一步」</td></tr>
   </table></div>
   <p class="muted">禁 mermaid、禁外連圖、禁外部庫。md 留 ASCII 當正本;html 圖只是掃頁臉。</p>
 

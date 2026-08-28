@@ -1,4 +1,5 @@
-<!-- 掃頁樣張:六件齊、問答摺著。機械檢查只認這份,不是把 md 十節倒進去。 -->
+<!-- html 外殼:把 md 轉出的 HTML 塞進 <main>,{{TITLE}} 換成頁題。
+     自足單檔、無外部資源、深淺色自適應。 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -16,14 +17,26 @@
   body{margin:0;background:var(--bg);color:var(--fg);
        font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
   main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
+  h2{font-size:1.15rem;margin-top:2em}
+  h3{font-size:1rem;margin-top:1.5em}
+  .tablewrap{overflow-x:auto}
   table{border-collapse:collapse;width:100%;margin:1em 0}
   th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
   th{background:var(--card)}
+  code,pre{background:var(--card);border-radius:4px;
+           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
+  pre{padding:12px;overflow-x:auto}
+  code{padding:1px 5px}
+  blockquote{margin:1em 0;padding:.5em 1em;border-left:3px solid var(--line);color:var(--muted)}
+  ul,ol{padding-left:1.4em}
+  .meta{color:var(--muted);font-size:.85rem;margin-bottom:2em}
   .badge{display:inline-block;padding:2px 10px;border-radius:999px;
          font-size:.8rem;font-weight:600;border:1px solid transparent}
   .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
   .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
   .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+  /* 掃頁:摘要卡、直式 svg 節點、問答 details。舊 class 語意不動。 */
   .sum{background:var(--card);border:1px solid var(--line);border-radius:10px;
        padding:14px 16px;margin:1em 0}
   .sum .pain{font-weight:600;margin:0 0 .4em}
@@ -43,27 +56,34 @@
 </head>
 <body>
 <main>
-<section class="sum" id="scan-sum">
-  <p class="pain">痛:業務靠記憶追到期,每季漏續約。</p>
-  <p>現在怎麼繞:Excel 私表 + 電話催。</p>
+  <section class="sum" id="scan-sum">
+  <p class="pain">痛:業務靠記憶追到期,每季漏續約</p>
+  <p>現在怎麼繞:Excel 私表 + 電話催</p>
   <span class="badge ok">已解 1</span>
   <span class="badge warn">假設 1</span>
   <span class="badge">移交 1</span>
 </section>
 
 <div class="figwrap">
-<svg id="scan-now" viewBox="0 0 160 260" role="img" aria-label="現況:誰、怎麼做、痛在哪">
-  <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 Z" style="fill:var(--muted)"/></marker></defs>
-  <rect class="hl" x="30" y="8" width="100" height="36" rx="6"/>
-  <text x="48" y="30">業務</text>
-  <path class="flow" marker-end="url(#arrow)" d="M80,44 L80,68"/>
-  <rect class="b" x="30" y="70" width="100" height="36" rx="6"/>
-  <text x="48" y="92">Excel</text>
-  <path class="flow" marker-end="url(#arrow)" d="M80,106 L80,130"/>
-  <rect class="no" x="30" y="132" width="100" height="36" rx="6"/>
-  <text x="42" y="154">漏續約</text>
-  <text class="cap" x="42" y="186">痛在這</text>
+<svg id="scan-now" viewBox="0 0 200 420" role="img" aria-label="現況:誰、做什麼、用什麼、痛在最後一步">
+  <rect class="hl" x="20" y="8" width="160" height="88" rx="6"/>
+  <text text-anchor="middle" x="100" y="26">行政</text>
+  <text text-anchor="middle" x="100" y="52">建補助案、填申請日</text>
+  <text text-anchor="middle" x="100" y="72">後台</text>
+  <text class="cap" text-anchor="middle" x="100" y="92">PLUS 還不會自動切</text>
+  <path class="flow" d="M100,96 L100,112"/>
+  <rect class="b" x="20" y="112" width="160" height="88" rx="6"/>
+  <text text-anchor="middle" x="100" y="130">行政</text>
+  <text text-anchor="middle" x="100" y="156">新增附表五、選 A–F</text>
+  <text text-anchor="middle" x="100" y="176">後台</text>
+  <text class="cap" text-anchor="middle" x="100" y="196">看不到 2PN</text>
+  <path class="flow" d="M100,200 L100,216"/>
+  <rect class="no" x="20" y="216" width="160" height="88" rx="6"/>
+  <text text-anchor="middle" x="100" y="234">行政</text>
+  <text text-anchor="middle" x="100" y="260">口頭對 OPU／FBT</text>
+  <text text-anchor="middle" x="100" y="280">另開單</text>
+  <text class="no" text-anchor="middle" x="100" y="300">完整額只能猜</text>
+  <text class="cap" text-anchor="middle" x="100" y="332">痛在最後一步</text>
 </svg>
 </div>
 
@@ -88,6 +108,7 @@
   <summary>問答摘要</summary>
   <p>Q:提前幾天? 事實:議約約一個月 → 結論:30 天。</p>
 </details>
+
 </main>
 </body>
 </html>
