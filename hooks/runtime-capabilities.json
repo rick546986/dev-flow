@@ -2,7 +2,7 @@
   "supported_contract_versions": [
     "2.0.0"
   ],
-  "runtime_version": "3.20.0",
+  "runtime_version": "3.20.1",
   "capabilities": [
     "task_scoped_guard",
     "parallel_wave_execution",

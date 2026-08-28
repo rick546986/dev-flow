@@ -236,3 +236,8 @@
 - 為什麼:Claude 以外只能 git pull + 手掛；plugin.json 字串不動，其他機器 update 會靜默不拉。
 - 落在哪:.claude-plugin/ .cursor-plugin/ .codex-plugin/ hooks/runtime-capabilities.json example/subsidy-3-0-plus/ notes/prompt-html-gap-loop.md
 
+## 2026-08-28 · v3201-patch · v3.20.1
+- 做了什麼:#65 修正進版號；清補助手樣對照殘件與過時 html-gap 便條。
+- 為什麼:Claude /plugin update 只看 version 字串；停在 3.20.0 會靜默不拉 #65。
+- 落在哪:.claude-plugin/ .cursor-plugin/ .codex-plugin/ hooks/runtime-capabilities.json example/subsidy-3-0-plus/ notes/prompt-html-gap-loop.md docs/dev/HISTORY.md
+
