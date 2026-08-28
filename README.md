@@ -246,7 +246,8 @@ md 是 git 正本,html twin 是給人審的殼。gate 時必產。
 | **5-tasks(執行板)** | 狀態(frontmatter)/ 任務(幾個 T + 幾條缺必填欄)/ 模式(execution.mode,未標=sequential)/ 依賴(幾條 Blocked-by 邊)/ 進度(可勾計數) |
 
 第 5 站審查頁 chrome／任務總表版面正本 `notes/design/stage5-review-ui-contract.md`
-(本輪不改 twin)。第 6 站審碼同一份:函式要帶實際改到的 hunk,不能只列名＋行號。
+(本輪不改 twin)。第 6 站審碼同一份:每個這輪改過的函式一塊色碼 hunk,要有
+改什麼／T-n／關聯;不能只列名＋行號。
 
 預設只寫 `docs/dev/<slug>/{stage}.html`(完整本機頁)。發布用片段要設 `DEVFLOW_ARTIFACT_OUT` 才寫,不預設產出 `{stage}-review.artifact.html`。
 
