@@ -245,6 +245,9 @@ md 是 git 正本,html twin 是給人審的殼。gate 時必產。
 | **7-review(G3)** | 判定(frontmatter `verdict:`)/ 出貨(Exit Checklist `x/y`)/ 爭點(「附錄:本輪特有」幾條)/ 風險(Known Limits 幾條)/ 抽驗(Coverage Matrix 中位列 `檔:行`,決定論、可重現)|
 | **5-tasks(執行板)** | 狀態(frontmatter)/ 任務(幾個 T + 幾條缺必填欄)/ 模式(execution.mode,未標=sequential)/ 依賴(幾條 Blocked-by 邊)/ 進度(可勾計數) |
 
+第 5 站審查頁 chrome／任務總表版面正本 `notes/design/stage5-review-ui-contract.md`
+(本輪不改 twin)。第 6 站審碼同一份:函式要帶實際改到的 hunk,不能只列名＋行號。
+
 預設只寫 `docs/dev/<slug>/{stage}.html`(完整本機頁)。發布用片段要設 `DEVFLOW_ARTIFACT_OUT` 才寫,不預設產出 `{stage}-review.artifact.html`。
 
 ## 7. 角色與 Gate
@@ -652,7 +655,7 @@ dev-flow/
 │                            └ 讀者:devflow-exec.sh doctor,缺件 fail-closed
 │   _templates/               七階段模板 + STATUS/ADR/living-spec/html-shell
 │                            └ 讀者:dev-setup 散發進每個專案;parity 檢查比對 guides
-│   notes/design/ (6)        各機制設計正本(並行/觀測/gauntlet/real-world/boundary)
+│   notes/design/ (8)        各機制設計正本(並行/觀測/gauntlet/boundary/vbox-fig/審查頁)
 │                            └ 讀者:dev-setup SKILL 指 evidence-gauntlet.md 為契約正本
 │   docs/prompts/ (2)        改造 dev-flow 本身的需求正本
 │                            └ 讀者:notes/ 底下 8 處寫「需求正本: docs/prompts/…」

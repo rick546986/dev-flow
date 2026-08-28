@@ -753,7 +753,9 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
   再逐層加厚)。不是 gate 站,免 reviewer 核准,但一樣要讓人<strong>照著動工</strong>——
   5-tasks twin 是<strong>執行板</strong>不是審查介面(README §6),動線頂區五格/任務卡
   逐條可勾/Boundaries 摺疊/依賴 DAG 四件事缺一不可,細節見 <code>_templates/5-tasks.md</code>
-  頂註。</p>
+  頂註。審查頁 chrome／任務總表版面正本
+  <code>notes/design/stage5-review-ui-contract.md</code>(與
+  <code>notes/design/vbox-fig-contract.md</code> 並列;本輪不改 twin)。</p>
   <div class="parity">
   <p class="parity-tag">規則正本 · Stage 5 執行清單(逐字抄自 <code>_templates/5-tasks.md</code> 頂註)</p>
   <details>
@@ -840,7 +842,10 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
   不是一 T 一 hop。</p>
   <p>實作期唯一日誌:每個 T × Covers S 先 RED 後 GREEN;scope check 與 Verify 後由不同
   implementer 的 reviewer 獨立審查,review PASS 才一 T 一 commit。偏差分 L1(保守方案續走)/
-  L2(停,回 4-spec 重 G2)兩級,分不清一律當 L2。</p>
+  L2(停,回 4-spec 重 G2)兩級,分不清一律當 L2。
+  審碼:<code>6-implementation-notes</code> 不能只列函式名＋行號,每個這輪改過的函式要帶
+  實際改到的那段(hunk／關鍵分支);不要整檔貼上,不要變成第二份正本。產檔器這輪不做。
+  正本 <code>notes/design/stage5-review-ui-contract.md</code>。</p>
   <div class="parity">
   <p class="parity-tag">規則正本 · Stage 6 執行清單(逐字抄自 <code>_templates/6-implementation-notes.md</code> 頂註)</p>
   <details>

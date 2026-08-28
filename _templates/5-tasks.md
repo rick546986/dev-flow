@@ -38,6 +38,9 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 > 產生方式:`docs/dev/tools/build-gate-twin.py <專案根> <slug> 5-tasks`
 > (母版在 `scripts/`)。它讀 md 逐條解析,不手抄;解析不到任何一個 T 會直接失敗。
 >
+> 審查頁 chrome／任務總表版面正本:`notes/design/stage5-review-ui-contract.md`
+> (與 `notes/design/vbox-fig-contract.md` 並列;本輪不改 twin、不產第 3–7 站 HTML)。
+>
 > 順序 = **tracer bullet**:先打通最薄的端到端縱切,再逐層加厚。
 > 禁整份按 DB→Repo→Service→API→UI 逐層分 T。每個 T 必須能回答:
 > 「完成後,使用者或系統多了什麼可觀測行為?」答不出即為水平切層徵兆,

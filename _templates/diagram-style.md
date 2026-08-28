@@ -88,6 +88,13 @@
 生命週期主詞是這個 feat 的那個模組:關聯收一格,新功能畫在所屬那一格。
 第 4 站落頁時圖與說明各一個 `.r-block`,說明撐滿卡寬再折。
 
+## 第 5 站審查頁 chrome(另一家族)
+
+第 5 站給人看的頁(`--ground`／`--panel`／`--accent`、`.r-block`、任務總表 nowrap、
+`a.cell` 無底線且 `color:inherit`、內文撐滿卡寬)走
+`notes/design/stage5-review-ui-contract.md`。不是上面的直式步驟方塊,也不是本檔
+的橫式／三走廊圖。本輪不改 twin、不產第 3–7 站 HTML。
+
 ## 範本
 
 抄現成的最快:七階段全程圖 `guides/guide-quickstart.html` ⑥(單列+gate+區間+session 框
@@ -95,3 +102,4 @@
 `guides/guide-dev-flow.html` ⑥ `fig-lifecycle`(三走廊+雙層範圍框+多色主幹,上面「直式
 生命週期版式」整節即以此圖定案)。新圖先挑最像的抄結構,再改節點。
 直式步驟方塊另見 `notes/design/vbox-fig-contract.md`。
+第 5 站審查頁 chrome 另見 `notes/design/stage5-review-ui-contract.md`。
