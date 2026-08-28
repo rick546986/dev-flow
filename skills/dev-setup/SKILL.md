@@ -80,9 +80,13 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
 ## install(fresh)
 
 > **前提**:hooks 需要 python3(解析順序 `DEVFLOW_PYTHON` → `/usr/bin/python3` → PATH;
-> 詳見母版 README「環境需求」)——Windows Git Bash 環境安裝前先確認 `python3` 找得到
-> (或設 `DEVFLOW_PYTHON`),否則守衛會**靜默跳過**:不是壞掉,但等於沒有保護,
-> 而「守衛沉睡」與「守衛在擋」從外面看長得一樣(G1 同型風險)。
+> **編譯下限 3.9**;詳見母版 README「環境需求」)——Windows Git Bash 環境安裝前先確認
+> `python3` 找得到(或設 `DEVFLOW_PYTHON`),否則守衛會**靜默跳過**:不是壞掉,但等於
+> 沒有保護,而「守衛沉睡」與「守衛在擋」從外面看長得一樣(G1 同型風險)。
+> gate-twin／產圖另要 `markdown-it-py==4.0.0`,該套件要 **Python 3.12+**。
+> macOS `/usr/bin/python3` 常是 3.9,裝不出 4.x。用**專案 venv**或設
+> `DEVFLOW_PYTHON` 指向 3.12+,**不要覆寫** Apple／系統 Python。
+> doctor 的 `printer-python` 項會查;不夠就停,不准默默留 markdown-it-py 3.x。
 
 0. **解析 DEVFLOW_ROOT + 掛整棵(P0，先於散發)**：先完成本檔「主機掛整棵」節，並先探測主機（見「主機探測」）。
    `DEVFLOW_ROOT` 解析失敗 → setup 大聲停，不准進入步 1。
@@ -284,6 +288,9 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
   否則 Windows 上母版側被 sed 剝掉 CR、採用專案側是 CRLF,每一行都差一個 CR、
   整份被判全不同 —— check 第 6 項恆紅、每次健檢都走 upgrade 覆蓋一次,
   把「開工前工作樹要乾淨」的前提直接弄壞。
+- **產圖 Python 地板**:upgrade／doctor 必須查 `printer-python`(3.12+ 專案 venv
+  或 `DEVFLOW_PYTHON`)。系統 python 是 3.9 時不准默默 `pip install` 出
+  markdown-it-py 3.x,也**不要覆寫** Apple／系統 Python。
 - **絕不動 `docs/dev/<slug>/` 已產出的 feature 檔**與 STATUS/CONTEXT/rules。
 
 ## refresh(使用者說「重掃 rules」「rules 過期了」「更新架構規則」)
