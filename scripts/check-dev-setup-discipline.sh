@@ -21,8 +21,9 @@
 #   ⑦mkdir -p docs/dev/tools 在第一支工具 cp 之前(fresh install 不炸;A-2)
 #   ⑧baseline 落地在步 7 最後一項驗證之後(不拍未驗證/未散發完的樹;A-2)
 #   ⑨upgrade 的 baseline 來源綁 upstream-new 正本,禁抄 docs/dev/ 現況(A-2)
-#   ⑩check 段的散發副本 parity 取自檔案地圖散發面標註(不得逐支硬列)、涵蓋
-#     history-append.sh、且交代 contract 副本要單獨驗(2026-08-20 實際漏驗)
+#   ⑩check 段的散發副本 parity 取自 docs/dev/ship-manifest.json(不得逐支硬列、
+#     不得掃 docs/dev/tools/ 當 expected set)、涵蓋 history-append.sh、且交代
+#     contract 副本要第 10 項單獨驗(2026-08-20 實際漏驗)
 #   ⑪upgrade 必須先刪 pack 不再出貨的受管殘件(devflow-upgrade-leftovers.sh),
 #     不准刪專案根／live docs/dev/CONTEXT.md,且先刪殘件再換 baseline
 #   ⑫產圖／gate-twin 要 Python 3.12+ 專案 venv 或 DEVFLOW_PYTHON,不要覆寫系統 Python
@@ -169,27 +170,28 @@ if src:
          " baseline」禁令 —— 抄現況會把本地客製記成「上游舊」,下次三方比對就"
          "分不出誰改的")
 
-    # ── ⑩check 段的散發副本 parity 必須 map-driven,不得逐支硬列(2026-08-20)──
+    # ── ⑩check 段的散發副本 parity 必須讀 ship-manifest,不得逐支硬列(2026-08-29)──
     # 起因:check 第 9/11/12 項逐支硬列了四支散發工具,而 history-append.sh 有散發
-    # 卻從來沒被任何一項驗過。母版側的 parity 守衛
-    # (check-integration-regression-guard.sh ④)早就因為「寫死五個 diff -q,新增
-    # 第六支必漏驗」改成掃檔案地圖散發面標註了,採用專案側卻還停在硬列 —— 同一條
-    # 不變量在兩側記帳不對稱(第 7 型)。現場實例:健檢者手打清單只點到三支,
-    # 實際散發五支,而漏掉的正是 HISTORY.md 的唯一寫入口。
+    # 卻從來沒被任何一項驗過。舊版改成掃檔案地圖散發面標註,仍是第二份清單。
+    # 正本收斂後 expected set 只准來自 docs/dev/ship-manifest.json;掃
+    # docs/dev/tools/ 當 expected set = 第 4 型假綠(正副本同刪全綠)。
     i_check = src.find("## check")
     i_fix = src.find("## fix / uninstall")
     chk_sec = src[i_check:i_fix] if 0 <= i_check < i_fix else ""
-    need("散發面:docs/dev/tools/" in chk_sec,
-         "check 段沒有把散發副本 parity 的比對集合綁定在檔案地圖的"
-         "「散發面:docs/dev/tools/」標註 —— 退回逐支硬列的話,下一支新散發工具"
-         "必定漏驗(母版側已因同一理由改成 map-driven)")
+    need("ship-manifest.json" in chk_sec,
+         "check 段沒有把散發副本 parity 的比對集合綁定在 "
+         "`docs/dev/ship-manifest.json` —— 退回逐支硬列或改回掃檔案地圖,"
+         "下一支新散發工具必定漏驗")
+    need("不得掃 docs/dev/tools/" in chk_sec,
+         "check 段沒寫「不得掃 docs/dev/tools/」當 expected set —— "
+         "掃副本目錄,正副本同時被刪會假綠(第 4 型)")
     need("history-append.sh" in chk_sec,
          "check 段完全沒提 history-append.sh —— 它是 HISTORY.md 的唯一寫入口,"
          "副本過期或掉執行位元就寫不進去,而 G1 的巢狀路徑 bug 正是出在這支裡;"
          "散發了卻沒有任何一項健檢驗它(2026-08-20 實際漏過)")
-    need("散發面標註涵蓋不到" in chk_sec,
-         "check 段沒交代 devflow-contract.json 不住在 docs/dev/tools/、散發面標註"
-         "涵蓋不到它、必須單獨驗 —— 併進 parity 總表就沒有人在驗 contract 副本"
+    need("第 10 項單獨驗" in chk_sec,
+         "check 段沒交代 devflow-contract.json 不住在 docs/dev/tools/、"
+         "第 10 項單獨驗 —— 併進 parity 總表就沒有人在驗 contract 副本"
          "(同 dev-release 步 2 把那行 diff -q 單獨留著的理由)")
 
     # ── ⑪upgrade 殘件刪除:pack 不再出貨的受管檔要刪,live CONTEXT 不准刪 ──
@@ -222,7 +224,7 @@ if src:
 # ── 檢查數地板:防止有人把上面整段刪成空迴圈仍然 exit 0 ──────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」(同 repo 慣例:
 # check-stage67-enforcement.sh:232、check-no-stale-paths.sh 的 MIN_CHECKS)。
-MIN_CHECKS = 26
+MIN_CHECKS = 27
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
@@ -236,5 +238,5 @@ if fails:
 print(f"✅ check-dev-setup-discipline: dev-setup upgrade 三方比對紀律齊({checks} 項檢查全過)")
 print("   三方比對 / baseline 落地段落 scoped / 逐檔徵同意 / 過渡態 / master-only 剝除"
       " / gate twin 相依 / mkdir 先於工具 cp / 落地在驗證後 / upgrade 來源綁 upstream-new"
-      " / check 段散發副本 parity map-driven / upgrade 殘件刪除")
+      " / check 段散發副本 parity 讀 ship-manifest / upgrade 殘件刪除")
 PY

@@ -266,3 +266,8 @@
 - 為什麼:功能早已合進 main,STATUS Backlog 那列寫的就是收尾文書沒關;本刀只補文書,不動引擎與 STATUS.md
 - 落在哪:docs/dev/engine-fence-masking/{7-review.md,7-review.html}、docs/dev/HISTORY.md
 
+## 2026-08-29 · ship-manifest
+- 做了什麼:散發清單收成一份正本 docs/dev/ship-manifest.json(每列 source/destination/mode);install/check/baseline/upgrade、dev-release、parity、檔案地圖散發面都讀這一份
+- 為什麼:新加工具要改八處,漏一處就假綠;掃 docs/dev/tools/ 當 expected set 則正副本同刪全綠(第 4 型)
+- 落在哪:docs/dev/ship-manifest.json scripts/devflow_ship_manifest.py scripts/check-ship-manifest.sh skills/dev-setup/SKILL.md skills/dev-release/SKILL.md scripts/check-integration-regression-guard.sh scripts/check-dev-setup-discipline.sh scripts/devflow-check.sh guides/guide-dev-flow.html
+

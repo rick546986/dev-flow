@@ -1,0 +1,45 @@
+{
+  "schema": "devflow-ship-manifest-v1",
+  "files": [
+    {
+      "source": "scripts/history-append.sh",
+      "destination": "docs/dev/tools/history-append.sh",
+      "mode": "755"
+    },
+    {
+      "source": "scripts/build-gate-twin.py",
+      "destination": "docs/dev/tools/build-gate-twin.py",
+      "mode": "755"
+    },
+    {
+      "source": "scripts/devflow_twin_ui.py",
+      "destination": "docs/dev/tools/devflow_twin_ui.py",
+      "mode": "644"
+    },
+    {
+      "source": "scripts/publish-pages.sh",
+      "destination": "docs/dev/tools/publish-pages.sh",
+      "mode": "755"
+    },
+    {
+      "source": "scripts/devflow-evidence-gauntlet.sh",
+      "destination": "docs/dev/tools/devflow-evidence-gauntlet.sh",
+      "mode": "755"
+    },
+    {
+      "source": "scripts/devflow-integration-regression.sh",
+      "destination": "docs/dev/tools/devflow-integration-regression.sh",
+      "mode": "755"
+    },
+    {
+      "source": "scripts/devflow_gate.py",
+      "destination": "docs/dev/tools/devflow_gate.py",
+      "mode": "755"
+    },
+    {
+      "source": "devflow-contract.json",
+      "destination": "docs/dev/devflow-contract.json",
+      "mode": "644"
+    }
+  ]
+}

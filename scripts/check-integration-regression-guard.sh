@@ -12,9 +12,8 @@
 #   ③模板順序:7-review 步 2c(Final Fresh 之前)那條裡「跑工具」必須出現在
 #     「合併」與「全套測試」之前。P0-1 之後整合回歸不住 Exit Checklist ——
 #     Exit 只准確認已完成,再叫人在 Verdict 後跑工具/合併就是原始 bug 的形狀
-#   ④正本/散發副本 parity:expected set 取自檔案地圖標「散發面:docs/dev/tools/」
-#     的列(不只掃副本目錄 —— 正副本同時被刪時,掃目錄的清單會少一項而全綠,
-#     第 4 型假綠);雙向比對存在性+內容+可執行位元,並含負向 fixture 驗證
+#   ④正本/散發副本 parity 已遷到 check-ship-manifest.sh:expected set 取自
+#     docs/dev/ship-manifest.json,不再掃檔案地圖、也不掃 docs/dev/tools/
 #
 # 掛載:scripts/devflow-check.sh group_architecture()。
 # 注意:受測工具吐出的 10/11 是測試資料,不是本 wrapper 的退出碼。
@@ -32,7 +31,6 @@ ROOT=$(cd "$SELF_DIR/.." && pwd)
   echo "FATAL: 正式工具 scripts/devflow-integration-regression.sh 不存在" >&2; exit 2; }
 
 DEVFLOW_ROOT="$ROOT" python3 - <<'PY'
-import html
 import os
 import re
 import shutil
@@ -555,97 +553,12 @@ check(nowords is not None and "找不到必要動作" in (nowords or ""),
       "缺動作負向②:動作行還在但動作詞被掏空必須紅",
       f"got: {nowords}")
 
-print("-- 正本/散發副本 parity(expected set 取自檔案地圖「散發面」標註)--")
-
-
-def parity_failures(root):
-    fails = []
-    guide = os.path.join(root, "guides", "guide-dev-flow.html")
-    if not os.path.isfile(guide):
-        return ["找不到 guides/guide-dev-flow.html"]
-    text = open(guide, encoding="utf-8").read()
-    m = re.search(r'<h2 id="filemap">.*?(?=<h2 |\Z)', text, re.S)
-    if not m:
-        return ["找不到 filemap 節"]
-    expected = set()
-    for row in re.findall(r"<tr>(.*?)</tr>", m.group(0), re.S):
-        if "散發面:<code>docs/dev/tools/</code>" not in row:
-            continue
-        cell = re.search(r"<td>(.*?)</td>", row, re.S)
-        code = re.search(r"<code>(.*?)</code>", cell.group(1), re.S) if cell else None
-        if code:
-            expected.add(html.unescape(code.group(1)).strip())
-    if not expected:
-        return ["檔案地圖沒有任何一列標「散發面:docs/dev/tools/」—— expected set 空,無從對帳"]
-    for name in sorted(expected):
-        src = os.path.join(root, "scripts", name)
-        dst = os.path.join(root, "docs", "dev", "tools", name)
-        if not os.path.isfile(src):
-            fails.append(f"正本不存在:scripts/{name}(檔案地圖列還在 → 正副本同刪也會紅)")
-        if not os.path.isfile(dst):
-            fails.append(f"副本不存在:docs/dev/tools/{name}(忘記散發,或副本被刪)")
-        if os.path.isfile(src) and os.path.isfile(dst):
-            if open(src, "rb").read() != open(dst, "rb").read():
-                fails.append(f"內容不同:{name}(改了正本沒重新散發)")
-            src_x = os.stat(src).st_mode & 0o111
-            dst_x = os.stat(dst).st_mode & 0o111
-            if src_x != dst_x:
-                fails.append(f"可執行位元不一致:{name}(正本 {src_x:o} vs 副本 {dst_x:o})")
-    tools_dir = os.path.join(root, "docs", "dev", "tools")
-    if os.path.isdir(tools_dir):
-        for f in sorted(os.listdir(tools_dir)):
-            if os.path.isfile(os.path.join(tools_dir, f)) and f not in expected:
-                fails.append(f"反向:docs/dev/tools/{f} 不在檔案地圖「散發面」列裡"
-                             "(散發了但沒記帳)")
-    return fails
-
-
-real_fails = parity_failures(ROOT)
-check(not real_fails, "正本/散發副本 parity 全過(存在性+內容+可執行位元,雙向)",
-      "; ".join(real_fails))
-
-NEW_TOOL = "devflow-integration-regression.sh"
-for rel in (os.path.join("scripts", NEW_TOOL),
-            os.path.join("docs", "dev", "tools", NEW_TOOL)):
-    p = os.path.join(ROOT, rel)
-    mode = os.stat(p).st_mode & 0o777 if os.path.isfile(p) else None
-    check(mode == 0o755, f"{rel} mode=755(檔名+位置+期望 mode 三件一組,寫死)",
-          f"實得 {mode:o}" if mode is not None else "檔案不存在")
-
-# 負向 fixture:正副本同時被刪、filemap 列仍在 → parity 必須紅(第 4 型假綠防護)
-fixture = tempfile.mkdtemp(prefix="irparity.")
-try:
-    os.makedirs(os.path.join(fixture, "guides"))
-    os.makedirs(os.path.join(fixture, "scripts"))
-    os.makedirs(os.path.join(fixture, "docs", "dev", "tools"))
-    rows = "".join(
-        f'<tr><td><code>{n}</code></td><td>x</td>'
-        f'<td>(散發面:<code>docs/dev/tools/</code>)</td></tr>'
-        for n in ("tool-x.sh", "tool-y.sh"))
-    with open(os.path.join(fixture, "guides", "guide-dev-flow.html"), "w") as fh:
-        fh.write(f'<h2 id="filemap">map</h2><table>{rows}</table>')
-    for n in ("tool-x.sh", "tool-y.sh"):
-        for d in ("scripts", os.path.join("docs", "dev", "tools")):
-            p = os.path.join(fixture, d, n)
-            with open(p, "w") as fh:
-                fh.write("#!/bin/bash\n")
-            os.chmod(p, 0o755)
-    check(not parity_failures(fixture), "parity 負向 fixture 基線:兩工具齊全 → 綠")
-    os.unlink(os.path.join(fixture, "scripts", "tool-y.sh"))
-    os.unlink(os.path.join(fixture, "docs", "dev", "tools", "tool-y.sh"))
-    fails = parity_failures(fixture)
-    check(any("tool-y.sh" in f for f in fails),
-          "parity 負向:正副本同時刪、filemap 列仍在 → 紅(不是掃目錄式的靜默縮水)",
-          f"實得 {fails}")
-finally:
-    shutil.rmtree(fixture, ignore_errors=True)
-
 # ── 檢查數地板:防止情境/mutant 整段被刪後檢查數靜默縮水仍全綠(B-4)──────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」(同 repo 慣例:
 # check-gate-twin.sh、check-dev-setup-discipline.sh 的 MIN_CHECKS);之後每加一條
 # 檢查都要同步調高。字面值與這整個 if 區塊(condition+記錄 failure+非零退出鏈)
 # 另被 test-architecture-guards.sh 靜態互釘外釘,兩處要同一個 commit 一起改。
-MIN_CHECKS = 41
+MIN_CHECKS = 36
 if CHECKS < MIN_CHECKS:
     FAILED += 1
     print(f"  ✗ 檢查數地板:實際只跑了 {CHECKS} 項(地板 {MIN_CHECKS})—— "

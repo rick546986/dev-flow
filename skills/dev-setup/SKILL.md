@@ -93,6 +93,14 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
 0. **解析 DEVFLOW_ROOT + 掛整棵(P0，先於散發)**：先完成本檔「主機掛整棵」節，並先探測主機（見「主機探測」）。
    `DEVFLOW_ROOT` 解析失敗 → setup 大聲停，不准進入步 1。
    不准只散發 docs/dev/ 就當成功。不要把節點 MD 複製進採用專案。
+   **1:1 散發列正本**:`${DEVFLOW_ROOT}/docs/dev/ship-manifest.json`
+   (每列 `source` / `destination` / `mode`)。install / check / baseline / upgrade
+   的 1:1 檔都讀這一份,不得另抄清單,也**不得掃 `docs/dev/tools/` 當 expected set**
+   (正副本同刪 = 第 4 型假綠)。對每一列:
+   `cp "${DEVFLOW_ROOT}/<source>" <destination>` 後 `chmod <mode>`。
+   `devflow-contract.json` 的 destination 是 `docs/dev/devflow-contract.json`,
+   **不住在 `docs/dev/tools/`**,不得把它塞進 tools/ 清單再刪掉第 10 項獨立比對。
+   README 剝除與 `_templates/` 整目錄複製不是 1:1 mode 列,仍按本步既有手續。
 1. `docs/dev/` 建立:cp 方法論 `${DEVFLOW_ROOT}/README.md` 後**剝除 master-only 區塊**
    再落地為 `docs/dev/README.md`(不得直接 cp 未剝除版 —— 母版 README 內
    `<!-- devflow:master-only:start -->` / `<!-- devflow:master-only:end -->` 之間是純母版
@@ -112,9 +120,11 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    `.dev-flow/knowledge/domain/`,由步 1b 建置;既有專案的 `CONTEXT.md` 由
    步 1b 的遷移處理,**不刪、不重新產生**。
    **基準快照(此步只宣告,不落地)**:**本步只登記清單** —— 本次 install 結束前
-   要快照的東西是 `docs/dev/README.md`(已剝除版)、`_templates/*`、
-   `devflow-contract.json`、**整個 `docs/dev/tools/`(按目錄整包存,不逐檔列 ——
-   逐檔列的話下一支新工具又會漏)**。**實際落地時機在步 8,不在這裡**。
+   要快照的東西是 `docs/dev/README.md`(已剝除版)、`_templates/*`、以及
+   `${DEVFLOW_ROOT}/docs/dev/ship-manifest.json` **每一列的 destination**
+   (含 `devflow-contract.json` 與整個 `docs/dev/tools/`)。`docs/dev/tools/`
+   按目錄整包存,不逐檔列 —— 1:1 列正本已在 ship-manifest;整包是為了
+   upgrade 能清掉上游已移除的檔。**實際落地時機在步 8,不在這裡**。
    **原因見步 8 與 upgrade 段**(`docs/dev/tools/` 現在還沒散發完,拍早了會誤判;
    upgrade 段的三方比對靠這份快照當「上游舊」)。
    **改版歷史**:`mkdir -p docs/adr`(長期決策一決策一檔;編號唯一性由
@@ -227,9 +237,11 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    ②正副本**可執行位元一致(兩邊都 755)** —— 散發時掉執行權限實際發生過;
    母版側由 `check-integration-regression-guard.sh` 的 parity 對帳釘住同一件事。
 8. **基準快照落地(收尾步;只有全部驗證成功才做)**:確認步 1、6、7 的每一項
-   散發/權限/diff/用法驗證**全部成功**之後,才把步 1 宣告的四樣 ——
-   `docs/dev/README.md`(已剝除版)、`_templates/*`、`devflow-contract.json`、
-   **整個 `docs/dev/tools/`** —— 快照到 `docs/dev/.devflow-baseline/`。
+   散發/權限/diff/用法驗證**全部成功**之後,才把步 1 宣告的 ——
+   `docs/dev/README.md`(已剝除版)、`_templates/*`、以及
+   `docs/dev/ship-manifest.json` **每一列的 destination**(含
+   `devflow-contract.json` 與**整個 `docs/dev/tools/`**) —— 快照到
+   `docs/dev/.devflow-baseline/`。
    放在最後的理由:`docs/dev/tools/` 要到步 6、7 才有內容,拍早了會讓 upgrade 的
    三方比對把官方散發的工具誤判成本地客製。**任一驗證失敗 → 不建立新 baseline**;
    upgrade 情境下舊 baseline 必須原封不動 —— 不能先污染快照再報錯。
@@ -239,10 +251,14 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
 
 ## upgrade(stale)
 
-- 只覆蓋 `docs/dev/README.md`、`docs/dev/_templates/`、`docs/dev/tools/`
-  (**整個 tools/ 目錄**;覆蓋後重跑 install 步 6 **與步 7** 的可執行驗證 ——
-  步 6 只驗 gauntlet 一支,整合回歸工具的可執行位元驗證在步 7,兩道都要)與
-  `docs/dev/devflow-contract.json`(版本握手契約;覆蓋後重跑 check 第 10 項)——
+- 只覆蓋 `docs/dev/README.md`、`docs/dev/_templates/`、以及
+  `${DEVFLOW_ROOT}/docs/dev/ship-manifest.json` **每一列的 destination**
+  (`docs/dev/tools/` 仍**整個 tools/ 目錄**整包覆蓋,以便清掉上游已移除的檔;
+  覆蓋後重跑 install 步 6 **與步 7** 的可執行驗證 ——
+  步 6 只驗 gauntlet 一支,整合回歸工具的可執行位元驗證在步 7,兩道都要;各列
+  `mode` 以正本為準)與
+  `docs/dev/devflow-contract.json`(版本握手契約,正本列已在 ship-manifest;
+  覆蓋後重跑 check 第 10 項,**不得**因它進了正本就刪掉這項獨立比對)——
   先 diff 摘要給使用者過目。
 - **出廠殘件刪除**(覆蓋受管檔與換 baseline **之前**):跑
   `${DEVFLOW_ROOT}/scripts/devflow-upgrade-leftovers.sh --root <專案根> --pack ${DEVFLOW_ROOT} --apply`
@@ -393,7 +409,7 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
    ③無參數跑 exit 2(usage);④對方法論 fixture `good-evidence.md` 跑 exit 0
    (同 install 步 6 的兩道可執行驗證)。任一不符 → broken,列異常+修法。
    ⚠️ 本項與第 11/12 項只是**逐支的行為面**驗證,**不是散發集合的全集** ——
-   全集由第 13 項從檔案地圖散發面標註動態取,別拿這三項的名字當清單。
+   全集由第 13 項從 `docs/dev/ship-manifest.json` 動態取,別拿這三項的名字當清單。
 10. **版本握手**(在專案內跑時):①`docs/dev/devflow-contract.json` 存在
     (缺件 = broken,走 install 步 1 補 —— doctor 無明示指定時就在這裡找契約,
     缺件必 fail-closed)且與方法論 `${DEVFLOW_ROOT}/devflow-contract.json` diff
@@ -418,27 +434,28 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     diff 無差異(有差異 = stale,走 upgrade 覆蓋 —— 專案側不得自改此腳本,
     要改改方法論);③無參數跑 → 訊息含「用法」且 exit 2。
     任一不符 → broken,列異常+修法。
-13. **散發副本 parity 總表**(在專案內跑時)——**比對集合一律取自檔案地圖的
-    「散發面」標註,不得自己枚舉,也不得照第 9/11/12 項那幾支硬列的名字當全集**:
-    讀 `${DEVFLOW_ROOT}/guides/guide-dev-flow.html` 的「附錄:檔案地圖」節
-    (`<h2 id="filemap">` 到下一個 `<h2>` 之間),取出所有標
-    `散發面:docs/dev/tools/` 的列;對其中**每一支**驗:①專案側
-    `docs/dev/tools/<同名>` 存在;②可執行位元與正本一致;③與
-    `${DEVFLOW_ROOT}/scripts/<同名>` diff 逐字無差異(有差異 = stale,走
-    upgrade 覆蓋 —— 專案側不得自改任何一支,要改改方法論)。任一不符 → broken。
-    **為什麼不逐支硬列**:母版側的 parity 守衛
-    (`scripts/check-integration-regression-guard.sh` ④)早就因為「寫死五個
-    `diff -q`,新增第六支散發工具必漏驗」改成掃散發面標註了,採用專案側卻還停在
-    逐支硬列 —— 第 7 型「不對稱記帳」,而且**已經真的漏了**:`history-append.sh`
-    有散發,第 9/11/12 項卻沒有任何一項驗它(2026-08-20 現場健檢實例:健檢者手打
-    清單只點到三支,實際散發五支)。這支漏不得 —— 它是 `HISTORY.md` 的**唯一寫
-    入口**,副本過期或掉執行位元就寫不進去,而 G1 那個「靜默寫到
-    `docs/dev/docs/dev/`」的巢狀 bug 正是出在這支裡,過期副本會把它默默帶回來。
+13. **散發副本 parity 總表**(在專案內跑時)——**比對集合一律取自
+    `${DEVFLOW_ROOT}/docs/dev/ship-manifest.json` destination 落在
+    `docs/dev/tools/` 的列,不得自己枚舉,也不得照第 9/11/12 項那幾支硬列的
+    名字當全集,更不得掃 docs/dev/tools/ 當 expected set**:
+    讀正本每一列,對其中**每一支**驗:①專案側 destination 存在;②可執行位元與
+    清單 `mode` 一致、且與 source 一致;③與 `${DEVFLOW_ROOT}/<source>` diff
+    逐字無差異(有差異 = stale,走 upgrade 覆蓋 —— 專案側不得自改任何一支,
+    要改改方法論)。任一不符 → broken。
+    **為什麼不掃副本目錄、也不再掃檔案地圖**:掃 `docs/dev/tools/` 當 expected
+    set,正副本同時被刪時清單會少一項而全綠(第 4 型假綠)。檔案地圖「散發面」
+    標註改由母版 `scripts/check-ship-manifest.sh` 跟正本對帳,不再當正本。
+    母版側舊版曾寫死五個 `diff -q`,新增第六支必漏驗;採用專案側也曾逐支硬列
+    而**已經真的漏了**:`history-append.sh` 有散發,第 9/11/12 項卻沒有任何一項
+    驗它(2026-08-20 現場健檢實例:健檢者手打清單只點到三支,實際散發五支)。
+    這支漏不得 —— 它是 `HISTORY.md` 的**唯一寫入口**,副本過期或掉執行位元就
+    寫不進去,而 G1 那個「靜默寫到 `docs/dev/docs/dev/`」的巢狀 bug 正是出在
+    這支裡,過期副本會把它默默帶回來。
     行為面另驗:`bash docs/dev/tools/history-append.sh` 無參數 → 訊息含「拒絕:缺
     `--slug`」且 exit 2;`--print-root` 印出專案根且 exit 0(doctor 拿它對帳)。
-    ⚠️ **`devflow-contract.json` 不住在 `docs/dev/tools/`,散發面標註涵蓋不到它**,
-    由第 10 項單獨驗 —— 不得併進本項(併掉就沒有人在驗 contract 副本,同
-    `dev-release` 步 2 把那行 `diff -q` 單獨留著的理由)。
+    ⚠️ **`devflow-contract.json` 不住在 `docs/dev/tools/`,第 10 項單獨驗** ——
+    不得併進本項(併掉就沒有人在驗 contract 副本,同 `dev-release` 步 2 把那行
+    `diff -q` 單獨留著的理由)。
 14. **Agent Memory 健檢**(在專案內跑時):跑
     `python3 "${DEVFLOW_ROOT}/memory/dev-memory.py" doctor --path <專案根>`
     並照它的 verdict 分流(`PASS` / `WARN` / `FAIL`;exit 1 = FAIL)。它逐項回報:

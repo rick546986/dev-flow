@@ -61,14 +61,17 @@ bash hooks/devflow-exec.sh doctor
 
 ```bash
 diff -q devflow-contract.json docs/dev/devflow-contract.json
-bash scripts/check-integration-regression-guard.sh
+bash scripts/check-ship-manifest.sh
 ```
 
-第一行單獨留著是因為 **contract 不住在 `docs/dev/tools/`**,parity 守衛的
-expected set(檔案地圖「散發面」標註的列)涵蓋不到它 —— 併掉這行就沒有人在驗
-contract 副本。第二行的 parity 對帳**掃的是檔案地圖的散發面標註,不是寫死支數**
-(舊版在這裡寫死五個 `diff -q`,新增第六支散發工具必漏驗 —— 第 7 型「不對稱記帳」);
-它同時比對存在性、內容與**可執行位元**,正副本同時被刪也會紅。
+第一行單獨留著是因為 **contract 不住在 `docs/dev/tools/`**,parity 的
+expected set(正本 `docs/dev/ship-manifest.json` 裡 destination 落在 tools/ 的列)
+涵蓋不到它的獨立比對 —— 併掉這行就沒有人在驗 contract 副本(正本裡仍有
+contract 那一列,管的是它也要被記帳,不是取代這行 `diff -q`)。第二行的
+parity 對帳**讀 ship-manifest,不是寫死支數,也不得掃 `docs/dev/tools/`**
+(舊版在這裡寫死五個 `diff -q`,新增第六支散發工具必漏驗 —— 第 7 型「不對稱記帳」;
+掃副本目錄則正副本同刪會假綠 —— 第 4 型);
+它同時比對存在性、內容、清單 `mode` 與**可執行位元**,正副本同時被刪也會紅。
 
 有差異 → 用根目錄正本覆蓋 `docs/dev/` 副本(正本方向永遠是 根目錄 → docs/dev/),
 覆蓋後重跑步驟 1 的 doctor。
