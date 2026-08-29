@@ -48,7 +48,7 @@ scripts/history-append.sh --slug <代號> --what <做了什麼> --why <為什麼
 > 4cap 的 O-1~O-8 與 §7 六件亦已裁決結案(`docs/dev/4cap-remediation/4cap-audit-fixes-2026-08.md`)。
 > 以下是該輪**產生或收攏**的剩餘項。
 
-> 2026-08-16 守衛覆蓋輪:上表原 5 條中 3 條已做(引擎 fence 蔾蔽 → feature
+> 2026-08-16 守衛覆蓋輪:上表原 5 條中 3 條已做(引擎 fence 遮蔽 → feature
 > `engine-fence-masking` 走 fast lane 全程武裝完成,G3 PASS;devtalk-guard obs 事件;
 > postbash 圍欄③收緊),詳見 `docs/dev/b8-gate-twin-review-ui/7-review.md` 附錄 A8。
 
