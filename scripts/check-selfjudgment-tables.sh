@@ -65,6 +65,7 @@ T5 = read("_templates/5-tasks.md")
 T6 = read("_templates/6-implementation-notes.md")
 E2 = read("example/contract-expiry-reminder/2-decision.md")
 E4 = read("example/contract-expiry-reminder/4-spec.md")
+E4_SUB = read("example/subsidy-3-0-plus/4-spec.md")
 
 # ── 1. 四份模板的自判節都要求標 [Assumption] ────────────────────────────────
 for rel, source, heading in (
@@ -87,6 +88,7 @@ for rel, source, heading in (
         ("example/contract-expiry-reminder/2-decision.md", E2, "Approaches Considered"),
         ("example/contract-expiry-reminder/2-decision.md", E2, "Owner Calls"),
         ("example/contract-expiry-reminder/4-spec.md", E4, "Drafting Decisions"),
+        ("example/subsidy-3-0-plus/4-spec.md", E4_SUB, "Drafting Decisions"),
 ):
     body = section(source, heading)
     header = next((ln for ln in body.splitlines() if ln.strip().startswith("|")), "")
@@ -96,7 +98,8 @@ for rel, source, heading in (
 for rel, source in (("_templates/2-decision.md", T2),
                     ("_templates/4-spec.md", T4),
                     ("example/contract-expiry-reminder/2-decision.md", E2),
-                    ("example/contract-expiry-reminder/4-spec.md", E4)):
+                    ("example/contract-expiry-reminder/4-spec.md", E4),
+                    ("example/subsidy-3-0-plus/4-spec.md", E4_SUB)):
     heading = "Owner Calls" if "2-decision" in rel else "Drafting Decisions"
     check("若被推翻會怎樣" in section(source, heading),
           f"{rel}「{heading}」有「若被推翻會怎樣」欄",
@@ -105,6 +108,7 @@ for rel, source in (("_templates/2-decision.md", T2),
 # ── 4. DD 與 OC 一樣分上下兩層 ────────────────────────────────────────────
 for rel, source in (("_templates/4-spec.md", T4),
                     ("example/contract-expiry-reminder/4-spec.md", E4),
+                    ("example/subsidy-3-0-plus/4-spec.md", E4_SUB),
                     ("_templates/2-decision.md", T2),
                     ("example/contract-expiry-reminder/2-decision.md", E2)):
     heading = "Drafting Decisions" if "4-spec" in rel else "Owner Calls"
@@ -117,6 +121,7 @@ for rel, source, heading in (
         ("example/contract-expiry-reminder/2-decision.md", E2, "Approaches Considered"),
         ("example/contract-expiry-reminder/2-decision.md", E2, "Owner Calls"),
         ("example/contract-expiry-reminder/4-spec.md", E4, "Drafting Decisions"),
+        ("example/subsidy-3-0-plus/4-spec.md", E4_SUB, "Drafting Decisions"),
 ):
     body = section(source, heading)
     header_line = next((ln for ln in body.splitlines() if ln.strip().startswith("|")), "")
@@ -157,11 +162,16 @@ check("C5" in proc.stdout and "❌ C5" in proc.stdout,
       "負向 fixture 是被 C5 擋下的(不是被別條誤擋)",
       proc.stdout.strip().splitlines()[-1] if proc.stdout.strip() else "無輸出")
 
-good = os.path.join(root, "example", "contract-expiry-reminder", "4-spec.md")
-proc_ok = subprocess.run(["bash", gate, good], capture_output=True, text=True)
-check(proc_ok.returncode == 0,
-      "正向:改成兩層表之後,母版範例仍過 G2 形狀檢查",
-      f"實得 exit {proc_ok.returncode}")
+SPEC_GATE_FIXTURES = (
+    "example/contract-expiry-reminder/4-spec.md",
+    "example/subsidy-3-0-plus/4-spec.md",
+)
+for rel in SPEC_GATE_FIXTURES:
+    good = os.path.join(root, *rel.split("/"))
+    proc_ok = subprocess.run(["bash", gate, good], capture_output=True, text=True)
+    check(proc_ok.returncode == 0,
+          f"正向:改成兩層表之後,{rel} 仍過 G2 形狀檢查",
+          f"實得 exit {proc_ok.returncode}")
 
 # ── 7. 晚改可見行為:C6 必須咬停放的覆寫,已回寫的正向必須綠 ─────────────
 late = os.path.join(root, "scripts", "fixtures", "spec-gate-late-owner")
@@ -195,7 +205,7 @@ check("✅ C6" in proc_late.stdout,
 # ── 檢查數地板 ─────────────────────────────────────────────────────────────
 # ⚠️ 必須等於當下實際檢查數(同 scripts/check-realworld.sh 的 MIN_CHECKS 慣例):
 # 留餘裕 = 沒有牙齒,整段被刪掉時仍會印綠。增刪 check() 時一起改這個數字。
-MIN_CHECKS = 42
+MIN_CHECKS = 49
 if checks < MIN_CHECKS:
     failures.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                     f"檢查本身被刪掉或迴圈跑了零圈")

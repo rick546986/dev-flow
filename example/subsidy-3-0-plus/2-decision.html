@@ -15,543 +15,95 @@
   --bad:#a83730; --bad-soft:#fae7e5;
   --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
 }
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
-    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
-    --rule:#2a303b; --rule-2:#212731;
-    --accent:#7fa0e0; --accent-soft:#1b2436;
-    --ok:#4fbe86; --ok-soft:#132a20;
-    --warn:#dda944; --warn-soft:#2c2415;
-    --bad:#e4796f; --bad-soft:#2e1a19;
-    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
-  }
-}
-:root[data-theme="dark"]{
-  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
-  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
-  --rule:#2a303b; --rule-2:#212731;
-  --accent:#7fa0e0; --accent-soft:#1b2436;
-  --ok:#4fbe86; --ok-soft:#132a20;
-  --warn:#dda944; --warn-soft:#2c2415;
-  --bad:#e4796f; --bad-soft:#2e1a19;
-  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
-}
 *{box-sizing:border-box}
 body{margin:0;background:var(--ground);color:var(--ink);
-  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
-  -webkit-font-smoothing:antialiased}
-code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  font-size:.86em;font-variant-numeric:tabular-nums}
-code{background:var(--sunk);border-radius:3px;padding:1px 5px;color:var(--ink-2)}
-a{color:var(--accent)}
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
 .wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
-
 .masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
 .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
   color:var(--ink-3);font-weight:600;margin:0 0 8px}
-h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
-.sub{color:var(--ink-2);margin:0;font-size:.94rem;max-width:62ch}
-
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
 .dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
-  margin:20px 0 4px}
+  margin:18px 0 0}
 .cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
-  padding:11px 13px;box-shadow:var(--shadow)}
+  padding:10px 12px}
 .cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--ink-3);font-weight:600;display:block;margin-bottom:5px}
+  color:var(--ink-3)}
 .cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
-.cell .n{font-size:.78rem;color:var(--ink-2);display:block;margin-top:3px}
-.cell.is-bad .v{color:var(--bad)} .cell.is-ok .v{color:var(--ok)}
-.cell.is-warn .v{color:var(--warn)} .cell.is-accent .v{color:var(--accent)}
-
-.progress{position:sticky;top:0;z-index:20;background:var(--ground);
-  border-bottom:1px solid var(--rule);padding:11px 0;margin:22px 0 0}
-.progress-in{max-width:900px;margin:0 auto;padding:0 20px;
-  display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.bar{flex:1 1 200px;height:7px;background:var(--sunk);border-radius:99px;overflow:hidden;
-  min-width:140px}
-.bar i{display:block;height:100%;width:0;background:var(--accent);
-  transition:width .25s ease;border-radius:99px}
-.count{font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
-.count b{color:var(--accent)}
-.btn{border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);
-  border-radius:7px;padding:5px 11px;font-size:.82rem;cursor:pointer;font-family:inherit}
-.btn:hover{border-color:var(--accent);color:var(--accent)}
-.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-
+a.cell{text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
 .r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
   background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
-.r-head{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;
-  border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
-.r-block.danger .r-head{border-left-color:var(--bad)}
-.r-id{font-weight:700;font-size:.95rem;letter-spacing:.02em;white-space:nowrap;
-  font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-.r-block.danger .r-id{color:var(--bad)}
-.r-block.core .r-id{color:var(--accent)}
-.r-name{font-weight:650}
-.r-risk{display:block;font-size:.83rem;color:var(--ink-2);margin-top:3px}
-
-.fig{margin:26px 0;padding:17px;border:1px solid var(--rule);border-radius:12px;
-  background:var(--panel);box-shadow:var(--shadow)}
-.fig h2{margin:0 0 12px;font-size:1rem;border:0;padding:0}
-.fig svg{display:block;width:100%;max-width:360px;margin:0 auto;height:auto}
-.cap{color:var(--ink-3);font-size:.82rem;line-height:1.6;margin-top:11px;text-align:center}
-svg .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.4}
-svg .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
-svg .wn{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.4}
-svg .bd{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.4}
-svg .nl{font:12px "PingFang TC","Noto Sans TC",sans-serif;fill:var(--ink)}
-svg .sm{font:11px "PingFang TC","Noto Sans TC",sans-serif;fill:var(--ink-3)}
-svg .edge{fill:none;stroke:var(--ink-3);stroke-width:1.6}
-
-.appendix{margin-top:42px;border-top:1px solid var(--rule);padding-top:22px}
-.appendix > h2{font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--ink-3);margin:0 0 13px;border:0;padding:0}
-details.doc{border:1px solid var(--rule);border-radius:9px;margin-bottom:9px;
-  background:var(--panel);overflow:hidden}
-details.doc > summary{cursor:pointer;padding:11px 15px;font-weight:600;font-size:.9rem;
-  list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:center}
-details.doc > summary::-webkit-details-marker{display:none}
-details.doc > summary::after{content:"展開";font-size:.76rem;color:var(--ink-3);font-weight:500}
-details.doc[open] > summary::after{content:"收合"}
-details.doc[open] > summary{border-bottom:1px solid var(--rule-2)}
-details.doc:hover{border-color:var(--accent)}
-.doc-in{padding:4px 17px 15px;font-size:.9rem;color:var(--ink-2)}
-.doc-in h2,.doc-in h3{color:var(--ink);font-size:.95rem;margin:16px 0 7px;border:0;padding:0}
-.doc-in ul,.doc-in ol{padding-left:1.35em}
-.doc-in li{margin:4px 0}
-
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px}
+.group{margin:0 0 16px}
+.group h3{margin:0 0 8px;font-size:.95rem}
+.card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 8px;background:var(--sunk)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+details.bg{margin:10px 0 0}
+details.bg>summary{cursor:pointer;color:var(--ink-2)}
+table.judge{width:100%;border-collapse:collapse;font-size:.86rem;margin:0}
+table.judge th,table.judge td{border:1px solid var(--rule);padding:6px 8px;
+  text-align:left;vertical-align:top}
+table.judge th{background:var(--sunk);font-weight:650}
 .src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-@media (max-width:560px){h1{font-size:1.35rem}}
-
-.pinned{border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:8px;
-        padding:14px 16px;margin:22px 0 14px;background:var(--panel)}
-.pinned>h2{margin:0 0 8px;font-size:1rem;letter-spacing:.01em}
-.pinned p{margin:.35em 0}
-a.cell{cursor:pointer;text-decoration:none;color:inherit}
-a.cell:hover{border-color:var(--accent)}
-a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-
-.s-card{border-bottom:1px solid var(--rule-2)}
-.s-card:last-child{border-bottom:0}
-.s-head{display:flex;gap:10px;align-items:center;padding:12px 18px;cursor:pointer;
-  flex-wrap:wrap}
-.s-head:hover{background:var(--sunk)}
-.s-chk{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex:none}
-.s-chk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.s-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.83rem;
-  font-weight:650;color:var(--accent);background:var(--accent-soft);
-  padding:2px 7px;border-radius:5px;flex:none}
-.s-title{font-weight:600;font-size:.94rem}
-.tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600;flex:none}
-.tag.base{background:var(--sunk);color:var(--ink-3)}
-.tag.main{background:var(--warn-soft);color:var(--warn)}
-.tag.rej{background:var(--bad-soft);color:var(--bad)}
-.s-card.done{background:var(--ok-soft)}
-.s-card.done .s-title{color:var(--ink-2)}
-.s-body{padding:0 18px 15px 45px}
-.gwt{display:grid;gap:5px;margin-bottom:11px}
-.gwt-row{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:baseline}
-.gwt-k{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.71rem;
-  font-weight:700;color:var(--ink-3);letter-spacing:.06em}
-.gwt-v{font-size:.9rem;color:var(--ink-2)}
-.rej-list{margin:0;padding:0 18px 16px 36px;color:var(--ink-2)}
-.rej-list li{margin:6px 0}
-@media (max-width:560px){
-  .s-body{padding-left:18px}
-  .gwt-row{grid-template-columns:1fr;gap:2px}
-}
 </style>
 </head>
 <body>
-<div class="wrap" id="top">
+<div class="wrap">
 <header class="masthead">
   <p class="eyebrow">dev-flow · 2-decision · 審查介面</p>
-  <h1>2. 收斂 — 試管補助 3.0 PLUS</h1>
-  <p class="sub">審查樣張 · 手寫分組，非 build-gate-twin 產物。
-  <strong>審完頂區五格再決定要不要往下讀。</strong></p>
-  <div class="dash">
-    <a class="cell is-accent" href="#sec-Decision"><span class="k">判定</span><span class="v">1A+2A+3A+4A</span><span class="n">選了哪個方案</span></a>
-    <a class="cell is-ok" href="#sec-OC"><span class="k">Owner Calls</span><span class="v">3/3</span><span class="n">待裁決幾條</span></a>
-    <a class="cell" href="#cards"><span class="k">決策點</span><span class="v">4</span><span class="n">分組審方案</span></a>
-    <a class="cell is-bad" href="#sec-Rejected"><span class="k">駁回</span><span class="v">6</span><span class="n">Rejected</span></a>
-    <a class="cell is-ok" href="#top"><span class="k">狀態</span><span class="v">approved</span><span class="n">frontmatter</span></a>
-  </div>
+  <h1>subsidy-3-0-plus</h1>
+  <p class="sub">正本是 md。這頁是審頁分組卡,不是 gate-twin 勾選卡。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">approved</span></div><div class="cell"><span class="k">分組</span><span class="v">4</span></div><div class="cell"><span class="k">方案</span><span class="v">11</span></div></div>
 </header>
-
-<section class="pinned" id="sec-Decision">
-  <h2>Decision</h2>
-  <p>選 <strong>1A + 2A + 3A + 4A</strong>：PLUS 只看主檔申請日；三格自動可手改；申請滿新開一筆；測試區用切 worktree 掛載，不把碼合進正在改 ERP 的主目錄。</p>
-</section>
-
-<section class="fig" id="sec-方案架構圖">
-  <h2>方案架構圖</h2>
-  <svg viewBox="0 0 280 520" role="img" aria-label="apply_date 切表與 27004 掛載，直式步驟">
-    <rect class="hl" x="40" y="8" width="200" height="36" rx="6"/>
-    <text class="nl" x="140" y="31" text-anchor="middle">apply_date</text>
-    <path class="edge" d="M140,44 L140,62"/>
-    <rect class="b" x="40" y="62" width="200" height="52" rx="6"/>
-    <text class="nl" x="140" y="84" text-anchor="middle">&lt; 2026-09-01</text>
-    <text class="sm" x="140" y="102" text-anchor="middle">整案 3.0 兩格表（39 切）</text>
-    <path class="edge" d="M140,114 L140,132"/>
-    <rect class="hl" x="40" y="132" width="200" height="52" rx="6"/>
-    <text class="nl" x="140" y="154" text-anchor="middle">≥ 2026-09-01</text>
-    <text class="sm" x="140" y="172" text-anchor="middle">PLUS 三格表（40 切）</text>
-    <path class="edge" d="M140,184 L140,202"/>
-    <rect class="b" x="40" y="202" width="200" height="52" rx="6"/>
-    <text class="nl" x="140" y="224" text-anchor="middle">取卵 + 形成 + 植入</text>
-    <text class="sm" x="140" y="242" text-anchor="middle">= 該次上限</text>
-    <path class="edge" d="M140,254 L140,272"/>
-    <rect class="b" x="40" y="272" width="200" height="52" rx="6"/>
-    <text class="nl" x="140" y="294" text-anchor="middle">形成 = 完整 − 取卵無法植入</text>
-    <text class="sm" x="140" y="312" text-anchor="middle">− 僅植入</text>
-    <path class="edge" d="M140,324 L140,342"/>
-    <rect class="wn" x="40" y="342" width="200" height="52" rx="6"/>
-    <text class="nl" x="140" y="364" text-anchor="middle">27004 bind</text>
-    <text class="sm" x="140" y="382" text-anchor="middle">要測的 worktree（一次一棵）</text>
-  </svg>
-  <p class="cap">直式步驟 · 與 2-decision.md 方案架構圖同一組事實 · 無外連圖、無 ASCII 箭頭</p>
-</section>
-
-<div class="progress">
-  <div class="progress-in">
-    <span class="count">已審 <b id="done">0</b> / 14 條</span>
-    <span class="bar"><i></i></span>
-    <button class="btn" id="clear" type="button">清除勾選</button>
+<section class="r-block" id="decision">
+  <div class="r-head"><span class="r-name">Decision</span></div>
+  <div class="r-body">
+    <p>選定 1A + 2B + 3A + 4A：PLUS 只看主檔申請日；畫面兩格（形成併取卵，內部仍三筆）自動可手改；申請滿新開一筆；測試區用切 worktree 掛載，不把碼合進正在改 ERP 的主目錄。</p>
   </div>
+</section>
+<section class="r-block" id="fig">
+  <div class="r-head"><h2 class="r-name">方案架構圖</h2></div>
+  <div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 378" role="img" aria-label="選定方案步驟">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">[1A] 切日只看主檔 apply_date（選定）</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">[2B] 形成併入取卵格、只顯示兩格（選定）</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="b" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">[2A] 三格畫面</text>
+  <path class="flow" d="M140,216 L140,238"/>
+  <rect class="b" x="40" y="238" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="262">[3A] 兩顆年齡鎖、申請滿新開（選定）</text>
+  <path class="flow" d="M140,292 L140,314"/>
+  <rect class="b" x="40" y="314" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="338">[4A] 27004 掛要測的 worktree（選定）</text>
+</svg>
+  </div></div>
+</section>
+<section class="r-block" id="basis"><div class="r-head"><span class="r-name">方案依據</span></div><div class="r-body"><table class="judge"><tr><th></th><th>A</th><th>B</th><th>C</th><th>方案</th><th>A</th><th>B</th><th>C</th><th>方案</th><th>A</th><th>B</th><th>方案</th><th>A</th><th>B</th><th>C</th></tr><tr><td>依據</td><td>1-discussion OQ 切日</td><td>討論已駁回</td><td>討論已駁回</td><td>依據</td><td>1-discussion 討論期三格（當時的話）</td><td>2026-08-26 完工時使用者改兩格</td><td>討論改自動填</td><td>依據</td><td>1-discussion 歸零</td><td>討論已駁回</td><td>依據</td><td>docker inspect：現掛 `/path/to/ivf_platform`</td><td>主目錄 `git status`</td><td>`[Assumption]` 尚未做</td></tr></table></div></section>
+
+<section class="r-block" id="point-1"><div class="r-head"><span class="r-name">決策點 1：誰走 PLUS 表</span></div><div class="r-body"><div class="card"><strong>A</strong><p>只看主檔 `apply_date` ≥ 115/9/1（2026-09-01）。沒有 today 開關。9/1 前立案整案留 3.0 優:測試區 9/1 前也能用申請日測；舊案不被重判 劣:行政若改申請日會切表（實務說不會改） 依據:1-discussion OQ 切日</p></div><div class="card"><strong>B</strong><p>日曆 today ≥ 9/1 才啟用 優:上線前碼進不去 PLUS 劣:測試區 9/1 前測不了；跟「程式一上就啟用」衝突 依據:討論已駁回</p></div><div class="card"><strong>C</strong><p>3.0 後第 2 次也走 PLUS（舊 But Example） 優:接近 briefing 一例 劣:9/1 前立案之後附表五會跳表 依據:討論已駁回</p></div></div></section>
+<section class="r-block" id="point-2"><div class="r-head"><span class="r-name">決策點 2：畫面幾格（內部仍三筆）</span></div><div class="r-body"><div class="card"><strong>A</strong><p>取卵／胚胎形成／植入三格都列出。形成＝完整−取卵無法植入−僅植入。自動填可手改 優:對上討論期「至少三格都列出來」 劣:滿 40 第 1 次形成會算出 1 萬；要開第三金額格 依據:1-discussion 討論期三格（當時的話）</p></div><div class="card"><strong>B</strong><p>畫面兩格：取卵格＝取卵＋形成，植入格＝植入。上限＝兩格相加。內部仍三筆。自動填可手改，存檔不蓋手改 優:第 2 次 11+4=15；不開第三金額格；形成不落庫 劣:與討論期「先上三格」不同 依據:2026-08-26 完工時使用者改兩格</p></div><div class="card"><strong>C</strong><p>金額格都空白手填 優:最彈性 劣:行政每次對表 依據:討論改自動填</p></div></div></section>
+<section class="r-block" id="point-3"><div class="r-head"><span class="r-name">決策點 3：年齡與歸零</span></div><div class="r-body"><div class="card"><strong>A</strong><p>同一輪鎖兩格（次數 `first_time_subsidy_age`、金額 `first_subsidy_age`）。申請滿再來新開一筆，舊案不動 優:跟實務一致；國健署申請日不亂動 劣:新案要自己建 依據:1-discussion 歸零</p></div><div class="card"><strong>B</strong><p>同一案次數改回首次並重算年齡 優:少一筆主檔 劣:跟「舊資料不再動」衝突 依據:討論已駁回</p></div></div></section>
+<section class="r-block" id="point-4"><div class="r-head"><span class="r-name">決策點 4：本機怎麼給人測</span></div><div class="r-body"><div class="card"><strong>A</strong><p>`ivf-platform-develop-dev`（27004）bind 改掛到該 feature 的 worktree，要測哪支就切掛載 優:主目錄可留在別的 feature；worktree 互不踩 劣:同時只能掛一棵；切的時候要重掛容器 依據:docker inspect：現掛 `/path/to/ivf_platform`</p></div><div class="card"><strong>B</strong><p>把 PLUS 合進主目錄的 `testing` 分支 優:跟以前 merge testing 一樣 劣:主目錄現在在 `fix/erp-detection-official-prices`，會攪在一起 依據:主目錄 `git status`</p></div><div class="card"><strong>C</strong><p>另開第二個容器掛 worktree 優:可同時測兩支 劣:要再佔埠、兩套登入 依據:`[Assumption]` 尚未做</p></div></div></section>
+<details class="bg"><summary>背景</summary><p><strong>Rationale</strong> 討論期每題都有使用者一句話。畫面格數在完工時改口：內部仍三筆，畫面只兩格。4A 對上「worktree 讓測試區可切」。正式區不動。</p><p><strong>風險</strong> - 滿 40 第 1 次畫面 8／5 看起來怪（內部 7+1+5）→ 先照算，本輪不收回兩格。 - 切掛載會讓 27004 暫時看不到 ERP 分支 → 切回去即可；切前跟使用者講。 - 手改後被後端覆寫（現況）→ 規格寫「有手改就不要蓋」。</p><p><strong>未採</strong> - 1B：today 開關，測試區 9/1 前測不了。 - 1C：舊案第 2 次跳 PLUS，已重鎖否決。 - 2A：三格畫面。討論期先上三格；完工時使用者改兩格。 - 2C：全手填，討論改自動填。 - 3B：同案改回首次，舊資料會被動。 - 4B：主目錄正在別的 feature，不合。 - 4C：先不開第二容器，除非 27004 不能停。</p></details>
+<p class="src">由 <code>scripts/build-stage2-html.py</code> 從 md 解析產生,不包 html-shell。</p>
 </div>
-
-<div id="cards">
-
-<section class="r-block core" id="dp1">
-  <div class="r-head">
-    <span class="r-id">決策點 1</span>
-    <div>
-      <span class="r-name">誰走 PLUS 表</span>
-      <span class="r-risk">選定 1A · 只看主檔 apply_date ≥ 115/9/1</span>
-    </div>
-  </div>
-  <article class="s-card" data-sid="1A" id="card-1A">
-    <label class="s-head">
-      <input type="checkbox" class="s-chk" data-sid="1A">
-      <span class="s-id">1A</span>
-      <span class="s-title">只看主檔 <code>apply_date</code> ≥ 115/9/1（2026-09-01）。沒有 today 開關。9/1 前立案整案留 3.0</span>
-      <span class="tag main">選定</span>
-    </label>
-    <div class="s-body">
-      <div class="gwt">
-        <div class="gwt-row"><span class="gwt-k">優</span><span class="gwt-v">測試區 9/1 前也能用申請日測；舊案不被重判</span></div>
-        <div class="gwt-row"><span class="gwt-k">劣</span><span class="gwt-v">行政若改申請日會切表（實務說不會改）</span></div>
-        <div class="gwt-row"><span class="gwt-k">成本</span><span class="gwt-v">三處金額函式加切日</span></div>
-        <div class="gwt-row"><span class="gwt-k">依據</span><span class="gwt-v">1-discussion OQ 切日</span></div>
-      </div>
-    </div>
-  </article>
-  <article class="s-card" data-sid="1B" id="card-1B">
-    <label class="s-head">
-      <input type="checkbox" class="s-chk" data-sid="1B">
-      <span class="s-id">1B</span>
-      <span class="s-title">日曆 today ≥ 9/1 才啟用</span>
-      <span class="tag rej">駁回</span>
-    </label>
-    <div class="s-body">
-      <div class="gwt">
-        <div class="gwt-row"><span class="gwt-k">優</span><span class="gwt-v">上線前碼進不去 PLUS</span></div>
-        <div class="gwt-row"><span class="gwt-k">劣</span><span class="gwt-v">測試區 9/1 前測不了；跟「程式一上就啟用」衝突</span></div>
-        <div class="gwt-row"><span class="gwt-k">成本</span><span class="gwt-v">低</span></div>
-        <div class="gwt-row"><span class="gwt-k">依據</span><span class="gwt-v">討論已駁回</span></div>
-      </div>
-    </div>
-  </article>
-  <article class="s-card" data-sid="1C" id="card-1C">
-    <label class="s-head">
-      <input type="checkbox" class="s-chk" data-sid="1C">
-      <span class="s-id">1C</span>
-      <span class="s-title">3.0 後第 2 次也走 PLUS（舊 But Example）</span>
-      <span class="tag rej">駁回</span>
-    </label>
-    <div class="s-body">
-      <div class="gwt">
-        <div class="gwt-row"><span class="gwt-k">優</span><span class="gwt-v">接近 briefing 一例</span></div>
-        <div class="gwt-row"><span class="gwt-k">劣</span><span class="gwt-v">9/1 前立案之後附表五會跳表</span></div>
-        <div class="gwt-row"><span class="gwt-k">成本</span><span class="gwt-v">高（要重判）</span></div>
-        <div class="gwt-row"><span class="gwt-k">依據</span><span class="gwt-v">討論已駁回</span></div>
-      </div>
-    </div>
-  </article>
-</section>
-
-<section class="r-block core" id="dp2">
-  <div class="r-head">
-    <span class="r-id">決策點 2</span>
-    <div>
-      <span class="r-name">金額三格</span>
-      <span class="r-risk">選定 2A · 取卵／胚胎形成／植入，自動可手改</span>
-    </div>
-  </div>
-  <article class="s-card" data-sid="2A" id="card-2A">
-    <label class="s-head">
-      <input type="checkbox" class="s-chk" data-sid="2A">
-      <span class="s-id">2A</span>
-      <span class="s-title">取卵／胚胎形成／植入三格。形成＝完整−取卵無法植入−僅植入。自動填可手改，存檔不蓋手改</span>
-      <span class="tag main">選定</span>
-    </label>
-    <div class="s-body">
-      <div class="gwt">
-        <div class="gwt-row"><span class="gwt-k">優</span><span class="gwt-v">第 2 次完整 15 不會像少一格；不好再收回兩格</span></div>
-        <div class="gwt-row"><span class="gwt-k">劣</span><span class="gwt-v">滿 40 第 1 次形成會算出 1 萬；要比現況打開 readonly</span></div>
-        <div class="gwt-row"><span class="gwt-k">成本</span><span class="gwt-v">畫面＋DB 一欄＋三函式</span></div>
-        <div class="gwt-row"><span class="gwt-k">依據</span><span class="gwt-v">1-discussion 三格</span></div>
-      </div>
-    </div>
-  </article>
-  <article class="s-card" data-sid="2B" id="card-2B">
-    <label class="s-head">
-      <input type="checkbox" class="s-chk" data-sid="2B">
-      <span class="s-id">2B</span>
-      <span class="s-title">維持取卵＋植入兩格</span>
-      <span class="tag rej">駁回</span>
-    </label>
-    <div class="s-body">
-      <div class="gwt">
-        <div class="gwt-row"><span class="gwt-k">優</span><span class="gwt-v">改最少</span></div>
-        <div class="gwt-row"><span class="gwt-k">劣</span><span class="gwt-v">第 2 次完整 6+4≠15</span></div>
-        <div class="gwt-row"><span class="gwt-k">成本</span><span class="gwt-v">低</span></div>
-        <div class="gwt-row"><span class="gwt-k">依據</span><span class="gwt-v">討論已駁回</span></div>
-      </div>
-    </div>
-  </article>
-  <article class="s-card" data-sid="2C" id="card-2C">
-    <label class="s-head">
-      <input type="checkbox" class="s-chk" data-sid="2C">
-      <span class="s-id">2C</span>
-      <span class="s-title">三格都空白手填</span>
-      <span class="tag rej">駁回</span>
-    </label>
-    <div class="s-body">
-      <div class="gwt">
-        <div class="gwt-row"><span class="gwt-k">優</span><span class="gwt-v">最彈性</span></div>
-        <div class="gwt-row"><span class="gwt-k">劣</span><span class="gwt-v">行政每次對表</span></div>
-        <div class="gwt-row"><span class="gwt-k">成本</span><span class="gwt-v">低</span></div>
-        <div class="gwt-row"><span class="gwt-k">依據</span><span class="gwt-v">討論改自動填</span></div>
-      </div>
-    </div>
-  </article>
-</section>
-
-<section class="r-block core" id="dp3">
-  <div class="r-head">
-    <span class="r-id">決策點 3</span>
-    <div>
-      <span class="r-name">年齡與歸零</span>
-      <span class="r-risk">選定 3A · 兩格鎖、申請滿新開一筆</span>
-    </div>
-  </div>
-  <article class="s-card" data-sid="3A" id="card-3A">
-    <label class="s-head">
-      <input type="checkbox" class="s-chk" data-sid="3A">
-      <span class="s-id">3A</span>
-      <span class="s-title">同一輪鎖兩格（次數 <code>first_time_subsidy_age</code>、金額 <code>first_subsidy_age</code>）。申請滿再來新開一筆，舊案不動</span>
-      <span class="tag main">選定</span>
-    </label>
-    <div class="s-body">
-      <div class="gwt">
-        <div class="gwt-row"><span class="gwt-k">優</span><span class="gwt-v">跟實務一致；國健署申請日不亂動</span></div>
-        <div class="gwt-row"><span class="gwt-k">劣</span><span class="gwt-v">新案要自己建</span></div>
-        <div class="gwt-row"><span class="gwt-k">成本</span><span class="gwt-v">不改舊列</span></div>
-        <div class="gwt-row"><span class="gwt-k">依據</span><span class="gwt-v">1-discussion 歸零</span></div>
-      </div>
-    </div>
-  </article>
-  <article class="s-card" data-sid="3B" id="card-3B">
-    <label class="s-head">
-      <input type="checkbox" class="s-chk" data-sid="3B">
-      <span class="s-id">3B</span>
-      <span class="s-title">同一案次數改回首次並重算年齡</span>
-      <span class="tag rej">駁回</span>
-    </label>
-    <div class="s-body">
-      <div class="gwt">
-        <div class="gwt-row"><span class="gwt-k">優</span><span class="gwt-v">少一筆主檔</span></div>
-        <div class="gwt-row"><span class="gwt-k">劣</span><span class="gwt-v">跟「舊資料不再動」衝突</span></div>
-        <div class="gwt-row"><span class="gwt-k">成本</span><span class="gwt-v">高</span></div>
-        <div class="gwt-row"><span class="gwt-k">依據</span><span class="gwt-v">討論已駁回</span></div>
-      </div>
-    </div>
-  </article>
-</section>
-
-<section class="r-block core" id="dp4">
-  <div class="r-head">
-    <span class="r-id">決策點 4</span>
-    <div>
-      <span class="r-name">本機怎麼給人測</span>
-      <span class="r-risk">選定 4A · 27004 切 worktree</span>
-    </div>
-  </div>
-  <article class="s-card" data-sid="4A" id="card-4A">
-    <label class="s-head">
-      <input type="checkbox" class="s-chk" data-sid="4A">
-      <span class="s-id">4A</span>
-      <span class="s-title"><code>ivf-platform-develop-dev</code>（27004）bind 改掛到該 feature 的 worktree，要測哪支就切掛載</span>
-      <span class="tag main">選定</span>
-    </label>
-    <div class="s-body">
-      <div class="gwt">
-        <div class="gwt-row"><span class="gwt-k">優</span><span class="gwt-v">主目錄可留在別的 feature；worktree 互不踩</span></div>
-        <div class="gwt-row"><span class="gwt-k">劣</span><span class="gwt-v">同時只能掛一棵；切的時候要重掛容器</span></div>
-        <div class="gwt-row"><span class="gwt-k">成本</span><span class="gwt-v">低</span></div>
-        <div class="gwt-row"><span class="gwt-k">依據</span><span class="gwt-v">docker inspect：現掛 <code>/path/to/ivf_platform</code></span></div>
-      </div>
-    </div>
-  </article>
-  <article class="s-card" data-sid="4B" id="card-4B">
-    <label class="s-head">
-      <input type="checkbox" class="s-chk" data-sid="4B">
-      <span class="s-id">4B</span>
-      <span class="s-title">把 PLUS 合進主目錄的 <code>testing</code> 分支</span>
-      <span class="tag rej">駁回</span>
-    </label>
-    <div class="s-body">
-      <div class="gwt">
-        <div class="gwt-row"><span class="gwt-k">優</span><span class="gwt-v">跟以前 merge testing 一樣</span></div>
-        <div class="gwt-row"><span class="gwt-k">劣</span><span class="gwt-v">主目錄現在在 <code>fix/erp-detection-official-prices</code>，會攪在一起</span></div>
-        <div class="gwt-row"><span class="gwt-k">成本</span><span class="gwt-v">中</span></div>
-        <div class="gwt-row"><span class="gwt-k">依據</span><span class="gwt-v">主目錄 <code>git status</code></span></div>
-      </div>
-    </div>
-  </article>
-  <article class="s-card" data-sid="4C" id="card-4C">
-    <label class="s-head">
-      <input type="checkbox" class="s-chk" data-sid="4C">
-      <span class="s-id">4C</span>
-      <span class="s-title">另開第二個容器掛 worktree</span>
-      <span class="tag base">先不開</span>
-    </label>
-    <div class="s-body">
-      <div class="gwt">
-        <div class="gwt-row"><span class="gwt-k">優</span><span class="gwt-v">可同時測兩支</span></div>
-        <div class="gwt-row"><span class="gwt-k">劣</span><span class="gwt-v">要再佔埠、兩套登入</span></div>
-        <div class="gwt-row"><span class="gwt-k">成本</span><span class="gwt-v">中</span></div>
-        <div class="gwt-row"><span class="gwt-k">依據</span><span class="gwt-v"><code>[Assumption]</code> 尚未做 · parked，不是本輪駁回 6 條之一</span></div>
-      </div>
-    </div>
-  </article>
-</section>
-
-<section class="r-block" id="sec-OC">
-  <div class="r-head">
-    <span class="r-id">OC</span>
-    <div>
-      <span class="r-name">Owner Calls</span>
-      <span class="r-risk">3／3 已確認</span>
-    </div>
-  </div>
-  <article class="s-card" data-sid="OC-1" id="card-OC-1">
-    <label class="s-head">
-      <input type="checkbox" class="s-chk" data-sid="OC-1">
-      <span class="s-id">OC-1</span>
-      <span class="s-title">手改後存檔不覆寫</span>
-      <span class="tag main">已確認</span>
-    </label>
-    <div class="s-body">
-      <div class="gwt">
-        <div class="gwt-row"><span class="gwt-k">決定</span><span class="gwt-v">後端不覆寫三格（相對現況是新行為）</span></div>
-        <div class="gwt-row"><span class="gwt-k">依據</span><span class="gwt-v">已在討論確認</span></div>
-      </div>
-    </div>
-  </article>
-  <article class="s-card" data-sid="OC-2" id="card-OC-2">
-    <label class="s-head">
-      <input type="checkbox" class="s-chk" data-sid="OC-2">
-      <span class="s-id">OC-2</span>
-      <span class="s-title">27004 等另 session 測完再切</span>
-      <span class="tag main">已確認</span>
-    </label>
-    <div class="s-body">
-      <div class="gwt">
-        <div class="gwt-row"><span class="gwt-k">決定</span><span class="gwt-v">27004 等另一個 session 測完再切到 subsidy worktree；此前只寫 worktree、不重掛、不動主目錄</span></div>
-        <div class="gwt-row"><span class="gwt-k">依據</span><span class="gwt-v">2026-08-26 使用者確認</span></div>
-      </div>
-    </div>
-  </article>
-  <article class="s-card" data-sid="OC-3" id="card-OC-3">
-    <label class="s-head">
-      <input type="checkbox" class="s-chk" data-sid="OC-3">
-      <span class="s-id">OC-3</span>
-      <span class="s-title">形成 1 萬先照算</span>
-      <span class="tag main">已確認</span>
-    </label>
-    <div class="s-body">
-      <div class="gwt">
-        <div class="gwt-row"><span class="gwt-k">決定</span><span class="gwt-v">滿 40 第 1 次形成算出 1 萬時，先照算給人看</span></div>
-        <div class="gwt-row"><span class="gwt-k">依據</span><span class="gwt-v">已在討論確認</span></div>
-      </div>
-    </div>
-  </article>
-</section>
-
-</div>
-
-<section class="r-block danger" id="sec-Rejected">
-  <div class="r-head">
-    <span class="r-id">Rejected</span>
-    <div>
-      <span class="r-name">駁回 6 條</span>
-      <span class="r-risk">4C parked 先不開，不計入這 6 條</span>
-    </div>
-  </div>
-  <ul class="rej-list">
-    <li>1B：today 開關，測試區 9/1 前測不了。</li>
-    <li>1C：舊案第 2 次跳 PLUS，已重鎖否決。</li>
-    <li>2B：維持兩格，第 2 次完整 6+4≠15，已否決。</li>
-    <li>2C：三格全手填，已否決。</li>
-    <li>3B：同案改回首次，舊資料會被動。</li>
-    <li>4B：主目錄正在別的 feature，不合。</li>
-  </ul>
-</section>
-
-<div class="appendix">
-  <h2>背景資料</h2>
-  <details class="doc" id="sec-確認紀錄"><summary><span>確認紀錄</span></summary><div class="doc-in"><ul><li>2026-08-25～26 討論已拍板；本檔把決策點收成方案，送 G1。</li></ul></div></details>
-  <details class="doc" id="sec-Rationale"><summary><span>Rationale</span></summary><div class="doc-in"><p>討論期每題都有使用者一句話；4A 對上「worktree 讓測試區可切」。正式區不動。</p></div></details>
-  <details class="doc" id="sec-Scope-Non-Goals"><summary><span>Scope &amp; Non-Goals</span></summary><div class="doc-in"><ul><li>做：PLUS 表、三格、切日、附表五列形成胚胎 OPU、worktree 掛載切換。</li><li>不做：顆數硬擋、38 文案、低收入改、Revised、正式區、主目錄 ERP 分支。</li></ul></div></details>
-  <details class="doc" id="sec-Risks-Mitigations"><summary><span>Risks &amp; Mitigations</span></summary><div class="doc-in"><ul><li>滿 40 第 1 次形成 1 萬看起來怪 → 先照算給人看，不好收回兩格。</li><li>切掛載會讓 27004 暫時看不到 ERP 分支 → 切回去即可；切前跟使用者講。</li><li>手改後被後端覆寫（現況）→ 規格寫「有手改就不要蓋」。</li></ul></div></details>
-  <details class="doc" id="sec-Success-Criteria"><summary><span>Success Criteria</span></summary><div class="doc-in"><ul><li>申請日 2026-09-01、未滿 40、第一次完整：三格 10+0+5、上限 15 萬。</li><li>申請日 2026-08-31 的舊案第 2 次完整：仍 3.0（10 萬），不是 PLUS 15。</li><li>申請日 2026-09-01、未滿 40、第 2 次完整：6+5+4＝15。</li><li>27004 掛上 subsidy worktree 後，畫面看得到胚胎形成格。</li><li>正式區／191 無任何寫入。</li></ul></div></details>
-  <details class="doc" id="sec-ADR-晉升檢查"><summary><span>ADR 晉升檢查</span></summary><div class="doc-in"><ul><li>跨團隊／跨 repo？否（只 IVF 後台）。</li><li>不可逆資料？加一欄胚胎形成金額，可相容。</li><li>要獨立 ADR？否。</li></ul></div></details>
-</div>
-
-<p class="src">審查樣張 · 手寫分組 twin · 正本 <code>2-decision.md</code> · 不由 build-gate-twin.py 重生</p>
-</div>
-<script>
-(function(){
-  var boxes = [].slice.call(document.querySelectorAll('.s-chk'));
-  if (!boxes.length) return;
-  var bar = document.querySelector('.bar i'), done = document.getElementById('done');
-  var KEY = 'devflow-gate-twin:' + document.title;
-  function load(){ try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ return {}; } }
-  function save(s){ try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e){} }
-  var state = load();
-  function paint(){
-    var n = 0;
-    boxes.forEach(function(b){
-      var card = b.closest('.s-card');
-      if (b.checked){ n++; card.classList.add('done'); } else { card.classList.remove('done'); }
-    });
-    if (done) done.textContent = n;
-    if (bar) bar.style.width = (n / boxes.length * 100) + '%';
-  }
-  boxes.forEach(function(b){
-    if (state[b.dataset.sid]) b.checked = true;
-    b.addEventListener('change', function(){ state[b.dataset.sid] = b.checked; save(state); paint(); });
-  });
-  var clr = document.getElementById('clear');
-  if (clr) clr.addEventListener('click', function(){
-    state = {}; save(state); boxes.forEach(function(b){ b.checked = false; }); paint();
-  });
-  paint();
-})();
-</script>
 </body>
 </html>

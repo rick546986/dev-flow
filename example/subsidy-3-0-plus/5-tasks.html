@@ -15,66 +15,42 @@
   --bad:#a83730; --bad-soft:#fae7e5;
   --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
 }
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
-    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
-    --rule:#2a303b; --rule-2:#212731;
-    --accent:#7fa0e0; --accent-soft:#1b2436;
-    --ok:#4fbe86; --ok-soft:#132a20;
-    --warn:#dda944; --warn-soft:#2c2415;
-    --bad:#e4796f; --bad-soft:#2e1a19;
-    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
-  }
-}
 *{box-sizing:border-box}
 body{margin:0;background:var(--ground);color:var(--ink);
-  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
-  -webkit-font-smoothing:antialiased}
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px;color:var(--ink-2)}
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
 .wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
 .masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
 .eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
   color:var(--ink-3);font-weight:600;margin:0 0 8px}
-h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em}
-.sub{color:var(--ink-2);margin:0;font-size:.94rem;max-width:62ch}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
 .dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
-  margin:20px 0 4px}
+  margin:18px 0 0}
 .cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
-  padding:11px 13px;box-shadow:var(--shadow)}
+  padding:10px 12px}
 .cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--ink-3);font-weight:600;display:block;margin-bottom:5px}
+  color:var(--ink-3)}
 .cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
-.cell .n{font-size:.78rem;color:var(--ink-2);display:block;margin-top:3px}
-.cell.is-ok .v{color:var(--ok)} .cell.is-warn .v{color:var(--warn)}
-a.cell,a.cell .k,a.cell .v,a.cell .n{text-decoration:none;color:inherit}
-a.cell:hover{border-color:var(--accent)}
+a.cell{text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent);text-decoration:none}
 .r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
   background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
-.r-head{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;
+.r-head{display:flex;gap:10px;align-items:center;padding:15px 18px;
   border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
-.r-block.is-ok .r-head{border-left-color:var(--ok)}
-.r-id{font-weight:700;font-size:.95rem;letter-spacing:.02em;
-  font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-.r-name{font-weight:650}
-.r-risk{display:block;font-size:.83rem;color:var(--ink-2);margin-top:3px}
-.tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600;flex:none;white-space:nowrap}
-.tag.ok{background:var(--ok-soft);color:var(--ok)}
-.tag.warn{background:var(--warn-soft);color:var(--warn)}
-.tag.base{background:var(--sunk);color:var(--ink-3)}
-.body{padding:14px 18px 18px;color:var(--ink-2);font-size:.94rem}
-.body p{margin:.4em 0}
-.table-wrap{overflow-x:auto;margin:22px 0}
-table{border-collapse:collapse;width:100%;min-width:720px;margin:0;background:var(--panel);
-  border:1px solid var(--rule);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
-th,td{border-bottom:1px solid var(--rule-2);padding:9px 11px;text-align:left;vertical-align:top}
-th{background:var(--sunk);color:var(--ink-3);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase}
-th:nth-child(1),td:nth-child(1),
-th:nth-child(2),td:nth-child(2){white-space:nowrap}
-tr:last-child td{border-bottom:0}
-h2{font-size:1rem;margin:28px 0 8px;color:var(--ink)}
-.note{color:var(--ink-3);font-size:.86rem}
+.r-name,.t-line{font-weight:650;text-decoration:none;white-space:nowrap}
+.t-line{display:inline-flex;gap:8px;align-items:center;white-space:nowrap}
+.tid,.t-title,.st{white-space:nowrap}
+.r-body{padding:14px 18px 16px;overflow-wrap:anywhere;word-break:break-word}
+.r-body p{margin:0 0 8px}
+.tablewrap{overflow-x:auto}
+.task-index{width:100%;border-collapse:collapse;font-size:.92rem}
+.task-index th,.task-index td{border-bottom:1px solid var(--rule-2);
+  text-align:left;padding:8px 6px}
+.task-index th:nth-child(1),.task-index th:nth-child(2),
+.task-index td:nth-child(1),.task-index td:nth-child(2){white-space:nowrap}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
 </style>
 </head>
 <body>
@@ -82,98 +58,16 @@ h2{font-size:1rem;margin:28px 0 8px;color:var(--ink)}
 <header class="masthead">
   <p class="eyebrow">dev-flow · 5-tasks · 審查介面</p>
   <h1>subsidy-3-0-plus</h1>
-  <p class="sub">審查稿。上游是 <code>4-spec.md</code>。四筆循序：先讓 PLUS 金額對（T-1→T-2），再鎖年齡（T-3），再列 OPU（T-4）。</p>
-  <div class="dash">
-    <a class="cell is-warn" href="#T-1"><span class="k">任務</span><span class="v">4 筆</span><span class="n">sequential</span></a>
-    <a class="cell is-ok" href="#T-4"><span class="k">完成</span><span class="v">T-4</span><span class="n">OPU 已在 worktree</span></a>
-    <a class="cell is-warn" href="#T-1"><span class="k">未完成</span><span class="v">T-1～T-3</span><span class="n">金額／畫面／年齡</span></a>
-    <div class="cell"><span class="k">lane</span><span class="v">full</span><span class="n">只寫本 worktree</span></div>
-  </div>
+  <p class="sub">正本是 md。這頁是審頁任務卡,不是執行板,不加提交判定。</p>
+  <div class="dash"><a class="cell" href="#T-1"><span class="k">狀態</span><span class="v">draft</span></a><div class="cell"><span class="k">任務</span><span class="v">4</span></div><div class="cell"><span class="k">未完成</span><span class="v">3</span></div></div>
 </header>
-
-<section class="r-block">
-  <div class="r-head"><span class="r-id">前提</span><span><span class="r-name">執行圍欄</span><span class="r-risk">正式區／191 不碰。180 不加欄。PHP 5.3.3。</span></span></div>
-  <div class="body">
-    <p>只寫本 worktree。主目錄與 27004 不動。</p>
-    <p>形成金額先不落新欄：存 <code>subsidy_limit = 取卵+形成+植入</code>，讀回來形成＝上限−取卵−植入。</p>
-    <p>Verify 用 grep 形狀（動碼前紅、後綠）。行為靠人工回歸。不使用短陣列 <code>[]</code>、不使用 <code>??</code>。</p>
-  </div>
-</section>
-
-<div class="table-wrap">
-<table>
-  <tr><th>T</th><th>狀態</th><th>做什麼</th><th>Files</th><th>Covers</th><th>Blocked-by</th></tr>
-  <tr>
-    <td>T-1</td>
-    <td><span class="tag warn">未完成</span></td>
-    <td>三處金額函式依申請日切 PLUS。PLUS 三欄內部、畫面後續併兩格。</td>
-    <td><code>controllers/backend/ivf.php</code>、<code>views/backend/ivf_subsidy_edit.php</code></td>
-    <td>R-1／S-1.1、S-1.2、S-1.3；R-2／S-2.1、S-2.3；R-4／S-4.2</td>
-    <td>—</td>
-  </tr>
-  <tr>
-    <td>T-2</td>
-    <td><span class="tag warn">未完成</span></td>
-    <td>畫面三格且手改存檔不蓋。</td>
-    <td><code>views/backend/ivf_subsidy_edit.php</code>、<code>controllers/backend/ivf.php</code></td>
-    <td>R-2／S-2.1、S-2.2</td>
-    <td>T-1</td>
-  </tr>
-  <tr>
-    <td>T-3</td>
-    <td><span class="tag warn">未完成</span></td>
-    <td>新增附表五不覆寫已存 <code>first_subsidy_age</code>。</td>
-    <td><code>views/backend/ivf_subsidy_edit.php</code></td>
-    <td>R-3／S-3.1、S-3.2</td>
-    <td>T-1</td>
-  </tr>
-  <tr>
-    <td>T-4</td>
-    <td><span class="tag ok">完成</span></td>
-    <td>附表五列出形成胚胎的 OPU。</td>
-    <td><code>views/backend/ivf_subsidy_edit.php</code>、<code>controllers/backend/ivf.php</code></td>
-    <td>R-4／S-4.1、S-4.2</td>
-    <td>T-2</td>
-  </tr>
-</table>
-</div>
-<p class="note">任務稿仍寫三格，第 6 站筆記已鎖形成併取卵兩格。</p>
-
-<section class="r-block" id="T-1">
-  <div class="r-head"><span class="r-id">T-1</span><span><span class="r-name">三處金額函式依申請日切 PLUS 表</span><span class="r-risk">未完成 · 切日看 apply_date，不看 today</span></span><span class="tag warn">未完成</span></div>
-  <div class="body">
-    <p>申請日 ≥ 2026-09-01 用 PLUS 三欄（完整／取卵無法植入／僅植入），形成＝完整−取卵−植入；9/1 前仍 3.0 兩格數字。PLUS 三欄內部、畫面後續併兩格。</p>
-    <p>改 <code>calculateSubsidy3Amount</code>、<code>calculateSubsidy3AmountAdd</code>、<code>calculateSubsidy3AmountForSchedule5</code> 三處同一張表。低收入仍 15 萬。不改顆數、不改 38 文案。</p>
-    <p>Verify：<code>rg -n "2026-09-01|embryo" controllers/backend/ivf.php views/backend/ivf_subsidy_edit.php | grep -c "2026-09-01"</code></p>
-  </div>
-</section>
-
-<section class="r-block" id="T-2">
-  <div class="r-head"><span class="r-id">T-2</span><span><span class="r-name">附表五畫面三格且手改存檔不蓋</span><span class="r-risk">未完成 · 任務稿仍寫三格</span></span><span class="tag warn">未完成</span></div>
-  <div class="body">
-    <p>PLUS 看得到取卵／胚胎形成／植入；手改後存檔再打開數字還在。</p>
-    <p>3.0 舊案維持兩格 readonly＋後端覆寫。PLUS 打開可改；後端若 POST 帶 <code>subsidy_amount_manual=1</code> 就用畫面值，不算回去。形成不新增 DB 欄。27004 不掛本樹。</p>
-    <p>Verify：<code>rg -n "embryo_subsidy" views/backend/ivf_subsidy_edit.php | grep -c "embryo_subsidy"</code></p>
-  </div>
-</section>
-
-<section class="r-block" id="T-3">
-  <div class="r-head"><span class="r-id">T-3</span><span><span class="r-name">新增附表五不覆寫已存金額年齡</span><span class="r-risk">未完成</span></span><span class="tag warn">未完成</span></div>
-  <div class="body">
-    <p>第 2 次附表五不會把 <code>first_subsidy_age</code> 重算掉。</p>
-    <p>只改 <code>calcSchedule5AgeAndAmount</code>：已有 <code>first_subsidy_age</code> 就不要寫回。不改次數欄 <code>first_time_subsidy_age</code>。不開新補助案（歸零是人工新開）。</p>
-    <p>Verify：<code>rg -n "first_subsidy_age" views/backend/ivf_subsidy_edit.php | grep -c "calcSchedule5AgeAndAmount"</code></p>
-  </div>
-</section>
-
-<section class="r-block is-ok" id="T-4">
-  <div class="r-head"><span class="r-id">T-4</span><span><span class="r-name">附表五列出形成胚胎的 OPU</span><span class="r-risk">完成 · 小字在上限格</span></span><span class="tag ok">完成</span></div>
-  <div class="body">
-    <p>有 <code>fbt_date</code> 時附表五看得到對到的 OPU <code>ivf_no</code>、取卵日、2PN。方案 C 仍是僅植入。</p>
-    <p>用 <code>fbt_date</code>→<code>ivf_fbt</code>（<code>cNumber</code>+<code>bt_date</code>）→<code>opu_ivf_no</code>→OPU <code>sum_2pn</code>。不硬擋顆數。查詢要帶 <code>cNumber</code>，不單靠 <code>ivf_no</code>。</p>
-    <p>Verify：<code>rg -n "sum_2pn|opu_ivf_no" views/backend/ivf_subsidy_edit.php controllers/backend/ivf.php | grep -c "sum_2pn"</code></p>
-  </div>
-</section>
+<section class="r-block" id="premise"><div class="r-head"><span class="r-name">執行前提</span></div><div class="r-body"><p>- 只寫本 worktree。主目錄與 27004 不動。 - 正式區／191 不碰。180 不加欄。 - 形成金額先不落新欄：存 `subsidy_limit = 取卵+形成+植入`，讀回來形成＝上限−取卵−植入。 - Verify 用 grep 形狀（動碼前紅、後綠）。行為靠人工回歸。 - PHP 5.3.3：不使用短陣列 `[]`、不使用 `??`。</p></div></section>
+<section class="r-block" id="task-index"><div class="r-head"><span class="r-name">任務總表</span></div><div class="r-body"><div class="tablewrap"><table class="task-index"><tr><th>T</th><th>狀態</th><th>標題</th></tr><tr><td>T-1</td><td>未完成</td><td>三處金額函式依申請日切 PLUS 表</td></tr><tr><td>T-2</td><td>未完成</td><td>附表五畫面兩格且手改存檔不蓋</td></tr><tr><td>T-3</td><td>未完成</td><td>新增附表五不覆寫已存金額年齡</td></tr><tr><td>T-4</td><td>完成</td><td>附表五列出形成胚胎的 OPU</td></tr></table></div></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name t-line"><span class="tid">T-1</span><span class="t-title">三處金額函式依申請日切 PLUS 表</span><span class="st">未完成</span></span></div><div class="r-body"><p><strong>Intent</strong> 申請日 ≥ 2026-09-01 用 PLUS 基數三筆（取卵／形成／植入）再依方案拆，畫面併成兩格；9/1 前仍 3.0 兩格數字。</p><p><strong>Covers</strong> R-1 / S-1.1, S-1.2, S-1.3, R-2 / S-2.1, S-2.3, R-4 / S-4.2</p><p><strong>Files</strong> controllers/backend/ivf.php, views/backend/ivf_subsidy_edit.php</p><p><strong>Verify</strong> `rg -n "2026-09-01|embryo" controllers/backend/ivf.php views/backend/ivf_subsidy_edit.php | grep -c "2026-09-01"`</p><p><strong>Blocked-by</strong> —</p><p><strong>Boundaries</strong> 改 `calculateSubsidy3Amount`、`calculateSubsidy3AmountAdd`、`calculateSubsidy3AmountForSchedule5` 三處同一張表。低收入仍 15 萬。不改顆數、不改 38 文案。PLUS 切日看主檔 apply_date，不看 today。</p></div></section>
+<section class="r-block" id="T-2"><div class="r-head"><span class="r-name t-line"><span class="tid">T-2</span><span class="t-title">附表五畫面兩格且手改存檔不蓋</span><span class="st">未完成</span></span></div><div class="r-body"><p><strong>Intent</strong> PLUS 只見取卵／植入兩格（取卵格已含形成）；手改後存檔再打開數字還在。無形成金額第三格。</p><p><strong>Covers</strong> R-2 / S-2.1, S-2.2</p><p><strong>Files</strong> views/backend/ivf_subsidy_edit.php, controllers/backend/ivf.php</p><p><strong>Verify</strong> `rg -n "embryo_subsidy" views/backend/ivf_subsidy_edit.php | grep -c "embryo_subsidy"`</p><p><strong>Blocked-by</strong> T-1</p><p><strong>Boundaries</strong> 3.0 舊案維持兩格 readonly＋後端覆寫。PLUS 打開可改；後端若 POST 帶 subsidy_amount_manual=1 就用畫面值，不算回去。形成不新增 DB 欄。27004 不掛本樹。</p></div></section>
+<section class="r-block" id="T-3"><div class="r-head"><span class="r-name t-line"><span class="tid">T-3</span><span class="t-title">新增附表五不覆寫已存金額年齡</span><span class="st">未完成</span></span></div><div class="r-body"><p><strong>Intent</strong> 第 2 次附表五不會把 first_subsidy_age 重算掉。</p><p><strong>Covers</strong> R-3 / S-3.1, S-3.2</p><p><strong>Files</strong> views/backend/ivf_subsidy_edit.php</p><p><strong>Verify</strong> `rg -n "first_subsidy_age" views/backend/ivf_subsidy_edit.php | grep -c "calcSchedule5AgeAndAmount"`</p><p><strong>Blocked-by</strong> T-1</p><p><strong>Boundaries</strong> 只改 `calcSchedule5AgeAndAmount`：已有 first_subsidy_age 就不要寫回。不改次數欄 first_time_subsidy_age。不開新補助案（歸零是人工新開）。</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name t-line"><span class="tid">T-4</span><span class="t-title">附表五列出形成胚胎的 OPU</span><span class="st">完成</span></span></div><div class="r-body"><p><strong>Intent</strong> 有 fbt_date 時附表五看得到對到的 OPU ivf_no、取卵日、2PN。方案 C 仍是僅植入。</p><p><strong>Covers</strong> R-4 / S-4.1, S-4.2</p><p><strong>Files</strong> views/backend/ivf_subsidy_edit.php, controllers/backend/ivf.php</p><p><strong>Verify</strong> `rg -n "sum_2pn|opu_ivf_no" views/backend/ivf_subsidy_edit.php controllers/backend/ivf.php | grep -c "sum_2pn"`</p><p><strong>Blocked-by</strong> T-2</p><p><strong>Boundaries</strong> 用 fbt_date→ivf_fbt（cNumber+bt_date）→opu_ivf_no→OPU sum_2pn。不硬擋顆數。查詢要帶 cNumber，不單靠 ivf_no。</p></div></section>
+<p class="src">由 <code>scripts/build-stage5-html.py</code> 從 md 解析產生,不包 html-shell。</p>
 </div>
 </body>
 </html>

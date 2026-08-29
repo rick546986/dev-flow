@@ -86,8 +86,16 @@ group_methodology() {
   run "methodology/check-readme-markers" scripts/check-readme-markers.sh || return 1
   # G2 機械關卡(B-9):對母版自帶的正例跑一次 —— 等於自帶回歸測試,腳本壞了這裡先紅。
   # ⚠️ 這支是 **Gate**(exit 1 = FAIL 擋流程),與 warning-only 的 check-task-slicing 契約相反。
-  run "methodology/check-spec-gate" \
-      scripts/check-spec-gate.sh example/contract-expiry-reminder/4-spec.md || return 1
+  # 第二個範例破「唯一範例自證循環」:兩個 Stage 4 fixture 都要過同一支 gate。
+  local spec_gate_fixtures=(
+    example/contract-expiry-reminder/4-spec.md
+    example/subsidy-3-0-plus/4-spec.md
+  )
+  local spec_gate_fixture
+  for spec_gate_fixture in "${spec_gate_fixtures[@]}"; do
+    run "methodology/check-spec-gate ($spec_gate_fixture)" \
+        scripts/check-spec-gate.sh "$spec_gate_fixture" || return 1
+  done
   # G3 回歸(2026-08-17 採用現場):全形冒號版 fixture 必須同樣通過 —— C1 的冒號
   # 字元集曾把「:或：」打成兩個半形,全形觀測欄被判缺欄、全形例外欄被判沒寫。
   run "methodology/check-spec-gate (全形冒號回歸)" \

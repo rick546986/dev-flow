@@ -301,3 +301,13 @@
 - 為什麼:owner 改口後 agent 只改 4-spec,把 2-decision 戰火停成 Drafting Decision,1／2／5／7 過期。覆寫已核 Decision 不是合法 DD。
 - 落在哪:skills/dev-flow/stage2/nodes/N3-write-md.md skills/dev-flow/stage4/nodes/{N1-handoff,S4-dd}.md _templates/{2-decision,4-spec}.md scripts/check-spec-gate.sh scripts/check-devstage{2,4}-graph.sh scripts/fixtures/spec-gate-late-owner/ guides/guide-dev-flow.html
 
+## 2026-08-29 · example-subsidy-stage4 · v3.20.1
+- 做了什麼:依現行 _templates/4-spec.md 重寫 example/subsidy-3-0-plus/4-spec.md 並用官方產器重生 4-spec.html；Stage 4 牙改認兩個範例 fixture
+- 為什麼:Backlog「第二個範例 feature」：破唯一範例自證循環。手樣 R/S 鎖兩格／切日／年齡／OPU 小字；Risk 從非法 medium 改 high。不代填 Human verdict、不升版
+- 落在哪:example/subsidy-3-0-plus/4-spec.md example/subsidy-3-0-plus/4-spec.html scripts/devflow-check.sh scripts/check-selfjudgment-tables.sh scripts/check-stage4-rs-contract.sh scripts/check-devstage-fig-text.sh docs/dev/HISTORY.md
+
+## 2026-08-29 · subsidy-two-cell-align
+- 做了什麼:整條 example/subsidy-3-0-plus 回望對齊 PLUS 畫面兩格：2-decision 改選定 2B、2A 三格改列 Rejected（完工時使用者改兩格）；1 驗收雛形改兩格、歷史問答留當時三格；4-spec DD-1 不再說兩份打架；5/6/7 用語對齊。官方產器重生 1/2/4/5/7 html
+- 為什麼:Owner lock：PLUS 畫面兩格不是三格。先前只改第 4 站，2A 三格 vs R-2 兩格是假矛盾。不改產品行為、不填 verdict、不升版
+- 落在哪:example/subsidy-3-0-plus/{1-discussion,2-decision,4-spec,5-tasks,6-implementation-notes,7-review}.{md,html} docs/dev/HISTORY.md
+

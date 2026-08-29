@@ -23,11 +23,13 @@
 # (build_dag 寫死)。禁止為統一 #fig-* 改 build-gate-twin.py／html-shell.html。
 # #fig-* 只准手寫 fixture fallback。
 #
-# 不掃 live docs/dev/<slug>。要掃方法包內第二正例
-# example/contract-expiry-reminder/(它不是 live slug)。紅了只准:修抽法,或只
-# 補該站圖槽讓指紋對上文字。不准改 example 的表／Decision／R／T／Diff 正文。
+# 不掃 live docs/dev/<slug>。要掃方法包內範例
+# example/contract-expiry-reminder/(完整 2／3／4／5／7)與
+# example/subsidy-3-0-plus/(第 4 站手樣;它不是 live slug)。
+# 紅了只准:修抽法,或只補該站圖槽讓指紋對上文字。不准改 example 的表／
+# Decision／R／T／Diff 正文。
 #
-# 抽法(鎖死;oracle = example/contract-expiry-reminder;NFKC、去空白)。
+# 抽法(鎖死;oracle = 上列 example 清單;NFKC、去空白)。
 # 抽不到唯一解 → exit 2 NOT-PARSED。某一站抽不到 → 那站 NOT-PARSED,不准
 # 把該站從牙拿掉充綠。
 #
@@ -101,6 +103,10 @@ skip_mutation = sys.argv[3] == "1"
 
 FIX_ROOT = os.path.join(root, "scripts", "fixtures", "devstage-fig-text")
 EXAMPLE = os.path.join(root, "example", "contract-expiry-reminder")
+STAGE4_EXAMPLES = (
+    os.path.join(root, "example", "contract-expiry-reminder"),
+    os.path.join(root, "example", "subsidy-3-0-plus"),
+)
 
 STAGE_FILES = {
     2: ("2-decision.md", "2-decision.html"),
@@ -1019,6 +1025,15 @@ def check_example():
     for stage in (2, 3, 4, 5, 7):
         md_path, html_path = example_paths(stage)
         check_stage(stage, md_path, html_path, "example-%s" % stage)
+    for folder in STAGE4_EXAMPLES:
+        if folder == EXAMPLE:
+            continue
+        slug = os.path.basename(folder)
+        if not os.path.isdir(folder):
+            raise NotParsed("缺 example/%s/" % slug)
+        md_path = os.path.join(folder, "4-spec.md")
+        html_path = os.path.join(folder, "4-spec.html")
+        check_stage(4, md_path, html_path, "example-%s-4" % slug)
 
 
 def copy_tree(dst):
@@ -1034,6 +1049,16 @@ def copy_tree(dst):
             src = os.path.join(src_ex, name)
             if os.path.isfile(src):
                 shutil.copy(src, os.path.join(dest_ex, name))
+    for folder in STAGE4_EXAMPLES:
+        if folder == EXAMPLE:
+            continue
+        slug = os.path.basename(folder)
+        dest = os.path.join(dst, "example", slug)
+        os.makedirs(dest, exist_ok=True)
+        for name in ("4-spec.md", "4-spec.html"):
+            src = os.path.join(folder, name)
+            if os.path.isfile(src):
+                shutil.copy(src, os.path.join(dest, name))
 
 
 def child_rc(tree):
