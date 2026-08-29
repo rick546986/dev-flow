@@ -737,8 +737,45 @@ check(bool(policy_failures(template, mutated_docs)),
 
 # ㉕㉖:表列被手改、蓋章沒跟著走 → --verify-stamp 必須紅。今天沒這顆牙,
 # 手改全綠;這就是「會被今天手改餵綠、有牙才紅」的 destroy。
+# docs 的 destroy 針從現存 Backlog 資料列動態取 —— 寫死某一列的「一句」會在
+# merger 划掉該列後失針(2026-08-29 #73/#74 划掉「真正的單寫入者」後 main 紅)。
 import subprocess as _sp2
 import tempfile as _tf
+
+
+def _backlog_data_rows(text):
+    m = re.search(r"(?m)^## Backlog\s*$", text)
+    if not m:
+        return []
+    rest = text[m.end():]
+    nxt = re.search(r"(?m)^## ", rest)
+    body = rest if nxt is None else rest[:nxt.start()]
+    rows = []
+    for ln in body.splitlines():
+        if not ln.startswith("|"):
+            continue
+        cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+        if not cells or cells[0] == "級":
+            continue
+        if set(cells[0]) <= set("-:"):
+            continue
+        rows.append(cells)
+    return rows
+
+
+def _backlog_destroy_needle(text):
+    """現存 Backlog「一句」裡一段只出現一次的子字串。找不到就回 None(fail-closed)。"""
+    for cells in _backlog_data_rows(text):
+        if len(cells) < 2:
+            continue
+        phrase = cells[1]
+        for n in (28, 20, 12):
+            chunk = phrase[:n]
+            if len(chunk) >= 12 and text.count(chunk) == 1:
+                return chunk
+        if phrase and text.count(phrase) == 1:
+            return phrase
+    return None
 
 
 def _stamp_stale(rel, old, new, label):
@@ -764,28 +801,37 @@ def _stamp_stale(rel, old, new, label):
         os.unlink(tmp)
 
 
-_stamp_stale("docs/dev/STATUS.md",
-             "STATUS 真正的單寫入者", "STATUS 被手改的列",
-             "負向㉕:docs 手改 Backlog 列、章不動 → 紅")
+_docs_needle = _backlog_destroy_needle(docs)
+if not _docs_needle:
+    check(False, "負向㉕:docs 手改 Backlog 列、章不動 → 紅",
+          "docs/dev/STATUS.md Backlog 沒有可當 destroy 針的資料列")
+    check(False, "負向㉗:feature 檔 Backlog 列相對基準被改 → 紅",
+          "同上,沒有針就無法製造表列差")
+else:
+    _stamp_stale("docs/dev/STATUS.md",
+                 _docs_needle, _docs_needle + "（手改）",
+                 "負向㉕:docs 手改 Backlog 列、章不動 → 紅")
+
 _stamp_stale("_templates/STATUS.md",
              "[<slug>](./<slug>/)", "[<hand-edit>](./hand-edit/)",
              "負向㉖:模板手改 Active 範例列、章不動 → 紅")
 
 # ㉗:feature 檔 Backlog 相對基準被改 → --check-tables 紅
-with _tf.TemporaryDirectory() as _td:
-    _base = os.path.join(_td, "base.md")
-    _feat = os.path.join(_td, "feat.md")
-    open(_base, "w", encoding="utf-8").write(docs)
-    open(_feat, "w", encoding="utf-8").write(
-        docs.replace("STATUS 真正的單寫入者", "STATUS 分支上改", 1))
-    _ct = _sp2.run(
-        ["bash", os.path.join(ROOT, "scripts", "status-update.sh"),
-         "--check-tables", "--file", _feat, "--base-file", _base],
-        capture_output=True, text=True,
-    )
-    check(_ct.returncode != 0,
-          "負向㉗:feature 檔 Backlog 列相對基準被改 → 紅",
-          ((_ct.stdout or "") + (_ct.stderr or "")).strip())
+if _docs_needle:
+    with _tf.TemporaryDirectory() as _td:
+        _base = os.path.join(_td, "base.md")
+        _feat = os.path.join(_td, "feat.md")
+        open(_base, "w", encoding="utf-8").write(docs)
+        open(_feat, "w", encoding="utf-8").write(
+            docs.replace(_docs_needle, _docs_needle + "（分支上改）", 1))
+        _ct = _sp2.run(
+            ["bash", os.path.join(ROOT, "scripts", "status-update.sh"),
+             "--check-tables", "--file", _feat, "--base-file", _base],
+            capture_output=True, text=True,
+        )
+        check(_ct.returncode != 0,
+              "負向㉗:feature 檔 Backlog 列相對基準被改 → 紅",
+              ((_ct.stdout or "") + (_ct.stderr or "")).strip())
 
 # ⑳~㉒:W6 耐久性鏈的負向 fixture。三個 mutant 各拿掉/挪動鏈上一步,其餘原封
 # 不動 —— 對應的正是三種實際會發生的假完成:memory commit 漏掉、checkpoint 排在
