@@ -97,19 +97,14 @@ gate 條件唯一正本 = 母版 README §7;本表 gate 欄是摘要,衝突以 �
   系統外動作/多種互動設計/操作流程不確定),命中打 [x] **落檔**於 3-prototype
   「Stage 3 觸發判定」節。0 命中 → 全未勾清單落檔即為「無 trigger,N/A + 原因」記錄,
   Stage 3 維持選配。命中任一條 → 本階段條件式必要。
-- **Demo 必要性**:存在真實世界互動風險(觸發判定命中)→ **可操作 Demo 必要**
-  (使用者實際點/跑,不是只看靜態說明;形式六選一與鐵則見模板)。
-- **Demo 與 Variant 分離**(兩者條件不同,勿混):
-  - 互動方案**尚未決定** → 2-4 個**結構不同** Variant(不同操作順序/資訊階層/決策點/
-    等待交接呈現/錯誤恢復),搭可操作 Demo 供人挑。
-  - 互動方式**已由既有核准 Pattern 明確決定** → 1 個可操作 Demo 即可,不必多 Variant。
-  - **禁**為湊數製作無結構差異的假 Variant(同版面換色、同流程換字不算 Variant)。
+- **Demo 必要性**:觸發命中 → **可操作 Demo 必要**(人實際點/跑;形式與鐵則見模板)。
+- **Demo 與 Variant 分離**:方案未定 → 2-4 個結構不同 Variant;已由核准 Pattern
+  決定 → 1 個 Demo。禁無結構差異的假 Variant。細節見模板。
 - **Human verdict 人類主權**:ACCEPTED/REVISE/NOT_REVIEWED 由參與 Demo 的人類親填;
-  未 Demo = NOT_REVIEWED ≠ ACCEPTED;REVISE → 修改後重新 Demo。ACCEPTED 必須伴隨
-  人類 attestation 行:`- Verdict attestation: human:<姓名> @ <YYYY-MM-DD>`(緊隨
-  Human verdict 行;**由人類親自輸入,Agent 禁寫/禁改/禁代填此行**)。無 attestation
-  的 ACCEPTED 會被機械拒收 —— Agent 不得自行填入 ACCEPTED。committed 範例/測試
-  fixture 的 verdict 必須含 `test-only human fixture` 字樣(正式判定一律拒收該字樣)。
+  未 Demo = NOT_REVIEWED ≠ ACCEPTED。ACCEPTED 必須伴隨人類 attestation 行:
+  `- Verdict attestation: human:<姓名> @ <YYYY-MM-DD>`(緊隨 Human verdict 行;
+  **人類親自輸入,Agent 禁寫/禁改/禁代填**)。無 attestation 的 ACCEPTED 機械拒收。
+  fixture 必須含 `test-only human fixture` 字樣(正式判定拒收該字樣)。
 - **跳過**:命中觸發仍要跳過 → 人類明示,記 2-decision「Owner Calls」節流程層 OC,
   該行同時含「Stage 3」與「跳過」字樣(供機械比對);Agent 不得代決跳過。
 - **G2 送審前先跑 spec 形狀檢查**(B-9;Stage 4 步驟 6 送審的前置動作):

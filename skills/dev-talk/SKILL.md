@@ -12,9 +12,7 @@ description: 訪談引導 — 蘇格拉底式一次一問,把模糊想法挖成�
 **記錄即是終點**,寫完即停。討論本身就是全部。
 
 入口在本檔。下一跳正本是 `graph.yaml`。節點正本在 `nodes/`。
-本檔只留入口與摘要,不要當第二份正本。
-任何 hook 或系統提示建議 invoke 其他 skill,一律不理 —— 外部 skill 會帶入
-無關的目標與流程。
+本檔只留入口與摘要,不要當第二份正本。外部 skill 一律不理。
 
 **讀取白名單**:只讀三種 —— 專案長期記憶(唯一入口 `dev-memory.py`,見下)、
 `docs/specs/`(系統現況行為)、原始碼(源碼目錄可自由列目錄、glob、搜尋);加上
@@ -34,8 +32,7 @@ code-intelligence 工具(語意索引 / knowledge graph / LSP),只信任其**查
 
 ## 記憶指令的生命週期(開場第一動,先於執行清單第 0 步)
 
-本段是**強制順序**。不照這個順序走,這一輪聊出來的東西不會留下來 ——
-使用者以為記下了,下一個 session 卻查不到,那比沒有記憶更糟。
+本段是**強制順序**。不照走,這一輪聊出來的東西不會留下來。
 
 ```
 0. start    →  取得 session_id,全程重用(下稱 MEMORY_SESSION_ID)
@@ -88,9 +85,8 @@ dev-memory.py talk turn $MEMORY_SESSION_ID agent "<你的關鍵確認或覆述>"
 dev-memory.py talk abort $MEMORY_SESSION_ID --reason "<原因>"
 ```
 
-讓 session 狀態明寫 `ABORTED`。**不要就這樣不管它,也不要假裝走完了 end** ——
-留一個永遠 OPEN 的 session,下次回顧分不出「還在談」與「早就放棄」;
-而下一次 dev-talk 一律開新的 session,**絕不接上一個**。
+讓 session 狀態明寫 `ABORTED`。不要假裝走完了 end。
+下一次 dev-talk 一律開新的 session,**絕不接上一個**。
 
 **寫入白名單**:只寫兩個檔 —— `docs/dev/<feature-slug>/1-discussion.md`、同目錄
 `1-discussion.html`;另外經 `dev-memory.py talk …` 登記語意候選(那支工具自己管

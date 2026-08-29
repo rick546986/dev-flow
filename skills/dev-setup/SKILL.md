@@ -119,50 +119,32 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    **不再建 repo root `CONTEXT.md`**(v3.10.0 起):業務語言的正本改為
    `.dev-flow/knowledge/domain/`,由步 1b 建置;既有專案的 `CONTEXT.md` 由
    步 1b 的遷移處理,**不刪、不重新產生**。
-   **基準快照(此步只宣告,不落地)**:**本步只登記清單** —— 本次 install 結束前
-   要快照的東西是 `docs/dev/README.md`(已剝除版)、`_templates/*`、以及
-   `${DEVFLOW_ROOT}/docs/dev/ship-manifest.json` **每一列的 destination**
-   (含 `devflow-contract.json` 與整個 `docs/dev/tools/`)。`docs/dev/tools/`
-   按目錄整包存,不逐檔列 —— 1:1 列正本已在 ship-manifest;整包是為了
-   upgrade 能清掉上游已移除的檔。**實際落地時機在步 8,不在這裡**。
-   **原因見步 8 與 upgrade 段**(`docs/dev/tools/` 現在還沒散發完,拍早了會誤判;
-   upgrade 段的三方比對靠這份快照當「上游舊」)。
-   **改版歷史**:`mkdir -p docs/adr`(長期決策一決策一檔;編號唯一性由
-   `check-adr-integrity.sh` 驗)、`docs/dev/HISTORY.md` 不存在則從
-   `_templates/HISTORY.md` 建(只增不改的索引);再 `mkdir -p docs/dev/tools`
-   (**工具散發的 parent 目錄在此建立** —— 本步與步 6、7 的工具 cp 全落在它底下,
-   不先建目錄,本步三支工具的 cp 會直接失敗;步 6 那句 mkdir 冪等,留著無妨);
-   然後比照 gauntlet 散發寫入口
+   **基準快照(此步只宣告,不落地)**:清單 = `docs/dev/README.md`(已剝除版)、
+   `_templates/*`、以及 `${DEVFLOW_ROOT}/docs/dev/ship-manifest.json` **每一列的
+   destination**(含 `devflow-contract.json` 與整個 `docs/dev/tools/`)。
+   `docs/dev/tools/` 按目錄整包存,不逐檔列。**實際落地在步 8**(工具還沒散發完,
+   拍早了 upgrade 會誤判)。
+   `mkdir -p docs/adr`、`docs/dev/HISTORY.md` 不存在則從 `_templates/HISTORY.md`
+   建;再 `mkdir -p docs/dev/tools`(第一支工具 cp 之前);然後
    `${DEVFLOW_ROOT}/scripts/history-append.sh` → `docs/dev/tools/history-append.sh`
-   並 `chmod +x`(**該檔是 HISTORY.md 的唯一寫入口** —— 直接用 Edit/Write 改會在
-   多 session 並行時靜默覆蓋,由 `history-guard` hook 擋下)。
-   散發後**可執行驗證**(G1 教訓:舊版用「自身位置/..」推根,散發到 tools/ 後
-   預設輸出靜默巢狀到 `docs/dev/docs/dev/`):跑
-   `bash docs/dev/tools/history-append.sh --print-root` → 預期輸出 = 專案根且
-   exit 0(現版以 git toplevel 解析,與散發位置無關);不符即列 broken,不得靜默。
-   doctor 亦探測同一件事(`history-append-root`)。
-   **gate twin 產生器**:同樣比照散發 `${DEVFLOW_ROOT}/scripts/build-gate-twin.py`
-   與 `devflow_twin_ui.py` → `docs/dev/tools/`(兩支要在同一目錄,前者 import 後者)。
-   支援的 stage:`2-decision | 4-spec | 7-review | 5-tasks`(執行板)。
-   G1/G2/G3 的 html 用它產:`docs/dev/tools/build-gate-twin.py <專案根> <slug> <stage>`
-   —— 那三站的 twin 是**審查介面**不是文件視覺版(規格見母版 README §6)。
-   相依:`markdown-it-py==4.0.0`(解析層的判斷來源是它的 CommonMark token stream,
-   不是手刻正則;缺相依或版本不符 → 不吐 traceback、不靜默降級回正則,直接 exit 2
-   fail-loud)。缺相依時安裝:`pip install 'markdown-it-py==4.0.0'`。
-   散發後**可執行驗證**(比照上面 evidence gauntlet 的兩道,任一不符即列 broken,
-   不得靜默):①無參數跑 `python3 docs/dev/tools/build-gate-twin.py` → 預期訊息含
-   「用法」且 exit 2;②相依探測:
+   並 `chmod +x`(HISTORY.md 唯一寫入口;`history-guard` 擋直接 Edit/Write)。
+   散發後跑 `bash docs/dev/tools/history-append.sh --print-root` → 專案根且
+   exit 0(git toplevel,與散發位置無關);不符即 broken。doctor 項
+   `history-append-root`。
+   **gate twin**:`${DEVFLOW_ROOT}/scripts/build-gate-twin.py` 與
+   `devflow_twin_ui.py` → `docs/dev/tools/`(同目錄)。stage:
+   `2-decision | 4-spec | 7-review | 5-tasks`。
+   `docs/dev/tools/build-gate-twin.py <專案根> <slug> <stage>`。
+   相依:`markdown-it-py==4.0.0`(缺或版本不符 → exit 2,不降級)。
+   缺相依:`pip install 'markdown-it-py==4.0.0'`(不代裝)。
+   驗證:①無參數 → 含「用法」且 exit 2;②
    `python3 -c "import markdown_it, sys; sys.exit(0 if markdown_it.__version__ == '4.0.0' else 3)"`
-   → 預期 exit 0;非 0 時把上面的 pip 安裝指令完整回報給使用者(**不代裝**,裝不裝是
-   專案自己的事,但訊息要完整)。
-   **pages 食譜**:同樣比照散發 `${DEVFLOW_ROOT}/scripts/publish-pages.sh` →
-   `docs/dev/tools/publish-pages.sh` 並 `chmod 755`。這支是 GitLab／Gitea 組
-   `public/` 的正文(站審 html + `shots/` + `guides/`,保相對路徑);三邊薄殼不抄
-   正文。專案根沒有 `.gitlab-ci.yml` 才從方法包抄;沒有
-   `.gitea/workflows/pages.yml` 才抄。已有不覆蓋。GitHub 超連
-   `https://<owner>.github.io/<repo>/<path-to-html>`,不要改 source path。
-   本機:`python3 scripts/devflow_gate.py serve --root .`(不要另開伺服器)。
-   散發後**可執行驗證**:無參數或 `--help` → 用法且 exit 2。
+   → exit 0。
+   **pages**:`${DEVFLOW_ROOT}/scripts/publish-pages.sh` →
+   `docs/dev/tools/publish-pages.sh` 並 `chmod 755`。無 `.gitlab-ci.yml` /
+   `.gitea/workflows/pages.yml` 才抄,已有不覆蓋。本機
+   `python3 scripts/devflow_gate.py serve --root .`。驗證:無參數或 `--help` →
+   用法且 exit 2。
 1b. **Agent Memory 建置**(v3.10.0 起;`dev-setup` 是唯一入口,**不得新增
    `dev-flow init` 之類的第二個安裝器**)。跑:
    ```
@@ -202,9 +184,7 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
      不得一句「其餘都 OK」帶過 —— 這檔錯一條會長期誤導每個 session,值得逐條看。
      問法:用 AskUserQuestion **按 `##` 分節、每題 ≤4 條 multiSelect**(勾選 = 收錄,
      沒勾 = 砍),節與節之間停;使用者明說「這節全收/全砍」可整節裁決。
-     **僅 Claude 走 AskUserQuestion**。其他主機不要把這三個當唯一核可；
-     Cursor 另寫 `.cursor/rules/` 一行指標指到架構不變量（不要灌流程）；
-     Codex 仍只准 AGENTS.md 一行。
+     **僅 Claude 走 AskUserQuestion**。其他主機見「主機探測」。
      裁決後拿掉標記;**未經裁決的條目一律保留標記**(有標記 = 不可當事實引用),
      check 第 7 項會計數殘留並提醒回頭補裁。
    - **去重(避免雙正本)**:收割來源若是專案 `CLAUDE.md`,把該段落**改成一行指標**
@@ -395,13 +375,8 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
    OC/Owner Calls、DD/Drafting Decisions、回歸綠/既有全綠,靠小型映射表正規化)。
    **不把 gate 條件字串寫死在 script 裡**——寫死等於讓 script 自己變成第四份會漂移
    的複本,必須每次從正本動態重新抽取才驗得住漂移。exit 0 = 一致;非 0 = 有漂移
-   或抽取失敗(anchor 不見,需人工檢查)。已知限界:只做 token 級比對,不驗語序/
-   否定式,也不驗摘要多出的過期條件(§7 明文摘要=「關鍵條件一句」即正本子集,
-   反向相等檢查與制度定義矛盾,故為刻意取捨非遺漏)。
-   **VNext 錨**(共享契約 §1/§2):G2 新增 **Verification Profile**、**Demo
-   verdict**,G3 新增 **Evidence 契約全過** —— 新條文落入 §7 正本後(Phase 3),
-   動態抽取自動涵蓋,本檢查無須改碼;粗體錨的 + 串接支援 `**+ 錨**` 與 `+ **錨**`
-   兩種寫法(selftest p4_ fixture 案為證)。條文未落地前,live 檢查行為不變。
+   或抽取失敗(anchor 不見,需人工檢查)。只做 token 級比對,不驗語序/否定式。
+   G2/G3 新錨落入 §7 後動態抽取自動涵蓋。
 9. **evidence gauntlet 散發檢查**(在專案內跑時):
    `docs/dev/tools/devflow-evidence-gauntlet.sh` ①存在且可執行(缺件 = broken,
    走 install 步 6 補);②與方法論 `${DEVFLOW_ROOT}/scripts/devflow-evidence-gauntlet.sh`
@@ -442,20 +417,11 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     清單 `mode` 一致、且與 source 一致;③與 `${DEVFLOW_ROOT}/<source>` diff
     逐字無差異(有差異 = stale,走 upgrade 覆蓋 —— 專案側不得自改任何一支,
     要改改方法論)。任一不符 → broken。
-    **為什麼不掃副本目錄、也不再掃檔案地圖**:掃 `docs/dev/tools/` 當 expected
-    set,正副本同時被刪時清單會少一項而全綠(第 4 型假綠)。檔案地圖「散發面」
-    標註改由母版 `scripts/check-ship-manifest.sh` 跟正本對帳,不再當正本。
-    母版側舊版曾寫死五個 `diff -q`,新增第六支必漏驗;採用專案側也曾逐支硬列
-    而**已經真的漏了**:`history-append.sh` 有散發,第 9/11/12 項卻沒有任何一項
-    驗它(2026-08-20 現場健檢實例:健檢者手打清單只點到三支,實際散發五支)。
-    這支漏不得 —— 它是 `HISTORY.md` 的**唯一寫入口**,副本過期或掉執行位元就
-    寫不進去,而 G1 那個「靜默寫到 `docs/dev/docs/dev/`」的巢狀 bug 正是出在
-    這支裡,過期副本會把它默默帶回來。
-    行為面另驗:`bash docs/dev/tools/history-append.sh` 無參數 → 訊息含「拒絕:缺
-    `--slug`」且 exit 2;`--print-root` 印出專案根且 exit 0(doctor 拿它對帳)。
-    ⚠️ **`devflow-contract.json` 不住在 `docs/dev/tools/`,第 10 項單獨驗** ——
-    不得併進本項(併掉就沒有人在驗 contract 副本,同 `dev-release` 步 2 把那行
-    `diff -q` 單獨留著的理由)。
+    掃 `docs/dev/tools/` 當 expected set = 第 4 型假綠(正副本同刪全綠)。
+    `history-append.sh` 是 HISTORY 唯一寫入口,本項必須涵蓋。
+    行為面:`bash docs/dev/tools/history-append.sh` 無參數 → 含「拒絕:缺
+    `--slug`」且 exit 2;`--print-root` 印專案根且 exit 0。
+    **`devflow-contract.json` 不住在 `docs/dev/tools/`,第 10 項單獨驗**。
 14. **Agent Memory 健檢**(在專案內跑時):跑
     `python3 "${DEVFLOW_ROOT}/memory/dev-memory.py" doctor --path <專案根>`
     並照它的 verdict 分流(`PASS` / `WARN` / `FAIL`;exit 1 = FAIL)。它逐項回報:
@@ -469,23 +435,12 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     不是故障:依賴檔在本機改過,查詢時會要求重新確認)。
     另外跑 `dev-memory.py eval` 可用內建的小型確定性 dataset 驗檢索沒退步
     (非必跑;它不需要大型 benchmark,exit 1 = 有指標掉到門檻以下)。
-15. **主機掛整棵**(在專案內跑時):`DEVFLOW_ROOT` 仍解析得到。
+15. **主機掛整棵**(在專案內跑時):對照本檔「主機掛整棵」。`DEVFLOW_ROOT` 仍解析得到。
     `AGENTS.md` 只有一行指標 +「不要把流程規則貼進本檔」。
-    `.cursor/skills/<名>` 與 `.agents/skills/<名>` 四個 DV
-    (`dev-setup` / `dev-talk` / `dev-flow` / `dev-run`)都是整棵目錄
-    （setup／run 可只有 SKILL；`dev-flow` 必須看得到 stage2–stage7）；
-    若有 `.codex/skills/` 也指同一包。
-    只散發 docs/dev/、技能連結只有 SKILL.md → broken，不是成功。
-    Grok 不在產品 repo 自動灌；技能庫掛整棵由人做，掛 `.grok/skills/<名>`。
-16. **主機探測與 --action**(所有主機):先探測主機再選 1–3。
-    開工先跑 `scripts/check-host-adapter.sh --probe`；缺技能樹或 DEVFLOW_ROOT 不對
-    會印一句掛載句並紅。
-    非 Claude 不要把 AskUserQuestion／enabledPlugins／hooks.json 當唯一進條件。
-    三邊都沒有 Claude PreToolUse。誰開工誰先跑該站
-    `scripts/check-devtalk-graph.sh --action` 或 `scripts/check-devstageN-graph.sh --action`。
+    只散發 docs/dev/、技能連結只有 SKILL.md → broken。
+16. **主機探測與 --action**:對照本檔「主機探測」。先探測主機再選 1–3。
+    開工先跑 `scripts/check-host-adapter.sh --probe`。
     不准為了別的主機改鬆 `--action`。
-    Cursor：`.cursor/rules/` 寫架構不變量指標（不是流程）。
-    Codex：仍只准 AGENTS.md 一行。
 
 ## fix / uninstall
 

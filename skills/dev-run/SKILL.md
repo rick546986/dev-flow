@@ -63,14 +63,9 @@ Minor」「計畫已決定所以不算」→ 停手重寫。大材料(diff、報
 
 ## 事件寫入通道(四軌 obs W2/W3;sequential 與並行共用)
 
-> **Runtime 現況(誠實條件,2026-08-19 更新)**:`start <slug> --task T-n`(parallel task
-> 武裝,schema=exec-v3)與 sequential 整 feature start(legacy/VNext feature-scope,
-> schema=exec-v4)、Stage 7 review 自建武裝現在都會生 `run_id`(§7 前置修復,見
-> `notes/dispatch-agent-dispatch-layer.md` 裁決 8/9)——`run_id` 本身不再是 sequential
-> 的缺口。但本節下方的逐 T 事件寫入迴圈仍只描述 task-scoped 派工者動作;sequential
-> 是否要比照逐步寫 `agent_dispatched`/`attempt_started` 等事件是後續工作範圍,執行
-> 記錄現況仍以 6-notes 散文為準,不因 run_id 已存在就回頭幫 sequential 補寫本節
-> 未定義的事件序列。
+> **Runtime**:parallel `start <slug> --task T-n` 與 sequential / Stage 7 武裝都會生
+> `run_id`。下方逐 T 事件迴圈仍只描述 task-scoped 動作;sequential 是否逐步寫
+> `agent_dispatched`/`attempt_started` 是後續範圍,執行紀錄仍以 6-notes 為準。
 
 執行軌跡事件由**你**(派工者)經 `devflow-exec.sh event <slug>` 逐步寫入 run ledger
 (事件 JSON 走 **stdin**;命令列不鋪 `.devflow/` 路徑)—— 這是 coordinator 唯一合法
@@ -156,26 +151,13 @@ PASS 才算記憶真的離開這台機器,FAIL 就回上一步修到 PASS →
 Stage 7(送審前置派工見「Stage 7 送審前置」節)。7-review.html 須含執行記錄表
 (模型分佈/升階次數/D-n 與 allow 清單)。
 
-**W6 的順序不能換**,而且**每一步都會單獨地「看起來已經做完」**:
+**W6 順序不能換**(詳「記憶生命週期」):強制萃取 → checkpoint → memory commit →
+最終 push → remote HEAD 驗證 → `durable-check`。checkpoint 在回歸綠之後、push
+之前;`durable-check` 擋假完成,不要用「我記得我 push 過」代替。
 
-```
-強制萃取 → checkpoint → memory commit → 最終 push → remote HEAD 驗證
-                ↑              ↑              ↑            ↑
-        寫進工作樹      進到本機歷史      離開本機     真的可驗證
-```
-
-- checkpoint **在回歸綠之後**不是之前:沒過回歸的東西還不是「這個專案現在的樣子」。
-- checkpoint **在 push 之前**:反過來的話 `.dev-flow/` 的改動永遠留在工作樹裡 ——
-  `checkpoint` 回 `promoted: 3` 而 remote 上一個字都沒有,而且**不會有任何錯誤**。
-  這是這一整節存在的理由。
-- `durable-check` 是唯一能複驗上面四步的東西。它同時擋掉三種假完成:
-  durable 檔沒 commit、HEAD 沒到 upstream、有 session 還開著沒收(或還有 revision
-  沒落地)。**不要用「我記得我 push 過」代替它。**
-
-**寫事件與衍生(W5)**:回歸綠後送 `stage_completed`(stage=6)→ 跑
-`devflow-obs.sh derive` 重建 run-events.jsonl —— 6-notes 執行軌跡列與 7-review
-執行記錄由 ledger **衍生**(禁手動雙寫),`devflow-obs.sh stats` 產模型分佈/升階
-摘要供 7-review 執行記錄表 → 最後送 `run_completed`。
+**寫事件與衍生(W5)**:回歸綠後送 `stage_completed`(stage=6)→
+`devflow-obs.sh derive`(6-notes 軌跡與 7-review 執行記錄由 ledger 衍生,禁手動雙寫)
++ `stats` → `run_completed`。
 
 ## 記憶生命週期(Stage 6 做完要真的「長記憶」)
 
@@ -358,20 +340,15 @@ Out-of-system action / Waiting-timeout 與 Recovery / 不得誤導使用者事�
 
 全 T ACCEPTED → 你在 integration 樹跑回歸(全綠)→ 6-notes Self-Review → bookkeeping
 commit → 各 task worktree `devflow-exec.sh stop` + `git worktree remove`(乾淨才移,
-不 --force)→ integration branch 依 repo 慣例合回 feature branch → **強制萃取(W6-1)**
-→ `dev-memory.py checkpoint $MEMORY_SESSION_ID --end`(**W6-2**)→ **memory commit
-(W6-3)** → **發布最終成果:
+不 --force)→ integration 合回 feature branch → **強制萃取(W6-1)** →
+`dev-memory.py checkpoint $MEMORY_SESSION_ID --end`(**W6-2**)→ **memory commit**
+→ **發布最終成果:
 integration 合回 feature branch 之後、回報 Stage 7 之前,push feature branch 到
 remote,再 `git fetch` 驗證 remote tip 等於當下 feature HEAD;push 或驗證失敗就停在
-這裡,不得宣稱 Stage 6 完成**(理由同 sequential 收尾:remote ref 是補修計算的座標)
-→ **`dev-memory.py durable-check`(W6-4)** → 回報使用者進 Stage 7(送審前置派工見下節)。
-W6 一律在 integration 合回 feature branch **之後**做:記憶要跟著最終落地的那個
-branch 走,寫在 integration 樹裡再被合掉一次只會多一次漂移機會。
-7-review 執行記錄表另加:wave 數 / gate FAIL 分佈 /
-rework 與 invalidation 清單。
-**寫事件與衍生(W5,同 sequential 收尾)**:`stage_completed`(stage=6)→
-`devflow-obs.sh derive`(6-notes 執行軌跡與 7-review 執行記錄由 ledger 衍生,
-禁手動雙寫)+ `stats` 摘要 → `run_completed`。
+這裡,不得宣稱 Stage 6 完成** → `dev-memory.py durable-check`(W6-4)→
+回報使用者進 Stage 7。W6 一律在合回 **之後**做。
+7-review 執行記錄表另加:wave 數 / gate FAIL 分佈 / rework 與 invalidation 清單。
+**寫事件與衍生(W5)**:同 sequential 收尾。
 
 ## Stage 7 送審前置(G3 前;sequential 與並行皆適用)
 

@@ -23,9 +23,7 @@ dev-setup
 
 ## 為什麼
 
-Agent 跑站與驗證；人只在方向、契約、出貨三道閘拍板。
-方法包一份正本掛在機器上；每個產品專案只從 setup 拿到 `docs/dev/`。
-契約、清單、怎麼走，都在 quickstart 與 flow guide，不在這張入口。
+人握方向、契約、出貨三道閘；契約與清單在 quickstart，不在這張入口。
 
 <details>
 <summary>機械正本（檢查器抽這裡；人看 guide）</summary>
@@ -276,8 +274,7 @@ G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件�
 
 ## 8. 導覽
 
-每站清單與模型對照見 [flow](guides/guide-dev-flow.html) 與 [talk `#map`](guides/guide-dev-talk.html#map)。
-Agent Memory 見 [flow `#memory`](guides/guide-dev-flow.html#memory)。
+每站清單與模型對照見 [flow](guides/guide-dev-flow.html)。
 
 - **G1/G2/G3 審查與 verdict**:依 §7 的人類→fresh-context reviewer Agent→有記錄的
   owner 自審順序;Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。

@@ -10,10 +10,8 @@ updated:
 # 1. 討論 — <feature 標題>
 
 > 用途:發散。把「還不知道自己不知道什麼」變成一張可收斂的問題清單。**不做決定**。
-> 產生方式:由 `/dev-talk` 盲產(討論 agent 不知道後續階段;此檔是討論→後續的唯一通道)。
-> 本階段固定產出:`1-discussion.md`(本模板全節)+ `1-discussion.html`(/dev-talk 收尾
-> 即產;必含脈絡圖、OQ+假設 badge、驗收雛形表、Real-world Context 表)。
-> 不多不少,不 free-form 增刪產物。
+> 產生方式:由 `/dev-talk` 盲產。本階段固定產出:`1-discussion.md` +
+> `1-discussion.html`。不多不少。
 > 掃頁六件仍走 `scripts/build-scan-html.py`(S10,html-shell)。審頁另一支:
 > `scripts/build-stage1-html.py`(--action 授權;吐 `.sum#scan-sum`／`#scan-now`
 > 直式三框 viewBox 200×420／`.now-wrap` 置中／`#scan-people`;現況圖吃無標籤
