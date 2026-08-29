@@ -291,3 +291,8 @@
 - 為什麼:--refresh-stamp 原本不查 branch、不查表列,手改一列再補章,verify-stamp 與 check-status-policy 全綠。後面若把 parallel canonical ref 寫進 STATUS,這扇門會把假座標蓋成合法章。
 - 落在哪:scripts/status-update.sh scripts/test-status-update.sh scripts/check-status-policy.sh guides/guide-dev-flow.html
 
+## 2026-08-29 · overlap-ref · v3.20.1
+- 做了什麼:定義「直接補修」檔案重疊用的單一座標 OverlapRef:sequential 就是 Branch;parallel 合回並 push 前是已發布的 integration/<slug> tip,之後變成 Branch。status-update.sh --print-overlap-ref 印出這一個;解不出來 fail-closed,不猜 Lane、不拼第二個 ref。未升版、未進 ship-manifest、未划 Backlog。
+- 為什麼:C-2 把 parallel 一律 fail-closed,是因為當時沒有一個 STATUS/runtime 可提供的 canonical integration ref。沒有這一個座標,算法就會自己在 feature tip 與 integration tip 之間猜,或把 Lane 當 mode。
+- 落在哪:scripts/status-update.sh scripts/test-status-update.sh scripts/check-status-policy.sh scripts/test-architecture-guards.sh _templates/STATUS.md README.md guides/guide-quickstart.html guides/guide-dev-flow.html docs/dev/HISTORY.md
+
