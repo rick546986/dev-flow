@@ -79,15 +79,20 @@ def resolve_printer_python(root):
 
     hook 仍走 devflow-python-lib(系統 python3 優先)。這裡管的是
     markdown-it-py==4.0.0 要的 3.12+,不准默默用掉 macOS 3.9。
+    回傳 (exe, ver, kind),kind ∈ env|venv|system。
     """
-    candidates = []
     env = os.environ.get("DEVFLOW_PYTHON", "").strip()
     if env:
-        candidates.append(env)
-    candidates.extend((
-        os.path.join(root, ".venv", "bin", "python"),
-        os.path.join(root, ".venv", "bin", "python3"),
-    ))
+        ver = _python_version(env)
+        if ver:
+            return env, ver, "env"
+    for rel in (".venv/bin/python", ".venv/bin/python3"):
+        cand = os.path.join(root, rel)
+        if os.path.isfile(cand) and os.access(cand, os.X_OK):
+            ver = _python_version(cand)
+            if ver:
+                return cand, ver, "venv"
+    candidates = []
     if os.path.isfile("/usr/bin/python3"):
         candidates.append("/usr/bin/python3")
     which = shutil.which("python3")
@@ -101,8 +106,8 @@ def resolve_printer_python(root):
         if os.path.isfile(cand) and os.access(cand, os.X_OK):
             ver = _python_version(cand)
             if ver:
-                return cand, ver
-    return None, None
+                return cand, ver, "system"
+    return None, None, None
 
 
 def _mdit_version(exe):
@@ -343,7 +348,9 @@ def run_doctor(root, contract_path="", gate_cmd=""):
 
     # 6d. 產圖／gate-twin 直譯器:markdown-it-py==4.0.0 要 Python 3.12+。
     # macOS /usr/bin/python3 常是 3.9,pip 會靜默停在 3.x。不准叫人覆寫系統 Python。
-    exe, ver = resolve_printer_python(root)
+    # 系統 leftover mdit 3.x 不擋握手(CI runner／selftest 常見);venv／DEVFLOW_PYTHON
+    # 帶 3.x 才 fail-closed。
+    exe, ver, kind = resolve_printer_python(root)
     if not exe:
         check(False, "printer-python",
               "找不到產圖／gate-twin 直譯器。建專案 venv 或設 DEVFLOW_PYTHON"
@@ -356,11 +363,20 @@ def run_doctor(root, contract_path="", gate_cmd=""):
               "不要覆寫 Apple／系統 Python。")
     else:
         mdit = _mdit_version(exe)
-        if mdit and not mdit.startswith("4."):
+        if mdit and not mdit.startswith("4.") and kind in ("env", "venv"):
             check(False, "printer-python",
                   f"{exe} 已是 Python {ver[0]}.{ver[1]},但 markdown-it-py 是 "
                   f"{mdit}(要 4.0.0)。不要靜默留 3.x;在這個 venv 重裝 "
                   f"`pip install 'markdown-it-py==4.0.0'`。")
+        elif mdit and not mdit.startswith("4."):
+            info("printer-python",
+                 f"系統 {exe} 有 leftover markdown-it-py {mdit};"
+                 "產圖請用專案 venv 或 DEVFLOW_PYTHON 裝 4.0.0,"
+                 "不要覆寫系統套件。")
+            check(True, "printer-python",
+                  f"{exe} Python {ver[0]}.{ver[1]} ≥ "
+                  f"{PRINTER_PY_FLOOR[0]}.{PRINTER_PY_FLOOR[1]}"
+                  f"(系統 leftover mdit {mdit} 不擋握手)")
         else:
             extra = (f",markdown-it-py {mdit}" if mdit
                      else ",markdown-it-py 未裝(gate-twin 會自己 exit 2)")
