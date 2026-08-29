@@ -276,3 +276,8 @@
 - 為什麼:engine-fence-masking 第 7 站觀察到 Edit 當場擋、Bash 先寫再 postbash 示警;STATUS Backlog C 列的就是這落差
 - 落在哪:hooks/devflow-lib.py hooks/_guard_impl.py hooks/_prebash_impl.py hooks/selftest.sh scripts/check-write-scope.sh scripts/test-write-scope.sh scripts/devflow-check.sh scripts/check-file-map.sh scripts/test-architecture-guards.sh guides/guide-dev-flow.html
 
+## 2026-08-29 · verbosity-trim
+- 做了什麼:方法包技能、模板頂註、guides／README 收掉重複贅字；契約句與守衛釘句不動
+- 為什麼:同一件事講三遍，讀的人要掃很長才碰到要做的
+- 落在哪:skills/dev-setup/SKILL.md skills/dev-run/SKILL.md skills/dev-talk/SKILL.md skills/dev-flow/SKILL.md _templates/ README.md guides/guide-dev-flow.html
+

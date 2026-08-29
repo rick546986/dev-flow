@@ -1960,16 +1960,10 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             <code>.codex/skills/</code>，兩處都指同一包，或先探測再掛。</td></tr>
   </table></div>
   <p>採用專案的 <code>AGENTS.md</code> 只准這一行指標（dev-setup 寫入；已有就只補這一行，不准灌流程）：
-  「這專案用 DevFlow。技能在方法包 skills/。開工讀該技能 SKILL.md，下一跳看 graph.yaml。不要把流程規則貼進本檔。」</p>
-  <p>dev-setup 跑完之後，被採用的產品 repo 必須：有上面那行 <code>AGENTS.md</code>；
-  Cursor 的 <code>.cursor/skills/&lt;名&gt;</code> 與 Codex 的
-  <code>.agents/skills/&lt;名&gt;</code> 指向 <code>$DEVFLOW_ROOT/skills/&lt;名&gt;</code>
-  （整棵目錄；<code>dev-flow</code> 要看得到 stage2–stage7）。探測到
-  <code>.codex/skills/</code> 也指同一包。Grok 技能庫掛整棵，不要假裝能從產品 repo
-  自動灌進。節點找的乘客清單是相對 <code>DEVFLOW_ROOT</code> 的
-  <code>_templates/&lt;檔&gt;</code>；<code>docs/dev/_templates/</code> 是散發副本。
+  「這專案用 DevFlow。技能在方法包 skills/。開工讀該技能 SKILL.md，下一跳看 graph.yaml。不要把流程規則貼進本檔。」
+  掛整棵與乘客清單正本見上表與 <code>skills/dev-setup/SKILL.md</code>。
   <code>DEVFLOW_ROOT</code> 解析失敗 → setup 大聲停，不准只散發 <code>docs/dev/</code>
-  就當成功。不要把節點 MD 複製進採用專案。</p>
+  就當成功。不要把節點 MD 複製進採用專案。不要假裝能從產品 repo 自動灌進 Grok。</p>
   <p>路由器／派工：<code>dev-run</code> → 讀
   <code>skills/dev-run/SKILL.md</code>；reviewer → 讀
   <code>agents/devflow-reviewer.md</code>。舊字串當 Claude 別名，不要當唯一入口。
