@@ -111,7 +111,7 @@ if scanned == 0:
 # 新增/刪除必列檔時同步改這個常數(並同步補/刪檔案地圖節對應列),還要同步改
 # test-architecture-guards.sh 的靜態互釘清單那一行 —— 只改這裡不改那裡,砍檢查數
 # 會在那裡現形;只改那裡不改這裡,這裡的數字跟實得數脫鉤,防線形同虛設。
-EXPECTED_MAPPED_FILES = 182
+EXPECTED_MAPPED_FILES = 184
 if scanned != EXPECTED_MAPPED_FILES:
     direction = ("多了 —— 若為真實新增,請同步上修本常數並補檔案地圖對應列"
                  if scanned > EXPECTED_MAPPED_FILES

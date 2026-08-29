@@ -2047,7 +2047,11 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
 
   <h2 id="filemap">附錄:檔案地圖(每支腳本在做什麼)</h2>
   <p class="lead">這張表由 <code>scripts/check-file-map.sh</code> 雙向盤點守衛顧著:新增一支腳本沒登記進來、
-  或表裡寫了一個不存在的檔名,守衛都會紅——手寫表必腐化,靠人記得同步不可靠。各檔實際掛在生命週期哪一格,
+  或表裡寫了一個不存在的檔名,守衛都會紅——手寫表必腐化,靠人記得同步不可靠。
+  標了「散發面:<code>docs/dev/tools/</code>」的列必須與
+  <code>docs/dev/ship-manifest.json</code> 的 tools 列同一集合
+  (正本是那份清單,本表不是;對帳牙 <code>check-ship-manifest.sh</code>)。
+  各檔實際掛在生命週期哪一格,
   對照 <a href="#guard">⑥ 執行守衛</a>。下面五張表(hooks/scripts/observability/memory/tests)每列都補了一欄
   「生命週期格」;以下先給一張迷你索引,反過來查「某一格上掛了哪些檔」。</p>
 
@@ -2198,6 +2202,18 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td>檢查安裝器自己的升級說明有沒有把三方比對、備份快照、逐檔徵求同意這幾條紀律講清楚,防升級流程
             改弱到悄悄蓋掉使用者本地客製。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-ship-manifest.sh</code></td>
+        <td>散發清單正本的牙齒:<code>docs/dev/ship-manifest.json</code> 缺欄／重複
+            destination／非法 mode 必紅;parity 的 expected set 取自這份正本
+            (不掃 <code>docs/dev/tools/</code>,正副本同刪也會紅);檔案地圖
+            「散發面」標註必須與正本 tools 列同一集合。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>devflow_ship_manifest.py</code></td>
+        <td>散發清單正本的讀取／校驗庫。install／check／baseline／upgrade／
+            dev-release／parity／檔案地圖對帳都讀
+            <code>docs/dev/ship-manifest.json</code> 這一份。</td>
+        <td>被 <code>check-ship-manifest.sh</code> import;診斷可用
+            <code>--list</code>／<code>--validate</code></td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-py-floor.sh</code></td>
         <td>拿一個舊版本的 Python 去讀一遍所有會在別人機器上跑的程式檔,讀不進去就判失敗。
             起因是有一支會發給採用專案的產生器用了新版才允許的寫法,在 Mac 內建的那個版本
@@ -2314,8 +2330,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             <code>check-integration-regression-guard.sh</code> 對它跑情境與 mutant</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>check-integration-regression-guard.sh</code></td>
         <td>整合回歸工具的母版自檢:拋棄式 repo 建八個情境打正式工具驗行為、五個 mutant 驗抓得到、
-            釘模板順序(先跑工具才輪得到合併與全套測試)、對帳正本與散發副本(expected set 取自
-            本表「散發面」標註,雙向+可執行位元,正副本同刪也會紅)。</td>
+            釘模板順序(先跑工具才輪得到合併與全套測試)。正本／散發副本 parity 已遷到
+            <code>check-ship-manifest.sh</code>(expected set 取自
+            <code>docs/dev/ship-manifest.json</code>,不掃本表、也不掃副本目錄)。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-status-policy.sh</code></td>
         <td>STATUS 規則對帳:模板頂註的規則要點(只在整合分支維護/merger 在合併後移出 Active)

@@ -379,15 +379,16 @@ if start < 0 or end < 0 or end <= start:
 body = text[start:end]
 # 只看會執行的行,註解裡寫「py-floor 之前」不能算已換序
 code = "\n".join(ln.split("#", 1)[0] for ln in body.splitlines())
-i_parity = code.find("scripts/check-integration-regression-guard.sh")
+i_parity = code.find("scripts/check-ship-manifest.sh")
+i_ir = code.find("scripts/check-integration-regression-guard.sh")
 i_floor = code.find("scripts/check-py-floor.sh")
-if i_parity < 0 or i_floor < 0:
-    print("group_architecture 缺 parity 或 py-floor 的 run 行")
+if i_parity < 0 or i_ir < 0 or i_floor < 0:
+    print("group_architecture 缺 ship-manifest / IR / py-floor 的 run 行")
     raise SystemExit(1)
-if i_parity > i_floor:
-    print(f"舊序:py-floor@{i_floor} 在 parity@{i_parity} 之前")
+if i_parity > i_floor or i_ir > i_floor:
+    print(f"舊序:py-floor@{i_floor} 在 ship-manifest@{i_parity} 或 IR@{i_ir} 之前")
     raise SystemExit(1)
-print("parity 在 py-floor 之前")
+print("parity(ship-manifest) 在 py-floor 之前")
 PY
 then
   echo "  ✅ group_architecture:parity 在 py-floor 之前"

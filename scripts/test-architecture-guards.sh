@@ -2294,11 +2294,12 @@ check_static_pin_sub() { # check_static_pin_sub <相對路徑> <期望子字串>
 }
 check_static_pin "hooks/selftest.sh" "MIN_CASES=402" "MIN_CASES 釘死 402(2026-08-17 清空輪 378 之後,2026-08-19 §7 前置修復:s7 legacy sequential 真跑 start 驗證+6/s7b VNext feature-scope 同型驗證+2/s7c Stage 7 review 自建武裝同型驗證+3 → 389,同日 §7-3b 探針 pst 真實 subagent_type payload 形狀釘住+3 → 392,2026-08-20 issue #7 路徑分隔符 w1 組+6 → 398,同日派工單 §2.1 TMPDIR 跨平台正規化 w2 組+2 → 400,同日 report-guard 覆蓋缺口+2 → 402)"
 check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "EXPECTED_CHECKS 釘死 131"
-check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 26" "MIN_CHECKS 釘死 26(A-2/B-5 輪 → 18;2026-08-28 ⑪殘件 +5 → 23;⑫Python 地板 +2 → 25;HISTORY 種子不准自動清 +1 → 26)"
+check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 27" "MIN_CHECKS 釘死 27(A-2/B-5 輪 → 18;2026-08-28 ⑪殘件 +5 → 23;⑫Python 地板 +2 → 25;HISTORY 種子不准自動清 +1 → 26;ship-manifest ⑩ +1 → 27)"
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 179" "MIN_CHECKS 釘死 179(Human verdict 寫入器納入 n7-dist-copy +1 後的實得數)"
-check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 41" "MIN_CHECKS 釘死 41(反證輪 E-1:再加 M-f~M-h 五個(mutant,子案)配對後的實得數)"
+check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 36" "MIN_CHECKS 釘死 36(parity 遷到 check-ship-manifest.sh 後,情境/mutant/模板順序實得數)"
+check_static_pin "scripts/check-ship-manifest.sh" "MIN_CHECKS = 15" "MIN_CHECKS 釘死 15(結構+parity+地圖對帳+負向 fixture 的實得數)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 35" "MIN_CHECKS 釘死 35(durability-barrier 輪:W6 耐久性鏈的負向⑳㉑㉒ 三案後的實得數)"
-check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 182" "EXPECTED_MAPPED_FILES 釘死 182(精確值;2026-08-28 再加 test-history-seed-cleanup.sh,疊在殘件腳本 181 之上)"
+check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 184" "EXPECTED_MAPPED_FILES 釘死 184(精確值;ship-manifest 正本庫+牙齒 +2,疊在 182 之上)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 28" "EXPECTED_GROUPS 釘死 28(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的
@@ -2430,6 +2431,7 @@ PYFLOOR
   fi
 }
 check_floor_block "scripts/check-integration-regression-guard.sh" "CHECKS" "FAILED" "aug"
+check_floor_block "scripts/check-ship-manifest.sh" "CHECKS" "FAILED" "aug"
 check_floor_block "scripts/check-status-policy.sh" "CHECKS" "FAILED" "aug"
 check_floor_block "scripts/check-dev-setup-discipline.sh" "checks" "fails" "append"
 

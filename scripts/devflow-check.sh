@@ -177,6 +177,7 @@ group_architecture() {
   # exit 2 —— 1930 散發副本漂移就是這樣本機看不見的。
   # 2130-P1:直譯器缺席(exit 2)該項記紅、組內繼續;語法超下限(exit 1)仍
   # fail-fast。不把 py-floor 改 WARN(門檻不降)。
+  run "architecture/check-ship-manifest" scripts/check-ship-manifest.sh || return 1
   run "architecture/check-integration-regression-guard" scripts/check-integration-regression-guard.sh || return 1
   # 最低 Python 版本相容(2026-08-19 採用現場踩到):會在採用專案直譯器上跑的 .py
   # 不得用到比宣告下限更新的語法。build-gate-twin.py 曾在 f-string 表達式寫反斜線,
