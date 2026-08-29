@@ -516,6 +516,15 @@ for _st in ("2-decision", "4-spec", "7-review"):
     check(_actual_ids == _expect_ids,
           f"{_st}:置頂節 id 精確集合與釘死清單一致(PINNED_PAT 誤吞/桶位擴大都要現形)",
           f"多 {sorted(_actual_ids - _expect_ids)} / 少 {sorted(_expect_ids - _actual_ids)}")
+    if _st == "4-spec" and _html_pin is not None:
+        _beh_sec = re.search(
+            r'<section class="pinned" id="sec-行為流程圖-R-級".*?</section>',
+            _html_pin, re.S)
+        _beh_html = _beh_sec.group(0) if _beh_sec else ""
+        check(bool(_beh_sec) and "<svg" in _beh_html and "<pre>" not in _beh_html
+              and "viewBox" in _beh_html and "mermaid" not in _beh_html,
+              "4-spec:行為流程圖置頂且是直式 SVG、不是 pre(不只釘 id)",
+              "缺節" if not _beh_sec else "缺 svg／仍是 pre／出現 mermaid")
 
 print("-- T2 負向:缺必填欄要在卡上紅底現形 --")
 CURRENT_GROUP = "t2-missing-required"

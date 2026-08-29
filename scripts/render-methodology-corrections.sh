@@ -161,7 +161,6 @@ def strip_frontmatter(source):
 
 shell = read("_templates/html-shell.html")
 for rel in (
-    "example/contract-expiry-reminder/4-spec.md",
     "example/contract-expiry-reminder/5-tasks.md",
     "example/contract-expiry-reminder/6-implementation-notes.md",
     "example/contract-expiry-reminder/7-review.md",

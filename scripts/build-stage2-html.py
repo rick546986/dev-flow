@@ -34,6 +34,7 @@ H2_RE = re.compile(r"^##[ \t]+(.+?)\s*$", re.M)
 H3_RE = re.compile(r"^###[ \t]+(.+?)\s*$", re.M)
 H4_RE = re.compile(r"^####[ \t]+(.+?)\s*$", re.M)
 LIST_RE = re.compile(r"^[-*]\s+(.+)$", re.M)
+FIG_HEAD = re.compile(r"^\[([^\]]+)\]\s*(.*)$")
 
 CANVAS_W = 280
 BOX_W = 200
@@ -242,20 +243,35 @@ def parse_cards(blob):
 
 
 def parse_steps(fig_body, decision):
+    """認 `[A] 標題(選定)` 當一框,框上保留標籤與「選定」,給 fig-text 對文字。"""
     steps = []
-    for item in LIST_RE.findall(fig_body or ""):
-        steps.append(item.strip())
+    current = None
+
+    def flush():
+        if current:
+            steps.append(current)
+
+    for raw in (fig_body or "").splitlines():
+        stripped = raw.strip()
+        if not stripped or stripped.startswith("```"):
+            continue
+        if stripped.startswith("|") or stripped.startswith("<"):
+            continue
+        match = FIG_HEAD.match(stripped)
+        if match:
+            flush()
+            label = match.group(1).strip()
+            rest = match.group(2).strip()
+            current = ("[%s] %s" % (label, rest)).strip() if rest else "[%s]" % label
+        elif current is None:
+            current = stripped
+    flush()
     if not steps:
-        for raw in (fig_body or "").splitlines():
-            line = raw.strip()
-            if not line or line.startswith("#") or line.startswith("```"):
-                continue
-            if line.startswith("|") or line.startswith("<"):
-                continue
-            steps.append(re.sub(r"^\[.?\]\s*", "", line))
+        for item in LIST_RE.findall(fig_body or ""):
+            steps.append(item.strip())
     if not steps and decision:
         steps = [decision.strip().split("。")[0][:24] or "選定"]
-    return steps[:6]
+    return steps[:8]
 
 
 def render_vbox(steps):
@@ -268,8 +284,9 @@ def render_vbox(steps):
         % (CANVAS_W, height),
     ]
     y = TOP
+    hl_idx = next((i for i, title in enumerate(steps) if "選定" in title), 0)
     for i, title in enumerate(steps):
-        kind = "hl" if i == 0 else "b"
+        kind = "hl" if i == hl_idx else "b"
         parts.append(
             '  <rect class="%s" x="%d" y="%d" width="%d" height="%d" rx="8"/>'
             % (kind, BOX_X, y, BOX_W, box_h)
@@ -381,10 +398,13 @@ def build_html(text):
   <div class="r-head"><span class="r-name">Decision</span></div>
   <div class="r-body">
     <p>%s</p>
-    <div class="figwrap">
-%s
-    </div>
   </div>
+</section>
+<section class="r-block" id="fig">
+  <div class="r-head"><h2 class="r-name">方案架構圖</h2></div>
+  <div class="r-body"><div class="figwrap">
+%s
+  </div></div>
 </section>
 %s
 %s

@@ -285,6 +285,12 @@ if os.path.isfile(builder):
     )
     old_ok, _ = judge_html(old_fake, "舊主產檔器假輸出")
     check(not old_ok, "牙咬:勾選提示／你要審什麼／橫 ASCII 必須紅")
+    ex2 = read("example/contract-expiry-reminder/2-decision.html")
+    check(bool(ex2) and "html 外殼" not in ex2
+          and "<svg" in (ex2 or "") and not re.search(r"<pre[^>]*>", ex2 or "")
+          and "方案架構圖" in (ex2 or "")
+          and "build-stage2-html.py" in (ex2 or ""),
+          "example 2-decision.html 是產器直式 SVG,不是 html-shell／橫 ASCII")
 else:
     check(False, "產檔器存在且可跑 " + BUILDER)
 
