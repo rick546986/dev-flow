@@ -14,8 +14,8 @@
 # 主咬:該站「表或標題抽出的流程指紋」vs「md 圖節(第 5 站改咬 html #dag)」。
 # 副咬:md 圖與 html 同節指紋。2／4／7 的 gate twin 把 md 圖 dump 進 details,
 # 重產後恆同,不准把 md-vs-html 當主牙。3 的 html 不是 gate-twin
-# (STAGES 不含 3-prototype)。example 的 html 是 html-shell、零 id,不准拿它當
-# 「沒 id」去改產生器。
+# (STAGES 不含 3-prototype)。example 2／4 的 html 是審頁產器 twin(直式 SVG),
+# 仍用標題抽圖,不准拿 id 去改產生器。
 #
 # html 怎麼找圖:咬標題含「方案架構圖／結構圖／行為流程圖／變更架構圖」,
 # 不要寫死 sec-…(anchor_id() 跟標題走,加括號就變)。產生器現況僅供對帳:
@@ -66,7 +66,8 @@
 # exit:0 = 全過 / 1 = 真漂移 / 2 = NOT-PARSED
 #
 # 不改 check-devtalk-fig-graph.sh / check-devtalk-fig-journey.sh /
-# check-guides-fig-sync.sh / check-gate-twin.sh / build-gate-twin.py。
+# check-guides-fig-sync.sh。gate-twin 2／4 站圖改直式 SVG 時,本檔與
+# check-gate-twin.sh 必須一起改(舊契約「圖 dump 進 pre」已廢)。
 
 set -uo pipefail
 

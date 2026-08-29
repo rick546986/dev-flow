@@ -1,142 +1,108 @@
-<!-- html 外殼:把 md 轉出的 HTML 塞進 <main>,2. 收斂 — 到期提醒的實現方式 換成頁題。
-     自足單檔、無外部資源、深淺色自適應。 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>2. 收斂 — 到期提醒的實現方式</title>
+<title>contract-expiry-reminder · 2-decision</title>
 <style>
-  :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
-        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;}
-  @media(prefers-color-scheme:dark){
-    :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
-          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;}
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);
-       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
-  main{max-width:900px;margin:0 auto;padding:32px 20px 80px}
-  h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
-  h2{font-size:1.15rem;margin-top:2em}
-  .tablewrap{overflow-x:auto}
-  table{border-collapse:collapse;width:100%;margin:1em 0}
-  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
-  th{background:var(--card)}
-  .meta{color:var(--muted);font-size:.85rem;margin-bottom:1.2em}
-  .badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.8rem;font-weight:600}
-  .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
-  .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
-  .pin{border:1.5px dashed var(--warn);border-radius:8px;padding:10px 14px;margin:1em 0;
-       background:color-mix(in srgb,var(--warn) 7%,transparent)}
-  pre{background:var(--card);border:1px solid var(--line);border-radius:8px;
-      padding:10px;overflow-x:auto;font-size:.85em;line-height:1.5}
-  ul{padding-left:1.4em}
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+a.cell{text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px}
+.group{margin:0 0 16px}
+.group h3{margin:0 0 8px;font-size:.95rem}
+.card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 8px;background:var(--sunk)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+details.bg{margin:10px 0 0}
+details.bg>summary{cursor:pointer;color:var(--ink-2)}
+table.judge{width:100%;border-collapse:collapse;font-size:.86rem;margin:0}
+table.judge th,table.judge td{border:1px solid var(--rule);padding:6px 8px;
+  text-align:left;vertical-align:top}
+table.judge th{background:var(--sunk);font-weight:650}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
 </style>
 </head>
 <body>
-<main>
-  <h1>2. 收斂 — 到期提醒的實現方式</h1>
-  <p class="meta">feature: contract-expiry-reminder · owner: &lt;owner&gt; · G1 核准:&lt;reviewer-a&gt; ·
-     <span class="badge ok">Decision: A 登入即時查</span></p>
-
-  <div class="pin"><strong>⚠️ 待裁決:0</strong> —— 審中此區置頂未裁決的 OC 供 approver
-    優先處理;本輪 OC-1~4 已全裁決(OC-4 <span class="badge bad">✗</span> 被推翻,
-    處理見 Owner Calls 表),裁決後此區歸零。</div>
-
-  <h2>Approaches(分歧區)</h2>
-  <div class="tablewrap"><table>
-    <tr><th></th><th>A 登入即時查 ✅</th><th>B nightly cron</th><th>C MQ 事件</th></tr>
-    <tr><td>新 infra</td><td>零</td><td>cron + 通知表</td><td>MQ(違反約束)</td></tr>
-    <tr><td>成本</td><td>0.5 週</td><td>1.5 週</td><td>3 週+</td></tr>
-    <tr><td>可擴充</td><td>service 抽象保留 B 路</td><td>可加 email</td><td>最強但 overkill</td></tr>
-    <tr><td>依據</td><td><code>1-discussion.md:18</code> 已有空白卡片區;<code>:116</code> 最低成本呈現面。成本 <code>[Assumption]</code></td>
-        <td><code>1-discussion.md:68</code> email 之後再議;<code>:116</code> 現況無排程機制。成本 <code>[Assumption]</code></td>
-        <td><code>1-discussion.md:80</code> Constraints 明列不引入新 infra。成本 <code>[Assumption]</code></td></tr>
-  </table></div>
-
-  <h2>方案架構圖(比較期並排;A 選定)</h2>
-  <pre>
-[A] 登入即時查(選定)
-  業務登入 → Dashboard 載入 → GET /contracts/expiring?days=30
-               │                    └→ service.ListExpiring(抽象層,未來 cron 可複用)
-               │                         └→ repo 查 idx_contracts_end_date(8k 筆,p95<50ms)
-               └→ 卡片渲染(到期列表 / 空狀態)
-
-[B] nightly cron + 通知表
-  cron(nightly) → scan contracts.end_date
-    → write notifications 表(新表)
-  Dashboard 載入 → 讀 notifications 表(可擴充 email)
-
-[C] MQ 事件驅動
-  合約異動 → publish event → MQ(新 infra,違反 constraint)
-    → consumer 判斷到期 → 通知
-  </pre>
-
-  <h2>Owner Calls(自判裁決區)</h2>
-  <div class="tablewrap"><table>
-    <tr><th>OC</th><th>決定了什麼</th><th>依據(<code>檔:行</code> 或 <code>[Assumption]</code>)</th><th>若被推翻會怎樣</th><th>狀態</th></tr>
-    <tr><td>OC-1</td><td>排除已續約合約(使用者只被問到「30 天內到期」,排除是 owner 延伸)</td>
-        <td><code>1-discussion.md:84</code> AC-1 原文只寫「未續約」;「已續約提醒是雜訊」為 <code>[Assumption]</code></td>
-        <td>Success Criteria「未續約」字眼與 4-spec 過濾條件都要改</td>
-        <td><span class="badge ok">✅</span></td></tr>
-    <tr><td>OC-2</td><td>只列 end_date 非空者(對「快到期要看得到」的收窄;無 end_date 無從計算到期)</td>
-        <td><code>1-discussion.md:75</code> Q3 已定案只做站內;無期限合約語意全篇未出現 = <code>[Assumption]</code></td>
-        <td>需先定義無期限合約的到期語意,Scope 擴大</td>
-        <td><span class="badge ok">✅</span></td></tr>
-    <tr><td>OC-3</td><td>零筆到期仍顯示空狀態卡片,不隱藏整卡</td>
-        <td><code>[Assumption]</code> —— 使用者未被問過空狀態,依一般 UI 慣例延伸</td>
-        <td>前端渲染邏輯與 prototype variant 題目跟著變</td>
-        <td><span class="badge ok">✅</span></td></tr>
-    <tr><td>OC-4</td><td>卡片只顯示最靠近到期 10 筆,其餘收進「查看全部」</td>
-        <td><code>[Assumption]</code> —— 「10 筆」無來源,未量測過單一業務名下到期筆數分布</td>
-        <td>到期 &gt;10 筆時 UI 行為改變,prototype variant 題目跟著變</td>
-        <td><span class="badge bad">✗</span> &lt;reviewer-a&gt;:截斷會漏看 → 改全數顯示+滾動(列保留 = 審計軌跡)</td></tr>
-  </table></div>
-  <p class="meta">下層(告知即可):<code>days</code> 參數預設 30(參數化只為測試方便)、複用 idx_contracts_end_date 不另建索引。</p>
-
-  <h2>Rejected</h2>
-  <ul>
-    <li>B:email 本期不做,通知表無消費者 = 浪費。</li>
-    <li>C:8k 筆量級用 MQ 過重,且違反「不引入新 infra」。</li>
-  </ul>
-
-  <h2>Rationale</h2>
-  <p>量級小(8k 筆,索引查詢 &lt;50ms)、需求只到「看得到」,即時查是最短路徑;
-     service 抽象保住升級路。</p>
-
-  <h2>Risks &amp; Mitigations</h2>
-  <ul>
-    <li>查詢慢拖累 dashboard → prototype 前先 EXPLAIN 驗證;超過 100ms 就加覆蓋索引。</li>
-    <li>UI 形式不確定(badge? 卡片?)→ 交給 3-prototype 用 variants 挑。</li>
-  </ul>
-
-  <h2>Success Criteria</h2>
-  <ul>
-    <li>30 天內到期未續約合約,dashboard 100% 可見。</li>
-    <li>dashboard p95 延遲增加 < 100ms。</li>
-  </ul>
-
-  <h2>Scope &amp; Non-Goals(定稿)</h2>
-  <ul>
-    <li>In:dashboard 卡片、API、詳情連結。</li>
-    <li>Out:email/LINE、自訂天數、主管彙總報表。</li>
-  </ul>
-
-  <h2>ADR 晉升檢查</h2>
-  <ul>
-    <li>難逆轉:否(service 抽象保住退路)</li>
-    <li>反直覺:否</li>
-    <li>真 trade-off:是</li>
-  </ul>
-  <p>→ 晉升:<strong>否</strong>(留在本檔即可)</p>
-
-  <h2>確認紀錄</h2>
-  <ul>
-    <li>決策點清單確認 | 2026-07-23</li>
-    <li>Owner Calls 全裁決(OC-1~3 ✅、OC-4 ✗ 改全數顯示+滾動,&lt;reviewer-a&gt;)| 2026-07-23</li>
-    <li>prototype 回寫(UI 形式定案為 B dashboard 卡片,見 3-prototype Verdict) | 2026-07-23</li>
-  </ul>
-</main>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 2-decision · 審查介面</p>
+  <h1>contract-expiry-reminder</h1>
+  <p class="sub">正本是 md。這頁是審頁分組卡,不是 gate-twin 勾選卡。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">approved</span></div><div class="cell"><span class="k">分組</span><span class="v">1</span></div><div class="cell"><span class="k">方案</span><span class="v">3</span></div></div>
+</header>
+<section class="r-block" id="decision">
+  <div class="r-head"><span class="r-name">Decision</span></div>
+  <div class="r-body">
+    <p>採 **A(登入即時查)**,API 設計預留 B 的擴充空間(查詢邏輯抽成 service,未來 cron 可直接複用)。</p>
+  </div>
+</section>
+<section class="r-block" id="fig">
+  <div class="r-head"><h2 class="r-name">方案架構圖</h2></div>
+  <div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 226" role="img" aria-label="選定方案步驟">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">[A] 登入即時查(選定)</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">[B] nightly cron + 通知表</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="b" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">[C] MQ 事件驅動</text>
+</svg>
+  </div></div>
+</section>
+<section class="r-block" id="basis"><div class="r-head"><span class="r-name">方案依據</span></div><div class="r-body"><table class="judge"><tr><th></th><th>A 登入即時查</th><th>B nightly cron + 通知表</th><th>C MQ 事件驅動</th></tr><tr><td>依據</td><td>`1-discussion.md:18` 現有 dashboard 已有空白卡片區;`:116` explore 記「dashboard 是最低成本呈現面」。成本 `[Assumption]`</td><td>`1-discussion.md:68` Non-Goals 記 email 之後再議;`:116` 現況無任何排程機制。成本 `[Assumption]`</td><td>`1-discussion.md:80` Constraints 明列「不引入新 infra」。成本 `[Assumption]`</td></tr></table></div></section>
+<section class="r-block" id="owner-calls">
+<div class="r-head"><h2>Owner Calls</h2></div>
+<div class="r-body"><table class="judge">
+<tr><th>OC</th><th>決定了什麼</th><th>依據</th><th>若被推翻會怎樣</th><th>狀態</th></tr>
+<tr><td>OC-1</td><td>已有後繼續約紀錄的合約**不列入**提醒。使用者只被問到「30 天內到期要提醒」,「排除已續約」是 owner 延伸</td><td>`1-discussion.md:84` AC-1 原文只寫「未續約」;「是雜訊」為 `[Assumption]`,未取實際漏看數據</td><td>卡片會多列已續約合約;Success Criteria 第 1 條「未續約」字眼與 4-spec 的過濾條件都要改</td><td>✅</td></tr>
+<tr><td>OC-2</td><td>只處理 end_date 非空的合約(無期限合約不列)。使用者說「快到期的要看得到」,此為收窄;依據:無 end_date 無從計算「到期」</td><td>`1-discussion.md:75` Q3 已定案只做站內;無期限合約語意在 1-discussion 全篇未出現 = `[Assumption]` 認定其不存在到期日</td><td>要先定義無期限合約的到期語意,Scope 擴大、需回頭問使用者</td><td>✅</td></tr>
+<tr><td>OC-3</td><td>零筆到期時 dashboard 仍顯示空狀態卡片,不隱藏整卡</td><td>`[Assumption]` —— 使用者未被問過空狀態,此為 owner 依一般 UI 慣例延伸</td><td>前端渲染邏輯改寫,3-prototype 的 variant 題目跟著變</td><td>✅</td></tr>
+<tr><td>OC-4</td><td>卡片只顯示最靠近到期的 10 筆,其餘收進「查看全部」連結</td><td>`[Assumption]` —— 「10 筆」無來源,1-discussion 未量測過單一業務名下到期筆數分布</td><td>到期 &gt;10 筆時的 UI 行為改變,3-prototype variant 題目跟著變</td><td>**✗** `&lt;reviewer-a&gt;`:截斷會讓業務漏看 → 改為全數顯示+卡片內滾動(裁決後歸使用者裁決,計入確認紀錄;本列保留 = 審計軌跡)</td></tr>
+</table></div></section>
+<section class="r-block" id="point-1"><div class="r-head"><span class="r-name">方案</span></div><div class="r-body"><div class="card"><strong>A 登入即時查</strong><p>dashboard 載入時 API 即時查 expiring 合約 優:零新 infra、實作最小 劣:每次載入查一次;無主動推播 依據:`1-discussion.md:18` 現有 dashboard 已有空白卡片區;`:116` explore 記「dashboard 是最低成本呈現面」。成本 `[Assumption]`</p></div><div class="card"><strong>B nightly cron + 通知表</strong><p>排程掃描寫入 notifications 表 優:可擴充 email;查詢便宜 劣:要新增 cron 進程 + 新表 依據:`1-discussion.md:68` Non-Goals 記 email 之後再議;`:116` 現況無任何排程機制。成本 `[Assumption]`</p></div><div class="card"><strong>C MQ 事件驅動</strong><p>合約異動發事件,消費者判斷到期 優:即時、最可擴充 劣:引入 MQ = 新 infra,violates constraint 依據:`1-discussion.md:80` Constraints 明列「不引入新 infra」。成本 `[Assumption]`</p></div></div></section>
+<details class="bg"><summary>背景</summary><p><strong>Rationale</strong> 量級小(8k 筆,索引查詢 &lt;50ms)、需求只到「看得到」,即時查是最短路徑;service 抽象保住升級路。</p><p><strong>風險</strong> - 查詢慢拖累 dashboard → prototype 前先 EXPLAIN 驗證;超過 100ms 就加覆蓋索引。 - UI 形式不確定(badge? 卡片?)→ 交給 3-prototype 用 variants 挑。</p><p><strong>未採</strong> - B:本期不做 email,通知表沒有消費者,先做是浪費。 - C:8,000 筆量級用 MQ 是 overkill,且違反「不引入新 infra」約束。</p></details>
+<p class="src">由 <code>scripts/build-stage2-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
 </body>
 </html>

@@ -241,3 +241,23 @@
 - 為什麼:Claude /plugin update 只看 version 字串；停在 3.20.0 會靜默不拉 #65。
 - 落在哪:.claude-plugin/ .cursor-plugin/ .codex-plugin/ hooks/runtime-capabilities.json example/subsidy-3-0-plus/ notes/prompt-html-gap-loop.md docs/dev/HISTORY.md
 
+## 2026-08-28 · field-fixes-six
+- 做了什麼:六項現場修復:upgrade 刪 pack 停出殘件、產圖 Python 3.12+ venv、gate-twin 2/4 站直式 SVG、worktree 雙生頁併回整合線、HISTORY 出廠種子選配清理、主機 --probe 印下一句安裝指令
+- 為什麼:採用樹仍留 _templates/CONTEXT.md、macOS 3.9 靜默裝不出 markdown-it-py 4、審查頁仍吐橫 ASCII pre、worktree 雙生頁不知該併哪條線、出廠 HISTORY 種子清不掉、Codex/Grok/Cursor 更新指令對不上現場
+- 落在哪:scripts/devflow-upgrade-leftovers.sh scripts/test-upgrade-leftovers.sh hooks/_doctor_impl.py scripts/build-gate-twin.py scripts/devflow_twin_ui.py scripts/history-append.sh scripts/check-host-adapter.sh skills/dev-setup/SKILL.md docs/PLUGIN.md _templates/
+
+## 2026-08-29 · field-fixes-six-b
+- 做了什麼:半點審第 3 顆牙:example 2-decision／4-spec 用 3.20.1 產器重生直式 SVG;第 4 站行為圖契約真咬 SVG-not-pre。doctor 對系統 leftover markdown-it-py 3.x 改 info,不連坐 EXTERNAL_RUNTIME 握手。
+- 為什麼:審 B FAIL:example 雙生頁仍是橫 ASCII pre,契約只釘置頂 id。CI selftest 因 runner 系統 python 帶 mdit 3.0.0 整組 doctor 紅。
+- 落在哪:example/contract-expiry-reminder/{2-decision,4-spec}.html scripts/build-stage{2,4}-html.py scripts/check-stage4-rs-contract.sh scripts/check-gate-twin.sh hooks/_doctor_impl.py
+
+## 2026-08-29 · field-fixes-six-c
+- 做了什麼:CI 兩紅修復:doctor 不寫死系統 python 路徑字串;stage2 產器吐 Owner Calls／依據表,example 2-decision 直式 SVG 與自判表並存
+- 為什麼:半點審重生蓋掉自判表,methodology/check-selfjudgment-tables 32/36;_doctor_impl 字串觸發 runtime-selftest 禁寫死路徑
+- 落在哪:hooks/_doctor_impl.py scripts/build-stage2-html.py example/contract-expiry-reminder/2-decision.html scripts/check-selfjudgment-tables.sh
+
+## 2026-08-29 · field-fixes-six-d
+- 做了什麼:doctor 對系統 leftover markdown-it-py 3.x 維持 info:DEVFLOW_PYTHON 指到系統 python3 不算專案 venv
+- 為什麼:CI selftest 用 DEVFLOW_PYTHON=$(command -v python3) 覆寫,系統 leftover 3.x 被判成 env 連坐握手,EXTERNAL_RUNTIME 仍紅
+- 落在哪:hooks/_doctor_impl.py
+

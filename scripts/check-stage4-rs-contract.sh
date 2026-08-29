@@ -92,6 +92,8 @@ CONTRACT_NEEDLES = (
     "不中折",
     "新生（",
     "相關一格",
+    "行為流程圖",
+    "SVG-not-pre",
 )
 
 FORBIDDEN = (
@@ -294,6 +296,13 @@ if os.path.isfile(builder):
     check("class=\"hl\"" in html_out, "fixture 這輪落點 .hl")
     check(html_out.find('id="lifecycle"') < html_out.find('id="lifecycle-note"'),
           "圖卡與說明卡分開,圖在前")
+    beh0 = html_out.find('id="behavior"')
+    beh_chunk = ""
+    if beh0 >= 0:
+        beh1 = html_out.find("</section>", beh0)
+        beh_chunk = html_out[beh0:beh1] if beh1 > beh0 else ""
+    check("行為流程圖" in html_out and "<svg" in beh_chunk and "<pre" not in beh_chunk,
+          "fixture 行為流程圖是直式 SVG、不是 pre")
     subsidy = subprocess.run(
         [sys.executable, builder, os.path.join(root, SUBSIDY), "--out",
          os.path.join(root, "scripts/fixtures/stage4-html/_subsidy.out.html")],
@@ -348,6 +357,21 @@ if os.path.isfile(builder):
     )
     old_ok, _ = judge_html(old_fake, "html-shell 假輸出")
     check(not old_ok, "牙咬:html-shell／橫 ASCII 必須紅")
+    stripped_beh = (contract_text or "").replace("行為流程圖", "")
+    check(bool(judge(stripped_beh, template_text, hop_text)),
+          "牙咬:契約刪「行為流程圖」必須紅")
+    ex4 = read("example/contract-expiry-reminder/4-spec.html")
+    ex4_beh = ""
+    if ex4:
+        e0 = ex4.find('id="behavior"')
+        e1 = ex4.find("</section>", e0) if e0 >= 0 else -1
+        ex4_beh = ex4[e0:e1] if e0 >= 0 and e1 > e0 else ""
+    check(bool(ex4) and "html 外殼" not in ex4
+          and "build-stage4-html.py" in ex4,
+          "example 4-spec.html 是產器 twin,不是 html-shell")
+    check(bool(ex4_beh) and "<svg" in ex4_beh and "<pre" not in ex4_beh
+          and "viewBox" in ex4_beh,
+          "example 4-spec.html 行為流程圖是直式 SVG、不是 pre")
     missing = html_out.replace("審的時候看什麼", "看什麼")
     missing_ok, _ = judge_html(missing, "刪 審的時候看什麼")
     check(not missing_ok, "牙咬:輸出刪 審的時候看什麼 必須紅")

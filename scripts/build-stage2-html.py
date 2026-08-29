@@ -34,6 +34,7 @@ H2_RE = re.compile(r"^##[ \t]+(.+?)\s*$", re.M)
 H3_RE = re.compile(r"^###[ \t]+(.+?)\s*$", re.M)
 H4_RE = re.compile(r"^####[ \t]+(.+?)\s*$", re.M)
 LIST_RE = re.compile(r"^[-*]\s+(.+)$", re.M)
+FIG_HEAD = re.compile(r"^\[([^\]]+)\]\s*(.*)$")
 
 CANVAS_W = 280
 BOX_W = 200
@@ -96,6 +97,10 @@ a.cell:hover{border-color:var(--accent)}
 .vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
 details.bg{margin:10px 0 0}
 details.bg>summary{cursor:pointer;color:var(--ink-2)}
+table.judge{width:100%;border-collapse:collapse;font-size:.86rem;margin:0}
+table.judge th,table.judge td{border:1px solid var(--rule);padding:6px 8px;
+  text-align:left;vertical-align:top}
+table.judge th{background:var(--sunk);font-weight:650}
 .src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
 """
 
@@ -219,6 +224,7 @@ def parse_cards(blob):
         sum_i = col_index(header, "摘要")
         pro_i = col_index(header, "優")
         con_i = col_index(header, "劣")
+        basis_i = col_index(header, "依據")
         for row in rows:
             name = cell(row, name_i)
             if not name or set(name) <= set("-: "):
@@ -233,6 +239,9 @@ def parse_cards(blob):
                 bits.append("優:" + pro)
             if con:
                 bits.append("劣:" + con)
+            basis = cell(row, basis_i)
+            if basis:
+                bits.append("依據:" + basis)
             if not bits:
                 extras = [c for i, c in enumerate(row) if i != name_i and c]
                 bits.append("／".join(extras[:3]))
@@ -242,20 +251,35 @@ def parse_cards(blob):
 
 
 def parse_steps(fig_body, decision):
+    """認 `[A] 標題(選定)` 當一框,框上保留標籤與「選定」,給 fig-text 對文字。"""
     steps = []
-    for item in LIST_RE.findall(fig_body or ""):
-        steps.append(item.strip())
+    current = None
+
+    def flush():
+        if current:
+            steps.append(current)
+
+    for raw in (fig_body or "").splitlines():
+        stripped = raw.strip()
+        if not stripped or stripped.startswith("```"):
+            continue
+        if stripped.startswith("|") or stripped.startswith("<"):
+            continue
+        match = FIG_HEAD.match(stripped)
+        if match:
+            flush()
+            label = match.group(1).strip()
+            rest = match.group(2).strip()
+            current = ("[%s] %s" % (label, rest)).strip() if rest else "[%s]" % label
+        elif current is None:
+            current = stripped
+    flush()
     if not steps:
-        for raw in (fig_body or "").splitlines():
-            line = raw.strip()
-            if not line or line.startswith("#") or line.startswith("```"):
-                continue
-            if line.startswith("|") or line.startswith("<"):
-                continue
-            steps.append(re.sub(r"^\[.?\]\s*", "", line))
+        for item in LIST_RE.findall(fig_body or ""):
+            steps.append(item.strip())
     if not steps and decision:
         steps = [decision.strip().split("。")[0][:24] or "選定"]
-    return steps[:6]
+    return steps[:8]
 
 
 def render_vbox(steps):
@@ -268,8 +292,9 @@ def render_vbox(steps):
         % (CANVAS_W, height),
     ]
     y = TOP
+    hl_idx = next((i for i, title in enumerate(steps) if "選定" in title), 0)
     for i, title in enumerate(steps):
-        kind = "hl" if i == 0 else "b"
+        kind = "hl" if i == hl_idx else "b"
         parts.append(
             '  <rect class="%s" x="%d" y="%d" width="%d" height="%d" rx="8"/>'
             % (kind, BOX_X, y, BOX_W, box_h)
@@ -293,6 +318,82 @@ def first_sentence(body):
     text = re.sub(r"<!--.*?-->", "", body or "", flags=re.S).strip()
     text = " ".join(line.strip() for line in text.splitlines() if line.strip())
     return text
+
+
+def collect_basis(approaches):
+    """Approaches 表若有「依據」欄,回 (方案名, 依據) 列。沒有就空。"""
+    header, rows = parse_table(approaches or "")
+    basis_i = col_index(header, "依據")
+    if basis_i < 0 or not rows:
+        return []
+    name_i = col_index(header, "方案", "Approach")
+    if name_i < 0:
+        name_i = 0
+    out = []
+    for row in rows:
+        name = cell(row, name_i)
+        if not name or set(name) <= set("-: "):
+            continue
+        out.append((name, cell(row, basis_i)))
+    return out
+
+
+def render_basis_table(approaches):
+    pairs = collect_basis(approaches)
+    if not pairs:
+        return ""
+    head = "<tr><th></th>%s</tr>" % "".join(
+        "<th>%s</th>" % esc(name) for name, _b in pairs
+    )
+    row = "<tr><td>依據</td>%s</tr>" % "".join(
+        "<td>%s</td>" % esc(basis or "—") for _n, basis in pairs
+    )
+    return (
+        '<section class="r-block" id="basis">'
+        '<div class="r-head"><span class="r-name">方案依據</span></div>'
+        '<div class="r-body"><table class="judge">%s%s</table></div></section>'
+        % (head, row)
+    )
+
+
+def render_owner_calls(body):
+    _title, oc = section_named(body, ("Owner Calls",))
+    if not oc:
+        return ""
+    header, rows = parse_table(oc)
+    if not header or not rows:
+        return ""
+    oc_i = col_index(header, "OC")
+    what_i = col_index(header, "決定了什麼", "決定")
+    basis_i = col_index(header, "依據")
+    cost_i = col_index(header, "若被推翻")
+    st_i = col_index(header, "狀態")
+    if oc_i < 0:
+        oc_i = 0
+    # 表頭必須同一行含 <th>OC</th> 與「依據」—— selfjudgment 牙咬這形。
+    lines = [
+        '<section class="r-block" id="owner-calls">',
+        '<div class="r-head"><h2>Owner Calls</h2></div>',
+        '<div class="r-body"><table class="judge">',
+        "<tr><th>OC</th><th>決定了什麼</th><th>依據</th>"
+        "<th>若被推翻會怎樣</th><th>狀態</th></tr>",
+    ]
+    for row in rows:
+        name = cell(row, oc_i)
+        if not name or set(name) <= set("-: "):
+            continue
+        lines.append(
+            "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
+            % (
+                esc(name),
+                esc(cell(row, what_i) or "—"),
+                esc(cell(row, basis_i) or "—"),
+                esc(cell(row, cost_i) or "—"),
+                esc(cell(row, st_i) or "—"),
+            )
+        )
+    lines.append("</table></div></section>")
+    return "\n".join(lines)
 
 
 def build_html(text):
@@ -381,11 +482,16 @@ def build_html(text):
   <div class="r-head"><span class="r-name">Decision</span></div>
   <div class="r-body">
     <p>%s</p>
-    <div class="figwrap">
-%s
-    </div>
   </div>
 </section>
+<section class="r-block" id="fig">
+  <div class="r-head"><h2 class="r-name">方案架構圖</h2></div>
+  <div class="r-body"><div class="figwrap">
+%s
+  </div></div>
+</section>
+%s
+%s
 %s
 %s
 <p class="src">由 <code>scripts/build-stage2-html.py</code> 從 md 解析產生,不包 html-shell。</p>
@@ -399,6 +505,8 @@ def build_html(text):
         dash,
         esc(decision_text),
         render_vbox(steps),
+        render_basis_table(approaches),
+        render_owner_calls(body),
         "\n".join(group_html),
         bg_html,
     )

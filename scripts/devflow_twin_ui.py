@@ -16,6 +16,8 @@ CSS_SPEC 沒有對應樣式的新結構,且對 CSS_SPEC 只加不改(見 CSS_TAS
 主題規則沿用母版 html-shell:淺色定義在裸 `:root`、深色只覆寫 token
 (`prefers-color-scheme` 用 `:not([data-theme="light"])` 守衛,`[data-theme="dark"]` 再覆蓋一次)。
 """
+import html
+import re
 
 CSS = """
 :root{
@@ -121,11 +123,12 @@ h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-
 
 /* ---- 圖 ---- */
 /* 直式現況圖／方案架構圖:外層撐滿欄、圖本身有限寬,水平置中。
-   禁 svg/pre width:100% —— 畫布撐滿時狹長圖會貼左。 */
+   禁 svg/pre width:100% —— 畫布撐滿時狹長圖會貼左。
+   max-width 360px 對齊鎖定手樣(subsidy 2-decision.html)。 */
 .fig{margin:26px 0;padding:17px;border:1px solid var(--rule);border-radius:12px;
   background:var(--panel);box-shadow:var(--shadow);
   display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}
-.fig svg,.fig pre{display:block;width:auto;max-width:220px;margin:0;height:auto}
+.fig svg,.fig pre{display:block;width:auto;max-width:360px;margin:0 auto;height:auto}
 .pinned pre{display:block;width:max-content;max-width:100%;margin-left:auto;margin-right:auto}
 .cap{color:var(--ink-3);font-size:.82rem;line-height:1.6;margin-top:11px;text-align:center}
 svg .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.4}
@@ -368,6 +371,122 @@ def local_page(title: str, extra_css: str, body: str, script: str = "") -> str:
 </body>
 </html>
 """
+
+
+# 直式置中方塊(與 build-vbox-fig.py 同一組常數)。gate-twin 散發時只有
+# 本檔跟產生器在同一目錄,不能 import 母版 scripts/build-vbox-fig.py。
+VBOX_CANVAS_W = 280
+VBOX_BOX_W = 200
+VBOX_BOX_X = 40
+VBOX_CX = 140
+VBOX_TOP = 10
+VBOX_BOTTOM = 10
+VBOX_GAP = 22
+VBOX_PAD_TOP = 12
+VBOX_TITLE_H = 16
+VBOX_LINE_H = 14
+VBOX_PAD_BOTTOM = 12
+_FIG_HEAD = re.compile(r"^\[([^\]]+)\]\s*(.*)$")
+
+
+def ascii_fig_steps(body):
+    """把方案架構圖／行為流程圖的 ASCII 收成直式方塊步驟。
+
+    認 `[標籤] 標題` 當一框;框上保留 `[A]`／`[R-1]` 與「選定」,
+    給 fig-text 牙對文字。沒有方括號標籤就退回非箭頭列。
+    """
+    steps = []
+    current = None
+    extras = []
+
+    def flush():
+        if current is None:
+            return
+        bits = []
+        for extra in extras:
+            text = extra.strip()
+            if text:
+                bits.append(text[:42])
+            if len(bits) >= 3:
+                break
+        if not bits:
+            bits = ["步驟"]
+        kind = "hl" if "選定" in current else "b"
+        steps.append((kind, current, bits[:3]))
+
+    for raw in (body or "").splitlines():
+        stripped = raw.strip()
+        if not stripped or stripped.startswith("```"):
+            continue
+        match = _FIG_HEAD.match(stripped)
+        if match:
+            flush()
+            label = match.group(1).strip()
+            rest = match.group(2).strip()
+            current = ("[%s] %s" % (label, rest)).strip() if rest else "[%s]" % label
+            extras = []
+        elif current is not None:
+            extras.append(stripped)
+        else:
+            extras.append(stripped)
+    flush()
+    if not steps and extras:
+        arrows = set("|-▼▲→←│─┌┐└┘<>v^ ")
+        for extra in extras[:6]:
+            if extra.startswith("|") or extra.startswith("<"):
+                continue
+            if set(extra) <= arrows:
+                continue
+            steps.append(("b", extra[:42], ["步驟"]))
+    return steps[:8]
+
+
+def render_vbox_svg(aria, steps):
+    """steps = [(kind, title, lines), ...],常數對齊 build-vbox-fig.py。"""
+    if not steps:
+        return ""
+
+    def box_h(n_lines):
+        return VBOX_PAD_TOP + VBOX_TITLE_H + n_lines * VBOX_LINE_H + VBOX_PAD_BOTTOM
+
+    heights = [box_h(len(lines)) for _kind, _title, lines in steps]
+    height = VBOX_TOP + sum(heights) + VBOX_GAP * (len(steps) - 1) + VBOX_BOTTOM
+    label = html.escape((aria or "").strip() or "直式步驟方塊", quote=True)
+    parts = [
+        '<svg viewBox="0 0 %d %d" role="img" aria-label="%s" '
+        'style="display:block;max-width:360px;margin:0 auto;height:auto">'
+        % (VBOX_CANVAS_W, height, label),
+    ]
+    y = VBOX_TOP
+    for i, (kind, title, lines) in enumerate(steps):
+        h = heights[i]
+        parts.append(
+            '<rect class="%s" x="%d" y="%d" width="%d" height="%d" rx="6"/>'
+            % (kind, VBOX_BOX_X, y, VBOX_BOX_W, h)
+        )
+        ty = y + VBOX_PAD_TOP + 12
+        parts.append(
+            '<text class="nl" x="%d" y="%d" text-anchor="middle">%s</text>'
+            % (VBOX_CX, ty, html.escape(title))
+        )
+        ly = ty
+        for line in lines:
+            ly += VBOX_LINE_H
+            parts.append(
+                '<text class="sm" x="%d" y="%d" text-anchor="middle">%s</text>'
+                % (VBOX_CX, ly, html.escape(line))
+            )
+        if i < len(steps) - 1:
+            y1 = y + h
+            y2 = y + h + VBOX_GAP
+            parts.append(
+                '<line x1="%d" y1="%d" x2="%d" y2="%d" '
+                'stroke="currentColor" stroke-width="1.4"/>'
+                % (VBOX_CX, y1, VBOX_CX, y2)
+            )
+        y = y + h + VBOX_GAP
+    parts.append("</svg>")
+    return "\n".join(parts)
 
 
 def artifact_page(title: str, extra_css: str, body: str, script: str = "") -> str:

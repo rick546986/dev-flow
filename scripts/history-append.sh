@@ -19,12 +19,16 @@
 #                             --where <落在哪> [--date YYYY-MM-DD] [--version vX.Y.Z] \
 #                             [--adr NNNN[,NNNN]] [--detail <連結或檔案路徑>] \
 #                             [--file <HISTORY.md 路徑>] [--retries N] [--dry-run]
+#                             [--action factory-seed-cleanup]
 #
 #   --date    不給就用今天(本機時區)。
 #   --file    不給就用 `<repo root>/docs/dev/HISTORY.md`;檔案不存在會先建出檔頭。
 #   --dry-run 只把要追加的內容印到 stdout,不動檔案、不取鎖。
 #   --print-root 只印解析到的專案根後離開(診斷用,doctor 探測 ROOT 解析;
 #             解析不到印 (unresolved) 並 exit 2)。
+#   --action factory-seed-cleanup
+#             一次性清掉可見的出廠種子列(YYYY-MM-DD · <第一筆的代號> 那四行)。
+#             認不出種子 vs 真紀錄 → fail-closed 不刪。不准每次 upgrade 自動跑。
 #
 # exit code:
 #   0 = 已追加(或 --dry-run / --print-root 成功產出)
@@ -42,7 +46,7 @@ SELF_DIR=$(cd "$(dirname "$0")" && pwd)
 REPO_ROOT=$(git -C "$SELF_DIR" rev-parse --show-toplevel 2>/dev/null || true)
 
 DATE="" SLUG="" WHAT="" WHY="" WHERE="" VERSION="" ADR="" DETAIL=""
-TARGET="" RETRIES=3 DRY_RUN=0
+TARGET="" RETRIES=3 DRY_RUN=0 ACTION=""
 
 die() { echo "$1" >&2; exit "${2:-2}"; }
 
@@ -64,31 +68,38 @@ while [ $# -gt 0 ]; do
     --file)    need_value "$1" "${2:-}"; TARGET=$2; shift 2 ;;
     --retries) need_value "$1" "${2:-}"; RETRIES=$2; shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
+    --action)  need_value "$1" "${2:-}"; ACTION=$2; shift 2 ;;
     --print-root)
       # 診斷:印出解析到的專案根(doctor 探測散發副本的 ROOT 解析,比照 gauntlet)
       if [ -n "$REPO_ROOT" ]; then printf '%s\n' "$REPO_ROOT"; exit 0
       else echo "(unresolved)"; exit 2; fi ;;
     -h|--help) sed -n '2,34p' "$0"; exit 0 ;;
-    *) die "拒絕:未知參數 $1(可用:--slug --what --why --where --date --version --adr --detail --file --retries --dry-run --print-root)" ;;
+    *) die "拒絕:未知參數 $1(可用:--slug --what --why --where --date --version --adr --detail --file --retries --dry-run --print-root --action)" ;;
   esac
 done
 
-[ -n "$SLUG" ]  || die "拒絕:缺 --slug(這筆紀錄的代號,例:guides-visual-rewrite)"
-[ -n "$WHAT" ]  || die "拒絕:缺 --what(做了什麼,一句話)"
-[ -n "$WHY" ]   || die "拒絕:缺 --why(為什麼要做,一句話 —— 半年後只有這句救得了你)"
-[ -n "$WHERE" ] || die "拒絕:缺 --where(改動落在哪些檔/目錄)"
-
-case "$SLUG" in
-  *[!a-z0-9-]*) die "拒絕:--slug 只接受小寫英數與連字號,得「$SLUG」" ;;
-esac
-
-if [ -z "$DATE" ]; then
-  DATE=$(date +%Y-%m-%d)
+if [ -n "$ACTION" ] && [ "$ACTION" != "factory-seed-cleanup" ]; then
+  die "拒絕:未知 --action $ACTION(可用:factory-seed-cleanup)"
 fi
-case "$DATE" in
-  [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) : ;;
-  *) die "拒絕:--date 需 YYYY-MM-DD,得「$DATE」" ;;
-esac
+
+if [ -z "$ACTION" ]; then
+  [ -n "$SLUG" ]  || die "拒絕:缺 --slug(這筆紀錄的代號,例:guides-visual-rewrite)"
+  [ -n "$WHAT" ]  || die "拒絕:缺 --what(做了什麼,一句話)"
+  [ -n "$WHY" ]   || die "拒絕:缺 --why(為什麼要做,一句話 —— 半年後只有這句救得了你)"
+  [ -n "$WHERE" ] || die "拒絕:缺 --where(改動落在哪些檔/目錄)"
+
+  case "$SLUG" in
+    *[!a-z0-9-]*) die "拒絕:--slug 只接受小寫英數與連字號,得「$SLUG」" ;;
+  esac
+
+  if [ -z "$DATE" ]; then
+    DATE=$(date +%Y-%m-%d)
+  fi
+  case "$DATE" in
+    [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) : ;;
+    *) die "拒絕:--date 需 YYYY-MM-DD,得「$DATE」" ;;
+  esac
+fi
 
 case "$RETRIES" in
   ''|*[!0-9]*) die "拒絕:--retries 需非負整數,得「$RETRIES」" ;;
@@ -101,21 +112,124 @@ if [ -z "$TARGET" ]; then
   TARGET="$REPO_ROOT/docs/dev/HISTORY.md"
 fi
 
-# ── 組出這一筆(格式正本;改格式請同步 _templates/HISTORY.md 與 README §1)──
-ENTRY="## $DATE · $SLUG"
-[ -n "$VERSION" ] && ENTRY="$ENTRY · $VERSION"
-ENTRY="$ENTRY
+if [ "$ACTION" = "factory-seed-cleanup" ] && [ "$DRY_RUN" = "1" ]; then
+  python3 - "$TARGET" "1" <<'PY'
+import sys
+
+path, dry = sys.argv[1], sys.argv[2] == "1"
+SEED_HEAD = "## YYYY-MM-DD · <第一筆的代號>"
+SEED_BODY = (
+    "- 做了什麼:<可觀測的結果>",
+    "- 為什麼:<當初的痛點>",
+    "- 落在哪:<檔案或目錄>",
+)
+SEED = SEED_HEAD + "\n" + "\n".join(SEED_BODY)
+LOOKALIKE = "## YYYY-MM-DD ·"
+
+
+def fail(msg, code=2):
+    print(msg, file=sys.stderr)
+    sys.exit(code)
+
+
+def strip_comments(text):
+    out, i, n = [], 0, len(text)
+    while i < n:
+        start = text.find("<!--", i)
+        if start < 0:
+            out.append(text[i:])
+            break
+        out.append(text[i:start])
+        end = text.find("-->", start + 4)
+        if end < 0:
+            fail("拒絕:HISTORY.md 註解沒閉合,分不出種子與真紀錄")
+        i = end + 3
+    return "".join(out)
+
+
+def in_comment(text, pos):
+    last_open = text.rfind("<!--", 0, pos)
+    if last_open < 0:
+        return False
+    last_close = text.rfind("-->", 0, pos)
+    return last_close < last_open
+
+
+try:
+    raw = open(path, encoding="utf-8").read()
+except OSError as err:
+    fail("拒絕:讀不到 %s(%s)" % (path, err))
+
+visible = strip_comments(raw)
+lookalikes = []
+for i, line in enumerate(visible.splitlines()):
+    if line.startswith(LOOKALIKE) and line != SEED_HEAD:
+        lookalikes.append(line)
+if lookalikes:
+    fail("拒絕:看見像種子但不是出廠原文的標題,fail-closed 不刪:\n  "
+         + "\n  ".join(lookalikes))
+
+# 可見區必須是完整四行,或完全沒有
+vis_has = SEED in visible
+head_only = SEED_HEAD in visible and not vis_has
+if head_only:
+    fail("拒絕:看見出廠標題但後面三行不是出廠原文,fail-closed 不刪")
+
+starts = []
+idx = 0
+while True:
+    found = raw.find(SEED, idx)
+    if found < 0:
+        break
+    if not in_comment(raw, found):
+        starts.append(found)
+    idx = found + 1
+
+if not starts:
+    print("factory-seed: none")
+    sys.exit(0)
+
+if dry:
+    print("factory-seed: %d (dry-run)" % len(starts))
+    print(SEED)
+    sys.exit(0)
+
+# 從後往前刪,避免位移
+new = raw
+for found in reversed(starts):
+    end = found + len(SEED)
+    while end < len(new) and new[end] == "\n":
+        end += 1
+        if end < len(new) and new[end] == "\n":
+            end += 1
+            break
+    new = new[:found] + new[end:]
+if new == raw:
+    fail("拒絕:對上種子卻刪不動,fail-closed")
+open(path, "w", encoding="utf-8").write(new)
+print("factory-seed: removed %d" % len(starts))
+sys.exit(0)
+PY
+  exit $?
+fi
+
+if [ -z "$ACTION" ]; then
+  # ── 組出這一筆(格式正本;改格式請同步 _templates/HISTORY.md 與 README §1)──
+  ENTRY="## $DATE · $SLUG"
+  [ -n "$VERSION" ] && ENTRY="$ENTRY · $VERSION"
+  ENTRY="$ENTRY
 - 做了什麼:$WHAT
 - 為什麼:$WHY
 - 落在哪:$WHERE"
-[ -n "$ADR" ]    && ENTRY="$ENTRY
+  [ -n "$ADR" ]    && ENTRY="$ENTRY
 - 長期決策:$ADR"
-[ -n "$DETAIL" ] && ENTRY="$ENTRY
+  [ -n "$DETAIL" ] && ENTRY="$ENTRY
 - 詳細:$DETAIL"
 
-if [ "$DRY_RUN" = "1" ]; then
-  printf '%s\n' "$ENTRY"
-  exit 0
+  if [ "$DRY_RUN" = "1" ]; then
+    printf '%s\n' "$ENTRY"
+    exit 0
+  fi
 fi
 
 TARGET_DIR=$(dirname "$TARGET")
@@ -163,6 +277,100 @@ fi
 
 cleanup() { rmdir "$LOCK" 2>/dev/null || true; }
 trap cleanup EXIT INT TERM
+
+if [ "$ACTION" = "factory-seed-cleanup" ]; then
+  [ -f "$TARGET" ] || die "拒絕:沒有 $TARGET,沒有種子可清"
+  python3 - "$TARGET" "0" <<'PY'
+import sys
+
+path, dry = sys.argv[1], sys.argv[2] == "1"
+SEED_HEAD = "## YYYY-MM-DD · <第一筆的代號>"
+SEED_BODY = (
+    "- 做了什麼:<可觀測的結果>",
+    "- 為什麼:<當初的痛點>",
+    "- 落在哪:<檔案或目錄>",
+)
+SEED = SEED_HEAD + "\n" + "\n".join(SEED_BODY)
+LOOKALIKE = "## YYYY-MM-DD ·"
+
+
+def fail(msg, code=2):
+    print(msg, file=sys.stderr)
+    sys.exit(code)
+
+
+def strip_comments(text):
+    out, i, n = [], 0, len(text)
+    while i < n:
+        start = text.find("<!--", i)
+        if start < 0:
+            out.append(text[i:])
+            break
+        out.append(text[i:start])
+        end = text.find("-->", start + 4)
+        if end < 0:
+            fail("拒絕:HISTORY.md 註解沒閉合,分不出種子與真紀錄")
+        i = end + 3
+    return "".join(out)
+
+
+def in_comment(text, pos):
+    last_open = text.rfind("<!--", 0, pos)
+    if last_open < 0:
+        return False
+    last_close = text.rfind("-->", 0, pos)
+    return last_close < last_open
+
+
+try:
+    raw = open(path, encoding="utf-8").read()
+except OSError as err:
+    fail("拒絕:讀不到 %s(%s)" % (path, err))
+
+visible = strip_comments(raw)
+lookalikes = []
+for line in visible.splitlines():
+    if line.startswith(LOOKALIKE) and line != SEED_HEAD:
+        lookalikes.append(line)
+if lookalikes:
+    fail("拒絕:看見像種子但不是出廠原文的標題,fail-closed 不刪:\n  "
+         + "\n  ".join(lookalikes))
+
+vis_has = SEED in visible
+if SEED_HEAD in visible and not vis_has:
+    fail("拒絕:看見出廠標題但後面三行不是出廠原文,fail-closed 不刪")
+
+starts = []
+idx = 0
+while True:
+    found = raw.find(SEED, idx)
+    if found < 0:
+        break
+    if not in_comment(raw, found):
+        starts.append(found)
+    idx = found + 1
+
+if not starts:
+    print("factory-seed: none")
+    sys.exit(0)
+
+new = raw
+for found in reversed(starts):
+    end = found + len(SEED)
+    while end < len(new) and new[end] == "\n":
+        end += 1
+        if end < len(new) and new[end] == "\n":
+            end += 1
+            break
+    new = new[:found] + new[end:]
+if new == raw:
+    fail("拒絕:對上種子卻刪不動,fail-closed")
+open(path, "w", encoding="utf-8").write(new)
+print("factory-seed: removed %d" % len(starts))
+sys.exit(0)
+PY
+  exit $?
+fi
 
 # 檔頭只在第一次建立時寫(之後一律純追加,不重寫既有內容)
 if [ ! -f "$TARGET" ]; then

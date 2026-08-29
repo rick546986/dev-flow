@@ -334,7 +334,9 @@ updated:
       canonical ref)貼在本檔;Source SHA 仍等於當下 HEAD。Verdict 之後若有任何
       程式碼 commit → G3 已作廢,回步 2c/2d 重跑,**不得再改程式碼**、不得在本節
       補碼或合併 INTEGRATION_SHA。
-- [ ] PR → develop(feature branch,禁直上 master)
+- [ ] PR → develop(feature branch,禁直上 master;專案若還用 `testing`,同一支
+      worktree branch 也要併進去。`docs/dev` 雙生頁跟著 branch 走是預期,
+      不要只留在 worktree)
 - [ ] 4-spec delta 已併入 `docs/specs/<domain>.md`
 - [ ] STATUS.md 已更新為 shipped(這一步在整合分支上、PR 合併後由合併那個 PR 的人
       做,不塞進本 branch 的 PR —— 動線與理由見 STATUS 模板頂註)

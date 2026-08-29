@@ -503,7 +503,7 @@ check(bool(m) and "|" not in (m.group(1) if m else "|"),
 # 而不是它原本要防的「誤吞/桶位擴大」。
 EXPECT_PINNED_IDS = {
     "2-decision": {"sec-Decision", "sec-方案架構圖", "sec-Rejected-Alternatives"},
-    "4-spec": set(),
+    "4-spec": {"sec-行為流程圖-R-級"},
     "7-review": {"sec-Verdict", "sec-Known-Limits"},
 }
 for _st in ("2-decision", "4-spec", "7-review"):
@@ -516,6 +516,15 @@ for _st in ("2-decision", "4-spec", "7-review"):
     check(_actual_ids == _expect_ids,
           f"{_st}:置頂節 id 精確集合與釘死清單一致(PINNED_PAT 誤吞/桶位擴大都要現形)",
           f"多 {sorted(_actual_ids - _expect_ids)} / 少 {sorted(_expect_ids - _actual_ids)}")
+    if _st == "4-spec" and _html_pin is not None:
+        _beh_sec = re.search(
+            r'<section class="pinned" id="sec-行為流程圖-R-級".*?</section>',
+            _html_pin, re.S)
+        _beh_html = _beh_sec.group(0) if _beh_sec else ""
+        check(bool(_beh_sec) and "<svg" in _beh_html and "<pre>" not in _beh_html
+              and "viewBox" in _beh_html and "mermaid" not in _beh_html,
+              "4-spec:行為流程圖置頂且是直式 SVG、不是 pre(不只釘 id)",
+              "缺節" if not _beh_sec else "缺 svg／仍是 pre／出現 mermaid")
 
 print("-- T2 負向:缺必填欄要在卡上紅底現形 --")
 CURRENT_GROUP = "t2-missing-required"
@@ -1299,14 +1308,14 @@ else:
         ".fig svg{display:block;width:100%;max-width:700px;margin:0 auto;height:auto}"
         not in _ui_css
         and "align-items:center" in _ui_css
-        and "max-width:220px" in _ui_css,
-        "twin 母版:圖有限寬且欄內置中,不得 width:100% 撐滿",
-        "仍是 .fig svg width:100% 或缺 align-items:center / max-width:220px",
+        and "max-width:360px" in _ui_css,
+        "twin 母版:圖有限寬 360px 且欄內置中,不得 width:100% 撐滿",
+        "仍是 .fig svg width:100% 或缺 align-items:center / max-width:360px",
     )
     check(
-        bool(re.search(r"\.pinned pre\{[^}]*margin-left:auto", _ui_css, re.S)),
-        "twin 母版:.pinned pre(方案架構圖)水平置中",
-        "缺 .pinned pre{…margin-left:auto}",
+        bool(re.search(r"\.fig svg,.fig pre\{[^}]*max-width:360px", _ui_css, re.S)),
+        "twin 母版:.fig svg 直式置中 max-width 360px(鎖定手樣)",
+        "缺 .fig svg … max-width:360px",
     )
 
 print("-- 2-decision 決策點分組(多表不得攤成平卡＋假表頭)--")
@@ -1347,7 +1356,7 @@ if _dp_html is None:
         "多決策點:選定集合 == Decision 的 1A+2A+3A+4A",
         "多決策點:Rejected 置頂可見",
         "多決策點:OC 條列有卡且頂區不是 —",
-        "多決策點:方案架構圖置頂且仍是 pre、不是 SVG",
+        "多決策點:方案架構圖置頂且是直式 SVG、不是 pre",
         "多決策點:駁回卡 .tag.rej",
     ):
         check(False, _lab, "2-decision.html 不存在")
@@ -1384,10 +1393,11 @@ else:
     _fig_sec = re.search(
         r'<section class="pinned" id="sec-方案架構圖".*?</section>', _dp_html, re.S)
     _fig_html = _fig_sec.group(0) if _fig_sec else ""
-    check(_fig is True and "<pre>" in _fig_html and "<svg" not in _fig_html,
-          "多決策點:方案架構圖置頂且仍是 pre、不是 SVG",
+    check(_fig is True and "<svg" in _fig_html and "<pre>" not in _fig_html
+          and "viewBox" in _fig_html and "mermaid" not in _fig_html,
+          "多決策點:方案架構圖置頂且是直式 SVG、不是 pre",
           "整節不見了" if _fig is None else (
-              "被摺疊" if _fig is False else "缺 pre 或出現 svg"))
+              "被摺疊" if _fig is False else "缺 svg／仍是 pre／出現 mermaid"))
     _rej_ids = set(_tagged_sids(_dp_html, 'class="tag rej">駁回</span>'))
     check(_rej_ids == {"1B", "2B", "2C", "3B", "4B"},
           "多決策點:駁回卡 .tag.rej(含 2B／2C 拆開)",

@@ -30,10 +30,15 @@ Agent 跑站與驗證；人只在方向、契約、出貨三道閘拍板。
 <details>
 <summary>機械正本（檢查器抽這裡；人看 guide）</summary>
 
-hook 要 python3（只吃標準函式庫，最低 3.9）。找直譯器的順序是
+hook 要 python3（只吃標準函式庫，**編譯下限 3.9**）。hook 找直譯器的順序是
 `DEVFLOW_PYTHON` → `/usr/bin/python3` → PATH 上的 `python3`。
-四邊安裝／更新 → [docs/PLUGIN.md](docs/PLUGIN.md)。
+gate-twin／產圖要 `markdown-it-py==4.0.0`，該套件要 **Python 3.12+**。
+macOS `/usr/bin/python3` 常是 3.9，裝不出 4.x、會靜默停在 3.x。
+用專案 venv 或設 `DEVFLOW_PYTHON` 指向 3.12+，**不要覆寫** Apple 系統 Python。
+產圖直譯器順序:`DEVFLOW_PYTHON` → 專案 `.venv` → `/usr/bin/python3` → PATH。
+doctor／upgrade 會查這件事。四邊安裝／更新 → [docs/PLUGIN.md](docs/PLUGIN.md)。
 主機發現 → [guide `#host`](guides/guide-dev-flow.html#host)。
+feat worktree 的 `docs/dev` 雙生頁要併回專案真正在用的整合線(常是 develop／testing),不要只留在 worktree。
 
 ## 3. 七份文檔(用途一句話;骨架見 `_templates/`,填好範例見 `example/`)
 

@@ -23,6 +23,9 @@
 #   ⑨upgrade 的 baseline 來源綁 upstream-new 正本,禁抄 docs/dev/ 現況(A-2)
 #   ⑩check 段的散發副本 parity 取自檔案地圖散發面標註(不得逐支硬列)、涵蓋
 #     history-append.sh、且交代 contract 副本要單獨驗(2026-08-20 實際漏驗)
+#   ⑪upgrade 必須先刪 pack 不再出貨的受管殘件(devflow-upgrade-leftovers.sh),
+#     不准刪專案根／live docs/dev/CONTEXT.md,且先刪殘件再換 baseline
+#   ⑫產圖／gate-twin 要 Python 3.12+ 專案 venv 或 DEVFLOW_PYTHON,不要覆寫系統 Python
 #
 # 用法:
 #   scripts/check-dev-setup-discipline.sh [root]   # 缺省 = repo root
@@ -189,10 +192,37 @@ if src:
          "涵蓋不到它、必須單獨驗 —— 併進 parity 總表就沒有人在驗 contract 副本"
          "(同 dev-release 步 2 把那行 diff -q 單獨留著的理由)")
 
+    # ── ⑪upgrade 殘件刪除:pack 不再出貨的受管檔要刪,live CONTEXT 不准刪 ──
+    need("devflow-upgrade-leftovers.sh" in upg_sec,
+         "SKILL.md upgrade 段沒有點名 devflow-upgrade-leftovers.sh —— pack 停出的"
+         "受管殘件(例:_templates/CONTEXT.md)會永遠留在採用樹")
+    need("不再出貨" in upg_sec,
+         "SKILL.md upgrade 段沒有「不再出貨」—— 殘件刪除的判準會漂成「看起來多餘"
+         "就刪」,把本地客製模板一併清掉")
+    need("不准刪" in upg_sec and "docs/dev/CONTEXT.md" in upg_sec,
+         "SKILL.md upgrade 段沒把 live docs/dev/CONTEXT.md 釘成不准刪 —— 採用專案"
+         "正在用的脈絡檔會被當成退役模板清掉")
+    need("專案根" in upg_sec and "CONTEXT.md" in upg_sec,
+         "SKILL.md upgrade 段沒交代不准刪專案根 CONTEXT.md")
+    need("先刪殘件再換 baseline" in upg_sec,
+         "SKILL.md upgrade 段沒有「先刪殘件再換 baseline」—— 先換快照的話退役檔"
+         "會被看成本地客製,下次 upgrade 再也不敢刪")
+
+    # ── ⑫產圖 Python 執行地板:3.12+ venv,不准覆寫系統 Python ──────────────
+    need("3.12" in src and "venv" in src,
+         "SKILL.md 沒交代 gate-twin／產圖要 Python 3.12+ 專案 venv —— macOS "
+         "系統 3.9 會靜默裝成 markdown-it-py 3.x")
+    need("不要覆寫" in src,
+         "SKILL.md 沒寫「不要覆寫」Apple／系統 Python —— 現場會被教去改 "
+         "/usr/bin/python3")
+    need("不准每次 upgrade 自動跑" in src,
+         "SKILL.md 沒把 HISTORY 種子清理釘成「不准每次 upgrade 自動跑」——"
+         "upgrade 若自動重寫 HISTORY 會吃掉真紀錄")
+
 # ── 檢查數地板:防止有人把上面整段刪成空迴圈仍然 exit 0 ──────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」(同 repo 慣例:
 # check-stage67-enforcement.sh:232、check-no-stale-paths.sh 的 MIN_CHECKS)。
-MIN_CHECKS = 18
+MIN_CHECKS = 26
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
@@ -206,5 +236,5 @@ if fails:
 print(f"✅ check-dev-setup-discipline: dev-setup upgrade 三方比對紀律齊({checks} 項檢查全過)")
 print("   三方比對 / baseline 落地段落 scoped / 逐檔徵同意 / 過渡態 / master-only 剝除"
       " / gate twin 相依 / mkdir 先於工具 cp / 落地在驗證後 / upgrade 來源綁 upstream-new"
-      " / check 段散發副本 parity map-driven")
+      " / check 段散發副本 parity map-driven / upgrade 殘件刪除")
 PY

@@ -54,6 +54,8 @@ LIFE_KEYS = (
     "模組生命週期",
     "生命週期",
 )
+BEHAVIOR_KEYS = ("行為流程圖",)
+FIG_HEAD = re.compile(r"^\[([^\]]+)\]\s*(.*)$")
 
 CANVAS_W = 280
 BOX_W = 200
@@ -407,6 +409,87 @@ def wrap_lines(text, width=14):
     return [part for part in lines if part][:3] or ["沒有"]
 
 
+def parse_behavior_steps(fig_body):
+    """認 `[R-1] 標題` 當一框,框上保留 R-id 與底下步驟列,給 fig-text 對文字。"""
+    steps = []
+    current = None
+    extras = []
+
+    def flush():
+        if current is None:
+            return
+        bits = []
+        for extra in extras:
+            text = extra.strip()
+            if text:
+                bits.append(text[:42])
+            if len(bits) >= 3:
+                break
+        steps.append((current, bits[:3]))
+
+    for raw in (fig_body or "").splitlines():
+        stripped = raw.strip()
+        if not stripped or stripped.startswith("```"):
+            continue
+        if stripped.startswith("|") or stripped.startswith("<"):
+            continue
+        match = FIG_HEAD.match(stripped)
+        if match:
+            flush()
+            label = match.group(1).strip()
+            rest = match.group(2).strip()
+            current = ("[%s] %s" % (label, rest)).strip() if rest else "[%s]" % label
+            extras = []
+        elif current is not None:
+            extras.append(stripped)
+        else:
+            extras.append(stripped)
+    flush()
+    return steps[:8]
+
+
+def render_vbox_titles(steps, aria):
+    if not steps:
+        return ""
+    heights = []
+    for _title, lines in steps:
+        n = max(1, len(lines))
+        heights.append(PAD_TOP + TITLE_H + n * LINE_H + PAD_BOTTOM)
+    height = TOP + sum(heights) + GAP * (len(steps) - 1) + TOP
+    parts = [
+        '<svg class="vbox" viewBox="0 0 %d %d" role="img" aria-label="%s">'
+        % (CANVAS_W, height, esc(aria or "行為流程圖")),
+    ]
+    y = TOP
+    for i, (title, lines) in enumerate(steps):
+        box_h = heights[i]
+        kind = "hl" if i == 0 else "b"
+        parts.append(
+            '  <rect class="%s" x="%d" y="%d" width="%d" height="%d" rx="8"/>'
+            % (kind, BOX_X, y, BOX_W, box_h)
+        )
+        parts.append(
+            '  <text class="nl" text-anchor="middle" x="%d" y="%d">%s</text>'
+            % (CX, y + PAD_TOP + 12, esc(title))
+        )
+        ly = y + PAD_TOP + TITLE_H
+        for line in lines:
+            ly += LINE_H
+            parts.append(
+                '  <text class="sm" text-anchor="middle" x="%d" y="%d">%s</text>'
+                % (CX, ly, esc(line))
+            )
+        if i < len(steps) - 1:
+            y1 = y + box_h
+            y2 = y1 + GAP
+            parts.append(
+                '  <path class="flow" d="M%d,%d L%d,%d"/>' % (CX, y1, CX, y2)
+            )
+        y += box_h + GAP
+    parts.append("</svg>")
+    return "\n".join(parts)
+
+
 def render_lifecycle_svg(slots):
     hl = pick_hl(slots)
     steps = []
@@ -545,6 +628,19 @@ def build_html(text):
         '<div class="r-head"><span class="r-name">生命週期說明</span></div>'
         '<div class="r-body"><p>%s</p></div></section>'
     ) % esc(note)
+    beh_title, beh_body = section_named(body, BEHAVIOR_KEYS)
+    beh_html = ""
+    if beh_body:
+        beh_steps = parse_behavior_steps(beh_body)
+        if beh_steps:
+            beh_html = (
+                '<section class="r-block" id="behavior">'
+                '<div class="r-head"><h2 class="r-name">%s</h2></div>'
+                '<div class="r-body"><div class="figwrap">\n%s\n</div></div></section>'
+            ) % (
+                esc(beh_title or "行為流程圖"),
+                render_vbox_titles(beh_steps, beh_title or "行為流程圖"),
+            )
     page = """<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -565,6 +661,7 @@ def build_html(text):
 %s
 %s
 %s
+%s
 <p class="src">由 <code>scripts/build-stage4-html.py</code> 從 md 解析產生,不包 html-shell。</p>
 </div>
 <script>%s</script>
@@ -578,6 +675,7 @@ def build_html(text):
         fig,
         note_card,
         "\n".join(render_req(r) for r in reqs),
+        beh_html,
         verdict_footer(slug),
         SCRIPT_VERDICT,
     )

@@ -351,6 +351,32 @@ def detect_host(tree):
     return ""
 
 
+def next_command(host):
+    """--probe 印的下一句:該主機現在該打哪條,不是手冊。"""
+    if host == "claude":
+        return (
+            "/plugin marketplace add rick546986/dev-flow"
+            " ；然後 /plugin install dev-flow@dev-flow"
+        )
+    if host == "cursor":
+        return (
+            "Dashboard → Plugins → 已匯入的 rick546986/dev-flow 那一列 → Refresh"
+            "（不是 plugin 詳情卡）"
+        )
+    if host == "codex":
+        return (
+            "codex plugin marketplace add rick546986/dev-flow"
+            " ；然後 codex plugin add dev-flow@dev-flow"
+            " ；更新再 marketplace upgrade 後 add 一次"
+        )
+    if host == "grok":
+        return (
+            "不要發明 Grok marketplace。Grok Bot 吃 Cursor 帳的 plugin cache；"
+            "本機可把方法包 skills 整棵掛進 .grok/skills"
+        )
+    return "四邊下一指令見 docs/PLUGIN.md"
+
+
 def hang_sentence(host, pack):
     """開工卡住時只印一句:缺什麼、掛到哪、不要複製正文。"""
     root = pack or "${DEVFLOW_ROOT}"
@@ -518,8 +544,11 @@ def main():
             print(
                 f"hang: {start_hang or hang_sentence(detected_host, pack)}"
             )
+            print(f"next: {next_command(detected_host)}")
             print(f"FAIL: probe {len(missing)} 項", file=sys.stderr)
             sys.exit(1)
+        print(f"host: {detected_host or 'unknown'}")
+        print(f"next: {next_command(detected_host)}")
         print("probe: ok")
         sys.exit(0)
 

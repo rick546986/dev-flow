@@ -39,7 +39,9 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 | Grok | 人明說／技能庫掛整棵 | 同上。不要假裝能從產品 repo 自動灌 |
 
 Cursor／Grok／Codex 開工先跑 `scripts/check-host-adapter.sh --probe`。
-缺技能樹或 `DEVFLOW_ROOT` 不對會印一句掛載句並紅。
+綠的時候印該主機下一句安裝／更新指令(Cursor Refresh 在已匯入 repo 那一列;
+Codex 是 marketplace add／plugin add;Grok 沒有 marketplace)。
+缺技能樹或 `DEVFLOW_ROOT` 不對會印一句掛載句並紅。四邊正本見 `docs/PLUGIN.md`。
 三邊都沒有 Claude PreToolUse。**誰開工誰先跑**該站
 `scripts/check-devtalk-graph.sh --action` 或 `scripts/check-devstageN-graph.sh --action`。
 **不准為了別的主機改鬆 `--action`。**
@@ -80,9 +82,13 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
 ## install(fresh)
 
 > **前提**:hooks 需要 python3(解析順序 `DEVFLOW_PYTHON` → `/usr/bin/python3` → PATH;
-> 詳見母版 README「環境需求」)——Windows Git Bash 環境安裝前先確認 `python3` 找得到
-> (或設 `DEVFLOW_PYTHON`),否則守衛會**靜默跳過**:不是壞掉,但等於沒有保護,
-> 而「守衛沉睡」與「守衛在擋」從外面看長得一樣(G1 同型風險)。
+> **編譯下限 3.9**;詳見母版 README「環境需求」)——Windows Git Bash 環境安裝前先確認
+> `python3` 找得到(或設 `DEVFLOW_PYTHON`),否則守衛會**靜默跳過**:不是壞掉,但等於
+> 沒有保護,而「守衛沉睡」與「守衛在擋」從外面看長得一樣(G1 同型風險)。
+> gate-twin／產圖另要 `markdown-it-py==4.0.0`,該套件要 **Python 3.12+**。
+> macOS `/usr/bin/python3` 常是 3.9,裝不出 4.x。用**專案 venv**或設
+> `DEVFLOW_PYTHON` 指向 3.12+,**不要覆寫** Apple／系統 Python。
+> doctor 的 `printer-python` 項會查;不夠就停,不准默默留 markdown-it-py 3.x。
 
 0. **解析 DEVFLOW_ROOT + 掛整棵(P0，先於散發)**：先完成本檔「主機掛整棵」節，並先探測主機（見「主機探測」）。
    `DEVFLOW_ROOT` 解析失敗 → setup 大聲停，不准進入步 1。
@@ -238,6 +244,14 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
   步 6 只驗 gauntlet 一支,整合回歸工具的可執行位元驗證在步 7,兩道都要)與
   `docs/dev/devflow-contract.json`(版本握手契約;覆蓋後重跑 check 第 10 項)——
   先 diff 摘要給使用者過目。
+- **出廠殘件刪除**(覆蓋受管檔與換 baseline **之前**):跑
+  `${DEVFLOW_ROOT}/scripts/devflow-upgrade-leftovers.sh --root <專案根> --pack ${DEVFLOW_ROOT} --apply`
+  刪掉目前 pack **不再出貨**、但採用樹還留著的受管殘件(例:`docs/dev/_templates/CONTEXT.md`
+  與 `.devflow-baseline/_templates/CONTEXT.md`)。**不准刪**專案根 `CONTEXT.md`,
+  也不准刪採用專案正在用的 `docs/dev/CONTEXT.md`。沒 baseline 時只刪已知退役
+  模板名;有 baseline 時另刪「在舊 baseline、不在新 pack」的 `_templates/` 檔。
+  **先刪殘件再換 baseline**,否則退役檔會被看成本地客製。預設 dry-run;upgrade
+  帶 `--apply`。這一步不是每次 upgrade 重寫 HISTORY,也不是掃整個專案亂刪。
 - **diff 摘要必須分兩類,不得只給一份「新舊不同」清單**(否則使用者按下「全部
   升級」時看不到自己的在地修改要被沖掉):
   ①**母版改寫**(上游更新):本地內容 = 上次 install/upgrade 留下的原樣,使用者
@@ -276,6 +290,11 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
   否則 Windows 上母版側被 sed 剝掉 CR、採用專案側是 CRLF,每一行都差一個 CR、
   整份被判全不同 —— check 第 6 項恆紅、每次健檢都走 upgrade 覆蓋一次,
   把「開工前工作樹要乾淨」的前提直接弄壞。
+- **產圖 Python 地板**:upgrade／doctor 必須查 `printer-python`(3.12+ 專案 venv
+  或 `DEVFLOW_PYTHON`)。系統 python 是 3.9 時不准默默 `pip install` 出
+  markdown-it-py 3.x,也**不要覆寫** Apple／系統 Python。
+- **HISTORY 出廠種子清理是選配**:`docs/dev/tools/history-append.sh --action factory-seed-cleanup`
+  只刪可見的出廠四行。認不出種子 vs 真紀錄 → fail-closed。**不准每次 upgrade 自動跑**。
 - **絕不動 `docs/dev/<slug>/` 已產出的 feature 檔**與 STATUS/CONTEXT/rules。
 
 ## refresh(使用者說「重掃 rules」「rules 過期了」「更新架構規則」)

@@ -285,6 +285,7 @@ if plugin_md:
         (".cursor-plugin/plugin.json", "Cursor manifest"),
         (".codex-plugin/plugin.json", "Codex manifest"),
         ("Customize", "Cursor 官方安裝面"),
+        ("已匯入", "Cursor Refresh 在已匯入 repo 那一列"),
     ):
         if needle not in plugin_md:
             fail(f"docs/PLUGIN.md 少了{label}指令／路徑:{needle}")
@@ -303,6 +304,7 @@ else:
         (".cursor-plugin/plugin.json", "Cursor manifest"),
         (".codex-plugin/plugin.json", "Codex manifest"),
         ("Customize", "Cursor 官方安裝面"),
+        ("已匯入", "Cursor Refresh 在已匯入 repo 那一列"),
         ("Cursor", "Cursor"),
         ("Grok", "Grok"),
         ("Codex", "Codex"),

@@ -35,7 +35,7 @@ Windows 同構,在 `%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\<versi
 1. Dashboard → Plugins → Import from Repo → `rick546986/dev-flow`
 2. Customize → 找到 `dev-flow` → Install（user 或 project）
 
-更新:Dashboard → Plugins → Refresh,或開 Auto Refresh。
+更新:Refresh 在 Dashboard → Plugins **已匯入的 rick546986/dev-flow 那一列**,不是 plugin 詳情卡。或開 Auto Refresh。
 本機試裝:`ln -s <clone> ~/.cursor/plugins/local/<name>`（`<name>` = plugin.json 的 `name`）
 
 產品 repo 技能樹仍可掛整棵 `.cursor/skills`(dev-setup)。流程規則不准灌進 AGENTS.md。Cursor 只准 `.cursor/rules/` 一行架構不變量指標。
@@ -60,11 +60,14 @@ codex plugin marketplace upgrade dev-flow
 
 不要發明 Grok marketplace。Grok Bot 吃 Cursor 帳裝好的同一包（已見過 `plugins/cache/dev-flow/...`）。本機 Grok 技能庫仍可掛整棵 `.grok/skills`。不要假裝能從產品 repo 自動灌進 Grok。
 
-**環境**:hooks 要 python3(只吃標準函式庫)。找直譯器的順序是 `DEVFLOW_PYTHON` → `/usr/bin/python3` → PATH 上的 `python3`。找不到就印警告後放行 —— 那次呼叫沒有守衛,不是功能壞掉。
+**環境**:hooks 要 python3(只吃標準函式庫,編譯下限 3.9)。hook 找直譯器:`DEVFLOW_PYTHON` → `/usr/bin/python3` → PATH。找不到就印警告後放行 —— 那次呼叫沒有守衛,不是功能壞掉。
+gate-twin／產圖要 `markdown-it-py==4.0.0`(Python **3.12+**)。macOS 系統 python 常是 3.9,裝不出 4.x。用專案 venv 或設 `DEVFLOW_PYTHON` 指向 3.12+,**不要覆寫** Apple 系統 Python。doctor 的 `printer-python` 會查。
 
-Windows(Git Bash)沒有 `/usr/bin/python3`。另外裝 Python,或設 `DEVFLOW_PYTHON`(例:`setx DEVFLOW_PYTHON "C:/Python312/python.exe"`)。裝好之後 hook 會生效,但本 repo 的驗證套件在 Windows 上仍跑不全綠。見 `notes/dispatch-windows-parity.md`。
+Windows(Git Bash)沒有 `/usr/bin/python3`。另外裝 Python 3.12+,或設 `DEVFLOW_PYTHON`(例:`setx DEVFLOW_PYTHON "C:/Python312/python.exe"`)。裝好之後 hook 會生效,但本 repo 的驗證套件在 Windows 上仍跑不全綠。見 `notes/dispatch-windows-parity.md`。
 
 細節見母版 README「環境需求」。
+
+feat worktree 產的 `docs/dev` html/md 併回整合線(常是 `develop`／`testing`)是預期,不是污染;HISTORY 種子列也會跟著走。不要把雙生頁只留在 worktree。
 
 新專案裝好後,進專案打 `dev-setup`。它會建 `.dev-flow/`(進 Git 的記憶正本)與本機快取。之後 `git pull` 不必重跑 setup;下一句 ask / context 會核對 generation。見 README §16。
 

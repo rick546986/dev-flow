@@ -10,6 +10,7 @@ devflow-contract.json(dev-setup 散發副本);找不到 → 明確報,fail-close
 """
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -55,6 +56,97 @@ def _find_contract(root, cli_path):
         if os.path.exists(c):
             return c, candidates
     return None, candidates
+
+
+PRINTER_PY_FLOOR = (3, 12)
+
+
+def _python_version(exe):
+    try:
+        r = subprocess.run(
+            [exe, "-c", "import sys;print('%d.%d' % sys.version_info[:2])"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            return tuple(int(x) for x in r.stdout.strip().split("."))
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return None
+    return None
+
+
+def resolve_printer_python(root):
+    """產圖／gate-twin 直譯器:DEVFLOW_PYTHON → 專案 venv → 系統 python3。
+
+    hook 仍走 devflow-python-lib(系統 python3 優先)。這裡管的是
+    markdown-it-py==4.0.0 要的 3.12+,不准默默用掉 macOS 3.9。
+    回傳 (exe, ver, kind),kind ∈ env|venv|system。
+    """
+    env = os.environ.get("DEVFLOW_PYTHON", "").strip()
+    if env:
+        ver = _python_version(env)
+        if ver:
+            return env, ver, "env"
+    for rel in (".venv/bin/python", ".venv/bin/python3"):
+        cand = os.path.join(root, rel)
+        if os.path.isfile(cand) and os.access(cand, os.X_OK):
+            ver = _python_version(cand)
+            if ver:
+                return cand, ver, "venv"
+    candidates = []
+    # 系統優先,但不寫死路徑字串 —— runtime-selftest 禁 hooks/ 出現
+    # 那串(只准留在 python-lib)。Windows 沒這條路,isfile 會略過。
+    sys_py = os.path.join(os.sep, "usr", "bin", "python3")
+    if os.path.isfile(sys_py):
+        candidates.append(sys_py)
+    which = shutil.which("python3")
+    if which:
+        candidates.append(which)
+    seen = set()
+    for cand in candidates:
+        if not cand or cand in seen:
+            continue
+        seen.add(cand)
+        if os.path.isfile(cand) and os.access(cand, os.X_OK):
+            ver = _python_version(cand)
+            if ver:
+                return cand, ver, "system"
+    return None, None, None
+
+
+def _is_project_printer(exe, kind):
+    """只有專案 venv、或 DEVFLOW_PYTHON 指到非系統直譯器,leftover mdit 才 fail-closed。
+
+    CI／selftest 常把 DEVFLOW_PYTHON 指到系統 python3;那仍是系統 leftover,
+    不准連坐握手,也不准叫人覆寫系統套件。
+    """
+    if not exe:
+        return False
+    norm = exe.replace("\\", "/")
+    if "/.venv/" in norm:
+        return True
+    if kind != "env":
+        return False
+    real = os.path.realpath(exe)
+    sys_py = os.path.join(os.sep, "usr", "bin", "python3")
+    if os.path.isfile(sys_py) and os.path.realpath(sys_py) == real:
+        return False
+    which = shutil.which("python3")
+    if which and os.path.realpath(which) == real:
+        return False
+    return True
+
+
+def _mdit_version(exe):
+    try:
+        r = subprocess.run(
+            [exe, "-c", "import markdown_it;print(markdown_it.__version__)"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            return r.stdout.strip()
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return None
 
 
 def run_doctor(root, contract_path="", gate_cmd=""):
@@ -279,6 +371,49 @@ def run_doctor(root, contract_path="", gate_cmd=""):
         info("history-append-root",
              "docs/dev/tools/history-append.sh 不存在 —— 未散發(舊安裝);"
              "HISTORY 唯一寫入口建議跑 dev-setup 散發後使用。")
+
+    # 6d. 產圖／gate-twin 直譯器:markdown-it-py==4.0.0 要 Python 3.12+。
+    # macOS 系統 python3 常是 3.9,pip 會靜默停在 3.x。不准叫人覆寫系統 Python。
+    # 系統 leftover mdit 3.x 不擋握手(CI runner／selftest 把 DEVFLOW_PYTHON
+    # 指到系統 python3 也算系統);專案 venv 或非系統 DEVFLOW_PYTHON 帶 3.x
+    # 才 fail-closed。
+    exe, ver, kind = resolve_printer_python(root)
+    if not exe:
+        check(False, "printer-python",
+              "找不到產圖／gate-twin 直譯器。建專案 venv 或設 DEVFLOW_PYTHON"
+              "指向 3.12+,不要覆寫系統 python3。")
+    elif ver < PRINTER_PY_FLOOR:
+        check(False, "printer-python",
+              f"{exe} 是 Python {ver[0]}.{ver[1]}。markdown-it-py==4.0.0 要 "
+              f"{PRINTER_PY_FLOOR[0]}.{PRINTER_PY_FLOOR[1]}+。"
+              "建專案 venv 或設 DEVFLOW_PYTHON 指向 3.12+,"
+              "不要覆寫 Apple／系統 Python。")
+    else:
+        mdit = _mdit_version(exe)
+        if mdit and not mdit.startswith("4.") and _is_project_printer(exe, kind):
+            check(False, "printer-python",
+                  f"{exe} 已是 Python {ver[0]}.{ver[1]},但 markdown-it-py 是 "
+                  f"{mdit}(要 4.0.0)。不要靜默留 3.x;在這個 venv 重裝 "
+                  f"`pip install 'markdown-it-py==4.0.0'`。")
+        elif mdit and not mdit.startswith("4."):
+            info("printer-python",
+                 f"系統 {exe} 有 leftover markdown-it-py {mdit};"
+                 "產圖請用專案 venv 或 DEVFLOW_PYTHON 裝 4.0.0,"
+                 "不要覆寫系統套件。")
+            check(True, "printer-python",
+                  f"{exe} Python {ver[0]}.{ver[1]} ≥ "
+                  f"{PRINTER_PY_FLOOR[0]}.{PRINTER_PY_FLOOR[1]}"
+                  f"(系統 leftover mdit {mdit} 不擋握手)")
+        else:
+            extra = (f",markdown-it-py {mdit}" if mdit
+                     else ",markdown-it-py 未裝(gate-twin 會自己 exit 2)")
+            check(True, "printer-python",
+                  f"{exe} Python {ver[0]}.{ver[1]} ≥ "
+                  f"{PRINTER_PY_FLOOR[0]}.{PRINTER_PY_FLOOR[1]}{extra}")
+
+    info("host-install",
+         "四邊下一指令見 docs/PLUGIN.md；本機探針 "
+         "scripts/check-host-adapter.sh --probe")
 
     # 6c. wave_review schema(M3:契約 vs runtime-capabilities 聲明;
     #     runtime 實際字串 = devflow-lib wave review 驗證所認 schema)

@@ -10,7 +10,10 @@
 # 且 dev-flow 挑直譯器的順序把系統內建排在 PATH 之前(README 環境需求段)——
 # **等於優先挑到跑不動的那個版本**。這個缺陷在 v3.8.0 就已經出貨,全部既有檢查皆綠。
 #
-# 宣告下限 = PY_FLOOR(下方常數)。改下限要同時改 README 環境需求段。
+# 宣告下限 = PY_FLOOR(下方常數)= 編譯地板。printers 在 3.9 仍可 parse(本輪用
+# 真的 3.9.25 compile 過);markdown-it-py==4.0.0 的**執行地板**是 3.12+,
+# 由 doctor `printer-python` 查,不把編譯地板偷偷升到 3.12。
+# 改編譯下限要同時改 README 環境需求段;改執行地板要同時改 doctor 與 README。
 #
 # 做法:找一個「舊到會顯示出問題」的直譯器(版本在下限 ~ 3.11 之間),用它逐檔真的
 # compile 一遍。**找不到就 exit 2,不退回靜態掃描** —— 曾經寫過一版靜態掃描 fallback
@@ -33,9 +36,27 @@ import sys
 root = sys.argv[1]
 
 # ── 宣告下限 ──────────────────────────────────────────────────────────────
-# 3.9 = macOS 內建 /usr/bin/python3。挑這個當下限是因為 dev-flow 的直譯器解析順序
-# 把系統內建排在 PATH 之前,採用專案沒設 DEVFLOW_PYTHON 時拿到的就是它。
+# 3.9 = hook／.py 編譯地板(printers 仍可 parse)。macOS /usr/bin/python3 常是 3.9;
+# 那只夠跑 hook,不夠裝 markdown-it-py 4。執行地板 3.12+ 見 doctor printer-python。
+# 不要叫人覆寫 Apple 系統 Python。
 PY_FLOOR = (3, 9)
+
+readme = open(os.path.join(root, "README.md"), encoding="utf-8").read()
+skill = open(os.path.join(root, "skills", "dev-setup", "SKILL.md"), encoding="utf-8").read()
+doc_fails = []
+if "3.9" not in readme:
+    doc_fails.append("README 沒宣告編譯下限 3.9")
+if "3.12" not in readme or "markdown-it-py" not in readme:
+    doc_fails.append("README 沒宣告產圖執行地板 3.12+／markdown-it-py")
+if "venv" not in readme or "不要覆寫" not in readme:
+    doc_fails.append("README 沒要求專案 venv、也沒寫不要覆寫系統 Python")
+if "3.12" not in skill or "不要覆寫" not in skill or "venv" not in skill:
+    doc_fails.append("SKILL.md 沒把 3.12+／專案 venv／不要覆寫系統 Python 寫進安裝前提")
+if doc_fails:
+    print("⛔ Python 地板文件與實作不一致:", file=sys.stderr)
+    for item in doc_fails:
+        print("   " + item, file=sys.stderr)
+    sys.exit(1)
 
 # ── 要驗哪些檔 ───────────────────────────────────────────────────────────
 # 全部收:hooks/ 與 docs/dev/tools/ 是採用專案真的會跑的;scripts/ 與 observability/
