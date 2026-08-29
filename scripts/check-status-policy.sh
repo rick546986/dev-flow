@@ -42,6 +42,9 @@
 #       「失敗不得宣稱 Stage 6 完成」—— 用順序鏈驗位置,不是只找 push 字。
 #     ⑬ _templates/STATUS.md Branch 段:兩段式發布都要在(起手=建立可查座標、
 #       不代表執行中 remote 完整;Stage 6 收尾由 dev-run 再發布最終 tip)。
+#     ⑭ scripts/status-update.sh 存在、可執行、含目錄鎖
+#     ⑮⑯ 兩份 STATUS 的 status-writer-rev 蓋章對得上 Active/Backlog 表列
+#     ⑰ feature branch 上 docs 表列必須等於 origin/main(找不到基準則略過)
 # 並各帶內建負向 fixture(把各件改壞一次,守衛必須紅 —— 不紅就是白做)。
 #
 # 掛載:scripts/devflow-check.sh group_architecture()。
@@ -104,6 +107,9 @@ POINTS = [
     # 拆成「動作/落點」兩層之後,能被機械釘住的就只剩這個目的本身 —— 沒有這一條,
     # 今天有人把整段寫入紀律刪掉只留 pull/rebase/force 三條,本守衛照樣全綠。
     ("寫入窗口最短", ["窗口最短"]),
+    # 同 checkout 靜默互蓋:v3.8.0 只縮窗口。表列唯一寫入口是 status-update.sh
+    # (目錄鎖 + 蓋章);兩份頂註都要點名,否則只剩散文、牙不在。
+    ("表列唯一寫入口", ["status-update.sh"]),
 ]
 
 
@@ -469,6 +475,51 @@ fails = status_branch_failures(template)
 check(not fails, "Branch 段:起手座標與 Stage 6 收尾最終 tip 說明都在",
       "; ".join(fails))
 
+print("-- ⑭表列唯一寫入口腳本 --")
+writer = os.path.join(ROOT, "scripts", "status-update.sh")
+check(os.path.isfile(writer) and os.access(writer, os.X_OK),
+      "scripts/status-update.sh 存在且可執行")
+if os.path.isfile(writer):
+    wtxt = open(writer, encoding="utf-8").read()
+    check("mkdir" in wtxt and "LOCK" in wtxt
+          and "refresh-stamp 需要基準" in wtxt,
+          "status-update.sh 含目錄鎖,且 --refresh-stamp 需要基準",
+          "拿掉鎖或拿掉補章基準閘 = 手改表列再 refresh-stamp 假綠")
+else:
+    check(False, "status-update.sh 含目錄鎖(mkdir + LOCK)", "檔案不存在")
+
+print("-- ⑮⑯蓋章:Active/Backlog 表列指紋 --")
+
+
+def verify_stamp(rel):
+    import subprocess
+    return subprocess.run(
+        ["bash", os.path.join(ROOT, "scripts", "status-update.sh"),
+         "--verify-stamp", "--file", os.path.join(ROOT, rel)],
+        capture_output=True, text=True,
+    )
+
+
+for rel, label in (("docs/dev/STATUS.md", "docs"),
+                   ("_templates/STATUS.md", "模板")):
+    vr = verify_stamp(rel)
+    check(vr.returncode == 0,
+          f"{label} STATUS 蓋章對得上表列",
+          ((vr.stderr or vr.stdout or "").strip()))
+
+print("-- ⑰feature branch 表列凍結(相對 origin/main)--")
+import subprocess as _sp
+_fr = _sp.run(
+    ["bash", os.path.join(ROOT, "scripts", "status-update.sh"),
+     "--check-tables", "--file", os.path.join(ROOT, "docs/dev/STATUS.md")],
+    capture_output=True, text=True,
+)
+# --check-tables:表列與基準相同或找不到基準(no-base)都是 0;
+# 只有表列真的漂了才非零。架構守衛複本常沒有 origin/main,不能因此紅。
+_freeze_rc = _fr.returncode
+check(_freeze_rc == 0, "docs/dev/STATUS.md Active/Backlog 表列與整合分支基準相同",
+      ((_fr.stderr or _fr.stdout or "").strip()))
+
 print("-- 負向 fixture(改壞必須紅,不紅就是白做)--")
 mutated_docs = docs.replace("只在整合分支", "在任何分支").replace("不碰本檔", "隨便改")
 check(bool(policy_failures(template, mutated_docs)),
@@ -554,6 +605,64 @@ check(bool(policy_failures(mutated_template, docs)),
 mutated_docs = docs.replace("**寫入窗口最短**", "**盡快**")
 check(bool(policy_failures(template, mutated_docs)),
       "負向⑲:docs 頂註拿掉「窗口最短」→ 紅")
+mutated_template = template.replace("status-update.sh", "status-edit.md")
+check(bool(policy_failures(mutated_template, docs)),
+      "負向㉓:模板頂註拿掉 status-update.sh(其餘寫入紀律都還在)→ 紅")
+mutated_docs = docs.replace("status-update.sh", "status-edit.md")
+check(bool(policy_failures(template, mutated_docs)),
+      "負向㉔:docs 頂註拿掉 status-update.sh → 紅")
+
+# ㉕㉖:表列被手改、蓋章沒跟著走 → --verify-stamp 必須紅。今天沒這顆牙,
+# 手改全綠;這就是「會被今天手改餵綠、有牙才紅」的 destroy。
+import subprocess as _sp2
+import tempfile as _tf
+
+
+def _stamp_stale(rel, old, new, label):
+    src = os.path.join(ROOT, rel)
+    raw = open(src, encoding="utf-8").read()
+    if old not in raw:
+        check(False, label, f"{rel} 找不到要替換的表列針「{old}」")
+        return
+    mutated = raw.replace(old, new, 1)
+    with _tf.NamedTemporaryFile("w", encoding="utf-8", suffix=".md",
+                                delete=False) as fh:
+        fh.write(mutated)
+        tmp = fh.name
+    try:
+        vr = _sp2.run(
+            ["bash", os.path.join(ROOT, "scripts", "status-update.sh"),
+             "--verify-stamp", "--file", tmp],
+            capture_output=True, text=True,
+        )
+        check(vr.returncode != 0, label,
+              "手改表列後蓋章仍過 —— 牙沒咬到")
+    finally:
+        os.unlink(tmp)
+
+
+_stamp_stale("docs/dev/STATUS.md",
+             "STATUS 真正的單寫入者", "STATUS 被手改的列",
+             "負向㉕:docs 手改 Backlog 列、章不動 → 紅")
+_stamp_stale("_templates/STATUS.md",
+             "[<slug>](./<slug>/)", "[<hand-edit>](./hand-edit/)",
+             "負向㉖:模板手改 Active 範例列、章不動 → 紅")
+
+# ㉗:feature 檔 Backlog 相對基準被改 → --check-tables 紅
+with _tf.TemporaryDirectory() as _td:
+    _base = os.path.join(_td, "base.md")
+    _feat = os.path.join(_td, "feat.md")
+    open(_base, "w", encoding="utf-8").write(docs)
+    open(_feat, "w", encoding="utf-8").write(
+        docs.replace("STATUS 真正的單寫入者", "STATUS 分支上改", 1))
+    _ct = _sp2.run(
+        ["bash", os.path.join(ROOT, "scripts", "status-update.sh"),
+         "--check-tables", "--file", _feat, "--base-file", _base],
+        capture_output=True, text=True,
+    )
+    check(_ct.returncode != 0,
+          "負向㉗:feature 檔 Backlog 列相對基準被改 → 紅",
+          ((_ct.stdout or "") + (_ct.stderr or "")).strip())
 
 # ⑳~㉒:W6 耐久性鏈的負向 fixture。三個 mutant 各拿掉/挪動鏈上一步,其餘原封
 # 不動 —— 對應的正是三種實際會發生的假完成:memory commit 漏掉、checkpoint 排在
@@ -582,7 +691,7 @@ check(bool(devrun_publish_failures(mutated_devrun)),
 # check-gate-twin.sh、check-dev-setup-discipline.sh 的 MIN_CHECKS);之後每加一條
 # 檢查都要同步調高。字面值與這整個 if 區塊(condition+記錄 failure+非零退出鏈)
 # 另被 test-architecture-guards.sh 靜態互釘外釘,兩處要同一個 commit 一起改。
-MIN_CHECKS = 35
+MIN_CHECKS = 45
 if CHECKS < MIN_CHECKS:
     FAILED += 1
     print(f"  ✗ 檢查數地板:實際只跑了 {CHECKS} 項(地板 {MIN_CHECKS})—— "

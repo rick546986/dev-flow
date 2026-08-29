@@ -19,6 +19,13 @@
 > `git rebase origin/main` 重放自己未發布的 commit,解完衝突再推,並核對整張表的
 > **列集合**沒有把別人的列刪掉;**不准**用 `push --force` / `reset --hard` 解決
 > 本檔的推送衝突。
+>
+> **表列(Active / Backlog)的唯一寫入口**是 `scripts/status-update.sh`
+> (目錄鎖包住讀→改自己那一列→寫→蓋章)。不要直接編輯表列:兩個 session
+> 在同一 checkout 手改,後寫會靜默蓋掉先寫的列。手改而不走寫入口會讓
+> 蓋章對不上,`check-status-policy.sh` 會紅。feature branch 上本腳本拒改正本表列。
+
+<!-- status-writer-rev:1cd5591a9d8fb9d30650ff78cfb5c1e20baf4ac7ac02ea249179ed87fb7c800e -->
 
 ## Active
 
