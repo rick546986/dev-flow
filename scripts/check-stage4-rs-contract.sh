@@ -360,18 +360,23 @@ if os.path.isfile(builder):
     stripped_beh = (contract_text or "").replace("行為流程圖", "")
     check(bool(judge(stripped_beh, template_text, hop_text)),
           "牙咬:契約刪「行為流程圖」必須紅")
-    ex4 = read("example/contract-expiry-reminder/4-spec.html")
-    ex4_beh = ""
-    if ex4:
-        e0 = ex4.find('id="behavior"')
-        e1 = ex4.find("</section>", e0) if e0 >= 0 else -1
-        ex4_beh = ex4[e0:e1] if e0 >= 0 and e1 > e0 else ""
-    check(bool(ex4) and "html 外殼" not in ex4
-          and "build-stage4-html.py" in ex4,
-          "example 4-spec.html 是產器 twin,不是 html-shell")
-    check(bool(ex4_beh) and "<svg" in ex4_beh and "<pre" not in ex4_beh
-          and "viewBox" in ex4_beh,
-          "example 4-spec.html 行為流程圖是直式 SVG、不是 pre")
+    EXAMPLE_HTMLS = (
+        "example/contract-expiry-reminder/4-spec.html",
+        "example/subsidy-3-0-plus/4-spec.html",
+    )
+    for ex4_rel in EXAMPLE_HTMLS:
+        ex4 = read(ex4_rel)
+        ex4_beh = ""
+        if ex4:
+            e0 = ex4.find('id="behavior"')
+            e1 = ex4.find("</section>", e0) if e0 >= 0 else -1
+            ex4_beh = ex4[e0:e1] if e0 >= 0 and e1 > e0 else ""
+        check(bool(ex4) and "html 外殼" not in ex4
+              and "build-stage4-html.py" in ex4,
+              "%s 是產器 twin,不是 html-shell" % ex4_rel)
+        check(bool(ex4_beh) and "<svg" in ex4_beh and "<pre" not in ex4_beh
+              and "viewBox" in ex4_beh,
+              "%s 行為流程圖是直式 SVG、不是 pre" % ex4_rel)
     missing = html_out.replace("審的時候看什麼", "看什麼")
     missing_ok, _ = judge_html(missing, "刪 審的時候看什麼")
     check(not missing_ok, "牙咬:輸出刪 審的時候看什麼 必須紅")
