@@ -2298,8 +2298,8 @@ check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 27" "MIN_
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 179" "MIN_CHECKS 釘死 179(Human verdict 寫入器納入 n7-dist-copy +1 後的實得數)"
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 36" "MIN_CHECKS 釘死 36(parity 遷到 check-ship-manifest.sh 後,情境/mutant/模板順序實得數)"
 check_static_pin "scripts/check-ship-manifest.sh" "MIN_CHECKS = 15" "MIN_CHECKS 釘死 15(結構+parity+地圖對帳+負向 fixture 的實得數)"
-check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 35" "MIN_CHECKS 釘死 35(durability-barrier 輪:W6 耐久性鏈的負向⑳㉑㉒ 三案後的實得數)"
-check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 186" "EXPECTED_MAPPED_FILES 釘死 186(精確值;ship-manifest 184 之上,Bash 寫入 prevent-before check+test +2)"
+check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 45" "MIN_CHECKS 釘死 45(STATUS 單寫入者:寫入口+蓋章+表列凍結+負向㉓–㉗ 後的實得數)"
+check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 188" "EXPECTED_MAPPED_FILES 釘死 188(精確值;status-update.sh + test-status-update.sh +2)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 28" "EXPECTED_GROUPS 釘死 28(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的

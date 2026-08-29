@@ -226,6 +226,7 @@ group_architecture() {
   run "architecture/check-dev-setup-discipline" scripts/check-dev-setup-discipline.sh || return 1
   run "architecture/test-upgrade-leftovers" scripts/test-upgrade-leftovers.sh || return 1
   run "architecture/test-history-seed-cleanup" scripts/test-history-seed-cleanup.sh || return 1
+  run "architecture/test-status-update" scripts/test-status-update.sh || return 1
   run "architecture/check-write-scope" scripts/check-write-scope.sh || return 1
   run "architecture/test-write-scope" scripts/test-write-scope.sh || return 1
   # Stage 6/7 執行期強制條款(A1 守衛武裝／A3 Verify 案例數／A4 gauntlet 路徑／

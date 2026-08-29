@@ -281,3 +281,8 @@
 - 為什麼:同一件事講三遍，讀的人要掃很長才碰到要做的
 - 落在哪:skills/dev-setup/SKILL.md skills/dev-run/SKILL.md skills/dev-talk/SKILL.md skills/dev-flow/SKILL.md _templates/ README.md guides/guide-dev-flow.html
 
+## 2026-08-29 · status-single-writer
+- 做了什麼:STATUS 表列唯一寫入口 scripts/status-update.sh:目錄鎖包住 read-modify-write、寫完蓋章;手改表列章對不上就紅;feature branch 拒改正本表列。test-status-update.sh 含無鎖互蓋會丟列、拿掉蓋章檢查的 mutant 對手改檔又綠。未進 ship-manifest、未升版。
+- 為什麼:v3.8.0 只縮寫入窗口,同 checkout 兩 session 手改仍 last-write-wins 且不報錯。HISTORY 已有單寫入者,STATUS 沒有。本輪是 Backlog「真正的單寫入者」那列的牙,不划掉該列(main 上由 merger 收)。
+- 落在哪:scripts/status-update.sh scripts/test-status-update.sh scripts/check-status-policy.sh scripts/devflow-check.sh scripts/check-file-map.sh scripts/test-architecture-guards.sh _templates/STATUS.md docs/dev/STATUS.md(只改頂註+蓋章,Active/Backlog 表列未動) guides/guide-dev-flow.html
+

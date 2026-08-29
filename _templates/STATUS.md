@@ -37,6 +37,12 @@
 > - **不准**用 `push --force` 或 `reset --hard` 解決本檔的推送衝突。
 > - 一句理由:看板遺失一列是**靜默**的,沒有紅字、下一個人會照著錯的狀態決策。
 >
+> **表列(Active / Backlog)的唯一寫入口**是帶鎖的更新器。母版:
+> `scripts/status-update.sh`(目錄鎖包住讀→改自己那一列→寫→蓋章)。
+> 採用專案本輪尚未散發這支腳本;沒有更新器的 checkout 仍靠上面的
+> 寫入紀律,且**不要**同 checkout 並行手改表列。手改表列而不走寫入口,
+> 蓋章對不上,`check-status-policy.sh` 會紅。
+>
 > `Branch` 欄填法:Stage 1–5(尚未開 feature branch,見 README §7 規劃層 git)固定填
 > `n-a:尚未建立 branch`(逐字這個字串,方便機械判定);Stage 6 起 branch 建立並
 > 推上去之後,換成**已發布的遠端 ref**(如 `origin/feat/<slug>`)—— 不要填本地
@@ -49,6 +55,8 @@
 > feature tip** 並驗證 remote tip 等於本地 HEAD(見 `skills/dev-run/SKILL.md`
 > 收尾節)。執行中的未發布窗口由 README §7 直接補修算法負責封住:Stage 6 一律
 > fail-closed、Stage 7 逐一驗 ACCEPTED commit 是 remote tip 的祖先。
+
+<!-- status-writer-rev:64f9c9c505b3d9d0762d947847ee32360e4a893f1d7c1e81e0199d97e40bb021 -->
 
 ## Active
 
