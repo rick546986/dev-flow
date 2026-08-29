@@ -44,10 +44,10 @@ sys.stderr.reconfigure(line_buffering=True)
 root, check, fix = sys.argv[1], sys.argv[2], sys.argv[3]
 passed = 0
 failed = 0
-MIN_CASES = 46
+MIN_CASES = 54
 
 
-def run_check(tree, extra_env=None, drop=None, probe=False):
+def run_check(tree, extra_env=None, drop=None, probe=False, cwd=None):
     env = os.environ.copy()
     env.pop("DEVFLOW_ROOT", None)
     env.pop("CLAUDE_PLUGIN_ROOT", None)
@@ -61,21 +61,38 @@ def run_check(tree, extra_env=None, drop=None, probe=False):
         cmd.append("--probe")
     if tree:
         cmd.append(tree)
-    return subprocess.run(cmd, capture_output=True, text=True, env=env)
+    return subprocess.run(
+        cmd, capture_output=True, text=True, env=env, cwd=cwd
+    )
 
 
 def seed(tmp):
     shutil.copytree(os.path.join(fix, "good"), tmp, dirs_exist_ok=True)
 
 
-def expect(label, tree, want_rc, needle=None, extra_env=None, probe=False):
+def expect(
+    label,
+    tree,
+    want_rc,
+    needle=None,
+    extra_env=None,
+    probe=False,
+    cwd=None,
+    forbid=None,
+):
     global passed, failed
-    proc = run_check(tree, extra_env=extra_env, probe=probe)
+    proc = run_check(tree, extra_env=extra_env, probe=probe, cwd=cwd)
     blob = (proc.stdout or "") + "\n" + (proc.stderr or "")
     ok = proc.returncode == want_rc
     if ok and needle and needle not in blob:
         ok = False
         blob += f"\n[test] 期望輸出含 {needle!r}"
+    if ok and forbid:
+        # 整行比對:FAIL 句提到「不得 probe: ok」不算成功狀態行
+        lines = [ln.strip() for ln in blob.splitlines()]
+        if forbid in lines:
+            ok = False
+            blob += f"\n[test] 不該出現整行 {forbid!r}"
     if ok:
         passed += 1
         print(f"  ✓ {label}")
@@ -654,6 +671,48 @@ with tempfile.TemporaryDirectory(prefix="host-adapter-test-") as tmpbase:
         "hang: DEVFLOW_ROOT 不對",
         extra_env={"DEVFLOW_ROOT": bad_root},
         probe=True,
+    )
+
+    # 第 4 型假綠牙齒:今日 main 無參數 --probe 的 tree="" → missing=[] →
+    # probe: ok / exit 0,與被檢查專案無關。採用樹／空樹必須紅或印未檢查;
+    # 方法包 repo 無參數是自檢,不准共用 probe: ok。
+    probe_adopter = os.path.join(tmpbase, "probe-no-root-adopter")
+    shutil.copytree(os.path.join(fix, "no-root"), probe_adopter)
+    os.makedirs(os.path.join(probe_adopter, ".cursor"), exist_ok=True)
+    os.makedirs(os.path.join(probe_adopter, "docs", "dev"), exist_ok=True)
+    expect(
+        "R-probe-no-root-adopter 採用樹無參數 --probe 不得 probe: ok（空樹假綠）",
+        "",
+        1,
+        "缺專案根",
+        extra_env={"DEVFLOW_ROOT": root},
+        probe=True,
+        cwd=probe_adopter,
+        forbid="probe: ok",
+    )
+
+    empty_cwd = os.path.join(tmpbase, "probe-empty-cwd")
+    os.makedirs(empty_cwd)
+    expect(
+        "R-probe-empty-tree 空樹 cwd 無參數 --probe 不得 probe: ok",
+        "",
+        1,
+        "未檢查",
+        extra_env={"DEVFLOW_ROOT": root},
+        probe=True,
+        cwd=empty_cwd,
+        forbid="probe: ok",
+    )
+
+    expect(
+        "G-probe-pack-self 方法包 repo 無參數 --probe 是自檢不是採用探測",
+        "",
+        0,
+        "probe: pack-self-check",
+        extra_env={"DEVFLOW_ROOT": root},
+        probe=True,
+        cwd=root,
+        forbid="probe: ok",
     )
 
     expect_stage_deny(
