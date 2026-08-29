@@ -3,7 +3,7 @@ feature: subsidy-3-0-plus
 stage: 6-implementation-notes
 status: draft
 owner: IVF後台
-updated: 2026-08-26
+updated: 2026-08-29
 ---
 # 6. 實作筆記 — 試管補助 3.0 PLUS（T-1～T-4）
 
@@ -15,7 +15,7 @@ updated: 2026-08-26
 - PLUS 只看主檔 `apply_date >= 2026-09-01`（ROC 115/9/1）。沒有 today 開關。
 - 三函式共用基數＋方案拆分：JS `calculateSubsidy3Amount`、`calculateSubsidy3AmountAdd`、PHP `calculateSubsidy3AmountForSchedule5`。
 - 3.0（申請日 < 9/1）維持原 39 切兩格數字。
-- PLUS 內部三欄基數不變：未滿 40 第1次 10+0+5；第2–3次 6+5+4；第4–6次 4+0+2。滿 40 第1次 7+1+5；第2–3次 4+5+4。
+- PLUS 內部三欄基數不變（畫面仍兩格，不是三格畫面）：未滿 40 第1次 10+0+5；第2–3次 6+5+4；第4–6次 4+0+2。滿 40 第1次 7+1+5；第2–3次 4+5+4。
 - 方案拆分後把形成併入取卵，畫面只留兩格。完整 A/B：未滿40 15／15／6 萬；滿40 13／13 萬。只取卵走官方取卵欄；只植入走官方植入欄。
 - 低收入仍 10+5=15，再依方案拆。
 - 方案：A/B 完整（最高額）；C 僅植入；D/E/F／無法植入 僅取卵；方案 1 看 `inside_operation`。

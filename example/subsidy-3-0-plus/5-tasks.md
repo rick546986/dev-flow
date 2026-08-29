@@ -3,7 +3,7 @@ feature: subsidy-3-0-plus
 stage: 5-tasks
 status: draft
 owner: IVF後台
-updated: 2026-08-26
+updated: 2026-08-29
 execution:
   mode: sequential
 ---
@@ -12,7 +12,7 @@ execution:
 dev-flow · Stage 5 · full · 2026-08-26
 上游＝`4-spec.md`（G2 PASS 2026-08-26 使用者審 html）
 
-tracer：先讓 PLUS 金額三格在畫面＋存檔對（T-1→T-2），再鎖年齡（T-3），再列 OPU（T-4）。
+tracer：先讓 PLUS 畫面兩格＋存檔對（T-1→T-2；內部仍三筆），再鎖年齡（T-3），再列 OPU（T-4）。
 
 ## 執行前提
 - 只寫本 worktree。主目錄與 27004 不動。
@@ -27,17 +27,17 @@ tracer：先讓 PLUS 金額三格在畫面＋存檔對（T-1→T-2），再鎖�
 - Covers: R-1 / S-1.1, S-1.2, S-1.3, R-2 / S-2.1, S-2.3, R-4 / S-4.2
 - Files: controllers/backend/ivf.php, views/backend/ivf_subsidy_edit.php
 - Verify: `rg -n "2026-09-01|embryo" controllers/backend/ivf.php views/backend/ivf_subsidy_edit.php | grep -c "2026-09-01"` 
-- Intent: 申請日 ≥ 2026-09-01 用 PLUS 三欄（完整／取卵無法植入／僅植入），形成＝完整−取卵−植入；9/1 前仍 3.0 兩格數字。
+- Intent: 申請日 ≥ 2026-09-01 用 PLUS 基數三筆（取卵／形成／植入）再依方案拆，畫面併成兩格；9/1 前仍 3.0 兩格數字。
 - Boundaries: 改 `calculateSubsidy3Amount`、`calculateSubsidy3AmountAdd`、`calculateSubsidy3AmountForSchedule5` 三處同一張表。低收入仍 15 萬。不改顆數、不改 38 文案。PLUS 切日看主檔 apply_date，不看 today。
 - Blocked-by: —
 
-## T-2 附表五畫面三格且手改存檔不蓋
+## T-2 附表五畫面兩格且手改存檔不蓋
 
 - [ ] 未完成
 - Covers: R-2 / S-2.1, S-2.2
 - Files: views/backend/ivf_subsidy_edit.php, controllers/backend/ivf.php
 - Verify: `rg -n "embryo_subsidy" views/backend/ivf_subsidy_edit.php | grep -c "embryo_subsidy"`
-- Intent: PLUS 看得到取卵／胚胎形成／植入；手改後存檔再打開數字還在。
+- Intent: PLUS 只見取卵／植入兩格（取卵格已含形成）；手改後存檔再打開數字還在。無形成金額第三格。
 - Boundaries: 3.0 舊案維持兩格 readonly＋後端覆寫。PLUS 打開可改；後端若 POST 帶 subsidy_amount_manual=1 就用畫面值，不算回去。形成不新增 DB 欄。27004 不掛本樹。
 - Blocked-by: T-1
 

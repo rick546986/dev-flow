@@ -349,7 +349,7 @@ Stage 3 對帳(逐場核對 3-prototype Demo Script)—— N/A：本手樣資料
 
 - Applicability: applicable
 - Trigger(s): Feature Risk = high（涉金流：補助金額計算與存檔）、涉及既有金額函式寫入路徑與手改後的一致性（Transaction／Idempotency：自動值與手改不得只成功一筆）、三個以上參與點（編輯畫面／三處金額函式／附表五存檔）共同改 PLUS 切日與兩格
-- Design source: 既有 pattern —— 3.0 已用 `calculateSubsidy3Amount` 三處同一張表、`first_subsidy_age`／`first_time_subsidy_age`、附表五兩格；PLUS 切日與形成併取卵是 new local design（無獨立 ADR；2-decision 選 1A+3A+4A，畫面格數以本檔既有鎖為準，見 DD-1）
+- Design source: 既有 pattern —— 3.0 已用 `calculateSubsidy3Amount` 三處同一張表、`first_subsidy_age`／`first_time_subsidy_age`、附表五兩格；PLUS 切日與形成併取卵是 new local design（無獨立 ADR；2-decision 選 1A+2B+3A+4A，畫面兩格已回寫，見 DD-1）
 
 ### Architecture Boundaries
 
@@ -421,8 +421,8 @@ Stage 3 對帳(逐場核對 3-prototype Demo Script)—— N/A：本手樣資料
 ### 逐條裁決(上層)
 | DD | 決定了什麼 | 為什麼 | 依據(`檔:行` 或 `[Assumption]`) | 若被推翻會怎樣 | 狀態(待人審→✅/✗) |
 |---|---|---|---|---|---|
-| DD-1 | 畫面只給兩格（形成併入取卵）；不採 2-decision 決策點 2A 的三格畫面 | 既有手樣 4-spec 與本輪 owner 鎖已是兩格；2-decision 2A 三格是更早的收斂，後續手樣已覆寫。本輪不發明第三條路 | `example/subsidy-3-0-plus/4-spec.md` 既有 R-2；`example/subsidy-3-0-plus/2-decision.md` 決策點 2A 仍寫三格。兩份並存，產品行為以既有 4-spec R/S 為準 = 本輪 owner 指示，不是新 Decision | R-2／S-2.1～S-2.3 與生命週期退役格都要改回三格 | 待人審 |
-| DD-2 | 本輪不加 `embryo_subsidy_amount`；形成不落庫 | 180 未准不加欄；形成用畫面兩格＋上限表達 | 既有手樣 DD-1；2-decision ADR 檢查「加一欄可相容」是後話，不是本 feat 授權 | 要補 migration 與還原邏輯，Diff Budget 與 S-2.2 存檔契約都要改 | 待人審 |
+| DD-1 | 畫面只給兩格（形成併入取卵）。2-decision 已回寫選定 2B；不再是兩份打架 | 完工時使用者改兩格；討論期 2A 三格改列 Rejected。R-2 不改回三格 | `example/subsidy-3-0-plus/2-decision.md` Decision 1A+2B+3A+4A；本檔 R-2；1-discussion 歷史問答仍記當時三格 | 若改回三格，R-2／S-2.1～S-2.3 與生命週期退役格都要改 | 待人審 |
+| DD-2 | 本輪不加 `embryo_subsidy_amount`；形成不落庫 | 180 未准不加欄；形成用畫面兩格＋上限表達 | 既有手樣；2-decision ADR 檢查「形成不落庫」 | 要補 migration 與還原邏輯，Diff Budget 與 S-2.2 存檔契約都要改 | 待人審 |
 | DD-3 | G1 以對話鎖定視同方向可寫本手樣規格；frontmatter 不代填 Human verdict／G2 PASS | 本輪任務禁止代填 Human verdict；2-decision 已是 approved，但 G2 仍待人 | 本輪 owner 指示「Leave verdict empty」；`2-decision.md` frontmatter `status: approved` | 若 G1 被否認，本檔 R/S 要停 | 待人審 |
 | DD-4 | Feature Risk = high，不是手樣舊值 medium，也不是 normal | 模板只准 `normal\|high`；涉補助金額（金流）→ high。無法正當化 normal | `_templates/4-spec.md` Risk 判準「涉金流 → high」 | Verification Profile 與 Design Boundary 觸發條件⑨都要重寫 | 待人審 |
 | DD-5 | Stage 3 對帳整節 N/A，不補 3-prototype、不代填 Demo verdict | 手樣沒有 3-prototype；本輪禁止做 Stage 3 | 本資料夾無 `3-prototype.md`；1-discussion 有 Real-world Context，操作下落改寫進各 S Operational Context | 若後補 Stage 3，要逐場對回 R/S 或 Out of Scope | 待人審 |
@@ -451,7 +451,7 @@ test_s_5_1_worktree_only_no_27004_bind
 ## 確認紀錄
 - R 範圍沿用既有手樣 R-1～R-5（兩格／切日／年齡鎖／OPU 小字／只寫 worktree）| 2026-08-29
 - S 逐條對應既有 S-1.1～S-5.1，補齊觀測三截與 Operational Context | 2026-08-29
-- 1-discussion 四條驗收雛形：1→S-1.1（三格改讀兩格，見 DD-1）；2→S-1.2；3→S-4.1；4→Out of Scope（不硬擋）| 2026-08-29
+- 1-discussion 四條驗收雛形：1→S-1.1（兩格；歷史問答仍記當時三格）；2→S-1.2；3→S-4.1；4→Out of Scope（不硬擋）| 2026-08-29
 - Stage 3 對帳 N/A（無 3-prototype）| 2026-08-29
 - Verification Profile 填畢（lane: full；Risk: high）| 2026-08-29
-- 2-decision 決策點 2A 三格 vs 既有 4-spec 兩格：本輪不發明第三條路，產品行為跟既有 R-2 | 2026-08-29
+- 2-decision 已回寫選定 2B 兩格；DD-1 不再說兩份打架 | 2026-08-29

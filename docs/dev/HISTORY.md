@@ -301,3 +301,8 @@
 - 為什麼:owner 改口後 agent 只改 4-spec,把 2-decision 戰火停成 Drafting Decision,1／2／5／7 過期。覆寫已核 Decision 不是合法 DD。
 - 落在哪:skills/dev-flow/stage2/nodes/N3-write-md.md skills/dev-flow/stage4/nodes/{N1-handoff,S4-dd}.md _templates/{2-decision,4-spec}.md scripts/check-spec-gate.sh scripts/check-devstage{2,4}-graph.sh scripts/fixtures/spec-gate-late-owner/ guides/guide-dev-flow.html
 
+## 2026-08-29 · subsidy-two-cell-align
+- 做了什麼:整條 example/subsidy-3-0-plus 回望對齊 PLUS 畫面兩格：2-decision 改選定 2B、2A 三格改列 Rejected（完工時使用者改兩格）；1 驗收雛形改兩格、歷史問答留當時三格；4-spec DD-1 不再說兩份打架；5/6/7 用語對齊。官方產器重生 1/2/4/5/7 html
+- 為什麼:Owner lock：PLUS 畫面兩格不是三格。先前只改第 4 站，2A 三格 vs R-2 兩格是假矛盾。不改產品行為、不填 verdict、不升版
+- 落在哪:example/subsidy-3-0-plus/{1-discussion,2-decision,4-spec,5-tasks,6-implementation-notes,7-review}.{md,html} docs/dev/HISTORY.md
+
