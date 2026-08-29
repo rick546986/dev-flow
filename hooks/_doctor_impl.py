@@ -113,6 +113,29 @@ def resolve_printer_python(root):
     return None, None, None
 
 
+def _is_project_printer(exe, kind):
+    """只有專案 venv、或 DEVFLOW_PYTHON 指到非系統直譯器,leftover mdit 才 fail-closed。
+
+    CI／selftest 常把 DEVFLOW_PYTHON 指到系統 python3;那仍是系統 leftover,
+    不准連坐握手,也不准叫人覆寫系統套件。
+    """
+    if not exe:
+        return False
+    norm = exe.replace("\\", "/")
+    if "/.venv/" in norm:
+        return True
+    if kind != "env":
+        return False
+    real = os.path.realpath(exe)
+    sys_py = os.path.join(os.sep, "usr", "bin", "python3")
+    if os.path.isfile(sys_py) and os.path.realpath(sys_py) == real:
+        return False
+    which = shutil.which("python3")
+    if which and os.path.realpath(which) == real:
+        return False
+    return True
+
+
 def _mdit_version(exe):
     try:
         r = subprocess.run(
@@ -351,8 +374,9 @@ def run_doctor(root, contract_path="", gate_cmd=""):
 
     # 6d. 產圖／gate-twin 直譯器:markdown-it-py==4.0.0 要 Python 3.12+。
     # macOS 系統 python3 常是 3.9,pip 會靜默停在 3.x。不准叫人覆寫系統 Python。
-    # 系統 leftover mdit 3.x 不擋握手(CI runner／selftest 常見);venv／DEVFLOW_PYTHON
-    # 帶 3.x 才 fail-closed。
+    # 系統 leftover mdit 3.x 不擋握手(CI runner／selftest 把 DEVFLOW_PYTHON
+    # 指到系統 python3 也算系統);專案 venv 或非系統 DEVFLOW_PYTHON 帶 3.x
+    # 才 fail-closed。
     exe, ver, kind = resolve_printer_python(root)
     if not exe:
         check(False, "printer-python",
@@ -366,7 +390,7 @@ def run_doctor(root, contract_path="", gate_cmd=""):
               "不要覆寫 Apple／系統 Python。")
     else:
         mdit = _mdit_version(exe)
-        if mdit and not mdit.startswith("4.") and kind in ("env", "venv"):
+        if mdit and not mdit.startswith("4.") and _is_project_printer(exe, kind):
             check(False, "printer-python",
                   f"{exe} 已是 Python {ver[0]}.{ver[1]},但 markdown-it-py 是 "
                   f"{mdit}(要 4.0.0)。不要靜默留 3.x;在這個 venv 重裝 "
