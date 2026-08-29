@@ -24,11 +24,15 @@
 
 核前站:G1 是否過、第 3 站 findings 是否已回寫且 frontmatter 收尾,再清點雙源
 (驗收雛形 N 條、living spec 受影響條文)給人確認。完成 = 前站核對過。
+若 owner 在開工後改了可見行為,先分流(G3 未過回第 2 站改 Decision;
+G3 已過另開薄刀;純文字 HISTORY)。禁只改 4-spec。
 跑 `${CLAUDE_PLUGIN_ROOT}/scripts/check-devstage4-graph.sh --write-cursor N1-handoff`。
 
 ## 完成條件
 
-G1 過;第 3 站若必要則已 approved 或有 skip OC。本機游標在 N1-handoff。
+G1 過;第 3 站若必要則已 approved 或有 skip OC。
+晚改可見行為已分流(G3 未過回第 2 站 / 已過另開薄刀 / 純文字 HISTORY)。
+禁只改 4-spec。本機游標在 N1-handoff。
 
 ## 下一跳
 

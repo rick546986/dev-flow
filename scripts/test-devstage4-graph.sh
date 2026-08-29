@@ -151,6 +151,29 @@ with tempfile.TemporaryDirectory(prefix="devstage4-graph-test-") as tmpbase:
     patch(node_of(case, "S2-scenarios.md"), "## 完成條件", "## 收尾備註")
     expect("P0 真節點缺完成條件必須紅", case, 1, "完成條件")
 
+    case = os.path.join(tmpbase, "n1-missing-late-owner")
+    seed(case)
+    patch(
+        node_of(case, "N1-handoff.md"),
+        "禁只改 4-spec。本機游標在 N1-handoff。",
+        "可只改 4-spec。本機游標在 N1-handoff。",
+    )
+    expect("P0 N1 完成條件缺「禁只改 4-spec」必須紅", case, 1, "禁只改 4-spec")
+
+    case = os.path.join(tmpbase, "s4-missing-dd-lock")
+    seed(case)
+    patch(
+        node_of(case, "S4-dd.md"),
+        "推翻已核 Decision 不是合法 DD",
+        "推翻已核 Decision 可寫成 DD",
+    )
+    expect(
+        "P0 S4-dd 完成條件缺「推翻已核 Decision 不是合法 DD」必須紅",
+        case,
+        1,
+        "推翻已核 Decision 不是合法 DD",
+    )
+
     case = os.path.join(tmpbase, "second-md")
     seed(case)
     slug = os.path.join(case, "docs", "dev", "fixture-slug")
@@ -677,7 +700,7 @@ if failed:
     sys.exit(1)
 # 第一刀 8、第二刀 28、第三刀再加 guide 鏈與 prebash 實跑。
 # 下限不跟著上修等於留一個「少跑一半照樣綠」的洞。
-if total < 56:
+if total < 58:
     print(f"⛔ 案例數 {total} < 56,牙齒沒跑齊", file=sys.stderr)
     sys.exit(2)
 sys.exit(0)

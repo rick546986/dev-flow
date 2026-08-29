@@ -92,6 +92,9 @@ group_methodology() {
   # 字元集曾把「:或：」打成兩個半形,全形觀測欄被判缺欄、全形例外欄被判沒寫。
   run "methodology/check-spec-gate (全形冒號回歸)" \
       scripts/check-spec-gate.sh scripts/fixtures/spec-gate-fullwidth-colon/4-spec.md || return 1
+  # 晚改可見行為:已回寫 Decision 的 4-spec 必須仍綠(C6 不得誤殺「跟 Decision」)。
+  run "methodology/check-spec-gate (晚改可見行為正向)" \
+      scripts/check-spec-gate.sh scripts/fixtures/spec-gate-late-owner/good-amended-follow.md || return 1
   # G3 通解:掃 scripts/ hooks/ 正則字元集內「相鄰重複半形標點」(本想寫全形的
   # 機械徵象)。單修已知 6 處只是治標,沒有這支,下次再寫一個 [::] 又會重演。
   run "methodology/check-regex-charclass" scripts/check-regex-charclass.sh || return 1

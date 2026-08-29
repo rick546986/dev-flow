@@ -48,7 +48,11 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 > 0. 接手盤點:先前站核對 —— 2-decision status=approved(G1 過)?3-prototype 若
 >    存在,findings 已回寫 2-decision 且 frontmatter 收尾?缺 → 停,回補。再讀
 >    1-discussion(驗收雛形/OQ)、2-decision(Decision/Scope/Success Criteria)、
->    living spec 相關域。完成 = 前站核對過 + 雙源清點回報(雛形 N 條、living 受影響條文)。
+>    living spec 相關域。
+>    晚改可見行為:G3 未過 → 停,回第 2 站先改 Decision,再重走 4→5→6→7;
+>    禁只改 4-spec。G3 已過 → 另開薄刀,不准改已封包。純文字 → 原包 HISTORY。
+>    1-discussion 保留當時說法加後來改口。
+>    完成 = 前站核對過 + 雙源清點回報(雛形 N 條、living 受影響條文)。
 > 1. 雙源列 R:驗收雛形逐條 → ADDED;living spec 受影響 → MODIFIED/REMOVED
 >    (引原條文)。完成 = R 清單經使用者確認範圍(確認紀錄節留一行)。
 > 2. 逐 R 展開 S:一次一個 R,GWT 寫到「可直接變一個測試」(具體輸入+可斷言輸出),
@@ -72,10 +76,13 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 >      完成 = Stage 3 對帳逐場有下落。
 > 4. Drafting Decisions 清點:草擬自拍板逐條進上層表(決定了什麼|為什麼|依據|
 >    若被推翻會怎樣|狀態),純內部技術選擇進下層清單;全文掃
->    TBD/之後再說/實作再定 → 命中即轉 DD 或退回提問。完成 = 掃描零殘留。
+>    TBD/之後再說/實作再定 → 命中即轉 DD 或退回提問。
+>    推翻已核 Decision 不是合法 DD(回第 2 站)。C6 掃本節與確認紀錄。
+>    完成 = 掃描零殘留。
 > 5. 自檢(反模糊掃描):**先跑機械關卡** `scripts/check-spec-gate.sh <本檔路徑>`
 >    (C1 每 S 有觀測欄 / C2 Profile 可解析 / C3 lane×Risk 合法 / C4 模糊詞 /
->    C5 DD 無殘留待裁決);紅了先修再往下,它擋的都是模板明文要求卻沒人擋的項。
+>    C5 DD 無殘留待裁決 / C6 晚改可見行為不得停成「4-spec 壓 Decision」);
+>    紅了先修再往下,它擋的都是模板明文要求卻沒人擋的項。
 >    機械過了才做人工部分:鏈檢每條驗收雛形 ≥1 個 S 承接、每 MODIFIED 有原文引用。
 >    任一否 → 重寫該 S;(選配)每 S 產 named test skeleton 入 Test Skeletons 節。
 >    完成 = 機械關卡 exit 0 + 逐 S 打勾 + 鏈檢清零。

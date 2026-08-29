@@ -296,3 +296,8 @@
 - 為什麼:C-2 把 parallel 一律 fail-closed,是因為當時沒有一個 STATUS/runtime 可提供的 canonical integration ref。沒有這一個座標,算法就會自己在 feature tip 與 integration tip 之間猜,或把 Lane 當 mode。
 - 落在哪:scripts/status-update.sh scripts/test-status-update.sh scripts/check-status-policy.sh scripts/test-architecture-guards.sh _templates/STATUS.md README.md guides/guide-quickstart.html guides/guide-dev-flow.html docs/dev/HISTORY.md
 
+## 2026-08-29 · late-owner-change-tooth · v3.20.1
+- 做了什麼:晚改可見行為鎖進 Stage 2／4 hop＋模板:G3 未過先回寫 Decision 再走 4→5→6→7;G3 已過另開薄刀。C6 擋「不採 Decision、跟 4-spec」停成 DD。
+- 為什麼:owner 改口後 agent 只改 4-spec,把 2-decision 戰火停成 Drafting Decision,1／2／5／7 過期。覆寫已核 Decision 不是合法 DD。
+- 落在哪:skills/dev-flow/stage2/nodes/N3-write-md.md skills/dev-flow/stage4/nodes/{N1-handoff,S4-dd}.md _templates/{2-decision,4-spec}.md scripts/check-spec-gate.sh scripts/check-devstage{2,4}-graph.sh scripts/fixtures/spec-gate-late-owner/ guides/guide-dev-flow.html
+

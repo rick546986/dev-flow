@@ -43,6 +43,13 @@ updated:
 >    有對策);Success Criteria 逐條可量測(7-review 對照用)。完成 = 兩節齊、
 >    無不可量測句。
 > 3. 定稿:Decision 一句話+範圍、Rejected 逐案一句棄因、Rationale、Scope & Non-Goals。
+>    晚改可見行為(開工後或自稱「完工」但 G3 未過 / 已過 G3):
+>    G3 未過 → 同一 feat。先改本檔 Decision / Owner Call,再走 4→5→6→7。
+>    1-discussion 保留當時說法,另記後來改口;不准假裝第一次裁決本來就是新的。
+>    G3 已過 → 另開薄刀 feat/delta,不准改已封包。
+>    純文字、行為不變 → 原包 HISTORY。
+>    推翻已核 Decision 不是合法 DD;回本站。DD 寫「不採 2-decision /
+>    兩份並存 / 產品跟 4-spec 不跟 Decision」= 流程 bug。
 >    完成 = 節全齊、無佔位符。
 > 4. Owner Calls 清點:owner 沒問使用者、自己拍的板逐條收進 Owner Calls 節
 >    (收錄判準見該節註;上層逐條 OC-n,下層內部項一段帶過)。特別掃兩型必收必標:

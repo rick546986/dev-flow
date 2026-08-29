@@ -16,11 +16,14 @@
 ## 做什麼
 
 按模板寫同一份 `2-decision.md`。重跑覆寫同一路徑。
+晚改可見行為先改本檔 Decision / Owner Call,不准只讓 4-spec 改口。
 跑 `scripts/check-devstage2-graph.sh --write-cursor N3-write-md`。
 
 ## 完成條件
 
 該 slug 目錄只有一份 `2-decision.md`。定稿節齊、無佔位符。
+晚改可見行為:G3 未過先改 Decision / Owner Call,再走 4→5→6→7;
+G3 已過另開薄刀;純文字走 HISTORY。1-discussion 留當時說法加改口。
 
 ## 下一跳
 
