@@ -508,20 +508,16 @@ for rel, label in (("docs/dev/STATUS.md", "docs"),
 
 print("-- ⑰feature branch 表列凍結(相對 origin/main)--")
 import subprocess as _sp
-_branch = _sp.run(["git", "-C", ROOT, "rev-parse", "--abbrev-ref", "HEAD"],
-                  capture_output=True, text=True).stdout.strip()
-if _branch in ("main", "master"):
-    check(True, "在整合分支上略過表列凍結")
-else:
-    _fr = _sp.run(
-        ["bash", os.path.join(ROOT, "scripts", "status-update.sh"),
-         "--check-tables", "--file", os.path.join(ROOT, "docs/dev/STATUS.md")],
-        capture_output=True, text=True,
-    )
-    # no-base = 找不到 origin/main,不擋(架構守衛複本常沒有 git)
-    _ok = _fr.returncode == 0
-    check(_ok, "docs/dev/STATUS.md Active/Backlog 表列與整合分支基準相同",
-          ((_fr.stderr or _fr.stdout or "").strip()))
+_fr = _sp.run(
+    ["bash", os.path.join(ROOT, "scripts", "status-update.sh"),
+     "--check-tables", "--file", os.path.join(ROOT, "docs/dev/STATUS.md")],
+    capture_output=True, text=True,
+)
+# --check-tables:表列與基準相同或找不到基準(no-base)都是 0;
+# 只有表列真的漂了才非零。架構守衛複本常沒有 origin/main,不能因此紅。
+_freeze_rc = _fr.returncode
+check(_freeze_rc == 0, "docs/dev/STATUS.md Active/Backlog 表列與整合分支基準相同",
+      ((_fr.stderr or _fr.stdout or "").strip()))
 
 print("-- 負向 fixture(改壞必須紅,不紅就是白做)--")
 mutated_docs = docs.replace("只在整合分支", "在任何分支").replace("不碰本檔", "隨便改")
