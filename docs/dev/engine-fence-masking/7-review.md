@@ -1,10 +1,10 @@
 ---
 feature: engine-fence-masking
 stage: 7-review
-status: draft
+status: shipped
 verdict: PASS               # 步 4 對照 Self-Review/Deviations 後重新確認,維持不變
 owner: G3 reviewer(fresh-context agent,授權見派工單/notes/dispatch-guard-coverage.md)
-updated: 2026-08-16
+updated: 2026-08-29
 ---
 
 # 7. 驗證(fast lane mini,骨架縮編自 `_templates/7-review.md`)
@@ -99,16 +99,20 @@ L1 allow 處置,收 Backlog,不影響本次判定。Self-Review 三點皆已對�
 | 4 | `_fence_mask` docstring 的 Out-of-Scope 段只寫「list 項目內的縮排 code block(非 fence)不遮蔽」,但 B4 破壞實驗顯示**非 list 頂層的 4-space 縮排 fence** 同樣不被遮蔽(FENCE_OPEN_RE 限 `{0,3}`)——文件揭露範圍窄於實際行為邊界。行為本身無害:engine/contract_ref 對此輸入逐字一致,且與 twin 判定方向一致(twin 也判該輸入為未閉合/紅卡),不構成 R-1/R-2 的「與 twin 判定不一致」偏離 | 🟢(文件精確度問題,非行為缺陷) | 建議 docstring 補一句涵蓋「非 list 頂層縮排 ≥4」情境;non-blocking,可隨手改或 park |
 | 5 | 審查過程中,`Edit` 工具對 scope 外檔案(`tests/parallel-stage6/contract_ref.py`)被 `devflow-guard.sh`(PreToolUse)正確擋下;但改用 `Bash` 對同一檔案寫入時,**寫入先成功執行**,`devflow-postbash.sh` 只在事後偵測到並示警(detect-after,非 prevent-before)。已立即 `git checkout` 還原並確認工作樹乾淨,對本次審查結論無影響。本 feature 是「母版第一個全程武裝走流程的 feature」,此觀察可能是圍欄機制本身值得留意的落差(Edit 路徑 prevent、Bash 路徑僅 detect) | 🟢(非本 feature 程式碼缺陷,是圍欄機制本身的觀察;已即時處置、無殘留) | 記錄供 owner 參考;是否要把 Bash 寫入也做成 prevent-before 屬圍欄機制本身的改動範疇,不在本 feature 範圍內,建議另開 ticket 或記 STATUS 待辦 |
 
-## Exit Checklist(全勾才算 shipped;fast lane G3 review 現階段僅完成判定,出貨步驟留待 owner)
+## Exit Checklist(能誠實收尾的項已收;不能在本 branch 做的標 n-a,不假勾)
+
+2026-08-29 出貨文書關帳:功能早已合進 main、G3 已 PASS;本刀只補第 7 站關帳文書,
+不動引擎/守衛/契約/STATUS.md/版號。n-a 項不是未做完,是本 branch 依法做不到
+或本 feature 不適用。
 
 - [x] Design Boundary finding 全數處置:n-a(本輪 Design Boundary Contract 未 applicable,已確認)
-- [ ] Quiz:fast lane 免(non-不可逆改動)
-- [ ] PR → develop
-- [ ] 4-spec delta 已併入 `docs/specs/<domain>.md`
-- [ ] STATUS.md 已更新為 shipped
-- [ ] 7-review frontmatter status: shipped
-- [ ] 7-review.html 已產生
-- [ ] feature branch 已刪 / worktree 已清
+- [ ] Quiz:n-a(fast lane 免,non-不可逆改動;本刀不編假 Quiz)
+- [ ] PR → develop:n-a(本 repo 整合分支是 `main`,不是 `develop`;功能早已合進 main。本刀開 draft PR → main 關帳,不 merge、不開 develop)
+- [ ] 4-spec delta 已併入 `docs/specs/<domain>.md`:n-a(fast lane,Design Boundary 已 n-a;本 repo 無 `docs/specs/` living spec,沒有真正要併的 delta,不造 spec)
+- [ ] STATUS.md 已更新為 shipped:n-a(本檔只在整合分支 `main` 上由合併那個 PR 的人更;feature branch 改 STATUS 是違規。合併後由 merger 在 main 收 Backlog 那列)
+- [x] 7-review frontmatter status: shipped
+- [x] 7-review.html 已產生(`scripts/build-gate-twin.py`,與 md 同步)
+- [ ] feature branch 已刪 / worktree 已清:n-a(原 feature branch 遠端已不在,2026-08-29 查 origin 無 engine-fence-masking 相關分支;本刀短命 branch 留到 PR 合併後再清,本刀不刪遠端分支)
 
 ## Deviations(承接 6-notes 的 D-1~D-3,本階段新增 D-4)
 
@@ -174,3 +178,13 @@ L1 allow 處置,收 Backlog,不影響本次判定。Self-Review 三點皆已對�
 (未經任何人工漂移時)**逐字輸出相同**,fence 外 F-1 fail-closed 回歸案保住,
 twin 幽靈警告如期退場。故判 PASS,三項 Known Limits(#1/#2/#3)留給 owner 在
 步 4 決定是否構成需要回 G2 的 L2。
+
+### A2　2026-08-29 出貨文書關帳(母版輪詢第一刀 F)
+
+功能早已合進 main;本刀只關第 7 站出貨文書。Exit Checklist 能做的三格已勾
+(Design Boundary 維持原 n-a、frontmatter `shipped`、`7-review.html` 由
+`build-gate-twin.py` 產)。其餘五格維持未勾並標 n-a(不假勾),理由:Quiz 是
+fast lane 免、不編假 Quiz;PR 對 `main` 不是 `develop`;無 `docs/specs/`
+delta 可併;`STATUS.md` 只准 merger 在 main 收;原 feature branch 遠端已不在,
+本刀不刪別人的遠端分支。twin 出貨格會顯示 3/8,那是實況。不 bump 版號、
+不打 tag、不發 release。
