@@ -163,10 +163,39 @@ check(proc_ok.returncode == 0,
       "正向:改成兩層表之後,母版範例仍過 G2 形狀檢查",
       f"實得 exit {proc_ok.returncode}")
 
+# ── 7. 晚改可見行為:C6 必須咬停放的覆寫,已回寫的正向必須綠 ─────────────
+late = os.path.join(root, "scripts", "fixtures", "spec-gate-late-owner")
+bad_dd = os.path.join(late, "bad-parked-dd.md")
+proc_dd = subprocess.run(["bash", gate, bad_dd], capture_output=True, text=True)
+check(proc_dd.returncode == 1,
+      "負向 fixture:DD 停「不採 Decision, follow 4-spec」→ exit 1",
+      f"實得 exit {proc_dd.returncode}")
+check("❌ C6" in proc_dd.stdout,
+      "負向 DD fixture 是被 C6 擋下的",
+      proc_dd.stdout.strip().splitlines()[-1] if proc_dd.stdout.strip() else "無輸出")
+
+bad_cf = os.path.join(late, "bad-parked-confirm.md")
+proc_cf = subprocess.run(["bash", gate, bad_cf], capture_output=True, text=True)
+check(proc_cf.returncode == 1,
+      "負向 fixture:確認紀錄停「不採 2-decision／兩份並存」→ exit 1",
+      f"實得 exit {proc_cf.returncode}")
+check("❌ C6" in proc_cf.stdout,
+      "負向確認紀錄 fixture 是被 C6 擋下的",
+      proc_cf.stdout.strip().splitlines()[-1] if proc_cf.stdout.strip() else "無輸出")
+
+good_late = os.path.join(late, "good-amended-follow.md")
+proc_late = subprocess.run(["bash", gate, good_late], capture_output=True, text=True)
+check(proc_late.returncode == 0,
+      "正向:Decision 已回寫、4-spec 跟它 → C6 綠",
+      f"實得 exit {proc_late.returncode}\n{proc_late.stdout[-400:]}")
+check("✅ C6" in proc_late.stdout,
+      "正向 late-owner fixture 的 C6 是綠燈",
+      proc_late.stdout)
+
 # ── 檢查數地板 ─────────────────────────────────────────────────────────────
 # ⚠️ 必須等於當下實際檢查數(同 scripts/check-realworld.sh 的 MIN_CHECKS 慣例):
 # 留餘裕 = 沒有牙齒,整段被刪掉時仍會印綠。增刪 check() 時一起改這個數字。
-MIN_CHECKS = 36
+MIN_CHECKS = 42
 if checks < MIN_CHECKS:
     failures.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                     f"檢查本身被刪掉或迴圈跑了零圈")

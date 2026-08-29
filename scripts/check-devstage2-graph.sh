@@ -117,6 +117,10 @@ REQUIRED_CHAIN = (
 )
 REQUIRED_HEADINGS = ("進條件", "讀什麼", "寫哪裡", "做什麼", "完成條件", "下一跳")
 TEETH_HEADINGS = ("進條件", "完成條件")
+# 晚改可見行為鎖:N3 定稿完成條件必須含這些句,缺了 = 圖牙紅。
+DONE_NEEDLES = {
+    "N3-write-md": ("晚改可見行為", "先改 Decision"),
+}
 CANONICAL_MD = "docs/dev/<slug>/2-decision.md"
 LOCKED_ACTIONS = ("write_decision", "write_spec")
 WRITE_DECISION_NODES = (
@@ -427,6 +431,10 @@ def check_live(graph):
                     failures.append(f"P0 {rel} 缺「{heading}」或該節為空")
                 else:
                     failures.append(f"P0 {rel} 缺「{heading}」或該節為空")
+        done_body = sections.get("完成條件", "")
+        for needle in DONE_NEEDLES.get(node_id, ()):
+            if needle not in done_body:
+                failures.append(f"P0 {rel} 完成條件必須含「{needle}」")
         if spec is None:
             failures.append(f"P0 graph.yaml 沒有節點 {node_id}")
             continue

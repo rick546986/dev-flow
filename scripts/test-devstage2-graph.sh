@@ -97,6 +97,13 @@ with tempfile.TemporaryDirectory(prefix="devstage2-graph-test-") as tmpbase:
     open(n1, "w", encoding="utf-8").write(text)
     expect("P0 真節點缺完成條件必須紅", case, 1, "完成條件")
 
+    case = os.path.join(tmpbase, "n3-missing-late-owner")
+    seed(case)
+    n3 = os.path.join(case, "skills", "dev-flow", "stage2", "nodes", "N3-write-md.md")
+    text = open(n3, encoding="utf-8").read().replace("先改 Decision", "先改規格")
+    open(n3, "w", encoding="utf-8").write(text)
+    expect("P0 N3 完成條件缺「先改 Decision」必須紅", case, 1, "先改 Decision")
+
     case = os.path.join(tmpbase, "second-md")
     seed(case)
     slug = os.path.join(case, "docs", "dev", "fixture-slug")
@@ -394,7 +401,7 @@ print(f"=== test-devstage2-graph:{passed}/{total} ===")
 if failed:
     print(f"⛔ {failed} 案未依預期", file=sys.stderr)
     sys.exit(1)
-if total < 28:
+if total < 29:
     print(f"⛔ 案例數 {total} < 28,牙齒沒跑齊", file=sys.stderr)
     sys.exit(2)
 sys.exit(0)

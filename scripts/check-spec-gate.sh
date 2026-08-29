@@ -13,7 +13,7 @@
 # 讓 reviewer 把時間花在判斷 R/S 寫得對不對、DD 決策合不合理 —— 那些仍然是人審的事。
 # 本腳本永遠不判斷內容好壞。
 #
-# 五項檢查(逐項印結果,全過才 exit 0):
+# 六項檢查(逐項印結果,全過才 exit 0):
 #   C1 每個 S 都有觀測欄          _templates/4-spec.md:53(完成條件)、:99(欄位形式)
 #   C2 Verification Profile 節存在,且 `- lane:` 與 `- Risk:` 可被解析
 #                                 _templates/4-spec.md:181-182、:200(runtime 讀這兩行)
@@ -22,6 +22,8 @@
 #   C4 模糊詞掃描                 _templates/4-spec.md:23-24(全文掃三詞)、
 #                                 :49 逐 S 過三律(見 :22 第 1 條的模糊詞清單)
 #   C5 Drafting Decisions 無殘留「待裁決」  _templates/4-spec.md:47(掃描零殘留)
+#   C6 晚改可見行為不得停成「4-spec 壓 Decision」
+#                                 _templates/4-spec.md 步 0／步 4;掃 DD 與確認紀錄
 #
 # C2/C3 的 lane/Risk/Owner Call 解析**直接 import runtime 正本**
 # (hooks/devflow-lib.py 的 `spec_profile()`),不另寫一份 —— G2 前置檢查與
@@ -30,7 +32,7 @@
 # **exit code 契約(重要;與 scripts/check-task-slicing.sh 相反,別看混)**:
 #   check-task-slicing.sh 是 warning-only,對真實檔案永遠不 exit 1。
 #   **本腳本是 Gate**:FAIL 就是要擋下流程。
-#     0 = 五項全過
+#     0 = 六項全過
 #     1 = 任一項 FAIL —— G2 不得送審,修完再跑
 #     2 = 用法錯誤 / 檔案讀不到 / runtime 正本載不進來(檢查本身故障)
 #
@@ -47,7 +49,7 @@ if [ -z "$SPEC" ]; then
   cat >&2 <<'USAGE'
 usage: scripts/check-spec-gate.sh <4-spec.md 路徑>
 
-G2 機械關卡:對一份 4-spec.md 做形狀檢查(五項,見腳本頂註)。
+G2 機械關卡:對一份 4-spec.md 做形狀檢查(六項,見腳本頂註)。
 exit 0 = 全過 / 1 = 有 FAIL,G2 不得送審 / 2 = 用法錯誤或檢查本身故障。
 USAGE
   exit 2
@@ -190,6 +192,58 @@ else:
     record("C5", not left,
            f"Drafting Decisions 無殘留「待裁決」(L{dd + 1} 起)",
            [*left, "G2 條件明列「DD 全裁決」;有未裁決 DD 不得過(模板 :47)"] if left else [])
+
+# ---- C6:晚改可見行為不得停成「4-spec 壓未改 Decision」----
+# 只掃 Drafting Decisions 與確認紀錄:這兩處是現場把「不採 Decision」停成合法
+# 自判的地方。正文講規則、引 2-decision 當依據,都不算。
+# 負向 fixture:scripts/fixtures/spec-gate-late-owner/bad-parked-dd.md
+#             scripts/fixtures/spec-gate-late-owner/bad-parked-confirm.md
+# 正向 fixture:scripts/fixtures/spec-gate-late-owner/good-amended-follow.md
+PARKED = (
+    re.compile(r"不採\s*(?:2-decision|Decision|決策)"),
+    re.compile(r"兩份並存"),
+    re.compile(r"產品跟\s*4-spec"),
+    re.compile(r"4-spec.{0,24}不跟.{0,16}(?:Decision|2-decision|決策)"),
+    re.compile(
+        r"(?:follow|跟)\s*4-spec.{0,24}(?:不跟|instead of|而非).{0,16}"
+        r"(?:Decision|2-decision|決策)",
+        re.I,
+    ),
+    re.compile(
+        r"不採.{0,16}(?:Decision|2-decision|決策).{0,24}follow\s*4-spec",
+        re.I,
+    ),
+)
+
+
+def parked_hits(start):
+    if start is None:
+        return []
+    end = section_end(start)
+    found = []
+    for n in range(start + 1, end):  # 跳過標題行本身(Drafting Decisions 含 Decision)
+        line = lines[n]
+        for pat in PARKED:
+            if pat.search(line):
+                found.append(f"L{n + 1}:{line.strip()[:70]}")
+                break
+    return found
+
+
+confirm = next((i for i in heads if re.match(r"^#{2,6}\s*確認紀錄", lines[i])), None)
+c6_hits = parked_hits(dd) + parked_hits(confirm)
+record(
+    "C6",
+    not c6_hits,
+    "晚改可見行為不得停成「4-spec 壓 Decision」(DD／確認紀錄)",
+    [
+        *c6_hits,
+        "推翻已核 Decision 不是合法 DD;回第 2 站改 Decision,再走 4→5→6→7"
+        " —— 模板步 0／步 4。G3 已過另開薄刀,不准改已封包。",
+    ]
+    if c6_hits
+    else [],
+)
 
 # ---- 輸出 ----
 print(f"=== G2 spec gate:{spec_path} ===")

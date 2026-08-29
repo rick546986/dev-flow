@@ -7,7 +7,7 @@ N5-write-md 完成:步 1–4 的內容全在同一份 `4-spec.md`。游標在 N5
 
 ## 讀什麼
 
-已落檔的 `docs/dev/<slug>/4-spec.md`。C1–C5 五關的判準正本在
+已落檔的 `docs/dev/<slug>/4-spec.md`。C1–C6 六關的判準正本在
 `scripts/check-spec-gate.sh` 本身與 `_templates/4-spec.md` 頂註第 5 步,
 本檔不抄乘客步原文,也不重述關卡條文。`graph.yaml` 是下一跳正本。
 

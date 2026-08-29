@@ -106,6 +106,11 @@ ENTRY_NODE = "N1-handoff"
 WRITE_SPEC_NODE = "N5-write-md"
 GATE_NODE = "S5-gate"
 GATE_SCRIPT = "check-spec-gate.sh"
+# 晚改可見行為鎖:完成條件必須含這些句,缺了 = 圖牙紅。
+DONE_NEEDLES = {
+    "N1-handoff": ("晚改可見行為", "禁只改 4-spec"),
+    "S4-dd": ("推翻已核 Decision 不是合法 DD",),
+}
 # 第二刀:十一個真節點檔,沒有 skill-legacy 團塊。
 CHAIN = (
     "N1-handoff",
@@ -500,6 +505,10 @@ def check_live(graph):
             body = sections.get(heading, "")
             if heading not in sections or not body.strip():
                 failures.append(f"P0 {rel} 缺「{heading}」或該節為空")
+        done_body = sections.get("完成條件", "")
+        for needle in DONE_NEEDLES.get(node_id, ()):
+            if needle not in done_body:
+                failures.append(f"P0 {rel} 完成條件必須含「{needle}」")
         if spec is None:
             failures.append(f"P0 graph.yaml 沒有節點 {node_id}")
             continue
