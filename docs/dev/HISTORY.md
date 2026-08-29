@@ -316,3 +316,8 @@
 - 為什麼:Claude 比 plugin.json version 字串；3.20.1 字串不變則 /plugin update 回 (no content) 且無提示
 - 落在哪:.claude-plugin/plugin.json .cursor-plugin/plugin.json .codex-plugin/plugin.json hooks/runtime-capabilities.json
 
+## 2026-08-29 · probe-empty-tree-fail-closed · v3.20.2
+- 做了什麼:--probe 無專案根不得 probe: ok；採用樹必須帶根+DEVFLOW_ROOT；方法包無參數改印 pack-self-check；detect_host 優先序寫進 SKILL；test-host-adapter 地板 46→54
+- 為什麼:SKILL 教的無參數 --probe 空樹 missing=[] 恆綠（第 4 型假綠），採用專案以為掛載已驗過
+- 落在哪:scripts/check-host-adapter.sh scripts/test-host-adapter.sh skills/dev-setup/SKILL.md
+

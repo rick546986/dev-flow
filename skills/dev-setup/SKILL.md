@@ -33,12 +33,19 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 
 | 主機 | 怎麼認 | 健檢走哪條 |
 |---|---|---|
-| Claude | 有 `.claude/`、或人明說在 Claude Code | 舊的 AskUserQuestion／enabledPlugins／hooks.json 仍可走 |
-| Cursor | 有 `.cursor/`、或人明說 | 不要把這三個當唯一核可。改查技能目錄在不在、是不是整棵、`DEVFLOW_ROOT` 對不對 |
-| Codex | 有 `.agents/` 或 `.codex/` | 同上 |
-| Grok | 人明說／技能庫掛整棵 | 同上。不要假裝能從產品 repo 自動灌 |
+| Claude | 有 `.claude/`、或人明說在 Claude Code。**優先序最低**：多主機目錄並存時不會只因有 `.claude/` 就判 Claude | 舊的 AskUserQuestion／enabledPlugins／hooks.json 仍可走 |
+| Cursor | 有 `.cursor/`、或人明說。優先於 agents/codex／grok／claude | 不要把這三個當唯一核可。改查技能目錄在不在、是不是整棵、`DEVFLOW_ROOT` 對不對 |
+| Codex | 有 `.agents/` 或 `.codex/`。優先於 grok／claude | 同上 |
+| Grok | 人明說／有 `.grok/`／技能庫掛整棵。優先於 claude | 同上。不要假裝能從產品 repo 自動灌 |
 
-Cursor／Grok／Codex 開工先跑 `scripts/check-host-adapter.sh --probe`。
+`detect_host` 優先序：`.devflow-host` marker → `.cursor/` → `.agents/`／`.codex/` → `.grok/` → `.claude/`。要硬指定就寫專案根 `.devflow-host`（一行：`claude`／`cursor`／`codex`／`grok`）。表裡「有 `.claude/` → Claude」只在沒有更高優先目錄、也沒有 marker 時成立。
+
+兩種用途不要混：
+- **方法包自檢（無參數）**：只在方法包 repo 根跑 `scripts/check-host-adapter.sh --probe`（或無 `--probe` 的全檢）。印 `probe: pack-self-check`，不是採用專案通過。
+- **採用專案探測（帶樹）**：與 `scripts/test-host-adapter.sh` 的 `run_check()` 契約相同：
+  `DEVFLOW_ROOT=<方法包根> scripts/check-host-adapter.sh --probe <採用專案根>`
+  Cursor／Grok／Codex 開工用這一條。不帶專案根會 `probe: 未檢查／缺專案根` 並紅（空樹不得假綠）。
+
 綠的時候印該主機下一句安裝／更新指令(Cursor Refresh 在已匯入 repo 那一列;
 Codex 是 marketplace add／plugin add;Grok 沒有 marketplace)。
 缺技能樹或 `DEVFLOW_ROOT` 不對會印一句掛載句並紅。四邊正本見 `docs/PLUGIN.md`。
@@ -439,7 +446,9 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     `AGENTS.md` 只有一行指標 +「不要把流程規則貼進本檔」。
     只散發 docs/dev/、技能連結只有 SKILL.md → broken。
 16. **主機探測與 --action**:對照本檔「主機探測」。先探測主機再選 1–3。
-    開工先跑 `scripts/check-host-adapter.sh --probe`。
+    採用專案探測（帶樹）開工跑
+    `DEVFLOW_ROOT=<方法包根> scripts/check-host-adapter.sh --probe <專案根>`。
+    方法包自檢才可無參數。
     不准為了別的主機改鬆 `--action`。
 
 ## fix / uninstall

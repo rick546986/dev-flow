@@ -19,6 +19,13 @@
 #   scripts/check-host-adapter.sh [root]
 #   scripts/check-host-adapter.sh --probe [root]
 # --probe = 開工探針:只驗 DEVFLOW_ROOT + 本機技能樹,缺了印一句掛載句就停。
+# 兩種用途不要混:
+#   方法包自檢(無參數):cwd 必須是方法包根,印 probe: pack-self-check,
+#     不是 probe: ok(那是採用專案帶樹通過)。
+#   採用專案探測(帶樹):DEVFLOW_ROOT=<方法包根> … --probe <採用專案根>
+#     與 test-host-adapter.sh run_check() 契約相同。
+#   --probe 無 [root] 且 cwd 不是方法包 → probe: 未檢查／缺專案根,exit 1。
+#   空 tree 不得 missing=[] 就 probe: ok(第 4 型假綠)。
 # 不是第 2–7 站的 --action,不准拿這支去改鬆那些圍欄。
 # exit:0 = 全過 / 1 = 真違規 / 2 = 檢查自身故障
 #
@@ -143,6 +150,9 @@ HOST_PROBE_NEEDLES = (
     "不准為了別的主機改鬆",
     ".cursor/rules/",
     "AGENTS.md 一行",
+    "方法包自檢",
+    "採用專案探測",
+    ".devflow-host",
 )
 README_DUMP_NEEDLES = ("第一刀", "第二刀", "第三刀", "刀序")
 HOST_MARKERS = ("claude", "cursor", "codex", "grok")
@@ -537,6 +547,26 @@ def main():
         tree, detected_host, pack, is_adopter
     )
     if probe_mode:
+        if not tree:
+            cwd = os.getcwd()
+            if is_pack(cwd) and os.path.abspath(cwd) == os.path.abspath(pack):
+                pack_host = detect_host(cwd)
+                print(f"host: {pack_host or 'n/a'}")
+                print("mode: pack-self-check")
+                print(f"next: {next_command(pack_host)}")
+                print("probe: pack-self-check")
+                sys.exit(0)
+            print("probe: 未檢查／缺專案根")
+            print(
+                "next: 採用專案探測必須帶專案根："
+                "DEVFLOW_ROOT=<方法包根> "
+                "scripts/check-host-adapter.sh --probe <採用專案根>"
+            )
+            print(
+                "FAIL: --probe 無專案根且 cwd 不是方法包（空樹不得 probe: ok）",
+                file=sys.stderr,
+            )
+            sys.exit(1)
         missing = thin_mount_gaps(tree) + start_gaps
         for item in missing:
             print(f"missing: {item}")
