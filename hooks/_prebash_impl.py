@@ -656,4 +656,14 @@ if phase == "review" and not review_unlocked and slug:
               "7-review.md 步 4 才准讀 Self-Review(防錨定:先自建矩陣、後讀作者主張)。"
               f"要解鎖:devflow-exec.sh review-unlock {slug}。")
 
+# ④ Bash 寫入 prevent-before:解得出的寫路徑走與 Edit/Write 同一套
+# write_scope_verdict。擋在指令執行前,檔不落盤。解不出路徑不擋(後網仍是
+# postbash)。三邊共同入口是 scripts/check-write-scope.sh --action;本段
+# 是 Claude PreToolUse 接到同一套判定,不是另一份較鬆的規則。
+denied = L.deny_write_command(root, cmd, state)
+if denied:
+    _rel, violation, msg = denied
+    _obs_deny("prebash-write", violation, _rel)
+    L.die(msg)
+
 sys.exit(0)

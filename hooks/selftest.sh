@@ -46,13 +46,14 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 反斜線 scope、反斜線寫法走完整 guard 的圍欄②與 6-notes 恆許)→ 398;同日
 # 派工單 §2.1 TMPDIR 跨平台正規化 w2 組 +2(注入假 cygpath 的正向 + 空 PATH 的
 # 對照組)→ 400;同日 report-guard 覆蓋缺口 +2(.devflow/ 非 reports/ 仍擋 +
-# .devflow/task/ 證據區不得誤傷)→ 402)
+# .devflow/task/ 證據區不得誤傷)→ 402;2026-08-29 Bash 寫入 prevent-before
+# +3(prebash 擋 scope 外 redirect / 擋後檔不落盤 / 放行 scope 內)→ 405)
 # ——新增案例時同步 +;絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=402
+MIN_CASES=405
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -426,6 +427,16 @@ echo "-- prebash 圍欄 --"
 ck "shell 讀上游 → 擋"         2 "$(pb 'cat docs/dev/f1/1-discussion.md')"
 ck "shell 刪旗標 → 擋"         2 "$(pb 'rm -f .devflow/exec.json')"
 ck "正常 shell 放行"           0 "$(pb 'pytest -q')"
+# Bash 寫入 prevent-before(STATUS Backlog C / engine-fence-masking #5):
+# 先問 prebash,允許才真寫。收寬成只 postbash detect-after → 檔會落盤 → 紅。
+pb_capture 'echo sneak > src/selftest-sneaky.py'
+if [ "$PB_RC" = 0 ]; then echo sneak > src/selftest-sneaky.py; fi
+ck_msg "prebash 擋 Bash 寫 scope 外" 2 "scope 外" "$PB_RC" "$PB_OUT"
+LANDED=1
+[ -f src/selftest-sneaky.py ] || LANDED=0
+rm -f src/selftest-sneaky.py
+ck "prebash 擋後檔不落盤(收寬成 detect-after 必須紅)" 0 "$LANDED"
+ck "prebash 放行 Bash 寫 scope 內" 0 "$(pb 'echo ok > src/a.py')"
 
 echo "-- allow(L1 出口)--"
 ck "allow 無 reason → 拒"      1 "$(x allow src/other.py)"

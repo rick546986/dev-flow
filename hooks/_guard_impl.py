@@ -121,46 +121,12 @@ if tool == "Read":
               f"停:devflow-exec.sh stop → 補 spec → 重審。")
     sys.exit(0)
 
-# 契約防篡改:任何 feature 的 1/2/3/4 檔(含 .html)一律禁改
-if L.is_contract_path(rel):
-    _obs_deny("guard-write", "contract", rel)
-    L.die(f"⛔ 契約防篡改:執行期禁改 {rel}(跨 feature 一律保護)。"
-          f"改本 feature 的 spec = L2:devflow-exec.sh stop → 修 → 重審 → 重新 start。")
-# 旗標與忽略規則只准 CLI 動,agent 側禁寫;task 模式恆許自己的 evidence 專區
-if rel.startswith(".devflow/"):
-    if task and rel.startswith(f".devflow/task/{task}/"):
-        sys.exit(0)
-    _obs_deny("guard-write", "guard_state", rel)
-    L.die("⛔ 禁止直接編輯守衛狀態(.devflow/)。擴 scope 走 devflow-exec.sh allow <file> --reason \"...\"。")
-if rel == ".gitignore":
-    _obs_deny("guard-write", "guard_state", rel)
-    L.die("⛔ 執行期禁改 .gitignore(改忽略規則會讓偵測網失明)。確有需要 → 停下回報使用者。")
-
-# 圍欄③(續):Stage 7 review 期間,本 slug 的 dev-flow 文檔寫入限縮到
-# 7-review*/evidence/ —— 蓋過下面 5-tasks/6-notes 的「恆許」。與 unlock 無關
-# (unlock 只放行 Read,Write 限縮維持,見 7-review.md 步 0)。刻意只管
-# docs/dev/<slug>/ 底下的東西:非 dev-flow 檔(程式碼、其他路徑)一律不擋 ——
-# reviewer 可能要跑測試產生暫存,誤傷比不擋更糟(這裡不判斷,交回下方既有
-# scope/in_pool 邏輯處理)。
-if phase == "review" and rel.startswith(feat):
-    if rel.startswith(feat + "7-review") or rel.startswith(feat + "evidence/"):
-        sys.exit(0)
-    _obs_deny("guard-write", "review_scope", rel)
-    L.die(f"⛔ 圍欄③:Stage 7 review 期間寫入限縮到 {feat}7-review* 與 {feat}evidence/;"
-          f"{rel} 屬其他 dev-flow 文檔,禁寫(unlock 不解除本限制)。"
-          f"真要改 → devflow-exec.sh stop 後處理。")
-
-if rel.startswith((feat + "5-tasks", feat + "6-implementation-notes")):
-    if task:
-        # 單寫者原則(§12):task 模式下共享文件移出恆許,記帳由派工者於 ACCEPTED 後執行
-        L.die(f"⛔ task-scoped 守衛:{rel} 是共享文件(單寫者=派工者)。"
-              f"Worker 只寫 .devflow/task/{task}/ 的 evidence;"
-              f"5-tasks/6-notes 記帳由派工者在 ACCEPTED 後執行。")
+# Write 擋法正本 = devflow-lib.write_scope_verdict(與 Bash --action / prebash
+# 同一套)。task_shared 維持舊行為:die 但不記 obs。
+verdict = L.write_scope_verdict(rel, state)
+if verdict is None:
     sys.exit(0)
-if L.in_pool(rel, state):
-    sys.exit(0)
-_obs_deny("guard-write", "scope", rel)
-L.die(L.scope_violation_message(
-    f"⛔ scope 外寫入:{rel} 不在 5-tasks Files 聯集。",
-    resolution=(f"L1(不動 R/S)→ devflow-exec.sh allow '{rel}' --reason \"...\" "
-                f"並記 D-n;L2 → stop。")))
+violation, msg = verdict
+if violation != "task_shared":
+    _obs_deny("guard-write", violation, rel)
+L.die(msg)
