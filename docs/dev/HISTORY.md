@@ -251,3 +251,8 @@
 - 為什麼:審 B FAIL:example 雙生頁仍是橫 ASCII pre,契約只釘置頂 id。CI selftest 因 runner 系統 python 帶 mdit 3.0.0 整組 doctor 紅。
 - 落在哪:example/contract-expiry-reminder/{2-decision,4-spec}.html scripts/build-stage{2,4}-html.py scripts/check-stage4-rs-contract.sh scripts/check-gate-twin.sh hooks/_doctor_impl.py
 
+## 2026-08-29 · field-fixes-six-c
+- 做了什麼:CI 兩紅修復:doctor 不寫死系統 python 路徑字串;stage2 產器吐 Owner Calls／依據表,example 2-decision 直式 SVG 與自判表並存
+- 為什麼:半點審重生蓋掉自判表,methodology/check-selfjudgment-tables 32/36;_doctor_impl 字串觸發 runtime-selftest 禁寫死路徑
+- 落在哪:hooks/_doctor_impl.py scripts/build-stage2-html.py example/contract-expiry-reminder/2-decision.html scripts/check-selfjudgment-tables.sh
+
