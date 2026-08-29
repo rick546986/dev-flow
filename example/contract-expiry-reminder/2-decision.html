@@ -54,6 +54,10 @@ a.cell:hover{border-color:var(--accent)}
 .vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
 details.bg{margin:10px 0 0}
 details.bg>summary{cursor:pointer;color:var(--ink-2)}
+table.judge{width:100%;border-collapse:collapse;font-size:.86rem;margin:0}
+table.judge th,table.judge td{border:1px solid var(--rule);padding:6px 8px;
+  text-align:left;vertical-align:top}
+table.judge th{background:var(--sunk);font-weight:650}
 .src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
 </style>
 </head>
@@ -86,7 +90,17 @@ details.bg>summary{cursor:pointer;color:var(--ink-2)}
 </svg>
   </div></div>
 </section>
-<section class="r-block" id="point-1"><div class="r-head"><span class="r-name">方案</span></div><div class="r-body"><div class="card"><strong>A 登入即時查</strong><p>dashboard 載入時 API 即時查 expiring 合約 優:零新 infra、實作最小 劣:每次載入查一次;無主動推播</p></div><div class="card"><strong>B nightly cron + 通知表</strong><p>排程掃描寫入 notifications 表 優:可擴充 email;查詢便宜 劣:要新增 cron 進程 + 新表</p></div><div class="card"><strong>C MQ 事件驅動</strong><p>合約異動發事件,消費者判斷到期 優:即時、最可擴充 劣:引入 MQ = 新 infra,violates constraint</p></div></div></section>
+<section class="r-block" id="basis"><div class="r-head"><span class="r-name">方案依據</span></div><div class="r-body"><table class="judge"><tr><th></th><th>A 登入即時查</th><th>B nightly cron + 通知表</th><th>C MQ 事件驅動</th></tr><tr><td>依據</td><td>`1-discussion.md:18` 現有 dashboard 已有空白卡片區;`:116` explore 記「dashboard 是最低成本呈現面」。成本 `[Assumption]`</td><td>`1-discussion.md:68` Non-Goals 記 email 之後再議;`:116` 現況無任何排程機制。成本 `[Assumption]`</td><td>`1-discussion.md:80` Constraints 明列「不引入新 infra」。成本 `[Assumption]`</td></tr></table></div></section>
+<section class="r-block" id="owner-calls">
+<div class="r-head"><h2>Owner Calls</h2></div>
+<div class="r-body"><table class="judge">
+<tr><th>OC</th><th>決定了什麼</th><th>依據</th><th>若被推翻會怎樣</th><th>狀態</th></tr>
+<tr><td>OC-1</td><td>已有後繼續約紀錄的合約**不列入**提醒。使用者只被問到「30 天內到期要提醒」,「排除已續約」是 owner 延伸</td><td>`1-discussion.md:84` AC-1 原文只寫「未續約」;「是雜訊」為 `[Assumption]`,未取實際漏看數據</td><td>卡片會多列已續約合約;Success Criteria 第 1 條「未續約」字眼與 4-spec 的過濾條件都要改</td><td>✅</td></tr>
+<tr><td>OC-2</td><td>只處理 end_date 非空的合約(無期限合約不列)。使用者說「快到期的要看得到」,此為收窄;依據:無 end_date 無從計算「到期」</td><td>`1-discussion.md:75` Q3 已定案只做站內;無期限合約語意在 1-discussion 全篇未出現 = `[Assumption]` 認定其不存在到期日</td><td>要先定義無期限合約的到期語意,Scope 擴大、需回頭問使用者</td><td>✅</td></tr>
+<tr><td>OC-3</td><td>零筆到期時 dashboard 仍顯示空狀態卡片,不隱藏整卡</td><td>`[Assumption]` —— 使用者未被問過空狀態,此為 owner 依一般 UI 慣例延伸</td><td>前端渲染邏輯改寫,3-prototype 的 variant 題目跟著變</td><td>✅</td></tr>
+<tr><td>OC-4</td><td>卡片只顯示最靠近到期的 10 筆,其餘收進「查看全部」連結</td><td>`[Assumption]` —— 「10 筆」無來源,1-discussion 未量測過單一業務名下到期筆數分布</td><td>到期 &gt;10 筆時的 UI 行為改變,3-prototype variant 題目跟著變</td><td>**✗** `&lt;reviewer-a&gt;`:截斷會讓業務漏看 → 改為全數顯示+卡片內滾動(裁決後歸使用者裁決,計入確認紀錄;本列保留 = 審計軌跡)</td></tr>
+</table></div></section>
+<section class="r-block" id="point-1"><div class="r-head"><span class="r-name">方案</span></div><div class="r-body"><div class="card"><strong>A 登入即時查</strong><p>dashboard 載入時 API 即時查 expiring 合約 優:零新 infra、實作最小 劣:每次載入查一次;無主動推播 依據:`1-discussion.md:18` 現有 dashboard 已有空白卡片區;`:116` explore 記「dashboard 是最低成本呈現面」。成本 `[Assumption]`</p></div><div class="card"><strong>B nightly cron + 通知表</strong><p>排程掃描寫入 notifications 表 優:可擴充 email;查詢便宜 劣:要新增 cron 進程 + 新表 依據:`1-discussion.md:68` Non-Goals 記 email 之後再議;`:116` 現況無任何排程機制。成本 `[Assumption]`</p></div><div class="card"><strong>C MQ 事件驅動</strong><p>合約異動發事件,消費者判斷到期 優:即時、最可擴充 劣:引入 MQ = 新 infra,violates constraint 依據:`1-discussion.md:80` Constraints 明列「不引入新 infra」。成本 `[Assumption]`</p></div></div></section>
 <details class="bg"><summary>背景</summary><p><strong>Rationale</strong> 量級小(8k 筆,索引查詢 &lt;50ms)、需求只到「看得到」,即時查是最短路徑;service 抽象保住升級路。</p><p><strong>風險</strong> - 查詢慢拖累 dashboard → prototype 前先 EXPLAIN 驗證;超過 100ms 就加覆蓋索引。 - UI 形式不確定(badge? 卡片?)→ 交給 3-prototype 用 variants 挑。</p><p><strong>未採</strong> - B:本期不做 email,通知表沒有消費者,先做是浪費。 - C:8,000 筆量級用 MQ 是 overkill,且違反「不引入新 infra」約束。</p></details>
 <p class="src">由 <code>scripts/build-stage2-html.py</code> 從 md 解析產生,不包 html-shell。</p>
 </div>

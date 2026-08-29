@@ -130,9 +130,10 @@ for rel, source, heading in (
     check(not empty, f"{rel}「{heading}」每列依據欄非空", f"空的列:{empty}")
 
 # ── 5b. 範例的 html twin 也要帶「依據」欄 ────────────────────────────────
-# 為什麼要單獨驗:example 的 twin 是**手寫**的審查介面,不是 md 直轉,renderer 的
-# fixed-point 檢查管不到它;md 加了欄、html 沒跟上時,人打開來審的那一份看不到依據,
-# 而所有機械檢查照樣全綠(獨立驗收 2026-08-19 實際抓到這個漂移)。
+# 為什麼要單獨驗:example 的 2-decision.html 是 build-stage2-html.py 產的審頁,
+# renderer fixed-point 管不到它;md 加了欄、產器沒吐出時,人打開來審的那一份
+# 看不到依據,而所有機械檢查照樣全綠(獨立驗收 2026-08-19 抓到;2026-08-29
+# 重生直式 SVG 又把表蓋掉一次)。產器有 Owner Calls／依據欄才算跟上。
 twin = read("example/contract-expiry-reminder/2-decision.html")
 check("<h2>Owner Calls" in twin, "範例 2-decision.html 有 Owner Calls 節")
 oc_head = next((ln for ln in twin.splitlines()

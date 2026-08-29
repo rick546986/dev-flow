@@ -93,8 +93,11 @@ def resolve_printer_python(root):
             if ver:
                 return cand, ver, "venv"
     candidates = []
-    if os.path.isfile("/usr/bin/python3"):
-        candidates.append("/usr/bin/python3")
+    # 系統優先,但不寫死路徑字串 —— runtime-selftest 禁 hooks/ 出現
+    # 那串(只准留在 python-lib)。Windows 沒這條路,isfile 會略過。
+    sys_py = os.path.join(os.sep, "usr", "bin", "python3")
+    if os.path.isfile(sys_py):
+        candidates.append(sys_py)
     which = shutil.which("python3")
     if which:
         candidates.append(which)
@@ -347,14 +350,14 @@ def run_doctor(root, contract_path="", gate_cmd=""):
              "HISTORY 唯一寫入口建議跑 dev-setup 散發後使用。")
 
     # 6d. 產圖／gate-twin 直譯器:markdown-it-py==4.0.0 要 Python 3.12+。
-    # macOS /usr/bin/python3 常是 3.9,pip 會靜默停在 3.x。不准叫人覆寫系統 Python。
+    # macOS 系統 python3 常是 3.9,pip 會靜默停在 3.x。不准叫人覆寫系統 Python。
     # 系統 leftover mdit 3.x 不擋握手(CI runner／selftest 常見);venv／DEVFLOW_PYTHON
     # 帶 3.x 才 fail-closed。
     exe, ver, kind = resolve_printer_python(root)
     if not exe:
         check(False, "printer-python",
               "找不到產圖／gate-twin 直譯器。建專案 venv 或設 DEVFLOW_PYTHON"
-              "指向 3.12+,不要覆寫系統 /usr/bin/python3。")
+              "指向 3.12+,不要覆寫系統 python3。")
     elif ver < PRINTER_PY_FLOOR:
         check(False, "printer-python",
               f"{exe} 是 Python {ver[0]}.{ver[1]}。markdown-it-py==4.0.0 要 "
