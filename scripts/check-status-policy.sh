@@ -481,9 +481,10 @@ check(os.path.isfile(writer) and os.access(writer, os.X_OK),
       "scripts/status-update.sh 存在且可執行")
 if os.path.isfile(writer):
     wtxt = open(writer, encoding="utf-8").read()
-    check("mkdir" in wtxt and "LOCK" in wtxt,
-          "status-update.sh 含目錄鎖(mkdir + LOCK)",
-          "拿掉鎖就回到同 checkout last-write-wins")
+    check("mkdir" in wtxt and "LOCK" in wtxt
+          and "refresh-stamp 需要基準" in wtxt,
+          "status-update.sh 含目錄鎖,且 --refresh-stamp 需要基準",
+          "拿掉鎖或拿掉補章基準閘 = 手改表列再 refresh-stamp 假綠")
 else:
     check(False, "status-update.sh 含目錄鎖(mkdir + LOCK)", "檔案不存在")
 

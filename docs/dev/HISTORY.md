@@ -286,3 +286,8 @@
 - 為什麼:v3.8.0 只縮寫入窗口,同 checkout 兩 session 手改仍 last-write-wins 且不報錯。HISTORY 已有單寫入者,STATUS 沒有。本輪是 Backlog「真正的單寫入者」那列的牙,不划掉該列(main 上由 merger 收)。
 - 落在哪:scripts/status-update.sh scripts/test-status-update.sh scripts/check-status-policy.sh scripts/devflow-check.sh scripts/check-file-map.sh scripts/test-architecture-guards.sh _templates/STATUS.md docs/dev/STATUS.md(只改頂註+蓋章,Active/Backlog 表列未動) guides/guide-dev-flow.html
 
+## 2026-08-29 · status-refresh-stamp-gate
+- 做了什麼:--refresh-stamp 必須表列已與基準相同才准補章;正本還要 HEAD=main。手改表列再 refresh-stamp 拒,章不變。fixture 帶 --base-file 且表列相同仍可補章。
+- 為什麼:--refresh-stamp 原本不查 branch、不查表列,手改一列再補章,verify-stamp 與 check-status-policy 全綠。後面若把 parallel canonical ref 寫進 STATUS,這扇門會把假座標蓋成合法章。
+- 落在哪:scripts/status-update.sh scripts/test-status-update.sh scripts/check-status-policy.sh guides/guide-dev-flow.html
+

@@ -1,12 +1,13 @@
 #!/bin/bash
 # test-status-update.sh — STATUS 單寫入者的行為牙
 #
-# 釘四件:
+# 釘五件:
 #   1. 帶鎖的更新器對兩列並行寫,兩列都在(同 checkout 不再 last-write-wins)
 #   2. 今日手改(無鎖 read-modify-write)會丟一列 —— 這是 hazard 本身
 #   3. 手改後蓋章對不上(`--verify-stamp` 紅)。今天沒有這顆牙,手改全綠;
 #      拿掉蓋章檢查的 mutant 對同一份手改檔又變綠 —— 證明牙在蓋章,不在散文
 #   4. feature 檔的 Active/Backlog 表列相對基準被改 → `--check-tables` 紅
+#   5. --refresh-stamp 不准替手改表列補章:表列漂了就拒;表列與基準相同才准補章
 #
 # 用法:scripts/test-status-update.sh [root]
 # exit:0 = 全過 / 1 = 案例未依預期 / 2 = 治具故障
@@ -35,7 +36,7 @@ import time
 tool, root = sys.argv[1], sys.argv[2]
 passed = 0
 failed = 0
-MIN_CASES = 10
+MIN_CASES = 19
 
 HEADER = """# 進行中變更索引
 
@@ -87,16 +88,70 @@ def unlocked_rmw(path, old, new, delay):
 
 
 with tempfile.TemporaryDirectory(prefix="status-update-") as tmp:
-    # ── 1. 蓋章:refresh 後 verify 過;手改表列 verify 紅 ──
+    # ── 1. 蓋章:表列與基準相同才准 refresh;手改表列 verify 紅 ──
     fx = os.path.join(tmp, "stamp.md")
+    base_fx = os.path.join(tmp, "stamp-base.md")
     open(fx, "w", encoding="utf-8").write(HEADER)
-    ref = run(fx, "--refresh-stamp")
+    shutil.copy2(fx, base_fx)
+    ref = run(fx, "--refresh-stamp", "--base-file", base_fx)
     ver = run(fx, "--verify-stamp")
     expect(
-        "refresh-stamp 後 verify-stamp 過",
+        "表列與基準相同時 refresh-stamp 後 verify-stamp 過",
         ref.returncode == 0 and ver.returncode == 0
         and "status-writer-rev:" in ver.stdout,
         (ref.stdout or "") + (ref.stderr or "") + (ver.stdout or "") + (ver.stderr or ""),
+    )
+
+    # destroy:手改一列再 --refresh-stamp → 必須拒,章不得變成漂表的合法章
+    drifted = os.path.join(tmp, "drifted.md")
+    shutil.copy2(fx, drifted)
+    open(drifted, "w", encoding="utf-8").write(
+        open(drifted, encoding="utf-8").read().replace("row-alpha 待辦", "row-alpha 手改後想補章", 1)
+    )
+    before_drift = open(drifted, encoding="utf-8").read()
+    bless = run(drifted, "--refresh-stamp", "--base-file", base_fx)
+    after_drift = open(drifted, encoding="utf-8").read()
+    expect(
+        "手改表列再 --refresh-stamp → 拒(不准替漂表補章)",
+        bless.returncode != 0
+        and "不准替手改表列補章" in (bless.stderr or "")
+        and after_drift == before_drift,
+        (bless.stdout or "") + (bless.stderr or ""),
+    )
+    expect(
+        "被拒的漂表 verify-stamp 仍紅(章沒被改成合法)",
+        run(drifted, "--verify-stamp").returncode != 0,
+        after_drift,
+    )
+
+    # mutant:拿掉「表列與基準不同就拒」——今天的 --refresh-stamp 就是這種綠
+    mutant_rs = os.path.join(tmp, "status-update.mutant-restamp.sh")
+    src_rs = open(tool, encoding="utf-8").read()
+    patched_rs = src_rs.replace(
+        'fail("拒絕:--refresh-stamp 表列與基準不同,不准替手改表列補章(%s)" % title)',
+        "pass  # mutant: bless drifted tables",
+    )
+    expect(
+        "refresh-stamp 基準閘 mutant 源與正本不同",
+        patched_rs != src_rs,
+        "替換沒打中,基準閘沒被破壞",
+    )
+    open(mutant_rs, "w", encoding="utf-8").write(patched_rs)
+    os.chmod(mutant_rs, 0o755)
+    drift2 = os.path.join(tmp, "drifted-mutant.md")
+    shutil.copy2(fx, drift2)
+    open(drift2, "w", encoding="utf-8").write(
+        open(drift2, encoding="utf-8").read().replace("row-alpha 待辦", "row-alpha 手改後想補章", 1)
+    )
+    forged_rs = subprocess.run(
+        ["bash", mutant_rs, "--file", drift2, "--refresh-stamp", "--base-file", base_fx],
+        capture_output=True, text=True,
+    )
+    expect(
+        "拿掉基準閘的 mutant 對手改表列 refresh-stamp 綠(今天的後門)",
+        forged_rs.returncode == 0
+        and run(drift2, "--verify-stamp").returncode == 0,
+        (forged_rs.stdout or "") + (forged_rs.stderr or ""),
     )
 
     hand = os.path.join(tmp, "hand.md")
@@ -272,6 +327,17 @@ with tempfile.TemporaryDirectory(prefix="status-update-") as tmp:
                 and "不准改" in (refused.stderr or "")
                 and after_real == before,
                 (refused.stdout or "") + (refused.stderr or ""),
+            )
+            restamp = subprocess.run(
+                ["bash", tool, "--refresh-stamp"],
+                capture_output=True, text=True, cwd=root,
+            )
+            expect(
+                "feature branch 對正本 --refresh-stamp → 拒且檔案不動",
+                restamp.returncode == 2
+                and "補章" in (restamp.stderr or "")
+                and open(real, encoding="utf-8").read() == before,
+                (restamp.stdout or "") + (restamp.stderr or ""),
             )
     else:
         expect("找不到 docs/dev/STATUS.md 治具", False, real)

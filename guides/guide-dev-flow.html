@@ -2351,7 +2351,8 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             驗蓋章與 feature-branch 表列凍結</td><td>人工/CI(不在生命週期上;本輪未進 ship-manifest)</td></tr>
     <tr><td><code>test-status-update.sh</code></td>
         <td>證明帶鎖並行寫兩列都在、無鎖手改會丟列且蓋章紅、拿掉蓋章檢查的 mutant
-            對手改檔又綠、feature 檔改表列 <code>--check-tables</code> 紅。</td>
+            對手改檔又綠、手改再 <code>--refresh-stamp</code> 必須拒、feature 檔改表列
+            <code>--check-tables</code> 紅。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>devflow-upgrade-leftovers.sh</code></td>
         <td>upgrade 時刪掉目前方法包不再出貨的受管殘件(例:<code>_templates/CONTEXT.md</code>

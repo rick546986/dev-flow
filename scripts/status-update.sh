@@ -17,9 +17,10 @@
 #     `--verify-stamp` / check-status-policy.sh 紅。這就是「手改可被偵測」。
 #
 # 母版的表列仍只在整合分支維護:對本 repo 的 `docs/dev/STATUS.md` 做表列
-# 變更時,目前 branch 必須是 `main`(短命 STATUS 收尾 branch 也算表列變更,
-# 請在 main 上跑,或合併後由 merger 跑)。fixture(`--file` 指向別處)不查 branch。
-# `--refresh-stamp` / `--verify-stamp` / `--check-tables` 不改表列,不查 branch。
+# 變更或 `--refresh-stamp` 時,目前 branch 必須是 `main`。fixture(`--file`
+# 指向別處)不查 branch,但 `--refresh-stamp` 仍要表列對得上 `--base-file`。
+# `--verify-stamp` / `--check-tables` 不改檔。`--refresh-stamp` 只准在表列
+# 已與基準相同時補章(缺章/殘章);不准替手改過的表列補一顆「合法」章。
 #
 # 用法:
 #   scripts/status-update.sh --section active|backlog --match <唯一針> \
@@ -29,14 +30,16 @@
 #   scripts/status-update.sh --section active|backlog --remove --match <針> \
 #                            [--file PATH]
 #   scripts/status-update.sh --verify-stamp [--file PATH]
-#   scripts/status-update.sh --refresh-stamp [--file PATH]
+#   scripts/status-update.sh --refresh-stamp [--file PATH] [--base-file PATH]
 #   scripts/status-update.sh --check-tables [--file PATH] [--base-file PATH]
 #   scripts/status-update.sh --print-root
 #
 #   --file      不給就用 <repo>/docs/dev/STATUS.md
 #   --retries   取鎖重試次數,預設 3
 #   --dry-run   只印將寫入的列,不動檔、不取鎖
-#   --base-file --check-tables 時的基準(預設 git show origin/main:docs/dev/STATUS.md)
+#   --base-file --check-tables / --refresh-stamp 的基準
+#               (不給且目標是本 repo 正本 → git show origin/main:docs/dev/STATUS.md;
+#                --refresh-stamp 找不到基準就拒,不准無基準蓋章)
 #
 # exit:
 #   0 = 成功
@@ -241,13 +244,14 @@ if [ "$ACTION" = "upsert" ]; then
   [ -n "$ROW" ] || die "拒絕:--upsert 需要 --row"
 fi
 
-# 對本 repo 正本做表列變更 → 必須在 main。stamp / fixture 不查。
-if [ "$ACTION" != "refresh-stamp" ] && [ -n "$REPO_ROOT" ]; then
+# 對本 repo 正本做表列變更或補章 → 必須在 main。
+# --refresh-stamp 也查:否則 feature branch 手改表列再補章,verify 會假綠。
+if [ -n "$REPO_ROOT" ]; then
   REAL="$REPO_ROOT/docs/dev/STATUS.md"
   if [ "$TARGET" = "$REAL" ]; then
     BRANCH=$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
     if [ "$BRANCH" != "main" ]; then
-      die "拒絕:docs/dev/STATUS.md 表列只能在整合分支 main 上改(現在是 $BRANCH)。feature branch 不准改 Active/Backlog。"
+      die "拒絕:docs/dev/STATUS.md 表列與 --refresh-stamp 只能在整合分支 main 上改(現在是 $BRANCH)。feature branch 不准改 Active/Backlog,也不准替手改表列補章。"
     fi
   fi
 fi
@@ -308,6 +312,9 @@ cleanup() { rmdir "$LOCK" 2>/dev/null || true; }
 trap cleanup EXIT INT TERM
 
 # 鎖內才讀、改、寫、蓋章 —— 讀在鎖外就是 last-write-wins
+# --refresh-stamp 的基準走環境變數(不是跳過開關;沒基準就拒)
+DEVFLOW_STATUS_BASE_FILE="$BASE_FILE" \
+DEVFLOW_STATUS_REPO_ROOT="$REPO_ROOT" \
 python3 - "$TARGET" "$ACTION" "$SECTION" "$MATCH" "$ROW" "${SETS[@]+"${SETS[@]}"}" <<'PY'
 import hashlib
 import os
@@ -457,6 +464,42 @@ except OSError as err:
     fail("拒絕:讀不到 %s(%s)" % (path, err))
 
 if action == "refresh-stamp":
+    # refresh-stamp 需要基準:表列必須已與基準相同,才准補章。
+    # 沒有基準不准蓋章 —— 否則手改表列再 --refresh-stamp 會把假座標變成合法章。
+    def section_rows(text, title):
+        sp = section_span(text, title)
+        if sp is None:
+            return []
+        _, st, en = sp
+        return [ln.rstrip("\n") for ln in text[st:en].splitlines() if ln.startswith("|")]
+
+    def load_baseline():
+        base_path = os.environ.get("DEVFLOW_STATUS_BASE_FILE") or ""
+        root = os.environ.get("DEVFLOW_STATUS_REPO_ROOT") or ""
+        if base_path:
+            try:
+                return open(base_path, encoding="utf-8").read()
+            except OSError as err:
+                fail("拒絕:讀不到基準 %s(%s)" % (base_path, err))
+        if root:
+            import subprocess
+            shown = subprocess.run(
+                ["git", "-C", root, "show", "origin/main:docs/dev/STATUS.md"],
+                capture_output=True, text=True,
+            )
+            if shown.returncode != 0:
+                shown = subprocess.run(
+                    ["git", "-C", root, "show", "main:docs/dev/STATUS.md"],
+                    capture_output=True, text=True,
+                )
+            if shown.returncode == 0:
+                return shown.stdout
+        fail("拒絕:--refresh-stamp 需要基準(--base-file 或本 repo 正本的 origin/main)。沒有基準不准蓋章")
+
+    base_text = load_baseline()
+    for title in ("Active", "Backlog"):
+        if section_rows(raw, title) != section_rows(base_text, title):
+            fail("拒絕:--refresh-stamp 表列與基準不同,不准替手改表列補章(%s)" % title)
     new = apply_stamp(raw)
     # 原子寫
     d = os.path.dirname(path) or "."
