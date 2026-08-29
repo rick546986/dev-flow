@@ -261,3 +261,8 @@
 - 為什麼:CI selftest 用 DEVFLOW_PYTHON=$(command -v python3) 覆寫,系統 leftover 3.x 被判成 env 連坐握手,EXTERNAL_RUNTIME 仍紅
 - 落在哪:hooks/_doctor_impl.py
 
+## 2026-08-29 · engine-fence-masking-exit
+- 做了什麼:關 engine-fence-masking 第 7 站出貨文書:status 改 shipped、Exit Checklist 誠實收尾、產 7-review.html
+- 為什麼:功能早已合進 main,STATUS Backlog 那列寫的就是收尾文書沒關;本刀只補文書,不動引擎與 STATUS.md
+- 落在哪:docs/dev/engine-fence-masking/{7-review.md,7-review.html}、docs/dev/HISTORY.md
+
