@@ -271,3 +271,8 @@
 - 為什麼:新加工具要改八處,漏一處就假綠;掃 docs/dev/tools/ 當 expected set 則正副本同刪全綠(第 4 型)
 - 落在哪:docs/dev/ship-manifest.json scripts/devflow_ship_manifest.py scripts/check-ship-manifest.sh skills/dev-setup/SKILL.md skills/dev-release/SKILL.md scripts/check-integration-regression-guard.sh scripts/check-dev-setup-discipline.sh scripts/devflow-check.sh guides/guide-dev-flow.html
 
+## 2026-08-29 · bash-write-prevent
+- 做了什麼:Bash 寫 scope 外改成當場攔:解出寫路徑後走與 Edit 同一套判定,檔不落盤;三邊共同入口是 check-write-scope.sh --action
+- 為什麼:engine-fence-masking 第 7 站觀察到 Edit 當場擋、Bash 先寫再 postbash 示警;STATUS Backlog C 列的就是這落差
+- 落在哪:hooks/devflow-lib.py hooks/_guard_impl.py hooks/_prebash_impl.py hooks/selftest.sh scripts/check-write-scope.sh scripts/test-write-scope.sh scripts/devflow-check.sh scripts/check-file-map.sh scripts/test-architecture-guards.sh guides/guide-dev-flow.html
+

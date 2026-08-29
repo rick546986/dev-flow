@@ -286,6 +286,163 @@ def die(msg):
 
 
 # ====================================================================
+# Bash 寫入 prevent-before(與 Edit/Write 同一套 scope 判定)
+# ====================================================================
+# 為什麼要有這一段:Edit/Write 走 PreToolUse 當場擋;Bash 舊路是先寫再
+# postbash 事後抓(detect-after)。Claude / Cursor / Codex 沒有同一套
+# PreToolUse,共同 runtime 是這組函式 + scripts/check-write-scope.sh
+# --action。prebash 與 --action 都只問「這條指令要寫哪些路徑、允不允
+# 許」,自己不落盤。解不出寫路徑 → 不擋(postbash 仍是後網);不是沙盒。
+
+_REDIR_TARGET_RE = re.compile(
+    r"(?:>>|>)\s*(?!/dev/null\b)(?!\&)(?:'([^']+)'|\"([^\"]+)\"|([A-Za-z0-9_./~-]+))"
+)
+_TEE_TARGET_RE = re.compile(
+    r"\btee\b(?:\s+-[a-zA-Z]+)*\s+(?!/dev/null\b)(?:'([^']+)'|\"([^\"]+)\"|(\S+))"
+)
+_OPEN_PATH_RE = re.compile(r"""open\(\s*['\"]([^'\"]+)['\"]""")
+_COPY_DEST_RE = re.compile(
+    r"(?:^|[;&|\n]\s*)(cp|mv|install)\b((?:\s+-\S+)*)\s*(.*)$"
+)
+_SED_INPLACE_RE = re.compile(r"\bsed\s+(?:-i(?:[.\s=']|$)|--in-place\b)")
+
+
+def _first_capture(match):
+    for group in match.groups():
+        if group:
+            return group
+    return ""
+
+
+def extract_write_targets(command):
+    """從 shell 指令抽出看得見的寫入目標。解不出 → 空 list(不擋)。
+
+    只認這幾種字面(與 _prebash_impl._looks_like_write_code 同一窄口,
+    這裡要的是路徑不是布林):
+    - > / >> 寫到檔(/dev/null 與 2>&1 除外)
+    - tee 寫到檔(/dev/null 除外)
+    - python3? -c / << 裡 open('path')(同一字串有 open( 或 .write()
+    - sed -i / --in-place 的檔案 operand
+    - cp / mv / install 的最後一個 operand(不含 --help/--version、install -d)
+    """
+    if not command:
+        return []
+    found = []
+    for match in _REDIR_TARGET_RE.finditer(command):
+        found.append(_first_capture(match))
+    for match in _TEE_TARGET_RE.finditer(command):
+        found.append(_first_capture(match))
+    if re.search(r"\bpython3?\s+-c\b", command) or re.search(
+            r"\bpython3?(?:\s+-)?\s*<<", command):
+        if "open(" in command or ".write(" in command:
+            found.extend(_OPEN_PATH_RE.findall(command))
+    if _SED_INPLACE_RE.search(command):
+        operands = [tok for tok in command.split() if not tok.startswith("-")
+                    and tok != "sed"]
+        if operands:
+            found.append(operands[-1].strip("'\""))
+    copy_match = _COPY_DEST_RE.search(command)
+    if copy_match:
+        verb, flags, rest = copy_match.group(1), copy_match.group(2) or "", copy_match.group(3)
+        blob = flags + " " + rest
+        if not re.search(r"--help|--version", blob):
+            if not (verb == "install" and re.search(r"(?:^|\s)-d\b", flags)):
+                operands = [tok.strip("'\"") for tok in rest.split()
+                            if not tok.startswith("-")]
+                if len(operands) >= 2:
+                    found.append(operands[-1])
+    out = []
+    seen = set()
+    for raw in found:
+        token = (raw or "").strip().strip("'\"")
+        if not token or token in seen:
+            continue
+        seen.add(token)
+        out.append(token)
+    return out
+
+
+def resolve_write_rel(root, raw):
+    """把指令裡的寫入目標收成 repo 相對正斜線;repo 外 / 空 / 裝置檔回 None。"""
+    token = (raw or "").strip().strip("'\"")
+    if not token or token in ("/dev/null", "&"):
+        return None
+    if token.startswith("/dev/"):
+        return None
+    if os.path.isabs(token):
+        path = token
+    else:
+        path = os.path.join(root, token)
+    return rel_of(root, path)
+
+
+def write_scope_verdict(rel, state):
+    """Write 路徑的 scope 判定。None = 放行;否則 (violation, message)。
+
+    規則與 _guard_impl.py 的 Edit/Write 擋法同一套,不准單邊放寬。
+    不管 Read、不管未武裝(A1)、不管 ambient / rel is None —— 那些由呼叫端先濾。
+    """
+    slug = state.get("slug", "")
+    task = state.get("task") or ""
+    feat = "docs/dev/%s/" % slug
+    phase = state.get("phase") or ""
+
+    if is_contract_path(rel):
+        return ("contract",
+                "⛔ 契約防篡改:執行期禁改 %s(跨 feature 一律保護)。"
+                "改本 feature 的 spec = L2:devflow-exec.sh stop → 修 → 重審 → 重新 start。"
+                % rel)
+    if rel.startswith(".devflow/"):
+        if task and rel.startswith(".devflow/task/%s/" % task):
+            return None
+        return ("guard_state",
+                "⛔ 禁止直接編輯守衛狀態(.devflow/)。"
+                "擴 scope 走 devflow-exec.sh allow <file> --reason \"...\"。")
+    if rel == ".gitignore":
+        return ("guard_state",
+                "⛔ 執行期禁改 .gitignore(改忽略規則會讓偵測網失明)。"
+                "確有需要 → 停下回報使用者。")
+    if phase == "review" and rel.startswith(feat):
+        if rel.startswith(feat + "7-review") or rel.startswith(feat + "evidence/"):
+            return None
+        return ("review_scope",
+                "⛔ 圍欄③:Stage 7 review 期間寫入限縮到 %s7-review* 與 %sevidence/;"
+                "%s 屬其他 dev-flow 文檔,禁寫(unlock 不解除本限制)。"
+                "真要改 → devflow-exec.sh stop 後處理。"
+                % (feat, feat, rel))
+    if rel.startswith((feat + "5-tasks", feat + "6-implementation-notes")):
+        if task:
+            return ("task_shared",
+                    "⛔ task-scoped 守衛:%s 是共享文件(單寫者=派工者)。"
+                    "Worker 只寫 .devflow/task/%s/ 的 evidence;"
+                    "5-tasks/6-notes 記帳由派工者在 ACCEPTED 後執行。"
+                    % (rel, task))
+        return None
+    if in_pool(rel, state):
+        return None
+    return ("scope", scope_violation_message(
+        "⛔ scope 外寫入:%s 不在 5-tasks Files 聯集。" % rel,
+        resolution=("L1(不動 R/S)→ devflow-exec.sh allow '%s' --reason \"...\" "
+                    "並記 D-n;L2 → stop。" % rel)))
+
+
+def deny_write_command(root, command, state):
+    """武裝中:指令裡解得出的寫入目標若有一條不該寫,回 (rel, violation, message)。
+
+    解不出寫路徑 → None(不擋;postbash 仍是後網)。
+    ambient / repo 外目標略過。
+    """
+    for raw in extract_write_targets(command):
+        rel = resolve_write_rel(root, raw)
+        if rel is None or is_ambient_path(rel):
+            continue
+        verdict = write_scope_verdict(rel, state)
+        if verdict is not None:
+            return (rel, verdict[0], verdict[1])
+    return None
+
+
+# ====================================================================
 # parallel 契約(vnext §5/§7;行為正本 = tests/parallel-stage6/)
 # ====================================================================
 

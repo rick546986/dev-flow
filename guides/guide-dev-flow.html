@@ -2720,6 +2720,19 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             <code>skills/</code> 必須紅;拿掉或正面宣稱 Grok 自動灌必須紅;
             README 第一屏灌安裝指令必須紅。案例數下限寫死,少於下限 exit 2。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-write-scope.sh</code></td>
+        <td>Bash 寫入 prevent-before 的三邊共同入口。Claude / Cursor / Codex 沒有
+            同一套 PreToolUse;誰要經 shell 寫檔,先跑本檔 <code>--action</code>。
+            判定與 Edit/Write 同一套 <code>write_scope_verdict</code>,自己不落盤。
+            deny 就不准執行那條指令。不准為了別的主機改鬆。</td>
+        <td>人工/<code>devflow-prebash.sh</code> 接到同一套判定;
+            <code>devflow-check.sh</code> architecture 組經
+            <code>test-write-scope.sh</code> 跑</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-write-scope.sh</code></td>
+        <td>上面那支的牙:重現「Bash 寫 scope 外」必須當場失敗、檔不落盤;
+            收寬成只 postbash detect-after 必須紅。Edit 擋法不準更鬆;
+            scope 內寫入仍放行。案例數下限寫死。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>
         <td>本節新增的守衛本身——盤點 <code>hooks/</code>/<code>scripts/</code>/<code>observability/</code>/
             <code>tests/parallel-stage6/</code> 底下每支腳本有沒有被這張表點名到,也反查表裡寫的檔名是不是
