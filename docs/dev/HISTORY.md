@@ -311,3 +311,8 @@
 - 為什麼:Owner lock：PLUS 畫面兩格不是三格。先前只改第 4 站，2A 三格 vs R-2 兩格是假矛盾。不改產品行為、不填 verdict、不升版
 - 落在哪:example/subsidy-3-0-plus/{1-discussion,2-decision,4-spec,5-tasks,6-implementation-notes,7-review}.{md,html} docs/dev/HISTORY.md
 
+## 2026-08-29 · release-v3-20-2 · v3.20.2
+- 做了什麼:發 v3.20.2：C6 晚改可見行為牙、補助手樣兩格第二 fixture、STATUS 單寫入／OverlapRef／活針、F/S/W 關帳等已在 main 的刀讓 Claude plugin update 拉得到
+- 為什麼:Claude 比 plugin.json version 字串；3.20.1 字串不變則 /plugin update 回 (no content) 且無提示
+- 落在哪:.claude-plugin/plugin.json .cursor-plugin/plugin.json .codex-plugin/plugin.json hooks/runtime-capabilities.json
+
