@@ -256,3 +256,8 @@
 - 為什麼:半點審重生蓋掉自判表,methodology/check-selfjudgment-tables 32/36;_doctor_impl 字串觸發 runtime-selftest 禁寫死路徑
 - 落在哪:hooks/_doctor_impl.py scripts/build-stage2-html.py example/contract-expiry-reminder/2-decision.html scripts/check-selfjudgment-tables.sh
 
+## 2026-08-29 · field-fixes-six-d
+- 做了什麼:doctor 對系統 leftover markdown-it-py 3.x 維持 info:DEVFLOW_PYTHON 指到系統 python3 不算專案 venv
+- 為什麼:CI selftest 用 DEVFLOW_PYTHON=$(command -v python3) 覆寫,系統 leftover 3.x 被判成 env 連坐握手,EXTERNAL_RUNTIME 仍紅
+- 落在哪:hooks/_doctor_impl.py
+
