@@ -237,8 +237,15 @@ G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件�
    執行中的 feature 本地可能還有未 commit/未發布的工作,remote 天生不能證明完整
    戰場。不要嘗試靠猜最新 T 補洞;走上面的預設回滾,或等它到 Stage 7。
 4. **只有 Stage 7 的列才進 mode/ref/SHA 驗證**,而且全部讀 pinned remote tree:
-   - 該列 `Branch` 的 remote ref 用 `git rev-parse --verify` 釘成單一
-     `<remote-tip>`;後續 mode、Progress Log 與 diff **全部讀這個 SHA,不准讀目前
+   - 該列的補修座標是 STATUS/runtime 提供的單一 `OverlapRef`
+     (`scripts/status-update.sh --print-overlap-ref` 印出的那一個;
+     sequential 時這個座標**就是** `Branch` 遠端 ref;parallel 在
+     integration 合回 feature 並 push **之前**是已發布的
+     `integration/<slug>` tip,合回並 push **之後**變成 `Branch`)。
+     用 `git rev-parse --verify` 把這**一個**座標釘成單一 `<remote-tip>`。
+     直接補修只讀這一個座標,不得另猜第二個 ref,也不得在 feature tip 與
+     integration tip 之間自行挑選。
+   - 後續 mode、Progress Log 與 diff **全部讀這個 SHA,不准讀目前
      main checkout 裡可能尚未合併的舊副本**。
    - `Feature` 連結只用來導出該 feature 的相對路徑;兩份文件分別用
      `git show <remote-tip>:docs/dev/<slug>/5-tasks.md` 與
@@ -246,9 +253,10 @@ G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件�
      任一路徑不存在、逃出 feature 目錄或讀取失敗 → fail-closed 停下問人。
    - **mode 的唯一資料源是上面 pinned tree 讀出的 `5-tasks.md` frontmatter
      `execution.mode`**,不是 STATUS 的 `Lane` 欄(full/fast 跟
-     sequential/parallel 是兩件事)。整塊缺省視為 `sequential`;明寫 `parallel`
-     一律 fail-closed 停下(本輪未定義 parallel 供補修計算的 canonical
-     integration ref);連結/檔案/frontmatter 無法解析也停。
+     sequential/parallel 是兩件事)。整塊缺省視為 `sequential`。
+     明寫 `parallel` 且 `OverlapRef` 解不出來一律 fail-closed 停下,
+     不宣稱零交集;不得把 Lane 當 mode,也不得為了湊出座標去猜
+     `integration/<slug>`。連結/檔案/frontmatter 無法解析也停。
    - **sequential**:從 pinned tree 的 6-notes **Progress Log** 讀出**每一個**
      ACCEPTED T 的 commit SHA,逐個通過
      `git merge-base --is-ancestor <accepted-sha> <remote-tip>` 才算發布完整

@@ -32,6 +32,8 @@
 #   scripts/status-update.sh --verify-stamp [--file PATH]
 #   scripts/status-update.sh --refresh-stamp [--file PATH] [--base-file PATH]
 #   scripts/status-update.sh --check-tables [--file PATH] [--base-file PATH]
+#   scripts/status-update.sh --print-overlap-ref --match <針> [--file PATH] \
+#                            [--tasks-file PATH]
 #   scripts/status-update.sh --print-root
 #
 #   --file      不給就用 <repo>/docs/dev/STATUS.md
@@ -40,6 +42,14 @@
 #   --base-file --check-tables / --refresh-stamp 的基準
 #               (不給且目標是本 repo 正本 → git show origin/main:docs/dev/STATUS.md;
 #                --refresh-stamp 找不到基準就拒,不准無基準蓋章)
+#   --print-overlap-ref
+#               印出該列「直接補修」用的單一座標 OverlapRef。sequential 時這個
+#               座標就是 Branch;parallel 必須已寫入可解析的 OverlapRef(發布的
+#               integration/<slug> tip,或合回並 push 後的 Branch)。解不出來就
+#               fail-closed,不猜 Lane,也不在 feature tip 與 integration tip
+#               之間自行挑選。mode 只讀 5-tasks frontmatter execution.mode。
+#   --tasks-file --print-overlap-ref 用來讀 execution.mode 的 5-tasks.md;
+#               不給就依 Feature 欄連結推 docs/dev/<slug>/5-tasks.md
 #
 # exit:
 #   0 = 成功
@@ -54,6 +64,8 @@ DATE=""
 SECTION="" MATCH="" ROW="" ACTION=""
 TARGET="" BASE_FILE="" RETRIES=3 DRY_RUN=0
 VERIFY_STAMP=0 REFRESH_STAMP=0 CHECK_TABLES=0
+PRINT_OVERLAP_REF=0
+TASKS_FILE=""
 SETS=()
 
 die() { echo "$1" >&2; exit "${2:-2}"; }
@@ -77,11 +89,13 @@ while [ $# -gt 0 ]; do
     --verify-stamp)  VERIFY_STAMP=1; shift ;;
     --refresh-stamp) REFRESH_STAMP=1; shift ;;
     --check-tables)  CHECK_TABLES=1; shift ;;
+    --print-overlap-ref) PRINT_OVERLAP_REF=1; shift ;;
+    --tasks-file) need_value "$1" "${2:-}"; TASKS_FILE=$2; shift 2 ;;
     --print-root)
       if [ -n "$REPO_ROOT" ]; then printf '%s\n' "$REPO_ROOT"; exit 0
       else echo "(unresolved)"; exit 2; fi ;;
-    -h|--help) sed -n '2,44p' "$0"; exit 0 ;;
-    *) die "拒絕:未知參數 $1(可用:--section --match --set --row --upsert --remove --file --base-file --retries --dry-run --verify-stamp --refresh-stamp --check-tables --print-root)" ;;
+    -h|--help) sed -n '2,52p' "$0"; exit 0 ;;
+    *) die "拒絕:未知參數 $1(可用:--section --match --set --row --upsert --remove --file --base-file --retries --dry-run --verify-stamp --refresh-stamp --check-tables --print-overlap-ref --tasks-file --print-root)" ;;
   esac
 done
 
@@ -213,6 +227,152 @@ PY
   exit $?
 fi
 
+# 唯讀:印出該列直接補修用的單一座標 OverlapRef。不取鎖、不改檔。
+if [ "$PRINT_OVERLAP_REF" = "1" ]; then
+  [ -n "$MATCH" ] || die "拒絕:--print-overlap-ref 需要 --match"
+  if [ -n "$TASKS_FILE" ]; then
+    case "$TASKS_FILE" in
+      /*) ;;
+      *) TASKS_FILE="$(pwd)/$TASKS_FILE" ;;
+    esac
+  fi
+  python3 - "$TARGET" "$MATCH" "$TASKS_FILE" "$REPO_ROOT" <<'PY'
+import os, re, sys
+
+path, needle, tasks_file, repo_root = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+SENTINEL = "n-a:尚未建立 branch"
+
+
+def fail(msg, code=2):
+    print(msg, file=sys.stderr)
+    sys.exit(code)
+
+
+def section_span(text, title):
+    m = re.search(r"(?m)^## " + re.escape(title) + r"\s*$", text)
+    if not m:
+        return None
+    start = m.end()
+    n = re.search(r"(?m)^## ", text[start:])
+    end = len(text) if n is None else start + n.start()
+    return start, end
+
+
+def cells(line):
+    return [c.strip() for c in line.strip().strip("|").split("|")]
+
+
+def is_resolved_ref(val):
+    v = (val or "").strip()
+    return bool(v) and v != SENTINEL
+
+
+def parse_execution_mode(text):
+    """mode 唯一資料源 = 5-tasks frontmatter execution.mode。
+    不是 STATUS Lane。整塊缺省 = sequential。解不出來就 None。"""
+    if text is None:
+        return None
+    m = re.search(r"^---\s*\n(.*?)\n---", text, re.S | re.M)
+    if not m:
+        return "sequential"
+    fm = m.group(1)
+    if not re.search(r"(?m)^execution:\s*(#.*)?$", fm):
+        return "sequential"
+    mm = re.search(r"(?m)^  mode:\s*(\S+)", fm)
+    if not mm:
+        return "sequential"
+    value = mm.group(1).split("#", 1)[0].strip()
+    if value not in ("sequential", "parallel"):
+        return None
+    return value
+
+
+def derive_tasks_path(feature_cell):
+    m = re.search(r"\]\(\./([^)/]+)/?\)", feature_cell)
+    if not m:
+        return None
+    slug = m.group(1)
+    candidates = []
+    status_dir = os.path.dirname(path)
+    candidates.append(os.path.join(status_dir, slug, "5-tasks.md"))
+    if repo_root:
+        candidates.append(os.path.join(repo_root, "docs", "dev", slug, "5-tasks.md"))
+    for cand in candidates:
+        if os.path.isfile(cand):
+            return cand
+    return None
+
+
+def resolve_overlap_ref(branch, overlap, mode):
+    """直接補修只讀這一個回傳值。
+    sequential:座標就是 Branch。
+    parallel:必須已寫入可解析的 OverlapRef;解不出來 fail-closed。
+    本函式不讀 Lane,也不會從 slug 拼 origin/integration/<slug>。"""
+    if is_resolved_ref(overlap):
+        return overlap.strip()
+    if mode is None:
+        fail("拒絕:execution.mode 解不出來,OverlapRef 不准猜")
+    if mode == "parallel":
+        fail("拒絕:parallel feature 的 OverlapRef 解不出來"
+             "(不得猜 Lane,也不得自行挑選 integration/<slug>)")
+    if is_resolved_ref(branch):
+        return branch.strip()
+    fail("拒絕:OverlapRef 解不出來(sequential 的座標就是 Branch,"
+         "但 Branch 也不是可解析座標)")
+
+
+try:
+    raw = open(path, encoding="utf-8").read()
+except OSError as err:
+    fail("拒絕:讀不到 %s(%s)" % (path, err))
+
+span = section_span(raw, "Active")
+if span is None:
+    fail("拒絕:找不到 ## Active")
+start, end = span
+lines = [ln for ln in raw[start:end].splitlines() if ln.startswith("|")]
+if len(lines) < 2:
+    fail("拒絕:## Active 沒有表")
+header, data = lines[0], lines[2:]
+heads = cells(header)
+hits = [ln for ln in data if needle in ln]
+if not hits:
+    fail("拒絕:Active 找不到含「%s」的列" % needle)
+if len(hits) > 1:
+    fail("拒絕:Active 「%s」對上 %d 列,fail-closed 不猜" % (needle, len(hits)))
+vals = cells(hits[0])
+if len(vals) != len(heads):
+    fail("拒絕:列欄數 %d ≠ 表頭 %d" % (len(vals), len(heads)))
+
+def cell(name):
+    if name not in heads:
+        return ""
+    return vals[heads.index(name)]
+
+# 刻意不讀 Lane。mode 只來自 5-tasks execution.mode。
+lane_unused = cell("Lane")
+del lane_unused
+branch = cell("Branch")
+overlap = cell("OverlapRef")
+
+if is_resolved_ref(overlap):
+    print(overlap.strip())
+    sys.exit(0)
+
+tasks_path = tasks_file or derive_tasks_path(cell("Feature"))
+tasks_text = None
+if tasks_path:
+    try:
+        tasks_text = open(tasks_path, encoding="utf-8").read()
+    except OSError as err:
+        fail("拒絕:讀不到 5-tasks %s(%s)" % (tasks_path, err))
+mode = parse_execution_mode(tasks_text)
+print(resolve_overlap_ref(branch, overlap, mode))
+sys.exit(0)
+PY
+  exit $?
+fi
+
 MUTATE=0
 if [ "$REFRESH_STAMP" = "1" ]; then
   MUTATE=1
@@ -224,7 +384,8 @@ elif [ -n "$ACTION" ] || [ ${#SETS[@]} -gt 0 ]; then
   fi
 fi
 
-[ "$MUTATE" = "1" ] || die "拒絕:請指定 --set / --upsert / --remove / --verify-stamp / --refresh-stamp / --check-tables"
+[ "$MUTATE" = "1" ] || [ "$PRINT_OVERLAP_REF" = "1" ] \
+  || die "拒絕:請指定 --set / --upsert / --remove / --verify-stamp / --refresh-stamp / --check-tables / --print-overlap-ref"
 
 if [ "$ACTION" != "refresh-stamp" ]; then
   case "$SECTION" in
@@ -332,8 +493,8 @@ sets = sys.argv[6:]
 STAMP_RE = re.compile(r"<!-- status-writer-rev:[0-9a-f]{64} -->")
 EMPTY_ACTIVE = "目前無進行中的改版軌。"
 ACTIVE_HEADER = (
-    "| Feature | Lane | Stage | Owner | Branch | Gates | Updated |\n"
-    "|---|---|---|---|---|---|---|"
+    "| Feature | Lane | Stage | Owner | Branch | OverlapRef | Gates | Updated |\n"
+    "|---|---|---|---|---|---|---|---|"
 )
 BACKLOG_HEADER = "| 級 | 一句 | 來源 |\n|---|---|---|"
 

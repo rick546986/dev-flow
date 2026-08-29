@@ -30,12 +30,13 @@
 #     —— 不在整份頂註找散落的「移出/Active/合併/PR」(那樣改成 owner 照樣全中)。
 #   ⑪~⑬(C-2)直接補修判準的三個正本分開 scoped:
 #     ⑪ README §7 算法段:判定順序鏈(fetch 釘整合分支 < Stage 1–5 sentinel 等值
-#       才跳過 < Stage 6 一律 fail-closed < Stage 7 才進 mode/ref/SHA < rev-parse
-#       釘 remote-tip < pinned tree 讀 5-tasks 與 6-notes < execution.mode <
-#       --is-ancestor < 聯集 < 補修者 checkout clean/無 ahead)用 index 比序;
-#       兩個 git show 必須讀同一個 <remote-tip>(中途重 resolve 就是兩份文件
-#       可能來自不同 SHA);「不是 Lane 欄」「不要求 SHA 相等」「不得只查最新
-#       一個」「parallel fail-closed」逐一釘住。
+#       才跳過 < Stage 6 一律 fail-closed < Stage 7 才進 mode/ref/SHA < 單一
+#       OverlapRef < rev-parse 釘 remote-tip < pinned tree 讀 5-tasks 與 6-notes
+#       < execution.mode < --is-ancestor < 聯集 < 補修者 checkout clean/無 ahead)
+#       用 index 比序;兩個 git show 必須讀同一個 <remote-tip>(中途重 resolve
+#       就是兩份文件可能來自不同 SHA);「不是 Lane 欄」「不要求 SHA 相等」
+#       「不得只查最新一個」「parallel 且 OverlapRef 解不出來才 fail-closed」
+#       「只讀這一個座標」「不得另猜第二個 ref」逐一釘住。
 #     ⑫ skills/dev-run/SKILL.md 發布紀律:sequential 收尾 push 的位置必須在
 #       bookkeeping 之後、stop/回報之前;parallel 在 integration 合回 feature
 #       之後、回報之前;兩邊都要有 fetch 後 remote tip == feature HEAD 驗證與
@@ -152,6 +153,8 @@ def table_failures(template_text):
     header, sep, sample = table
     if "Branch" not in header:
         fails.append(f"Active 表頭缺 `Branch` 欄(實得 {header})")
+    if "OverlapRef" not in header:
+        fails.append(f"Active 表頭缺 `OverlapRef` 欄(實得 {header})")
     if not (len(header) == len(sep) == len(sample)):
         fails.append(f"表頭/分隔列/範例列欄數不一致({len(header)}/{len(sep)}/{len(sample)})")
     # B-3:sentinel 必須驗「範例列 Branch 那一格」本身。全檔(甚至全模板)搜尋都不行 ——
@@ -161,6 +164,12 @@ def table_failures(template_text):
         got = sample[idx] if idx < len(sample) else "<缺格>"
         if got != "n-a:尚未建立 branch":
             fails.append("範例列 Branch 格必須逐字 = `n-a:尚未建立 branch`"
+                         f"(實得 `{got}`;頂註說明裡的 sentinel 不算數)")
+    if "OverlapRef" in header:
+        idx = header.index("OverlapRef")
+        got = sample[idx] if idx < len(sample) else "<缺格>"
+        if got != "n-a:尚未建立 branch":
+            fails.append("範例列 OverlapRef 格必須逐字 = `n-a:尚未建立 branch`"
                          f"(實得 `{got}`;頂註說明裡的 sentinel 不算數)")
     return fails
 
@@ -329,11 +338,13 @@ def readme_patch_failures(readme_text):
         ("Stage 1–5 sentinel 逐字等值才跳過", r"Stage 1–5 且 `Branch` 欄逐字等於 `n-a:尚未建立 branch` 才跳過"),
         ("Stage 6 一律 fail-closed", r"Stage 6 一律 fail-closed"),
         ("只有 Stage 7 才進 mode/ref/SHA 驗證", r"只有 Stage 7 的列才進 mode/ref/SHA 驗證"),
+        ("單一座標 OverlapRef", r"單一 `OverlapRef`"),
         ("rev-parse --verify 釘 remote-tip", r"rev-parse --verify"),
         ("pinned tree 讀 5-tasks", r"git show <remote-tip>:docs/dev/<slug>/5-tasks\.md"),
         ("pinned tree 讀 6-notes", r"git show <remote-tip>:docs/dev/<slug>/6-implementation-notes\.md"),
         ("mode 資料源 execution.mode", r"`execution\.mode`"),
-        ("parallel 一律 fail-closed", r"明寫 `parallel`[\s\S]{0,60}fail-closed"),
+        ("parallel 且 OverlapRef 解不出來才 fail-closed",
+         r"明寫 `parallel`[\s\S]{0,80}fail-closed"),
         ("Progress Log 每一個 ACCEPTED", r"每一個\*\*[\s\S]{0,20}ACCEPTED"),
         ("merge-base --is-ancestor", r"merge-base --is-ancestor"),
         ("補修者 checkout clean", r"checkout 也必須 clean"),
@@ -346,6 +357,14 @@ def readme_patch_failures(readme_text):
         ("mode 缺省視為 sequential", "缺省視為 `sequential`"),
         ("ancestor 不要求 SHA 相等", "不要求 SHA 相等"),
         ("不得只查最新一個 ACCEPTED", "不得只查最新一個"),
+        ("只讀這一個座標", "只讀這一個座標"),
+        ("不得另猜第二個 ref", "不得另猜第二個 ref"),
+        ("不得自行挑選 feature/integration tip", "不得在 feature tip 與"),
+        ("sequential 座標就是 Branch", "**就是** `Branch`"),
+        ("parallel 合回前是已發布 integration/<slug>", "已發布的"),
+        ("合回並 push 之後變成 Branch", "合回並 push **之後**變成"),
+        ("不得把 Lane 當 mode", "不得把 Lane 當 mode"),
+        ("不得猜 integration/<slug>", "不得為了湊出座標去猜"),
     ]:
         if token not in sec:
             fails.append(f"README 補修算法:缺關鍵判準「{label}」(找不到 `{token}`)")
@@ -413,6 +432,64 @@ def status_branch_failures(template_text):
             ] if token not in sec]
 
 
+def status_overlap_ref_failures(template_text):
+    """模板 OverlapRef:欄位 + 填法(sequential=Branch;parallel 合回前
+    寫已發布 integration/<slug>,解不出來 fail-closed;不得猜 Lane)。"""
+    pre = preamble(template_text)
+    m = re.search(r"`OverlapRef` 欄(.*)", pre, re.S)
+    if not m:
+        return ["_templates/STATUS.md 頂註找不到「`OverlapRef` 欄」段"]
+    sec = m.group(1)
+    fails = [f"OverlapRef 段缺「{label}」(找不到 `{token}`)"
+             for label, token in [
+                 ("唯一座標", "唯一座標"),
+                 ("--print-overlap-ref", "--print-overlap-ref"),
+                 ("不得另猜第二個 ref", "不得另猜第二個 ref"),
+                 ("不得把 Lane 當 mode", "不得把 `Lane` 當"),
+                 ("sequential 就是 Branch", "**就是** `Branch`"),
+                 ("parallel 合回前寫 integration/<slug>", "integration/<slug>"),
+                 ("合回並 push 之後改成 Branch", "合回並 push"),
+                 ("解不出來 fail-closed", "fail-closed"),
+                 ("不准 runtime 自己去拼", "不准 runtime 自己去拼"),
+             ] if token not in sec]
+    table = active_table(template_text)
+    if table is None:
+        fails.append("Active 表解析失敗,無法驗 OverlapRef 欄")
+    else:
+        header, _, sample = table
+        if "OverlapRef" not in header:
+            fails.append(f"Active 表頭缺 OverlapRef(實得 {header})")
+        else:
+            got = sample[header.index("OverlapRef")]
+            if got != "n-a:尚未建立 branch":
+                fails.append(f"範例列 OverlapRef 格必須是 sentinel(實得 `{got}`)")
+    return fails
+
+
+def updater_overlap_ref_failures(writer_text):
+    """status-update.sh 必須認得 OverlapRef 欄,並提供 --print-overlap-ref。
+    resolver 不得從 slug 拼 integration/<slug>,也不得讀 Lane 當 mode。"""
+    fails = []
+    if "--print-overlap-ref" not in writer_text:
+        fails.append("status-update.sh 缺 --print-overlap-ref")
+    if "OverlapRef" not in writer_text:
+        fails.append("status-update.sh 不認得 OverlapRef 欄")
+    if "| Feature | Lane | Stage | Owner | Branch | OverlapRef | Gates | Updated |" not in writer_text:
+        fails.append("ACTIVE_HEADER 缺 OverlapRef 欄(新建 Active 表必須帶這個座標欄)")
+    if "def resolve_overlap_ref(" not in writer_text:
+        fails.append("缺 resolve_overlap_ref(直接補修只讀這一個回傳值)")
+    if "不得自行挑選 integration/<slug>" not in writer_text:
+        fails.append("resolver 缺「不得自行挑選 integration/<slug>」fail-closed 句")
+    if "execution.mode" not in writer_text:
+        fails.append("resolver 沒把 mode 釘在 execution.mode")
+    # 不得在 resolver 裡從 slug 拼第二個 ref(那就是「自行挑選」)
+    if re.search(r'origin/integration/\{', writer_text):
+        fails.append("resolver 從 slug 拼 origin/integration/{…}——那是猜第二個 ref")
+    if re.search(r'cell\("Lane"\).*mode|mode\s*=\s*cell\("Lane"\)', writer_text):
+        fails.append("resolver 把 Lane 當 mode")
+    return fails
+
+
 print("-- ①規則要點:模板 vs 母版自用 docs/dev/STATUS.md --")
 fails = policy_failures(template, docs)
 check(not fails, "規則要點兩份都在(整合分支維護/寫入紀律四組;ship actor 由⑨⑩驗)",
@@ -462,7 +539,7 @@ check(not fails, "docs 責任句 actor 含「合併那個 PR 的人」且不含 
 
 print("-- ⑪直接補修算法:README 順序鏈與 pinned-tree 判準(C-2)--")
 fails = readme_patch_failures(readme)
-check(not fails, "README:S1–5 sentinel→S6 fail-closed→S7 pinned/ancestor/clean 鏈全對",
+check(not fails, "README:S1–5 sentinel→S6 fail-closed→S7 OverlapRef/pinned/ancestor/clean 鏈全對",
       "; ".join(fails))
 
 print("-- ⑫Stage 6 最終發布紀律:dev-run 收尾(C-2)--")
@@ -473,6 +550,19 @@ check(not fails, "dev-run:seq 與 parallel 的 push 位置+remote-tip 驗證都�
 print("-- ⑬STATUS Branch 段兩段式發布(C-2)--")
 fails = status_branch_failures(template)
 check(not fails, "Branch 段:起手座標與 Stage 6 收尾最終 tip 說明都在",
+      "; ".join(fails))
+
+print("-- ⑬b OverlapRef 單一座標(模板填法 + 表頭)--")
+fails = status_overlap_ref_failures(template)
+check(not fails, "模板 OverlapRef:唯一座標填法 + 表頭/範例 sentinel 都在",
+      "; ".join(fails))
+
+print("-- ⑬c OverlapRef runtime(status-update.sh)--")
+_writer_txt = open(os.path.join(ROOT, "scripts", "status-update.sh"),
+                   encoding="utf-8").read() if os.path.isfile(
+    os.path.join(ROOT, "scripts", "status-update.sh")) else ""
+fails = updater_overlap_ref_failures(_writer_txt)
+check(not fails, "updater:ACTIVE_HEADER 有 OverlapRef、--print-overlap-ref 不猜第二個 ref",
       "; ".join(fails))
 
 print("-- ⑭表列唯一寫入口腳本 --")
@@ -596,6 +686,39 @@ check(bool(devrun_publish_failures(mutated_devrun)),
 mutated_template = template.replace("再發布最終", "不再另外發布")
 check(bool(status_branch_failures(mutated_template)),
       "負向⑰:STATUS Branch 段刪 Stage 6 最終 tip 發布說明 → 紅")
+mutated_readme = readme.replace("不得另猜第二個 ref", "可另讀 Branch 或 integration/<slug>")
+check(bool(readme_patch_failures(mutated_readme)),
+      "負向㉘:README 算法改成另猜第二個 ref → 紅")
+mutated_readme = readme.replace("不是 STATUS 的 `Lane` 欄", "也可用 Lane 當 mode")
+check(bool(readme_patch_failures(mutated_readme)),
+      "負向㉙:README 把 Lane 當 mode → 紅")
+mutated_readme = readme.replace(
+    "明寫 `parallel` 且 `OverlapRef` 解不出來一律 fail-closed",
+    "明寫 `parallel` 也照 sequential 算")
+check(bool(readme_patch_failures(mutated_readme)),
+      "負向㉚:README 拿掉 parallel+OverlapRef 解不出來的 fail-closed → 紅")
+mutated_template = template.replace("`OverlapRef` 欄 = 直接補修算法讀的**唯一座標**",
+                                    "`OverlapRef` 欄可選")
+check(bool(status_overlap_ref_failures(mutated_template)),
+      "負向㉛:模板 OverlapRef 不再是唯一座標 → 紅")
+mutated_template = template.replace("| OverlapRef ", "").replace(
+    "| n-a:尚未建立 branch | G1", "| G1")
+check(bool(table_failures(mutated_template) or status_overlap_ref_failures(mutated_template)),
+      "負向㉜:模板表頭拿掉 OverlapRef 欄 → 紅")
+mutated_writer = _writer_txt.replace("--print-overlap-ref", "--print-branch-or-integration")
+check(bool(updater_overlap_ref_failures(mutated_writer)),
+      "負向㉝:updater 拿掉 --print-overlap-ref → 紅")
+mutated_writer = _writer_txt.replace(
+    "| Feature | Lane | Stage | Owner | Branch | OverlapRef | Gates | Updated |",
+    "| Feature | Lane | Stage | Owner | Branch | Gates | Updated |")
+check(bool(updater_overlap_ref_failures(mutated_writer)),
+      "負向㉞:updater ACTIVE_HEADER 拿掉 OverlapRef → 紅")
+mutated_writer = _writer_txt.replace(
+    'fail("拒絕:parallel feature 的 OverlapRef 解不出來"\n'
+    '             "(不得猜 Lane,也不得自行挑選 integration/<slug>)")',
+    'return "origin/integration/{slug}"')
+check(bool(updater_overlap_ref_failures(mutated_writer)),
+      "負向㉟:resolver 改成從 slug 拼 origin/integration/{…} → 紅")
 # ⑱⑲:兩份頂註各拿掉一次「窗口最短」——其餘寫入紀律(pull/rebase/force)原封不動,
 # 唯一的錯誤是把規則的目的拿掉、只留手段。兩份分開試:只釘一份的話,另一份被刪
 # 不會有任何訊號(POINTS 是對兩份各驗一次,負向也要各驗一次才對稱)。
@@ -691,7 +814,7 @@ check(bool(devrun_publish_failures(mutated_devrun)),
 # check-gate-twin.sh、check-dev-setup-discipline.sh 的 MIN_CHECKS);之後每加一條
 # 檢查都要同步調高。字面值與這整個 if 區塊(condition+記錄 failure+非零退出鏈)
 # 另被 test-architecture-guards.sh 靜態互釘外釘,兩處要同一個 commit 一起改。
-MIN_CHECKS = 45
+MIN_CHECKS = 55
 if CHECKS < MIN_CHECKS:
     FAILED += 1
     print(f"  ✗ 檢查數地板:實際只跑了 {CHECKS} 項(地板 {MIN_CHECKS})—— "

@@ -414,8 +414,10 @@
 
   <p class="muted"><strong>過 gate 三連動</strong>:每過一個 gate,frontmatter <code>status</code> +
   <code>STATUS.md</code> + 同名 html twin 三者同步更新,禁漏一項。Stage 1 完成後就該去
-  <code>STATUS.md</code> 加第一列(README §10 步驟 2):<code>| &lt;slug&gt; | full | 1-discussion | &lt;你的名字&gt; | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | &lt;日期&gt; |</code>
-(<code>Branch</code> 欄 Stage 6 開 branch 並推上去後換成 <code>origin/feat/&lt;slug&gt;</code>),
+  <code>STATUS.md</code> 加第一列(README §10 步驟 2):<code>| &lt;slug&gt; | full | 1-discussion | &lt;你的名字&gt; | n-a:尚未建立 branch | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | &lt;日期&gt; |</code>
+(<code>Branch</code> 欄 Stage 6 開 branch 並推上去後換成 <code>origin/feat/&lt;slug&gt;</code>;
+<code>OverlapRef</code> 是直接補修讀的唯一座標,sequential 就是 Branch,
+parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;</code>),
   之後每過一個 gate 回來更新 Stage 欄與對應的 G⬜ → G✅。</p>
 
   <p><strong>G1/G2/G3 誰來審(reviewer 從哪來)</strong>:author ≠ approver;核心規則描述能力與

@@ -49,20 +49,35 @@
 > 分支名:本地分支只存在於某一台機器,換一個 clone 算「各 feature 改過的檔」
 > (README §7「直接補修」判準)時會靜默漏掉這個 feature。
 >
-> ⚠️ 這個 ref 是**兩段式發布**:Stage 6 開始時先推一次,是為了建立可查的座標,
+> `OverlapRef` 欄 = 直接補修算法讀的**唯一座標**(STATUS/runtime 名稱就是
+> `OverlapRef`;`scripts/status-update.sh --print-overlap-ref` 印出的就是它)。
+> 算法只讀這一個,不得另猜第二個 ref,也不得把 `Lane` 當 `execution.mode`。
+> 解析規則(寫死,不留二選一):
+> - sequential(`5-tasks` frontmatter `execution.mode` 缺省或明寫 sequential):
+>   這個座標**就是** `Branch` 遠端 ref。欄可留 sentinel / 空白,runtime 回傳 Branch。
+> - parallel:合回 feature branch **之前**,本欄必須寫已發布的
+>   `integration/<slug>` tip(如 `origin/integration/<slug>`);合回並 push
+>   **之後**,改成與 `Branch` 同一遠端 ref。欄空或仍是 sentinel → fail-closed,
+>   不宣稱零交集,也不准 runtime 自己去拼 `integration/<slug>`。
+> Stage 1–5 範例列本欄與 `Branch` 一樣填 `n-a:尚未建立 branch`。
+>
+> ⚠️ `Branch` 這個 ref 是**兩段式發布**:Stage 6 開始時先推一次,是為了建立可查的座標,
 > **不代表執行中的 remote 已經完整**(本地可能還有未 commit/未發布的 T);
 > Stage 6 收尾由 dev-run 在 bookkeeping 之後、回報 Stage 7 之前**再發布最終
 > feature tip** 並驗證 remote tip 等於本地 HEAD(見 `skills/dev-run/SKILL.md`
 > 收尾節)。執行中的未發布窗口由 README §7 直接補修算法負責封住:Stage 6 一律
 > fail-closed、Stage 7 逐一驗 ACCEPTED commit 是 remote tip 的祖先。
+> parallel 在 `OverlapRef` 解不出來之前同樣 fail-closed。
 
-<!-- status-writer-rev:64f9c9c505b3d9d0762d947847ee32360e4a893f1d7c1e81e0199d97e40bb021 -->
+<!-- status-writer-rev:PLACEHOLDER-WILL-REFRESH -->
+
+<!-- status-writer-rev:0f1a84cf04e27b2f6868c6ccce14e2b0d90ebb155d922df724b4dd650ff7ab94 -->
 
 ## Active
 
-| Feature | Lane | Stage | Owner | Branch | Gates | Updated |
-|---|---|---|---|---|---|---|
-| [<slug>](./<slug>/) | full | 1-discussion | <name> | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | YYYY-MM-DD |
+| Feature | Lane | Stage | Owner | Branch | OverlapRef | Gates | Updated |
+|---|---|---|---|---|---|---|---|
+| [<slug>](./<slug>/) | full | 1-discussion | <name> | n-a:尚未建立 branch | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | YYYY-MM-DD |
 
 ## Known Debt(選配)
 <!-- 跨 feature 的技術債看板,不對應單一 feature 的 STATUS 列。逐條:# | 內容 | 來源 | 追蹤位置。

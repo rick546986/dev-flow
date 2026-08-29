@@ -2330,8 +2330,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-status-policy.sh</code></td>
         <td>STATUS 規則對帳:模板頂註的規則要點(只在整合分支維護/merger 在合併後移出 Active)
-            在母版自用的 <code>docs/dev/STATUS.md</code> 也存在;Active 表頭含 <code>Branch</code> 欄、
-            範例列欄數對得上;quickstart 的手寫範例列同步跟上;表列唯一寫入口
+            在母版自用的 <code>docs/dev/STATUS.md</code> 也存在;Active 表頭含 <code>Branch</code>
+            與 <code>OverlapRef</code> 欄、範例列欄數對得上;quickstart 的手寫範例列同步跟上;
+            直接補修只讀 <code>OverlapRef</code> 這一個座標;表列唯一寫入口
             <code>status-update.sh</code> 存在、蓋章對得上、feature branch 表列相對
             整合分支凍結。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
@@ -2346,13 +2347,17 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <tr><td><code>status-update.sh</code></td>
         <td>STATUS.md Active/Backlog 表列的唯一寫入口——目錄鎖包住整段
             read-modify-write,寫完蓋章。兩個 session 同 checkout 不再靜默互蓋;
-            手改表列不走這支,蓋章對不上就紅。對本 repo 正本做表列變更時拒非 main。</td>
+            手改表列不走這支,蓋章對不上就紅。對本 repo 正本做表列變更時拒非 main。
+            也提供 <code>--print-overlap-ref</code>:印出該列直接補修用的單一座標
+            <code>OverlapRef</code>(sequential 就是 Branch;parallel 解不出來就
+            fail-closed,不猜 Lane、不拼 integration/&lt;slug&gt;)。</td>
         <td>人工/agent 在整合分支改看板時呼叫;<code>check-status-policy.sh</code>
             驗蓋章與 feature-branch 表列凍結</td><td>人工/CI(不在生命週期上;本輪未進 ship-manifest)</td></tr>
     <tr><td><code>test-status-update.sh</code></td>
         <td>證明帶鎖並行寫兩列都在、無鎖手改會丟列且蓋章紅、拿掉蓋章檢查的 mutant
             對手改檔又綠、手改再 <code>--refresh-stamp</code> 必須拒、feature 檔改表列
-            <code>--check-tables</code> 紅。</td>
+            <code>--check-tables</code> 紅;<code>--print-overlap-ref</code> 對
+            sequential / parallel / Lane 不是 mode / 猜第二個 ref 的 mutant 都有牙。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>devflow-upgrade-leftovers.sh</code></td>
         <td>upgrade 時刪掉目前方法包不再出貨的受管殘件(例:<code>_templates/CONTEXT.md</code>

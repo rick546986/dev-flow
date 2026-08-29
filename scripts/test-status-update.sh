@@ -36,7 +36,7 @@ import time
 tool, root = sys.argv[1], sys.argv[2]
 passed = 0
 failed = 0
-MIN_CASES = 19
+MIN_CASES = 30
 
 HEADER = """# 進行中變更索引
 
@@ -46,10 +46,10 @@ HEADER = """# 進行中變更索引
 
 ## Active
 
-| Feature | Lane | Stage | Owner | Branch | Gates | Updated |
-|---|---|---|---|---|---|---|
-| [feat-a](./feat-a/) | full | 1-discussion | alice | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | 2026-08-01 |
-| [feat-b](./feat-b/) | full | 1-discussion | bob | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | 2026-08-01 |
+| Feature | Lane | Stage | Owner | Branch | OverlapRef | Gates | Updated |
+|---|---|---|---|---|---|---|---|
+| [feat-a](./feat-a/) | full | 1-discussion | alice | n-a:尚未建立 branch | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | 2026-08-01 |
+| [feat-b](./feat-b/) | full | 1-discussion | bob | n-a:尚未建立 branch | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | 2026-08-01 |
 
 ## Backlog
 
@@ -348,7 +348,7 @@ with tempfile.TemporaryDirectory(prefix="status-update-") as tmp:
     add = run(
         up, "--section", "active", "--upsert",
         "--match", "feat-c",
-        "--row", "| [feat-c](./feat-c/) | fast | 4-spec | cara | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | 2026-08-29 |",
+        "--row", "| [feat-c](./feat-c/) | fast | 4-spec | cara | n-a:尚未建立 branch | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | 2026-08-29 |",
     )
     up_txt = open(up, encoding="utf-8").read()
     expect(
@@ -363,6 +363,139 @@ with tempfile.TemporaryDirectory(prefix="status-update-") as tmp:
         and "feat-c" not in open(up, encoding="utf-8").read()
         and "feat-a" in open(up, encoding="utf-8").read(),
         (rm.stdout or "") + (rm.stderr or ""),
+    )
+
+    # ── 9. --print-overlap-ref:單一座標,不猜 Lane,不拼 integration/<slug> ──
+    def write_tasks(slug, mode, extra=""):
+        d = os.path.join(tmp, slug)
+        os.makedirs(d, exist_ok=True)
+        open(os.path.join(d, "5-tasks.md"), "w", encoding="utf-8").write(
+            "---\nfeature: %s\nexecution:\n  mode: %s\n---\n# 5. 任務\n%s\n"
+            % (slug, mode, extra)
+        )
+
+    ov = os.path.join(tmp, "overlap.md")
+    shutil.copy2(fx, ov)
+    # 先把 feat-a 推到 Stage 7 sequential:Branch 已發布,OverlapRef 留 sentinel
+    run(ov, "--section", "active", "--match", "feat-a",
+        "--set", "Stage=7-review", "--set", "Branch=origin/feat/a")
+    write_tasks("feat-a", "sequential")
+    p = run(ov, "--print-overlap-ref", "--match", "feat-a")
+    expect(
+        "sequential + OverlapRef sentinel → 座標就是 Branch",
+        p.returncode == 0 and p.stdout.strip() == "origin/feat/a",
+        (p.stdout or "") + (p.stderr or ""),
+    )
+
+    run(ov, "--section", "active", "--match", "feat-a",
+        "--set", "OverlapRef=origin/feat/a-explicit")
+    p = run(ov, "--print-overlap-ref", "--match", "feat-a")
+    expect(
+        "sequential + 明示 OverlapRef → 只讀那一個(不改回 Branch)",
+        p.returncode == 0 and p.stdout.strip() == "origin/feat/a-explicit",
+        (p.stdout or "") + (p.stderr or ""),
+    )
+
+    run(ov, "--section", "active", "--match", "feat-b",
+        "--set", "Stage=7-review", "--set", "Lane=parallel",
+        "--set", "Branch=origin/feat/b",
+        "--set", "OverlapRef=n-a:尚未建立 branch")
+    write_tasks("feat-b", "sequential")
+    p = run(ov, "--print-overlap-ref", "--match", "feat-b")
+    expect(
+        "Lane=parallel 但 execution.mode=sequential + 空 OverlapRef → 仍是 Branch",
+        p.returncode == 0 and p.stdout.strip() == "origin/feat/b",
+        (p.stdout or "") + (p.stderr or ""),
+    )
+
+    write_tasks("feat-b", "parallel")
+    p = run(ov, "--print-overlap-ref", "--match", "feat-b")
+    expect(
+        "parallel + OverlapRef 解不出來 → fail-closed,不拼 integration/<slug>",
+        p.returncode != 0
+        and "解不出來" in (p.stderr or "")
+        and "integration/" not in (p.stdout or ""),
+        (p.stdout or "") + (p.stderr or ""),
+    )
+
+    run(ov, "--section", "active", "--match", "feat-b",
+        "--set", "OverlapRef=origin/integration/feat-b")
+    p = run(ov, "--print-overlap-ref", "--match", "feat-b")
+    expect(
+        "parallel + 已寫入 integration/<slug> tip → 就是那一個座標",
+        p.returncode == 0 and p.stdout.strip() == "origin/integration/feat-b",
+        (p.stdout or "") + (p.stderr or ""),
+    )
+
+    run(ov, "--section", "active", "--match", "feat-b",
+        "--set", "OverlapRef=origin/feat/b")
+    p = run(ov, "--print-overlap-ref", "--match", "feat-b")
+    expect(
+        "parallel 合回並 push 後 OverlapRef=Branch → 座標變成 Branch",
+        p.returncode == 0 and p.stdout.strip() == "origin/feat/b",
+        (p.stdout or "") + (p.stderr or ""),
+    )
+
+    # 缺 5-tasks 且 OverlapRef 空 → 不准猜
+    # 放進子目錄,避免 derive_tasks_path 撿到同 tmp 底下別案的 feat-a/5-tasks.md
+    orphan_dir = os.path.join(tmp, "orphan-dir")
+    os.makedirs(orphan_dir, exist_ok=True)
+    orphan = os.path.join(orphan_dir, "orphan.md")
+    shutil.copy2(fx, orphan)
+    run(orphan, "--section", "active", "--match", "feat-a",
+        "--set", "Branch=origin/feat/a")
+    p = run(orphan, "--print-overlap-ref", "--match", "feat-a")
+    expect(
+        "OverlapRef 空且 5-tasks 讀不到 → fail-closed",
+        p.returncode != 0 and "解不出來" in (p.stderr or ""),
+        (p.stdout or "") + (p.stderr or ""),
+    )
+
+    # sequential 但 Branch 也是 sentinel → 沒有可解析座標
+    write_tasks("feat-a", "sequential")
+    p = run(fx, "--print-overlap-ref", "--match", "feat-a")
+    expect(
+        "sequential 但 Branch 仍是 sentinel → fail-closed",
+        p.returncode != 0 and "解不出來" in (p.stderr or ""),
+        (p.stdout or "") + (p.stderr or ""),
+    )
+
+    # mutant:空的 parallel 改成猜 origin/integration/<slug>
+    mutant_ov = os.path.join(tmp, "status-update.mutant-guess-integ.sh")
+    src_ov = open(tool, encoding="utf-8").read()
+    patched_ov = src_ov.replace(
+        'fail("拒絕:parallel feature 的 OverlapRef 解不出來"\n'
+        '             "(不得猜 Lane,也不得自行挑選 integration/<slug>)")',
+        'return "origin/integration/guessed"',
+    )
+    expect(
+        "猜 integration/<slug> 的 mutant 源與正本不同",
+        patched_ov != src_ov,
+        "替換沒打中,resolver 的 fail-closed 句沒被破壞",
+    )
+    open(mutant_ov, "w", encoding="utf-8").write(patched_ov)
+    os.chmod(mutant_ov, 0o755)
+    guess_fx = os.path.join(tmp, "guess.md")
+    shutil.copy2(fx, guess_fx)
+    run(guess_fx, "--section", "active", "--match", "feat-a",
+        "--set", "Branch=origin/feat/a",
+        "--set", "OverlapRef=n-a:尚未建立 branch")
+    write_tasks("feat-a", "parallel")
+    guessed = subprocess.run(
+        ["bash", mutant_ov, "--file", guess_fx,
+         "--print-overlap-ref", "--match", "feat-a"],
+        capture_output=True, text=True,
+    )
+    expect(
+        "mutant 在 parallel+空 OverlapRef 猜出 integration/<slug>(正本必須 fail-closed)",
+        guessed.returncode == 0 and "origin/integration/guessed" in guessed.stdout,
+        (guessed.stdout or "") + (guessed.stderr or ""),
+    )
+    real = run(guess_fx, "--print-overlap-ref", "--match", "feat-a")
+    expect(
+        "正本對同一份 parallel+空 OverlapRef 仍 fail-closed",
+        real.returncode != 0 and "解不出來" in (real.stderr or ""),
+        (real.stdout or "") + (real.stderr or ""),
     )
 
 if passed < MIN_CASES:
