@@ -346,3 +346,8 @@
 - 為什麼:Claude 比 plugin.json version 字串；3.20.3 字串不變則 /plugin update 回 (no content) 且無提示
 - 落在哪:.claude-plugin/plugin.json .cursor-plugin/plugin.json .codex-plugin/plugin.json hooks/runtime-capabilities.json
 
+## 2026-08-30 · test-status-update-main-count
+- 做了什麼:main 上「拒改正本」略過從 1 案改成 2 案,對齊 feature 的 --set / --refresh-stamp 兩顆牙;MIN_CASES 維持 30
+- 為什麼:main-push 的 abbrev-ref 是 main,只跑 29 案撞地板;同樹 PR 是 detached HEAD 走 else 兩案所以綠。產品寫入者未改
+- 落在哪:scripts/test-status-update.sh docs/dev/HISTORY.md
+

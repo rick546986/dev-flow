@@ -316,8 +316,14 @@ with tempfile.TemporaryDirectory(prefix="status-update-") as tmp:
         )
         after_real = open(real, encoding="utf-8").read()
         if branch == "main":
+            # 與下方 feature 兩顆牙 1:1。main 上寫入者合法,不能用正本當「拒」的受測物。
+            # 只記一顆略過 → main-push 數到 29,撞 MIN_CASES=30;PR/detached 走 else 則剛好 30。
             expect(
-                "在 main 上略過「feature 拒改正本」案(本 tar 在整合分支)",
+                "在 main 上略過「feature 對正本 --set 拒」案(本 tar 在整合分支)",
+                True,
+            )
+            expect(
+                "在 main 上略過「feature 對正本 --refresh-stamp 拒」案(本 tar 在整合分支)",
                 True,
             )
         else:
