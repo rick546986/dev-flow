@@ -336,3 +336,8 @@
 - 為什麼:CI architecture/test-architecture-guards：MEM-4 舊錨 sub.add_parser("doctor").set_defaults 已不在，mutation 沒種毒 → 預期 fail 實得 pass
 - 落在哪:scripts/test-architecture-guards.sh
 
+## 2026-08-30 · pages-noarg-not-usage · v3.20.3
+- 做了什麼:SKILL pages 驗證句拆開：--help 才是 usage exit 2；無參數會真組 public/，健檢不得用無參數
+- 為什麼:3.20.2 起 SKILL 把無參數跟 --help 併成 exit 2，照做會在採用專案根長出 public/ 並誤以為驗到 usage
+- 落在哪:skills/dev-setup/SKILL.md
+
