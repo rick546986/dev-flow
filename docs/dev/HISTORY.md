@@ -326,3 +326,8 @@
 - 為什麼:Claude 比 plugin.json version 字串；3.20.2 字串不變則 /plugin update 回 (no content) 且無提示
 - 落在哪:.claude-plugin/plugin.json .cursor-plugin/plugin.json .codex-plugin/plugin.json hooks/runtime-capabilities.json
 
+## 2026-08-30 · path-after-subcommand · v3.20.3
+- 做了什麼:dev-memory --path 兩種順序都通；usage 與 SKILL 1b/14 改成 --path 在子命令前；subparser --path 用 SUPPRESS
+- 為什麼:SKILL 寫 setup --path / doctor --path，argparse 只收子命令前 → exit 2 unrecognized arguments，dev-setup 步 1b 紅
+- 落在哪:memory/dev-memory.py memory/tests/test_cli.py skills/dev-setup/SKILL.md
+

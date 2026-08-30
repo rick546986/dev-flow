@@ -155,7 +155,7 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
 1b. **Agent Memory 建置**(v3.10.0 起;`dev-setup` 是唯一入口,**不得新增
    `dev-flow init` 之類的第二個安裝器**)。跑:
    ```
-   python3 "${DEVFLOW_ROOT}/memory/dev-memory.py" setup --path <專案根>
+   python3 "${DEVFLOW_ROOT}/memory/dev-memory.py" --path <專案根> setup
    ```
    它做九件事,全部冪等(輸出是 JSON,直接鋪進回報表):
    ①找 repository root;②`.dev-flow/project.yaml` 不存在 → 建 `project_id`
@@ -430,7 +430,7 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     `--slug`」且 exit 2;`--print-root` 印專案根且 exit 0。
     **`devflow-contract.json` 不住在 `docs/dev/tools/`,第 10 項單獨驗**。
 14. **Agent Memory 健檢**(在專案內跑時):跑
-    `python3 "${DEVFLOW_ROOT}/memory/dev-memory.py" doctor --path <專案根>`
+    `python3 "${DEVFLOW_ROOT}/memory/dev-memory.py" --path <專案根> doctor`
     並照它的 verdict 分流(`PASS` / `WARN` / `FAIL`;exit 1 = FAIL)。它逐項回報:
     `project-identity`(`.dev-flow/project.yaml` 在不在、`project_id` 合不合法 ——
     缺件 = broken,走 install 步 1b 補)、`local-schema`(本機 DB schema 版本)、
