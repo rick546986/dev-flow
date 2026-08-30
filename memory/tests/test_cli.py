@@ -1,4 +1,5 @@
 """CLI 端對端(dev-setup 呼叫的介面):輸出可解析、路徑不外洩、無 init 入口。"""
+import importlib.util
 import json
 import os
 import subprocess
@@ -20,6 +21,29 @@ class CliTest(MemoryCase):
 
     def json_cli(self, *args, **kwargs):
         return json.loads(self.run_cli(*args, **kwargs).stdout)
+
+    def _parser(self):
+        spec = importlib.util.spec_from_file_location(
+            "dev_memory_cli", os.path.abspath(CLI))
+        cli = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cli)
+        return cli.build_parser()
+
+    def test_path_accepted_after_or_before_subcommand(self):
+        """#82:doctor/setup 的 --path 在子命令後也通;子命令前不得被 child default 蓋成 None。"""
+        parser = self._parser()
+        after = parser.parse_args(["doctor", "--path", "/tmp/x"])
+        self.assertEqual(after.path, "/tmp/x")
+        self.assertEqual(after.cmd, "doctor")
+        before = parser.parse_args(["--path", "/tmp/x", "doctor"])
+        self.assertEqual(before.path, "/tmp/x")
+        self.assertEqual(before.cmd, "doctor")
+        setup_after = parser.parse_args(["setup", "--path", "/tmp/x"])
+        self.assertEqual(setup_after.path, "/tmp/x")
+        self.assertEqual(setup_after.cmd, "setup")
+        setup_before = parser.parse_args(["--path", "/tmp/x", "setup"])
+        self.assertEqual(setup_before.path, "/tmp/x")
+        self.assertEqual(setup_before.cmd, "setup")
 
     def test_no_init_subcommand_exists(self):
         """§12:dev-setup 是唯一 setup 入口 —— CLI 不得提供第二個安裝器。"""

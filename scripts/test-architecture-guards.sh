@@ -1532,9 +1532,9 @@ D=$(seed_mem mem4); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "memory/dev-memory.py"
 t = p.read_text(encoding="utf-8")
-old = '    sub.add_parser("doctor").set_defaults(func=cmd_doctor)'
+old = '    p = sub.add_parser("doctor")\n    _add_path(p)\n    p.set_defaults(func=cmd_doctor)'
 assert old in t, "MEM-4 anchor 不見"
-n = t.replace(old, '    sub.add_parser("init").set_defaults(func=cmd_setup)\n' + old, 1)
+n = t.replace(old, '    p = sub.add_parser("init")\n    _add_path(p)\n    p.set_defaults(func=cmd_setup)\n' + old, 1)
 assert n != t, "MEM-4 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY

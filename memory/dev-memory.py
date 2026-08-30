@@ -6,11 +6,11 @@
 不是第二個安裝器(`dev-setup` 會呼叫它;使用者不需要記得它)。
 
 用法:
-  dev-memory.py setup [--path DIR] [--no-rebuild] [--no-embeddings] [--name N]
-  dev-memory.py doctor [--path DIR]
-  dev-memory.py status [--path DIR]
-  dev-memory.py context [--path DIR] [--budget N] [--json]
-  dev-memory.py ask "<問題>" [--path DIR] [--limit N] [--json]
+  dev-memory.py [--path DIR] setup [--no-rebuild] [--no-embeddings] [--name N]
+  dev-memory.py [--path DIR] doctor
+  dev-memory.py [--path DIR] status
+  dev-memory.py [--path DIR] context [--budget N] [--json]
+  dev-memory.py [--path DIR] ask "<問題>" [--limit N] [--json]
   dev-memory.py remember --kind <event 種類> --title T [--body B] [--path-ref P]...
   dev-memory.py fact --entity-type T --entity-key K --fact-key F --value V
                      [--dep P]... [--verified]
@@ -33,11 +33,11 @@
                 | confirm <candidate> | reject <candidate> [--reason R]
                 | correct <session> --kind K --key K2 --title T [--body B]
                 | checkpoint <session> | end <session> | status <session>
-  dev-memory.py reindex [--path DIR] [--force]
-  dev-memory.py migrate-legacy [--path DIR] [--apply] [--promote]
-  dev-memory.py eval [--path DIR] [--dataset FILE] [--json]
-  dev-memory.py inventory [--path DIR]
-  dev-memory.py durable-check [--local-only] [--path DIR]
+  dev-memory.py [--path DIR] reindex [--force]
+  dev-memory.py [--path DIR] migrate-legacy [--apply] [--promote]
+  dev-memory.py [--path DIR] eval [--dataset FILE] [--json]
+  dev-memory.py [--path DIR] inventory
+  dev-memory.py [--path DIR] durable-check [--local-only]
 
 exit code:0 = 成功 / 1 = 可判定的失敗(含 doctor FAIL)/ 2 = 用法或環境錯誤。
 """
@@ -418,6 +418,16 @@ def cmd_inventory(args):
     return 0
 
 
+def _add_path(p):
+    """子命令後的 --path。default 必須是 SUPPRESS,不能是 None。
+
+    父 parser 已有 --path(default=None)。子 parser 若再 default=None,
+    `--path DIR doctor` 會被子預設蓋成 path=None。
+    """
+    p.add_argument("--path", default=argparse.SUPPRESS, dest="path",
+                   help="repo 內任一路徑(預設 cwd)")
+
+
 def build_parser():
     parser = argparse.ArgumentParser(prog="dev-memory", add_help=True)
     parser.add_argument("--path", default=None,
@@ -425,33 +435,44 @@ def build_parser():
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("setup", help="dev-setup 的 memory 階段(不是第二個安裝器)")
+    _add_path(p)
     p.add_argument("--no-rebuild", action="store_true")
     p.add_argument("--no-embeddings", action="store_true")
     p.add_argument("--name", default=None)
     p.set_defaults(func=cmd_setup)
 
-    sub.add_parser("doctor").set_defaults(func=cmd_doctor)
-    sub.add_parser("status").set_defaults(func=cmd_status)
-    sub.add_parser("inventory").set_defaults(func=cmd_inventory)
+    p = sub.add_parser("doctor")
+    _add_path(p)
+    p.set_defaults(func=cmd_doctor)
+    p = sub.add_parser("status")
+    _add_path(p)
+    p.set_defaults(func=cmd_status)
+    p = sub.add_parser("inventory")
+    _add_path(p)
+    p.set_defaults(func=cmd_inventory)
     p = sub.add_parser(
         "durable-check",
         help="驗證 durable memory 已 commit 且已抵達 remote(Stage 6 收尾)")
+    _add_path(p)
     p.add_argument("--local-only", action="store_true",
                    help="不問遠端(離線、或 remote 就在本機)。放行但不會聲稱驗過遠端")
     p.set_defaults(func=cmd_durable_check)
 
     p = sub.add_parser("context")
+    _add_path(p)
     p.add_argument("--budget", type=int, default=context_mod.DEFAULT_BUDGET)
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_context)
 
     p = sub.add_parser("ask")
+    _add_path(p)
     p.add_argument("question")
     p.add_argument("--limit", type=int, default=5)
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_ask)
 
     p = sub.add_parser("remember")
+    _add_path(p)
     p.add_argument("--kind", required=True)
     p.add_argument("--title", required=True)
     p.add_argument("--body", default="")
@@ -459,6 +480,7 @@ def build_parser():
     p.set_defaults(func=cmd_remember)
 
     p = sub.add_parser("fact")
+    _add_path(p)
     p.add_argument("--entity-type", required=True)
     p.add_argument("--entity-key", required=True)
     p.add_argument("--fact-key", required=True)
@@ -470,6 +492,7 @@ def build_parser():
     p.set_defaults(func=cmd_fact)
 
     p = sub.add_parser("verify")
+    _add_path(p)
     p.add_argument("--entity-type", required=True)
     p.add_argument("--entity-key", required=True)
     p.add_argument("--fact-key", required=True)
@@ -478,6 +501,7 @@ def build_parser():
     p.set_defaults(func=cmd_verify)
 
     p = sub.add_parser("know")
+    _add_path(p)
     p.add_argument("--kind", required=True,
                    choices=sorted(durable.KNOWLEDGE_DIRS))
     p.add_argument("--key", required=True)
@@ -492,6 +516,7 @@ def build_parser():
 
     p = sub.add_parser("session",
                        help="通用 memory session(implementation / understanding)")
+    _add_path(p)
     ses = p.add_subparsers(dest="session_cmd", required=True)
     s = ses.add_parser("start")
     s.add_argument("--mode", default=session_mod.IMPLEMENTATION,
@@ -518,16 +543,19 @@ def build_parser():
 
     p = sub.add_parser("checkpoint",
                        help="固化本 session 的候選(沒有高訊號時回 0 promoted)")
+    _add_path(p)
     p.add_argument("session")
     p.add_argument("--end", action="store_true", help="固化後關閉 session")
     p.set_defaults(func=cmd_checkpoint)
 
     p = sub.add_parser("abort", help="中止 session(狀態明寫 ABORTED)")
+    _add_path(p)
     p.add_argument("session")
     p.add_argument("--reason", default="")
     p.set_defaults(func=cmd_abort)
 
     p = sub.add_parser("talk")
+    _add_path(p)
     talk = p.add_subparsers(dest="talk_cmd", required=True)
     t = talk.add_parser("start")
     t.add_argument("topic")
@@ -561,15 +589,18 @@ def build_parser():
     p.set_defaults(func=cmd_talk)
 
     p = sub.add_parser("reindex")
+    _add_path(p)
     p.add_argument("--force", action="store_true")
     p.set_defaults(func=cmd_reindex)
 
     p = sub.add_parser("migrate-legacy")
+    _add_path(p)
     p.add_argument("--apply", action="store_true")
     p.add_argument("--promote", action="store_true")
     p.set_defaults(func=cmd_migrate_legacy)
 
     p = sub.add_parser("eval")
+    _add_path(p)
     p.add_argument("--dataset", default=None)
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_eval)
