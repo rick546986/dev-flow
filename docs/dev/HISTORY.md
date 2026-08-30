@@ -341,3 +341,8 @@
 - 為什麼:3.20.2 起 SKILL 把無參數跟 --help 併成 exit 2，照做會在採用專案根長出 public/ 並誤以為驗到 usage
 - 落在哪:skills/dev-setup/SKILL.md
 
+## 2026-08-30 · release-v3-20-4 · v3.20.4
+- 做了什麼:發 v3.20.4：#81 pages 驗證句拆開、#82 --path 子命令後也通，已在 main，讓 Claude plugin update 拉得到
+- 為什麼:Claude 比 plugin.json version 字串；3.20.3 字串不變則 /plugin update 回 (no content) 且無提示
+- 落在哪:.claude-plugin/plugin.json .cursor-plugin/plugin.json .codex-plugin/plugin.json hooks/runtime-capabilities.json
+
