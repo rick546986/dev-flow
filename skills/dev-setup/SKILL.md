@@ -150,8 +150,9 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    **pages**:`${DEVFLOW_ROOT}/scripts/publish-pages.sh` →
    `docs/dev/tools/publish-pages.sh` 並 `chmod 755`。無 `.gitlab-ci.yml` /
    `.gitea/workflows/pages.yml` 才抄,已有不覆蓋。本機
-   `python3 scripts/devflow_gate.py serve --root .`。驗證:無參數或 `--help` →
-   用法且 exit 2。
+   `python3 scripts/devflow_gate.py serve --root .`。驗證:`--help`/`-h`/`help`/未知參數 →
+   用法且 exit 2(量測勿經 pipe);無參數 = 以 git toplevel 當預設根並實際組
+   `public/`(exit 0),健檢不得用無參數呼叫。
 1b. **Agent Memory 建置**(v3.10.0 起;`dev-setup` 是唯一入口,**不得新增
    `dev-flow init` 之類的第二個安裝器**)。跑:
    ```
