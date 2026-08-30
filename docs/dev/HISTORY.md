@@ -321,3 +321,8 @@
 - 為什麼:SKILL 教的無參數 --probe 空樹 missing=[] 恆綠（第 4 型假綠），採用專案以為掛載已驗過
 - 落在哪:scripts/check-host-adapter.sh scripts/test-host-adapter.sh skills/dev-setup/SKILL.md
 
+## 2026-08-30 · release-v3-20-3 · v3.20.3
+- 做了什麼:發 v3.20.3：--probe 空樹不得 probe: ok（#79 / #78）已在 main，讓 Claude plugin update 拉得到
+- 為什麼:Claude 比 plugin.json version 字串；3.20.2 字串不變則 /plugin update 回 (no content) 且無提示
+- 落在哪:.claude-plugin/plugin.json .cursor-plugin/plugin.json .codex-plugin/plugin.json hooks/runtime-capabilities.json
+
