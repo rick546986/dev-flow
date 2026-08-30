@@ -331,3 +331,8 @@
 - 為什麼:SKILL 寫 setup --path / doctor --path，argparse 只收子命令前 → exit 2 unrecognized arguments，dev-setup 步 1b 紅
 - 落在哪:memory/dev-memory.py memory/tests/test_cli.py skills/dev-setup/SKILL.md
 
+## 2026-08-30 · path-after-subcommand-mem4 · v3.20.3
+- 做了什麼:MEM-4 負向錨改對新的 doctor parser 寫法（_add_path 三行），毒才能種出 init
+- 為什麼:CI architecture/test-architecture-guards：MEM-4 舊錨 sub.add_parser("doctor").set_defaults 已不在，mutation 沒種毒 → 預期 fail 實得 pass
+- 落在哪:scripts/test-architecture-guards.sh
+
