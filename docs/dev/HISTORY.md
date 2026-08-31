@@ -376,3 +376,8 @@
 - 為什麼:點開後的子資料夾與檔案不能空白；scripts/hooks 不整包列進樹
 - 落在哪:guides/guide-dir-map.html docs/dev/HISTORY.md
 
+## 2026-08-31 · guide-dir-map-deep
+- 做了什麼:目錄樹往下長 2–3 層：skills hop 檔、example 1–7、docs/adr/dev/tools、notes/design、tests/parallel-stage6、memory
+- 為什麼:人要看到方法包骨架（hop 檔名+用途），摺疊仍只露 L1
+- 落在哪:guides/guide-dir-map.html docs/dev/HISTORY.md
+

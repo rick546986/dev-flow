@@ -70,41 +70,145 @@
 
   <div class="treewrap" role="tree" aria-label="dev-flow 方法包目錄樹">
   <div class="tree">
-    <div class="tline"><span class="g"></span><span class="name">dev-flow/</span><span class="why">方法包根</span></div>
+      <div class="tline"><span class="g"></span><span class="name">dev-flow/</span><span class="why">方法包根</span></div>
 
     <details id="skills">
       <summary class="tline"><span class="g">├─ </span><span class="name">skills/</span><span class="why">方法包正本，整棵掛</span></summary>
       <details id="skill-dev-talk">
-        <summary class="tline"><span class="g">│  ├─ </span><span class="name">dev-talk/</span><span class="why">第 1 站</span></summary>
-        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">SKILL.md</span><span class="why">入口，觸發才載全文</span></div>
-        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">graph.yaml</span><span class="why">下一跳正本</span></div>
-        <div class="tline"><span class="g">│  │  └─ </span><span class="name">nodes/</span><span class="why">一 hop 一檔</span></div>
+      <summary class="tline"><span class="g">│  ├─ </span><span class="name">dev-talk/</span><span class="why">第 1 站</span></summary>
+      <div class="tline"><span class="g">│  │  ├─ </span><span class="name">SKILL.md</span><span class="why">入口，觸發才載全文</span></div>
+      <div class="tline"><span class="g">│  │  ├─ </span><span class="name">graph.yaml</span><span class="why">下一跳正本</span></div>
+      <div class="tline"><span class="g">│  │  ├─ </span><span class="name">html-shell.html</span><span class="why">掃頁殼，不手寫</span></div>
+        <details id="talk-nodes">
+      <summary class="tline"><span class="g">│  │  └─ </span><span class="name">nodes/</span><span class="why">一 hop 一檔</span></summary>
+      <div class="tline"><span class="g">│  │     ├─ </span><span class="name">N1-start.md</span><span class="why">開場</span></div>
+      <div class="tline"><span class="g">│  │     ├─ </span><span class="name">S0-scope.md</span><span class="why">定範圍</span></div>
+      <div class="tline"><span class="g">│  │     ├─ </span><span class="name">S1-survey.md</span><span class="why">掃現況</span></div>
+      <div class="tline"><span class="g">│  │     ├─ </span><span class="name">S2-world.md</span><span class="why">世界圖</span></div>
+      <div class="tline"><span class="g">│  │     ├─ </span><span class="name">N3-probe.md</span><span class="why">追問</span></div>
+      <div class="tline"><span class="g">│  │     ├─ </span><span class="name">S4-accept.md</span><span class="why">驗收雛形</span></div>
+      <div class="tline"><span class="g">│  │     ├─ </span><span class="name">S5-diverge.md</span><span class="why">發散</span></div>
+      <div class="tline"><span class="g">│  │     ├─ </span><span class="name">S6-blind.md</span><span class="why">盲檢下游</span></div>
+      <div class="tline"><span class="g">│  │     ├─ </span><span class="name">N9-write-md.md</span><span class="why">寫 1-discussion.md</span></div>
+      <div class="tline"><span class="g">│  │     ├─ </span><span class="name">S8-review.md</span><span class="why">自檢</span></div>
+      <div class="tline"><span class="g">│  │     ├─ </span><span class="name">S9-terms.md</span><span class="why">詞彙</span></div>
+      <div class="tline"><span class="g">│  │     ├─ </span><span class="name">S10-html.md</span><span class="why">掃頁</span></div>
+      <div class="tline"><span class="g">│  │     └─ </span><span class="name">N13-end.md</span><span class="why">收尾</span></div>
+        </details>
       </details>
       <details id="skill-dev-flow">
-        <summary class="tline"><span class="g">│  ├─ </span><span class="name">dev-flow/</span><span class="why">第 2-7 站</span></summary>
-        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">SKILL.md</span><span class="why">第 2-7 站入口</span></div>
-        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">stage2/</span><span class="why">收斂，出口 G1</span></div>
-        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">stage3/</span><span class="why">原型，可 skip</span></div>
-        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">stage4/</span><span class="why">規格，出口 G2</span></div>
-        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">stage5/</span><span class="why">任務板，無 G</span></div>
-        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">stage6/</span><span class="why">實作</span></div>
-        <div class="tline"><span class="g">│  │  └─ </span><span class="name">stage7/</span><span class="why">驗證，出口 G3</span></div>
+      <summary class="tline"><span class="g">│  ├─ </span><span class="name">dev-flow/</span><span class="why">第 2-7 站</span></summary>
+      <div class="tline"><span class="g">│  │  ├─ </span><span class="name">SKILL.md</span><span class="why">第 2-7 站入口</span></div>
+        <details id="flow-stage2">
+      <summary class="tline"><span class="g">│  │  ├─ </span><span class="name">stage2/</span><span class="why">收斂，出口 G1</span></summary>
+      <div class="tline"><span class="g">│  │  │  ├─ </span><span class="name">graph.yaml</span><span class="why">下一跳正本</span></div>
+          <details id="flow-stage2-nodes">
+      <summary class="tline"><span class="g">│  │  │  └─ </span><span class="name">nodes/</span><span class="why">一 hop 一檔</span></summary>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">N1-handoff.md</span><span class="why">接手</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S1-approaches.md</span><span class="why">生方案</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S2-stress.md</span><span class="why">壓測定案</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">N3-write-md.md</span><span class="why">寫 2-decision.md</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S4-oc.md</span><span class="why">寫 Owner Call</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S5-adr.md</span><span class="why">寫 ADR 檢查</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S6-selfcheck.md</span><span class="why">寫自檢</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">N7-g1.md</span><span class="why">G1 送審</span></div>
+      <div class="tline"><span class="g">│  │  │     └─ </span><span class="name">N8-end.md</span><span class="why">收尾</span></div>
+          </details>
+        </details>
+        <details id="flow-stage3">
+      <summary class="tline"><span class="g">│  │  ├─ </span><span class="name">stage3/</span><span class="why">原型，可 skip</span></summary>
+      <div class="tline"><span class="g">│  │  │  ├─ </span><span class="name">graph.yaml</span><span class="why">下一跳正本</span></div>
+          <details id="flow-stage3-nodes">
+      <summary class="tline"><span class="g">│  │  │  └─ </span><span class="name">nodes/</span><span class="why">一 hop 一檔</span></summary>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">N1-trigger.md</span><span class="why">觸發判定</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">N-skip.md</span><span class="why">0 命中跳過</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S0-question.md</span><span class="why">定義疑問</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S1-experiment.md</span><span class="why">實驗</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S2-evidence.md</span><span class="why">收證</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">N3-write-md.md</span><span class="why">寫 3-prototype.md</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S3-writeback.md</span><span class="why">回寫 2-decision.md</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S4-close.md</span><span class="why">收尾</span></div>
+      <div class="tline"><span class="g">│  │  │     └─ </span><span class="name">N5-end.md</span><span class="why">結束</span></div>
+          </details>
+        </details>
+        <details id="flow-stage4">
+      <summary class="tline"><span class="g">│  │  ├─ </span><span class="name">stage4/</span><span class="why">規格，出口 G2</span></summary>
+      <div class="tline"><span class="g">│  │  │  ├─ </span><span class="name">graph.yaml</span><span class="why">下一跳正本</span></div>
+          <details id="flow-stage4-nodes">
+      <summary class="tline"><span class="g">│  │  │  └─ </span><span class="name">nodes/</span><span class="why">一 hop 一檔</span></summary>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">N1-handoff.md</span><span class="why">接手</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S1-requirements.md</span><span class="why">列 R</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S2-scenarios.md</span><span class="why">展 S</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S3a-close.md</span><span class="why">邊界收尾</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S3b-profile.md</span><span class="why">Verification Profile</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S3c-stage3.md</span><span class="why">對帳原型</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S4-dd.md</span><span class="why">Drafting Decision</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">N5-write-md.md</span><span class="why">寫 4-spec.md</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S5-gate.md</span><span class="why">機械關自檢</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">N6-g2.md</span><span class="why">G2 送審</span></div>
+      <div class="tline"><span class="g">│  │  │     └─ </span><span class="name">N7-end.md</span><span class="why">收尾</span></div>
+          </details>
+        </details>
+        <details id="flow-stage5">
+      <summary class="tline"><span class="g">│  │  ├─ </span><span class="name">stage5/</span><span class="why">任務板，無 G</span></summary>
+      <div class="tline"><span class="g">│  │  │  ├─ </span><span class="name">graph.yaml</span><span class="why">下一跳正本</span></div>
+          <details id="flow-stage5-nodes">
+      <summary class="tline"><span class="g">│  │  │  └─ </span><span class="name">nodes/</span><span class="why">一 hop 一檔</span></summary>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">N1-handoff.md</span><span class="why">接手</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S1-slice.md</span><span class="why">切 T</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S2-fields.md</span><span class="why">填欄</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S3-deps.md</span><span class="why">依賴</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">N4-write-md.md</span><span class="why">寫 5-tasks.md</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S4-selfcheck.md</span><span class="why">自檢</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">N5-twin.md</span><span class="why">產執行板</span></div>
+      <div class="tline"><span class="g">│  │  │     └─ </span><span class="name">N6-end.md</span><span class="why">定稿</span></div>
+          </details>
+        </details>
+        <details id="flow-stage6">
+      <summary class="tline"><span class="g">│  │  ├─ </span><span class="name">stage6/</span><span class="why">實作</span></summary>
+      <div class="tline"><span class="g">│  │  │  ├─ </span><span class="name">graph.yaml</span><span class="why">下一跳正本</span></div>
+          <details id="flow-stage6-nodes">
+      <summary class="tline"><span class="g">│  │  │  └─ </span><span class="name">nodes/</span><span class="why">一 hop 一檔</span></summary>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">N1-arm.md</span><span class="why">武裝守衛</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">N2-handoff.md</span><span class="why">接手核對</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">S2-tdd.md</span><span class="why">逐 T</span></div>
+      <div class="tline"><span class="g">│  │  │     ├─ </span><span class="name">N4-selfcheck.md</span><span class="why">自檢</span></div>
+      <div class="tline"><span class="g">│  │  │     └─ </span><span class="name">N5-end.md</span><span class="why">結束</span></div>
+          </details>
+        </details>
+        <details id="flow-stage7">
+      <summary class="tline"><span class="g">│  │  └─ </span><span class="name">stage7/</span><span class="why">驗證，出口 G3</span></summary>
+      <div class="tline"><span class="g">│  │     ├─ </span><span class="name">graph.yaml</span><span class="why">下一跳正本</span></div>
+          <details id="flow-stage7-nodes">
+      <summary class="tline"><span class="g">│  │     └─ </span><span class="name">nodes/</span><span class="why">一 hop 一檔</span></summary>
+      <div class="tline"><span class="g">│  │        ├─ </span><span class="name">N0-role.md</span><span class="why">角色+防錨定</span></div>
+      <div class="tline"><span class="g">│  │        ├─ </span><span class="name">N1-matrix.md</span><span class="why">自建矩陣</span></div>
+      <div class="tline"><span class="g">│  │        ├─ </span><span class="name">S2-run.md</span><span class="why">親跑驗證</span></div>
+      <div class="tline"><span class="g">│  │        ├─ </span><span class="name">S2b-phenomena.md</span><span class="why">現象複驗</span></div>
+      <div class="tline"><span class="g">│  │        ├─ </span><span class="name">S2c-integration.md</span><span class="why">整合回歸</span></div>
+      <div class="tline"><span class="g">│  │        ├─ </span><span class="name">S2d-fresh.md</span><span class="why">Final Fresh</span></div>
+      <div class="tline"><span class="g">│  │        ├─ </span><span class="name">S2e-walkthrough.md</span><span class="why">操作走查</span></div>
+      <div class="tline"><span class="g">│  │        ├─ </span><span class="name">N3-axes.md</span><span class="why">雙軸審</span></div>
+      <div class="tline"><span class="g">│  │        ├─ </span><span class="name">N4-author.md</span><span class="why">對照作者</span></div>
+      <div class="tline"><span class="g">│  │        └─ </span><span class="name">N5-verdict.md</span><span class="why">Verdict</span></div>
+          </details>
+        </details>
       </details>
       <details id="skill-dev-run">
-        <summary class="tline"><span class="g">│  ├─ </span><span class="name">dev-run/</span><span class="why">第 6 站引擎</span></summary>
-        <div class="tline"><span class="g">│  │  └─ </span><span class="name">SKILL.md</span><span class="why">整棵掛，裡面只有這份</span></div>
+      <summary class="tline"><span class="g">│  ├─ </span><span class="name">dev-run/</span><span class="why">第 6 站引擎</span></summary>
+      <div class="tline"><span class="g">│  │  └─ </span><span class="name">SKILL.md</span><span class="why">整棵掛，裡面只有這份</span></div>
       </details>
       <details id="skill-dev-setup">
-        <summary class="tline"><span class="g">│  ├─ </span><span class="name">dev-setup/</span><span class="why">初裝／升級</span></summary>
-        <div class="tline"><span class="g">│  │  └─ </span><span class="name">SKILL.md</span><span class="why">整棵掛，裡面只有這份</span></div>
+      <summary class="tline"><span class="g">│  ├─ </span><span class="name">dev-setup/</span><span class="why">初裝／升級</span></summary>
+      <div class="tline"><span class="g">│  │  └─ </span><span class="name">SKILL.md</span><span class="why">整棵掛，裡面只有這份</span></div>
       </details>
       <details id="skill-dev-release">
-        <summary class="tline"><span class="g">│  ├─ </span><span class="name">dev-release/</span><span class="why">母版發版</span></summary>
-        <div class="tline"><span class="g">│  │  └─ </span><span class="name">SKILL.md</span><span class="why">整棵掛，裡面只有這份</span></div>
+      <summary class="tline"><span class="g">│  ├─ </span><span class="name">dev-release/</span><span class="why">母版發版</span></summary>
+      <div class="tline"><span class="g">│  │  └─ </span><span class="name">SKILL.md</span><span class="why">整棵掛，裡面只有這份</span></div>
       </details>
       <details id="skill-dev-report">
-        <summary class="tline"><span class="g">│  └─ </span><span class="name">dev-report/</span><span class="why">缺陷回報</span></summary>
-        <div class="tline"><span class="g">│     └─ </span><span class="name">SKILL.md</span><span class="why">整棵掛，裡面只有這份</span></div>
+      <summary class="tline"><span class="g">│  └─ </span><span class="name">dev-report/</span><span class="why">缺陷回報</span></summary>
+      <div class="tline"><span class="g">│     └─ </span><span class="name">SKILL.md</span><span class="why">整棵掛，裡面只有這份</span></div>
       </details>
     </details>
 
@@ -121,8 +225,26 @@
 
     <details id="example">
       <summary class="tline"><span class="g">├─ </span><span class="name">example/</span><span class="why">填好範例</span></summary>
-      <div class="tline"><span class="g">│  ├─ </span><span class="name">contract-expiry-reminder/</span><span class="why">合約到期提醒，填好的 full lane</span></div>
-      <div class="tline"><span class="g">│  └─ </span><span class="name">subsidy-3-0-plus/</span><span class="why">補助手樣</span></div>
+      <details id="ex-contract">
+      <summary class="tline"><span class="g">│  ├─ </span><span class="name">contract-expiry-reminder/</span><span class="why">合約到期提醒，填好的 full lane</span></summary>
+      <div class="tline"><span class="g">│  │  ├─ </span><span class="name">1-discussion.md</span><span class="why">討論 · 審頁 twin</span></div>
+      <div class="tline"><span class="g">│  │  ├─ </span><span class="name">2-decision.md</span><span class="why">決策 · 審頁 twin</span></div>
+      <div class="tline"><span class="g">│  │  ├─ </span><span class="name">3-prototype.md</span><span class="why">原型 · 審頁 twin</span></div>
+      <div class="tline"><span class="g">│  │  ├─ </span><span class="name">4-spec.md</span><span class="why">規格 · 審頁 twin</span></div>
+      <div class="tline"><span class="g">│  │  ├─ </span><span class="name">5-tasks.md</span><span class="why">任務 · 審頁 twin</span></div>
+      <div class="tline"><span class="g">│  │  ├─ </span><span class="name">6-implementation-notes.md</span><span class="why">實作日誌 · 審頁 twin</span></div>
+      <div class="tline"><span class="g">│  │  └─ </span><span class="name">7-review.md</span><span class="why">驗證 · 審頁 twin</span></div>
+      </details>
+      <details id="ex-subsidy">
+      <summary class="tline"><span class="g">│  └─ </span><span class="name">subsidy-3-0-plus/</span><span class="why">補助手樣</span></summary>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">1-discussion.md</span><span class="why">討論 · 審頁 twin</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">2-decision.md</span><span class="why">決策 · 審頁 twin</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">4-spec.md</span><span class="why">規格 · 審頁 twin</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">5-tasks.md</span><span class="why">任務 · 審頁 twin</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">6-implementation-notes.md</span><span class="why">實作日誌 · 審頁 twin</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">7-review.md</span><span class="why">驗證 · 審頁 twin</span></div>
+      <div class="tline"><span class="g">│     └─ </span><span class="name">shots/</span><span class="why">第 7 站現象截圖</span></div>
+      </details>
     </details>
 
     <details id="guides">
@@ -148,24 +270,67 @@
 
     <details id="tests">
       <summary class="tline"><span class="g">├─ </span><span class="name">tests/</span><span class="why">契約測試</span></summary>
-      <div class="tline"><span class="g">│  └─ </span><span class="name">parallel-stage6/</span><span class="why">第 6 站平行契約套件</span></div>
+      <details id="tests-p6">
+      <summary class="tline"><span class="g">│  └─ </span><span class="name">parallel-stage6/</span><span class="why">第 6 站平行契約套件</span></summary>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">contract_ref.py</span><span class="why">契約對照</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">run_tests.py</span><span class="why">跑平行契約測試</span></div>
+      <div class="tline"><span class="g">│     └─ </span><span class="name">fixtures/</span><span class="why">契約樣本</span></div>
+      </details>
     </details>
 
     <details id="memory">
       <summary class="tline"><span class="g">├─ </span><span class="name">memory/</span><span class="why">Agent Memory CLI</span></summary>
-      <div class="tline"><span class="g">│  └─ </span><span class="name">dev-memory.py</span><span class="why">唯一 CLI</span></div>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">dev-memory.py</span><span class="why">唯一 CLI</span></div>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">run-tests.sh</span><span class="why">記憶測試入口</span></div>
+      <div class="tline"><span class="g">│  └─ </span><span class="name">agentmem/</span><span class="why">實作模組</span></div>
     </details>
 
     <details id="docs">
       <summary class="tline"><span class="g">├─ </span><span class="name">docs/</span><span class="why">PLUGIN／adr／專案帳</span></summary>
-      <div class="tline"><span class="g">│  ├─ </span><span class="name">adr/</span><span class="why">架構決策紀錄</span></div>
-      <div class="tline"><span class="g">│  ├─ </span><span class="name">dev/</span><span class="why">母版自己的 STATUS／HISTORY／tools</span></div>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">PLUGIN.md</span><span class="why">四邊安裝說明</span></div>
+      <details id="docs-adr">
+      <summary class="tline"><span class="g">│  ├─ </span><span class="name">adr/</span><span class="why">架構決策紀錄</span></summary>
+      <div class="tline"><span class="g">│  │  ├─ </span><span class="name">0001-merge-plugin-into-methodology-repo.md</span><span class="why">方法包與 plugin 併成一份</span></div>
+      <div class="tline"><span class="g">│  │  ├─ </span><span class="name">0002-markdown-it-py-for-twin-parsing.md</span><span class="why">twin 解析鎖 markdown-it-py</span></div>
+      <div class="tline"><span class="g">│  │  └─ </span><span class="name">0003-agent-memory-two-layer-split.md</span><span class="why">長期記憶與執行暫存分開</span></div>
+      </details>
+      <details id="docs-dev">
+      <summary class="tline"><span class="g">│  ├─ </span><span class="name">dev/</span><span class="why">母版自己的 STATUS／HISTORY／tools</span></summary>
+      <div class="tline"><span class="g">│  │  ├─ </span><span class="name">STATUS.md</span><span class="why">專案帳，只在整合分支</span></div>
+      <div class="tline"><span class="g">│  │  ├─ </span><span class="name">HISTORY.md</span><span class="why">改版史</span></div>
+      <div class="tline"><span class="g">│  │  ├─ </span><span class="name">ship-manifest.json</span><span class="why">散發清單</span></div>
+      <div class="tline"><span class="g">│  │  ├─ </span><span class="name">devflow-contract.json</span><span class="why">版本握手</span></div>
+        <details id="docs-dev-tools">
+      <summary class="tline"><span class="g">│  │  └─ </span><span class="name">tools/</span><span class="why">散發到產品的工具</span></summary>
+      <div class="tline"><span class="g">│  │     ├─ </span><span class="name">history-append.sh</span><span class="why">改版史唯一寫入口</span></div>
+      <div class="tline"><span class="g">│  │     ├─ </span><span class="name">publish-pages.sh</span><span class="why">組 Pages 樹</span></div>
+      <div class="tline"><span class="g">│  │     ├─ </span><span class="name">build-gate-twin.py</span><span class="why">產審查頁</span></div>
+      <div class="tline"><span class="g">│  │     └─ </span><span class="name">devflow_gate.py</span><span class="why">serve／寫 verdict</span></div>
+        </details>
+      </details>
       <div class="tline"><span class="g">│  └─ </span><span class="name">prompts/</span><span class="why">提示詞</span></div>
     </details>
 
     <details id="notes">
       <summary class="tline"><span class="g">├─ </span><span class="name">notes/</span><span class="why">設計正本</span></summary>
-      <div class="tline"><span class="g">│  └─ </span><span class="name">design/</span><span class="why">審查頁與 vbox-fig 設計正本</span></div>
+      <details id="notes-design">
+      <summary class="tline"><span class="g">│  └─ </span><span class="name">design/</span><span class="why">審查頁與 vbox-fig 設計正本</span></summary>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">vbox-fig-contract.md</span><span class="why">直式置中方塊圖契約</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">pages-hosting.md</span><span class="why">站審 html 掛 Pages</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">stage1-review-ui-contract.md</span><span class="why">第 1 站審頁</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">stage2-review-ui-contract.md</span><span class="why">第 2 站審頁</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">stage3-review-ui-contract.md</span><span class="why">第 3 站審頁</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">stage4-review-ui-contract.md</span><span class="why">第 4 站審頁</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">stage5-review-ui-contract.md</span><span class="why">第 5 站審頁</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">stage7-review-ui-contract.md</span><span class="why">第 7 站審頁</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">parallel-stage6.md</span><span class="why">第 6 站平行契約</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">gate-verdict-write.md</span><span class="why">gate 判定寫入</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">vnext-shared-contract.md</span><span class="why">vnext 共用契約</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">evidence-gauntlet.md</span><span class="why">證據關卡</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">design-boundary-contract.md</span><span class="why">設計邊界契約</span></div>
+      <div class="tline"><span class="g">│     ├─ </span><span class="name">agent-attempt-observability.md</span><span class="why">嘗試帳觀測</span></div>
+      <div class="tline"><span class="g">│     └─ </span><span class="name">real-world-interaction.md</span><span class="why">真實世界互動</span></div>
+      </details>
     </details>
 
     <details id="observability">
