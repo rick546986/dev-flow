@@ -88,23 +88,22 @@ CSS = """\
   .tablewrap{overflow-x:auto}
 
   /* 目錄樹：摺疊仍是一棵 ├─ │ └─ 樹，不是卡片／步驟圖 */
-  /* why 折行：.g[data-cont]::after 補 ├─ 與下一列之間的半根 │，clip 到列高；名 why 之間不准 .sep */
+  /* 非末子 .g:not(.last)::after 在 ├─ 與下一顆 branch 之間塞半根 │；名 why 之間不准 .sep */
   .treewrap{overflow-x:auto;background:var(--bg);border:1px solid var(--line);
             border-radius:10px;padding:14px 16px;margin:1em 0}
   .tree{font:13px/1.75 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
         color:var(--fg)}
   .tree details{margin:0}
   .tree .tline{display:grid;grid-template-columns:auto auto minmax(0,1fr);
-               align-items:stretch;column-gap:.5ch}
+               align-items:start;column-gap:.5ch}
   .tree summary.tline{list-style:none;cursor:pointer;color:inherit;
                       font-size:inherit;font-weight:400;padding:0;user-select:none}
   .tree summary.tline::-webkit-details-marker{display:none}
   .tree summary.tline::marker{content:""}
-  .tree .g{display:block;height:100%;position:relative;overflow:hidden;
-           color:var(--muted);white-space:pre;align-self:stretch}
-  .tree .g::after{position:absolute;left:0;top:1em;white-space:pre;
-                  pointer-events:none;color:inherit;
-                  content:attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont)}
+  .tree .g{position:relative;color:var(--muted);white-space:pre}
+  .tree .g:not(.last)::after{content:"│";font-size:50%;line-height:1;
+                             position:absolute;left:calc(100% - 3ch);bottom:0;
+                             transform:translateY(50%);color:inherit;pointer-events:none}
   .tree .name{white-space:nowrap}
   .tree summary .name{color:var(--acc)}
   .tree .why{color:var(--muted);min-width:0}
@@ -326,13 +325,14 @@ def why_span(node, minimum=12, filemap_href="#filemap"):
     return '<span class="why">%s</span>' % body
 
 
-def tline(gutter, name, node, summary=False, filemap_href="#filemap", gcont=""):
+def tline(gutter, name, node, summary=False, filemap_href="#filemap", last=False):
     tag = "summary" if summary else "div"
     minimum = 4 if is_virtual(node) else 12
+    gcls = "g last" if last else "g"
     return (
-        '      <%s class="tline"><span class="g" data-cont="%s">%s</span>'
+        '      <%s class="tline"><span class="%s">%s</span>'
         '<span class="name">%s</span>%s</%s>'
-        % (tag, esc(gcont), esc(gutter), esc(name),
+        % (tag, gcls, esc(gutter), esc(name),
            why_span(node, minimum, filemap_href), tag)
     )
 
@@ -346,7 +346,6 @@ def render_nodes(nodes, cont, parent_rel, lines, filemap_href):
         last = i == len(nodes) - 1
         prefix = prefix_parts(cont)
         gutter = prefix + ("└─ " if last else "├─ ")
-        gcont = prefix + ("   " if last else "│  ")
         name = node["name"]
         rel = name if not parent_rel else (parent_rel.rstrip("/") + "/" + name)
         children = node.get("children") or []
@@ -354,12 +353,12 @@ def render_nodes(nodes, cont, parent_rel, lines, filemap_href):
             nid = node.get("id") or slug_id(rel)
             lines.append('    <details id="%s">' % esc(nid))
             lines.append(tline(gutter, name, node, summary=True,
-                              filemap_href=filemap_href, gcont=gcont))
+                              filemap_href=filemap_href, last=last))
             render_nodes(children, cont + [not last], rel, lines, filemap_href)
             lines.append("    </details>")
         else:
             lines.append(tline(gutter, name, node, filemap_href=filemap_href,
-                              gcont=gcont))
+                              last=last))
 
 
 def render_tree(spec, filemap_href="#filemap"):
@@ -377,7 +376,7 @@ def render_tree(spec, filemap_href="#filemap"):
         '  <div class="treewrap" role="tree" aria-label="%s">'
         % esc(spec.get("aria") or name),
         '  <div class="tree">',
-        tline("", name, root, filemap_href=filemap_href),
+        tline("", name, root, filemap_href=filemap_href, last=True),
         "",
     ]
     render_nodes(children, [], "", lines, filemap_href)

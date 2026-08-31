@@ -112,11 +112,10 @@ leaf = [ln for ln in good.stdout.splitlines() if 'class="name">app.py</span>' in
 check(leaf and leaf[0].strip().startswith("<div class=\"tline\">"), "葉子不是 summary")
 folder = [ln for ln in good.stdout.splitlines() if 'class="name">src/</span>' in ln]
 check(folder and "<summary" in folder[0], "有子列的夾才是 summary")
-check('data-cont="' in good.stdout, "fixture 列有 data-cont")
+check('class="g last"' in good.stdout, "fixture 末子有 .last")
 check('class="sep"' not in good.stdout, "fixture 沒有 .sep")
 check('class="name">│</span>' not in good.stdout, "產器不預插假列")
-check('data-cont="│  "' in good.stdout, "非末子折行延續 │")
-check('data-cont="   "' in good.stdout, "末子折行不畫脊")
+check('class="g">' in good.stdout, "非末子 gutter 沒有 .last")
 
 frag = run_builder(["--fixture", "good", "--fragment"])
 check(frag.returncode == 0 and "<!DOCTYPE" not in frag.stdout, "--fragment 只吐樹")
@@ -153,7 +152,7 @@ check(page.find('href="#dirmap">目錄關係</a>')
       < page.find('href="#filemap">附錄 檔案地圖</a>'),
       "nav 目錄關係在檔案地圖前面")
 check(".treewrap{" in page and ".tree .tline{" in page, "主指南有樹 CSS")
-check('data-cont="' in tree, "母版樹列有 data-cont")
+check('class="g last"' in tree, "母版樹末子有 .last")
 check('class="sep"' not in tree, "母版樹沒有 .sep")
 check('class="name">│</span>' not in tree, "母版樹沒有預插假列")
 
@@ -165,12 +164,10 @@ def tree_css(text):
 
 def spine_ok(css, label):
     check(bool(css), label + " 抽得到樹 CSS")
-    check("attr(data-cont)" in css, label + " gutter 用 data-cont 補脊")
+    check(".g:not(.last)::after" in css, label + " 非末子畫半根 │")
+    check("font-size:50%" in css, label + " 半根是 │ 字高的一半")
     check(".tree .sep" not in css and "sep::after" not in css, label + " 沒有 .sep")
-    check("align-items:stretch" in css, label + " 列 stretch")
     check("gap:1.5em" not in css, label + " 沒有大 gap")
-    check("height:100%" in css, label + " gutter 拉滿列高")
-    check("top:1em" in css, label + " 半根 │ 從 ├─ 下面補")
 
 builder_src = open(builder, encoding="utf-8").read()
 spine_ok(tree_css(page), "主指南")
@@ -200,8 +197,8 @@ check("scan-now" in canon and "vbox-fig" in canon and "#filemap" in canon
       and "fig-lifecycle" in canon, "契約點名何時不用")
 check("2.0.0" in canon, "契約寫明不改 2.0.0")
 check("#dirmap" in canon and "guide-dev-flow.html" in canon, "契約正本在主指南 #dirmap")
-check("折行" in canon and "data-cont" in canon and "半根" in canon,
-      "契約鎖 why 折行時只補左邊樹脊")
+check("半根" in canon and ".last" in canon and "50%" not in canon,
+      "契約鎖半根 │、末子不畫")
 check(".sep" in canon and ("不准" in canon or "不要" in canon),
       "契約寫明名與 why 之間不准 .sep")
 

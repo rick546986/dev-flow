@@ -406,3 +406,8 @@
 - 為什麼:人改口：第二根 │ 當欄分隔不舒服；只要把折行掐斷的樹脊接上
 - 落在哪:guides/guide-dev-flow.html#dirmap scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
 
+## 2026-08-31 · dir-tree-half-bar
+- 做了什麼:├─ 與下一列 branch 中間用 .g:not(.last)::after 塞半根 │（字級 50%）；末子 .last 不畫。拿掉 data-cont 拉滿折行
+- 為什麼:人要的是把虛線脊接實，不是另開一列、也不是拉滿 why
+- 落在哪:guides/guide-dev-flow.html#dirmap scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
+
