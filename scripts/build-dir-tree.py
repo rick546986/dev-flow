@@ -88,20 +88,27 @@ CSS = """\
   .tablewrap{overflow-x:auto}
 
   /* 目錄樹：摺疊仍是一棵 ├─ │ └─ 樹，不是卡片／步驟圖 */
+  /* why 折行：.g[data-cont] 與 .sep 的 ::after 從第二行起重複 │，clip 到列高 */
   .treewrap{overflow-x:auto;background:var(--bg);border:1px solid var(--line);
             border-radius:10px;padding:14px 16px;margin:1em 0}
   .tree{font:13px/1.75 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
         color:var(--fg)}
   .tree details{margin:0}
-  .tree .tline{display:flex;align-items:baseline;gap:1.5em}
+  .tree .tline{display:grid;grid-template-columns:auto auto auto minmax(0,42em);
+               align-items:stretch;column-gap:0}
   .tree summary.tline{list-style:none;cursor:pointer;color:inherit;
                       font-size:inherit;font-weight:400;padding:0;user-select:none}
   .tree summary.tline::-webkit-details-marker{display:none}
   .tree summary.tline::marker{content:""}
-  .tree .g{color:var(--muted);flex:0 0 auto;white-space:pre}
-  .tree .name{flex:0 0 auto;white-space:nowrap}
+  .tree .g,.tree .sep{position:relative;overflow:hidden;color:var(--muted);
+                      white-space:pre;align-self:stretch}
+  .tree .g::after,.tree .sep::after{position:absolute;left:0;top:1.75em;
+                                    white-space:pre;pointer-events:none;color:inherit}
+  .tree .g::after{content:attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont) "\\A" attr(data-cont)}
+  .tree .sep::after{content:"│\\A│\\A│\\A│\\A│\\A│\\A│\\A│\\A│\\A│\\A│\\A│"}
+  .tree .name{white-space:nowrap;padding-right:1ch}
   .tree summary .name{color:var(--acc)}
-  .tree .why{color:var(--muted);flex:1 1 18em;max-width:42em}
+  .tree .why{color:var(--muted);min-width:0;padding-left:1ch}
 """
 
 
@@ -320,13 +327,15 @@ def why_span(node, minimum=12, filemap_href="#filemap"):
     return '<span class="why">%s</span>' % body
 
 
-def tline(gutter, name, node, summary=False, filemap_href="#filemap"):
+def tline(gutter, name, node, summary=False, filemap_href="#filemap", gcont=""):
     tag = "summary" if summary else "div"
     minimum = 4 if is_virtual(node) else 12
     return (
-        '      <%s class="tline"><span class="g">%s</span>'
-        '<span class="name">%s</span>%s</%s>'
-        % (tag, esc(gutter), esc(name), why_span(node, minimum, filemap_href), tag)
+        '      <%s class="tline"><span class="g" data-cont="%s">%s</span>'
+        '<span class="name">%s</span>'
+        '<span class="sep" aria-hidden="true">│</span>%s</%s>'
+        % (tag, esc(gcont), esc(gutter), esc(name),
+           why_span(node, minimum, filemap_href), tag)
     )
 
 
@@ -337,7 +346,9 @@ def prefix_parts(cont):
 def render_nodes(nodes, cont, parent_rel, lines, filemap_href):
     for i, node in enumerate(nodes):
         last = i == len(nodes) - 1
-        gutter = prefix_parts(cont) + ("└─ " if last else "├─ ")
+        prefix = prefix_parts(cont)
+        gutter = prefix + ("└─ " if last else "├─ ")
+        gcont = prefix + ("   " if last else "│  ")
         name = node["name"]
         rel = name if not parent_rel else (parent_rel.rstrip("/") + "/" + name)
         children = node.get("children") or []
@@ -345,11 +356,12 @@ def render_nodes(nodes, cont, parent_rel, lines, filemap_href):
             nid = node.get("id") or slug_id(rel)
             lines.append('    <details id="%s">' % esc(nid))
             lines.append(tline(gutter, name, node, summary=True,
-                              filemap_href=filemap_href))
+                              filemap_href=filemap_href, gcont=gcont))
             render_nodes(children, cont + [not last], rel, lines, filemap_href)
             lines.append("    </details>")
         else:
-            lines.append(tline(gutter, name, node, filemap_href=filemap_href))
+            lines.append(tline(gutter, name, node, filemap_href=filemap_href,
+                              gcont=gcont))
 
 
 def render_tree(spec, filemap_href="#filemap"):

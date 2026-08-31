@@ -15,8 +15,11 @@
   不是卡片／步驟圖／mermaid／橫 ASCII／`<pre>` 當圖。
 - **巢狀 details**;預設全關＝只露 L1。不准 `<details open>`。
 - 可點的是藍色資料夾名(`summary .name` 用 `--acc`)。
-- 每列同一行:`.g` + `.name` + `.why`。why 一句到兩句:是什麼、何時用、
+- 每列:`.g` + `.name` + `.sep` + `.why`。why 一句到兩句:是什麼、何時用、
   跟旁邊誰有關。不要另開說明卡。
+- why 折行時兩根 `│` 不斷:gutter 用 `data-cont` 從第二行起重複
+  (`├─`／`└─` 改 `│  `,末子改空白,不准畫過最後 sibling);名與 why
+  中間 `.sep` 同樣拉滿列高。產器不准預插假列。
 - 葉子(檔案、或不再展開的資料夾)不是 summary。
 - 不要把整包 scripts／hooks 列完;用一列 `…`(ellipsis)指到盤點。
 - 類名沿用手樣,不准另發明:
@@ -26,8 +29,9 @@
 | `.treewrap` | 樹外框 |
 | `.tree` | monospace 樹 |
 | `.tline` | 一列 |
-| `.g` | `├─` `│` `└─` gutter |
+| `.g` | `├─` `│` `└─` gutter;`data-cont` 折行延續 |
 | `.name` | 檔名／夾名 |
+| `.sep` | 名與 why 中間的 `│`;折行拉滿列高 |
 | `.why` | 同一列右邊的用途 |
 
 ## 輸入

@@ -396,3 +396,8 @@
 - 為什麼:人拍板樹不是獨立頁；正本只留一棵，手改 #dirmap 會紅
 - 落在哪:guides/guide-dev-flow.html#dirmap scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md guides/dir-tree-purpose.yaml guides/guide-dir-map.html README.md
 
+## 2026-08-31 · dir-tree-wrap-spine
+- 做了什麼:目錄樹 why 折行時 gutter 與 .sep 的 │ 跟著列高往下拉；拿掉 gap:1.5em，改欄分隔。產器寫 data-cont，不准預插假列
+- 為什麼:說明換行不能把樹脊掐斷；人要看到 ├─ 與下一列中間仍有 │
+- 落在哪:guides/guide-dev-flow.html#dirmap scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
+

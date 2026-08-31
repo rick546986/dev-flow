@@ -112,6 +112,11 @@ leaf = [ln for ln in good.stdout.splitlines() if 'class="name">app.py</span>' in
 check(leaf and leaf[0].strip().startswith("<div class=\"tline\">"), "葉子不是 summary")
 folder = [ln for ln in good.stdout.splitlines() if 'class="name">src/</span>' in ln]
 check(folder and "<summary" in folder[0], "有子列的夾才是 summary")
+check('class="sep"' in good.stdout and 'data-cont="' in good.stdout,
+      "fixture 列有 .sep 與 data-cont")
+check('class="name">│</span>' not in good.stdout, "產器不預插假列")
+check('data-cont="│  "' in good.stdout, "非末子折行延續 │")
+check('data-cont="   "' in good.stdout, "末子折行不畫脊")
 
 frag = run_builder(["--fixture", "good", "--fragment"])
 check(frag.returncode == 0 and "<!DOCTYPE" not in frag.stdout, "--fragment 只吐樹")
@@ -148,6 +153,26 @@ check(page.find('href="#dirmap">目錄關係</a>')
       < page.find('href="#filemap">附錄 檔案地圖</a>'),
       "nav 目錄關係在檔案地圖前面")
 check(".treewrap{" in page and ".tree .tline{" in page, "主指南有樹 CSS")
+check('class="sep"' in tree and 'data-cont="' in tree, "母版樹列有 .sep 與 data-cont")
+check('class="name">│</span>' not in tree, "母版樹沒有預插假列")
+
+def tree_css(text):
+    start = text.find(".treewrap{")
+    why = text.find(".tree .why{", start) if start >= 0 else -1
+    end = text.find("}", why) if why >= 0 else -1
+    return text[start:end + 1] if start >= 0 and end > start else ""
+
+def spine_ok(css, label):
+    check(bool(css), label + " 抽得到樹 CSS")
+    check("attr(data-cont)" in css, label + " gutter 用 data-cont 折行延續")
+    check("sep::after" in css, label + " .sep 折行延續")
+    check("align-items:stretch" in css, label + " 列 stretch")
+    check("gap:1.5em" not in css, label + " 沒有大 gap")
+    check("1.75em" in css, label + " 從第二行起畫脊")
+
+builder_src = open(builder, encoding="utf-8").read()
+spine_ok(tree_css(page), "主指南")
+spine_ok(tree_css(builder_src), "產器內嵌")
 check("dir-tree-purpose.yaml" in tree, "母版樹列了 YAML 用途表")
 check('id="skills"' in tree, "母版仍有 skills 摺疊")
 check("summary .name" in open(builder, encoding="utf-8").read()
@@ -173,6 +198,8 @@ check("scan-now" in canon and "vbox-fig" in canon and "#filemap" in canon
       and "fig-lifecycle" in canon, "契約點名何時不用")
 check("2.0.0" in canon, "契約寫明不改 2.0.0")
 check("#dirmap" in canon and "guide-dev-flow.html" in canon, "契約正本在主指南 #dirmap")
+check("折行" in canon and ".sep" in canon and "data-cont" in canon,
+      "契約鎖 why 折行時 │ 不斷")
 
 print("checks=%d" % checks)
 if failures:
