@@ -1,0 +1,7 @@
+title: 缺 why
+root:
+  name: demo/
+  why: 示範根也要有一句到兩句，否則產器該紅。
+  children:
+    - name: src/
+      why: 短

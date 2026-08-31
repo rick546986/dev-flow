@@ -46,7 +46,7 @@
 | spec append-only、修訂必須可見 | SKILL.md §1 | L2 契約偏差 → 停、修 4-spec、重 G2(禁 silent drift) |
 | Failing gauntlet blocks done | SKILL.md anti-gaming 6 | G3 PASS 條件(README §7);本次擴及 Evidence 層(E6) |
 | 回歸零新失敗(baseline note) | SKILL.md §5 baseline note | G3「既有測試全綠」(更嚴:不只零新增,是全綠) |
-| 同作者相關性要靠獨立審查打破 | SKILL.md 開場「correlation」段 | author≠approver、fresh-context reviewer 鐵則(README §7/§9) |
+| 同作者相關性要靠獨立審查打破 | SKILL.md 開場「correlation」段 | author≠approver、fresh-context reviewer 鐵則(README §7) |
 | git checkpoint、逐步可回滾 | SKILL.md Setup | 一 T 一 commit(README §5 seam)、gate 文檔 commit |
 
 ### 1b. 值得吸收(本次採用;落點見 §2-§10)

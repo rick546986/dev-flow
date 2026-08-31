@@ -39,7 +39,7 @@
   <p><strong>現況</strong>:現在只有一個 plugin,叫 <code>dev-flow</code>。裝法見 <code>docs/PLUGIN.md</code>。
   進專案打 <code>dev-setup</code>。記憶正本是 <code>.dev-flow/</code>(進 Git);本機 SQLite 是快取。
   新機器重建打 <code>dev-setup</code>;之後 <code>git pull</code> 不必重跑 setup。下方目錄樹是 2026-07 的舊拆分,不要照著裝。</p>
-  <p class="muted">2026-07-25 初裝(settings hook 版)→ 2026-07-26 升級為 local plugin。當時 dev-talk 與 dev-flow 還是兩個 plugin。其後已併成單一 plugin,路徑是 <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/</code>。hooks 要 python3,找不到就警告後放行。詳見母版 README「環境需求」。</p>
+  <p class="muted">2026-07-25 初裝(settings hook 版)→ 2026-07-26 升級為 local plugin。當時 dev-talk 與 dev-flow 還是兩個 plugin。其後已併成單一 plugin,路徑是 <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/</code>。hooks 要 python3,找不到就警告後放行。詳見 <code>docs/PLUGIN.md</code> 環境段。不要覆寫 <code>/usr/bin/python3</code>。</p>
 
   <h2>① 現行架構(舊版兩 plugin 拆分,僅供歷史對照)</h2>
   <pre>

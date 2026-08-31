@@ -145,7 +145,7 @@
         <code>devflow-exec.sh start &lt;slug&gt;</code> 逐 T 驗證並照 Git repository root
         相對路徑解析 scope。</td></tr>
   </table></div>
-  <p class="muted">兩軌判準與細節見 <a href="guide-dev-flow.html#lanes">guide-dev-flow.html ②兩軌</a>。</p>
+  <p class="muted">兩軌判準與細節見 <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#lanes">guide-dev-flow.html#lanes</a>。</p>
 
   <blockquote>本頁指令分兩種管道,下文用固定標籤區分:<br>
   <span class="badge you">跟 AI 說</span> —— 對話裡打的觸發語(<code>dev-setup</code>、<code>/dev-talk …</code>、
@@ -182,7 +182,7 @@
   新版 skill/hook 才生效(見 <code>dev-setup</code> SKILL「注意」節)。</p>
   <p class="muted">環境需求:hooks 需要 python3(找不到時守衛只印警告後跳過,不擋工具呼叫);
   Windows Git Bash 要另外裝 Python 並確認 <code>python3</code> 找得到,或設
-  <code>DEVFLOW_PYTHON</code> 指向直譯器 —— 解析順序與細節見母版 README「環境需求」。</p>
+  <code>DEVFLOW_PYTHON</code> 指向直譯器 —— 解析順序見 <code>docs/PLUGIN.md</code> 環境段。不要覆寫 <code>/usr/bin/python3</code>。</p>
 
   <h3>1. 進專案打 dev-setup(不需參數)</h3>
   <p><span class="badge you">跟 AI 說</span> cd 進新專案 repo root 後:</p>
@@ -226,7 +226,7 @@
     <li><code>docs/dev/STATUS.md</code> ← 從模板建(進行中 feature 看板)</li>
     <li><code>.dev-flow/</code> ← Agent Memory 正本(進 Git)。本機 SQLite 是這棵樹的快取。
     新機器打 <code>dev-setup</code> 重建;之後 <code>git pull</code> 不必重跑 setup,下一句 ask / context
-    會核對 generation(見母版 README §16)</li>
+    會核對 generation（見 <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#memory">guide #memory</a>）</li>
     <li><code>.claude/rules/arch-invariants.md</code> —— <strong>自動產草稿</strong>(不是空殼):收割使用者指名的
     external workflow artifacts 與 <code>CLAUDE.md</code> 的技術規則段 → 派 sonnet 掃 codebase 抓候選 → 每條標
     <code>【待確認】</code> 列給你逐條核可,見下一步</li>
@@ -239,7 +239,7 @@
   <p class="muted">兩個會跳出來徵你同意的動作,不是自動靜默完成:</p>
   <ul>
     <li><strong>文檔歸位</strong>:專案裡若有散落文件,會提議 <code>git mv</code> 進
-    <code>docs/specs/</code> / <code>docs/dev/</code> / <code>docs/adr/</code>,並同步全部引用(README §1)</li>
+    <code>docs/specs/</code> / <code>docs/dev/</code> / <code>docs/adr/</code>,並同步全部引用</li>
     <li><strong>外部 workflow artifacts</strong>:使用者指名後,只讀取其中可重用的「架構不變量/
     技術慣例」作為 rules 草稿候選;未指名目錄不掃描,原 artifacts 不移動、不覆蓋、不刪除</li>
   </ul>
@@ -271,7 +271,7 @@
         (例:「某張表禁止直接寫,一定要走某個 service」)</td>
         <td><strong>dev-flow 流程規則</strong>(README/gate/lane 那套)—— 這檔案每 session 自動注入,
         寫進流程規則等於把「有這套 SOP」的知識灌給所有 agent,包含理應對下游盲的 <code>/dev-talk</code>
-        (README §11:「禁把流程規則寫進專案 CLAUDE.md/AGENTS.md」)</td></tr>
+        （<a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#fence">guide #fence</a>：禁把流程規則寫進專案 CLAUDE.md/AGENTS.md）</td></tr>
     <tr><td><strong>spec 內容</strong> —— living spec 已經在 <code>docs/specs/</code>,不重抄</td></tr>
     <tr><td>「看 repo 就知道的事」—— 那是雜訊,不是不變量</td></tr>
   </table></div>
@@ -303,7 +303,7 @@
         <code>/dev-talk 我想做 X</code></td>
       <td>一次一問。乘客地圖 12 步,執行是節點鏈(下一跳看 <code>graph.yaml</code>)。
         只覆寫一份 <code>1-discussion.md</code>。已有 OPEN 場不要再 <code>talk start</code>。
-        細節見 <a href="guide-dev-talk.html#map">guide-dev-talk</a></td>
+        細節見 <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map">guide-dev-talk 全程地圖</a></td>
       <td><code>docs/dev/&lt;slug&gt;/1-discussion.md</code> + <code>.html</code></td>
       <td>Open Questions 全解或明標假設(無人工簽核,是自我完成條件)</td>
       <td><span class="badge opus">opus</span></td>
@@ -414,7 +414,7 @@
 
   <p class="muted"><strong>過 gate 三連動</strong>:每過一個 gate,frontmatter <code>status</code> +
   <code>STATUS.md</code> + 同名 html twin 三者同步更新,禁漏一項。Stage 1 完成後就該去
-  <code>STATUS.md</code> 加第一列(README §10 步驟 2):<code>| &lt;slug&gt; | full | 1-discussion | &lt;你的名字&gt; | n-a:尚未建立 branch | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | &lt;日期&gt; |</code>
+  <code>STATUS.md</code> 加第一列（格式見 <code>_templates/STATUS.md</code>）:<code>| &lt;slug&gt; | full | 1-discussion | &lt;你的名字&gt; | n-a:尚未建立 branch | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | &lt;日期&gt; |</code>
 (<code>Branch</code> 欄 Stage 6 開 branch 並推上去後換成 <code>origin/feat/&lt;slug&gt;</code>;
 <code>OverlapRef</code> 是直接補修讀的唯一座標,sequential 就是 Branch,
 parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;</code>),
@@ -440,7 +440,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   <blockquote>為什麼討論要另開 session:圍欄①「討論盲下游」—— <code>/dev-talk</code> 全文零提及後續階段,
   讀取白名單只有長期記憶(dev-memory.py ask)/ docs/specs/ / 原始碼 / 使用者指名檔案,不進其他文件資料夾。
   同一個 session 若接著往下走,即使 skill 邊界仍在,模型也已經看過同一段對話,
-  盲從結構強制退化為紀律(README §11:「最強用法:獨立 session」)。
+  盲從結構強制退化為紀律（<a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#fence">guide #fence</a>：最強用法是獨立 session）。
   <code>/dev-talk</code> 收尾時若你說「開始做」「實作吧」,它只會回「討論記錄已完成,實作請另開 session」然後停。
   這頁本身(<code>guide-quickstart.html</code>)也不在 <code>/dev-talk</code> 的讀取白名單內 —— 討論 agent 看不到、
   也不會讀到這份導覽頁提前偷跑下游知識,圍欄①不因本頁存在而破。</blockquote>
@@ -623,7 +623,7 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
 
     <text class="dbad" x="20" y="1218">武裝與圍欄都掛在 PreToolUse/PostToolUse 這一圈;紅色 Stop/StopFailure 之後仍有 TeammateIdle/PreCompact/PostCompact 才到 SessionEnd。</text>
   </svg></div>
-  <p class="figcap">這是 <a href="guide-dev-flow.html#guard">guide-dev-flow.html ⑥</a> 的同一張圖,放在這裡讓你先看到
+  <p class="figcap">這是 <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#guard">guide-dev-flow.html#guard</a> 的同一張圖,放在這裡讓你先看到
   「被擋下時你人在生命週期哪裡」的整體地圖;三走廊(左掛靠/中主幹/右 dev-flow 掛鉤)、範圍框與顏色語意的完整解說、
   以及下面「你看到的訊息 ⇒ 是哪支 hook」速查表,都以 guide-dev-flow ⑥ 為準。</p>
 
@@ -642,7 +642,7 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   <code>devflow-postbash</code>(Bash)。換句話說:<strong>被 dev-flow 擋,必是這兩格之一</strong> ——
   別處(<code>SessionStart</code> 只是 hook 註冊/skills 描述進場,<code>Stop</code>/壓縮/<code>SessionEnd</code>)
   不會是原因。機制細節(誠實界線、fail-closed 語意、逐 hook 攻防表)見
-  <a href="guide-dev-flow.html#guard">guide-dev-flow.html ⑥</a>。</p>
+  <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#guard">guide-dev-flow.html#guard</a>。</p>
 
   <p>Stage 6 的守衛本體是 <code>devflow-exec.sh</code>(plugin hooks 內,無 alias,要打路徑;
   安裝路徑 <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/</code>,
@@ -739,7 +739,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>移除比對到的字眼;判定為誤報 → 回報使用者裁決</td></tr>
     <tr><td>節錄:「⛔ 派工分層守衛:本 run 尚未出現任何低階(haiku/sonnet)attempt,首次派工卻直接指名最高階模型(&lt;model&gt;)—— 違反分層紀律…」</td>
         <td><code>devflow-dispatch-guard.sh</code></td>
-        <td><code>PreToolUse</code>(Task|Agent,見 <a href="guide-dev-flow.html#guard-pre">guide-dev-flow ⑥-3</a>)</td>
+        <td><code>PreToolUse</code>(Task|Agent,見 <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#guard-pre">guide-dev-flow.html#guard-pre</a>)</td>
         <td>本 run 還沒出現過任何低階(haiku/sonnet)派工紀錄,卻第一筆就直接指名最高階模型
         (<code>opus</code>/<code>fable</code>)—— 分層紀律(haiku 機械活、sonnet 分析實作、opus/fable
         只做最終判斷)被繞過的機械徵象</td>
@@ -817,7 +817,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   (<code>parallel-init</code>/<code>plan</code>/<code>wave-open</code>/<code>wave-close</code>/
   <code>task-candidate</code>/<code>task-state</code>/<code>task-integrate</code>/<code>task-rework</code>/
   <code>rebuild-plan</code>/<code>review</code>/<code>candidate</code>/<code>gate</code>),
-  語意見 README §5「T 級並行」與下方「T 級並行」小節。</p>
+  語意見下方「T 級並行」小節與 <code>notes/design/parallel-stage6.md</code>。</p>
 
   <h3>並行與多模組:守衛的邊界在「工作樹」</h3>
   <ul>
@@ -863,7 +863,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   (缺省 sequential,行為不變)。每 T 一個 task worktree(<code>task/&lt;slug&gt;/T-n</code>,
   同 Wave 同 Base SHA),守衛以 <code>--task</code> 釘單 T scope。核心規則:未過 Review 的
   Candidate 不得進正式 integration branch、不得標完成,只有 ACCEPTED 才勾 checkbox
-  (ASCII 正本:README §5「T 級並行」;細節 <code>notes/design/parallel-stage6.md</code>)。</p>
+  （細節 <code>notes/design/parallel-stage6.md</code>）。</p>
 
   <div class="figwrap"><svg id="fig-parallel" viewBox="0 0 880 280" role="img"
        aria-label="Stage 6 並行流程:Task DAG 經 Wave Base、Task Worktrees、seam、Candidate、Mechanical Gate、Integration DAG、Review 到 ACCEPTED">
@@ -893,9 +893,9 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
 
   <h2 id="models">④ 模型分層速查</h2>
   <p class="lead">這章要你懂:<strong>只有執行層綁模型,審查層一律不綁</strong> ——
-  gate reviewer 要的是乾淨 context 與能力,不是某個型號。對照 README §9。</p>
+  gate reviewer 要的是乾淨 context 與能力,不是某個型號。對照 README 摺疊機械正本（審查者不指定模型）。</p>
   <div class="parity">
-  <p class="parity-tag">規則正本 · Gate 審查者不指定模型(逐字抄自 README §9)</p>
+  <p class="parity-tag">規則正本 · Gate 審查者不指定模型(逐字抄自 README 機械正本)</p>
   <!-- parity:start readme-gate-model-quickstart -->
   <ul>
   <li><strong>G1/G2/G3 審查與 verdict</strong>:依 §7 的人類→fresh-context reviewer Agent→有記錄的
@@ -983,7 +983,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   哪幾站要另開 session、守衛只在哪一段是醒著的。</p>
   <p>同一張七階段圖,額外標出兩個新手常忽略的地方:<strong>虛線框</strong> = 要/建議另開
   session 的站(1 討論<strong>必開</strong>;3 原型、6 實作<strong>建議另開</strong>;
-  2/4/5 留在主 session,7 的隔離在 reviewer agent 層 —— 完整表見 README §10「Session 邊界」);
+  2/4/5 留在主 session,7 的隔離在 reviewer agent 層 —— 完整表見 <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#fence">guide #fence</a>）；
   <strong>紅色虛線括號</strong> = 執行守衛的武裝區間(<code>start</code> 到 <code>stop</code> 之間)。</p>
 
   <div class="figwrap"><svg id="fig-flow" viewBox="0 0 880 310" role="img"

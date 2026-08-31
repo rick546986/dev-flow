@@ -361,3 +361,93 @@
 - 為什麼:巢狀 [flow `#filemap`] 破 GitHub renderer,標籤跟 URL 各顯一次甚至退化成 blob;§4 與 master-only 頁尾又是同一條 URL
 - 落在哪:README.md docs/dev/HISTORY.md
 
+## 2026-08-31 · guide-dir-map
+- 做了什麼:新增 guides/guide-dir-map.html：母版五塊目錄關係用 vbox-fig 直式 SVG 重畫，巢狀 details 分五層摺疊
+- 為什麼:人要看資料夾怎麼疊，不是 #filemap 那五張腳本清單；入口 README 不准重畫樹，只留一條 Pages 超連
+- 落在哪:guides/guide-dir-map.html README.md guides/guide-dev-flow.html#filemap docs/dev/HISTORY.md
+
+## 2026-08-31 · guide-dir-map-tree
+- 做了什麼:guide-dir-map 改成 monospace 目錄樹：預設只露 L1，點資料夾才用 ├─ │ └─ 接子層
+- 為什麼:人要的是資料夾包含關係，不是 hop 流程也不是 vbox-fig 步驟方塊
+- 落在哪:guides/guide-dir-map.html docs/dev/HISTORY.md
+
+## 2026-08-31 · guide-dir-map-why
+- 做了什麼:目錄樹每一列補 why；L1 原先不能點的資料夾改可展開，只列關鍵檔
+- 為什麼:點開後的子資料夾與檔案不能空白；scripts/hooks 不整包列進樹
+- 落在哪:guides/guide-dir-map.html docs/dev/HISTORY.md
+
+## 2026-08-31 · guide-dir-map-deep
+- 做了什麼:目錄樹往下長 2–3 層：skills hop 檔、example 1–7、docs/adr/dev/tools、notes/design、tests/parallel-stage6、memory
+- 為什麼:人要看到方法包骨架（hop 檔名+用途），摺疊仍只露 L1
+- 落在哪:guides/guide-dir-map.html docs/dev/HISTORY.md
+
+## 2026-08-31 · guide-dir-map-dir-tree
+- 做了什麼:目錄樹 why 改成一句到兩句脈絡；收成可選產器 build-dir-tree.py + 契約 dir-tree-contract.md，母版 guide-dir-map.html 改由產器吐
+- 為什麼:人要看懂每列幹嘛；產品專案大／接手／跨模組才畫，不進 gate、不進 ship-manifest
+- 落在哪:guides/guide-dir-map.html guides/dir-tree-purpose.json scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md _templates/1-discussion.md _templates/diagram-style.md guides/guide-dev-flow.html#filemap docs/dev/HISTORY.md
+
+## 2026-08-31 · dir-tree-yaml-contract
+- 做了什麼:dir-tree 契約收成 vbox-fig 短冊；產器改吃手寫 YAML（ellipsis），拿掉掃 repo 猜 why；母版頁仍由產器吐
+- 為什麼:人要的是可套用畫法，不是另發明視覺語言或自動猜用途
+- 落在哪:notes/design/dir-tree-contract.md scripts/build-dir-tree.py scripts/check-dir-tree.sh guides/dir-tree-purpose.yaml guides/guide-dir-map.html docs/dev/HISTORY.md
+
+## 2026-08-31 · dirmap-into-guide
+- 做了什麼:目錄樹併進主指南 #dirmap：產器改吐片段寫進 guide-dev-flow.html，獨立頁只留轉址，README 改連同一 Pages #dirmap
+- 為什麼:人拍板樹不是獨立頁；正本只留一棵，手改 #dirmap 會紅
+- 落在哪:guides/guide-dev-flow.html#dirmap scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md guides/dir-tree-purpose.yaml guides/guide-dir-map.html README.md
+
+## 2026-08-31 · dir-tree-wrap-spine
+- 做了什麼:目錄樹 why 折行時 gutter 與 .sep 的 │ 跟著列高往下拉；拿掉 gap:1.5em，改欄分隔。產器寫 data-cont，不准預插假列
+- 為什麼:說明換行不能把樹脊掐斷；人要看到 ├─ 與下一列中間仍有 │
+- 落在哪:guides/guide-dev-flow.html#dirmap scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
+
+## 2026-08-31 · dir-tree-spine-only
+- 做了什麼:目錄樹拿掉名／why 中間的 .sep；why 貼近 name。只在左邊 ├─ 與下一列之間用 data-cont 補半根 │，末子 └─ 下面不畫
+- 為什麼:人改口：第二根 │ 當欄分隔不舒服；只要把折行掐斷的樹脊接上
+- 落在哪:guides/guide-dev-flow.html#dirmap scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
+
+## 2026-08-31 · dir-tree-half-bar
+- 做了什麼:├─ 與下一列 branch 中間用 .g:not(.last)::after 塞半根 │（字級 50%）；末子 .last 不畫。拿掉 data-cont 拉滿折行
+- 為什麼:人要的是把虛線脊接實，不是另開一列、也不是拉滿 why
+- 落在哪:guides/guide-dev-flow.html#dirmap scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
+
+## 2026-08-31 · dir-tree-half-both
+- 做了什麼:半根上下都接：每顆 ├ 頭頂 ::before、腳底 ::after；└─／.last 只留頭頂。對齊當層豎筆，不准 .sep
+- 為什麼:人拍板 B：半根要同時接上一顆與下一顆，虛線脊才接實
+- 落在哪:guides/guide-dev-flow.html scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
+
+## 2026-08-31 · dir-tree-one-seam
+- 做了什麼:目錄樹改一根接縫：非末子 ::after 滿高 │ 塗列間縫；刪掉 ::before 半根；.last 不畫
+- 為什麼:absolute 不佔列高，兩截半根不如一根塗滿縫
+- 落在哪:guides/guide-dev-flow.html scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
+
+## 2026-08-31 · dir-tree-ancestor-v
+- 做了什麼:祖先 │ 包成 .v，::after 一根接縫不受 .last 關；本列 ├─ 仍用 .g:not(.last)::after。展開子列左邊脊不再虛掉
+- 為什麼:prefix 純文字 │ 沒 overlay，末子關掉整列後祖先接不到下一個 L1
+- 落在哪:scripts/build-dir-tree.py guides/guide-dev-flow.html scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
+
+## 2026-08-31 · dir-tree-recipe
+- 做了什麼:第 1 站模板頂註改成可照做的三步目錄樹食譜；契約修好產品路徑 docs/dev/<slug>/dir-tree-purpose.yaml → dir-tree.html；S1-survey 加一句指標；牙加窄針防食譜再漂
+- 為什麼:現況太薄、產品路徑還是壞的 docs/dev/ /；人要套上就能跑，不是每案必跑、不進 gate、不改 hop
+- 落在哪:_templates/1-discussion.md notes/design/dir-tree-contract.md skills/dev-talk/nodes/S1-survey.md scripts/check-dir-tree.sh
+
+## 2026-08-31 · dir-tree-overlap
+- 做了什麼:目錄樹接縫改 220% 跨列重疊：祖先 .v::after 與本列 .g:not(.last)::after 都 top:50% translateY(-50%)；.treewrap overflow-y:visible、.tree 留 padding。牙改針 ≥200%，不再咬 100%/175%
+- 為什麼:13px×1.75 下列盒剛好等於 175% overlay，子像素露 1px 縫看來像虛線；100% 的 ├ 欄也會縫
+- 落在哪:scripts/build-dir-tree.py guides/guide-dev-flow.html scripts/check-dir-tree.sh
+
+## 2026-08-31 · dir-tree-spine-bar
+- 做了什麼:目錄樹脊改成跟列高走的 1px 接縫：.v/.g 拉滿列高，::after top/bottom 各伸出 .5em；祖先字元 │ 透明以免雙線。牙改針跨列重疊，不再咬 100%/175%/220%
+- 為什麼:字級 220% 疊在 inline 13px 盒上仍露 1px 縫；再疊 gradient 變雙線。字元 │ 填不滿 line-height 1.75 與折行 why
+- 落在哪:scripts/build-dir-tree.py guides/guide-dev-flow.html scripts/check-dir-tree.sh
+
+## 2026-08-31 · dir-tree-templates-why
+- 做了什麼:用途表：1-discussion.md 的 why 改成頂註三步食譜，不再寫「一句」；_templates/ 1–7 後加 ellipsis，STATUS／HISTORY／html-shell 見 #filemap。--write 同步 #dirmap
+- 為什麼:頂註已是三步食譜；_templates/ 還有骨架檔不該整包列進樹
+- 落在哪:guides/dir-tree-purpose.yaml guides/guide-dev-flow.html#dirmap
+
+## 2026-08-31 · pages-link-prefix
+- 做了什麼:人點的 html 超連改成 Pages 絕對網址：範例表補 3/5/6 視覺頁；ADR／HISTORY 導覽不再用會走出錯誤前綴的相對路；guides 牙咬相對／blob。dev-setup 說明書加 Pages
+- 為什麼:guides/ 相對 example/*.html 在 Pages 會解析成 guides/example/ 而 404；html 有視覺版卻沒連
+- 落在哪:guides/guide-dev-flow.html scripts/build-public-docs.py scripts/check-pages-hosting.sh skills/dev-setup/SKILL.md docs/adr/ docs/dev/HISTORY.html
+

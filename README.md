@@ -292,5 +292,5 @@ retrieval status:`OK` / `NEEDS_VERIFICATION` / `CONFLICT` / `NO_RELIABLE_MATCH`�
 </details>
 
 <!-- devflow:master-only:start -->
-母版目錄與檔案地圖在 guide #filemap，不要在入口重畫樹。
+母版目錄樹見 [目錄關係](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#dirmap)，不要在入口重畫樹。
 <!-- devflow:master-only:end -->

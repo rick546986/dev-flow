@@ -68,7 +68,7 @@ Codex 是 marketplace add／plugin add;Grok 沒有 marketplace)。
 Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的 `/plugin`）。
 **實際 plugin root = `~/.claude/plugins/cache/dev-flow/dev-flow/<version>/`**
 ——會隨版本改變,腳本與檢查一律用 `${DEVFLOW_ROOT}` 或由自身位置推導,禁寫死。
-說明書:`${DEVFLOW_ROOT}/guides/dev-setup-record.html`。
+說明書:[dev-setup 安裝紀錄](https://rick546986.github.io/dev-flow/guides/dev-setup-record.html)。本機路徑 `${DEVFLOW_ROOT}/guides/dev-setup-record.html`。
 
 ## 開場第一動:偵測 → 分流(使用者只打「dev-setup」時的預設行為)
 

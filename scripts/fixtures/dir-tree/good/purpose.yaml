@@ -1,0 +1,19 @@
+title: 產品名 目錄關係
+root:
+  name: demo/
+  why: 示範產品根。只畫人要接手時看的結構，不列母版脚本。
+  children:
+    - name: src/
+      why: 業務碼。改行為從這裡找，不要翻方法包 skills/。
+      children:
+        - name: app.py
+          why: 入口。本機跑產品從這支進，不是 devflow-check。
+    - name: docs/
+      why: 產品說明。給接手的人看模組怎麼疊，不是母版 README。
+      children:
+        - name: readme.md
+          why: 產品說明正本。目錄樹 why 不夠時回這裡補上下文。
+      ellipsis: 其餘見盤點
+    - name: scripts/
+      why: 入口腳本。人工或 CI 跑，不要把九十支灌進樹。
+      ellipsis: 其餘見盤點

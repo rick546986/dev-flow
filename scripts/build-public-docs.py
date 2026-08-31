@@ -332,7 +332,11 @@ def page(title, body, extra_nav=""):
 def render_index(adrs):
     rows = []
     for a in adrs:
-        href = html.escape(a["slug_file"] + ".html", quote=True)
+        href = html.escape(
+            "https://rick546986.github.io/dev-flow/docs/adr/"
+            + a["slug_file"] + ".html",
+            quote=True,
+        )
         rows.append(
             "<tr>"
             "<td>" + html.escape(a["number"]) + "</td>"
@@ -347,7 +351,7 @@ def render_index(adrs):
         '<p class="lead">人要看為什麼當初這樣選,走這裡。'
         "yaml / <code>.dev-flow/decisions</code> 不是給人讀的頁。</p>\n"
         "<nav>"
-        '<a href="../dev/HISTORY.html">改版歷史</a>'
+        '<a href="https://rick546986.github.io/dev-flow/docs/dev/HISTORY.html">改版歷史</a>'
         '<a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html">dev-flow 導覽</a>'
         '<a href="https://github.com/rick546986/dev-flow/tree/main/docs/adr">md 正本</a>'
         "</nav>\n"
@@ -369,9 +373,9 @@ def render_adr(a):
         + (" · 出處:" + src if src else "")
         + "</p>\n"
         "<nav>"
-        '<a href="index.html">決策列表</a>'
+        '<a href="https://rick546986.github.io/dev-flow/docs/adr/index.html">決策列表</a>'
         '<a href="' + html.escape(a["slug_file"] + ".md", quote=True) + '">md 正本</a>'
-        '<a href="../dev/HISTORY.html">改版歷史</a>'
+        '<a href="https://rick546986.github.io/dev-flow/docs/dev/HISTORY.html">改版歷史</a>'
         "</nav>\n"
         + a["body_html"]
         + "\n"
@@ -413,7 +417,7 @@ def render_history(entries):
         '<p class="lead">只看日期、做了什麼、為什麼。'
         "最新的在上面。要改這份紀錄,走 <code>scripts/history-append.sh</code>,不要手改 md。</p>\n"
         "<nav>"
-        '<a href="../adr/index.html">決策列表</a>'
+        '<a href="https://rick546986.github.io/dev-flow/docs/adr/index.html">決策列表</a>'
         '<a href="HISTORY.md">md 正本</a>'
         '<a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html">dev-flow 導覽</a>'
         "</nav>\n"

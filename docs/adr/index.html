@@ -53,13 +53,13 @@
 <main>
 <h1>長期決策</h1>
 <p class="lead">人要看為什麼當初這樣選,走這裡。yaml / <code>.dev-flow/decisions</code> 不是給人讀的頁。</p>
-<nav><a href="../dev/HISTORY.html">改版歷史</a><a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html">dev-flow 導覽</a><a href="https://github.com/rick546986/dev-flow/tree/main/docs/adr">md 正本</a></nav>
+<nav><a href="https://rick546986.github.io/dev-flow/docs/dev/HISTORY.html">改版歷史</a><a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html">dev-flow 導覽</a><a href="https://github.com/rick546986/dev-flow/tree/main/docs/adr">md 正本</a></nav>
 <div class="tablewrap"><table>
 <thead><tr><th>編號</th><th>標題</th><th>狀態</th><th>為什麼</th></tr></thead>
 <tbody>
-<tr><td>0001</td><td><a href="0001-merge-plugin-into-methodology-repo.html">外掛併回方法論 repo,兩者不再獨立演進</a></td><td><span class="badge ok">accepted</span></td><td>方法論(README、模板、檢查腳本)住在 <code>dev-flow</code> repo;實際在跑的執行程式 (hooks、skills)住在另一個 <code>dev-flow-plugin</code> 目錄。</td></tr>
-<tr><td>0002</td><td><a href="0002-markdown-it-py-for-twin-parsing.html">gate twin 解析層採用 markdown-it-py(推翻散發工具零相依立場)</a></td><td><span class="badge ok">accepted</span></td><td><code>build-gate-twin.py</code> 會被 dev-setup 散發到採用專案,原始立場是零外部相依 (「多一個相依就多一個在別人機器上跑不起來的理由」,寫進了工具 docstring)。</td></tr>
-<tr><td>0003</td><td><a href="0003-agent-memory-two-layer-split.html">Agent Memory 分兩層:`.dev-flow/` 進 Git、本機索引不進 Git</a></td><td><span class="badge ok">accepted</span></td><td>舊架構的 agent 記憶載體有兩個,都是人工維護的 Markdown:repo root <code>CONTEXT.md</code> (業務詞彙表)與 <code>docs/dev/HISTORY.md</code>(改版歷史索引)。</td></tr>
+<tr><td>0001</td><td><a href="https://rick546986.github.io/dev-flow/docs/adr/0001-merge-plugin-into-methodology-repo.html">外掛併回方法論 repo,兩者不再獨立演進</a></td><td><span class="badge ok">accepted</span></td><td>方法論(README、模板、檢查腳本)住在 <code>dev-flow</code> repo;實際在跑的執行程式 (hooks、skills)住在另一個 <code>dev-flow-plugin</code> 目錄。</td></tr>
+<tr><td>0002</td><td><a href="https://rick546986.github.io/dev-flow/docs/adr/0002-markdown-it-py-for-twin-parsing.html">gate twin 解析層採用 markdown-it-py(推翻散發工具零相依立場)</a></td><td><span class="badge ok">accepted</span></td><td><code>build-gate-twin.py</code> 會被 dev-setup 散發到採用專案,原始立場是零外部相依 (「多一個相依就多一個在別人機器上跑不起來的理由」,寫進了工具 docstring)。</td></tr>
+<tr><td>0003</td><td><a href="https://rick546986.github.io/dev-flow/docs/adr/0003-agent-memory-two-layer-split.html">Agent Memory 分兩層:`.dev-flow/` 進 Git、本機索引不進 Git</a></td><td><span class="badge ok">accepted</span></td><td>舊架構的 agent 記憶載體有兩個,都是人工維護的 Markdown:repo root <code>CONTEXT.md</code> (業務詞彙表)與 <code>docs/dev/HISTORY.md</code>(改版歷史索引)。</td></tr>
 </tbody></table></div>
 
 <p class="foot">md 是 git 正本。本頁由 <code>scripts/build-public-docs.py</code> 重生。不是 Agent Memory,不要把正文抄進 <code>.dev-flow/decisions</code>。</p>
