@@ -366,3 +366,8 @@
 - 為什麼:人要看資料夾怎麼疊，不是 #filemap 那五張腳本清單；入口 README 不准重畫樹，只留一條 Pages 超連
 - 落在哪:guides/guide-dir-map.html README.md guides/guide-dev-flow.html#filemap docs/dev/HISTORY.md
 
+## 2026-08-31 · guide-dir-map-tree
+- 做了什麼:guide-dir-map 改成 monospace 目錄樹：預設只露 L1，點資料夾才用 ├─ │ └─ 接子層
+- 為什麼:人要的是資料夾包含關係，不是 hop 流程也不是 vbox-fig 步驟方塊
+- 落在哪:guides/guide-dir-map.html docs/dev/HISTORY.md
+
