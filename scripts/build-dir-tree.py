@@ -88,7 +88,7 @@ CSS = """\
   .tablewrap{overflow-x:auto}
 
   /* 目錄樹：摺疊仍是一棵 ├─ │ └─ 樹，不是卡片／步驟圖 */
-  /* 半根上下都接：::before 頭頂、非末子 ::after 腳底；.last 只留頭頂；不准 .sep */
+  /* 一根接縫：非末子 ::after 滿高 │ 塗列間縫；.last 不畫；不准 .sep */
   .treewrap{overflow-x:auto;background:var(--bg);border:1px solid var(--line);
             border-radius:10px;padding:14px 16px;margin:1em 0}
   .tree{font:13px/1.75 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -101,11 +101,9 @@ CSS = """\
   .tree summary.tline::-webkit-details-marker{display:none}
   .tree summary.tline::marker{content:""}
   .tree .g{position:relative;color:var(--muted);white-space:pre}
-  .tree .g:not(:empty)::before,.tree .g:not(.last)::after{
-    content:"│";font-size:50%;line-height:1;position:absolute;
-    left:calc(100% - 3ch);color:inherit;pointer-events:none}
-  .tree .g:not(:empty)::before{top:0;transform:translateY(-50%)}
-  .tree .g:not(.last)::after{bottom:0;transform:translateY(50%)}
+  .tree .g:not(.last)::after{content:"│";font-size:100%;line-height:1;
+                             position:absolute;left:calc(100% - 3ch);bottom:0;
+                             transform:translateY(50%);color:inherit;pointer-events:none}
   .tree .name{white-space:nowrap}
   .tree summary .name{color:var(--acc)}
   .tree .why{color:var(--muted);min-width:0}

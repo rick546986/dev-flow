@@ -416,3 +416,8 @@
 - 為什麼:人拍板 B：半根要同時接上一顆與下一顆，虛線脊才接實
 - 落在哪:guides/guide-dev-flow.html scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
 
+## 2026-08-31 · dir-tree-one-seam
+- 做了什麼:目錄樹改一根接縫：非末子 ::after 滿高 │ 塗列間縫；刪掉 ::before 半根；.last 不畫
+- 為什麼:absolute 不佔列高，兩截半根不如一根塗滿縫
+- 落在哪:guides/guide-dev-flow.html scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
+

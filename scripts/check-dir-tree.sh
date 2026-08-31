@@ -164,11 +164,11 @@ def tree_css(text):
 
 def spine_ok(css, label):
     check(bool(css), label + " 抽得到樹 CSS")
-    check("::before" in css and "translateY(-50%)" in css, label + " 有 ::before 半根")
-    check(".g:not(.last)::after" in css and "translateY(50%)" in css,
-          label + " 非末子有 ::after")
+    check("::before" not in css, label + " 沒有 ::before 半根")
+    check(".g:not(.last)::after" in css and "font-size:100%" in css
+          and "translateY(50%)" in css, label + " 非末子一根滿高接縫")
     check(".last::after" not in css, label + " 末子沒有 ::after")
-    check("font-size:50%" in css, label + " 半根是 │ 字高的一半")
+    check("font-size:50%" not in css, label + " 不是兩截半根")
     check(".tree .sep" not in css and "sep::after" not in css, label + " 沒有 .sep")
     check("gap:1.5em" not in css, label + " 沒有大 gap")
 
@@ -200,8 +200,8 @@ check("scan-now" in canon and "vbox-fig" in canon and "#filemap" in canon
       and "fig-lifecycle" in canon, "契約點名何時不用")
 check("2.0.0" in canon, "契約寫明不改 2.0.0")
 check("#dirmap" in canon and "guide-dev-flow.html" in canon, "契約正本在主指南 #dirmap")
-check("半根" in canon and "::before" in canon and ".last" in canon,
-      "契約鎖半根上下都接、末子只留頭頂")
+check("一根接縫" in canon and ".last" in canon and "::before" not in canon,
+      "契約鎖一根接縫、末子不畫")
 check(".sep" in canon and ("不准" in canon or "不要" in canon),
       "契約寫明名與 why 之間不准 .sep")
 
