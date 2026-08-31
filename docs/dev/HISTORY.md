@@ -441,3 +441,8 @@
 - 為什麼:字級 220% 疊在 inline 13px 盒上仍露 1px 縫；再疊 gradient 變雙線。字元 │ 填不滿 line-height 1.75 與折行 why
 - 落在哪:scripts/build-dir-tree.py guides/guide-dev-flow.html scripts/check-dir-tree.sh
 
+## 2026-08-31 · dir-tree-templates-why
+- 做了什麼:用途表：1-discussion.md 的 why 改成頂註三步食譜，不再寫「一句」；_templates/ 1–7 後加 ellipsis，STATUS／HISTORY／html-shell 見 #filemap。--write 同步 #dirmap
+- 為什麼:頂註已是三步食譜；_templates/ 還有骨架檔不該整包列進樹
+- 落在哪:guides/dir-tree-purpose.yaml guides/guide-dev-flow.html#dirmap
+

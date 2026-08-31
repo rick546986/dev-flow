@@ -251,7 +251,7 @@ root:
       id: templates
       children:
         - name: 1-discussion.md
-          why: 第 1 站討論骨架。頂註有可選目錄樹一句；掃頁六件仍走 build-scan-html.py。
+          why: 第 1 站討論骨架。頂註是可選目錄樹三步食譜；掃頁六件仍走 build-scan-html.py。
         - name: 2-decision.md
           why: 第 2 站決策骨架。頂註是收斂執行清單，出口對 G1。
         - name: 3-prototype.md
@@ -264,6 +264,7 @@ root:
           why: 第 6 站實作日誌骨架。Progress Log 與 T Review 記這裡，不是任務板。
         - name: 7-review.md
           why: 第 7 站驗證骨架。G3 證據與雙軸審的欄位在這份。
+      ellipsis: "其餘骨架不整包列進樹，STATUS／HISTORY／html-shell 見 #filemap"
     - name: example/
       why: 填好的範例 feat。對模板看「空白該長怎樣」；對這裡看「填完長怎樣」。
       id: dir-example
