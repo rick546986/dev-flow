@@ -401,3 +401,8 @@
 - 為什麼:說明換行不能把樹脊掐斷；人要看到 ├─ 與下一列中間仍有 │
 - 落在哪:guides/guide-dev-flow.html#dirmap scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
 
+## 2026-08-31 · dir-tree-spine-only
+- 做了什麼:目錄樹拿掉名／why 中間的 .sep；why 貼近 name。只在左邊 ├─ 與下一列之間用 data-cont 補半根 │，末子 └─ 下面不畫
+- 為什麼:人改口：第二根 │ 當欄分隔不舒服；只要把折行掐斷的樹脊接上
+- 落在哪:guides/guide-dev-flow.html#dirmap scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
+
