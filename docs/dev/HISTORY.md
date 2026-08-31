@@ -356,3 +356,8 @@
 - 為什麼:相對路 guides/*.html 在 GitHub README 會解析成 blob/main/... 顯示 HTML 原始碼,不是渲染頁
 - 落在哪:README.md、scripts/check-pages-hosting.sh、guides/guide-dev-flow.html 檔案地圖列
 
+## 2026-08-31 · readme-filemap-one-link
+- 做了什麼:README 同一個 #filemap 只留一條可點超連;標籤拿掉巢狀反引號,GitHub 不再把標籤跟網址拆成兩截
+- 為什麼:巢狀 [flow `#filemap`] 破 GitHub renderer,標籤跟 URL 各顯一次甚至退化成 blob;§4 與 master-only 頁尾又是同一條 URL
+- 落在哪:README.md docs/dev/HISTORY.md
+
