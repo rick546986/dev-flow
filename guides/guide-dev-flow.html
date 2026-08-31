@@ -144,10 +144,11 @@
   /* ── 目錄樹(dir-tree,嵌在 #dirmap)─────────────────────────────────── */
   /* 摺疊仍是一棵 ├─ │ └─ 樹，沿用既有 token，不准另開視覺語言 */
   /* 一根接縫：祖先 .v 每欄都塗；本列 ├─ 仍用 .g:not(.last)::after；.last 不關 .v；不准 .sep */
-  .treewrap{overflow-x:auto;background:var(--bg);border:1px solid var(--line);
+  /* overlay 220% 跨列重疊，剛好一列盒會露 1px 縫 */
+  .treewrap{overflow-x:auto;overflow-y:visible;background:var(--bg);border:1px solid var(--line);
             border-radius:10px;padding:14px 16px;margin:1em 0}
   .tree{font:13px/1.75 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-        color:var(--fg)}
+        color:var(--fg);padding:.5em 0}
   .tree details{margin:0}
   .tree .tline{display:grid;grid-template-columns:auto auto minmax(0,1fr);
                align-items:start;column-gap:.5ch}
@@ -156,12 +157,12 @@
   .tree summary.tline::-webkit-details-marker{display:none}
   .tree summary.tline::marker{content:""}
   .tree .g{position:relative;color:var(--muted);white-space:pre}
-  .tree .g:not(.last)::after{content:"│";font-size:100%;line-height:1;
-                             position:absolute;left:calc(100% - 3ch);bottom:0;
-                             transform:translateY(50%);color:inherit;pointer-events:none}
+  .tree .g:not(.last)::after{content:"│";font-size:220%;line-height:1;
+                             position:absolute;left:calc(100% - 3ch);top:50%;
+                             transform:translateY(-50%);color:inherit;pointer-events:none}
   .tree .v{position:relative}
   .tree .v::after{content:"│";position:absolute;left:0;top:50%;
-                  font-size:175%;line-height:1;transform:translateY(-50%);
+                  font-size:220%;line-height:1;transform:translateY(-50%);
                   color:inherit;pointer-events:none}
   .tree .name{white-space:nowrap}
   .tree summary .name{color:var(--acc)}

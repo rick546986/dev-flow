@@ -19,6 +19,7 @@ fi
 
 python3 - "$ROOT" <<'PY'
 import os
+import re
 import subprocess
 import sys
 
@@ -170,12 +171,26 @@ def tree_css(text):
     end = text.find("}", why) if why >= 0 else -1
     return text[start:end + 1] if start >= 0 and end > start else ""
 
+def after_pct(css, selector):
+    i = css.find(selector)
+    if i < 0:
+        return None
+    m = re.search(r"font-size:(\d+(?:\.\d+)?)%", css[i:i + 220])
+    return float(m.group(1)) if m else None
+
+
 def spine_ok(css, label):
     check(bool(css), label + " 抽得到樹 CSS")
     check("::before" not in css, label + " 沒有 ::before 半根")
-    check(".g:not(.last)::after" in css and "font-size:100%" in css
-          and "translateY(50%)" in css, label + " 非末子一根滿高接縫")
-    check(".v::after" in css and "font-size:175%" in css, label + " 祖先 │ 有接縫")
+    g_pct = after_pct(css, ".g:not(.last)::after")
+    v_pct = after_pct(css, ".v::after")
+    check(g_pct is not None and g_pct >= 200 and "translateY(-50%)" in css,
+          label + " 非末子跨列重疊接縫")
+    check(".v::after" in css and v_pct is not None and v_pct >= 200,
+          label + " 祖先 │ 跨列重疊")
+    check("font-size:100%" not in css and "font-size:175%" not in css,
+          label + " 接縫不是剛好一列盒")
+    check("overflow-y:visible" in css, label + " wrap 不剪 y 溢出")
     check(".last::after" not in css, label + " 末子沒有 branch ::after")
     check("font-size:50%" not in css, label + " 不是兩截半根")
     check(".tree .sep" not in css and "sep::after" not in css, label + " 沒有 .sep")

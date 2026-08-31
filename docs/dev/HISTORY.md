@@ -431,3 +431,8 @@
 - 為什麼:現況太薄、產品路徑還是壞的 docs/dev/ /；人要套上就能跑，不是每案必跑、不進 gate、不改 hop
 - 落在哪:_templates/1-discussion.md notes/design/dir-tree-contract.md skills/dev-talk/nodes/S1-survey.md scripts/check-dir-tree.sh
 
+## 2026-08-31 · dir-tree-overlap
+- 做了什麼:目錄樹接縫改 220% 跨列重疊：祖先 .v::after 與本列 .g:not(.last)::after 都 top:50% translateY(-50%)；.treewrap overflow-y:visible、.tree 留 padding。牙改針 ≥200%，不再咬 100%/175%
+- 為什麼:13px×1.75 下列盒剛好等於 175% overlay，子像素露 1px 縫看來像虛線；100% 的 ├ 欄也會縫
+- 落在哪:scripts/build-dir-tree.py guides/guide-dev-flow.html scripts/check-dir-tree.sh
+
