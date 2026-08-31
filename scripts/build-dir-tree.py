@@ -13,6 +13,10 @@
   scripts/build-dir-tree.py --write
   scripts/build-dir-tree.py --check
 
+--write／--check 對的是主指南 guides/guide-dev-flow.html #dirmap
+裡 <!-- dir-tree:begin --> … <!-- dir-tree:end --> 那棵片段。
+產品 --purpose 仍可吐整頁；--fragment 只吐樹。
+
 無參數或 --help 印用法並 exit 2。
 exit:0 = 寫出／對得上 / 1 = 用途表不合法或吐了禁物 / 2 = 用法錯誤、檔案讀不到
 """
@@ -26,8 +30,10 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PURPOSE_PATH = ROOT / "guides" / "dir-tree-purpose.yaml"
-GUIDE_PATH = ROOT / "guides" / "guide-dir-map.html"
+GUIDE_PATH = ROOT / "guides" / "guide-dev-flow.html"
 FIX_DIR = ROOT / "scripts" / "fixtures" / "dir-tree"
+TREE_BEGIN = "<!-- dir-tree:begin -->"
+TREE_END = "<!-- dir-tree:end -->"
 
 SCROLL_BLOCK = """<!-- 
   頁內錨點捲動修正：iframe/artifact 載體會把 fragment 導航當新網址，原生 #錨點 不捲動；
@@ -105,6 +111,7 @@ def usage():
         "     build-dir-tree.py --write\n"
         "     build-dir-tree.py --check\n"
         "契約:notes/design/dir-tree-contract.md\n"
+        "--write／--check 把樹插進 guide-dev-flow.html#dirmap。\n"
         "吃手寫 YAML,吐可摺疊 monospace 目錄樹。不准掃 repo 猜 why。",
         file=sys.stderr,
     )
@@ -302,24 +309,24 @@ def slug_id(rel):
     return text.strip("-") or "n"
 
 
-def why_span(node, minimum=12):
+def why_span(node, minimum=12, filemap_href="#filemap"):
     why = node_why(node, minimum)
     body = esc(why)
     if "#filemap" in why:
         body = body.replace(
             esc("#filemap"),
-            '<a href="guide-dev-flow.html#filemap">#filemap</a>',
+            '<a href="%s">#filemap</a>' % esc(filemap_href),
         )
     return '<span class="why">%s</span>' % body
 
 
-def tline(gutter, name, node, summary=False):
+def tline(gutter, name, node, summary=False, filemap_href="#filemap"):
     tag = "summary" if summary else "div"
     minimum = 4 if is_virtual(node) else 12
     return (
         '      <%s class="tline"><span class="g">%s</span>'
         '<span class="name">%s</span>%s</%s>'
-        % (tag, esc(gutter), esc(name), why_span(node, minimum), tag)
+        % (tag, esc(gutter), esc(name), why_span(node, minimum, filemap_href), tag)
     )
 
 
@@ -327,7 +334,7 @@ def prefix_parts(cont):
     return "".join("│  " if c else "   " for c in cont)
 
 
-def render_nodes(nodes, cont, parent_rel, lines):
+def render_nodes(nodes, cont, parent_rel, lines, filemap_href):
     for i, node in enumerate(nodes):
         last = i == len(nodes) - 1
         gutter = prefix_parts(cont) + ("└─ " if last else "├─ ")
@@ -337,14 +344,15 @@ def render_nodes(nodes, cont, parent_rel, lines):
         if children:
             nid = node.get("id") or slug_id(rel)
             lines.append('    <details id="%s">' % esc(nid))
-            lines.append(tline(gutter, name, node, summary=True))
-            render_nodes(children, cont + [not last], rel, lines)
+            lines.append(tline(gutter, name, node, summary=True,
+                              filemap_href=filemap_href))
+            render_nodes(children, cont + [not last], rel, lines, filemap_href)
             lines.append("    </details>")
         else:
-            lines.append(tline(gutter, name, node))
+            lines.append(tline(gutter, name, node, filemap_href=filemap_href))
 
 
-def render_tree(spec):
+def render_tree(spec, filemap_href="#filemap"):
     root = spec.get("root")
     if not isinstance(root, dict):
         die(1, "用途表要有 root")
@@ -359,10 +367,10 @@ def render_tree(spec):
         '  <div class="treewrap" role="tree" aria-label="%s">'
         % esc(spec.get("aria") or name),
         '  <div class="tree">',
-        tline("", name, root),
+        tline("", name, root, filemap_href=filemap_href),
         "",
     ]
-    render_nodes(children, [], "", lines)
+    render_nodes(children, [], "", lines, filemap_href)
     lines += ["  </div>", "  </div>"]
     return "\n".join(lines) + "\n"
 
@@ -440,13 +448,13 @@ document.addEventListener('click', function(e) {
 """
 
 
-def render_page(spec):
+def render_page(spec, filemap_href="guide-dev-flow.html#filemap"):
     title, intro, nav, h2, lead, after, footer = default_chrome(spec)
     nav_html = "\n".join(
         '    <a href="%s">%s</a>' % (esc(item["href"]), esc(item["label"]))
         for item in nav
     )
-    tree = render_tree(spec)
+    tree = render_tree(spec, filemap_href)
     return "".join([
         "<!DOCTYPE html>\n",
         '<html lang="zh-TW">\n',
@@ -517,13 +525,34 @@ def prepare(spec, root):
     return spec
 
 
-def emit(spec, root, fragment):
+def emit(spec, root, fragment, filemap_href=None):
     spec = prepare(spec, root)
-    html_out = render_tree(spec) if fragment else render_page(spec)
+    if filemap_href is None:
+        filemap_href = "#filemap" if fragment else "guide-dev-flow.html#filemap"
+    html_out = (
+        render_tree(spec, filemap_href) if fragment
+        else render_page(spec, filemap_href)
+    )
     ok, detail = judge_html(html_out, "產出")
     if not ok:
         die(1, detail)
     return html_out
+
+
+def extract_tree(page):
+    start = page.find(TREE_BEGIN)
+    end = page.find(TREE_END)
+    if start < 0 or end < 0 or end < start:
+        die(1, "guide-dev-flow.html 缺 <!-- dir-tree:begin/end --> 標記")
+    return page[start + len(TREE_BEGIN):end].lstrip("\n")
+
+
+def splice_tree(page, fragment):
+    start = page.find(TREE_BEGIN)
+    end = page.find(TREE_END)
+    if start < 0 or end < 0 or end < start:
+        die(1, "guide-dev-flow.html 缺 <!-- dir-tree:begin/end --> 標記")
+    return page[:start + len(TREE_BEGIN)] + "\n" + fragment + page[end:]
 
 
 def write_text(path, text):
@@ -585,18 +614,19 @@ def main(argv):
     if mode in ("write", "check"):
         purpose = purpose or str(PURPOSE_PATH)
         root = root or str(ROOT)
-        page = emit(load_yaml(purpose), root, False)
+        fragment_html = emit(load_yaml(purpose), root, True, "#filemap")
+        try:
+            current = GUIDE_PATH.read_text(encoding="utf-8")
+        except OSError as err:
+            die(2, "讀不到 %s:%s" % (GUIDE_PATH, err))
         if mode == "check":
-            try:
-                current = GUIDE_PATH.read_text(encoding="utf-8")
-            except OSError as err:
-                die(2, "讀不到 %s:%s" % (GUIDE_PATH, err))
-            if current != page:
-                die(1, "guide-dir-map.html 跟產器產出不一致,請跑 scripts/build-dir-tree.py --write")
-            print("ok:guide-dir-map.html 對得上產器", file=sys.stderr)
+            if extract_tree(current) != fragment_html:
+                die(1, "guide-dev-flow.html #dirmap 跟產器產出不一致,"
+                    "請跑 scripts/build-dir-tree.py --write")
+            print("ok:guide-dev-flow.html #dirmap 對得上產器", file=sys.stderr)
             return
-        write_text(GUIDE_PATH, page)
-        print("wrote %s" % GUIDE_PATH, file=sys.stderr)
+        write_text(GUIDE_PATH, splice_tree(current, fragment_html))
+        print("wrote %s #dirmap" % GUIDE_PATH, file=sys.stderr)
         return
 
     if not purpose:

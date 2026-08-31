@@ -7,7 +7,7 @@
 ## 何時用
 
 專案大、接手、跨模組、人要先看檔案脈絡。第 1 站條件式,不新增閘、
-不新增必跑 hop。母版示範頁 `guides/guide-dir-map.html` 由本產器吐。
+不新增必跑 hop。母版樹插在 `guides/guide-dev-flow.html#dirmap`，由本產器吐片段。
 
 ## 畫法鎖死
 
@@ -54,9 +54,9 @@ root:
 
 ## 輸出
 
-html 片段(`--fragment`)或整頁。母版 `guides/guide-dir-map.html` 必須由
-這支產,`--check` 對得上手改會紅。產品落到 `docs/dev/<slug>/` 一個 html,
-不要跟 1-discussion 掃頁三框搶槽。
+html 片段(`--fragment`)或整頁。母版 `#dirmap` 必須由這支產,`--check`
+對得上手改會紅。產品落到 `docs/dev/<slug>/` 一個 html,不要跟 1-discussion
+掃頁三框搶槽。
 
 ## 何時不用
 

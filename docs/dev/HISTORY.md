@@ -391,3 +391,8 @@
 - 為什麼:人要的是可套用畫法，不是另發明視覺語言或自動猜用途
 - 落在哪:notes/design/dir-tree-contract.md scripts/build-dir-tree.py scripts/check-dir-tree.sh guides/dir-tree-purpose.yaml guides/guide-dir-map.html docs/dev/HISTORY.md
 
+## 2026-08-31 · dirmap-into-guide
+- 做了什麼:目錄樹併進主指南 #dirmap：產器改吐片段寫進 guide-dev-flow.html，獨立頁只留轉址，README 改連同一 Pages #dirmap
+- 為什麼:人拍板樹不是獨立頁；正本只留一棵，手改 #dirmap 會紅
+- 落在哪:guides/guide-dev-flow.html#dirmap scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md guides/dir-tree-purpose.yaml guides/guide-dir-map.html README.md
+

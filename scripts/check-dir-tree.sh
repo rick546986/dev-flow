@@ -2,7 +2,7 @@
 # check-dir-tree.sh — 可摺疊目錄包含樹產器的小牙
 #
 # 咬什麼:產器壞了、吐 mermaid／<pre>／svg、掃 repo 猜 why、
-# 或母版 guides/guide-dir-map.html 跟產器產出漂了。
+# 或主指南 guides/guide-dev-flow.html #dirmap 裡那棵樹跟產器產出漂了。
 # 契約在 notes/design/dir-tree-contract.md(短冊,對齊 vbox-fig-contract)。
 #
 # 用法:
@@ -26,8 +26,11 @@ root = sys.argv[1]
 builder = os.path.join(root, "scripts", "build-dir-tree.py")
 contract = os.path.join(root, "notes", "design", "dir-tree-contract.md")
 purpose = os.path.join(root, "guides", "dir-tree-purpose.yaml")
-guide = os.path.join(root, "guides", "guide-dir-map.html")
+guide = os.path.join(root, "guides", "guide-dev-flow.html")
+stub = os.path.join(root, "guides", "guide-dir-map.html")
 template = os.path.join(root, "_templates", "1-discussion.md")
+BEGIN = "<!-- dir-tree:begin -->"
+END = "<!-- dir-tree:end -->"
 
 failures = []
 checks = 0
@@ -65,16 +68,22 @@ def judge(html, label):
         issues.append("沒有 .tline")
     if "├─" not in html or "└─" not in html:
         issues.append("沒有樹線")
-    if issues:
-        return False, label + ":" + "、".join(issues)
-    return True, label
+    return (False, label + ":" + "、".join(issues)) if issues else (True, label)
+
+
+def extract_tree(page):
+    start = page.find(BEGIN)
+    end = page.find(END)
+    if start < 0 or end < 0 or end < start:
+        return None
+    return page[start + len(BEGIN):end]
 
 
 for path, label in (
     (builder, "scripts/build-dir-tree.py"),
     (contract, "notes/design/dir-tree-contract.md"),
     (purpose, "guides/dir-tree-purpose.yaml"),
-    (guide, "guides/guide-dir-map.html"),
+    (guide, "guides/guide-dev-flow.html"),
 ):
     if not os.path.isfile(path):
         print("FATAL:找不到 " + label, file=sys.stderr)
@@ -91,7 +100,7 @@ walk = run_builder(["--walk"])
 check(walk.returncode == 2, "--walk 必須紅(不准掃 repo 猜 why)")
 
 checked = run_builder(["--check"])
-check(checked.returncode == 0, "--check 母版頁對得上產器")
+check(checked.returncode == 0, "--check 母版 #dirmap 對得上產器")
 
 good = run_builder(["--fixture", "good"])
 check(good.returncode == 0, "good fixture exit 0")
@@ -125,13 +134,32 @@ for name, payload in bad_cases:
     ok, _detail = judge(payload, name)
     check(not ok, "牙咬 %s" % name)
 
-text = open(guide, encoding="utf-8").read()
-ok, detail = judge(text, "母版頁形狀")
+page = open(guide, encoding="utf-8").read()
+tree = extract_tree(page)
+check(tree is not None, "主指南有 dir-tree 標記")
+if tree is None:
+    tree = ""
+ok, detail = judge(tree, "母版 #dirmap 樹形狀")
 check(ok, detail)
-check("dir-tree-purpose.yaml" in text, "母版樹列了 YAML 用途表")
-check('id="skills"' in text, "母版仍有 skills 摺疊")
+check('id="dirmap"' in page, "主指南有 #dirmap")
+check(page.find('id="dirmap"') < page.find('id="filemap"'), "#dirmap 在 #filemap 前面")
+check('href="#dirmap">目錄關係</a>' in page, "頂部 nav 有目錄關係")
+check(page.find('href="#dirmap">目錄關係</a>')
+      < page.find('href="#filemap">附錄 檔案地圖</a>'),
+      "nav 目錄關係在檔案地圖前面")
+check(".treewrap{" in page and ".tree .tline{" in page, "主指南有樹 CSS")
+check("dir-tree-purpose.yaml" in tree, "母版樹列了 YAML 用途表")
+check('id="skills"' in tree, "母版仍有 skills 摺疊")
 check("summary .name" in open(builder, encoding="utf-8").read()
-      or "summary .name{color:var(--acc)}" in text, "可點夾名用 accent")
+      or "summary .name{color:var(--acc)}" in page, "可點夾名用 accent")
+check("guide-dir-map.html" not in tree or "不要當正本" in tree
+      or "轉去" in tree, "樹不把獨立頁當正本")
+
+if os.path.isfile(stub):
+    stub_text = open(stub, encoding="utf-8").read()
+    check("├─" not in stub_text and 'class="tree"' not in stub_text,
+          "獨立頁沒有第二棵樹")
+    check("guide-dev-flow.html#dirmap" in stub_text, "獨立頁轉去 #dirmap")
 
 tmpl = open(template, encoding="utf-8").read()
 check("build-dir-tree.py" in tmpl and "dir-tree.html" in tmpl, "第 1 站模板有可選目錄樹")
@@ -144,6 +172,7 @@ check("不要掃整棵 repo" in canon or "不要掃整棵 repo 自動猜 why" in
 check("scan-now" in canon and "vbox-fig" in canon and "#filemap" in canon
       and "fig-lifecycle" in canon, "契約點名何時不用")
 check("2.0.0" in canon, "契約寫明不改 2.0.0")
+check("#dirmap" in canon and "guide-dev-flow.html" in canon, "契約正本在主指南 #dirmap")
 
 print("checks=%d" % checks)
 if failures:
