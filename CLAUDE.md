@@ -2,7 +2,9 @@
 
 > 本檔**只放工具/環境授權**。dev-flow 的流程規則正本在 `README.md`,
 > 架構不變量與技術慣例在 `.claude/rules/` —— **不要往這裡搬**
-> (每 session 自動注入 = 盲測全滅,見 `README.md` §11 資訊隔離與 §7 的禁令)。
+> (每 session 自動注入 = 盲測全滅,見
+> [guide #fence](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#fence)；
+> gate 禁令在 README 摺疊機械正本 §7)。
 
 ## Google Drive:「記憶系統」資料夾
 

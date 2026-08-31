@@ -130,4 +130,5 @@ GIVEN/WHEN/THEN 照舊保留;每個重要 S 須答得出五問:系統要做什�
    建議文字在 manifest,由 Owner 裁決。
    (已於 VNext 整合輪落地:README §3/§7 現版已納 Demo verdict;2026-08-02)
 4. plugin 側 dev-flow/dev-run SKILL.md 階段動作表同步 → 另 repo,coordinator 另派。
-   (已於 VNext 整合輪 P2 落地:plugin _stage3_impl + attestation;2026-08-02)
+   (已於 VNext 整合輪 P2 落地:plugin _stage3_impl + attestation;2026-08-02。
+   2026-08-13 後 plugin 已併進本 repo,不再另 repo。)

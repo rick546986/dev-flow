@@ -1,6 +1,10 @@
-# 跨 repo patch 暫存區（merge prerequisite）
+# 跨 repo patch 暫存區（歷史）
 
-這裡放**本 repo 修不掉、必須由外部 plugin repo 落地**的修正。
+> 現況：plugin 已併進本 repo（ADR-0001）。runtime 在 `hooks/`，
+> `tests/parallel-stage6/` 只住方法包。下面各 patch 是 2026-08 兩 repo
+> 時期的落盤紀錄，不要再當成現行裝法。
+
+這裡放**當時**本 repo 修不掉、必須由外部 plugin repo 落地的修正。
 每個 patch 都對應一條 fresh review finding，且都是 **merge prerequisite**：
 patch 未在 runtime 落地前，本 repo 的對應修正只擋得住 repo-local reference parser，
 擋不住真正在跑的 Stage 6 scope guard。

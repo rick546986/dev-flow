@@ -189,15 +189,15 @@
     <a href="#memory">Agent Memory</a>
     <a href="#dirmap">目錄關係</a>
     <a href="#filemap">附錄 檔案地圖</a>
-    <a href="../docs/adr/index.html">決策列表</a>
-    <a href="../docs/dev/HISTORY.html">改版歷史</a>
+    <a href="https://rick546986.github.io/dev-flow/docs/adr/index.html">決策列表</a>
+    <a href="https://rick546986.github.io/dev-flow/docs/dev/HISTORY.html">改版歷史</a>
   </nav>
 
   <h2 id="flow">① 七階段流程圖(含 Gate 與模型分層)</h2>
   <p class="lead">這章要你懂:<strong>七站單行,只有 G1 / G2 / G3 會被人擋</strong>。
   哪站用哪個模型是綁死的。G1 過且沒技術疑問,可以跳過選配的 3。
   Stage 1 本身是可重跑的節點鏈,下一跳看 <code>graph.yaml</code>,細節見
-  <a href="guide-dev-talk.html#map">guide-dev-talk 全程地圖</a>。</p>
+  <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map">guide-dev-talk 全程地圖</a>。</p>
 
   <div class="figwrap"><svg id="fig-flow" viewBox="0 0 880 330" role="img"
        aria-label="dev-flow 七階段全程圖:上排 1 討論到 4 規格,下排 G2 到 PR,含 G1 跳過 3 的捷徑與模型分層配色">
@@ -243,7 +243,7 @@
   6 實作以<strong>起步</strong>模型標色 —— 它實際是三層,升階規則見下表。</p>
 
   <div class="tablewrap"><table>
-    <tr><th>層 / 站</th><th>模型</th><th>規則(對照 README §9)</th></tr>
+    <tr><th>層 / 站</th><th>模型</th><th>規則</th></tr>
     <tr><td>規劃 / 派工層<br>(1 討論、2 與 4 文檔、Stage 6 派工主對話)</td>
         <td><span class="badge opus">opus</span></td>
         <td>撰寫文檔、多方案辯論;派工主對話<strong>不下場寫碼</strong></td></tr>
@@ -261,10 +261,10 @@
     <tr><td>Stage 6 · adviser</td><td><span class="badge opus">opus</span>,唯讀</td>
         <td>三層皆 FAIL(連敗)才派來診斷</td></tr>
   </table></div>
-  <p class="legend">圖對照 README §0 一張圖(mermaid)+ §9 模型分層;升階細節另見下方
-  <a href="#devrun">dev-run 引擎</a>小節。細節見下方原文引用。</p>
+  <p class="legend">正本是上面 SVG。模型分層見上表。升階細節另見下方
+  <a href="#devrun">dev-run 引擎</a>小節。</p>
   <details>
-    <summary>原文(README §0「一張圖」mermaid 原始碼)</summary>
+    <summary>舊入口 mermaid（README 已改為入口圖，不再放 mermaid；僅供對照）</summary>
     <pre>flowchart LR
     idea([需求/想法]) --&gt; s1[1 討論&lt;br/&gt;發散]
     s1 --&gt; s2[2 收斂&lt;br/&gt;決策]
@@ -277,9 +277,8 @@
     s7 -- G3 PASS --&gt; pr[PR → develop]
     pr --&gt; merge[延伸 living spec&lt;br/&gt;docs/specs/]</pre>
   </details>
-  <p class="muted">此區塊為原始 mermaid 語法逐字引用(README 正本),按內容忠實度優先保留,不套用本頁其他
-  ASCII 圖的半形字元限制 —— 半形限制是為了 <code>&lt;pre&gt;</code> 欄位對齊(全形寬度不定會歪),
-  mermaid 語法本身無需欄位對齊,且逐字引用不應被重新排版。</p>
+  <p class="muted">此區塊是舊入口 mermaid 的文字備份,不是現行 README,也不是本頁正本圖。
+  半形限制是為了 <code>&lt;pre&gt;</code> 欄位對齊;mermaid 語法無需欄位對齊,故維持原樣。</p>
 
   <h2 id="lanes">② 兩軌(full / fast)</h2>
   <p class="lead">這章要你懂:<strong>兩軌差的只有「前段」</strong> —— 從 4 規格開始的後半段兩軌完全一樣,
@@ -350,8 +349,8 @@
   前者過完 gate 就封存,後者永生且每 session 自動注入。搞混會出事:把流程規則寫進 rules,
   圍欄② 的「盲」會全滅。</p>
   <p>人要翻長期決策或改版歷史,不要讀生 md:
-  <a href="../docs/adr/index.html">決策列表</a> ·
-  <a href="../docs/dev/HISTORY.html">改版歷史</a>。
+  <a href="https://rick546986.github.io/dev-flow/docs/adr/index.html">決策列表</a> ·
+  <a href="https://rick546986.github.io/dev-flow/docs/dev/HISTORY.html">改版歷史</a>。
   md 仍是 git 正本。這兩頁不是 Agent Memory。</p>
   <p>ID 追溯鏈:<code>R-n</code>(4-spec)→ <code>S-n</code>(4-spec)→ <code>T-n</code>(5-tasks,標 Covers)
   → 測試名含 S-id(6 實作)→ <code>D-n</code>(deviation,6)→ <code>F-n</code>(finding,7,標影響的 S/T)。
@@ -470,7 +469,7 @@
 
   <h2 id="checklists">④ 每站執行清單(逐字收錄自 <code>_templates/</code> 頂註)</h2>
   <p class="lead">這章要你懂:<strong>綠條是規則原文,一個字沒改</strong>。灰條是伴讀。打架以綠條為準。
-  Stage 1 不在這裡:12 步與節點鏈見 <a href="guide-dev-talk.html#map">guide-dev-talk</a>。</p>
+  Stage 1 不在這裡:12 步與節點鏈見 <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map">guide-dev-talk 全程地圖</a>。</p>
 
   <div class="figwrap"><svg id="fig-checklist" viewBox="0 0 880 210" role="img"
        aria-label="七站中哪些有逐字收錄的執行清單區塊:6 站共 8 塊,Stage 1 不在收錄之列">
@@ -1200,8 +1199,8 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   <code>wave-close</code>/<code>task-candidate</code>/<code>gate</code>/<code>review</code> 等)
   見 ⑥ 執行守衛。全 T ACCEPTED 後的跨階段收束(sequential/parallel 皆同):先跑
   <strong>Final Fresh Gauntlet</strong>(綁定當下 source SHA 的 Final Fresh Run + Evidence 契約,
-  README §7 G3 錨)全過才進 G3。ASCII 正本見 README §5「T 級並行」,SVG 圖解見
-  <code>guide-quickstart.html</code> ③/⑥。</p>
+  README §7 G3 錨)全過才進 G3。語意見 <code>notes/design/parallel-stage6.md</code>；SVG 見
+  <a href="https://rick546986.github.io/dev-flow/guides/guide-quickstart.html">guide-quickstart</a>。</p>
 
   <h3 id="stage7">Stage 7 — 驗證(G3)</h3>
   <p>節點鏈正本 <code>skills/dev-flow/stage7/graph.yaml</code>:
@@ -1617,7 +1616,7 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   <code>task-state</code> / <code>task-integrate</code> / <code>task-rework</code> /
   <code>rebuild-plan</code> / <code>review --file|--bundle …</code>(wave review,與上表裸打的
   <code>review</code> 同名不同用途)/ <code>candidate</code> / <code>gate</code>,
-  語意見 README §5「T 級並行」與 <code>notes/design/parallel-stage6.md</code>。</p>
+  語意見 <code>notes/design/parallel-stage6.md</code>。</p>
 
   <div class="tablewrap"><table>
     <tr><th>hook</th><th>時機</th><th>擋什麼</th></tr>
@@ -1960,7 +1959,7 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   後片必須 impact review。</p>
   <p class="muted">長時間與跨 session 依 <code>STATUS.md</code>、<code>5-tasks.md</code>、
   <code>6-implementation-notes.md</code> 接力;無人看管的多 phase orchestration 屬專案層選擇,
-  dev-flow 不依賴也不規範它。完整規則見 README §13–14。</p>
+  dev-flow 不依賴也不規範它。完整規則見本頁 <a href="#large-work">⑧ 大案與切片</a>。</p>
 
   <h2 id="example">⑨ 範例:合約到期提醒(<code>example/contract-expiry-reminder/</code>)</h2>
   <p class="lead">這章要你懂:<strong>前面八章講的東西,有一份填好的實例可以對照</strong> ——
@@ -1968,17 +1967,17 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   <p class="muted">html 有視覺版時優先連 html;<code>.md</code> 才是 git 正本。</p>
   <div class="tablewrap"><table>
     <tr><th>#</th><th>檔</th><th>連結</th></tr>
-    <tr><td>1</td><td>討論</td><td><a href="example/contract-expiry-reminder/1-discussion.html">1-discussion.html</a> ·
-        <a href="example/contract-expiry-reminder/1-discussion.md">.md</a></td></tr>
-    <tr><td>2</td><td>決策</td><td><a href="example/contract-expiry-reminder/2-decision.html">2-decision.html</a> ·
-        <a href="example/contract-expiry-reminder/2-decision.md">.md</a></td></tr>
-    <tr><td>3</td><td>原型</td><td><a href="example/contract-expiry-reminder/3-prototype.md">3-prototype.md</a></td></tr>
-    <tr><td>4</td><td>規格</td><td><a href="example/contract-expiry-reminder/4-spec.html">4-spec.html</a> ·
-        <a href="example/contract-expiry-reminder/4-spec.md">.md</a></td></tr>
-    <tr><td>5</td><td>任務</td><td><a href="example/contract-expiry-reminder/5-tasks.md">5-tasks.md</a></td></tr>
-    <tr><td>6</td><td>實作筆記</td><td><a href="example/contract-expiry-reminder/6-implementation-notes.md">6-implementation-notes.md</a></td></tr>
-    <tr><td>7</td><td>驗證</td><td><a href="example/contract-expiry-reminder/7-review.html">7-review.html</a> ·
-        <a href="example/contract-expiry-reminder/7-review.md">.md</a></td></tr>
+    <tr><td>1</td><td>討論</td><td><a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/1-discussion.html">1-discussion.html</a> ·
+        <code>example/contract-expiry-reminder/1-discussion.md</code></td></tr>
+    <tr><td>2</td><td>決策</td><td><a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/2-decision.html">2-decision.html</a> ·
+        <code>example/contract-expiry-reminder/2-decision.md</code></td></tr>
+    <tr><td>3</td><td>原型</td><td><code>example/contract-expiry-reminder/3-prototype.md</code></td></tr>
+    <tr><td>4</td><td>規格</td><td><a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/4-spec.html">4-spec.html</a> ·
+        <code>example/contract-expiry-reminder/4-spec.md</code></td></tr>
+    <tr><td>5</td><td>任務</td><td><code>example/contract-expiry-reminder/5-tasks.md</code></td></tr>
+    <tr><td>6</td><td>實作筆記</td><td><code>example/contract-expiry-reminder/6-implementation-notes.md</code></td></tr>
+    <tr><td>7</td><td>驗證</td><td><a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/7-review.html">7-review.html</a> ·
+        <code>example/contract-expiry-reminder/7-review.md</code></td></tr>
   </table></div>
 
   <h2 id="host">主機發現(Cursor／Grok／Codex)</h2>
@@ -2028,8 +2027,8 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   <p><code>.claude/rules/</code> 不會被 Cursor／Codex 自動吃。架構不變量由
   setup 依主機寫對應指標：Cursor 寫 <code>.cursor/rules/</code> 一行指標；
   Codex 仍只准 AGENTS.md 一行。流程規則仍不准進 AGENTS.md。</p>
-  <p>四邊用各自的 plugin install 裝方法包。正本仍一份 <code>skills/</code>；
-  三邊 manifest 是薄殼。產品 repo 技能樹掛整棵的規則上面那張表仍在。</p>
+  <p>四邊各自裝方法包（見下表；Codex 沒有 <code>plugin install</code>／<code>plugin update</code>）。
+  正本仍一份 <code>skills/</code>；三邊 manifest 是薄殼。產品 repo 技能樹掛整棵的規則上面那張表仍在。</p>
   <div class="tablewrap"><table>
     <tr><th>主機</th><th>怎麼裝／怎麼更新</th></tr>
     <tr><td>Claude</td>
@@ -3193,7 +3192,7 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     <tr><th>檔名</th><th>一句白話職責</th><th>誰呼叫它/掛在哪</th><th>生命週期格</th></tr>
     <tr><td><code>contract_ref.py</code></td>
         <td>平行 Stage 6 的機械版規則本體——判斷任務怎麼分波次、什麼時候能開始做、Gate 檢查怎麼判;
-            外部 plugin 真正跑的邏輯必須跟這裡一致。</td>
+            hooks 實作必須跟這裡一致。這組測試只住方法包。</td>
         <td>被 <code>run_tests.py</code> import 執行對拍</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>run_tests.py</code></td>
         <td>跑三層驗證(模板有沒有選配欄位、設計文件契約錨有沒有齊、<code>contract_ref.py</code> 本身邏輯
@@ -3207,7 +3206,7 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   <h3>memory/(Agent Memory:可 Git 同步的長期記憶 + 本機檢索索引)</h3>
   <p class="muted"><code>.dev-flow/</code> 進 Git,是正本。<code>~/.agentmem/…/worktrees/</code> 的 SQLite 是這棵樹的快取,不進 Git。
   <code>git pull</code> 之後下一句 ask / context 會核對 generation,舊了就重建;不必每次 pull 都重跑 <code>dev-setup</code>。
-  新 clone / 新機器才打一次 <code>dev-setup</code>。<code>.devflow/</code> 是執行期暫存,跟前兩者無關。規格見母版 README §16。</p>
+  新 clone / 新機器才打一次 <code>dev-setup</code>。<code>.devflow/</code> 是執行期暫存,跟前兩者無關。規格見本頁 <a href="#memory">#memory</a>。</p>
   <div class="tablewrap"><table>
     <tr><th>檔名</th><th>一句白話職責</th><th>誰呼叫它/掛在哪</th><th>生命週期格</th></tr>
     <tr><td><code>dev-memory.py</code></td>

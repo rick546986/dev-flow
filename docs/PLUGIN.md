@@ -65,11 +65,11 @@ gate-twin／產圖要 `markdown-it-py==4.0.0`(Python **3.12+**)。macOS 系統 p
 
 Windows(Git Bash)沒有 `/usr/bin/python3`。另外裝 Python 3.12+,或設 `DEVFLOW_PYTHON`(例:`setx DEVFLOW_PYTHON "C:/Python312/python.exe"`)。裝好之後 hook 會生效,但本 repo 的驗證套件在 Windows 上仍跑不全綠。見 `notes/dispatch-windows-parity.md`。
 
-細節見母版 README「環境需求」。
+本檔上一節即環境規則。入口 README 摺疊的機械正本也有同一段。不要覆寫 `/usr/bin/python3`。
 
 feat worktree 產的 `docs/dev` html/md 併回整合線(常是 `develop`／`testing`)是預期,不是污染;HISTORY 種子列也會跟著走。不要把雙生頁只留在 worktree。
 
-新專案裝好後,進專案打 `dev-setup`。它會建 `.dev-flow/`(進 Git 的記憶正本)與本機快取。之後 `git pull` 不必重跑 setup;下一句 ask / context 會核對 generation。見 README §16。
+新專案裝好後,進專案打 `dev-setup`。它會建 `.dev-flow/`(進 Git 的記憶正本)與本機快取。之後 `git pull` 不必重跑 setup;下一句 ask / context 會核對 generation。見 [guide #memory](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#memory)。
 
 ## 沿革(維護者才需要)
 
