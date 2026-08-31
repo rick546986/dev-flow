@@ -421,3 +421,8 @@
 - 為什麼:absolute 不佔列高，兩截半根不如一根塗滿縫
 - 落在哪:guides/guide-dev-flow.html scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
 
+## 2026-08-31 · dir-tree-ancestor-v
+- 做了什麼:祖先 │ 包成 .v，::after 一根接縫不受 .last 關；本列 ├─ 仍用 .g:not(.last)::after。展開子列左邊脊不再虛掉
+- 為什麼:prefix 純文字 │ 沒 overlay，末子關掉整列後祖先接不到下一個 L1
+- 落在哪:scripts/build-dir-tree.py guides/guide-dev-flow.html scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
+

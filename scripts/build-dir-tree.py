@@ -88,7 +88,7 @@ CSS = """\
   .tablewrap{overflow-x:auto}
 
   /* 目錄樹：摺疊仍是一棵 ├─ │ └─ 樹，不是卡片／步驟圖 */
-  /* 一根接縫：非末子 ::after 滿高 │ 塗列間縫；.last 不畫；不准 .sep */
+  /* 一根接縫：祖先 .v 每欄都塗；本列 ├─ 仍用 .g:not(.last)::after；.last 不關 .v；不准 .sep */
   .treewrap{overflow-x:auto;background:var(--bg);border:1px solid var(--line);
             border-radius:10px;padding:14px 16px;margin:1em 0}
   .tree{font:13px/1.75 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -104,6 +104,10 @@ CSS = """\
   .tree .g:not(.last)::after{content:"│";font-size:100%;line-height:1;
                              position:absolute;left:calc(100% - 3ch);bottom:0;
                              transform:translateY(50%);color:inherit;pointer-events:none}
+  .tree .v{position:relative}
+  .tree .v::after{content:"│";position:absolute;left:0;top:50%;
+                  font-size:175%;line-height:1;transform:translateY(-50%);
+                  color:inherit;pointer-events:none}
   .tree .name{white-space:nowrap}
   .tree summary .name{color:var(--acc)}
   .tree .why{color:var(--muted);min-width:0}
@@ -332,13 +336,15 @@ def tline(gutter, name, node, summary=False, filemap_href="#filemap", last=False
     return (
         '      <%s class="tline"><span class="%s">%s</span>'
         '<span class="name">%s</span>%s</%s>'
-        % (tag, gcls, esc(gutter), esc(name),
+        % (tag, gcls, gutter, esc(name),
            why_span(node, minimum, filemap_href), tag)
     )
 
 
 def prefix_parts(cont):
-    return "".join("│  " if c else "   " for c in cont)
+    return "".join(
+        '<span class="v">│</span>  ' if c else "   " for c in cont
+    )
 
 
 def render_nodes(nodes, cont, parent_rel, lines, filemap_href):

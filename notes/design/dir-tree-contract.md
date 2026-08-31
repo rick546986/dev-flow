@@ -17,9 +17,9 @@
 - 可點的是藍色資料夾名(`summary .name` 用 `--acc`)。
 - 每列:`.g` + `.name` + `.why`。why 貼近 name,不准大 gap,不准名與 why
   中間再加 `.sep`／第二根 `│`。why 一句到兩句。不要另開說明卡。
-- 非末子一根接縫:`.g:not(.last)::after` 滿高 `│` 塗本列與下一列之間
-  的縫（absolute,不佔列高）。`└─`／`.last` 不畫。不是另開一列、
-  不是兩截半根對接。祖先前綴的 `│` 不要重複畫。產器不准預插假列。
+- 一根接縫要蓋祖先 `│` 每一欄（產器包 `<span class="v">`），不只
+  branch 欄。本列 `├─` 用 `.g:not(.last)::after`；`.last` 不關 `.v`。
+  absolute,不佔列高。不是兩截半根。產器不准預插假列。
 - 葉子(檔案、或不再展開的資料夾)不是 summary。
 - 不要把整包 scripts／hooks 列完;用一列 `…`(ellipsis)指到盤點。
 - 類名沿用手樣,不准另發明:
@@ -29,8 +29,9 @@
 | `.treewrap` | 樹外框 |
 | `.tree` | monospace 樹 |
 | `.tline` | 一列 |
-| `.g` | `├─` `│` `└─` gutter;非末子 `::after` 一根接縫 |
-| `.last` | 末子 gutter,不畫接縫 |
+| `.g` | `├─` `│` `└─` gutter;非末子 `::after` 本列 branch 接縫 |
+| `.v` | 還在延續的祖先 `│`；`::after` 接縫,不受 `.last` 關 |
+| `.last` | 末子不畫本列 branch 接縫 |
 | `.name` | 檔名／夾名 |
 | `.why` | 同一列右邊的用途 |
 

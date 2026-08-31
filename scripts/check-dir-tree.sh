@@ -113,6 +113,9 @@ check(leaf and leaf[0].strip().startswith("<div class=\"tline\">"), "葉子不�
 folder = [ln for ln in good.stdout.splitlines() if 'class="name">src/</span>' in ln]
 check(folder and "<summary" in folder[0], "有子列的夾才是 summary")
 check('class="g last"' in good.stdout, "fixture 末子有 .last")
+check('class="v"' in good.stdout, "fixture 祖先 │ 包成 .v")
+check(any('class="g last"' in ln and 'class="v"' in ln
+          for ln in good.stdout.splitlines()), "末子仍有祖先 .v")
 check('class="sep"' not in good.stdout, "fixture 沒有 .sep")
 check('class="name">│</span>' not in good.stdout, "產器不預插假列")
 check('class="g">' in good.stdout, "非末子 gutter 沒有 .last")
@@ -153,6 +156,9 @@ check(page.find('href="#dirmap">目錄關係</a>')
       "nav 目錄關係在檔案地圖前面")
 check(".treewrap{" in page and ".tree .tline{" in page, "主指南有樹 CSS")
 check('class="g last"' in tree, "母版樹末子有 .last")
+check('class="v"' in tree, "母版樹祖先 │ 包成 .v")
+check(any('class="g last"' in ln and 'class="v"' in ln
+          for ln in tree.splitlines()), "母版末子仍有祖先 .v")
 check('class="sep"' not in tree, "母版樹沒有 .sep")
 check('class="name">│</span>' not in tree, "母版樹沒有預插假列")
 
@@ -167,7 +173,8 @@ def spine_ok(css, label):
     check("::before" not in css, label + " 沒有 ::before 半根")
     check(".g:not(.last)::after" in css and "font-size:100%" in css
           and "translateY(50%)" in css, label + " 非末子一根滿高接縫")
-    check(".last::after" not in css, label + " 末子沒有 ::after")
+    check(".v::after" in css and "font-size:175%" in css, label + " 祖先 │ 有接縫")
+    check(".last::after" not in css, label + " 末子沒有 branch ::after")
     check("font-size:50%" not in css, label + " 不是兩截半根")
     check(".tree .sep" not in css and "sep::after" not in css, label + " 沒有 .sep")
     check("gap:1.5em" not in css, label + " 沒有大 gap")
@@ -200,8 +207,8 @@ check("scan-now" in canon and "vbox-fig" in canon and "#filemap" in canon
       and "fig-lifecycle" in canon, "契約點名何時不用")
 check("2.0.0" in canon, "契約寫明不改 2.0.0")
 check("#dirmap" in canon and "guide-dev-flow.html" in canon, "契約正本在主指南 #dirmap")
-check("一根接縫" in canon and ".last" in canon and "::before" not in canon,
-      "契約鎖一根接縫、末子不畫")
+check("一根接縫" in canon and ".v" in canon and "祖先" in canon,
+      "契約鎖接縫蓋祖先 │ 每一欄")
 check(".sep" in canon and ("不准" in canon or "不要" in canon),
       "契約寫明名與 why 之間不准 .sep")
 
