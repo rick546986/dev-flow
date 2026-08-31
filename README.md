@@ -35,7 +35,7 @@ macOS `/usr/bin/python3` 常是 3.9，裝不出 4.x、會靜默停在 3.x。
 用專案 venv 或設 `DEVFLOW_PYTHON` 指向 3.12+，**不要覆寫** Apple 系統 Python。
 產圖直譯器順序:`DEVFLOW_PYTHON` → 專案 `.venv` → `/usr/bin/python3` → PATH。
 doctor／upgrade 會查這件事。四邊安裝／更新 → [docs/PLUGIN.md](docs/PLUGIN.md)。
-主機發現 → [guide `#host`](guides/guide-dev-flow.html#host)。
+主機發現 → [guide `#host`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#host)。
 feat worktree 的 `docs/dev` 雙生頁要併回專案真正在用的整合線(常是 develop／testing),不要只留在 worktree。
 
 ## 3. 七份文檔(用途一句話;骨架見 `_templates/`,填好範例見 `example/`)
@@ -60,7 +60,7 @@ feat worktree 的 `docs/dev` 雙生頁要併回專案真正在用的整合線(�
 
 ## 4. ID 追溯鏈
 
-每張票用同一個 id 串起來。全文見 [flow `#filemap`](guides/guide-dev-flow.html#filemap)。
+每張票用同一個 id 串起來。全文見 [flow `#filemap`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#filemap)。
 
 `R-n`(requirement,4-spec)→ `S-n`(scenario,4-spec)→ `T-n`(task,5-tasks,標 Covers)
 → 測試名含 S-id(6 實作)→ `D-n`(deviation,6)→ `F-n`(finding,7,標影響的 S/T)。
@@ -282,7 +282,7 @@ G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件�
 
 ## 8. 導覽
 
-每站清單與模型對照見 [flow](guides/guide-dev-flow.html)。
+每站清單與模型對照見 [flow](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html)。
 
 - **G1/G2/G3 審查與 verdict**:依 §7 的人類→fresh-context reviewer Agent→有記錄的
   owner 自審順序;Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。
@@ -292,5 +292,5 @@ retrieval status:`OK` / `NEEDS_VERIFICATION` / `CONFLICT` / `NO_RELIABLE_MATCH`�
 </details>
 
 <!-- devflow:master-only:start -->
-母版目錄與檔案地圖在 [guide `#filemap`](guides/guide-dev-flow.html#filemap)，不要在入口重畫樹。
+母版目錄與檔案地圖在 [guide `#filemap`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#filemap)，不要在入口重畫樹。
 <!-- devflow:master-only:end -->

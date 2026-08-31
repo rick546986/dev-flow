@@ -6,6 +6,9 @@
 # 薄殼不抄正文／不要另開本機伺服器),
 # 或三邊食譜缺一邊、拿掉 pages job、組樹漏 7-review.html／shots,
 # 必須紅。
+# README.md 可點的 *.html 超連必須是既有 GitHub 超連規則
+# https://<owner>.github.io/<repo>/<path-to-html>(本倉即
+# https://rick546986.github.io/dev-flow/...),相對路或 blob 必須紅。
 #
 # 實跑 publish-pages.sh --root fixture:public/ 必須出現站審 html + shots/ + guides。
 # 禁 check(True)。補助產品詞不得當通用規則。
@@ -25,6 +28,7 @@ fi
 
 python3 - "$ROOT" <<'PY'
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -33,6 +37,7 @@ import tempfile
 
 root = sys.argv[1]
 CONTRACT = "notes/design/pages-hosting.md"
+README = "README.md"
 PUBLISHER = "scripts/publish-pages.sh"
 DIST = "docs/dev/tools/publish-pages.sh"
 GITLAB = ".gitlab-ci.yml"
@@ -40,6 +45,7 @@ GITEA = ".gitea/workflows/pages.yml"
 HELPER = "scripts/devflow_gate.py"
 SKILL = "skills/dev-setup/SKILL.md"
 FIXTURE = "scripts/fixtures/pages-hosting/good"
+PAGES_HREF = "https://rick546986.github.io/dev-flow/"
 STAGES = (
     "1-discussion.html",
     "2-decision.html",
@@ -103,6 +109,38 @@ FORBIDDEN = (
     "表六",
     "8604",
 )
+
+
+def readme_html_hrefs(text):
+    """README 裡人點得到的 *.html 超連(markdown ](url) 與 <a href>)。不管 img src。"""
+    if not text:
+        return []
+    found = []
+    for match in re.finditer(r"(?<!!)\[(?:[^\]]*)\]\(([^)]+)\)", text):
+        found.append(match.group(1).strip())
+    for match in re.finditer(r"""(?i)<a\b[^>]*\bhref\s*=\s*["']([^"']+)["']""", text):
+        found.append(match.group(1).strip())
+    hrefs = []
+    for raw in found:
+        path = raw.split("#", 1)[0]
+        if path.endswith(".html"):
+            hrefs.append(raw)
+    return hrefs
+
+
+def judge_readme_html(readme_text):
+    local = []
+    if readme_text is None:
+        local.append("README.md 存在")
+        return local
+    hrefs = readme_html_hrefs(readme_text)
+    if not hrefs:
+        local.append("README 至少有一條 *.html 超連")
+        return local
+    for href in hrefs:
+        if not href.startswith(PAGES_HREF):
+            local.append("README *.html 超連必須是 github.io Pages:" + href)
+    return local
 
 
 def judge(contract_text, gitlab_text, gitea_text, publisher_text, skill_text, helper_text):
@@ -191,11 +229,18 @@ gitea_text = read(GITEA)
 publisher_text = read(PUBLISHER)
 skill_text = read(SKILL)
 helper_text = read(HELPER)
+readme_text = read(README)
 
 real = judge(contract_text, gitlab_text, gitea_text, publisher_text, skill_text, helper_text)
 check(not real, "完整食譜綠")
 if real:
     for item in real:
+        print("  - " + item)
+
+readme_fails = judge_readme_html(readme_text)
+check(not readme_fails, "README *.html 超連都是 github.io Pages")
+if readme_fails:
+    for item in readme_fails:
         print("  - " + item)
 
 # 散發副本與正本一致(同一條發散路)
@@ -275,6 +320,18 @@ if contract_text is not None:
     poisoned = contract_text + "\nPLUS\n"
     check(bool(judge(poisoned, gitlab_text, gitea_text, publisher_text, skill_text, helper_text)),
           "牙咬:契約寫入補助產品詞必須紅")
+
+if readme_text is not None:
+    relative = readme_text.replace(PAGES_HREF + "guides/guide-dev-flow.html",
+                                   "guides/guide-dev-flow.html", 1)
+    check(bool(judge_readme_html(relative)),
+          "牙咬:README 相對 *.html 必須紅")
+    blob = readme_text.replace(
+        PAGES_HREF + "guides/guide-dev-flow.html",
+        "https://github.com/rick546986/dev-flow/blob/main/guides/guide-dev-flow.html",
+        1)
+    check(bool(judge_readme_html(blob)),
+          "牙咬:README blob *.html 必須紅")
 
 print("checks=%d" % checks)
 if checks < 10:
