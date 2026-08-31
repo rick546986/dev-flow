@@ -35,7 +35,7 @@ macOS `/usr/bin/python3` 常是 3.9，裝不出 4.x、會靜默停在 3.x。
 用專案 venv 或設 `DEVFLOW_PYTHON` 指向 3.12+，**不要覆寫** Apple 系統 Python。
 產圖直譯器順序:`DEVFLOW_PYTHON` → 專案 `.venv` → `/usr/bin/python3` → PATH。
 doctor／upgrade 會查這件事。四邊安裝／更新 → [docs/PLUGIN.md](docs/PLUGIN.md)。
-主機發現 → [guide `#host`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#host)。
+主機發現 → [guide #host](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#host)。
 feat worktree 的 `docs/dev` 雙生頁要併回專案真正在用的整合線(常是 develop／testing),不要只留在 worktree。
 
 ## 3. 七份文檔(用途一句話;骨架見 `_templates/`,填好範例見 `example/`)
@@ -60,7 +60,7 @@ feat worktree 的 `docs/dev` 雙生頁要併回專案真正在用的整合線(�
 
 ## 4. ID 追溯鏈
 
-每張票用同一個 id 串起來。全文見 [flow `#filemap`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#filemap)。
+每張票用同一個 id 串起來。全文見 [flow #filemap](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#filemap)。
 
 `R-n`(requirement,4-spec)→ `S-n`(scenario,4-spec)→ `T-n`(task,5-tasks,標 Covers)
 → 測試名含 S-id(6 實作)→ `D-n`(deviation,6)→ `F-n`(finding,7,標影響的 S/T)。
@@ -114,10 +114,10 @@ L1 出口 = `devflow-exec.sh allow`;L2 = `stop`。
 
 三道閘。粗體詞是過關條件,檢查器在抽,不要改字。
 
-去哪:[flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)
+去哪:[flow #gates](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)
 
 > **本節 = gate 條件(G1/G2/G3)的契約句**。各一句過關條件在下;全文、強制力對照、回滾導覽見
-> [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)。
+> [flow #gates](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)。
 > 改任何 gate 條件先改這裡的粗體 token 與錨定義,再同步三處摘要:①plugin `dev-flow`
 > SKILL.md 階段動作表 ②本 README §3 七份文檔表 ③對應模板頂註。衝突以本節為準。
 
@@ -128,7 +128,7 @@ L1 出口 = `devflow-exec.sh allow`;L2 = `stop`。
   Agent → owner 自審(有記錄的最後手段)**。Agent 必須是乾淨 context,只給審核對象+基準+回報格式,不給
   作者結論;verdict 與審者身分記 reviewers 欄(如 `[independent-fresh-context-reviewer]`)
   + 檔內留 round 紀錄。owner 自審僅能作為**有記錄的最後手段**,不假裝有四眼。
-- **規劃層 git**:每過一個 gate,把該階段文檔 commit 一次,只含文檔。Stage 1–5 落在整合分支;Stage 6 才開 feature branch。細節見 [flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)。
+- **規劃層 git**:每過一個 gate,把該階段文檔 commit 一次,只含文檔。Stage 1–5 落在整合分支;Stage 6 才開 feature branch。細節見 [flow #gates](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)。
 - 機械錨點註記:以下 G1/G2/G3 定義句內的粗體詞組是 gate-consistency 機械比對錨;增改 gate 條件務必加粗。
 
  ### G1
@@ -214,7 +214,7 @@ G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件�
 
 合併後出事,預設 revert,不要硬補。下面算法只在「直接補修」例外才用,可跳。
 
-去哪:[flow `#gates`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)
+去哪:[flow #gates](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)
 
 > **契約 / 檢查器抽**
 >
@@ -292,5 +292,5 @@ retrieval status:`OK` / `NEEDS_VERIFICATION` / `CONFLICT` / `NO_RELIABLE_MATCH`�
 </details>
 
 <!-- devflow:master-only:start -->
-母版目錄與檔案地圖在 [guide `#filemap`](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#filemap)，不要在入口重畫樹。
+母版目錄與檔案地圖在 guide #filemap，不要在入口重畫樹。
 <!-- devflow:master-only:end -->
