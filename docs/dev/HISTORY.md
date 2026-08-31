@@ -436,3 +436,8 @@
 - 為什麼:13px×1.75 下列盒剛好等於 175% overlay，子像素露 1px 縫看來像虛線；100% 的 ├ 欄也會縫
 - 落在哪:scripts/build-dir-tree.py guides/guide-dev-flow.html scripts/check-dir-tree.sh
 
+## 2026-08-31 · dir-tree-spine-bar
+- 做了什麼:目錄樹脊改成跟列高走的 1px 接縫：.v/.g 拉滿列高，::after top/bottom 各伸出 .5em；祖先字元 │ 透明以免雙線。牙改針跨列重疊，不再咬 100%/175%/220%
+- 為什麼:字級 220% 疊在 inline 13px 盒上仍露 1px 縫；再疊 gradient 變雙線。字元 │ 填不滿 line-height 1.75 與折行 why
+- 落在哪:scripts/build-dir-tree.py guides/guide-dev-flow.html scripts/check-dir-tree.sh
+

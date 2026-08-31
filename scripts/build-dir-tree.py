@@ -89,7 +89,7 @@ CSS = """\
 
   /* 目錄樹：摺疊仍是一棵 ├─ │ └─ 樹，不是卡片／步驟圖 */
   /* 一根接縫：祖先 .v 每欄都塗；本列 ├─ 仍用 .g:not(.last)::after；.last 不關 .v；不准 .sep */
-  /* overlay 220% 跨列重疊，剛好一列盒會露 1px 縫 */
+  /* overlay 220% 跨列重疊；.v/.g 拉滿列高，折行 why 列盒才蓋得住 */
   .treewrap{overflow-x:auto;overflow-y:visible;background:var(--bg);border:1px solid var(--line);
             border-radius:10px;padding:14px 16px;margin:1em 0}
   .tree{font:13px/1.75 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -101,14 +101,14 @@ CSS = """\
                       font-size:inherit;font-weight:400;padding:0;user-select:none}
   .tree summary.tline::-webkit-details-marker{display:none}
   .tree summary.tline::marker{content:""}
-  .tree .g{position:relative;color:var(--muted);white-space:pre}
-  .tree .g:not(.last)::after{content:"│";font-size:220%;line-height:1;
-                             position:absolute;left:calc(100% - 3ch);top:50%;
-                             transform:translateY(-50%);color:inherit;pointer-events:none}
-  .tree .v{position:relative}
-  .tree .v::after{content:"│";position:absolute;left:0;top:50%;
-                  font-size:220%;line-height:1;transform:translateY(-50%);
-                  color:inherit;pointer-events:none}
+  .tree .g{position:relative;align-self:stretch;color:var(--muted);white-space:pre}
+  .tree .g:not(.last)::after{content:"";position:absolute;left:calc(100% - 3ch + .45ch);
+                             top:.7em;bottom:-.5em;width:1px;background:currentColor;
+                             pointer-events:none}
+  .tree .v{position:relative;display:inline-block;height:100%;vertical-align:top;
+           color:transparent}
+  .tree .v::after{content:"";position:absolute;left:.45ch;top:-.5em;bottom:-.5em;
+                  width:1px;background:var(--muted);pointer-events:none}
   .tree .name{white-space:nowrap}
   .tree summary .name{color:var(--acc)}
   .tree .why{color:var(--muted);min-width:0}
