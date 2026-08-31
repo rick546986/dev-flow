@@ -411,3 +411,8 @@
 - 為什麼:人要的是把虛線脊接實，不是另開一列、也不是拉滿 why
 - 落在哪:guides/guide-dev-flow.html#dirmap scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
 
+## 2026-08-31 · dir-tree-half-both
+- 做了什麼:半根上下都接：每顆 ├ 頭頂 ::before、腳底 ::after；└─／.last 只留頭頂。對齊當層豎筆，不准 .sep
+- 為什麼:人拍板 B：半根要同時接上一顆與下一顆，虛線脊才接實
+- 落在哪:guides/guide-dev-flow.html scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
+
