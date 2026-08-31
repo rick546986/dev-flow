@@ -40,7 +40,7 @@
   .treewrap{overflow-x:auto;background:var(--bg);border:1px solid var(--line);
             border-radius:10px;padding:14px 16px;margin:1em 0}
   .tree{font:13px/1.75 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-        min-width:42em;color:var(--fg)}
+        min-width:52em;color:var(--fg)}
   .tree details{margin:0}
   .tree .tline{display:flex;align-items:baseline;gap:1.5em}
   .tree summary.tline{list-style:none;cursor:pointer;color:inherit;
@@ -74,67 +74,127 @@
 
     <details id="skills">
       <summary class="tline"><span class="g">├─ </span><span class="name">skills/</span><span class="why">方法包正本，整棵掛</span></summary>
-      <div class="tline"><span class="g">│  ├─ </span><span class="name">dev-talk/</span><span class="why">第 1 站</span></div>
+      <details id="skill-dev-talk">
+        <summary class="tline"><span class="g">│  ├─ </span><span class="name">dev-talk/</span><span class="why">第 1 站</span></summary>
+        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">SKILL.md</span><span class="why">入口，觸發才載全文</span></div>
+        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">graph.yaml</span><span class="why">下一跳正本</span></div>
+        <div class="tline"><span class="g">│  │  └─ </span><span class="name">nodes/</span><span class="why">一 hop 一檔</span></div>
+      </details>
       <details id="skill-dev-flow">
         <summary class="tline"><span class="g">│  ├─ </span><span class="name">dev-flow/</span><span class="why">第 2-7 站</span></summary>
-        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">stage2/</span></div>
-        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">stage3/</span></div>
-        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">stage4/</span></div>
-        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">stage5/</span></div>
-        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">stage6/</span></div>
-        <div class="tline"><span class="g">│  │  └─ </span><span class="name">stage7/</span></div>
+        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">SKILL.md</span><span class="why">第 2-7 站入口</span></div>
+        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">stage2/</span><span class="why">收斂，出口 G1</span></div>
+        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">stage3/</span><span class="why">原型，可 skip</span></div>
+        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">stage4/</span><span class="why">規格，出口 G2</span></div>
+        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">stage5/</span><span class="why">任務板，無 G</span></div>
+        <div class="tline"><span class="g">│  │  ├─ </span><span class="name">stage6/</span><span class="why">實作</span></div>
+        <div class="tline"><span class="g">│  │  └─ </span><span class="name">stage7/</span><span class="why">驗證，出口 G3</span></div>
       </details>
-      <div class="tline"><span class="g">│  ├─ </span><span class="name">dev-run/</span><span class="why">第 6 站引擎</span></div>
-      <div class="tline"><span class="g">│  ├─ </span><span class="name">dev-setup/</span><span class="why">初裝／升級</span></div>
-      <div class="tline"><span class="g">│  ├─ </span><span class="name">dev-release/</span><span class="why">母版發版</span></div>
-      <div class="tline"><span class="g">│  └─ </span><span class="name">dev-report/</span><span class="why">缺陷回報</span></div>
+      <details id="skill-dev-run">
+        <summary class="tline"><span class="g">│  ├─ </span><span class="name">dev-run/</span><span class="why">第 6 站引擎</span></summary>
+        <div class="tline"><span class="g">│  │  └─ </span><span class="name">SKILL.md</span><span class="why">整棵掛，裡面只有這份</span></div>
+      </details>
+      <details id="skill-dev-setup">
+        <summary class="tline"><span class="g">│  ├─ </span><span class="name">dev-setup/</span><span class="why">初裝／升級</span></summary>
+        <div class="tline"><span class="g">│  │  └─ </span><span class="name">SKILL.md</span><span class="why">整棵掛，裡面只有這份</span></div>
+      </details>
+      <details id="skill-dev-release">
+        <summary class="tline"><span class="g">│  ├─ </span><span class="name">dev-release/</span><span class="why">母版發版</span></summary>
+        <div class="tline"><span class="g">│  │  └─ </span><span class="name">SKILL.md</span><span class="why">整棵掛，裡面只有這份</span></div>
+      </details>
+      <details id="skill-dev-report">
+        <summary class="tline"><span class="g">│  └─ </span><span class="name">dev-report/</span><span class="why">缺陷回報</span></summary>
+        <div class="tline"><span class="g">│     └─ </span><span class="name">SKILL.md</span><span class="why">整棵掛，裡面只有這份</span></div>
+      </details>
     </details>
 
     <details id="templates">
       <summary class="tline"><span class="g">├─ </span><span class="name">_templates/</span><span class="why">七站骨架</span></summary>
-      <div class="tline"><span class="g">│  ├─ </span><span class="name">1-discussion.md</span></div>
-      <div class="tline"><span class="g">│  ├─ </span><span class="name">2-decision.md</span></div>
-      <div class="tline"><span class="g">│  ├─ </span><span class="name">3-prototype.md</span></div>
-      <div class="tline"><span class="g">│  ├─ </span><span class="name">4-spec.md</span></div>
-      <div class="tline"><span class="g">│  ├─ </span><span class="name">5-tasks.md</span></div>
-      <div class="tline"><span class="g">│  ├─ </span><span class="name">6-implementation-notes.md</span></div>
-      <div class="tline"><span class="g">│  └─ </span><span class="name">7-review.md</span></div>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">1-discussion.md</span><span class="why">第 1 站討論骨架</span></div>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">2-decision.md</span><span class="why">第 2 站決策骨架</span></div>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">3-prototype.md</span><span class="why">第 3 站原型骨架</span></div>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">4-spec.md</span><span class="why">第 4 站規格骨架</span></div>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">5-tasks.md</span><span class="why">第 5 站任務骨架</span></div>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">6-implementation-notes.md</span><span class="why">第 6 站實作日誌骨架</span></div>
+      <div class="tline"><span class="g">│  └─ </span><span class="name">7-review.md</span><span class="why">第 7 站驗證骨架</span></div>
     </details>
 
     <details id="example">
       <summary class="tline"><span class="g">├─ </span><span class="name">example/</span><span class="why">填好範例</span></summary>
-      <div class="tline"><span class="g">│  ├─ </span><span class="name">contract-expiry-reminder/</span></div>
-      <div class="tline"><span class="g">│  └─ </span><span class="name">subsidy-3-0-plus/</span></div>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">contract-expiry-reminder/</span><span class="why">合約到期提醒，填好的 full lane</span></div>
+      <div class="tline"><span class="g">│  └─ </span><span class="name">subsidy-3-0-plus/</span><span class="why">補助手樣</span></div>
     </details>
 
-    <div class="tline"><span class="g">├─ </span><span class="name">guides/</span><span class="why">人看導覽</span></div>
-    <div class="tline"><span class="g">├─ </span><span class="name">hooks/</span><span class="why">執行期守衛</span></div>
-    <div class="tline"><span class="g">├─ </span><span class="name">scripts/</span><span class="why">檢查與產檔</span></div>
+    <details id="guides">
+      <summary class="tline"><span class="g">├─ </span><span class="name">guides/</span><span class="why">人看導覽</span></summary>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">guide-dev-flow.html</span><span class="why">七站導覽</span></div>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">guide-dev-talk.html</span><span class="why">討論站導覽</span></div>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">guide-quickstart.html</span><span class="why">快速上手</span></div>
+      <div class="tline"><span class="g">│  └─ </span><span class="name">guide-dir-map.html</span><span class="why">本頁目錄樹</span></div>
+    </details>
+
+    <details id="hooks">
+      <summary class="tline"><span class="g">├─ </span><span class="name">hooks/</span><span class="why">執行期守衛</span></summary>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">hooks.json</span><span class="why">掛載清單</span></div>
+      <div class="tline"><span class="g">│  └─ </span><span class="name">…</span><span class="why">其餘守衛逐支見 <a href="guide-dev-flow.html#filemap">#filemap</a></span></div>
+    </details>
+
+    <details id="scripts">
+      <summary class="tline"><span class="g">├─ </span><span class="name">scripts/</span><span class="why">檢查與產檔</span></summary>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">devflow-check.sh</span><span class="why">總開關</span></div>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">build-vbox-fig.py</span><span class="why">直式產圖</span></div>
+      <div class="tline"><span class="g">│  └─ </span><span class="name">…</span><span class="why">其餘逐支見 <a href="guide-dev-flow.html#filemap">#filemap</a></span></div>
+    </details>
 
     <details id="tests">
       <summary class="tline"><span class="g">├─ </span><span class="name">tests/</span><span class="why">契約測試</span></summary>
-      <div class="tline"><span class="g">│  └─ </span><span class="name">parallel-stage6/</span></div>
+      <div class="tline"><span class="g">│  └─ </span><span class="name">parallel-stage6/</span><span class="why">第 6 站平行契約套件</span></div>
     </details>
 
-    <div class="tline"><span class="g">├─ </span><span class="name">memory/</span><span class="why">Agent Memory CLI</span></div>
+    <details id="memory">
+      <summary class="tline"><span class="g">├─ </span><span class="name">memory/</span><span class="why">Agent Memory CLI</span></summary>
+      <div class="tline"><span class="g">│  └─ </span><span class="name">dev-memory.py</span><span class="why">唯一 CLI</span></div>
+    </details>
 
     <details id="docs">
       <summary class="tline"><span class="g">├─ </span><span class="name">docs/</span><span class="why">PLUGIN／adr／專案帳</span></summary>
-      <div class="tline"><span class="g">│  ├─ </span><span class="name">adr/</span></div>
-      <div class="tline"><span class="g">│  ├─ </span><span class="name">dev/</span></div>
-      <div class="tline"><span class="g">│  └─ </span><span class="name">prompts/</span></div>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">adr/</span><span class="why">架構決策紀錄</span></div>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">dev/</span><span class="why">母版自己的 STATUS／HISTORY／tools</span></div>
+      <div class="tline"><span class="g">│  └─ </span><span class="name">prompts/</span><span class="why">提示詞</span></div>
     </details>
 
     <details id="notes">
       <summary class="tline"><span class="g">├─ </span><span class="name">notes/</span><span class="why">設計正本</span></summary>
-      <div class="tline"><span class="g">│  └─ </span><span class="name">design/</span></div>
+      <div class="tline"><span class="g">│  └─ </span><span class="name">design/</span><span class="why">審查頁與 vbox-fig 設計正本</span></div>
     </details>
 
-    <div class="tline"><span class="g">├─ </span><span class="name">observability/</span><span class="why">事件工具</span></div>
-    <div class="tline"><span class="g">├─ </span><span class="name">agents/</span><span class="why">reviewer 提示</span></div>
-    <div class="tline"><span class="g">├─ </span><span class="name">.claude-plugin/</span><span class="why">Claude 薄殼</span></div>
-    <div class="tline"><span class="g">├─ </span><span class="name">.cursor-plugin/</span><span class="why">Cursor 薄殼</span></div>
-    <div class="tline"><span class="g">└─ </span><span class="name">.codex-plugin/</span><span class="why">Codex 薄殼</span></div>
+    <details id="observability">
+      <summary class="tline"><span class="g">├─ </span><span class="name">observability/</span><span class="why">事件工具</span></summary>
+      <div class="tline"><span class="g">│  └─ </span><span class="name">devflow-obs.py</span><span class="why">讀取／統計</span></div>
+    </details>
+
+    <details id="agents">
+      <summary class="tline"><span class="g">├─ </span><span class="name">agents/</span><span class="why">reviewer 提示</span></summary>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">devflow-reviewer.md</span><span class="why">T／gate 收驗，只讀</span></div>
+      <div class="tline"><span class="g">│  └─ </span><span class="name">devflow-adviser.md</span><span class="why">連敗用盡後診斷</span></div>
+    </details>
+
+    <details id="claude-plugin">
+      <summary class="tline"><span class="g">├─ </span><span class="name">.claude-plugin/</span><span class="why">Claude 薄殼</span></summary>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">plugin.json</span><span class="why">市集身分</span></div>
+      <div class="tline"><span class="g">│  └─ </span><span class="name">marketplace.json</span><span class="why">市集清單</span></div>
+    </details>
+
+    <details id="cursor-plugin">
+      <summary class="tline"><span class="g">├─ </span><span class="name">.cursor-plugin/</span><span class="why">Cursor 薄殼</span></summary>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">plugin.json</span><span class="why">市集身分</span></div>
+      <div class="tline"><span class="g">│  └─ </span><span class="name">marketplace.json</span><span class="why">市集清單</span></div>
+    </details>
+
+    <details id="codex-plugin">
+      <summary class="tline"><span class="g">└─ </span><span class="name">.codex-plugin/</span><span class="why">Codex 薄殼</span></summary>
+      <div class="tline"><span class="g">   └─ </span><span class="name">plugin.json</span><span class="why">市集身分</span></div>
+    </details>
   </div>
   </div>
   <p class="muted">三邊薄殼都指同一棵 <code>skills/</code>。脚本職責見

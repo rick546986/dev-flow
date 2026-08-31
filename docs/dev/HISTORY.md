@@ -371,3 +371,8 @@
 - 為什麼:人要的是資料夾包含關係，不是 hop 流程也不是 vbox-fig 步驟方塊
 - 落在哪:guides/guide-dir-map.html docs/dev/HISTORY.md
 
+## 2026-08-31 · guide-dir-map-why
+- 做了什麼:目錄樹每一列補 why；L1 原先不能點的資料夾改可展開，只列關鍵檔
+- 為什麼:點開後的子資料夾與檔案不能空白；scripts/hooks 不整包列進樹
+- 落在哪:guides/guide-dir-map.html docs/dev/HISTORY.md
+
