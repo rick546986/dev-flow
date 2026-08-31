@@ -2426,6 +2426,15 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             第 2／4 站及同類圖走這支,不是掃頁三框,也不是七站三走廊圖。
             契約 <code>notes/design/vbox-fig-contract.md</code>。</td>
         <td>各站畫直式步驟方塊時呼叫;<code>check-vbox-fig.sh</code> 對 lifecycle fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>build-dir-tree.py</code></td>
+        <td>可摺疊目錄樹產器:吃目錄＋用途表,吐 monospace
+            <code>├─ │ └─</code> 巢狀摺疊 HTML,每列 why、預設只露 L1。
+            母版 <code>guides/guide-dir-map.html</code> 用這支產,不准手抄。
+            產品有需要才畫,落 <code>docs/dev/&lt;slug&gt;/dir-tree.html</code>,
+            不進 ship-manifest。契約 <code>notes/design/dir-tree-contract.md</code>。</td>
+        <td>母版 <code>--write</code>／<code>--check</code>;產品
+            <code>--purpose</code>＋<code>--root</code>;
+            <code>check-dir-tree.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>build-stage1-html.py</code></td>
         <td>第 1 站審頁產生器:吃 <code>1-discussion.md</code> 的 Problem／Open Questions／
             現況圖／Actors,吐 <code>.sum#scan-sum</code>／直式三框
@@ -2517,6 +2526,12 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             lifecycle fixture 必須吐直式 SVG 且含 <code>.hl</code>;吐 mermaid／
             <code>&lt;pre&gt;</code>／沒 viewBox／沒置中字必須紅。
             不塞 hop graph,不取代 fig-text／Journey／guides-fig-sync。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-dir-tree.sh</code></td>
+        <td>可摺疊目錄樹產器的小牙:無參數／<code>--help</code> 必須 exit 2;
+            母版 <code>guide-dir-map.html</code> 必須跟產器
+            <code>--check</code> 對得上;吐 mermaid／<code>&lt;pre&gt;</code>／svg／
+            預設展開必須紅。不塞 hop graph,不改 vbox-fig／scan-now／七站三走廊。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-stage1-now-contract.sh</code></td>
         <td>第 1 站審頁三框契約牙:正本 <code>notes/design/stage1-review-ui-contract.md</code>

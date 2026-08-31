@@ -381,3 +381,8 @@
 - 為什麼:人要看到方法包骨架（hop 檔名+用途），摺疊仍只露 L1
 - 落在哪:guides/guide-dir-map.html docs/dev/HISTORY.md
 
+## 2026-08-31 · guide-dir-map-dir-tree
+- 做了什麼:目錄樹 why 改成一句到兩句脈絡；收成可選產器 build-dir-tree.py + 契約 dir-tree-contract.md，母版 guide-dir-map.html 改由產器吐
+- 為什麼:人要看懂每列幹嘛；產品專案大／接手／跨模組才畫，不進 gate、不進 ship-manifest
+- 落在哪:guides/guide-dir-map.html guides/dir-tree-purpose.json scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md _templates/1-discussion.md _templates/diagram-style.md guides/guide-dev-flow.html#filemap docs/dev/HISTORY.md
+

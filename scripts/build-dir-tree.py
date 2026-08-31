@@ -1,0 +1,596 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""可摺疊目錄樹產器。
+
+契約:notes/design/dir-tree-contract.md
+牙:scripts/check-dir-tree.sh
+
+吃目錄 + 用途表(JSON),吐 monospace ├─ │ └─ 巢狀摺疊 HTML。
+每列 why 一句到兩句。預設只露 L1。不准 mermaid／橫 ASCII／vbox 步驟方塊。
+
+用法:
+  scripts/build-dir-tree.py --purpose <表.json> --root <目錄> [--out <html>]
+  scripts/build-dir-tree.py --write
+  scripts/build-dir-tree.py --check
+  scripts/build-dir-tree.py --purpose <表.json> --root <目錄> --walk [--out -]
+
+無參數或 --help 印用法並 exit 2。
+exit:0 = 寫出／對得上 / 1 = 用途表不合法或吐了禁物 / 2 = 用法錯誤、檔案讀不到
+"""
+from __future__ import print_function
+
+import html
+import json
+import os
+import pathlib
+import sys
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+PURPOSE_PATH = ROOT / "guides" / "dir-tree-purpose.json"
+GUIDE_PATH = ROOT / "guides" / "guide-dir-map.html"
+FIX_DIR = ROOT / "scripts" / "fixtures" / "dir-tree"
+
+OMIT_DEFAULT = (
+    ".git",
+    "node_modules",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+    ".tox",
+    ".mypy_cache",
+    ".pytest_cache",
+)
+
+# 與 guide-dev-flow.html 逐位元組一致(check-guides-fig-sync 只比這段)。
+SCROLL_BLOCK = """<!-- 
+  頁內錨點捲動修正：iframe/artifact 載體會把 fragment 導航當新網址，原生 #錨點 不捲動；
+  此段攔截頁內錨點點擊改用 scrollIntoView，一般瀏覽器直開不受影響。
+-->
+<script>
+  document.addEventListener('click', function(e) {
+    var a = e.target.closest('a[href^="#"]');
+    if (!a) return;
+    var href = a.getAttribute('href');
+    if (href.length <= 1) return;
+    var id = decodeURIComponent(href.slice(1));
+    var el = document.getElementById(id);
+    if (!el) return;
+    e.preventDefault();
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    history.replaceState(null, '', href);
+  });
+</script>
+"""
+
+CSS = """\
+  :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;}
+  @media(prefers-color-scheme:dark){
+    :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  }
+  :root[data-theme="dark"]{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;
+        --card:#1e2023;--ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  :root[data-theme="light"]{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;
+        --card:#f7f7f8;--ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+  main{max-width:960px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
+  h2{font-size:1.15rem;margin-top:2.2em}
+  nav{background:var(--card);border:1px solid var(--line);border-radius:10px;
+      padding:10px 16px;margin:1em 0;display:flex;flex-wrap:wrap;gap:6px 16px}
+  nav a{color:var(--acc);text-decoration:none;font-size:.9rem}
+  code{background:var(--card);border-radius:4px;padding:1px 5px;
+       font-family:ui-monospace,Menlo,monospace;font-size:.88em}
+  .muted{color:var(--muted)}
+  details{margin:.35em 0 0}
+  details>summary{cursor:pointer;color:var(--acc);font-size:.85rem;user-select:none}
+  footer.foot{margin-top:3em;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padding-top:1em}
+
+  /* ── Phase 1(guide-dev-talk)定調的可複用 token,勿改名 ───────────── */
+  .lead{margin:.2em 0 .9em;padding:.5em .85em;border-left:3px solid var(--acc);
+        background:var(--card);border-radius:0 6px 6px 0;font-size:.92rem}
+  .tablewrap{overflow-x:auto}
+
+  /* 目錄樹：摺疊仍是一棵 ├─ │ └─ 樹，不是卡片／步驟圖 */
+  .treewrap{overflow-x:auto;background:var(--bg);border:1px solid var(--line);
+            border-radius:10px;padding:14px 16px;margin:1em 0}
+  .tree{font:13px/1.75 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+        color:var(--fg)}
+  .tree details{margin:0}
+  .tree .tline{display:flex;align-items:baseline;gap:1.5em}
+  .tree summary.tline{list-style:none;cursor:pointer;color:inherit;
+                      font-size:inherit;font-weight:400;padding:0;user-select:none}
+  .tree summary.tline::-webkit-details-marker{display:none}
+  .tree summary.tline::marker{content:""}
+  .tree .g{color:var(--muted);flex:0 0 auto;white-space:pre}
+  .tree .name{flex:0 0 auto;white-space:nowrap}
+  .tree summary .name{color:var(--acc)}
+  .tree .why{color:var(--muted);flex:1 1 18em;max-width:42em}
+"""
+
+
+def usage():
+    print(
+        "用法:build-dir-tree.py --purpose <表.json> --root <目錄> [--out <html>]\n"
+        "     build-dir-tree.py --write\n"
+        "     build-dir-tree.py --check\n"
+        "     build-dir-tree.py --purpose <表.json> --root <目錄> --walk [--out -]\n"
+        "契約:notes/design/dir-tree-contract.md\n"
+        "吃目錄+用途表,吐可摺疊 monospace 目錄樹。無參數／--help 離開。",
+        file=sys.stderr,
+    )
+
+
+def die(code, msg):
+    print(msg, file=sys.stderr)
+    sys.exit(code)
+
+
+def esc(text):
+    return html.escape(text or "", quote=True)
+
+
+def load_json(path):
+    try:
+        raw = pathlib.Path(path).read_text(encoding="utf-8")
+    except OSError as err:
+        die(2, "讀不到用途表:%s" % err)
+    try:
+        data = json.loads(raw)
+    except ValueError as err:
+        die(1, "用途表不是 JSON:%s" % err)
+    if not isinstance(data, dict):
+        die(1, "用途表必須是物件")
+    return data
+
+
+def why_ok(why):
+    text = (why or "").strip()
+    if len(text) < 12:
+        return False
+    return True
+
+
+def node_why(node):
+    why = node.get("why")
+    if not isinstance(why, str) or not why_ok(why):
+        die(1, "列 %s 缺一句到兩句 why" % node.get("name", "?"))
+    return why
+
+
+def is_virtual(node):
+    if node.get("virtual"):
+        return True
+    name = node.get("name") or ""
+    return name in ("…", "...", "…")
+
+
+def validate_tree(node, root, rel=""):
+    name = node.get("name")
+    if not isinstance(name, str) or not name:
+        die(1, "列缺 name")
+    node_why(node)
+    children = node.get("children") or []
+    if children and not isinstance(children, list):
+        die(1, "%s 的 children 必須是陣列" % name)
+    if is_virtual(node):
+        if children:
+            die(1, "合成列 %s 不准再有 children" % name)
+        return
+    child_rel = name if not rel else (rel.rstrip("/") + "/" + name)
+    # root row name is display-only (dev-flow/), path checks start at children
+    if rel or name not in (pathlib.Path(root).name + "/",):
+        pass
+    for child in children:
+        if not isinstance(child, dict):
+            die(1, "%s 的子列不是物件" % name)
+        validate_child(child, root, rel if rel else "")
+
+
+def validate_child(node, root, parent_rel):
+    name = node.get("name")
+    if not isinstance(name, str) or not name:
+        die(1, "列缺 name")
+    node_why(node)
+    children = node.get("children") or []
+    if children and not isinstance(children, list):
+        die(1, "%s 的 children 必須是陣列" % name)
+    rel = name if not parent_rel else (parent_rel.rstrip("/") + "/" + name)
+    if not is_virtual(node):
+        path = pathlib.Path(root) / rel.rstrip("/")
+        if not path.exists():
+            die(1, "用途表有、目錄沒有:%s" % rel)
+    for child in children:
+        if not isinstance(child, dict):
+            die(1, "%s 的子列不是物件" % name)
+        validate_child(child, root, "" if is_virtual(node) else rel)
+
+
+def slug_id(rel):
+    text = rel.strip("/").replace("/", "-").replace(".", "")
+    text = "".join(ch if ch.isalnum() or ch == "-" else "-" for ch in text)
+    return text.strip("-") or "n"
+
+
+def why_span(node):
+    why = node_why(node)
+    link = node.get("link")
+    body = esc(why)
+    if link:
+        href = link.get("href") or ""
+        label = link.get("text") or href
+        if not href:
+            die(1, "%s 的 link 缺 href" % node.get("name"))
+        body = body + ' <a href="%s">%s</a>' % (esc(href), esc(label))
+    return '<span class="why">%s</span>' % body
+
+
+def tline(gutter, name, node, summary=False):
+    tag = "summary" if summary else "div"
+    return (
+        '      <%s class="tline"><span class="g">%s</span>'
+        '<span class="name">%s</span>%s</%s>'
+        % (tag, esc(gutter), esc(name), why_span(node), tag)
+    )
+
+
+def prefix_parts(cont):
+    return "".join("│  " if c else "   " for c in cont)
+
+
+def render_nodes(nodes, cont, parent_rel, lines):
+    for i, node in enumerate(nodes):
+        last = i == len(nodes) - 1
+        gutter = prefix_parts(cont) + ("└─ " if last else "├─ ")
+        name = node["name"]
+        rel = name if not parent_rel else (parent_rel.rstrip("/") + "/" + name)
+        children = node.get("children") or []
+        if children:
+            nid = node.get("id") or slug_id(rel)
+            lines.append('    <details id="%s">' % esc(nid))
+            lines.append(tline(gutter, name, node, summary=True))
+            render_nodes(children, cont + [not last], rel, lines)
+            lines.append("    </details>")
+        else:
+            lines.append(tline(gutter, name, node))
+
+
+def render_tree(spec):
+    root = spec.get("root")
+    if not isinstance(root, dict):
+        die(1, "用途表要有 root 物件")
+    node_why(root)
+    name = root.get("name")
+    if not isinstance(name, str) or not name:
+        die(1, "root 缺 name")
+    children = root.get("children") or []
+    if not isinstance(children, list) or not children:
+        die(1, "root 要有 children")
+    lines = [
+        '  <div class="treewrap" role="tree" aria-label="%s">'
+        % esc(spec.get("aria") or name),
+        '  <div class="tree">',
+        tline("", name, root),
+        "",
+    ]
+    render_nodes(children, [], "", lines)
+    lines += ["  </div>", "  </div>"]
+    return "\n".join(lines) + "\n"
+
+
+def default_chrome(spec):
+    title = spec.get("title") or spec["root"]["name"]
+    kind = spec.get("kind") or "product"
+    intro = spec.get("intro")
+    if not intro:
+        if kind == "method-package":
+            intro = (
+                "人看母版資料夾怎麼疊。不是腳本盤點。腳本盤點在 "
+                '<a href="guide-dev-flow.html#filemap">guide-dev-flow 附錄 #filemap</a>。'
+            )
+        else:
+            intro = "人看這個 repo 資料夾怎麼疊、每一列幹嘛。不是腳本盤點。"
+    nav = spec.get("nav")
+    if nav is None:
+        nav = [{"href": "#tree", "label": "目錄樹"}]
+        if kind == "method-package":
+            nav.append(
+                {"href": "guide-dev-flow.html#filemap", "label": "腳本盤點 #filemap"}
+            )
+    h2 = spec.get("h2") or "目錄樹"
+    lead = spec.get("lead") or (
+        "預設只看到第一層。摺疊時仍是一棵樹。"
+        "藍色資料夾名可點，點開才接子層；子層一樣用 "
+        "<code>├─</code> <code>│</code> <code>└─</code>。"
+    )
+    after = spec.get("after")
+    if after is None:
+        if kind == "method-package":
+            after = (
+                "三邊薄殼都指同一棵 <code>skills/</code>。脚本職責見 "
+                '<a href="guide-dev-flow.html#filemap">#filemap</a>。'
+            )
+        else:
+            after = "本頁是目錄包含關係，不是 hop 流程、也不是脚本盤點。"
+    footer = spec.get("footer")
+    if footer is None:
+        if kind == "method-package":
+            footer = (
+                "正本規則:<code>README.md</code>；技能樹:<code>skills/</code>。"
+                "本頁是目錄包含關係，不是 hop 流程、也不是脚本盤點。脚本盤點在 "
+                '<a href="guide-dev-flow.html#filemap">guide-dev-flow 附錄 #filemap</a>。'
+                "視覺語言沿用 <code>guide-dev-talk.html</code> 的共用 token。"
+                "疑義以 README 為準。"
+            )
+        else:
+            footer = (
+                "畫法:<code>notes/design/dir-tree-contract.md</code>；"
+                "產器:<code>scripts/build-dir-tree.py</code>。"
+                "有需要才畫，不是每案必跑。"
+            )
+    return title, intro, nav, h2, lead, after, footer
+
+
+OPEN_ANCESTOR_JS = """\
+<script>
+/* 巢狀 details：點頁內錨點時先打開祖先 details */
+document.addEventListener('click', function(e) {
+  var a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  var href = a.getAttribute('href');
+  if (href.length <= 1) return;
+  var el = document.getElementById(decodeURIComponent(href.slice(1)));
+  if (!el) return;
+  var node = el;
+  while (node) {
+    if (node.tagName === 'DETAILS') node.open = true;
+    node = node.parentElement;
+  }
+});
+</script>
+"""
+
+
+def render_page(spec):
+    title, intro, nav, h2, lead, after, footer = default_chrome(spec)
+    nav_html = "\n".join(
+        '    <a href="%s">%s</a>' % (esc(item["href"]), esc(item["label"]))
+        for item in nav
+    )
+    tree = render_tree(spec)
+    parts = [
+        "<!DOCTYPE html>\n",
+        '<html lang="zh-TW">\n',
+        "<head>\n",
+        '<meta charset="utf-8">\n',
+        '<meta name="viewport" content="width=device-width,initial-scale=1">\n',
+        "<title>%s</title>\n" % esc(title),
+        "<style>\n",
+        CSS,
+        "</style>\n",
+        "</head>\n",
+        "<body>\n",
+        "<main>\n",
+        "  <h1>%s</h1>\n" % esc(title),
+        '  <p class="muted">%s</p>\n' % intro,
+        "\n",
+        "  <nav>\n",
+        nav_html,
+        "\n  </nav>\n",
+        "\n",
+        '  <h2 id="tree">%s</h2>\n' % esc(h2),
+        '  <p class="lead">%s</p>\n' % lead,
+        "\n",
+        tree,
+        '  <p class="muted">%s</p>\n' % after,
+        "\n",
+        '  <footer class="foot">\n',
+        "    %s\n" % footer,
+        "  </footer>\n",
+        "</main>\n",
+        OPEN_ANCESTOR_JS,
+        SCROLL_BLOCK,
+        "\n",
+        "</body>\n",
+        "</html>\n",
+    ]
+    return "".join(parts)
+
+
+def judge_html(text, label):
+    issues = []
+    low = text.lower()
+    if "```mermaid" in low or "mermaid.js" in low or "class=\"mermaid\"" in low or "class='mermaid'" in low:
+        issues.append("吐 mermaid")
+    if "<pre" in low:
+        issues.append("吐 <pre>")
+    if "<svg" in low:
+        issues.append("吐 svg")
+    if "<details open" in low:
+        issues.append("預設展開")
+    if "class=\"tline\"" not in text and "class='tline'" not in text:
+        issues.append("沒有 .tline")
+    if "├─" not in text or "└─" not in text:
+        issues.append("沒有樹線")
+    if issues:
+        return False, label + ":" + "、".join(issues)
+    return True, label
+
+
+def walk_dir(root, why_map, omit, prune, rel=""):
+    base = pathlib.Path(root) / rel if rel else pathlib.Path(root)
+    try:
+        names = sorted(os.listdir(base), key=lambda n: (not n.endswith("/"), n.lower()))
+    except OSError as err:
+        die(2, "讀不到目錄 %s:%s" % (base, err))
+    # listdir gives files; mark dirs with trailing slash in name for display
+    entries = []
+    for raw in sorted(os.listdir(base), key=str.lower):
+        if raw in omit or raw.startswith("."):
+            # still allow explicit why for dotted dirs if listed
+            child_rel = raw if not rel else rel.rstrip("/") + "/" + raw
+            if child_rel not in why_map and (raw + "/") not in why_map:
+                if raw in OMIT_DEFAULT or raw in omit:
+                    continue
+        path = base / raw
+        display = raw + ("/" if path.is_dir() else "")
+        child_rel = display if not rel else rel.rstrip("/") + "/" + display
+        key = child_rel
+        prune_spec = prune.get(child_rel) or prune.get(child_rel.rstrip("/"))
+        if prune_spec == "omit" or (isinstance(prune_spec, dict) and prune_spec.get("omit")):
+            continue
+        why = why_map.get(child_rel) or why_map.get(child_rel.rstrip("/"))
+        if path.is_dir() and isinstance(prune_spec, dict) and "rest_why" in prune_spec:
+            show = prune_spec.get("show") or []
+            kids = []
+            for item in show:
+                item_rel = child_rel.rstrip("/") + "/" + item
+                item_why = why_map.get(item_rel) or why_map.get(item)
+                if not item_why:
+                    die(1, "prune.show %s 缺 why" % item_rel)
+                kids.append({"name": item, "why": item_why})
+            kids.append({
+                "name": "…",
+                "why": prune_spec["rest_why"],
+                "virtual": True,
+                "link": prune_spec.get("link"),
+            })
+            if not why:
+                die(1, "列 %s 缺 why" % child_rel)
+            entries.append({"name": display, "why": why, "children": kids})
+            continue
+        if not why:
+            die(1, "列 %s 缺 why" % child_rel)
+        node = {"name": display, "why": why}
+        if path.is_dir():
+            kids = walk_dir(root, why_map, omit, prune, child_rel)
+            if kids:
+                node["children"] = kids
+        entries.append(node)
+    return entries
+
+
+def apply_walk(spec, root):
+    why_map = spec.get("why")
+    if not isinstance(why_map, dict):
+        die(1, "--walk 用途表要有 why 對照")
+    omit = set(OMIT_DEFAULT)
+    for extra in spec.get("omit") or []:
+        omit.add(extra.rstrip("/"))
+    prune = spec.get("prune") or {}
+    if not isinstance(prune, dict):
+        die(1, "prune 必須是物件")
+    children = walk_dir(root, why_map, omit, prune, "")
+    root_name = spec.get("root_name") or (pathlib.Path(root).name + "/")
+    root_why = spec.get("root_why") or why_map.get("") or why_map.get(root_name)
+    if not why_ok(root_why or ""):
+        die(1, "walk 缺 root why")
+    spec = dict(spec)
+    spec["root"] = {"name": root_name, "why": root_why, "children": children}
+    return spec
+
+
+def emit(spec, root, do_walk):
+    if do_walk:
+        spec = apply_walk(spec, root)
+    root_node = spec.get("root")
+    if not isinstance(root_node, dict):
+        die(1, "用途表要有 root")
+    children = root_node.get("children") or []
+    for child in children:
+        if not isinstance(child, dict):
+            die(1, "root.children 必須是物件列")
+        validate_child(child, root, "")
+    page = render_page(spec)
+    ok, detail = judge_html(page, "產出")
+    if not ok:
+        die(1, detail)
+    return page
+
+
+def write_text(path, text):
+    pathlib.Path(path).parent.mkdir(parents=True, exist_ok=True)
+    pathlib.Path(path).write_text(text, encoding="utf-8")
+
+
+def main(argv):
+    if not argv or argv[0] in ("-h", "--help"):
+        usage()
+        sys.exit(2)
+
+    purpose = None
+    root = None
+    out = None
+    do_walk = False
+    mode = None
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg == "--write":
+            mode = "write"
+            i += 1
+        elif arg == "--check":
+            mode = "check"
+            i += 1
+        elif arg == "--walk":
+            do_walk = True
+            i += 1
+        elif arg == "--purpose":
+            if i + 1 >= len(argv):
+                die(2, "--purpose 需要一個值")
+            purpose = argv[i + 1]
+            i += 2
+        elif arg == "--root":
+            if i + 1 >= len(argv):
+                die(2, "--root 需要一個值")
+            root = argv[i + 1]
+            i += 2
+        elif arg == "--out":
+            if i + 1 >= len(argv):
+                die(2, "--out 需要一個值")
+            out = argv[i + 1]
+            i += 2
+        elif arg == "--fixture":
+            if i + 1 >= len(argv):
+                die(2, "--fixture 需要一個值")
+            name = argv[i + 1]
+            purpose = str(FIX_DIR / name / "purpose.json")
+            root = str(FIX_DIR / name / "repo")
+            i += 2
+        else:
+            die(2, "拒絕:未知參數 %s" % arg)
+
+    if mode in ("write", "check"):
+        purpose = purpose or str(PURPOSE_PATH)
+        root = root or str(ROOT)
+        page = emit(load_json(purpose), root, do_walk)
+        if mode == "check":
+            try:
+                current = GUIDE_PATH.read_text(encoding="utf-8")
+            except OSError as err:
+                die(2, "讀不到 %s:%s" % (GUIDE_PATH, err))
+            if current != page:
+                die(1, "guide-dir-map.html 跟產器產出不一致,請跑 scripts/build-dir-tree.py --write")
+            print("ok:guide-dir-map.html 對得上產器", file=sys.stderr)
+            return
+        write_text(GUIDE_PATH, page)
+        print("wrote %s" % GUIDE_PATH, file=sys.stderr)
+        return
+
+    if not purpose or not root:
+        die(2, "要 --purpose 與 --root(或 --write／--check／--fixture)")
+    page = emit(load_json(purpose), root, do_walk)
+    if out in (None, "-"):
+        sys.stdout.write(page)
+        return
+    write_text(out, page)
+    print("wrote %s" % out, file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

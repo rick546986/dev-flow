@@ -2299,7 +2299,7 @@ check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 179" "MIN_CHECKS 釘
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 36" "MIN_CHECKS 釘死 36(parity 遷到 check-ship-manifest.sh 後,情境/mutant/模板順序實得數)"
 check_static_pin "scripts/check-ship-manifest.sh" "MIN_CHECKS = 15" "MIN_CHECKS 釘死 15(結構+parity+地圖對帳+負向 fixture 的實得數)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 55" "MIN_CHECKS 釘死 55(STATUS 單寫入者 + OverlapRef 單一座標:⑬b/⑬c + 負向㉘–㉟ 後的實得數)"
-check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 188" "EXPECTED_MAPPED_FILES 釘死 188(精確值;status-update.sh + test-status-update.sh +2)"
+check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 190" "EXPECTED_MAPPED_FILES 釘死 190(精確值;dir-tree 產器+牙 +2)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 28" "EXPECTED_GROUPS 釘死 28(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的

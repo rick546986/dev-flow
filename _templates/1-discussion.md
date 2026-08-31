@@ -18,6 +18,11 @@ updated:
 > 四行堆＋`|` 分隔)。正本
 > `notes/design/stage1-review-ui-contract.md`。不要改掃頁產生器來充審頁,
 > 不要手包 html-shell。
+> 可選目錄樹:專案大、接手、跨模組、或人要看檔案脈絡時,才用方法包
+> `scripts/build-dir-tree.py` 畫可摺疊目錄樹(契約
+> `notes/design/dir-tree-contract.md`)。落在本 feat 的
+> `docs/dev/<slug>/dir-tree.html`,不要寫進 `1-discussion.html`、
+> 不要跟掃頁三框搶槽。不是每案必跑,不進 gate、不改 hop。
 
 ## Problem
 <!-- 1-3 句:誰、遇到什麼痛、現在怎麼繞過 -->
