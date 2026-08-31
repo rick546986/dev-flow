@@ -17,9 +17,8 @@
 - 可點的是藍色資料夾名(`summary .name` 用 `--acc`)。
 - 每列:`.g` + `.name` + `.why`。why 貼近 name,不准大 gap,不准名與 why
   中間再加 `.sep`／第二根 `│`。why 一句到兩句。不要另開說明卡。
-- 一根接縫要蓋祖先 `│` 每一欄（產器包 `<span class="v">`），不只
-  branch 欄。本列 `├─` 用 `.g:not(.last)::after`；`.last` 不關 `.v`。
-  absolute,不佔列高。不是兩截半根。產器不准預插假列。
+- 一根接縫蓋祖先 `.v` 與本列 `├─`（`.g:not(.last)::after`）。
+  `.last` 不關 `.v`。absolute。不是兩截半根。不准預插假列。
 - 葉子(檔案、或不再展開的資料夾)不是 summary。
 - 不要把整包 scripts／hooks 列完;用一列 `…`(ellipsis)指到盤點。
 - 類名沿用手樣,不准另發明:
@@ -40,7 +39,7 @@
 產器吃這份 YAML,**不要掃整棵 repo 自動猜 why**。
 
 ```yaml
-title: 產品名 目錄關係
+title: <產品> 目錄關係
 root:
   name: app/
   why: 產品根。一句到兩句。
@@ -59,9 +58,10 @@ root:
 
 ## 輸出
 
-html 片段(`--fragment`)或整頁。母版 `#dirmap` 必須由這支產,`--check`
-對得上手改會紅。產品落到 `docs/dev/<slug>/` 一個 html,不要跟 1-discussion
-掃頁三框搶槽。
+產品:`docs/dev/<slug>/dir-tree-purpose.yaml` → 方法包產器吐
+`docs/dev/<slug>/dir-tree.html`(可 `--fragment`)。產器不進
+ship-manifest。母版 `#dirmap` 必須由這支產,`--check` 手改會紅。
+不要跟 1-discussion 掃頁三框搶槽。
 
 ## 何時不用
 

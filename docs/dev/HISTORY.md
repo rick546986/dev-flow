@@ -426,3 +426,8 @@
 - 為什麼:prefix 純文字 │ 沒 overlay，末子關掉整列後祖先接不到下一個 L1
 - 落在哪:scripts/build-dir-tree.py guides/guide-dev-flow.html scripts/check-dir-tree.sh notes/design/dir-tree-contract.md
 
+## 2026-08-31 · dir-tree-recipe
+- 做了什麼:第 1 站模板頂註改成可照做的三步目錄樹食譜；契約修好產品路徑 docs/dev/<slug>/dir-tree-purpose.yaml → dir-tree.html；S1-survey 加一句指標；牙加窄針防食譜再漂
+- 為什麼:現況太薄、產品路徑還是壞的 docs/dev/ /；人要套上就能跑，不是每案必跑、不進 gate、不改 hop
+- 落在哪:_templates/1-discussion.md notes/design/dir-tree-contract.md skills/dev-talk/nodes/S1-survey.md scripts/check-dir-tree.sh
+

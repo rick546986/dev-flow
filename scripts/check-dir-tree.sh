@@ -84,6 +84,8 @@ for path, label in (
     (contract, "notes/design/dir-tree-contract.md"),
     (purpose, "guides/dir-tree-purpose.yaml"),
     (guide, "guides/guide-dev-flow.html"),
+    (os.path.join(root, "skills", "dev-talk", "nodes", "S1-survey.md"),
+     "skills/dev-talk/nodes/S1-survey.md"),
 ):
     if not os.path.isfile(path):
         print("FATAL:找不到 " + label, file=sys.stderr)
@@ -198,6 +200,17 @@ if os.path.isfile(stub):
 tmpl = open(template, encoding="utf-8").read()
 check("build-dir-tree.py" in tmpl and "dir-tree.html" in tmpl, "第 1 站模板有可選目錄樹")
 check("不進 gate" in tmpl or "不是每案必跑" in tmpl, "模板寫明不是必跑")
+check("dir-tree-purpose.yaml" in tmpl, "模板有用途表路徑")
+check("${DEVFLOW_ROOT}/scripts/build-dir-tree.py" in tmpl, "模板用方法包產器")
+check("docs/dev/" in tmpl, "模板產出落 docs/dev/")
+
+survey = os.path.join(root, "skills", "dev-talk", "nodes", "S1-survey.md")
+if not os.path.isfile(survey):
+    print("FATAL:找不到 skills/dev-talk/nodes/S1-survey.md", file=sys.stderr)
+    sys.exit(2)
+s1 = open(survey, encoding="utf-8").read()
+check("可選目錄樹" in s1 or ("1-discussion.md" in s1 and "頂註" in s1),
+      "S1-survey 有可選目錄樹食譜指標")
 
 canon = open(contract, encoding="utf-8").read()
 check(len(canon.splitlines()) <= 80, "契約是短冊(≤80 行)")
@@ -209,6 +222,9 @@ check("2.0.0" in canon, "契約寫明不改 2.0.0")
 check("#dirmap" in canon and "guide-dev-flow.html" in canon, "契約正本在主指南 #dirmap")
 check("一根接縫" in canon and ".v" in canon and "祖先" in canon,
       "契約鎖接縫蓋祖先 │ 每一欄")
+check("docs/dev/<slug>/dir-tree.html" in canon
+      or "docs/dev/<slug>/dir-tree.html" in canon.replace("\\", ""),
+      "契約寫清產品 dir-tree.html 路徑")
 check(".sep" in canon and ("不准" in canon or "不要" in canon),
       "契約寫明名與 why 之間不准 .sep")
 
