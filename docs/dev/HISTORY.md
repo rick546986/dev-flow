@@ -446,3 +446,8 @@
 - 為什麼:頂註已是三步食譜；_templates/ 還有骨架檔不該整包列進樹
 - 落在哪:guides/dir-tree-purpose.yaml guides/guide-dev-flow.html#dirmap
 
+## 2026-08-31 · pages-link-prefix
+- 做了什麼:人點的 html 超連改成 Pages 絕對網址：範例表補 3/5/6 視覺頁；ADR／HISTORY 導覽不再用會走出錯誤前綴的相對路；guides 牙咬相對／blob。dev-setup 說明書加 Pages
+- 為什麼:guides/ 相對 example/*.html 在 Pages 會解析成 guides/example/ 而 404；html 有視覺版卻沒連
+- 落在哪:guides/guide-dev-flow.html scripts/build-public-docs.py scripts/check-pages-hosting.sh skills/dev-setup/SKILL.md docs/adr/ docs/dev/HISTORY.html
+

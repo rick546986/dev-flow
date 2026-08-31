@@ -53,7 +53,7 @@
 <main>
 <h1>0001. 外掛併回方法論 repo,兩者不再獨立演進</h1>
 <p class="meta"><span class="badge ok">accepted</span> · 2026-08-13 · 出處:<code>docs/dev/HISTORY.md</code> 的 <code>2026-08-13 · single-plugin-merge</code>;</p>
-<nav><a href="index.html">決策列表</a><a href="0001-merge-plugin-into-methodology-repo.md">md 正本</a><a href="../dev/HISTORY.html">改版歷史</a></nav>
+<nav><a href="https://rick546986.github.io/dev-flow/docs/adr/index.html">決策列表</a><a href="0001-merge-plugin-into-methodology-repo.md">md 正本</a><a href="https://rick546986.github.io/dev-flow/docs/dev/HISTORY.html">改版歷史</a></nav>
 <h2>Context</h2>
 <p>方法論(README、模板、檢查腳本)住在 <code>dev-flow</code> repo;實際在跑的執行程式 (hooks、skills)住在另一個 <code>dev-flow-plugin</code> 目錄。兩邊各自演進,靠一個 「版本握手」機制(<code>devflow-contract.json</code> + <code>runtime-capabilities.json</code>)確認相容。</p>
 <p>2026-08-02 的四能力審查明確把「外部外掛併回本 repo」列進<strong>防守清單</strong> (= 明確裁定不要做,防止未來有人誤補),理由寫的是: <strong>「握手機制的前提就是兩邊獨立演進。」</strong></p>

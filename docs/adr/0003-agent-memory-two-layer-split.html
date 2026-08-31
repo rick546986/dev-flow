@@ -53,7 +53,7 @@
 <main>
 <h1>0003. Agent Memory 分兩層:`.dev-flow/` 進 Git、本機索引不進 Git</h1>
 <p class="meta"><span class="badge ok">accepted</span> · 2026-08-20 · 出處:docs/prompts(Agent Memory v3 需求正本);落地見 README §16</p>
-<nav><a href="index.html">決策列表</a><a href="0003-agent-memory-two-layer-split.md">md 正本</a><a href="../dev/HISTORY.html">改版歷史</a></nav>
+<nav><a href="https://rick546986.github.io/dev-flow/docs/adr/index.html">決策列表</a><a href="0003-agent-memory-two-layer-split.md">md 正本</a><a href="https://rick546986.github.io/dev-flow/docs/dev/HISTORY.html">改版歷史</a></nav>
 <h2>Context</h2>
 <p>舊架構的 agent 記憶載體有兩個,都是人工維護的 Markdown:repo root <code>CONTEXT.md</code> (業務詞彙表)與 <code>docs/dev/HISTORY.md</code>(改版歷史索引)。三個問題:</p>
 <ol><li><strong>沒有 identity</strong>:記憶靠 filesystem path 定位。Mac 的 <code>/Users/…</code>、Windows 的 <code>D:\…</code>、Linux 的 <code>/home/…</code> 是三份不同的東西,而它們其實是同一個專案。</li><li><strong>沒有狀態</strong>:詞條寫下去就永遠是真的。程式碼改了、業務規則改了,詞條不會變, 而且<strong>腐化時沒有任何機制會發現</strong>。</li><li><strong>沒有分層</strong>:「程式現在怎麼運作」「這個詞什麼意思」「我們打算怎麼走」 「當初為什麼選」全混在同一份文字裡,回答時分不出哪句是現況、哪句是願景。</li></ol>

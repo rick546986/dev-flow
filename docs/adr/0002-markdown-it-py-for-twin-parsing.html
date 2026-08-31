@@ -53,7 +53,7 @@
 <main>
 <h1>0002. gate twin 解析層採用 markdown-it-py(推翻散發工具零相依立場)</h1>
 <p class="meta"><span class="badge ok">accepted</span> · 2026-08-15 · 出處:docs/dev/b8-gate-twin-review-ui/7-review.md(附錄 A7)</p>
-<nav><a href="index.html">決策列表</a><a href="0002-markdown-it-py-for-twin-parsing.md">md 正本</a><a href="../dev/HISTORY.html">改版歷史</a></nav>
+<nav><a href="https://rick546986.github.io/dev-flow/docs/adr/index.html">決策列表</a><a href="0002-markdown-it-py-for-twin-parsing.md">md 正本</a><a href="https://rick546986.github.io/dev-flow/docs/dev/HISTORY.html">改版歷史</a></nav>
 <h2>Context</h2>
 <p><code>build-gate-twin.py</code> 會被 dev-setup 散發到採用專案,原始立場是零外部相依 (「多一個相依就多一個在別人機器上跑不起來的理由」,寫進了工具 docstring)。 但手刻正則解析 markdown(fence 遮蔽、章節切割)在三輪獨立審查共爆 28 條 finding, 其中兩條是修上一輪時引入的新 HIGH、一條已發生在出貨物上(P4:整節從產出 html 消失而 60 項守衛全綠)。每補一個邊界就冒出下一個,靠自審不可能收斂。</p>
 <h2>Decision</h2>

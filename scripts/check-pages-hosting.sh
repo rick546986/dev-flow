@@ -6,9 +6,10 @@
 # 薄殼不抄正文／不要另開本機伺服器),
 # 或三邊食譜缺一邊、拿掉 pages job、組樹漏 7-review.html／shots,
 # 必須紅。
-# README.md 可點的 *.html 超連必須是既有 GitHub 超連規則
+# README.md 與 guides/*.html 可點的 *.html 超連必須是既有 GitHub 超連規則
 # https://<owner>.github.io/<repo>/<path-to-html>(本倉即
 # https://rick546986.github.io/dev-flow/...),相對路或 blob 必須紅。
+# 頁內 #錨 不算超連。md 正本／repo 路徑可留。
 #
 # 實跑 publish-pages.sh --root fixture:public/ 必須出現站審 html + shots/ + guides。
 # 禁 check(True)。補助產品詞不得當通用規則。
@@ -143,6 +144,35 @@ def judge_readme_html(readme_text):
     return local
 
 
+def html_hrefs(text):
+    found = []
+    for match in re.finditer(r"""(?i)<a\b[^>]*\bhref\s*=\s*["']([^"']+)["']""", text):
+        found.append(match.group(1).strip())
+    hrefs = []
+    for raw in found:
+        path = raw.split("#", 1)[0]
+        if path.endswith(".html"):
+            hrefs.append(raw)
+    return hrefs
+
+
+def judge_guides_html():
+    local = []
+    guides = os.path.join(root, "guides")
+    if not os.path.isdir(guides):
+        local.append("guides/ 存在")
+        return local
+    for name in sorted(os.listdir(guides)):
+        if not name.endswith(".html"):
+            continue
+        path = os.path.join(guides, name)
+        text = open(path, encoding="utf-8").read()
+        for href in html_hrefs(text):
+            if not href.startswith(PAGES_HREF):
+                local.append(name + " *.html 超連必須是 github.io Pages:" + href)
+    return local
+
+
 def judge(contract_text, gitlab_text, gitea_text, publisher_text, skill_text, helper_text):
     local = []
 
@@ -241,6 +271,12 @@ readme_fails = judge_readme_html(readme_text)
 check(not readme_fails, "README *.html 超連都是 github.io Pages")
 if readme_fails:
     for item in readme_fails:
+        print("  - " + item)
+
+guide_fails = judge_guides_html()
+check(not guide_fails, "guides/*.html 的 *.html 超連都是 github.io Pages")
+if guide_fails:
+    for item in guide_fails:
         print("  - " + item)
 
 # 散發副本與正本一致(同一條發散路)
