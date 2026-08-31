@@ -351,3 +351,8 @@
 - 為什麼:main-push 的 abbrev-ref 是 main,只跑 29 案撞地板;同樹 PR 是 detached HEAD 走 else 兩案所以綠。產品寫入者未改
 - 落在哪:scripts/test-status-update.sh docs/dev/HISTORY.md
 
+## 2026-08-31 · readme-pages-html-links
+- 做了什麼:README 的 *.html 超連改成 GitHub Pages 絕對網址,GitHub 上點開是渲染頁不是 blob 原始碼;pages-hosting 牙加咬 README 相對路／blob
+- 為什麼:相對路 guides/*.html 在 GitHub README 會解析成 blob/main/... 顯示 HTML 原始碼,不是渲染頁
+- 落在哪:README.md、scripts/check-pages-hosting.sh、guides/guide-dev-flow.html 檔案地圖列
+
