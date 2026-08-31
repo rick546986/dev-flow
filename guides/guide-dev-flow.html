@@ -2427,13 +2427,13 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             契約 <code>notes/design/vbox-fig-contract.md</code>。</td>
         <td>各站畫直式步驟方塊時呼叫;<code>check-vbox-fig.sh</code> 對 lifecycle fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>build-dir-tree.py</code></td>
-        <td>可摺疊目錄樹產器:吃目錄＋用途表,吐 monospace
-            <code>├─ │ └─</code> 巢狀摺疊 HTML,每列 why、預設只露 L1。
+        <td>可摺疊目錄包含樹產器:吃手寫 YAML 用途表(不准掃 repo 猜 why),吐
+            monospace <code>├─ │ └─</code> 巢狀摺疊 HTML,每列 why、預設只露 L1。
             母版 <code>guides/guide-dir-map.html</code> 用這支產,不准手抄。
-            產品有需要才畫,落 <code>docs/dev/&lt;slug&gt;/dir-tree.html</code>,
-            不進 ship-manifest。契約 <code>notes/design/dir-tree-contract.md</code>。</td>
+            產品有需要才畫,落 <code>docs/dev/&lt;slug&gt;/</code> 一個 html。
+            契約 <code>notes/design/dir-tree-contract.md</code>。</td>
         <td>母版 <code>--write</code>／<code>--check</code>;產品
-            <code>--purpose</code>＋<code>--root</code>;
+            <code>--purpose</code>;可 <code>--fragment</code>;
             <code>check-dir-tree.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>build-stage1-html.py</code></td>
         <td>第 1 站審頁產生器:吃 <code>1-discussion.md</code> 的 Problem／Open Questions／

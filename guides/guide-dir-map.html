@@ -243,20 +243,20 @@
     </details>
     </details>
     <details id="guides">
-      <summary class="tline"><span class="g">├─ </span><span class="name">guides/</span><span class="why">給人看的導覽 HTML。跟 skills/ 鏡像，不代替 README，也不代替 #filemap。</span></summary>
-      <div class="tline"><span class="g">│  ├─ </span><span class="name">guide-dev-flow.html</span><span class="why">七站導覽。生命週期圖與附錄 #filemap 在這裡；目錄關係另見本頁。</span></div>
+      <summary class="tline"><span class="g">├─ </span><span class="name">guides/</span><span class="why">給人看的導覽 HTML。跟 skills/ 鏡像，不代替 README，也不代替 <a href="guide-dev-flow.html#filemap">#filemap</a>。</span></summary>
+      <div class="tline"><span class="g">│  ├─ </span><span class="name">guide-dev-flow.html</span><span class="why">七站導覽。生命週期圖與附錄 <a href="guide-dev-flow.html#filemap">#filemap</a> 在這裡；目錄關係另見本頁。</span></div>
       <div class="tline"><span class="g">│  ├─ </span><span class="name">guide-dev-talk.html</span><span class="why">討論站導覽。對 skills/dev-talk/ 的鏡像，改 hop 要兩邊一起看。</span></div>
       <div class="tline"><span class="g">│  ├─ </span><span class="name">guide-quickstart.html</span><span class="why">快速上手。生命週期圖與 guide-dev-flow 那張必須同步。</span></div>
       <div class="tline"><span class="g">│  ├─ </span><span class="name">guide-dir-map.html</span><span class="why">本頁。由 scripts/build-dir-tree.py 產，手改會漂；預設只露 L1。</span></div>
-      <div class="tline"><span class="g">│  └─ </span><span class="name">dir-tree-purpose.json</span><span class="why">本頁用途表。產器吃這份 + 母版目錄，不要另手抄一棵樹。</span></div>
+      <div class="tline"><span class="g">│  └─ </span><span class="name">dir-tree-purpose.yaml</span><span class="why">本頁用途表（YAML）。產器只吃這份，不准掃 repo 猜 why。</span></div>
     </details>
     <details id="hooks">
-      <summary class="tline"><span class="g">├─ </span><span class="name">hooks/</span><span class="why">執行期守衛。掛在 agent 生命週期上擋違規；逐支職責看 #filemap，不要整包列進樹。</span></summary>
+      <summary class="tline"><span class="g">├─ </span><span class="name">hooks/</span><span class="why">執行期守衛。掛在 agent 生命週期上擋違規；逐支職責看 <a href="guide-dev-flow.html#filemap">#filemap</a>，不要整包列進樹。</span></summary>
       <div class="tline"><span class="g">│  ├─ </span><span class="name">hooks.json</span><span class="why">掛載清單。哪支 hook 聽哪個事件，以這份為準，不是靠資料夾掃。</span></div>
       <div class="tline"><span class="g">│  └─ </span><span class="name">…</span><span class="why">其餘守衛不整包列進樹，逐支職責見 <a href="guide-dev-flow.html#filemap">#filemap</a></span></div>
     </details>
     <details id="scripts">
-      <summary class="tline"><span class="g">├─ </span><span class="name">scripts/</span><span class="why">檢查與產檔。人工或 CI 跑；關鍵入口列下面，其餘見 #filemap，不要九十支灌進來。</span></summary>
+      <summary class="tline"><span class="g">├─ </span><span class="name">scripts/</span><span class="why">檢查與產檔。人工或 CI 跑；關鍵入口列下面，其餘見 <a href="guide-dev-flow.html#filemap">#filemap</a>，不要九十支灌進來。</span></summary>
       <div class="tline"><span class="g">│  ├─ </span><span class="name">devflow-check.sh</span><span class="why">母版總開關。CI 與本機健檢都從這支進各組牙。</span></div>
       <div class="tline"><span class="g">│  ├─ </span><span class="name">build-vbox-fig.py</span><span class="why">直式步驟方塊產圖。另一家族；不要拿來畫目錄樹或掃頁三框。</span></div>
       <div class="tline"><span class="g">│  ├─ </span><span class="name">build-dir-tree.py</span><span class="why">本頁這棵樹的產器。產品有需要才從方法包跑，不進 ship-manifest。</span></div>

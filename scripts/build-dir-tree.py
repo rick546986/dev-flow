@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""可摺疊目錄樹產器。
+"""可摺疊目錄包含樹產器(dir-tree)。
 
 契約:notes/design/dir-tree-contract.md
 牙:scripts/check-dir-tree.sh
 
-吃目錄 + 用途表(JSON),吐 monospace ├─ │ └─ 巢狀摺疊 HTML。
-每列 why 一句到兩句。預設只露 L1。不准 mermaid／橫 ASCII／vbox 步驟方塊。
+吃手寫 YAML 用途表,吐 monospace ├─ │ └─ 巢狀摺疊 HTML。
+不要掃 repo 猜 why。每列 why 一句到兩句。預設只露 L1。
 
 用法:
-  scripts/build-dir-tree.py --purpose <表.json> --root <目錄> [--out <html>]
+  scripts/build-dir-tree.py --purpose <表.yaml> [--out <html>] [--fragment]
   scripts/build-dir-tree.py --write
   scripts/build-dir-tree.py --check
-  scripts/build-dir-tree.py --purpose <表.json> --root <目錄> --walk [--out -]
 
 無參數或 --help 印用法並 exit 2。
 exit:0 = 寫出／對得上 / 1 = 用途表不合法或吐了禁物 / 2 = 用法錯誤、檔案讀不到
@@ -21,29 +20,15 @@ from __future__ import print_function
 
 import html
 import json
-import os
 import pathlib
+import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PURPOSE_PATH = ROOT / "guides" / "dir-tree-purpose.json"
+PURPOSE_PATH = ROOT / "guides" / "dir-tree-purpose.yaml"
 GUIDE_PATH = ROOT / "guides" / "guide-dir-map.html"
 FIX_DIR = ROOT / "scripts" / "fixtures" / "dir-tree"
 
-OMIT_DEFAULT = (
-    ".git",
-    "node_modules",
-    "__pycache__",
-    ".venv",
-    "venv",
-    "dist",
-    "build",
-    ".tox",
-    ".mypy_cache",
-    ".pytest_cache",
-)
-
-# 與 guide-dev-flow.html 逐位元組一致(check-guides-fig-sync 只比這段)。
 SCROLL_BLOCK = """<!-- 
   頁內錨點捲動修正：iframe/artifact 載體會把 fragment 導航當新網址，原生 #錨點 不捲動；
   此段攔截頁內錨點點擊改用 scrollIntoView，一般瀏覽器直開不受影響。
@@ -116,12 +101,11 @@ CSS = """\
 
 def usage():
     print(
-        "用法:build-dir-tree.py --purpose <表.json> --root <目錄> [--out <html>]\n"
+        "用法:build-dir-tree.py --purpose <表.yaml> [--out <html>] [--fragment]\n"
         "     build-dir-tree.py --write\n"
         "     build-dir-tree.py --check\n"
-        "     build-dir-tree.py --purpose <表.json> --root <目錄> --walk [--out -]\n"
         "契約:notes/design/dir-tree-contract.md\n"
-        "吃目錄+用途表,吐可摺疊 monospace 目錄樹。無參數／--help 離開。",
+        "吃手寫 YAML,吐可摺疊 monospace 目錄樹。不准掃 repo 猜 why。",
         file=sys.stderr,
     )
 
@@ -135,73 +119,174 @@ def esc(text):
     return html.escape(text or "", quote=True)
 
 
-def load_json(path):
+# ── YAML 子集(與契約範例同形;不支援 flow／anchor／掃目錄)──────────────
+class YamlError(ValueError):
+    pass
+
+
+def _parse_scalar(token, lineno):
+    token = token.strip()
+    if token in ("", "null", "~"):
+        return None
+    if token == "true":
+        return True
+    if token == "false":
+        return False
+    if token.startswith('"'):
+        try:
+            return json.loads(token)
+        except ValueError as exc:
+            raise YamlError("第 %d 行:引號字串失敗:%s" % (lineno, exc))
+    if token.startswith("'"):
+        raise YamlError("第 %d 行:請用雙引號" % lineno)
+    if token[0] in "{[&*|>":
+        raise YamlError("第 %d 行:不支援 flow／anchor" % lineno)
+    return token
+
+
+def _tokenize(text):
+    out = []
+    for lineno, raw in enumerate(text.splitlines(), 1):
+        if raw.startswith("---"):
+            raise YamlError("第 %d 行:不支援 ---" % lineno)
+        if not raw.strip():
+            continue
+        stripped = raw.lstrip(" ")
+        if stripped.startswith("#"):
+            continue
+        indent = len(raw) - len(stripped)
+        if "\t" in raw[:indent] or raw.startswith("\t"):
+            raise YamlError("第 %d 行:縮排不得用 tab" % lineno)
+        if indent % 2 != 0:
+            raise YamlError("第 %d 行:縮排必須是 2 的倍數" % lineno)
+        out.append((indent // 2, stripped.rstrip(), lineno))
+    return out
+
+
+def _split_key(content, lineno):
+    m = re.match(r"^([A-Za-z0-9_][A-Za-z0-9_./@+-]*):(?:\s+(.*))?$", content)
+    if not m:
+        raise YamlError("第 %d 行:不是 key: value" % lineno)
+    return m.group(1), (m.group(2) or "")
+
+
+def _parse_block(tokens, pos, level):
+    if pos >= len(tokens):
+        return None, pos
+    _, content, _ = tokens[pos]
+    if content.startswith("- "):
+        items = []
+        while pos < len(tokens):
+            ind, content, lineno = tokens[pos]
+            if ind != level or not content.startswith("- "):
+                break
+            body = content[2:].strip()
+            if re.match(r"^[A-Za-z0-9_][A-Za-z0-9_./@+-]*:(\s|$)", body):
+                key, token = _split_key(body, lineno)
+                if token:
+                    item = {key: _parse_scalar(token, lineno)}
+                    pos += 1
+                else:
+                    nested, pos = _parse_block(tokens, pos + 1, level + 2)
+                    item = {key: nested}
+                while pos < len(tokens) and tokens[pos][0] == level + 1 \
+                        and not tokens[pos][1].startswith("- "):
+                    _ind2, content2, lineno2 = tokens[pos]
+                    key2, token2 = _split_key(content2, lineno2)
+                    if token2:
+                        item[key2] = _parse_scalar(token2, lineno2)
+                        pos += 1
+                    else:
+                        nested2, pos = _parse_block(tokens, pos + 1, level + 2)
+                        item[key2] = nested2
+                items.append(item)
+            else:
+                items.append(_parse_scalar(body, lineno))
+                pos += 1
+        return items, pos
+    mapping = {}
+    while pos < len(tokens):
+        ind, content, lineno = tokens[pos]
+        if ind != level:
+            break
+        if content.startswith("- "):
+            break
+        key, token = _split_key(content, lineno)
+        if key in mapping:
+            raise YamlError("第 %d 行:重複 key %s" % (lineno, key))
+        if token:
+            mapping[key] = _parse_scalar(token, lineno)
+            pos += 1
+        else:
+            nested, pos = _parse_block(tokens, pos + 1, level + 1)
+            mapping[key] = nested
+    return mapping, pos
+
+
+def load_yaml(path):
     try:
         raw = pathlib.Path(path).read_text(encoding="utf-8")
     except OSError as err:
         die(2, "讀不到用途表:%s" % err)
     try:
-        data = json.loads(raw)
-    except ValueError as err:
-        die(1, "用途表不是 JSON:%s" % err)
+        tokens = _tokenize(raw)
+        if not tokens:
+            die(1, "用途表是空的")
+        data, pos = _parse_block(tokens, 0, 0)
+        if pos != len(tokens):
+            die(1, "用途表 YAML 縮排不連續")
+    except YamlError as err:
+        die(1, "用途表不是契約形 YAML:%s" % err)
     if not isinstance(data, dict):
         die(1, "用途表必須是物件")
     return data
 
 
-def why_ok(why):
-    text = (why or "").strip()
-    if len(text) < 12:
-        return False
-    return True
+def why_ok(why, minimum=12):
+    return isinstance(why, str) and len(why.strip()) >= minimum
 
 
-def node_why(node):
+def node_why(node, minimum=12):
     why = node.get("why")
-    if not isinstance(why, str) or not why_ok(why):
+    if not why_ok(why, minimum):
         die(1, "列 %s 缺一句到兩句 why" % node.get("name", "?"))
     return why
 
 
+def expand_ellipsis(node):
+    if not isinstance(node, dict):
+        die(1, "列不是物件")
+    out = dict(node)
+    kids = [expand_ellipsis(c) for c in (out.get("children") or [])]
+    ell = out.pop("ellipsis", None)
+    if ell is not None:
+        if not isinstance(ell, str) or len(ell.strip()) < 4:
+            die(1, "%s 的 ellipsis 太短" % out.get("name", "?"))
+        kids.append({"name": "…", "why": ell.strip(), "virtual": True})
+    if kids:
+        out["children"] = kids
+    else:
+        out.pop("children", None)
+    return out
+
+
 def is_virtual(node):
-    if node.get("virtual"):
-        return True
-    name = node.get("name") or ""
-    return name in ("…", "...", "…")
-
-
-def validate_tree(node, root, rel=""):
-    name = node.get("name")
-    if not isinstance(name, str) or not name:
-        die(1, "列缺 name")
-    node_why(node)
-    children = node.get("children") or []
-    if children and not isinstance(children, list):
-        die(1, "%s 的 children 必須是陣列" % name)
-    if is_virtual(node):
-        if children:
-            die(1, "合成列 %s 不准再有 children" % name)
-        return
-    child_rel = name if not rel else (rel.rstrip("/") + "/" + name)
-    # root row name is display-only (dev-flow/), path checks start at children
-    if rel or name not in (pathlib.Path(root).name + "/",):
-        pass
-    for child in children:
-        if not isinstance(child, dict):
-            die(1, "%s 的子列不是物件" % name)
-        validate_child(child, root, rel if rel else "")
+    return bool(node.get("virtual")) or node.get("name") in ("…", "...")
 
 
 def validate_child(node, root, parent_rel):
     name = node.get("name")
     if not isinstance(name, str) or not name:
         die(1, "列缺 name")
-    node_why(node)
+    minimum = 4 if is_virtual(node) else 12
+    node_why(node, minimum)
     children = node.get("children") or []
     if children and not isinstance(children, list):
         die(1, "%s 的 children 必須是陣列" % name)
+    if is_virtual(node) and children:
+        die(1, "ellipsis 列不准再有 children")
     rel = name if not parent_rel else (parent_rel.rstrip("/") + "/" + name)
-    if not is_virtual(node):
+    if root and not is_virtual(node):
         path = pathlib.Path(root) / rel.rstrip("/")
         if not path.exists():
             die(1, "用途表有、目錄沒有:%s" % rel)
@@ -217,25 +302,24 @@ def slug_id(rel):
     return text.strip("-") or "n"
 
 
-def why_span(node):
-    why = node_why(node)
-    link = node.get("link")
+def why_span(node, minimum=12):
+    why = node_why(node, minimum)
     body = esc(why)
-    if link:
-        href = link.get("href") or ""
-        label = link.get("text") or href
-        if not href:
-            die(1, "%s 的 link 缺 href" % node.get("name"))
-        body = body + ' <a href="%s">%s</a>' % (esc(href), esc(label))
+    if "#filemap" in why:
+        body = body.replace(
+            esc("#filemap"),
+            '<a href="guide-dev-flow.html#filemap">#filemap</a>',
+        )
     return '<span class="why">%s</span>' % body
 
 
 def tline(gutter, name, node, summary=False):
     tag = "summary" if summary else "div"
+    minimum = 4 if is_virtual(node) else 12
     return (
         '      <%s class="tline"><span class="g">%s</span>'
         '<span class="name">%s</span>%s</%s>'
-        % (tag, esc(gutter), esc(name), why_span(node), tag)
+        % (tag, esc(gutter), esc(name), why_span(node, minimum), tag)
     )
 
 
@@ -263,7 +347,7 @@ def render_nodes(nodes, cont, parent_rel, lines):
 def render_tree(spec):
     root = spec.get("root")
     if not isinstance(root, dict):
-        die(1, "用途表要有 root 物件")
+        die(1, "用途表要有 root")
     node_why(root)
     name = root.get("name")
     if not isinstance(name, str) or not name:
@@ -363,7 +447,7 @@ def render_page(spec):
         for item in nav
     )
     tree = render_tree(spec)
-    parts = [
+    return "".join([
         "<!DOCTYPE html>\n",
         '<html lang="zh-TW">\n',
         "<head>\n",
@@ -398,14 +482,13 @@ def render_page(spec):
         "\n",
         "</body>\n",
         "</html>\n",
-    ]
-    return "".join(parts)
+    ])
 
 
 def judge_html(text, label):
     issues = []
     low = text.lower()
-    if "```mermaid" in low or "mermaid.js" in low or "class=\"mermaid\"" in low or "class='mermaid'" in low:
+    if "```mermaid" in low or "mermaid.js" in low or 'class="mermaid"' in low:
         issues.append("吐 mermaid")
     if "<pre" in low:
         issues.append("吐 <pre>")
@@ -413,7 +496,7 @@ def judge_html(text, label):
         issues.append("吐 svg")
     if "<details open" in low:
         issues.append("預設展開")
-    if "class=\"tline\"" not in text and "class='tline'" not in text:
+    if 'class="tline"' not in text and "class='tline'" not in text:
         issues.append("沒有 .tline")
     if "├─" not in text or "└─" not in text:
         issues.append("沒有樹線")
@@ -422,95 +505,25 @@ def judge_html(text, label):
     return True, label
 
 
-def walk_dir(root, why_map, omit, prune, rel=""):
-    base = pathlib.Path(root) / rel if rel else pathlib.Path(root)
-    try:
-        names = sorted(os.listdir(base), key=lambda n: (not n.endswith("/"), n.lower()))
-    except OSError as err:
-        die(2, "讀不到目錄 %s:%s" % (base, err))
-    # listdir gives files; mark dirs with trailing slash in name for display
-    entries = []
-    for raw in sorted(os.listdir(base), key=str.lower):
-        if raw in omit or raw.startswith("."):
-            # still allow explicit why for dotted dirs if listed
-            child_rel = raw if not rel else rel.rstrip("/") + "/" + raw
-            if child_rel not in why_map and (raw + "/") not in why_map:
-                if raw in OMIT_DEFAULT or raw in omit:
-                    continue
-        path = base / raw
-        display = raw + ("/" if path.is_dir() else "")
-        child_rel = display if not rel else rel.rstrip("/") + "/" + display
-        key = child_rel
-        prune_spec = prune.get(child_rel) or prune.get(child_rel.rstrip("/"))
-        if prune_spec == "omit" or (isinstance(prune_spec, dict) and prune_spec.get("omit")):
-            continue
-        why = why_map.get(child_rel) or why_map.get(child_rel.rstrip("/"))
-        if path.is_dir() and isinstance(prune_spec, dict) and "rest_why" in prune_spec:
-            show = prune_spec.get("show") or []
-            kids = []
-            for item in show:
-                item_rel = child_rel.rstrip("/") + "/" + item
-                item_why = why_map.get(item_rel) or why_map.get(item)
-                if not item_why:
-                    die(1, "prune.show %s 缺 why" % item_rel)
-                kids.append({"name": item, "why": item_why})
-            kids.append({
-                "name": "…",
-                "why": prune_spec["rest_why"],
-                "virtual": True,
-                "link": prune_spec.get("link"),
-            })
-            if not why:
-                die(1, "列 %s 缺 why" % child_rel)
-            entries.append({"name": display, "why": why, "children": kids})
-            continue
-        if not why:
-            die(1, "列 %s 缺 why" % child_rel)
-        node = {"name": display, "why": why}
-        if path.is_dir():
-            kids = walk_dir(root, why_map, omit, prune, child_rel)
-            if kids:
-                node["children"] = kids
-        entries.append(node)
-    return entries
-
-
-def apply_walk(spec, root):
-    why_map = spec.get("why")
-    if not isinstance(why_map, dict):
-        die(1, "--walk 用途表要有 why 對照")
-    omit = set(OMIT_DEFAULT)
-    for extra in spec.get("omit") or []:
-        omit.add(extra.rstrip("/"))
-    prune = spec.get("prune") or {}
-    if not isinstance(prune, dict):
-        die(1, "prune 必須是物件")
-    children = walk_dir(root, why_map, omit, prune, "")
-    root_name = spec.get("root_name") or (pathlib.Path(root).name + "/")
-    root_why = spec.get("root_why") or why_map.get("") or why_map.get(root_name)
-    if not why_ok(root_why or ""):
-        die(1, "walk 缺 root why")
-    spec = dict(spec)
-    spec["root"] = {"name": root_name, "why": root_why, "children": children}
-    return spec
-
-
-def emit(spec, root, do_walk):
-    if do_walk:
-        spec = apply_walk(spec, root)
+def prepare(spec, root):
     root_node = spec.get("root")
     if not isinstance(root_node, dict):
         die(1, "用途表要有 root")
-    children = root_node.get("children") or []
+    spec = dict(spec)
+    spec["root"] = expand_ellipsis(root_node)
+    children = spec["root"].get("children") or []
     for child in children:
-        if not isinstance(child, dict):
-            die(1, "root.children 必須是物件列")
         validate_child(child, root, "")
-    page = render_page(spec)
-    ok, detail = judge_html(page, "產出")
+    return spec
+
+
+def emit(spec, root, fragment):
+    spec = prepare(spec, root)
+    html_out = render_tree(spec) if fragment else render_page(spec)
+    ok, detail = judge_html(html_out, "產出")
     if not ok:
         die(1, detail)
-    return page
+    return html_out
 
 
 def write_text(path, text):
@@ -526,7 +539,7 @@ def main(argv):
     purpose = None
     root = None
     out = None
-    do_walk = False
+    fragment = False
     mode = None
     i = 0
     while i < len(argv):
@@ -537,9 +550,11 @@ def main(argv):
         elif arg == "--check":
             mode = "check"
             i += 1
-        elif arg == "--walk":
-            do_walk = True
+        elif arg == "--fragment":
+            fragment = True
             i += 1
+        elif arg == "--walk":
+            die(2, "拒絕:不准掃 repo 猜 why,用途表手寫")
         elif arg == "--purpose":
             if i + 1 >= len(argv):
                 die(2, "--purpose 需要一個值")
@@ -559,8 +574,10 @@ def main(argv):
             if i + 1 >= len(argv):
                 die(2, "--fixture 需要一個值")
             name = argv[i + 1]
-            purpose = str(FIX_DIR / name / "purpose.json")
-            root = str(FIX_DIR / name / "repo")
+            purpose = str(FIX_DIR / name / "purpose.yaml")
+            repo = FIX_DIR / name / "repo"
+            if repo.is_dir():
+                root = str(repo)
             i += 2
         else:
             die(2, "拒絕:未知參數 %s" % arg)
@@ -568,7 +585,7 @@ def main(argv):
     if mode in ("write", "check"):
         purpose = purpose or str(PURPOSE_PATH)
         root = root or str(ROOT)
-        page = emit(load_json(purpose), root, do_walk)
+        page = emit(load_yaml(purpose), root, False)
         if mode == "check":
             try:
                 current = GUIDE_PATH.read_text(encoding="utf-8")
@@ -582,9 +599,9 @@ def main(argv):
         print("wrote %s" % GUIDE_PATH, file=sys.stderr)
         return
 
-    if not purpose or not root:
-        die(2, "要 --purpose 與 --root(或 --write／--check／--fixture)")
-    page = emit(load_json(purpose), root, do_walk)
+    if not purpose:
+        die(2, "要 --purpose(或 --write／--check／--fixture)")
+    page = emit(load_yaml(purpose), root, fragment)
     if out in (None, "-"):
         sys.stdout.write(page)
         return

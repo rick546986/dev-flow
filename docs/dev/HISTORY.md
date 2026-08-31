@@ -386,3 +386,8 @@
 - 為什麼:人要看懂每列幹嘛；產品專案大／接手／跨模組才畫，不進 gate、不進 ship-manifest
 - 落在哪:guides/guide-dir-map.html guides/dir-tree-purpose.json scripts/build-dir-tree.py scripts/check-dir-tree.sh notes/design/dir-tree-contract.md _templates/1-discussion.md _templates/diagram-style.md guides/guide-dev-flow.html#filemap docs/dev/HISTORY.md
 
+## 2026-08-31 · dir-tree-yaml-contract
+- 做了什麼:dir-tree 契約收成 vbox-fig 短冊；產器改吃手寫 YAML（ellipsis），拿掉掃 repo 猜 why；母版頁仍由產器吐
+- 為什麼:人要的是可套用畫法，不是另發明視覺語言或自動猜用途
+- 落在哪:notes/design/dir-tree-contract.md scripts/build-dir-tree.py scripts/check-dir-tree.sh guides/dir-tree-purpose.yaml guides/guide-dir-map.html docs/dev/HISTORY.md
+

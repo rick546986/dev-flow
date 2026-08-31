@@ -1,0 +1,480 @@
+kind: method-package
+title: dev-flow 目錄關係 · 方法包
+aria: dev-flow 方法包目錄樹
+h2: 母版目錄樹
+lead: 預設只看到 <code>dev-flow/</code> 底下第一層。摺疊時仍是一棵樹。藍色資料夾名可點，點開才接子層；子層一樣用 <code>├─</code> <code>│</code> <code>└─</code>。右邊 why 說這是什麼、何時用、跟誰有關。
+root:
+  name: dev-flow/
+  why: 方法包根。規則在 README，技能在 skills/；三邊 plugin 只是薄殼，都指回這裡。
+  id: root
+  children:
+    - name: skills/
+      why: 方法包正本，三邊 plugin 整棵掛這裡。要看流程從這點下去，不要從 hooks／scripts 找規則。
+      id: skills
+      children:
+        - name: dev-talk/
+          why: 第 1 站討論技能。獨立 session、全盲下游；產出 1-discussion.md，不進 G1。
+          id: skill-dev-talk
+          children:
+            - name: SKILL.md
+              why: 討論站入口。觸發才載全文；只留盲原則與摘要，下一跳看 graph.yaml。
+            - name: graph.yaml
+              why: 討論站下一跳正本。本機游標不進 Git；改 hop 先改這份再對 nodes/。
+            - name: html-shell.html
+              why: 掃頁殼。S10 用來包 1-discussion.html，不准手寫、不准拿去充審頁。
+            - name: nodes/
+              why: 一 hop 一檔，順序跟 graph.yaml 的 next。點開才看開場到收尾。
+              id: talk-nodes
+              children:
+                - name: N1-start.md
+                  why: 討論開場：建 session、鎖盲原則與讀寫白名單。下一跳才定範圍，這裡不寫 1-discussion.md。
+                - name: S0-scope.md
+                  why: 定本輪要談什麼、不談什麼。接開場、交給掃現況，仍不寫檔、不碰下游階段。
+                - name: S1-survey.md
+                  why: 掃現況事實：規格、程式位置、數據。只記查過的，不把推測寫成 Context。
+                - name: S2-world.md
+                  why: 補真實世界怎麼做完這件事（人、繞過、例外）。這是後面觸發判定與 Operational Context 的原料。
+                - name: N3-probe.md
+                  why: 追問不知道的事。可 talk_turn／propose，仍不准寫 md、不准寫程式。
+                - name: S4-accept.md
+                  why: 把 Goal 翻成使用者視角的驗收雛形。這是 4-spec Scenario 的種子，還不做決定。
+                - name: S5-diverge.md
+                  why: 把不知道變成問題清單。發散、不收斂，下一跳才盲檢下游。
+                - name: S6-blind.md
+                  why: 盲檢：討論 agent 不准知道後續站。防止這輪已經在寫方案或任務。
+                - name: N9-write-md.md
+                  why: 覆寫本 feat 的 1-discussion.md。只准這一份，十節齊、無佔位符。
+                - name: S8-review.md
+                  why: 自檢剛寫的討論檔。可改同一份 md，不准另存、不准寫程式。
+                - name: S9-terms.md
+                  why: 對過詞彙與三態 Open Questions。全數落入已解／帶假設／移交才算討論完。
+                - name: S10-html.md
+                  why: 掃頁：用 html-shell 產 1-discussion.html 六件套。不要跟目錄樹或審頁三框搶槽。
+                - name: N13-end.md
+                  why: 討論收尾：md 與掃頁都在就停。不另存第二份討論檔。
+        - name: dev-flow/
+          why: 第 2–7 站路由器。定位 stage 後接手該站；第 6 站會再載 dev-run。
+          id: skill-dev-flow
+          children:
+            - name: SKILL.md
+              why: 第 2–7 站入口與 lane／gate 摘要。細節以 README 為準，各站 hop 在 stage*/。
+            - name: stage2/
+              why: 收斂站，出口 G1。把討論收成方向；過了才寫規格或做原型。
+              id: flow-stage2
+              children:
+                - name: graph.yaml
+                  why: 第 2 站下一跳正本。九個 hop，從接手寫到 G1。
+                - name: nodes/
+                  why: 一 hop 一檔。生方案、壓測、寫 2-decision、送 G1。
+                  id: flow-stage2-nodes
+                  children:
+                    - name: N1-handoff.md
+                      why: 從已核准的 1-discussion 接手。只讀討論檔，確認能收斂再往下生方案。
+                    - name: S1-approaches.md
+                      why: 並排生 2–3 個方案。還不壓測，下一跳才定案。
+                    - name: S2-stress.md
+                      why: 壓測定案：挑一個方向。G1 要審的就是這裡定下來的東西。
+                    - name: N3-write-md.md
+                      why: 寫 2-decision.md。單產物，不准另存第二份決策檔。
+                    - name: S4-oc.md
+                      why: 寫 Owner Call。人要裁決的點放這裡，不要埋在方案敘事裡。
+                    - name: S5-adr.md
+                      why: 該抄 ADR 的決策抄到 docs/adr/。不是每案都有，有不可逆方向才寫。
+                    - name: S6-selfcheck.md
+                      why: 交 G1 前自檢：方案、OC、ADR 對得上 2-decision.md。
+                    - name: N7-g1.md
+                      why: 送 G1。方向核准 + OC 全裁決才過，作者不能當 approver。
+                    - name: N8-end.md
+                      why: 第 2 站收尾。過 G1 才往規格或原型走。
+            - name: stage3/
+              why: 原型站，可 skip。開場先觸發判定；0 命中走 N-skip，有命中才實驗。
+              id: flow-stage3
+              children:
+                - name: graph.yaml
+                  why: 第 3 站下一跳正本。分叉用 next + fork_required，禁止 via。
+                - name: nodes/
+                  why: 一 hop 一檔。含 skip 與實驗兩條，不要漏 fork 那側。
+                  id: flow-stage3-nodes
+                  children:
+                    - name: N1-trigger.md
+                      why: 先做觸發判定。0 命中走 N-skip，有命中才進 S0-question，禁止 via。
+                    - name: N-skip.md
+                      why: 觸發 0 命中：本站跳過。不寫 3-prototype.md，直接結束。
+                    - name: S0-question.md
+                      why: fork：真的要做原型時定義要回答的疑問。跟 N-skip 互斥。
+                    - name: S1-experiment.md
+                      why: 做 throwaway 實驗。程式進 throwaway branch，不准進 main。
+                    - name: S2-evidence.md
+                      why: 收實驗證據。沒證據就不要寫結論。
+                    - name: N3-write-md.md
+                      why: 寫 3-prototype.md。涉互動要有可操作 Demo 與人填 verdict。
+                    - name: S3-writeback.md
+                      why: 答案回寫 2-decision.md。原型站的出口是決策檔，不是另開一條規格。
+                    - name: S4-close.md
+                      why: 原型收尾自檢。frontmatter 與回寫對得上才往結束走。
+                    - name: N5-end.md
+                      why: 第 3 站結束。skip 或做完都走這裡，再進第 4 站。
+            - name: stage4/
+              why: 規格站，出口 G2。R/S/DD/Profile 寫死；過了才切任務。
+              id: flow-stage4
+              children:
+                - name: graph.yaml
+                  why: 第 4 站下一跳正本。從接手列 R 寫到 G2。
+                - name: nodes/
+                  why: 一 hop 一檔。反模糊三律在這裡落地，不是在任務站補。
+                  id: flow-stage4-nodes
+                  children:
+                    - name: N1-handoff.md
+                      why: 從決策（與可選原型）接手寫規格。只帶討論的驗收雛形與 OC，不回引逐字稿。
+                    - name: S1-requirements.md
+                      why: 列 R。每條要能往下長 S，禁止模糊詞與 TBD。
+                    - name: S2-scenarios.md
+                      why: 展 S。一條 S 要能轉成單一測試，測試名會帶 S-id。
+                    - name: S3a-close.md
+                      why: 收邊界：Non-Goals 與不做的例外寫死，防範圍蔓延。
+                    - name: S3b-profile.md
+                      why: 填 Verification Profile。依 lane 填，G2 要審這張表。
+                    - name: S3c-stage3.md
+                      why: 對帳原型：有 3-prototype 才核 Demo verdict，沒有就標 n-a。
+                    - name: S4-dd.md
+                      why: 寫 Drafting Decision。規格寫作時的選擇記在這裡，G2 要全裁決。
+                    - name: N5-write-md.md
+                      why: 寫 4-spec.md。openspec delta，單產物。
+                    - name: S5-gate.md
+                      why: 機械關自檢：R/S/DD/Profile 齊了才准送 G2。
+                    - name: N6-g2.md
+                      why: 送 G2。R/S 全審 + DD 全裁決，過了才切任務。
+                    - name: N7-end.md
+                      why: 第 4 站收尾。規格是後面實作唯一準繩。
+            - name: stage5/
+              why: 任務板，無 G。把規格切成 T；人同意這張板才進實作。
+              id: flow-stage5
+              children:
+                - name: graph.yaml
+                  why: 第 5 站下一跳正本。切 T、填欄、產執行板。
+                - name: nodes/
+                  why: 一 hop 一檔。Covers／Files／Verify／Blocked-by 都在這幾跳填。
+                  id: flow-stage5-nodes
+                  children:
+                    - name: N1-handoff.md
+                      why: 從已核准 4-spec 接手切任務。實作者之後不准回讀 1/2/3。
+                    - name: S1-slice.md
+                      why: 切 T：tracer-bullet 順序。每 T 要有 Covers，對得上 S。
+                    - name: S2-fields.md
+                      why: 填欄：Files／Verify／Blocked-by 必填，給 devflow-exec 解析 scope。
+                    - name: S3-deps.md
+                      why: 標依賴。Blocked-by 決定能不能平行，不要事後口頭講。
+                    - name: N4-write-md.md
+                      why: 寫 5-tasks.md。這是第 6 站的工作單，不是進度日誌。
+                    - name: S4-selfcheck.md
+                      why: 自檢每 T 的 Verify 與 Files。缺欄不准往下產執行板。
+                    - name: N5-twin.md
+                      why: 產第 5 站執行板／審頁 twin。人看任務總表用，不改 hop。
+                    - name: N6-end.md
+                      why: 任務板定稿。無 G；人同意這張板才進實作。
+            - name: stage6/
+              why: 實作站。守衛 + 逐 T；平行時另走 parallel 契約，不是這棵 hop 的另一張圖。
+              id: flow-stage6
+              children:
+                - name: graph.yaml
+                  why: 第 6 站下一跳正本。武裝、接手、逐 T、自檢、結束。
+                - name: nodes/
+                  why: 一 hop 一檔。真正寫碼在 S2-tdd，前後是守衛與自檢。
+                  id: flow-stage6-nodes
+                  children:
+                    - name: N1-arm.md
+                      why: 武裝執行守衛。沒 start 不准當第 6 站在跑。
+                    - name: N2-handoff.md
+                      why: 核對 4-spec + 5-tasks + 6-notes。禁讀 1/2/3，缺東西回 G2。
+                    - name: S2-tdd.md
+                      why: 逐 T：RED→GREEN→scope→Verify→獨立 review→PASS→commit。
+                    - name: N4-selfcheck.md
+                      why: 實作自檢：每 T review PASS、改動 ⊆ Files 聯集。
+                    - name: N5-end.md
+                      why: 第 6 站結束。驗證另開第 7 站，不在這裡宣佈 G3。
+            - name: stage7/
+              why: 驗證站，出口 G3。reviewer 自建矩陣再親跑，不是複誦作者結論。
+              id: flow-stage7
+              children:
+                - name: graph.yaml
+                  why: 第 7 站下一跳正本。從角色防錨定寫到 Verdict。
+                - name: nodes/
+                  why: 一 hop 一檔。現象、回歸、Fresh、走查都在送 G3 之前。
+                  id: flow-stage7-nodes
+                  children:
+                    - name: N0-role.md
+                      why: 角色與防錨定：先自建矩陣，才准看作者 Self-Review。
+                    - name: N1-matrix.md
+                      why: 自建 coverage matrix。reviewer 用 R→S→T 鏈對，不抄作者表。
+                    - name: S2-run.md
+                      why: "親跑驗證。完成宣稱要附原始輸出或檔案:行號。"
+                    - name: S2b-phenomena.md
+                      why: 現象複驗。宣稱的畫面／行為要有證據，不能只看測試綠。
+                    - name: S2c-integration.md
+                      why: 整合回歸。本次 S 全綠還不夠，既有測試也要綠。
+                    - name: S2d-fresh.md
+                      why: Final Fresh：乾淨環境再跑一次，防本機髒狀態。
+                    - name: S2e-walkthrough.md
+                      why: 操作走查。人真的點過主路徑，不是只看 log。
+                    - name: N3-axes.md
+                      why: 雙軸審：Standards + Spec。兩邊都過才往下對作者。
+                    - name: N4-author.md
+                      why: 對照作者 Self-Review。找漏，不讓作者的表取代 reviewer 矩陣。
+                    - name: N5-verdict.md
+                      why: 寫 Verdict。G3 要本次 S + 回歸 + 現象 + Evidence 契約全過。
+        - name: dev-run/
+          why: 第 6 站內部引擎。正常由 dev-flow 定位到 stage 6 時載入，不必當第二個指令學。
+          id: skill-dev-run
+          children:
+            - name: SKILL.md
+              why: 整棵掛，裡面只有這份。haiku 寫碼、sonnet 審、錯誤升階，配 devflow-exec。
+        - name: dev-setup/
+          why: 初裝／升級／修復。產品專案打一次，把方法包模板與工具抄進 docs/dev/。
+          id: skill-dev-setup
+          children:
+            - name: SKILL.md
+              why: 整棵掛，裡面只有這份。分流初裝或升級，不在這裡改方法論規則。
+        - name: dev-release/
+          why: 母版自己發版。驗證過才升版、打 tag、建 GitHub release；不是給產品專案用。
+          id: skill-dev-release
+          children:
+            - name: SKILL.md
+              why: 整棵掛，裡面只有這份。只服務 rick546986/dev-flow 這個 repo。
+        - name: dev-report/
+          why: 缺陷回報。流程外的現場問題走這裡，避免直接改方法包正本。
+          id: skill-dev-report
+          children:
+            - name: SKILL.md
+              why: 整棵掛，裡面只有這份。產出回報檔，給守衛與人看，不代替 issue。
+    - name: _templates/
+      why: 七站骨架。產品專案抄進 docs/dev/ 當空白模子；example/ 才是填好的範例。
+      id: templates
+      children:
+        - name: 1-discussion.md
+          why: 第 1 站討論骨架。頂註有可選目錄樹一句；掃頁六件仍走 build-scan-html.py。
+        - name: 2-decision.md
+          why: 第 2 站決策骨架。頂註是收斂執行清單，出口對 G1。
+        - name: 3-prototype.md
+          why: 第 3 站原型骨架。選配；命中觸發判定才填，否則整站 skip。
+        - name: 4-spec.md
+          why: 第 4 站規格骨架。反模糊三律與 G2 要審的欄都在頂註。
+        - name: 5-tasks.md
+          why: 第 5 站任務骨架。再小也要 Covers／Files／Verify／Blocked-by。
+        - name: 6-implementation-notes.md
+          why: 第 6 站實作日誌骨架。Progress Log 與 T Review 記這裡，不是任務板。
+        - name: 7-review.md
+          why: 第 7 站驗證骨架。G3 證據與雙軸審的欄位在這份。
+    - name: example/
+      why: 填好的範例 feat。對模板看「空白該長怎樣」；對這裡看「填完長怎樣」。
+      id: example
+      children:
+        - name: contract-expiry-reminder/
+          why: 合約到期提醒，full lane 填好。1–7 都有 md，旁邊同名 html 是審頁 twin。
+          id: ex-contract
+          children:
+            - name: 1-discussion.md
+              why: 填好的討論正本。旁邊 1-discussion.html 是掃頁／審頁 twin，不必再佔一列。
+            - name: 2-decision.md
+              why: 填好的決策正本。旁邊同名 html 是 G1 審頁 twin。
+            - name: 3-prototype.md
+              why: 填好的原型正本。這個 feat 有做第 3 站；旁邊是審頁 twin。
+            - name: 4-spec.md
+              why: 填好的規格正本。R/S/DD 都在；旁邊是 G2 審頁 twin。
+            - name: 5-tasks.md
+              why: 填好的任務板。旁邊是執行板 twin，不是另一份 md。
+            - name: 6-implementation-notes.md
+              why: 填好的實作日誌。旁邊是 twin，進度以 md 為準。
+            - name: 7-review.md
+              why: 填好的驗證正本。旁邊 7-review.html 是 G3 審頁 twin。
+        - name: subsidy-3-0-plus/
+          why: 補助手樣。沒有 3-prototype（該站 skip）；shots/ 給第 7 站現象截圖。
+          id: ex-subsidy
+          children:
+            - name: 1-discussion.md
+              why: 補助討論正本。旁邊同名 html 是掃頁／審頁 twin。
+            - name: 2-decision.md
+              why: 補助決策正本。旁邊是 G1 審頁 twin。
+            - name: 4-spec.md
+              why: 補助規格正本。沒有第 3 站，規格直接接決策。
+            - name: 5-tasks.md
+              why: 補助任務板。旁邊是執行板 twin。
+            - name: 6-implementation-notes.md
+              why: 補助實作日誌。旁邊是 twin。
+            - name: 7-review.md
+              why: 補助驗證正本。現象截圖在 shots/，不要跟這份搶槽。
+            - name: shots/
+              why: 第 7 站現象截圖。Pages 掛相對路；不是目錄樹、也不是掃頁三框。
+    - name: guides/
+      why: "給人看的導覽 HTML。跟 skills/ 鏡像，不代替 README，也不代替 #filemap。"
+      id: guides
+      children:
+        - name: guide-dev-flow.html
+          why: "七站導覽。生命週期圖與附錄 #filemap 在這裡；目錄關係另見本頁。"
+        - name: guide-dev-talk.html
+          why: 討論站導覽。對 skills/dev-talk/ 的鏡像，改 hop 要兩邊一起看。
+        - name: guide-quickstart.html
+          why: 快速上手。生命週期圖與 guide-dev-flow 那張必須同步。
+        - name: guide-dir-map.html
+          why: 本頁。由 scripts/build-dir-tree.py 產，手改會漂；預設只露 L1。
+        - name: dir-tree-purpose.yaml
+          why: 本頁用途表（YAML）。產器只吃這份，不准掃 repo 猜 why。
+    - name: hooks/
+      why: "執行期守衛。掛在 agent 生命週期上擋違規；逐支職責看 #filemap，不要整包列進樹。"
+      id: hooks
+      children:
+        - name: hooks.json
+          why: 掛載清單。哪支 hook 聽哪個事件，以這份為準，不是靠資料夾掃。
+      ellipsis: "其餘守衛不整包列進樹，逐支職責見 #filemap"
+    - name: scripts/
+      why: "檢查與產檔。人工或 CI 跑；關鍵入口列下面，其餘見 #filemap，不要九十支灌進來。"
+      id: scripts
+      children:
+        - name: devflow-check.sh
+          why: 母版總開關。CI 與本機健檢都從這支進各組牙。
+        - name: build-vbox-fig.py
+          why: 直式步驟方塊產圖。另一家族；不要拿來畫目錄樹或掃頁三框。
+        - name: build-dir-tree.py
+          why: 本頁這棵樹的產器。產品有需要才從方法包跑，不進 ship-manifest。
+      ellipsis: "其餘腳本不整包列進樹，逐支職責見 #filemap"
+    - name: tests/
+      why: 契約測試。平行第 6 站等機器可跑的套件；不是七站文檔、也不是 selftest。
+      id: tests
+      children:
+        - name: parallel-stage6/
+          why: 第 6 站平行契約套件。對 notes/design/parallel-stage6.md，缺 fixture 會紅。
+          id: tests-p6
+          children:
+            - name: contract_ref.py
+              why: 契約對照。測試讀這份對正本，不要在用例裡複製一份規則。
+            - name: run_tests.py
+              why: 跑平行契約測試。改契約先改正本再跑這支。
+            - name: fixtures/
+              why: 契約樣本。好／壞案例都在這，不必把每份 json 再佔一列。
+    - name: memory/
+      why: Agent Memory CLI。討論 session 與長期記憶走這裡，不是 STATUS.md。
+      id: memory
+      children:
+        - name: dev-memory.py
+          why: 唯一 CLI。talk start／查詢／migrate 都進這支，不要直接 import 子模組當入口。
+        - name: run-tests.sh
+          why: 記憶測試入口。改 agentmem/ 先跑這支，不要只看手測。
+        - name: agentmem/
+          why: 實作模組。十幾個 py 不必列；入口仍是 dev-memory.py。
+    - name: docs/
+      why: PLUGIN、ADR、母版自己的專案帳。產品專案的 feat 文檔不寫在這裡。
+      id: docs
+      children:
+        - name: PLUGIN.md
+          why: 四邊安裝說明。人裝 Claude／Cursor／Codex／手動時看這份，不是技能 hop。
+        - name: adr/
+          why: 架構決策紀錄。不可逆方向才抄過來；第 2 站 S5 對應這裡。
+          id: docs-adr
+          children:
+            - name: 0001-merge-plugin-into-methodology-repo.md
+              why: 方法包與 plugin 併成一份 repo。之後技能與薄殼一起改，不再分兩個正本。
+            - name: 0002-markdown-it-py-for-twin-parsing.md
+              why: twin 解析鎖 markdown-it-py。審頁產生器吃 md 用這套，不准另引一套。
+            - name: 0003-agent-memory-two-layer-split.md
+              why: 長期記憶與執行暫存分開。durable 進 Git，SQLite／逐字稿只住本機。
+        - name: dev/
+          why: 母版自己的 STATUS／HISTORY／tools。不要把 autoloop 工作日誌展開進來。
+          id: docs-dev
+          children:
+            - name: STATUS.md
+              why: 專案帳，只在整合分支當現況。feature 過程寫 docs/dev/<slug>/，不寫這份。
+            - name: HISTORY.md
+              why: 改版史。只准 scripts/history-append.sh 追加，不准整檔重寫。
+            - name: ship-manifest.json
+              why: 散發清單。dev-setup 抄到產品的工具以這份為準；本產器刻意不進清單。
+            - name: devflow-contract.json
+              why: 版本握手 2.0.0。plugin 對這份，不要為目錄樹去改版本。
+            - name: tools/
+              why: 散發到產品的工具副本。正本在 scripts/；這裡是 ship-manifest 對過的那包。
+              id: docs-dev-tools
+              children:
+                - name: history-append.sh
+                  why: 改版史唯一寫入口。目錄鎖 + 只追加，避免多 session 互蓋。
+                - name: publish-pages.sh
+                  why: 組 GitHub Pages 樹。站審 html 與 shots 相對路靠這支。
+                - name: build-gate-twin.py
+                  why: 產審查頁。G1／G2／G3 介面走這支，不是目錄樹。
+                - name: devflow_gate.py
+                  why: serve／寫 gate verdict。判定寫進 md 頂欄，sidecar 不是正本。
+        - name: prompts/
+          why: 提示詞與 autoloop 契約。工作日誌不展開；要改提示先看這層正本。
+    - name: notes/
+      why: 設計正本。畫法與審查頁契約住這裡；實作跟牙在 scripts／hooks。
+      id: notes
+      children:
+        - name: design/
+          why: 審查頁、產圖、平行實作等設計正本。新畫法先寫契約再寫產器。
+          id: notes-design
+          children:
+            - name: vbox-fig-contract.md
+              why: 直式置中方塊圖契約。步驟一格一步走那份，不要拿來畫目錄樹。
+            - name: dir-tree-contract.md
+              why: 本頁這棵樹的畫法契約。預設 L1、每列 why、禁 mermaid／vbox 步驟方塊。
+            - name: pages-hosting.md
+              why: 站審 html 掛 Pages。7-review.html 與 shots 相對路，跟目錄樹頁不是同一條。
+            - name: stage1-review-ui-contract.md
+              why: "第 1 站審頁。三框 #scan-now，不要跟本樹或掃頁殼併張。"
+            - name: stage2-review-ui-contract.md
+              why: 第 2 站審頁。Decision 置頂 + 直式 SVG，不是目錄樹。
+            - name: stage3-review-ui-contract.md
+              why: 第 3 站審頁。觸發判定與 Demo，feat 沒原型就 n-a。
+            - name: stage4-review-ui-contract.md
+              why: 第 4 站審頁。R/S 與生命週期圖分卡，不是本樹。
+            - name: stage5-review-ui-contract.md
+              why: 第 5 站審頁。任務總表 chrome，執行板 twin 對這份。
+            - name: stage7-review-ui-contract.md
+              why: 第 7 站審頁。現象與 Evidence 欄，shots 另掛。
+            - name: parallel-stage6.md
+              why: 第 6 站平行契約。tests/parallel-stage6/ 對這份，不是 hop 圖。
+            - name: gate-verdict-write.md
+              why: "gate 判定寫入。正本是 md 頂欄 verdict:，全勾不算 PASS。"
+            - name: vnext-shared-contract.md
+              why: vnext 共用契約。執行期欄位與事件，不是目錄樹。
+            - name: evidence-gauntlet.md
+              why: 證據關卡。G3 要過的機器檢查清單。
+            - name: design-boundary-contract.md
+              why: 設計邊界契約。G2 要審的模組／介面表長什麼樣。
+            - name: agent-attempt-observability.md
+              why: 嘗試帳觀測。連敗與升階怎麼記，給 adviser 用。
+            - name: real-world-interaction.md
+              why: 真實世界互動。討論站 Real-world Context 的正本說明。
+    - name: observability/
+      why: 事件工具。讀嘗試帳與統計；不掛 hook，人工或腳本叫。
+      id: observability
+      children:
+        - name: devflow-obs.py
+          why: 讀取／統計入口。vendor 與 fixtures 不必列進這棵樹。
+    - name: agents/
+      why: 派給 reviewer／adviser 的提示。只讀收驗，不代替 7-review.md。
+      id: agents
+      children:
+        - name: devflow-reviewer.md
+          why: T／gate 收驗提示。fresh-context reviewer 用，只讀、不修 finding。
+        - name: devflow-adviser.md
+          why: 連敗用盡後診斷。強制 adviser，不讓同一執行者再猜一次。
+    - name: .claude-plugin/
+      why: Claude 薄殼。只放市集身分，技能正本仍是根上的 skills/。
+      id: claude-plugin
+      children:
+        - name: plugin.json
+          why: 市集身分與版號。對契約 2.0.0；目錄樹功能不靠改這份升版。
+        - name: marketplace.json
+          why: 市集清單。跟 plugin.json 一起給 Claude 裝，不另藏技能。
+    - name: .cursor-plugin/
+      why: Cursor 薄殼。與 Claude 那份對同一棵 skills/，不要兩套規則。
+      id: cursor-plugin
+      children:
+        - name: plugin.json
+          why: 市集身分與版號。三邊應對同一契約，不要只改一邊。
+        - name: marketplace.json
+          why: 市集清單。Cursor 裝方法包時讀這份。
+    - name: .codex-plugin/
+      why: Codex 薄殼。這裡沒有 marketplace.json，只有 plugin.json。
+      id: codex-plugin
+      children:
+        - name: plugin.json
+          why: 市集身分。Codex 邊只有這份，不要臆造 marketplace。

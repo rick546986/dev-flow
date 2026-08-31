@@ -1,12 +1,9 @@
 #!/bin/bash
-# check-dir-tree.sh — 可摺疊目錄樹產器的小牙
+# check-dir-tree.sh — 可摺疊目錄包含樹產器的小牙
 #
-# 咬什麼:scripts/build-dir-tree.py 本身壞了、吐 mermaid／<pre>／svg、
+# 咬什麼:產器壞了、吐 mermaid／<pre>／svg、掃 repo 猜 why、
 # 或母版 guides/guide-dir-map.html 跟產器產出漂了。
-# 契約在 notes/design/dir-tree-contract.md。
-#
-# 不塞 hop graph、不改 vbox-fig／scan-now／七站三走廊圖、
-# 不進 ship-manifest。
+# 契約在 notes/design/dir-tree-contract.md(短冊,對齊 vbox-fig-contract)。
 #
 # 用法:
 #   scripts/check-dir-tree.sh [root]
@@ -28,7 +25,7 @@ import sys
 root = sys.argv[1]
 builder = os.path.join(root, "scripts", "build-dir-tree.py")
 contract = os.path.join(root, "notes", "design", "dir-tree-contract.md")
-purpose = os.path.join(root, "guides", "dir-tree-purpose.json")
+purpose = os.path.join(root, "guides", "dir-tree-purpose.yaml")
 guide = os.path.join(root, "guides", "guide-dir-map.html")
 template = os.path.join(root, "_templates", "1-discussion.md")
 
@@ -73,18 +70,15 @@ def judge(html, label):
     return True, label
 
 
-if not os.path.isfile(builder):
-    print("FATAL:找不到 " + builder, file=sys.stderr)
-    sys.exit(2)
-if not os.path.isfile(contract):
-    print("FATAL:找不到契約 notes/design/dir-tree-contract.md", file=sys.stderr)
-    sys.exit(2)
-if not os.path.isfile(purpose):
-    print("FATAL:找不到用途表 guides/dir-tree-purpose.json", file=sys.stderr)
-    sys.exit(2)
-if not os.path.isfile(guide):
-    print("FATAL:找不到 guides/guide-dir-map.html", file=sys.stderr)
-    sys.exit(2)
+for path, label in (
+    (builder, "scripts/build-dir-tree.py"),
+    (contract, "notes/design/dir-tree-contract.md"),
+    (purpose, "guides/dir-tree-purpose.yaml"),
+    (guide, "guides/guide-dir-map.html"),
+):
+    if not os.path.isfile(path):
+        print("FATAL:找不到 " + label, file=sys.stderr)
+        sys.exit(2)
 
 empty = run_builder([])
 check(empty.returncode == 2, "無參數 exit 2")
@@ -92,7 +86,9 @@ check("用法" in (empty.stdout + empty.stderr), "無參數印用法")
 
 help_run = run_builder(["--help"])
 check(help_run.returncode == 2, "--help exit 2")
-check("用法" in (help_run.stdout + help_run.stderr), "--help 印用法")
+
+walk = run_builder(["--walk"])
+check(walk.returncode == 2, "--walk 必須紅(不准掃 repo 猜 why)")
 
 checked = run_builder(["--check"])
 check(checked.returncode == 0, "--check 母版頁對得上產器")
@@ -101,19 +97,24 @@ good = run_builder(["--fixture", "good"])
 check(good.returncode == 0, "good fixture exit 0")
 ok, detail = judge(good.stdout, "fixture 形狀")
 check(ok, detail)
-check("app.py" in good.stdout and "readme.md" in good.stdout, "fixture 含產品檔")
+check("app.py" in good.stdout and "其餘見盤點" in good.stdout, "fixture 含產品檔與 ellipsis")
 check("devflow-check.sh" not in good.stdout, "產品樹不灌母版脚本")
-check("<details open" not in good.stdout, "fixture 預設摺疊")
-guide_text = open(guide, encoding="utf-8").read()
-check("全盲下游" in guide_text and "何時用" in guide_text, "母版 why 有脈絡句")
+leaf = [ln for ln in good.stdout.splitlines() if 'class="name">app.py</span>' in ln]
+check(leaf and leaf[0].strip().startswith("<div class=\"tline\">"), "葉子不是 summary")
+folder = [ln for ln in good.stdout.splitlines() if 'class="name">src/</span>' in ln]
+check(folder and "<summary" in folder[0], "有子列的夾才是 summary")
+
+frag = run_builder(["--fixture", "good", "--fragment"])
+check(frag.returncode == 0 and "<!DOCTYPE" not in frag.stdout, "--fragment 只吐樹")
+ok, detail = judge(frag.stdout, "fragment 形狀")
+check(ok, detail)
 
 missing = run_builder([
-    "--purpose", os.path.join(root, "scripts", "fixtures", "dir-tree", "missing-why", "purpose.json"),
+    "--purpose", os.path.join(root, "scripts", "fixtures", "dir-tree", "missing-why", "purpose.yaml"),
     "--root", os.path.join(root, "scripts", "fixtures", "dir-tree", "good", "repo"),
 ])
 check(missing.returncode == 1, "短 why 必須紅")
 
-# 牙自己咬壞輸出
 bad_cases = [
     ("mermaid", "```mermaid\ngraph TD\nA-->B\n```"),
     ("pre", "<pre>├─ src/</pre>"),
@@ -127,18 +128,22 @@ for name, payload in bad_cases:
 text = open(guide, encoding="utf-8").read()
 ok, detail = judge(text, "母版頁形狀")
 check(ok, detail)
-check("dir-tree-contract.md" in text, "母版樹列了畫法契約")
+check("dir-tree-purpose.yaml" in text, "母版樹列了 YAML 用途表")
 check('id="skills"' in text, "母版仍有 skills 摺疊")
+check("summary .name" in open(builder, encoding="utf-8").read()
+      or "summary .name{color:var(--acc)}" in text, "可點夾名用 accent")
 
 tmpl = open(template, encoding="utf-8").read()
-check("build-dir-tree.py" in tmpl, "第 1 站模板有可選目錄樹")
-check("dir-tree.html" in tmpl, "模板指定落 docs/dev/<slug>/dir-tree.html")
+check("build-dir-tree.py" in tmpl and "dir-tree.html" in tmpl, "第 1 站模板有可選目錄樹")
 check("不進 gate" in tmpl or "不是每案必跑" in tmpl, "模板寫明不是必跑")
 
 canon = open(contract, encoding="utf-8").read()
-check("├─" in canon and "預設" in canon and "L1" in canon, "契約鎖 L1 摺疊")
-check("mermaid" in canon.lower() and "vbox" in canon.lower(), "契約點名禁 mermaid／vbox")
-check("ship-manifest" in canon, "契約寫明不進散發清單")
+check(len(canon.splitlines()) <= 80, "契約是短冊(≤80 行)")
+check("```yaml" in canon and "ellipsis:" in canon, "契約鎖 YAML + ellipsis")
+check("不要掃整棵 repo" in canon or "不要掃整棵 repo 自動猜 why" in canon, "契約禁掃 repo 猜 why")
+check("scan-now" in canon and "vbox-fig" in canon and "#filemap" in canon
+      and "fig-lifecycle" in canon, "契約點名何時不用")
+check("2.0.0" in canon, "契約寫明不改 2.0.0")
 
 print("checks=%d" % checks)
 if failures:

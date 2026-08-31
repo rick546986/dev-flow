@@ -91,10 +91,9 @@
 ## 可摺疊目錄樹(另一家族)
 
 人要看「資料夾怎麼疊 + 每列用途」走 `notes/design/dir-tree-contract.md` +
-`scripts/build-dir-tree.py`。monospace `├─` `│` `└─`、巢狀摺疊、每列 why、
-預設只露 L1。不是 mermaid、不是橫 ASCII、不是 vbox-fig 步驟方塊、不是第 1 站
-三框現況圖、也不是本檔的橫式／三走廊圖。母版頁 `guides/guide-dir-map.html`;
-產品有需要才畫,落 `docs/dev/<slug>/dir-tree.html`。
+`scripts/build-dir-tree.py`。手寫 YAML,不准掃 repo 猜 why。monospace
+`├─` `│` `└─`、巢狀摺疊、每列 why、預設只露 L1。不是 mermaid、不是橫 ASCII、
+不是 vbox-fig、不是第 1 站三框、也不是本檔的橫式／三走廊圖。
 
 ## 第 5 站審查頁 chrome(另一家族)
 
