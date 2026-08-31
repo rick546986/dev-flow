@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>dev-flow 目錄關係 · 方法包</title>
+<style>
+  :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;}
+  @media(prefers-color-scheme:dark){
+    :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  }
+  :root[data-theme="dark"]{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;
+        --card:#1e2023;--ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  :root[data-theme="light"]{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;
+        --card:#f7f7f8;--ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+  main{max-width:960px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
+  h2{font-size:1.15rem;margin-top:2.2em}
+  h3{font-size:1rem;margin-top:1.6em}
+  nav{background:var(--card);border:1px solid var(--line);border-radius:10px;
+      padding:10px 16px;margin:1em 0;display:flex;flex-wrap:wrap;gap:6px 16px}
+  nav a{color:var(--acc);text-decoration:none;font-size:.9rem}
+  code{background:var(--card);border-radius:4px;padding:1px 5px;
+       font-family:ui-monospace,Menlo,monospace;font-size:.88em}
+  .muted{color:var(--muted)}
+  details{margin:.35em 0 0}
+  details>summary{cursor:pointer;color:var(--acc);font-size:.85rem;user-select:none}
+  footer.foot{margin-top:3em;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padding-top:1em}
+
+  /* ── Phase 1(guide-dev-talk)定調的可複用 token,勿改名 ───────────── */
+  .lead{margin:.2em 0 .9em;padding:.5em .85em;border-left:3px solid var(--acc);
+        background:var(--card);border-radius:0 6px 6px 0;font-size:.92rem}
+  .figwrap{position:relative;background:var(--bg);border:1px solid var(--line);
+           border-radius:10px;padding:16px 14px 10px;margin:1em 0}
+  .figwrap::after{content:"點圖放大";position:absolute;right:10px;top:5px;
+                  font-size:.7rem;color:var(--muted)}
+  .figwrap>svg{display:block;width:100%;height:auto;cursor:zoom-in}
+  .figcap{margin:.5em 0 0;font-size:.85rem;color:var(--muted)}
+  .figzoom{position:fixed;inset:0;z-index:99;overflow:hidden;
+           background:color-mix(in srgb,var(--bg) 92%,#000);
+           display:flex;align-items:center;justify-content:center}
+  .figzoom-inner{cursor:grab}
+  .figzoom svg{width:min(96vw,1700px);height:auto;transform-origin:center center}
+  .figzoom-tip{position:fixed;bottom:14px;left:0;right:0;text-align:center;
+               font-size:.8rem;color:var(--muted)}
+  svg .b{fill:var(--card);stroke:var(--line);stroke-width:1}
+  svg .hl{fill:color-mix(in srgb,var(--acc) 16%,var(--card));stroke:var(--acc)}
+  svg .wn{fill:color-mix(in srgb,var(--warn) 16%,var(--card));stroke:var(--warn)}
+  svg .no{fill:color-mix(in srgb,var(--bad) 12%,var(--card));stroke:var(--bad)}
+  svg .go{fill:color-mix(in srgb,var(--ok) 14%,var(--card));stroke:var(--ok)}
+  svg .note{fill:var(--card);stroke:var(--warn);stroke-dasharray:5 3}
+  svg .grpbox{fill:none;stroke:var(--line);stroke-dasharray:4 4}
+  svg .edge{fill:none;stroke:var(--muted);stroke-width:1.5}
+  svg .arrowhead{fill:var(--muted)}
+  .dt{font:11px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--fg)}
+  .dm{font:11px ui-monospace,Menlo,monospace;fill:var(--fg)}
+  .dc{font:9px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--muted)}
+  .dl{font:10px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--muted)}
+  .nl{font:700 13px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--fg)}
+  .sm{font:11px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--muted)}
+
+  details.layer{margin:1.2em 0 0;padding:.2em 0 .2em .7em;border-left:2px solid var(--line)}
+  details.layer>summary{font-size:1rem;font-weight:600;padding:.4em 0}
+</style>
+</head>
+<body>
+<main>
+  <h1>dev-flow 目錄關係 · 方法包</h1>
+  <p class="muted">人看母版資料夾怎麼疊。不是腳本盤點。腳本盤點在
+  <a href="guide-dev-flow.html#filemap">guide-dev-flow 附錄 #filemap</a>。</p>
+
+  <nav>
+    <a href="#overview">① 母版五塊</a>
+    <a href="#layer-skills">② skills/</a>
+    <a href="#layer-hops">③ 七站 hop</a>
+    <a href="#layer-six">④ 六節契約</a>
+    <a href="#layer-landing">⑤ docs/dev 落地</a>
+    <a href="guide-dev-flow.html#filemap">腳本盤點 #filemap</a>
+  </nav>
+
+  <h2 id="overview">① 母版五塊目錄</h2>
+  <p class="lead">收據時這張總覽仍看得到。五塊：給人看／給 agent 跑／牙與守衛／記憶／三邊薄殼。
+  點開下面才展下一層。藍框是方法包正本 <code>skills/</code>。</p>
+  <div class="figwrap">
+  <svg id="fig-overview" viewBox="0 0 280 518" role="img" aria-label="母版五塊目錄：給人看、給 agent 跑、牙與守衛、記憶、三邊薄殼" style="display:block;max-width:360px;margin:0 auto;height:auto">
+<rect class="b" x="40" y="10" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="34" text-anchor="middle">給人看</text>
+<text class="sm" x="140" y="48" text-anchor="middle">README.md 第一屏</text>
+<text class="sm" x="140" y="62" text-anchor="middle">guides/ 導覽頁</text>
+<text class="sm" x="140" y="76" text-anchor="middle">docs/ PLUGIN ADR</text>
+<line x1="140" y1="92" x2="140" y2="114" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="114" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="138" text-anchor="middle">給 agent 跑</text>
+<text class="sm" x="140" y="152" text-anchor="middle">skills/ 整棵掛</text>
+<text class="sm" x="140" y="166" text-anchor="middle">_templates/ 七站骨架</text>
+<text class="sm" x="140" y="180" text-anchor="middle">example/ 填好範例</text>
+<line x1="140" y1="196" x2="140" y2="218" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="218" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="242" text-anchor="middle">牙與守衛</text>
+<text class="sm" x="140" y="256" text-anchor="middle">hooks/ 執行擋</text>
+<text class="sm" x="140" y="270" text-anchor="middle">scripts/ 檢查產檔</text>
+<text class="sm" x="140" y="284" text-anchor="middle">tests/ 並行契約</text>
+<line x1="140" y1="300" x2="140" y2="322" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="322" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="346" text-anchor="middle">記憶</text>
+<text class="sm" x="140" y="360" text-anchor="middle">memory/ ask write</text>
+<text class="sm" x="140" y="374" text-anchor="middle">.dev-flow/ 進 Git</text>
+<text class="sm" x="140" y="388" text-anchor="middle">.devflow/ 不進 Git</text>
+<line x1="140" y1="404" x2="140" y2="426" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="426" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="450" text-anchor="middle">三邊薄殼</text>
+<text class="sm" x="140" y="464" text-anchor="middle">.claude-plugin/</text>
+<text class="sm" x="140" y="478" text-anchor="middle">.cursor-plugin/</text>
+<text class="sm" x="140" y="492" text-anchor="middle">.codex-plugin/ 同指</text>
+</svg>
+  </div>
+  <p class="figcap">dev-setup 散發 <code>_templates</code> 與 tools 到產品 <code>docs/dev/</code>。各腳本職責見 <a href="guide-dev-flow.html#filemap">#filemap</a>；本圖只畫資料夾關係。</p>
+
+  <details class="layer" id="layer-skills">
+    <summary>② 下一層：skills/ hop 樹 vs 單檔</summary>
+    <p class="lead">有 hop 鏈的必須整棵掛，薄殼只丟 <code>SKILL.md</code> 會讓真節點讀不到。
+    單檔技能也掛整棵，裡面只有 <code>SKILL.md</code>。</p>
+  <div class="figwrap">
+  <svg id="fig-skills-hop" viewBox="0 0 280 310" role="img" aria-label="有 hop 鏈的技能必須整棵掛：dev-talk 與 dev-flow 各站 graph.yaml 加 nodes" style="display:block;max-width:360px;margin:0 auto;height:auto">
+<rect class="hl" x="40" y="10" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="34" text-anchor="middle">dev-talk/</text>
+<text class="sm" x="140" y="48" text-anchor="middle">第 1 站討論</text>
+<text class="sm" x="140" y="62" text-anchor="middle">13 hop</text>
+<text class="sm" x="140" y="76" text-anchor="middle">SKILL + graph + nodes/</text>
+<line x1="140" y1="92" x2="140" y2="114" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="114" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="138" text-anchor="middle">dev-flow/</text>
+<text class="sm" x="140" y="152" text-anchor="middle">第 2–7 站路由</text>
+<text class="sm" x="140" y="166" text-anchor="middle">各站一棵</text>
+<text class="sm" x="140" y="180" text-anchor="middle">graph.yaml + nodes/</text>
+<line x1="140" y1="196" x2="140" y2="218" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="218" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="242" text-anchor="middle">共通形狀</text>
+<text class="sm" x="140" y="256" text-anchor="middle">graph.yaml 進讀寫做完</text>
+<text class="sm" x="140" y="270" text-anchor="middle">nodes/ 一 hop 一檔</text>
+<text class="sm" x="140" y="284" text-anchor="middle">缺一節牙就紅</text>
+</svg>
+  </div>
+  <p class="figcap">dev-talk 13 hop；dev-flow 的 stage2–7 各有 <code>graph.yaml</code> + <code>nodes/</code>。</p>
+
+  <div class="figwrap">
+  <svg id="fig-skills-single" viewBox="0 0 280 358" role="img" aria-label="單檔技能仍掛整棵，裡面只有 SKILL.md" style="display:block;max-width:360px;margin:0 auto;height:auto">
+<rect class="b" x="40" y="10" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="34" text-anchor="middle">dev-run/</text>
+<text class="sm" x="140" y="48" text-anchor="middle">第 6 站實作引擎</text>
+<text class="sm" x="140" y="62" text-anchor="middle">整棵掛</text>
+<text class="sm" x="140" y="76" text-anchor="middle">裡頭只有 SKILL.md</text>
+<line x1="140" y1="92" x2="140" y2="114" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="114" width="200" height="68" rx="6"/>
+<text class="nl" x="140" y="138" text-anchor="middle">dev-setup/</text>
+<text class="sm" x="140" y="152" text-anchor="middle">初裝／升級／修復</text>
+<text class="sm" x="140" y="166" text-anchor="middle">健檢</text>
+<line x1="140" y1="182" x2="140" y2="204" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="204" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="228" text-anchor="middle">dev-release/</text>
+<text class="sm" x="140" y="242" text-anchor="middle">母版自己發版</text>
+<line x1="140" y1="258" x2="140" y2="280" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="280" width="200" height="68" rx="6"/>
+<text class="nl" x="140" y="304" text-anchor="middle">dev-report/</text>
+<text class="sm" x="140" y="318" text-anchor="middle">缺陷回報</text>
+<text class="sm" x="140" y="332" text-anchor="middle">去識別化</text>
+</svg>
+  </div>
+  <p class="figcap">dev-run／setup／release／report 仍掛整棵，不要只抄單檔。</p>
+
+
+    <details class="layer" id="layer-hops">
+      <summary>③ 下一層：七站 hop 鏈</summary>
+      <p class="lead">順序以各站 <code>graph.yaml</code> 的 <code>next</code> 為準，不是猜。
+      藍框＝該 hop 准寫該站 md（<code>write:</code> 在 graph 裡）。第 3 站分叉拆成三張直式圖，線不穿過不相干的盒子。</p>
+
+      <h3>第 1 站 · 討論 · dev-talk · 13 hop</h3>
+  <div class="figwrap">
+  <svg id="fig-hop-s1" viewBox="0 0 280 986" role="img" aria-label="第 1 站討論 hop 鏈，順序依 dev-talk graph.yaml next" style="display:block;max-width:360px;margin:0 auto;height:auto">
+<rect class="b" x="40" y="10" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="34" text-anchor="middle">N1-start</text>
+<text class="sm" x="140" y="48" text-anchor="middle">開場</text>
+<line x1="140" y1="64" x2="140" y2="86" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="86" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="110" text-anchor="middle">S0-scope</text>
+<text class="sm" x="140" y="124" text-anchor="middle">定範圍</text>
+<line x1="140" y1="140" x2="140" y2="162" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="162" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="186" text-anchor="middle">S1-survey</text>
+<text class="sm" x="140" y="200" text-anchor="middle">掃現況</text>
+<line x1="140" y1="216" x2="140" y2="238" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="238" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="262" text-anchor="middle">S2-world</text>
+<text class="sm" x="140" y="276" text-anchor="middle">世界圖</text>
+<line x1="140" y1="292" x2="140" y2="314" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="314" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="338" text-anchor="middle">N3-probe</text>
+<text class="sm" x="140" y="352" text-anchor="middle">追問</text>
+<line x1="140" y1="368" x2="140" y2="390" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="390" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="414" text-anchor="middle">S4-accept</text>
+<text class="sm" x="140" y="428" text-anchor="middle">驗收雛形</text>
+<line x1="140" y1="444" x2="140" y2="466" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="466" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="490" text-anchor="middle">S5-diverge</text>
+<text class="sm" x="140" y="504" text-anchor="middle">發散</text>
+<line x1="140" y1="520" x2="140" y2="542" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="542" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="566" text-anchor="middle">S6-blind</text>
+<text class="sm" x="140" y="580" text-anchor="middle">盲檢下游</text>
+<line x1="140" y1="596" x2="140" y2="618" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="618" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="642" text-anchor="middle">N9-write-md</text>
+<text class="sm" x="140" y="656" text-anchor="middle">准寫 1-discussion.md</text>
+<line x1="140" y1="672" x2="140" y2="694" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="694" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="718" text-anchor="middle">S8-review</text>
+<text class="sm" x="140" y="732" text-anchor="middle">自檢</text>
+<line x1="140" y1="748" x2="140" y2="770" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="770" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="794" text-anchor="middle">S9-terms</text>
+<text class="sm" x="140" y="808" text-anchor="middle">詞彙</text>
+<line x1="140" y1="824" x2="140" y2="846" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="846" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="870" text-anchor="middle">S10-html</text>
+<text class="sm" x="140" y="884" text-anchor="middle">掃頁</text>
+<line x1="140" y1="900" x2="140" y2="922" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="922" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="946" text-anchor="middle">N13-end</text>
+<text class="sm" x="140" y="960" text-anchor="middle">收尾</text>
+</svg>
+  </div>
+  <p class="figcap">nodes/*.md 一 hop 一檔。藍框准寫 <code>1-discussion.md</code>。</p>
+
+
+      <h3>第 2 站 · 收斂 · stage2 · 出口 G1</h3>
+  <div class="figwrap">
+  <svg id="fig-hop-s2" viewBox="0 0 280 682" role="img" aria-label="第 2 站收斂 hop 鏈，出口 G1，順序依 stage2 graph.yaml next" style="display:block;max-width:360px;margin:0 auto;height:auto">
+<rect class="b" x="40" y="10" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="34" text-anchor="middle">N1-handoff</text>
+<text class="sm" x="140" y="48" text-anchor="middle">接手</text>
+<line x1="140" y1="64" x2="140" y2="86" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="86" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="110" text-anchor="middle">S1-approaches</text>
+<text class="sm" x="140" y="124" text-anchor="middle">生方案</text>
+<line x1="140" y1="140" x2="140" y2="162" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="162" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="186" text-anchor="middle">S2-stress</text>
+<text class="sm" x="140" y="200" text-anchor="middle">壓測定案</text>
+<line x1="140" y1="216" x2="140" y2="238" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="238" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="262" text-anchor="middle">N3-write-md</text>
+<text class="sm" x="140" y="276" text-anchor="middle">准寫 2-decision.md</text>
+<line x1="140" y1="292" x2="140" y2="314" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="314" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="338" text-anchor="middle">S4-oc</text>
+<text class="sm" x="140" y="352" text-anchor="middle">准寫 Owner Call</text>
+<line x1="140" y1="368" x2="140" y2="390" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="390" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="414" text-anchor="middle">S5-adr</text>
+<text class="sm" x="140" y="428" text-anchor="middle">准寫 ADR 檢查</text>
+<line x1="140" y1="444" x2="140" y2="466" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="466" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="490" text-anchor="middle">S6-selfcheck</text>
+<text class="sm" x="140" y="504" text-anchor="middle">准寫自檢</text>
+<line x1="140" y1="520" x2="140" y2="542" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="542" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="566" text-anchor="middle">N7-g1</text>
+<text class="sm" x="140" y="580" text-anchor="middle">G1 送審</text>
+<line x1="140" y1="596" x2="140" y2="618" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="618" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="642" text-anchor="middle">N8-end</text>
+<text class="sm" x="140" y="656" text-anchor="middle">收尾</text>
+</svg>
+  </div>
+  <p class="figcap">藍框准寫 <code>2-decision.md</code>。</p>
+
+
+      <h3>第 3 站 · 原型 · stage3 · 可 skip</h3>
+      <p class="muted">N1-trigger：<code>next=N-skip</code>，<code>fork_required=S0-question</code>。
+      下面第一張是 0 命中跳過，第二張是有命中後的實驗鏈。兩條路各一張直式圖，線不穿過不相干的盒子。</p>
+  <div class="figwrap">
+  <svg id="fig-hop-s3-gate" viewBox="0 0 280 102" role="img" aria-label="第 3 站觸發判定：next 是 N-skip，fork_required 是 S0-question" style="display:block;max-width:360px;margin:0 auto;height:auto">
+<rect class="wn" x="40" y="10" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="34" text-anchor="middle">N1-trigger</text>
+<text class="sm" x="140" y="48" text-anchor="middle">觸發判定</text>
+<text class="sm" x="140" y="62" text-anchor="middle">next=N-skip</text>
+<text class="sm" x="140" y="76" text-anchor="middle">fork=S0-question</text>
+</svg>
+  </div>
+  <p class="figcap">觸發判定是開場第一動。黃框＝分叉點。</p>
+
+  <div class="figwrap">
+  <svg id="fig-hop-s3-skip" viewBox="0 0 280 88" role="img" aria-label="第 3 站 0 命中走 N-skip 跳過" style="display:block;max-width:360px;margin:0 auto;height:auto">
+<rect class="b" x="40" y="10" width="200" height="68" rx="6"/>
+<text class="nl" x="140" y="34" text-anchor="middle">N-skip</text>
+<text class="sm" x="140" y="48" text-anchor="middle">0 命中</text>
+<text class="sm" x="140" y="62" text-anchor="middle">跳過本站</text>
+</svg>
+  </div>
+  <p class="figcap">0 命中：清單落檔後跳過本站。</p>
+
+  <div class="figwrap">
+  <svg id="fig-hop-s3-run" viewBox="0 0 280 544" role="img" aria-label="第 3 站有命中後的 hop 鏈，順序依 stage3 graph.yaml next" style="display:block;max-width:360px;margin:0 auto;height:auto">
+<rect class="b" x="40" y="10" width="200" height="68" rx="6"/>
+<text class="nl" x="140" y="34" text-anchor="middle">S0-question</text>
+<text class="sm" x="140" y="48" text-anchor="middle">有命中</text>
+<text class="sm" x="140" y="62" text-anchor="middle">定義疑問</text>
+<line x1="140" y1="78" x2="140" y2="100" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="100" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="124" text-anchor="middle">S1-experiment</text>
+<text class="sm" x="140" y="138" text-anchor="middle">實驗</text>
+<line x1="140" y1="154" x2="140" y2="176" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="176" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="200" text-anchor="middle">S2-evidence</text>
+<text class="sm" x="140" y="214" text-anchor="middle">收證</text>
+<line x1="140" y1="230" x2="140" y2="252" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="252" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="276" text-anchor="middle">N3-write-md</text>
+<text class="sm" x="140" y="290" text-anchor="middle">准寫 3-prototype.md</text>
+<line x1="140" y1="306" x2="140" y2="328" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="328" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="352" text-anchor="middle">S3-writeback</text>
+<text class="sm" x="140" y="366" text-anchor="middle">准寫回 2-decision.md</text>
+<line x1="140" y1="382" x2="140" y2="404" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="404" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="428" text-anchor="middle">S4-close</text>
+<text class="sm" x="140" y="442" text-anchor="middle">收尾</text>
+<line x1="140" y1="458" x2="140" y2="480" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="480" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="504" text-anchor="middle">N5-end</text>
+<text class="sm" x="140" y="518" text-anchor="middle">結束</text>
+</svg>
+  </div>
+  <p class="figcap">有命中：藍框准寫 <code>3-prototype.md</code> 與回寫 <code>2-decision.md</code>。S4-close 在 graph 裡禁寫。</p>
+
+
+      <h3>第 4 站 · 規格 · stage4 · 出口 G2</h3>
+  <div class="figwrap">
+  <svg id="fig-hop-s4" viewBox="0 0 280 834" role="img" aria-label="第 4 站規格 hop 鏈，出口 G2，順序依 stage4 graph.yaml next" style="display:block;max-width:360px;margin:0 auto;height:auto">
+<rect class="b" x="40" y="10" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="34" text-anchor="middle">N1-handoff</text>
+<text class="sm" x="140" y="48" text-anchor="middle">接手</text>
+<line x1="140" y1="64" x2="140" y2="86" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="86" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="110" text-anchor="middle">S1-requirements</text>
+<text class="sm" x="140" y="124" text-anchor="middle">准寫列 R</text>
+<line x1="140" y1="140" x2="140" y2="162" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="162" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="186" text-anchor="middle">S2-scenarios</text>
+<text class="sm" x="140" y="200" text-anchor="middle">准寫展 S</text>
+<line x1="140" y1="216" x2="140" y2="238" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="238" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="262" text-anchor="middle">S3a-close</text>
+<text class="sm" x="140" y="276" text-anchor="middle">准寫邊界收尾</text>
+<line x1="140" y1="292" x2="140" y2="314" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="314" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="338" text-anchor="middle">S3b-profile</text>
+<text class="sm" x="140" y="352" text-anchor="middle">准寫 Profile</text>
+<line x1="140" y1="368" x2="140" y2="390" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="390" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="414" text-anchor="middle">S3c-stage3</text>
+<text class="sm" x="140" y="428" text-anchor="middle">准寫對帳原型</text>
+<line x1="140" y1="444" x2="140" y2="466" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="466" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="490" text-anchor="middle">S4-dd</text>
+<text class="sm" x="140" y="504" text-anchor="middle">准寫 Drafting Decision</text>
+<line x1="140" y1="520" x2="140" y2="542" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="542" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="566" text-anchor="middle">N5-write-md</text>
+<text class="sm" x="140" y="580" text-anchor="middle">准寫 4-spec.md</text>
+<line x1="140" y1="596" x2="140" y2="618" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="618" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="642" text-anchor="middle">S5-gate</text>
+<text class="sm" x="140" y="656" text-anchor="middle">准寫機械關自檢</text>
+<line x1="140" y1="672" x2="140" y2="694" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="694" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="718" text-anchor="middle">N6-g2</text>
+<text class="sm" x="140" y="732" text-anchor="middle">G2 送審</text>
+<line x1="140" y1="748" x2="140" y2="770" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="770" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="794" text-anchor="middle">N7-end</text>
+<text class="sm" x="140" y="808" text-anchor="middle">收尾</text>
+</svg>
+  </div>
+  <p class="figcap">藍框共寫同一份 <code>4-spec.md</code>。</p>
+
+
+      <h3>第 5 站 · 任務 · stage5 · 無 G</h3>
+  <div class="figwrap">
+  <svg id="fig-hop-s5" viewBox="0 0 280 606" role="img" aria-label="第 5 站任務 hop 鏈，無 gate，順序依 stage5 graph.yaml next" style="display:block;max-width:360px;margin:0 auto;height:auto">
+<rect class="b" x="40" y="10" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="34" text-anchor="middle">N1-handoff</text>
+<text class="sm" x="140" y="48" text-anchor="middle">接手</text>
+<line x1="140" y1="64" x2="140" y2="86" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="86" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="110" text-anchor="middle">S1-slice</text>
+<text class="sm" x="140" y="124" text-anchor="middle">准寫切 T</text>
+<line x1="140" y1="140" x2="140" y2="162" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="162" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="186" text-anchor="middle">S2-fields</text>
+<text class="sm" x="140" y="200" text-anchor="middle">准寫填欄</text>
+<line x1="140" y1="216" x2="140" y2="238" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="238" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="262" text-anchor="middle">S3-deps</text>
+<text class="sm" x="140" y="276" text-anchor="middle">准寫依賴</text>
+<line x1="140" y1="292" x2="140" y2="314" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="314" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="338" text-anchor="middle">N4-write-md</text>
+<text class="sm" x="140" y="352" text-anchor="middle">准寫 5-tasks.md</text>
+<line x1="140" y1="368" x2="140" y2="390" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="390" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="414" text-anchor="middle">S4-selfcheck</text>
+<text class="sm" x="140" y="428" text-anchor="middle">准寫自檢</text>
+<line x1="140" y1="444" x2="140" y2="466" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="466" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="490" text-anchor="middle">N5-twin</text>
+<text class="sm" x="140" y="504" text-anchor="middle">產執行板</text>
+<line x1="140" y1="520" x2="140" y2="542" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="542" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="566" text-anchor="middle">N6-end</text>
+<text class="sm" x="140" y="580" text-anchor="middle">定稿</text>
+</svg>
+  </div>
+  <p class="figcap">藍框共寫同一份 <code>5-tasks.md</code>。</p>
+
+
+      <h3>第 6 站 · 實作 · stage6 · 逐 T 走引擎</h3>
+  <div class="figwrap">
+  <svg id="fig-hop-s6" viewBox="0 0 280 392" role="img" aria-label="第 6 站實作 hop 鏈，逐 T 走引擎，順序依 stage6 graph.yaml next" style="display:block;max-width:360px;margin:0 auto;height:auto">
+<rect class="hl" x="40" y="10" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="34" text-anchor="middle">N1-arm</text>
+<text class="sm" x="140" y="48" text-anchor="middle">准寫武裝守衛</text>
+<line x1="140" y1="64" x2="140" y2="86" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="86" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="110" text-anchor="middle">N2-handoff</text>
+<text class="sm" x="140" y="124" text-anchor="middle">接手核對</text>
+<line x1="140" y1="140" x2="140" y2="162" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="162" width="200" height="68" rx="6"/>
+<text class="nl" x="140" y="186" text-anchor="middle">S2-tdd</text>
+<text class="sm" x="140" y="200" text-anchor="middle">准寫逐 T</text>
+<text class="sm" x="140" y="214" text-anchor="middle">不是一 T 一 hop</text>
+<line x1="140" y1="230" x2="140" y2="252" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="252" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="276" text-anchor="middle">N4-selfcheck</text>
+<text class="sm" x="140" y="290" text-anchor="middle">自檢</text>
+<line x1="140" y1="306" x2="140" y2="328" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="328" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="352" text-anchor="middle">N5-end</text>
+<text class="sm" x="140" y="366" text-anchor="middle">結束</text>
+</svg>
+  </div>
+  <p class="figcap">S2-tdd 是一顆 hop，不是一 T 一 hop。</p>
+
+
+      <h3>第 7 站 · 驗證 · stage7 · 出口 G3</h3>
+  <div class="figwrap">
+  <svg id="fig-hop-s7" viewBox="0 0 280 758" role="img" aria-label="第 7 站驗證 hop 鏈，出口 G3，順序依 stage7 graph.yaml next" style="display:block;max-width:360px;margin:0 auto;height:auto">
+<rect class="b" x="40" y="10" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="34" text-anchor="middle">N0-role</text>
+<text class="sm" x="140" y="48" text-anchor="middle">角色+防錨定</text>
+<line x1="140" y1="64" x2="140" y2="86" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="86" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="110" text-anchor="middle">N1-matrix</text>
+<text class="sm" x="140" y="124" text-anchor="middle">自建矩陣</text>
+<line x1="140" y1="140" x2="140" y2="162" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="162" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="186" text-anchor="middle">S2-run</text>
+<text class="sm" x="140" y="200" text-anchor="middle">准寫親跑驗證</text>
+<line x1="140" y1="216" x2="140" y2="238" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="238" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="262" text-anchor="middle">S2b-phenomena</text>
+<text class="sm" x="140" y="276" text-anchor="middle">准寫現象複驗</text>
+<line x1="140" y1="292" x2="140" y2="314" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="314" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="338" text-anchor="middle">S2c-integration</text>
+<text class="sm" x="140" y="352" text-anchor="middle">准寫整合回歸</text>
+<line x1="140" y1="368" x2="140" y2="390" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="390" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="414" text-anchor="middle">S2d-fresh</text>
+<text class="sm" x="140" y="428" text-anchor="middle">准寫 Final Fresh</text>
+<line x1="140" y1="444" x2="140" y2="466" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="466" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="490" text-anchor="middle">S2e-walkthrough</text>
+<text class="sm" x="140" y="504" text-anchor="middle">准寫操作走查</text>
+<line x1="140" y1="520" x2="140" y2="542" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="542" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="566" text-anchor="middle">N3-axes</text>
+<text class="sm" x="140" y="580" text-anchor="middle">雙軸審</text>
+<line x1="140" y1="596" x2="140" y2="618" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="618" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="642" text-anchor="middle">N4-author</text>
+<text class="sm" x="140" y="656" text-anchor="middle">准寫對照作者</text>
+<line x1="140" y1="672" x2="140" y2="694" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="694" width="200" height="54" rx="6"/>
+<text class="nl" x="140" y="718" text-anchor="middle">N5-verdict</text>
+<text class="sm" x="140" y="732" text-anchor="middle">Verdict</text>
+</svg>
+  </div>
+  <p class="figcap">藍框准寫 <code>7-review.md</code>。整合回歸在 Final Fresh 之前。</p>
+
+
+      <details class="layer" id="layer-six">
+        <summary>④ 下一層：hop 六節契約</summary>
+        <p class="lead">每個 <code>nodes/*.md</code> 都長這樣。缺一節，<code>check-devstageN-graph.sh</code> 就紅。
+        樣板：stage2／N3-write-md（定稿落檔）。</p>
+  <div class="figwrap">
+  <svg id="fig-six" viewBox="0 0 280 622" role="img" aria-label="hop 六節契約樣板，以 stage2 N3-write-md 定稿落檔為例" style="display:block;max-width:360px;margin:0 auto;height:auto">
+<rect class="b" x="40" y="10" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="34" text-anchor="middle">1. 進條件</text>
+<text class="sm" x="140" y="48" text-anchor="middle">步 1-2 已完成</text>
+<text class="sm" x="140" y="62" text-anchor="middle">1-discussion 仍 approved</text>
+<text class="sm" x="140" y="76" text-anchor="middle">只寫一份 2-decision</text>
+<line x1="140" y1="92" x2="140" y2="114" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="114" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="138" text-anchor="middle">2. 讀什麼</text>
+<text class="sm" x="140" y="152" text-anchor="middle">已確認決策點</text>
+<text class="sm" x="140" y="166" text-anchor="middle">步 1-2 方案與壓測</text>
+<text class="sm" x="140" y="180" text-anchor="middle">定稿清單在模板頂註</text>
+<line x1="140" y1="196" x2="140" y2="218" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="218" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="242" text-anchor="middle">3. 寫哪裡</text>
+<text class="sm" x="140" y="256" text-anchor="middle">只覆寫 2-decision.md</text>
+<text class="sm" x="140" y="270" text-anchor="middle">禁第二份／禁另存</text>
+<text class="sm" x="140" y="284" text-anchor="middle">write_mode: overwrite</text>
+<line x1="140" y1="300" x2="140" y2="322" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="322" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="346" text-anchor="middle">4. 做什麼</text>
+<text class="sm" x="140" y="360" text-anchor="middle">按模板定稿同一份</text>
+<text class="sm" x="140" y="374" text-anchor="middle">重跑=覆寫不是另存</text>
+<text class="sm" x="140" y="388" text-anchor="middle">圖跟 Decision 對得上</text>
+<line x1="140" y1="404" x2="140" y2="426" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="426" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="450" text-anchor="middle">5. 完成條件</text>
+<text class="sm" x="140" y="464" text-anchor="middle">該 slug 只有一份</text>
+<text class="sm" x="140" y="478" text-anchor="middle">定稿節齊、無佔位符</text>
+<text class="sm" x="140" y="492" text-anchor="middle">達不到就回上游</text>
+<line x1="140" y1="508" x2="140" y2="530" stroke="currentColor" stroke-width="1.4"/>
+<rect class="hl" x="40" y="530" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="554" text-anchor="middle">6. 下一跳</text>
+<text class="sm" x="140" y="568" text-anchor="middle">S4-oc</text>
+<text class="sm" x="140" y="582" text-anchor="middle">graph.yaml 的 next</text>
+<text class="sm" x="140" y="596" text-anchor="middle">不是猜</text>
+</svg>
+  </div>
+  <p class="figcap">牙齒：缺進條件、或下一跳跟 graph.yaml 不一致就 FAIL。</p>
+
+
+        <details class="layer" id="layer-landing">
+          <summary>⑤ 下一層：產品專案 docs/dev 落地</summary>
+          <p class="lead">dev-setup 自己不會去抓 GitHub；方法包要先變新。產品 repo 只拿到骨架與工具，不抄 <code>skills/</code>。</p>
+  <div class="figwrap">
+  <svg id="fig-landing" viewBox="0 0 280 490" role="img" aria-label="產品專案 docs/dev 落地：dev-setup 散發骨架，每 feat 一個 slug，skills 不抄進產品" style="display:block;max-width:360px;margin:0 auto;height:auto">
+<rect class="hl" x="40" y="10" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="34" text-anchor="middle">方法包一份正本</text>
+<text class="sm" x="140" y="48" text-anchor="middle">skills/ hop 不抄進產品</text>
+<text class="sm" x="140" y="62" text-anchor="middle">_templates/ 七站骨架</text>
+<text class="sm" x="140" y="76" text-anchor="middle">scripts/ 檢查與產檔</text>
+<line x1="140" y1="92" x2="140" y2="114" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="114" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="138" text-anchor="middle">dev-setup 散發一次</text>
+<text class="sm" x="140" y="152" text-anchor="middle">docs/dev/_templates/</text>
+<text class="sm" x="140" y="166" text-anchor="middle">docs/dev/tools/</text>
+<text class="sm" x="140" y="180" text-anchor="middle">契約 + STATUS + HISTORY</text>
+<line x1="140" y1="196" x2="140" y2="218" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="218" width="200" height="82" rx="6"/>
+<text class="nl" x="140" y="242" text-anchor="middle">每 feat 一個 slug</text>
+<text class="sm" x="140" y="256" text-anchor="middle">七份 md + html twin</text>
+<text class="sm" x="140" y="270" text-anchor="middle">1-discussion…7-review</text>
+<text class="sm" x="140" y="284" text-anchor="middle">evidence/ shots/</text>
+<line x1="140" y1="300" x2="140" y2="322" stroke="currentColor" stroke-width="1.4"/>
+<rect class="b" x="40" y="322" width="200" height="68" rx="6"/>
+<text class="nl" x="140" y="346" text-anchor="middle">記憶在產品根</text>
+<text class="sm" x="140" y="360" text-anchor="middle">.dev-flow/ 進 Git</text>
+<text class="sm" x="140" y="374" text-anchor="middle">.devflow/ 不進 Git</text>
+<line x1="140" y1="390" x2="140" y2="412" stroke="currentColor" stroke-width="1.4"/>
+<rect class="wn" x="40" y="412" width="200" height="68" rx="6"/>
+<text class="nl" x="140" y="436" text-anchor="middle">產品裡沒有的</text>
+<text class="sm" x="140" y="450" text-anchor="middle">skills/ 整棵只掛</text>
+<text class="sm" x="140" y="464" text-anchor="middle">AGENTS.md 只一行指標</text>
+</svg>
+  </div>
+  <p class="figcap">STATUS 只在整合分支。每 feat 一個 slug，七份 md + html。AGENTS.md 只准一行指標。</p>
+
+        </details>
+      </details>
+    </details>
+  </details>
+
+  <footer class="foot">
+    正本規則:<code>README.md</code>；技能樹:<code>skills/</code>；
+    直式圖契約:<code>notes/design/vbox-fig-contract.md</code>。
+    本頁是目錄關係樹，不是腳本盤點。腳本盤點在
+    <a href="guide-dev-flow.html#filemap">guide-dev-flow 附錄 #filemap</a>。
+    視覺語言沿用 <code>guide-dev-talk.html</code> 的共用 token。疑義以 README 為準。
+  </footer>
+</main>
+<script>
+/* 圖表放大檢視:點圖開全螢幕 overlay,滾輪縮放、拖曳平移、ESC/點背景關閉。
+   全 inline,不連任何外部庫(CSP 安全)。三份導覽共用同一份實作,勿改。 */
+(function(){
+  var ov=null;
+  function esc(e){ if(e.key==='Escape') close(); }
+  function close(){ if(ov){ ov.remove(); ov=null; document.removeEventListener('keydown',esc); } }
+  Array.prototype.forEach.call(document.querySelectorAll('.figwrap>svg'),function(svg){
+    svg.addEventListener('click',function(){
+      close();
+      ov=document.createElement('div'); ov.className='figzoom';
+      var box=document.createElement('div'); box.className='figzoom-inner';
+      var c=svg.cloneNode(true); c.removeAttribute('id'); box.appendChild(c);
+      var tip=document.createElement('div'); tip.className='figzoom-tip';
+      tip.textContent='滾輪縮放 · 拖曳平移 · ESC 或點背景關閉';
+      ov.appendChild(box); ov.appendChild(tip); document.body.appendChild(ov);
+      var s=1,tx=0,ty=0,drag=false,px=0,py=0;
+      function apply(){ c.style.transform='translate('+tx+'px,'+ty+'px) scale('+s+')'; }
+      ov.addEventListener('wheel',function(e){ e.preventDefault();
+        s=Math.min(6,Math.max(0.4,s*(e.deltaY<0?1.12:1/1.12))); apply(); },{passive:false});
+      box.addEventListener('mousedown',function(e){ drag=true; px=e.clientX; py=e.clientY; e.preventDefault(); });
+      window.addEventListener('mousemove',function(e){ if(!drag) return;
+        tx+=e.clientX-px; ty+=e.clientY-py; px=e.clientX; py=e.clientY; apply(); });
+      window.addEventListener('mouseup',function(){ drag=false; });
+      ov.addEventListener('click',function(e){ if(e.target===ov||e.target===tip) close(); });
+      document.addEventListener('keydown',esc);
+    });
+  });
+})();
+</script>
+<script>
+/* 巢狀 details：點 nav 錨點時先打開祖先 details，收據層才看得到目標 */
+document.addEventListener('click', function(e) {
+  var a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  var href = a.getAttribute('href');
+  if (href.length <= 1) return;
+  var el = document.getElementById(decodeURIComponent(href.slice(1)));
+  if (!el) return;
+  var node = el;
+  while (node) {
+    if (node.tagName === 'DETAILS') node.open = true;
+    node = node.parentElement;
+  }
+});
+</script>
+<!-- 
+  頁內錨點捲動修正：iframe/artifact 載體會把 fragment 導航當新網址，原生 #錨點 不捲動；
+  此段攔截頁內錨點點擊改用 scrollIntoView，一般瀏覽器直開不受影響。
+-->
+<script>
+  document.addEventListener('click', function(e) {
+    var a = e.target.closest('a[href^="#"]');
+    if (!a) return;
+    var href = a.getAttribute('href');
+    if (href.length <= 1) return;
+    var id = decodeURIComponent(href.slice(1));
+    var el = document.getElementById(id);
+    if (!el) return;
+    e.preventDefault();
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    history.replaceState(null, '', href);
+  });
+</script>
+
+</body>
+</html>

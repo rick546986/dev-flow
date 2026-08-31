@@ -2058,7 +2058,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   舊的 <code>CONTEXT.md</code> → <code>dev-memory.py migrate-legacy</code>，落地是候選，不是已確認。</p>
 
   <h2 id="filemap">附錄:檔案地圖(每支腳本在做什麼)</h2>
-  <p class="lead">這張表由 <code>scripts/check-file-map.sh</code> 雙向盤點守衛顧著:新增一支腳本沒登記進來、
+  <p class="lead">母版目錄關係（資料夾怎麼疊，不是下面這五張腳本表）見
+  <a href="guide-dir-map.html">目錄關係</a>。
+  這張表由 <code>scripts/check-file-map.sh</code> 雙向盤點守衛顧著:新增一支腳本沒登記進來、
   或表裡寫了一個不存在的檔名,守衛都會紅——手寫表必腐化,靠人記得同步不可靠。
   標了「散發面:<code>docs/dev/tools/</code>」的列必須與
   <code>docs/dev/ship-manifest.json</code> 的 tools 列同一集合

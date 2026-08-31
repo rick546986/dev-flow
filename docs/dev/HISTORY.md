@@ -361,3 +361,8 @@
 - 為什麼:巢狀 [flow `#filemap`] 破 GitHub renderer,標籤跟 URL 各顯一次甚至退化成 blob;§4 與 master-only 頁尾又是同一條 URL
 - 落在哪:README.md docs/dev/HISTORY.md
 
+## 2026-08-31 · guide-dir-map
+- 做了什麼:新增 guides/guide-dir-map.html：母版五塊目錄關係用 vbox-fig 直式 SVG 重畫，巢狀 details 分五層摺疊
+- 為什麼:人要看資料夾怎麼疊，不是 #filemap 那五張腳本清單；入口 README 不准重畫樹，只留一條 Pages 超連
+- 落在哪:guides/guide-dir-map.html README.md guides/guide-dev-flow.html#filemap docs/dev/HISTORY.md
+
