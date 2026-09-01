@@ -106,7 +106,7 @@
   /* parity 區內若含 details,summary 顏色改用綠系,與左側色條一致 */
   .parity>details>summary{color:var(--ok)}
 
-  /* ── Phase 4(fig-lifecycle 全還原版)新增,quickstart 的 fig-lifecycle-qs 雙生 ── */
+  /* ── Phase 4(fig-lifecycle 全還原版)新增 ── */
   /* 黃 = hook 可掛點(與既有 warn 變數同色但不用虛線,和 .note 區分) */
   svg .hk{fill:color-mix(in srgb,var(--warn) 16%,var(--card));stroke:var(--warn)}
   /* 灰虛線掛靠事件框(左側旁支 + 底部獨立事件,harness 觸發但非本圖主幹) */
@@ -167,6 +167,13 @@
   .tree .name{white-space:nowrap}
   .tree summary .name{color:var(--acc)}
   .tree .why{color:var(--muted);min-width:0}
+
+  /* 可勾選 checklist(狀態存 localStorage,純 inline JS) */
+  .chk{list-style:none;padding-left:0;margin:.6em 0}
+  .chk li{display:flex;gap:8px;align-items:flex-start;padding:5px 0;
+          border-bottom:1px dashed var(--line)}
+  .chk input{margin-top:.35em;flex:0 0 auto;accent-color:var(--acc)}
+  .chk input:checked+span{color:var(--muted);text-decoration:line-through}
 </style>
 </head>
 <body>
@@ -176,6 +183,7 @@
   <code>README.md</code>（只當第一屏）。契約句檢查器仍抽那份的機械正本；人看本頁。</p>
 
   <nav>
+    <a href="#start">⑯ 開工</a>
     <a href="#flow">① 七階段流程圖</a>
     <a href="#lanes">② 兩軌</a>
     <a href="#docs">③ 七份文件</a>
@@ -193,16 +201,361 @@
     <a href="https://rick546986.github.io/dev-flow/docs/dev/HISTORY.html">改版歷史</a>
   </nav>
 
+  <h2 id="start">⑯ 開工(零到一 → 一個 feature → FAQ)</h2>
+  <p class="lead">這章要你懂:<strong>先裝機、再走一個 feature、卡關對 FAQ</strong>。
+  七站圖、兩軌、每站清單在後面各章,不另開第二頁。</p>
+  <blockquote>本頁指令分兩種管道,下文用固定標籤區分:<br>
+  <span class="badge you">跟 AI 說</span> —— 對話裡打的觸發語(<code>dev-setup</code>、<code>/dev-talk …</code>、
+  <code>/dev-flow 繼續 …</code>、<code>dev-run …</code>),由 plugin 的 skill 描述以自然語言匹配,不是 shell 指令。<br>
+  <span class="badge warn">終端機</span> —— 實際在 shell 執行的指令(<code>git</code>、<code>devflow-exec.sh</code>)。</blockquote>
+
+  <h3 id="checklist">零到一 checklist</h3>
+  <p class="lead">這章要你懂:<strong>裝機五件事,只有第 3 件要你動腦</strong>。其餘打一行、看回報。</p>
+  <ul class="chk" id="chk-zero">
+    <li><input type="checkbox" id="z0"><span><strong>0.</strong> 剛裝好或剛改過 plugin → 打 <code>/reload-plugins</code></span></li>
+    <li><input type="checkbox" id="z1"><span><strong>1.</strong> cd 進新專案 repo root → 打 <code>dev-setup</code>(不帶參數)</span></li>
+    <li><input type="checkbox" id="z2"><span><strong>2.</strong> 看它建了什麼,並回應兩個徵你同意的動作</span></li>
+    <li><input type="checkbox" id="z3"><span><strong>3.</strong> 逐條核可 <code>.claude/rules/arch-invariants.md</code> 草稿 ← <strong>唯一要動腦的一步</strong></span></li>
+    <li><input type="checkbox" id="z4"><span><strong>4.</strong> 收下 check 的固定四段回報,確認沒有異常項</span></li>
+  </ul>
+
+  <h3>0. plugin 已改過就先 reload</h3>
+  <p><span class="badge you">跟 AI 說</span> 如果你剛裝好、或剛改過 <code>dev-talk</code>/<code>dev-flow</code> plugin,
+  在當前 session 打:</p>
+  <pre>/reload-plugins</pre>
+  <p class="muted">為何:skills 與 hooks 隨 plugin 全域生效(安裝目錄
+  <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/</code>,Windows 對應
+  <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\</code>;
+  dev-talk 已併入同一 plugin,單一正本),但執行中的 session 不會自動感知改動,要 reload
+  新版 skill/hook 才生效(見 <code>dev-setup</code> SKILL「注意」節)。</p>
+  <p class="muted">環境需求:hooks 需要 python3(找不到時守衛只印警告後跳過,不擋工具呼叫);
+  Windows Git Bash 要另外裝 Python 並確認 <code>python3</code> 找得到,或設
+  <code>DEVFLOW_PYTHON</code> 指向直譯器 —— 解析順序見 <code>docs/PLUGIN.md</code> 環境段。不要覆寫 <code>/usr/bin/python3</code>。</p>
+
+  <h3>1. 進專案打 dev-setup(不需參數)</h3>
+  <p><span class="badge you">跟 AI 說</span> cd 進新專案 repo root 後:</p>
+  <pre>dev-setup</pre>
+  <p>它會自動偵測現況分流,不用你自己判斷裝過沒:</p>
+
+  <div class="figwrap"><svg id="fig-setup" viewBox="0 0 880 250" role="img"
+       aria-label="dev-setup 自動偵測的四種分流:fresh、stale、current、broken">
+    <defs><marker id="ar-su" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
+    <g class="n"><rect x="20" y="84" width="170" height="46" rx="6" class="hl"/><text class="dm" x="32" y="105">dev-setup</text><text class="dc" x="32" y="120">不需參數</text></g>
+    <g class="n"><rect x="240" y="84" width="170" height="46" rx="6" class="b"/><text class="dt" x="252" y="105">自動偵測現況</text><text class="dc" x="252" y="120">不用你自己判斷裝過沒</text></g>
+    <g class="n"><rect x="460" y="16" width="400" height="36" rx="6" class="go"/><text class="dt" x="472" y="32">fresh —— 無 docs/dev/</text><text class="dc" x="472" y="46">跑 install,完成後跑 check 回報</text></g>
+    <g class="n"><rect x="460" y="60" width="400" height="36" rx="6" class="note"/><text class="dt" x="472" y="76">stale —— 有,但版本落後母版</text><text class="dc" x="472" y="90">先列 diff 摘要徵同意 → upgrade → check</text></g>
+    <g class="n"><rect x="460" y="104" width="400" height="36" rx="6" class="b"/><text class="dt" x="472" y="120">current —— 有且與母版一致</text><text class="dc" x="472" y="134">只跑 check</text></g>
+    <g class="n"><rect x="460" y="148" width="400" height="36" rx="6" class="no"/><text class="dt" x="472" y="164">broken —— check 抓到異常</text><text class="dc" x="472" y="178">列異常+修法,徵得同意後 fix</text></g>
+    <g class="n"><rect x="20" y="200" width="390" height="36" rx="6" class="b"/><text class="dt" x="32" y="216">明講子命令 → 跳過偵測</text><text class="dc" x="32" y="230">check / upgrade / install / fix / uninstall</text></g>
+    <path class="edge" marker-end="url(#ar-su)" d="M190,107 L240,107"/>
+    <path class="edge" marker-end="url(#ar-su)" d="M410,92 L435,92 L435,34 L460,34"/>
+    <path class="edge" marker-end="url(#ar-su)" d="M410,100 L435,100 L435,78 L460,78"/>
+    <path class="edge" marker-end="url(#ar-su)" d="M410,114 L435,114 L435,122 L460,122"/>
+    <path class="edge" marker-end="url(#ar-su)" d="M410,122 L435,122 L435,166 L460,166"/>
+    <path class="edge" marker-end="url(#ar-su)" d="M105,130 L105,200"/>
+  </svg></div>
+  <p class="figcap">綠 = 全新安裝、黃 = 要你先看 diff、紅 = 有異常待修。四條路都以 check 收尾。</p>
+
+  <div class="tablewrap"><table>
+    <tr><th>偵測</th><th>狀態</th><th>動作</th></tr>
+    <tr><td>無 <code>docs/dev/</code></td><td><strong>fresh</strong></td><td>跑 install,完成後跑 check 回報</td></tr>
+    <tr><td>有 <code>docs/dev/</code>,但版本落後母版</td><td><strong>stale</strong></td><td>先列 diff 摘要徵同意 → upgrade → check</td></tr>
+    <tr><td>有且與母版一致</td><td><strong>current</strong></td><td>只跑 check</td></tr>
+    <tr><td>check 抓到異常</td><td><strong>broken</strong></td><td>列異常+修法,徵得同意後 fix</td></tr>
+  </table></div>
+  <p class="muted">明講子命令(<code>dev-setup check</code> / <code>upgrade</code> / <code>install</code> / <code>fix</code> /
+  <code>uninstall</code>)會跳過偵測,直接照該子命令走。</p>
+
+  <h3>2. install 完成後,它建了什麼(fresh 情境)</h3>
+  <ul>
+    <li><code>docs/dev/README.md</code> ← cp 母版 <code>~/dev/dev-flow/README.md</code></li>
+    <li><code>docs/dev/_templates/</code> ← cp 母版 <code>_templates/</code></li>
+    <li><code>docs/dev/STATUS.md</code> ← 從模板建(進行中 feature 看板)</li>
+    <li><code>.dev-flow/</code> ← Agent Memory 正本(進 Git)。本機 SQLite 是這棵樹的快取。
+    新機器打 <code>dev-setup</code> 重建;之後 <code>git pull</code> 不必重跑 setup,下一句 ask / context
+    會核對 generation（見 <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#memory">guide #memory</a>）</li>
+    <li><code>.claude/rules/arch-invariants.md</code> —— <strong>自動產草稿</strong>(不是空殼):收割使用者指名的
+    external workflow artifacts 與 <code>CLAUDE.md</code> 的技術規則段 → 派 sonnet 掃 codebase 抓候選 → 每條標
+    <code>【待確認】</code> 列給你逐條核可,見下一步</li>
+    <li><code>.gitignore</code> 加一行 <code>.devflow/</code>(執行守衛的狀態檔目錄)</li>
+    <li><code>docs/dev/devflow-contract.json</code> ← cp 母版正本(<strong>版本握手契約</strong>;
+    <code>devflow-exec.sh doctor</code> 無明示指定時在此找契約,缺件必 fail-closed)</li>
+    <li><code>docs/dev/tools/devflow-evidence-gauntlet.sh</code> ← cp 母版 <code>scripts/</code>
+    並 <code>chmod +x</code>(Stage 7 Evidence 機械檢查 E1–E13;散發後跑兩道可執行驗證)</li>
+  </ul>
+  <p class="muted">兩個會跳出來徵你同意的動作,不是自動靜默完成:</p>
+  <ul>
+    <li><strong>文檔歸位</strong>:專案裡若有散落文件,會提議 <code>git mv</code> 進
+    <code>docs/specs/</code> / <code>docs/dev/</code> / <code>docs/adr/</code>,並同步全部引用</li>
+    <li><strong>外部 workflow artifacts</strong>:使用者指名後,只讀取其中可重用的「架構不變量/
+    技術慣例」作為 rules 草稿候選;未指名目錄不掃描,原 artifacts 不移動、不覆蓋、不刪除</li>
+  </ul>
+  <p class="muted">專案若已有其他 external workflow artifacts 與目錄,一律保留不動;
+  dev-setup 不轉換也不接管它們。</p>
+
+  <h3>3. 核可 <code>.claude/rules/arch-invariants.md</code> 草稿</h3>
+  <p>install 會產草稿,你要做的是<strong>逐條核可</strong>(不是從零寫)。草稿每條長這樣:</p>
+  <pre>## 交易與併發
+- 【待確認】寫入路徑一律走 TxManager(可設 isolation level + idempotent retry),
+  禁直接開 tx  &lt;- 證據:internal/db/tx_manager.go:42;信心:高</pre>
+  <p>核可 = 拿掉 <code>【待確認】</code>;不同意就刪。<strong>留著標記的條目不得被當事實引用</strong>。
+  判準兩問:<strong>①這條錯了會出 bug 或被 review 打回嗎?②新 session 看檔案結構會知道嗎?
+  ①是 ②否 → 留。</strong></p>
+  <div class="tablewrap"><table>
+    <tr><th>七類骨架(模板已列)</th><th>內容範例</th></tr>
+    <tr><td>資料層</td><td>軟刪除一律 <code>deleted_at</code>,查詢預設帶 <code>WHERE deleted_at IS NULL</code>;
+        pg unique violation(23505)必攔截轉 domain error</td></tr>
+    <tr><td>交易與併發</td><td>寫入走 TxManager(isolation level + 指數退避 retry 上限 5 次),禁直接開 tx</td></tr>
+    <tr><td>錯誤處理</td><td>domain error 定義位置;API 層才轉 HTTP status,domain 層不碰 HTTP</td></tr>
+    <tr><td>分層與依賴方向</td><td>業務規則只住 domain/services/,API 層禁寫業務 if/else;依賴方向 api → application → domain</td></tr>
+    <tr><td>命名與慣例</td><td>DB 欄位 snake_case、struct tag 對映、測試檔命名</td></tr>
+    <tr><td><strong>已知地雷</strong>(最高價值)</td><td>踩過的坑,例:某 cache 需在某動作後手動失效,否則會用到舊資料 —— 這種別人絕對看不出來</td></tr>
+    <tr><td>驗證指令</td><td><code>cd backend &amp;&amp; PYTHONPATH=. python -m pytest tests/</code>、<code>npm run build</code></td></tr>
+  </table></div>
+  <div class="tablewrap"><table>
+    <tr><th>放什麼</th><th>不放什麼</th></tr>
+    <tr><td rowspan="3">架構不變量與 gotchas —— 光看 repo 看不出來、會讓人踩坑的事
+        (例:「某張表禁止直接寫,一定要走某個 service」)</td>
+        <td><strong>dev-flow 流程規則</strong>(README/gate/lane 那套)—— 這檔案每 session 自動注入,
+        寫進流程規則等於把「有這套 SOP」的知識灌給所有 agent,包含理應對下游盲的 <code>/dev-talk</code>
+        （<a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#fence">guide #fence</a>：禁把流程規則寫進專案 CLAUDE.md/AGENTS.md）</td></tr>
+    <tr><td><strong>spec 內容</strong> —— living spec 已經在 <code>docs/specs/</code>,不重抄</td></tr>
+    <tr><td>「看 repo 就知道的事」—— 那是雜訊,不是不變量</td></tr>
+  </table></div>
+
+  <h3>4. check 的固定回報格式</h3>
+  <p>不論走哪個分流(fresh/stale/current/broken),結尾回報都是固定四段:</p>
+  <ol>
+    <li>判定狀態一句</li>
+    <li>做了什麼(逐條)</li>
+    <li>check 結果表</li>
+    <li>還需要你決定的事(可空)</li>
+  </ol>
+  <p class="muted">check 項目數與編號以 <code>skills/dev-setup/SKILL.md</code> 的 check 節為準
+  (JSON/掛載/自測/盲掃/專案面…),其中第 9 項驗
+  gauntlet 散發(存在、與母版無 diff、兩道可執行驗證),第 10 項驗<strong>版本握手</strong>:
+  <code>docs/dev/devflow-contract.json</code> 與母版無 diff,且 <code>devflow-exec.sh doctor</code>
+  可執行並看 verdict —— 報 INCOMPATIBLE 是刻意 fail-closed,不得繞過或改綠。</p>
+
+  <h3 id="walkthrough">一個 feature 的完整走位</h3>
+  <p class="lead">這章要你懂:<strong>七個階段裡你只打四種指令</strong>,其餘都是 AI 在跑;
+  真正卡人的是 Stage 6 —— 它有一組不可調的三步順序,順序錯了安全網會失效。</p>
+  <p>以下以「加一個 X 功能」為例,逐階段列出:使用者打什麼 / AI 做什麼 / 產出什麼檔 / gate 誰審 / 用什麼模型。</p>
+
+  <div class="tablewrap"><table>
+    <tr><th>階段</th><th>使用者打什麼</th><th>AI 做什麼</th><th>產出檔</th><th>Gate</th><th>模型</th></tr>
+    <tr>
+      <td>1 討論</td>
+      <td><span class="badge you">跟 AI 說</span>(<strong>建議另開新 session</strong>)<br>
+        <code>/dev-talk 我想做 X</code></td>
+      <td>一次一問。乘客地圖 12 步,執行是節點鏈(下一跳看 <code>graph.yaml</code>)。
+        只覆寫一份 <code>1-discussion.md</code>。已有 OPEN 場不要再 <code>talk start</code>。
+        細節見 <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map">guide-dev-talk 全程地圖</a></td>
+      <td><code>docs/dev/&lt;slug&gt;/1-discussion.md</code> + <code>.html</code></td>
+      <td>Open Questions 全解或明標假設(無人工簽核,是自我完成條件)</td>
+      <td><span class="badge opus">opus</span></td>
+    </tr>
+    <tr>
+      <td>2 收斂</td>
+      <td><span class="badge you">跟 AI 說</span> 回主 session:<br><code>/dev-flow 繼續 &lt;slug&gt;</code></td>
+      <td><code>brainstorming</code>(2-3 approaches)+ <code>grill-me</code> 壓測定案</td>
+      <td><code>2-decision.md</code>(+html);三條件成立 → 抄 <code>docs/adr/</code></td>
+      <td><strong>G1</strong> 方向核准 + Owner Calls 全裁決;reviewer 順序見表後正本摘錄</td>
+      <td><span class="badge opus">opus</span> 撰寫;Gate reviewer 不指定模型</td>
+    </tr>
+    <tr>
+      <td>3 原型<br><span class="muted">(選配)</span></td>
+      <td><span class="badge you">跟 AI 說</span> <code>/dev-flow 繼續 &lt;slug&gt;</code></td>
+      <td>mattpocock <code>prototype</code>(code 進 throwaway branch,禁進 main)
+        + visual companion(UI 多 variant 互動挑);命中觸發判定(前端/交接/核准/等待/權限/
+        系統外/多互動設計)→ <strong>條件式必要</strong>,產可操作 Demo + User Demo Feedback</td>
+      <td><code>3-prototype.md</code>;答案回寫 <code>2-decision.md</code></td>
+      <td>回寫完成即終態 approved(無獨立 gate);Demo 的 <strong>Human verdict 由人類親填</strong>
+        (Agent 不得代填),是 G2「Demo verdict」錨的輸入</td>
+      <td><span class="badge sonnet">sonnet</span></td>
+    </tr>
+    <tr>
+      <td>4 規格</td>
+      <td><span class="badge you">跟 AI 說</span> <code>/dev-flow 繼續 &lt;slug&gt;</code></td>
+      <td>openspec delta 格式 + 反模糊三律,一次一個 R 段段展開、段段給你確認</td>
+      <td><code>4-spec.md</code>(+html)</td>
+      <td><strong>G2</strong> R/S 全審 + Drafting Decisions 全裁決 + Verification Profile
+        + Demo verdict(有未裁決不得過;全文見 §7)</td>
+      <td><span class="badge opus">opus</span> 撰寫;Gate reviewer 不指定模型</td>
+    </tr>
+    <tr>
+      <td>5 任務</td>
+      <td><span class="badge you">跟 AI 說</span> <code>/dev-flow 繼續 &lt;slug&gt;</code></td>
+      <td><code>to-tickets</code> 概念,tracer-bullet 順序拆 T,標 Covers/Verify/Blocked-by</td>
+      <td><code>5-tasks.md</code></td>
+      <td>每 T 欄位完整(Covers/Files/Verify/Blocked-by;無人工 gate)</td>
+      <td><span class="badge sonnet">sonnet</span></td>
+    </tr>
+    <tr>
+      <td>6 實作</td>
+      <td><span class="badge warn">終端機</span>(順序不可調,完整指令見下方「Stage 6 三步順序為何不可調」):<br>
+        1. 進 worktree/branch<br>
+        2. <code>devflow-exec.sh start &lt;slug&gt;</code><br>
+        3. <code>devflow-exec.sh status</code> 核對<br>
+        <span class="badge you">跟 AI 說</span> 4. <code>dev-run &lt;slug&gt;</code></td>
+      <td>派工者(opus)讀 4-spec/5-tasks/長期記憶/living spec,逐 T 派工(haiku 起步)
+        → fresh sonnet 審(親跑 Verify)→ 錯誤升階 → 派工者 commit + 記帳</td>
+      <td><code>6-implementation-notes.md</code> + 逐 T commit</td>
+      <td>每 T review PASS + 全 S 綠;PASS 前不得 commit</td>
+      <td><span class="badge opus">opus</span> 派工<br>
+        <span class="badge haiku">haiku</span>→<span class="badge sonnet">sonnet</span>→<span class="badge opus">opus</span> 升階<br>
+        <span class="badge sonnet">sonnet</span> review</td>
+    </tr>
+    <tr>
+      <td>7 驗證</td>
+      <td><span class="badge you">跟 AI 說</span> <code>/dev-flow 繼續 &lt;slug&gt;</code></td>
+      <td>mattpocock <code>code-review</code> 雙軸(Standards + Spec)+ coverage matrix,
+        reviewer 先自建矩陣才看 Self-Review(防錨定)</td>
+      <td><code>7-review.md</code> + <code>.html</code></td>
+      <td><strong>G3</strong> 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → Exit Checklist(PR 是其中一項);
+        模板另要求無 🔴</td>
+      <td><span class="badge sonnet">sonnet</span> 產檔;Gate reviewer 不指定模型</td>
+    </tr>
+  </table></div>
+
+  <div class="parity">
+  <p class="parity-tag">規則正本 · Stage 6 固定 acceptance seam(逐字抄自 README §5)</p>
+  <!-- parity:start readme-stage6-seam-quickstart -->
+  <pre><code class="language-text">RED → GREEN → scope check → Verify
+  → independent T review
+  → PASS
+  → commit
+  → Progress Log + checkbox + review evidence
+  </code></pre>
+  <!-- parity:end readme-stage6-seam-quickstart -->
+  </div>
+
+  <div class="figwrap"><svg id="fig-seam" viewBox="0 0 880 260" role="img"
+       aria-label="T acceptance seam:RED 到 commit,含 FAIL 回路、失敗分類與嘗試次數上限">
+    <defs>
+      <marker id="ar-sm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker>
+      <marker id="ar-smb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path class="arrowhead-bad" d="M0,0 L10,5 L0,10 Z"/></marker>
+    </defs>
+    <g class="n"><rect x="20" y="40" width="180" height="46" rx="6" class="b"/><text class="dt" x="32" y="61">RED 先紅</text><text class="dc" x="32" y="76">測試先失敗</text></g>
+    <g class="n"><rect x="230" y="40" width="180" height="46" rx="6" class="b"/><text class="dt" x="242" y="61">GREEN</text><text class="dc" x="242" y="76">最小實作到綠</text></g>
+    <g class="n"><rect x="440" y="40" width="180" height="46" rx="6" class="b"/><text class="dt" x="452" y="61">scope check</text><text class="dc" x="452" y="76">改動 ⊆ Files 聯集</text></g>
+    <g class="n"><rect x="650" y="40" width="180" height="46" rx="6" class="b"/><text class="dt" x="662" y="61">Verify</text><text class="dc" x="662" y="76">跑 T 自己的 Verify 指令</text></g>
+    <g class="n"><rect x="20" y="150" width="180" height="46" rx="6" class="hl"/><text class="dt" x="32" y="171">獨立 T review</text><text class="dc" x="32" y="186">reviewer ≠ 實作者</text></g>
+    <g class="n"><rect x="230" y="150" width="180" height="46" fill="none" stroke="none"/><polygon class="go" points="230,173 320,150 410,173 320,196"/><text class="dt" x="300" y="178">PASS</text></g>
+    <g class="n"><rect x="440" y="150" width="180" height="46" rx="6" class="b"/><text class="dt" x="452" y="171">commit + 記帳</text><text class="dc" x="452" y="186">PASS 後才准 commit</text></g>
+    <path class="edge" marker-end="url(#ar-sm)" d="M200,63 L230,63"/>
+    <path class="edge" marker-end="url(#ar-sm)" d="M410,63 L440,63"/>
+    <path class="edge" marker-end="url(#ar-sm)" d="M620,63 L650,63"/>
+    <path class="edge" marker-end="url(#ar-sm)" d="M830,63 L855,63 L855,118 L8,118 L8,173 L20,173"/>
+    <path class="edge" marker-end="url(#ar-sm)" d="M200,173 L230,173"/>
+    <path class="edge" marker-end="url(#ar-sm)" d="M410,173 L440,173"/>
+    <path class="edge-bad" marker-end="url(#ar-smb)" d="M110,150 L110,132 L320,132 L320,86"/>
+    <text class="dbad" x="340" y="146">FAIL → 回 GREEN 重來</text>
+    <text class="dl" x="20" y="222">FAIL 先分類:SPEC → L2 停回 G2 / ENV → 修環境重跑(不計次)/ IMPL·UNKNOWN → 升階重派</text>
+    <text class="dl" x="20" y="242">同 T 總嘗試 ≤4(haiku 1 + sonnet 2 + opus 1),用盡強制 adviser —— README §5 驗證五律</text>
+  </svg></div>
+  <p class="figcap">上排四步跑完才進下排的獨立審查;<strong>PASS 之前不准 commit</strong>。
+  紅線是失敗回路 —— 回頭前一定要先分類,因為 ENV 類不計入嘗試次數。</p>
+
+  <p class="muted"><strong>過 gate 三連動</strong>:每過一個 gate,frontmatter <code>status</code> +
+  <code>STATUS.md</code> + 同名 html twin 三者同步更新,禁漏一項。Stage 1 完成後就該去
+  <code>STATUS.md</code> 加第一列（格式見 <code>_templates/STATUS.md</code>）:<code>| &lt;slug&gt; | full | 1-discussion | &lt;你的名字&gt; | n-a:尚未建立 branch | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | &lt;日期&gt; |</code>
+(<code>Branch</code> 欄 Stage 6 開 branch 並推上去後換成 <code>origin/feat/&lt;slug&gt;</code>;
+<code>OverlapRef</code> 是直接補修讀的唯一座標,sequential 就是 Branch,
+parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;</code>),
+  之後每過一個 gate 回來更新 Stage 欄與對應的 G⬜ → G✅。</p>
+
+  <p><strong>G1/G2/G3 誰來審(reviewer 從哪來)</strong>:author ≠ approver;核心規則描述能力與
+  fallback,不指定模型或供應商。</p>
+  <div class="parity">
+  <p class="parity-tag">規則正本 · 審查者產生順序(逐字抄自 README §7)</p>
+  <!-- parity:start readme-reviewer-selection-quickstart -->
+  <ul>
+  <li><strong>審查者產生</strong>:G1/G2/G3 一律依序選 <strong>適格人類 reviewer → fresh-context reviewer
+  Agent → owner 自審(有記錄的最後手段)</strong>。Agent 必須是乾淨 context,只給審核對象+基準+回報格式,不給
+  作者結論;verdict 與審者身分記 reviewers 欄(如 <code>[independent-fresh-context-reviewer]</code>)
+  <ul>
+  <li>檔內留 round 紀錄。owner 自審僅能作為<strong>有記錄的最後手段</strong>,不假裝有四眼。</li>
+  </ul>
+  </li>
+  </ul>
+  <!-- parity:end readme-reviewer-selection-quickstart -->
+  </div>
+
+  <blockquote>為什麼討論要另開 session:圍欄①「討論盲下游」—— <code>/dev-talk</code> 全文零提及後續階段,
+  讀取白名單只有長期記憶(dev-memory.py ask)/ docs/specs/ / 原始碼 / 使用者指名檔案,不進其他文件資料夾。
+  同一個 session 若接著往下走,即使 skill 邊界仍在,模型也已經看過同一段對話,
+  盲從結構強制退化為紀律（<a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#fence">guide #fence</a>：最強用法是獨立 session）。
+  <code>/dev-talk</code> 收尾時若你說「開始做」「實作吧」,它只會回「討論記錄已完成,實作請另開 session」然後停。
+  這頁本身(<code>guide-dev-flow.html</code>)也不在 <code>/dev-talk</code> 的讀取白名單內 —— 討論 agent 看不到、
+  也不會讀到這份導覽頁提前偷跑下游知識,圍欄①不因本頁存在而破。</blockquote>
+  <p class="muted">Stage 6 三步順序與 Stage 7 G3 + Exit 的逐字摘要在下方
+  <a href="#stage6">④ Stage 6</a> / <a href="#stage7">④ Stage 7</a>,不另開一章。</p>
+
+  <h3 id="faq">常見卡關 FAQ</h3>
+  <p class="lead">這章要你懂:<strong>五種最常撞到的狀況各有固定修法</strong> ——
+  沒有一種需要你自由心證,照著走就行。</p>
+
+  <h3>守衛擋住怎麼辦?</h3>
+  <p>先看是③三張卡的哪一種,照對應處置走。核心原則只有一條:<strong>分不清 L1/L2 一律當 L2</strong> ——
+  <code>devflow-exec.sh stop</code>,不要自由心證硬闖。</p>
+
+  <h3>忘了 stop 怎麼辦?</h3>
+  <p>上個 session 結束時沒跑 <code>stop</code>,旗標留著,有兩種徵狀:</p>
+  <ul>
+    <li><code>devflow-exec.sh status</code> 平時只印 slug/scope/sentinel 狀態;旗標存在<strong>超過 24 小時</strong>
+      才會多印一行「旗標已存在 N 天」警告;<code>dev-setup check</code> 也會把「陳年旗標」列為 broken 狀態的異常項</li>
+    <li>更糟的情況:sentinel 檔案還在但 <code>.devflow/exec.json</code> 被誤刪或損壞 ——
+      這時 hooks 是 <strong>fail-closed</strong>,會擋掉所有 Edit/Write/Read,不是靜默放行;
+      <code>status</code> 會印「旗標損壞/異常」訊息</li>
+  </ul>
+  <p>修法:確認沒人在跑該 feature 後,跑 <code>devflow-exec.sh stop</code> 清掉,需要時重新 <code>start</code>。</p>
+
+  <h3>5-tasks 的 Files 格式怎麼寫(機械可解析)?</h3>
+  <pre>## T-1 export
+- Covers: R-1 / S-1
+- Files: ./src/api/export.ts, src/api/export.test.ts
+- Verify: `npm test -- export`
+- Blocked-by: —</pre>
+  <p>每個 <code>## T-n</code> 都必填 Covers、Files、Verify、Blocked-by。Files 逗號分隔多檔;
+  整個目錄要收作前綴放行,<strong>目錄結尾要加 <code>/</code></strong>(如 <code>src/jobs/</code>
+  會放行該目錄下所有檔案)。Files 一律以 <strong>Git repository root</strong> 為相對根:
+  <code>./src/api/export.ts</code> 會正規化為 <code>src/api/export.ts</code>,不可寫絕對路徑、
+  <code>..</code> traversal、空值或含糊的 root。monorepo 中 <code>internal/x_test.go</code> 與
+  <code>backend-go/internal/x_test.go</code> 是兩個不同 scope;前者不會放行後者。planned new file
+  可直接列入,不必先存在。</p>
+
+  <h3>scope 太寬的警告怎麼處理?</h3>
+  <p>只有 Files 值(去掉頭尾斜線後)命中固定字集
+  <code>{"docs", "src", "app", "lib"}</code> 才會觸發 —— 這是<strong>警告,不是硬擋</strong>,
+  <code>start</code> 仍會成功,只是等於整個目錄都在 scope 內,guard 形同虛設。
+  建議回 5-tasks 把 Files 收斂到實際會動的檔案,再重新 <code>start</code>。
+  <code>""</code>、<code>"."</code> 與任何正規化後指向 repository root 的條目是<strong>硬拒絕</strong>,
+  不是 scope 過寬警告。沒命中固定字集的「寬」(例如某個很大的子目錄)不會被這條規則抓到,
+  靠 5-tasks 撰寫時自己把關。</p>
+
+  <h3>既有 external workflow artifacts 會被改動嗎?</h3>
+  <p>不會。<code>dev-setup</code> install 會保留所有未識別的外部 workflow 目錄與產物:
+  不移動、不覆蓋、不刪除。外部 workflow 是專案層選擇,dev-flow 不轉換、不接管、
+  也不把它當成官方替代執行系統。</p>
+
   <h2 id="flow">① 七階段流程圖(含 Gate 與模型分層)</h2>
   <p class="lead">這章要你懂:<strong>七站單行,只有 G1 / G2 / G3 會被人擋</strong>。
   哪站用哪個模型是綁死的。G1 過且沒技術疑問,可以跳過選配的 3。
   Stage 1 本身是可重跑的節點鏈,下一跳看 <code>graph.yaml</code>,細節見
   <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map">guide-dev-talk 全程地圖</a>。</p>
 
-  <div class="figwrap"><svg id="fig-flow" viewBox="0 0 880 330" role="img"
-       aria-label="dev-flow 七階段全程圖:上排 1 討論到 4 規格,下排 G2 到 PR,含 G1 跳過 3 的捷徑與模型分層配色">
+  <span id="diagram" hidden></span>
+  <div class="figwrap"><svg id="fig-flow" viewBox="0 0 880 370" role="img"
+       aria-label="dev-flow 七階段全程圖:上排 1 討論到 4 規格,下排 G2 到 PR,含 G1 跳過 3 的捷徑、模型分層配色、另開 session 虛線框與守衛武裝區間">
     <defs><marker id="ar-fl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
+    <g class="cluster"><rect x="148" y="58" width="142" height="74" rx="10" class="sessionbox"/></g>
+    <g class="cluster"><rect x="592" y="58" width="142" height="74" rx="10" class="sessionbox"/></g>
+    <g class="cluster"><rect x="444" y="198" width="142" height="74" rx="10" class="sessionbox"/></g>
 
     <g class="n"><rect x="6" y="70" width="130" height="56" rx="26" class="b"/><text class="dt" x="18" y="88">想法/需求</text><text class="dc" x="18" y="103">還沒有任何檔案</text></g>
     <g class="n"><rect x="154" y="70" width="130" height="56" rx="6" class="m-opus"/><text class="dt" x="166" y="88">1 討論</text><text class="dc" x="166" y="103">opus · /dev-talk</text><text class="dc" x="166" y="117">1-discussion.md</text></g>
@@ -234,18 +587,26 @@
     <path class="edge" marker-end="url(#ar-fl)" d="M71,266 L71,286"/>
     <path class="edge" marker-end="url(#ar-fl)" d="M515,70 L515,30 L811,30 L811,70"/>
 
+    <path class="fenceline" d="M450,278 L450,286 L580,286 L580,278"/>
     <text class="dl" x="560" y="24">G1 過·無技術疑問 → 跳過選配的 3</text>
-    <text class="dl" x="160" y="300">Stage 6 內部是三層,不是單一模型:haiku 起步 → sonnet(同 T 最多 2 次,換方法不歸零)→ opus,升階時帶完整失敗軌跡</text>
-    <text class="dl" x="160" y="318">T review = sonnet fresh(高風險/爭議升 opus 二審);adviser = opus 唯讀,三層皆 FAIL 才派</text>
+    <text class="dk" x="154" y="52">必開新 session</text>
+    <text class="dk" x="598" y="52">建議另開(選配)</text>
+    <text class="dk" x="450" y="192">建議另開 session</text>
+    <text class="dl" x="160" y="318">Stage 6 內部是三層,不是單一模型:haiku 起步 → sonnet(同 T 最多 2 次,換方法不歸零)→ opus,升階時帶完整失敗軌跡</text>
+    <text class="dl" x="160" y="336">T review = sonnet fresh(高風險/爭議升 opus 二審);adviser = opus 唯讀,三層皆 FAIL 才派</text>
+    <text class="dl" x="450" y="358">守衛武裝區間:start→stop,只有這一段守衛是醒著的</text>
   </svg></div>
   <p class="figcap">下排由右往左走。<strong>紫 = opus</strong>(規劃/派工層)、<strong>青 = sonnet</strong>(執行/產檔層)、
   <strong>灰 = haiku</strong>(Stage 6 T 執行起步模型)、<strong>藍 = gate</strong>(reviewer 依能力與 fallback 選,不指定模型)。
-  6 實作以<strong>起步</strong>模型標色 —— 它實際是三層,升階規則見下表。</p>
+  <strong>虛線框</strong> = 要/建議另開 session 的站(1 討論<strong>必開</strong>;3 原型、6 實作<strong>建議另開</strong>)。
+  <strong>紅色虛線括號</strong> = 執行守衛的武裝區間(<code>start</code> 到 <code>stop</code>)。
+  6 實作以<strong>起步</strong>模型標色 —— 它實際是三層,升階規則見下表。
+  reviewer 不綁型號。</p>
 
   <div class="tablewrap"><table>
     <tr><th>層 / 站</th><th>模型</th><th>規則</th></tr>
     <tr><td>規劃 / 派工層<br>(1 討論、2 與 4 文檔、Stage 6 派工主對話)</td>
-        <td><span class="badge opus">opus</span></td>
+        <td><span class="badge opus">opus</span>(或 fable5)</td>
         <td>撰寫文檔、多方案辯論;派工主對話<strong>不下場寫碼</strong></td></tr>
     <tr><td>G1 / G2 / G3 reviewer</td><td>不指定模型</td>
         <td>依<strong>能力與 fallback</strong> 選(順序見 ⑤ Gate 規則卡),不綁型號或供應商</td></tr>
@@ -258,30 +619,47 @@
             (換方法不歸零)才升 opus;升階時帶<strong>完整失敗軌跡</strong></td></tr>
     <tr><td>Stage 6 · T review</td><td><span class="badge sonnet">sonnet</span>(fresh context)</td>
         <td>高風險 / 爭議升 <span class="badge opus">opus</span> 二審</td></tr>
+    <tr><td>Stage 6 · Wave review<br><span class="muted">(parallel 選配)</span></td>
+        <td><span class="badge sonnet">sonnet</span>(fresh)</td>
+        <td>一次審一個 wave;<strong>必須</strong>輸出每 T 獨立 verdict + finding 歸屬 + integration verdict</td></tr>
+    <tr><td>Stage 6 · Mechanical Gate<br><span class="muted">(parallel 選配)</span></td>
+        <td>(無模型,機械)</td>
+        <td>14 項機械檢查全 PASS 才 READY_FOR_INTEGRATION</td></tr>
     <tr><td>Stage 6 · adviser</td><td><span class="badge opus">opus</span>,唯讀</td>
         <td>三層皆 FAIL(連敗)才派來診斷</td></tr>
   </table></div>
+  <span id="models" hidden></span>
+  <div class="parity">
+  <p class="parity-tag">規則正本 · Gate 審查者不指定模型(逐字抄自 README 機械正本)</p>
+  <!-- parity:start readme-gate-model-quickstart -->
+  <ul>
+  <li><strong>G1/G2/G3 審查與 verdict</strong>:依 §7 的人類→fresh-context reviewer Agent→有記錄的
+  owner 自審順序;Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。</li>
+  </ul>
+  <!-- parity:end readme-gate-model-quickstart -->
+  </div>
   <p class="legend">正本是上面 SVG。模型分層見上表。升階細節另見下方
-  <a href="#devrun">dev-run 引擎</a>小節。</p>
-  <details>
-    <summary>舊入口 mermaid（README 已改為入口圖，不再放 mermaid；僅供對照）</summary>
-    <pre>flowchart LR
-    idea([需求/想法]) --&gt; s1[1 討論&lt;br/&gt;發散]
-    s1 --&gt; s2[2 收斂&lt;br/&gt;決策]
-    s2 -- G1 過 --&gt; s3{{3 原型&lt;br/&gt;選配}}
-    s3 --&gt; s4[4 規格&lt;br/&gt;change spec]
-    s2 -- G1 過·無技術疑問 --&gt; s4
-    s4 -- G2 reviewer 核准 --&gt; s5[5 任務]
-    s5 --&gt; s6[6 實作&lt;br/&gt;TDD]
-    s6 --&gt; s7[7 驗證]
-    s7 -- G3 PASS --&gt; pr[PR → develop]
-    pr --&gt; merge[延伸 living spec&lt;br/&gt;docs/specs/]</pre>
-  </details>
-  <p class="muted">此區塊是舊入口 mermaid 的文字備份,不是現行 README,也不是本頁正本圖。
-  半形限制是為了 <code>&lt;pre&gt;</code> 欄位對齊;mermaid 語法無需欄位對齊,故維持原樣。</p>
+  <a href="#devrun">dev-run 引擎</a>小節。reviewer 不綁型號。</p>
+  <p class="muted">Stage 6 全部 T ACCEPTED 之後的跨階段收束(sequential/parallel 皆同):
+  先跑 Final Fresh Gauntlet(綁定當下 source SHA 的 Final Fresh Run + Evidence 契約,
+  README §7 G3 錨定義),全過才進 G3。Gauntlet PASS 不取代雙軸 code review。</p>
+
+  <div class="figwrap"><svg id="fig-ffg" viewBox="0 0 880 160" role="img"
+       aria-label="跨階段收束:ACCEPTED Tasks 經 Final Fresh Gauntlet 到 G3">
+    <defs><marker id="ar-fg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
+    <g class="n"><rect x="20" y="50" width="280" height="60" rx="6" class="go"/><text class="dt" x="32" y="68">ACCEPTED Tasks</text><text class="dc" x="32" y="83">Stage 6 收束</text><text class="dc" x="32" y="97">全部 T 已 ACCEPTED</text></g>
+    <g class="n"><rect x="320" y="50" width="280" height="60" rx="6" class="hl"/><text class="dt" x="332" y="68">Final Fresh Gauntlet</text><text class="dc" x="332" y="83">Stage 7 前置:清 stale·綁 source SHA</text><text class="dc" x="332" y="97">Required layers 全 pass</text></g>
+    <g class="n"><rect x="620" y="50" width="240" height="60" rx="6" class="hl"/><text class="dt" x="632" y="68">G3</text><text class="dc" x="632" y="83">Stage 7</text><text class="dc" x="632" y="97">Evidence 契約全過(八點)</text></g>
+    <path class="edge" marker-end="url(#ar-fg)" d="M300,80 L320,80"/>
+    <path class="edge" marker-end="url(#ar-fg)" d="M600,80 L620,80"/>
+    <text class="dl" x="20" y="140">Gauntlet 全過才進 G3;但 Gauntlet PASS 不取代雙軸 code review,兩者都要</text>
+  </svg></div>
 
   <h2 id="lanes">② 兩軌(full / fast)</h2>
-  <p class="lead">這章要你懂:<strong>兩軌差的只有「前段」</strong> —— 從 4 規格開始的後半段兩軌完全一樣,
+  <p class="lead"><strong>先確認你走哪一軌</strong>:本頁示範與清單以 <strong>full lane</strong> 為主。
+  你手上這件事若命中右欄任一條,走 <strong>fast lane</strong> 更省。
+  兩軌差的只有「前段」 —— 從 4 規格開始的後半段兩軌完全一樣,
   fast lane 省掉的是 Stage 1–3,不是省掉 gate、也不是省掉 Stage 5。</p>
 
   <div class="figwrap"><svg id="fig-lanes" viewBox="0 0 880 290" role="img"
@@ -1136,6 +1514,60 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   </div>
   </details>
 
+  <h3>Stage 6 三步順序為何不可調</h3>
+  <p>正確順序:<strong>先進工作樹 → <code>devflow-exec.sh start</code> → <code>status</code> 核對 →
+  <code>devflow-doctor.sh</code> → <code>dev-run</code></strong>。
+  完整可複製指令(單線用 feature branch,多 feature 並行用 worktree 互不干擾;
+  兩條動線都含「開 branch + 持久化 <code>FORK_INTEGRATION_SHA</code> 錨點 + STATUS 交接」,
+  漏了錨點,Stage 7 的整合回歸工具就拿不到 <code>--fork-sha</code> 的輸入):</p>
+  <pre># 共用起手式(fetch 一定在取錨點之前,兩步不得拆開或倒置):
+git fetch &lt;remote&gt;
+FORK=$(git rev-parse --verify "refs/remotes/&lt;remote&gt;/&lt;整合分支&gt;^{commit}")  # 40 碼;^{commit} 驗證它是 commit
+
+# 單線(同一棵樹;開 branch + 持久化錨點是同一個不可拆動作,中間不准插別的事):
+git switch -c feat/&lt;slug&gt; "$FORK"
+test "$(git rev-parse HEAD)" = "$FORK"  # 不相等 = 中間出過事,停下重來
+# 立刻把 $FORK 那 40 碼寫進 docs/dev/&lt;slug&gt;/6-implementation-notes.md 步 0 的固定欄,逐字格式:
+#   FORK_INTEGRATION_SHA: &lt;40 碼&gt;   ← Stage 7 整合回歸工具 --fork-sha 吃的就是這個值
+git add docs/dev/&lt;slug&gt;/6-implementation-notes.md
+git commit -m "chore(&lt;slug&gt;): 記 FORK_INTEGRATION_SHA 錨點"  # 只 commit 這個錨點,不夾其他改動
+git push -u &lt;remote&gt; feat/&lt;slug&gt;
+git switch &lt;整合分支&gt;  # STATUS 交接:該列 Branch 欄換成 &lt;remote&gt;/feat/&lt;slug&gt;,commit 並 push(STATUS 只在整合分支改)
+git switch feat/&lt;slug&gt;  # 回 feature branch,確認在這條 branch 上才准跑下面的 start
+
+# 並行(多 feature 互不干擾;另一組指令,不是把單線那組改一個字):
+git worktree add -b feat/&lt;slug&gt; &lt;path&gt; "$FORK"
+test "$(git -C &lt;path&gt; rev-parse HEAD)" = "$FORK"  # 一定要 -C,少了它驗的是你站的樹,不是新樹
+# 在新樹內把 $FORK 寫進 6-notes 步 0 固定欄(FORK_INTEGRATION_SHA: &lt;40 碼&gt;),只 commit 錨點:
+git -C &lt;path&gt; add docs/dev/&lt;slug&gt;/6-implementation-notes.md
+git -C &lt;path&gt; commit -m "chore(&lt;slug&gt;): 記 FORK_INTEGRATION_SHA 錨點"
+git -C &lt;path&gt; push -u &lt;remote&gt; feat/&lt;slug&gt;
+# 回原整合 checkout 更新 STATUS 該列 Branch 欄(commit 並 push),再進新樹:
+cd &lt;path&gt;  # 確認 cwd 已在 worktree、branch 是 feat/&lt;slug&gt;
+
+# 兩者接下來都一樣(PLUGIN = 安裝路徑,版號依安裝而定,見 docs/PLUGIN.md;
+# Windows 對應 %USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;):
+PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
+"$PLUGIN/hooks/devflow-exec.sh" start &lt;slug&gt;
+"$PLUGIN/hooks/devflow-exec.sh" status  # 核對 slug 與 cwd 相符
+"$PLUGIN/hooks/devflow-doctor.sh"  # 版本握手 fail-closed,INCOMPATIBLE 即停</pre>
+  <p class="muted">跟 AI 說 <code>dev-run &lt;slug&gt;</code> 才是最後一步。<code>dev-run</code> SKILL 原文:</p>
+  <blockquote>守衛只武裝「start 當下所在的那棵樹」—— 先 start 再換樹 = 安全網失效。</blockquote>
+  <p class="muted">原因是 git worktree 各自有獨立的 git-dir(<code>.git/worktrees/&lt;name&gt;</code>),
+  守衛的 sentinel 檔案與 <code>.devflow/exec.json</code> 的 baseline/scope 都是對「start 當下的 cwd」算出來的。
+  在主樹 start 完再 cd 進 worktree,武裝的是錯的樹,新樹完全不設防。
+  <code>status</code> 這一步不是可省的裝飾 —— 就是拿來核對「slug 與 cwd 相符」,提早抓到樹選錯的情況。</p>
+
+  <p class="muted"><strong>為什麼 start 是分界點(生命週期因果)</strong>:<code>start</code> 之前,
+  <code>.devflow/exec.json</code> 不存在 —— 每次工具呼叫,掛在 <strong>PreToolUse</strong> 的
+  <code>devflow-guard.sh</code>/<code>devflow-prebash.sh</code> 讀狀態時拿到「未武裝」,對 Read 與
+  Bash 一律靜默放行,完全無感;唯一的例外訊號是 <strong>A-7 軟提醒</strong> —— 且範圍很窄:只在
+  Write/Edit 打中 <code>5-tasks</code>/<code>6-implementation-notes</code> 時才響,而且整個 repo
+  只響<strong>一次</strong>(git-dir sentinel 記過就不再提醒,不是持續警告)。<code>start</code> 把
+  baseline/scope/契約 hash 寫進 <code>.devflow/exec.json</code> 之後,<strong>PreToolUse</strong> 才有
+  依據可比對、可擋 —— 這就是三步順序不可調的生命週期理由:沒有步驟 2(<code>start</code>),
+  之後每一次 <code>PreToolUse</code> 都無米可炊,擋不了任何東西。</p>
+
   <h3 id="devrun">dev-run 引擎(選配執行方式)</h3>
   <p>Stage 6 除了手動逐 T,另有 <code>dev-run</code> 引擎:派工者(主對話)不下場寫碼,只派工、審驗結果、
   commit 記帳;細節見 <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/skills/dev-run/SKILL.md</code>
@@ -1200,7 +1632,7 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   見 ⑥ 執行守衛。全 T ACCEPTED 後的跨階段收束(sequential/parallel 皆同):先跑
   <strong>Final Fresh Gauntlet</strong>(綁定當下 source SHA 的 Final Fresh Run + Evidence 契約,
   README §7 G3 錨)全過才進 G3。語意見 <code>notes/design/parallel-stage6.md</code>；SVG 見
-  <a href="https://rick546986.github.io/dev-flow/guides/guide-quickstart.html">guide-quickstart</a>。</p>
+  <a href="#guard">⑥ 執行守衛 · T 級並行</a>。</p>
 
   <h3 id="stage7">Stage 7 — 驗證(G3)</h3>
   <p>節點鏈正本 <code>skills/dev-flow/stage7/graph.yaml</code>:
@@ -1388,6 +1820,38 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   </div>
   </details>
 
+  <h3>Stage 7 的 G3 + Exit checklist</h3>
+  <p>G3 PASS 之後,<code>7-review.md</code> 的 Exit Checklist 要全勾才算 shipped:</p>
+  <div class="parity">
+  <p class="parity-tag">規則正本 · Exit Checklist(逐字抄自 <code>_templates/7-review.md</code>)</p>
+  <!-- parity:start template7-exit-quickstart -->
+  <ul>
+  <li>[ ] <strong>Design Boundary finding 全數處置</strong>(契約 <code>applicable</code> 時必勾;<code>n-a</code> 時記 n-a):
+  未經授權的 Boundary 變更<strong>不論 🔴 或 🟡 都不得帶著出貨</strong> —— 逐條落在下列三種之一:
+  ①已修正(diff 已回到契約內);②記 <strong>L2</strong> 回 G2 改契約後重審;
+  ③<strong>Owner 明示接受或 park</strong>:寫下 owner、理由、追蹤位置
+  (STATUS 待辦或 7-review known limits,擇一,須寫得出實際落點)。
+  無記錄的 🟡 = 未處置,不得勾。理由:PASS 門檻只寫「無 🔴」,
+  而未授權 Boundary 變更的預設分級是 🟡 —— 沒有這一條它就會靜默出貨
+  (2026-08 fresh review F-5)</li>
+  <li>[ ] Quiz(<strong>不可逆改動必做</strong>;其餘 full lane 選配,fast 免):AI 就本次變更出 3-5 題考 approver(改了什麼/為何/邊界),全對才准 merge</li>
+  <li>[ ] (條件式)整合回歸已在 Final Fresh <strong>之前</strong>完成:步 2c 的結論(含三個 SHA 與
+  canonical ref)貼在本檔;Source SHA 仍等於當下 HEAD。Verdict 之後若有任何
+  程式碼 commit → G3 已作廢,回步 2c/2d 重跑,<strong>不得再改程式碼</strong>、不得在本節
+  補碼或合併 INTEGRATION_SHA。</li>
+  <li>[ ] PR → develop(feature branch,禁直上 master;專案若還用 <code>testing</code>,同一支
+  worktree branch 也要併進去。<code>docs/dev</code> 雙生頁跟著 branch 走是預期,
+  不要只留在 worktree)</li>
+  <li>[ ] 4-spec delta 已併入 <code>docs/specs/&lt;domain&gt;.md</code></li>
+  <li>[ ] STATUS.md 已更新為 shipped(這一步在整合分支上、PR 合併後由合併那個 PR 的人
+  做,不塞進本 branch 的 PR —— 動線與理由見 STATUS 模板頂註)</li>
+  <li>[ ] 7-review frontmatter status: shipped;上游 artifact 可保留 approved(各自 gate 核准紀錄)</li>
+  <li>[ ] 7-review.html 已產生(含變更架構圖 + diff 折疊,規格見 README §6)</li>
+  <li>[ ] feature branch 已刪 / worktree 已清</li>
+  </ul>
+  <!-- parity:end template7-exit-quickstart -->
+  </div>
+
   <h2 id="gates">⑤ Gate 規則卡</h2>
   <p class="lead">這章要你懂:<strong>三道 gate 問的是三個不同的問題</strong> ——
   G1 問方向、G2 問契約寫得對不對、G3 問做出來的對不對。共同的硬規則只有一條:
@@ -1444,10 +1908,273 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
   作為各自 gate 的核准紀錄。<code>superseded</code> 是被後續決策取代,不是失敗。</p>
 
   <h2 id="guard">⑥ 執行守衛:dev-flow 掛在 agent 生命週期的哪裡</h2>
-  <p class="lead">這章要你懂:<strong>dev-flow 沒有自己的一套事件系統</strong> —— 它整套掛在 Claude Code
-  agent 既有的生命週期事件上(hook 註冊 + skill 的 progressive disclosure)。「掛上去」與
-  「沒掛上」對執行者長得一模一樣,所以知道<strong>哪一格</strong>會醒、哪一格從來不管事,
-  比背誦 hook 名字重要。</p>
+  <p class="lead">這章要你懂:<strong>你被擋的時候,一定是 Claude agent 生命週期的 <code>PreToolUse</code> 或
+  <code>PostToolUse</code> 這兩格在擋你</strong> —— 知道是哪一格,就知道是「動手前擋下來」還是「動完了事後才查到」;
+  剩下唯一要你判斷的是 L1 還是 L2,判不出來時規則已經幫你決定了(當 L2)。
+  dev-flow 沒有自己的一套事件系統,整套掛在 Claude Code agent 既有生命週期上。</p>
+
+  <p>Claude agent 一輪的生命週期(站數以 guide-dev-flow ⑥ 的圖為準):<br>
+  <code>SessionStart</code>(hooks 註冊/skills 描述進場)→ <code>UserPromptSubmit</code>(/指令展開)→
+  <strong><code>PreToolUse</code></strong>(寫入前擋)→ 工具執行 → <strong><code>PostToolUse</code></strong>(事後偵測)→
+  <code>Stop</code> → 壓縮 → <code>SessionEnd</code>。<br>
+  dev-flow 的守衛逐字以 <code>hooks/hooks.json</code> 為準,只掛在其中<strong>兩格</strong>:
+  <strong>PreToolUse</strong> = <code>devflow-guard</code>(Edit|Write|Read)+ <code>history-guard</code>(Edit|Write)+
+  <code>devflow-prebash</code>(Bash)+ <code>devflow-dispatch-guard</code>(Task|Agent);
+  <strong>PostToolUse</strong> = <code>devtalk-guard</code>(Edit|Write)+
+  <code>devflow-postbash</code>(Bash)。換句話說:<strong>被 dev-flow 擋,必是這兩格之一</strong> ——
+  別處(<code>SessionStart</code> 只是 hook 註冊/skills 描述進場,<code>Stop</code>/壓縮/<code>SessionEnd</code>)
+  不會是原因。機制細節(誠實界線、fail-closed 語意、逐 hook 攻防表)見
+  <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#guard">guide-dev-flow.html#guard</a>。</p>
+
+  <p>Stage 6 的守衛本體是 <code>devflow-exec.sh</code>(plugin hooks 內,無 alias,要打路徑;
+  安裝路徑 <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/</code>,
+  Windows 對應 <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\</code>):</p>
+  <pre>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/hooks/devflow-exec.sh start &lt;slug&gt;</pre>
+  <p class="muted">此檔已可執行(<code>chmod +x</code> 免打),下文一律省略路徑,單寫 <code>devflow-exec.sh</code>。</p>
+
+  <h3 id="guardcheat">速查表:你看到的訊息 ⇒ 是哪支 hook ⇒ 生命週期哪一格 ⇒ 為什麼 ⇒ 怎麼辦</h3>
+  <p class="muted">前三列 <code>&lt;pre&gt;</code> 是 hook 原始碼裡的 f-string 逐字內容(含 ⛔ 與中文),只為了塞進表格欄寬
+  手動折成多行 —— 不是宣稱位元組全同斷行,是宣稱「拿掉手動折行後,文字內容零差異」;這三塊訊息是<strong>驗證工具的原始輸出</strong>,
+  不是欄位對齊的示意圖,故不套用本頁 ASCII 圖表的半形字元限制。其餘標「節錄」的列只取訊息開頭一句,不是全文逐字。</p>
+  <div class="tablewrap"><table>
+    <tr><th>你看到的訊息</th><th>是哪支 hook</th><th>生命週期哪一格</th><th>為什麼</th><th>怎麼辦</th></tr>
+    <tr><td><pre>⛔ 圍欄②:執行期禁讀 &lt;path&gt;
+—— 要翻上游 = spec 不完整。
+停:devflow-exec.sh stop → 補 spec → 重審。</pre></td>
+        <td><code>devflow-guard.sh</code></td>
+        <td><code>PreToolUse</code>(Read)</td>
+        <td>要翻上游討論檔 = spec 沒寫完整,不是 scope 問題,跨 feature 一律擋</td>
+        <td><strong>一律 stop</strong> —— 沒有 allow 可用</td></tr>
+    <tr><td><pre>⛔ 契約防篡改:執行期禁改 &lt;path&gt;
+(跨 feature 一律保護)。
+改本 feature 的 spec = L2:
+devflow-exec.sh stop → 修 → 重審 → 重新 start。</pre></td>
+        <td><code>devflow-guard.sh</code></td>
+        <td><code>PreToolUse</code>(Edit|Write)</td>
+        <td>1/2/3/4(含 <code>.html</code> twin)是基準線,改了就跟著漂;跨 feature 一律保護</td>
+        <td><strong>L2</strong> → stop → 修 → 重審 → 重新 start(baseline/契約 hash 都要重算)</td></tr>
+    <tr><td><pre>⛔ scope 外寫入:&lt;path&gt; 不在 5-tasks Files 聯集。
+L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
+  --reason "..." 並記 D-n;L2 → stop。</pre></td>
+        <td><code>devflow-guard.sh</code></td>
+        <td><code>PreToolUse</code>(Edit|Write)</td>
+        <td>改動超出 5-tasks Files 聯集</td>
+        <td>三種裡<strong>唯一有 L1 分支</strong>:沒動 R/S → <code>allow</code> + 記 D-n 繼續;動了 →
+        stop 走 L2;判不清 → 一律當 L2,這條沒有裁量空間</td></tr>
+    <tr><td>節錄(fail-closed,兩種):「⛔ devflow-guard:旗標檔 .devflow/exec.json 消失,但守衛仍武裝中…」/
+        「⛔ devflow-guard:.devflow/exec.json 損壞(…)。守衛 fail-closed 擋下動作。」</td>
+        <td><code>devflow-guard.sh</code> +
+        <code>devflow-prebash.sh</code>(共用同一個狀態讀取)</td>
+        <td><code>PreToolUse</code>(Edit|Write|Read 與 Bash 皆擋)</td>
+        <td>sentinel 在但 <code>.devflow/exec.json</code> 消失或損壞 —— <strong>擋一切</strong>動作,不是自動放行</td>
+        <td><code>devflow-exec.sh</code> 是 CLI、不經 hooks,不會被自己擋:跑 <code>stop</code> 後重新
+        <code>start &lt;slug&gt;</code>;sentinel 還記得原 slug 時,直接 <code>start</code> 同 slug 亦可(re-arm 復原)</td></tr>
+    <tr><td>節錄:「⛔ 圍欄②:執行期禁讀上游討論文件(shell 亦同)。」</td>
+        <td><code>devflow-prebash.sh</code></td>
+        <td><code>PreToolUse</code>(Bash)</td>
+        <td>圍欄②的 shell 破口(<code>cat</code>/<code>grep</code> 等),等同上面 Read 版</td>
+        <td>同上一律 stop;一般指令(測試/build/git)完全不受影響</td></tr>
+    <tr><td>節錄:「⛔ 禁止經 shell 破壞守衛狀態(.devflow/ 或 sentinel)。」</td>
+        <td><code>devflow-prebash.sh</code></td>
+        <td><code>PreToolUse</code>(Bash)</td>
+        <td><code>rm</code>/<code>mv</code>/直寫 <code>.devflow/</code> 或 sentinel 會讓守衛狀態失真</td>
+        <td>正常收工用 <code>devflow-exec.sh stop</code>;要擴 scope 用 <code>allow</code>,不要手動動 JSON</td></tr>
+    <tr><td>節錄:「⛔ 禁止直接編輯守衛狀態(.devflow/)。」</td>
+        <td><code>devflow-guard.sh</code></td>
+        <td><code>PreToolUse</code>(Edit|Write)</td>
+        <td>狀態只准 CLI 動,Edit/Write 直改會跟 CLI 認知的狀態不一致</td>
+        <td>擴 scope 走 <code>devflow-exec.sh allow &lt;file&gt; --reason "..."</code></td></tr>
+    <tr><td>節錄:「⛔ 執行期禁改 .gitignore(改忽略規則會讓偵測網失明)。」</td>
+        <td><code>devflow-guard.sh</code></td>
+        <td><code>PreToolUse</code>(Edit|Write)</td>
+        <td>忽略規則一鬆,scope 外髒檔就能躲過偵測網</td>
+        <td>確有需要 → 停下回報使用者,不得自行改</td></tr>
+    <tr><td>節錄:「⛔ 契約檔內容在執行期被改(經 shell 或外部工具):」</td>
+        <td><code>devflow-postbash.sh</code></td>
+        <td><code>PostToolUse</code>(Bash)</td>
+        <td>Edit/Write 擋得住的改法,經 shell 繞過 prebash 的關鍵字比對後仍可能落地</td>
+        <td>已落地的 L2:<code>devflow-exec.sh stop</code> → 修 spec → 重審 → 重新 start</td></tr>
+    <tr><td>節錄:「⛔ 偵測網:scope 外改動出現(可能經 shell 寫入):」</td>
+        <td><code>devflow-postbash.sh</code></td>
+        <td><code>PostToolUse</code>(Bash)</td>
+        <td>事前 <code>devflow-prebash</code> 只認關鍵字/正則,擋不住刻意繞路;<code>.gitignore</code> 的 shell 改動
+        (Edit/Write 事前擋,shell 改動事前不擋)也是在這裡事後比對 baseline hash 抓到</td>
+        <td>誤寫 → 還原;L1(不動 R/S)→ <code>allow &lt;file&gt; --reason</code> 並記 D-n;L2 → stop</td></tr>
+    <tr><td>節錄:「⛔ 偵測網(tamper alarm):…守衛狀態與驗收帳只准 devflow-exec.sh 寫」</td>
+        <td><code>devflow-postbash.sh</code></td>
+        <td><code>PostToolUse</code>(Bash)</td>
+        <td>heredoc/直寫繞得過 prebash 的關鍵字比對,以 git-dir shadow hash 比對抓 out-of-band 竄改</td>
+        <td>復原:<code>exec.json</code> → 重新 <code>start</code>;<code>parallel.json</code> →
+        <code>parallel-init &lt;slug&gt; --reset</code>(或還原檔案)</td></tr>
+    <tr><td>逐字:「⛔ history-guard:不要用 Edit/Write 直接改 docs/dev/HISTORY.md。」</td>
+        <td><code>history-guard.sh</code></td>
+        <td><code>PreToolUse</code>(Edit|Write)</td>
+        <td><strong>不受 Stage 6 武裝狀態影響</strong>,一律作用:Edit/Write 整檔寫回,多 session 交錯會互相
+        蓋掉且不報錯</td>
+        <td>改用單一寫入口 <code>history-append.sh</code>(目錄鎖 + 重試 + 純追加);Read 與經 Bash 執行的
+        <code>history-append.sh</code> 皆放行</td></tr>
+    <tr><td>節錄:「⛔ devtalk-guard:盲原則洩漏 —— 剛寫入的 dev-talk 檔案含下游階段字眼(不得出現):」</td>
+        <td><code>devtalk-guard.sh</code></td>
+        <td><code>PostToolUse</code>(Edit|Write)</td>
+        <td>與本節 Stage 6 執行守衛是<strong>不同子系統,不共用武裝狀態</strong>;只認
+        <code>*/skills/dev-talk/*</code> 路徑,防 <code>/dev-talk</code> 自己洩漏下游知識</td>
+        <td>移除比對到的字眼;判定為誤報 → 回報使用者裁決</td></tr>
+    <tr><td>節錄:「⛔ 派工分層守衛:本 run 尚未出現任何低階(haiku/sonnet)attempt,首次派工卻直接指名最高階模型(&lt;model&gt;)—— 違反分層紀律…」</td>
+        <td><code>devflow-dispatch-guard.sh</code></td>
+        <td><code>PreToolUse</code>(Task|Agent,見 <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#guard-pre">guide-dev-flow.html#guard-pre</a>)</td>
+        <td>本 run 還沒出現過任何低階(haiku/sonnet)派工紀錄,卻第一筆就直接指名最高階模型
+        (<code>opus</code>/<code>fable</code>)—— 分層紀律(haiku 機械活、sonnet 分析實作、opus/fable
+        只做最終判斷)被繞過的機械徵象</td>
+        <td>合法情境(例如 G3 仲裁需要最高階首派)→ 跑 <code>devflow-exec.sh tier-exempt --reason
+        "G3 仲裁需要最高階首派"</code> 豁免一次(一次性,用畢即失效);其餘情境 → 先派低階
+        (haiku/sonnet)做過一次 attempt,再合法升階</td></tr>
+    <tr><td>(不擋,無訊息)</td>
+        <td>—</td>
+        <td>—(不觸發任何一格)</td>
+        <td><strong>ambient metadata</strong>(任何深度的 <code>.DS_Store</code>、basename 為
+        <code>._*</code>、<code>Thumbs.db</code>、<code>__pycache__/</code>、<code>*.pyc</code>)不進
+        baseline,只是檔案系統雜訊</td>
+        <td>不需 <code>allow</code>;其他真正的 tracked/untracked/ignored scope 外檔仍會擋,
+        守衛不把 <code>.gitignore</code> 當成政策介面</td></tr>
+  </table></div>
+  <p class="figcap"><code>devflow-guard.sh</code> 與 <code>devflow-prebash.sh</code> 的訊息都是<strong>寫入前</strong>就擋
+  (<code>PreToolUse</code>)—— 看到就代表動作「還沒發生」;<code>devflow-postbash.sh</code> 的三種訊息是
+  <strong>事後偵測網</strong>(<code>PostToolUse</code>)—— 看到就代表改動<strong>已經落地</strong>,要先確認有沒有真的需要還原。
+  <code>history-guard</code> 與 <code>devtalk-guard</code> 是另外兩支獨立守衛(前者不受武裝狀態影響、後者不共用武裝狀態),
+  別把它們的訊息誤判成 Stage 6 的 scope 問題。</p>
+
+  <div class="figwrap"><svg id="fig-level" viewBox="0 0 880 300" role="img"
+       aria-label="被守衛擋下時的判級決策:三種訊息各自的處置,以及 L1 與 L2 的分岔">
+    <defs><marker id="ar-lv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
+    <g class="n"><rect x="20" y="30" width="260" height="46" rx="6" class="no"/><text class="dt" x="32" y="51">圍欄② 讀上游討論檔</text><text class="dc" x="32" y="66">Read 與 shell 皆擋,跨 feature 一律擋</text></g>
+    <g class="n"><rect x="20" y="100" width="260" height="46" rx="6" class="no"/><text class="dt" x="32" y="121">契約防篡改 改 1/2/3/4</text><text class="dc" x="32" y="136">保護對象含 .html twin,含 4-spec</text></g>
+    <g class="n"><rect x="20" y="170" width="260" height="46" rx="6" class="no"/><text class="dt" x="32" y="191">scope 外寫入</text><text class="dc" x="32" y="206">不在 5-tasks Files 聯集</text></g>
+    <g class="n"><rect x="330" y="170" width="230" height="46" rx="6" class="hl"/><text class="dt" x="342" y="191">有動到 R/S 嗎?</text><text class="dc" x="342" y="206">三種裡唯一有 L1 分支</text></g>
+    <g class="n"><rect x="610" y="30" width="250" height="46" rx="6" class="note"/><text class="dt" x="622" y="51">一律 stop</text><text class="dc" x="622" y="66">是 spec 完整度問題,沒有 allow 可用</text></g>
+    <g class="n"><rect x="610" y="100" width="250" height="46" rx="6" class="note"/><text class="dt" x="622" y="121">L2 → stop → 修 → 重審 → 重新 start</text><text class="dc" x="622" y="136">baseline 與契約 hash 都要重算</text></g>
+    <g class="n"><rect x="610" y="148" width="250" height="36" rx="6" class="go"/><text class="dt" x="622" y="164">否 → L1</text><text class="dc" x="622" y="178">allow 擴 scope + 記 D-n,繼續做</text></g>
+    <g class="n"><rect x="610" y="192" width="250" height="36" rx="6" class="note"/><text class="dt" x="622" y="208">是 → L2</text><text class="dc" x="622" y="222">stop,回頭走 G2</text></g>
+    <g class="n"><rect x="20" y="250" width="840" height="40" rx="6" class="hl"/><text class="dt" x="32" y="268">分不清 L1/L2 → 一律當 L2,這條沒有裁量空間</text><text class="dc" x="32" y="282">判級由實作者當下自判,但必須以 D-n 留痕(現象/保守選擇/理由/影響);T review 時 reviewer 對照 D-n 覆核 —— 自判錯誤會在 review 被打回</text></g>
+    <path class="edge" marker-end="url(#ar-lv)" d="M280,53 L610,53"/>
+    <path class="edge" marker-end="url(#ar-lv)" d="M280,123 L610,123"/>
+    <path class="edge" marker-end="url(#ar-lv)" d="M280,193 L330,193"/>
+    <path class="edge" marker-end="url(#ar-lv)" d="M560,185 L585,185 L585,166 L610,166"/>
+    <path class="edge" marker-end="url(#ar-lv)" d="M560,201 L585,201 L585,210 L610,210"/>
+  </svg></div>
+  <p class="figcap">前兩種沒有分支 —— 看到就是 <code>stop</code>。只有第三種要你判級,判不出來時最後一列已經幫你決定了。</p>
+
+  <h3><code>devflow-exec.sh</code> 指令一覽(你自己動手打的,不是被擋的訊息)</h3>
+  <p class="muted">上面速查表是「你被擋的時候看到什麼」;下面這張是「你自己主動打的指令」——
+  兩者不要混淆:指令是你的動作,速查表是 hook 對你動作的反應。</p>
+  <div class="tablewrap"><table>
+    <tr><th>動作</th><th>指令</th><th>用途</th></tr>
+    <tr><td><code>start</code></td><td><code>devflow-exec.sh start &lt;slug&gt;</code></td>
+        <td>依序檢查:①本工作樹是否已武裝 —— 武裝中<strong>他模組</strong> start 一律拒絕
+        (不靜默覆寫;見下方「並行與多模組」),<strong>同模組</strong>重跑 = re-arm 允許
+        (5-tasks 改動後重釘 scope 的正常路徑);②驗 4-spec 存在且 <code>status: approved</code>;
+        ③逐 T 驗 Covers/Files/Verify/Blocked-by;④把 Git repository root 相對的 Files 聯集
+        正規化成 scope。scope 外的真實髒檔會<strong>拒絕</strong> start(先 commit/還原/
+        換乾淨 worktree),不會被收進 baseline;唯一例外:<code>.gitignore</code> 若與 HEAD 的
+        差異只有上次 start 自己 append 的 <code>.devflow/</code> 一行,視為良性,不擋 re-arm。
+        全部通過後才記錄 scope 內 baseline、契約 hash、寫 sentinel。</td></tr>
+    <tr><td><code>status</code></td><td><code>devflow-exec.sh status</code></td>
+        <td>查目前武裝的 slug/scope/extra 數與 sentinel 是否在。&gt;24h 警告<strong>只在
+        你手動跑 <code>status</code> 時檢查並列印</strong> —— 沒有背景排程,不跑就不會有人提醒。</td></tr>
+    <tr><td><code>allow</code></td><td><code>devflow-exec.sh allow &lt;file&gt; --reason "D-n …"</code></td>
+        <td>L1 偏差擴 scope。<code>--reason</code> 必填 —— 位置參數是 <code>$1</code> 動作
+        <code>$2</code> 檔案 <code>$3</code>(固定字面 <code>--reason</code>)<code>$4</code> 理由;
+        漏打 <code>--reason</code> 會直接被拒絕(理由要進 D-n,留痕強制)。</td></tr>
+    <tr><td><code>stop</code></td><td><code>devflow-exec.sh stop</code></td>
+        <td>撤旗標與 sentinel。收工或判定 L2 才用。</td></tr>
+    <tr><td><code>doctor</code></td><td><code>devflow-exec.sh doctor</code></td>
+        <td>契約握手(fail-closed):依專案側 <code>docs/dev/devflow-contract.json</code>
+        (dev-setup 散發)比對 runtime 能力與方法論版本;INCOMPATIBLE = 刻意擋下,
+        不得繞過或改綠;舊 sequential 專案標 legacy compatibility mode。</td></tr>
+    <tr><td><code>event</code></td><td><code>devflow-exec.sh event &lt;slug&gt;</code></td>
+        <td>Attempt Ledger 唯一合法落盤通道(事件 JSON 走 stdin,經 <code>devflow-obs.sh</code>);
+        直改 ledger 或 shell 重導向會被 guard/prebash 擋。dev-run 引擎用,手動逐 T 不需要。</td></tr>
+  </table></div>
+  <p class="muted">T 級並行(<code>execution.mode: parallel</code>)另有一組子命令
+  (<code>parallel-init</code>/<code>plan</code>/<code>wave-open</code>/<code>wave-close</code>/
+  <code>task-candidate</code>/<code>task-state</code>/<code>task-integrate</code>/<code>task-rework</code>/
+  <code>rebuild-plan</code>/<code>review</code>/<code>candidate</code>/<code>gate</code>),
+  語意見下方「T 級並行」小節與 <code>notes/design/parallel-stage6.md</code>。</p>
+
+  <h3>並行與多模組:守衛的邊界在「工作樹」</h3>
+  <ul>
+    <li>守衛狀態(<code>.devflow/exec.json</code> + git-dir sentinel)以<strong>當前工作樹</strong>為
+      單位,一個工作樹同一時間只武裝一個模組。</li>
+    <li><strong>多模組並行的正解:各開 git worktree。</strong>每個 worktree 有自己的 toplevel 與
+      git-dir,守衛 state 天然隔離 —— 模組 A 在 worktree 甲跑 Stage 6 時,模組 B 在 worktree 乙
+      寫 spec、跑自己的 Stage 6,互不阻擋。模組 A 在 task 執行、模組 B 已進後段 stage 的
+      混速並行,就用這個方式。</li>
+    <li>同一工作樹內硬要並行<strong>做不到</strong>,且是刻意設計:hooks 分不清寫入來自哪個
+      session,武裝期間跨 feature 的 1/2/3/4 契約檔一律保護(fail-closed)。</li>
+    <li>武裝中另一模組 <code>start</code> → <strong>拒絕</strong>並提示開 worktree 或先
+      <code>stop</code>;絕不靜默覆寫已武裝模組的 scope/baseline(舊版曾有此漏洞,已修並入 selftest)。</li>
+  </ul>
+
+  <div class="figwrap"><svg id="fig-worktree" viewBox="0 0 880 300" role="img"
+       aria-label="worktree 隔離:兩個 worktree 各自守衛狀態互不相見,同一工作樹第二個模組 start 被拒">
+    <defs><marker id="ar-wt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
+    <g class="cluster"><rect x="40" y="90" width="380" height="140" rx="10" class="grpbox"/></g>
+    <g class="cluster"><rect x="460" y="90" width="380" height="140" rx="10" class="grpbox"/></g>
+    <g class="n"><rect x="340" y="16" width="200" height="36" rx="6" class="b"/><text class="dt" x="352" y="39">同一 git repo</text></g>
+    <g class="n"><rect x="60" y="100" width="340" height="36" rx="6" class="m-sonnet"/><text class="dt" x="72" y="116">worktree 甲</text><text class="dc" x="72" y="130">模組 A · Stage 6 武裝中</text></g>
+    <g class="n"><rect x="60" y="150" width="340" height="36" rx="6" class="b"/><text class="dm" x="72" y="166">.devflow/exec.json (A)</text><text class="dc" x="72" y="180">+ 該工作樹自己的 git-dir sentinel</text></g>
+    <g class="n"><rect x="480" y="100" width="340" height="36" rx="6" class="m-sonnet"/><text class="dt" x="492" y="116">worktree 乙</text><text class="dc" x="492" y="130">模組 B · Stage 4 寫 spec 或自己的 Stage 6</text></g>
+    <g class="n"><rect x="480" y="150" width="340" height="36" rx="6" class="b"/><text class="dm" x="492" y="166">.devflow/exec.json (B)</text><text class="dc" x="492" y="180">+ 該工作樹自己的 git-dir sentinel</text></g>
+    <g class="n"><rect x="40" y="240" width="800" height="40" rx="6" class="hl"/><text class="dt" x="52" y="258">state 互不相見 = 互不阻擋(混速並行 OK)</text><text class="dc" x="52" y="274">同一工作樹第二個模組 start → ⛔ 拒絕:開 worktree,或先 stop —— 絕不靜默覆寫已武裝模組的 scope/baseline</text></g>
+    <path class="edge" marker-end="url(#ar-wt)" d="M390,52 L390,70 L230,70 L230,100"/>
+    <path class="edge" marker-end="url(#ar-wt)" d="M490,52 L490,70 L650,70 L650,100"/>
+    <path class="fenceline" d="M440,80 L440,236"/>
+  </svg></div>
+  <p class="figcap">紅虛線是隔離面:一個工作樹同一時間只武裝一個模組,而每個 worktree 有自己的 toplevel 與 git-dir,
+  所以守衛狀態天然分開。同一工作樹內硬要並行做不到,且是刻意設計 —— hooks 分不清寫入來自哪個 session。</p>
+  <p class="muted">守衛掛載(條數與清單以 <code>hooks/hooks.json</code> 為準):<strong>PreToolUse</strong> =
+  <code>devflow-guard</code>(Edit|Write|Read)、<code>history-guard</code>(Edit|Write,不受武裝狀態影響)、
+  <code>devflow-prebash</code>(Bash 事前)、<code>devflow-dispatch-guard</code>(Task|Agent,派工分層守衛);
+  <strong>PostToolUse</strong> = <code>devtalk-guard</code>(盲原則,
+  不同子系統)、<code>devflow-postbash</code>(Bash 事後偵測)。想確認整套沒壞:跑
+  <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/hooks/selftest.sh</code>(動態發現所有案例,自建 temp repo 後自清)。</p>
+
+  <h3>T 級並行(選配):Candidate 到 ACCEPTED</h3>
+  <p><code>5-tasks.md</code> frontmatter 明寫 <code>execution.mode: parallel</code> 才啟用
+  (缺省 sequential,行為不變)。每 T 一個 task worktree(<code>task/&lt;slug&gt;/T-n</code>,
+  同 Wave 同 Base SHA),守衛以 <code>--task</code> 釘單 T scope。核心規則:未過 Review 的
+  Candidate 不得進正式 integration branch、不得標完成,只有 ACCEPTED 才勾 checkbox
+  （細節 <code>notes/design/parallel-stage6.md</code>）。</p>
+
+  <div class="figwrap"><svg id="fig-parallel" viewBox="0 0 880 280" role="img"
+       aria-label="Stage 6 並行流程:Task DAG 經 Wave Base、Task Worktrees、seam、Candidate、Mechanical Gate、Integration DAG、Review 到 ACCEPTED">
+    <defs><marker id="ar-pl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
+    <g class="n"><rect x="10" y="40" width="160" height="60" rx="6" class="b"/><text class="dt" x="22" y="56">Task DAG</text><text class="dc" x="22" y="71">Blocked-by 邊</text></g>
+    <g class="n"><rect x="185" y="40" width="160" height="60" rx="6" class="b"/><text class="dt" x="197" y="56">Wave Base</text><text class="dc" x="197" y="71">同 Wave 同 Base SHA</text></g>
+    <g class="n"><rect x="360" y="40" width="160" height="60" rx="6" class="b"/><text class="dt" x="372" y="56">Task Worktrees</text><text class="dc" x="372" y="71">一樹一武裝</text><text class="dc" x="372" y="85">task/&lt;slug&gt;/T-n</text></g>
+    <g class="n"><rect x="535" y="40" width="160" height="60" rx="6" class="b"/><text class="dt" x="547" y="56">RED·GREEN·Verify</text><text class="dc" x="547" y="71">逐 T 各自跑 seam</text></g>
+    <g class="n"><rect x="710" y="40" width="160" height="60" rx="6" class="b"/><text class="dt" x="722" y="56">Candidate</text><text class="dc" x="722" y="71">task branch,不可變</text></g>
+    <g class="n"><rect x="710" y="170" width="160" height="60" rx="6" class="go"/><text class="dt" x="722" y="186">Mechanical Gate</text><text class="dc" x="722" y="201">14 項機械檢查</text><text class="dc" x="722" y="215">全 PASS 才 READY</text></g>
+    <g class="n"><rect x="535" y="170" width="160" height="60" rx="6" class="b"/><text class="dt" x="547" y="186">Integration DAG</text><text class="dc" x="547" y="201">拓撲序 cherry-pick</text></g>
+    <g class="n"><rect x="360" y="170" width="160" height="60" rx="6" class="hl"/><text class="dt" x="372" y="186">Dedicated / Wave Review</text><text class="dc" x="372" y="201">high:整合前逐 T 審</text><text class="dc" x="372" y="215">normal:整合後審整 wave</text></g>
+    <g class="n"><rect x="185" y="170" width="160" height="60" rx="6" class="go"/><text class="dt" x="197" y="186">ACCEPTED</text><text class="dc" x="197" y="201">才勾 checkbox</text></g>
+    <path class="edge" marker-end="url(#ar-pl)" d="M170,70 L185,70"/>
+    <path class="edge" marker-end="url(#ar-pl)" d="M345,70 L360,70"/>
+    <path class="edge" marker-end="url(#ar-pl)" d="M520,70 L535,70"/>
+    <path class="edge" marker-end="url(#ar-pl)" d="M695,70 L710,70"/>
+    <path class="edge" marker-end="url(#ar-pl)" d="M790,100 L790,170"/>
+    <path class="edge" marker-end="url(#ar-pl)" d="M710,200 L695,200"/>
+    <path class="edge" marker-end="url(#ar-pl)" d="M535,200 L520,200"/>
+    <path class="edge" marker-end="url(#ar-pl)" d="M360,200 L345,200"/>
+    <text class="dl" x="20" y="260">未過 Review 的 Candidate 不得進正式 integration branch;只有 ACCEPTED 才勾 checkbox</text>
+  </svg></div>
+  <p class="figcap">下排由右往左走。機械檢查(綠)不需要模型,但它<strong>不取代</strong> Review ——
+  只有走完 Review 拿到 ACCEPTED 才勾 checkbox。</p>
+
+  <p class="lead">下面這張生命週期圖與 1–6 寫的是<strong>掛在哪一格、進了什麼 context</strong>。
+  「掛上去」與「沒掛上」對執行者長得一模一樣,所以知道哪一格會醒,比背誦 hook 名字重要。</p>
 
   <div class="figwrap"><svg id="fig-lifecycle" viewBox="0 0 1220 1230" role="img"
        aria-label="Claude Code agent 完整生命週期:SessionStart(綠)到 SessionEnd。中央主幹依序為 UserPromptSubmit、PreToolUse、PermissionRequest、[tool executes](藍)、PostToolUse/PostToolUseFailure、PostToolBatch、SubagentStart/SubagentStop、TaskCreated、TaskCompleted——這八格圍在橘色虛線 AGENTIC LOOP 內,橘色回邊繞回 PreToolUse;UserPromptSubmit 到 Stop/StopFailure(紅)全段圍在藍色虛線 EACH TURN 內,藍色回邊繞回 UserPromptSubmit;之後接 TeammateIdle、PreCompact、PostCompact、SessionEnd,SessionEnd 另有右側黑虛線長回邊「resumed sessions」繞回 SessionStart。左側灰虛線掛靠事件:Setup、UserPrompt Expansion、Permission Denied、Elicitation、ElicitationResult、Notification,各自灰虛線箭頭指向對應主幹節點。右側文字標出 dev-flow 實際掛鉤的六格,其餘留白。底部另有六個無箭頭獨立事件框:ConfigChange、WorktreeCreate、WorktreeRemove、CwdChanged/FileChanged/DirectoryAdded、InstructionsLoaded、MessageDisplay">
@@ -2274,7 +3001,7 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
       <summary class="tline"><span class="g">├─ </span><span class="name">guides/</span><span class="why">給人看的導覽 HTML。跟 skills/ 鏡像，不代替 README，也不代替 <a href="#filemap">#filemap</a>。</span></summary>
       <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">guide-dev-flow.html</span><span class="why">七站導覽。#dirmap 目錄樹與附錄 <a href="#filemap">#filemap</a> 都在本頁；不是獨立頁。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">guide-dev-talk.html</span><span class="why">討論站導覽。對 skills/dev-talk/ 的鏡像，改 hop 要兩邊一起看。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">guide-quickstart.html</span><span class="why">快速上手。生命週期圖與 guide-dev-flow 那張必須同步。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">guide-quickstart.html</span><span class="why">舊獨立頁。只留一句轉去 guide-dev-flow.html#start，不要當正本、不要第二份正文。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">guide-dir-map.html</span><span class="why">舊獨立頁。只留一句轉去 guide-dev-flow.html#dirmap，不要當正本、不要第二棵樹。</span></div>
       <div class="tline"><span class="g last"><span class="v">│</span>  └─ </span><span class="name">dir-tree-purpose.yaml</span><span class="why">用途表（YAML）。產器只吃這份，把樹寫進 guide-dev-flow.html#dirmap。</span></div>
     </details>
@@ -3111,9 +3838,9 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
             真的存在,雙向防這張表腐化。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-guides-fig-sync.sh</code></td>
-        <td>本檔與 <code>guide-quickstart.html</code> 各自嵌了一張完整的生命週期圖(owner 裁決兩份導覽都要放
-            全圖,不接受單正本+連結取代);這支守衛抽出兩張 svg、正規化掉唯一預期的 id 後綴差異後逐位元組
-            比對,漂移就報錯並點名差在哪。</td>
+        <td>盯住合併後的單一正本:<code>guide-quickstart.html</code> 必須是轉去
+            <code>guide-dev-flow.html#start</code> 的 stub(不得再放第二份正文),且主指南必須有
+            <code>#start</code>;另比對仍活著的導覽頁內錨點捲動 JS,漂移就報錯。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>scripts/fixtures/</code>(整包,fixtures 目錄豁免)</td>
         <td>各支守衛自己的測試材料(合格/不合格範例檔)。</td>
@@ -3394,8 +4121,8 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
     正本規則:<code>~/dev/dev-flow/README.md</code>;模板:<code>~/dev/dev-flow/_templates/</code>;
     路由器 skill:<code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/skills/dev-flow/SKILL.md</code>
     (Windows 對應 <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\skills\dev-flow\SKILL.md</code>)。
-    視覺語言沿用 <code>guide-dev-talk.html</code>(Phase 1)與 <code>guide-quickstart.html</code>(Phase 2)
-    的共用 token,三份導覽同一套。疑義以 README 為準。
+    視覺語言沿用 <code>guide-dev-talk.html</code>(Phase 1)與本檔(Phase 2/3)
+    的共用 token。疑義以 README 為準。
     <br>對應 <code>dev-flow</code> plugin(版本以
     <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/.claude-plugin/plugin.json</code> 實值為準;本頁對版 2026-08-02)。
   </footer>
@@ -3426,6 +4153,14 @@ GREEN: 同指令 → ok  internal/service  0.31s</pre>
       window.addEventListener('mouseup',function(){ drag=false; });
       ov.addEventListener('click',function(e){ if(e.target===ov||e.target===tip) close(); });
       document.addEventListener('keydown',esc);
+    });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.chk input[type=checkbox]'),function(box){
+    var key='devflow-quickstart-'+box.id;
+    try{ box.checked = localStorage.getItem(key)==='1'; }catch(e){}
+    box.addEventListener('change',function(){
+      try{ localStorage.setItem(key, box.checked?'1':'0'); }catch(e){}
     });
   });
 })();

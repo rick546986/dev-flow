@@ -16,8 +16,8 @@
 #   ②`_templates/STATUS.md` Active 表頭含 `Branch` 欄,表頭/分隔列/範例列欄數一致,
 #     範例列 `Branch` 那一格逐字 = sentinel `n-a:尚未建立 branch`(B-3:全檔搜尋
 #     驗不到這一格 —— 頂註說明裡的同字串會餵綠,必須取儲存格比)
-#   ③`guides/guide-quickstart.html` 的手寫 STATUS 範例列欄數 = 模板表頭欄數
-#   ④~⑥(A-3)quickstart Stage 6「完整可複製指令」區塊:html.unescape 後只解析
+#   ③`guides/guide-dev-flow.html` 的手寫 STATUS 範例列欄數 = 模板表頭欄數
+#   ④~⑥(A-3)主指南 Stage 6「完整可複製指令」區塊:html.unescape 後只解析
 #     該 <pre> 區塊(不在全文湊關鍵詞),單線與 worktree 兩條動線分開驗
 #     fetch < 取錨點 < 建 branch < 驗 HEAD=="$FORK" < 寫錨點 < commit 錨點 <
 #     push -u < STATUS 交接 < 回 feature/worktree < start/status/doctor 的先後關係;
@@ -89,7 +89,7 @@ def read(rel):
 
 template = read("_templates/STATUS.md")
 docs = read("docs/dev/STATUS.md")
-quickstart = read("guides/guide-quickstart.html")
+quickstart = read("guides/guide-dev-flow.html")
 template6 = read("_templates/6-implementation-notes.md")
 readme = read("README.md")
 devrun = read("skills/dev-run/SKILL.md")
@@ -181,7 +181,7 @@ def quickstart_failures(template_text, quickstart_text):
     header = table[0]
     m = re.search(r"^.*\| full \| 1-discussion \|.*$", quickstart_text, re.M)
     if not m:
-        return ["guides/guide-quickstart.html 找不到 STATUS 範例列"
+        return ["guides/guide-dev-flow.html 找不到 STATUS 範例列"
                 "(含 `| full | 1-discussion |` 的那行)"]
     row = m.group(0)
     inner = re.search(r"<code>\|(.*)\|</code>", row)

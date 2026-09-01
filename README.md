@@ -19,11 +19,11 @@ dev-setup
 
 ## 開始
 
-[quickstart](https://rick546986.github.io/dev-flow/guides/guide-quickstart.html)
+[開工](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#start)
 
 ## 為什麼
 
-人握方向、契約、出貨三道閘；契約與清單在 quickstart，不在這張入口。
+人握方向、契約、出貨三道閘；契約與清單在主指南 #start，不在這張入口。
 
 <details>
 <summary>機械正本（檢查器抽這裡；人看 guide）</summary>

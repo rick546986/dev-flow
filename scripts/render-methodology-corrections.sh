@@ -124,12 +124,12 @@ fragments = {
         quote_region("_templates/7-review.md", "執行清單("),
     ("guides/guide-dev-flow.html", "readme-reviewer-selection-flow"):
         bullet("README.md", "審查者產生"),
-    ("guides/guide-quickstart.html", "readme-stage6-seam-quickstart"): fenced_seam(),
-    ("guides/guide-quickstart.html", "readme-reviewer-selection-quickstart"):
+    ("guides/guide-dev-flow.html", "readme-stage6-seam-quickstart"): fenced_seam(),
+    ("guides/guide-dev-flow.html", "readme-reviewer-selection-quickstart"):
         bullet("README.md", "審查者產生"),
-    ("guides/guide-quickstart.html", "readme-gate-model-quickstart"):
+    ("guides/guide-dev-flow.html", "readme-gate-model-quickstart"):
         bullet("README.md", "G1/G2/G3 審查與 verdict"),
-    ("guides/guide-quickstart.html", "template7-exit-quickstart"): exit_checklist(),
+    ("guides/guide-dev-flow.html", "template7-exit-quickstart"): exit_checklist(),
 }
 
 

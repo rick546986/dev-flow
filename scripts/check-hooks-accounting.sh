@@ -165,15 +165,12 @@ for lineno, line in enumerate(guide.splitlines(), 1):
             if not num_matches(num, len(script_names)):
                 fail(f"guide:{lineno} 寫「這{num}支」,實際掛載 {len(script_names)} 支不同腳本")
 
-# ── ④ 兩份導覽的生命週期圖:圖上必須點名每一支掛載中的 hook ───────────────
+# ── ④ 主指南生命週期圖:圖上必須點名每一支掛載中的 hook ──────────────────
 # 為什麼要獨立於③:③比的是文字版 hooks 註冊表(event/matcher/command/timeout 四格),
-# 生命週期圖是**另一個列舉面**,③掃不到它。而 check-guides-fig-sync.sh 只保證
-# 「兩份圖彼此一致」,不保證圖與 hooks.json 一致 —— 兩份一起漏同一支時它照樣綠。
-# 這不是假設:devflow-report-guard 2026-08-17 掛上,兩份圖都沒補,兩支守衛全綠到
-# 2026-08-19 才被人眼抓到。把圖接到機械正本上,以後漏一支就紅(第 7 型:守衛比錯軸)。
+# 生命週期圖是**另一個列舉面**,③掃不到它。合併後只剩 guide-dev-flow 一張
+# fig-lifecycle;check-guides-fig-sync.sh 改盯 stub+#start,不比第二份圖。
 # 圖上為排版用簡寫(dispatch-guard = devflow-dispatch-guard),兩種寫法都認。
-FIGS = (("guides/guide-dev-flow.html", "fig-lifecycle"),
-        ("guides/guide-quickstart.html", "fig-lifecycle-qs"))
+FIGS = (("guides/guide-dev-flow.html", "fig-lifecycle"),)
 
 
 def fig_hook_failures(text, sid, expected):
@@ -211,8 +208,7 @@ for rel, sid in FIGS:
     for msg in fig_hook_failures(fig_texts[rel], sid, expected_bases):
         fail(f"{rel}:{msg}")
 
-# 負向自檢:證明④真的有鑑別力,不是永遠回空清單。兩份各驗一次 —— 只驗一份的話,
-# 另一份的檢查失效不會有任何訊號(而「兩份一起漏」正是這條要防的原始事故形態)。
+# 負向自檢:證明④真的有鑑別力,不是永遠回空清單。
 for rel, sid in FIGS:
     if not fig_hook_failures(fig_texts[rel], sid, expected_bases | {"devflow-phantom-guard"}):
         fail(f"負向自檢失效:{rel} 的圖少一支新 hook 竟然沒被判漏列 —— ④ 沒有鑑別力")

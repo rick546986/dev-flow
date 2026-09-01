@@ -187,12 +187,12 @@ parity = {
         quote_region("_templates/7-review.md", "執行清單("),
     ("guides/guide-dev-flow.html", "readme-reviewer-selection-flow"):
         bullet("README.md", "審查者產生"),
-    ("guides/guide-quickstart.html", "readme-stage6-seam-quickstart"): fenced_seam(),
-    ("guides/guide-quickstart.html", "readme-reviewer-selection-quickstart"):
+    ("guides/guide-dev-flow.html", "readme-stage6-seam-quickstart"): fenced_seam(),
+    ("guides/guide-dev-flow.html", "readme-reviewer-selection-quickstart"):
         bullet("README.md", "審查者產生"),
-    ("guides/guide-quickstart.html", "readme-gate-model-quickstart"):
+    ("guides/guide-dev-flow.html", "readme-gate-model-quickstart"):
         bullet("README.md", "G1/G2/G3 審查與 verdict"),
-    ("guides/guide-quickstart.html", "template7-exit-quickstart"): exit_checklist(),
+    ("guides/guide-dev-flow.html", "template7-exit-quickstart"): exit_checklist(),
 }
 
 for (rel, marker), source in parity.items():
@@ -203,26 +203,32 @@ for (rel, marker), source in parity.items():
 
 # ── Exit Checklist 截斷回歸(2026-08 實測缺陷)──────────────────────────────
 # 缺陷長相:模板新增一個**多行**項目 → 舊的單行 regex 只抽到第一項 →
-# guide-quickstart 靜默掉了其餘 7 項,而 renderer fixed point 與上面的 parity
+# 主指南靜默掉了其餘 7 項,而 renderer fixed point 與上面的 parity
 # 兩邊一起截斷、互相自洽,全綠通過。下面三條讓它不可能再靜默發生。
 _exit_items = exit_checklist_items()
-_exit_fragment = marker_fragment("guides/guide-quickstart.html", "template7-exit-quickstart")
+_exit_fragment = marker_fragment("guides/guide-dev-flow.html", "template7-exit-quickstart")
 check(len(_exit_items) >= 2,
       "7-review Exit Checklist 至少有 2 個頂層項目(抽取沒被截斷)",
       f"實得 {len(_exit_items)}")
-# ①每個頂層項目都必須出現在 quickstart(比對正規化後的可見文字)
+# ①每個頂層項目都必須出現在主指南(比對正規化後的可見文字)
 _exit_visible = norm(visible(_exit_fragment))
 for _item in _exit_items:
     _head = norm(markdown_visible(_item))[:24]
     check(_head in _exit_visible,
-          f"Exit Checklist 項目「{_item[:28]}」有進 quickstart(多行項目不得吞掉後續項目)")
+          f"Exit Checklist 項目「{_item[:28]}」有進主指南(多行項目不得吞掉後續項目)")
 # ②模板頂層項目數 = 生成 HTML 的 <li> 數
 _li_count = len(re.findall(r"<li>", _exit_fragment))
 check(_li_count == len(_exit_items),
-      "quickstart Exit Checklist 的 <li> 數 = 模板頂層 `- [ ]` 項目數",
+      "主指南 Exit Checklist 的 <li> 數 = 模板頂層 `- [ ]` 項目數",
       f"<li>={_li_count} 模板={len(_exit_items)}")
 
-guide_text = norm(visible(read("guides/guide-dev-flow.html") + read("guides/guide-quickstart.html")))
+stub = read("guides/guide-quickstart.html")
+check("guide-dev-flow.html#start" in stub, "quickstart stub 轉去主指南 #start")
+check(len(stub.splitlines()) < 20, "quickstart 是 stub 不是第二份正文",
+      f"{len(stub.splitlines())} 行")
+check('id="start"' in read("guides/guide-dev-flow.html"), "主指南有 #start")
+
+guide_text = norm(visible(read("guides/guide-dev-flow.html")))
 for stale in (
     "每T五小步",
     "Verify綠→一commit",
@@ -261,7 +267,7 @@ for _stage in "1234567":
     check(norm(markdown_visible(_rm[3])) == norm(visible(_gd[3])),
           f"README §3 / guide 第 {_stage} 列 Gate 一致(用途欄不比)")
 walkthrough = re.search(
-    r'<h2 id="walkthrough".*?<table>(.*?)</table>', read("guides/guide-quickstart.html"), re.S)
+    r'<h[23] id="walkthrough".*?<table>(.*?)</table>', read("guides/guide-dev-flow.html"), re.S)
 walkthrough_rows = {}
 if walkthrough:
     for row in re.findall(r"<tr>(.*?)</tr>", walkthrough.group(1), re.S):
@@ -274,7 +280,7 @@ for stage in ("5", "6", "7"):
     canonical_gate = norm(markdown_visible(readme_stage_rows.get(stage, ["", "", "", ""])[3]))
     guide_gate = norm(visible(walkthrough_rows.get(stage, ["", "", "", "", ""])[4]))
     check(bool(canonical_gate) and canonical_gate in guide_gate,
-          f"quickstart Stage {stage} gate 包含 README §3 canonical summary")
+          f"主指南 Stage {stage} gate 包含 README §3 canonical summary")
 
 tasks = read("example/contract-expiry-reminder/5-tasks.md")
 task_blocks = re.split(r"(?=^## T-\d+)", tasks, flags=re.M)[1:]
