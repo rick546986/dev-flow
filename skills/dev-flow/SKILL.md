@@ -44,7 +44,7 @@ description: 開發流程 SOP 的唯一對外入口(7 階段路由器,SDD 為主
 | 3 原型(選配;命中觸發判定 → 條件式必要) | 開場第一動先做**觸發判定**(§4);throwaway 實驗(code 進 throwaway branch,禁進 main;純資料實驗 → scratchpad);Demo 必要性與 Variant 數量規則見 §4;**執行清單見 `_templates/3-prototype.md` 頂註**;節點鏈見 `skills/dev-flow/stage3/` | `3-prototype.md`(涉互動 → 含可操作 Demo + User Demo Feedback,Human verdict 人類親填 + attestation,見 §4) | 答案回寫 2-decision + frontmatter 收尾同步 |
 | 4 規格 | openspec delta 格式,**step-by-step 生成** + **反模糊三律**(S 可轉單一測試、禁模糊詞、禁 TBD);**執行清單與三律見 `_templates/4-spec.md` 頂註**;節點鏈見 `skills/dev-flow/stage4/` | `4-spec.md`(含 Drafting Decisions) | **G2** R/S 全審 + DD 全裁決 + Verification Profile(依 lane 正確填寫)+ Demo verdict 條件(全文見 README §7;Demo verdict 語意正本見 §4 所引,機械檢查 `hooks/_stage3_impl.py`) |
 | 5 任務 | `to-tickets` 概念:tracer-bullet 順序 + Covers/Verify/Blocked-by;節點鏈見 `skills/dev-flow/stage5/` | `5-tasks.md` | 每 T 有 Verify |
-| 6 實作 | **`dev-run` 引擎**(haiku 執行→sonnet 審→錯誤升階;守衛 `devflow-exec.sh` start/stop,詳其 SKILL;5-tasks 明寫 `execution.mode: parallel` 時走並行引擎(選配))或手動逐 T;兩者共用 README §5 的 T acceptance seam:RED→GREEN→scope check→Verify→獨立 T review→PASS→commit→記 Progress Log/checkbox/review evidence;**執行清單見 `_templates/6-implementation-notes.md` 頂註**;節點鏈見 `skills/dev-flow/stage6/` | `6-implementation-notes.md`(含 T Review Log;執行軌跡只供 dev-run) | 每 T review PASS + 全 S 綠 |
+| 6 實作 | **`dev-run` 引擎**(起步層寫碼→執行層審→錯誤升階;Claude 對照 haiku→sonnet;守衛 `devflow-exec.sh` start/stop,詳其 SKILL;5-tasks 明寫 `execution.mode: parallel` 時走並行引擎(選配))或手動逐 T;兩者共用 README §5 的 T acceptance seam:RED→GREEN→scope check→Verify→獨立 T review→PASS→commit→記 Progress Log/checkbox/review evidence;**執行清單見 `_templates/6-implementation-notes.md` 頂註**;節點鏈見 `skills/dev-flow/stage6/` | `6-implementation-notes.md`(含 T Review Log;執行軌跡只供 dev-run) | 每 T review PASS + 全 S 綠 |
 | 7 驗證 | 雙軸審(Standards + Spec)+ 自建 coverage matrix(可搭 mattpocock `code-review`);整合回歸在 Final Fresh 之前(出貨樹=審過的樹);4-spec Required layers 欄必須在(可寫「無」/none/n-a;空值不算零層;層名全等);**執行清單見 `_templates/7-review.md` 頂註**;節點鏈見 `skills/dev-flow/stage7/` | `7-review.md` + `7-review.html` | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 README §7);PASS → Exit Checklist(PR 是其中一項) |
 
 gate 條件唯一正本 = 母版 README §7;本表 gate 欄是摘要,衝突以 §7 為準。
@@ -74,9 +74,10 @@ gate 條件唯一正本 = 母版 README §7;本表 gate 欄是摘要,衝突以 �
 - **過 gate 三連動**:frontmatter status + STATUS.md + 同名 html twin(`_templates/html-shell.html` 包);使用者說「上 artifact」→ 先載 artifact-design skill,再用 Artifact 發布該 html。
 - **git**:feature branch → develop;禁直上 master。規劃層:起手 `git status`,有無關
   改動先回報使用者;每過 gate 該階段文檔 commit 一次(只含文檔)。
-- **模型與 effort**:一律照 README §9 對照表自動採用(規劃/派工 opus/fable5、
-  T 執行 haiku 起步升階、T review sonnet fresh、其他執行活 sonnet;effort 按判斷密度
-  low/medium/high)。偏離表格(內建升降階除外)需使用者明示同意並記入該階段文檔。
+- **層與 effort**:綁的是層,不是產品名。規劃/派工層、執行/產檔層、起步層、
+  審查層(G1/G2/G3 不指定模型)。Claude Code 對照見 guide `#flow`(規劃 opus/fable5、
+  執行 sonnet、起步 haiku;升階 起步→執行→規劃)。其他主機選同等能力層,不要發明 SKU 表。
+  effort 按判斷密度 low/medium/high。偏離層級(內建升降階除外)需使用者明示同意並記入該階段文檔。
 - **G1/G2/G3 審查與 verdict**:依 README §7 的人類→fresh-context reviewer Agent→
   有記錄的 owner 自審順序；Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。
   Human 判定正本是同目錄 md 頂欄 `verdict:`(PASS／REQUEST_CHANGES／HOLD)。

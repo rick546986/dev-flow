@@ -282,7 +282,7 @@ G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件�
 
 ## 8. 導覽
 
-每站清單與模型對照見 [flow](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html)。
+每站清單與能力層對照見 [flow](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow)。綁的是層,不是 Claude 產品名。
 
 - **G1/G2/G3 審查與 verdict**:依 §7 的人類→fresh-context reviewer Agent→有記錄的
   owner 自審順序;Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。

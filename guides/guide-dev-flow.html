@@ -179,7 +179,8 @@
 <body>
 <main>
   <h1>dev-flow 導覽 · 開發流程 SOP</h1>
-  <p class="muted">七個階段怎麼走、三道 gate 卡哪裡、哪站用哪個模型。入口是 repo 根
+  <p class="muted">七個階段怎麼走、三道 gate 卡哪裡、哪<strong>層</strong>做哪類活
+  （產品型號是主機對照,不是契約）。入口是 repo 根
   <code>README.md</code>（只當第一屏）。契約句檢查器仍抽那份的機械正本；人看本頁。</p>
 
   <nav>
@@ -276,7 +277,7 @@
     新機器打 <code>dev-setup</code> 重建;之後 <code>git pull</code> 不必重跑 setup,下一句 ask / context
     會核對 generation（見 <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#memory">guide #memory</a>）</li>
     <li><code>.claude/rules/arch-invariants.md</code> —— <strong>自動產草稿</strong>(不是空殼):收割使用者指名的
-    external workflow artifacts 與 <code>CLAUDE.md</code> 的技術規則段 → 派 sonnet 掃 codebase 抓候選 → 每條標
+    external workflow artifacts 與 <code>CLAUDE.md</code> 的技術規則段 → 派執行層掃 codebase 抓候選（Claude 對照 sonnet）→ 每條標
     <code>【待確認】</code> 列給你逐條核可,見下一步</li>
     <li><code>.gitignore</code> 加一行 <code>.devflow/</code>(執行守衛的狀態檔目錄)</li>
     <li><code>docs/dev/devflow-contract.json</code> ← cp 母版正本(<strong>版本握手契約</strong>;
@@ -341,10 +342,11 @@
   <h3 id="walkthrough">一個 feature 的完整走位</h3>
   <p class="lead">這章要你懂:<strong>七個階段裡你只打四種指令</strong>,其餘都是 AI 在跑;
   真正卡人的是 Stage 6 —— 它有一組不可調的三步順序,順序錯了安全網會失效。</p>
-  <p>以下以「加一個 X 功能」為例,逐階段列出:使用者打什麼 / AI 做什麼 / 產出什麼檔 / gate 誰審 / 用什麼模型。</p>
+  <p>以下以「加一個 X 功能」為例,逐階段列出:使用者打什麼 / AI 做什麼 / 產出什麼檔 / gate 誰審 / 哪一層
+  （Claude 名只是對照,不是契約）。</p>
 
   <div class="tablewrap"><table>
-    <tr><th>階段</th><th>使用者打什麼</th><th>AI 做什麼</th><th>產出檔</th><th>Gate</th><th>模型</th></tr>
+    <tr><th>階段</th><th>使用者打什麼</th><th>AI 做什麼</th><th>產出檔</th><th>Gate</th><th>層（Claude 對照）</th></tr>
     <tr>
       <td>1 討論</td>
       <td><span class="badge you">跟 AI 說</span>(<strong>建議另開新 session</strong>)<br>
@@ -354,7 +356,7 @@
         細節見 <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map">guide-dev-talk 全程地圖</a></td>
       <td><code>docs/dev/&lt;slug&gt;/1-discussion.md</code> + <code>.html</code></td>
       <td>Open Questions 全解或明標假設(無人工簽核,是自我完成條件)</td>
-      <td><span class="badge opus">opus</span></td>
+      <td><span class="badge opus">規劃層</span> <span class="muted">對照 opus</span></td>
     </tr>
     <tr>
       <td>2 收斂</td>
@@ -362,7 +364,7 @@
       <td><code>brainstorming</code>(2-3 approaches)+ <code>grill-me</code> 壓測定案</td>
       <td><code>2-decision.md</code>(+html);三條件成立 → 抄 <code>docs/adr/</code></td>
       <td><strong>G1</strong> 方向核准 + Owner Calls 全裁決;reviewer 順序見表後正本摘錄</td>
-      <td><span class="badge opus">opus</span> 撰寫;Gate reviewer 不指定模型</td>
+      <td><span class="badge opus">規劃層</span> <span class="muted">對照 opus</span> 撰寫;Gate reviewer 不指定模型</td>
     </tr>
     <tr>
       <td>3 原型<br><span class="muted">(選配)</span></td>
@@ -373,7 +375,7 @@
       <td><code>3-prototype.md</code>;答案回寫 <code>2-decision.md</code></td>
       <td>回寫完成即終態 approved(無獨立 gate);Demo 的 <strong>Human verdict 由人類親填</strong>
         (Agent 不得代填),是 G2「Demo verdict」錨的輸入</td>
-      <td><span class="badge sonnet">sonnet</span></td>
+      <td><span class="badge sonnet">執行層</span> <span class="muted">對照 sonnet</span></td>
     </tr>
     <tr>
       <td>4 規格</td>
@@ -382,7 +384,7 @@
       <td><code>4-spec.md</code>(+html)</td>
       <td><strong>G2</strong> R/S 全審 + Drafting Decisions 全裁決 + Verification Profile
         + Demo verdict(有未裁決不得過;全文見 §7)</td>
-      <td><span class="badge opus">opus</span> 撰寫;Gate reviewer 不指定模型</td>
+      <td><span class="badge opus">規劃層</span> <span class="muted">對照 opus</span> 撰寫;Gate reviewer 不指定模型</td>
     </tr>
     <tr>
       <td>5 任務</td>
@@ -390,7 +392,7 @@
       <td><code>to-tickets</code> 概念,tracer-bullet 順序拆 T,標 Covers/Verify/Blocked-by</td>
       <td><code>5-tasks.md</code></td>
       <td>每 T 欄位完整(Covers/Files/Verify/Blocked-by;無人工 gate)</td>
-      <td><span class="badge sonnet">sonnet</span></td>
+      <td><span class="badge sonnet">執行層</span> <span class="muted">對照 sonnet</span></td>
     </tr>
     <tr>
       <td>6 實作</td>
@@ -399,13 +401,14 @@
         2. <code>devflow-exec.sh start &lt;slug&gt;</code><br>
         3. <code>devflow-exec.sh status</code> 核對<br>
         <span class="badge you">跟 AI 說</span> 4. <code>dev-run &lt;slug&gt;</code></td>
-      <td>派工者(opus)讀 4-spec/5-tasks/長期記憶/living spec,逐 T 派工(haiku 起步)
-        → fresh sonnet 審(親跑 Verify)→ 錯誤升階 → 派工者 commit + 記帳</td>
+      <td>派工者(規劃層)讀 4-spec/5-tasks/長期記憶/living spec,逐 T 派工(起步層)
+        → fresh 執行層審(親跑 Verify)→ 錯誤升階 → 派工者 commit + 記帳</td>
       <td><code>6-implementation-notes.md</code> + 逐 T commit</td>
       <td>每 T review PASS + 全 S 綠;PASS 前不得 commit</td>
-      <td><span class="badge opus">opus</span> 派工<br>
-        <span class="badge haiku">haiku</span>→<span class="badge sonnet">sonnet</span>→<span class="badge opus">opus</span> 升階<br>
-        <span class="badge sonnet">sonnet</span> review</td>
+      <td><span class="badge opus">規劃層</span> 派工 <span class="muted">對照 opus</span><br>
+        <span class="badge haiku">起步</span>→<span class="badge sonnet">執行</span>→<span class="badge opus">規劃</span> 升階<br>
+        <span class="muted">對照 haiku→sonnet→opus</span><br>
+        <span class="badge sonnet">執行層</span> review <span class="muted">對照 sonnet</span></td>
     </tr>
     <tr>
       <td>7 驗證</td>
@@ -415,7 +418,7 @@
       <td><code>7-review.md</code> + <code>.html</code></td>
       <td><strong>G3</strong> 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → Exit Checklist(PR 是其中一項);
         模板另要求無 🔴</td>
-      <td><span class="badge sonnet">sonnet</span> 產檔;Gate reviewer 不指定模型</td>
+      <td><span class="badge sonnet">執行層</span> <span class="muted">對照 sonnet</span> 產檔;Gate reviewer 不指定模型</td>
     </tr>
   </table></div>
 
@@ -455,7 +458,7 @@
     <path class="edge-bad" marker-end="url(#ar-smb)" d="M110,150 L110,132 L320,132 L320,86"/>
     <text class="dbad" x="340" y="146">FAIL → 回 GREEN 重來</text>
     <text class="dl" x="20" y="222">FAIL 先分類:SPEC → L2 停回 G2 / ENV → 修環境重跑(不計次)/ IMPL·UNKNOWN → 升階重派</text>
-    <text class="dl" x="20" y="242">同 T 總嘗試 ≤4(haiku 1 + sonnet 2 + opus 1),用盡強制 adviser —— README §5 驗證五律</text>
+    <text class="dl" x="20" y="242">同 T 總嘗試 ≤4(起步 1 + 執行 2 + 規劃 1;Claude 對照 haiku/sonnet/opus),用盡強制 adviser —— README §5 驗證五律</text>
   </svg></div>
   <p class="figcap">上排四步跑完才進下排的獨立審查;<strong>PASS 之前不准 commit</strong>。
   紅線是失敗回路 —— 回頭前一定要先分類,因為 ENV 類不計入嘗試次數。</p>
@@ -542,15 +545,16 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   不移動、不覆蓋、不刪除。外部 workflow 是專案層選擇,dev-flow 不轉換、不接管、
   也不把它當成官方替代執行系統。</p>
 
-  <h2 id="flow">① 七階段流程圖(含 Gate 與模型分層)</h2>
+  <h2 id="flow">① 七階段流程圖(含 Gate 與能力分層)</h2>
   <p class="lead">這章要你懂:<strong>七站單行,只有 G1 / G2 / G3 會被人擋</strong>。
-  哪站用哪個模型是綁死的。G1 過且沒技術疑問,可以跳過選配的 3。
+  綁死的是<strong>層</strong>(規劃 / 執行 / 起步 / 審查),不是產品型號。
+  Claude 的 opus / sonnet / haiku 只是對照,不是契約。G1 過且沒技術疑問,可以跳過選配的 3。
   Stage 1 本身是可重跑的節點鏈,下一跳看 <code>graph.yaml</code>,細節見
   <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map">guide-dev-talk 全程地圖</a>。</p>
 
   <span id="diagram" hidden></span>
   <div class="figwrap"><svg id="fig-flow" viewBox="0 0 880 370" role="img"
-       aria-label="dev-flow 七階段全程圖:上排 1 討論到 4 規格,下排 G2 到 PR,含 G1 跳過 3 的捷徑、模型分層配色、另開 session 虛線框與守衛武裝區間">
+       aria-label="dev-flow 七階段全程圖:上排 1 討論到 4 規格,下排 G2 到 PR,含 G1 跳過 3 的捷徑、能力分層配色、另開 session 虛線框與守衛武裝區間">
     <defs><marker id="ar-fl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
     <g class="cluster"><rect x="148" y="58" width="142" height="74" rx="10" class="sessionbox"/></g>
@@ -558,16 +562,16 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
     <g class="cluster"><rect x="444" y="198" width="142" height="74" rx="10" class="sessionbox"/></g>
 
     <g class="n"><rect x="6" y="70" width="130" height="56" rx="26" class="b"/><text class="dt" x="18" y="88">想法/需求</text><text class="dc" x="18" y="103">還沒有任何檔案</text></g>
-    <g class="n"><rect x="154" y="70" width="130" height="56" rx="6" class="m-opus"/><text class="dt" x="166" y="88">1 討論</text><text class="dc" x="166" y="103">opus · /dev-talk</text><text class="dc" x="166" y="117">1-discussion.md</text></g>
-    <g class="n"><rect x="302" y="70" width="130" height="56" rx="6" class="m-opus"/><text class="dt" x="314" y="88">2 收斂</text><text class="dc" x="314" y="103">opus</text><text class="dc" x="314" y="117">2-decision.md</text></g>
-    <g class="n"><rect x="450" y="70" width="130" height="56" rx="6" class="hl"/><text class="dt" x="462" y="88">G1 方向核准</text><text class="dc" x="462" y="103">reviewer·不指定模型</text><text class="dc" x="462" y="117">Owner Calls 全裁決</text></g>
-    <g class="n"><rect x="598" y="70" width="130" height="56" rx="6" class="m-sonnet"/><text class="dt" x="610" y="88">3 原型(選配)</text><text class="dc" x="610" y="103">sonnet</text><text class="dc" x="610" y="117">答案回寫 2-decision</text></g>
-    <g class="n"><rect x="746" y="70" width="130" height="56" rx="6" class="m-opus"/><text class="dt" x="758" y="88">4 規格</text><text class="dc" x="758" y="103">opus</text><text class="dc" x="758" y="117">4-spec.md</text></g>
+    <g class="n"><rect x="154" y="70" width="130" height="56" rx="6" class="m-opus"/><text class="dt" x="166" y="88">1 討論</text><text class="dc" x="166" y="103">規劃層 · /dev-talk</text><text class="dc" x="166" y="117">1-discussion.md</text></g>
+    <g class="n"><rect x="302" y="70" width="130" height="56" rx="6" class="m-opus"/><text class="dt" x="314" y="88">2 收斂</text><text class="dc" x="314" y="103">規劃層</text><text class="dc" x="314" y="117">2-decision.md</text></g>
+    <g class="n"><rect x="450" y="70" width="130" height="56" rx="6" class="hl"/><text class="dt" x="462" y="88">G1 方向核准</text><text class="dc" x="462" y="103">審查層·不指定模型</text><text class="dc" x="462" y="117">Owner Calls 全裁決</text></g>
+    <g class="n"><rect x="598" y="70" width="130" height="56" rx="6" class="m-sonnet"/><text class="dt" x="610" y="88">3 原型(選配)</text><text class="dc" x="610" y="103">執行層</text><text class="dc" x="610" y="117">答案回寫 2-decision</text></g>
+    <g class="n"><rect x="746" y="70" width="130" height="56" rx="6" class="m-opus"/><text class="dt" x="758" y="88">4 規格</text><text class="dc" x="758" y="103">規劃層</text><text class="dc" x="758" y="117">4-spec.md</text></g>
 
     <g class="n"><rect x="746" y="210" width="130" height="56" rx="6" class="hl"/><text class="dt" x="758" y="228">G2 契約核准</text><text class="dc" x="758" y="243">reviewer·契約</text><text class="dc" x="758" y="257">R/S 全審 + DD 全裁決</text></g>
-    <g class="n"><rect x="598" y="210" width="130" height="56" rx="6" class="m-sonnet"/><text class="dt" x="610" y="228">5 任務</text><text class="dc" x="610" y="243">sonnet</text><text class="dc" x="610" y="257">5-tasks.md</text></g>
-    <g class="n"><rect x="450" y="210" width="130" height="56" rx="6" class="m-haiku"/><text class="dt" x="462" y="228">6 實作</text><text class="dc" x="462" y="243">haiku 起步 · dev-run</text><text class="dc" x="462" y="257">6-notes + 逐 T commit</text></g>
-    <g class="n"><rect x="302" y="210" width="130" height="56" rx="6" class="m-sonnet"/><text class="dt" x="314" y="228">7 驗證</text><text class="dc" x="314" y="243">sonnet · 產檔</text><text class="dc" x="314" y="257">7-review.md</text></g>
+    <g class="n"><rect x="598" y="210" width="130" height="56" rx="6" class="m-sonnet"/><text class="dt" x="610" y="228">5 任務</text><text class="dc" x="610" y="243">執行層</text><text class="dc" x="610" y="257">5-tasks.md</text></g>
+    <g class="n"><rect x="450" y="210" width="130" height="56" rx="6" class="m-haiku"/><text class="dt" x="462" y="228">6 實作</text><text class="dc" x="462" y="243">起步層 · dev-run</text><text class="dc" x="462" y="257">6-notes + 逐 T commit</text></g>
+    <g class="n"><rect x="302" y="210" width="130" height="56" rx="6" class="m-sonnet"/><text class="dt" x="314" y="228">7 驗證</text><text class="dc" x="314" y="243">執行層 · 產檔</text><text class="dc" x="314" y="257">7-review.md</text></g>
     <g class="n"><rect x="154" y="210" width="130" height="56" rx="6" class="hl"/><text class="dt" x="166" y="228">G3 出貨核准</text><text class="dc" x="166" y="243">reviewer·驗收</text><text class="dc" x="166" y="257">S 全綠+Evidence 契約</text></g>
     <g class="n"><rect x="6" y="210" width="130" height="56" rx="6" class="go"/><text class="dt" x="18" y="228">PR</text><text class="dc" x="18" y="243">→ develop</text><text class="dc" x="18" y="257">PASS 才准開</text></g>
 
@@ -592,42 +596,53 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
     <text class="dk" x="154" y="52">必開新 session</text>
     <text class="dk" x="598" y="52">建議另開(選配)</text>
     <text class="dk" x="450" y="192">建議另開 session</text>
-    <text class="dl" x="160" y="318">Stage 6 內部是三層,不是單一模型:haiku 起步 → sonnet(同 T 最多 2 次,換方法不歸零)→ opus,升階時帶完整失敗軌跡</text>
-    <text class="dl" x="160" y="336">T review = sonnet fresh(高風險/爭議升 opus 二審);adviser = opus 唯讀,三層皆 FAIL 才派</text>
+    <text class="dl" x="160" y="318">Stage 6 內部是三層:起步 → 執行 → 規劃(誤 1 次升執行;執行同 T 最多 2 次才升規劃)。Claude 對照 haiku→sonnet→opus</text>
+    <text class="dl" x="160" y="336">T review = 執行層 fresh(高風險/爭議升規劃層二審);adviser = 規劃層唯讀,三層皆 FAIL 才派</text>
     <text class="dl" x="450" y="358">守衛武裝區間:start→stop,只有這一段守衛是醒著的</text>
   </svg></div>
-  <p class="figcap">下排由右往左走。<strong>紫 = opus</strong>(規劃/派工層)、<strong>青 = sonnet</strong>(執行/產檔層)、
-  <strong>灰 = haiku</strong>(Stage 6 T 執行起步模型)、<strong>藍 = gate</strong>(reviewer 依能力與 fallback 選,不指定模型)。
+  <p class="figcap">下排由右往左走。<strong>紫 = 規劃/派工層</strong>(Claude 對照 opus)、
+  <strong>青 = 執行/產檔層</strong>(對照 sonnet)、
+  <strong>灰 = 起步層</strong>(對照 haiku)、<strong>藍 = 審查層 / gate</strong>(依能力與 fallback 選,不指定模型)。
   <strong>虛線框</strong> = 要/建議另開 session 的站(1 討論<strong>必開</strong>;3 原型、6 實作<strong>建議另開</strong>)。
   <strong>紅色虛線括號</strong> = 執行守衛的武裝區間(<code>start</code> 到 <code>stop</code>)。
-  6 實作以<strong>起步</strong>模型標色 —— 它實際是三層,升階規則見下表。
+  6 實作以<strong>起步層</strong>標色 —— 它實際是三層,升階規則見下表。
   reviewer 不綁型號。</p>
 
   <div class="tablewrap"><table>
-    <tr><th>層 / 站</th><th>模型</th><th>規則</th></tr>
-    <tr><td>規劃 / 派工層<br>(1 討論、2 與 4 文檔、Stage 6 派工主對話)</td>
-        <td><span class="badge opus">opus</span>(或 fable5)</td>
-        <td>撰寫文檔、多方案辯論;派工主對話<strong>不下場寫碼</strong></td></tr>
-    <tr><td>G1 / G2 / G3 reviewer</td><td>不指定模型</td>
-        <td>依<strong>能力與 fallback</strong> 選(順序見 ⑤ Gate 規則卡),不綁型號或供應商</td></tr>
-    <tr><td>執行層<br>(3 原型、5 任務拆解、7 產檔、html twin)</td>
-        <td><span class="badge sonnet">sonnet</span></td>
-        <td>機械與執行活</td></tr>
-    <tr><td>Stage 6 · T 執行</td>
-        <td><span class="badge haiku">haiku</span> 起步 → <span class="badge sonnet">sonnet</span> → <span class="badge opus">opus</span></td>
-        <td>haiku 錯 1 次<strong>立即</strong>升 sonnet(同層不重試);sonnet 同 T <strong>最多 2 次</strong>
-            (換方法不歸零)才升 opus;升階時帶<strong>完整失敗軌跡</strong></td></tr>
-    <tr><td>Stage 6 · T review</td><td><span class="badge sonnet">sonnet</span>(fresh context)</td>
-        <td>高風險 / 爭議升 <span class="badge opus">opus</span> 二審</td></tr>
+    <tr><th>層</th><th>做什麼</th><th>能力</th><th>Claude對照（只是對照）</th></tr>
+    <tr><td>規劃/派工層</td>
+        <td>長文檔、多方案、Stage 6 派工主對話</td>
+        <td>長上下文、多方案辯論;派工主對話<strong>不下場寫碼</strong></td>
+        <td><span class="badge opus">opus</span>（或 fable5）</td></tr>
+    <tr><td>執行/產檔層</td>
+        <td>原型、任務板、審頁產檔、T review</td>
+        <td>機械與執行活;fresh context 審查</td>
+        <td><span class="badge sonnet">sonnet</span></td></tr>
+    <tr><td>起步層</td>
+        <td>Stage 6 T 寫碼第一槍</td>
+        <td>便宜、可丟。升階仍是 <strong>起步 → 執行 → 規劃</strong>
+            （誤 1 次升執行;執行同 T 最多 2 次才升規劃）。升階時帶<strong>完整失敗軌跡</strong></td>
+        <td><span class="badge haiku">haiku</span></td></tr>
+    <tr><td>審查層 G1/G2/G3</td>
+        <td>gate verdict</td>
+        <td>依<strong>能力與 fallback</strong> 選(順序見 ⑤ Gate 規則卡),不綁型號或供應商</td>
+        <td>不指定模型</td></tr>
     <tr><td>Stage 6 · Wave review<br><span class="muted">(parallel 選配)</span></td>
-        <td><span class="badge sonnet">sonnet</span>(fresh)</td>
-        <td>一次審一個 wave;<strong>必須</strong>輸出每 T 獨立 verdict + finding 歸屬 + integration verdict</td></tr>
+        <td>一次審一個 wave</td>
+        <td><strong>必須</strong>輸出每 T 獨立 verdict + finding 歸屬 + integration verdict</td>
+        <td><span class="badge sonnet">sonnet</span>（fresh）</td></tr>
     <tr><td>Stage 6 · Mechanical Gate<br><span class="muted">(parallel 選配)</span></td>
-        <td>(無模型,機械)</td>
-        <td>14 項機械檢查全 PASS 才 READY_FOR_INTEGRATION</td></tr>
-    <tr><td>Stage 6 · adviser</td><td><span class="badge opus">opus</span>,唯讀</td>
-        <td>三層皆 FAIL(連敗)才派來診斷</td></tr>
+        <td>14 項機械檢查</td>
+        <td>全 PASS 才 READY_FOR_INTEGRATION</td>
+        <td>無模型（機械）</td></tr>
+    <tr><td>Stage 6 · adviser</td>
+        <td>連敗才診斷</td>
+        <td>規劃層、唯讀;判 T 定義問題 vs 純執行</td>
+        <td><span class="badge opus">opus</span></td></tr>
   </table></div>
+  <p>Grok／Cursor／Codex:在該主機選<strong>同等能力層</strong>。不要發明那些主機的型號表,
+  也不要假裝它們有 Claude PreToolUse 或 haiku–sonnet–opus 的 dispatch-guard
+  （那顆牙只在 Claude Code 主機上咬）。</p>
   <span id="models" hidden></span>
   <div class="parity">
   <p class="parity-tag">規則正本 · Gate 審查者不指定模型(逐字抄自 README 機械正本)</p>
@@ -638,7 +653,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   </ul>
   <!-- parity:end readme-gate-model-quickstart -->
   </div>
-  <p class="legend">正本是上面 SVG。模型分層見上表。升階細節另見下方
+  <p class="legend">正本是上面 SVG。能力分層見上表。升階細節另見下方
   <a href="#devrun">dev-run 引擎</a>小節。reviewer 不綁型號。</p>
   <p class="muted">Stage 6 全部 T ACCEPTED 之後的跨階段收束(sequential/parallel 皆同):
   先跑 Final Fresh Gauntlet(綁定當下 source SHA 的 Final Fresh Run + Evidence 契約,
@@ -813,7 +828,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
 
     <g class="n"><rect x="24" y="166" width="130" height="50" rx="6" class="hl"/><text class="dt" x="36" y="184">dev-setup</text><text class="dc" x="36" y="200">install 時產草稿</text></g>
     <g class="n"><rect x="166" y="166" width="130" height="50" rx="6" class="b"/><text class="dt" x="178" y="184">收割既有素材</text><text class="dc" x="178" y="200">指名的外部 artifacts</text></g>
-    <g class="n"><rect x="308" y="166" width="130" height="50" rx="6" class="m-sonnet"/><text class="dt" x="320" y="184">sonnet 掃 codebase</text><text class="dc" x="320" y="200">抓候選條目</text></g>
+    <g class="n"><rect x="308" y="166" width="130" height="50" rx="6" class="m-sonnet"/><text class="dt" x="320" y="184">執行層掃 codebase</text><text class="dc" x="320" y="200">Claude 對照 sonnet</text></g>
     <g class="n"><rect x="450" y="166" width="130" height="50" rx="6" class="note"/><text class="dt" x="462" y="184">每條標【待確認】</text><text class="dc" x="462" y="200">未核可不得當事實</text></g>
     <g class="n"><rect x="592" y="166" width="130" height="50" rx="6" class="hl"/><text class="dt" x="604" y="184">你逐條核可</text><text class="dc" x="604" y="200">拿掉標記或刪掉</text></g>
     <g class="n"><rect x="734" y="166" width="130" height="50" rx="6" class="go"/><text class="dt" x="746" y="184">每 session 注入</text><text class="dc" x="746" y="200">全員 + dev-run 引擎</text></g>
@@ -837,7 +852,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   <p class="figcap">紅虛線是<strong>生命週期分界</strong>:上下兩排沒有任何箭頭相連,因為 rules 檔不跟 gate 走。
   它的生命週期是<strong>「永生」—— 不隨 feature 結案封存</strong>,內容是架構不變量 / 技術慣例 / 坑。
   下排是 <code>dev-setup</code> install 時產草稿到你核可的路徑:素材來自<strong>你指名的 external workflow
-  artifacts 與 <code>CLAUDE.md</code> 的技術規則段</strong>,再派 sonnet 掃 codebase 抓候選 ——
+  artifacts 與 <code>CLAUDE.md</code> 的技術規則段</strong>,再派執行層掃 codebase 抓候選（Claude 對照 sonnet）——
   <strong>留著 <code>【待確認】</code> 的條目不得被當事實引用</strong>。
   另:<code>4-spec</code> 只寫本次 delta,<strong>不重抄 rules</strong>(見 <code>_templates/4-spec.md</code> 頂註)。</p>
   <blockquote><strong>執行清單四原則</strong>(Stage 2/3/4/5/6/7;清單全文住各模板頂註。Stage 1 同款機制內建於
@@ -1577,7 +1592,7 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   <div class="tablewrap"><table>
     <tr><th>動作</th><th>誰</th></tr>
     <tr><td>寫碼、跑 Verify、貼 RED/GREEN 原文輸出到回報</td><td>執行者(fresh subagent)</td></tr>
-    <tr><td>依共用 T acceptance seam 收驗、判 PASS/FAIL</td><td>reviewer(fresh sonnet)</td></tr>
+    <tr><td>依共用 T acceptance seam 收驗、判 PASS/FAIL</td><td>reviewer(執行層,fresh;Claude 對照 sonnet)</td></tr>
     <tr><td><strong>PASS 後 commit、寫 Progress Log(hash)/T Review Log、勾 checkbox、謄 TDD Evidence/Decisions/執行軌跡</strong></td><td><strong>派工者(你)</strong></td></tr>
     <tr><td>判偏差級、呼叫 <code>allow</code>/<code>stop</code>、諮詢 adviser</td><td>派工者(你)</td></tr>
   </table></div>
@@ -1587,11 +1602,12 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   <p><strong>逐 T 迴圈</strong>(照 Blocked-by 拓撲序,禁併 T):</p>
   <ol>
     <li><strong>派工</strong>:三件套(目標與動機/驗收條件/回報格式),驗收條件寫明不要 commit。</li>
-    <li><strong>收驗</strong>:派 fresh sonnet reviewer(給 T + S 原文 + diff + 執行者輸出,不給執行者結論),
+    <li><strong>收驗</strong>:派 fresh 執行層 reviewer(給 T + S 原文 + diff + 執行者輸出,不給執行者結論;
+        Claude 對照 sonnet),
         依 README §5 / 6-notes 共用 acceptance seam 裁決。FAIL → <strong>先分類再路由</strong>(README §5
         驗證五律 5):SPEC(T/S 定義問題)→ L2 停,回 G2;ENV(環境/依賴壞)→ 修環境重跑,不計升階;
         IMPL/UNKNOWN → 同一 T 升階重派(失敗軌跡全帶)並重新送審。<strong>同 T 總嘗試上限 4</strong>
-        (haiku 1+sonnet 2+opus 1),用盡強制問 adviser,禁無限重試。PASS → 你 commit → 讀出 hash。</li>
+        (起步 1+執行 2+規劃 1;Claude 對照 haiku/sonnet/opus),用盡強制問 adviser,禁無限重試。PASS → 你 commit → 讀出 hash。</li>
     <li><strong>記帳</strong>:T Review Log 一筆(reviewer 裁決證據)、
         Progress Log 一列(日期|T-id|hash)、勾 checkbox、TDD Evidence 貼每個 T × S 的 RED/GREEN、
         Decisions 記自由選擇、執行軌跡一列(T-id|失敗分類 SPEC/ENV/IMPL/UNKNOWN(無失敗填 —)|升階史|
@@ -1602,13 +1618,13 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
         全程不打斷問人,只有 L2 停。</li>
   </ol>
 
-  <p class="muted">角色與模型(逐字,見 SKILL.md 模型分層表):</p>
+  <p class="muted">角色與層(Claude 名只是對照;Claude Code 上的派工細節見 SKILL.md):</p>
   <div class="tablewrap"><table>
-    <tr><th>角色</th><th>模型</th><th>規則</th></tr>
-    <tr><td>派工者(你)</td><td>opus / fable5</td><td>派工、彙整、commit、記帳;不寫碼</td></tr>
-    <tr><td>T 執行</td><td><strong>haiku 起步</strong></td><td>「錯」= reviewer 判 FAIL(或執行者自陳卡關送不出)。haiku 錯 1 次<strong>立即</strong>升 sonnet(同層不重試);sonnet 同 T 最多 2 次(換方法不歸零)才升 opus;升階時把完整失敗軌跡帶給下一階</td></tr>
-    <tr><td>T review</td><td><strong>sonnet</strong>(fresh context)</td><td>依 README §5 / 6-notes 共用 acceptance seam;高風險或爭議時由 opus 作第二 reviewer</td></tr>
-    <tr><td>adviser</td><td>opus,唯讀</td><td><strong>三層皆 FAIL = 連敗</strong> → 派 adviser 診斷:是 T/5-tasks 定義問題,還是純執行問題;verdict=STOP → 走 L2 路徑</td></tr>
+    <tr><th>角色</th><th>層</th><th>Claude對照</th><th>規則</th></tr>
+    <tr><td>派工者(你)</td><td>規劃/派工層</td><td>opus / fable5</td><td>派工、彙整、commit、記帳;不寫碼</td></tr>
+    <tr><td>T 執行</td><td><strong>起步 → 執行 → 規劃</strong></td><td>haiku → sonnet → opus</td><td>「錯」= reviewer 判 FAIL(或執行者自陳卡關送不出)。起步錯 1 次<strong>立即</strong>升執行(同層不重試);執行同 T 最多 2 次(換方法不歸零)才升規劃;升階時把完整失敗軌跡帶給下一階</td></tr>
+    <tr><td>T review</td><td>執行層(fresh context)</td><td>sonnet</td><td>依 README §5 / 6-notes 共用 acceptance seam;高風險或爭議時由規劃層作第二 reviewer</td></tr>
+    <tr><td>adviser</td><td>規劃層,唯讀</td><td>opus</td><td><strong>三層皆 FAIL = 連敗</strong> → 派 adviser 診斷:是 T/5-tasks 定義問題,還是純執行問題;verdict=STOP → 走 L2 路徑</td></tr>
   </table></div>
   <p class="muted">守衛:<code>devflow-exec.sh start</code>/<code>stop</code> 標記武裝範圍,細節見下方
   <a href="#guard">⑥ 執行守衛</a>小節。</p>
@@ -2523,8 +2539,8 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   這種事後才現形的性質,對比 PreToolUse 的真硬擋。</p>
 
   <h3 id="guard-subagent">5. SubagentStart/Stop:dev-run 派工</h3>
-  <p>Stage 6 由 <code>dev-run</code> 引擎逐 T 派工:worker(haiku 起步,錯一次升 sonnet)與
-  reviewer(fresh sonnet)<strong>各自是獨立 context</strong> —— 主線讀過的專案 CLAUDE.md、
+  <p>Stage 6 由 <code>dev-run</code> 引擎逐 T 派工:worker(起步層,錯一次升執行層;Claude 對照 haiku→sonnet)與
+  reviewer(執行層,fresh;對照 sonnet)<strong>各自是獨立 context</strong> —— 主線讀過的專案 CLAUDE.md、
   這份導覽頁、甚至前一個 T 的討論,都不會自動跟過去。</p>
   <p>這正是 <strong>Task Context Packet</strong>(派 worker 的 prompt;缺一不派)存在的 runtime 理由:
   要靠 prompt 把 <code>run_id</code>、slug、T-id、<strong>Intent</strong>、Covers 的 R/S 原文、
@@ -2749,7 +2765,10 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   <p>開工先跑 <code>scripts/check-host-adapter.sh --probe</code>。
   綠的時候會印該主機下一句安裝／更新指令；缺技能樹或 <code>DEVFLOW_ROOT</code>
   不對會印一句掛載句並紅。
-  Cursor／Grok／Codex 三邊都沒有 Claude PreToolUse。
+  Cursor／Grok／Codex 三邊都沒有 Claude PreToolUse,
+  也沒有 haiku–sonnet–opus 的 dispatch-guard。選模型時對準
+  <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow">#flow</a>
+  的能力層,不要發明那些主機的 SKU 表。
   <strong>誰開工誰先跑</strong>該站
   <code>check-devtalk-graph.sh --action</code> 或
   <code>check-devstageN-graph.sh --action</code>。
