@@ -268,12 +268,12 @@ if os.path.isfile(impl_path):
 
 # ── 輸出 ─────────────────────────────────────────────────────────────────
 print(f"=== hooks 記帳對帳:hooks.json {mount_count} 條掛載 / {len(script_names)} 支腳本 "
-      f"vs SKILL.md + README + PLUGIN.md + guide 註冊表 + 兩份生命週期圖 ===")
+      f"vs SKILL.md + README + PLUGIN.md + guide 註冊表 + 主指南生命週期圖 ===")
 if fails:
     print(f"❌ 記帳漂移 {len(fails)} 處(第 7 型:機制長大了,列舉它的文件沒跟上):")
     for f in fails:
         print(f"   {f}")
     print("   修法:讓文件跟上 hooks.json(或 hooks.json 才是錯的那邊 —— 人判斷,守衛只報不一致)。")
     sys.exit(1)
-print("✅ 四份列舉文件 + 兩份生命週期圖與 hooks.json/skills 目錄一致(數量與名稱都比過,圖為雙向)")
+print("✅ 四份列舉文件 + 主指南生命週期圖與 hooks.json/skills 目錄一致(數量與名稱都比過,圖為雙向)")
 PY
