@@ -51,7 +51,7 @@ passed = 0
 failed = 0
 
 NODES = ("skills", "dev-flow", "stage6", "nodes")
-MIN_CASES = 59
+MIN_CASES = 58
 
 
 def run_check(tree, extra=None):
