@@ -24,6 +24,7 @@ CHECK="$SELF_DIR/check-plugin-hosts.sh"
 python3 - "$ROOT" "$CHECK" <<'PY'
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -32,7 +33,7 @@ import tempfile
 root, check = sys.argv[1], sys.argv[2]
 passed = 0
 failed = 0
-MIN_CASES = 14
+MIN_CASES = 17
 
 COPY_DIRS = (
     ".claude-plugin",
@@ -278,18 +279,58 @@ with tempfile.TemporaryDirectory(prefix="plugin-hosts-") as tmp:
     shutil.copytree(good, d)
     readme = os.path.join(d, "README.md")
     text = open(readme, encoding="utf-8").read()
-    pre, sep, post = text.partition("<details>")
-    if not sep:
-        print("FATAL: README 沒有 details", file=sys.stderr)
-        sys.exit(2)
+    pre, sep, post = text.partition("<!-- devflow:master-only:start -->")
+    first = pre if sep else text
+    rest = sep + post if sep else ""
     open(readme, "w", encoding="utf-8").write(
-        pre + "/plugin marketplace add rick546986/dev-flow\n" + sep + post
+        first + "~/.claude/plugins/cache/dev-flow/dev-flow/<version>/\n" + rest
     )
     expect(
-        "R-readme-manual README 第一屏灌進安裝指令必須紅",
+        "R-readme-essay README 第一屏灌進 PLUGIN 長文必須紅",
         d,
         1,
-        "第一屏灌進安裝手冊",
+        "第一屏灌進 PLUGIN 長文",
+    )
+
+    d = os.path.join(tmp, "readme-no-grok")
+    shutil.copytree(good, d)
+    readme = os.path.join(d, "README.md")
+    text = open(readme, encoding="utf-8").read()
+    pre, sep, post = text.partition("<!-- devflow:master-only:start -->")
+    first = pre if sep else text
+    rest = sep + post if sep else ""
+    open(readme, "w", encoding="utf-8").write(
+        first.replace("Grok", "OtherHost") + rest
+    )
+    expect(
+        "R-readme-hosts README 第一屏拿掉 Grok 必須紅",
+        d,
+        1,
+        "第一屏缺四主機",
+    )
+
+    d = os.path.join(tmp, "readme-host-table")
+    shutil.copytree(good, d)
+    readme = os.path.join(d, "README.md")
+    text = open(readme, encoding="utf-8").read()
+    pre, sep, post = text.partition("<!-- devflow:master-only:start -->")
+    first = pre if sep else text
+    rest = sep + post if sep else ""
+    tabled = re.sub(
+        r"^[\t ]*[-*][\t ]+\*\*(Claude|Cursor|Codex|Grok)\*\*",
+        r"| **\1** |",
+        first,
+        flags=re.M,
+    )
+    if tabled == first:
+        print("FATAL: 治具找不到四主機清單項可改成表格列", file=sys.stderr)
+        sys.exit(2)
+    open(readme, "w", encoding="utf-8").write(tabled + rest)
+    expect(
+        "R-readme-host-table README 第一屏四主機改回表格必須紅",
+        d,
+        1,
+        "必須改清單",
     )
 
 total = passed + failed

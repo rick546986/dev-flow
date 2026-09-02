@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 370" role="img"
+     aria-label="七階段流程圖含 Gate 與能力分層">
+  <title>① 七階段流程圖(含 Gate 與能力分層)</title>
+  <style>
+    svg {
+      --bg: #ffffff; --fg: #1a1a1a; --muted: #666; --line: #e2e2e2; --card: #f7f7f8;
+      --ok: #0a7d33; --warn: #b57700; --bad: #c0392b; --acc: #2563eb;
+      --opus: #7c3aed; --sonnet: #0d9488; --haiku: #57606a;
+    }
+    @media (prefers-color-scheme: dark) {
+      svg {
+        --bg: #141517; --fg: #e8e8e8; --muted: #9a9a9a; --line: #33363a; --card: #1e2023;
+        --ok: #37c871; --warn: #e0a93e; --bad: #e46a5a; --acc: #6ea8ff;
+        --opus: #a78bfa; --sonnet: #2dd4bf; --haiku: #9aa4af;
+      }
+    }
+    .b { fill: var(--card); stroke: var(--line); stroke-width: 1; }
+    .hl { fill: color-mix(in srgb, var(--acc) 16%, var(--card)); stroke: var(--acc); }
+    .go { fill: color-mix(in srgb, var(--ok) 14%, var(--card)); stroke: var(--ok); }
+    .note { fill: var(--card); stroke: var(--warn); stroke-dasharray: 5 3; }
+    .m-opus { fill: color-mix(in srgb, var(--opus) 18%, var(--card)); stroke: var(--opus); }
+    .m-sonnet { fill: color-mix(in srgb, var(--sonnet) 18%, var(--card)); stroke: var(--sonnet); }
+    .m-haiku { fill: color-mix(in srgb, var(--haiku) 18%, var(--card)); stroke: var(--haiku); }
+    .edge { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+    .arrowhead { fill: var(--muted); }
+    .fenceline { fill: none; stroke: var(--bad); stroke-width: 1.6; stroke-dasharray: 6 4; }
+    .sessionbox { fill: none; stroke: var(--acc); stroke-dasharray: 4 3; stroke-width: 1.4; }
+    .dt { font: 11px -apple-system, "PingFang TC", "Noto Sans TC", "WenQuanYi Micro Hei", sans-serif; fill: var(--fg); }
+    .dc { font: 9px -apple-system, "PingFang TC", "Noto Sans TC", "WenQuanYi Micro Hei", sans-serif; fill: var(--muted); }
+    .dl { font: 10px -apple-system, "PingFang TC", "Noto Sans TC", "WenQuanYi Micro Hei", sans-serif; fill: var(--muted); }
+    .dk { font: 700 10px -apple-system, "PingFang TC", "Noto Sans TC", "WenQuanYi Micro Hei", sans-serif; fill: var(--acc); }
+  </style>
+  <rect x="0" y="0" width="880" height="370" fill="var(--bg)"/>
+  <defs>
+    <marker id="ar-fl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/>
+    </marker>
+  </defs>
+  <g class="cluster"><rect x="148" y="58" width="142" height="74" rx="10" class="sessionbox"/></g>
+  <g class="cluster"><rect x="592" y="58" width="142" height="74" rx="10" class="sessionbox"/></g>
+  <g class="cluster"><rect x="444" y="198" width="142" height="74" rx="10" class="sessionbox"/></g>
+
+  <g class="n"><rect x="6" y="70" width="130" height="56" rx="26" class="b"/><text class="dt" x="18" y="88">想法/需求</text><text class="dc" x="18" y="103">還沒有任何檔案</text></g>
+  <g class="n"><rect x="154" y="70" width="130" height="56" rx="6" class="m-opus"/><text class="dt" x="166" y="88">1 討論</text><text class="dc" x="166" y="103">規劃層 · /dev-talk</text><text class="dc" x="166" y="117">1-discussion.md</text></g>
+  <g class="n"><rect x="302" y="70" width="130" height="56" rx="6" class="m-opus"/><text class="dt" x="314" y="88">2 收斂</text><text class="dc" x="314" y="103">規劃層</text><text class="dc" x="314" y="117">2-decision.md</text></g>
+  <g class="n"><rect x="450" y="70" width="130" height="56" rx="6" class="hl"/><text class="dt" x="462" y="88">G1 方向核准</text><text class="dc" x="462" y="103">審查層·不指定模型</text><text class="dc" x="462" y="117">Owner Calls 全裁決</text></g>
+  <g class="n"><rect x="598" y="70" width="130" height="56" rx="6" class="m-sonnet"/><text class="dt" x="610" y="88">3 原型(選配)</text><text class="dc" x="610" y="103">執行層</text><text class="dc" x="610" y="117">答案回寫 2-decision</text></g>
+  <g class="n"><rect x="746" y="70" width="130" height="56" rx="6" class="m-opus"/><text class="dt" x="758" y="88">4 規格</text><text class="dc" x="758" y="103">規劃層</text><text class="dc" x="758" y="117">4-spec.md</text></g>
+
+  <g class="n"><rect x="746" y="210" width="130" height="56" rx="6" class="hl"/><text class="dt" x="758" y="228">G2 契約核准</text><text class="dc" x="758" y="243">reviewer·契約</text><text class="dc" x="758" y="257">R/S 全審 + DD 全裁決</text></g>
+  <g class="n"><rect x="598" y="210" width="130" height="56" rx="6" class="m-sonnet"/><text class="dt" x="610" y="228">5 任務</text><text class="dc" x="610" y="243">執行層</text><text class="dc" x="610" y="257">5-tasks.md</text></g>
+  <g class="n"><rect x="450" y="210" width="130" height="56" rx="6" class="m-haiku"/><text class="dt" x="462" y="228">6 實作</text><text class="dc" x="462" y="243">起步層 · dev-run</text><text class="dc" x="462" y="257">6-notes + 逐 T commit</text></g>
+  <g class="n"><rect x="302" y="210" width="130" height="56" rx="6" class="m-sonnet"/><text class="dt" x="314" y="228">7 驗證</text><text class="dc" x="314" y="243">執行層 · 產檔</text><text class="dc" x="314" y="257">7-review.md</text></g>
+  <g class="n"><rect x="154" y="210" width="130" height="56" rx="6" class="hl"/><text class="dt" x="166" y="228">G3 出貨核准</text><text class="dc" x="166" y="243">reviewer·驗收</text><text class="dc" x="166" y="257">S 全綠+Evidence 契約</text></g>
+  <g class="n"><rect x="6" y="210" width="130" height="56" rx="6" class="go"/><text class="dt" x="18" y="228">PR</text><text class="dc" x="18" y="243">→ develop</text><text class="dc" x="18" y="257">PASS 才准開</text></g>
+
+  <g class="n"><rect x="6" y="286" width="130" height="40" rx="6" class="note"/><text class="dt" x="18" y="304">延伸 living spec</text><text class="dc" x="18" y="318">docs/specs/</text></g>
+
+  <path class="edge" marker-end="url(#ar-fl)" d="M136,98 L154,98"/>
+  <path class="edge" marker-end="url(#ar-fl)" d="M284,98 L302,98"/>
+  <path class="edge" marker-end="url(#ar-fl)" d="M432,98 L450,98"/>
+  <path class="edge" marker-end="url(#ar-fl)" d="M580,98 L598,98"/>
+  <path class="edge" marker-end="url(#ar-fl)" d="M728,98 L746,98"/>
+  <path class="edge" marker-end="url(#ar-fl)" d="M811,126 L811,210"/>
+  <path class="edge" marker-end="url(#ar-fl)" d="M746,238 L728,238"/>
+  <path class="edge" marker-end="url(#ar-fl)" d="M598,238 L580,238"/>
+  <path class="edge" marker-end="url(#ar-fl)" d="M450,238 L432,238"/>
+  <path class="edge" marker-end="url(#ar-fl)" d="M302,238 L284,238"/>
+  <path class="edge" marker-end="url(#ar-fl)" d="M154,238 L136,238"/>
+  <path class="edge" marker-end="url(#ar-fl)" d="M71,266 L71,286"/>
+  <path class="edge" marker-end="url(#ar-fl)" d="M515,70 L515,30 L811,30 L811,70"/>
+
+  <path class="fenceline" d="M450,278 L450,286 L580,286 L580,278"/>
+  <text class="dl" x="560" y="24">G1 過·無技術疑問 → 跳過選配的 3</text>
+  <text class="dk" x="154" y="52">必開新 session</text>
+  <text class="dk" x="598" y="52">建議另開(選配)</text>
+  <text class="dk" x="450" y="192">建議另開 session</text>
+  <text class="dl" x="160" y="318">Stage 6 內部是三層:起步 → 執行 → 規劃(誤 1 次升執行;執行同 T 最多 2 次才升規劃)。Claude 對照 haiku→sonnet→opus</text>
+  <text class="dl" x="160" y="336">T review = 執行層 fresh(高風險/爭議升規劃層二審);adviser = 規劃層唯讀,三層皆 FAIL 才派</text>
+  <text class="dl" x="450" y="358">守衛武裝區間:start→stop,只有這一段守衛是醒著的</text>
+</svg>

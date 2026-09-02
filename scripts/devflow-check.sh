@@ -257,11 +257,10 @@ group_architecture() {
   # 更新那張表就紅;表裡寫了不存在的檔名也紅。
   run "architecture/check-file-map" scripts/check-file-map.sh || return 1
   # STATUS 規則對帳(S-1):模板/母版自用兩份要點、Active 表頭 Branch 欄、
-  # quickstart 手寫範例列(renderer 不同步那段,只有這支在看)。
+  # 主指南手寫 STATUS 範例列與 Stage 6 可複製指令(renderer 不同步那段)。
   run "architecture/check-status-policy" scripts/check-status-policy.sh || return 1
-  # 兩份導覽各自嵌一張完整的生命週期圖(fig-lifecycle / fig-lifecycle-qs)是 owner
-  # 明確裁決的雙副本(quickstart 要能自足,不接受單正本+連結取代;見腳本頂註與
-  # notes/dispatch-guard-symmetry.md X-6)——雙副本天生會漂移,補這支同步守衛。
+  # 合併後:quickstart 必須是轉去主指南 #start 的 stub;主指南必須有 #start;
+  # 仍活著的導覽頁內錨點捲動 JS 必須同步。
   run "architecture/check-guides-fig-sync" scripts/check-guides-fig-sync.sh || return 1
   # Agent Memory 架構不變量(§16):目錄進不進 Git、durable↔local 相依單向、
   # domain 失效隔離、權威排序不對稱、唯一 setup 入口、線索詞兩份、契約與常數同值、

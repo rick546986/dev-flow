@@ -89,7 +89,7 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
 ## install(fresh)
 
 > **前提**:hooks 需要 python3(解析順序 `DEVFLOW_PYTHON` → `/usr/bin/python3` → PATH;
-> **編譯下限 3.9**;詳見母版 README「環境需求」)——Windows Git Bash 環境安裝前先確認
+> **編譯下限 3.9**;詳見 `docs/PLUGIN.md`)——Windows Git Bash 環境安裝前先確認
 > `python3` 找得到(或設 `DEVFLOW_PYTHON`),否則守衛會**靜默跳過**:不是壞掉,但等於
 > 沒有保護,而「守衛沉睡」與「守衛在擋」從外面看長得一樣(G1 同型風險)。
 > gate-twin／產圖另要 `markdown-it-py==4.0.0`,該套件要 **Python 3.12+**。
@@ -185,8 +185,8 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
      (架構不變量/技術慣例類搬入,流程類丟棄)、專案 `CLAUDE.md` 的技術規則段、
      `docs/specs/` 裡屬慣例而非行為的敘述。未經使用者指名的外部目錄不掃描;
      原 artifacts 不移動、不覆蓋、不刪除。
-   - 再派 **sonnet subagent 掃 codebase 產候選**(派工三件套;不逐檔讀全庫,採樣:
-     入口/資料層/錯誤處理/測試設定 + grep 反覆出現的 pattern)。要它回報格式:
+   - 再派 subagent 掃 codebase 產候選（層見指南 `#flow`／`#docs` 下排；派工三件套；不逐檔讀全庫,採樣:
+     入口/資料層/錯誤處理/測試設定 + grep 反覆出現的 pattern）。要它回報格式:
      `分類 | 規則一句 | 證據(檔:行)| 信心(高/中/低)`。
    - 落檔時**每條標 `【待確認】`**,且**每一條都要經使用者明確裁決**(採/砍/改),
      不得一句「其餘都 OK」帶過 —— 這檔錯一條會長期誤導每個 session,值得逐條看。
@@ -204,7 +204,7 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
      rules 超過 ~100 行、或前後端等多技術棧同 repo 時,才建議拆多檔 + `paths:`
      frontmatter 做 path-scoped 按需載入(判準見模板頂註);一開始就分是過度工程。
 3. `.gitignore` 加 `.devflow/`。
-4. 文檔歸位(散檔 git mv 進 specs/dev/adr,引用 sed 歸零)照 README §1。
+4. 文檔歸位(散檔 git mv 進 specs/dev/adr,引用 sed 歸零)照指南 `#docs`。
 5. 未識別的既有外部 workflow artifacts 與目錄**一律保留**:不移動、
    不覆蓋、不刪除。dev-setup 只安裝 dev-flow 的文檔面,不轉換也不接管外部 workflow。
 6. **evidence gauntlet 散發**:`mkdir -p docs/dev/tools` 後 cp 方法論
@@ -377,8 +377,8 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
    非 0 → 回報「N 條未核可,該檔每 session 自動注入,未核可條目不得當事實引用」,
    並提議**按 `##` 分節批次核可**(逐條問不現實)。
 8. **gate 摘要 vs §7 正本一致性**(手動跑,非掛載 hook,不計入第 3 項可執行清單):
-   跑 `hooks/gate-consistency.sh` —— 從母版 README §7(G1/G2/G3 唯一正本)動態抽取
-   每個 gate 的關鍵 token,比對 plugin `dev-flow` SKILL.md 階段表、README §3 表、
+   跑 `hooks/gate-consistency.sh` —— 從母版 `docs/dev/readme-contract-extract.md` §7(G1/G2/G3 機械正本)動態抽取
+   每個 gate 的關鍵 token,比對 plugin `dev-flow` SKILL.md 階段表、契約檔 §3 表、
    三份模板(2-decision/4-spec/7-review)頂註送審步是否都含該 token(同義詞如
    OC/Owner Calls、DD/Drafting Decisions、回歸綠/既有全綠,靠小型映射表正規化)。
    **不把 gate 條件字串寫死在 script 裡**——寫死等於讓 script 自己變成第四份會漂移

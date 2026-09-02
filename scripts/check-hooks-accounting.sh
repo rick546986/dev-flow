@@ -4,7 +4,7 @@
 # 抓什麼:`hooks/hooks.json`(掛載的機械正本)與所有「為了驗證而列舉 hook 的
 # 文件」之間的漂移 —— 數量與名稱都比,任一處漏列/多列/數字過期就紅:
 #   ① skills/dev-setup/SKILL.md:安裝健檢清單(N 支可執行、N 條掛載、逐條列舉)
-#   ② README.md:執行守衛段的 hook 名稱列舉
+#   ② docs/dev/readme-contract-extract.md:執行守衛段的 hook 名稱列舉
 #   ②' docs/PLUGIN.md:hooks 表 + skills 表 + agents 表(agents 對帳的機械正本 =
 #      agents/ 目錄,2026-08-19 派工單 §4.4 第 4 項新增)
 #   ③ guides/guide-dev-flow.html:hooks 註冊表(event/matcher/command/timeout 鏡像
@@ -115,12 +115,13 @@ else:
         elif not os.access(p, os.X_OK):
             fail(f"SKILL.md 說 {n} 可執行,但 hooks/{n}.sh 沒有執行權限")
 
-# ── ② README.md:執行守衛段落必須點名每一支掛載中的 hook ─────────────────
-readme = open(os.path.join(root, "README.md"), encoding="utf-8").read()
+# ── ② 契約檔:執行守衛段落必須點名每一支掛載中的 hook ─────────────────
+extract = open(os.path.join(root, "docs", "dev", "readme-contract-extract.md"),
+               encoding="utf-8").read()
 for name in script_names:
     base = name[:-3] if name.endswith(".sh") else name
-    if base not in readme:
-        fail(f"README.md 完全沒提到掛載中的 {base}(hooks.json 有,文件沒有)")
+    if base not in extract:
+        fail(f"契約檔完全沒提到掛載中的 {base}(hooks.json 有,文件沒有)")
 
 # ── ②' docs/PLUGIN.md:第四份列舉副本(hooks 表 + skills 表)────────────────
 # 第一版守衛只掃三份文件,盤點當場抓到 PLUGIN.md 漏了 2 支 hook 與 1 個 skill ——
@@ -165,15 +166,12 @@ for lineno, line in enumerate(guide.splitlines(), 1):
             if not num_matches(num, len(script_names)):
                 fail(f"guide:{lineno} 寫「這{num}支」,實際掛載 {len(script_names)} 支不同腳本")
 
-# ── ④ 兩份導覽的生命週期圖:圖上必須點名每一支掛載中的 hook ───────────────
+# ── ④ 主指南生命週期圖:圖上必須點名每一支掛載中的 hook ──────────────────
 # 為什麼要獨立於③:③比的是文字版 hooks 註冊表(event/matcher/command/timeout 四格),
-# 生命週期圖是**另一個列舉面**,③掃不到它。而 check-guides-fig-sync.sh 只保證
-# 「兩份圖彼此一致」,不保證圖與 hooks.json 一致 —— 兩份一起漏同一支時它照樣綠。
-# 這不是假設:devflow-report-guard 2026-08-17 掛上,兩份圖都沒補,兩支守衛全綠到
-# 2026-08-19 才被人眼抓到。把圖接到機械正本上,以後漏一支就紅(第 7 型:守衛比錯軸)。
+# 生命週期圖是**另一個列舉面**,③掃不到它。合併後只剩 guide-dev-flow 一張
+# fig-lifecycle;check-guides-fig-sync.sh 改盯 stub+#start,不比第二份圖。
 # 圖上為排版用簡寫(dispatch-guard = devflow-dispatch-guard),兩種寫法都認。
-FIGS = (("guides/guide-dev-flow.html", "fig-lifecycle"),
-        ("guides/guide-quickstart.html", "fig-lifecycle-qs"))
+FIGS = (("guides/guide-dev-flow.html", "fig-lifecycle"),)
 
 
 def fig_hook_failures(text, sid, expected):
@@ -211,8 +209,7 @@ for rel, sid in FIGS:
     for msg in fig_hook_failures(fig_texts[rel], sid, expected_bases):
         fail(f"{rel}:{msg}")
 
-# 負向自檢:證明④真的有鑑別力,不是永遠回空清單。兩份各驗一次 —— 只驗一份的話,
-# 另一份的檢查失效不會有任何訊號(而「兩份一起漏」正是這條要防的原始事故形態)。
+# 負向自檢:證明④真的有鑑別力,不是永遠回空清單。
 for rel, sid in FIGS:
     if not fig_hook_failures(fig_texts[rel], sid, expected_bases | {"devflow-phantom-guard"}):
         fail(f"負向自檢失效:{rel} 的圖少一支新 hook 竟然沒被判漏列 —— ④ 沒有鑑別力")
@@ -272,12 +269,12 @@ if os.path.isfile(impl_path):
 
 # ── 輸出 ─────────────────────────────────────────────────────────────────
 print(f"=== hooks 記帳對帳:hooks.json {mount_count} 條掛載 / {len(script_names)} 支腳本 "
-      f"vs SKILL.md + README + PLUGIN.md + guide 註冊表 + 兩份生命週期圖 ===")
+      f"vs SKILL.md + README + PLUGIN.md + guide 註冊表 + 主指南生命週期圖 ===")
 if fails:
     print(f"❌ 記帳漂移 {len(fails)} 處(第 7 型:機制長大了,列舉它的文件沒跟上):")
     for f in fails:
         print(f"   {f}")
     print("   修法:讓文件跟上 hooks.json(或 hooks.json 才是錯的那邊 —— 人判斷,守衛只報不一致)。")
     sys.exit(1)
-print("✅ 四份列舉文件 + 兩份生命週期圖與 hooks.json/skills 目錄一致(數量與名稱都比過,圖為雙向)")
+print("✅ 四份列舉文件 + 主指南生命週期圖與 hooks.json/skills 目錄一致(數量與名稱都比過,圖為雙向)")
 PY

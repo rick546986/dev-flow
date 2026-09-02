@@ -9,7 +9,13 @@ case "$MODE" in
   *) echo "usage: $0 [--write|--check]" >&2; exit 2 ;;
 esac
 
-DEVFLOW_RENDER_PYTHON=${DEVFLOW_RENDER_PYTHON:-python}
+if [ -z "${DEVFLOW_RENDER_PYTHON:-}" ]; then
+  if command -v python3 >/dev/null 2>&1; then
+    DEVFLOW_RENDER_PYTHON=python3
+  else
+    DEVFLOW_RENDER_PYTHON=python
+  fi
+fi
 "$DEVFLOW_RENDER_PYTHON" - "$ROOT" "$MODE" <<'PY'
 import html
 import os
@@ -77,9 +83,12 @@ def bullet(rel, anchor):
 
 
 def fenced_seam():
-    matches = re.findall(r"```text\n(RED → GREEN.*?review evidence)\n```", read("README.md"), re.S)
+    matches = re.findall(r"```text\n(RED → GREEN.*?review evidence)\n```",
+                         read("docs/dev/readme-contract-extract.md"), re.S)
     if len(matches) != 1:
-        raise SystemExit(f"README.md: expected one Stage 6 seam, found {len(matches)}")
+        raise SystemExit(
+            "docs/dev/readme-contract-extract.md: expected one Stage 6 seam, "
+            f"found {len(matches)}")
     return "```text\n" + matches[0] + "\n```\n"
 
 
@@ -123,13 +132,13 @@ fragments = {
     ("guides/guide-dev-flow.html", "template7-checklist"):
         quote_region("_templates/7-review.md", "執行清單("),
     ("guides/guide-dev-flow.html", "readme-reviewer-selection-flow"):
-        bullet("README.md", "審查者產生"),
-    ("guides/guide-quickstart.html", "readme-stage6-seam-quickstart"): fenced_seam(),
-    ("guides/guide-quickstart.html", "readme-reviewer-selection-quickstart"):
-        bullet("README.md", "審查者產生"),
-    ("guides/guide-quickstart.html", "readme-gate-model-quickstart"):
-        bullet("README.md", "G1/G2/G3 審查與 verdict"),
-    ("guides/guide-quickstart.html", "template7-exit-quickstart"): exit_checklist(),
+        bullet("docs/dev/readme-contract-extract.md", "審查者產生"),
+    ("guides/guide-dev-flow.html", "readme-stage6-seam-quickstart"): fenced_seam(),
+    ("guides/guide-dev-flow.html", "readme-reviewer-selection-quickstart"):
+        bullet("docs/dev/readme-contract-extract.md", "審查者產生"),
+    ("guides/guide-dev-flow.html", "readme-gate-model-quickstart"):
+        bullet("docs/dev/readme-contract-extract.md", "G1/G2/G3 審查與 verdict"),
+    ("guides/guide-dev-flow.html", "template7-exit-quickstart"): exit_checklist(),
 }
 
 

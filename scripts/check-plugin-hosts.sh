@@ -17,7 +17,8 @@
 #   ⑦docs/PLUGIN.md 仍有 Claude 舊指令;Codex 寫的是實測動詞(add／upgrade)
 #   ⑧guide #host 四邊都寫了怎麼裝／怎麼更新
 #   ⑨Grok 牙:必須有「不要假裝能從產品 repo 自動灌進 Grok」;正面宣稱自動灌就紅
-#   ⑩README 第一屏不准變安裝手冊;details 要有 PLUGIN.md 入口
+#   ⑩README 第一屏必須有 A/B 分層 + 四主機清單(真指令,不是表格)
+#     +全圖 fig-flow-full.svg;不准灌 PLUGIN 長文。README 要有 PLUGIN.md 入口。
 #
 # 用法:scripts/check-plugin-hosts.sh [root]
 # exit:0 = 全過 / 1 = 真違規 / 2 = 檢查自身故障
@@ -314,19 +315,63 @@ else:
     grok_claim_ok(host, "guide #host")
 
 if readme:
-    pre, sep, post = readme.partition("<details>")
-    if not sep:
-        fail("README 沒有 details（契約句必須留在 details,第一屏不准變手冊）")
-    else:
-        dumped = [
-            n for n in (CLAUDE_ADD, CODEX_MKT_ADD, "codex plugin add", "/plugin install")
-            if n in pre
-        ]
-        if dumped:
-            fail("README 第一屏灌進安裝手冊:" + "、".join(dumped))
-        if "PLUGIN.md" not in post:
-            fail("README details 沒有 docs/PLUGIN.md 入口")
-        print("readme-first-screen: ok")
+    pre, sep, _ = readme.partition("<!-- devflow:master-only:start -->")
+    first = pre if sep else readme
+    missing_hosts = [h for h in ("Claude", "Cursor", "Codex", "Grok") if h not in first]
+    if missing_hosts:
+        fail("README 第一屏缺四主機:" + "、".join(missing_hosts))
+    if "A) 裝方法包" not in first:
+        fail("README 第一屏缺 A) 裝方法包")
+    if "B) 產品專案" not in first:
+        fail("README 第一屏缺 B) 產品專案")
+    missing_list = []
+    for host in ("Claude", "Cursor", "Codex", "Grok"):
+        bullet = re.search(
+            r"^[\t ]*(?:[-*]|\d+\.)[\t ]+\*\*" + host + r"\*\*",
+            first,
+            re.M,
+        )
+        if not bullet:
+            missing_list.append(host)
+    if missing_list:
+        fail("README 第一屏四主機必須是清單項:" + "、".join(missing_list))
+    if re.search(r"^\|.*(Claude|Cursor|Codex|Grok)", first, re.M):
+        fail("README 第一屏四主機還是 markdown 表格,必須改清單")
+    missing_cmd = [
+        n for n in (CLAUDE_ADD, CLAUDE_INSTALL, CODEX_MKT_ADD, CODEX_ADD)
+        if n not in first
+    ]
+    if missing_cmd:
+        fail("README 第一屏缺方法包短指令:" + "、".join(missing_cmd))
+    if "dev-setup" not in first:
+        fail("README 第一屏沒寫產品專案 dev-setup")
+    if "guide-dev-flow.html#start" not in first:
+        fail("README 第一屏沒有開工 Pages #start")
+    if "guide-dev-flow.html#host" not in first:
+        fail("README 第一屏沒有 #host Pages")
+    essay = [
+        n for n in ("~/.claude/plugins/cache", "%USERPROFILE%", "薄殼必須")
+        if n in first
+    ]
+    if essay:
+        fail("README 第一屏灌進 PLUGIN 長文:" + "、".join(essay))
+    if "Grok marketplace" in first and "不要發明" not in first:
+        fail("README 第一屏發明了 Grok marketplace")
+    if "PLUGIN.md" not in readme:
+        fail("README 沒有 docs/PLUGIN.md 入口")
+    if "fig-flow-full.svg" not in first:
+        fail("README 第一屏沒有全圖 fig-flow-full.svg")
+    if "七階段流程圖含 Gate 與能力分層" not in first:
+        fail("README 第一屏全圖 alt 必須是「七階段流程圖含 Gate 與能力分層」")
+    if "fig-readme-flow.svg" in first:
+        fail("README 第一屏還在用舊的瘦七格圖")
+    print("readme-first-screen: ok")
+
+if guide:
+    if 'src="fig-flow-full.svg"' not in guide and "fig-flow-full.svg" not in guide:
+        fail("guide #flow 沒有共用全圖 fig-flow-full.svg")
+    if "fig-readme-flow.svg" in guide:
+        fail("guide 還在指舊的瘦七格圖")
 
 if fails:
     print(f"FAIL: plugin-hosts {len(fails)} 項", file=sys.stderr)

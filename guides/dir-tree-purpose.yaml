@@ -314,7 +314,7 @@ root:
         - name: guide-dev-talk.html
           why: 討論站導覽。對 skills/dev-talk/ 的鏡像，改 hop 要兩邊一起看。
         - name: guide-quickstart.html
-          why: 快速上手。生命週期圖與 guide-dev-flow 那張必須同步。
+          why: 舊獨立頁。只留一句轉去 guide-dev-flow.html#start，不要當正本、不要第二份正文。
         - name: guide-dir-map.html
           why: 舊獨立頁。只留一句轉去 guide-dev-flow.html#dirmap，不要當正本、不要第二棵樹。
         - name: dir-tree-purpose.yaml

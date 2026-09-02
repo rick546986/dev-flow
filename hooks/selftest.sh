@@ -109,18 +109,18 @@ gate_fixture() { # gate_fixture <template sentence> [live-skill sentence]
   local template_clause="$1"
   local skill_clause="${2:-$1}"
   rm -rf "$C/master" "$C/plugin"
-  mkdir -p "$C/master/_templates" "$C/plugin/skills/dev-flow"
+  mkdir -p "$C/master/_templates" "$C/master/docs/dev" "$C/plugin/skills/dev-flow"
   printf '%s\n' \
     '## 3. 七份文檔' \
     '| # | 檔 | 用途 | Gate |' \
     '| 2 | 2-decision | | **G1** 方向核准 + OC 全裁決 |' \
     '| 4 | 4-spec | | **G2** R/S 全審 + DD 全裁決 |' \
     '| 7 | 7-review | | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 |' \
-    '## 4. 下一節' \
+    '## 5. 下一節' \
     '## 7. 角色與 Gate' \
     '- 審查者依序：適格人類 reviewer → fresh-context reviewer Agent → owner 自審（留痕的最後手段）。' \
     '- G1 = 方向核准 + **Owner Calls 全裁決**。G2 = **R/S 全審 + Drafting Decisions 全裁決**。G3 = **本次 S 全綠 + 既有測試套件全綠 + 現象證據逐 S 相符**。' \
-    '## 8. 下一節' > "$C/master/README.md"
+    '## 8. 下一節' > "$C/master/docs/dev/readme-contract-extract.md"
   printf '%s\n' \
     '| stage | gate |' \
     '| 2 | **G1** Owner Calls 全裁決 |' \
@@ -566,18 +566,18 @@ p4_gate_fixture_vnext() { # <tpl4 G2 摘要> <tpl7 G3 摘要> <skill G2 摘要> 
   local p4_reviewer='審查者依序：適格人類 reviewer → fresh-context reviewer Agent → owner 自審（留痕的最後手段）。'
   local p4_s7="${7:-$p4_s7_default}"
   rm -rf "$C/master" "$C/plugin"
-  mkdir -p "$C/master/_templates" "$C/plugin/skills/dev-flow"
+  mkdir -p "$C/master/_templates" "$C/master/docs/dev" "$C/plugin/skills/dev-flow"
   printf '%s\n' \
     '## 3. 七份文檔' \
     '| # | 檔 | 用途 | Gate |' \
     '| 2 | 2-decision | | **G1** OC 全裁決 |' \
     "| 4 | 4-spec | | **G2** $5 |" \
     "| 7 | 7-review | | **G3** $6 |" \
-    '## 4. 下一節' \
+    '## 5. 下一節' \
     '## 7. 角色與 Gate' \
     "- $p4_reviewer" \
     "$p4_s7" \
-    '## 8. 下一節' > "$C/master/README.md"
+    '## 8. 下一節' > "$C/master/docs/dev/readme-contract-extract.md"
   printf '%s\n' \
     '| stage | gate |' \
     '| 2 | **G1** Owner Calls 全裁決 |' \
@@ -607,7 +607,7 @@ gate_capture
 ck_msg "p4_vnext 7-review 頂註缺 Evidence 契約全過 → 抓漂移" 1 '✗ _templates/7-review.md 頂註:缺 token「Evidence、契約全過」' "$GATE_RC" "$GATE_OUT"
 p4_gate_fixture_vnext "$p4_g2_echo" "$p4_g3_echo" "$p4_g2_echo" "$p4_g3_echo" "$p4_g2_echo" '本次 S 全綠 + 既有測試套件全綠 + 現象證據'
 gate_capture
-ck_msg "p4_vnext README §3 表缺 Evidence 契約全過 → 抓漂移" 1 '✗ README §3 七份文檔表:缺 token「Evidence、契約全過」' "$GATE_RC" "$GATE_OUT"
+ck_msg "p4_vnext 契約檔 §3 表缺 Evidence 契約全過 → 抓漂移" 1 '✗ 契約檔 §3 七份文檔表:缺 token「Evidence、契約全過」' "$GATE_RC" "$GATE_OUT"
 p4_gate_fixture_vnext "$p4_g2_echo" "$p4_g3_echo" "$p4_g2_echo" "$p4_g3_echo" "$p4_g2_echo" "$p4_g3_echo" "$p4_s7_mixed"
 gate_capture
 ck_msg "p4_vnext 混寫形(**+ 錨**/+ **錨**)全抽到 → 通過" 0 "Demo verdict" "$GATE_RC" "$GATE_OUT"

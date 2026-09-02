@@ -133,8 +133,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=120
-EXPECTED_TOTAL=134
+EXPECTED_NEGATIVES=119
+EXPECTED_TOTAL=133
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -150,6 +150,9 @@ seed() {
            "$dst/notes/design" "$dst/scripts" "$dst/docs/dev/tools" "$dst/docs/adr" \
            "$dst/skills/dev-setup"
   cp "$ROOT/README.md" "$dst/README.md"
+  mkdir -p "$dst/docs/dev"
+  cp "$ROOT/docs/dev/readme-contract-extract.md" \
+     "$dst/docs/dev/readme-contract-extract.md"
   cp "$ROOT/devflow-contract.json" "$dst/devflow-contract.json"
   cp "$ROOT"/_templates/{1-discussion,3-prototype,4-spec,5-tasks,6-implementation-notes,7-review}.md \
      "$dst/_templates/"
@@ -488,7 +491,7 @@ D=$(seed gt0); expect pass check-gate-tokens.sh "$D" "GT-0 對照組(未變異)"
 
 D=$(seed gt1); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace(" + **Demo verdict**", "", 1)
 assert n != t, "GT-1 mutation 沒生效"
@@ -498,7 +501,7 @@ expect fail check-gate-tokens.sh "$D" "GT-1 刪 G2 的一個粗體 token(Demo ve
 
 D=$(seed gt2); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("**本次 S 全綠**", "本次 S 全綠", 1)
 assert n != t, "GT-2 mutation 沒生效"
@@ -508,7 +511,7 @@ expect fail check-gate-tokens.sh "$D" "GT-2 G3 的一個 token 被去掉粗體(�
 
 D=$(seed gt3); mutate "$D" <<'PY'
 import re, sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = re.sub(r"^  7\. Optional Layer[^\n]*\n", "", t, count=1, flags=re.M)
 assert n != t, "GT-3 mutation 沒生效"
@@ -521,7 +524,7 @@ expect fail check-gate-tokens.sh "$D" "GT-3 刪 G3 錨定義八點中的一點"
 # 確保紅燈是 check-gate-tokens 抓到的,不是別人順手擋下的。
 D=$(seed gt4); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("- G2 錨定義(錨句在上;此處為條件式全文):",
               "- G4 = 設計邊界對不對(4-spec:**設計契約三表全填**,未過不得進入 Stage 5;\n"
@@ -536,7 +539,7 @@ expect fail check-gate-tokens.sh "$D" "GT-4 §7 憑空新增第四道 gate 標�
 # 舊版守衛對這四種 mutation 全部 exit 0 —— 規則語意反過來而測試不紅。
 D=$(seed gt5a); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("Gauntlet PASS 不取代 Standards Axis", "Gauntlet PASS 取代 Standards Axis", 1)
 assert n != t, "GT-5a mutation 沒生效"
@@ -546,7 +549,7 @@ expect fail check-gate-tokens.sh "$D" "GT-5a 第 8 點極性反轉(Gauntlet PASS
 
 D=$(seed gt5b); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("Required Layer 不得為 unverified", "Required Layer 得為 unverified", 1)
 assert n != t, "GT-5b mutation 沒生效"
@@ -556,7 +559,7 @@ expect fail check-gate-tokens.sh "$D" "GT-5b 第 5 點極性反轉(Required Laye
 
 D=$(seed gt5c); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("Optional Layer 可為 unverified,但必須誠實標示",
               "Optional Layer 可為 unverified", 1)
@@ -567,7 +570,7 @@ expect fail check-gate-tokens.sh "$D" "GT-5c 第 7 點刪掉「必須誠實標�
 
 D=$(seed gt5d); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("Explicitly Excluded Layer 可為 n-a,但必須附理由",
               "Explicitly Excluded Layer 可為 n-a", 1)
@@ -580,7 +583,7 @@ expect fail check-gate-tokens.sh "$D" "GT-5d 第 6 點刪掉「必須附理由�
 # 舊版是在整個八點 body 做子字串搜尋,這兩種都繞得過(fresh reviewer 實測重現)。
 D=$(seed gt6a); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("  5. Required Layer 不得為 unverified 或 n-a。",
               "  5. Required Layer 得為 unverified 或 n-a(reviewer 自行判斷即可,"
@@ -592,7 +595,7 @@ expect fail check-gate-tokens.sh "$D" "GT-6a 第 5 點反義 + 同句保留原�
 
 D=$(seed gt6b); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("  5. Required Layer 不得為 unverified 或 n-a。\n"
               "  6. Explicitly Excluded Layer 可為 n-a,但必須附理由。",
@@ -609,7 +612,7 @@ D=$(seed vs0); expect pass check-version-sync.sh "$D" "VS-0 對照組(四處一�
 
 D=$(seed vs1); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("devflow-evidence-gauntlet.sh`(1.3.3,", "devflow-evidence-gauntlet.sh`(9.9.9,", 1)
 assert n != t, "VS-1 mutation 沒生效"
@@ -778,7 +781,7 @@ t = g.read_text(encoding="utf-8")
 n = t.replace('        "+ 現象證據逐 S 相符",\n', "", 1)
 assert n != t, "GS-6 mutation(守衛端)沒生效"
 g.write_text(n, encoding="utf-8")
-p = root / "README.md"
+p = root / "docs/dev/readme-contract-extract.md"
 p.write_text(p.read_text(encoding="utf-8").replace(
     "**+ 現象證據逐 S 相符**", "+ 現象證據逐 S 相符", 1), encoding="utf-8")
 PY
@@ -1243,17 +1246,19 @@ expect_local fail check-no-stale-paths.sh "$D" "SP-9 _ls_files() 的 pathspec �
 
 # seed_mem <name> → 給 check-memory-architecture.sh 用的最小 seed:它讀 .gitignore、
 # memory/ 整包、skills/dev-setup/SKILL.md、devflow-contract.json、
-# hooks/runtime-capabilities.json,少任何一樣它會 exit 2(fail-closed),
+# hooks/runtime-capabilities.json、guides/guide-dev-flow.html
+# (retrieval 四態人讀句在指南,不在 README),少任何一樣它會 exit 2(fail-closed),
 # 那會讓 MEM-0 對照組自己變紅而不是測到東西。
 # ⚠️ 守衛以後多讀一個檔,這裡也要跟著補 —— 同 seed_fm 的教訓。
 seed_mem() {
   local name="${1:?seed_mem: name is empty}"
   local dst; dst=$(seed "$name")
   cp -r "$ROOT/memory" "$dst/memory"
-  mkdir -p "$dst/hooks"
+  mkdir -p "$dst/hooks" "$dst/guides"
   cp "$ROOT/hooks/runtime-capabilities.json" "$dst/hooks/runtime-capabilities.json"
   cp "$ROOT/skills/dev-setup/SKILL.md" "$dst/skills/dev-setup/SKILL.md"
   [ -f "$ROOT/.gitignore" ] && cp "$ROOT/.gitignore" "$dst/.gitignore"
+  cp "$ROOT/guides/guide-dev-flow.html" "$dst/guides/guide-dev-flow.html"
   cp "$ROOT/scripts/check-memory-architecture.sh" "$dst/scripts/"
   chmod +x "$dst/scripts/check-memory-architecture.sh"
   echo "$dst"
@@ -1291,18 +1296,10 @@ p.write_text(n, encoding="utf-8")
 PY
 expect fail check-file-map.sh "$D" "FM-2 檔案地圖加一列指向不存在的檔(reverse 找不到對應檔案)"
 
-# ── FG 群組:兩份導覽的生命週期圖同步守衛(check-guides-fig-sync.sh,X-6)──────
+# ── FG 群組:quickstart stub + 主指南 #start + 仍活導覽 JS(check-guides-fig-sync.sh)
 #
-# guide-dev-flow.html 的 fig-lifecycle 與 guide-quickstart.html 的 fig-lifecycle-qs
-# 是 owner 裁決保留的雙副本(quickstart 要能自足看完整圖,不接受單正本+連結取代)。
-# 雙副本天生會漂移——改一張圖裡的文字,另一張沒人會自動跟著改,且改之前完全沒有
-# 任何既有檢查會紅(這正是本檔「假綠第⑥型:不對稱保護」要防的案例)。這一組證明
-# 守衛真的抓得到:FG-0 兩張圖同步時必須 pass;FG-1 只改 quickstart 那張圖裡一個
-# node 的文字(dev-flow 那張不動),必須 fail 並點名差異。
-#
-# 2026-08-17 補(X-7):守衛新增第三層(三份 guides 共用的頁內錨點捲動 JS),
-# guide-dev-talk.html 也要在場,否則新版守衛找不到第三份檔案會 exit 2——
-# seed_fg() 一併補齊,FG-0…FG-2 既有案例才不會因為這支新哨兵一起變 exit 2。
+# 合併後不再比兩張生命週期圖。牙齒改為:stub 存在且轉去 #start;主指南有 #start;
+# 仍活著的導覽(guide-dev-flow / guide-dev-talk)頁內錨點捲動 JS 必須同步。
 seed_fg() { # seed_fg <name> → 同 seed(),另外複製三份導覽 HTML 進 guides/
   local name="${1:?seed_fg: name is empty}"
   local dst; dst=$(seed "$name")
@@ -1314,45 +1311,38 @@ seed_fg() { # seed_fg <name> → 同 seed(),另外複製三份導覽 HTML 進 gu
 }
 
 D=$(seed_fg fg0)
-expect pass check-guides-fig-sync.sh "$D" "FG-0 對照組(兩張生命週期圖正規化後一致)"
+expect pass check-guides-fig-sync.sh "$D" "FG-0 對照組(stub + #start + 仍活導覽 JS 同步)"
 
 D=$(seed_fg fg1); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "guides/guide-quickstart.html"
 t = p.read_text(encoding="utf-8")
-old = '>Session Start<'
-new = '>Session Start MUTATED<'
-assert t.count(old) == 1, "FG-1 anchor 不是唯一命中,mutation 目標不明確"
-n = t.replace(old, new, 1)
+old = "https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#start"
+new = "https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow"
+assert t.count(old) >= 1, "FG-1 #start URL 不是命中"
+n = t.replace(old, new)
 assert n != t, "FG-1 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
-expect fail check-guides-fig-sync.sh "$D" "FG-1 quickstart 版 svg 內一個 node 文字被改(dev-flow 版未動,漂移必須現形)"
+expect fail check-guides-fig-sync.sh "$D" "FG-1 stub 轉去錯錨(#flow 不是 #start)必須紅"
 
-# FG-2:只改 CSS 規則層(svg 標記不動)。守衛顧的是「svg 標記」與「畫這張圖的 CSS
-# 規則」兩層,不是只顧其中一層——這一案專門證明 CSS 這層真的被咬到,不是只在
-# svg 那層空轉。
 D=$(seed_fg fg2); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "guides/guide-quickstart.html"
+p = pathlib.Path(sys.argv[1]) / "guides/guide-dev-flow.html"
 t = p.read_text(encoding="utf-8")
-old = 'svg .hk{fill:color-mix(in srgb,var(--warn) 16%,var(--card));stroke:var(--warn)}'
-new = 'svg .hk{fill:color-mix(in srgb,var(--warn) 99%,var(--card));stroke:var(--warn)}'
-assert t.count(old) == 1, "FG-2 anchor 不是唯一命中,mutation 目標不明確"
-n = t.replace(old, new, 1)
+old = 'id="start"'
+new = 'id="start-removed"'
+assert t.count(old) >= 1, "FG-2 #start 不是命中"
+n = t.replace(old, new)
 assert n != t, "FG-2 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
-expect fail check-guides-fig-sync.sh "$D" "FG-2 quickstart 版畫圖用的 CSS 規則被改(svg 標記本身沒動,只有渲染規則漂移,一樣必須現形)"
+expect fail check-guides-fig-sync.sh "$D" "FG-2 主指南拿掉 #start 必須紅"
 
-# FG-3(X-7 第三層):三份 guides 共用的頁內錨點捲動 JS,只改其中一份的
-# scrollIntoView 選項(quickstart 那份的 behavior 從 smooth 改成 auto,dev-flow/
-# dev-talk 兩份不動)。這段 JS 在守衛新增第三層之前完全沒有任何檢查覆蓋——
-# worktree 已對舊版驗證過:單改一份 JS,devflow-check 24 組全綠(零守衛),
-# 這一案就是證明新增的第三層真的咬得到。
+# FG-3:仍活著的導覽頁內錨點捲動 JS,只改 talk 那份的 scrollIntoView 選項。
 D=$(seed_fg fg3); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "guides/guide-quickstart.html"
+p = pathlib.Path(sys.argv[1]) / "guides/guide-dev-talk.html"
 t = p.read_text(encoding="utf-8")
 old = "{ behavior: 'smooth', block: 'start' }"
 new = "{ behavior: 'auto', block: 'start' }"
@@ -1361,61 +1351,10 @@ n = t.replace(old, new, 1)
 assert n != t, "FG-3 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
-expect fail check-guides-fig-sync.sh "$D" "FG-3 quickstart 版頁內錨點捲動 JS 的 scrollIntoView 選項被改(dev-flow/dev-talk 兩份未動,三份不再逐位元組一致必須現形)"
+expect fail check-guides-fig-sync.sh "$D" "FG-3 talk 版頁內錨點捲動 JS 被改(dev-flow 未動,漂移必須現形)"
 
-# FG-4(X-6 HIGH,驗證深度感知抽取修復):對兩份導覽的 fig-lifecycle 區塊「對稱」
-# 插入同一段巢狀假 <svg>(兩邊插入點與插入內容逐位元組相同,這部分本身不是漂移),
-# 再只對 quickstart 那份、插入點**之後**的一段真實節點文字做單邊修改。
-#
-# 這一案重現的是 X-6 HIGH 那個「抽取截斷」漏洞:舊版(非貪婪 regex,認第一個
-# </svg> 就收工)在插入點就被巢狀假 svg 的 </svg> 截斷,插入點之後的內容(含這裡
-# 單邊改掉的真實文字)整段不在抽出來的比對範圍內——worktree 已對舊版驗證過:
-# 這組對稱插入+單邊真漂移的組合,舊版會給出假的 PASS(逃逸)。新版深度感知抽取
-# 掃到巢狀 <svg> 會直接 fail-closed(exit 2,不嘗試聰明處理、叫人來看),不會被
-# 誤判成「一致」,也不會误判成別的東西——這裡只驗證「不再是假 PASS」(expect fail
-# 涵蓋 exit 1 與 exit 2 兩種非零結果,見 expect() 的 got=fail 判定)。
-D=$(seed_fg fg4); mutate "$D" <<'PY'
-import sys, pathlib
-root = pathlib.Path(sys.argv[1])
-
-INSERT_ANCHOR = ">Session Start</text></g>"
-FAKE_SVG = ('<svg class="fake-icon-mut" width="1" height="1">'
-            '<rect width="1" height="1"/><text x="0" y="0">x</text></svg>')
-DIVERGE_OLD = ">InstructionsLoaded<"
-DIVERGE_NEW = ">InstructionsLoaded MUTATED<"
-
-# 對稱插入:兩份導覽的插入點與插入內容逐位元組相同,單獨看這一步不構成漂移。
-for relpath in ("guides/guide-dev-flow.html", "guides/guide-quickstart.html"):
-    p = root / relpath
-    t = p.read_text(encoding="utf-8")
-    assert t.count(INSERT_ANCHOR) == 1, f"FG-4 插入錨點在 {relpath} 不是唯一命中"
-    n = t.replace(INSERT_ANCHOR, INSERT_ANCHOR + FAKE_SVG, 1)
-    assert n != t, f"FG-4 對稱插入沒生效於 {relpath}"
-    p.write_text(n, encoding="utf-8")
-
-# 單邊真漂移:只改 quickstart,位置在對稱插入點之後——落在舊版(非貪婪 regex)
-# truncated 抽取窗口之外,這正是舊版會逃逸的原因。
-p = root / "guides/guide-quickstart.html"
-t = p.read_text(encoding="utf-8")
-assert t.count(DIVERGE_OLD) == 1, "FG-4 單邊漂移錨點不是唯一命中"
-n = t.replace(DIVERGE_OLD, DIVERGE_NEW, 1)
-assert n != t, "FG-4 單邊漂移沒生效"
-p.write_text(n, encoding="utf-8")
-PY
-expect fail check-guides-fig-sync.sh "$D" "FG-4 對稱插入巢狀假 svg 後單邊改真實節點文字(驗證深度感知抽取修復:5cabf4e 版此毒是逃逸的假 PASS,修復後必須 fail-closed)"
-
-# FG-5(2026-08-17,二次複審誘餌攻擊常設案例):三份 guides 的頁內錨點捲動 JS
-# marker 所在註解收尾 --> 之後,都插入同一段誘餌 <script>/* decoy */</script>
-# (三份逐位元組相同,插入本身不構成漂移),再只對 quickstart 那份、誘餌之後的
-# 真正 <script> 內容做單邊修改。
-#
-# 這一案重現的是二次複審者實測的繞法:d1dd5b3 版「找 marker 之後第一個
-# <script>」的抽取邏輯,遇到誘餌就會把誘餌本身當成「唯一」的 script 抓走——三份
-# 誘餌逐位元組相同,比對通過,真正單邊漂移的內容整段沒被抽到也沒被比對
-# (worktree 已驗證:此毒對 d1dd5b3 版是逃逸的假 PASS,exit 0)。修復後的
-# extract_anchor_scroll_js() 從收尾 </script> 反向檢查:除空白/換行外不能緊接著
-# 又是一個 <script>,偵測到誘餌+真身疊在同一個 anchor 槽位時必須 fail-closed
-# (exit 2,不猜先抓到的是誘餌還是真身)。
+# FG-5:兩份仍活導覽的 marker 後都插同一段誘餌 <script>,再只對 talk 那份、
+# 誘餌之後的真正 <script> 內容做單邊修改。stub 沒有這段 JS,不納入。
 D=$(seed_fg fg5); mutate "$D" <<'PY'
 import sys, pathlib
 root = pathlib.Path(sys.argv[1])
@@ -1425,8 +1364,7 @@ DECOY = "<script>/* decoy */</script>\n"
 OLD_ANCHOR = PREFIX + "<script>"
 NEW_ANCHOR = PREFIX + DECOY + "<script>"
 
-for relpath in ("guides/guide-dev-flow.html", "guides/guide-quickstart.html",
-                "guides/guide-dev-talk.html"):
+for relpath in ("guides/guide-dev-flow.html", "guides/guide-dev-talk.html"):
     p = root / relpath
     t = p.read_text(encoding="utf-8")
     assert t.count(OLD_ANCHOR) == 1, f"FG-5 插入錨點在 {relpath} 不是唯一命中"
@@ -1434,9 +1372,7 @@ for relpath in ("guides/guide-dev-flow.html", "guides/guide-quickstart.html",
     assert n != t, f"FG-5 誘餌插入沒生效於 {relpath}"
     p.write_text(n, encoding="utf-8")
 
-# 單邊真漂移:只改 quickstart,位置在誘餌**之後**的真正 <script> 內容裡——這正是
-# d1dd5b3 版逃逸的關鍵,誘餌之後的內容從沒被抽到過。
-p = root / "guides/guide-quickstart.html"
+p = root / "guides/guide-dev-talk.html"
 t = p.read_text(encoding="utf-8")
 DIVERGE_OLD = "var id = decodeURIComponent(href.slice(1));"
 DIVERGE_NEW = DIVERGE_OLD + " // MUTATED"
@@ -1445,7 +1381,7 @@ n = t.replace(DIVERGE_OLD, DIVERGE_NEW, 1)
 assert n != t, "FG-5 單邊漂移沒生效"
 p.write_text(n, encoding="utf-8")
 PY
-expect fail check-guides-fig-sync.sh "$D" "FG-5 三份 guides 的 marker 後都插同一段誘餌 <script>,真正的 JS 被推到誘餌後面再單邊改(二次複審誘餌攻擊重放:d1dd5b3 版此毒是逃逸的假 PASS,修復後必須 fail-closed)"
+expect fail check-guides-fig-sync.sh "$D" "FG-5 仍活導覽 marker 後都插同一段誘餌 <script>,真正的 JS 被推到誘餌後面再單邊改必須 fail-closed"
 
 # ───────────────────────────────── Model Tiering ────────────────────────────
 # X-5a HIGH:check-model-tiering.sh 先前只有 fixture 自測(scripts/fixtures/

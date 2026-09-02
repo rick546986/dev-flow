@@ -4,7 +4,7 @@
 # 五處(缺一或值不同即 FAIL;不是只 grep「版本字串存在」,是逐處抽值後比較):
 #   ①scripts/devflow-evidence-gauntlet.sh    GAUNTLET_VERSION="X"
 #   ②devflow-contract.json                   schema_versions.gauntlet
-#   ③README.md                               §7 的 `devflow-evidence-gauntlet.sh`(X,E1–E13
+#   ③docs/dev/readme-contract-extract.md     §7 的 `devflow-evidence-gauntlet.sh`(X,E1–E13
 #   ④notes/design/evidence-gauntlet.md       **現行 Gauntlet 版本:X**
 #   ⑤docs/dev/tools/devflow-evidence-gauntlet.sh  GAUNTLET_VERSION="X"(採用專案散發副本;
 #     2026-08-15 補,devflow-4cap-remediation-2026-08.md §7 第 4 點:母版與散發副本的版本
@@ -82,7 +82,7 @@ if contract_text is not None:
             problems.append(
                 f"contract-json({contract_rel}):schema_versions.gauntlet 非三段版本號:{value!r}")
 
-single("readme", "README.md",
+single("readme", "docs/dev/readme-contract-extract.md",
        rf'devflow-evidence-gauntlet\.sh`?\(({SEMVER}),')
 
 single("design-doc", "notes/design/evidence-gauntlet.md",

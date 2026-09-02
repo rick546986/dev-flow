@@ -65,7 +65,7 @@ gate-twin／產圖要 `markdown-it-py==4.0.0`(Python **3.12+**)。macOS 系統 p
 
 Windows(Git Bash)沒有 `/usr/bin/python3`。另外裝 Python 3.12+,或設 `DEVFLOW_PYTHON`(例:`setx DEVFLOW_PYTHON "C:/Python312/python.exe"`)。裝好之後 hook 會生效,但本 repo 的驗證套件在 Windows 上仍跑不全綠。見 `notes/dispatch-windows-parity.md`。
 
-本檔上一節即環境規則。入口 README 摺疊的機械正本也有同一段。不要覆寫 `/usr/bin/python3`。
+本檔上一節即環境規則。不要覆寫 `/usr/bin/python3`。
 
 feat worktree 產的 `docs/dev` html/md 併回整合線(常是 `develop`／`testing`)是預期,不是污染;HISTORY 種子列也會跟著走。不要把雙生頁只留在 worktree。
 
@@ -88,7 +88,7 @@ feat worktree 產的 `docs/dev` html/md 併回整合線(常是 `develop`／`test
 | `.claude-plugin/` | Claude plugin manifest(marketplace.json + plugin.json);Codex 官方也讀這份 marketplace 當 legacy 市集 |
 | `.cursor-plugin/` | Cursor 薄殼:`plugin.json` + `marketplace.json`;`source` 指本 repo 根,`skills` 整棵 `./skills/` |
 | `.codex-plugin/` | Codex 薄殼:`plugin.json`;`skills: "./skills/"`(整棵,不是 symlink) |
-| repo 根目錄其餘部分 | 方法論正本:`README.md`(§7 gate 條件)、`_templates/`、`example/`、`guides/`、`docs/`、`scripts/`、`notes/`、`observability/` |
+| repo 根目錄其餘部分 | 方法論正本:`guides/guide-dev-flow.html`(人看)、`docs/dev/readme-contract-extract.md`(檢查器抽)、`_templates/`、`example/`、`guides/`、`docs/`、`scripts/`、`notes/`、`observability/` |
 
 ## 跑測試
 
@@ -96,7 +96,7 @@ feat worktree 產的 `docs/dev` html/md 併回整合線(常是 `develop`／`test
 # 用本 repo 內建的方法論,不必另外 checkout:
 bash hooks/selftest.sh     # 期望全過(案數以腳本輸出為準,不在本檔寫死)
 
-# gate 條件三處摘要是否與 README.md §7 一致
+# gate 條件三處摘要是否與契約檔 §7 一致
 bash hooks/gate-consistency.sh   # 期望全過(項數以輸出為準)
 
 # 測試時要指向另一份方法論 checkout,才設這個:

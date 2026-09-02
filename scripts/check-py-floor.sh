@@ -41,15 +41,15 @@ root = sys.argv[1]
 # 不要叫人覆寫 Apple 系統 Python。
 PY_FLOOR = (3, 9)
 
-readme = open(os.path.join(root, "README.md"), encoding="utf-8").read()
+plugin_md = open(os.path.join(root, "docs", "PLUGIN.md"), encoding="utf-8").read()
 skill = open(os.path.join(root, "skills", "dev-setup", "SKILL.md"), encoding="utf-8").read()
 doc_fails = []
-if "3.9" not in readme:
-    doc_fails.append("README 沒宣告編譯下限 3.9")
-if "3.12" not in readme or "markdown-it-py" not in readme:
-    doc_fails.append("README 沒宣告產圖執行地板 3.12+／markdown-it-py")
-if "venv" not in readme or "不要覆寫" not in readme:
-    doc_fails.append("README 沒要求專案 venv、也沒寫不要覆寫系統 Python")
+if "3.9" not in plugin_md:
+    doc_fails.append("docs/PLUGIN.md 沒宣告編譯下限 3.9")
+if "3.12" not in plugin_md or "markdown-it-py" not in plugin_md:
+    doc_fails.append("docs/PLUGIN.md 沒宣告產圖執行地板 3.12+／markdown-it-py")
+if "venv" not in plugin_md or "不要覆寫" not in plugin_md:
+    doc_fails.append("docs/PLUGIN.md 沒要求專案 venv、也沒寫不要覆寫系統 Python")
 if "3.12" not in skill or "不要覆寫" not in skill or "venv" not in skill:
     doc_fails.append("SKILL.md 沒把 3.12+／專案 venv／不要覆寫系統 Python 寫進安裝前提")
 if doc_fails:

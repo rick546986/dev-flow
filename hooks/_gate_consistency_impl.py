@@ -1,10 +1,10 @@
-"""_gate_consistency_impl.py — gate 條件摘要 vs README §7 正本一致性檢查實作。
+"""_gate_consistency_impl.py — gate 條件摘要 vs 契約檔 §7 正本一致性檢查實作。
 
 設計原則(核心約束,見 dev-setup SKILL.md check 第 8 項):token 一律從母版
-README §7(G1/G2/G3 唯一正本)動態抽取,不把 gate 條件字串寫死在本檔 ——
+docs/dev/readme-contract-extract.md §7(G1/G2/G3 唯一正本)動態抽取,不把 gate 條件字串寫死在本檔 ——
 寫死等於讓本檔自己變成第四份會漂移的複本,必須每次重新抽取才驗得住漂移。
 gate 條件 token 的唯一寫死內容是下面 SYNONYMS 同義詞映射表(小且穩定,映射本身
-不是 gate 條件)。reviewer-selection 則是 README §7 已定義、跨 G1/G2/G3 不可反轉的
+不是 gate 條件)。reviewer-selection 則是契約檔 §7 已定義、跨 G1/G2/G3 不可反轉的
 角色順序；下方以順序、否定、留痕與最後手段等行為特徵驗證，而非比對一段脆弱的逐字
 複本。
 
@@ -47,14 +47,14 @@ MASTER = os.environ.get("DEVFLOW_MASTER") or os.path.dirname(os.path.dirname(os.
 # 指向同一個 repo root(各自保留環境變數做第一順位,selftest 靠它們注入假 repo)。
 PLUGIN = os.environ.get("DEVFLOW_PLUGIN") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-README = os.path.join(MASTER, "README.md")
+EXTRACT = os.path.join(MASTER, "docs", "dev", "readme-contract-extract.md")
 SKILL = os.path.join(PLUGIN, "skills", "dev-flow", "SKILL.md")
 
 # ---- 比對表(表驅動;共享契約「同步位置」清單的機械化身)----
 # 每列 = (gate 標籤, 該 gate 的模板檔名)。順序即 §7 內 G1→G2→G3 的定義順序,
 # slice_gate_clause 以「下一列的標籤」當子句終點。每個 gate 的 token 檢查位置固定
-# 三處:plugin dev-flow SKILL.md 階段表格、README §3 表格、該 gate 模板頂註;
-# reviewer-selection 檢查位置 = README §7 + SKILL + 三份模板頂註。
+# 三處:plugin dev-flow SKILL.md 階段表格、契約檔 §3 表格、該 gate 模板頂註;
+# reviewer-selection 檢查位置 = 契約檔 §7 + SKILL + 三份模板頂註。
 # VNext 新錨(G2「Verification Profile」「Demo verdict」、G3「Evidence 契約全過」)
 # 不寫死在此 —— 條文落入 §7 正本後由動態抽取自動涵蓋(selftest p4_ 案為證)。
 GATE_TABLE = (
@@ -255,10 +255,10 @@ def reviewer_selection_error(location_text):
 
 
 def main():
-    readme_text = read(README)
-    g7_raw = slice_section(readme_text, r'##\s*7\.', r'\n##\s*8\.', "README §7")
+    extract_text = read(EXTRACT)
+    g7_raw = slice_section(extract_text, r'##\s*7\.', r'\n##\s*8\.', "契約檔 §7")
     assert_gate_labels_unique(g7_raw)
-    g3_table_text = slice_section(readme_text, r'##\s*3\.', r'\n##\s*4\.', "README §3")
+    g3_table_text = slice_section(extract_text, r'##\s*3\.', r'\n##\s*5\.', "契約檔 §3")
     skill_text = read(SKILL)
 
     lines_out = []
@@ -267,7 +267,7 @@ def main():
     n_bad = 0
 
     reviewer_locations = [
-        ("README §7", g7_raw),
+        ("契約檔 §7", g7_raw),
         ("plugin dev-flow SKILL.md", skill_text),
     ]
 
@@ -275,11 +275,11 @@ def main():
         next_gate = GATE_TABLE[idx + 1][0] if idx + 1 < len(GATE_TABLE) else None
         raw_clause = slice_gate_clause(g7_raw, gate, next_gate)
         tokens = extract_tokens(raw_clause, gate)
-        lines_out.append(f"[{gate}] 正本 tokens(README §7 動態抽取):{' / '.join(tokens)}")
+        lines_out.append(f"[{gate}] 正本 tokens(契約檔 §7 動態抽取):{' / '.join(tokens)}")
 
         locations = [
             ("plugin dev-flow SKILL.md 階段表", find_table_cell(skill_text, gate, "plugin dev-flow SKILL.md")),
-            ("README §3 七份文檔表", find_table_cell(g3_table_text, gate, "README §3 表")),
+            ("契約檔 §3 七份文檔表", find_table_cell(g3_table_text, gate, "契約檔 §3 表")),
         ]
         tpl_path = TEMPLATES[gate]
         tpl_text = read(tpl_path)
@@ -297,7 +297,7 @@ def main():
             else:
                 lines_out.append(f"  ✓ {loc_label}")
 
-    lines_out.append("[reviewer-selection] README §7 與 G1/G2/G3 模板的角色順序")
+    lines_out.append("[reviewer-selection] 契約檔 §7 與 G1/G2/G3 模板的角色順序")
     for loc_label, loc_text in reviewer_locations:
         n_checks += 1
         error = reviewer_selection_error(loc_text)
@@ -308,8 +308,8 @@ def main():
         else:
             lines_out.append(f"  ✓ {loc_label}")
 
-    print(f"=== gate-consistency:README §7 正本 vs 三處摘要({n_checks} 格)===")
-    print(f"正本:{README} §7")
+    print(f"=== gate-consistency:契約檔 §7 正本 vs 三處摘要({n_checks} 格)===")
+    print(f"正本:{EXTRACT} §7")
     print()
     print("\n".join(lines_out))
     print()
