@@ -526,6 +526,14 @@ ck "旗標消失但 sentinel 在 → 擋" 2 "$(g Write src/a.py)"
 mkdir -p .devflow; echo "{壞" > .devflow/exec.json
 ck "旗標損壞 → 擋"            2 "$(g Write src/a.py)"
 ck "旗標損壞 → 異 slug start 拒啟" 1 "$(x start f2)"
+echo 'null' > .devflow/exec.json
+ck "旗標 null → 擋"           2 "$(g Write src/a.py)"
+echo '[]' > .devflow/exec.json
+ck "旗標 [] → 擋"             2 "$(g Write src/a.py)"
+echo '"x"' > .devflow/exec.json
+ck "旗標字串 → 擋"            2 "$(g Write src/a.py)"
+ck "非 JSON payload 武裝中 → 擋" 2 "$(echo 'not-json' | "$H/devflow-guard.sh" >/dev/null 2>&1; echo $?)"
+ck "prebash 非 JSON payload 武裝中 → 擋" 2 "$(echo 'not-json' | "$H/devflow-prebash.sh" >/dev/null 2>&1; echo $?)"
 
 echo "-- gate reviewer-selection semantics --"
 gate_fixture '審查者依序：適格人類 reviewer → fresh-context reviewer Agent → owner 自審（留痕的最後手段）。'
@@ -1979,22 +1987,26 @@ p3_obs registry validate
 ck "p3 prompt registry schema 綠" 0 "$P3_RC"
 ck "p3 registry 五 prompt id 齊" 0 "$(p3_json_has "$H/prompt-registry.json" registry5; echo $?)"
 ck "p3 runtime-capabilities 契約聲明" 0 "$(p3_json_has "$H/runtime-capabilities.json" caps; echo $?)"
+find "$H/devflow_obs_vendor" -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
+find "$H/devflow_obs_vendor" -name '*.pyc' -delete 2>/dev/null || true
 ck "p3 vendor 無 __pycache__ 生成" 0 "$([ -z "$(find "$H/devflow_obs_vendor" -name '__pycache__' -print -quit 2>/dev/null)" ]; echo $?)"
 # MINOR-1:vendor byte-identical 宣稱機械強制(母版在才可驗;不在 → 明確 SKIP,不靜默)
-p3_vendor_cmp() { # 0=全檔一致或母版缺(SKIP 已明示);1=漂移
-  local master="${DEVFLOW_MASTER:-$(dirname "$H")}/observability" f
+p3_vendor_cmp() { # 0=目錄一致或母版缺(SKIP 已明示);1=漂移
+  local master="${DEVFLOW_MASTER:-$(dirname "$H")}/observability"
   if [ ! -d "$master" ]; then
     echo "  ⚠ SKIP:方法論母版不存在($master)—— vendor 一致性僅本機可驗,他機安裝不算 FAIL"
     return 0
   fi
-  for f in __init__ ids event_validate writer ledger stats legacy_md; do
-    cmp -s "$H/devflow_obs_vendor/devflow_obs/$f.py" "$master/devflow_obs/$f.py" \
-      || { echo "  vendor 漂移:devflow_obs/$f.py ≠ 母版"; return 1; }
-  done
-  for f in agent-event context-manifest prompt-registry; do
-    cmp -s "$H/devflow_obs_vendor/schema/$f.schema.json" "$master/schema/$f.schema.json" \
-      || { echo "  vendor 漂移:schema/$f.schema.json ≠ 母版"; return 1; }
-  done
+  if ! diff -rq -x '__pycache__' -x '*.pyc' \
+      "$H/devflow_obs_vendor/devflow_obs" "$master/devflow_obs"; then
+    echo "  vendor 漂移:devflow_obs/ 目錄與母版不一致"
+    return 1
+  fi
+  if ! diff -rq -x '__pycache__' -x '*.pyc' \
+      "$H/devflow_obs_vendor/schema" "$master/schema"; then
+    echo "  vendor 漂移:schema/ 目錄與母版不一致"
+    return 1
+  fi
   return 0
 }
 p3_vendor_sha() { # VENDOR-SOURCE.md sha256 表 vs 實檔(自足,母版不需在)

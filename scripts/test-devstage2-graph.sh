@@ -290,6 +290,13 @@ with tempfile.TemporaryDirectory(prefix="devstage2-graph-test-") as tmpbase:
     )
     expect("P0 guide 第 2 站開頭沒九節點鏈必須紅", case, 1, "缺節點")
 
+    case = os.path.join(tmpbase, "guide-missing")
+    seed(case)
+    gpath = os.path.join(case, "guides", "guide-dev-flow.html")
+    if os.path.isfile(gpath):
+        os.remove(gpath)
+    expect("P0 指南檔缺席必須紅", case, 1, "指南檔缺席")
+
     case = os.path.join(tmpbase, "action-unwired")
     seed(case)
     hooks = os.path.join(case, "hooks")

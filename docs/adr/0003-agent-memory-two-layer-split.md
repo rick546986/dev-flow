@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-08-20
-- Source: docs/prompts(Agent Memory v3 需求正本);落地見 README §16
+- Source: docs/prompts(Agent Memory v3 需求正本);落地見指南 `#memory`
 
 > 晉升條件(三條件**全中**才立此檔,否則留在 2-decision 就好):
 > 難逆轉 + 反直覺 + 真 trade-off。
@@ -68,7 +68,7 @@
 - clone 之後必須先跑一次 `dev-setup` 才有檢索能力(空索引時查詢會回
   `NO_RELIABLE_MATCH`,不會假裝有答案)。
 - **`.dev-flow/`(進 Git)與既有的 `.devflow/`(本機執行期暫存、gitignored)
-  只差一個連字號** —— 這是本決策已知且刻意接受的命名風險。緩解:README §16.1
+  只差一個連字號** —— 這是本決策已知且刻意接受的命名風險。緩解:指南 `#memory`
   的三目錄對照表、`check-memory-architecture.sh` 機械驗 `.gitignore` 兩邊的狀態、
   以及 `DEVFLOW_MEMORY_DIR` 這個單點覆寫通道供採用專案改名。
 - 記憶的寫入變得吝嗇(低訊號一律不進 Git),代價是「什麼算高訊號」這份清單

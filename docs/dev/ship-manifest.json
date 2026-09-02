@@ -40,6 +40,11 @@
       "source": "devflow-contract.json",
       "destination": "docs/dev/devflow-contract.json",
       "mode": "644"
+    },
+    {
+      "source": "docs/dev/readme-contract-extract.md",
+      "destination": "docs/dev/readme-contract-extract.md",
+      "mode": "644"
     }
   ]
 }

@@ -41,6 +41,10 @@ root = sys.argv[1]
 # export 大 payload 會讓殼層 exec 撞 ARG_MAX,守衛以 rc=126 靜默自壞。
 h = L.read_hook_input()
 if h is None:
+    _, armed, err = L.load_state(root)
+    if armed or err:
+        L.die("⛔ devflow-prebash:hook payload 解析失敗(非 JSON／非 object)。"
+              "守衛武裝中,fail-closed 擋下。")
     sys.exit(0)
 cmd = h.get("tool_input", {}).get("command", "")
 if not cmd:

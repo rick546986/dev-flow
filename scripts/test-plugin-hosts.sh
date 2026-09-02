@@ -33,7 +33,7 @@ import tempfile
 root, check = sys.argv[1], sys.argv[2]
 passed = 0
 failed = 0
-MIN_CASES = 17
+MIN_CASES = 19
 
 COPY_DIRS = (
     ".claude-plugin",
@@ -331,6 +331,32 @@ with tempfile.TemporaryDirectory(prefix="plugin-hosts-") as tmp:
         d,
         1,
         "必須改清單",
+    )
+
+    d = os.path.join(tmp, "skill-no-fm")
+    shutil.copytree(good, d)
+    skill_md = os.path.join(d, "skills", "dev-talk", "SKILL.md")
+    text = open(skill_md, encoding="utf-8").read()
+    open(skill_md, "w", encoding="utf-8").write("<!-- x -->\n" + text)
+    expect(
+        "R-skill-fm SKILL.md 第一行不是 --- 必須紅",
+        d,
+        1,
+        "第一行必須是 ---",
+    )
+
+    d = os.path.join(tmp, "cursor-hooks-claim")
+    shutil.copytree(good, d)
+    path = os.path.join(d, ".cursor-plugin", "marketplace.json")
+    data = load_json(path)
+    meta = data.setdefault("metadata", {})
+    meta["description"] = str(meta.get("description") or "") + " + 守衛 hooks"
+    dump_json(path, data)
+    expect(
+        "R-cursor-hooks-claim Cursor 無 hooks 卻寫守衛 hooks 必須紅",
+        d,
+        1,
+        "守衛 hooks",
     )
 
 total = passed + failed

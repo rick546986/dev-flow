@@ -128,7 +128,9 @@ def runtime_check(obj, tags_enum=None):
         if isinstance(node, dict):
             for k, v in node.items():
                 p = f"{path}.{k}" if path else str(k)
-                if str(k).lower() in EXTRA_FORBIDDEN_KEYS:
+                raw = str(k).lower()
+                bare = raw[2:] if raw.startswith("x_") else raw
+                if bare in EXTRA_FORBIDDEN_KEYS:
                     errs.append({"code": "privacy_forbidden_key", "field": p,
                                  "msg": f"禁載欄位 {k!r}(共享契約 §6 runtime 加嚴)"})
                     continue
@@ -416,11 +418,9 @@ def cmd_validate(root, args):
     for rd in resolve_run_dirs(root, run_ids):
         try:
             errors = ledger.validate_run(rd)
-        except FileNotFoundError as e:
-            # 事件帶 task_tags 但 enum 正本缺(未 seed 成功)→ 明確報,不靜默跳過
-            errors = [{"code": "contract_missing", "field": "task_tags",
-                       "msg": f"task_tags 受控 enum 正本 devflow-contract.json "
-                              f"不可得({e});fail-closed,不靜默跳過驗證"}]
+        except Exception as e:
+            errors = [{"code": "run_error", "field": rd,
+                       "msg": f"{type(e).__name__}: {e}"}]
         if strict:
             for rel, path in ledger._sources(rd):
                 events, _ = writer._read_complete_events(path)

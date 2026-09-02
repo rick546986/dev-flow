@@ -70,8 +70,11 @@ _SENSITIVE = (
         r"\b[a-zA-Z][a-zA-Z0-9+.-]*://[^\s/:@]+:[^\s/@]+@")),
     # `SOMETHING_SECRET = "value"` 這一族:key 名帶敏感字 + 有實際賦值
     ("assigned_secret", re.compile(
-        r"(?i)\b[\w.-]*(?:password|passwd|secret|api[_-]?key|apikey|token|"
+        r"(?i)(?:"
+        r"\b[\w.-]*(?:password|passwd|secret|api[_-]?key|apikey|token|"
         r"credential|private[_-]?key|access[_-]?key)[\w.-]*\s*[:=]\s*"
+        r"|(?:密碼是|金鑰是)\s*[:=]?\s*"
+        r")"
         r"(?!(?:<|\{|\$|\(|null\b|none\b|redacted\b|xxx+\b|\*+\s*$))"
         r"[\"']?[^\s\"',;]{6,}")),
 )

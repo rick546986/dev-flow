@@ -34,7 +34,7 @@ updated:
 > **就這兩個檔,不多不少。禁止長出 `7-review-<誰>.md`、`7-self-review.md` 這類並存檔**
 > —— 兩份同 stage 產物 = gate 讀哪一份沒有定義(2026-08-13 order-intake 實際發生)。
 >
-> ## G3 twin 是**審查介面**,不是文件視覺版(README §6)
+> ## G3 twin 是**審查介面**,不是文件視覺版(指南 `#twin-dash`)
 >
 > 上面五步是 md 側閱讀動線;html 做成可點。兩邊講同一件事,md 是正本。三件事缺一不可:
 >
@@ -165,8 +165,8 @@ updated:
 >    `devflow-exec.sh review-unlock <slug>` 解鎖才讀得到(Write 仍限縮於
 >    7-review*/evidence/,unlock 不解除)。完成 = 差異全裁定入 Spec Axis。
 > 5. Verdict:PASS = 本次 S 全綠+既有全綠+**現象證據逐 S 相符**+Evidence 契約全過
->    (G3 錨,八點條件正本 README §7;步 2d 的 gauntlet 全綠 + Required 層全 pass
->    即其機械面)+無 🔴(G3 正本 README §7;無 🔴 是本模板加嚴的出貨門檻,
+>    (G3 錨,八點條件正本 `guides/guide-dev-flow.html#gates`;步 2d 的 gauntlet 全綠 + Required 層全 pass
+>    即其機械面)+無 🔴(G3 正本 `guides/guide-dev-flow.html#gates`;無 🔴 是本模板加嚴的出貨門檻,
 >    不與 §7 矛盾);否則
 >    REQUEST_CHANGES 列 🔴 →
 >    author 走 6-notes 的 Review Follow-up(同意改+一句為何對/不同意擺論證,
@@ -292,12 +292,12 @@ updated:
      須列 F 並回頭修契約(L2 路徑),不得默默接受 -->
 
 ## 變更架構圖
-<!-- README §6:Markdown 留 ASCII 正本;純線性/單層樹用半形 | - + > < = [ ],
+<!-- 指南 #twin-dash:Markdown 留 ASCII 正本;純線性/單層樹用半形 | - + > < = [ ],
      空間關係複雜才在 HTML 改 SVG。必須對上 Diff 的檔名 basename 與公開端點／新表名;
      改 Diff 必須改圖。不要拿 F-id／現象證據 S-id 當圖上的模組。 -->
 
 ## Diff(merge-base(develop)..HEAD,逐檔折疊)
-<!-- README §6 要求每檔一個 details。summary 的 title/文字列 +N/-N 與函式;
+<!-- 指南 #twin-dash 要求每檔一個 details。summary 的 title/文字列 +N/-N 與函式;
      內容放 HTML-escaped 完整 diff,刪行 class="del"、增行 class="add"。 -->
 
 ## Verdict
@@ -314,7 +314,7 @@ updated:
 |---|---|---|---|
 
 ## Exit Checklist(全勾才算 shipped)
-<!-- 合併之後才發現壞了 → 回滾規則見母版 README §7「合併後出事怎麼辦(整合分支回滾)」:
+<!-- 合併之後才發現壞了 → 回滾規則見指南 `#gates`「合併後出事怎麼辦(整合分支回滾)」:
      預設 `git revert -m 1 <merge commit>`;禁止對整合分支 reset --hard / force push /
      rebase(改寫共享歷史);revert 過的 feature 不能直接重 merge 回來(祖先關係還在),
      兩條復原路徑見該節。 -->
@@ -338,7 +338,7 @@ updated:
 - [ ] STATUS.md 已更新為 shipped(這一步在整合分支上、PR 合併後由合併那個 PR 的人
       做,不塞進本 branch 的 PR —— 動線與理由見 STATUS 模板頂註)
 - [ ] 7-review frontmatter status: shipped;上游 artifact 可保留 approved(各自 gate 核准紀錄)
-- [ ] 7-review.html 已產生(含變更架構圖 + diff 折疊,規格見 README §6)
+- [ ] 7-review.html 已產生(含變更架構圖 + diff 折疊,規格見指南 `#twin-dash`)
 - [ ] feature branch 已刪 / worktree 已清
 
 ## 附錄:本輪特有

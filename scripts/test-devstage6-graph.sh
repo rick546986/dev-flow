@@ -9,7 +9,7 @@
 # 每個真節點「做什麼」必須 --write-cursor <自己的 id>;
 # N1-arm 與 S2-tdd 才 allow write_notes(同一份 6-implementation-notes.md,
 # overwrite);不放寬 N2-handoff／N4-selfcheck／N5-end;
-# 有 via 必須紅;S2-tdd 做什麼必須點名 README §5 且寫明「不是一 T 一 hop」;
+# 有 via 必須紅;S2-tdd 做什麼必須點名 #five-laws 且寫明「不是一 T 一 hop」;
 # 一 T 一 hop(節點名 T-1)必須紅。
 # 第三刀:hooks 沒接 --action(或只寫在註解)必須紅;guide 第 6 站開頭缺五節點鏈、
 # 缺「逐 T 仍走引擎」、或出現「Stage 6 還在單一 SKILL」必須紅;prebash 實跑 ——
@@ -51,7 +51,7 @@ passed = 0
 failed = 0
 
 NODES = ("skills", "dev-flow", "stage6", "nodes")
-MIN_CASES = 57
+MIN_CASES = 59
 
 
 def run_check(tree, extra=None):
@@ -275,8 +275,8 @@ with tempfile.TemporaryDirectory(prefix="devstage6-graph-test-") as tmpbase:
 
     case = os.path.join(tmpbase, "s2-no-readme")
     seed(case)
-    patch(node_of(case, "S2-tdd.md"), "共用 README §5 動線", "共用模板頂註動線")
-    expect("P0 S2-tdd 做什麼沒點名 README §5 必須紅", case, 1, "README §5")
+    patch(node_of(case, "S2-tdd.md"), "共用指南 `#five-laws`／`#stage6` 動線", "共用模板頂註動線")
+    expect("P0 S2-tdd 做什麼沒點名 #five-laws 必須紅", case, 1, "#five-laws")
 
     case = os.path.join(tmpbase, "s2-no-one-hop")
     seed(case)
@@ -477,6 +477,13 @@ with tempfile.TemporaryDirectory(prefix="devstage6-graph-test-") as tmpbase:
     seed(case)
     put_guide(case, CHAIN_GUIDE)
     expect("G-guide 第 6 站開頭對上五節點鏈且寫明逐 T 仍走引擎必須綠", case, 0)
+
+    case = os.path.join(tmpbase, "guide-missing")
+    seed(case)
+    gpath = os.path.join(case, "guides", "guide-dev-flow.html")
+    if os.path.isfile(gpath):
+        os.remove(gpath)
+    expect("P0 指南檔缺席必須紅", case, 1, "指南檔缺席")
 
     case = os.path.join(tmpbase, "action-unwired")
     seed(case)

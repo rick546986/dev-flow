@@ -18,7 +18,7 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 > 本階段固定產出:`4-spec.md`(本模板全節)+ `4-spec.html`(G2 必產;必含 R 級
 > 行為流程圖、Drafting Decisions 待裁決置頂)。
 >
-> ## G2 twin 是**審查介面**,不是文件視覺版(README §6)
+> ## G2 twin 是**審查介面**,不是文件視覺版(指南 `#twin-dash`)
 >
 > 三件事缺一不可,**產 html 時逐項對照,缺一項就是沒做完**:
 >
@@ -92,10 +92,10 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 >    + Verification Profile(依 lane 正確填寫;未填視為步 3 未完成)
 >    + Demo verdict(條件式:無 Stage 3 trigger → N/A+原因;有 trigger → 需人類
 >    ACCEPTED,REVISE/NOT_REVIEWED 不得過,跳過需 Owner Call;Agent 不得代填)——
->    條件全文見 README §7。核准 → 三連動。
+>    條件全文見 `guides/guide-dev-flow.html#gates`。核准 → 三連動。
 >    完成 = verdict+三連動。
 >
-> 起草前估 S 數,單份 >~40 → 先切片(見 README §14)。
+> 起草前估 S 數,單份 >~40 → 先切片(見指南 `#large-work`)。
 >
 > Operational Context(承接 1-discussion Real-world Context 與 3-prototype Demo 回饋):
 > 涉人員操作/交接/等待/權限的重要 S 必附(欄位見 S-1 樣板);純內部行為 S 寫
@@ -141,7 +141,7 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 ## REMOVED Requirements
 
 ## 行為流程圖(R 級)
-<!-- 每個主要 R 一張行為流程(輸入 → 分支 → 輸出);判準同 README §6:
+<!-- 每個主要 R 一張行為流程(輸入 → 分支 → 輸出);判準同指南 `#twin-dash`:
      純線性 → ASCII 半形;多分支/跨層 → html 用 SVG(md 留 ASCII 正本)。gate 前必有。
      每個 R-id 必須在圖上,該 R 標題 SHALL 後的行為詞至少一個在圖上;改行為詞必須改圖。 -->
 
@@ -286,7 +286,7 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
      分兩層,判準與 2-decision 的 Owner Calls 同一套:
      - 上層:會改變使用者看得到的行為、交付範圍或流程 → 下表逐條裁決。
      - 下層:純內部技術選擇(資料結構寫法、索引型式、命名慣例)→ 下方清單告知即可。
-     - 拿不準放哪層 → 一律放上層(同 README §5 判級疑義原則)。
+     - 拿不準放哪層 → 一律放上層(同指南 `#five-laws` 判級疑義原則)。
      「依據」欄:寫得出出處就寫 `檔:行` 或實際指令輸出;寫不出就寫 `[Assumption]`。
      沒有依據不是不能寫,是不能寫得像有依據(同 1-discussion 的 [Assumption] 規則)。 -->
 

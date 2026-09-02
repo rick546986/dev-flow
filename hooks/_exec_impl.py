@@ -102,6 +102,8 @@ def load_parallel(slug=None):
         p = json.load(open(PARP))
     except Exception as e:
         die(f"拒絕:.devflow/parallel.json 損壞({e})")
+    if not isinstance(p, dict):
+        die(f"拒絕:.devflow/parallel.json 損壞(非 object,得到 {type(p).__name__})")
     if slug and p.get("slug") != slug:
         die(f"拒絕:parallel.json 屬於 {p.get('slug')},非 {slug}")
     msg = L.shadow_mismatch(root, "parallel.json")

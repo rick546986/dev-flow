@@ -657,7 +657,7 @@ def check_action_runtime_wired():
 def check_guide():
     """第 4 站開頭對上十一節點鏈;舊句「還在單一 SKILL」必須紅。"""
     if not os.path.isfile(GUIDE_PATH):
-        return []
+        return ["P0 指南檔缺席:找不到 guides/guide-dev-flow.html"]
     text = open(GUIDE_PATH, encoding="utf-8").read()
     failures = []
     if STALE_GUIDE in text:

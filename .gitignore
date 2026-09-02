@@ -22,3 +22,5 @@ __pycache__/
 .codex/skills/
 # GitLab／Gitea Pages 組樹輸出(本機跑 publish-pages.sh 才會出現;不進 Git)
 public/
+# 本機授權覆寫(擁有者／共用帳號／Drive 資料夾),不進 Git
+CLAUDE.local.md

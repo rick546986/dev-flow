@@ -243,11 +243,17 @@ def load_state(root):
                 f"(slug={armed})。這是自我停權訊號 —— 正常收工請跑 devflow-exec.sh stop。")
         return None, "", ""          # 真的沒在執行 → 沉睡
     try:
-        return json.load(open(execp)), armed, ""
+        d = json.load(open(execp))
     except Exception as e:
         return None, armed, (
             f"⛔ devflow-guard:.devflow/exec.json 損壞({e})。守衛 fail-closed 擋下動作。"
             f"修復或跑 devflow-exec.sh stop 後重新 start。")
+    if not isinstance(d, dict):
+        return None, armed, (
+            f"⛔ devflow-guard:.devflow/exec.json 損壞(非 object,"
+            f"得到 {type(d).__name__})。守衛 fail-closed 擋下動作。"
+            f"修復或跑 devflow-exec.sh stop 後重新 start。")
+    return d, armed, ""
 
 
 def is_contract_path(rel, kinds=CONTRACT):

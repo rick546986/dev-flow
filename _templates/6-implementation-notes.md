@@ -101,7 +101,7 @@ updated:
 >    完成 = `devflow-exec.sh status` 與 `devflow-doctor.sh` 兩份輸出都貼進本檔。
 > 1. 接手核對:4-spec approved?5-tasks 每 T 有 Verify+Covers?缺 → 停回補。
 >    建 todo 一 T 一項,照 Blocked-by 拓撲序。完成 = todo 與 5-tasks 一一對應。
-> 2. 逐 T 循環,對齊 README §5 的驗收動線(RED → GREEN → scope check → Verify →
+> 2. 逐 T 循環,對齊指南 `#five-laws`／`#stage6` 的驗收動線(RED → GREEN → scope check → Verify →
 >    independent T review → PASS → commit → 記帳),a–h 逐段對應同一條 seam:
 >    a **RED**:照 Covers 先寫失敗測試(名含 S-id)→ RED 輸出貼 TDD Evidence。
 >    完成 = RED 輸出已貼。
@@ -194,7 +194,7 @@ updated:
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 Run: <run_id>
 <!-- 節首固定一行 `Run: <run_id>`;dev-run 案本節由 devflow-obs 從 ledger 衍生,禁手填。
-     每 T 一列:T-id | 失敗分類(SPEC/ENV/IMPL/UNKNOWN,README §5 驗證五律 5;
+     每 T 一列:T-id | 失敗分類(SPEC/ENV/IMPL/UNKNOWN,指南 `#five-laws` 驗證五律 5;
      全程無失敗填 —)| 模型升階史(如 haiku→sonnet)| 回合數 | 升階原因一句。
      ENV 失敗的重跑不計升階回合。升階本身 = spec 品質訊號,7-review.html 以表呈現。
      parallel 模式加記:wave 編號 | candidate SHA | gate verdict(devflow-gate-result.v1

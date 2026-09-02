@@ -228,6 +228,14 @@ else:
             fail(err)
         else:
             print(f"skill-tree: {name}")
+        skill_md = os.path.join(skills_root, name, "SKILL.md")
+        if os.path.isfile(skill_md):
+            first = open(skill_md, encoding="utf-8").readline()
+            if first.rstrip("\r\n") != "---":
+                fail(
+                    f"{name} 的 SKILL.md 第一行必須是 ---（frontmatter）,"
+                    f"實得 {first.rstrip()!r}"
+                )
 
 # ── ④ version 互釘 ────────────────────────────────────────────────────
 versions = {}
@@ -313,6 +321,39 @@ else:
         if needle not in host:
             fail(f"guide #host 少了{label}:{needle}")
     grok_claim_ok(host, "guide #host")
+
+def forbid_hooks_claim_without_hooks(plugin, texts, label):
+    if plugin is None:
+        return
+    if "hooks" in plugin:
+        return
+    for src, text in texts:
+        if text and "守衛 hooks" in text:
+            fail(f"{label} plugin.json 無 hooks 欄,{src} 不得含「守衛 hooks」")
+
+
+cursor_descs = []
+if cursor_plugin is not None:
+    cursor_descs.append((".cursor-plugin/plugin.json description",
+                         cursor_plugin.get("description")))
+if cursor_market:
+    cursor_descs.append(
+        (".cursor-plugin/marketplace.json metadata",
+         (cursor_market.get("metadata") or {}).get("description"))
+    )
+    for plug in cursor_market.get("plugins") or []:
+        if isinstance(plug, dict):
+            cursor_descs.append(
+                (".cursor-plugin/marketplace.json plugin description",
+                 plug.get("description"))
+            )
+forbid_hooks_claim_without_hooks(cursor_plugin, cursor_descs, ".cursor-plugin")
+
+codex_descs = []
+if codex_plugin is not None:
+    codex_descs.append((".codex-plugin/plugin.json description",
+                        codex_plugin.get("description")))
+forbid_hooks_claim_without_hooks(codex_plugin, codex_descs, ".codex-plugin")
 
 if readme:
     pre, sep, _ = readme.partition("<!-- devflow:master-only:start -->")

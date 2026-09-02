@@ -40,6 +40,8 @@ class SensitiveTest(unittest.TestCase):
         "Authorization: Bearer abc.def.ghi",
         "postgres://user:secretpw@db.internal/app",
         "xoxb-1234567890-abcdefghijkl",
+        "密碼是 hunter2000",
+        "金鑰是 sk-live-9f8a7b6c5d4e",
     )
 
     def test_secrets_block_durable_persist(self):
@@ -57,6 +59,10 @@ class SensitiveTest(unittest.TestCase):
         hits = signal.scan_sensitive('API_KEY = "sk-live-9f8a7b6c5d4e"')
         self.assertEqual(hits, ["assigned_secret"])
         self.assertNotIn("sk-live-9f8a7b6c5d4e", "".join(hits))
+
+    def test_chinese_assignment_is_assigned_secret(self):
+        for text in ("密碼是 hunter2000", "金鑰是 sk-live-9f8a7b6c5d4e"):
+            self.assertEqual(signal.scan_sensitive(text), ["assigned_secret"], text)
 
     def test_absolute_path_blocks_durable_persist(self):
         verdict = signal.gate("schema_change", "t", "見 /Users/rick/proj/db.ts")

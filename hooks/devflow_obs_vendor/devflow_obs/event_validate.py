@@ -152,20 +152,29 @@ def _privacy_scan(obj, errors, path=""):
     allow = set(privacy["allowlist_exact"])
     max_len = privacy["max_string_len"]
 
+    # 值只掃禁載詞,不用鍵名全套 substring(避免 body／messages 誤傷)
+    value_leak = re.compile(
+        r"(?i)(?<![A-Za-z0-9_])(?:transcript|password|passwd)(?![A-Za-z0-9_])"
+    )
+
     def walk(node, p):
         if isinstance(node, dict):
             for k, v in node.items():
                 kp = f"{p}.{k}" if p else k
                 low = str(k).lower()
-                if low not in allow:
-                    if low in forbidden_exact:
+                bare = low[2:] if low.startswith("x_") else low
+                if bare not in allow and low not in allow:
+                    if bare in forbidden_exact or low in forbidden_exact:
                         errors.append(_err("privacy_forbidden_key", kp,
                                            f"禁載欄位 {k!r}(隱私紅線)"))
                         continue
-                    if any(s in low for s in substrings):
+                    if any(s in bare for s in substrings):
                         errors.append(_err("privacy_forbidden_key", kp,
                                            f"欄位名 {k!r} 命中禁載樣式(隱私紅線)"))
                         continue
+                if isinstance(v, str) and value_leak.search(v):
+                    errors.append(_err("privacy_forbidden_key", kp,
+                                       "值命中禁載詞(隱私紅線)"))
                 walk(v, kp)
         elif isinstance(node, list):
             for i, v in enumerate(node):
@@ -216,7 +225,7 @@ def validate_event(event):
                     errors.append(_err(
                         "missing_field", req,
                         f"{etype}: {cond['when_field']}={cond['equals']} 時必填"
-                        "(失敗先分類再路由,README §5 驗證五律 5)"))
+                        "(失敗先分類再路由,指南 #five-laws 驗證五律 5)"))
 
     for group in schema.get("at_least_one_of", {}).get(etype or "", []):
         if not any(f in event for f in group):

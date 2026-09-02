@@ -298,6 +298,10 @@ class TestPrivacy(unittest.TestCase):
         e = attempt_completed(x_meta={"note": "x" * 5000})
         self.assertIn("privacy_value_too_long", codes(ev.validate_event(e)))
 
+    def test_x_prefix_cannot_bypass_forbidden_key(self):
+        e = attempt_completed(x_transcript="full chat log")
+        self.assertIn("privacy_forbidden_key", codes(ev.validate_event(e)))
+
 
 class TestGauntletContract(unittest.TestCase):
     """ID-10:D/C 事件契約合流 —— final_fresh_run_* 兩事件 + 四值 status。
