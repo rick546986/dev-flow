@@ -24,31 +24,30 @@ description: 開發流程 SOP 的唯一對外入口(7 階段路由器,SDD 為主
   （Claude 別名：Skill tool 載入 `dev-run`）接手逐 T 執行;使用者只需說
   「/dev-flow 繼續 <slug>」。dev-run 是內部引擎,對外文件不要求使用者學它;
   使用者直接喊「dev-run <slug>」仍相容。
-- 模型與 effort 依 README §9 對照表自動採用,**不因使用者一句「換個模型」就偏離**:
-  偏離(表內建升降階除外)需使用者明示同意,並記入該階段文檔。
+- 層與 effort 見指南 `#flow`。本檔不另定義層或型號。
 
 **文檔歸位**(init 與全程強制):living → `docs/specs/`、feature 過程 →
 `docs/dev/<slug>/`、決策 → `docs/adr/`;散檔徵同意 `git mv` 歸位 + 全引用同步;
-流程外草稿收編 `0-draft-<名>.md` 只當 Stage 2 原料。細則見 README §1。
+流程外草稿收編 `0-draft-<名>.md` 只當 Stage 2 原料。細則見指南 `#docs`（文檔歸位）。
 
 ## 1. Lane 判準
 - **full**(預設):新能力 / 不可逆改動(schema、API 契約、跨模組介面)→ 1-7 全套(3 選配)。
 - **fast**:bugfix / ≤2 檔小改 / 行為已有 spec 條目(可逆的跨模組小改也算)→ 4-spec(補 bug scenario) → 5-tasks(mini) → 6-implementation-notes → 7-review(mini)。Stage 1–3 省略;5-tasks 仍用同一模板,可只有一個 T,但 Covers/Files/Verify/Blocked-by 必填,供 `devflow-exec.sh start <slug>` 解析 scope。起手 = **診斷迴圈**(重現→最小化→假設→定位→修→回歸),bug scenario 從重現步驟長出。
-- **大案與切片**:訊號與可切判準一律看 README §13(要不要切)與 §14(切點在哪),本檔不重述 —— 這兩節條件多且互相牽動,摘要過就會與正本分歧。
+- **大案與切片**:訊號與可切判準一律看指南 `#large-work`,本檔不重述 —— 條件多且互相牽動,摘要過就會與正本分歧。
 
 ## 2. 階段動作
 
 | stage | 呼叫技能 | 產出 | gate |
 |---|---|---|---|
 | 1 討論 | **本 skill 不執行**。討論由 `/dev-talk` 專職(資訊隔離:討論 agent 不知道有後續階段,防直奔結論;最好開獨立 session)。使用者在此要求討論 → 請他改跑 `/dev-talk`,並提醒:討論須收集 **Real-world Context**(人怎麼真的完成這件工作) | `1-discussion.md`(接手時**只讀此檔**,對話不是契約);必含 Real-world Context 節(Actors/Current Journey/Workarounds/Exceptions/Evidence)—— Stage 3 觸發判定與 4-spec Operational Context 的輸入;接手時缺此節 = legacy 檔(§4) | Open Questions 全解或明標假設 |
-| 2 收斂 | 2-3 方案並排比較 + 壓測定案(方法內建;可搭 mattpocock `grill-me`);**執行清單見 `_templates/2-decision.md` 頂註**;節點鏈見 `skills/dev-flow/stage2/` | `2-decision.md`;三條件中→抄 `docs/adr/` | **G1** 方向核准 + OC 全裁決(全文見 README §7) |
+| 2 收斂 | 2-3 方案並排比較 + 壓測定案(方法內建;可搭 mattpocock `grill-me`);**執行清單見 `_templates/2-decision.md` 頂註**;節點鏈見 `skills/dev-flow/stage2/` | `2-decision.md`;三條件中→抄 `docs/adr/` | **G1** 方向核准 + OC 全裁決(全文見指南 `#gates`) |
 | 3 原型(選配;命中觸發判定 → 條件式必要) | 開場第一動先做**觸發判定**(§4);throwaway 實驗(code 進 throwaway branch,禁進 main;純資料實驗 → scratchpad);Demo 必要性與 Variant 數量規則見 §4;**執行清單見 `_templates/3-prototype.md` 頂註**;節點鏈見 `skills/dev-flow/stage3/` | `3-prototype.md`(涉互動 → 含可操作 Demo + User Demo Feedback,Human verdict 人類親填 + attestation,見 §4) | 答案回寫 2-decision + frontmatter 收尾同步 |
-| 4 規格 | openspec delta 格式,**step-by-step 生成** + **反模糊三律**(S 可轉單一測試、禁模糊詞、禁 TBD);**執行清單與三律見 `_templates/4-spec.md` 頂註**;節點鏈見 `skills/dev-flow/stage4/` | `4-spec.md`(含 Drafting Decisions) | **G2** R/S 全審 + DD 全裁決 + Verification Profile(依 lane 正確填寫)+ Demo verdict 條件(全文見 README §7;Demo verdict 語意正本見 §4 所引,機械檢查 `hooks/_stage3_impl.py`) |
+| 4 規格 | openspec delta 格式,**step-by-step 生成** + **反模糊三律**(S 可轉單一測試、禁模糊詞、禁 TBD);**執行清單與三律見 `_templates/4-spec.md` 頂註**;節點鏈見 `skills/dev-flow/stage4/` | `4-spec.md`(含 Drafting Decisions) | **G2** R/S 全審 + DD 全裁決 + Verification Profile(依 lane 正確填寫)+ Demo verdict 條件(全文見指南 `#gates`;Demo verdict 語意正本見 §4 所引,機械檢查 `hooks/_stage3_impl.py`) |
 | 5 任務 | `to-tickets` 概念:tracer-bullet 順序 + Covers/Verify/Blocked-by;節點鏈見 `skills/dev-flow/stage5/` | `5-tasks.md` | 每 T 有 Verify |
-| 6 實作 | **`dev-run` 引擎**(起步層寫碼→執行層審→錯誤升階;Claude 對照 haiku→sonnet;守衛 `devflow-exec.sh` start/stop,詳其 SKILL;5-tasks 明寫 `execution.mode: parallel` 時走並行引擎(選配))或手動逐 T;兩者共用 README §5 的 T acceptance seam:RED→GREEN→scope check→Verify→獨立 T review→PASS→commit→記 Progress Log/checkbox/review evidence;**執行清單見 `_templates/6-implementation-notes.md` 頂註**;節點鏈見 `skills/dev-flow/stage6/` | `6-implementation-notes.md`(含 T Review Log;執行軌跡只供 dev-run) | 每 T review PASS + 全 S 綠 |
-| 7 驗證 | 雙軸審(Standards + Spec)+ 自建 coverage matrix(可搭 mattpocock `code-review`);整合回歸在 Final Fresh 之前(出貨樹=審過的樹);4-spec Required layers 欄必須在(可寫「無」/none/n-a;空值不算零層;層名全等);**執行清單見 `_templates/7-review.md` 頂註**;節點鏈見 `skills/dev-flow/stage7/` | `7-review.md` + `7-review.html` | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 README §7);PASS → Exit Checklist(PR 是其中一項) |
+| 6 實作 | **`dev-run` 引擎**(層與升階見指南 `#flow`；守衛 `devflow-exec.sh` start/stop,詳其 SKILL;5-tasks 明寫 `execution.mode: parallel` 時走並行引擎(選配))或手動逐 T;兩者共用指南 `#stage6`／契約檔 §5 的 T acceptance seam:RED→GREEN→scope check→Verify→獨立 T review→PASS→commit→記 Progress Log/checkbox/review evidence;**執行清單見 `_templates/6-implementation-notes.md` 頂註**;節點鏈見 `skills/dev-flow/stage6/` | `6-implementation-notes.md`(含 T Review Log;執行軌跡只供 dev-run) | 每 T review PASS + 全 S 綠 |
+| 7 驗證 | 雙軸審(Standards + Spec)+ 自建 coverage matrix(可搭 mattpocock `code-review`);整合回歸在 Final Fresh 之前(出貨樹=審過的樹);4-spec Required layers 欄必須在(可寫「無」/none/n-a;空值不算零層;層名全等);**執行清單見 `_templates/7-review.md` 頂註**;節點鏈見 `skills/dev-flow/stage7/` | `7-review.md` + `7-review.html` | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見指南 `#gates`);PASS → Exit Checklist(PR 是其中一項) |
 
-gate 條件唯一正本 = 母版 README §7;本表 gate 欄是摘要,衝突以 §7 為準。
+gate 條件人看正本 = 指南 `#gates`;機械正本 = 契約檔 §7。本表 gate 欄是摘要,衝突以指南／契約檔為準。
 
 ## 3. 鐵則
 - **資訊圍欄**(anti-premature-convergence):①討論全盲下游(/dev-talk 不知有後續)。
@@ -59,27 +58,24 @@ gate 條件唯一正本 = 母版 README §7;本表 gate 欄是摘要,衝突以 �
   的最小子集,不回引 1-discussion 原文。
 - **ID 鏈**:R→S→T→D→F;測試名含 S-id;reviewer 用鏈機械對 coverage。
 - **執行清單**:Stage 2/3/4/6/7 開場把模板頂註清單建成 todo,逐步達成「完成 =」才勾,
-  交審前過自檢步;禁跳項併項(四原則見 README §3)。
-- **實作不打斷**(Anthropic field-guide 模式):手動實作與 `dev-run` 共用 README §5 /
-  6-notes 的逐 T acceptance seam;T reviewer 必須不同於 T implementer,review PASS
+  交審前過自檢步;禁跳項併項(四原則見指南 `#docs`)。
+- **實作不打斷**(Anthropic field-guide 模式):手動實作與 `dev-run` 共用指南 `#stage6` /
+  契約檔 §5 / 6-notes 的逐 T acceptance seam;T reviewer 必須不同於 T implementer,review PASS
   才 commit,之後才記 Progress Log / checkbox / review evidence。spec 未載明的自由
   選擇 → 自己選、記 6-notes 的 Decisions 節、繼續。Stage 7 G3 仍另行執行。
 - **Scope guard**:改動檔案 ⊆ 5-tasks Files 聯集,超出依 L1/L2 判。G3 的綠 = 本次 S 全綠 + 既有測試全綠(回歸)。
-- **驗證五律**(README §5 全文):①完成宣稱必附原始輸出或 檔案:行號;②派工者不
+- **驗證五律**(指南 `#five-laws`;契約句在契約檔 §5):①完成宣稱必附原始輸出或 檔案:行號;②派工者不
   親修 finding(重派+重審);③派工 prompt 禁預判 reviewer 判斷;④需要人裁決的
   問題禁代答;⑤失敗先分類(SPEC→L2/ENV→重跑不計/IMPL、UNKNOWN→升階),
   同 T 總嘗試 ≤4,用盡強制 adviser。
-- **html 重生**:gate 必產;草稿期分歧點隨時重生,「⚠️ 待裁決」置頂(per-stage 規格見 README §6;圖 ASCII 優先)。2／3／4／5／7 站關鍵文字改了、該站圖沒改 → CI 紅(`scripts/check-devstage-fig-text.sh`);第 6 站無必產圖槽、本牙不咬。
+- **html 重生**:gate 必產;草稿期分歧點隨時重生,「⚠️ 待裁決」置頂(per-stage 規格見指南 `#twin-dash`;圖 ASCII 優先)。2／3／4／5／7 站關鍵文字改了、該站圖沒改 → CI 紅(`scripts/check-devstage-fig-text.sh`);第 6 站無必產圖槽、本牙不咬。
 - **偏差**:L1(不動 R/S)→ 保守方案 + 記 D-n + 繼續。L2(動 R/S / 翻 decision)→ 停 → 修 4-spec → 重 G2。禁 silent drift。
 - **Quiz gate**:不可逆改動 merge 前**必做** —— AI 出 3-5 題考 approver(改了什麼/為何/邊界),全對才 merge;其餘 full lane 選配,fast lane 免。
 - **過 gate 三連動**:frontmatter status + STATUS.md + 同名 html twin(`_templates/html-shell.html` 包);使用者說「上 artifact」→ 先載 artifact-design skill,再用 Artifact 發布該 html。
 - **git**:feature branch → develop;禁直上 master。規劃層:起手 `git status`,有無關
   改動先回報使用者;每過 gate 該階段文檔 commit 一次(只含文檔)。
-- **層與 effort**:綁的是層,不是產品名。規劃/派工層、執行/產檔層、起步層、
-  審查層(G1/G2/G3 不指定模型)。Claude Code 對照見 guide `#flow`(規劃 opus/fable5、
-  執行 sonnet、起步 haiku;升階 起步→執行→規劃)。其他主機選同等能力層,不要發明 SKU 表。
-  effort 按判斷密度 low/medium/high。偏離層級(內建升降階除外)需使用者明示同意並記入該階段文檔。
-- **G1/G2/G3 審查與 verdict**:依 README §7 的人類→fresh-context reviewer Agent→
+- **層與 effort**:見指南 `#flow`。本檔不另定義層或型號。
+- **G1/G2/G3 審查與 verdict**:依指南 `#gates` 的人類→fresh-context reviewer Agent→
   有記錄的 owner 自審順序；Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。
   Human 判定正本是同目錄 md 頂欄 `verdict:`(PASS／REQUEST_CHANGES／HOLD)。
   若已寫入,該 gate 已關,feature agent 不得手改該檔來記錄判定;尚無寫入 → 才准在
@@ -87,7 +83,7 @@ gate 條件唯一正本 = 母版 README §7;本表 gate 欄是摘要,衝突以 �
   衝突時 md 勝。
 - **author ≠ approver**(G1/G2/G3 四眼原則)。審查者依序:適格人類 reviewer →
   fresh-context reviewer Agent → owner 自審(有記錄的最後手段);身分記 reviewers 欄
-  (產生程序見 README §7)。
+  (產生程序見指南 `#gates`)。
 
 ## 4. Stage 3 操作面(觸發判定/Demo/verdict)
 
@@ -122,7 +118,7 @@ gate 條件唯一正本 = 母版 README §7;本表 gate 欄是摘要,衝突以 �
 
   **exit 1 = 不得送審**(這支是 Gate,不是 warning-only);exit 0 只代表**形狀**齊,
   R/S 寫得對不對、DD 決策合不合理仍是 reviewer 的事,機械不判語意。
-- **G2 Demo verdict 條件**(條件正本 README §7;語意全文 vnext-shared-contract §2):
+- **G2 Demo verdict 條件**(條件正本指南 `#gates`;機械句在契約檔 §7;語意全文 vnext-shared-contract §2):
   無 trigger → N/A + 明確原因可過;有 trigger 完成 Demo → 須 ACCEPTED(+attestation);
   REVISE / NOT_REVIEWED → 不得過;有 trigger 但跳過 → 須 Owner Call 明示。機械檢查:
   `python3 <plugin>/hooks/_stage3_impl.py <slug>`(專案根執行;exit 0 可過 / 2 拒 /
