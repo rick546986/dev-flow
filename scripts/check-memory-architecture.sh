@@ -13,7 +13,7 @@
 #   ⑥意圖分類用的線索詞與相關性計算用的框架詞是**兩份**,且帶內容的線索
 #     (怎麼部署)不得進剝除清單(進了會讓「怎麼部署?」查不到 deploy 流程)
 #   ⑦契約/能力宣告與程式碼裡的常數必須同值
-#   ⑦b retrieval status 契約(四態)在程式碼 / 契約檔 / README 三處同值
+#   ⑦b retrieval status 契約(四態)在程式碼 / 契約檔 / 指南 #memory 三處同值
 #   ⑧評測資料集必須涵蓋六種問句意圖與三種語言(中/英/混合)
 #
 # 這八條每一條都對應一個真實的失敗模式,而且都是「壞掉之後所有既有檢查照樣全綠」
@@ -246,8 +246,8 @@ if memory_contract.get("setup_entry") != "dev-setup":
 else:
     ok("contract.memory.setup_entry = dev-setup")
 
-# ── ⑦b retrieval status 契約:程式碼 / 契約檔 / README 三處同值 ────────────
-# 這一條防的是「狀態在程式碼裡改了,契約檔與 README 沒跟上」——
+# ── ⑦b retrieval status 契約:程式碼 / 契約檔 / 指南 #memory 三處同值 ────
+# 這一條防的是「狀態在程式碼裡改了,契約檔與指南沒跟上」——
 # 外部 runtime 照契約檔實作,對不上的狀態會被當成未知值處理。
 query_src = read("memory/agentmem/query.py")
 declared = re.search(r"RETRIEVAL_STATUSES\s*=\s*\(([^)]*)\)", query_src, re.S)
@@ -273,7 +273,7 @@ if code_statuses != expected_statuses:
                                        sorted(expected_statuses)))
 else:
     ok("query.RETRIEVAL_STATUSES 與契約同值")
-readme = read("README.md")
+readme = read("guides/guide-dev-flow.html")
 missing_doc = [s for s in sorted(expected_statuses) if s not in readme]
 if missing_doc:
     bad("README status 契約", "README 沒說明 {0}".format(missing_doc))

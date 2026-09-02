@@ -150,6 +150,9 @@ seed() {
            "$dst/notes/design" "$dst/scripts" "$dst/docs/dev/tools" "$dst/docs/adr" \
            "$dst/skills/dev-setup"
   cp "$ROOT/README.md" "$dst/README.md"
+  mkdir -p "$dst/docs/dev"
+  cp "$ROOT/docs/dev/readme-contract-extract.md" \
+     "$dst/docs/dev/readme-contract-extract.md"
   cp "$ROOT/devflow-contract.json" "$dst/devflow-contract.json"
   cp "$ROOT"/_templates/{1-discussion,3-prototype,4-spec,5-tasks,6-implementation-notes,7-review}.md \
      "$dst/_templates/"
@@ -488,7 +491,7 @@ D=$(seed gt0); expect pass check-gate-tokens.sh "$D" "GT-0 對照組(未變異)"
 
 D=$(seed gt1); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace(" + **Demo verdict**", "", 1)
 assert n != t, "GT-1 mutation 沒生效"
@@ -498,7 +501,7 @@ expect fail check-gate-tokens.sh "$D" "GT-1 刪 G2 的一個粗體 token(Demo ve
 
 D=$(seed gt2); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("**本次 S 全綠**", "本次 S 全綠", 1)
 assert n != t, "GT-2 mutation 沒生效"
@@ -508,7 +511,7 @@ expect fail check-gate-tokens.sh "$D" "GT-2 G3 的一個 token 被去掉粗體(�
 
 D=$(seed gt3); mutate "$D" <<'PY'
 import re, sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = re.sub(r"^  7\. Optional Layer[^\n]*\n", "", t, count=1, flags=re.M)
 assert n != t, "GT-3 mutation 沒生效"
@@ -521,7 +524,7 @@ expect fail check-gate-tokens.sh "$D" "GT-3 刪 G3 錨定義八點中的一點"
 # 確保紅燈是 check-gate-tokens 抓到的,不是別人順手擋下的。
 D=$(seed gt4); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("- G2 錨定義(錨句在上;此處為條件式全文):",
               "- G4 = 設計邊界對不對(4-spec:**設計契約三表全填**,未過不得進入 Stage 5;\n"
@@ -536,7 +539,7 @@ expect fail check-gate-tokens.sh "$D" "GT-4 §7 憑空新增第四道 gate 標�
 # 舊版守衛對這四種 mutation 全部 exit 0 —— 規則語意反過來而測試不紅。
 D=$(seed gt5a); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("Gauntlet PASS 不取代 Standards Axis", "Gauntlet PASS 取代 Standards Axis", 1)
 assert n != t, "GT-5a mutation 沒生效"
@@ -546,7 +549,7 @@ expect fail check-gate-tokens.sh "$D" "GT-5a 第 8 點極性反轉(Gauntlet PASS
 
 D=$(seed gt5b); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("Required Layer 不得為 unverified", "Required Layer 得為 unverified", 1)
 assert n != t, "GT-5b mutation 沒生效"
@@ -556,7 +559,7 @@ expect fail check-gate-tokens.sh "$D" "GT-5b 第 5 點極性反轉(Required Laye
 
 D=$(seed gt5c); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("Optional Layer 可為 unverified,但必須誠實標示",
               "Optional Layer 可為 unverified", 1)
@@ -567,7 +570,7 @@ expect fail check-gate-tokens.sh "$D" "GT-5c 第 7 點刪掉「必須誠實標�
 
 D=$(seed gt5d); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("Explicitly Excluded Layer 可為 n-a,但必須附理由",
               "Explicitly Excluded Layer 可為 n-a", 1)
@@ -580,7 +583,7 @@ expect fail check-gate-tokens.sh "$D" "GT-5d 第 6 點刪掉「必須附理由�
 # 舊版是在整個八點 body 做子字串搜尋,這兩種都繞得過(fresh reviewer 實測重現)。
 D=$(seed gt6a); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("  5. Required Layer 不得為 unverified 或 n-a。",
               "  5. Required Layer 得為 unverified 或 n-a(reviewer 自行判斷即可,"
@@ -592,7 +595,7 @@ expect fail check-gate-tokens.sh "$D" "GT-6a 第 5 點反義 + 同句保留原�
 
 D=$(seed gt6b); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("  5. Required Layer 不得為 unverified 或 n-a。\n"
               "  6. Explicitly Excluded Layer 可為 n-a,但必須附理由。",
@@ -609,7 +612,7 @@ D=$(seed vs0); expect pass check-version-sync.sh "$D" "VS-0 對照組(四處一�
 
 D=$(seed vs1); mutate "$D" <<'PY'
 import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "README.md"
+p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
 n = t.replace("devflow-evidence-gauntlet.sh`(1.3.3,", "devflow-evidence-gauntlet.sh`(9.9.9,", 1)
 assert n != t, "VS-1 mutation 沒生效"
@@ -778,7 +781,7 @@ t = g.read_text(encoding="utf-8")
 n = t.replace('        "+ 現象證據逐 S 相符",\n', "", 1)
 assert n != t, "GS-6 mutation(守衛端)沒生效"
 g.write_text(n, encoding="utf-8")
-p = root / "README.md"
+p = root / "docs/dev/readme-contract-extract.md"
 p.write_text(p.read_text(encoding="utf-8").replace(
     "**+ 現象證據逐 S 相符**", "+ 現象證據逐 S 相符", 1), encoding="utf-8")
 PY
@@ -1243,17 +1246,19 @@ expect_local fail check-no-stale-paths.sh "$D" "SP-9 _ls_files() 的 pathspec �
 
 # seed_mem <name> → 給 check-memory-architecture.sh 用的最小 seed:它讀 .gitignore、
 # memory/ 整包、skills/dev-setup/SKILL.md、devflow-contract.json、
-# hooks/runtime-capabilities.json,少任何一樣它會 exit 2(fail-closed),
+# hooks/runtime-capabilities.json、guides/guide-dev-flow.html
+# (retrieval 四態人讀句在指南,不在 README),少任何一樣它會 exit 2(fail-closed),
 # 那會讓 MEM-0 對照組自己變紅而不是測到東西。
 # ⚠️ 守衛以後多讀一個檔,這裡也要跟著補 —— 同 seed_fm 的教訓。
 seed_mem() {
   local name="${1:?seed_mem: name is empty}"
   local dst; dst=$(seed "$name")
   cp -r "$ROOT/memory" "$dst/memory"
-  mkdir -p "$dst/hooks"
+  mkdir -p "$dst/hooks" "$dst/guides"
   cp "$ROOT/hooks/runtime-capabilities.json" "$dst/hooks/runtime-capabilities.json"
   cp "$ROOT/skills/dev-setup/SKILL.md" "$dst/skills/dev-setup/SKILL.md"
   [ -f "$ROOT/.gitignore" ] && cp "$ROOT/.gitignore" "$dst/.gitignore"
+  cp "$ROOT/guides/guide-dev-flow.html" "$dst/guides/guide-dev-flow.html"
   cp "$ROOT/scripts/check-memory-architecture.sh" "$dst/scripts/"
   chmod +x "$dst/scripts/check-memory-architecture.sh"
   echo "$dst"

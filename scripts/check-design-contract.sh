@@ -155,11 +155,11 @@ def applicability(block):
 
 template_text = read(TEMPLATE)
 example_text = read(EXAMPLE)
-readme_text = read("README.md")
+extract_text = read("docs/dev/readme-contract-extract.md")
 
 check(template_text is not None, f"{TEMPLATE} 存在")
 check(example_text is not None, f"{EXAMPLE} 存在")
-check(readme_text is not None, "README.md 存在")
+check(extract_text is not None, "docs/dev/readme-contract-extract.md 存在")
 check(read(CANON) is not None, f"語意正本 {CANON} 存在")
 
 CURRENT_GROUP = "template-section"
@@ -259,19 +259,19 @@ for rel, block in ((TEMPLATE, template_block), (EXAMPLE, example_block)):
         check(value.strip() != "", f"{rel} Applicability 非空值", f"實得={value!r}")
 
 CURRENT_GROUP = "readme-canonical"
-# ── 7. README 只保留摘要與正本連結(不得重抄表格) ───────────────────────────
-if readme_text is not None:
+# ── 7. 契約檔只保留摘要與正本連結(不得重抄表格) ───────────────────────────
+if extract_text is not None:
     for heading in TABLE_HEADINGS:
         # Software Design 是通用詞,只擋「表頭形式」(出現在 markdown 表格列裡)
-        leaked = [line for line in readme_text.splitlines()
+        leaked = [line for line in extract_text.splitlines()
                   if line.strip().startswith("|") and heading in line]
-        check(not leaked, f"README 未重抄「{heading}」表頭(正本在 {TEMPLATE})",
+        check(not leaked, f"契約檔未重抄「{heading}」表頭(正本在 {TEMPLATE})",
               f"洩漏於={leaked[:1]}")
     for column in ("Forbidden dependencies", "Transaction / Consistency boundary", "Test seam"):
-        check(column not in readme_text,
-              f"README 未重抄欄位「{column}」(正本在 {TEMPLATE})")
-    check(SECTION in readme_text, f"README 有 {SECTION} 摘要")
-    check(CANON in readme_text, f"README 連到語意正本 {CANON}")
+        check(column not in extract_text,
+              f"契約檔未重抄欄位「{column}」(正本在 {TEMPLATE})")
+    check(SECTION in extract_text, f"契約檔有 {SECTION} 摘要")
+    check(CANON in extract_text, f"契約檔連到語意正本 {CANON}")
 
 CURRENT_GROUP = "example-antipattern"
 # ── 5b. Example 不得填成 canon 自己白紙黑字列出的「壞例」 ──────────────────
@@ -363,10 +363,10 @@ if template_block is not None and canon_text is not None:
     # README 只准摘要,不准第三份枚舉。README 本來就用圈號做各種小列舉(§3 四原則、
     # §7 三處摘要…),所以不能一律禁圈號;改盯「11 條清單才會用到的尾號」——
     # 出現 ⑨/⑩/⑪ 就代表有人在 README 又抄了一份十一條觸發條件。
-    if readme_text is not None:
-        leaked = [mark for mark in ("⑨", "⑩", "⑪") if mark in readme_text]
+    if extract_text is not None:
+        leaked = [mark for mark in ("⑨", "⑩", "⑪") if mark in extract_text]
         check(not leaked,
-              "README 未出現第三份觸發條件枚舉(11 條清單的尾號 ⑨⑩⑪)",
+              "契約檔未出現第三份觸發條件枚舉(11 條清單的尾號 ⑨⑩⑪)",
               f"出現={leaked}")
 
 CURRENT_GROUP = "handoff-templates"

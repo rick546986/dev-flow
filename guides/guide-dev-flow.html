@@ -64,6 +64,8 @@
   .figwrap::after{content:"點圖放大";position:absolute;right:10px;top:5px;
                   font-size:.7rem;color:var(--muted)}
   .figwrap>svg{display:block;width:100%;height:auto;cursor:zoom-in}
+  .figwrap>img{display:block;width:100%;height:auto}
+  .figwrap-static::after{content:none}
   .figcap{margin:.5em 0 0;font-size:.85rem;color:var(--muted)}
   .figzoom{position:fixed;inset:0;z-index:99;overflow:hidden;
            background:color-mix(in srgb,var(--bg) 92%,#000);
@@ -181,7 +183,8 @@
   <h1>dev-flow 導覽 · 開發流程 SOP</h1>
   <p class="muted">七個階段怎麼走、三道 gate 卡哪裡、哪<strong>層</strong>做哪類活
   （產品型號是主機對照,不是契約）。入口是 repo 根
-  <code>README.md</code>（只當第一屏）。契約句檢查器仍抽那份的機械正本；人看本頁。</p>
+  <code>README.md</code>（只當第一屏）。契約句檢查器抽
+  <code>docs/dev/readme-contract-extract.md</code>；人看本頁。</p>
 
   <nav>
     <a href="#start">⓪ 開工</a>
@@ -445,7 +448,7 @@
   </table></div>
 
   <div class="parity">
-  <p class="parity-tag">規則正本 · Stage 6 固定 acceptance seam(逐字抄自 README §5)</p>
+  <p class="parity-tag">規則正本 · Stage 6 固定 acceptance seam(逐字抄自 契約檔 §5)</p>
   <!-- parity:start readme-stage6-seam-quickstart -->
   <pre><code class="language-text">RED → GREEN → scope check → Verify
   → independent T review
@@ -480,7 +483,7 @@
     <path class="edge-bad" marker-end="url(#ar-smb)" d="M110,150 L110,132 L320,132 L320,86"/>
     <text class="dbad" x="340" y="146">FAIL → 回 GREEN 重來</text>
     <text class="dl" x="20" y="222">FAIL 先分類:SPEC → L2 停回 G2 / ENV → 修環境重跑(不計次)/ IMPL·UNKNOWN → 升階重派</text>
-    <text class="dl" x="20" y="242">同 T 總嘗試 ≤4(起步 1 + 執行 2 + 規劃 1;Claude 對照 haiku/sonnet/opus),用盡強制 adviser —— README §5 驗證五律</text>
+    <text class="dl" x="20" y="242">同 T 總嘗試 ≤4(起步 1 + 執行 2 + 規劃 1;Claude 對照 haiku/sonnet/opus),用盡強制 adviser —— 契約檔 §5 驗證五律</text>
   </svg></div>
   <p class="figcap">上排四步跑完才進下排的獨立審查;<strong>PASS 之前不准 commit</strong>。
   紅線是失敗回路 —— 回頭前一定要先分類,因為 ENV 類不計入嘗試次數。</p>
@@ -496,7 +499,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   <p><strong>G1/G2/G3 誰來審(reviewer 從哪來)</strong>:author ≠ approver;核心規則描述能力與
   fallback,不指定模型或供應商。</p>
   <div class="parity">
-  <p class="parity-tag">規則正本 · 審查者產生順序(逐字抄自 README §7)</p>
+  <p class="parity-tag">規則正本 · 審查者產生順序(逐字抄自 契約檔 §7)</p>
   <!-- parity:start readme-reviewer-selection-quickstart -->
   <ul>
   <li><strong>審查者產生</strong>:G1/G2/G3 一律依序選 <strong>適格人類 reviewer → fresh-context reviewer
@@ -575,53 +578,9 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map">guide-dev-talk 全程地圖</a>。</p>
 
   <span id="diagram" hidden></span>
-  <div class="figwrap"><svg id="fig-flow" viewBox="0 0 880 370" role="img"
-       aria-label="dev-flow 七階段全程圖:上排 1 討論到 4 規格,下排 G2 到 PR,含 G1 跳過 3 的捷徑、能力分層配色、另開 session 虛線框與守衛武裝區間">
-    <defs><marker id="ar-fl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
-    <g class="cluster"><rect x="148" y="58" width="142" height="74" rx="10" class="sessionbox"/></g>
-    <g class="cluster"><rect x="592" y="58" width="142" height="74" rx="10" class="sessionbox"/></g>
-    <g class="cluster"><rect x="444" y="198" width="142" height="74" rx="10" class="sessionbox"/></g>
-
-    <g class="n"><rect x="6" y="70" width="130" height="56" rx="26" class="b"/><text class="dt" x="18" y="88">想法/需求</text><text class="dc" x="18" y="103">還沒有任何檔案</text></g>
-    <g class="n"><rect x="154" y="70" width="130" height="56" rx="6" class="m-opus"/><text class="dt" x="166" y="88">1 討論</text><text class="dc" x="166" y="103">規劃層 · /dev-talk</text><text class="dc" x="166" y="117">1-discussion.md</text></g>
-    <g class="n"><rect x="302" y="70" width="130" height="56" rx="6" class="m-opus"/><text class="dt" x="314" y="88">2 收斂</text><text class="dc" x="314" y="103">規劃層</text><text class="dc" x="314" y="117">2-decision.md</text></g>
-    <g class="n"><rect x="450" y="70" width="130" height="56" rx="6" class="hl"/><text class="dt" x="462" y="88">G1 方向核准</text><text class="dc" x="462" y="103">審查層·不指定模型</text><text class="dc" x="462" y="117">Owner Calls 全裁決</text></g>
-    <g class="n"><rect x="598" y="70" width="130" height="56" rx="6" class="m-sonnet"/><text class="dt" x="610" y="88">3 原型(選配)</text><text class="dc" x="610" y="103">執行層</text><text class="dc" x="610" y="117">答案回寫 2-decision</text></g>
-    <g class="n"><rect x="746" y="70" width="130" height="56" rx="6" class="m-opus"/><text class="dt" x="758" y="88">4 規格</text><text class="dc" x="758" y="103">規劃層</text><text class="dc" x="758" y="117">4-spec.md</text></g>
-
-    <g class="n"><rect x="746" y="210" width="130" height="56" rx="6" class="hl"/><text class="dt" x="758" y="228">G2 契約核准</text><text class="dc" x="758" y="243">reviewer·契約</text><text class="dc" x="758" y="257">R/S 全審 + DD 全裁決</text></g>
-    <g class="n"><rect x="598" y="210" width="130" height="56" rx="6" class="m-sonnet"/><text class="dt" x="610" y="228">5 任務</text><text class="dc" x="610" y="243">執行層</text><text class="dc" x="610" y="257">5-tasks.md</text></g>
-    <g class="n"><rect x="450" y="210" width="130" height="56" rx="6" class="m-haiku"/><text class="dt" x="462" y="228">6 實作</text><text class="dc" x="462" y="243">起步層 · dev-run</text><text class="dc" x="462" y="257">6-notes + 逐 T commit</text></g>
-    <g class="n"><rect x="302" y="210" width="130" height="56" rx="6" class="m-sonnet"/><text class="dt" x="314" y="228">7 驗證</text><text class="dc" x="314" y="243">執行層 · 產檔</text><text class="dc" x="314" y="257">7-review.md</text></g>
-    <g class="n"><rect x="154" y="210" width="130" height="56" rx="6" class="hl"/><text class="dt" x="166" y="228">G3 出貨核准</text><text class="dc" x="166" y="243">reviewer·驗收</text><text class="dc" x="166" y="257">S 全綠+Evidence 契約</text></g>
-    <g class="n"><rect x="6" y="210" width="130" height="56" rx="6" class="go"/><text class="dt" x="18" y="228">PR</text><text class="dc" x="18" y="243">→ develop</text><text class="dc" x="18" y="257">PASS 才准開</text></g>
-
-    <g class="n"><rect x="6" y="286" width="130" height="40" rx="6" class="note"/><text class="dt" x="18" y="304">延伸 living spec</text><text class="dc" x="18" y="318">docs/specs/</text></g>
-
-    <path class="edge" marker-end="url(#ar-fl)" d="M136,98 L154,98"/>
-    <path class="edge" marker-end="url(#ar-fl)" d="M284,98 L302,98"/>
-    <path class="edge" marker-end="url(#ar-fl)" d="M432,98 L450,98"/>
-    <path class="edge" marker-end="url(#ar-fl)" d="M580,98 L598,98"/>
-    <path class="edge" marker-end="url(#ar-fl)" d="M728,98 L746,98"/>
-    <path class="edge" marker-end="url(#ar-fl)" d="M811,126 L811,210"/>
-    <path class="edge" marker-end="url(#ar-fl)" d="M746,238 L728,238"/>
-    <path class="edge" marker-end="url(#ar-fl)" d="M598,238 L580,238"/>
-    <path class="edge" marker-end="url(#ar-fl)" d="M450,238 L432,238"/>
-    <path class="edge" marker-end="url(#ar-fl)" d="M302,238 L284,238"/>
-    <path class="edge" marker-end="url(#ar-fl)" d="M154,238 L136,238"/>
-    <path class="edge" marker-end="url(#ar-fl)" d="M71,266 L71,286"/>
-    <path class="edge" marker-end="url(#ar-fl)" d="M515,70 L515,30 L811,30 L811,70"/>
-
-    <path class="fenceline" d="M450,278 L450,286 L580,286 L580,278"/>
-    <text class="dl" x="560" y="24">G1 過·無技術疑問 → 跳過選配的 3</text>
-    <text class="dk" x="154" y="52">必開新 session</text>
-    <text class="dk" x="598" y="52">建議另開(選配)</text>
-    <text class="dk" x="450" y="192">建議另開 session</text>
-    <text class="dl" x="160" y="318">Stage 6 內部是三層:起步 → 執行 → 規劃(誤 1 次升執行;執行同 T 最多 2 次才升規劃)。Claude 對照 haiku→sonnet→opus</text>
-    <text class="dl" x="160" y="336">T review = 執行層 fresh(高風險/爭議升規劃層二審);adviser = 規劃層唯讀,三層皆 FAIL 才派</text>
-    <text class="dl" x="450" y="358">守衛武裝區間:start→stop,只有這一段守衛是醒著的</text>
-  </svg></div>
+  <div class="figwrap figwrap-static">
+    <img id="fig-flow" src="fig-flow-full.svg" alt="七階段流程圖含 Gate 與能力分層">
+  </div>
   <p class="figcap">下排由右往左走。<strong>紫 = 規劃/派工層</strong>(Claude 對照 opus)、
   <strong>青 = 執行/產檔層</strong>(對照 sonnet)、
   <strong>灰 = 起步層</strong>(對照 haiku)、<strong>藍 = 審查層 / gate</strong>(依能力與 fallback 選,不指定模型)。
@@ -667,7 +626,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   （那顆牙只在 Claude Code 主機上咬）。</p>
   <span id="models" hidden></span>
   <div class="parity">
-  <p class="parity-tag">規則正本 · Gate 審查者不指定模型(逐字抄自 README 機械正本)</p>
+  <p class="parity-tag">規則正本 · Gate 審查者不指定模型(逐字抄自契約檔 機械正本)</p>
   <!-- parity:start readme-gate-model-quickstart -->
   <ul>
   <li><strong>G1/G2/G3 審查與 verdict</strong>:依 §7 的人類→fresh-context reviewer Agent→有記錄的
@@ -679,7 +638,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   <a href="#devrun">dev-run 引擎</a>小節。reviewer 不綁型號。</p>
   <p class="muted">Stage 6 全部 T ACCEPTED 之後的跨階段收束(sequential/parallel 皆同):
   先跑 Final Fresh Gauntlet(綁定當下 source SHA 的 Final Fresh Run + Evidence 契約,
-  README §7 G3 錨定義),全過才進 G3。Gauntlet PASS 不取代雙軸 code review。</p>
+  契約檔 §7 G3 錨定義),全過才進 G3。Gauntlet PASS 不取代雙軸 code review。</p>
 
   <div class="figwrap"><svg id="fig-ffg" viewBox="0 0 880 160" role="img"
        aria-label="跨階段收束:ACCEPTED Tasks 經 Final Fresh Gauntlet 到 G3">
@@ -757,7 +716,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   <blockquote>lane 的選擇<strong>須記入 <code>4-spec</code> Verification Profile 的 <code>lane:</code> 欄</strong>。
   命中「自動升 Full」清單仍寫 fast → <strong>G2 不得過</strong>;<code>lane: fast</code> 配
   <code>Risk: high</code> → <strong>runtime(start 時)與 G2 一律拒絕</strong>,例外僅限 Owner Call 明示
-  (條件全文見 README §7 G2 錨定義)。拿不準 → Full;被流程煩到 → 檢討判準,不要繞過流程。</blockquote>
+  (條件全文見 契約檔 §7 G2 錨定義)。拿不準 → Full;被流程煩到 → 檢討判準,不要繞過流程。</blockquote>
 
   <h2 id="docs">③ 七份文件</h2>
   <p class="lead">這章要你懂:<strong>七份文件跟著 feature 生死,<code>.claude/rules/</code> 不跟</strong> ——
@@ -772,7 +731,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   裁決用 ID 不入鏈:<code>OC-n</code>(2-decision)、<code>DD-n</code>(4-spec)不被 T 實作。</p>
 
   <div class="parity">
-  <p class="parity-tag">規則正本 · 七份文件與各自的 Gate(逐字抄自 README 階段表)</p>
+  <p class="parity-tag">規則正本 · 七份文件與各自的 Gate(逐字抄自契約檔 階段表)</p>
   <!-- parity:start readme-stage-table -->
   <div class="tablewrap"><table>
   <thead>
@@ -929,7 +888,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   乘客清單仍是下方模板頂註 0–7。</p>
   <p>晚改可見行為:G3 未過 → 同一 feat 先改 Decision / Owner Call,再走 4→5→6→7;
   G3 已過 → 另開薄刀,不准改已封包。推翻已核 Decision 不是合法 DD。</p>
-  <p>把 1 的發散收成一個選定方案;完成後依 README §7 的 reviewer fallback 取得 G1 核准才進 4。</p>
+  <p>把 1 的發散收成一個選定方案;完成後依 契約檔 §7 的 reviewer fallback 取得 G1 核准才進 4。</p>
   <div class="parity">
   <p class="parity-tag">規則正本 · Stage 2 執行清單(逐字抄自 <code>_templates/2-decision.md</code> 頂註)</p>
   <details>
@@ -1076,7 +1035,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   G3 已過 → 另開薄刀。DD 寫「不採 Decision、跟 4-spec」= 流程 bug(C6)。</p>
   <p>本次變更的可測契約(openspec delta 格式)。先過反模糊三律(防偷懶條文),再走執行清單;
   G2 = R/S 全審 + Drafting Decisions 全裁決 + Verification Profile(依 lane 正確填寫)
-  + Demo verdict(條件式),有未裁決不得過,全文見 README §7。</p>
+  + Demo verdict(條件式),有未裁決不得過,全文見 契約檔 §7。</p>
   <div class="parity">
   <p class="parity-tag">規則正本 · Stage 4 反模糊三律(逐字抄自 <code>_templates/4-spec.md</code> 頂註)</p>
   <details>
@@ -1215,7 +1174,7 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
   乘客清單仍是下方模板頂註 0–6。</p>
   <p>把 4-spec 切成可勾選、可驗證的實作單;順序 = tracer bullet(先打通最薄端到端縱切,
   再逐層加厚)。不是 gate 站,免 reviewer 核准,但一樣要讓人<strong>照著動工</strong>——
-  5-tasks twin 是<strong>執行板</strong>不是審查介面(README §6),動線頂區五格/任務卡
+  5-tasks twin 是<strong>執行板</strong>不是審查介面(契約檔 §6),動線頂區五格/任務卡
   逐條可勾/Boundaries 摺疊/依賴 DAG 四件事缺一不可,細節見 <code>_templates/5-tasks.md</code>
   頂註。審查頁 chrome／任務總表版面正本
   <code>notes/design/stage5-review-ui-contract.md</code>(與
@@ -1303,7 +1262,7 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
   <p>節點鏈正本 <code>skills/dev-flow/stage6/graph.yaml</code>:
   <code>N1-arm</code> → <code>N2-handoff</code> → <code>S2-tdd</code> →
   <code>N4-selfcheck</code> → <code>N5-end</code>。
-  乘客清單仍是下方模板頂註 0–4。逐 T 仍走引擎(README §5 動線 / 現有引擎),
+  乘客清單仍是下方模板頂註 0–4。逐 T 仍走引擎(契約檔 §5 動線 / 現有引擎),
   不是一 T 一 hop。</p>
   <p>實作期唯一日誌:每個 T × Covers S 先 RED 後 GREEN;scope check 與 Verify 後由不同
   implementer 的 reviewer 獨立審查,review PASS 才一 T 一 commit。偏差分 L1(保守方案續走)/
@@ -1626,7 +1585,7 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
     <li><strong>派工</strong>:三件套(目標與動機/驗收條件/回報格式),驗收條件寫明不要 commit。</li>
     <li><strong>收驗</strong>:派 fresh 執行層 reviewer(給 T + S 原文 + diff + 執行者輸出,不給執行者結論;
         Claude 對照 sonnet),
-        依 README §5 / 6-notes 共用 acceptance seam 裁決。FAIL → <strong>先分類再路由</strong>(README §5
+        依 契約檔 §5 / 6-notes 共用 acceptance seam 裁決。FAIL → <strong>先分類再路由</strong>(契約檔 §5
         驗證五律 5):SPEC(T/S 定義問題)→ L2 停,回 G2;ENV(環境/依賴壞)→ 修環境重跑,不計升階;
         IMPL/UNKNOWN → 同一 T 升階重派(失敗軌跡全帶)並重新送審。<strong>同 T 總嘗試上限 4</strong>
         (起步 1+執行 2+規劃 1;Claude 對照 haiku/sonnet/opus),用盡強制問 adviser,禁無限重試。PASS → 你 commit → 讀出 hash。</li>
@@ -1645,7 +1604,7 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
     <tr><th>角色</th><th>層</th><th>Claude對照</th><th>規則</th></tr>
     <tr><td>派工者(你)</td><td>規劃/派工層</td><td>opus / fable5</td><td>派工、彙整、commit、記帳;不寫碼</td></tr>
     <tr><td>T 執行</td><td><strong>起步 → 執行 → 規劃</strong></td><td>haiku → sonnet → opus</td><td>「錯」= reviewer 判 FAIL(或執行者自陳卡關送不出)。起步錯 1 次<strong>立即</strong>升執行(同層不重試);執行同 T 最多 2 次(換方法不歸零)才升規劃;升階時把完整失敗軌跡帶給下一階</td></tr>
-    <tr><td>T review</td><td>執行層(fresh context)</td><td>sonnet</td><td>依 README §5 / 6-notes 共用 acceptance seam;高風險或爭議時由規劃層作第二 reviewer</td></tr>
+    <tr><td>T review</td><td>執行層(fresh context)</td><td>sonnet</td><td>依 契約檔 §5 / 6-notes 共用 acceptance seam;高風險或爭議時由規劃層作第二 reviewer</td></tr>
     <tr><td>adviser</td><td>規劃層,唯讀</td><td>opus</td><td><strong>三層皆 FAIL = 連敗</strong> → 派 adviser 診斷:是 T/5-tasks 定義問題,還是純執行問題;verdict=STOP → 走 L2 路徑</td></tr>
   </table></div>
   <p class="muted">守衛:<code>devflow-exec.sh start</code>/<code>stop</code> 標記武裝範圍,細節見下方
@@ -1669,7 +1628,7 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   <code>wave-close</code>/<code>task-candidate</code>/<code>gate</code>/<code>review</code> 等)
   見 ⑥ 執行守衛。全 T ACCEPTED 後的跨階段收束(sequential/parallel 皆同):先跑
   <strong>Final Fresh Gauntlet</strong>(綁定當下 source SHA 的 Final Fresh Run + Evidence 契約,
-  README §7 G3 錨)全過才進 G3。語意見 <code>notes/design/parallel-stage6.md</code>；SVG 見
+  契約檔 §7 G3 錨)全過才進 G3。語意見 <code>notes/design/parallel-stage6.md</code>；SVG 見
   <a href="#guard">⑥ 執行守衛 · T 級並行</a>。</p>
 
   <h3 id="stage7">Stage 7 — 驗證(G3)</h3>
@@ -1896,8 +1855,8 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   <strong>核准者不能是該文檔的 owner</strong>。</p>
   <div class="cardgrid">
     <div class="card"><h4>G1 —— 方向對不對</h4><p><code>2-decision</code>:方向核准 + Owner Calls 全裁決,有未裁決 OC 不得過。</p></div>
-    <div class="card"><h4>G2 —— 契約寫得對不對</h4><p><code>4-spec</code>:R/S 全審 + Drafting Decisions 全裁決 + Verification Profile(依 lane 正確填寫)+ Demo verdict(條件式),有未裁決項不得過(條件全文見 README §7)。</p></div>
-    <div class="card"><h4>G3 —— 做出來的對不對</h4><p><code>7-review</code>:本次 S 全綠 + 既有測試套件全綠 + 現象證據逐 S 相符 + Evidence 契約全過(八點定義見 README §7);本模板另要求無 🔴 才 PASS。</p></div>
+    <div class="card"><h4>G2 —— 契約寫得對不對</h4><p><code>4-spec</code>:R/S 全審 + Drafting Decisions 全裁決 + Verification Profile(依 lane 正確填寫)+ Demo verdict(條件式),有未裁決項不得過(條件全文見 契約檔 §7)。</p></div>
+    <div class="card"><h4>G3 —— 做出來的對不對</h4><p><code>7-review</code>:本次 S 全綠 + 既有測試套件全綠 + 現象證據逐 S 相符 + Evidence 契約全過(八點定義見 契約檔 §7);本模板另要求無 🔴 才 PASS。</p></div>
     <div class="card"><h4>author ≠ approver</h4><p>G1/G2/G3 的核准者不可以是該文檔的 owner。無適格人類第二人不跳過 Agent fallback;只有前兩種 reviewer 都不可用時才記錄 owner 自審,不假裝有四眼。</p></div>
     <div class="card"><h4>Quiz gate</h4><p><strong>不可逆改動</strong>(schema/API 契約/跨模組介面)merge 前<strong>必做</strong>:AI 出 3-5 題考 approver,全對才 merge;其餘 full lane <strong>選配</strong>(approver 可要求),fast lane <strong>免</strong>。</p></div>
     <div class="card"><h4>三連動</h4><p>每過一個 gate:frontmatter status + <code>STATUS.md</code> + 同名 html twin 三者同步更新,禁漏一項。</p></div>
@@ -1905,7 +1864,7 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   </div>
 
   <div class="parity">
-  <p class="parity-tag">規則正本 · 審查者產生順序(逐字抄自 README §7)</p>
+  <p class="parity-tag">規則正本 · 審查者產生順序(逐字抄自 契約檔 §7)</p>
       <!-- parity:start readme-reviewer-selection-flow -->
       <ul>
       <li><strong>審查者產生</strong>:G1/G2/G3 一律依序選 <strong>適格人類 reviewer → fresh-context reviewer
@@ -1944,6 +1903,72 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   </svg></div>
   <p class="figcap">只有 Stage 7 會走到 <code>shipped</code>;上游 artifact 停在 <code>approved</code>,
   作為各自 gate 的核准紀錄。<code>superseded</code> 是被後續決策取代,不是失敗。</p>
+
+  <h3 id="five-laws">驗證五律</h3>
+  <p>適用 T 執行、T review 與各 gate。契約句在
+  <code>docs/dev/readme-contract-extract.md</code> §5。</p>
+  <ol>
+    <li><strong>證據 = 原始輸出</strong>:完成/通過必附原始指令輸出或 檔案:行號。</li>
+    <li><strong>派工者不下場修</strong>:修復一律重派執行者、重新送審。</li>
+    <li><strong>反預判禁令</strong>:派工 prompt 禁止預先框定 reviewer 判斷。</li>
+    <li><strong>HITL 不可代答</strong>:gate / Owner Call / L2 不得由 agent 代答。</li>
+    <li><strong>失敗先分類再路由</strong>:SPEC → L2;ENV → 修環境不計升階;IMPL/UNKNOWN → 升階。同 T 上限 4(起步 1 + 執行 2 + 規劃 1)。</li>
+  </ol>
+
+  <h3 id="twin-dash">審查動線頂區五格</h3>
+  <p>標籤逐字釘死;機械正本在契約檔 §6。</p>
+  <div class="tablewrap"><table>
+    <tr><th>站</th><th>五格內容</th></tr>
+    <tr><td><strong>2-decision(G1)</strong></td>
+        <td>判定(<code>## Decision</code> 首句)/ Owner Calls(已裁決 <code>x/y</code>)/ 方案(幾項待審)/ 駁回理由(幾條)/ 狀態(frontmatter)</td></tr>
+    <tr><td><strong>4-spec(G2)</strong></td>
+        <td>狀態(frontmatter)/ 待審 S(幾條 + <strong>幾條缺觀測欄</strong>)/ lane · Risk / DD 進度 <code>x/y</code> / Demo verdict(承接 3-prototype)</td></tr>
+    <tr><td><strong>7-review(G3)</strong></td>
+        <td>判定(frontmatter <code>verdict:</code>)/ 出貨(Exit Checklist <code>x/y</code>)/ 爭點(「附錄:本輪特有」幾條)/ 風險(Known Limits 幾條)/ 抽驗(Coverage Matrix 中位列 <code>檔:行</code>,決定論、可重現)</td></tr>
+    <tr><td><strong>5-tasks(執行板)</strong></td>
+        <td>狀態(frontmatter)/ 任務(幾個 T + 幾條缺必填欄)/ 模式(execution.mode,未標=sequential)/ 依賴(幾條 Blocked-by 邊)/ 進度(可勾計數)</td></tr>
+  </table></div>
+
+  <h3 id="gate-anchors">G2 / G3 錨定義</h3>
+  <p>粗體 token 與八點的機械正本在契約檔 §7。這裡是人讀全文。</p>
+  <h4>G2 錨</h4>
+  <ul>
+    <li>「Verification Profile」:G2 必須確認 4-spec Verification Profile 已依 lane 正確填寫 ——
+      full lane = 完整 Profile;fast lane = 最小 Profile(五欄,見 4-spec 模板);命中「自動升 Full」清單仍寫 fast → 不得過。
+      <code>lane: fast</code> 配 <code>Risk: high</code> → Runtime、模板檢查與 Gate 一律拒絕,例外僅限 Owner Call 明示。
+      Reliability triage 不計入五個最小 Profile 欄,但 full 與 fast 都必須回答 Concurrency、Idempotency、Timeout/retry。</li>
+    <li>「Demo verdict」(條件式):無 Stage 3 trigger → N/A + 明確原因,可過 G2;
+      有 trigger 且完成 Demo → 必須 <code>Human verdict: ACCEPTED</code>;REVISE / NOT_REVIEWED → 不得過 G2;
+      有 trigger 但跳過 → 必須有 Owner Call 明示。Agent 不得自行填入 ACCEPTED。</li>
+  </ul>
+  <h4>G3 錨:Evidence 契約全過 = 以下八點全部成立</h4>
+  <ol>
+    <li>Final Fresh Run 綁定目前受審的 source SHA,且該 SHA 必須等於送審當下 HEAD;之後任何程式碼 commit 作廢 G3,必須重跑 Final Fresh。</li>
+    <li>所有 Required Layer = pass。</li>
+    <li>所有已觸發的 Conditional Layer = pass。</li>
+    <li>不得存在任何 fail。</li>
+    <li>Required Layer 不得為 unverified 或 n-a。</li>
+    <li>Explicitly Excluded Layer 可為 n-a,但必須附理由。</li>
+    <li>Optional Layer 可為 unverified,但必須誠實標示。</li>
+    <li>Gauntlet PASS 不取代 Standards Axis / Spec Axis / Operational Walkthrough / Coverage Matrix / 真實現象複驗。</li>
+  </ol>
+
+  <h3 id="direct-patch">合併後出事:整合分支回滾與直接補修</h3>
+  <p>預設 <code>git revert -m 1 &lt;merge commit&gt;</code>;禁對整合分支
+  <code>reset --hard</code> / <code>push --force</code> / <code>rebase</code>。
+  例外「直接補修」必須同時滿足:①一個 commit 修得完;②補修 diff 與「其他 feature 碰過的檔」零交集。
+  機械正本(順序寫死)在契約檔 §7。</p>
+  <p>「其他 feature 碰過的檔」=<strong>目前列在 <code>docs/dev/STATUS.md</code> Active 表裡的每個 feature 各自改過的檔的聯集</strong>。逐列判定不得跳步、不得倒序:</p>
+  <ol>
+    <li><code>git fetch</code> 後先把<strong>整合分支</strong>釘成 SHA。</li>
+    <li>Stage 1–5 且 <code>Branch</code> 欄逐字等於 <code>n-a:尚未建立 branch</code> 才跳過;不是這個 sentinel(或空)→ fail-closed 停下問人。</li>
+    <li>Stage 6 一律 fail-closed:Active 表只要還有另一個 feature 在 <code>6-implementation</code>,就不准用直接補修。</li>
+    <li>只有 Stage 7 的列才進 mode/ref/SHA 驗證,而且全部讀 pinned remote tree。直接補修只讀 STATUS 提供的單一 <code>OverlapRef</code>,不得另猜第二個 ref。<code>mode</code> 的唯一資料源是 pinned tree 的 <code>5-tasks.md</code> frontmatter <code>execution.mode</code>,不是 STATUS 的 Lane。sequential 必須核對 Progress Log 裡<strong>每一個</strong> ACCEPTED T 的 SHA 都是 remote tip 的祖先,不得只查最新一個。</li>
+    <li>排除正在評估的補修自己。</li>
+    <li>表裡列著但 ref 不存在 → 停下問人,不當空集合略過。</li>
+    <li>執行補修者自己的 checkout 也必須 clean、無 ahead 未推的 commit;任何一條無法觀測就不准宣稱零交集。</li>
+  </ol>
+  <p>⚠️ revert 之後的坑:走預設回滾,不要在整合分支上 force-push 把別人的工作一併抹掉。</p>
 
   <h2 id="guard">⑥ 執行守衛:dev-flow 掛在 agent 生命週期的哪裡</h2>
   <p class="lead">這章要你懂:<strong>你被擋的時候,一定是 Claude agent 生命週期的 <code>PreToolUse</code> 或
@@ -3759,7 +3784,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             未定案不得寫 <code>6-implementation-notes.md</code>、沒武裝不得寫、
             <code>FORK_INTEGRATION_SHA</code> 缺或被改寫必須紅。
             <code>kind: skill-legacy</code> 團塊必須紅;<code>S2-tdd</code> 是一顆 hop
-            (指向 README §5 動線,逐 T 不是一 T 一 hop),有 <code>via</code> 就紅。
+            (指向 契約檔 §5 動線,逐 T 不是一 T 一 hop),有 <code>via</code> 就紅。
             本機游標 <code>.devstage6-cursor.json</code> 不進 Git。prebash 在寫
             <code>6-implementation-notes.md</code> 時會帶 <code>--action</code>。
             guide <code>#stage6</code> 開頭必須對上五節點鏈並寫明逐 T 仍走引擎。</td>
@@ -3771,7 +3796,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             未定案仍寫 <code>6-notes</code>、沒武裝寫 6-notes、
             <code>FORK_INTEGRATION_SHA</code> 缺或被改寫、<code>via</code> 當 hop、
             <code>kind: skill-legacy</code> 回頭、一 T 一 hop、entry 不對、鏈斷、
-            缺 <code>--write-cursor</code>、<code>S2-tdd</code> 沒點名 README §5
+            缺 <code>--write-cursor</code>、<code>S2-tdd</code> 沒點名 契約檔 §5
             各打一槍;guide 還寫單一 SKILL、hooks 沒接 <code>--action</code> 各打一槍;
             prebash 另有實跑一輪。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>

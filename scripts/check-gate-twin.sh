@@ -217,7 +217,7 @@ CURRENT_GROUP = "dash-cells-readme"
 # 硬寫 = 斷言釘在副本而不是正本:改 README 的規格文字,守衛照樣全綠
 #(2026-08-15 複審缺口 G;與 H2「守衛只驗字串在不在」是同一類病)。
 def readme_keys():
-    txt = (ROOT / "README.md").read_text(encoding="utf-8")
+    txt = (ROOT / "docs/dev/readme-contract-extract.md").read_text(encoding="utf-8")
     out = {}
     for st in STAGES:
         # 5-tasks 是執行板不是 gate,標籤是「(執行板)」不是「(G\d)」——K-3 擴充,
@@ -248,7 +248,7 @@ PINNED_ROW_SHA = {
     "7-review": "bef9dfc2ddea381c",
     "5-tasks": "d780503d05ac8c0a",
 }
-_readme_txt = (ROOT / "README.md").read_text(encoding="utf-8")
+_readme_txt = (ROOT / "docs/dev/readme-contract-extract.md").read_text(encoding="utf-8")
 for st in STAGES:
     _m = re.search(r"^\|\s*\*\*" + re.escape(st) + r"\((?:G\d|執行板)\)\*\*\s*\|(.+?)\|\s*$",
                    _readme_txt, re.M)

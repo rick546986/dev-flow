@@ -146,7 +146,7 @@ def bullet(rel, anchor):
 
 
 def fenced_seam():
-    source = read("README.md")
+    source = read("docs/dev/readme-contract-extract.md")
     matches = re.findall(r"```text\n(RED → GREEN.*?review evidence)\n```", source, re.S)
     return ("```text\n" + matches[0] + "\n```\n") if len(matches) == 1 else ""
 
@@ -186,12 +186,12 @@ parity = {
     ("guides/guide-dev-flow.html", "template7-checklist"):
         quote_region("_templates/7-review.md", "執行清單("),
     ("guides/guide-dev-flow.html", "readme-reviewer-selection-flow"):
-        bullet("README.md", "審查者產生"),
+        bullet("docs/dev/readme-contract-extract.md", "審查者產生"),
     ("guides/guide-dev-flow.html", "readme-stage6-seam-quickstart"): fenced_seam(),
     ("guides/guide-dev-flow.html", "readme-reviewer-selection-quickstart"):
-        bullet("README.md", "審查者產生"),
+        bullet("docs/dev/readme-contract-extract.md", "審查者產生"),
     ("guides/guide-dev-flow.html", "readme-gate-model-quickstart"):
-        bullet("README.md", "G1/G2/G3 審查與 verdict"),
+        bullet("docs/dev/readme-contract-extract.md", "G1/G2/G3 審查與 verdict"),
     ("guides/guide-dev-flow.html", "template7-exit-quickstart"): exit_checklist(),
 }
 
@@ -241,7 +241,7 @@ for stale in (
     check(norm(stale) not in guide_text, f"active guides 移除舊語意: {stale}")
 
 readme_stage_rows = {}
-for line in markdown_table("README.md", "## 3.", "| # |").splitlines()[2:]:
+for line in markdown_table("docs/dev/readme-contract-extract.md", "## 3.", "| # |").splitlines()[2:]:
     cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
     if cells and cells[0].isdigit():
         readme_stage_rows[cells[0]] = cells

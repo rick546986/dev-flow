@@ -64,7 +64,7 @@ ORDER = ["G1", "G2", "G3"]
 def norm(text):
     return re.sub(r"\s+", "", text)
 
-path = os.path.join(root, "README.md")
+path = os.path.join(root, "docs", "dev", "readme-contract-extract.md")
 if not os.path.isfile(path):
     print(f"  ✗ 讀不到 {path}")
     raise SystemExit(1)

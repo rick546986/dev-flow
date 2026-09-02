@@ -4,7 +4,7 @@
 # 抓什麼:`hooks/hooks.json`(掛載的機械正本)與所有「為了驗證而列舉 hook 的
 # 文件」之間的漂移 —— 數量與名稱都比,任一處漏列/多列/數字過期就紅:
 #   ① skills/dev-setup/SKILL.md:安裝健檢清單(N 支可執行、N 條掛載、逐條列舉)
-#   ② README.md:執行守衛段的 hook 名稱列舉
+#   ② docs/dev/readme-contract-extract.md:執行守衛段的 hook 名稱列舉
 #   ②' docs/PLUGIN.md:hooks 表 + skills 表 + agents 表(agents 對帳的機械正本 =
 #      agents/ 目錄,2026-08-19 派工單 §4.4 第 4 項新增)
 #   ③ guides/guide-dev-flow.html:hooks 註冊表(event/matcher/command/timeout 鏡像
@@ -115,12 +115,13 @@ else:
         elif not os.access(p, os.X_OK):
             fail(f"SKILL.md 說 {n} 可執行,但 hooks/{n}.sh 沒有執行權限")
 
-# ── ② README.md:執行守衛段落必須點名每一支掛載中的 hook ─────────────────
-readme = open(os.path.join(root, "README.md"), encoding="utf-8").read()
+# ── ② 契約檔:執行守衛段落必須點名每一支掛載中的 hook ─────────────────
+extract = open(os.path.join(root, "docs", "dev", "readme-contract-extract.md"),
+               encoding="utf-8").read()
 for name in script_names:
     base = name[:-3] if name.endswith(".sh") else name
-    if base not in readme:
-        fail(f"README.md 完全沒提到掛載中的 {base}(hooks.json 有,文件沒有)")
+    if base not in extract:
+        fail(f"契約檔完全沒提到掛載中的 {base}(hooks.json 有,文件沒有)")
 
 # ── ②' docs/PLUGIN.md:第四份列舉副本(hooks 表 + skills 表)────────────────
 # 第一版守衛只掃三份文件,盤點當場抓到 PLUGIN.md 漏了 2 支 hook 與 1 個 skill ——

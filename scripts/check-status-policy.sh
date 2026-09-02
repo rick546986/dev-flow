@@ -91,7 +91,7 @@ template = read("_templates/STATUS.md")
 docs = read("docs/dev/STATUS.md")
 quickstart = read("guides/guide-dev-flow.html")
 template6 = read("_templates/6-implementation-notes.md")
-readme = read("README.md")
+readme = read("docs/dev/readme-contract-extract.md")
 devrun = read("skills/dev-run/SKILL.md")
 
 # ①規則要點對帳:每個要點 = 一組必須同時出現的關鍵詞(不比逐字)。

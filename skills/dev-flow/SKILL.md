@@ -7,8 +7,9 @@ description: 開發流程 SOP 的唯一對外入口(7 階段路由器,SDD 為主
 
 方法包根目錄叫 `DEVFLOW_ROOT`（舊名 `CLAUDE_PLUGIN_ROOT` 當別名，不准刪）。找不到就停，不准猜。
 
-方法論:`${DEVFLOW_ROOT}/`(`README.md` = 完整規則;`_templates/` = 模板;
-`example/contract-expiry-reminder/` = 填好的完整範例)。細節疑義**先讀方法論 README**,以它為準。
+方法論:`${DEVFLOW_ROOT}/`（人看 `guides/guide-dev-flow.html`；契約句
+`docs/dev/readme-contract-extract.md`；`_templates/` = 模板;
+`example/contract-expiry-reminder/` = 填好的完整範例）。細節疑義**先讀主指南**,以它為準。
 乘客清單正本一律相對 DEVFLOW_ROOT 的 `_templates/<檔>`。採用專案的 `docs/dev/_templates/` 是散發副本，不是正本。
 
 ## 0. 定位與自動路由
