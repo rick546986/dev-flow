@@ -52,7 +52,7 @@
 <body>
 <main>
 <h1>0003. Agent Memory 分兩層:`.dev-flow/` 進 Git、本機索引不進 Git</h1>
-<p class="meta"><span class="badge ok">accepted</span> · 2026-08-20 · 出處:docs/prompts(Agent Memory v3 需求正本);落地見 README §16</p>
+<p class="meta"><span class="badge ok">accepted</span> · 2026-08-20 · 出處:docs/prompts(Agent Memory v3 需求正本);落地見指南 <code>#memory</code></p>
 <nav><a href="https://rick546986.github.io/dev-flow/docs/adr/index.html">決策列表</a><a href="0003-agent-memory-two-layer-split.md">md 正本</a><a href="https://rick546986.github.io/dev-flow/docs/dev/HISTORY.html">改版歷史</a></nav>
 <h2>Context</h2>
 <p>舊架構的 agent 記憶載體有兩個,都是人工維護的 Markdown:repo root <code>CONTEXT.md</code> (業務詞彙表)與 <code>docs/dev/HISTORY.md</code>(改版歷史索引)。三個問題:</p>
@@ -71,7 +71,7 @@
 <p><strong>換到:</strong></p>
 <ul><li>同一個專案在 Mac / Windows / Linux 是同一個 <code>project_id</code>,記憶內容相同。</li><li>本機索引可以整包刪掉重建;砍掉不損失 durable 記憶(有 integration test 釘住)。</li><li>Git 樹裡的記憶是人看得懂、review 得動的結構化文字,不是二進位 blob。</li><li>secret 與絕對路徑在固化前被擋下,不會因為記憶而被 push 出去。</li></ul>
 <p><strong>付出:</strong></p>
-<ul><li>clone 之後必須先跑一次 <code>dev-setup</code> 才有檢索能力(空索引時查詢會回 <code>NO_RELIABLE_MATCH</code>,不會假裝有答案)。</li><li><strong>`.dev-flow/`(進 Git)與既有的 `.devflow/`(本機執行期暫存、gitignored) 只差一個連字號</strong> —— 這是本決策已知且刻意接受的命名風險。緩解:README §16.1 的三目錄對照表、<code>check-memory-architecture.sh</code> 機械驗 <code>.gitignore</code> 兩邊的狀態、 以及 <code>DEVFLOW_MEMORY_DIR</code> 這個單點覆寫通道供採用專案改名。</li><li>記憶的寫入變得吝嗇(低訊號一律不進 Git),代價是「什麼算高訊號」這份清單 住在程式碼裡,要擴充就要改碼並經 review —— 這是刻意的,不讓 runtime 自行決定。</li></ul>
+<ul><li>clone 之後必須先跑一次 <code>dev-setup</code> 才有檢索能力(空索引時查詢會回 <code>NO_RELIABLE_MATCH</code>,不會假裝有答案)。</li><li><strong>`.dev-flow/`(進 Git)與既有的 `.devflow/`(本機執行期暫存、gitignored) 只差一個連字號</strong> —— 這是本決策已知且刻意接受的命名風險。緩解:指南 <code>#memory</code> 的三目錄對照表、<code>check-memory-architecture.sh</code> 機械驗 <code>.gitignore</code> 兩邊的狀態、 以及 <code>DEVFLOW_MEMORY_DIR</code> 這個單點覆寫通道供採用專案改名。</li><li>記憶的寫入變得吝嗇(低訊號一律不進 Git),代價是「什麼算高訊號」這份清單 住在程式碼裡,要擴充就要改碼並經 review —— 這是刻意的,不讓 runtime 自行決定。</li></ul>
 
 <p class="foot">md 是 git 正本。本頁由 <code>scripts/build-public-docs.py</code> 重生。不是 Agent Memory,不要把正文抄進 <code>.dev-flow/decisions</code>。</p>
 </main>

@@ -936,7 +936,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
     <li>G1 送審:html twin(方案架構圖,比較期並排;OC 待裁決置頂)→ in-review →
     reviewer。審查者依序:適格人類 reviewer → fresh-context reviewer Agent →
     owner 自審(有記錄的最後手段)。G1 = 方向核准 +
-    Owner Calls 全裁決(有未裁決 OC 不得過;正本 README §7)。核准 → 三連動
+    Owner Calls 全裁決(有未裁決 OC 不得過;正本 <code>guides/guide-dev-flow.html#gates</code>)。核准 → 三連動
     (frontmatter/STATUS/twin)。完成 = verdict 記錄+三連動齊。</li>
     </ol>
     </blockquote>
@@ -1134,7 +1134,7 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     <li>Verification Profile(依 lane 正確填寫;未填視為步 3 未完成)</li>
     <li>Demo verdict(條件式:無 Stage 3 trigger → N/A+原因;有 trigger → 需人類
     ACCEPTED,REVISE/NOT_REVIEWED 不得過,跳過需 Owner Call;Agent 不得代填)——
-    條件全文見 README §7。核准 → 三連動。
+    條件全文見 <code>guides/guide-dev-flow.html#gates</code>。核准 → 三連動。
     完成 = verdict+三連動。</li>
     </ul>
     </li>
@@ -1358,7 +1358,7 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     建 todo 一 T 一項,照 Blocked-by 拓撲序。完成 = todo 與 5-tasks 一一對應。</p>
     </li>
     <li>
-    <p>逐 T 循環,對齊 README §5 的驗收動線(RED → GREEN → scope check → Verify →
+    <p>逐 T 循環,對齊指南 <code>#five-laws</code>／<code>#stage6</code> 的驗收動線(RED → GREEN → scope check → Verify →
     independent T review → PASS → commit → 記帳),a–h 逐段對應同一條 seam:
     a <strong>RED</strong>:照 Covers 先寫失敗測試(名含 S-id)→ RED 輸出貼 TDD Evidence。
     完成 = RED 輸出已貼。
@@ -1770,8 +1770,8 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
     <code>devflow-exec.sh review-unlock &lt;slug&gt;</code> 解鎖才讀得到(Write 仍限縮於
     7-review*/evidence/,unlock 不解除)。完成 = 差異全裁定入 Spec Axis。</li>
     <li>Verdict:PASS = 本次 S 全綠+既有全綠+<strong>現象證據逐 S 相符</strong>+Evidence 契約全過
-    (G3 錨,八點條件正本 README §7;步 2d 的 gauntlet 全綠 + Required 層全 pass
-    即其機械面)+無 🔴(G3 正本 README §7;無 🔴 是本模板加嚴的出貨門檻,
+    (G3 錨,八點條件正本 <code>guides/guide-dev-flow.html#gates</code>;步 2d 的 gauntlet 全綠 + Required 層全 pass
+    即其機械面)+無 🔴(G3 正本 <code>guides/guide-dev-flow.html#gates</code>;無 🔴 是本模板加嚴的出貨門檻,
     不與 §7 矛盾);否則
     REQUEST_CHANGES 列 🔴 →
     author 走 6-notes 的 Review Follow-up(同意改+一句為何對/不同意擺論證,
@@ -1846,7 +1846,7 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   <li>[ ] STATUS.md 已更新為 shipped(這一步在整合分支上、PR 合併後由合併那個 PR 的人
   做,不塞進本 branch 的 PR —— 動線與理由見 STATUS 模板頂註)</li>
   <li>[ ] 7-review frontmatter status: shipped;上游 artifact 可保留 approved(各自 gate 核准紀錄)</li>
-  <li>[ ] 7-review.html 已產生(含變更架構圖 + diff 折疊,規格見 README §6)</li>
+  <li>[ ] 7-review.html 已產生(含變更架構圖 + diff 折疊,規格見指南 <code>#twin-dash</code>)</li>
   <li>[ ] feature branch 已刪 / worktree 已清</li>
   </ul>
   <!-- parity:end template7-exit-quickstart -->
