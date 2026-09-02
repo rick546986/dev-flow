@@ -2,28 +2,30 @@
 
 七站開發流程，給 agent 跑、人還握著方向（不拿走控制，不像 GSD／BMAD 整包代操）。
 
-## 安裝（約 30 秒）
-
-在**產品專案根目錄**跑官方 `dev-setup`（不是 Claude `/plugin update`）。
-主機技能樹在這台機器掛一次。
-
-方法包是一份正本；每個專案只從 setup 拿到 `docs/dev/`。
-
-```
-dev-setup
-```
-
 <p align="center">
   <img src="guides/fig-readme-flow.svg" alt="七站：討論、收斂、原型、規格、任務、實作、驗證" width="360">
 </p>
 
+## 安裝
+
+兩層，不要混。
+
+**A) 裝方法包**（這台機器／這個主機一次）。不是 `dev-setup`。
+
+| 主機 | 裝／更新（一句） |
+|---|---|
+| Claude | 裝：`/plugin marketplace add rick546986/dev-flow` 後 `/plugin install dev-flow@dev-flow`。更新：`/plugin marketplace update dev-flow` + `/plugin update dev-flow`。 |
+| Cursor | Dashboard → Plugins → Import from Repo `rick546986/dev-flow`。更新：Refresh 在已匯入的 rick546986/dev-flow 那一列。 |
+| Codex | 沒有 `plugin install`／`plugin update`。裝：`codex plugin marketplace add rick546986/dev-flow` 後 `codex plugin add dev-flow@dev-flow`。更新：`codex plugin marketplace upgrade dev-flow` 再 `add` 一次。 |
+| Grok | 不要發明 Grok marketplace。Grok Bot 吃 Cursor 帳裝好的同一包。本機技能庫可掛整棵 `.grok/skills`。 |
+
+細節與 `DEVFLOW_ROOT`：[guide #host](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#host)。安裝長文在 [docs/PLUGIN.md](docs/PLUGIN.md)。
+
+**B) 產品專案**：進專案根目錄打 `dev-setup`（不帶參數）。這不是 `/plugin update`。
+
 ## 開始
 
 [開工](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#start)
-
-## 為什麼
-
-人握方向、契約、出貨三道閘；契約與清單在主指南 #start，不在這張入口。
 
 <details>
 <summary>機械正本（檢查器抽這裡；人看 guide）</summary>
@@ -50,22 +52,12 @@ feat worktree 的 `docs/dev` 雙生頁要併回專案真正在用的整合線(�
 | 6 | `6-implementation-notes.md` | 實作日誌:TDD 證據 + 偏差記錄 | 每 T review PASS + 全 S 綠 |
 | 7 | `7-review.md` + `.html` | 雙軸審 + coverage matrix + Exit checklist;出貨樹=審過的樹。 | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → Exit Checklist(PR 是其中一項) |
 
-**Design Boundary Contract**(4-spec 內的條件式章節,不是第八份文檔):補的是
-4-spec(可測契約)到 5-tasks(可勾選任務)之間缺的設計邊界。
-**十一條觸發條件任一命中即必填,全未命中才可 `n-a` + 具體理由(Fast lane 不豁免)**;
-條件全文與判準**不在此重抄** ——
-操作用清單在 `_templates/4-spec.md` 該節頂註,
+**Design Boundary Contract**(4-spec 內的條件式章節,不是第八份文檔)。
+條件全文與判準**不在此重抄** —— 操作用清單在 `_templates/4-spec.md` 該節頂註,
 語意判準與好壞範例在 `notes/design/design-boundary-contract.md`(母版 repo,唯一語意正本);
 兩份由 `scripts/check-design-contract.sh` 機械比對。由既有 G2 一併審(gate 條件正本仍是 §7)。
 
-## 4. ID 追溯鏈
-
-每張票用同一個 id 串起來。全文見 [flow #filemap](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#filemap)。
-
-`R-n`(requirement,4-spec)→ `S-n`(scenario,4-spec)→ `T-n`(task,5-tasks,標 Covers)
-→ 測試名含 S-id(6 實作)→ `D-n`(deviation,6)→ `F-n`(finding,7,標影響的 S/T)。
-
-裁決用 ID **不入鏈**:`OC-n`(2-decision)、`DD-n`(4-spec)不被 T 實作。
+## 4.
 
 ## 5. 實作期鐵則
 
@@ -78,8 +70,6 @@ RED → GREEN → scope check → Verify
 → commit
 → Progress Log + checkbox + review evidence
 ```
-
-T 在獨立審查 PASS 前一律未完成。分不清 L1/L2 → 一律當 L2。
 
 契約 / 檢查器抽(七支掛載 hook 名):
 
@@ -106,17 +96,9 @@ L1 出口 = `devflow-exec.sh allow`;L2 = `stop`。
 | **7-review(G3)** | 判定(frontmatter `verdict:`)/ 出貨(Exit Checklist `x/y`)/ 爭點(「附錄:本輪特有」幾條)/ 風險(Known Limits 幾條)/ 抽驗(Coverage Matrix 中位列 `檔:行`,決定論、可重現)|
 | **5-tasks(執行板)** | 狀態(frontmatter)/ 任務(幾個 T + 幾條缺必填欄)/ 模式(execution.mode,未標=sequential)/ 依賴(幾條 Blocked-by 邊)/ 進度(可勾計數) |
 
-審頁產檔器 `scripts/build-stage{1,2,5,7}-html.py`;第 6 站 `scripts/build-stage6-html.py`。
-正本 `notes/design/stageN-review-ui-contract.md`。不進 gate-twin STAGES。
-站審 html 掛 Pages(真的 html 頁,不是倉庫原始碼):正本 `notes/design/pages-hosting.md`。本機 `python3 scripts/devflow_gate.py serve --root .`。
-
 ## 7. 角色與 Gate
 
-三道閘。粗體詞是過關條件,檢查器在抽,不要改字。
-
-去哪:[flow #gates](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)
-
-> **本節 = gate 條件(G1/G2/G3)的契約句**。各一句過關條件在下;全文、強制力對照、回滾導覽見
+> **本節 = gate 條件(G1/G2/G3)的契約句**。各一句過關條件在下;全文見
 > [flow #gates](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)。
 > 改任何 gate 條件先改這裡的粗體 token 與錨定義,再同步三處摘要:①plugin `dev-flow`
 > SKILL.md 階段動作表 ②本 README §3 七份文檔表 ③對應模板頂註。衝突以本節為準。
@@ -128,12 +110,9 @@ L1 出口 = `devflow-exec.sh allow`;L2 = `stop`。
   Agent → owner 自審(有記錄的最後手段)**。Agent 必須是乾淨 context,只給審核對象+基準+回報格式,不給
   作者結論;verdict 與審者身分記 reviewers 欄(如 `[independent-fresh-context-reviewer]`)
   + 檔內留 round 紀錄。owner 自審僅能作為**有記錄的最後手段**,不假裝有四眼。
-- **規劃層 git**:每過一個 gate,把該階段文檔 commit 一次,只含文檔。Stage 1–5 落在整合分支;Stage 6 才開 feature branch。細節見 [flow #gates](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)。
 - 機械錨點註記:以下 G1/G2/G3 定義句內的粗體詞組是 gate-consistency 機械比對錨;增改 gate 條件務必加粗。
 
  ### G1
-
-方向對不對。2-decision 過了才能往規格走。
 
 契約 / 檢查器抽:
 
@@ -142,8 +121,6 @@ G1 = 方向對不對(2-decision:方向核准 + **Owner Calls 全裁決**,有未�
   誤放** —— 抽查是規則要求,不是 reviewer 自由心證)。
 
  ### G2
-
-契約寫得對不對。4-spec 的 R/S、DD、Profile、Demo 都要過。
 
 契約 / 檢查器抽:
 
@@ -168,8 +145,6 @@ G2 = 契約寫得對不對
     明示。Agent 不得自行填入 ACCEPTED;Runtime 必須拒絕 Agent 自產的 ACCEPTED。
 
  ### G3
-
-做出來的對不對。測試綠不夠,還要現象證據跟 Evidence 八點。
 
 契約 / 檢查器抽:
 
@@ -205,16 +180,9 @@ G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件�
 
 ### 強制力對照(誰在擋)
 
-「規則存在」不等於「Runtime 會擋」。
-
-本 repo 的 reference test 全綠 ≠ 外部 Runtime pass。Gauntlet 只驗 Evidence 契約,
-自己不跑專案測試。
+全文見 [flow #gates](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)。
 
 ### 合併後出事怎麼辦(整合分支回滾) · 機械契約,可跳
-
-合併後出事,預設 revert,不要硬補。下面算法只在「直接補修」例外才用,可跳。
-
-去哪:[flow #gates](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#gates)
 
 > **契約 / 檢查器抽**
 >
@@ -272,17 +240,9 @@ G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件�
 7. **執行補修者自己的 checkout 也必須 clean、無 ahead 未推的 commit**;上面任何
    一條無法觀測(fetch 失敗、表解析不了、狀態看不到)就**不准宣稱零交集**。
 
-⚠️ revert 之後的坑:**revert 一個 merge commit 之後,重新 merge 同一個 branch 不會
-生效** —— git 看的是祖先關係,revert 只是加一個反向 commit,不改變「那些 commit
-已在歷史裡」的事實。不要以為 revert 完再 merge 一次就好;要讓那個 feature 回來,
-只有兩條路:
+⚠️ revert 之後的坑:
 
-- **revert the revert**:`git revert <那個 revert commit>`,再補修。
-- 從整合分支**重新開一個 branch**,把改動重做成新 commit。
-
-## 8. 導覽
-
-每站清單與能力層對照見 [flow](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow)。綁的是層,不是 Claude 產品名。
+## 8.
 
 - **G1/G2/G3 審查與 verdict**:依 §7 的人類→fresh-context reviewer Agent→有記錄的
   owner 自審順序;Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。
@@ -293,4 +253,5 @@ retrieval status:`OK` / `NEEDS_VERIFICATION` / `CONFLICT` / `NO_RELIABLE_MATCH`�
 
 <!-- devflow:master-only:start -->
 母版目錄樹見 [目錄關係](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#dirmap)，不要在入口重畫樹。
+層對照見 [flow](https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow)。
 <!-- devflow:master-only:end -->

@@ -32,7 +32,7 @@ import tempfile
 root, check = sys.argv[1], sys.argv[2]
 passed = 0
 failed = 0
-MIN_CASES = 14
+MIN_CASES = 16
 
 COPY_DIRS = (
     ".claude-plugin",
@@ -283,13 +283,31 @@ with tempfile.TemporaryDirectory(prefix="plugin-hosts-") as tmp:
         print("FATAL: README 沒有 details", file=sys.stderr)
         sys.exit(2)
     open(readme, "w", encoding="utf-8").write(
-        pre + "/plugin marketplace add rick546986/dev-flow\n" + sep + post
+        pre + "~/.claude/plugins/cache/dev-flow/dev-flow/<version>/\n" + sep + post
     )
     expect(
-        "R-readme-manual README 第一屏灌進安裝指令必須紅",
+        "R-readme-essay README 第一屏灌進 PLUGIN 長文必須紅",
         d,
         1,
-        "第一屏灌進安裝手冊",
+        "第一屏灌進 PLUGIN 長文",
+    )
+
+    d = os.path.join(tmp, "readme-no-grok")
+    shutil.copytree(good, d)
+    readme = os.path.join(d, "README.md")
+    text = open(readme, encoding="utf-8").read()
+    pre, sep, post = text.partition("<details>")
+    if not sep:
+        print("FATAL: README 沒有 details", file=sys.stderr)
+        sys.exit(2)
+    open(readme, "w", encoding="utf-8").write(
+        pre.replace("Grok", "OtherHost") + sep + post
+    )
+    expect(
+        "R-readme-hosts README 第一屏拿掉 Grok 必須紅",
+        d,
+        1,
+        "第一屏缺四主機",
     )
 
 total = passed + failed

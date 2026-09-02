@@ -17,7 +17,8 @@
 #   ⑦docs/PLUGIN.md 仍有 Claude 舊指令;Codex 寫的是實測動詞(add／upgrade)
 #   ⑧guide #host 四邊都寫了怎麼裝／怎麼更新
 #   ⑨Grok 牙:必須有「不要假裝能從產品 repo 自動灌進 Grok」;正面宣稱自動灌就紅
-#   ⑩README 第一屏不准變安裝手冊;details 要有 PLUGIN.md 入口
+#   ⑩README 第一屏必須有四主機短表(真指令);不准灌 PLUGIN 長文。
+#     details 要有 PLUGIN.md 入口
 #
 # 用法:scripts/check-plugin-hosts.sh [root]
 # exit:0 = 全過 / 1 = 真違規 / 2 = 檢查自身故障
@@ -318,12 +319,29 @@ if readme:
     if not sep:
         fail("README 沒有 details（契約句必須留在 details,第一屏不准變手冊）")
     else:
-        dumped = [
-            n for n in (CLAUDE_ADD, CODEX_MKT_ADD, "codex plugin add", "/plugin install")
+        missing_hosts = [h for h in ("Claude", "Cursor", "Codex", "Grok") if h not in pre]
+        if missing_hosts:
+            fail("README 第一屏缺四主機:" + "、".join(missing_hosts))
+        missing_cmd = [
+            n for n in (CLAUDE_ADD, CLAUDE_INSTALL, CODEX_MKT_ADD, CODEX_ADD)
+            if n not in pre
+        ]
+        if missing_cmd:
+            fail("README 第一屏缺方法包短指令:" + "、".join(missing_cmd))
+        if "dev-setup" not in pre:
+            fail("README 第一屏沒寫產品專案 dev-setup")
+        if "guide-dev-flow.html#start" not in pre:
+            fail("README 第一屏沒有開工 Pages #start")
+        if "guide-dev-flow.html#host" not in pre:
+            fail("README 第一屏沒有 #host Pages")
+        essay = [
+            n for n in ("~/.claude/plugins/cache", "%USERPROFILE%", "薄殼必須")
             if n in pre
         ]
-        if dumped:
-            fail("README 第一屏灌進安裝手冊:" + "、".join(dumped))
+        if essay:
+            fail("README 第一屏灌進 PLUGIN 長文:" + "、".join(essay))
+        if "Grok marketplace" in pre and "不要發明" not in pre:
+            fail("README 第一屏發明了 Grok marketplace")
         if "PLUGIN.md" not in post:
             fail("README details 沒有 docs/PLUGIN.md 入口")
         print("readme-first-screen: ok")

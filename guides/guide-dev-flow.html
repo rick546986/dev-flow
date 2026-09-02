@@ -211,24 +211,46 @@
   <span class="badge warn">終端機</span> —— 實際在 shell 執行的指令(<code>git</code>、<code>devflow-exec.sh</code>)。</blockquote>
 
   <h3 id="checklist">零到一 checklist</h3>
-  <p class="lead">這章要你懂:<strong>裝機五件事,只有第 3 件要你動腦</strong>。其餘打一行、看回報。</p>
+  <p class="lead">這章要你懂:<strong>先刷新方法包(四主機各一句),再進專案打 <code>dev-setup</code></strong>。
+  只有核可架構不變量要動腦。不要把 <code>dev-setup</code> 當成裝方法包。</p>
   <ul class="chk" id="chk-zero">
-    <li><input type="checkbox" id="z0"><span><strong>0.</strong> 剛裝好或剛改過 plugin → 打 <code>/reload-plugins</code></span></li>
-    <li><input type="checkbox" id="z1"><span><strong>1.</strong> cd 進新專案 repo root → 打 <code>dev-setup</code>(不帶參數)</span></li>
+    <li><input type="checkbox" id="z0"><span><strong>0.</strong> 剛裝好或剛改過方法包 → 依主機刷新(不是每台都打 <code>/reload-plugins</code>)。
+      Claude:<code>/plugin update</code>(必要時再 <code>/reload-plugins</code>)；
+      Cursor:Dashboard → Plugins → Refresh <strong>已匯入的 rick546986/dev-flow 那一列</strong>；
+      Codex:<code>codex plugin marketplace upgrade dev-flow</code> 再 <code>codex plugin add dev-flow@dev-flow</code>；
+      Grok:跟 Cursor 帳那包走,不要發明 Grok marketplace</span></li>
+    <li><input type="checkbox" id="z1"><span><strong>1.</strong> cd 進新專案 repo root → 打 <code>dev-setup</code>(不帶參數)。這是產品專案層,不是 <code>/plugin update</code></span></li>
     <li><input type="checkbox" id="z2"><span><strong>2.</strong> 看它建了什麼,並回應兩個徵你同意的動作</span></li>
     <li><input type="checkbox" id="z3"><span><strong>3.</strong> 逐條核可 <code>.claude/rules/arch-invariants.md</code> 草稿 ← <strong>唯一要動腦的一步</strong></span></li>
     <li><input type="checkbox" id="z4"><span><strong>4.</strong> 收下 check 的固定四段回報,確認沒有異常項</span></li>
   </ul>
 
-  <h3>0. plugin 已改過就先 reload</h3>
-  <p><span class="badge you">跟 AI 說</span> 如果你剛裝好、或剛改過 <code>dev-talk</code>/<code>dev-flow</code> plugin,
-  在當前 session 打:</p>
-  <pre>/reload-plugins</pre>
-  <p class="muted">為何:skills 與 hooks 隨 plugin 全域生效(安裝目錄
-  <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/</code>,Windows 對應
-  <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\</code>;
-  dev-talk 已併入同一 plugin,單一正本),但執行中的 session 不會自動感知改動,要 reload
-  新版 skill/hook 才生效(見 <code>dev-setup</code> SKILL「注意」節)。</p>
+  <h3>0. 方法包已改過就先刷新(依主機)</h3>
+  <p>剛裝好、或剛改過方法包,先讓這台主機拿到新版。四主機各一句,不要發明指令:</p>
+  <div class="tablewrap"><table>
+    <tr><th>主機</th><th>刷新</th></tr>
+    <tr><td>Claude</td>
+        <td><span class="badge you">跟 AI 說</span> <code>/plugin update dev-flow</code>
+            (必要時再 <code>/reload-plugins</code>)</td></tr>
+    <tr><td>Cursor</td>
+        <td>Dashboard → Plugins → Refresh <strong>已匯入的 rick546986/dev-flow 那一列</strong>,
+            不是 plugin 詳情卡</td></tr>
+    <tr><td>Codex</td>
+        <td>沒有 <code>plugin update</code>。
+            <code>codex plugin marketplace upgrade dev-flow</code> 再
+            <code>codex plugin add dev-flow@dev-flow</code></td></tr>
+    <tr><td>Grok</td>
+        <td>不要發明 Grok marketplace。Grok Bot 吃 Cursor 帳那包。
+            本機技能庫可掛整棵 <code>.grok/skills</code></td></tr>
+  </table></div>
+  <p>裝方法包的完整四句見 <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#host">#host</a>
+  與 <code>docs/PLUGIN.md</code>。
+  下一格的 <code>dev-setup</code> 是產品專案層,不是裝方法包。</p>
+  <p class="muted">為何要刷新:skills 與 hooks 隨方法包生效,執行中的 session 不會自動感知改動。
+  Claude 安裝目錄在
+  <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/</code>(Windows 對應
+  <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\</code>),
+  這是 Claude 對照,不是其他主機的契約。</p>
   <p class="muted">環境需求:hooks 需要 python3(找不到時守衛只印警告後跳過,不擋工具呼叫);
   Windows Git Bash 要另外裝 Python 並確認 <code>python3</code> 找得到,或設
   <code>DEVFLOW_PYTHON</code> 指向直譯器 —— 解析順序見 <code>docs/PLUGIN.md</code> 環境段。不要覆寫 <code>/usr/bin/python3</code>。</p>
