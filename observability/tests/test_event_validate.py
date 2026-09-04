@@ -388,6 +388,18 @@ class TestPrivacy(unittest.TestCase):
             e = attempt_completed(x_meta={"note": note})
             self.assertEqual(ev.validate_event(e), [], msg=note)
 
+    def test_value_leak_narrative_general_threshold_60_10_passes(self):
+        # r3-#98 收斂:首版通用門檻 40 字元/6 詞會誤擋短的工程改名敘述
+        # (「renamed "old field name" to "new field name"」44 字元 8 詞,
+        # 引號內各段只有 3 詞,不吃引號路徑),裁定拉高到 60 字元/10 詞。
+        for note in (
+            'messages: renamed "old field name" to "new field name"',
+            "conversation: moved the retry logic into the shared "
+            "client module",
+        ):
+            e = attempt_completed(x_meta={"note": note})
+            self.assertEqual(ev.validate_event(e), [], msg=note)
+
     def test_value_leak_narrative_quoted_dialogue_rejected(self):
         e = attempt_completed(x_meta={
             "note": 'conversation: "can you reset my password" '
@@ -395,8 +407,9 @@ class TestPrivacy(unittest.TestCase):
         self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
 
     def test_value_leak_narrative_role_marker_rejected(self):
-        # 值本身不夠長(<40 字元)、詞數剛好卡在 6,但含 user:/assistant: 角色
-        # 標記,要靠角色標記那條規則單獨擋下,不能只靠長度+詞數判斷。
+        # 值本身不夠長(<60 字元)、詞數也不到 10(6 詞),但含 user:/
+        # assistant: 角色標記,要靠角色標記那條規則單獨擋下,不能只靠
+        # 長度+詞數判斷。
         e = attempt_completed(x_meta={
             "note": "messages: user: hi assistant: hello user: bye"})
         self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))

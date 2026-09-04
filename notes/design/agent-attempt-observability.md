@@ -162,9 +162,11 @@ hash 進事件(`context_manifest_hash`),內容不進事件。
   同算,值要 6+ 非空白字元);(b) 已知憑證前綴(`sk-`/`AKIA`/JWT/PEM 私鑰/
   `Bearer`);(c) 同一字串內 ≥3 行對話結構。`transcript/conversation/
   messages=值` 是獨立第四種(賦值形才擋、裸字放行),但值還要「長得像逐字稿
-  內容」才算外洩(長度 ≥40 字元且 ≥6 詞 / 引號包住的多詞句 / 含
+  內容」才算外洩(長度 ≥60 字元且 ≥10 詞 / 引號包住的 ≥4 詞句 / 含
   user:/assistant: 角色標記),避免「messages: 3 pending」這類日常狀態敘述
-  被誤殺(r3-#98)。已知排除:賦值形的值若整段只是遮蔽標記(`redacted`/
+  被誤殺(r3-#98;首版通用門檻定 40 字元/6 詞,收斂 F1 找碴發現連「renamed
+  "old field name" to "new field name"」這類短的工程改名敘述都被誤擋,
+  裁定拉高到 60/10)。已知排除:賦值形的值若整段只是遮蔽標記(`redacted`/
   `***`/`null` 等)不算外洩;裸字提及、base64 內容不在此掃描範圍。
 
 ## 7. 事件寫入責任(七節;runtime 皆在 plugin repo → interface contract)

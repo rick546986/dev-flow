@@ -74,22 +74,22 @@ _VALUE_LEAK_CONV_LINE = re.compile(
 #   - 引號對話:值裡有一段用引號包住、內含 ≥4 個以空白分開的詞的片段
 #     (門檻拉到 4 詞只是不讓「"old field name"」這類 ≤3 詞的短識別字片段
 #     單獨觸發這條路徑;"can you reset my password" 這類 ≥4 詞的逐字稿式
-#     引號句仍擋得住。注意:這條路徑放不放行,不影響下面長度+詞數那條 ——
-#     一個值只要整體 ≥40 字元且 ≥6 詞,就算沒有引號也照樣被下面那條擋下,
-#     例如「renamed "old field name" to "new field name"」全值 44 字元
-#     8 詞,靠長度+詞數就擋下,不是靠這條引號路徑);
-#   - 落單於前兩者之外:值本身要夠長(≥40 字元)且夠多詞(≥6 個以空白分開的
-#     詞)才算。純數字、狀態詞(started/pending/none/ok/done/available/
-#     empty/n-a)、單一檔名或路徑天生構不成這個門檻,一律放行;但足夠長、
-#     足夠多詞的一般工程敘述(即使只是賦值形提到 messages/conversation/
-#     transcript 三個關鍵字,不是真的逐字稿)也會被這條擋下 ——
-#     門檻數字(40/6)是 #98 找碴單字面給定,取捨屬找碴單作者,這裡不擅改。
+#     引號句仍擋得住);
+#   - 落單於前兩者之外:值本身要夠長(≥60 字元)且夠多詞(≥10 個以空白分開
+#     的詞)才算。r3-#98 首版門檻定 40 字元/6 詞,收斂 F1 找碴發現
+#     「messages: renamed "old field name" to "new field name"」
+#     (44 字元 8 詞,引號內各段只有 3 詞,不吃引號路徑)這類短的工程改名
+#     敘述也被通用路徑誤擋——裁定拉高到 60/10,純數字、狀態詞
+#     (started/pending/none/ok/done/available/empty/n-a)、單一檔名或
+#     路徑、短識別字改名敘述天生構不成這個門檻,一律放行;真的長得像逐字稿
+#     的一般敘述(refund 案例 89 字元 17 詞)仍擋得住。門檻數字(60/10)是
+#     dispatcher 裁定值,取捨屬 dispatcher,這裡不擅改。
 _VALUE_LEAK_ROLE_MARK = re.compile(
     r"(?i)(?<![A-Za-z0-9])(?:user|assistant|human|system|使用者|助理)\s*[:：]"
 )
 _VALUE_LEAK_QUOTED_SPAN = re.compile(r'"([^"\n]{4,})"|\'([^\'\n]{4,})\'')
-_NARRATIVE_MIN_LEN = 40
-_NARRATIVE_MIN_WORDS = 6
+_NARRATIVE_MIN_LEN = 60
+_NARRATIVE_MIN_WORDS = 10
 _NARRATIVE_QUOTE_MIN_WORDS = 4
 
 
@@ -103,7 +103,7 @@ def _looks_like_transcript(val):
             return True
     if len(val) < _NARRATIVE_MIN_LEN:
         return False
-    # maxsplit 只切出前 6 個詞就夠判斷門檻,避免對 v2 裡可能塞進來的超長殘值
+    # maxsplit 只切出前 _NARRATIVE_MIN_WORDS 個詞就夠判斷門檻,避免對 v2 裡可能塞進來的超長殘值
     # (ReDoS 驗收案例:200KB 重複同一句)整段 split 配置一堆用不到的 token。
     return len(val.split(None, _NARRATIVE_MIN_WORDS - 1)) >= _NARRATIVE_MIN_WORDS
 
