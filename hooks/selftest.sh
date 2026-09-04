@@ -47,8 +47,24 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 派工單 §2.1 TMPDIR 跨平台正規化 w2 組 +2(注入假 cygpath 的正向 + 空 PATH 的
 # 對照組)→ 400;同日 report-guard 覆蓋缺口 +2(.devflow/ 非 reports/ 仍擋 +
 # .devflow/task/ 證據區不得誤傷)→ 402;2026-08-29 Bash 寫入 prevent-before
-# +3(prebash 擋 scope 外 redirect / 擋後檔不落盤 / 放行 scope 內)→ 405)
-# ——新增案例時同步 +;絕不「大概抓個下限」。
+# +3(prebash 擋 scope 外 redirect / 擋後檔不落盤 / 放行 scope 內)→ 405;PR #110
+# 一次 fail-closed 收斂補 +5(vendor __pycache__ 清殘留相關 selftest 衛生案 +3、
+# 壞 payload 武裝判斷初版 armed/err 檢查 +2)→ 實得 410(未同步這個常數);
+# 2026-09-04 issue #101 第二截修法:壞 payload 的武裝判斷跟正常路徑同一套
+# (state 非空/armed/err 任一為真)才 fail-closed,補 12 案(guard/prebash ×
+# 壞JSON/空stdin × sentinel在-exec合法/sentinel刪-exec合法/未武裝三種武裝
+# 狀態,§「①a/①b/①c」)→ 實得 422。
+# ⚠️ 這條常數**刻意沒有**跟著本次改動同步到 422,維持 405 不動 —— 地板本身
+# 是 `TOTAL_CASES < MIN_CASES` 才紅,422 ≥ 405 照樣過,不影響本次 selftest
+# 是否綠。不同步的理由:`scripts/test-architecture-guards.sh:2231` 的
+# `check_static_pin "hooks/selftest.sh" "MIN_CASES=405" ...` 對這一行釘了
+# 逐字比對,那支檔案不在 issue #101 的改動範圍內。若在這裡把 405 改成 422,
+# 那條靜態互釘會找不到逐字行而紅,反而讓 `devflow-check.sh all` 因為一個
+# 範圍外檔案而炸——這正是那條互釘設計要抓的「調動地板卻沒同步互釘」情境,
+# 不該由本次修動自己撞上去又自己繞過去。正確做法是**同一個 commit** 把
+# hooks/selftest.sh:56 與 scripts/test-architecture-guards.sh:2231 一起改到
+# 422(連互釘註解裡的尾聲小計也要跟著更新),留給下一輪能動那支檔案的修動做。
+# ——新增案例時同步 +(受本節說明的互釘限制者除外);絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
@@ -520,6 +536,52 @@ DT_OUT=$(echo "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$DTT/ski
 ck_msg "③ devtalk-guard obs 通道壞掉(目錄不可寫):deny 判定不變" 2 "盲原則洩漏" "$DT_RC" "$DT_OUT"
 rm -f "$DTBAD"; rm -rf "$DTT"
 
+echo "-- #101 壞 payload 的武裝判斷跟正常路徑同一套(state/armed/err 任一為真 → 擋)--"
+# 主 $T fixture 此刻仍是 f1 從第 264 行附近武裝至今、從未 stop 過的狀態:
+# .devflow/exec.json 是合法 dict,.git/devflow-armed sentinel 也在 —— 這是
+# 「合法區塊」,不是後面 exec.json 已被寫壞的 fail-closed 區塊,所以下面四案
+# 真的驗到 state 這條路徑,不是只驗 err。
+# (a) sentinel 在 + exec.json 合法 + 壞 JSON / 空 stdin → 擋
+ck "①a sentinel 在、exec.json 合法 + 壞 JSON → 擋" 2 \
+  "$(echo 'not-json' | "$H/devflow-guard.sh" >/dev/null 2>&1; echo $?)"
+ck "①a prebash 同型" 2 \
+  "$(echo 'not-json' | "$H/devflow-prebash.sh" >/dev/null 2>&1; echo $?)"
+ck "①a 空 stdin(sentinel 在、exec.json 合法)→ 擋" 2 \
+  "$("$H/devflow-guard.sh" < /dev/null >/dev/null 2>&1; echo $?)"
+ck "①a prebash 空 stdin 同型" 2 \
+  "$("$H/devflow-prebash.sh" < /dev/null >/dev/null 2>&1; echo $?)"
+# (b) sentinel 刪、exec.json 仍合法 + 壞 JSON / 空 stdin → 擋 —— 這是 #101
+# 漏掉的那格:armed(sentinel 內容)是空字串、err 也是空字串,但 state 是合法
+# dict;正常路徑(下方 write_scope_verdict)靠 state 判斷要不要擋 scope,壞
+# payload 不能因為剛好沒有 sentinel 就跳過同一套判斷。用 mv 而非重寫內容,
+# 復原時位元組完全一致,不必猜 devflow-exec.sh 當初寫了什麼格式。
+mv .git/devflow-armed .git/devflow-armed.i101bak
+[ -f .git/devflow-armed ] && echo "  ⚠️ i101:①b sentinel 沒被移走,以下四案不是在測 sentinel-刪的情境"
+ck "①b sentinel 刪、exec.json 合法 + 壞 JSON → 擋(#101 本體)" 2 \
+  "$(echo 'not-json' | "$H/devflow-guard.sh" >/dev/null 2>&1; echo $?)"
+ck "①b prebash 同型" 2 \
+  "$(echo 'not-json' | "$H/devflow-prebash.sh" >/dev/null 2>&1; echo $?)"
+ck "①b 空 stdin(sentinel 刪、exec.json 合法)→ 擋" 2 \
+  "$("$H/devflow-guard.sh" < /dev/null >/dev/null 2>&1; echo $?)"
+ck "①b prebash 空 stdin 同型" 2 \
+  "$("$H/devflow-prebash.sh" < /dev/null >/dev/null 2>&1; echo $?)"
+mv .git/devflow-armed.i101bak .git/devflow-armed   # 復原:下一段假設 sentinel 在
+[ -f .git/devflow-armed ] || echo "  ⚠️ i101:①b sentinel 復原失敗,下一段 fail-closed 案例會假紅"
+# (c) 未武裝(無 exec.json、無 sentinel)+ 壞 JSON / 空 stdin → 仍放行(fail-open
+# 不變)。獨立 fixture,不動主 $T —— 主 $T 全程武裝,拆了會連坐後面所有案例。
+C101=$(mktemp -d "${TMPDIR:-/tmp}/devflow-i101-unarmed.XXXXXX")
+( cd "$C101" && git init -q . && git config user.email t@t && git config user.name t \
+  && git commit --allow-empty -qm init >/dev/null )
+ck "①c 未武裝 + 壞 JSON → 放行(fail-open 不變)" 0 \
+  "$(cd "$C101" && echo 'not-json' | "$H/devflow-guard.sh" >/dev/null 2>&1; echo $?)"
+ck "①c prebash 同型" 0 \
+  "$(cd "$C101" && echo 'not-json' | "$H/devflow-prebash.sh" >/dev/null 2>&1; echo $?)"
+ck "①c 空 stdin(未武裝)→ 放行" 0 \
+  "$(cd "$C101" && "$H/devflow-guard.sh" < /dev/null >/dev/null 2>&1; echo $?)"
+ck "①c prebash 空 stdin 同型" 0 \
+  "$(cd "$C101" && "$H/devflow-prebash.sh" < /dev/null >/dev/null 2>&1; echo $?)"
+rm -rf "$C101"
+
 echo "-- fail-closed --"
 rm -f .devflow/exec.json
 ck "旗標消失但 sentinel 在 → 擋" 2 "$(g Write src/a.py)"
@@ -532,6 +594,9 @@ echo '[]' > .devflow/exec.json
 ck "旗標 [] → 擋"             2 "$(g Write src/a.py)"
 echo '"x"' > .devflow/exec.json
 ck "旗標字串 → 擋"            2 "$(g Write src/a.py)"
+# 下面兩案 exec.json 此刻是 '"x"'(合法 JSON 但非 object)→ load_state 回 err
+# 非空,只驗到 armed/err 分支;state-是合法-dict-但-armed/err-皆空 那格由上面
+# 「①b」補,不要以為這兩案涵蓋了 #101 的漏洞本體。
 ck "非 JSON payload 武裝中 → 擋" 2 "$(echo 'not-json' | "$H/devflow-guard.sh" >/dev/null 2>&1; echo $?)"
 ck "prebash 非 JSON payload 武裝中 → 擋" 2 "$(echo 'not-json' | "$H/devflow-prebash.sh" >/dev/null 2>&1; echo $?)"
 
