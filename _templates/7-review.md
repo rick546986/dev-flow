@@ -292,12 +292,12 @@ updated:
      須列 F 並回頭修契約(L2 路徑),不得默默接受 -->
 
 ## 變更架構圖
-<!-- 指南 #twin-dash:Markdown 留 ASCII 正本;純線性/單層樹用半形 | - + > < = [ ],
+<!-- 指南 #diagram-style:Markdown 留 ASCII 正本;純線性/單層樹用半形 | - + > < = [ ],
      空間關係複雜才在 HTML 改 SVG。必須對上 Diff 的檔名 basename 與公開端點／新表名;
      改 Diff 必須改圖。不要拿 F-id／現象證據 S-id 當圖上的模組。 -->
 
 ## Diff(merge-base(develop)..HEAD,逐檔折疊)
-<!-- 指南 #twin-dash 要求每檔一個 details。summary 的 title/文字列 +N/-N 與函式;
+<!-- 指南 #diff-fold 要求每檔一個 details。summary 的 title/文字列 +N/-N 與函式;
      內容放 HTML-escaped 完整 diff,刪行 class="del"、增行 class="add"。 -->
 
 ## Verdict
@@ -338,7 +338,7 @@ updated:
 - [ ] STATUS.md 已更新為 shipped(這一步在整合分支上、PR 合併後由合併那個 PR 的人
       做,不塞進本 branch 的 PR —— 動線與理由見 STATUS 模板頂註)
 - [ ] 7-review frontmatter status: shipped;上游 artifact 可保留 approved(各自 gate 核准紀錄)
-- [ ] 7-review.html 已產生(含變更架構圖 + diff 折疊,規格見指南 `#twin-dash`)
+- [ ] 7-review.html 已產生(含變更架構圖,規格見指南 `#diagram-style`;diff 折疊規格見指南 `#diff-fold`)
 - [ ] feature branch 已刪 / worktree 已清
 
 ## 附錄:本輪特有

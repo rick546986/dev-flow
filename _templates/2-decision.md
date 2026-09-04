@@ -82,7 +82,7 @@ updated:
 | B |  |  |  |  |  |
 
 ## 方案架構圖
-<!-- 每案一張或並排比較(比較期);判準同指南 `#twin-dash`:純線性/單層樹 → ASCII
+<!-- 每案一張或並排比較(比較期);判準同指南 `#diagram-style`:純線性/單層樹 → ASCII
      (半形 | - + > < = [ ]);方塊+連線空間關係 → html 用 SVG(md 留 ASCII 正本)。
      gate 前必有。選定案必須在圖上標「選定」;Rejected 的案若上圖,不得標選定。
      Decision／Rejected 改選定,圖的選定標必須一起改。 -->

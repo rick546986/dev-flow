@@ -1846,7 +1846,7 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   <li>[ ] STATUS.md 已更新為 shipped(這一步在整合分支上、PR 合併後由合併那個 PR 的人
   做,不塞進本 branch 的 PR —— 動線與理由見 STATUS 模板頂註)</li>
   <li>[ ] 7-review frontmatter status: shipped;上游 artifact 可保留 approved(各自 gate 核准紀錄)</li>
-  <li>[ ] 7-review.html 已產生(含變更架構圖 + diff 折疊,規格見指南 <code>#twin-dash</code>)</li>
+  <li>[ ] 7-review.html 已產生(含變更架構圖,規格見指南 <code>#diagram-style</code>;diff 折疊規格見指南 <code>#diff-fold</code>)</li>
   <li>[ ] feature branch 已刪 / worktree 已清</li>
   </ul>
   <!-- parity:end template7-exit-quickstart -->
@@ -1931,6 +1931,25 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
     <tr><td><strong>5-tasks(執行板)</strong></td>
         <td>狀態(frontmatter)/ 任務(幾個 T + 幾條缺必填欄)/ 模式(execution.mode,未標=sequential)/ 依賴(幾條 Blocked-by 邊)/ 進度(可勾計數)</td></tr>
   </table></div>
+
+  <h3 id="diagram-style">圖規則(全域):ASCII vs SVG 判準</h3>
+  <p>每站 html 至少一張圖,判準看關係形狀:</p>
+  <ul>
+    <li><strong>純線性步驟 / 單層樹</strong> → ASCII(md code block,html <code>&lt;pre&gt;</code>,git-diffable;
+      <strong>限半形字元</strong> <code>| - + &gt; &lt; = [ ]</code> —— 全形框線與中文不參與欄位對齊,
+      瀏覽器 <code>pre</code> 全形寬度不定必歪,中文只放行首標籤/行尾註)。</li>
+    <li><strong>方塊+連線的空間關係</strong>(多層模型/時間軸/分支交錯/跨層互動)→ <strong>inline SVG 真圖</strong>
+      (block+線條+箭頭)。拿不準 → SVG。</li>
+  </ul>
+  <p>禁外部庫。md 永遠留 ASCII 正本,html 依判準選渲染。畫法規範(顏色變數/class 約定/佈局紀律,
+  不依賴任何 skill 或本機軟體)見 <code>_templates/diagram-style.md</code>;新圖先抄現成範本結構再改節點。</p>
+
+  <h3 id="diff-fold">Diff 折疊細則(6/7 的 html)</h3>
+  <p>每檔一個 <code>&lt;details&gt;</code> 折疊條 —— hover 顯示 stat 摘要(+N/−N、動到的函式),
+  click 展開完整 diff(紅綠著色);內容必 HTML-escape;單檔 &gt;400 行截斷留 stat+首段註「完整見 git」;
+  base:6 = 該 T 的 commit,7 = merge-base(develop)..HEAD。</p>
+  <p><strong>標題要寫實際用的 base</strong> —— merge-base 與「feature 開工前那個 commit」常常不是同一個
+  (order-intake 實測相差 105 個 commit、檔數 202 vs 861),用了哪個就標哪個並寫原因,不要照抄本行的字面。</p>
 
   <h3 id="gate-anchors">G2 / G3 錨定義</h3>
   <p>粗體 token 與八點的機械正本在契約檔 §7。這裡是人讀全文。</p>
