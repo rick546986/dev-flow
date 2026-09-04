@@ -96,27 +96,39 @@ if not sh_files:
           file=sys.stderr)
     sys.exit(2)
 
-# heredoc 起頭有兩種形狀,都要收:
+# heredoc 起頭有三種形狀,都要收(#113 兩輪 fresh 驗收陸續補的):
 # ①字面 interpreter token:`python3`/`python`,或指向直譯器的**變數呼叫**——
 #   `"$DEVFLOW_PY"`、`$DEVFLOW_RENDER_PYTHON` 這種 `$...PY...` 形狀(含不含雙引號
-#   都算);原本只認字面 python3/python,#113 fresh 驗收抓到 check-write-scope.sh
-#   的 `"$DEVFLOW_PY" - <<'PY'` 整支漏網。
+#   都算)。⚠️ 誠實記錄:目前這條路徑對 repo 裡任何一支真實檔案都不是必要的
+#   ——凡是靠變數呼叫的 heredoc,tag 也剛好都含 PY,②單獨就吃得下,這條路徑
+#   目前零獨佔貢獻(第二輪複驗把 INTERP_TOKEN_RE 改成 `(?!)` 重跑,掃到的
+#   heredoc 數量、PF-1 結果都不變,證實了這件事)。仍然留著是因為:handler 形狀
+#   在語法上合法、遲早會有人這樣寫;它的負向覆蓋現在**只**靠
+#   test-architecture-guards.sh 的 PF-2 fixture(對 check-adr-integrity.sh 複本
+#   改形成「只有變數呼叫,tag 不含 PY」的形狀,逼這條路徑成為唯一判準)。
 # ②wrapper 呼叫:呼叫行完全看不到 python 字樣(例如 test-architecture-guards.sh
 #   的 `mutate() { python3 - "$1"; }`,呼叫處是 `mutate "$D" <<'PY'`),但 heredoc
-#   tag 本身以 PY 開頭 —— 這是作者自己選來標記「這是 python 片段」的慣例,同一輪
-#   驗收也抓到這類(連同 check_floor_block 用的 <<'PYFLOOR')原本因為 tag 不在舊
-#   白名單(PY/PYTHON/EOF_PY/PYEOF)裡而漏收。
-# tag 字元類放寬成任意識別字(不再是四選一白名單),但**只吃有引號的 delimiter**——
-# 無引號的 heredoc 內容進 shell 前會先展開 `$VAR`/反引號,抽出來的字串已經不是
-# 原始碼字面值,拿去 compile 只會誤判,所以跳過並計數,既不算過也不算 FAIL。
+#   tag**含** PY(不限開頭,子字串即可 —— 見 hooks/selftest.sh:695 的
+#   `<<'P1PY'`,tag 開頭是 P1 不是 PY,原本用 `.startswith("PY")` 會漏收,第二輪
+#   複驗抓到後放寬成子字串判斷)。EOF/USAGE/HEADER 這類非 python heredoc 的 tag
+#   都不含 PY 子字串,放寬不會誤收。
+# ③`cat > x.py <<'TAG'` 這種**直接寫成 .py 檔**的 heredoc,不管 tag 或呼叫行
+#   長怎樣都收 —— 內容本來就是要落地執行的 python 原始碼(同樣是
+#   hooks/selftest.sh:695 那類案例的一般化:P1PY 靠②的子字串放寬也收得到,但
+#   `.py` 副檔名本身就是比 tag 命名慣例更直接的證據,兩條路徑互為備援)。
+# tag 字元類放寬成任意識別字(不再是四選一白名單),但①②**只吃有引號的
+# delimiter**——無引號的 heredoc 內容進 shell 前會先展開 `$VAR`/反引號,抽出來
+# 的字串已經不是原始碼字面值,拿去 compile 只會誤判,所以跳過並計數,既不算過
+# 也不算 FAIL。③不受這條引號限制,因為判準是副檔名不是 tag。
 INTERP_TOKEN_RE = re.compile(r'python3?\b|"\$[A-Z_]*PY[A-Z_]*"|\$[A-Z_]*PY[A-Z_]*')
 HEREDOC_ANY_RE = re.compile(r"<<(-)?\s*(['\"]?)([A-Za-z_]\w*)\2")
+PY_REDIRECT_RE = re.compile(r"\.py['\"]")
 LINE_NO_RE = re.compile(r"line (\d+)")
 
 
 def find_heredocs(src_lines):
     """掃一支檔案的行陣列,回傳 [(起始行號 1-based, tag, 有無引號, body 行陣列)]——
-    只回傳判定為 python 的 heredoc(見上方①②)。body 用 None 代表「找不到對應
+    只回傳判定為 python 的 heredoc(見上方①②③)。body 用 None 代表「找不到對應
     結尾標記」(呼叫端要另外記一筆失敗,不是靜默跳過)。
 
     不管判不判定為 python,每個 heredoc 起頭都會先把 body 掃到底找結尾標記
@@ -156,8 +168,9 @@ def find_heredocs(src_lines):
             body.append(probe.lstrip("\t") if dash else probe)
             j += 1
         has_interp = bool(INTERP_TOKEN_RE.search(line))
-        is_wrapper = (not has_interp) and tag.startswith("PY")
-        if has_interp or is_wrapper:
+        is_wrapper = (not has_interp) and "PY" in tag.upper()
+        is_py_redirect = bool(PY_REDIRECT_RE.search(line))
+        if has_interp or is_wrapper or is_py_redirect:
             out.append((i + 1, tag, bool(quote), body if end_no else None))
         i = (j + 1) if end_no else n
     return out
@@ -266,14 +279,21 @@ if checked < MIN_FILES:
 
 # ⚠️ 精確釘死實測數,不留餘裕(同 EXPECTED_MAPPED_FILES/MIN_CASES 那批「釘死」常數
 # 的慣例,比 MIN_FILES 這支舊常數的鬆地板更嚴)——heredoc 掃描剛補上(#113),牙齒
-# 還沒被驗證過撐不撐得住 regex 被悄悄縮小;INTERP_TOKEN_RE/tag 字元類/wrapper
-# fallback 任一處被改窄,只要沒讓 checked 直接掉到 0(FATAL 已經擋這種),都得靠
-# 這個地板現形。增刪 .sh 或 heredoc 時一起改這個數字。
-MIN_HEREDOCS = 210
+# 還沒被驗證過撐不撐得住 regex 被悄悄縮小。HEREDOC_ANY_RE/tag 字元類/wrapper
+# fallback(②)/py-redirect fallback(③)任一處被改窄,只要沒讓 heredoc_checked
+# 直接掉到 0(FATAL 已經擋這種),真實檔案(hooks/selftest.sh、
+# test-architecture-guards.sh 那批 mutate wrapper 等)都靠它們才被收進來,窄了
+# 這個地板就會現形。
+# ⚠️ 唯一例外是①INTERP_TOKEN_RE:這個 repo 裡沒有任何一支真實檔案的計數是
+# **只**靠它才收得到(見上方①段落的頂註)——它被改窄不會讓這個地板掉,負向覆蓋
+# 另外靠 test-architecture-guards.sh 的 PF-2 fixture(對 check-py-floor.sh 複本
+# 本身做 INTERP_TOKEN_RE 變異,逼一個自造的變數呼叫 heredoc 從計數裡消失),
+# 不是這裡。增刪 .sh 或 heredoc 時一起改下面這個數字。
+MIN_HEREDOCS = 212
 if heredoc_checked < MIN_HEREDOCS:
     failures.append(
         f"⛔ 只掃到 {heredoc_checked} 個 heredoc(地板 {MIN_HEREDOCS})—— "
-        "INTERP_TOKEN_RE/HEREDOC_ANY_RE/wrapper fallback 被縮小或漏檔")
+        "HEREDOC_ANY_RE/wrapper fallback/py-redirect fallback 被縮小或漏檔")
 
 # ⚠️ 成功訊息一律報**實際用到的版本**,不准報 PY_FLOOR。
 # 起因(2026-08-19,由 dev-flow:devflow-adviser 唯讀複核抓到):接受區間是

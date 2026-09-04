@@ -138,8 +138,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=15
-EXPECTED_NEGATIVES=120
-EXPECTED_TOTAL=135
+EXPECTED_NEGATIVES=121
+EXPECTED_TOTAL=136
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -2195,14 +2195,14 @@ D=$(seed_sm sm1)
 rm -f "$D/docs/dev/readme-contract-extract.md"
 expect fail check-ship-manifest.sh "$D" "SM-1 第三類列(docs/dev/readme-contract-extract.md,source==destination 的同步宣告列)source 被刪 → 必須紅(issue #92:舊版同一變異 15 項仍全綠)"
 
-# ── PF 群組:check-py-floor.sh 的 heredoc 掃描(#113 fresh 驗收補的負向覆蓋)────
-# PF-0 對照組(未變異,check-py-floor.sh 對自己的完整複本應全綠)/ PF-1 在
-# scripts/check-write-scope.sh 的第一個 heredoc 裡插一行 3.12-only 的 f-string
-# 反斜線。故意選 check-write-scope.sh 當變異目標,不是隨便挑一支:它的 heredoc
-# 起頭是 `"$DEVFLOW_PY" - "$LIB" <<'PY'`——**變數呼叫**,同一行沒有字面
-# python3/python——這樣 PF-1 同時覆蓋兩件事:①heredoc 掃描抓不抓得到語法退化
-# ②interpreter token 的變數呼叫形狀(`"$DEVFLOW_PY"`)真的有被掃到,不只是字面
-# python3/python 這一種形狀。
+# ── PF 群組:check-py-floor.sh 的 heredoc 掃描(#113 兩輪 fresh 驗收補的負向覆蓋)──
+# PF-0 對照組(未變異,check-py-floor.sh 對自己的完整複本應全綠)。
+# PF-1 在 scripts/check-write-scope.sh 的第一個 heredoc(`"$DEVFLOW_PY" - "$LIB"
+# <<'PY'`,變數呼叫,tag 是 'PY')裡插一行 3.12-only 的 f-string 反斜線 —— 驗
+# heredoc 掃描抓不抓得到語法退化。⚠️ 誠實記錄(第二輪複驗抓到):這**不是**在
+# 單獨驗 interpreter token 的變數呼叫路徑(INTERP_TOKEN_RE)——check-write-scope.sh
+# 的 tag 是 'PY',含 PY 子字串,wrapper fallback 自己就吃得下,PF-1 對
+# INTERP_TOKEN_RE 開不開都無感。要單獨咬 INTERP_TOKEN_RE,見下面 PF-2。
 # 為什麼不用 check_static_pin_sub:那支只驗「guard 自己的原始碼裡某段字面還在
 # 不在」,是靜態存在性檢查,答不了「guard 遇到別支檔案裡的真實語法退化,判得判
 # 不判得出來」這個行為問題。這裡要驗的是後者,跟 DC-*/GT-*/MEM-* 那批
@@ -2225,6 +2225,54 @@ assert n != t, "PF-1 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
 expect_local fail check-py-floor.sh "$D" "PF-1 \$DEVFLOW_PY 變數呼叫的 heredoc 塞 3.12-only f-string 反斜線 → 必紅"
+
+# PF-2:單獨咬 INTERP_TOKEN_RE(#113 第二輪複驗抓到 PF-1 對它無感之後補的)。
+# 用 chr(34)/chr(39) 組出雙引號/單引號、用 str.index 找到宣告行後整行替換 ——
+# 不手刻含大量跳脫字元的正則文字本身,三層引號(bash heredoc → mutate 的 python
+# 原始碼 → 被改寫的目標檔案文字)疊在一起手刻極容易錯,改用結構化操作更穩。
+# ①把 seed_pyfloor 複本裡 scripts/check-adr-integrity.sh 的唯一 heredoc 改形
+#   成「呼叫行是變數呼叫 $DEVFLOW_PY、tag 是 ZZZ(不含 PY 子字串)」——這個形狀
+#   wrapper fallback(靠 tag 含 PY)跟 py-redirect fallback(靠 .py 副檔名)都
+#   咬不到,只剩 INTERP_TOKEN_RE 能讓它被計入。改寫既有檔案而不是另外新增一支,
+#   是為了讓複本的 heredoc 總數跟正式 repo 的 MIN_HEREDOCS 精確對齊(整形不改變
+#   總數,只改變「這一個」heredoc 靠哪條路徑被收);這樣②把 INTERP_TOKEN_RE
+#   關掉時,複本的計數才會真的從地板值跌破一個,不是從「天生多一個」的餘裕退回
+#   地板打平(打平不會紅,`checked < MIN` 不成立)。
+# ②把複本的 scripts/check-py-floor.sh 裡 INTERP_TOKEN_RE 改成永不命中 —— ①
+#   改形的那個 heredoc 應該從計數裡消失,MIN_HEREDOCS 地板要跌破,
+#   check-py-floor.sh 必須紅。
+D=$(seed_pyfloor pf2); mutate "$D" <<'PY'
+import sys, pathlib
+
+root = pathlib.Path(sys.argv[1])
+DQ = chr(34)
+SQ = chr(39)
+
+adr = root / "scripts/check-adr-integrity.sh"
+t = adr.read_text(encoding="utf-8")
+open_old = "python3 - " + DQ + "$1" + DQ + " <<" + SQ + "PY" + SQ
+open_new = DQ + "$DEVFLOW_PY" + DQ + " - " + DQ + "$1" + DQ + " <<" + SQ + "ZZZ" + SQ
+assert open_old in t, "PF-2 anchor(heredoc 開頭)不見"
+t2 = t.replace(open_old, open_new, 1)
+assert t2 != t, "PF-2 heredoc 開頭整形沒生效"
+close_old = "\n" + "PY" + "\n"
+close_new = "\n" + "ZZZ" + "\n"
+assert t2.count(close_old) == 1, "PF-2 anchor(heredoc 結尾)不是恰好一次"
+t3 = t2.replace(close_old, close_new, 1)
+assert t3 != t2, "PF-2 heredoc 結尾整形沒生效"
+adr.write_text(t3, encoding="utf-8")
+
+floor = root / "scripts/check-py-floor.sh"
+u = floor.read_text(encoding="utf-8")
+marker = "INTERP_TOKEN_RE = re.compile("
+start = u.index(marker)
+end = u.index("\n", start)
+new_decl = "INTERP_TOKEN_RE = re.compile(r" + SQ + "(?!)" + SQ + ")"
+u2 = u[:start] + new_decl + u[end:]
+assert u2 != u, "PF-2 INTERP_TOKEN_RE 變異沒生效"
+floor.write_text(u2, encoding="utf-8")
+PY
+expect_local fail check-py-floor.sh "$D" "PF-2 INTERP_TOKEN_RE 關掉後,只能靠它判定的變數呼叫 heredoc(tag 不含 PY)漏收,MIN_HEREDOCS 必紅"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
