@@ -128,8 +128,9 @@ def runtime_check(obj, tags_enum=None):
         if isinstance(node, dict):
             for k, v in node.items():
                 p = f"{path}.{k}" if path else str(k)
-                raw = str(k).lower()
-                bare = raw[2:] if raw.startswith("x_") else raw
+                bare = str(k).lower()
+                while bare.startswith("x_"):          # 剝到底,#98:曾只剝一層
+                    bare = bare[2:]
                 if bare in EXTRA_FORBIDDEN_KEYS:
                     errs.append({"code": "privacy_forbidden_key", "field": p,
                                  "msg": f"禁載欄位 {k!r}(共享契約 §6 runtime 加嚴)"})

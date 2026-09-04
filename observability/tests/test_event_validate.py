@@ -302,6 +302,70 @@ class TestPrivacy(unittest.TestCase):
         e = attempt_completed(x_transcript="full chat log")
         self.assertIn("privacy_forbidden_key", codes(ev.validate_event(e)))
 
+    def test_double_x_prefix_cannot_bypass_forbidden_key(self):
+        # #98 PR #110 回歸:剝一層時 x_x_transcript 對 forbidden_exact 免疫。
+        e = attempt_completed(x_x_transcript="full chat log")
+        self.assertIn("privacy_forbidden_key", codes(ev.validate_event(e)),
+                      msg="x_ 前綴須剝到底,不是只剝一層")
+
+    def test_nested_transcript_key_still_rejected(self):
+        e = attempt_completed(x_meta={"transcript": "full chat log"})
+        self.assertIn("privacy_forbidden_key", codes(ev.validate_event(e)))
+
+    # ── value_leak:洩漏形狀,不是裸字比對 ─────────────────────
+
+    def test_value_leak_assigned_secret_rejected(self):
+        e = attempt_completed(x_meta={"note": "password=hunter2"})
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_openai_style_key_rejected(self):
+        e = attempt_completed(
+            x_meta={"note": "leaked sk-abcdefghijklmnop1234567890 in log"})
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_stripe_style_hyphenated_key_rejected(self):
+        # 驗收原文的字面案例:含連字號的金鑰格式(sk-live-...)。
+        e = attempt_completed(x_meta={"note": "found sk-live-abcd1234efgh in diff"})
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_sk_prefix_does_not_catch_english_words(self):
+        # 同型回歸:sk-[A-Za-z0-9]{8,} 沒鎖字界時會吃到 risk-assessment、
+        # disk-encryption 這類合法英文字,誤判成金鑰洩漏。
+        for note in ("risk-assessment completed for this feature",
+                     "switched to disk-encryption for the volume"):
+            e = attempt_completed(x_meta={"note": note})
+            self.assertEqual(ev.validate_event(e), [], msg=note)
+
+    def test_value_leak_aws_key_rejected(self):
+        e = attempt_completed(
+            x_meta={"note": "found AKIAIOSFODNN7EXAMPLE in commit"})
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_conversation_structure_rejected(self):
+        convo = "user: hi\nassistant: hello there\nuser: bye now"
+        e = attempt_completed(x_meta={"note": convo})
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_scanned_inside_list(self):
+        # #98 PR #110 回歸:值掃描只在 dict 分支,list 內字串完全不掃。
+        e = attempt_completed(x_meta={"notes": ["ok", "password=hunter2"]})
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)),
+                      msg="list 元素也要走 value_leak 掃描")
+
+    def test_value_leak_word_in_engineering_prose_passes(self):
+        # #98 PR #110 回歸:裸字比對把「移除了密碼欄位」的工程敘述誤判成外洩。
+        e = attempt_completed(x_meta={
+            "summary": "removed the password field from the login form"})
+        self.assertEqual(ev.validate_event(e), [])
+
+    def test_value_leak_token_mentioned_in_prose_passes(self):
+        e = attempt_completed(x_meta={"note": "rotate the token weekly"})
+        self.assertEqual(ev.validate_event(e), [])
+
+    def test_value_leak_transcript_ref_value_passes(self):
+        e = attempt_completed(x_meta={"note": "transcript_ref: abc"})
+        self.assertEqual(ev.validate_event(e), [])
+
 
 class TestGauntletContract(unittest.TestCase):
     """ID-10:D/C 事件契約合流 —— final_fresh_run_* 兩事件 + 四值 status。
