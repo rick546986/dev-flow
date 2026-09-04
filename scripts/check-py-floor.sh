@@ -96,26 +96,54 @@ if not sh_files:
           file=sys.stderr)
     sys.exit(2)
 
-# heredoc 起頭:`python3`/`python` 後面接 `<<'PY'`(或 PYTHON/EOF_PY/PYEOF,可加
-# `-` 用 `<<-` 讓終止行允許前導 tab)。只吃**有引號**的 delimiter —— 無引號的
-# heredoc 內容進 shell 前會先展開 `$VAR`/反引號,抽出來的字串已經不是原始碼字面
-# 值,拿去 compile 只會誤判,所以跳過並計數,既不算過也不算 FAIL。
-HEREDOC_OPEN_RE = re.compile(
-    r"python3?\b.*<<(-)?\s*(['\"]?)(PY|PYTHON|EOF_PY|PYEOF)\2")
+# heredoc 起頭有兩種形狀,都要收:
+# ①字面 interpreter token:`python3`/`python`,或指向直譯器的**變數呼叫**——
+#   `"$DEVFLOW_PY"`、`$DEVFLOW_RENDER_PYTHON` 這種 `$...PY...` 形狀(含不含雙引號
+#   都算);原本只認字面 python3/python,#113 fresh 驗收抓到 check-write-scope.sh
+#   的 `"$DEVFLOW_PY" - <<'PY'` 整支漏網。
+# ②wrapper 呼叫:呼叫行完全看不到 python 字樣(例如 test-architecture-guards.sh
+#   的 `mutate() { python3 - "$1"; }`,呼叫處是 `mutate "$D" <<'PY'`),但 heredoc
+#   tag 本身以 PY 開頭 —— 這是作者自己選來標記「這是 python 片段」的慣例,同一輪
+#   驗收也抓到這類(連同 check_floor_block 用的 <<'PYFLOOR')原本因為 tag 不在舊
+#   白名單(PY/PYTHON/EOF_PY/PYEOF)裡而漏收。
+# tag 字元類放寬成任意識別字(不再是四選一白名單),但**只吃有引號的 delimiter**——
+# 無引號的 heredoc 內容進 shell 前會先展開 `$VAR`/反引號,抽出來的字串已經不是
+# 原始碼字面值,拿去 compile 只會誤判,所以跳過並計數,既不算過也不算 FAIL。
+INTERP_TOKEN_RE = re.compile(r'python3?\b|"\$[A-Z_]*PY[A-Z_]*"|\$[A-Z_]*PY[A-Z_]*')
+HEREDOC_ANY_RE = re.compile(r"<<(-)?\s*(['\"]?)([A-Za-z_]\w*)\2")
+LINE_NO_RE = re.compile(r"line (\d+)")
 
 
 def find_heredocs(src_lines):
-    """掃一支檔案的行陣列,回傳 [(起始行號 1-based, tag, 有無引號, body 行陣列)]。
-    body 用 None 代表「找不到對應結尾標記」(呼叫端要另外記一筆失敗,不是靜默跳過)。"""
+    """掃一支檔案的行陣列,回傳 [(起始行號 1-based, tag, 有無引號, body 行陣列)]——
+    只回傳判定為 python 的 heredoc(見上方①②)。body 用 None 代表「找不到對應
+    結尾標記」(呼叫端要另外記一筆失敗,不是靜默跳過)。
+
+    不管判不判定為 python,每個 heredoc 起頭都會先把 body 掃到底找結尾標記
+    (尊重 `<<-` 的前導 tab 語意)—— 不是 python 的也要跳過整段 body 再繼續往下
+    掃,不能只跳一行:否則非 python heredoc(例如 `cat > x.md <<'EOF'`)的內容裡
+    剛好長得像另一個 heredoc 起頭,會被誤判成巢狀開頭。
+
+    整行註解(去掉前導空白後第一個字元是 `#`)一律跳過不進 regex —— 這支檔案自己
+    的頂註、以及 test-architecture-guards.sh:297 的 `# mutate <root> <<'PY' …`
+    這種**描述** heredoc 語法的說明句,原本會被字面比對誤判成真的 heredoc 起頭
+    (實測踩到:自我掃描時把自己的頂註當成開頭,吃掉一大段不相干的行當 body)。
+    只擋整行註解,不擋「程式碼後面接 # 尾註」—— 本 repo 目前沒有 heredoc 起頭行
+    帶尾註的用法,真出現時 INTERP_TOKEN_RE/HEREDOC_ANY_RE 一樣會在同一行命中,
+    不受影響。
+    """
     out = []
     i, n = 0, len(src_lines)
     while i < n:
-        m = HEREDOC_OPEN_RE.search(src_lines[i])
+        line = src_lines[i]
+        if line.lstrip().startswith("#"):
+            i += 1
+            continue
+        m = HEREDOC_ANY_RE.search(line)
         if not m:
             i += 1
             continue
         dash, quote, tag = m.group(1), m.group(2), m.group(3)
-        open_no = i + 1
         j = i + 1
         body = []
         end_no = None
@@ -127,7 +155,10 @@ def find_heredocs(src_lines):
                 break
             body.append(probe.lstrip("\t") if dash else probe)
             j += 1
-        out.append((open_no, tag, bool(quote), body if end_no else None))
+        has_interp = bool(INTERP_TOKEN_RE.search(line))
+        is_wrapper = (not has_interp) and tag.startswith("PY")
+        if has_interp or is_wrapper:
+            out.append((i + 1, tag, bool(quote), body if end_no else None))
         i = (j + 1) if end_no else n
     return out
 
@@ -201,8 +232,16 @@ if floor_exe:
                     capture_output=True, text=True)
                 if r.returncode != 0:
                     tail = (r.stderr.strip().splitlines() or ["(無 stderr)"])[-1]
+                    # temp 檔已經補了跟 open_no 等量的空白行,py_compile 回報的
+                    # 「line N」因此直接就是 .sh 檔案的絕對行號 —— 從 stderr 抽出來,
+                    # 訊息同時印 heredoc 起始行與這個實際出錯行,兩個數字都要看得到。
+                    line_nos = LINE_NO_RE.findall(r.stderr)
+                    if line_nos:
+                        where = f"起於第 {open_no} 行,實際出錯在第 {line_nos[-1]} 行"
+                    else:
+                        where = f"起於第 {open_no} 行(stderr 沒有行號可抽)"
                     failures.append(
-                        f"{rel}:第 {open_no} 行起的 heredoc 在 Python "
+                        f"{rel}:heredoc {where},在 Python "
                         f"{floor_ver[0]}.{floor_ver[1]} 編譯不過 —— {tail}")
 
     # 掃到零個 heredoc 跟掃到零個 .py 同等級:pattern 壞了或漏檔,不能悄悄放行。
@@ -224,6 +263,17 @@ else:
 MIN_FILES = 40
 if checked < MIN_FILES:
     failures.append(f"⛔ 只驗了 {checked} 個檔(地板 {MIN_FILES})—— PATTERNS 被縮小或 repo 缺檔")
+
+# ⚠️ 精確釘死實測數,不留餘裕(同 EXPECTED_MAPPED_FILES/MIN_CASES 那批「釘死」常數
+# 的慣例,比 MIN_FILES 這支舊常數的鬆地板更嚴)——heredoc 掃描剛補上(#113),牙齒
+# 還沒被驗證過撐不撐得住 regex 被悄悄縮小;INTERP_TOKEN_RE/tag 字元類/wrapper
+# fallback 任一處被改窄,只要沒讓 checked 直接掉到 0(FATAL 已經擋這種),都得靠
+# 這個地板現形。增刪 .sh 或 heredoc 時一起改這個數字。
+MIN_HEREDOCS = 210
+if heredoc_checked < MIN_HEREDOCS:
+    failures.append(
+        f"⛔ 只掃到 {heredoc_checked} 個 heredoc(地板 {MIN_HEREDOCS})—— "
+        "INTERP_TOKEN_RE/HEREDOC_ANY_RE/wrapper fallback 被縮小或漏檔")
 
 # ⚠️ 成功訊息一律報**實際用到的版本**,不准報 PY_FLOOR。
 # 起因(2026-08-19,由 dev-flow:devflow-adviser 唯讀複核抓到):接受區間是

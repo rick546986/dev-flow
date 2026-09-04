@@ -278,6 +278,35 @@ seed_fm() {
   echo "$dst"
 }
 
+# seed_pyfloor <name> → 專供 check-py-floor.sh 的 fixture:複製它會讀到的**全部**
+# 目標(docs/PLUGIN.md、skills/dev-setup/SKILL.md、hooks/、scripts/、observability/、
+# memory/、docs/dev/tools/)並初始化真 git repo。
+# 起因:check-py-floor.sh 用 `git ls-files --cached --others --exclude-standard`
+# 當掃描來源(同 check-no-stale-paths.sh 的 seed_sp、check-file-map.sh 的 seed_fm
+# 既有理由),單純檔案樹跑不了 git ls-files;它又是靠 `$0` 自己定位 ROOT(不吃
+# CLI root 參數),所以守衛本體必須真的落在複本的 scripts/ 底下才會用複本當 ROOT。
+# 只複製 seed() 的既有清單不夠 —— check-py-floor.sh 開頭就讀 docs/PLUGIN.md(seed()
+# 沒帶這份),沒補齊會在還沒掃到任何 heredoc 前就先因為讀不到檔案炸開。
+seed_pyfloor() {
+  local name="${1:?seed_pyfloor: name is empty}"
+  local dst="$WORK/$name"
+  [[ "$dst" == "$WORK/"* ]] || { echo "seed_pyfloor: 目標逃逸 $dst" >&2; exit 1; }
+  safe_rm "$dst"
+  mkdir -p "$dst/docs/dev/tools" "$dst/skills/dev-setup"
+  cp "$ROOT/docs/PLUGIN.md" "$dst/docs/PLUGIN.md"
+  cp "$ROOT/skills/dev-setup/SKILL.md" "$dst/skills/dev-setup/SKILL.md"
+  cp -r "$ROOT/hooks" "$dst/hooks"
+  cp -r "$ROOT/scripts" "$dst/scripts"
+  cp -r "$ROOT/observability" "$dst/observability"
+  cp -r "$ROOT/memory" "$dst/memory"
+  cp "$ROOT"/docs/dev/tools/*.py "$dst/docs/dev/tools/" 2>/dev/null || true
+  [ -f "$ROOT/.gitignore" ] && cp "$ROOT/.gitignore" "$dst/.gitignore"
+  git -C "$dst" init -q
+  git -C "$dst" -c user.email=test@dev-flow.local -c user.name=test add -A
+  git -C "$dst" -c user.email=test@dev-flow.local -c user.name=test commit -q -m seed
+  echo "$dst"
+}
+
 # expect_local <pass|fail> <guard-script> <root> <label>
 # 與 expect() 的差別:跑的是 **$root/scripts/ 底下那份複本**,不是正式 repo 的守衛。
 expect_local() {
@@ -2165,6 +2194,37 @@ expect pass check-ship-manifest.sh "$D" "SM-0 對照組(ship-manifest.json 全�
 D=$(seed_sm sm1)
 rm -f "$D/docs/dev/readme-contract-extract.md"
 expect fail check-ship-manifest.sh "$D" "SM-1 第三類列(docs/dev/readme-contract-extract.md,source==destination 的同步宣告列)source 被刪 → 必須紅(issue #92:舊版同一變異 15 項仍全綠)"
+
+# ── PF 群組:check-py-floor.sh 的 heredoc 掃描(#113 fresh 驗收補的負向覆蓋)────
+# PF-0 對照組(未變異,check-py-floor.sh 對自己的完整複本應全綠)/ PF-1 在
+# scripts/check-write-scope.sh 的第一個 heredoc 裡插一行 3.12-only 的 f-string
+# 反斜線。故意選 check-write-scope.sh 當變異目標,不是隨便挑一支:它的 heredoc
+# 起頭是 `"$DEVFLOW_PY" - "$LIB" <<'PY'`——**變數呼叫**,同一行沒有字面
+# python3/python——這樣 PF-1 同時覆蓋兩件事:①heredoc 掃描抓不抓得到語法退化
+# ②interpreter token 的變數呼叫形狀(`"$DEVFLOW_PY"`)真的有被掃到,不只是字面
+# python3/python 這一種形狀。
+# 為什麼不用 check_static_pin_sub:那支只驗「guard 自己的原始碼裡某段字面還在
+# 不在」,是靜態存在性檢查,答不了「guard 遇到別支檔案裡的真實語法退化,判得判
+# 不判得出來」這個行為問題。這裡要驗的是後者,跟 DC-*/GT-*/MEM-* 那批
+# seed→mutate→expect_local 的既有案例同一種形狀,所以照抄那個模式,不是另開一套。
+D=$(seed_pyfloor pf0)
+expect_local pass check-py-floor.sh "$D" "PF-0 對照組(check-py-floor.sh 對未變異複本應全綠)"
+
+D=$(seed_pyfloor pf1); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "scripts/check-write-scope.sh"
+t = p.read_text(encoding="utf-8")
+anchor = "import sys\nfrom importlib.machinery import SourceFileLoader\n"
+assert anchor in t, "PF-1 anchor 不見(check-write-scope.sh 的第一個 heredoc 開頭變了)"
+# 用 chr(92) 組出兩個字面反斜線,不在三層引號(bash heredoc → python 原始碼 →
+# 被寫進去的字串)裡手刻跳脫——避免 nested-quoting 出錯又難驗證。
+bs = chr(92)
+bad_line = "x = f\"{'" + bs + bs + "'}\"\n"
+n = t.replace(anchor, anchor + bad_line, 1)
+assert n != t, "PF-1 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-py-floor.sh "$D" "PF-1 \$DEVFLOW_PY 變數呼叫的 heredoc 塞 3.12-only f-string 反斜線 → 必紅"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
