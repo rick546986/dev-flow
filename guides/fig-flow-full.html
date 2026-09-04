@@ -2,76 +2,12 @@
 <html lang="zh-TW">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>七階段流程圖 · 放大檢視</title>
-<style>
-  :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
-        --acc:#2563eb;}
-  @media(prefers-color-scheme:dark){
-    :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
-          --acc:#6ea8ff;}
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);
-       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
-  main{max-width:1100px;margin:0 auto;padding:24px 12px 72px}
-  h1{font-size:1.35rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
-  nav{background:var(--card);border:1px solid var(--line);border-radius:10px;
-      padding:10px 16px;margin:1em 0}
-  nav a{color:var(--acc);text-decoration:none;font-size:.9rem}
-  .muted{color:var(--muted)}
-  .figwrap{position:relative;background:var(--bg);border:1px solid var(--line);
-           border-radius:10px;padding:16px 10px 10px;margin:1em 0}
-  .figwrap::after{content:"點圖放大";position:absolute;right:10px;top:5px;
-                  font-size:.7rem;color:var(--muted)}
-  .figwrap>img{display:block;width:100%;height:auto;cursor:zoom-in}
-  .figzoom{position:fixed;inset:0;z-index:99;overflow:auto;
-           background:color-mix(in srgb,var(--bg) 92%,#000);
-           padding:16px;cursor:zoom-out}
-  .figzoom img{display:block;width:min(220vw,1700px);height:auto;max-width:none;
-               margin:24px auto;cursor:zoom-out}
-  .figzoom-tip{position:fixed;bottom:14px;left:0;right:0;text-align:center;
-               font-size:.8rem;color:var(--muted);pointer-events:none}
-  footer.foot{margin-top:2.4em;font-size:.85rem;color:var(--muted);
-              border-top:1px solid var(--line);padding-top:1em}
-</style>
+<meta http-equiv="refresh" content="0; url=https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow">
+<link rel="canonical" href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow">
+<title>七階段流程圖</title>
+<script>location.replace("https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow");</script>
 </head>
 <body>
-<main>
-  <h1>七階段流程圖</h1>
-  <p class="muted">點圖放大；Esc／再點關閉。</p>
-  <nav>
-    <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow">回主指南 #flow</a>
-  </nav>
-  <div class="figwrap">
-    <img id="fig-flow" src="fig-flow-full.svg" alt="七階段流程圖含 Gate 與能力分層">
-  </div>
-  <footer class="foot">本頁只放大這張圖。流程說明在主指南，不在這裡重寫。</footer>
-</main>
-<script>
-(function(){
-  var img=document.getElementById('fig-flow');
-  var ov=null;
-  function esc(e){ if(e.key==='Escape') close(); }
-  function close(){
-    if(!ov) return;
-    ov.remove(); ov=null;
-    document.removeEventListener('keydown',esc);
-  }
-  function open(){
-    if(ov) return;
-    ov=document.createElement('div'); ov.className='figzoom';
-    var c=document.createElement('img');
-    c.src=img.currentSrc||img.src; c.alt=img.alt;
-    var tip=document.createElement('div'); tip.className='figzoom-tip';
-    tip.textContent='Esc／再點關閉';
-    ov.appendChild(c); ov.appendChild(tip);
-    document.body.appendChild(ov);
-    ov.addEventListener('click',close);
-    document.addEventListener('keydown',esc);
-  }
-  if(img) img.addEventListener('click',open);
-})();
-</script>
+<p><a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow">主指南 #flow</a></p>
 </body>
 </html>
