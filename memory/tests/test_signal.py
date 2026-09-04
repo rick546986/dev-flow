@@ -1,4 +1,5 @@
 """Signal Gate 與敏感內容守衛(§19/§34)。"""
+import time
 import unittest
 
 from memtools import MemoryCase  # noqa: F401
@@ -73,6 +74,26 @@ class SensitiveTest(unittest.TestCase):
         self.assertIn("assigned_secret",
                        signal.scan_sensitive("金鑰是=AKIAIOSFODNN7EXAMPLE"))
 
+    def test_bare_token_regression_vs_pr110_baseline(self):
+        # #95 R2 審查 finding 2:裸 token 分支曾比 7fd15cd 基準更窄 —— 拿掉了
+        # `/`、且要求首字元一定是英數字,導致「資料庫密碼是 root/root」
+        # 「密碼是 -abc-1234-」「金鑰是 _Abc12345」從會攔變不攔。補回:允許字元
+        # 集含 `/`,首字元允許 `-`/`_`。
+        for text in ("資料庫密碼是 root/root", "密碼是 -abc-1234-",
+                     "金鑰是 _Abc12345"):
+            self.assertEqual(signal.scan_sensitive(text), ["assigned_secret"],
+                             text)
+
+    def test_bare_token_longer_than_shape_bound_still_detected(self):
+        # ReDoS 修法(finding 1)把形狀 lookahead 的量詞改成有界 `{0,64}`,但
+        # 存在性/邊界 lookahead 必須維持不設上限 —— 否則 65 字元以上的裸
+        # token 邊界永遠卡在字元類別內側、等不到終止條件,整支失配,是修
+        # ReDoS 時新引入的假陰性(對抗審查抓到)。這裡用一個 81 字元、混合
+        # 大小寫特徵落在中段的 token 驗證兩件事都還成立。
+        text = "密碼是 " + ("a" * 40) + "B" + ("c" * 40)
+        self.assertEqual(signal.scan_sensitive(text), ["assigned_secret"],
+                         text)
+
     def test_chinese_narrative_sentence_is_not_assigned_secret(self):
         # 反向(#95 回歸,PR #110 審查 finding C):「密碼是／金鑰是」後接接續詞
         # 或純敘述文字(無賦值記號、非憑證形狀)不是賦值句,不該擋 durable 寫入。
@@ -97,3 +118,16 @@ class SensitiveTest(unittest.TestCase):
                               "migration 落在 migrations/20260820_rename.sql")
         self.assertTrue(verdict["durable_allowed"])
         self.assertEqual(verdict["reasons"], [])
+
+    def test_scan_sensitive_is_bounded_time_against_redos(self):
+        # #95 R2 審查 finding 1(blocker,ReDoS):「密碼是」後接一長段同大小寫
+        # ASCII 字母,曾讓裸 token 形狀 lookahead 的兩個不定長 `[...]*`
+        # 互相重疊、災難性回溯。200KB 這類輸入必須在有界時間內回傳,不能隨
+        # 輸入長度退化。
+        text = "密碼是" + ("a" * 200000)
+        start = time.perf_counter()
+        signal.scan_sensitive(text)
+        elapsed = time.perf_counter() - start
+        self.assertLess(elapsed, 0.5,
+                         "scan_sensitive 對 200KB 輸入耗時 {0:.3f}s,"
+                         "疑似 ReDoS 回退".format(elapsed))
