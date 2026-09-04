@@ -158,16 +158,25 @@ hash 進事件(`context_manifest_hash`),內容不進事件。
 - transcript 要留:**獨立權限、獨立 retention 的外部儲存**,ledger 只放
   `transcript_ref`(路徑或 hash)。
 - **值形狀掃描**(`event_validate._value_leak`,鍵名掃描之外的第二道):不比對
-  裸字,只認三種樣式 ——(a) 賦值形 `password/token/secret/...=值`(全形冒號
-  同算,值要 6+ 非空白字元);(b) 已知憑證前綴(`sk-`/`AKIA`/JWT/PEM 私鑰/
-  `Bearer`);(c) 同一字串內 ≥3 行對話結構。`transcript/conversation/
-  messages=值` 是獨立第四種(賦值形才擋、裸字放行),但值還要「長得像逐字稿
-  內容」才算外洩(長度 ≥60 字元且 ≥10 詞 / 引號包住的 ≥4 詞句 / 含
-  user:/assistant: 角色標記),避免「messages: 3 pending」這類日常狀態敘述
-  被誤殺(r3-#98;首版通用門檻定 40 字元/6 詞,收斂 F1 找碴發現連「renamed
-  "old field name" to "new field name"」這類短的工程改名敘述都被誤擋,
-  裁定拉高到 60/10)。已知排除:賦值形的值若整段只是遮蔽標記(`redacted`/
-  `***`/`null` 等)不算外洩;裸字提及、base64 內容不在此掃描範圍。
+  裸字,只認三種樣式 ——(a) 賦值形 `password/passwd/secret/token/api key`
+  (=值,全形冒號同算,值要 6+ 非空白字元;裸 `pwd` 不算,常見於 shell
+  `pwd` 指令輸出而非密碼,r3-#98 F4);(b) 已知憑證前綴(`sk-`/`AKIA`/JWT/
+  PEM 私鑰/`Bearer`);(c) 同一字串內 ≥3 行對話結構(dict 值與字串葉節點的
+  每個字串各自判斷之外,同一個 list 裡的多個字串元素也會先用換行 join
+  起來合併判一次,防逐字稿被拆成多個各自不觸發門檻的短元素,r3-#98 F1)。
+  `transcript/conversation/messages=值` 是獨立第四種(賦值形才擋、裸字
+  放行),但值還要「長得像逐字稿內容」才算外洩(長度 ≥60 字元且 ≥10 詞 /
+  引號包住的 ≥4 詞句 / 含 user:/assistant: 角色標記),避免
+  「messages: 3 pending」這類日常狀態敘述被誤殺(r3-#98;首版通用門檻定
+  40 字元/6 詞,收斂 F1 找碴發現連「renamed "old field name" to "new
+  field name"」這類短的工程改名敘述都被誤擋,裁定拉高到 60/10)。詞數對
+  CJK(中日韓)文字另計:中文/日文一般不用空白斷詞,單純用空白切詞會把一整段
+  中文算成 1 個詞,永遠跨不過門檻——每個 CJK 碼點(中日韓統一表意文字、
+  日文假名、諺文音節)額外各計 1 詞,再跟空白斷詞的結果相加(r3-#98 F2)。
+  引號判斷同時認 ASCII 直引號與 CJK 括號「」『』、CJK 彎引號,開閉不要求
+  同款成對(r3-#98 F3)。已知排除:賦值形的值若整段只是遮蔽標記
+  (`redacted`/`***`/`null` 等)不算外洩;裸字提及、base64 內容不在此掃描
+  範圍。
 
 ## 7. 事件寫入責任(七節;runtime 皆在 plugin repo → interface contract)
 
