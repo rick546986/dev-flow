@@ -157,6 +157,13 @@ hash 進事件(`context_manifest_hash`),內容不進事件。
   (堵「整份貼進來」)。
 - transcript 要留:**獨立權限、獨立 retention 的外部儲存**,ledger 只放
   `transcript_ref`(路徑或 hash)。
+- **值形狀掃描**(`event_validate._value_leak`,鍵名掃描之外的第二道):不比對
+  裸字,只認三種樣式 ——(a) 賦值形 `password/token/secret/...=值` 或
+  `transcript/conversation/messages: 內容`(全形冒號 `：` 同算);(b) 已知憑證
+  前綴(`sk-`/`AKIA`/`gh?_`/`xox?-`/JWT/PEM 私鑰/`Bearer <token>`);(c) 同一
+  字串內 ≥3 行對話結構(`user:`/`assistant:` 開頭)。已知排除:賦值形的值若整段
+  只是遮蔽標記(`redacted`/`***`/`xxx`/`null` 等)不算外洩;裸字提及(不接
+  `:`/`=`)一律放行;base64 內容不在此掃描範圍內。
 
 ## 7. 事件寫入責任(七節;runtime 皆在 plugin repo → interface contract)
 

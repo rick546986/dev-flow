@@ -65,7 +65,10 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 靜態互釘死盯這行必須逐字是「MIN_CASES=405」,兩處要同一個 commit 一起改,但
 # 那支腳本不在本次派工的允許改動清單內。MIN_CASES 是地板不是等號,405 對 411
 # 仍成立,先留著,兩處同步留給後續一併調整。
-MIN_CASES=430
+# ⚠️ 2026-09-04 r2-#98:對抗審查 F1 補一個 p3 回歸案(x__customer_data,雙底線
+# 單 x,對照上面已有的雙層 x_x_customer_data 案),grep 實測 TOTAL_CASES 變 431。
+# 同一 commit 同步 scripts/test-architecture-guards.sh:2231 字面 → 431。
+MIN_CASES=431
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -1901,6 +1904,8 @@ p3_ev '{"event_type":"run_completed","writer":"coordinator","result":"PASS","x_m
 ck_msg "p3 runtime 加嚴:customer_data → 拒收" 1 "privacy_forbidden_key" "$P3_RC" "$P3_OUT"
 p3_ev '{"event_type":"run_completed","writer":"coordinator","result":"PASS","x_meta":{"x_x_customer_data":"x"}}'
 ck_msg "p3 runtime 加嚴:x_ 前綴剝到底(雙層 x_x_customer_data)仍拒收(#98 回歸)" 1 "privacy_forbidden_key" "$P3_RC" "$P3_OUT"
+p3_ev '{"event_type":"run_completed","writer":"coordinator","result":"PASS","x_meta":{"x__customer_data":"x"}}'
+ck_msg "p3 runtime 加嚴:x_ 前綴剝到底(雙底線 x__customer_data)仍拒收(r2-#98 F1)" 1 "privacy_forbidden_key" "$P3_RC" "$P3_OUT"
 # 1.1:task_tags 為正式欄(agent_dispatched/attempt_* optional),enum 解析自契約
 p3_ev "{\"event_type\":\"agent_dispatched\",\"writer\":\"coordinator\",\"task_id\":\"T-1\",\"attempt_id\":\"$P3ATT\",\"agent_role\":\"worker\",\"model\":\"haiku\",\"prompt\":{\"id\":\"stage6-worker\",\"version\":\"1.0.0\",\"hash\":\"sha256:$P3HASH\"},\"task_tags\":[\"frontend-magic\"]}"
 ck_msg "p3 task_tags 自由字串 → 拒收" 1 "受控" "$P3_RC" "$P3_OUT"

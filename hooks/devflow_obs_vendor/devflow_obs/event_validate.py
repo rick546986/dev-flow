@@ -21,9 +21,24 @@ _CONTRACT_DIR = os.path.join(_SCHEMA_DIR, "..", "..")   # repo 根(devflow-contr
 
 
 # ── 值洩漏形狀(不用裸字比對,見 #98 回歸紀錄)────────────────────
-# (a) 賦值形 secret:password/token/... 後接 : 或 =,再接 6+ 非空白字元
+# (a) 賦值形 secret:password/token/... 後接 : 或 =(含全形冒號 ：,比照
+# _VALUE_LEAK_CONV_LINE,r2-#98 F3),再接 6+ 非空白字元(v1);
+# transcript/conversation/messages 是「賦值形才擋、裸字放行」的敘事型欄位
+# (r2-#98 F5),值不必是無空白的 token 形狀,賦值後有內容(v2)即算。
+# 起頭鎖字界改用 (?<![A-Za-z0-9]) 而不是 \b:\b 在底線前後不成立詞界,
+# access_token=/refresh_token=/id_token=/client_secret: 這類複合詞會漏網
+# (r2-#98 F2)。
 _VALUE_LEAK_ASSIGN = re.compile(
-    r"(?i)\b(?:password|passwd|pwd|secret|token|api[_-]?key)\s*[:=]\s*\S{6,}"
+    r"(?i)(?<![A-Za-z0-9])"
+    r"(?:(?:password|passwd|pwd|secret|token|api[_-]?key)"
+    r"\s*[:=：]\s*(?P<v1>\S{6,})"
+    r"|(?:transcript|conversation|messages)"
+    r"\s*[:=：]\s*(?P<v2>\S.{3,}))"
+)
+# 遮蔽標記:賦值形抓到值後,若整段值只是「已遮蔽」的佔位符,不算外洩
+# (r2-#98 F4;例:secret=redacted、password=REDACTED、token=******)。
+_VALUE_LEAK_MASKED = re.compile(
+    r"(?i)^(?:\[?redacted\]?|<redacted>|filtered|\*{3,}|x{3,}|\.{3,}|null|none)$"
 )
 # (b) 已知憑證前綴(OpenAI/Anthropic/AWS/GitHub/Slack/JWT/PEM 私鑰/Bearer token)。
 # 前面補 (?<![A-Za-z0-9]) 是因為 "sk-" 不加鎖字界會吃到 risk-assessment、
@@ -46,10 +61,15 @@ _VALUE_LEAK_CONV_LINE = re.compile(
 
 
 def _value_leak(s):
-    """值命中「洩漏形狀」:賦值形 secret、已知憑證前綴、或對話結構。
+    """值命中「洩漏形狀」:賦值形 secret/transcript、已知憑證前綴、或對話結構;
+    賦值形若整段值只是遮蔽標記(redacted/***/...)不算外洩(r2-#98 F4)。
     不比對裸字(transcript/password 等單字本身),避免誤殺合法工程敘述
     (見 #98 PR #110 回歸:'removed the password field...' 曾被誤擋)。"""
-    if _VALUE_LEAK_ASSIGN.search(s) or _VALUE_LEAK_CRED.search(s):
+    for m in _VALUE_LEAK_ASSIGN.finditer(s):
+        val = m.group("v1") or m.group("v2")
+        if val is not None and not _VALUE_LEAK_MASKED.match(val):
+            return True
+    if _VALUE_LEAK_CRED.search(s):
         return True
     return len(_VALUE_LEAK_CONV_LINE.findall(s)) >= 3
 
@@ -204,8 +224,11 @@ def _privacy_scan(obj, errors, path=""):
             for k, v in node.items():
                 kp = f"{p}.{k}" if p else k
                 low = str(k).lower()
-                while low.startswith("x_"):          # 剝到底,#98:曾只剝一層
-                    low = low[2:]
+                # r2-#98 F1:while low.startswith("x_") 遇 x__transcript(雙底線)
+                # 只剝掉 "x_" 兩字元,剩 "_transcript" 對 forbidden_exact 免疫。
+                # 改成 regex 一次吃掉整段 (x + 1 個以上底線) 的重複前綴,
+                # x__transcript / x___messages / x_x__body 都能剝到底。
+                low = re.sub(r"^(?:x_+)+", "", low)
                 if low not in allow:
                     if low in forbidden_exact:
                         errors.append(_err("privacy_forbidden_key", kp,
