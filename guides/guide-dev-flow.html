@@ -1946,7 +1946,8 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
 
   <h3 id="diff-fold">Diff 折疊細則(6/7 的 html)</h3>
   <p>每檔一個 <code>&lt;details&gt;</code> 折疊條 —— hover 顯示 stat 摘要(+N/−N、動到的函式),
-  click 展開完整 diff(紅綠著色);內容必 HTML-escape;單檔 &gt;400 行截斷留 stat+首段註「完整見 git」;
+  click 展開完整 diff(紅綠著色:刪行 <code>class="del"</code>、增行 <code>class="add"</code>);
+  內容必 HTML-escape;單檔 &gt;400 行截斷留 stat+首段註「完整見 git」;
   base:6 = 該 T 的 commit,7 = merge-base(develop)..HEAD。</p>
   <p><strong>標題要寫實際用的 base</strong> —— merge-base 與「feature 開工前那個 commit」常常不是同一個
   (order-intake 實測相差 105 個 commit、檔數 202 vs 861),用了哪個就標哪個並寫原因,不要照抄本行的字面。</p>
