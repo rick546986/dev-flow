@@ -25,9 +25,12 @@ _CONTRACT_DIR = os.path.join(_SCHEMA_DIR, "..", "..")   # repo 根(devflow-contr
 # _VALUE_LEAK_CONV_LINE,r2-#98 F3),再接 6+ 非空白字元(v1)。起頭鎖字界改用
 # (?<![A-Za-z0-9]) 而不是 \b:\b 在底線前後不成立詞界,access_token=/
 # refresh_token=/id_token=/client_secret: 這類複合詞會漏網(r2-#98 F2)。
+# 詞表不放裸 "pwd"(r3-#98 F4,low):"pwd" 常見於「pwd=/usr/local/bin」這種
+# shell 路徑輸出(current working directory),不是密碼;password/passwd 這
+# 兩個詞不會有這種歧義,保留。
 _VALUE_LEAK_ASSIGN = re.compile(
     r"(?i)(?<![A-Za-z0-9])"
-    r"(?:password|passwd|pwd|secret|token|api[_-]?key)"
+    r"(?:password|passwd|secret|token|api[_-]?key)"
     r"\s*[:=：]\s*(?P<v1>\S{6,})"
 )
 # transcript/conversation/messages 是「賦值形才擋、裸字放行」的敘事型欄位
@@ -71,10 +74,13 @@ _VALUE_LEAK_CONV_LINE = re.compile(
 # 日常狀態敘述被舊版 4 字元門檻誤殺):
 #   - 角色標記:值裡任何位置含 user/assistant/human/system(或中文)接冒號
 #     (不要求在行首,因為 v2 本身就是「賦值後的殘值」,不是整行);
-#   - 引號對話:值裡有一段用引號包住、內含 ≥4 個以空白分開的詞的片段
-#     (門檻拉到 4 詞只是不讓「"old field name"」這類 ≤3 詞的短識別字片段
-#     單獨觸發這條路徑;"can you reset my password" 這類 ≥4 詞的逐字稿式
-#     引號句仍擋得住);
+#   - 引號對話:值裡有一段用引號包住的片段,折成詞數(見下方 _token_count)
+#     ≥4 才算(門檻拉到 4 詞只是不讓「"old field name"」這類 ≤3 詞的短識別
+#     字片段單獨觸發這條路徑;"can you reset my password" 這類 ≥4 詞的
+#     逐字稿式引號句仍擋得住)。引號字元類同時收 ASCII 直引號、CJK 括號
+#     「」『』、CJK 彎引號""(r3-#98 F3,medium:原本只認 ASCII 直引號,
+#     中文/日文常見的「」/『』/彎引號完全漏網),開閉只要成對出現、不要求
+#     同款(「...’ 這種混搭也算,判斷交給内容詞數,不是括號本身);
 #   - 落單於前兩者之外:值本身要夠長(≥60 字元)且夠多詞(≥10 個以空白分開
 #     的詞)才算。r3-#98 首版門檻定 40 字元/6 詞,收斂 F1 找碴發現
 #     「messages: renamed "old field name" to "new field name"」
@@ -84,13 +90,47 @@ _VALUE_LEAK_CONV_LINE = re.compile(
 #     路徑、短識別字改名敘述天生構不成這個門檻,一律放行;真的長得像逐字稿
 #     的一般敘述(refund 案例 89 字元 17 詞)仍擋得住。門檻數字(60/10)是
 #     dispatcher 裁定值,取捨屬 dispatcher,這裡不擅改。
+#     詞數怎麼算(r3-#98 F2,high):val.split() 對中日韓文字沒用——中文
+#     一整段話中間沒有空白,split() 永遠只切出 1 個「詞」,再長的中文逐字
+#     稿轉述也跨不過詞數門檻。_token_count 額外把 CJK 碼點(中日韓統一表意
+#     文字 U+4E00-9FFF、日文假名 U+3040-30FF、諺文音節 U+AC00-D7AF)逐字
+#     元計 1 詞,跟空白斷詞的結果相加,長度門檻(60/4)不變。
 _VALUE_LEAK_ROLE_MARK = re.compile(
     r"(?i)(?<![A-Za-z0-9])(?:user|assistant|human|system|使用者|助理)\s*[:：]"
 )
-_VALUE_LEAK_QUOTED_SPAN = re.compile(r'"([^"\n]{4,})"|\'([^\'\n]{4,})\'')
+# 引號字元類:開字元 "'「『""''(ASCII 直引號 + CJK 括號 + CJK 彎引號),
+# 閉字元同一批,不要求跟開字元同款成對(見上方 F3 註解)。ASCII 直單引號
+# ' 額外加字界鎖:contraction/所有格(don't、customer's)裡的撇號前後都是
+# 字母,若不鎖字界,兩個這種撇號中間夾的英文字剛好 ≥4 詞就會被誤判成引號
+# 對話(對抗審查抓到:"don't ship the customer's patch" 曾被誤擋)——開
+# 撇號前面不能是字母/數字、閉撇號後面不能是字母/數字,真正的引號用法
+# ("'can you...'" 這種)前後接的是空白或標點,不受影響;CJK 括號/彎引號
+# 本身不跟英文縮寫共用字元,不需要這道鎖。非貪婪 {4,}? 是單一量詞、內容
+# 排除換行,不構成 ReDoS 形狀。
+_VALUE_LEAK_QUOTED_SPAN = re.compile(
+    r"(?:[\"「『\u201c\u2018]|(?<![A-Za-z0-9])')"
+    r"([^\n]{4,}?)"
+    r"(?:[\"」』\u201d\u2019]|'(?![A-Za-z0-9]))"
+)
+_CJK_CHAR = re.compile(r"[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]")
 _NARRATIVE_MIN_LEN = 60
 _NARRATIVE_MIN_WORDS = 10
 _NARRATIVE_QUOTE_MIN_WORDS = 4
+
+
+def _token_count(val, cap):
+    """英數詞照空白切 + CJK 碼點各算 1 詞(見上方 F2 註解),回傳
+    min(實際詞數, cap)——只在乎有沒有跨過門檻 cap,不必真數到底,對超長
+    殘值(ReDoS 驗收案例:200KB 重複同一句)友善,找到 cap 個就提早結束。"""
+    words = len(val.split(None, cap - 1))
+    if words >= cap:
+        return cap
+    total = words
+    for _ in _CJK_CHAR.finditer(val):
+        total += 1
+        if total >= cap:
+            return cap
+    return total
 
 
 def _looks_like_transcript(val):
@@ -98,14 +138,12 @@ def _looks_like_transcript(val):
     if _VALUE_LEAK_ROLE_MARK.search(val):
         return True
     for m in _VALUE_LEAK_QUOTED_SPAN.finditer(val):
-        span = (m.group(1) or m.group(2) or "").strip()
-        if len(span.split()) >= _NARRATIVE_QUOTE_MIN_WORDS:
+        span = m.group(1).strip()
+        if _token_count(span, _NARRATIVE_QUOTE_MIN_WORDS) >= _NARRATIVE_QUOTE_MIN_WORDS:
             return True
     if len(val) < _NARRATIVE_MIN_LEN:
         return False
-    # maxsplit 只切出前 _NARRATIVE_MIN_WORDS 個詞就夠判斷門檻,避免對 v2 裡可能塞進來的超長殘值
-    # (ReDoS 驗收案例:200KB 重複同一句)整段 split 配置一堆用不到的 token。
-    return len(val.split(None, _NARRATIVE_MIN_WORDS - 1)) >= _NARRATIVE_MIN_WORDS
+    return _token_count(val, _NARRATIVE_MIN_WORDS) >= _NARRATIVE_MIN_WORDS
 
 
 def _value_leak(s):
@@ -295,6 +333,24 @@ def _privacy_scan(obj, errors, path=""):
                         continue
                 walk(v, kp)
         elif isinstance(node, list):
+            # r3-#98 F1(high):逐字稿拆成多個元素放進同一個 list 能繞過
+            # 逐元素掃——單一元素內湊不滿 _VALUE_LEAK_CONV_LINE 要的 ≥3 行
+            # (例:["user: hi","assistant: hello there","user: bye now"]
+            # 三個元素各自只有 1 行角色標記),或整段逐字稿切成 10 個各
+            # <max_len 的短片段,每片段本身也不構成對話結構。除了下面照舊
+            # 逐元素 walk,先把這個 list 直屬的字串葉節點用 "\n" join 起來
+            # 對 _VALUE_LEAK_CONV_LINE 合併判一次 ≥3 行,同一個 list 裡的
+            # 元素合起來是同一段逐字稿就在這裡抓到;只 join 直屬字串元素,
+            # 不遞迴挖巢狀 dict/list(不重構整個 walk)。
+            str_items = [v for v in node if isinstance(v, str)]
+            if str_items:
+                joined = "\n".join(str_items)
+                if len(_VALUE_LEAK_CONV_LINE.findall(joined)) >= 3:
+                    errors.append(_err(
+                        "privacy_value_leak", p,
+                        "list 元素合併後命中對話結構(≥3 行角色標記,隱私"
+                        "紅線;單一元素分開看湊不滿,合併看得出是同一段"
+                        "逐字稿被拆散)"))
             for i, v in enumerate(node):
                 walk(v, f"{p}[{i}]")
         elif isinstance(node, str):

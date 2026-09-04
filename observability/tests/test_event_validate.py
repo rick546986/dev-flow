@@ -422,6 +422,79 @@ class TestPrivacy(unittest.TestCase):
             "note": "messages: 3 pending. password=hunter2"})
         self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
 
+    # ── r3-#98 對抗審查四條 ─────────────────────────────────────
+
+    def test_value_leak_list_aggregated_conv_lines_rejected(self):
+        # r3-#98 F1(high):list 元素個別掃逐字稿拆散成多個各自不觸發門檻的
+        # 短元素就繞得過去——單一元素湊不滿 _VALUE_LEAK_CONV_LINE 要的 ≥3
+        # 行。合併該 list 直屬字串元素再判一次。
+        e = attempt_completed(x_meta={"notes": [
+            "user: hi", "assistant: hello there", "user: bye now"]})
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_list_split_transcript_rejected(self):
+        # 同上,長逐字稿拆成 10 個各自 <max_len 的短元素,個別看都不像逐字稿
+        # 結構,合併看才看得出是同一段對話。
+        elems = [f"{'user' if i % 2 == 0 else 'assistant'}: turn {i} "
+                 + "x" * 50 for i in range(10)]
+        e = attempt_completed(x_meta={"notes": elems})
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_list_unrelated_short_strings_passes(self):
+        e = attempt_completed(x_meta={"notes": ["ok", "done", "fine"]})
+        self.assertEqual(ev.validate_event(e), [])
+
+    def test_value_leak_cjk_narrative_rejected(self):
+        # r3-#98 F2(high):val.split() 對中文沒有空白可切,永遠只算 1 詞,
+        # 中文逐字稿轉述再長也跨不過詞數門檻。_token_count 額外把 CJK 碼點
+        # 逐字元計 1 詞。77 字中文客服對話轉述,無角色標記無引號。
+        zh77 = ("使用者說要重設密碼客服回覆需要先驗證身份請提供帳號後半資訊"
+                "接著詢問訂單編號才能繼續處理大約需要五個工作天才會完成整個"
+                "流程謝謝耐心等候祝您順利平安健康萬事如")
+        self.assertEqual(len(zh77), 77, msg="測資本身要 77 字,找碴單字面案例")
+        e = attempt_completed(x_meta={"note": "transcript：" + zh77})
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_cjk_short_status_passes(self):
+        for note in ("訊息：三筆待處理", "對話：已開始", "transcript：待審"):
+            e = attempt_completed(x_meta={"note": note})
+            self.assertEqual(ev.validate_event(e), [], msg=note)
+
+    def test_value_leak_cjk_quoted_dialogue_rejected(self):
+        # r3-#98 F3(medium):引號路徑原本只認 ASCII 直引號,CJK 括號「」
+        # 『』與彎引號""''完全漏網。開閉不要求同款。
+        for note in (
+            'conversation: 「can you reset my password」'
+            '「sure what is your account id」',
+            'conversation: “can you reset my password” '
+            '“sure what is your account id”',
+        ):
+            e = attempt_completed(x_meta={"note": note})
+            self.assertIn("privacy_value_leak", codes(ev.validate_event(e)),
+                          msg=note)
+
+    def test_value_leak_bare_pwd_passes(self):
+        # r3-#98 F4(low):裸 "pwd" 常見於 shell 的 pwd(current working
+        # directory)輸出,不是密碼;password/passwd 才擋。
+        e = attempt_completed(x_meta={"note": "pwd=/usr/local/bin"})
+        self.assertEqual(ev.validate_event(e), [])
+
+    def test_value_leak_quoted_span_apostrophe_guard_passes(self):
+        # r3-#98 F3 收斂(對抗審查追加):ASCII 直單引號同時是英文縮寫/所有格
+        # 撇號(don't、customer's)。不鎖字界的話,兩個這種撇號中間夾的英文
+        # 字只要 ≥4 詞就被誤判成引號對話。
+        for note in (
+            "messages: don't ship the customer's patch",
+            "messages: don't reopen the ticket, the customer's "
+            "already been refunded",
+        ):
+            e = attempt_completed(x_meta={"note": note})
+            self.assertEqual(ev.validate_event(e), [], msg=note)
+
+    def test_value_leak_passwd_still_rejected(self):
+        e = attempt_completed(x_meta={"note": "passwd=hunter2"})
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
     def test_value_leak_openai_style_key_rejected(self):
         e = attempt_completed(
             x_meta={"note": "leaked sk-abcdefghijklmnop1234567890 in log"})
