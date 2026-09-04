@@ -107,6 +107,29 @@ class SensitiveTest(unittest.TestCase):
         self.assertEqual(signal.scan_sensitive(text), ["assigned_secret"],
                          text)
 
+    def test_english_keyword_prefix_longer_than_suffix_bound_is_detected(self):
+        # #95 R3 對抗審查 minor:第一輪修法把英文 key 名分支兩側量詞都改成
+        # 有界 `{0,64}`,連關鍵字「前綴」也一起設了界 —— 變數名在 password
+        # 等關鍵字前有 65 字元以上連續 [\w.-] 字元時,`\b` 只落在整段識別字
+        # 最前面、離關鍵字超過 64 字元,有界前綴量詞搆不到,漏放。修法把
+        # 前綴整段拿掉(關鍵字前不再要求任何字元),這裡驗證正向(超長前綴
+        # 仍攔)與貼著門檻的正向(常見全大寫 env var 名)都成立。
+        long_prefix = ("my_super_long_internal_service_configuration_"
+                       "database_admin_root_")
+        self.assertGreater(len(long_prefix), 64, "測資前綴長度前提")
+        text = long_prefix + "password=abc123"
+        self.assertEqual(signal.scan_sensitive(text), ["assigned_secret"],
+                         text)
+        self.assertEqual(
+            signal.scan_sensitive("MY_DB_PASSWORD=x1y2z3"), ["assigned_secret"])
+
+    def test_passwordless_without_assignment_marker_is_not_flagged(self):
+        # 反向:拿掉前綴的界之後,關鍵字前不再有任何限制,但「有沒有賦值
+        # 記號」這一關維持不變 —— `passwordless` 內含 `password` 字面,
+        # 沒有 `[:=]` 跟在後面就不該命中,不能因為拿掉前綴界而變寬鬆。
+        self.assertEqual(
+            signal.scan_sensitive("passwordless login enabled"), [])
+
     def test_chinese_narrative_sentence_is_not_assigned_secret(self):
         # 反向(#95 回歸,PR #110 審查 finding C):「密碼是／金鑰是」後接接續詞
         # 或純敘述文字(無賦值記號、非憑證形狀)不是賦值句,不該擋 durable 寫入。
@@ -144,15 +167,18 @@ class SensitiveTest(unittest.TestCase):
         #     在其中幾乎每個字元都是邊界起點,每個起點各自回溯到底。
         #   ③英文分支 `x.-_` 重複(同一顆 finding,另一種輸入形狀):`.`/`-`
         #     反覆出現讓 `\\b` 邊界起點更密集,是①的加強版重現。
-        # 200KB / 60KB 這類輸入都必須在有界時間內回傳,不能隨輸入長度退化。
+        # 三案對齊成同一個量級(200KB),不要一案 200KB、一案 60KB 各測各的
+        # ——量級不齊,門檻就不是同一把尺(#95 R3 對抗審查 nit)。實測(2026-09,
+        # 本機)三案都在 0.05s 內、離 0.5s 門檻還有 10 倍以上餘裕,不是
+        # 90% 佈滿的 flaky 門檻,維持 0.5s 不用放寬到 1.0s。
         cases = {
             "chinese_bare_token": "密碼是" + ("a" * 200000),
             "english_blob": (
                 "please rotate the session token sess_v2." +
-                base64.urlsafe_b64encode(os.urandom(45000)).decode("ascii") +
+                base64.urlsafe_b64encode(os.urandom(150000)).decode("ascii") +
                 " before shipping"
             ),
-            "x_dot_dash_underscore_repeat": "x.-_" * 15000,
+            "x_dot_dash_underscore_repeat": "x.-_" * 50000,
         }
         for label, text in cases.items():
             start = time.perf_counter()
