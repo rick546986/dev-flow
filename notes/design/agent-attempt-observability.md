@@ -161,22 +161,31 @@ hash 進事件(`context_manifest_hash`),內容不進事件。
   裸字,只認三種樣式 ——(a) 賦值形 `password/passwd/secret/token/api key`
   (=值,全形冒號同算,值要 6+ 非空白字元;裸 `pwd` 不算,常見於 shell
   `pwd` 指令輸出而非密碼,r3-#98 F4);(b) 已知憑證前綴(`sk-`/`AKIA`/JWT/
-  PEM 私鑰/`Bearer`);(c) 同一字串內 ≥3 行對話結構(dict 值與字串葉節點的
-  每個字串各自判斷之外,同一個 list 裡的多個字串元素也會先用換行 join
-  起來合併判一次,防逐字稿被拆成多個各自不觸發門檻的短元素,r3-#98 F1)。
-  `transcript/conversation/messages=值` 是獨立第四種(賦值形才擋、裸字
-  放行),但值還要「長得像逐字稿內容」才算外洩(長度 ≥60 字元且 ≥10 詞 /
-  引號包住的 ≥4 詞句 / 含 user:/assistant: 角色標記),避免
-  「messages: 3 pending」這類日常狀態敘述被誤殺(r3-#98;首版通用門檻定
-  40 字元/6 詞,收斂 F1 找碴發現連「renamed "old field name" to "new
+  PEM 私鑰/`Bearer`);(c) 同一字串內 ≥3 行對話結構。這條在 `_privacy_scan`
+  另外有一個獨立的容器聚合遍歷(`_scan_conv_structure`,r3-#98
+  F1→F2):對每個 dict/list 容器節點,遞迴收集整棵子樹的字串葉節點合併判
+  一次 ≥3 行(bottom-up 整數相加,不因巢狀層數重複 rescan),防逐字稿被拆進
+  多個 list 元素或多個 dict 鍵值就各自躲過單一元素的門檻;OpenAI 風格的
+  `{"role":"user","content":"hi"}` 陣列沒有「role: 」前綴長在 content 值
+  裡,join 也不會命中對話結構正則,所以另外判斷「role(user/assistant/
+  system/human)+ content/text/message」形狀的一個對話 turn,容器內 ≥3 個
+  turn 也算命中。`transcript/conversation/messages=值` 是獨立第四種
+  (賦值形才擋、裸字放行),但值還要「長得像逐字稿內容」才算外洩(長度
+  ≥60 字元且 ≥10 詞 / 引號包住的 ≥4 詞句 / 含 user:/assistant: 角色標記),
+  避免「messages: 3 pending」這類日常狀態敘述被誤殺(r3-#98;首版通用門檻
+  定 40 字元/6 詞,收斂 F1 找碴發現連「renamed "old field name" to "new
   field name"」這類短的工程改名敘述都被誤擋,裁定拉高到 60/10)。詞數對
-  CJK(中日韓)文字另計:中文/日文一般不用空白斷詞,單純用空白切詞會把一整段
-  中文算成 1 個詞,永遠跨不過門檻——每個 CJK 碼點(中日韓統一表意文字、
-  日文假名、諺文音節)額外各計 1 詞,再跟空白斷詞的結果相加(r3-#98 F2)。
-  引號判斷同時認 ASCII 直引號與 CJK 括號「」『』、CJK 彎引號,開閉不要求
-  同款成對(r3-#98 F3)。已知排除:賦值形的值若整段只是遮蔽標記
-  (`redacted`/`***`/`null` 等)不算外洩;裸字提及、base64 內容不在此掃描
-  範圍。
+  CJK(中日韓)文字另計:先把 CJK 字元從字串移除再切英數詞(避免同一段連續
+  CJK 字元先被空白斷詞算 1 個詞、又逐字元加一次的重複計數),CJK 碼點
+  (中日韓統一表意文字、日文假名、諺文音節)逐字元各計 1 詞,再跟英數詞數
+  相加(r3-#98 F2,第四輪 nit 修正重複計數)。引號判斷同時認 ASCII 直引號
+  與 CJK 括號「」『』、CJK 彎引號,開閉不要求同款成對;引號內容有長度上界
+  (200 字)且排除所有引號字元本身,避免整段沒有閉引號的字串讓比對從每個
+  起點都掃到底(r3-#98 F3,第四輪修 ReDoS)。已知排除:賦值形的值若整段
+  只是遮蔽標記(`redacted`/`***`/`null` 等)不算外洩;裸字提及、base64
+  內容不在此掃描範圍;超過 `max_string_len` 已經報 `privacy_value_too_
+  long`,不會再對該值跑值形狀掃描(backstop,同時收斂超長字串的 ReDoS
+  曝險面)。
 
 ## 7. 事件寫入責任(七節;runtime 皆在 plugin repo → interface contract)
 

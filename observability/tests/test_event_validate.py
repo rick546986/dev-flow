@@ -3,6 +3,7 @@ parent attempt 關聯格式、hook 寫入者欄位限制。"""
 import copy
 import os
 import sys
+import time
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -494,6 +495,92 @@ class TestPrivacy(unittest.TestCase):
     def test_value_leak_passwd_still_rejected(self):
         e = attempt_completed(x_meta={"note": "passwd=hunter2"})
         self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    # ── r3-#98 第四輪對抗審查:blocker/major/nit 三條 ───────────────
+
+    def test_value_leak_quoted_span_no_closing_quote_redos_fast(self):
+        # r3-#98 第四輪(blocker):內容類原本是 [^\n]{4,}?,開閉引號不對稱時
+        # (整段字串全是開引號,沒有半個閉引號)懶惰量詞從每個起點都掃到字串
+        # 尾端才確認失敗,O(n^2)(修前 n=16000 實測 1.87s,外推 n=200000 會是
+        # 數分鐘)。改成內容類上界 200 且排除所有引號字元本身,每個起點工作
+        # 量有界,線性。門檻設 0.5s(手測實際 ~0.035-0.04s):找碴單要求
+        # <0.05s 是驗收時測量報告用的數字,不是拿來釘進 CI 斷言的門檻——
+        # 0.05s 對 O(n^2) 回歸只有 ~1.25 倍餘裕,機器忙的時候會抖;0.5s 對
+        # 真的退回 O(n^2) 一樣抓得到(那會是秒等級),又不會在正常機器上因
+        # 抖動假紅。
+        for note in ('「' * 200000, '“' * 200000, '"' * 200000,
+                     '「」' * 100000):
+            t0 = time.perf_counter()
+            leaked = ev._value_leak(note)
+            elapsed = time.perf_counter() - t0
+            self.assertLess(elapsed, 0.5,
+                            msg=f"{note[:20]}...({len(note)} 字) 花 {elapsed:.4f}s")
+            self.assertFalse(leaked, msg=note[:20])
+
+    def test_value_leak_scan_value_skips_leak_scan_past_max_len(self):
+        # r3-#98 第四輪(blocker,b):超過 max_string_len 已經報
+        # privacy_value_too_long,不該再對整段超長字串跑 _value_leak——這是
+        # 上一條 ReDoS 修法的第二件事,經由 validate_event 這條真實入口驗證
+        # (單元測 _value_leak 本身不夠,舊 bug 是 scan_value 沒提早 return)。
+        e = attempt_completed(x_meta={"note": "transcript: " + "「" * 16000})
+        t0 = time.perf_counter()
+        result_codes = codes(ev.validate_event(e))
+        elapsed = time.perf_counter() - t0
+        self.assertLess(elapsed, 0.05, msg=f"花 {elapsed:.4f}s")
+        self.assertIn("privacy_value_too_long", result_codes)
+        self.assertNotIn("privacy_value_leak", result_codes)
+
+    def test_value_leak_openai_style_turn_list_rejected(self):
+        # r3-#98 第四輪(major):OpenAI 訊息陣列 [{"role":...,"content":...}]
+        # 沒有「role: 」前綴長在 content 值裡,join 字串葉節點也不會命中對話
+        # 結構正則。額外判斷 role+content 形狀的 turn,容器內 ≥3 個就擋。
+        e = attempt_completed(x_meta={"notes": [
+            {"role": "user", "content": "hi"},
+            {"role": "assistant", "content": "yo"},
+            {"role": "user", "content": "bye"},
+        ]})
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_dict_of_turns_rejected(self):
+        # 同上,逐字稿被拆進一個 dict 的多個鍵而不是 list——上一輪的 list
+        # 直屬字串 join 完全看不到這種形狀,新的遞迴聚合看得到。
+        e = attempt_completed(x_meta={"transcript_dict": {
+            "t1": "user: hi", "t2": "assistant: yo", "t3": "user: bye"}})
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_single_turn_passes(self):
+        e = attempt_completed(x_meta={"notes": [
+            {"role": "user", "content": "hi"}]})
+        self.assertEqual(ev.validate_event(e), [])
+
+    def test_value_leak_path_and_tag_lists_pass(self):
+        e1 = attempt_completed(x_meta={"included_artifacts": [
+            "docs/user-guide.md", "docs/system-design.md",
+            "docs/human-review.md"]})
+        self.assertEqual(ev.validate_event(e1), [])
+        e2 = attempt_completed(x_meta={"tags": [
+            "user-facing", "system-level", "human-review"]})
+        self.assertEqual(ev.validate_event(e2), [])
+
+    def test_value_leak_1000_turn_dicts_redos_fast(self):
+        # r3-#98 第四輪(major,ReDoS 驗收):容器聚合改成 bottom-up 整數
+        # 相加,不因為巢狀層數重複 rescan 整棵子樹。
+        turns = [{"role": "user" if i % 2 == 0 else "assistant",
+                  "content": f"turn {i}"} for i in range(1000)]
+        e = attempt_completed(x_meta={"notes": turns})
+        t0 = time.perf_counter()
+        result_codes = codes(ev.validate_event(e))
+        elapsed = time.perf_counter() - t0
+        self.assertLess(elapsed, 0.5, msg=f"花 {elapsed:.4f}s")
+        self.assertIn("privacy_value_leak", result_codes)
+
+    def test_token_count_cjk_run_not_double_counted(self):
+        # r3-#98 第四輪(nit):CJK 連續段先被 split() 算成 1 個「詞」,又被
+        # 逐字元加一次,同一段字元算兩次。先把 CJK 字元換成空白再切英數詞。
+        self.assertEqual(ev._token_count("一二三四五", 100), 5,
+                         msg="5 個連續中文字元只算 5 詞,不是 6(1+5)")
+        self.assertEqual(ev._token_count("hello世界foo", 100), 4,
+                         msg="2 個英文詞 + 2 個中文字元 = 4 詞")
 
     def test_value_leak_openai_style_key_rejected(self):
         e = attempt_completed(

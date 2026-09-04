@@ -105,11 +105,19 @@ _VALUE_LEAK_ROLE_MARK = re.compile(
 # 對話(對抗審查抓到:"don't ship the customer's patch" 曾被誤擋)——開
 # 撇號前面不能是字母/數字、閉撇號後面不能是字母/數字,真正的引號用法
 # ("'can you...'" 這種)前後接的是空白或標點,不受影響;CJK 括號/彎引號
-# 本身不跟英文縮寫共用字元,不需要這道鎖。非貪婪 {4,}? 是單一量詞、內容
-# 排除換行,不構成 ReDoS 形狀。
+# 本身不跟英文縮寫共用字元,不需要這道鎖。
+# ReDoS(r3-#98 第四輪對抗審查,blocker):內容類原本是 [^\n]{4,}?——開閉
+# 引號類不對稱時(例如整段字串全是開引號 "「"*16000,沒有半個閉引號),
+# 懶惰量詞從每個起點都會往後掃到字串尾端才確認失敗,O(n^2)(n=8000 實測
+# 0.47s、16000 1.95s)。改成兩件事:(a) 內容類上界 200(單一引號片段本來
+# 就不該長到需要無界掃描,判斷是不是逐字稿只在乎有沒有 ≥4 詞,不是有多
+# 長);(b) 內容類額外排除所有引號字元本身(含開闔兩批),讓每個起點的內容
+# 掃描一遇到任何引號字元就得停(不論那是不是合法的閉引號),不會被閉引號
+# 之外的其他引號字元硬拖著往後掃——兩者合起來讓每個起點的工作量有界
+# (≤200),總工作量變回線性。
 _VALUE_LEAK_QUOTED_SPAN = re.compile(
     r"(?:[\"「『\u201c\u2018]|(?<![A-Za-z0-9])')"
-    r"([^\n]{4,}?)"
+    r"([^\n\"'「」『』\u201c\u201d\u2018\u2019]{4,200})"
     r"(?:[\"」』\u201d\u2019]|'(?![A-Za-z0-9]))"
 )
 _CJK_CHAR = re.compile(r"[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]")
@@ -121,8 +129,12 @@ _NARRATIVE_QUOTE_MIN_WORDS = 4
 def _token_count(val, cap):
     """英數詞照空白切 + CJK 碼點各算 1 詞(見上方 F2 註解),回傳
     min(實際詞數, cap)——只在乎有沒有跨過門檻 cap,不必真數到底,對超長
-    殘值(ReDoS 驗收案例:200KB 重複同一句)友善,找到 cap 個就提早結束。"""
-    words = len(val.split(None, cap - 1))
+    殘值(ReDoS 驗收案例:200KB 重複同一句)友善,找到 cap 個就提早結束。
+    先把 CJK 字元換成空白再切英數詞(r3-#98 第四輪對抗審查,nit):不這樣
+    做的話,一整段連續 CJK 字元(中間沒有空白)會先被 split() 算成 1 個
+    「詞」,又在下面 CJK finditer 逐字元各加 1 次,同一段字元被算兩次。"""
+    non_cjk = _CJK_CHAR.sub(" ", val)
+    words = len(non_cjk.split(None, cap - 1))
     if words >= cap:
         return cap
     total = words
@@ -290,6 +302,81 @@ def _check_prompt_object(name, value, errors):
             _check_field(f"{name}.{key}", val, schema["fields"][key], errors)
 
 
+# r3-#98 第四輪對抗審查 F2(major):上一輪的 list 直屬字串 join(見下方
+# walk() 內殘留註解)只看「list 裡直接是字串」這一種形狀,對
+# [{"role":"user","content":"hi"},{"role":"assistant","content":"yo"},
+# {"role":"user","content":"bye"}](OpenAI 訊息陣列,list 元素是 dict 不是
+# 字串)、{"t1":"user: hi","t2":"assistant: yo","t3":"user: bye"}(逐字稿
+# 被拆進一個 dict 的多個鍵而不是 list)兩種容器形狀完全視而不見。
+#
+# 修法:對每個容器節點(dict 或 list)遞迴收集其整棵子樹內所有字串葉節點的
+# 對話行數,bottom-up 用整數相加(不是每層都重新 join/rescan 整棵子樹的
+# 字串——那樣深層巢狀會變 O(n·depth));命中 ≥3 行就對該容器路徑報一次。
+# OpenAI 風格的 {"role":"user","content":"hi"} 沒有「role: 」這種前綴長在
+# content 值裡面,join 起來也不會命中 _VALUE_LEAK_CONV_LINE——所以額外判斷
+# 一個 dict 是不是「role(值為 user/assistant/system/human)+ content/
+# text/message」形狀的一個對話 turn;turn 本身不計進自己的對話行數,而是
+# 回報給父層,父層(list 或 dict)直屬子節點裡湊到 ≥3 個 turn 也算對話結構
+# 命中。兩個條件命中同一個容器路徑只報一次。
+_TURN_ROLE_WORDS = {"user", "assistant", "system", "human"}
+_TURN_CONTENT_KEYS = {"content", "text", "message"}
+
+
+def _is_turn_dict(node):
+    """node 是不是一個 role+content 對話 turn(鍵名不分大小寫)。"""
+    lowered = {str(k).lower(): v for k, v in node.items()}
+    role = lowered.get("role")
+    if not isinstance(role, str) or role.strip().lower() not in _TURN_ROLE_WORDS:
+        return False
+    return any(k in lowered for k in _TURN_CONTENT_KEYS)
+
+
+def _scan_conv_structure(node, p, errors):
+    """回傳 (conv_count, is_turn)。conv_count 是這個子樹內所有字串葉節點的
+    對話行數總和(bottom-up 整數相加,總工作量 O(子樹大小),不因為巢狀層數
+    重複 rescan)。is_turn 是這個節點本身是不是一個 role+content 對話
+    turn,只回報給父層判斷用,不計進自己這層的 conv_count。子樹命中 ≥3 行
+    對話結構、或直屬子節點湊到 ≥3 個 turn,對這個容器路徑報一次
+    privacy_value_leak(兩個條件都中也只報一次)。根節點(p == "",
+    _privacy_scan 頂層呼叫傳進來的 event/manifest/registry 本身)不落地報
+    錯——命中一定同時也會在某個有名字的子路徑(至少 x_meta 那層)報過一次,
+    根節點那筆只是同一件事的空欄位重複,不比 bad_json 那種「整個物件都壞
+    掉」的情境,沒有欄位可指,加了只是雜訊。"""
+    if isinstance(node, str):
+        return len(_VALUE_LEAK_CONV_LINE.findall(node)), False
+    if isinstance(node, dict):
+        conv_count = 0
+        turn_children = 0
+        for k, v in node.items():
+            c, is_turn = _scan_conv_structure(v, f"{p}.{k}" if p else k, errors)
+            conv_count += c
+            if is_turn:
+                turn_children += 1
+        if p and (conv_count >= 3 or turn_children >= 3):
+            errors.append(_err(
+                "privacy_value_leak", p,
+                "容器內字串葉節點合併後命中對話結構,或直屬子節點構成 ≥3 個"
+                "role+content 對話 turn(隱私紅線;逐字稿被拆進多個鍵值或"
+                "多個 turn 物件也算)"))
+        return conv_count, _is_turn_dict(node)
+    if isinstance(node, list):
+        conv_count = 0
+        turn_children = 0
+        for i, v in enumerate(node):
+            c, is_turn = _scan_conv_structure(v, f"{p}[{i}]", errors)
+            conv_count += c
+            if is_turn:
+                turn_children += 1
+        if p and (conv_count >= 3 or turn_children >= 3):
+            errors.append(_err(
+                "privacy_value_leak", p,
+                "容器內字串葉節點合併後命中對話結構,或直屬子節點構成 ≥3 個"
+                "role+content 對話 turn(隱私紅線;逐字稿被拆進多個 list"
+                "元素或多個 turn 物件也算)"))
+        return conv_count, False
+    return 0, False
+
+
 # ── 隱私掃描(六節紅線)────────────────────────────────────────
 
 
@@ -307,6 +394,13 @@ def _privacy_scan(obj, errors, path=""):
             errors.append(_err("privacy_value_too_long", p,
                                f"字串長 {len(s)} 超過 {max_len}"
                                "(ledger 不收完整 transcript/log/source,只收 ref/hash)"))
+            # r3-#98 第四輪對抗審查(b):超過長度上限本來就是 backstop,已經
+            # 報 privacy_value_too_long,不必再對這段超長字串跑一次
+            # _value_leak(多條正則的完整掃描)——上限值本身(max_len,見
+            # schema)已經界定「多長算太長」,不靠 _value_leak 兜底這段長度
+            # 保護,提早 return 也順便把超長字串的 ReDoS 曝險面收斂到只剩
+            # max_len 以內。
+            return
         if _value_leak(s):
             errors.append(_err("privacy_value_leak", p,
                                "值命中洩漏樣式(憑證前綴／賦值形 secret／對話結構,"
@@ -333,30 +427,20 @@ def _privacy_scan(obj, errors, path=""):
                         continue
                 walk(v, kp)
         elif isinstance(node, list):
-            # r3-#98 F1(high):逐字稿拆成多個元素放進同一個 list 能繞過
-            # 逐元素掃——單一元素內湊不滿 _VALUE_LEAK_CONV_LINE 要的 ≥3 行
-            # (例:["user: hi","assistant: hello there","user: bye now"]
-            # 三個元素各自只有 1 行角色標記),或整段逐字稿切成 10 個各
-            # <max_len 的短片段,每片段本身也不構成對話結構。除了下面照舊
-            # 逐元素 walk,先把這個 list 直屬的字串葉節點用 "\n" join 起來
-            # 對 _VALUE_LEAK_CONV_LINE 合併判一次 ≥3 行,同一個 list 裡的
-            # 元素合起來是同一段逐字稿就在這裡抓到;只 join 直屬字串元素,
-            # 不遞迴挖巢狀 dict/list(不重構整個 walk)。
-            str_items = [v for v in node if isinstance(v, str)]
-            if str_items:
-                joined = "\n".join(str_items)
-                if len(_VALUE_LEAK_CONV_LINE.findall(joined)) >= 3:
-                    errors.append(_err(
-                        "privacy_value_leak", p,
-                        "list 元素合併後命中對話結構(≥3 行角色標記,隱私"
-                        "紅線;單一元素分開看湊不滿,合併看得出是同一段"
-                        "逐字稿被拆散)"))
+            # r3-#98 F1 的 list 直屬字串 join 邏輯已被下面的
+            # _scan_conv_structure(遞迴、不限 list 直屬字串、也認
+            # role+content turn 結構,見 F2 註解)取代,這裡只留逐元素
+            # walk(forbidden-key/scan_value 那條路徑不變)。
             for i, v in enumerate(node):
                 walk(v, f"{p}[{i}]")
         elif isinstance(node, str):
             scan_value(node, p)
 
     walk(obj, path)
+    # r3-#98 F2(major):上面的 walk() 只逐元素掃字串葉節點本身
+    # (forbidden-key、value_leak/too_long),不做「合併子樹判斷對話結構」
+    # 這件事——那是另一個獨立的 bottom-up 遍歷,見 _scan_conv_structure。
+    _scan_conv_structure(obj, path, errors)
 
 
 # ── 事件驗證 ────────────────────────────────────────────────────
