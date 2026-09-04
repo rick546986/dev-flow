@@ -1,5 +1,7 @@
 """`.dev-flow/` durable 檔案:deterministic、路徑可攜、conflict fail-loud(§6/§30)。"""
+import errno
 import os
+from unittest import mock
 
 from memtools import MemoryCase, read_file, write
 from agentmem import durable, identity, ids, paths
@@ -243,6 +245,153 @@ class InventoryTest(MemoryCase):
         self.assertEqual(durable.inventory(self.repo),
                          {"facts": 1, "knowledge": 1, "decisions": 1,
                           "skills": 1, "events": 1, "entities": 1})
+
+
+class SensitiveContentGateTest(MemoryCase):
+    """四個耐久寫入函式各自要對自己落盤的內容欄位重掃敏感內容(issue #107)。
+
+    刻意繞過 `sync.consolidate()`/`signal.gate()`,直接呼叫 writer ——
+    模擬「呼叫端沒有先過閘」的情境;writer 自己必須是最後一道閘,
+    縱深防禦就是要重掃已經被掃過的內容,不是只信任呼叫端。
+    """
+
+    def test_write_state_rejects_secret_in_value(self):
+        with self.assertRaises(durable.DurableError):
+            durable.write_state(self.repo, "database", "memory-store",
+                                [sample_fact(value="AKIAIOSFODNN7EXAMPLE")])
+        self.assertIsNone(
+            durable.read_state(self.repo, "database", "memory-store"),
+            "被拒絕的內容不得落盤")
+
+    def test_write_state_allows_benign_value(self):
+        durable.write_state(self.repo, "database", "memory-store",
+                            [sample_fact()])
+        data = durable.read_state(self.repo, "database", "memory-store")
+        self.assertEqual(data["facts"][0]["value"], "sqlite-wasm")
+
+    def test_write_knowledge_rejects_secret_in_body(self):
+        with self.assertRaises(durable.DurableError):
+            durable.write_knowledge(self.repo, {
+                "kind": "domain", "key": "k", "title": "t",
+                "body": "password=hunter2secret", "authority": "domain_expert",
+                "recorded_at": "2026-08-20T00:00:00Z"})
+        self.assertEqual(list(durable.iter_knowledge(self.repo)), [])
+
+    def test_write_knowledge_allows_benign_body(self):
+        durable.write_knowledge(self.repo, {
+            "kind": "domain", "key": "k", "title": "t",
+            "body": "一段不含敏感內容的說明", "authority": "domain_expert",
+            "recorded_at": "2026-08-20T00:00:00Z"})
+        self.assertEqual(len(list(durable.iter_knowledge(self.repo))), 1)
+
+    def test_write_decision_rejects_secret_in_reason(self):
+        record = dict(DecisionFileTest.RECORD,
+                      reason="外洩憑證 AKIAIOSFODNN7EXAMPLE 留在這裡")
+        with self.assertRaises(durable.DurableError):
+            durable.write_decision(self.repo, record)
+        self.assertEqual(list(durable.iter_decisions(self.repo)), [])
+
+    def test_write_decision_allows_benign_content(self):
+        durable.write_decision(self.repo, DecisionFileTest.RECORD)
+        self.assertEqual(len(list(durable.iter_decisions(self.repo))), 1)
+
+    def test_write_skill_rejects_secret_in_step(self):
+        with self.assertRaises(durable.DurableError):
+            durable.write_skill(self.repo, {
+                "key": "deploy", "title": "部署",
+                "steps": ["build", "password=hunter2secret"],
+                "recorded_at": "2026-08-20T00:00:00Z"})
+        self.assertEqual(list(durable.iter_skills(self.repo)), [])
+
+    def test_write_skill_allows_benign_steps(self):
+        durable.write_skill(self.repo, {
+            "key": "deploy", "title": "部署", "steps": ["build", "push"],
+            "recorded_at": "2026-08-20T00:00:00Z"})
+        self.assertEqual(len(list(durable.iter_skills(self.repo))), 1)
+
+    def test_rejection_message_names_pattern_not_value(self):
+        """拒絕訊息只能講中槍的 pattern 名稱,不能把值本身抄一份進錯誤訊息。"""
+        try:
+            durable.write_state(self.repo, "database", "memory-store",
+                                [sample_fact(value="AKIAIOSFODNN7EXAMPLE")])
+            self.fail("應該要被拒絕")
+        except durable.DurableError as exc:
+            message = str(exc)
+            self.assertIn("aws_access_key", message)
+            self.assertNotIn("AKIAIOSFODNN7EXAMPLE", message)
+
+
+class DirectoryFsyncTest(MemoryCase):
+    """`os.replace` 落地後,目錄項本身也要盡快 fsync(issue #107)。"""
+
+    def _requires_dirfd_path(self):
+        if not (hasattr(os, "O_DIRECTORY") and hasattr(os, "O_NOFOLLOW")):
+            self.skipTest("this platform has no O_NOFOLLOW dirfd write path")
+
+    def test_fsync_called_on_directory_fd_after_replace(self):
+        self._requires_dirfd_path()
+        events = []
+        original_fsync = os.fsync
+        original_replace = os.replace
+
+        replace_dirfds = []
+
+        def spy_fsync(fd):
+            events.append(("fsync", fd))
+            return original_fsync(fd)
+
+        def spy_replace(*args, **kwargs):
+            replace_dirfds.append(kwargs.get("dst_dir_fd"))
+            events.append(("replace",))
+            return original_replace(*args, **kwargs)
+
+        with mock.patch("os.fsync", side_effect=spy_fsync), \
+             mock.patch("os.replace", side_effect=spy_replace):
+            durable.write_knowledge(self.repo, {
+                "kind": "domain", "key": "fsync-k", "title": "t", "body": "b",
+                "authority": "domain_expert",
+                "recorded_at": "2026-08-20T00:00:00Z"})
+
+        replace_positions = [i for i, e in enumerate(events)
+                             if e[0] == "replace"]
+        self.assertEqual(len(replace_positions), 1, events)
+        self.assertEqual(len(replace_dirfds), 1, replace_dirfds)
+        target_dirfd = replace_dirfds[0]
+        self.assertIsNotNone(target_dirfd, "os.replace 必須帶 dst_dir_fd")
+        after_replace = events[replace_positions[0] + 1:]
+        self.assertIn(
+            ("fsync", target_dirfd), after_replace,
+            "os.replace 之後必須對*同一個*目錄 fd 呼叫過一次 os.fsync,"
+            "不能只是隨便哪個 fd;events={0}".format(events))
+
+    def test_directory_fsync_einval_does_not_fail_the_write(self):
+        """macOS 部分檔案系統對目錄 fd 的 fsync 回 EINVAL;寫入仍須成功。"""
+        self._requires_dirfd_path()
+        original_fsync = os.fsync
+        original_replace = os.replace
+        state = {"replaced": False}
+
+        def picky_fsync(fd):
+            if state["replaced"]:
+                raise OSError(errno.EINVAL, "Invalid argument")
+            return original_fsync(fd)
+
+        def spy_replace(*args, **kwargs):
+            result = original_replace(*args, **kwargs)
+            state["replaced"] = True
+            return result
+
+        with mock.patch("os.fsync", side_effect=picky_fsync), \
+             mock.patch("os.replace", side_effect=spy_replace):
+            path = durable.write_knowledge(self.repo, {
+                "kind": "domain", "key": "fsync-einval", "title": "t",
+                "body": "b", "authority": "domain_expert",
+                "recorded_at": "2026-08-20T00:00:00Z"})
+        self.assertTrue(
+            os.path.isfile(path),
+            "目錄 fd 的 fsync 回 EINVAL 時,寫入仍必須成功")
+        record = list(durable.iter_knowledge(self.repo))
+        self.assertEqual(len(record), 1)
 
 
 def _can_symlink(work):

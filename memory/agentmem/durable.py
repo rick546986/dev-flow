@@ -76,9 +76,11 @@ class DurableError(RuntimeError):
 def _assert_portable_content(*texts):
     """durable writer 邊界:敏感內容與絕對路徑不得進 Git。
 
-    這是最後一道閘。呼叫端(consolidate / legacy promote)也會先過
-    `signal.gate`,但 writer 自己必須再擋一次 —— 第二個直接呼叫者
-    不該成為第二個繞過點。
+    這是最後一道閘,四個耐久寫入函式(write_state / write_knowledge /
+    write_decision / write_skill)各自對自己會落盤的文字欄位呼叫這裡。
+    呼叫端(consolidate / legacy promote)也會先過 `signal.gate`,但 writer
+    自己必須再擋一次 —— 縱深防禦就是要重掃已經掃過的內容,不是只信任
+    呼叫端;直接呼叫 writer(繞過 consolidate)不該成為第二個繞過點。
     """
     from . import signal
     verdict = signal.gate("domain_clarification", extra_texts=texts)
@@ -300,6 +302,15 @@ def _atomic_write_dirfd(root_path, parent, dest, payload):
                 os.path.relpath(dest, root_path).replace(os.sep, "/")))
         os.replace(tmp_name, dest_name, src_dir_fd=dirfd, dst_dir_fd=dirfd)
         tmp_name = None
+        try:
+            os.fsync(dirfd)
+        except OSError:
+            # 目錄項的 rename 本身在多數檔案系統上是原子的;這裡的 fsync
+            # 只是把「目錄項已指向新檔」這件事盡快落盤,縮短斷電後目錄項
+            # 回退到舊狀態的視窗,不是正確性前提。部分平台(macOS 對某些
+            # 檔案系統的目錄 fd)fsync 會回 EINVAL —— 目錄不保證支援
+            # fsync,不能因為這裡失敗就讓整個寫入報錯。
+            pass
     finally:
         if fd is not None:
             os.close(fd)
@@ -374,6 +385,7 @@ def write_state(repo_root_path, entity_type, entity_key, facts):
             "confidence": round(float(fact.get("confidence", 0.0)), 4),
             "recorded_at": fact.get("recorded_at"),
         }
+        _assert_portable_content(record["fact_key"], record["value"])
         for optional in ("effective_at", "superseded_at", "superseded_by",
                          "source_type", "source_ref", "source_commit",
                          "verified_at", "verified_commit"):
@@ -524,6 +536,10 @@ def write_decision(repo_root_path, record):
     為什麼不用純 YAML:decision 的價值在 reason / tradeoff 的散文,那是人寫給
     半年後的人看的。純 YAML 會讓人不想寫;純 Markdown 會讓機器讀不到 status。
     """
+    _assert_portable_content(
+        record.get("title", ""), record.get("decision", ""),
+        record.get("alternatives", ""), record.get("reason", ""),
+        record.get("tradeoff", ""))
     header = {
         "schema_version": DURABLE_SCHEMA_VERSION,
         "key": record["key"],
@@ -609,6 +625,10 @@ def skill_file(repo_root_path, key):
 
 
 def write_skill(repo_root_path, record):
+    _assert_portable_content(
+        record.get("title", ""), record.get("preconditions", ""),
+        record.get("verification", ""),
+        *[str(step) for step in (record.get("steps") or [])])
     payload = {
         "schema_version": DURABLE_SCHEMA_VERSION,
         "key": record["key"],
