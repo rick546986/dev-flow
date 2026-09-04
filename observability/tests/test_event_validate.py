@@ -312,11 +312,63 @@ class TestPrivacy(unittest.TestCase):
         e = attempt_completed(x_meta={"transcript": "full chat log"})
         self.assertIn("privacy_forbidden_key", codes(ev.validate_event(e)))
 
+    def test_double_underscore_x_prefix_cannot_bypass_forbidden_key(self):
+        # r2-#98 F1:while low.startswith("x_") 一次只剝 2 個字元,遇
+        # x__transcript(單 x、雙底線)剝出的是 "_transcript"(前面多一個底線),
+        # 對 forbidden_exact 完全免疫。改成 regex 一次吃掉整段
+        # (x + 1 個以上底線) 的重複前綴才擋得住。
+        for key in ("x__transcript", "x___messages"):
+            e = attempt_completed(**{key: "leak"})
+            self.assertIn("privacy_forbidden_key", codes(ev.validate_event(e)),
+                          msg=key)
+
+    def test_mixed_x_underscore_prefix_strips_to_bare_key(self):
+        # 同上,混合形(單 x_ 後接雙底線 x_):x_x__body 須剝到 "body"。
+        e = attempt_completed(x_meta={"x_x__body": "leak"})
+        self.assertIn("privacy_forbidden_key", codes(ev.validate_event(e)),
+                      msg="x_x__body 須剝到底成 'body'(forbidden_exact 之一)")
+
     # ── value_leak:洩漏形狀,不是裸字比對 ─────────────────────
 
     def test_value_leak_assigned_secret_rejected(self):
         e = attempt_completed(x_meta={"note": "password=hunter2"})
         self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_underscore_compound_name_rejected(self):
+        # r2-#98 F2:起頭用 \b 時,底線前後不成立詞界,access_token=/
+        # refresh_token=/id_token=/client_secret: 這類複合詞完全不命中。
+        # 改成 (?<![A-Za-z0-9]) 才擋得住。
+        for note in ("access_token=abcdef123", "refresh_token=abcdef123",
+                     "id_token=abcdef123", "client_secret: xyz12345"):
+            e = attempt_completed(x_meta={"note": note})
+            self.assertIn("privacy_value_leak", codes(ev.validate_event(e)), msg=note)
+
+    def test_value_leak_fullwidth_colon_rejected(self):
+        # r2-#98 F3:[:=] 不含全形冒號 ：,比照 _VALUE_LEAK_CONV_LINE 補上。
+        e = attempt_completed(x_meta={"note": "password：hunter2"})
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_masked_marker_passes(self):
+        # r2-#98 F4:賦值形抓到值後,若整段值只是已遮蔽的佔位符,不算外洩。
+        # 找碴單上的字面案例是 "token=***"(3 星),但 \S{6,} 要求值至少 6 個
+        # 非空白字元,3 星本來就構不成 _VALUE_LEAK_ASSIGN 的一個 match(修前
+        # 就放行,不是本輪修的紅);仍原樣收進來當基準,另補 "token=******"
+        # (6 星,修前確實誤判)驗證遮蔽排除規則真的生效,不是規則沒觸發而放行。
+        for note in ("secret=redacted", "password=REDACTED",
+                     "token=***", "token=******"):
+            e = attempt_completed(x_meta={"note": note})
+            self.assertEqual(ev.validate_event(e), [], msg=note)
+
+    def test_value_leak_transcript_assign_form_rejected(self):
+        # r2-#98 F5:值側對 transcript/conversation/messages 完全沒覆蓋。
+        # 賦值形(transcript: <text>)才擋,裸字提及仍放行。找碴單字面案例。
+        e = attempt_completed(
+            x_meta={"note": "transcript: user said hi…"})
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_transcript_bare_mention_passes(self):
+        e = attempt_completed(x_meta={"note": "see the transcript for details"})
+        self.assertEqual(ev.validate_event(e), [])
 
     def test_value_leak_openai_style_key_rejected(self):
         e = attempt_completed(

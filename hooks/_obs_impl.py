@@ -28,6 +28,7 @@ import datetime
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -129,8 +130,8 @@ def runtime_check(obj, tags_enum=None):
             for k, v in node.items():
                 p = f"{path}.{k}" if path else str(k)
                 bare = str(k).lower()
-                while bare.startswith("x_"):          # 剝到底,#98:曾只剝一層
-                    bare = bare[2:]
+                # r2-#98 F1:同型迴圈同型修法,見 event_validate.py 同段註解。
+                bare = re.sub(r"^(?:x_+)+", "", bare)
                 if bare in EXTRA_FORBIDDEN_KEYS:
                     errs.append({"code": "privacy_forbidden_key", "field": p,
                                  "msg": f"禁載欄位 {k!r}(共享契約 §6 runtime 加嚴)"})

@@ -2228,7 +2228,7 @@ check_static_pin_sub() { # check_static_pin_sub <相對路徑> <期望子字串>
     STATIC_PIN_FAIL=1
   fi
 }
-check_static_pin "hooks/selftest.sh" "MIN_CASES=430" "MIN_CASES 釘死 430(2026-08-17 清空輪 378 之後,2026-08-19 §7 前置修復:s7 legacy sequential 真跑 start 驗證+6/s7b VNext feature-scope 同型驗證+2/s7c Stage 7 review 自建武裝同型驗證+3 → 389,同日 §7-3b 探針 pst 真實 subagent_type payload 形狀釘住+3 → 392,2026-08-20 issue #7 路徑分隔符 w1 組+6 → 398,同日派工單 §2.1 TMPDIR 跨平台正規化 w2 組+2 → 400,同日 report-guard 覆蓋缺口+2 → 402,2026-08-29 Bash 寫入 prevent-before +3 → 405,2026-09-02 PR #110 fail-closed 收斂 +5 → 410,2026-09-04 #98 值掃描重做 +1/#101 壞 payload 武裝判斷 +12/#103 --strict 重讀漏包 +7 → 430)"
+check_static_pin "hooks/selftest.sh" "MIN_CASES=431" "MIN_CASES 釘死 431(2026-08-17 清空輪 378 之後,2026-08-19 §7 前置修復:s7 legacy sequential 真跑 start 驗證+6/s7b VNext feature-scope 同型驗證+2/s7c Stage 7 review 自建武裝同型驗證+3 → 389,同日 §7-3b 探針 pst 真實 subagent_type payload 形狀釘住+3 → 392,2026-08-20 issue #7 路徑分隔符 w1 組+6 → 398,同日派工單 §2.1 TMPDIR 跨平台正規化 w2 組+2 → 400,同日 report-guard 覆蓋缺口+2 → 402,2026-08-29 Bash 寫入 prevent-before +3 → 405,2026-09-02 PR #110 fail-closed 收斂 +5 → 410,2026-09-04 #98 值掃描重做 +1/#101 壞 payload 武裝判斷 +12/#103 --strict 重讀漏包 +7 → 430,同日 r2-#98 對抗審查 F1 x_ 剝除迴圈補案(x__customer_data)+1 → 431)"
 check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "EXPECTED_CHECKS 釘死 131"
 check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 27" "MIN_CHECKS 釘死 27(A-2/B-5 輪 → 18;2026-08-28 ⑪殘件 +5 → 23;⑫Python 地板 +2 → 25;HISTORY 種子不准自動清 +1 → 26;ship-manifest ⑩ +1 → 27)"
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 179" "MIN_CHECKS 釘死 179(Human verdict 寫入器納入 n7-dist-copy +1 後的實得數)"
