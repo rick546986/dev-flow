@@ -366,6 +366,20 @@ class TestPrivacy(unittest.TestCase):
         e = attempt_completed(x_meta={"note": "transcript_ref: abc"})
         self.assertEqual(ev.validate_event(e), [])
 
+    def test_value_leak_bearer_token_rejected(self):
+        # Bearer 後接像 token 的字串(至少含一位數字)才算洩漏。
+        for note in ("Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0",
+                     "sent Bearer a1b2c3d4e5f6g7h8i9j0 to the API"):
+            e = attempt_completed(x_meta={"note": note})
+            self.assertIn("privacy_value_leak", codes(ev.validate_event(e)), msg=note)
+
+    def test_value_leak_bearer_prose_passes(self):
+        # 整合審查抓到的誤殺:Bearer 後接純字母連字號的工程敘述不是 token。
+        for note in ("added Bearer authentication-middleware to the router",
+                     "the Bearer scheme is documented in the auth spec"):
+            e = attempt_completed(x_meta={"note": note})
+            self.assertEqual(ev.validate_event(e), [], msg=note)
+
 
 class TestGauntletContract(unittest.TestCase):
     """ID-10:D/C 事件契約合流 —— final_fresh_run_* 兩事件 + 四值 status。

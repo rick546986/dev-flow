@@ -65,7 +65,7 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 靜態互釘死盯這行必須逐字是「MIN_CASES=405」,兩處要同一個 commit 一起改,但
 # 那支腳本不在本次派工的允許改動清單內。MIN_CASES 是地板不是等號,405 對 411
 # 仍成立,先留著,兩處同步留給後續一併調整。
-MIN_CASES=405
+MIN_CASES=430
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"

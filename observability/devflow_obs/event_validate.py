@@ -37,7 +37,7 @@ _VALUE_LEAK_CRED = re.compile(
     r"|(?<![A-Za-z0-9])xox[bpas]-"
     r"|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"
     r"|-----BEGIN [A-Z ]*PRIVATE KEY-----"
-    r"|Bearer\s+[A-Za-z0-9._-]{16,}"
+    r"|Bearer\s+(?=[A-Za-z0-9._-]*\d)[A-Za-z0-9._-]{16,}"   # 至少含一位數字,排除 Bearer authentication-middleware 這類敘述
 )
 # (c) 對話結構:同一字串內 ≥3 行以 user/assistant/human/system(或中文)開頭
 _VALUE_LEAK_CONV_LINE = re.compile(
