@@ -3,7 +3,9 @@
 七站開發流程，給 agent 跑、人還握著方向（不拿走控制，不像 GSD／BMAD 整包代操）。
 
 <p align="center">
-  <img src="guides/fig-flow-full.svg" alt="七階段流程圖含 Gate 與能力分層">
+  <a href="https://rick546986.github.io/dev-flow/guides/fig-flow-full.html">
+    <img src="https://rick546986.github.io/dev-flow/guides/fig-flow-full.svg" alt="七階段流程圖含 Gate 與能力分層">
+  </a>
 </p>
 
 ## 安裝
