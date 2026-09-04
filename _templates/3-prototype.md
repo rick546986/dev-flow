@@ -78,7 +78,7 @@ updated:
 
 ## 結構圖
 <!-- variant 流程/結構圖(UI 案每 variant 一張簡圖;LOGIC 案畫模組介面/資料流)。
-     判準同指南 `#twin-dash`:純線性 → ASCII 半形;方塊+連線 → html 用 SVG(md 留 ASCII 正本)。
+     判準同指南 `#diagram-style`:純線性 → ASCII 半形;方塊+連線 → html 用 SVG(md 留 ASCII 正本)。
      Method 裡的 Variant X／具名模組名必須上圖,選定 variant 必須標「選定」。 -->
 
 ## Demo Script
