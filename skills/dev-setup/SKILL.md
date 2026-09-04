@@ -254,8 +254,12 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
   與 `.devflow-baseline/_templates/CONTEXT.md`)。**不准刪**專案根 `CONTEXT.md`,
   也不准刪採用專案正在用的 `docs/dev/CONTEXT.md`。沒 baseline 時只刪已知退役
   模板名;有 baseline 時另刪「在舊 baseline、不在新 pack」的 `_templates/` 檔。
-  **先刪殘件再換 baseline**,否則退役檔會被看成本地客製。預設 dry-run;upgrade
-  帶 `--apply`。這一步不是每次 upgrade 重寫 HISTORY,也不是掃整個專案亂刪。
+  已知退役模板名這批,真刪前先跟 baseline 做雜湊比對:內容相同才直刪,客製過
+  (內容不同)或 baseline 沒有對應檔可比,一律搬到 `docs/dev/.devflow-upgrade-trash/`
+  下的時間戳記子目錄並印 diff 摘要,不無備份直刪——這個 trash 目錄要比照
+  `.devflow/` 加進 `.gitignore`。**先刪殘件再換 baseline**,否則退役檔會被看成
+  本地客製。預設 dry-run;upgrade 帶 `--apply`。這一步不是每次 upgrade 重寫
+  HISTORY,也不是掃整個專案亂刪。
 - **diff 摘要必須分兩類,不得只給一份「新舊不同」清單**(否則使用者按下「全部
   升級」時看不到自己的在地修改要被沖掉):
   ①**母版改寫**(上游更新):本地內容 = 上次 install/upgrade 留下的原樣,使用者
