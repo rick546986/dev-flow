@@ -40,8 +40,11 @@ L = SourceFileLoader("devflow_lib", os.path.join(os.path.dirname(os.path.abspath
 # (採用專案的路徑存在與否正是要判別的東西)。舊版只有下面的優先序 3,已安裝
 # plugin 執行時拿到的是發版快照根,會把母版自己剛加的路徑誤判成「不存在」。
 #   1. DEVFLOW_MASTER 環境變數(測試/移植用途,同 _gate_consistency_impl.py 的
-#      DEVFLOW_MASTER/DEVFLOW_PLUGIN 慣例)—— 目錄存在且含
-#      .claude-plugin/plugin.json 才採信,避免誤設的環境變數指去無關目錄。
+#      DEVFLOW_MASTER/DEVFLOW_PLUGIN 慣例)—— 一樣要通過 _is_master_repo()
+#      (name 為 dev-flow)才採信,不是只看 .claude-plugin/plugin.json 存在;
+#      否則誤設的 DEVFLOW_MASTER 指到別的 plugin(name 不同)也會被接受,
+#      「避免誤設環境變數指去無關目錄」這句話就只是嘴上說說(fresh 驗收抓到,
+#      2026-09-04)。沒通過就落到優先序 2/3,並在訊息裡點名 env 被忽略的原因。
 #   2. 回報檔所在 repo 的 git toplevel(devflow-report-guard.sh 已用
 #      `git rev-parse --show-toplevel` 算好、以 argv[1] 傳入本檔)—— 若那裡本身
 #      就是 dev-flow 母版(.claude-plugin/plugin.json 的 name 為 dev-flow),
@@ -68,13 +71,21 @@ def _is_master_repo(path):
 def resolve_master_root(report_repo_root):
     """回傳 (母版根, 判讀用的來源說明) —— 優先序見上方模組註解。"""
     env_master = os.environ.get("DEVFLOW_MASTER")
-    if env_master and os.path.isdir(env_master) and \
-            os.path.isfile(os.path.join(env_master, ".claude-plugin", "plugin.json")):
-        return env_master, "DEVFLOW_MASTER 環境變數"
+    env_ignored_reason = None
+    if env_master and os.path.isdir(env_master):
+        if _is_master_repo(env_master):
+            return env_master, "DEVFLOW_MASTER 環境變數"
+        env_ignored_reason = (
+            f"DEVFLOW_MASTER={env_master} 已忽略"
+            "(.claude-plugin/plugin.json 缺席或 name 不是 dev-flow,"
+            "不是真的母版)"
+        )
     if report_repo_root and _is_master_repo(report_repo_root):
-        return report_repo_root, "回報檔所在 repo 本身即母版(git toplevel)"
+        src = "回報檔所在 repo 本身即母版(git toplevel)"
+        return report_repo_root, (f"{env_ignored_reason};{src}" if env_ignored_reason else src)
     fallback = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    return fallback, "fallback:hook 自身位置上兩層(已安裝 plugin 的發版快照根)"
+    src = "fallback:hook 自身位置上兩層(已安裝 plugin 的發版快照根)"
+    return fallback, (f"{env_ignored_reason};{src}" if env_ignored_reason else src)
 
 
 RULES = (

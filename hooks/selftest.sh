@@ -54,8 +54,10 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # → 430,同日 r2-#98 對抗審查 F1 x_ 剝除迴圈補案(x__customer_data)+1 → 431;
 # 2026-09-04 issue #109 report-guard 三處路徑判定誤擋回歸 +4(前導點母版路徑放行
 # /連字號後 release 不誤判分支名/真分支名仍擋/母版沒有的路徑仍擋)→ 435;
-# 同一 commit 同步 scripts/test-architecture-guards.sh 的 check_static_pin 字面
-# (那條互釘就是要抓「調地板沒同步」)。
+# 同日 fresh 驗收 medium:DEVFLOW_MASTER 優先序 1 補驗 name=dev-flow(不是只看
+# .claude-plugin/plugin.json 存在)+1 → 436;同一 commit 同步
+# scripts/test-architecture-guards.sh 的 check_static_pin 字面(那條互釘就是要
+# 抓「調地板沒同步」)。
 # ——新增案例時同步 +;絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
@@ -69,8 +71,10 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # scripts/test-architecture-guards.sh:2231 字面 → 432。
 # ⚠️ 2026-09-04 issue #109:report-guard 三處路徑判定誤擋回歸補 4 案,疊在
 # #102 的 432 上 → 436。同一 commit 同步 scripts/test-architecture-guards.sh
-# 的 check_static_pin 字面 → 436。
-MIN_CASES=436
+# 的 check_static_pin 字面。
+# ⚠️ 2026-09-04 fresh 驗收 medium:DEVFLOW_MASTER 優先序 1 補 _is_master_repo
+# 驗證(name=dev-flow)+1 案,疊上 → 437。
+MIN_CASES=437
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -2664,6 +2668,18 @@ ck_msg "rg 真分支名 feature/foo-bar → 仍擋(分支名規則沒被連坐�
 printf '相關檔案:docs/dev/acme-crm/4-spec.md\n' > "$RGT/.devflow/reports/i109-not-in-master.md"
 rg_run "$RGT/.devflow/reports/i109-not-in-master.md"
 ck_msg "rg 母版不存在的路徑(docs/dev/acme-crm/4-spec.md)→ 仍擋" 2 "不存在於母版" "$RG_RC" "$RG_OUT"
+# fresh 驗收(2026-09-04)medium:DEVFLOW_MASTER 優先序 1 舊版只查
+# .claude-plugin/plugin.json 存在,沒驗 name=dev-flow —— 誤設成別的 plugin 目錄
+# 也會被接受。這裡指向一個 name≠dev-flow 的假 plugin 目錄,期望:①不被採用
+# (乾脆落到 fallback,母版真沒有的路徑仍要擋)②訊息點名「忽略」講清楚原因。
+RGFAKE=$(mktemp -d "${TMPDIR:-/tmp}/devflow-rg-fake-plugin.XXXXXX")
+mkdir -p "$RGFAKE/.claude-plugin"
+printf '{"name":"some-other-plugin"}' > "$RGFAKE/.claude-plugin/plugin.json"
+printf '相關檔案:docs/dev/acme-crm/4-spec.md\n' > "$RGT/.devflow/reports/i109-env-master-wrong-name.md"
+RG_OUT=$(printf '{"tool_name":"Write","tool_input":{"file_path":"%s"}}' "$RGT/.devflow/reports/i109-env-master-wrong-name.md" \
+  | env DEVFLOW_MASTER="$RGFAKE" "$H/devflow-report-guard.sh" 2>&1); RG_RC=$?
+ck_msg "rg DEVFLOW_MASTER 指向 name≠dev-flow 的假 plugin → 不採用,訊息點名忽略" 2 "忽略" "$RG_RC" "$RG_OUT"
+rm -rf "$RGFAKE"
 rm -rf "$RGT"
 
 echo "-- c2 tier-exempt 豁免卡 run 級:stop 清未消耗的卡、留已消耗的卡 --"
