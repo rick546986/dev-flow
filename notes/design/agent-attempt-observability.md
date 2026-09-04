@@ -168,8 +168,12 @@ hash 進事件(`context_manifest_hash`),內容不進事件。
   多個 list 元素或多個 dict 鍵值就各自躲過單一元素的門檻;OpenAI 風格的
   `{"role":"user","content":"hi"}` 陣列沒有「role: 」前綴長在 content 值
   裡,join 也不會命中對話結構正則,所以另外判斷「role(user/assistant/
-  system/human)+ content/text/message」形狀的一個對話 turn,容器內 ≥3 個
-  turn 也算命中。`transcript/conversation/messages=值` 是獨立第四種
+  system/human)+ content/text/message」形狀的一個對話 turn,turn 數也是
+  bottom-up 整數往上傳、子樹內(不限直屬子節點,turn 可以埋在兄弟
+  list/dict 裡更深一層)湊到 ≥3 個就算命中(r3-#98 第五輪對抗審查修正
+  「只看直屬子節點」的漏洞)——換句話說,x_meta 底下任何地方湊得到 3 個
+  role+content dict 就會被擋,即使它們分散在語意上不相關的欄位。
+  `transcript/conversation/messages=值` 是獨立第四種
   (賦值形才擋、裸字放行),但值還要「長得像逐字稿內容」才算外洩(長度
   ≥60 字元且 ≥10 詞 / 引號包住的 ≥4 詞句 / 含 user:/assistant: 角色標記),
   避免「messages: 3 pending」這類日常狀態敘述被誤殺(r3-#98;首版通用門檻

@@ -332,49 +332,53 @@ def _is_turn_dict(node):
 
 
 def _scan_conv_structure(node, p, errors):
-    """回傳 (conv_count, is_turn)。conv_count 是這個子樹內所有字串葉節點的
-    對話行數總和(bottom-up 整數相加,總工作量 O(子樹大小),不因為巢狀層數
-    重複 rescan)。is_turn 是這個節點本身是不是一個 role+content 對話
-    turn,只回報給父層判斷用,不計進自己這層的 conv_count。子樹命中 ≥3 行
-    對話結構、或直屬子節點湊到 ≥3 個 turn,對這個容器路徑報一次
-    privacy_value_leak(兩個條件都中也只報一次)。根節點(p == "",
-    _privacy_scan 頂層呼叫傳進來的 event/manifest/registry 本身)不落地報
-    錯——命中一定同時也會在某個有名字的子路徑(至少 x_meta 那層)報過一次,
-    根節點那筆只是同一件事的空欄位重複,不比 bad_json 那種「整個物件都壞
-    掉」的情境,沒有欄位可指,加了只是雜訊。"""
+    """回傳 (conv_count, turns)。conv_count 是這個子樹內所有字串葉節點的
+    對話行數總和;turns 是這個子樹內所有 role+content turn dict 的總數
+    (含 node 自己,如果 node 本身就是一個 turn dict)。兩者都是 bottom-up
+    整數相加(總工作量 O(子樹大小),不因為巢狀層數重複 rescan)。
+    r3-#98 第五輪對抗審查(major):上一輪的 turns 只數「直屬子節點是不是
+    turn」,turn 藏在兄弟 list/dict 裡一層(例:
+    {"a":[turn,turn],"b":[turn]})父層就完全看不到——list/dict 分支硬回傳
+    turns=0/False,不繼續往上傳實際數字。改成子樹裡的 turn 總數整數相加,
+    不管 turn 埋在直屬子節點還是更深的孫節點,只要同一個容器的子樹裡湊得到
+    ≥3 個就算。
+    子樹命中 conv_count ≥3 行對話結構、或 turns ≥3 個 turn,對這個容器
+    路徑報一次 privacy_value_leak(兩個條件都中也只報一次;同一個 turn
+    被多層祖先容器各自算進門檻、各自報一次是刻意的,見上一輪 F1/F2 決定)。
+    根節點(p == "",_privacy_scan 頂層呼叫傳進來的 event/manifest/
+    registry 本身)不落地報錯——命中一定同時也會在某個有名字的子路徑
+    (至少 x_meta 那層)報過一次,根節點那筆只是同一件事的空欄位重複。"""
     if isinstance(node, str):
-        return len(_VALUE_LEAK_CONV_LINE.findall(node)), False
+        return len(_VALUE_LEAK_CONV_LINE.findall(node)), 0
     if isinstance(node, dict):
         conv_count = 0
-        turn_children = 0
+        turns = 1 if _is_turn_dict(node) else 0
         for k, v in node.items():
-            c, is_turn = _scan_conv_structure(v, f"{p}.{k}" if p else k, errors)
+            c, t = _scan_conv_structure(v, f"{p}.{k}" if p else k, errors)
             conv_count += c
-            if is_turn:
-                turn_children += 1
-        if p and (conv_count >= 3 or turn_children >= 3):
+            turns += t
+        if p and (conv_count >= 3 or turns >= 3):
             errors.append(_err(
                 "privacy_value_leak", p,
-                "容器內字串葉節點合併後命中對話結構,或直屬子節點構成 ≥3 個"
+                "容器子樹內字串葉節點合併後命中對話結構,或子樹內構成 ≥3 個"
                 "role+content 對話 turn(隱私紅線;逐字稿被拆進多個鍵值或"
-                "多個 turn 物件也算)"))
-        return conv_count, _is_turn_dict(node)
+                "多個 turn 物件也算,turn 不必是直屬子節點)"))
+        return conv_count, turns
     if isinstance(node, list):
         conv_count = 0
-        turn_children = 0
+        turns = 0
         for i, v in enumerate(node):
-            c, is_turn = _scan_conv_structure(v, f"{p}[{i}]", errors)
+            c, t = _scan_conv_structure(v, f"{p}[{i}]", errors)
             conv_count += c
-            if is_turn:
-                turn_children += 1
-        if p and (conv_count >= 3 or turn_children >= 3):
+            turns += t
+        if p and (conv_count >= 3 or turns >= 3):
             errors.append(_err(
                 "privacy_value_leak", p,
-                "容器內字串葉節點合併後命中對話結構,或直屬子節點構成 ≥3 個"
+                "容器子樹內字串葉節點合併後命中對話結構,或子樹內構成 ≥3 個"
                 "role+content 對話 turn(隱私紅線;逐字稿被拆進多個 list"
-                "元素或多個 turn 物件也算)"))
-        return conv_count, False
-    return 0, False
+                "元素或多個 turn 物件也算,turn 不必是直屬子節點)"))
+        return conv_count, turns
+    return 0, 0
 
 
 # ── 隱私掃描(六節紅線)────────────────────────────────────────
