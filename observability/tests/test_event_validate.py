@@ -639,6 +639,44 @@ class TestPrivacy(unittest.TestCase):
         self.assertLess(elapsed, 0.5, msg=f"花 {elapsed:.4f}s")
         self.assertIn("privacy_value_leak", result_codes)
 
+    # ── r3-#98 第六輪對抗審查:turn 分散在頂層 x_* 欄位,根層例外 ──────
+
+    def test_value_leak_turns_scattered_across_top_level_x_fields_rejected(self):
+        # r3-#98 第六輪(major):turn 分散在多個頂層 x_* 欄位,每個欄位自己
+        # 都不到門檻,根節點(p=="")加總到 ≥3 卻因為舊版「根節點永不報」的
+        # 例外被整個放行——沒有任何具名子路徑單獨達標,根節點是唯一看得到
+        # 全貌的地方。
+        turn = {"role": "user", "content": "hi"}
+        e = attempt_completed(x_a=[turn], x_b=[turn], x_c=[turn])
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_turns_scattered_mixed_x_meta_and_sibling_rejected(self):
+        # 同上,混合形:x_meta 底下 2 個 turn + 另一個頂層 x_ 欄位 1 個 turn,
+        # x_meta 自己只有 2 個(不到門檻),x_notes 自己只有 1 個,只有根節點
+        # 加總看得到合計 3 個。
+        turn = {"role": "user", "content": "hi"}
+        e = attempt_completed(x_meta={"a": [turn, turn]}, x_notes=[turn])
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_turns_scattered_only_two_total_passes(self):
+        turn = {"role": "user", "content": "hi"}
+        e = attempt_completed(x_a=[turn], x_b=[turn])
+        self.assertEqual(ev.validate_event(e), [])
+
+    def test_value_leak_root_does_not_double_report_when_subpath_already_did(self):
+        # 子路徑(x_meta.a、進而 x_meta)已經各自報過一次;根節點的例外只在
+        # 「子樹內完全沒有任何具名子路徑報過」時才補報,這裡子路徑報過了,
+        # 根節點要照舊跳過——privacy_value_leak 筆數要跟這條 major 修之前
+        # (86e382d)一樣,不能因為新加的根層例外多出第三筆。
+        turn = {"role": "user", "content": "hi"}
+        e = attempt_completed(x_meta={"a": [turn, turn, turn]})
+        errs = ev.validate_event(e)
+        leak_errs = [x for x in errs if x["code"] == "privacy_value_leak"]
+        self.assertEqual(len(leak_errs), 2,
+                         msg=f"預期 x_meta.a + x_meta 各報一次(共 2 筆),"
+                             f"根節點不重報,實得 {leak_errs}")
+        self.assertNotIn("(event)", [x["field"] for x in leak_errs])
+
     def test_value_leak_openai_style_key_rejected(self):
         e = attempt_completed(
             x_meta={"note": "leaked sk-abcdefghijklmnop1234567890 in log"})

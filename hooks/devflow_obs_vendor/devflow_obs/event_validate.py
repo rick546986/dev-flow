@@ -332,10 +332,12 @@ def _is_turn_dict(node):
 
 
 def _scan_conv_structure(node, p, errors):
-    """回傳 (conv_count, turns)。conv_count 是這個子樹內所有字串葉節點的
-    對話行數總和;turns 是這個子樹內所有 role+content turn dict 的總數
-    (含 node 自己,如果 node 本身就是一個 turn dict)。兩者都是 bottom-up
-    整數相加(總工作量 O(子樹大小),不因為巢狀層數重複 rescan)。
+    """回傳 (conv_count, turns, reported)。conv_count 是這個子樹內所有
+    字串葉節點的對話行數總和;turns 是這個子樹內所有 role+content turn
+    dict 的總數(含 node 自己,如果 node 本身就是一個 turn dict)。兩者都是
+    bottom-up 整數相加(總工作量 O(子樹大小),不因為巢狀層數重複
+    rescan)。reported 是這個子樹(含 node 自己)有沒有任何一筆因為這個
+    機制報過 privacy_value_leak,只給根節點的例外判斷用(見下方)。
     r3-#98 第五輪對抗審查(major):上一輪的 turns 只數「直屬子節點是不是
     turn」,turn 藏在兄弟 list/dict 裡一層(例:
     {"a":[turn,turn],"b":[turn]})父層就完全看不到——list/dict 分支硬回傳
@@ -344,41 +346,73 @@ def _scan_conv_structure(node, p, errors):
     ≥3 個就算。
     子樹命中 conv_count ≥3 行對話結構、或 turns ≥3 個 turn,對這個容器
     路徑報一次 privacy_value_leak(兩個條件都中也只報一次;同一個 turn
-    被多層祖先容器各自算進門檻、各自報一次是刻意的,見上一輪 F1/F2 決定)。
+    被多層祖先容器各自算進門檻、各自報一次是刻意的,見上一輪 F1/F2 決定,
+    這裡不變)。
     根節點(p == "",_privacy_scan 頂層呼叫傳進來的 event/manifest/
-    registry 本身)不落地報錯——命中一定同時也會在某個有名字的子路徑
-    (至少 x_meta 那層)報過一次,根節點那筆只是同一件事的空欄位重複。"""
+    registry 本身)是唯一例外:turn 或對話行可能分散在好幾個頂層 x_*
+    欄位,每個欄位自己都不到門檻,只有全部加總才到 ≥3——這種情況下沒有
+    任何具名子路徑會報錯,原本「根節點不落地報錯,因為子路徑一定報過」的
+    假設不成立,整個事件就這樣放行(r3-#98 第六輪對抗審查抓到:
+    x_a=[T],x_b=[T],x_c=[T] 或 x_meta={"a":[T,T]},x_notes=[T] 都是
+    []比對)。所以根節點改成:命中且子樹內沒有任何一個具名子路徑已經報過
+    (reported 累積下來是 False)才在根節點自己報一次,path 用 "(event)"
+    (訊息裡說明是分散在多個頂層欄位);子路徑已經報過就跳過,避免對同一件
+    事重複報。"""
     if isinstance(node, str):
-        return len(_VALUE_LEAK_CONV_LINE.findall(node)), 0
+        return len(_VALUE_LEAK_CONV_LINE.findall(node)), 0, False
     if isinstance(node, dict):
         conv_count = 0
         turns = 1 if _is_turn_dict(node) else 0
+        reported = False
         for k, v in node.items():
-            c, t = _scan_conv_structure(v, f"{p}.{k}" if p else k, errors)
+            c, t, r = _scan_conv_structure(v, f"{p}.{k}" if p else k, errors)
             conv_count += c
             turns += t
-        if p and (conv_count >= 3 or turns >= 3):
+            reported = reported or r
+        hit = conv_count >= 3 or turns >= 3
+        if p and hit:
             errors.append(_err(
                 "privacy_value_leak", p,
                 "容器子樹內字串葉節點合併後命中對話結構,或子樹內構成 ≥3 個"
                 "role+content 對話 turn(隱私紅線;逐字稿被拆進多個鍵值或"
                 "多個 turn 物件也算,turn 不必是直屬子節點)"))
-        return conv_count, turns
+            reported = True
+        elif not p and hit and not reported:
+            errors.append(_err(
+                "privacy_value_leak", "(event)",
+                "整個事件裡分散在多個頂層欄位的字串葉節點合併後命中對話"
+                "結構,或分散的 role+content 對話 turn 合計 ≥3 個(隱私"
+                "紅線;沒有任何單一具名欄位單獨達標,只有全部頂層欄位加總"
+                "才到門檻,由根節點在這裡報一次)"))
+            reported = True
+        return conv_count, turns, reported
     if isinstance(node, list):
         conv_count = 0
         turns = 0
+        reported = False
         for i, v in enumerate(node):
-            c, t = _scan_conv_structure(v, f"{p}[{i}]", errors)
+            c, t, r = _scan_conv_structure(v, f"{p}[{i}]", errors)
             conv_count += c
             turns += t
-        if p and (conv_count >= 3 or turns >= 3):
+            reported = reported or r
+        hit = conv_count >= 3 or turns >= 3
+        if p and hit:
             errors.append(_err(
                 "privacy_value_leak", p,
                 "容器子樹內字串葉節點合併後命中對話結構,或子樹內構成 ≥3 個"
                 "role+content 對話 turn(隱私紅線;逐字稿被拆進多個 list"
                 "元素或多個 turn 物件也算,turn 不必是直屬子節點)"))
-        return conv_count, turns
-    return 0, 0
+            reported = True
+        elif not p and hit and not reported:
+            errors.append(_err(
+                "privacy_value_leak", "(event)",
+                "整個事件裡分散在多個頂層元素的字串葉節點合併後命中對話"
+                "結構,或分散的 role+content 對話 turn 合計 ≥3 個(隱私"
+                "紅線;沒有任何單一具名子路徑單獨達標,只有全部加總才到"
+                "門檻,由根節點在這裡報一次)"))
+            reported = True
+        return conv_count, turns, reported
+    return 0, 0, False
 
 
 # ── 隱私掃描(六節紅線)────────────────────────────────────────
