@@ -226,8 +226,13 @@ def shadow_mismatch(root, name):
     return ""
 
 
-def load_state(root):
-    """回傳 (state, armed_slug, error)。error 非空 = fail-closed 情境。"""
+def load_state(root, caller="devflow-guard"):
+    """回傳 (state, armed_slug, error)。error 非空 = fail-closed 情境。
+
+    `caller`:錯誤訊息前綴 —— 各呼叫端(devflow-guard.sh / devflow-prebash.sh
+    等)傳自己的名字,讓 fail-closed 訊息標對來源,不誤標成 devflow-guard。
+    預設值維持既有行為,呼叫端不傳就不變。
+    """
     sentinel = os.path.join(git_dir(root), "devflow-armed")
     armed = ""
     if os.path.exists(sentinel):
@@ -239,18 +244,18 @@ def load_state(root):
     if not os.path.exists(execp):
         if armed:
             return None, armed, (
-                f"⛔ devflow-guard:旗標檔 .devflow/exec.json 消失,但守衛仍武裝中"
+                f"⛔ {caller}:旗標檔 .devflow/exec.json 消失,但守衛仍武裝中"
                 f"(slug={armed})。這是自我停權訊號 —— 正常收工請跑 devflow-exec.sh stop。")
         return None, "", ""          # 真的沒在執行 → 沉睡
     try:
         d = json.load(open(execp))
     except Exception as e:
         return None, armed, (
-            f"⛔ devflow-guard:.devflow/exec.json 損壞({e})。守衛 fail-closed 擋下動作。"
+            f"⛔ {caller}:.devflow/exec.json 損壞({e})。守衛 fail-closed 擋下動作。"
             f"修復或跑 devflow-exec.sh stop 後重新 start。")
     if not isinstance(d, dict):
         return None, armed, (
-            f"⛔ devflow-guard:.devflow/exec.json 損壞(非 object,"
+            f"⛔ {caller}:.devflow/exec.json 損壞(非 object,"
             f"得到 {type(d).__name__})。守衛 fail-closed 擋下動作。"
             f"修復或跑 devflow-exec.sh stop 後重新 start。")
     return d, armed, ""
