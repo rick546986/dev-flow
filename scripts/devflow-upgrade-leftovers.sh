@@ -22,7 +22,11 @@
 # ①的檔案真刪前另跟 baseline 做雜湊比對(不改①②列候選的規格,只改刪除動作):
 # 內容與 baseline 相同才直刪;不同(使用者客製過)或 baseline 沒有對應檔可比
 # (無法比對)就搬到 docs/dev/.devflow-upgrade-trash/<時間戳記>/ 並印 diff 摘要,
-# 不無備份直刪。
+# 不無備份直刪。落點撞名(同一秒內第二次 --apply 同一相對路徑)絕不靜默覆蓋前一
+# 份,自動加 .1 .2 … 唯一化後綴,stdout 印實際落點。
+#
+# 測試專用環境變數 DEVFLOW_UPGRADE_LEFTOVERS_STAMP:覆寫 trash 子目錄的時間戳記,
+# 只給治具決定性重現撞名;正常使用不要設它,設了會改變 trash 落點。
 #
 # 用法:
 #   scripts/devflow-upgrade-leftovers.sh --root <專案根> --pack <方法包根> [--apply]
@@ -45,7 +49,7 @@ while [ $# -gt 0 ]; do
     --root)  need_value "$1" "${2:-}"; ROOT=$2; shift 2 ;;
     --pack)  need_value "$1" "${2:-}"; PACK=$2; shift 2 ;;
     --apply) APPLY=1; shift ;;
-    -h|--help) sed -n '2,29p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,33p' "$0"; exit 0 ;;
     *) die "拒絕:未知參數 $1(可用:--root --pack --apply)" ;;
   esac
 done
@@ -74,6 +78,10 @@ PROTECTED = (
     os.path.join(root, "docs", "dev", "CONTEXT.md"),
 )
 TRASH_ROOT = os.path.join(root, "docs", "dev", ".devflow-upgrade-trash")
+# 測試專用覆寫:讓治具能強迫兩次 --apply 落在同一個 stamp 目錄,決定性地
+# 觸發撞名分支,不必賭兩次呼叫剛好落在同一秒內。正常執行不設這個環境變數,
+# 行為不變(仍取當下時間)。
+STAMP_OVERRIDE = os.environ.get("DEVFLOW_UPGRADE_LEFTOVERS_STAMP", "")
 
 
 def fail(msg, code=2):
@@ -112,6 +120,20 @@ def sha256_of(path):
         for chunk in iter(lambda: fh.read(65536), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def unique_dest(dest):
+    # dest 若已存在(同一秒內第二次 --apply 同一相對路徑撞名),絕不能靜默覆蓋
+    # 前一次搬進 trash 的檔——遞增 .1 .2 ... 直到找到空位。
+    if not os.path.exists(dest):
+        return dest
+    base, ext = os.path.splitext(dest)
+    n = 1
+    while True:
+        candidate = "%s.%d%s" % (base, n, ext)
+        if not os.path.exists(candidate):
+            return candidate
+        n += 1
 
 
 def rel_within_managed(path):
@@ -245,11 +267,12 @@ for path in allowed:
 
         if not same:
             if stamp is None:
-                stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+                stamp = STAMP_OVERRIDE or datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
             rel_root = os.path.relpath(path, root)
             dest = os.path.join(TRASH_ROOT, stamp, rel_root)
             try:
                 os.makedirs(os.path.dirname(dest), exist_ok=True)
+                dest = unique_dest(dest)  # 撞名絕不覆蓋,遞增 .1 .2 找空位
                 shutil.move(path, dest)
             except OSError as err:
                 failed.append("%s (搬移失敗:%s)" % (path, err))

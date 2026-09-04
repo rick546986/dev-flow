@@ -27,6 +27,8 @@
 #   ⑪upgrade 必須先刪 pack 不再出貨的受管殘件(devflow-upgrade-leftovers.sh),
 #     不准刪專案根／live docs/dev/CONTEXT.md,且先刪殘件再換 baseline
 #   ⑫產圖／gate-twin 要 Python 3.12+ 專案 venv 或 DEVFLOW_PYTHON,不要覆寫系統 Python
+#   ⑬trash 目錄(docs/dev/.devflow-upgrade-trash/)要獨立列一條進 .gitignore,
+#     不准埋在殘件刪除段落裡一筆帶過
 #
 # 用法:
 #   scripts/check-dev-setup-discipline.sh [root]   # 缺省 = repo root
@@ -221,10 +223,15 @@ if src:
          "SKILL.md 沒把 HISTORY 種子清理釘成「不准每次 upgrade 自動跑」——"
          "upgrade 若自動重寫 HISTORY 會吃掉真紀錄")
 
+    # ── ⑬trash 目錄要獨立列一條進 .gitignore,不准埋在殘件刪除段落裡 ──────
+    need(".devflow-upgrade-trash" in upg_sec and ".gitignore" in upg_sec,
+         "SKILL.md upgrade 段沒有把 docs/dev/.devflow-upgrade-trash/ 列進 "
+         ".gitignore —— 雜湊安全網搬出來的客製檔備份會被誤 commit 進版控")
+
 # ── 檢查數地板:防止有人把上面整段刪成空迴圈仍然 exit 0 ──────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」(同 repo 慣例:
 # check-stage67-enforcement.sh:232、check-no-stale-paths.sh 的 MIN_CHECKS)。
-MIN_CHECKS = 27
+MIN_CHECKS = 28
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")

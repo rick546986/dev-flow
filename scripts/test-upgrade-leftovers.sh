@@ -33,14 +33,20 @@ import tempfile
 pack, tool = sys.argv[1], sys.argv[2]
 passed = 0
 failed = 0
-MIN_CASES = 10
+MIN_CASES = 13
 
 
-def run(root, *args):
+def run(root, *args, stamp=None):
+    env = os.environ.copy()
+    if stamp is not None:
+        env["DEVFLOW_UPGRADE_LEFTOVERS_STAMP"] = stamp
+    else:
+        env.pop("DEVFLOW_UPGRADE_LEFTOVERS_STAMP", None)
     return subprocess.run(
         ["bash", tool, "--root", root, "--pack", pack, *args],
         capture_output=True,
         text=True,
+        env=env,
     )
 
 
@@ -209,6 +215,64 @@ with tempfile.TemporaryDirectory(prefix="upgrade-leftovers-nobaseline-") as tmp:
         len(trashed_files) == 1
         and open(trashed_files[0], encoding="utf-8").read() == orphan_body,
         "trash 檔案:%r" % trashed_files,
+    )
+
+# ── KNOWN_RETIRED 雜湊安全網 案 4:同一秒內第二次 --apply 撞名 —— 不准覆蓋 ──
+# 用 DEVFLOW_UPGRADE_LEFTOVERS_STAMP 強迫兩次 run 落在同一個 stamp 目錄,
+# 決定性地觸發撞名分支,不必賭兩次呼叫剛好落在同一個真實秒內。
+with tempfile.TemporaryDirectory(prefix="upgrade-leftovers-collide-") as tmp:
+    root = os.path.join(tmp, "proj")
+    os.makedirs(os.path.join(root, "docs", "dev", "_templates"))
+    os.makedirs(os.path.join(root, "docs", "dev", ".devflow-baseline", "_templates"))
+    live_leftover = os.path.join(root, "docs", "dev", "_templates", "CONTEXT.md")
+    baseline_leftover = os.path.join(
+        root, "docs", "dev", ".devflow-baseline", "_templates", "CONTEXT.md"
+    )
+    fixed_stamp = "20990101-000000"
+    first_body = "FIRST custom version\n"
+    baseline_body = "出廠原版\n"
+
+    open(live_leftover, "w", encoding="utf-8").write(first_body)
+    open(baseline_leftover, "w", encoding="utf-8").write(baseline_body)
+    first_applied = run(root, "--apply", stamp=fixed_stamp)
+    expect(
+        "撞名案 run 1:--apply 成功搬第一份客製版",
+        first_applied.returncode == 0
+        and len(find_trash_files(root)) == 1,
+        (first_applied.stdout or "") + (first_applied.stderr or ""),
+    )
+
+    # 第二次退役:同一相對路徑,重新種一份不同內容的客製檔,強迫同一 stamp。
+    second_body = "SECOND custom version\n"
+    open(live_leftover, "w", encoding="utf-8").write(second_body)
+    open(baseline_leftover, "w", encoding="utf-8").write(baseline_body)
+    second_applied = run(root, "--apply", stamp=fixed_stamp)
+
+    trashed_files = sorted(find_trash_files(root))
+    trashed_bodies = sorted(
+        open(p, encoding="utf-8").read() for p in trashed_files
+    )
+    expect(
+        "撞名案:run 2 exit 0 且沒有靜默吞掉第一份",
+        second_applied.returncode == 0
+        and len(trashed_files) == 2
+        and trashed_bodies == sorted([first_body, second_body]),
+        "trash 檔案:%r\n內容:%r\nstdout:%s" % (
+            trashed_files,
+            trashed_bodies,
+            second_applied.stdout,
+        ),
+    )
+    original_dest = os.path.join(
+        root, "docs", "dev", ".devflow-upgrade-trash", fixed_stamp,
+        "docs", "dev", "_templates", "CONTEXT.md",
+    )
+    uniquified = [p for p in trashed_files if p != original_dest]
+    expect(
+        "撞名案:第二份改用唯一化後綴落點,且 stdout 印出該實際落點",
+        len(uniquified) == 1
+        and os.path.relpath(uniquified[0], root) in second_applied.stdout,
+        "trash 檔案:%r\nstdout:%s" % (trashed_files, second_applied.stdout),
     )
 
 if passed < MIN_CASES:
