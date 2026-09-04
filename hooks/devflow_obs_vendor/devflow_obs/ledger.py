@@ -14,6 +14,7 @@
 └── derived/run-events.jsonl       # 衍生 aggregate,隨時可重建
 ```
 """
+import datetime
 import json
 import os
 import tempfile
@@ -202,3 +203,152 @@ def validate_run(run_dir):
                            "source": rel,
                            "msg": f"事件 run_id={run_id} 與 manifest {manifest_run} 不符"})
     return errors
+
+
+# ── repair(#103:壞 run 有出口)────────────────────────────────────
+#
+# 契約不變:「非截尾＝損壞」(writer.py `_read_complete_events`);截尾殘行
+# (壞行落在最後一行、或檔案沒有結尾換行)由 reader 既有容忍,**不算損壞**、
+# 不在 repair 範圍內 —— 那是既有 crash/incomplete 模型(`incomplete_attempts`
+# 、`has_stale_lock`)的管轄,repair 不重複判定、也不搶著「續寫」。
+# repair 處理的是中間一行壞掉、拖垮整檔重讀(`_read_complete_events` 對非
+# 截尾壞行會 raise)的情況:把壞行起(含之後所有內容,無論是否還有合法行)
+# 整段原子隔離到 `<file>.corrupt-<UTC 時戳>`,原檔只留壞行前的乾淨事件,
+# 讓 `EventWriter` 之後能正常對該目錄重開續寫。**是破壞性動作**:壞行之後
+# 若還有合法事件,一併進隔離檔,不逐行搶救。
+
+
+def _scan_events_file(rel, path):
+    """逐行掃一個事件檔,回傳壞行掃描結果或 None(乾淨/僅截尾殘行)。
+    掃描邏輯與 `writer._read_complete_events` 判斷「是否截尾」同一套規則
+    (`i >= len(lines) - 2`),差別只在這裡不 raise、改回傳診斷用的位置資訊。"""
+    with open(path, "rb") as f:
+        raw = f.read()
+    lines = raw.split(b"\n")
+    offset = 0
+    clean_events = 0
+    for i, line in enumerate(lines):
+        line_len = len(line) + (1 if i < len(lines) - 1 else 0)
+        if line.strip():
+            try:
+                json.loads(line.decode("utf-8"))
+                clean_events += 1
+            except (ValueError, UnicodeDecodeError):
+                if i >= len(lines) - 2:
+                    return None          # 截尾殘行:既有契約可續寫,非 repair 對象
+                total = len(raw)
+                lock_path = path + ".lock"
+                return {
+                    "source": rel, "path": path,
+                    "clean_events": clean_events,
+                    "bad_line_no": i + 1,
+                    "total_bytes": total,
+                    "corrupt_offset": offset,
+                    "quarantine_bytes": total - offset,
+                    "locked": os.path.exists(lock_path),
+                    "lock_path": lock_path,
+                }
+        offset += line_len
+    return None
+
+
+def scan_corruption(run_dir):
+    """掃描 run_dir 下所有事件檔,列出每個「非截尾＝損壞」檔案的修復計畫
+    (不動任何檔案)。找不到 run_dir 本身視為呼叫端誤用,明確 raise —— 不要
+    讓打錯路徑靜默回報「沒有損壞」。"""
+    if not os.path.isdir(run_dir):
+        raise FileNotFoundError(f"run_dir 不存在:{run_dir}")
+    out = []
+    for rel, path in _sources(run_dir):
+        found = _scan_events_file(rel, path)
+        if found is not None:
+            out.append(found)
+    return out
+
+
+def _quarantine_path(path):
+    ts = datetime.datetime.now(datetime.timezone.utc).strftime(
+        "%Y%m%dT%H%M%S.%fZ")
+    candidate = f"{path}.corrupt-{ts}"
+    n = 0
+    while os.path.exists(candidate):
+        n += 1
+        candidate = f"{path}.corrupt-{ts}-{n}"
+    return candidate
+
+
+def repair_run(run_dir, apply=False):
+    """#103:壞 run 有出口。dry-run(預設,apply=False)只回報計畫,不動任何
+    檔案,呼叫端可安全重跑。apply=True 才真的動作:
+
+    1. 壞行前的乾淨事件先寫進同目錄 tmp 檔(fsync),
+    2. 把原檔原子搬成 `<file>.corrupt-<UTC 時戳>`(保留全部原始 bytes,供稽核
+       回溯 —— 壞行之後若還有合法事件,一併隔離,repair 不逐行搶救),
+    3. 把 tmp 頂上原檔名(os.replace,同 `atomic_write_json` 手法)。
+
+    有 `events.jsonl.lock`(或 hook 的 `events-<session>.jsonl.lock`)的檔案
+    **跳過不修**:crash 遺留鎖是 `has_stale_lock` 的既有佐證,可能還有寫入者
+    在跑,repair 不搶著清鎖或搬檔(fail-closed;人工確認無人在寫、手動清鎖
+    後再重跑 repair)。回傳結構化摘要,風格同 `validate_run` 的 error dict
+    (帶 `code`/`source`/`msg`)。
+
+    repair 後 `derived/run-events.jsonl` 已過期(不含隔離掉的內容),下一次
+    `derive` 會依現況重建,不需另外處理。"""
+    plan = scan_corruption(run_dir)
+    if not plan:
+        return {"run_dir": run_dir, "apply": apply, "corrupt_found": False,
+                "items": [],
+                "msg": "未發現需要 repair 的損壞檔"
+                       "(截尾殘行由既有契約容忍,不算損壞,不需 repair)"}
+    items = []
+    for p in plan:
+        if not apply:
+            items.append({
+                "code": "would_repair", "source": p["source"],
+                "path": p["path"], "bad_line_no": p["bad_line_no"],
+                "clean_events_before_bad_line": p["clean_events"],
+                "total_bytes": p["total_bytes"],
+                "quarantine_bytes": p["quarantine_bytes"],
+                "locked": p["locked"],
+                "msg": (f"第 {p['bad_line_no']} 行壞(非截尾);壞行前 "
+                        f"{p['clean_events']} 筆乾淨事件;--apply 後會把壞行起 "
+                        f"{p['quarantine_bytes']} bytes 隔離到 "
+                        f"{os.path.basename(p['path'])}.corrupt-<UTC 時戳>,原檔"
+                        f"只留壞行前的乾淨事件" +
+                        (";⚠ 該檔有 lock,--apply 時會跳過不修"
+                         if p["locked"] else ""))})
+            continue
+        if p["locked"]:
+            items.append({
+                "code": "locked_skip", "source": p["source"],
+                "path": p["path"], "lock_path": p["lock_path"],
+                "msg": f"{p['lock_path']} 存在(crash 遺留鎖或仍有寫入者),"
+                       f"repair 跳過此檔不動 —— 先確認無人在寫、手動清鎖後再重跑"})
+            continue
+        path = p["path"]
+        with open(path, "rb") as f:
+            raw = f.read()
+        clean_part = raw[:p["corrupt_offset"]]
+        directory = os.path.dirname(path)
+        fd, tmp = tempfile.mkstemp(prefix=".tmp-", dir=directory)
+        try:
+            with os.fdopen(fd, "wb") as f:
+                f.write(clean_part)
+                f.flush()
+                os.fsync(f.fileno())
+            quarantine_path = _quarantine_path(path)
+            os.replace(path, quarantine_path)   # 原檔(全部原始 bytes)先搬走
+            os.replace(tmp, path)                # 乾淨前綴(已 fsync)頂上原檔名
+        finally:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+        items.append({
+            "code": "repaired", "source": p["source"], "path": path,
+            "quarantined_to": quarantine_path,
+            "clean_events_kept": p["clean_events"],
+            "quarantine_bytes": p["quarantine_bytes"],
+            "msg": (f"壞行起 {p['quarantine_bytes']} bytes 已隔離到 "
+                    f"{os.path.basename(quarantine_path)};原檔留 "
+                    f"{p['clean_events']} 筆乾淨事件,可正常重開續寫")})
+    return {"run_dir": run_dir, "apply": apply, "corrupt_found": True,
+            "items": items}

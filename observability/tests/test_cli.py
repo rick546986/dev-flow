@@ -65,6 +65,50 @@ class TestCli(unittest.TestCase):
         self.assertIn("recommendations", out)
         self.assertIn("skipped_insufficient_sample", out)
 
+    def test_repair_dry_run_then_apply_on_corrupted_copy(self):
+        # #103:壞 run 有出口。複製一份乾淨 fixture,中間插一行壞 JSON(非
+        # 截尾),經真正的 CLI subprocess 跑 dry-run(不動檔案)→ --apply
+        # (隔離壞行、原檔留乾淨前綴)→ validate 轉綠。
+        with tempfile.TemporaryDirectory() as tmp:
+            dst = os.path.join(tmp, "r2")
+            shutil.copytree(R2, dst)
+            coord = os.path.join(dst, "coordinator", "events.jsonl")
+            with open(coord) as f:
+                lines = f.read().splitlines()
+            self.assertGreaterEqual(len(lines), 2)
+            with open(coord, "w") as f:
+                f.write(lines[0] + "\n")
+                f.write("{this is not valid json\n")
+                f.write("\n".join(lines[1:]) + "\n")
+            with open(coord, "rb") as f:
+                before = f.read()
+
+            p = run_cli("validate", dst)
+            self.assertEqual(p.returncode, 1)
+            self.assertIn("run_error", p.stdout)
+
+            p = run_cli("repair", dst)
+            self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+            plan = json.loads(p.stdout)
+            self.assertFalse(plan["apply"])
+            self.assertTrue(plan["corrupt_found"])
+            self.assertEqual(plan["items"][0]["code"], "would_repair")
+            with open(coord, "rb") as f:
+                self.assertEqual(f.read(), before)  # dry-run 沒動檔案
+
+            p = run_cli("repair", dst, "--apply")
+            self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+            result = json.loads(p.stdout)
+            self.assertTrue(result["apply"])
+            item = result["items"][0]
+            self.assertEqual(item["code"], "repaired")
+            self.assertTrue(os.path.exists(item["quarantined_to"]))
+            with open(item["quarantined_to"], "rb") as f:
+                self.assertEqual(f.read(), before)  # 隔離檔含原始全部 bytes
+
+            p = run_cli("validate", dst)
+            self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

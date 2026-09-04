@@ -17,6 +17,9 @@ vendor 行為正本:hooks/devflow_obs_vendor/(方法論 repo observability/ 副�
                           回印 context_manifest_hash
   validate [--strict] [run_id ...]   schema+交叉引用驗證(--strict 加 runtime 加嚴表)
   derive [run_id ...]     重建 derived/run-events.jsonl(byte 決定性)
+  repair <run_id> [--apply]  #103:壞 run 有出口。預設 dry-run 只印計畫;
+                          --apply 才把壞行起隔離到 <file>.corrupt-<UTC 時戳>,
+                          原檔留壞行前乾淨事件,之後可正常重開續寫
   stats / recommend       vendor stats 聚合(--run-id/--legacy-md/--min-n/--threshold)
   archive [run_id]        歸檔至 LEDGER_HOME/runs/<repo_id>/<run_id>/(OC-5)
   retention status|prune [--dry-run]  保存政策(180 天 raw);**僅手動執行,
@@ -32,6 +35,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 
 sys.dont_write_bytecode = True
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -225,15 +229,27 @@ def head_sha(root):
 
 def ensure_manifest(root, run_dir, run_id, state):
     """run 首事件時建 manifest(OC-5 六必填:repo_id/run_id/schema_version/
-    created_at/expires_at/source_sha;另帶 run fixture 慣用欄位)。"""
+    created_at/expires_at/source_sha;另帶 run fixture 慣用欄位)。
+
+    #103:兩行程同時首事件會同時通過下面的存在檢查、各自算出 manifest 內容
+    (created_at 等會不同),原本各自 atomic_write_json(temp+rename)最後一個
+    replace 靜默蓋掉先到者。改用互斥建立語義:先把完整內容寫進同目錄 tmp 檔
+    (fsync),用 os.link 把 tmp 曝光成正式檔名 —— link() 是核心保證的互斥
+    操作,兩行程同時 link 只有一個成功,另一個拿 FileExistsError(= 別人已建,
+    讀回既有內容不覆寫)。先寫滿 tmp 再曝光,不會像直接對正式檔名開
+    O_CREAT|O_EXCL 那樣讓其他讀者看到半成品(零位元組)manifest.json,維持
+    四節②「快照類一律 atomic write」的規則。開頭的 os.path.exists 只是快
+    路徑優化(manifest 建好後,同 run 後續每筆事件都會再呼叫本函式),真正
+    的互斥由 os.link 提供,不受這條檢查的 TOCTOU 影響。"""
     mp = os.path.join(run_dir, "manifest.json")
     if os.path.exists(mp):
         return
+    os.makedirs(run_dir, exist_ok=True)
     created = now_iso()
     expires = (datetime.datetime.fromisoformat(created)
                + datetime.timedelta(days=RETENTION_DAYS_RAW)).isoformat(timespec="seconds")
     sha = head_sha(root)
-    writer.atomic_write_json(mp, {
+    payload = {
         "schema": "devflow-run-manifest/1",
         "schema_version": "1.0.0",
         "repo_id": repo_id(root),
@@ -245,7 +261,21 @@ def ensure_manifest(root, run_dir, run_id, state):
         "started": created,
         "created_at": created,
         "expires_at": expires,
-    })
+    }
+    fd, tmp = tempfile.mkstemp(prefix=".tmp-", dir=run_dir)
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=1, sort_keys=True)
+            f.write("\n")
+            f.flush()
+            os.fsync(f.fileno())
+        try:
+            os.link(tmp, mp)
+        except FileExistsError:
+            pass  # 別人已建(os.link 提供真正互斥);不覆寫,讀回既有內容
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
 
 
 def resolve_run_dirs(root, run_ids):
@@ -445,6 +475,18 @@ def cmd_derive(root, run_ids):
     return 0
 
 
+def cmd_repair(root, args):
+    # #103:壞 run 有出口。命令列只吃 run_id(經 resolve_run_dirs 解析路徑),
+    # 不在命令列鋪 .devflow/ 路徑 —— 與本檔其餘子命令同一慣例(見檔頭註解)。
+    apply = "--apply" in args
+    run_ids = [a for a in args if not a.startswith("--")]
+    if len(run_ids) != 1:
+        die("用法: devflow-obs.sh repair <run_id> [--apply]")
+    rd = resolve_run_dirs(root, run_ids)[0]
+    _print(ledger.repair_run(rd, apply=apply))
+    return 0
+
+
 def _parse_stats_args(args):
     run_ids, legacy, min_n, threshold = [], [], 5, 0.6
     i = 0
@@ -639,6 +681,8 @@ def main():
         return cmd_validate(root, args)
     if cmd == "derive":
         return cmd_derive(root, args)
+    if cmd == "repair":
+        return cmd_repair(root, args)
     if cmd == "stats":
         return cmd_stats(root, args)
     if cmd == "recommend":
@@ -654,7 +698,7 @@ def main():
     if cmd == "registry":
         return cmd_registry(args)
     die(f"未知子命令 {cmd!r}。可用:event/hook-event/context-manifest/validate/"
-        f"derive/stats/recommend/archive/retention/ledger-home/registry")
+        f"derive/repair/stats/recommend/archive/retention/ledger-home/registry")
 
 
 if __name__ == "__main__":

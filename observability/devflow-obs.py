@@ -7,12 +7,16 @@
   devflow-obs.py incomplete <run_dir>...          # crash 後可判定的 incomplete attempts
   devflow-obs.py resume <run_dir>                 # restart 恢復視圖(每 T 進度)
   devflow-obs.py derive <run_dir>...              # 重建 derived/run-events.jsonl
+  devflow-obs.py repair <run_dir> [--apply]       # #103:壞 run 有出口(見下)
   devflow-obs.py stats --run <dir> [--run ...] [--legacy-md <md>] [--min-n N]
   devflow-obs.py recommend --run <dir> [...] [--min-n N] [--threshold X]
 
 注意:本 CLI 是**讀取/衍生/統計**工具;事件寫入由 runtime(coordinator/hooks/
 verifier)透過 devflow_obs.writer 進行,Worker agent 不得手改 ledger(四節)。
 命令列引數避免直接鋪 .devflow/ 路徑前綴帶 rm/mv 字樣 —— 守衛 prebash 會攔。
+repair 是例外:壞 run(中間一行壞掉,拖垮整檔重讀)的人工維護出口,預設
+dry-run 只印計畫不動檔案,--apply 才真的把壞行起隔離到 <file>.corrupt-<UTC
+時戳>——不是 agent 常態寫入路徑,不違反上面「Worker 不得手改 ledger」。
 """
 import argparse
 import json
@@ -42,6 +46,9 @@ def main(argv=None):
     p.add_argument("run_dir")
     p = sub.add_parser("derive")
     p.add_argument("run_dirs", nargs="+")
+    p = sub.add_parser("repair")
+    p.add_argument("run_dir")
+    p.add_argument("--apply", action="store_true")
     for name in ("stats", "recommend"):
         p = sub.add_parser(name)
         p.add_argument("--run", action="append", default=[], dest="runs")
@@ -84,6 +91,10 @@ def main(argv=None):
     if args.cmd == "derive":
         _print({os.path.basename(rd.rstrip("/")): ledger.derive(rd)
                 for rd in args.run_dirs})
+        return 0
+
+    if args.cmd == "repair":
+        _print(ledger.repair_run(args.run_dir, apply=args.apply))
         return 0
 
     agg = stats.aggregate_runs(args.runs, legacy_paths=args.legacy,
