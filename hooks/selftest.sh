@@ -58,13 +58,6 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-# ⚠️ 2026-09-04 #98:本輪補了 1 個 p3 回歸案(x_x_customer_data),grep 實測
-# TOTAL_CASES 因此變 411(基線本身在 405 之後已有未同步的既有落差,實測落地本來
-# 就是 410,不是這裡最後記載的 405——那筆落差不是本次引入,原樣不回填)。這裡
-# 刻意不把 MIN_CASES 跟著調到 411:scripts/test-architecture-guards.sh 有一支
-# 靜態互釘死盯這行必須逐字是「MIN_CASES=405」,兩處要同一個 commit 一起改,但
-# 那支腳本不在本次派工的允許改動清單內。MIN_CASES 是地板不是等號,405 對 411
-# 仍成立,先留著,兩處同步留給後續一併調整。
 # ⚠️ 2026-09-04 r2-#98:對抗審查 F1 補一個 p3 回歸案(x__customer_data,雙底線
 # 單 x,對照上面已有的雙層 x_x_customer_data 案),grep 實測 TOTAL_CASES 變 431。
 # 同一 commit 同步 scripts/test-architecture-guards.sh:2231 字面 → 431。

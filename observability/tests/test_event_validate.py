@@ -350,15 +350,20 @@ class TestPrivacy(unittest.TestCase):
 
     def test_value_leak_masked_marker_passes(self):
         # r2-#98 F4:賦值形抓到值後,若整段值只是已遮蔽的佔位符,不算外洩。
-        for note in ("secret=redacted", "password=REDACTED", "token=******"):
+        # 找碴單上的字面案例是 "token=***"(3 星),但 \S{6,} 要求值至少 6 個
+        # 非空白字元,3 星本來就構不成 _VALUE_LEAK_ASSIGN 的一個 match(修前
+        # 就放行,不是本輪修的紅);仍原樣收進來當基準,另補 "token=******"
+        # (6 星,修前確實誤判)驗證遮蔽排除規則真的生效,不是規則沒觸發而放行。
+        for note in ("secret=redacted", "password=REDACTED",
+                     "token=***", "token=******"):
             e = attempt_completed(x_meta={"note": note})
             self.assertEqual(ev.validate_event(e), [], msg=note)
 
     def test_value_leak_transcript_assign_form_rejected(self):
         # r2-#98 F5:值側對 transcript/conversation/messages 完全沒覆蓋。
-        # 賦值形(transcript: <text>)才擋,裸字提及仍放行。
+        # 賦值形(transcript: <text>)才擋,裸字提及仍放行。找碴單字面案例。
         e = attempt_completed(
-            x_meta={"note": "transcript: user said hello there for a while"})
+            x_meta={"note": "transcript: user said hi…"})
         self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
 
     def test_value_leak_transcript_bare_mention_passes(self):
