@@ -61,8 +61,30 @@ class SensitiveTest(unittest.TestCase):
         self.assertNotIn("sk-live-9f8a7b6c5d4e", "".join(hits))
 
     def test_chinese_assignment_is_assigned_secret(self):
-        for text in ("密碼是 hunter2000", "金鑰是 sk-live-9f8a7b6c5d4e"):
-            self.assertEqual(signal.scan_sensitive(text), ["assigned_secret"], text)
+        # 正向:明確賦值記號(空白、無空白、冒號、等號)後接看起來像憑證的
+        # token。中文書寫 ASCII 值時常常不留空白(「密碼是hunter2000」),
+        # 不能要求一定要有空白才算賦值句。
+        for text in ("密碼是 hunter2000", "密碼是hunter2000",
+                     "金鑰是 sk-live-9f8a7b6c5d4e", "金鑰是 sk-live-abc123XYZ",
+                     "密碼是: P@ssw0rd!"):
+            self.assertEqual(signal.scan_sensitive(text), ["assigned_secret"],
+                              text)
+        # AKIA 開頭同時撞上 aws_access_key,兩個 pattern 都該命中。
+        self.assertIn("assigned_secret",
+                       signal.scan_sensitive("金鑰是=AKIAIOSFODNN7EXAMPLE"))
+
+    def test_chinese_narrative_sentence_is_not_assigned_secret(self):
+        # 反向(#95 回歸,PR #110 審查 finding C):「密碼是／金鑰是」後接接續詞
+        # 或純敘述文字(無賦值記號、非憑證形狀)不是賦值句,不該擋 durable 寫入。
+        # 含全形冒號的敘述句(「密碼是:需要定期更換的」)是最容易漏測的一種:
+        # 有冒號但後面接的仍是中文敘述,不是憑證。
+        for text in ("密碼是否要定期更換", "密碼是公司規定",
+                     "金鑰是託管在 KMS", "金鑰是由 KMS 管理",
+                     "密碼是要保密的資訊", "這個密碼是給測試用的",
+                     "密碼是:需要定期更換的", "金鑰是:由 KMS 統一託管"):
+            verdict = signal.gate("schema_change", "t", text)
+            self.assertEqual(signal.scan_sensitive(text), [], text)
+            self.assertTrue(verdict["durable_allowed"], text)
 
     def test_absolute_path_blocks_durable_persist(self):
         verdict = signal.gate("schema_change", "t", "見 /Users/rick/proj/db.ts")
