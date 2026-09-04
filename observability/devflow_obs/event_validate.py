@@ -22,18 +22,25 @@ _CONTRACT_DIR = os.path.join(_SCHEMA_DIR, "..", "..")   # repo 根(devflow-contr
 
 # ── 值洩漏形狀(不用裸字比對,見 #98 回歸紀錄)────────────────────
 # (a) 賦值形 secret:password/token/... 後接 : 或 =(含全形冒號 ：,比照
-# _VALUE_LEAK_CONV_LINE,r2-#98 F3),再接 6+ 非空白字元(v1);
-# transcript/conversation/messages 是「賦值形才擋、裸字放行」的敘事型欄位
-# (r2-#98 F5),值不必是無空白的 token 形狀,賦值後有內容(v2)即算。
-# 起頭鎖字界改用 (?<![A-Za-z0-9]) 而不是 \b:\b 在底線前後不成立詞界,
-# access_token=/refresh_token=/id_token=/client_secret: 這類複合詞會漏網
-# (r2-#98 F2)。
+# _VALUE_LEAK_CONV_LINE,r2-#98 F3),再接 6+ 非空白字元(v1)。起頭鎖字界改用
+# (?<![A-Za-z0-9]) 而不是 \b:\b 在底線前後不成立詞界,access_token=/
+# refresh_token=/id_token=/client_secret: 這類複合詞會漏網(r2-#98 F2)。
 _VALUE_LEAK_ASSIGN = re.compile(
     r"(?i)(?<![A-Za-z0-9])"
-    r"(?:(?:password|passwd|pwd|secret|token|api[_-]?key)"
+    r"(?:password|passwd|pwd|secret|token|api[_-]?key)"
     r"\s*[:=：]\s*(?P<v1>\S{6,})"
-    r"|(?:transcript|conversation|messages)"
-    r"\s*[:=：]\s*(?P<v2>\S.{3,}))"
+)
+# transcript/conversation/messages 是「賦值形才擋、裸字放行」的敘事型欄位
+# (r2-#98 F5)。獨立成自己的正則(不跟 v1 共用一個 alternation)是刻意的:
+# v2 的殘值要交給 Python 端判斷是否「像逐字稿」(見下方 _looks_like_transcript),
+# 一旦判斷結果可能是 False,若跟 v1 共用同一次 finditer match,greedy 的
+# v2 會把行尾其餘內容(含可能藏在後面的 password=... )一起吞進同一個 match、
+# 判完 False 後 finditer 從行尾繼續掃,導致藏在 v2 殘值裡的 v1 洩漏永遠掃不到
+# (例:"messages: 3 pending. password=hunter2")。拆開後兩條正則各自對 s
+# 獨立掃一輪,v1 不再受 v2 吞了多少字元影響(r3-#98)。
+_VALUE_LEAK_NARRATIVE = re.compile(
+    r"(?i)(?<![A-Za-z0-9])(?:transcript|conversation|messages)"
+    r"\s*[:=：]\s*(?P<v2>\S.*)"
 )
 # 遮蔽標記:賦值形抓到值後,若整段值只是「已遮蔽」的佔位符,不算外洩
 # (r2-#98 F4;例:secret=redacted、password=REDACTED、token=******)。
@@ -58,16 +65,64 @@ _VALUE_LEAK_CRED = re.compile(
 _VALUE_LEAK_CONV_LINE = re.compile(
     r"(?im)^\s*(?:user|assistant|human|system|使用者|助理)\s*[:：]"
 )
+# v2(transcript/conversation/messages)賦值後的殘值要不要擋,交給 Python 端
+# 判斷「像不像逐字稿」,不在正則裡疊第二個不定長量詞夾字面(ReDoS 形狀)。
+# 三選一命中就算(r3-#98,兩個審查鏡頭同時抓到「messages: 3 pending」這類
+# 日常狀態敘述被舊版 4 字元門檻誤殺):
+#   - 角色標記:值裡任何位置含 user/assistant/human/system(或中文)接冒號
+#     (不要求在行首,因為 v2 本身就是「賦值後的殘值」,不是整行);
+#   - 引號對話:值裡有一段用引號包住、內含 ≥4 個以空白分開的詞的片段
+#     (門檻拉到 4 詞只是不讓「"old field name"」這類 ≤3 詞的短識別字片段
+#     單獨觸發這條路徑;"can you reset my password" 這類 ≥4 詞的逐字稿式
+#     引號句仍擋得住);
+#   - 落單於前兩者之外:值本身要夠長(≥60 字元)且夠多詞(≥10 個以空白分開
+#     的詞)才算。r3-#98 首版門檻定 40 字元/6 詞,收斂 F1 找碴發現
+#     「messages: renamed "old field name" to "new field name"」
+#     (44 字元 8 詞,引號內各段只有 3 詞,不吃引號路徑)這類短的工程改名
+#     敘述也被通用路徑誤擋——裁定拉高到 60/10,純數字、狀態詞
+#     (started/pending/none/ok/done/available/empty/n-a)、單一檔名或
+#     路徑、短識別字改名敘述天生構不成這個門檻,一律放行;真的長得像逐字稿
+#     的一般敘述(refund 案例 89 字元 17 詞)仍擋得住。門檻數字(60/10)是
+#     dispatcher 裁定值,取捨屬 dispatcher,這裡不擅改。
+_VALUE_LEAK_ROLE_MARK = re.compile(
+    r"(?i)(?<![A-Za-z0-9])(?:user|assistant|human|system|使用者|助理)\s*[:：]"
+)
+_VALUE_LEAK_QUOTED_SPAN = re.compile(r'"([^"\n]{4,})"|\'([^\'\n]{4,})\'')
+_NARRATIVE_MIN_LEN = 60
+_NARRATIVE_MIN_WORDS = 10
+_NARRATIVE_QUOTE_MIN_WORDS = 4
+
+
+def _looks_like_transcript(val):
+    """v2 殘值是否像逐字稿內容,見上方三選一規則的註解。"""
+    if _VALUE_LEAK_ROLE_MARK.search(val):
+        return True
+    for m in _VALUE_LEAK_QUOTED_SPAN.finditer(val):
+        span = (m.group(1) or m.group(2) or "").strip()
+        if len(span.split()) >= _NARRATIVE_QUOTE_MIN_WORDS:
+            return True
+    if len(val) < _NARRATIVE_MIN_LEN:
+        return False
+    # maxsplit 只切出前 _NARRATIVE_MIN_WORDS 個詞就夠判斷門檻,避免對 v2 裡可能塞進來的超長殘值
+    # (ReDoS 驗收案例:200KB 重複同一句)整段 split 配置一堆用不到的 token。
+    return len(val.split(None, _NARRATIVE_MIN_WORDS - 1)) >= _NARRATIVE_MIN_WORDS
 
 
 def _value_leak(s):
-    """值命中「洩漏形狀」:賦值形 secret/transcript、已知憑證前綴、或對話結構;
-    賦值形若整段值只是遮蔽標記(redacted/***/...)不算外洩(r2-#98 F4)。
-    不比對裸字(transcript/password 等單字本身),避免誤殺合法工程敘述
-    (見 #98 PR #110 回歸:'removed the password field...' 曾被誤擋)。"""
+    """值命中「洩漏形狀」:賦值形 secret、transcript/conversation/messages
+    賦值形且值像逐字稿、已知憑證前綴、或對話結構;賦值形若整段值只是遮蔽標記
+    (redacted/***/...)不算外洩(r2-#98 F4)。不比對裸字(transcript/password
+    等單字本身),避免誤殺合法工程敘述(見 #98 PR #110 回歸:'removed the
+    password field...' 曾被誤擋;r3-#98:'messages: 3 pending' 這類日常狀態
+    敘述同理,見 _looks_like_transcript)。"""
     for m in _VALUE_LEAK_ASSIGN.finditer(s):
-        val = m.group("v1") or m.group("v2")
-        if val is not None and not _VALUE_LEAK_MASKED.match(val):
+        v1 = m.group("v1")
+        if v1 is not None and not _VALUE_LEAK_MASKED.match(v1):
+            return True
+    for m in _VALUE_LEAK_NARRATIVE.finditer(s):
+        v2 = m.group("v2")
+        if (v2 is not None and not _VALUE_LEAK_MASKED.match(v2)
+                and _looks_like_transcript(v2)):
             return True
     if _VALUE_LEAK_CRED.search(s):
         return True
