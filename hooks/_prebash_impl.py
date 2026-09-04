@@ -50,7 +50,7 @@ if not h:
     # None,但對「stdin 完全空」回 {}(見該函式docstring 的 HOOK_INPUT 相容退路)——
     # 從守衛的角度兩者是同一種情境:hook 被觸發了(工具真的動了)卻讀不到內容,
     # 武裝中同樣要 fail-closed,不能因為剛好解析出一個空 dict 就放行。
-    state, armed, err = L.load_state(root)
+    state, armed, err = L.load_state(root, caller="devflow-prebash")
     if err:
         # err 是 load_state 給的具體診斷(例如 exec.json 損壞時的修復指引)——
         # 優先印它,不要被下面這句通用訊息蓋掉。
@@ -619,7 +619,7 @@ _devstage5_graph_action(cmd)
 _devstage6_graph_action(cmd)
 _devstage7_graph_action(cmd)
 
-state, armed, err = L.load_state(root)
+state, armed, err = L.load_state(root, caller="devflow-prebash")
 if err:
     L.die(err)
 if state is None:
