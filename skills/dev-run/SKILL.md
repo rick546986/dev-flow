@@ -8,7 +8,7 @@ description: dev-flow Stage 6 內部執行引擎 — 多模型派工(haiku 寫�
 方法包根目錄叫 `DEVFLOW_ROOT`（舊名 `CLAUDE_PLUGIN_ROOT` 當別名，不准刪）。找不到就停，不准猜。
 
 你是**派工者**(主對話,opus/fable5 層):讀 spec、派 T、收驗、**commit 與記帳** ——
-不下場寫碼。逐 T acceptance seam 的唯一核心規則在 README §5,執行順序與證據
+不下場寫碼。逐 T acceptance seam 的唯一核心規則在指南 `#five-laws`／`#stage6`,執行順序與證據
 格式以相對 DEVFLOW_ROOT 的 `_templates/6-implementation-notes.md` 頂註清單 / T Review Log 為準;
 本檔只定義 `dev-run` 的派工、模型升階與職責適配,不另立第二套 review policy。
 
@@ -46,7 +46,7 @@ description: dev-flow Stage 6 內部執行引擎 — 多模型派工(haiku 寫�
 執行者**不得自行 commit**(先審後 commit 是引擎順序)。文件記帳 edit 累積,
 隨下一個 T 的 commit 帶入;最後一個 T 之後補一次 bookkeeping commit。
 
-**派工者禁親修**(README §5 驗證五律 2):reviewer 的 finding 一律重派執行者修、
+**派工者禁親修**(指南 `#five-laws` 驗證五律 2):reviewer 的 finding 一律重派執行者修、
 重新送審 —— 你親自動手修 = 跳過 review,你的 context 也不再乾淨。同理,
 **反預判禁令**(五律 3):你寫的 reviewer 派工 prompt 出現「不要標記 X」「最多算
 Minor」「計畫已決定所以不算」→ 停手重寫。大材料(diff、報告)以檔案路徑交接,
@@ -58,7 +58,7 @@ Minor」「計畫已決定所以不算」→ 停手重寫。大材料(diff、報
 |---|---|---|
 | 派工者(你) | opus / fable5 | 派工、彙整、commit、記帳;不寫碼 |
 | T 執行 | **haiku 起步** | 「錯」= reviewer 判 FAIL(或執行者自陳卡關送不出)。haiku 錯 1 次**立即**升 sonnet(同層不重試);sonnet 同 T 最多 2 次(換方法不歸零)才升 opus;升階時把完整失敗軌跡帶給下一階 |
-| T review | **sonnet**(fresh context) | 依 README §5 / 6-notes 共用 acceptance seam;高風險或爭議時由 opus 作第二 reviewer |
+| T review | **sonnet**(fresh context) | 依指南 `#five-laws`／`#stage6` / 6-notes 共用 acceptance seam;高風險或爭議時由 opus 作第二 reviewer |
 | adviser | opus,唯讀 | **三層皆 FAIL = 連敗** → 派 adviser 診斷:是 T/5-tasks 定義問題,還是純執行問題;verdict=STOP → 走 L2 路徑 |
 
 ## 事件寫入通道(四軌 obs W2/W3;sequential 與並行共用)
@@ -90,9 +90,9 @@ hash 必須是 registry 內 `prompt_hash` 實值,**禁佔位 hash** / 禁自編)
    fresh sonnet、`tools: Read` 唯讀——沒有 Bash,也沒有 Grep/Glob/Skill 與專案裝的
    MCP 工具;`git diff` 由你先跑好貼進 prompt,要搜的東西(例如「這個符號還有哪裡
    引用」)也是你先搜好貼進去,不要指望它自己查)明確派出(給 T + S 原文 + diff +
-   執行者輸出,不給執行者結論;每 F 引 spec 原文或 diff hunk),依 README §5 /
-   6-notes 的共用 seam 裁決並回傳 T Review Log 所需證據。
-   FAIL → **先分類再路由**(README §5 驗證五律 5)。分三類,各走各的路:
+   執行者輸出,不給執行者結論;每 F 引 spec 原文或 diff hunk),依指南 `#five-laws`／
+   `#stage6` / 6-notes 的共用 seam 裁決並回傳 T Review Log 所需證據。
+   FAIL → **先分類再路由**(指南 `#five-laws` 驗證五律 5)。分三類,各走各的路:
 
    | 分類 | 什麼算 | 怎麼走 | 計不計入嘗試上限 |
    |---|---|---|---|

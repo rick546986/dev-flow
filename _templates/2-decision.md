@@ -14,7 +14,7 @@ updated:
 > 本階段固定產出:`2-decision.md`(本模板全節)+ `2-decision.html`(G1 必產;必含
 > 方案架構圖、Approaches+Rejected、Owner Calls 待裁決置頂);三條件中 → 另抄 `docs/adr/`。
 >
-> ## G1 twin 是**審查介面**,不是文件視覺版(README §6)
+> ## G1 twin 是**審查介面**,不是文件視覺版(指南 `#twin-dash`)
 >
 > 三件事缺一不可 —— **產 html 時逐項對照,缺一項就是沒做完**:
 >
@@ -68,7 +68,7 @@ updated:
 > 7. G1 送審:html twin(方案架構圖,比較期並排;OC 待裁決置頂)→ in-review →
 >    reviewer。審查者依序:適格人類 reviewer → fresh-context reviewer Agent →
 >    owner 自審(有記錄的最後手段)。G1 = 方向核准 +
->    Owner Calls 全裁決(有未裁決 OC 不得過;正本 README §7)。核准 → 三連動
+>    Owner Calls 全裁決(有未裁決 OC 不得過;正本 `guides/guide-dev-flow.html#gates`)。核准 → 三連動
 >    (frontmatter/STATUS/twin)。完成 = verdict 記錄+三連動齊。
 
 ## Approaches Considered
@@ -82,7 +82,7 @@ updated:
 | B |  |  |  |  |  |
 
 ## 方案架構圖
-<!-- 每案一張或並排比較(比較期);判準同 README §6:純線性/單層樹 → ASCII
+<!-- 每案一張或並排比較(比較期);判準同指南 `#diagram-style`:純線性/單層樹 → ASCII
      (半形 | - + > < = [ ]);方塊+連線空間關係 → html 用 SVG(md 留 ASCII 正本)。
      gate 前必有。選定案必須在圖上標「選定」;Rejected 的案若上圖,不得標選定。
      Decision／Rejected 改選定,圖的選定標必須一起改。 -->
@@ -118,7 +118,7 @@ updated:
      (資料結構寫法、索引型式、命名慣例)→ 下方清單告知即可。
      流程層:改變流程而非交付內容的自判(例:跳過某 stage)→ 照收上層並標
      「流程層」,不要求對應步 0 決策點。
-     拿不準放上層或下層 → 一律放上層(同 README §5 判級疑義原則) -->
+     拿不準放上層或下層 → 一律放上層(同指南 `#five-laws` 判級疑義原則) -->
 
 ### 逐條裁決(上層)
 | OC | 決定了什麼 | 為什麼 | 依據(`檔:行` 或 `[Assumption]`) | 若被推翻會怎樣 | 狀態(待人審→✅/✗) |

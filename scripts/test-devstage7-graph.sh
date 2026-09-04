@@ -617,6 +617,13 @@ with tempfile.TemporaryDirectory(prefix="devstage7-graph-test-") as tmpbase:
     put_guide(case, CHAIN_GUIDE)
     expect("G-guide 第 7 站開頭對上十節點鏈必須綠", case, 0)
 
+    case = os.path.join(tmpbase, "guide-missing")
+    seed(case)
+    gpath = os.path.join(case, "guides", "guide-dev-flow.html")
+    if os.path.isfile(gpath):
+        os.remove(gpath)
+    expect("P0 指南檔缺席必須紅", case, 1, "指南檔缺席")
+
     case = os.path.join(tmpbase, "action-unwired")
     seed(case)
     put_hooks(case, "# fixture:有 hooks 但沒接 check-devstage7-graph --action\n")

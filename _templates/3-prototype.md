@@ -17,7 +17,7 @@ updated:
 > Owner Call、記錄跳過風險;Agent 不得自行替人決定跳過。
 > 涉互動的案子不只產文件:須產**可操作 Demo**(使用者實際點/跑,不是只看靜態說明),
 > 以 Demo Script 帶使用者走過,回饋記入 User Demo Feedback,Human verdict 由人類親填。
-> Human verdict 即 G2「Demo verdict」錨的輸入(條件正本 README §7):ACCEPTED 必須由
+> Human verdict 即 G2「Demo verdict」錨的輸入(條件正本 `guides/guide-dev-flow.html#gates`):ACCEPTED 必須由
 > 人類親填並伴隨 Verdict attestation 行;REVISE / NOT_REVIEWED 不得過 G2;Agent 不得
 > 代填,Runtime 拒絕 Agent 自產的 ACCEPTED。
 > 本階段固定產出(跑本階段才適用):`3-prototype.md`(本模板全節)+ `3-prototype.html`
@@ -78,7 +78,7 @@ updated:
 
 ## 結構圖
 <!-- variant 流程/結構圖(UI 案每 variant 一張簡圖;LOGIC 案畫模組介面/資料流)。
-     判準同 README §6:純線性 → ASCII 半形;方塊+連線 → html 用 SVG(md 留 ASCII 正本)。
+     判準同指南 `#diagram-style`:純線性 → ASCII 半形;方塊+連線 → html 用 SVG(md 留 ASCII 正本)。
      Method 裡的 Variant X／具名模組名必須上圖,選定 variant 必須標「選定」。 -->
 
 ## Demo Script

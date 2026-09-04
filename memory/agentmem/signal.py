@@ -69,22 +69,119 @@ _SENSITIVE = (
     ("dsn_with_password", re.compile(
         r"\b[a-zA-Z][a-zA-Z0-9+.-]*://[^\s/:@]+:[^\s/@]+@")),
     # `SOMETHING_SECRET = "value"` 這一族:key 名帶敏感字 + 有實際賦值
+    #
+    # 中文「密碼是／金鑰是」不能只看後接 6 個非空白字元 —— 敘述句(「密碼是否
+    # 要定期更換」「密碼是公司規定」「金鑰是由 KMS 管理」)一樣會後接一串非
+    # 空白中文字,誤殺(#95 回歸,PR #110 審查 finding C)。改成三條路都要求
+    # 「後面看起來像憑證,不是像句子」:
+    #   ①英文 key 名(password/secret/api_key/…)+ 賦值記號(冒號/等號)——
+    #     純正則判定,不做形狀檢查。
+    #   ②中文「密碼是／金鑰是」+ 明確賦值記號(引號、半形/全形冒號、等號)——
+    #     記號後第一個字元仍要求是 ASCII 可見字元,擋掉「密碼是:需要定期更換
+    #     的」這種「有冒號但接的還是中文敘述」的假陽性。純正則判定。
+    #   ③中文「密碼是／金鑰是」+ 沒有賦值記號的裸 token(中文書寫 ASCII 值
+    #     常不留空白,如「密碼是hunter2000」)—— 正則只抓候選(named group
+    #     `tok`:首字元 `[A-Za-z0-9_-]`(不含 `.`/`/`,同 R2 基準,讓
+    #     「密碼是 -abc-1234-」「金鑰是 _Abc12345」不被排除,同時不讓
+    #     「金鑰是 /path/to/keyfile」這種路徑誤判成裸 token)接續 7 個以上
+    #     `[A-Za-z0-9._/-]`,單一量詞、線性時間,前面保留 placeholder 排除
+    #     lookahead(`<`/`{`/`$`/`(`/null/none/redacted/xxx…,同①②)。形狀
+    #     判斷(是否含數字/連字號底線斜線,或英文大小寫混合)搬出正則,由
+    #     scan_sensitive 用 Python 對 tok 字串判定 —— 原因見下方 ReDoS 段。
+    # 三條路都刻意排除 CJK 字元:敘述句的接續文字幾乎不可能撞上。
+    #
+    # ReDoS:這顆函式踩過兩次,病灶同一類——用不定長 regex 結構夾住/跟著
+    # 必須條件,讓回溯量隨輸入長度變成平方成長。下面誠實記兩次各自的病灶與
+    # 修法,不是宣稱「ReDoS 已處理」這種對未來所有輸入都成立的保證:
+    #   R2 finding 1(裸 token 形狀判斷,③):曾用兩個獨立、不定長的
+    #     `[A-Za-z0-9._-]*` 夾住必須字元(混合大小寫那支)。輸入「密碼是」後
+    #     接一長段同大小寫 ASCII 字母時,兩個 `*` 在同一段字元集上互相重疊,
+    #     每個 split 點都要重新掃到底才判定失敗,退化成平方時間。本輪(R3)
+    #     把形狀判斷整段搬出正則(見③),規則本身不再存在,不只是設界。
+    #   R3 finding 1(英文 key 名分支,①,blocker):`\b[\w.-]*(?:password|…)…`
+    #     兩側各一個不定長 `[\w.-]*` 夾住必須字面(keyword 群組)。對一段
+    #     無空白的 `[A-Za-z0-9_.-]` 長串(例如 60KB base64url blob、或
+    #     `x.-_` 重複),`.`/`-` 不是 \w 字元,`\b` 在這種輸入裡幾乎每個字元
+    #     都是一個邊界起點;每個起點都要對兩側 `*` 各自回溯到底才判定失敗,
+    #     退化成對輸入長度平方的回溯 —— 即使全文完全不含任何敏感關鍵字。
+    #     第一輪修法把兩側量詞都改成有界 `{0,64}`,但這連帶把關鍵字前綴也
+    #     設了界:變數名在關鍵字前有 65 字元以上連續 `[\w.-]` 字元時(如
+    #     `my_super_long_…_root_password=abc123`),`\b` 只落在整段識別字
+    #     最前面、離關鍵字超過 64 字元,有界前綴量詞搆不到,漏放,是對抗
+    #     審查抓到的新假陰性(R3 finding minor)。前綴這段的「界」從一開始
+    #     就是錯的修法方向 —— 它想封的是回溯量,但界本身會直接砍掉合法輸入
+    #     的可偵測範圍。真正修法(R3 second round):關鍵字前的 `\b[\w.-]*`
+    #     整段拿掉,alternation 直接以關鍵字開頭 —— `search()` 本來就會逐
+    #     位置嘗試,不需要靠 `\b`+前綴去對齊到關鍵字,拿掉後既不影響命中範圍
+    #     (關鍵字前不管多長都能命中),回溯量也降到只剩關鍵字後綴那一個有界
+    #     `{0,64}`,不是「前綴封頂但不影響可偵測性」而是「前綴根本不需要」。
+    #     後綴(關鍵字後,marker 前)維持有界 `{0,64}`:它只需要涵蓋 key 名
+    #     殘餘字元到賦值記號之間的距離,真實案例幾乎不會超過 64 字元。
+    # 兩次修法後,「存在性」量詞(③裸 token 最短 8 字元、①②的關鍵字/中文
+    # 詞本身)都維持不設上限的單一量詞 —— 那不是回溯的來源,設上限反而會
+    # 製造新的假陰性(65 字元以上的裸 token,若邊界判斷式本身設界,會卡在
+    # 界內、永遠等不到終止條件而整支失配)。這正是③把形狀判斷整段搬出正則
+    # 的原因:單一量詞的存在性判定留在正則(線性),形狀判定挪到 Python 端
+    # 對已擷取的 tok 字串做,不受任何長度上限影響。
     ("assigned_secret", re.compile(
-        r"(?i)\b[\w.-]*(?:password|passwd|secret|api[_-]?key|apikey|token|"
-        r"credential|private[_-]?key|access[_-]?key)[\w.-]*\s*[:=]\s*"
+        r"(?i)(?:"
+        r"(?:password|passwd|secret|api[_-]?key|apikey|token|"
+        r"credential|private[_-]?key|access[_-]?key)[\w.-]{0,64}\s*[:=]\s*"
         r"(?!(?:<|\{|\$|\(|null\b|none\b|redacted\b|xxx+\b|\*+\s*$))"
-        r"[\"']?[^\s\"',;]{6,}")),
+        r"[\"']?[^\s\"',;]{6,}"
+        r"|(?:密碼是|金鑰是)\s*(?:[:：=]\s*(?=[!-~])|(?=[\"'][!-~]))"
+        r"(?!(?:<|\{|\$|\(|null\b|none\b|redacted\b|xxx+\b|\*+\s*$))"
+        r"[\"']?[^\s\"',;]{6,}"
+        r"|(?:密碼是|金鑰是)\s*[:：=]?"
+        r"(?!(?:<|\{|\$|\(|null\b|none\b|redacted\b|xxx+\b|\*+\s*$))"
+        r"[\"']?(?P<tok>[A-Za-z0-9_-][A-Za-z0-9._/-]{7,})"
+        r")")),
 )
 
 
+def _looks_like_credential(tok):
+    """裸 token 候選(assigned_secret 第③支)是否長得像憑證。
+
+    正則只負責抓出候選字串(見上方 _SENSITIVE 定義處註解);形狀判斷放在
+    這裡用 Python 對已擷取的 tok 做,不放回正則,長度不受任何上限影響。
+    """
+    has_digit = False
+    has_symbol = False
+    has_lower = False
+    has_upper = False
+    for ch in tok:
+        if ch.isdigit():
+            has_digit = True
+        elif ch in "-_/":
+            has_symbol = True
+        elif ch.islower():
+            has_lower = True
+        elif ch.isupper():
+            has_upper = True
+    return has_digit or has_symbol or (has_lower and has_upper)
+
+
 def scan_sensitive(text):
-    """回傳命中的敏感 pattern 名稱清單(不回傳命中內容 —— 回傳等於再抄一份)。"""
+    """回傳命中的敏感 pattern 名稱清單(不回傳命中內容 —— 回傳等於再抄一份)。
+
+    assigned_secret 的裸 token 分支(③)只用正則抓候選,形狀判斷交給
+    `_looks_like_credential`,所以這一個 pattern 要逐一檢查每個候選
+    (finditer),候選不像憑證就跳過、繼續找下一個。其餘 pattern 沒有這種
+    「候選 vs 判定」的兩段式,維持原本 search 一次即算。
+    """
     if not isinstance(text, str) or not text:
         return []
     hits = []
     for name, pattern in _SENSITIVE:
-        if pattern.search(text):
-            hits.append(name)
+        if name != "assigned_secret":
+            if pattern.search(text):
+                hits.append(name)
+            continue
+        for m in pattern.finditer(text):
+            tok = m.groupdict().get("tok")
+            if tok is None or _looks_like_credential(tok):
+                hits.append(name)
+                break
     return hits
 
 

@@ -3,7 +3,7 @@
 > 目的:讓**任何人、任何工具**照本規範畫出與母版 guide 同風格的圖 —— 不依賴
 > 特定 skill、不依賴 draw.io/Graphviz 等本機軟體(有工具可加速,沒工具照樣手刻)。
 > 「看圖」零依賴:全部圖都是靜態 inline SVG,瀏覽器直開。
-> ASCII vs SVG 的選用判準在 README §6(純線性/單層樹 → ASCII;方塊+連線的
+> ASCII vs SVG 的選用判準在指南 `#diagram-style`(純線性/單層樹 → ASCII;方塊+連線的
 > 空間關係 → SVG;拿不準 → SVG),本檔只管「畫出來長什麼樣」。
 
 ## 硬規則(違反即改)

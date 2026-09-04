@@ -18,8 +18,8 @@
 #      每個真節點「做什麼」必須 --write-cursor <本節點 id>。
 #      N1-arm 與 S2-tdd 才 allow write_notes(同一份 6-implementation-notes.md,
 #      overwrite);不要放寬 N2-handoff／N4-selfcheck／N5-end。
-#      S2-tdd 是一顆 hop,不是一 T 一 hop —— 逐 T 仍走 README §5 動線 / 引擎。
-#      做什麼必須點名 README §5,且寫明「不是一 T 一 hop」。
+#      S2-tdd 是一顆 hop,不是一 T 一 hop —— 逐 T 仍走指南 #five-laws／#stage6 動線 / 引擎。
+#      做什麼必須點名 #five-laws,且寫明「不是一 T 一 hop」。
 #   9. 第三刀:--action 必須接到 prebash,不能只活在 test fixture。guide 第 6 站
 #      開頭必須對上五節點鏈,並寫明「逐 T 仍走引擎」。出現「Stage 6 還在單一 SKILL」
 #      必須紅。不改第 1／2／3／4／5 站的編成。圍欄②一個字不改鬆。
@@ -552,9 +552,9 @@ def check_live(graph):
         if token not in do_body:
             failures.append(f"P0 {rel} 做什麼必須呼叫 --write-cursor {node_id}")
         if node_id == TDD_NODE:
-            if "README §5" not in do_body:
+            if "#five-laws" not in do_body:
                 failures.append(
-                    f"P0 {rel} 做什麼必須點名 README §5"
+                    f"P0 {rel} 做什麼必須點名 #five-laws"
                     "(逐 T 動線正本,不抄原文、不另寫引擎)"
                 )
             if "不是一 T 一 hop" not in do_body:
@@ -643,7 +643,7 @@ def check_live(graph):
             )
         if PER_T_HOP_RE.match(str(node_id)):
             failures.append(
-                f"P0 {node_id} 是一 T 一 hop,逐 T 必須仍走 README §5 動線 / "
+                f"P0 {node_id} 是一 T 一 hop,逐 T 必須仍走指南 #five-laws 動線 / "
                 f"引擎,不准每個 T 一顆 hop"
             )
         allow = set(as_list(spec.get("allow")))
@@ -699,7 +699,7 @@ def check_action_runtime_wired():
 def check_guide():
     """第 6 站開頭對上五節點鏈,並寫明逐 T 仍走引擎;舊句「還在單一 SKILL」必須紅。"""
     if not os.path.isfile(GUIDE_PATH):
-        return []
+        return ["P0 指南檔缺席:找不到 guides/guide-dev-flow.html"]
     text = open(GUIDE_PATH, encoding="utf-8").read()
     failures = []
     if STALE_GUIDE in text:

@@ -6,7 +6,7 @@ N4-author 完成,`7-review.md` 已落檔。不要另開檔。
 
 ## 讀什麼
 
-已落檔的 `7-review.md`(含頂欄 `verdict:`)。PASS 條件正本仍是現有 G3(README §7 +
+已落檔的 `7-review.md`(含頂欄 `verdict:`)。PASS 條件正本仍是現有 G3(`guides/guide-dev-flow.html#gates` +
 Gauntlet / Evidence 契約 / 空欄擋 / 層名全等 / 出貨樹=審過的樹 /
 Final Fresh 綁 SHA)。本檔不另寫通過條件、不重寫那些工具。
 `graph.yaml` 是下一跳正本。

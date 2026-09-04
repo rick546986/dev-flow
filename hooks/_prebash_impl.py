@@ -40,7 +40,24 @@ root = sys.argv[1]
 # F2:payload 從 stdin 讀(正本 devflow-lib.read_hook_input),不再經環境變數 ——
 # export 大 payload 會讓殼層 exec 撞 ARG_MAX,守衛以 rc=126 靜默自壞。
 h = L.read_hook_input()
-if h is None:
+if not h:
+    # #101 修法:武裝判斷跟正常路徑(下方 `state, armed, err = L.load_state(root)`
+    # 之後的 scope 判斷)同一套 —— 不能只看 armed(sentinel)。sentinel 被刪但
+    # .devflow/exec.json 還在(合法 dict)時,armed 是空字串、err 也是空字串,
+    # 但守衛仍在強制(正常路徑用 state 判斷是否要擋 scope 外寫入)。三者任一
+    # 非空就代表「有在跑」,對壞 payload 一律 fail-closed。
+    # `not h` 而非 `h is None`:read_hook_input() 對「非 JSON／非 object」回
+    # None,但對「stdin 完全空」回 {}(見該函式docstring 的 HOOK_INPUT 相容退路)——
+    # 從守衛的角度兩者是同一種情境:hook 被觸發了(工具真的動了)卻讀不到內容,
+    # 武裝中同樣要 fail-closed,不能因為剛好解析出一個空 dict 就放行。
+    state, armed, err = L.load_state(root, caller="devflow-prebash")
+    if err:
+        # err 是 load_state 給的具體診斷(例如 exec.json 損壞時的修復指引)——
+        # 優先印它,不要被下面這句通用訊息蓋掉。
+        L.die(err)
+    if state is not None or armed:
+        L.die("⛔ devflow-prebash:hook payload 缺失或解析失敗(空/非 JSON/非 object)。"
+              "守衛武裝中,fail-closed 擋下。")
     sys.exit(0)
 cmd = h.get("tool_input", {}).get("command", "")
 if not cmd:
@@ -602,7 +619,7 @@ _devstage5_graph_action(cmd)
 _devstage6_graph_action(cmd)
 _devstage7_graph_action(cmd)
 
-state, armed, err = L.load_state(root)
+state, armed, err = L.load_state(root, caller="devflow-prebash")
 if err:
     L.die(err)
 if state is None:

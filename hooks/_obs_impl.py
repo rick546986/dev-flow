@@ -28,6 +28,7 @@ import datetime
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -128,7 +129,10 @@ def runtime_check(obj, tags_enum=None):
         if isinstance(node, dict):
             for k, v in node.items():
                 p = f"{path}.{k}" if path else str(k)
-                if str(k).lower() in EXTRA_FORBIDDEN_KEYS:
+                bare = str(k).lower()
+                # r2-#98 F1:同型迴圈同型修法,見 event_validate.py 同段註解。
+                bare = re.sub(r"^(?:x_+)+", "", bare)
+                if bare in EXTRA_FORBIDDEN_KEYS:
                     errs.append({"code": "privacy_forbidden_key", "field": p,
                                  "msg": f"禁載欄位 {k!r}(共享契約 §6 runtime 加嚴)"})
                     continue
@@ -416,17 +420,19 @@ def cmd_validate(root, args):
     for rd in resolve_run_dirs(root, run_ids):
         try:
             errors = ledger.validate_run(rd)
-        except FileNotFoundError as e:
-            # 事件帶 task_tags 但 enum 正本缺(未 seed 成功)→ 明確報,不靜默跳過
-            errors = [{"code": "contract_missing", "field": "task_tags",
-                       "msg": f"task_tags 受控 enum 正本 devflow-contract.json "
-                              f"不可得({e});fail-closed,不靜默跳過驗證"}]
-        if strict:
-            for rel, path in ledger._sources(rd):
-                events, _ = writer._read_complete_events(path)
-                for e in events:
-                    for err in runtime_check(e, tags_enum):
-                        errors.append(dict(err, source=rel))
+            if strict:
+                for rel, path in ledger._sources(rd):
+                    events, _ = writer._read_complete_events(path)
+                    for e in events:
+                        for err in runtime_check(e, tags_enum):
+                            errors.append(dict(err, source=rel))
+        except Exception as e:
+            # #103:strict 重讀同一批檔與非 strict 共用這個 try/except,
+            # 壞檔轉成結構化 run_error(同錯誤碼、同欄位),不讓單一 run 拖垮
+            # 整批(裸 traceback 會連 _print(report) 都跑不到,乾淨 run 也
+            # 印不出報告)。exit code 語義不變:errors 非空仍算 dirty。
+            errors = [{"code": "run_error", "field": rd,
+                       "msg": f"{type(e).__name__}: {e}"}]
         report[os.path.basename(rd.rstrip("/"))] = errors
         dirty = dirty or bool(errors)
     _print(report)

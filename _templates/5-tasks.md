@@ -16,7 +16,7 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 > 本階段固定產出:`5-tasks.md`(本模板全節)+ `5-tasks.html`(tasks 定稿供派工時
 > 必產;必含 T 依賴 DAG,ASCII 天生適合)。
 >
-> ## 5-tasks twin 是**執行板**,不是審查介面(README §6)
+> ## 5-tasks twin 是**執行板**,不是審查介面(指南 `#twin-dash`)
 >
 > 不是 gate 站,但要讓人照著動工,不是 md 直轉攤平。四件事缺一不可,**產 html
 > 時逐項對照,缺一項就是沒做完**:

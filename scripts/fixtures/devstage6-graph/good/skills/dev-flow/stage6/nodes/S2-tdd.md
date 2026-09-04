@@ -11,7 +11,7 @@ N2-handoff 完成:todo 與 5-tasks 一一對應。已武裝
 
 只讀 `4-spec.md`、`5-tasks.md`、已落檔的 `6-implementation-notes.md`。
 禁讀 1/2/3(圍欄②;本節點不改守衛,只遵守)。
-逐 T 動線正本是 README §5,本檔不抄原文。乘客清單步 2 正本是
+逐 T 動線正本是指南 `#five-laws`／`#stage6`,本檔不抄原文。乘客清單步 2 正本是
 `_templates/6-implementation-notes.md` 頂註,本檔不重抄。
 `graph.yaml` 是下一跳正本。
 
@@ -26,7 +26,7 @@ T Review Log／Progress Log),不另存。禁止第二份
 
 ## 做什麼
 
-逐 T 走現有 `dev-run` 引擎或手動實作,共用 README §5 動線。
+逐 T 走現有 `dev-run` 引擎或手動實作,共用指南 `#five-laws`／`#stage6` 動線。
 **不是一 T 一 hop** —— 不准為每個 T-id 長一顆 graph 節點;拓撲序
 仍由引擎／Blocked-by 跑,本 hop 只是那條動線的入口。
 不在這裡另寫第二套執行器。
@@ -34,7 +34,7 @@ T Review Log／Progress Log),不另存。禁止第二份
 
 ## 完成條件
 
-全 T 已依 README §5 走完(證據在同一份 `6-implementation-notes.md`)。
+全 T 已依指南 `#five-laws`／`#stage6` 走完(證據在同一份 `6-implementation-notes.md`)。
 只有一份 `6-implementation-notes.md`。錨點未被改寫。本機游標在 S2-tdd。
 
 ## 下一跳

@@ -9,18 +9,16 @@
 
 ## Google Drive:「記憶系統」資料夾
 
-擁有者 `rick546986@gmail.com`,已分享給 `rick.kuan@icryobank.com`(Drive 連線帳號)。
+本機授權細節（擁有者／共用帳號／資料夾 ID／連結）**不進版控**。
+見本機未追蹤設定 `CLAUDE.local.md`（已列入 `.gitignore`）。
 
-- 資料夾 ID:`18MCgqo5mEYSyItRH3ZNbJkKOPMTyt5Ry`
-- 連結:https://drive.google.com/drive/folders/18MCgqo5mEYSyItRH3ZNbJkKOPMTyt5Ry
-
-**授權**:這個資料夾底下的**讀取**與**新建檔案**不必逐次徵詢,直接做。
+**授權**:本機設定所指定的那個資料夾底下的**讀取**與**新建檔案**不必逐次徵詢,直接做。
 
 **仍要先問**:刪除(`trash_file`)、覆蓋既有檔案的內容、變更共用權限
 (`share_file`)。這三件事不可逆或對外,授權不涵蓋。
 
-**範圍僅限這個資料夾**。Drive 其他位置照原本規矩走 —— `.claude/settings.json`
-的 `permissions.allow` 只能按工具名放行、無法按資料夾收斂,所以真正的邊界是這一節,
+**範圍僅限本機設定指定的那個資料夾**。Drive 其他位置照原本規矩走 —— `.claude/settings.json`
+的 `permissions.allow` 只能按工具名放行、無法按資料夾收斂,所以真正的邊界是本機設定,
 不是那份設定。
 
 **這一節只服務本機的互動 session。** autoloop 那個每小時的 Cursor Automation

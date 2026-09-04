@@ -451,3 +451,8 @@
 - 為什麼:guides/ 相對 example/*.html 在 Pages 會解析成 guides/example/ 而 404；html 有視覺版卻沒連
 - 落在哪:guides/guide-dev-flow.html scripts/build-public-docs.py scripts/check-pages-hosting.sh skills/dev-setup/SKILL.md docs/adr/ docs/dev/HISTORY.html
 
+## 2026-09-02 · readme-guide-converge
+- 做了什麼:README 精簡為入口,quickstart 併入同一 SOP 頁;流程正本收斂到指南 #start/#host/#dirmap(#90)
+- 為什麼:入口與指南雙正本會漂;人與 agent 應從同一指南錨開工
+- 落在哪:README.md guides/guide-dev-flow.html docs/PLUGIN.md
+

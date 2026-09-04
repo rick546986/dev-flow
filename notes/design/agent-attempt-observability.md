@@ -157,6 +157,45 @@ hash 進事件(`context_manifest_hash`),內容不進事件。
   (堵「整份貼進來」)。
 - transcript 要留:**獨立權限、獨立 retention 的外部儲存**,ledger 只放
   `transcript_ref`(路徑或 hash)。
+- **值形狀掃描**(`event_validate._value_leak`,鍵名掃描之外的第二道):不比對
+  裸字,只認三種樣式 ——(a) 賦值形 `password/passwd/secret/token/api key`
+  (=值,全形冒號同算,值要 6+ 非空白字元;裸 `pwd` 不算,常見於 shell
+  `pwd` 指令輸出而非密碼,r3-#98 F4);(b) 已知憑證前綴(`sk-`/`AKIA`/JWT/
+  PEM 私鑰/`Bearer`);(c) 同一字串內 ≥3 行對話結構。這條在 `_privacy_scan`
+  另外有一個獨立的容器聚合遍歷(`_scan_conv_structure`,r3-#98
+  F1→F2):對每個 dict/list 容器節點,遞迴收集整棵子樹的字串葉節點合併判
+  一次 ≥3 行(bottom-up 整數相加,不因巢狀層數重複 rescan),防逐字稿被拆進
+  多個 list 元素或多個 dict 鍵值就各自躲過單一元素的門檻;OpenAI 風格的
+  `{"role":"user","content":"hi"}` 陣列沒有「role: 」前綴長在 content 值
+  裡,join 也不會命中對話結構正則,所以另外判斷「role(user/assistant/
+  system/human)+ content/text/message」形狀的一個對話 turn,turn 數也是
+  bottom-up 整數往上傳、子樹內(不限直屬子節點,turn 可以埋在兄弟
+  list/dict 裡更深一層)湊到 ≥3 個就算命中(r3-#98 第五輪對抗審查修正
+  「只看直屬子節點」的漏洞)——換句話說,x_meta 底下任何地方湊得到 3 個
+  role+content dict 就會被擋,即使它們分散在語意上不相關的欄位。這條聚合
+  遍歷正常只在有名字的子路徑(至少 x_meta 那層)報一次,但如果 turn 或
+  對話行是分散在**好幾個頂層 `x_*` 欄位**(不是同一個具名子路徑底下),
+  每個欄位自己都不到門檻,只有整個事件加總才到 ≥3——這種情況下事件的根
+  節點會直接報一次(`field` 用 `"(event)"`),前提是子樹內沒有任何具名
+  子路徑已經報過(避免同一件事在根層跟子路徑各報一次,r3-#98 第六輪
+  對抗審查補上這個根層例外)。
+  `transcript/conversation/messages=值` 是獨立第四種
+  (賦值形才擋、裸字放行),但值還要「長得像逐字稿內容」才算外洩(長度
+  ≥60 字元且 ≥10 詞 / 引號包住的 ≥4 詞句 / 含 user:/assistant: 角色標記),
+  避免「messages: 3 pending」這類日常狀態敘述被誤殺(r3-#98;首版通用門檻
+  定 40 字元/6 詞,收斂 F1 找碴發現連「renamed "old field name" to "new
+  field name"」這類短的工程改名敘述都被誤擋,裁定拉高到 60/10)。詞數對
+  CJK(中日韓)文字另計:先把 CJK 字元從字串移除再切英數詞(避免同一段連續
+  CJK 字元先被空白斷詞算 1 個詞、又逐字元加一次的重複計數),CJK 碼點
+  (中日韓統一表意文字、日文假名、諺文音節)逐字元各計 1 詞,再跟英數詞數
+  相加(r3-#98 F2,第四輪 nit 修正重複計數)。引號判斷同時認 ASCII 直引號
+  與 CJK 括號「」『』、CJK 彎引號,開閉不要求同款成對;引號內容有長度上界
+  (200 字)且排除所有引號字元本身,避免整段沒有閉引號的字串讓比對從每個
+  起點都掃到底(r3-#98 F3,第四輪修 ReDoS)。已知排除:賦值形的值若整段
+  只是遮蔽標記(`redacted`/`***`/`null` 等)不算外洩;裸字提及、base64
+  內容不在此掃描範圍;超過 `max_string_len` 已經報 `privacy_value_too_
+  long`,不會再對該值跑值形狀掃描(backstop,同時收斂超長字串的 ReDoS
+  曝險面)。
 
 ## 7. 事件寫入責任(七節;runtime 皆在 plugin repo → interface contract)
 

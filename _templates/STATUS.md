@@ -32,7 +32,7 @@
 > - `push` 被拒 → `git fetch` 後 `git rebase origin/<整合分支>`,把自己還沒發布
 >   出去的那個 commit 重放上去,解完衝突再推;重放完**核對整張表的列集合**,
 >   確認別人的列沒有在解衝突時被自己刪掉。這**不算改寫共享歷史** —— 重放的是
->   自己本地還沒推出去的 commit;README §7 禁的是對**已經推出去、別人已經拿到**
+>   自己本地還沒推出去的 commit;指南 `#gates` 禁的是對**已經推出去、別人已經拿到**
 >   的歷史做 `reset --hard` / `push --force` / `rebase`,兩件事不要混。
 > - **不准**用 `push --force` 或 `reset --hard` 解決本檔的推送衝突。
 > - 一句理由:看板遺失一列是**靜默**的,沒有紅字、下一個人會照著錯的狀態決策。
@@ -43,11 +43,11 @@
 > 寫入紀律,且**不要**同 checkout 並行手改表列。手改表列而不走寫入口,
 > 蓋章對不上,`check-status-policy.sh` 會紅。
 >
-> `Branch` 欄填法:Stage 1–5(尚未開 feature branch,見 README §7 規劃層 git)固定填
+> `Branch` 欄填法:Stage 1–5(尚未開 feature branch,見指南 `#gates` 規劃層 git)固定填
 > `n-a:尚未建立 branch`(逐字這個字串,方便機械判定);Stage 6 起 branch 建立並
 > 推上去之後,換成**已發布的遠端 ref**(如 `origin/feat/<slug>`)—— 不要填本地
 > 分支名:本地分支只存在於某一台機器,換一個 clone 算「各 feature 改過的檔」
-> (README §7「直接補修」判準)時會靜默漏掉這個 feature。
+> (指南 `#gates`「直接補修」判準)時會靜默漏掉這個 feature。
 >
 > `OverlapRef` 欄 = 直接補修算法讀的**唯一座標**(STATUS/runtime 名稱就是
 > `OverlapRef`;`scripts/status-update.sh --print-overlap-ref` 印出的就是它)。
@@ -65,7 +65,7 @@
 > **不代表執行中的 remote 已經完整**(本地可能還有未 commit/未發布的 T);
 > Stage 6 收尾由 dev-run 在 bookkeeping 之後、回報 Stage 7 之前**再發布最終
 > feature tip** 並驗證 remote tip 等於本地 HEAD(見 `skills/dev-run/SKILL.md`
-> 收尾節)。執行中的未發布窗口由 README §7 直接補修算法負責封住:Stage 6 一律
+> 收尾節)。執行中的未發布窗口由指南 `#gates` 直接補修算法負責封住:Stage 6 一律
 > fail-closed、Stage 7 逐一驗 ACCEPTED commit 是 remote tip 的祖先。
 > parallel 在 `OverlapRef` 解不出來之前同樣 fail-closed。
 

@@ -47,13 +47,21 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 派工單 §2.1 TMPDIR 跨平台正規化 w2 組 +2(注入假 cygpath 的正向 + 空 PATH 的
 # 對照組)→ 400;同日 report-guard 覆蓋缺口 +2(.devflow/ 非 reports/ 仍擋 +
 # .devflow/task/ 證據區不得誤傷)→ 402;2026-08-29 Bash 寫入 prevent-before
-# +3(prebash 擋 scope 外 redirect / 擋後檔不落盤 / 放行 scope 內)→ 405)
+# +3(prebash 擋 scope 外 redirect / 擋後檔不落盤 / 放行 scope 內)→ 405;
+# PR #110 fail-closed 收斂 +5 → 410(當時未同步本常數);
+# 2026-09-04 #98 值掃描重做 +1、#101 壞 payload 武裝判斷跟正常路徑同一套 +12
+# (guard/prebash × 壞JSON/空stdin × 三種武裝狀態)、#103 --strict 重讀漏包 +7
+# → 見下方 MIN_CASES 實值;同一 commit 同步 scripts/test-architecture-guards.sh
+# 的 check_static_pin 字面(那條互釘就是要抓「調地板沒同步」)。
 # ——新增案例時同步 +;絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=405
+# ⚠️ 2026-09-04 r2-#98:對抗審查 F1 補一個 p3 回歸案(x__customer_data,雙底線
+# 單 x,對照上面已有的雙層 x_x_customer_data 案),grep 實測 TOTAL_CASES 變 431。
+# 同一 commit 同步 scripts/test-architecture-guards.sh:2231 字面 → 431。
+MIN_CASES=431
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -520,12 +528,69 @@ DT_OUT=$(echo "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$DTT/ski
 ck_msg "③ devtalk-guard obs 通道壞掉(目錄不可寫):deny 判定不變" 2 "盲原則洩漏" "$DT_RC" "$DT_OUT"
 rm -f "$DTBAD"; rm -rf "$DTT"
 
+echo "-- #101 壞 payload 的武裝判斷跟正常路徑同一套(state/armed/err 任一為真 → 擋)--"
+# 主 $T fixture 此刻仍是 f1 從第 264 行附近武裝至今、從未 stop 過的狀態:
+# .devflow/exec.json 是合法 dict,.git/devflow-armed sentinel 也在 —— 這是
+# 「合法區塊」,不是後面 exec.json 已被寫壞的 fail-closed 區塊,所以下面四案
+# 真的驗到 state 這條路徑,不是只驗 err。
+# (a) sentinel 在 + exec.json 合法 + 壞 JSON / 空 stdin → 擋
+ck "①a sentinel 在、exec.json 合法 + 壞 JSON → 擋" 2 \
+  "$(echo 'not-json' | "$H/devflow-guard.sh" >/dev/null 2>&1; echo $?)"
+ck "①a prebash 同型" 2 \
+  "$(echo 'not-json' | "$H/devflow-prebash.sh" >/dev/null 2>&1; echo $?)"
+ck "①a 空 stdin(sentinel 在、exec.json 合法)→ 擋" 2 \
+  "$("$H/devflow-guard.sh" < /dev/null >/dev/null 2>&1; echo $?)"
+ck "①a prebash 空 stdin 同型" 2 \
+  "$("$H/devflow-prebash.sh" < /dev/null >/dev/null 2>&1; echo $?)"
+# (b) sentinel 刪、exec.json 仍合法 + 壞 JSON / 空 stdin → 擋 —— 這是 #101
+# 漏掉的那格:armed(sentinel 內容)是空字串、err 也是空字串,但 state 是合法
+# dict;正常路徑(下方 write_scope_verdict)靠 state 判斷要不要擋 scope,壞
+# payload 不能因為剛好沒有 sentinel 就跳過同一套判斷。用 mv 而非重寫內容,
+# 復原時位元組完全一致,不必猜 devflow-exec.sh 當初寫了什麼格式。
+mv .git/devflow-armed .git/devflow-armed.i101bak
+[ -f .git/devflow-armed ] && echo "  ⚠️ i101:①b sentinel 沒被移走,以下四案不是在測 sentinel-刪的情境"
+ck "①b sentinel 刪、exec.json 合法 + 壞 JSON → 擋(#101 本體)" 2 \
+  "$(echo 'not-json' | "$H/devflow-guard.sh" >/dev/null 2>&1; echo $?)"
+ck "①b prebash 同型" 2 \
+  "$(echo 'not-json' | "$H/devflow-prebash.sh" >/dev/null 2>&1; echo $?)"
+ck "①b 空 stdin(sentinel 刪、exec.json 合法)→ 擋" 2 \
+  "$("$H/devflow-guard.sh" < /dev/null >/dev/null 2>&1; echo $?)"
+ck "①b prebash 空 stdin 同型" 2 \
+  "$("$H/devflow-prebash.sh" < /dev/null >/dev/null 2>&1; echo $?)"
+mv .git/devflow-armed.i101bak .git/devflow-armed   # 復原:下一段假設 sentinel 在
+[ -f .git/devflow-armed ] || echo "  ⚠️ i101:①b sentinel 復原失敗,下一段 fail-closed 案例會假紅"
+# (c) 未武裝(無 exec.json、無 sentinel)+ 壞 JSON / 空 stdin → 仍放行(fail-open
+# 不變)。獨立 fixture,不動主 $T —— 主 $T 全程武裝,拆了會連坐後面所有案例。
+C101=$(mktemp -d "${TMPDIR:-/tmp}/devflow-i101-unarmed.XXXXXX")
+( cd "$C101" && git init -q . && git config user.email t@t && git config user.name t \
+  && git commit --allow-empty -qm init >/dev/null )
+ck "①c 未武裝 + 壞 JSON → 放行(fail-open 不變)" 0 \
+  "$(cd "$C101" && echo 'not-json' | "$H/devflow-guard.sh" >/dev/null 2>&1; echo $?)"
+ck "①c prebash 同型" 0 \
+  "$(cd "$C101" && echo 'not-json' | "$H/devflow-prebash.sh" >/dev/null 2>&1; echo $?)"
+ck "①c 空 stdin(未武裝)→ 放行" 0 \
+  "$(cd "$C101" && "$H/devflow-guard.sh" < /dev/null >/dev/null 2>&1; echo $?)"
+ck "①c prebash 空 stdin 同型" 0 \
+  "$(cd "$C101" && "$H/devflow-prebash.sh" < /dev/null >/dev/null 2>&1; echo $?)"
+rm -rf "$C101"
+
 echo "-- fail-closed --"
 rm -f .devflow/exec.json
 ck "旗標消失但 sentinel 在 → 擋" 2 "$(g Write src/a.py)"
 mkdir -p .devflow; echo "{壞" > .devflow/exec.json
 ck "旗標損壞 → 擋"            2 "$(g Write src/a.py)"
 ck "旗標損壞 → 異 slug start 拒啟" 1 "$(x start f2)"
+echo 'null' > .devflow/exec.json
+ck "旗標 null → 擋"           2 "$(g Write src/a.py)"
+echo '[]' > .devflow/exec.json
+ck "旗標 [] → 擋"             2 "$(g Write src/a.py)"
+echo '"x"' > .devflow/exec.json
+ck "旗標字串 → 擋"            2 "$(g Write src/a.py)"
+# 下面兩案 exec.json 此刻是 '"x"'(合法 JSON 但非 object)→ load_state 回 err
+# 非空,只驗到 armed/err 分支;state-是合法-dict-但-armed/err-皆空 那格由上面
+# 「①b」補,不要以為這兩案涵蓋了 #101 的漏洞本體。
+ck "非 JSON payload 武裝中 → 擋" 2 "$(echo 'not-json' | "$H/devflow-guard.sh" >/dev/null 2>&1; echo $?)"
+ck "prebash 非 JSON payload 武裝中 → 擋" 2 "$(echo 'not-json' | "$H/devflow-prebash.sh" >/dev/null 2>&1; echo $?)"
 
 echo "-- gate reviewer-selection semantics --"
 gate_fixture '審查者依序：適格人類 reviewer → fresh-context reviewer Agent → owner 自審（留痕的最後手段）。'
@@ -1830,6 +1895,10 @@ p3_ev "{\"event_type\":\"attempt_started\",\"writer\":\"coordinator\",\"task_id\
 ck_msg "p3 runtime 加嚴:model>100 → 拒收" 1 "field_too_long" "$P3_RC" "$P3_OUT"
 p3_ev '{"event_type":"run_completed","writer":"coordinator","result":"PASS","x_meta":{"customer_data":"x"}}'
 ck_msg "p3 runtime 加嚴:customer_data → 拒收" 1 "privacy_forbidden_key" "$P3_RC" "$P3_OUT"
+p3_ev '{"event_type":"run_completed","writer":"coordinator","result":"PASS","x_meta":{"x_x_customer_data":"x"}}'
+ck_msg "p3 runtime 加嚴:x_ 前綴剝到底(雙層 x_x_customer_data)仍拒收(#98 回歸)" 1 "privacy_forbidden_key" "$P3_RC" "$P3_OUT"
+p3_ev '{"event_type":"run_completed","writer":"coordinator","result":"PASS","x_meta":{"x__customer_data":"x"}}'
+ck_msg "p3 runtime 加嚴:x_ 前綴剝到底(雙底線 x__customer_data)仍拒收(r2-#98 F1)" 1 "privacy_forbidden_key" "$P3_RC" "$P3_OUT"
 # 1.1:task_tags 為正式欄(agent_dispatched/attempt_* optional),enum 解析自契約
 p3_ev "{\"event_type\":\"agent_dispatched\",\"writer\":\"coordinator\",\"task_id\":\"T-1\",\"attempt_id\":\"$P3ATT\",\"agent_role\":\"worker\",\"model\":\"haiku\",\"prompt\":{\"id\":\"stage6-worker\",\"version\":\"1.0.0\",\"hash\":\"sha256:$P3HASH\"},\"task_tags\":[\"frontend-magic\"]}"
 ck_msg "p3 task_tags 自由字串 → 拒收" 1 "受控" "$P3_RC" "$P3_OUT"
@@ -1979,22 +2048,26 @@ p3_obs registry validate
 ck "p3 prompt registry schema 綠" 0 "$P3_RC"
 ck "p3 registry 五 prompt id 齊" 0 "$(p3_json_has "$H/prompt-registry.json" registry5; echo $?)"
 ck "p3 runtime-capabilities 契約聲明" 0 "$(p3_json_has "$H/runtime-capabilities.json" caps; echo $?)"
+find "$H/devflow_obs_vendor" -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
+find "$H/devflow_obs_vendor" -name '*.pyc' -delete 2>/dev/null || true
 ck "p3 vendor 無 __pycache__ 生成" 0 "$([ -z "$(find "$H/devflow_obs_vendor" -name '__pycache__' -print -quit 2>/dev/null)" ]; echo $?)"
 # MINOR-1:vendor byte-identical 宣稱機械強制(母版在才可驗;不在 → 明確 SKIP,不靜默)
-p3_vendor_cmp() { # 0=全檔一致或母版缺(SKIP 已明示);1=漂移
-  local master="${DEVFLOW_MASTER:-$(dirname "$H")}/observability" f
+p3_vendor_cmp() { # 0=目錄一致或母版缺(SKIP 已明示);1=漂移
+  local master="${DEVFLOW_MASTER:-$(dirname "$H")}/observability"
   if [ ! -d "$master" ]; then
     echo "  ⚠ SKIP:方法論母版不存在($master)—— vendor 一致性僅本機可驗,他機安裝不算 FAIL"
     return 0
   fi
-  for f in __init__ ids event_validate writer ledger stats legacy_md; do
-    cmp -s "$H/devflow_obs_vendor/devflow_obs/$f.py" "$master/devflow_obs/$f.py" \
-      || { echo "  vendor 漂移:devflow_obs/$f.py ≠ 母版"; return 1; }
-  done
-  for f in agent-event context-manifest prompt-registry; do
-    cmp -s "$H/devflow_obs_vendor/schema/$f.schema.json" "$master/schema/$f.schema.json" \
-      || { echo "  vendor 漂移:schema/$f.schema.json ≠ 母版"; return 1; }
-  done
+  if ! diff -rq -x '__pycache__' -x '*.pyc' \
+      "$H/devflow_obs_vendor/devflow_obs" "$master/devflow_obs"; then
+    echo "  vendor 漂移:devflow_obs/ 目錄與母版不一致"
+    return 1
+  fi
+  if ! diff -rq -x '__pycache__' -x '*.pyc' \
+      "$H/devflow_obs_vendor/schema" "$master/schema"; then
+    echo "  vendor 漂移:schema/ 目錄與母版不一致"
+    return 1
+  fi
   return 0
 }
 p3_vendor_sha() { # VENDOR-SOURCE.md sha256 表 vs 實檔(自足,母版不需在)
@@ -2010,6 +2083,45 @@ p3_vendor_cmp; P3_RC=$?
 ck "p3 vendor byte-identical vs 母版(缺母版=明示 SKIP)" 0 "$P3_RC"
 p3_vendor_sha; P3_RC=$?
 ck "p3 VENDOR-SOURCE sha256 表與實檔一致" 0 "$P3_RC"
+# issue #103:validate --strict 重讀同批檔沒包 try/except,一個中間壞行的 run
+# 會拖垮整批(裸 traceback,連乾淨 run 的報告都印不出來)。獨立 RUNS_ROOT,
+# 不動 $P3T/.devflow/runs(避免污染上面 derive/stats/archive 用的隱式全枚舉)。
+P3SBAD="run_01JG8C4V2M0000000000000STRB"
+P3SCLEAN="run_01JG8C4V2M0000000000000STRC"
+P3STRICT=$(mktemp -d "${TMPDIR:-/tmp}/devflow-p3-strict.XXXXXX")
+mkdir -p "$P3STRICT/runs/$P3SBAD/coordinator" "$P3STRICT/runs/$P3SCLEAN/coordinator"
+printf '%s\n' \
+  "{\"schema\":\"devflow-agent-event/1.1\",\"event_type\":\"run_started\",\"writer\":\"coordinator\",\"run_id\":\"$P3SCLEAN\",\"feature_slug\":\"f1\",\"base_sha\":\"abc1234\",\"timestamp\":\"2026-08-01T00:00:00+00:00\"}" \
+  > "$P3STRICT/runs/$P3SCLEAN/coordinator/events.jsonl"
+# 中間一行壞 JSON(非最後一行 → writer._read_complete_events 判非截尾殘行,拋例外;
+# 契約「非截尾＝損壞」不可續寫,見 writer.py:82 —— 這正是本案要轉成 run_error 的錯誤)
+printf '%s\n%s\n%s\n' \
+  "{\"schema\":\"devflow-agent-event/1.1\",\"event_type\":\"run_started\",\"writer\":\"coordinator\",\"run_id\":\"$P3SBAD\",\"feature_slug\":\"f1\",\"base_sha\":\"abc1234\",\"timestamp\":\"2026-08-01T00:00:00+00:00\"}" \
+  '{this is not valid json' \
+  "{\"schema\":\"devflow-agent-event/1.1\",\"event_type\":\"run_completed\",\"writer\":\"coordinator\",\"run_id\":\"$P3SBAD\",\"result\":\"PASS\",\"timestamp\":\"2026-08-01T00:01:00+00:00\"}" \
+  > "$P3STRICT/runs/$P3SBAD/coordinator/events.jsonl"
+p3_strict() { P3_OUT=$( (cd "$P3T" && DEVFLOW_RUNS_ROOT="$P3STRICT/runs" "$H/devflow-obs.sh" "$@") 2>&1 ); P3_RC=$?; }
+p3_strict validate "$P3SBAD" "$P3SCLEAN"
+ck_msg "p3 validate(非 strict)壞 run → run_error,不動既有行為" 1 "run_error" "$P3_RC" "$P3_OUT"
+ck "p3 validate(非 strict)乾淨 run 仍印出報告" 0 "$(echo "$P3_OUT" | grep -q "$P3SCLEAN"; echo $?)"
+p3_strict validate --strict "$P3SBAD" "$P3SCLEAN"
+ck_msg "p3 validate --strict 壞 run → 結構化 run_error(#103)" 1 "run_error" "$P3_RC" "$P3_OUT"
+ck "p3 validate --strict 乾淨 run 不被拖垮,仍印出報告(#103)" 0 "$(echo "$P3_OUT" | grep -q "$P3SCLEAN"; echo $?)"
+ck "p3 validate --strict 無裸 traceback(#103)" 1 "$(echo "$P3_OUT" | grep -q "Traceback"; echo $?)"
+# strict 的正向作用不能因這次合併 try/except 被誤删:另跑一個 schema 可讀、但違反
+# runtime 加嚴(x_task_tags 受控 enum,非 vendor schema 檢查範圍)的乾淨檔,非
+# strict 抓不到、--strict 才抓得到 —— 證明合併後 strict 仍真的多做事,不是把
+# strict 那段整段吞掉。
+P3SVIOL="run_01JG8C4V2M0000000000000STRD"
+mkdir -p "$P3STRICT/runs/$P3SVIOL/coordinator"
+printf '%s\n' \
+  "{\"schema\":\"devflow-agent-event/1.1\",\"event_type\":\"run_started\",\"writer\":\"coordinator\",\"run_id\":\"$P3SVIOL\",\"feature_slug\":\"f1\",\"base_sha\":\"abc1234\",\"timestamp\":\"2026-08-01T00:00:00+00:00\",\"x_task_tags\":[\"frontend-magic\"]}" \
+  > "$P3STRICT/runs/$P3SVIOL/coordinator/events.jsonl"
+p3_strict validate "$P3SVIOL"
+ck "p3 validate(非 strict)不查 runtime 加嚴,x_task_tags 自由字串放行" 1 "$(echo "$P3_OUT" | grep -q "invalid_enum"; echo $?)"
+p3_strict validate --strict "$P3SVIOL"
+ck_msg "p3 validate --strict 仍照常抓 runtime 加嚴違規(合併 try/except 未吞掉本體)" 1 "invalid_enum" "$P3_RC" "$P3_OUT"
+rm -rf "$P3STRICT"
 rm -rf "$P3T"
 
 echo "-- pw integrator wiring(event/doctor/stage3 分派 + 守衛觀測插樁 fail-open)--"

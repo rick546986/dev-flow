@@ -7,7 +7,7 @@ G2 已有 verdict。`4-spec.md` frontmatter 即將是 approved。游標在 N7。
 ## 讀什麼
 
 `4-spec.md` frontmatter 與內文(含頂欄 `verdict:`)、`STATUS.md`、`4-spec.html`。
-G2 條件正本 README §7。`graph.yaml` 是下一跳正本。
+G2 條件正本 `guides/guide-dev-flow.html#gates`。`graph.yaml` 是下一跳正本。
 sidecar／HTML／localStorage 都不是正本;sidecar 與 md 衝突時 md 勝。
 
 ## 寫哪裡

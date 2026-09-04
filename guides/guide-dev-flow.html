@@ -935,7 +935,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
     <li>G1 送審:html twin(方案架構圖,比較期並排;OC 待裁決置頂)→ in-review →
     reviewer。審查者依序:適格人類 reviewer → fresh-context reviewer Agent →
     owner 自審(有記錄的最後手段)。G1 = 方向核准 +
-    Owner Calls 全裁決(有未裁決 OC 不得過;正本 README §7)。核准 → 三連動
+    Owner Calls 全裁決(有未裁決 OC 不得過;正本 <code>guides/guide-dev-flow.html#gates</code>)。核准 → 三連動
     (frontmatter/STATUS/twin)。完成 = verdict 記錄+三連動齊。</li>
     </ol>
     </blockquote>
@@ -1133,7 +1133,7 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     <li>Verification Profile(依 lane 正確填寫;未填視為步 3 未完成)</li>
     <li>Demo verdict(條件式:無 Stage 3 trigger → N/A+原因;有 trigger → 需人類
     ACCEPTED,REVISE/NOT_REVIEWED 不得過,跳過需 Owner Call;Agent 不得代填)——
-    條件全文見 README §7。核准 → 三連動。
+    條件全文見 <code>guides/guide-dev-flow.html#gates</code>。核准 → 三連動。
     完成 = verdict+三連動。</li>
     </ul>
     </li>
@@ -1357,7 +1357,7 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     建 todo 一 T 一項,照 Blocked-by 拓撲序。完成 = todo 與 5-tasks 一一對應。</p>
     </li>
     <li>
-    <p>逐 T 循環,對齊 README §5 的驗收動線(RED → GREEN → scope check → Verify →
+    <p>逐 T 循環,對齊指南 <code>#five-laws</code>／<code>#stage6</code> 的驗收動線(RED → GREEN → scope check → Verify →
     independent T review → PASS → commit → 記帳),a–h 逐段對應同一條 seam:
     a <strong>RED</strong>:照 Covers 先寫失敗測試(名含 S-id)→ RED 輸出貼 TDD Evidence。
     完成 = RED 輸出已貼。
@@ -1769,8 +1769,8 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
     <code>devflow-exec.sh review-unlock &lt;slug&gt;</code> 解鎖才讀得到(Write 仍限縮於
     7-review*/evidence/,unlock 不解除)。完成 = 差異全裁定入 Spec Axis。</li>
     <li>Verdict:PASS = 本次 S 全綠+既有全綠+<strong>現象證據逐 S 相符</strong>+Evidence 契約全過
-    (G3 錨,八點條件正本 README §7;步 2d 的 gauntlet 全綠 + Required 層全 pass
-    即其機械面)+無 🔴(G3 正本 README §7;無 🔴 是本模板加嚴的出貨門檻,
+    (G3 錨,八點條件正本 <code>guides/guide-dev-flow.html#gates</code>;步 2d 的 gauntlet 全綠 + Required 層全 pass
+    即其機械面)+無 🔴(G3 正本 <code>guides/guide-dev-flow.html#gates</code>;無 🔴 是本模板加嚴的出貨門檻,
     不與 §7 矛盾);否則
     REQUEST_CHANGES 列 🔴 →
     author 走 6-notes 的 Review Follow-up(同意改+一句為何對/不同意擺論證,
@@ -1845,7 +1845,7 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   <li>[ ] STATUS.md 已更新為 shipped(這一步在整合分支上、PR 合併後由合併那個 PR 的人
   做,不塞進本 branch 的 PR —— 動線與理由見 STATUS 模板頂註)</li>
   <li>[ ] 7-review frontmatter status: shipped;上游 artifact 可保留 approved(各自 gate 核准紀錄)</li>
-  <li>[ ] 7-review.html 已產生(含變更架構圖 + diff 折疊,規格見 README §6)</li>
+  <li>[ ] 7-review.html 已產生(含變更架構圖,規格見指南 <code>#diagram-style</code>;diff 折疊規格見指南 <code>#diff-fold</code>)</li>
   <li>[ ] feature branch 已刪 / worktree 已清</li>
   </ul>
   <!-- parity:end template7-exit-quickstart -->
@@ -1930,6 +1930,26 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
     <tr><td><strong>5-tasks(執行板)</strong></td>
         <td>狀態(frontmatter)/ 任務(幾個 T + 幾條缺必填欄)/ 模式(execution.mode,未標=sequential)/ 依賴(幾條 Blocked-by 邊)/ 進度(可勾計數)</td></tr>
   </table></div>
+
+  <h3 id="diagram-style">圖規則(全域):ASCII vs SVG 判準</h3>
+  <p>每站 html 至少一張圖,判準看關係形狀:</p>
+  <ul>
+    <li><strong>純線性步驟 / 單層樹</strong> → ASCII(md code block,html <code>&lt;pre&gt;</code>,git-diffable;
+      <strong>限半形字元</strong> <code>| - + &gt; &lt; = [ ]</code> —— 全形框線與中文不參與欄位對齊,
+      瀏覽器 <code>pre</code> 全形寬度不定必歪,中文只放行首標籤/行尾註)。</li>
+    <li><strong>方塊+連線的空間關係</strong>(多層模型/時間軸/分支交錯/跨層互動)→ <strong>inline SVG 真圖</strong>
+      (block+線條+箭頭)。拿不準 → SVG。</li>
+  </ul>
+  <p>禁外部庫。md 永遠留 ASCII 正本,html 依判準選渲染。畫法規範(顏色變數/class 約定/佈局紀律,
+  不依賴任何 skill 或本機軟體)見 <code>_templates/diagram-style.md</code>;新圖先抄現成範本結構再改節點。</p>
+
+  <h3 id="diff-fold">Diff 折疊細則(6/7 的 html)</h3>
+  <p>每檔一個 <code>&lt;details&gt;</code> 折疊條 —— hover 顯示 stat 摘要(+N/−N、動到的函式),
+  click 展開完整 diff(紅綠著色:刪行 <code>class="del"</code>、增行 <code>class="add"</code>);
+  內容必 HTML-escape;單檔 &gt;400 行截斷留 stat+首段註「完整見 git」;
+  base:6 = 該 T 的 commit,7 = merge-base(develop)..HEAD。</p>
+  <p><strong>標題要寫實際用的 base</strong> —— merge-base 與「feature 開工前那個 commit」常常不是同一個
+  (order-intake 實測相差 105 個 commit、檔數 202 vs 861),用了哪個就標哪個並寫原因,不要照抄本行的字面。</p>
 
   <h3 id="gate-anchors">G2 / G3 錨定義</h3>
   <p>粗體 token 與八點的機械正本在契約檔 §7。這裡是人讀全文。</p>

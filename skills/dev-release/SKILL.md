@@ -50,12 +50,17 @@ env -u DEVFLOW_MASTER -u DEVFLOW_PLUGIN -u CLAUDE_PLUGIN_ROOT bash hooks/gate-co
 bash hooks/devflow-exec.sh doctor
 # 期望:✅ devflow doctor: COMPATIBLE
 # 注意 cwd:在 ~/dev/dev-flow 跑,驗的是本 repo 自己的 docs/dev/ 散發副本
+
+bash scripts/devflow-check.sh all
+# 期望:全綠。涵蓋記憶／觀測性／平行執行等子系統,不是只有 hooks 那幾支。
+# CI 綠不代表本機綠;兩邊都要跑。runtime-selftest.yml 綠只代表 hooks;
+# devflow-ci.yml 綠只代表方法論檢查。本機還要自己跑這一支。
 ```
 
 任一紅 → **停止發版**,回報實際輸出。不要「這條跟本次改動無關」就放行 ——
 那正是 gate-consistency 壞九天的成因。
 
-完成 = 三道輸出原文都貼出來且全綠。
+完成 = 四道輸出原文都貼出來且全綠。
 
 ### 2. 散發副本同步檢查
 

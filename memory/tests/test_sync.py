@@ -1219,11 +1219,17 @@ class DurableRootClassificationTest(MemoryCase):
 
     def _inject_root_lstat(self, exc):
         real = os.lstat
-        # 比對用 abspath,不用 realpath:realpath 自己會再呼叫 os.lstat,hook 會遞迴。
-        root_abs = os.path.abspath(durable.root(self.repo))
+        # 與正式碼 paths.py 同一套 realpath。realpath 會再呼叫 lstat,
+        # 比對時暫時還原,避免 hook 遞迴。
+        root_real = os.path.realpath(durable.root(self.repo))
 
         def hooked(path, *args, **kwargs):
-            if os.path.abspath(str(path)) == root_abs:
+            os.lstat = real
+            try:
+                incoming = os.path.realpath(str(path))
+            finally:
+                os.lstat = hooked
+            if incoming == root_real:
                 raise exc
             return real(path, *args, **kwargs)
 

@@ -55,8 +55,13 @@ def main(argv=None):
     if args.cmd == "validate":
         report, dirty = {}, False
         for rd in args.run_dirs:
-            errors = ledger.validate_run(rd)
-            report[os.path.basename(rd.rstrip("/"))] = errors
+            key = os.path.basename(rd.rstrip("/"))
+            try:
+                errors = ledger.validate_run(rd)
+            except Exception as e:
+                errors = [{"code": "run_error", "field": rd,
+                           "msg": f"{type(e).__name__}: {e}"}]
+            report[key] = errors
             dirty = dirty or bool(errors)
         _print(report)
         return 1 if dirty else 0
