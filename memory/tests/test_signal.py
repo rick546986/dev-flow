@@ -66,9 +66,9 @@ class SensitiveTest(unittest.TestCase):
         # 不能要求一定要有空白才算賦值句。
         for text in ("密碼是 hunter2000", "密碼是hunter2000",
                      "金鑰是 sk-live-9f8a7b6c5d4e", "金鑰是 sk-live-abc123XYZ",
-                     "密碼是: P@ssw0rd!"):
+                     "密碼是: P@ssw0rd!", '密碼是 "hunter2000"'):
             self.assertEqual(signal.scan_sensitive(text), ["assigned_secret"],
-                              text)
+                             text)
         # AKIA 開頭同時撞上 aws_access_key,兩個 pattern 都該命中。
         self.assertIn("assigned_secret",
                        signal.scan_sensitive("金鑰是=AKIAIOSFODNN7EXAMPLE"))
@@ -81,7 +81,8 @@ class SensitiveTest(unittest.TestCase):
         for text in ("密碼是否要定期更換", "密碼是公司規定",
                      "金鑰是託管在 KMS", "金鑰是由 KMS 管理",
                      "密碼是要保密的資訊", "這個密碼是給測試用的",
-                     "密碼是:需要定期更換的", "金鑰是:由 KMS 統一託管"):
+                     "密碼是:需要定期更換的", "金鑰是:由 KMS 統一託管",
+                     '密碼是"需要定期更換的"'):
             verdict = signal.gate("schema_change", "t", text)
             self.assertEqual(signal.scan_sensitive(text), [], text)
             self.assertTrue(verdict["durable_allowed"], text)
