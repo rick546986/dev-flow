@@ -1131,9 +1131,10 @@ else:
     check(not _oc_in_s,
           "4-spec:作業脈絡在 R 上,不在每張 S 裡",
           f"S 卡內出現作業脈絡:{_oc_in_s}")
-    check(all('class="r-oc"' in r for r in _r_blocks) and len(_r_blocks) >= 1,
+    _roc_attr = 'class="r-oc"'
+    check(all(_roc_attr in r for r in _r_blocks) and len(_r_blocks) >= 1,
           "4-spec:每張 R 有一份作業脈絡(合併一次)",
-          f"{sum('class=\"r-oc\"' in r for r in _r_blocks)}/{len(_r_blocks)} 張 R 有 r-oc")
+          f"{sum(_roc_attr in r for r in _r_blocks)}/{len(_r_blocks)} 張 R 有 r-oc")
     _ask_ok = True
     _ask_detail = []
     for c in _s_cards:

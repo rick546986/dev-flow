@@ -30,8 +30,10 @@ ROOT=$(cd "$SELF_DIR/.." && pwd)
 
 python3 - "$ROOT" <<'PY'
 import os
+import re
 import subprocess
 import sys
+import tempfile
 
 root = sys.argv[1]
 
@@ -76,6 +78,60 @@ if not files:
           file=sys.stderr)
     sys.exit(2)
 
+# ── 要驗哪些 heredoc ─────────────────────────────────────────────────────
+# scripts/、hooks/ 的 .sh 常見手法:`python3 - <<'PY' ... PY` 內嵌一整段 Python。
+# 那段內容不是 .py 檔,上面那組 .py 掃描完全看不到它 —— 2026-08-19 那次事故
+# (check-gate-twin.sh heredoc 裡的 f-string 反斜線,3.12 才合法)就是從這個
+# 缺口漏過去的,全部既有 .py 檢查皆綠。
+SH_PATTERNS = ["scripts/*.sh", "hooks/*.sh"]
+out_sh = subprocess.run(
+    ["git", "ls-files", "--cached", "--others", "--exclude-standard", *SH_PATTERNS],
+    cwd=root, capture_output=True, text=True)
+if out_sh.returncode != 0:
+    print(f"⛔ git ls-files(.sh)失敗:{out_sh.stderr.strip()}", file=sys.stderr)
+    sys.exit(2)
+sh_files = sorted(f for f in out_sh.stdout.split() if f.endswith(".sh"))
+if not sh_files:
+    print("⛔ 掃到零個 .sh —— 檢查沒有真的跑到東西(SH_PATTERNS 壞了或 repo 空的)",
+          file=sys.stderr)
+    sys.exit(2)
+
+# heredoc 起頭:`python3`/`python` 後面接 `<<'PY'`(或 PYTHON/EOF_PY/PYEOF,可加
+# `-` 用 `<<-` 讓終止行允許前導 tab)。只吃**有引號**的 delimiter —— 無引號的
+# heredoc 內容進 shell 前會先展開 `$VAR`/反引號,抽出來的字串已經不是原始碼字面
+# 值,拿去 compile 只會誤判,所以跳過並計數,既不算過也不算 FAIL。
+HEREDOC_OPEN_RE = re.compile(
+    r"python3?\b.*<<(-)?\s*(['\"]?)(PY|PYTHON|EOF_PY|PYEOF)\2")
+
+
+def find_heredocs(src_lines):
+    """掃一支檔案的行陣列,回傳 [(起始行號 1-based, tag, 有無引號, body 行陣列)]。
+    body 用 None 代表「找不到對應結尾標記」(呼叫端要另外記一筆失敗,不是靜默跳過)。"""
+    out = []
+    i, n = 0, len(src_lines)
+    while i < n:
+        m = HEREDOC_OPEN_RE.search(src_lines[i])
+        if not m:
+            i += 1
+            continue
+        dash, quote, tag = m.group(1), m.group(2), m.group(3)
+        open_no = i + 1
+        j = i + 1
+        body = []
+        end_no = None
+        while j < n:
+            probe = src_lines[j]
+            term = probe.lstrip("\t") if dash else probe
+            if term == tag:
+                end_no = j + 1
+                break
+            body.append(probe.lstrip("\t") if dash else probe)
+            j += 1
+        out.append((open_no, tag, bool(quote), body if end_no else None))
+        i = (j + 1) if end_no else n
+    return out
+
+
 # ── 找下限版直譯器 ───────────────────────────────────────────────────────
 def version_of(exe):
     try:
@@ -103,6 +159,8 @@ for cand in (os.environ.get("DEVFLOW_PY_FLOOR_BIN"), "/usr/bin/python3",
 
 failures = []
 checked = 0
+heredoc_checked = 0
+heredoc_skipped = 0
 
 if floor_exe:
     print(f"• 真編譯模式:用 {floor_exe}(Python {floor_ver[0]}.{floor_ver[1]})逐檔 compile")
@@ -116,6 +174,42 @@ if floor_exe:
         if r.returncode != 0:
             tail = (r.stderr.strip().splitlines() or ["(無 stderr)"])[-1]
             failures.append(f"{rel}:在 Python {floor_ver[0]}.{floor_ver[1]} 編譯不過 —— {tail}")
+
+    # ── heredoc 掃描:scripts/、hooks/ 的 .sh 裡 python3 <<'PY' 內嵌片段 ──────
+    # 寫到暫存檔(不進 repo,不留 __pycache__)用同一支下限直譯器的 `-m py_compile`
+    # 真的編一遍;temp 檔前面補跟 heredoc 起始行等量的空白行,py_compile 回報的行號
+    # 就直接對得上 .sh 檔案的行號,不用另外做 offset 換算。
+    with tempfile.TemporaryDirectory(prefix="devflow-py-floor-heredoc-") as heredoc_dir:
+        for rel in sh_files:
+            src_lines = open(os.path.join(root, rel), encoding="utf-8").read().split("\n")
+            for open_no, tag, quoted, body in find_heredocs(src_lines):
+                if body is None:
+                    failures.append(
+                        f"{rel}:第 {open_no} 行 heredoc(<<'{tag}')找不到對應結尾標記,"
+                        "無法解析")
+                    continue
+                if not quoted:
+                    heredoc_skipped += 1
+                    continue
+                heredoc_checked += 1
+                padded = ("\n" * open_no) + "\n".join(body) + "\n"
+                tmp_path = os.path.join(heredoc_dir, f"h{heredoc_checked}.py")
+                with open(tmp_path, "w", encoding="utf-8") as tf:
+                    tf.write(padded)
+                r = subprocess.run(
+                    [floor_exe, "-m", "py_compile", tmp_path],
+                    capture_output=True, text=True)
+                if r.returncode != 0:
+                    tail = (r.stderr.strip().splitlines() or ["(無 stderr)"])[-1]
+                    failures.append(
+                        f"{rel}:第 {open_no} 行起的 heredoc 在 Python "
+                        f"{floor_ver[0]}.{floor_ver[1]} 編譯不過 —— {tail}")
+
+    # 掃到零個 heredoc 跟掃到零個 .py 同等級:pattern 壞了或漏檔,不能悄悄放行。
+    if heredoc_checked == 0:
+        print("⛔ 掃到零個 heredoc —— 檢查沒有真的跑到東西(pattern 壞了或 repo 缺檔)",
+              file=sys.stderr)
+        sys.exit(2)
 else:
     print(f"⛔ 找不到 Python {PY_FLOOR[0]}.{PY_FLOOR[1]}–3.11 的直譯器 —— 這支檢查無法取得證據。",
           file=sys.stderr)
@@ -143,6 +237,8 @@ gap = "" if floor_ver == PY_FLOOR else (
     f";⚠️ 這一輪**沒有**真的驗到 {floor_s} —— 本機找不到那個版本,"
     f"只驗到 {used}。{floor_s} 到 {used} 之間新增的語法不會被抓到")
 print(f"=== Python 下限相容(宣告下限 {floor_s},本輪實際用 {used}):驗了 {checked} 個 .py ===")
+print(f"=== heredoc 下限相容:掃了 {heredoc_checked} 個 heredoc"
+      f"(略過 {heredoc_skipped} 個無引號 delimiter)===")
 if failures:
     print(f"❌ {len(failures)} 項不符:")
     for f in failures:
