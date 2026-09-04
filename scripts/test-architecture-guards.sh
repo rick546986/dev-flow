@@ -54,6 +54,11 @@
 #                    expect fail;此案專咬「若守衛被挖空成永遠印全過,外部呼叫路徑
 #                    (CLI 參數 real 模式)是否也一起失守」——之前只驗過 fixture 自測,
 #                    real 模式的紅路徑完全零外部變異覆蓋(check-model-tiering.sh)
+#   SM(2026-09-04 補,issue #92 殘留) SM-0 對照組(ship-manifest.json 全部列
+#                    source/destination 齊全,含 source==destination 的第三類
+#                    同步宣告列)/ SM-1 第三類列 docs/dev/readme-contract-extract.md
+#                    的 source 被刪、正本列仍在 → 必須紅(舊版此變異 15 項仍全綠;
+#                    check-ship-manifest.sh)
 #   靜態互釘(2026-08-16 補,獨立審查 finding 4;2026-08-17 二次複審後補到七支;
 #                    v3.8.0 落地輪 B-4 補到九支)
 #                    九支散落地板/群組數的字面值互釘 —— hooks/selftest.sh
@@ -132,9 +137,9 @@ RESULTS=()
 # 改法:由 expect()/expect_local() 依 want 實際累計 control 與 negative,尾聲與釘死值比對。
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
-EXPECTED_CONTROLS=14
-EXPECTED_NEGATIVES=119
-EXPECTED_TOTAL=133
+EXPECTED_CONTROLS=15
+EXPECTED_NEGATIVES=120
+EXPECTED_TOTAL=135
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -2124,6 +2129,43 @@ p.write_text(n, encoding="utf-8")
 PYX
 expect_local fail check-memory-architecture.sh "$D" "MEM-44 root 分類把所有 lstat 失敗當 absent"
 
+# ── SM 群組:散發清單正本第三類列的全列 source 存在性(check-ship-manifest.sh;
+# issue #92)──────────────────────────────────────────────────────────────
+# 起因:tools_rows()/contract_rows() 之外還有第三類列(source == destination
+# 的同步宣告列,例 docs/dev/readme-contract-extract.md),舊版任何一個 parity
+# 函式都沒把它納入 expected set,實測刪掉該檔後 check-ship-manifest.sh 15 項
+# 仍全綠、exit 0。
+# seed_sm 用正本自己的 `--list` 動態展開要複製哪些 source/destination,不手寫
+# 檔名清單 —— 同 seed_fm() 的 PATTERNS 教訓(寫死清單,清單一長就漏);也同
+# skills/dev-release/SKILL.md:77「舊版在這裡寫死五個 diff -q,新增第六支散發
+# 工具必漏驗」是同一型錯。只複製 manifest 點名的 source/destination(不是整包
+# `cp -r docs/dev/tools`),順便避開「反向:docs/dev/tools/ 多出未記帳檔案」
+# 那格被雜物(.DS_Store 之類)誤咬紅 SM-0 對照組。
+seed_sm() {
+  local name="${1:?seed_sm: name is empty}"
+  local dst="$WORK/$name"
+  [[ "$dst" == "$WORK/"* ]] || { echo "seed_sm: 目標逃逸 $dst" >&2; exit 1; }
+  safe_rm "$dst"
+  mkdir -p "$dst/docs/dev" "$dst/guides"
+  cp "$ROOT/docs/dev/ship-manifest.json" "$dst/docs/dev/ship-manifest.json"
+  cp "$ROOT/guides/guide-dev-flow.html" "$dst/guides/guide-dev-flow.html"
+  local src dstpath mode
+  while IFS=$'\t' read -r src dstpath mode; do
+    [ -n "$src" ] || continue
+    mkdir -p "$dst/$(dirname "$src")" "$dst/$(dirname "$dstpath")"
+    cp "$ROOT/$src" "$dst/$src"
+    [ "$dstpath" = "$src" ] || cp "$ROOT/$dstpath" "$dst/$dstpath"
+  done < <(python3 "$ROOT/scripts/devflow_ship_manifest.py" --list "$ROOT")
+  echo "$dst"
+}
+
+D=$(seed_sm sm0)
+expect pass check-ship-manifest.sh "$D" "SM-0 對照組(ship-manifest.json 全部列的 source/destination 齊全,含第三類列)"
+
+D=$(seed_sm sm1)
+rm -f "$D/docs/dev/readme-contract-extract.md"
+expect fail check-ship-manifest.sh "$D" "SM-1 第三類列(docs/dev/readme-contract-extract.md,source==destination 的同步宣告列)source 被刪 → 必須紅(issue #92:舊版同一變異 15 項仍全綠)"
+
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
 echo
@@ -2233,7 +2275,7 @@ check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "E
 check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 27" "MIN_CHECKS 釘死 27(A-2/B-5 輪 → 18;2026-08-28 ⑪殘件 +5 → 23;⑫Python 地板 +2 → 25;HISTORY 種子不准自動清 +1 → 26;ship-manifest ⑩ +1 → 27)"
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 179" "MIN_CHECKS 釘死 179(Human verdict 寫入器納入 n7-dist-copy +1 後的實得數)"
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 36" "MIN_CHECKS 釘死 36(parity 遷到 check-ship-manifest.sh 後,情境/mutant/模板順序實得數)"
-check_static_pin "scripts/check-ship-manifest.sh" "MIN_CHECKS = 15" "MIN_CHECKS 釘死 15(結構+parity+地圖對帳+負向 fixture 的實得數)"
+check_static_pin "scripts/check-ship-manifest.sh" "MIN_CHECKS = 21" "MIN_CHECKS 釘死 21(結構+parity+地圖對帳+負向 fixture 的實得數;issue #92 補全列 source 存在 +2、第三類列負向 fixture +4,15→21)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 55" "MIN_CHECKS 釘死 55(STATUS 單寫入者 + OverlapRef 單一座標:⑬b/⑬c + 負向㉘–㉟ 後的實得數)"
 check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 190" "EXPECTED_MAPPED_FILES 釘死 190(精確值;dir-tree 產器+牙 +2)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 28" "EXPECTED_GROUPS 釘死 28(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"

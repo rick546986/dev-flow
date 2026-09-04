@@ -1,14 +1,22 @@
 #!/bin/bash
 # check-ship-manifest.sh — 散發清單正本的牙齒(Repo-local)。
 #
-# 正本 docs/dev/ship-manifest.json。本守衛釘四件事:
+# 正本 docs/dev/ship-manifest.json。本守衛釘五件事:
 #   ①結構 fail-closed:缺欄 / 重複 destination / mode 不是 644|755
 #   ②parity:expected set 取自正本 tools 列(不掃 docs/dev/tools/)
 #     存在性 + 內容 + 清單 mode + 正副本可執行位元,雙向
 #   ③檔案地圖「散發面」標註與正本 tools 列同一集合(地圖不是正本,漏記會紅)
-#   ④負向 fixture:漏記、正副本同刪、mode 不一致、結構壞掉都必須紅
+#   ④全列 source 存在:manifest **每一列**(含 tools/contract 之外的第三類,
+#     例:source == destination 的同步宣告列 docs/dev/readme-contract-extract.md)
+#     的 source 檔都必須存在;第三類列若 destination 在母版內也存在同一份檔,
+#     內容/mode 比照 parity 做法核對(2026-09-04 補,issue #92:第三類列被刪掉
+#     時,舊版①②③全綠 —— ②只掃 tools 列,③只比檔案地圖,兩者都碰不到它)
+#   ⑤負向 fixture:漏記、正副本同刪、mode 不一致、結構壞掉、
+#     第三類列 source 被刪都必須紅
 #
-# contract 列在正本,但 destination 不住 tools/;獨立比對不得刪。
+# contract 列在正本,但 destination 不住 tools/;獨立比對(dev-release 步驟 2 的
+# `diff -q devflow-contract.json docs/dev/devflow-contract.json`)不得刪 ——
+# ④的內容/mode 核對也刻意不含 contract 列,理由同上,兩邊比對重複沒有意義。
 #
 # 掛載:scripts/devflow-check.sh group_architecture()(必須在 py-floor 之前)。
 #
@@ -48,7 +56,9 @@ from devflow_ship_manifest import (
     parity_failures,
     rows,
     schema_problems,
+    source_existence_failures,
     tools_rows,
+    unclassified_sync_failures,
 )
 
 FAILED = 0
@@ -106,6 +116,16 @@ map_fails = filemap_sync_failures(root, data if raw_ok else None)
 check(not map_fails,
       "檔案地圖散發面與正本 tools 列同一集合",
       "; ".join(map_fails))
+
+print("-- 全列 source 存在(涵蓋 tools/contract 之外的第三類列)--")
+src_fails = source_existence_failures(root, data if raw_ok else None)
+check(not src_fails,
+      "manifest 每一列的 source 檔在母版都存在",
+      "; ".join(src_fails))
+sync_fails = unclassified_sync_failures(root, data if raw_ok else None)
+check(not sync_fails,
+      "第三類列(非 tools/非 contract)若母版內也有同步副本,內容/mode 一致",
+      "; ".join(sync_fails))
 
 print("-- 結構負向(缺欄/重複 destination/非法 mode)--")
 
@@ -185,6 +205,9 @@ try:
             {"source": CONTRACT_SOURCE,
              "destination": CONTRACT_DEST,
              "mode": "644"},
+            {"source": "docs/dev/self-sync.md",
+             "destination": "docs/dev/self-sync.md",
+             "mode": "644"},
         ],
     }
     import json
@@ -211,9 +234,39 @@ try:
         fh.write("{}\n")
     os.chmod(os.path.join(fixture, CONTRACT_SOURCE), 0o644)
     os.chmod(os.path.join(fixture, CONTRACT_DEST), 0o644)
+    # 第三類列(source == destination 的同步宣告列;issue #92 的殘留就是這種列
+    # 完全沒被任何 parity 函式驗過)。
+    self_sync = os.path.join(fixture, "docs", "dev", "self-sync.md")
+    with open(self_sync, "w") as fh:
+        fh.write("third-category fixture\n")
+    os.chmod(self_sync, 0o644)
 
     check(not parity_failures(fixture),
           "parity 負向 fixture 基線:兩工具齊全 → 綠")
+
+    # ── 第三類列(issue #92):source == destination 的同步宣告列 ──────────────
+    # 必須在 tool-y.sh 被刪掉(下面)之前做完 —— tool-y.sh 刪掉後不會再復原,
+    # 晚做的話 source_existence_failures() 連 tool-y 缺席都一起算進來,
+    # 汙染這裡本來只想測 self-sync.md 的基線。
+    check(not source_existence_failures(fixture)
+          and not unclassified_sync_failures(fixture),
+          "第三類列負向 fixture 基線:self-sync.md 齊全 → 綠")
+    still_blind = parity_failures(fixture)
+    check(not any("self-sync.md" in f for f in still_blind),
+          "第三類列刪掉前,舊版 parity_failures()(只掃 tools 列)本來就看不到它"
+          "(佐證 issue #92 的漏洞成因,不是本次新加的迴歸)")
+    os.unlink(self_sync)
+    third_gone = source_existence_failures(fixture)
+    check(any("self-sync.md" in f for f in third_gone),
+          "第三類列負向:source 被刪、正本列仍在 → source_existence_failures 紅"
+          "(issue #92:刪掉 docs/dev/readme-contract-extract.md,舊版 15 項仍全綠)",
+          "實得 %s" % third_gone)
+    still_blind_after = parity_failures(fixture)
+    check(not any("self-sync.md" in f for f in still_blind_after),
+          "第三類列刪掉後,舊版 parity_failures() 仍然看不到它 → 印證非它負責這格"
+          "(必須靠新加的 source_existence_failures 才擋得住)",
+          "實得 %s" % still_blind_after)
+
     os.unlink(os.path.join(fixture, "scripts", "tool-y.sh"))
     os.unlink(os.path.join(fixture, "docs", "dev", "tools", "tool-y.sh"))
     gone = parity_failures(fixture)
@@ -242,7 +295,7 @@ finally:
     shutil.rmtree(fixture, ignore_errors=True)
 
 # ── 檢查數地板 ──────────────────────────────────────────────────────────
-MIN_CHECKS = 15
+MIN_CHECKS = 21
 if CHECKS < MIN_CHECKS:
     FAILED += 1
     print("  ✗ 檢查數地板:實際只跑了 %s 項(地板 %s)" % (CHECKS, MIN_CHECKS))
