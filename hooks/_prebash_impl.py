@@ -51,7 +51,11 @@ if not h:
     # 從守衛的角度兩者是同一種情境:hook 被觸發了(工具真的動了)卻讀不到內容,
     # 武裝中同樣要 fail-closed,不能因為剛好解析出一個空 dict 就放行。
     state, armed, err = L.load_state(root)
-    if state is not None or armed or err:
+    if err:
+        # err 是 load_state 給的具體診斷(例如 exec.json 損壞時的修復指引)——
+        # 優先印它,不要被下面這句通用訊息蓋掉。
+        L.die(err)
+    if state is not None or armed:
         L.die("⛔ devflow-prebash:hook payload 缺失或解析失敗(空/非 JSON/非 object)。"
               "守衛武裝中,fail-closed 擋下。")
     sys.exit(0)
