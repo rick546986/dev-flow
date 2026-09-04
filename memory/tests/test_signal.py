@@ -1,4 +1,6 @@
 """Signal Gate 與敏感內容守衛(§19/§34)。"""
+import base64
+import os
 import time
 import unittest
 
@@ -85,12 +87,23 @@ class SensitiveTest(unittest.TestCase):
                              text)
 
     def test_bare_token_longer_than_shape_bound_still_detected(self):
-        # ReDoS 修法(finding 1)把形狀 lookahead 的量詞改成有界 `{0,64}`,但
-        # 存在性/邊界 lookahead 必須維持不設上限 —— 否則 65 字元以上的裸
-        # token 邊界永遠卡在字元類別內側、等不到終止條件,整支失配,是修
-        # ReDoS 時新引入的假陰性(對抗審查抓到)。這裡用一個 81 字元、混合
-        # 大小寫特徵落在中段的 token 驗證兩件事都還成立。
+        # #95 R3 finding 2 修法把形狀判斷整段搬出正則,改成 scan_sensitive
+        # 對正則抓到的 tok 候選用 Python 判定(_looks_like_credential)——
+        # 判斷對象是已擷取的完整字串,不再受正則裡任何量詞上限影響。這裡用
+        # 一個 81 字元、混合大小寫特徵落在中段的 token,驗證即使特徵落在
+        # 「舊版有界 lookahead 看不到的位置」,新版仍然攔得住。
         text = "密碼是 " + ("a" * 40) + "B" + ("c" * 40)
+        self.assertEqual(signal.scan_sensitive(text), ["assigned_secret"],
+                         text)
+
+    def test_bare_token_digit_only_at_tail_past_shape_bound_is_detected(self):
+        # #95 R3 審查 finding 2(major):形狀判斷改成 Python 端對整個 tok 字串
+        # 判定(不再受正則裡任何長度上限限制)之前,若形狀判斷還留在正則裡並
+        # 對量詞設界,65 字元以上、判別特徵(數字/連字號/大小寫轉換)只出現
+        # 在尾端的裸 token 會漏放 —— 這裡的 71 字元 token 只有最後 4 碼是
+        # 數字,其餘全是小寫字母,驗證修法後仍然攔得住。
+        text = ("密碼是 productionapiendpointsecretforinternalservicemesh"
+                "connectivityregion2026")
         self.assertEqual(signal.scan_sensitive(text), ["assigned_secret"],
                          text)
 
@@ -120,14 +133,32 @@ class SensitiveTest(unittest.TestCase):
         self.assertEqual(verdict["reasons"], [])
 
     def test_scan_sensitive_is_bounded_time_against_redos(self):
-        # #95 R2 審查 finding 1(blocker,ReDoS):「密碼是」後接一長段同大小寫
-        # ASCII 字母,曾讓裸 token 形狀 lookahead 的兩個不定長 `[...]*`
-        # 互相重疊、災難性回溯。200KB 這類輸入必須在有界時間內回傳,不能隨
-        # 輸入長度退化。
-        text = "密碼是" + ("a" * 200000)
-        start = time.perf_counter()
-        signal.scan_sensitive(text)
-        elapsed = time.perf_counter() - start
-        self.assertLess(elapsed, 0.5,
-                         "scan_sensitive 對 200KB 輸入耗時 {0:.3f}s,"
-                         "疑似 ReDoS 回退".format(elapsed))
+        # assigned_secret 踩過兩次 ReDoS,病灶不同支、修法也不同支,三種病態
+        # 輸入都要各自留一份計時回歸,不能只測其中一種就當作「這顆函式
+        # 沒有 ReDoS」:
+        #   ①中文裸 token(#95 R2 finding 1):「密碼是」後接一長段同大小寫
+        #     ASCII 字母,曾讓裸 token 形狀 lookahead 的兩個不定長 `[...]*`
+        #     互相重疊、災難性回溯。
+        #   ②英文分支長 blob(#95 R3 finding 1):英文關鍵字分支兩個不定長
+        #     `[\\w.-]*` 夾住必須字面,對一段無空白的 base64url 長串,`\\b`
+        #     在其中幾乎每個字元都是邊界起點,每個起點各自回溯到底。
+        #   ③英文分支 `x.-_` 重複(同一顆 finding,另一種輸入形狀):`.`/`-`
+        #     反覆出現讓 `\\b` 邊界起點更密集,是①的加強版重現。
+        # 200KB / 60KB 這類輸入都必須在有界時間內回傳,不能隨輸入長度退化。
+        cases = {
+            "chinese_bare_token": "密碼是" + ("a" * 200000),
+            "english_blob": (
+                "please rotate the session token sess_v2." +
+                base64.urlsafe_b64encode(os.urandom(45000)).decode("ascii") +
+                " before shipping"
+            ),
+            "x_dot_dash_underscore_repeat": "x.-_" * 15000,
+        }
+        for label, text in cases.items():
+            start = time.perf_counter()
+            signal.scan_sensitive(text)
+            elapsed = time.perf_counter() - start
+            self.assertLess(
+                elapsed, 0.5,
+                "scan_sensitive 對病態輸入({0})耗時 {1:.3f}s,"
+                "疑似 ReDoS 回退".format(label, elapsed))
