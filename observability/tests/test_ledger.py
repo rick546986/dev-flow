@@ -2,9 +2,11 @@
 derived ledger 可重建、parent attempt 關聯(交叉驗證)。"""
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import threading
+import time
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -393,6 +395,83 @@ class TestRepair(unittest.TestCase):
         w = writer.EventWriter(os.path.dirname(path))
         w.append({"event_type": "tool_invoked"})
         w.close()
+
+
+
+class TestRepairConcurrentApply(unittest.TestCase):
+    """r3-#103 minor:repair_run 的 --apply 原本沒有互斥,兩個行程同時 apply
+    同一檔會用各自讀到的舊內容互踩——B 的 os.replace(path, quarantine) 蓋掉
+    A 剛搬進去的隔離檔(quarantine 檔名靠微秒時戳,仍可能撞名),兩邊都回報
+    repaired,但隔離檔最後只剩一份、內容不保證是「全部原始 bytes」。加上
+    <file>.repair.lock(O_EXCL,同 events.jsonl.lock 同型)後,應恰一個
+    repaired、另一個 concurrent_repair_skip。用兩個真的 OS process(不是
+    threading)重現——用一個檔案柵欄讓兩邊在幾乎同一瞬間進入 repair_run,
+    提高真的搶到同一個 O_EXCL syscall 的機率。"""
+
+    def test_two_processes_apply_concurrently_exactly_one_wins(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        run_dir = os.path.join(tmp.name, "run_r")
+        d = os.path.join(run_dir, "attempts", "att_x")
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, "events.jsonl")
+        with open(path, "wb") as f:
+            f.write(b'{"event_type":"attempt_started","seq":1}\n')
+            f.write(b'{not valid\n')
+            f.write(b'{"event_type":"attempt_completed","seq":2}\n')
+        with open(path, "rb") as f:
+            original = f.read()
+
+        pkg_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+        alive_a = os.path.join(tmp.name, "alive_a")
+        alive_b = os.path.join(tmp.name, "alive_b")
+        go = os.path.join(tmp.name, "go")
+        out_a = os.path.join(tmp.name, "out_a.json")
+        out_b = os.path.join(tmp.name, "out_b.json")
+
+        def make_script(alive_marker, out_path):
+            return (
+                "import sys, os, json, time\n"
+                f"sys.path.insert(0, {pkg_root!r})\n"
+                "from devflow_obs import ledger\n"
+                f"open({alive_marker!r}, 'w').close()\n"
+                f"while not os.path.exists({go!r}): time.sleep(0.001)\n"
+                f"r = ledger.repair_run({run_dir!r}, apply=True)\n"
+                f"with open({out_path!r}, 'w') as f: json.dump(r, f)\n"
+            )
+
+        pa = subprocess.Popen([sys.executable, "-c", make_script(alive_a, out_a)],
+                              stderr=subprocess.PIPE, text=True)
+        pb = subprocess.Popen([sys.executable, "-c", make_script(alive_b, out_b)],
+                              stderr=subprocess.PIPE, text=True)
+        deadline = time.time() + 10
+        while not (os.path.exists(alive_a) and os.path.exists(alive_b)):
+            if time.time() > deadline:
+                pa.kill()
+                pb.kill()
+                self.fail("子行程未能在時限內就緒(柵欄逾時)")
+            time.sleep(0.002)
+        open(go, "w").close()          # 起跑槍:兩邊幾乎同時進 repair_run
+        _, err_a = pa.communicate(timeout=15)
+        _, err_b = pb.communicate(timeout=15)
+        self.assertEqual(pa.returncode, 0, err_a)
+        self.assertEqual(pb.returncode, 0, err_b)
+
+        with open(out_a) as f:
+            ra = json.load(f)
+        with open(out_b) as f:
+            rb = json.load(f)
+        codes = sorted(r["items"][0]["code"] for r in (ra, rb))
+        self.assertEqual(codes, ["concurrent_repair_skip", "repaired"])
+
+        quarantines = [n for n in os.listdir(d) if ".corrupt-" in n]
+        self.assertEqual(len(quarantines), 1)
+        with open(os.path.join(d, quarantines[0]), "rb") as f:
+            self.assertEqual(f.read(), original)   # 隔離檔含原始全部 bytes
+
+        events, partial = writer._read_complete_events(path)
+        self.assertFalse(partial)
+        self.assertEqual(len(events), 1)
 
 
 if __name__ == "__main__":

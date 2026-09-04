@@ -326,29 +326,63 @@ def repair_run(run_dir, apply=False):
                        f"repair 跳過此檔不動 —— 先確認無人在寫、手動清鎖後再重跑"})
             continue
         path = p["path"]
-        with open(path, "rb") as f:
-            raw = f.read()
-        clean_part = raw[:p["corrupt_offset"]]
-        directory = os.path.dirname(path)
-        fd, tmp = tempfile.mkstemp(prefix=".tmp-", dir=directory)
+        # r3-#103 minor:兩個 --apply 併發同一檔,原本沒有互斥——A 完成後
+        # B 仍用自己早先讀到的舊內容繼續搬檔,B 的 os.replace(path, quarantine)
+        # 會把 A 已經搬進去的隔離檔蓋掉(quarantine_path 靠時戳算,微秒級仍可能
+        # 撞名),兩邊都回報 repaired 但隔離檔實際只剩一份、內容還可能不是
+        # 「全部原始 bytes」。修法:比照 events.jsonl.lock 同型的 O_EXCL 鎖檔,
+        # 操作期間排他持有;拿不到鎖(另一個 repair 正在處理)比照現有的
+        # locked_skip 邏輯,per-file 跳過並印訊息,不搶著動檔案。
+        repair_lock = path + ".repair.lock"
         try:
-            with os.fdopen(fd, "wb") as f:
-                f.write(clean_part)
-                f.flush()
-                os.fsync(f.fileno())
-            quarantine_path = _quarantine_path(path)
-            os.replace(path, quarantine_path)   # 原檔(全部原始 bytes)先搬走
-            os.replace(tmp, path)                # 乾淨前綴(已 fsync)頂上原檔名
+            lockfd = os.open(repair_lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            items.append({
+                "code": "concurrent_repair_skip", "source": p["source"],
+                "path": path, "lock_path": repair_lock,
+                "msg": f"{repair_lock} 存在(另一個 repair --apply 正在處理"
+                       f"此檔),本次跳過 —— 稍後重跑;若為 crash 殘留鎖需"
+                       f"人工確認後清除"})
+            continue
+        try:
+            os.close(lockfd)
+            # 鎖內重新掃描:避免用鎖前(scan_corruption 於呼叫端一次性算好
+            # 的)plan 是 stale 的——若檔案已被另一個 repair 處理過而不再
+            # 損壞,用舊 offset 切檔會切錯位置,寧可重新確認再動作。
+            fresh = _scan_events_file(p["source"], path)
+            if fresh is None:
+                items.append({
+                    "code": "already_clean_skip", "source": p["source"],
+                    "path": path,
+                    "msg": "取得鎖後重新掃描已無損壞(可能已被並行的 repair "
+                           "處理過),跳過不動"})
+                continue
+            with open(path, "rb") as f:
+                raw = f.read()
+            clean_part = raw[:fresh["corrupt_offset"]]
+            directory = os.path.dirname(path)
+            fd, tmp = tempfile.mkstemp(prefix=".tmp-", dir=directory)
+            try:
+                with os.fdopen(fd, "wb") as f:
+                    f.write(clean_part)
+                    f.flush()
+                    os.fsync(f.fileno())
+                quarantine_path = _quarantine_path(path)
+                os.replace(path, quarantine_path)  # 原檔(全部原始 bytes)先搬走
+                os.replace(tmp, path)               # 乾淨前綴(已 fsync)頂上原檔名
+            finally:
+                if os.path.exists(tmp):
+                    os.remove(tmp)
+            items.append({
+                "code": "repaired", "source": p["source"], "path": path,
+                "quarantined_to": quarantine_path,
+                "clean_events_kept": fresh["clean_events"],
+                "quarantine_bytes": fresh["quarantine_bytes"],
+                "msg": (f"壞行起 {fresh['quarantine_bytes']} bytes 已隔離到 "
+                        f"{os.path.basename(quarantine_path)};原檔留 "
+                        f"{fresh['clean_events']} 筆乾淨事件,可正常重開續寫")})
         finally:
-            if os.path.exists(tmp):
-                os.remove(tmp)
-        items.append({
-            "code": "repaired", "source": p["source"], "path": path,
-            "quarantined_to": quarantine_path,
-            "clean_events_kept": p["clean_events"],
-            "quarantine_bytes": p["quarantine_bytes"],
-            "msg": (f"壞行起 {p['quarantine_bytes']} bytes 已隔離到 "
-                    f"{os.path.basename(quarantine_path)};原檔留 "
-                    f"{p['clean_events']} 筆乾淨事件,可正常重開續寫")})
+            if os.path.exists(repair_lock):
+                os.remove(repair_lock)
     return {"run_dir": run_dir, "apply": apply, "corrupt_found": True,
             "items": items}

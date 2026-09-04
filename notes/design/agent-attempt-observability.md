@@ -304,7 +304,7 @@ feature 反向相容:`legacy_md.parse_execution_trace` 直接讀執行軌跡表
 | derived ledger 可重建 | test_ledger `test_derived_is_rebuildable_and_deterministic` |
 | 舊 Markdown 無 Run ID 仍能讀 | test_legacy_md + test_cli `test_stats_over_fixtures_and_legacy` |
 
-執行:`python3 -m unittest discover -s observability/tests`(125 案)。
+執行:`python3 -m unittest discover -s observability/tests`(193 案)。
 CLI:`python3 observability/devflow-obs.py {validate|validate-registry|incomplete|resume|derive|repair|stats|recommend}`。
 
 ## 13. 1.1 變更 + 2.0 移除計畫(共享契約 §6 三項六修正落地,2026-08-02)
