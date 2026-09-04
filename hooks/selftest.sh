@@ -47,24 +47,13 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 派工單 §2.1 TMPDIR 跨平台正規化 w2 組 +2(注入假 cygpath 的正向 + 空 PATH 的
 # 對照組)→ 400;同日 report-guard 覆蓋缺口 +2(.devflow/ 非 reports/ 仍擋 +
 # .devflow/task/ 證據區不得誤傷)→ 402;2026-08-29 Bash 寫入 prevent-before
-# +3(prebash 擋 scope 外 redirect / 擋後檔不落盤 / 放行 scope 內)→ 405;PR #110
-# 一次 fail-closed 收斂補 +5(vendor __pycache__ 清殘留相關 selftest 衛生案 +3、
-# 壞 payload 武裝判斷初版 armed/err 檢查 +2)→ 實得 410(未同步這個常數);
-# 2026-09-04 issue #101 第二截修法:壞 payload 的武裝判斷跟正常路徑同一套
-# (state 非空/armed/err 任一為真)才 fail-closed,補 12 案(guard/prebash ×
-# 壞JSON/空stdin × sentinel在-exec合法/sentinel刪-exec合法/未武裝三種武裝
-# 狀態,§「①a/①b/①c」)→ 實得 422。
-# ⚠️ 這條常數**刻意沒有**跟著本次改動同步到 422,維持 405 不動 —— 地板本身
-# 是 `TOTAL_CASES < MIN_CASES` 才紅,422 ≥ 405 照樣過,不影響本次 selftest
-# 是否綠。不同步的理由:`scripts/test-architecture-guards.sh:2231` 的
-# `check_static_pin "hooks/selftest.sh" "MIN_CASES=405" ...` 對這一行釘了
-# 逐字比對,那支檔案不在 issue #101 的改動範圍內。若在這裡把 405 改成 422,
-# 那條靜態互釘會找不到逐字行而紅,反而讓 `devflow-check.sh all` 因為一個
-# 範圍外檔案而炸——這正是那條互釘設計要抓的「調動地板卻沒同步互釘」情境,
-# 不該由本次修動自己撞上去又自己繞過去。正確做法是**同一個 commit** 把
-# hooks/selftest.sh:56 與 scripts/test-architecture-guards.sh:2231 一起改到
-# 422(連互釘註解裡的尾聲小計也要跟著更新),留給下一輪能動那支檔案的修動做。
-# ——新增案例時同步 +(受本節說明的互釘限制者除外);絕不「大概抓個下限」。
+# +3(prebash 擋 scope 外 redirect / 擋後檔不落盤 / 放行 scope 內)→ 405;
+# PR #110 fail-closed 收斂 +5 → 410(當時未同步本常數);
+# 2026-09-04 #98 值掃描重做 +1、#101 壞 payload 武裝判斷跟正常路徑同一套 +12
+# (guard/prebash × 壞JSON/空stdin × 三種武裝狀態)、#103 --strict 重讀漏包 +7
+# → 見下方 MIN_CASES 實值;同一 commit 同步 scripts/test-architecture-guards.sh
+# 的 check_static_pin 字面(那條互釘就是要抓「調地板沒同步」)。
+# ——新增案例時同步 +;絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
@@ -2096,6 +2085,45 @@ p3_vendor_cmp; P3_RC=$?
 ck "p3 vendor byte-identical vs 母版(缺母版=明示 SKIP)" 0 "$P3_RC"
 p3_vendor_sha; P3_RC=$?
 ck "p3 VENDOR-SOURCE sha256 表與實檔一致" 0 "$P3_RC"
+# issue #103:validate --strict 重讀同批檔沒包 try/except,一個中間壞行的 run
+# 會拖垮整批(裸 traceback,連乾淨 run 的報告都印不出來)。獨立 RUNS_ROOT,
+# 不動 $P3T/.devflow/runs(避免污染上面 derive/stats/archive 用的隱式全枚舉)。
+P3SBAD="run_01JG8C4V2M0000000000000STRB"
+P3SCLEAN="run_01JG8C4V2M0000000000000STRC"
+P3STRICT=$(mktemp -d "${TMPDIR:-/tmp}/devflow-p3-strict.XXXXXX")
+mkdir -p "$P3STRICT/runs/$P3SBAD/coordinator" "$P3STRICT/runs/$P3SCLEAN/coordinator"
+printf '%s\n' \
+  "{\"schema\":\"devflow-agent-event/1.1\",\"event_type\":\"run_started\",\"writer\":\"coordinator\",\"run_id\":\"$P3SCLEAN\",\"feature_slug\":\"f1\",\"base_sha\":\"abc1234\",\"timestamp\":\"2026-08-01T00:00:00+00:00\"}" \
+  > "$P3STRICT/runs/$P3SCLEAN/coordinator/events.jsonl"
+# 中間一行壞 JSON(非最後一行 → writer._read_complete_events 判非截尾殘行,拋例外;
+# 契約「非截尾＝損壞」不可續寫,見 writer.py:82 —— 這正是本案要轉成 run_error 的錯誤)
+printf '%s\n%s\n%s\n' \
+  "{\"schema\":\"devflow-agent-event/1.1\",\"event_type\":\"run_started\",\"writer\":\"coordinator\",\"run_id\":\"$P3SBAD\",\"feature_slug\":\"f1\",\"base_sha\":\"abc1234\",\"timestamp\":\"2026-08-01T00:00:00+00:00\"}" \
+  '{this is not valid json' \
+  "{\"schema\":\"devflow-agent-event/1.1\",\"event_type\":\"run_completed\",\"writer\":\"coordinator\",\"run_id\":\"$P3SBAD\",\"result\":\"PASS\",\"timestamp\":\"2026-08-01T00:01:00+00:00\"}" \
+  > "$P3STRICT/runs/$P3SBAD/coordinator/events.jsonl"
+p3_strict() { P3_OUT=$( (cd "$P3T" && DEVFLOW_RUNS_ROOT="$P3STRICT/runs" "$H/devflow-obs.sh" "$@") 2>&1 ); P3_RC=$?; }
+p3_strict validate "$P3SBAD" "$P3SCLEAN"
+ck_msg "p3 validate(非 strict)壞 run → run_error,不動既有行為" 1 "run_error" "$P3_RC" "$P3_OUT"
+ck "p3 validate(非 strict)乾淨 run 仍印出報告" 0 "$(echo "$P3_OUT" | grep -q "$P3SCLEAN"; echo $?)"
+p3_strict validate --strict "$P3SBAD" "$P3SCLEAN"
+ck_msg "p3 validate --strict 壞 run → 結構化 run_error(#103)" 1 "run_error" "$P3_RC" "$P3_OUT"
+ck "p3 validate --strict 乾淨 run 不被拖垮,仍印出報告(#103)" 0 "$(echo "$P3_OUT" | grep -q "$P3SCLEAN"; echo $?)"
+ck "p3 validate --strict 無裸 traceback(#103)" 1 "$(echo "$P3_OUT" | grep -q "Traceback"; echo $?)"
+# strict 的正向作用不能因這次合併 try/except 被誤删:另跑一個 schema 可讀、但違反
+# runtime 加嚴(x_task_tags 受控 enum,非 vendor schema 檢查範圍)的乾淨檔,非
+# strict 抓不到、--strict 才抓得到 —— 證明合併後 strict 仍真的多做事,不是把
+# strict 那段整段吞掉。
+P3SVIOL="run_01JG8C4V2M0000000000000STRD"
+mkdir -p "$P3STRICT/runs/$P3SVIOL/coordinator"
+printf '%s\n' \
+  "{\"schema\":\"devflow-agent-event/1.1\",\"event_type\":\"run_started\",\"writer\":\"coordinator\",\"run_id\":\"$P3SVIOL\",\"feature_slug\":\"f1\",\"base_sha\":\"abc1234\",\"timestamp\":\"2026-08-01T00:00:00+00:00\",\"x_task_tags\":[\"frontend-magic\"]}" \
+  > "$P3STRICT/runs/$P3SVIOL/coordinator/events.jsonl"
+p3_strict validate "$P3SVIOL"
+ck "p3 validate(非 strict)不查 runtime 加嚴,x_task_tags 自由字串放行" 1 "$(echo "$P3_OUT" | grep -q "invalid_enum"; echo $?)"
+p3_strict validate --strict "$P3SVIOL"
+ck_msg "p3 validate --strict 仍照常抓 runtime 加嚴違規(合併 try/except 未吞掉本體)" 1 "invalid_enum" "$P3_RC" "$P3_OUT"
+rm -rf "$P3STRICT"
 rm -rf "$P3T"
 
 echo "-- pw integrator wiring(event/doctor/stage3 分派 + 守衛觀測插樁 fail-open)--"
