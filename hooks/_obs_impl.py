@@ -418,15 +418,19 @@ def cmd_validate(root, args):
     for rd in resolve_run_dirs(root, run_ids):
         try:
             errors = ledger.validate_run(rd)
+            if strict:
+                for rel, path in ledger._sources(rd):
+                    events, _ = writer._read_complete_events(path)
+                    for e in events:
+                        for err in runtime_check(e, tags_enum):
+                            errors.append(dict(err, source=rel))
         except Exception as e:
+            # #103:strict 重讀同一批檔與非 strict 共用這個 try/except,
+            # 壞檔轉成結構化 run_error(同錯誤碼、同欄位),不讓單一 run 拖垮
+            # 整批(裸 traceback 會連 _print(report) 都跑不到,乾淨 run 也
+            # 印不出報告)。exit code 語義不變:errors 非空仍算 dirty。
             errors = [{"code": "run_error", "field": rd,
                        "msg": f"{type(e).__name__}: {e}"}]
-        if strict:
-            for rel, path in ledger._sources(rd):
-                events, _ = writer._read_complete_events(path)
-                for e in events:
-                    for err in runtime_check(e, tags_enum):
-                        errors.append(dict(err, source=rel))
         report[os.path.basename(rd.rstrip("/"))] = errors
         dirty = dirty or bool(errors)
     _print(report)

@@ -47,7 +47,19 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 派工單 §2.1 TMPDIR 跨平台正規化 w2 組 +2(注入假 cygpath 的正向 + 空 PATH 的
 # 對照組)→ 400;同日 report-guard 覆蓋缺口 +2(.devflow/ 非 reports/ 仍擋 +
 # .devflow/task/ 證據區不得誤傷)→ 402;2026-08-29 Bash 寫入 prevent-before
-# +3(prebash 擋 scope 外 redirect / 擋後檔不落盤 / 放行 scope 內)→ 405)
+# +3(prebash 擋 scope 外 redirect / 擋後檔不落盤 / 放行 scope 內)→ 405;
+# 註:此常數其後落後於實際案例數(改動時實跑已是 410,未同步更新過);
+# 2026-09-04 issue #103 --strict 分支重讀漏包 try/except 補回歸測試(非 strict
+# 壞 run 仍報 run_error / 非 strict 乾淨 run 仍出報告 / strict 壞 run 轉結構化
+# run_error / strict 乾淨 run 不被拖垮仍出報告 / strict 無裸 traceback / 非
+# strict 不查 runtime 加嚴放行 x_task_tags 自由字串 / strict 仍照常抓 runtime
+# 加嚴違規(防合併 try/except 誤删 strict 本體)共 7 案),實跑已是 417;此常數
+# 這次刻意不跟著調到 417 —— scripts/test-architecture-guards.sh:2231 的
+# check_static_pin 硬釘 hooks/selftest.sh 內要有逐字一行「MIN_CASES=405」,
+# 那支腳本不在本次改動範圍內(#103 只准動 hooks/_obs_impl.py 與本檔),不能
+# 順手一起改;405 仍是遠低於實際數的地板,不影響「案例被刪會紅」這個地板本身
+# 的作用。下次真要動這個常數時,記得同步改 test-architecture-guards.sh:2231
+# 那行釘死的字面值,否則 devflow-check.sh architecture 組會紅。
 # ——新增案例時同步 +;絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
@@ -2022,6 +2034,45 @@ p3_vendor_cmp; P3_RC=$?
 ck "p3 vendor byte-identical vs 母版(缺母版=明示 SKIP)" 0 "$P3_RC"
 p3_vendor_sha; P3_RC=$?
 ck "p3 VENDOR-SOURCE sha256 表與實檔一致" 0 "$P3_RC"
+# issue #103:validate --strict 重讀同批檔沒包 try/except,一個中間壞行的 run
+# 會拖垮整批(裸 traceback,連乾淨 run 的報告都印不出來)。獨立 RUNS_ROOT,
+# 不動 $P3T/.devflow/runs(避免污染上面 derive/stats/archive 用的隱式全枚舉)。
+P3SBAD="run_01JG8C4V2M0000000000000STRB"
+P3SCLEAN="run_01JG8C4V2M0000000000000STRC"
+P3STRICT=$(mktemp -d "${TMPDIR:-/tmp}/devflow-p3-strict.XXXXXX")
+mkdir -p "$P3STRICT/runs/$P3SBAD/coordinator" "$P3STRICT/runs/$P3SCLEAN/coordinator"
+printf '%s\n' \
+  "{\"schema\":\"devflow-agent-event/1.1\",\"event_type\":\"run_started\",\"writer\":\"coordinator\",\"run_id\":\"$P3SCLEAN\",\"feature_slug\":\"f1\",\"base_sha\":\"abc1234\",\"timestamp\":\"2026-08-01T00:00:00+00:00\"}" \
+  > "$P3STRICT/runs/$P3SCLEAN/coordinator/events.jsonl"
+# 中間一行壞 JSON(非最後一行 → writer._read_complete_events 判非截尾殘行,拋例外;
+# 契約「非截尾＝損壞」不可續寫,見 writer.py:82 —— 這正是本案要轉成 run_error 的錯誤)
+printf '%s\n%s\n%s\n' \
+  "{\"schema\":\"devflow-agent-event/1.1\",\"event_type\":\"run_started\",\"writer\":\"coordinator\",\"run_id\":\"$P3SBAD\",\"feature_slug\":\"f1\",\"base_sha\":\"abc1234\",\"timestamp\":\"2026-08-01T00:00:00+00:00\"}" \
+  '{this is not valid json' \
+  "{\"schema\":\"devflow-agent-event/1.1\",\"event_type\":\"run_completed\",\"writer\":\"coordinator\",\"run_id\":\"$P3SBAD\",\"result\":\"PASS\",\"timestamp\":\"2026-08-01T00:01:00+00:00\"}" \
+  > "$P3STRICT/runs/$P3SBAD/coordinator/events.jsonl"
+p3_strict() { P3_OUT=$( (cd "$P3T" && DEVFLOW_RUNS_ROOT="$P3STRICT/runs" "$H/devflow-obs.sh" "$@") 2>&1 ); P3_RC=$?; }
+p3_strict validate "$P3SBAD" "$P3SCLEAN"
+ck_msg "p3 validate(非 strict)壞 run → run_error,不動既有行為" 1 "run_error" "$P3_RC" "$P3_OUT"
+ck "p3 validate(非 strict)乾淨 run 仍印出報告" 0 "$(echo "$P3_OUT" | grep -q "$P3SCLEAN"; echo $?)"
+p3_strict validate --strict "$P3SBAD" "$P3SCLEAN"
+ck_msg "p3 validate --strict 壞 run → 結構化 run_error(#103)" 1 "run_error" "$P3_RC" "$P3_OUT"
+ck "p3 validate --strict 乾淨 run 不被拖垮,仍印出報告(#103)" 0 "$(echo "$P3_OUT" | grep -q "$P3SCLEAN"; echo $?)"
+ck "p3 validate --strict 無裸 traceback(#103)" 1 "$(echo "$P3_OUT" | grep -q "Traceback"; echo $?)"
+# strict 的正向作用不能因這次合併 try/except 被誤删:另跑一個 schema 可讀、但違反
+# runtime 加嚴(x_task_tags 受控 enum,非 vendor schema 檢查範圍)的乾淨檔,非
+# strict 抓不到、--strict 才抓得到 —— 證明合併後 strict 仍真的多做事,不是把
+# strict 那段整段吞掉。
+P3SVIOL="run_01JG8C4V2M0000000000000STRD"
+mkdir -p "$P3STRICT/runs/$P3SVIOL/coordinator"
+printf '%s\n' \
+  "{\"schema\":\"devflow-agent-event/1.1\",\"event_type\":\"run_started\",\"writer\":\"coordinator\",\"run_id\":\"$P3SVIOL\",\"feature_slug\":\"f1\",\"base_sha\":\"abc1234\",\"timestamp\":\"2026-08-01T00:00:00+00:00\",\"x_task_tags\":[\"frontend-magic\"]}" \
+  > "$P3STRICT/runs/$P3SVIOL/coordinator/events.jsonl"
+p3_strict validate "$P3SVIOL"
+ck "p3 validate(非 strict)不查 runtime 加嚴,x_task_tags 自由字串放行" 1 "$(echo "$P3_OUT" | grep -q "invalid_enum"; echo $?)"
+p3_strict validate --strict "$P3SVIOL"
+ck_msg "p3 validate --strict 仍照常抓 runtime 加嚴違規(合併 try/except 未吞掉本體)" 1 "invalid_enum" "$P3_RC" "$P3_OUT"
+rm -rf "$P3STRICT"
 rm -rf "$P3T"
 
 echo "-- pw integrator wiring(event/doctor/stage3 分派 + 守衛觀測插樁 fail-open)--"
