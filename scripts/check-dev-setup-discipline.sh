@@ -223,15 +223,40 @@ if src:
          "SKILL.md 沒把 HISTORY 種子清理釘成「不准每次 upgrade 自動跑」——"
          "upgrade 若自動重寫 HISTORY 會吃掉真紀錄")
 
-    # ── ⑬trash 目錄要獨立列一條進 .gitignore,不准埋在殘件刪除段落裡 ──────
-    need(".devflow-upgrade-trash" in upg_sec and ".gitignore" in upg_sec,
-         "SKILL.md upgrade 段沒有把 docs/dev/.devflow-upgrade-trash/ 列進 "
-         ".gitignore —— 雜湊安全網搬出來的客製檔備份會被誤 commit 進版控")
+    # ── ⑬trash 目錄要獨立列一條進 .gitignore,不准埋在殘件刪除段落裡(scoped)──
+    # 舊版只驗「.devflow-upgrade-trash」與「.gitignore」同時出現在整個 upgrade
+    # 區段——這句話埋在殘件刪除段落裡(舊寫法)一樣會命中,是假綠(見 f45b662
+    # 複驗)。比照 ⑨ 的 scoped 寫法:先切出殘件刪除那條 bullet(到下一個 bullet
+    # 起點為止),再切出「下一個 bullet」本身,兩段分開斷言。
+    i_leftover_bullet = upg_sec.find("殘件刪除")
+    i_next_bullet = upg_sec.find("\n- ", i_leftover_bullet) if i_leftover_bullet >= 0 else -1
+    leftover_para = (
+        upg_sec[i_leftover_bullet:i_next_bullet]
+        if 0 <= i_leftover_bullet < i_next_bullet else ""
+    )
+    i_gitignore_bullet = i_next_bullet + 1 if i_next_bullet >= 0 else -1
+    i_bullet_after = (
+        upg_sec.find("\n- ", i_gitignore_bullet) if i_gitignore_bullet >= 0 else -1
+    )
+    gitignore_para = (
+        upg_sec[i_gitignore_bullet:i_bullet_after]
+        if 0 <= i_gitignore_bullet < i_bullet_after else ""
+    )
+    need(leftover_para != "" and ".gitignore" not in leftover_para,
+         "SKILL.md 殘件刪除那條 bullet 的敘述句內混進了 .gitignore —— trash 目錄"
+         "要進 .gitignore 這件事必須是獨立一條,不能埋在殘件刪除段落裡一筆帶過")
+    need(
+        gitignore_para != ""
+        and ".devflow-upgrade-trash" in gitignore_para
+        and ".gitignore" in gitignore_para,
+        "SKILL.md 殘件刪除段落緊接著的下一條 bullet 不是「trash 目錄要進 "
+        ".gitignore」獨立條款(缺 .devflow-upgrade-trash 或 .gitignore 字面)—— "
+        "雜湊安全網搬出來的客製檔備份會被誤 commit 進版控")
 
 # ── 檢查數地板:防止有人把上面整段刪成空迴圈仍然 exit 0 ──────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」(同 repo 慣例:
 # check-stage67-enforcement.sh:232、check-no-stale-paths.sh 的 MIN_CHECKS)。
-MIN_CHECKS = 28
+MIN_CHECKS = 29
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")

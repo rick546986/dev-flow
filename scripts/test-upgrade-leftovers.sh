@@ -33,7 +33,7 @@ import tempfile
 pack, tool = sys.argv[1], sys.argv[2]
 passed = 0
 failed = 0
-MIN_CASES = 13
+MIN_CASES = 17
 
 
 def run(root, *args, stamp=None):
@@ -273,6 +273,69 @@ with tempfile.TemporaryDirectory(prefix="upgrade-leftovers-collide-") as tmp:
         len(uniquified) == 1
         and os.path.relpath(uniquified[0], root) in second_applied.stdout,
         "trash 檔案:%r\nstdout:%s" % (trashed_files, second_applied.stdout),
+    )
+
+# ── KNOWN_RETIRED 雜湊安全網 案 5:STAMP 格式驗證 —— 惡意值拒絕、不動任何檔 ──
+with tempfile.TemporaryDirectory(prefix="upgrade-leftovers-badstamp-") as tmp:
+    root = os.path.join(tmp, "proj")
+    os.makedirs(os.path.join(root, "docs", "dev", "_templates"))
+    os.makedirs(os.path.join(root, "docs", "dev", ".devflow-baseline", "_templates"))
+    live_leftover = os.path.join(root, "docs", "dev", "_templates", "CONTEXT.md")
+    baseline_leftover = os.path.join(
+        root, "docs", "dev", ".devflow-baseline", "_templates", "CONTEXT.md"
+    )
+    original_body = "還沒被搬走的客製內容\n"
+    open(live_leftover, "w", encoding="utf-8").write(original_body)
+    open(baseline_leftover, "w", encoding="utf-8").write("出廠原版\n")
+
+    evil_applied = run(root, "--apply", stamp="../../evil")
+    expect(
+        "STAMP 惡意值(../../evil):拒絕且 exit 2",
+        evil_applied.returncode == 2,
+        (evil_applied.stdout or "") + (evil_applied.stderr or ""),
+    )
+    expect(
+        "STAMP 惡意值:原檔原封不動、沒有建立任何 trash 目錄",
+        os.path.isfile(live_leftover)
+        and open(live_leftover, encoding="utf-8").read() == original_body
+        and not os.path.isdir(trash_root(root)),
+        "live 現況:%r" % (
+            open(live_leftover, encoding="utf-8").read()
+            if os.path.isfile(live_leftover) else None
+        ),
+    )
+    outside = os.path.join(tmp, "evil")
+    expect(
+        "STAMP 惡意值:沒有在 --root 外面留下 evil 目錄",
+        not os.path.exists(outside),
+        "意外存在:%s" % outside,
+    )
+
+# ── KNOWN_RETIRED 雜湊安全網 案 6:合法 STAMP 照常運作 ──────────────────────
+with tempfile.TemporaryDirectory(prefix="upgrade-leftovers-goodstamp-") as tmp:
+    root = os.path.join(tmp, "proj")
+    os.makedirs(os.path.join(root, "docs", "dev", "_templates"))
+    os.makedirs(os.path.join(root, "docs", "dev", ".devflow-baseline", "_templates"))
+    live_leftover = os.path.join(root, "docs", "dev", "_templates", "CONTEXT.md")
+    baseline_leftover = os.path.join(
+        root, "docs", "dev", ".devflow-baseline", "_templates", "CONTEXT.md"
+    )
+    good_body = "合法 STAMP 案的客製內容\n"
+    open(live_leftover, "w", encoding="utf-8").write(good_body)
+    open(baseline_leftover, "w", encoding="utf-8").write("出廠原版\n")
+
+    good_applied = run(root, "--apply", stamp="20990102-030405")
+    expected_dest = os.path.join(
+        root, "docs", "dev", ".devflow-upgrade-trash", "20990102-030405",
+        "docs", "dev", "_templates", "CONTEXT.md",
+    )
+    expect(
+        "合法 STAMP:照常搬進預期路徑,內容正確",
+        good_applied.returncode == 0
+        and not os.path.isfile(live_leftover)
+        and os.path.isfile(expected_dest)
+        and open(expected_dest, encoding="utf-8").read() == good_body,
+        (good_applied.stdout or "") + (good_applied.stderr or ""),
     )
 
 if passed < MIN_CASES:

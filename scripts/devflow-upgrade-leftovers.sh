@@ -64,6 +64,7 @@ import datetime
 import difflib
 import hashlib
 import os
+import re
 import shutil
 import sys
 
@@ -80,13 +81,22 @@ PROTECTED = (
 TRASH_ROOT = os.path.join(root, "docs", "dev", ".devflow-upgrade-trash")
 # 測試專用覆寫:讓治具能強迫兩次 --apply 落在同一個 stamp 目錄,決定性地
 # 觸發撞名分支,不必賭兩次呼叫剛好落在同一秒內。正常執行不設這個環境變數,
-# 行為不變(仍取當下時間)。
+# 行為不變(仍取當下時間)。這個值會直接組進 trash 落點路徑,格式一定要驗
+# (不驗的話 "../../evil" 這種值可以讓落點跳出 trash 目錄甚至跳出 --root)。
 STAMP_OVERRIDE = os.environ.get("DEVFLOW_UPGRADE_LEFTOVERS_STAMP", "")
 
 
 def fail(msg, code=2):
     print(msg, file=sys.stderr)
     sys.exit(code)
+
+
+if STAMP_OVERRIDE and not re.fullmatch(r"\d{8}-\d{6}", STAMP_OVERRIDE):
+    fail(
+        "拒絕:DEVFLOW_UPGRADE_LEFTOVERS_STAMP 格式不對,只接受 YYYYMMDD-HHMMSS"
+        "(8 位數字-6 位數字)——這個值會直接組進 trash 落點路徑,格式不對可能"
+        "讓落點跳出 trash 目錄甚至跳出 --root 專案樹,fail-closed 不執行"
+    )
 
 
 def real(path):
@@ -270,6 +280,14 @@ for path in allowed:
                 stamp = STAMP_OVERRIDE or datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
             rel_root = os.path.relpath(path, root)
             dest = os.path.join(TRASH_ROOT, stamp, rel_root)
+            if not is_under(dest, TRASH_ROOT):
+                # 二次圈住(與來源端 is_under/managed_ok 慣例一致):即使前面的
+                # STAMP 格式驗證被繞過,落點也絕不能跑出 TRASH_ROOT——搬移前先
+                # 擋,不留任何 makedirs/move 副作用。
+                fail(
+                    "拒絕:trash 落點跳出 %s(算出的落點:%s),fail-closed 不搬移"
+                    % (TRASH_ROOT, dest)
+                )
             try:
                 os.makedirs(os.path.dirname(dest), exist_ok=True)
                 dest = unique_dest(dest)  # 撞名絕不覆蓋,遞增 .1 .2 找空位
