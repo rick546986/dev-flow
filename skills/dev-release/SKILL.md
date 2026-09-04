@@ -37,7 +37,7 @@ git fetch origin && git rev-list --left-right --count HEAD...origin/main   # 必
 
 完成 = 三項都符合。有未提交改動 → 先問使用者要 commit 還是 stash,**不要自己決定**。
 
-### 1. 驗證三道(全綠才准發版)
+### 1. 驗證四道(全綠才准發版)
 
 ```bash
 bash hooks/selftest.sh
@@ -176,7 +176,7 @@ gh release create vX.Y.Z \
 release notes 內容(不要只貼 commit 標題):
 - **改了什麼** — 使用者角度,不是檔案清單
 - **要不要動手** — 既有安裝需不需要重跑 `dev-setup`、要不要重新 install
-- **驗證** — 貼步驟 1 三道的實際輸出摘要
+- **驗證** — 貼步驟 1 四道的實際輸出摘要
 
 完成 = `gh release view vX.Y.Z` 查得到。
 

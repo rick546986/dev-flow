@@ -68,7 +68,7 @@ gate 條件人看正本 = 指南 `#gates`;機械正本 = 契約檔 §7。本表 
   親修 finding(重派+重審);③派工 prompt 禁預判 reviewer 判斷;④需要人裁決的
   問題禁代答;⑤失敗先分類(SPEC→L2/ENV→重跑不計/IMPL、UNKNOWN→升階),
   同 T 總嘗試 ≤4,用盡強制 adviser。
-- **html 重生**:gate 必產;草稿期分歧點隨時重生,「⚠️ 待裁決」置頂(per-stage 規格見指南 `#twin-dash`;圖 ASCII 優先)。2／3／4／5／7 站關鍵文字改了、該站圖沒改 → CI 紅(`scripts/check-devstage-fig-text.sh`);第 6 站無必產圖槽、本牙不咬。
+- **html 重生**:gate 必產;草稿期分歧點隨時重生,「⚠️ 待裁決」置頂。各站規格見指南 `#flow`／`#docs`／`#stage2`–`#stage7`／`#gates` 與 `_templates/`(過程檔落 `docs/dev/<slug>/`);圖 ASCII 優先見 `#diagram-style`。2／3／4／5／7 站關鍵文字改了、該站圖沒改 → CI 紅(`scripts/check-devstage-fig-text.sh`);第 6 站無必產圖槽、本牙不咬。
 - **偏差**:L1(不動 R/S)→ 保守方案 + 記 D-n + 繼續。L2(動 R/S / 翻 decision)→ 停 → 修 4-spec → 重 G2。禁 silent drift。
 - **Quiz gate**:不可逆改動 merge 前**必做** —— AI 出 3-5 題考 approver(改了什麼/為何/邊界),全對才 merge;其餘 full lane 選配,fast lane 免。
 - **過 gate 三連動**:frontmatter status + STATUS.md + 同名 html twin(`_templates/html-shell.html` 包);使用者說「上 artifact」→ 先載 artifact-design skill,再用 Artifact 發布該 html。
