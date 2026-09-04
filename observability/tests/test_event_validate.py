@@ -582,6 +582,63 @@ class TestPrivacy(unittest.TestCase):
         self.assertEqual(ev._token_count("hello世界foo", 100), 4,
                          msg="2 個英文詞 + 2 個中文字元 = 4 詞")
 
+    # ── r3-#98 第五輪對抗審查:turn 計數要跨容器往上傳 ───────────────
+
+    def test_value_leak_turns_scattered_across_sibling_lists_rejected(self):
+        # r3-#98 第五輪(major):上一輪的 turns 只數「直屬子節點是不是
+        # turn」,turn 藏在兄弟 list/dict 裡一層就完全看不到。四種普通 JSON
+        # 形狀,各含 3 個真 turn,turn 都不是同一個容器的直屬子節點。
+        shapes = [
+            {"a": [{"role": "user", "content": "hi"},
+                   {"role": "assistant", "content": "yo"}],
+             "b": [{"role": "user", "content": "bye"}]},
+            {"input": [{"role": "user", "content": "hi"}],
+             "output": [{"role": "assistant", "content": "yo"},
+                        {"role": "user", "content": "bye"}]},
+            {"user_turns": [{"role": "user", "content": "hi"},
+                            {"role": "user", "content": "bye"}],
+             "assistant_turns": [{"role": "assistant", "content": "yo"}]},
+            {"a": [{"role": "user", "content": "hi"}],
+             "b": [{"role": "assistant", "content": "yo"}],
+             "c": [{"role": "user", "content": "bye"}]},
+        ]
+        for i, shape in enumerate(shapes):
+            e = attempt_completed(x_meta=shape)
+            self.assertIn("privacy_value_leak", codes(ev.validate_event(e)),
+                          msg=f"shape {i}: {shape}")
+
+    def test_value_leak_two_turns_across_containers_passes(self):
+        # 上面同一種「跨容器」形狀,但總共只有 2 個 turn(< 3 門檻),放行。
+        e = attempt_completed(x_meta={
+            "input": [{"role": "user", "content": "hi"}],
+            "output": [{"role": "assistant", "content": "yo"}]})
+        self.assertEqual(ev.validate_event(e), [])
+
+    def test_value_leak_single_turn_in_list_passes(self):
+        e = attempt_completed(x_meta={"notes": [
+            {"role": "user", "content": "hi"}]})
+        self.assertEqual(ev.validate_event(e), [])
+
+    def test_value_leak_path_list_and_user_count_field_pass(self):
+        e1 = attempt_completed(x_meta={"included_artifacts": [
+            "docs/user-guide.md", "docs/system-design.md",
+            "docs/human-review.md"]})
+        self.assertEqual(ev.validate_event(e1), [])
+        e2 = attempt_completed(x_meta={"user_count": 3, "other": "x"})
+        self.assertEqual(ev.validate_event(e2), [])
+
+    def test_value_leak_1000_sibling_single_turn_lists_redos_fast(self):
+        # r3-#98 第五輪(ReDoS 驗收):turns 改成子樹整數相加後,1000 個兄弟
+        # list 各含 1 個 turn(總數 1000 個 turn,遠超 ≥3 門檻)一樣要線性。
+        big = {f"k{i}": [{"role": "user", "content": f"turn {i}"}]
+               for i in range(1000)}
+        e = attempt_completed(x_meta=big)
+        t0 = time.perf_counter()
+        result_codes = codes(ev.validate_event(e))
+        elapsed = time.perf_counter() - t0
+        self.assertLess(elapsed, 0.5, msg=f"花 {elapsed:.4f}s")
+        self.assertIn("privacy_value_leak", result_codes)
+
     def test_value_leak_openai_style_key_rejected(self):
         e = attempt_completed(
             x_meta={"note": "leaked sk-abcdefghijklmnop1234567890 in log"})
