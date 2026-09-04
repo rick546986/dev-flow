@@ -76,8 +76,16 @@ class DurableError(RuntimeError):
 def _assert_portable_content(*texts):
     """durable writer 邊界:敏感內容與絕對路徑不得進 Git。
 
-    這是最後一道閘,四個耐久寫入函式(write_state / write_knowledge /
-    write_decision / write_skill)各自對自己會落盤的文字欄位呼叫這裡。
+    這是最後一道閘,四個耐久寫入函式各自對自己**會落盤的散文欄位**呼叫
+    這裡:write_state 掃 fact_key/value;write_knowledge 掃 title/body;
+    write_decision 掃 title/decision/alternatives/reason/tradeoff;
+    write_skill 掃 title/preconditions/verification/steps。
+
+    evidence/conflicts(knowledge/decision/skill)與
+    source_ref/source_type/source_commit/superseded_by(state)也會落盤,
+    但那些是結構化的 ref/hash/key 欄位 —— 刻意不在 writer 層掃,由呼叫端
+    (sync.py 的 `signal.gate` extra_texts)涵蓋。
+
     呼叫端(consolidate / legacy promote)也會先過 `signal.gate`,但 writer
     自己必須再擋一次 —— 縱深防禦就是要重掃已經掃過的內容,不是只信任
     呼叫端;直接呼叫 writer(繞過 consolidate)不該成為第二個繞過點。
@@ -305,11 +313,13 @@ def _atomic_write_dirfd(root_path, parent, dest, payload):
         try:
             os.fsync(dirfd)
         except OSError:
-            # 目錄項的 rename 本身在多數檔案系統上是原子的;這裡的 fsync
-            # 只是把「目錄項已指向新檔」這件事盡快落盤,縮短斷電後目錄項
-            # 回退到舊狀態的視窗,不是正確性前提。部分平台(macOS 對某些
-            # 檔案系統的目錄 fd)fsync 會回 EINVAL —— 目錄不保證支援
-            # fsync,不能因為這裡失敗就讓整個寫入報錯。
+            # os.replace 在這裡已經成功 —— 目錄項已經指向新檔,寫入本身
+            # 已經完成;這次 fsync 只是想把那個事實盡快逼進磁碟,縮短斷電
+            # 後目錄項回退到舊狀態的視窗。rename 已成功之後,fsync 失敗
+            # 一律吞(EINVAL/EIO 等,不只 EINVAL 一種;部分平台的目錄 fd
+            # 本來就不保證支援 fsync)—— 這裡才 raise 只會把「內容已經
+            # 寫對、只是還沒強制落盤」誤報成寫入失敗,讓呼叫端狀態分裂
+            # (local 已推進、durable 卻報錯),不是把問題擋下來。
             pass
     finally:
         if fd is not None:
