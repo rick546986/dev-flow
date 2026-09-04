@@ -4,7 +4,8 @@
 錯誤格式:{"code", "field", "msg"};空 list = 通過。
 error codes:bad_json / missing_field / unknown_field / unknown_event_type /
 invalid_format / invalid_enum / hook_forbidden_field /
-privacy_forbidden_key / privacy_value_too_long / registry_inconsistent
+privacy_forbidden_key / privacy_value_leak / privacy_value_too_long /
+registry_inconsistent
 """
 import datetime
 import hashlib
@@ -17,6 +18,40 @@ _cache = {}
 
 
 _CONTRACT_DIR = os.path.join(_SCHEMA_DIR, "..", "..")   # repo 根(devflow-contract.json 正本)
+
+
+# ── 值洩漏形狀(不用裸字比對,見 #98 回歸紀錄)────────────────────
+# (a) 賦值形 secret:password/token/... 後接 : 或 =,再接 6+ 非空白字元
+_VALUE_LEAK_ASSIGN = re.compile(
+    r"(?i)\b(?:password|passwd|pwd|secret|token|api[_-]?key)\s*[:=]\s*\S{6,}"
+)
+# (b) 已知憑證前綴(OpenAI/Anthropic/AWS/GitHub/Slack/JWT/PEM 私鑰/Bearer token)。
+# 前面補 (?<![A-Za-z0-9]) 是因為 "sk-" 不加鎖字界會吃到 risk-assessment、
+# disk-encryption 這類合法英文字(#98 教訓的同型回歸,換了觸發詞而已);
+# 字元類也放寬含 - _,才擋得住 sk-live-...、sk-proj-... 這類含連字號的真實金鑰。
+_VALUE_LEAK_CRED = re.compile(
+    r"(?<![A-Za-z0-9])sk-ant-"
+    r"|(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{8,}"
+    r"|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}"
+    r"|(?<![A-Za-z0-9_])gh[pousr]_[A-Za-z0-9]{20,}"
+    r"|(?<![A-Za-z0-9])xox[bpas]-"
+    r"|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"
+    r"|-----BEGIN [A-Z ]*PRIVATE KEY-----"
+    r"|Bearer\s+[A-Za-z0-9._-]{16,}"
+)
+# (c) 對話結構:同一字串內 ≥3 行以 user/assistant/human/system(或中文)開頭
+_VALUE_LEAK_CONV_LINE = re.compile(
+    r"(?im)^\s*(?:user|assistant|human|system|使用者|助理)\s*[:：]"
+)
+
+
+def _value_leak(s):
+    """值命中「洩漏形狀」:賦值形 secret、已知憑證前綴、或對話結構。
+    不比對裸字(transcript/password 等單字本身),避免誤殺合法工程敘述
+    (見 #98 PR #110 回歸:'removed the password field...' 曾被誤擋)。"""
+    if _VALUE_LEAK_ASSIGN.search(s) or _VALUE_LEAK_CRED.search(s):
+        return True
+    return len(_VALUE_LEAK_CONV_LINE.findall(s)) >= 3
 
 
 def _load(name):
@@ -152,37 +187,40 @@ def _privacy_scan(obj, errors, path=""):
     allow = set(privacy["allowlist_exact"])
     max_len = privacy["max_string_len"]
 
-    # 值只掃禁載詞,不用鍵名全套 substring(避免 body／messages 誤傷)
-    value_leak = re.compile(
-        r"(?i)(?<![A-Za-z0-9_])(?:transcript|password|passwd)(?![A-Za-z0-9_])"
-    )
+    def scan_value(s, p):
+        # dict 值、list 元素、字串葉節點三種路徑都走這個函式(#98:list 內
+        # 字串曾經完全不掃)。
+        if len(s) > max_len:
+            errors.append(_err("privacy_value_too_long", p,
+                               f"字串長 {len(s)} 超過 {max_len}"
+                               "(ledger 不收完整 transcript/log/source,只收 ref/hash)"))
+        if _value_leak(s):
+            errors.append(_err("privacy_value_leak", p,
+                               "值命中洩漏樣式(憑證前綴／賦值形 secret／對話結構,"
+                               "隱私紅線)"))
 
     def walk(node, p):
         if isinstance(node, dict):
             for k, v in node.items():
                 kp = f"{p}.{k}" if p else k
                 low = str(k).lower()
-                bare = low[2:] if low.startswith("x_") else low
-                if bare not in allow and low not in allow:
-                    if bare in forbidden_exact or low in forbidden_exact:
+                while low.startswith("x_"):          # 剝到底,#98:曾只剝一層
+                    low = low[2:]
+                if low not in allow:
+                    if low in forbidden_exact:
                         errors.append(_err("privacy_forbidden_key", kp,
                                            f"禁載欄位 {k!r}(隱私紅線)"))
                         continue
-                    if any(s in bare for s in substrings):
+                    if any(s in low for s in substrings):
                         errors.append(_err("privacy_forbidden_key", kp,
                                            f"欄位名 {k!r} 命中禁載樣式(隱私紅線)"))
                         continue
-                if isinstance(v, str) and value_leak.search(v):
-                    errors.append(_err("privacy_forbidden_key", kp,
-                                       "值命中禁載詞(隱私紅線)"))
                 walk(v, kp)
         elif isinstance(node, list):
             for i, v in enumerate(node):
                 walk(v, f"{p}[{i}]")
-        elif isinstance(node, str) and len(node) > max_len:
-            errors.append(_err("privacy_value_too_long", p,
-                               f"字串長 {len(node)} 超過 {max_len}"
-                               "(ledger 不收完整 transcript/log/source,只收 ref/hash)"))
+        elif isinstance(node, str):
+            scan_value(node, p)
 
     walk(obj, path)
 

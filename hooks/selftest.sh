@@ -47,13 +47,18 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 派工單 §2.1 TMPDIR 跨平台正規化 w2 組 +2(注入假 cygpath 的正向 + 空 PATH 的
 # 對照組)→ 400;同日 report-guard 覆蓋缺口 +2(.devflow/ 非 reports/ 仍擋 +
 # .devflow/task/ 證據區不得誤傷)→ 402;2026-08-29 Bash 寫入 prevent-before
-# +3(prebash 擋 scope 外 redirect / 擋後檔不落盤 / 放行 scope 內)→ 405)
-# ——新增案例時同步 +;絕不「大概抓個下限」。
+# +3(prebash 擋 scope 外 redirect / 擋後檔不落盤 / 放行 scope 內)→ 405;
+# ⚠️ 405 之後、2026-09-04 之前的某次改動加了案例卻沒同步這個註解/常數
+# (grep 實測落地時已是 410,不是 405)——這是本次改動之前就存在的既有落差,
+# 不是這次引入的,原樣記錄不回填;2026-09-04 #98 重做:runtime_check x_
+# 前綴改 while 迴圈剝到底,補雙層 x_x_customer_data 回歸案 +1 → 411)
+# ——新增案例時同步 +;絕不「大概抓個下限」,且 MIN_CASES 應等於當下 grep
+# 實測值,不是隨便給個低於實際的下限。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
 # 通過),於是刪一條案例仍印「全過」。這個常數把「案例數不得低於當下已知值」變成
 # 獨立於 grep 自算之外的斷言。
-MIN_CASES=405
+MIN_CASES=411
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -1838,6 +1843,8 @@ p3_ev "{\"event_type\":\"attempt_started\",\"writer\":\"coordinator\",\"task_id\
 ck_msg "p3 runtime 加嚴:model>100 → 拒收" 1 "field_too_long" "$P3_RC" "$P3_OUT"
 p3_ev '{"event_type":"run_completed","writer":"coordinator","result":"PASS","x_meta":{"customer_data":"x"}}'
 ck_msg "p3 runtime 加嚴:customer_data → 拒收" 1 "privacy_forbidden_key" "$P3_RC" "$P3_OUT"
+p3_ev '{"event_type":"run_completed","writer":"coordinator","result":"PASS","x_meta":{"x_x_customer_data":"x"}}'
+ck_msg "p3 runtime 加嚴:x_ 前綴剝到底(雙層 x_x_customer_data)仍拒收(#98 回歸)" 1 "privacy_forbidden_key" "$P3_RC" "$P3_OUT"
 # 1.1:task_tags 為正式欄(agent_dispatched/attempt_* optional),enum 解析自契約
 p3_ev "{\"event_type\":\"agent_dispatched\",\"writer\":\"coordinator\",\"task_id\":\"T-1\",\"attempt_id\":\"$P3ATT\",\"agent_role\":\"worker\",\"model\":\"haiku\",\"prompt\":{\"id\":\"stage6-worker\",\"version\":\"1.0.0\",\"hash\":\"sha256:$P3HASH\"},\"task_tags\":[\"frontend-magic\"]}"
 ck_msg "p3 task_tags 自由字串 → 拒收" 1 "受控" "$P3_RC" "$P3_OUT"
