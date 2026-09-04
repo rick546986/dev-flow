@@ -361,14 +361,53 @@ class TestPrivacy(unittest.TestCase):
 
     def test_value_leak_transcript_assign_form_rejected(self):
         # r2-#98 F5:值側對 transcript/conversation/messages 完全沒覆蓋。
-        # 賦值形(transcript: <text>)才擋,裸字提及仍放行。找碴單字面案例。
+        # 賦值形(transcript: <text>)才擋,裸字提及仍放行。
+        # r3-#98:短的「transcript: user said hi…」(舊找碴單字面案例)已改由
+        # _looks_like_transcript 放行(不夠長也不夠多詞、無引號無角色標記),
+        # 換成真的長得像逐字稿內容的長版,見 test_value_leak_narrative_*
+        # 三個必擋案例。
         e = attempt_completed(
-            x_meta={"note": "transcript: user said hi…"})
+            x_meta={"note": "transcript: user said hi and then asked about "
+                             "the refund policy, the agent replied it takes "
+                             "five days"})
         self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
 
     def test_value_leak_transcript_bare_mention_passes(self):
         e = attempt_completed(x_meta={"note": "see the transcript for details"})
         self.assertEqual(ev.validate_event(e), [])
+
+    def test_value_leak_narrative_short_status_passes(self):
+        # r3-#98(major,兩個審查鏡頭同時抓到):v2 舊門檻只要 4 字元就擋,
+        # 「messages: 3 pending」這類日常狀態敘述在 title/result_summary 等
+        # 自由文字欄位很容易撞到,被誤判 privacy_value_leak。改成要「長得像
+        # 逐字稿內容」才擋(長度+詞數 / 引號對話 / 角色標記),純狀態詞放行。
+        for note in ("messages: 3 pending", "conversation: started",
+                     "transcript: see attached", "messages: none",
+                     "transcript: pending review",
+                     "conversation: 2026-09-04 kickoff"):
+            e = attempt_completed(x_meta={"note": note})
+            self.assertEqual(ev.validate_event(e), [], msg=note)
+
+    def test_value_leak_narrative_quoted_dialogue_rejected(self):
+        e = attempt_completed(x_meta={
+            "note": 'conversation: "can you reset my password" '
+                    '"sure, what is your account id"'})
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_narrative_role_marker_rejected(self):
+        # 值本身不夠長(<40 字元)、詞數剛好卡在 6,但含 user:/assistant: 角色
+        # 標記,要靠角色標記那條規則單獨擋下,不能只靠長度+詞數判斷。
+        e = attempt_completed(x_meta={
+            "note": "messages: user: hi assistant: hello user: bye"})
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_narrative_does_not_swallow_trailing_secret(self):
+        # r3-#98:v2 若跟 v1 共用同一次 alternation match,greedy 的 v2 會把
+        # 行尾的 password=... 一起吞掉,判完「不像逐字稿」就放行,導致藏在
+        # v2 殘值裡的 v1 洩漏永遠掃不到。兩條正則已拆開各自獨立掃描 s。
+        e = attempt_completed(x_meta={
+            "note": "messages: 3 pending. password=hunter2"})
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
 
     def test_value_leak_openai_style_key_rejected(self):
         e = attempt_completed(
