@@ -19,9 +19,18 @@
 # 沒 baseline 時只走①。先列殘件再換 baseline,否則退役檔會被看成「本地客製」。
 # 預設 dry-run;upgrade 帶 --apply 才真刪。
 #
+# ①的檔案真刪前另跟 baseline 做雜湊比對(不改①②列候選的規格,只改刪除動作):
+# 內容與 baseline 相同才直刪;不同(使用者客製過)或 baseline 沒有對應檔可比
+# (無法比對)就搬到 docs/dev/.devflow-upgrade-trash/<時間戳記>/ 並印 diff 摘要,
+# 不無備份直刪。落點撞名(同一秒內第二次 --apply 同一相對路徑)絕不靜默覆蓋前一
+# 份,自動加 .1 .2 … 唯一化後綴,stdout 印實際落點。
+#
+# 測試專用環境變數 DEVFLOW_UPGRADE_LEFTOVERS_STAMP:覆寫 trash 子目錄的時間戳記,
+# 只給治具決定性重現撞名;正常使用不要設它,設了會改變 trash 落點。
+#
 # 用法:
 #   scripts/devflow-upgrade-leftovers.sh --root <專案根> --pack <方法包根> [--apply]
-# exit:0 = 乾淨或已刪 / 1 = 真刪失敗 / 2 = 用法或邊界違規
+# exit:0 = 乾淨或已刪(含搬 trash)/ 1 = 真刪或搬移失敗 / 2 = 用法或邊界違規
 set -uo pipefail
 
 SELF_DIR=$(cd "$(dirname "$0")" && pwd)
@@ -40,7 +49,7 @@ while [ $# -gt 0 ]; do
     --root)  need_value "$1" "${2:-}"; ROOT=$2; shift 2 ;;
     --pack)  need_value "$1" "${2:-}"; PACK=$2; shift 2 ;;
     --apply) APPLY=1; shift ;;
-    -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,33p' "$0"; exit 0 ;;
     *) die "拒絕:未知參數 $1(可用:--root --pack --apply)" ;;
   esac
 done
@@ -51,7 +60,12 @@ ROOT=$(cd "$ROOT" && pwd) || die "拒絕:--root 不是目錄"
 PACK=$(cd "$PACK" && pwd) || die "拒絕:--pack 不是目錄"
 
 python3 - "$ROOT" "$PACK" "$APPLY" <<'PY'
+import datetime
+import difflib
+import hashlib
 import os
+import re
+import shutil
 import sys
 
 root, pack, apply = sys.argv[1], sys.argv[2], sys.argv[3] == "1"
@@ -64,11 +78,25 @@ PROTECTED = (
     os.path.join(root, "CONTEXT.md"),
     os.path.join(root, "docs", "dev", "CONTEXT.md"),
 )
+TRASH_ROOT = os.path.join(root, "docs", "dev", ".devflow-upgrade-trash")
+# 測試專用覆寫:讓治具能強迫兩次 --apply 落在同一個 stamp 目錄,決定性地
+# 觸發撞名分支,不必賭兩次呼叫剛好落在同一秒內。正常執行不設這個環境變數,
+# 行為不變(仍取當下時間)。這個值會直接組進 trash 落點路徑,格式一定要驗
+# (不驗的話 "../../evil" 這種值可以讓落點跳出 trash 目錄甚至跳出 --root)。
+STAMP_OVERRIDE = os.environ.get("DEVFLOW_UPGRADE_LEFTOVERS_STAMP", "")
 
 
 def fail(msg, code=2):
     print(msg, file=sys.stderr)
     sys.exit(code)
+
+
+if STAMP_OVERRIDE and not re.fullmatch(r"\d{8}-\d{6}", STAMP_OVERRIDE):
+    fail(
+        "拒絕:DEVFLOW_UPGRADE_LEFTOVERS_STAMP 格式不對,只接受 YYYYMMDD-HHMMSS"
+        "(8 位數字-6 位數字)——這個值會直接組進 trash 落點路徑,格式不對可能"
+        "讓落點跳出 trash 目錄甚至跳出 --root 專案樹,fail-closed 不執行"
+    )
 
 
 def real(path):
@@ -96,6 +124,62 @@ def managed_ok(path):
     return any(is_under(path, os.path.join(root, rel)) for rel in MANAGED_REL)
 
 
+def sha256_of(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def unique_dest(dest):
+    # dest 若已存在(同一秒內第二次 --apply 同一相對路徑撞名),絕不能靜默覆蓋
+    # 前一次搬進 trash 的檔——遞增 .1 .2 ... 直到找到空位。
+    if not os.path.exists(dest):
+        return dest
+    base, ext = os.path.splitext(dest)
+    n = 1
+    while True:
+        candidate = "%s.%d%s" % (base, n, ext)
+        if not os.path.exists(candidate):
+            return candidate
+        n += 1
+
+
+def rel_within_managed(path):
+    # 這個候選路徑相對它所在的受管目錄(MANAGED_REL 其中之一)的相對路徑,
+    # 用來在 baseline 側找對應檔——同一相對路徑,不管候選是落在
+    # docs/dev/_templates/ 還是 docs/dev/.devflow-baseline/_templates/。
+    for rel in MANAGED_REL:
+        base = os.path.join(root, rel)
+        if is_under(path, base):
+            return os.path.relpath(real(path), real(base))
+    return None
+
+
+def diff_summary(baseline_path, live_path, limit=10):
+    def read_lines(p):
+        try:
+            with open(p, encoding="utf-8", errors="strict") as fh:
+                return fh.readlines()
+        except (UnicodeDecodeError, OSError):
+            return None
+
+    old = read_lines(baseline_path)
+    new = read_lines(live_path)
+    if old is None or new is None:
+        return ["    (二進位或非文字內容,略過逐行 diff)"]
+    lines = list(
+        difflib.unified_diff(old, new, fromfile="baseline", tofile="現況", lineterm="")
+    )
+    if not lines:
+        return ["    (雜湊不同但逐行 diff 無輸出,可能是行尾符差異)"]
+    out = ["    " + line.rstrip("\n") for line in lines[:limit]]
+    if len(lines) > limit:
+        out.append("    ...(還有 %d 行差異未顯示)" % (len(lines) - limit))
+    return out
+
+
 protected_real = {real(p) for p in PROTECTED}
 pack_templates = os.path.join(pack, "_templates")
 if not os.path.isdir(pack_templates):
@@ -104,16 +188,21 @@ if not os.path.isdir(pack_templates):
 pack_set = list_files(pack_templates)
 baseline_templates = os.path.join(root, "docs", "dev", ".devflow-baseline", "_templates")
 have_baseline = os.path.isdir(baseline_templates)
-candidates = []
 
+# ①已知退役模板名——這批候選在 --apply 真刪前要跟 baseline 做雜湊比對
+# (見下方 apply 段),路徑差集列候選的規格不變。
+known_retired_candidates = []
 for name in KNOWN_RETIRED:
     if name in pack_set:
         continue
     for rel in MANAGED_REL:
         path = os.path.join(root, rel, name)
         if os.path.isfile(path):
-            candidates.append(path)
+            known_retired_candidates.append(path)
 
+candidates = list(known_retired_candidates)
+
+# ②有 baseline 時:舊 baseline 有、新 pack 沒有的檔——候選列法不變。
 if have_baseline:
     for rel in list_files(baseline_templates) - pack_set:
         for base in (
@@ -123,6 +212,8 @@ if have_baseline:
             path = os.path.join(base, rel)
             if os.path.isfile(path):
                 candidates.append(path)
+
+known_retired_real = {real(p) for p in known_retired_candidates}
 
 # 去重且穩定排序
 seen = set()
@@ -162,14 +253,83 @@ if not apply:
     sys.exit(0)
 
 failed = []
+deleted = 0
+trashed = []  # [(原路徑, trash 內路徑, diff 摘要行清單), ...]
+stamp = None
+
 for path in allowed:
+    key = real(path)
+    if key in known_retired_real:
+        # KNOWN_RETIRED 分支:真刪前跟 baseline 做雜湊比對,內容相同才直刪;
+        # 不同(客製過)或 baseline 無對應檔(無法比對)一律搬 trash,不無備份直刪。
+        rel = rel_within_managed(path)
+        baseline_ref = os.path.join(baseline_templates, rel) if rel is not None else None
+        if baseline_ref is not None and real(baseline_ref) == key:
+            same = True  # 候選本身就是 baseline 複本,對自己比對必然相同
+        elif baseline_ref is not None and os.path.isfile(baseline_ref):
+            try:
+                same = sha256_of(path) == sha256_of(baseline_ref)
+            except OSError as err:
+                failed.append("%s (讀取失敗,無法比對:%s)" % (path, err))
+                continue
+        else:
+            same = False  # baseline 沒有對應檔可比——無法比對,當作客製處理
+
+        if not same:
+            if stamp is None:
+                stamp = STAMP_OVERRIDE or datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            rel_root = os.path.relpath(path, root)
+            dest = os.path.join(TRASH_ROOT, stamp, rel_root)
+            if not is_under(dest, TRASH_ROOT):
+                # 二次圈住(與來源端 is_under/managed_ok 慣例一致):即使前面的
+                # STAMP 格式驗證被繞過,落點也絕不能跑出 TRASH_ROOT——搬移前先
+                # 擋,不留任何 makedirs/move 副作用。
+                fail(
+                    "拒絕:trash 落點跳出 %s(算出的落點:%s),fail-closed 不搬移"
+                    % (TRASH_ROOT, dest)
+                )
+            try:
+                os.makedirs(os.path.dirname(dest), exist_ok=True)
+                dest = unique_dest(dest)  # 撞名絕不覆蓋,遞增 .1 .2 找空位
+                shutil.move(path, dest)
+            except OSError as err:
+                failed.append("%s (搬移失敗:%s)" % (path, err))
+                continue
+            # diff 摘要就地算好存文字——不能留到迴圈跑完再算,同一批候選裡
+            # baseline 複本本身也可能在後續疊代被直刪,屆時 baseline_ref 已不在。
+            if baseline_ref and os.path.isfile(baseline_ref):
+                summary_lines = diff_summary(baseline_ref, dest)
+            else:
+                summary_lines = ["    (baseline 沒有對應檔,無法比對,一律搬移)"]
+            trashed.append((path, dest, summary_lines))
+            continue
+
     try:
         os.remove(path)
+        deleted += 1
     except OSError as err:
         failed.append("%s (%s)" % (path, err))
+
 if failed:
     print("⛔ 刪不掉:\n  " + "\n  ".join(failed), file=sys.stderr)
     sys.exit(1)
-print("deleted: %d" % len(allowed))
+
+if trashed:
+    print("客製過的退役檔(內容跟 baseline 不同,已搬離不直刪):")
+    for orig, dest, summary_lines in trashed:
+        print(
+            "  "
+            + os.path.relpath(orig, root)
+            + " -> "
+            + os.path.relpath(dest, root)
+        )
+        for line in summary_lines:
+            print(line)
+    print(
+        "已搬移 %d 個客製過的退役檔到 %s,請自行檢視後刪除"
+        % (len(trashed), os.path.relpath(os.path.join(TRASH_ROOT, stamp), root))
+    )
+
+print("deleted: %d" % deleted)
 sys.exit(0)
 PY
