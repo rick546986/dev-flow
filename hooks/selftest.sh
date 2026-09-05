@@ -61,7 +61,10 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # ⚠️ 2026-09-04 r2-#98:對抗審查 F1 補一個 p3 回歸案(x__customer_data,雙底線
 # 單 x,對照上面已有的雙層 x_x_customer_data 案),grep 實測 TOTAL_CASES 變 431。
 # 同一 commit 同步 scripts/test-architecture-guards.sh:2231 字面 → 431。
-MIN_CASES=431
+# 2026-09-04 #102 仲裁拆半:EXEC_SCHEMAS 對帳(_exec_impl.py vs _dispatch_impl.py
+# 兩份手抄 tuple 靜態比對)+1 → 432。同一 commit 同步
+# scripts/test-architecture-guards.sh:2231 字面 → 432。
+MIN_CASES=432
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -2677,6 +2680,40 @@ cp "$H/../scripts/history-append.sh" "$G1N/history-append.sh"
 G1_OUT=$(cd "$G1N" && bash history-append.sh --slug g1 --what a --why b --where c 2>&1); G1_RC=$?
 ck_msg "g1 不在 git repo 且未帶 --file → 拒絕並指路 --file" 2 "--file" "$G1_RC" "$G1_OUT"
 rm -rf "$G1T" "$G1N"
+
+echo "-- exec-schemas 對帳:_exec_impl.py 與 _dispatch_impl.py 兩份 EXEC_SCHEMAS 字面相等 --"
+# issue #102 仲裁(2026-09-04):fail-open 不改(hooks/_dispatch_impl.py 檔頭 + 契約
+# exec_state_note 明文裁決,另案 wont-fix)。但兩份手抄的 EXEC_SCHEMAS
+# (hooks/_exec_impl.py:33、hooks/_dispatch_impl.py:41)零自動比對是獨立缺口——
+# 新增/修改 schema 版本若漏改其中一邊,dispatch-guard 會把新版誤判成「未武裝」
+# 整批 fail-open 放行,卻沒有任何測試會現形。這裡補靜態比對,不 import
+# _exec_impl(它是即刻執行的 CLI 腳本,讀 sys.argv[1]/[2] 動態載入有副作用風險,
+# 兩檔各自的檔頭註解都有寫這一點)——只讀原始碼文字,regex 抓
+# `EXEC_SCHEMAS = ( … )` 字面(非貪婪比對到最近的 `)`;兩邊 tuple 內容都是純
+# 字串、不含巢狀括號,故不需手動配對括號深度),ast.literal_eval 成 tuple 後
+# assert 相等,不等時把兩份內容都印出來。
+EXSC_OUT=$("$DEVFLOW_PY" - "$H/_exec_impl.py" "$H/_dispatch_impl.py" 2>&1 <<'PY'
+import ast, re, sys
+
+
+def extract(path):
+    src = open(path, encoding="utf-8").read()
+    m = re.search(r'EXEC_SCHEMAS\s*=\s*(\(.*?\))', src, re.S)
+    if not m:
+        print(f"{path}: 找不到 EXEC_SCHEMAS = ( … ) 字面", file=sys.stderr)
+        sys.exit(1)
+    return ast.literal_eval(m.group(1))
+
+
+a_path, b_path = sys.argv[1], sys.argv[2]
+a, b = extract(a_path), extract(b_path)
+if a != b:
+    print(f"不相等:\n  {a_path}: {a!r}\n  {b_path}: {b!r}", file=sys.stderr)
+    sys.exit(1)
+print("一致:" + repr(a))
+PY
+); EXSC_RC=$?
+ck_msg "exec-schemas 對帳:_exec_impl.py 與 _dispatch_impl.py 的 EXEC_SCHEMAS tuple 字面逐字相等" 0 "一致" "$EXSC_RC" "$EXSC_OUT"
 
 cd / && rm -rf "$T" "$C"
 echo
