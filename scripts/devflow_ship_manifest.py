@@ -8,6 +8,12 @@
 # 不准掃 docs/dev/tools/ 當 expected set —— 正副本同時被刪時掃目錄會少一項而全綠
 # (第 4 型假綠)。contract 列的 destination 不住在 tools/,獨立比對不得刪。
 #
+# tools_rows()/contract_rows() 只各挑一種 destination 樣式,兩者外還有第三種
+# (source == destination 的同步宣告列,例:docs/dev/readme-contract-extract.md)——
+# 舊版沒有任何函式把它納入 expected set,刪掉該檔 15 項仍全綠(issue #92)。
+# all_rows() 涵蓋全部列;source_existence_failures()/unclassified_sync_failures()
+# 補上第三類列的存在性/內容/mode 驗證,不再各分類各挑各的。
+#
 # 本檔是庫。牙齒在 scripts/check-ship-manifest.sh。
 # 用法(診斷):
 #   python3 scripts/devflow_ship_manifest.py --list [root]
@@ -137,6 +143,89 @@ def contract_rows(data):
     return [r for r in rows(data)
             if r["source"] == CONTRACT_SOURCE
             or r["destination"] == CONTRACT_DEST]
+
+
+def all_rows(data):
+    """manifest 的完整列清單,不分類。tools_rows()/contract_rows() 各自只挑一種
+    destination 樣式,兩者外還有第三種(例:source == destination,單純宣告
+    「這個檔案本身就是散發面之一」的同步宣告列,如
+    docs/dev/readme-contract-extract.md)。任何只用 tools_rows()/contract_rows()
+    拼起來的 expected set 都會漏掉這一種 —— issue #92 的殘留就是這樣漏的:
+    刪掉 readme-contract-extract.md,check-ship-manifest.sh 15 項仍全綠。
+    全列存在性檢查(source_existence_failures)一律走這支,不要再各分類各挑各的。
+    """
+    return rows(data)
+
+
+def unclassified_rows(data):
+    """既不是 tools_rows()、也不是 contract_rows() 的列 —— 目前只有
+    source == destination 的同步宣告列這一種,但用集合差(以 destination 字串
+    當 key,schema 已保證 destination 不重複)而非硬編列名,未來再多一種
+    第三類也不必回來改這裡。"""
+    skip = {r["destination"] for r in tools_rows(data)}
+    skip |= {r["destination"] for r in contract_rows(data)}
+    return [r for r in all_rows(data) if r["destination"] not in skip]
+
+
+def source_existence_failures(root, data=None):
+    """全列 source 存在性:manifest 每一列的 source 檔在母版都必須存在,不分
+    tools/contract/第三類。這是最外層的網子 —— tools_rows()/contract_rows()
+    衍生的 parity 各自只驗自己那個子集的存在性,第三類列(例如
+    docs/dev/readme-contract-extract.md 這種同步宣告列)過去完全沒有任何函式
+    驗過它的 source 檔還在不在,刪掉整份清單仍全綠(issue #92)。
+    """
+    fails = []
+    if data is None:
+        try:
+            data = load(root)
+        except ManifestError as exc:
+            return list(exc.problems)
+    for row in all_rows(data):
+        src = os.path.join(root, row["source"])
+        if not os.path.isfile(src):
+            fails.append("正本不存在:%s(destination=%s,清單列還在但找不到來源檔)"
+                         % (row["source"], row["destination"]))
+    return fails
+
+
+def unclassified_sync_failures(root, data=None):
+    """tools 列、contract 列以外的列(見 unclassified_rows())—— 若其
+    destination 在母版內也是真實存在的檔(同步副本,例:source == destination
+    的自我宣告列),內容與可執行位元要跟 source 一致,做法比照
+    parity_failures() 對 tools 列的比對。destination 在母版內沒有對應檔的列
+    不強求(可能純粹是給採用專案落地用、母版自己沒有另一份可比對),那種情況
+    source_existence_failures() 已經驗過 source 半邊。
+    contract 列的正副本比對刻意不在這裡做 —— 那條留給 dev-release 步驟 2 的
+    獨立 `diff -q devflow-contract.json docs/dev/devflow-contract.json`
+    (skills/dev-release/SKILL.md),兩邊重複沒有意義還可能各自漂移出不同的
+    失敗訊息。
+    """
+    fails = []
+    if data is None:
+        try:
+            data = load(root)
+        except ManifestError as exc:
+            return list(exc.problems)
+    for row in unclassified_rows(data):
+        src = os.path.join(root, row["source"])
+        dst = os.path.join(root, row["destination"])
+        if not (os.path.isfile(src) and os.path.isfile(dst)):
+            continue
+        if open(src, "rb").read() != open(dst, "rb").read():
+            fails.append("內容不同:%s(改了正本沒重新散發)" % row["destination"])
+        want = mode_int(row["mode"])
+        src_m = actual_mode(src)
+        dst_m = actual_mode(dst)
+        if src_m != want:
+            fails.append("正本 mode 與清單不一致:%s(清單 %s vs 檔 %03o)"
+                         % (row["source"], row["mode"], src_m))
+        if dst_m != want:
+            fails.append("副本 mode 與清單不一致:%s(清單 %s vs 檔 %03o)"
+                         % (row["destination"], row["mode"], dst_m))
+        if src_m != dst_m:
+            fails.append("可執行位元不一致:%s(正本 %03o vs 副本 %03o)"
+                         % (row["destination"], src_m, dst_m))
+    return fails
 
 
 def mode_int(mode_str):
