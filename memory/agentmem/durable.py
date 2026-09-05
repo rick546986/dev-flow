@@ -76,9 +76,19 @@ class DurableError(RuntimeError):
 def _assert_portable_content(*texts):
     """durable writer 邊界:敏感內容與絕對路徑不得進 Git。
 
-    這是最後一道閘。呼叫端(consolidate / legacy promote)也會先過
-    `signal.gate`,但 writer 自己必須再擋一次 —— 第二個直接呼叫者
-    不該成為第二個繞過點。
+    這是最後一道閘,四個耐久寫入函式各自對自己**會落盤的散文欄位**呼叫
+    這裡:write_state 掃 fact_key/value;write_knowledge 掃 title/body;
+    write_decision 掃 title/decision/alternatives/reason/tradeoff;
+    write_skill 掃 title/preconditions/verification/steps。
+
+    evidence/conflicts(knowledge/decision/skill)與
+    source_ref/source_type/source_commit/superseded_by(state)也會落盤,
+    但那些是結構化的 ref/hash/key 欄位 —— 刻意不在 writer 層掃,由呼叫端
+    (sync.py 的 `signal.gate` extra_texts)涵蓋。
+
+    呼叫端(consolidate / legacy promote)也會先過 `signal.gate`,但 writer
+    自己必須再擋一次 —— 縱深防禦就是要重掃已經掃過的內容,不是只信任
+    呼叫端;直接呼叫 writer(繞過 consolidate)不該成為第二個繞過點。
     """
     from . import signal
     verdict = signal.gate("domain_clarification", extra_texts=texts)
@@ -300,6 +310,17 @@ def _atomic_write_dirfd(root_path, parent, dest, payload):
                 os.path.relpath(dest, root_path).replace(os.sep, "/")))
         os.replace(tmp_name, dest_name, src_dir_fd=dirfd, dst_dir_fd=dirfd)
         tmp_name = None
+        try:
+            os.fsync(dirfd)
+        except OSError:
+            # os.replace 在這裡已經成功 —— 目錄項已經指向新檔,寫入本身
+            # 已經完成;這次 fsync 只是想把那個事實盡快逼進磁碟,縮短斷電
+            # 後目錄項回退到舊狀態的視窗。rename 已成功之後,fsync 失敗
+            # 一律吞(EINVAL/EIO 等,不只 EINVAL 一種;部分平台的目錄 fd
+            # 本來就不保證支援 fsync)—— 這裡才 raise 只會把「內容已經
+            # 寫對、只是還沒強制落盤」誤報成寫入失敗,讓呼叫端狀態分裂
+            # (local 已推進、durable 卻報錯),不是把問題擋下來。
+            pass
     finally:
         if fd is not None:
             os.close(fd)
@@ -374,6 +395,7 @@ def write_state(repo_root_path, entity_type, entity_key, facts):
             "confidence": round(float(fact.get("confidence", 0.0)), 4),
             "recorded_at": fact.get("recorded_at"),
         }
+        _assert_portable_content(record["fact_key"], record["value"])
         for optional in ("effective_at", "superseded_at", "superseded_by",
                          "source_type", "source_ref", "source_commit",
                          "verified_at", "verified_commit"):
@@ -524,6 +546,10 @@ def write_decision(repo_root_path, record):
     為什麼不用純 YAML:decision 的價值在 reason / tradeoff 的散文,那是人寫給
     半年後的人看的。純 YAML 會讓人不想寫;純 Markdown 會讓機器讀不到 status。
     """
+    _assert_portable_content(
+        record.get("title", ""), record.get("decision", ""),
+        record.get("alternatives", ""), record.get("reason", ""),
+        record.get("tradeoff", ""))
     header = {
         "schema_version": DURABLE_SCHEMA_VERSION,
         "key": record["key"],
@@ -609,6 +635,10 @@ def skill_file(repo_root_path, key):
 
 
 def write_skill(repo_root_path, record):
+    _assert_portable_content(
+        record.get("title", ""), record.get("preconditions", ""),
+        record.get("verification", ""),
+        *[str(step) for step in (record.get("steps") or [])])
     payload = {
         "schema_version": DURABLE_SCHEMA_VERSION,
         "key": record["key"],
