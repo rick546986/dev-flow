@@ -51,8 +51,13 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # PR #110 fail-closed 收斂 +5 → 410(當時未同步本常數);
 # 2026-09-04 #98 值掃描重做 +1、#101 壞 payload 武裝判斷跟正常路徑同一套 +12
 # (guard/prebash × 壞JSON/空stdin × 三種武裝狀態)、#103 --strict 重讀漏包 +7
-# → 見下方 MIN_CASES 實值;同一 commit 同步 scripts/test-architecture-guards.sh
-# 的 check_static_pin 字面(那條互釘就是要抓「調地板沒同步」)。
+# → 430,同日 r2-#98 對抗審查 F1 x_ 剝除迴圈補案(x__customer_data)+1 → 431;
+# 2026-09-04 issue #109 report-guard 三處路徑判定誤擋回歸 +4(前導點母版路徑放行
+# /連字號後 release 不誤判分支名/真分支名仍擋/母版沒有的路徑仍擋)→ 435;
+# 同日 fresh 驗收 medium:DEVFLOW_MASTER 優先序 1 補驗 name=dev-flow(不是只看
+# .claude-plugin/plugin.json 存在)+1 → 436;同一 commit 同步
+# scripts/test-architecture-guards.sh 的 check_static_pin 字面(那條互釘就是要
+# 抓「調地板沒同步」)。
 # ——新增案例時同步 +;絕不「大概抓個下限」。
 # 起因:TOTAL_CASES 本身是靠 grep 自算,案例被刪時
 # TOTAL_CASES 與實際執行數會一起掉、彼此仍自洽(尾聲的 TOTAL_CASES==TOTAL 比對照樣
@@ -64,7 +69,12 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 2026-09-04 #102 仲裁拆半:EXEC_SCHEMAS 對帳(_exec_impl.py vs _dispatch_impl.py
 # 兩份手抄 tuple 靜態比對)+1 → 432。同一 commit 同步
 # scripts/test-architecture-guards.sh:2231 字面 → 432。
-MIN_CASES=432
+# ⚠️ 2026-09-04 issue #109:report-guard 三處路徑判定誤擋回歸補 4 案,疊在
+# #102 的 432 上 → 436。同一 commit 同步 scripts/test-architecture-guards.sh
+# 的 check_static_pin 字面。
+# ⚠️ 2026-09-04 fresh 驗收 medium:DEVFLOW_MASTER 優先序 1 補 _is_master_repo
+# 驗證(name=dev-flow)+1 案,疊上 → 437。
+MIN_CASES=437
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -2641,6 +2651,35 @@ mkdir -p "$RGT/.devflow/task/T-1"
 printf '/Users/somebody/companyapp/x.go\n' > "$RGT/.devflow/task/T-1/evidence.md"
 rg_run "$RGT/.devflow/task/T-1/evidence.md"
 ck "rg .devflow/task/ 的本機證據帶絕對路徑 → 放行(不得過度封鎖)" 0 "$RG_RC"
+# issue #109(2026-09-04)三處路徑判定誤擋回歸:①PATH_TOKEN 起頭 \b 吃不到前導
+# "."(母版自己的 .cursor-plugin/marketplace.json 被誤判不存在)②分支名正則 \b
+# 在連字號後一樣成立(dev-release/SKILL.md 的 release/ 被誤判分支名)③MASTER_ROOT
+# 優先序補 DEVFLOW_MASTER/回報檔所在 repo 本身即母版 兩層。前兩案驗證放行擴大,
+# 後兩案驗證擋的範圍沒被連坐削弱(真分支名、母版真沒有的路徑仍要擋)。
+printf '受影響:.cursor-plugin/marketplace.json 需要調整\n' > "$RGT/.devflow/reports/i109-leading-dot.md"
+rg_run "$RGT/.devflow/reports/i109-leading-dot.md"
+ck "rg 前導點的母版路徑(.cursor-plugin/marketplace.json)→ 放行(PATH_TOKEN 吃得到前導 .)" 0 "$RG_RC"
+printf '參考 skills/dev-release/SKILL.md 的寫法\n' > "$RGT/.devflow/reports/i109-dash-release.md"
+rg_run "$RGT/.devflow/reports/i109-dash-release.md"
+ck "rg 連字號後的 release/(skills/dev-release/SKILL.md)→ 放行(不誤判分支名)" 0 "$RG_RC"
+printf '此問題發生在 feature/foo-bar 分支上\n' > "$RGT/.devflow/reports/i109-real-branch.md"
+rg_run "$RGT/.devflow/reports/i109-real-branch.md"
+ck_msg "rg 真分支名 feature/foo-bar → 仍擋(分支名規則沒被連坐削弱)" 2 "分支名" "$RG_RC" "$RG_OUT"
+printf '相關檔案:docs/dev/acme-crm/4-spec.md\n' > "$RGT/.devflow/reports/i109-not-in-master.md"
+rg_run "$RGT/.devflow/reports/i109-not-in-master.md"
+ck_msg "rg 母版不存在的路徑(docs/dev/acme-crm/4-spec.md)→ 仍擋" 2 "不存在於母版" "$RG_RC" "$RG_OUT"
+# fresh 驗收(2026-09-04)medium:DEVFLOW_MASTER 優先序 1 舊版只查
+# .claude-plugin/plugin.json 存在,沒驗 name=dev-flow —— 誤設成別的 plugin 目錄
+# 也會被接受。這裡指向一個 name≠dev-flow 的假 plugin 目錄,期望:①不被採用
+# (乾脆落到 fallback,母版真沒有的路徑仍要擋)②訊息點名「忽略」講清楚原因。
+RGFAKE=$(mktemp -d "${TMPDIR:-/tmp}/devflow-rg-fake-plugin.XXXXXX")
+mkdir -p "$RGFAKE/.claude-plugin"
+printf '{"name":"some-other-plugin"}' > "$RGFAKE/.claude-plugin/plugin.json"
+printf '相關檔案:docs/dev/acme-crm/4-spec.md\n' > "$RGT/.devflow/reports/i109-env-master-wrong-name.md"
+RG_OUT=$(printf '{"tool_name":"Write","tool_input":{"file_path":"%s"}}' "$RGT/.devflow/reports/i109-env-master-wrong-name.md" \
+  | env DEVFLOW_MASTER="$RGFAKE" "$H/devflow-report-guard.sh" 2>&1); RG_RC=$?
+ck_msg "rg DEVFLOW_MASTER 指向 name≠dev-flow 的假 plugin → 不採用,訊息點名忽略" 2 "忽略" "$RG_RC" "$RG_OUT"
+rm -rf "$RGFAKE"
 rm -rf "$RGT"
 
 echo "-- c2 tier-exempt 豁免卡 run 級:stop 清未消耗的卡、留已消耗的卡 --"
