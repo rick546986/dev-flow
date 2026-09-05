@@ -47,6 +47,10 @@ _SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
 # token stream,不是手刻正則(理由見 mask_fenced/sections 的 docstring)。
 # 這支工具會被散發到採用專案,缺相依或版本不對時**不吐 traceback、不靜默
 # 降級回正則**——降級等於讓兩邊 diverge 卻不吭聲,比直接擋下來更危險。
+# ⚠️ render 路徑要 Python 3.12+ 的專案 venv(#122):doctor printer-python 的
+# PRINTER_PY_FLOOR 釘死 3.12。母版地板 3.9(scripts/check-py-floor.sh)只保證這支
+# 檔案的語法可解析,不保證這個相依裝得起來 —— `DEVFLOW_RENDER_PYTHON` 指向那個 venv,
+# 不要覆寫 macOS 系統 python3。
 _MDIT_REQUIRED = "4.0.0"
 _MDIT_REQ_FILE = _SCRIPT_DIR / "requirements-methodology-render.txt"
 # 散發副本(docs/dev/tools/build-gate-twin.py)身邊沒有 requirements-methodology-render.txt
