@@ -7,13 +7,16 @@
 # `docs/dev/tools/`,三個 gate 的審查頁全靠它產)在 f-string 的**表達式部分**寫了反斜線
 # (正則的 `\s`/`\S`)。那個寫法 Python 3.12 才允許,3.11 及更早直接 SyntaxError ——
 # 整支檔案讀不進去,不是報錯訊息,是語法錯誤。而 macOS 內建的 /usr/bin/python3 是 3.9,
-# 且 dev-flow 挑直譯器的順序把系統內建排在 PATH 之前(README 環境需求段)——
+# 且 dev-flow 挑直譯器的順序把系統內建排在 PATH 之前(docs/PLUGIN.md 環境需求段)——
 # **等於優先挑到跑不動的那個版本**。這個缺陷在 v3.8.0 就已經出貨,全部既有檢查皆綠。
 #
 # 宣告下限 = PY_FLOOR(下方常數)= 編譯地板。printers 在 3.9 仍可 parse(本輪用
 # 真的 3.9.25 compile 過);markdown-it-py==4.0.0 的**執行地板**是 3.12+,
 # 由 doctor `printer-python` 查,不把編譯地板偷偷升到 3.12。
-# 改編譯下限要同時改 README 環境需求段;改執行地板要同時改 doctor 與 README。
+# 改編譯下限要同時改 docs/PLUGIN.md 環境需求段;改執行地板要同時改 doctor 與 docs/PLUGIN.md。
+# ⚠️ 這支守衛只驗語法層,不驗第三方相依在地板版本上裝不裝得起來(#122 拍板修法 1)——
+# render 路徑(build-gate-twin.py、render-methodology-corrections.sh)那條執行地板見上,
+# 不歸這支守衛保證。
 #
 # 做法:找一個「舊到會顯示出問題」的直譯器(版本在下限 ~ 3.11 之間),用它逐檔真的
 # compile 一遍。**找不到就 exit 2,不退回靜態掃描** —— 曾經寫過一版靜態掃描 fallback
@@ -313,7 +316,8 @@ if failures:
     print(f"❌ {len(failures)} 項不符:")
     for f in failures:
         print(f"   {f}")
-    print("   修法:把值落成變數再進 f-string;或改 PY_FLOOR 並同步 README 環境需求段。")
+    print("   修法:把值落成變數再進 f-string;或改 PY_FLOOR 並同步 docs/PLUGIN.md 環境需求段。")
     sys.exit(1)
-print(f"✅ {checked} 個 .py 在 Python {used} 下皆可解析{gap}")
+print(f"✅ {checked} 個 .py 在 Python {used} 下皆可解析{gap}"
+      "(語法層;render 路徑另需 Python ≥3.12 的專案 venv,見 docs/PLUGIN.md)")
 PY
