@@ -59,6 +59,8 @@
 #                    同步宣告列)/ SM-1 第三類列 docs/dev/readme-contract-extract.md
 #                    的 source 被刪、正本列仍在 → 必須紅(舊版此變異 15 項仍全綠;
 #                    check-ship-manifest.sh)
+#   RP(2026-09-05,issue #129) RP-1 DEVFLOW_RENDER_PYTHON 指向假直譯器時
+#                    check-gate-twin.sh 必須呼叫它(舊版寫死 python3,env 無效)
 #   靜態互釘(2026-08-16 補,獨立審查 finding 4;2026-08-17 二次複審後補到七支;
 #                    v3.8.0 落地輪 B-4 補到九支)
 #                    九支散落地板/群組數的字面值互釘 —— hooks/selftest.sh
@@ -138,8 +140,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=16
-EXPECTED_NEGATIVES=122
-EXPECTED_TOTAL=138
+EXPECTED_NEGATIVES=123
+EXPECTED_TOTAL=139
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -2273,6 +2275,32 @@ assert u2 != u, "PF-2 INTERP_TOKEN_RE 變異沒生效"
 floor.write_text(u2, encoding="utf-8")
 PY
 expect_local fail check-py-floor.sh "$D" "PF-2 INTERP_TOKEN_RE 關掉後,只能靠它判定的變數呼叫 heredoc(tag 不含 PY)漏收,MIN_HEREDOCS 必紅"
+
+# RP-1(issue #129):env 指向假直譯器時,check-gate-twin.sh 必須用它。
+# 不靠「守衛非零退出」當證據 —— 不完整 seed 在舊版寫死 python3 時也會因缺
+# markdown-it-py 而紅,那種紅證明不了有讀 env。證據是假直譯器自己印的標記。
+D="$WORK/rp1"
+[[ "$D" == "$WORK/"* ]] || { echo "RP-1: root 逃逸 $D" >&2; exit 1; }
+mkdir -p "$D/scripts"
+cp "$ROOT/scripts/check-gate-twin.sh" "$D/scripts/"
+chmod +x "$D/scripts/check-gate-twin.sh"
+fake="$D/fake-render-python"
+cat > "$fake" <<'SH'
+#!/bin/sh
+echo "FAKE_RENDER_PYTHON_USED"
+exit 42
+SH
+chmod +x "$fake"
+count_case fail
+out=$(DEVFLOW_RENDER_PYTHON="$fake" "$D/scripts/check-gate-twin.sh" "$D" 2>&1) || true
+if printf '%s' "$out" | grep -qF "FAKE_RENDER_PYTHON_USED"; then
+  RESULTS+=("  ✅ RP-1 DEVFLOW_RENDER_PYTHON 指向假直譯器 → check-gate-twin.sh 必用它 — 預期 fail,實得 fail")
+  PASS=$((PASS + 1))
+else
+  RESULTS+=("  ❌ RP-1 DEVFLOW_RENDER_PYTHON 指向假直譯器 → check-gate-twin.sh 必用它 — 假直譯器未被呼叫")
+  RESULTS+=("       $(printf '%s' "$out" | tail -3 | tr '\n' ' ')")
+  FAIL=$((FAIL + 1))
+fi
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
