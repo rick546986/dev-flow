@@ -2071,18 +2071,24 @@ find "$H/devflow_obs_vendor" -type d -name '__pycache__' -exec rm -rf {} + 2>/de
 find "$H/devflow_obs_vendor" -name '*.pyc' -delete 2>/dev/null || true
 ck "p3 vendor 無 __pycache__ 生成" 0 "$([ -z "$(find "$H/devflow_obs_vendor" -name '__pycache__' -print -quit 2>/dev/null)" ]; echo $?)"
 # MINOR-1:vendor byte-identical 宣稱機械強制(母版在才可驗;不在 → 明確 SKIP,不靜默)
+# ⚠️ 2026-09-05:diff 排除清單原本只有 __pycache__/*.pyc(vendor 側自己的
+# rm -rf,見上方 2070-2071 行);母版側 observability/devflow_obs/ 是使用者的
+# 工作樹,不歸這支測試清理 —— 若母版側殘留 __pycache__ 或 macOS 的 .DS_Store,
+# 舊版 diff 會把這種本機噪音當成 vendor 漂移誤判,本機 main 上 453/454 假紅、
+# CI 乾淨 checkout 才綠。修法是兩側都適用的 -x '.DS_Store'(兩份 diff 呼叫同時
+# 補上),不是去清母版側的檔案。
 p3_vendor_cmp() { # 0=目錄一致或母版缺(SKIP 已明示);1=漂移
   local master="${DEVFLOW_MASTER:-$(dirname "$H")}/observability"
   if [ ! -d "$master" ]; then
     echo "  ⚠ SKIP:方法論母版不存在($master)—— vendor 一致性僅本機可驗,他機安裝不算 FAIL"
     return 0
   fi
-  if ! diff -rq -x '__pycache__' -x '*.pyc' \
+  if ! diff -rq -x '__pycache__' -x '*.pyc' -x '.DS_Store' \
       "$H/devflow_obs_vendor/devflow_obs" "$master/devflow_obs"; then
     echo "  vendor 漂移:devflow_obs/ 目錄與母版不一致"
     return 1
   fi
-  if ! diff -rq -x '__pycache__' -x '*.pyc' \
+  if ! diff -rq -x '__pycache__' -x '*.pyc' -x '.DS_Store' \
       "$H/devflow_obs_vendor/schema" "$master/schema"; then
     echo "  vendor 漂移:schema/ 目錄與母版不一致"
     return 1
@@ -2838,21 +2844,37 @@ echo "-- exec-schemas 對帳:_exec_impl.py 與 _dispatch_impl.py 兩份 EXEC_SCH
 # 新增/修改 schema 版本若漏改其中一邊,dispatch-guard 會把新版誤判成「未武裝」
 # 整批 fail-open 放行,卻沒有任何測試會現形。這裡補靜態比對,不 import
 # _exec_impl(它是即刻執行的 CLI 腳本,讀 sys.argv[1]/[2] 動態載入有副作用風險,
-# 兩檔各自的檔頭註解都有寫這一點)——只讀原始碼文字,regex 抓
-# `EXEC_SCHEMAS = ( … )` 字面(非貪婪比對到最近的 `)`;兩邊 tuple 內容都是純
-# 字串、不含巢狀括號,故不需手動配對括號深度),ast.literal_eval 成 tuple 後
-# assert 相等,不等時把兩份內容都印出來。
+# 兩檔各自的檔頭註解都有寫這一點)——只讀原始碼文字。
+# ⚠️ 2026-09-04 二次複審:舊版用 re.search(非貪婪比對到最近的 `)`)只抓「第一個」
+# `EXEC_SCHEMAS = ( … )` 字面就當數,若檔案裡意外/惡意多出第二個同名賦值(後面
+# 那個才是 Python 實際生效的值,Python 賦值後面蓋前面),regex 版永遠只看第一個、
+# 悄悄放行、比對照樣綠燈——跟 check_static_pin 那層「賦值覆蓋計數」防的是同一種
+# 漂移,這裡舊版沒防到。改法:ast.parse 整份原始碼,只走 module-level(tree.body
+# 這一層,不下鑽巢狀 def/class/if)的 Assign 節點,收集所有 target 名為
+# EXEC_SCHEMAS 的賦值,斷言恰好 1 個(0 個或 ≥2 個都視為找不到單一權威值,直接
+# fail),再對那一個節點的 value 子樹 ast.literal_eval(不吃字串源碼片段,吃已解析
+# 的 AST 節點,兩邊 tuple 內容都是純字串常數,literal_eval 吃得動),assert 相等,
+# 不等時把兩份內容都印出來。
 EXSC_OUT=$("$DEVFLOW_PY" - "$H/_exec_impl.py" "$H/_dispatch_impl.py" 2>&1 <<'PY'
-import ast, re, sys
+import ast, sys
 
 
 def extract(path):
     src = open(path, encoding="utf-8").read()
-    m = re.search(r'EXEC_SCHEMAS\s*=\s*(\(.*?\))', src, re.S)
-    if not m:
-        print(f"{path}: 找不到 EXEC_SCHEMAS = ( … ) 字面", file=sys.stderr)
+    tree = ast.parse(src, filename=path)
+    bindings = [
+        node for node in tree.body
+        if isinstance(node, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id == "EXEC_SCHEMAS" for t in node.targets)
+    ]
+    if len(bindings) != 1:
+        print(
+            f"{path}: module-level EXEC_SCHEMAS 綁定數為 {len(bindings)}(應恰為 1,"
+            "多於一個綁定或完全找不到都視為沒有單一權威值)",
+            file=sys.stderr,
+        )
         sys.exit(1)
-    return ast.literal_eval(m.group(1))
+    return ast.literal_eval(bindings[0].value)
 
 
 a_path, b_path = sys.argv[1], sys.argv[2]
