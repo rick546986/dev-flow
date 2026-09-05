@@ -248,7 +248,7 @@ class InventoryTest(MemoryCase):
 
 
 class SensitiveContentGateTest(MemoryCase):
-    """四個耐久寫入函式各自要對自己落盤的內容欄位重掃敏感內容(issue #107)。
+    """五個耐久寫入函式各自要對自己落盤的內容欄位重掃敏感內容(issue #107/#123)。
 
     刻意繞過 `sync.consolidate()`/`signal.gate()`,直接呼叫 writer ——
     模擬「呼叫端沒有先過閘」的情境;writer 自己必須是最後一道閘,
@@ -308,6 +308,24 @@ class SensitiveContentGateTest(MemoryCase):
             "key": "deploy", "title": "部署", "steps": ["build", "push"],
             "recorded_at": "2026-08-20T00:00:00Z"})
         self.assertEqual(len(list(durable.iter_skills(self.repo))), 1)
+
+    def test_append_events_rejects_secret_in_title(self):
+        with self.assertRaises(durable.DurableError) as ctx:
+            durable.append_events(self.repo, "ses_a", [{
+                "event_id": "evt_secret", "kind": "schema_change",
+                "title": "AKIAIOSFODNN7EXAMPLE",
+                "occurred_at": "2026-08-20T00:00:00Z"}])
+        self.assertEqual(list(durable.iter_events(self.repo)), [])
+        message = str(ctx.exception)
+        self.assertIn("aws_access_key", message)
+        self.assertNotIn("AKIAIOSFODNN7EXAMPLE", message)
+
+    def test_append_events_allows_benign_title(self):
+        durable.append_events(self.repo, "ses_a", [{
+            "event_id": "evt_ok", "kind": "schema_change",
+            "title": "一段不含敏感內容的事件",
+            "occurred_at": "2026-08-20T00:00:00Z"}])
+        self.assertEqual(len(list(durable.iter_events(self.repo))), 1)
 
     def test_rejection_message_names_pattern_not_value(self):
         """拒絕訊息只能講中槍的 pattern 名稱,不能把值本身抄一份進錯誤訊息。"""

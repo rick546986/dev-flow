@@ -76,10 +76,11 @@ class DurableError(RuntimeError):
 def _assert_portable_content(*texts):
     """durable writer 邊界:敏感內容與絕對路徑不得進 Git。
 
-    這是最後一道閘,四個耐久寫入函式各自對自己**會落盤的散文欄位**呼叫
+    這是最後一道閘,五個耐久寫入函式各自對自己**會落盤的散文欄位**呼叫
     這裡:write_state 掃 fact_key/value;write_knowledge 掃 title/body;
     write_decision 掃 title/decision/alternatives/reason/tradeoff;
-    write_skill 掃 title/preconditions/verification/steps。
+    write_skill 掃 title/preconditions/verification/steps;
+    append_events 掃每筆 event 的 title/body。
 
     evidence/conflicts(knowledge/decision/skill)與
     source_ref/source_type/source_commit/superseded_by(state)也會落盤,
@@ -752,6 +753,8 @@ def append_events(repo_root_path, session_id, records):
         occurred_at = record.get("occurred_at")
         path = event_file(repo_root_path, session_id, occurred_at)
         payload = {k: v for k, v in record.items() if v is not None}
+        _assert_portable_content(
+            payload.get("title", ""), payload.get("body", ""))
         _guard_paths(payload.get("paths") or ())
         event_id = payload.get("event_id")
         if not event_id:
