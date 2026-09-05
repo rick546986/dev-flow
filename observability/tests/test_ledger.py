@@ -404,9 +404,29 @@ class TestRepairConcurrentApply(unittest.TestCase):
     A 剛搬進去的隔離檔(quarantine 檔名靠微秒時戳,仍可能撞名),兩邊都回報
     repaired,但隔離檔最後只剩一份、內容不保證是「全部原始 bytes」。加上
     <file>.repair.lock(O_EXCL,同 events.jsonl.lock 同型)後,應恰一個
-    repaired、另一個 concurrent_repair_skip。用兩個真的 OS process(不是
-    threading)重現——用一個檔案柵欄讓兩邊在幾乎同一瞬間進入 repair_run,
-    提高真的搶到同一個 O_EXCL syscall 的機率。"""
+    repaired、另一個 concurrent_repair_skip。
+
+    #103 fix-forward:原本用一個檔案柵欄讓兩邊「幾乎同時」進 repair_run,
+    賭真的搶到同一個 O_EXCL syscall——這只是提高機率,不是保證。GitHub
+    ubuntu runner 排程抖動夠大時,A 行程可能整個 repair_run(含 scan →
+    拿鎖 → os.replace 兩次 → 還鎖)都跑完了,B 行程最上層、鎖外那次
+    scan_corruption(run_dir) 才真正執行——此時檔案早已被 A 修好,B 看到
+    的 plan 是空的,repair_run 對「從沒壞過」與「壞過但被別人搶先修好」
+    回傳同一種 {"corrupt_found": False, "items": []},於是測試那行
+    `r["items"][0]` 對 B 的結果 IndexError(這是回報粒度的落差,不是資料
+    安全問題——O_EXCL 鎖 + 拿鎖後 fresh rescan 保證任何交錯下都恰好一份
+    隔離檔、內容為原始全部 bytes,repair_run 本體不用修)。
+
+    現在改用行程 A 自己的一次性 os.replace monkeypatch 卡住:A 進了
+    repair_run、真的透過 O_EXCL 拿到 <file>.repair.lock、讀完待搬的乾淨
+    內容之後,在第一次 os.replace(path, quarantine) 前卡住等父行程訊號
+    (此時鎖仍握在 A 手上、磁碟上的檔案仍是原始壞內容未動)。父行程確認
+    A 已卡住持鎖後才放行 B——B 這時最上層 scan_corruption 一定還看得到
+    損壞(檔案尚未被 A 動過),進迴圈嘗試拿同一把鎖必定 FileExistsError,
+    確定性拿到 concurrent_repair_skip;B 跑完後父行程才放行 A 完成剩下
+    兩次 os.replace 並還鎖,確定性拿到 repaired。兩個真行程(不是
+    threading)、真鎖、真檔案 I/O 全程保留,只是把「誰先誰後」從賭運氣
+    改成明確排程,消除原本的 flaky 視窗。"""
 
     def test_two_processes_apply_concurrently_exactly_one_wins(self):
         tmp = tempfile.TemporaryDirectory()
@@ -425,33 +445,68 @@ class TestRepairConcurrentApply(unittest.TestCase):
         pkg_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
         alive_a = os.path.join(tmp.name, "alive_a")
         alive_b = os.path.join(tmp.name, "alive_b")
-        go = os.path.join(tmp.name, "go")
+        go_a = os.path.join(tmp.name, "go_a")
+        go_b = os.path.join(tmp.name, "go_b")
+        hold_a = os.path.join(tmp.name, "hold_a")     # A 已拿鎖、卡在 os.replace 前
+        release_a = os.path.join(tmp.name, "release_a")  # 父行程確認 B 跑完後才放行 A
         out_a = os.path.join(tmp.name, "out_a.json")
         out_b = os.path.join(tmp.name, "out_b.json")
 
-        def make_script(alive_marker, out_path):
-            return (
-                "import sys, os, json, time\n"
-                f"sys.path.insert(0, {pkg_root!r})\n"
-                "from devflow_obs import ledger\n"
-                f"open({alive_marker!r}, 'w').close()\n"
-                f"while not os.path.exists({go!r}): time.sleep(0.001)\n"
-                f"r = ledger.repair_run({run_dir!r}, apply=True)\n"
-                f"with open({out_path!r}, 'w') as f: json.dump(r, f)\n"
-            )
+        script_a = (
+            "import sys, os, json, time\n"
+            f"sys.path.insert(0, {pkg_root!r})\n"
+            "from devflow_obs import ledger\n"
+            "_orig_replace = os.replace\n"
+            "_paused = []\n"
+            "def _paced_replace(src, dst):\n"
+            f"    if src == {path!r} and not _paused:\n"
+            "        _paused.append(1)\n"
+            f"        open({hold_a!r}, 'w').close()\n"
+            "        deadline = time.time() + 10\n"
+            f"        while not os.path.exists({release_a!r}):\n"
+            "            if time.time() > deadline:\n"
+            "                raise RuntimeError('release_a 逾時未出現')\n"
+            "            time.sleep(0.001)\n"
+            "    return _orig_replace(src, dst)\n"
+            "os.replace = _paced_replace\n"
+            f"open({alive_a!r}, 'w').close()\n"
+            f"while not os.path.exists({go_a!r}): time.sleep(0.001)\n"
+            f"r = ledger.repair_run({run_dir!r}, apply=True)\n"
+            f"with open({out_a!r}, 'w') as f: json.dump(r, f)\n"
+        )
+        script_b = (
+            "import sys, os, json, time\n"
+            f"sys.path.insert(0, {pkg_root!r})\n"
+            "from devflow_obs import ledger\n"
+            f"open({alive_b!r}, 'w').close()\n"
+            f"while not os.path.exists({go_b!r}): time.sleep(0.001)\n"
+            f"r = ledger.repair_run({run_dir!r}, apply=True)\n"
+            f"with open({out_b!r}, 'w') as f: json.dump(r, f)\n"
+        )
 
-        pa = subprocess.Popen([sys.executable, "-c", make_script(alive_a, out_a)],
+        pa = subprocess.Popen([sys.executable, "-c", script_a],
                               stderr=subprocess.PIPE, text=True)
-        pb = subprocess.Popen([sys.executable, "-c", make_script(alive_b, out_b)],
+        pb = subprocess.Popen([sys.executable, "-c", script_b],
                               stderr=subprocess.PIPE, text=True)
-        deadline = time.time() + 10
-        while not (os.path.exists(alive_a) and os.path.exists(alive_b)):
-            if time.time() > deadline:
-                pa.kill()
-                pb.kill()
-                self.fail("子行程未能在時限內就緒(柵欄逾時)")
-            time.sleep(0.002)
-        open(go, "w").close()          # 起跑槍:兩邊幾乎同時進 repair_run
+
+        def wait_or_fail(predicate, timeout, msg):
+            deadline = time.time() + timeout
+            while not predicate():
+                if time.time() > deadline:
+                    pa.kill()
+                    pb.kill()
+                    self.fail(msg)
+                time.sleep(0.002)
+
+        wait_or_fail(lambda: os.path.exists(alive_a) and os.path.exists(alive_b),
+                     10, "子行程未能在時限內就緒(柵欄逾時)")
+        open(go_a, "w").close()        # 只放行 A:A 先進 repair_run 真的拿到鎖
+        wait_or_fail(lambda: os.path.exists(hold_a),
+                     10, "A 未能在時限內拿鎖並卡在 os.replace 前")
+        open(go_b, "w").close()        # A 卡住持鎖中才放行 B:B 必定搶輸
+        wait_or_fail(lambda: os.path.exists(out_b),
+                     10, "B 未能在時限內完成 repair_run(此時鎖應仍握在 A 手上)")
+        open(release_a, "w").close()   # B 已確定拿到結果,才放行 A 完成搬檔
         _, err_a = pa.communicate(timeout=15)
         _, err_b = pb.communicate(timeout=15)
         self.assertEqual(pa.returncode, 0, err_a)
