@@ -107,20 +107,54 @@ run_started → stage_started → [每 T:
 1. **每檔單一寫入者**:`writer.EventWriter` 以 `events.jsonl.lock`(O_EXCL)強制,
    雙開即 `AlreadyLocked`;多 worktree 天然分 `.devflow/` 不相見。
 2. **atomic write**:快照類(manifest/result/context-manifest/derived)一律
-   同目錄 temp + `os.replace`;失敗不毀原檔、不留半成品。
+   同目錄 temp + `os.replace`;失敗不毀原檔、不留半成品。manifest 另外要求
+   **互斥建立**(#103):兩行程同時打 run 的首事件都會走到
+   `_obs_impl.ensure_manifest`,若只靠「先檢查存在、不存在才寫」的 atomic
+   write 仍是 TOCTOU——兩邊都通過檢查、各自算出不同的 `created_at`,最後
+   `os.replace` 誰後到誰贏,先到者的內容被靜默蓋掉。改法:內容先寫滿同目錄
+   tmp 檔(fsync),再用 `os.link(tmp, mp)` 把它曝光成正式檔名——`link()`
+   是核心保證的互斥操作,兩邊同時 link 只有一個成功,另一個拿
+   `FileExistsError`(= 別人已建,不覆寫)。開頭仍留一個 `os.path.exists`
+   快路徑(同 run 後續每筆事件都會再呼叫 `ensure_manifest`,多數情況一開始
+   就該提早返回),但真正的互斥保證來自 `os.link`,不受這條檢查的 TOCTOU
+   影響。
 3. **crash 可判**:events 只可能截尾最後一行(reader 容忍並標 `partial_tail`);
    `attempt_started` 存在 + 無 `attempt_completed` + 無 result.json =
    **incomplete attempt**(`ledger.incomplete_attempts`);遺留 lock = 佐證。
+   **「非截尾＝損壞」語義不可逆轉**:中間一行壞掉不是截尾,reader
+   (`writer._read_complete_events`)對這種情況 raise,不當殘行續寫——這是
+   刻意的,續寫等於掩蓋真實損毀。
 4. **restart 恢復**:`ledger.resume_state` 只靠檔案系統重建每 T 進度
    (attempts 數 = 升階預算消耗、open_attempt、accepted)。
 5. **derived 是衍生資料**:排序鍵 (timestamp, source, seq),byte 決定性,
    刪掉可重建;JSON/JSONL 是 runtime source,Markdown 摘要一律由 ledger 衍生
    (十一節),禁手動雙寫。
 6. **守衛互動**:`.devflow/` 受 guard/prebash 保護 → 事件寫入只能由
-   coordinator 經正式 CLI/runtime writer(§7),**Worker 不得直接手改 ledger**。
+   coordinator 經正式 CLI/runtime writer(§7),**Worker 不得直接手改
+   ledger**(repair 是例外:損壞 run 的人工維護出口,`--apply` 才動作,不是
+   agent 常態寫入路徑)。
    ⚠️ prebash regex 陷阱:指令字串中「rm/mv 子字串 + `.devflow/` 路徑」會被攔
    (無 word boundary,`confirm .devflow/...` 也中),故 writer CLI 介面設計成
    **吃 slug/state 自行解析路徑,不在命令列鋪 `.devflow/` 路徑**。
+7. **壞 run 有出口(#103)**:「非截尾＝損壞」意味著中間一行壞掉的 run 曾經
+   無法被 `EventWriter` 重開(建構子讀既有事件時原樣把例外往上丟),也沒有
+   任何工具能把它救回來。`ledger.scan_corruption` / `ledger.repair_run`
+   (CLI:`devflow-obs.py repair <run_dir> [--apply]`,runtime 同等骨架
+   `devflow-obs.sh repair <run_id> [--apply]`)補上這個出口:掃描邏輯與
+   `_read_complete_events` 判斷「是否截尾」完全同一套規則
+   (`i >= len(lines) - 2`),差別只在不 raise、改回傳壞行位置(第幾行、
+   byte offset、壞行前有幾筆乾淨事件)。預設 dry-run 只印計畫,不動任何
+   檔案;`--apply` 才把壞行起(含之後所有內容,無論是否還有合法行——**是
+   破壞性動作,不逐行搶救**)原子隔離到 `<file>.corrupt-<UTC 時戳>`(保留
+   原始全部 bytes,供稽核回溯),原檔只留壞行前的乾淨事件,之後
+   `EventWriter` 可正常對該目錄重開續寫。截尾殘行(壞行落在最後一行、或
+   檔案沒有結尾換行)由既有 `partial_tail`/`incomplete_attempts` 模型處理,
+   **不算損壞**、不在 repair 範圍內,repair 對這種檔案回報「不需要
+   repair」。有 `events.jsonl.lock`(或 hook 的
+   `events-<session>.jsonl.lock`)存在的檔案,`--apply` 一律跳過不修
+   (crash 遺留鎖或仍有寫入者是 fail-closed 的既有立場,不搶著清鎖或搬檔)。
+   repair 後 `derived/run-events.jsonl` 對應內容過期,下一次 `derive` 依
+   現況重建即可,不需要另外處理。
 
 ## 5. Prompt Version(五節)
 
@@ -270,8 +304,8 @@ feature 反向相容:`legacy_md.parse_execution_trace` 直接讀執行軌跡表
 | derived ledger 可重建 | test_ledger `test_derived_is_rebuildable_and_deterministic` |
 | 舊 Markdown 無 Run ID 仍能讀 | test_legacy_md + test_cli `test_stats_over_fixtures_and_legacy` |
 
-執行:`python3 -m unittest discover -s observability/tests`(125 案)。
-CLI:`python3 observability/devflow-obs.py {validate|validate-registry|incomplete|resume|derive|stats|recommend}`。
+執行:`python3 -m unittest discover -s observability/tests`(193 案)。
+CLI:`python3 observability/devflow-obs.py {validate|validate-registry|incomplete|resume|derive|repair|stats|recommend}`。
 
 ## 13. 1.1 變更 + 2.0 移除計畫(共享契約 §6 三項六修正落地,2026-08-02)
 

@@ -2,9 +2,11 @@
 derived ledger 可重建、parent attempt 關聯(交叉驗證)。"""
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import threading
+import time
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -203,6 +205,273 @@ class TestConcurrency(unittest.TestCase):
         self.assertNotEqual(run_a, run_b)
         self.assertEqual(ledger.validate_run(run_a), [])
         self.assertEqual(ledger.validate_run(run_b), [])
+
+
+class TestRepair(unittest.TestCase):
+    """#103:壞 run 有出口。「非截尾＝損壞」語義不變 —— scan_corruption 的
+    判定必須與 writer._read_complete_events 是否 raise 完全一致(否則 repair
+    修的跟 reader 判的是兩套標準,drift 沒人抓得到)。"""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+
+    def _write(self, *lines_bytes):
+        """把給定的 bytes 片段依序寫進一個 attempts/att_x/events.jsonl,
+        回傳 (run_dir, path)。片段本身已含換行與否,由呼叫端控制。"""
+        run_dir = os.path.join(self.tmp.name, "run_r")
+        d = os.path.join(run_dir, "attempts", "att_x")
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, "events.jsonl")
+        with open(path, "wb") as f:
+            for chunk in lines_bytes:
+                f.write(chunk)
+        return run_dir, path
+
+    def test_scan_agrees_with_reader_raising_mid_file_bad_line(self):
+        run_dir, path = self._write(
+            b'{"event_type":"attempt_started","seq":1}\n',
+            b'{not valid\n',
+            b'{"event_type":"attempt_completed","seq":2}\n')
+        with self.assertRaises(ValueError):
+            writer._read_complete_events(path)
+        found = ledger.scan_corruption(run_dir)
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0]["bad_line_no"], 2)
+        self.assertEqual(found[0]["clean_events"], 1)
+
+    def test_scan_agrees_with_reader_tolerating_last_line_truncated(self):
+        run_dir, path = self._write(
+            b'{"event_type":"attempt_started","seq":1}\n',
+            b'{"event_type":"attempt_comple')   # 截尾,無結尾換行
+        events, partial = writer._read_complete_events(path)
+        self.assertTrue(partial)
+        self.assertEqual(len(events), 1)
+        self.assertEqual(ledger.scan_corruption(run_dir), [])
+
+    def test_scan_agrees_with_reader_tolerating_last_line_bad_json_no_newline(self):
+        run_dir, path = self._write(
+            b'{"event_type":"attempt_started","seq":1}\n',
+            b'{this is not json at all, no trailing newline')
+        events, partial = writer._read_complete_events(path)
+        self.assertTrue(partial)
+        self.assertEqual(ledger.scan_corruption(run_dir), [])
+
+    def test_scan_agrees_with_reader_single_bad_line_file_is_not_corrupt(self):
+        # 只有一行、還壞掉:reader 判斷不出「只有一行的截尾」跟「唯一一行就是
+        # 壞的」有什麼差別,一律當截尾容忍(i>=len(lines)-2 對單行檔恆成立)。
+        # scan_corruption 用同一套規則,必須跟著不判為損壞 —— 這正是「非截尾
+        # ＝損壞」語義在最短檔案上的邊界,兩邊標準不一致才是真正該抓的 drift。
+        run_dir, path = self._write(b'{not valid\n')
+        events, partial = writer._read_complete_events(path)
+        self.assertTrue(partial)
+        self.assertEqual(ledger.scan_corruption(run_dir), [])
+
+    def test_bad_line_first_zero_clean_events(self):
+        run_dir, path = self._write(
+            b'{not valid\n',
+            b'{"event_type":"attempt_completed","seq":2}\n')
+        found = ledger.scan_corruption(run_dir)
+        self.assertEqual(found[0]["clean_events"], 0)
+        self.assertEqual(found[0]["corrupt_offset"], 0)
+        result = ledger.repair_run(run_dir, apply=True)
+        self.assertEqual(result["items"][0]["clean_events_kept"], 0)
+        with open(path, "rb") as f:
+            self.assertEqual(f.read(), b"")
+
+    def test_dry_run_does_not_touch_files(self):
+        run_dir, path = self._write(
+            b'{"event_type":"attempt_started","seq":1}\n',
+            b'{not valid\n',
+            b'{"event_type":"attempt_completed","seq":2}\n')
+        with open(path, "rb") as f:
+            before = f.read()
+        result = ledger.repair_run(run_dir, apply=False)
+        self.assertFalse(result["apply"])
+        self.assertTrue(result["corrupt_found"])
+        self.assertEqual(result["items"][0]["code"], "would_repair")
+        with open(path, "rb") as f:
+            self.assertEqual(f.read(), before)   # 完全沒動檔案
+        self.assertEqual(sorted(os.listdir(os.path.dirname(path))),
+                         ["events.jsonl"])         # 沒有隔離檔、沒有 tmp 殘留
+
+    def test_apply_quarantines_full_bytes_and_keeps_clean_prefix(self):
+        run_dir, path = self._write(
+            b'{"event_type":"attempt_started","seq":1}\n',
+            b'{not valid\n',
+            b'{"event_type":"attempt_completed","seq":2}\n')
+        with open(path, "rb") as f:
+            original = f.read()
+        result = ledger.repair_run(run_dir, apply=True)
+        self.assertTrue(result["apply"])
+        item = result["items"][0]
+        self.assertEqual(item["code"], "repaired")
+        quarantine = item["quarantined_to"]
+        self.assertTrue(os.path.basename(quarantine)
+                        .startswith("events.jsonl.corrupt-"))
+        with open(quarantine, "rb") as f:
+            self.assertEqual(f.read(), original)   # 隔離檔含原始全部 bytes
+        with open(path, "rb") as f:
+            clean = f.read()
+        self.assertEqual(clean, b'{"event_type":"attempt_started","seq":1}\n')
+        events, partial = writer._read_complete_events(path)
+        self.assertFalse(partial)
+        self.assertEqual(len(events), 1)
+
+    def test_apply_then_eventwriter_can_reopen_and_append(self):
+        run_dir, path = self._write(
+            b'{"event_type":"attempt_started","seq":1}\n',
+            b'{not valid\n',
+            b'{"event_type":"attempt_completed","seq":2}\n')
+        ledger.repair_run(run_dir, apply=True)
+        d = os.path.dirname(path)
+        w = writer.EventWriter(d)
+        rec = w.append({"event_type": "tool_invoked"})
+        w.close()
+        self.assertEqual(rec["seq"], 2)   # 續號自壞行前的乾淨事件之後
+        events, partial = writer._read_complete_events(path)
+        self.assertFalse(partial)
+        self.assertEqual([e["seq"] for e in events], [1, 2])
+
+    def test_apply_skips_locked_file(self):
+        run_dir, path = self._write(
+            b'{"event_type":"attempt_started","seq":1}\n',
+            b'{not valid\n',
+            b'{"event_type":"attempt_completed","seq":2}\n')
+        lock = path + ".lock"
+        open(lock, "w").close()
+        with open(path, "rb") as f:
+            before = f.read()
+        result = ledger.repair_run(run_dir, apply=True)
+        self.assertEqual(result["items"][0]["code"], "locked_skip")
+        with open(path, "rb") as f:
+            self.assertEqual(f.read(), before)     # 有鎖:原檔完全不動
+        self.assertTrue(os.path.exists(lock))
+
+    def test_dry_run_reports_locked_flag(self):
+        run_dir, path = self._write(
+            b'{"event_type":"attempt_started","seq":1}\n',
+            b'{not valid\n',
+            b'{"event_type":"attempt_completed","seq":2}\n')
+        open(path + ".lock", "w").close()
+        result = ledger.repair_run(run_dir, apply=False)
+        self.assertTrue(result["items"][0]["locked"])
+
+    def test_no_corruption_reports_clean_rc_style(self):
+        run_dir, _ = self._write(
+            b'{"event_type":"attempt_started","seq":1}\n',
+            b'{"event_type":"attempt_completed","seq":2}\n')
+        result = ledger.repair_run(run_dir, apply=False)
+        self.assertFalse(result["corrupt_found"])
+        self.assertEqual(result["items"], [])
+        result2 = ledger.repair_run(run_dir, apply=True)
+        self.assertFalse(result2["corrupt_found"])
+
+    def test_nonexistent_run_dir_raises(self):
+        with self.assertRaises(FileNotFoundError):
+            ledger.repair_run(os.path.join(self.tmp.name, "no-such-run"))
+
+    def test_repair_then_validate_clean_on_full_run_fixture(self):
+        # 用完整合法 run(build_run)驗證 repair 不會誤傷別的檔案、修完後
+        # validate_run 對整個 run 目錄乾淨(不只是被修的那一檔本身)。
+        # ledger.validate_run 本身對中間壞行不是 exception-safe(那層 try/except
+        # 是 CLI 層的事,#103 PR #110 已加在 devflow-obs.py/cmd_validate),
+        # 這裡直接呼叫 validate_run 預期會 raise —— 這正是 repair 存在的理由。
+        run_dir, t1_atts, att3 = build_run(self.tmp.name)
+        self.assertEqual(ledger.validate_run(run_dir), [])
+        path = os.path.join(run_dir, "attempts", t1_atts[0], "events.jsonl")
+        with open(path, "rb") as f:
+            raw = f.read()
+        lines = raw.split(b"\n")
+        # 在第一、二行之間插入一行壞 JSON(非截尾)
+        broken = lines[0] + b"\n" + b"{not valid\n" + b"\n".join(lines[1:])
+        with open(path, "wb") as f:
+            f.write(broken)
+        with self.assertRaises(ValueError):
+            ledger.validate_run(run_dir)
+        result = ledger.repair_run(run_dir, apply=True)
+        self.assertEqual(result["items"][0]["code"], "repaired")
+        self.assertEqual(ledger.validate_run(run_dir), [])
+        w = writer.EventWriter(os.path.dirname(path))
+        w.append({"event_type": "tool_invoked"})
+        w.close()
+
+
+
+class TestRepairConcurrentApply(unittest.TestCase):
+    """r3-#103 minor:repair_run 的 --apply 原本沒有互斥,兩個行程同時 apply
+    同一檔會用各自讀到的舊內容互踩——B 的 os.replace(path, quarantine) 蓋掉
+    A 剛搬進去的隔離檔(quarantine 檔名靠微秒時戳,仍可能撞名),兩邊都回報
+    repaired,但隔離檔最後只剩一份、內容不保證是「全部原始 bytes」。加上
+    <file>.repair.lock(O_EXCL,同 events.jsonl.lock 同型)後,應恰一個
+    repaired、另一個 concurrent_repair_skip。用兩個真的 OS process(不是
+    threading)重現——用一個檔案柵欄讓兩邊在幾乎同一瞬間進入 repair_run,
+    提高真的搶到同一個 O_EXCL syscall 的機率。"""
+
+    def test_two_processes_apply_concurrently_exactly_one_wins(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        run_dir = os.path.join(tmp.name, "run_r")
+        d = os.path.join(run_dir, "attempts", "att_x")
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, "events.jsonl")
+        with open(path, "wb") as f:
+            f.write(b'{"event_type":"attempt_started","seq":1}\n')
+            f.write(b'{not valid\n')
+            f.write(b'{"event_type":"attempt_completed","seq":2}\n')
+        with open(path, "rb") as f:
+            original = f.read()
+
+        pkg_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+        alive_a = os.path.join(tmp.name, "alive_a")
+        alive_b = os.path.join(tmp.name, "alive_b")
+        go = os.path.join(tmp.name, "go")
+        out_a = os.path.join(tmp.name, "out_a.json")
+        out_b = os.path.join(tmp.name, "out_b.json")
+
+        def make_script(alive_marker, out_path):
+            return (
+                "import sys, os, json, time\n"
+                f"sys.path.insert(0, {pkg_root!r})\n"
+                "from devflow_obs import ledger\n"
+                f"open({alive_marker!r}, 'w').close()\n"
+                f"while not os.path.exists({go!r}): time.sleep(0.001)\n"
+                f"r = ledger.repair_run({run_dir!r}, apply=True)\n"
+                f"with open({out_path!r}, 'w') as f: json.dump(r, f)\n"
+            )
+
+        pa = subprocess.Popen([sys.executable, "-c", make_script(alive_a, out_a)],
+                              stderr=subprocess.PIPE, text=True)
+        pb = subprocess.Popen([sys.executable, "-c", make_script(alive_b, out_b)],
+                              stderr=subprocess.PIPE, text=True)
+        deadline = time.time() + 10
+        while not (os.path.exists(alive_a) and os.path.exists(alive_b)):
+            if time.time() > deadline:
+                pa.kill()
+                pb.kill()
+                self.fail("子行程未能在時限內就緒(柵欄逾時)")
+            time.sleep(0.002)
+        open(go, "w").close()          # 起跑槍:兩邊幾乎同時進 repair_run
+        _, err_a = pa.communicate(timeout=15)
+        _, err_b = pb.communicate(timeout=15)
+        self.assertEqual(pa.returncode, 0, err_a)
+        self.assertEqual(pb.returncode, 0, err_b)
+
+        with open(out_a) as f:
+            ra = json.load(f)
+        with open(out_b) as f:
+            rb = json.load(f)
+        codes = sorted(r["items"][0]["code"] for r in (ra, rb))
+        self.assertEqual(codes, ["concurrent_repair_skip", "repaired"])
+
+        quarantines = [n for n in os.listdir(d) if ".corrupt-" in n]
+        self.assertEqual(len(quarantines), 1)
+        with open(os.path.join(d, quarantines[0]), "rb") as f:
+            self.assertEqual(f.read(), original)   # 隔離檔含原始全部 bytes
+
+        events, partial = writer._read_complete_events(path)
+        self.assertFalse(partial)
+        self.assertEqual(len(events), 1)
 
 
 if __name__ == "__main__":

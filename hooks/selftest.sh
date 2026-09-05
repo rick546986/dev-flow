@@ -74,7 +74,13 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 的 check_static_pin 字面。
 # ⚠️ 2026-09-04 fresh 驗收 medium:DEVFLOW_MASTER 優先序 1 補 _is_master_repo
 # 驗證(name=dev-flow)+1 案,疊上 → 437。
-MIN_CASES=437
+# ⚠️ 2026-09-04 #103:repair 子命令(runtime CLI 同等骨架)dry-run/--apply/
+# 隔離檔/validate 轉綠/EventWriter 重開續寫 +8,ensure_manifest O_EXCL 互斥
+# (併發首事件只留一份 manifest、無 tmp 半成品、六必填仍完整)+3,疊在 437 上 → 448。
+# 同日 fresh 驗收 r3-#103:cmd_repair run_id 路徑穿越攔截(相對路徑/絕對
+# 路徑/含空白各一案,拒絕且無檔案變動)+5,ensure_manifest hardlink 不支援
+# 退回 os.replace(mock os.link EPERM)+1,疊上 → 454。
+MIN_CASES=454
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -2135,6 +2141,111 @@ ck "p3 validate(非 strict)不查 runtime 加嚴,x_task_tags 自由字串放行"
 p3_strict validate --strict "$P3SVIOL"
 ck_msg "p3 validate --strict 仍照常抓 runtime 加嚴違規(合併 try/except 未吞掉本體)" 1 "invalid_enum" "$P3_RC" "$P3_OUT"
 rm -rf "$P3STRICT"
+
+echo "-- p3 repair(#103:壞 run 有出口,runtime CLI 同等骨架)--"
+# 直接在 $P3T 的真實 runs root 底下建一個壞 run(中間一行壞掉,非截尾),
+# 不另開 DEVFLOW_RUNS_ROOT——這樣才能接著用 p3_ev 對同一個 run 補寫事件,
+# 驗證 repair 之後 EventWriter 真的能重開續寫,不只是檔案內容對。
+P3RBAD="run_01JG8C4V2M0000000000000RPB"
+mkdir -p "$P3T/.devflow/runs/$P3RBAD/coordinator"
+printf '%s\n%s\n%s\n' \
+  "{\"schema\":\"devflow-agent-event/1.1\",\"seq\":1,\"event_type\":\"run_started\",\"writer\":\"coordinator\",\"run_id\":\"$P3RBAD\",\"feature_slug\":\"f1\",\"base_sha\":\"abc1234\",\"timestamp\":\"2026-08-01T00:00:00+00:00\"}" \
+  '{this is not valid json' \
+  "{\"schema\":\"devflow-agent-event/1.1\",\"seq\":2,\"event_type\":\"run_completed\",\"writer\":\"coordinator\",\"run_id\":\"$P3RBAD\",\"result\":\"PASS\",\"timestamp\":\"2026-08-01T00:01:00+00:00\"}" \
+  > "$P3T/.devflow/runs/$P3RBAD/coordinator/events.jsonl"
+P3RBAD_BEFORE=$(cat "$P3T/.devflow/runs/$P3RBAD/coordinator/events.jsonl")
+p3_obs repair "$P3RBAD"
+ck "p3 repair dry-run rc=0(#103)" 0 "$P3_RC"
+ck_msg "p3 repair dry-run 印計畫(#103)" 0 "would_repair" "$P3_RC" "$P3_OUT"
+ck "p3 repair dry-run 不動任何檔案(#103)" 0 "$([ "$(cat "$P3T/.devflow/runs/$P3RBAD/coordinator/events.jsonl")" = "$P3RBAD_BEFORE" ]; echo $?)"
+p3_obs repair "$P3RBAD" --apply
+ck_msg "p3 repair --apply 隔離壞行,結構化摘要(#103)" 0 "repaired" "$P3_RC" "$P3_OUT"
+P3RQ=$(find "$P3T/.devflow/runs/$P3RBAD/coordinator" -maxdepth 1 -name 'events.jsonl.corrupt-*' -print -quit)
+ck "p3 repair --apply 產生 .corrupt-<UTC 時戳> 隔離檔(#103)" 0 "$([ -n "$P3RQ" ]; echo $?)"
+ck "p3 repair --apply 隔離檔含原始全部 bytes(#103)" 0 "$([ "$(cat "$P3RQ")" = "$P3RBAD_BEFORE" ]; echo $?)"
+p3_obs validate "$P3RBAD"
+ck "p3 repair 後 validate 轉綠(#103)" 0 "$P3_RC"
+cp "$P3T/.devflow/exec.json" "$P3T/.devflow/exec.json.bak103"
+printf '{"schema":"exec-v3","slug":"f1","run_id":"%s","scope":[],"extra":[]}\n' "$P3RBAD" > "$P3T/.devflow/exec.json"
+p3_ev '{"event_type":"run_completed","writer":"coordinator","result":"PASS"}'
+ck_msg "p3 repair 後 EventWriter 對該 run 可正常重開續寫(#103)" 0 "run_completed" "$P3_RC" "$P3_OUT"
+mv "$P3T/.devflow/exec.json.bak103" "$P3T/.devflow/exec.json"
+
+echo "-- p3 ensure_manifest 互斥(#103:兩行程同時首事件不再靜默互蓋)--"
+# O_CREAT|O_EXCL(經 os.link 曝光)語義:多行程同時打第一筆事件,只會留一份
+# manifest.json,不會有人靜默蓋掉先到者、也不會留半成品 tmp 檔。
+P3MRUN="run_01JG8C4V2M0000000000000MFX"
+cp "$P3T/.devflow/exec.json" "$P3T/.devflow/exec.json.bak103b"
+printf '{"schema":"exec-v3","slug":"f1","run_id":"%s","scope":[],"extra":[]}\n' "$P3MRUN" > "$P3T/.devflow/exec.json"
+for _p3mi in $(seq 1 10); do
+  ( cd "$P3T" && printf '%s\n' \
+    '{"event_type":"run_started","writer":"coordinator","feature_slug":"f1","base_sha":"abc1234"}' \
+    | "$H/devflow-obs.sh" event >/dev/null 2>&1 ) &
+done
+wait
+P3MN=$(find "$P3T/.devflow/runs/$P3MRUN" -maxdepth 1 -name 'manifest.json' | wc -l | tr -d ' ')
+ck "p3 ensure_manifest 併發首事件只留一份 manifest(#103)" 0 "$([ "$P3MN" = "1" ]; echo $?)"
+P3MTMP=$(find "$P3T/.devflow/runs/$P3MRUN" -name '.tmp-*' -print -quit)
+ck "p3 ensure_manifest 併發後無 tmp 半成品殘留(#103)" 0 "$([ -z "$P3MTMP" ]; echo $?)"
+ck "p3 ensure_manifest 併發後 manifest 六必填仍完整(#103)" 0 "$(p3_json_has "$P3T/.devflow/runs/$P3MRUN/manifest.json" manifest; echo $?)"
+mv "$P3T/.devflow/exec.json.bak103b" "$P3T/.devflow/exec.json"
+
+echo "-- p3 repair run_id 路徑穿越攔截(r3-#103 major)--"
+# PoC(fresh 驗收):repair "../../.devflow-victim-test" --apply 從
+# .devflow/runs/ 內把 runs 樹外的檔案隔離重寫成功——resolve_run_dirs 對
+# run_id 沒驗格式,os.path.join(base, rid) 對 "../x" 會逃出 runs_root,
+# 對絕對路徑更直接被 os.path.join 丟掉 base。cmd_repair 現在先驗
+# ids.is_valid_id,三案(相對路徑穿越/絕對路徑/含空白)都應在動任何檔案
+# 之前就被拒絕。
+mkdir -p "$P3T/.devflow-victim-test/coordinator"
+printf 'untouched-marker
+' > "$P3T/.devflow-victim-test/coordinator/events.jsonl"
+P3VICTIM_BEFORE=$(cat "$P3T/.devflow-victim-test/coordinator/events.jsonl")
+p3_obs repair "../../.devflow-victim-test" --apply
+ck_msg "p3 repair run_id 相對路徑穿越 → 拒絕(r3-#103)" 1 "invalid_run_id" "$P3_RC" "$P3_OUT"
+ck "p3 repair 相對路徑穿越攻擊後受害檔未變動(r3-#103)" 0 "$([ "$(cat "$P3T/.devflow-victim-test/coordinator/events.jsonl")" = "$P3VICTIM_BEFORE" ]; echo $?)"
+p3_obs repair "$P3T/.devflow-victim-test" --apply
+ck_msg "p3 repair run_id 絕對路徑 → 拒絕(r3-#103)" 1 "invalid_run_id" "$P3_RC" "$P3_OUT"
+ck "p3 repair 絕對路徑攻擊後受害檔未變動(r3-#103)" 0 "$([ "$(cat "$P3T/.devflow-victim-test/coordinator/events.jsonl")" = "$P3VICTIM_BEFORE" ]; echo $?)"
+p3_obs repair "run x with space" --apply
+ck_msg "p3 repair run_id 含空白 → 拒絕(r3-#103)" 1 "invalid_run_id" "$P3_RC" "$P3_OUT"
+
+echo "-- p3 ensure_manifest hardlink 不支援時退回 os.replace(r3-#103 minor)--"
+# 修前 os.link 只接 FileExistsError,不支援 hardlink 的檔案系統會拋別種
+# OSError(EPERM/EOPNOTSUPP/EXDEV/EMLINK)裸崩,整條事件寫入路徑掛掉。
+P3MFB=$("$DEVFLOW_PY" - "$H" "$P3T" <<'PYEOF'
+import sys, os, json, errno
+hooks_dir, root = sys.argv[1], sys.argv[2]
+sys.path.insert(0, hooks_dir)
+sys.path.insert(0, os.path.join(hooks_dir, "devflow_obs_vendor"))
+import _obs_impl as impl
+
+run_dir = os.path.join(root, ".devflow", "runs", "run_01JG8C4V2M0000000000000MFB")
+os.makedirs(run_dir, exist_ok=True)
+state = {"slug": "mfb-test"}
+
+real_link = os.link
+def boom(src, dst, *a, **kw):
+    raise OSError(errno.EPERM, "simulated no-hardlink")
+os.link = boom
+try:
+    impl.ensure_manifest(root, run_dir, "run_01JG8C4V2M0000000000000MFB", state)
+finally:
+    os.link = real_link
+
+mp = os.path.join(run_dir, "manifest.json")
+ok = os.path.exists(mp)
+if ok:
+    with open(mp) as f:
+        m = json.load(f)
+    need = ["repo_id", "run_id", "schema_version", "created_at", "expires_at", "source_sha"]
+    ok = all(m.get(k) for k in need) and m.get("run_id") == "run_01JG8C4V2M0000000000000MFB"
+leftover = [n for n in os.listdir(run_dir) if n.startswith(".tmp-")]
+print("OK" if (ok and not leftover) else "FAIL")
+PYEOF
+)
+ck "p3 ensure_manifest hardlink 不支援(os.link EPERM)退回 os.replace,manifest 仍正確建立(r3-#103)" "OK" "$P3MFB"
+
 rm -rf "$P3T"
 
 echo "-- pw integrator wiring(event/doctor/stage3 分派 + 守衛觀測插樁 fail-open)--"

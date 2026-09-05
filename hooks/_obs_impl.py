@@ -17,6 +17,9 @@ vendor 行為正本:hooks/devflow_obs_vendor/(方法論 repo observability/ 副�
                           回印 context_manifest_hash
   validate [--strict] [run_id ...]   schema+交叉引用驗證(--strict 加 runtime 加嚴表)
   derive [run_id ...]     重建 derived/run-events.jsonl(byte 決定性)
+  repair <run_id> [--apply]  #103:壞 run 有出口。預設 dry-run 只印計畫;
+                          --apply 才把壞行起隔離到 <file>.corrupt-<UTC 時戳>,
+                          原檔留壞行前乾淨事件,之後可正常重開續寫
   stats / recommend       vendor stats 聚合(--run-id/--legacy-md/--min-n/--threshold)
   archive [run_id]        歸檔至 LEDGER_HOME/runs/<repo_id>/<run_id>/(OC-5)
   retention status|prune [--dry-run]  保存政策(180 天 raw);**僅手動執行,
@@ -25,6 +28,7 @@ vendor 行為正本:hooks/devflow_obs_vendor/(方法論 repo observability/ 副�
   registry validate [path] 驗 prompt-registry.json(vendor validator)
 """
 import datetime
+import errno
 import hashlib
 import json
 import os
@@ -32,6 +36,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 
 sys.dont_write_bytecode = True
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -223,17 +228,39 @@ def head_sha(root):
     return sha
 
 
+# r3-#103:os.link 在這些 errno 上代表「此檔案系統不支援 hardlink」
+# (非「別人已建」的 FileExistsError),ensure_manifest 據此決定要不要
+# 退回 os.replace。ENOTSUP 在 Linux 的 errno 模組不一定存在,用
+# getattr 保底避免 AttributeError。
+_HARDLINK_UNSUPPORTED_ERRNOS = {
+    errno.EPERM, errno.EXDEV, errno.EMLINK,
+    getattr(errno, "EOPNOTSUPP", None), getattr(errno, "ENOTSUP", None),
+} - {None}
+
+
 def ensure_manifest(root, run_dir, run_id, state):
     """run 首事件時建 manifest(OC-5 六必填:repo_id/run_id/schema_version/
-    created_at/expires_at/source_sha;另帶 run fixture 慣用欄位)。"""
+    created_at/expires_at/source_sha;另帶 run fixture 慣用欄位)。
+
+    #103:兩行程同時首事件會同時通過下面的存在檢查、各自算出 manifest 內容
+    (created_at 等會不同),原本各自 atomic_write_json(temp+rename)最後一個
+    replace 靜默蓋掉先到者。改用互斥建立語義:先把完整內容寫進同目錄 tmp 檔
+    (fsync),用 os.link 把 tmp 曝光成正式檔名 —— link() 是核心保證的互斥
+    操作,兩行程同時 link 只有一個成功,另一個拿 FileExistsError(= 別人已建,
+    讀回既有內容不覆寫)。先寫滿 tmp 再曝光,不會像直接對正式檔名開
+    O_CREAT|O_EXCL 那樣讓其他讀者看到半成品(零位元組)manifest.json,維持
+    四節②「快照類一律 atomic write」的規則。開頭的 os.path.exists 只是快
+    路徑優化(manifest 建好後,同 run 後續每筆事件都會再呼叫本函式),真正
+    的互斥由 os.link 提供,不受這條檢查的 TOCTOU 影響。"""
     mp = os.path.join(run_dir, "manifest.json")
     if os.path.exists(mp):
         return
+    os.makedirs(run_dir, exist_ok=True)
     created = now_iso()
     expires = (datetime.datetime.fromisoformat(created)
                + datetime.timedelta(days=RETENTION_DAYS_RAW)).isoformat(timespec="seconds")
     sha = head_sha(root)
-    writer.atomic_write_json(mp, {
+    payload = {
         "schema": "devflow-run-manifest/1",
         "schema_version": "1.0.0",
         "repo_id": repo_id(root),
@@ -245,7 +272,36 @@ def ensure_manifest(root, run_dir, run_id, state):
         "started": created,
         "created_at": created,
         "expires_at": expires,
-    })
+    }
+    fd, tmp = tempfile.mkstemp(prefix=".tmp-", dir=run_dir)
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=1, sort_keys=True)
+            f.write("\n")
+            f.flush()
+            os.fsync(f.fileno())
+        try:
+            os.link(tmp, mp)
+        except FileExistsError:
+            pass  # 別人已建(os.link 提供真正互斥);不覆寫,讀回既有內容
+        except OSError as e:
+            # r3-#103 minor:部分檔案系統(FAT/某些網路掛載/跨裝置)不支援
+            # hardlink,os.link 對它們是 EPERM/EOPNOTSUPP/EXDEV/EMLINK 這類
+            # OSError,不是 FileExistsError——修前沒接住,整條事件寫入路徑會
+            # 因此裸崩(修前的 atomic_write_json 沒有 hardlink 依賴,不會炸)。
+            # 只對這幾種「不支援 hardlink」的明確 errno 退回
+            # os.replace(舊路徑),且要先確認 mp 真的還不存在,免得誤蓋掉
+            # 剛好在這極短窗口內由另一行程 link 贏得的內容——退回後失去
+            # os.link 的原子互斥保證,但至少不崩;其餘 OSError(磁碟滿、
+            # 權限問題等)照樣往上炸,不做 blanket except(那會把 #103
+            # 互斥修法整個退回成覆蓋)。
+            if e.errno in _HARDLINK_UNSUPPORTED_ERRNOS and not os.path.exists(mp):
+                os.replace(tmp, mp)
+            else:
+                raise
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
 
 
 def resolve_run_dirs(root, run_ids):
@@ -445,6 +501,35 @@ def cmd_derive(root, run_ids):
     return 0
 
 
+def cmd_repair(root, args):
+    # #103:壞 run 有出口。命令列只吃 run_id(經 resolve_run_dirs 解析路徑),
+    # 不在命令列鋪 .devflow/ 路徑 —— 與本檔其餘子命令同一慣例(見檔頭註解)。
+    # r3-#103 major:run_id 未驗時 resolve_run_dirs 內部 os.path.join(base, rid)
+    # 對 "../x" 會逃出 runs_root,對絕對路徑更是直接被 os.path.join 丟掉
+    # base——--apply 因此能真的改寫 runs 樹外的檔案(PoC 已證實)。比照同檔
+    # cmd_archive 先驗格式(ids.is_valid_id),resolve 完再 realpath 二次
+    # 確認落在 runs_root(root) 底下(雙保險,防未來繞過第一層的變形)。
+    apply = "--apply" in args
+    run_ids = [a for a in args if not a.startswith("--")]
+    if len(run_ids) != 1:
+        die("用法: devflow-obs.sh repair <run_id> [--apply]")
+    run_id = run_ids[0]
+    if not ids.is_valid_id("run", run_id):
+        _print({"errors": [{"code": "invalid_run_id", "field": "run_id",
+                            "msg": f"run_id {run_id!r} 非法(須符合 "
+                                   f"run_<26 字 Crockford ULID>,不得含路徑"
+                                   f"分隔符/相對路徑片段)"}]})
+        return 1
+    rd = resolve_run_dirs(root, [run_id])[0]
+    base_real = os.path.realpath(runs_root(root))
+    rd_real = os.path.realpath(rd)
+    if rd_real != base_real and not rd_real.startswith(base_real + os.sep):
+        die(f"⛔ devflow-obs:repair 目標解析後不在 runs 目錄底下"
+            f"(雙保險攔截;{rd_real!r} vs {base_real!r})。")
+    _print(ledger.repair_run(rd, apply=apply))
+    return 0
+
+
 def _parse_stats_args(args):
     run_ids, legacy, min_n, threshold = [], [], 5, 0.6
     i = 0
@@ -639,6 +724,8 @@ def main():
         return cmd_validate(root, args)
     if cmd == "derive":
         return cmd_derive(root, args)
+    if cmd == "repair":
+        return cmd_repair(root, args)
     if cmd == "stats":
         return cmd_stats(root, args)
     if cmd == "recommend":
@@ -654,7 +741,7 @@ def main():
     if cmd == "registry":
         return cmd_registry(args)
     die(f"未知子命令 {cmd!r}。可用:event/hook-event/context-manifest/validate/"
-        f"derive/stats/recommend/archive/retention/ledger-home/registry")
+        f"derive/repair/stats/recommend/archive/retention/ledger-home/registry")
 
 
 if __name__ == "__main__":
