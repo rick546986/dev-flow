@@ -24,7 +24,7 @@ ROOT=$(cd "$SELF_DIR/.." && pwd)
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
-DEVFLOW_ROOT="$ROOT" DEVFLOW_TMP="$TMP" python3 - "$0" <<'PY'
+DEVFLOW_ROOT="$ROOT" DEVFLOW_TMP="$TMP" "${DEVFLOW_RENDER_PYTHON:-python3}" - "$0" <<'PY'
 import ast
 import hashlib
 import html
