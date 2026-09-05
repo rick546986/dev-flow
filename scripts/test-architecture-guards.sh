@@ -137,9 +137,9 @@ RESULTS=()
 # 改法:由 expect()/expect_local() 依 want 實際累計 control 與 negative,尾聲與釘死值比對。
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
-EXPECTED_CONTROLS=15
-EXPECTED_NEGATIVES=120
-EXPECTED_TOTAL=135
+EXPECTED_CONTROLS=16
+EXPECTED_NEGATIVES=122
+EXPECTED_TOTAL=138
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -271,6 +271,35 @@ seed_fm() {
   mkdir -p "$dst/tests" "$dst/guides"
   cp -r "$ROOT/tests/parallel-stage6" "$dst/tests/parallel-stage6"
   cp "$ROOT/guides/guide-dev-flow.html" "$dst/guides/guide-dev-flow.html"
+  [ -f "$ROOT/.gitignore" ] && cp "$ROOT/.gitignore" "$dst/.gitignore"
+  git -C "$dst" init -q
+  git -C "$dst" -c user.email=test@dev-flow.local -c user.name=test add -A
+  git -C "$dst" -c user.email=test@dev-flow.local -c user.name=test commit -q -m seed
+  echo "$dst"
+}
+
+# seed_pyfloor <name> → 專供 check-py-floor.sh 的 fixture:複製它會讀到的**全部**
+# 目標(docs/PLUGIN.md、skills/dev-setup/SKILL.md、hooks/、scripts/、observability/、
+# memory/、docs/dev/tools/)並初始化真 git repo。
+# 起因:check-py-floor.sh 用 `git ls-files --cached --others --exclude-standard`
+# 當掃描來源(同 check-no-stale-paths.sh 的 seed_sp、check-file-map.sh 的 seed_fm
+# 既有理由),單純檔案樹跑不了 git ls-files;它又是靠 `$0` 自己定位 ROOT(不吃
+# CLI root 參數),所以守衛本體必須真的落在複本的 scripts/ 底下才會用複本當 ROOT。
+# 只複製 seed() 的既有清單不夠 —— check-py-floor.sh 開頭就讀 docs/PLUGIN.md(seed()
+# 沒帶這份),沒補齊會在還沒掃到任何 heredoc 前就先因為讀不到檔案炸開。
+seed_pyfloor() {
+  local name="${1:?seed_pyfloor: name is empty}"
+  local dst="$WORK/$name"
+  [[ "$dst" == "$WORK/"* ]] || { echo "seed_pyfloor: 目標逃逸 $dst" >&2; exit 1; }
+  safe_rm "$dst"
+  mkdir -p "$dst/docs/dev/tools" "$dst/skills/dev-setup"
+  cp "$ROOT/docs/PLUGIN.md" "$dst/docs/PLUGIN.md"
+  cp "$ROOT/skills/dev-setup/SKILL.md" "$dst/skills/dev-setup/SKILL.md"
+  cp -r "$ROOT/hooks" "$dst/hooks"
+  cp -r "$ROOT/scripts" "$dst/scripts"
+  cp -r "$ROOT/observability" "$dst/observability"
+  cp -r "$ROOT/memory" "$dst/memory"
+  cp "$ROOT"/docs/dev/tools/*.py "$dst/docs/dev/tools/" 2>/dev/null || true
   [ -f "$ROOT/.gitignore" ] && cp "$ROOT/.gitignore" "$dst/.gitignore"
   git -C "$dst" init -q
   git -C "$dst" -c user.email=test@dev-flow.local -c user.name=test add -A
@@ -2165,6 +2194,85 @@ expect pass check-ship-manifest.sh "$D" "SM-0 對照組(ship-manifest.json 全�
 D=$(seed_sm sm1)
 rm -f "$D/docs/dev/readme-contract-extract.md"
 expect fail check-ship-manifest.sh "$D" "SM-1 第三類列(docs/dev/readme-contract-extract.md,source==destination 的同步宣告列)source 被刪 → 必須紅(issue #92:舊版同一變異 15 項仍全綠)"
+
+# ── PF 群組:check-py-floor.sh 的 heredoc 掃描(#113 兩輪 fresh 驗收補的負向覆蓋)──
+# PF-0 對照組(未變異,check-py-floor.sh 對自己的完整複本應全綠)。
+# PF-1 在 scripts/check-write-scope.sh 的第一個 heredoc(`"$DEVFLOW_PY" - "$LIB"
+# <<'PY'`,變數呼叫,tag 是 'PY')裡插一行 3.12-only 的 f-string 反斜線 —— 驗
+# heredoc 掃描抓不抓得到語法退化。⚠️ 誠實記錄(第二輪複驗抓到):這**不是**在
+# 單獨驗 interpreter token 的變數呼叫路徑(INTERP_TOKEN_RE)——check-write-scope.sh
+# 的 tag 是 'PY',含 PY 子字串,wrapper fallback 自己就吃得下,PF-1 對
+# INTERP_TOKEN_RE 開不開都無感。要單獨咬 INTERP_TOKEN_RE,見下面 PF-2。
+# 為什麼不用 check_static_pin_sub:那支只驗「guard 自己的原始碼裡某段字面還在
+# 不在」,是靜態存在性檢查,答不了「guard 遇到別支檔案裡的真實語法退化,判得判
+# 不判得出來」這個行為問題。這裡要驗的是後者,跟 DC-*/GT-*/MEM-* 那批
+# seed→mutate→expect_local 的既有案例同一種形狀,所以照抄那個模式,不是另開一套。
+D=$(seed_pyfloor pf0)
+expect_local pass check-py-floor.sh "$D" "PF-0 對照組(check-py-floor.sh 對未變異複本應全綠)"
+
+D=$(seed_pyfloor pf1); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "scripts/check-write-scope.sh"
+t = p.read_text(encoding="utf-8")
+anchor = "import sys\nfrom importlib.machinery import SourceFileLoader\n"
+assert anchor in t, "PF-1 anchor 不見(check-write-scope.sh 的第一個 heredoc 開頭變了)"
+# 用 chr(92) 組出兩個字面反斜線,不在三層引號(bash heredoc → python 原始碼 →
+# 被寫進去的字串)裡手刻跳脫——避免 nested-quoting 出錯又難驗證。
+bs = chr(92)
+bad_line = "x = f\"{'" + bs + bs + "'}\"\n"
+n = t.replace(anchor, anchor + bad_line, 1)
+assert n != t, "PF-1 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect_local fail check-py-floor.sh "$D" "PF-1 \$DEVFLOW_PY 變數呼叫的 heredoc 塞 3.12-only f-string 反斜線 → 必紅"
+
+# PF-2:單獨咬 INTERP_TOKEN_RE(#113 第二輪複驗抓到 PF-1 對它無感之後補的)。
+# 用 chr(34)/chr(39) 組出雙引號/單引號、用 str.index 找到宣告行後整行替換 ——
+# 不手刻含大量跳脫字元的正則文字本身,三層引號(bash heredoc → mutate 的 python
+# 原始碼 → 被改寫的目標檔案文字)疊在一起手刻極容易錯,改用結構化操作更穩。
+# ①把 seed_pyfloor 複本裡 scripts/check-adr-integrity.sh 的唯一 heredoc 改形
+#   成「呼叫行是變數呼叫 $DEVFLOW_PY、tag 是 ZZZ(不含 PY 子字串)」——這個形狀
+#   wrapper fallback(靠 tag 含 PY)跟 py-redirect fallback(靠 .py 副檔名)都
+#   咬不到,只剩 INTERP_TOKEN_RE 能讓它被計入。改寫既有檔案而不是另外新增一支,
+#   是為了讓複本的 heredoc 總數跟正式 repo 的 MIN_HEREDOCS 精確對齊(整形不改變
+#   總數,只改變「這一個」heredoc 靠哪條路徑被收);這樣②把 INTERP_TOKEN_RE
+#   關掉時,複本的計數才會真的從地板值跌破一個,不是從「天生多一個」的餘裕退回
+#   地板打平(打平不會紅,`checked < MIN` 不成立)。
+# ②把複本的 scripts/check-py-floor.sh 裡 INTERP_TOKEN_RE 改成永不命中 —— ①
+#   改形的那個 heredoc 應該從計數裡消失,MIN_HEREDOCS 地板要跌破,
+#   check-py-floor.sh 必須紅。
+D=$(seed_pyfloor pf2); mutate "$D" <<'PY'
+import sys, pathlib
+
+root = pathlib.Path(sys.argv[1])
+DQ = chr(34)
+SQ = chr(39)
+
+adr = root / "scripts/check-adr-integrity.sh"
+t = adr.read_text(encoding="utf-8")
+open_old = "python3 - " + DQ + "$1" + DQ + " <<" + SQ + "PY" + SQ
+open_new = DQ + "$DEVFLOW_PY" + DQ + " - " + DQ + "$1" + DQ + " <<" + SQ + "ZZZ" + SQ
+assert open_old in t, "PF-2 anchor(heredoc 開頭)不見"
+t2 = t.replace(open_old, open_new, 1)
+assert t2 != t, "PF-2 heredoc 開頭整形沒生效"
+close_old = "\n" + "PY" + "\n"
+close_new = "\n" + "ZZZ" + "\n"
+assert t2.count(close_old) == 1, "PF-2 anchor(heredoc 結尾)不是恰好一次"
+t3 = t2.replace(close_old, close_new, 1)
+assert t3 != t2, "PF-2 heredoc 結尾整形沒生效"
+adr.write_text(t3, encoding="utf-8")
+
+floor = root / "scripts/check-py-floor.sh"
+u = floor.read_text(encoding="utf-8")
+marker = "INTERP_TOKEN_RE = re.compile("
+start = u.index(marker)
+end = u.index("\n", start)
+new_decl = "INTERP_TOKEN_RE = re.compile(r" + SQ + "(?!)" + SQ + ")"
+u2 = u[:start] + new_decl + u[end:]
+assert u2 != u, "PF-2 INTERP_TOKEN_RE 變異沒生效"
+floor.write_text(u2, encoding="utf-8")
+PY
+expect_local fail check-py-floor.sh "$D" "PF-2 INTERP_TOKEN_RE 關掉後,只能靠它判定的變數呼叫 heredoc(tag 不含 PY)漏收,MIN_HEREDOCS 必紅"
 
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
