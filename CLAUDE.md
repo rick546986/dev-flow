@@ -11,6 +11,9 @@
 
 本機授權細節（擁有者／共用帳號／資料夾 ID／連結）**不進版控**。
 見本機未追蹤設定 `CLAUDE.local.md`（已列入 `.gitignore`）。
+複製 `CLAUDE.local.md.example` 為 `CLAUDE.local.md` 後填入。
+
+**fail-closed 預設**:若 `CLAUDE.local.md` 不存在,本節授權不生效,Drive 讀取／新建一律先問。
 
 **授權**:本機設定所指定的那個資料夾底下的**讀取**與**新建檔案**不必逐次徵詢,直接做。
 

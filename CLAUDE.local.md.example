@@ -1,0 +1,13 @@
+# CLAUDE.local.md.example
+
+用途:本機 Google Drive「記憶系統」資料夾授權細節的範本。複製本檔為
+`CLAUDE.local.md`（已列入 `.gitignore`,不進版控）後,把下面的佔位符換成
+自己環境的真實值。`CLAUDE.local.md` 不存在時,`CLAUDE.md` 的 Google Drive
+免詢問授權不生效,一律先問。
+
+## Google Drive:「記憶系統」資料夾
+
+擁有者 `<擁有者 email>`,已分享給 `<共用帳號 email>`(Drive 連線帳號)。
+
+- 資料夾 ID:`<資料夾 ID>`
+- 連結:`<連結>`
