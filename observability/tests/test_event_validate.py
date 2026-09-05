@@ -663,6 +663,23 @@ class TestPrivacy(unittest.TestCase):
         e = attempt_completed(x_a=[turn], x_b=[turn])
         self.assertEqual(ev.validate_event(e), [])
 
+    def test_value_leak_mixed_two_turns_and_two_role_lines_rejected(self):
+        # issue #124: conv_count 與 turns 必須加總。2 個 turn dict + 2 行
+        # 角色標記合計 4 個證據,舊判定兩邊各自 <3 會放行。
+        e = attempt_completed(
+            x_a=[{"role": "user", "content": "hi"}],
+            x_b=[{"role": "assistant", "content": "yo"}],
+            x_c="user: hi",
+            x_d="assistant: yo")
+        self.assertIn("privacy_value_leak", codes(ev.validate_event(e)))
+
+    def test_value_leak_mixed_one_turn_and_one_role_line_passes(self):
+        # 反向:1 turn + 1 行角色標記合計 2 < 3,放行。
+        e = attempt_completed(
+            x_a=[{"role": "user", "content": "hi"}],
+            x_c="user: hi")
+        self.assertEqual(ev.validate_event(e), [])
+
     def test_value_leak_root_does_not_double_report_when_subpath_already_did(self):
         # 子路徑(x_meta.a、進而 x_meta)已經各自報過一次;根節點的例外只在
         # 「子樹內完全沒有任何具名子路徑報過」時才補報,這裡子路徑報過了,

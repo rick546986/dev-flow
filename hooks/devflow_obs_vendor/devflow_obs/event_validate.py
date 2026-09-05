@@ -344,7 +344,7 @@ def _scan_conv_structure(node, p, errors):
     turns=0/False,不繼續往上傳實際數字。改成子樹裡的 turn 總數整數相加,
     不管 turn 埋在直屬子節點還是更深的孫節點,只要同一個容器的子樹裡湊得到
     ≥3 個就算。
-    子樹命中 conv_count ≥3 行對話結構、或 turns ≥3 個 turn,對這個容器
+    子樹命中 conv_count + turns ≥ 3(兩種證據加總,不是各自獨立門檻),對這個容器
     路徑報一次 privacy_value_leak(兩個條件都中也只報一次;同一個 turn
     被多層祖先容器各自算進門檻、各自報一次是刻意的,見上一輪 F1/F2 決定,
     這裡不變)。
@@ -369,7 +369,7 @@ def _scan_conv_structure(node, p, errors):
             conv_count += c
             turns += t
             reported = reported or r
-        hit = conv_count >= 3 or turns >= 3
+        hit = conv_count + turns >= 3
         if p and hit:
             errors.append(_err(
                 "privacy_value_leak", p,
@@ -395,7 +395,7 @@ def _scan_conv_structure(node, p, errors):
             conv_count += c
             turns += t
             reported = reported or r
-        hit = conv_count >= 3 or turns >= 3
+        hit = conv_count + turns >= 3
         if p and hit:
             errors.append(_err(
                 "privacy_value_leak", p,
