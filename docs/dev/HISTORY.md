@@ -456,3 +456,9 @@
 - 為什麼:入口與指南雙正本會漂;人與 agent 應從同一指南錨開工
 - 落在哪:README.md guides/guide-dev-flow.html docs/PLUGIN.md
 
+## 2026-09-05 · release-3-21-0 · v3.21.0
+- 做了什麼:合入 #115–#132：obs repair／pin 衛生／地板 3.9+render 3.12 明文化／durable append_events 掃描／conv 證據加總／DEVFLOW_RENDER_PYTHON 等
+- 為什麼:採用者要吃到 hooks 與守衛修復需升 plugin 字串
+- 落在哪:.claude-plugin/plugin.json .cursor-plugin/plugin.json .codex-plugin/plugin.json hooks/runtime-capabilities.json + 已合 main 改動
+- 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.21.0
+

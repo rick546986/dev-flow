@@ -1,6 +1,6 @@
 {
   "name": "dev-flow",
-  "version": "3.20.4",
+  "version": "3.21.0",
   "description": "開發流程 SOP 路由器(7 階段,SDD 主幹 + TDD 驗證,方法論內建於本 repo 根目錄)+ dev-run 執行引擎(多模型升階)+ dev-setup 專案安裝器 + dev-talk 訪談引導 + dev-report 缺陷回報產生器 + Agent Memory v3。",
   "author": {
     "name": "rick",
