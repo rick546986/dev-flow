@@ -18,6 +18,12 @@ S0 已完成(slug / 起點 / 模式已定)。MEMORY_SESSION_ID 仍在。游標�
 
 ## 做什麼
 
+逐項消化本場 brief 的 known_facts／known_knowledge／repo_signals／conflicts:
+每項落到「已驗證進 Context」「留 Log 待驗證」「不相關」三者之一。
+brief 條目是線索,不是現況;進 Context 前必須在 current checkout／`docs/specs`
+驗證過。Context 每條 = 已驗證斷言 + 出處,出處語法 `path:L起` 或 `path:L起-L迄`。
+同 slug 重跑時必須逐條重讀出處:路徑不在、行段失效、內容不再支持斷言 →
+該條降回 Log 待驗證。
 讀白名單,條列事實並一併回報使用者。
 認可後的清單 = 本次「已核事實」。
 條件命中才畫可選目錄樹,食譜在 `_templates/1-discussion.md` 頂註;不進本 hop。

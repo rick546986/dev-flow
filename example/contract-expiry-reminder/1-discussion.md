@@ -13,9 +13,9 @@ updated: 2026-07-23
 業務靠記憶與 Excel 追合約到期,平均每季漏 2-3 件續約,客戶流失後才發現。
 
 ## Context(已知事實)
-- `docs/specs/contracts.md`:合約 CRUD 已有,`contracts.end_date` 欄位存效期,無任何通知機制。
+- 合約 CRUD 已有,`contracts.end_date` 欄位存效期,無任何通知機制。docs/specs/contracts.md:L1-L20
 - 後端 Go/Echo/ent,無 scheduler、無 MQ(引入 = 新 infra)。
-- 現有 dashboard 頁面有空白卡片區(前端 `src/pages/Dashboard.tsx`)。
+- 現有 dashboard 頁面有空白卡片區(前端 src/pages/Dashboard.tsx:L1-L40)。
 - 量級:活躍合約約 8,000 筆。
 
 ## Real-world Context
@@ -112,8 +112,20 @@ updated: 2026-07-23
                           └─ 無 → 空狀態「近期無到期合約」
 ```
 
-## Interview Log(四段結論)
-- explore:現況無任何通知/排程機制;dashboard 是最低成本的呈現面。
-- grill-with-docs:逼出「Expiring」精確定義(30 天 + 未續約),新增 CONTEXT.md 詞條 Expiring、Renewal。
-- brainstorming:方向收斂為「登入時即時查詢」優先,cron 留作後手 → 進 2-decision 比較。
-- real-world:以「最近一次」實例還原 Journey(Excel/LINE/Email/電話全在系統外);正式 SOP(先法務後簽)與實際做法(急件先口頭續)不同,兩者都記;無紀錄斷點=Step 2-4 → 催生 Goal 3 與 Q4/Q5。
+## Interview Log(推理鏈外顯)
+- Q:現況有沒有通知或排程?
+  - 事實:docs/specs/contracts.md:L1-L20
+  - 推理:CRUD 與 end_date 已在,通知機制完全沒有,dashboard 是最低成本呈現面。
+  - 結論:已解 本期用 dashboard 卡片呈現到期,不引入新 infra。
+- Q:Expiring 怎麼定義?
+  - 事實:docs/specs/contracts.md:L1-L20
+  - 推理:議約約一個月,30 天加未續約才能趕上續約窗口。
+  - 結論:已解 Expiring = end_date - today ≤ 30 且未續約。
+- Q:到期清單用即時查還是排程灌?
+  - 事實:src/pages/Dashboard.tsx:L1-L40
+  - 推理:dashboard 已有空白卡片區,登入時即時查不必先上 cron。
+  - 結論:移交 cron 是否要做,留給後續比較。
+- Q:沒有這功能時人怎麼真的續約?
+  - 事實:src/pages/Dashboard.tsx:L1-L40
+  - 推理:Journey 全在系統外;正式 SOP 與急件先口頭續不同;Step 2-4 無紀錄。
+  - 結論:已解 要記狀態與下一步,看過提醒不算處理完。

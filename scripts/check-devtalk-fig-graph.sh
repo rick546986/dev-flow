@@ -643,6 +643,12 @@ def check_scan_page(text, label):
             if "問答" not in inner_text(body):
                 missing.append("details 不是問答摘要")
                 break
+            if 'class="tablewrap"' not in body:
+                missing.append("問答缺 .tablewrap")
+                break
+            if not all(token in body for token in ("<th>Q</th>", "<th>事實</th>", "<th>推理</th>", "<th>結論</th>")):
+                missing.append("問答不是四欄表")
+                break
     if "mermaid" in text.lower():
         missing.append("%s禁 mermaid" % label)
     if re.search(r'<img[^>]+src="https?://', text):
@@ -749,6 +755,50 @@ def check_generated():
     print("[scan] 生成頁長題目列 + 著落／驗收短欄 nowrap")
 
 
+def check_log_teeth():
+    """牙 1–4:每條牙一份 bad fixture 必須讓產生器 ValueError(exit 1)。
+    破壞實驗複本若沒拷 bad 目錄就略過,不改既有 mutation 規則。"""
+    scan_root = os.path.join(root, "scripts", "fixtures", "devtalk-html-scan")
+    cases = (
+        ("bad-tooth1-fields", "牙1"),
+        ("bad-tooth2-conclusion", "牙2"),
+        ("bad-tooth3-path", "牙3"),
+        ("bad-tooth4-pipe", "牙4"),
+    )
+    found = []
+    for name, label in cases:
+        md = os.path.join(scan_root, name, "1-discussion.md")
+        if not os.path.isfile(md):
+            continue
+        found.append(label)
+        fd, out = tempfile.mkstemp(suffix=".html", prefix="scan-bad-")
+        os.close(fd)
+        try:
+            proc = subprocess.run(
+                [sys.executable, BUILD, "--action", md, "--out", out],
+                capture_output=True,
+                text=True,
+            )
+        finally:
+            try:
+                os.remove(out)
+            except OSError:
+                pass
+        if proc.returncode == 0:
+            raise Mismatch("%s (%s) 必須紅,產生器卻綠了" % (label, name))
+        if proc.returncode != 1:
+            blob = ((proc.stdout or "") + "\n" + (proc.stderr or ""))[-800:]
+            raise Mismatch(
+                "%s (%s) 必須 exit 1,實際 rc=%s\n%s"
+                % (label, name, proc.returncode, blob)
+            )
+    if not found:
+        return
+    if len(found) != 4:
+        raise Mismatch("牙 fixture 應有 4 份,實得 %s" % "／".join(found))
+    print("[scan] 牙 1–4 bad fixture 皆紅")
+
+
 def check_live():
     chain = graph_chain(GRAPH)
     print("[graph] chain=" + " → ".join(chain))
@@ -768,6 +818,7 @@ def check_live():
         raise Mismatch("掃頁母版短欄未 nowrap:" + "、".join(nowrap_gaps))
     print("[scan] html-shell #scan-qs 末欄與 #scan-ac 短欄 nowrap")
     check_generated()
+    check_log_teeth()
 
 
 def copy_tree(dst):

@@ -53,5 +53,4 @@ PLUS 還不會自動切
 ## Interview Log
 - Q:提前幾天?
   - 事實:docs/specs/contracts.md:L12-L20
-  - 推理:議約約一個月,30 天才能趕上。
   - 結論:已解 30 天。

@@ -240,16 +240,72 @@ def parse_ac(body):
     return [it for it in items if it["rule"]]
 
 
-def parse_log(body):
-    lines = []
+LOG_GRAMMAR = (
+    "Interview Log 必須是巢狀四段(Q／事實／推理／結論),"
+    "子項剛好 2 個空白縮排;見 notes/design/stage1-context-chain.md §6.3"
+)
+LOG_CHILD_RE = re.compile(r"^  - (事實|推理|結論)[:：]\s*(.*)$")
+LOG_Q_RE = re.compile(r"^- (?:⚠️\s*)?Q[:：]\s*(.*)$")
+LOG_WRONG_CHILD_RE = re.compile(
+    r"^\s+- (事實依據|事實|推理|結論)[:：]"
+)
+LOG_PIPE_RE = re.compile(r"Q[:：].*\|")
+LOG_CITE_RE = re.compile(r"(\S+):L\d+(?:-L\d+)?")
+LOG_CONCLUSION_PREFIXES = ("已解", "假設", "移交")
+LOG_MAX = 8
+
+
+def parse_log(body, context_text=""):
+    """巢狀四段。子項必須剛好 2 個空白縮排。不讀產品檔案系統。"""
+    entries = []
+    current = None
+
+    def flush():
+        if current is None:
+            return
+        missing = [name for name in ("事實", "推理", "結論") if not current.get(name)]
+        if not current.get("q") or missing:
+            raise ValueError(
+                "Interview Log 四段不齊:缺「%s」" % "／".join(missing or ["Q"])
+            )
+        conclusion = current["結論"]
+        if not conclusion.startswith(LOG_CONCLUSION_PREFIXES):
+            raise ValueError("結論欄必須以 已解／假設／移交 開頭")
+        for match in LOG_CITE_RE.finditer(current["事實"]):
+            path = match.group(1)
+            if path not in (context_text or ""):
+                raise ValueError("事實欄路徑不在 Context:%s" % path)
+        entries.append(current)
+
     for raw in (body or "").splitlines():
         stripped = raw.strip()
-        if stripped.startswith("- "):
-            stripped = stripped[2:].strip()
         if not stripped or stripped.startswith("#") or stripped.startswith("```"):
             continue
-        lines.append(stripped)
-    return lines[:8]
+        if stripped.startswith("<!--"):
+            continue
+        if LOG_PIPE_RE.search(stripped):
+            raise ValueError(LOG_GRAMMAR)
+        q_match = LOG_Q_RE.match(raw)
+        if q_match:
+            flush()
+            q_text = q_match.group(1).strip()
+            if raw.startswith("- ⚠️") and not q_text.startswith("⚠️"):
+                q_text = "⚠️ " + q_text
+            current = {"q": q_text, "事實": "", "推理": "", "結論": ""}
+            continue
+        child = LOG_CHILD_RE.match(raw)
+        if child:
+            if current is None:
+                raise ValueError(LOG_GRAMMAR)
+            current[child.group(1)] = child.group(2).strip()
+            continue
+        if LOG_WRONG_CHILD_RE.match(raw):
+            raise ValueError(LOG_GRAMMAR)
+
+    flush()
+    if not entries:
+        raise ValueError("抽不到 Interview Log")
+    return entries[:LOG_MAX]
 
 
 def diagram_ascii(md):
@@ -465,14 +521,13 @@ def build_body(md):
     ac_items = parse_ac(ac_body)
     if not ac_items:
         raise ValueError("抽不到驗收雛形")
+    _ct, ctx_body = optional_section(
+        md, lambda t: t.replace(" ", "").startswith("Context") or t.startswith("Context")
+    )
     _lt, log_body = optional_section(
         md, lambda t: t.startswith("Interview Log") or "問答" in t
     )
-    log_lines = parse_log(log_body)
-    if not log_lines and questions:
-        log_lines = ["Q:%s 著落:%s" % (q, st) for q, st in questions[:4]]
-    if not log_lines:
-        raise ValueError("抽不到 Interview Log／問答")
+    log_entries = parse_log(log_body, ctx_body)
     fig = render_fig(diagram_ascii(md), actor_names)
 
     badges = [
@@ -495,7 +550,16 @@ def build_body(md):
         % (esc(it["rule"]), esc(it["where"] or "—"), esc(it["see"] or "—"))
         for it in ac_items
     ]
-    log_html = "\n  ".join("<p>%s</p>" % esc(line) for line in log_lines)
+    log_rows = [
+        "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
+        % (
+            esc(item["q"]),
+            esc(item["事實"]),
+            esc(item["推理"]),
+            esc(item["結論"]),
+        )
+        for item in log_entries
+    ]
 
     return "\n".join(
         [
@@ -524,7 +588,12 @@ def build_body(md):
             "",
             '<details id="scan-log">',
             "  <summary>問答摘要</summary>",
-            "  " + log_html,
+            '  <div class="tablewrap">',
+            "    <table>",
+            "      <tr><th>Q</th><th>事實</th><th>推理</th><th>結論</th></tr>",
+            "      " + "\n      ".join(log_rows),
+            "    </table>",
+            "  </div>",
             "</details>",
             "",
         ]
