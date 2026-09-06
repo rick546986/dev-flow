@@ -194,8 +194,8 @@ claude          # 建議 opus(規劃層)
     <tr><th>步</th><th>AI 做什麼</th><th>你做什麼</th><th>完成條件</th></tr>
     <tr><td>0 規模</td><td>多需求拆 slug;同時問起點(多熟/想法走到哪)校準提問深度;微型需求提議精簡模式</td><td>選先談哪個/答起點/同意模式</td><td>slug、起點、模式三者定案</td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>0. <strong>規模、範圍與起點</strong>。正本:<code>nodes/S0-scope.md</code>。入口摘要:多需求拆 slug、問起點校準深度、微型可走精簡。完成條件見該節點。</blockquote></details></td></tr>
-    <tr><td>1 盤現況</td><td>讀長期記憶 + docs/specs + 程式碼,條列事實(帶數字/檔位),含受影響面清點。不讀過期的 CONTEXT.md</td><td><span class="badge you">認可或糾正</span></td><td>認可清單 = 「已核事實」</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>1. <strong>盤現況</strong>。正本:<code>nodes/S1-survey.md</code>。入口摘要:讀白名單條列事實含受影響面,認可後即已核事實。完成條件見該節點。</blockquote></details></td></tr>
+    <tr><td>1 盤現況</td><td>消化 brief 四欄位;讀長期記憶 + docs/specs + 程式碼,條列事實(帶數字/檔位),含受影響面清點。不讀過期的 CONTEXT.md</td><td><span class="badge you">認可或糾正</span></td><td>認可清單 = 「已核事實」</td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>1. <strong>盤現況</strong>。正本:<code>nodes/S1-survey.md</code>。入口摘要:消化 brief,讀白名單條列事實含受影響面,認可後即已核事實。完成條件見該節點。</blockquote></details></td></tr>
     <tr><td>2 真實世界</td><td>問人現在<strong>怎麼真的</strong>完成這件工作,寫成 Actors / Current Journey / Workarounds / Exceptions / Evidence 五份記錄;優先問「最近一次真的發生時怎麼處理」,無證據的敘述標 <code>[Assumption]</code></td><td><span class="badge you">回答真實工作流程</span></td><td>五份齊,且每條可分辨「有證據」或 <code>[Assumption]</code></td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>2. <strong>真實世界互動盤點</strong>。正本:<code>nodes/S2-world.md</code>。入口摘要:五份記錄(Actors / Current Journey / Workarounds / Exceptions / Evidence),無證據標 <code>[Assumption]</code>。完成條件見該節點。</blockquote></details></td></tr>
     <tr><td>3 逼問</td><td>①一次一問附推薦,多解讀禁默選;②覆述推理鏈,接不上就說卡在哪;③清單外斷言必問;3a 核銷五份時同步改現況圖;④發現實為多題 → 停,提議拆分,收斂到使用者選的子題,其餘記 <code>[&gt;]</code> 移交(附建議 slug)</td><td><span class="badge you">選/答/反駁</span></td><td>連續兩輪無新題、全數三態、它能複述問題/目標/邊界而不被糾正</td></tr>
@@ -408,7 +408,7 @@ claude          # 建議 opus(規劃層)
     <tr><td>7 Constraints</td><td>限制(技術/時程/法規)</td><td>步 3</td></tr>
     <tr><td>8 驗收雛形</td><td>假設…當…則…,使用者視角、不綁做法</td><td>步 4 你逐條確認</td></tr>
     <tr><td>9 邏輯圖(ASCII)</td><td>限半形 <code>| - + &gt; &lt; = [ ]</code>;中文只放行首標籤/行尾註</td><td>步 7</td></tr>
-    <tr><td>10 Interview Log</td><td>每條:Q → 事實依據 → 推理 → 結論;含發散段與盲點戰果;高影響決策標 ⚠️</td><td>步 3/5/6 全程累積</td></tr>
+    <tr><td>10 Interview Log</td><td>每條:Q → 事實 → 推理 → 結論;含發散段與盲點戰果;高影響決策標 ⚠️</td><td>步 3/5/6 全程累積</td></tr>
   </table></div>
 
   <h2 id="visual">⑧ 視覺版(html 產出)判準</h2>
