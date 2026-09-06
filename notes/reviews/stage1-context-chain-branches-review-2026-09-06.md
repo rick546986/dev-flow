@@ -1,5 +1,10 @@
 # Stage 1 Context Chain — 三分支實作審查
 
+> **已於 #136／#134 解決（2026-09-06）。** 本檔是第一輪審查，P0-1～P1-4 與 Merge gate
+> 所列條件已由 brief 第三版（#136）與 `parser-7d32` 實作（#134）落地。
+> 後續收尾見 [round3](stage1-context-chain-branches-review-round3-2026-09-06.md)
+> （含第二、三輪對照）。本檔保留作歷史，不再當阻擋項。
+
 日期：2026-09-06
 
 審查分支：

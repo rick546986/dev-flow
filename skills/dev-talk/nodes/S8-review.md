@@ -19,8 +19,13 @@ N9 已完成(`1-discussion.md` 已在)。MEMORY_SESSION_ID 仍在。游標在 S8
 
 換上嚴格審視者視角重讀全檔:①每條驗收敘述自洽嗎?有無
 斷言超出可驗範圍?②所有結論都有「已核事實」或問答背書嗎?③與使用者
-原話有無矛盾?④Interview Log 每條齊「Q→事實→推理→結論」四段嗎?
-結論以 CONFIRMED／NEEDS_VERIFICATION／OPEN 開頭嗎?事實欄每個 path:L 行段都 ⊆ Context 出處嗎?
+原話有無矛盾?④Interview Log 每條齊「Q → 事實 → 推理 → 結論」四段嗎?
+標籤固定為 `事實`／`推理`／`結論`(`事實依據` 不接受)。結論欄以
+`CONFIRMED`／`NEEDS_VERIFICATION`／`OPEN` 開頭,後接一句結論。這是 Log
+結論詞,與記憶模組 `known_knowledge` 的 `CONFIRMED`、`ask()` 的
+`NEEDS_VERIFICATION`、session 的 `OPEN` 不同軸,不得互借。不得為了填滿
+四段硬下結論。事實欄 path+行段 ⊆ Context 已列行段(同一路徑,行段可更窄);
+至少一個 `path:L` 出處;不另造無出處斷言。
 ⑤範圍對照步 0 的界定,有沒有悄悄長大?長大 → 問使用者拆或收。⑥同一
 名詞/事實多處出現,逐處比對數字、條件、方向一致嗎?不一致 → 統一
 或標 Open Question。⑦真實世界五份裡,每條沒有證據的敘述都標了
