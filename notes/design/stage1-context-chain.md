@@ -129,8 +129,9 @@ S10 六件不變：摘要卡／現況圖／人表／題目／驗收表／問答�
 **牙**（住 `scripts/build-scan-html.py`，fail-closed）：
 
 1. 每條 Log 四段齊，標籤為 `事實`／`推理`／`結論`，否則 `ValueError`。
-2. 結論欄以 `CONFIRMED`／`NEEDS_VERIFICATION`／`OPEN` 開頭，否則 `ValueError`。
-3. 事實欄至少一個 `path:L`；每個 `path`（去行段、剝 `` ` ' " （ ） ( ) 「 」 ``）必須以字串包含出現在 Context 節文字中（比對前先剝 HTML 註解），否則 `ValueError`。產生器不讀產品檔案系統。重複 `事實`／`推理`／`結論` 標籤 fail-closed。超過 8 條 `ValueError`，不靜默截斷。
+2. 結論欄須符合 `^(CONFIRMED|NEEDS_VERIFICATION|OPEN)\s+\S`（後接一句結論），否則 `ValueError`。`CONFIRMEDx` 與只有 `CONFIRMED` 沒接句子都拒。
+3. 事實欄每個 citation（`path:L起` 或 `path:L起-L迄`）必須 path 相同且行段 ⊆ Context 已列 citation 行段，否則 `ValueError`。比對前剝 Context HTML 註解；路徑 token 兩端剝 `` ` ' " （ ） ( ) 「 」 ``。產生器不讀產品檔案系統。Context 只有裸路徑、沒有 `:L` 行段時，任何事實 citation 都紅。
+3a. 事實欄必須至少一個 `path:L` citation，否則 `ValueError`。重複 `事實`／`推理`／`結論` 標籤 fail-closed。超過 8 條 `ValueError`，不靜默截斷。Log 節內頂層非 `- ` 散文 → `ValueError`；續行必須有前導空白才併入上一欄。
 4. 舊單行 `|` 格式（完整舊 grammar，不是 Q 裡出現 `|`）、空 Log → `ValueError`。
 
 **無牙、靠 S8 人工**：出處是否真的支持斷言；重跑時的 stale 重驗；brief 是否真被消化。
@@ -138,7 +139,7 @@ S10 六件不變：摘要卡／現況圖／人表／題目／驗收表／問答�
 **後續實作 PR 過關**＝下列全真（本檔本身不算過關）：
 
 1. §9 表列檔全部改到，`check-devtalk-fig-graph.sh`／`check-devtalk-guide-sync.sh` 綠。
-2. 牙 1–4 + 空 Log 有對應 fixture（good 一份、五份 bad；守衛比對 stderr needle）。
+2. 牙 1–4 + 空 Log + 行段／裸路徑／頂層散文／`CONFIRMEDx`／裸 `CONFIRMED` 有對應 fixture（守衛比對 stderr needle）。
 3. 掃頁 `#scan-log` 為四欄表，`<details>` 預設摺著、`<summary>` 含「問答摘要」。
 4. S10 仍六件；審頁不變；html-shell 不變。
 5. 版本零 bump。

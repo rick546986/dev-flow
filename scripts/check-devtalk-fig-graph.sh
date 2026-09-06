@@ -759,9 +759,14 @@ def check_generated():
 TOOTH_CASES = (
     ("bad-tooth1-fields", "四段"),
     ("bad-tooth2-conclusion", "CONFIRMED"),
+    ("bad-tooth2-confirmedx", "CONFIRMED"),
+    ("bad-tooth2-bare", "CONFIRMED"),
     ("bad-tooth3-path", "Context"),
+    ("bad-tooth3-range", "Context"),
+    ("bad-tooth3-barepath", "Context"),
     ("bad-tooth4-pipe", "§6.3"),
     ("bad-tooth5-empty", "抽不到 Interview Log"),
+    ("bad-tooth-prose", "未知內容"),
 )
 
 
@@ -781,9 +786,10 @@ def check_log_teeth():
         if skip_mutation:
             return
         raise NotParsed("缺掃頁牙 fixture:" + "、".join(missing))
-    if len(found) != 5:
+    if len(found) != len(TOOTH_CASES):
         raise Mismatch(
-            "牙 fixture 應有 5 份,實得 %s" % "／".join(name for name, _, _ in found)
+            "牙 fixture 應有 %s 份,實得 %s"
+            % (len(TOOTH_CASES), "／".join(name for name, _, _ in found))
         )
     for name, needle, path in found:
         fd, out = tempfile.mkstemp(suffix=".html", prefix="scan-tooth-")
@@ -915,7 +921,79 @@ def check_log_edges():
         if "Context" not in str(exc):
             raise Mismatch("註解路徑訊息應提到 Context,實得 %s" % exc)
 
-    print("[scan] parse_log 邊界:|／續行／剝標點／零 citation／重複／>8／註解皆過")
+    try:
+        parse_log(
+            _one_entry(
+                "行段超出?",
+                "docs/specs/contracts.md:L999-L1000",
+                "不該過",
+            ),
+            ctx,
+        )
+        raise Mismatch("事實行段超出 Context 行段必須紅")
+    except ValueError as exc:
+        if "Context" not in str(exc):
+            raise Mismatch("行段超出訊息應提到 Context,實得 %s" % exc)
+
+    try:
+        parse_log(
+            _one_entry(
+                "Context 只有裸路徑?",
+                "docs/specs/contracts.md:L12-L20",
+                "不該過",
+            ),
+            "見 docs/specs/contracts.md。",
+        )
+        raise Mismatch("Context 只有裸路徑必須紅")
+    except ValueError as exc:
+        if "Context" not in str(exc):
+            raise Mismatch("裸路徑訊息應提到 Context,實得 %s" % exc)
+
+    try:
+        parse_log(
+            _one_entry("頂層散文?", "docs/specs/contracts.md:L12-L20", "不該過")
+            + "這是一段散文\n",
+            ctx,
+        )
+        raise Mismatch("頂層散文必須紅,不得併進結論")
+    except ValueError as exc:
+        if "未知內容" not in str(exc):
+            raise Mismatch("頂層散文訊息應提到未知內容,實得 %s" % exc)
+
+    try:
+        parse_log(
+            _one_entry(
+                "CONFIRMEDx?",
+                "docs/specs/contracts.md:L12-L20",
+                "不該過",
+                "CONFIRMEDx 30 天",
+            ),
+            ctx,
+        )
+        raise Mismatch("CONFIRMEDx 必須紅")
+    except ValueError as exc:
+        if "CONFIRMED" not in str(exc):
+            raise Mismatch("CONFIRMEDx 訊息應提到 CONFIRMED,實得 %s" % exc)
+
+    try:
+        parse_log(
+            _one_entry(
+                "只有 CONFIRMED?",
+                "docs/specs/contracts.md:L12-L20",
+                "不該過",
+                "CONFIRMED",
+            ),
+            ctx,
+        )
+        raise Mismatch("只有 CONFIRMED 無句子必須紅")
+    except ValueError as exc:
+        if "CONFIRMED" not in str(exc):
+            raise Mismatch("裸 CONFIRMED 訊息應提到 CONFIRMED,實得 %s" % exc)
+
+    print(
+        "[scan] parse_log 邊界:|／續行／剝標點／零 citation／重複／>8／"
+        "註解／行段／裸路徑／頂層散文／CONFIRMEDx／裸 CONFIRM 皆過"
+    )
 
 
 def check_live():
