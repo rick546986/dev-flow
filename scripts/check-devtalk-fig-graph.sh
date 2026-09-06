@@ -65,6 +65,7 @@ fi
 
 python3 - "$ROOT" "$SELF/check-devtalk-fig-graph.sh" "$SKIP_MUTATION" <<'PY'
 import html
+import importlib.util
 import os
 import re
 import shutil
@@ -818,6 +819,167 @@ def check_log_teeth():
         print("[scan] 牙 %s 紅且提到「%s」" % (name, needle))
 
 
+def load_parse_log():
+    spec = importlib.util.spec_from_file_location("build_scan_html", BUILD)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.parse_log
+
+
+def _one_entry(q, fact, reason, conclusion="CONFIRMED ok"):
+    return (
+        "- Q:%s\n  - 事實:%s\n  - 推理:%s\n  - 結論:%s\n"
+        % (q, fact, reason, conclusion)
+    )
+
+
+def check_log_edges():
+    """round-2 邊界:直接餵 parse_log(|／續行／行段／散文／前綴)。"""
+    parse_log = load_parse_log()
+    ctx = "見 docs/specs/contracts.md:L10-L20 與 scripts/cron.py:L3。"
+
+    got = parse_log(
+        _one_entry(
+            "shell 用 `a | b` 還是 TS `string | null`?",
+            "docs/specs/contracts.md:L10-L20",
+            "內容含 | 不是舊單行 grammar",
+        ),
+        ctx,
+    )
+    if len(got) != 1 or "|" not in got[0]["q"]:
+        raise Mismatch("Q 含 | 必須綠")
+
+    merged = parse_log(
+        "- Q:Q1\n"
+        "  - 事實:docs/specs/contracts.md:L10-L20\n"
+        "    這一行續文\n"
+        "  - 推理:短句\n"
+        "  - 結論:OPEN 待補\n",
+        ctx,
+    )
+    if "這一行續文" not in merged[0]["fact"]:
+        raise Mismatch("子項續行必須併入上一欄")
+
+    quoted = parse_log(
+        _one_entry(
+            "路徑有引號嗎?",
+            "（`scripts/cron.py:L3`）",
+            "標點不應進 path token",
+        ),
+        ctx,
+    )
+    if quoted[0]["fact"] != "（`scripts/cron.py:L3`）":
+        raise Mismatch("路徑剝標點後仍須保留原文")
+
+    try:
+        parse_log(_one_entry("沒出處?", "沒有 path 引用", "不該過"), ctx)
+        raise Mismatch("事實欄零 citation 必須紅")
+    except ValueError as exc:
+        if "path:L" not in str(exc):
+            raise Mismatch("零 citation 訊息應提到 path:L,實得 %s" % exc)
+
+    try:
+        parse_log(
+            "- Q:重複?\n"
+            "  - 事實:docs/specs/contracts.md:L10-L20\n"
+            "  - 事實:docs/specs/contracts.md:L10-L20\n"
+            "  - 推理:x\n"
+            "  - 結論:OPEN x\n",
+            ctx,
+        )
+        raise Mismatch("重複標籤必須紅")
+    except ValueError as exc:
+        if "重複" not in str(exc):
+            raise Mismatch("重複標籤訊息應提到重複,實得 %s" % exc)
+
+    nine = "".join(
+        _one_entry("Q%d" % i, "docs/specs/contracts.md:L10-L20", "r%d" % i)
+        for i in range(9)
+    )
+    try:
+        parse_log(nine, ctx)
+        raise Mismatch(">8 條必須紅,不得靜默截斷")
+    except ValueError as exc:
+        if "八條" not in str(exc):
+            raise Mismatch(">8 訊息應提到上限八條,實得 %s" % exc)
+
+    try:
+        parse_log(
+            _one_entry("只在註解?", "docs/specs/contracts.md:L10-L20", "不該過"),
+            "可見文字。<!-- docs/specs/contracts.md:L10-L20 -->",
+        )
+        raise Mismatch("路徑只在 Context HTML 註解必須紅")
+    except ValueError as exc:
+        if "Context" not in str(exc):
+            raise Mismatch("註解路徑訊息應提到 Context,實得 %s" % exc)
+
+    try:
+        parse_log(
+            _one_entry("行段超出?", "docs/specs/contracts.md:L999-L1000", "不該過"),
+            ctx,
+        )
+        raise Mismatch("事實行段超出 Context 行段必須紅")
+    except ValueError as exc:
+        if "Context" not in str(exc) and "行段" not in str(exc):
+            raise Mismatch("行段超出訊息應提到 Context／行段,實得 %s" % exc)
+
+    try:
+        parse_log(
+            _one_entry("Context 只有裸路徑?", "docs/specs/contracts.md:L10-L20", "不該過"),
+            "見 docs/specs/contracts.md。",
+        )
+        raise Mismatch("Context 只有裸路徑必須紅")
+    except ValueError as exc:
+        if "Context" not in str(exc):
+            raise Mismatch("裸路徑訊息應提到 Context,實得 %s" % exc)
+
+    try:
+        parse_log(
+            _one_entry("頂層散文?", "docs/specs/contracts.md:L10-L20", "不該過")
+            + "這是一段散文\n",
+            ctx,
+        )
+        raise Mismatch("頂層散文必須紅,不得併進結論")
+    except ValueError as exc:
+        if "未知內容" not in str(exc):
+            raise Mismatch("頂層散文訊息應提到未知內容,實得 %s" % exc)
+
+    try:
+        parse_log(
+            _one_entry(
+                "CONFIRMEDx?",
+                "docs/specs/contracts.md:L10-L20",
+                "不該過",
+                "CONFIRMEDx 30 天",
+            ),
+            ctx,
+        )
+        raise Mismatch("CONFIRMEDx 必須紅")
+    except ValueError as exc:
+        if "CONFIRMED" not in str(exc):
+            raise Mismatch("CONFIRMEDx 訊息應提到 CONFIRMED,實得 %s" % exc)
+
+    try:
+        parse_log(
+            _one_entry(
+                "只有 CONFIRMED?",
+                "docs/specs/contracts.md:L10-L20",
+                "不該過",
+                "CONFIRMED",
+            ),
+            ctx,
+        )
+        raise Mismatch("只有 CONFIRMED 無句子必須紅")
+    except ValueError as exc:
+        if "CONFIRMED" not in str(exc):
+            raise Mismatch("裸 CONFIRMED 訊息應提到 CONFIRMED,實得 %s" % exc)
+
+    print(
+        "[scan] parse_log 邊界:|／續行／剝標點／零 citation／重複／>8／"
+        "註解／行段／裸路徑／頂層散文／CONFIRMEDx／裸 CONFIRM 皆過"
+    )
+
+
 def check_live():
     chain = graph_chain(GRAPH)
     print("[graph] chain=" + " → ".join(chain))
@@ -838,6 +1000,7 @@ def check_live():
     print("[scan] html-shell #scan-qs 末欄與 #scan-ac 短欄 nowrap")
     check_generated()
     check_log_teeth()
+    check_log_edges()
 
 
 def copy_tree(dst):

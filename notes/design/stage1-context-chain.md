@@ -138,7 +138,7 @@ S10 六件不變：摘要卡／現況圖／人表／題目／驗收表／問答�
 **後續實作 PR 過關**＝下列全真（本檔本身不算過關）：
 
 1. §9 表列檔全部改到，`check-devtalk-fig-graph.sh`／`check-devtalk-guide-sync.sh` 綠。
-2. 牙 1–4 有對應 fixture（good 一份、每條牙一份 bad）。
+2. 牙 1–4／3a／行段／裸路徑／頂層散文／`CONFIRMEDx`／裸 `CONFIRMED` 有對應 fixture。
 3. 掃頁 `#scan-log` 為四欄表，`<details>` 預設摺著、`<summary>` 含「問答摘要」。
 4. S10 仍六件；審頁不變；html-shell 不變。
 5. 版本零 bump。
