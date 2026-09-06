@@ -240,144 +240,182 @@ def parse_ac(body):
     return [it for it in items if it["rule"]]
 
 
-LOG_CHILD_LABELS = ("事實", "推理", "結論")
-LOG_CONCLUSION_PREFIXES = ("CONFIRMED", "NEEDS_VERIFICATION", "OPEN")
+# Interview Log 巢狀四段(正本 notes/design/stage1-context-chain.md §6.3)
+# 子項縮排剛好兩格;舊單行 | 、空 Log、超過八條一律 ValueError。
+# 頂層散文 ValueError(對齊 parser-7d32);續行必須有前導空白。
+# 牙 3:path 相同且行段 ⊆ Context 已列 citation。產生器不讀產品檔案系統。
+LOG_LABELS = ("事實", "推理", "結論")
 LOG_CAP = 8
-LOG_GRAMMAR = (
-    "Interview Log 須為巢狀四段(- Q: + 正好兩格縮排的 - 事實:/- 推理:/- 結論:),"
-    "見 notes/design/stage1-context-chain.md §6.3"
-)
-LOG_CITE_RE = re.compile(r"(\S+):L\d+(?:-L\d+)?")
-LOG_Q_RE = re.compile(r"^-\s+(⚠️\s*)?Q[:：]\s*(.*)$")
-LOG_CHILD_RE = re.compile(r"^-\s+(事實|推理|結論)[:：]\s*(.*)$")
+CITE_RE = re.compile(r"([A-Za-z0-9_./-]+):L(\d+)(?:-L(\d+))?")
+Q_LINE_RE = re.compile(r"^- (?:⚠️\s*)?Q[:：]\s*(.*)$")
+CHILD_RE = re.compile(r"^  - (事實|推理|結論)[:：]\s*(.*)$")
 OLD_PIPE_RE = re.compile(
     r"^- (?:⚠️\s*)?Q[:：].*\|\s*事實[:：].*\|\s*推理[:：].*\|\s*結論[:：]"
 )
-LOG_PATH_STRIP = "`'\"（）()「」"
-# 牙 3:path⊆Context = 去行段、去兩端標點後的 path 字串包含。
-# 產生器不讀產品檔案系統。Context 比對前先剝 HTML 註解。
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.S)
+CONCLUSION_RE = re.compile(r"^(CONFIRMED|NEEDS_VERIFICATION|OPEN)\s+\S")
+PATH_STRIP = "`'\"（）()「」[]【】<>"
+LOG_GRAMMAR = (
+    "Interview Log 須為巢狀四段:頂層 - Q: + 剛好兩格縮排 "
+    "- 事實:/- 推理:/- 結論:(見 notes/design/stage1-context-chain.md §6.3)"
+)
 
 
-def _leading_spaces(raw):
-    lead = raw[: len(raw) - len(raw.lstrip())]
-    if "\t" in lead:
-        raise ValueError(LOG_GRAMMAR)
-    return len(lead)
+def _log_skip(line):
+    stripped = line.strip()
+    return (
+        not stripped
+        or stripped.startswith("#")
+        or stripped.startswith("```")
+        or stripped.startswith("<!--")
+        or stripped.startswith("-->")
+    )
 
 
-def _fact_paths(fact_text):
-    paths = []
-    for raw in LOG_CITE_RE.findall(fact_text or ""):
-        path = raw.strip(LOG_PATH_STRIP)
-        if path:
-            paths.append(path)
-    return paths
+def _clean_path(raw):
+    return (raw or "").strip(PATH_STRIP)
 
 
-def _strip_html_comments(text):
-    return re.sub(r"<!--.*?-->", "", text or "", flags=re.S)
+def _parse_cites(text):
+    """抽 (path, start, end)。只做字串,不讀產品檔案系統。"""
+    cites = []
+    for match in CITE_RE.finditer(text or ""):
+        path = _clean_path(match.group(1))
+        if not path:
+            continue
+        start = int(match.group(2))
+        end = int(match.group(3) or match.group(2))
+        if end < start:
+            start, end = end, start
+        cites.append((path, start, end))
+    return cites
 
 
-def parse_log(body, context_body=""):
-    """巢狀四段。子項正好兩格縮排。空 Log／舊單行 |／超過八條直接 ValueError。"""
-    text = _strip_html_comments(body)
+def _context_visible(text):
+    return HTML_COMMENT_RE.sub("", text or "")
+
+
+def _cite_contained(fact_cite, ctx_cites):
+    path, start, end = fact_cite
+    for cpath, cstart, cend in ctx_cites:
+        if path == cpath and start >= cstart and end <= cend:
+            return True
+    return False
+
+
+def parse_log(body, context_text=""):
+    """解析巢狀四段 Interview Log。牙 1–4／3a 任一失敗即 ValueError。"""
+    raw_lines = (body or "").splitlines()
     entries = []
-    current = None
-    last_field = None
-
-    def flush():
-        nonlocal current, last_field
-        if current is None:
-            return
-        entries.append(current)
-        current = None
-        last_field = None
-
-    for raw in text.splitlines():
-        stripped = raw.strip()
-        if not stripped or stripped.startswith("#") or stripped.startswith("```"):
+    i = 0
+    while i < len(raw_lines):
+        line = raw_lines[i]
+        if _log_skip(line):
+            i += 1
             continue
-        indent = _leading_spaces(raw)
-        content = raw.lstrip(" ")
-        if OLD_PIPE_RE.match(content):
-            raise ValueError(LOG_GRAMMAR)
-        q_match = LOG_Q_RE.match(content)
-        child_match = LOG_CHILD_RE.match(content)
-        if indent == 0 and q_match:
-            flush()
-            warn = q_match.group(1) or ""
-            question = q_match.group(2).strip()
-            if warn and not question.startswith("⚠️"):
-                question = "⚠️ " + question
-            current = {"q": question, "事實": None, "推理": None, "結論": None}
-            last_field = "q"
-            continue
-        if child_match:
-            if indent != 2:
-                raise ValueError(LOG_GRAMMAR)
-            if current is None:
-                raise ValueError(LOG_GRAMMAR)
-            label, value = child_match.group(1), child_match.group(2).strip()
-            if current[label] is not None:
-                raise ValueError(LOG_GRAMMAR)
-            current[label] = value
-            last_field = label
-            continue
-        if indent == 2 and content.startswith("- "):
+        if OLD_PIPE_RE.match(line):
             raise ValueError(
-                "Interview Log 四段標籤須為事實／推理／結論,"
-                "見 notes/design/stage1-context-chain.md §6.3"
+                "舊單行 | 格式已廢,改用巢狀四段(%s)" % LOG_GRAMMAR
             )
-        if indent == 0 and content.startswith("- "):
-            raise ValueError(LOG_GRAMMAR)
-        if current is not None and last_field is not None:
-            prev = current[last_field] or ""
-            current[last_field] = (prev + " " + stripped).strip()
-            continue
-
-    flush()
-    if not entries:
-        raise ValueError("抽不到 Interview Log")
-
-    context_text = _strip_html_comments(context_body)
-    out = []
-    for entry in entries:
-        missing = [name for name in LOG_CHILD_LABELS if entry[name] is None]
+        q_match = Q_LINE_RE.match(line)
+        if not q_match:
+            if line.startswith("- "):
+                raise ValueError(
+                    "Interview Log 頂層項須為 - Q:(%s)" % LOG_GRAMMAR
+                )
+            raise ValueError(
+                "Interview Log 含未知內容(%s): %s" % (LOG_GRAMMAR, line.strip())
+            )
+        q_text = q_match.group(1).strip()
+        if line.startswith("- ⚠️") and not q_text.startswith("⚠️"):
+            q_text = "⚠️ " + q_text
+        i += 1
+        fields = {}
+        current_label = None
+        while i < len(raw_lines):
+            child = raw_lines[i]
+            if child.startswith("- "):
+                break
+            if _log_skip(child):
+                i += 1
+                continue
+            child_match = CHILD_RE.match(child)
+            if child_match:
+                label, value = child_match.group(1), child_match.group(2).strip()
+                if label in fields:
+                    raise ValueError(
+                        "Interview Log 標籤「%s」重複(%s)" % (label, LOG_GRAMMAR)
+                    )
+                fields[label] = value
+                current_label = label
+                i += 1
+                continue
+            if re.match(r"^\s+- ", child):
+                raise ValueError(
+                    "Interview Log 四段不齊或子項縮排不是剛好兩格(%s)"
+                    % LOG_GRAMMAR
+                )
+            extra = child.strip()
+            if extra and re.match(r"^\s+\S", child):
+                if current_label is None:
+                    q_text = (q_text + " " + extra).strip()
+                else:
+                    fields[current_label] = (
+                        fields[current_label] + " " + extra
+                    ).strip()
+                i += 1
+                continue
+            raise ValueError(
+                "Interview Log 含未知內容(%s): %s" % (LOG_GRAMMAR, extra)
+            )
+        missing = [name for name in LOG_LABELS if name not in fields]
         if missing:
             raise ValueError(
-                "Interview Log 每條須齊四段(Q／事實／推理／結論),"
-                "見 notes/design/stage1-context-chain.md §6.3"
+                "Interview Log 四段不齊,缺「%s」;標籤須為 事實／推理／結論(%s)"
+                % ("／".join(missing), LOG_GRAMMAR)
             )
-        conclusion = entry["結論"]
-        if not conclusion.startswith(LOG_CONCLUSION_PREFIXES):
+        conclusion = fields["結論"]
+        if not CONCLUSION_RE.match(conclusion):
             raise ValueError(
                 "結論欄須以 CONFIRMED／NEEDS_VERIFICATION／OPEN 開頭,"
-                "見 notes/design/stage1-context-chain.md §6.3"
+                "後接一句結論"
+                "(見 notes/design/stage1-context-chain.md §6.3)"
             )
-        paths = _fact_paths(entry["事實"])
-        if not paths:
+        fact_cites = _parse_cites(fields["事實"])
+        if not fact_cites:
             raise ValueError(
-                "事實欄須至少一個 path:L 出處,"
-                "見 notes/design/stage1-context-chain.md §6.3"
+                "事實欄須引用 Context 出處 path:L起 或 path:L起-L迄"
+                "(見 notes/design/stage1-context-chain.md §10 牙 3a)"
             )
-        for path in paths:
-            if path not in context_text:
-                raise ValueError(
-                    "事實欄路徑 %s 須出現在 Context 節(去行段後字串包含),"
-                    "產生器不讀產品檔案系統;"
-                    "見 notes/design/stage1-context-chain.md §6.3" % path
+        ctx_cites = _parse_cites(_context_visible(context_text))
+        for cite in fact_cites:
+            if not _cite_contained(cite, ctx_cites):
+                path, start, end = cite
+                shown = (
+                    "%s:L%d-L%d" % (path, start, end)
+                    if end != start
+                    else "%s:L%d" % (path, start)
                 )
-        out.append(
+                raise ValueError(
+                    "事實欄路徑不在 Context:%s"
+                    "(path+行段須 ⊆ Context 已列出處;比對前剝 HTML 註解;"
+                    "產生器不讀產品檔案系統;"
+                    "見 notes/design/stage1-context-chain.md §10 牙 3)"
+                    % shown
+                )
+        entries.append(
             {
-                "q": entry["q"],
-                "fact": entry["事實"],
-                "reason": entry["推理"],
-                "conclusion": entry["結論"],
+                "q": q_text,
+                "fact": fields["事實"],
+                "reason": fields["推理"],
+                "conclusion": fields["結論"],
             }
         )
-    if len(out) > LOG_CAP:
+    if not entries:
+        raise ValueError("抽不到 Interview Log")
+    if len(entries) > LOG_CAP:
         raise ValueError("Interview Log 上限八條")
-    return out
+    return entries
 
 
 def diagram_ascii(md):

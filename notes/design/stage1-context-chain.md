@@ -85,7 +85,7 @@ grammar 從單行 `|` 改為巢狀四段。理由：shell pipe、TypeScript unio
 - 舊單行 `Q:… | 事實:… | 推理:… | 結論:` 完整 grammar：掃頁產生器直接 `ValueError`，訊息指向本節 grammar（fail-closed）。Q 或欄位文字含 `|`（shell pipe／TS union）不算舊格式。
 - Log 為空：現有「從 Open Questions 合成 `Q:… 著落:…`」的退路**移除**，改為 `ValueError("抽不到 Interview Log")`。理由：SKILL.md 十節骨架不准刪，S8 ④ 已要求每條齊段，空 Log 本來就不該過 S8。
 - 上限八條：超過 8 條 `ValueError("Interview Log 上限八條")`，先驗完全部再拒，禁止 silent truncate。
-- 子項續行併入上一欄（空白接）。path token 兩端剝 `` ` ' " （ ） ( ) 「 」 ``。Context 比對前先剝 HTML 註解。
+- 子項續行須有前導空白，併入上一欄（空白接）。頂層散文（無前導空白、非 `- Q:`／非 `#` 小標）直接 `ValueError`，不得接進上一欄。path token 兩端剝 `` ` ' " （ ） ( ) 「 」 [] 【 】 < > ``。Context 比對前先剝 HTML 註解。
 
 ## 7. Html 形狀（只動掃頁 `#scan-log`）
 
@@ -128,8 +128,8 @@ S10 六件不變：摘要卡／現況圖／人表／題目／驗收表／問答�
 **牙**（住 `scripts/build-scan-html.py`，fail-closed）：
 
 1. 每條 Log 四段齊，標籤為 `事實`／`推理`／`結論`，否則 `ValueError`。
-2. 結論欄以 `CONFIRMED`／`NEEDS_VERIFICATION`／`OPEN` 開頭，否則 `ValueError`。
-3. 事實欄每個 `path`（去行段）必須以字串包含出現在 Context 節文字中，否則 `ValueError`。產生器不讀產品檔案系統。Context 比對前先剝 HTML 註解。
+2. 結論欄須符合 `^(CONFIRMED|NEEDS_VERIFICATION|OPEN)\s+\S`（後接一句結論；拒 `CONFIRMEDx`、拒裸 `CONFIRMED`），否則 `ValueError`。
+3. 事實欄每個 citation（`path:L起` 或 `path:L起-L迄`）必須 path 相同且行段 ⊆ Context 已列 citation 行段，否則 `ValueError`。比對前剝 Context HTML 註解。產生器不讀產品檔案系統。Context 只寫裸路徑（沒 `:L`）時，事實欄任何 citation 都紅。
 3a. 事實欄至少一個 `path:L` 出處，否則 `ValueError`。
 4. 舊單行完整 `|` grammar、空 Log、超過八條 → `ValueError`。
 
