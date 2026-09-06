@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""跑掃頁產生器對 good + 牙 1–4 bad fixture。不讀產品檔案系統。"""
+"""本地跑掃頁產生器對 good + 牙 fixture。CI 正本是
+check-devtalk-fig-graph.sh 的 check_log_teeth()。不讀產品檔案系統。"""
 from __future__ import print_function
 
 import os
@@ -15,10 +16,14 @@ BUILD = ROOT / "scripts" / "build-scan-html.py"
 
 BAD = (
     ("bad-1-fields", "四段不齊"),
-    ("bad-2-conclusion", "已解／假設／移交"),
+    ("bad-2-conclusion", "CONFIRMED／NEEDS_VERIFICATION／OPEN"),
     ("bad-3-path", "不在 Context"),
+    ("bad-3-range", "不在 Context"),
+    ("bad-3-comment", "不在 Context"),
+    ("bad-3a-nocite", "事實欄須引用"),
     ("bad-4-pipe", "舊單行"),
     ("bad-4-empty", "抽不到 Interview Log"),
+    ("bad-5-over8", "上限八條"),
 )
 
 
@@ -47,7 +52,7 @@ def main():
                 failures.append("good 缺 #scan-log")
             if "<summary>問答摘要</summary>" not in text:
                 failures.append("good summary 須含問答摘要")
-            if 'open' in text.split('id="scan-log"', 1)[-1][:80]:
+            if "open" in text.split('id="scan-log"', 1)[-1][:80]:
                 failures.append("good #scan-log 不得預設 open")
             if 'class="tablewrap"' not in text:
                 failures.append("good #scan-log 須包 .tablewrap")
@@ -55,6 +60,10 @@ def main():
                 failures.append("good #scan-log 須為四欄表")
             if "<p>Q:" in text:
                 failures.append("good 不得再逐條 <p> 問答")
+            if "CONFIRMED 30 天" not in text:
+                failures.append("good 結論須為 CONFIRMED")
+            if "議約週期寫在 spec" not in text:
+                failures.append("good 須合併事實欄續行")
         for name, needle in BAD:
             md = HERE / name / "1-discussion.md"
             proc = run_builder(md, out)
@@ -75,7 +84,7 @@ def main():
     if failures:
         print("FAIL:\n- " + "\n- ".join(failures), file=sys.stderr)
         return 1
-    print("ok good + teeth 1-4 (%d bad)" % len(BAD))
+    print("ok good + teeth (%d bad)" % len(BAD))
     return 0
 
 

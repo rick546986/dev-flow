@@ -52,4 +52,4 @@ PLUS 還不會自動切
 - Q:提前幾天?
   - 事實:scripts/missing.py:L1-L2
   - 推理:議約約一個月,更短來不及
-  - 結論:已解 30 天
+  - 結論:CONFIRMED 30 天

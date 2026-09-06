@@ -1,4 +1,4 @@
-# 1. 討論 — 牙 1 四段不齊
+# 1. 討論 — 牙 3a 事實欄無 path:L
 
 ## Problem
 業務靠記憶追到期,每季漏續約。
@@ -50,5 +50,6 @@ PLUS 還不會自動切
 
 ## Interview Log
 - Q:提前幾天?
-  - 事實:docs/specs/contracts.md:L12-L18
+  - 事實:議約約一個月,沒有出處
+  - 推理:議約約一個月,更短來不及
   - 結論:CONFIRMED 30 天

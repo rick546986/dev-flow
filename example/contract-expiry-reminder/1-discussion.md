@@ -116,16 +116,16 @@ updated: 2026-07-23
 - Q:現況有沒有通知或排程機制?
   - 事實:docs/specs/contracts.md:L1-L20
   - 推理:CRUD 與 end_date 已在,通知與排程都不在;dashboard 有空白卡片。
-  - 結論:已解 dashboard 是最低成本的呈現面。
+  - 結論:CONFIRMED dashboard 是最低成本的呈現面。
 - Q:Expiring 怎麼定義?
   - 事實:docs/specs/contracts.md:L1-L20
   - 推理:議約約一個月,更短來不及。
-  - 結論:已解 30 天 + 未續約;詞條進 CONTEXT.md。
+  - 結論:CONFIRMED 30 天 + 未續約;詞條進 CONTEXT.md。
 - Q:登入時即時查還是上 cron?
   - 事實:src/pages/Dashboard.tsx:L1
   - 推理:不引入新 infra,兩週內要上。
-  - 結論:移交 登入時即時查詢優先,cron 留作後手 → 進 2-decision 比較。
+  - 結論:OPEN 登入時即時查詢優先,cron 留作後手 → 進 2-decision 比較。
 - Q:人現在怎麼真的追到期?
   - 事實:docs/specs/contracts.md:L1-L20
   - 推理:Journey 全在系統外;正式 SOP(先法務後簽)與實際做法(急件先口頭續)不同,兩者都記。
-  - 結論:已解 無紀錄斷點=Step 2-4 → 催生 Goal 3 與 Q4/Q5。
+  - 結論:CONFIRMED 無紀錄斷點=Step 2-4 → 催生 Goal 3 與 Q4/Q5。

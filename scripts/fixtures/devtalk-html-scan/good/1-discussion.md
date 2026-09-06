@@ -51,7 +51,8 @@ PLUS 還不會自動切
 ```
 
 ## Interview Log
-- Q:提前幾天?
-  - 事實:docs/specs/contracts.md:L12-L18
-  - 推理:議約約一個月,更短來不及
-  - 結論:已解 30 天
+- Q:提前幾天? shell 用 `a | b` 嗎?
+  - 事實:`docs/specs/contracts.md:L12-L18`
+    議約週期寫在 spec
+  - 推理:議約約一個月,更短來不及;TypeScript `string | null` 不是 delimiter
+  - 結論:CONFIRMED 30 天

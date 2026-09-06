@@ -1,11 +1,12 @@
-# 1. 討論 — 牙 1 四段不齊
+# 1. 討論 — 牙 3 路徑只在 Context 註解
 
 ## Problem
 業務靠記憶追到期,每季漏續約。
 現在怎麼繞:Excel 私表 + 電話催。
 
 ## Context(已知事實)
-- 議約週期約一個月:docs/specs/contracts.md:L12-L18
+- 議約週期約一個月
+<!-- docs/specs/contracts.md:L12-L18 -->
 
 ## Real-world Context
 
@@ -51,4 +52,5 @@ PLUS 還不會自動切
 ## Interview Log
 - Q:提前幾天?
   - 事實:docs/specs/contracts.md:L12-L18
+  - 推理:議約約一個月,更短來不及
   - 結論:CONFIRMED 30 天

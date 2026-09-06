@@ -40,6 +40,8 @@
 #   複本刪掉圖上一個 hop → 必須紅;graph.yaml 多一個 hop 不改圖 → 必須紅;
 #   樣張拿掉 details → 必須紅;樣張圖改回撐滿欄 → 必須紅;好樣本必須綠;
 #   生成頁拿掉人表 → 必須紅;生成頁圖改撐滿欄必須紅;
+#   生成頁／樣張 #scan-log 必須四欄 <th>Q／事實／推理／結論</th> + .tablewrap;
+#   Interview Log 牙 fixture(bad-1…／3a／5)必須紅,訊息含針;mutation 複本可沒有 bad 目錄;
 #   框高改 28／每框少一行／痛空／堆疊拆很多小格 → 必須紅;
 #   殼或樣張拿掉 #scan-qs 末欄 nowrap → 必須紅;生成頁拿掉 nowrap → 必須紅。
 #
@@ -643,6 +645,19 @@ def check_scan_page(text, label):
             if "問答" not in inner_text(body):
                 missing.append("details 不是問答摘要")
                 break
+    scan_log = first_block(text, r'<details\b[^>]*id="scan-log"[^>]*>.*?</details>')
+    if scan_log:
+        if not re.search(r"<table\b", scan_log):
+            missing.append("#scan-log 缺四欄表")
+        else:
+            heads = [
+                inner_text(h).strip()
+                for h in re.findall(r"<th\b[^>]*>(.*?)</th>", scan_log, re.S)
+            ]
+            if heads != ["Q", "事實", "推理", "結論"]:
+                missing.append("#scan-log 不是四欄表(Q／事實／推理／結論)")
+            if 'class="tablewrap"' not in scan_log:
+                missing.append("#scan-log 表未包 .tablewrap")
     if "mermaid" in text.lower():
         missing.append("%s禁 mermaid" % label)
     if re.search(r'<img[^>]+src="https?://', text):
@@ -749,6 +764,58 @@ def check_generated():
     print("[scan] 生成頁長題目列 + 著落／驗收短欄 nowrap")
 
 
+TOOTH_CASES = (
+    ("bad-1-fields", "四段不齊"),
+    ("bad-2-conclusion", "CONFIRMED／NEEDS_VERIFICATION／OPEN"),
+    ("bad-3-path", "不在 Context"),
+    ("bad-3-range", "不在 Context"),
+    ("bad-3-comment", "不在 Context"),
+    ("bad-3a-nocite", "事實欄須引用"),
+    ("bad-4-pipe", "舊單行"),
+    ("bad-4-empty", "抽不到 Interview Log"),
+    ("bad-5-over8", "上限八條"),
+)
+
+
+def check_log_teeth():
+    """牙 1–4／3a／>8:每條牙一份 bad 必須紅。mutation 複本可沒有 bad 目錄。"""
+    base = os.path.join(root, "scripts", "fixtures", "devtalk-html-scan")
+    found = []
+    missing = []
+    for name, needle in TOOTH_CASES:
+        path = os.path.join(base, name, "1-discussion.md")
+        if os.path.isfile(path):
+            found.append((name, needle, path))
+        else:
+            missing.append(name)
+    if missing:
+        if skip_mutation:
+            return
+        raise NotParsed("缺掃頁牙 fixture:" + "、".join(missing))
+    for name, needle, path in found:
+        fd, out = tempfile.mkstemp(suffix=".html", prefix="scan-tooth-")
+        os.close(fd)
+        try:
+            proc = subprocess.run(
+                [sys.executable, BUILD, "--action", path, "--out", out],
+                capture_output=True,
+                text=True,
+            )
+        finally:
+            try:
+                os.remove(out)
+            except OSError:
+                pass
+        blob = (proc.stdout or "") + "\n" + (proc.stderr or "")
+        if proc.returncode == 0:
+            raise Mismatch("牙 fixture %s 必須紅,卻綠了" % name)
+        if needle not in blob:
+            raise Mismatch(
+                "牙 fixture %s 應提到「%s」,實際:\n%s" % (name, needle, blob[-800:])
+            )
+        print("[scan] 牙 %s 紅且提到「%s」" % (name, needle))
+
+
 def check_live():
     chain = graph_chain(GRAPH)
     print("[graph] chain=" + " → ".join(chain))
@@ -768,6 +835,7 @@ def check_live():
         raise Mismatch("掃頁母版短欄未 nowrap:" + "、".join(nowrap_gaps))
     print("[scan] html-shell #scan-qs 末欄與 #scan-ac 短欄 nowrap")
     check_generated()
+    check_log_teeth()
 
 
 def copy_tree(dst):

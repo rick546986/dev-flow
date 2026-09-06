@@ -103,9 +103,9 @@ updated:
 
 ## Interview Log(推理鏈外顯)
 <!-- 每條一個 - Q: 頂層項 + 三個剛好兩格縮排子項,標籤固定 事實／推理／結論。四段齊才算一條。 -->
-<!-- 事實欄只引用 Context 已列出處(同一路徑,行段可更窄)。結論以 已解／假設／移交 開頭。 -->
+<!-- 事實欄只引用 Context 已列出處(同一路徑,行段可更窄)。結論以 CONFIRMED／NEEDS_VERIFICATION／OPEN 開頭。 -->
 <!-- 層1 盤現況確認的事實、層3 what-if 推演與盲點戰果也記於此。高影響在 Q 前標 ⚠️。上限八條。 -->
 - Q:為什麼這裡要讀 memory？
   - 事實:scripts/foo.py:L31-L44
   - 推理:signal 不是證據,仍需讀 current repo 驗證。
-  - 結論:已解 Stage 1 把驗證後內容寫進 Context。
+  - 結論:CONFIRMED Stage 1 把驗證後內容寫進 Context。
