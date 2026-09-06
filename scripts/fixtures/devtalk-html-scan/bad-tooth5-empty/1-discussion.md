@@ -51,6 +51,4 @@ PLUS 還不會自動切
 ```
 
 ## Interview Log
-- Q:提前幾天?
-  - 事實:docs/specs/contracts.md:L12-L20
-  - 結論:CONFIRMED 30 天。
+<!-- 空 Log:不得再從 Open Questions 合成退路 -->

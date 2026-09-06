@@ -56,8 +56,9 @@ S1 已有 Context（已知事實）＋ Interview Log（Q／事實／推理／結
 | 檢索狀態 | `ask()` 的 `retrieval_status` | `OK`／`NEEDS_VERIFICATION`／`CONFLICT`／`NO_RELIABLE_MATCH` | 只有 `OK` 的答案可當線索 |
 
 - brief 條目**不帶**檢索狀態；`ask()` 結果**不帶**事實／語意狀態。文件與實作都不得寫「brief 的 `ask()` 狀態」這種混軸句。
-- `OPEN` 是 session 狀態（`memory/agentmem/session.py`），不是上表任何一軸，本檔不用。
+- session 的 `OPEN`（`memory/agentmem/session.py`）與 Interview Log 結論前綴 `OPEN` 不同軸，不得互借。
 - 上表任一軸「可當線索」仍不等於 current fact；要進 Context 必須再經 current repo／spec 驗證（§6.2）。
+- Interview Log 結論至少允許 `CONFIRMED`／`NEEDS_VERIFICATION`／`OPEN`。`NEEDS_VERIFICATION`／`OPEN` 可留 Log，不得進 Context 當 current fact，也不得 promote 成 semantic memory。
 
 ### 6.2 Context（已知事實）
 
@@ -74,13 +75,13 @@ grammar 從單行 `|` 改為巢狀四段。理由：shell pipe、TypeScript unio
 - Q:為什麼這裡要讀 memory？
   - 事實:scripts/foo.py:L31-L44（Context 同批）
   - 推理:signal 不是證據，仍需讀 current repo 驗證。
-  - 結論:已解 Stage 1 把驗證後內容寫進 Context。
+  - 結論:CONFIRMED — Stage 1 應將已驗證內容寫入 Context。
 ```
 
 - 一條 = 一個 `- Q:` 頂層項 + 三個縮排子項，標籤固定為 `事實`／`推理`／`結論`（`事實依據` 不接受，S8 與 SKILL.md 骨架同步改字）。四段齊才算一條。
 - 子項縮排剛好 2 個空白（不是 tab、不是 4 空白）。模板註解與掃頁 `parse_log` 都寫死這條。
-- 事實欄只放 Context 已列出處（同一路徑，行段可更窄）；不另造無出處斷言。
-- 結論欄以 Open Questions 三態之一開頭：`已解`／`假設`／`移交`，後接一句結論。不借用記憶模組的 `CONFIRMED`／`VERIFIED`，也不借用檢索狀態。不得為了填滿四段硬下結論，寫 `假設` 或 `移交` 即可。
+- 事實欄只放 Context 已列出處（同一路徑，行段可更窄）；不另造無出處斷言。事實欄至少一個 `path:L` citation，否則 `ValueError`。
+- 結論欄以 `CONFIRMED`／`NEEDS_VERIFICATION`／`OPEN` 開頭，後接一句結論。這是 Log 結論前綴，不是 Open Questions 的 `已解`／`假設`／`移交`，也不是記憶模組的 `CONFIRMED` 固化。不得為了填滿四段硬下結論，寫 `NEEDS_VERIFICATION` 或 `OPEN` 即可。
 - 高影響（難逆轉／意外／真權衡）在 Q 前標 ⚠️。推理是可核對的短句，不是 raw CoT。
 - 舊單行 `Q:… | 事實:… | …` 格式：掃頁產生器直接 `ValueError`，訊息指向本節 grammar（fail-closed，與現有「抽不到 Interview Log／問答」同風格）。
 - Log 為空：現有「從 Open Questions 合成 `Q:… 著落:…`」的退路**移除**，改為 `ValueError("抽不到 Interview Log")`。理由：SKILL.md 十節骨架不准刪，S8 ④ 已要求每條齊段，空 Log 本來就不該過 S8。
@@ -92,7 +93,8 @@ S10 六件不變：摘要卡／現況圖／人表／題目／驗收表／問答�
 
 `#scan-log` 仍是預設摺著的 `<details>`，`<summary>` 仍含「問答摘要」（`check-devtalk-fig-graph.sh` 只查這兩件），內文從逐條 `<p>` 改為一張四欄 `<table>`（Q／事實／推理／結論），外包既有 `.tablewrap`。
 
-- 窄 viewport 靠 `.tablewrap{overflow-x:auto}` 橫向捲動。**不做堆疊**：產生器不輸出 CSS，堆疊得改 html-shell，本檔不動殼。
+- wide viewport：可呈現 `Q | 事實 | 推理 | 結論` 四欄。
+- narrow viewport：允許依序堆疊 `Q → 事實 → 推理 → 結論`，不得因四欄要求犧牲可讀性。本輪不改 html-shell；不得把 acceptance 改成「只能橫向捲動」。
 - 每欄內容逐一 `esc()`，維持現狀。
 - ⚠️ 以純文字前綴呈現，不加 class。
 - Constraints／詞條仍不佔第一屏。
@@ -103,7 +105,7 @@ S10 六件不變：摘要卡／現況圖／人表／題目／驗收表／問答�
 
 - 跨功能 semantic intake 入口只有本場 brief + `ask()`。verification 讀白名單（記憶入口、`docs/specs/`、原始碼），**不讀**其他 `docs/dev/<slug>/`，也不把 `docs/dev` 加進讀取白名單。
 - 推理留在本 slug 的 Interview Log；不把 Log 整包 promote 進 `.dev-flow`。transcript 只住本機。
-- 語意候選仍走 propose → 人 confirm → end 才固化。Log 結論的 `已解` 不等於記憶的 `CONFIRMED`。
+- 語意候選仍走 propose → 人 confirm → end 才固化。Log 結論的 `CONFIRMED` 不等於記憶的 `CONFIRMED`。
 
 ## 9. 範圍：要改與不改的檔
 
@@ -127,16 +129,16 @@ S10 六件不變：摘要卡／現況圖／人表／題目／驗收表／問答�
 **牙**（住 `scripts/build-scan-html.py`，fail-closed）：
 
 1. 每條 Log 四段齊，標籤為 `事實`／`推理`／`結論`，否則 `ValueError`。
-2. 結論欄以 `已解`／`假設`／`移交` 開頭，否則 `ValueError`。
-3. 事實欄每個 `path`（去行段）必須以字串包含出現在 Context 節文字中，否則 `ValueError`。產生器不讀產品檔案系統。
-4. 舊單行 `|` 格式、空 Log → `ValueError`。
+2. 結論欄以 `CONFIRMED`／`NEEDS_VERIFICATION`／`OPEN` 開頭，否則 `ValueError`。
+3. 事實欄至少一個 `path:L`；每個 `path`（去行段、剝 `` ` ' " （ ） ( ) 「 」 ``）必須以字串包含出現在 Context 節文字中（比對前先剝 HTML 註解），否則 `ValueError`。產生器不讀產品檔案系統。重複 `事實`／`推理`／`結論` 標籤 fail-closed。超過 8 條 `ValueError`，不靜默截斷。
+4. 舊單行 `|` 格式（完整舊 grammar，不是 Q 裡出現 `|`）、空 Log → `ValueError`。
 
 **無牙、靠 S8 人工**：出處是否真的支持斷言；重跑時的 stale 重驗；brief 是否真被消化。
 
 **後續實作 PR 過關**＝下列全真（本檔本身不算過關）：
 
 1. §9 表列檔全部改到，`check-devtalk-fig-graph.sh`／`check-devtalk-guide-sync.sh` 綠。
-2. 牙 1–4 有對應 fixture（good 一份、每條牙一份 bad）。
+2. 牙 1–4 + 空 Log 有對應 fixture（good 一份、五份 bad；守衛比對 stderr needle）。
 3. 掃頁 `#scan-log` 為四欄表，`<details>` 預設摺著、`<summary>` 含「問答摘要」。
 4. S10 仍六件；審頁不變；html-shell 不變。
 5. 版本零 bump。
@@ -157,8 +159,8 @@ S10 六件不變：摘要卡／現況圖／人表／題目／驗收表／問答�
 
 - 巢狀四段取代單行 `|`（§6.3）。翻回單行需另定 escape 規則。
 - 出處語法只留 `path:L<起>-L<迄>`（§6.2）。
-- 結論三態沿用 Open Questions（§6.3）。
-- 窄 viewport 橫向捲動、不堆疊、不動殼（§7）。
+- 結論前綴用 `CONFIRMED`／`NEEDS_VERIFICATION`／`OPEN`（§6.3）；Open Questions 三態仍是 `已解`／`假設`／`移交`。
+- 窄 viewport 允許四段堆疊；本輪不動殼（§7）。
 - 空 Log 與舊格式 fail-closed、移除 OQ 合成退路（§6.3）。
 - 「不升 plugin」= 不 bump 版本，節點文字可改（§9）。
 - stale 重驗無牙（§6.2）。

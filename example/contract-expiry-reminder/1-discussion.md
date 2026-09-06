@@ -116,16 +116,16 @@ updated: 2026-07-23
 - Q:現況有沒有通知或排程?
   - 事實:docs/specs/contracts.md:L1-L20
   - 推理:CRUD 與 end_date 已在,通知機制完全沒有,dashboard 是最低成本呈現面。
-  - 結論:已解 本期用 dashboard 卡片呈現到期,不引入新 infra。
+  - 結論:CONFIRMED 本期用 dashboard 卡片呈現到期,不引入新 infra。
 - Q:Expiring 怎麼定義?
   - 事實:docs/specs/contracts.md:L1-L20
   - 推理:議約約一個月,30 天加未續約才能趕上續約窗口。
-  - 結論:已解 Expiring = end_date - today ≤ 30 且未續約。
+  - 結論:CONFIRMED Expiring = end_date - today ≤ 30 且未續約。
 - Q:到期清單用即時查還是排程灌?
   - 事實:src/pages/Dashboard.tsx:L1-L40
   - 推理:dashboard 已有空白卡片區,登入時即時查不必先上 cron。
-  - 結論:移交 cron 是否要做,留給後續比較。
+  - 結論:OPEN cron 是否要做,留給後續比較。
 - Q:沒有這功能時人怎麼真的續約?
   - 事實:src/pages/Dashboard.tsx:L1-L40
   - 推理:Journey 全在系統外;正式 SOP 與急件先口頭續不同;Step 2-4 無紀錄。
-  - 結論:已解 要記狀態與下一步,看過提醒不算處理完。
+  - 結論:CONFIRMED 要記狀態與下一步,看過提醒不算處理完。

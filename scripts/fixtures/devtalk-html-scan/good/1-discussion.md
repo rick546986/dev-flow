@@ -51,7 +51,8 @@ PLUS 還不會自動切
 ```
 
 ## Interview Log
-- Q:提前幾天?
+- Q:提前幾天? shell 用 `a | b` 還是 TS `string | null`?
   - 事實:docs/specs/contracts.md:L12-L20
+    議約週期見同一出處。
   - 推理:議約約一個月,30 天才能趕上。
-  - 結論:已解 30 天。
+  - 結論:CONFIRMED 30 天。

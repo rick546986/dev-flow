@@ -65,6 +65,7 @@ fi
 
 python3 - "$ROOT" "$SELF/check-devtalk-fig-graph.sh" "$SKIP_MUTATION" <<'PY'
 import html
+import importlib.util
 import os
 import re
 import shutil
@@ -755,27 +756,41 @@ def check_generated():
     print("[scan] 生成頁長題目列 + 著落／驗收短欄 nowrap")
 
 
+TOOTH_CASES = (
+    ("bad-tooth1-fields", "四段"),
+    ("bad-tooth2-conclusion", "CONFIRMED"),
+    ("bad-tooth3-path", "Context"),
+    ("bad-tooth4-pipe", "§6.3"),
+    ("bad-tooth5-empty", "抽不到 Interview Log"),
+)
+
+
 def check_log_teeth():
-    """牙 1–4:每條牙一份 bad fixture 必須讓產生器 ValueError(exit 1)。
-    破壞實驗複本若沒拷 bad 目錄就略過,不改既有 mutation 規則。"""
-    scan_root = os.path.join(root, "scripts", "fixtures", "devtalk-html-scan")
-    cases = (
-        ("bad-tooth1-fields", "牙1"),
-        ("bad-tooth2-conclusion", "牙2"),
-        ("bad-tooth3-path", "牙3"),
-        ("bad-tooth4-pipe", "牙4"),
-    )
+    """牙 1–4 + 空 Log:good 綠;每條牙一份 bad 必須紅,且 stderr 含 needle。
+    破壞實驗複本可沒有 bad 目錄。"""
+    base = os.path.join(root, "scripts", "fixtures", "devtalk-html-scan")
     found = []
-    for name, label in cases:
-        md = os.path.join(scan_root, name, "1-discussion.md")
-        if not os.path.isfile(md):
-            continue
-        found.append(label)
-        fd, out = tempfile.mkstemp(suffix=".html", prefix="scan-bad-")
+    missing = []
+    for name, needle in TOOTH_CASES:
+        path = os.path.join(base, name, "1-discussion.md")
+        if os.path.isfile(path):
+            found.append((name, needle, path))
+        else:
+            missing.append(name)
+    if missing:
+        if skip_mutation:
+            return
+        raise NotParsed("缺掃頁牙 fixture:" + "、".join(missing))
+    if len(found) != 5:
+        raise Mismatch(
+            "牙 fixture 應有 5 份,實得 %s" % "／".join(name for name, _, _ in found)
+        )
+    for name, needle, path in found:
+        fd, out = tempfile.mkstemp(suffix=".html", prefix="scan-tooth-")
         os.close(fd)
         try:
             proc = subprocess.run(
-                [sys.executable, BUILD, "--action", md, "--out", out],
+                [sys.executable, BUILD, "--action", path, "--out", out],
                 capture_output=True,
                 text=True,
             )
@@ -784,19 +799,123 @@ def check_log_teeth():
                 os.remove(out)
             except OSError:
                 pass
+        blob = (proc.stdout or "") + "\n" + (proc.stderr or "")
         if proc.returncode == 0:
-            raise Mismatch("%s (%s) 必須紅,產生器卻綠了" % (label, name))
+            raise Mismatch("牙 fixture %s 必須紅,卻綠了" % name)
         if proc.returncode != 1:
-            blob = ((proc.stdout or "") + "\n" + (proc.stderr or ""))[-800:]
             raise Mismatch(
-                "%s (%s) 必須 exit 1,實際 rc=%s\n%s"
-                % (label, name, proc.returncode, blob)
+                "牙 fixture %s 必須 exit 1,實際 rc=%s\n%s"
+                % (name, proc.returncode, blob[-800:])
             )
-    if not found:
-        return
-    if len(found) != 4:
-        raise Mismatch("牙 fixture 應有 4 份,實得 %s" % "／".join(found))
-    print("[scan] 牙 1–4 bad fixture 皆紅")
+        if needle not in blob:
+            raise Mismatch(
+                "牙 fixture %s 應提到「%s」,實際:\n%s" % (name, needle, blob[-800:])
+            )
+        print("[scan] 牙 %s 紅且提到「%s」" % (name, needle))
+
+
+def load_parse_log():
+    spec = importlib.util.spec_from_file_location("build_scan_html", BUILD)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.parse_log
+
+
+def _one_entry(q, fact, reason, conclusion="CONFIRMED ok"):
+    return (
+        "- Q:%s\n  - 事實:%s\n  - 推理:%s\n  - 結論:%s\n"
+        % (q, fact, reason, conclusion)
+    )
+
+
+def check_log_edges():
+    """共同缺口 §2.1–2.3 與 >8／無 citation／重複標籤：直接餵 parse_log。"""
+    parse_log = load_parse_log()
+    ctx = "見 docs/specs/contracts.md:L12-L20 與 scripts/cron.py:L3。"
+
+    got = parse_log(
+        _one_entry(
+            "shell 用 `a | b` 還是 TS `string | null`?",
+            "docs/specs/contracts.md:L12-L20",
+            "內容含 | 不是舊單行 grammar",
+        ),
+        ctx,
+    )
+    if len(got) != 1 or "|" not in got[0]["q"]:
+        raise Mismatch("Q 含 | 必須綠")
+
+    merged = parse_log(
+        "- Q:Q1\n"
+        "  - 事實:docs/specs/contracts.md:L12-L20\n"
+        "    這一行續文\n"
+        "  - 推理:短句\n"
+        "  - 結論:OPEN 待補\n",
+        ctx,
+    )
+    if "這一行續文" not in merged[0]["事實"]:
+        raise Mismatch("子項續行必須併入上一欄")
+
+    quoted = parse_log(
+        _one_entry(
+            "路徑有引號嗎?",
+            "（`scripts/cron.py:L3`）",
+            "標點不應進 path token",
+        ),
+        ctx,
+    )
+    if quoted[0]["事實"] != "（`scripts/cron.py:L3`）":
+        raise Mismatch("路徑剝標點後仍須保留原文")
+
+    try:
+        parse_log(
+            _one_entry("沒出處?", "沒有 path 引用", "不該過"),
+            ctx,
+        )
+        raise Mismatch("事實欄零 citation 必須紅")
+    except ValueError as exc:
+        if "path:L" not in str(exc):
+            raise Mismatch("零 citation 訊息應提到 path:L,實得 %s" % exc)
+
+    try:
+        parse_log(
+            "- Q:重複?\n"
+            "  - 事實:docs/specs/contracts.md:L12-L20\n"
+            "  - 事實:docs/specs/contracts.md:L12-L20\n"
+            "  - 推理:x\n"
+            "  - 結論:OPEN x\n",
+            ctx,
+        )
+        raise Mismatch("重複標籤必須紅")
+    except ValueError as exc:
+        if "重複" not in str(exc):
+            raise Mismatch("重複標籤訊息應提到重複,實得 %s" % exc)
+
+    nine = "".join(
+        _one_entry("Q%d" % i, "docs/specs/contracts.md:L12-L20", "r%d" % i)
+        for i in range(9)
+    )
+    try:
+        parse_log(nine, ctx)
+        raise Mismatch(">8 條必須紅,不得靜默截斷")
+    except ValueError as exc:
+        if "八條" not in str(exc):
+            raise Mismatch(">8 訊息應提到上限八條,實得 %s" % exc)
+
+    try:
+        parse_log(
+            _one_entry(
+                "只在註解?",
+                "docs/specs/contracts.md:L12-L20",
+                "不該過",
+            ),
+            "可見文字。<!-- docs/specs/contracts.md:L12-L20 -->",
+        )
+        raise Mismatch("路徑只在 Context HTML 註解必須紅")
+    except ValueError as exc:
+        if "Context" not in str(exc):
+            raise Mismatch("註解路徑訊息應提到 Context,實得 %s" % exc)
+
+    print("[scan] parse_log 邊界:|／續行／剝標點／零 citation／重複／>8／註解皆過")
 
 
 def check_live():
@@ -819,6 +938,7 @@ def check_live():
     print("[scan] html-shell #scan-qs 末欄與 #scan-ac 短欄 nowrap")
     check_generated()
     check_log_teeth()
+    check_log_edges()
 
 
 def copy_tree(dst):
