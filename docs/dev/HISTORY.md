@@ -462,3 +462,9 @@
 - 落在哪:.claude-plugin/plugin.json .cursor-plugin/plugin.json .codex-plugin/plugin.json hooks/runtime-capabilities.json + 已合 main 改動
 - 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.21.0
 
+## 2026-09-06 · stage1-context-chain · v3.22.0
+- 做了什麼:Stage1 Context+nested Interview Log on scan page with fail-closed teeth
+- 為什麼:brief digestion + evidence chain visibility
+- 落在哪:notes/design/stage1-context-chain.md scripts/build-scan-html.py scripts/fixtures/devtalk-html-scan scripts/check-devtalk-fig-graph.sh skills/dev-talk/nodes notes/reviews
+- 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.22.0
+
