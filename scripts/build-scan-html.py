@@ -240,16 +240,122 @@ def parse_ac(body):
     return [it for it in items if it["rule"]]
 
 
-def parse_log(body):
-    lines = []
-    for raw in (body or "").splitlines():
-        stripped = raw.strip()
-        if stripped.startswith("- "):
-            stripped = stripped[2:].strip()
-        if not stripped or stripped.startswith("#") or stripped.startswith("```"):
+# Interview Log 巢狀四段(正本 notes/design/stage1-context-chain.md §6.3)
+# 子項縮排剛好兩格;舊單行 | 與空 Log 一律 ValueError。
+LOG_LABELS = ("事實", "推理", "結論")
+CONCLUSION_HEADS = ("已解", "假設", "移交")
+LOG_CAP = 8
+CITE_RE = re.compile(r"(\S+?):L\d+(?:-L\d+)?")
+Q_LINE_RE = re.compile(r"^- (?:⚠️\s*)?Q[:：]\s*(.*)$")
+CHILD_RE = re.compile(r"^  - (事實|推理|結論)[:：]\s*(.*)$")
+OLD_PIPE_RE = re.compile(
+    r"^- (?:⚠️\s*)?Q[:：].*\|\s*事實[:：].*\|\s*推理[:：].*\|\s*結論[:：]"
+)
+LOG_GRAMMAR = (
+    "Interview Log 須為巢狀四段:頂層 - Q: + 剛好兩格縮排 "
+    "- 事實:/- 推理:/- 結論:(見 notes/design/stage1-context-chain.md §6.3)"
+)
+
+
+def _log_skip(line):
+    stripped = line.strip()
+    return (
+        not stripped
+        or stripped.startswith("#")
+        or stripped.startswith("```")
+        or stripped.startswith("<!--")
+        or stripped.startswith("-->")
+    )
+
+
+def _cite_paths(fact):
+    """出處 path(去行段)。只做字串抽取,不讀產品檔案系統。"""
+    return [match.group(1) for match in CITE_RE.finditer(fact or "")]
+
+
+def parse_log(body, context_text=""):
+    """解析巢狀四段 Interview Log。牙 1–4 任一失敗即 ValueError。"""
+    raw_lines = (body or "").splitlines()
+    entries = []
+    i = 0
+    while i < len(raw_lines):
+        line = raw_lines[i]
+        if _log_skip(line):
+            i += 1
             continue
-        lines.append(stripped)
-    return lines[:8]
+        if OLD_PIPE_RE.match(line):
+            raise ValueError(
+                "舊單行 | 格式已廢,改用巢狀四段(%s)" % LOG_GRAMMAR
+            )
+        q_match = Q_LINE_RE.match(line)
+        if not q_match:
+            if line.startswith("- "):
+                raise ValueError(
+                    "Interview Log 頂層項須為 - Q:(%s)" % LOG_GRAMMAR
+                )
+            i += 1
+            continue
+        q_text = q_match.group(1).strip()
+        if line.startswith("- ⚠️") and not q_text.startswith("⚠️"):
+            q_text = "⚠️ " + q_text
+        i += 1
+        fields = {}
+        while i < len(raw_lines):
+            child = raw_lines[i]
+            if child.startswith("- "):
+                break
+            if _log_skip(child):
+                i += 1
+                continue
+            child_match = CHILD_RE.match(child)
+            if not child_match:
+                if re.match(r"^\s+- ", child):
+                    raise ValueError(
+                        "Interview Log 四段不齊或子項縮排不是剛好兩格(%s)"
+                        % LOG_GRAMMAR
+                    )
+                i += 1
+                continue
+            label, value = child_match.group(1), child_match.group(2).strip()
+            if label in fields:
+                raise ValueError(
+                    "Interview Log 標籤「%s」重複(%s)" % (label, LOG_GRAMMAR)
+                )
+            fields[label] = value
+            i += 1
+        missing = [name for name in LOG_LABELS if name not in fields]
+        if missing:
+            raise ValueError(
+                "Interview Log 四段不齊,缺「%s」;標籤須為 事實／推理／結論(%s)"
+                % ("／".join(missing), LOG_GRAMMAR)
+            )
+        conclusion = fields["結論"]
+        if not any(conclusion.startswith(head) for head in CONCLUSION_HEADS):
+            raise ValueError(
+                "結論欄須以 已解／假設／移交 開頭"
+                "(見 notes/design/stage1-context-chain.md §6.3)"
+            )
+        paths = _cite_paths(fields["事實"])
+        if not paths:
+            raise ValueError(
+                "事實欄須引用 Context 出處 path:L起 或 path:L起-L迄"
+                "(見 notes/design/stage1-context-chain.md §6.3)"
+            )
+        ctx = context_text or ""
+        for path in paths:
+            if path not in ctx:
+                raise ValueError(
+                    "事實欄路徑不在 Context:%s"
+                    "(去行段後須為 Context 節文字的子字串;"
+                    "見 notes/design/stage1-context-chain.md §10 牙 3)"
+                    % path
+                )
+        entries.append(
+            (q_text, fields["事實"], fields["推理"], fields["結論"])
+        )
+    if not entries:
+        raise ValueError("抽不到 Interview Log")
+    return entries[:LOG_CAP]
 
 
 def diagram_ascii(md):
@@ -465,14 +571,13 @@ def build_body(md):
     ac_items = parse_ac(ac_body)
     if not ac_items:
         raise ValueError("抽不到驗收雛形")
+    _ct, context_body = optional_section(
+        md, lambda t: t.startswith("Context") or "已知事實" in t
+    )
     _lt, log_body = optional_section(
         md, lambda t: t.startswith("Interview Log") or "問答" in t
     )
-    log_lines = parse_log(log_body)
-    if not log_lines and questions:
-        log_lines = ["Q:%s 著落:%s" % (q, st) for q, st in questions[:4]]
-    if not log_lines:
-        raise ValueError("抽不到 Interview Log／問答")
+    log_entries = parse_log(log_body, context_body)
     fig = render_fig(diagram_ascii(md), actor_names)
 
     badges = [
@@ -495,7 +600,11 @@ def build_body(md):
         % (esc(it["rule"]), esc(it["where"] or "—"), esc(it["see"] or "—"))
         for it in ac_items
     ]
-    log_html = "\n  ".join("<p>%s</p>" % esc(line) for line in log_lines)
+    log_rows = [
+        "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
+        % (esc(q), esc(fact), esc(reason), esc(conclusion))
+        for q, fact, reason, conclusion in log_entries
+    ]
 
     return "\n".join(
         [
@@ -524,7 +633,12 @@ def build_body(md):
             "",
             '<details id="scan-log">',
             "  <summary>問答摘要</summary>",
-            "  " + log_html,
+            '  <div class="tablewrap">',
+            "  <table>",
+            "  <tr><th>Q</th><th>事實</th><th>推理</th><th>結論</th></tr>",
+            "  " + "\n  ".join(log_rows),
+            "  </table>",
+            "  </div>",
             "</details>",
             "",
         ]

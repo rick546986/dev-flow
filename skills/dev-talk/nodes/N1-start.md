@@ -23,7 +23,8 @@
 
 1. 跑 `${DEVFLOW_ROOT}/memory/dev-memory.py talk start "<本輪主題>"`。
    它回 `session_id` 與 brief。把 `session_id` 當 MEMORY_SESSION_ID,**全程重用**。
-   brief 的 open questions 是 N3 逐題逼問的起點之一,不是全部。
+   brief 的全部欄位(known_facts／known_knowledge／repo_signals／conflicts)交 S1 消化;
+   open questions 仍是 N3 逐題逼問的起點之一,不是全部。
 2. 把執行清單 0-11 建成 todo(開場第一動;逐項達成完成條件才勾;禁跳項、禁併項)。
 3. 跑 `${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor N1-start "$MEMORY_SESSION_ID"`。
    把本機游標寫成現在節點 N1-start + MEMORY_SESSION_ID。檔不進 Git。
