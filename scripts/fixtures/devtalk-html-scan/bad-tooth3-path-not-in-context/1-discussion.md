@@ -52,6 +52,6 @@ PLUS 還不會自動切
 
 ## Interview Log
 - Q:提前幾天?
-  - 事實:docs/specs/contracts.md:L10-L20
+  - 事實:docs/other/missing.md:L1-L2
   - 推理:議約約一個月,30 天覆蓋一輪。
   - 結論:已解 提前 30 天。

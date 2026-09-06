@@ -98,7 +98,7 @@ dev-memory.py talk abort $MEMORY_SESSION_ID --reason "<原因>"
 ## 執行清單(開場第一動:把 0-11 建成 todo;逐項達成完成條件才勾;禁跳項、禁併項)
 
 0. **規模、範圍與起點**。正本:`nodes/S0-scope.md`。入口摘要:多需求拆 slug、問起點校準深度、微型可走精簡。完成條件見該節點。
-1. **盤現況**。正本:`nodes/S1-survey.md`。入口摘要:讀白名單條列事實含受影響面,認可後即已核事實。完成條件見該節點。
+1. **盤現況**。正本:`nodes/S1-survey.md`。入口摘要:消化 brief,讀白名單條列事實含受影響面,認可後即已核事實。完成條件見該節點。
 2. **真實世界互動盤點**。正本:`nodes/S2-world.md`。入口摘要:五份記錄(Actors / Current Journey / Workarounds / Exceptions / Evidence),無證據標 `[Assumption]`。完成條件見該節點。
 3. **逐題逼問**(循環)。正本:`nodes/N3-probe.md`。入口摘要:一次只問一題、
    覆述推理鏈、清單外斷言必問;3a 核銷五份時同步改現況圖;其餘子條款見該節點。完成條件見該節點。
@@ -145,7 +145,7 @@ feature: <slug>  stage: 1-discussion  status: draft→approved  owner:  updated:
 ## 驗收雛形           ← 每條:假設…當…則…(不綁做法)
                         + 觀測:從哪看 | 看到什麼算對 | 拿什麼資料試
 ## 邏輯圖(ASCII)     ← 限半形 | - + > < = [ ];中文只放行首標籤/行尾註
-## Interview Log      ← 每條:Q → 事實依據 → 推理 → 結論;含發散段與盲點戰果;
+## Interview Log      ← 每條:Q → 事實 → 推理 → 結論;含發散段與盲點戰果;
                         高影響決策(難逆轉/意外/真權衡)標 ⚠️
 ```
 

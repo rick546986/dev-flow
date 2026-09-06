@@ -112,8 +112,20 @@ updated: 2026-07-23
                           └─ 無 → 空狀態「近期無到期合約」
 ```
 
-## Interview Log(四段結論)
-- explore:現況無任何通知/排程機制;dashboard 是最低成本的呈現面。
-- grill-with-docs:逼出「Expiring」精確定義(30 天 + 未續約),新增 CONTEXT.md 詞條 Expiring、Renewal。
-- brainstorming:方向收斂為「登入時即時查詢」優先,cron 留作後手 → 進 2-decision 比較。
-- real-world:以「最近一次」實例還原 Journey(Excel/LINE/Email/電話全在系統外);正式 SOP(先法務後簽)與實際做法(急件先口頭續)不同,兩者都記;無紀錄斷點=Step 2-4 → 催生 Goal 3 與 Q4/Q5。
+## Interview Log(推理鏈外顯)
+- Q:現況有沒有通知或排程?
+  - 事實:docs/specs/contracts.md
+  - 推理:CRUD 與 end_date 已在,無通知機制;dashboard 有空白卡片區。
+  - 結論:已解 dashboard 是最低成本的呈現面。
+- Q:提前幾天算即將到期?
+  - 事實:docs/specs/contracts.md
+  - 推理:業務主管拍板 30 天,寫入 Expiring 定義。
+  - 結論:已解 30 天 + 未續約。
+- ⚠️ Q:登入時即時查還是上 cron?
+  - 事實:src/pages/Dashboard.tsx
+  - 推理:無 scheduler、無 MQ;引入 = 新 infra,兩週內要上。
+  - 結論:假設 本期即時查詢優先,cron 留作後手。
+- Q:人現在怎麼真的完成續約?
+  - 事實:src/pages/Dashboard.tsx
+  - 推理:Journey 全在 Excel/LINE/Email/電話;Step 2-4 無系統紀錄。
+  - 結論:已解 Goal 3 與 Q4/Q5 來自真實世界斷點。
