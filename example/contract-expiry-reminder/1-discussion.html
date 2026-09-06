@@ -49,9 +49,9 @@
 <p>業務靠記憶與 Excel 追合約到期,平均每季漏 2-3 件續約,客戶流失後才發現。</p>
 <h2>Context(已知事實)</h2>
 <ul>
-<li><code>docs/specs/contracts.md</code>:合約 CRUD 已有,<code>contracts.end_date</code> 欄位存效期,無任何通知機制。</li>
+<li>合約 CRUD 已有,<code>contracts.end_date</code> 欄位存效期,無任何通知機制。docs/specs/contracts.md:L1-L20</li>
 <li>後端 Go/Echo/ent,無 scheduler、無 MQ(引入 = 新 infra)。</li>
-<li>現有 dashboard 頁面有空白卡片區(前端 <code>src/pages/Dashboard.tsx</code>)。</li>
+<li>現有 dashboard 頁面有空白卡片區(前端 src/pages/Dashboard.tsx:L1-L40)。</li>
 <li>量級:活躍合約約 8,000 筆。</li>
 </ul>
 <h2>Real-world Context</h2>
@@ -263,30 +263,30 @@
 <ul>
 <li>Q:現況有沒有通知或排程?
 <ul>
-<li>事實:docs/specs/contracts.md</li>
+<li>事實:docs/specs/contracts.md:L1-L20</li>
 <li>推理:CRUD 與 end_date 已在,無通知機制;dashboard 有空白卡片區。</li>
-<li>結論:已解 dashboard 是最低成本的呈現面。</li>
+<li>結論:CONFIRMED dashboard 是最低成本的呈現面。</li>
 </ul>
 </li>
 <li>Q:提前幾天算即將到期?
 <ul>
-<li>事實:docs/specs/contracts.md</li>
+<li>事實:docs/specs/contracts.md:L1-L20</li>
 <li>推理:業務主管拍板 30 天,寫入 Expiring 定義。</li>
-<li>結論:已解 30 天 + 未續約。</li>
+<li>結論:CONFIRMED 30 天 + 未續約。</li>
 </ul>
 </li>
 <li>⚠️ Q:登入時即時查還是上 cron?
 <ul>
-<li>事實:src/pages/Dashboard.tsx</li>
+<li>事實:src/pages/Dashboard.tsx:L1-L40</li>
 <li>推理:無 scheduler、無 MQ;引入 = 新 infra,兩週內要上。</li>
-<li>結論:假設 本期即時查詢優先,cron 留作後手。</li>
+<li>結論:NEEDS_VERIFICATION 本期即時查詢優先,cron 留作後手。</li>
 </ul>
 </li>
 <li>Q:人現在怎麼真的完成續約?
 <ul>
-<li>事實:src/pages/Dashboard.tsx</li>
+<li>事實:src/pages/Dashboard.tsx:L1-L40</li>
 <li>推理:Journey 全在 Excel/LINE/Email/電話;Step 2-4 無系統紀錄。</li>
-<li>結論:已解 Goal 3 與 Q4/Q5 來自真實世界斷點。</li>
+<li>結論:CONFIRMED Goal 3 與 Q4/Q5 來自真實世界斷點。</li>
 </ul>
 </li>
 </ul>

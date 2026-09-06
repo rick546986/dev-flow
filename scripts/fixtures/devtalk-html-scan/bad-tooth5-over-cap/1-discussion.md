@@ -51,6 +51,39 @@ PLUS 還不會自動切
 ```
 
 ## Interview Log
-- Q:提前幾天?
+- Q:第1條?
   - 事實:docs/specs/contracts.md:L10-L20
-  - 結論:CONFIRMED 提前 30 天。
+  - 推理:第1條推理。
+  - 結論:CONFIRMED 第1條。
+- Q:第2條?
+  - 事實:docs/specs/contracts.md:L10-L20
+  - 推理:第2條推理。
+  - 結論:CONFIRMED 第2條。
+- Q:第3條?
+  - 事實:docs/specs/contracts.md:L10-L20
+  - 推理:第3條推理。
+  - 結論:CONFIRMED 第3條。
+- Q:第4條?
+  - 事實:docs/specs/contracts.md:L10-L20
+  - 推理:第4條推理。
+  - 結論:CONFIRMED 第4條。
+- Q:第5條?
+  - 事實:docs/specs/contracts.md:L10-L20
+  - 推理:第5條推理。
+  - 結論:CONFIRMED 第5條。
+- Q:第6條?
+  - 事實:docs/specs/contracts.md:L10-L20
+  - 推理:第6條推理。
+  - 結論:CONFIRMED 第6條。
+- Q:第7條?
+  - 事實:docs/specs/contracts.md:L10-L20
+  - 推理:第7條推理。
+  - 結論:CONFIRMED 第7條。
+- Q:第8條?
+  - 事實:docs/specs/contracts.md:L10-L20
+  - 推理:第8條推理。
+  - 結論:CONFIRMED 第8條。
+- Q:第9條?
+  - 事實:docs/specs/contracts.md:L10-L20
+  - 推理:第9條推理。
+  - 結論:CONFIRMED 第9條。

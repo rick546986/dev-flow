@@ -764,10 +764,13 @@ def check_generated():
 
 TOOTH_CASES = (
     ("bad-tooth1-missing-label", "四段"),
-    ("bad-tooth2-conclusion-prefix", "已解"),
+    ("bad-tooth2-conclusion-prefix", "CONFIRMED"),
     ("bad-tooth3-path-not-in-context", "Context"),
+    ("bad-tooth3a-no-cite", "path:L"),
+    ("bad-tooth3b-comment-only", "Context"),
     ("bad-tooth4-legacy-pipe", "§6.3"),
     ("bad-tooth4-empty-log", "抽不到 Interview Log"),
+    ("bad-tooth5-over-cap", "上限"),
 )
 
 

@@ -5,7 +5,8 @@
 現在怎麼繞:Excel 私表 + 電話催。
 
 ## Context(已知事實)
-- 議約週期約一個月,見 docs/specs/contracts.md:L10-L20
+<!-- docs/specs/contracts.md:L10-L20 -->
+- 議約週期約一個月
 
 ## Real-world Context
 
@@ -53,4 +54,5 @@ PLUS 還不會自動切
 ## Interview Log
 - Q:提前幾天?
   - 事實:docs/specs/contracts.md:L10-L20
+  - 推理:議約約一個月,30 天覆蓋一輪。
   - 結論:CONFIRMED 提前 30 天。
