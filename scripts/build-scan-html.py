@@ -244,6 +244,9 @@ def parse_ac(body):
 # 子項縮排剛好兩格;舊單行 | 、空 Log、超過八條一律 ValueError。
 LOG_LABELS = ("事實", "推理", "結論")
 CONCLUSION_HEADS = ("CONFIRMED", "NEEDS_VERIFICATION", "OPEN")
+CONCLUSION_HEAD_RE = re.compile(
+    r"^(%s)\s+\S" % "|".join(CONCLUSION_HEADS)
+)
 LOG_CAP = 8
 CITE_RE = re.compile(r"([A-Za-z0-9_./-]+):L(\d+)(?:-L(\d+))?")
 Q_LINE_RE = re.compile(r"^- (?:⚠️\s*)?Q[:：]\s*(.*)$")
@@ -373,9 +376,10 @@ def parse_log(body, context_text=""):
                 % ("／".join(missing), LOG_GRAMMAR)
             )
         conclusion = fields["結論"]
-        if not any(conclusion.startswith(head) for head in CONCLUSION_HEADS):
+        if not CONCLUSION_HEAD_RE.match(conclusion):
             raise ValueError(
                 "結論欄須以 CONFIRMED／NEEDS_VERIFICATION／OPEN 開頭"
+                "且後接空白再接一句;拒 CONFIRMEDx 與光禿 CONFIRMED"
                 "(見 notes/design/stage1-context-chain.md §6.3)"
             )
         fact_cites = _parse_cites(fields["事實"])

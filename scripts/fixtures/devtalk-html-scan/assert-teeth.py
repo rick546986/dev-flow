@@ -17,6 +17,8 @@ BUILD = ROOT / "scripts" / "build-scan-html.py"
 BAD = (
     ("bad-1-fields", "四段不齊"),
     ("bad-2-conclusion", "CONFIRMED／NEEDS_VERIFICATION／OPEN"),
+    ("bad-2-confirmedx", "CONFIRMED／NEEDS_VERIFICATION／OPEN"),
+    ("bad-2-bare", "CONFIRMED／NEEDS_VERIFICATION／OPEN"),
     ("bad-3-path", "不在 Context"),
     ("bad-3-range", "不在 Context"),
     ("bad-3-comment", "不在 Context"),
