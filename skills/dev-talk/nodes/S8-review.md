@@ -33,6 +33,7 @@ N9 已完成(`1-discussion.md` 已在)。MEMORY_SESSION_ID 仍在。游標在 S8
 ⑧圖 vs Journey:Actors 名字與 Current Journey 每步的誰／工具必須在現況圖上;
 圖上多出來的人／工具必須對得上 Actors／Journey;步序一致。
 對不上 → 改圖或回 N3。不准拿明天系統流來對 Journey。
+行長由產器守,不目測凸框。
 發現問題 → 改檔或回步 3 補問。
 跑 `${DEVFLOW_ROOT}/scripts/check-devtalk-graph.sh --write-cursor S8-review "$MEMORY_SESSION_ID"`。
 

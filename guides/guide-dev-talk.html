@@ -207,7 +207,7 @@ claude          # 建議 opus(規劃層)
     <tr><td>6 盲點</td><td>列你沒想到要問的 unknown unknowns,逐條解釋;並列隱含預設,逐條問你確認</td><td><span class="badge you">兩份清單各至少回一句</span></td><td>兩份清單皆回應過</td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>6. <strong>盲點掃描</strong>。正本:<code>nodes/S6-blind.md</code>。入口摘要:unknown unknowns 與隱含預設兩份清單都要回應。完成條件見該節點。</blockquote></details></td></tr>
     <tr><td>7 落檔</td><td>寫 1-discussion.md(十節)</td><td>—</td><td>十節齊、零佔位</td></tr>
-    <tr><td colspan="4"><details><summary>原文</summary><blockquote>7. <strong>落檔 md</strong>。正本:<code>nodes/N9-write-md.md</code>。寫 <code>1-discussion.md</code>(骨架見下);<br>現況圖從 Actors＋Current Journey 長出來,不准另發明天系統流卻叫現況圖;<br>重跑覆寫同一檔,不另存。完成條件見該節點。</blockquote></details></td></tr>
+    <tr><td colspan="4"><details><summary>原文</summary><blockquote>7. <strong>落檔 md</strong>。正本:<code>nodes/N9-write-md.md</code>。寫 <code>1-discussion.md</code>(骨架見下);<br>現況圖從 Actors＋Current Journey 長出來(標題卡／每行 ≤13 全形),不准另發明天系統流卻叫現況圖;<br>重跑覆寫同一檔,不另存。完成條件見該節點。</blockquote></details></td></tr>
     <tr><td>8 複核</td><td>嚴格審視者七掃(AC 自洽/事實背書/矛盾/推理鏈齊/範圍未偷長/用詞前後一致/真實世界標注 [Assumption])+第 ⑧ 掃「圖 vs Journey」</td><td>—</td><td>七掃與第 ⑧ 掃清零</td></tr>
     <tr><td colspan="4"><details><summary>原文</summary><blockquote>8. <strong>獨立複核</strong>。正本:<code>nodes/S8-review.md</code>。入口摘要:換嚴格審視者視角七掃,再加第 ⑧ 掃「圖 vs Journey」。完成條件見該節點。</blockquote></details></td></tr>
     <tr><td>9 詞彙</td><td>先查長期記憶的現況(其他討論可能已確認過詞條,只增改本輪的、不動他人的);浮現詞彙逐一登記成候選,逐詞自問「這詞條在解釋語言,還是在記方案?」——後者刪;使用者確認過的才 confirm</td><td>—</td><td>逐詞打勾</td></tr>
@@ -414,10 +414,10 @@ claude          # 建議 opus(規劃層)
   <h2 id="visual">⑧ 視覺版(html 產出)判準</h2>
   <p class="lead">這章要你懂:<strong>html 是掃頁臉</strong>。要改內容就改 md,再重生 html。html 可以丟,md 不能丟。Constraints／詞條不要佔第一屏。</p>
   <p><code>1-discussion.html</code> 六件由上而下,不多不少:摘要卡 → 直式現況圖 → 人與土法 → 題目 → 驗收一小表 → 問答摘要摺著。<span class="muted">步 10「自核過+掃頁六件齊」= 先自核 OQ 三態,定態後這六件都要在。</span></p>
-  <details><summary>原文</summary><blockquote>html 是掃頁臉,不是把 md 十節整份倒進去。md 仍是正本、十節骨架不准刪。<br>六件由上而下,不多不少:<br>1. 摘要卡:痛 + 現在怎麼繞 + Open Questions 三態 badge(已解／假設／移交)<br>2. 直式現況圖:誰／做什麼／工具／痛點,直式三框(每框四行)。有人、分支、痛點用 inline SVG。直式,不要橫排。禁 mermaid、禁外連圖、禁外部庫。md 留 ASCII。<br>3. 人與土法:誰／要什麼／缺什麼(從 Actors + Workarounds 收)。<code>[Assumption]</code> 看得見。<br>4. 題目:每列一題 + 著落(已解／假設／移交)。不要長 claim。<br>5. 驗收一小表:假設…當…則…｜從哪看｜看到什麼。<br>6. 問答摘要預設摺著(<code>&lt;details&gt;</code>)。Constraints／詞條不要佔第一屏。<br>SVG 用既有圖表 class:.b .hl .no .flow .cap,顏色只用 CSS 變數(含 --acc)。字 11px。現況圖不裁字;三步時 viewBox="0 0 200 420",外層 width:220px 置中,圖下小字「痛在最後一步」,最後一框用痛的強調色。</blockquote></details>
+  <details><summary>原文</summary><blockquote>html 是掃頁臉,不是把 md 十節整份倒進去。md 仍是正本、十節骨架不准刪。<br>六件由上而下,不多不少:<br>1. 摘要卡:痛 + 現在怎麼繞 + Open Questions 三態 badge(已解／假設／移交)<br>2. 直式現況圖:誰／做什麼／工具／痛點,直式三框(每框四行)。有人、分支、痛點用 inline SVG。直式,不要橫排。禁 mermaid、禁外連圖、禁外部庫。md 留 ASCII。<br>3. 人與土法:誰／要什麼／缺什麼(從 Actors + Workarounds 收)。<code>[Assumption]</code> 看得見。<br>4. 題目:每列一題 + 著落(已解／假設／移交)。不要長 claim。<br>5. 驗收一小表:假設…當…則…｜從哪看｜看到什麼。<br>6. 問答摘要預設摺著(<code>&lt;details&gt;</code>)。Constraints／詞條不要佔第一屏。<br>SVG 用既有圖表 class:.b .hl .no .flow .cap,顏色只用 CSS 變數(含 --acc)。字 11px。現況圖不裁字(每行 ≤13 全形,W/F/A=1、其餘=0.5,超過 S10 exit 1);三步時 viewBox="0 0 200 420",外層 width:220px 置中,圖下小字「痛在最後一步」,最後一框用痛的強調色。</blockquote></details>
   <div class="tablewrap"><table>
     <tr><th>現況圖形狀</th><th>畫法</th></tr>
-    <tr><td>直式三框(誰／做什麼／工具／痛點)</td><td>inline SVG;viewBox 200×420;不裁字</td></tr>
+    <tr><td>直式三框(誰／做什麼／工具／痛點)</td><td>inline SVG;viewBox 200×420;不裁字(每行 ≤13 全形,超過 S10 exit 1)</td></tr>
     <tr><td>痛在最後一框</td><td>第三框強調色 + 圖下「痛在最後一步」</td></tr>
   </table></div>
   <p class="muted">禁 mermaid、禁外連圖、禁外部庫。md 留 ASCII 當正本;html 圖只是掃頁臉。</p>

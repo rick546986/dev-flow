@@ -26,6 +26,7 @@ BAD = (
     ("bad-4-pipe", "舊單行"),
     ("bad-4-empty", "抽不到 Interview Log"),
     ("bad-5-over8", "上限八條"),
+    ("bad-now-line", "現況圖行超長"),
 )
 
 
