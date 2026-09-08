@@ -9,6 +9,12 @@
 > 本檔用到的 repo 名詞：掃頁產生器 `scripts/build-scan-html.py`（S10）、
 > `#scan-now` SVG、`unicodedata.east_asian_width`、Interview Log 牙
 > （`ValueError` → `die(1, "拒絕:%s")`）。
+>
+> **Amendment（#142 merge 後）**：摺入 Cursor review R1 contract／teeth 與
+> R2 writer UX。**Locked decisions 不變**（N=13、`W`／`F`／`A`=1 其餘 0.5、
+> 量剝標籤後的 who／action／tool／pain、一則 `ValueError` 列完、針
+> `現況圖行超長`＋`13`、只在 S10 紅、幾何凍結、零 bump、不動
+> `build-stage1-html.py`）。本輪只補牙鎖與作者文件觸點。仍不算修 #138。
 
 ## 1. Status
 
@@ -27,6 +33,22 @@
 | `:15` 「不裁字」 | 檔頭仍只寫不裁，無每行上限 |
 | `SKILL.md:156-161` | 視覺版仍「每框四行」「不裁字」，無字數上限 |
 | `N9-write-md.md` / `S10-html.md:29` | N9 只管從 Journey 長圖；S10 只寫四行形狀 |
+
+### 1.1 本 amendment 摺入的 nits（R1＋R2）
+
+Locked 決策一項都沒翻。摺進的是牙怎麼鎖、作者會看哪一格：
+
+| # | 來源 | 摺到 | 內容 |
+|---|---|---|---|
+| 1 | R1 must／R2 must | §9–§11 | **多欄牙**：≥2 欄同時超；**同一則** stderr 含兩個中文欄名。單欄 `bad-now-line` 鎖不住 list-all |
+| 2 | R1 must | §9–§11 | **labeled-stack 綠 fixture**：全形 `：`；raw（含標籤）>13、剝後 ≤13 必須過。鎖「標籤不計」 |
+| 3 | R1 should | §10–§11 | `check_now_line_edges` 必須 `assert NOW_LINE_MAX==13`，並練**真守衛**（13 過／14 紅），不只孤立 `display_width`；掛進 `check_live()` |
+| 4 | R2 must／R1 should | §4、§9 | guide 觸點改 **REQUIRED**。`#visual` 表列「不裁字」格在原文 blockquote **之外**，必須另改；原文也改 |
+| 5 | R2 opt | §4、§9 | SKILL **執行清單步 7** 加「標題卡／≤13」，免得 agent 整格搬 Journey |
+| 6 | R2 opt | §7 | 錯誤訊息指向 **N9**，不指向 `notes/design/…`（採用專案沒這檔）。針仍是 `現況圖行超長`＋`13` |
+| 7 | R1 should | §4、§9 | N9 寫清與 `check-devtalk-fig-journey.sh` 共存：先縮 Journey 再畫標題卡 |
+| 8 | R1／R2 nits | §6–§10 | combining／ZWJ **跟公式走**（不准假 0.5 例外）；範例估寬 16.0→**15.0**；空白=0.5；`bad-now-line` 用 14 CJK（或 13.5 混合）不用 26.0 巨獸；`assert-teeth.py` 是本地雙份，CI 正本是 fig-graph |
+| 9 | R2 opt（便宜） | §7、§9 | N9 before／after：`月初翻 Excel 私表比對到期日` = **13.5** → `翻私表` |
 
 ## 2. Problem
 
@@ -60,8 +82,14 @@ exit 1）。現況圖行長是同一類「形狀壞了還綠」缺口。
 - `display_width(s) > 13` → 一則 `ValueError` 列完本圖所有超長欄 → 既有 `die(1, "拒絕:%s")`。`= 13` 過。
 - 牙只住 S10 `scripts/build-scan-html.py`。不另開 md-write-time linter。
 - 檔頭 docstring「不裁字」旁補上限；`exit:` 那行把行超長算進 exit 1。
-- 作者文件（實作 PR 才改，本 brief 不動）：N9 主場；SKILL 現況圖節；S10；guide 若 guide-sync 要求；N3 3a 半句。S8 不目測凸框。
-- 既有 good fixture 必須仍綠。加 `display_width` 邊界表 + `bad-now-line` 牙（§10）。
+- 作者文件（實作 PR 才改，本 brief 不動）：
+  - **N9 主場**：渲染後四欄每行 ≤13 全形（這是 W／F／A **權重和**，不是「13 個字」；空白 0.5；標籤不計）；超過 S10 exit 1；現況圖是標題卡。放一組 before／after（§9）。寫清與 `check-devtalk-fig-journey.sh` 共存：Journey 的動作／痛點 token 必須是圖上子字串；只縮圖、不縮 Journey 儲存格，S10 綠了這支牙會紅。**標題卡 ⇒ 先縮 Journey 再畫圖。**
+  - **SKILL 視覺版**（約 L156–161）「不裁字」旁補上限與 exit 1。
+  - **SKILL 執行清單步 7**（約 L108–110）現句「現況圖從 Actors＋Current Journey 長出來」必須加「標題卡／≤13」，免得 agent 把 Journey 整格貼進框。guide 步 7 原文會跟著 sync。
+  - S10；N3 3a 半句。S8 不目測凸框。
+  - **guide 必改**（不是「若 guide-sync 要求」）：見 §9。
+  - 錯誤訊息指向 N9，不指向本檔。
+- 既有 good fixture 必須仍綠。牙見 §10（多欄 list-all、labeled-stack 綠、真守衛 13／14、掛 `check_live()`）。
 
 ## 5. Don't
 
@@ -71,7 +99,7 @@ exit 1）。現況圖行長是同一類「形狀壞了還綠」缺口。
 - **不動** `scripts/build-stage1-html.py`（審頁產生器；#138 只點掃頁）。
 - 不 bump plugin／契約。不加 hop、不改 `graph.yaml`。
 - 不准引入 `wcwidth` 或任何非標準庫。不准 `match`／`case`（3.10）。訊息用既有 `%-format`。
-- 不准為拉丁大寫 `Na` 另做第三權重（殘見 §6.3，本 hop 不修）。
+- 不准為拉丁大寫 `Na`、combining／ZWJ／VS16／emoji 另做第三權重（殘見 §6.2–§6.3，本 hop 不修）。
 
 ## 6. 寬度公式與量測對象
 
@@ -107,8 +135,8 @@ def display_width(s):
 
 | 類 | 權重 | 例子 |
 |---|---|---|
-| `W`／`F`／`A` | 1.0 | 中日韓、全形 `Ａ`／`Ｆ`、全形標點 `，`、歧義 `—`／`–`／`×` |
-| 其餘（`Na`／`N`／`H`） | 0.5 | ASCII、半形假名、空白 |
+| `W`／`F`／`A` | 1.0 | 中日韓、全形 `Ａ`／`Ｆ`、全形標點 `，`、歧義 `—`／`–`／`×`／`…`／`·` |
+| 其餘（`Na`／`N`／`H`） | 0.5 | ASCII、半形假名、空白（含 ASCII space） |
 
 issue 與 A／B 把 `A`（Ambiguous）丟進 0.5。本檔不採。
 
@@ -117,6 +145,8 @@ issue 與 A／B 把 `A`（Ambiguous）丟進 0.5。本檔不採。
 - `unicodedata.east_asian_width` 是 stdlib、Python 2.4 起就有，**3.9 地板安全**
   （`scripts/check-py-floor.sh`）。不准新 API、不准 `wcwidth`。
 - 現有 html-scan good 最長欄「新增附表五、選 A–F」在 `A=1` 後 = **9.5**（EN DASH 升 0.5），仍遠低於 13。改權重不誤殺 fixture。
+- 「≤13 全形」= 上表權重和，不是「13 個字」。26 個拉丁 `A`（`Na`）= 13.0。
+- **空白 = 0.5**（ASCII space 是 `Na`）。作者用「數中文字」會誤判。旗艦 Journey 動作 5「談成後改 Excel 標「已續」」= **12.5**；每多一個空白 +0.5。
 
 量 **parsed SVG field values**：`parse_frames` 之後、寫入 `<text>` 之前的
 `who`／`action`／`tool`／`pain`。與畫面同源。
@@ -128,13 +158,18 @@ issue 與 A／B 把 `A`（Ambiguous）丟進 0.5。本檔不採。
 - `<pre id="scan-now">` 退路（`parse_frames` 抽不到框；沒有 160 寬 rect）
 
 空字串 `display_width=0`，本牙放行（痛空仍走既有「痛不准空」牙，不合併）。
-combining mark／ZWJ 各算 0.5（略高估）。fail-loud 可接受，不為它們開例外。
+
+combining mark／ZWJ／VS16 **跟公式走，不准另開 0.5 例外**。分類是什麼權重就是什麼：
+ZWJ（U+200D）是 `N` → 0.5；多數 combining（如 U+0301）與 VS16（U+FE0F）是 `A` → 1.0。
+視覺寬常接近 0，公式會**高估**。fail-loud 可接受。實作者跟上面的 snippet 走即對；
+若 special-case combining=0.5，反而偏離鎖定公式。不為它們加第三權重。
 
 ### 6.3 已知殘（本 hop 不修）
 
 拉丁 `Na` 是比例字。26 個全大寫 `W`（`Na`）估寬 13、實畫可接近 1em／字，公式放行、畫面可能凸框。
+`⚠`（`N`=0.5、畫面約 1em）同款低估。emoji／ZWJ 序列（如 `👨‍👩‍👧` 估 4.0、畫面約 2em）是高估。
 現況圖文類是中文標題卡加短拉丁 token（`PLUS`、`OPU`、`2PN`），不是 26 連發大寫。
-不為這個殘加第三權重。
+不為這些殘加第三權重。
 
 ## 7. 錯誤訊息形狀（採 B；覆寫 A／C 的 fail-fast-first）
 
@@ -147,9 +182,11 @@ combining mark／ZWJ 各算 0.5（略高估）。fail-loud 可接受，不為它
 ```text
 現況圖行超長(每行 ≤13 全形;W/F/A=1、其餘=0.5;標籤不計):
   第1框「做什麼」估寬 13.5：「月初翻 Excel 私表比對到期日」
-  第2框「痛點」估寬 16.0：「法務回覆要等而且進度完全不可見」
-請收成標題卡再重生(例:「翻私表」／「進度不可見」)。見 notes/design/scan-now-line-guard.md
+  第2框「痛點」估寬 15.0：「法務回覆要等而且進度完全不可見」
+請收成標題卡再重生(例:「翻私表」／「進度不可見」)。見 skills/dev-talk/nodes/N9-write-md.md
 ```
+
+（上一版誤寫痛點估寬 16.0；該句全 CJK 15 字 = **15.0**。不要把錯數字抄進 fixture。）
 
 實作可微調標點與提示句，但必須同時滿足：
 
@@ -157,6 +194,8 @@ combining mark／ZWJ 各算 0.5（略高估）。fail-loud 可接受，不為它
 - 訊息必須出現數字上限 **`13`**
 - 每條超欄含框號、中文欄名、估寬、渲染原文（未 `esc`）
 - 不准只報第一條讓撰寫者跑四輪 S10
+- **指向 N9**（`skills/dev-talk/nodes/N9-write-md.md`），**不准**指向
+  `notes/design/scan-now-line-guard.md`——採用專案沒有這檔。針＋`13`＋改寫例已夠
 
 禁：只說「行太長」、只印 raw md 含標籤的那一行、exit 0 加 warning、靜默截斷後仍 `wrote …`。
 
@@ -175,20 +214,22 @@ combining mark／ZWJ 各算 0.5（略高估）。fail-loud 可接受，不為它
 ## 9. 範圍：要改與不改的檔
 
 「不升 plugin」= 不 bump 版本，不改 graph、不加節點。節點與指南的**文字**可改。
-下表是**後續實作 PR** 的範圍。本 brief 只新增本檔。
+下表是**後續實作 PR** 的範圍。本 brief 只改本檔。
 
 | 檔 | 改什麼 |
 |---|---|
-| `scripts/build-scan-html.py` | `NOW_LINE_MAX`；`display_width`；`render_svg` 前檢查；檔頭「不裁字」旁補上限；`exit:` 把行超長算進 1；一次列完的 `ValueError` |
-| `scripts/check-devtalk-fig-graph.sh` | `TOOTH_CASES` 加 `bad-now-line`（與 `check_log_teeth` 同款：bad 必須紅、stderr 含針）；另加 `check_now_line_edges()` 直接 import `display_width`；檔頭註解補「超長 fail-loud」 |
-| `scripts/fixtures/devtalk-html-scan/bad-now-line/1-discussion.md` | 從 good 抄一份，只把一欄改超（建議做什麼欄 14 全形，或 issue 示範句剝標籤後 26.0） |
-| `scripts/fixtures/devtalk-html-scan/assert-teeth.py` | `BAD` 加 `("bad-now-line", "現況圖行超長")` |
-| `skills/dev-talk/nodes/N9-write-md.md` | **主場**。補：渲染後四欄每行 ≤ 13 全形（W／F／A=1、其餘 0.5；標籤不計）；超過 S10 exit 1；現況圖是標題卡，不要把 Current Journey 整格搬進來 |
-| `skills/dev-talk/SKILL.md` | 現況圖節（約 L156–161）「不裁字」旁補上限與 exit 1 |
+| `scripts/build-scan-html.py` | `NOW_LINE_MAX`；`display_width`；`render_svg` 前檢查；檔頭「不裁字」旁補上限；`exit:` 把行超長算進 1；一次列完的 `ValueError`（指向 N9，見 §7） |
+| `scripts/check-devtalk-fig-graph.sh` | `TOOTH_CASES` 加超長牙（與 `check_log_teeth` 同款：bad 必須紅、stderr 含針）；`check_now_line_edges()` 見 §10（**真守衛**，不是只測 `display_width`）；**必須掛進 `check_live()`**，與既有 `check_log_teeth`／`check_log_edges` 並列。檔頭註解補「超長 fail-loud」 |
+| `scripts/fixtures/devtalk-html-scan/bad-now-line/1-discussion.md` | 從 good 抄一份。超長欄用 **14 個 CJK**（或 13.5 混合，例如 `月初翻 Excel 私表比對到期日`），**不要**用 issue 那句剝標籤後 26.0 的巨獸——26 個拉丁 `A` 估寬剛好 13.0，釘不住 N=13。**單欄超長不夠**：見下一列 |
+| 多欄牙（fixture **或** `check_now_line_edges` 餵入） | **≥2 欄同時超**。**同一則** stderr 必須同時出現那兩個中文欄名（例如 `做什麼` 與 `痛點`）。本倉庫慣例是沒牙就當沒寫；`for field in …: if w > 13: raise` 是最自然的寫法，單欄 fixture 會讓 fail-first 默默綠。可把 `bad-now-line` 本身做成兩欄超，或另開 fixture／edges 餵入；鎖的是「一則訊息、兩個欄名」 |
+| `scripts/fixtures/devtalk-html-scan/good-now-labeled/1-discussion.md`（名可微調） | **labeled-stack 綠 fixture**。四行堆疊、欄位帶**全形冒號**標籤（`做什麼：…`）。至少一欄 raw（標籤+值）>13、剝標籤後 ≤13，產器必須 exit 0。這顆牙鎖「標籤不計」。既有 good 是無標籤四行，`_strip_field_label` 完全沒被練到；半形 `做什麼:新增附表五、選 A–F` raw 剛好 13.0，量 raw 也綠，鎖不住。建議值：`做什麼：新增附表五、選 A–F`（raw **13.5**、剝後 **9.5**）或 `做什麼：`＋13 個 `字`（raw 17.0、剝後 13.0） |
+| `scripts/fixtures/devtalk-html-scan/assert-teeth.py` | `BAD` 加 `("bad-now-line", "現況圖行超長")`（多欄 fixture 若另開也要加）。**這支是本地雙份**，不在 CI；**CI 正本是** `check-devtalk-fig-graph.sh`。兩邊針表必須同步，不准只改一邊 |
+| `skills/dev-talk/nodes/N9-write-md.md` | **主場**。補：渲染後四欄每行 ≤13 全形（W／F／A=1、其餘 0.5，**權重和**不是「13 個字」；空白 0.5；標籤不計）；超過 S10 exit 1；現況圖是標題卡，不要把 Current Journey 整格搬進來。**before／after**（旗艦例動作 1）：`月初翻 Excel 私表比對到期日` = **13.5** → `翻私表`（或 `翻 Excel 對到期`）。**與 `check-devtalk-fig-journey.sh` 共存**：該牙要求 Journey 每步的誰／工具／動作／痛點 token 是圖上子字串；只縮圖、不縮 Journey 儲存格，S10 綠了這支會紅。標題卡 ⇒ **先縮 Journey 再畫圖** |
+| `skills/dev-talk/SKILL.md` | 視覺版（約 L156–161）「不裁字」旁補上限與 exit 1。**執行清單步 7**（約 L108–110）加「標題卡／≤13」 |
 | `skills/dev-talk/nodes/S10-html.md` | 產生器對超長行 fail-loud；改 md 該欄再重生，不要開瀏覽器目測凸框 |
 | `skills/dev-talk/nodes/N3-probe.md` | 3a「同步改現況圖」加半句：每行渲染值 ≤13 全形（公式同 N9） |
 | `skills/dev-talk/nodes/S8-review.md` | ⑧ 加一句：行長由產器守，不目測凸框 |
-| `guides/guide-dev-talk.html` | 若 `check-devtalk-guide-sync.sh` 要求：視覺版「原文」blockquote 與 SKILL 逐字同步 |
+| `guides/guide-dev-talk.html` | **REQUIRED，不是「若 guide-sync 要求」。** `check-devtalk-guide-sync.sh` **只比「原文」blockquote**。人打開 `#visual` 先看到的是未展開表列「inline SVG;viewBox 200×420;**不裁字**」（約 L420）——這格**不在 sync 範圍**，卻是 issue 講的那個缺口，**必須另改**。原文 blockquote（約 L417）也要改，否則 SKILL 一改 guide-sync 會紅 |
 
 本輪**不改**：`html-shell.html` 幾何、`scripts/build-stage1-html.py`、
 `notes/design/stage1-review-ui-contract.md`、`graph.yaml`、
@@ -200,24 +241,40 @@ plugin／契約版本。既有 html-scan good 最長欄 9.5，不必為 N=13 改
 **牙**（住 `scripts/build-scan-html.py`，fail-closed）：
 
 1. 任一框四欄 `display_width(s) > NOW_LINE_MAX` → `ValueError`，訊息含 `現況圖行超長`、數字 `13`、框號、中文欄名、估寬、渲染原文、短改寫提示。
-2. 多欄同時超 → 一則訊息列完，仍 exit 1、不印 `wrote …`。
+2. 多欄同時超 → 一則訊息列完，仍 exit 1、不印 `wrote …`。**機械鎖**：fixture 或 `check_now_line_edges` 餵入必須有 ≥2 欄同時超，**同一則** stderr 含那兩個中文欄名。單欄 `bad-now-line` **不足以**鎖 list-all。
 3. 不准截斷、不准換行、不准縮字後繼續寫檔。
+4. 標籤不計：**labeled-stack 綠 fixture**（全形 `：`；raw >13、剝後 ≤13）必須過。沒這顆牙，量 md 原行的實作也能綠。
 
 現況牙慣例（實作時對齊）：`check-devtalk-fig-graph.sh` 的 `TOOTH_CASES` +
 `check_log_teeth()` 對每份 `scripts/fixtures/devtalk-html-scan/bad-*/1-discussion.md`
 跑產器，要求 exit ≠ 0 且 stderr 含針；`assert-teeth.py` 的 `BAD` 表同步。
-`bad-now-line` 掛同一條鏈。另加 `check_now_line_edges()` 直接餵 `display_width`，
-不必整份 md（對齊既有 `check_log_edges` 直接餵 `parse_log`）。
+`bad-now-line`（及若另開的多欄 fixture）掛同一條鏈。
 
-**邊界（`check_now_line_edges`，公式已重算：`A=1`）**
+`TOOTH_CASES`／`BAD` 一案一針，主針仍是 `現況圖行超長`。同一則 stderr **另外**
+必須含數字 `13`（`check_now_line_edges` 或 tooth 迴圈第二個 assert）。§7／§9／§10 對齊，不准只釘主針。
+
+`assert-teeth.py` 是**本地雙份**；**CI 正本**是 `check-devtalk-fig-graph.sh`。
+兩邊針表必須同步。
+
+**`check_now_line_edges()`（對齊既有 `check_log_edges` 直接餵函式）**
+
+不准只孤立測 `display_width`。必須同時：
+
+1. `assert NOW_LINE_MAX == 13`（常數被改成 20、bad fixture 用 26 字時，邊界表仍會綠）。
+2. 走**真守衛**（呼叫實際行長檢查，不是只算寬）：13 個 `字` **過**；14 個 `字` **紅**，例外／stderr 含 `現況圖行超長` 與 `13`。
+3. 若多欄鎖走這條而不是獨立 fixture：餵 ≥2 欄同時超，**一則**例外含兩個中文欄名。
+4. **掛進 `check_live()`**，與 `check_log_teeth`／`check_log_edges` 並列。只加函式不呼叫 = 牙沒跑。
+
+**邊界表（公式已重算：`A=1`）**
 
 ASCII 26／27 **仍相關**：拉丁 `A` 是 `Na`，不是 Ambiguous，權重仍 0.5。
 
 | 輸入 | `display_width` | 期望 |
 |---|---|---|
 | `""` | 0 | 0 |
-| 13 個 `字`（`W`） | 13.0 | ≤13 |
-| 14 個 `字` | 14.0 | >13 |
+| ASCII space | 0.5 | 空白不是 0 |
+| 13 個 `字`（`W`） | 13.0 | ≤13；**真守衛必須過** |
+| 14 個 `字` | 14.0 | >13；**真守衛必須紅** |
 | 26 個拉丁 `A`（`Na`） | 13.0 | ≤13 |
 | 27 個拉丁 `A` | 13.5 | >13 |
 | 12 個 `字` + `AB` | 13.0 | ≤13 |
@@ -225,26 +282,35 @@ ASCII 26／27 **仍相關**：拉丁 `A` 是 `Na`，不是 Ambiguous，權重仍
 | 全形 `Ｆ`（`F`） | 1.0 | 與半形 `F`=`Na`=0.5 不同 |
 | 全形 `Ａ`（`F`） | 1.0 | 與半形 `A`=0.5 不同 |
 | `—`（EM DASH、`A`） | 1.0 | 與 issue／A／B 原式 0.5 不同；本檔採 1 |
+| `…`／`·`（皆 `A`） | 1.0 | A=1 不是只為 EM DASH |
 | 13 個 `—` | 13.0 | ≤13 |
 | 14 個 `—` | 14.0 | >13 |
+| `月初翻 Excel 私表比對到期日` | 13.5 | >13（N9 before 例；A=0.5 也是 13.5） |
+| `法務回覆要等而且進度完全不可見` | 15.0 | >13（不是 16.0） |
 
-**整檔牙**：`bad-now-line` 必須 exit 1 且 stderr 含 `現況圖行超長` 與 `13`。
-既有 `good/1-discussion.md` 必須仍綠。
+**整檔牙**：
+
+- `bad-now-line`：exit 1；stderr 含 `現況圖行超長` 與 `13`。超長欄 = 14 CJK 或 13.5 混合，不用 26.0。
+- 多欄鎖：同一則 stderr 含 ≥2 個中文欄名（fixture 或 edges 餵入）。
+- `good-now-labeled`（或選定之名）：exit 0。全形 `：`；raw >13、剝後 ≤13。
+- 既有 `good/1-discussion.md` 必須仍綠。
 
 **無牙、靠文件**：句子好不好讀、能不能再短；只保證不凸框。
-S8 ⑧ 仍只核 Journey 指紋，不目測溢位。拉丁 26 連發大寫的殘（§6.3）本 hop 無牙。
+S8 ⑧ 仍只核 Journey 指紋，不目測溢位。拉丁 26 連發大寫／`⚠`／emoji 序列的殘（§6.3）本 hop 無牙。
 
 ## 11. 後續實作 PR 過關
 
 本檔本身不算過關。實作 PR 必須下列全真：
 
 1. §9 表列檔全部改到；`check-devtalk-fig-graph.sh`／`check-devtalk-guide-sync.sh` 綠。
-2. 牙 1–3 + 邊界表 + `bad-now-line` 都掛上；既有 good fixture 仍綠。
-3. SVG 幾何不變：`viewBox 200×420`（三步）、`rect x=20 width=160 height=88`、`text-anchor=middle x=100`、字 11px。不 wrap、不縮字、不加寬、不裁。
-4. 超長輸入 exit 1，不印 `wrote …`。
-5. 一份剛好 13 全形的欄必須綠；一份「標籤 + 短值、合計 >13、值本身 ≤13」必須綠（證明剝標籤）。
-6. 版本零 bump。`check-py-floor.sh` 仍綠（3.9 可 parse）。
-7. `scripts/build-stage1-html.py` 零 diff。
+2. 牙 1–4 + 邊界表 + `bad-now-line` + 多欄鎖 + labeled-stack 綠 fixture 都掛上；既有 good fixture 仍綠。
+3. `check_now_line_edges` 斷言 `NOW_LINE_MAX==13`，並以真守衛練 13 過／14 紅；函式已掛進 `check_live()`。
+4. SVG 幾何不變：`viewBox 200×420`（三步）、`rect x=20 width=160 height=88`、`text-anchor=middle x=100`、字 11px。不 wrap、不縮字、不加寬、不裁。
+5. 超長輸入 exit 1，不印 `wrote …`。一則訊息列完所有超欄。
+6. 一份剛好 13 全形的欄必須綠；labeled-stack 綠 fixture（全形 `：`、raw >13、剝後 ≤13）必須綠。
+7. guide `#visual` **可見表**「不裁字」格已改（不只原文 blockquote）。SKILL 步 7 已帶「標題卡／≤13」。錯誤訊息指向 N9。
+8. 版本零 bump。`check-py-floor.sh` 仍綠（3.9 可 parse）。
+9. `scripts/build-stage1-html.py` 零 diff。
 
 ## 12. 來源 brief 取捨
 
@@ -253,7 +319,7 @@ S8 ⑧ 仍只核 Journey 指紋，不目測溢位。拉丁 26 連發大寫的殘
 | 來源 | 採 | 棄 |
 |---|---|---|
 | [#139](https://github.com/rick546986/dev-flow/pull/139) **A** | N=13、`≤` 過；量 parsed field；fail-loud `ValueError` → exit 1；針 `現況圖行超長`；不動幾何；零 bump；good 仍綠 + `display_width` 邊界表 + `bad-now-line` 掛 `check-devtalk-fig-graph.sh`／`assert-teeth.py`；不動審頁產生器 | `A=0.5`；fail-fast 只報第一條超欄；針不含強制數字 13 |
-| [#140](https://github.com/rick546986/dev-flow/pull/140) **B** | 一則訊息列完所有超欄（框 1-based + 誰／做什麼／工具／痛點 + 估寬 + 渲染原文 + 短改寫提示）；牙只在 S10，不另開 md-write-time linter；N9 主場、SKILL 現況圖節、S10、guide-sync、N3 3a 半句；S8 不目測凸框 | `A=0.5`；常數名 `LINE_CAP`（改採 `NOW_LINE_MAX`）；針用「行太長」而非 `現況圖行超長` |
+| [#140](https://github.com/rick546986/dev-flow/pull/140) **B** | 一則訊息列完所有超欄（框 1-based + 誰／做什麼／工具／痛點 + 估寬 + 渲染原文 + 短改寫提示）；牙只在 S10，不另開 md-write-time linter；N9 主場、SKILL 現況圖節、S10、guide、N3 3a 半句；S8 不目測凸框 | `A=0.5`；常數名 `LINE_CAP`（改採 `NOW_LINE_MAX`）；針用「行太長」而非 `現況圖行超長` |
 | [#141](https://github.com/rick546986/dev-flow/pull/141) **C** | `W`／`F`／`A`=1、其餘=0.5 與理由；Python 3.9-safe；Reject 表 B–F；`NOW_LINE_MAX` 寫死在 `RECT_*` 旁；拉丁 `Na` 連發大寫列已知殘 | fail-fast-first；針 `超過 13 全形字`（改採 A 的 `現況圖行超長`，另強制訊息含 `13`）；常數名 `NOW_LINE_EM`；不改 N3／S8 |
 
 共識（三份皆採，本檔鎖定）：N=13；fail-loud；量剥標籤後的 SVG 欄位值；幾何本輪凍結；零版本 bump；實作另 PR。
@@ -263,15 +329,15 @@ S8 ⑧ 仍只核 Journey 指紋，不目測溢位。拉丁 26 連發大寫的殘
 以下由本次合成拍板，翻任一項請同步改對應章節：
 
 - `NOW_LINE_MAX = 13`，`>` 才紅（§6.1）。
-- `W`／`F`／`A`=1、其餘=0.5（§6.2）。這是對 issue／A／B 原式的修正。
+- `W`／`F`／`A`=1、其餘=0.5（§6.2）。這是對 issue／A／B 原式的修正。combining／ZWJ／VS16 跟公式走，不開 0.5 例外。
 - 量 parse 後四欄，不量原始行、不量 caption、不量 `<pre>`（§6.2）。
-- 一則 `ValueError` 列完所有超欄；針 `現況圖行超長` 且訊息含 `13`（§7）。
+- 一則 `ValueError` 列完所有超欄；針 `現況圖行超長` 且訊息含 `13`；指向 N9（§7）。多欄鎖必須有機械牙（§10）。
 - 牙只在產 html 時；N9 是作者主場；S8 不目測（§4、§9）。
 - Reject 表：wrap／widen／shrink／ellipsis／warn-0（§8）。
 - 幾何本輪凍結（§5、§11）。
 - 零版本 bump（§1、§9）。
 - 審頁產生器本輪不動（§5、§11）。
-- 拉丁 `Na` 連發大寫低估列已知殘，本 hop 不修（§6.3）。
+- 拉丁 `Na` 連發大寫／`⚠`／emoji 序列列已知殘，本 hop 不修（§6.3）。
 
 ## 14. Non-goals
 
@@ -280,4 +346,5 @@ S8 ⑧ 仍只核 Journey 指紋，不目測溢位。拉丁 26 連發大寫的殘
 - 不加寬框、不改字級、不換行、不裁字、不改 html-shell 幾何。
 - 不正名 `_templates/1-discussion.md`／example 的「邏輯圖」槽（既有缺口，不是 #138）。
 - 不為審頁抄同一顆牙（若要抄，另開 issue）。
-- 不修拉丁全大寫 `Na` 低估。
+- 不修拉丁全大寫 `Na`、`⚠`、emoji／ZWJ 序列的估寬殘差。
+- 不為 combining／VS16 開第三權重。
