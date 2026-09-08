@@ -106,7 +106,7 @@ dev-memory.py talk abort $MEMORY_SESSION_ID --reason "<原因>"
 5. **發散推演**。正本:`nodes/S5-diverge.md`。入口摘要:至少一輪 what-if,結果記入 Interview Log。完成條件見該節點。
 6. **盲點掃描**。正本:`nodes/S6-blind.md`。入口摘要:unknown unknowns 與隱含預設兩份清單都要回應。完成條件見該節點。
 7. **落檔 md**。正本:`nodes/N9-write-md.md`。寫 `1-discussion.md`(骨架見下);
-   現況圖從 Actors＋Current Journey 長出來,不准另發明天系統流卻叫現況圖;
+   現況圖從 Actors＋Current Journey 長出來(標題卡／每行 ≤13 全形),不准另發明天系統流卻叫現況圖;
    重跑覆寫同一檔,不另存。完成條件見該節點。
 8. **獨立複核**。正本:`nodes/S8-review.md`。入口摘要:換嚴格審視者視角七掃,再加第 ⑧ 掃「圖 vs Journey」。完成條件見該節點。
 9. **詞彙對帳**。正本:`nodes/S9-terms.md`。入口摘要:先查長期記憶現況,再登記候選。
@@ -158,4 +158,4 @@ html 是掃頁臉,不是把 md 十節整份倒進去。md 仍是正本、十節�
 4. 題目:每列一題 + 著落(已解／假設／移交)。不要長 claim。
 5. 驗收一小表:假設…當…則…｜從哪看｜看到什麼。
 6. 問答摘要預設摺著(`<details>`)。Constraints／詞條不要佔第一屏。
-SVG 用既有圖表 class:.b .hl .no .flow .cap,顏色只用 CSS 變數(含 --acc)。字 11px。現況圖不裁字;三步時 viewBox="0 0 200 420",外層 width:220px 置中,圖下小字「痛在最後一步」,最後一框用痛的強調色。
+SVG 用既有圖表 class:.b .hl .no .flow .cap,顏色只用 CSS 變數(含 --acc)。字 11px。現況圖不裁字(每行 ≤13 全形,W/F/A=1、其餘=0.5,超過 S10 exit 1);三步時 viewBox="0 0 200 420",外層 width:220px 置中,圖下小字「痛在最後一步」,最後一框用痛的強調色。

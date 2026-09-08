@@ -32,8 +32,8 @@
 #   生成頁必須過同一套六件／置中契約;缺一件或現況圖貼左／撐滿欄必須紅。
 #   現況圖必須長手樣三框:每框四行(誰／做什麼／工具／痛點,痛不准空)、
 #   框 x=20 width=160 height=88、字 text-anchor="middle" x=100、
-#   三步時 viewBox="0 0 200 420",不裁字、不把四行堆疊拆成很多小格、
-#   框高≠88／每框 text<4／痛空 必須紅。
+#   三步時 viewBox="0 0 200 420",不裁字、現況圖行超長 fail-loud、
+#   不把四行堆疊拆成很多小格、框高≠88／每框 text<4／痛空 必須紅。
 #   不准攤成 twin 卡,不加 g1-ask／「你要審什麼」／勾選講義。
 #
 # 破壞實驗(本檔每次跑,除非 --skip-mutation):
@@ -42,6 +42,7 @@
 #   生成頁拿掉人表 → 必須紅;生成頁圖改撐滿欄必須紅;
 #   生成頁／樣張 #scan-log 必須四欄 <th>Q／事實／推理／結論</th> + .tablewrap;
 #   Interview Log 牙 fixture(bad-1…／3a／5 + 結論詞界)必須紅,訊息含針;
+#   現況圖行超長 fail-loud(bad-now-line + check_now_line_edges 13／14／多欄／labeled-stack);
 #   parse_log 邊界(check_log_edges: |／續行／剝標點／零 citation／重複／>8／註解／詞界);
 #   mutation 複本可沒有 bad 目錄;
 #   框高改 28／每框少一行／痛空／堆疊拆很多小格 → 必須紅;
@@ -779,6 +780,7 @@ TOOTH_CASES = (
     ("bad-4-pipe", "舊單行"),
     ("bad-4-empty", "抽不到 Interview Log"),
     ("bad-5-over8", "上限八條"),
+    ("bad-now-line", "現況圖行超長"),
 )
 
 
@@ -818,14 +820,22 @@ def check_log_teeth():
             raise Mismatch(
                 "牙 fixture %s 應提到「%s」,實際:\n%s" % (name, needle, blob[-800:])
             )
+        if name == "bad-now-line" and "13" not in blob:
+            raise Mismatch(
+                "牙 fixture %s 應提到「13」,實際:\n%s" % (name, blob[-800:])
+            )
         print("[scan] 牙 %s 紅且提到「%s」" % (name, needle))
 
 
-def load_parse_log():
+def load_scan_mod():
     spec = importlib.util.spec_from_file_location("build_scan_html", BUILD)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    return mod.parse_log
+    return mod
+
+
+def load_parse_log():
+    return load_scan_mod().parse_log
 
 
 def _one_entry(q, fact, reason, conclusion="CONFIRMED ok"):
@@ -956,6 +966,95 @@ def check_log_edges():
     print("[scan] parse_log 邊界:|／續行／剝標點／零 citation／重複／>8／註解／詞界皆過")
 
 
+def check_now_line_edges():
+    """現況圖行長:NOW_LINE_MAX、真守衛 13／14、多欄 list-all、labeled-stack 綠。"""
+    mod = load_scan_mod()
+    if mod.NOW_LINE_MAX != 13:
+        raise Mismatch("NOW_LINE_MAX 必須是 13,實得 %s" % mod.NOW_LINE_MAX)
+
+    width_cases = (
+        ("", 0.0),
+        (" ", 0.5),
+        ("字" * 13, 13.0),
+        ("字" * 14, 14.0),
+        ("A" * 26, 13.0),
+        ("A" * 27, 13.5),
+        ("字" * 12 + "AB", 13.0),
+        ("字" * 12 + "ABC", 13.5),
+        ("Ｆ", 1.0),
+        ("F", 0.5),
+        ("Ａ", 1.0),
+        ("A", 0.5),
+        ("—", 1.0),
+        ("…", 1.0),
+        ("·", 1.0),
+        ("—" * 13, 13.0),
+        ("—" * 14, 14.0),
+        ("月初翻 Excel 私表比對到期日", 13.5),
+        ("法務回覆要等而且進度完全不可見", 15.0),
+    )
+    for sample, want in width_cases:
+        got = mod.display_width(sample)
+        if got != want:
+            raise Mismatch(
+                "display_width(%r) 期望 %s,實得 %s" % (sample, want, got)
+            )
+
+    ok13 = [("行政", "字" * 13, "後台", "痛點短")]
+    svg13 = mod.render_svg(ok13)
+    if "字" * 13 not in svg13:
+        raise Mismatch("13 個字必須畫進 SVG")
+
+    try:
+        mod.render_svg([("行政", "字" * 14, "後台", "痛點短")])
+        raise Mismatch("14 個字必須紅")
+    except ValueError as exc:
+        msg = str(exc)
+        if "現況圖行超長" not in msg or "13" not in msg:
+            raise Mismatch("14 個字訊息應含現況圖行超長與 13,實得 %s" % exc)
+        if "N9-write-md.md" not in msg:
+            raise Mismatch("行超長訊息應指向 N9,實得 %s" % exc)
+
+    try:
+        mod.render_svg([("行政", "字" * 14, "後台", "字" * 14)])
+        raise Mismatch("多欄超必須紅")
+    except ValueError as exc:
+        msg = str(exc)
+        if "做什麼" not in msg or "痛點" not in msg:
+            raise Mismatch("多欄超同一則應含做什麼與痛點,實得 %s" % exc)
+        if "現況圖行超長" not in msg or "13" not in msg:
+            raise Mismatch("多欄超訊息應含現況圖行超長與 13,實得 %s" % exc)
+
+    labeled = (
+        "誰：行政\n"
+        "做什麼：新增附表五、選 A–F\n"
+        "工具：後台\n"
+        "痛點：看不到 2PN\n"
+    )
+    raw_action = "做什麼：新增附表五、選 A–F"
+    stripped_action = "新增附表五、選 A–F"
+    if not (
+        mod.display_width(raw_action) > 13
+        and mod.display_width(stripped_action) <= 13
+    ):
+        raise Mismatch(
+            "labeled-stack 樣本 raw 應 >13、剝後 ≤13,實得 raw=%s 剝=%s"
+            % (mod.display_width(raw_action), mod.display_width(stripped_action))
+        )
+    frames = mod.parse_frames(labeled)
+    if not frames or frames[0][1] != stripped_action:
+        raise Mismatch(
+            "labeled-stack 必須剝全形標籤,實得 %s" % (frames[0][1] if frames else None)
+        )
+    svg_labeled = mod.render_svg(frames)
+    if stripped_action not in svg_labeled:
+        raise Mismatch("labeled-stack 剝後值必須畫進 SVG")
+    if "做什麼：" in svg_labeled:
+        raise Mismatch("labeled-stack 標籤不得畫進 SVG")
+
+    print("[scan] now-line 邊界:NOW_LINE_MAX=13／13 過／14 紅／多欄／labeled-stack")
+
+
 def check_live():
     chain = graph_chain(GRAPH)
     print("[graph] chain=" + " → ".join(chain))
@@ -977,6 +1076,7 @@ def check_live():
     check_generated()
     check_log_teeth()
     check_log_edges()
+    check_now_line_edges()
 
 
 def copy_tree(dst):

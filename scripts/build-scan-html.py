@@ -12,10 +12,11 @@
 #scan-now 只從 md「現況圖」節重生,不准拿邏輯圖／明天系統流充這個槽。
 現況圖:一框 = 誰／做什麼／工具／痛點 四行。吃「一行四欄」也吃「四行堆疊」;
 不准把堆疊拆成很多小格。三步時 viewBox="0 0 200 420"。框 x=20 width=160
-height=88,字 text-anchor="middle" x=100。不裁字。最後一框 .no,中框 .b,
+height=88,字 text-anchor="middle" x=100。不裁字;每行 ≤13 全形
+(W/F/A=1、其餘=0.5,量畫進圖的字),超過 exit 1。最後一框 .no,中框 .b,
 框間 .flow,圖下小字「痛在最後一步」。痛不准空。
 
-exit:0 = 寫出 / 1 = md 缺六件原料或現況圖抽不到 / 2 = 用法錯誤、檔案讀不到
+exit:0 = 寫出 / 1 = md 缺六件原料或現況圖抽不到或現況圖行超長 / 2 = 用法錯誤、檔案讀不到
 """
 from __future__ import print_function
 
@@ -24,6 +25,7 @@ import os
 import pathlib
 import re
 import sys
+import unicodedata
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SHELL = ROOT / "skills" / "dev-talk" / "html-shell.html"
@@ -43,7 +45,11 @@ FRAME_PITCH = 104
 CAPTION_EXTRA = 100
 VB_W = 200
 RECT_X, RECT_W, RECT_H = 20, 160, 88
+# 字 11px 正本:skills/dev-talk/html-shell.html:56(svg text)。改字級或框寬必須同時改此常數。
+NOW_LINE_MAX = 13
 TEXT_X = 100
+FIELD_ZH = ("誰", "做什麼", "工具", "痛點")
+WIDE_EAW = ("W", "F", "A")
 FIELD_LABELS = (
     (re.compile(r"^(?:誰|Actor)[:：]\s*", re.I), "who"),
     (re.compile(r"^(?:做什麼|動作|真實動作)[:：]\s*"), "action"),
@@ -542,10 +548,42 @@ def parse_frames(ascii_text):
     return [f for f in frames if f and any(part.strip() for part in f)]
 
 
+def display_width(s):
+    total = 0.0
+    for ch in s or "":
+        total += 1.0 if unicodedata.east_asian_width(ch) in WIDE_EAW else 0.5
+    return total
+
+
+def check_now_line_widths(frames):
+    """量 parse 後會畫進 <text> 的四欄。超過 NOW_LINE_MAX 一則列完。"""
+    overflows = []
+    for i, fields in enumerate(frames):
+        for name, val in zip(FIELD_ZH, fields):
+            width = display_width(val)
+            if width > NOW_LINE_MAX:
+                overflows.append((i + 1, name, width, val))
+    if not overflows:
+        return
+    lines = [
+        "現況圖行超長(每行 ≤13 全形;W/F/A=1、其餘=0.5;量畫進圖的字):",
+    ]
+    for idx, name, width, val in overflows:
+        lines.append(
+            "  第%d框「%s」估寬 %.1f：「%s」" % (idx, name, width, val)
+        )
+    lines.append(
+        "請收成標題卡再重生(例:「翻私表」／「進度不可見」)。"
+        "見 skills/dev-talk/nodes/N9-write-md.md"
+    )
+    raise ValueError("\n".join(lines))
+
+
 def render_svg(frames):
     """手樣結構:直式三框, viewBox 0 0 200 420,每框四行進 88 高的卡。"""
     if not frames:
         raise ValueError("現況圖抽不到節點")
+    check_now_line_widths(frames)
     n = len(frames)
     height = FRAME_TOP + n * FRAME_PITCH + CAPTION_EXTRA
     parts = [
