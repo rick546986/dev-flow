@@ -150,7 +150,7 @@ group_methodology() {
   # Stage 2:九真節點;單產物 2-decision.md;N1 不得寫檔;每個 hop --write-cursor。
   run "methodology/check-devstage2-graph"     scripts/check-devstage2-graph.sh   || return 1
   run "methodology/test-devstage2-graph"      scripts/test-devstage2-graph.sh    || return 1
-  # Stage 3:觸發判定 + 跳過 hop;單產物 3-prototype.md;N1／N-skip 不得寫檔。
+  # Stage 3:觸發判定 + 跳過 hop;單產物 3-prototype.md;N1 不得寫檔,N-skip 落檔最小觸發判定。
   run "methodology/check-devstage3-graph"     scripts/check-devstage3-graph.sh   || return 1
   run "methodology/test-devstage3-graph"      scripts/test-devstage3-graph.sh    || return 1
   # Stage 4:四真節點 + 兩暫留 hop;單產物 4-spec.md;只有 N5 可寫;G2 前不寫 5-tasks。

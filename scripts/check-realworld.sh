@@ -188,7 +188,8 @@ for rel, source in (("_templates/1-discussion.md", t1), ("_templates/3-prototype
 check(re.search(r"^# 3\..*選配", t3, re.M) is not None,
       "template 3-prototype H1 保留選配")
 check("純後端" in t3, "template 3-prototype 明示純後端可照舊跳過")
-check("跳過本階段 → 兩檔皆不建" in t3, "template 3-prototype 保留跳過路徑")
+check("兩檔皆不建" in t3, "template 3-prototype 保留命中後跳過路徑(兩檔皆不建)")
+check("全未勾" in t3, "template 3-prototype 零命中仍落檔全未勾清單")
 
 # ── 9. 舊模板仍可渲染 ──
 # renderer 不存在時(隔離測試根目錄,如 test-architecture-guards.sh 的 seed()複本)

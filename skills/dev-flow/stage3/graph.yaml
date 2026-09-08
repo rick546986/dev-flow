@@ -14,8 +14,12 @@ nodes:
   N-skip:
     file: nodes/N-skip.md
     next: ""
-    forbid:
+    write:
+      - docs/dev/<slug>/3-prototype.md
+    write_mode: overwrite
+    allow:
       - write_prototype
+    forbid:
       - write_decision
   S0-question:
     file: nodes/S0-question.md

@@ -10,16 +10,18 @@ N1 判定結果。不重抄九條條文。
 
 ## 寫哪裡
 
-不建 `3-prototype.md`、不建 `3-prototype.html`。
+只覆寫 `docs/dev/<slug>/3-prototype.md`,不另存。禁止第二份 `3-prototype*.md`。
+不建 `3-prototype.html`。
 
 ## 做什麼
 
-維持選配、兩檔都不建。Agent 不得代決跳過。
+寫最小 `3-prototype.md`:status approved + 九條全未勾。不建 html。
+Agent 不得代決跳過。
 跑 `scripts/check-devstage3-graph.sh --write-cursor N-skip`。
 
 ## 完成條件
 
-repo 裡沒有該 slug 的 `3-prototype*.md`。游標在 N-skip。
+該 slug 有一份最小 `3-prototype.md`。游標在 N-skip。
 
 ## 下一跳
 
