@@ -10,18 +10,22 @@ N1 判定結果(九條皆未勾)。不重抄九條條文。`graph.yaml` 是下�
 
 ## 寫哪裡
 
-不建 `3-prototype.md`、不建 `3-prototype.html`。禁止第二份 `3-prototype*.md`。
+只覆寫 `docs/dev/<slug>/3-prototype.md`,不另存。禁止第二份 `3-prototype*.md`。
+不建 `3-prototype.html`。`write_mode: overwrite`。
 本機游標只留在 `.devstage3-cursor.json`,不進 Git。不改 `.dev-flow`。
 
 ## 做什麼
 
-維持選配、兩檔都不建。人類若要在「必要」時仍跳過 → 必須已有 2-decision
-流程層 Owner Call,該行同時含「Stage 3」與「跳過」;Agent 不得代決。
+寫最小 `3-prototype.md`:frontmatter `status: approved` + `## Stage 3 觸發判定`
+九條全未勾。不建 html。Owner Call 跳過路徑不在本節點
+(那是命中後仍要跳過才用:2-decision 該行同時含「Stage 3」與「跳過」)。
+Agent 不得代決跳過。
 跑 `${DEVFLOW_ROOT}/scripts/check-devstage3-graph.sh --write-cursor N-skip`。
 
 ## 完成條件
 
-repo 裡沒有該 slug 的 `3-prototype*.md`。游標在 N-skip。
+該 slug 有一份最小 `3-prototype.md`(status approved + 九條未勾),
+沒有 `3-prototype.html`。游標在 N-skip。
 
 ## 下一跳
 

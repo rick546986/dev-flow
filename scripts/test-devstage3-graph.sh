@@ -7,6 +7,7 @@
 # 這就是「先寫測試、舊實作先紅」的永久牙齒,不是散文。
 # 第二刀:skill-legacy 團塊必須紅;S3 才准 write_decision。
 # 第三刀:--action 接到 prebash;guide 第 3 站開頭對上九節點鏈。
+# 零命中:N-skip 必須 allow write_prototype;N1 仍 deny;全未勾檔必須綠。
 #
 # 用法:scripts/test-devstage3-graph.sh [root]
 # exit:0 = 全過 / 1 = 案例未依預期 / 2 = 治具故障
@@ -140,10 +141,9 @@ with tempfile.TemporaryDirectory(prefix="devstage3-graph-test-") as tmpbase:
     proto = os.path.join(case, "docs", "dev", "fixture-slug", "3-prototype.md")
     open(proto, "w", encoding="utf-8").write(ZERO_HIT)
     expect(
-        "P0 九條觸發全未命中，卻存在 3-prototype.md 必須紅",
+        "G-zero-hit 九條觸發全未命中且有最小 3-prototype.md 必須綠",
         case,
-        1,
-        "全未命中",
+        0,
     )
 
     actions = os.path.join(fix, "actions")
@@ -164,10 +164,10 @@ with tempfile.TemporaryDirectory(prefix="devstage3-graph-test-") as tmpbase:
     )
 
     expect(
-        "P0 N-skip 做 write_prototype 必須紅",
+        "G-action N-skip 做 write_prototype 必須綠",
         good,
-        1,
-        "N-skip",
+        0,
+        "allow",
         extra=["--action", os.path.join(actions, "n-skip-write-prototype.json")],
     )
 
@@ -178,6 +178,21 @@ with tempfile.TemporaryDirectory(prefix="devstage3-graph-test-") as tmpbase:
         "allow",
         extra=["--action", os.path.join(actions, "n3-write-prototype-ok.json")],
     )
+
+    case = os.path.join(tmpbase, "nskip-no-allow")
+    seed(case)
+    graph = os.path.join(case, "skills", "dev-flow", "stage3", "graph.yaml")
+    text = open(graph, encoding="utf-8").read()
+    text = text.replace(
+        "  N-skip:\n    file: nodes/N-skip.md\n    next: \"\"\n"
+        "    write:\n      - docs/dev/<slug>/3-prototype.md\n"
+        "    write_mode: overwrite\n    allow:\n      - write_prototype\n"
+        "    forbid:\n      - write_decision\n",
+        "  N-skip:\n    file: nodes/N-skip.md\n    next: \"\"\n"
+        "    forbid:\n      - write_prototype\n      - write_decision\n",
+    )
+    open(graph, "w", encoding="utf-8").write(text)
+    expect("P0 N-skip 缺 allow write_prototype 必須紅", case, 1, "N-skip")
 
     wrote = os.path.join(tmpbase, "cursor")
     os.makedirs(wrote)
@@ -405,6 +420,15 @@ with tempfile.TemporaryDirectory(prefix="devstage3-graph-test-") as tmpbase:
                 0,
             )
             open(cursor, "w", encoding="utf-8").write(json.dumps({
+                "node": "N-skip",
+                "slug": "stage3-prebash-tmp",
+            }))
+            expect_prebash(
+                "G-prebash:游標 N-skip 寫 3-prototype.md 必須放行",
+                "echo x > docs/dev/stage3-prebash-tmp/3-prototype.md",
+                0,
+            )
+            open(cursor, "w", encoding="utf-8").write(json.dumps({
                 "node": "S3-writeback",
                 "slug": "stage3-prebash-tmp",
             }))
@@ -448,8 +472,8 @@ print(f"=== test-devstage3-graph:{passed}/{total} ===")
 if failed:
     print(f"⛔ {failed} 案未依預期", file=sys.stderr)
     sys.exit(1)
-if total < 28:
-    print(f"⛔ 案例數 {total} < 28,牙齒沒跑齊", file=sys.stderr)
+if total < 30:
+    print(f"⛔ 案例數 {total} < 30,牙齒沒跑齊", file=sys.stderr)
     sys.exit(2)
 sys.exit(0)
 PY

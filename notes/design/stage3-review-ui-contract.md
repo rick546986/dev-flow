@@ -9,7 +9,7 @@
 ## 何時用
 
 寫或改第 3 站給人看的審頁時。chrome 跟第 2／4／5／7 站同一套 token,
-不要另發明殼。沒有 `3-prototype.md` 就不要建頁。
+不要另發明殼。沒有 `3-prototype.md`、或檔只含全未勾觸發判定 → 不要建頁。
 
 ## 版面鎖死(已拍板)
 
@@ -34,7 +34,7 @@ Result／Verdict:`scripts/build-stage3-html.py` 吐觸發判定 + Demo + 答案�
 
 | 別用本檔 | 走哪條 |
 |---|---|
-| 全未命中、不建 3-prototype | `skills/dev-flow/stage3/nodes/N-skip.md` |
+| 全未命中、只落檔最小 3-prototype.md(不建 html) | `skills/dev-flow/stage3/nodes/N-skip.md` |
 | 回寫 2-decision 正文 | `_templates/3-prototype.md` 頂註步 3 + S3-writeback |
 | G1／G2／G3 五格卡 | `scripts/build-gate-twin.py` |
 | 第 4 站 R/S 卡／生命週期 | `notes/design/stage4-review-ui-contract.md` |

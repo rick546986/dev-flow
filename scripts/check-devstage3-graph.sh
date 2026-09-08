@@ -7,20 +7,23 @@
 #   2. 真節點缺「進條件」或「完成條件」必須紅:節點不能單獨當入口。
 #   3. 同 slug 第二份 3-prototype*.md 必須紅:產物仍是一份。
 #   4. write_mode≠overwrite 必須紅:重跑 N3 覆寫同一檔,不另存。
-#   5. 九條觸發全未命中,卻存在 3-prototype.md 必須紅:0 命中走 N-skip,不准建檔。
+#   5. 零命中仍由 N-skip 落檔最小 3-prototype.md;N1 仍不准 write_prototype。
+#      舊牙「九條全未命中卻有檔必須紅」已撤。N-skip 必須 allow write_prototype
+#      且 write 路徑是正本那一份。
 #   6. 有命中、無 skip OC、未 approved,卻 write_spec(寫 4-spec.md)
 #      必須紅:第 3 站必要還沒結束不准搶跑第 4 站。
 #   7. 第二刀:legacy 0／1／2／3／4 必須是真節點檔。skill-legacy 團塊必須紅。
 #      每個真節點「做什麼」必須 --write-cursor <本節點 id>。
 #      fork_required 必須是 S0-question。S3-writeback 才 allow write_decision
-#      (同一份 2-decision.md,overwrite)。不要放寬 N1／N-skip／S0／S1／S2／N3／N5。
+#      (同一份 2-decision.md,overwrite)。不要放寬 N1／S0／S1／S2／N3／N5
+#      的 write_decision;N-skip 可 write_prototype,仍禁 write_decision。
 #   8. 第三刀:--action 必須接到 prebash。guide 第 3 站開頭必須對上九節點鏈。
 #      出現「Stage 3 還在單一 SKILL」必須紅。不改第 2 站 write_spec 編成。
 #
 # graph.yaml 是下一跳的唯一正本。分叉用 next + fork_required,禁止 via。
 # 本機游標 .devstage3-cursor.json 不進 Git。
 # 不改 check-devtalk-graph.sh / check-devstage2-graph.sh。
-# 不改 _templates/3-prototype.md 正文。
+# 零命中 vs 命中後 Owner Call 跳過的散文正本在 `_templates/3-prototype.md`。
 #
 # 用法:
 #   scripts/check-devstage3-graph.sh [root]
@@ -112,7 +115,7 @@ TEETH_HEADINGS = ("進條件", "完成條件")
 CANONICAL_MD = "docs/dev/<slug>/3-prototype.md"
 CANONICAL_DECISION_MD = "docs/dev/<slug>/2-decision.md"
 LOCKED_ACTIONS = ("write_prototype", "write_spec", "write_decision")
-WRITE_PROTOTYPE_NODE = "N3-write-md"
+WRITE_PROTOTYPE_NODES = frozenset(("N3-write-md", "N-skip"))
 WRITE_DECISION_NODE = "S3-writeback"
 WRITE_DECISION_FORBIDDEN = (
     "N1-trigger",
@@ -360,7 +363,7 @@ def evaluate_action(graph, payload):
         if approved or skip or node_id == "N-skip":
             return "allow", f"{node_id} Stage 3 已結束或選配,不擋 write_spec"
         return "deny", f"{node_id} 未允許 write_spec（寫 4-spec.md）"
-    if action == "write_prototype" and node_id in ("N1-trigger", "N-skip"):
+    if action == "write_prototype" and node_id == "N1-trigger":
         return "deny", f"{node_id} 禁止 write_prototype（寫 3-prototype.md）"
     if action == "write_decision" and node_id != WRITE_DECISION_NODE:
         return "deny", f"{node_id} 不得 write_decision(回寫在 S3,寫 2-decision.md)"
@@ -404,27 +407,6 @@ def scan_live_prototype_dupes():
             failures.append(
                 f"P0 {rel}/ 有 {len(hits)} 份 3-prototype*.md:{sorted(hits)}"
             )
-    return failures
-
-
-def scan_zero_hit_prototypes():
-    failures = []
-    if not os.path.isdir(DOCS_DEV):
-        return failures
-    for dirpath, dirnames, filenames in os.walk(DOCS_DEV):
-        dirnames[:] = [d for d in dirnames if d not in (".git",)]
-        protos = [f for f in filenames if re.fullmatch(r"3-prototype.*\.md", f)]
-        for name in protos:
-            path = os.path.join(dirpath, name)
-            try:
-                text = open(path, encoding="utf-8").read()
-            except OSError:
-                continue
-            if trigger_hit_count(text) == 0:
-                rel = os.path.relpath(path, root)
-                failures.append(
-                    f"P0 九條觸發全未命中，卻存在 3-prototype.md:{rel}"
-                )
     return failures
 
 
@@ -529,7 +511,7 @@ def check_live(graph):
         token = f"--write-cursor {node_id}"
         if token not in do_body:
             failures.append(f"P0 {rel} 做什麼必須呼叫 --write-cursor {node_id}")
-        if node_id == "N3-write-md":
+        if node_id in ("N3-write-md", "N-skip"):
             if "3-prototype.md" not in write_body:
                 failures.append(f"P0 {rel} 寫哪裡必須點名 3-prototype.md")
             if not re.search(r"覆寫|不另存", write_body):
@@ -537,6 +519,9 @@ def check_live(graph):
             if re.search(r"3-prototype\*\.md|第二份", write_body):
                 if not re.search(r"禁止|不得|禁", write_body):
                     failures.append(f"P0 {rel} 必須禁止第二份 3-prototype*.md")
+        if node_id == "N-skip":
+            if not re.search(r"不建.*html|html.*不建", write_body):
+                failures.append(f"P0 {rel} 寫哪裡必須宣告不建 3-prototype.html")
 
     if graph is None:
         failures.append(
@@ -546,14 +531,10 @@ def check_live(graph):
             "P0 舊實作沒有 N3 覆寫契約,無法證明 write_mode≠overwrite 會被擋"
         )
         failures.append(
-            "P0 舊實作無法證明九條觸發全未命中，卻存在 3-prototype.md 會被擋"
-        )
-        failures.append(
             "P0 舊實作無法證明有命中、無 skip OC、游標不在第 3 站允許節點"
             "卻 write_spec（寫 4-spec.md）會被擋"
         )
         failures.extend(scan_live_prototype_dupes())
-        failures.extend(scan_zero_hit_prototypes())
         return failures
 
     n3 = nodes.get("N3-write-md") or {}
@@ -574,6 +555,20 @@ def check_live(graph):
             f"P0 模擬重跑 N3 後 3-prototype*.md = {found},必須只剩正本一份"
         )
 
+    nskip = nodes.get("N-skip") or {}
+    skip_write = as_list(nskip.get("write"))
+    skip_mode = nskip.get("write_mode") or ""
+    if skip_write != [CANONICAL_MD]:
+        failures.append(
+            f"P0 graph.yaml N-skip write 必須剛好是 {[CANONICAL_MD]},"
+            f"實際是 {skip_write}"
+        )
+    if skip_mode != "overwrite":
+        failures.append(
+            f"P0 graph.yaml N-skip write_mode 必須是 overwrite,"
+            f"實際是 {skip_mode!r}"
+        )
+
     for node_id, spec in nodes.items():
         if not isinstance(spec, dict):
             continue
@@ -586,9 +581,9 @@ def check_live(graph):
                 f"P0 {node_id} 仍是 skill-legacy 團塊,必須拆成有節點檔的 hop"
             )
         allow = set(as_list(spec.get("allow")))
-        if node_id == WRITE_PROTOTYPE_NODE:
+        if node_id in WRITE_PROTOTYPE_NODES:
             if "write_prototype" not in allow:
-                failures.append("P0 N3-write-md 必須 allow write_prototype")
+                failures.append(f"P0 {node_id} 必須 allow write_prototype")
         elif "write_prototype" in allow:
             failures.append(f"P0 {node_id} 不得 allow write_prototype")
         if node_id == WRITE_DECISION_NODE:
@@ -617,7 +612,6 @@ def check_live(graph):
 
     check_fork_and_next(nodes, failures)
     failures.extend(scan_live_prototype_dupes())
-    failures.extend(scan_zero_hit_prototypes())
     failures.extend(check_action_runtime_wired())
     failures.extend(check_guide(graph))
     return failures

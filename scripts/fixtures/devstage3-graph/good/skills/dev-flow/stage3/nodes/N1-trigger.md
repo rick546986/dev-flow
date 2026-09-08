@@ -14,7 +14,7 @@
 
 ## 做什麼
 
-逐條判定九條。0 命中不准建 `3-prototype.md`。
+逐條判定九條。0 命中不在本節點建檔,交 N-skip 落檔。
 跑 `scripts/check-devstage3-graph.sh --write-cursor N1-trigger`。
 
 ## 完成條件

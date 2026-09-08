@@ -20,11 +20,14 @@ updated:
 > Human verdict 即 G2「Demo verdict」錨的輸入(條件正本 `guides/guide-dev-flow.html#gates`):ACCEPTED 必須由
 > 人類親填並伴隨 Verdict attestation 行;REVISE / NOT_REVIEWED 不得過 G2;Agent 不得
 > 代填,Runtime 拒絕 Agent 自產的 ACCEPTED。
-> 本階段固定產出(跑本階段才適用):`3-prototype.md`(本模板全節)+ `3-prototype.html`
+> 本階段固定產出(跑本階段才適用,即九條有命中且做實驗):`3-prototype.md`(本模板全節)+ `3-prototype.html`
 > (終態必產;必含 variant 流程/結構圖、Demo Script、User Demo Feedback、Verdict)。
-> 跳過本階段 → 兩檔皆不建,跳過決定記 2-decision 流程層 Owner Call。
-> 審頁產檔器:`scripts/build-stage3-html.py`(--action 授權;有 `3-prototype.md`
-> 才印頁,沒有就 n-a／跳過,不要當硬缺)。正本
+> 零命中 → 只落檔最小 `3-prototype.md`(frontmatter status approved +
+> 「Stage 3 觸發判定」九條全未勾),不建 html;此即機械閘 `_stage3_impl.py` 的 N/A 記錄。
+> 命中後仍要跳過 → 兩檔皆不建,跳過決定記 2-decision 流程層 Owner Call
+> (該行同時含「Stage 3」與「跳過」);Agent 不得自行替人決定跳過。
+> 審頁產檔器:`scripts/build-stage3-html.py`(--action 授權;有命中的
+> `3-prototype.md` 才印頁,沒有或只有全未勾觸發判定就 n-a／跳過,不要當硬缺)。正本
 > `notes/design/stage3-review-ui-contract.md`。觸發判定／Demo／答案回寫
 > 2-decision。不要手包 html-shell 當正式審頁。
 >
@@ -44,8 +47,9 @@ updated:
 
 ## Stage 3 觸發判定(條件式必要)
 <!-- 對照 1-discussion Real-world Context 逐條判定,命中打 [x]。全未命中且無互動風險 →
-     本階段維持選配,可跳過(舊純後端 feature 照舊)。命中任一條 → 條件式必要;
-     仍要跳過 → 人類明示 + 2-decision Owner Call + 記跳過風險,Agent 不得代決 -->
+     本階段維持選配;仍須落檔本節九條全未勾(G2 機械閘讀它當 N/A 記錄),不建 html。
+     命中任一條 → 條件式必要;仍要跳過 → 人類明示 + 2-decision Owner Call
+     (該行同時含「Stage 3」與「跳過」)+ 記跳過風險,兩檔皆不建,Agent 不得代決 -->
 - [ ] 有新的前端流程
 - [ ] 改變使用者下一步
 - [ ] 涉及角色交接

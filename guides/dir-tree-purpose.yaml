@@ -99,7 +99,7 @@ root:
                     - name: N1-trigger.md
                       why: 先做觸發判定。0 命中走 N-skip，有命中才進 S0-question，禁止 via。
                     - name: N-skip.md
-                      why: 觸發 0 命中：本站跳過。不寫 3-prototype.md，直接結束。
+                      why: 觸發 0 命中：落檔最小 3-prototype.md（九條未勾、approved），不建 html。
                     - name: S0-question.md
                       why: fork：真的要做原型時定義要回答的疑問。跟 N-skip 互斥。
                     - name: S1-experiment.md
