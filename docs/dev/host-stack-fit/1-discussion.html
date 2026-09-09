@@ -67,8 +67,8 @@
   <p class="pain">痛:誰:在 Cursor Agent / Grok Bot(以及讀同一棵 `skills/` 的其他非 Claude 主機)上跑 dev-flow 的開工 agent,與要審方法論母版／產品專案的 owner。 痛:同一棵技能樹讀得到,但 Claude `hooks/hooks.json` 的 PreToolUse 不會跑;gate／graph／`devflow-exec` 是共用腳本卻要人手跑。`devflow-exec start` 之後看起來像已武裝,主機其實沒有 Claude 那層擋,形成假安全感與靜默漂移。第二痛:1→7 整條走完才發現語言／runtime／套件 API 不對(母版自己踩過 Python 地板 vs render 套件)</p>
   <p>現在怎麼繞:人記得就手動跑 `--probe`／`--action`;撞 SyntaxError 或套件載入失敗再回頭查 `docs/PLUGIN.md`;Grok 看起來舊就去 Refresh Cursor 快取</p>
   <span class="badge ok">已解 4</span>
-  <span class="badge warn">假設 2</span>
-  <span class="badge">移交 7</span>
+  <span class="badge warn">假設 4</span>
+  <span class="badge">移交 5</span>
 </section>
 
 <div class="figwrap">
@@ -108,10 +108,10 @@
   <tr><td>契約與本 PR 版本?</td><td>已解</td></tr>
   <tr><td>堆疊盤點是不是必須納入?</td><td>已解</td></tr>
   <tr><td>slug 用 `host-stack-fit`?</td><td>假設</td></tr>
-  <tr><td>主機貼近選 H1、H2 還是 H3?</td><td>移交</td></tr>
+  <tr><td>主機貼近選 H1、H2 還是 H3?</td><td>假設</td></tr>
   <tr><td>堆疊盤點選 I1、I2、I3、I4,或組合?</td><td>移交</td></tr>
   <tr><td>「每個套件的版本」= 宣告 pin、lock 全樹(含 transitive)、還是本次會碰到的直接相依?機器可讀 digest 要不要?</td><td>移交</td></tr>
-  <tr><td>主機牙要 fail-closed(沒跑 `--action` 就紅)還是 warning-only?</td><td>移交</td></tr>
+  <tr><td>主機牙要 fail-closed(沒跑 `--action` 就紅)還是 warning-only?</td><td>假設</td></tr>
   <tr><td>主機貼近與堆疊盤點要不要拆成兩個 slug?</td><td>移交</td></tr>
   <tr><td>本 feature 是否解除「完整 full lane 觀測前不動 Stage 1–4 模板」?若否,I1 出局。?</td><td>移交</td></tr>
   <tr><td>Grok／box cache 落後 tip 是否仍是現況?</td><td>假設</td></tr>
@@ -137,8 +137,8 @@
   <tr><td>現有 `--probe` 能不能當「這次已執法」的證明?</td><td>scripts/check-host-adapter.sh:L21-L29 skills/dev-setup/SKILL.md:L43-L54</td><td>probe 只驗 ROOT + 技能樹;檔頭禁止把它當 `--action`。#78 已證空樹假綠。用 probe 冒充執法會重演第四型假綠。</td><td>CONFIRMED probe ≠ session 執法證據;H3 若做只能加輸出,不能讓 probe 變綠就等於 `--action`。</td></tr>
   <tr><td>為什麼要在早期寫語言、runtime、每個套件版本?</td><td>scripts/check-py-floor.sh:L13-L18 scripts/requirements-methodology-render.txt:L1 docs/PLUGIN.md:L59-L64</td><td>母版已分開「3.9 語法地板」與「3.12+／markdown-it-py 4.0.0 執行地板」。#122 是整組檢查都綠、採用者本機才爆。沒有開場盤點,S1 只收 brief／白名單事實,不會自動寫套件表。</td><td>CONFIRMED 堆疊盤點是新缺口,不是 `#host` 已做完的事。</td></tr>
   <tr><td>S1-survey 現在會不會盤語言與套件?</td><td>skills/dev-talk/nodes/S1-survey.md:L21-L32 _templates/1-discussion.md:L36-L39</td><td>S1 要的是帶出處的已核事實,沒有語言／lockfile 步驟。加 I1 等於改 Stage 1 節點／模板。</td><td>CONFIRMED 現況沒有堆疊盤點;I1 會動 Stage 1 文字。</td></tr>
-  <tr><td>⚠️ 主機貼近三條哪條比較對?本 hop 能定案嗎?</td><td>notes/design/stage1-context-chain.md:L21-L35 guides/guide-dev-flow.html:L2837-L2844</td><td>Stage 1 不准做 Decision。H2 與現況文件重疊最大;H1 有牙但要新紀錄;H3 入口現成但易假綠。owner 未選。</td><td>OPEN 留給 Q6;本檔只並列。</td></tr>
-  <tr><td>⚠️ 盤點該住 Stage 1、setup、STATUS,還是新檔?</td><td>docs/dev/STATUS.md:L49 skills/dev-talk/nodes/S1-survey.md:L21-L32</td><td>I1 最早但撞模板凍結與 fast lane。I2 壽命是專案不是 feature。I3 撞 STATUS 寫入窗。I4 清楚但多產物。深度(直接／全 lock)未問。</td><td>OPEN 留給 Q7／Q8／Q11。</td></tr>
+  <tr><td>⚠️ 軟提醒夠不夠當 Cursor／Grok 主機牙?實驗 lean 哪條?</td><td>notes/design/stage1-context-chain.md:L21-L35 guides/guide-dev-flow.html:L2837-L2844 scripts/check-host-adapter.sh:L21-L29</td><td>2026-09-09 H1 實驗(Evidence):A 10/10、B 9/10(B08 noop)、C 9/10 receipts(C08 empty;some missing DONE)、LA 10/10、DA 10/10、LAC01–10 10/10。軟提醒可見時遵從高,但不取代牙。H2 重疊既有 `#host`。H3 有 probe≠action 假綠風險。B 手填 checklist 可偽造;無 PreToolUse 主機牙應是 fail-closed script-minted receipt(條件 C)。DA caveat(brief 仍要讀長 guide;report 問 ran_stage_check=yes|no name leak;env hints H1_EXP_ROOT／H1_TRIAL_ID;not wild diluted product SOP)削弱「野外只靠軟提醒」。I 軸本輪未測。Stage 1 不准做 Decision。</td><td>OPEN 實驗 lean H1 + fail-closed script-minted receipt;軟提醒可見時有效,主牙仍要 C 形收據。非定案。</td></tr>
+  <tr><td>⚠️ 盤點該住 Stage 1、setup、STATUS,還是新檔?</td><td>docs/dev/STATUS.md:L49 skills/dev-talk/nodes/S1-survey.md:L21-L32</td><td>I1 最早但撞模板凍結與 fast lane。I2 壽命是專案不是 feature。I3 撞 STATUS 寫入窗。I4 清楚但多產物。深度(直接／全 lock)未問。本輪只跑 H 軸遵從實驗,I 軸未測。</td><td>OPEN 留給 Q7／Q8／Q11／Q13;本輪堆疊盤點仍 OPEN。</td></tr>
   <tr><td>⚠️ 假 hook、第二方法論、拆 slug、cache 落後,哪些已死、哪些還能翻?</td><td>docs/PLUGIN.md:L5 docs/PLUGIN.md:L59-L64 notes/design/stage1-context-chain.md:L21-L35</td><td>假 PreToolUse 與第二方法論與 brief／`#host` 衝突,本討論標已拒。拆 slug 仍合法(兩痛可獨立交)。cache 落後是 brief,本樹未重現。</td><td>NEEDS_VERIFICATION Grok 3.6.1 vs 3.22.1 對照;拆 slug 見 Q10;已拒項不進方案表。</td></tr>
   </table>
   </div>
