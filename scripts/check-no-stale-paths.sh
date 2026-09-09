@@ -331,6 +331,15 @@ def check_pattern(label, pat):
     if not candidates:
         return
     full_paths = [os.path.join(root, rel) for rel in candidates]
+    # TOCTOU: methodology 牙可能留下／清掉 docs/dev/*-tmp；略過已不存在的路徑，
+    # 不要把 grep rc=2（No such file）誤當守衛失敗。
+    missing = [fp for fp in full_paths if not os.path.isfile(fp)]
+    if missing:
+        print(f"  ⚠ 略過 {len(missing)} 個掃描當下已不存在的路徑"
+              f"（例:{os.path.relpath(missing[0], root)}）")
+        full_paths = [fp for fp in full_paths if os.path.isfile(fp)]
+    if not full_paths:
+        return
     result = subprocess.run(
         ["grep", "-I", "-n", "-H", "-F", pat, *full_paths],
         capture_output=True, text=True, errors="ignore",
