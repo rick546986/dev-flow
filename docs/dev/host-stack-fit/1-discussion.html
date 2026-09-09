@@ -1,0 +1,149 @@
+<!-- html 外殼:把 md 轉出的 HTML 塞進 <main>,{{TITLE}} 換成頁題。
+     自足單檔、無外部資源、深淺色自適應。 -->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1. 討論 — 主機執法貼近與堆疊盤點</title>
+<style>
+  :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;}
+  @media(prefers-color-scheme:dark){
+    :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+  main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
+  h2{font-size:1.15rem;margin-top:2em}
+  h3{font-size:1rem;margin-top:1.5em}
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:1em 0}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
+  th{background:var(--card)}
+  /* 掃頁短欄:表撐滿後中文會逐字斷。著落／從哪看／看到什麼必須橫排。 */
+  #scan-qs th:last-child,
+  #scan-qs td:last-child{white-space:nowrap;word-break:keep-all}
+  #scan-ac th:nth-child(2),
+  #scan-ac td:nth-child(2),
+  #scan-ac th:last-child,
+  #scan-ac td:last-child{white-space:nowrap;word-break:keep-all}
+  code,pre{background:var(--card);border-radius:4px;
+           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
+  pre{padding:12px;overflow-x:auto}
+  code{padding:1px 5px}
+  blockquote{margin:1em 0;padding:.5em 1em;border-left:3px solid var(--line);color:var(--muted)}
+  ul,ol{padding-left:1.4em}
+  .meta{color:var(--muted);font-size:.85rem;margin-bottom:2em}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;
+         font-size:.8rem;font-weight:600;border:1px solid transparent}
+  .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+  .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+  /* 掃頁:摘要卡、直式 svg 節點、問答 details。舊 class 語意不動。 */
+  .sum{background:var(--card);border:1px solid var(--line);border-radius:10px;
+       padding:14px 16px;margin:1em 0}
+  .sum .pain{font-weight:600;margin:0 0 .4em}
+  details{margin:.6em 0}
+  details>summary{cursor:pointer;color:var(--muted);user-select:none}
+  /* 直式現況圖:有限寬、欄內水平置中。禁 width:100% 把畫布撐滿而圖貼左。 */
+  .figwrap{display:flex;justify-content:center;width:100%;margin:1.2em 0}
+  svg#scan-now,.figwrap>svg{display:block;width:220px;max-width:100%;height:auto;margin:0 auto}
+  pre#scan-now,.figwrap>pre{display:block;width:max-content;max-width:100%;margin:0 auto}
+  svg text{font:11px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--fg)}
+  svg .b{fill:var(--card);stroke:var(--line);stroke-width:1}
+  svg .hl{fill:color-mix(in srgb,var(--acc) 16%,var(--card));stroke:var(--acc)}
+  svg .no{fill:color-mix(in srgb,var(--bad) 12%,var(--card));stroke:var(--bad)}
+  svg .flow{fill:none;stroke:var(--muted);stroke-width:1.6}
+  svg .cap{fill:var(--muted);font:11px -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+</style>
+</head>
+<body>
+<main>
+  <section class="sum" id="scan-sum">
+  <p class="pain">痛:誰:在 Cursor Agent / Grok Bot(以及讀同一棵 `skills/` 的其他非 Claude 主機)上跑 dev-flow 的開工 agent,與要審方法論母版／產品專案的 owner。 痛:同一棵技能樹讀得到,但 Claude `hooks/hooks.json` 的 PreToolUse 不會跑;gate／graph／`devflow-exec` 是共用腳本卻要人手跑。`devflow-exec start` 之後看起來像已武裝,主機其實沒有 Claude 那層擋,形成假安全感與靜默漂移。第二痛:1→7 整條走完才發現語言／runtime／套件 API 不對(母版自己踩過 Python 地板 vs render 套件)</p>
+  <p>現在怎麼繞:人記得就手動跑 `--probe`／`--action`;撞 SyntaxError 或套件載入失敗再回頭查 `docs/PLUGIN.md`;Grok 看起來舊就去 Refresh Cursor 快取</p>
+  <span class="badge ok">已解 4</span>
+  <span class="badge warn">假設 2</span>
+  <span class="badge">移交 7</span>
+</section>
+
+<div class="figwrap">
+<svg id="scan-now" viewBox="0 0 200 420" role="img" aria-label="現況:誰、做什麼、用什麼、痛在最後一步">
+  <rect class="hl" x="20" y="8" width="160" height="88" rx="6"/>
+  <text text-anchor="middle" x="100" y="26">開工 agent</text>
+  <text text-anchor="middle" x="100" y="52">讀 skills</text>
+  <text text-anchor="middle" x="100" y="72">SKILL.md</text>
+  <text class="cap" text-anchor="middle" x="100" y="92">以為已武裝</text>
+  <path class="flow" d="M100,96 L100,112"/>
+  <rect class="b" x="20" y="112" width="160" height="88" rx="6"/>
+  <text text-anchor="middle" x="100" y="130">開工 agent</text>
+  <text text-anchor="middle" x="100" y="156">跑 start</text>
+  <text text-anchor="middle" x="100" y="176">exec.sh</text>
+  <text class="cap" text-anchor="middle" x="100" y="196">無 PreToolUse</text>
+  <path class="flow" d="M100,200 L100,216"/>
+  <rect class="no" x="20" y="216" width="160" height="88" rx="6"/>
+  <text text-anchor="middle" x="100" y="234">開工 agent</text>
+  <text text-anchor="middle" x="100" y="260">寫到收尾</text>
+  <text text-anchor="middle" x="100" y="280">編輯器</text>
+  <text class="no" text-anchor="middle" x="100" y="300">晚撞版本</text>
+  <text class="cap" text-anchor="middle" x="100" y="332">痛在最後一步</text>
+</svg>
+</div>
+
+<table id="scan-people">
+  <tr><th>誰</th><th>要什麼</th><th>缺什麼</th></tr>
+  <tr><td>開工 agent</td><td>把 feature 做完且看起來守流程</td><td>本主機這次有沒有真的執法;語言／套件地板 [Assumption]` Grok／box plugin cache 曾停在 3.6.1、對上 tip 3.22.1:brief 有寫,本環境未重現該對照。</td></tr>
+  <tr><td>owner</td><td>Cursor／Grok dogfood 貼近 Claude,但不造假 hook</td><td>選哪條牙;盤點住哪;「每個套件」多深 [Assumption]` Grok／box plugin cache 曾停在 3.6.1、對上 tip 3.22.1:brief 有寫,本環境未重現該對照。</td></tr>
+  <tr><td>採用者</td><td>agent 不要用錯語法／錯 API 寫完一條 lane</td><td>agent 開場有沒有讀過版本 [Assumption]` Grok／box plugin cache 曾停在 3.6.1、對上 tip 3.22.1:brief 有寫,本環境未重現該對照。</td></tr>
+</table>
+
+<table id="scan-qs">
+  <tr><th>題目</th><th>著落</th></tr>
+  <tr><td>可不可以發明 Cursor／Grok 的假 PreToolUse?</td><td>已解</td></tr>
+  <tr><td>可不可以另造第二套方法論?</td><td>已解</td></tr>
+  <tr><td>契約與本 PR 版本?</td><td>已解</td></tr>
+  <tr><td>堆疊盤點是不是必須納入?</td><td>已解</td></tr>
+  <tr><td>slug 用 `host-stack-fit`?</td><td>假設</td></tr>
+  <tr><td>主機貼近選 H1、H2 還是 H3?</td><td>移交</td></tr>
+  <tr><td>堆疊盤點選 I1、I2、I3、I4,或組合?</td><td>移交</td></tr>
+  <tr><td>「每個套件的版本」= 宣告 pin、lock 全樹(含 transitive)、還是本次會碰到的直接相依?機器可讀 digest 要不要?</td><td>移交</td></tr>
+  <tr><td>主機牙要 fail-closed(沒跑 `--action` 就紅)還是 warning-only?</td><td>移交</td></tr>
+  <tr><td>主機貼近與堆疊盤點要不要拆成兩個 slug?</td><td>移交</td></tr>
+  <tr><td>本 feature 是否解除「完整 full lane 觀測前不動 Stage 1–4 模板」?若否,I1 出局。?</td><td>移交</td></tr>
+  <tr><td>Grok／box cache 落後 tip 是否仍是現況?</td><td>假設</td></tr>
+  <tr><td>產品專案與方法論母版是否同一份 artifact、同一套深度?</td><td>移交</td></tr>
+</table>
+
+<table id="scan-ac">
+  <tr><th>假設…當…則…</th><th>從哪看</th><th>看到什麼</th></tr>
+  <tr><td>假設 agent 在 Cursor 或 Grok 開工,當它宣稱「已武裝／可寫碼」,則人能在本次產出裡看到「本主機沒有 PreToolUse、共同 runtime 是 `--action`」,且能指出本次有沒有真的跑過該站檢查。</td><td>`docs/dev/&lt;slug&gt;/` 開場紀錄,或 owner 指定的 setup／probe 輸出</td><td>出現「無 PreToolUse」與「`--action`」字樣;有／無本次檢查輸出可分辨,不是只看到 `exec start` 成功</td></tr>
+  <tr><td>假設有人只跑 `devflow-exec start`、沒跑該站 `--action`,當流程走到可寫碼的點,則不會只靠「start 過了」就被當成與 Claude 同級執法。</td><td>同一點的紀錄或檢查出口</td><td>缺口可見(紅、或明確「未跑 `--action`」);沒有「已與 Claude 同等武裝」的句子</td></tr>
+  <tr><td>假設專案宣告語言地板與套件 pin,當 owner 指定的早期步驟做完,則落點寫出語言、runtime 版本、每個套件版本。</td><td>Q7 選定的落點(1-discussion／setup 產出／STATUS／`0-stack.md` 等)</td><td>至少含語言名、runtime 版本、套件名+版本;母版樣張能對上 Python 3.9 地板與 `markdown-it-py==4.0.0`</td></tr>
+  <tr><td>假設本機直譯器是 3.9、某套件要 3.12,當盤點做完,則這段落差在進後段 lane 之前就寫在檔上。</td><td>同上落點的「落差」列</td><td>同時出現本機 3.9 與套件 3.12+ 需求,不是等 render 爆才補</td></tr>
+  <tr><td>假設在 Cursor 寫檔,當工具執行 Write,則系統不假裝有 Claude PreToolUse 攔截。</td><td>Cursor session 工具軌跡;`.cursor-plugin/plugin.json`</td><td>沒有新的假 PreToolUse 掛載;薄殼仍無 hooks 鍵</td></tr>
+</table>
+
+<details id="scan-log">
+  <summary>問答摘要</summary>
+  <div class="tablewrap">
+  <table>
+  <tr><th>Q</th><th>事實</th><th>推理</th><th>結論</th></tr>
+  <tr><td>Cursor／Grok 讀得到 skills,為什麼還是沒有 Claude 那層擋?</td><td>guides/guide-dev-flow.html:L2837-L2844 hooks/hooks.json:L3-L10 .cursor-plugin/plugin.json:L16 docs/PLUGIN.md:L59-L64</td><td>PreToolUse 掛在 Claude `hooks.json`;Cursor 薄殼只有 skills 鍵;PLUGIN 明寫 hooks 只在 Claude 生效。讀同一棵樹 ≠ 跑同一套生命週期。</td><td>CONFIRMED 共同 runtime 是手動 `--action`,不是假 hook。</td></tr>
+  <tr><td>⚠️ `devflow-exec start` 之後,非 Claude 主機是否已經武裝?</td><td>guides/guide-dev-flow.html:L1559-L1567 scripts/check-write-scope.sh:L4-L8</td><td>`start` 寫 `exec.json` 是給 PreToolUse 當米。沒有 PreToolUse,檔在也不會擋 Write。把 start 成功當成 Claude 同級執法,就是假安全感。</td><td>CONFIRMED start ≠ 非 Claude 執法;H1／H2／H3 都要處理這層誤讀。</td></tr>
+  <tr><td>現有 `--probe` 能不能當「這次已執法」的證明?</td><td>scripts/check-host-adapter.sh:L21-L29 skills/dev-setup/SKILL.md:L43-L54</td><td>probe 只驗 ROOT + 技能樹;檔頭禁止把它當 `--action`。#78 已證空樹假綠。用 probe 冒充執法會重演第四型假綠。</td><td>CONFIRMED probe ≠ session 執法證據;H3 若做只能加輸出,不能讓 probe 變綠就等於 `--action`。</td></tr>
+  <tr><td>為什麼要在早期寫語言、runtime、每個套件版本?</td><td>scripts/check-py-floor.sh:L13-L18 scripts/requirements-methodology-render.txt:L1 docs/PLUGIN.md:L59-L64</td><td>母版已分開「3.9 語法地板」與「3.12+／markdown-it-py 4.0.0 執行地板」。#122 是整組檢查都綠、採用者本機才爆。沒有開場盤點,S1 只收 brief／白名單事實,不會自動寫套件表。</td><td>CONFIRMED 堆疊盤點是新缺口,不是 `#host` 已做完的事。</td></tr>
+  <tr><td>S1-survey 現在會不會盤語言與套件?</td><td>skills/dev-talk/nodes/S1-survey.md:L21-L32 _templates/1-discussion.md:L36-L39</td><td>S1 要的是帶出處的已核事實,沒有語言／lockfile 步驟。加 I1 等於改 Stage 1 節點／模板。</td><td>CONFIRMED 現況沒有堆疊盤點;I1 會動 Stage 1 文字。</td></tr>
+  <tr><td>⚠️ 主機貼近三條哪條比較對?本 hop 能定案嗎?</td><td>notes/design/stage1-context-chain.md:L21-L35 guides/guide-dev-flow.html:L2837-L2844</td><td>Stage 1 不准做 Decision。H2 與現況文件重疊最大;H1 有牙但要新紀錄;H3 入口現成但易假綠。owner 未選。</td><td>OPEN 留給 Q6;本檔只並列。</td></tr>
+  <tr><td>⚠️ 盤點該住 Stage 1、setup、STATUS,還是新檔?</td><td>docs/dev/STATUS.md:L49 skills/dev-talk/nodes/S1-survey.md:L21-L32</td><td>I1 最早但撞模板凍結與 fast lane。I2 壽命是專案不是 feature。I3 撞 STATUS 寫入窗。I4 清楚但多產物。深度(直接／全 lock)未問。</td><td>OPEN 留給 Q7／Q8／Q11。</td></tr>
+  <tr><td>⚠️ 假 hook、第二方法論、拆 slug、cache 落後,哪些已死、哪些還能翻?</td><td>docs/PLUGIN.md:L5 docs/PLUGIN.md:L59-L64 notes/design/stage1-context-chain.md:L21-L35</td><td>假 PreToolUse 與第二方法論與 brief／`#host` 衝突,本討論標已拒。拆 slug 仍合法(兩痛可獨立交)。cache 落後是 brief,本樹未重現。</td><td>NEEDS_VERIFICATION Grok 3.6.1 vs 3.22.1 對照;拆 slug 見 Q10;已拒項不進方案表。</td></tr>
+  </table>
+  </div>
+</details>
+
+</main>
+</body>
+</html>
