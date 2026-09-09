@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>host-stack-fit · 4-spec</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+a.cell{text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px;overflow-wrap:anywhere;word-break:break-word}
+.r-body p{margin:0 0 8px}
+.s-card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 10px;background:var(--sunk)}
+.s-card h3{margin:0 0 8px;font-size:.95rem}
+.gwt{margin:0 0 6px}
+.gwt .k{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-3);display:block}
+.ask{margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--accent);
+  background:var(--accent-soft)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+.miss{background:var(--bad-soft);color:var(--bad);padding:2px 6px;border-radius:4px}
+.foot{margin:36px 0 0;padding:16px 18px;border:1px solid var(--rule);
+  border-radius:12px;background:var(--panel)}
+.gv-row{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0}
+.gv-field{display:block;margin:8px 0}
+.btn{background:var(--accent);color:#fff;border:0;border-radius:8px;
+  padding:8px 14px;font-weight:650;cursor:pointer}
+.gv-status{color:var(--ink-2);font-size:.86rem}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 4-spec · 審查介面</p>
+  <h1>host-stack-fit</h1>
+  <p class="sub">正本是 md。這頁是 R/S 卡 + 生命週期直式圖,不是 gate-twin 勾選卡。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">draft</span></div><div class="cell"><span class="k">verdict</span><span class="v">PRE-REVIEW</span></div><div class="cell"><span class="k">R</span><span class="v">6</span></div><div class="cell"><span class="k">S</span><span class="v">22</span></div></div>
+</header>
+<section class="r-block" id="lifecycle"><div class="r-head"><span class="r-name">補助模組生命週期（預覽）</span></div><div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 414" role="img" aria-label="模組生命週期">
+  <rect class="b" x="40" y="10" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">新生</text>
+  <text class="sm" text-anchor="middle" x="140" y="52">不加欄。</text>
+  <path class="flow" d="M140,92 L140,114"/>
+  <rect class="hl" x="40" y="114" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="138">改行為</text>
+  <text class="sm" text-anchor="middle" x="140" y="156">該站 --action 鑄收</text>
+  <text class="sm" text-anchor="middle" x="140" y="170">據;dev-setup 寫 </text>
+  <text class="sm" text-anchor="middle" x="140" y="184">I2;選配 I4。</text>
+  <path class="flow" d="M140,196 L140,218"/>
+  <rect class="b" x="40" y="218" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="242">退役</text>
+  <text class="sm" text-anchor="middle" x="140" y="260">沒有。</text>
+  <path class="flow" d="M140,300 L140,322"/>
+  <rect class="b" x="40" y="322" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="346">不動</text>
+  <text class="sm" text-anchor="middle" x="140" y="364">PreToolUse、</text>
+  <text class="sm" text-anchor="middle" x="140" y="378">--action 圍欄、</text>
+  <text class="sm" text-anchor="middle" x="140" y="392">Stage 1–4 模板、plugin 版本、lock 正本。</text>
+</svg>
+</div></div></section>
+<section class="r-block" id="lifecycle-note"><div class="r-head"><span class="r-name">生命週期說明</span></div><div class="r-body"><p>只畫本 feat 碰到的兩塊:主機收據與堆疊盤點／setup。有關聯的收成一格,不拆檔名。直式圖,置中。</p></div></section>
+<section class="r-block" id="R-1"><div class="r-head"><span class="r-name">R-1 系統 SHALL 鑄出該站 `--action` 收據</span></div><div class="r-body"><article class="s-card" id="S-1.1"><h3>S-1.1 七支該站腳本 allow 後鑄檔</h3><p class="ask"><strong>審的時候看什麼</strong> 從 `.devflow/host-receipt/host-stack-fit/&lt;station&gt;.json` 看 | 檔存在、`json.load` 得到 object、`schema`=`devflow-host-receipt/v1` 算過 | 用暫存專案根跑該站 `--action` fixture(allow)測</p><p class="gwt"><span class="k">GIVEN</span>專案根存在、slug=`host-stack-fit`、`.devflow/host-receipt/host-stack-fit/` 尚無任何 `.json`</p><p class="gwt"><span class="k">WHEN</span>下列任一腳本以 `--action FILE` 跑完且 exit 0:`scripts/check-devtalk-graph.sh`、`scripts/check-devstage2-graph.sh`、`scripts/check-devstage3-graph.sh`、`scripts/check-devstage4-graph.sh`、`scripts/check-devstage5-graph.sh`、`scripts/check-devstage6-graph.sh`、`scripts/check-devstage7-graph.sh`</p><p class="gwt"><span class="k">THEN</span>對應路徑寫出一個 UTF-8 JSON 物件:talk → `talk.json`;stage2 → `stage2.json`;stage3 → `stage3.json`;stage4 → `stage4.json`;stage5 → `stage5.json`;stage6 → `stage6.json`;stage7 → `stage7.json`</p></article><article class="s-card" id="S-1.2"><h3>S-1.2 收據必填欄與 stamp</h3><p class="ask"><strong>審的時候看什麼</strong> 用 `json.load` 印鍵集合與 `DONE` 的 `type` | 鍵齊、`DONE is True`、自算 stamp 與檔內相同算過 | 拿 S-1.1 產出檔測</p><p class="gwt"><span class="k">GIVEN</span>S-1.1 鑄出的檔</p><p class="gwt"><span class="k">WHEN</span>讀該 JSON</p><p class="gwt"><span class="k">THEN</span>恰好含這些鍵且型別如下:`schema`(字串 `devflow-host-receipt/v1`)、`station`(字串,值為 `talk` 或 `stage2`…`stage7`)、`slug`(字串)、`node`(字串,缺游標則 `""`)、`script`(字串,相對 repo 根,例如 `scripts/check-devstage4-graph.sh`)、`argv`(陣列,第一個元素為 `--action`)、`action_result`(字串 `allow`)、`minted_at`(UTC ISO-8601,含 `T` 與 `Z`)、`root`(專案根絕對路徑)、`payload_sha256`(64 個小寫 hex)、`DONE`(JSON 布林 `true`,不是字串)、`stamp`(64 個小寫 hex)。`stamp` = SHA-256(UTF-8,無多餘空白)的 `devflow-host-receipt/v1|{station}|{slug}|{node}|{script}|{action_result}|{minted_at}|{payload_sha256}|true`</p></article><article class="s-card" id="S-1.3"><h3>S-1.3 probe／start／write-cursor／write-scope 不鑄</h3><p class="ask"><strong>審的時候看什麼</strong> 從 `.devflow/host-receipt/` 看 | 目錄不存在或零個 `.json` 算過 | 用空收據樹分別跑四種入口測</p><p class="gwt"><span class="k">GIVEN</span>同一專案根,`.devflow/host-receipt/` 為空</p><p class="gwt"><span class="k">WHEN</span>分別跑:`scripts/check-host-adapter.sh --probe &lt;root&gt;`、`scripts/devflow-exec.sh start`(若本樹有此入口)、該站 `--write-cursor NODE`、`scripts/check-write-scope.sh --action FILE`</p><p class="gwt"><span class="k">THEN</span>`.devflow/host-receipt/` 仍不存在任何 `.json`;上述指令的既有 exit 契約不變</p></article><article class="s-card" id="S-1.4"><h3>S-1.4 deny 與 exit 2 不鑄、allow 覆寫同路徑</h3><p class="ask"><strong>審的時候看什麼</strong> 比對兩次前後的 `minted_at` 與 `payload_sha256` | deny／exit 2 後哈希不變、allow 後哈希變且檔仍一份算過 | 用同一 slug 連跑 deny 再 allow 測</p><p class="gwt"><span class="k">GIVEN</span>slug=`host-stack-fit`、station=`stage4`、已有一份有效 `stage4.json`</p><p class="gwt"><span class="k">WHEN</span>先跑 `check-devstage4-graph.sh --action` 且 exit 1 或 2,再跑一次 exit 0</p><p class="gwt"><span class="k">THEN</span>第一次之後檔內容與時間戳不變;第二次之後同路徑被覆寫,`minted_at` 與 `payload_sha256` 換成第二次、`DONE` 仍為 `true`</p></article></div></section>
+<section class="r-block" id="R-2"><div class="r-head"><span class="r-name">R-2 系統 SHALL 核對收據並 fail-closed</span></div><div class="r-body"><article class="s-card" id="S-2.1"><h3>S-2.1 有效收據核對 exit 0</h3><p class="ask"><strong>審的時候看什麼</strong> 看指令 exit 與核對前後檔的 `stamp` | exit 0 且 stamp 不變算過 | 用 S-1.1 鑄好的 stage4 檔測</p><p class="gwt"><span class="k">GIVEN</span>S-1.2 形狀的 `stage4.json` 已在 `.devflow/host-receipt/host-stack-fit/stage4.json`</p><p class="gwt"><span class="k">WHEN</span>`scripts/check-devstage4-graph.sh --action FILE`,FILE 為 `{"cursor":{"node":"S5-gate","slug":"host-stack-fit"},"action":"verify_receipt","slug":"host-stack-fit","verify_receipt":true}`</p><p class="gwt"><span class="k">THEN</span>exit 0;不改寫該收據檔;`schema`／`stamp` 仍與核對前相同</p></article><article class="s-card" id="S-2.2"><h3>S-2.2 缺檔、空檔、空白檔皆紅</h3><p class="ask"><strong>審的時候看什麼</strong> 看 exit 與 stderr 原文 | 三案皆紅且含指定字串、不含武裝句算過 | 用三種暫存檔測</p><p class="gwt"><span class="k">GIVEN</span>三種輸入:(1)路徑不存在;(2)零位元組檔;(3)只含空白字元(space／tab／newline)的檔,放在 `.devflow/host-receipt/host-stack-fit/stage4.json`</p><p class="gwt"><span class="k">WHEN</span>對每種輸入跑 S-2.1 同一條 `verify_receipt`</p><p class="gwt"><span class="k">THEN</span>每次 exit ≠ 0;stderr 含字串 `未跑 --action`;stdout／stderr 都不含 `已與 Claude 同等武裝`</p></article><article class="s-card" id="S-2.3"><h3>S-2.3 手填與缺 DONE 皆紅</h3><p class="ask"><strong>審的時候看什麼</strong> 看四次 exit 與 stderr | 全紅且咬指定字串算過 | 用手寫 md／殘缺 JSON fixture 測</p><p class="gwt"><span class="k">GIVEN</span>四份放在正規路徑的檔:(1)Markdown 清單,內文 `DONE` 與 `--action`;(2)JSON 物件缺 `stamp`;(3)JSON `DONE` 為字串 `"true"`;(4)JSON `DONE` 為 `false` 或鍵不存在</p><p class="gwt"><span class="k">WHEN</span>各跑一次 S-2.1 的 `verify_receipt`</p><p class="gwt"><span class="k">THEN</span>四次皆 exit ≠ 0;stderr 含 `未跑 --action`;不含 `已與 Claude 同等武裝`</p></article><article class="s-card" id="S-2.4"><h3>S-2.4 stamp 不符或 station／script 對不上則紅</h3><p class="ask"><strong>審的時候看什麼</strong> 看 exit 與 stderr | 三案皆紅算過 | 用改過欄位的 JSON 測</p><p class="gwt"><span class="k">GIVEN</span>一份其餘欄位齊的 JSON,但 `stamp` 改成 64 個 `0`;另兩份分別把 `station` 改成 `stage7`、`script` 改成 `scripts/check-host-adapter.sh`</p><p class="gwt"><span class="k">WHEN</span>用 `check-devstage4-graph.sh` 做 `verify_receipt`</p><p class="gwt"><span class="k">THEN</span>三次皆 exit ≠ 0;stderr 含 `未跑 --action`</p></article><article class="s-card" id="S-2.5"><h3>S-2.5 只跑 start 不得宣稱武裝</h3><p class="ask"><strong>審的時候看什麼</strong> 從核對 exit、stderr、session 開場紀錄看 | start 後核對紅;有宣稱則能指出收據檔,且文案含兩個指定詞算過 | 用 throwaway Cursor／本機 session:先 start、不跑 `--action` 測(AC-1／AC-2／SC-1／SC-2)</p><p class="gwt"><span class="k">GIVEN</span>`.devflow/exec.json` 因 `devflow-exec start` 存在,且 `.devflow/host-receipt/` 無任何收據</p><p class="gwt"><span class="k">WHEN</span>對 `stage4` 跑 `verify_receipt`,或 session 輸出宣稱「已武裝／可寫碼／已與 Claude 同等武裝」</p><p class="gwt"><span class="k">THEN</span>`verify_receipt` exit ≠ 0 且 stderr 含 `未跑 --action`;任何「已武裝／可寫碼」宣稱在本 session 產出裡必須同時能指出一份核對過的收據路徑,否則該宣稱不算數。文案若提到主機限制,必須同時出現 `無 PreToolUse`(或 `沒有 PreToolUse`)與 `--action`</p></article><article class="s-card" id="S-2.6"><h3>S-2.6 fail-closed 時點:宣稱武裝與第一次寫檔之前</h3><p class="ask"><strong>審的時候看什麼</strong> 從本 repo 可跑的核對指令與「核對前／後」兩次呼叫看 | 核對前 exit ≠ 0,鑄檔並核對後 exit 0 算過;Claude PreToolUse 行為用既有 `hooks/hooks.json` 與 `.cursor-plugin/plugin.json` 對照(薄殼仍無 hooks 鍵) | 用暫存樹:無收據核對 → 鑄 → 再核對。n-a:Cursor 編輯器 Write 工具本身無 hook,改用本 repo 核對指令當替代觀測</p><p class="gwt"><span class="k">GIVEN</span>非 Claude session,本站尚無有效收據</p><p class="gwt"><span class="k">WHEN</span>agent 要輸出「可寫碼／已武裝」,或要對本站 feature 檔做第一次 Write／Edit(例:`docs/dev/host-stack-fit/4-spec.md`)</p><p class="gwt"><span class="k">THEN</span>必須先有該站 `verify_receipt` exit 0;若核對未跑或 exit ≠ 0,不得把該次寫入標成已武裝。Claude Code 既有 PreToolUse 擋寫規則不變;Claude 不要求人指收據才能寫,但同一支 `--action` 仍在 allow 時鑄檔</p></article></div></section>
+<section class="r-block" id="R-3"><div class="r-head"><span class="r-name">R-3 系統 SHALL 寫出 I2 堆疊盤點</span></div><div class="r-body"><article class="s-card" id="S-3.1"><h3>S-3.1 I2 路徑與必填欄</h3><p class="ask"><strong>審的時候看什麼</strong> 從 `docs/dev/0-inventory.json` 看 | `json.load` 後上列鍵齊、陣列元素欄位齊算過 | 對本 repo 跑 setup check 或對 fixture 樹跑同等寫入測</p><p class="gwt"><span class="k">GIVEN</span>一份剛跑完 `dev-setup` install 或 check 的專案樹(方法包或產品)</p><p class="gwt"><span class="k">WHEN</span>讀 `docs/dev/0-inventory.json`</p><p class="gwt"><span class="k">THEN</span>檔為 UTF-8 JSON 物件,必填鍵:`schema`(值 `devflow-stack-inventory/v1`)、`written_by`(值 `dev-setup`)、`written_at`(UTC ISO-8601,含 `Z`)、`project_kind`(值 `methodology-pack` 或 `product`)、`languages`(非空陣列)、`declared_pins`(陣列)、`direct_deps`(陣列)、`gaps`(陣列,可空)。每個 `languages[]` 必填:`language`(字串,例 `Python`)、`runtime_version`(字串,例 `3.9.6`)、`runtime_cmd`(字串,值 `python3 --version`)。每個 `declared_pins[]` 與 `direct_deps[]` 必填:`name`、`version`、`source`(相對 repo 根的 pin／requirements 路徑)。每個 `gaps[]` 若存在必填:`local_runtime`、`requirement`、`pin`、`source`</p></article><article class="s-card" id="S-3.2"><h3>S-3.2 母版樣張對上 3.9 與 markdown-it-py</h3><p class="ask"><strong>審的時候看什麼</strong> 從 I2 JSON 三個陣列看 | 指定 pin 列存在、無第二層套件列算過 | 拿本 repo `docs/PLUGIN.md` + `scripts/requirements-methodology-render.txt` 當輸入(AC-3／SC-4)</p><p class="gwt"><span class="k">GIVEN</span>本方法包(`project_kind`=`methodology-pack`),pin 來源含 `scripts/requirements-methodology-render.txt` 的 `markdown-it-py==4.0.0`,以及 `scripts/check-py-floor.sh`／`docs/PLUGIN.md` 宣告的 Python 3.9 編譯地板</p><p class="gwt"><span class="k">WHEN</span>`dev-setup` 寫完 I2</p><p class="gwt"><span class="k">THEN</span>`declared_pins` 至少有一列 `name`=`markdown-it-py` 且 `version`=`4.0.0` 且 `source`=`scripts/requirements-methodology-render.txt`;`languages` 至少有一列 `language`=`Python`;`direct_deps` 至少含同一顆 `markdown-it-py` `4.0.0`(第一層,不含 transitive)。不把 lock 全樹寫進任一陣列</p></article><article class="s-card" id="S-3.3"><h3>S-3.3 落差列在進 Stage 4 之前</h3><p class="ask"><strong>審的時候看什麼</strong> 從 `gaps` 列看 | 三個指定子字串同列出現,不是等 render 爆才補算過 | 用 #122 情節(3.9 地板 vs `markdown-it-py==4.0.0`)測(AC-4／SC-5)</p><p class="gwt"><span class="k">GIVEN</span>本機 `python3 --version` 主次版為 `3.9`,且 I2 已寫入 `markdown-it-py` `4.0.0`(該套件執行地板為 Python 3.12+)</p><p class="gwt"><span class="k">WHEN</span>讀 `gaps`</p><p class="gwt"><span class="k">THEN</span>至少一列同時含 `local_runtime` 以 `3.9` 開頭、`requirement` 含 `3.12`、`pin`=`markdown-it-py==4.0.0`;此列在任何人開始寫該專案 `docs/dev/&lt;slug&gt;/4-spec.md` 之前就已在檔上</p></article><article class="s-card" id="S-3.4"><h3>S-3.4 依賴變了要重寫 I2</h3><p class="ask"><strong>審的時候看什麼</strong> 從 I2 `written_at` 與 pin 檔 mtime、setup 說明句看 | check 後時間戳更新;只 pull 則時間戳不變;說明句存在算過 | 改 pin 檔 mtime 後跑 check,對照不跑 setup 的對照組</p><p class="gwt"><span class="k">GIVEN</span>`docs/dev/0-inventory.json` 的 `written_at` 早於 `scripts/requirements-methodology-render.txt`(或產品樹的 `requirements*.txt`／`pyproject.toml`／`package.json`)的 mtime,或 `python3 --version` 字串已不等於檔內 `runtime_version`</p><p class="gwt"><span class="k">WHEN</span>再跑 `dev-setup` check(或 install／upgrade 的盤點步)</p><p class="gwt"><span class="k">THEN</span>腳本覆寫同一路徑 `docs/dev/0-inventory.json`;新檔 `written_at` 較新;`declared_pins` 反映當前 pin 檔。只做 `git pull`、不跑 setup → 檔不自動改;`dev-setup` 指引必須有一句「依賴變了要重跑」</p></article><article class="s-card" id="S-3.5"><h3>S-3.5 setup 未寫 I2 則未完成</h3><p class="ask"><strong>審的時候看什麼</strong> 看 check exit 與輸出 | 缺檔不得當 current／成功算過 | 刪掉 I2 後跑 check 測</p><p class="gwt"><span class="k">GIVEN</span>專案已有 `docs/dev/` 但沒有 `docs/dev/0-inventory.json`</p><p class="gwt"><span class="k">WHEN</span>跑 `dev-setup` check</p><p class="gwt"><span class="k">THEN</span>exit ≠ 0,或狀態列為 broken／stale,且輸出點名缺 `docs/dev/0-inventory.json`</p></article></div></section>
+<section class="r-block" id="R-4"><div class="r-head"><span class="r-name">R-4 系統 SHALL 選配寫出 I4 摘要</span></div><div class="r-body"><article class="s-card" id="S-4.1"><h3>S-4.1 預設不建 I4</h3><p class="ask"><strong>審的時候看什麼</strong> 從 `docs/dev/` 檔名清單看 | I2 在、I4 不在算過 | 對 fresh fixture 跑 install 測</p><p class="gwt"><span class="k">GIVEN</span>新專案跑完 `dev-setup` install,且沒有人要求 digest 或散文摘要</p><p class="gwt"><span class="k">WHEN</span>列 `docs/dev/`</p><p class="gwt"><span class="k">THEN</span>有 `0-inventory.json`;沒有 `0-stack.md`;setup 仍 exit 0(在 I2 已寫的前提下)</p></article><article class="s-card" id="S-4.2"><h3>S-4.2 建立 I4 的時機與內容</h3><p class="ask"><strong>審的時候看什麼</strong> 從 `docs/dev/0-stack.md` 與 I2 JSON 對看 | 版本列與 I2 逐列相同、兩句指定文案在、digest 行(若有)對得回檔位元算過 | 先寫 I2 再按人要求加 I4 測</p><p class="gwt"><span class="k">GIVEN</span>I2 已存在,且人明確要求 lock digest 或散文堆疊頁</p><p class="gwt"><span class="k">WHEN</span>寫入 `docs/dev/0-stack.md`</p><p class="gwt"><span class="k">THEN</span>檔為 UTF-8 Markdown;必須有一節列出與 I2 相同的 `language`／`runtime_version`／每個 `declared_pins` 的 `name`+`version`;必須有一句「盤點正本是 `docs/dev/0-inventory.json`」;若含 digest,格式為一行 `` `&lt;filename&gt;` sha256:&lt;64 hex&gt; ``,`&lt;filename&gt;` 為既有 lock／pin 檔(例 `package-lock.json` 或 `scripts/requirements-methodology-render.txt`),hex 為該檔位元組的 SHA-256;檔內必須有一句「digest 不是 lock 正本」</p></article><article class="s-card" id="S-4.3"><h3>S-4.3 digest 不是 lock 正本、不寫每 slug 一份</h3><p class="ask"><strong>審的時候看什麼</strong> 搜產品樹 `0-stack.md` 路徑與衝突規則句 | 只見 `docs/dev/0-stack.md`;規則句寫明 lock／pin 勝 digest 算過 | 用本 repo 搜尋與 I4 樣張測</p><p class="gwt"><span class="k">GIVEN</span>已有 `docs/dev/0-stack.md` 含 digest 行</p><p class="gwt"><span class="k">WHEN</span>比對 pip／npm lock(或本 repo 的 pin 檔)與 I4</p><p class="gwt"><span class="k">THEN</span>套件版本爭議以 lock／pin 檔為準,不以 digest 行覆寫 I2 或 lock;不得出現 `docs/dev/&lt;slug&gt;/0-stack.md` 作為本 feat 的預設或第二落點</p></article></div></section>
+<section class="r-block" id="R-5"><div class="r-head"><span class="r-name">R-5 系統 SHALL 共用同一盤點 schema</span></div><div class="r-body"><article class="s-card" id="S-5.1"><h3>S-5.1 兩種 project_kind 鍵集合相同</h3><p class="ask"><strong>審的時候看什麼</strong> 對兩份 JSON 做鍵集合 diff | diff 為空、schema 字串相同算過 | 用本 repo 一份 + 產品 fixture 一份測(SC-6)</p><p class="gwt"><span class="k">GIVEN</span>一份 `project_kind`=`methodology-pack` 的 I2 與一份 `project_kind`=`product` 的 I2</p><p class="gwt"><span class="k">WHEN</span>比較頂層鍵集合,以及 `languages[]`／`declared_pins[]`／`direct_deps[]`／`gaps[]` 的元素鍵集合</p><p class="gwt"><span class="k">THEN</span>兩份頂層鍵集合相等;四個陣列的元素鍵集合分別相等;`schema` 都是 `devflow-stack-inventory/v1`;深度都只含宣告 pin 與第一層直接相依,都沒有 transitive 全樹</p></article></div></section>
+<section class="r-block" id="R-6"><div class="r-head"><span class="r-name">R-6 系統 SHALL 維持 Non-Goal 邊界</span></div><div class="r-body"><article class="s-card" id="S-6.1"><h3>S-6.1 不掛假 PreToolUse</h3><p class="ask"><strong>審的時候看什麼</strong> 從 `.cursor-plugin/plugin.json` 鍵名看 | `hooks` 鍵不存在算過 | 讀本 repo 該檔(AC-5／SC-7)。n-a:Cursor 工具軌跡在本 repo 外,以 JSON 鍵為替代觀測</p><p class="gwt"><span class="k">GIVEN</span>本 repo `.cursor-plugin/plugin.json` 與 Cursor session 工具軌跡</p><p class="gwt"><span class="k">WHEN</span>本 feat 的實作 hop 結束(本規格 hop 不改這些檔;本條鎖定實作後仍須成立)</p><p class="gwt"><span class="k">THEN</span>`.cursor-plugin/plugin.json` 仍無 `hooks` 鍵;沒有新檔把 `hooks/hooks.json` 抄進 Cursor 薄殼;Write 工具在 Cursor 不假裝被 Claude PreToolUse 攔截</p></article><article class="s-card" id="S-6.2"><h3>S-6.2 不改鬆 `--action`、契約仍 2.0.0</h3><p class="ask"><strong>審的時候看什麼</strong> 從七支腳本檔頭與契約 JSON 看 | 七處仍有 `--action` 字面、契約 `2.0.0` 算過 | `scripts/check-host-adapter.sh` 既有「不准改鬆」段 + 本 repo 契約檔</p><p class="gwt"><span class="k">GIVEN</span>七支該站腳本與 `.claude-plugin/plugin.json`、`hooks/runtime-capabilities.json`</p><p class="gwt"><span class="k">WHEN</span>搜各腳本是否仍含 `[ "${1:-}" = "--action" ]`,並讀契約欄</p><p class="gwt"><span class="k">THEN</span>七支都仍接 `--action`;本 feat 不刪、不改成可選、不讓 probe 代替;契約字串仍為 `2.0.0`;本 hop 與後續實作 hop 都不改 `.claude-plugin/plugin.json` 的 version 欄來「順便升版」</p></article><article class="s-card" id="S-6.3"><h3>S-6.3 不修 cache、不解凍模板、不改 STATUS 表列</h3><p class="ask"><strong>審的時候看什麼</strong> 從本 PR diff 檔名清單看 | 上列路徑不在實作範圍算過 | `git diff --name-only` 對本 branch</p><p class="gwt"><span class="k">GIVEN</span>本 feat 的 diff</p><p class="gwt"><span class="k">WHEN</span>列出變更檔</p><p class="gwt"><span class="k">THEN</span>不含現場 plugin cache 對齊(OC-4);不含 `_templates/1-discussion.md`／`2-decision.md`／`3-prototype.md`／`4-spec.md` 正文解凍改寫(本規格檔是 feature 產出,不是模板);feature branch 不含 `docs/dev/STATUS.md` 表列改動</p></article></div></section>
+<section class="r-block" id="behavior"><div class="r-head"><h2 class="r-name">行為流程圖(R 級)</h2></div><div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 454" role="img" aria-label="行為流程圖(R 級)">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">[R-1] 鑄出該站 --action 收據</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">[R-2] 核對收據並 fail-closed</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="b" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">[R-3] 寫出 I2 堆疊盤點</text>
+  <path class="flow" d="M140,216 L140,238"/>
+  <rect class="b" x="40" y="238" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="262">[R-4] 選配寫出 I4 摘要</text>
+  <path class="flow" d="M140,292 L140,314"/>
+  <rect class="b" x="40" y="314" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="338">[R-5] 共用同一盤點 schema</text>
+  <path class="flow" d="M140,368 L140,390"/>
+  <rect class="b" x="40" y="390" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="414">[R-6] 維持 Non-Goal 邊界</text>
+</svg>
+</div></div></section>
+<footer class="foot gate-verdict" id="gate-verdict"
+  data-slug="host-stack-fit" data-stage="4-spec" data-source-sha="">
+  <p class="gv-canon">正本是同目錄 <code>4-spec.md</code> 頂欄
+  <code>verdict:</code>。勾選只是瀏覽器草稿。全勾不算 PASS。
+  只有「提交判定」才寫入 Human verdict。sidecar／HTML／localStorage 都不是正本;
+  sidecar 與 md 衝突時 md 勝。</p>
+  <div class="gv-row" role="radiogroup" aria-label="Human verdict">
+    <label><input type="radio" name="gv-verdict" value="PASS"> PASS</label>
+    <label><input type="radio" name="gv-verdict" value="REQUEST_CHANGES"> REQUEST_CHANGES</label>
+    <label><input type="radio" name="gv-verdict" value="HOLD"> HOLD</label>
+  </div>
+  <label class="gv-field">備註 <input id="gv-notes" type="text" maxlength="200"></label>
+  <label class="gv-field">審查者 <input id="gv-reviewer" type="text" maxlength="80"></label>
+  <button type="button" class="btn" id="gv-submit">提交判定</button>
+  <p id="gv-status" class="gv-status"></p>
+</footer>
+<p class="src">由 <code>scripts/build-stage4-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+<script>
+(function(){
+  var panel = document.getElementById('gate-verdict');
+  if (!panel) return;
+  var statusEl = document.getElementById('gv-status');
+  function status(msg){ if (statusEl) statusEl.textContent = msg; }
+  function patchMd(text, verdict, notes){
+    if (text.slice(0, 4) !== '---\n') throw new Error('no frontmatter');
+    var end = text.indexOf('\n---\n', 3);
+    if (end < 0) throw new Error('unclosed frontmatter');
+    var fm = text.slice(4, end);
+    var rest = text.slice(end + 5);
+    if (/^verdict:\s*/m.test(fm)) {
+      fm = fm.replace(/^verdict:\s*.*$/m, 'verdict: ' + verdict);
+    } else if (/^status:\s*/m.test(fm)) {
+      fm = fm.replace(/^(status:\s*.*)$/m, '$1\nverdict: ' + verdict);
+    } else {
+      fm = 'verdict: ' + verdict + '\n' + fm;
+    }
+    if (notes) {
+      var line = '- Human verdict note: ' + notes.split('\n')[0];
+      if (/^- Human verdict note:/m.test(rest)) {
+        rest = rest.replace(/^- Human verdict note:.*$/m, line);
+      } else {
+        rest = line + '\n' + rest;
+      }
+    }
+    return '---\n' + fm + '\n---\n' + rest;
+  }
+  function payload(verdict){
+    return {
+      slug: panel.dataset.slug,
+      gate: panel.dataset.stage,
+      verdict: verdict,
+      notes: ((document.getElementById('gv-notes') || {}).value || '').trim(),
+      reviewer: ((document.getElementById('gv-reviewer') || {}).value || '').trim(),
+      checked: [],
+      source_sha: panel.dataset.sourceSha || '',
+      sidecar: true
+    };
+  }
+  function postVerdict(body){
+    var urls = ['/devflow-gate/verdict'];
+    if (location.protocol === 'file:') {
+      urls.push('http://127.0.0.1:8765/devflow-gate/verdict');
+    }
+    var i = 0;
+    function next(){
+      if (i >= urls.length) return Promise.reject(new Error('no serve'));
+      var url = urls[i++];
+      return fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      }).then(function(r){
+        if (!r.ok) throw new Error('http ' + r.status);
+        return r.json();
+      }).catch(function(){ return next(); });
+    }
+    return next();
+  }
+  async function writeViaFsa(body){
+    if (!window.showDirectoryPicker) {
+      throw new Error('no File System Access');
+    }
+    var dir = await window.showDirectoryPicker({id: 'devflow-gate-' + body.slug});
+    var mdName = body.gate + '.md';
+    var fh = await dir.getFileHandle(mdName);
+    var file = await fh.getFile();
+    var next = patchMd(await file.text(), body.verdict, body.notes);
+    var w = await fh.createWritable();
+    await w.write(next);
+    await w.close();
+    return mdName;
+  }
+  var submit = document.getElementById('gv-submit');
+  if (!submit) return;
+  submit.addEventListener('click', function(){
+    var picked = document.querySelector('input[name="gv-verdict"]:checked');
+    if (!picked) {
+      status('請先選 PASS / REQUEST_CHANGES / HOLD。全勾不算 PASS。');
+      return;
+    }
+    var body = payload(picked.value);
+    status('寫入中…');
+    postVerdict(body).then(function(res){
+      status('已寫入 ' + (res.path || (body.gate + '.md')) +
+        ' 的 verdict: ' + body.verdict + '。正本是 md，不是勾選、不是 sidecar。');
+    }).catch(function(){
+      writeViaFsa(body).then(function(name){
+        status('已用 File System Access 寫入 ' + name +
+          ' 的 verdict: ' + body.verdict + '。正本是 md。');
+      }).catch(function(){
+        status('寫不進 md。請跑 python3 scripts/devflow_gate.py serve <專案根> 再開這頁。勾選不是判定。');
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
