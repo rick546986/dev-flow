@@ -5,14 +5,14 @@ status: draft
 owner: rick
 reviewers: []
 updated: 2026-09-09
-baseline: v3.22.1 / 7006b8a
+baseline: v3.22.1 / dc9f099
 contract: 2.0.0
 ---
 
 # 1. 討論 — 主機執法貼近與堆疊盤點
 
-> 基準:`main` tag `v3.22.1` tip `7006b8a`;本討論首稿已合入 `#148` @ `d020913`。契約維持 `2.0.0`。本檔是 Stage 1 討論,不做決定、不改 hooks/skills、不升 plugin。
-> 本場是 Cursor Cloud Agent 依 owner 書面 brief 落檔,不是現場一問一答;未核的敘述標 `[Assumption]`。2026-09-09 補寫 H1 遵從實驗與 I 軸 owner lean(lean ≠ Decision)。
+> 基準:`main` 發版線 `v3.22.1`;本回寫核對 tip `dc9f099`(#150 後)。首稿已合入 `#148` @ `d020913`。契約維持 `2.0.0`。本檔是 Stage 1 討論,不做決定、不改 hooks/skills、不升 plugin。
+> 本場是 Cursor Cloud Agent 依 owner 書面 brief 落檔,不是現場一問一答;未核的敘述標 `[Assumption]`。2026-09-09 補寫 H1 遵從實驗、I 軸 lean、Q12 cache 核對與 Q13 schema／深度 lean(lean ≠ Decision)。
 
 ## Problem
 誰:在 Cursor Agent / Grok Bot(以及讀同一棵 `skills/` 的其他非 Claude 主機)上跑 dev-flow 的開工 agent,與要審方法論母版／產品專案的 owner。
@@ -72,9 +72,11 @@ contract: 2.0.0
 - owner 書面 brief(本 session 2026-09-09):主機執法缺口 + 必須有語言／版本／每個套件版本的早期盤點;禁假 PreToolUse;禁第二套方法論;契約 2.0.0;本 PR 只討論。
 - 已核文件:上列 Context 出處(本 working tree 讀過)。
 - 已關 issue/PR:https://github.com/rick546986/dev-flow/issues/122 、https://github.com/rick546986/dev-flow/pull/128 、https://github.com/rick546986/dev-flow/issues/129 、https://github.com/rick546986/dev-flow/issues/78
-- `[Assumption]` Grok／box plugin cache 曾停在 3.6.1、對上 tip 3.22.1:brief 有寫,本環境未重現該對照。
+- 2026-09-09 核 cache 落後(Q12):GitHub tip `dc9f099`(合入 #150 後);發版線 v3.22.1。Grok Bot box `plugins/cache/dev-flow/...` 仍 **3.6.1**(本場讀到 hash `aaf68c12a6cec6dbf96ad256bb106dc43f47f3a3`)。Mac Cursor plugin cache 同 hash／**3.6.1**。Claude 快取最高 **3.22.0**;該側本機 checkout 約 `v3.22.0`。對齊 plugin cache **不是每條 feature** 必做;發版時、或行為看起來舊了再做。
+- owner lean 2026-09-09(Q13):方法論母版與產品專案 **同一 schema／同一深度**(內容各填;欄位形狀共用;深度 = 宣告 pin + 直接相依)。owner 說一致比較好。lean ≠ Decision。
 - `[Assumption]` Cursor／Grok 現場「常」跳過 `--action`:從「沒有 PreToolUse + 共同 runtime 是手動 `--action`」推出,無採用專案 log。
 - `[Assumption]` 「整條 1→7 走完才發現版本」是重複痛,不是單次:#122 是母版實例,產品專案頻率未量。
+- `#scan-people` 缺什麼只吃 Actors 欄;`parse_people` 不再附加 Evidence Assumption(https://github.com/rick546986/dev-flow/issues/151)。
 
 #### H1 遵從實驗（2026-09-09）
 
@@ -129,7 +131,7 @@ DA caveats(必須記錄 — 削弱「野外只靠軟提醒就夠」):
 | I3 | `STATUS.md` 一節 | Active 旁邊 | 人本來就看 STATUS | 母版 STATUS 禁 feature branch 手改;採用專案也不是每 feature 重寫 |
 | I4 | 新 `0-stack.md` 或 lockfile digest | `docs/dev/<slug>/` 或專案根機器可讀摘要 | 與討論檔分離;可對 lock 做 digest | 多一個產物;digest 不是 lock 正本 |
 
-owner lean 2026-09-09 → I2+I4; not I1/I3。I2 當底(專案級、跟 setup 走)、I4 選配(要機器可讀摘要時才加)。I1 要先解凍 Q11 且漏 fast lane,不取;I3 撞 STATUS 寫入窗,不取。本節不是 Decision。
+owner lean 2026-09-09 → I2+I4; not I1/I3。I2 當底(專案級、跟 setup 走)、I4 選配(要機器可讀摘要時才加)。I1 要先解凍 Q11 且漏 fast lane,不取;I3 撞 STATUS 寫入窗,不取。方法包 vs 產品專案:同一 schema／同一深度(內容各填;欄位形狀共用;深度 = 宣告 pin + 直接相依)。本節不是 Decision。
 
 組合包 lean(非定案):主機 **H1 fail-closed script receipt(C)** + 堆疊 **I2+I4**。
 
@@ -154,8 +156,8 @@ owner lean 2026-09-09 → I2+I4; not I1/I3。I2 當底(專案級、跟 setup 走
 - [~] Q9:主機牙要 fail-closed(沒跑 `--action` 就紅)還是 warning-only?→ 帶假設 lean **fail-closed**;牙形 = **script-minted receipt**(條件 C),不是手填 checklist(B 可偽造)。非定案。
 - [~] Q10:主機貼近與堆疊盤點要不要拆成兩個 slug?→ 帶假設 lean 維持**一個 slug** `host-stack-fit`(主機 H1 + 堆疊 I2/I4 同場);除非 owner 之後要拆。軟 lean。
 - [~] Q11:本 feature 是否解除「完整 full lane 觀測前不動 Stage 1–4 模板」?若否,I1 出局。→ 帶假設:本 lean 不需要 I1,凍結可先留;I1 延後。非定案。
-- [~] Q12:Grok／box cache 落後 tip 是否仍是現況?→ 帶假設:仍可能;本環境未重現 3.6.1 vs 3.22.1
-- [>] Q13:產品專案與方法論母版是否同一份 artifact、同一套深度?→ 仍 OPEN
+- [x] Q12:Grok／box cache 落後 tip 是否仍是現況?→ CONFIRMED 仍落後。2026-09-09:tip `dc9f099`(#150 後);發版線 v3.22.1;Grok Bot／Mac Cursor plugin cache 同 hash 仍 3.6.1;Claude 快取至 3.22.0、該側 checkout 約 v3.22.0。對齊 cache 不是每 feature;發版或行為舊了再做。
+- [~] Q13:產品專案與方法論母版是否同一份 artifact、同一套深度?→ 帶假設 lean **同一 schema／同一深度**(內容各填;欄位形狀共用;深度 = 宣告 pin + 直接相依)。owner:一致比較好。非定案。
 
 ## Constraints
 - 契約維持 2.0.0;本討論不 bump `.claude-plugin/plugin.json`。
@@ -249,9 +251,9 @@ now
   - 結論:OPEN 實驗 lean H1 + fail-closed script-minted receipt;軟提醒可見時有效,主牙仍要 C 形收據。非定案。
 - ⚠️ Q:盤點該住 Stage 1、setup、STATUS,還是新檔?深度先寫到哪?
   - 事實:docs/dev/STATUS.md:L49 skills/dev-talk/nodes/S1-survey.md:L21-L32
-  - 推理:owner 2026-09-09 收下 I2 為底、I4 選配。I1 要先解凍 Q11 且漏 fast,不取。I3 撞 STATUS 寫入窗,不取。深度 v1 = 宣告 pin + 本次碰到的直接相依,不是 lock 全樹。Q11 凍結可先留,I1 延後。Q10 軟 lean 單一 slug `host-stack-fit`(H1+I2/I4 同場)。組合包 lean:H1 fail-closed script receipt(C)+I2+I4。Stage 1 不准做 Decision。
-  - 結論:OPEN owner lean I2 base + I4 optional;深度先直接 pin。非定案。
+  - 推理:owner 2026-09-09 收下 I2 為底、I4 選配。I1 要先解凍 Q11 且漏 fast,不取。I3 撞 STATUS 寫入窗,不取。深度 v1 = 宣告 pin + 本次碰到的直接相依,不是 lock 全樹。Q13 lean:方法包與產品專案同一 schema／同一深度(內容各填;欄位形狀共用)。Q11 凍結可先留,I1 延後。Q10 軟 lean 單一 slug `host-stack-fit`(H1+I2/I4 同場)。組合包 lean:H1 fail-closed script receipt(C)+I2+I4。Stage 1 不准做 Decision。
+  - 結論:OPEN owner lean I2 base + I4 optional;同一 schema／同一深度(宣告 pin + 直接相依)。非定案。
 - ⚠️ Q:假 hook、第二方法論、拆 slug、cache 落後,哪些已死、哪些還能翻?
-  - 事實:docs/PLUGIN.md:L5 docs/PLUGIN.md:L59-L64 notes/design/stage1-context-chain.md:L21-L35
-  - 推理:假 PreToolUse 與第二方法論與 brief／`#host` 衝突,本討論標已拒。Q10 軟 lean 不拆 slug。cache 落後是 brief,本樹未重現。
-  - 結論:NEEDS_VERIFICATION Grok 3.6.1 vs 3.22.1 對照;拆 slug 除非 owner 之後要拆;已拒項不進方案表。
+  - 事實:docs/PLUGIN.md:L5 docs/PLUGIN.md:L59-L64 notes/design/stage1-context-chain.md:L21-L35 .claude-plugin/plugin.json:L3
+  - 推理:假 PreToolUse 與第二方法論與 brief／`#host` 衝突,本討論標已拒。Q10 軟 lean 不拆 slug。2026-09-09 核對:GitHub tip `dc9f099`(#150 後);發版線 v3.22.1。Grok Bot box `plugins/cache/dev-flow/...` 仍 3.6.1(hash `aaf68c12a6cec6dbf96ad256bb106dc43f47f3a3`)。Mac Cursor plugin cache 同 hash／3.6.1。Claude 快取最高 3.22.0;該側本機 checkout 約 v3.22.0。對齊 plugin cache 不是每條 feature;發版時或行為看起來舊了再做。
+  - 結論:CONFIRMED cache 仍落後 tip;拆 slug 除非 owner 之後要拆;已拒項不進方案表。

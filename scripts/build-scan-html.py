@@ -45,7 +45,7 @@ FRAME_PITCH = 104
 CAPTION_EXTRA = 100
 VB_W = 200
 RECT_X, RECT_W, RECT_H = 20, 160, 88
-# 字 11px 正本:skills/dev-talk/html-shell.html:56(svg text)。改字級或框寬必須同時改此常數。
+# 字 11px 正本:skills/dev-talk/html-shell.html(svg text)。改字級或框寬必須同時改此常數。
 NOW_LINE_MAX = 13
 TEXT_X = 100
 FIELD_ZH = ("誰", "做什麼", "工具", "痛點")
@@ -139,14 +139,6 @@ def cell(row, idx):
     return row[idx].strip()
 
 
-def first_assumption(*blobs):
-    for blob in blobs:
-        match = re.search(r"\[Assumption\][^\n|]*", blob or "")
-        if match:
-            return match.group(0).strip()
-    return ""
-
-
 def split_problem(body):
     text = inner_plain(body)
     text = re.sub(r"^#+\s+.*$", "", text, flags=re.M).strip()
@@ -196,25 +188,17 @@ def parse_people(md):
     who_i = col_index(header, "Actor", "誰")
     want_i = col_index(header, "真實目標", "要什麼")
     miss_i = col_index(header, "缺少資訊", "缺什麼")
-    work, work_body = optional_section(
-        md, lambda t: "Workarounds" in t or "土法" in t
-    )
-    evidence, ev_body = optional_section(md, lambda t: "Evidence" in t or "證據" in t)
-    assume = first_assumption(body, work_body, ev_body)
+    # 缺什麼只吃 Actors「缺少資訊」欄。不准把 Workarounds／Evidence 的
+    # Assumption 長句拼進每一列(#151)。[Assumption] 要看得見 → 寫在該列儲存格。
     people = []
     for row in rows:
         who = cell(row, who_i if who_i >= 0 else 0)
         want = cell(row, want_i if want_i >= 0 else 1)
         miss = cell(row, miss_i if miss_i >= 0 else 4)
-        if assume and "[Assumption]" not in miss:
-            miss = (miss + " " + assume).strip() if miss else assume
         if who:
             people.append((who, want, miss))
     if not people:
         raise ValueError("Actors 沒有可列的人")
-    if assume and not any("[Assumption]" in row[2] for row in people):
-        who, want, miss = people[0]
-        people[0] = (who, want, (miss + " " + assume).strip())
     return people
 
 

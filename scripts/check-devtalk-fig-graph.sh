@@ -25,7 +25,8 @@
 #   scripts/fixtures/devtalk-html-scan/good/1-discussion.html
 #   必須有:摘要卡(.sum)、直式 svg 或 pre、人表、題表、驗收表、details 問答(預設摺著)
 #   現況圖必須有限寬且欄內置中(width:220px + .figwrap justify-content:center)
-#   題表必須有長題目列;#scan-qs 末欄(著落)與 #scan-ac 短欄必須 white-space:nowrap
+#   題表必須有長題目列;#scan-qs 末欄(著落徽章)必須 white-space:nowrap;
+#   #scan-ac／#scan-log 長文欄禁止 nowrap;td 必須 overflow-wrap:anywhere(#151)
 #
 # 掃頁產生器(同檔第三節):
 #   scripts/build-scan-html.py --action 從同目錄 1-discussion.md 產出六件套。
@@ -46,7 +47,8 @@
 #   parse_log 邊界(check_log_edges: |／續行／剝標點／零 citation／重複／>8／註解／詞界);
 #   mutation 複本可沒有 bad 目錄;
 #   框高改 28／每框少一行／痛空／堆疊拆很多小格 → 必須紅;
-#   殼或樣張拿掉 #scan-qs 末欄 nowrap → 必須紅;生成頁拿掉 nowrap → 必須紅。
+#   殼或樣張拿掉 #scan-qs 末欄 nowrap → 必須紅;生成頁拿掉 nowrap → 必須紅;
+#   殼對 #scan-ac 長欄加回 nowrap → 必須紅;Evidence Assumption 拼進缺什麼 → 必須紅。
 #
 # 用法:
 #   scripts/check-devtalk-fig-graph.sh [root]
@@ -372,28 +374,35 @@ def selector_nowrap_missing(compact, needles):
 
 
 def scan_short_col_nowrap_gaps(text, label):
-    """#scan-qs 末欄(著落)與 #scan-ac 短欄(從哪看／看到什麼)必須 nowrap。
-    表 width:100% 時中文會逐字斷,短欄被擠成一字一行。"""
+    """#scan-qs 末欄(著落徽章)必須 nowrap;長文欄禁止 nowrap(#151)。"""
     style = first_block(text, r"<style\b[^>]*>.*?</style>")
     compact = re.sub(r"\s+", "", style)
     gaps = []
     qs_needles = ("#scan-qsth:last-child", "#scan-qstd:last-child")
-    ac_needles = (
-        "#scan-acth:nth-child(2)",
-        "#scan-actd:nth-child(2)",
-        "#scan-acth:last-child",
-        "#scan-actd:last-child",
-    )
     if selector_nowrap_missing(compact, qs_needles):
         gaps.append("%s #scan-qs 末欄缺 white-space:nowrap" % label)
-    ac_n2 = any(
-        "white-space:nowrap" in body
-        and "#scan-ac" in sel
-        and "nth-child(n+2)" in sel
+    ac_nowrap = any(
+        "white-space:nowrap" in body and "#scan-ac" in sel
         for sel, body in css_rules(compact)
     )
-    if selector_nowrap_missing(compact, ac_needles) and not ac_n2:
-        gaps.append("%s #scan-ac 短欄(從哪看／看到什麼)缺 white-space:nowrap" % label)
+    if ac_nowrap:
+        gaps.append("%s #scan-ac 長欄禁 white-space:nowrap" % label)
+    log_nowrap = any(
+        "white-space:nowrap" in body and "#scan-log" in sel
+        for sel, body in css_rules(compact)
+    )
+    if log_nowrap:
+        gaps.append("%s #scan-log 長欄禁 white-space:nowrap" % label)
+    if "overflow-wrap:anywhere" not in compact:
+        gaps.append("%s td 缺 overflow-wrap:anywhere" % label)
+    if "vertical-align:top" not in compact:
+        gaps.append("%s td 缺 vertical-align:top" % label)
+    if "@media(max-width:720px)" not in compact:
+        gaps.append("%s 缺窄屏 720px #scan-ac 一列一卡" % label)
+    elif "#scan-ac" not in compact or "content:" not in compact:
+        gaps.append("%s 窄屏 #scan-ac 缺 ::before 欄名" % label)
+    if "@media(max-width:900px)" not in compact:
+        gaps.append("%s 缺窄屏 900px #scan-log 一題一卡" % label)
     return gaps
 
 
@@ -724,7 +733,7 @@ def check_fixture():
     print("[scan] fixture 六件齊,問答摺著")
     print("[scan] fixture 現況圖有限寬且欄內置中")
     print("[scan] fixture 現況圖三框手樣形狀")
-    print("[scan] fixture 長題目列 + 著落／驗收短欄 nowrap")
+    print("[scan] fixture 長題目列 + 著落徽章 nowrap／長文欄可換行")
 
 
 def generate_scan(md_path, out_path):
@@ -765,7 +774,7 @@ def check_generated():
         except OSError:
             pass
     print("[scan] 從 md 生成的掃頁六件齊,現況圖有限寬且欄內置中")
-    print("[scan] 生成頁長題目列 + 著落／驗收短欄 nowrap")
+    print("[scan] 生成頁長題目列 + 著落徽章 nowrap／長文欄可換行")
 
 
 TOOTH_CASES = (
@@ -966,6 +975,43 @@ def check_log_edges():
     print("[scan] parse_log 邊界:|／續行／剝標點／零 citation／重複／>8／註解／詞界皆過")
 
 
+def check_people_evidence_isolation():
+    """#151:Evidence Assumption 長句不得拼進 #scan-people 缺什麼。"""
+    if not os.path.isfile(FIXTURE_MD):
+        raise NotParsed("缺掃頁樣張 md")
+    marker = "EVIDENCE_BLEED_MARKER_XYZ"
+    md = open(FIXTURE_MD, encoding="utf-8").read()
+    if "## Open Questions" not in md:
+        raise NotParsed("樣張 md 缺 Open Questions,無法插入 Evidence")
+    poisoned = md.replace(
+        "## Open Questions",
+        "### Evidence\n- `[Assumption]` %s 很長的證據假設句\n\n## Open Questions"
+        % marker,
+        1,
+    )
+    fd_md, md_path = tempfile.mkstemp(suffix=".md", prefix="scan-people-bleed-")
+    os.close(fd_md)
+    fd_html, html_path = tempfile.mkstemp(suffix=".html", prefix="scan-people-bleed-")
+    os.close(fd_html)
+    try:
+        open(md_path, "w", encoding="utf-8").write(poisoned)
+        text = generate_scan(md_path, html_path)
+        people = first_block(text, r'<table[^>]*id="scan-people"[^>]*>.*?</table>')
+        if not people:
+            raise Mismatch("人表隔離檢查抽不到 #scan-people")
+        if marker in people:
+            raise Mismatch("Evidence Assumption 被拼進 #scan-people 缺什麼")
+        if marker not in poisoned:
+            raise Mismatch("隔離檢查沒寫進 Evidence marker")
+    finally:
+        for path in (md_path, html_path):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+    print("[scan] Evidence Assumption 不進 #scan-people 缺什麼")
+
+
 def check_now_line_edges():
     """現況圖行長:NOW_LINE_MAX、真守衛 13／14、多欄 list-all、labeled-stack 綠。"""
     mod = load_scan_mod()
@@ -1072,10 +1118,11 @@ def check_live():
     nowrap_gaps = scan_short_col_nowrap_gaps(shell_text, "html-shell")
     if nowrap_gaps:
         raise Mismatch("掃頁母版短欄未 nowrap:" + "、".join(nowrap_gaps))
-    print("[scan] html-shell #scan-qs 末欄與 #scan-ac 短欄 nowrap")
+    print("[scan] html-shell #scan-qs 著落徽章 nowrap、長文欄可換行")
     check_generated()
     check_log_teeth()
     check_log_edges()
+    check_people_evidence_isolation()
     check_now_line_edges()
 
 
@@ -1234,6 +1281,29 @@ def run_mutations():
                     "殼拿掉 nowrap 必須 exit 1,實際 rc=%s\n%s" % (rc, blob[-1200:])
                 )
 
+    with tempfile.TemporaryDirectory(prefix="devtalk-fig-ac-nowrap-") as tmp:
+        copy_tree(tmp)
+        spath = os.path.join(tmp, "skills", "dev-talk", "html-shell.html")
+        text = open(spath, encoding="utf-8").read()
+        if "#scan-log td{" not in text:
+            failures.append("破壞實驗殼找不到 #scan-log td")
+        else:
+            open(spath, "w", encoding="utf-8").write(
+                text.replace(
+                    "#scan-log td{",
+                    "#scan-ac td{white-space:nowrap}\n  #scan-log td{",
+                    1,
+                )
+            )
+            rc, blob = child_rc(tmp)
+            if rc == 1:
+                print("[mut] ✓ 殼對 #scan-ac 加回 nowrap 必須紅")
+            else:
+                failures.append(
+                    "殼對 #scan-ac 加回 nowrap 必須 exit 1,實際 rc=%s\n%s"
+                    % (rc, blob[-1200:])
+                )
+
     with tempfile.TemporaryDirectory(prefix="devtalk-fig-nowrap-fix-") as tmp:
         copy_tree(tmp)
         fpath = os.path.join(
@@ -1361,6 +1431,6 @@ if not skip_mutation:
         print("❌ FAIL:%s" % exc, file=sys.stderr)
         sys.exit(1)
 
-print("✅ PASS:方法流程圖 hop 對帳 + 掃頁樣張六件 + 生成頁六件／置中 + 短欄 nowrap + 破壞實驗全過")
+print("✅ PASS:方法流程圖 hop 對帳 + 掃頁樣張六件 + 生成頁六件／置中 + 著落徽章 nowrap／長文可換行 + 破壞實驗全過")
 sys.exit(0)
 PY
