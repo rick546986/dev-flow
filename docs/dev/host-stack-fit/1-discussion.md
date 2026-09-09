@@ -67,7 +67,6 @@ contract: 2.0.0
 - 方法包自檢 `--probe`(無專案根)與採用專案探測(帶樹)混用 → 曾出現空樹假綠(#78,已關)。
 - agent 可以整段跳過 probe／`--action`,沒有主機層攔截。
 - 本 feature 若要改 Stage 1 模板,撞上 STATUS「觀測前不動 Stage 1–4 模板」凍結。
-- `[Assumption]` 「整條 1→7 走完才發現版本」是重複痛,不是單次:#122 是母版實例,產品專案頻率未量。
 
 ### Evidence
 - owner 書面 brief(本 session 2026-09-09):主機執法缺口 + 必須有語言／版本／每個套件版本的早期盤點;禁假 PreToolUse;禁第二套方法論;契約 2.0.0;本 PR 只討論。
@@ -75,7 +74,9 @@ contract: 2.0.0
 - 已關 issue/PR:https://github.com/rick546986/dev-flow/issues/122 、https://github.com/rick546986/dev-flow/pull/128 、https://github.com/rick546986/dev-flow/issues/129 、https://github.com/rick546986/dev-flow/issues/78
 - 2026-09-09 核 cache 落後(Q12):GitHub tip `dc9f099`(合入 #150 後);發版線 v3.22.1。Grok Bot box `plugins/cache/dev-flow/...` 仍 **3.6.1**(本場讀到 hash `aaf68c12a6cec6dbf96ad256bb106dc43f47f3a3`)。Mac Cursor plugin cache 同 hash／**3.6.1**。Claude 快取最高 **3.22.0**;該側本機 checkout 約 `v3.22.0`。對齊 plugin cache **不是每條 feature** 必做;發版時、或行為看起來舊了再做。
 - owner lean 2026-09-09(Q13):方法論母版與產品專案 **同一 schema／同一深度**(內容各填;欄位形狀共用;深度 = 宣告 pin + 直接相依)。owner 說一致比較好。lean ≠ Decision。
-- 掃頁 `#scan-people` 若把 Evidence 長句拼進「缺什麼」,是產生器 `parse_people` 會附加第一條 Assumption 句(https://github.com/rick546986/dev-flow/issues/151)。本 hop 不改 `html-shell`／`build-scan-html`;未核項改放 Current Journey／Exceptions,讓重生 sweep 乾淨。
+- `[Assumption]` Cursor／Grok 現場「常」跳過 `--action`:從「沒有 PreToolUse + 共同 runtime 是手動 `--action`」推出,無採用專案 log。
+- `[Assumption]` 「整條 1→7 走完才發現版本」是重複痛,不是單次:#122 是母版實例,產品專案頻率未量。
+- `#scan-people` 缺什麼只吃 Actors 欄;`parse_people` 不再附加 Evidence Assumption(https://github.com/rick546986/dev-flow/issues/151)。
 
 #### H1 遵從實驗（2026-09-09）
 

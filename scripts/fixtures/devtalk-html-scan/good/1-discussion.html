@@ -24,13 +24,41 @@
   table{border-collapse:collapse;width:100%;margin:1em 0}
   th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
   th{background:var(--card)}
-  /* 掃頁短欄:表撐滿後中文會逐字斷。著落／從哪看／看到什麼必須橫排。 */
+  table td{vertical-align:top;word-break:normal;overflow-wrap:anywhere;line-height:1.55}
+  /* 掃頁短欄:只有著落徽章橫排。長文欄必須可換行(#151)。 */
   #scan-qs th:last-child,
   #scan-qs td:last-child{white-space:nowrap;word-break:keep-all}
-  #scan-ac th:nth-child(2),
-  #scan-ac td:nth-child(2),
-  #scan-ac th:last-child,
-  #scan-ac td:last-child{white-space:nowrap;word-break:keep-all}
+  #scan-log td{white-space:normal;word-break:normal;overflow-wrap:anywhere}
+  @media (max-width:720px){
+    #scan-ac thead{display:none}
+    #scan-ac,#scan-ac tbody{display:block;width:100%}
+    #scan-ac tr{display:block;margin:0 0 .75em;border:1px solid var(--line);
+                border-radius:8px;background:var(--card);overflow:hidden}
+    #scan-ac td{display:block;border:0;border-top:1px solid var(--line);
+                white-space:normal;word-break:normal;overflow-wrap:anywhere}
+    #scan-ac td:first-child{border-top:0}
+    #scan-ac td::before{display:block;color:var(--muted);font-size:.75rem;
+                        font-weight:600;margin:0 0 .25em}
+    #scan-ac td:nth-child(1)::before{content:"假設…當…則…"}
+    #scan-ac td:nth-child(2)::before{content:"從哪看"}
+    #scan-ac td:nth-child(3)::before{content:"看到什麼"}
+  }
+  @media (max-width:900px){
+    #scan-log .tablewrap{overflow:visible}
+    #scan-log table,#scan-log tbody{display:block;width:100%}
+    #scan-log thead{display:none}
+    #scan-log tr{display:block;margin:0 0 .75em;border:1px solid var(--line);
+                 border-radius:8px;background:var(--card);overflow:hidden}
+    #scan-log td{display:block;border:0;border-top:1px solid var(--line);
+                 white-space:normal;word-break:normal;overflow-wrap:anywhere}
+    #scan-log td:first-child{border-top:0}
+    #scan-log td::before{display:block;color:var(--muted);font-size:.75rem;
+                         font-weight:600;margin:0 0 .25em}
+    #scan-log td:nth-child(1)::before{content:"Q"}
+    #scan-log td:nth-child(2)::before{content:"事實"}
+    #scan-log td:nth-child(3)::before{content:"推理"}
+    #scan-log td:nth-child(4)::before{content:"結論"}
+  }
   code,pre{background:var(--card);border-radius:4px;
            font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
   pre{padding:12px;overflow-x:auto}
