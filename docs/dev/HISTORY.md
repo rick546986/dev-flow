@@ -468,3 +468,8 @@
 - 落在哪:notes/design/stage1-context-chain.md scripts/build-scan-html.py scripts/fixtures/devtalk-html-scan scripts/check-devtalk-fig-graph.sh skills/dev-talk/nodes notes/reviews
 - 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.22.0
 
+## 2026-09-09 · release-3-22-1 · v3.22.1
+- 做了什麼:現況圖超長 fail-loud；Stage3 零命中最小清單可過 G2
+- 為什麼:#138/#144 已合 main 但 plugin 字串仍停在 3.22.0，他機 update 拉不到
+- 落在哪:build-scan-html.py／Stage3 N-skip／brief；本 release 只升版號
+
