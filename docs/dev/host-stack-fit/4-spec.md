@@ -1,10 +1,10 @@
 ---
 feature: host-stack-fit
 stage: 4-spec
-status: draft
-verdict:
+status: approved
+verdict: PASS
 owner: rick
-reviewers: []
+reviewers: [user]
 updated: 2026-09-10
 baseline: v3.22.1 / ff6049a
 contract: 2.0.0
@@ -17,7 +17,7 @@ issue: 149
 > Decision 正本:`docs/dev/host-stack-fit/2-decision.md`(H1+C、I2 底 + I4 選配、OC-1～OC-4 ✅)。本檔把 Stage 2 留下的形狀釘成可測 R/S,不翻案。
 > 追蹤:[#149](https://github.com/rick546986/dev-flow/issues/149)。
 >
-> **HISTORY(2026-09-10)**:多代理人審查收斂三處,owner 核准,不翻 H1+C／I2+I4 Decision。① DD-1 stamp 輸入綁專案 `root`;核對必須 `receipt.slug`==路徑 slug==`--action` slug、`receipt.station`／`script` 對上呼叫腳本、`receipt.root`==核對時專案根。② DD-2 只認可選布林 `verify_receipt:true`(true=只核對不鑄;缺欄=舊 graph);不認 `action:"verify_receipt"` 當第二把鑰匙。③ DD-3 深度 = 專案級宣告 pin + pin／requirements 第一層 `direct_deps`(不是 per-slug「這次 feat 碰到的檔」;不是 lock 全樹)。`verdict:` 仍空,留給人類 G2。
+> **HISTORY(2026-09-10)**:多代理人審查收斂三處,owner 核准,不翻 H1+C／I2+I4 Decision。① DD-1 stamp 輸入綁專案 `root`;核對必須 `receipt.slug`==路徑 slug==`--action` slug、`receipt.station`／`script` 對上呼叫腳本、`receipt.root`==核對時專案根。② DD-2 只認可選布林 `verify_receipt:true`(true=只核對不鑄;缺欄=舊 graph);不認 `action:"verify_receipt"` 當第二把鑰匙。③ DD-3 深度 = 專案級宣告 pin + pin／requirements 第一層 `direct_deps`(不是 per-slug「這次 feat 碰到的檔」;不是 lock 全樹)。同日 owner 簽 G2 PASS;`verdict: PASS`、`status: approved`、DD-1～DD-5 ✅。
 
 ## Stage 3 跳過(owner 明示)
 
@@ -511,18 +511,18 @@ Human verdict: N/A
 | I4 digest 被當成 lock 正本 | 雙源漂 | 實作把 digest 寫回 pin | Required:S-4.3 | — |
 | Cursor Write 無 hook 仍寫入 | 人跳過核對仍能改檔 | 編輯器寫入成功 | 明示 Known limit ①;用 S-2.6 核對指令替代 | 不在編輯器層擋(禁假 hook) |
 
-## Drafting Decisions(草擬自判,待人審)
+## Drafting Decisions(草擬自判,已核)
 
-形狀已寫進 R/S,本表只記 Stage 2 沒釘死、由本檔綁定的選擇。不翻 Decision。2026-09-10 多代理人審查收斂 DD-1／DD-2／DD-3 三處(見頂註 HISTORY),owner 核准。狀態留給 G2 人審,不代填 PASS。
+形狀已寫進 R/S,本表只記 Stage 2 沒釘死、由本檔綁定的選擇。不翻 Decision。2026-09-10 多代理人審查收斂 DD-1／DD-2／DD-3 三處(見頂註 HISTORY),owner 核准。G2 PASS by owner on 2026-09-10 (UTC+8);DD-1～DD-5 ✅。
 
 ### 逐條裁決(上層)
 | DD | 決定了什麼 | 為什麼 | 依據(`檔:行` 或 `[Assumption]`) | 若被推翻會怎樣 | 狀態(待人審→✅/✗) |
 |---|---|---|---|---|---|
-| DD-1 | KEEP 路徑 = `.devflow/host-receipt/<slug>/<station>.json`、schema = `devflow-host-receipt/v1`、七站 `--action` allow 才鑄。TIGHTEN:stamp 輸入必須含專案 `root`;核對必須 `receipt.slug`==路徑 slug==`--action` slug、`receipt.station`／`script` 對上呼叫腳本、`receipt.root`==核對時專案根。仍非密碼學防偽;不新開 `check-host-receipt.sh` | Decision 只鎖腳本鑄、可核對、不可手填;路徑與 schema 沿用。多代理人審查要求 stamp／核對綁 `root` 與三方 slug,避免收據搬家仍綠 | `2-decision.md` Risks「欄位／檔名進 4-spec」;`.gitignore` 已忽略 `.devflow/`;owner 2026-09-10 核准包 | 改路徑則 S-1.1／SC-1 觀測點全改;拿掉 root 綁定則 S-1.2／S-2.4 紅案消失 | 待人審 |
-| DD-2 | 核對開關**只有**可選欄 `verify_receipt:true`(布林)。true = 只核對不鑄;缺欄 = 舊 graph。不接受 `action:"verify_receipt"` 當第二把鑰匙。不新開腳本 | OC-1 禁止第二套檢查家族。雙鍵會 fail-open(有人只寫 `action` 字串就當核對)。多代理人審查收斂為布林唯一 | `2-decision.md` OC-1;owner 2026-09-10 核准包 | 若改獨立 `check-*.sh` 要重審 G4／第二方法論;若再加第二把鑰匙,S-2.7 要重寫 | 待人審 |
-| DD-3 | I2 路徑 = `docs/dev/0-inventory.json`;schema = `devflow-stack-inventory/v1`;深度 = **專案級**宣告 pin + 來自 pin／requirements 的第一層 `direct_deps`。不是 per-slug「這次 feat 碰到的檔」;不是 lock 全樹／transitive | 要進 Git、fast 也看得到、與選配 I4 `0-stack.md` 分開。Decision D1 鎖「宣告 pin + 直接相依、不做全樹」;「本次碰到」若讀成 feature-scoped 會漂,本檔把深度釘在專案第一層 | `2-decision.md` I2 專案級、D1;OC-2 只鎖 I4 檔名;owner 2026-09-10 核准包 | 改檔名則 SC-4／SC-5 觀測點改;改成 per-slug 或 lock 全樹則 S-3.1／S-3.2／S-5.1 與 D2 邊界翻 | 待人審 |
-| DD-4 | Stage 3 由 owner 2026-09-09 跳過,記在本檔;不回改正本 Decision 組合包 | 使用者本 hop 明示;Decision 組合包(H1+C／I2+I4)不因此翻案 | 本 hop owner 指示;2-decision 下層「不預先跳過」是 Stage 2 當時句 | 若改要補 3-prototype,本節對帳改寫 | 待人審 |
-| DD-5 | Feature Risk = high;本檔 `verdict:` 留空,不代填 G2 PASS | `--action` 契約副作用 + fail-closed + filesystem;G2 是人審 | `_templates/4-spec.md` Risk 判準;本 hop「Leave G2 empty」 | 改 normal 則 Failure Model 可改選配 | 待人審 |
+| DD-1 | KEEP 路徑 = `.devflow/host-receipt/<slug>/<station>.json`、schema = `devflow-host-receipt/v1`、七站 `--action` allow 才鑄。TIGHTEN:stamp 輸入必須含專案 `root`;核對必須 `receipt.slug`==路徑 slug==`--action` slug、`receipt.station`／`script` 對上呼叫腳本、`receipt.root`==核對時專案根。仍非密碼學防偽;不新開 `check-host-receipt.sh` | Decision 只鎖腳本鑄、可核對、不可手填;路徑與 schema 沿用。多代理人審查要求 stamp／核對綁 `root` 與三方 slug,避免收據搬家仍綠 | `2-decision.md` Risks「欄位／檔名進 4-spec」;`.gitignore` 已忽略 `.devflow/`;owner 2026-09-10 核准包 | 改路徑則 S-1.1／SC-1 觀測點全改;拿掉 root 綁定則 S-1.2／S-2.4 紅案消失 | ✅ |
+| DD-2 | 核對開關**只有**可選欄 `verify_receipt:true`(布林)。true = 只核對不鑄;缺欄 = 舊 graph。不接受 `action:"verify_receipt"` 當第二把鑰匙。不新開腳本 | OC-1 禁止第二套檢查家族。雙鍵會 fail-open(有人只寫 `action` 字串就當核對)。多代理人審查收斂為布林唯一 | `2-decision.md` OC-1;owner 2026-09-10 核准包 | 若改獨立 `check-*.sh` 要重審 G4／第二方法論;若再加第二把鑰匙,S-2.7 要重寫 | ✅ |
+| DD-3 | I2 路徑 = `docs/dev/0-inventory.json`;schema = `devflow-stack-inventory/v1`;深度 = **專案級**宣告 pin + 來自 pin／requirements 的第一層 `direct_deps`。不是 per-slug「這次 feat 碰到的檔」;不是 lock 全樹／transitive | 要進 Git、fast 也看得到、與選配 I4 `0-stack.md` 分開。Decision D1 鎖「宣告 pin + 直接相依、不做全樹」;「本次碰到」若讀成 feature-scoped 會漂,本檔把深度釘在專案第一層 | `2-decision.md` I2 專案級、D1;OC-2 只鎖 I4 檔名;owner 2026-09-10 核准包 | 改檔名則 SC-4／SC-5 觀測點改;改成 per-slug 或 lock 全樹則 S-3.1／S-3.2／S-5.1 與 D2 邊界翻 | ✅ |
+| DD-4 | Stage 3 由 owner 2026-09-09 跳過,記在本檔;不回改正本 Decision 組合包 | 使用者本 hop 明示;Decision 組合包(H1+C／I2+I4)不因此翻案 | 本 hop owner 指示;2-decision 下層「不預先跳過」是 Stage 2 當時句 | 若改要補 3-prototype,本節對帳改寫 | ✅ |
+| DD-5 | Feature Risk = high;`verdict: PASS` 由 owner G2 填入,非 agent 代填 | `--action` 契約副作用 + fail-closed + filesystem;G2 是人審 | `_templates/4-spec.md` Risk 判準;owner G2 PASS 2026-09-10 (UTC+8) | 改 normal 則 Failure Model 可改選配 | ✅ |
 
 ### 內部技術選擇(下層,告知即可)
 - station 檔名:`talk.json`／`stage2.json`…`stage7.json`,對應七支既有 graph 腳本。
@@ -559,6 +559,7 @@ Human verdict: N/A
 - 3a 四節 | 2026-09-09 | AC／Out of Scope／Diff Budget／Dependencies 齊
 - 3b Profile | 2026-09-09 | lane full、Risk high、Failure Model、Reliability triage、Design Boundary applicable
 - 3c Stage 3 | 2026-09-09 | N/A + owner 跳過(Decision 已夠清楚,不需原型)
-- DD 掃描 | 2026-09-09 | 上層五條皆待人審;形狀綁在 R/S
-- G2 verdict | 2026-09-09 | 留空,留給人類,不代填 PASS
-- 多代理人收斂 | 2026-09-10 | owner 核准三處,不翻 H1+C／I2+I4 Decision:DD-1 stamp 綁 `root` + 核對三方 slug／station+script／root;DD-2 只認布林 `verify_receipt:true`;DD-3 深度 = 專案級 pin + 第一層 `direct_deps`。`verdict:` 仍空
+- DD 掃描 | 2026-09-09 | 上層五條當時待人審;形狀綁在 R/S
+- G2 verdict | 2026-09-09 | 當時留空,留給人類,不代填 PASS
+- 多代理人收斂 | 2026-09-10 | owner 核准三處,不翻 H1+C／I2+I4 Decision:DD-1 stamp 綁 `root` + 核對三方 slug／station+script／root;DD-2 只認布林 `verify_receipt:true`;DD-3 深度 = 專案級 pin + 第一層 `direct_deps`
+- G2 PASS | 2026-09-10 | G2 PASS by owner on 2026-09-10 (UTC+8). DD-1～DD-5 ✅。owner 自審(有記錄);reviewers: [user]
