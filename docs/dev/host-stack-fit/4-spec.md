@@ -5,7 +5,7 @@ status: draft
 verdict:
 owner: rick
 reviewers: []
-updated: 2026-09-09
+updated: 2026-09-10
 baseline: v3.22.1 / ff6049a
 contract: 2.0.0
 issue: 149
@@ -16,6 +16,8 @@ issue: 149
 > 基準:`main` tip `ff6049a`(#156 G1 PASS)。契約維持 `2.0.0`。本 hop **只寫規格**,不改 hooks／skills、不 bump plugin、不改 `STATUS.md` 表列。
 > Decision 正本:`docs/dev/host-stack-fit/2-decision.md`(H1+C、I2 底 + I4 選配、OC-1～OC-4 ✅)。本檔把 Stage 2 留下的形狀釘成可測 R/S,不翻案。
 > 追蹤:[#149](https://github.com/rick546986/dev-flow/issues/149)。
+>
+> **HISTORY(2026-09-10)**:多代理人審查收斂三處,owner 核准,不翻 H1+C／I2+I4 Decision。① DD-1 stamp 輸入綁專案 `root`;核對必須 `receipt.slug`==路徑 slug==`--action` slug、`receipt.station`／`script` 對上呼叫腳本、`receipt.root`==核對時專案根。② DD-2 只認可選布林 `verify_receipt:true`(true=只核對不鑄;缺欄=舊 graph);不認 `action:"verify_receipt"` 當第二把鑰匙。③ DD-3 深度 = 專案級宣告 pin + pin／requirements 第一層 `direct_deps`(不是 per-slug「這次 feat 碰到的檔」;不是 lock 全樹)。`verdict:` 仍空,留給人類 G2。
 
 ## Stage 3 跳過(owner 明示)
 
@@ -62,7 +64,7 @@ Human verdict: N/A
 #### S-1.2 收據必填欄與 stamp
 - GIVEN S-1.1 鑄出的檔
 - WHEN 讀該 JSON
-- THEN 恰好含這些鍵且型別如下:`schema`(字串 `devflow-host-receipt/v1`)、`station`(字串,值為 `talk` 或 `stage2`…`stage7`)、`slug`(字串)、`node`(字串,缺游標則 `""`)、`script`(字串,相對 repo 根,例如 `scripts/check-devstage4-graph.sh`)、`argv`(陣列,第一個元素為 `--action`)、`action_result`(字串 `allow`)、`minted_at`(UTC ISO-8601,含 `T` 與 `Z`)、`root`(專案根絕對路徑)、`payload_sha256`(64 個小寫 hex)、`DONE`(JSON 布林 `true`,不是字串)、`stamp`(64 個小寫 hex)。`stamp` = SHA-256(UTF-8,無多餘空白)的 `devflow-host-receipt/v1|{station}|{slug}|{node}|{script}|{action_result}|{minted_at}|{payload_sha256}|true`
+- THEN 恰好含這些鍵且型別如下:`schema`(字串 `devflow-host-receipt/v1`)、`station`(字串,值為 `talk` 或 `stage2`…`stage7`)、`slug`(字串)、`node`(字串,缺游標則 `""`)、`script`(字串,相對 repo 根,例如 `scripts/check-devstage4-graph.sh`)、`argv`(陣列,第一個元素為 `--action`)、`action_result`(字串 `allow`)、`minted_at`(UTC ISO-8601,含 `T` 與 `Z`)、`root`(本次鑄檔所用專案根的絕對路徑)、`payload_sha256`(64 個小寫 hex)、`DONE`(JSON 布林 `true`,不是字串)、`stamp`(64 個小寫 hex)。`root` 必須等於該次呼叫的專案根。`stamp` 輸入必須含 `root`:`stamp` = SHA-256(UTF-8,無多餘空白)的 `devflow-host-receipt/v1|{station}|{slug}|{node}|{script}|{root}|{action_result}|{minted_at}|{payload_sha256}|true`
 - 觀測:用 `json.load` 印鍵集合與 `DONE` 的 `type` | 鍵齊、`DONE is True`、自算 stamp 與檔內相同算過 | 拿 S-1.1 產出檔測
 - Operational Context:不適用 — 純欄位形狀,無人員交接。
 
@@ -81,15 +83,15 @@ Human verdict: N/A
 - Operational Context:不適用 — 覆寫規則,無人員交接。
 
 ### R-2: 系統 SHALL 核對收據並 fail-closed
-核對走**同一支**該站 `--action` 腳本,不新開 `check-host-receipt.sh`。`--action` JSON 多一個可選欄 `verify_receipt`(布林)。`true` 時只核對、不鑄檔。缺檔／空檔／手填／缺 `DONE:true`／stamp 不符／只跑過 `start` → exit ≠ 0,stderr 含 `未跑 --action`,且不得出現 `已與 Claude 同等武裝`。fail-closed 發生在宣稱「已武裝／可寫碼」之前,也發生在非 Claude 第一次寫入本站 feature 檔之前。`start` 單獨成功 ≠ 已武裝。
+核對走**同一支**該站 `--action` 腳本,不新開 `check-host-receipt.sh`。核對開關**只有**一個可選欄:`verify_receipt`(JSON 布林)。值為 `true` 時只核對、不鑄檔。缺此欄 = 舊行為(只做 graph 裁決,不核收據)。不接受 `action:"verify_receipt"` 當第二把鑰匙,也不因該字串 fail-open。缺檔／空檔／手填／缺 `DONE:true`／stamp 不符／`receipt.slug` ≠ 路徑 slug 或 ≠ `--action` slug／`receipt.station` 或 `receipt.script` 對不上呼叫中的腳本／`receipt.root` ≠ 本次核對的專案根／只跑過 `start` → exit ≠ 0,stderr 含 `未跑 --action`,且不得出現 `已與 Claude 同等武裝`。fail-closed 發生在宣稱「已武裝／可寫碼」之前,也發生在非 Claude 第一次寫入本站 feature 檔之前。`start` 單獨成功 ≠ 已武裝。不是密碼學防偽。
 
 **審的時候看什麼**
 看核對指令的 exit 與 stderr。人要能指著收據檔說在或不在,而且文案同時有「無 PreToolUse」與「`--action`」。
 
 #### S-2.1 有效收據核對 exit 0
 - GIVEN S-1.2 形狀的 `stage4.json` 已在 `.devflow/host-receipt/host-stack-fit/stage4.json`
-- WHEN `scripts/check-devstage4-graph.sh --action FILE`,FILE 為 `{"cursor":{"node":"S5-gate","slug":"host-stack-fit"},"action":"verify_receipt","slug":"host-stack-fit","verify_receipt":true}`
-- THEN exit 0;不改寫該收據檔;`schema`／`stamp` 仍與核對前相同
+- WHEN `scripts/check-devstage4-graph.sh --action FILE`,FILE 為 `{"cursor":{"node":"S5-gate","slug":"host-stack-fit"},"action":"write_spec","slug":"host-stack-fit","verify_receipt":true}`(`action` 仍是 graph 動詞;`verify_receipt` 是唯一核對開關)
+- THEN exit 0;不改寫該收據檔;`schema`／`stamp` 仍與核對前相同;且 `receipt.slug`==路徑 slug `host-stack-fit`==`--action` slug、`receipt.station`=`stage4`、`receipt.script`=`scripts/check-devstage4-graph.sh`、`receipt.root` 等於本次核對的專案根
 - 觀測:看指令 exit 與核對前後檔的 `stamp` | exit 0 且 stamp 不變算過 | 用 S-1.1 鑄好的 stage4 檔測
 - Operational Context:
   - Actor:開工 agent
@@ -108,29 +110,29 @@ Human verdict: N/A
 
 #### S-2.2 缺檔、空檔、空白檔皆紅
 - GIVEN 三種輸入:(1)路徑不存在;(2)零位元組檔;(3)只含空白字元(space／tab／newline)的檔,放在 `.devflow/host-receipt/host-stack-fit/stage4.json`
-- WHEN 對每種輸入跑 S-2.1 同一條 `verify_receipt`
+- WHEN 對每種輸入跑 S-2.1 同一條 `verify_receipt:true`
 - THEN 每次 exit ≠ 0;stderr 含字串 `未跑 --action`;stdout／stderr 都不含 `已與 Claude 同等武裝`
 - 觀測:看 exit 與 stderr 原文 | 三案皆紅且含指定字串、不含武裝句算過 | 用三種暫存檔測
 - Operational Context:不適用 — 核對失敗形狀,無人員交接。
 
 #### S-2.3 手填與缺 DONE 皆紅
 - GIVEN 四份放在正規路徑的檔:(1)Markdown 清單,內文 `DONE` 與 `--action`;(2)JSON 物件缺 `stamp`;(3)JSON `DONE` 為字串 `"true"`;(4)JSON `DONE` 為 `false` 或鍵不存在
-- WHEN 各跑一次 S-2.1 的 `verify_receipt`
+- WHEN 各跑一次 S-2.1 的 `verify_receipt:true`
 - THEN 四次皆 exit ≠ 0;stderr 含 `未跑 --action`;不含 `已與 Claude 同等武裝`
 - 觀測:看四次 exit 與 stderr | 全紅且咬指定字串算過 | 用手寫 md／殘缺 JSON fixture 測
 - Operational Context:不適用 — 真偽核對,無人員交接。
 
-#### S-2.4 stamp 不符或 station／script 對不上則紅
-- GIVEN 一份其餘欄位齊的 JSON,但 `stamp` 改成 64 個 `0`;另兩份分別把 `station` 改成 `stage7`、`script` 改成 `scripts/check-host-adapter.sh`
-- WHEN 用 `check-devstage4-graph.sh` 做 `verify_receipt`
-- THEN 三次皆 exit ≠ 0;stderr 含 `未跑 --action`
-- 觀測:看 exit 與 stderr | 三案皆紅算過 | 用改過欄位的 JSON 測
-- Operational Context:不適用 — stamp／身分核對。
+#### S-2.4 stamp 不符、slug／station／script／root 對不上則紅
+- GIVEN 五份其餘欄位齊的 JSON,分別:(1)`stamp` 改成 64 個 `0`;(2)`station` 改成 `stage7`;(3)`script` 改成 `scripts/check-host-adapter.sh`;(4)`slug` 改成 `other-slug`(路徑仍為 `.devflow/host-receipt/host-stack-fit/stage4.json`,`--action` slug 仍為 `host-stack-fit`);(5)`root` 改成另一個絕對路徑
+- WHEN 用 `check-devstage4-graph.sh` 對該專案根跑 S-2.1 同一條 `verify_receipt:true`
+- THEN 五次皆 exit ≠ 0;stderr 含 `未跑 --action`。核對必須同時成立:`receipt.slug` == 路徑 slug == `--action` slug;`receipt.station` 與 `receipt.script` 對上呼叫中的腳本;`receipt.root` 等於本次核對的專案根。任一不合即紅
+- 觀測:看 exit 與 stderr | 五案皆紅算過 | 用改過欄位的 JSON 測
+- Operational Context:不適用 — stamp／身分／root 核對。
 
 #### S-2.5 只跑 start 不得宣稱武裝
 - GIVEN `.devflow/exec.json` 因 `devflow-exec start` 存在,且 `.devflow/host-receipt/` 無任何收據
-- WHEN 對 `stage4` 跑 `verify_receipt`,或 session 輸出宣稱「已武裝／可寫碼／已與 Claude 同等武裝」
-- THEN `verify_receipt` exit ≠ 0 且 stderr 含 `未跑 --action`;任何「已武裝／可寫碼」宣稱在本 session 產出裡必須同時能指出一份核對過的收據路徑,否則該宣稱不算數。文案若提到主機限制,必須同時出現 `無 PreToolUse`(或 `沒有 PreToolUse`)與 `--action`
+- WHEN 對 `stage4` 跑 `verify_receipt:true`,或 session 輸出宣稱「已武裝／可寫碼／已與 Claude 同等武裝」
+- THEN `verify_receipt:true` exit ≠ 0 且 stderr 含 `未跑 --action`;任何「已武裝／可寫碼」宣稱在本 session 產出裡必須同時能指出一份核對過的收據路徑,否則該宣稱不算數。文案若提到主機限制,必須同時出現 `無 PreToolUse`(或 `沒有 PreToolUse`)與 `--action`
 - 觀測:從核對 exit、stderr、session 開場紀錄看 | start 後核對紅;有宣稱則能指出收據檔,且文案含兩個指定詞算過 | 用 throwaway Cursor／本機 session:先 start、不跑 `--action` 測(AC-1／AC-2／SC-1／SC-2)
 - Operational Context:
   - Actor:開工 agent 與 owner
@@ -150,7 +152,7 @@ Human verdict: N/A
 #### S-2.6 fail-closed 時點:宣稱武裝與第一次寫檔之前
 - GIVEN 非 Claude session,本站尚無有效收據
 - WHEN agent 要輸出「可寫碼／已武裝」,或要對本站 feature 檔做第一次 Write／Edit(例:`docs/dev/host-stack-fit/4-spec.md`)
-- THEN 必須先有該站 `verify_receipt` exit 0;若核對未跑或 exit ≠ 0,不得把該次寫入標成已武裝。Claude Code 既有 PreToolUse 擋寫規則不變;Claude 不要求人指收據才能寫,但同一支 `--action` 仍在 allow 時鑄檔
+- THEN 必須先有該站 `verify_receipt:true` exit 0;若核對未跑或 exit ≠ 0,不得把該次寫入標成已武裝。Claude Code 既有 PreToolUse 擋寫規則不變;Claude 不要求人指收據才能寫,但同一支 `--action` 仍在 allow 時鑄檔
 - 觀測:從本 repo 可跑的核對指令與「核對前／後」兩次呼叫看 | 核對前 exit ≠ 0,鑄檔並核對後 exit 0 算過;Claude PreToolUse 行為用既有 `hooks/hooks.json` 與 `.cursor-plugin/plugin.json` 對照(薄殼仍無 hooks 鍵) | 用暫存樹:無收據核對 → 鑄 → 再核對。n-a:Cursor 編輯器 Write 工具本身無 hook,改用本 repo 核對指令當替代觀測
 - Operational Context:
   - Actor:開工 agent
@@ -167,8 +169,15 @@ Human verdict: N/A
   - Audit/handoff requirement:收據路徑可指
   - Observation:見本條觀測
 
+#### S-2.7 不認 `action:"verify_receipt"` 當核對開關
+- GIVEN 專案根與 slug=`host-stack-fit`;`--action` JSON **沒有** `verify_receipt:true`(鍵缺席,或值不是 JSON 布林 `true`)
+- WHEN `scripts/check-devstage4-graph.sh --action FILE`,FILE 為 `{"cursor":{"node":"S5-gate","slug":"host-stack-fit"},"action":"verify_receipt","slug":"host-stack-fit"}`
+- THEN 腳本不得因 `action` 字串進入只核對、不鑄模式;缺 `verify_receipt:true` = 舊 graph 裁決。不得把 `action:"verify_receipt"` 當成第二把鑰匙或 fail-open 核對。graph 依既有規則處理這個 `action` 值(未知動詞 → 既有 deny／exit ≠ 0,既有字面)
+- 觀測:看 exit、是否鑄檔、stderr | 未進入 verify-only;沒有只因該 `action` 字串而核對綠算過 | 用無布林鍵的 payload 測
+- Operational Context:不適用 — 開關鍵邊界,無人員交接。
+
 ### R-3: 系統 SHALL 寫出 I2 堆疊盤點
-`dev-setup` 的 install／upgrade／check 必須在專案級寫 `docs/dev/0-inventory.json`,schema=`devflow-stack-inventory/v1`。深度 = 宣告 pin + 第一層直接相依,不做 lock 全樹。方法包與產品專案同一欄位形狀(R-5)。落差列必須在進 Stage 4 之前就在這個檔上。
+`dev-setup` 的 install／upgrade／check 必須在專案級寫 `docs/dev/0-inventory.json`,schema=`devflow-stack-inventory/v1`。深度綁在**專案級**:宣告 pin + 來自 pin／requirements 的第一層 `direct_deps`。不是 per-slug「這次 feat 碰到／改到的檔」;不是 lock 全樹／transitive。Decision D1「宣告 pin + 直接相依、不做全樹」在本檔收成專案第一層,不是 feature-scoped。方法包與產品專案同一欄位形狀(R-5)。落差列必須在進 Stage 4 之前就在這個檔上。
 
 **審的時候看什麼**
 打開 `docs/dev/0-inventory.json`。母版樣張要看得到 Python 地板 3.9 與 `markdown-it-py==4.0.0`,以及 3.9 vs 3.12+ 的落差列。
@@ -183,7 +192,7 @@ Human verdict: N/A
   - Goal:進完整 lane 之前看見語言、runtime、套件版本
   - Situation:setup 剛做完或依賴剛變
   - Known information:pin 檔、本機 `python3 --version`
-  - Missing information:間接套件(本 v1 不寫)
+  - Missing information:間接套件與 per-slug「這次碰到的檔」(本 v1 都不寫)
   - Human decision:看到落差要不要換直譯器／venv
   - Authority:`dev-setup` 寫檔;人讀檔
   - External dependency:本機直譯器
@@ -196,7 +205,7 @@ Human verdict: N/A
 #### S-3.2 母版樣張對上 3.9 與 markdown-it-py
 - GIVEN 本方法包(`project_kind`=`methodology-pack`),pin 來源含 `scripts/requirements-methodology-render.txt` 的 `markdown-it-py==4.0.0`,以及 `scripts/check-py-floor.sh`／`docs/PLUGIN.md` 宣告的 Python 3.9 編譯地板
 - WHEN `dev-setup` 寫完 I2
-- THEN `declared_pins` 至少有一列 `name`=`markdown-it-py` 且 `version`=`4.0.0` 且 `source`=`scripts/requirements-methodology-render.txt`;`languages` 至少有一列 `language`=`Python`;`direct_deps` 至少含同一顆 `markdown-it-py` `4.0.0`(第一層,不含 transitive)。不把 lock 全樹寫進任一陣列
+- THEN `declared_pins` 至少有一列 `name`=`markdown-it-py` 且 `version`=`4.0.0` 且 `source`=`scripts/requirements-methodology-render.txt`;`languages` 至少有一列 `language`=`Python`;`direct_deps` 至少含同一顆 `markdown-it-py` `4.0.0`(專案 pin／requirements 第一層,不含 transitive,也不是本 feat 碰到的檔清單)。不把 lock 全樹寫進任一陣列
 - 觀測:從 I2 JSON 三個陣列看 | 指定 pin 列存在、無第二層套件列算過 | 拿本 repo `docs/PLUGIN.md` + `scripts/requirements-methodology-render.txt` 當輸入(AC-3／SC-4)
 - Operational Context:不適用 — 欄位對帳,無人員交接。
 
@@ -306,7 +315,7 @@ I4 不是每專案強制(OC-3)。只有人要機器可讀 lock digest 或散文�
 #### S-5.1 兩種 project_kind 鍵集合相同
 - GIVEN 一份 `project_kind`=`methodology-pack` 的 I2 與一份 `project_kind`=`product` 的 I2
 - WHEN 比較頂層鍵集合,以及 `languages[]`／`declared_pins[]`／`direct_deps[]`／`gaps[]` 的元素鍵集合
-- THEN 兩份頂層鍵集合相等;四個陣列的元素鍵集合分別相等;`schema` 都是 `devflow-stack-inventory/v1`;深度都只含宣告 pin 與第一層直接相依,都沒有 transitive 全樹
+- THEN 兩份頂層鍵集合相等;四個陣列的元素鍵集合分別相等;`schema` 都是 `devflow-stack-inventory/v1`;深度都只含專案級宣告 pin 與 pin／requirements 第一層直接相依,都沒有 transitive 全樹,也都不是 per-slug「這次碰到的檔」
 - 觀測:對兩份 JSON 做鍵集合 diff | diff 為空、schema 字串相同算過 | 用本 repo 一份 + 產品 fixture 一份測(SC-6)
 - Operational Context:不適用 — schema 對帳。
 
@@ -375,7 +384,7 @@ I4 不是每專案強制(OC-3)。只有人要機器可讀 lock digest 或散文�
 - 全 S 綠,且既有 `scripts/devflow-check.sh`／host-adapter／七站 `--action` 自檢回歸綠。
 - SC-1／AC-1 ← S-2.5、S-2.6:非 Claude 宣稱可寫碼時,人能指出本次 script-minted receipt 在或不在;文案含「無 PreToolUse」與「`--action`」;不是只看到 start 成功。
 - SC-2／AC-2 ← S-2.2、S-2.5:只跑 start、不跑該站 `--action` → 核對 exit ≠ 0 且含「未跑 `--action`」;不得出現「已與 Claude 同等武裝」。
-- SC-3 ← S-2.3、S-2.4:手填／空白／缺 DONE／stamp 不符不得算有效收據。
+- SC-3 ← S-2.3、S-2.4、S-2.7:手填／空白／缺 DONE／stamp 不符／slug 或 root 或 station／script 對不上不得算有效收據;`action:"verify_receipt"` 不是核對開關。
 - SC-4／AC-3 ← S-3.1、S-3.2:I2 寫出語言名、runtime 版本、宣告 pin、直接相依;母版樣張對上 Python 3.9 地板與 `markdown-it-py==4.0.0`。
 - SC-5／AC-4 ← S-3.3:本機 3.9、套件要 3.12+ 時,落差列在進 Stage 4 之前就在 I2。
 - SC-6 ← S-5.1:方法包與產品專案同一 schema／同一深度。
@@ -396,6 +405,8 @@ I4 不是每專案強制(OC-3)。只有人要機器可讀 lock digest 或散文�
 - 把 haiku–sonnet–opus dispatch-guard 搬到非 Claude。
 - 本 feat 對齊現場 3.6.1 plugin cache(OC-4)。
 - lock 全樹／transitive 盤點(D2)。
+- per-slug／feature-scoped「這次 feat 碰到的檔」當 I2 深度(D1 在本檔收成專案第一層)。
+- 把 `action:"verify_receipt"` 當成核對開關(只認布林 `verify_receipt:true`)。
 - 每 slug 一份 `0-stack.md`。
 - 在 Cursor Write 工具上發明機械擋(那是假 hook);本 feat 的牙是收據 + 核對。
 - 密碼學防偽(stamp 防的是空檔／手填清單／改欄,不是對抗讀過規格的偽造者)。
@@ -416,7 +427,7 @@ I4 不是每專案強制(OC-3)。只有人要機器可讀 lock digest 或散文�
 
 ## Dependencies
 
-- 既有該站 `--action` 腳本與 `--action` JSON(`cursor`／`action`／`slug`)—— justification:OC-1 沿用,不另造家族。
+- 既有該站 `--action` 腳本與 `--action` JSON(`cursor`／`action`／`slug`)—— justification:OC-1 沿用,不另造家族。核對只加可選布林 `verify_receipt`,不改 graph `action` 詞彙。
 - `dev-setup` install／check／upgrade —— justification:I2 落點。
 - `docs/PLUGIN.md`、`scripts/requirements-methodology-render.txt`、`scripts/check-py-floor.sh` —— justification:母版樣張與 #122 落差。
 - 無新外部服務、無新 pip 套件、無 migration。
@@ -431,7 +442,7 @@ I4 不是每專案強制(OC-3)。只有人要機器可讀 lock digest 或散文�
 
 | Boundary / Module | Responsibility | Data owner | Allowed dependencies | Forbidden dependencies |
 |---|---|---|---|---|
-| 該站 `--action` 腳本(talk + stage2–7) | allow 時鑄收據;`verify_receipt` 時核對;既有 graph 圍欄不變 | **擁有**收據 JSON 的鑄造與 stamp | → `--action` payload、→ `.devflow/host-receipt/` | 不得呼叫 probe 冒充鑄造;不得改鬆 deny 規則;不得寫 lockfile |
+| 該站 `--action` 腳本(talk + stage2–7) | allow 時鑄收據;`verify_receipt:true` 時核對;既有 graph 圍欄不變 | **擁有**收據 JSON 的鑄造與 stamp | → `--action` payload、→ `.devflow/host-receipt/` | 不得呼叫 probe 冒充鑄造;不得改鬆 deny 規則;不得寫 lockfile;不得把 `action:"verify_receipt"` 當核對開關 |
 | 主機收據檔(`.devflow/host-receipt/`) | 本機 session 證據;不進 Git | **擁有**當次 station+slug 的收據位元 | ← 該站腳本 | 產品碼與 I2 不得當收據正本 |
 | `dev-setup` I2 | 寫／覆寫 `docs/dev/0-inventory.json` | **擁有**盤點欄位正本 | → pin／requirements 檔、→ `python3 --version` | 不得讀 I4 digest 回填版本;不得改 Stage 1–4 模板 |
 | I4 `0-stack.md`(選配) | 投影 I2 + 可選 lock 指紋 | 不擁有套件版本 | → I2、→ lock／pin 檔位元 | 不得當 lock 正本;不得每 slug 一份 |
@@ -441,7 +452,7 @@ I4 不是每專案強制(OC-3)。只有人要機器可讀 lock digest 或散文�
 | Interface / Flow | Input / Output | Errors | Transaction / Consistency boundary | Compatibility |
 |---|---|---|---|---|
 | `--action` allow → mint | in:既有 `--action` JSON;out:正規路徑一份收據 | deny／exit 2 不鑄 | 單檔 `os.replace`;allow 與鑄檔同一次成功,鑄失敗則該次不得只回 allow 卻無檔 | 既有 allow／deny 字面與 exit 0／1／2 不變;只加副作用 |
-| `--action` + `verify_receipt:true` | in:同腳本 JSON;out:exit 0／≠ 0 | 缺檔／空／手填／stamp 錯 → exit ≠ 0 + `未跑 --action` | 只讀收據,不寫 | 新欄位可選;缺欄=舊行為(只做 graph 裁決,不核收據) |
+| `--action` + `verify_receipt:true` | in:同腳本 JSON(graph `action` 仍為既有動詞);out:exit 0／≠ 0 | 缺檔／空／手填／stamp 錯／slug 三方不一／station／script 對不上／root ≠ 核對專案根 → exit ≠ 0 + `未跑 --action` | 只讀收據,不寫 | 唯一可選核對欄;缺欄=舊行為(只做 graph,不核收據)。不認 `action:"verify_receipt"` |
 | `dev-setup` → I2 | in:pin 檔 + runtime;out:`0-inventory.json` | 缺 I2 → check 不得當成功 | 單檔覆寫;不與收據同交易 | 方法包／產品同一 schema |
 | 選配 I4 | in:人要求 + I2;out:`docs/dev/0-stack.md` | 無 I2 不得先寫 I4 | I4 失敗不影响 I2 | 可缺席 |
 
@@ -449,20 +460,20 @@ I4 不是每專案強制(OC-3)。只有人要機器可讀 lock digest 或散文�
 
 | Component | Responsibility | Collaborators | State / Data flow | Error handling | Test seam |
 |---|---|---|---|---|---|
-| mint 函式(七支腳本共用,住既有 check 檔或 `devflow-lib` 一函式) | allow 後寫收據 + stamp | ← graph evaluate;→ 收據路徑 | payload bytes → sha256 → JSON → replace | 寫失敗 → 該次不得假裝已鑄 | 暫存根跑 `--action` allow,斷言檔與 stamp(S-1.1／S-1.2) |
-| verify 函式(同一支腳本) | 讀檔、重算 stamp、咬 DONE | ← `--action` JSON | 只讀 | 任何失敗 exit ≠ 0 | S-2.2～S-2.4 fixture |
+| mint 函式(七支腳本共用,住既有 check 檔或 `devflow-lib` 一函式) | allow 後寫收據 + stamp(輸入含 `root`) | ← graph evaluate;→ 收據路徑 | payload bytes → sha256 → JSON → replace | 寫失敗 → 該次不得假裝已鑄 | 暫存根跑 `--action` allow,斷言檔與 stamp(S-1.1／S-1.2) |
+| verify 函式(同一支腳本) | 讀檔、重算 stamp(含 `root`)、咬 DONE、三方 slug、station／script、root | ← `--action` JSON 的 `verify_receipt:true` | 只讀 | 任何失敗 exit ≠ 0 | S-2.2～S-2.4／S-2.7 fixture |
 | I2 writer(`dev-setup`) | 組 `languages`／pins／deps／gaps | ← pin 檔、`python3 --version` | 讀 pin → 寫 JSON | 缺來源就列 gap 或讓 check 紅 | S-3.2／S-3.3 母版樣張 |
 | I4 writer(選配) | 抄 I2 + 可選 digest | ← I2、lock 檔 | 只投影 | 無 I2 拒絕寫 I4 | S-4.1／S-4.2 |
 
 ### Design Constraints
-- 必須:沿用既有該站 `--action`;空檔 ≠ 有效;start 單獨 ≠ 武裝;I2 專案級;I4 選配且只有 `docs/dev/0-stack.md`;同一 schema。
+- 必須:沿用既有該站 `--action`;空檔 ≠ 有效;start 單獨 ≠ 武裝;stamp 含 `root`;核對只認 `verify_receipt:true`;I2 專案級 pin + 第一層 `direct_deps`;I4 選配且只有 `docs/dev/0-stack.md`;同一 schema。
 - 禁止:假 PreToolUse;第二套檢查家族;改鬆 `--action`;I1 解凍模板;I3 寫 STATUS;digest 當 lock 正本;本 feat 修 cache;本 hop 升 plugin。
 - Extension point:後續 feat 若要解凍 Stage 1 模板做 I1,須另開 slug 並先過 Q11。
 - Known design limit:
   ① Cursor Write 工具沒有 hook,本 feat 不在編輯器層擋寫,只靠收據核對與「不得宣稱武裝」。
   ② stamp 不是對抗已讀規格者的密碼學防偽。
   ③ I2 不每條 feature 自動重跑;`git pull` 後套件可漂,直到人重跑 setup。
-  ④ 間接相依仍可能晚爆(D1)。
+  ④ 間接相依仍可能晚爆(D1;本檔深度 = 專案級 pin + 第一層 `direct_deps`,不是 per-slug 碰到的檔)。
 
 ## Verification Profile(G2 一併審)
 - lane: full(判準:新能力、新 schema、跨模組、新增 filesystem 寫入、改 `--action` 副作用契約;命中自動升 Full 的 filesystem／公開契約。owner 未要求降 fast;無偏離)
@@ -470,7 +481,8 @@ I4 不是每專案強制(OC-3)。只有人要機器可讀 lock digest 或散文�
 - Failure model:(Risk: high 必填,表見下)
 - Negative constraints:
   - 不得用 probe／start／write-cursor／write-scope 冒充鑄造(S-1.3)
-  - 不得把空檔／手填／缺 DONE 當有效收據(S-2.2／S-2.3)
+  - 不得把空檔／手填／缺 DONE／slug 或 root 對不上當有效收據(S-2.2／S-2.3／S-2.4)
+  - 不得把 `action:"verify_receipt"` 當核對開關(S-2.7)
   - 不得出現「已與 Claude 同等武裝」(S-2.2／S-2.5)
   - 不得強制每專案 I4(S-4.1)
   - 不得把 digest 當 lock 正本(S-4.3)
@@ -491,6 +503,8 @@ Human verdict: N/A
 |---|---|---|---|---|
 | 只跑 start 卻宣稱已武裝 | 假安全感,非 Claude 靜默漂移 | `verify_receipt` 綠或文案含「同等武裝」 | Required:host-adapter + S-2.5 | — |
 | 空檔／手填被當成收據 | 條件 C 牙沒了(C08／B) | 空檔或 md 清單核對 exit 0 | Required:S-2.2／S-2.3 | — |
+| 換 slug／換 root 仍核對綠 | 收據可搬到別專案或別 feat 冒充 | `receipt.slug` 或 `receipt.root` 對不上仍 exit 0 | Required:S-2.4 | — |
+| `action:"verify_receipt"` 被當成核對 | 雙鍵／fail-open,缺布林仍進 verify | 無 `verify_receipt:true` 卻 verify-only | Required:S-2.7 | — |
 | probe 鑄收據或代替 `--action` | 重演 #78 第四型假綠 | `--probe` 後出現 host-receipt JSON | Required:S-1.3 | — |
 | `--action` 圍欄被改鬆 | 無 hook 主機可跳過 graph | 七支腳本不再接 `--action` | Required:host-adapter 第三刀 + S-6.2 | — |
 | I2 漏 pin 或漏落差 | #122 再現,進 Stage 4 才爆 | 母版 I2 無 `markdown-it-py==4.0.0` 或 3.9 vs 3.12 gap | Required:S-3.2／S-3.3 | — |
@@ -499,21 +513,22 @@ Human verdict: N/A
 
 ## Drafting Decisions(草擬自判,待人審)
 
-形狀已寫進 R/S,本表只記 Stage 2 沒釘死、由本檔綁定的選擇。不翻 Decision。狀態留給 G2 人審,不代填 PASS。
+形狀已寫進 R/S,本表只記 Stage 2 沒釘死、由本檔綁定的選擇。不翻 Decision。2026-09-10 多代理人審查收斂 DD-1／DD-2／DD-3 三處(見頂註 HISTORY),owner 核准。狀態留給 G2 人審,不代填 PASS。
 
 ### 逐條裁決(上層)
 | DD | 決定了什麼 | 為什麼 | 依據(`檔:行` 或 `[Assumption]`) | 若被推翻會怎樣 | 狀態(待人審→✅/✗) |
 |---|---|---|---|---|---|
-| DD-1 | 收據路徑 = `.devflow/host-receipt/<slug>/<station>.json`;schema = `devflow-host-receipt/v1`;欄位與 stamp 見 S-1.2 | Decision 只鎖腳本鑄、可核對、不可手填;路徑放 `.devflow/` 與 `exec.json` 同層本機狀態,不進 Git | `2-decision.md` Risks「欄位／檔名進 4-spec」;`.gitignore` 已忽略 `.devflow/` | 改路徑則 S-1.1／SC-1 觀測點全改 | 待人審 |
-| DD-2 | 核對 = 同一支 `--action` JSON 加可選 `verify_receipt:true`;不新開腳本 | OC-1 禁止第二套檢查家族;新欄可選,缺欄=舊 graph 行為 | `2-decision.md` OC-1 | 若改獨立 `check-*.sh` 要重審 G4／第二方法論 | 待人審 |
-| DD-3 | I2 路徑 = `docs/dev/0-inventory.json`;schema = `devflow-stack-inventory/v1` | 要進 Git、fast 也看得到、與選配 I4 `0-stack.md` 分開 | `2-decision.md` I2 專案級;OC-2 只鎖 I4 檔名 | 改檔名則 SC-4／SC-5 觀測點改 | 待人審 |
+| DD-1 | KEEP 路徑 = `.devflow/host-receipt/<slug>/<station>.json`、schema = `devflow-host-receipt/v1`、七站 `--action` allow 才鑄。TIGHTEN:stamp 輸入必須含專案 `root`;核對必須 `receipt.slug`==路徑 slug==`--action` slug、`receipt.station`／`script` 對上呼叫腳本、`receipt.root`==核對時專案根。仍非密碼學防偽;不新開 `check-host-receipt.sh` | Decision 只鎖腳本鑄、可核對、不可手填;路徑與 schema 沿用。多代理人審查要求 stamp／核對綁 `root` 與三方 slug,避免收據搬家仍綠 | `2-decision.md` Risks「欄位／檔名進 4-spec」;`.gitignore` 已忽略 `.devflow/`;owner 2026-09-10 核准包 | 改路徑則 S-1.1／SC-1 觀測點全改;拿掉 root 綁定則 S-1.2／S-2.4 紅案消失 | 待人審 |
+| DD-2 | 核對開關**只有**可選欄 `verify_receipt:true`(布林)。true = 只核對不鑄;缺欄 = 舊 graph。不接受 `action:"verify_receipt"` 當第二把鑰匙。不新開腳本 | OC-1 禁止第二套檢查家族。雙鍵會 fail-open(有人只寫 `action` 字串就當核對)。多代理人審查收斂為布林唯一 | `2-decision.md` OC-1;owner 2026-09-10 核准包 | 若改獨立 `check-*.sh` 要重審 G4／第二方法論;若再加第二把鑰匙,S-2.7 要重寫 | 待人審 |
+| DD-3 | I2 路徑 = `docs/dev/0-inventory.json`;schema = `devflow-stack-inventory/v1`;深度 = **專案級**宣告 pin + 來自 pin／requirements 的第一層 `direct_deps`。不是 per-slug「這次 feat 碰到的檔」;不是 lock 全樹／transitive | 要進 Git、fast 也看得到、與選配 I4 `0-stack.md` 分開。Decision D1 鎖「宣告 pin + 直接相依、不做全樹」;「本次碰到」若讀成 feature-scoped 會漂,本檔把深度釘在專案第一層 | `2-decision.md` I2 專案級、D1;OC-2 只鎖 I4 檔名;owner 2026-09-10 核准包 | 改檔名則 SC-4／SC-5 觀測點改;改成 per-slug 或 lock 全樹則 S-3.1／S-3.2／S-5.1 與 D2 邊界翻 | 待人審 |
 | DD-4 | Stage 3 由 owner 2026-09-09 跳過,記在本檔;不回改正本 Decision 組合包 | 使用者本 hop 明示;Decision 組合包(H1+C／I2+I4)不因此翻案 | 本 hop owner 指示;2-decision 下層「不預先跳過」是 Stage 2 當時句 | 若改要補 3-prototype,本節對帳改寫 | 待人審 |
 | DD-5 | Feature Risk = high;本檔 `verdict:` 留空,不代填 G2 PASS | `--action` 契約副作用 + fail-closed + filesystem;G2 是人審 | `_templates/4-spec.md` Risk 判準;本 hop「Leave G2 empty」 | 改 normal 則 Failure Model 可改選配 | 待人審 |
 
 ### 內部技術選擇(下層,告知即可)
 - station 檔名:`talk.json`／`stage2.json`…`stage7.json`,對應七支既有 graph 腳本。
-- stamp 輸入用 `|` 串接,小寫 hex;防空檔與手填,不是密碼學防偽。
-- I2 `direct_deps` = 專案 pin／requirements 第一層,不是 per-slug「這次改到的檔」。
+- stamp 輸入用 `|` 串接且必須含專案 `root`,小寫 hex;防空檔、手填與改欄,不是密碼學防偽。
+- 核對只認 `verify_receipt:true`;不認 `action:"verify_receipt"`。
+- I2 `direct_deps` = 專案 pin／requirements 第一層,不是 per-slug「這次改到的檔」,也不是 lock 全樹。
 - 本 hop 不改 hooks／skills 正文。
 - 審頁 html 用 `scripts/build-stage4-html.py --action`(生命週期直式 SVG);與本 feat Stage 2 的 `build-stage2-html.py` 同一家族。
 
@@ -524,7 +539,9 @@ Human verdict: N/A
 - `test_s_1_3_probe_start_cursor_scope_do_not_mint`
 - `test_s_2_2_missing_empty_blank_receipt_fails`
 - `test_s_2_3_handfilled_or_string_done_fails`
+- `test_s_2_4_stamp_slug_station_script_root_mismatch_fails`
 - `test_s_2_5_start_only_not_armed`
+- `test_s_2_7_action_verify_receipt_is_not_a_switch`
 - `test_s_3_2_pack_pins_markdown_it_py`
 - `test_s_3_3_gap_39_vs_312_before_stage4`
 - `test_s_4_1_setup_does_not_require_i4`
@@ -533,7 +550,7 @@ Human verdict: N/A
 
 ## Stage 3 對帳
 
-整節 N/A。無 `3-prototype.md`,無 ACCEPTED Demo 場景。Owner 2026-09-09 跳過 Stage 3,理由:Decision 已夠清楚,不需原型。操作下落寫在各重要 S 的 Operational Context(S-1.1、S-2.1、S-2.5、S-2.6、S-3.1、S-3.3、S-3.4、S-4.1、S-4.2、S-6.1)。
+整節 N/A。無 `3-prototype.md`,無 ACCEPTED Demo 場景。Owner 2026-09-09 跳過 Stage 3,理由:Decision 已夠清楚,不需原型。操作下落寫在各重要 S 的 Operational Context(S-1.1、S-2.1、S-2.5、S-2.6、S-3.1、S-3.3、S-3.4、S-4.1、S-4.2、S-6.1)。S-2.7 為開關鍵邊界,無人員交接。
 
 ## 確認紀錄
 - 雙源清點 | 2026-09-09 | 驗收雛形 AC-1..5 共 5 條;living spec `docs/specs/` 0 條可引 → 全數 ADDED。1-discussion 雛形觀測欄已升進對應 S
@@ -544,3 +561,4 @@ Human verdict: N/A
 - 3c Stage 3 | 2026-09-09 | N/A + owner 跳過(Decision 已夠清楚,不需原型)
 - DD 掃描 | 2026-09-09 | 上層五條皆待人審;形狀綁在 R/S
 - G2 verdict | 2026-09-09 | 留空,留給人類,不代填 PASS
+- 多代理人收斂 | 2026-09-10 | owner 核准三處,不翻 H1+C／I2+I4 Decision:DD-1 stamp 綁 `root` + 核對三方 slug／station+script／root;DD-2 只認布林 `verify_receipt:true`;DD-3 深度 = 專案級 pin + 第一層 `direct_deps`。`verdict:` 仍空
