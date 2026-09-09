@@ -12,7 +12,7 @@ contract: 2.0.0
 # 1. 討論 — 主機執法貼近與堆疊盤點
 
 > 基準:`main` tag `v3.22.1` tip `7006b8a`;本討論首稿已合入 `#148` @ `d020913`。契約維持 `2.0.0`。本檔是 Stage 1 討論,不做決定、不改 hooks/skills、不升 plugin。
-> 本場是 Cursor Cloud Agent 依 owner 書面 brief 落檔,不是現場一問一答;未核的敘述標 `[Assumption]`。2026-09-09 補寫 H1 遵從實驗(lean ≠ Decision)。
+> 本場是 Cursor Cloud Agent 依 owner 書面 brief 落檔,不是現場一問一答;未核的敘述標 `[Assumption]`。2026-09-09 補寫 H1 遵從實驗與 I 軸 owner lean(lean ≠ Decision)。
 
 ## Problem
 誰:在 Cursor Agent / Grok Bot(以及讀同一棵 `skills/` 的其他非 Claude 主機)上跑 dev-flow 的開工 agent,與要審方法論母版／產品專案的 owner。
@@ -129,6 +129,10 @@ DA caveats(必須記錄 — 削弱「野外只靠軟提醒就夠」):
 | I3 | `STATUS.md` 一節 | Active 旁邊 | 人本來就看 STATUS | 母版 STATUS 禁 feature branch 手改;採用專案也不是每 feature 重寫 |
 | I4 | 新 `0-stack.md` 或 lockfile digest | `docs/dev/<slug>/` 或專案根機器可讀摘要 | 與討論檔分離;可對 lock 做 digest | 多一個產物;digest 不是 lock 正本 |
 
+owner lean 2026-09-09 → I2+I4; not I1/I3。I2 當底(專案級、跟 setup 走)、I4 選配(要機器可讀摘要時才加)。I1 要先解凍 Q11 且漏 fast lane,不取;I3 撞 STATUS 寫入窗,不取。本節不是 Decision。
+
+組合包 lean(非定案):主機 **H1 fail-closed script receipt(C)** + 堆疊 **I2+I4**。
+
 ### 已拒(本討論可寫死,不是方案)
 | 已拒 | 理由 |
 |---|---|
@@ -143,15 +147,15 @@ DA caveats(必須記錄 — 削弱「野外只靠軟提醒就夠」):
 - [x] Q2:可不可以另造第二套方法論?→ 不可;只延伸 Stage 1／talk／setup
 - [x] Q3:契約與本 PR 版本?→ 契約 2.0.0;本 PR 不升 plugin
 - [x] Q4:堆疊盤點是不是必須納入?→ 必須(owner)
-- [~] Q5:slug 用 `host-stack-fit`?→ 暫定;更短候選 `early-stack`(只蓋盤點,不蓋主機)
+- [~] Q5:slug 用 `host-stack-fit`?→ 暫定;Q10 軟 lean 維持此名(H1+I2/I4 同場)。更短候選 `early-stack` 只蓋盤點,本 lean 不取。
 - [~] Q6:主機貼近選 H1、H2 還是 H3?→ 帶假設 lean **H1**(實驗 2026-09-09:A／LA／DA／LAC 高分 ≠ 取代牙;H2 重疊既有 `#host`;H3 有 probe≠action 假綠風險)。非定案。
-- [>] Q7:堆疊盤點選 I1、I2、I3、I4,或組合?→ 仍 OPEN(本輪未測堆疊盤點)
-- [>] Q8:「每個套件的版本」= 宣告 pin、lock 全樹(含 transitive)、還是本次會碰到的直接相依?機器可讀 digest 要不要?→ 仍 OPEN(本輪未測堆疊盤點)
+- [~] Q7:堆疊盤點選 I1、I2、I3、I4,或組合?→ 帶假設 lean **I2 base + I4 optional**。不取 I1(要先解凍 Q11 且漏 fast lane)、不取 I3(STATUS 寫入窗)。非定案。
+- [~] Q8:「每個套件的版本」= 宣告 pin、lock 全樹(含 transitive)、還是本次會碰到的直接相依?機器可讀 digest 要不要?→ 帶假設 lean **declared pins + direct deps this work touches**;v1 不做 full transitive lock tree。I4 digest 選配。非定案。
 - [~] Q9:主機牙要 fail-closed(沒跑 `--action` 就紅)還是 warning-only?→ 帶假設 lean **fail-closed**;牙形 = **script-minted receipt**(條件 C),不是手填 checklist(B 可偽造)。非定案。
-- [>] Q10:主機貼近與堆疊盤點要不要拆成兩個 slug?→ 仍 OPEN
-- [>] Q11:本 feature 是否解除「完整 full lane 觀測前不動 Stage 1–4 模板」?若否,I1 出局。→ 仍 OPEN(本輪未測堆疊盤點)
+- [~] Q10:主機貼近與堆疊盤點要不要拆成兩個 slug?→ 帶假設 lean 維持**一個 slug** `host-stack-fit`(主機 H1 + 堆疊 I2/I4 同場);除非 owner 之後要拆。軟 lean。
+- [~] Q11:本 feature 是否解除「完整 full lane 觀測前不動 Stage 1–4 模板」?若否,I1 出局。→ 帶假設:本 lean 不需要 I1,凍結可先留;I1 延後。非定案。
 - [~] Q12:Grok／box cache 落後 tip 是否仍是現況?→ 帶假設:仍可能;本環境未重現 3.6.1 vs 3.22.1
-- [>] Q13:產品專案與方法論母版是否同一份 artifact、同一套深度?→ 仍 OPEN(本輪未測堆疊盤點)
+- [>] Q13:產品專案與方法論母版是否同一份 artifact、同一套深度?→ 仍 OPEN
 
 ## Constraints
 - 契約維持 2.0.0;本討論不 bump `.claude-plugin/plugin.json`。
@@ -241,13 +245,13 @@ now
   - 結論:CONFIRMED 現況沒有堆疊盤點;I1 會動 Stage 1 文字。
 - ⚠️ Q:軟提醒夠不夠當 Cursor／Grok 主機牙?實驗 lean 哪條?
   - 事實:notes/design/stage1-context-chain.md:L21-L35 guides/guide-dev-flow.html:L2837-L2844 scripts/check-host-adapter.sh:L21-L29
-  - 推理:2026-09-09 H1 實驗(Evidence):A 10/10、B 9/10(B08 noop)、C 9/10 receipts(C08 empty;some missing DONE)、LA 10/10、DA 10/10、LAC01–10 10/10。軟提醒可見時遵從高,但不取代牙。H2 重疊既有 `#host`。H3 有 probe≠action 假綠風險。B 手填 checklist 可偽造;無 PreToolUse 主機牙應是 fail-closed script-minted receipt(條件 C)。DA caveat(brief 仍要讀長 guide;report 問 ran_stage_check=yes|no name leak;env hints H1_EXP_ROOT／H1_TRIAL_ID;not wild diluted product SOP)削弱「野外只靠軟提醒」。I 軸本輪未測。Stage 1 不准做 Decision。
+  - 推理:2026-09-09 H1 實驗(Evidence):A 10/10、B 9/10(B08 noop)、C 9/10 receipts(C08 empty;some missing DONE)、LA 10/10、DA 10/10、LAC01–10 10/10。軟提醒可見時遵從高,但不取代牙。H2 重疊既有 `#host`。H3 有 probe≠action 假綠風險。B 手填 checklist 可偽造;無 PreToolUse 主機牙應是 fail-closed script-minted receipt(條件 C)。DA caveat(brief 仍要讀長 guide;report 問 ran_stage_check=yes|no name leak;env hints H1_EXP_ROOT／H1_TRIAL_ID;not wild diluted product SOP)削弱「野外只靠軟提醒」。I 軸 owner lean 見下一條。Stage 1 不准做 Decision。
   - 結論:OPEN 實驗 lean H1 + fail-closed script-minted receipt;軟提醒可見時有效,主牙仍要 C 形收據。非定案。
-- ⚠️ Q:盤點該住 Stage 1、setup、STATUS,還是新檔?
+- ⚠️ Q:盤點該住 Stage 1、setup、STATUS,還是新檔?深度先寫到哪?
   - 事實:docs/dev/STATUS.md:L49 skills/dev-talk/nodes/S1-survey.md:L21-L32
-  - 推理:I1 最早但撞模板凍結與 fast lane。I2 壽命是專案不是 feature。I3 撞 STATUS 寫入窗。I4 清楚但多產物。深度(直接／全 lock)未問。本輪只跑 H 軸遵從實驗,I 軸未測。
-  - 結論:OPEN 留給 Q7／Q8／Q11／Q13;本輪堆疊盤點仍 OPEN。
+  - 推理:owner 2026-09-09 收下 I2 為底、I4 選配。I1 要先解凍 Q11 且漏 fast,不取。I3 撞 STATUS 寫入窗,不取。深度 v1 = 宣告 pin + 本次碰到的直接相依,不是 lock 全樹。Q11 凍結可先留,I1 延後。Q10 軟 lean 單一 slug `host-stack-fit`(H1+I2/I4 同場)。組合包 lean:H1 fail-closed script receipt(C)+I2+I4。Stage 1 不准做 Decision。
+  - 結論:OPEN owner lean I2 base + I4 optional;深度先直接 pin。非定案。
 - ⚠️ Q:假 hook、第二方法論、拆 slug、cache 落後,哪些已死、哪些還能翻?
   - 事實:docs/PLUGIN.md:L5 docs/PLUGIN.md:L59-L64 notes/design/stage1-context-chain.md:L21-L35
-  - 推理:假 PreToolUse 與第二方法論與 brief／`#host` 衝突,本討論標已拒。拆 slug 仍合法(兩痛可獨立交)。cache 落後是 brief,本樹未重現。
-  - 結論:NEEDS_VERIFICATION Grok 3.6.1 vs 3.22.1 對照;拆 slug 見 Q10;已拒項不進方案表。
+  - 推理:假 PreToolUse 與第二方法論與 brief／`#host` 衝突,本討論標已拒。Q10 軟 lean 不拆 slug。cache 落後是 brief,本樹未重現。
+  - 結論:NEEDS_VERIFICATION Grok 3.6.1 vs 3.22.1 對照;拆 slug 除非 owner 之後要拆;已拒項不進方案表。
