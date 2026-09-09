@@ -24,3 +24,6 @@ __pycache__/
 public/
 # 本機授權覆寫(擁有者／共用帳號／Drive 資料夾),不進 Git
 CLAUDE.local.md
+
+# Stage2 prebash 牙暫存 slug（test-devstage2-graph；不得進 --others 掃描）
+docs/dev/stage2-prebash-tmp/

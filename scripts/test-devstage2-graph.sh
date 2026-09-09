@@ -351,6 +351,7 @@ with tempfile.TemporaryDirectory(prefix="devstage2-graph-test-") as tmpbase:
 
         tmp_slug = os.path.join(root, "docs", "dev", "stage2-prebash-tmp")
         try:
+            shutil.rmtree(tmp_slug, ignore_errors=True)
             os.makedirs(tmp_slug, exist_ok=True)
             open(os.path.join(tmp_slug, "1-discussion.md"), "w", encoding="utf-8").write(
                 "---\nfeature: stage2-prebash-tmp\nstage: 1-discussion\n"
