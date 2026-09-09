@@ -1,10 +1,10 @@
 ---
 feature: host-stack-fit
 stage: 2-decision
-status: draft
-verdict:
+status: approved
+verdict: PASS
 owner: rick
-reviewers: []
+reviewers: [user]
 updated: 2026-09-09
 baseline: v3.22.1 / 1768130
 contract: 2.0.0
@@ -12,7 +12,7 @@ contract: 2.0.0
 
 # 2. 收斂 — 主機執法貼近與堆疊盤點
 
-> 把 `1-discussion.md` 的 lean 收成 Decision。G1 未審:`verdict` 空、OC 待人審、不偽造 Human PASS。契約維持 `2.0.0`。本 hop 不升 plugin、不改 hooks／skills、不改 `STATUS.md` 表列。
+> 把 `1-discussion.md` 的 lean 收成 Decision。G1 已核:`verdict` PASS、`status` approved、OC-1～OC-4 ✅。契約維持 `2.0.0`。本 hop 不升 plugin、不改 hooks／skills、不改 `STATUS.md` 表列。
 > Stage 1 當時寫 lean、Q13 曾 `[>]`;owner 2026-09-09 Stage 2 brief 把組合包鎖死。1-discussion 留當時措辭,改口記在本檔,不回改正本討論。
 
 ## Approaches Considered
@@ -118,15 +118,15 @@ contract: 2.0.0
 - In:H1+C 收據契約(形狀細節進 4-spec);I2 `dev-setup` 專案級盤點;I4 選配機器可讀摘要;Q8 深度;Q13 同一 schema;單一 slug `host-stack-fit`。
 - Out:假 PreToolUse;第二套方法論;改鬆 `--action`;另造 lockfile 當正本;解凍並改 Stage 1–4 模板;本 hop bump plugin;Grok marketplace／主機 SKU 表;把 haiku–sonnet–opus dispatch-guard 搬到非 Claude;本 hop 對齊現場 3.6.1 cache。
 
-## Owner Calls(自判裁決,待人審)
+## Owner Calls(自判裁決,已核)
 
 ### 逐條裁決(上層)
 | OC | 決定了什麼 | 為什麼 | 依據(`檔:行` 或 `[Assumption]`) | 若被推翻會怎樣 | 狀態(待人審→✅/✗) |
 |---|---|---|---|---|---|
-| OC-1 | 收據由**既有**該站 `--action` 腳本鑄造、走既有核對路徑。不另造第二套檢查家族。使用者 brief 只鎖「script-minted receipt」;「沿用既有腳本」是 owner 延伸 | 共同 runtime 已經是 `--action` + check;另造家族等於靠近第二套方法論 | `1-discussion.md:28` 共同 runtime;`L106` 禁第二套方法論;`L237-239` probe 不能冒充 action。延伸本身 `[Assumption]` | 要新腳本／新入口;G4 與「不重寫 1–7」要重審 | 待人審 |
-| OC-2 | I4 預設落點 = 專案級 `docs/dev/0-stack.md`,不是每 slug 一份。使用者只鎖「I4 optional」;落點是延伸 | I2 是專案級;每 slug 再寫一份會漂而且 fast／多 feature 重複 | `1-discussion.md:132` I4 候選含專案根;`L130` I2 專案級。檔名 `[Assumption]` | 改成 `docs/dev/<slug>/0-stack.md` 或 lock digest 檔名;SC-4 觀測點跟著變 | 待人審 |
-| OC-3 | I4 **不是**每專案強制;只有需要機器可讀摘要／lock digest 時才加。這是對組合包「I2+I4」的收窄 | 強制 I4 = 每專案多一個產物;digest 不是 lock 正本 | `1-discussion.md:136` 「要機器可讀摘要時才加」;`L145` digest 不取代 lock | I4 變必做;Scope 與 setup 步驟加長 | 待人審 |
-| OC-4 | 本 feat **不修** plugin cache 落後(Q12)。對齊 cache 留在發版或行為看起來舊了。使用者 brief 未要求本 hop 修 cache;此為收窄 | #152 已確認仍落後,但「不是每條 feature」 | `1-discussion.md:75`/`L159` Q12 CONFIRMED + 不是每 feature | Scope 加上 Refresh／cache 對齊;與 H1+I2 交付纏在一起 | 待人審 |
+| OC-1 | 收據由**既有**該站 `--action` 腳本鑄造、走既有核對路徑。不另造第二套檢查家族。使用者 brief 只鎖「script-minted receipt」;「沿用既有腳本」是 owner 延伸 | 共同 runtime 已經是 `--action` + check;另造家族等於靠近第二套方法論 | `1-discussion.md:28` 共同 runtime;`L106` 禁第二套方法論;`L237-239` probe 不能冒充 action。延伸本身 `[Assumption]` | 要新腳本／新入口;G4 與「不重寫 1–7」要重審 | ✅ |
+| OC-2 | I4 預設落點 = 專案級 `docs/dev/0-stack.md`,不是每 slug 一份。使用者只鎖「I4 optional」;落點是延伸 | I2 是專案級;每 slug 再寫一份會漂而且 fast／多 feature 重複 | `1-discussion.md:132` I4 候選含專案根;`L130` I2 專案級。檔名 `[Assumption]` | 改成 `docs/dev/<slug>/0-stack.md` 或 lock digest 檔名;SC-4 觀測點跟著變 | ✅ |
+| OC-3 | I4 **不是**每專案強制;只有需要機器可讀摘要／lock digest 時才加。這是對組合包「I2+I4」的收窄 | 強制 I4 = 每專案多一個產物;digest 不是 lock 正本 | `1-discussion.md:136` 「要機器可讀摘要時才加」;`L145` digest 不取代 lock | I4 變必做;Scope 與 setup 步驟加長 | ✅ |
+| OC-4 | 本 feat **不修** plugin cache 落後(Q12)。對齊 cache 留在發版或行為看起來舊了。使用者 brief 未要求本 hop 修 cache;此為收窄 | #152 已確認仍落後,但「不是每條 feature」 | `1-discussion.md:75`/`L159` Q12 CONFIRMED + 不是每 feature | Scope 加上 Refresh／cache 對齊;與 H1+I2 交付纏在一起 | ✅ |
 
 ### 內部技術選擇(下層,告知即可)
 - 契約維持 `2.0.0`;本 hop 不 bump `.claude-plugin/plugin.json`(模板未要求 2-decision 寫 plugin 版本欄)。
@@ -138,9 +138,9 @@ contract: 2.0.0
 - 難逆轉:否(契約 2.0.0 不變;G3 前可改本檔 Decision／OC;收據與 setup 面可改版)
 - 反直覺:是(`start` ≠ 武裝;軟提醒高分仍要 C 牙;最早的 I1 反而不取)
 - 真 trade-off:是(fail-closed 摩擦 vs 假綠;I2 新鮮度 vs I1 凍結)
-→ 晉升:**否**(三條件未全中;留在本檔。G1 未過也不抄 `docs/adr/`)
+→ 晉升:**否**(三條件未全中;留在本檔。不抄 `docs/adr/`)
 
 ## 確認紀錄
 - 決策點清單確認 | 2026-09-09 | owner Stage 2 brief 鎖:主機 H1+C、堆疊 I2+I4、深度 D1、schema S1、slug One;本檔六個決策點對應該鎖板
 - Stage 1 改口 | 2026-09-09 | 1-discussion 仍 draft、Q6–Q11／Q13 仍寫 lean;本檔改口為 Decision。Q13 自 `[>]`／`[~]` 收成 S1。不回改正本討論
-- G1 | 未審 | `verdict` 空、`reviewers` 空、OC 全數待人審;Agent 不代填 Human PASS
+- G1 | 2026-09-09 | owner 在 chat 說「G1 ok」並確認 merge #154;OC-1～OC-4 隨 Decision 組合包一併視為接受。owner 自審(有記錄);reviewers: [user]
