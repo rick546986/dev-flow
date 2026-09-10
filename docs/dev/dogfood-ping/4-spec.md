@@ -119,7 +119,7 @@ contract: 2.0.0
   - Timeout/retry: n-a — 同步瞬間結束；無網路／無等待；不定義重試
 - lane 判準: Risk normal、無 schema／權限／金流／對外 API／新 capability → **fast**（與判準一致，無偏離）
 
-## Drafting Decisions(草擬自判,待人審)
+## Drafting Decisions(草擬自判,G2 已核)
 
 ### 逐條裁決(上層)
 | DD | 決定了什麼 | 為什麼 | 依據(`檔:行` 或 `[Assumption]`) | 若被推翻會怎樣 | 狀態(待人審→✅/✗) |
