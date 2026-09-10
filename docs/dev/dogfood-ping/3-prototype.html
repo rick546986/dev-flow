@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>dogfood-ping · 3-prototype</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px}
+.r-body p{margin:0 0 8px}
+.trigger{list-style:none;padding:0;margin:0}
+.trigger li{padding:4px 0;border-bottom:1px solid var(--rule-2)}
+.hit{color:var(--ok);font-weight:650}
+.miss{color:var(--ink-3)}
+.card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 8px;background:var(--sunk)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 3-prototype · 審查介面</p>
+  <h1>dogfood-ping</h1>
+  <p class="sub">正本是 md。觸發判定／Demo／答案回寫 2-decision。不是 html-shell 長文。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">draft</span></div><div class="cell"><span class="k">觸發命中</span><span class="v">6/9</span></div><div class="cell"><span class="k">Demo</span><span class="v">2</span></div><div class="cell"><span class="k">Human verdict</span><span class="v">-</span></div></div>
+</header>
+<section class="r-block" id="trigger"><div class="r-head"><span class="r-name">觸發判定</span></div><div class="r-body"><ul class="trigger"><li class="miss">[未中] 有新的前端流程（本題是 CLI，無新前端）</li><li class="hit">[命中] 改變使用者下一步（owner 改以可觀測腳本／Example 驗證模板，不再只靠大 feat 記憶）</li><li class="hit">[命中] 涉及角色交接（owner ↔ 派工助手 ↔ 獨立 reviewer）</li><li class="hit">[命中] 涉及人工核准（G1／G2／G3 人類簽核）</li><li class="hit">[命中] 涉及等待/退回/逾時（閘門等待裁決／退回重做）</li><li class="hit">[命中] 涉及權限差異（寫碼 agent ≠ 審核 agent；owner 簽閘）</li><li class="hit">[命中] 涉及系統外動作（GitHub PR／CloudAgent／本機 shell）</li><li class="miss">[未中] 涉及多種可行互動設計（方向 A 已 lock；單一路徑 CLI）</li><li class="miss">[未中] Stage 1 尚有操作流程不確定性（Journey 已清；Q3 掛點後置 4-spec）</li></ul></div></section>
+<section class="r-block" id="question"><div class="r-head"><span class="r-name">Question</span></div><div class="r-body"><p>2-decision SC-1／決策點 A：throwaway 最小 shell 能否印出**恰好**一行 `dogfood-ok` 且 exit 0？ 附帶：對本 dogfood，**CLI Demo 是否足夠**滿足 Stage 3（無需 UI Variant）？ 答案長什麼樣才算回答了： 1. 實跑輸出字串等於 `dogfood-ok`（無多餘空白／前綴）。 2. exit code = 0。 3. 記錄「CLI Demo 足夠／不足」與依據（Pattern 已核准 vs 仍需互動 Variant）。</p></div></section>
+<section class="r-block" id="demo"><div class="r-head"><span class="r-name">Demo</span></div><div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 226" role="img" aria-label="結構圖">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">throwaway CLI Demo(選定)</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">印 dogfood-ok + exit 0</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="b" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">正式腳本留 Stage 6</text>
+</svg>
+</div><div class="card"><strong>Scenario SC-1(跑 throwaway → 見 dogfood-ok)</strong><p>使用者角色:owner（或派工助手代跑給 owner 看）</p><p>真實目標:確認極小可觀測題的輸出契約成立，作為後續 Stage 6 寫碼基準</p><p>起始狀態:scratchpad 有 `dogfood-ping-proto.sh`（可執行；標 PROTOTYPE）</p><p>操作步驟:在 terminal 執行 `./dogfood-ping-proto.sh`；記下 stdout 與 exit code</p><p>系統回應:stdout 一行 `dogfood-ok`；process exit 0</p><p>系統外下一步:無（本 Demo 不開 PR、不碰 file-map）</p><p>觀察問題:輸出是否剛好 `dogfood-ok`（無前綴）？exit 是否 0？是否覺得還需要 UI／多 Variant 才算「跑過 Stage 3」？</p></div><div class="card"><strong>Scenario SC-1(錯誤對照：故意印錯字)</strong><p>使用者角色:派工助手</p><p>真實目標:確認驗收邊界——錯字不可當 PASS</p><p>起始狀態:臨時改印 `dogfood-OK` 或加前綴（僅對照，不留檔）</p><p>操作步驟:跑對照指令；與正確輸出比對</p><p>系統回應:字串不相等 → 不得宣稱 SC-1 形狀成立</p><p>系統外下一步:無</p><p>觀察問題:驗收是否只認精確字串？</p></div></div></section>
+<section class="r-block" id="result"><div class="r-head"><span class="r-name">答案</span></div><div class="r-body"><p>- **2026-09-10 實跑**（CloudAgent session scratchpad）: - stdout: `dogfood-ok` - exit: `0` - `exact_match_dogfood-ok: yes` - 答案:SC-1 輸出形狀**成立**（throwaway 證明）；**CLI Demo 足夠**——方向 A 已是核准 Pattern，無剩餘互動設計分叉，不必湊 UI Variant。 - 正式 `scripts/dogfood-ping.sh` **尚未**寫入 repo（留給 Stage 6 + file-map 同步）。 - 回寫對象:2-decision 確認紀錄「prototype 回寫」行 + Risks 旁註 `#165`（產器問題另票，與本 Demo 無關）。</p></div></section>
+<section class="r-block" id="writeback"><div class="r-head"><span class="r-name">回寫 2-decision</span></div><div class="r-body"><p>- 回寫 2-decision：SC-1 輸出形狀經 throwaway CLI 確認（`dogfood-ok` + exit 0）；**Stage 3 已行使**；CLI Demo 足夠，無跳過宣告。 - 互動／Human verdict：仍待 owner 親填（本檔 `status: draft` 直至 Human verdict = ACCEPTED + attestation）。 - throwaway 腳本處置:留在 session `/tmp`，**不進 Git**；結構已錄於上方結構圖；正式碼 Stage 6 再寫。</p></div></section>
+<section class="r-block" id="feedback"><div class="r-head"><span class="r-name">User Demo Feedback</span></div><div class="r-body"><p>- Demo date: 2026-09-10（agent 已代跑 CLI；待 owner 親看輸出／頁面） - Participants: - Variant reviewed: CLI-only（無 UI Variant） - Accepted interaction: - Rejected interaction: - Confusions observed: - Missing real-world steps: - Permission corrections: - External handoffs: - Required changes: - Human verdict: - Verdict attestation:</p></div></section>
+<p class="src">由 <code>scripts/build-stage3-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
