@@ -364,6 +364,111 @@ def test_s_1_4_allow_overwrites_same_path():
         expect(ok, f"rc={proc.returncode} dest={dest}")
 
 
+REST = (
+    (
+        "talk",
+        "check-devtalk-graph.sh",
+        "talk-allow.json",
+        "devtalk-graph",
+        "talk.json",
+    ),
+    (
+        "stage2",
+        "check-devstage2-graph.sh",
+        "stage2-allow.json",
+        "devstage2-graph",
+        "stage2.json",
+    ),
+    (
+        "stage3",
+        "check-devstage3-graph.sh",
+        "stage3-allow.json",
+        "devstage3-graph",
+        "stage3.json",
+    ),
+    (
+        "stage5",
+        "check-devstage5-graph.sh",
+        "stage5-allow.json",
+        "devstage5-graph",
+        "stage5.json",
+    ),
+    (
+        "stage6",
+        "check-devstage6-graph.sh",
+        "stage6-allow.json",
+        "devstage6-graph",
+        "stage6.json",
+    ),
+    (
+        "stage7",
+        "check-devstage7-graph.sh",
+        "stage7-allow.json",
+        "devstage7-graph",
+        "stage7.json",
+    ),
+)
+
+
+def seed_station(tmp, fixture_name):
+    src = os.path.join(root, "scripts", "fixtures", fixture_name, "good")
+    shutil.copytree(src, tmp, dirs_exist_ok=True)
+    src_docs = os.path.join(tmp, "docs", "dev", "fixture-slug")
+    dest_docs = os.path.join(tmp, "docs", "dev", SLUG)
+    if os.path.isdir(src_docs) and not os.path.isdir(dest_docs):
+        shutil.copytree(src_docs, dest_docs)
+
+
+def mint_rest_station(station, script_name, action_name, fixture_name, dest_name):
+    case_title(f"test_s_1_1_{station}_action_mints_receipt")
+    script = os.path.join(root, "scripts", script_name)
+    action = os.path.join(fix, "actions", action_name)
+    with tempfile.TemporaryDirectory(prefix=f"hr-{station}-") as tmp:
+        seed_station(tmp, fixture_name)
+        proc = run_cmd(["bash", script, "--action", action, tmp])
+        dest = os.path.join(tmp, ".devflow", "host-receipt", SLUG, dest_name)
+        ok = proc.returncode == 0 and os.path.isfile(dest)
+        if ok:
+            data = read_json(dest)
+            ok = (
+                data.get("schema") == SCHEMA
+                and data.get("station") == station
+                and data.get("slug") == SLUG
+                and data.get("script") == f"scripts/{script_name}"
+                and data.get("DONE") is True
+                and data.get("stamp") == stamp_of(data)
+            )
+        expect(
+            ok,
+            f"{station} rc={proc.returncode} dest={os.path.isfile(dest)} "
+            f"out={(proc.stdout or '')[-180:]} err={(proc.stderr or '')[-180:]}",
+        )
+
+
+def test_s_1_1_talk_action_mints_receipt():
+    mint_rest_station(*REST[0])
+
+
+def test_s_1_1_stage2_action_mints_receipt():
+    mint_rest_station(*REST[1])
+
+
+def test_s_1_1_stage3_action_mints_receipt():
+    mint_rest_station(*REST[2])
+
+
+def test_s_1_1_stage5_action_mints_receipt():
+    mint_rest_station(*REST[3])
+
+
+def test_s_1_1_stage6_action_mints_receipt():
+    mint_rest_station(*REST[4])
+
+
+def test_s_1_1_stage7_action_mints_receipt():
+    mint_rest_station(*REST[5])
+
+
 GROUPS = {
     "mint-stage4": [
         test_s_1_1_station_action_mints_receipt,
@@ -376,7 +481,14 @@ GROUPS = {
         test_s_1_4_exit2_does_not_change_receipt,
         test_s_1_4_allow_overwrites_same_path,
     ],
-    "mint-rest": [],
+    "mint-rest": [
+        test_s_1_1_talk_action_mints_receipt,
+        test_s_1_1_stage2_action_mints_receipt,
+        test_s_1_1_stage3_action_mints_receipt,
+        test_s_1_1_stage5_action_mints_receipt,
+        test_s_1_1_stage6_action_mints_receipt,
+        test_s_1_1_stage7_action_mints_receipt,
+    ],
     "verify-receipt": [],
     "fail-closed-claim": [],
 }

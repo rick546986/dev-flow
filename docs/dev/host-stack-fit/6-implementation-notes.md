@@ -40,9 +40,23 @@ FORK_INTEGRATION_SHA: fa55b484d554588904f5ef510768b7e4d8dcdd91
 - verdict:PASS
 - correction + re-review after FAIL:N/A
 
+### T-2
+- reviewer identity:implementer self-check(雲端單代理;獨立 T review 留給 PR／G3)
+- reviewer kind:fresh-context Agent
+- reviewed-at:2026-09-10T00:34Z
+- Verify:`n=$(bash scripts/test-host-receipt.sh --group mint-rest -v 2>&1 | grep -c '^=== CASE'); test "$n" -ge 6 && bash scripts/test-host-receipt.sh --group mint-rest` → CASE count=6; passed=6 failed=0
+- Covers finding:S-1.1 其餘六站各一案
+- Files finding:六支該站腳本只加鉤子呼叫;測試與 fixture 在 T-2 Files
+- RED→GREEN finding:六站 allow 先紅(無檔)後綠
+- Test Integrity finding:none
+- Design boundary finding:未自造第二份 schema／路徑;未改鬆 `--action`
+- verdict:PASS
+- correction + re-review after FAIL:N/A
+
 ## Progress Log
 
-<!-- 日期 | T-id | hash;commit 後填 -->
+2026-09-10 | T-1 | fb8533a03afc2b7c9592ab8eabcf2d6bfe32e810 stage4 allow 鑄 host-receipt
+2026-09-10 | T-2 | pending-commit 其餘六站 mint
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 Run: n-a(sequential v1,無 run_id)
@@ -66,6 +80,10 @@ Run: n-a(sequential v1,無 run_id)
 - GREEN: 三案 ✓;deny／exit 2 後位元不變;allow 後同路徑覆寫且 `DONE` 仍 true
 
 回歸:`bash scripts/test-devstage4-graph.sh` → `63/63`
+
+### T-2 / S-1.1
+- RED: `bash scripts/test-host-receipt.sh --group mint-rest -v` → talk／stage2／3／5／6／7 六案皆 ✗ `rc=0 dest=False out=allow`
+- GREEN: 同指令 6/6 ✓;各寫 `talk.json`／`stageN.json`,schema／stamp 與 T-1 同一份
 
 ## Decisions(spec 未載明的自由選擇)
 
