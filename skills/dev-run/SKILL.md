@@ -1,6 +1,6 @@
 ---
 name: dev-run
-description: dev-flow Stage 6 內部執行引擎 — 多模型派工(Claude Code:haiku 寫碼 → sonnet 審 → 錯誤升階;Cursor／Grok 預設 Auto),配 devflow-exec 執行守衛,全程不打斷問人。正常由 /dev-flow 定位到 Stage 6 時自動載入,使用者不需直接呼叫;使用者說「dev-run <slug>」「開始執行 <slug>」「跑實作」時亦啟用(相容直呼)。
+description: dev-flow Stage 6 內部執行引擎 — 多模型派工(Claude Code:haiku 寫碼 → sonnet 審 → 錯誤升階;Cursor／Grok 預設 Auto、執行者 ≠ reviewer),配 devflow-exec 執行守衛,全程不打斷問人。正常由 /dev-flow 定位到 Stage 6 時自動載入,使用者不需直接呼叫;使用者說「dev-run <slug>」「開始執行 <slug>」「跑實作」時亦啟用(相容直呼)。
 ---
 
 # dev-run — Stage 6 執行引擎
@@ -59,7 +59,13 @@ Minor」「計畫已決定所以不算」→ 停手重寫。大材料(diff、報
 層(規劃／執行／起步／審查)綁死;opus／sonnet／haiku **只是 Claude 對照**,不是跨主機必跑型號。
 
 - **Claude Code**:走下表。haiku → sonnet → opus 升階牙與嘗試上限在此主機有效,行為不變。
-- **Cursor／Grok／Grok Bot**:派工者與執行者預設 **Auto**(Cursor Auto／該主機同等自動選模／cloud-agent 預設)。Reviewer = 第二個獨立 Auto,或同主機 fresh session。不要強制點名 Claude 型號。嘗試上限與層紀律仍適用,但是**角色**(起步 → 執行 → 規劃),不是 Claude 產品名。
+- **Cursor／Grok／Grok Bot**:
+  - **鐵則**:執行者 ≠ reviewer。必須是不同 agent id／chat／cloud agent／Bot;同一對話自審不算。
+  - ① **必做**:兩邊預設 **Auto**(Cursor Auto／該主機同等自動選模／CloudAgent `default`)。必須兩個不同 agent。
+  - ③ **選配**:owner 明示更強 review → reviewer 可用具名模型 + 該主機支援的 effort／thinking(例:CloudAgent grok-4.6 + effort=high)。不另編假跨主機 SKU 表。
+  - ④ **選配升階**:執行 FAIL 時,派工者可改派更強具名模型執行者(新 agent 或 model override)。按 agent／模型升,不走 Claude haiku→sonnet 階梯。
+  - ② **不支援**:Auto + 提高 effort／thinking。CloudAgent `default` **不收參數**(probe 會拒)。不要寫成可用。
+  嘗試上限與層紀律仍適用,但是**角色**(起步 → 執行 → 規劃),不是 Claude 產品名。
 - **Codex**:若他處已有具名對照,沿用那份;本節不另編 Codex 型號表。
 
 | 角色 | 模型 | 規則 |
