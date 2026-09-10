@@ -1,8 +1,8 @@
 ---
 feature: dogfood-ping
 stage: 4-spec
-status: draft
-verdict:
+status: approved
+verdict: PASS
 owner: rick-dev-flow
 reviewers: [user]
 updated: 2026-09-10
@@ -13,7 +13,7 @@ contract: 2.0.0
 # 4. 規格 — dogfood-ping（極小 CLI）
 
 > Change spec（delta）。G1 鎖定：A + 跑 Stage 3 + Example。正式腳本 Stage 6 才落地；本檔只釘可測契約。
-> `verdict` 空＝尚未 G2；**禁止**代填 PASS。契約維持 `2.0.0`。
+> **G2 PASS**（owner 2026-09-10 chat）。契約維持 `2.0.0`。
 
 ## ADDED Requirements
 
@@ -124,8 +124,8 @@ contract: 2.0.0
 ### 逐條裁決(上層)
 | DD | 決定了什麼 | 為什麼 | 依據(`檔:行` 或 `[Assumption]`) | 若被推翻會怎樣 | 狀態(待人審→✅/✗) |
 |---|---|---|---|---|---|
-| DD-1 | shebang 固定 `#!/usr/bin/env bash`（不用寫死 `/bin/bash`） | CI／mac／linux bash 路徑不一致；`env` 較可攜 | `2-decision.md` OC-3 路徑鎖在 `scripts/`；可攜 `[Assumption]` | S-1 觀測改認絕對路徑 shebang；部分環境可能找不到 bash | 待人審 |
-| DD-2 | 換行政策 = 單一 LF；實作用 `printf '%s\n' 'dogfood-ok'`（或位元組等價），不用依賴 echo 的實作差異 | 要與 `dogfood-ok\n` 位元組契約一致；echo 在不同 shell 可能加旗標或吃跳脫 | Stage 3 Result 實跑；POSIX printf 行為 `[Assumption]` | S-2 改允許 CRLF 或無換行；觀測指令跟著改 | 待人審 |
+| DD-1 | shebang 固定 `#!/usr/bin/env bash`（不用寫死 `/bin/bash`） | CI／mac／linux bash 路徑不一致；`env` 較可攜 | `2-decision.md` OC-3 路徑鎖在 `scripts/`；可攜 `[Assumption]` | S-1 觀測改認絕對路徑 shebang；部分環境可能找不到 bash | ✅ |
+| DD-2 | 換行政策 = 單一 LF；實作用 `printf '%s\n' 'dogfood-ok'`（或位元組等價），不用依賴 echo 的實作差異 | 要與 `dogfood-ok\n` 位元組契約一致；echo 在不同 shell 可能加旗標或吃跳脫 | Stage 3 Result 實跑；POSIX printf 行為 `[Assumption]` | S-2 改允許 CRLF 或無換行；觀測指令跟著改 | ✅ |
 
 ### 內部技術選擇(下層,告知即可)
 - 正式檔名／路徑：`scripts/dogfood-ping.sh`（G1／OC-3 已鎖）。
@@ -147,4 +147,4 @@ printf 'dogfood-ok\n' | cmp -n - <(scripts/dogfood-ping.sh)
 - R 範圍草稿 | 2026-09-10 | R-1～R-4 對齊 G1 鎖板（路徑／stdout／exit／file-map）；待 G2 人審
 - S 展開草稿 | 2026-09-10 | S-1～S-4 各含觀測；純內部行為 Operational Context = 不適用
 - Stage 3 對帳 | 2026-09-10 | throwaway CLI Demo 對應 R-2／R-3；owner chat 准開 Stage 4；Human Demo 正式 attestation 仍待頁面親填
-- 送 G2 前 | — | `verdict` 仍空；等 owner／reviewer 簽 G2 後才開 Stage 5
+- G2 | 2026-09-10 | owner chat 明示 **G2 PASS**；`verdict: PASS`、`status: approved`；DD-1／DD-2 ✅。准開 Stage 5；正式腳本仍 Stage 6

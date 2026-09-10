@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>dogfood-ping · 5-tasks</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+a.cell{text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent);text-decoration:none}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{display:flex;gap:10px;align-items:center;padding:15px 18px;
+  border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
+.r-name,.t-line{font-weight:650;text-decoration:none;white-space:nowrap}
+.t-line{display:inline-flex;gap:8px;align-items:center;white-space:nowrap}
+.tid,.t-title,.st{white-space:nowrap}
+.r-body{padding:14px 18px 16px;overflow-wrap:anywhere;word-break:break-word}
+.r-body p{margin:0 0 8px}
+.tablewrap{overflow-x:auto}
+.task-index{width:100%;border-collapse:collapse;font-size:.92rem}
+.task-index th,.task-index td{border-bottom:1px solid var(--rule-2);
+  text-align:left;padding:8px 6px}
+.task-index th:nth-child(1),.task-index th:nth-child(2),
+.task-index td:nth-child(1),.task-index td:nth-child(2){white-space:nowrap}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 5-tasks · 審查介面</p>
+  <h1>dogfood-ping</h1>
+  <p class="sub">正本是 md。這頁是審頁任務卡,不是執行板,不加提交判定。</p>
+  <div class="dash"><a class="cell" href="#T-1"><span class="k">狀態</span><span class="v">draft</span></a><div class="cell"><span class="k">任務</span><span class="v">2</span></div><div class="cell"><span class="k">未完成</span><span class="v">2</span></div></div>
+</header>
+
+<section class="r-block" id="task-index"><div class="r-head"><span class="r-name">任務總表</span></div><div class="r-body"><div class="tablewrap"><table class="task-index"><tr><th>T</th><th>狀態</th><th>標題</th></tr><tr><td>T-1</td><td>未完成</td><td>新增 dogfood-ping CLI（印 dogfood-ok、exit 0）</td></tr><tr><td>T-2</td><td>未完成</td><td>同步 file-map 地板（檢查綠）</td></tr></table></div></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name t-line"><span class="tid">T-1</span><span class="t-title">新增 dogfood-ping CLI（印 dogfood-ok、exit 0）</span><span class="st">未完成</span></span></div><div class="r-body"><p><strong>Intent</strong> 系統多了一支可執行腳本 `scripts/dogfood-ping.sh`：跑起來 stdout 恰好 `dogfood-ok\n`，exit 0。</p><p><strong>Covers</strong> R-1, R-2, R-3 / S-1, S-2, S-3</p><p><strong>Files</strong> `scripts/dogfood-ping.sh`</p><p><strong>Verify</strong> `test -x scripts/dogfood-ping.sh &amp;&amp; head -n1 scripts/dogfood-ping.sh | grep -Fq '/usr/bin/env bash' &amp;&amp; scripts/dogfood-ping.sh &gt; /tmp/dogfood-ping.out; test $? -eq 0 &amp;&amp; cmp /tmp/dogfood-ping.out &lt;(printf 'dogfood-ok\n')`</p><p><strong>Blocked-by</strong> —</p><p><strong>Boundaries</strong> 只准新增／編輯 Files 列出的那一支腳本；shebang 必須 `#!/usr/bin/env bash`；輸出用 `printf '%s\n' 'dogfood-ok'`（或位元組等價），不用 echo；不准加 HTTP／npm／第二支腳本；不准動 host-stack-fit／#163／#165。</p></div></section>
+<section class="r-block" id="T-2"><div class="r-head"><span class="r-name t-line"><span class="tid">T-2</span><span class="t-title">同步 file-map 地板（檢查綠）</span><span class="st">未完成</span></span></div><div class="r-body"><p><strong>Intent</strong> 新增腳本後 file-map／計數地板綠——`check-file-map.sh` exit 0，不因漏登 `scripts/dogfood-ping.sh` 而紅。</p><p><strong>Covers</strong> R-4 / S-4</p><p><strong>Files</strong> `scripts/check-file-map.sh`, `guides/guide-dev-flow.html`</p><p><strong>Verify</strong> `bash scripts/check-file-map.sh`</p><p><strong>Blocked-by</strong> T-1</p><p><strong>Boundaries</strong> 只准改 file-map 列與 `EXPECTED_MAPPED_FILES`（或等價計數）讓新腳本入帳；不准改檢查算法／放寬守衛；不准動 host-stack-fit 正本；不准在本 T 改 CLI 行為（行為屬 T-1）。</p></div></section>
+<p class="src">由 <code>scripts/build-stage5-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
