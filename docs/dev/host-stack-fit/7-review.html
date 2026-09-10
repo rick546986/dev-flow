@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>host-stack-fit · 7-review</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  -webkit-font-smoothing:antialiased}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;font-variant-numeric:tabular-nums}
+code{background:var(--sunk);border-radius:3px;padding:1px 5px;color:var(--ink-2)}
+a{color:var(--accent)}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+
+/* ---- 頁首 ---- */
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem;max-width:62ch}
+
+/* ---- 動線格 ---- */
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:20px 0 4px}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:11px 13px;box-shadow:var(--shadow)}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;display:block;margin-bottom:5px}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+.cell .n{font-size:.78rem;color:var(--ink-2);display:block;margin-top:3px}
+.cell.is-bad .v{color:var(--bad)} .cell.is-ok .v{color:var(--ok)}
+.cell.is-warn .v{color:var(--warn)} .cell.is-accent .v{color:var(--accent)}
+
+/* ---- sticky 進度 ---- */
+.progress{position:sticky;top:0;z-index:20;background:var(--ground);
+  border-bottom:1px solid var(--rule);padding:11px 0;margin:22px 0 0}
+.progress-in{max-width:900px;margin:0 auto;padding:0 20px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.bar{flex:1 1 200px;height:7px;background:var(--sunk);border-radius:99px;overflow:hidden;
+  min-width:140px}
+.bar i{display:block;height:100%;width:0;background:var(--accent);
+  transition:width .25s ease;border-radius:99px}
+.count{font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.count b{color:var(--accent)}
+.btn{border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);
+  border-radius:7px;padding:5px 11px;font-size:.82rem;cursor:pointer;font-family:inherit}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---- 提示框 ---- */
+.criterion{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 26%,transparent);
+  border-radius:10px;padding:15px 17px;margin:26px 0}
+.criterion h2{margin:0 0 7px;font-size:.95rem;letter-spacing:.02em;border:0;padding:0}
+.criterion p{margin:0;color:var(--ink-2);font-size:.9rem}
+.criterion .ex{margin-top:9px;padding-top:9px;
+  border-top:1px dashed color-mix(in srgb,var(--accent) 30%,transparent);font-size:.85rem}
+
+/* ---- 區塊卡（R / T 共用）---- */
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;
+  border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
+.r-block.danger .r-head{border-left-color:var(--bad)}
+.r-id{font-weight:700;font-size:.95rem;letter-spacing:.02em;white-space:nowrap;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.r-block.danger .r-id{color:var(--bad)}
+.r-block.core .r-id{color:var(--accent)}
+.r-name{font-weight:650}
+.r-risk{display:block;font-size:.83rem;color:var(--ink-2);margin-top:3px}
+.r-rule{padding:12px 18px;background:var(--sunk);font-size:.9rem;color:var(--ink-2);
+  border-bottom:1px solid var(--rule-2)}
+.r-rule b{color:var(--ink)}
+
+/* ---- 圖 ---- */
+/* 直式現況圖／方案架構圖:外層撐滿欄、圖本身有限寬,水平置中。
+   禁 svg/pre width:100% —— 畫布撐滿時狹長圖會貼左。
+   max-width 360px 對齊鎖定手樣(subsidy 2-decision.html)。 */
+.fig{margin:26px 0;padding:17px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}
+.fig svg,.fig pre{display:block;width:auto;max-width:360px;margin:0 auto;height:auto}
+.pinned pre{display:block;width:max-content;max-width:100%;margin-left:auto;margin-right:auto}
+.cap{color:var(--ink-3);font-size:.82rem;line-height:1.6;margin-top:11px;text-align:center}
+svg .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.4}
+svg .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+svg .wn{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.4}
+svg .bd{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.4}
+svg .nl{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--ink)}
+svg .sm{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--ink-3)}
+svg .edge{fill:none;stroke:var(--ink-3);stroke-width:1.6}
+svg .ahead{fill:var(--ink-3);stroke:none}
+
+/* ---- 摺疊 ---- */
+.appendix{margin-top:42px;border-top:1px solid var(--rule);padding-top:22px}
+.appendix > h2{font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 13px;border:0;padding:0}
+details.doc{border:1px solid var(--rule);border-radius:9px;margin-bottom:9px;
+  background:var(--panel);overflow:hidden}
+details.doc > summary{cursor:pointer;padding:11px 15px;font-weight:600;font-size:.9rem;
+  list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:center}
+details.doc > summary::-webkit-details-marker{display:none}
+details.doc > summary::after{content:"展開";font-size:.76rem;color:var(--ink-3);font-weight:500}
+details.doc[open] > summary::after{content:"收合"}
+details.doc[open] > summary{border-bottom:1px solid var(--rule-2)}
+details.doc:hover{border-color:var(--accent)}
+.doc-in{padding:4px 17px 15px;font-size:.9rem;color:var(--ink-2)}
+.doc-in h2,.doc-in h3{color:var(--ink);font-size:.95rem;margin:16px 0 7px;border:0;padding:0}
+.doc-in table{border-collapse:collapse;width:100%;margin:11px 0;font-size:.84rem}
+.doc-in th,.doc-in td{border:1px solid var(--rule);padding:6px 9px;text-align:left;
+  vertical-align:top}
+.doc-in th{background:var(--sunk);font-weight:650;color:var(--ink)}
+.doc-in pre{background:var(--sunk);padding:11px;border-radius:7px;overflow-x:auto;
+  font-size:.82rem;line-height:1.5}
+.doc-in blockquote{margin:11px 0;padding:.4em 1em;border-left:3px solid var(--rule);
+  color:var(--ink-3)}
+.doc-in ul,.doc-in ol{padding-left:1.35em}
+.doc-in li{margin:4px 0}
+.tablewrap{overflow-x:auto}
+
+/* ---- 收尾 ---- */
+.verdict{margin-top:34px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);padding:19px 21px;box-shadow:var(--shadow)}
+.verdict h2{margin:0 0 9px;font-size:1rem;border:0;padding:0}
+.verdict p{margin:0 0 9px;color:var(--ink-2);font-size:.91rem}
+.verdict p:last-child{margin-bottom:0}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:560px){h1{font-size:1.35rem}}
+
+.pinned{border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:8px;
+        padding:14px 16px;margin:0 0 14px;background:var(--panel)}
+.pinned>h2{margin:0 0 8px;font-size:1rem;letter-spacing:.01em}
+.pinned .tablewrap{overflow-x:auto}
+.pinned table{width:100%;border-collapse:collapse;font-size:.86rem}
+.pinned th,.pinned td{border:1px solid var(--rule);padding:5px 8px;text-align:left;vertical-align:top}
+.pinned ul{margin:.3em 0 .3em 1.1em;padding:0}
+.pinned p{margin:.35em 0}
+a.cell{cursor:pointer;text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.s-card{border-bottom:1px solid var(--rule-2)}
+.s-card:last-child{border-bottom:0}
+.s-head{display:flex;gap:10px;align-items:center;padding:12px 18px;cursor:pointer;
+  flex-wrap:wrap}
+.s-head:hover{background:var(--sunk)}
+.s-chk{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex:none}
+.s-chk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.s-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.83rem;
+  font-weight:650;color:var(--accent);background:var(--accent-soft);
+  padding:2px 7px;border-radius:5px;flex:none}
+.s-title{font-weight:600;font-size:.94rem}
+.tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600;flex:none}
+.tag.base{background:var(--sunk);color:var(--ink-3)}
+.tag.main{background:var(--warn-soft);color:var(--warn)}
+.tag.rej{background:var(--bad-soft);color:var(--bad)}
+.s-card.done{background:var(--ok-soft)}
+.s-card.done .s-title{color:var(--ink-2)}
+.s-body{padding:0 18px 15px 45px}
+.gwt{display:grid;gap:5px;margin-bottom:11px}
+.gwt-row{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:baseline}
+.gwt-k{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.71rem;
+  font-weight:700;color:var(--ink-3);letter-spacing:.06em}
+.gwt-v{font-size:.9rem;color:var(--ink-2)}
+.obs{background:var(--sunk);border-left:3px solid var(--accent);border-radius:0 7px 7px 0;
+  padding:9px 13px}
+.obs.missing{border-left-color:var(--bad);background:var(--bad-soft)}
+.obs-k{display:block;font-size:.71rem;letter-spacing:.08em;text-transform:uppercase;
+  font-weight:700;color:var(--accent);margin-bottom:3px}
+.obs.missing .obs-k{color:var(--bad)}
+.obs-v{font-size:.88rem;color:var(--ink-2)}
+@media (max-width:560px){
+  .s-body{padding-left:18px}
+  .gwt-row{grid-template-columns:1fr;gap:2px}
+}
+
+.g3-chk-hint{font-size:.86rem;color:var(--ink-2);margin:18px 0 0}
+.g3-ask{margin:0 0 12px}
+.g3-ask-h{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-3);margin:0 0 6px}
+.g3-ask ul{margin:0;padding:0;list-style:none}
+.g3-ask li{display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:.9rem;
+  color:var(--ink)}
+.g3-ask .qmark{color:var(--accent);font-weight:700;flex:none;line-height:1.5}
+
+.gate-verdict{margin:34px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);padding:18px 20px;box-shadow:var(--shadow)}
+.gate-verdict .gv-canon{margin:0 0 12px;color:var(--ink-2);font-size:.9rem}
+.gv-row{display:flex;flex-wrap:wrap;gap:12px 18px;margin:0 0 12px}
+.gv-row label{display:flex;gap:6px;align-items:center;font-weight:600}
+.gv-field{display:block;margin:0 0 8px;color:var(--ink-2);font-size:.88rem}
+.gv-field input{margin-left:8px;min-width:16rem;max-width:100%;padding:4px 8px;
+  border:1px solid var(--rule);border-radius:6px;background:var(--sunk);color:var(--ink);
+  font:inherit}
+.gate-verdict .btn{margin-top:6px;background:var(--accent);color:#fff;border-color:var(--accent)}
+.gate-verdict .btn:hover{filter:brightness(1.05)}
+.gv-status{margin:10px 0 0;font-size:.86rem;color:var(--ink-2)}
+</style>
+</head>
+<body>
+<div class="wrap" id="top">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 7-review · 審查介面</p>
+  <h1>host-stack-fit</h1>
+  <p class="sub">正本是 <code>docs/dev/host-stack-fit/7-review.md</code>,
+  這頁隨時可重生。<strong>審完頂區五格再決定要不要往下讀。</strong></p>
+  <div class="dash"><a class="cell" href="#sec-Verdict"><span class="k">判定</span><span class="v">PRE-REVIEW</span><span class="n">frontmatter verdict</span></a><a class="cell" href="#sec-Exit-Checklist-全勾才算-shipped"><span class="k">出貨</span><span class="v">2/9</span><span class="n">Exit Checklist</span></a><a class="cell" href="#sec-附錄-本輪特有"><span class="k">爭點</span><span class="v">5 條</span><span class="n">附錄:本輪特有</span></a><a class="cell" href="#sec-Known-Limits"><span class="k">風險</span><span class="v">7 條</span><span class="n">Known Limits</span></a><a class="cell" href="#sec-Coverage-Matrix"><span class="k">抽驗</span><span class="v">S-3.2</span><span class="n">對得上才信剩下的</span></a></div>
+</header>
+<section class="pinned" id="sec-限制聲明-讀取順序-身分"><h2>限制聲明(讀取順序 + 身分)</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>審查者</th><th><code>agent-a-stage7-host-stack-fit</code>(fresh-context Cloud Agent A;<strong>≠</strong> Stage 6 實作 owner <code>cursor-cloud-agent</code>)</th></tr></thead><tbody><tr><td>讀取順序(可查)</td><td>①<code>4-spec.md</code> ②<code>5-tasks.md</code> ③測試碼(<code>test-host-receipt.sh</code>／<code>test-stack-inventory.sh</code>／<code>test-host-adapter.sh</code> + fixtures) ④<code>git show 0a89ec8</code>(Stage 6 vs <code>cedfe69</code>) ⑤實作碼(<code>hooks/devflow-lib.py</code> mint／verify、七站腳本鉤子、<code>write-stack-inventory.py</code>) ⑥親跑 Verify／現象／回歸 → <strong>之後才</strong> ⑦<code>review-unlock</code> 讀 <code>6-implementation-notes.md</code> Self-Review</td></tr><tr><td>圍欄</td><td><code>hooks/devflow-exec.sh review host-stack-fit</code> 曾武裝(步 0);回歸前 <code>stop</code> 以免測試寫入被擋。doctor:<code>COMPATIBLE</code>(契約 2.0.0)</td></tr><tr><td>本輪性質</td><td>獨立 Stage 7 交接文件;<code>verdict: PRE-REVIEW</code>;<strong>不是 G3 PASS</strong>。建議 Human 審完再填 PASS／REQUEST_CHANGES／HOLD。建議路徑:Human 抽驗 + Agent B 挑戰本 PR</td></tr></tbody></table></div></div></section><section class="pinned" id="sec-Verdict"><h2>Verdict</h2><div class="doc-in"><p><strong>PRE-REVIEW</strong>(Agent A 自審落點;<strong>不是</strong> Human G3 PASS)。</p><div class="tablewrap"><table><thead><tr><th>門檻</th><th>證據</th><th>Agent A 判讀</th></tr></thead><tbody><tr><td>本次 S 全綠</td><td>Coverage Matrix 23/23 ✅</td><td>通過</td></tr><tr><td>既有回歸綠</td><td>methodology／contracts／render 全綠;host 三套全綠;architecture <strong>PF-0 ENV 紅</strong></td><td>產品回歸通過;全套 <code>devflow-check all</code> 因環境未全綠</td></tr><tr><td>現象證據逐 S 相符</td><td>上表 ✅</td><td>通過</td></tr><tr><td>Evidence 契約</td><td>Required 三層 pass;<code>devflow-check</code> 層 fail(PF-0)</td><td>機械面未全綠;建議 Human 明示接受 PF-0</td></tr><tr><td>無 🔴</td><td>Standards／Spec 無 🔴;僅 F-1 🟡 文案</td><td>通過(加嚴門檻)</td></tr></tbody></table></div><p><strong>建議 Human</strong>:接受 Known Limits(含 PF-0)→ <strong>G3 PASS</strong>;若要求本機先有 3.9–3.11 讓 architecture 全綠再出貨 → <strong>HOLD</strong>。勿代填。</p><p>重驗輪次:1(首輪 PRE-REVIEW)。</p></div></section><section class="pinned" id="sec-Known-Limits"><h2>Known Limits</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>#</th><th>限制</th><th>嚴重度</th><th>建議處置</th></tr></thead><tbody><tr><td>1</td><td>Cursor Write 工具沒有 hook;人可跳過核對仍改檔</td><td>高(設計已知)</td><td>park:4-spec Known design limit ①;牙停在收據＋不得宣稱武裝</td></tr><tr><td>2</td><td>stamp 不是對抗已讀規格者的密碼學防偽</td><td>中</td><td>park:limit ②;防空檔／手填／改欄</td></tr><tr><td>3</td><td>I2 不因 <code>git pull</code> 自動刷新;依賴變了要人重跑 setup</td><td>中</td><td>park:limit ③;指引句已在</td></tr><tr><td>4</td><td>間接／transitive 相依仍可能晚爆</td><td>中</td><td>park:limit ④／D1</td></tr><tr><td>5</td><td>本雲端／部分 CI 無 Python 3.9–3.11 → PF-0／<code>check-py-floor</code> 無法取證,<code>devflow-check architecture</code> 紅</td><td>中(ENV)</td><td>park:設 <code>DEVFLOW_PY_FLOOR_BIN</code> 或裝 3.9–3.11;非本 feat 產品回歸。PF-2 仍綠</td></tr><tr><td>6</td><td>現場 plugin cache Refresh 仍手動(Non-Goal／OC-4)</td><td>低</td><td>park:另票;本 feat 不做</td></tr><tr><td>7</td><td>Stage 6 T Review 為同一代理 self-check(D-review-1)</td><td>流程</td><td>本 Stage 7 + Agent B + Human G3 補四眼</td></tr></tbody></table></div></div></section>
+<div class="progress">
+  <div class="progress-in">
+    <span class="count">已審 <b id="done">0</b> / 61 條</span>
+    <span class="bar"><i></i></span>
+    <button class="btn" id="clear" type="button">清除勾選</button>
+  </div>
+</div>
+<div id="cards">
+<p class="g3-chk-hint">勾選 = 這列只靠標的檔:行就能判失敗,不是整份已過 G3。</p><section class="r-block" id="sec-判定"><div class="r-head"><span class="r-name">判定</span></div><article class="s-card" data-sid="判定">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="判定">
+    <span class="s-id">判定</span>
+    <span class="s-title">PRE-REVIEW</span>
+    <span class="tag base">判定</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>判定 這列不打開 7-review.md、只靠標的檔:行能判失敗嗎？</span></li><li><span class="qmark">?</span><span>判定 這列的結論，有沒有被 Coverage Matrix 授權？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">判定</span><span class="gwt-v">PRE-REVIEW</span></div></div>
+    
+  </div>
+</article></section><section class="r-block" id="sec-Exit-Checklist-全勾才算-shipped"><div class="r-head"><span class="r-name">Exit Checklist(全勾才算 shipped)</span></div><article class="s-card" data-sid="EC-1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-1">
+    <span class="s-id">EC-1</span>
+    <span class="s-title"><strong>Design Boundary finding 全數處置</strong>:無未授權 Boundary 變更;F-1 為 spec 括號文案(L1 建議後修),非 Boundary 違規。n-a 處置項:無 🟡 Boundary。</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-1 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-1 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-1 只改文件、測試沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-2">
+    <span class="s-id">EC-2</span>
+    <span class="s-title">Quiz(<strong>不可逆／公開契約副作用 → 建議做</strong>):見附錄 A3;Human／approver 答對後再 merge</span>
+    <span class="tag base">出貨</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-2 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-2 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-2 標了不可逆，Quiz 沒過能否決出貨嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-3">
+    <span class="s-id">EC-3</span>
+    <span class="s-title">整合回歸已在 Final Fresh <strong>之前</strong>完成:<code>STATUS=N_A_NO_INCOMING</code>;FORK=HEAD=INTEGRATION=<code>0a89ec85ae2cf3ee0c555b82441caa323e77c10f</code>(origin/main)。本 PR 不改產品碼。</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-3 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-3 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-3 這項跟 Matrix 綠不綠無關，沒做完 PRE-REVIEW 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-4">
+    <span class="s-id">EC-4</span>
+    <span class="s-title">PR → develop／main(本 draft PR 只含 Stage 7 文檔;<strong>勿直上 master 以外政策</strong>;Human merge)</span>
+    <span class="tag base">出貨</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-4 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-4 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-4 這項跟 Matrix 綠不綠無關，沒做完 PRE-REVIEW 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-5">
+    <span class="s-id">EC-5</span>
+    <span class="s-title">4-spec delta 已併入 <code>docs/specs/&lt;domain&gt;.md</code>(本 repo <code>docs/specs/</code> 無對應 living 條 → Human 確認 n-a 或另開 living)</span>
+    <span class="tag base">出貨</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-5 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-5 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-5 只改文件、測試沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-6">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-6">
+    <span class="s-id">EC-6</span>
+    <span class="s-title">STATUS.md 已更新為 shipped(<strong>合併後</strong>由合併者做,不塞本 branch)</span>
+    <span class="tag base">出貨</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-6 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-6 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-6 這項跟 Matrix 綠不綠無關，沒做完 PRE-REVIEW 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-7">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-7">
+    <span class="s-id">EC-7</span>
+    <span class="s-title">7-review frontmatter status: shipped(Human G3 PASS 後)</span>
+    <span class="tag base">出貨</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-7 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-7 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-7 只改文件、測試沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-8">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-8">
+    <span class="s-id">EC-8</span>
+    <span class="s-title">7-review.html 已產生(本 PR 會產;<code>build-gate-twin</code> + <code>build-stage7-html</code>)</span>
+    <span class="tag base">出貨</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-8 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-8 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-8 這項跟 Matrix 綠不綠無關，沒做完 PRE-REVIEW 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-9">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-9">
+    <span class="s-id">EC-9</span>
+    <span class="s-title">feature branch 已刪 / worktree 已清(merge 後)</span>
+    <span class="tag base">出貨</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-9 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-9 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-9 這項跟 Matrix 綠不綠無關，沒做完 PRE-REVIEW 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article></section><section class="r-block" id="sec-爭點"><div class="r-head"><span class="r-name">爭點</span></div><article class="s-card" data-sid="A1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A1">
+    <span class="s-id">A1</span>
+    <span class="s-title">讀取順序聲明(防錨定)</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A1 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A1 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A1 這則若成立，Coverage Matrix 還授權 PRE-REVIEW 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">1. 4-spec / 5-tasks</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A2">
+    <span class="s-id">A2</span>
+    <span class="s-title">Agent B 可證偽點(請挑戰)</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A2 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A2 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A2 這則若成立，Coverage Matrix 還授權 PRE-REVIEW 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">1. hooks/devflow-lib.py:1008 是否真的只認布林 is True(字串 &quot;true&quot; 必須紅)?</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A3">
+    <span class="s-id">A3</span>
+    <span class="s-title">Quiz(給 approver;不可逆契約副作用)</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A3 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A3 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A3 這則若成立，Coverage Matrix 還授權 PRE-REVIEW 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">1. 非 Claude 主機要證明「已跑該站 --action」</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A4">
+    <span class="s-id">A4</span>
+    <span class="s-title">環境與工具備註</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A4 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A4 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A4 這則若成立，Coverage Matrix 還授權 PRE-REVIEW 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">初跑 devflow-check 曾因缺 markdown-it-py 紅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A5">
+    <span class="s-id">A5</span>
+    <span class="s-title">與 Stage 6 Self-Review 對照裁斷</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A5 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A5 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A5 的 L1 分級，4-spec Dependencies 還罩得住嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">—</span></div></div>
+    
+  </div>
+</article></section><section class="r-block" id="sec-風險"><div class="r-head"><span class="r-name">風險</span></div><article class="s-card" data-sid="KL-1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-1">
+    <span class="s-id">KL-1</span>
+    <span class="s-title">Cursor Write 工具沒有 hook;人可跳過核對仍改檔</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-1 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-1 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-1 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">高(設計已知)</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">park:4-spec Known design limit ①;牙停在收據＋不得宣稱武裝</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-2">
+    <span class="s-id">KL-2</span>
+    <span class="s-title">stamp 不是對抗已讀規格者的密碼學防偽</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-2 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-2 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-2 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">park:limit ②;防空檔／手填／改欄</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-3">
+    <span class="s-id">KL-3</span>
+    <span class="s-title">I2 不因 <code>git pull</code> 自動刷新;依賴變了要人重跑 setup</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-3 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-3 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-3 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">park:limit ③;指引句已在</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-4">
+    <span class="s-id">KL-4</span>
+    <span class="s-title">間接／transitive 相依仍可能晚爆</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-4 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-4 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-4 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">park:limit ④／D1</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-5">
+    <span class="s-id">KL-5</span>
+    <span class="s-title">本雲端／部分 CI 無 Python 3.9–3.11 → PF-0／<code>check-py-floor</code> 無法取證,<code>devflow-check architecture</code> 紅</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-5 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-5 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-5 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中(ENV)</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">park:設 <code>DEVFLOW_PY_FLOOR_BIN</code> 或裝 3.9–3.11;非本 feat 產品回歸。PF-2 仍綠</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-6">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-6">
+    <span class="s-id">KL-6</span>
+    <span class="s-title">現場 plugin cache Refresh 仍手動(Non-Goal／OC-4)</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-6 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-6 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-6 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">park:另票;本 feat 不做</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-7">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-7">
+    <span class="s-id">KL-7</span>
+    <span class="s-title">Stage 6 T Review 為同一代理 self-check(D-review-1)</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-7 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-7 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-7 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">流程</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">本 Stage 7 + Agent B + Human G3 補四眼</span></div></div>
+    
+  </div>
+</article></section><section class="r-block" id="sec-Coverage-Matrix"><div class="r-head"><span class="r-name">Coverage Matrix</span></div><article class="s-card" data-sid="S-1.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.1">
+    <span class="s-id">S-1.1</span>
+    <span class="s-title"><code>test_s_1_1_station_action_mints_receipt</code> + talk／stage2／3／5／6／7;<code>scripts/fixtures/host-receipt/run_cases.py:147-166,687-694</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.1 這列只靠 scripts/fixtures/host-receipt/run_cases.py:147 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-1.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅ mint-stage4+mint-rest</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.2">
+    <span class="s-id">S-1.2</span>
+    <span class="s-title"><code>test_s_1_2_receipt_fields_and_stamp</code> <code>run_cases.py:168-200</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.2 這列只靠 run_cases.py:168 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-1.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.3">
+    <span class="s-id">S-1.3</span>
+    <span class="s-title"><code>test_s_1_3_probe/start/write_cursor/write_scope_does_not_mint</code> <code>run_cases.py:679-682</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.3 這列只靠 run_cases.py:679 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-1.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.4">
+    <span class="s-id">S-1.4</span>
+    <span class="s-title"><code>test_s_1_4_deny/exit2/allow_overwrites</code> <code>run_cases.py:683-685</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.4 這列只靠 run_cases.py:683 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.4 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-1.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.1">
+    <span class="s-id">S-2.1</span>
+    <span class="s-title"><code>test_s_2_1_valid_receipt_verify_exit_0</code> <code>run_cases.py:439</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2.1 這列只靠 run_cases.py:439 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-2.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.2">
+    <span class="s-id">S-2.2</span>
+    <span class="s-title">missing／empty／blank ×3 <code>run_cases.py:697-699</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2.2 這列只靠 run_cases.py:697 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-2.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.3">
+    <span class="s-id">S-2.3</span>
+    <span class="s-title">handfilled／no-stamp／done-str／done-false ×4 <code>run_cases.py:700-703</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2.3 這列只靠 run_cases.py:700 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-2.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.4">
+    <span class="s-id">S-2.4</span>
+    <span class="s-title">stamp／station／script／slug／root ×5 <code>run_cases.py:704-708</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2.4 這列只靠 run_cases.py:704 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2.4 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-2.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.5">
+    <span class="s-id">S-2.5</span>
+    <span class="s-title"><code>test_s_2_5_start_only_not_armed</code> + <code>test_s_2_5_host_copy_has_pretooluse_and_action</code> <code>run_cases.py:712-714</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2.5 這列只靠 run_cases.py:712 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2.5 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-2.5 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.6">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.6">
+    <span class="s-id">S-2.6</span>
+    <span class="s-title"><code>test_s_2_6_fail_closed_before_first_write</code> <code>run_cases.py:713</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2.6 這列只靠 run_cases.py:713 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2.6 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-2.6 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.7">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.7">
+    <span class="s-id">S-2.7</span>
+    <span class="s-title"><code>test_s_2_7_action_verify_receipt_is_not_a_switch</code> <code>run_cases.py:650-672</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2.7 這列只靠 run_cases.py:650 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2.7 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-2.7 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅(見 Spec Axis F-1 文案)</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.1">
+    <span class="s-id">S-3.1</span>
+    <span class="s-title"><code>test_s_3_1_i2_path_and_required_fields</code> <code>stack-inventory/run_cases.py:63</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.1 這列只靠 stack-inventory/run_cases.py:63 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-3.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.2">
+    <span class="s-id">S-3.2</span>
+    <span class="s-title"><code>test_s_3_2_pack_pins_markdown_it_py</code> <code>:87</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.2 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-3.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.3">
+    <span class="s-id">S-3.3</span>
+    <span class="s-title"><code>test_s_3_3_gap_39_vs_312_before_stage4</code> <code>:112</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.3 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-3.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.4">
+    <span class="s-id">S-3.4</span>
+    <span class="s-title"><code>test_s_3_4_check_rewrites_stale_i2</code> + <code>test_s_3_4_guidance_says_rerun</code> <code>:129,:149</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.4 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.4 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-3.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.5">
+    <span class="s-id">S-3.5</span>
+    <span class="s-title"><code>test_s_3_5_missing_i2_check_not_success</code> <code>:157</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.5 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.5 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-3.5 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.1">
+    <span class="s-id">S-4.1</span>
+    <span class="s-title"><code>test_s_4_1_setup_does_not_require_i4</code> <code>:194</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4.1 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-4.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.2">
+    <span class="s-id">S-4.2</span>
+    <span class="s-title"><code>test_s_4_2_i4_content_when_asked</code> <code>:207</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4.2 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-4.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.3">
+    <span class="s-id">S-4.3</span>
+    <span class="s-title"><code>test_s_4_3_no_per_slug_stack_and_lock_wins</code> <code>:242</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4.3 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-4.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-5.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-5.1">
+    <span class="s-id">S-5.1</span>
+    <span class="s-title"><code>test_s_5_1_pack_and_product_same_keys</code> <code>:171</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-5.1 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-5.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-5.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-6.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-6.1">
+    <span class="s-id">S-6.1</span>
+    <span class="s-title">host-adapter「S-6.1 .cursor-plugin/plugin.json 無 hooks 鍵」<code>scripts/test-host-adapter.sh:777</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-6.1 這列只靠 scripts/test-host-adapter.sh:777 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-6.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-6.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-6.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-6.2">
+    <span class="s-id">S-6.2</span>
+    <span class="s-title">七站仍接 <code>--action</code> + 契約 2.0.0 <code>test-host-adapter.sh:798-811</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-6.2 這列只靠 test-host-adapter.sh:798 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-6.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-6.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-6.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-6.3">
+    <span class="s-id">S-6.3</span>
+    <span class="s-title">無 <code>check-host-receipt.sh</code> + diff 無模板／STATUS <code>test-host-adapter.sh:815</code>;<code>git diff --name-only 0a89ec8^..0a89ec8</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-6.3 這列只靠 test-host-adapter.sh:815 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-6.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-6.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="既有測試套件(回歸)">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="既有測試套件(回歸)">
+    <span class="s-id">既有測試套件(回歸)</span>
+    <span class="s-title">見 Verification Evidence:methodology／contracts／render 全綠;architecture PF-0 ENV 紅;host 三套全綠</span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列若其實沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅/⚠</span></div></div>
+    
+  </div>
+</article></section><section class="r-block" id="sec-現象證據-逐-S-對照-4-spec-的-觀測-欄"><div class="r-head"><span class="r-name">現象證據(逐 S,對照 4-spec 的「觀測」欄)</span></div><article class="s-card" data-sid="S-1.1／S-1.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.1／S-1.2">
+    <span class="s-id">S-1.1／S-1.2</span>
+    <span class="s-title">暫存根跑 stage4 <code>--action</code> allow;讀 JSON／自算 stamp</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1.1／S-1.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1.1／S-1.2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-1.1／S-1.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>exit=0 file=True schema=devflow-host-receipt/v1 DONE=True stamp_ok=True root_match=True</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.3">
+    <span class="s-id">S-1.3</span>
+    <span class="s-title"><code>--probe</code> 空樹</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1.3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-1.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>probe_exit=1 receipt_jsons=0</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.4">
+    <span class="s-id">S-1.4</span>
+    <span class="s-title">測試群組 mint-stage4 deny／exit2／overwrite</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1.4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1.4 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-1.4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">passed=9(含三案)</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.1">
+    <span class="s-id">S-2.1</span>
+    <span class="s-title">mint 後 <code>verify_receipt:true</code></span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-2.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-2.1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-2.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>mint_exit=0 verify_exit=0 stamp_unchanged=True</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.2">
+    <span class="s-id">S-2.2</span>
+    <span class="s-title">缺檔 verify</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-2.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-2.2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-2.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>exit=1</code> stderr=<code>未跑 --action(缺檔)</code>;無「同等武裝」</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.3／S-2.4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.3／S-2.4">
+    <span class="s-id">S-2.3／S-2.4</span>
+    <span class="s-title">verify-receipt 群組</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-2.3／S-2.4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-2.3／S-2.4 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-2.3／S-2.4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">14/14</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.5／S-2.6">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.5／S-2.6">
+    <span class="s-id">S-2.5／S-2.6</span>
+    <span class="s-title">fail-closed-claim</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-2.5／S-2.6 只靠 guides/guide-dev-flow.html:2856 能判這列失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-2.5／S-2.6 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-2.5／S-2.6 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">3/3;文案含「沒有 PreToolUse」與 <code>--action</code>(<code>guides/guide-dev-flow.html:2856-2858</code>,<code>docs/PLUGIN.md:63</code>,<code>skills/dev-setup/SKILL.md:52-54</code>)</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.7">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.7">
+    <span class="s-id">S-2.7</span>
+    <span class="s-title">payload <code>action:&quot;verify_receipt&quot;</code> 無布林</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-2.7 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-2.7 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-2.7 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>exit=0 minted=True has_未跑=False</code>(未進 verify-only)</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅(核心);文案見 F-1</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.1／S-3.2／S-3.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.1／S-3.2／S-3.3">
+    <span class="s-id">S-3.1／S-3.2／S-3.3</span>
+    <span class="s-title"><code>write-stack-inventory.py --root &lt;pack&gt; --runtime-version 3.9.6</code></span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3.1／S-3.2／S-3.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3.1／S-3.2／S-3.3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-3.1／S-3.2／S-3.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">schema=<code>devflow-stack-inventory/v1</code>;pin <code>markdown-it-py==4.0.0</code>;gaps 含 <code>3.9.6</code>／<code>3.12+</code>／<code>markdown-it-py==4.0.0</code>;預設無 I4</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.4／S-3.5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.4／S-3.5">
+    <span class="s-id">S-3.4／S-3.5</span>
+    <span class="s-title">i2 群組</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3.4／S-3.5 只靠 skills/dev-setup/SKILL.md:471 能判這列失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3.4／S-3.5 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-3.4／S-3.5 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">7/7;<code>skills/dev-setup/SKILL.md:471</code>「依賴變了要重跑」</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.1／S-4.2／S-4.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.1／S-4.2／S-4.3">
+    <span class="s-id">S-4.1／S-4.2／S-4.3</span>
+    <span class="s-title">預設無 I4;<code>--write-stack</code> 後有正本句與 digest 非 lock 句</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-4.1／S-4.2／S-4.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-4.1／S-4.2／S-4.3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-4.1／S-4.2／S-4.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>default_i4=False</code>;asked 後兩句皆在</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-5.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-5.1">
+    <span class="s-id">S-5.1</span>
+    <span class="s-title">pack vs product 鍵集合</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-5.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-5.1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-5.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">i2 群組案綠</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-6.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-6.1">
+    <span class="s-id">S-6.1</span>
+    <span class="s-title">讀 <code>.cursor-plugin/plugin.json</code></span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-6.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-6.1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-6.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>hooks</code> 鍵不存在</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-6.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-6.2">
+    <span class="s-id">S-6.2</span>
+    <span class="s-title">七腳本 <code>[ &quot;${1:-}&quot; = &quot;--action&quot; ]</code> + 契約</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-6.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-6.2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-6.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">七處皆有;契約 <code>2.0.0</code>;plugin version 仍 <code>3.22.1</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-6.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-6.3">
+    <span class="s-id">S-6.3</span>
+    <span class="s-title">Stage 6 檔名清單</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-6.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-6.3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-6.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">無 <code>_templates/1-4</code>、無 <code>docs/dev/STATUS.md</code>、無假 <code>check-host-receipt.sh</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article></section>
+</div>
+<h2 class="apx-h">背景資料(預設收合,內容零刪減)</h2>
+<details class="doc" id="sec-Verification-Evidence"><summary><span>Verification Evidence</span></summary><div class="doc-in"><ul><li>Source SHA: 0a89ec85ae2cf3ee0c555b82441caa323e77c10f</li><li>Final Fresh Run ID: 2026-09-10T0842Z-agent-a-r1</li><li>Entry point: <code>bash scripts/check-spec-gate.sh docs/dev/host-stack-fit/4-spec.md &amp;&amp; bash scripts/check-host-adapter.sh &amp;&amp; bash scripts/devflow-check.sh</code></li><li>Toolchain: python3.12.3; markdown-it-py==4.0.0; contract 2.0.0; runtime 3.22.1</li></ul><div class="tablewrap"><table><thead><tr><th>Layer</th><th>Command</th><th>Status</th><th>Result</th><th>Skipped reason</th></tr></thead><tbody><tr><td>check-spec-gate／check-host-adapter／七站 graph <code>--action</code> 自檢／devflow-check</td><td>Final Fresh entry point(上列三指令)</td><td>fail</td><td>前三段綠:spec-gate 6/6;host-adapter PASS;mint-rest 6/6+adapter 58/58。<code>devflow-check all</code>:methodology 44、contracts 5、render 2 全綠;architecture PF-0 無 3.9–3.11 直譯器 exit 2(唯一產品外紅;PF-2 仍綠 MIN_HEREDOCS=214)</td><td></td></tr><tr><td>check-spec-gate</td><td><code>bash scripts/check-spec-gate.sh docs/dev/host-stack-fit/4-spec.md</code></td><td>pass</td><td>exit 0;6/6 形狀全過;23 條 S</td><td></td></tr><tr><td>check-host-adapter</td><td><code>bash scripts/check-host-adapter.sh</code></td><td>pass</td><td>exit 0;PASS host-adapter</td><td></td></tr><tr><td>七站 graph --action 自檢</td><td><code>bash scripts/test-host-receipt.sh --group mint-rest</code></td><td>pass</td><td>mint-rest 6/6;host-adapter 七站 deny+S-6.2 綠</td><td></td></tr><tr><td>devflow-check</td><td><code>bash scripts/devflow-check.sh all</code></td><td>fail</td><td>methodology44 contracts5 render2 綠;architecture PF-0 exit 2</td><td></td></tr><tr><td>Mutation</td><td></td><td>n-a</td><td></td><td>Explicitly excluded(4-spec Verification Profile)</td></tr><tr><td>e2e／Playwright</td><td></td><td>n-a</td><td></td><td>Explicitly excluded</td></tr><tr><td>Race／stress</td><td></td><td>n-a</td><td></td><td>Explicitly excluded</td></tr><tr><td>Supply chain</td><td></td><td>n-a</td><td></td><td>Conditional:本 feat 未改真 pin／requirements 正本(只加 fixture 複本)</td></tr></tbody></table></div><p><strong>Gauntlet 降級聲明</strong>:本 VM 無 Python 3.9–3.11 → Required 束中 <code>devflow-check</code> 無法全綠(PF-0 ENV)。<code>devflow-evidence-gauntlet.sh --review-file</code> 會報 E6／E7。逐層手動實跑證據見上表與附錄 A4;不得把 gauntlet 未全綠默認為已過。Human 若接受 PF-0=Known Limit ⑤,方可把 Evidence 契約視為「產品面通過、環境地板待補」。</p><p>整合回歸(步 2c):<code>docs/dev/tools/devflow-integration-regression.sh --integration origin/main --fork-sha 0a89ec85ae2cf3ee0c555b82441caa323e77c10f</code> → <code>STATUS: N_A_NO_INCOMING</code>;FORK=HEAD=INTEGRATION=<code>0a89ec85ae2cf3ee0c555b82441caa323e77c10f</code>(refs/remotes/origin/main)。</p></div></details><details class="doc" id="sec-Negative-Constraint-Mapping"><summary><span>Negative Constraint Mapping</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>Constraint</th><th>Test/Layer</th><th>Status</th></tr></thead><tbody><tr><td>不得用 probe／start／write-cursor／write-scope 冒充鑄造(S-1.3)</td><td><code>test_s_1_3_*</code> ×4</td><td>pass</td></tr><tr><td>不得把空檔／手填／缺 DONE／slug 或 root 對不上當有效收據(S-2.2／S-2.3／S-2.4)</td><td>verify-receipt 12 負向案</td><td>pass</td></tr><tr><td>不得把 <code>action:&quot;verify_receipt&quot;</code> 當核對開關(S-2.7)</td><td><code>test_s_2_7_*</code></td><td>pass</td></tr><tr><td>不得出現「已與 Claude 同等武裝」(S-2.2／S-2.5)</td><td>verify_fail_ok + host_copy</td><td>pass</td></tr><tr><td>不得強制每專案 I4(S-4.1)</td><td><code>test_s_4_1_*</code></td><td>pass</td></tr><tr><td>不得把 digest 當 lock 正本(S-4.3)</td><td><code>test_s_4_3_*</code></td><td>pass</td></tr><tr><td>不得加假 PreToolUse／改鬆 <code>--action</code>／解凍模板／修 cache／bump plugin(S-6.1～S-6.3)</td><td>host-adapter S-6.* + <code>git diff --name-only 0a89ec8^..0a89ec8</code></td><td>pass</td></tr></tbody></table></div></div></details><details class="doc" id="sec-執行記錄-dev-run-引擎案-手動實作留白"><summary><span>執行記錄(dev-run 引擎案;手動實作留白)</span></summary><div class="doc-in"><p>Stage 6 為雲端手動／單代理實作(見 6-notes);本 Stage 7 為獨立 Agent A 審查,無 dev-run ledger。本節留白。</p></div></details><details class="doc" id="sec-截圖槽"><summary><span>截圖槽</span></summary><div class="doc-in"><p>本 feat 無產品前端;現象為 CLI／JSON。截圖槽 N/A(無 shots/ 定名檔 → 產檔器顯示佔位即可)。</p><p>### 進場</p><ul><li>data-shot: n-a-cli</li><li>src: shots/n-a.png</li><li>caption: 無 GUI 進場;牙在 shell exit／JSON</li><li>進場:從列表打開已存在紀錄。不准新增。</li><li>hang-point: <code>.e2e</code> n-a</li></ul></div></details><details class="doc" id="sec-Operational-Walkthrough"><summary><span>Operational Walkthrough</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>S-id</th><th>角色</th><th>真實目標</th><th>系統操作</th><th>系統外步驟</th><th>等待/例外</th><th>結果</th></tr></thead><tbody><tr><td>S-1.1</td><td>開工 agent</td><td>留下已跑 <code>--action</code> 的收據</td><td>跑該站 <code>--action</code> allow</td><td>終端機</td><td>deny／exit 2 不鑄;修好重跑</td><td>✅ 人能指著檔說在</td></tr><tr><td>S-2.1／S-2.5／S-2.6</td><td>開工 agent／owner</td><td>宣稱可寫碼前先有牙</td><td><code>verify_receipt:true</code></td><td>owner 看紅就否決「已武裝」</td><td>紅 → 先鑄再核</td><td>✅ start-only 不能冒充;Cursor Write 仍無 hook(Known limit ①)</td></tr><tr><td>S-3.1／S-3.3／S-3.4</td><td>owner／採用者</td><td>進 Stage 4 前看見落差</td><td><code>dev-setup</code> check 寫 I2</td><td>換 3.12+ venv</td><td>pull 不自動改 I2</td><td>✅ gaps 提早落檔</td></tr><tr><td>S-4.1／S-4.2</td><td>採用者</td><td>不要每專案強制 I4</td><td>預設只 I2;要才 <code>--write-stack</code></td><td>—</td><td>缺 I4 ≠ broken</td><td>✅</td></tr><tr><td>S-6.1</td><td>owner</td><td>不造假 hook</td><td>審 <code>.cursor-plugin/plugin.json</code></td><td>—</td><td>發現 hooks 鍵就打回</td><td>✅</td></tr><tr><td>其餘純內部 S</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>不適用(4-spec 已標)</td></tr></tbody></table></div></div></details><details class="doc" id="sec-Design-Integrity-Check-Design-Boundary-Contract-"><summary><span>Design Integrity Check(Design Boundary Contract = <code>applicable</code>)</span></summary><div class="doc-in"><p>1. <strong>依賴反向被間接繞過</strong>:未命中 —— mint／verify 住 <code>hooks/devflow-lib.py:944-1086</code>;七站只呼叫 <code>after_station_action</code>;I2 writer 不讀收據。</p><p>2. <strong>資料所有權被繞過寫入</strong>:未命中 —— 收據只由該站腳本鑄;I2 由 <code>write-stack-inventory.py</code>／dev-setup 寫;產品碼不當收據正本。</p><p>3. <strong>相容性破壞包成新增</strong>:未命中 —— 既有 allow／deny／exit 0／1／2 不變;只加選布林與鑄檔副作用(<code>devflow-lib.py:1008-1024</code>)。</p><p>4. <strong>一致性邊界被拆解</strong>:未命中 —— allow 與鑄檔同次;鑄失敗回 2(<code>:1021-1023</code>)。</p><p>5. <strong>宣告的 Test seam 未被使用</strong>:未命中 —— 暫存根跑 <code>--action</code>／writer;測試名含 S-id。</p><p>6. <strong>Known design limit 被悄悄「解決」</strong>:未命中 —— Cursor Write 仍無 hook;stamp 仍非密碼學防偽;I2 仍不因 pull 自動刷新。</p></div></details><details class="doc" id="sec-Standards-Axis"><summary><span>Standards Axis</span></summary><div class="doc-in"><ul><li>F-1 🟡 <code>docs/dev/host-stack-fit/4-spec.md</code> S-2.7 括號句「未知動詞 → 既有 deny」vs 實作／測試 | 問題:stage4 對非 LOCKED 未知 <code>action</code> <strong>既有行為是 allow</strong>(實跑 <code>allow\tS5-gate 允許 verify_receipt</code>;測試註解 <code>run_cases.py:660-661</code>)。核心契約「布林才是核對開關」成立,但 spec 括號與既有 graph 不符。 | 建議:G3 後 fast-lane 改 S-2.7 括號為「未知動詞依既有 graph(stage4 非 LOCKED → allow)」,或另開票收緊未知動詞 —— <strong>不擋本 hop 出貨</strong>(不動 R/S 行為正本:只認布林)。影響 S-2.7。</li><li>F-2 🟢 <code>6-implementation-notes.md</code> D-review-1 | Stage 6 T Review 為 implementer self-check | 本 Stage 7／Agent B／Human G3 補四眼。影響流程可信度,非產品碼。</li><li>F-3 🟢 Diff Budget | 實作 ~40 檔 &gt; 估 ≤16 | 已記 6-notes D-budget-1(L1);內容仍在 Files 聯集。</li></ul><p>Design Boundary 四項(Standards 加查):</p><ul><li><strong>Dependency Direction</strong>:符合 —— 腳本 → lib;setup → writer;無反向。</li><li><strong>Boundary Leakage</strong>:符合 —— 收據 schema 只經正規路徑;無第二家族 <code>check-host-receipt.sh</code>。</li><li><strong>Data Ownership</strong>:符合 —— 鑄造權在該站腳本;盤點權在 dev-setup／writer。</li><li><strong>Interface Stability</strong>:符合 —— additive(<code>verify_receipt</code> 缺欄=舊行為);契約仍 2.0.0;plugin 未升版。</li></ul><p>無 🔴。</p></div></details><details class="doc" id="sec-Spec-Axis"><summary><span>Spec Axis</span></summary><div class="doc-in"><ul><li>R-1 符合(S-1.1…S-1.4 綠;七站鉤子 <code>after_station_action</code> 於各 <code>check-dev*-graph.sh</code>)。</li><li>R-2 符合(S-2.1…S-2.7 綠;只認 <code>payload.get(&quot;verify_receipt&quot;) is True</code> at <code>devflow-lib.py:1008</code>)。</li><li>R-3 符合(I2 schema／母版 pin／gaps／缺檔 check 紅)。</li><li>R-4 符合(預設無 I4;人要求才寫;digest 非正本)。</li><li>R-5 符合(S-5.1 pack／product 鍵集合)。</li><li>R-6 符合(S-6.1…S-6.3;契約 2.0.0;無模板解凍／STATUS／假 hooks)。</li><li>6-notes Deviations／Decisions:D-mint-1／D-i2-1／D-t7-1／D-heredoc-1／D-budget-1／D-review-1 與 diff 對得上;無未記 L2。</li><li>Design Boundary 契約逐條:符合;Known design limit ①–④ 未被悄悄修掉。</li><li>F-1(上軸)為 <strong>spec 括號 vs 既有 graph</strong> 文案漂移,不改 R-2 行為判定。</li></ul></div></details><details class="doc" id="sec-變更架構圖"><summary><span>變更架構圖</span></summary><div class="doc-in"><pre><code>[七站 --action 腳本]
+   talk/stage2..stage7
+        |
+        v
+[hooks/devflow-lib.py]
+   after_station_action
+     |-- verify_receipt:true --&gt; verify_host_receipt (只讀)
+     |-- allow + slug --------&gt; mint_host_receipt ----+
+                                                      |
+                                                      v
+                                      .devflow/host-receipt/&lt;slug&gt;/&lt;station&gt;.json
+                                      (gitignore; stamp 含 root)
+
+[skills/dev-setup] --&gt; [scripts/write-stack-inventory.py]
+                            |-- 預設 --&gt; docs/dev/0-inventory.json (I2)
+                            |-- --write-stack --&gt; docs/dev/0-stack.md (I4 投影)
+
+[說明] guide #host / PLUGIN.md / dev-setup SKILL
+       「沒有 PreToolUse」+「--action」鑄／核
+
+[地板] test-host-receipt / test-stack-inventory / test-host-adapter
+       + file-map 193 + architecture-guards + devflow-check 掛載</code></pre></div></details><details class="doc" id="sec-Diff-merge-base-cedfe69-0a89ec8-逐檔折疊"><summary><span>Diff(merge-base = <code>cedfe69</code>..<code>0a89ec8</code>,逐檔折疊)</span></summary><div class="doc-in"><p>完整位元:<code>git show 0a89ec8</code>。摘要 +N/-N(產品相關):</p><p>&lt;details&gt;</p><p>&lt;summary&gt;hooks/devflow-lib.py +167 — mint／verify／after_station_action&lt;/summary&gt;</p><pre><code>host_receipt_stamp / mint_host_receipt / after_station_action / verify_host_receipt
+路徑 .devflow/host-receipt/&lt;slug&gt;/&lt;station&gt;.json;stamp 含 root;os.replace 原子寫
+verify 失敗 stderr「未跑 --action」;只認 JSON 布林 verify_receipt is True</code></pre><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary&gt;scripts/check-dev{talk,stage2..7}-graph.sh 各 ~+23/-2 — 呼叫 after_station_action&lt;/summary&gt;</p><pre><code>evaluate 後 extra = lib.after_station_action(...); extra is not None → sys.exit(extra)
+deny／exit 2／--write-cursor 不走鑄造成功路徑</code></pre><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary&gt;scripts/write-stack-inventory.py +292 — I2／選配 I4&lt;/summary&gt;</p><pre><code>schema devflow-stack-inventory/v1; --check 缺 I2 → broken; --write-stack 才寫 0-stack.md</code></pre><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary&gt;scripts/test-host-receipt.sh +63 / fixtures/host-receipt/run_cases.py +741&lt;/summary&gt;</p><pre><code>groups: mint-stage4(9) mint-rest(6) verify-receipt(14) fail-closed-claim(3)</code></pre><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary&gt;scripts/test-stack-inventory.sh +39 / fixtures/stack-inventory/run_cases.py +293&lt;/summary&gt;</p><pre><code>groups: i2(7) i4(3)</code></pre><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary&gt;scripts/test-host-adapter.sh +52/-1 — MIN_CASES=58 + S-6.*&lt;/summary&gt;</p><pre><code>無 hooks 鍵;七站 --action;契約 2.0.0;無 check-host-receipt.sh</code></pre><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary&gt;guides/guide-dev-flow.html / docs/PLUGIN.md / skills/dev-setup/SKILL.md — 主機文案&lt;/summary&gt;</p><pre><code>同時出現「沒有 PreToolUse」與「--action」鑄／核對;`start` ≠ 已武裝
+I2／I4／「依賴變了要重跑」</code></pre><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary&gt;地板:check-file-map EXPECTED=193; check-dev-setup-discipline MIN=32; architecture-guards; devflow-check 掛兩牙&lt;/summary&gt;</p><pre><code>+ test-host-receipt.sh / test-stack-inventory.sh / write-stack-inventory.py</code></pre><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary&gt;docs/dev/host-stack-fit/6-implementation-notes.md(+html) — Stage 6 筆記&lt;/summary&gt;</p><pre><code>T-1…T-7 記錄;Self-Review;D-* Decisions</code></pre><p>&lt;/details&gt;</p><p>Banned 路徑不在 diff:無 <code>_templates/{1-4}</code>、無 <code>docs/dev/STATUS.md</code>、無 <code>.claude-plugin</code> version bump、無 <code>.cursor-plugin</code> hooks 鍵。</p></div></details><details class="doc" id="sec-附錄-本輪特有"><summary><span>附錄:本輪特有</span></summary><div class="doc-in"><p>### A1　讀取順序聲明(防錨定)</p><p>1. 4-spec / 5-tasks  </p><p>2. 測試與 Stage 6 diff(<code>0a89ec8</code>)／實作碼  </p><p>3. 自建 Coverage Matrix + 親跑 Verify／現象／回歸  </p><p>4. 才 <code>review-unlock</code> 讀 6-notes Self-Review  </p><p>與作者主張差異:作者已標 D-review-1／PF-0／D-budget-1 —— 獨立複核同意。新發現僅 F-1(S-2.7 括號 vs 既有 allow-unknown)。</p><p>### A2　Agent B 可證偽點(請挑戰)</p><p>1. <code>hooks/devflow-lib.py:1008</code> 是否真的只認布林 <code>is True</code>(字串 <code>&quot;true&quot;</code> 必須紅)?  </p><p>2. S-2.7 實跑是否可能被解讀成「未知動詞 allow = fail-open 核對」?(應否:未進 verify-only)  </p><p>3. PF-0 紅是否掩蓋了本 feat 引入的其他 architecture 失敗?(對照:清掉 <code>.devflow/runs</code> 後唯一紅為 PF-0)  </p><p>4. Coverage 是否漏 S?(23 條 S 是否都有含 S-id 的案?)</p><p>### A3　Quiz(給 approver;不可逆契約副作用)</p><p>1. 非 Claude 主機要證明「已跑該站 <code>--action</code>」,看哪個路徑的什麼檔?  </p><p>2. 核對開關是哪個 JSON 欄／型別?<code>action:&quot;verify_receipt&quot;</code> 可不可以當開關?  </p><p>3. 只跑 <code>devflow-exec start</code>、沒有收據時,<code>verify_receipt:true</code> 的 exit 與 stderr 關鍵字是什麼?  </p><p>4. I2 與 I4 哪個是盤點正本?預設 setup 會不會寫 <code>0-stack.md</code>?  </p><p>5. 本 feat 之後契約版本、薄殼 <code>hooks</code> 鍵、是否新增 <code>check-host-receipt.sh</code>?</p><p>### A4　環境與工具備註</p><ul><li>初跑 <code>devflow-check</code> 曾因缺 <code>markdown-it-py</code> 紅;本 session 已 <code>pip install markdown-it-py==4.0.0</code> 後 render／gate-twin 綠。</li><li>武裝 Stage 7 review 時,部分 graph 測試會被 write-scope 擋 → 回歸前必須 <code>devflow-exec stop</code>。</li><li>殘留 <code>.devflow/runs</code>(無 attempt 事件)會讓 <code>check-model-tiering</code> NOT-PARSED → 清掉再跑。</li><li><strong>Gauntlet 實跑</strong>(Source SHA = <code>0a89ec85ae2cf3ee0c555b82441caa323e77c10f</code> = 當時 HEAD):</li></ul><pre><code>❌ evidence gauntlet: 3 violation(s) in 48 checks — docs/dev/host-stack-fit/7-review.md
+  - E6: 「check-spec-gate／check-host-adapter／七站 graph `--action` 自檢／devflow-check」fail —— Gauntlet 有失敗層,不得宣告 Stage 7 PASS
+  - E6: 「devflow-check」fail —— Gauntlet 有失敗層,不得宣告 Stage 7 PASS
+  - E7: required layer「check-spec-gate／check-host-adapter／七站 graph `--action` 自檢／devflow-check」缺席或未 pass(unverified/n-a 不滿足 required)</code></pre><p>  此三條皆源自 PF-0 ENV(無 3.9–3.11),與產品 S 綠無關。降級=逐層手動實跑已落 Verification Evidence;Agent A <strong>不</strong>把 gauntlet 未全綠寫成 PASS。</p><ul><li>4-spec Required layers 用全形 <code>／</code> 串成單一 token(gauntlet 不拆 <code>／</code>);Evidence 表首列層名與此 token 全等。</li><li><code>7-review.html</code> 以 <code>docs/dev/tools/build-gate-twin.py /workspace host-stack-fit 7-review</code> 為準(動線五格)。<code>build-stage7-html.py</code> 會覆寫同檔且無 shots 時較瘦;本 PR 最終保留 twin。</li></ul><p>### A5　與 Stage 6 Self-Review 對照裁斷</p><div class="tablewrap"><table><thead><tr><th>作者主張</th><th>獨立複核</th></tr></thead><tbody><tr><td>全 S 有含 S-id 測試</td><td>✅ 同意(矩陣)</td></tr><tr><td>T Review self-check</td><td>✅ 同意;本檔補獨立審</td></tr><tr><td>PF-0 ENV</td><td>✅ 同意;再現</td></tr><tr><td>D-heredoc-1 保 PF-2</td><td>✅ 同意;PF-2 仍綠</td></tr><tr><td>無 L2／無假 hook／契約 2.0.0</td><td>✅ 同意</td></tr><tr><td>(未提)S-2.7 括號 vs allow-unknown</td><td>本輪 F-1 🟡</td></tr></tbody></table></div></div></details>
+<footer class="foot gate-verdict" id="gate-verdict"
+  data-slug="host-stack-fit" data-stage="7-review"
+  data-source-sha="0a89ec85ae2cf3ee0c555b82441caa323e77c10f">
+  <p class="gv-canon">正本是同目錄 <code>7-review.md</code> 頂欄
+  <code>verdict:</code>。勾選只是瀏覽器草稿。全勾不算 PASS。
+  只有「提交判定」才寫入 Human verdict。sidecar／HTML／localStorage 都不是正本;
+  sidecar 與 md 衝突時 md 勝。</p>
+  <div class="gv-row" role="radiogroup" aria-label="Human verdict">
+    <label><input type="radio" name="gv-verdict" value="PASS"> PASS</label>
+    <label><input type="radio" name="gv-verdict" value="REQUEST_CHANGES"> REQUEST_CHANGES</label>
+    <label><input type="radio" name="gv-verdict" value="HOLD"> HOLD</label>
+  </div>
+  <label class="gv-field">備註 <input id="gv-notes" type="text" maxlength="200"></label>
+  <label class="gv-field">審查者 <input id="gv-reviewer" type="text" maxlength="80"></label>
+  <button type="button" class="btn" id="gv-submit">提交判定</button>
+  <p id="gv-status" class="gv-status"></p>
+</footer>
+</div>
+<script>
+(function(){
+  var boxes = [].slice.call(document.querySelectorAll('.s-chk'));
+  if (!boxes.length) return;
+  var bar = document.querySelector('.bar i'), done = document.getElementById('done');
+  var KEY = 'devflow-gate-twin:' + document.title;
+  function load(){ try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ return {}; } }
+  function save(s){ try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e){} }
+  var state = load();
+  function paint(){
+    var n = 0;
+    boxes.forEach(function(b){
+      var card = b.closest('.s-card');
+      if (b.checked){ n++; card.classList.add('done'); } else { card.classList.remove('done'); }
+    });
+    if (done) done.textContent = n;
+    if (bar) bar.style.width = (n / boxes.length * 100) + '%';
+  }
+  boxes.forEach(function(b){
+    if (state[b.dataset.sid]) b.checked = true;
+    b.addEventListener('change', function(){ state[b.dataset.sid] = b.checked; save(state); paint(); });
+  });
+  var clr = document.getElementById('clear');
+  if (clr) clr.addEventListener('click', function(){
+    state = {}; save(state); boxes.forEach(function(b){ b.checked = false; }); paint();
+  });
+  paint();
+})();
+
+(function(){
+  var panel = document.getElementById('gate-verdict');
+  if (!panel) return;
+  var statusEl = document.getElementById('gv-status');
+  function status(msg){ if (statusEl) statusEl.textContent = msg; }
+  function checkedIds(){
+    return [].slice.call(document.querySelectorAll('.s-chk')).filter(function(b){
+      return b.checked;
+    }).map(function(b){ return b.dataset.sid; });
+  }
+  function patchMd(text, verdict, notes){
+    if (text.slice(0, 4) !== '---\n') throw new Error('no frontmatter');
+    var end = text.indexOf('\n---\n', 3);
+    if (end < 0) throw new Error('unclosed frontmatter');
+    var fm = text.slice(4, end);
+    var rest = text.slice(end + 5);
+    if (/^verdict:\s*/m.test(fm)) {
+      fm = fm.replace(/^verdict:\s*.*$/m, 'verdict: ' + verdict);
+    } else if (/^status:\s*/m.test(fm)) {
+      fm = fm.replace(/^(status:\s*.*)$/m, '$1\nverdict: ' + verdict);
+    } else {
+      fm = 'verdict: ' + verdict + '\n' + fm;
+    }
+    if (notes) {
+      var line = '- Human verdict note: ' + notes.split('\n')[0];
+      if (/^- Human verdict note:/m.test(rest)) {
+        rest = rest.replace(/^- Human verdict note:.*$/m, line);
+      } else {
+        rest = line + '\n' + rest;
+      }
+    }
+    return '---\n' + fm + '\n---\n' + rest;
+  }
+  function payload(verdict){
+    return {
+      slug: panel.dataset.slug,
+      gate: panel.dataset.stage,
+      verdict: verdict,
+      notes: ((document.getElementById('gv-notes') || {}).value || '').trim(),
+      reviewer: ((document.getElementById('gv-reviewer') || {}).value || '').trim(),
+      checked: checkedIds(),
+      source_sha: panel.dataset.sourceSha || '',
+      sidecar: true
+    };
+  }
+  function postVerdict(body){
+    var urls = ['/devflow-gate/verdict'];
+    if (location.protocol === 'file:') {
+      urls.push('http://127.0.0.1:8765/devflow-gate/verdict');
+    }
+    var i = 0;
+    function next(){
+      if (i >= urls.length) return Promise.reject(new Error('no serve'));
+      var url = urls[i++];
+      return fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      }).then(function(r){
+        if (!r.ok) throw new Error('http ' + r.status);
+        return r.json();
+      }).catch(function(){ return next(); });
+    }
+    return next();
+  }
+  async function writeViaFsa(body){
+    if (!window.showDirectoryPicker) {
+      throw new Error('no File System Access');
+    }
+    var dir = await window.showDirectoryPicker({id: 'devflow-gate-' + body.slug});
+    var mdName = body.gate + '.md';
+    var fh = await dir.getFileHandle(mdName);
+    var file = await fh.getFile();
+    var next = patchMd(await file.text(), body.verdict, body.notes);
+    var w = await fh.createWritable();
+    await w.write(next);
+    await w.close();
+    try {
+      var sh = await dir.getFileHandle(body.gate + '.verdict.json', {create: true});
+      var sw = await sh.createWritable();
+      await sw.write(JSON.stringify({
+        gate: body.gate, verdict: body.verdict, notes: body.notes,
+        checked: body.checked, source_sha: body.source_sha,
+        timestamp: new Date().toISOString(), reviewer: body.reviewer
+      }, null, 2) + '\n');
+      await sw.close();
+    } catch (e) {}
+    return mdName;
+  }
+  var submit = document.getElementById('gv-submit');
+  if (!submit) return;
+  submit.addEventListener('click', function(){
+    var picked = document.querySelector('input[name="gv-verdict"]:checked');
+    if (!picked) {
+      status('請先選 PASS / REQUEST_CHANGES / HOLD。全勾不算 PASS。');
+      return;
+    }
+    var body = payload(picked.value);
+    status('寫入中…');
+    postVerdict(body).then(function(res){
+      status('已寫入 ' + (res.path || (body.gate + '.md')) +
+        ' 的 verdict: ' + body.verdict + '。正本是 md，不是勾選、不是 sidecar。');
+    }).catch(function(){
+      writeViaFsa(body).then(function(name){
+        status('已用 File System Access 寫入 ' + name +
+          ' 的 verdict: ' + body.verdict + '。正本是 md。');
+      }).catch(function(){
+        status('寫不進 md。請跑 python3 scripts/devflow_gate.py serve <專案根> 再開這頁,或用 File System Access 選 feature 資料夾。勾選不是判定。');
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
