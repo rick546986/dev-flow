@@ -49,8 +49,9 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 綠的時候印該主機下一句安裝／更新指令(Cursor Refresh 在已匯入 repo 那一列;
 Codex 是 marketplace add／plugin add;Grok 沒有 marketplace)。
 缺技能樹或 `DEVFLOW_ROOT` 不對會印一句掛載句並紅。四邊正本見 `docs/PLUGIN.md`。
-三邊都沒有 Claude PreToolUse。**誰開工誰先跑**該站
+三邊都**沒有 PreToolUse**。**誰開工誰先跑**該站
 `scripts/check-devtalk-graph.sh --action` 或 `scripts/check-devstageN-graph.sh --action`。
+該站 `--action` allow 才鑄 `.devflow/host-receipt/<slug>/<station>.json`；核對只認布林 `verify_receipt:true`（只核對不鑄）。`devflow-exec start` 單獨成功 ≠ 已武裝。
 **不准為了別的主機改鬆 `--action`。**
 
 `.claude/rules/` 不會被 Cursor／Codex 自動吃。架構不變量用 setup 依主機寫對應指標：
@@ -236,6 +237,8 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    落地方式:先在暫存目錄把完整 baseline 新樹組好、核對成功後才整棵替換
    `docs/dev/.devflow-baseline/`(**乾淨替換,不准 overlay** —— overlay 會在
    上游移除工具時於 baseline 留下幽靈檔)。
+9. **堆疊盤點 I2**:`python3 "${DEVFLOW_ROOT}/scripts/write-stack-inventory.py" --root <專案根>`
+   寫 `docs/dev/0-inventory.json`。依賴變了要重跑。預設不寫 `0-stack.md`。
 
 ## upgrade(stale)
 
@@ -459,6 +462,20 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     `DEVFLOW_ROOT=<方法包根> scripts/check-host-adapter.sh --probe <專案根>`。
     方法包自檢才可無參數。
     不准為了別的主機改鬆 `--action`。
+17. **堆疊盤點 I2**:跑
+    `python3 "${DEVFLOW_ROOT}/scripts/write-stack-inventory.py" --root <專案根> --check`
+    （install／upgrade 收尾改跑同一支、不帶 `--check` 以新建）。
+    寫出 `docs/dev/0-inventory.json`（schema `devflow-stack-inventory/v1`）。
+    缺此檔 → check **不得**當 current／成功,狀態列 broken／stale,輸出點名
+    `docs/dev/0-inventory.json`。
+    **依賴變了要重跑** setup check（只 `git pull` 不會改這份檔）。
+    深度=專案級宣告 pin + pin／requirements 第一層 `direct_deps`,不是 lock 全樹,
+    也不是 per-slug。預設不建 `docs/dev/0-stack.md`(I4 選配;人要求且 I2 已在才寫)。
+    人明確要求 lock digest 或散文堆疊頁時才跑
+    `python3 "${DEVFLOW_ROOT}/scripts/write-stack-inventory.py" --root <專案根> --write-stack`
+    （可加 `--digest <pin-or-lock>`）。只有專案級 `docs/dev/0-stack.md`,不得每 slug 一份。
+    無 I2 不得先寫 I4。檔內必須寫「盤點正本是 `docs/dev/0-inventory.json`」與
+    「digest 不是 lock 正本」。套件版本爭議以 lock／pin 為準,不以 digest 覆寫 I2。
 
 ## fix / uninstall
 

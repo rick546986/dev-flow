@@ -169,6 +169,7 @@ group_methodology() {
   # 不重寫 1–7 站編成,不准為了別的主機改鬆 --action。
   run "methodology/check-host-adapter"        scripts/check-host-adapter.sh      || return 1
   run "methodology/test-host-adapter"         scripts/test-host-adapter.sh       || return 1
+  run "methodology/test-host-receipt"         scripts/test-host-receipt.sh       || return 1
   # 三邊 plugin 薄殼:Claude／Cursor／Codex 各自官方 manifest,skills 整棵,
   # Claude 舊 /plugin 指令不准改;Grok 不准發明 marketplace。
   run "methodology/check-plugin-hosts"        scripts/check-plugin-hosts.sh      || return 1
@@ -243,6 +244,7 @@ group_architecture() {
   run "architecture/test-status-update" scripts/test-status-update.sh || return 1
   run "architecture/check-write-scope" scripts/check-write-scope.sh || return 1
   run "architecture/test-write-scope" scripts/test-write-scope.sh || return 1
+  run "architecture/test-stack-inventory" scripts/test-stack-inventory.sh || return 1
   # Stage 6/7 執行期強制條款(A1 守衛武裝／A3 Verify 案例數／A4 gauntlet 路徑／
   # A5 觀測可執行性)。四條都是 2026-08 order-intake 實際失效過的散文規則。
   run "architecture/check-stage67-enforcement" scripts/check-stage67-enforcement.sh || return 1
