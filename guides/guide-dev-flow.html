@@ -572,7 +572,8 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   <h2 id="flow">① 七階段流程圖(含 Gate 與能力分層)</h2>
   <p class="lead">這章要你懂:<strong>七站單行,只有 G1 / G2 / G3 會被人擋</strong>。
   綁死的是<strong>層</strong>(規劃 / 執行 / 起步 / 審查),不是產品型號。
-  Claude 的 opus / sonnet / haiku 只是對照,不是契約。G1 過且沒技術疑問,可以跳過選配的 3。
+  Claude 的 opus / sonnet / haiku 只是對照,不是契約。
+  非 Claude 主機不跑 haiku→sonnet→opus 產品階梯。G1 過且沒技術疑問,可以跳過選配的 3。
   Stage 1 本身是可重跑的節點鏈,下一跳看 <code>graph.yaml</code>,細節見
   <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map">guide-dev-talk 全程地圖</a>。</p>
 
@@ -620,12 +621,17 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
         <td>規劃層、唯讀;判 T 定義問題 vs 純執行</td>
         <td><span class="badge opus">opus</span></td></tr>
   </table></div>
-  <p>Grok／Cursor／Codex:在該主機選<strong>同等能力層</strong>。不要發明那些主機的型號表,
-  也不要假裝它們有 Claude PreToolUse 或 haiku–sonnet–opus 的 dispatch-guard
-  （那顆牙只在 Claude Code 主機上咬）。</p>
+  <p>Cursor／Grok（含 Grok Bot）Stage 6:<strong>預設 Auto</strong>（Cursor Auto／該主機同等自動選模／CloudAgent <code>default</code>）。
+  <strong>鐵則</strong>:執行者 ≠ reviewer(不同 agent id／chat／cloud agent／Bot;同一對話自審不算)。兩邊預設 Auto,必須兩個不同 agent。
+  Owner 明示才可用具名模型 + 該主機支援的 effort／thinking 做更強 review;執行 FAIL 可改派更強具名執行者。
+  <strong>不支援</strong> Auto + 提高 effort／thinking(CloudAgent <code>default</code> 不收參數)。不要把 haiku／sonnet／opus 寫成必跑型號。
+  Codex:在該主機選<strong>同等能力層</strong>;本頁不另編 Codex 型號表。
+  不要發明那些主機的型號表,也不要假裝它們有 Claude PreToolUse 或 haiku–sonnet–opus 的 dispatch-guard
+  （那顆牙只在 Claude Code 主機上咬）。非 Claude 主機不跑 haiku→sonnet→opus 產品階梯;層（規劃／執行／起步／審查）與嘗試上限仍綁死。細節見 <code>skills/dev-run/SKILL.md</code>「主機分流」。</p>
   <p id="effort"><strong>effort</strong> 按判斷密度選 <code>low</code>／<code>medium</code>／<code>high</code>，
   不是按產品型號。層與 effort 依本表自動採用，<strong>不因使用者一句「換個模型」就偏離</strong>。
-  偏離層級（表內建升降階除外）需使用者明示同意，並記入該階段文檔。</p>
+  偏離層級（表內建升降階除外）需使用者明示同意，並記入該階段文檔。
+  Cursor／Grok 的 Auto／CloudAgent <code>default</code> 不收 effort 參數;具名模型才可帶該主機支援的 effort／thinking。</p>
   <span id="models" hidden></span>
   <div class="parity">
   <p class="parity-tag">規則正本 · Gate 審查者不指定模型(逐字抄自契約檔 機械正本)</p>
@@ -1569,7 +1575,8 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   <h3 id="devrun">dev-run 引擎(選配執行方式)</h3>
   <p>Stage 6 除了手動逐 T,另有 <code>dev-run</code> 引擎:派工者(主對話)不下場寫碼,只派工、審驗結果、
   commit 記帳;細節見 <code>~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;/skills/dev-run/SKILL.md</code>
-  (Windows 對應 <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\skills\dev-run\SKILL.md</code>)。</p>
+  (Windows 對應 <code>%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\&lt;version&gt;\skills\dev-run\SKILL.md</code>)。
+  Cursor／Grok（含 Grok Bot）Stage 6 預設 Auto,執行者 ≠ reviewer(不同 agent;同一對話自審不算),不跑 haiku→sonnet→opus 產品階梯;見該 SKILL「主機分流」。</p>
 
   <p class="muted">誰做什麼(逐字,見 SKILL.md「誰做什麼(職責分配)」節):</p>
   <div class="tablewrap"><table>
@@ -1601,7 +1608,8 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
         全程不打斷問人,只有 L2 停。</li>
   </ol>
 
-  <p class="muted">角色與層(Claude 名只是對照;Claude Code 上的派工細節見 SKILL.md):</p>
+  <p class="muted">角色與層(Claude 名只是對照;Claude Code 上的派工細節見 SKILL.md)。
+  非 Claude 主機不跑 haiku→sonnet→opus 產品階梯;Cursor／Grok（含 Grok Bot）Stage 6 預設 Auto,執行者 ≠ reviewer。</p>
   <div class="tablewrap"><table>
     <tr><th>角色</th><th>層</th><th>Claude對照</th><th>規則</th></tr>
     <tr><td>派工者(你)</td><td>規劃/派工層</td><td>opus / fable5</td><td>派工、彙整、commit、記帳;不寫碼</td></tr>
@@ -2838,6 +2846,9 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   也沒有 haiku–sonnet–opus 的 dispatch-guard。選模型時對準
   <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow">#flow</a>
   的能力層,不要發明那些主機的 SKU 表。
+  Cursor／Grok（含 Grok Bot）Stage 6 預設 Auto,執行者 ≠ reviewer,不支援 Auto + 提高 effort,見
+  <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow">#flow</a>
+  與 <code>skills/dev-run/SKILL.md</code>「主機分流」。
   <strong>誰開工誰先跑</strong>該站
   <code>check-devtalk-graph.sh --action</code> 或
   <code>check-devstageN-graph.sh --action</code>。
