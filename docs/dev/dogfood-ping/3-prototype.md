@@ -98,7 +98,7 @@ Stage 6 才落地 scripts/dogfood-ping.sh + file-map
 
 ## User Demo Feedback
 <!-- Human verdict 由參與 Demo 的人類親填；Agent 禁代填 ACCEPTED／attestation -->
-- Demo date: 2026-09-10（agent 已代跑 CLI；待 owner 親看輸出／頁面）
+- Demo date: 2026-09-10（agent 已代跑 CLI；owner 同日 chat 准開 Stage 4）
 - Participants:
 - Variant reviewed: CLI-only（無 UI Variant）
 - Accepted interaction:
@@ -107,7 +107,7 @@ Stage 6 才落地 scripts/dogfood-ping.sh + file-map
 - Missing real-world steps:
 - Permission corrections:
 - External handoffs:
-- Required changes:
+- Required changes: 無；owner 2026-09-10 chat：「可以開 Stage 4」（流程放行；非正式 Demo attestation）
 - Human verdict:
 - Verdict attestation:
 
