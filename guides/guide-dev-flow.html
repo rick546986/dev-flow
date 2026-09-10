@@ -3926,6 +3926,22 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             收寬成只 postbash detect-after 必須紅。Edit 擋法不準更鬆;
             scope 內寫入仍放行。案例數下限寫死。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-host-receipt.sh</code></td>
+        <td>host-stack-fit 收據牙:stage4 allow 鑄檔、其餘六站同一套 mint、
+            <code>verify_receipt:true</code> 只核對、start-only 不得宣稱武裝。
+            群組 <code>mint-stage4</code>／<code>mint-rest</code>／
+            <code>verify-receipt</code>／<code>fail-closed-claim</code>。
+            不另造 <code>check-host-receipt.sh</code>。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>write-stack-inventory.py</code></td>
+        <td>dev-setup 寫專案級 I2 <code>docs/dev/0-inventory.json</code>
+            （<code>devflow-stack-inventory/v1</code>）。
+            <code>--check</code> 缺檔則 broken;選配 <code>--write-stack</code> 才投影 I4。</td>
+        <td>dev-setup install／upgrade／check</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-stack-inventory.sh</code></td>
+        <td>I2／I4 牙:欄位、母版 <code>markdown-it-py==4.0.0</code>、3.9 vs 3.12 落差、
+            缺 I2 不得成功、方法包與產品同鍵、預設不建 I4。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>
         <td>本節新增的守衛本身——盤點 <code>hooks/</code>/<code>scripts/</code>/<code>observability/</code>/
             <code>tests/parallel-stage6/</code> 底下每支腳本有沒有被這張表點名到,也反查表裡寫的檔名是不是

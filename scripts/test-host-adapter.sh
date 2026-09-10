@@ -31,6 +31,7 @@ FIX="$SELF_DIR/fixtures/host-adapter"
 [ -d "$FIX/setup-claimed" ] || { echo "FATAL: 找不到 $FIX/setup-claimed" >&2; exit 2; }
 
 python3 - "$ROOT" "$CHECK" "$FIX" <<'PY'
+import json
 import os
 import re
 import shutil
@@ -44,7 +45,7 @@ sys.stderr.reconfigure(line_buffering=True)
 root, check, fix = sys.argv[1], sys.argv[2], sys.argv[3]
 passed = 0
 failed = 0
-MIN_CASES = 54
+MIN_CASES = 58
 
 
 def run_check(tree, extra_env=None, drop=None, probe=False, cwd=None):
@@ -765,6 +766,56 @@ with tempfile.TemporaryDirectory(prefix="host-adapter-test-") as tmpbase:
         "N1-start.md",
         extra_env={"DEVFLOW_ROOT": root},
     )
+
+    cursor_plugin = os.path.join(root, ".cursor-plugin", "plugin.json")
+    ok = os.path.isfile(cursor_plugin)
+    if ok:
+        data = json.loads(open(cursor_plugin, encoding="utf-8").read())
+        ok = "hooks" not in data
+    if ok:
+        passed += 1
+        print("  ✓ S-6.1 .cursor-plugin/plugin.json 無 hooks 鍵")
+    else:
+        failed += 1
+        print("  ✗ S-6.1 薄殼有 hooks 鍵或缺檔", file=sys.stderr)
+
+    action_scripts = (
+        "scripts/check-devtalk-graph.sh",
+        "scripts/check-devstage2-graph.sh",
+        "scripts/check-devstage3-graph.sh",
+        "scripts/check-devstage4-graph.sh",
+        "scripts/check-devstage5-graph.sh",
+        "scripts/check-devstage6-graph.sh",
+        "scripts/check-devstage7-graph.sh",
+    )
+    missing_action = []
+    for rel in action_scripts:
+        text = open(os.path.join(root, rel), encoding="utf-8").read()
+        if '[ "${1:-}" = "--action" ]' not in text:
+            missing_action.append(rel)
+    if not missing_action:
+        passed += 1
+        print("  ✓ S-6.2 七站仍接 --action")
+    else:
+        failed += 1
+        print("  ✗ S-6.2 缺 --action:" + ",".join(missing_action), file=sys.stderr)
+
+    contract = json.loads(
+        open(os.path.join(root, "docs", "dev", "devflow-contract.json"), encoding="utf-8").read()
+    )
+    if contract.get("devflow_contract_version") == "2.0.0":
+        passed += 1
+        print("  ✓ S-6.2 契約仍 2.0.0")
+    else:
+        failed += 1
+        print("  ✗ S-6.2 契約漂了:" + repr(contract.get("devflow_contract_version")), file=sys.stderr)
+
+    if not os.path.exists(os.path.join(root, "scripts", "check-host-receipt.sh")):
+        passed += 1
+        print("  ✓ S-6 Non-Goal 無 check-host-receipt.sh")
+    else:
+        failed += 1
+        print("  ✗ S-6 出現第二套 check-host-receipt.sh", file=sys.stderr)
 
 total = passed + failed
 print(f"=== test-host-adapter:{passed}/{total} ===")
