@@ -116,7 +116,7 @@ FORK_INTEGRATION_SHA: fa55b484d554588904f5ef510768b7e4d8dcdd91
 - Test Integrity finding:none
 - Design boundary finding:未假掛 Cursor hooks;未 bump .claude-plugin version;未改 STATUS 表列
 - verdict:PASS
-- correction + re-review after FAIL:N/A
+- correction + re-review after FAIL:CI `PF-2` 假綠 → 補 `MIN_HEREDOCS=216`(D-heredoc-1)
 
 ## Progress Log
 
@@ -127,6 +127,7 @@ FORK_INTEGRATION_SHA: fa55b484d554588904f5ef510768b7e4d8dcdd91
 2026-09-10 | T-5 | 33a67ec83c5b38c80c161d9ba8a54da3b9c07c72 I2 write-stack-inventory
 2026-09-10 | T-6 | fca0fa6d96109070c83c3ddd052914a709dcfbf1 I4 SKILL wording
 2026-09-10 | T-7 | 2698a4eda949d66670c83417ad93478541fac807 Non-Goal + file-map + host-adapter MIN_CASES=58
+2026-09-10 | T-7-fix | (本 commit) MIN_HEREDOCS 214→216 修 CI PF-2 假綠
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 Run: n-a(sequential v1,無 run_id)
@@ -253,6 +254,12 @@ Run: n-a(sequential v1,無 run_id)
 - 理由:本 hop 使用者指定單一雲端代理做完 T-1…T-7;獨立審查留給 PR／G3。
 - 影響:T Review Log reviewer identity 已標 self-check
 
+### D-heredoc-1(L1)
+- 現象:T-1／T-5 新增 `test-host-receipt.sh`／`test-stack-inventory.sh` 各一條 `<<'PY'`,實得 heredoc=216;T-7 漏同步 `MIN_HEREDOCS`(仍 214)。CI `PF-2` 關掉 `INTERP_TOKEN_RE` 後剩 215 ≥ 214,預期紅卻綠。
+- 保守選擇:把 `check-py-floor.sh` 與 architecture-guards 靜態釘一併改成 216。多動 T-7 Files 未列的 `check-py-floor.sh`。
+- 理由:該檔頂註「增刪 .sh 或 heredoc 時一起改」;地板必須精確、不留餘裕。未改 R/S。
+- 影響:T-7 地板／architecture-guards PF-2
+
 ## Files Changed
 
 T-1:hooks/devflow-lib.py、scripts/check-devstage4-graph.sh、scripts/test-host-receipt.sh、scripts/fixtures/host-receipt/**
@@ -366,6 +373,14 @@ T-7:test-host-adapter MIN_CASES=58、check-file-map EXPECTED=193、guide #filema
 ```diff
 -EXPECTED_MAPPED_FILES = 190
 +EXPECTED_MAPPED_FILES = 193
+```
+
+### MIN_HEREDOCS · `scripts/check-py-floor.sh` 295-295  T-7
+改什麼：heredoc 地板 214→216,消掉 PF-2 假綠餘裕
+關聯：architecture-guards `check_static_pin`;新增兩支測試腳本各一條 `<<'PY'`
+```diff
+-MIN_HEREDOCS = 214
++MIN_HEREDOCS = 216
 ```
 
 ## Self-Review
