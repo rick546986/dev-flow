@@ -1,0 +1,408 @@
+#!/bin/bash
+# test-host-receipt.sh — host-stack-fit 收據鑄／核對牙
+#
+# 群組:
+#   mint-stage4        T-1  S-1.1(stage4)／S-1.2／S-1.3／S-1.4
+#   mint-rest          T-2  其餘六站 allow 鑄檔
+#   verify-receipt     T-3  verify_receipt:true
+#   fail-closed-claim  T-4  start-only 與主機文案
+#
+# 用法:
+#   scripts/test-host-receipt.sh [--group NAME] [-v] [root]
+# exit:0 = 全過 / 1 = 案例未依預期 / 2 = 治具故障
+
+set -uo pipefail
+
+SELF_DIR=$(cd "$(dirname "$0")" && pwd)
+ROOT=$(cd "$SELF_DIR/.." && pwd)
+GROUP=""
+VERBOSE=0
+POSITIONAL=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --group)
+      GROUP=${2:-}
+      [ -n "$GROUP" ] || { echo "FATAL: --group 需要名稱" >&2; exit 2; }
+      shift 2
+      ;;
+    -v|--verbose)
+      VERBOSE=1
+      shift
+      ;;
+    --)
+      shift
+      POSITIONAL+=("$@")
+      break
+      ;;
+    -*)
+      echo "FATAL: 未知旗標 $1" >&2
+      exit 2
+      ;;
+    *)
+      POSITIONAL+=("$1")
+      shift
+      ;;
+  esac
+done
+if [ "${#POSITIONAL[@]}" -gt 0 ]; then
+  ROOT=$(cd "${POSITIONAL[0]}" && pwd) || exit 2
+fi
+
+STAGE4="$SELF_DIR/check-devstage4-graph.sh"
+PROBE="$SELF_DIR/check-host-adapter.sh"
+SCOPE="$SELF_DIR/check-write-scope.sh"
+EXEC="$ROOT/hooks/devflow-exec.sh"
+FIX="$SELF_DIR/fixtures/host-receipt"
+GOOD4="$SELF_DIR/fixtures/devstage4-graph/good"
+[ -x "$STAGE4" ] || chmod +x "$STAGE4"
+[ -f "$STAGE4" ] || { echo "FATAL: 找不到 $STAGE4" >&2; exit 2; }
+[ -d "$FIX/actions" ] || { echo "FATAL: 找不到 $FIX/actions" >&2; exit 2; }
+[ -d "$GOOD4" ] || { echo "FATAL: 找不到 $GOOD4" >&2; exit 2; }
+
+python3 - "$ROOT" "$STAGE4" "$PROBE" "$SCOPE" "$EXEC" "$FIX" "$GOOD4" "$GROUP" "$VERBOSE" <<'PY'
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+
+sys.stdout.reconfigure(line_buffering=True)
+sys.stderr.reconfigure(line_buffering=True)
+
+(
+    root,
+    stage4,
+    probe,
+    scope,
+    exec_sh,
+    fix,
+    good4,
+    group,
+    verbose,
+) = sys.argv[1:10]
+verbose = verbose == "1"
+
+SCHEMA = "devflow-host-receipt/v1"
+STATION = "stage4"
+SLUG = "host-stack-fit"
+SCRIPT = "scripts/check-devstage4-graph.sh"
+KEYS = {
+    "schema",
+    "station",
+    "slug",
+    "node",
+    "script",
+    "argv",
+    "action_result",
+    "minted_at",
+    "root",
+    "payload_sha256",
+    "DONE",
+    "stamp",
+}
+
+passed = 0
+failed = 0
+ran = []
+
+
+def vprint(msg):
+    if verbose:
+        print(msg)
+
+
+def case_title(name):
+    line = f"=== CASE {name}"
+    print(line)
+    ran.append(name)
+
+
+def receipt_jsons(tree):
+    base = os.path.join(tree, ".devflow", "host-receipt")
+    found = []
+    if not os.path.isdir(base):
+        return found
+    for dirpath, _, filenames in os.walk(base):
+        for name in filenames:
+            if name.endswith(".json"):
+                found.append(os.path.join(dirpath, name))
+    return found
+
+
+def seed_stage4(tmp):
+    shutil.copytree(good4, tmp, dirs_exist_ok=True)
+    dest = os.path.join(tmp, "docs", "dev", SLUG)
+    os.makedirs(dest, exist_ok=True)
+    src = os.path.join(fix, "docs", "dev", SLUG, "2-decision.md")
+    shutil.copy2(src, os.path.join(dest, "2-decision.md"))
+
+
+def run_cmd(cmd, cwd=None, env=None):
+    merged = os.environ.copy()
+    if env:
+        merged.update(env)
+    return subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, env=merged)
+
+
+def expect(ok, detail=""):
+    global passed, failed
+    if ok:
+        passed += 1
+        print("  ✓")
+    else:
+        failed += 1
+        print("  ✗ " + detail, file=sys.stderr)
+
+
+def stamp_of(data):
+    raw = "|".join(
+        [
+            SCHEMA,
+            data["station"],
+            data["slug"],
+            data["node"],
+            data["script"],
+            data["root"],
+            data["action_result"],
+            data["minted_at"],
+            data["payload_sha256"],
+            "true",
+        ]
+    )
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def read_json(path):
+    return json.loads(open(path, encoding="utf-8").read())
+
+
+def plant_receipt(tree, minted_at="2020-01-01T00:00:00Z", payload_sha="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"):
+    dest = os.path.join(tree, ".devflow", "host-receipt", SLUG, "stage4.json")
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    node = "S5-gate"
+    data = {
+        "schema": SCHEMA,
+        "station": STATION,
+        "slug": SLUG,
+        "node": node,
+        "script": SCRIPT,
+        "argv": ["--action"],
+        "action_result": "allow",
+        "minted_at": minted_at,
+        "root": os.path.abspath(tree),
+        "payload_sha256": payload_sha,
+        "DONE": True,
+        "stamp": "",
+    }
+    data["stamp"] = stamp_of(data)
+    tmp = dest + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as handle:
+        json.dump(data, handle, ensure_ascii=False)
+        handle.write("\n")
+    os.replace(tmp, dest)
+    return dest, data
+
+
+def test_s_1_1_station_action_mints_receipt():
+    case_title("test_s_1_1_station_action_mints_receipt")
+    with tempfile.TemporaryDirectory(prefix="hr-s11-") as tmp:
+        seed_stage4(tmp)
+        action = os.path.join(fix, "actions", "stage4-allow.json")
+        proc = run_cmd(["bash", stage4, "--action", action, tmp])
+        dest = os.path.join(tmp, ".devflow", "host-receipt", SLUG, "stage4.json")
+        ok = proc.returncode == 0 and os.path.isfile(dest)
+        if ok:
+            data = read_json(dest)
+            ok = (
+                isinstance(data, dict)
+                and data.get("schema") == SCHEMA
+            )
+        expect(
+            ok,
+            f"rc={proc.returncode} dest={os.path.isfile(dest)} "
+            f"out={(proc.stdout or '')[-200:]} err={(proc.stderr or '')[-200:]}",
+        )
+
+
+def test_s_1_2_receipt_fields_and_stamp():
+    case_title("test_s_1_2_receipt_fields_and_stamp")
+    with tempfile.TemporaryDirectory(prefix="hr-s12-") as tmp:
+        seed_stage4(tmp)
+        action = os.path.join(fix, "actions", "stage4-allow.json")
+        raw = open(action, "rb").read()
+        proc = run_cmd(["bash", stage4, "--action", action, tmp])
+        dest = os.path.join(tmp, ".devflow", "host-receipt", SLUG, "stage4.json")
+        ok = proc.returncode == 0 and os.path.isfile(dest)
+        detail = f"rc={proc.returncode}"
+        if ok:
+            data = read_json(dest)
+            root_abs = os.path.abspath(tmp)
+            want_sha = hashlib.sha256(raw).hexdigest()
+            ok = (
+                set(data.keys()) == KEYS
+                and data["schema"] == SCHEMA
+                and data["station"] == STATION
+                and data["slug"] == SLUG
+                and data["node"] == "S5-gate"
+                and data["script"] == SCRIPT
+                and isinstance(data["argv"], list)
+                and data["argv"]
+                and data["argv"][0] == "--action"
+                and data["action_result"] == "allow"
+                and isinstance(data["minted_at"], str)
+                and "T" in data["minted_at"]
+                and data["minted_at"].endswith("Z")
+                and data["root"] == root_abs
+                and data["payload_sha256"] == want_sha
+                and data["DONE"] is True
+                and type(data["DONE"]) is bool
+                and data["stamp"] == stamp_of(data)
+                and len(data["stamp"]) == 64
+                and data["stamp"].islower()
+                and all(c in "0123456789abcdef" for c in data["stamp"])
+            )
+            detail = f"keys={sorted(data.keys())} DONE={data.get('DONE')!r} root={data.get('root')!r}"
+        expect(ok, detail)
+
+
+def test_s_1_3_probe_does_not_mint():
+    case_title("test_s_1_3_probe_does_not_mint")
+    with tempfile.TemporaryDirectory(prefix="hr-s13p-") as tmp:
+        seed_stage4(tmp)
+        proc = run_cmd(["bash", probe, "--probe", tmp])
+        found = receipt_jsons(tmp)
+        expect(
+            not found,
+            f"probe rc={proc.returncode} receipts={found}",
+        )
+
+
+def test_s_1_3_start_does_not_mint():
+    case_title("test_s_1_3_start_does_not_mint")
+    with tempfile.TemporaryDirectory(prefix="hr-s13s-") as tmp:
+        seed_stage4(tmp)
+        subprocess.run(["git", "init"], cwd=tmp, capture_output=True, check=False)
+        if os.path.isfile(exec_sh):
+            run_cmd(["bash", exec_sh, "start", SLUG], cwd=tmp)
+        found = receipt_jsons(tmp)
+        expect(not found, f"start minted {found}")
+
+
+def test_s_1_3_write_cursor_does_not_mint():
+    case_title("test_s_1_3_write_cursor_does_not_mint")
+    with tempfile.TemporaryDirectory(prefix="hr-s13c-") as tmp:
+        seed_stage4(tmp)
+        proc = run_cmd(["bash", stage4, "--write-cursor", "S5-gate", SLUG, tmp])
+        found = receipt_jsons(tmp)
+        cursor = os.path.join(tmp, ".devstage4-cursor.json")
+        expect(
+            proc.returncode == 0 and os.path.isfile(cursor) and not found,
+            f"rc={proc.returncode} cursor={os.path.isfile(cursor)} receipts={found}",
+        )
+
+
+def test_s_1_3_write_scope_does_not_mint():
+    case_title("test_s_1_3_write_scope_does_not_mint")
+    with tempfile.TemporaryDirectory(prefix="hr-s13w-") as tmp:
+        seed_stage4(tmp)
+        action = os.path.join(fix, "actions", "write-scope.json")
+        run_cmd(["bash", scope, "--action", action, tmp])
+        found = receipt_jsons(tmp)
+        expect(not found, f"write-scope minted {found}")
+
+
+def test_s_1_4_deny_does_not_change_receipt():
+    case_title("test_s_1_4_deny_does_not_change_receipt")
+    with tempfile.TemporaryDirectory(prefix="hr-s14d-") as tmp:
+        seed_stage4(tmp)
+        dest, before = plant_receipt(tmp)
+        before_raw = open(dest, "rb").read()
+        action = os.path.join(fix, "actions", "stage4-deny.json")
+        proc = run_cmd(["bash", stage4, "--action", action, tmp])
+        after_raw = open(dest, "rb").read()
+        expect(
+            proc.returncode == 1 and after_raw == before_raw,
+            f"rc={proc.returncode} changed={after_raw != before_raw} err={(proc.stderr or '')[-200:]}",
+        )
+
+
+def test_s_1_4_exit2_does_not_change_receipt():
+    case_title("test_s_1_4_exit2_does_not_change_receipt")
+    with tempfile.TemporaryDirectory(prefix="hr-s14e-") as tmp:
+        seed_stage4(tmp)
+        dest, _before = plant_receipt(tmp, minted_at="2021-02-02T00:00:00Z")
+        before_raw = open(dest, "rb").read()
+        action = os.path.join(fix, "actions", "stage4-error.json")
+        proc = run_cmd(["bash", stage4, "--action", action, tmp])
+        after_raw = open(dest, "rb").read()
+        expect(
+            proc.returncode == 2 and after_raw == before_raw,
+            f"rc={proc.returncode} changed={after_raw != before_raw}",
+        )
+
+
+def test_s_1_4_allow_overwrites_same_path():
+    case_title("test_s_1_4_allow_overwrites_same_path")
+    with tempfile.TemporaryDirectory(prefix="hr-s14a-") as tmp:
+        seed_stage4(tmp)
+        dest, before = plant_receipt(tmp)
+        action = os.path.join(fix, "actions", "stage4-allow.json")
+        proc = run_cmd(["bash", stage4, "--action", action, tmp])
+        ok = proc.returncode == 0 and os.path.isfile(dest)
+        if ok:
+            after = read_json(dest)
+            only = receipt_jsons(tmp)
+            ok = (
+                after["minted_at"] != before["minted_at"]
+                and after["payload_sha256"] != before["payload_sha256"]
+                and after["DONE"] is True
+                and len(only) == 1
+                and os.path.abspath(only[0]) == os.path.abspath(dest)
+            )
+        expect(ok, f"rc={proc.returncode} dest={dest}")
+
+
+GROUPS = {
+    "mint-stage4": [
+        test_s_1_1_station_action_mints_receipt,
+        test_s_1_2_receipt_fields_and_stamp,
+        test_s_1_3_probe_does_not_mint,
+        test_s_1_3_start_does_not_mint,
+        test_s_1_3_write_cursor_does_not_mint,
+        test_s_1_3_write_scope_does_not_mint,
+        test_s_1_4_deny_does_not_change_receipt,
+        test_s_1_4_exit2_does_not_change_receipt,
+        test_s_1_4_allow_overwrites_same_path,
+    ],
+    "mint-rest": [],
+    "verify-receipt": [],
+    "fail-closed-claim": [],
+}
+
+if group:
+    if group not in GROUPS:
+        print(f"FATAL: 未知 --group {group}", file=sys.stderr)
+        sys.exit(2)
+    selected = GROUPS[group]
+    if not selected:
+        print(f"FATAL: 群組 {group} 尚無案例", file=sys.stderr)
+        sys.exit(2)
+else:
+    selected = []
+    for name, cases in GROUPS.items():
+        selected.extend(cases)
+    if not selected:
+        print("FATAL: 沒有可跑案例", file=sys.stderr)
+        sys.exit(2)
+
+for fn in selected:
+    fn()
+
+total = passed + failed
+print(f"[host-receipt] passed={passed} failed={failed} cases={len(ran)}")
+if failed:
+    sys.exit(1)
+sys.exit(0)
+PY

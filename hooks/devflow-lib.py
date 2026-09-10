@@ -917,3 +917,104 @@ def contract_agg_hash(contract_hashes):
     """契約 hash 聚合值(status/candidate 對照用單一短 hash)。"""
     payload = "\n".join(f"{k}:{v}" for k, v in sorted(contract_hashes.items()))
     return hashlib.sha256(payload.encode()).hexdigest()[:16]
+
+
+# ---------- host-receipt(host-stack-fit; 七站 --action allow 才鑄)----------
+
+HOST_RECEIPT_SCHEMA = "devflow-host-receipt/v1"
+HOST_RECEIPT_STATIONS = {
+    "talk": "scripts/check-devtalk-graph.sh",
+    "stage2": "scripts/check-devstage2-graph.sh",
+    "stage3": "scripts/check-devstage3-graph.sh",
+    "stage4": "scripts/check-devstage4-graph.sh",
+    "stage5": "scripts/check-devstage5-graph.sh",
+    "stage6": "scripts/check-devstage6-graph.sh",
+    "stage7": "scripts/check-devstage7-graph.sh",
+}
+
+
+class HostReceiptError(Exception):
+    """鑄／核對收據失敗(缺欄、身分對不上、寫入失敗)。"""
+
+
+def host_receipt_path(root, slug, station):
+    return os.path.join(root, ".devflow", "host-receipt", slug, station + ".json")
+
+
+def host_receipt_stamp(station, slug, node, script, root, action_result,
+                       minted_at, payload_sha256):
+    raw = "|".join((
+        HOST_RECEIPT_SCHEMA,
+        station,
+        slug,
+        node,
+        script,
+        root,
+        action_result,
+        minted_at,
+        payload_sha256,
+        "true",
+    ))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def mint_host_receipt(root, slug, station, script, argv, payload_bytes, node=""):
+    """allow 後寫 `.devflow/host-receipt/<slug>/<station>.json`(原子覆寫)。"""
+    if not slug:
+        raise HostReceiptError("mint 缺 slug")
+    if station not in HOST_RECEIPT_STATIONS:
+        raise HostReceiptError("未知 station:%s" % station)
+    if script != HOST_RECEIPT_STATIONS[station]:
+        raise HostReceiptError("script 對不上 station")
+    if not isinstance(argv, (list, tuple)) or not argv or argv[0] != "--action":
+        raise HostReceiptError("argv 第一個元素必須是 --action")
+    minted_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    payload_sha256 = hashlib.sha256(payload_bytes).hexdigest()
+    stamp = host_receipt_stamp(
+        station, slug, node or "", script, root, "allow", minted_at, payload_sha256
+    )
+    receipt = {
+        "schema": HOST_RECEIPT_SCHEMA,
+        "station": station,
+        "slug": slug,
+        "node": node or "",
+        "script": script,
+        "argv": list(argv),
+        "action_result": "allow",
+        "minted_at": minted_at,
+        "root": root,
+        "payload_sha256": payload_sha256,
+        "DONE": True,
+        "stamp": stamp,
+    }
+    dest = host_receipt_path(root, slug, station)
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    tmp = dest + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as handle:
+        json.dump(receipt, handle, ensure_ascii=False, separators=(",", ":"))
+        handle.write("\n")
+    os.replace(tmp, dest)
+    return dest
+
+
+def after_station_action(root, station, script, action_file, payload,
+                         payload_bytes, argv, verdict):
+    """該站 `--action` 共用鉤子。allow 才鑄;缺 slug 不鑄(沿用既有 allow 契約)。
+
+    回傳要採用的 exit code;None = 沿用既有 allow/deny/error。
+    鑄失敗回 2,不得只印 allow 卻無檔。
+    """
+    if verdict != "allow":
+        return None
+    slug = payload.get("slug") or (payload.get("cursor") or {}).get("slug") or ""
+    if not slug:
+        return None
+    node = (payload.get("cursor") or {}).get("node") or ""
+    try:
+        mint_host_receipt(
+            root, slug, station, script, argv, payload_bytes, node=node
+        )
+    except (HostReceiptError, OSError, TypeError) as exc:
+        print("error\t鑄收據失敗:%s" % exc, file=sys.stderr)
+        return 2
+    return None
