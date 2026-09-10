@@ -132,6 +132,14 @@ Run: n-a(sequential v1,無 run_id)
 - RED: 初版誤要求未知動詞 deny;stage4 既有規則對未知動詞仍 allow
 - GREEN: 空檔 + `action:"verify_receipt"` 無布林 → 舊 graph 鑄檔、不是 verify-only
 
+### T-4 / S-2.5
+- RED: `#host`／PLUGIN／dev-setup 缺「沒有 PreToolUse」(PLUGIN 亦缺 `--action`)
+- GREEN: 三檔皆同時有「沒有 PreToolUse」與 `--action`;start-only 核對紅
+
+### T-4 / S-2.6
+- RED: n-a(T-3 已綠;本 T 複測核對前／後)
+- GREEN: `test_s_2_6_fail_closed_before_first_write` ✓
+
 ## Decisions(spec 未載明的自由選擇)
 
 - D-mint-1:共用鉤子名 `after_station_action` 住 `hooks/devflow-lib.py`;該站腳本只 load + 呼叫。缺 `slug` 不鑄、不改既有 allow 契約(既有 talk fixture 無 slug)。有 slug 的 allow 鑄失敗 → exit 2。依據:4-spec S-1.1 路徑需要 slug;既有 `--action` 綠案不得無故變紅。[Assumption] 無 slug 的 allow 不在本 feat 觀測範圍。

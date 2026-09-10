@@ -237,6 +237,8 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    落地方式:先在暫存目錄把完整 baseline 新樹組好、核對成功後才整棵替換
    `docs/dev/.devflow-baseline/`(**乾淨替換,不准 overlay** —— overlay 會在
    上游移除工具時於 baseline 留下幽靈檔)。
+9. **堆疊盤點 I2**:`python3 "${DEVFLOW_ROOT}/scripts/write-stack-inventory.py" --root <專案根>`
+   寫 `docs/dev/0-inventory.json`。依賴變了要重跑。預設不寫 `0-stack.md`。
 
 ## upgrade(stale)
 
@@ -460,6 +462,15 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     `DEVFLOW_ROOT=<方法包根> scripts/check-host-adapter.sh --probe <專案根>`。
     方法包自檢才可無參數。
     不准為了別的主機改鬆 `--action`。
+17. **堆疊盤點 I2**:跑
+    `python3 "${DEVFLOW_ROOT}/scripts/write-stack-inventory.py" --root <專案根> --check`
+    （install／upgrade 收尾改跑同一支、不帶 `--check` 以新建）。
+    寫出 `docs/dev/0-inventory.json`（schema `devflow-stack-inventory/v1`）。
+    缺此檔 → check **不得**當 current／成功,狀態列 broken／stale,輸出點名
+    `docs/dev/0-inventory.json`。
+    **依賴變了要重跑** setup check（只 `git pull` 不會改這份檔）。
+    深度=專案級宣告 pin + pin／requirements 第一層 `direct_deps`,不是 lock 全樹,
+    也不是 per-slug。預設不建 `docs/dev/0-stack.md`(I4 選配;人要求且 I2 已在才寫)。
 
 ## fix / uninstall
 
