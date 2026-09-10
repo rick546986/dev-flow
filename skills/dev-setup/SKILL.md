@@ -49,8 +49,9 @@ description: dev-flow 專案安裝器 — 打「dev-setup」即自動偵測現�
 綠的時候印該主機下一句安裝／更新指令(Cursor Refresh 在已匯入 repo 那一列;
 Codex 是 marketplace add／plugin add;Grok 沒有 marketplace)。
 缺技能樹或 `DEVFLOW_ROOT` 不對會印一句掛載句並紅。四邊正本見 `docs/PLUGIN.md`。
-三邊都沒有 Claude PreToolUse。**誰開工誰先跑**該站
+三邊都**沒有 PreToolUse**。**誰開工誰先跑**該站
 `scripts/check-devtalk-graph.sh --action` 或 `scripts/check-devstageN-graph.sh --action`。
+該站 `--action` allow 才鑄 `.devflow/host-receipt/<slug>/<station>.json`；核對只認布林 `verify_receipt:true`（只核對不鑄）。`devflow-exec start` 單獨成功 ≠ 已武裝。
 **不准為了別的主機改鬆 `--action`。**
 
 `.claude/rules/` 不會被 Cursor／Codex 自動吃。架構不變量用 setup 依主機寫對應指標：

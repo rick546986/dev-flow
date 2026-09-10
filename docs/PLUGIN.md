@@ -60,7 +60,7 @@ codex plugin marketplace upgrade dev-flow
 
 不要發明 Grok marketplace。Grok Bot 吃 Cursor 帳裝好的同一包（已見過 `plugins/cache/dev-flow/...`）。本機 Grok 技能庫仍可掛整棵 `.grok/skills`。不要假裝能從產品 repo 自動灌進 Grok。
 
-**環境**:以下 hooks 規則只在 Claude Code 生效。Cursor／Codex 薄殼不掛 hooks,沒有機械擋寫入。hooks 要 python3(只吃標準函式庫,編譯下限 3.9)。hook 找直譯器:`DEVFLOW_PYTHON` → `/usr/bin/python3` → PATH。找不到就印警告後放行 —— 那次呼叫沒有守衛,不是功能壞掉。
+**環境**:以下 hooks 規則只在 Claude Code 生效。Cursor／Codex 薄殼不掛 hooks,沒有機械擋寫入。非 Claude 主機**沒有 PreToolUse**；共同 runtime 是該站 `--action`（allow 鑄 `.devflow/host-receipt/<slug>/<station>.json`；`verify_receipt:true` 只核對不鑄）。`devflow-exec start` 單獨成功 ≠ 已武裝。不准為了別的主機改鬆 `--action`。hooks 要 python3(只吃標準函式庫,編譯下限 3.9)。hook 找直譯器:`DEVFLOW_PYTHON` → `/usr/bin/python3` → PATH。找不到就印警告後放行 —— 那次呼叫沒有守衛,不是功能壞掉。
 gate-twin／產圖要 `markdown-it-py==4.0.0`(Python **3.12+**)。macOS 系統 python 常是 3.9,裝不出 4.x。用專案 venv 或設 `DEVFLOW_PYTHON` 指向 3.12+,**不要覆寫** Apple 系統 Python。doctor 的 `printer-python` 會查。
 
 Windows(Git Bash)沒有 `/usr/bin/python3`。另外裝 Python 3.12+,或設 `DEVFLOW_PYTHON`(例:`setx DEVFLOW_PYTHON "C:/Python312/python.exe"`)。裝好之後 hook 會生效,但本 repo 的驗證套件在 Windows 上仍跑不全綠。見 `notes/dispatch-windows-parity.md`。

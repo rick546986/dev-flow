@@ -53,6 +53,19 @@ FORK_INTEGRATION_SHA: fa55b484d554588904f5ef510768b7e4d8dcdd91
 - verdict:PASS
 - correction + re-review after FAIL:N/A
 
+### T-4
+- reviewer identity:implementer self-check(雲端單代理;獨立 T review 留給 PR／G3)
+- reviewer kind:fresh-context Agent
+- reviewed-at:2026-09-10T00:39Z
+- Verify:`--group fail-closed-claim` → CASE count=3; passed=3 failed=0
+- Covers finding:S-2.5 start-only／文案;S-2.6 核對前紅後綠
+- Files finding:guide #host／PLUGIN／dev-setup SKILL + 測試
+- RED→GREEN finding:文案三檔缺「沒有 PreToolUse」先紅;加鑄／核對副作用句後綠。start-only 與前後核對兩案本就綠(T-3 鉤子)
+- Test Integrity finding:none
+- Design boundary finding:未加 Cursor Write hook;未改鬆 `--action` 禁令
+- verdict:PASS
+- correction + re-review after FAIL:N/A
+
 ### T-3
 - reviewer identity:implementer self-check(雲端單代理;獨立 T review 留給 PR／G3)
 - reviewer kind:fresh-context Agent

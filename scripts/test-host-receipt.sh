@@ -63,6 +63,7 @@ python3 - "$ROOT" "$STAGE4" "$PROBE" "$SCOPE" "$EXEC" "$FIX" "$GOOD4" "$GROUP" "
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -652,6 +653,62 @@ def test_s_2_4_root_mismatch_fails():
     _mutate_and_verify("test_s_2_4_root_mismatch_fails", mut)
 
 
+def test_s_2_5_start_only_not_armed():
+    case_title("test_s_2_5_start_only_not_armed")
+    with tempfile.TemporaryDirectory(prefix="hr-s25-") as tmp:
+        seed_stage4(tmp)
+        subprocess.run(["git", "init"], cwd=tmp, capture_output=True, check=False)
+        if os.path.isfile(exec_sh):
+            run_cmd(["bash", exec_sh, "start", SLUG], cwd=tmp)
+        exec_json = os.path.join(tmp, ".devflow", "exec.json")
+        if not os.path.isfile(exec_json):
+            os.makedirs(os.path.dirname(exec_json), exist_ok=True)
+            open(exec_json, "w", encoding="utf-8").write("{}\n")
+        found = receipt_jsons(tmp)
+        proc = run_verify(tmp)
+        ok, detail = verify_fail_ok(proc, "start-only")
+        expect(ok and not found, detail + f" receipts={found}")
+
+
+def test_s_2_6_fail_closed_before_first_write():
+    case_title("test_s_2_6_fail_closed_before_first_write")
+    with tempfile.TemporaryDirectory(prefix="hr-s26-") as tmp:
+        seed_stage4(tmp)
+        before = run_verify(tmp)
+        dest, minted = mint_then(tmp)
+        after = run_verify(tmp)
+        ok_before, detail_b = verify_fail_ok(before, "before")
+        ok = (
+            ok_before
+            and minted.returncode == 0
+            and after.returncode == 0
+            and os.path.isfile(dest)
+        )
+        expect(ok, f"before={detail_b} mint={minted.returncode} after={after.returncode}")
+
+
+def test_s_2_5_host_copy_has_pretooluse_and_action():
+    case_title("test_s_2_5_host_copy_has_pretooluse_and_action")
+    guide = open(
+        os.path.join(root, "guides", "guide-dev-flow.html"), encoding="utf-8"
+    ).read()
+    m = re.search(r'<h2 id="host">.*?(?=<h2 |\Z)', guide, re.S)
+    host = m.group(0) if m else ""
+    plugin = open(os.path.join(root, "docs", "PLUGIN.md"), encoding="utf-8").read()
+    skill = open(
+        os.path.join(root, "skills", "dev-setup", "SKILL.md"), encoding="utf-8"
+    ).read()
+    ok = True
+    missing = []
+    for label, text in (("guide#host", host), ("PLUGIN", plugin), ("dev-setup", skill)):
+        has_pt = ("無 PreToolUse" in text) or ("沒有 PreToolUse" in text)
+        has_action = "--action" in text
+        if not (has_pt and has_action):
+            ok = False
+            missing.append(f"{label} pt={has_pt} action={has_action}")
+    expect(ok, ",".join(missing))
+
+
 def test_s_2_7_action_verify_receipt_is_not_a_switch():
     case_title("test_s_2_7_action_verify_receipt_is_not_a_switch")
     with tempfile.TemporaryDirectory(prefix="hr-s27-") as tmp:
@@ -713,7 +770,11 @@ GROUPS = {
         test_s_2_4_root_mismatch_fails,
         test_s_2_7_action_verify_receipt_is_not_a_switch,
     ],
-    "fail-closed-claim": [],
+    "fail-closed-claim": [
+        test_s_2_5_start_only_not_armed,
+        test_s_2_6_fail_closed_before_first_write,
+        test_s_2_5_host_copy_has_pretooluse_and_action,
+    ],
 }
 
 if group:

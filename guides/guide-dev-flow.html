@@ -2841,7 +2841,12 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   <strong>誰開工誰先跑</strong>該站
   <code>check-devtalk-graph.sh --action</code> 或
   <code>check-devstageN-graph.sh --action</code>。
-  不准為了別的主機改鬆 <code>--action</code>。</p>
+  不准為了別的主機改鬆 <code>--action</code>。
+  非 Claude 主機<strong>沒有 PreToolUse</strong>；該站 <code>--action</code> allow
+  才鑄 <code>.devflow/host-receipt/&lt;slug&gt;/&lt;station&gt;.json</code>。
+  核對只認布林 <code>verify_receipt:true</code>（只核對不鑄）。
+  <code>devflow-exec start</code> 單獨成功 ≠ 已武裝／可寫碼；要能指出核對過的收據路徑。
+  Cursor Write 工具沒有 hook，本牙不是假 PreToolUse。</p>
   <p><code>.claude/rules/</code> 不會被 Cursor／Codex 自動吃。架構不變量由
   setup 依主機寫對應指標：Cursor 寫 <code>.cursor/rules/</code> 一行指標；
   Codex 仍只准 AGENTS.md 一行。流程規則仍不准進 AGENTS.md。</p>
