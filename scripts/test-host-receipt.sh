@@ -469,6 +469,214 @@ def test_s_1_1_stage7_action_mints_receipt():
     mint_rest_station(*REST[5])
 
 
+MISSING = "未跑 --action"
+ARMED = "已與 Claude 同等武裝"
+VERIFY = os.path.join(fix, "actions", "stage4-verify.json")
+
+
+def run_verify(tmp, action_path=None):
+    return run_cmd(
+        ["bash", stage4, "--action", action_path or VERIFY, tmp]
+    )
+
+
+def verify_fail_ok(proc, extra=""):
+    blob = (proc.stdout or "") + "\n" + (proc.stderr or "")
+    return (
+        proc.returncode != 0
+        and MISSING in (proc.stderr or "")
+        and ARMED not in blob
+    ), f"rc={proc.returncode} extra={extra} err={(proc.stderr or '')[-200:]}"
+
+
+def mint_then(tmp):
+    seed_stage4(tmp)
+    allow = os.path.join(fix, "actions", "stage4-allow.json")
+    proc = run_cmd(["bash", stage4, "--action", allow, tmp])
+    dest = os.path.join(tmp, ".devflow", "host-receipt", SLUG, "stage4.json")
+    return dest, proc
+
+
+def test_s_2_1_valid_receipt_verify_exit_0():
+    case_title("test_s_2_1_valid_receipt_verify_exit_0")
+    with tempfile.TemporaryDirectory(prefix="hr-s21-") as tmp:
+        dest, minted = mint_then(tmp)
+        before = open(dest, "rb").read()
+        before_json = read_json(dest)
+        proc = run_verify(tmp)
+        after = open(dest, "rb").read()
+        after_json = read_json(dest)
+        ok = (
+            minted.returncode == 0
+            and proc.returncode == 0
+            and after == before
+            and after_json["stamp"] == before_json["stamp"]
+            and after_json["slug"] == SLUG
+            and after_json["station"] == STATION
+            and after_json["script"] == SCRIPT
+            and after_json["root"] == os.path.abspath(tmp)
+        )
+        expect(ok, f"mint={minted.returncode} verify={proc.returncode}")
+
+
+def test_s_2_2_missing_receipt_fails():
+    case_title("test_s_2_2_missing_receipt_fails")
+    with tempfile.TemporaryDirectory(prefix="hr-s22m-") as tmp:
+        seed_stage4(tmp)
+        proc = run_verify(tmp)
+        ok, detail = verify_fail_ok(proc, "missing")
+        expect(ok, detail)
+
+
+def test_s_2_2_empty_receipt_fails():
+    case_title("test_s_2_2_empty_receipt_fails")
+    with tempfile.TemporaryDirectory(prefix="hr-s22e-") as tmp:
+        seed_stage4(tmp)
+        dest = os.path.join(tmp, ".devflow", "host-receipt", SLUG, "stage4.json")
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        open(dest, "wb").close()
+        proc = run_verify(tmp)
+        ok, detail = verify_fail_ok(proc, "empty")
+        expect(ok, detail)
+
+
+def test_s_2_2_blank_receipt_fails():
+    case_title("test_s_2_2_blank_receipt_fails")
+    with tempfile.TemporaryDirectory(prefix="hr-s22b-") as tmp:
+        seed_stage4(tmp)
+        dest = os.path.join(tmp, ".devflow", "host-receipt", SLUG, "stage4.json")
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        open(dest, "w", encoding="utf-8").write(" \t\n")
+        proc = run_verify(tmp)
+        ok, detail = verify_fail_ok(proc, "blank")
+        expect(ok, detail)
+
+
+def test_s_2_3_handfilled_md_fails():
+    case_title("test_s_2_3_handfilled_md_fails")
+    with tempfile.TemporaryDirectory(prefix="hr-s23m-") as tmp:
+        seed_stage4(tmp)
+        dest = os.path.join(tmp, ".devflow", "host-receipt", SLUG, "stage4.json")
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        open(dest, "w", encoding="utf-8").write("- DONE\n- --action\n")
+        proc = run_verify(tmp)
+        ok, detail = verify_fail_ok(proc, "md")
+        expect(ok, detail)
+
+
+def test_s_2_3_missing_stamp_fails():
+    case_title("test_s_2_3_missing_stamp_fails")
+    with tempfile.TemporaryDirectory(prefix="hr-s23s-") as tmp:
+        dest, _ = mint_then(tmp)
+        data = read_json(dest)
+        del data["stamp"]
+        open(dest, "w", encoding="utf-8").write(json.dumps(data))
+        proc = run_verify(tmp)
+        ok, detail = verify_fail_ok(proc, "no-stamp")
+        expect(ok, detail)
+
+
+def test_s_2_3_done_string_fails():
+    case_title("test_s_2_3_done_string_fails")
+    with tempfile.TemporaryDirectory(prefix="hr-s23d-") as tmp:
+        dest, _ = mint_then(tmp)
+        data = read_json(dest)
+        data["DONE"] = "true"
+        open(dest, "w", encoding="utf-8").write(json.dumps(data))
+        proc = run_verify(tmp)
+        ok, detail = verify_fail_ok(proc, "done-str")
+        expect(ok, detail)
+
+
+def test_s_2_3_done_false_fails():
+    case_title("test_s_2_3_done_false_fails")
+    with tempfile.TemporaryDirectory(prefix="hr-s23f-") as tmp:
+        dest, _ = mint_then(tmp)
+        data = read_json(dest)
+        data["DONE"] = False
+        data["stamp"] = stamp_of({**data, "DONE": True})
+        open(dest, "w", encoding="utf-8").write(json.dumps(data))
+        proc = run_verify(tmp)
+        ok, detail = verify_fail_ok(proc, "done-false")
+        expect(ok, detail)
+
+
+def _mutate_and_verify(label, mutator):
+    case_title(label)
+    with tempfile.TemporaryDirectory(prefix="hr-s24-") as tmp:
+        dest, _ = mint_then(tmp)
+        data = read_json(dest)
+        mutator(data)
+        open(dest, "w", encoding="utf-8").write(json.dumps(data))
+        proc = run_verify(tmp)
+        ok, detail = verify_fail_ok(proc, label)
+        expect(ok, detail)
+
+
+def test_s_2_4_stamp_mismatch_fails():
+    _mutate_and_verify(
+        "test_s_2_4_stamp_mismatch_fails",
+        lambda d: d.update(stamp="0" * 64),
+    )
+
+
+def test_s_2_4_station_mismatch_fails():
+    def mut(d):
+        d["station"] = "stage7"
+        d["stamp"] = stamp_of(d)
+
+    _mutate_and_verify("test_s_2_4_station_mismatch_fails", mut)
+
+
+def test_s_2_4_script_mismatch_fails():
+    def mut(d):
+        d["script"] = "scripts/check-host-adapter.sh"
+        d["stamp"] = stamp_of(d)
+
+    _mutate_and_verify("test_s_2_4_script_mismatch_fails", mut)
+
+
+def test_s_2_4_slug_mismatch_fails():
+    def mut(d):
+        d["slug"] = "other-slug"
+        d["stamp"] = stamp_of(d)
+
+    _mutate_and_verify("test_s_2_4_slug_mismatch_fails", mut)
+
+
+def test_s_2_4_root_mismatch_fails():
+    def mut(d):
+        d["root"] = "/other/absolute/root"
+        d["stamp"] = stamp_of(d)
+
+    _mutate_and_verify("test_s_2_4_root_mismatch_fails", mut)
+
+
+def test_s_2_7_action_verify_receipt_is_not_a_switch():
+    case_title("test_s_2_7_action_verify_receipt_is_not_a_switch")
+    with tempfile.TemporaryDirectory(prefix="hr-s27-") as tmp:
+        seed_stage4(tmp)
+        dest = os.path.join(tmp, ".devflow", "host-receipt", SLUG, "stage4.json")
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        open(dest, "wb").close()
+        action = os.path.join(fix, "actions", "stage4-action-verify-receipt.json")
+        proc = run_verify(tmp, action)
+        blob = (proc.stdout or "") + "\n" + (proc.stderr or "")
+        # 空檔 + 無布林:舊 graph(stage4 未知動詞仍 allow)應鑄檔。
+        # 若誤把 action 當核對開關會 verify-only 紅且含「未跑 --action」。
+        minted = os.path.isfile(dest) and os.path.getsize(dest) > 0
+        ok = (
+            proc.returncode == 0
+            and minted
+            and MISSING not in (proc.stderr or "")
+            and ARMED not in blob
+        )
+        expect(
+            ok,
+            f"rc={proc.returncode} minted={minted} err={(proc.stderr or '')[-160:]}",
+        )
+
+
 GROUPS = {
     "mint-stage4": [
         test_s_1_1_station_action_mints_receipt,
@@ -489,7 +697,22 @@ GROUPS = {
         test_s_1_1_stage6_action_mints_receipt,
         test_s_1_1_stage7_action_mints_receipt,
     ],
-    "verify-receipt": [],
+    "verify-receipt": [
+        test_s_2_1_valid_receipt_verify_exit_0,
+        test_s_2_2_missing_receipt_fails,
+        test_s_2_2_empty_receipt_fails,
+        test_s_2_2_blank_receipt_fails,
+        test_s_2_3_handfilled_md_fails,
+        test_s_2_3_missing_stamp_fails,
+        test_s_2_3_done_string_fails,
+        test_s_2_3_done_false_fails,
+        test_s_2_4_stamp_mismatch_fails,
+        test_s_2_4_station_mismatch_fails,
+        test_s_2_4_script_mismatch_fails,
+        test_s_2_4_slug_mismatch_fails,
+        test_s_2_4_root_mismatch_fails,
+        test_s_2_7_action_verify_receipt_is_not_a_switch,
+    ],
     "fail-closed-claim": [],
 }
 

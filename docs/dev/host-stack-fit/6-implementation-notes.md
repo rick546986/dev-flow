@@ -53,10 +53,24 @@ FORK_INTEGRATION_SHA: fa55b484d554588904f5ef510768b7e4d8dcdd91
 - verdict:PASS
 - correction + re-review after FAIL:N/A
 
+### T-3
+- reviewer identity:implementer self-check(雲端單代理;獨立 T review 留給 PR／G3)
+- reviewer kind:fresh-context Agent
+- reviewed-at:2026-09-10T00:37Z
+- Verify:`--group verify-receipt` → CASE count=14; passed=14 failed=0
+- Covers finding:S-2.1／S-2.2×3／S-2.3×4／S-2.4×5／S-2.7
+- Files finding:只加厚 lib verify 分支 + 測試／fixture
+- RED→GREEN finding:13 案先因 allow 仍鑄而假綠;S-2.7 改測「空檔+無布林仍走舊 graph 鑄檔」
+- Test Integrity finding:none
+- Design boundary finding:只認 JSON 布林 `verify_receipt:true`;不認 `action:"verify_receipt"`
+- verdict:PASS
+- correction + re-review after FAIL:N/A
+
 ## Progress Log
 
 2026-09-10 | T-1 | fb8533a03afc2b7c9592ab8eabcf2d6bfe32e810 stage4 allow 鑄 host-receipt
 2026-09-10 | T-2 | dda13c89df9dc831aac0dbb0b8813c045f9a4358 其餘六站 mint
+2026-09-10 | T-3 | 8eff25680c3cb03aa7e0547a61441440f0e6d10e verify_receipt
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 Run: n-a(sequential v1,無 run_id)
@@ -84,6 +98,26 @@ Run: n-a(sequential v1,無 run_id)
 ### T-2 / S-1.1
 - RED: `bash scripts/test-host-receipt.sh --group mint-rest -v` → talk／stage2／3／5／6／7 六案皆 ✗ `rc=0 dest=False out=allow`
 - GREEN: 同指令 6/6 ✓;各寫 `talk.json`／`stageN.json`,schema／stamp 與 T-1 同一份
+
+### T-3 / S-2.1
+- RED: verify 仍鑄檔 → stamp 變
+- GREEN: `test_s_2_1_valid_receipt_verify_exit_0` ✓;exit 0 且 stamp 不變
+
+### T-3 / S-2.2
+- RED: 缺／空／空白檔 `verify_receipt:true` 仍 allow 鑄 → rc=0
+- GREEN: 三案 ✓;stderr 含「未跑 --action」;不含「已與 Claude 同等武裝」
+
+### T-3 / S-2.3
+- RED: 手填 md／缺 stamp／DONE 字串／DONE false 仍鑄 → rc=0
+- GREEN: 四案 ✓
+
+### T-3 / S-2.4
+- RED: stamp／station／script／slug／root 不符仍鑄 → rc=0
+- GREEN: 五案 ✓
+
+### T-3 / S-2.7
+- RED: 初版誤要求未知動詞 deny;stage4 既有規則對未知動詞仍 allow
+- GREEN: 空檔 + `action:"verify_receipt"` 無布林 → 舊 graph 鑄檔、不是 verify-only
 
 ## Decisions(spec 未載明的自由選擇)
 

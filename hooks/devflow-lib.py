@@ -999,11 +999,15 @@ def mint_host_receipt(root, slug, station, script, argv, payload_bytes, node="")
 
 def after_station_action(root, station, script, action_file, payload,
                          payload_bytes, argv, verdict):
-    """該站 `--action` 共用鉤子。allow 才鑄;缺 slug 不鑄(沿用既有 allow 契約)。
+    """該站 `--action` 共用鉤子。
 
-    回傳要採用的 exit code;None = 沿用既有 allow/deny/error。
+    `verify_receipt is True`(JSON 布林)→ 只核對不鑄,回 0／≠0。
+    不認 `action:\"verify_receipt\"`。缺欄 = 舊 graph;allow 且有 slug 才鑄。
     鑄失敗回 2,不得只印 allow 卻無檔。
     """
+    if payload.get("verify_receipt") is True:
+        slug = payload.get("slug") or (payload.get("cursor") or {}).get("slug") or ""
+        return verify_host_receipt(root, slug, station, script, payload)
     if verdict != "allow":
         return None
     slug = payload.get("slug") or (payload.get("cursor") or {}).get("slug") or ""
@@ -1018,3 +1022,65 @@ def after_station_action(root, station, script, action_file, payload,
         print("error\t鑄收據失敗:%s" % exc, file=sys.stderr)
         return 2
     return None
+
+
+def verify_host_receipt(root, slug, station, script, payload):
+    """核對正規路徑收據。失敗 stderr 含「未跑 --action」,不含武裝句。"""
+    action_slug = payload.get("slug") or (payload.get("cursor") or {}).get("slug") or ""
+    missing = "未跑 --action"
+
+    def fail(why):
+        print("%s(%s)" % (missing, why), file=sys.stderr)
+        return 1
+
+    if not slug or not action_slug:
+        return fail("缺 slug")
+    dest = host_receipt_path(root, slug, station)
+    path_slug = os.path.basename(os.path.dirname(dest))
+    if not os.path.isfile(dest):
+        return fail("缺檔")
+    raw = open(dest, "rb").read()
+    if not raw.strip():
+        return fail("空檔")
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError):
+        return fail("不是 JSON")
+    if not isinstance(data, dict):
+        return fail("不是物件")
+    need = {
+        "schema", "station", "slug", "node", "script", "argv",
+        "action_result", "minted_at", "root", "payload_sha256", "DONE", "stamp",
+    }
+    if not need.issubset(data.keys()):
+        return fail("缺欄")
+    if data.get("schema") != HOST_RECEIPT_SCHEMA:
+        return fail("schema")
+    if data.get("DONE") is not True:
+        return fail("DONE")
+    if data.get("action_result") != "allow":
+        return fail("action_result")
+    if not (
+        data.get("slug") == path_slug == action_slug == slug
+    ):
+        return fail("slug")
+    if data.get("station") != station:
+        return fail("station")
+    if data.get("script") != script:
+        return fail("script")
+    if data.get("root") != root:
+        return fail("root")
+    want = host_receipt_stamp(
+        data.get("station") or "",
+        data.get("slug") or "",
+        data.get("node") or "",
+        data.get("script") or "",
+        data.get("root") or "",
+        data.get("action_result") or "",
+        data.get("minted_at") or "",
+        data.get("payload_sha256") or "",
+    )
+    stamp = data.get("stamp")
+    if not isinstance(stamp, str) or stamp != want:
+        return fail("stamp")
+    return 0
