@@ -114,7 +114,7 @@ host-adapter: CHECK_COUNT=58 EXIT=0  === test-host-adapter:58/58 ===
 | Race／stress | | n-a | | Explicitly excluded |
 | Supply chain | | n-a | | Conditional:本 feat 未改真 pin／requirements 正本(只加 fixture 複本) |
 
-**Gauntlet 降級聲明**:本 VM 無 Python 3.9–3.11 → Required 束中 `devflow-check` 無法全綠(PF-0 ENV)。`devflow-evidence-gauntlet.sh --review-file` 會報 E6／E7。逐層手動實跑證據見上表與附錄 A4;不得把 gauntlet 未全綠默認為已過。Human 若接受 PF-0=Known Limit ⑤,方可把 Evidence 契約視為「產品面通過、環境地板待補」。
+**Gauntlet 降級聲明**:① Source SHA 綁定產品 tip `0a89ec8`(Stage 6);本 PR 只加 7-review 文檔使 HEAD≠該 tip → `--review-file` 會報 E2。② 本 VM 無 Python 3.9–3.11 → Required 束中 `devflow-check` 無法全綠(PF-0 ENV) → E6／E7。逐層手動實跑證據見上表與附錄 A4;不得把 gauntlet 未全綠默認為已過。Human 若接受 PF-0=Known Limit ⑤ 且同意 Evidence 綁產品 tip,方可把 Evidence 契約視為「產品面通過、環境地板待補」。
 
 整合回歸(步 2c):`docs/dev/tools/devflow-integration-regression.sh --integration origin/main --fork-sha 0a89ec85ae2cf3ee0c555b82441caa323e77c10f` → `STATUS: N_A_NO_INCOMING`;FORK=HEAD=INTEGRATION=`0a89ec85ae2cf3ee0c555b82441caa323e77c10f`(refs/remotes/origin/main)。
 
