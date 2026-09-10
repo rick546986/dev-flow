@@ -471,6 +471,11 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     **依賴變了要重跑** setup check（只 `git pull` 不會改這份檔）。
     深度=專案級宣告 pin + pin／requirements 第一層 `direct_deps`,不是 lock 全樹,
     也不是 per-slug。預設不建 `docs/dev/0-stack.md`(I4 選配;人要求且 I2 已在才寫)。
+    人明確要求 lock digest 或散文堆疊頁時才跑
+    `python3 "${DEVFLOW_ROOT}/scripts/write-stack-inventory.py" --root <專案根> --write-stack`
+    （可加 `--digest <pin-or-lock>`）。只有專案級 `docs/dev/0-stack.md`,不得每 slug 一份。
+    無 I2 不得先寫 I4。檔內必須寫「盤點正本是 `docs/dev/0-inventory.json`」與
+    「digest 不是 lock 正本」。套件版本爭議以 lock／pin 為準,不以 digest 覆寫 I2。
 
 ## fix / uninstall
 
