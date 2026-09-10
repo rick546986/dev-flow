@@ -116,7 +116,7 @@ FORK_INTEGRATION_SHA: fa55b484d554588904f5ef510768b7e4d8dcdd91
 - Test Integrity finding:none
 - Design boundary finding:未假掛 Cursor hooks;未 bump .claude-plugin version;未改 STATUS 表列
 - verdict:PASS
-- correction + re-review after FAIL:CI `PF-2` 假綠 → 補 `MIN_HEREDOCS=216`(D-heredoc-1)
+- correction + re-review after FAIL:CI `PF-2` 假綠 → 撤回地板上修;兩支測試改呼叫 fixture `run_cases.py`(D-heredoc-1)
 
 ## Progress Log
 
@@ -255,10 +255,10 @@ Run: n-a(sequential v1,無 run_id)
 - 影響:T Review Log reviewer identity 已標 self-check
 
 ### D-heredoc-1(L1)
-- 現象:T-1／T-5 新增 `test-host-receipt.sh`／`test-stack-inventory.sh` 各一條 `<<'PY'`,實得 heredoc=216;T-7 漏同步 `MIN_HEREDOCS`(仍 214)。CI `PF-2` 關掉 `INTERP_TOKEN_RE` 後剩 215 ≥ 214,預期紅卻綠。
-- 保守選擇:把 `check-py-floor.sh` 與 architecture-guards 靜態釘一併改成 216。多動 T-7 Files 未列的 `check-py-floor.sh`。
-- 理由:該檔頂註「增刪 .sh 或 heredoc 時一起改」;地板必須精確、不留餘裕。未改 R/S。
-- 影響:T-7 地板／architecture-guards PF-2
+- 現象:兩支新測試各嵌一條 `python3 - <<'PY'`,實得 heredoc 216、`MIN_HEREDOCS` 仍 214。PF-2 關掉 `INTERP_TOKEN_RE` 只少 1(215≥214)假綠。曾誤把地板改成 216。
+- 保守選擇:撤回地板改動;案例本體改落到 `scripts/fixtures/*/run_cases.py`,`.sh` 只 `python3` 呼叫。heredoc 回到 214。不刪 PF-2、不改鬆 py-floor。
+- 理由:PF-2 契約是「地板精確、關掉 INTERP 必跌破一個」;新牙不該靠新增 `<<'PY'` 撐出餘裕。fixture 目錄本就在 T-1／T-5 Files。
+- 影響:T-1／T-5 測試形狀／T-7 PF-2
 
 ## Files Changed
 
@@ -375,12 +375,12 @@ T-7:test-host-adapter MIN_CASES=58、check-file-map EXPECTED=193、guide #filema
 +EXPECTED_MAPPED_FILES = 193
 ```
 
-### MIN_HEREDOCS · `scripts/check-py-floor.sh` 295-295  T-7
-改什麼：heredoc 地板 214→216,消掉 PF-2 假綠餘裕
-關聯：architecture-guards `check_static_pin`;新增兩支測試腳本各一條 `<<'PY'`
+### run_cases 外提 · `scripts/test-host-receipt.sh` 62-62  T-7
+改什麼：拿掉 `<<'PY'`,改呼叫 fixture 裡的 `run_cases.py`
+關聯：`scripts/test-stack-inventory.sh` 同形;PF-2／`MIN_HEREDOCS=214`
 ```diff
--MIN_HEREDOCS = 214
-+MIN_HEREDOCS = 216
+-python3 - "$ROOT" ... <<'PY'
++python3 "$FIX/run_cases.py" "$ROOT" ...
 ```
 
 ## Self-Review
