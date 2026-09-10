@@ -56,7 +56,7 @@ FORK_INTEGRATION_SHA: fa55b484d554588904f5ef510768b7e4d8dcdd91
 ## Progress Log
 
 2026-09-10 | T-1 | fb8533a03afc2b7c9592ab8eabcf2d6bfe32e810 stage4 allow 鑄 host-receipt
-2026-09-10 | T-2 | pending-commit 其餘六站 mint
+2026-09-10 | T-2 | dda13c89df9dc831aac0dbb0b8813c045f9a4358 其餘六站 mint
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 Run: n-a(sequential v1,無 run_id)
