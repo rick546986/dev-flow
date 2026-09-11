@@ -26,7 +26,9 @@
 #   必須有:摘要卡(.sum)、直式 svg 或 pre、人表、題表、驗收表、details 問答(預設摺著)
 #   現況圖必須有限寬且欄內置中(width:220px + .figwrap justify-content:center)
 #   題表必須有長題目列;#scan-qs 末欄(著落徽章)必須 white-space:nowrap;
-#   #scan-ac／#scan-log 長文欄禁止 nowrap;td 必須 overflow-wrap:anywhere(#151)
+#   #scan-ac／#scan-log 一律卡片 + ::before 欄名(不限 media query);
+#   長文欄禁止 nowrap;td 必須 overflow-wrap:anywhere;
+#   摘要 .sum 必須短標籤段(痛／繞法,有誰就另段),禁「誰:… 痛:…」一牆(#151)
 #
 # 掃頁產生器(同檔第三節):
 #   scripts/build-scan-html.py --action 從同目錄 1-discussion.md 產出六件套。
@@ -48,7 +50,9 @@
 #   mutation 複本可沒有 bad 目錄;
 #   框高改 28／每框少一行／痛空／堆疊拆很多小格 → 必須紅;
 #   殼或樣張拿掉 #scan-qs 末欄 nowrap → 必須紅;生成頁拿掉 nowrap → 必須紅;
-#   殼對 #scan-ac 長欄加回 nowrap → 必須紅;Evidence Assumption 拼進缺什麼 → 必須紅。
+#   殼對 #scan-ac 長欄加回 nowrap → 必須紅;Evidence Assumption 拼進缺什麼 → 必須紅;
+#   殼把 #scan-ac／#scan-log 卡片只包回 max-width media → 必須紅;
+#   摘要痛欄糊進「誰:」一牆 → 必須紅。
 #
 # 用法:
 #   scripts/check-devtalk-fig-graph.sh [root]
@@ -373,10 +377,35 @@ def selector_nowrap_missing(compact, needles):
     return missing
 
 
+def style_without_maxwidth_media(compact):
+    """拿掉 @media(max-width:...){...},看一律卡片有沒有漏在 media 外。"""
+    out = []
+    i = 0
+    n = len(compact)
+    while i < n:
+        m = re.search(r"@media\(max-width:\d+px\)\{", compact[i:])
+        if not m:
+            out.append(compact[i:])
+            break
+        out.append(compact[i : i + m.start()])
+        j = i + m.end()
+        depth = 1
+        while j < n and depth:
+            if compact[j] == "{":
+                depth += 1
+            elif compact[j] == "}":
+                depth -= 1
+            j += 1
+        i = j
+    return "".join(out)
+
+
 def scan_short_col_nowrap_gaps(text, label):
-    """#scan-qs 末欄(著落徽章)必須 nowrap;長文欄禁止 nowrap(#151)。"""
+    """#scan-qs 末欄(著落徽章)必須 nowrap;長文欄禁止 nowrap;
+    #scan-ac／#scan-log 一律卡片 + ::before,不准只包在 max-width media(#151)。"""
     style = first_block(text, r"<style\b[^>]*>.*?</style>")
     compact = re.sub(r"\s+", "", style)
+    bare = style_without_maxwidth_media(compact)
     gaps = []
     qs_needles = ("#scan-qsth:last-child", "#scan-qstd:last-child")
     if selector_nowrap_missing(compact, qs_needles):
@@ -397,12 +426,26 @@ def scan_short_col_nowrap_gaps(text, label):
         gaps.append("%s td 缺 overflow-wrap:anywhere" % label)
     if "vertical-align:top" not in compact:
         gaps.append("%s td 缺 vertical-align:top" % label)
-    if "@media(max-width:720px)" not in compact:
-        gaps.append("%s 缺窄屏 720px #scan-ac 一列一卡" % label)
-    elif "#scan-ac" not in compact or "content:" not in compact:
-        gaps.append("%s 窄屏 #scan-ac 缺 ::before 欄名" % label)
-    if "@media(max-width:900px)" not in compact:
-        gaps.append("%s 缺窄屏 900px #scan-log 一題一卡" % label)
+    if "#scan-actr{display:block" not in bare:
+        gaps.append("%s #scan-ac 必須一律卡片,不准只包在 max-width media" % label)
+    if "#scan-logtr{display:block" not in bare:
+        gaps.append("%s #scan-log 必須一律卡片,不准只包在 max-width media" % label)
+    if "#scan-actd::before" not in bare:
+        gaps.append("%s 一律卡片 #scan-ac 缺 ::before 欄名" % label)
+    if "#scan-logtd::before" not in bare:
+        gaps.append("%s 一律卡片 #scan-log 缺 ::before 欄名" % label)
+    for needle in (
+        'content:"假設…當…則…"',
+        'content:"從哪看"',
+        'content:"看到什麼"',
+        'content:"Q"',
+        'content:"事實"',
+        'content:"推理"',
+        'content:"結論"',
+    ):
+        if needle not in bare:
+            gaps.append("%s 一律卡片缺欄名 %s" % (label, needle))
+            break
     return gaps
 
 
@@ -602,6 +645,20 @@ def check_scan_page(text, label):
                 missing.append("摘要卡缺 OQ 三態「%s」" % token)
         if len(re.findall(r'class="badge', sum_block)) < 3:
             missing.append("摘要卡 OQ 三態 badge 少於 3")
+        if '<span class="k">誰</span>' not in sum_block:
+            missing.append("摘要缺誰短標籤段")
+        if '<span class="k">痛</span>' not in sum_block:
+            missing.append("摘要缺痛短標籤段")
+        if '<span class="k">繞法</span>' not in sum_block:
+            missing.append("摘要缺繞法短標籤段")
+        if 'class="who"' not in sum_block:
+            missing.append("摘要缺 .who")
+        if 'class="bypass"' not in sum_block:
+            missing.append("摘要缺 .bypass")
+        if re.search(r"痛:誰:", sum_block) or re.search(
+            r'class="pain"[^>]*>痛:誰', sum_block
+        ):
+            missing.append("摘要把誰糊進痛牆")
     svgs = re.findall(r"<svg\b.*?</svg>", text, re.S)
     vertical = False
     for block in svgs:
@@ -733,7 +790,7 @@ def check_fixture():
     print("[scan] fixture 六件齊,問答摺著")
     print("[scan] fixture 現況圖有限寬且欄內置中")
     print("[scan] fixture 現況圖三框手樣形狀")
-    print("[scan] fixture 長題目列 + 著落徽章 nowrap／長文欄可換行")
+    print("[scan] fixture 長題目列 + 著落徽章 nowrap／一律卡片／摘要短標籤")
 
 
 def generate_scan(md_path, out_path):
@@ -774,7 +831,7 @@ def check_generated():
         except OSError:
             pass
     print("[scan] 從 md 生成的掃頁六件齊,現況圖有限寬且欄內置中")
-    print("[scan] 生成頁長題目列 + 著落徽章 nowrap／長文欄可換行")
+    print("[scan] 生成頁長題目列 + 著落徽章 nowrap／一律卡片／摘要短標籤")
 
 
 TOOTH_CASES = (
@@ -1012,6 +1069,47 @@ def check_people_evidence_isolation():
     print("[scan] Evidence Assumption 不進 #scan-people 缺什麼")
 
 
+def check_problem_edges():
+    """#151:誰／痛／繞法分開;無標籤舊稿仍綠;痛欄不准含誰。"""
+    mod = load_scan_mod()
+    who, pain, bypass = mod.split_problem(
+        "誰:開工 agent。\n痛:假安全感。\n現在怎麼繞:人手跑 --action。"
+    )
+    if who != "開工 agent":
+        raise Mismatch("標籤誰應抽出,實得 %r" % who)
+    if pain != "假安全感":
+        raise Mismatch("標籤痛應抽出且不含誰,實得 %r" % pain)
+    if "人手跑" not in bypass:
+        raise Mismatch("標籤繞法應抽出,實得 %r" % bypass)
+    if "誰" in pain or "開工" in pain:
+        raise Mismatch("痛欄不准含誰,實得 %r" % pain)
+
+    who, pain, bypass = mod.split_problem(
+        "業務靠記憶追到期,每季漏續約。\n現在怎麼繞:Excel 私表 + 電話催。"
+    )
+    if who:
+        raise Mismatch("無誰標籤時 who 應空,實得 %r" % who)
+    if "業務靠記憶" not in pain:
+        raise Mismatch("無標籤痛應留下原文,實得 %r" % pain)
+    if "Excel" not in bypass:
+        raise Mismatch("現在怎麼繞仍須抽出,實得 %r" % bypass)
+
+    who, pain, bypass = mod.split_problem(
+        "誰:在 Cursor Agent 上跑的開工 agent。\n"
+        "痛:同一棵技能樹讀得到,但 PreToolUse 不會跑。第二痛:走完才撞版本。\n"
+        "現在怎麼繞:人記得就手動跑 --action。"
+    )
+    if "Cursor Agent" not in who:
+        raise Mismatch("長誰應整段抽出,實得 %r" % who)
+    if who.startswith("誰:") or pain.startswith("誰:") or "誰:" in pain:
+        raise Mismatch("抽出後不准殘「誰:」糊牆 who=%r pain=%r" % (who, pain))
+    if "PreToolUse" not in pain or "第二痛" not in pain:
+        raise Mismatch("痛應含本段與第二痛,實得 %r" % pain)
+    if "手動跑" not in bypass:
+        raise Mismatch("繞法應抽出,實得 %r" % bypass)
+    print("[scan] Problem 邊界:誰／痛／繞法分開／無標籤舊稿／禁糊牆")
+
+
 def check_now_line_edges():
     """現況圖行長:NOW_LINE_MAX、真守衛 13／14、多欄 list-all、labeled-stack 綠。"""
     mod = load_scan_mod()
@@ -1118,11 +1216,12 @@ def check_live():
     nowrap_gaps = scan_short_col_nowrap_gaps(shell_text, "html-shell")
     if nowrap_gaps:
         raise Mismatch("掃頁母版短欄未 nowrap:" + "、".join(nowrap_gaps))
-    print("[scan] html-shell #scan-qs 著落徽章 nowrap、長文欄可換行")
+    print("[scan] html-shell #scan-qs 著落徽章 nowrap、一律卡片、長文可換行")
     check_generated()
     check_log_teeth()
     check_log_edges()
     check_people_evidence_isolation()
+    check_problem_edges()
     check_now_line_edges()
 
 
@@ -1304,6 +1403,28 @@ def run_mutations():
                     % (rc, blob[-1200:])
                 )
 
+    with tempfile.TemporaryDirectory(prefix="devtalk-fig-card-media-") as tmp:
+        copy_tree(tmp)
+        spath = os.path.join(tmp, "skills", "dev-talk", "html-shell.html")
+        text = open(spath, encoding="utf-8").read()
+        marker = "/* 一律卡片:"
+        if marker not in text:
+            failures.append("破壞實驗殼找不到一律卡片註解")
+        elif "  code,pre{" not in text:
+            failures.append("破壞實驗殼找不到 code,pre 錨")
+        else:
+            wrapped = text.replace(marker, "@media (max-width:720px){\n  " + marker, 1)
+            wrapped = wrapped.replace("  code,pre{", "  }\n  code,pre{", 1)
+            open(spath, "w", encoding="utf-8").write(wrapped)
+            rc, blob = child_rc(tmp)
+            if rc == 1:
+                print("[mut] ✓ 殼把卡片只包回 media 必須紅")
+            else:
+                failures.append(
+                    "殼把卡片只包回 media 必須 exit 1,實際 rc=%s\n%s"
+                    % (rc, blob[-1200:])
+                )
+
     with tempfile.TemporaryDirectory(prefix="devtalk-fig-nowrap-fix-") as tmp:
         copy_tree(tmp)
         fpath = os.path.join(
@@ -1410,6 +1531,33 @@ def run_mutations():
                 failures.append("生成頁拿掉長題目列必須紅,卻綠了")
             except Mismatch:
                 print("[mut] ✓ 生成頁拿掉長題目列必須紅")
+            smashed = re.sub(
+                r'<p class="who">.*?</p>\s*<p class="pain">.*?</p>',
+                '<p class="pain">痛:誰:業務 痛:業務靠記憶追到期,每季漏續約</p>',
+                text,
+                count=1,
+                flags=re.S,
+            )
+            try:
+                check_scan_page(smashed, "生成頁")
+                failures.append("生成頁摘要糊牆必須紅,卻綠了")
+            except Mismatch:
+                print("[mut] ✓ 生成頁摘要糊牆必須紅")
+            media_only = text
+            if "/* 一律卡片:" in media_only and "  code,pre{" in media_only:
+                media_only = media_only.replace(
+                    "/* 一律卡片:",
+                    "@media (max-width:720px){\n  /* 一律卡片:",
+                    1,
+                )
+                media_only = media_only.replace("  code,pre{", "  }\n  code,pre{", 1)
+                try:
+                    check_scan_page(media_only, "生成頁")
+                    failures.append("生成頁卡片只包 media 必須紅,卻綠了")
+                except Mismatch:
+                    print("[mut] ✓ 生成頁卡片只包 media 必須紅")
+            else:
+                failures.append("破壞實驗生成頁找不到一律卡片註解")
 
     if failures:
         raise Mismatch("破壞實驗沒咬到:\n" + "\n".join(failures))
@@ -1431,6 +1579,6 @@ if not skip_mutation:
         print("❌ FAIL:%s" % exc, file=sys.stderr)
         sys.exit(1)
 
-print("✅ PASS:方法流程圖 hop 對帳 + 掃頁樣張六件 + 生成頁六件／置中 + 著落徽章 nowrap／長文可換行 + 破壞實驗全過")
+print("✅ PASS:方法流程圖 hop 對帳 + 掃頁樣張六件 + 生成頁六件／置中 + 著落徽章 nowrap／一律卡片／摘要短標籤 + 破壞實驗全過")
 sys.exit(0)
 PY

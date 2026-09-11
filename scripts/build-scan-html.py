@@ -139,29 +139,53 @@ def cell(row, idx):
     return row[idx].strip()
 
 
+PROBLEM_FIELD_RE = re.compile(r"^(誰|痛|現在怎麼繞)[:：][ \t]*", re.M)
+
+
+def _clean_problem_field(text, *prefixes):
+    text = text or ""
+    for prefix in prefixes:
+        text = re.sub(r"^" + prefix + r"\s*", "", text)
+    return re.sub(r"\s+", " ", text).strip(" 。")
+
+
 def split_problem(body):
+    """回 (who, pain, bypass)。誰／痛／繞法分開,不准糊成「誰:… 痛:…」一牆。"""
     text = inner_plain(body)
     text = re.sub(r"^#+\s+.*$", "", text, flags=re.M).strip()
-    pain, bypass = "", ""
-    match = re.search(r"現在怎麼繞[:：]?\s*(.+)", text, re.S)
-    if match:
-        bypass = match.group(1).strip()
-        pain = text[: match.start()].strip()
+    who, pain, bypass = "", "", ""
+    marks = [(m.group(1), m.start(), m.end()) for m in PROBLEM_FIELD_RE.finditer(text)]
+    if marks:
+        prefix = text[: marks[0][1]].strip()
+        chunks = {}
+        for i, (key, _start, end) in enumerate(marks):
+            stop = marks[i + 1][1] if i + 1 < len(marks) else len(text)
+            chunks[key] = text[end:stop].strip()
+        who = chunks.get("誰", "")
+        pain = chunks.get("痛", "")
+        bypass = chunks.get("現在怎麼繞", "")
+        if not pain and prefix:
+            pain = prefix
+        elif prefix and not who:
+            pain = (prefix + " " + pain).strip() if pain else prefix
     else:
-        match = re.search(r"(現在[^。\n]+)", text)
+        match = re.search(r"現在怎麼繞[:：]?\s*(.+)", text, re.S)
         if match:
             bypass = match.group(1).strip()
-            pain = (text[: match.start()] + text[match.end() :]).strip()
+            pain = text[: match.start()].strip()
         else:
-            parts = re.split(r"\n\s*\n", text, maxsplit=1)
-            pain = parts[0].strip()
-            bypass = parts[1].strip() if len(parts) > 1 else ""
-    pain = re.sub(r"^痛[:：]\s*", "", pain)
-    pain = re.sub(r"\s+", " ", pain).strip(" 。")
-    bypass = re.sub(r"^現在怎麼繞[:：]\s*", "", bypass)
-    bypass = re.sub(r"^現在靠\s*", "", bypass)
-    bypass = re.sub(r"\s+", " ", bypass).strip(" 。")
-    return pain, bypass
+            match = re.search(r"(現在[^。\n]+)", text)
+            if match:
+                bypass = match.group(1).strip()
+                pain = (text[: match.start()] + text[match.end() :]).strip()
+            else:
+                parts = re.split(r"\n\s*\n", text, maxsplit=1)
+                pain = parts[0].strip()
+                bypass = parts[1].strip() if len(parts) > 1 else ""
+    who = _clean_problem_field(who)
+    pain = _clean_problem_field(pain, r"痛[:：]")
+    bypass = _clean_problem_field(bypass, r"現在怎麼繞[:：]", r"現在靠")
+    return who, pain, bypass
 
 
 def parse_oq(body):
@@ -633,7 +657,7 @@ def page_title(md):
 
 def build_body(md):
     _pt, problem = optional_section(md, lambda t: t.startswith("Problem") or t.startswith("問題"))
-    pain, bypass = split_problem(problem)
+    who, pain, bypass = split_problem(problem)
     if not pain:
         raise ValueError("Problem 抽不到痛")
     _ot, oq_body = optional_section(
@@ -684,13 +708,20 @@ def build_body(md):
         for q, fact, reason, conclusion in log_entries
     ]
 
+    sum_rows = ['<section class="sum" id="scan-sum">']
+    if who:
+        sum_rows.append('  <p class="who"><span class="k">誰</span>%s</p>' % esc(who))
+    sum_rows.append('  <p class="pain"><span class="k">痛</span>%s</p>' % esc(pain))
+    sum_rows.append(
+        '  <p class="bypass"><span class="k">繞法</span>%s</p>'
+        % esc(bypass or "（未寫）")
+    )
+    sum_rows.append("  " + "\n  ".join(badges))
+    sum_rows.append("</section>")
+
     return "\n".join(
-        [
-            '<section class="sum" id="scan-sum">',
-            '  <p class="pain">痛:%s</p>' % esc(pain),
-            "  <p>現在怎麼繞:%s</p>" % esc(bypass or "（未寫）"),
-            "  " + "\n  ".join(badges),
-            "</section>",
+        sum_rows
+        + [
             "",
             fig,
             "",
@@ -705,16 +736,20 @@ def build_body(md):
             "</table>",
             "",
             '<table id="scan-ac">',
-            "  <tr><th>假設…當…則…</th><th>從哪看</th><th>看到什麼</th></tr>",
+            "  <thead><tr><th>假設…當…則…</th><th>從哪看</th><th>看到什麼</th></tr></thead>",
+            "  <tbody>",
             "  " + "\n  ".join(ac_rows),
+            "  </tbody>",
             "</table>",
             "",
             '<details id="scan-log">',
             "  <summary>問答摘要</summary>",
             '  <div class="tablewrap">',
             "  <table>",
-            "  <tr><th>Q</th><th>事實</th><th>推理</th><th>結論</th></tr>",
+            "  <thead><tr><th>Q</th><th>事實</th><th>推理</th><th>結論</th></tr></thead>",
+            "  <tbody>",
             "  " + "\n  ".join(log_rows),
+            "  </tbody>",
             "  </table>",
             "  </div>",
             "</details>",
