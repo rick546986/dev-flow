@@ -527,6 +527,70 @@ _Avoid_:<同義詞>
         self.assertEqual([t["key"] for t in terms], ["Contract", "Expiring"])
         self.assertEqual(unparsed, [])
 
+    def test_wrapped_term_body_continuations_are_appended(self):
+        """真實 CONTEXT 常把定義折行;續行必須併入 body,不得進 unparsed。"""
+        text = """# demo
+
+## Language
+
+**Run(上機/定序批次)**:一次晶片上機的定序批次,PGS 與 ECS 各有獨立 run 表
+(`ngs_pgs_lab_run` / `ngs_ecs_lab_run`)。
+邊界:同一天多批算多個 Run。
+_Avoid_:批次、sequencing batch
+
+**Contract(合約)**:客戶與本公司簽署的服務協議。
+_Avoid_:Agreement
+"""
+        terms, unparsed = legacy.parse_context_md(text)
+        self.assertEqual(unparsed, [])
+        self.assertEqual([t["key"] for t in terms], ["Run", "Contract"])
+        run = terms[0]
+        self.assertIn("ngs_pgs_lab_run", run["body"])
+        self.assertIn("ngs_ecs_lab_run", run["body"])
+        self.assertIn("邊界:同一天多批算多個 Run。", run["body"])
+        self.assertTrue(run["body"].startswith(
+            "一次晶片上機的定序批次,PGS 與 ECS 各有獨立 run 表"))
+        self.assertEqual(run["avoid"], "批次、sequencing batch")
+        self.assertEqual(terms[1]["body"], "客戶與本公司簽署的服務協議。")
+
+    def test_lines_before_any_term_stay_unparsed(self):
+        """無開啟詞條時的散文仍進 unparsed,不猜成詞條。"""
+        text = """# demo
+
+## 語言
+
+這是開場散文,不是詞條。
+**Contract(合約)**:客戶與本公司簽署的服務協議。
+又一段落在詞條之後的散文續行。
+"""
+        terms, unparsed = legacy.parse_context_md(text)
+        self.assertEqual([t["key"] for t in terms], ["Contract"])
+        self.assertEqual(unparsed, ["這是開場散文,不是詞條。"])
+        self.assertIn("又一段落在詞條之後的散文續行。", terms[0]["body"])
+
+    def test_wrapped_term_survives_apply_promote(self):
+        """--apply --promote 必須寫出完整折行定義,不可只留第一行。"""
+        write(self.repo, "CONTEXT.md", """# demo
+
+## Language
+
+**Run(上機/定序批次)**:一次晶片上機的定序批次,PGS 與 ECS 各有獨立 run 表
+(`ngs_pgs_lab_run` / `ngs_ecs_lab_run`)。
+_Avoid_:批次、sequencing batch
+""")
+        report = legacy.migrate(self.repo, self.store, apply_changes=True,
+                                promote=True)
+        self.assertEqual(report["context_md"]["unparsed_lines"], 0)
+        self.assertEqual(len(report["written"]), 1)
+        row = self.store.knowledge(kind="domain", key="Run", limit=1)[0]
+        self.assertIn("ngs_pgs_lab_run", row["body"])
+        self.assertIn("ngs_ecs_lab_run", row["body"])
+        self.assertIn("禁用同義詞:批次、sequencing batch", row["body"])
+        durable_rows = list(durable.iter_knowledge(self.repo))
+        self.assertEqual(len(durable_rows), 1)
+        self.assertIn("ngs_pgs_lab_run", durable_rows[0]["body"])
+        self.assertIn("ngs_ecs_lab_run", durable_rows[0]["body"])
+
     def test_real_history_index_parses(self):
         """對本 repo 真正的 docs/dev/HISTORY.md 跑一次(它留在原地給人看)。"""
         entries = legacy.parse_history_md(
