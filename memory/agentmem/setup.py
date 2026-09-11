@@ -205,6 +205,30 @@ def doctor(start_path=None):
             "detail": "發現舊的專案級共用 DB,不會再被打開:{0}".format(leftover),
             "fix": "跑 dev-setup:會把它改名封存,不把舊 OPEN session 扇出到各 worktree"})
 
+    context_path = os.path.join(root, legacy.CONTEXT_FILE)
+    if os.path.isfile(context_path):
+        try:
+            with open(context_path, encoding="utf-8") as stream:
+                _terms, unparsed = legacy.parse_context_md(stream.read())
+        except (OSError, UnicodeDecodeError) as exc:
+            findings.append({
+                "level": "warn", "check": "legacy-context-unparsed",
+                "detail": "無法讀取 {0}:{1}".format(legacy.CONTEXT_FILE, exc),
+                "fix": "修檔編碼/權限後重跑 doctor 或 migrate-legacy"})
+        else:
+            if unparsed:
+                findings.append({
+                    "level": "warn", "check": "legacy-context-unparsed",
+                    "detail": "{0} 有 {1} 行 unparsed(遷移可能丟義;需 owner 確認)".format(
+                        legacy.CONTEXT_FILE, len(unparsed)),
+                    "fix": "跑 migrate-legacy dry-run 看 unparsed;"
+                           "修 CONTEXT 或確認後再 --apply --promote"})
+            else:
+                findings.append({
+                    "level": "ok", "check": "legacy-context-unparsed",
+                    "detail": "{0} 無 unparsed 行".format(legacy.CONTEXT_FILE),
+                    "fix": ""})
+
     db = store_mod.runtime_db_path(project["project_id"], root)
     if not os.path.isfile(db):
         findings.append({
