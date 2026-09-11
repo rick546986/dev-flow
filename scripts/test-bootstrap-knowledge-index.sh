@@ -7,6 +7,7 @@
 #   • multi-active / bad-status / dangling / unparseable → queue (no auto-winner)
 #   • CONTEXT.md → warn-candidate-only (not resurrected as index truth)
 #   • #176 context-warn.detail forks PRE vs POST migrate (domain empty vs present)
+#   • #177 all-legacy ADR note uses product-perspective (not tip-stale Pilot-1)
 #   • bootstrap never auto-deletes CONTEXT.md
 #   • mother-shaped clean tree → empty queue
 #
@@ -34,7 +35,7 @@ import tempfile
 pack, tool = sys.argv[1], sys.argv[2]
 passed = 0
 failed = 0
-MIN_CASES = 14
+MIN_CASES = 18
 
 
 def run(root, *args):
@@ -88,6 +89,26 @@ def plant_clean(tmp):
         os.path.join(root, "docs", "adr", "0001-payments-sync.md"),
         "accepted",
         ["payments"],
+    )
+    return root
+
+
+def plant_all_legacy(tmp):
+    """Product-shaped tree: every ADR uses legacy `- Status:` (no YAML fm)."""
+    root = os.path.join(tmp, "all-legacy")
+    write(
+        os.path.join(root, "docs", "adr", "0001-diffcoverage-storage.md"),
+        "# 0001. fixture\n\n"
+        "- Status: accepted\n"
+        "- Date: 2026-06-05\n\n"
+        "Body.\n",
+    )
+    write(
+        os.path.join(root, "docs", "adr", "0002-other-topic.md"),
+        "# 0002. fixture\n\n"
+        "- Status: accepted\n"
+        "- Date: 2026-06-06\n\n"
+        "Body.\n",
     )
     return root
 
@@ -324,6 +345,31 @@ with tempfile.TemporaryDirectory(prefix="df-kboot-") as tmp:
     expect(
         "post-migrate does not delete CONTEXT",
         os.path.isfile(os.path.join(post, "CONTEXT.md")),
+    )
+
+    # 8) #177: all-legacy product ADRs → product-perspective note (not tip-stale)
+    legacy = plant_all_legacy(tmp)
+    r = run(legacy, "--apply")
+    expect("all-legacy apply exit 0", r.returncode == 0, r.stderr or r.stdout)
+    ly = open(
+        os.path.join(legacy, "docs", "knowledge", "index.yaml"), encoding="utf-8"
+    ).read()
+    expect(
+        "all-legacy note is product-ADR wording",
+        "This project's ADRs still use legacy" in ly
+        and "Prefer Pilot-1 frontmatter when touching ADRs" in ly
+        and "docs/knowledge/README.md" in ly,
+        ly[:1200],
+    )
+    expect(
+        "all-legacy note must not claim Pilot-1 not on main",
+        "not on main yet" not in ly,
+        ly[:1200],
+    )
+    expect(
+        "all-legacy still indexes by filename slug topic",
+        "diffcoverage-storage:" in ly and 'active_adr: ["0001"]' in ly,
+        ly[:1200],
     )
 
 print()
