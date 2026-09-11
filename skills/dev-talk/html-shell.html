@@ -29,29 +29,41 @@
   #scan-qs th:last-child,
   #scan-qs td:last-child{white-space:nowrap;word-break:keep-all}
   #scan-log td{white-space:normal;word-break:normal;overflow-wrap:anywhere}
-  /* 一律卡片:#scan-ac／#scan-log。880px 主欄仍太窄塞 3–4 長欄,不限 media(#151)。 */
+  /* 一律卡片:#scan-people／#scan-ac／#scan-log。880px 主欄仍太窄塞 3–4 長欄,不限 media(#151)。 */
+  #scan-people thead,#scan-people tr:has(> th),
   #scan-ac thead,#scan-ac tr:has(> th),
   #scan-log thead,#scan-log tr:has(> th){display:none}
+  #scan-people,#scan-people tbody{display:block;width:100%}
+  #scan-people tr{display:block;margin:0 0 1em;border:1px solid var(--line);
+                  border-radius:8px;background:var(--card);overflow:hidden}
+  #scan-people td{display:block;border:0;border-top:1px solid var(--line);
+                  padding:10px 12px;white-space:normal;word-break:normal;overflow-wrap:anywhere}
+  #scan-people td:first-child{border-top:0}
+  #scan-people td::before{display:block;color:var(--muted);font-size:.75rem;
+                          font-weight:600;margin:0 0 .3em}
+  #scan-people td:nth-child(1)::before{content:"誰"}
+  #scan-people td:nth-child(2)::before{content:"要什麼"}
+  #scan-people td:nth-child(3)::before{content:"缺什麼"}
   #scan-ac,#scan-ac tbody{display:block;width:100%}
-  #scan-ac tr{display:block;margin:0 0 .75em;border:1px solid var(--line);
+  #scan-ac tr{display:block;margin:0 0 1em;border:1px solid var(--line);
               border-radius:8px;background:var(--card);overflow:hidden}
   #scan-ac td{display:block;border:0;border-top:1px solid var(--line);
-              white-space:normal;word-break:normal;overflow-wrap:anywhere}
+              padding:10px 12px;white-space:normal;word-break:normal;overflow-wrap:anywhere}
   #scan-ac td:first-child{border-top:0}
   #scan-ac td::before{display:block;color:var(--muted);font-size:.75rem;
-                      font-weight:600;margin:0 0 .25em}
+                      font-weight:600;margin:0 0 .3em}
   #scan-ac td:nth-child(1)::before{content:"假設…當…則…"}
   #scan-ac td:nth-child(2)::before{content:"從哪看"}
   #scan-ac td:nth-child(3)::before{content:"看到什麼"}
   #scan-log .tablewrap{overflow:visible}
   #scan-log table,#scan-log tbody{display:block;width:100%}
-  #scan-log tr{display:block;margin:0 0 .75em;border:1px solid var(--line);
+  #scan-log tr{display:block;margin:0 0 1em;border:1px solid var(--line);
                border-radius:8px;background:var(--card);overflow:hidden}
   #scan-log td{display:block;border:0;border-top:1px solid var(--line);
-               white-space:normal;word-break:normal;overflow-wrap:anywhere}
+               padding:10px 12px;white-space:normal;word-break:normal;overflow-wrap:anywhere}
   #scan-log td:first-child{border-top:0}
   #scan-log td::before{display:block;color:var(--muted);font-size:.75rem;
-                       font-weight:600;margin:0 0 .25em}
+                       font-weight:600;margin:0 0 .3em}
   #scan-log td:nth-child(1)::before{content:"Q"}
   #scan-log td:nth-child(2)::before{content:"事實"}
   #scan-log td:nth-child(3)::before{content:"推理"}
