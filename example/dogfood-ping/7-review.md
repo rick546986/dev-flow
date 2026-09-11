@@ -19,7 +19,7 @@ updated: 2026-09-11
 > | 4 | **Known Limits** | 有沒有一條是 owner 不能接受的? |
 > | 5 | **抽驗一列** | 從 Coverage Matrix / Standards Axis / Spec Axis 任挑一列,照它給的 `檔:行` 去看。對得上就信剩下的,對不上就整份退回 |
 >
-> **只做一步就做第 5 步**。Author A 證據包 → 獨立 reviewer B 建議 PASS（`7-reviewer-B-notes.md`）→ **Human G3 PASS**（owner，2026-09-11 Asia/Taipei）。
+> **只做一步就做第 5 步**。Author A 證據包 → 獨立 reviewer B 建議 PASS（`reviewer-B-notes.md`）→ **Human G3 PASS**（owner，2026-09-11 Asia/Taipei）。
 
 ## 人讀摘要（給 owner）
 
@@ -34,7 +34,7 @@ updated: 2026-09-11
 | | |
 |---|---|
 | Author A | Stage 7 彙整／交接（曾為 PRE-REVIEW pack） |
-| Reviewer B | 獨立建議 PASS（`7-reviewer-B-notes.md`）；**未**代填 Human `verdict:` |
+| Reviewer B | 獨立建議 PASS（`reviewer-B-notes.md`）；**未**代填 Human `verdict:` |
 | Human G3 | owner `rick-dev-flow` → **PASS** 2026-09-11 (Asia/Taipei) |
 | 讀取順序（稽核） | `4-spec`／`5-tasks`／diff／現象表／B notes；勿只信作者主張 |
 
@@ -176,7 +176,7 @@ n-a — 4-spec Design Boundary Contract Applicability = n-a（單檔本機 shell
 
 **PASS** —— **Human G3 PASS by owner（rick-dev-flow）on 2026-09-11 (Asia/Taipei)。**
 
-依據：Author A 證據包 + 獨立 reviewer B（`7-reviewer-B-notes.md`，@ `36c68db`）親跑 S-1～S-4 全綠、建議 PASS；owner 採納並提交本檔 `verdict: PASS`。准 squash-merge PR [#164](https://github.com/rick546986/dev-flow/pull/164) → `main` 落 Example。
+依據：Author A 證據包 + 獨立 reviewer B（`reviewer-B-notes.md`，@ `36c68db`）親跑 S-1～S-4 全綠、建議 PASS；owner 採納並提交本檔 `verdict: PASS`。准 squash-merge PR [#164](https://github.com/rick546986/dev-flow/pull/164) → `main` 落 Example。
 
 | 門檻 | 證據 | 簽署 |
 |---|---|---|
@@ -213,7 +213,7 @@ n-a — 4-spec Design Boundary Contract Applicability = n-a（單檔本機 shell
 
 ### Owner G3 出手清單（短）
 
-1. ~~確認獨立 reviewer B ≠ A~~ → 見 `7-reviewer-B-notes.md`（建議 PASS）。
+1. ~~確認獨立 reviewer B ≠ A~~ → 見 `reviewer-B-notes.md`（建議 PASS）。
 2. ~~抽驗 Coverage~~ → owner 採納 B／現象證據。
 3. ~~提交判定~~ → **Human G3 PASS 2026-09-11 (Asia/Taipei)**；本檔 `verdict: PASS`。
 4. merge #164 → main（Example）；合併後更新 STATUS／必要時刷 Example。
