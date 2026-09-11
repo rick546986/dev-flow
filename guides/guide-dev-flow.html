@@ -3422,6 +3422,14 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>檢查 adr / HISTORY 的人頁有沒有跟 md 標題、條目脫節。新增 ADR 或追加 HISTORY 之後
             沒重生就紅。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>build-knowledge-index.py</code></td>
+        <td>掃 ADR／living spec／durable knowledge keys,產出機器索引
+            <code>docs/knowledge/index.yaml</code> 與人讀投影 <code>index.md</code>(同源,禁手維)。</td>
+        <td>人工改 ADR／spec／knowledge 後跑;<code>check-knowledge-index.sh</code> 用
+            <code>--check</code> 驗過期</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-knowledge-index.sh</code></td>
+        <td>檢查知識主題索引有沒有跟來源脫節:yaml 正本與 md 投影必須可由產生器重生對上。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>publish-pages.sh</code></td>
         <td>GitLab／Gitea Pages 食譜正文:把站審 html
             (<code>1-discussion</code>／<code>2-decision</code>／<code>5-tasks</code>／
