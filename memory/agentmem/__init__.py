@@ -25,6 +25,7 @@
 - retrieval    multi-channel retrieval + RRF fusion
 - truth        LVP-inspired Current Truth Resolver + invalidation
 - query        Query Planner / Execution Engine(CURRENT/HISTORY/WHY/HOW/DOMAIN/INTENT)
+- knowledge_index  docs/knowledge/index.yaml 短索引路由(ask topic → path)
 - context      Startup Context Builder(小、結構化、不讀 CONTEXT.md)
 - devtalk      Project Understanding Mode 的候選知識生命週期
 - consolidate  candidate → durable 的固化(唯一 durable 寫入時機)

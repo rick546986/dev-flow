@@ -148,6 +148,12 @@ def _render_answer(answer):
     print("[{0}] {1}(confidence {2})".format(
         answer["primary_intent"], answer["retrieval_status"],
         answer["confidence"]))
+    index = answer.get("knowledge_index") or {}
+    if index.get("status"):
+        topics = ",".join(index.get("matched_topics") or []) or "-"
+        print("  index:{0} topics={1}".format(index["status"], topics))
+        if index.get("note") and index["status"] != "hit":
+            print("  index-note: {0}".format(index["note"]))
     current = answer.get("current_truth")
     if current:
         print("  → {0}(fast path;verified_commit={1})".format(
