@@ -364,6 +364,31 @@ class DoctorTest(MemoryCase):
         self.assertNotIn("sk-live-seeded-do-not-echo", blob)
         self.assertIn("assigned_secret", leaks[0]["detail"])
 
+    def test_doctor_warns_on_context_unparsed_lines(self):
+        """#175: CONTEXT 仍有 unparsed 時 doctor WARN,不得默默 PASS。"""
+        setup.run(self.repo, name="demo")
+        write(self.repo, "CONTEXT.md", """# demo
+
+## Language
+
+無法辨識的 orphan 行。
+
+**Contract(合約)**:客戶與本公司簽署的服務協議。
+""")
+        report = setup.doctor(self.repo)
+        finding = self._finding(report, "legacy-context-unparsed")
+        self.assertEqual(finding["level"], "warn")
+        self.assertNotEqual(report["verdict"], "PASS")
+
+    def test_doctor_ok_when_wrapped_context_has_no_unparsed(self):
+        """#175: wrap 續行已被 parser 吃進 body → unparsed 檢查 ok。"""
+        setup.run(self.repo, name="demo")
+        write(self.repo, "CONTEXT.md", read_file(os.path.join(
+            os.getcwd(), "memory", "fixtures", "legacy", "CONTEXT-wrapped.md")))
+        report = setup.doctor(self.repo)
+        finding = self._finding(report, "legacy-context-unparsed")
+        self.assertEqual(finding["level"], "ok")
+
 
 class LegacyTest(MemoryCase):
     CONTEXT = """# demo — CONTEXT(詞彙表 / Ubiquitous Language)
@@ -430,6 +455,49 @@ _Avoid_:<同義詞>
         legacy.migrate(self.repo, self.store, apply_changes=True)
         row = self.store.knowledge(kind="domain", key="Contract", limit=1)[0]
         self.assertIn("Agreement", row["body"])
+
+    def test_wrapped_term_body_keeps_continuation(self):
+        """#175: wrap 續行併入 body,不得進 unparsed / 靜默截斷。"""
+        wrapped = read_file(os.path.join(
+            os.getcwd(), "memory", "fixtures", "legacy", "CONTEXT-wrapped.md"))
+        terms, unparsed = legacy.parse_context_md(wrapped)
+        by_key = {t["key"]: t for t in terms}
+        self.assertIn("Run", by_key)
+        body = by_key["Run"]["body"]
+        self.assertIn("一次晶片上機的定序批次", body)
+        self.assertIn("ngs_pgs_lab_run", body)
+        self.assertIn("ngs_ecs_lab_run", body)
+        self.assertEqual(by_key["Run"]["avoid"], "批次、sequencing batch")
+        self.assertEqual(unparsed, [])
+        self.assertNotIn("(`ngs_pgs_lab_run` / `ngs_ecs_lab_run`)。", unparsed)
+
+    def test_promote_keeps_wrapped_continuation_in_durable_body(self):
+        """#175: --apply --promote 後 durable body 仍含 wrap 表名行。"""
+        write(self.repo, "CONTEXT.md", read_file(os.path.join(
+            os.getcwd(), "memory", "fixtures", "legacy", "CONTEXT-wrapped.md")))
+        report = legacy.migrate(self.repo, self.store, apply_changes=True,
+                                promote=True)
+        self.assertEqual(report["context_md"]["unparsed_lines"], 0)
+        self.assertFalse(report["context_md"]["needs_owner_review"])
+        row = self.store.knowledge(kind="domain", key="Run", limit=1)[0]
+        self.assertIn("ngs_pgs_lab_run", row["body"])
+        self.assertIn("禁用同義詞:批次、sequencing batch", row["body"])
+        durable_rows = {r["key"]: r for r in durable.iter_knowledge(self.repo)}
+        self.assertIn("Run", durable_rows)
+        self.assertIn("ngs_ecs_lab_run", durable_rows["Run"]["body"])
+
+    def test_migrate_flags_needs_owner_review_when_unparsed(self):
+        write(self.repo, "CONTEXT.md", """# demo
+
+## Language
+
+這是 Language 區但不是詞條的散文。
+
+**Contract(合約)**:客戶與本公司簽署的服務協議。
+""")
+        report = legacy.migrate(self.repo, self.store, apply_changes=False)
+        self.assertGreater(report["context_md"]["unparsed_lines"], 0)
+        self.assertTrue(report["context_md"]["needs_owner_review"])
 
     def test_promote_writes_durable_but_still_candidate(self):
         report = legacy.migrate(self.repo, self.store, apply_changes=True,
