@@ -32,7 +32,7 @@ import tempfile
 pack, tool = sys.argv[1], sys.argv[2]
 passed = 0
 failed = 0
-MIN_CASES = 10
+MIN_CASES = 13
 
 
 def run(root, *args):
@@ -86,6 +86,25 @@ def plant_clean(tmp):
         os.path.join(root, "docs", "adr", "0001-payments-sync.md"),
         "accepted",
         ["payments"],
+    )
+    return root
+
+
+def plant_legacy_only(tmp):
+    """Product ADRs that never got Pilot-1 YAML frontmatter (dogfood shape)."""
+    root = os.path.join(tmp, "legacy-only")
+    write(
+        os.path.join(root, "docs", "adr", "0001-diffcoverage-storage.md"),
+        "# DiffCoverage storage\n\n"
+        "- Status: accepted\n"
+        "- Date: 2026-06-05\n\n"
+        "## Decision\n\nKeep compressed storage.\n",
+    )
+    write(
+        os.path.join(root, "docs", "adr", "0002-legacy-topic.md"),
+        "# Another legacy ADR\n\n"
+        "- Status: accepted\n"
+        "- Date: 2026-06-06\n",
     )
     return root
 
@@ -226,7 +245,34 @@ with tempfile.TemporaryDirectory(prefix="df-kboot-") as tmp:
         cy,
     )
 
-    # 5) mutating queue makes --check fail
+    # 5) all-legacy product ADRs → product-ADR note (Pilot-1 already on main)
+    legacy = plant_legacy_only(tmp)
+    r = run(legacy, "--apply")
+    expect("legacy-only apply exit 0", r.returncode == 0, r.stderr or r.stdout)
+    ly = open(
+        os.path.join(legacy, "docs", "knowledge", "index.yaml"), encoding="utf-8"
+    ).read()
+    expect(
+        "legacy-only note: product ADR still on legacy Status (not mother tip)",
+        "still use legacy `- Status:` lines" in ly
+        and "(no YAML frontmatter)" in ly
+        and "falls back to filename slug" in ly
+        and "Prefer Pilot-1 frontmatter when touching ADRs" in ly
+        and "docs/knowledge/README.md" in ly,
+        ly[:1200],
+    )
+    expect(
+        "legacy-only note must not say Pilot-1 not on main yet",
+        "not on main yet" not in ly,
+        ly[:1200],
+    )
+    expect(
+        "legacy-only active_adr still populated via filename slug",
+        'active_adr: ["0001"]' in ly or 'active_adr: ["0002"]' in ly,
+        ly,
+    )
+
+    # 6) mutating queue makes --check fail
     qpath = os.path.join(clean, "docs", "knowledge", "conflicts-queue.yaml")
     with open(qpath, "a", encoding="utf-8") as fh:
         fh.write("# tampered\n")

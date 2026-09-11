@@ -602,9 +602,10 @@ def build_index(root):
     legacy_count = sum(1 for a in adrs if a["source_form"] == "legacy")
     if adr_dir_ok and legacy_count and yaml_count == 0:
         notes.append(
-            "Pilot-1 ADR YAML frontmatter not on main yet — generator used "
-            "legacy `- Status:` lines + filename slug as topic; intended schema "
-            "documented in docs/knowledge/README.md."
+            "This project's ADRs still use legacy `- Status:` lines "
+            "(no YAML frontmatter); generator falls back to filename slug as "
+            "topic. Prefer Pilot-1 frontmatter when touching ADRs. See "
+            "docs/knowledge/README.md."
         )
     elif legacy_count:
         notes.append(

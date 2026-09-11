@@ -2505,6 +2505,14 @@ check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 55" "MIN_CHECKS 
 check_static_pin "scripts/check-py-floor.sh" "MIN_HEREDOCS = 220" "MIN_HEREDOCS 釘死 220(精確實測;含 bootstrap + check-preload-ban.sh;不留餘裕否則 PF-2 假綠)"
 check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 202" "EXPECTED_MAPPED_FILES 釘死 202(精確值;knowledge-index +2、proof +1、knife-2 ask +2、knowledge bootstrap +2、check-preload-ban.sh +1)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 28" "EXPECTED_GROUPS 釘死 28(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
+# #177: all-legacy product ADR note is product-facing (Pilot-1 already on main).
+check_static_pin "scripts/build-knowledge-index.py" "            \"This project's ADRs still use legacy \`- Status:\` lines \"" \
+  "#177 product-ADR legacy note first line (forbids stale「not on main yet」mother wording)"
+check_static_pin "scripts/test-bootstrap-knowledge-index.sh" "MIN_CASES = 13" \
+  "MIN_CASES 釘死 13(#177 legacy-only product-ADR note cases +3 → 13)"
+check_static_pin_sub "scripts/test-bootstrap-knowledge-index.sh" \
+  "not on main yet\" not in ly" \
+  "#177 pin: bootstrap test rejects stale「not on main yet」note wording"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的
 # EXPECTED_CHECK_SKIP_CALLS 是「顯性跳過 check() 次數」的釘死地板(見該檔第 480、
