@@ -1,8 +1,15 @@
-# 0003. Agent Memory 分兩層:`.dev-flow/` 進 Git、本機索引不進 Git
+---
+status: accepted
+date: 2026-08-20
+source: docs/prompts(Agent Memory v3 需求正本);落地見指南 `#memory`
+topics:
+  - agent-memory
+  - durable-store
+supersedes: []
+superseded_by: null
+---
 
-- Status: accepted
-- Date: 2026-08-20
-- Source: docs/prompts(Agent Memory v3 需求正本);落地見指南 `#memory`
+# 0003. Agent Memory 分兩層:`.dev-flow/` 進 Git、本機索引不進 Git
 
 > 晉升條件(三條件**全中**才立此檔,否則留在 2-decision 就好):
 > 難逆轉 + 反直覺 + 真 trade-off。
