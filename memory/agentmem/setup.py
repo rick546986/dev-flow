@@ -16,6 +16,7 @@
 回報一律結構化(dev-setup 的回報格式固定四段,它需要可直接鋪成表格的資料)。
 """
 import os
+import sys
 
 from . import (LOCAL_SCHEMA_VERSION, durable, embedding, identity, legacy,
                paths, schema, signal, store as store_mod, sync, truth)
@@ -23,6 +24,41 @@ from . import (LOCAL_SCHEMA_VERSION, durable, embedding, identity, legacy,
 
 class SetupError(RuntimeError):
     """setup 前置條件不成立(不在 git repo / project.yaml 壞掉)。"""
+
+
+DOMAIN_DIR = os.path.join("knowledge", "domain")
+MIGRATE_OWNER_ACTION = "migrate-legacy --apply --promote"
+
+
+def domain_yaml_names(root):
+    """Return `*.yaml` basenames under `.dev-flow/knowledge/domain/` (or [])."""
+    domain_dir = os.path.join(durable.root(root), DOMAIN_DIR)
+    if not os.path.isdir(domain_dir):
+        return []
+    try:
+        return sorted(n for n in os.listdir(domain_dir) if n.endswith(".yaml"))
+    except OSError:
+        return []
+
+
+def legacy_context_path(root):
+    """First existing CONTEXT.md path (repo-relative), or None."""
+    for candidate in (legacy.CONTEXT_FILE,
+                      os.path.join("docs", "dev", legacy.CONTEXT_FILE)):
+        if os.path.isfile(os.path.join(root, candidate)):
+            return candidate.replace("\\", "/")
+    return None
+
+
+def _needs_migrate_apply(legacy_report, root):
+    """terms>0 from CONTEXT dry-run AND domain still empty → owner must apply."""
+    if not legacy_report:
+        return False
+    ctx = legacy_report.get("context_md") or {}
+    terms = int(ctx.get("terms") or 0)
+    if terms <= 0:
+        return False
+    return not domain_yaml_names(root)
 
 
 def run(start_path=None, rebuild=True, reindex_embeddings=True,
@@ -60,6 +96,16 @@ def run(start_path=None, rebuild=True, reindex_embeddings=True,
         # 對不上時,使用者第一個查詢就該看到 STALE,而不是拿到 main 的舊答案。
         stale = truth.invalidate_from_snapshot(store, root, workspace_id,
                                               snapshot)
+        needs_owner_action = []
+        if _needs_migrate_apply(legacy_report, root):
+            needs_owner_action.append(MIGRATE_OWNER_ACTION)
+            sys.stderr.write(
+                "⚠ setup: CONTEXT terms present but "
+                ".dev-flow/knowledge/domain/ empty — dry-run ≠ complete; "
+                "run `dev-memory.py migrate-legacy --apply --promote` "
+                "then re-bootstrap knowledge index "
+                "(index glossary stays [] until then).\n"
+            )
         report = {
             "project_id": project["project_id"],
             "project_name": project.get("name"),
@@ -80,10 +126,42 @@ def run(start_path=None, rebuild=True, reindex_embeddings=True,
             "stale_after_rebuild": len(stale),
             "legacy": legacy_report,
             "indexed_items": store.item_count(),
+            "needs_owner_action": needs_owner_action,
         }
     finally:
         store.close()
     return report
+
+
+def _append_legacy_context_finding(findings, root):
+    """Doctor hook: CONTEXT ∧ empty domain = WARN; domain present = OK (#176)."""
+    ctx_path = legacy_context_path(root)
+    if not ctx_path:
+        return
+    domain_files = domain_yaml_names(root)
+    if not domain_files:
+        findings.append({
+            "level": "warn",
+            "check": "legacy-context-pending",
+            "detail": (
+                "{0} present and .dev-flow/knowledge/domain/ empty — "
+                "setup dry-run alone leaves index glossary: []; "
+                "migrate-legacy --apply --promote then re-bootstrap"
+            ).format(ctx_path),
+            "fix": "dev-memory.py migrate-legacy --apply --promote; "
+                   "then bootstrap-knowledge-index.py --apply",
+        })
+    else:
+        findings.append({
+            "level": "ok",
+            "check": "legacy-context-pending",
+            "detail": (
+                "{0} still present but domain has {1} yaml file(s) — "
+                "migrate done; delete CONTEXT only after owner confirms "
+                "no dual-cite (never routing truth)"
+            ).format(ctx_path, len(domain_files)),
+            "fix": "",
+        })
 
 
 def doctor(start_path=None):
@@ -137,7 +215,11 @@ def doctor(start_path=None):
             "level": "warn", "check": "local-db",
             "detail": "local index 不存在(這不是資料遺失 —— durable 側是正本)",
             "fix": "跑 dev-setup 重建"})
-        return {"verdict": "WARN", "findings": findings,
+        _append_legacy_context_finding(findings, root)
+        levels = {f["level"] for f in findings}
+        verdict = "FAIL" if "error" in levels else ("WARN" if "warn" in levels
+                                                    else "PASS")
+        return {"verdict": verdict, "findings": findings,
                 "project_id": project["project_id"]}
 
     store = store_mod.open_for_root(project["project_id"], root)
@@ -239,6 +321,8 @@ def doctor(start_path=None):
                    "查詢時會要求重新 inspect;這是預期行為,不是故障"})
     finally:
         store.close()
+
+    _append_legacy_context_finding(findings, root)
 
     levels = {f["level"] for f in findings}
     verdict = "FAIL" if "error" in levels else ("WARN" if "warn" in levels

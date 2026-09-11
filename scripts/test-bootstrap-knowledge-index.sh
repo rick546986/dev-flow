@@ -6,6 +6,7 @@
 #   • --apply writes index.yaml + index.md + conflicts-queue.yaml
 #   • multi-active / bad-status / dangling / unparseable → queue (no auto-winner)
 #   • CONTEXT.md → warn-candidate-only (not resurrected as index truth)
+#   • CONTEXT detail forks: pre-migrate CTA vs post-migrate leftover CTA (#176)
 #   • mother-shaped clean tree → empty queue
 #
 # 用法: scripts/test-bootstrap-knowledge-index.sh [pack]
@@ -32,7 +33,10 @@ import tempfile
 pack, tool = sys.argv[1], sys.argv[2]
 passed = 0
 failed = 0
-MIN_CASES = 10
+MIN_CASES = 14
+
+PRE_MIGRATE_NEEDLE = "migrate-legacy dry-run then --apply --promote"
+POST_MIGRATE_NEEDLE = "Terms already in .dev-flow/knowledge/domain/"
 
 
 def run(root, *args):
@@ -90,8 +94,8 @@ def plant_clean(tmp):
     return root
 
 
-def plant_conflicts(tmp):
-    root = os.path.join(tmp, "dirty")
+def plant_conflicts(tmp, with_domain=True):
+    root = os.path.join(tmp, "dirty" if with_domain else "pre-migrate")
     adr_dir = os.path.join(root, "docs", "adr")
     # multi-active same topic
     adr(os.path.join(adr_dir, "0001-sync-payments.md"), "accepted", ["payments"])
@@ -114,11 +118,12 @@ def plant_conflicts(tmp):
     )
     # CONTEXT.md warn only
     write(os.path.join(root, "CONTEXT.md"), "# legacy glossary — not truth\n")
-    # domain knowledge key (should index, not conflict)
-    write(
-        os.path.join(root, ".dev-flow", "knowledge", "domain", "payments.yaml"),
-        "kind: domain\nkey: payments\nbody: |\n  term\n",
-    )
+    if with_domain:
+        # domain knowledge key (should index, not conflict) — post-migrate shape
+        write(
+            os.path.join(root, ".dev-flow", "knowledge", "domain", "payments.yaml"),
+            "kind: domain\nkey: payments\nbody: |\n  term\n",
+        )
     return root
 
 
@@ -126,7 +131,8 @@ print("=== test-bootstrap-knowledge-index ===")
 
 with tempfile.TemporaryDirectory(prefix="df-kboot-") as tmp:
     clean = plant_clean(tmp)
-    dirty = plant_conflicts(tmp)
+    dirty = plant_conflicts(tmp, with_domain=True)
+    pre_mig = plant_conflicts(tmp, with_domain=False)
 
     # 1) dry-run writes nothing
     before = set()
@@ -179,6 +185,11 @@ with tempfile.TemporaryDirectory(prefix="df-kboot-") as tmp:
         "status: warn-candidate-only" in qtext,
         qtext,
     )
+    expect(
+        "post-migrate context-warn detail (domain present)",
+        POST_MIGRATE_NEEDLE in qtext and PRE_MIGRATE_NEEDLE not in qtext,
+        qtext,
+    )
 
     ytext = open(yml, encoding="utf-8").read()
     # multi-active must not leave a single auto-picked active_adr winner
@@ -202,6 +213,19 @@ with tempfile.TemporaryDirectory(prefix="df-kboot-") as tmp:
         "CONTEXT.md present — candidate/warn only" in ytext
         and "legacy glossary" not in ytext,
         ytext[:800],
+    )
+
+    # 2b) pre-migrate: CONTEXT present, no domain yaml → dry-run CTA
+    r = run(pre_mig, "--apply")
+    expect("pre-migrate apply exit 0", r.returncode == 0, r.stderr or r.stdout)
+    pq = open(
+        os.path.join(pre_mig, "docs", "knowledge", "conflicts-queue.yaml"),
+        encoding="utf-8",
+    ).read()
+    expect(
+        "pre-migrate context-warn detail (no domain)",
+        PRE_MIGRATE_NEEDLE in pq and POST_MIGRATE_NEEDLE not in pq,
+        pq,
     )
 
     # 3) --check passes on freshly applied dirty tree

@@ -110,6 +110,42 @@ def scan_unparseable_filenames(root):
     return out
 
 
+# Pre-migrate: no domain yaml yet — CTA to run migrate-legacy.
+CONTEXT_WARN_DETAIL_PRE_MIGRATE = (
+    "migrate-legacy dry-run then --apply --promote "
+    "(CANDIDATE + documentation only). "
+    "Do not resurrect CONTEXT.md as index/routing truth. "
+    "Delete only after owner confirms migrate + no dual cite."
+)
+# Post-migrate: domain yaml already present; CONTEXT leftover only.
+CONTEXT_WARN_DETAIL_POST_MIGRATE = (
+    "Terms already in .dev-flow/knowledge/domain/ (CANDIDATE). "
+    "CONTEXT.md still present — delete only after owner confirms no dual-cite; "
+    "never treat CONTEXT as routing truth."
+)
+
+DOMAIN_DIR_REL = os.path.join(".dev-flow", "knowledge", "domain")
+
+
+def domain_yaml_present(root):
+    """True iff `.dev-flow/knowledge/domain/` has at least one `*.yaml`."""
+    domain_dir = os.path.join(root, DOMAIN_DIR_REL)
+    if not os.path.isdir(domain_dir):
+        return False
+    try:
+        names = os.listdir(domain_dir)
+    except OSError:
+        return False
+    return any(name.endswith(".yaml") for name in names)
+
+
+def context_warn_detail(root):
+    """Fork CTA: pre-migrate vs post-migrate leftover CONTEXT (#176)."""
+    if domain_yaml_present(root):
+        return CONTEXT_WARN_DETAIL_POST_MIGRATE
+    return CONTEXT_WARN_DETAIL_PRE_MIGRATE
+
+
 def collect_queue_items(bki, root, doc, adrs):
     """Build structured human-queue items. Never invent a winner."""
     items = []
@@ -211,12 +247,7 @@ def collect_queue_items(bki, root, doc, adrs):
                 "reason": "legacy-context-present",
                 "adr_ids": [],
                 "topic": None,
-                "detail": (
-                    "migrate-legacy dry-run then --apply --promote "
-                    "(CANDIDATE + documentation only). "
-                    "Do not resurrect CONTEXT.md as index/routing truth. "
-                    "Delete only after owner confirms migrate + no dual cite."
-                ),
+                "detail": context_warn_detail(root),
             }
         )
 

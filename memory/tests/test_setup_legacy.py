@@ -42,6 +42,41 @@ class SetupTest(MemoryCase):
         self.assertIn("fts5", report["capabilities"])
         self.assertEqual(report["durable_inventory"]["facts"], 0)
         self.assertEqual(report["durable_dir"], ".dev-flow")
+        self.assertEqual(report["needs_owner_action"], [])
+
+    def test_setup_needs_owner_action_when_context_terms_and_domain_empty(self):
+        """#176: dry-run migrate alone must loud-flag migrate --apply."""
+        write(self.repo, "CONTEXT.md", """# demo
+
+## Language
+
+**Contract(合約)**:客戶與本公司簽署的服務協議。
+""")
+        import io
+        import contextlib
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            report = setup.run(self.repo, name="demo")
+        self.assertEqual(
+            report["needs_owner_action"],
+            [setup.MIGRATE_OWNER_ACTION])
+        self.assertIn("dry-run ≠ complete", err.getvalue())
+        self.assertIn("glossary stays []", err.getvalue())
+
+    def test_setup_no_owner_action_after_domain_promoted(self):
+        write(self.repo, "CONTEXT.md", """# demo
+
+## Language
+
+**Contract(合約)**:客戶與本公司簽署的服務協議。
+""")
+        write(self.repo, os.path.join(".dev-flow", "knowledge", "domain",
+                                      "Contract.yaml"),
+              "schema_version: 1\nkind: domain\nkey: Contract\n"
+              "title: Contract\nbody: term\nauthority: documentation\n"
+              "status: CANDIDATE\n")
+        report = setup.run(self.repo, name="demo")
+        self.assertEqual(report["needs_owner_action"], [])
 
     def test_setup_outside_git_fails_loud(self):
         outside = os.path.join(self.work, "not-a-repo")
@@ -363,6 +398,41 @@ class DoctorTest(MemoryCase):
         blob = json.dumps(report, ensure_ascii=False)
         self.assertNotIn("sk-live-seeded-do-not-echo", blob)
         self.assertIn("assigned_secret", leaks[0]["detail"])
+
+    def test_doctor_warns_legacy_context_pending_when_domain_empty(self):
+        """#176/#179: CONTEXT ∧ empty domain → WARN legacy-context-pending."""
+        setup.run(self.repo, name="demo")
+        write(self.repo, "CONTEXT.md", """# demo
+
+## Language
+
+**Contract(合約)**:客戶與本公司簽署的服務協議。
+""")
+        report = setup.doctor(self.repo)
+        finding = self._finding(report, "legacy-context-pending")
+        self.assertEqual(finding["level"], "warn")
+        self.assertIn("glossary: []", finding["detail"])
+        self.assertIn("migrate-legacy --apply --promote", finding["fix"])
+        self.assertEqual(report["verdict"], "WARN")
+
+    def test_doctor_ok_legacy_context_when_domain_present(self):
+        """Post-migrate leftover CONTEXT → ok, not pending CTA."""
+        setup.run(self.repo, name="demo")
+        write(self.repo, "CONTEXT.md", """# demo
+
+## Language
+
+**Contract(合約)**:客戶與本公司簽署的服務協議。
+""")
+        write(self.repo, os.path.join(".dev-flow", "knowledge", "domain",
+                                      "Contract.yaml"),
+              "schema_version: 1\nkind: domain\nkey: Contract\n"
+              "title: Contract\nbody: term\nauthority: documentation\n"
+              "status: CANDIDATE\n")
+        report = setup.doctor(self.repo)
+        finding = self._finding(report, "legacy-context-pending")
+        self.assertEqual(finding["level"], "ok")
+        self.assertIn("migrate done", finding["detail"])
 
 
 class LegacyTest(MemoryCase):

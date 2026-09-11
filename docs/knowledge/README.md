@@ -65,7 +65,9 @@ items:
     detail: do-not-auto-pick; human must choose winner or supersede
 ```
 
-`CONTEXT.md`：只進 queue 當 **warn-candidate-only**（走既有 `migrate-legacy` → CANDIDATE）；**不**把內文灌進 index 當 routing 真相。
+`CONTEXT.md`：只進 queue 當 **warn-candidate-only**（走既有 `migrate-legacy` → CANDIDATE）；**不**把內文灌進 index 當 routing 真相。queue `detail` 依 `.dev-flow/knowledge/domain/*.yaml` 有無分岔（尚未 migrate → dry-run/`--apply --promote` CTA；已 promote 但 CONTEXT 仍在 → 確認無雙引後再刪）。
+
+**大聲一句**：只跑 setup、**沒有** `migrate-legacy --apply` 時，`.dev-flow/knowledge/` 仍缺／空，index topics 的 `glossary: []` 會一直空——dry-run ≠ complete；apply 後再 bootstrap。
 
 ## ADR frontmatter (Pilot-1 landed)
 
