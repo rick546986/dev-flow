@@ -3958,6 +3958,10 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             <code>tests/parallel-stage6/</code> 底下每支腳本有沒有被這張表點名到,也反查表裡寫的檔名是不是
             真的存在,雙向防這張表腐化。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>dogfood-ping.sh</code></td>
+        <td>dogfood-ping 極小可觀測 CLI:stdout 恰好 <code>dogfood-ok</code>+LF,exit 0。
+            給整套 1→7 試跑用,不是業務功能。</td>
+        <td>人工／CI 直接執行;dogfood-ping feat Stage 6</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-guides-fig-sync.sh</code></td>
         <td>盯住合併後的單一正本:<code>guide-quickstart.html</code> 必須是轉去
             <code>guide-dev-flow.html#start</code> 的 stub(不得再放第二份正文),且主指南必須有
