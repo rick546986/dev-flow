@@ -275,7 +275,7 @@ def emit_markdown(doc):
         "`python3 scripts/build-knowledge-index.py --write`."
     )
     lines.append("")
-    lines.append("Schema / Pilot-1 note: [`README.md`](./README.md).")
+    lines.append("Schema: [`README.md`](./README.md).")
     lines.append("")
     if doc.get("notes"):
         lines.append("## Notes")

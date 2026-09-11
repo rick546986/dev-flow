@@ -16,7 +16,7 @@ scripts/check-knowledge-index.sh
 ```yaml
 schema_version: 1
 generated_from: [...]
-notes: [...]          # e.g. Pilot-1 frontmatter not landed yet
+notes: []               # generator warnings (legacy meta, mixed forms, …)
 topics:
   <topic-key>:
     glossary: []      # → .dev-flow/knowledge/domain/<key> (pointers only)
@@ -38,7 +38,7 @@ unscoped:
 
 Pointers only — no ADR / DEC / spec / knowledge bodies.
 
-## Intended ADR frontmatter (Pilot-1; not required on main yet)
+## ADR frontmatter (Pilot-1 landed)
 
 ```yaml
 ---
@@ -53,25 +53,24 @@ superseded_by: null
 ---
 ```
 
-**Pilot-1 note (2026-09-11):** structured ADR YAML frontmatter is **not** on `main` yet (Pilot-1 agent in flight). This generator:
+This generator:
 
-1. Prefers YAML frontmatter when present.
-2. Otherwise parses legacy `- Status: …` bullets and uses the filename slug as the sole topic.
-3. Does **not** migrate ADR files (owned by Pilot-1).
+1. Prefers YAML frontmatter when present (`topics` / `supersedes` from meta).
+2. Otherwise parses legacy `- Status: …` bullets and uses the filename slug as the sole topic (adopting repos mid-migration).
+3. Does **not** rewrite ADR files (Pilot-1 owns migration / gate teeth).
 
-After Pilot-1 lands, re-run `--write` so `topics:` / `supersedes` come from frontmatter instead of slug hints.
+After ADR meta changes, re-run `--write` so the index stays fresh.
 
 ## Sample topic lookup (this repo)
 
 ```bash
 python3 scripts/build-knowledge-index.py --check
 # then open docs/knowledge/index.yaml and search e.g.
-#   agent-memory-two-layer-split: → active_adr: ["0003"]
+#   agent-memory: → active_adr: ["0003"]
 ```
 
 ## Non-goals (this slice)
 
 - Full agent ask / Q&A routing
-- Supersede integrity gate teeth (Pilot-1 / sister check)
 - Auto-resolving conflicts
 - Inlining durable knowledge bodies

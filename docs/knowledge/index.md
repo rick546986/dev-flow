@@ -4,15 +4,11 @@
 
 Machine truth: [`index.yaml`](./index.yaml). This page is a projection only — regenerate with `python3 scripts/build-knowledge-index.py --write`.
 
-Schema / Pilot-1 note: [`README.md`](./README.md).
-
-## Notes
-
-- Pilot-1 ADR YAML frontmatter not on main yet — generator used legacy `- Status:` lines + filename slug as topic; intended schema documented in docs/knowledge/README.md.
+Schema: [`README.md`](./README.md).
 
 ## Topics
 
-### `agent-memory-two-layer-split`
+### `agent-memory`
 
 | Field | Pointers |
 |---|---|
@@ -23,7 +19,18 @@ Schema / Pilot-1 note: [`README.md`](./README.md).
 | durable.knowledge | `no-arbitrary-memory-fallback` |
 | conflicts | — |
 
-### `markdown-it-py-for-twin-parsing`
+### `durable-store`
+
+| Field | Pointers |
+|---|---|
+| active_adr | `0003` |
+| active_spec | — |
+| glossary | — |
+| durable.decisions | `durable-check-observes-remote`, `durable-check-requires-offmachine-remote`, `durable-check-verdict-derives-from-evidence-not-flags` |
+| durable.knowledge | `doctor-must-report-durable-mirror-freshness`, `durable-check-preflight-best-effort`, `durable-full-replace-no-window`, `durable-mirror-generation`, `durable-mirror-snapshot-consistent`, `durable-refresh-preserves-local-index`, `durable-root-lstat-only-enoent-is-absent`, `durable-root-must-be-real-directory`, `durable-snapshot-rejects-nonregular`, `durable-vs-local`, `durable-writer-must-confine-to-real-devflow`, `durable-writer-must-walk-via-nofollow-dirfd`, `durable-writer-secret-gate`, `read-must-revalidate-durable-generation`, `store-open-requires-worktree-or-path`, `unreadable-durable-file-fails-closed` |
+| conflicts | — |
+
+### `gate-twin-parsing`
 
 | Field | Pointers |
 |---|---|
@@ -31,10 +38,10 @@ Schema / Pilot-1 note: [`README.md`](./README.md).
 | active_spec | — |
 | glossary | — |
 | durable.decisions | — |
-| durable.knowledge | — |
+| durable.knowledge | `durable-writer-secret-gate` |
 | conflicts | — |
 
-### `merge-plugin-into-methodology-repo`
+### `plugin-repo-merge`
 
 | Field | Pointers |
 |---|---|
@@ -49,9 +56,9 @@ Schema / Pilot-1 note: [`README.md`](./README.md).
 
 Keys that did not token-match any topic (await human topic tags / Pilot-1).
 
-- decisions: `correction-lineage`, `durability-barrier`, `durable-check-observes-remote`, `durable-check-requires-offmachine-remote`, `durable-check-verdict-derives-from-evidence-not-flags`, `endpoint-attestation-stays-out-of-remote-is-offmachine`, `stage6-durability-chain`
-- knowledge: `ask-refresh-must-reindex-embeddings`, `autoloop-report-commit-not-covered`, `code-cannot-override-domain`, `current-target-must-be-coordinate-exact-in-both-dimensions`, `current-target-must-be-scoped-to-a-named-entity-not`, `doctor-must-report-durable-mirror-freshness`, `doctor-unreadable-source-is-structured-fail`, `durable-check-preflight-best-effort`, `durable-full-replace-no-window`, `durable-mirror-generation`, `durable-mirror-snapshot-consistent`, `durable-refresh-preserves-local-index`, `durable-root-lstat-only-enoent-is-absent`, `durable-root-must-be-real-directory`, `durable-snapshot-rejects-nonregular`, `durable-vs-local`, `durable-writer-must-confine-to-real-devflow`, `durable-writer-must-walk-via-nofollow-dirfd`, `durable-writer-secret-gate`, `embedding-health-counts-missing-vectors`, `hostname-shape-is-not-resolved-endpoint`, `hydrate-known-key-by-primary-key`, `local-ip-inventory-empty-is-unverified-not-offmachine`, `mirror-revision-increment-must-be-atomic`, `project-identity-not-path`, `query-envelope-per-coordinate-required`, `reachable-is-not-offmachine`, `read-must-bind-monotonic-mirror-revision`, `read-must-revalidate-durable-generation`, `real-semantic-embedding`, `rebuild-uncertifies-before-clear`, `relevance-cap-must-come-after-not-before-exact-match`, `runtime-db-is-per-worktree`, `store-open-requires-worktree-or-path`, `unreadable-durable-file-fails-closed`
+- decisions: `correction-lineage`, `durability-barrier`, `endpoint-attestation-stays-out-of-remote-is-offmachine`, `stage6-durability-chain`
+- knowledge: `ask-refresh-must-reindex-embeddings`, `autoloop-report-commit-not-covered`, `code-cannot-override-domain`, `current-target-must-be-coordinate-exact-in-both-dimensions`, `current-target-must-be-scoped-to-a-named-entity-not`, `doctor-unreadable-source-is-structured-fail`, `embedding-health-counts-missing-vectors`, `hostname-shape-is-not-resolved-endpoint`, `hydrate-known-key-by-primary-key`, `local-ip-inventory-empty-is-unverified-not-offmachine`, `mirror-revision-increment-must-be-atomic`, `project-identity-not-path`, `query-envelope-per-coordinate-required`, `reachable-is-not-offmachine`, `read-must-bind-monotonic-mirror-revision`, `real-semantic-embedding`, `rebuild-uncertifies-before-clear`, `relevance-cap-must-come-after-not-before-exact-match`, `runtime-db-is-per-worktree`
 
 ## Sample lookup
 
-Topic `agent-memory-two-layer-split` → active_adr `0003` (open `index.yaml`, search that topic key).
+Topic `agent-memory` → active_adr `0003` (open `index.yaml`, search that topic key).
