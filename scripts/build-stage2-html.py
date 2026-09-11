@@ -320,42 +320,6 @@ def first_sentence(body):
     return text
 
 
-def collect_basis(approaches):
-    """Approaches 表若有「依據」欄,回 (方案名, 依據) 列。沒有就空。"""
-    header, rows = parse_table(approaches or "")
-    basis_i = col_index(header, "依據")
-    if basis_i < 0 or not rows:
-        return []
-    name_i = col_index(header, "方案", "Approach")
-    if name_i < 0:
-        name_i = 0
-    out = []
-    for row in rows:
-        name = cell(row, name_i)
-        if not name or set(name) <= set("-: "):
-            continue
-        out.append((name, cell(row, basis_i)))
-    return out
-
-
-def render_basis_table(approaches):
-    pairs = collect_basis(approaches)
-    if not pairs:
-        return ""
-    head = "<tr><th></th>%s</tr>" % "".join(
-        "<th>%s</th>" % esc(name) for name, _b in pairs
-    )
-    row = "<tr><td>依據</td>%s</tr>" % "".join(
-        "<td>%s</td>" % esc(basis or "—") for _n, basis in pairs
-    )
-    return (
-        '<section class="r-block" id="basis">'
-        '<div class="r-head"><span class="r-name">方案依據</span></div>'
-        '<div class="r-body"><table class="judge">%s%s</table></div></section>'
-        % (head, row)
-    )
-
-
 def render_owner_calls(body):
     _title, oc = section_named(body, ("Owner Calls",))
     if not oc:
@@ -505,7 +469,9 @@ def build_html(text):
         dash,
         esc(decision_text),
         render_vbox(steps),
-        render_basis_table(approaches),
+        # 方案依據不得跨決策點橫拼成全域 #basis 大表(#165)。
+        # 依據已由 parse_cards 寫進每決策點的 .card,不再另產寬表。
+        "",
         render_owner_calls(body),
         "\n".join(group_html),
         bg_html,

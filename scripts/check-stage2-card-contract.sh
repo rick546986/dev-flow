@@ -3,8 +3,9 @@
 #
 # 咬什麼:notes/design/stage2-review-ui-contract.md 丟了鎖死句子
 # (分組卡／Decision／max-width:360px／直式 SVG／背景摺疊／mermaid 禁／
-# ASCII 禁／勾選提示／你要審什麼／Rejected 釘頂／chrome),
-# 或模板／產檔器消失／吐舊主產檔器樣,必須紅。
+# ASCII 禁／勾選提示／你要審什麼／Rejected 釘頂／chrome／
+# 方案依據不得跨決策點橫拼),
+# 或模板／產檔器消失／吐舊主產檔器樣／單個 #basis th 跨組,必須紅。
 #
 # 產檔器:`scripts/build-stage2-html.py`。不進 build-gate-twin.py STAGES、
 # 不包 html-shell。補助產品詞不得當通用規則。
@@ -85,6 +86,7 @@ CONTRACT_NEEDLES = (
     "html-shell",
     "置頂",
     "表格",
+    "方案依據不得跨決策點橫拼",
 )
 
 FORBIDDEN = (
@@ -161,6 +163,26 @@ def looks_like_shell_article(html_text):
     )
 
 
+def basis_named_th_count(html_text):
+    """單個全域 #basis 的非空 <th> 數;沒有該區塊則 0。"""
+    match = re.search(r'id="basis".*?</section>', html_text or "", re.S)
+    if not match:
+        return 0
+    ths = re.findall(r"<th>(.*?)</th>", match.group(0))
+    return len([t for t in ths if t.strip()])
+
+
+def basis_spans_all_groups(html_text, group_count, total_approaches):
+    """多決策點時,單一 #basis 的 th 數若蓋過單組上限(=跨組橫拼)→ True(違約)。"""
+    if group_count <= 1 or total_approaches <= 0:
+        return False
+    named = basis_named_th_count(html_text)
+    if named <= 0:
+        return False
+    max_per_group = (total_approaches + group_count - 1) // group_count
+    return named > max_per_group or named >= total_approaches
+
+
 def judge_html(html_text, label):
     issues = []
     if looks_like_shell_article(html_text):
@@ -231,6 +253,9 @@ if contract_text is not None and template_text is not None and hop_text is not N
     stripped_svg = contract_text.replace("max-width:360px", "")
     check(bool(judge(stripped_svg, template_text, hop_text)),
           "牙咬:契約刪「max-width:360px」必須紅")
+    stripped_basis = contract_text.replace("方案依據不得跨決策點橫拼", "")
+    check(bool(judge(stripped_basis, template_text, hop_text)),
+          "牙咬:契約刪「方案依據不得跨決策點橫拼」必須紅")
     poisoned = contract_text + "\n形成併取卵\n"
     check(bool(judge(poisoned, template_text, hop_text)),
           "牙咬:契約寫入補助產品詞必須紅")
@@ -279,6 +304,24 @@ if os.path.isfile(builder):
     check("<details" in sub_html, "補助表寫法背景摺疊")
     check("<pre" not in sub_html and "mermaid" not in sub_html.lower(),
           "補助表寫法禁 mermaid／ASCII pre")
+    # #165: 單個全域 #basis 不得把四組方案 th 橫拼成一張超寬表
+    sub_groups = sub_html.count('id="point-')
+    sub_cards = sub_html.count('class="card"')
+    check(not basis_spans_all_groups(sub_html, sub_groups, sub_cards),
+          "補助表寫法單個 #basis 不得跨決策點橫拼 th")
+    check(not basis_spans_all_groups(html_out,
+                                     html_out.count('id="point-'),
+                                     html_out.count('class="card"')),
+          "fixture 輸出單個 #basis 不得跨決策點橫拼 th")
+    mega_fake = (
+        '<section class="r-block" id="basis"><div class="r-head">'
+        '<span class="r-name">方案依據</span></div><div class="r-body">'
+        '<table class="judge"><tr><th></th><th>A</th><th>B</th><th>C</th>'
+        '<th>D</th><th>E</th><th>F</th><th>G</th><th>H</th><th>I</th>'
+        '<th>J</th><th>K</th><th>L</th></tr></table></div></section>'
+    )
+    check(basis_spans_all_groups(mega_fake, 4, 12),
+          "牙咬:單個 #basis th 跨全部決策點必須紅")
     old_fake = (
         "<!DOCTYPE html><html><body><div>你要審什麼</div>"
         "<div>勾選提示</div><pre>[A]->[B]->[C]</pre></body></html>"

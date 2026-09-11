@@ -14,7 +14,7 @@
 
 ## 版面鎖死(已拍板)
 
-下列六條是鎖死,不是口味、不是選配。產檔器吃 md 的 Approaches／Decision／
+下列七條是鎖死,不是口味、不是選配。產檔器吃 md 的 Approaches／Decision／
 方案架構圖:`scripts/build-stage2-html.py` 吐分組卡 + Decision 後直式 SVG。
 授權 `--action`。不包 markdown-it + html-shell。
 寫法落點:`_templates/2-decision.md`(本檔是正本,不另開家族)。
@@ -29,6 +29,10 @@
 5. **不是舊主產檔器樣**:不要「勾選提示」、不要「你要審什麼」、
    不要 Rejected 釘頂那版(那是 gate-twin 卡,不是這份審頁)。
 6. **不是 twin**:不准把第 2 站審頁塞進 `build-gate-twin.py` STAGES。
+7. **方案依據不得跨決策點橫拼**:不准把多個決策點 Approaches 的「依據」欄
+   收成單一全域 `#basis` 超寬表(手機右側裁切)。依據留在每決策點的 `.card`
+   內即可;若另產可見依據區塊,必須**每決策點一組**(卡或窄表),
+   不得一張寬矩陣橫跨全部決策點。
 
 ## 何時不用
 
