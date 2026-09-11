@@ -68,7 +68,10 @@ PYTHONPATH=memory python3 memory/dev-memory.py ask "目前 agent-memory 決策�
 # knowledge_index.status=hit → docs/adr/0003-*.md (+ durable pointers)
 ```
 
+Bootstrap / conflict queue (landing with this slice):
+
+- ~~`dev-setup` bootstrap / conflict queue for real `docs/knowledge/index.yaml`~~ → `scripts/bootstrap-knowledge-index.py` + `dev-setup` 1c/upgrade/check 18
+
 Still open beyond this knife item:
 
-- `dev-setup` bootstrap / conflict queue for adopting repos
 - Ban/enforce preload via gate (policy text + ask routing; gate teeth deferred)

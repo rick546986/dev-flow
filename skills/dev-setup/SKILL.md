@@ -180,6 +180,20 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    **dev-setup 不自動刪別人的檔**。
    `docs/dev/HISTORY.md` 只被**索引**進本機記憶(查得到「之前發生過什麼」),
    不複製進 `.dev-flow/events/` —— 同一份內容兩個 durable 正本必然漂移。
+1c. **Knowledge topic index bootstrap**(#155 knife-2;`dev-setup` 是採用專案
+   唯一入口)。掃 `docs/adr/` + `.dev-flow/knowledge/`(+ specs/decisions)後:
+   ```
+   python3 "${DEVFLOW_ROOT}/scripts/bootstrap-knowledge-index.py" --root <專案根> --apply
+   ```
+   寫出 `docs/knowledge/index.yaml`(機器正本)+ `docs/knowledge/index.md`
+   (人讀投影,同輪重生,禁手維)+ `docs/knowledge/conflicts-queue.yaml`
+   (人工佇列)。**衝突永不自動挑 winner**:bad-status、dangling supersede、
+   multi-active(同 topic 多份 accepted)、unparseable(檔名/缺 status)一律進
+   queue;multi-active 時 index 的 `active_adr` 清空只留 conflicts 標籤。
+   **CONTEXT.md**:若仍存在,只進 queue 當 `warn-candidate-only`(對齊步 1b 的
+   migrate-legacy CANDIDATE 路徑),**不得**把 CONTEXT 內文灌進 index 當 routing
+   真相,也不得在本步刪檔。母版 repo 與產品專案同一命令(`--root` 指向專案根)。
+   預覽用預設 dry-run(不加 `--apply`);牙齒:`scripts/test-bootstrap-knowledge-index.sh`。
 2. `.claude/rules/arch-invariants.md`:從 `_templates/arch-invariants.md` 建檔,**並自動產草稿**
    (不留空殼):
    - 先收割既有素材:使用者指名的外部 workflow artifacts 中的架構指引
@@ -310,6 +324,13 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
   markdown-it-py 3.x,也**不要覆寫** Apple／系統 Python。
 - **HISTORY 出廠種子清理是選配**:`docs/dev/tools/history-append.sh --action factory-seed-cleanup`
   只刪可見的出廠四行。認不出種子 vs 真紀錄 → fail-closed。**不准每次 upgrade 自動跑**。
+- **Knowledge index bootstrap(升級必跑)**:受管檔覆蓋與 baseline 換新**之後**,跑
+  `python3 "${DEVFLOW_ROOT}/scripts/bootstrap-knowledge-index.py" --root <專案根> --apply`
+  (同 install 步 1c)。既有採用專案缺 `docs/knowledge/` 時由此建立;已有則重掃
+  ADR/domain 更新 index + 人讀 twin + conflicts-queue。queue 有項目 → 回報給
+  使用者裁決,upgrade **不得**代為挑選 active ADR。CONTEXT.md 仍在 → queue
+  `context-warn` 而已,不復活為真相。dry-run 可先預覽:`bootstrap-knowledge-index.py
+  --root <專案根>`(預設不加 `--apply`)。
 - **絕不動 `docs/dev/<slug>/` 已產出的 feature 檔**與 STATUS/CONTEXT/rules。
 
 ## refresh(使用者說「重掃 rules」「rules 過期了」「更新架構規則」)
@@ -476,10 +497,20 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     （可加 `--digest <pin-or-lock>`）。只有專案級 `docs/dev/0-stack.md`,不得每 slug 一份。
     無 I2 不得先寫 I4。檔內必須寫「盤點正本是 `docs/dev/0-inventory.json`」與
     「digest 不是 lock 正本」。套件版本爭議以 lock／pin 為準,不以 digest 覆寫 I2。
+18. **Knowledge topic index**(在專案內跑時;#155 knife-2):跑
+    `python3 "${DEVFLOW_ROOT}/scripts/bootstrap-knowledge-index.py" --root <專案根> --check`
+    (或 `scripts/check-knowledge-index.sh` —— 已改走 bootstrap)。①缺
+    `docs/knowledge/index.yaml` / `index.md` / `conflicts-queue.yaml` = broken,
+    走 install 步 1c / upgrade bootstrap `--apply` 補;②過期(與現掃 ADR/domain
+    不一致)= stale,同樣 `--apply` 重生;③queue `items` 非空 → 回報「N 筆待人工
+    裁決」,**不**自動修、不挑 winner;④`context.status: warn-candidate-only` →
+    提醒走步 1b migrate-legacy,不得把 CONTEXT 當 index 真相。
 
 ## fix / uninstall
 
-- fix:缺件按 install/upgrade 對應步驟補;陳年旗標 → 問使用者後 `devflow-exec.sh stop`。
+- fix:缺件按 install/upgrade 對應步驟補;陳年旗標 → 問使用者後 `devflow-exec.sh stop`;
+  knowledge index／queue 缺件或過期 → 跑 install 步 1c / upgrade 的 bootstrap
+  `--apply`(衝突仍只進 queue,fix **不得**代裁)。
 - uninstall:兩帳號 enabledPlugins 設 false(hooks 隨停);專案文檔面留給使用者決定。
 
 ## 注意

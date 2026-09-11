@@ -11,10 +11,12 @@
   - .dev-flow/knowledge/**/*.yaml  (domain/glossary + invariant/intent keys,只收 key)
   - .dev-flow/decisions/DEC-*.md  (decision keys,只收 key)
 
-不做:Full ask 路由、語意衝突裁決、LLM 聚類、手寫第二份真相。
+不做:Full ask 路由、語意衝突裁決(衝突進 queue,永不自動挑 winner)、LLM 聚類、手寫第二份真相。
 
 用法:
   python3 scripts/build-knowledge-index.py [--root DIR] [--write|--check]
+  # adopting repos / setup: prefer scripts/bootstrap-knowledge-index.py
+  #   (--apply also writes docs/knowledge/conflicts-queue.yaml)
   --write  寫出 index.yaml + index.md(預設)
   --check  重生到記憶體,與現檔逐位元組比;差一點就 exit 1
 
@@ -385,17 +387,17 @@ def normalize_status(raw):
     if raw is None:
         return None
     s = str(raw).strip().lower()
+    # drop trailing comments ("accepted  # note")
+    s = s.split("#", 1)[0].strip()
     if s in KNOWN_STATUSES:
         return s
-    # legacy free text: "superseded by 0003", "accepted  # comment"
-    if s.startswith("superseded"):
-        return "superseded"
-    if s.startswith("accepted"):
-        return "accepted"
-    if s.startswith("proposed"):
-        return "proposed"
-    if s.startswith("deprecated"):
-        return "deprecated"
+    # legacy free text with trailing words: "superseded by 0003", "accepted "
+    # — require word boundary so "accepted-ish" stays bad (queue, not auto-fix).
+    m = re.match(
+        r"^(proposed|accepted|deprecated|superseded)(?:\s+|$)", s
+    )
+    if m:
+        return m.group(1)
     return s
 
 
@@ -664,12 +666,54 @@ def build_index(root):
                 if edge not in row["supersedes"]:
                     row["supersedes"].append(edge)
 
-    # Multi-active detection → conflicts (report only; gate is Pilot-1/P3)
+    # Multi-active → conflicts only; clear active_adr (never auto-pick a winner).
+    # Gate teeth live in check-adr-integrity; this index must not invent authority.
     for topic, row in topics.items():
         if len(row["active_adr"]) > 1:
+            candidates = list(row["active_adr"])
             row["conflicts"].append(
-                "multi-active-adr:" + ",".join(row["active_adr"])
+                "multi-active-adr:" + ",".join(candidates)
             )
+            row["active_adr"] = []
+
+    # Bad status / unparseable / dangling supersede → topic conflicts (+ bootstrap queue)
+    known_ids = set(by_id.keys())
+    for adr in adrs:
+        st = adr.get("status")
+        topics_for = adr.get("topics") or [adr["slug"]]
+        if st is None:
+            tag = "unparseable-status:%s" % adr["id"]
+            for topic in topics_for:
+                row = ensure(topic)
+                if tag not in row["conflicts"]:
+                    row["conflicts"].append(tag)
+        elif st not in KNOWN_STATUSES:
+            tag = "bad-status:%s:%s" % (adr["id"], st)
+            for topic in topics_for:
+                row = ensure(topic)
+                if tag not in row["conflicts"]:
+                    row["conflicts"].append(tag)
+        dangling = []
+        for old in adr.get("supersedes") or []:
+            if old not in known_ids:
+                dangling.append(old)
+        sb = adr.get("superseded_by")
+        if sb and sb not in known_ids:
+            dangling.append(sb)
+        for part in adr.get("supersedes_partial") or []:
+            if isinstance(part, dict):
+                old = str(part.get("id") or "").strip()
+                if old and old not in known_ids:
+                    dangling.append(old)
+        if dangling:
+            tag = "dangling-supersede:%s:%s" % (
+                adr["id"],
+                ",".join(sorted(set(dangling))),
+            )
+            for topic in topics_for:
+                row = ensure(topic)
+                if tag not in row["conflicts"]:
+                    row["conflicts"].append(tag)
 
     # Living specs
     for spec in specs:
