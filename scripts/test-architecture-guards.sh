@@ -2523,6 +2523,24 @@ check_static_pin_sub "scripts/check-gate-twin.sh" "len(REQUIRED_GROUPS) == EXPEC
 check_static_pin_sub "scripts/check-gate-twin.sh" "_assigned == set(REQUIRED_GROUPS)" \
   "guard-selfpin 斷言 _assigned == set(REQUIRED_GROUPS) 仍在原始碼中"
 
+# #177: all-legacy product ADR note must speak product-legacy (not 「Pilot-1 not on
+# main yet」). Condition unchanged; only the generated note string is pinned.
+check_static_pin_sub "scripts/build-knowledge-index.py" \
+  "This project's ADRs still use legacy" \
+  "#177 all-legacy note 用產品視角(本專案 ADR 仍是 legacy Status)"
+check_static_pin_sub "scripts/build-knowledge-index.py" \
+  "Prefer Pilot-1 frontmatter when touching ADRs" \
+  "#177 all-legacy note 建議觸碰 ADR 時改用 Pilot-1 frontmatter"
+# 禁字拆開寫,避免本檔自己留下連續舊文案被誤當正本。
+_stale_legacy_note="not on main"\ yet
+if grep -qF "$_stale_legacy_note" "$ROOT/scripts/build-knowledge-index.py" 2>/dev/null; then
+  echo "  ✗ 靜態互釘(禁字):scripts/build-knowledge-index.py 仍含「${_stale_legacy_note}」(#177 過時 Pilot-1 tip 文案)"
+  STATIC_PIN_FAIL=1
+else
+  echo "  ✓ 靜態互釘(禁字):scripts/build-knowledge-index.py 不含「${_stale_legacy_note}」(#177)"
+fi
+unset _stale_legacy_note
+
 # X-3 MED:上面兩條只釘「斷言在不在」,群組總數對不對,但 REQUIRED_GROUPS 清單裡
 # 個別群組名被改名(decoy 換掉真名、總數與賦值集合等式都不受影響)完全抓不到。這裡
 # 逐一釘死 28 個群組名——清單住在本檔(誰要改名/刪名都得同步這裡,否則這裡會現形;
