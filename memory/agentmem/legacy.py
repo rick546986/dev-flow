@@ -49,7 +49,10 @@ def parse_context_md(text):
     """解析詞彙表。回傳 [{key, title, body, avoid, proposed}]。
 
     只認舊模板明文規定的形狀(`**詞**:定義` + 選填 `_Avoid_:`)。
-    認不出來的行**原樣回報成 unparsed**,不猜 —— 猜錯會把散文塞成詞條。
+    詞條開啟後、下一則 `**詞**` / `_Avoid_` 之前的非空白行視為定義換行延續,
+    附加到當前 body(真實 CONTEXT.md 常把邊界/表名折到下一行)。
+    沒有開啟詞條時認不出來的行**原樣回報成 unparsed**,不猜 ——
+    猜錯會把散文塞成詞條。
     """
     terms = []
     unparsed = []
@@ -81,6 +84,10 @@ def parse_context_md(text):
             value = avoid.group("avoid").strip()
             if not _PLACEHOLDER.match(value):
                 current["avoid"] = value
+            continue
+        if current is not None:
+            # Wrap / 邊界續行:附加到開啟中的詞條,勿丟進 unparsed。
+            current["body"] = (current["body"] + "\n" + line).strip()
             continue
         unparsed.append(line)
     return terms, unparsed
