@@ -271,11 +271,15 @@ if src:
     need("不得**代為挑選" in src or "不得代為挑選" in src or "永不自動挑" in src
          or "衝突永不自動挑" in src,
          "SKILL.md 沒有「衝突永不自動挑 winner」禁令 —— upgrade 可能代裁 multi-active")
+    need("glossary: []" in src and ("Dry-run ≠" in src or "dry-run ≠" in src),
+         "SKILL.md 缺 loud empty-glossary(#176)—— setup dry-run 易被當成遷移完成")
+    need("PRE-MIGRATE" in src and "POST-MIGRATE" in src,
+         "SKILL.md 缺 context-warn PRE/POST migrate 分岔(#176)")
 
 # ── 檢查數地板:防止有人把上面整段刪成空迴圈仍然 exit 0 ──────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」(同 repo 慣例:
 # check-stage67-enforcement.sh:232、check-no-stale-paths.sh 的 MIN_CHECKS)。
-MIN_CHECKS = 36
+MIN_CHECKS = 38
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
@@ -290,5 +294,5 @@ print(f"✅ check-dev-setup-discipline: dev-setup upgrade 三方比對紀律齊(
 print("   三方比對 / baseline 落地段落 scoped / 逐檔徵同意 / 過渡態 / master-only 剝除"
       " / gate twin 相依 / mkdir 先於工具 cp / 落地在驗證後 / upgrade 來源綁 upstream-new"
       " / check 段散發副本 parity 讀 ship-manifest / upgrade 殘件刪除"
-      " / knowledge bootstrap + conflicts-queue")
+      " / knowledge bootstrap + conflicts-queue / #176 context-warn fork")
 PY
