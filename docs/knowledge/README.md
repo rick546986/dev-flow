@@ -65,7 +65,14 @@ items:
     detail: do-not-auto-pick; human must choose winner or supersede
 ```
 
-`CONTEXT.md`：只進 queue 當 **warn-candidate-only**（走既有 `migrate-legacy` → CANDIDATE）；**不**把內文灌進 index 當 routing 真相。
+`CONTEXT.md`：只進 queue 當 **warn-candidate-only**（走既有 `migrate-legacy` → CANDIDATE）；**不**把內文灌進 index 當 routing 真相；**不**自動刪檔。
+
+**Loud empty-glossary（#176）**：`dev-memory.py setup` / `migrate-legacy` **只跑 dry-run、沒有** `--apply --promote` 時，`.dev-flow/knowledge/` 仍缺／空，index topic 會一直是 `glossary: []`。**Dry-run ≠ complete.** 佇列 `context-warn.detail` 會分岔：
+
+| 狀態 | `context-warn.detail` CTA |
+|---|---|
+| 尚未 migrate（無 domain yaml／glossary 空） | `migrate-legacy` dry-run → `--apply --promote`；明寫 dry-run ≠ complete |
+| 已 migrate、CONTEXT 仍在 | 詞條已在 `.dev-flow/knowledge/domain/`（CANDIDATE）；等人確認無雙引後再刪；勿把 CONTEXT 當 routing 真相 |
 
 ## ADR frontmatter (Pilot-1 landed)
 

@@ -110,6 +110,51 @@ def scan_unparseable_filenames(root):
     return out
 
 
+# Pre-migrate CTA: CONTEXT still present and domain glossary not landed yet.
+CONTEXT_WARN_DETAIL_PRE_MIGRATE = (
+    "migrate-legacy dry-run then --apply --promote "
+    "(CANDIDATE + documentation only). "
+    "Dry-run alone leaves .dev-flow/knowledge/ absent/empty and index "
+    "topics glossary: [] — dry-run ≠ complete. "
+    "Do not resurrect CONTEXT.md as index/routing truth. "
+    "Delete only after owner confirms migrate + no dual cite."
+)
+
+# Post-migrate CTA: terms already in domain/; CONTEXT leftover only.
+CONTEXT_WARN_DETAIL_POST_MIGRATE = (
+    "terms already in .dev-flow/knowledge/domain/ (CANDIDATE); "
+    "CONTEXT still present → wait for owner to confirm no dual cite, "
+    "then delete CONTEXT; do not treat CONTEXT as routing truth. "
+    "Do not re-run migrate as if nothing landed."
+)
+
+
+def domain_glossary_landed(root, doc=None):
+    """True when domain yaml exists or index already points at glossary keys.
+
+    Used to fork context-warn copy: empty domain + empty glossary ⇒ still need
+    migrate-legacy --apply --promote; otherwise CONTEXT is leftover cleanup only.
+    Never auto-deletes CONTEXT.
+    """
+    domain_dir = os.path.join(root, ".dev-flow", "knowledge", "domain")
+    if os.path.isdir(domain_dir):
+        for name in os.listdir(domain_dir):
+            if name.endswith(".yaml") or name.endswith(".yml"):
+                return True
+    if doc:
+        for row in (doc.get("topics") or {}).values():
+            if row.get("glossary"):
+                return True
+    return False
+
+
+def context_warn_detail(root, doc=None):
+    """Queue detail for CONTEXT.md — pre vs post migrate (#176)."""
+    if domain_glossary_landed(root, doc):
+        return CONTEXT_WARN_DETAIL_POST_MIGRATE
+    return CONTEXT_WARN_DETAIL_PRE_MIGRATE
+
+
 def collect_queue_items(bki, root, doc, adrs):
     """Build structured human-queue items. Never invent a winner."""
     items = []
@@ -192,7 +237,8 @@ def collect_queue_items(bki, root, doc, adrs):
                 }
             )
 
-    # CONTEXT.md — warn/candidate only; never treat as routing truth
+    # CONTEXT.md — warn/candidate only; never treat as routing truth;
+    # never auto-delete. Detail forks on whether domain glossary already landed.
     context_path = None
     for candidate in ("CONTEXT.md", os.path.join("docs", "dev", "CONTEXT.md")):
         full = os.path.join(root, candidate)
@@ -211,12 +257,7 @@ def collect_queue_items(bki, root, doc, adrs):
                 "reason": "legacy-context-present",
                 "adr_ids": [],
                 "topic": None,
-                "detail": (
-                    "migrate-legacy dry-run then --apply --promote "
-                    "(CANDIDATE + documentation only). "
-                    "Do not resurrect CONTEXT.md as index/routing truth. "
-                    "Delete only after owner confirms migrate + no dual cite."
-                ),
+                "detail": context_warn_detail(root, doc),
             }
         )
 
@@ -291,10 +332,20 @@ def build_payload(bki, root):
     items, context = collect_queue_items(bki, root, doc, adrs)
     notes = list(doc.get("notes") or [])
     if context.get("status") == "warn-candidate-only":
-        notes.append(
-            "CONTEXT.md present — candidate/warn only; not index truth "
-            "(see conflicts-queue.yaml)."
-        )
+        if domain_glossary_landed(root, doc):
+            notes.append(
+                "CONTEXT.md still present after migrate — leftover only; "
+                "terms already in .dev-flow/knowledge/domain/ (CANDIDATE); "
+                "not index truth (see conflicts-queue.yaml). "
+                "Owner confirms no dual cite before delete; never auto-delete."
+            )
+        else:
+            notes.append(
+                "CONTEXT.md present — candidate/warn only; not index truth "
+                "(see conflicts-queue.yaml). "
+                "Index topics stay glossary: [] until migrate-legacy "
+                "--apply --promote; dry-run ≠ complete."
+            )
         doc["notes"] = notes
     yaml_text = bki.emit_yaml(doc)
     md_text = bki.emit_markdown(doc)

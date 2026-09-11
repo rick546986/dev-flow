@@ -6,6 +6,7 @@
 #   • --apply writes index.yaml + index.md + conflicts-queue.yaml
 #   • multi-active / bad-status / dangling / unparseable → queue (no auto-winner)
 #   • CONTEXT.md → warn-candidate-only (not resurrected as index truth)
+#   • #176 context-warn.detail forks: pre-migrate vs post-migrate
 #   • mother-shaped clean tree → empty queue
 #
 # 用法: scripts/test-bootstrap-knowledge-index.sh [pack]
@@ -32,7 +33,7 @@ import tempfile
 pack, tool = sys.argv[1], sys.argv[2]
 passed = 0
 failed = 0
-MIN_CASES = 10
+MIN_CASES = 14
 
 
 def run(root, *args):
@@ -112,7 +113,7 @@ def plant_conflicts(tmp):
         os.path.join(adr_dir, "0005-no-status.md"),
         "---\ntopics: [nostat]\nsupersedes: []\nsuperseded_by: null\n---\n# x\n",
     )
-    # CONTEXT.md warn only
+    # CONTEXT.md warn only — with domain yaml ⇒ post-migrate CTA (#176)
     write(os.path.join(root, "CONTEXT.md"), "# legacy glossary — not truth\n")
     # domain knowledge key (should index, not conflict)
     write(
@@ -122,11 +123,41 @@ def plant_conflicts(tmp):
     return root
 
 
+def plant_pre_migrate(tmp):
+    """CONTEXT present, no domain yaml → pre-migrate dry-run CTA."""
+    root = os.path.join(tmp, "pre-migrate")
+    adr(
+        os.path.join(root, "docs", "adr", "0001-solo.md"),
+        "accepted",
+        ["solo"],
+    )
+    write(os.path.join(root, "CONTEXT.md"), "# legacy glossary — not truth\n")
+    return root
+
+
+def plant_post_migrate(tmp):
+    """CONTEXT present + domain yaml → post-migrate leftover CTA."""
+    root = os.path.join(tmp, "post-migrate")
+    adr(
+        os.path.join(root, "docs", "adr", "0001-solo.md"),
+        "accepted",
+        ["solo"],
+    )
+    write(os.path.join(root, "CONTEXT.md"), "# legacy glossary — not truth\n")
+    write(
+        os.path.join(root, ".dev-flow", "knowledge", "domain", "sample.yaml"),
+        "kind: domain\nkey: sample\nstatus: CANDIDATE\nbody: |\n  from CONTEXT\n",
+    )
+    return root
+
+
 print("=== test-bootstrap-knowledge-index ===")
 
 with tempfile.TemporaryDirectory(prefix="df-kboot-") as tmp:
     clean = plant_clean(tmp)
     dirty = plant_conflicts(tmp)
+    pre = plant_pre_migrate(tmp)
+    post = plant_post_migrate(tmp)
 
     # 1) dry-run writes nothing
     before = set()
@@ -179,6 +210,13 @@ with tempfile.TemporaryDirectory(prefix="df-kboot-") as tmp:
         "status: warn-candidate-only" in qtext,
         qtext,
     )
+    # dirty plant has domain yaml → post-migrate leftover CTA (#176)
+    expect(
+        "dirty context-warn uses post-migrate detail",
+        "terms already in .dev-flow/knowledge/domain/" in qtext
+        and "migrate-legacy dry-run then --apply --promote" not in qtext,
+        qtext,
+    )
 
     ytext = open(yml, encoding="utf-8").read()
     # multi-active must not leave a single auto-picked active_adr winner
@@ -199,9 +237,9 @@ with tempfile.TemporaryDirectory(prefix="df-kboot-") as tmp:
     )
     expect(
         "CONTEXT path only appears as warn note (not topic body)",
-        "CONTEXT.md present — candidate/warn only" in ytext
+        "CONTEXT.md still present after migrate" in ytext
         and "legacy glossary" not in ytext,
-        ytext[:800],
+        ytext[:1200],
     )
 
     # 3) --check passes on freshly applied dirty tree
@@ -232,6 +270,66 @@ with tempfile.TemporaryDirectory(prefix="df-kboot-") as tmp:
         fh.write("# tampered\n")
     r = run(clean, "--check")
     expect("check fails on stale queue", r.returncode == 1, r.stdout + r.stderr)
+
+    # 6) #176 pre-migrate: CONTEXT + empty domain → dry-run CTA + empty-glossary loudness
+    r = run(pre, "--apply")
+    expect("pre-migrate apply exit 0", r.returncode == 0, r.stderr or r.stdout)
+    pq = open(
+        os.path.join(pre, "docs", "knowledge", "conflicts-queue.yaml"),
+        encoding="utf-8",
+    ).read()
+    expect(
+        "pre-migrate context-warn detail CTA",
+        "migrate-legacy dry-run then --apply --promote" in pq
+        and "dry-run" in pq
+        and "glossary: []" in pq
+        and "terms already in .dev-flow/knowledge/domain/" not in pq,
+        pq,
+    )
+    py = open(
+        os.path.join(pre, "docs", "knowledge", "index.yaml"), encoding="utf-8"
+    ).read()
+    expect(
+        "pre-migrate index note loud empty-glossary",
+        "glossary: [] until migrate-legacy" in py
+        and "dry-run" in py,
+        py[:1500],
+    )
+    # glossary pointers empty (no domain yaml)
+    expect(
+        "pre-migrate topic glossary empty",
+        re.search(r"solo:\n(?:.*\n)*?    glossary: \[\]\n", py) is not None,
+        py,
+    )
+
+    # 7) #176 post-migrate: CONTEXT + domain yaml → leftover CTA (no re-migrate)
+    r = run(post, "--apply")
+    expect("post-migrate apply exit 0", r.returncode == 0, r.stderr or r.stdout)
+    oq = open(
+        os.path.join(post, "docs", "knowledge", "conflicts-queue.yaml"),
+        encoding="utf-8",
+    ).read()
+    expect(
+        "post-migrate context-warn leftover detail",
+        "terms already in .dev-flow/knowledge/domain/" in oq
+        and "wait for owner to confirm no dual cite" in oq
+        and "Do not re-run migrate" in oq
+        and "migrate-legacy dry-run then --apply --promote" not in oq,
+        oq,
+    )
+    oy = open(
+        os.path.join(post, "docs", "knowledge", "index.yaml"), encoding="utf-8"
+    ).read()
+    expect(
+        "post-migrate index note leftover (not empty-glossary CTA)",
+        "CONTEXT.md still present after migrate" in oy
+        and "glossary: [] until migrate-legacy" not in oy,
+        oy[:1500],
+    )
+    expect(
+        "post-migrate does not auto-delete CONTEXT",
+        os.path.isfile(os.path.join(post, "CONTEXT.md")),
+    )
 
 print()
 print("passed=%d failed=%d (min %d)" % (passed, failed, MIN_CASES))

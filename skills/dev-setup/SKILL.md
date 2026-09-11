@@ -176,8 +176,11 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    `dev-memory.py migrate-legacy`(預設 dry-run,只回報會做什麼),把詞條數與
    目標分類回報給使用者;使用者同意後跑 `--apply --promote`,詞條會以
    **CANDIDATE + documentation authority** 落地(不標成已確認 —— 沒有人在遷移
-   那一刻重新確認過那些詞條)。遷移完成且使用者確認後才可刪 `CONTEXT.md`,
-   **dev-setup 不自動刪別人的檔**。
+   那一刻重新確認過那些詞條)。**Loud empty-glossary(#176)**:只跑 setup／
+   migrate dry-run、**沒有** `--apply --promote` 時,`.dev-flow/knowledge/`
+   仍缺／空,knowledge index topic 會一直是 `glossary: []` —— **dry-run ≠
+   complete**,不得當遷移完成。遷移完成且使用者確認無雙引後才可刪
+   `CONTEXT.md`,**dev-setup 不自動刪別人的檔**。
    `docs/dev/HISTORY.md` 只被**索引**進本機記憶(查得到「之前發生過什麼」),
    不複製進 `.dev-flow/events/` —— 同一份內容兩個 durable 正本必然漂移。
 1c. **Knowledge topic index bootstrap**(#155 knife-2;`dev-setup` 是採用專案
@@ -192,7 +195,11 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    queue;multi-active 時 index 的 `active_adr` 清空只留 conflicts 標籤。
    **CONTEXT.md**:若仍存在,只進 queue 當 `warn-candidate-only`(對齊步 1b 的
    migrate-legacy CANDIDATE 路徑),**不得**把 CONTEXT 內文灌進 index 當 routing
-   真相,也不得在本步刪檔。母版 repo 與產品專案同一命令(`--root` 指向專案根)。
+   真相,也不得在本步刪檔。`context-warn.detail` **依狀態分岔**(#176):尚未
+   migrate(無 domain yaml／glossary 空)→ 維持 dry-run → `--apply --promote`
+   CTA 並明寫 dry-run ≠ complete;已 migrate、CONTEXT 仍在 → 改寫「詞條已進
+   `.dev-flow/knowledge/domain/`(CANDIDATE);等人確認無雙引後再刪;勿當
+   routing 真相」。母版 repo 與產品專案同一命令(`--root` 指向專案根)。
    預覽用預設 dry-run(不加 `--apply`);牙齒:`scripts/test-bootstrap-knowledge-index.sh`。
 2. `.claude/rules/arch-invariants.md`:從 `_templates/arch-invariants.md` 建檔,**並自動產草稿**
    (不留空殼):
@@ -504,7 +511,10 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     走 install 步 1c / upgrade bootstrap `--apply` 補;②過期(與現掃 ADR/domain
     不一致)= stale,同樣 `--apply` 重生;③queue `items` 非空 → 回報「N 筆待人工
     裁決」,**不**自動修、不挑 winner;④`context.status: warn-candidate-only` →
-    提醒走步 1b migrate-legacy,不得把 CONTEXT 當 index 真相。
+    **分岔**(#176):若 index topic 仍 `glossary: []`／domain 空 → 提醒步 1b
+    `migrate-legacy --apply --promote`(**dry-run ≠ complete**);若 domain 已有
+    CANDIDATE 詞條 → 回報 CONTEXT 仍在、等人確認無雙引後再刪,**不得**把
+    CONTEXT 當 index 真相,也**不得**自動刪。
 
 ## fix / uninstall
 
