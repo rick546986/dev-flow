@@ -49,7 +49,9 @@ def parse_context_md(text):
     """解析詞彙表。回傳 [{key, title, body, avoid, proposed}]。
 
     只認舊模板明文規定的形狀(`**詞**:定義` + 選填 `_Avoid_:`)。
-    認不出來的行**原樣回報成 unparsed**,不猜 —— 猜錯會把散文塞成詞條。
+    詞條開啟後的非 `_Avoid_` 續行併入 body(真實 CONTEXT 常 wrap 表名/邊界)。
+    沒有開啟詞條時認不出來的行**原樣回報成 unparsed**,不猜 ——
+    猜錯會把散文塞成詞條。
     """
     terms = []
     unparsed = []
@@ -81,6 +83,10 @@ def parse_context_md(text):
             value = avoid.group("avoid").strip()
             if not _PLACEHOLDER.match(value):
                 current["avoid"] = value
+            continue
+        if current is not None:
+            # Wrap continuation of an open term — keep table names / 邊界.
+            current["body"] = current["body"] + "\n" + line
             continue
         unparsed.append(line)
     return terms, unparsed
@@ -127,6 +133,7 @@ def migrate(repo_root, store, apply_changes=False, promote=False, now=None):
         report["context_md"] = {
             "path": CONTEXT_FILE, "terms": len(terms),
             "unparsed_lines": len(unparsed),
+            "needs_owner_review": len(unparsed) > 0,
             "keys": [t["key"] for t in terms],
             "target": "knowledge/domain/(status={0}, authority={1})".format(
                 LEGACY_STATUS, LEGACY_AUTHORITY),
