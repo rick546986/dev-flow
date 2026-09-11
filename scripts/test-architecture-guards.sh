@@ -2408,13 +2408,13 @@ check_static_pin_sub() { # check_static_pin_sub <相對路徑> <期望子字串>
 }
 check_static_pin "hooks/selftest.sh" "MIN_CASES=454" "MIN_CASES 釘死 454(2026-08-17 清空輪 378 之後,2026-08-19 §7 前置修復:s7 legacy sequential 真跑 start 驗證+6/s7b VNext feature-scope 同型驗證+2/s7c Stage 7 review 自建武裝同型驗證+3 → 389,同日 §7-3b 探針 pst 真實 subagent_type payload 形狀釘住+3 → 392,2026-08-20 issue #7 路徑分隔符 w1 組+6 → 398,同日派工單 §2.1 TMPDIR 跨平台正規化 w2 組+2 → 400,同日 report-guard 覆蓋缺口+2 → 402,2026-08-29 Bash 寫入 prevent-before +3 → 405,2026-09-02 PR #110 fail-closed 收斂 +5 → 410,2026-09-04 #98 值掃描重做 +1/#101 壞 payload 武裝判斷 +12/#103 --strict 重讀漏包 +7 → 430,同日 r2-#98 對抗審查 F1 x_ 剝除迴圈補案(x__customer_data)+1 → 431,同日 #102 仲裁拆半 EXEC_SCHEMAS 對帳 +1 → 432,同日 issue #109 report-guard 三處路徑判定誤擋回歸補 4 案 → 436,同日 fresh 驗收 medium:DEVFLOW_MASTER 優先序 1 補 name=dev-flow 驗證 +1 → 437,同日 #103 repair 子命令 +8/ensure_manifest O_EXCL 互斥 +3 → 448,同日 fresh 驗收 r3-#103:cmd_repair run_id 路徑穿越攔截 +5/ensure_manifest hardlink 不支援退回 +1 → 454)"
 check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "EXPECTED_CHECKS 釘死 131"
-check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 32" "MIN_CHECKS 釘死 32(A-2/B-5 輪 → 18;2026-08-28 ⑪殘件 +5 → 23;⑫Python 地板 +2 → 25;HISTORY 種子不准自動清 +1 → 26;ship-manifest ⑩ +1 → 27;2026-09-04 #96 ⑬trash 目錄進 .gitignore +1 → 28;同日複驗 ⑬改 scoped 兩段斷言 +1 → 29;2026-09-10 host-stack-fit I2 +3 → 32)"
+check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 36" "MIN_CHECKS 釘死 36(A-2/B-5 輪 → 18;2026-08-28 ⑪殘件 +5 → 23;⑫Python 地板 +2 → 25;HISTORY 種子不准自動清 +1 → 26;ship-manifest ⑩ +1 → 27;2026-09-04 #96 ⑬trash 目錄進 .gitignore +1 → 28;同日複驗 ⑬改 scoped 兩段斷言 +1 → 29;2026-09-10 host-stack-fit I2 +3 → 32;#155 knife-2 knowledge bootstrap +4 → 36)"
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 179" "MIN_CHECKS 釘死 179(Human verdict 寫入器納入 n7-dist-copy +1 後的實得數)"
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 36" "MIN_CHECKS 釘死 36(parity 遷到 check-ship-manifest.sh 後,情境/mutant/模板順序實得數)"
 check_static_pin "scripts/check-ship-manifest.sh" "MIN_CHECKS = 21" "MIN_CHECKS 釘死 21(結構+parity+地圖對帳+負向 fixture 的實得數;issue #92 補全列 source 存在 +2、第三類列負向 fixture +4,15→21)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 55" "MIN_CHECKS 釘死 55(STATUS 單寫入者 + OverlapRef 單一座標:⑬b/⑬c + 負向㉘–㉟ 後的實得數)"
 check_static_pin "scripts/check-py-floor.sh" "MIN_HEREDOCS = 214" "MIN_HEREDOCS 釘死 214(#113 heredoc 掃描補上後的實得數,精確值不留餘裕)"
-check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 199" "EXPECTED_MAPPED_FILES 釘死 199(精確值;knowledge-index +2、proof-knowledge-index-call-path.py +1、knife-2 ask knowledge_index +2)"
+check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 201" "EXPECTED_MAPPED_FILES 釘死 201(精確值;knowledge-index +2、proof-knowledge-index-call-path.py +1、knife-2 ask knowledge_index +2、knowledge bootstrap +2)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 28" "EXPECTED_GROUPS 釘死 28(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的

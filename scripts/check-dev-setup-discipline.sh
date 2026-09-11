@@ -29,6 +29,8 @@
 #   ⑫產圖／gate-twin 要 Python 3.12+ 專案 venv 或 DEVFLOW_PYTHON,不要覆寫系統 Python
 #   ⑬trash 目錄(docs/dev/.devflow-upgrade-trash/)要獨立列一條進 .gitignore,
 #     不准埋在殘件刪除段落裡一筆帶過
+#   ⑭knowledge index bootstrap(#155 knife-2):bootstrap-knowledge-index.py、
+#     conflicts-queue.yaml、CONTEXT warn-candidate-only、衝突永不自動挑 winner
 #
 # 用法:
 #   scripts/check-dev-setup-discipline.sh [root]   # 缺省 = repo root
@@ -259,10 +261,21 @@ if src:
     need("依賴變了要重跑" in src,
          "SKILL.md 沒有「依賴變了要重跑」—— pull 之後盤點會默默過期")
 
+    # ── ⑭ knowledge index bootstrap(#155 knife-2)────────────────────────────
+    need("bootstrap-knowledge-index.py" in src,
+         "SKILL.md 沒點名 bootstrap-knowledge-index.py —— 既有專案 upgrade 拿不到 topic index")
+    need("conflicts-queue.yaml" in src,
+         "SKILL.md 沒點名 conflicts-queue.yaml —— 衝突會被安靜吞掉或自動挑 winner")
+    need("warn-candidate-only" in src or "warn-candidate" in src,
+         "SKILL.md 沒交代 CONTEXT.md 只 warn/candidate —— 容易把 CONTEXT 復活成 index 真相")
+    need("不得**代為挑選" in src or "不得代為挑選" in src or "永不自動挑" in src
+         or "衝突永不自動挑" in src,
+         "SKILL.md 沒有「衝突永不自動挑 winner」禁令 —— upgrade 可能代裁 multi-active")
+
 # ── 檢查數地板:防止有人把上面整段刪成空迴圈仍然 exit 0 ──────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」(同 repo 慣例:
 # check-stage67-enforcement.sh:232、check-no-stale-paths.sh 的 MIN_CHECKS)。
-MIN_CHECKS = 32
+MIN_CHECKS = 36
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
@@ -276,5 +289,6 @@ if fails:
 print(f"✅ check-dev-setup-discipline: dev-setup upgrade 三方比對紀律齊({checks} 項檢查全過)")
 print("   三方比對 / baseline 落地段落 scoped / 逐檔徵同意 / 過渡態 / master-only 剝除"
       " / gate twin 相依 / mkdir 先於工具 cp / 落地在驗證後 / upgrade 來源綁 upstream-new"
-      " / check 段散發副本 parity 讀 ship-manifest / upgrade 殘件刪除")
+      " / check 段散發副本 parity 讀 ship-manifest / upgrade 殘件刪除"
+      " / knowledge bootstrap + conflicts-queue")
 PY

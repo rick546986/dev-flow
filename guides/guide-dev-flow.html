@@ -3377,6 +3377,12 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     <tr><td><code>proof-knowledge-index-call-path.py</code></td>
         <td>#155 Pilot-3：短索引 topic → active ADR 路徑 → 檔案存在的 call-path 自測(無生產索引時用 fixtures/knowledge-index)。</td>
         <td>人工/Pilot 自測</td><td>人工</td></tr>
+    <tr><td><code>bootstrap-knowledge-index.py</code></td>
+        <td>#155 knife-2：採用專案／母版掃 ADR+domain，寫出 index.yaml、人讀 twin、conflicts-queue（衝突永不自動挑 winner；CONTEXT 只 warn）。</td>
+        <td><code>dev-setup</code> install 1c／upgrade／fix；<code>check-knowledge-index.sh</code></td><td>人工/CI</td></tr>
+    <tr><td><code>test-bootstrap-knowledge-index.sh</code></td>
+        <td>bootstrap 牙齒：dry-run 不寫入、--apply 三檔齊、multi-active／bad-status／dangling／unparseable／CONTEXT warn 進 queue。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI</td></tr>
     <tr><td><code>check-design-contract.sh</code></td>
         <td>檢查規格文件裡的邊界表格欄位有沒有填齊,只驗形狀在不在,不判斷寫得好不好。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
