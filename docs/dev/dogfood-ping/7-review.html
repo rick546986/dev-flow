@@ -239,12 +239,12 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <h1>dogfood-ping</h1>
   <p class="sub">正本是 <code>docs/dev/dogfood-ping/7-review.md</code>,
   這頁隨時可重生。<strong>審完頂區五格再決定要不要往下讀。</strong></p>
-  <div class="dash"><a class="cell" href="#sec-Verdict"><span class="k">判定</span><span class="v">PRE-REVIEW</span><span class="n">frontmatter verdict</span></a><a class="cell" href="#sec-Exit-Checklist-全勾才算-shipped-多數留給-Human-merge-後"><span class="k">出貨</span><span class="v">4/10</span><span class="n">Exit Checklist</span></a><a class="cell" href="#sec-附錄-本輪特有"><span class="k">爭點</span><span class="v">4 條</span><span class="n">附錄:本輪特有</span></a><a class="cell" href="#sec-Known-Limits"><span class="k">風險</span><span class="v">5 條</span><span class="n">Known Limits</span></a><a class="cell" href="#sec-Coverage-Matrix"><span class="k">抽驗</span><span class="v">S-3</span><span class="n">對得上才信剩下的</span></a></div>
+  <div class="dash"><a class="cell" href="#sec-Verdict"><span class="k">判定</span><span class="v">PASS</span><span class="n">frontmatter verdict</span></a><a class="cell" href="#sec-Exit-Checklist-全勾才算-shipped-多數留給-Human-merge-後"><span class="k">出貨</span><span class="v">7/10</span><span class="n">Exit Checklist</span></a><a class="cell" href="#sec-附錄-本輪特有"><span class="k">爭點</span><span class="v">5 條</span><span class="n">附錄:本輪特有</span></a><a class="cell" href="#sec-Known-Limits"><span class="k">風險</span><span class="v">5 條</span><span class="n">Known Limits</span></a><a class="cell" href="#sec-Coverage-Matrix"><span class="k">抽驗</span><span class="v">S-3</span><span class="n">對得上才信剩下的</span></a></div>
 </header>
-<section class="pinned" id="sec-限制聲明-Author-pack-pre-review-非-G3"><h2>⚠️ 限制聲明（Author pack／pre-review；非 G3）</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>本檔作者</th><th>Stage 7 <strong>author Agent A</strong>（彙整／交接）</th></tr></thead><tbody><tr><td>不是誰</td><td><strong>不是</strong>獨立 G3 reviewer；<strong>不是</strong> Human；<strong>不得</strong>自簽 G3 PASS</td></tr><tr><td>建議下一棒</td><td>① <strong>獨立 reviewer B ≠ A</strong>（fresh context）接管 <code>7-review.md</code>＋重生 html → ② <strong>owner Human</strong> 在 gate twin 提交判定（<code>verdict:</code>）</td></tr><tr><td>讀取順序（給 B）</td><td>先讀 <code>4-spec.md</code>／<code>5-tasks.md</code>／diff／本檔現象證據表並<strong>親重跑</strong>；再讀 <code>6-implementation-notes.md</code>；<strong>勿採信本檔作者主張取代親跑</strong></td></tr><tr><td>Stage6 獨立審</td><td>PR #164 review [5168696526](https://github.com/rick546986/dev-flow/pull/164#pullrequestreview-5168696526) <strong>PASS</strong>（reviewer ≠ implementer；@ <code>a940b4d</code>）——可作 R/S 證據鏈索引，<strong>不代替</strong> Stage7 親跑</td></tr></tbody></table></div><p><strong>哪些結論可信、哪些要打折（給 B／owner）</strong></p><div class="tablewrap"><table><thead><tr><th>類</th><th>可信度</th><th>為什麼</th></tr></thead><tbody><tr><td>機械數字（hex、exit、<code>check-file-map</code> scanned=194）</td><td><strong>可信（可複驗）</strong></td><td>Author A 本輪親跑；指令在現象證據／附錄</td></tr><tr><td>Coverage Matrix 對應</td><td><strong>中等</strong></td><td>對齊 4-spec + Stage6 Verify + Stage6 獨立審；B 須抽驗 <code>檔:行</code></td></tr><tr><td>F-id／「有沒有漏的」</td><td><strong>要打折</strong></td><td>本檔是 author pack，不是獨立雙軸審完稿</td></tr></tbody></table></div></div></section><section class="pinned" id="sec-Verdict"><h2>Verdict</h2><div class="doc-in"><p><strong>PRE-REVIEW</strong> —— <strong>不是 G3 PASS。</strong> Author A 證據包就緒；<strong>獨立 reviewer B ≠ A</strong> 須接管本檔並親跑後才能建議判定；<strong>Human</strong> 才可把 <code>verdict:</code> 寫成 PASS／REQUEST_CHANGES／HOLD。</p><div class="tablewrap"><table><thead><tr><th>門檻</th><th>Author 證據</th><th>誰簽</th></tr></thead><tbody><tr><td>本次 S 全綠</td><td>Coverage Matrix S-1～S-4 ✅（author 複驗）</td><td>B 親跑確認 → Human G3</td></tr><tr><td>既有回歸綠</td><td><code>check-file-map.sh</code> exit 0</td><td>同上</td></tr><tr><td>現象證據逐 S</td><td>本檔現象表 + hex/exit</td><td>B 必須重跑</td></tr><tr><td>Evidence 契約／Gauntlet</td><td>未完成 Final Fresh</td><td>B</td></tr><tr><td>無 🔴</td><td>Author 初掃無產品行為 🔴</td><td>B 雙軸</td></tr></tbody></table></div><p>整合回歸（author 跑）：<code>STATUS=N_A_NO_INCOMING FORK=0a89ec85ae2cf3ee0c555b82441caa323e77c10f HEAD=a940b4dfe38cffe9e3d597c88fe5e85c05aeb53b INTEGRATION=0a89ec85ae2cf3ee0c555b82441caa323e77c10f(refs/remotes/origin/main)</code> —— 分岔後 main 零新 commit。<strong>B 在 Final Fresh 前若 HEAD 已變，須重跑腳本。</strong></p></div></section><section class="pinned" id="sec-Known-Limits"><h2>Known Limits</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>#</th><th>限制</th><th>嚴重度</th><th>建議處置</th></tr></thead><tbody><tr><td>1</td><td>Stage2 審頁「方案依據」超寬橫表／手機裁切</td><td>🟡（dogfood 摩擦；非本產品行為）</td><td>park → [#165](https://github.com/rick546986/dev-flow/issues/165)；本 PR 不修</td></tr><tr><td>2</td><td>Cloud／部分 VM 跑全套 <code>test-architecture-guards.sh</code> 可能撞環境 PF-0（無 Python 3.9–3.11）——Stage6 獨立審已標 <strong>outside</strong> T-1/T-2 Verify</td><td>🟢</td><td>維持；本 feat 回歸入口以 <code>check-file-map.sh</code> 為準；全 guards 另環境</td></tr><tr><td>3</td><td>4-spec Verification Profile <strong>無 `Required layers` 欄</strong>（契約允許寫「無」/none/n-a，但缺欄 ≠ 零層）→ Gauntlet <code>--review-file</code> 可能紅</td><td>🟡（流程／文件形狀；G2 已 PASS）</td><td>owner／B：L2 回補一行 <code>Required layers: 無</code>，或 G3 明示 gauntlet 降級；<strong>勿默默當跑過</strong></td></tr><tr><td>4</td><td>Example 鏡像與 feat 正本可能短暫漂移（B 改 7-review 後須同步 <code>example/dogfood-ping/7-review.*</code> 或 merge packing 再刷）</td><td>🟢</td><td>Exit 勾 Example 同步；合 main 前核對</td></tr><tr><td>5</td><td>本檔 = author PRE-REVIEW；<strong>尚未</strong>獨立雙軸完稿</td><td>🟡（程序）</td><td>等 reviewer B ≠ A；再 Human G3；<strong>禁 merge</strong></td></tr></tbody></table></div></div></section>
+<section class="pinned" id="sec-限制聲明-G3-密封後-作者-B-Human-角色"><h2>⚠️ 限制聲明（G3 密封後；作者／B／Human 角色）</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>Author A</th><th>Stage 7 彙整／交接（曾為 PRE-REVIEW pack）</th></tr></thead><tbody><tr><td>Reviewer B</td><td>獨立建議 PASS（<code>7-reviewer-B-notes.md</code>）；<strong>未</strong>代填 Human <code>verdict:</code></td></tr><tr><td>Human G3</td><td>owner <code>rick-dev-flow</code> → <strong>PASS</strong> 2026-09-11 (Asia/Taipei)</td></tr><tr><td>讀取順序（稽核）</td><td><code>4-spec</code>／<code>5-tasks</code>／diff／現象表／B notes；勿只信作者主張</td></tr></tbody></table></div></div></section><section class="pinned" id="sec-Verdict"><h2>Verdict</h2><div class="doc-in"><p><strong>PASS</strong> —— <strong>Human G3 PASS by owner（rick-dev-flow）on 2026-09-11 (Asia/Taipei)。</strong></p><p>依據：Author A 證據包 + 獨立 reviewer B（<code>7-reviewer-B-notes.md</code>，@ <code>36c68db</code>）親跑 S-1～S-4 全綠、建議 PASS；owner 採納並提交本檔 <code>verdict: PASS</code>。准 squash-merge PR [#164](https://github.com/rick546986/dev-flow/pull/164) → <code>main</code> 落 Example。</p><div class="tablewrap"><table><thead><tr><th>門檻</th><th>證據</th><th>簽署</th></tr></thead><tbody><tr><td>本次 S 全綠</td><td>Coverage Matrix S-1～S-4 ✅；B 複驗 hex／exit／file-map 194</td><td>Human G3</td></tr><tr><td>既有回歸綠</td><td><code>check-file-map.sh</code> exit 0</td><td>Human G3</td></tr><tr><td>現象證據逐 S</td><td>本檔現象表 + B notes</td><td>Human G3</td></tr><tr><td>Evidence／Gauntlet</td><td>KL #3：缺 <code>Required layers</code> → Gauntlet 明示<strong>降級</strong>（不默認跑過）；不擋產品 PASS</td><td>Human G3</td></tr><tr><td>無 🔴</td><td>Author／B 無產品行為 🔴</td><td>Human G3</td></tr></tbody></table></div><p>整合回歸（author @ Stage6）：<code>STATUS=N_A_NO_INCOMING FORK=0a89ec85ae2cf3ee0c555b82441caa323e77c10f HEAD=a940b4dfe38cffe9e3d597c88fe5e85c05aeb53b INTEGRATION=0a89ec85ae2cf3ee0c555b82441caa323e77c10f(refs/remotes/origin/main)</code>。B @ <code>36c68db</code> 重跑腳本綠；其後僅文件／Example／G3 密封，無產品行為碼變更。</p></div></section><section class="pinned" id="sec-Known-Limits"><h2>Known Limits</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>#</th><th>限制</th><th>嚴重度</th><th>建議處置</th></tr></thead><tbody><tr><td>1</td><td>Stage2 審頁「方案依據」超寬橫表／手機裁切</td><td>🟡（dogfood 摩擦；非本產品行為）</td><td>park → [#165](https://github.com/rick546986/dev-flow/issues/165)；本 PR 不修</td></tr><tr><td>2</td><td>Cloud／部分 VM 跑全套 <code>test-architecture-guards.sh</code> 可能撞環境 PF-0（無 Python 3.9–3.11）——Stage6 獨立審已標 <strong>outside</strong> T-1/T-2 Verify</td><td>🟢</td><td>維持；本 feat 回歸入口以 <code>check-file-map.sh</code> 為準；全 guards 另環境</td></tr><tr><td>3</td><td>4-spec Verification Profile <strong>無 `Required layers` 欄</strong>（契約允許寫「無」/none/n-a，但缺欄 ≠ 零層）→ Gauntlet <code>--review-file</code> 可能紅</td><td>🟡（流程／文件形狀；G2 已 PASS）</td><td><strong>G3 明示降級</strong>（不默認跑過）；另票 L2 補欄可選</td></tr><tr><td>4</td><td>Example 鏡像與 feat 正本可能短暫漂移（B 改 7-review 後須同步 <code>example/dogfood-ping/7-review.*</code> 或 merge packing 再刷）</td><td>🟢</td><td>Exit 勾 Example 同步；合 main 前核對</td></tr><tr><td>5</td><td>（已關閉）曾為 author PRE-REVIEW／待 B＋Human</td><td>—</td><td>B 建議 PASS + Human G3 PASS 2026-09-11</td></tr></tbody></table></div></div></section>
 <div class="progress">
   <div class="progress-in">
-    <span class="count">已審 <b id="done">0</b> / 29 條</span>
+    <span class="count">已審 <b id="done">0</b> / 30 條</span>
     <span class="bar"><i></i></span>
     <button class="btn" id="clear" type="button">清除勾選</button>
   </div>
@@ -254,11 +254,11 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="判定">
     <span class="s-id">判定</span>
-    <span class="s-title">PRE-REVIEW</span>
+    <span class="s-title">PASS</span>
     <span class="tag base">判定</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>判定 這列不打開 7-review.md、只靠標的檔:行能判失敗嗎？</span></li><li><span class="qmark">?</span><span>判定 這列的結論，有沒有被 Coverage Matrix 授權？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">判定</span><span class="gwt-v">PRE-REVIEW</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>判定寫 PASS，Coverage Matrix 每一列都授權了嗎？</span></li><li><span class="qmark">?</span><span>判定正文沒有檔:行，不打開 7-review.md 能判 PASS 失敗嗎？</span></li><li><span class="qmark">?</span><span>Matrix 若有一列其實沒綠，這個 PASS 還算被授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">判定</span><span class="gwt-v">PASS</span></div></div>
     
   </div>
 </article></section><section class="r-block" id="sec-Exit-Checklist-全勾才算-shipped-多數留給-Human-merge-後"><div class="r-head"><span class="r-name">Exit Checklist(全勾才算 shipped — 多數留給 Human／merge 後)</span></div><article class="s-card" data-sid="EC-1">
@@ -269,7 +269,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">已勾</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-1 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-1 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-1 只改文件、測試沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-1 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-1 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-1 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article><article class="s-card" data-sid="EC-2">
@@ -277,32 +277,32 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <input type="checkbox" class="s-chk" data-sid="EC-2">
     <span class="s-id">EC-2</span>
     <span class="s-title">Quiz: n-a（fast lane 免；非不可逆 schema／API）</span>
-    <span class="tag base">出貨</span>
+    <span class="tag base">已勾</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-2 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-2 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-2 標了不可逆，Quiz 沒過能否決出貨嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-2 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-2 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-2 標了不可逆，Quiz 沒過能否決出貨嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article><article class="s-card" data-sid="EC-3">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="EC-3">
     <span class="s-id">EC-3</span>
-    <span class="s-title">(條件式)整合回歸已在 Final Fresh <strong>之前</strong>記錄: author 已貼 <code>N_A_NO_INCOMING</code> + 三 SHA（見 Verdict）。<strong>注意</strong>：本 author 後續若只加文件／Example，B 做 Final Fresh 前須重跑腳本綁新 HEAD；Verdict 後禁改程式碼</span>
+    <span class="s-title">(條件式)整合回歸已在 Final Fresh <strong>之前</strong>記錄: author 已貼 <code>N_A_NO_INCOMING</code> + 三 SHA（見 Verdict）；B @ <code>36c68db</code> 重跑綠；G3 後禁改產品行為碼</span>
     <span class="tag base">已勾</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-3 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-3 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-3 只改文件、測試沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-3 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-3 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-3 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article><article class="s-card" data-sid="EC-4">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="EC-4">
     <span class="s-id">EC-4</span>
-    <span class="s-title">PR → develop: <strong>本 repo 整合分支 = `main`</strong>（非 develop）。PR [#164](https://github.com/rick546986/dev-flow/pull/164) draft → main；<strong>等 B + Human G3 後才准 merge</strong>（owner）</span>
+    <span class="s-title">PR → main: PR [#164](https://github.com/rick546986/dev-flow/pull/164)；<strong>Human G3 PASS 已簽 → merge in progress</strong></span>
     <span class="tag base">出貨</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-4 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-4 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-4 這項跟 Matrix 綠不綠無關，沒做完 PRE-REVIEW 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-4 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-4 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-4 這項跟 Matrix 綠不綠無關，沒做完 PASS 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article><article class="s-card" data-sid="EC-5">
@@ -310,10 +310,10 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <input type="checkbox" class="s-chk" data-sid="EC-5">
     <span class="s-id">EC-5</span>
     <span class="s-title">4-spec delta 已併入 <code>docs/specs/&lt;domain&gt;.md</code>: n-a（本 repo 無對應 living domain spec 要併；極小 CLI dogfood）</span>
-    <span class="tag base">出貨</span>
+    <span class="tag base">已勾</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-5 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-5 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-5 只改文件、測試沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-5 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-5 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-5 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article><article class="s-card" data-sid="EC-6">
@@ -324,29 +324,29 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">出貨</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-6 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-6 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-6 這項跟 Matrix 綠不綠無關，沒做完 PRE-REVIEW 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-6 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-6 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-6 這項跟 Matrix 綠不綠無關，沒做完 PASS 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article><article class="s-card" data-sid="EC-7">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="EC-7">
     <span class="s-id">EC-7</span>
-    <span class="s-title">7-review frontmatter <code>status: shipped</code> + <code>verdict:</code> Human PASS（<strong>僅 Human</strong>；現為 <code>draft</code> / <code>PRE-REVIEW</code>）</span>
-    <span class="tag base">出貨</span>
+    <span class="s-title">7-review frontmatter <code>verdict: PASS</code>（Human G3）；<code>status: approved</code>（<code>shipped</code> 留 merge 後）</span>
+    <span class="tag base">已勾</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-7 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-7 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-7 這項跟 Matrix 綠不綠無關，沒做完 PRE-REVIEW 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-7 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-7 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-7 這項跟 Matrix 綠不綠無關，沒做完 PASS 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article><article class="s-card" data-sid="EC-8">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="EC-8">
     <span class="s-id">EC-8</span>
-    <span class="s-title">7-review.html 已產生（author twin；B 改 md 後須重生）</span>
+    <span class="s-title">7-review.html 已產生／G3 密封後重生</span>
     <span class="tag base">已勾</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-8 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-8 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-8 只改文件、測試沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-8 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-8 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-8 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article><article class="s-card" data-sid="EC-9">
@@ -357,7 +357,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">已勾</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-9 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-9 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-9 只改文件、測試沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-9 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-9 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-9 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article><article class="s-card" data-sid="EC-10">
@@ -368,18 +368,18 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">出貨</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-10 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-10 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-10 這項跟 Matrix 綠不綠無關，沒做完 PRE-REVIEW 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-10 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-10 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-10 這項跟 Matrix 綠不綠無關，沒做完 PASS 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article></section><section class="r-block" id="sec-爭點"><div class="r-head"><span class="r-name">爭點</span></div><article class="s-card" data-sid="A1">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="A1">
     <span class="s-id">A1</span>
-    <span class="s-title">角色：Author pack ≠ G3</span>
+    <span class="s-title">角色鏈：Author → B → Human G3</span>
     <span class="tag base">爭點</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A1 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A1 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A1 這則若成立，Coverage Matrix 還授權 PRE-REVIEW 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">本檔履行模板步 0a：自審／交接形狀可用 7-review，但 verdict: 必須 PRE-REVIEW、標題寫明不是 G3 PASS、並列…</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A1 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A1 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A1 這則若成立，Coverage Matrix 還授權 PASS 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">Author pack（PRE-REVIEW）→ 獨立 B notes（建議 PASS，未代填 frontmatter）→ Human G3 P…</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="A2">
@@ -390,18 +390,18 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">爭點</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A2 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A2 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A2 這則若成立，Coverage Matrix 還授權 PRE-REVIEW 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">URL: https://github.com/rick546986/dev-flow/pull/164#pullrequestreview-5…</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A2 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A2 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A2 這則若成立，Coverage Matrix 還授權 PASS 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">URL: https://github.com/rick546986/dev-flow/pull/164#pullrequestreview-5…</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="A3">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="A3">
     <span class="s-id">A3</span>
-    <span class="s-title">Author 現象原始輸出（摘要）</span>
+    <span class="s-title">Author／B 現象原始輸出（摘要）</span>
     <span class="tag base">爭點</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A3 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A3 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A3 這則若成立，Coverage Matrix 還授權 PRE-REVIEW 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">—</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A3 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A3 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A3 這則若成立，Coverage Matrix 還授權 PASS 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">—</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="A4">
@@ -412,7 +412,18 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">爭點</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A4 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A4 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A4 這則若成立，Coverage Matrix 還授權 PRE-REVIEW 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">Stage2 方案依據超寬表 → [#165](https://github.com/rick546986/dev-flow/issues/16…</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A4 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A4 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A4 這則若成立，Coverage Matrix 還授權 PASS 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">Stage2 方案依據超寬表 → [#165](https://github.com/rick546986/dev-flow/issues/16…</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A5">
+    <span class="s-id">A5</span>
+    <span class="s-title">Human G3 確認紀錄</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A5 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A5 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A5 這則若成立，Coverage Matrix 還授權 PASS 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">G3 | 2026-09-11 (Asia/Taipei) | owner（rick-dev-flow）明示 G3 PASS</span></div></div>
     
   </div>
 </article></section><section class="r-block" id="sec-風險"><div class="r-head"><span class="r-name">風險</span></div><article class="s-card" data-sid="KL-1">
@@ -423,7 +434,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-1 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-1 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-1 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">🟡（dogfood 摩擦；非本產品行為）</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">park → [#165](https://github.com/rick546986/dev-flow/issues/165)；本 PR 不修</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-1 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-1 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-1 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">🟡（dogfood 摩擦；非本產品行為）</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">park → [#165](https://github.com/rick546986/dev-flow/issues/165)；本 PR 不修</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-2">
@@ -434,7 +445,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-2 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-2 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-2 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">🟢</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">維持；本 feat 回歸入口以 <code>check-file-map.sh</code> 為準；全 guards 另環境</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-2 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-2 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-2 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">🟢</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">維持；本 feat 回歸入口以 <code>check-file-map.sh</code> 為準；全 guards 另環境</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-3">
@@ -445,7 +456,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-3 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-3 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-3 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">🟡（流程／文件形狀；G2 已 PASS）</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">owner／B：L2 回補一行 <code>Required layers: 無</code>，或 G3 明示 gauntlet 降級；<strong>勿默默當跑過</strong></span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-3 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-3 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-3 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">🟡（流程／文件形狀；G2 已 PASS）</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v"><strong>G3 明示降級</strong>（不默認跑過）；另票 L2 補欄可選</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-4">
@@ -456,18 +467,18 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-4 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-4 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-4 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">🟢</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">Exit 勾 Example 同步；合 main 前核對</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-4 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-4 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-4 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">🟢</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">Exit 勾 Example 同步；合 main 前核對</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-5">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="KL-5">
     <span class="s-id">KL-5</span>
-    <span class="s-title">本檔 = author PRE-REVIEW；<strong>尚未</strong>獨立雙軸完稿</span>
+    <span class="s-title">（已關閉）曾為 author PRE-REVIEW／待 B＋Human</span>
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-5 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-5 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-5 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">🟡（程序）</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">等 reviewer B ≠ A；再 Human G3；<strong>禁 merge</strong></span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-5 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-5 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-5 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">—</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">B 建議 PASS + Human G3 PASS 2026-09-11</span></div></div>
     
   </div>
 </article></section><section class="r-block" id="sec-Coverage-Matrix"><div class="r-head"><span class="r-name">Coverage Matrix</span></div><article class="s-card" data-sid="S-1">
@@ -478,7 +489,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1 這列只靠 scripts/dogfood-ping.sh:1 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅（author 複驗；待 B 親簽）</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1 這列只靠 scripts/dogfood-ping.sh:1 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅（author 複驗；待 B 親簽）</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-2">
@@ -489,7 +500,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅（author 複驗；待 B 親簽）</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅（author 複驗；待 B 親簽）</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-3">
@@ -500,7 +511,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅（author 複驗；待 B 親簽）</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅（author 複驗；待 B 親簽）</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-4">
@@ -511,7 +522,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4 這列只靠 scripts/test-architecture-guards.sh:2417 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅（author 複驗；待 B 親簽）</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4 這列只靠 scripts/test-architecture-guards.sh:2417 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅（author 複驗；待 B 親簽）</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="既有測試套件(回歸)">
@@ -522,7 +533,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列若其實沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅ exit 0（見下）</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列若其實沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅ exit 0（見下）</span></div></div>
     
   </div>
 </article></section><section class="r-block" id="sec-現象證據-逐-S-對照-4-spec-的-觀測-欄"><div class="r-head"><span class="r-name">現象證據(逐 S,對照 4-spec 的「觀測」欄)</span></div><article class="s-card" data-sid="S-1">
@@ -533,7 +544,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1 只靠 scripts/dogfood-ping.sh:1 能判這列失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>test -x</code> ✅；<code>head -n1</code> → <code>#!/usr/bin/env bash</code>（<code>scripts/dogfood-ping.sh:1</code>）；行程可啟動</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1 只靠 scripts/dogfood-ping.sh:1 能判這列失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>test -x</code> ✅；<code>head -n1</code> → <code>#!/usr/bin/env bash</code>（<code>scripts/dogfood-ping.sh:1</code>）；行程可啟動</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-2">
@@ -544,7 +555,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>od -An -tx1</code> → <code>64 6f 67 66 6f 6f 64 2d 6f 6b 0a</code>；<code>cmp</code> → CMP_OK</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-2 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>od -An -tx1</code> → <code>64 6f 67 66 6f 6f 64 2d 6f 6b 0a</code>；<code>cmp</code> → CMP_OK</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-3">
@@ -555,7 +566,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">同趟 <code>exit=0</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">同趟 <code>exit=0</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-4">
@@ -566,13 +577,13 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-4 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">exit 0；<code>scanned=194</code>；PASS forward/reverse</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-4 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">exit 0；<code>scanned=194</code>；PASS forward/reverse</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article></section>
 </div>
 <h2 class="apx-h">背景資料(預設收合,內容零刪減)</h2>
-<details class="doc" id="sec-人讀摘要-給-owner"><summary><span>人讀摘要（給 owner）</span></summary><div class="doc-in"><ul><li>產品：<code>scripts/dogfood-ping.sh</code> 印恰好 <code>dogfood-ok</code>+LF、exit 0；file-map 地板 194 綠。</li><li>Stage 1–6 已過（G1 lean PASS、G2 PASS、Stage6 implementer + <strong>獨立 Stage6 review PASS</strong> on PR [#164](https://github.com/rick546986/dev-flow/pull/164)）。</li><li>落地決策：合 main → Example <code>example/dogfood-ping</code>；feat 正本仍 <code>docs/dev/dogfood-ping/</code>。</li><li><strong>本檔狀態 = PRE-REVIEW</strong>：Author A 已親跑現象＋回歸、建 Example 鏡像、寫交接清單。<strong>等獨立 reviewer B 接管本檔／重生 html，再等 Human G3。禁止 merge。</strong></li><li>#165（Stage2 方案依據超寬表）<strong>本 PR 不修</strong>。</li></ul></div></details><details class="doc" id="sec-Verification-Evidence"><summary><span>Verification Evidence</span></summary><div class="doc-in"><p>&gt; Author pack 記錄；<strong>Final Fresh／Gauntlet 全綠仍屬獨立 reviewer B 職權</strong>。4-spec Verification Profile <strong>未寫 `Required layers` 欄</strong>（見 Known Limits #3）——<code>--review-file</code> 可能 fail-closed；B 須裁決補欄（L2）或明示降級。</p><ul><li>Source SHA: a940b4dfe38cffe9e3d597c88fe5e85c05aeb53b（Stage6 HEAD；本 author 開寫前；Example／本檔 commit 後 B 須重綁當下 HEAD）</li><li>Final Fresh Run ID: n-a — author pack；留給 reviewer B</li><li>Entry point: <code>scripts/dogfood-ping.sh</code> 然後 <code>bash scripts/check-file-map.sh</code>（對齊 4-spec Verify）</li><li>Toolchain: system bash + repo scripts（無第三方套件）</li></ul><div class="tablewrap"><table><thead><tr><th>Layer</th><th>Command</th><th>Status</th><th>Result</th><th>Skipped reason</th></tr></thead><tbody><tr><td>Real execution</td><td><code>scripts/dogfood-ping.sh &gt; /tmp/dogfood-ping.out; echo exit=$?; od -An -tx1 /tmp/dogfood-ping.out; cmp /tmp/dogfood-ping.out &lt;(printf &#x27;dogfood-ok\n&#x27;)</code></td><td>pass</td><td>exit=0; bytes <code>64 6f 67 66 6f 6f 64 2d 6f 6b 0a</code>; CMP_OK</td><td></td></tr><tr><td>File-map regression</td><td><code>bash scripts/check-file-map.sh</code></td><td>pass</td><td>exit 0; scanned=194 = EXPECTED_MAPPED_FILES</td><td></td></tr><tr><td>Full test suite</td><td></td><td>n-a</td><td></td><td>4-spec Verify 未要求全 repo selftest；本 feat 回歸入口為 check-file-map</td></tr><tr><td>Mutation</td><td></td><td>n-a</td><td></td><td>Explicitly excluded（4-spec Verification Profile）</td></tr><tr><td>Race/stress</td><td></td><td>n-a</td><td></td><td>Explicitly excluded（4-spec Verification Profile）</td></tr><tr><td>Gauntlet <code>--review-file</code></td><td></td><td>unverified</td><td></td><td>留給 B；且 4-spec 缺 Required layers 欄（KL #3）</td></tr></tbody></table></div></div></details><details class="doc" id="sec-Negative-Constraint-Mapping"><summary><span>Negative Constraint Mapping</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>Constraint</th><th>Test/Layer</th><th>Status</th></tr></thead><tbody><tr><td>不得改 host-stack-fit／#163 正本</td><td>diff 範圍 = dogfood 腳本 + file-map／指南列／靜態釘 + feat docs／example</td><td>pass（author 目視；B 抽 <code>git diff origin/main...HEAD --stat</code>）</td></tr><tr><td>不得引入 HTTP／npm</td><td><code>scripts/dogfood-ping.sh</code> 僅 shebang+printf+exit</td><td>pass</td></tr><tr><td>不得在本 PR 修 #165</td><td>無產器／Stage2 表寬改動</td><td>pass</td></tr><tr><td>不得手填假 PreToolUse</td><td>無 hooks 行為偽造成品</td><td>pass</td></tr><tr><td>正式腳本不得提早塞進 Stage 4／5</td><td>腳本於 Stage6 commit <code>a940b4d</code> 落地</td><td>pass</td></tr></tbody></table></div></div></details><details class="doc" id="sec-執行記錄-dev-run-引擎案-手動實作留白"><summary><span>執行記錄(dev-run 引擎案;手動實作留白)</span></summary><div class="doc-in"><p>（手動／Cloud Agent 實作 —— 無 dev-run ledger；本節留白。）</p></div></details><details class="doc" id="sec-截圖槽"><summary><span>截圖槽</span></summary><div class="doc-in"><p>（無 UI —— CLI／地板檢查。本節無 shots。）</p></div></details><details class="doc" id="sec-Operational-Walkthrough"><summary><span>Operational Walkthrough</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>S-id</th><th>角色</th><th>真實目標</th><th>系統操作</th><th>系統外步驟</th><th>等待/例外</th><th>結果</th></tr></thead><tbody><tr><td>S-1～S-4</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>不適用（4-spec 各 S Operational Context = 不適用；純腳本／地板）</td></tr></tbody></table></div></div></details><details class="doc" id="sec-Design-Integrity-Check-Design-Boundary-Contract-"><summary><span>Design Integrity Check(Design Boundary Contract 為 <code>applicable</code> 時逐項過;<code>n-a</code> 時記 n-a)</span></summary><div class="doc-in"><p>n-a — 4-spec Design Boundary Contract Applicability = n-a（單檔本機 shell）。</p></div></details><details class="doc" id="sec-Standards-Axis"><summary><span>Standards Axis</span></summary><div class="doc-in"><p>&gt; Author 初掃（非正式獨立 Standards reviewer）。B 應重做雙軸。</p><ul><li>（無 🔴／無未授權 Boundary）腳本 ≤5 行；shebang／printf 對齊 DD-1／DD-2。</li><li>F-s7a-1 🟢 <code>docs/dev/dogfood-ping/4-spec.md</code> Verification Profile | 缺 <code>Required layers</code> 明示欄（可寫「無」）——Gauntlet <code>--review-file</code> 可能 fail-closed | 建議：owner／B 裁決是否 L2 回補一行，或本 dogfood 接受降級聲明（見 KL #3）</li></ul></div></details><details class="doc" id="sec-Spec-Axis"><summary><span>Spec Axis</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>R</th><th>判定</th><th>證據</th></tr></thead><tbody><tr><td>R-1</td><td>符合（author）</td><td><code>scripts/dogfood-ping.sh:1-5</code>；S-1 現象 ✅；Stage6 獨立審 PASS</td></tr><tr><td>R-2</td><td>符合（author）</td><td>stdout hex + cmp；S-2 ✅</td></tr><tr><td>R-3</td><td>符合（author）</td><td>exit 0；S-3 ✅</td></tr><tr><td>R-4</td><td>符合（author）</td><td><code>check-file-map.sh:114</code> = 194；指南 <code>guide-dev-flow.html:3961</code>；guards <code>:2417</code>；S-4 ✅</td></tr><tr><td>D-s6-1</td><td>已吸收</td><td>Example 本輪已落地 <code>example/dogfood-ping/</code>（author packing）；合 main 後滿足 SC-6</td></tr><tr><td>Design Boundary</td><td>n-a</td><td>無未經授權 Boundary 變更</td></tr></tbody></table></div></div></details><details class="doc" id="sec-變更架構圖"><summary><span>變更架構圖</span></summary><div class="doc-in"><pre><code>[caller: bash / ./scripts/dogfood-ping.sh]
+<details class="doc" id="sec-人讀摘要-給-owner"><summary><span>人讀摘要（給 owner）</span></summary><div class="doc-in"><ul><li>產品：<code>scripts/dogfood-ping.sh</code> 印恰好 <code>dogfood-ok</code>+LF、exit 0；file-map 地板 194 綠。</li><li>Stage 1–6 已過（G1 lean PASS、G2 PASS、Stage6 implementer + <strong>獨立 Stage6 review PASS</strong> on PR [#164](https://github.com/rick546986/dev-flow/pull/164)）。</li><li>落地決策：合 main → Example <code>example/dogfood-ping</code>；feat 正本仍 <code>docs/dev/dogfood-ping/</code>。</li><li><strong>本檔狀態 = G3 PASS</strong>：獨立 reviewer B 建議 PASS；<strong>Human G3 PASS by owner 2026-09-11 (Asia/Taipei)</strong>。准 merge #164 → main 當 Example。</li><li>#165（Stage2 方案依據超寬表）<strong>本 PR 不修</strong>（仍 open）。</li></ul></div></details><details class="doc" id="sec-Verification-Evidence"><summary><span>Verification Evidence</span></summary><div class="doc-in"><p>&gt; Author pack 記錄；<strong>Final Fresh／Gauntlet 全綠仍屬獨立 reviewer B 職權</strong>。4-spec Verification Profile <strong>未寫 `Required layers` 欄</strong>（見 Known Limits #3）——<code>--review-file</code> 可能 fail-closed；B 須裁決補欄（L2）或明示降級。</p><ul><li>Source SHA: a940b4dfe38cffe9e3d597c88fe5e85c05aeb53b（Stage6 HEAD；本 author 開寫前；Example／本檔 commit 後 B 須重綁當下 HEAD）</li><li>Final Fresh Run ID: n-a — author pack；留給 reviewer B</li><li>Entry point: <code>scripts/dogfood-ping.sh</code> 然後 <code>bash scripts/check-file-map.sh</code>（對齊 4-spec Verify）</li><li>Toolchain: system bash + repo scripts（無第三方套件）</li></ul><div class="tablewrap"><table><thead><tr><th>Layer</th><th>Command</th><th>Status</th><th>Result</th><th>Skipped reason</th></tr></thead><tbody><tr><td>Real execution</td><td><code>scripts/dogfood-ping.sh &gt; /tmp/dogfood-ping.out; echo exit=$?; od -An -tx1 /tmp/dogfood-ping.out; cmp /tmp/dogfood-ping.out &lt;(printf &#x27;dogfood-ok\n&#x27;)</code></td><td>pass</td><td>exit=0; bytes <code>64 6f 67 66 6f 6f 64 2d 6f 6b 0a</code>; CMP_OK</td><td></td></tr><tr><td>File-map regression</td><td><code>bash scripts/check-file-map.sh</code></td><td>pass</td><td>exit 0; scanned=194 = EXPECTED_MAPPED_FILES</td><td></td></tr><tr><td>Full test suite</td><td></td><td>n-a</td><td></td><td>4-spec Verify 未要求全 repo selftest；本 feat 回歸入口為 check-file-map</td></tr><tr><td>Mutation</td><td></td><td>n-a</td><td></td><td>Explicitly excluded（4-spec Verification Profile）</td></tr><tr><td>Race/stress</td><td></td><td>n-a</td><td></td><td>Explicitly excluded（4-spec Verification Profile）</td></tr><tr><td>Gauntlet <code>--review-file</code></td><td></td><td>unverified</td><td></td><td>留給 B；且 4-spec 缺 Required layers 欄（KL #3）</td></tr></tbody></table></div></div></details><details class="doc" id="sec-Negative-Constraint-Mapping"><summary><span>Negative Constraint Mapping</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>Constraint</th><th>Test/Layer</th><th>Status</th></tr></thead><tbody><tr><td>不得改 host-stack-fit／#163 正本</td><td>diff 範圍 = dogfood 腳本 + file-map／指南列／靜態釘 + feat docs／example</td><td>pass（author 目視；B 抽 <code>git diff origin/main...HEAD --stat</code>）</td></tr><tr><td>不得引入 HTTP／npm</td><td><code>scripts/dogfood-ping.sh</code> 僅 shebang+printf+exit</td><td>pass</td></tr><tr><td>不得在本 PR 修 #165</td><td>無產器／Stage2 表寬改動</td><td>pass</td></tr><tr><td>不得手填假 PreToolUse</td><td>無 hooks 行為偽造成品</td><td>pass</td></tr><tr><td>正式腳本不得提早塞進 Stage 4／5</td><td>腳本於 Stage6 commit <code>a940b4d</code> 落地</td><td>pass</td></tr></tbody></table></div></div></details><details class="doc" id="sec-執行記錄-dev-run-引擎案-手動實作留白"><summary><span>執行記錄(dev-run 引擎案;手動實作留白)</span></summary><div class="doc-in"><p>（手動／Cloud Agent 實作 —— 無 dev-run ledger；本節留白。）</p></div></details><details class="doc" id="sec-截圖槽"><summary><span>截圖槽</span></summary><div class="doc-in"><p>（無 UI —— CLI／地板檢查。本節無 shots。）</p></div></details><details class="doc" id="sec-Operational-Walkthrough"><summary><span>Operational Walkthrough</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>S-id</th><th>角色</th><th>真實目標</th><th>系統操作</th><th>系統外步驟</th><th>等待/例外</th><th>結果</th></tr></thead><tbody><tr><td>S-1～S-4</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>不適用（4-spec 各 S Operational Context = 不適用；純腳本／地板）</td></tr></tbody></table></div></div></details><details class="doc" id="sec-Design-Integrity-Check-Design-Boundary-Contract-"><summary><span>Design Integrity Check(Design Boundary Contract 為 <code>applicable</code> 時逐項過;<code>n-a</code> 時記 n-a)</span></summary><div class="doc-in"><p>n-a — 4-spec Design Boundary Contract Applicability = n-a（單檔本機 shell）。</p></div></details><details class="doc" id="sec-Standards-Axis"><summary><span>Standards Axis</span></summary><div class="doc-in"><p>&gt; Author 初掃（非正式獨立 Standards reviewer）。B 應重做雙軸。</p><ul><li>（無 🔴／無未授權 Boundary）腳本 ≤5 行；shebang／printf 對齊 DD-1／DD-2。</li><li>F-s7a-1 🟢 <code>docs/dev/dogfood-ping/4-spec.md</code> Verification Profile | 缺 <code>Required layers</code> 明示欄（可寫「無」）——Gauntlet <code>--review-file</code> 可能 fail-closed | 建議：owner／B 裁決是否 L2 回補一行，或本 dogfood 接受降級聲明（見 KL #3）</li></ul></div></details><details class="doc" id="sec-Spec-Axis"><summary><span>Spec Axis</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>R</th><th>判定</th><th>證據</th></tr></thead><tbody><tr><td>R-1</td><td>符合（author）</td><td><code>scripts/dogfood-ping.sh:1-5</code>；S-1 現象 ✅；Stage6 獨立審 PASS</td></tr><tr><td>R-2</td><td>符合（author）</td><td>stdout hex + cmp；S-2 ✅</td></tr><tr><td>R-3</td><td>符合（author）</td><td>exit 0；S-3 ✅</td></tr><tr><td>R-4</td><td>符合（author）</td><td><code>check-file-map.sh:114</code> = 194；指南 <code>guide-dev-flow.html:3961</code>；guards <code>:2417</code>；S-4 ✅</td></tr><tr><td>D-s6-1</td><td>已吸收</td><td>Example 本輪已落地 <code>example/dogfood-ping/</code>（author packing）；合 main 後滿足 SC-6</td></tr><tr><td>Design Boundary</td><td>n-a</td><td>無未經授權 Boundary 變更</td></tr></tbody></table></div></div></details><details class="doc" id="sec-變更架構圖"><summary><span>變更架構圖</span></summary><div class="doc-in"><pre><code>[caller: bash / ./scripts/dogfood-ping.sh]
         |
         v
 [scripts/dogfood-ping.sh] --printf--&gt; stdout &quot;dogfood-ok\n&quot;
@@ -581,15 +592,15 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         +-- guide row -------&gt; [guides/guide-dev-flow.html #filemap]
         +-- static pin ------&gt; [test-architecture-guards.sh]
         +-- feat canon ------&gt; [docs/dev/dogfood-ping/]
-        +-- Example mirror --&gt; [example/dogfood-ping/]</code></pre></div></details><details class="doc" id="sec-Diff-merge-base-main-HEAD-逐檔折疊"><summary><span>Diff(merge-base(main)..HEAD,逐檔折疊)</span></summary><div class="doc-in"><p>&lt;details&gt;</p><p>&lt;summary title=&quot;+5/-0; dogfood-ping CLI&quot;&gt;&lt;code&gt;scripts/dogfood-ping.sh&lt;/code&gt; (+5/-0)&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;add&quot;&gt;+#!/usr/bin/env bash&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+# dogfood-ping — minimal observable CLI (Stage 6).&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+printf &#x27;%s\n&#x27; &#x27;dogfood-ok&#x27;&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+exit 0&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;+1/-1; EXPECTED_MAPPED_FILES&quot;&gt;&lt;code&gt;scripts/check-file-map.sh&lt;/code&gt; (+1/-1)&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;del&quot;&gt;-EXPECTED_MAPPED_FILES = 193&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+EXPECTED_MAPPED_FILES = 194&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;+1/-1; static pin&quot;&gt;&lt;code&gt;scripts/test-architecture-guards.sh&lt;/code&gt; (+1/-1)&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;del&quot;&gt;-... EXPECTED_MAPPED_FILES = 193 ...&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+check_static_pin &quot;scripts/check-file-map.sh&quot; &quot;EXPECTED_MAPPED_FILES = 194&quot; &quot;...&quot;&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;filemap row&quot;&gt;&lt;code&gt;guides/guide-dev-flow.html&lt;/code&gt; (filemap +dogfood-ping.sh)&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;add&quot;&gt;+&amp;lt;code&amp;gt;dogfood-ping.sh&amp;lt;/code&amp;gt; — dogfood-ping 極小可觀測 CLI...&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;feat docs + Example&quot;&gt;&lt;code&gt;docs/dev/dogfood-ping/*&lt;/code&gt; · &lt;code&gt;example/dogfood-ping/*&lt;/code&gt;&lt;/summary&gt;</p><p>&lt;pre&gt;Stage 1–7 過程檔（含本 7-review）+ Example 最小鏡像；合 main 滿足 SC-6。&lt;/pre&gt;</p><p>&lt;/details&gt;</p></div></details><details class="doc" id="sec-附錄-本輪特有"><summary><span>附錄:本輪特有</span></summary><div class="doc-in"><p>### A1　角色：Author pack ≠ G3</p><p>本檔履行模板步 0a：<strong>自審／交接形狀</strong>可用 7-review，但 <code>verdict:</code> 必須 <code>PRE-REVIEW</code>、標題寫明不是 G3 PASS、並列 reviewer 路徑。獨立 B 產出後<strong>直接覆蓋本檔</strong>（不另存 sibling）。</p><p>### A2　Stage6 獨立審索引（證據鏈，非 Stage7 替代）</p><ul><li>URL: https://github.com/rick546986/dev-flow/pull/164#pullrequestreview-5168696526</li><li>Commit: <code>a940b4d</code></li><li>結論: Stage6 <strong>PASS</strong>；stdout hex／exit 0／file-map 194 與其複驗一致；Example 當時 deferred（本 author 已補鏡像）</li></ul><p>### A3　Author 現象原始輸出（摘要）</p><pre><code>#!/usr/bin/env bash          # head -n1
+        +-- Example mirror --&gt; [example/dogfood-ping/]</code></pre></div></details><details class="doc" id="sec-Diff-merge-base-main-HEAD-逐檔折疊"><summary><span>Diff(merge-base(main)..HEAD,逐檔折疊)</span></summary><div class="doc-in"><p>&lt;details&gt;</p><p>&lt;summary title=&quot;+5/-0; dogfood-ping CLI&quot;&gt;&lt;code&gt;scripts/dogfood-ping.sh&lt;/code&gt; (+5/-0)&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;add&quot;&gt;+#!/usr/bin/env bash&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+# dogfood-ping — minimal observable CLI (Stage 6).&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+printf &#x27;%s\n&#x27; &#x27;dogfood-ok&#x27;&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+exit 0&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;+1/-1; EXPECTED_MAPPED_FILES&quot;&gt;&lt;code&gt;scripts/check-file-map.sh&lt;/code&gt; (+1/-1)&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;del&quot;&gt;-EXPECTED_MAPPED_FILES = 193&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+EXPECTED_MAPPED_FILES = 194&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;+1/-1; static pin&quot;&gt;&lt;code&gt;scripts/test-architecture-guards.sh&lt;/code&gt; (+1/-1)&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;del&quot;&gt;-... EXPECTED_MAPPED_FILES = 193 ...&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+check_static_pin &quot;scripts/check-file-map.sh&quot; &quot;EXPECTED_MAPPED_FILES = 194&quot; &quot;...&quot;&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;filemap row&quot;&gt;&lt;code&gt;guides/guide-dev-flow.html&lt;/code&gt; (filemap +dogfood-ping.sh)&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;add&quot;&gt;+&amp;lt;code&amp;gt;dogfood-ping.sh&amp;lt;/code&amp;gt; — dogfood-ping 極小可觀測 CLI...&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;feat docs + Example&quot;&gt;&lt;code&gt;docs/dev/dogfood-ping/*&lt;/code&gt; · &lt;code&gt;example/dogfood-ping/*&lt;/code&gt;&lt;/summary&gt;</p><p>&lt;pre&gt;Stage 1–7 過程檔（含本 7-review）+ Example 最小鏡像；合 main 滿足 SC-6。&lt;/pre&gt;</p><p>&lt;/details&gt;</p></div></details><details class="doc" id="sec-附錄-本輪特有"><summary><span>附錄:本輪特有</span></summary><div class="doc-in"><p>### A1　角色鏈：Author → B → Human G3</p><p>Author pack（PRE-REVIEW）→ 獨立 B notes（建議 PASS，未代填 frontmatter）→ <strong>Human G3 PASS</strong> 寫入本檔 <code>verdict: PASS</code>（2026-09-11 Asia/Taipei）。</p><p>### A2　Stage6 獨立審索引（證據鏈，非 Stage7 替代）</p><ul><li>URL: https://github.com/rick546986/dev-flow/pull/164#pullrequestreview-5168696526</li><li>Commit: <code>a940b4d</code></li><li>結論: Stage6 <strong>PASS</strong>；stdout hex／exit 0／file-map 194 與其複驗一致；Example 當時 deferred（本 author 已補鏡像）</li></ul><p>### A3　Author／B 現象原始輸出（摘要）</p><pre><code>#!/usr/bin/env bash          # head -n1
 exit=0
  64 6f 67 66 6f 6f 64 2d 6f 6b 0a
 CMP_OK
 T1_VERIFY_OK
-scanned=194 … ✅ PASS … filemap_exit=0</code></pre><p>### A4　#165 與 DOGFOOD 摩擦</p><p>Stage2 方案依據超寬表 → [#165](https://github.com/rick546986/dev-flow/issues/165)。試跑筆記見 <code>DOGFOOD-NOTES.md</code>。不阻擋本 CLI 出貨判定，但阻擋「審頁體驗完美」宣稱。</p></div></details>
+scanned=194 … ✅ PASS … filemap_exit=0</code></pre><p>### A4　#165 與 DOGFOOD 摩擦</p><p>Stage2 方案依據超寬表 → [#165](https://github.com/rick546986/dev-flow/issues/165)。試跑筆記見 <code>DOGFOOD-NOTES.md</code>。不阻擋本 CLI 出貨判定，但阻擋「審頁體驗完美」宣稱。<strong>#165 保持 open。</strong></p><p>### A5　Human G3 確認紀錄</p><ul><li>G3 | 2026-09-11 (Asia/Taipei) | owner（rick-dev-flow）明示 <strong>G3 PASS</strong>；<code>verdict: PASS</code>、<code>status: approved</code>；准 merge #164 → main 當 Example。</li></ul></div></details>
 <footer class="foot gate-verdict" id="gate-verdict"
   data-slug="dogfood-ping" data-stage="7-review"
-  data-source-sha="a940b4dfe38cffe9e3d597c88fe5e85c05aeb53b">
+  data-source-sha="b76fe53374e55dfce839c490f6157796fc398d38">
   <p class="gv-canon">正本是同目錄 <code>7-review.md</code> 頂欄
   <code>verdict:</code>。勾選只是瀏覽器草稿。全勾不算 PASS。
   只有「提交判定」才寫入 Human verdict。sidecar／HTML／localStorage 都不是正本;

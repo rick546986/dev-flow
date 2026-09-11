@@ -1,13 +1,13 @@
 ---
 feature: dogfood-ping
 stage: 7-review
-status: draft
-verdict: PRE-REVIEW
-owner:                  # Human G3 簽署者；獨立 reviewer B 接管後可填 ≠ Stage7-author-A
+status: approved
+verdict: PASS
+owner: rick-dev-flow
 updated: 2026-09-11
 ---
 
-# 7. 驗證 —— **這不是 G3 PASS**
+# 7. 驗證 —— **G3 PASS**
 
 > ## Reviewer 閱讀動線(**必留;給看的人,不是給寫的人**)
 >
@@ -19,33 +19,24 @@ updated: 2026-09-11
 > | 4 | **Known Limits** | 有沒有一條是 owner 不能接受的? |
 > | 5 | **抽驗一列** | 從 Coverage Matrix / Standards Axis / Spec Axis 任挑一列,照它給的 `檔:行` 去看。對得上就信剩下的,對不上就整份退回 |
 >
-> **只做一步就做第 5 步**。本檔是 **Stage 7 author pack（Agent A）**：彙整證據、交接給 **獨立 reviewer B ≠ A**，再由 **Human 簽 G3**。**禁止把本檔 `verdict` 寫成 PASS。**
+> **只做一步就做第 5 步**。Author A 證據包 → 獨立 reviewer B 建議 PASS（`7-reviewer-B-notes.md`）→ **Human G3 PASS**（owner，2026-09-11 Asia/Taipei）。
 
 ## 人讀摘要（給 owner）
 
 - 產品：`scripts/dogfood-ping.sh` 印恰好 `dogfood-ok`+LF、exit 0；file-map 地板 194 綠。
 - Stage 1–6 已過（G1 lean PASS、G2 PASS、Stage6 implementer + **獨立 Stage6 review PASS** on PR [#164](https://github.com/rick546986/dev-flow/pull/164)）。
 - 落地決策：合 main → Example `example/dogfood-ping`；feat 正本仍 `docs/dev/dogfood-ping/`。
-- **本檔狀態 = PRE-REVIEW**：Author A 已親跑現象＋回歸、建 Example 鏡像、寫交接清單。**等獨立 reviewer B 接管本檔／重生 html，再等 Human G3。禁止 merge。**
-- #165（Stage2 方案依據超寬表）**本 PR 不修**。
+- **本檔狀態 = G3 PASS**：獨立 reviewer B 建議 PASS；**Human G3 PASS by owner 2026-09-11 (Asia/Taipei)**。准 merge #164 → main 當 Example。
+- #165（Stage2 方案依據超寬表）**本 PR 不修**（仍 open）。
 
-## ⚠️ 限制聲明（Author pack／pre-review；非 G3）
+## ⚠️ 限制聲明（G3 密封後；作者／B／Human 角色）
 
 | | |
 |---|---|
-| 本檔作者 | Stage 7 **author Agent A**（彙整／交接） |
-| 不是誰 | **不是**獨立 G3 reviewer；**不是** Human；**不得**自簽 G3 PASS |
-| 建議下一棒 | ① **獨立 reviewer B ≠ A**（fresh context）接管 `7-review.md`＋重生 html → ② **owner Human** 在 gate twin 提交判定（`verdict:`） |
-| 讀取順序（給 B） | 先讀 `4-spec.md`／`5-tasks.md`／diff／本檔現象證據表並**親重跑**；再讀 `6-implementation-notes.md`；**勿採信本檔作者主張取代親跑** |
-| Stage6 獨立審 | PR #164 review [5168696526](https://github.com/rick546986/dev-flow/pull/164#pullrequestreview-5168696526) **PASS**（reviewer ≠ implementer；@ `a940b4d`）——可作 R/S 證據鏈索引，**不代替** Stage7 親跑 |
-
-**哪些結論可信、哪些要打折（給 B／owner）**
-
-| 類 | 可信度 | 為什麼 |
-|---|---|---|
-| 機械數字（hex、exit、`check-file-map` scanned=194） | **可信（可複驗）** | Author A 本輪親跑；指令在現象證據／附錄 |
-| Coverage Matrix 對應 | **中等** | 對齊 4-spec + Stage6 Verify + Stage6 獨立審；B 須抽驗 `檔:行` |
-| F-id／「有沒有漏的」 | **要打折** | 本檔是 author pack，不是獨立雙軸審完稿 |
+| Author A | Stage 7 彙整／交接（曾為 PRE-REVIEW pack） |
+| Reviewer B | 獨立建議 PASS（`7-reviewer-B-notes.md`）；**未**代填 Human `verdict:` |
+| Human G3 | owner `rick-dev-flow` → **PASS** 2026-09-11 (Asia/Taipei) |
+| 讀取順序（稽核） | `4-spec`／`5-tasks`／diff／現象表／B notes；勿只信作者主張 |
 
 ## Coverage Matrix
 
@@ -183,17 +174,19 @@ n-a — 4-spec Design Boundary Contract Applicability = n-a（單檔本機 shell
 
 ## Verdict
 
-**PRE-REVIEW** —— **不是 G3 PASS。** Author A 證據包就緒；**獨立 reviewer B ≠ A** 須接管本檔並親跑後才能建議判定；**Human** 才可把 `verdict:` 寫成 PASS／REQUEST_CHANGES／HOLD。
+**PASS** —— **Human G3 PASS by owner（rick-dev-flow）on 2026-09-11 (Asia/Taipei)。**
 
-| 門檻 | Author 證據 | 誰簽 |
+依據：Author A 證據包 + 獨立 reviewer B（`7-reviewer-B-notes.md`，@ `36c68db`）親跑 S-1～S-4 全綠、建議 PASS；owner 採納並提交本檔 `verdict: PASS`。准 squash-merge PR [#164](https://github.com/rick546986/dev-flow/pull/164) → `main` 落 Example。
+
+| 門檻 | 證據 | 簽署 |
 |---|---|---|
-| 本次 S 全綠 | Coverage Matrix S-1～S-4 ✅（author 複驗） | B 親跑確認 → Human G3 |
-| 既有回歸綠 | `check-file-map.sh` exit 0 | 同上 |
-| 現象證據逐 S | 本檔現象表 + hex/exit | B 必須重跑 |
-| Evidence 契約／Gauntlet | 未完成 Final Fresh | B |
-| 無 🔴 | Author 初掃無產品行為 🔴 | B 雙軸 |
+| 本次 S 全綠 | Coverage Matrix S-1～S-4 ✅；B 複驗 hex／exit／file-map 194 | Human G3 |
+| 既有回歸綠 | `check-file-map.sh` exit 0 | Human G3 |
+| 現象證據逐 S | 本檔現象表 + B notes | Human G3 |
+| Evidence／Gauntlet | KL #3：缺 `Required layers` → Gauntlet 明示**降級**（不默認跑過）；不擋產品 PASS | Human G3 |
+| 無 🔴 | Author／B 無產品行為 🔴 | Human G3 |
 
-整合回歸（author 跑）：`STATUS=N_A_NO_INCOMING FORK=0a89ec85ae2cf3ee0c555b82441caa323e77c10f HEAD=a940b4dfe38cffe9e3d597c88fe5e85c05aeb53b INTEGRATION=0a89ec85ae2cf3ee0c555b82441caa323e77c10f(refs/remotes/origin/main)` —— 分岔後 main 零新 commit。**B 在 Final Fresh 前若 HEAD 已變，須重跑腳本。**
+整合回歸（author @ Stage6）：`STATUS=N_A_NO_INCOMING FORK=0a89ec85ae2cf3ee0c555b82441caa323e77c10f HEAD=a940b4dfe38cffe9e3d597c88fe5e85c05aeb53b INTEGRATION=0a89ec85ae2cf3ee0c555b82441caa323e77c10f(refs/remotes/origin/main)`。B @ `36c68db` 重跑腳本綠；其後僅文件／Example／G3 密封，無產品行為碼變更。
 
 ## Known Limits
 
@@ -201,35 +194,35 @@ n-a — 4-spec Design Boundary Contract Applicability = n-a（單檔本機 shell
 |---|---|---|---|
 | 1 | Stage2 審頁「方案依據」超寬橫表／手機裁切 | 🟡（dogfood 摩擦；非本產品行為） | park → [#165](https://github.com/rick546986/dev-flow/issues/165)；本 PR 不修 |
 | 2 | Cloud／部分 VM 跑全套 `test-architecture-guards.sh` 可能撞環境 PF-0（無 Python 3.9–3.11）——Stage6 獨立審已標 **outside** T-1/T-2 Verify | 🟢 | 維持；本 feat 回歸入口以 `check-file-map.sh` 為準；全 guards 另環境 |
-| 3 | 4-spec Verification Profile **無 `Required layers` 欄**（契約允許寫「無」/none/n-a，但缺欄 ≠ 零層）→ Gauntlet `--review-file` 可能紅 | 🟡（流程／文件形狀；G2 已 PASS） | owner／B：L2 回補一行 `Required layers: 無`，或 G3 明示 gauntlet 降級；**勿默默當跑過** |
+| 3 | 4-spec Verification Profile **無 `Required layers` 欄**（契約允許寫「無」/none/n-a，但缺欄 ≠ 零層）→ Gauntlet `--review-file` 可能紅 | 🟡（流程／文件形狀；G2 已 PASS） | **G3 明示降級**（不默認跑過）；另票 L2 補欄可選 |
 | 4 | Example 鏡像與 feat 正本可能短暫漂移（B 改 7-review 後須同步 `example/dogfood-ping/7-review.*` 或 merge packing 再刷） | 🟢 | Exit 勾 Example 同步；合 main 前核對 |
-| 5 | 本檔 = author PRE-REVIEW；**尚未**獨立雙軸完稿 | 🟡（程序） | 等 reviewer B ≠ A；再 Human G3；**禁 merge** |
+| 5 | （已關閉）曾為 author PRE-REVIEW／待 B＋Human | — | B 建議 PASS + Human G3 PASS 2026-09-11 |
 
 ## Exit Checklist(全勾才算 shipped — 多數留給 Human／merge 後)
 
 - [x] **Design Boundary finding 全數處置**: n-a（契約 n-a）
-- [ ] Quiz: n-a（fast lane 免；非不可逆 schema／API）
-- [x] (條件式)整合回歸已在 Final Fresh **之前**記錄: author 已貼 `N_A_NO_INCOMING` + 三 SHA（見 Verdict）。**注意**：本 author 後續若只加文件／Example，B 做 Final Fresh 前須重跑腳本綁新 HEAD；Verdict 後禁改程式碼
-- [ ] PR → develop: **本 repo 整合分支 = `main`**（非 develop）。PR [#164](https://github.com/rick546986/dev-flow/pull/164) draft → main；**等 B + Human G3 後才准 merge**（owner）
-- [ ] 4-spec delta 已併入 `docs/specs/<domain>.md`: n-a（本 repo 無對應 living domain spec 要併；極小 CLI dogfood）
+- [x] Quiz: n-a（fast lane 免；非不可逆 schema／API）
+- [x] (條件式)整合回歸已在 Final Fresh **之前**記錄: author 已貼 `N_A_NO_INCOMING` + 三 SHA（見 Verdict）；B @ `36c68db` 重跑綠；G3 後禁改產品行為碼
+- [ ] PR → main: PR [#164](https://github.com/rick546986/dev-flow/pull/164)；**Human G3 PASS 已簽 → merge in progress**
+- [x] 4-spec delta 已併入 `docs/specs/<domain>.md`: n-a（本 repo 無對應 living domain spec 要併；極小 CLI dogfood）
 - [ ] STATUS.md 已更新為 shipped: **merge 後由 merger 在 main 做**（feature branch 禁改 STATUS 表列）
-- [ ] 7-review frontmatter `status: shipped` + `verdict:` Human PASS（**僅 Human**；現為 `draft` / `PRE-REVIEW`）
-- [x] 7-review.html 已產生（author twin；B 改 md 後須重生）
+- [x] 7-review frontmatter `verdict: PASS`（Human G3）；`status: approved`（`shipped` 留 merge 後）
+- [x] 7-review.html 已產生／G3 密封後重生
 - [x] Example `example/dogfood-ping/` 最小鏡像已落地（SC-6 packing；合 main 後可指）
 - [ ] feature branch 已刪 / worktree 已清: merge 後再做
 
 ### Owner G3 出手清單（短）
 
-1. 確認獨立 reviewer **B ≠ Stage7-author-A** 已接管並更新本檔（建議判定可寫在 Verdict，但 **`verdict:` frontmatter 仍由 Human 提交**）。
-2. 抽驗 Coverage 任一列 `檔:行`（建議 S-2 hex 或 S-4 `EXPECTED_MAPPED_FILES = 194`）。
-3. 打開 `7-review.html` gate twin → **提交判定**。
-4. PASS 後才 merge #164；合併後在 main 更新 STATUS／必要時刷 Example。
+1. ~~確認獨立 reviewer B ≠ A~~ → 見 `7-reviewer-B-notes.md`（建議 PASS）。
+2. ~~抽驗 Coverage~~ → owner 採納 B／現象證據。
+3. ~~提交判定~~ → **Human G3 PASS 2026-09-11 (Asia/Taipei)**；本檔 `verdict: PASS`。
+4. merge #164 → main（Example）；合併後更新 STATUS／必要時刷 Example。
 
 ## 附錄:本輪特有
 
-### A1　角色：Author pack ≠ G3
+### A1　角色鏈：Author → B → Human G3
 
-本檔履行模板步 0a：**自審／交接形狀**可用 7-review，但 `verdict:` 必須 `PRE-REVIEW`、標題寫明不是 G3 PASS、並列 reviewer 路徑。獨立 B 產出後**直接覆蓋本檔**（不另存 sibling）。
+Author pack（PRE-REVIEW）→ 獨立 B notes（建議 PASS，未代填 frontmatter）→ **Human G3 PASS** 寫入本檔 `verdict: PASS`（2026-09-11 Asia/Taipei）。
 
 ### A2　Stage6 獨立審索引（證據鏈，非 Stage7 替代）
 
@@ -237,7 +230,7 @@ n-a — 4-spec Design Boundary Contract Applicability = n-a（單檔本機 shell
 - Commit: `a940b4d`
 - 結論: Stage6 **PASS**；stdout hex／exit 0／file-map 194 與其複驗一致；Example 當時 deferred（本 author 已補鏡像）
 
-### A3　Author 現象原始輸出（摘要）
+### A3　Author／B 現象原始輸出（摘要）
 
 ```
 #!/usr/bin/env bash          # head -n1
@@ -250,4 +243,8 @@ scanned=194 … ✅ PASS … filemap_exit=0
 
 ### A4　#165 與 DOGFOOD 摩擦
 
-Stage2 方案依據超寬表 → [#165](https://github.com/rick546986/dev-flow/issues/165)。試跑筆記見 `DOGFOOD-NOTES.md`。不阻擋本 CLI 出貨判定，但阻擋「審頁體驗完美」宣稱。
+Stage2 方案依據超寬表 → [#165](https://github.com/rick546986/dev-flow/issues/165)。試跑筆記見 `DOGFOOD-NOTES.md`。不阻擋本 CLI 出貨判定，但阻擋「審頁體驗完美」宣稱。**#165 保持 open。**
+
+### A5　Human G3 確認紀錄
+
+- G3 | 2026-09-11 (Asia/Taipei) | owner（rick-dev-flow）明示 **G3 PASS**；`verdict: PASS`、`status: approved`；准 merge #164 → main 當 Example。

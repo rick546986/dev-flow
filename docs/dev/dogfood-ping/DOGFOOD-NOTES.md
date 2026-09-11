@@ -19,9 +19,11 @@
 
 ## 2026-09-11
 
-- **Stage 7 author pack（Agent A）**：寫了 `7-review.md` + `7-review.html`（`build-gate-twin.py`）；frontmatter **`verdict: PRE-REVIEW`** —— **不是 G3 PASS**，未代填 Human 判定。
+- **Stage 7 author pack（Agent A）**：寫了 `7-review.md` + `7-review.html`（`build-gate-twin.py`）；frontmatter 曾為 **`verdict: PRE-REVIEW`**。
 - Author 親跑現象：stdout hex `64 6f 67 66 6f 6f 64 2d 6f 6b 0a`、exit 0；`check-file-map.sh` exit 0（`scanned=194`）。
 - 整合回歸腳本：`STATUS=N_A_NO_INCOMING`（FORK=INTEGRATION=`0a89ec8…`）。
 - Example 最小鏡像已落 `example/dogfood-ping/`（SC-6 packing；含 1–7 + DOGFOOD-NOTES）。
-- 已知摩擦：#165（Stage2 超寬表，本 PR 不修）；4-spec Verification Profile 缺 `Required layers` 欄 → Gauntlet `--review-file` 可能紅（KL #3，待 B／owner）。
-- **下一步**：獨立 **reviewer B ≠ A** 接管 `7-review.md`／重生 html → **Human G3** 才准 merge #164。Author A **不**兼 B。
+- 獨立 **reviewer B ≠ A**：建議 PASS（`7-reviewer-B-notes.md` @ `36c68db`）。
+- **Human G3 PASS** by owner 2026-09-11 (Asia/Taipei)；`7-review.md` `verdict: PASS`。**Merging #164 → main as Example.**
+- 已知摩擦：#165（Stage2 超寬表，**保持 open**，本 PR 不修）；KL#3 Gauntlet 明示降級。
+- CI：`example/dogfood-ping/5-tasks.md` 進 TF_SKIP（POSIX `test -x` 誤觸 `\btest\b`；無測試套件手樣，同 subsidy）。
