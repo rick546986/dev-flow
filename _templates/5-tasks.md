@@ -24,7 +24,7 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 > | | 要求 | 這一站的內容 |
 > |---|---|---|
 > | 1 | **動線頂區五格**,每格一句話 + 可點跳轉 | 狀態(frontmatter)/ 任務(幾個 T + 幾條缺必填欄)/ 模式(execution.mode,未標=sequential)/ 依賴(幾條 Blocked-by 邊)/ 進度(可勾計數) |
-> | 2 | **任務卡逐條可勾**,缺必填欄直接在卡上現形 | 每個 T 一張卡(Covers/Files/Verify/Blocked-by 對齊、Intent 獨立標色);**六欄必填**(Covers/Files/Verify/Blocked-by/Intent/Boundaries)缺任一即紅底,格式同 K-7;Owner 選配 |
+> | 2 | **任務卡逐條可勾**,缺必填欄直接在卡上現形 | 每個 T 一張卡(Covers/Files/Verify/Blocked-by 對齊、Intent · 做完差什麼 獨立標色);**六欄必填**(Covers/Files/Verify/Blocked-by/Intent/Boundaries)缺任一即紅底,格式同 K-7;Owner 選配 |
 > | 3 | **Boundaries 摺疊**(`<details>`,預設收合、內容零刪減) | 每張 T 卡內建 `<details>`,原文零刪減 |
 > | 4 | **依賴 DAG 由 Blocked-by 自動衍生**(ASCII 波次,拓撲分波) | `#dag` 區塊;引用不存在的 T 或成環一律 fail-loud(stderr 警告),不擋產出 |
 >
@@ -53,9 +53,16 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 > **T 自足律(為了丟給 agent 不辨識不清)**:每個 T 單獨拿出來,搭配它 Covers 的
 > S 原文,執行者就能動工 —— 不需翻其他 T、不需讀 1/2/3。寫法紀律:
 > - 標題 = 動詞開頭的一句完成式(「建 ent schema 十二張」,不是「schema 相關」)。
-> - Intent 一句話寫「這個 T 做完,系統多了什麼可觀測行為」;Boundaries 寫硬約束/
->   禁區(照哪個既有 pattern、不准動什麼),無則寫「—」。兩欄是派工 prompt 的
->   直接原料;守衛只解析必填四欄,這兩欄**本身**不影響 scope —— 但見下一條的續行禁令。
+> - Intent = 白話「做完差什麼」(欄名仍是 `Intent:`,**不另開** Effect 欄)。必須用
+>   人話答滿三問,禁只堆契約詞／R·S id／欄位名:
+>   (1) 日常多／少了什麼動作？
+>   (2) 會改哪些地方(用白話說地方:收據、盤點、文案…,不是檔名堆疊)？
+>   (3) **不會**變成什麼(例:不是 Cursor 擋寫、不是假 PreToolUse)？
+>   一句或短段皆可,但三問要看得出答案;只寫「涵蓋 R-n／對齊 S-n」不算 Intent。
+>   Boundaries 寫硬約束/禁區(照哪個既有 pattern、不准動什麼),無則寫「—」。
+>   兩欄是派工 prompt 的直接原料;守衛只解析必填四欄,這兩欄**本身**不影響
+>   scope —— 但見下一條的續行禁令。Intent 白話是**寫法紀律**,本模板不另加
+>   fail-closed 牙咬內容(缺欄仍由 twin 紅底現形;Stage 6 仍只吃四欄)。
 > - **續行禁令(保留欄名不得被遮蔽)**:`Intent:`／`Boundaries:` 的續行與子項
 >   **不得**以保留欄名開頭 —— `- Covers:`、`- Files:`、`- Verify:`、`- Blocked-by:`、
 >   `- Integrate-after:`、`- Risk:`、`- Review-mode:`、`- Semantic-conflicts-with:`、
@@ -179,11 +186,12 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 >    斷言(強制形狀見上方「篩選子集必須自帶案例數斷言」那條的骨架),開工前先原樣跑一次,
 >    依「①已經綠→補計數或改條件
 >    ②不可能綠→停,修欄位,記 L1③綠不了但方向對→正常開工」三種結果處置;Intent
->    一句寫可觀測行為,Boundaries 寫硬約束/禁區,Design Boundary Contract 為
+>    用白話答滿「做完差什麼」三問(日常多/少什麼;改哪些地方;不會變成什麼;
+>    禁只堆契約詞),Boundaries 寫硬約束/禁區,Design Boundary Contract 為
 >    `applicable` 時比照「Design Boundary 摘錄規則」摘錄該 T 最小子集;續行不得
 >    以保留欄名開頭(見上方「續行禁令」)。
->    完成 = 四必填欄齊備、Verify 已原樣跑過一次並記錄結果、Intent/Boundaries 各
->    一句到位。
+>    完成 = 四必填欄齊備、Verify 已原樣跑過一次並記錄結果、Intent 三問到位、
+>    Boundaries 一句到位。
 > 3. 依賴:填 `Blocked-by`(硬執行依賴,拓撲序不成環);parallel 模式選配填
 >    `Integrate-after`(軟整合依賴)/`Risk`/`Review-mode`/`Semantic-conflicts-with`,
 >    不必手排 wave——Wave 由引擎從 Blocked-by + Files overlap 自動派生(見上「並行
@@ -209,7 +217,7 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 - Blocked-by: —
 <!-- 改 Blocked-by 必須重產 html #dag。圖對文字牙比的是各 T-id＋Blocked-by 邊集合
      對 #dag 裡的 T-n／←(T-n),不比手畫的 T-1 連到 T-2。 -->
-- Intent: <做完系統多了什麼可觀測行為,一句>
+- Intent: <白話三問:日常多/少什麼;改哪些地方;不會變成什麼。例:跑過該站指令→系統自己留收據,可用同一支核對;Cursor 仍能寫檔——擋的是「嘴砲已武裝」,不是鎖鍵盤>
 - Boundaries: <硬約束/禁區;無則 —>
 - Owner:(多人才填)
 
@@ -219,7 +227,7 @@ execution:                              # 選配;整塊刪除 = 舊 sequential �
 - Files: <預計動的檔>
 - Verify: `<指令>`
 - Blocked-by: T-1
-- Intent: <做完系統多了什麼可觀測行為,一句>
+- Intent: <白話三問:日常多/少什麼;改哪些地方;不會變成什麼>
 - Boundaries: —
 
 ## Split Decisions(拆分自判,選配)

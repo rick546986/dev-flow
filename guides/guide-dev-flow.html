@@ -1188,6 +1188,10 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
   <code>notes/design/stage5-review-ui-contract.md</code>(與
   <code>notes/design/vbox-fig-contract.md</code> 並列;本輪不改 twin)。
   審頁產檔器 <code>scripts/build-stage5-html.py</code>。</p>
+  <p><strong>Intent = 白話「做完差什麼」</strong>:每個 T 的 <code>Intent:</code> 必須用人話答
+  (1)日常多／少什麼動作、(2)會改哪些地方、(3)不會變成什麼;禁只堆契約詞／R·S id。
+  欄名不變、不另開 Effect;Stage 6 scope guard 仍只吃四欄。本輪是<strong>寫法紀律</strong>,
+  不另加 fail-closed 牙咬 Intent 內容(缺欄仍由 twin 紅底現形)。</p>
   <div class="parity">
   <p class="parity-tag">規則正本 · Stage 5 執行清單(逐字抄自 <code>_templates/5-tasks.md</code> 頂註)</p>
   <details>
@@ -1212,11 +1216,12 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     斷言(強制形狀見上方「篩選子集必須自帶案例數斷言」那條的骨架),開工前先原樣跑一次,
     依「①已經綠→補計數或改條件
     ②不可能綠→停,修欄位,記 L1③綠不了但方向對→正常開工」三種結果處置;Intent
-    一句寫可觀測行為,Boundaries 寫硬約束/禁區,Design Boundary Contract 為
+    用白話答滿「做完差什麼」三問(日常多/少什麼;改哪些地方;不會變成什麼;
+    禁只堆契約詞),Boundaries 寫硬約束/禁區,Design Boundary Contract 為
     <code>applicable</code> 時比照「Design Boundary 摘錄規則」摘錄該 T 最小子集;續行不得
     以保留欄名開頭(見上方「續行禁令」)。
-    完成 = 四必填欄齊備、Verify 已原樣跑過一次並記錄結果、Intent/Boundaries 各
-    一句到位。</li>
+    完成 = 四必填欄齊備、Verify 已原樣跑過一次並記錄結果、Intent 三問到位、
+    Boundaries 一句到位。</li>
     <li>依賴:填 <code>Blocked-by</code>(硬執行依賴,拓撲序不成環);parallel 模式選配填
     <code>Integrate-after</code>(軟整合依賴)/<code>Risk</code>/<code>Review-mode</code>/<code>Semantic-conflicts-with</code>,
     不必手排 wave——Wave 由引擎從 Blocked-by + Files overlap 自動派生(見上「並行
@@ -1243,7 +1248,7 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
   <ul>
   <li><strong>0.</strong> 前置:動工前先確認上一站的規格文件已經核准過,並把規格裡的每一條需求與行為描述通讀一遍,當作拆工作單的依據。</li>
   <li><strong>1.</strong> 切工作單:順序照「先打通一條最細的端到端路徑,再逐層加厚」走,不要整批照資料庫→存取層→服務層→介面→畫面這種技術分層去切。每張工作單都要能回答「做完之後,使用者或系統多了什麼看得到的行為」,答不出來就代表切錯了,要跟旁邊的工作單合併或重新界定。就算是純粹建資料表、加欄位這種沒有明顯業務邏輯的工作單,也要有一個「做完了會變綠」的測試,只是測的是形狀對不對(表存不存在、型別對不對)。有一個小工具會提醒「疑似整批照技術分層切」的情況,但它只是提醒不會擋人,也不能取代人工判斷。</li>
-  <li><strong>2.</strong> 填欄位:每張工作單要標清楚承接了規格裡哪一條需求與行為描述(規格裡每一條都至少要被一張工作單接住,不能漏);要動的檔案要列清楚(相對路徑,連測試檔案都要列進去);驗證方法要寫成一行可以直接貼進終端機執行的指令,若用篩選條件只挑幾個測試跑,一定要順便斷言「真的跑了幾個」,不然篩選條件沒對到任何測試、指令照樣回報成功,會誤以為測試都通過了。這個驗證指令動工前要先照原樣跑一次看結果——已經是綠燈代表這條驗證沒有鑑別力,需要加強;照理說不可能綠卻已經綠了,代表哪裡有問題要停下來查;還沒綠但方向正確,才是正常狀態可以開工。另外每張工作單要一句話寫「做完後多了什麼看得到的行為」,以及有沒有不能踩的硬性限制或禁區。</li>
+  <li><strong>2.</strong> 填欄位:每張工作單要標清楚承接了規格裡哪一條需求與行為描述(規格裡每一條都至少要被一張工作單接住,不能漏);要動的檔案要列清楚(相對路徑,連測試檔案都要列進去);驗證方法要寫成一行可以直接貼進終端機執行的指令,若用篩選條件只挑幾個測試跑,一定要順便斷言「真的跑了幾個」,不然篩選條件沒對到任何測試、指令照樣回報成功,會誤以為測試都通過了。這個驗證指令動工前要先照原樣跑一次看結果——已經是綠燈代表這條驗證沒有鑑別力,需要加強;照理說不可能綠卻已經綠了,代表哪裡有問題要停下來查;還沒綠但方向正確,才是正常狀態可以開工。另外每張工作單的 Intent 要用白話答滿「做完差什麼」三問(日常多/少什麼、改哪些地方、不會變成什麼),不要只堆契約詞;以及有沒有不能踩的硬性限制或禁區。</li>
   <li><strong>3.</strong> 填依賴關係:寫清楚每張工作單要等哪一張先做完(這是真正的硬性順序,不能提前做);允許同時進行的模式下還有一些選填欄位,但不需要自己手動排「誰跟誰可以同時做」,系統會自己從依賴關係與檔案有沒有重疊算出來。</li>
   <li><strong>4.</strong> 自我檢查:逐張工作單核對四個必填欄位(承接的需求、要動的檔案、驗證方法、依賴關係)有沒有填齊,格式有沒有踩到會被系統誤判成別的欄位的陷阱——少填一項或踩到陷阱,系統在真正要開工時會直接拒絕啟動,不會讓你帶著漏洞硬做下去。</li>
   <li><strong>5.</strong> 看一眼執行看板:用固定的工具把這份工作單文件轉成一份看板網頁,看板會自動標出整體進度概況、每張工作單卡片(缺欄位的卡片會用顏色標出來)、限制條件收合起來不佔畫面、還有依照依賴關係自動畫出的執行順序圖。四件事都要在,少一件就代表這一步沒做完。</li>
@@ -1258,7 +1263,7 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
   <tr><td>Files</td><td><code>internal/handler/contract.go</code>、<code>internal/service/contract.go</code>、<code>internal/repo/contract.go</code>、<code>internal/service/contract_test.go</code>、<code>internal/handler/contract_test.go</code></td><td>要動的檔案,含測試檔</td></tr>
   <tr><td>Verify</td><td><code>n=$(go test ./internal/... -run TestExpiring -v 2&gt;&amp;1 | grep -c '^=== RUN'); test "$n" -ge 1</code></td><td>先數有幾個測試真的跑了、再確認通過,不是只看指令有沒有報錯</td></tr>
   <tr><td>Blocked-by</td><td>—(第一張工作單,不用等別人)</td><td>要等哪一張先做完</td></tr>
-  <tr><td>Intent</td><td>系統多了到期查詢 API,回傳登入者名下 30 天內到期且未續約的合約;無符合者回空列表,不報錯</td><td>做完後系統多了什麼看得到的行為</td></tr>
+  <tr><td>Intent · 做完差什麼</td><td>跑完查詢指令 → 使用者日常多了「看得到 30 天內到期合約」這一步;改的是查詢 API 與回傳內容;不會變成自動寄信或鎖畫面</td><td>白話三問:日常多/少什麼;改哪些地方;不會變成什麼(禁只堆 R/S)</td></tr>
   <tr><td>Boundaries</td><td>查詢邏輯抽在 <code>service.ListExpiring</code>;複用既有索引,不另建索引</td><td>不能踩的硬性限制或禁區</td></tr>
   </table></div>
   <p>「填依賴關係」(步驟 3)的實際樣子:T-2(前端到期卡片)的 <code>Blocked-by: T-1</code>,代表 T-2 要等 T-1(API)先做完;整份文件最後有一張由 <code>Blocked-by</code> 自動導出的依賴圖,一路排到 T-7。</p>
