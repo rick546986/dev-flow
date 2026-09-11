@@ -26,7 +26,7 @@
 #   必須有:摘要卡(.sum)、直式 svg 或 pre、人表、題表、驗收表、details 問答(預設摺著)
 #   現況圖必須有限寬且欄內置中(width:220px + .figwrap justify-content:center)
 #   題表必須有長題目列;#scan-qs 末欄(著落徽章)必須 white-space:nowrap;
-#   #scan-ac／#scan-log 一律卡片 + ::before 欄名(不限 media query);
+#   #scan-people／#scan-ac／#scan-log 一律卡片 + ::before 欄名(不限 media query);
 #   長文欄禁止 nowrap;td 必須 overflow-wrap:anywhere;
 #   摘要 .sum 必須短標籤段(痛／繞法,有誰就另段),禁「誰:… 痛:…」一牆(#151)
 #
@@ -51,7 +51,7 @@
 #   框高改 28／每框少一行／痛空／堆疊拆很多小格 → 必須紅;
 #   殼或樣張拿掉 #scan-qs 末欄 nowrap → 必須紅;生成頁拿掉 nowrap → 必須紅;
 #   殼對 #scan-ac 長欄加回 nowrap → 必須紅;Evidence Assumption 拼進缺什麼 → 必須紅;
-#   殼把 #scan-ac／#scan-log 卡片只包回 max-width media → 必須紅;
+#   殼把 #scan-people／#scan-ac／#scan-log 卡片只包回 max-width media → 必須紅;
 #   摘要痛欄糊進「誰:」一牆 → 必須紅。
 #
 # 用法:
@@ -402,7 +402,7 @@ def style_without_maxwidth_media(compact):
 
 def scan_short_col_nowrap_gaps(text, label):
     """#scan-qs 末欄(著落徽章)必須 nowrap;長文欄禁止 nowrap;
-    #scan-ac／#scan-log 一律卡片 + ::before,不准只包在 max-width media(#151)。"""
+    #scan-people／#scan-ac／#scan-log 一律卡片 + ::before,不准只包在 max-width media(#151)。"""
     style = first_block(text, r"<style\b[^>]*>.*?</style>")
     compact = re.sub(r"\s+", "", style)
     bare = style_without_maxwidth_media(compact)
@@ -410,31 +410,36 @@ def scan_short_col_nowrap_gaps(text, label):
     qs_needles = ("#scan-qsth:last-child", "#scan-qstd:last-child")
     if selector_nowrap_missing(compact, qs_needles):
         gaps.append("%s #scan-qs 末欄缺 white-space:nowrap" % label)
-    ac_nowrap = any(
-        "white-space:nowrap" in body and "#scan-ac" in sel
-        for sel, body in css_rules(compact)
-    )
-    if ac_nowrap:
-        gaps.append("%s #scan-ac 長欄禁 white-space:nowrap" % label)
-    log_nowrap = any(
-        "white-space:nowrap" in body and "#scan-log" in sel
-        for sel, body in css_rules(compact)
-    )
-    if log_nowrap:
-        gaps.append("%s #scan-log 長欄禁 white-space:nowrap" % label)
+    for long_id, msg in (
+        ("#scan-people", "%s #scan-people 長欄禁 white-space:nowrap" % label),
+        ("#scan-ac", "%s #scan-ac 長欄禁 white-space:nowrap" % label),
+        ("#scan-log", "%s #scan-log 長欄禁 white-space:nowrap" % label),
+    ):
+        if any(
+            "white-space:nowrap" in body and long_id in sel
+            for sel, body in css_rules(compact)
+        ):
+            gaps.append(msg)
     if "overflow-wrap:anywhere" not in compact:
         gaps.append("%s td 缺 overflow-wrap:anywhere" % label)
     if "vertical-align:top" not in compact:
         gaps.append("%s td 缺 vertical-align:top" % label)
+    if "#scan-peopletr{display:block" not in bare:
+        gaps.append("%s #scan-people 必須一律卡片,不准只包在 max-width media" % label)
     if "#scan-actr{display:block" not in bare:
         gaps.append("%s #scan-ac 必須一律卡片,不准只包在 max-width media" % label)
     if "#scan-logtr{display:block" not in bare:
         gaps.append("%s #scan-log 必須一律卡片,不准只包在 max-width media" % label)
+    if "#scan-peopletd::before" not in bare:
+        gaps.append("%s 一律卡片 #scan-people 缺 ::before 欄名" % label)
     if "#scan-actd::before" not in bare:
         gaps.append("%s 一律卡片 #scan-ac 缺 ::before 欄名" % label)
     if "#scan-logtd::before" not in bare:
         gaps.append("%s 一律卡片 #scan-log 缺 ::before 欄名" % label)
     for needle in (
+        'content:"誰"',
+        'content:"要什麼"',
+        'content:"缺什麼"',
         'content:"假設…當…則…"',
         'content:"從哪看"',
         'content:"看到什麼"',
