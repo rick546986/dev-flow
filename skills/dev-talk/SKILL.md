@@ -29,6 +29,7 @@ code-intelligence 工具(語意索引 / knowledge graph / LSP),只信任其**查
 `NO_RELIABLE_MATCH`(沒有可信記憶)。**只讀狀態欄不夠時再讀 uncertainty**,
 但**不要看到有結果就當成 OK**。查不到就據此說「沒有記錄」,
 **不要拿相近的記憶頂替**。
+**專案問答先短索引 / `dev-memory.py ask`;禁預載全部 `docs/adr/` 與全量 specs;再按回傳 path 載單檔。**
 
 ## 記憶指令的生命週期(開場第一動,先於執行清單第 0 步)
 
