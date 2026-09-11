@@ -479,3 +479,9 @@
 - 落在哪:memory/, scripts/bootstrap-knowledge-index.py, scripts/check-preload-ban.sh, skills/, docs/knowledge/, skills/dev-talk/html-shell.html
 - 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.23.0
 
+## 2026-09-11 · fix-175-177 · v3.23.1
+- 做了什麼:migrate-legacy keeps CONTEXT wrap bodies; context-warn forks PRE/POST migrate; all-legacy ADR note is product wording
+- 為什麼:#175 truncated promote bodies; #176 queue still said migrate after promote; #177 tip falsely said Pilot-1 not on main
+- 落在哪:memory/agentmem/{legacy,setup}.py, scripts/{bootstrap,build}-knowledge-index.py, skills/dev-setup, docs/knowledge, tests
+- 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.23.1
+
