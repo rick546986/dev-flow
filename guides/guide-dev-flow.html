@@ -2911,7 +2911,9 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   記得到：既有 <code>talk end</code>／Stage&nbsp;6 <code>checkpoint --end</code>（見 skill，勿另造寫入路徑）。
   叫得到：先短索引或 <code>ask</code>；索引 lookup 自測
   <code>scripts/proof-knowledge-index-call-path.py</code>（缺生產索引時用
-  <code>scripts/fixtures/knowledge-index/</code>）。</p>
+  <code>scripts/fixtures/knowledge-index/</code>）。
+  機械牙：<code>scripts/check-preload-ban.sh</code>（CI fail-closed：one-liner 釘死 + 反模式掃描 + call-path proof）。
+  <em>Limit：Cursor／Grok 薄殼無 PreToolUse Read 擋；不造假 hook，可攜牙停在 script+CI。</em></p>
   <div class="tablewrap"><table>
     <tr><th>目錄</th><th>是什麼</th><th>進 Git?</th></tr>
     <tr><td><code>docs/dev/</code></td><td>給人看的七階段文檔、STATUS、HISTORY</td><td>是</td></tr>
@@ -3376,13 +3378,16 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>proof-knowledge-index-call-path.py</code></td>
         <td>#155 Pilot-3：短索引 topic → active ADR 路徑 → 檔案存在的 call-path 自測(無生產索引時用 fixtures/knowledge-index)。</td>
-        <td>人工/Pilot 自測</td><td>人工</td></tr>
+        <td>被 <code>check-preload-ban.sh</code> 呼叫;亦可人工自測</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>bootstrap-knowledge-index.py</code></td>
         <td>#155 knife-2：採用專案／母版掃 ADR+domain，寫出 index.yaml、人讀 twin、conflicts-queue（衝突永不自動挑 winner；CONTEXT 只 warn）。</td>
         <td><code>dev-setup</code> install 1c／upgrade／fix；<code>check-knowledge-index.sh</code></td><td>人工/CI</td></tr>
     <tr><td><code>test-bootstrap-knowledge-index.sh</code></td>
         <td>bootstrap 牙齒：dry-run 不寫入、--apply 三檔齊、multi-active／bad-status／dangling／unparseable／CONTEXT warn 進 queue。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI</td></tr>
+    <tr><td><code>check-preload-ban.sh</code></td>
+        <td>#155 knife-2.3：禁預載全部 ADR/spec 的機械牙——skills/guide ask-first one-liner 釘死、正向前載反模式掃描、call-path proof 自測。Cursor/Grok 無 PreToolUse bulk-Read 擋時的可攜 fail-closed 條。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-design-contract.sh</code></td>
         <td>檢查規格文件裡的邊界表格欄位有沒有填齊,只驗形狀在不在,不判斷寫得好不好。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>

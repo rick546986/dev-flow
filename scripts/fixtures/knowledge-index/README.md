@@ -68,10 +68,15 @@ PYTHONPATH=memory python3 memory/dev-memory.py ask "目前 agent-memory 決策�
 # knowledge_index.status=hit → docs/adr/0003-*.md (+ durable pointers)
 ```
 
-Bootstrap / conflict queue (landing with this slice):
+Bootstrap / conflict queue (landed):
 
 - ~~`dev-setup` bootstrap / conflict queue for real `docs/knowledge/index.yaml`~~ → `scripts/bootstrap-knowledge-index.py` + `dev-setup` 1c/upgrade/check 18
 
-Still open beyond this knife item:
+Preload ban tooth (landed):
 
-- Ban/enforce preload via gate (policy text + ask routing; gate teeth deferred)
+- ~~Ban/enforce preload via gate (policy text alone is Pilot-3)~~ → **landed**:
+  `scripts/check-preload-ban.sh` (CI via `devflow-check.sh` architecture).
+  Pins ask-first one-liner in skills + guide `#memory`, scans positive preload
+  anti-patterns, re-runs this call-path proof on production + fixture indexes.
+  **Limit:** Cursor/Grok have no PreToolUse Read hook — no portable bulk-Read
+  block; tooth is script+CI only (do not invent fake Cursor hooks).

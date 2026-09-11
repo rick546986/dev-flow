@@ -123,4 +123,14 @@ PYTHONPATH=memory python3 memory/dev-memory.py ask "目前 agent-memory 決策�
 
 - Auto-resolving conflicts (queue only; human picks)
 - Inlining durable knowledge bodies
-- Gate-enforced preload ban (policy + ask routing only for now)
+
+## Preload ban tooth (#155 knife-2.3)
+
+```bash
+scripts/check-preload-ban.sh
+```
+
+CI via `devflow-check.sh` architecture. Pins ask-first one-liner, scans positive
+preload anti-patterns, re-runs `proof-knowledge-index-call-path.py`.
+**Limit:** Cursor/Grok have no PreToolUse bulk-Read block — portable tooth is
+script+CI only.

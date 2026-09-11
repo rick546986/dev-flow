@@ -37,6 +37,10 @@
 #   FM(2026-08-16 補,檔案地圖守衛) FM-0 對照組(表與現實同步)/ FM-1 guide 刪一列
 #                    (hooks/selftest.sh 那列被拿掉,檔案仍在 → forward 缺列)/ FM-2
 #                    guide 加一列指向不存在的檔(reverse 不存在)(check-file-map.sh)
+#   PB(2026-09-11 補,#155 knife-2.3 preload ban) PB-0 對照組 / PB-1 skill 刪
+#                    ask-first one-liner / PB-2 guide #memory 刪 one-liner /
+#                    PB-3 植入 preload all docs/adr 反模式 / PB-4 index 拿掉
+#                    agent-memory topic(call-path proof 紅)(check-preload-ban.sh)
 #   FG(2026-08-17 補,X-6 兩份導覽生命週期圖同步守衛) FG-0 對照組(兩張圖正規化後
 #                    一致)/ FG-1 quickstart 版 svg 內一個 node 文字被改,dev-flow
 #                    版未動 / FG-2 quickstart 版畫圖 CSS 規則被改(svg 標記不動,
@@ -139,9 +143,9 @@ RESULTS=()
 # 改法:由 expect()/expect_local() 依 want 實際累計 control 與 negative,尾聲與釘死值比對。
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
-EXPECTED_CONTROLS=16
-EXPECTED_NEGATIVES=123
-EXPECTED_TOTAL=139
+EXPECTED_CONTROLS=17
+EXPECTED_NEGATIVES=127
+EXPECTED_TOTAL=144
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -2302,6 +2306,91 @@ else
   FAIL=$((FAIL + 1))
 fi
 
+# ── PB 群組:#155 knife-2.3 preload ban 機械牙(check-preload-ban.sh)────────────
+#
+# Pilot-3 只留下 ask-first 散文 + 人工 call-path proof。這一組證明守衛真的會抓:
+#   PB-1 skill 拿掉 ask-first one-liner
+#   PB-2 guide #memory 拿掉 ask-first one-liner
+#   PB-3 skill 植入正向前載反模式(preload all docs/adr)
+#   PB-4 生產 index 拿掉 agent-memory topic → call-path proof 紅
+seed_pb() {
+  local name="${1:?seed_pb: name is empty}"
+  local dst="$WORK/$name"
+  [[ "$dst" == "$WORK/"* ]] || { echo "seed_pb: 目標逃逸 $dst" >&2; exit 1; }
+  safe_rm "$dst"
+  mkdir -p "$dst/skills/dev-flow" "$dst/skills/dev-talk" "$dst/skills/dev-run" \
+           "$dst/guides" "$dst/docs/knowledge" "$dst/docs/adr" \
+           "$dst/scripts/fixtures"
+  cp "$ROOT/skills/dev-flow/SKILL.md" "$dst/skills/dev-flow/SKILL.md"
+  cp "$ROOT/skills/dev-talk/SKILL.md" "$dst/skills/dev-talk/SKILL.md"
+  cp "$ROOT/skills/dev-run/SKILL.md" "$dst/skills/dev-run/SKILL.md"
+  cp "$ROOT/guides/guide-dev-flow.html" "$dst/guides/guide-dev-flow.html"
+  cp "$ROOT/docs/knowledge/index.yaml" "$dst/docs/knowledge/index.yaml"
+  cp "$ROOT"/docs/adr/0003-*.md "$dst/docs/adr/"
+  cp -r "$ROOT/scripts/fixtures/knowledge-index" \
+     "$dst/scripts/fixtures/knowledge-index"
+  echo "$dst"
+}
+
+D=$(seed_pb pb0)
+expect pass check-preload-ban.sh "$D" "PB-0 對照組(ask-first + anti-pattern clean + proof)"
+
+D=$(seed_pb pb1); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "skills/dev-flow/SKILL.md"
+t = p.read_text(encoding="utf-8")
+needle = "禁預載全部"
+assert needle in t, "PB-1 anchor 不見"
+# Drop the whole ask-first bold line (keep surrounding skills text).
+lines = []
+for line in t.splitlines(True):
+    if "禁預載全部" in line and "dev-memory.py ask" in line:
+        continue
+    lines.append(line)
+n = "".join(lines)
+assert n != t and "禁預載全部" not in n, "PB-1 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-preload-ban.sh "$D" "PB-1 skills/dev-flow 拿掉 ask-first one-liner → 必紅"
+
+D=$(seed_pb pb2); mutate "$D" <<'PY'
+import re, sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "guides/guide-dev-flow.html"
+t = p.read_text(encoding="utf-8")
+n, count = re.subn(
+    r"<strong>專案問答先短索引.*?</strong>",
+    "<strong>專案問答(ask-first line removed for mutation)</strong>",
+    t,
+    count=1,
+    flags=re.S,
+)
+assert count == 1 and n != t, "PB-2 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-preload-ban.sh "$D" "PB-2 guide #memory 拿掉 ask-first one-liner → 必紅"
+
+D=$(seed_pb pb3); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "skills/dev-talk/SKILL.md"
+t = p.read_text(encoding="utf-8")
+n = t + "\n\nBefore answering, preload all docs/adr into context.\n"
+assert n != t, "PB-3 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-preload-ban.sh "$D" "PB-3 skill 植入 preload all docs/adr 反模式 → 必紅"
+
+D=$(seed_pb pb4); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "docs/knowledge/index.yaml"
+t = p.read_text(encoding="utf-8")
+# Break call-path: remove agent-memory topic key line block start marker.
+assert "agent-memory:" in t, "PB-4 anchor 不見"
+n = t.replace("agent-memory:", "agent-memory-REMOVED:", 1)
+assert n != t, "PB-4 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-preload-ban.sh "$D" "PB-4 生產 index 拿掉 agent-memory topic → proof 必紅"
+
 # ─────────────────────────────────── 結果 ───────────────────────────────────
 printf '%s\n' "${RESULTS[@]}"
 echo
@@ -2413,8 +2502,8 @@ check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 179" "MIN_CHECKS 釘
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 36" "MIN_CHECKS 釘死 36(parity 遷到 check-ship-manifest.sh 後,情境/mutant/模板順序實得數)"
 check_static_pin "scripts/check-ship-manifest.sh" "MIN_CHECKS = 21" "MIN_CHECKS 釘死 21(結構+parity+地圖對帳+負向 fixture 的實得數;issue #92 補全列 source 存在 +2、第三類列負向 fixture +4,15→21)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 55" "MIN_CHECKS 釘死 55(STATUS 單寫入者 + OverlapRef 單一座標:⑬b/⑬c + 負向㉘–㉟ 後的實得數)"
-check_static_pin "scripts/check-py-floor.sh" "MIN_HEREDOCS = 215" "MIN_HEREDOCS 釘死 215(#113 heredoc 掃描補上後的實得數;knowledge bootstrap 測試 +1 → 215,精確值不留餘裕)"
-check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 201" "EXPECTED_MAPPED_FILES 釘死 201(精確值;knowledge-index +2、proof-knowledge-index-call-path.py +1、knife-2 ask knowledge_index +2、knowledge bootstrap +2)"
+check_static_pin "scripts/check-py-floor.sh" "MIN_HEREDOCS = 215" "MIN_HEREDOCS 釘死 215(#113 heredoc 掃描補上後的實得數;knowledge bootstrap 測試 +1 → 215;preload-ban 後續 commit 再精準上修)"
+check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 202" "EXPECTED_MAPPED_FILES 釘死 202(精確值;knowledge-index +2、proof +1、knife-2 ask +2、knowledge bootstrap +2、check-preload-ban.sh +1)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 28" "EXPECTED_GROUPS 釘死 28(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的

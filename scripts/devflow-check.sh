@@ -227,6 +227,9 @@ group_architecture() {
   # knowledge topic index: yaml 正本 + md 投影;過期就紅(#155 Pilot-2)
   run "architecture/check-knowledge-index" scripts/check-knowledge-index.sh || return 1
   run "architecture/test-bootstrap-knowledge-index" scripts/test-bootstrap-knowledge-index.sh || return 1
+  # preload ban tooth(#155 knife-2.3):ask-first one-liner + anti-pattern + call-path proof
+  # (Cursor/Grok 無 PreToolUse bulk-Read 擋;可攜牙 = 本腳本 + CI)
+  run "architecture/check-preload-ban" scripts/check-preload-ban.sh || return 1
   # gate twin 是審查介面不是文件視覺版(README §6):三件必含 + 預設只寫本機完整文件,對四站實跑
   run "architecture/check-gate-twin"         scripts/check-gate-twin.sh         || return 1
   # 模型分層是散文紀律(prompt 級),沒照做不會現形——事後從 ledger 的 attempt 事件流
