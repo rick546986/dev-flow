@@ -1581,10 +1581,10 @@ def parse_tasks(_md, secs):
     格式與機制**沿用 K-7**(card() 的 missing 清單、「缺「X」欄」字串)—— 執行板跟
     4-spec 的審查介面一樣,「缺必填欄」不能只在別處列表,必須在卡上直接現形。
     Owner 選配,不進 TASK_REQUIRED 就永遠不會觸發缺欄。
-    Intent 借 obs_block 的高亮樣式(標籤換成「Intent」);Boundaries 走 card() 新加的
-    `extra` 插槽,包成 `<details>`(預設收合、經 md_block 渲染、原文零刪減)——
-    這正是 owner 兩次抱怨的那件事:Boundaries 常常上千字,直接攤平會把
-    Covers/Files/Verify 擠到畫面外,摺起來才看得下去。
+    Intent 借 obs_block 的高亮樣式(顯示別名「Intent · 做完差什麼」,欄名仍是
+    Intent);Boundaries 走 card() 新加的 `extra` 插槽,包成 `<details>`(預設收合、
+    經 md_block 渲染、原文零刪減)——這正是 owner 兩次抱怨的那件事:Boundaries
+    常常上千字,直接攤平會把 Covers/Files/Verify 擠到畫面外,摺起來才看得下去。
 
     卡形狀(套 4-spec 已合骨架):每張 T 加 2–3 條「你要審什麼」(不開口能不能開工、
     Blocked-by 是不是真的 T、4-spec 觀測還在不在)。問題從該 T 的洞抽,禁止三張 T
@@ -1609,7 +1609,7 @@ def parse_tasks(_md, secs):
         missing = [k for k in TASK_REQUIRED if not (f.get(k) or "").strip()]
         rows = [(k, f.get(k, "")) for k in ("Covers", "Files", "Verify", "Blocked-by")]
         intent = f.get("Intent", "").strip()
-        sub = obs_block(intent, label="Intent") if intent else ""
+        sub = obs_block(intent, label="Intent · 做完差什麼") if intent else ""
         bounds = f.get("Boundaries", "").strip()
         extra = ""
         if bounds:

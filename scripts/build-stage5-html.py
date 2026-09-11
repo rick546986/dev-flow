@@ -182,12 +182,19 @@ def parse_tasks(text):
     return tasks
 
 
+# Intent 欄名不變;審頁顯示別名提醒「做完差什麼」白話三問(見 _templates/5-tasks.md)。
+FIELD_LABELS = {
+    "Intent": "Intent · 做完差什麼",
+}
+
+
 def render_task(task):
     fields = task["fields"]
     bits = []
     for key in ("Intent", "Covers", "Files", "Verify", "Blocked-by", "Boundaries"):
         if key in fields:
-            bits.append("<p><strong>%s</strong> %s</p>" % (esc(key), esc(fields[key])))
+            label = FIELD_LABELS.get(key, key)
+            bits.append("<p><strong>%s</strong> %s</p>" % (esc(label), esc(fields[key])))
     body = "".join(bits) or "<p>—</p>"
     title = task["title"] or "—"
     return (
