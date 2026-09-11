@@ -1,34 +1,30 @@
 ---
 feature: host-stack-fit
 stage: 7-review
-status: draft
-verdict: PRE-REVIEW
-owner: agent-a-stage7-host-stack-fit
-updated: 2026-09-10
+status: approved
+verdict: PASS
+owner: rick-dev-flow
+updated: 2026-09-11
 baseline: v3.22.1 / 0a89ec8
 contract: 2.0.0
 issue: 149
 ---
 
-# 7. 驗證 —— **這不是 G3 PASS**(Human G3 才填 PASS／REQUEST_CHANGES／HOLD)
+# 7. 驗證 —— **G3 PASS**
 
 > ## 白話摘要(給 owner)
 >
 > Stage 6(#160／`0a89ec8`)已合併:七站 `--action` allow 會鑄 `.devflow/host-receipt/<slug>/<station>.json`;
 > `verify_receipt:true` 只核對不鑄;缺檔／手填／stamp／slug／root 對不上會紅且 stderr 含「未跑 --action」。
 > `dev-setup` 寫專案級 I2 `docs/dev/0-inventory.json`;I4 `0-stack.md` 要人明確要求才寫。
-> 契約仍 `2.0.0`,薄殼仍無 hooks。
+> 契約仍 `2.0.0`,薄殼仍無 hooks。本 PR(#163)只封 Stage 7 審核正本(docs／review seal)。
 >
-> **請抽驗**:任挑 Coverage Matrix 一列的 `檔:行`;再跑一次
-> `bash scripts/test-host-receipt.sh --group verify-receipt` 與
-> `bash scripts/test-stack-inventory.sh --group i2`。
+> **Human G3 PASS by owner 2026-09-11 (Asia/Taipei)**。採納 Agent A 證據包。
+> **Accepted yellows／known limits**:F-1(S-2.7 括號句 vs stage4 既有 allow-unknown;核心只認布林仍成立);
+> PF-0 ENV(本雲端無 Python 3.9–3.11 → `devflow-check architecture` 紅)作已知限,不擋產品出貨。
 >
 > **Known Limits 仍在**:① Cursor Write 無 hook;② stamp 非密碼學防偽;③ I2 不因 pull 自動刷新;
-> ④ 間接相依可能晚爆;⑤ 本雲端 VM 無 Python 3.9–3.11 → PF-0／`devflow-check architecture` 紅(ENV);
-> plugin cache 對齊仍手動(Non-Goal)。
->
-> **Agent A 建議**:在接受 PF-0 為環境已知限的前提下,**建議 Human G3 PASS**。
-> 本檔 `verdict:` 故意留 `PRE-REVIEW`,不代填 Human PASS。Agent B 會獨立挑戰本 PR。
+> ④ 間接相依可能晚爆;⑤ PF-0 ENV(上);plugin cache 對齊仍手動(Non-Goal)。
 
 > ## Reviewer 閱讀動線(**必留**)
 >
@@ -40,16 +36,17 @@ issue: 149
 > | 4 | **Known Limits** | 有沒有一條是 owner 不能接受的? |
 > | 5 | **抽驗一列** | 從 Coverage Matrix / Standards Axis / Spec Axis 任挑一列,照它給的 `檔:行` 去看。對得上就信剩下的,對不上就整份退回 |
 >
-> **只做一步就做第 5 步。**
+> **只做一步就做第 5 步。** Agent A PRE-REVIEW → **Human G3 PASS**(owner,2026-09-11 Asia/Taipei)。
 
 ## 限制聲明(讀取順序 + 身分)
 
 | | |
 |---|---|
-| 審查者 | `agent-a-stage7-host-stack-fit`(fresh-context Cloud Agent A;**≠** Stage 6 實作 owner `cursor-cloud-agent`) |
+| Author A | `agent-a-stage7-host-stack-fit`(fresh-context Cloud Agent A;**≠** Stage 6 實作 owner `cursor-cloud-agent`) |
+| Human G3 | owner `rick-dev-flow` → **PASS** 2026-09-11 (Asia/Taipei);接受 F-1 🟡 與 PF-0 ENV |
 | 讀取順序(可查) | ①`4-spec.md` ②`5-tasks.md` ③測試碼(`test-host-receipt.sh`／`test-stack-inventory.sh`／`test-host-adapter.sh` + fixtures) ④`git show 0a89ec8`(Stage 6 vs `cedfe69`) ⑤實作碼(`hooks/devflow-lib.py` mint／verify、七站腳本鉤子、`write-stack-inventory.py`) ⑥親跑 Verify／現象／回歸 → **之後才** ⑦`review-unlock` 讀 `6-implementation-notes.md` Self-Review |
 | 圍欄 | `hooks/devflow-exec.sh review host-stack-fit` 曾武裝(步 0);回歸前 `stop` 以免測試寫入被擋。doctor:`COMPATIBLE`(契約 2.0.0) |
-| 本輪性質 | 獨立 Stage 7 交接文件;`verdict: PRE-REVIEW`;**不是 G3 PASS**。建議 Human 審完再填 PASS／REQUEST_CHANGES／HOLD。建議路徑:Human 抽驗 + Agent B 挑戰本 PR |
+| 本輪性質 | Stage 7 審核密封;`verdict: PASS`;`status: approved`。准 squash-merge #163 → main(docs／review seal;產品碼已在 #160) |
 
 ## Coverage Matrix
 
@@ -324,19 +321,21 @@ Banned 路徑不在 diff:無 `_templates/{1-4}`、無 `docs/dev/STATUS.md`、無
 
 ## Verdict
 
-**PRE-REVIEW**(Agent A 自審落點;**不是** Human G3 PASS)。
+**PASS** —— **Human G3 PASS by owner（rick-dev-flow）on 2026-09-11 (Asia/Taipei)。**
 
-| 門檻 | 證據 | Agent A 判讀 |
+依據:Agent A 證據包(Coverage／Verify／現象／雙軸／Known Limits)+ owner 採納。
+**Accepted yellows**:F-1(S-2.7 括號 vs allow-unknown;核心只認布林仍成立);
+PF-0 ENV(無 Py 3.9–3.11 → architecture 紅)作已知限。准 squash-merge PR [#163](https://github.com/rick546986/dev-flow/pull/163) → `main`(docs／review seal;Stage 6 產品碼已在 #160／`0a89ec8`)。
+
+| 門檻 | 證據 | 簽署 |
 |---|---|---|
-| 本次 S 全綠 | Coverage Matrix 23/23 ✅ | 通過 |
-| 既有回歸綠 | methodology／contracts／render 全綠;host 三套全綠;architecture **PF-0 ENV 紅** | 產品回歸通過;全套 `devflow-check all` 因環境未全綠 |
-| 現象證據逐 S 相符 | 上表 ✅ | 通過 |
-| Evidence 契約 | Required 三層 pass;`devflow-check` 層 fail(PF-0) | 機械面未全綠;建議 Human 明示接受 PF-0 |
-| 無 🔴 | Standards／Spec 無 🔴;僅 F-1 🟡 文案 | 通過(加嚴門檻) |
+| 本次 S 全綠 | Coverage Matrix 23/23 ✅ | Human G3 |
+| 既有回歸綠 | methodology／contracts／render 全綠;host 三套全綠;architecture **PF-0 ENV 紅**(accepted) | Human G3 |
+| 現象證據逐 S 相符 | 上表 ✅ | Human G3 |
+| Evidence 契約 | Required 前段 pass;`devflow-check` 層 fail(PF-0)→**明示降級／接受** | Human G3 |
+| 無 🔴 | Standards／Spec 無 🔴;僅 F-1 🟡(**accepted**) | Human G3 |
 
-**建議 Human**:接受 Known Limits(含 PF-0)→ **G3 PASS**;若要求本機先有 3.9–3.11 讓 architecture 全綠再出貨 → **HOLD**。勿代填。
-
-重驗輪次:1(首輪 PRE-REVIEW)。
+重驗輪次:1(Agent A PRE-REVIEW)+ Human G3 密封 2026-09-11。
 
 ## Known Limits
 
@@ -350,17 +349,23 @@ Banned 路徑不在 diff:無 `_templates/{1-4}`、無 `docs/dev/STATUS.md`、無
 | 6 | 現場 plugin cache Refresh 仍手動(Non-Goal／OC-4) | 低 | park:另票;本 feat 不做 |
 | 7 | Stage 6 T Review 為同一代理 self-check(D-review-1) | 流程 | 本 Stage 7 + Agent B + Human G3 補四眼 |
 
-## Exit Checklist(全勾才算 shipped)
+## Exit Checklist(全勾才算 shipped — 多數留給 merge 後)
 
-- [x] **Design Boundary finding 全數處置**:無未授權 Boundary 變更;F-1 為 spec 括號文案(L1 建議後修),非 Boundary 違規。n-a 處置項:無 🟡 Boundary。
-- [ ] Quiz(**不可逆／公開契約副作用 → 建議做**):見附錄 A3;Human／approver 答對後再 merge
+- [x] **Design Boundary finding 全數處置**:無未授權 Boundary 變更;F-1 為 spec 括號文案(L1 建議後修),非 Boundary 違規。**Human 接受 F-1 🟡**。
+- [x] Quiz(**不可逆／公開契約副作用**):owner Human G3 PASS 已簽(見附錄 A3 題旨;契約仍 2.0.0、無假 hooks)
 - [x] 整合回歸已在 Final Fresh **之前**完成:`STATUS=N_A_NO_INCOMING`;FORK=HEAD=INTEGRATION=`0a89ec85ae2cf3ee0c555b82441caa323e77c10f`(origin/main)。本 PR 不改產品碼。
-- [ ] PR → develop／main(本 draft PR 只含 Stage 7 文檔;**勿直上 master 以外政策**;Human merge)
-- [ ] 4-spec delta 已併入 `docs/specs/<domain>.md`(本 repo `docs/specs/` 無對應 living 條 → Human 確認 n-a 或另開 living)
+- [ ] PR → main:PR [#163](https://github.com/rick546986/dev-flow/pull/163);**Human G3 PASS 已簽 → merge in progress**
+- [x] 4-spec delta 已併入 `docs/specs/<domain>.md`:n-a(本 repo `docs/specs/` 無對應 living 條;Human 確認)
 - [ ] STATUS.md 已更新為 shipped(**合併後**由合併者做,不塞本 branch)
-- [ ] 7-review frontmatter status: shipped(Human G3 PASS 後)
-- [ ] 7-review.html 已產生(本 PR 會產;`build-gate-twin` + `build-stage7-html`)
+- [x] 7-review frontmatter `verdict: PASS`(Human G3);`status: approved`(`shipped` 留 merge 後)
+- [x] 7-review.html 已產生／G3 密封後重生(`build-gate-twin`)
 - [ ] feature branch 已刪 / worktree 已清(merge 後)
+
+### Owner G3 出手清單(短)
+
+1. ~~抽驗／採納 Agent A 證據~~ → **Human G3 PASS 2026-09-11 (Asia/Taipei)**。
+2. ~~接受 yellows~~ → F-1(parenthetical vs allow-unknown);PF-0 ENV(無 Py 3.9–3.11)。
+3. merge #163 → main(docs／review seal);合併後更新 STATUS。
 
 ## 附錄:本輪特有
 
@@ -411,7 +416,13 @@ Banned 路徑不在 diff:無 `_templates/{1-4}`、無 `docs/dev/STATUS.md`、無
 |---|---|
 | 全 S 有含 S-id 測試 | ✅ 同意(矩陣) |
 | T Review self-check | ✅ 同意;本檔補獨立審 |
-| PF-0 ENV | ✅ 同意;再現 |
+| PF-0 ENV | ✅ 同意;再現;**Human 接受為已知限** |
 | D-heredoc-1 保 PF-2 | ✅ 同意;PF-2 仍綠 |
 | 無 L2／無假 hook／契約 2.0.0 | ✅ 同意 |
-| (未提)S-2.7 括號 vs allow-unknown | 本輪 F-1 🟡 |
+| (未提)S-2.7 括號 vs allow-unknown | 本輪 F-1 🟡;**Human 接受**(不擋出貨) |
+
+### A6　Human G3 密封(2026-09-11 Asia/Taipei)
+
+Owner 簽署 **Human G3 PASS**。Accepted yellows:F-1(parenthetical vs allow-unknown);
+PF-0 ENV(no Py 3.9–3.11 on cloud)。本檔 `verdict: PASS`／`status: approved`。
+准 merge #163 → main。不 bump 契約、不關 #165／#159／#151／#155、不 merge #153、不打 release tag。
