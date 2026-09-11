@@ -20,7 +20,8 @@
 """
 import re
 
-from . import cues, retrieval, signal as signal_mod, sync, textnorm, truth
+from . import (cues, knowledge_index, retrieval, signal as signal_mod, sync,
+               textnorm, truth)
 
 # ── retrieval status contract(P0-4)──────────────────────────────────────────
 # 上層 agent 很容易只看 `retrieval_status` 這一個欄位。所以「其實還沒驗證」
@@ -183,6 +184,10 @@ def _execute_prepared(store, repo_root, plan_dict, workspace_id, snapshot,
     kind = plan_dict["primary"]
     branch = plan_dict["branch"] or (snapshot or {}).get("branch")
 
+    # #155 knife-2:CURRENT / topic-like 先查短索引,只回指標 path(不預載全 ADR)。
+    index_route = knowledge_index.route(
+        repo_root, plan_dict["query"], plan_dict)
+
     if kind == CURRENT:
         answer = _current(store, repo_root, plan_dict, workspace_id, snapshot,
                           embedder, limit, branch)
@@ -199,8 +204,56 @@ def _execute_prepared(store, repo_root, plan_dict, workspace_id, snapshot,
     else:
         answer = _discovery(store, plan_dict, embedder, limit, branch)
 
+    answer = _apply_knowledge_index(answer, index_route)
+
     if plan_dict["secondary"]:
         answer["secondary_intents"] = plan_dict["secondary"]
+    return answer
+
+
+def _apply_knowledge_index(answer, index_route):
+    """把短索引路由掛上 envelope;topic hit 時優先露出指標 path。
+
+    既有 retrieval_status 契約不動:
+    - CURRENT 已有 fast-path OK → 維持 OK,只附加 path 指標
+    - 其餘若原本 NO_RELIABLE_MATCH / 空 results 且索引有 path → 升成 OK
+      (答案是「去讀這些檔」,不是捏造記憶正文)
+    - 缺索引 / 未知 topic → 只記 knowledge_index 欄,不改 status
+    """
+    answer["knowledge_index"] = index_route
+    path_rows = knowledge_index.path_results(index_route)
+    if index_route.get("status") != knowledge_index.HIT or not path_rows:
+        if index_route.get("note") and index_route["status"] in (
+                knowledge_index.MISSING_INDEX, knowledge_index.UNREADABLE):
+            # 降級可見,但不污染 uncertainty 成「查不到」
+            pass
+        return answer
+
+    existing = list(answer.get("results") or [])
+    # 去重:已有相同 path 不重複塞
+    seen_paths = {r.get("path") for r in existing if r.get("path")}
+    new_rows = [r for r in path_rows if r["path"] not in seen_paths]
+
+    if answer.get("current_truth") and answer.get("retrieval_status") == retrieval.OK:
+        answer["results"] = existing + new_rows
+        return answer
+
+    if answer.get("retrieval_status") == retrieval.NO_RELIABLE_MATCH or not existing:
+        answer["results"] = new_rows + existing
+        answer["retrieval_status"] = retrieval.OK
+        answer["confidence"] = max(float(answer.get("confidence") or 0.0), 0.85)
+        answer["uncertainty"] = [
+            u for u in (answer.get("uncertainty") or [])
+            if "沒有可信記憶命中" not in u
+        ]
+        if index_route.get("note"):
+            answer["uncertainty"] = list(answer["uncertainty"]) + [
+                index_route["note"]]
+        return answer
+
+    answer["results"] = new_rows + existing
+    if index_route.get("note"):
+        answer.setdefault("uncertainty", []).append(index_route["note"])
     return answer
 
 

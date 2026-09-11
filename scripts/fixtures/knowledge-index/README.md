@@ -58,8 +58,17 @@ python3 "${DEVFLOW_ROOT}/memory/dev-memory.py" checkpoint "$MEMORY_SESSION_ID" -
 # then memory commit + push + durable-check
 ```
 
-## Gaps left for knife-2
+## Knife-2 ask wiring (landed)
 
-- Wire `ask` backend to short index (topic routing), not only FTS/embedding
-- `dev-setup` bootstrap / conflict queue for real `docs/knowledge/index.yaml`
-- Ban/enforce preload via gate (policy text alone is Pilot-3)
+`dev-memory.py ask` now routes CURRENT / topic-like questions through
+`docs/knowledge/index.yaml` (see `memory/agentmem/knowledge_index.py`).
+
+```bash
+PYTHONPATH=memory python3 memory/dev-memory.py ask "目前 agent-memory 決策指向哪份 ADR?" --json
+# knowledge_index.status=hit → docs/adr/0003-*.md (+ durable pointers)
+```
+
+Still open beyond this knife item:
+
+- `dev-setup` bootstrap / conflict queue for adopting repos
+- Ban/enforce preload via gate (policy text + ask routing; gate teeth deferred)
