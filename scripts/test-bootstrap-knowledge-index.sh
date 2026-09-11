@@ -6,6 +6,8 @@
 #   • --apply writes index.yaml + index.md + conflicts-queue.yaml
 #   • multi-active / bad-status / dangling / unparseable → queue (no auto-winner)
 #   • CONTEXT.md → warn-candidate-only (not resurrected as index truth)
+#   • #176 context-warn.detail forks PRE vs POST migrate (domain empty vs present)
+#   • bootstrap never auto-deletes CONTEXT.md
 #   • mother-shaped clean tree → empty queue
 #
 # 用法: scripts/test-bootstrap-knowledge-index.sh [pack]
@@ -32,7 +34,7 @@ import tempfile
 pack, tool = sys.argv[1], sys.argv[2]
 passed = 0
 failed = 0
-MIN_CASES = 10
+MIN_CASES = 14
 
 
 def run(root, *args):
@@ -114,10 +116,39 @@ def plant_conflicts(tmp):
     )
     # CONTEXT.md warn only
     write(os.path.join(root, "CONTEXT.md"), "# legacy glossary — not truth\n")
-    # domain knowledge key (should index, not conflict)
+    # domain knowledge key (should index, not conflict) → POST-MIGRATE warn text
     write(
         os.path.join(root, ".dev-flow", "knowledge", "domain", "payments.yaml"),
         "kind: domain\nkey: payments\nbody: |\n  term\n",
+    )
+    return root
+
+
+def plant_pre_migrate(tmp):
+    """CONTEXT present, domain empty → PRE-MIGRATE queue detail."""
+    root = os.path.join(tmp, "pre-migrate")
+    adr(
+        os.path.join(root, "docs", "adr", "0001-solo.md"),
+        "accepted",
+        ["solo"],
+    )
+    write(os.path.join(root, "CONTEXT.md"), "# legacy glossary — not truth\n")
+    return root
+
+
+def plant_post_migrate(tmp):
+    """CONTEXT still present after promote → POST-MIGRATE queue detail."""
+    root = os.path.join(tmp, "post-migrate")
+    adr(
+        os.path.join(root, "docs", "adr", "0001-solo.md"),
+        "accepted",
+        ["solo"],
+    )
+    write(os.path.join(root, "CONTEXT.md"), "# legacy glossary — not truth\n")
+    write(
+        os.path.join(root, ".dev-flow", "knowledge", "domain", "Contract.yaml"),
+        "kind: domain\nkey: Contract\nstatus: CANDIDATE\n"
+        "body: |\n  from CONTEXT\n",
     )
     return root
 
@@ -127,6 +158,8 @@ print("=== test-bootstrap-knowledge-index ===")
 with tempfile.TemporaryDirectory(prefix="df-kboot-") as tmp:
     clean = plant_clean(tmp)
     dirty = plant_conflicts(tmp)
+    pre = plant_pre_migrate(tmp)
+    post = plant_post_migrate(tmp)
 
     # 1) dry-run writes nothing
     before = set()
@@ -178,6 +211,15 @@ with tempfile.TemporaryDirectory(prefix="df-kboot-") as tmp:
         "context status warn-candidate-only",
         "status: warn-candidate-only" in qtext,
         qtext,
+    )
+    expect(
+        "dirty tree with domain uses POST-MIGRATE detail",
+        "POST-MIGRATE" in qtext and "do not auto-delete" in qtext,
+        qtext,
+    )
+    expect(
+        "CONTEXT.md not deleted by apply",
+        os.path.isfile(os.path.join(dirty, "CONTEXT.md")),
     )
 
     ytext = open(yml, encoding="utf-8").read()
@@ -232,6 +274,57 @@ with tempfile.TemporaryDirectory(prefix="df-kboot-") as tmp:
         fh.write("# tampered\n")
     r = run(clean, "--check")
     expect("check fails on stale queue", r.returncode == 1, r.stdout + r.stderr)
+
+    # 6) #176 PRE-MIGRATE detail when CONTEXT ∧ empty domain
+    r = run(pre, "--apply")
+    expect("pre-migrate apply exit 0", r.returncode == 0, r.stderr or r.stdout)
+    pq = open(
+        os.path.join(pre, "docs", "knowledge", "conflicts-queue.yaml"),
+        encoding="utf-8",
+    ).read()
+    expect(
+        "pre-migrate detail CTA",
+        "PRE-MIGRATE" in pq
+        and "glossary stays []" in pq
+        and "dry-run ≠ complete" in pq
+        and "--apply --promote" in pq
+        and "POST-MIGRATE" not in pq,
+        pq,
+    )
+    expect(
+        "pre-migrate does not delete CONTEXT",
+        os.path.isfile(os.path.join(pre, "CONTEXT.md")),
+    )
+    py = open(
+        os.path.join(pre, "docs", "knowledge", "index.yaml"), encoding="utf-8"
+    ).read()
+    # solo topic has no domain glossary pointer yet
+    expect(
+        "pre-migrate index glossary empty for solo",
+        re.search(r"solo:\n(?:.*\n)*?    glossary: \[\]\n", py) is not None,
+        py,
+    )
+
+    # 7) #176 POST-MIGRATE detail when domain yaml already present
+    r = run(post, "--apply")
+    expect("post-migrate apply exit 0", r.returncode == 0, r.stderr or r.stdout)
+    oq = open(
+        os.path.join(post, "docs", "knowledge", "conflicts-queue.yaml"),
+        encoding="utf-8",
+    ).read()
+    expect(
+        "post-migrate detail CTA",
+        "POST-MIGRATE" in oq
+        and ".dev-flow/knowledge/domain/" in oq
+        and "do not auto-delete" in oq
+        and "PRE-MIGRATE" not in oq
+        and "migrate-legacy dry-run then" not in oq,
+        oq,
+    )
+    expect(
+        "post-migrate does not delete CONTEXT",
+        os.path.isfile(os.path.join(post, "CONTEXT.md")),
+    )
 
 print()
 print("passed=%d failed=%d (min %d)" % (passed, failed, MIN_CASES))

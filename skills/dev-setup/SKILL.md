@@ -178,6 +178,11 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    **CANDIDATE + documentation authority** 落地(不標成已確認 —— 沒有人在遷移
    那一刻重新確認過那些詞條)。遷移完成且使用者確認後才可刪 `CONTEXT.md`,
    **dev-setup 不自動刪別人的檔**。
+   **Loud empty-glossary:** After `dev-memory.py setup` **without**
+   `migrate-legacy --apply --promote`, `.dev-flow/knowledge/` is absent/empty
+   and index topics stay `glossary: []`. Dry-run ≠ complete —— setup 只 dry-run
+   migrate,會在報告 `needs_owner_action` / stderr 標出;doctor 對「CONTEXT ∧
+   domain 空」WARN `legacy-context-pending`。promote 後再跑步 1c bootstrap。
    `docs/dev/HISTORY.md` 只被**索引**進本機記憶(查得到「之前發生過什麼」),
    不複製進 `.dev-flow/events/` —— 同一份內容兩個 durable 正本必然漂移。
 1c. **Knowledge topic index bootstrap**(#155 knife-2;`dev-setup` 是採用專案
@@ -192,8 +197,11 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    queue;multi-active 時 index 的 `active_adr` 清空只留 conflicts 標籤。
    **CONTEXT.md**:若仍存在,只進 queue 當 `warn-candidate-only`(對齊步 1b 的
    migrate-legacy CANDIDATE 路徑),**不得**把 CONTEXT 內文灌進 index 當 routing
-   真相,也不得在本步刪檔。母版 repo 與產品專案同一命令(`--root` 指向專案根)。
-   預覽用預設 dry-run(不加 `--apply`);牙齒:`scripts/test-bootstrap-knowledge-index.sh`。
+   真相,也不得在本步刪檔。`context-warn.detail` **分岔**:domain 空 → PRE-MIGRATE
+   (dry-run → `--apply --promote`;glossary 仍 `[]`);domain 已有 yaml → POST-MIGRATE
+   (詞條已在 CANDIDATE,等人確認無雙引再刪)。母版 repo 與產品專案同一命令
+   (`--root` 指向專案根)。預覽用預設 dry-run(不加 `--apply`);牙齒:
+   `scripts/test-bootstrap-knowledge-index.sh`。
 2. `.claude/rules/arch-invariants.md`:從 `_templates/arch-invariants.md` 建檔,**並自動產草稿**
    (不留空殼):
    - 先收割既有素材:使用者指名的外部 workflow artifacts 中的架構指引
@@ -504,7 +512,9 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     走 install 步 1c / upgrade bootstrap `--apply` 補;②過期(與現掃 ADR/domain
     不一致)= stale,同樣 `--apply` 重生;③queue `items` 非空 → 回報「N 筆待人工
     裁決」,**不**自動修、不挑 winner;④`context.status: warn-candidate-only` →
-    提醒走步 1b migrate-legacy,不得把 CONTEXT 當 index 真相。
+    讀 `context-warn.detail` 分岔:PRE-MIGRATE → 步 1b `--apply --promote`(否則
+    `glossary: []` 會一直空;dry-run ≠ complete);POST-MIGRATE → 勿再當「還沒遷移」,
+    只等人確認無雙引後刪 CONTEXT。不得把 CONTEXT 當 index 真相、不得自動刪。
 
 ## fix / uninstall
 

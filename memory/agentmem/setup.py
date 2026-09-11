@@ -16,6 +16,7 @@
 回報一律結構化(dev-setup 的回報格式固定四段,它需要可直接鋪成表格的資料)。
 """
 import os
+import sys
 
 from . import (LOCAL_SCHEMA_VERSION, durable, embedding, identity, legacy,
                paths, schema, signal, store as store_mod, sync, truth)
@@ -23,6 +24,60 @@ from . import (LOCAL_SCHEMA_VERSION, durable, embedding, identity, legacy,
 
 class SetupError(RuntimeError):
     """setup 前置條件不成立(不在 git repo / project.yaml 壞掉)。"""
+
+
+def _domain_yaml_count(root):
+    """Count promote-landing domain yaml files under .dev-flow/knowledge/domain/."""
+    domain_dir = os.path.join(root, ".dev-flow", "knowledge", "domain")
+    if not os.path.isdir(domain_dir):
+        return 0
+    n = 0
+    for name in os.listdir(domain_dir):
+        if not name.endswith((".yaml", ".yml")):
+            continue
+        if os.path.isfile(os.path.join(domain_dir, name)):
+            n += 1
+    return n
+
+
+def _legacy_context_path(root):
+    for candidate in ("CONTEXT.md", os.path.join("docs", "dev", "CONTEXT.md")):
+        full = os.path.join(root, candidate)
+        if os.path.isfile(full):
+            return candidate.replace("\\", "/")
+    return None
+
+
+def _legacy_context_finding(root):
+    """#176: CONTEXT present ∧ empty domain → WARN; domain already landed → OK."""
+    ctx = _legacy_context_path(root)
+    if not ctx:
+        return None
+    n = _domain_yaml_count(root)
+    if n == 0:
+        return {
+            "level": "warn",
+            "check": "legacy-context-pending",
+            "detail": (
+                "CONTEXT.md present and .dev-flow/knowledge/domain/ empty — "
+                "setup/migrate dry-run ≠ complete; index glossary stays [] until "
+                "migrate-legacy --apply --promote"
+            ),
+            "fix": (
+                "dev-memory.py migrate-legacy --apply --promote "
+                "(then owner confirms before deleting CONTEXT; never auto-delete)"
+            ),
+        }
+    return {
+        "level": "ok",
+        "check": "legacy-context-pending",
+        "detail": (
+            "{0} domain yaml present (CANDIDATE likely from migrate); "
+            "CONTEXT.md still at {1} — confirm no dual-cite then delete; "
+            "do not auto-delete"
+        ).format(n, ctx),
+        "fix": "",
+    }
 
 
 def run(start_path=None, rebuild=True, reindex_embeddings=True,
@@ -60,6 +115,21 @@ def run(start_path=None, rebuild=True, reindex_embeddings=True,
         # 對不上時,使用者第一個查詢就該看到 STALE,而不是拿到 main 的舊答案。
         stale = truth.invalidate_from_snapshot(store, root, workspace_id,
                                               snapshot)
+
+        # #176: dry-run setup must not look "done" when CONTEXT still needs promote.
+        needs_owner_action = []
+        ctx_md = (legacy_report or {}).get("context_md") if legacy_report else None
+        if (ctx_md and int(ctx_md.get("terms") or 0) > 0
+                and _domain_yaml_count(root) == 0):
+            action = "migrate-legacy --apply --promote"
+            needs_owner_action.append(action)
+            sys.stderr.write(
+                "⚠️  CONTEXT.md has {0} terms but .dev-flow/knowledge/domain/ "
+                "is empty — setup dry-run ≠ migrate complete; index glossary "
+                "stays [] until {1} + re-bootstrap.\n".format(
+                    ctx_md["terms"], action)
+            )
+
         report = {
             "project_id": project["project_id"],
             "project_name": project.get("name"),
@@ -80,6 +150,7 @@ def run(start_path=None, rebuild=True, reindex_embeddings=True,
             "stale_after_rebuild": len(stale),
             "legacy": legacy_report,
             "indexed_items": store.item_count(),
+            "needs_owner_action": needs_owner_action,
         }
     finally:
         store.close()
@@ -118,6 +189,9 @@ def doctor(start_path=None):
     findings.append({"level": "ok", "check": "project-identity",
                      "detail": "project_id={0}".format(project["project_id"]),
                      "fix": ""})
+    legacy_ctx = _legacy_context_finding(root)
+    if legacy_ctx is not None:
+        findings.append(legacy_ctx)
     if project.get("schema_version_mismatch"):
         findings.append({
             "level": "warn", "check": "durable-schema",

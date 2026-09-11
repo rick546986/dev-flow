@@ -110,6 +110,38 @@ class SetupTest(MemoryCase):
         report = setup.run(self.repo)
         self.assertEqual(report["stale_after_rebuild"], 1)
 
+    def test_setup_flags_needs_owner_action_when_context_unpromoted(self):
+        """#176: setup dry-run ≠ migrate complete when CONTEXT has terms."""
+        write(self.repo, "CONTEXT.md", """# demo
+
+## Language
+
+**Contract(合約)**:客戶與本公司簽署的服務協議。
+""")
+        report = setup.run(self.repo, name="demo")
+        self.assertIn("migrate-legacy --apply --promote",
+                      report.get("needs_owner_action") or [])
+        self.assertTrue(os.path.isfile(os.path.join(self.repo, "CONTEXT.md")))
+
+    def test_setup_clears_needs_owner_action_after_domain_present(self):
+        write(self.repo, "CONTEXT.md", """# demo
+
+## Language
+
+**Contract(合約)**:客戶與本公司簽署的服務協議。
+""")
+        setup.run(self.repo, name="demo")
+        durable.write_knowledge(self.repo, {
+            "kind": "domain", "key": "Contract", "title": "Contract",
+            "body": "客戶與本公司簽署的服務協議。",
+            "authority": "documentation", "status": "CANDIDATE",
+            "recorded_at": "2026-08-20T00:00:00Z",
+            "evidence": [{"type": "file", "ref": "CONTEXT.md",
+                          "stance": "legacy_import"}]})
+        report = setup.run(self.repo)
+        self.assertEqual(report.get("needs_owner_action") or [], [])
+        self.assertTrue(os.path.isfile(os.path.join(self.repo, "CONTEXT.md")))
+
 
 class DoctorTest(MemoryCase):
     def test_doctor_fails_before_setup(self):
@@ -125,6 +157,45 @@ class DoctorTest(MemoryCase):
         checks = {f["check"] for f in report["findings"]}
         self.assertIn("durable-relative-paths", checks)
         self.assertIn("embedding-version", checks)
+
+    def test_doctor_warns_legacy_context_pending_when_domain_empty(self):
+        """#176 doctor WARN when CONTEXT ∧ empty domain."""
+        write(self.repo, "CONTEXT.md", """# demo
+
+## Language
+
+**Contract(合約)**:客戶與本公司簽署的服務協議。
+""")
+        setup.run(self.repo, name="demo")
+        report = setup.doctor(self.repo)
+        pending = [f for f in report["findings"]
+                   if f["check"] == "legacy-context-pending"]
+        self.assertEqual(len(pending), 1)
+        self.assertEqual(pending[0]["level"], "warn")
+        self.assertIn("glossary stays []", pending[0]["detail"])
+        self.assertEqual(report["verdict"], "WARN")
+        self.assertTrue(os.path.isfile(os.path.join(self.repo, "CONTEXT.md")))
+
+    def test_doctor_ok_legacy_context_when_domain_already_promoted(self):
+        write(self.repo, "CONTEXT.md", """# demo
+
+## Language
+
+**Contract(合約)**:客戶與本公司簽署的服務協議。
+""")
+        setup.run(self.repo, name="demo")
+        durable.write_knowledge(self.repo, {
+            "kind": "domain", "key": "Contract", "title": "Contract",
+            "body": "客戶與本公司簽署的服務協議。",
+            "authority": "documentation", "status": "CANDIDATE",
+            "recorded_at": "2026-08-20T00:00:00Z"})
+        report = setup.doctor(self.repo)
+        pending = [f for f in report["findings"]
+                   if f["check"] == "legacy-context-pending"]
+        self.assertEqual(len(pending), 1)
+        self.assertEqual(pending[0]["level"], "ok")
+        self.assertIn("do not auto-delete", pending[0]["detail"])
+        self.assertTrue(os.path.isfile(os.path.join(self.repo, "CONTEXT.md")))
 
     def test_doctor_flags_absolute_path_leak(self):
         setup.run(self.repo, name="demo")

@@ -110,6 +110,36 @@ def scan_unparseable_filenames(root):
     return out
 
 
+def count_domain_yaml(root):
+    """Count `.dev-flow/knowledge/domain/*.{yaml,yml}` files (promote landing zone)."""
+    domain_dir = os.path.join(root, ".dev-flow", "knowledge", "domain")
+    if not os.path.isdir(domain_dir):
+        return 0
+    n = 0
+    for name in os.listdir(domain_dir):
+        if not name.endswith((".yaml", ".yml")):
+            continue
+        if os.path.isfile(os.path.join(domain_dir, name)):
+            n += 1
+    return n
+
+
+# #176: queue detail forks on whether migrate-legacy --promote already landed.
+CONTEXT_WARN_DETAIL_PRE = (
+    "PRE-MIGRATE: .dev-flow/knowledge/domain/ empty and index glossary stays []. "
+    "setup/migrate dry-run ≠ complete. "
+    "Run migrate-legacy dry-run then --apply --promote "
+    "(CANDIDATE + documentation only). "
+    "Do not resurrect CONTEXT.md as index/routing truth. "
+    "Delete only after owner confirms migrate + no dual cite."
+)
+CONTEXT_WARN_DETAIL_POST = (
+    "POST-MIGRATE: terms already in .dev-flow/knowledge/domain/ (CANDIDATE). "
+    "CONTEXT.md still present — wait for owner confirm no dual-cite, then delete. "
+    "Do not treat CONTEXT as routing truth; do not auto-delete."
+)
+
+
 def collect_queue_items(bki, root, doc, adrs):
     """Build structured human-queue items. Never invent a winner."""
     items = []
@@ -192,7 +222,8 @@ def collect_queue_items(bki, root, doc, adrs):
                 }
             )
 
-    # CONTEXT.md — warn/candidate only; never treat as routing truth
+    # CONTEXT.md — warn/candidate only; never treat as routing truth;
+    # never auto-delete (#176). Detail forks on promote landing zone.
     context_path = None
     for candidate in ("CONTEXT.md", os.path.join("docs", "dev", "CONTEXT.md")):
         full = os.path.join(root, candidate)
@@ -204,6 +235,7 @@ def collect_queue_items(bki, root, doc, adrs):
         "status": "absent" if context_path is None else "warn-candidate-only",
     }
     if context_path:
+        migrated = count_domain_yaml(root) > 0
         items.append(
             {
                 "kind": "context-warn",
@@ -212,10 +244,9 @@ def collect_queue_items(bki, root, doc, adrs):
                 "adr_ids": [],
                 "topic": None,
                 "detail": (
-                    "migrate-legacy dry-run then --apply --promote "
-                    "(CANDIDATE + documentation only). "
-                    "Do not resurrect CONTEXT.md as index/routing truth. "
-                    "Delete only after owner confirms migrate + no dual cite."
+                    CONTEXT_WARN_DETAIL_POST
+                    if migrated
+                    else CONTEXT_WARN_DETAIL_PRE
                 ),
             }
         )
