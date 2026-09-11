@@ -473,3 +473,9 @@
 - 為什麼:#138/#144 已合 main 但 plugin 字串仍停在 3.22.0，他機 update 拉不到
 - 落在哪:build-scan-html.py／Stage3 N-skip／brief；本 release 只升版號
 
+## 2026-09-11 · knowledge-index · v3.23.0
+- 做了什麼:knife-2: ask↔index, dev-setup bootstrap+conflict queue, preload-ban tooth; Stage1 people cards
+- 為什麼:agents need short current-truth index + portable fail-closed ask-first; Stage1 people readable
+- 落在哪:memory/, scripts/bootstrap-knowledge-index.py, scripts/check-preload-ban.sh, skills/, docs/knowledge/, skills/dev-talk/html-shell.html
+- 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.23.0
+
