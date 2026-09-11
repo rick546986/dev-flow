@@ -2413,7 +2413,7 @@ check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 179" "MIN_CHECKS 釘
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 36" "MIN_CHECKS 釘死 36(parity 遷到 check-ship-manifest.sh 後,情境/mutant/模板順序實得數)"
 check_static_pin "scripts/check-ship-manifest.sh" "MIN_CHECKS = 21" "MIN_CHECKS 釘死 21(結構+parity+地圖對帳+負向 fixture 的實得數;issue #92 補全列 source 存在 +2、第三類列負向 fixture +4,15→21)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 55" "MIN_CHECKS 釘死 55(STATUS 單寫入者 + OverlapRef 單一座標:⑬b/⑬c + 負向㉘–㉟ 後的實得數)"
-check_static_pin "scripts/check-py-floor.sh" "MIN_HEREDOCS = 214" "MIN_HEREDOCS 釘死 214(#113 heredoc 掃描補上後的實得數,精確值不留餘裕)"
+check_static_pin "scripts/check-py-floor.sh" "MIN_HEREDOCS = 215" "MIN_HEREDOCS 釘死 215(#113 heredoc 掃描補上後的實得數;knowledge bootstrap 測試 +1 → 215,精確值不留餘裕)"
 check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 201" "EXPECTED_MAPPED_FILES 釘死 201(精確值;knowledge-index +2、proof-knowledge-index-call-path.py +1、knife-2 ask knowledge_index +2、knowledge bootstrap +2)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 28" "EXPECTED_GROUPS 釘死 28(REQUIRED_GROUPS 實際長度;群組數軸的靜態釘)"
 
