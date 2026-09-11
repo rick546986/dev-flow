@@ -211,12 +211,15 @@ _TEST_VERIFY_RE = re.compile(r"\btest\b", re.I)
 _TEST_FILE_RE = re.compile(r"(_test\.\w+|\.test\.\w+|\.spec\.\w+|(^|/)tests?/)", re.I)
 # 手樣無測試套件者不進 TF 範例承接。Verify 是 grep 形狀,7-review 已標
 # 「本 repo 無補助金額自動化測試」。禁止在 Files 捏一個 tests/ 騙過 examined>=1。
-# 新增豁免必須寫進這兩份集合(內容地板,不是只釘條數)。
+# dogfood-ping:極小 CLI,Verify 用 POSIX `test -x`／cmp(無 *_test.*);`\btest\b`
+# 會誤判成「跑測試的 T」。新增豁免必須寫進這兩份集合(內容地板,不是只釘條數)。
 _TF_SKIP = {
     "example/subsidy-3-0-plus/5-tasks.md",
+    "example/dogfood-ping/5-tasks.md",
 }
 EXPECTED_TF_SKIP = {
     "example/subsidy-3-0-plus/5-tasks.md",
+    "example/dogfood-ping/5-tasks.md",
 }
 need(_TF_SKIP == EXPECTED_TF_SKIP,
      "TF:skip 集合與釘死清單不符 —— "

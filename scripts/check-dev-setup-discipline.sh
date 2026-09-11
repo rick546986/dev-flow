@@ -252,11 +252,17 @@ if src:
         "SKILL.md 殘件刪除段落緊接著的下一條 bullet 不是「trash 目錄要進 "
         ".gitignore」獨立條款(缺 .devflow-upgrade-trash 或 .gitignore 字面)—— "
         "雜湊安全網搬出來的客製檔備份會被誤 commit 進版控")
+    need("0-inventory.json" in src,
+         "SKILL.md 沒點名 docs/dev/0-inventory.json —— I2 盤點會從 setup 清單消失")
+    need("write-stack-inventory.py" in src,
+         "SKILL.md 沒點名 write-stack-inventory.py —— install／check 不知道誰寫 I2")
+    need("依賴變了要重跑" in src,
+         "SKILL.md 沒有「依賴變了要重跑」—— pull 之後盤點會默默過期")
 
 # ── 檢查數地板:防止有人把上面整段刪成空迴圈仍然 exit 0 ──────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」(同 repo 慣例:
 # check-stage67-enforcement.sh:232、check-no-stale-paths.sh 的 MIN_CHECKS)。
-MIN_CHECKS = 29
+MIN_CHECKS = 32
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")

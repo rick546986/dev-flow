@@ -29,7 +29,9 @@
 
 set -uo pipefail
 
-ROOT=$(cd "$(dirname "$0")/.." && pwd)
+PACK=$(cd "$(dirname "$0")/.." && pwd)
+ROOT=$PACK
+LIB="$PACK/hooks/devflow-lib.py"
 ACTION_FILE=""
 WRITE_NODE=""
 WRITE_SESSION=""
@@ -53,12 +55,14 @@ elif [ -n "${1:-}" ]; then
   ROOT=$(cd "$1" && pwd) || exit 2
 fi
 
-python3 - "$ROOT" "$ACTION_FILE" "$WRITE_NODE" "$WRITE_SESSION" <<'PY'
+python3 - "$ROOT" "$ACTION_FILE" "$WRITE_NODE" "$WRITE_SESSION" "$LIB" <<'PY'
 import json
 import os
 import re
 import sys
+from importlib.machinery import SourceFileLoader
 
+sys.dont_write_bytecode = True
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
 
@@ -66,6 +70,7 @@ root = sys.argv[1]
 action_file = sys.argv[2]
 write_node = sys.argv[3] if len(sys.argv) > 3 else ""
 write_session = sys.argv[4] if len(sys.argv) > 4 else ""
+lib_path = sys.argv[5] if len(sys.argv) > 5 else ""
 
 if write_node:
     dest = os.path.join(root, ".devtalk-cursor.json")
@@ -570,6 +575,22 @@ if action_file:
         print(f"FATAL: 讀不了 action JSON:{exc}", file=sys.stderr)
         sys.exit(2)
     verdict, reason = evaluate_action(graph, payload)
+    extra = None
+    if lib_path and os.path.isfile(lib_path):
+        lib = SourceFileLoader("devflow_lib", lib_path).load_module()
+        raw = open(action_file, "rb").read()
+        extra = lib.after_station_action(
+            root,
+            "talk",
+            "scripts/check-devtalk-graph.sh",
+            action_file,
+            payload,
+            raw,
+            ["--action", action_file],
+            verdict,
+        )
+    if extra is not None:
+        sys.exit(extra)
     print(f"{verdict}\t{reason}")
     if verdict == "error":
         sys.exit(2)
