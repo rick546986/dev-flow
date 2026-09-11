@@ -21,6 +21,7 @@ description: dev-flow Stage 6 內部執行引擎 — 多模型派工(Claude Code
    lane: fast + Risk: high 無 Owner Call)→ 停,回報使用者。
 3. 讀 4-spec、5-tasks、living spec、`.claude/rules/*.md`;業務語意改查長期記憶
    (`${DEVFLOW_ROOT}/memory/dev-memory.py ask "<詞> 是什麼意思"`),不再讀 CONTEXT.md。
+   **專案問答先短索引 / `dev-memory.py ask`;禁預載全部 `docs/adr/` 與全量 specs;再按回傳 path 載單檔。**
    **禁讀 1/2/3**(守衛會擋,含 shell)。
 4. **開 memory session**(記憶生命週期的起點,見「記憶生命週期」節):
    ```

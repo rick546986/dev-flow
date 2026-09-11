@@ -17,6 +17,7 @@ description: 開發流程 SOP 的唯一對外入口(7 階段路由器,SDD 為主
 專案沒有 `docs/dev/` → 初始化:複製方法論 `README.md`、`_templates/` 進 `docs/dev/`,
 從 `_templates/STATUS.md` 建 STATUS。**業務語言不再靠 repo root 的 `CONTEXT.md`**——
 已確認的語意住可 Git 同步的長期記憶,由 dev-setup 建置、`dev-memory.py ask` 查詢。
+**專案問答先短索引 / `dev-memory.py ask`;禁預載全部 `docs/adr/` 與全量 specs;再按回傳 path 載單檔。**
 
 **定位後直接接手該 stage 的動作,不要求使用者記第二個指令**:
 - stage 1~5、7 → 按 §2 表執行對應階段。

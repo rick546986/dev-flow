@@ -1,0 +1,17 @@
+# Pilot-3 call-path fixture for #155 (MVP short index).
+# Shape mirrors converge-C1: topic → active_* pointers only (no prose bodies).
+# Not a production index — used when docs/knowledge/index.yaml is absent.
+schema_version: 1
+generated_from:
+  - docs/adr/*.md
+topics:
+  agent-memory:
+    glossary: []
+    active_adr:
+      - "0003"
+    active_spec: []
+    durable:
+      decisions: []
+      knowledge: []
+    supersedes: []
+    conflicts: []

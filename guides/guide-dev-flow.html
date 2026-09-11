@@ -2904,7 +2904,12 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
 
   <h2 id="memory">Agent Memory（<code>.dev-flow/</code>）</h2>
   <p class="lead">長期記憶進 Git。不要手改記憶檔。安裝與重建入口只有 <code>dev-setup</code>。
-  查詢與寫入只有 <code>${DEVFLOW_ROOT}/memory/dev-memory.py</code>。</p>
+  查詢與寫入只有 <code>${DEVFLOW_ROOT}/memory/dev-memory.py</code>。
+  <strong>專案問答先短索引 / <code>dev-memory.py ask</code>;禁預載全部 <code>docs/adr/</code> 與全量 specs;再按回傳 path 載單檔。</strong>
+  記得到：既有 <code>talk end</code>／Stage&nbsp;6 <code>checkpoint --end</code>（見 skill，勿另造寫入路徑）。
+  叫得到：先短索引或 <code>ask</code>；索引 lookup 自測
+  <code>scripts/proof-knowledge-index-call-path.py</code>（缺生產索引時用
+  <code>scripts/fixtures/knowledge-index/</code>）。</p>
   <div class="tablewrap"><table>
     <tr><th>目錄</th><th>是什麼</th><th>進 Git?</th></tr>
     <tr><td><code>docs/dev/</code></td><td>給人看的七階段文檔、STATUS、HISTORY</td><td>是</td></tr>
@@ -3367,6 +3372,9 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     <tr><td><code>check-adr-integrity.sh</code></td>
         <td>檢查 ADR 檔名格式對不對、有沒有兩份文件共用同一個編號(編號重複等於引用會指錯文件)。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>proof-knowledge-index-call-path.py</code></td>
+        <td>#155 Pilot-3：短索引 topic → active ADR 路徑 → 檔案存在的 call-path 自測(無生產索引時用 fixtures/knowledge-index)。</td>
+        <td>人工/Pilot 自測</td><td>人工</td></tr>
     <tr><td><code>check-design-contract.sh</code></td>
         <td>檢查規格文件裡的邊界表格欄位有沒有填齊,只驗形狀在不在,不判斷寫得好不好。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
