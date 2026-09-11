@@ -29,36 +29,33 @@
   #scan-qs th:last-child,
   #scan-qs td:last-child{white-space:nowrap;word-break:keep-all}
   #scan-log td{white-space:normal;word-break:normal;overflow-wrap:anywhere}
-  @media (max-width:720px){
-    #scan-ac thead{display:none}
-    #scan-ac,#scan-ac tbody{display:block;width:100%}
-    #scan-ac tr{display:block;margin:0 0 .75em;border:1px solid var(--line);
-                border-radius:8px;background:var(--card);overflow:hidden}
-    #scan-ac td{display:block;border:0;border-top:1px solid var(--line);
-                white-space:normal;word-break:normal;overflow-wrap:anywhere}
-    #scan-ac td:first-child{border-top:0}
-    #scan-ac td::before{display:block;color:var(--muted);font-size:.75rem;
-                        font-weight:600;margin:0 0 .25em}
-    #scan-ac td:nth-child(1)::before{content:"假設…當…則…"}
-    #scan-ac td:nth-child(2)::before{content:"從哪看"}
-    #scan-ac td:nth-child(3)::before{content:"看到什麼"}
-  }
-  @media (max-width:900px){
-    #scan-log .tablewrap{overflow:visible}
-    #scan-log table,#scan-log tbody{display:block;width:100%}
-    #scan-log thead{display:none}
-    #scan-log tr{display:block;margin:0 0 .75em;border:1px solid var(--line);
-                 border-radius:8px;background:var(--card);overflow:hidden}
-    #scan-log td{display:block;border:0;border-top:1px solid var(--line);
-                 white-space:normal;word-break:normal;overflow-wrap:anywhere}
-    #scan-log td:first-child{border-top:0}
-    #scan-log td::before{display:block;color:var(--muted);font-size:.75rem;
-                         font-weight:600;margin:0 0 .25em}
-    #scan-log td:nth-child(1)::before{content:"Q"}
-    #scan-log td:nth-child(2)::before{content:"事實"}
-    #scan-log td:nth-child(3)::before{content:"推理"}
-    #scan-log td:nth-child(4)::before{content:"結論"}
-  }
+  /* 一律卡片:#scan-ac／#scan-log。880px 主欄仍太窄塞 3–4 長欄,不限 media(#151)。 */
+  #scan-ac thead,#scan-ac tr:has(> th),
+  #scan-log thead,#scan-log tr:has(> th){display:none}
+  #scan-ac,#scan-ac tbody{display:block;width:100%}
+  #scan-ac tr{display:block;margin:0 0 .75em;border:1px solid var(--line);
+              border-radius:8px;background:var(--card);overflow:hidden}
+  #scan-ac td{display:block;border:0;border-top:1px solid var(--line);
+              white-space:normal;word-break:normal;overflow-wrap:anywhere}
+  #scan-ac td:first-child{border-top:0}
+  #scan-ac td::before{display:block;color:var(--muted);font-size:.75rem;
+                      font-weight:600;margin:0 0 .25em}
+  #scan-ac td:nth-child(1)::before{content:"假設…當…則…"}
+  #scan-ac td:nth-child(2)::before{content:"從哪看"}
+  #scan-ac td:nth-child(3)::before{content:"看到什麼"}
+  #scan-log .tablewrap{overflow:visible}
+  #scan-log table,#scan-log tbody{display:block;width:100%}
+  #scan-log tr{display:block;margin:0 0 .75em;border:1px solid var(--line);
+               border-radius:8px;background:var(--card);overflow:hidden}
+  #scan-log td{display:block;border:0;border-top:1px solid var(--line);
+               white-space:normal;word-break:normal;overflow-wrap:anywhere}
+  #scan-log td:first-child{border-top:0}
+  #scan-log td::before{display:block;color:var(--muted);font-size:.75rem;
+                       font-weight:600;margin:0 0 .25em}
+  #scan-log td:nth-child(1)::before{content:"Q"}
+  #scan-log td:nth-child(2)::before{content:"事實"}
+  #scan-log td:nth-child(3)::before{content:"推理"}
+  #scan-log td:nth-child(4)::before{content:"結論"}
   code,pre{background:var(--card);border-radius:4px;
            font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
   pre{padding:12px;overflow-x:auto}
@@ -74,7 +71,10 @@
   /* 掃頁:摘要卡、直式 svg 節點、問答 details。舊 class 語意不動。 */
   .sum{background:var(--card);border:1px solid var(--line);border-radius:10px;
        padding:14px 16px;margin:1em 0}
-  .sum .pain{font-weight:600;margin:0 0 .4em}
+  .sum .k{display:block;color:var(--muted);font-size:.75rem;font-weight:600;
+          margin:0 0 .2em}
+  .sum .who,.sum .pain,.sum .bypass{margin:0 0 .75em;line-height:1.55}
+  .sum .pain{font-weight:400}
   details{margin:.6em 0}
   details>summary{cursor:pointer;color:var(--muted);user-select:none}
   /* 直式現況圖:有限寬、欄內水平置中。禁 width:100% 把畫布撐滿而圖貼左。 */
