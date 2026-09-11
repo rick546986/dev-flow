@@ -3,17 +3,14 @@ status: accepted
 date: 2026-01-05
 source: fixture
 topics: [postgres]
-supersedes: []
+supersedes: ["0099"]
 superseded_by: null
 ---
 
 # 0001. 用 PostgreSQL 當主資料庫
 
 ## Context
-需要交易保證與 JSON 欄位。
+需要交易保證。
 
 ## Decision
 採用 PostgreSQL。
-
-## Consequences
-維運需備援策略。

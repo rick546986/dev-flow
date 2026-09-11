@@ -1,9 +1,14 @@
-# 0001. 外掛併回方法論 repo,兩者不再獨立演進
+---
+status: accepted
+date: 2026-08-13
+source: "`docs/dev/HISTORY.md` 的 `2026-08-13 · single-plugin-merge`; 被推翻的原裁決在 `docs/dev/4cap-remediation/4cap-audit-fixes-2026-08.md:151-159`(防守清單第 7 條)"
+topics:
+  - plugin-repo-merge
+supersedes: []
+superseded_by: null
+---
 
-- Status: accepted
-- Date: 2026-08-13
-- Source: `docs/dev/HISTORY.md` 的 `2026-08-13 · single-plugin-merge`;
-  被推翻的原裁決在 `docs/dev/4cap-remediation/4cap-audit-fixes-2026-08.md:151-159`(防守清單第 7 條)
+# 0001. 外掛併回方法論 repo,兩者不再獨立演進
 
 > 補立於 2026-08-14 —— 決策當下沒有留下紀錄,`docs/adr/` 當時也還不存在。
 > 這筆 ADR 本身就是「缺長期決策載體」的代價示範:一個明確裁定「不要做」的事,

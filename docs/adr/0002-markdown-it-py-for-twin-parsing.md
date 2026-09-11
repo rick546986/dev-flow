@@ -1,8 +1,14 @@
-# 0002. gate twin 解析層採用 markdown-it-py(推翻散發工具零相依立場)
+---
+status: accepted
+date: 2026-08-15
+source: docs/dev/b8-gate-twin-review-ui/7-review.md(附錄 A7)
+topics:
+  - gate-twin-parsing
+supersedes: []
+superseded_by: null
+---
 
-- Status: accepted
-- Date: 2026-08-15
-- Source: docs/dev/b8-gate-twin-review-ui/7-review.md(附錄 A7)
+# 0002. gate twin 解析層採用 markdown-it-py(推翻散發工具零相依立場)
 
 > 晉升條件(三條件**全中**才立此檔,否則留在 2-decision 就好):
 > 難逆轉 + 反直覺 + 真 trade-off。

@@ -28,9 +28,41 @@ DEFAULT_ROOT = os.path.dirname(SCRIPT_DIR)
 ADR_NAME = re.compile(r"^(\d{4})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$")
 H1 = re.compile(r"^#\s+(\d{4})\.\s+(.+?)\s*$")
 FIELD = re.compile(r"^-\s+(Status|Date|Source):\s*(.+?)\s*$")
+FM_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.S)
 HIST_HEAD = re.compile(r"^## (\d{4}-\d{2}-\d{2}) · ([a-z0-9-]+)(?: · (\S+))?$")
 HIST_FIELD = re.compile(r"^-\s+(做了什麼|為什麼|落在哪|詳細|長期決策|另含):\s*(.*)$")
 INLINE = re.compile(r"`([^`]+)`|\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)]+)\)")
+
+
+def _unquote_meta(val):
+    val = val.strip()
+    if len(val) >= 2 and val[0] == val[-1] and val[0] in ("'", '"'):
+        return val[1:-1]
+    return val
+
+
+def parse_adr_frontmatter(text):
+    """讀 ADR YAML frontmatter 的 status/date/source(列表欄位略過)。"""
+    match = FM_RE.match(text or "")
+    if not match:
+        return {}, text or ""
+    meta = {}
+    for raw in match.group(1).splitlines():
+        if not raw.strip() or raw.strip().startswith("#"):
+            continue
+        if re.match(r"^[ \t]+-\s+", raw):
+            continue
+        if ":" not in raw:
+            continue
+        key, value = raw.split(":", 1)
+        key = key.strip()
+        value = value.split("#", 1)[0].strip()
+        if key in ("topics", "supersedes", "superseded_by"):
+            continue
+        if value in ("", "|", ">", "null", "~", "[]"):
+            continue
+        meta[key] = _unquote_meta(value)
+    return meta, text[match.end():]
 
 # 跟 html-shell 同一盤色,acc 從 guides 既有 token 來。
 CSS = """
@@ -213,28 +245,30 @@ def parse_adr(path):
     if not mname:
         raise ValueError("ADR 檔名不合規:" + name)
     number = mname.group(1)
+    fm, body_text = parse_adr_frontmatter(text)
     title = ""
-    status = ""
-    date = ""
-    source = ""
+    status = fm.get("status", "")
+    date = fm.get("date", "")
+    source = fm.get("source", "")
     body_lines = []
     context_lines = []
     in_context = False
-    for raw in text.splitlines():
+    for raw in body_text.splitlines():
         if not title:
             hm = H1.match(raw)
             if hm:
                 title = hm.group(2).strip()
                 continue
-        fm = FIELD.match(raw)
-        if fm and not body_lines:
-            key = fm.group(1)
-            val = fm.group(2).strip()
-            if key == "Status":
+        fm_line = FIELD.match(raw)
+        if fm_line and not body_lines:
+            # 舊 bullet meta 相容(frontmatter 已優先)
+            key = fm_line.group(1)
+            val = fm_line.group(2).strip()
+            if key == "Status" and not status:
                 status = val.split("#", 1)[0].strip()
-            elif key == "Date":
+            elif key == "Date" and not date:
                 date = val
-            elif key == "Source":
+            elif key == "Source" and not source:
                 source = val
             continue
         if raw.startswith("## "):
