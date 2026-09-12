@@ -571,9 +571,19 @@ def splice_tree(page, fragment):
     return page[:start + len(TREE_BEGIN)] + "\n" + fragment + page[end:]
 
 
-def write_text(path, text):
-    pathlib.Path(path).parent.mkdir(parents=True, exist_ok=True)
-    pathlib.Path(path).write_text(text, encoding="utf-8")
+def _diagir():
+    here = pathlib.Path(__file__).resolve().parent
+    if str(here) not in sys.path:
+        sys.path.insert(0, str(here))
+    import diagir
+    return diagir
+
+
+def write_text(path, text, payload):
+    try:
+        _diagir().write_via_gate(str(path), text, "dir-tree", payload)
+    except OSError as err:
+        die(2, "寫不出 %s:%s" % (path, err))
 
 
 def main(argv):
@@ -630,7 +640,9 @@ def main(argv):
     if mode in ("write", "check"):
         purpose = purpose or str(PURPOSE_PATH)
         root = root or str(ROOT)
-        fragment_html = emit(load_yaml(purpose), root, True, "#filemap")
+        data = load_yaml(purpose)
+        fragment_html = emit(data, root, True, "#filemap")
+        payload = {"kind": "dir-tree", "root": data.get("root") or data}
         try:
             current = GUIDE_PATH.read_text(encoding="utf-8")
         except OSError as err:
@@ -641,17 +653,18 @@ def main(argv):
                     "請跑 scripts/build-dir-tree.py --write")
             print("ok:guide-dev-flow.html #dirmap 對得上產器", file=sys.stderr)
             return
-        write_text(GUIDE_PATH, splice_tree(current, fragment_html))
+        write_text(GUIDE_PATH, splice_tree(current, fragment_html), payload)
         print("wrote %s #dirmap" % GUIDE_PATH, file=sys.stderr)
         return
 
     if not purpose:
         die(2, "要 --purpose(或 --write／--check／--fixture)")
-    page = emit(load_yaml(purpose), root, fragment)
+    data = load_yaml(purpose)
+    page = emit(data, root, fragment)
     if out in (None, "-"):
         sys.stdout.write(page)
         return
-    write_text(out, page)
+    write_text(out, page, {"kind": "dir-tree", "root": data.get("root") or data})
     print("wrote %s" % out, file=sys.stderr)
 
 

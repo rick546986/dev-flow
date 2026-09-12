@@ -537,8 +537,19 @@ def main(argv):
         die(2, "讀不到 md:%s" % err)
     html_out = build_html(text)
     dest = pathlib.Path(out) if out else path.with_suffix(".html")
+    here = pathlib.Path(__file__).resolve().parent
+    if str(here) not in sys.path:
+        sys.path.insert(0, str(here))
+    import diagir
     try:
-        dest.write_text(html_out, encoding="utf-8")
+        diagir.write_via_gate(
+            str(dest),
+            html_out,
+            "stage2-arch",
+            {"kind": "vbox", "steps": [
+                {"kind": "b", "title": "stage2-arch", "lines": ["審頁"]},
+            ]},
+        )
     except OSError as err:
         die(2, "寫不出 html:%s" % err)
     print("wrote %s" % dest)

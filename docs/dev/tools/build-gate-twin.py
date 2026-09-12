@@ -2324,14 +2324,35 @@ def main(argv):
         ui.CSS_REVIEW7 if stage == "7-review" else "")
     page_script = SCRIPT + (SCRIPT_VERDICT if stage in GATE_STAGES else "")
     extra_css = extra_css + (ui.CSS_VERDICT if stage in GATE_STAGES else "")
-    out_local.write_text(ui.local_page(title, extra_css, body_html, page_script), encoding="utf-8")
+
+    def _product_write(path, text):
+        scripts_dir = _SCRIPT_DIR
+        if not (scripts_dir / "diagir.py").is_file():
+            for parent in scripts_dir.parents:
+                cand = parent / "scripts"
+                if (cand / "diagir.py").is_file():
+                    scripts_dir = cand
+                    break
+        if str(scripts_dir) not in sys.path:
+            sys.path.insert(0, str(scripts_dir))
+        import diagir
+        payload = {
+            "kind": "vbox",
+            "steps": [{"kind": "b", "title": stage, "lines": [slug or "twin"]}],
+        }
+        try:
+            diagir.write_via_gate(str(path), text, "behavior-flow", payload)
+        except OSError as err:
+            print(f"寫不出 {path}:{err}", file=sys.stderr)
+            raise SystemExit(2)
+
+    _product_write(out_local, ui.local_page(title, extra_css, body_html, page_script))
     # 片段是 opt-in:只有呼叫端明確設定 DEVFLOW_ARTIFACT_OUT 才寫。空字串 / 空白
     # 視同未設,避免「變數在、值是空的」仍落到預設 sidecar。
     art_out = os.environ.get("DEVFLOW_ARTIFACT_OUT", "").strip()
     if art_out:
         out_art = pathlib.Path(art_out)
-        out_art.parent.mkdir(parents=True, exist_ok=True)
-        out_art.write_text(ui.artifact_page(title, extra_css, body_html, page_script), encoding="utf-8")
+        _product_write(out_art, ui.artifact_page(title, extra_css, body_html, page_script))
         print(f"wrote {out_local} + {out_art} — {n_items} 條待審,{len(appendix)} 節背景資料")
     else:
         print(f"wrote {out_local} — {n_items} 條待審,{len(appendix)} 節背景資料")

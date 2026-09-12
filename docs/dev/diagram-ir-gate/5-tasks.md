@@ -46,7 +46,7 @@ Stage 4 已核准。G2 PASS 已在 tip（#242）。本 hop 不改 `4-spec.md`／
 | T-6 | `--group static-scope` 同檔不存在，exit 127；`test -ge 2` 紅 | ③方向對 |
 
 ## T-1 讓壞 IR 吐穩定 DIAGIR_* 收據且不蓋 last-good
-- [ ] 完成
+- [x] 完成
 - Covers: R-1 / S-1.1, S-1.2, S-1.3, S-1.4, S-1.5, S-1.6
 - Files: scripts/diagir.py, scripts/test-diagir.sh, scripts/fixtures/diagir/
 - Verify: `n=$(bash scripts/test-diagir.sh --group validate -v 2>&1 | grep -c '^=== CASE'); test "$n" -ge 6 && bash scripts/test-diagir.sh --group validate`
@@ -55,7 +55,7 @@ Stage 4 已核准。G2 PASS 已在 tip（#242）。本 hop 不改 `4-spec.md`／
 - Boundaries: 只准改 `scripts/diagir.py` 與本 T 牙／信封治具。閘擁有 DIAGIR_* 判定與收據 JSON；請求鍵只有 `family`／`payload`，收據是輸出（鍵 `ok`／`code`／`knob`／`abort`／`delivered`／`target_replaced`），stderr 另印 `FAIL <code>` 與 Q6 該列旋鈕句，且含 `DIAGIR_ABORT`。禁止 import Archify／mermaid／Node、禁止黑盒猜 family、禁止把 `docs/dev/diagram-ir-gate/proto/diagir_gate.py` 當正式入口、禁止驗證失敗後呼叫 `atomic_write`。失敗時目標 sha 必須等於 last-good（Stage 3 sha256 `8ed83a4d66100b71ed41a651553f453e38997b9f89d52df28bf13eac22354dbc` 或測試新寫的同等檔）。入口鎖定 `python3 scripts/diagir.py deliver ENVELOPE.json --out TARGET`。Actor=開工 agent；Goal=壞 IR 不得換掉上一張可審圖；Human decision=依旋鈕改 kind／補欄／改選路由列後重跑；Authority=閘機械拒寫；Recovery=修 IR 再跑，不要 `git checkout` 舊 html。看過 traceback ≠ 已交付。
 
 ## T-2 讓綠生命週期原子換成完整靜態 SVG，中斷只留截斷 tmp
-- [ ] 完成
+- [x] 完成
 - Covers: R-2 / S-2.1, S-2.2
 - Files: scripts/diagir.py, scripts/devflow_atomic.py, scripts/test-diagir.sh, scripts/fixtures/diagir/
 - Verify: `n=$(bash scripts/test-diagir.sh --group deliver -v 2>&1 | grep -c '^=== CASE'); test "$n" -ge 2 && bash scripts/test-diagir.sh --group deliver`
@@ -64,7 +64,7 @@ Stage 4 已核准。G2 PASS 已在 tip（#242）。本 hop 不改 `4-spec.md`／
 - Boundaries: 原子寫抽出 `scripts/devflow_atomic.py` 的 `atomic_write`，形狀與 `scripts/write-stack-inventory.py` 的 tmp + `os.replace` + 補尾端 newline 相同；inventory 本 slug 可不改。`atomic_write` 擁有寫入原語，不得做驗證，不得在驗證失敗後被呼叫。目標與 tmp 只成功一筆可見：`replace` 前目標全舊。綠交付目標須含 `<svg`、長度大於截斷字串 `<svg viewBox`、不含字面 `mermaid`、sha ≠ last-good；中斷案旁路寫入 `TARGET.tmp` 恰為 `<svg viewBox` 且不呼叫 `replace`。禁止另造第三支幫手。Actor=產檔器；Goal=通過後人打開完整新圖、中斷時審頁仍打得開舊圖；Authority=閘在通過後才 `replace`；Recovery=exit 0 但檔缺 `</svg>` 則本條紅，修原子寫；未 `replace` 視同 `DIAGIR_ABORT`，刪殘 tmp 後重跑綠 IR。
 
 ## T-3 把三支現況寫檔與 vbox 呼叫端接到同一閘
-- [ ] 完成
+- [x] 完成
 - Covers: R-2 / S-2.3
 - Files: scripts/build-dir-tree.py, scripts/build-gate-twin.py, scripts/build-stage1-html.py, scripts/build-stage2-html.py, scripts/build-stage4-html.py, docs/dev/tools/build-gate-twin.py, scripts/test-diagir.sh
 - Verify: `n=$(bash scripts/test-diagir.sh --group wire -v 2>&1 | grep -c '^=== CASE'); test "$n" -ge 4 && bash scripts/test-diagir.sh --group wire`
@@ -73,7 +73,7 @@ Stage 4 已核准。G2 PASS 已在 tip（#242）。本 hop 不改 `4-spec.md`／
 - Boundaries: 產品目標覆寫必須改呼叫 `scripts/diagir.py`（或同模組函式）→ `devflow_atomic.atomic_write`。對帳行：`build-dir-tree.py` 現況 `write_text`、`build-gate-twin.py` 的 `out_local.write_text`、`build-stage1-html.py` 的 `dest.write_text`；vbox-fig 仍只寫 stdout，但 `build-stage2-html.py`／`build-stage4-html.py` 把該 stdout 寫進目標 SVG 的呼叫端必須先走同一閘。gate-twin 正本改完必須 `cp` 同步 `docs/dev/tools/build-gate-twin.py`。產器可組 payload、選 family、讀契約；不得再對目標 `Path.write_text`／`open(path,'w')` 而不經驗證。禁止改 `build-vbox-fig.py` 成自己寫檔、禁止未接閘勾 wave-1 完成、禁止本 T 改 #196 檔或 plugin 版號。Files 超過五檔是因為可觀測行為是「同一閘接上現況覆寫」一刀，不是按產器橫切。Actor=產檔器；Goal=未接閘不得宣稱 wave-1 完成；Authority=S-2.3 用 diff 咬接線，不是 OS hook。
 
 ## T-4 落地五列查找路由表並拒錯家族與缺欄
-- [ ] 完成
+- [x] 完成
 - Covers: R-3 / S-3.1, S-3.2, S-3.3, S-3.4, S-3.5
 - Files: notes/design/diagir-route.md, scripts/diagir.py, scripts/test-diagir.sh, scripts/fixtures/diagir/
 - Verify: `n=$(bash scripts/test-diagir.sh --group route -v 2>&1 | grep -c '^=== CASE'); test "$n" -ge 5 && bash scripts/test-diagir.sh --group route`
@@ -82,7 +82,7 @@ Stage 4 已核准。G2 PASS 已在 tip（#242）。本 hop 不改 `4-spec.md`／
 - Boundaries: 路由表活檔鎖定 `notes/design/diagir-route.md`。剛好五列，id 集合等於 `{stage1-now, stage2-arch, behavior-flow, dir-tree, vbox-lifecycle}`；每列非空「用這條／不用那條／產器／契約」。契約欄分別指回 `stage1-review-ui-contract`、`stage2-review-ui-contract`+vbox 母版、vbox-fig-contract（twin 收口）、`dir-tree-contract`、`vbox-fig-contract`。產器欄須對上 `build-stage1-html.py --action`、`build-stage2-html.py --action`、`build-gate-twin.py` 行為流、`build-dir-tree.py`、`build-vbox-fig.py` lifecycle，各恰好一列。閘擁有未知 id／缺欄／錯家族 → `DIAGIR_FAMILY`；不得猜 `family`、不得發明第六家族（mermaid／hosted）。`python3 scripts/diagir.py route` 可印五列。改 id 或併 API = 回第 2 站，本 T 不准翻。Actor=開工 agent；Goal=先選家族，不要讓機器猜；Human decision=補上 id 或改跑對的產器；Authority=閘拒猜、拒寫；Recovery=Q6 `DIAGIR_FAMILY` 旋鈕。
 
 ## T-5 用薄索引重放三家族各一正一負且不另造 Lab 牙
-- [ ] 完成
+- [x] 完成
 - Covers: R-4 / S-4.1, S-4.2, S-4.3, S-4.4, S-4.5
 - Files: scripts/fixtures/diagir-lab.yaml, scripts/fixtures/vbox-fig/kind-parked.json, scripts/test-diagir.sh, scripts/fixtures/diagir/
 - Verify: `n=$(bash scripts/test-diagir.sh --group lab -v 2>&1 | grep -c '^=== CASE'); test "$n" -ge 5 && bash scripts/test-diagir.sh --group lab`
@@ -91,7 +91,7 @@ Stage 4 已核准。G2 PASS 已在 tip（#242）。本 hop 不改 `4-spec.md`／
 - Boundaries: 索引檔名鎖定 `scripts/fixtures/diagir-lab.yaml`，`version: 1`，剛好 6 列；`family` 集合 `{vbox-fig, gate-twin, dir-tree}` 且各 1 正 1 負。path 分別為 `scripts/fixtures/vbox-fig/lifecycle.json`、`scripts/fixtures/vbox-fig/kind-parked.json`、`scripts/fixtures/gate-twin/fig-long-label`、`scripts/fixtures/gate-twin/fig-tree-ascii`、`scripts/fixtures/dir-tree/good`、`scripts/fixtures/dir-tree/missing-why`。負向 `expect_code`：`DIAGIR_KIND`／`DIAGIR_FAMILY`／`DIAGIR_WHY`；`tooth_language` 字面 `existing`。vbox 負向本 T 才新增 `kind-parked.json`（落地前形狀須與 Stage 3 parked 信封相同）。索引只准點名，不准發明新 needle。禁止新增 `scripts/check-diagir-lab.sh`（或同等）被 `scripts/devflow-check.sh` 當成取代 `check-vbox-fig`／`check-gate-twin`／`check-dir-tree` 的入口；三支既有牙與 `devflow-check` 仍在。負向三次之後目標 sha 仍是 last-good。本 T 不改那三支牙的演算法。Actor=owner／審查人；Goal=負向紅了 last-good 還在；Human decision=負向紅且檔還在才算 Lab 過；Authority=閘拒寫；Recovery=負向若蓋檔 → wave-1 未完成。
 
 ## T-6 釘預設靜態直式 SVG 且本 slug 不碰 plugin 與 #196
-- [ ] 完成
+- [x] 完成
 - Covers: R-5 / S-5.1, S-5.2
 - Files: scripts/test-diagir.sh, scripts/fixtures/diagir/
 - Verify: `n=$(bash scripts/test-diagir.sh --group static-scope -v 2>&1 | grep -c '^=== CASE'); test "$n" -ge 2 && bash scripts/test-diagir.sh --group static-scope`

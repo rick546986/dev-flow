@@ -740,8 +740,26 @@ def main(argv):
         die(2, "讀不到 md:%s" % err)
     html_out = build_html(text)
     dest = pathlib.Path(out) if out else path.with_suffix(".html")
+    here = pathlib.Path(__file__).resolve().parent
+    if str(here) not in sys.path:
+        sys.path.insert(0, str(here))
+    import diagir
     try:
-        dest.write_text(html_out, encoding="utf-8")
+        diagir.write_via_gate(
+            str(dest),
+            html_out,
+            "vbox-lifecycle",
+            {
+                "kind": "vbox",
+                "aria": "模組生命週期",
+                "steps": [
+                    {"kind": "b", "title": "新生", "lines": ["沒有"]},
+                    {"kind": "hl", "title": "改行為", "lines": ["這輪新功能落點"]},
+                    {"kind": "b", "title": "退役", "lines": ["沒有"]},
+                    {"kind": "b", "title": "不動", "lines": ["其餘既有模組"]},
+                ],
+            },
+        )
     except OSError as err:
         die(2, "寫不出 html:%s" % err)
     print("wrote %s" % dest)

@@ -1,0 +1,12 @@
+{
+  "family": "vbox-lifecycle",
+  "payload": {
+    "kind": "vbox",
+    "steps": [
+      {"kind": "parked", "title": "新生", "lines": ["x"]},
+      {"kind": "b", "title": "改行為", "lines": ["x"]},
+      {"kind": "b", "title": "退役", "lines": ["x"]},
+      {"kind": "b", "title": "不動", "lines": ["x"]}
+    ]
+  }
+}
