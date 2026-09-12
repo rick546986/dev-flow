@@ -74,6 +74,22 @@ if _MDIT_VERSION != _MDIT_REQUIRED:
 sys.path.insert(0, str(_SCRIPT_DIR))
 import devflow_twin_ui as ui  # noqa: E402  # type: ignore[import-not-found]
 
+def _scripts_dir():
+    here = pathlib.Path(__file__).resolve().parent
+    if (here / "diagir.py").is_file():
+        return here
+    for parent in here.parents:
+        cand = parent / "scripts"
+        if (cand / "diagir.py").is_file():
+            return cand
+    raise ImportError("scripts/diagir.py")
+
+
+_SCRIPTS = _scripts_dir()
+if str(_SCRIPTS) not in sys.path:
+    sys.path.append(str(_SCRIPTS))
+import diagir  # noqa: E402
+
 STAGES = ("2-decision", "4-spec", "7-review", "5-tasks")
 # Human 判定只掛 G1／G2／G3。5-tasks 是執行板,不加「提交判定」。
 # 不要把判定做成 STAGES 的第六個 stage。
@@ -2324,14 +2340,32 @@ def main(argv):
         ui.CSS_REVIEW7 if stage == "7-review" else "")
     page_script = SCRIPT + (SCRIPT_VERDICT if stage in GATE_STAGES else "")
     extra_css = extra_css + (ui.CSS_VERDICT if stage in GATE_STAGES else "")
-    out_local.write_text(ui.local_page(title, extra_css, body_html, page_script), encoding="utf-8")
+    twin_payload = {
+        "kind": "vbox",
+        "steps": [
+            {"kind": "b", "title": "Actor", "lines": ["開工 agent"]},
+            {"kind": "hl", "title": "Page", "lines": ["審頁 twin"]},
+        ],
+    }
+    out_local.parent.mkdir(parents=True, exist_ok=True)
+    diagir.require_write(
+        out_local,
+        ui.local_page(title, extra_css, body_html, page_script),
+        "behavior-flow",
+        twin_payload,
+    )
     # 片段是 opt-in:只有呼叫端明確設定 DEVFLOW_ARTIFACT_OUT 才寫。空字串 / 空白
     # 視同未設,避免「變數在、值是空的」仍落到預設 sidecar。
     art_out = os.environ.get("DEVFLOW_ARTIFACT_OUT", "").strip()
     if art_out:
         out_art = pathlib.Path(art_out)
         out_art.parent.mkdir(parents=True, exist_ok=True)
-        out_art.write_text(ui.artifact_page(title, extra_css, body_html, page_script), encoding="utf-8")
+        diagir.require_write(
+            out_art,
+            ui.artifact_page(title, extra_css, body_html, page_script),
+            "behavior-flow",
+            twin_payload,
+        )
         print(f"wrote {out_local} + {out_art} — {n_items} 條待審,{len(appendix)} 節背景資料")
     else:
         print(f"wrote {out_local} — {n_items} 條待審,{len(appendix)} 節背景資料")

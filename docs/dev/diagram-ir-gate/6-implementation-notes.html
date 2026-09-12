@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>diagram-ir-gate · 6-implementation-notes</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  -webkit-font-smoothing:antialiased}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;font-variant-numeric:tabular-nums}
+code{background:var(--sunk);border-radius:3px;padding:1px 5px;color:var(--ink-2)}
+a{color:var(--accent)}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem;max-width:62ch}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;
+  border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
+.r-name{font-weight:650}
+.r-body{padding:14px 18px 16px;font-size:.94rem;color:var(--ink)}
+.r-body p{margin:0 0 8px}
+.r-body p:last-child{margin-bottom:0}
+.tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600}
+.tag.base{background:var(--sunk);color:var(--ink-3)}
+details.hunk{border:1px solid var(--rule);border-radius:9px;margin:10px 12px 12px;
+  background:var(--sunk);overflow:hidden}
+details.hunk>summary{cursor:pointer;padding:11px 15px;font-weight:600;font-size:.9rem;
+  list-style:none;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+details.hunk>summary::-webkit-details-marker{display:none}
+.hunk-why,.hunk-rel{margin:8px 15px;font-size:.9rem}
+.hunk-why{color:var(--ink)}
+.hunk-rel{color:var(--ink-2)}
+.diff{margin:0 12px 12px;border:1px solid var(--rule);border-radius:7px;overflow:auto;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82rem}
+.ln{display:flex;white-space:pre;padding:1px 10px;line-height:1.55}
+.ln .m{display:inline-block;width:1.2em;flex:none;color:var(--ink-3)}
+.ln.ctx{color:var(--ink-3);background:var(--panel)}
+.ln.add{background:var(--ok-soft);color:var(--ok)}
+.ln.del{background:var(--bad-soft);color:var(--bad)}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+@media (max-width:560px){h1{font-size:1.35rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 6-implementation-notes · 審查介面</p>
+  <h1>diagram-ir-gate</h1>
+  <p class="sub">status in-review／owner implementer-C。正本是 md 的 ## Diff,這頁由產檔器重生。不要當第二份正本。</p>
+</header>
+<section class="r-block" id="summary"><div class="r-head"><span class="r-name">摘要</span></div><div class="r-body"><p>slug `diagram-ir-gate`／status in-review／owner implementer-C／updated 2026-09-12</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1</span></div><div class="r-body"><p>- reviewer identity:implementer-C self-check(雲端單代理;獨立 T review 留給 PR／G3) - reviewer kind:fresh-context Agent - reviewed-at:2026-09-12T17:50Z - Verify:`n=$(bash scripts/test-diagir.sh --group validate -v 2&gt;&amp;1 | grep -c '^=== CASE'); test "$n" -ge 6 &amp;&amp; bash scripts/test-diagir.sh --group validate` → CASE count=6; PASS 6/6 - Covers finding:S-1.1～S-1.6 各有含 S-id 的案例;失敗碼與 last-good sha 對得上 - Files finding:只動 `scripts/diagir.py`、`scripts/test-diagir.sh`、`scripts/fixtures/diagir/` - RED→GREEN finding:開工前腳本不存在 exit 127;落地後六案全綠 - Test Integrity finding:none - Design boundary finding:閘擁有 DIAGIR_* 與收據;未 import Archify／mermaid／Node;失敗不呼叫 atomic_write - verdict:PASS - correction + re-review after FAIL:N/A</p></div></section>
+<section class="r-block" id="T-2"><div class="r-head"><span class="r-name">T-2</span></div><div class="r-body"><p>- reviewer identity:implementer-C self-check(雲端單代理;獨立 T review 留給 PR／G3) - reviewer kind:fresh-context Agent - reviewed-at:2026-09-12T17:50Z - Verify:`--group deliver` → CASE count=2; PASS 2/2 - Covers finding:S-2.1 綠生命週期整份 SVG;S-2.2 截斷 tmp 不碰目標 - Files finding:`scripts/devflow_atomic.py` 抽出;`diagir.deliver` 通過後才呼叫 - RED→GREEN finding:開工前腳本不存在;落地後兩案全綠 - Test Integrity finding:none - Design boundary finding:atomic_write 只做 tmp+replace+newline;驗證失敗路徑不呼叫它 - verdict:PASS - correction + re-review after FAIL:N/A</p></div></section>
+<section class="r-block" id="T-3"><div class="r-head"><span class="r-name">T-3</span></div><div class="r-body"><p>- reviewer identity:implementer-C self-check(雲端單代理;獨立 T review 留給 PR／G3) - reviewer kind:fresh-context Agent - reviewed-at:2026-09-12T17:51Z - Verify:`--group wire` → CASE count=4; PASS 4/4;`check-gate-twin.sh` N7 正本／tools 副本逐字一致 - Covers finding:S-2.3 三支現況寫檔 + stage2/stage4 呼叫端都經 `diagir.require_write` - Files finding:只改 T-3 列出的六支產器 + tools 副本 + 牙 - RED→GREEN finding:開工前無接線牙;落地後四案全綠。dir-tree `--out` 實寫 `/tmp/diagir-dt.html` 7409 bytes - Test Integrity finding:none - Design boundary finding:未改 `build-vbox-fig.py` 成自己寫檔;未碰 #196／plugin - verdict:PASS - correction + re-review after FAIL:N/A</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4</span></div><div class="r-body"><p>- reviewer identity:implementer-C self-check(雲端單代理;獨立 T review 留給 PR／G3) - reviewer kind:fresh-context Agent - reviewed-at:2026-09-12T17:51Z - Verify:`--group route` → CASE count=5; PASS 6/6 - Covers finding:S-3.1 五列四欄;S-3.2／S-3.3／S-3.4 `DIAGIR_FAMILY`;S-3.5 五入口一一對上 - Files finding:`notes/design/diagir-route.md` + 閘 route CLI - RED→GREEN finding:開工前無表檔;落地後全綠 - Test Integrity finding:none - Design boundary finding:五 id 凍結;無第六列 mermaid／hosted;`python3 scripts/diagir.py route` 印 `ROUTE_ROWS 5` - verdict:PASS - correction + re-review after FAIL:N/A</p></div></section>
+<section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5</span></div><div class="r-body"><p>- reviewer identity:implementer-C self-check(雲端單代理;獨立 T review 留給 PR／G3) - reviewer kind:fresh-context Agent - reviewed-at:2026-09-12T17:51Z - Verify:`--group lab` → CASE count=5; PASS 5/5 - Covers finding:S-4.1 六列;S-4.2 三正;S-4.3 三負 last-good;S-4.4 負向 ≠ lifecycle.json;S-4.5 無第二套 Lab 牙 - Files finding:`diagir-lab.yaml` + `kind-parked.json` + 牙／信封 - RED→GREEN finding:開工前索引不存在;落地後全綠 - Test Integrity finding:none - Design boundary finding:未新增 `check-diagir-lab.sh`;`devflow-check.sh` 仍呼叫既有三支牙 - verdict:PASS - correction + re-review after FAIL:N/A</p></div></section>
+<section class="r-block" id="T-6"><div class="r-head"><span class="r-name">T-6</span></div><div class="r-body"><p>- reviewer identity:implementer-C self-check(雲端單代理;獨立 T review 留給 PR／G3) - reviewer kind:fresh-context Agent - reviewed-at:2026-09-12T17:51Z - Verify:`--group static-scope` → CASE count=2; PASS 2/2 - Covers finding:S-5.1 綠交付無 mermaid／`&lt;animate`;S-5.2 plugin `3.23.3`、本 PR 不含 #196／STATUS／IBV - Files finding:只加牙／fixture - RED→GREEN finding:開工前腳本不存在;落地後兩案全綠 - Test Integrity finding:none - Design boundary finding:未 bump plugin;未收 Node／hosted - verdict:PASS - correction + re-review after FAIL:N/A</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1 / S-1.1</span></div><div class="r-body"><p>- RED: `bash scripts/test-diagir.sh --group validate` → `No such file or directory`, exit 127 - GREEN: `S-1.1_parked_kind_keeps_last_good → DIAGIR_KIND last-good held`</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1 / S-1.2</span></div><div class="r-body"><p>- RED: 同上 exit 127 - GREEN: `S-1.2_empty_title_diagir_empty → DIAGIR_EMPTY last-good held`</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1 / S-1.3</span></div><div class="r-body"><p>- RED: 同上 exit 127 - GREEN: `S-1.3_four_lines_diagir_lines → DIAGIR_LINES last-good held`</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1 / S-1.4</span></div><div class="r-body"><p>- RED: 同上 exit 127 - GREEN: `S-1.4_tree_as_vbox_diagir_family → DIAGIR_FAMILY last-good held`</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1 / S-1.5</span></div><div class="r-body"><p>- RED: 同上 exit 127 - GREEN: `S-1.5_short_why_diagir_why → DIAGIR_WHY last-good held`</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1 / S-1.6</span></div><div class="r-body"><p>- RED: 同上 exit 127 - GREEN: `S-1.6 six keys + ABORT + knob, not traceback-only`</p></div></section>
+<section class="r-block" id="T-2"><div class="r-head"><span class="r-name">T-2 / S-2.1</span></div><div class="r-body"><p>- RED: `--group deliver` exit 127 - GREEN: `S-2.1 green lifecycle replaces with static SVG`</p></div></section>
+<section class="r-block" id="T-2"><div class="r-head"><span class="r-name">T-2 / S-2.2</span></div><div class="r-body"><p>- RED: 同上 exit 127 - GREEN: `S-2.2 interrupt leaves last-good + truncated tmp`</p></div></section>
+<section class="r-block" id="T-3"><div class="r-head"><span class="r-name">T-3 / S-2.3</span></div><div class="r-body"><p>- RED: `--group wire` exit 127 - GREEN: 四案全綠;tools 副本 `cmp` 一致;`check-gate-twin.sh` 222 項 PASS</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4 / S-3.1</span></div><div class="r-body"><p>- RED: `--group route` exit 127 - GREEN: `route table five rows + four columns + contracts`</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4 / S-3.2</span></div><div class="r-body"><p>- RED: 同上 - GREEN: `S-3.2_stage1_as_lifecycle_family → DIAGIR_FAMILY last-good held`</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4 / S-3.3</span></div><div class="r-body"><p>- RED: 同上 - GREEN: `S-3.3_dir_as_vbox_family → DIAGIR_FAMILY last-good held`</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4 / S-3.4</span></div><div class="r-body"><p>- RED: 同上 - GREEN: `missing family` → `DIAGIR_FAMILY`;無 auto／detect／已選</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4 / S-3.5</span></div><div class="r-body"><p>- RED: 同上 - GREEN: `S-3.5 five entries map; no sixth family`;`ROUTE_ROWS 5`</p></div></section>
+<section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5 / S-4.1</span></div><div class="r-body"><p>- RED: `--group lab` exit 127 - GREEN: `S-4.1 six rows / three families / expect_code`</p></div></section>
+<section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5 / S-4.2</span></div><div class="r-body"><p>- RED: 同上 - GREEN: `S-4.2 three pos teeth/gate replay`</p></div></section>
+<section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5 / S-4.3</span></div><div class="r-body"><p>- RED: 同上 - GREEN: `S-4.3 three neg hold last-good`</p></div></section>
+<section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5 / S-4.4</span></div><div class="r-body"><p>- RED: 同上 - GREEN: `S-4.4 vbox neg ≠ lifecycle.json`</p></div></section>
+<section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5 / S-4.5</span></div><div class="r-body"><p>- RED: 同上 - GREEN: `S-4.5 no second lab tooth; existing three remain`</p></div></section>
+<section class="r-block" id="T-6"><div class="r-head"><span class="r-name">T-6 / S-5.1</span></div><div class="r-body"><p>- RED: `--group static-scope` exit 127 - GREEN: `S-5.1 static SVG, no mermaid/animate`</p></div></section>
+<section class="r-block" id="T-6"><div class="r-head"><span class="r-name">T-6 / S-5.2</span></div><div class="r-body"><p>- RED: 同上 - GREEN: `S-5.2 plugin version unchanged; no #196 / IBV / STATUS files`</p></div></section>
+<section class="r-block" id="hunks"><div class="r-head"><span class="r-name">Hunks</span></div><details class="hunk" open><summary>fail · <code>scripts/diagir.py</code> L74-88 <span class="tag base">T-1</span></summary><p class="hunk-why">改什麼：失敗回收據六鍵,stderr 印 `FAIL &lt;code&gt; | knob:` 與 `DIAGIR_ABORT`</p><p class="hunk-rel">關聯：validate → fail;deliver 失敗路徑不寫檔</p><div class="diff">
+<div class="ln add"><span class="m">+</span>def fail(code, extra=""):</div>
+<div class="ln add"><span class="m">+</span>    knob = CODES[code]</div>
+<div class="ln add"><span class="m">+</span>    receipt = {</div>
+<div class="ln add"><span class="m">+</span>        "ok": False, "code": code, "knob": knob,</div>
+<div class="ln add"><span class="m">+</span>        "abort": "DIAGIR_ABORT",</div>
+<div class="ln add"><span class="m">+</span>        "delivered": False, "target_replaced": False,</div>
+<div class="ln add"><span class="m">+</span>    }</div>
+<div class="ln add"><span class="m">+</span>    eprint("FAIL", code, "| knob:", knob)</div>
+<div class="ln add"><span class="m">+</span>    eprint("FAIL", "DIAGIR_ABORT", "| knob:", CODES["DIAGIR_ABORT"])</div>
+<div class="ln add"><span class="m">+</span>    return receipt</div>
+</div></details>
+<details class="hunk" open><summary>validate · <code>scripts/diagir.py</code> L146-198 <span class="tag base">T-1</span><span class="tag base">T-4</span></summary><p class="hunk-why">改什麼：五家族擋形;缺 family／錯家族／樹當 vbox／短 why 回穩定碼</p><p class="hunk-rel">關聯：deliver 先叫它;route id 集合</p><div class="diff">
+<div class="ln add"><span class="m">+</span>def validate(envelope):</div>
+<div class="ln add"><span class="m">+</span>    family = envelope.get("family")</div>
+<div class="ln add"><span class="m">+</span>    if family not in ROUTE_IDS:</div>
+<div class="ln add"><span class="m">+</span>        return fail("DIAGIR_FAMILY", "missing-or-unknown-family")</div>
+<div class="ln add"><span class="m">+</span>    if family == "vbox-lifecycle":</div>
+<div class="ln add"><span class="m">+</span>        if looks_like_tree(payload):</div>
+<div class="ln add"><span class="m">+</span>            return fail("DIAGIR_FAMILY", "tree-as-vbox")</div>
+</div></details>
+<details class="hunk" open><summary>deliver · <code>scripts/diagir.py</code> L227-253 <span class="tag base">T-2</span></summary><p class="hunk-why">改什麼：通過後才 `atomic_write`;失敗不 replace</p><p class="hunk-rel">關聯：validate → atomic_write;產器 `require_write`</p><div class="diff">
+<div class="ln add"><span class="m">+</span>    result = validate(envelope)</div>
+<div class="ln add"><span class="m">+</span>    if not result.get("ok"):</div>
+<div class="ln add"><span class="m">+</span>        return result</div>
+<div class="ln add"><span class="m">+</span>    atomic_write(out_path, text)</div>
+<div class="ln add"><span class="m">+</span>    result["delivered"] = True</div>
+<div class="ln add"><span class="m">+</span>    result["target_replaced"] = True</div>
+</div></details>
+<details class="hunk" open><summary>atomic_write · <code>scripts/devflow_atomic.py</code> L13-22 <span class="tag base">T-2</span></summary><p class="hunk-why">改什麼：抽出 inventory 同形 tmp + replace + 尾端 newline</p><p class="hunk-rel">關聯：只被 deliver 在 ok 之後呼叫</p><div class="diff">
+<div class="ln add"><span class="m">+</span>def atomic_write(path, text):</div>
+<div class="ln add"><span class="m">+</span>    tmp = path + ".tmp"</div>
+<div class="ln add"><span class="m">+</span>    with open(tmp, "w", encoding="utf-8") as handle:</div>
+<div class="ln add"><span class="m">+</span>        handle.write(text)</div>
+<div class="ln add"><span class="m">+</span>        if not text.endswith("\n"):</div>
+<div class="ln add"><span class="m">+</span>            handle.write("\n")</div>
+<div class="ln add"><span class="m">+</span>    os.replace(tmp, path)</div>
+</div></details>
+<details class="hunk" open><summary>write_text · <code>scripts/build-dir-tree.py</code> L576-578 <span class="tag base">T-3</span></summary><p class="hunk-why">改什麼：產品覆寫改走閘,不再 `Path.write_text`</p><p class="hunk-rel">關聯：main `--out`／`--write` 組 dir-tree payload</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>def write_text(path, text, payload):</div>
+<div class="ln ctx"><span class="m"> </span>    pathlib.Path(path).parent.mkdir(parents=True, exist_ok=True)</div>
+<div class="ln del"><span class="m">-</span>    pathlib.Path(path).write_text(text, encoding="utf-8")</div>
+<div class="ln add"><span class="m">+</span>    diagir.require_write(path, text, "dir-tree", payload, die=die)</div>
+</div></details>
+<details class="hunk" open><summary>main · <code>scripts/build-gate-twin.py</code> L2343-2368 <span class="tag base">T-3</span></summary><p class="hunk-why">改什麼：`out_local.write_text` 改 `diagir.require_write`;tools 副本同步</p><p class="hunk-rel">關聯：`_scripts_dir` 讓散發副本找得到 `scripts/diagir.py`</p><div class="diff">
+<div class="ln del"><span class="m">-</span>    out_local.write_text(ui.local_page(...), encoding="utf-8")</div>
+<div class="ln add"><span class="m">+</span>    diagir.require_write(out_local, ui.local_page(...), "behavior-flow", twin_payload)</div>
+</div></details>
+<details class="hunk" open><summary>main · <code>scripts/build-stage1-html.py</code> L481-489 <span class="tag base">T-3</span></summary><p class="hunk-why">改什麼：審頁 dest 改走 stage1-now 閘</p><p class="hunk-rel">關聯：require_write → deliver</p><div class="diff">
+<div class="ln del"><span class="m">-</span>        dest.write_text(html_out, encoding="utf-8")</div>
+<div class="ln add"><span class="m">+</span>        diagir.require_write(dest, html_out, "stage1-now",</div>
+<div class="ln add"><span class="m">+</span>            {"kind": "stage1-now", "boxes": 3, "scan_now": True}, die=die)</div>
+</div></details>
+<details class="hunk" open><summary>build_html · <code>scripts/build-stage2-html.py</code> L481-493 <span class="tag base">T-3</span></summary><p class="hunk-why">改什麼：回傳 page + stage2-arch payload,寫檔走閘</p><p class="hunk-rel">關聯：main require_write</p><div class="diff">
+<div class="ln del"><span class="m">-</span>    return page</div>
+<div class="ln add"><span class="m">+</span>    return page, payload</div>
+</div></details>
+<details class="hunk" open><summary>build_html · <code>scripts/build-stage4-html.py</code> L684-696 <span class="tag base">T-3</span></summary><p class="hunk-why">改什麼：回傳 page + 四格 lifecycle payload,寫檔走閘</p><p class="hunk-rel">關聯：main require_write family=`vbox-lifecycle`</p><div class="diff">
+<div class="ln del"><span class="m">-</span>    return page</div>
+<div class="ln add"><span class="m">+</span>    return page, payload</div>
+</div></details>
+<details class="hunk" open><summary>route table · <code>notes/design/diagir-route.md</code> L7-13 <span class="tag base">T-4</span></summary><p class="hunk-why">改什麼：落地五列四欄查找表</p><p class="hunk-rel">關聯：`diagir.ROUTE` / `python3 scripts/diagir.py route`</p><div class="diff">
+<div class="ln add"><span class="m">+</span>| stage1-now | … | build-stage1-html.py --action | stage1-review-ui-contract |</div>
+<div class="ln add"><span class="m">+</span>| vbox-lifecycle | … | build-vbox-fig.py lifecycle | vbox-fig-contract |</div>
+</div></details>
+<details class="hunk" open><summary>lab index · <code>scripts/fixtures/diagir-lab.yaml</code> L1-30 <span class="tag base">T-5</span></summary><p class="hunk-why">改什麼：六列三家族薄索引;`tooth_language: existing`</p><p class="hunk-rel">關聯：`kind-parked.json` 負向;`test-diagir.sh --group lab`</p><div class="diff">
+<div class="ln add"><span class="m">+</span>version: 1</div>
+<div class="ln add"><span class="m">+</span>tooth_language: existing</div>
+<div class="ln add"><span class="m">+</span>rows:</div>
+<div class="ln add"><span class="m">+</span>  - family: vbox-fig</div>
+<div class="ln add"><span class="m">+</span>    polarity: neg</div>
+<div class="ln add"><span class="m">+</span>    path: scripts/fixtures/vbox-fig/kind-parked.json</div>
+<div class="ln add"><span class="m">+</span>    expect_code: DIAGIR_KIND</div>
+</div></details></section>
+<p class="src">由 <code>scripts/build-stage6-html.py</code> 從 md ## Diff 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>

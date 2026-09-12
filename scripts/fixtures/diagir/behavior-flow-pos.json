@@ -1,0 +1,10 @@
+{
+  "family": "behavior-flow",
+  "payload": {
+    "kind": "vbox",
+    "steps": [
+      {"kind": "b", "title": "Actor", "lines": ["開工 agent"]},
+      {"kind": "hl", "title": "Page R-1", "lines": ["直式步驟"]}
+    ]
+  }
+}

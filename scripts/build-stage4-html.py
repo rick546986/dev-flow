@@ -29,6 +29,8 @@ import pathlib
 import re
 import sys
 
+import diagir
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FIXTURE = ROOT / "scripts" / "fixtures" / "stage4-html" / "spec-page.md"
 
@@ -679,7 +681,19 @@ def build_html(text):
         verdict_footer(slug),
         SCRIPT_VERDICT,
     )
-    return page
+    hl = pick_hl(slots)
+    payload = {
+        "kind": "vbox",
+        "steps": [
+            {
+                "kind": "hl" if name == hl else "b",
+                "title": name,
+                "lines": wrap_lines(slots.get(name) or "沒有")[:3] or ["沒有"],
+            }
+            for name in SLOT_ORDER
+        ],
+    }
+    return page, payload
 
 
 def parse_args(argv):
@@ -729,7 +743,7 @@ def main(argv):
             text = path.read_text(encoding="utf-8")
         except OSError as err:
             die(2, "讀不到 fixture:%s" % err)
-        sys.stdout.write(build_html(text))
+        sys.stdout.write(build_html(text)[0])
         return
     path = pathlib.Path(src)
     if not path.is_file():
@@ -738,10 +752,11 @@ def main(argv):
         text = path.read_text(encoding="utf-8")
     except OSError as err:
         die(2, "讀不到 md:%s" % err)
-    html_out = build_html(text)
+    html_out, payload = build_html(text)
     dest = pathlib.Path(out) if out else path.with_suffix(".html")
     try:
-        dest.write_text(html_out, encoding="utf-8")
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        diagir.require_write(dest, html_out, "vbox-lifecycle", payload, die=die)
     except OSError as err:
         die(2, "寫不出 html:%s" % err)
     print("wrote %s" % dest)

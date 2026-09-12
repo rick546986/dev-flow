@@ -1,0 +1,10 @@
+{
+  "family": "vbox-lifecycle",
+  "payload": {
+    "kind": "dir-tree",
+    "root": {
+      "name": "demo/",
+      "why": "目錄樹不該收成單盒 vbox。"
+    }
+  }
+}

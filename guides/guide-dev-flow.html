@@ -3622,6 +3622,17 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>母版 <code>--write</code>／<code>--check</code> 對 <code>#dirmap</code>;產品
             <code>--purpose</code>;可 <code>--fragment</code>;
             <code>check-dir-tree.sh</code> 對 fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>diagir.py</code></td>
+        <td>五家族 IR 閘:信封只認 <code>family</code>+<code>payload</code>,
+            綠路徑才 <code>atomic_write</code>;紅路徑收據六鍵、不碰目標。
+            <code>route</code> 只印路由表。產器產品寫檔走 <code>require_write</code>。</td>
+        <td>產器產品寫檔呼叫;<code>test-diagir.sh</code> 對 lab／envelope 實跑</td>
+        <td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>devflow_atomic.py</code></td>
+        <td>原子寫檔:tmp + <code>os.replace</code>,保證結尾換行。
+            給 IR 閘共用,不改既有 inventory 形狀。</td>
+        <td>被 <code>diagir.py</code> import</td>
+        <td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>build-stage1-html.py</code></td>
         <td>第 1 站審頁產生器:吃 <code>1-discussion.md</code> 的 Problem／Open Questions／
             現況圖／Actors,吐 <code>.sum#scan-sum</code>／直式三框
@@ -3977,6 +3988,10 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             群組 <code>mint-stage4</code>／<code>mint-rest</code>／
             <code>verify-receipt</code>／<code>fail-closed-claim</code>。
             不另造 <code>check-host-receipt.sh</code>。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-diagir.sh</code></td>
+        <td>IR 閘牙:validate／deliver／wire／route／lab／static-scope 六組。
+            lab 索引只點名既有三支牙,不另造第二套檢查語言。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>write-stack-inventory.py</code></td>
         <td>dev-setup 寫專案級 I2 <code>docs/dev/0-inventory.json</code>

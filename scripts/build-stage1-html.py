@@ -26,6 +26,8 @@ import pathlib
 import re
 import sys
 
+import diagir
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FIXTURE = ROOT / "scripts" / "fixtures" / "stage1-html" / "scan-page.md"
 
@@ -477,7 +479,14 @@ def main(argv):
     html_out = build_html(text)
     dest = pathlib.Path(out) if out else path.with_suffix(".html")
     try:
-        dest.write_text(html_out, encoding="utf-8")
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        diagir.require_write(
+            dest,
+            html_out,
+            "stage1-now",
+            {"kind": "stage1-now", "boxes": 3, "scan_now": True},
+            die=die,
+        )
     except OSError as err:
         die(2, "寫不出 html:%s" % err)
     print("wrote %s" % dest)
