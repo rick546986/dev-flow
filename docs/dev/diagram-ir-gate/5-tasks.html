@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>diagram-ir-gate · 5-tasks</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  -webkit-font-smoothing:antialiased}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;font-variant-numeric:tabular-nums}
+code{background:var(--sunk);border-radius:3px;padding:1px 5px;color:var(--ink-2)}
+a{color:var(--accent)}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+
+/* ---- 頁首 ---- */
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem;max-width:62ch}
+
+/* ---- 動線格 ---- */
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:20px 0 4px}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:11px 13px;box-shadow:var(--shadow)}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;display:block;margin-bottom:5px}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+.cell .n{font-size:.78rem;color:var(--ink-2);display:block;margin-top:3px}
+.cell.is-bad .v{color:var(--bad)} .cell.is-ok .v{color:var(--ok)}
+.cell.is-warn .v{color:var(--warn)} .cell.is-accent .v{color:var(--accent)}
+
+/* ---- sticky 進度 ---- */
+.progress{position:sticky;top:0;z-index:20;background:var(--ground);
+  border-bottom:1px solid var(--rule);padding:11px 0;margin:22px 0 0}
+.progress-in{max-width:900px;margin:0 auto;padding:0 20px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.bar{flex:1 1 200px;height:7px;background:var(--sunk);border-radius:99px;overflow:hidden;
+  min-width:140px}
+.bar i{display:block;height:100%;width:0;background:var(--accent);
+  transition:width .25s ease;border-radius:99px}
+.count{font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.count b{color:var(--accent)}
+.btn{border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);
+  border-radius:7px;padding:5px 11px;font-size:.82rem;cursor:pointer;font-family:inherit}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---- 提示框 ---- */
+.criterion{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 26%,transparent);
+  border-radius:10px;padding:15px 17px;margin:26px 0}
+.criterion h2{margin:0 0 7px;font-size:.95rem;letter-spacing:.02em;border:0;padding:0}
+.criterion p{margin:0;color:var(--ink-2);font-size:.9rem}
+.criterion .ex{margin-top:9px;padding-top:9px;
+  border-top:1px dashed color-mix(in srgb,var(--accent) 30%,transparent);font-size:.85rem}
+
+/* ---- 區塊卡（R / T 共用）---- */
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;
+  border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
+.r-block.danger .r-head{border-left-color:var(--bad)}
+.r-id{font-weight:700;font-size:.95rem;letter-spacing:.02em;white-space:nowrap;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.r-block.danger .r-id{color:var(--bad)}
+.r-block.core .r-id{color:var(--accent)}
+.r-name{font-weight:650}
+.r-risk{display:block;font-size:.83rem;color:var(--ink-2);margin-top:3px}
+.r-rule{padding:12px 18px;background:var(--sunk);font-size:.9rem;color:var(--ink-2);
+  border-bottom:1px solid var(--rule-2)}
+.r-rule b{color:var(--ink)}
+
+/* ---- 圖 ---- */
+/* 直式現況圖／方案架構圖:外層撐滿欄、圖本身有限寬,水平置中。
+   禁 svg/pre width:100% —— 畫布撐滿時狹長圖會貼左。
+   max-width 360px 對齊鎖定手樣(subsidy 2-decision.html)。 */
+.fig{margin:26px 0;padding:17px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}
+.fig svg,.fig pre{display:block;width:auto;max-width:360px;margin:0 auto;height:auto}
+.fig pre.fig-ascii-fallback{max-width:100%;width:100%;box-sizing:border-box;
+  overflow-x:auto;text-align:left;white-space:pre;background:var(--sunk);
+  padding:11px;border-radius:7px;font-size:.82rem;line-height:1.5;margin-top:8px}
+.fig .fig-warn{color:var(--warn);text-align:left;margin:0 0 4px;max-width:100%}
+.pinned pre{display:block;width:max-content;max-width:100%;margin-left:auto;margin-right:auto}
+.cap{color:var(--ink-3);font-size:.82rem;line-height:1.6;margin-top:11px;text-align:center}
+svg .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.4}
+svg .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+svg .wn{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.4}
+svg .bd{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.4}
+svg .nl{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--ink)}
+svg .sm{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--ink-3)}
+svg .edge{fill:none;stroke:var(--ink-3);stroke-width:1.6}
+svg .ahead{fill:var(--ink-3);stroke:none}
+
+/* ---- 摺疊 ---- */
+.appendix{margin-top:42px;border-top:1px solid var(--rule);padding-top:22px}
+.appendix > h2{font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 13px;border:0;padding:0}
+details.doc{border:1px solid var(--rule);border-radius:9px;margin-bottom:9px;
+  background:var(--panel);overflow:hidden}
+details.doc > summary{cursor:pointer;padding:11px 15px;font-weight:600;font-size:.9rem;
+  list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:center}
+details.doc > summary::-webkit-details-marker{display:none}
+details.doc > summary::after{content:"展開";font-size:.76rem;color:var(--ink-3);font-weight:500}
+details.doc[open] > summary::after{content:"收合"}
+details.doc[open] > summary{border-bottom:1px solid var(--rule-2)}
+details.doc:hover{border-color:var(--accent)}
+.doc-in{padding:4px 17px 15px;font-size:.9rem;color:var(--ink-2)}
+.doc-in h2,.doc-in h3{color:var(--ink);font-size:.95rem;margin:16px 0 7px;border:0;padding:0}
+.doc-in table{border-collapse:collapse;width:100%;margin:11px 0;font-size:.84rem}
+.doc-in th,.doc-in td{border:1px solid var(--rule);padding:6px 9px;text-align:left;
+  vertical-align:top}
+.doc-in th{background:var(--sunk);font-weight:650;color:var(--ink)}
+.doc-in pre{background:var(--sunk);padding:11px;border-radius:7px;overflow-x:auto;
+  font-size:.82rem;line-height:1.5}
+.doc-in blockquote{margin:11px 0;padding:.4em 1em;border-left:3px solid var(--rule);
+  color:var(--ink-3)}
+.doc-in ul,.doc-in ol{padding-left:1.35em}
+.doc-in li{margin:4px 0}
+.tablewrap{overflow-x:auto}
+
+/* ---- 收尾 ---- */
+.verdict{margin-top:34px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);padding:19px 21px;box-shadow:var(--shadow)}
+.verdict h2{margin:0 0 9px;font-size:1rem;border:0;padding:0}
+.verdict p{margin:0 0 9px;color:var(--ink-2);font-size:.91rem}
+.verdict p:last-child{margin-bottom:0}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:560px){h1{font-size:1.35rem}}
+
+.pinned{border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:8px;
+        padding:14px 16px;margin:0 0 14px;background:var(--panel)}
+.pinned>h2{margin:0 0 8px;font-size:1rem;letter-spacing:.01em}
+.pinned .tablewrap{overflow-x:auto}
+.pinned table{width:100%;border-collapse:collapse;font-size:.86rem}
+.pinned th,.pinned td{border:1px solid var(--rule);padding:5px 8px;text-align:left;vertical-align:top}
+.pinned ul{margin:.3em 0 .3em 1.1em;padding:0}
+.pinned p{margin:.35em 0}
+a.cell{cursor:pointer;text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.s-card{border-bottom:1px solid var(--rule-2)}
+.s-card:last-child{border-bottom:0}
+.s-head{display:flex;gap:10px;align-items:center;padding:12px 18px;cursor:pointer;
+  flex-wrap:wrap}
+.s-head:hover{background:var(--sunk)}
+.s-chk{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex:none}
+.s-chk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.s-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.83rem;
+  font-weight:650;color:var(--accent);background:var(--accent-soft);
+  padding:2px 7px;border-radius:5px;flex:none}
+.s-title{font-weight:600;font-size:.94rem}
+.tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600;flex:none}
+.tag.base{background:var(--sunk);color:var(--ink-3)}
+.tag.main{background:var(--warn-soft);color:var(--warn)}
+.tag.rej{background:var(--bad-soft);color:var(--bad)}
+.s-card.done{background:var(--ok-soft)}
+.s-card.done .s-title{color:var(--ink-2)}
+.s-body{padding:0 18px 15px 45px}
+.gwt{display:grid;gap:5px;margin-bottom:11px}
+.gwt-row{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:baseline}
+.gwt-k{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.71rem;
+  font-weight:700;color:var(--ink-3);letter-spacing:.06em}
+.gwt-v{font-size:.9rem;color:var(--ink-2)}
+.obs{background:var(--sunk);border-left:3px solid var(--accent);border-radius:0 7px 7px 0;
+  padding:9px 13px}
+.obs.missing{border-left-color:var(--bad);background:var(--bad-soft)}
+.obs-k{display:block;font-size:.71rem;letter-spacing:.08em;text-transform:uppercase;
+  font-weight:700;color:var(--accent);margin-bottom:3px}
+.obs.missing .obs-k{color:var(--bad)}
+.obs-v{font-size:.88rem;color:var(--ink-2)}
+@media (max-width:560px){
+  .s-body{padding-left:18px}
+  .gwt-row{grid-template-columns:1fr;gap:2px}
+}
+
+.t-bound{border-top:1px solid var(--rule-2);margin-top:9px}
+.t-bound>summary{cursor:pointer;padding:9px 0 9px 45px;font-size:.84rem;font-weight:600;
+  color:var(--ink-2);list-style:none;display:flex;justify-content:space-between;gap:10px}
+.t-bound>summary::-webkit-details-marker{display:none}
+.t-bound>summary::after{content:"展開";font-size:.75rem;color:var(--ink-3);font-weight:500}
+.t-bound[open]>summary::after{content:"收合"}
+.t-bound .body{padding:2px 18px 13px 45px;font-size:.87rem;color:var(--ink-2);line-height:1.7}
+.t-bound .body code{font-size:.85em}
+.dag{margin:22px 0;padding:15px 17px;border:1px solid var(--rule);border-radius:10px;
+  background:var(--panel);box-shadow:var(--shadow)}
+.dag h2{margin:0 0 10px;font-size:.95rem;border:0;padding:0}
+.dag pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.82rem;
+  line-height:1.7;color:var(--ink-2);overflow-x:auto;white-space:pre}
+@media (max-width:560px){
+  .t-bound>summary{padding-left:18px}
+  .t-bound .body{padding-left:18px}
+}
+
+.t-chk-hint{font-size:.86rem;color:var(--ink-2);margin:18px 0 0}
+.t-ask{margin:0 0 12px}
+.t-ask-h{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-3);margin:0 0 6px}
+.t-ask ul{margin:0;padding:0;list-style:none}
+.t-ask li{display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:.9rem;
+  color:var(--ink)}
+.t-ask .qmark{color:var(--accent);font-weight:700;flex:none;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap" id="top">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 5-tasks · 執行板</p>
+  <h1>diagram-ir-gate</h1>
+  <p class="sub">正本是 <code>docs/dev/diagram-ir-gate/5-tasks.md</code>,
+  這頁隨時可重生。<strong>審完頂區五格再決定要不要動工。</strong></p>
+  <div class="dash"><a class="cell" href="#top"><span class="k">狀態</span><span class="v">approved</span><span class="n">frontmatter</span></a><a class="cell" href="#cards"><span class="k">任務</span><span class="v">6 個 T</span><span class="n">六欄齊全</span></a><a class="cell" href="#top"><span class="k">模式</span><span class="v">sequential</span><span class="n">execution.mode(未標=sequential)</span></a><a class="cell" href="#dag"><span class="k">依賴</span><span class="v">5 條</span><span class="n">Blocked-by 邊</span></a><a class="cell" href="#progress"><span class="k">進度</span><span class="v">0/6</span><span class="n">已勾 完成/總數</span></a></div>
+</header>
+
+<div class="progress" id="progress">
+  <div class="progress-in">
+    <span class="count">已完成 <b id="done">0</b> / 6 條</span>
+    <span class="bar"><i></i></span>
+    <button class="btn" id="clear" type="button">清除勾選</button>
+  </div>
+</div><section class="dag" id="dag"><h2>T 依賴 DAG(Blocked-by,自動衍生)</h2><pre>Wave 1: T-1
+Wave 2: T-2 ←(T-1)
+Wave 3: T-3 ←(T-2)
+Wave 4: T-4 ←(T-3)
+Wave 5: T-5 ←(T-4)
+Wave 6: T-6 ←(T-5)</pre></section>
+<div id="cards">
+<p class="t-chk-hint">勾選 = 這張 T 不開口也能開工,不是已做完。</p><article class="s-card" data-sid="T-1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-1">
+    <span class="s-id">T-1</span>
+    <span class="s-title">落地閘驗證讓壞 IR 吐 DIAGIR_* 且不蓋 last-good</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-1 的 Files 第一個檔 diagir.py，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-1 的 Blocked-by 沒點名任何 T，真的可以立刻開工嗎？</span></li><li><span class="qmark">?</span><span>T-1 蓋的 S-1.1、S-1.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-1 / S-1.1, S-1.2, S-1.3, S-1.4, S-1.5, S-1.6</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/diagir.py, scripts/test-diagir.sh, scripts/fixtures/diagir/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(python3 scripts/fixtures/diagir/run_cases.py --group r1 -v 2&gt;&amp;1 | grep -c &#x27;^=== RUN&#x27;); test &quot;$n&quot; -ge 6 &amp;&amp; python3 scripts/fixtures/diagir/run_cases.py --group r1</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">—</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常餵壞 IR 時，系統多了穩定收據：stdout 一筆 JSON（鍵 <code>ok</code>／<code>code</code>／<code>knob</code>／<code>abort</code>／<code>delivered</code>／<code>target_replaced</code>），stderr 印該 <code>DIAGIR_*</code> 與 Q6 旋鈕句另含 <code>DIAGIR_ABORT</code>，目標檔 sha 仍是上一張可審圖。改的是驗證與收據，不是各產器怎麼畫。不會變成只印 traceback，也不會在缺 <code>family</code> 時猜列。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>只准新寫 <code>scripts/diagir.py</code> 的 validate／deliver 失敗路徑，以及 <code>scripts/test-diagir.sh</code> 與 <code>scripts/fixtures/diagir/</code>（案例名對齊 4-spec Test Skeletons：<code>test_s_1_1</code>～<code>test_s_1_6</code>）。正式入口是 <code>python3 scripts/diagir.py deliver ENVELOPE.json --out TARGET</code>（DD-5）；<code>docs/dev/diagram-ir-gate/proto/diagir_gate.py</code> 只當對照，不得當 ship。閘擁有 <code>DIAGIR_*</code> 判定與收據 JSON；不得 import Archify／mermaid／Node；不得猜 <code>family</code>。驗證失敗零寫目標（<code>target_replaced</code>=false；last-good 可對 Stage 3 sha256 <code>8ed83a4d66100b71ed41a651553f453e38997b9f89d52df28bf13eac22354dbc</code> 或測試新寫的同等檔）。本 T 尚未抽出 <code>atomic_write</code>，不得新造第三支寫檔演算法，也不得用 <code>Path.write_text</code> 蓋目標。錯誤碼鎖定 R-1：<code>DIAGIR_KIND</code>／<code>DIAGIR_EMPTY</code>／<code>DIAGIR_LINES</code>／<code>DIAGIR_FAMILY</code>／<code>DIAGIR_WHY</code>，失敗另印 <code>DIAGIR_ABORT</code>。信封鍵只有 <code>family</code>+<code>payload</code>（DD-1）。Diff Budget（4-spec 估計）：本 T 落在 <code>scripts/diagir.py</code> 列（≤1 檔、非測試 ≤220、測試 ≤180）；超支本身非偏差，是停下判 L1/L2 的訊號。禁碰 <code>#196</code>、integration-before-verdict、plugin 版號、<code>STATUS.md</code> 表列、mermaid／Node／動畫預設。作業脈絡（S-1.1）：Actor=開工 agent；Goal=壞 IR 不得換掉上一張可審圖；Human decision=改 kind 或改選路由列後重跑；Authority=閘機械拒寫；Recovery=依 Q6 旋鈕改 IR 再跑，不要 <code>git checkout</code> 舊 html。看過收據 ≠ 已修好。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-2">
+    <span class="s-id">T-2</span>
+    <span class="s-title">抽出 atomic_write 讓綠 IR 整份換新、中斷只留截斷 tmp</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-2 的 Files 第一個檔 devflow_atomic.py，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-2 的 Blocked-by 寫 T-1，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-2 蓋的 S-2.1、S-2.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-2 / S-2.1, S-2.2</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/devflow_atomic.py, scripts/diagir.py, scripts/fixtures/diagir/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(python3 scripts/fixtures/diagir/run_cases.py --group r2 -v 2&gt;&amp;1 | grep -c &#x27;^=== RUN&#x27;); test &quot;$n&quot; -ge 2 &amp;&amp; python3 scripts/fixtures/diagir/run_cases.py --group r2</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-1</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">綠生命週期通過後，人打開的是完整新靜態 SVG（檔含 <code>&lt;svg</code>、長度大於截斷字串 <code>&lt;svg viewBox</code>、不含字面 <code>mermaid</code>、sha ≠ last-good，收據 <code>ok</code>／<code>delivered</code>／<code>target_replaced</code> 皆 true、<code>code</code> 為 null）；寫到一半尚未 <code>replace</code> 時舊圖還在，旁邊只留長度 &lt; 20 的 <code>.tmp</code>。改的是寫入原語與 deliver 成功路徑。不會每支產器自寫一套 tmp 邏輯，也不會把截斷 tmp 改名當交付。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>只准新寫 <code>scripts/devflow_atomic.py</code> 的 <code>atomic_write</code>，並讓 <code>diagir.deliver</code> 在 validate 通過後才呼叫。形狀必須與 <code>scripts/write-stack-inventory.py:30-37</code> 相同（tmp + <code>os.replace</code> + 補尾端 newline）；inventory 本 slug 可不改（DD-4）。<code>atomic_write</code> 擁有寫入原語：不得做驗證，不得在驗證失敗後被呼叫。一致性：目標與 tmp 只成功一筆可見，<code>replace</code> 前目標全舊；未 <code>replace</code> 視同 <code>DIAGIR_ABORT</code>。vbox-fig 本 T 仍不寫檔。案例名 <code>test_s_2_1_pass_lifecycle_atomic_svg</code>／<code>test_s_2_2_interrupt_keeps_last_good</code>；綠信封由 <code>scripts/fixtures/vbox-fig/lifecycle.json</code> 包成 <code>family</code>=<code>vbox-lifecycle</code>。Diff Budget：<code>devflow_atomic.py</code> ≤1 檔、非測試 ≤40、測試 ≤30；diagir 成功路徑吃 T-1 同一份 ≤220 預算的剩餘。禁第三支寫檔演算法、禁 <code>#196</code>／IBV／plugin／STATUS／mermaid。作業脈絡（S-2.1／S-2.2）：Actor=產檔器；Goal=通過後人打開完整新圖，中斷時審頁仍打得開舊圖；Human decision=接受新圖進審頁，或修 IR 重跑且不要把 <code>.tmp</code> 改名當交付；Authority=只有 <code>os.replace</code> 之後目標才變。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-3">
+    <span class="s-id">T-3</span>
+    <span class="s-title">把三支 write_text 與 vbox 呼叫端改接同一閘</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-3 的 Files 第一個檔 build-dir-tree.py，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-3 的 Blocked-by 寫 T-2，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-3 蓋的 S-2.3 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-2 / S-2.3</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/build-dir-tree.py, scripts/build-gate-twin.py, scripts/build-stage1-html.py, scripts/build-stage2-html.py, scripts/build-stage4-html.py, scripts/fixtures/diagir/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(python3 scripts/fixtures/diagir/run_cases.py --group wire -v 2&gt;&amp;1 | grep -c &#x27;^=== RUN&#x27;); test &quot;$n&quot; -ge 1 &amp;&amp; python3 scripts/fixtures/diagir/run_cases.py --group wire</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-2</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常產樹圖／gate-twin／第 1 站審頁時，目標產品檔不再被 <code>Path.write_text</code> 直接蓋掉；驗證失敗留下上一張 html／svg。改的是三處覆寫，以及把 vbox stdout 寫進目標檔的呼叫端。不會讓 vbox-fig 自己寫檔，不會另造寫檔演算法，也不會未接閘就勾 wave-1 完成。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>只准改 M-1 <code>scripts/build-dir-tree.py:574-576</code>、M-2 <code>scripts/build-gate-twin.py:2327</code>、M-3 <code>scripts/build-stage1-html.py:480</code>，以及把 vbox stdout 持久化的 <code>scripts/build-stage2-html.py</code>／<code>scripts/build-stage4-html.py</code> 呼叫端。目標覆寫必須 <code>scripts/diagir.py</code>（或同模組函式）→ <code>devflow_atomic.atomic_write</code>。產器組 payload、選 family；不得再對目標 <code>Path.write_text</code>／<code>open(path,&#x27;w&#x27;)</code>。vbox-fig 仍只寫 stdout（DD-6），本 T 不把它改成自己寫檔，故不列入 Files。主機層不擋「跳過閘硬跑舊 write_text」（4-spec Known limit ②）；本 T 用 diff 咬接線，不是 OS hook。案例名 <code>test_s_2_3_builders_wire_same_gate</code>。Diff Budget：三支產器 + vbox 呼叫端 ≤5 檔、非測試 ≤120、測試 ≤80；本 T Files 多一列測試目錄是為了 scope guard，不算第六個產品檔。禁改既有四支牙、禁 <code>#196</code>／IBV／plugin／STATUS／mermaid。接線範圍無現場人員交接。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-4">
+    <span class="s-id">T-4</span>
+    <span class="s-title">落五列路由表讓錯家族與缺 family 都 DIAGIR_FAMILY</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-4 的 Files 第一個檔 diagir-route.md，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-4 的 Blocked-by 寫 T-3，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-4 蓋的 S-3.1、S-3.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-3 / S-3.1, S-3.2, S-3.3, S-3.4, S-3.5</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">notes/design/diagir-route.md, scripts/diagir.py, scripts/fixtures/diagir/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(python3 scripts/fixtures/diagir/run_cases.py --group r3 -v 2&gt;&amp;1 | grep -c &#x27;^=== RUN&#x27;); test &quot;$n&quot; -ge 5 &amp;&amp; python3 scripts/fixtures/diagir/run_cases.py --group r3</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-3</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常先打開路由表勾一列再跑；把第 1 站三框當生命週期、把目錄樹當 vbox、或 JSON 漏掉 <code>family</code> 鍵，收據都是 <code>DIAGIR_FAMILY</code> 且不蓋檔。改的是一張五列表與閘的查找。不會黑盒猜列，不會長出第六列 mermaid／hosted。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>只准新寫 <code>notes/design/diagir-route.md</code>，並讓 <code>diagir</code> 按人選的 family 查找（可加 <code>route</code> 印五列）。五 id 凍結：<code>stage1-now</code>／<code>stage2-arch</code>／<code>behavior-flow</code>／<code>dir-tree</code>／<code>vbox-lifecycle</code>。每列都有非空「用這條」「不用那條」「產器」「契約」；契約欄分別指回 <code>stage1-review-ui-contract</code>、<code>stage2-review-ui-contract</code>+vbox 母版、vbox-fig-contract（twin 收口）、<code>dir-tree-contract</code>、<code>vbox-fig-contract</code>。路由表擁有 family id；不得發明第六家族；不得 import mermaid／Node。缺欄或未知 id → <code>DIAGIR_FAMILY</code>；輸出不得宣稱已選／auto／detect。五入口各恰好一列：<code>build-stage1-html.py --action</code>、<code>build-stage2-html.py --action</code>、<code>build-gate-twin.py</code> 行為流、<code>build-dir-tree.py</code>、<code>build-vbox-fig.py</code> lifecycle。<code>stage1-now</code> 不得指向 <code>build-vbox-fig.py</code>；<code>dir-tree</code> 不得指向 vbox 或 gate-twin。改 id = 回第 2 站。案例名 <code>test_s_3_1</code>～<code>test_s_3_5</code>。Diff Budget：與 T-5 共用 route+lab+parked ≤3 檔、非測試 ≤80、測試 ≤40；本 T 只消耗 <code>diagir-route.md</code> 那一檔。禁 <code>#196</code>／IBV／plugin／STATUS。作業脈絡（S-3.2／S-3.4）：Actor=開工 agent；Goal=先選家族，不要讓機器猜；Human decision=補上 id 或改跑對的產器；Authority=閘拒猜。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-5">
+    <span class="s-id">T-5</span>
+    <span class="s-title">落 Proof Lab 薄索引與 parked fixture 讓三正三負可重放</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-5 的 Files 第一個檔 diagir-lab.yaml，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-5 的 Blocked-by 寫 T-4，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-5 蓋的 S-4.1、S-4.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-4 / S-4.1, S-4.2, S-4.3, S-4.4, S-4.5</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/fixtures/diagir-lab.yaml, scripts/fixtures/vbox-fig/kind-parked.json, scripts/fixtures/diagir/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(python3 scripts/fixtures/diagir/run_cases.py --group r4 -v 2&gt;&amp;1 | grep -c &#x27;^=== RUN&#x27;); test &quot;$n&quot; -ge 5 &amp;&amp; python3 scripts/fixtures/diagir/run_cases.py --group r4</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-4</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常重放 Lab 時，六列索引點名既有 fixture：三正可獨立綠（牙 + 閘 <code>ok</code>=true），三負紅且 last-good sha 不變。改的是薄索引與 vbox 負向樣張。不會另造 <code>check-diagir-lab.sh</code> 當第二套牙，也不會只靠 <code>lifecycle.json</code> 綠過就算 Lab。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>只准新寫 <code>scripts/fixtures/diagir-lab.yaml</code> 與 <code>scripts/fixtures/vbox-fig/kind-parked.json</code>。索引 <code>version: 1</code>、剛好 6 列、<code>family</code> 集合為 <code>{vbox-fig, gate-twin, dir-tree}</code> 且各 1 正 1 負；<code>path</code> 鎖定為 <code>scripts/fixtures/vbox-fig/lifecycle.json</code>、<code>scripts/fixtures/vbox-fig/kind-parked.json</code>、<code>scripts/fixtures/gate-twin/fig-long-label</code>、<code>scripts/fixtures/gate-twin/fig-tree-ascii</code>、<code>scripts/fixtures/dir-tree/good</code>、<code>scripts/fixtures/dir-tree/missing-why</code>；負向 <code>expect_code</code>：<code>DIAGIR_KIND</code>／<code>DIAGIR_FAMILY</code>／<code>DIAGIR_WHY</code>；<code>tooth_language</code> 字面 <code>existing</code>。索引擁有正負 path：只准點名既有 fixture 目錄，不准發明新 needle 語言。牙入口仍是 <code>check-vbox-fig</code>／<code>check-gate-twin</code>／<code>check-dir-tree</code>／<code>devflow-check</code>（S-4.2 三正必須能被這三支牙吃到）。禁止 <code>scripts/check-diagir-lab.sh</code>（或同等）被 <code>scripts/devflow-check.sh</code> 當成取代三支牙的入口。負向不得 <code>replace</code> 目標。<code>kind-parked.json</code> 落地前重放須與 Stage 3 <code>kind-parked</code> 信封同結果（DD-2）。案例名 <code>test_s_4_1</code>～<code>test_s_4_5</code>。Diff Budget：與 T-4 共用 ≤3 檔的剩餘兩檔。禁 <code>#196</code>／IBV／plugin／STATUS／mermaid。作業脈絡（S-4.3）：Actor=owner／審查人；Goal=負向紅了 last-good 還在；Human decision=負向紅且檔還在才算 Lab 過。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-6">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-6">
+    <span class="s-id">T-6</span>
+    <span class="s-title">釘預設靜態 SVG 且本 slug 不碰 plugin 與 #196</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-6 的 Files 第一個檔 diagir，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-6 的 Blocked-by 寫 T-5，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-6 蓋的 S-5.1、S-5.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-5 / S-5.1, S-5.2</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/fixtures/diagir/, scripts/test-diagir.sh</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(python3 scripts/fixtures/diagir/run_cases.py --group r5 -v 2&gt;&amp;1 | grep -c &#x27;^=== RUN&#x27;); test &quot;$n&quot; -ge 2 &amp;&amp; python3 scripts/fixtures/diagir/run_cases.py --group r5</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-5</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">綠交付打開仍是靜態直式 SVG（含 <code>&lt;svg</code>，零命中 <code>mermaid</code>／<code>mermaid.js</code>／<code>&lt;animate</code>／<code>animateTransform</code>）；本 slug 的 diff 不改 plugin 版號、不帶 #196 正在改的檔、不加 Node render／hosted share 新依賴。改的是範圍牙與綠交付內容檢查。不會把「會動」當成功條件，也不會收 Q8／Q9。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>本 T 不改產品產器，只准在 <code>scripts/fixtures/diagir/</code> 與 <code>scripts/test-diagir.sh</code> 加 S-5.1／S-5.2 斷言。S-5.1 吃 T-2 的綠目標（<code>test_s_5_1_default_static_svg_no_mermaid</code>）。S-5.2（<code>test_s_5_2_no_plugin_bump_no_196</code>）對本 feature git diff（4-spec 寫相對 <code>9877652</code>）：<code>.claude-plugin/plugin.json</code> 的 <code>version</code> 與 tip 相同、該路徑空 diff；變更清單不含 PR <code>#196</code> 正在改的檔當本 slug 交付，也不含 Node render／hosted share 新依賴。禁 bump plugin、禁碰 <code>#196</code>／<code>#200</code>／<code>#201</code>、禁 IBV、禁改 <code>STATUS.md</code> 表列、禁 mermaid／動畫預設。Diff Budget：本 T 不新增產品檔，測試行吃 diagir 列剩餘；合計產品檔仍應對齊 4-spec ≤10／非測試 ≤460／測試 ≤330。作業脈絡（S-5.1）：Actor=owner；Goal=wave-1 成功條件不是「會動」；Human decision=看到動畫預設就打回。</p></div></details>
+  </div>
+</article>
+</div>
+<h2 class="apx-h">背景資料(預設收合,內容零刪減)</h2>
+<details class="doc" id="sec-開工前提"><summary><span>開工前提</span></summary><div class="doc-in"><p>Stage 4 已核准。G2 PASS 已在 tip（#242）。本 hop 不改 <code>4-spec.md</code>／<code>4-spec.html</code>。正式閘是 <code>scripts/diagir.py</code>，不是 <code>proto/diagir_gate.py</code>。Proof Lab 牙仍是現有四支，不是第二套 <code>check-diagir-lab.sh</code>。本 hop 不改 <code>STATUS.md</code> 表列（OC-4）。</p><p>### N1 R/S 盤點（21 S）</p><div class="tablewrap"><table><thead><tr><th>R</th><th>S</th><th>本 hop T</th></tr></thead><tbody><tr><td>R-1 失敗保住 last-good 並吐 <code>DIAGIR_*</code></td><td>S-1.1 <code>DIAGIR_KIND</code>；S-1.2 <code>DIAGIR_EMPTY</code>；S-1.3 <code>DIAGIR_LINES</code>；S-1.4 <code>DIAGIR_FAMILY</code>（樹當 vbox）；S-1.5 <code>DIAGIR_WHY</code>；S-1.6 <code>DIAGIR_ABORT</code> + 收據六鍵</td><td>T-1</td></tr><tr><td>R-2 通過才原子交付</td><td>S-2.1 綠生命週期整份換新；S-2.2 中斷留下 last-good 與截斷 tmp</td><td>T-2</td></tr><tr><td>R-2（續）M-1～M-3</td><td>S-2.3 三支 <code>write_text</code> + vbox 呼叫端接同一閘</td><td>T-3</td></tr><tr><td>R-3 五列查找路由</td><td>S-3.1 五列齊；S-3.2 三框當生命週期；S-3.3 目錄樹當 vbox；S-3.4 缺 <code>family</code>；S-3.5 五入口對五列</td><td>T-4</td></tr><tr><td>R-4 Proof Lab 薄索引</td><td>S-4.1 六列三家族；S-4.2 三正可重放；S-4.3 三負不蓋檔；S-4.4 不只要 <code>lifecycle.json</code>；S-4.5 不另造 Lab 牙</td><td>T-5</td></tr><tr><td>R-5 預設靜態 SVG 且不收 NON-goal</td><td>S-5.1 無 mermaid／動畫預設；S-5.2 不 bump plugin、不碰 #196</td><td>T-6</td></tr></tbody></table></div><p>### Verify 開工前原樣跑（2026-09-12；閘／索引／測試尚未落地）</p><div class="tablewrap"><table><thead><tr><th>T</th><th>結果</th><th>處置</th></tr></thead><tbody><tr><td>T-1</td><td><code>scripts/fixtures/diagir/run_cases.py</code> 不存在 → <code>n=0</code>，<code>test -ge 6</code> 紅</td><td>③綠不了但方向對（六碼案例尚未落地）→ 開工條件成立</td></tr><tr><td>T-2</td><td>同上，<code>--group r2</code> → <code>n=0</code>，<code>test -ge 2</code> 紅</td><td>③方向對</td></tr><tr><td>T-3</td><td>同上，<code>--group wire</code> → <code>n=0</code>，<code>test -ge 1</code> 紅；三處 <code>write_text</code> 仍在 tip 行號</td><td>③方向對</td></tr><tr><td>T-4</td><td>同上，<code>--group r3</code> → <code>n=0</code>，<code>test -ge 5</code> 紅；<code>notes/design/diagir-route.md</code> 尚無</td><td>③方向對</td></tr><tr><td>T-5</td><td>同上，<code>--group r4</code> → <code>n=0</code>，<code>test -ge 5</code> 紅；<code>diagir-lab.yaml</code>／<code>kind-parked.json</code> 尚無</td><td>③方向對</td></tr><tr><td>T-6</td><td>同上，<code>--group r5</code> → <code>n=0</code>，<code>test -ge 2</code> 紅。單獨量 <code>git diff 9877652 -- .claude-plugin/plugin.json</code> 已是空 diff（不具鑑別力，斷言放進尚未落地的 <code>test_s_5_2</code>）</td><td>③整欄紅、方向對</td></tr></tbody></table></div></div></details><details class="doc" id="sec-Split-Decisions-拆分自判"><summary><span>Split Decisions(拆分自判)</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>決策</th><th>理由</th><th>依據</th><th>棄項</th></tr></thead><tbody><tr><td>sequential，不開 parallel</td><td>Feature Risk high（公開 <code>DIAGIR_*</code>／信封；失敗會遺失上一張可審圖）。T-1～T-4 都碰 <code>scripts/diagir.py</code>，T-1～T-6 都碰 <code>scripts/fixtures/diagir/</code>，Files 重疊。tip 預設 sequential，須明確啟用才改。</td><td><code>_templates/5-tasks.md</code> <code>execution.mode</code> 缺省 sequential；4-spec Verification Profile Risk high</td><td>棄 T-1 ∥ T-4。家族碼與路由都碰 <code>DIAGIR_FAMILY</code>，檔重疊且語意相依。</td></tr><tr><td>T-1 六碼同一刀</td><td>可觀測行為是同一閘的失敗不蓋檔，不是六層架構。S-1.6 吃任一失敗案的收據形。</td><td>4-spec R-1「審的時候看什麼」；S-1.6 GIVEN</td><td>棄「一碼一 T」（同一函式、同一 Files）。</td></tr><tr><td>T-2 與 T-1 分開</td><td>失敗路徑與原子寫是兩件可觀測事；DD-4 要抽出 <code>atomic_write</code>。</td><td>4-spec R-2／DD-4／S-2.1／S-2.2</td><td>棄「validate+write 同一 T」（會把 atomic 與六碼測試綁死）。</td></tr><tr><td>M-1～M-3 同 T-3</td><td>S-2.3 明寫三支現況 <code>write_text</code> + vbox 呼叫端同一閘；拆開會讓三 T 改同一接線契約。</td><td>4-spec S-2.3、M-1～M-3、DD-6</td><td>棄「一產器一 T」。</td></tr><tr><td>路由與 Lab 分開</td><td>五列表與六列索引是兩件可觀測事。Diff Budget 把它們列在同一 ≤3 檔列，仍是兩關注點。</td><td>4-spec R-3／R-4；Diff Budget 第 4 列</td><td>棄併成一 T。</td></tr><tr><td>S-5.1／S-5.2 同 T-6</td><td>範圍牙：預設靜態 + 不碰 plugin／#196；無新產品檔。plugin 空 diff 開工前已綠，不得單獨當 Verify。</td><td>4-spec R-5／S-5.1／S-5.2</td><td>棄把 S-5.2 散進每個 T 的 Verify（會讓已綠的 plugin 空 diff 假綠整 T）。</td></tr><tr><td>不發明 R/S</td><td>Covers 只承接 4-spec 已核 R-1～R-5／S-1.1～S-5.2。M-1～M-3 是活產器寫檔改口，掛在 T-3，不另造 S。</td><td>#242 G2 PASS；4-spec「不發明新 R/S」</td><td>棄補「S-6.*」或把 IBV 的 R 寫進來。</td></tr></tbody></table></div></div></details>
+<footer class="foot">由 <code>scripts/build-gate-twin.py</code> 從 md 正本逐條解析產生,不手抄。</footer>
+</div>
+<script>
+(function(){
+  var boxes = [].slice.call(document.querySelectorAll('.s-chk'));
+  if (!boxes.length) return;
+  var bar = document.querySelector('.bar i'), done = document.getElementById('done');
+  var KEY = 'devflow-gate-twin:' + document.title;
+  function load(){ try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ return {}; } }
+  function save(s){ try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e){} }
+  var state = load();
+  function paint(){
+    var n = 0;
+    boxes.forEach(function(b){
+      var card = b.closest('.s-card');
+      if (b.checked){ n++; card.classList.add('done'); } else { card.classList.remove('done'); }
+    });
+    if (done) done.textContent = n;
+    if (bar) bar.style.width = (n / boxes.length * 100) + '%';
+  }
+  boxes.forEach(function(b){
+    if (state[b.dataset.sid]) b.checked = true;
+    b.addEventListener('change', function(){ state[b.dataset.sid] = b.checked; save(state); paint(); });
+  });
+  var clr = document.getElementById('clear');
+  if (clr) clr.addEventListener('click', function(){
+    state = {}; save(state); boxes.forEach(function(b){ b.checked = false; }); paint();
+  });
+  paint();
+})();
+</script>
+</body>
+</html>
