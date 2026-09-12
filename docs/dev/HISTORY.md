@@ -515,3 +515,9 @@
 - 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
 - 詳細:https://github.com/rick546986/dev-flow/pull/242
 
+## 2026-09-13 · diagram-ir-gate
+- 做了什麼:Stage5 #244 landed；Stage6 opened；Active 進 6-run；Gates G1✅ G2✅ G3⬜
+- 為什麼:Stage 5 已合 main（#244）；看板從 5-tasks 推進到 Stage 6 就緒
+- 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
+- 詳細:https://github.com/rick546986/dev-flow/pull/244
+
