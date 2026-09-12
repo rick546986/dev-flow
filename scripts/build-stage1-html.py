@@ -26,6 +26,10 @@ import pathlib
 import re
 import sys
 
+import diagir
+
+STAGE1_PAYLOAD = {"kind": "stage1-now", "boxes": 3, "scan_now": True}
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FIXTURE = ROOT / "scripts" / "fixtures" / "stage1-html" / "scan-page.md"
 
@@ -476,10 +480,9 @@ def main(argv):
         die(2, "讀不到 md:%s" % err)
     html_out = build_html(text)
     dest = pathlib.Path(out) if out else path.with_suffix(".html")
-    try:
-        dest.write_text(html_out, encoding="utf-8")
-    except OSError as err:
-        die(2, "寫不出 html:%s" % err)
+    result = diagir.persist_product(str(dest), html_out, "stage1-now", STAGE1_PAYLOAD)
+    if not result.get("ok"):
+        die(1, "IR gate %s:%s" % (result.get("code"), result.get("knob")))
     print("wrote %s" % dest)
 
 

@@ -26,6 +26,16 @@ import pathlib
 import re
 import sys
 
+import diagir
+
+STAGE2_PAYLOAD = {
+    "kind": "vbox",
+    "steps": [
+        {"kind": "b", "title": "方案", "lines": ["審頁"]},
+        {"kind": "hl", "title": "選定", "lines": ["直式"]},
+    ],
+}
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FIXTURE = ROOT / "scripts" / "fixtures" / "stage2-html" / "decision-page.md"
 
@@ -537,10 +547,9 @@ def main(argv):
         die(2, "讀不到 md:%s" % err)
     html_out = build_html(text)
     dest = pathlib.Path(out) if out else path.with_suffix(".html")
-    try:
-        dest.write_text(html_out, encoding="utf-8")
-    except OSError as err:
-        die(2, "寫不出 html:%s" % err)
+    result = diagir.persist_product(str(dest), html_out, "stage2-arch", STAGE2_PAYLOAD)
+    if not result.get("ok"):
+        die(1, "IR gate %s:%s" % (result.get("code"), result.get("knob")))
     print("wrote %s" % dest)
 
 

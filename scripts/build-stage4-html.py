@@ -29,6 +29,18 @@ import pathlib
 import re
 import sys
 
+import diagir
+
+STAGE4_PAYLOAD = {
+    "kind": "vbox",
+    "steps": [
+        {"kind": "b", "title": "新生", "lines": ["沒有"]},
+        {"kind": "hl", "title": "改行為", "lines": ["這輪"]},
+        {"kind": "b", "title": "退役", "lines": ["沒有"]},
+        {"kind": "b", "title": "不動", "lines": ["其餘"]},
+    ],
+}
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FIXTURE = ROOT / "scripts" / "fixtures" / "stage4-html" / "spec-page.md"
 
@@ -740,10 +752,11 @@ def main(argv):
         die(2, "讀不到 md:%s" % err)
     html_out = build_html(text)
     dest = pathlib.Path(out) if out else path.with_suffix(".html")
-    try:
-        dest.write_text(html_out, encoding="utf-8")
-    except OSError as err:
-        die(2, "寫不出 html:%s" % err)
+    result = diagir.persist_product(
+        str(dest), html_out, "vbox-lifecycle", STAGE4_PAYLOAD
+    )
+    if not result.get("ok"):
+        die(1, "IR gate %s:%s" % (result.get("code"), result.get("knob")))
     print("wrote %s" % dest)
 
 

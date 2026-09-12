@@ -28,6 +28,8 @@ import pathlib
 import re
 import sys
 
+import diagir
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PURPOSE_PATH = ROOT / "guides" / "dir-tree-purpose.yaml"
 GUIDE_PATH = ROOT / "guides" / "guide-dev-flow.html"
@@ -571,9 +573,18 @@ def splice_tree(page, fragment):
     return page[:start + len(TREE_BEGIN)] + "\n" + fragment + page[end:]
 
 
-def write_text(path, text):
-    pathlib.Path(path).parent.mkdir(parents=True, exist_ok=True)
-    pathlib.Path(path).write_text(text, encoding="utf-8")
+def write_text(path, text, purpose_data=None):
+    payload = {"kind": "dir-tree"}
+    if purpose_data is not None:
+        payload["root"] = purpose_data.get("root") or purpose_data
+    else:
+        payload["root"] = {
+            "name": "out/",
+            "why": "產器寫出產品目錄樹頁，給人接手看結構。",
+        }
+    result = diagir.persist_product(str(path), text, "dir-tree", payload)
+    if not result.get("ok"):
+        die(1, "IR gate %s:%s" % (result.get("code"), result.get("knob")))
 
 
 def main(argv):
@@ -630,7 +641,8 @@ def main(argv):
     if mode in ("write", "check"):
         purpose = purpose or str(PURPOSE_PATH)
         root = root or str(ROOT)
-        fragment_html = emit(load_yaml(purpose), root, True, "#filemap")
+        purpose_data = load_yaml(purpose)
+        fragment_html = emit(purpose_data, root, True, "#filemap")
         try:
             current = GUIDE_PATH.read_text(encoding="utf-8")
         except OSError as err:
@@ -641,17 +653,18 @@ def main(argv):
                     "請跑 scripts/build-dir-tree.py --write")
             print("ok:guide-dev-flow.html #dirmap 對得上產器", file=sys.stderr)
             return
-        write_text(GUIDE_PATH, splice_tree(current, fragment_html))
+        write_text(GUIDE_PATH, splice_tree(current, fragment_html), purpose_data)
         print("wrote %s #dirmap" % GUIDE_PATH, file=sys.stderr)
         return
 
     if not purpose:
         die(2, "要 --purpose(或 --write／--check／--fixture)")
-    page = emit(load_yaml(purpose), root, fragment)
+    purpose_data = load_yaml(purpose)
+    page = emit(purpose_data, root, fragment)
     if out in (None, "-"):
         sys.stdout.write(page)
         return
-    write_text(out, page)
+    write_text(out, page, purpose_data)
     print("wrote %s" % out, file=sys.stderr)
 
 

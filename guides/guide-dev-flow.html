@@ -3987,6 +3987,22 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>I2／I4 牙:欄位、母版 <code>markdown-it-py==4.0.0</code>、3.9 vs 3.12 落差、
             缺 I2 不得成功、方法包與產品同鍵、預設不建 I4。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>diagir.py</code></td>
+        <td>圖表 IR 閘正式入口:驗 <code>family</code>／<code>payload</code>、吐
+            <code>DIAGIR_*</code> 收據,通過後才 <code>atomic_write</code>。
+            CLI <code>deliver</code>／<code>route</code>。不是 Stage 3 proto。</td>
+        <td>產檔器寫產品目標前;人工 <code>python3 scripts/diagir.py</code></td>
+        <td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>devflow_atomic.py</code></td>
+        <td>共用寫入原語:tmp + <code>os.replace</code> + 補尾端 newline。
+            形狀對齊 <code>write-stack-inventory.py</code>。不做驗證。</td>
+        <td><code>diagir.py</code> 通過後呼叫</td>
+        <td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-diagir.sh</code></td>
+        <td>diagram-ir-gate 牙:validate／deliver／wire／route／lab／static-scope。
+            不另造 <code>check-diagir-lab.sh</code>。</td>
+        <td>人工/CI;diagram-ir-gate Stage 6 Verify</td>
+        <td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-file-map.sh</code></td>
         <td>本節新增的守衛本身——盤點 <code>hooks/</code>/<code>scripts/</code>/<code>observability/</code>/
             <code>tests/parallel-stage6/</code> 底下每支腳本有沒有被這張表點名到,也反查表裡寫的檔名是不是

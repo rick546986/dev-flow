@@ -74,6 +74,38 @@ if _MDIT_VERSION != _MDIT_REQUIRED:
 sys.path.insert(0, str(_SCRIPT_DIR))
 import devflow_twin_ui as ui  # noqa: E402  # type: ignore[import-not-found]
 
+
+def _load_diagir(project_root=None):
+    import importlib.util
+
+    candidates = []
+    if project_root:
+        candidates.append(pathlib.Path(project_root) / "scripts" / "diagir.py")
+    here = pathlib.Path(__file__).resolve()
+    candidates.append(here.parent / "diagir.py")
+    for parent in here.parents:
+        candidates.append(parent / "scripts" / "diagir.py")
+    seen = set()
+    for cand in candidates:
+        cand = cand.resolve()
+        if cand in seen or not cand.is_file():
+            continue
+        seen.add(cand)
+        spec = importlib.util.spec_from_file_location("diagir", str(cand))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+    raise RuntimeError("scripts/diagir.py not found; refuse raw write")
+
+
+TWIN_PAYLOAD = {
+    "kind": "vbox",
+    "steps": [
+        {"kind": "b", "title": "Actor", "lines": ["開工 agent"]},
+        {"kind": "hl", "title": "Page", "lines": ["gate twin"]},
+    ],
+}
+
 STAGES = ("2-decision", "4-spec", "7-review", "5-tasks")
 # Human 判定只掛 G1／G2／G3。5-tasks 是執行板,不加「提交判定」。
 # 不要把判定做成 STAGES 的第六個 stage。
@@ -2324,7 +2356,16 @@ def main(argv):
         ui.CSS_REVIEW7 if stage == "7-review" else "")
     page_script = SCRIPT + (SCRIPT_VERDICT if stage in GATE_STAGES else "")
     extra_css = extra_css + (ui.CSS_VERDICT if stage in GATE_STAGES else "")
-    out_local.write_text(ui.local_page(title, extra_css, body_html, page_script), encoding="utf-8")
+    page = ui.local_page(title, extra_css, body_html, page_script)
+    result = _load_diagir(root).persist_product(
+        str(out_local), page, "behavior-flow", TWIN_PAYLOAD
+    )
+    if not result.get("ok"):
+        print(
+            "IR gate %s:%s" % (result.get("code"), result.get("knob")),
+            file=sys.stderr,
+        )
+        return 1
     # 片段是 opt-in:只有呼叫端明確設定 DEVFLOW_ARTIFACT_OUT 才寫。空字串 / 空白
     # 視同未設,避免「變數在、值是空的」仍落到預設 sidecar。
     art_out = os.environ.get("DEVFLOW_ARTIFACT_OUT", "").strip()

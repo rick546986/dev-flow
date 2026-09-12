@@ -1,0 +1,7 @@
+{
+  "family": "vbox-lifecycle",
+  "payload": {
+    "kind": "tree-ascii",
+    "text": "[Actor] --> [Page]\n|-- login\n|-- open list\n"
+  }
+}

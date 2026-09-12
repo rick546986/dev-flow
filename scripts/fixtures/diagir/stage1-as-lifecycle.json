@@ -1,0 +1,8 @@
+{
+  "family": "vbox-lifecycle",
+  "payload": {
+    "kind": "stage1-now",
+    "boxes": 3,
+    "scan_now": true
+  }
+}
