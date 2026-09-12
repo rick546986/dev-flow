@@ -497,3 +497,9 @@
 - 落在哪:memory/agentmem/knowledge_index.py query.py; memory/tests; docs/knowledge; guides
 - 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.23.3
 
+## 2026-09-12 · adjudication-20260912
+- 做了什麼:Owner 裁決九條制度缺口並開 full-lane Stage 1（integration-before-verdict）
+- 為什麼:九條已裁、實作另開；整合須在 Fresh/Verdict 前，核准樹才是出貨樹
+- 落在哪:notes/review-requirement-discovery-gaps.md docs/dev/STATUS.md docs/dev/integration-before-verdict/
+- 詳細:notes/review-requirement-discovery-gaps.md
+

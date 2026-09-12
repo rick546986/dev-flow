@@ -1,28 +1,33 @@
-# 審核區：需求討論與真實世界需求的制度缺口（**未裁定，暫緩處理**）
+# 審核區：需求討論與真實世界需求的制度缺口（**已裁決 2026-09-12**）
 
 > 2026-08-17 盤點 `dev-talk`、Stage 1–7 模板、real-world 守衛與完整範例後產出，
 > 2026-08-18 從 `notes/dispatch-parallel-feature-gaps.md` 拆出獨立成檔。
 >
-> ## ⛔ 這份不是派工單，不要照著做
+> **裁決日**：2026-09-12。**實作 = 另開後續 feature**，本檔只留裁決與分析，
+> 不在本輪改 `dev-talk`／Stage 1–4 模板／範例／守衛。
 >
-> **owner 已裁定：這九條暫緩，等 dev-flow 自己跑完一次完整 full lane 之後再逐條裁決。**
+> ## ⛔ 這份不是派工單
 >
-> 理由：這九條跟前七輪修的東西性質不同 —— 前七輪修的是具體缺陷（守衛假綠、路徑推導錯、
-> 字元集打錯），驗證方式是「弄壞它、看守衛會不會紅」；**這九條修的是方法論的設計是否恰當，
-> 只能靠真的跑一次流程看有沒有改善**。而且它們會動到 `dev-talk` 核心契約、Stage 1–4 模板
-> 與範例，採用專案全部要跟著動 —— 用單一實例的證據去改最核心的部分，風險不對稱。
->
-> A-7 自己就講出了答案：「流程能證明功能做對，不能證明真實問題有改善」。
->
-> **處理順序**：先跑一次完整 normal-risk full lane（1-discussion → 7-review、過 G1/G2/G3），
-> 走完之後拿實際踩到的東西對照這九條，再決定哪幾條是真痛點。
-
----
-
-> **本檔不是派工單。未經 owner 逐條裁決，不得實作本檔的任何一條。**
+> 下面各條 **A/B 分析原文保留**，供後續 feature 當原料。不要把本檔當成「現在就改模板」的施工單。
 >
 > 分級沿用採用回饋的語意：**A**＝可能讓流程全綠、卻解錯問題；**B**＝不一定立刻解錯，
-> 但會讓證據不足或人機互動風險到後段才暴露。以下是供 owner 審核的候選，不是既定修法。
+> 但會讓證據不足或人機互動風險到後段才暴露。
+
+## Owner Call（2026-09-12）
+
+每條一行。落點與機械守衛留給後續 feature 的 G1/G2，不在本檔施工。
+
+| ID | 裁決 | 要點 |
+|---|---|---|
+| A-1 | **DO** | Goals 只寫人的結果；Requested solution 另欄、未定案。驗收雛形不鎖畫面／API／元件通道。Stage 2 原因仍可能由流程／政策／資料品質解決時，比較 no-build／process-only（不合理可註明，不硬塞） |
+| A-2 | **DO** | 發現題（現況／案例／例外／證據）禁附推薦答案。裁決題（已核事實上的取捨）可附選項／差異／推薦 |
+| A-3 | **DO** | 主張必須連到來源，或標 Assumption 並寫驗證期限。使用者點頭 ≠ 證據升格 |
+| A-4 | **DO** | 高影響 Assumption 必寫風險＋驗證期限；期限過了仍未驗 → 擋 G2 |
+| A-5 | **LIGHT** | Human verdict 一行寫清角色／場景即可（不在本輪做 Actor Coverage 全表） |
+| A-6 | **DO** | Stage 2→4 要有 disposition ledger：高影響痛點／workaround／exception 逐條標去向 |
+| A-7 | **DO** | 出貨後必留 improvement lookback（日期／owner／資料來源／低於何值要重開） |
+| B-1 | **DO** | 事實型 evidence 入口須 owner 核准後才讀；仍禁讀下游方案檔 |
+| B-2 | **DO** | Fast lane 在進 Stage 4 前做 early risk triage（下一步／權限／等待語意／交接／系統外／中斷恢復） |
 
 ## 建議審核順序
 
@@ -318,14 +323,20 @@ Journey、Demo，再靠一條技術重現 scenario 出貨。
 可要求 Fast lane 4-spec 帶結構化 triage 結果，命中卻無 full／mini／Owner Call 即拒；
 是否真的「不改語意」仍由 reviewer 查 diff 與既有 spec。不能只靠檔案數判互動風險。
 
-## 本區 owner 裁決格式（建議）
+## 本區 owner 裁決（2026-09-12 已填）
 
-每條只要補一行，避免把候選直接改寫成既定事項：
+正本在上文 **Owner Call（2026-09-12）**。一行摘要：
 
 ```text
-- A-1: 採 / 不採 / 改案 — 理由；若採，指定落點與是否要機械守衛
+- A-1: DO — Goals 只寫結果；Requested solution 另欄；驗收不鎖通道；Stage 2 適用時比 no-build
+- A-2: DO — 發現題禁推薦答案；裁決題可附
+- A-3: DO — 主張 → 來源，或 Assumption＋期限
+- A-4: DO — 高影響 Assumption 寫風險＋期限；過期擋 G2
+- A-5: LIGHT — Human verdict 一行角色／場景
+- A-6: DO — Stage 2→4 disposition ledger
+- A-7: DO — 出貨後 improvement lookback
+- B-1: DO — owner 核准的 evidence 入口
+- B-2: DO — Fast 進 Stage 4 前 early risk triage
 ```
 
-若採用，建議另開一份新的 dispatch／feature，而不是把本區混進上面「四項已定」的驗收；
-這九條會改 `dev-talk` 的核心契約、Stage 1–4 模板與範例，應獨立走 G1/G2，並保留現行
-real-world 機制的回歸基準。
+實作另開後續 feature，獨立走 G1/G2；保留現行 real-world 機制當回歸基準。不要把本區混進既有「四項已定」的驗收。
