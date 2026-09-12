@@ -102,9 +102,18 @@ h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-
 .r-rule b{color:var(--ink)}
 
 /* ---- 圖 ---- */
+/* 直式現況圖／方案架構圖:外層撐滿欄、圖本身有限寬,水平置中。
+   禁 svg/pre width:100% —— 畫布撐滿時狹長圖會貼左。
+   max-width 360px 對齊鎖定手樣(subsidy 2-decision.html)。 */
 .fig{margin:26px 0;padding:17px;border:1px solid var(--rule);border-radius:12px;
-  background:var(--panel);box-shadow:var(--shadow)}
-.fig svg{display:block;width:100%;max-width:700px;margin:0 auto;height:auto}
+  background:var(--panel);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}
+.fig svg,.fig pre{display:block;width:auto;max-width:360px;margin:0 auto;height:auto}
+.fig pre.fig-ascii-fallback{max-width:100%;width:100%;box-sizing:border-box;
+  overflow-x:auto;text-align:left;white-space:pre;background:var(--sunk);
+  padding:11px;border-radius:7px;font-size:.82rem;line-height:1.5;margin-top:8px}
+.fig .fig-warn{color:var(--warn);text-align:left;margin:0 0 4px;max-width:100%}
+.pinned pre{display:block;width:max-content;max-width:100%;margin-left:auto;margin-right:auto}
 .cap{color:var(--ink-3);font-size:.82rem;line-height:1.6;margin-top:11px;text-align:center}
 svg .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.4}
 svg .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
@@ -178,6 +187,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600;flex:none}
 .tag.base{background:var(--sunk);color:var(--ink-3)}
 .tag.main{background:var(--warn-soft);color:var(--warn)}
+.tag.rej{background:var(--bad-soft);color:var(--bad)}
 .s-card.done{background:var(--ok-soft)}
 .s-card.done .s-title{color:var(--ink-2)}
 .s-body{padding:0 18px 15px 45px}
@@ -197,6 +207,28 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .s-body{padding-left:18px}
   .gwt-row{grid-template-columns:1fr;gap:2px}
 }
+
+.g3-chk-hint{font-size:.86rem;color:var(--ink-2);margin:18px 0 0}
+.g3-ask{margin:0 0 12px}
+.g3-ask-h{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-3);margin:0 0 6px}
+.g3-ask ul{margin:0;padding:0;list-style:none}
+.g3-ask li{display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:.9rem;
+  color:var(--ink)}
+.g3-ask .qmark{color:var(--accent);font-weight:700;flex:none;line-height:1.5}
+
+.gate-verdict{margin:34px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);padding:18px 20px;box-shadow:var(--shadow)}
+.gate-verdict .gv-canon{margin:0 0 12px;color:var(--ink-2);font-size:.9rem}
+.gv-row{display:flex;flex-wrap:wrap;gap:12px 18px;margin:0 0 12px}
+.gv-row label{display:flex;gap:6px;align-items:center;font-weight:600}
+.gv-field{display:block;margin:0 0 8px;color:var(--ink-2);font-size:.88rem}
+.gv-field input{margin-left:8px;min-width:16rem;max-width:100%;padding:4px 8px;
+  border:1px solid var(--rule);border-radius:6px;background:var(--sunk);color:var(--ink);
+  font:inherit}
+.gate-verdict .btn{margin-top:6px;background:var(--accent);color:#fff;border-color:var(--accent)}
+.gate-verdict .btn:hover{filter:brightness(1.05)}
+.gv-status{margin:10px 0 0;font-size:.86rem;color:var(--ink-2)}
 </style>
 <div class="wrap" id="top">
 <header class="masthead">
@@ -204,26 +236,422 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <h1>b8-gate-twin-review-ui</h1>
   <p class="sub">正本是 <code>docs/dev/b8-gate-twin-review-ui/7-review.md</code>,
   這頁隨時可重生。<strong>審完頂區五格再決定要不要往下讀。</strong></p>
-  <div class="dash"><a class="cell" href="#sec-Verdict"><span class="k">判定</span><span class="v">REQUEST_CHANGES</span><span class="n">frontmatter verdict</span></a><a class="cell" href="#sec-Exit-Checklist-全勾才算-shipped"><span class="k">出貨</span><span class="v">16/18</span><span class="n">Exit Checklist</span></a><a class="cell" href="#sec-附錄-本輪特有"><span class="k">爭點</span><span class="v">9 條</span><span class="n">附錄:本輪特有</span></a><a class="cell" href="#sec-Known-Limits"><span class="k">風險</span><span class="v">7 條</span><span class="n">Known Limits</span></a><a class="cell" href="#sec-Coverage-Matrix"><span class="k">抽驗</span><span class="v">C5 背景資料收進 deta…</span><span class="n">對得上才信剩下的</span></a></div>
+  <div class="dash"><a class="cell" href="#sec-Verdict"><span class="k">判定</span><span class="v">PASS</span><span class="n">frontmatter verdict</span></a><a class="cell" href="#sec-Exit-Checklist-全勾才算-shipped"><span class="k">出貨</span><span class="v">17/18</span><span class="n">Exit Checklist</span></a><a class="cell" href="#sec-附錄-本輪特有"><span class="k">爭點</span><span class="v">10 條</span><span class="n">附錄:本輪特有</span></a><a class="cell" href="#sec-Known-Limits"><span class="k">風險</span><span class="v">7 條</span><span class="n">Known Limits</span></a><a class="cell" href="#sec-Coverage-Matrix"><span class="k">抽驗</span><span class="v">C5 背景資料收進 deta…</span><span class="n">對得上才信剩下的</span></a></div>
 </header>
-<section class="pinned" id="sec-限制聲明-模板步-0-0a-要求-沒有這節的-owner-自審視同未審"><h2>⚠️ 限制聲明(模板步 0/0a 要求;沒有這節的 owner 自審視同未審)</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>審查者</th><th>初版 = 實作者本人;<strong>2026-08-15 已補一輪獨立審查</strong>(fresh-context、不同 session、先自建判斷後才准讀本檔)</th></tr></thead><tbody><tr><td>verdict</td><td><strong>`REQUEST_CHANGES`</strong> —— 獨立審查判定。<strong>15 條 finding(5 HIGH / 5 MED / 5 nit)全部已修,待複審</strong>;修法逐條見附錄 A4</td></tr><tr><td>更嚴重的前提</td><td><strong>這次改動根本沒有走 dev-flow 的流程</strong> —— 沒有 1-discussion、2-decision、4-spec、5-tasks、6-implementation-notes,沒過 G1/G2,第 6 站的執行守衛沒武裝。本檔是<strong>事後補的</strong>,補的目的是讓 owner 至少能審到「做了什麼、憑什麼說它對」</td></tr></tbody></table></div><p><strong>哪些結論可信、哪些要打折</strong>:</p><div class="tablewrap"><table><thead><tr><th>類</th><th>可信度</th><th>為什麼</th></tr></thead><tbody><tr><td>機械數字(測試通過數、檢查項數、exit code)</td><td><strong>可信</strong></td><td>都是實跑輸出,可自行重跑複驗,見下方每列的指令</td></tr><tr><td>「規格條款 → 實作位置」的對照</td><td><strong>中等</strong></td><td>對照表是我自己建的,但每列都給了 <code>檔:行</code>,抽驗即可證偽</td></tr><tr><td>F-id 分級、「有沒有想漏的東西」</td><td><strong>要打折</strong></td><td>實作者審自己,看不到自己的盲點。這正是流程規定 reviewer ≠ 實作者的原因</td></tr></tbody></table></div><p><strong>建議的補救路徑</strong>(擇一):</p><p>1. 派 fresh-context reviewer agent 讀 <code>4f94c7a</code> 的 diff + 本檔,獨立產 G3 判定。</p><p>2. owner 親自抽驗下方「抽驗一列」那三條,對得上就接受 PRE-REVIEW,對不上整份退回。</p><p>3. 接受現況(這是 dogfood 第一次,流程本身也還在建),但<strong>在 HISTORY 留下「本輪未走流程」的紀錄</strong>。</p><p>---</p></div></section><section class="pinned" id="sec-Reviewer-閱讀動線"><h2>Reviewer 閱讀動線</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>步</th><th>讀哪節</th><th>這步問的唯一問題</th></tr></thead><tbody><tr><td>1</td><td><strong>Verdict</strong></td><td>判定是什麼?門檻表每一格是不是都有證據?</td></tr><tr><td>2</td><td><strong>Exit Checklist</strong></td><td>還缺什麼才能出貨?哪幾項要 owner 親自動?</td></tr><tr><td>3</td><td><strong>附錄:本輪特有</strong></td><td>本輪的爭點/分歧在哪,誰對?</td></tr><tr><td>4</td><td><strong>Known Limits</strong></td><td>有沒有一條是 owner 不能接受的?</td></tr><tr><td>5</td><td><strong>抽驗一列</strong></td><td>從 Coverage Matrix 任挑一列,照它給的 <code>檔:行</code> 去看。對得上就信剩下的,對不上就整份退回</td></tr></tbody></table></div><p><strong>只做一步就做第 5 步。</strong></p><p>---</p></div></section><section class="pinned" id="sec-Verdict"><h2>Verdict</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>門檻</th><th>要求</th><th>實際</th><th>證據</th></tr></thead><tbody><tr><td>規格條款全覆蓋</td><td>8/8</td><td>8/8</td><td>Coverage Matrix</td></tr><tr><td>機械驗證</td><td>全綠</td><td>18 組 + 25 項 + 14/14 + 297/297 + 6/6</td><td>Verification Evidence</td></tr><tr><td>負向案</td><td>有</td><td>5 項</td><td>check-gate-twin 輸出</td></tr><tr><td>回歸</td><td>既有全綠</td><td>297/297、6/6 byte-identical</td><td>同上</td></tr><tr><td>🔴 未處置</td><td>0</td><td>0</td><td>—</td></tr><tr><td><strong>獨立審查</strong></td><td><strong>必須 ≠ 實作者</strong></td><td><strong>✅ 已做</strong>(2026-08-15)</td><td>附錄 A4</td></tr><tr><td><strong>獨立審查的 finding 清空</strong></td><td>全數處置</td><td>15/15 已修</td><td>附錄 A4</td></tr><tr><td><strong>複審</strong></td><td>修完要再被獨立看一次</td><td>✅ 已做,又找到 7 條 + 4 個守衛缺口</td><td>附錄 A5</td></tr><tr><td><strong>二次複審</strong></td><td>同上</td><td>✅ 已做,再找到 6 條(含<strong>一條已發生在出貨物上</strong>)+ 5 個守衛變體缺口,<strong>全數已修</strong></td><td>附錄 A6</td></tr><tr><td><strong>第三次複審(第四輪)</strong></td><td>解析層替換後整體重審</td><td>✅ 已做(2026-08-15),3 HIGH + 1 MED,全數已修並重演其破壞實驗</td><td>附錄 A7</td></tr></tbody></table></div><p><strong>判定:`REQUEST_CHANGES`(維持,等 owner 驗收後親自改)。</strong> 四輪獨立審查共 **32 條</p><p>finding + 9 個守衛缺口<strong>,全數已修,守衛 25 → </strong>108 項**;解析層已換 markdown-it-py</p><p>(A7)。剩餘未了結項只剩 owner 親手的兩件:打開 html 驗收(K-5)、push。</p><p>⚠️ 三輪的模式完全一樣:<strong>修完我自己看很好 → 別人一看就破</strong>。而且第二、三輪各抓到</p><p>一條<strong>我修上一輪時引入的 HIGH</strong>(N1、P2)。這不是「差不多了」的訊號,是</p><p>「這類解析工作靠自審不可靠」的證據。</p></div></section><section class="pinned" id="sec-Known-Limits"><h2>Known Limits</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>#</th><th>限界</th><th>嚴重度</th><th>說明</th></tr></thead><tbody><tr><td>K-1</td><td><strong>本輪未走 dev-flow 流程</strong></td><td>🟡</td><td>沒有 1~6 站文檔、沒過 G1/G2、第 6 站守衛未武裝。這份 7-review 是事後補的</td></tr><tr><td>K-2</td><td>審查者 = 實作者</td><td>🟡</td><td>盲點類發現(「有沒有想漏」)不可信,需獨立 reviewer</td></tr><tr><td>K-3</td><td>5-tasks「執行板」未納入</td><td>⚪→✅</td><td><strong>已納入(2026-08-15 A7)</strong>:第三種形狀進 README §6,產生器支援 5-tasks(任務卡+Boundaries 摺疊+ASCII DAG),原型的寫死值全數拿掉</td></tr><tr><td>K-4</td><td>2-decision / 7-review 的解析較粗</td><td>⚪</td><td><strong>已評估,維持現狀(2026-08-15 A7)</strong>:markdown-it 的表格解析遵 GFM 會<strong>截斷多於表頭的欄</strong>——那正是 n5 修掉的缺陷,換了會回歸。表格切格維持自家遮蔽版逐行法</td></tr><tr><td>K-7</td><td><strong>E′ 守衛缺口未補</strong>:只砍掉 S 卡的一個欄位(例如只砍 THEN)守衛測不到</td><td>⚪→✅</td><td><strong>已補(2026-08-15 A7)</strong>:缺 GIVEN/WHEN/THEN/觀測任一欄即紅底(動線優先報缺觀測條數),fixture <code>missing-then</code> + 守衛</td></tr><tr><td>K-6</td><td>母版範例 <code>example/contract-expiry-reminder/7-review.md</code> <strong>不合模板</strong></td><td>⚪→✅</td><td><strong>已修(2026-08-15 A7)</strong>:補 <code>verdict: PASS</code>、<code>## Known Limits</code>、<code>## 附錄:本輪特有</code>;render 重生 html,守衛/gauntlet 全綠</td></tr><tr><td>K-5</td><td>產出物美觀度未經真人驗收</td><td>⚪</td><td>機械驗了結構(五格/卡片/摺疊/兩種殼),但「這頁好不好審」只有人打得出分數 —— <strong>這正是本檔要 owner 做的事</strong></td></tr></tbody></table></div></div></section>
+<section class="pinned" id="sec-限制聲明-模板步-0-0a-要求-沒有這節的-owner-自審視同未審"><h2>⚠️ 限制聲明(模板步 0/0a 要求;沒有這節的 owner 自審視同未審)</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>審查者</th><th>初版 = 實作者本人;<strong>2026-08-15 已補一輪獨立審查</strong>(fresh-context、不同 session、先自建判斷後才准讀本檔)</th></tr></thead><tbody><tr><td>verdict</td><td><strong>`PASS`</strong> —— owner Human（tony）2026-09-12 對話簽「html 好不好審」。<strong>只涵蓋 twin UI 可審度,不回溯宣稱原 feature 走過 Stage 1–6 或正式 G3</strong>。歷史:獨立審查曾判 <code>REQUEST_CHANGES</code>（15 條 finding 已修,見附錄 A4）</td></tr><tr><td>更嚴重的前提</td><td><strong>這次改動根本沒有走 dev-flow 的流程</strong> —— 沒有 1-discussion、2-decision、4-spec、5-tasks、6-implementation-notes,沒過 G1/G2,第 6 站的執行守衛沒武裝。本檔是<strong>事後補的</strong>,補的目的是讓 owner 至少能審到「做了什麼、憑什麼說它對」</td></tr></tbody></table></div><p><strong>哪些結論可信、哪些要打折</strong>:</p><div class="tablewrap"><table><thead><tr><th>類</th><th>可信度</th><th>為什麼</th></tr></thead><tbody><tr><td>機械數字(測試通過數、檢查項數、exit code)</td><td><strong>可信</strong></td><td>都是實跑輸出,可自行重跑複驗,見下方每列的指令</td></tr><tr><td>「規格條款 → 實作位置」的對照</td><td><strong>中等</strong></td><td>對照表是我自己建的,但每列都給了 <code>檔:行</code>,抽驗即可證偽</td></tr><tr><td>F-id 分級、「有沒有想漏的東西」</td><td><strong>要打折</strong></td><td>實作者審自己,看不到自己的盲點。這正是流程規定 reviewer ≠ 實作者的原因</td></tr></tbody></table></div><p><strong>建議的補救路徑</strong>(擇一):</p><p>1. 派 fresh-context reviewer agent 讀 <code>4f94c7a</code> 的 diff + 本檔,獨立產 G3 判定。</p><p>2. owner 親自抽驗下方「抽驗一列」那三條,對得上就接受 PRE-REVIEW,對不上整份退回。</p><p>3. 接受現況(這是 dogfood 第一次,流程本身也還在建),但<strong>在 HISTORY 留下「本輪未走流程」的紀錄</strong>。</p><p>---</p></div></section><section class="pinned" id="sec-Reviewer-閱讀動線"><h2>Reviewer 閱讀動線</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>步</th><th>讀哪節</th><th>這步問的唯一問題</th></tr></thead><tbody><tr><td>1</td><td><strong>Verdict</strong></td><td>判定是什麼?門檻表每一格是不是都有證據?</td></tr><tr><td>2</td><td><strong>Exit Checklist</strong></td><td>還缺什麼才能出貨?哪幾項要 owner 親自動?</td></tr><tr><td>3</td><td><strong>附錄:本輪特有</strong></td><td>本輪的爭點/分歧在哪,誰對?</td></tr><tr><td>4</td><td><strong>Known Limits</strong></td><td>有沒有一條是 owner 不能接受的?</td></tr><tr><td>5</td><td><strong>抽驗一列</strong></td><td>從 Coverage Matrix 任挑一列,照它給的 <code>檔:行</code> 去看。對得上就信剩下的,對不上就整份退回</td></tr></tbody></table></div><p><strong>只做一步就做第 5 步。</strong></p><p>---</p></div></section><section class="pinned" id="sec-Verdict"><h2>Verdict</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>門檻</th><th>要求</th><th>實際</th><th>證據</th></tr></thead><tbody><tr><td>規格條款全覆蓋</td><td>8/8</td><td>8/8</td><td>Coverage Matrix</td></tr><tr><td>機械驗證</td><td>全綠</td><td>18 組 + 25 項 + 14/14 + 297/297 + 6/6</td><td>Verification Evidence</td></tr><tr><td>負向案</td><td>有</td><td>5 項</td><td>check-gate-twin 輸出</td></tr><tr><td>回歸</td><td>既有全綠</td><td>297/297、6/6 byte-identical</td><td>同上</td></tr><tr><td>🔴 未處置</td><td>0</td><td>0</td><td>—</td></tr><tr><td><strong>獨立審查</strong></td><td><strong>必須 ≠ 實作者</strong></td><td><strong>✅ 已做</strong>(2026-08-15)</td><td>附錄 A4</td></tr><tr><td><strong>獨立審查的 finding 清空</strong></td><td>全數處置</td><td>15/15 已修</td><td>附錄 A4</td></tr><tr><td><strong>複審</strong></td><td>修完要再被獨立看一次</td><td>✅ 已做,又找到 7 條 + 4 個守衛缺口</td><td>附錄 A5</td></tr><tr><td><strong>二次複審</strong></td><td>同上</td><td>✅ 已做,再找到 6 條(含<strong>一條已發生在出貨物上</strong>)+ 5 個守衛變體缺口,<strong>全數已修</strong></td><td>附錄 A6</td></tr><tr><td><strong>第三次複審(第四輪)</strong></td><td>解析層替換後整體重審</td><td>✅ 已做(2026-08-15),3 HIGH + 1 MED,全數已修並重演其破壞實驗</td><td>附錄 A7</td></tr><tr><td><strong>owner「好不好審」</strong></td><td>Human 打開 html</td><td><strong>PASS</strong>(tony, 2026-09-12 對話)</td><td>K-5 / Exit checklist</td></tr></tbody></table></div><p><strong>判定:`PASS`(owner Human,2026-09-12 對話:html 好不好審)。</strong> 這不是正式 G3 PASS,</p><p>也不表示原 feature 走過 Stage 1–6。四輪獨立審查共 **32 條</p><p>finding + 9 個守衛缺口<strong>,全數已修,守衛 25 → </strong>108 項**;解析層已換 markdown-it-py</p><p>(A7)。K-5 已簽。剩餘未了結項只剩 push + tag + release(本輪不做)。</p><p>⚠️ 三輪的模式完全一樣:<strong>修完我自己看很好 → 別人一看就破</strong>。而且第二、三輪各抓到</p><p>一條<strong>我修上一輪時引入的 HIGH</strong>(N1、P2)。這不是「差不多了」的訊號,是</p><p>「這類解析工作靠自審不可靠」的證據。</p></div></section><section class="pinned" id="sec-Known-Limits"><h2>Known Limits</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>#</th><th>限界</th><th>嚴重度</th><th>說明</th></tr></thead><tbody><tr><td>K-1</td><td><strong>本輪未走 dev-flow 流程</strong></td><td>🟡</td><td>沒有 1~6 站文檔、沒過 G1/G2、第 6 站守衛未武裝。這份 7-review 是事後補的</td></tr><tr><td>K-2</td><td>審查者 = 實作者</td><td>🟡</td><td>盲點類發現(「有沒有想漏」)不可信,需獨立 reviewer</td></tr><tr><td>K-3</td><td>5-tasks「執行板」未納入</td><td>⚪→✅</td><td><strong>已納入(2026-08-15 A7)</strong>:第三種形狀進 README §6,產生器支援 5-tasks(任務卡+Boundaries 摺疊+ASCII DAG),原型的寫死值全數拿掉</td></tr><tr><td>K-4</td><td>2-decision / 7-review 的解析較粗</td><td>⚪</td><td><strong>已評估,維持現狀(2026-08-15 A7)</strong>:markdown-it 的表格解析遵 GFM 會<strong>截斷多於表頭的欄</strong>——那正是 n5 修掉的缺陷,換了會回歸。表格切格維持自家遮蔽版逐行法</td></tr><tr><td>K-7</td><td><strong>E′ 守衛缺口未補</strong>:只砍掉 S 卡的一個欄位(例如只砍 THEN)守衛測不到</td><td>⚪→✅</td><td><strong>已補(2026-08-15 A7)</strong>:缺 GIVEN/WHEN/THEN/觀測任一欄即紅底(動線優先報缺觀測條數),fixture <code>missing-then</code> + 守衛</td></tr><tr><td>K-6</td><td>母版範例 <code>example/contract-expiry-reminder/7-review.md</code> <strong>不合模板</strong></td><td>⚪→✅</td><td><strong>已修(2026-08-15 A7)</strong>:補 <code>verdict: PASS</code>、<code>## Known Limits</code>、<code>## 附錄:本輪特有</code>;render 重生 html,守衛/gauntlet 全綠</td></tr><tr><td>K-5</td><td>產出物美觀度未經真人驗收</td><td>⚪→✅</td><td><strong>owner tony 2026-09-12 對話 Human PASS</strong>:已打開 html 簽「好不好審」。機械結構驗收仍在;本列不再擋 verdict。<strong>仍非正式 G3</strong></td></tr></tbody></table></div></div></section>
 <div class="progress">
   <div class="progress-in">
-    <span class="count">已審 <b id="done">0</b> / 31 條</span>
+    <span class="count">已審 <b id="done">0</b> / 49 條</span>
     <span class="bar"><i></i></span>
     <button class="btn" id="clear" type="button">清除勾選</button>
   </div>
 </div>
 <div id="cards">
-<section class="r-block" id="sec-Coverage-Matrix"><div class="r-head"><span class="r-name">Coverage Matrix</span></div><article class="s-card" data-sid="C1 gate 三站的 twin 是「審查介面」不是文件視覺版">
+<p class="g3-chk-hint">勾選 = 這列只靠標的檔:行就能判失敗,不是整份已過 G3。</p><section class="r-block" id="sec-判定"><div class="r-head"><span class="r-name">判定</span></div><article class="s-card" data-sid="判定">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="判定">
+    <span class="s-id">判定</span>
+    <span class="s-title">PASS</span>
+    <span class="tag base">判定</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>判定寫 PASS，Coverage Matrix 每一列都授權了嗎？</span></li><li><span class="qmark">?</span><span>判定正文沒有檔:行，不打開 7-review.md 能判 PASS 失敗嗎？</span></li><li><span class="qmark">?</span><span>Matrix 若有一列其實沒綠，這個 PASS 還算被授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">判定</span><span class="gwt-v">PASS</span></div></div>
+    
+  </div>
+</article></section><section class="r-block" id="sec-Exit-Checklist-全勾才算-shipped"><div class="r-head"><span class="r-name">Exit Checklist(全勾才算 shipped)</span></div><article class="s-card" data-sid="EC-1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-1">
+    <span class="s-id">EC-1</span>
+    <span class="s-title">規格寫進正本(README §6 + 兩份模板)</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-1 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-1 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-1 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-2">
+    <span class="s-id">EC-2</span>
+    <span class="s-title">工具實作並可對母版範例跑通(三站)</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-2 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-2 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-2 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-3">
+    <span class="s-id">EC-3</span>
+    <span class="s-title">守衛註冊進 devflow-check(17 → 18 組)</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-3 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-3 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-3 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-4">
+    <span class="s-id">EC-4</span>
+    <span class="s-title">負向案覆蓋(5 項)+ dogfood 回歸(4 項)</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-4 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-4 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-4 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-5">
+    <span class="s-id">EC-5</span>
+    <span class="s-title">散發副本一致(五份)</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-5 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-5 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-5 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-6">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-6">
+    <span class="s-id">EC-6</span>
+    <span class="s-title">既有測試全綠(回歸)</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-6 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-6 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-6 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-7">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-7">
+    <span class="s-id">EC-7</span>
+    <span class="s-title">HISTORY 追加紀錄</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-7 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-7 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-7 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-8">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-8">
+    <span class="s-id">EC-8</span>
+    <span class="s-title"><strong>獨立審查(≠ 實作者)</strong> ← 2026-08-15 已做,當時判定 REQUEST_CHANGES（finding 已修;現況 owner PASS 見 frontmatter）</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-8 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-8 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-8 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-9">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-9">
+    <span class="s-id">EC-9</span>
+    <span class="s-title">15 條 finding 全數修完並補守衛(25 → 43 項)</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-9 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-9 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-9 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-10">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-10">
+    <span class="s-id">EC-10</span>
+    <span class="s-title"><strong>複審</strong>(2026-08-15,又找到 7 條 + 4 個守衛缺口)</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-10 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-10 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-10 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-11">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-11">
+    <span class="s-id">EC-11</span>
+    <span class="s-title">複審 findings 全數修完,守衛 43 → 53 項</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-11 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-11 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-11 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-12">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-12">
+    <span class="s-id">EC-12</span>
+    <span class="s-title"><strong>二次複審</strong>(2026-08-15,再找到 6 條 + 5 個守衛變體缺口)</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-12 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-12 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-12 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-13">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-13">
+    <span class="s-id">EC-13</span>
+    <span class="s-title">二次複審 findings 全數修完,守衛 53 → 60 項</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-13 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-13 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-13 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-14">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-14">
+    <span class="s-id">EC-14</span>
+    <span class="s-title"><strong>第三次複審</strong>(2026-08-15 第四輪:fresh-context 審查含 11 個自造破壞實驗,涵蓋二次複審後的全部狀態,再找到 3 HIGH + 1 MED)</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-14 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-14 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-14 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-15">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-15">
+    <span class="s-id">EC-15</span>
+    <span class="s-title"><strong>解析層換 markdown-it-py</strong>(A7:對母版範例 byte-identical;守衛 60 → 108 項)</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-15 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-15 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-15 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-16">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-16">
+    <span class="s-id">EC-16</span>
+    <span class="s-title">第四輪 findings 全數修完,審查者的破壞實驗逐一重演(壞→紅→還原→綠)</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-16 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-16 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-16 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-17">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-17">
+    <span class="s-id">EC-17</span>
+    <span class="s-title"><strong>owner 實際打開產出的 html,確認「好不好審」</strong> ← tony 2026-09-12 對話 Human PASS</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-17 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-17 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-17 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-18">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-18">
+    <span class="s-id">EC-18</span>
+    <span class="s-title">push + tag + release(owner 自己 push main)</span>
+    <span class="tag base">出貨</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-18 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-18 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-18 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article></section><section class="r-block" id="sec-爭點"><div class="r-head"><span class="r-name">爭點</span></div><article class="s-card" data-sid="A1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A1">
+    <span class="s-id">A1</span>
+    <span class="s-title">為什麼這輪沒走流程 —— 責任在我</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A1 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A1 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A1 這則若成立，Coverage Matrix 還授權 PASS 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">owner 在更早的對話問過「可不可以用現在的 dev-flow 來優化 dev-flow」</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A2">
+    <span class="s-id">A2</span>
+    <span class="s-title">產生器對「非表格待審內容」的取捨</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A2 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A2 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A2 這則若成立，Coverage Matrix 還授權 PASS 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">2-decision / 7-review 用通用表格解析</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A3">
+    <span class="s-id">A3</span>
+    <span class="s-title">dogfood 當場抓到三個真 bug(2026-08-15)</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A3 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A3 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A3 這則若成立，Coverage Matrix 還授權 PASS 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">用這支剛做好的工具產本檔自己的審查介面時</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A4">
+    <span class="s-id">A4</span>
+    <span class="s-title">獨立審查結果與逐條修法(2026-08-15)</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A4 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A4 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A4 這則若成立，Coverage Matrix 還授權 PASS 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">verdict: REQUEST_CHANGES</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A5">
+    <span class="s-id">A5</span>
+    <span class="s-title">複審結果與逐條修法(2026-08-15,第二輪)</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A5 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A5 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A5 這則若成立，Coverage Matrix 還授權 PASS 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">verdict: REQUEST_CHANGES</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A6">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A6">
+    <span class="s-id">A6</span>
+    <span class="s-title">二次複審結果與逐條修法(2026-08-15,第三輪)</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A6 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A6 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A6 這則若成立，Coverage Matrix 還授權 PASS 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">verdict: REQUEST_CHANGES</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A7">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A7">
+    <span class="s-id">A7</span>
+    <span class="s-title">解析層換 markdown-it-py + 執行板納入(2026-08-15,第四輪)</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A7 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A7 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A7 這則若成立，Coverage Matrix 還授權 PASS 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">三輪 28 條 finding 的結論是「這類解析靠手刻正則 + 自審不可能收斂」</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A8">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A8">
+    <span class="s-id">A8</span>
+    <span class="s-title">守衛覆蓋輪(2026-08-16,第五輪)</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A8 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A8 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A8 的 L1 分級，4-spec Dependencies 還罩得住嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">v3.4.0 出貨後的獨立審查給了一句話判詞:「有些東西壞掉了</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A9">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A9">
+    <span class="s-id">A9</span>
+    <span class="s-title">對稱守衛輪(2026-08-17)</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A9 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A9 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A9 這則若成立，Coverage Matrix 還授權 PASS 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">派工單 notes/dispatch-guard-symmetry.md:獨立審查抓到第 6 型假綠「不對稱保護」</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A10">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A10">
+    <span class="s-id">A10</span>
+    <span class="s-title">清空輪(2026-08-17,同日第二輪)</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A10 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A10 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A10 這則若成立，Coverage Matrix 還授權 PASS 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">派工單 notes/dispatch-accounting-symmetry.md:一次清空所有已知待辦 —— 獨立審查</span></div></div>
+    
+  </div>
+</article></section><section class="r-block" id="sec-風險"><div class="r-head"><span class="r-name">風險</span></div><article class="s-card" data-sid="KL-K-1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-K-1">
+    <span class="s-id">KL-K-1</span>
+    <span class="s-title"><strong>本輪未走 dev-flow 流程</strong></span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-K-1 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-K-1 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-K-1 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">🟡</span></div><div class="gwt-row"><span class="gwt-k">說明</span><span class="gwt-v">沒有 1~6 站文檔、沒過 G1/G2、第 6 站守衛未武裝。這份 7-review 是事後補的</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-K-2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-K-2">
+    <span class="s-id">KL-K-2</span>
+    <span class="s-title">審查者 = 實作者</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-K-2 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-K-2 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-K-2 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">🟡</span></div><div class="gwt-row"><span class="gwt-k">說明</span><span class="gwt-v">盲點類發現(「有沒有想漏」)不可信,需獨立 reviewer</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-K-3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-K-3">
+    <span class="s-id">KL-K-3</span>
+    <span class="s-title">5-tasks「執行板」未納入</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-K-3 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-K-3 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-K-3 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">⚪→✅</span></div><div class="gwt-row"><span class="gwt-k">說明</span><span class="gwt-v"><strong>已納入(2026-08-15 A7)</strong>:第三種形狀進 README §6,產生器支援 5-tasks(任務卡+Boundaries 摺疊+ASCII DAG),原型的寫死值全數拿掉</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-K-4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-K-4">
+    <span class="s-id">KL-K-4</span>
+    <span class="s-title">2-decision / 7-review 的解析較粗</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-K-4 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-K-4 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-K-4 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">⚪</span></div><div class="gwt-row"><span class="gwt-k">說明</span><span class="gwt-v"><strong>已評估,維持現狀(2026-08-15 A7)</strong>:markdown-it 的表格解析遵 GFM 會<strong>截斷多於表頭的欄</strong>——那正是 n5 修掉的缺陷,換了會回歸。表格切格維持自家遮蔽版逐行法</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-K-7">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-K-7">
+    <span class="s-id">KL-K-7</span>
+    <span class="s-title"><strong>E′ 守衛缺口未補</strong>:只砍掉 S 卡的一個欄位(例如只砍 THEN)守衛測不到</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-K-7 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-K-7 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-K-7 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">⚪→✅</span></div><div class="gwt-row"><span class="gwt-k">說明</span><span class="gwt-v"><strong>已補(2026-08-15 A7)</strong>:缺 GIVEN/WHEN/THEN/觀測任一欄即紅底(動線優先報缺觀測條數),fixture <code>missing-then</code> + 守衛</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-K-6">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-K-6">
+    <span class="s-id">KL-K-6</span>
+    <span class="s-title">母版範例 <code>example/contract-expiry-reminder/7-review.md</code> <strong>不合模板</strong></span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-K-6 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-K-6 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-K-6 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">⚪→✅</span></div><div class="gwt-row"><span class="gwt-k">說明</span><span class="gwt-v"><strong>已修(2026-08-15 A7)</strong>:補 <code>verdict: PASS</code>、<code>## Known Limits</code>、<code>## 附錄:本輪特有</code>;render 重生 html,守衛/gauntlet 全綠</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-K-5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-K-5">
+    <span class="s-id">KL-K-5</span>
+    <span class="s-title">產出物美觀度未經真人驗收</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-K-5 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-K-5 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-K-5 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">⚪→✅</span></div><div class="gwt-row"><span class="gwt-k">說明</span><span class="gwt-v"><strong>owner tony 2026-09-12 對話 Human PASS</strong>:已打開 html 簽「好不好審」。機械結構驗收仍在;本列不再擋 verdict。<strong>仍非正式 G3</strong></span></div></div>
+    
+  </div>
+</article></section><section class="r-block" id="sec-Coverage-Matrix"><div class="r-head"><span class="r-name">Coverage Matrix</span></div><article class="s-card" data-sid="C1 gate 三站的 twin 是「審查介面」不是文件視覺版">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="C1 gate 三站的 twin 是「審查介面」不是文件視覺版">
     <span class="s-id">C1 gate 三站的 twin 是「審查介面」不是文件視覺版</span>
     <span class="s-title"><code>README.md</code> §6 per-stage 表「審查形狀」欄</span>
-    
+    <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實作在哪</span><span class="gwt-v"><code>scripts/build-gate-twin.py:39</code> STAGES</span></div><div class="gwt-row"><span class="gwt-k">機械驗證在哪</span><span class="gwt-v"><code>scripts/check-gate-twin.sh</code> 三站實跑</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>C1 gate 三站的 twin 是「審查介面」不是文件視覺版 這列只靠 scripts/build-gate-twin.py:39 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>C1 gate 三站的 twin 是「審查介面」不是文件視覺版 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>C1 gate 三站的 twin 是「審查介面」不是文件視覺版 這列若其實沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實作在哪</span><span class="gwt-v"><code>scripts/build-gate-twin.py:39</code> STAGES</span></div><div class="gwt-row"><span class="gwt-k">機械驗證在哪</span><span class="gwt-v"><code>scripts/check-gate-twin.sh</code> 三站實跑</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="C2 動線頂區固定五格,每格一句話">
@@ -231,10 +659,10 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <input type="checkbox" class="s-chk" data-sid="C2 動線頂區固定五格,每格一句話">
     <span class="s-id">C2 動線頂區固定五格,每格一句話</span>
     <span class="s-title"><code>README.md</code> §6 動線表</span>
-    
+    <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實作在哪</span><span class="gwt-v"><code>build-gate-twin.py:dash_cells()</code></span></div><div class="gwt-row"><span class="gwt-k">機械驗證在哪</span><span class="gwt-v">check-gate-twin T1(<code>cell</code> 數 == 5)</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>C2 動線頂區固定五格,每格一句話 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>C2 動線頂區固定五格,每格一句話 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>C2 動線頂區固定五格,每格一句話 這列若其實沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實作在哪</span><span class="gwt-v"><code>build-gate-twin.py:dash_cells()</code></span></div><div class="gwt-row"><span class="gwt-k">機械驗證在哪</span><span class="gwt-v">check-gate-twin T1(<code>cell</code> 數 == 5)</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="C3 待審項目逐條可勾 + 進度計數">
@@ -242,10 +670,10 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <input type="checkbox" class="s-chk" data-sid="C3 待審項目逐條可勾 + 進度計數">
     <span class="s-id">C3 待審項目逐條可勾 + 進度計數</span>
     <span class="s-title"><code>README.md</code> §6 第 2 點</span>
-    
+    <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實作在哪</span><span class="gwt-v"><code>build-gate-twin.py:card()</code> + <code>SCRIPT</code></span></div><div class="gwt-row"><span class="gwt-k">機械驗證在哪</span><span class="gwt-v">check-gate-twin T2</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>C3 待審項目逐條可勾 + 進度計數 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>C3 待審項目逐條可勾 + 進度計數 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>C3 待審項目逐條可勾 + 進度計數 這列若其實沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實作在哪</span><span class="gwt-v"><code>build-gate-twin.py:card()</code> + <code>SCRIPT</code></span></div><div class="gwt-row"><span class="gwt-k">機械驗證在哪</span><span class="gwt-v">check-gate-twin T2</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="C4 缺必填欄的項目要在卡上直接紅底現形">
@@ -253,10 +681,10 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <input type="checkbox" class="s-chk" data-sid="C4 缺必填欄的項目要在卡上直接紅底現形">
     <span class="s-id">C4 缺必填欄的項目要在卡上直接紅底現形</span>
     <span class="s-title"><code>_templates/4-spec.md</code> 頂註表第 2 列</span>
-    
+    <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實作在哪</span><span class="gwt-v"><code>build-gate-twin.py:card(missing=)</code></span></div><div class="gwt-row"><span class="gwt-k">機械驗證在哪</span><span class="gwt-v">check-gate-twin 負向:fixture <code>missing-obs</code> 恰 1 張紅底</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>C4 缺必填欄的項目要在卡上直接紅底現形 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>C4 缺必填欄的項目要在卡上直接紅底現形 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>C4 缺必填欄的項目要在卡上直接紅底現形 這列若其實沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實作在哪</span><span class="gwt-v"><code>build-gate-twin.py:card(missing=)</code></span></div><div class="gwt-row"><span class="gwt-k">機械驗證在哪</span><span class="gwt-v">check-gate-twin 負向:fixture <code>missing-obs</code> 恰 1 張紅底</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="C5 背景資料收進 details,內容零刪減">
@@ -264,10 +692,10 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <input type="checkbox" class="s-chk" data-sid="C5 背景資料收進 details,內容零刪減">
     <span class="s-id">C5 背景資料收進 details,內容零刪減</span>
     <span class="s-title"><code>README.md</code> §6 第 3 點</span>
-    
+    <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實作在哪</span><span class="gwt-v"><code>build-gate-twin.py</code> 背景資料迴圈</span></div><div class="gwt-row"><span class="gwt-k">機械驗證在哪</span><span class="gwt-v">check-gate-twin T3</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>C5 背景資料收進 details,內容零刪減 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>C5 背景資料收進 details,內容零刪減 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>C5 背景資料收進 details,內容零刪減 這列若其實沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實作在哪</span><span class="gwt-v"><code>build-gate-twin.py</code> 背景資料迴圈</span></div><div class="gwt-row"><span class="gwt-k">機械驗證在哪</span><span class="gwt-v">check-gate-twin T3</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="C6 同一份內容兩種殼(片段不得含 doctype/html/head/body)">
@@ -275,10 +703,10 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <input type="checkbox" class="s-chk" data-sid="C6 同一份內容兩種殼(片段不得含 doctype/html/head/body)">
     <span class="s-id">C6 同一份內容兩種殼(片段不得含 doctype/html/head/body)</span>
     <span class="s-title"><code>README.md</code> §6 產生方式段</span>
-    
+    <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實作在哪</span><span class="gwt-v"><code>scripts/devflow_twin_ui.py:local_page()/artifact_page()</code></span></div><div class="gwt-row"><span class="gwt-k">機械驗證在哪</span><span class="gwt-v">check-gate-twin T4(正則 <code>&lt;html[\s&gt;]</code> 等)</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>C6 同一份內容兩種殼(片段不得含 doctype/html/head/body) 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>C6 同一份內容兩種殼(片段不得含 doctype/html/head/body) 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>C6 同一份內容兩種殼(片段不得含 doctype/html/head/body) 這列若其實沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實作在哪</span><span class="gwt-v"><code>scripts/devflow_twin_ui.py:local_page()/artifact_page()</code></span></div><div class="gwt-row"><span class="gwt-k">機械驗證在哪</span><span class="gwt-v">check-gate-twin T4(正則 <code>&lt;html[\s&gt;]</code> 等)</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="C7 解析不到任何待審項目 → exit 1,不產空殼">
@@ -286,10 +714,10 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <input type="checkbox" class="s-chk" data-sid="C7 解析不到任何待審項目 → exit 1,不產空殼">
     <span class="s-id">C7 解析不到任何待審項目 → exit 1,不產空殼</span>
     <span class="s-title"><code>README.md</code> §6 產生方式段</span>
-    
+    <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實作在哪</span><span class="gwt-v"><code>build-gate-twin.py</code> main 的 n_items==0 分支</span></div><div class="gwt-row"><span class="gwt-k">機械驗證在哪</span><span class="gwt-v">check-gate-twin T5</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>C7 解析不到任何待審項目 → exit 1,不產空殼 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>C7 解析不到任何待審項目 → exit 1,不產空殼 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>C7 解析不到任何待審項目 → exit 1,不產空殼 這列若其實沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實作在哪</span><span class="gwt-v"><code>build-gate-twin.py</code> main 的 n_items==0 分支</span></div><div class="gwt-row"><span class="gwt-k">機械驗證在哪</span><span class="gwt-v">check-gate-twin T5</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="C8 標題 pattern 與 G2 機械關卡對齊">
@@ -297,10 +725,10 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <input type="checkbox" class="s-chk" data-sid="C8 標題 pattern 與 G2 機械關卡對齊">
     <span class="s-id">C8 標題 pattern 與 G2 機械關卡對齊</span>
     <span class="s-title"><code>build-gate-twin.py</code> 檔頭</span>
-    
+    <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實作在哪</span><span class="gwt-v"><code>build-gate-twin.py:43</code> S_HEAD</span></div><div class="gwt-row"><span class="gwt-k">機械驗證在哪</span><span class="gwt-v">三站對母版範例實跑(格式不合會 0 條)</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>C8 標題 pattern 與 G2 機械關卡對齊 這列只靠 build-gate-twin.py:43 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>C8 標題 pattern 與 G2 機械關卡對齊 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>C8 標題 pattern 與 G2 機械關卡對齊 這列若其實沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實作在哪</span><span class="gwt-v"><code>build-gate-twin.py:43</code> S_HEAD</span></div><div class="gwt-row"><span class="gwt-k">機械驗證在哪</span><span class="gwt-v">三站對母版範例實跑(格式不合會 0 條)</span></div></div>
     
   </div>
 </article></section><section class="r-block" id="sec-現象證據-逐條規格-對照實跑"><div class="r-head"><span class="r-name">現象證據(逐條規格,對照實跑)</span></div><article class="s-card" data-sid="C2 五格">
@@ -311,7 +739,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑現象</span><span class="gwt-v">三站皆 5</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 C2 五格 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 C2 五格 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 C2 五格 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑現象</span><span class="gwt-v">三站皆 5</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="C4 紅底">
@@ -322,7 +750,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑現象</span><span class="gwt-v"><code>解析到 2 條待審項目,其中 1 條缺必填欄</code>;html 內 <code>s-card bad</code> 恰 1 張;動線頂區顯示「1 條缺觀測欄」</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 C4 紅底 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 C4 紅底 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 C4 紅底 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑現象</span><span class="gwt-v"><code>解析到 2 條待審項目,其中 1 條缺必填欄</code>;html 內 <code>s-card bad</code> 恰 1 張;動線頂區顯示「1 條缺觀測欄」</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="C6 兩種殼">
@@ -333,7 +761,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑現象</span><span class="gwt-v">&lt;html[\s&gt;]\</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">&lt;head[\s&gt;]\</span></div><div class="gwt-row"><span class="gwt-k">欄4</span><span class="gwt-v">&lt;body[\s&gt;]`</span></div><div class="gwt-row"><span class="gwt-k">欄5</span><span class="gwt-v">三站片段皆無命中;本機版皆有</span></div><div class="gwt-row"><span class="gwt-k">欄6</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 C6 兩種殼 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 C6 兩種殼 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 C6 兩種殼 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑現象</span><span class="gwt-v">&lt;html[\s&gt;]\</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">&lt;head[\s&gt;]\</span></div><div class="gwt-row"><span class="gwt-k">欄4</span><span class="gwt-v">&lt;body[\s&gt;]`</span></div><div class="gwt-row"><span class="gwt-k">欄5</span><span class="gwt-v">三站片段皆無命中;本機版皆有</span></div><div class="gwt-row"><span class="gwt-k">欄6</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="C7 不產空殼">
@@ -344,7 +772,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑現象</span><span class="gwt-v"><code>exit 1</code>,且 <code>4-spec.html</code> <strong>不存在</strong></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 C7 不產空殼 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 C7 不產空殼 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 C7 不產空殼 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑現象</span><span class="gwt-v"><code>exit 1</code>,且 <code>4-spec.html</code> <strong>不存在</strong></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="C8 格式相容">
@@ -355,205 +783,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑現象</span><span class="gwt-v">4-spec 解析到 6 條、2-decision 11 條、7-review 21 條</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
-    
-  </div>
-</article></section><section class="r-block" id="sec-Exit-Checklist-全勾才算-shipped"><div class="r-head"><span class="r-name">Exit Checklist(全勾才算 shipped)</span></div><article class="s-card" data-sid="EC-1">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-1">
-    <span class="s-id">EC-1</span>
-    <span class="s-title">規格寫進正本(README §6 + 兩份模板)</span>
-    <span class="tag main">已勾</span>
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
-    
-  </div>
-</article><article class="s-card" data-sid="EC-2">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-2">
-    <span class="s-id">EC-2</span>
-    <span class="s-title">工具實作並可對母版範例跑通(三站)</span>
-    <span class="tag main">已勾</span>
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
-    
-  </div>
-</article><article class="s-card" data-sid="EC-3">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-3">
-    <span class="s-id">EC-3</span>
-    <span class="s-title">守衛註冊進 devflow-check(17 → 18 組)</span>
-    <span class="tag main">已勾</span>
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
-    
-  </div>
-</article><article class="s-card" data-sid="EC-4">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-4">
-    <span class="s-id">EC-4</span>
-    <span class="s-title">負向案覆蓋(5 項)+ dogfood 回歸(4 項)</span>
-    <span class="tag main">已勾</span>
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
-    
-  </div>
-</article><article class="s-card" data-sid="EC-5">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-5">
-    <span class="s-id">EC-5</span>
-    <span class="s-title">散發副本一致(五份)</span>
-    <span class="tag main">已勾</span>
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
-    
-  </div>
-</article><article class="s-card" data-sid="EC-6">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-6">
-    <span class="s-id">EC-6</span>
-    <span class="s-title">既有測試全綠(回歸)</span>
-    <span class="tag main">已勾</span>
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
-    
-  </div>
-</article><article class="s-card" data-sid="EC-7">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-7">
-    <span class="s-id">EC-7</span>
-    <span class="s-title">HISTORY 追加紀錄</span>
-    <span class="tag main">已勾</span>
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
-    
-  </div>
-</article><article class="s-card" data-sid="EC-8">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-8">
-    <span class="s-id">EC-8</span>
-    <span class="s-title"><strong>獨立審查(≠ 實作者)</strong> ← 2026-08-15 已做,判定 REQUEST_CHANGES</span>
-    <span class="tag main">已勾</span>
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
-    
-  </div>
-</article><article class="s-card" data-sid="EC-9">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-9">
-    <span class="s-id">EC-9</span>
-    <span class="s-title">15 條 finding 全數修完並補守衛(25 → 43 項)</span>
-    <span class="tag main">已勾</span>
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
-    
-  </div>
-</article><article class="s-card" data-sid="EC-10">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-10">
-    <span class="s-id">EC-10</span>
-    <span class="s-title"><strong>複審</strong>(2026-08-15,又找到 7 條 + 4 個守衛缺口)</span>
-    <span class="tag main">已勾</span>
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
-    
-  </div>
-</article><article class="s-card" data-sid="EC-11">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-11">
-    <span class="s-id">EC-11</span>
-    <span class="s-title">複審 findings 全數修完,守衛 43 → 53 項</span>
-    <span class="tag main">已勾</span>
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
-    
-  </div>
-</article><article class="s-card" data-sid="EC-12">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-12">
-    <span class="s-id">EC-12</span>
-    <span class="s-title"><strong>二次複審</strong>(2026-08-15,再找到 6 條 + 5 個守衛變體缺口)</span>
-    <span class="tag main">已勾</span>
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
-    
-  </div>
-</article><article class="s-card" data-sid="EC-13">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-13">
-    <span class="s-id">EC-13</span>
-    <span class="s-title">二次複審 findings 全數修完,守衛 53 → 60 項</span>
-    <span class="tag main">已勾</span>
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
-    
-  </div>
-</article><article class="s-card" data-sid="EC-14">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-14">
-    <span class="s-id">EC-14</span>
-    <span class="s-title"><strong>第三次複審</strong>(2026-08-15 第四輪:fresh-context 審查含 11 個自造破壞實驗,涵蓋二次複審後的全部狀態,再找到 3 HIGH + 1 MED)</span>
-    <span class="tag main">已勾</span>
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
-    
-  </div>
-</article><article class="s-card" data-sid="EC-15">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-15">
-    <span class="s-id">EC-15</span>
-    <span class="s-title"><strong>解析層換 markdown-it-py</strong>(A7:對母版範例 byte-identical;守衛 60 → 108 項)</span>
-    <span class="tag main">已勾</span>
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
-    
-  </div>
-</article><article class="s-card" data-sid="EC-16">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-16">
-    <span class="s-id">EC-16</span>
-    <span class="s-title">第四輪 findings 全數修完,審查者的破壞實驗逐一重演(壞→紅→還原→綠)</span>
-    <span class="tag main">已勾</span>
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
-    
-  </div>
-</article><article class="s-card" data-sid="EC-17">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-17">
-    <span class="s-id">EC-17</span>
-    <span class="s-title"><strong>owner 實際打開產出的 html,確認「好不好審」</strong> ← 只有你能做(現在多一站:5-tasks 執行板)</span>
-    
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
-    
-  </div>
-</article><article class="s-card" data-sid="EC-18">
-  <label class="s-head">
-    <input type="checkbox" class="s-chk" data-sid="EC-18">
-    <span class="s-id">EC-18</span>
-    <span class="s-title">push + tag + release(owner 自己 push main)</span>
-    
-  </label>
-  <div class="s-body">
-    <div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 C8 格式相容 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 C8 格式相容 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 C8 格式相容 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑現象</span><span class="gwt-v">4-spec 解析到 6 條、2-decision 11 條、7-review 21 條</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article></section>
@@ -575,8 +805,24 @@ _templates/4-spec.md ────┘          │                               
 散發:scripts/ ──(dev-setup)──&gt; 採用專案 docs/dev/tools/</code></pre></div></details><details class="doc" id="sec-附錄-本輪特有"><summary><span>附錄:本輪特有</span></summary><div class="doc-in"><p>### A1　為什麼這輪沒走流程 —— 責任在我</p><p>owner 在更早的對話問過「可不可以用現在的 dev-flow 來優化 dev-flow」,我回答可行並列了</p><p>四個障礙,之後話題轉到 repo 公開性與 dev-setup,<strong>我沒有把它接回來</strong>,一路直接動手。</p><p>owner 說「可以繼續 B-8」時,我理解成「開始實作」而不是「開始走流程」,沒有回頭確認。</p><p><strong>這是流程本身的一個真實反例</strong>:規則寫在 README 裡,但沒有任何機制在</p><p>「有人開始改母版」時提醒他該走流程。第 6 站守衛只有在 <code>devflow-exec.sh start</code> 之後</p><p>才生效,而不 start 就直接改,守衛連知道都不知道。</p><p>(現行的軟提醒只涵蓋「寫入 Stage 6 執行文件」這一種情況,不涵蓋直接改 scripts/。)</p><p>### A2　產生器對「非表格待審內容」的取捨</p><p>2-decision / 7-review 用通用表格解析。優點:不綁死欄位名,採用專案怎麼寫都能用;</p><p>缺點:寫在條列而非表格的待審項目會被當成背景資料。</p><p><strong>本輪決定先接受</strong>,理由是母版模板的那幾節本來就是表格(Approaches 表、OC 表、</p><p>現象證據表、Exit Checklist 清單),偏離模板的寫法本來就該回頭對模板。</p><p>若採用現場出現反例,列為下一輪 finding。</p><p>### A3　dogfood 當場抓到三個真 bug(2026-08-15)</p><p>用這支剛做好的工具產<strong>本檔自己</strong>的審查介面時,一打開就發現最該先讀的東西不見了。</p><p>三條都已修,並補進守衛(21 → <strong>25 項</strong>):</p><div class="tablewrap"><table><thead><tr><th>#</th><th>現象</th><th>根因</th><th>修法</th></tr></thead><tbody><tr><td>D-1</td><td><code>## Verdict</code> 整節從 html 消失</td><td>一條過度粗暴的排除條件:「章節 body 裡提到任何已渲染章節的名字就跳過」。Verdict 的表格裡寫了「Coverage Matrix」四個字,整節就被誤殺</td><td>拿掉那條;改用明確的置頂清單</td></tr><tr><td>D-2</td><td>「限制聲明」「Known Limits」被摺疊進背景資料</td><td>工具只認「有沒有被做成卡片」,不認「這節重不重要」</td><td>新增 <code>PINNED_PAT</code>:限制聲明 / Verdict / 判定 / Known Limits / Reviewer 閱讀動線 一律置頂不摺疊</td></tr><tr><td>D-3</td><td>動線頂區「判定」格顯示 `\</td><td>門檻 \</td><td>要求 \</td><td>實際 \</td><td>證據 \</td><td>`</td><td>用 regex 抓 <code>## Verdict</code> 後第一行,抓到的是表頭列</td><td>改讀 frontmatter 的 <code>verdict:</code></td></tr></tbody></table></div><p><strong>這三條沒有一條是機械檢查抓得到的</strong> —— 21 項守衛當時全綠,產出物結構完全合規</p><p>(五格在、卡片在、摺疊在、兩種殼對)。只有<strong>真的打開來看</strong>才會發現「合規但沒用」。</p><p>這正是 K-5 說的那件事,也是本輪最該記住的一課:</p><p><strong>gate twin 的驗收條件裡,「人打開看一次」不能被機械檢查取代。</strong></p><p>順帶補了一個能力:背景資料與置頂節原本用 <code>&lt;pre&gt;</code> 顯示原始 md,表格擠成一團。</p><p>現在有極簡的 md→html(表格/清單/程式碼/段落),<strong>不依賴外部套件</strong>——</p><p>這支工具會被散發到採用專案,多一個相依就多一個「在別人機器上跑不起來」的理由。</p><p>### A4　獨立審查結果與逐條修法(2026-08-15)</p><p><strong>verdict: REQUEST_CHANGES</strong>。審查者用 fresh context、先自建判斷才准讀本檔,並**實際做了</p><p>破壞實驗**(把產生器改壞看守衛會不會變紅)。這是本輪最有價值的一次驗證:</p><p><strong>它找到的 5 條 HIGH,沒有一條是機械檢查當時抓得到的。</strong></p><div class="tablewrap"><table><thead><tr><th>id</th><th>級</th><th>缺陷一句</th><th>修法</th></tr></thead><tbody><tr><td>H1</td><td>HIGH</td><td>規格寫「每格必須可點跳轉」,實作<strong>一個 `&lt;a href=&quot;#` 都沒有</strong>;而且 2-decision/7-review 的區塊連 <code>id=</code> 都沒有,補了 href 也無處可跳</td><td>五格改成 <code>&lt;a class=&quot;cell&quot; href=&quot;#…&quot;&gt;</code>;置頂節/背景節/卡片區全部給穩定 id;守衛新增 T7(五格都要有錨點 + 每個錨點都要有對應目標)</td></tr><tr><td>H2</td><td>HIGH</td><td><strong>守衛假綠</strong>:T3 只斷言 <code>&lt;details&gt;</code> 字串在,不驗「內容零刪減」。把 <code>md_block()</code> 改成 <code>return &quot;&quot;</code>(背景資料全刪光)照樣全過 25 項</td><td>新增 fixture <code>zero-deletion/</code>,每個非卡片章節埋 <code>CANARY-n</code>,守衛檢查全部出現;另加「details 內容不得為空」。<strong>重跑該破壞實驗,現在 4 項失敗</strong></td></tr><tr><td>H3</td><td>HIGH</td><td><code>PINNED_PAT</code> 沒有 <code>Decision</code> → <strong>G1 的判定被摺進背景資料</strong>,與規則自己寫的「藏起來等於沒審」矛盾。同一種 bug 只修了一站</td><td>加 <code>^Decision\b</code>(不誤中 <code>Drafting Decisions</code>/<code>Split Decisions</code>);守衛 T6 改成三站都測</td></tr><tr><td>H4</td><td>HIGH</td><td><code>sections()</code> 不排除程式碼區塊 → ```<code> </code>`<code> </code>``<code> 裡的 </code>### R-9` 被當真標題,產生幻影卡污染進度分母;4-spec 那條「body 含 R/S 就跳過」再把整節<strong>靜默刪除</strong></td><td>新增 <code>mask_fenced()</code>:掃描用等長空白遮蔽版、內容取原文(位移不變、零刪減);fixture 內含此案</td></tr><tr><td>H5</td><td>HIGH</td><td>五格<strong>內容</strong>與同一份 diff 新增的 README §6 規格三站皆不符</td><td>規格與實作互相對齊:<strong>規格初版寫了三格文件裡根本沒有那筆資料的東西</strong>(影響面/Gate 過了沒/第 N 輪)→ 改成 md 裡真的抓得到的欄位;守衛新增 T8 逐字比對五格標籤</td></tr><tr><td>M6</td><td>MED</td><td><code>_find()</code> 用 <code>(\S+)</code> 取值,遇括號註記整串吃進去(<code>&#x27;full(Risk: · high(判準:公開&#x27;</code>)</td><td>取到第一個分隔符為止並清理</td></tr><tr><td>M7</td><td>MED</td><td>兩條 T6 斷言是空的:母版範例 7-review <strong>沒有</strong> <code>verdict:</code>、<strong>沒有</strong> <code>## Known Limits</code></td><td>守衛改用自造材料;<strong>範例本身沒修</strong>,列為 K-6</td></tr><tr><td>M8</td><td>MED</td><td>DD 進度只認表格列,但母版模板的 Drafting Decisions 是 bullet 清單無編號 → 永遠 <code>—</code>,而規格要求 <code>x/y</code></td><td>兩種格式都認</td></tr><tr><td>M9</td><td>MED</td><td><code>.pinned</code> 用了 <code>var(--line)</code>/<code>var(--acc)</code>,這兩個 token <strong>一個都沒定義</strong> → 置頂判定區無外框、表格無格線</td><td>改成實際存在的 <code>--rule</code>/<code>--accent</code>,並補 <code>background</code></td></tr><tr><td>M10</td><td>MED</td><td>進度條 markup 從原型退化(缺 <code>.progress-in</code>/<code>.count</code>/<code>.btn</code>),CSS 仍照原型寫 → 進度條無高度、按鈕無樣式</td><td>補齊 markup</td></tr><tr><td>n1–n5</td><td>nit</td><td>副標吐字面 <code>**</code>;判定格硬截斷;守衛失敗訊息裡 <code>chr(34)</code> 是字面字串;<code>DEVFLOW_EXPECT_ITEMS</code> 打錯靜默忽略;表格欄數多於表頭會截斷</td><td>全數修</td></tr></tbody></table></div><p><strong>守衛 25 → 43 項。</strong> 破壞實驗複驗(每次改壞一處、跑完即還原):</p><pre><code>md_block → return &quot;&quot;      → ❌ 4 項失敗(canary 全不見)
 PINNED_PAT 拿掉 Decision  → ❌ 1 項失敗(G1 判定被摺疊)
 五格拿掉 href             → ❌ 6 項失敗(T1 + T7)
-還原後                     → ✅ 全過(43 項)</code></pre><p>⚠️ 修守衛的過程本身又抓到一個<strong>同類的假綠</strong>:原本用「字串出現在 <code>&lt;details&gt;</code> 外面就算看得到」</p><p>判斷置頂,但動線頂區的註解文字也含「Known Limits」「採 A」這些字,斷言恆真 ——</p><p>拿掉 <code>Decision</code> 的破壞實驗第一次跑仍然全綠。改成直接查置頂節的 <code>id</code> 才真的守得住。</p><p><strong>教訓:斷言要釘在結構(id/class)上,不要釘在會出現在多處的文字上。</strong></p><p>### A5　複審結果與逐條修法(2026-08-15,第二輪)</p><p><strong>verdict: REQUEST_CHANGES</strong>。複審者做了七個<strong>自己設計</strong>的破壞實驗(不是重跑 A4 列的那三個),</p><p>結果:15 條裡 11 條確認修好、2 條修得不完整、1 條<strong>沒修好</strong>、1 條<strong>是我這輪改壞的</strong>。</p><div class="tablewrap"><table><thead><tr><th>id</th><th>級</th><th>缺陷</th><th>修法</th></tr></thead><tbody><tr><td>N1</td><td><strong>HIGH(本輪引入)</strong></td><td>我修 H4 時對遮蔽版與原文<strong>各 split 一次再用同一個索引取值</strong>,段數不同 → 錯位。實測:S-1 掉了 THEN 與觀測欄<strong>被誤判成紅底</strong>、S-2 的四個欄位全部顯示 ``` 區塊裡的「假的」,<strong>而且一個警告都沒有</strong></td><td>改成在遮蔽版上 <code>finditer</code> 取 span,再用同一組 index 切原文(等長遮蔽保證對得上)</td></tr><tr><td>N2</td><td>HIGH</td><td>遮蔽只接到 <code>sections()</code>/<code>parse_spec</code>,<code>table_rows</code>/<code>_find</code>/<code>dash_cells</code> 全讀原文 → ``<code> 裡寫 </code>verdict: REJECTED` 會讓 <strong>G3 最先被讀的「判定」格顯示與 frontmatter 相反的值</strong>;Owner Calls 節內的程式碼範例會多出幻影卡把計數從 1/1 變 1/3</td><td>三處全部接上遮蔽,計數一律掃遮蔽版</td></tr><tr><td>N3</td><td>MED</td><td>4-spec 的「整節跳過」只修了 fence 那半 —— <code>## Known limits</code> 底下寫一個 <code>### S-1 的已知限界</code>,整節連同內容從產出物消失,<strong>NOTE 一個字都不印</strong></td><td>判準改成「含<strong>已渲染的 R id</strong>」而非「含任何長得像 R/S 的字」,且跳過時必印 NOTE</td></tr><tr><td>N4</td><td>MED</td><td>H5 只改了 2-decision/4-spec 兩份頂註 → 7-review 模板的閱讀動線第 5 步(抽驗一列)與 README §6 第 5 格(待審項目)互相矛盾,無任何檢查</td><td>第 5 格改回「抽驗」與模板一致;7-review 模板補「G3 twin 是審查介面」節,三份對齊</td></tr><tr><td>N5</td><td>nit</td><td><code>zt.count(chr(34))</code> 數的是雙引號不是卡數(n3 同類殘留)</td><td>修</td></tr><tr><td>N6</td><td>nit</td><td><code>anchor_id</code> 撞名不去重</td><td>撞名補序號,同標題冪等</td></tr><tr><td>N7</td><td>nit</td><td><code>docs/dev/tools/</code> 的兩支副本無同步守衛</td><td>守衛新增逐字比對</td></tr></tbody></table></div><p><strong>四個守衛缺口(複審最有價值的部分)</strong> —— 這些不是缺陷,是「守衛對這類缺陷沒有鑑別力」:</p><div class="tablewrap"><table><thead><tr><th>破壞方式</th><th>當時</th><th>現在</th></tr></thead><tbody><tr><td>D 五格全部退化成 <code>href=&quot;#cards&quot;</code>(不是拿掉 <code>&lt;a&gt;</code>)</td><td>✅ 全綠</td><td>❌ 3 項(新增「五格指向不同段落」)</td></tr><tr><td>E 卡片 GIVEN/WHEN/THEN 全砍空</td><td>✅ 全綠</td><td>❌ 1 項(新增「卡片內容不得為空」)</td></tr><tr><td>F 進度條 markup 退回缺陷態</td><td>✅ 全綠</td><td>❌ 3 項(新增 markup 齊全檢查)</td></tr><tr><td><strong>G 改 README §6 的規格文字</strong></td><td>✅ 全綠</td><td>❌ 1 項(<strong>標籤集合改成從 README 正本解析</strong>,不再硬寫在守衛裡)</td></tr></tbody></table></div><p><strong>G 是最深的一條</strong>:README §6 自己寫「標籤逐字釘死,由 <code>check-gate-twin.sh</code> 驗」,</p><p>但守衛比對的是它<strong>自己硬寫的一份副本</strong> —— 改規格照樣全綠。</p><p>這與 H2(守衛只驗字串在不在)、以及我修守衛時抓到的那個文字比對假綠,<strong>是同一類病的第三次出現</strong>:</p><p>&gt; <strong>斷言要釘在正本上。釘在副本、釘在會出現在多處的文字上,都會恆真。</strong></p><p>守衛 43 → <strong>53 項</strong>。</p><p>### A6　二次複審結果與逐條修法(2026-08-15,第三輪)</p><p><strong>verdict: REQUEST_CHANGES</strong>。複審者做了 10 次自造破壞實驗。<strong>15 條裡只有 4 條真的修好。</strong></p><div class="tablewrap"><table><thead><tr><th>id</th><th>級</th><th>缺陷</th><th>修法</th></tr></thead><tbody><tr><td><strong>P4</strong></td><td><strong>HIGH,已發生在出貨物上</strong></td><td><code>H_ANY</code> 的 <code>\s*$</code> —— <code>\s</code> <strong>含換行</strong>,fence 遮蔽後標題底下全是空白,正則跨行吃到檔尾 → 整節 body 變空字串,再被 <code>not body.strip()</code> 靜默丟掉。實測:出貨的 <code>7-review.html</code> 裡 <code>## 變更架構圖</code> <strong>命中數 0</strong>,而模板明文把它列為背景資料必留項。60 項守衛當時全綠 = <strong>第四次同類假綠</strong></td><td>改成 <code>[ \t]</code> 明確限定同一行;新增 P4 回歸 fixture(整節只有一個 fence 的章節不得消失)</td></tr><tr><td>P1</td><td>HIGH</td><td><code>mask_fenced</code> 只認一種 fence 且用前綴 toggle:<strong>四個反引號包三個</strong> → parity 反轉、內層不遮(本 repo 自己就有這寫法);<code>~~~</code> 完全不遮 → 兩者都產生幻影卡且零警告</td><td>重寫:支援 ``` 與 ~~~、<strong>任意長度 ≥3</strong>、關閉圍欄須同種類且不短於開啟者、語言標籤、最多三格縮排、未閉合到檔尾。<strong>七種邊界逐一實測</strong>(含 CRLF、檔尾無換行)</td></tr><tr><td>P2</td><td><strong>HIGH(本輪引入)</strong></td><td><code>dash_cells</code> 收到 <code>md + &quot;\n&quot; + fm_text</code>,md 若有未閉合 fence,<strong>接在後面的 frontmatter 一起被遮</strong> → 狀態/判定退成 <code>—</code></td><td>frontmatter 改放<strong>前面</strong>(未閉合 fence 只會遮它之後的東西)</td></tr><tr><td>P3</td><td>HIGH</td><td>未閉合 fence 之後的所有章節從 <code>sections()</code> 消失,不進背景資料也<strong>不印任何 NOTE</strong></td><td>行為保留(那真的是 code),但改成<strong>必印警告</strong>並講出吞掉幾行</td></tr><tr><td>N3</td><td>HIGH(前輪宣稱已修,實際沒修)</td><td><code>rid in masked</code> 是<strong>子字串比對</strong>(<code>R-1</code> ⊂ <code>R-10</code>),而且「內文提到 R-1」就整節被吃 —— 原缺陷原樣重現,還印出<strong>假的</strong> NOTE</td><td>判準改成「該節<strong>直接包含已渲染的 R 標題行</strong>」,不是提到編號</td></tr><tr><td>N5</td><td>nit(前輪宣稱已修,實際沒修)</td><td><code>chr(...)</code> 拼出的是 <code>s-card</code>,但要數的是 <code>class=&quot;s-card</code>;CSS 裡的 <code>.s-card</code> 被算進去,真值 1 印成 6</td><td>改成數 <code>class=&quot;s-card</code></td></tr><tr><td>N6</td><td>修得不完整</td><td><code>anchor_id</code> 對同一標題非冪等(多次呼叫長出 <code>-3</code>/<code>-4</code>),<code>have_ids</code> 因此收到不存在的 id</td><td>改成先查「這個標題是否已有 id」,同標題永遠同 id</td></tr><tr><td>P6</td><td>LOW</td><td><code>md_scan</code> 是死碼,且擋在 docstring 前面讓 <code>__doc__</code> 變 None</td><td>刪</td></tr></tbody></table></div><p><strong>五個守衛變體缺口</strong>(原本的破壞方式會紅,換個改法就測不到):</p><div class="tablewrap"><table><thead><tr><th>變體</th><th>當時</th><th>現在</th></tr></thead><tbody><tr><td>D′ 只退化到 2 個不同錨點(不是全部同一個)</td><td>✅ 全綠</td><td>❌(門檻 3 → <strong>4</strong>)</td></tr><tr><td>E″ 2-decision/7-review 的表格卡砍空(空卡檢查只涵蓋 4-spec)</td><td>✅ 全綠</td><td>❌ 1 項(三站都驗)</td></tr><tr><td>G′ 只改 README 括號內的規格語意</td><td>✅ 全綠</td><td>仍測不到(見下)</td></tr><tr><td><strong>G″ 把模板頂註改回舊值 = 原封不動重建 N4 的矛盾</strong></td><td>✅ 全綠</td><td>❌ 1 項(<strong>新增跨檔一致檢查:README §6 vs 三份模板頂註</strong>)</td></tr><tr><td>E′ 只砍 S 卡的一個欄位</td><td>✅ 全綠</td><td>仍測不到 → 列 K-7</td></tr></tbody></table></div><p><strong>G″ 是 N4 的根因</strong>:規格同時寫在 README §6 與三份模板,兩邊不一致時<strong>零守衛</strong>。現在補上了。</p><p><strong>第四次同類假綠(P4)</strong>。前三次:H2(只驗字串在不在)、置頂節文字比對恆真、G(比對守衛自己硬寫的副本)。</p><p>這次是<strong>斷言根本沒涵蓋那個失敗模式</strong> —— 章節整個消失,而所有斷言都在檢查「有的東西對不對」,</p><p>沒有一條在檢查「該有的東西還在不在」。</p><p>&gt; **教訓補一條:守衛要有一條是「盤點」型的 —— 產出物的章節數/內容量要對得上輸入,</p><p>&gt; 而不是只驗已經出現的東西長得對不對。**</p><p>### A7　解析層換 markdown-it-py + 執行板納入(2026-08-15,第四輪)</p><p>三輪 28 條 finding 的結論是「這類解析靠手刻正則 + 自審不可能收斂」,本輪執行那個結論:</p><p>**fence 遮蔽與章節切割的判斷來源換成 markdown-it-py(4.0.0,repo 既有相依)的 token</p><p>stream<strong>,等長遮蔽 + span 切原文的骨架不變。驗收基準是對母版範例三站</strong>六份輸出</p><p>byte-identical**,實測達成 —— 也就是說替換本身零行為變化,變化全部來自下列明修:</p><div class="tablewrap"><table><thead><tr><th>項</th><th>內容</th></tr></thead><tbody><tr><td>S_HEAD/R_HEAD 跨行</td><td>P4 同類第三次現形:<code>#### S-1</code>(無尾隨文字)時 <code>\s*</code> 吃掉下一行,母版範例的 twin 裡 GIVEN 出現 0 次。修法比照 H_ANY(<code>[ \t]</code>),配回歸守衛</td></tr><tr><td>K-7</td><td>缺 GIVEN/WHEN/THEN/觀測任一欄即紅底(fixture <code>missing-then</code>)</td></tr><tr><td>P5</td><td>7-review「抽驗」格由寫死常數改為 Coverage Matrix 決定論取中位列</td></tr><tr><td>K-3</td><td>5-tasks 執行板納入:README §6 第三種形狀、產生器支援、ASCII DAG(原型的手寫 SVG 不採——無法泛化)</td></tr><tr><td>K-6</td><td>母版範例 7-review 補齊 verdict/Known Limits/附錄;dev-setup 散發段交代 markdown-it-py 相依 + 散發後驗證</td></tr><tr><td>計數</td><td>動線「風險」格把表頭/分隔列算進條數(4 報 6),修正並加盤點守衛</td></tr></tbody></table></div><p><strong>相依 fail-loud</strong>:缺套件或版本 ≠4.0.0 → 繁中訊息 + exit 2,不吐 traceback、不降級回正則</p><p>(降級 = 兩邊 diverge 卻不吭聲)。K-4 評估結論:表格解析<strong>不</strong>換 token stream ——</p><p>markdown-it 遵 GFM 會截斷多於表頭的欄,正是 n5 修掉的缺陷。</p><p><strong>第四輪獨立審查(fresh-context,11 個自造破壞實驗)</strong>:REQUEST_CHANGES,3 HIGH + 1 MED,</p><p>全數已修並重演其破壞實驗(壞→紅→還原→綠):</p><div class="tablewrap"><table><thead><tr><th>id</th><th>級</th><th>缺陷</th><th>修法</th></tr></thead><tbody><tr><td>H1</td><td>HIGH</td><td><strong>twin/引擎解析漂移</strong>:twin 遮 fence+吃續行,真引擎(contract_ref/hooks parse_5_tasks)不遮也無續行 —— Boundaries 下藏第二個 <code>- Files:</code> 時 twin 綠卡、引擎拒啟;fence 內 <code>## T-99</code> 時引擎長幽靈任務、twin 看不到</td><td>twin 側現形:重複保留欄 → 紅卡+NOTE(預告引擎 fail-closed);fence 內 T 標題 → 幽靈任務警告。<strong>引擎側(hooks)加 fence 遮蔽收 Backlog,屬 runtime 改動</strong></td></tr><tr><td>H2</td><td>HIGH</td><td>執行板五格<strong>值</strong>零守衛:硬寫「99 條」照樣 94 項全綠</td><td>盤點守衛:期望值由守衛自己從 example md 算(任務/依賴/模式/進度)</td></tr><tr><td>H3</td><td>HIGH</td><td>DAG 分波正確性零守衛:全塞 Wave 1 照樣全綠</td><td>守衛內獨立 Kahn 實作逐 T 比對波次(不 import 產生器)</td></tr><tr><td>M1</td><td>MED</td><td>守衛半路 traceback(檔案缺失/KeyError)會讓後面 90+ 項跑不到</td><td>讀檔防炸 + <code>.get()</code>,「紅而不炸」</td></tr></tbody></table></div><p>守衛 60 → <strong>108 項</strong>。前三輪的四次「假綠」型態(只驗殼/釘多處文字/釘副本/沒驗還在不在)</p><p>本輪新守衛逐一對照設計;H2/H3 仍屬第 4 型(該有的正確性沒被驗),證明**盤點型守衛要跟著</p><p>每個新資料格一起長**,不是加完功能再說。</p><p><strong>尚未了結(交接)</strong>:H1 的引擎側(hooks/devflow-lib.py <code>parse_5_tasks</code> 不遮 fence)</p><p>已收 Backlog,與 A-6(Boundaries 欄丟棄)同批處理;owner 驗收(K-5)與 push 仍是</p><p>Exit Checklist 未勾的兩項。</p><p>### A8　守衛覆蓋輪(2026-08-16,第五輪)</p><p>v3.4.0 出貨後的獨立審查給了一句話判詞:「<strong>有些東西壞掉了,而 108 項守衛不會發現</strong>」。</p><p>本輪照它的六條缺口逐一補,再對前一輪 Backlog 修復做行為層補驗,並把 A7 交接的</p><p>引擎側修復以 <strong>fast lane 全程武裝</strong>走完(母版第一個真正走 dev-flow 流程的 feature)。</p><div class="tablewrap"><table><thead><tr><th>塊</th><th>內容</th></tr></thead><tbody><tr><td>N-1(HIGH)</td><td>「背景章節盤點」缺守衛 —— 第 4 型假綠<strong>第二次發生</strong>(第一次=P4)。修法=雙層通用對帳:產生器內建 fail-closed 下落盤點(L2 節四類下落缺一即 exit 1)+ 守衛獨立數節逐節對 html/NOTE;整輪審查再抓到「兩層信同一份自報 dropped 清單」的單字元翻轉盲區 → 守衛連 drop 的<strong>理由</strong>都自己重算,雙向比對</td></tr><tr><td>N-2</td><td>四支守衛可被整段刪斷言而照印全過(<strong>第 5 型假綠</strong>:斷言不見了也沒人知道)→ 分節心跳 + MIN 地板;整輪審查再抓「連刪帶藏」零防禦 → 靜態互釘(GS-4 前例),防禦邊界誠實註明</td></tr><tr><td>N-3/N-4</td><td>用法斷言改驗內容;未閉合 <code>&lt;!--</code> 補警告(N-1 兩層都看不到被吞的節,警告是唯一訊號)</td></tr><tr><td>N-5</td><td>路徑守衛改 fail-closed(git ls-files 全量-印出豁免;豁免清單釘字面內容非條數)</td></tr><tr><td>N-6</td><td>47 條行號引用 3 錯 1 缺,先修源頭再修引用;裁決不做常駐引用檢查器(行號天然漂移=永久誤報工廠)</td></tr><tr><td>行為層補驗</td><td>fresh agent 對前輪 12 條逐一「退回會不會紅」:5 條①、7 條③;採納補強三件(B-2 紀律守衛/A-5 needle/第 5 型地板×2),其餘維持不補的裁決與理由入檔</td></tr><tr><td>引擎側 H1</td><td>feature <code>engine-fence-masking</code>(fast lane):4-spec→5-tasks→武裝 Stage 6→6-notes→審查圍欄(圍欄③實擋 reviewer 讀 Self-Review,unlock 才放)→G3 <strong>PASS</strong>。三筆 L1 偏差記帳;dogfood 撞出 D-4(postbash 偵測網缺 7-review* 豁免,收 Backlog)</td></tr></tbody></table></div><p>守衛 108 → <strong>133 項</strong>;selftest 326 → 339;devflow-check 20 → 21 組。</p><p>兩輪獨立審查(整輪 4 條 + G3 feature 審查 5 條 Known Limits)全數處置,</p><p>破壞實驗四步(未修重現→修→重演必紅→還原全綠)逐條在案。</p><p><strong>假綠型態表更新</strong>:第 4 型(該有的還在不在)至此有通用對帳看守;第 5 型(斷言</p><p>被刪沒人知道)有心跳+地板+靜態互釘。已知邊界:蓄意三點同改(案例+地板+互釘)</p><p>仍防不住 —— 與 GS-4 同級,防手滑不防蓄意。</p><p>### A9　對稱守衛輪(2026-08-17)</p><p>派工單 <code>notes/dispatch-guard-symmetry.md</code>:獨立審查抓到第 6 型假綠「不對稱保護」</p><p>(修法只套在觸發它的那個實例,沒推廣到同類其他實例)的第三次發作(X-1),另加 3 條</p><p>不對稱缺陷(X-2~X-4)+ 3 條追加項(X-5~X-7)+ 2 件記帳問題。以下依派工單「完成之後」</p><p>四項要求記錄。</p><p><strong>a. X-1~X-7 逐項結果</strong></p><div class="tablewrap"><table><thead><tr><th>id</th><th>級</th><th>一句(白話 + 術語)</th></tr></thead><tbody><tr><td>X-1</td><td>HIGH</td><td>第 2 層對帳(獨立重算 dropped 節、不信產生器自報清單)原本只推廣到 4-spec 一站;本輪推廣到三站 —— 2-decision/7-review 沒有合法的「可捨棄」語意,直接斷言產生器自報 <code>dropped</code> 清單必須是空集合,並對三站都做空節獨立重算、雙向比對</td></tr><tr><td>X-2</td><td>MED</td><td>路徑守衛(<code>check-no-stale-paths.sh</code>)掃描來源補納未追蹤檔;重跑裁決驗證的兩種攻擊後發現原判「零防禦」不準 —— 兩種攻擊在完整跑 <code>test-architecture-guards.sh</code> 時本來就會被 SP-3~SP-7 連帶接住(連坐失敗或炸 <code>AssertionError</code>),不是真的零防禦,而是「單支腳本自己跑」時才是零防禦。已補 SP-8/SP-9 兩個具名案例,讓單支腳本自己就會紅,不再依賴外層連坐</td></tr><tr><td>X-3</td><td>MED</td><td>群組數這條軸(<code>REQUIRED_GROUPS</code>)原本只印計數不斷言;補地板 + GS-9 靜態互釘(<code>EXPECTED_GROUPS=24</code> 釘死並斷言、24 個群組名逐一釘),誠實記錄「不防掏空換填充」的邊界(見 d 項)</td></tr><tr><td>X-4</td><td>LOW</td><td><code>check(True</code> 恆真規則原本只掃自己所在的兩個檔;推廣成跨檔掃描 <code>scripts/*.sh</code> 全部,並修掉 <code>check-realworld.sh:191</code> 那條真的恆真斷言</td></tr><tr><td>X-5a</td><td>MED</td><td>新增模型分層稽核檢查:掃 observability ledger,「首派即最高階」與「跳級升階」兩種模式皆紅;自帶 MT-0(自測對照組)/MT-1(<code>bad-first-top</code> 外部真實案例)fixture</td></tr><tr><td>X-5b</td><td>MED</td><td>PreToolUse 窄版攔截:本 run 從沒出現過低階 attempt 卻顯式指名最高階模型當第一筆派工 → 擋;補一次性、留痕的 <code>tier-exempt</code> 豁免通道(<code>--reason</code> 必填)。裁決:「偽造 <code>.devflow/</code> 記錄」這個信任邊界不修 —— 與 <code>_prebash_impl.py</code> 既有的字面圍欄同一個信任模型(防手滑與紀律漂移,不防蓄意偽造),已在兩檔檔頭互相引用明文化(見 d 項)</td></tr><tr><td>X-6</td><td>MED</td><td><code>guide-dev-flow.html</code>/<code>guide-quickstart.html</code> 各自完整內嵌一張生命週期圖(雙副本)。owner 裁決:不採「單正本 + 縮減版/連結」——quickstart 讀者不見得會去翻 guide-dev-flow.html,縮減版會犧牲 quickstart 的自足性。改補 <code>check-guides-fig-sync.sh</code> 三層同步守衛(① SVG 標記逐位元組 ② 渲染用到的 CSS 規則 ③ 三份 guides 共用的錨點捲動 JS),防單邊漂移;明文記錄「不防雙邊一致的錯誤」</td></tr><tr><td>X-7</td><td>LOW</td><td>頁內錨點在 artifact/iframe 載體不跳轉的捲動修正 JS(~8 行),裁決併入正式 guides(三份同字面,SVG 區塊位元組不變),已完成</td></tr></tbody></table></div><p><strong>b. 兩件記帳問題的判定</strong></p><p><strong>問題 2(11 條 vs 12 條):12 條正確。</strong> <code>dispatch-guard-coverage.md</code> 第三部分原文</p><p>宣稱「行為層只有 3 條有第一手證據」,但逐字只點名 2 條(A-2、A-1)—— 14 − 2 = 12,</p><p>與 commit <code>2046d69</code>、附錄 A8「12 條、5①/7③」完全吻合。任務書的「11 條」= 14 − 3</p><p>(沿用上游那句話的字面「3 條」),但那個「消失的第三條」本來就不存在,是</p><p><code>dispatch-guard-coverage.md</code> 自身的計數筆誤,不是新的錯誤來源。**A-1、A-2 兩條</p><p>本輪未重驗** —— 沿用上一輪已有的第一手證據原樣採計,如實註記。</p><p><strong>問題 1(12 條逐條歸類)</strong>:</p><div class="tablewrap"><table><thead><tr><th>條目(白話 + 術語)</th><th>當初修在哪</th><th>守衛是誰</th><th>結果</th><th>證據關鍵行</th></tr></thead><tbody><tr><td>A-3 5-tasks 模板沒警告「Verify 必須單行純指令」</td><td><code>_templates/5-tasks.md:63</code>(<code>013e8b7</code>)</td><td><code>check-stage67-enforcement.sh</code> VF 段</td><td>①紅</td><td>刪句後:<code>❌ VF:… 沒有「Verify 必須是單行、可原樣貼進 shell 的純指令」這條硬紀律</code></td></tr><tr><td>A-4 infra/migration 型 T 過不了 gate 三項必檢</td><td>文檔示例,<code>013e8b7</code></td><td>掃描零命中</td><td>③無守衛</td><td>`grep -rn &quot;infra.*型\</td><td>infra-T\</td><td>A-4\b&quot;` 全部零命中</td></tr><tr><td>A-5 5-tasks 模板沒提醒「測試檔路徑列進 Files」</td><td><code>_templates/5-tasks.md:94</code>(<code>013e8b7</code>);guard 在 <code>2046d69</code> 才補</td><td><code>test-architecture-guards.sh</code> S67-0 + TF needle</td><td>①紅</td><td>刪句後:<code>❌ S67-0 對照組… 預期 pass,實得 fail</code></td></tr><tr><td>A-6 Boundaries/Intent/Owner 欄被解析後丟棄</td><td><code>hooks/devflow-lib.py:488-493</code>(<code>1c3e841</code>)</td><td><code>hooks/selftest.sh</code>(連坐面廣)</td><td>①紅</td><td>刪三欄賦值後:<code>❌ 守衛自測 310/339,失敗 29 項</code></td></tr><tr><td>A-11 Stage 7 禁讀 6-notes 只是散文</td><td><code>hooks/_guard_impl.py:105-112</code>(<code>e68c67a</code>)</td><td><code>hooks/selftest.sh</code> 圍欄③案例</td><td>①紅</td><td>判斷式改 <code>False</code> 後:<code>❌ 失敗 1 項:期望 exit 2 且含 &#x27;步 4&#x27;,得 exit 0</code></td></tr><tr><td>A-12 Stage 6/7 步 0 沒要求跑 doctor</td><td><code>_templates/6-implementation-notes.md:35-41</code>(<code>013e8b7</code>)</td><td><code>check-stage67-enforcement.sh</code> DOC 段</td><td>①紅</td><td>改字面後:<code>❌ DOC:… 旁沒有要求跑 devflow-doctor.sh</code></td></tr><tr><td>B-1 母版 <code>_templates/5-tasks.md</code> 過不了 <code>parse_5_tasks</code></td><td>文檔修正,<code>013e8b7</code>,未加常駐檢查</td><td>掃描零命中(<code>run_tests.py</code> 只驗字面 <code>in</code>,未呼叫 <code>parse_5_tasks</code>)</td><td>③無守衛</td><td><code>grep -rn &quot;B-1\b&quot;</code> 零命中</td></tr><tr><td>B-2 <code>dev-setup</code> upgrade 靜默蓋掉在地客製</td><td><code>skills/dev-setup/SKILL.md</code>(<code>825879f</code>);guard 在 <code>2046d69</code> 才補</td><td><code>check-dev-setup-discipline.sh</code></td><td>①紅(更正,見下)</td><td>換 needle 後對下毒版重跑:<code>4 條失敗</code>,新增一條正是「沒有「判別法(三方比對)」定義」</td></tr><tr><td>B-3 lane 判準與 owner 指示衝突時母版沒說怎麼辦</td><td>文檔,<code>013e8b7</code></td><td>掃描零命中</td><td>③無守衛</td><td><code>grep -rn &quot;B-3\b&quot;</code> 零命中</td></tr><tr><td>B-4 doctor 對 gauntlet 只探 <code>--version</code></td><td><code>hooks/_doctor_impl.py:199-233</code>(<code>1c3e841</code>)</td><td><code>hooks/selftest.sh</code> gauntlet-root 三案例</td><td>①紅</td><td>短路後:<code>❌ 失敗 3 項</code>,三筆皆 gauntlet-root 相關斷言落空</td></tr><tr><td>B-5 Files 欄系統性低估</td><td>文檔,<code>013e8b7</code>,裁決「採,不加守衛」</td><td>掃描零命中(與裁決一致)</td><td>③無守衛(裁決性)</td><td><code>013e8b7</code> message:「裁決=採,不加守衛」</td></tr><tr><td>B-6 Diff Budget 測試檔估法沒算補償控制</td><td>文檔,<code>013e8b7</code></td><td>掃描零命中</td><td>③無守衛</td><td>`grep -rn &quot;B-6\b\</td><td>突變係數&quot;` 零命中</td></tr></tbody></table></div><p>&gt; <strong>B-2 更正(2026-08-17)</strong>:原判①依據的 needle 是子字串多處命中(假綠②)——舊</p><p>&gt; needle 為裸字面 <code>&quot;三方比對&quot; in src</code>,這四字在 SKILL.md 全檔出現 3 處(install</p><p>&gt; 摘要句、upgrade 段判別法定義本身、過渡態收尾句)。只刪定義段落本身時,needle</p><p>&gt; 因殘留引用仍會命中,本應紅卻假綠;上一輪引用的失敗訊息其實來自同一次退回</p><p>&gt; 實驗裡<strong>另一條</strong> needle 先觸發,不是「三方比對」needle 自己抓到的。2026-08-17</p><p>&gt; 重做退回實驗:①舊 needle 對「只刪定義段落」單獨核對,確認假綠 ②換成唯一</p><p>&gt; 字面 <code>&quot;判別法(三方比對)&quot; in src</code> 後對同一份下毒版重跑,4 條失敗(含新 needle</p><p>&gt; 本身)③主樹套用後對未下毒版跑,9 項全過。**結論:B-2 分類維持①,但憑的是</p><p>&gt; 修好之後的 needle** —— 原始①判定本身踩到假綠②,詳細退回實驗記錄見</p><p>&gt; <code>notes/dispatch-guard-coverage.md</code>(2026-08-17 勘誤註)。</p><p><strong>三類彙總</strong>:①有守衛且會紅 = A-3/A-5/A-6/A-11/A-12/B-2/B-4(7 條);②假綠(本輪</p><p>未發現)= 0 條;③無守衛 = A-4/B-1/B-3/B-5/B-6(5 條,其中 B-5 是明文裁決不加守衛,</p><p>其餘 4 條屬單純遺漏)。7 + 0 + 5 = 12。</p><p><strong>與 A8「5①/7③」的關係(非矛盾)</strong>:<code>2046d69</code> 這個 commit 本身就是把 A-5、B-2</p><p>從③補成①的那次修補 —— <code>2046d69</code> <strong>之前</strong>是 5①/7③(A8 記的是那個時間點),</p><p><code>2046d69</code> <strong>之後</strong>(本輪驗證所處的 HEAD)是 7①/5③,兩個數字描述同一件事的</p><p>前後兩個時間點,都屬實。</p><p><strong>c. 審查軌跡</strong></p><p>一次審查 9 人(1 APPROVE + 8 REQUEST_CHANGES)→ <code>d1dd5b3</code> 六棒修復(F1~F6,對應</p><p>X-2/X-3/X-4/X-5a/X-5b/X-6/B-2)→ 二次複審(1 HIGH 複合攻擊 + 2 MED + 1 nit)→</p><p><code>b9a0de1</code> 第三修(四招複合攻擊四缺二即死:<code>check_static_pin</code> 賦值計數改敘述起點</p><p>錨定、24 群組名釘改逐字整行含縮排、fig-sync JS 層雙斷言、no-stale-paths 自釘補</p><p>整行恰一、GS-9 補伴釘)→ 終驗重放(壞→紅→還原→綠逐條複驗)。</p><p>實證翻案:<strong>X-2「零防禦」實測為「外層 SP-7 連帶接住、單支靜默」</strong>(見 a 項);</p><p>B-2 needle 亦屬同類翻案(見 b 項的 B-2 更正)。</p><p><strong>d. 裁決記錄</strong></p><ul><li><strong>X-5b</strong>:偽造 <code>.devflow/</code> 記錄(繞過 <code>_prebash_impl.py</code> 字面圍欄、偽造豁免卡或</li></ul><p>  假 <code>attempt_started</code> 事件)= 信任邊界不修,與 <code>_prebash_impl.py</code> 既有信任模型</p><p>  同型(防手滑與紀律漂移,不防蓄意偽造),已在 <code>_dispatch_impl.py</code>/<code>_prebash_impl.py</code></p><p>  檔頭互相引用明文化。</p><ul><li><strong>X-3</strong>:語意層掏空(24 群組名保留字面、換填充內容)= 已知邊界,不在本守衛</li></ul><p>  防守範圍,由各群組自己的 fixture 管(誠實記錄,非遺漏)。</p><p><strong>e. Known Limits(本輪當下,2026-08-17,活文件不寫死,數字/狀態以此刻為準)</strong></p><div class="tablewrap"><table><thead><tr><th>限界</th><th>說明</th></tr></thead><tbody><tr><td>tier-exempt 豁免卡是 repo 級非 run 級</td><td><code>.devflow/tier-exempt.json</code> 不含 run_id,<code>devflow-exec.sh stop</code> 只移除 <code>exec.json</code>/sentinel,不清這張卡 —— 若核發後未消耗,會跨 run 存活,可能被不相關的下一個 run 用掉</td></tr><tr><td>MT-1 只咬 first-top 未咬 skip-level 的 real 模式</td><td><code>scripts/fixtures/model-tiering/bad-skip-level</code> 存在,但只在 <code>check-model-tiering.sh</code> 自己的自測模式內跑;<code>MT-1</code> 只把 <code>bad-first-top</code> 當外部真實 runs 根、用 CLI 參數餵給守衛複本的正常模式(驗證紅路徑不只活在自測模式);skip-level 缺這條對等案例(暫記為 MT-2 待補)</td></tr><tr><td>B-2 needle 仍是子字串比對</td><td>換成 <code>&quot;判別法(三方比對)&quot; in src</code> 後不再被裸「三方比對」三處殘留字誤觸,但仍是 <code>in</code> 子字串比對 —— 若 SKILL.md 其他地方字面湊巧完整撞上這串字,needle 一樣會被騙過;更窄但同類的脆弱性沒有消失</td></tr></tbody></table></div><p><strong>本輪當下守衛計數</strong>(2026-08-17,活文件不寫死,以當下輸出為準):devflow-check</p><p>24 組、selftest 348、arch 82(13+69)、gate-twin 139、一致性 14、doctor/renderer 6。</p></div></details>
-<footer class="foot">由 <code>scripts/build-gate-twin.py</code> 從 md 正本逐條解析產生,不手抄。</footer>
+還原後                     → ✅ 全過(43 項)</code></pre><p>⚠️ 修守衛的過程本身又抓到一個<strong>同類的假綠</strong>:原本用「字串出現在 <code>&lt;details&gt;</code> 外面就算看得到」</p><p>判斷置頂,但動線頂區的註解文字也含「Known Limits」「採 A」這些字,斷言恆真 ——</p><p>拿掉 <code>Decision</code> 的破壞實驗第一次跑仍然全綠。改成直接查置頂節的 <code>id</code> 才真的守得住。</p><p><strong>教訓:斷言要釘在結構(id/class)上,不要釘在會出現在多處的文字上。</strong></p><p>### A5　複審結果與逐條修法(2026-08-15,第二輪)</p><p><strong>verdict: REQUEST_CHANGES</strong>。複審者做了七個<strong>自己設計</strong>的破壞實驗(不是重跑 A4 列的那三個),</p><p>結果:15 條裡 11 條確認修好、2 條修得不完整、1 條<strong>沒修好</strong>、1 條<strong>是我這輪改壞的</strong>。</p><div class="tablewrap"><table><thead><tr><th>id</th><th>級</th><th>缺陷</th><th>修法</th></tr></thead><tbody><tr><td>N1</td><td><strong>HIGH(本輪引入)</strong></td><td>我修 H4 時對遮蔽版與原文<strong>各 split 一次再用同一個索引取值</strong>,段數不同 → 錯位。實測:S-1 掉了 THEN 與觀測欄<strong>被誤判成紅底</strong>、S-2 的四個欄位全部顯示 ``` 區塊裡的「假的」,<strong>而且一個警告都沒有</strong></td><td>改成在遮蔽版上 <code>finditer</code> 取 span,再用同一組 index 切原文(等長遮蔽保證對得上)</td></tr><tr><td>N2</td><td>HIGH</td><td>遮蔽只接到 <code>sections()</code>/<code>parse_spec</code>,<code>table_rows</code>/<code>_find</code>/<code>dash_cells</code> 全讀原文 → ``<code> 裡寫 </code>verdict: REJECTED` 會讓 <strong>G3 最先被讀的「判定」格顯示與 frontmatter 相反的值</strong>;Owner Calls 節內的程式碼範例會多出幻影卡把計數從 1/1 變 1/3</td><td>三處全部接上遮蔽,計數一律掃遮蔽版</td></tr><tr><td>N3</td><td>MED</td><td>4-spec 的「整節跳過」只修了 fence 那半 —— <code>## Known limits</code> 底下寫一個 <code>### S-1 的已知限界</code>,整節連同內容從產出物消失,<strong>NOTE 一個字都不印</strong></td><td>判準改成「含<strong>已渲染的 R id</strong>」而非「含任何長得像 R/S 的字」,且跳過時必印 NOTE</td></tr><tr><td>N4</td><td>MED</td><td>H5 只改了 2-decision/4-spec 兩份頂註 → 7-review 模板的閱讀動線第 5 步(抽驗一列)與 README §6 第 5 格(待審項目)互相矛盾,無任何檢查</td><td>第 5 格改回「抽驗」與模板一致;7-review 模板補「G3 twin 是審查介面」節,三份對齊</td></tr><tr><td>N5</td><td>nit</td><td><code>zt.count(chr(34))</code> 數的是雙引號不是卡數(n3 同類殘留)</td><td>修</td></tr><tr><td>N6</td><td>nit</td><td><code>anchor_id</code> 撞名不去重</td><td>撞名補序號,同標題冪等</td></tr><tr><td>N7</td><td>nit</td><td><code>docs/dev/tools/</code> 的兩支副本無同步守衛</td><td>守衛新增逐字比對</td></tr></tbody></table></div><p><strong>四個守衛缺口(複審最有價值的部分)</strong> —— 這些不是缺陷,是「守衛對這類缺陷沒有鑑別力」:</p><div class="tablewrap"><table><thead><tr><th>破壞方式</th><th>當時</th><th>現在</th></tr></thead><tbody><tr><td>D 五格全部退化成 <code>href=&quot;#cards&quot;</code>(不是拿掉 <code>&lt;a&gt;</code>)</td><td>✅ 全綠</td><td>❌ 3 項(新增「五格指向不同段落」)</td></tr><tr><td>E 卡片 GIVEN/WHEN/THEN 全砍空</td><td>✅ 全綠</td><td>❌ 1 項(新增「卡片內容不得為空」)</td></tr><tr><td>F 進度條 markup 退回缺陷態</td><td>✅ 全綠</td><td>❌ 3 項(新增 markup 齊全檢查)</td></tr><tr><td><strong>G 改 README §6 的規格文字</strong></td><td>✅ 全綠</td><td>❌ 1 項(<strong>標籤集合改成從 README 正本解析</strong>,不再硬寫在守衛裡)</td></tr></tbody></table></div><p><strong>G 是最深的一條</strong>:README §6 自己寫「標籤逐字釘死,由 <code>check-gate-twin.sh</code> 驗」,</p><p>但守衛比對的是它<strong>自己硬寫的一份副本</strong> —— 改規格照樣全綠。</p><p>這與 H2(守衛只驗字串在不在)、以及我修守衛時抓到的那個文字比對假綠,<strong>是同一類病的第三次出現</strong>:</p><p>&gt; <strong>斷言要釘在正本上。釘在副本、釘在會出現在多處的文字上,都會恆真。</strong></p><p>守衛 43 → <strong>53 項</strong>。</p><p>### A6　二次複審結果與逐條修法(2026-08-15,第三輪)</p><p><strong>verdict: REQUEST_CHANGES</strong>。複審者做了 10 次自造破壞實驗。<strong>15 條裡只有 4 條真的修好。</strong></p><div class="tablewrap"><table><thead><tr><th>id</th><th>級</th><th>缺陷</th><th>修法</th></tr></thead><tbody><tr><td><strong>P4</strong></td><td><strong>HIGH,已發生在出貨物上</strong></td><td><code>H_ANY</code> 的 <code>\s*$</code> —— <code>\s</code> <strong>含換行</strong>,fence 遮蔽後標題底下全是空白,正則跨行吃到檔尾 → 整節 body 變空字串,再被 <code>not body.strip()</code> 靜默丟掉。實測:出貨的 <code>7-review.html</code> 裡 <code>## 變更架構圖</code> <strong>命中數 0</strong>,而模板明文把它列為背景資料必留項。60 項守衛當時全綠 = <strong>第四次同類假綠</strong></td><td>改成 <code>[ \t]</code> 明確限定同一行;新增 P4 回歸 fixture(整節只有一個 fence 的章節不得消失)</td></tr><tr><td>P1</td><td>HIGH</td><td><code>mask_fenced</code> 只認一種 fence 且用前綴 toggle:<strong>四個反引號包三個</strong> → parity 反轉、內層不遮(本 repo 自己就有這寫法);<code>~~~</code> 完全不遮 → 兩者都產生幻影卡且零警告</td><td>重寫:支援 ``` 與 ~~~、<strong>任意長度 ≥3</strong>、關閉圍欄須同種類且不短於開啟者、語言標籤、最多三格縮排、未閉合到檔尾。<strong>七種邊界逐一實測</strong>(含 CRLF、檔尾無換行)</td></tr><tr><td>P2</td><td><strong>HIGH(本輪引入)</strong></td><td><code>dash_cells</code> 收到 <code>md + &quot;\n&quot; + fm_text</code>,md 若有未閉合 fence,<strong>接在後面的 frontmatter 一起被遮</strong> → 狀態/判定退成 <code>—</code></td><td>frontmatter 改放<strong>前面</strong>(未閉合 fence 只會遮它之後的東西)</td></tr><tr><td>P3</td><td>HIGH</td><td>未閉合 fence 之後的所有章節從 <code>sections()</code> 消失,不進背景資料也<strong>不印任何 NOTE</strong></td><td>行為保留(那真的是 code),但改成<strong>必印警告</strong>並講出吞掉幾行</td></tr><tr><td>N3</td><td>HIGH(前輪宣稱已修,實際沒修)</td><td><code>rid in masked</code> 是<strong>子字串比對</strong>(<code>R-1</code> ⊂ <code>R-10</code>),而且「內文提到 R-1」就整節被吃 —— 原缺陷原樣重現,還印出<strong>假的</strong> NOTE</td><td>判準改成「該節<strong>直接包含已渲染的 R 標題行</strong>」,不是提到編號</td></tr><tr><td>N5</td><td>nit(前輪宣稱已修,實際沒修)</td><td><code>chr(...)</code> 拼出的是 <code>s-card</code>,但要數的是 <code>class=&quot;s-card</code>;CSS 裡的 <code>.s-card</code> 被算進去,真值 1 印成 6</td><td>改成數 <code>class=&quot;s-card</code></td></tr><tr><td>N6</td><td>修得不完整</td><td><code>anchor_id</code> 對同一標題非冪等(多次呼叫長出 <code>-3</code>/<code>-4</code>),<code>have_ids</code> 因此收到不存在的 id</td><td>改成先查「這個標題是否已有 id」,同標題永遠同 id</td></tr><tr><td>P6</td><td>LOW</td><td><code>md_scan</code> 是死碼,且擋在 docstring 前面讓 <code>__doc__</code> 變 None</td><td>刪</td></tr></tbody></table></div><p><strong>五個守衛變體缺口</strong>(原本的破壞方式會紅,換個改法就測不到):</p><div class="tablewrap"><table><thead><tr><th>變體</th><th>當時</th><th>現在</th></tr></thead><tbody><tr><td>D′ 只退化到 2 個不同錨點(不是全部同一個)</td><td>✅ 全綠</td><td>❌(門檻 3 → <strong>4</strong>)</td></tr><tr><td>E″ 2-decision/7-review 的表格卡砍空(空卡檢查只涵蓋 4-spec)</td><td>✅ 全綠</td><td>❌ 1 項(三站都驗)</td></tr><tr><td>G′ 只改 README 括號內的規格語意</td><td>✅ 全綠</td><td>仍測不到(見下)</td></tr><tr><td><strong>G″ 把模板頂註改回舊值 = 原封不動重建 N4 的矛盾</strong></td><td>✅ 全綠</td><td>❌ 1 項(<strong>新增跨檔一致檢查:README §6 vs 三份模板頂註</strong>)</td></tr><tr><td>E′ 只砍 S 卡的一個欄位</td><td>✅ 全綠</td><td>仍測不到 → 列 K-7</td></tr></tbody></table></div><p><strong>G″ 是 N4 的根因</strong>:規格同時寫在 README §6 與三份模板,兩邊不一致時<strong>零守衛</strong>。現在補上了。</p><p><strong>第四次同類假綠(P4)</strong>。前三次:H2(只驗字串在不在)、置頂節文字比對恆真、G(比對守衛自己硬寫的副本)。</p><p>這次是<strong>斷言根本沒涵蓋那個失敗模式</strong> —— 章節整個消失,而所有斷言都在檢查「有的東西對不對」,</p><p>沒有一條在檢查「該有的東西還在不在」。</p><p>&gt; **教訓補一條:守衛要有一條是「盤點」型的 —— 產出物的章節數/內容量要對得上輸入,</p><p>&gt; 而不是只驗已經出現的東西長得對不對。**</p><p>### A7　解析層換 markdown-it-py + 執行板納入(2026-08-15,第四輪)</p><p>三輪 28 條 finding 的結論是「這類解析靠手刻正則 + 自審不可能收斂」,本輪執行那個結論:</p><p>**fence 遮蔽與章節切割的判斷來源換成 markdown-it-py(4.0.0,repo 既有相依)的 token</p><p>stream<strong>,等長遮蔽 + span 切原文的骨架不變。驗收基準是對母版範例三站</strong>六份輸出</p><p>byte-identical**,實測達成 —— 也就是說替換本身零行為變化,變化全部來自下列明修:</p><div class="tablewrap"><table><thead><tr><th>項</th><th>內容</th></tr></thead><tbody><tr><td>S_HEAD/R_HEAD 跨行</td><td>P4 同類第三次現形:<code>#### S-1</code>(無尾隨文字)時 <code>\s*</code> 吃掉下一行,母版範例的 twin 裡 GIVEN 出現 0 次。修法比照 H_ANY(<code>[ \t]</code>),配回歸守衛</td></tr><tr><td>K-7</td><td>缺 GIVEN/WHEN/THEN/觀測任一欄即紅底(fixture <code>missing-then</code>)</td></tr><tr><td>P5</td><td>7-review「抽驗」格由寫死常數改為 Coverage Matrix 決定論取中位列</td></tr><tr><td>K-3</td><td>5-tasks 執行板納入:README §6 第三種形狀、產生器支援、ASCII DAG(原型的手寫 SVG 不採——無法泛化)</td></tr><tr><td>K-6</td><td>母版範例 7-review 補齊 verdict/Known Limits/附錄;dev-setup 散發段交代 markdown-it-py 相依 + 散發後驗證</td></tr><tr><td>計數</td><td>動線「風險」格把表頭/分隔列算進條數(4 報 6),修正並加盤點守衛</td></tr></tbody></table></div><p><strong>相依 fail-loud</strong>:缺套件或版本 ≠4.0.0 → 繁中訊息 + exit 2,不吐 traceback、不降級回正則</p><p>(降級 = 兩邊 diverge 卻不吭聲)。K-4 評估結論:表格解析<strong>不</strong>換 token stream ——</p><p>markdown-it 遵 GFM 會截斷多於表頭的欄,正是 n5 修掉的缺陷。</p><p><strong>第四輪獨立審查(fresh-context,11 個自造破壞實驗)</strong>:REQUEST_CHANGES,3 HIGH + 1 MED,</p><p>全數已修並重演其破壞實驗(壞→紅→還原→綠):</p><div class="tablewrap"><table><thead><tr><th>id</th><th>級</th><th>缺陷</th><th>修法</th></tr></thead><tbody><tr><td>H1</td><td>HIGH</td><td><strong>twin/引擎解析漂移</strong>:twin 遮 fence+吃續行,真引擎(contract_ref/hooks parse_5_tasks)不遮也無續行 —— Boundaries 下藏第二個 <code>- Files:</code> 時 twin 綠卡、引擎拒啟;fence 內 <code>## T-99</code> 時引擎長幽靈任務、twin 看不到</td><td>twin 側現形:重複保留欄 → 紅卡+NOTE(預告引擎 fail-closed);fence 內 T 標題 → 幽靈任務警告。<strong>引擎側(hooks)加 fence 遮蔽收 Backlog,屬 runtime 改動</strong></td></tr><tr><td>H2</td><td>HIGH</td><td>執行板五格<strong>值</strong>零守衛:硬寫「99 條」照樣 94 項全綠</td><td>盤點守衛:期望值由守衛自己從 example md 算(任務/依賴/模式/進度)</td></tr><tr><td>H3</td><td>HIGH</td><td>DAG 分波正確性零守衛:全塞 Wave 1 照樣全綠</td><td>守衛內獨立 Kahn 實作逐 T 比對波次(不 import 產生器)</td></tr><tr><td>M1</td><td>MED</td><td>守衛半路 traceback(檔案缺失/KeyError)會讓後面 90+ 項跑不到</td><td>讀檔防炸 + <code>.get()</code>,「紅而不炸」</td></tr></tbody></table></div><p>守衛 60 → <strong>108 項</strong>。前三輪的四次「假綠」型態(只驗殼/釘多處文字/釘副本/沒驗還在不在)</p><p>本輪新守衛逐一對照設計;H2/H3 仍屬第 4 型(該有的正確性沒被驗),證明**盤點型守衛要跟著</p><p>每個新資料格一起長**,不是加完功能再說。</p><p><strong>尚未了結(交接)</strong>:H1 的引擎側(hooks/devflow-lib.py <code>parse_5_tasks</code> 不遮 fence)</p><p>已收 Backlog,與 A-6(Boundaries 欄丟棄)同批處理;owner 驗收(K-5)已於 2026-09-12</p><p>簽 Human PASS。Exit Checklist 未勾只剩 push + tag + release(owner 自己 push main)。</p><p>### A8　守衛覆蓋輪(2026-08-16,第五輪)</p><p>v3.4.0 出貨後的獨立審查給了一句話判詞:「<strong>有些東西壞掉了,而 108 項守衛不會發現</strong>」。</p><p>本輪照它的六條缺口逐一補,再對前一輪 Backlog 修復做行為層補驗,並把 A7 交接的</p><p>引擎側修復以 <strong>fast lane 全程武裝</strong>走完(母版第一個真正走 dev-flow 流程的 feature)。</p><div class="tablewrap"><table><thead><tr><th>塊</th><th>內容</th></tr></thead><tbody><tr><td>N-1(HIGH)</td><td>「背景章節盤點」缺守衛 —— 第 4 型假綠<strong>第二次發生</strong>(第一次=P4)。修法=雙層通用對帳:產生器內建 fail-closed 下落盤點(L2 節四類下落缺一即 exit 1)+ 守衛獨立數節逐節對 html/NOTE;整輪審查再抓到「兩層信同一份自報 dropped 清單」的單字元翻轉盲區 → 守衛連 drop 的<strong>理由</strong>都自己重算,雙向比對</td></tr><tr><td>N-2</td><td>四支守衛可被整段刪斷言而照印全過(<strong>第 5 型假綠</strong>:斷言不見了也沒人知道)→ 分節心跳 + MIN 地板;整輪審查再抓「連刪帶藏」零防禦 → 靜態互釘(GS-4 前例),防禦邊界誠實註明</td></tr><tr><td>N-3/N-4</td><td>用法斷言改驗內容;未閉合 <code>&lt;!--</code> 補警告(N-1 兩層都看不到被吞的節,警告是唯一訊號)</td></tr><tr><td>N-5</td><td>路徑守衛改 fail-closed(git ls-files 全量-印出豁免;豁免清單釘字面內容非條數)</td></tr><tr><td>N-6</td><td>47 條行號引用 3 錯 1 缺,先修源頭再修引用;裁決不做常駐引用檢查器(行號天然漂移=永久誤報工廠)</td></tr><tr><td>行為層補驗</td><td>fresh agent 對前輪 12 條逐一「退回會不會紅」:5 條①、7 條③;採納補強三件(B-2 紀律守衛/A-5 needle/第 5 型地板×2),其餘維持不補的裁決與理由入檔</td></tr><tr><td>引擎側 H1</td><td>feature <code>engine-fence-masking</code>(fast lane):4-spec→5-tasks→武裝 Stage 6→6-notes→審查圍欄(圍欄③實擋 reviewer 讀 Self-Review,unlock 才放)→G3 <strong>PASS</strong>。三筆 L1 偏差記帳;dogfood 撞出 D-4(postbash 偵測網缺 7-review* 豁免,收 Backlog)</td></tr></tbody></table></div><p>守衛 108 → <strong>133 項</strong>;selftest 326 → 339;devflow-check 20 → 21 組。</p><p>兩輪獨立審查(整輪 4 條 + G3 feature 審查 5 條 Known Limits)全數處置,</p><p>破壞實驗四步(未修重現→修→重演必紅→還原全綠)逐條在案。</p><p><strong>假綠型態表更新</strong>:第 4 型(該有的還在不在)至此有通用對帳看守;第 5 型(斷言</p><p>被刪沒人知道)有心跳+地板+靜態互釘。已知邊界:蓄意三點同改(案例+地板+互釘)</p><p>仍防不住 —— 與 GS-4 同級,防手滑不防蓄意。</p><p>### A9　對稱守衛輪(2026-08-17)</p><p>派工單 <code>notes/dispatch-guard-symmetry.md</code>:獨立審查抓到第 6 型假綠「不對稱保護」</p><p>(修法只套在觸發它的那個實例,沒推廣到同類其他實例)的第三次發作(X-1),另加 3 條</p><p>不對稱缺陷(X-2~X-4)+ 3 條追加項(X-5~X-7)+ 2 件記帳問題。以下依派工單「完成之後」</p><p>四項要求記錄。</p><p><strong>a. X-1~X-7 逐項結果</strong></p><div class="tablewrap"><table><thead><tr><th>id</th><th>級</th><th>一句(白話 + 術語)</th></tr></thead><tbody><tr><td>X-1</td><td>HIGH</td><td>第 2 層對帳(獨立重算 dropped 節、不信產生器自報清單)原本只推廣到 4-spec 一站;本輪推廣到三站 —— 2-decision/7-review 沒有合法的「可捨棄」語意,直接斷言產生器自報 <code>dropped</code> 清單必須是空集合,並對三站都做空節獨立重算、雙向比對</td></tr><tr><td>X-2</td><td>MED</td><td>路徑守衛(<code>check-no-stale-paths.sh</code>)掃描來源補納未追蹤檔;重跑裁決驗證的兩種攻擊後發現原判「零防禦」不準 —— 兩種攻擊在完整跑 <code>test-architecture-guards.sh</code> 時本來就會被 SP-3~SP-7 連帶接住(連坐失敗或炸 <code>AssertionError</code>),不是真的零防禦,而是「單支腳本自己跑」時才是零防禦。已補 SP-8/SP-9 兩個具名案例,讓單支腳本自己就會紅,不再依賴外層連坐</td></tr><tr><td>X-3</td><td>MED</td><td>群組數這條軸(<code>REQUIRED_GROUPS</code>)原本只印計數不斷言;補地板 + GS-9 靜態互釘(<code>EXPECTED_GROUPS=24</code> 釘死並斷言、24 個群組名逐一釘),誠實記錄「不防掏空換填充」的邊界(見 d 項)</td></tr><tr><td>X-4</td><td>LOW</td><td><code>check(True</code> 恆真規則原本只掃自己所在的兩個檔;推廣成跨檔掃描 <code>scripts/*.sh</code> 全部,並修掉 <code>check-realworld.sh:191</code> 那條真的恆真斷言</td></tr><tr><td>X-5a</td><td>MED</td><td>新增模型分層稽核檢查:掃 observability ledger,「首派即最高階」與「跳級升階」兩種模式皆紅;自帶 MT-0(自測對照組)/MT-1(<code>bad-first-top</code> 外部真實案例)fixture</td></tr><tr><td>X-5b</td><td>MED</td><td>PreToolUse 窄版攔截:本 run 從沒出現過低階 attempt 卻顯式指名最高階模型當第一筆派工 → 擋;補一次性、留痕的 <code>tier-exempt</code> 豁免通道(<code>--reason</code> 必填)。裁決:「偽造 <code>.devflow/</code> 記錄」這個信任邊界不修 —— 與 <code>_prebash_impl.py</code> 既有的字面圍欄同一個信任模型(防手滑與紀律漂移,不防蓄意偽造),已在兩檔檔頭互相引用明文化(見 d 項)</td></tr><tr><td>X-6</td><td>MED</td><td><code>guide-dev-flow.html</code>/<code>guide-quickstart.html</code> 各自完整內嵌一張生命週期圖(雙副本)。owner 裁決:不採「單正本 + 縮減版/連結」——quickstart 讀者不見得會去翻 guide-dev-flow.html,縮減版會犧牲 quickstart 的自足性。改補 <code>check-guides-fig-sync.sh</code> 三層同步守衛(① SVG 標記逐位元組 ② 渲染用到的 CSS 規則 ③ 三份 guides 共用的錨點捲動 JS),防單邊漂移;明文記錄「不防雙邊一致的錯誤」</td></tr><tr><td>X-7</td><td>LOW</td><td>頁內錨點在 artifact/iframe 載體不跳轉的捲動修正 JS(~8 行),裁決併入正式 guides(三份同字面,SVG 區塊位元組不變),已完成</td></tr></tbody></table></div><p><strong>b. 兩件記帳問題的判定</strong></p><p><strong>問題 2(11 條 vs 12 條):12 條正確。</strong> <code>dispatch-guard-coverage.md</code> 第三部分原文</p><p>宣稱「行為層只有 3 條有第一手證據」,但逐字只點名 2 條(A-2、A-1)—— 14 − 2 = 12,</p><p>與 commit <code>2046d69</code>、附錄 A8「12 條、5①/7③」完全吻合。任務書的「11 條」= 14 − 3</p><p>(沿用上游那句話的字面「3 條」),但那個「消失的第三條」本來就不存在,是</p><p><code>dispatch-guard-coverage.md</code> 自身的計數筆誤,不是新的錯誤來源。**A-1、A-2 兩條</p><p>本輪未重驗** —— 沿用上一輪已有的第一手證據原樣採計,如實註記。</p><p><strong>問題 1(12 條逐條歸類)</strong>:</p><div class="tablewrap"><table><thead><tr><th>條目(白話 + 術語)</th><th>當初修在哪</th><th>守衛是誰</th><th>結果</th><th>證據關鍵行</th></tr></thead><tbody><tr><td>A-3 5-tasks 模板沒警告「Verify 必須單行純指令」</td><td><code>_templates/5-tasks.md:63</code>(<code>013e8b7</code>)</td><td><code>check-stage67-enforcement.sh</code> VF 段</td><td>①紅</td><td>刪句後:<code>❌ VF:… 沒有「Verify 必須是單行、可原樣貼進 shell 的純指令」這條硬紀律</code></td></tr><tr><td>A-4 infra/migration 型 T 過不了 gate 三項必檢</td><td>文檔示例,<code>013e8b7</code></td><td>掃描零命中</td><td>③無守衛</td><td>`grep -rn &quot;infra.*型\</td><td>infra-T\</td><td>A-4\b&quot;` 全部零命中</td></tr><tr><td>A-5 5-tasks 模板沒提醒「測試檔路徑列進 Files」</td><td><code>_templates/5-tasks.md:94</code>(<code>013e8b7</code>);guard 在 <code>2046d69</code> 才補</td><td><code>test-architecture-guards.sh</code> S67-0 + TF needle</td><td>①紅</td><td>刪句後:<code>❌ S67-0 對照組… 預期 pass,實得 fail</code></td></tr><tr><td>A-6 Boundaries/Intent/Owner 欄被解析後丟棄</td><td><code>hooks/devflow-lib.py:488-493</code>(<code>1c3e841</code>)</td><td><code>hooks/selftest.sh</code>(連坐面廣)</td><td>①紅</td><td>刪三欄賦值後:<code>❌ 守衛自測 310/339,失敗 29 項</code></td></tr><tr><td>A-11 Stage 7 禁讀 6-notes 只是散文</td><td><code>hooks/_guard_impl.py:105-112</code>(<code>e68c67a</code>)</td><td><code>hooks/selftest.sh</code> 圍欄③案例</td><td>①紅</td><td>判斷式改 <code>False</code> 後:<code>❌ 失敗 1 項:期望 exit 2 且含 &#x27;步 4&#x27;,得 exit 0</code></td></tr><tr><td>A-12 Stage 6/7 步 0 沒要求跑 doctor</td><td><code>_templates/6-implementation-notes.md:35-41</code>(<code>013e8b7</code>)</td><td><code>check-stage67-enforcement.sh</code> DOC 段</td><td>①紅</td><td>改字面後:<code>❌ DOC:… 旁沒有要求跑 devflow-doctor.sh</code></td></tr><tr><td>B-1 母版 <code>_templates/5-tasks.md</code> 過不了 <code>parse_5_tasks</code></td><td>文檔修正,<code>013e8b7</code>,未加常駐檢查</td><td>掃描零命中(<code>run_tests.py</code> 只驗字面 <code>in</code>,未呼叫 <code>parse_5_tasks</code>)</td><td>③無守衛</td><td><code>grep -rn &quot;B-1\b&quot;</code> 零命中</td></tr><tr><td>B-2 <code>dev-setup</code> upgrade 靜默蓋掉在地客製</td><td><code>skills/dev-setup/SKILL.md</code>(<code>825879f</code>);guard 在 <code>2046d69</code> 才補</td><td><code>check-dev-setup-discipline.sh</code></td><td>①紅(更正,見下)</td><td>換 needle 後對下毒版重跑:<code>4 條失敗</code>,新增一條正是「沒有「判別法(三方比對)」定義」</td></tr><tr><td>B-3 lane 判準與 owner 指示衝突時母版沒說怎麼辦</td><td>文檔,<code>013e8b7</code></td><td>掃描零命中</td><td>③無守衛</td><td><code>grep -rn &quot;B-3\b&quot;</code> 零命中</td></tr><tr><td>B-4 doctor 對 gauntlet 只探 <code>--version</code></td><td><code>hooks/_doctor_impl.py:199-233</code>(<code>1c3e841</code>)</td><td><code>hooks/selftest.sh</code> gauntlet-root 三案例</td><td>①紅</td><td>短路後:<code>❌ 失敗 3 項</code>,三筆皆 gauntlet-root 相關斷言落空</td></tr><tr><td>B-5 Files 欄系統性低估</td><td>文檔,<code>013e8b7</code>,裁決「採,不加守衛」</td><td>掃描零命中(與裁決一致)</td><td>③無守衛(裁決性)</td><td><code>013e8b7</code> message:「裁決=採,不加守衛」</td></tr><tr><td>B-6 Diff Budget 測試檔估法沒算補償控制</td><td>文檔,<code>013e8b7</code></td><td>掃描零命中</td><td>③無守衛</td><td>`grep -rn &quot;B-6\b\</td><td>突變係數&quot;` 零命中</td></tr></tbody></table></div><p>&gt; <strong>B-2 更正(2026-08-17)</strong>:原判①依據的 needle 是子字串多處命中(假綠②)——舊</p><p>&gt; needle 為裸字面 <code>&quot;三方比對&quot; in src</code>,這四字在 SKILL.md 全檔出現 3 處(install</p><p>&gt; 摘要句、upgrade 段判別法定義本身、過渡態收尾句)。只刪定義段落本身時,needle</p><p>&gt; 因殘留引用仍會命中,本應紅卻假綠;上一輪引用的失敗訊息其實來自同一次退回</p><p>&gt; 實驗裡<strong>另一條</strong> needle 先觸發,不是「三方比對」needle 自己抓到的。2026-08-17</p><p>&gt; 重做退回實驗:①舊 needle 對「只刪定義段落」單獨核對,確認假綠 ②換成唯一</p><p>&gt; 字面 <code>&quot;判別法(三方比對)&quot; in src</code> 後對同一份下毒版重跑,4 條失敗(含新 needle</p><p>&gt; 本身)③主樹套用後對未下毒版跑,9 項全過。**結論:B-2 分類維持①,但憑的是</p><p>&gt; 修好之後的 needle** —— 原始①判定本身踩到假綠②,詳細退回實驗記錄見</p><p>&gt; <code>notes/dispatch-guard-coverage.md</code>(2026-08-17 勘誤註)。</p><p><strong>三類彙總</strong>:①有守衛且會紅 = A-3/A-5/A-6/A-11/A-12/B-2/B-4(7 條);②假綠(本輪</p><p>未發現)= 0 條;③無守衛 = A-4/B-1/B-3/B-5/B-6(5 條,其中 B-5 是明文裁決不加守衛,</p><p>其餘 4 條屬單純遺漏)。7 + 0 + 5 = 12。</p><p><strong>與 A8「5①/7③」的關係(非矛盾)</strong>:<code>2046d69</code> 這個 commit 本身就是把 A-5、B-2</p><p>從③補成①的那次修補 —— <code>2046d69</code> <strong>之前</strong>是 5①/7③(A8 記的是那個時間點),</p><p><code>2046d69</code> <strong>之後</strong>(本輪驗證所處的 HEAD)是 7①/5③,兩個數字描述同一件事的</p><p>前後兩個時間點,都屬實。</p><p><strong>c. 審查軌跡</strong></p><p>一次審查 9 人(1 APPROVE + 8 REQUEST_CHANGES)→ <code>d1dd5b3</code> 六棒修復(F1~F6,對應</p><p>X-2/X-3/X-4/X-5a/X-5b/X-6/B-2)→ 二次複審(1 HIGH 複合攻擊 + 2 MED + 1 nit)→</p><p><code>b9a0de1</code> 第三修(四招複合攻擊四缺二即死:<code>check_static_pin</code> 賦值計數改敘述起點</p><p>錨定、24 群組名釘改逐字整行含縮排、fig-sync JS 層雙斷言、no-stale-paths 自釘補</p><p>整行恰一、GS-9 補伴釘)→ 終驗重放(壞→紅→還原→綠逐條複驗)。</p><p>實證翻案:<strong>X-2「零防禦」實測為「外層 SP-7 連帶接住、單支靜默」</strong>(見 a 項);</p><p>B-2 needle 亦屬同類翻案(見 b 項的 B-2 更正)。</p><p><strong>d. 裁決記錄</strong></p><ul><li><strong>X-5b</strong>:偽造 <code>.devflow/</code> 記錄(繞過 <code>_prebash_impl.py</code> 字面圍欄、偽造豁免卡或</li></ul><p>  假 <code>attempt_started</code> 事件)= 信任邊界不修,與 <code>_prebash_impl.py</code> 既有信任模型</p><p>  同型(防手滑與紀律漂移,不防蓄意偽造),已在 <code>_dispatch_impl.py</code>/<code>_prebash_impl.py</code></p><p>  檔頭互相引用明文化。</p><ul><li><strong>X-3</strong>:語意層掏空(24 群組名保留字面、換填充內容)= 已知邊界,不在本守衛</li></ul><p>  防守範圍,由各群組自己的 fixture 管(誠實記錄,非遺漏)。</p><p><strong>e. Known Limits(本輪當下,2026-08-17,活文件不寫死,數字/狀態以此刻為準)</strong></p><div class="tablewrap"><table><thead><tr><th>限界</th><th>說明</th></tr></thead><tbody><tr><td>tier-exempt 豁免卡是 repo 級非 run 級</td><td><code>.devflow/tier-exempt.json</code> 不含 run_id,<code>devflow-exec.sh stop</code> 只移除 <code>exec.json</code>/sentinel,不清這張卡 —— 若核發後未消耗,會跨 run 存活,可能被不相關的下一個 run 用掉</td></tr><tr><td>MT-1 只咬 first-top 未咬 skip-level 的 real 模式</td><td><code>scripts/fixtures/model-tiering/bad-skip-level</code> 存在,但只在 <code>check-model-tiering.sh</code> 自己的自測模式內跑;<code>MT-1</code> 只把 <code>bad-first-top</code> 當外部真實 runs 根、用 CLI 參數餵給守衛複本的正常模式(驗證紅路徑不只活在自測模式);skip-level 缺這條對等案例(暫記為 MT-2 待補)</td></tr><tr><td>B-2 needle 仍是子字串比對</td><td>換成 <code>&quot;判別法(三方比對)&quot; in src</code> 後不再被裸「三方比對」三處殘留字誤觸,但仍是 <code>in</code> 子字串比對 —— 若 SKILL.md 其他地方字面湊巧完整撞上這串字,needle 一樣會被騙過;更窄但同類的脆弱性沒有消失</td></tr></tbody></table></div><p><strong>本輪當下守衛計數</strong>(2026-08-17,活文件不寫死,以當下輸出為準):devflow-check</p><p>24 組、selftest 348、arch 82(13+69)、gate-twin 139、一致性 14、doctor/renderer 6。</p><p>### A10　清空輪(2026-08-17,同日第二輪)</p><p>派工單 <code>notes/dispatch-accounting-symmetry.md</code>:一次清空所有已知待辦 —— 獨立審查</p><p>6 條(F1~F6)、STATUS Backlog 5 條、效能 1 條、採用現場 3 條(G1/G2/G3)、新增</p><p>缺陷回報 skill + 去識別化 hook。全數處置;兩條 Backlog 裁決不做(理由入 STATUS.md)。</p><p><strong>a. 逐項結果(細節見各 commit 與派工回報)</strong></p><div class="tablewrap"><table><thead><tr><th>id</th><th>級</th><th>一句(白話 + 術語)</th></tr></thead><tbody><tr><td>F2</td><td>前輪最優先</td><td>三支 PreToolUse 殼層曾把整包 payload 塞環境變數再 export,&gt;1MB 令其後每個 exec 撞 ARG_MAX → rc=126,fail-closed 守衛靜默降級 fail-open。修法 = stdin 直通 python(讀取正本 <code>devflow-lib.read_hook_input()</code>),四殼同型一起改;15.9MB payload 0.26s 走完。selftest f2 七案釘死「大 payload 該擋照擋、該放照放」</td></tr><tr><td>F1</td><td>blocker</td><td>第 7 型「不對稱記帳」:hooks 掛載長到 6 條,dev-setup 健檢清單靜默停在 5 條/七支。修文字 + 新守衛 <code>check-hooks-accounting.sh</code>(hooks.json ↔ 四份列舉文件,數量與名稱都比);第 7 型 + 通解已寫進 README 第 6 型旁。同輪加第 7 條掛載時守衛當場逼出 11 處漂移逐一同步 —— live 驗證有效</td></tr><tr><td>F3</td><td>LOW</td><td>恆真偵測黑名單外加 AST 常數運算式判定(<code>check(2 &gt; 1</code> 類);gauntlet 的 E-ID 字串簽名與 <code>check(False</code> 顯性失敗明文豁免</td></tr><tr><td>F4</td><td>LOW</td><td>豁免卡標記寫不回(唯讀 fs)曾 die;改 fail-open 放行 + 警告,卡未消耗屬可接受降級</td></tr><tr><td>F5</td><td>LOW</td><td>README §6 括號內規格語意無守衛(G′ 缺口);PINNED_ROW_SHA 四列全文 hash 釘死,改字必須同 commit 更新快照</td></tr><tr><td>F6</td><td>LOW</td><td>guide hooks 註冊表寫死 timeout —— F1 守衛的 event/matcher/command/timeout 四格逐字鏡像涵蓋</td></tr><tr><td>G1</td><td>HIGH(採用現場)</td><td>history-append 用「自身位置/..」推根,散發到 docs/dev/tools/ 後靜默寫到 docs/dev/docs/dev/HISTORY.md。改 git toplevel(-C 腳本位置,兩位置皆對)+ --print-root + doctor 探測 + selftest 四案;散發鏈 e2e 的 push/更新步驟交還 owner</td></tr><tr><td>G2</td><td>MED(採用現場)</td><td>母版 dev-talk SKILL 頂註含禁詞,誰改誰被自家 devtalk-guard 擋死(B-1 後第二次)。沿革移 docs/PLUGIN.md + 通解 <code>check-devtalk-selfclean.sh</code>(逐檔餵真 guard,不抄字詞表)</td></tr><tr><td>G3</td><td>HIGH(採用現場)</td><td>全形冒號字元集打錯(「:或：」打成兩個 0x3a)六處全修(2 處 runtime:Owner Call 例外、Stage 3 人類確認)+ 通解 <code>check-regex-charclass.sh</code>(字元集相鄰重複半形標點掃描)—— 上線首日抓到本輪新守衛自己打錯的第 7 個實例;政策裁決:結構化欄位冒號全形半形皆可</td></tr><tr><td>Backlog</td><td>3 做 2 留</td><td>D-4 postbash 審查白名單(第 6 型實例,鏡射 guard 側)、tier-exempt 改 run 級(stop 清未消耗卡)、MT-2 real-mode 案例;第二個範例與 SDC 大表裁決不做(理由入 STATUS.md)</td></tr><tr><td>效能</td><td>寬要求</td><td>逐組計時:test-architecture-guards 40.45s 佔 24 組總量 7 成;owner 端 4:55(CPU 15%)的等待瓶頸本機不可重現(本機序列 58s)。all 模式四組平行 → 43.7s,零檢查少跑(組間改全跑);內部平行化 83 案共享 fixture 池判定風險大於收益,不做</td></tr><tr><td>第五部分</td><td>新增</td><td><code>dev-report</code> skill(去識別化回報,白名單 fail-closed,不自動開 issue)+ <code>devflow-report-guard</code> hook(第 7 條掛載:只掃 <code>.devflow/reports/*.md</code> 的結構性識別特徵,最有價值判準 =「這路徑母版存在嗎」);兩層缺一不可,不宣稱 hook 上了就安全</td></tr></tbody></table></div><p><strong>b. 盤點與雙審查</strong></p><p>第 7 型通解盤點(fresh sonnet)另抓 4 處:docs/PLUGIN.md 漏 2 hook + 1 skill</p><p>(並揭穿其 selftest「294/294」爛數字)、dev-setup 健檢不驗 history-append 散發、</p><p>devflow-check 註冊無自審(新檢查漏註冊 = 永遠不跑且無紅字)、guide-dev-talk</p><p>逐字引用漂移(實修時擴大到 14 處,含漏掉整步「真實世界互動盤點」;新守衛</p><p><code>check-devtalk-guide-sync.sh</code>)。</p><p>兩路 fresh sonnet 對抗審查共實錘 4 HIGH + 2 MED,全數修正並以審查者自己的攻擊</p><p>重演驗證(report-guard 非 UTF-8 crash/正則災難回溯/<code>..</code> 繞路;註冊自審被註解</p><p>騙過;charclass 跨行盲區;平行模式訊息說謊)。裁決不改:postbash 白名單寬前綴</p><p>(與 guard 對稱是刻意的,單邊收緊正是第 6 型)。</p><p><strong>c. 仍未被驗證(不得宣稱「完整工作流已無缺陷」)</strong></p><p>採用專案端的實際行為(所有審查都在母版 repo 內做);dev-flow 自己從未完整走過</p><p>七站 full lane;G1 散發鏈 e2e 的第 3~5 步(push → plugin update → 拋棄式假專案</p><p>實測)待 owner 執行。</p><p><strong>本輪當下守衛計數</strong>(2026-08-17 清空輪收工,活文件不寫死,以當下輸出為準):</p><p>devflow-check 29 組(四組平行)、selftest 378、arch 83(13+70)、gate-twin 143。</p></div></details>
+<footer class="foot gate-verdict" id="gate-verdict"
+  data-slug="b8-gate-twin-review-ui" data-stage="7-review"
+  data-source-sha="52fe54b8c855f67e2cfa3cfdb584ea1c0a54f375">
+  <p class="gv-canon">正本是同目錄 <code>7-review.md</code> 頂欄
+  <code>verdict:</code>。勾選只是瀏覽器草稿。全勾不算 PASS。
+  只有「提交判定」才寫入 Human verdict。sidecar／HTML／localStorage 都不是正本;
+  sidecar 與 md 衝突時 md 勝。</p>
+  <div class="gv-row" role="radiogroup" aria-label="Human verdict">
+    <label><input type="radio" name="gv-verdict" value="PASS"> PASS</label>
+    <label><input type="radio" name="gv-verdict" value="REQUEST_CHANGES"> REQUEST_CHANGES</label>
+    <label><input type="radio" name="gv-verdict" value="HOLD"> HOLD</label>
+  </div>
+  <label class="gv-field">備註 <input id="gv-notes" type="text" maxlength="200"></label>
+  <label class="gv-field">審查者 <input id="gv-reviewer" type="text" maxlength="80"></label>
+  <button type="button" class="btn" id="gv-submit">提交判定</button>
+  <p id="gv-status" class="gv-status"></p>
+</footer>
 </div>
 <script>
 (function(){
@@ -605,5 +851,118 @@ PINNED_PAT 拿掉 Decision  → ❌ 1 項失敗(G1 判定被摺疊)
     state = {}; save(state); boxes.forEach(function(b){ b.checked = false; }); paint();
   });
   paint();
+})();
+
+(function(){
+  var panel = document.getElementById('gate-verdict');
+  if (!panel) return;
+  var statusEl = document.getElementById('gv-status');
+  function status(msg){ if (statusEl) statusEl.textContent = msg; }
+  function checkedIds(){
+    return [].slice.call(document.querySelectorAll('.s-chk')).filter(function(b){
+      return b.checked;
+    }).map(function(b){ return b.dataset.sid; });
+  }
+  function patchMd(text, verdict, notes){
+    if (text.slice(0, 4) !== '---\n') throw new Error('no frontmatter');
+    var end = text.indexOf('\n---\n', 3);
+    if (end < 0) throw new Error('unclosed frontmatter');
+    var fm = text.slice(4, end);
+    var rest = text.slice(end + 5);
+    if (/^verdict:\s*/m.test(fm)) {
+      fm = fm.replace(/^verdict:\s*.*$/m, 'verdict: ' + verdict);
+    } else if (/^status:\s*/m.test(fm)) {
+      fm = fm.replace(/^(status:\s*.*)$/m, '$1\nverdict: ' + verdict);
+    } else {
+      fm = 'verdict: ' + verdict + '\n' + fm;
+    }
+    if (notes) {
+      var line = '- Human verdict note: ' + notes.split('\n')[0];
+      if (/^- Human verdict note:/m.test(rest)) {
+        rest = rest.replace(/^- Human verdict note:.*$/m, line);
+      } else {
+        rest = line + '\n' + rest;
+      }
+    }
+    return '---\n' + fm + '\n---\n' + rest;
+  }
+  function payload(verdict){
+    return {
+      slug: panel.dataset.slug,
+      gate: panel.dataset.stage,
+      verdict: verdict,
+      notes: ((document.getElementById('gv-notes') || {}).value || '').trim(),
+      reviewer: ((document.getElementById('gv-reviewer') || {}).value || '').trim(),
+      checked: checkedIds(),
+      source_sha: panel.dataset.sourceSha || '',
+      sidecar: true
+    };
+  }
+  function postVerdict(body){
+    var urls = ['/devflow-gate/verdict'];
+    if (location.protocol === 'file:') {
+      urls.push('http://127.0.0.1:8765/devflow-gate/verdict');
+    }
+    var i = 0;
+    function next(){
+      if (i >= urls.length) return Promise.reject(new Error('no serve'));
+      var url = urls[i++];
+      return fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      }).then(function(r){
+        if (!r.ok) throw new Error('http ' + r.status);
+        return r.json();
+      }).catch(function(){ return next(); });
+    }
+    return next();
+  }
+  async function writeViaFsa(body){
+    if (!window.showDirectoryPicker) {
+      throw new Error('no File System Access');
+    }
+    var dir = await window.showDirectoryPicker({id: 'devflow-gate-' + body.slug});
+    var mdName = body.gate + '.md';
+    var fh = await dir.getFileHandle(mdName);
+    var file = await fh.getFile();
+    var next = patchMd(await file.text(), body.verdict, body.notes);
+    var w = await fh.createWritable();
+    await w.write(next);
+    await w.close();
+    try {
+      var sh = await dir.getFileHandle(body.gate + '.verdict.json', {create: true});
+      var sw = await sh.createWritable();
+      await sw.write(JSON.stringify({
+        gate: body.gate, verdict: body.verdict, notes: body.notes,
+        checked: body.checked, source_sha: body.source_sha,
+        timestamp: new Date().toISOString(), reviewer: body.reviewer
+      }, null, 2) + '\n');
+      await sw.close();
+    } catch (e) {}
+    return mdName;
+  }
+  var submit = document.getElementById('gv-submit');
+  if (!submit) return;
+  submit.addEventListener('click', function(){
+    var picked = document.querySelector('input[name="gv-verdict"]:checked');
+    if (!picked) {
+      status('請先選 PASS / REQUEST_CHANGES / HOLD。全勾不算 PASS。');
+      return;
+    }
+    var body = payload(picked.value);
+    status('寫入中…');
+    postVerdict(body).then(function(res){
+      status('已寫入 ' + (res.path || (body.gate + '.md')) +
+        ' 的 verdict: ' + body.verdict + '。正本是 md，不是勾選、不是 sidecar。');
+    }).catch(function(){
+      writeViaFsa(body).then(function(name){
+        status('已用 File System Access 寫入 ' + name +
+          ' 的 verdict: ' + body.verdict + '。正本是 md。');
+      }).catch(function(){
+        status('寫不進 md。請跑 python3 scripts/devflow_gate.py serve <專案根> 再開這頁,或用 File System Access 選 feature 資料夾。勾選不是判定。');
+      });
+    });
+  });
 })();
 </script>
