@@ -1,5 +1,5 @@
 #!/bin/bash
-# devflow-integration-regression.sh — Stage 7 Exit Checklist「(條件式)整合回歸」計算工具
+# devflow-integration-regression.sh — 步 2c 整合回歸,Fresh 之前,不是 Exit 程序
 # (散發給採用專案:正本 scripts/、散發副本 docs/dev/tools/;行為與 parity 由
 #  scripts/check-integration-regression-guard.sh 釘住)。規格正本:
 #  notes/dispatch-v380-blockers.md H-1(母版 repo)。
@@ -201,8 +201,9 @@ print("fetch:已執行" if fetched else "fetch:未執行(--no-fetch)")
 
 GUIDANCE = {
     "N_A_NO_INCOMING": "分岔後對方零新 commit,Exit Checklist 可記 n-a",
-    "ALREADY_SYNCED": "你已經同步過了,本次輸出不算數 —— 交集必須在動樹之前算,"
-                      "拿同步後的輸出當證據就是原本那個假綠",
+    "ALREADY_SYNCED": "你已經同步過了,本次輸出不算數 —— 交集必須在動樹之前算。"
+                      "恢復二選一:重綁 Final Fresh(Source SHA ≥7 hex),或寫本項 FAIL;"
+                      "不得只寫「輸出不算數」就結束",
     "SYNC_REQUIRED_NO_OVERLAP": "仍要合併 INTEGRATION_SHA + 跑全套測試"
                                 "(沒有共同戰場不代表不會壞)",
     "SYNC_REQUIRED_WITH_OVERLAP": "合併 INTEGRATION_SHA + 全套測試 + 交集逐檔看過",

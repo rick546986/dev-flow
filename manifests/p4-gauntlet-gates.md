@@ -49,7 +49,7 @@
 4. **單一入口**:用 4-spec Verification Profile `Final fresh entry point` 指名的
    persisted 一條命令跑完整驗證;所有 Evidence 數字出自這一次 run,禁混入舊結果。
 5. **`--require-layer` 逐層**:Profile Required layers 逐層一個 flag 帶入(同
-   7-review 執行清單 2c 的文檔化命令;Required 層 unverified/n-a/缺席 = E7 機械擋)。
+   7-review 執行清單 2d 的文檔化命令;Required 層 unverified/n-a/缺席 = E7 機械擋)。
 6. **Evidence 節驗證**:送審前跑
    `bash docs/dev/tools/devflow-evidence-gauntlet.sh <7-review.md> --source-sha $(git rev-parse HEAD) --review-file --require-layer <Required 層,逐層>`
    全綠;`--review-file` 驗 Standards Axis / Spec Axis / 現象證據 三節在場
