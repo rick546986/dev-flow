@@ -582,13 +582,17 @@ def test_s_4_5_no_second_lab_tooth():
     check = os.path.join(root, "scripts", "devflow-check.sh")
     text = open(check, encoding="utf-8").read()
     lab_tooth = os.path.join(root, "scripts", "check-diagir-lab.sh")
+    replaced = re.search(
+        r"check-diagir-lab|diagir-lab\.sh|Lab 牙|第二套.*牙",
+        text,
+    )
     ok = (
         not os.path.isfile(lab_tooth)
         and "check-vbox-fig" in text
         and "check-gate-twin" in text
         and "check-dir-tree" in text
-        and "取代" not in text
         and "check-diagir-lab" not in text
+        and replaced is None
     )
     expect(ok, "second lab tooth leaked into devflow-check")
 
