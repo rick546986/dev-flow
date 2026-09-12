@@ -485,3 +485,9 @@
 - 落在哪:memory/agentmem/{legacy,setup}.py, scripts/{bootstrap,build}-knowledge-index.py, skills/dev-setup, docs/knowledge, tests
 - 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.23.1
 
+## 2026-09-12 · fix-190-191 · v3.23.2
+- 做了什麼:yamlmini/index accept CJK+space topic keys; gate-twin stops silent truncate for tree ASCII (pre fallback)
+- 為什麼:#190 one bad topic key made whole knowledge index unreadable; #191 G2 twin silently cropped tree ASCII / long [R-n] labels
+- 落在哪:memory/agentmem/yamlmini.py, knowledge_index, build-knowledge-index.py; scripts/build-gate-twin.py + check-gate-twin fig-ascii-191; plugin.json ×3 + runtime_version
+- 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.23.2
+
