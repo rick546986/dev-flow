@@ -1,0 +1,10 @@
+{
+  "family": "behavior-flow",
+  "payload": {
+    "steps": [
+      {"kind": "b", "title": "開工 agent 查路由表", "lines": ["先選家族"]},
+      {"kind": "hl", "title": "IR 驗證", "lines": ["過才准寫"]},
+      {"kind": "b", "title": "原子交付", "lines": ["全新或全舊"]}
+    ]
+  }
+}

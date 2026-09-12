@@ -1,0 +1,8 @@
+{
+  "family": "lifecycle",
+  "payload": {
+    "steps": [
+      {"kind": "parked", "title": "第五格", "lines": ["不准"]}
+    ]
+  }
+}

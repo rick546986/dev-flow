@@ -1,0 +1,45 @@
+{
+  "schema": "diagir-proof-lab-index/v0-proto",
+  "note": "PROTOTYPE thin index. Points at existing fixtures plus one throwaway vbox negative. Teeth stay check-vbox-fig / check-gate-twin / check-dir-tree. Not a second check language.",
+  "cases": [
+    {
+      "family": "lifecycle",
+      "polarity": "pos",
+      "path": "scripts/fixtures/vbox-fig/lifecycle.json",
+      "adapter": "vbox-json"
+    },
+    {
+      "family": "lifecycle",
+      "polarity": "neg",
+      "path": "docs/dev/diagram-ir-gate/proto/samples/vbox-bad-kind.json",
+      "adapter": "ir-json",
+      "expect": "DIAGIR_KIND"
+    },
+    {
+      "family": "behavior-flow",
+      "polarity": "pos",
+      "path": "docs/dev/diagram-ir-gate/proto/samples/behavior-flow-good.json",
+      "adapter": "ir-json"
+    },
+    {
+      "family": "behavior-flow",
+      "polarity": "neg",
+      "path": "scripts/fixtures/gate-twin/fig-tree-ascii/docs/dev/demo/4-spec.md",
+      "adapter": "tree-ascii",
+      "expect": "DIAGIR_FAMILY"
+    },
+    {
+      "family": "dir-tree",
+      "polarity": "pos",
+      "path": "scripts/fixtures/dir-tree/good/purpose.yaml",
+      "adapter": "dir-yaml"
+    },
+    {
+      "family": "dir-tree",
+      "polarity": "neg",
+      "path": "scripts/fixtures/dir-tree/missing-why/purpose.yaml",
+      "adapter": "dir-yaml",
+      "expect": "DIAGIR_WHY"
+    }
+  ]
+}
