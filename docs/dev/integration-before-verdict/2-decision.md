@@ -80,7 +80,7 @@ A 留下已綠的 2c/2d 與模板牙，把力氣放在填檔牙與活教師。B 
 ## Risks & Mitigations
 | 風險 | 對策 |
 |---|---|
-| 填檔牙形狀未釘，Stage 4 之前各寫各的 | Decision 只鎖「有重綁 SHA 或明示 FAIL，否則紅」。欄位／腳本名進 4-spec；OC-1 先收窄「沿用既有檢查家族，不另造第二套整合工具」 |
+| 填檔牙形狀未釘，Stage 4 之前各寫各的 | Stage 3 throwaway 已鎖形狀：宣稱 2c 已勾／送 G3 且記 `ALREADY_SYNCED` → 必須「重綁 + Source SHA ≥7 hex」或「本項 FAIL」，只寫「證據不算數／輸出不算數」紅；`N_A_NO_INCOMING` 與未勾 draft no-fire。欄位名／掛進 `check-stage67` ST 仍進 4-spec（OC-1） |
 | 咬填檔時誤殺 `N_A_NO_INCOMING` 或未跑 2c 的 draft | 牙只在宣稱勾過整合項／送 G3 時發動；n-a 與 draft 不預先紅。細節 4-spec |
 | 掃 example 編號牽動 fixture（`spec-gate-dd-subsection` 抄了 4-spec 的 2c gauntlet 句） | Stage 6 把衍生 fixture 與正本 example 列進同一 T；改編號不同步 = 該 T 紅 |
 | 重編號誘惑（B）在實作時回流 | B 進 Rejected；要重編號必須回本站改 Decision |
@@ -112,9 +112,10 @@ A 留下已綠的 2c/2d 與模板牙，把力氣放在填檔牙與活教師。B 
 ### 內部技術選擇(下層,告知即可)
 - 本 hop 不 bump plugin、不改 `_templates/7-review.md` 正文（散文已對）。
 - `1-discussion.md` 保留 draft／「不送 G1」原文；本檔才改口成 Decision。
-- Q6 錨句候選（4-spec 再釘確切字）：「整合回歸在 Final Fresh 之前」「ALREADY_SYNCED 不得只寫證據不算數」。
-- Stage 3 不預先跳過；觸發判定留給第 3 站（本檔無「跳過 Stage 3」流程層 OC）。
+- Q6 錨句候選（4-spec 再釘確切字）：「整合回歸在 Final Fresh 之前」「ALREADY_SYNCED 不得只寫證據不算數」。Stage 3 補形狀：填檔結論塊要有 `STATUS` + 三 SHA／REF；恢復欄二選一「重綁 Final Fresh。Source SHA: <hex≥7>」或「本項 FAIL」。
+- 第 3 站依 Decision 執行。觸發判定已落檔（命中 6 條，CLI Demo）。owner chat 2026-09-12「過」= Human ACCEPTED；3-prototype status=approved。本檔 Owner Calls 沒有第 3 站省略紀錄。
 - 本 hop 產審頁用 `scripts/build-stage2-html.py --action`，不手包 html-shell，不把審頁塞進 `build-gate-twin.py` STAGES。
+- Stage 3 填檔牙／活教師改口只在 throwaway + `3-prototype.md` 展示；不改 example／manifest／腳本正本、不落地守衛碼。
 
 ## ADR 晉升檢查
 - 難逆轉:否（G3 前可改本檔 Decision／OC；牙尚未落地）
@@ -126,3 +127,5 @@ A 留下已綠的 2c/2d 與模板牙，把力氣放在填檔牙與活教師。B 
 - 決策點清單確認 | 2026-09-12 | owner chat「對」核准 Stage 1 方向（整合在 Fresh／雙軸／Verdict 前、full lane）。本 hop brief 指定 Stage 2 收斂並對帳模板 vs 腳本／守衛／範例／文件。三決策點：對帳策略／ALREADY_SYNCED 牙／活教師時機。
 - Stage 1 改口 | 2026-09-12 | 1-discussion 仍 draft、Q5 `[~]`、Q6／Q7 `[>]`；本檔改口為 Decision。不回改正本討論。
 - G1 | 2026-09-12 | owner 在 chat 說「都過」（G1 / Owner Calls passed）。3 位 reviewer 一致選 #202（已合為 `0afc1fd`）。OC-1～OC-3 隨 Decision 一併視為接受。owner 自審(有記錄)；reviewers: [user]
+- prototype 回寫 | 2026-09-12 | Stage 3 CLI Demo：void-only exit 1；rebind SHA／本項 FAIL／n-a／draft exit 0。活教師現檔 needle=5、改口副本=0。意圖序 2c→2d→Verdict→Exit 文件。形狀回寫本檔 Risk「填檔牙形狀」與內部技術選擇。throwaway 在 `/tmp/ibv-stage3-proto/`，不進 Git。
+- prototype Human ACCEPTED | 2026-09-12 | owner chat「過」。3-prototype `Human verdict: ACCEPTED` + `human:rick @ 2026-09-12`；frontmatter status=approved。不送 G2、不開 4-spec。
