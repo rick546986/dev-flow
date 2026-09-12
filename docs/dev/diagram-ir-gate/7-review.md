@@ -67,7 +67,7 @@ updated: 2026-09-12
 | S-4.2 | `scripts/test-diagir.sh:402-433`(閘三正 + 兩支產器 fixture);**本 hop Fresh 另跑** `check-vbox-fig.sh`／`check-dir-tree.sh`／`check-gate-twin.sh` | ✅ |
 | S-4.3 | `scripts/test-diagir.sh:434-451` 三負 `DIAGIR_KIND`／`DIAGIR_FAMILY`／`DIAGIR_WHY` 且 sha 不變 | ✅ |
 | S-4.4 | `scripts/test-diagir.sh:452-458`;負向 path `scripts/fixtures/vbox-fig/kind-parked.json` ≠ `lifecycle.json` | ✅ |
-| S-4.5 | `scripts/test-diagir.sh:459-478`;無 `scripts/check-diagir-lab.sh`;`scripts/devflow-check.sh:132` 仍跑三支牙、`:137` 只掛 `test-diagir` 不當 Lab 牙 | ✅ |
+| S-4.5 | `scripts/test-diagir.sh:459-478`;無 `scripts/check-diagir-lab.sh`;三支牙分列 `scripts/devflow-check.sh:132`(vbox-fig)／`:135`(dir-tree)／`:236`(gate-twin);`:137` 只掛 `test-diagir` 不當 Lab 牙 | ✅ |
 | S-5.1 | `scripts/test-diagir.sh:481-492`;綠檔禁 mermaid／`<animate` | ✅ |
 | S-5.2 | `scripts/test-diagir.sh:493-522` 三點 `origin/main...HEAD` + untracked;plugin `3.23.3` 空 diff | ✅ |
 | 既有測試套件(回歸) | 4-spec entry point 四層 + `scripts/test-diagir.sh` 25/25 + `scripts/check-file-map.sh` scanned=205 | ✅ |
@@ -129,7 +129,7 @@ checks=25
 | 不得未接閘就宣稱 wave-1 完成(S-2.3) | test-diagir wire 4 CASE;五支產器 `require_write` | pass |
 | 不得黑盒猜 family(S-3.4) | missing-family → `DIAGIR_FAMILY`;無 auto／detect／已選 | pass |
 | 不得只重放 lifecycle.json 當 Lab(S-4.4) | kind-parked.json ≠ lifecycle.json 且有 `DIAGIR_KIND` | pass |
-| 不得另造 Proof Lab 牙語言(S-4.5) | 無 `check-diagir-lab.sh`;三支既有牙仍在 | pass |
+| 不得另造 Proof Lab 牙語言(S-4.5) | 無 `check-diagir-lab.sh`;三支牙在 `devflow-check.sh:132`／`:135`／`:236`;`:137` 是 test-diagir 註冊 | pass |
 | 不得把 mermaid／動畫當預設(S-5.1) | 綠 SVG 四詞零命中且有 `</svg>` | pass |
 | 不得碰 #196、不得 bump plugin(S-5.2) | plugin 3.23.3;三點 diff 空;無 STATUS／IBV／b8 路徑 | pass |
 | 不得收 Mermaid／Node／hosted／WYSIWYG／Q8／Q9 | `scripts/diagir.py:11` 禁 import;route 無第六列 hosted | pass |
@@ -162,7 +162,7 @@ last-good sha256 實測 `8ed83a4d66100b71ed41a651553f453e38997b9f89d52df28bf13ea
 | S-4.2 | 三支牙 exit + 閘 pos | Fresh:`check-vbox-fig` 16/16、`check-dir-tree` 81/81、`check-gate-twin` 222;閘三正 `ok`=true | ✅ |
 | S-4.3 | 三案 exit、`code`、目標 sha | kind-parked→`DIAGIR_KIND`;tree-as-vbox→`DIAGIR_FAMILY`;dir-short-why→`DIAGIR_WHY`;三次 sha 不變 | ✅ |
 | S-4.4 | 索引兩列 path | 負向 `kind-parked.json` ≠ `lifecycle.json` 且有 `DIAGIR_KIND` | ✅ |
-| S-4.5 | `devflow-check.sh` 仍呼叫三支牙 | 無 `check-diagir-lab.sh`;`:132` 三牙、`:137` 只加 `test-diagir` | ✅ |
+| S-4.5 | `devflow-check.sh` 仍呼叫三支牙 | 無 `check-diagir-lab.sh`;`:132` vbox-fig、`:135` dir-tree、`:236` gate-twin;`:137` 只加 `test-diagir` | ✅ |
 | S-5.1 | 目標檔 rg 四詞 + `<svg` | 四詞零命中;`</svg>` 在;靜態 `viewBox="0 0 280 302"` | ✅ |
 | S-5.2 | plugin diff + 變更清單 | version `3.23.3`;`git diff origin/main...HEAD -- .claude-plugin/plugin.json` 空;本 hop 三點名單空(產品已在 tip) | ✅ |
 
@@ -198,13 +198,13 @@ last-good sha256 實測 `8ed83a4d66100b71ed41a651553f453e38997b9f89d52df28bf13ea
 ## Design Integrity Check(Design Boundary Contract 為 `applicable`)
 
 1. **依賴反向被間接繞過**:未命中 —— 閘 `scripts/diagir.py` 擁有判定;產器只 `import diagir` 後 `require_write`。無 event bus／共用 util 讓產器反向驅動碼表。`diagir.py:11` 禁 Archify／mermaid／Node。
-2. **資料所有權被繞過寫入**:未命中 —— 產品覆寫改走 `require_write` → `deliver` → 通過後才 `atomic_write`(`diagir.py:232-250`)。`devflow_atomic.py` 不做驗證。S-2.3 牙咬掉舊 `write_text` 字面。
+2. **資料所有權被繞過寫入**:寫檔路徑未命中 —— 產品覆寫改走 `require_write` → `deliver` → 通過後才 `atomic_write`(`diagir.py:232-250`)。**family id 所有權不是全綠**:契約 Data owner 是 `notes/design/diagir-route.md`;`scripts/diagir.py:30-66` `ROUTE` 是第二份,會漂。見 F-2 🟡。
 3. **相容性破壞包成新增**:未命中 —— 收據六鍵鎖定;多出來的 `detail`／`target_unchanged`／`target_existed` 是附加欄,六鍵仍在(S-1.6)。五 family id 未改名。
 4. **一致性邊界被拆解**:未命中 —— 驗證失敗零寫目標;成功才一次 `os.replace`。S-2.2 未 replace 時目標全舊。
 5. **宣告的 Test seam 未被使用**:部分觀察、不升 🟡 —— 契約 seam 是 `python3 scripts/diagir.py deliver` 與三支既有牙。`test-diagir.sh` S-4.2 對 gate-twin 正例只查 `fig-long-label` 檔在、對 vbox／dir-tree 跑產器 `--fixture`,不是直接呼叫 `check-*.sh`。本 hop Fresh **有**跑三支牙,補上契約觀測。見 F-3／Known Limits ④。
 6. **Known design limit 被實作悄悄「解決」**:未命中 —— ①`kind-parked.json` 已落地(S-4.3 不再靠 Stage 3 同形信封;限制①解除見 Known Limits)。②主機仍不擋跳過閘的舊 `write_text`(S-2.3 仍用 diff 咬)。③現象入口是 `scripts/diagir.py`,不是 proto。
 
-無未經授權 Boundary 變更。無 🔴。無要 park 的 🟡 Boundary。
+無未經授權 Boundary 變更(未改 R/S／所有權宣告／公開 Interface)。無 🔴。F-2 🟡 雙份路由表已 park(Known Limits ⑫),不是「Data Ownership 全綠」。
 
 ## Standards Axis
 
@@ -213,14 +213,15 @@ last-good sha256 實測 `8ed83a4d66100b71ed41a651553f453e38997b9f89d52df28bf13ea
 | F-id | 級 | 位置 | 問題 | 建議 | 影響 S/T |
 |---|---|---|---|---|---|
 | F-1 | 🟢 | `scripts/build-gate-twin.py:2343-2356` | twin 寫檔走 `require_write`,但 payload 是固定兩步 `behavior-flow`,不是頁面正文。閘驗的是罐頭信封,不是 html 內容。#191 樹仍能寫出。 | 接受為接線,不是內容閘。抽驗:`cmp` 正本＝tools 副本。記入 Known Limits ③ | S-2.3／M-2 |
-| F-2 | 🟢 | `scripts/test-diagir.sh:211-226` | S-2.2 是旁路寫 `.tmp`,不是在 `atomic_write` 裡注入崩潰。與 4-spec GIVEN「旁路寫入且不呼叫 `os.replace`」逐字相符。 | 接受。不要把「沒有真的 kill -9」當成紅 | S-2.2 |
+| F-2 | 🟡 | `scripts/diagir.py:30-66` `ROUTE` 對 `notes/design/diagir-route.md:7-12` | 契約 Data owner 是 md 表;Python 另有一份五列。目前字面對得上,但會漂。吸收自 #253 F-2。 | park。S-3.1 咬 md、S-3.5 咬 CLI;兩份都要綠才過。不要現在合併成單一來源(超出本 hop) | S-3.1／S-3.5 |
 | F-3 | 🟢 | `scripts/test-diagir.sh:402-433` | S-4.2 牙內未直接跑三支 `check-*.sh`。 | 本 hop Fresh 已跑 16/16、81/81、222。抽驗用那三個數字,不要只信 CASE 標籤 | S-4.2／T-5 |
 | F-4 | 🟢 | `scripts/diagir.py:74-88` 對 `232-246` | 失敗收據多 `detail`／`target_unchanged`／`target_existed`。六鍵仍在。 | 接受為 additive。勿當新公開契約 | S-1.6 |
 | F-5 | 🟢 | `scripts/check-file-map.sh:114`、`scripts/devflow-check.sh:137`、`scripts/check-py-floor.sh`、`scripts/test-architecture-guards.sh` | 這幾檔不在 5-tasks Files 聯集。#250 為掛 `test-diagir`、地圖 205、`MIN_HEREDOCS` 221。R/S 未改。 | L1。接受。抽驗 scanned=205、無 `check-diagir-lab.sh` | S-4.5／S-5.2 |
 | F-6 | 🟢 | Diff Budget 4-spec 估 ≤10 檔;#250 32 檔 | 超支是停下訊號,多數是 `scripts/fixtures/diagir/*`。 | 不是 L2。接受 | 過程 |
 | F-7 | 🟢 | `scripts/diagir.py:222-228` | CLI 無 `body=` 時 dir-tree／stage1 寫 stub html。產器路徑傳真實 body。 | 接受。G3 現象以產器／lifecycle 為準 | S-2.1 |
+| F-8 | 🟢 | `scripts/test-diagir.sh:211-226` | S-2.2 是旁路寫 `.tmp`,不是在 `atomic_write` 裡注入崩潰。與 4-spec GIVEN「旁路寫入且不呼叫 `os.replace`」逐字相符。原 F-2 位讓給 #253 路由表 🟡。 | 接受。不要把「沒有真的 kill -9」當成紅 | S-2.2 |
 
-Dependency Direction／Boundary Leakage／Data Ownership／Interface Stability:未發現反向依賴、未漏出內部型別、非 owner 未直寫目標、公開入口字面仍是 `python3 scripts/diagir.py deliver ENVELOPE.json --out TARGET`。無 🔴。無未授權 🟡 Boundary。
+Dependency Direction／Boundary Leakage／Interface Stability:未發現反向依賴、未漏出內部型別、公開入口字面仍是 `python3 scripts/diagir.py deliver ENVELOPE.json --out TARGET`。無 🔴。**Data Ownership 不是全綠**:family id 正本是 `notes/design/diagir-route.md`;`diagir.py:30-66` `ROUTE` 是複本(F-2 🟡)。這不是改所有權、也不是未授權 Boundary 變更,是複本會漂的風險,已 park。
 
 ## Spec Axis
 
@@ -232,7 +233,7 @@ Dependency Direction／Boundary Leakage／Data Ownership／Interface Stability:�
 | R-4 Proof Lab 薄索引 | 符合 | S-4.1 六列;S-4.2 Fresh 三牙綠 + 閘三正;S-4.3 三負不蓋檔;S-4.4 負向 ≠ lifecycle;S-4.5 無第二套 Lab 牙 |
 | R-5 預設靜態直式 SVG 且不收 NON-goal | 符合 | S-5.1 四詞零命中;S-5.2 plugin 3.23.3、三點空、無 #196／IBV／STATUS |
 | M-1～M-3 | 符合 | dir-tree／gate-twin／stage1 產品覆寫改 `require_write` |
-| Design Boundary | 符合 | 見 Design Integrity Check;無 L2、無未授權變更 |
+| Design Boundary | 符合(F-2 🟡 已 park) | 寫檔所有權未繞過。family id Data owner 仍是 md 表;Python `ROUTE` 複本見 F-2／Known Limits ⑫。無 L2、無未授權改所有權 |
 | 6-notes Deviations | 如實 L1 | D-1 三點 diff(S-5.2);D-2 S-4.5 不禁「取代」漢字;D-3／D-4 母版記帳。無 L2。見附錄 A4 |
 
 ## 變更架構圖
@@ -243,7 +244,8 @@ Dependency Direction／Boundary Leakage／Data Ownership／Interface Stability:�
 [scripts/diagir.py]  validate + deliver + route + require_write
     |-- DIAGIR_* / 六鍵收據
     +--> [scripts/devflow_atomic.py]  tmp + os.replace
-    +--> [notes/design/diagir-route.md]  五列查找
+    +--> [notes/design/diagir-route.md]  五列查找(Data owner)
+    +--> [diagir.py ROUTE 30-66]  複本,F-2 🟡 會漂
     +--> [scripts/fixtures/diagir-lab.yaml]  六列索引
     +--> [scripts/fixtures/vbox-fig/kind-parked.json]
     +--> [scripts/fixtures/diagir/*.json] + last-good.svg
@@ -257,7 +259,11 @@ Dependency Direction／Boundary Leakage／Data Ownership／Interface Stability:�
 [scripts/build-vbox-fig.py]  仍只寫 stdout
 
 [scripts/test-diagir.sh]  六組 25 checks
-[scripts/devflow-check.sh]  methodology 仍跑三支舊牙 + test-diagir
+[scripts/devflow-check.sh]
+    :132 check-vbox-fig
+    :135 check-dir-tree
+    :137 test-diagir(註冊,不是 Lab 牙)
+    :236 check-gate-twin(architecture 組,不是 :132 一包三支)
 
 本 hop(docs-only,不是產品碼):
 [7-review.md]   Source SHA=3b22f01 (#250 tip)
@@ -296,11 +302,11 @@ Dependency Direction／Boundary Leakage／Data Ownership／Interface Stability:�
 | 既有全綠 | entry point 四層 + test-diagir 25/25 | 6/6;16/16;81/81;222;25/25 |
 | 現象證據逐 S 相符 | 21/21 | 現象證據表;附錄 A3 |
 | Evidence 契約 | Fresh 綁產品 HEAD `3b22f01`;`--review-file` 見附錄 A5 | Source SHA=`3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4`(不追本 docs commit) |
-| 無 🔴 | 無 | Standards／Spec;F-1～F-7 皆 🟢 |
+| 無 🔴 | 無。F-2 為 🟡 park | Standards／Spec;Data Ownership 不是全綠 |
 | 2c 在 Fresh 之前 | 是 | 兩次 `N_A_NO_INCOMING`,座標相同,未合併 |
 | Human G3 | **未寫入** | 本檔禁止發明 PASS |
 
-建議 Human:Verdict 門檻表 → 抽驗 S-3.3 `test-diagir.sh:310` → Fresh 三牙數字 → Known Limits ②／③ → 再決定。
+建議 Human:Verdict 門檻表 → 抽驗 S-3.3 `test-diagir.sh:310` → Fresh 三牙數字 → F-2 🟡／Known Limits ⑫ → 再決定。不要因為「無 🔴」就把 Data Ownership 當成全綠。
 
 ## Known Limits
 
@@ -317,10 +323,11 @@ Dependency Direction／Boundary Leakage／Data Ownership／Interface Stability:�
 | 9 | 本檔 `verdict: PRE-REVIEW`;全勾也不算 shipped | 中 | 留給 Human G3。owner=rick |
 | 10 | #250 改了 file-map／py-floor／architecture-guards／devflow-check／guide-dev-flow.html,超出 5-tasks Files 聯集 | 低 | L1 已記 F-5。作者 D-3／D-4 如實。不要當 L2 |
 | 11 | Stage 6 T Review Log 是 implementer-C self-check,不是獨立 T reviewer | 中 | 本 hop 用獨立 Fresh／現象表補四眼的一半。Human G3 仍要另眼 |
+| 12 | 路由表雙份:Data owner=`notes/design/diagir-route.md`;`scripts/diagir.py:30-66` `ROUTE` 是複本(F-2 🟡;吸收 #253) | 低 | park。兩份目前對得上。S-3.1 咬 md、S-3.5 咬 CLI。不要本 hop 合併單一來源。owner=方法論;追蹤=本表 + F-2 |
 
 ## Exit Checklist(全勾才算 shipped)
 
-- [x] **Design Boundary finding 全數處置**(applicable):無未授權 Boundary 變更。F-1～F-7 皆 🟢 且未改 R/S／所有權／公開 Interface。無須 L2。Known Limits ①／③ 已落本節
+- [x] **Design Boundary finding 全數處置**(applicable):無未授權 Boundary 變更。F-2 🟡 為複本風險,已 park Known Limits ⑫(Owner 路徑 ③),未改 R/S／所有權宣告／公開 Interface。無須 L2。不得把 Data Ownership 讀成全綠
 - [ ] Quiz(**不可逆改動必做**;其餘 full lane 選配,fast 免):公開信封 + last-good。題在附錄 A6,留給 Human G3
 - [x] (條件式)整合回歸已在 Final Fresh **之前**完成:步 2c 兩次 `N_A_NO_INCOMING`(三 SHA 與 ref 在「2c 整合結論」)。Source SHA 綁產品樹 `3b22f01`。Verdict 之後不得再改程式碼
 - [ ] PR → develop(feature branch,禁直上 master;本專案整合分支是 `main`)
@@ -338,6 +345,7 @@ Dependency Direction／Boundary Leakage／Data Ownership／Interface Stability:�
 2. **2c 該用哪一個 FORK?** 本審查分支從 #250 tip `3b22f01` 切開,兩次腳本都是 `N_A_NO_INCOMING`。6-notes 步 0 錨是 `25997871a86fce87a1b1f0658512d7f96e07dea3`(#244 Stage 5 tip,Stage 6 開工)。產品已合進 main;拿那個錨再跑會 `ALREADY_SYNCED`,不得當「沒有共同戰場」的證據。
 3. **S-4.2 牙夠不夠?** CASE 本身偏弱(F-3)。本 hop 用三支既有牙 Fresh 補上。抽驗請看 16/16、81/81、222。
 4. **twin 罐頭 payload 算不算繞閘?** 寫檔路徑經閘(S-2.3 要的)。內容不經閘(Known Limits ③)。不升 🟡 Boundary。
+5. **#253 F-2 路由表雙份:** 吸收為本檔 F-2 🟡 + Known Limits ⑫。Data Ownership 不是全綠。
 
 ### A2　抽驗列(決定論)
 
@@ -390,7 +398,7 @@ S-5.2 plugin 3.23.3; origin/main...HEAD plugin diff empty
 | T-1..T-6 verdict PASS 且早於 commit | 作者自審。本 hop 不當四眼。獨立證據是本檔 Fresh／現象表 |
 | FORK=`2599787` | 屬實(Stage 6 開工)。本 hop 2c 用審查分支叉點 `3b22f01`(見 A1) |
 
-作者矩陣沒有多報或漏報 S。沒有「看起來 L1、其實動 R/S」的 Deviation。
+作者矩陣沒有多報或漏報 S。沒有「看起來 L1、其實動 R/S」的 Deviation。#253 F-2(路由表雙份)本 hop 原先漏列;must-fix 已吸收為 F-2 🟡,舊「S-2.2 旁路」改 F-8 🟢。
 
 ### A5　Fresh／gauntlet 指令
 
