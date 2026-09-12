@@ -1,8 +1,9 @@
 """Short knowledge index routing for `dev-memory.py ask` (#155 knife-2).
 
-正本:`docs/knowledge/index.yaml`(Pilot-2 產生)。ask 在 CURRENT 或 topic-like
-問句時**先**查這份短索引:topic → active_adr / active_spec / durable 指標 →
-只回那些 path,禁止預載全部 `docs/adr/` 或全量 specs。
+正本:`docs/knowledge/index.yaml`(Pilot-2 產生)。ask 在 CURRENT、短 ASCII
+topic-like、或問句**含**既有 topic key(含 CJK／空白,#194)時**先**查這份短
+索引:topic → active_adr / active_spec / durable 指標 → 只回那些 path,禁止
+預載全部 `docs/adr/` 或全量 specs。多 key 命中回聯集,不自動擇一。
 
 缺檔／不可讀 → 優雅降級(回 missing_index / unreadable,呼叫端繼續走既有
 FTS/embedding 路徑),不炸 CLI。
@@ -34,8 +35,12 @@ def index_abspath(repo_root):
     return os.path.join(repo_root, INDEX_REL)
 
 
-def should_consult(plan_dict, query=None):
-    """CURRENT 意圖,或問句看起來像在點名一個 topic(稍後再對表)。"""
+def should_consult(plan_dict, query=None, topics=None):
+    """CURRENT 意圖、短 ASCII/slug 題、或問句**含**既有 topic key 時才查索引。
+
+    `topics` 可選:已載入的 index topic map。長句／純 CJK 問句若不含 key,
+    維持 False → route 回 skipped(走 FTS)。不靠 NL 發明 topic(#194)。
+    """
     if not plan_dict:
         return True
     if plan_dict.get("primary") == "CURRENT":
@@ -48,7 +53,12 @@ def should_consult(plan_dict, query=None):
     if re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+){0,8}", compact):
         return True
     words = [w for w in re.split(r"[^a-z0-9]+", content.lower()) if w]
-    return 1 <= len(words) <= 6
+    if 1 <= len(words) <= 6:
+        return True
+    # #194: containment of real index keys (CJK / spaces), not invented topics
+    if topics:
+        return bool(match_topics(text, topics))
+    return False
 
 
 def load(repo_root):
@@ -153,20 +163,28 @@ def resolve_topic_paths(repo_root, topic, entry):
 
 
 def route(repo_root, query, plan_dict=None):
-    """ask 用的短索引路由。永不拋例外到 CLI。"""
+    """ask 用的短索引路由。永不拋例外到 CLI。
+
+    決策順序:短 ASCII/CURRENT 先 cheap-pass;否則載入 index keys,問句**含**
+    既有 topic key 才 consult(#194)。多 key 命中 → matched_topics 全回、paths
+    聯集,不自動擇一。
+    """
     plan_dict = plan_dict or {"query": query, "primary": None}
-    if not should_consult(plan_dict, query=query):
-        return _payload(SKIPPED, note="not CURRENT / not topic-like")
+    topic_like = should_consult(plan_dict, query=query)
 
     status, data, _abs_path = load(repo_root)
     rel_index = INDEX_REL.replace("\\", "/")
     if status == MISSING_INDEX:
+        if not topic_like:
+            return _payload(SKIPPED, note="not CURRENT / not topic-like")
         return _payload(
             MISSING_INDEX,
             index_path=rel_index,
             note="docs/knowledge/index.yaml missing — degraded to store retrieval",
         )
     if status == UNREADABLE:
+        if not topic_like:
+            return _payload(SKIPPED, note="not CURRENT / not topic-like")
         return _payload(
             UNREADABLE,
             index_path=rel_index,
@@ -174,6 +192,11 @@ def route(repo_root, query, plan_dict=None):
         )
 
     topics = data.get("topics") or {}
+    # Long / CJK NL: consult only when a real topic key is a substring (#194)
+    if not topic_like and not should_consult(plan_dict, query=query,
+                                            topics=topics):
+        return _payload(SKIPPED, note="not CURRENT / not topic-like")
+
     matched = match_topics(query, topics)
     if not matched:
         return _payload(
@@ -190,13 +213,18 @@ def route(repo_root, query, plan_dict=None):
         for item in (entry.get("conflicts") or []) if isinstance(entry, dict) else []:
             conflicts.append("{0}:{1}".format(topic, item))
 
-    note = None
+    note_parts = []
+    if len(matched) > 1:
+        note_parts.append(
+            "multi-topic match ({0}); returning union of pointers, "
+            "no auto-pick".format(", ".join(matched)))
     if conflicts:
-        note = "index conflicts (queue only, not auto-resolved): " + ", ".join(
-            conflicts)
+        note_parts.append(
+            "index conflicts (queue only, not auto-resolved): " + ", ".join(
+                conflicts))
     if not paths:
-        note = (note + "; " if note else "") + (
-            "topic matched but no resolvable pointer files")
+        note_parts.append("topic matched but no resolvable pointer files")
+    note = "; ".join(note_parts) if note_parts else None
 
     return _payload(
         HIT,
