@@ -1,7 +1,7 @@
 ---
 feature: integration-before-verdict
 stage: 3-prototype
-status: draft
+status: approved
 owner: rick
 updated: 2026-09-12
 ---
@@ -11,7 +11,7 @@ updated: 2026-09-12
 > Stage 3 依 2-decision「不預先跳過」**執行、不跳過**。Decision A + AS-1 + T-now 已是核准 Pattern → 1 個可操作 CLI Demo，不湊 UI Variant。
 > tip（#202／#207）模板／指南／節點鏈**已經**是 2c 整合 → 2d Fresh。本站不重編號、不重寫整合腳本演算法、不落地 Stage 6 守衛碼。
 > 正式牙延伸（`check-stage67` ST 射程到填好的 7-review）**不**在本站寫進 `scripts/`；本站只用 throwaway 證明結論形狀。
-> Human verdict 由參與 Demo 的人類親填；Agent 禁代填 ACCEPTED／attestation。不送 G2／G3、不發版、不碰 `#196`／diagram-ir-gate。
+> Human verdict 由參與 Demo 的人類親填。owner chat 2026-09-12「過」= ACCEPTED，已落 attestation。不送 G2／G3、不開 4-spec、不發版、不碰 `#196`／diagram-ir-gate。
 
 ## Stage 3 觸發判定(條件式必要)
 <!-- 對照 1-discussion Real-world Context -->
@@ -153,21 +153,21 @@ Exit 只准文件
 - 回寫對象:2-decision Risk「填檔牙形狀未釘」＋內部技術選擇＋確認紀錄「prototype 回寫」。
 
 ## User Demo Feedback
-<!-- Human verdict 由參與 Demo 的人類親填；Agent 禁代填 ACCEPTED／attestation -->
-- Demo date: 2026-09-12（agent 已代跑 CLI；人類尚未親走 Demo）
-- Participants: CloudAgent implementer-A（代跑）；人類 reviewer 未到
+<!-- owner chat 2026-09-12「過」= Human ACCEPTED；attestation 按該裁決落檔 -->
+- Demo date: 2026-09-12（agent 代跑 CLI；owner chat 同日「過」）
+- Participants: CloudAgent implementer-A（代跑）；owner rick（chat「過」）
 - Variant reviewed: CLI-only（無 UI Variant；選定 = AS-1 重綁或 FAIL）
-- Accepted interaction:
+- Accepted interaction: AS-1 填檔牙（重綁 Source SHA 或本項 FAIL）；Stage 7 序 2c→2d→Verdict→Exit 文件
 - Rejected interaction:
 - Confusions observed:
 - Missing real-world steps:
 - Permission corrections:
 - External handoffs:
 - Required changes:
-- Human verdict: NOT_REVIEWED
-- Verdict attestation:
+- Human verdict: ACCEPTED
+- Verdict attestation: human:rick @ 2026-09-12
 
 ## Verdict
 - 回寫 2-decision：AS-1 填檔牙形狀經 throwaway CLI 確認（void-only 紅；重綁 SHA／本項 FAIL 綠；n-a 與 draft no-fire）。活教師改口形狀已展示，正本未改。Stage 7 意圖序維持 2c 整合 → 2d Fresh → 雙軸 → Verdict → Exit 文件。**第 3 站已行使**；CLI Demo 足夠，無省略宣告。
-- 互動判定仍待人類親填（本檔 status 留 draft；Agent 不代填通過，不送 G2）。
+- owner chat 2026-09-12「過」→ Human 判定 ACCEPTED；frontmatter status=approved。不送 G2、不開 4-spec。
 - throwaway 腳本處置:留在 session `/tmp/ibv-stage3-proto/`，**不進 Git**；形狀已錄於 Question／Method／Result。正式碼 Stage 6 再把射程伸進既有檢查家族。

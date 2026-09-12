@@ -113,7 +113,7 @@ A 留下已綠的 2c/2d 與模板牙，把力氣放在填檔牙與活教師。B 
 - 本 hop 不 bump plugin、不改 `_templates/7-review.md` 正文（散文已對）。
 - `1-discussion.md` 保留 draft／「不送 G1」原文；本檔才改口成 Decision。
 - Q6 錨句候選（4-spec 再釘確切字）：「整合回歸在 Final Fresh 之前」「ALREADY_SYNCED 不得只寫證據不算數」。Stage 3 補形狀：填檔結論塊要有 `STATUS` + 三 SHA／REF；恢復欄二選一「重綁 Final Fresh。Source SHA: <hex≥7>」或「本項 FAIL」。
-- 第 3 站依 Decision 執行。觸發判定已落檔（命中 6 條，CLI Demo，人類判定待填）。本檔 Owner Calls 沒有第 3 站省略紀錄。
+- 第 3 站依 Decision 執行。觸發判定已落檔（命中 6 條，CLI Demo）。owner chat 2026-09-12「過」= Human ACCEPTED；3-prototype status=approved。本檔 Owner Calls 沒有第 3 站省略紀錄。
 - 本 hop 產審頁用 `scripts/build-stage2-html.py --action`，不手包 html-shell，不把審頁塞進 `build-gate-twin.py` STAGES。
 - Stage 3 填檔牙／活教師改口只在 throwaway + `3-prototype.md` 展示；不改 example／manifest／腳本正本、不落地守衛碼。
 
@@ -127,4 +127,5 @@ A 留下已綠的 2c/2d 與模板牙，把力氣放在填檔牙與活教師。B 
 - 決策點清單確認 | 2026-09-12 | owner chat「對」核准 Stage 1 方向（整合在 Fresh／雙軸／Verdict 前、full lane）。本 hop brief 指定 Stage 2 收斂並對帳模板 vs 腳本／守衛／範例／文件。三決策點：對帳策略／ALREADY_SYNCED 牙／活教師時機。
 - Stage 1 改口 | 2026-09-12 | 1-discussion 仍 draft、Q5 `[~]`、Q6／Q7 `[>]`；本檔改口為 Decision。不回改正本討論。
 - G1 | 2026-09-12 | owner 在 chat 說「都過」（G1 / Owner Calls passed）。3 位 reviewer 一致選 #202（已合為 `0afc1fd`）。OC-1～OC-3 隨 Decision 一併視為接受。owner 自審(有記錄)；reviewers: [user]
-- prototype 回寫 | 2026-09-12 | Stage 3 CLI Demo：void-only exit 1；rebind SHA／本項 FAIL／n-a／draft exit 0。活教師現檔 needle=5、改口副本=0。意圖序 2c→2d→Verdict→Exit 文件。形狀回寫本檔 Risk「填檔牙形狀」與內部技術選擇。Human verdict 未填；不送 G2。throwaway 在 `/tmp/ibv-stage3-proto/`，不進 Git。
+- prototype 回寫 | 2026-09-12 | Stage 3 CLI Demo：void-only exit 1；rebind SHA／本項 FAIL／n-a／draft exit 0。活教師現檔 needle=5、改口副本=0。意圖序 2c→2d→Verdict→Exit 文件。形狀回寫本檔 Risk「填檔牙形狀」與內部技術選擇。throwaway 在 `/tmp/ibv-stage3-proto/`，不進 Git。
+- prototype Human ACCEPTED | 2026-09-12 | owner chat「過」。3-prototype `Human verdict: ACCEPTED` + `human:rick @ 2026-09-12`；frontmatter status=approved。不送 G2、不開 4-spec。
