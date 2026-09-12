@@ -321,13 +321,152 @@ if rev:
          "ST:Exit Checklist 仍在 Verdict 之後合併 INTEGRATION_SHA"
          "(程式碼動作必須停在 Final Fresh 之前)")
 
+# ── ST-filled:填好的 7-review 不得只寫作廢就勾 ALREADY_SYNCED ─────────────
+# 射程從模板字串延到填檔。牙只在「正文有 ALREADY_SYNCED 且已宣稱」時發動
+# (2c 項 [x]／結論:STATUS=ALREADY_SYNCED／verdict: PASS／status: approved)。
+# 恢復二選一:Source SHA: + ≥7 hex,或字面「本項 FAIL」。其餘 void-only 紅。
+# 五份對照在 scripts/fixtures/stage67-filled-tooth/;seed 副本常沒帶該目錄,
+# 故內嵌同文 fallback,讓 S67-0 檢查數仍等於地板(不是「目錄不在就少跑」)。
+_FILLED_NAMES = (
+    "void-only.md",
+    "rebind-sha.md",
+    "item-fail.md",
+    "na-incoming.md",
+    "draft-unclaimed.md",
+)
+_FILLED_EMBEDDED = {
+    "void-only.md": (
+        "---\nfeature: stage67-filled-tooth-void-only\nstage: 7-review\n"
+        "status: approved\nverdict: PASS\n---\n\n# 7. 驗證\n\n"
+        "- [x] 2c 整合回歸\n\n## 2c 整合結論\n- STATUS: ALREADY_SYNCED\n"
+        "- FORK: aaa1111\n- HEAD: bbb2222\n- INTEGRATION: ccc3333\n"
+        "- REF: origin/main\n- 恢復: 證據不算數；輸出不算數\n"
+    ),
+    "rebind-sha.md": (
+        "---\nfeature: stage67-filled-tooth-rebind-sha\nstage: 7-review\n"
+        "status: approved\nverdict: PASS\n---\n\n# 7. 驗證\n\n"
+        "- [x] 2c 整合回歸\n\n## 2c 整合結論\n- STATUS: ALREADY_SYNCED\n"
+        "- FORK: aaa1111\n- HEAD: bbb2222\n- INTEGRATION: ccc3333\n"
+        "- REF: origin/main\n- 恢復: 重綁 Final Fresh。Source SHA: def4567890abc\n"
+    ),
+    "item-fail.md": (
+        "---\nfeature: stage67-filled-tooth-item-fail\nstage: 7-review\n"
+        "status: approved\nverdict: PASS\n---\n\n# 7. 驗證\n\n"
+        "- [x] 2c 整合回歸\n\n## 2c 整合結論\n- STATUS: ALREADY_SYNCED\n"
+        "- FORK: aaa1111\n- HEAD: bbb2222\n- INTEGRATION: ccc3333\n"
+        "- REF: origin/main\n- 恢復: 本項 FAIL\n"
+    ),
+    "na-incoming.md": (
+        "---\nfeature: stage67-filled-tooth-na-incoming\nstage: 7-review\n"
+        "status: approved\nverdict: PASS\n---\n\n# 7. 驗證\n\n"
+        "- [x] 2c 整合回歸\n\n## 2c 整合結論\n- STATUS: N_A_NO_INCOMING\n"
+        "- FORK: aaa1111\n- HEAD: bbb2222\n- INTEGRATION: ccc3333\n"
+        "- REF: origin/main\n"
+    ),
+    "draft-unclaimed.md": (
+        "---\nfeature: stage67-filled-tooth-draft-unclaimed\nstage: 7-review\n"
+        "status: draft\nverdict:\n---\n\n# 7. 驗證\n\n"
+        "- [ ] 2c 整合回歸\n\n正文可出現 ALREADY_SYNCED 或「證據不算數」，"
+        "但 2c 未勾、verdict 空白、\n也沒有結論列把 STATUS 寫成已同步。\n"
+    ),
+}
+
+
+def _filled_claimed(body):
+    if re.search(r"(?m)^status:\s*approved\b", body):
+        return True
+    if re.search(r"(?m)^verdict:\s*PASS\b", body):
+        return True
+    if re.search(r"(?m)^[ \t>]*結論:STATUS=ALREADY_SYNCED\b", body):
+        return True
+    if re.search(r"(?im)^[-*]\s*\[x\].{0,80}2c", body):
+        return True
+    if re.search(r"(?im)^[-*]\s*\[x\].{0,80}整合回歸", body):
+        return True
+    return False
+
+
+def classify_filled(body):
+    """回 (ok, reason)。ok=False 僅 void-only 已宣稱填檔。"""
+    has_as = "ALREADY_SYNCED" in body
+    claimed = _filled_claimed(body)
+    if not (has_as and claimed):
+        if "N_A_NO_INCOMING" in body and not has_as:
+            return True, "no-fire:N_A_NO_INCOMING"
+        return True, "no-fire:draft"
+    sha_m = re.search(r"Source SHA:\s*([0-9a-fA-F]{7,})", body)
+    if sha_m:
+        return True, "pass:rebind-sha:" + sha_m.group(1)
+    if "本項 FAIL" in body:
+        return True, "pass:item-FAIL"
+    return False, "fail:void-only"
+
+
+def _load_filled(name):
+    p = os.path.join(root, "scripts/fixtures/stage67-filled-tooth", name)
+    if os.path.isfile(p):
+        with open(p, encoding="utf-8") as fh:
+            return fh.read()
+    return _FILLED_EMBEDDED[name]
+
+
+_filled_dir = os.path.join(root, "scripts/fixtures/stage67-filled-tooth")
+need(
+    (not os.path.isdir(_filled_dir))
+    or all(
+        os.path.isfile(os.path.join(_filled_dir, n)) for n in _FILLED_NAMES
+    ),
+    "ST-filled: fixtures/stage67-filled-tooth 缺對照檔"
+    f"(期望 {_FILLED_NAMES})",
+)
+
+_FILLED_EXPECT = {
+    "void-only.md": (False, "void-only"),
+    "rebind-sha.md": (True, "def4567890abc"),
+    "item-fail.md": (True, "item-FAIL"),
+    "na-incoming.md": (True, "N_A_NO_INCOMING"),
+    "draft-unclaimed.md": (True, "draft"),
+}
+for _fn in _FILLED_NAMES:
+    _ok, _reason = classify_filled(_load_filled(_fn))
+    # 穩定 token:T-1 Verify 用 grep -c 'ST-filled:' ≥ 5;void-only 紅路徑也帶同一前綴。
+    print(f"ST-filled: {_fn} {_reason}", file=sys.stderr)
+    _exp_ok, _token = _FILLED_EXPECT[_fn]
+    need(
+        _ok is _exp_ok and _token in _reason,
+        f"ST-filled: {_fn} 期望 ok={_exp_ok} 含 {_token},實得 ok={_ok} {_reason}",
+    )
+
+_live_void = []
+for _rel_root in ("docs/dev", "example"):
+    _base = os.path.join(root, _rel_root)
+    if not os.path.isdir(_base):
+        continue
+    for _walk, _dirs, _files in os.walk(_base):
+        if "7-review.md" not in _files:
+            continue
+        _rel = os.path.relpath(os.path.join(_walk, "7-review.md"), root)
+        if _rel.startswith("scripts/fixtures/"):
+            continue
+        _body = read(_rel)
+        if _body is None:
+            continue
+        _lok, _lreason = classify_filled(_body)
+        if not _lok:
+            _live_void.append(f"{_rel} ({_lreason})")
+need(
+    not _live_void,
+    "ST-filled: 已宣稱 void-only 填檔:" + "; ".join(_live_void),
+)
+
 # ── 檢查數地板:防止有人把上面整段刪成空迴圈仍然 exit 0 ──────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」。
 # 負向測試 S67-6 實測:原本填 16(A1 那組恰好 8 項,24-8=16)→ 刪掉整組 A1 之後
 # 剛好等於地板,守衛照樣 exit 0。地板留餘裕 = 地板沒有牙齒。
 # 新增檢查時把這個數字一起往上調(同 test-architecture-guards.sh 的 EXPECTED_* 體例)。
 # 2026-08-16 補 TF 群組(測試檔路徑必須列進 Files):+2(模板 needle 1 + 範例承接 1)。
-MIN_CHECKS = 60
+# 2026-09-12 補 ST-filled 填檔牙:+7(目錄對帳 1 + 五份對照 5 + 活路徑掃 1)。
+MIN_CHECKS = 67
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
@@ -341,5 +480,5 @@ if fails:
 print(f"✅ check-stage67-enforcement: Stage 6/7 強制條款齊({checks} 項檢查全過)")
 print("   A1 守衛武裝自檢 / A3 Verify 案例數斷言 / A4 gauntlet 路徑 / A5 觀測可執行性 / "
       "VF Verify 單行純指令 / DOC doctor 必跑 / TF 測試檔路徑必列 Files / "
-      "ST 出貨樹=審過的樹")
+      "ST 出貨樹=審過的樹 / ST-filled ALREADY_SYNCED 填檔牙")
 PY
