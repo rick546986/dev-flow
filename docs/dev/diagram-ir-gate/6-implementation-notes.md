@@ -206,6 +206,12 @@ Run:
 - 理由:既有牙／`devflow-check` 必須維持綠；不動 R/S。
 - 影響:T-1..T-6 落地 / 無 R/S 變更
 
+### D-2(L1)
+- 現象:CI `devflow-check.sh all` 註冊自審紅：`test-diagir.sh` 存在但沒被任何 group 的 `run` 行執行。
+- 保守選擇:掛進 `group_methodology`，緊挨 `check-vbox-fig`／`check-dir-tree`。加測、不取代那三支，也不新增 `check-diagir-lab.sh`。
+- 理由:聚合器自審要的是「新牙真的會跑」；S-4.5 禁的是第二套 Lab 牙語言。
+- 影響:T-5／T-6 回歸入口 / 無 R/S 變更
+
 ## Files Changed
 
 對照 4-spec Diff Budget（閘／原子寫／接線／路由／Lab）+ D-1 檔案地圖記帳 + 本檔。
