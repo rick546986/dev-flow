@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>diagram-ir-gate · 7-review</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  -webkit-font-smoothing:antialiased}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;font-variant-numeric:tabular-nums}
+code{background:var(--sunk);border-radius:3px;padding:1px 5px;color:var(--ink-2)}
+a{color:var(--accent)}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+
+/* ---- 頁首 ---- */
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem;max-width:62ch}
+
+/* ---- 動線格 ---- */
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:20px 0 4px}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:11px 13px;box-shadow:var(--shadow)}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;display:block;margin-bottom:5px}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+.cell .n{font-size:.78rem;color:var(--ink-2);display:block;margin-top:3px}
+.cell.is-bad .v{color:var(--bad)} .cell.is-ok .v{color:var(--ok)}
+.cell.is-warn .v{color:var(--warn)} .cell.is-accent .v{color:var(--accent)}
+
+/* ---- sticky 進度 ---- */
+.progress{position:sticky;top:0;z-index:20;background:var(--ground);
+  border-bottom:1px solid var(--rule);padding:11px 0;margin:22px 0 0}
+.progress-in{max-width:900px;margin:0 auto;padding:0 20px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.bar{flex:1 1 200px;height:7px;background:var(--sunk);border-radius:99px;overflow:hidden;
+  min-width:140px}
+.bar i{display:block;height:100%;width:0;background:var(--accent);
+  transition:width .25s ease;border-radius:99px}
+.count{font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.count b{color:var(--accent)}
+.btn{border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);
+  border-radius:7px;padding:5px 11px;font-size:.82rem;cursor:pointer;font-family:inherit}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---- 提示框 ---- */
+.criterion{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 26%,transparent);
+  border-radius:10px;padding:15px 17px;margin:26px 0}
+.criterion h2{margin:0 0 7px;font-size:.95rem;letter-spacing:.02em;border:0;padding:0}
+.criterion p{margin:0;color:var(--ink-2);font-size:.9rem}
+.criterion .ex{margin-top:9px;padding-top:9px;
+  border-top:1px dashed color-mix(in srgb,var(--accent) 30%,transparent);font-size:.85rem}
+
+/* ---- 區塊卡（R / T 共用）---- */
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;
+  border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
+.r-block.danger .r-head{border-left-color:var(--bad)}
+.r-id{font-weight:700;font-size:.95rem;letter-spacing:.02em;white-space:nowrap;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.r-block.danger .r-id{color:var(--bad)}
+.r-block.core .r-id{color:var(--accent)}
+.r-name{font-weight:650}
+.r-risk{display:block;font-size:.83rem;color:var(--ink-2);margin-top:3px}
+.r-rule{padding:12px 18px;background:var(--sunk);font-size:.9rem;color:var(--ink-2);
+  border-bottom:1px solid var(--rule-2)}
+.r-rule b{color:var(--ink)}
+
+/* ---- 圖 ---- */
+/* 直式現況圖／方案架構圖:外層撐滿欄、圖本身有限寬,水平置中。
+   禁 svg/pre width:100% —— 畫布撐滿時狹長圖會貼左。
+   max-width 360px 對齊鎖定手樣(subsidy 2-decision.html)。 */
+.fig{margin:26px 0;padding:17px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}
+.fig svg,.fig pre{display:block;width:auto;max-width:360px;margin:0 auto;height:auto}
+.fig pre.fig-ascii-fallback{max-width:100%;width:100%;box-sizing:border-box;
+  overflow-x:auto;text-align:left;white-space:pre;background:var(--sunk);
+  padding:11px;border-radius:7px;font-size:.82rem;line-height:1.5;margin-top:8px}
+.fig .fig-warn{color:var(--warn);text-align:left;margin:0 0 4px;max-width:100%}
+.pinned pre{display:block;width:max-content;max-width:100%;margin-left:auto;margin-right:auto}
+.cap{color:var(--ink-3);font-size:.82rem;line-height:1.6;margin-top:11px;text-align:center}
+svg .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.4}
+svg .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+svg .wn{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.4}
+svg .bd{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.4}
+svg .nl{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--ink)}
+svg .sm{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--ink-3)}
+svg .edge{fill:none;stroke:var(--ink-3);stroke-width:1.6}
+svg .ahead{fill:var(--ink-3);stroke:none}
+
+/* ---- 摺疊 ---- */
+.appendix{margin-top:42px;border-top:1px solid var(--rule);padding-top:22px}
+.appendix > h2{font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 13px;border:0;padding:0}
+details.doc{border:1px solid var(--rule);border-radius:9px;margin-bottom:9px;
+  background:var(--panel);overflow:hidden}
+details.doc > summary{cursor:pointer;padding:11px 15px;font-weight:600;font-size:.9rem;
+  list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:center}
+details.doc > summary::-webkit-details-marker{display:none}
+details.doc > summary::after{content:"展開";font-size:.76rem;color:var(--ink-3);font-weight:500}
+details.doc[open] > summary::after{content:"收合"}
+details.doc[open] > summary{border-bottom:1px solid var(--rule-2)}
+details.doc:hover{border-color:var(--accent)}
+.doc-in{padding:4px 17px 15px;font-size:.9rem;color:var(--ink-2)}
+.doc-in h2,.doc-in h3{color:var(--ink);font-size:.95rem;margin:16px 0 7px;border:0;padding:0}
+.doc-in table{border-collapse:collapse;width:100%;margin:11px 0;font-size:.84rem}
+.doc-in th,.doc-in td{border:1px solid var(--rule);padding:6px 9px;text-align:left;
+  vertical-align:top}
+.doc-in th{background:var(--sunk);font-weight:650;color:var(--ink)}
+.doc-in pre{background:var(--sunk);padding:11px;border-radius:7px;overflow-x:auto;
+  font-size:.82rem;line-height:1.5}
+.doc-in blockquote{margin:11px 0;padding:.4em 1em;border-left:3px solid var(--rule);
+  color:var(--ink-3)}
+.doc-in ul,.doc-in ol{padding-left:1.35em}
+.doc-in li{margin:4px 0}
+.tablewrap{overflow-x:auto}
+
+/* ---- 收尾 ---- */
+.verdict{margin-top:34px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);padding:19px 21px;box-shadow:var(--shadow)}
+.verdict h2{margin:0 0 9px;font-size:1rem;border:0;padding:0}
+.verdict p{margin:0 0 9px;color:var(--ink-2);font-size:.91rem}
+.verdict p:last-child{margin-bottom:0}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:560px){h1{font-size:1.35rem}}
+
+.pinned{border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:8px;
+        padding:14px 16px;margin:0 0 14px;background:var(--panel)}
+.pinned>h2{margin:0 0 8px;font-size:1rem;letter-spacing:.01em}
+.pinned .tablewrap{overflow-x:auto}
+.pinned table{width:100%;border-collapse:collapse;font-size:.86rem}
+.pinned th,.pinned td{border:1px solid var(--rule);padding:5px 8px;text-align:left;vertical-align:top}
+.pinned ul{margin:.3em 0 .3em 1.1em;padding:0}
+.pinned p{margin:.35em 0}
+a.cell{cursor:pointer;text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.s-card{border-bottom:1px solid var(--rule-2)}
+.s-card:last-child{border-bottom:0}
+.s-head{display:flex;gap:10px;align-items:center;padding:12px 18px;cursor:pointer;
+  flex-wrap:wrap}
+.s-head:hover{background:var(--sunk)}
+.s-chk{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex:none}
+.s-chk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.s-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.83rem;
+  font-weight:650;color:var(--accent);background:var(--accent-soft);
+  padding:2px 7px;border-radius:5px;flex:none}
+.s-title{font-weight:600;font-size:.94rem}
+.tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600;flex:none}
+.tag.base{background:var(--sunk);color:var(--ink-3)}
+.tag.main{background:var(--warn-soft);color:var(--warn)}
+.tag.rej{background:var(--bad-soft);color:var(--bad)}
+.s-card.done{background:var(--ok-soft)}
+.s-card.done .s-title{color:var(--ink-2)}
+.s-body{padding:0 18px 15px 45px}
+.gwt{display:grid;gap:5px;margin-bottom:11px}
+.gwt-row{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:baseline}
+.gwt-k{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.71rem;
+  font-weight:700;color:var(--ink-3);letter-spacing:.06em}
+.gwt-v{font-size:.9rem;color:var(--ink-2)}
+.obs{background:var(--sunk);border-left:3px solid var(--accent);border-radius:0 7px 7px 0;
+  padding:9px 13px}
+.obs.missing{border-left-color:var(--bad);background:var(--bad-soft)}
+.obs-k{display:block;font-size:.71rem;letter-spacing:.08em;text-transform:uppercase;
+  font-weight:700;color:var(--accent);margin-bottom:3px}
+.obs.missing .obs-k{color:var(--bad)}
+.obs-v{font-size:.88rem;color:var(--ink-2)}
+@media (max-width:560px){
+  .s-body{padding-left:18px}
+  .gwt-row{grid-template-columns:1fr;gap:2px}
+}
+
+.g3-chk-hint{font-size:.86rem;color:var(--ink-2);margin:18px 0 0}
+.g3-ask{margin:0 0 12px}
+.g3-ask-h{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-3);margin:0 0 6px}
+.g3-ask ul{margin:0;padding:0;list-style:none}
+.g3-ask li{display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:.9rem;
+  color:var(--ink)}
+.g3-ask .qmark{color:var(--accent);font-weight:700;flex:none;line-height:1.5}
+
+.gate-verdict{margin:34px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);padding:18px 20px;box-shadow:var(--shadow)}
+.gate-verdict .gv-canon{margin:0 0 12px;color:var(--ink-2);font-size:.9rem}
+.gv-row{display:flex;flex-wrap:wrap;gap:12px 18px;margin:0 0 12px}
+.gv-row label{display:flex;gap:6px;align-items:center;font-weight:600}
+.gv-field{display:block;margin:0 0 8px;color:var(--ink-2);font-size:.88rem}
+.gv-field input{margin-left:8px;min-width:16rem;max-width:100%;padding:4px 8px;
+  border:1px solid var(--rule);border-radius:6px;background:var(--sunk);color:var(--ink);
+  font:inherit}
+.gate-verdict .btn{margin-top:6px;background:var(--accent);color:#fff;border-color:var(--accent)}
+.gate-verdict .btn:hover{filter:brightness(1.05)}
+.gv-status{margin:10px 0 0;font-size:.86rem;color:var(--ink-2)}
+</style>
+</head>
+<body>
+<div class="wrap" id="top">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 7-review · 審查介面</p>
+  <h1>diagram-ir-gate</h1>
+  <p class="sub">正本是 <code>docs/dev/diagram-ir-gate/7-review.md</code>,
+  這頁隨時可重生。<strong>審完頂區五格再決定要不要往下讀。</strong></p>
+  <div class="dash"><a class="cell" href="#sec-Verdict"><span class="k">判定</span><span class="v">PRE-REVIEW</span><span class="n">frontmatter verdict</span></a><a class="cell" href="#sec-Exit-Checklist-全勾才算-shipped"><span class="k">出貨</span><span class="v">3/9</span><span class="n">Exit Checklist</span></a><a class="cell" href="#sec-附錄-本輪特有"><span class="k">爭點</span><span class="v">6 條</span><span class="n">附錄:本輪特有</span></a><a class="cell" href="#sec-Known-Limits"><span class="k">風險</span><span class="v">11 條</span><span class="n">Known Limits</span></a><a class="cell" href="#sec-Coverage-Matrix"><span class="k">抽驗</span><span class="v">S-3.3</span><span class="n">對得上才信剩下的</span></a></div>
+</header>
+<section class="pinned" id="sec-限制聲明-讀取順序-身分"><h2>限制聲明(讀取順序 + 身分)</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>審查者</th><th><code>implementer-C-stage7</code>(獨立 fresh-context Cloud Agent;<code>bc-e842c9ff</code>)。<strong>≠</strong> Stage 6 #250 實作 session <code>bc-5ab0653d</code>。產品 owner 欄仍是 <code>rick</code>。</th></tr></thead><tbody><tr><td>Human G3</td><td><strong>未寫入</strong>。本檔不得把機械綠寫成 G3 PASS。</td></tr><tr><td>讀取順序(可查)</td><td>①<code>4-spec.md</code>(G2 <code>approved</code>／<code>verdict</code> PASS、21 S) ②<code>5-tasks.md</code>(T-1～T-6) ③<code>git show 3b22f01</code>(#250 產品 diff) ④<code>scripts/test-diagir.sh</code> + 三支既有牙 ⑤親跑 test-diagir 25/25 + check-vbox-fig 16/16 + check-dir-tree 81/81 + check-gate-twin 222 + 逐 S CLI 現象 + 2c 兩次座標相同 → <strong>之後才</strong> ⑥<code>review-unlock</code> 讀 6-notes</td></tr><tr><td>圍欄</td><td><code>hooks/devflow-exec.sh review diagram-ir-gate</code> 武裝後再 <code>review-unlock</code>。doctor:<code>COMPATIBLE</code>(契約 2.0.0,runtime 3.23.3,gauntlet 1.3.3)</td></tr><tr><td>本輪性質</td><td>產品碼已在 tip <code>#250</code>=<code>3b22f01</code>。本 hop <strong>只寫</strong> <code>7-review.md</code> + twin。不改產品碼、不改 <code>STATUS.md</code> 表列、不代填 Human G3。</td></tr><tr><td>可信／打折</td><td>機械數字(exit／checks／sha256)可信。F 分級與「沒想到的事」由下一棒 Human 裁量。本 session 與 #250 同標 impl-C,只保證讀取順序與獨立重跑,不保證四眼身分被 hook 擋住。</td></tr></tbody></table></div></div></section><section class="pinned" id="sec-Verdict"><h2>Verdict</h2><div class="doc-in"><p><strong>PRE-REVIEW。不是 G3 PASS。</strong> Human 尚未判定。</p><p>機械面(本 hop 獨立重跑,不新造 R/S):</p><div class="tablewrap"><table><thead><tr><th>門檻</th><th>本 hop</th><th>證據</th></tr></thead><tbody><tr><td>本次 S 全綠</td><td>21/21 自建矩陣 ✅</td><td>Coverage Matrix;每列有 <code>檔:行</code></td></tr><tr><td>既有全綠</td><td>entry point 四層 + test-diagir 25/25</td><td>6/6;16/16;81/81;222;25/25</td></tr><tr><td>現象證據逐 S 相符</td><td>21/21</td><td>現象證據表;附錄 A3</td></tr><tr><td>Evidence 契約</td><td>Fresh 綁產品 HEAD <code>3b22f01</code>;<code>--review-file</code> 見附錄 A5</td><td>Source SHA=<code>3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4</code>(不追本 docs commit)</td></tr><tr><td>無 🔴</td><td>無</td><td>Standards／Spec;F-1～F-7 皆 🟢</td></tr><tr><td>2c 在 Fresh 之前</td><td>是</td><td>兩次 <code>N_A_NO_INCOMING</code>,座標相同,未合併</td></tr><tr><td>Human G3</td><td><strong>未寫入</strong></td><td>本檔禁止發明 PASS</td></tr></tbody></table></div><p>建議 Human:Verdict 門檻表 → 抽驗 S-3.3 <code>test-diagir.sh:310</code> → Fresh 三牙數字 → Known Limits ②／③ → 再決定。</p></div></section><section class="pinned" id="sec-Known-Limits"><h2>Known Limits</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>#</th><th>限制</th><th>嚴重度</th><th>建議處置</th></tr></thead><tbody><tr><td>1</td><td>主機層不擋「跳過閘硬跑舊 write_text」(4-spec Known limit ②)</td><td>中</td><td>park。S-2.3 仍用 diff 咬接線,不是 OS hook。owner=方法論;追蹤=4-spec Design Constraints</td></tr><tr><td>2</td><td>含 Source SHA 的 docs commit 不能等於該 commit 自己的 SHA</td><td>中</td><td>park。本檔 Source SHA 綁 Fresh 產品樹 <code>3b22f01</code>。本 hop commit 落地後 HEAD 會漂。合法恢復=再重綁 Final Fresh,不得再合產品碼</td></tr><tr><td>3</td><td>gate-twin <code>require_write</code> 驗的是固定兩步 payload,不是頁面正文(<code>build-gate-twin.py:2343-2356</code>)</td><td>低</td><td>接受為接線。#191 樹仍 WARNING+<code>&lt;pre&gt;</code>。不要把 twin html 品質當成閘契約</td></tr><tr><td>4</td><td><code>test-diagir.sh</code> S-4.2 不直接呼叫三支 <code>check-*.sh</code></td><td>低</td><td>本 hop Fresh 已補跑。下一棒抽驗用 16/16、81/81、222,不要只信 CASE 名</td></tr><tr><td>5</td><td>S-4.3 閘負向的 FAMILY 列用 <code>tree-as-vbox.json</code>,不是把 <code>fig-tree-ascii/</code> 目錄當信封(該 path 是牙 fixture,不是 deliver JSON)</td><td>低</td><td>接受。碼仍是 <code>DIAGIR_FAMILY</code>。索引 path 給牙,閘用同碼信封</td></tr><tr><td>6</td><td>S-2.2 是旁路寫 tmp,不是 <code>atomic_write</code> 中途崩潰</td><td>低</td><td>接受;與 4-spec GIVEN 相符</td></tr><tr><td>7</td><td>~~vbox-fig 正式負向檔本 hop 不造(4-spec Known limit ①)~~</td><td>—</td><td>已解除:<code>scripts/fixtures/vbox-fig/kind-parked.json</code> 已在 #250</td></tr><tr><td>8</td><td><code>proto/diagir_gate.py</code> 仍在樹裡(非正式通道)</td><td>低</td><td>接受。G3 現象以 <code>scripts/diagir.py</code> 為準(本 hop 已遵守)</td></tr><tr><td>9</td><td>本檔 <code>verdict: PRE-REVIEW</code>;全勾也不算 shipped</td><td>中</td><td>留給 Human G3。owner=rick</td></tr><tr><td>10</td><td>#250 改了 file-map／py-floor／architecture-guards／devflow-check／guide-dev-flow.html,超出 5-tasks Files 聯集</td><td>低</td><td>L1 已記 F-5。作者 D-3／D-4 如實。不要當 L2</td></tr><tr><td>11</td><td>Stage 6 T Review Log 是 implementer-C self-check,不是獨立 T reviewer</td><td>中</td><td>本 hop 用獨立 Fresh／現象表補四眼的一半。Human G3 仍要另眼</td></tr></tbody></table></div></div></section>
+<div class="progress">
+  <div class="progress-in">
+    <span class="count">已審 <b id="done">0</b> / 70 條</span>
+    <span class="bar"><i></i></span>
+    <button class="btn" id="clear" type="button">清除勾選</button>
+  </div>
+</div>
+<div id="cards">
+<p class="g3-chk-hint">勾選 = 這列只靠標的檔:行就能判失敗,不是整份已過 G3。</p><section class="r-block" id="sec-判定"><div class="r-head"><span class="r-name">判定</span></div><article class="s-card" data-sid="判定">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="判定">
+    <span class="s-id">判定</span>
+    <span class="s-title">PRE-REVIEW</span>
+    <span class="tag base">判定</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>判定 這列不打開 7-review.md、只靠標的檔:行能判失敗嗎？</span></li><li><span class="qmark">?</span><span>判定 這列的結論，有沒有被 Coverage Matrix 授權？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">判定</span><span class="gwt-v">PRE-REVIEW</span></div></div>
+    
+  </div>
+</article></section><section class="r-block" id="sec-Exit-Checklist-全勾才算-shipped"><div class="r-head"><span class="r-name">Exit Checklist(全勾才算 shipped)</span></div><article class="s-card" data-sid="EC-1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-1">
+    <span class="s-id">EC-1</span>
+    <span class="s-title"><strong>Design Boundary finding 全數處置</strong>(applicable):無未授權 Boundary 變更。F-1～F-7 皆 🟢 且未改 R/S／所有權／公開 Interface。無須 L2。Known Limits ①／③ 已落本節</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-1 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-1 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-1 只改文件、測試沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-2">
+    <span class="s-id">EC-2</span>
+    <span class="s-title">Quiz(<strong>不可逆改動必做</strong>;其餘 full lane 選配,fast 免):公開信封 + last-good。題在附錄 A6,留給 Human G3</span>
+    <span class="tag base">出貨</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-2 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-2 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-2 標了不可逆，Quiz 沒過能否決出貨嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-3">
+    <span class="s-id">EC-3</span>
+    <span class="s-title">(條件式)整合回歸已在 Final Fresh <strong>之前</strong>完成:步 2c 兩次 <code>N_A_NO_INCOMING</code>(三 SHA 與 ref 在「2c 整合結論」)。Source SHA 綁產品樹 <code>3b22f01</code>。Verdict 之後不得再改程式碼</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-3 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-3 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-3 只改文件、測試沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-4">
+    <span class="s-id">EC-4</span>
+    <span class="s-title">PR → develop(feature branch,禁直上 master;本專案整合分支是 <code>main</code>)</span>
+    <span class="tag base">出貨</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-4 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-4 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-4 這項跟 Matrix 綠不綠無關，沒做完 PRE-REVIEW 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-5">
+    <span class="s-id">EC-5</span>
+    <span class="s-title">4-spec delta 已併入 <code>docs/specs/&lt;domain&gt;.md</code>(本 repo 無 living spec;<code>n-a</code>)</span>
+    <span class="tag base">出貨</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-5 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-5 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-5 只改文件、測試沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-6">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-6">
+    <span class="s-id">EC-6</span>
+    <span class="s-title">STATUS.md 已更新為 shipped(整合分支上、PR 合併後由合併者做,不塞進本 branch)</span>
+    <span class="tag base">出貨</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-6 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-6 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-6 這項跟 Matrix 綠不綠無關，沒做完 PRE-REVIEW 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-7">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-7">
+    <span class="s-id">EC-7</span>
+    <span class="s-title">7-review frontmatter status: shipped;上游 artifact 可保留 approved(<strong>本檔仍 draft／PRE-REVIEW</strong>)</span>
+    <span class="tag base">出貨</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-7 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-7 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-7 這項跟 Matrix 綠不綠無關，沒做完 PRE-REVIEW 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-8">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-8">
+    <span class="s-id">EC-8</span>
+    <span class="s-title">7-review.html 已產生(G3 twin;<code>scripts/build-gate-twin.py</code>;審頁另跑 <code>scripts/build-stage7-html.py --action</code> → <code>/tmp/diagram-ir-gate-stage7-shots.html</code>,不覆寫 twin)</span>
+    <span class="tag base">已勾</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-8 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-8 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-8 只改文件、測試沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article><article class="s-card" data-sid="EC-9">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="EC-9">
+    <span class="s-id">EC-9</span>
+    <span class="s-title">feature branch 已刪 / worktree 已清</span>
+    <span class="tag base">出貨</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-9 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-9 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-9 這項跟 Matrix 綠不綠無關，沒做完 PRE-REVIEW 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
+    
+  </div>
+</article></section><section class="r-block" id="sec-爭點"><div class="r-head"><span class="r-name">爭點</span></div><article class="s-card" data-sid="A1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A1">
+    <span class="s-id">A1</span>
+    <span class="s-title">爭點</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A1 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A1 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A1 這則若成立，Coverage Matrix 還授權 PRE-REVIEW 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">1. 本檔是不是 G3 PASS? 不是</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A2">
+    <span class="s-id">A2</span>
+    <span class="s-title">抽驗列(決定論)</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A2 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A2 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A2 這則若成立，Coverage Matrix 還授權 PRE-REVIEW 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">Coverage Matrix 中位列 = S-3.3(與 twin 頂區「抽驗」格同一列)</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A3">
+    <span class="s-id">A3</span>
+    <span class="s-title">現象 CLI 原始輸出(節錄)</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A3 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A3 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A3 這則若成立，Coverage Matrix 還授權 PRE-REVIEW 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">—</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A4">
+    <span class="s-id">A4</span>
+    <span class="s-title">作者對照(N4;<code>review-unlock</code> 之後才讀)</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A4 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A4 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A4 的 L1 分級，4-spec Dependencies 還罩得住嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">6-notes owner=implementer-C</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A5">
+    <span class="s-id">A5</span>
+    <span class="s-title">Fresh／gauntlet 指令</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A5 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A5 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A5 這則若成立，Coverage Matrix 還授權 PRE-REVIEW 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">—</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="A6">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="A6">
+    <span class="s-id">A6</span>
+    <span class="s-title">Quiz(留給 Human;不可逆公開信封)</span>
+    <span class="tag base">爭點</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A6 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A6 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A6 這則若成立，Coverage Matrix 還授權 PRE-REVIEW 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">1. 餵 kind=parked 的 vbox-lifecycle 信封時</span></div></div>
+    
+  </div>
+</article></section><section class="r-block" id="sec-風險"><div class="r-head"><span class="r-name">風險</span></div><article class="s-card" data-sid="KL-1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-1">
+    <span class="s-id">KL-1</span>
+    <span class="s-title">主機層不擋「跳過閘硬跑舊 write_text」(4-spec Known limit ②)</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-1 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-1 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-1 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">park。S-2.3 仍用 diff 咬接線,不是 OS hook。owner=方法論;追蹤=4-spec Design Constraints</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-2">
+    <span class="s-id">KL-2</span>
+    <span class="s-title">含 Source SHA 的 docs commit 不能等於該 commit 自己的 SHA</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-2 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-2 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-2 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">park。本檔 Source SHA 綁 Fresh 產品樹 <code>3b22f01</code>。本 hop commit 落地後 HEAD 會漂。合法恢復=再重綁 Final Fresh,不得再合產品碼</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-3">
+    <span class="s-id">KL-3</span>
+    <span class="s-title">gate-twin <code>require_write</code> 驗的是固定兩步 payload,不是頁面正文(<code>build-gate-twin.py:2343-2356</code>)</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-3 只靠 build-gate-twin.py:2343 能判這條限界還在嗎？</span></li><li><span class="qmark">?</span><span>KL-3 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-3 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">接受為接線。#191 樹仍 WARNING+<code>&lt;pre&gt;</code>。不要把 twin html 品質當成閘契約</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-4">
+    <span class="s-id">KL-4</span>
+    <span class="s-title"><code>test-diagir.sh</code> S-4.2 不直接呼叫三支 <code>check-*.sh</code></span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-4 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-4 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-4 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">本 hop Fresh 已補跑。下一棒抽驗用 16/16、81/81、222,不要只信 CASE 名</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-5">
+    <span class="s-id">KL-5</span>
+    <span class="s-title">S-4.3 閘負向的 FAMILY 列用 <code>tree-as-vbox.json</code>,不是把 <code>fig-tree-ascii/</code> 目錄當信封(該 path 是牙 fixture,不是 deliver JSON)</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-5 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-5 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-5 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">接受。碼仍是 <code>DIAGIR_FAMILY</code>。索引 path 給牙,閘用同碼信封</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-6">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-6">
+    <span class="s-id">KL-6</span>
+    <span class="s-title">S-2.2 是旁路寫 tmp,不是 <code>atomic_write</code> 中途崩潰</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-6 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-6 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-6 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">接受;與 4-spec GIVEN 相符</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-7">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-7">
+    <span class="s-id">KL-7</span>
+    <span class="s-title">~~vbox-fig 正式負向檔本 hop 不造(4-spec Known limit ①)~~</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-7 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-7 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-7 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">—</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">已解除:<code>scripts/fixtures/vbox-fig/kind-parked.json</code> 已在 #250</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-8">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-8">
+    <span class="s-id">KL-8</span>
+    <span class="s-title"><code>proto/diagir_gate.py</code> 仍在樹裡(非正式通道)</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-8 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-8 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-8 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">接受。G3 現象以 <code>scripts/diagir.py</code> 為準(本 hop 已遵守)</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-9">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-9">
+    <span class="s-id">KL-9</span>
+    <span class="s-title">本檔 <code>verdict: PRE-REVIEW</code>;全勾也不算 shipped</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-9 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-9 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-9 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">留給 Human G3。owner=rick</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-10">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-10">
+    <span class="s-id">KL-10</span>
+    <span class="s-title">#250 改了 file-map／py-floor／architecture-guards／devflow-check／guide-dev-flow.html,超出 5-tasks Files 聯集</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-10 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-10 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-10 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">L1 已記 F-5。作者 D-3／D-4 如實。不要當 L2</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-11">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-11">
+    <span class="s-id">KL-11</span>
+    <span class="s-title">Stage 6 T Review Log 是 implementer-C self-check,不是獨立 T reviewer</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-11 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-11 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-11 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">本 hop 用獨立 Fresh／現象表補四眼的一半。Human G3 仍要另眼</span></div></div>
+    
+  </div>
+</article></section><section class="r-block" id="sec-Coverage-Matrix"><div class="r-head"><span class="r-name">Coverage Matrix</span></div><article class="s-card" data-sid="S-1.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.1">
+    <span class="s-id">S-1.1</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:144-149</code> <code>S-1.1_parked_kind_keeps_last_good</code>;閘 <code>scripts/diagir.py:139-140</code>;信封 <code>scripts/fixtures/diagir/parked.json:6</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.1 這列只靠 scripts/test-diagir.sh:144 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-1.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.2">
+    <span class="s-id">S-1.2</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:150-155</code>;閘 <code>scripts/diagir.py:141-142</code>;信封 <code>scripts/fixtures/diagir/empty-title.json</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.2 這列只靠 scripts/test-diagir.sh:150 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-1.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.3">
+    <span class="s-id">S-1.3</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:156-161</code>;閘 <code>scripts/diagir.py:143-147</code>;信封 <code>scripts/fixtures/diagir/four-lines.json</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.3 這列只靠 scripts/test-diagir.sh:156 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-1.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.4">
+    <span class="s-id">S-1.4</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:162-167</code>;閘 <code>scripts/diagir.py:183-185</code> + <code>looks_like_tree</code> <code>97-102</code>;信封 <code>scripts/fixtures/diagir/tree-as-vbox.json:4-5</code> (<code>kind</code>=<code>tree-ascii</code> 且 text 含 <code>&amp;#124;---</code>)</span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.4 這列只靠 scripts/test-diagir.sh:162 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.4 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-1.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.5">
+    <span class="s-id">S-1.5</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:168-173</code>;閘 <code>scripts/diagir.py:161-171</code>;信封 <code>scripts/fixtures/diagir/dir-short-why.json</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.5 這列只靠 scripts/test-diagir.sh:168 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.5 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-1.5 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.6">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.6">
+    <span class="s-id">S-1.6</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:174-187</code>(吃 S-1.1 那次 stdout／stderr);收據形 <code>scripts/diagir.py:74-88</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.6 這列只靠 scripts/test-diagir.sh:174 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.6 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-1.6 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.1">
+    <span class="s-id">S-2.1</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:190-210</code>;<code>deliver</code> <code>scripts/diagir.py:232-258</code>;綠 SVG <code>scripts/diagir.py:205-214</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2.1 這列只靠 scripts/test-diagir.sh:190 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-2.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.2">
+    <span class="s-id">S-2.2</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:211-226</code>(旁路寫 <code>TARGET.tmp</code>);原語 <code>scripts/devflow_atomic.py:13-22</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2.2 這列只靠 scripts/test-diagir.sh:211 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-2.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.3">
+    <span class="s-id">S-2.3</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:229-276</code> 四 CASE;接線 <code>scripts/build-dir-tree.py:576-578</code>、<code>scripts/build-gate-twin.py:2351-2356</code>、<code>scripts/build-stage1-html.py:483-489</code>、<code>scripts/build-stage2-html.py:556</code>、<code>scripts/build-stage4-html.py:759</code>;tools 副本逐字相同</span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2.3 這列只靠 scripts/test-diagir.sh:229 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-2.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.1">
+    <span class="s-id">S-3.1</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:279-303</code>;表 <code>notes/design/diagir-route.md:7-12</code> 五列四欄</span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.1 這列只靠 scripts/test-diagir.sh:279 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-3.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.2">
+    <span class="s-id">S-3.2</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:304-309</code>;閘 <code>scripts/diagir.py:186-187</code>;信封 <code>scripts/fixtures/diagir/stage1-as-lifecycle.json</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.2 這列只靠 scripts/test-diagir.sh:304 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-3.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.3">
+    <span class="s-id">S-3.3</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:310-315</code>;信封 <code>scripts/fixtures/diagir/dir-as-vbox.json:4-8</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.3 這列只靠 scripts/test-diagir.sh:310 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-3.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.4">
+    <span class="s-id">S-3.4</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:316-328</code>;閘 <code>scripts/diagir.py:156-157</code>;信封 <code>scripts/fixtures/diagir/missing-family.json</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.4 這列只靠 scripts/test-diagir.sh:316 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.4 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-3.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.5">
+    <span class="s-id">S-3.5</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:329-373</code>;<code>route</code> CLI <code>scripts/diagir.py:277-283</code> 印 <code>ROUTE_ROWS 5</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.5 這列只靠 scripts/test-diagir.sh:329 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.5 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-3.5 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.1">
+    <span class="s-id">S-4.1</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:376-401</code>;索引 <code>scripts/fixtures/diagir-lab.yaml:1-30</code> 六列三家族</span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4.1 這列只靠 scripts/test-diagir.sh:376 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-4.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.2">
+    <span class="s-id">S-4.2</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:402-433</code>(閘三正 + 兩支產器 fixture);<strong>本 hop Fresh 另跑</strong> <code>check-vbox-fig.sh</code>／<code>check-dir-tree.sh</code>／<code>check-gate-twin.sh</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4.2 這列只靠 scripts/test-diagir.sh:402 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-4.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.3">
+    <span class="s-id">S-4.3</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:434-451</code> 三負 <code>DIAGIR_KIND</code>／<code>DIAGIR_FAMILY</code>／<code>DIAGIR_WHY</code> 且 sha 不變</span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4.3 這列只靠 scripts/test-diagir.sh:434 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-4.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.4">
+    <span class="s-id">S-4.4</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:452-458</code>;負向 path <code>scripts/fixtures/vbox-fig/kind-parked.json</code> ≠ <code>lifecycle.json</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4.4 這列只靠 scripts/test-diagir.sh:452 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4.4 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-4.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.5">
+    <span class="s-id">S-4.5</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:459-478</code>;無 <code>scripts/check-diagir-lab.sh</code>;<code>scripts/devflow-check.sh:132</code> 仍跑三支牙、<code>:137</code> 只掛 <code>test-diagir</code> 不當 Lab 牙</span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4.5 這列只靠 scripts/test-diagir.sh:459 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4.5 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-4.5 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-5.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-5.1">
+    <span class="s-id">S-5.1</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:481-492</code>;綠檔禁 mermaid／<code>&lt;animate</code></span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-5.1 這列只靠 scripts/test-diagir.sh:481 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-5.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-5.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-5.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-5.2">
+    <span class="s-id">S-5.2</span>
+    <span class="s-title"><code>scripts/test-diagir.sh:493-522</code> 三點 <code>origin/main...HEAD</code> + untracked;plugin <code>3.23.3</code> 空 diff</span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-5.2 這列只靠 scripts/test-diagir.sh:493 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-5.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-5.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="既有測試套件(回歸)">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="既有測試套件(回歸)">
+    <span class="s-id">既有測試套件(回歸)</span>
+    <span class="s-title">4-spec entry point 四層 + <code>scripts/test-diagir.sh</code> 25/25 + <code>scripts/check-file-map.sh</code> scanned=205</span>
+    <span class="tag main">抽驗</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列若其實沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article></section><section class="r-block" id="sec-現象證據-逐-S-對照-4-spec-的-觀測-欄"><div class="r-head"><span class="r-name">現象證據(逐 S,對照 4-spec 的「觀測」欄)</span></div><article class="s-card" data-sid="S-1.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.1">
+    <span class="s-id">S-1.1</span>
+    <span class="s-title">exit、stdout JSON、stderr、目標 sha</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1.1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-1.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">rc=1;<code>code</code>=<code>DIAGIR_KIND</code>;<code>target_replaced</code>=false;sha 不變;stderr <code>FAIL DIAGIR_KIND &amp;#124; knob: 把 kind 改回允許值，或改走路由表上的正確家族</code> + <code>DIAGIR_ABORT</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.2">
+    <span class="s-id">S-1.2</span>
+    <span class="s-title">exit、收據 <code>code</code>、目標 sha</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1.2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-1.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">rc=1;<code>DIAGIR_EMPTY</code>;sha 不變;旋鈕「補上非空標題／至少一步」</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.3">
+    <span class="s-id">S-1.3</span>
+    <span class="s-title">exit、收據 <code>code</code>、目標 sha</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1.3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-1.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">rc=1;<code>DIAGIR_LINES</code>;sha 不變;旋鈕「收成 1–3 行、刪空行」</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.4">
+    <span class="s-id">S-1.4</span>
+    <span class="s-title">exit、收據 <code>code</code>、目標 sha</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1.4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1.4 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-1.4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">rc=1;<code>DIAGIR_FAMILY</code>;detail=<code>tree-as-vbox</code>;sha 不變</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.5">
+    <span class="s-id">S-1.5</span>
+    <span class="s-title">exit、收據 <code>code</code>、目標 sha</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1.5 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1.5 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-1.5 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">rc=1;<code>DIAGIR_WHY</code>;detail=<code>short-or-missing-why:src/</code>;sha 不變</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-1.6">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-1.6">
+    <span class="s-id">S-1.6</span>
+    <span class="s-title">stdout 六鍵 + stderr 兩碼行</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1.6 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1.6 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-1.6 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">六鍵都在;<code>abort</code>=<code>DIAGIR_ABORT</code>;無 Traceback;旋鈕句在 stderr(見 S-1.1 輸出)</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.1">
+    <span class="s-id">S-2.1</span>
+    <span class="s-title">exit、收據四欄、檔頭與 sha</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-2.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-2.1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-2.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">rc=0;<code>ok</code>/<code>delivered</code>/<code>target_replaced</code>=true;<code>code</code>=null;含 <code>&lt;svg</code> 與 <code>&lt;/svg&gt;</code>;len=1158;sha ≠ last-good;無 mermaid</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.2">
+    <span class="s-id">S-2.2</span>
+    <span class="s-title">兩路徑 sha／size</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-2.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-2.2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-2.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">目標 sha 仍 last-good;tmp 恰 <code>&lt;svg viewBox</code>(size 12);目標 ≠ tmp</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-2.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-2.3">
+    <span class="s-id">S-2.3</span>
+    <span class="s-title">四檔 + 兩支呼叫端 diff／import</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-2.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-2.3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-2.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">五處 <code>require_write</code>;<code>pathlib.Path(path).write_text</code>／<code>out_local.write_text</code>／<code>dest.write_text</code> 字面不在產品覆寫;tools 副本 <code>cmp</code> 相同</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.1">
+    <span class="s-id">S-3.1</span>
+    <span class="s-title">路由表列數與四欄</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3.1 只靠 diagir-route.md:7 能判這列失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3.1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-3.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>diagir-route.md:7-12</code> 五 id;契約欄指回四份已核短冊</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.2">
+    <span class="s-id">S-3.2</span>
+    <span class="s-title">exit、<code>code</code>、目標 sha</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3.2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-3.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">rc=1;<code>DIAGIR_FAMILY</code>;detail=<code>stage1-as-lifecycle</code>;sha 不變</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.3">
+    <span class="s-id">S-3.3</span>
+    <span class="s-title">exit、<code>code</code>、目標 sha</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3.3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-3.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">rc=1;<code>DIAGIR_FAMILY</code>;sha 不變</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.4">
+    <span class="s-id">S-3.4</span>
+    <span class="s-title">收據 <code>code</code> + 無已選／auto／detect</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3.4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3.4 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-3.4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">rc=1;<code>DIAGIR_FAMILY</code>;detail=<code>missing-or-unknown-family</code>;三詞皆無</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-3.5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-3.5">
+    <span class="s-id">S-3.5</span>
+    <span class="s-title">路由表產器欄與五入口</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3.5 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3.5 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-3.5 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>ROUTE_ROWS 5</code>;五 builder 字面各一列;無 hosted;stage1-now 不指 vbox</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.1">
+    <span class="s-id">S-4.1</span>
+    <span class="s-title">yaml 列數、path、<code>expect_code</code></span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-4.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-4.1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-4.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">version 1;六 path;三家族各正負;<code>tooth_language: existing</code>;三碼齊</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.2">
+    <span class="s-id">S-4.2</span>
+    <span class="s-title">三支牙 exit + 閘 pos</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-4.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-4.2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-4.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">Fresh:<code>check-vbox-fig</code> 16/16、<code>check-dir-tree</code> 81/81、<code>check-gate-twin</code> 222;閘三正 <code>ok</code>=true</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.3">
+    <span class="s-id">S-4.3</span>
+    <span class="s-title">三案 exit、<code>code</code>、目標 sha</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-4.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-4.3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-4.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">kind-parked→<code>DIAGIR_KIND</code>;tree-as-vbox→<code>DIAGIR_FAMILY</code>;dir-short-why→<code>DIAGIR_WHY</code>;三次 sha 不變</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.4">
+    <span class="s-id">S-4.4</span>
+    <span class="s-title">索引兩列 path</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-4.4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-4.4 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-4.4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">負向 <code>kind-parked.json</code> ≠ <code>lifecycle.json</code> 且有 <code>DIAGIR_KIND</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-4.5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-4.5">
+    <span class="s-id">S-4.5</span>
+    <span class="s-title"><code>devflow-check.sh</code> 仍呼叫三支牙</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-4.5 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-4.5 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-4.5 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">無 <code>check-diagir-lab.sh</code>;<code>:132</code> 三牙、<code>:137</code> 只加 <code>test-diagir</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-5.1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-5.1">
+    <span class="s-id">S-5.1</span>
+    <span class="s-title">目標檔 rg 四詞 + <code>&lt;svg</code></span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-5.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-5.1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-5.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">四詞零命中;<code>&lt;/svg&gt;</code> 在;靜態 <code>viewBox=&quot;0 0 280 302&quot;</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="S-5.2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="S-5.2">
+    <span class="s-id">S-5.2</span>
+    <span class="s-title">plugin diff + 變更清單</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-5.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-5.2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-5.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">version <code>3.23.3</code>;<code>git diff origin/main...HEAD -- .claude-plugin/plugin.json</code> 空;本 hop 三點名單空(產品已在 tip)</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    
+  </div>
+</article></section>
+</div>
+<h2 class="apx-h">背景資料(預設收合,內容零刪減)</h2>
+<details class="doc" id="sec-Verification-Evidence"><summary><span>Verification Evidence</span></summary><div class="doc-in"><ul><li>Source SHA: 3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4</li><li>Final Fresh Run ID: 2026-09-12T1814Z-impl-C-s7</li><li>Entry point: <code>bash scripts/check-spec-gate.sh docs/dev/diagram-ir-gate/4-spec.md &amp;&amp; bash scripts/check-vbox-fig.sh &amp;&amp; bash scripts/check-dir-tree.sh &amp;&amp; bash scripts/check-gate-twin.sh</code></li><li>Toolchain: python3.12.3; markdown-it-py 4.0.0(gate-twin pin;<code>scripts/requirements-methodology-render.txt</code>); contract 2.0.0; runtime 3.23.3; git 2.43.0; gauntlet 1.3.3</li></ul><div class="tablewrap"><table><thead><tr><th>Layer</th><th>Command</th><th>Status</th><th>Result</th><th>Skipped reason</th></tr></thead><tbody><tr><td>check-spec-gate／check-vbox-fig／check-dir-tree／check-gate-twin</td><td>Final Fresh entry point(見上列四指令)</td><td>pass</td><td>四層皆 exit 0:spec-gate 6/6;vbox-fig 16/16;dir-tree 81/81;gate-twin 222</td><td></td></tr><tr><td>check-spec-gate</td><td><code>bash scripts/check-spec-gate.sh docs/dev/diagram-ir-gate/4-spec.md</code></td><td>pass</td><td>exit 0;6/6 形狀全過;21 條 S</td><td></td></tr><tr><td>check-vbox-fig</td><td><code>bash scripts/check-vbox-fig.sh</code></td><td>pass</td><td>exit 0;16/16</td><td></td></tr><tr><td>check-dir-tree</td><td><code>bash scripts/check-dir-tree.sh</code></td><td>pass</td><td>exit 0;81/81</td><td></td></tr><tr><td>check-gate-twin</td><td><code>bash scripts/check-gate-twin.sh</code></td><td>pass</td><td>exit 0;222 項全過</td><td></td></tr><tr><td>test-diagir(本 feat 牙;非 Profile Required)</td><td><code>bash scripts/test-diagir.sh -v</code></td><td>pass</td><td>exit 0;checks=25;25/25</td><td></td></tr><tr><td>Supply chain</td><td><code>bash scripts/check-file-map.sh</code>(產器寫檔已改,Conditional)</td><td>pass</td><td>exit 0;scanned=205;table_rows=215</td><td></td></tr><tr><td>Mutation</td><td></td><td>n-a</td><td></td><td>Explicitly excluded(4-spec Verification Profile)</td></tr><tr><td>e2e／Playwright</td><td></td><td>n-a</td><td></td><td>Explicitly excluded;無產品前端</td></tr><tr><td>Race／stress</td><td></td><td>n-a</td><td></td><td>Explicitly excluded</td></tr><tr><td>Windows 真機</td><td></td><td>n-a</td><td></td><td>Explicitly excluded／Out of Scope</td></tr></tbody></table></div><p>開工前 <code>test -x docs/dev/tools/devflow-evidence-gauntlet.sh</code> → exit 0。</p><p>本環境 doctor 初檢 <code>markdown-it-py 未裝</code>;Fresh 前已 <code>pip install &#x27;markdown-it-py==4.0.0&#x27;</code>。這是 runner 相依,不是產品碼。</p><p>### 2c 整合結論</p><p>本 Stage 7 分支從 #250 tip 切開。產品已在 <code>origin/main</code>。Fresh <strong>之前</strong>連跑兩次,STATUS／三 SHA／ref 完全相同。不合併(N_A)。</p><ul><li>STATUS: N_A_NO_INCOMING</li><li>FORK / HEAD / INTEGRATION / REF: 3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4 / 3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4 / 3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4 / refs/remotes/origin/main</li><li>恢復: n-a(分岔後對方零新 commit)</li></ul><pre><code>結論:STATUS=N_A_NO_INCOMING FORK=3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4 HEAD=3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4 INTEGRATION=3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4(refs/remotes/origin/main)—— 分岔後對方零新 commit,Exit Checklist 可記 n-a</code></pre><p>第二次座標逐字相同。Source SHA 綁產品樹 <code>3b22f01</code>。本 docs commit 落地後 HEAD 會漂 —— Known Limits ②。</p></div></details><details class="doc" id="sec-Negative-Constraint-Mapping"><summary><span>Negative Constraint Mapping</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>Constraint</th><th>Test/Layer</th><th>Status</th></tr></thead><tbody><tr><td>不得在驗證失敗後覆寫目標(S-1.1～S-1.5)</td><td>test-diagir validate + 現象 CLI sha 不變</td><td>pass</td></tr><tr><td>不得只印 traceback 而無穩定碼(S-1.6)</td><td>test-diagir S-1.6;stderr 兩行 FAIL + 無 Traceback</td><td>pass</td></tr><tr><td>不得留下半份新目標檔(S-2.2)</td><td>test-diagir S-2.2;目標 sha=last-good、tmp 長度 12</td><td>pass</td></tr><tr><td>不得未接閘就宣稱 wave-1 完成(S-2.3)</td><td>test-diagir wire 4 CASE;五支產器 <code>require_write</code></td><td>pass</td></tr><tr><td>不得黑盒猜 family(S-3.4)</td><td>missing-family → <code>DIAGIR_FAMILY</code>;無 auto／detect／已選</td><td>pass</td></tr><tr><td>不得只重放 lifecycle.json 當 Lab(S-4.4)</td><td>kind-parked.json ≠ lifecycle.json 且有 <code>DIAGIR_KIND</code></td><td>pass</td></tr><tr><td>不得另造 Proof Lab 牙語言(S-4.5)</td><td>無 <code>check-diagir-lab.sh</code>;三支既有牙仍在</td><td>pass</td></tr><tr><td>不得把 mermaid／動畫當預設(S-5.1)</td><td>綠 SVG 四詞零命中且有 <code>&lt;/svg&gt;</code></td><td>pass</td></tr><tr><td>不得碰 #196、不得 bump plugin(S-5.2)</td><td>plugin 3.23.3;三點 diff 空;無 STATUS／IBV／b8 路徑</td><td>pass</td></tr><tr><td>不得收 Mermaid／Node／hosted／WYSIWYG／Q8／Q9</td><td><code>scripts/diagir.py:11</code> 禁 import;route 無第六列 hosted</td><td>pass</td></tr></tbody></table></div></div></details><details class="doc" id="sec-執行記錄-dev-run-引擎案-手動實作留白"><summary><span>執行記錄(dev-run 引擎案;手動實作留白)</span></summary><div class="doc-in"><p>本 hop 不是 dev-run 引擎案。欄位留空。#250 為手動實作。</p></div></details><details class="doc" id="sec-截圖槽"><summary><span>截圖槽</span></summary><div class="doc-in"><p>本 feat 無產品前端;現象為 CLI／sha／牙 exit。截圖槽 N/A(無 <code>shots/</code> 定名檔 → 產檔器顯示佔位即可)。不准發明編輯 URL。不准新增一張只為了截圖。</p><p>### 進場</p><ul><li>data-shot: n-a-cli</li><li>src: shots/n-a.png</li><li>caption: 無 GUI 進場;牙在 shell exit／收據 JSON／目標 sha256</li><li>進場:從列表打開已存在紀錄。不准新增。</li><li>hang-point: <code>.e2e</code> n-a</li></ul></div></details><details class="doc" id="sec-Operational-Walkthrough"><summary><span>Operational Walkthrough</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>S-id</th><th>角色</th><th>真實目標</th><th>系統操作</th><th>系統外步驟</th><th>等待／例外</th><th>結果</th></tr></thead><tbody><tr><td>S-1.1</td><td>開工 agent</td><td>壞 IR 不得換掉上一張可審圖</td><td><code>diagir.py deliver</code> parked 信封</td><td>終端機看碼與旋鈕;不要 <code>git checkout</code> 舊圖</td><td>目標停在 last-good 直到下次綠交付</td><td>✅ 人看見 <code>DIAGIR_KIND</code> + last-good 仍在</td></tr><tr><td>S-1.4</td><td>開工 agent</td><td>不要把樹收成單盒 vbox</td><td>同一閘、tree-as-vbox 信封</td><td>查 <code>diagir-route.md</code> 後換入口</td><td>last-good 留下</td><td>✅ <code>DIAGIR_FAMILY</code></td></tr><tr><td>S-2.1</td><td>產檔器</td><td>通過後人打開完整新圖</td><td>綠 lifecycle <code>deliver</code></td><td>瀏覽器直開目標 SVG</td><td><code>replace</code> 同步結束</td><td>✅ 完整靜態 SVG,len=1158</td></tr><tr><td>S-2.2</td><td>產檔器</td><td>中斷時審頁仍打得開舊圖</td><td>旁路寫 <code>.tmp</code> 且不 <code>replace</code></td><td>刪殘 tmp 後重跑綠 IR</td><td>未 replace 視同 ABORT</td><td>✅ 目標仍 last-good</td></tr><tr><td>S-3.2</td><td>開工 agent</td><td>第 1 站三框不要畫成生命週期</td><td>stage1-as-lifecycle 信封</td><td>改跑 <code>build-stage1-html.py --action</code></td><td>last-good 留下</td><td>✅ <code>DIAGIR_FAMILY</code></td></tr><tr><td>S-3.4</td><td>開工 agent</td><td>先選家族,不要讓機器猜</td><td>無 <code>family</code> 鍵的 JSON</td><td>打開路由表勾一列</td><td>不寫檔</td><td>✅ 拒猜</td></tr><tr><td>S-4.3</td><td>owner／審查人</td><td>負向紅了 last-good 還在</td><td>Lab 三負 <code>deliver</code></td><td>跑索引列</td><td>負向若蓋檔 → wave-1 未完成</td><td>✅ 三碼對且 sha 不變</td></tr><tr><td>S-5.1</td><td>owner</td><td>wave-1 成功條件不是「會動」</td><td>打開 S-2.1 產出</td><td>瀏覽器直開、離線</td><td>看到動畫預設就打回</td><td>✅ 無 mermaid／animate</td></tr><tr><td>S-1.2／S-1.3／S-1.5／S-1.6／S-2.3／S-3.1／S-3.3／S-3.5／S-4.1／S-4.2／S-4.4／S-4.5／S-5.2</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>不適用(4-spec Operational Context 標不適用或純字面／接線)</td></tr></tbody></table></div><p>六條人因檢查:技術上能完成工作;失敗碼把決策權交回人(改 kind／換入口／補 family);未把等待標成完成(<code>delivered</code> 失敗為 false);無系統外不可追蹤動作;中斷路徑是刪 tmp 重跑;資訊(旋鈕句)未過期。未發現「看得到但沒有決策權」。</p></div></details><details class="doc" id="sec-Design-Integrity-Check-Design-Boundary-Contract-"><summary><span>Design Integrity Check(Design Boundary Contract 為 <code>applicable</code>)</span></summary><div class="doc-in"><p>1. <strong>依賴反向被間接繞過</strong>:未命中 —— 閘 <code>scripts/diagir.py</code> 擁有判定;產器只 <code>import diagir</code> 後 <code>require_write</code>。無 event bus／共用 util 讓產器反向驅動碼表。<code>diagir.py:11</code> 禁 Archify／mermaid／Node。</p><p>2. <strong>資料所有權被繞過寫入</strong>:未命中 —— 產品覆寫改走 <code>require_write</code> → <code>deliver</code> → 通過後才 <code>atomic_write</code>(<code>diagir.py:232-250</code>)。<code>devflow_atomic.py</code> 不做驗證。S-2.3 牙咬掉舊 <code>write_text</code> 字面。</p><p>3. <strong>相容性破壞包成新增</strong>:未命中 —— 收據六鍵鎖定;多出來的 <code>detail</code>／<code>target_unchanged</code>／<code>target_existed</code> 是附加欄,六鍵仍在(S-1.6)。五 family id 未改名。</p><p>4. <strong>一致性邊界被拆解</strong>:未命中 —— 驗證失敗零寫目標;成功才一次 <code>os.replace</code>。S-2.2 未 replace 時目標全舊。</p><p>5. <strong>宣告的 Test seam 未被使用</strong>:部分觀察、不升 🟡 —— 契約 seam 是 <code>python3 scripts/diagir.py deliver</code> 與三支既有牙。<code>test-diagir.sh</code> S-4.2 對 gate-twin 正例只查 <code>fig-long-label</code> 檔在、對 vbox／dir-tree 跑產器 <code>--fixture</code>,不是直接呼叫 <code>check-*.sh</code>。本 hop Fresh <strong>有</strong>跑三支牙,補上契約觀測。見 F-3／Known Limits ④。</p><p>6. <strong>Known design limit 被實作悄悄「解決」</strong>:未命中 —— ①<code>kind-parked.json</code> 已落地(S-4.3 不再靠 Stage 3 同形信封;限制①解除見 Known Limits)。②主機仍不擋跳過閘的舊 <code>write_text</code>(S-2.3 仍用 diff 咬)。③現象入口是 <code>scripts/diagir.py</code>,不是 proto。</p><p>無未經授權 Boundary 變更。無 🔴。無要 park 的 🟡 Boundary。</p></div></details><details class="doc" id="sec-Standards-Axis"><summary><span>Standards Axis</span></summary><div class="doc-in"><p>產品樹 = <code>git show 3b22f01</code>(#250)。本 PR vs <code>origin/main</code> = 本審查檔 + twin。</p><div class="tablewrap"><table><thead><tr><th>F-id</th><th>級</th><th>位置</th><th>問題</th><th>建議</th><th>影響 S/T</th></tr></thead><tbody><tr><td>F-1</td><td>🟢</td><td><code>scripts/build-gate-twin.py:2343-2356</code></td><td>twin 寫檔走 <code>require_write</code>,但 payload 是固定兩步 <code>behavior-flow</code>,不是頁面正文。閘驗的是罐頭信封,不是 html 內容。#191 樹仍能寫出。</td><td>接受為接線,不是內容閘。抽驗:<code>cmp</code> 正本＝tools 副本。記入 Known Limits ③</td><td>S-2.3／M-2</td></tr><tr><td>F-2</td><td>🟢</td><td><code>scripts/test-diagir.sh:211-226</code></td><td>S-2.2 是旁路寫 <code>.tmp</code>,不是在 <code>atomic_write</code> 裡注入崩潰。與 4-spec GIVEN「旁路寫入且不呼叫 <code>os.replace</code>」逐字相符。</td><td>接受。不要把「沒有真的 kill -9」當成紅</td><td>S-2.2</td></tr><tr><td>F-3</td><td>🟢</td><td><code>scripts/test-diagir.sh:402-433</code></td><td>S-4.2 牙內未直接跑三支 <code>check-*.sh</code>。</td><td>本 hop Fresh 已跑 16/16、81/81、222。抽驗用那三個數字,不要只信 CASE 標籤</td><td>S-4.2／T-5</td></tr><tr><td>F-4</td><td>🟢</td><td><code>scripts/diagir.py:74-88</code> 對 <code>232-246</code></td><td>失敗收據多 <code>detail</code>／<code>target_unchanged</code>／<code>target_existed</code>。六鍵仍在。</td><td>接受為 additive。勿當新公開契約</td><td>S-1.6</td></tr><tr><td>F-5</td><td>🟢</td><td><code>scripts/check-file-map.sh:114</code>、<code>scripts/devflow-check.sh:137</code>、<code>scripts/check-py-floor.sh</code>、<code>scripts/test-architecture-guards.sh</code></td><td>這幾檔不在 5-tasks Files 聯集。#250 為掛 <code>test-diagir</code>、地圖 205、<code>MIN_HEREDOCS</code> 221。R/S 未改。</td><td>L1。接受。抽驗 scanned=205、無 <code>check-diagir-lab.sh</code></td><td>S-4.5／S-5.2</td></tr><tr><td>F-6</td><td>🟢</td><td>Diff Budget 4-spec 估 ≤10 檔;#250 32 檔</td><td>超支是停下訊號,多數是 <code>scripts/fixtures/diagir/*</code>。</td><td>不是 L2。接受</td><td>過程</td></tr><tr><td>F-7</td><td>🟢</td><td><code>scripts/diagir.py:222-228</code></td><td>CLI 無 <code>body=</code> 時 dir-tree／stage1 寫 stub html。產器路徑傳真實 body。</td><td>接受。G3 現象以產器／lifecycle 為準</td><td>S-2.1</td></tr></tbody></table></div><p>Dependency Direction／Boundary Leakage／Data Ownership／Interface Stability:未發現反向依賴、未漏出內部型別、非 owner 未直寫目標、公開入口字面仍是 <code>python3 scripts/diagir.py deliver ENVELOPE.json --out TARGET</code>。無 🔴。無未授權 🟡 Boundary。</p></div></details><details class="doc" id="sec-Spec-Axis"><summary><span>Spec Axis</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>R</th><th>判定</th><th>出處</th></tr></thead><tbody><tr><td>R-1 失敗保住 last-good 並吐 DIAGIR_*</td><td>符合</td><td>S-1.1～S-1.5 五碼 + sha 不變;S-1.6 六鍵 + ABORT + Q6 旋鈕;正式入口不是 proto</td></tr><tr><td>R-2 通過後才原子交付</td><td>符合</td><td>S-2.1 整份靜態 SVG;S-2.2 旁路 tmp;S-2.3 五支覆寫經閘。M-1～M-3 舊 <code>write_text</code> 行已改 <code>require_write</code></td></tr><tr><td>R-3 五列查找路由表</td><td>符合</td><td>S-3.1 五列四欄;S-3.2／S-3.3／S-3.4 <code>DIAGIR_FAMILY</code> 且不猜;S-3.5 五入口一一對上、無第六列</td></tr><tr><td>R-4 Proof Lab 薄索引</td><td>符合</td><td>S-4.1 六列;S-4.2 Fresh 三牙綠 + 閘三正;S-4.3 三負不蓋檔;S-4.4 負向 ≠ lifecycle;S-4.5 無第二套 Lab 牙</td></tr><tr><td>R-5 預設靜態直式 SVG 且不收 NON-goal</td><td>符合</td><td>S-5.1 四詞零命中;S-5.2 plugin 3.23.3、三點空、無 #196／IBV／STATUS</td></tr><tr><td>M-1～M-3</td><td>符合</td><td>dir-tree／gate-twin／stage1 產品覆寫改 <code>require_write</code></td></tr><tr><td>Design Boundary</td><td>符合</td><td>見 Design Integrity Check;無 L2、無未授權變更</td></tr><tr><td>6-notes Deviations</td><td>如實 L1</td><td>D-1 三點 diff(S-5.2);D-2 S-4.5 不禁「取代」漢字;D-3／D-4 母版記帳。無 L2。見附錄 A4</td></tr></tbody></table></div></div></details><details class="doc" id="sec-變更架構圖"><summary><span>變更架構圖</span></summary><div class="doc-in"><p>產品(#250,已在 tip;<code>git show 3b22f01</code> basename)與本 PR 審查密封:</p><pre><code>[scripts/diagir.py]  validate + deliver + route + require_write
+    |-- DIAGIR_* / 六鍵收據
+    +--&gt; [scripts/devflow_atomic.py]  tmp + os.replace
+    +--&gt; [notes/design/diagir-route.md]  五列查找
+    +--&gt; [scripts/fixtures/diagir-lab.yaml]  六列索引
+    +--&gt; [scripts/fixtures/vbox-fig/kind-parked.json]
+    +--&gt; [scripts/fixtures/diagir/*.json] + last-good.svg
+
+[scripts/build-dir-tree.py] ----require_write----\
+[scripts/build-gate-twin.py] ----------------------&gt; [diagir.require_write]
+[docs/dev/tools/build-gate-twin.py]  (parity copy) /
+[scripts/build-stage1-html.py] ---------------------/
+[scripts/build-stage2-html.py] ---------------------/
+[scripts/build-stage4-html.py] ---------------------/
+[scripts/build-vbox-fig.py]  仍只寫 stdout
+
+[scripts/test-diagir.sh]  六組 25 checks
+[scripts/devflow-check.sh]  methodology 仍跑三支舊牙 + test-diagir
+
+本 hop(docs-only,不是產品碼):
+[7-review.md]   Source SHA=3b22f01 (#250 tip)
+[7-review.html] G3 twin</code></pre><p>無新公開 HTTP 端點、無新表。改 Diff 必須改本圖。</p></div></details><details class="doc" id="sec-Diff-merge-base-main-HEAD-逐檔折疊"><summary><span>Diff(merge-base(main)..HEAD,逐檔折疊)</span></summary><div class="doc-in"><p><code>merge-base(origin/main, HEAD)</code> 在寫本檔時 = <code>3b22f01</code>。產品 #250 已在 main。本 PR 相對 main 只加審查密封。</p><p>&lt;details&gt;</p><p>&lt;summary&gt;產品 #250(已在 tip;審查對象,不是本 PR 新增)&lt;/summary&gt;</p><p>32 files,+1802/−30。basename 見變更架構圖。入口仍是 <code>python3 scripts/diagir.py deliver ENVELOPE.json --out TARGET</code>。完整 hunk:<code>git show 3b22f01</code>。</p><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary&gt;docs/dev/diagram-ir-gate/7-review.md + 7-review.html — 本審查正本&lt;/summary&gt;</p><p>本檔。<code>verdict: PRE-REVIEW</code>。Source SHA 維持 Fresh 產品樹 <code>3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4</code>。不是 G3 PASS。</p><p>&lt;/details&gt;</p></div></details><details class="doc" id="sec-附錄-本輪特有"><summary><span>附錄:本輪特有</span></summary><div class="doc-in"><p>### A1　爭點</p><p>1. <strong>本檔是不是 G3 PASS?</strong> 不是。機械 21 S 綠 + 三牙綠 ≠ Human G3。<code>verdict:</code> 必須留 <code>PRE-REVIEW</code>。</p><p>2. <strong>2c 該用哪一個 FORK?</strong> 本審查分支從 #250 tip <code>3b22f01</code> 切開,兩次腳本都是 <code>N_A_NO_INCOMING</code>。6-notes 步 0 錨是 <code>25997871a86fce87a1b1f0658512d7f96e07dea3</code>(#244 Stage 5 tip,Stage 6 開工)。產品已合進 main;拿那個錨再跑會 <code>ALREADY_SYNCED</code>,不得當「沒有共同戰場」的證據。</p><p>3. <strong>S-4.2 牙夠不夠?</strong> CASE 本身偏弱(F-3)。本 hop 用三支既有牙 Fresh 補上。抽驗請看 16/16、81/81、222。</p><p>4. <strong>twin 罐頭 payload 算不算繞閘?</strong> 寫檔路徑經閘(S-2.3 要的)。內容不經閘(Known Limits ③)。不升 🟡 Boundary。</p><p>### A2　抽驗列(決定論)</p><p>Coverage Matrix 中位列 = S-3.3(與 twin 頂區「抽驗」格同一列)。</p><ul><li>測試:<code>scripts/test-diagir.sh:310-315</code> <code>S-3.3_dir_as_vbox_family</code> → <code>DIAGIR_FAMILY</code></li><li>信封:<code>scripts/fixtures/diagir/dir-as-vbox.json:4-8</code> <code>payload.kind</code>=<code>dir-tree</code>、<code>root.why</code> 長度 ≥ 12</li><li>閘:<code>scripts/diagir.py:183-185</code> <code>looks_like_tree</code> → <code>fail(&quot;DIAGIR_FAMILY&quot;, &quot;tree-as-vbox&quot;)</code>(kind <code>dir-tree</code> 走 tree 分支)</li><li>現象:rc=1;<code>code</code>=<code>DIAGIR_FAMILY</code>;sha 不變</li></ul><p>對得上才准信其餘 20 列。</p><p>### A3　現象 CLI 原始輸出(節錄)</p><pre><code>last-good sha 8ed83a4d66100b71ed41a651553f453e38997b9f89d52df28bf13eac22354dbc
+
+S-1.1 rc=1 code=DIAGIR_KIND target_replaced=false sha_same=True
+stderr:
+FAIL DIAGIR_KIND | knob: 把 kind 改回允許值，或改走路由表上的正確家族
+FAIL DIAGIR_ABORT | knob: last-good 仍在；先修 IR 再重跑
+
+S-2.1 rc=0 ok=true delivered=true target_replaced=true len=1158
+head: &lt;svg viewBox=&quot;0 0 280 302&quot; role=&quot;img&quot; aria-label=&quot;模組生命週期&quot;
+banned mermaid/mermaid.js/&lt;animate/animateTransform = all False
+
+S-4.2 Fresh:
+✅ PASS:vbox-fig 產圖器 + 牙 16/16
+✅ PASS:dir-tree 產器 + 牙 81/81
+✅ gate twin 產生器守衛:全過(222 項)
+
+S-4.3 held last-good after KIND/FAMILY/WHY
+S-5.2 plugin 3.23.3; origin/main...HEAD plugin diff empty</code></pre><p>### A4　作者對照(N4;<code>review-unlock</code> 之後才讀)</p><p>6-notes owner=<code>implementer-C</code>。T Review Log 六則都寫「implementer-C self-check;獨立 T review 留給 PR／G3」。本 hop <strong>不採信</strong>那些 PASS 當四眼,只對矩陣與 Deviations。</p><div class="tablewrap"><table><thead><tr><th>作者主張</th><th>自建裁斷</th></tr></thead><tbody><tr><td>21 S 各有含 S-id 的 CASE</td><td>相符。矩陣每列有 <code>test-diagir.sh</code> 行號。本 hop 重跑 25/25</td></tr><tr><td>last-good sha <code>8ed83a4d66100b71ed41a651553f453e38997b9f89d52df28bf13eac22354dbc</code></td><td>相符。本 hop <code>sha256sum</code> 同值</td></tr><tr><td>S-2.3 五支覆寫經 <code>require_write</code>;tools 副本一致</td><td>相符。本 hop <code>cmp</code> 相同;四 CASE 綠</td></tr><tr><td>D-1 三點 <code>origin/main...HEAD</code></td><td>如實 L1。本 hop S-5.2 牙即此形。不是 L2</td></tr><tr><td>D-2 S-4.5 不禁「取代」漢字</td><td>如實 L1。THEN 是「不當取代入口」</td></tr><tr><td>D-3／D-4 filemap 205、MIN_HEREDOCS 221、<code>devflow-check</code> 掛 test-diagir</td><td>如實 L1。對上 F-5。本 hop file-map scanned=205</td></tr><tr><td>Decisions:<code>require_write</code> API;twin 固定兩步 payload;ellipsis why 地板 4</td><td>如實,不是 L2。twin 罐頭對上 F-1／Known Limits ③</td></tr><tr><td>Self-Review ⑧ <code>check-stage1-now</code> 27／<code>check-stage2-card</code> 34／<code>check-stage4-rs</code> 50</td><td>檔名是縮寫。本 hop 獨立重跑 <code>check-stage1-now-contract.sh</code> 27/27、<code>check-stage2-card-contract.sh</code> 34/34、<code>check-stage4-rs-contract.sh</code> 50/50</td></tr><tr><td>T-1..T-6 verdict PASS 且早於 commit</td><td>作者自審。本 hop 不當四眼。獨立證據是本檔 Fresh／現象表</td></tr><tr><td>FORK=<code>2599787</code></td><td>屬實(Stage 6 開工)。本 hop 2c 用審查分支叉點 <code>3b22f01</code>(見 A1)</td></tr></tbody></table></div><p>作者矩陣沒有多報或漏報 S。沒有「看起來 L1、其實動 R/S」的 Deviation。</p><p>### A5　Fresh／gauntlet 指令</p><pre><code>test -x docs/dev/tools/devflow-evidence-gauntlet.sh
+bash docs/dev/tools/devflow-evidence-gauntlet.sh docs/dev/diagram-ir-gate/7-review.md \
+  --source-sha 3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4 --review-file \
+  --require-layer check-spec-gate \
+  --require-layer check-vbox-fig \
+  --require-layer check-dir-tree \
+  --require-layer check-gate-twin</code></pre><p>Fresh 當時 HEAD=<code>3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4</code>:</p><pre><code>✅ evidence gauntlet: 67 checks passed — docs/dev/diagram-ir-gate/7-review.md</code></pre><p>Profile Required 是一條全形 <code>／</code> 字串,Evidence 表第一列 Layer 必須與該字串全等。</p><p>### A6　Quiz(留給 Human;不可逆公開信封)</p><p>1. 餵 <code>kind=parked</code> 的 vbox-lifecycle 信封時,目標檔與 stderr 各應看到什麼?</p><p>2. 為什麼 <code>build-dir-tree.py</code>／<code>build-gate-twin.py</code>／<code>build-stage1-html.py</code> 必須改呼叫同一閘,vbox-fig 卻可以繼續只寫 stdout?</p><p>3. 本 slug 為什麼不准新增 <code>scripts/check-diagir-lab.sh</code>?</p><p>4. 失敗收據一定要有哪六個鍵?少了 <code>DIAGIR_ABORT</code> 算不算過?</p><p>5. S-5.2 為什麼用三點 <code>origin/main...HEAD</code> 而不是雙點 <code>origin/main</code>?</p><p>全對才准把 <code>verdict:</code> 從 PRE-REVIEW 改成 Human PASS,且必須由人類寫入。</p></div></details>
+<footer class="foot gate-verdict" id="gate-verdict"
+  data-slug="diagram-ir-gate" data-stage="7-review"
+  data-source-sha="3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4">
+  <p class="gv-canon">正本是同目錄 <code>7-review.md</code> 頂欄
+  <code>verdict:</code>。勾選只是瀏覽器草稿。全勾不算 PASS。
+  只有「提交判定」才寫入 Human verdict。sidecar／HTML／localStorage 都不是正本;
+  sidecar 與 md 衝突時 md 勝。</p>
+  <div class="gv-row" role="radiogroup" aria-label="Human verdict">
+    <label><input type="radio" name="gv-verdict" value="PASS"> PASS</label>
+    <label><input type="radio" name="gv-verdict" value="REQUEST_CHANGES"> REQUEST_CHANGES</label>
+    <label><input type="radio" name="gv-verdict" value="HOLD"> HOLD</label>
+  </div>
+  <label class="gv-field">備註 <input id="gv-notes" type="text" maxlength="200"></label>
+  <label class="gv-field">審查者 <input id="gv-reviewer" type="text" maxlength="80"></label>
+  <button type="button" class="btn" id="gv-submit">提交判定</button>
+  <p id="gv-status" class="gv-status"></p>
+</footer>
+</div>
+<script>
+(function(){
+  var boxes = [].slice.call(document.querySelectorAll('.s-chk'));
+  if (!boxes.length) return;
+  var bar = document.querySelector('.bar i'), done = document.getElementById('done');
+  var KEY = 'devflow-gate-twin:' + document.title;
+  function load(){ try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ return {}; } }
+  function save(s){ try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e){} }
+  var state = load();
+  function paint(){
+    var n = 0;
+    boxes.forEach(function(b){
+      var card = b.closest('.s-card');
+      if (b.checked){ n++; card.classList.add('done'); } else { card.classList.remove('done'); }
+    });
+    if (done) done.textContent = n;
+    if (bar) bar.style.width = (n / boxes.length * 100) + '%';
+  }
+  boxes.forEach(function(b){
+    if (state[b.dataset.sid]) b.checked = true;
+    b.addEventListener('change', function(){ state[b.dataset.sid] = b.checked; save(state); paint(); });
+  });
+  var clr = document.getElementById('clear');
+  if (clr) clr.addEventListener('click', function(){
+    state = {}; save(state); boxes.forEach(function(b){ b.checked = false; }); paint();
+  });
+  paint();
+})();
+
+(function(){
+  var panel = document.getElementById('gate-verdict');
+  if (!panel) return;
+  var statusEl = document.getElementById('gv-status');
+  function status(msg){ if (statusEl) statusEl.textContent = msg; }
+  function checkedIds(){
+    return [].slice.call(document.querySelectorAll('.s-chk')).filter(function(b){
+      return b.checked;
+    }).map(function(b){ return b.dataset.sid; });
+  }
+  function patchMd(text, verdict, notes){
+    if (text.slice(0, 4) !== '---\n') throw new Error('no frontmatter');
+    var end = text.indexOf('\n---\n', 3);
+    if (end < 0) throw new Error('unclosed frontmatter');
+    var fm = text.slice(4, end);
+    var rest = text.slice(end + 5);
+    if (/^verdict:\s*/m.test(fm)) {
+      fm = fm.replace(/^verdict:\s*.*$/m, 'verdict: ' + verdict);
+    } else if (/^status:\s*/m.test(fm)) {
+      fm = fm.replace(/^(status:\s*.*)$/m, '$1\nverdict: ' + verdict);
+    } else {
+      fm = 'verdict: ' + verdict + '\n' + fm;
+    }
+    if (notes) {
+      var line = '- Human verdict note: ' + notes.split('\n')[0];
+      if (/^- Human verdict note:/m.test(rest)) {
+        rest = rest.replace(/^- Human verdict note:.*$/m, line);
+      } else {
+        rest = line + '\n' + rest;
+      }
+    }
+    return '---\n' + fm + '\n---\n' + rest;
+  }
+  function payload(verdict){
+    return {
+      slug: panel.dataset.slug,
+      gate: panel.dataset.stage,
+      verdict: verdict,
+      notes: ((document.getElementById('gv-notes') || {}).value || '').trim(),
+      reviewer: ((document.getElementById('gv-reviewer') || {}).value || '').trim(),
+      checked: checkedIds(),
+      source_sha: panel.dataset.sourceSha || '',
+      sidecar: true
+    };
+  }
+  function postVerdict(body){
+    var urls = ['/devflow-gate/verdict'];
+    if (location.protocol === 'file:') {
+      urls.push('http://127.0.0.1:8765/devflow-gate/verdict');
+    }
+    var i = 0;
+    function next(){
+      if (i >= urls.length) return Promise.reject(new Error('no serve'));
+      var url = urls[i++];
+      return fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      }).then(function(r){
+        if (!r.ok) throw new Error('http ' + r.status);
+        return r.json();
+      }).catch(function(){ return next(); });
+    }
+    return next();
+  }
+  async function writeViaFsa(body){
+    if (!window.showDirectoryPicker) {
+      throw new Error('no File System Access');
+    }
+    var dir = await window.showDirectoryPicker({id: 'devflow-gate-' + body.slug});
+    var mdName = body.gate + '.md';
+    var fh = await dir.getFileHandle(mdName);
+    var file = await fh.getFile();
+    var next = patchMd(await file.text(), body.verdict, body.notes);
+    var w = await fh.createWritable();
+    await w.write(next);
+    await w.close();
+    try {
+      var sh = await dir.getFileHandle(body.gate + '.verdict.json', {create: true});
+      var sw = await sh.createWritable();
+      await sw.write(JSON.stringify({
+        gate: body.gate, verdict: body.verdict, notes: body.notes,
+        checked: body.checked, source_sha: body.source_sha,
+        timestamp: new Date().toISOString(), reviewer: body.reviewer
+      }, null, 2) + '\n');
+      await sw.close();
+    } catch (e) {}
+    return mdName;
+  }
+  var submit = document.getElementById('gv-submit');
+  if (!submit) return;
+  submit.addEventListener('click', function(){
+    var picked = document.querySelector('input[name="gv-verdict"]:checked');
+    if (!picked) {
+      status('請先選 PASS / REQUEST_CHANGES / HOLD。全勾不算 PASS。');
+      return;
+    }
+    var body = payload(picked.value);
+    status('寫入中…');
+    postVerdict(body).then(function(res){
+      status('已寫入 ' + (res.path || (body.gate + '.md')) +
+        ' 的 verdict: ' + body.verdict + '。正本是 md，不是勾選、不是 sidecar。');
+    }).catch(function(){
+      writeViaFsa(body).then(function(name){
+        status('已用 File System Access 寫入 ' + name +
+          ' 的 verdict: ' + body.verdict + '。正本是 md。');
+      }).catch(function(){
+        status('寫不進 md。請跑 python3 scripts/devflow_gate.py serve <專案根> 再開這頁,或用 File System Access 選 feature 資料夾。勾選不是判定。');
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
