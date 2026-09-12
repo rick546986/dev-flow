@@ -18,6 +18,7 @@ CSS_SPEC 沒有對應樣式的新結構,且對 CSS_SPEC 只加不改(見 CSS_TAS
 """
 import html
 import re
+import unicodedata
 
 CSS = """
 :root{
@@ -129,6 +130,10 @@ h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-
   background:var(--panel);box-shadow:var(--shadow);
   display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}
 .fig svg,.fig pre{display:block;width:auto;max-width:360px;margin:0 auto;height:auto}
+.fig pre.fig-ascii-fallback{max-width:100%;width:100%;box-sizing:border-box;
+  overflow-x:auto;text-align:left;white-space:pre;background:var(--sunk);
+  padding:11px;border-radius:7px;font-size:.82rem;line-height:1.5;margin-top:8px}
+.fig .fig-warn{color:var(--warn);text-align:left;margin:0 0 4px;max-width:100%}
 .pinned pre{display:block;width:max-content;max-width:100%;margin-left:auto;margin-right:auto}
 .cap{color:var(--ink-3);font-size:.82rem;line-height:1.6;margin-top:11px;text-align:center}
 svg .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.4}
@@ -375,6 +380,7 @@ def local_page(title: str, extra_css: str, body: str, script: str = "") -> str:
 
 # 直式置中方塊(與 build-vbox-fig.py 同一組常數)。gate-twin 散發時只有
 # 本檔跟產生器在同一目錄,不能 import 母版 scripts/build-vbox-fig.py。
+# 長標可多行或量測加寬;禁靜默硬裁字／默丟高編號框(見 #191)。
 VBOX_CANVAS_W = 280
 VBOX_BOX_W = 200
 VBOX_BOX_X = 40
@@ -386,15 +392,119 @@ VBOX_PAD_TOP = 12
 VBOX_TITLE_H = 16
 VBOX_LINE_H = 14
 VBOX_PAD_BOTTOM = 12
+# 內容估寬(全形=1、半形=0.5);預設框約塞得下 ~18 全形。
+VBOX_CONTENT_UNITS = 18.0
+VBOX_UNIT_PX = 11.0
+VBOX_SIDE_PAD = 40  # 左右各 40 → canvas = box + 80
+VBOX_SOFT_STEPS = 8
+VBOX_HARD_STEPS = 32
+VBOX_SOFT_DETAIL_LINES = 3
+VBOX_HARD_DETAIL_LINES = 12
+_WIDE_EAW = ("W", "F", "A")
 _FIG_HEAD = re.compile(r"^\[([^\]]+)\]\s*(.*)$")
+_TREE_BRANCH = re.compile(r"^(?:\|[\-\+]|[├└│]|\\-)")
+_H_FLOW = re.compile(r"-->|->|→|←")
 
 
-def ascii_fig_steps(body):
-    """把方案架構圖／行為流程圖的 ASCII 收成直式方塊步驟。
+def fig_display_width(s):
+    """估 SVG  monospace 佔寬:W/F/A=1,其餘=0.5。"""
+    total = 0.0
+    for ch in s or "":
+        total += 1.0 if unicodedata.east_asian_width(ch) in _WIDE_EAW else 0.5
+    return total
 
-    認 `[標籤] 標題` 當一框;框上保留 `[A]`／`[R-1]` 與「選定」,
-    給 fig-text 牙對文字。沒有方括號標籤就退回非箭頭列。
+
+def fig_wrap_units(text, max_units):
+    """依估寬折行;不丟字、不裁字。單字元超過上限仍單獨成行。"""
+    text = text or ""
+    if not text:
+        return []
+    if max_units <= 0:
+        return [text]
+    if fig_display_width(text) <= max_units:
+        return [text]
+    lines = []
+    cur = ""
+    cur_w = 0.0
+    for ch in text:
+        w = 1.0 if unicodedata.east_asian_width(ch) in _WIDE_EAW else 0.5
+        if cur and cur_w + w > max_units:
+            lines.append(cur)
+            cur = ch
+            cur_w = w
+        else:
+            cur += ch
+            cur_w += w
+    if cur:
+        lines.append(cur)
+    return lines
+
+
+def _content_lines(body):
+    out = []
+    for raw in (body or "").splitlines():
+        stripped = raw.strip()
+        if not stripped or stripped.startswith("```"):
+            continue
+        out.append(stripped)
+    return out
+
+
+def is_tree_shaped_ascii(body):
+    """樹狀／橫向多框 ASCII:含 |-- 分支,或單行多個 [...] 用箭頭串起來。
+
+    這種形收不成直式 [R-n] 方塊;gate-twin 應 WARNING + <pre> 原文,禁單盒硬裁。
     """
+    lines = _content_lines(body)
+    if not lines:
+        return False
+    for ln in lines:
+        if _TREE_BRANCH.match(ln):
+            return True
+    for ln in lines:
+        if ln.count("[") >= 2 and _H_FLOW.search(ln):
+            return True
+    return False
+
+
+def _plain_pre_text(body):
+    """給 <pre> 的原文:去掉圍欄列,保留其餘(含縮排意義的空白以 strip 後行為準)。"""
+    keep = []
+    for raw in (body or "").splitlines():
+        if raw.strip().startswith("```"):
+            continue
+        keep.append(raw.rstrip())
+    # 去掉首尾空行
+    while keep and not keep[0].strip():
+        keep.pop(0)
+    while keep and not keep[-1].strip():
+        keep.pop()
+    return "\n".join(keep)
+
+
+def parse_ascii_fig(body):
+    """解析方案架構圖／行為流程圖 ASCII。
+
+    回傳 dict:
+      mode: 'vbox' | 'pre'
+      steps: [(kind, title, detail_lines), ...]  (mode=vbox)
+      pre_text: str  (mode=pre)
+      warnings: [str, ...]  — 呼叫端印 WARNING,禁靜默裁切
+    """
+    warnings = []
+    if is_tree_shaped_ascii(body):
+        warnings.append(
+            "樹狀／橫向箭頭 ASCII(含 | 分支或單行多個 [...])無法收成直式方塊;"
+            "改以 <pre> 原文顯示。請改寫成每行一個 [R-n]／[A] 標題 + 短步驟"
+            "(見 notes/design/vbox-fig-contract.md)。"
+        )
+        return {
+            "mode": "pre",
+            "steps": [],
+            "pre_text": _plain_pre_text(body),
+            "warnings": warnings,
+        }
+
     steps = []
     current = None
     extras = []
@@ -406,18 +516,27 @@ def ascii_fig_steps(body):
         for extra in extras:
             text = extra.strip()
             if text:
-                bits.append(text[:42])
-            if len(bits) >= 3:
-                break
+                bits.append(text)
         if not bits:
             bits = ["步驟"]
+        if len(bits) > VBOX_SOFT_DETAIL_LINES:
+            warnings.append(
+                "框「%s」步驟列 %d 行超過建議 %d 行(仍全收;請縮短或拆框)"
+                % (current, len(bits), VBOX_SOFT_DETAIL_LINES)
+            )
+        if len(bits) > VBOX_HARD_DETAIL_LINES:
+            dropped = len(bits) - VBOX_HARD_DETAIL_LINES
+            warnings.append(
+                "框「%s」步驟列超過硬上限 %d,末 %d 行未畫進 SVG"
+                "——請縮短 md 或拆 [R-n]"
+                % (current, VBOX_HARD_DETAIL_LINES, dropped)
+            )
+            bits = bits[: VBOX_HARD_DETAIL_LINES]
+            bits[-1] = bits[-1] + " …(+%d 行未畫)" % dropped
         kind = "hl" if "選定" in current else "b"
-        steps.append((kind, current, bits[:3]))
+        steps.append((kind, current, bits))
 
-    for raw in (body or "").splitlines():
-        stripped = raw.strip()
-        if not stripped or stripped.startswith("```"):
-            continue
+    for stripped in _content_lines(body):
         match = _FIG_HEAD.match(stripped)
         if match:
             flush()
@@ -430,59 +549,145 @@ def ascii_fig_steps(body):
         else:
             extras.append(stripped)
     flush()
+
     if not steps and extras:
         arrows = set("|-▼▲→←│─┌┐└┘<>v^ ")
-        for extra in extras[:6]:
+        for extra in extras:
             if extra.startswith("|") or extra.startswith("<"):
                 continue
             if set(extra) <= arrows:
                 continue
-            steps.append(("b", extra[:42], ["步驟"]))
-    return steps[:8]
+            steps.append(("b", extra, ["步驟"]))
+
+    if len(steps) > VBOX_SOFT_STEPS:
+        warnings.append(
+            "直式方塊 %d 格超過建議 %d 格(仍全收;請確認是否該拆節)"
+            % (len(steps), VBOX_SOFT_STEPS)
+        )
+    if len(steps) > VBOX_HARD_STEPS:
+        dropped = len(steps) - VBOX_HARD_STEPS
+        warnings.append(
+            "直式方塊超過硬上限 %d,末 %d 格未畫進 SVG——請拆節或縮短圖"
+            % (VBOX_HARD_STEPS, dropped)
+        )
+        steps = steps[: VBOX_HARD_STEPS - 1]
+        steps.append(
+            ("wn", "[…] 其餘未畫", ["另有 %d 格未收進 SVG" % dropped, "請拆節或縮短圖"])
+        )
+
+    return {
+        "mode": "vbox",
+        "steps": steps,
+        "pre_text": "",
+        "warnings": warnings,
+    }
+
+
+def ascii_fig_steps(body):
+    """相容包裝:回 vbox 步驟列;樹狀 ASCII 回 [](請改用 parse_ascii_fig)。"""
+    result = parse_ascii_fig(body)
+    if result["mode"] != "vbox":
+        return []
+    return list(result["steps"])
+
+
+def render_fig_pre(aria, pre_text, notice):
+    """樹狀 ASCII 後備:可讀 <pre>,附顯式警告(不是裁過的單盒)。"""
+    label = html.escape((aria or "").strip() or "ASCII 圖", quote=True)
+    warn = html.escape(notice or "樹狀 ASCII 無法收成直式方塊;以下為原文。")
+    body = html.escape(pre_text or "")
+    return (
+        '<p class="cap fig-warn" role="status">⚠️ %s</p>'
+        '<pre class="fig-ascii-fallback" aria-label="%s">%s</pre>'
+        % (warn, label, body)
+    )
+
+
+def _layout_step(kind, title, detail_lines, content_units):
+    """折行標題與步驟;回 (kind, title_lines, detail_lines_wrapped)。"""
+    title_lines = fig_wrap_units(title, content_units) or ["—"]
+    wrapped = []
+    for raw in detail_lines or ["步驟"]:
+        parts = fig_wrap_units(raw, content_units)
+        if not parts:
+            continue
+        wrapped.extend(parts)
+    if not wrapped:
+        wrapped = ["步驟"]
+    return kind, title_lines, wrapped
 
 
 def render_vbox_svg(aria, steps):
-    """steps = [(kind, title, lines), ...],常數對齊 build-vbox-fig.py。"""
+    """steps = [(kind, title, lines), ...]。
+
+    長標題／長步驟依估寬折成多行 <text>;若單行仍超預設框則量測加寬
+    canvas/box(左右 padding 不變)。禁單行硬裁。
+    """
     if not steps:
         return ""
 
-    def box_h(n_lines):
-        return VBOX_PAD_TOP + VBOX_TITLE_H + n_lines * VBOX_LINE_H + VBOX_PAD_BOTTOM
+    # 先用預設估寬折;再量實際最長行決定是否加寬。
+    laid = [_layout_step(k, t, lines, VBOX_CONTENT_UNITS) for k, t, lines in steps]
+    max_units = VBOX_CONTENT_UNITS
+    for _k, title_lines, det in laid:
+        for ln in title_lines + det:
+            max_units = max(max_units, fig_display_width(ln))
+    # 單 token 極長時加寬框(仍折到新上限,避免無限)。
+    if max_units > VBOX_CONTENT_UNITS:
+        content_units = max_units
+        laid = [_layout_step(k, t, lines, content_units) for k, t, lines in steps]
+    else:
+        content_units = VBOX_CONTENT_UNITS
 
-    heights = [box_h(len(lines)) for _kind, _title, lines in steps]
-    height = VBOX_TOP + sum(heights) + VBOX_GAP * (len(steps) - 1) + VBOX_BOTTOM
+    box_w = max(VBOX_BOX_W, int(round(content_units * VBOX_UNIT_PX)) + 16)
+    canvas_w = box_w + VBOX_SIDE_PAD * 2
+    box_x = VBOX_SIDE_PAD
+    cx = box_x + box_w // 2
+
+    def box_h(n_title, n_detail):
+        # 第一行標題用 TITLE_H,其餘標題行與步驟行用 LINE_H
+        title_block = VBOX_TITLE_H + max(0, n_title - 1) * VBOX_LINE_H
+        return VBOX_PAD_TOP + title_block + n_detail * VBOX_LINE_H + VBOX_PAD_BOTTOM
+
+    heights = [box_h(len(tl), len(dl)) for _k, tl, dl in laid]
+    height = VBOX_TOP + sum(heights) + VBOX_GAP * (len(laid) - 1) + VBOX_BOTTOM
     label = html.escape((aria or "").strip() or "直式步驟方塊", quote=True)
+    # 加寬時放寬 max-width,避免 CSS 360px 把字又擠糊。
+    css_max = max(360, canvas_w)
     parts = [
         '<svg viewBox="0 0 %d %d" role="img" aria-label="%s" '
-        'style="display:block;max-width:360px;margin:0 auto;height:auto">'
-        % (VBOX_CANVAS_W, height, label),
+        'style="display:block;max-width:%dpx;margin:0 auto;height:auto">'
+        % (canvas_w, height, label, css_max),
     ]
     y = VBOX_TOP
-    for i, (kind, title, lines) in enumerate(steps):
+    for i, (kind, title_lines, det) in enumerate(laid):
         h = heights[i]
         parts.append(
             '<rect class="%s" x="%d" y="%d" width="%d" height="%d" rx="6"/>'
-            % (kind, VBOX_BOX_X, y, VBOX_BOX_W, h)
+            % (kind, box_x, y, box_w, h)
         )
         ty = y + VBOX_PAD_TOP + 12
-        parts.append(
-            '<text class="nl" x="%d" y="%d" text-anchor="middle">%s</text>'
-            % (VBOX_CX, ty, html.escape(title))
-        )
+        for ti, tline in enumerate(title_lines):
+            if ti:
+                ty += VBOX_LINE_H
+            parts.append(
+                '<text class="nl" x="%d" y="%d" text-anchor="middle">%s</text>'
+                % (cx, ty, html.escape(tline))
+            )
         ly = ty
-        for line in lines:
+        for line in det:
             ly += VBOX_LINE_H
             parts.append(
                 '<text class="sm" x="%d" y="%d" text-anchor="middle">%s</text>'
-                % (VBOX_CX, ly, html.escape(line))
+                % (cx, ly, html.escape(line))
             )
-        if i < len(steps) - 1:
+        if i < len(laid) - 1:
             y1 = y + h
             y2 = y + h + VBOX_GAP
             parts.append(
                 '<line x1="%d" y1="%d" x2="%d" y2="%d" '
                 'stroke="currentColor" stroke-width="1.4"/>'
-                % (VBOX_CX, y1, VBOX_CX, y2)
+                % (cx, y1, cx, y2)
             )
         y = y + h + VBOX_GAP
     parts.append("</svg>")

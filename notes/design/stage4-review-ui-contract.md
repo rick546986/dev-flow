@@ -19,7 +19,9 @@
 
 下列七條是鎖死,不是口味、不是選配。產檔器吃 md 的 R/S、生命週期與行為流程圖節:
 `scripts/build-stage4-html.py` 吐 R/S 卡 + 直式生命週期 SVG + 行為流程圖直式 SVG + 提交判定。
-行為流程圖必須是 SVG-not-pre,不准只釘置頂 id。
+行為流程圖必須是 SVG-not-pre(輸入為直式 `[R-n]` 形時),不准只釘置頂 id。
+樹狀 `|` ASCII 屬錯誤輸入形:契約見 `vbox-fig-contract.md`;G2 twin 會 WARNING
++ `<pre>` 降級,審頁產器仍要求作者改成直式 `[R-n]` 再產 SVG。
 授權 `--action`。不包 markdown-it + html-shell。
 寫法落點:`_templates/4-spec.md`(本檔是正本,不另開家族)。
 

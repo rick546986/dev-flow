@@ -2162,14 +2162,25 @@ def main(argv):
         if lvl <= 2 and PINNED_PAT.search(title) and body.strip():
             pinned_titles.add(title)
             if re.search(r"方案架構圖|行為流程圖", title):
-                steps = ui.ascii_fig_steps(body)
-                if not steps:
-                    steps = [("b", title.strip() or "圖", ["步驟"])]
-                svg = ui.render_vbox_svg(title, steps)
+                parsed = ui.parse_ascii_fig(body)
+                for w in parsed.get("warnings") or []:
+                    print(f"WARNING: {w}", file=sys.stderr)
+                if parsed.get("mode") == "pre":
+                    notice = (parsed.get("warnings") or [
+                        "樹狀 ASCII 無法收成直式方塊;以下為原文。"
+                    ])[0]
+                    fig_inner = ui.render_fig_pre(
+                        title, parsed.get("pre_text") or body, notice
+                    )
+                else:
+                    steps = list(parsed.get("steps") or [])
+                    if not steps:
+                        steps = [("b", title.strip() or "圖", ["步驟"])]
+                    fig_inner = ui.render_vbox_svg(title, steps)
                 fig_html[title] = (
                     f'<section class="pinned" id="{anchor_id(title)}">'
                     f'<h2>{inline(title)}</h2>'
-                    f'<div class="fig">{svg}</div></section>'
+                    f'<div class="fig">{fig_inner}</div></section>'
                 )
                 continue
             block = (
