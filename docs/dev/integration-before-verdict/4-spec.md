@@ -289,16 +289,14 @@ T-now:一次改完仍在教舊序的活教師。2c 編號仍叫整合回歸,不�
 
 ```
 [R-1] 拒絕只寫作廢的 ALREADY_SYNCED 填檔
-  宣稱 2c 已勾或送 G3
-  void-only → 牙紅
-  重綁 SHA 或本項 FAIL → 綠
-  GUIDANCE 寫出恢復下一步
+  已宣稱則 void-only 紅
+  重綁 SHA 或 FAIL 綠
+  GUIDANCE 寫恢復下一步
 [R-2] 放過未宣稱的 n-a 與 draft
   N_A_NO_INCOMING 不紅
   未勾 draft 不紅
 [R-3] 清除活教師舊序
-  example 2c≠Fresh
-  manifest／檔頭改口
+  example／manifest／檔頭改口
   衍生 fixture 同步
   活路徑 needle 歸零
 [R-4] 保留 2c 編號與模板牙
