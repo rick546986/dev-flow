@@ -48,12 +48,13 @@ if [ -n "${1:-}" ]; then
   esac
 fi
 
-python3 - "$ROOT" <<'PY'
+python3 - "$ROOT" "$SELF_DIR" <<'PY'
 import os
 import re
 import sys
 
 root = sys.argv[1]
+self_dir = sys.argv[2]
 fails = []
 checks = 0
 
@@ -321,13 +322,93 @@ if rev:
          "ST:Exit Checklist 仍在 Verdict 之後合併 INTEGRATION_SHA"
          "(程式碼動作必須停在 Final Fresh 之前)")
 
+# ── ST-filled:填好的 7-review 牙(AS-1;claimed + ALREADY_SYNCED 才開火)────
+#
+# 舊 ST 組只咬模板字串。本組把射程延到填檔:已宣稱勾 2c／送 G3 且正文有
+# ALREADY_SYNCED 時,恢復欄必須是重綁 Source SHA(≥7 hex)或「本項 FAIL」。
+# 只寫「證據不算數／輸出不算數」→ void-only 紅。N_A_NO_INCOMING 與未勾
+# draft 不開火。入口仍是本檔,不另開 check-already-synced.sh。
+# 五份對照住 scripts/fixtures/stage67-filled-tooth/;stdout 印 ST-filled:
+# 供 Verify 計數。seed 複本常沒帶 fixtures,先讀受測 root、再退回本腳本旁。
+_HEX7 = re.compile(r"Source SHA:\s*([0-9a-fA-F]{7,})")
+_CLAIMED_2C = re.compile(r"\[x\].{0,80}(2c|整合回歸)", re.I | re.S)
+
+
+def _front(text, key, value):
+    return re.search(rf"(?m)^{re.escape(key)}:\s*{re.escape(value)}\b", text) is not None
+
+
+def judge_filled_tooth(text):
+    """claimed + ALREADY_SYNCED → 恢復二選一;否則 no-fire。回 (exit, reason)。"""
+    has_synced = "ALREADY_SYNCED" in text
+    claimed = (
+        _front(text, "status", "approved")
+        or _front(text, "verdict", "PASS")
+        or "結論:STATUS=ALREADY_SYNCED" in text
+        or _CLAIMED_2C.search(text) is not None
+    )
+    if not has_synced or not claimed:
+        if "N_A_NO_INCOMING" in text:
+            return 0, "no-fire:N_A_NO_INCOMING"
+        return 0, "no-fire:draft"
+    if "本項 FAIL" in text:
+        return 0, "pass:item-FAIL"
+    sha = _HEX7.search(text)
+    if sha:
+        return 0, f"pass:rebind-sha:{sha.group(1)}"
+    return 1, "fail:void-only"
+
+
+EXPECTED_FILLED = (
+    ("void-only", lambda rc, reason: rc != 0 and "void-only" in reason),
+    ("rebind-sha", lambda rc, reason: rc == 0 and "def4567890abc" in reason),
+    ("item-fail", lambda rc, reason: rc == 0 and ("item-FAIL" in reason or "本項 FAIL" in reason)),
+    ("na-incoming", lambda rc, reason: rc == 0 and "no-fire" in reason and "N_A_NO_INCOMING" in reason),
+    ("draft-unclaimed", lambda rc, reason: rc == 0 and "no-fire" in reason and "draft" in reason),
+)
+need(tuple(name for name, _pred in EXPECTED_FILLED) == (
+        "void-only", "rebind-sha", "item-fail", "na-incoming", "draft-unclaimed"),
+     "ST-filled:案例名與釘死清單不符")
+
+_fx_here = os.path.join(root, "scripts", "fixtures", "stage67-filled-tooth")
+_fx_self = os.path.join(self_dir, "fixtures", "stage67-filled-tooth")
+
+
+def _filled_dir():
+    for cand in (_fx_here, _fx_self):
+        if all(os.path.isfile(os.path.join(cand, f"{n}.md"))
+               for n, _p in EXPECTED_FILLED):
+            return cand
+    return _fx_here if os.path.isdir(_fx_here) else _fx_self
+
+
+fx_dir = _filled_dir()
+need(os.path.isdir(fx_dir),
+     f"ST-filled:對照目錄不存在({fx_dir})")
+for name, pred in EXPECTED_FILLED:
+    path = os.path.join(fx_dir, f"{name}.md")
+    body = None
+    if os.path.isfile(path):
+        with open(path, encoding="utf-8") as fh:
+            body = fh.read()
+    need(body is not None, f"ST-filled:{name} fixture 不存在")
+    if body is None:
+        print(f"ST-filled: {name} missing")
+        continue
+    rc, reason = judge_filled_tooth(body)
+    print(f"ST-filled: {name} {reason}")
+    need(pred(rc, reason),
+         f"ST-filled:{name} 判定不符(rc={rc} reason={reason})")
+
 # ── 檢查數地板:防止有人把上面整段刪成空迴圈仍然 exit 0 ──────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」。
 # 負向測試 S67-6 實測:原本填 16(A1 那組恰好 8 項,24-8=16)→ 刪掉整組 A1 之後
 # 剛好等於地板,守衛照樣 exit 0。地板留餘裕 = 地板沒有牙齒。
 # 新增檢查時把這個數字一起往上調(同 test-architecture-guards.sh 的 EXPECTED_* 體例)。
 # 2026-08-16 補 TF 群組(測試檔路徑必須列進 Files):+2(模板 needle 1 + 範例承接 1)。
-MIN_CHECKS = 60
+# 2026-09-12 補 ST-filled 填檔牙:+12(案例名釘死 1 + 目錄 1 + 五份存在 5 + 五份判定 5)。
+# 實跑 checks=85(既有迴圈項 + 本組);地板釘死實得數,刪 A1 整組仍會低於地板。
+MIN_CHECKS = 85
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
@@ -341,5 +422,5 @@ if fails:
 print(f"✅ check-stage67-enforcement: Stage 6/7 強制條款齊({checks} 項檢查全過)")
 print("   A1 守衛武裝自檢 / A3 Verify 案例數斷言 / A4 gauntlet 路徑 / A5 觀測可執行性 / "
       "VF Verify 單行純指令 / DOC doctor 必跑 / TF 測試檔路徑必列 Files / "
-      "ST 出貨樹=審過的樹")
+      "ST 出貨樹=審過的樹 / ST-filled 填檔牙")
 PY
