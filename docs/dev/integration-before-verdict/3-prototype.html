@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>integration-before-verdict · 3-prototype</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px}
+.r-body p{margin:0 0 8px}
+.trigger{list-style:none;padding:0;margin:0}
+.trigger li{padding:4px 0;border-bottom:1px solid var(--rule-2)}
+.hit{color:var(--ok);font-weight:650}
+.miss{color:var(--ink-3)}
+.card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 8px;background:var(--sunk)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 3-prototype · 審查介面</p>
+  <h1>integration-before-verdict</h1>
+  <p class="sub">正本是 md。觸發判定／Demo／答案回寫 2-decision。不是 html-shell 長文。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">draft</span></div><div class="cell"><span class="k">觸發命中</span><span class="v">7/9</span></div><div class="cell"><span class="k">Demo</span><span class="v">5</span></div><div class="cell"><span class="k">Human verdict</span><span class="v">NOT_REVIEWED</span></div></div>
+</header>
+<section class="r-block" id="trigger"><div class="r-head"><span class="r-name">觸發判定</span></div><div class="r-body"><ul class="trigger"><li class="miss">[未中] 有新的前端流程（本題是清單／填檔／腳本檔頭，無新前端）</li><li class="hit">[命中] 改變使用者下一步（`ALREADY_SYNCED` 後不得只寫「證據不算數」勾過；下一步是重綁 2d Source SHA 或本項 FAIL）</li><li class="hit">[命中] 涉及角色交接（reviewer ↔ merger ↔ owner；合的是腳本印的 INTEGRATION_SHA）</li><li class="hit">[命中] 涉及人工核准（G3 Verdict；FAIL 是人停下重算）</li><li class="hit">[命中] 涉及等待/退回/逾時（`ALREADY_SYNCED` 停住 → 重跑 Fresh 或 FAIL）</li><li class="hit">[命中] 涉及權限差異（reviewer 只在 2c 准改 HEAD；merger 才合；owner 簽 G3）</li><li class="hit">[命中] 涉及系統外動作（git merge、GitHub PR、終端機腳本）</li><li class="miss">[未中] 涉及多種可行互動設計（A+AS-1+T-now 已 lock；單一路徑 CLI 填檔牙）</li><li class="hit">[命中] Stage 1 尚有操作流程不確定性（牙何時發動、結論欄位長什麼樣，Decision 留給本站／4-spec）</li></ul></div></section>
+<section class="r-block" id="question"><div class="r-head"><span class="r-name">Question</span></div><div class="r-body"><p>引 2-decision Risks 第 1–2 條 + SC-2／SC-3 + Decision「剩餘交付是填檔牙與活教師」： 1. **AS-1 填檔牙形狀**：一份填好的 7-review 記 `ALREADY_SYNCED` 時，什麼結論算過、什麼必須機械紅？ 2. **發動時機**：如何避免誤殺 `N_A_NO_INCOMING` 與未跑 2c 的 draft？ 3. **活教師 intended 改口**：example／manifest／腳本檔頭要改成哪一句，才不再教 `2c = Fresh`／「Exit Checklist 計算工具」？（本站只展示，不改正本） 4. **Stage 7 順序**：活教師必須教的序是否就是 tip 已鎖的 2c 整合 → 2d Fresh → 雙軸 → Verdict → Exit 只准文件？ 答案長什麼樣才算回答了： - 有可跑的 throwaway 謂詞：void-only → RED；重綁 SHA → GREEN；明示 FAIL → GREEN；n-a／draft → N/A。 - 發動條件寫成可檢查的句子（宣稱勾過／送 G3／明示 FAIL 才咬）。 - 活教師五條路徑有現況 vs intended 對照，且本 PR **未改**那些正本。 - 順序圖與 tip `_templates/7-review.md` 2c→2d 一致。</p></div></section>
+<section class="r-block" id="demo"><div class="r-head"><span class="r-name">Demo</span></div><div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 454" role="img" aria-label="結構圖">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">2c 整合回歸（選定順序；最後一次准改 HEAD</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">2d Final Fresh（Source SH</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="b" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">雙軸 + 現象</text>
+  <path class="flow" d="M140,216 L140,238"/>
+  <rect class="b" x="40" y="238" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="262">Verdict</text>
+  <path class="flow" d="M140,292 L140,314"/>
+  <rect class="b" x="40" y="314" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="338">Exit 只准文件（禁合併）</text>
+  <path class="flow" d="M140,368 L140,390"/>
+  <rect class="hl" x="40" y="390" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="414">CLI 填檔牙 Demo（選定）</text>
+</svg>
+</div><div class="card"><strong>Scenario AC-3（走 intended 順序）</strong><p>使用者角色:Stage 7 reviewer</p><p>真實目標:在將出貨的那棵樹上做 G3；核准樹=出貨樹</p><p>起始狀態:tip `_templates/7-review.md` 已是 2c 整合 → 2d Fresh；本 slug 尚未寫 4-spec／守衛碼</p><p>操作步驟:打開 `proto/live-teacher-intended.md` 與模板頂註；對照 CLI 印出的 `2c → 2d → 雙軸 → Verdict → Exit 只准文件`</p><p>系統回應:順序與 tip 模板一致；活教師對照表指出 example／manifest／檔頭仍教舊序</p><p>系統外下一步:本站不改正本；Stage 6 才改活教師</p><p>觀察問題:看到清單後，下一步是先合還是先 Fresh？系統有沒有暗示 Exit 才准合？</p></div><div class="card"><strong>Scenario AC-2（void-only 必須紅）</strong><p>使用者角色:Stage 7 reviewer</p><p>真實目標:`ALREADY_SYNCED` 時不能只靠「證據不算數」勾過</p><p>起始狀態:`proto/filled-void-only.md` 記 `ALREADY_SYNCED` + 「證據不算數／輸出不算數」+ `[x]` 勾過、無重綁 SHA、無 FAIL</p><p>操作步驟:跑 `python3 docs/dev/integration-before-verdict/proto/check-as1-tooth.py`；看 `filled-void-only.md` 列</p><p>系統回應:`expect RED / got RED`</p><p>系統外下一步:正式牙 Stage 6 才掛進既有檢查家族</p><p>觀察問題:這份填檔看起來能不能送 G3？下一步是重綁還是停？</p></div><div class="card"><strong>Scenario AC-2（重綁 SHA 必須綠）</strong><p>使用者角色:Stage 7 reviewer</p><p>真實目標:合過之後重跑 2d，把 Source SHA 綁到新 HEAD</p><p>起始狀態:`proto/filled-rebind.md` 有 Rebound Source SHA `c0ffee1` + 「重跑 Final Fresh 重綁」</p><p>操作步驟:同一支 CLI；看 `filled-rebind.md` 列</p><p>系統回應:`expect GREEN / got GREEN`</p><p>系統外下一步:無</p><p>觀察問題:重綁後是否看得出 Source SHA 就是送審樹？</p></div><div class="card"><strong>Scenario AC-2（明示 FAIL 必須綠）</strong><p>使用者角色:Stage 7 reviewer</p><p>真實目標:merge-base 污染時停下，不假裝過關</p><p>起始狀態:`proto/filled-fail.md` 寫「本項 FAIL」，2c 未勾</p><p>操作步驟:同一支 CLI；看 `filled-fail.md` 列</p><p>系統回應:`expect GREEN / got GREEN`（牙承認合法停，不是假過）</p><p>系統外下一步:從乾淨座標重算（系統外 git）</p><p>觀察問題:FAIL 會不會被當成「沒勾所以沒牙」而漏掉？能否撤回／重算？</p></div><div class="card"><strong>Scenario AC-2（n-a 與 draft 不預先紅）</strong><p>使用者角色:Stage 7 reviewer</p><p>真實目標:零 incoming 或還沒跑 2c 時不被誤殺</p><p>起始狀態:`proto/filled-n-a.md`（`N_A_NO_INCOMING`）；`proto/filled-draft.md`（draft、未勾）</p><p>操作步驟:同一支 CLI；看這兩列</p><p>系統回應:兩列皆 `N/A`</p><p>系統外下一步:n-a 可繼續 2d；draft 先跑腳本</p><p>觀察問題:空狀態／未跑是否被當成壞掉？</p></div></div></section>
+<section class="r-block" id="result"><div class="r-head"><span class="r-name">答案</span></div><div class="r-body"><p>- **2026-09-12 實跑**（本 branch `cursor/ibv-stage3-prototype-58f2`，base tip `630cd41` / #207）: ``` intended Stage 7 order: 2c 整合回歸 → 2d Final Fresh → 雙軸 + 現象 → Verdict → Exit 只准文件 fixture                expect   got      ok filled-void-only.md    RED      RED      yes filled-rebind.md       GREEN    GREEN    yes filled-fail.md         GREEN    GREEN    yes filled-n-a.md          N/A      N/A      yes filled-draft.md        N/A      N/A      yes live-teacher scan: OLD example/contract-expiry-reminder/7-review.md:24 OLD example/contract-expiry-reminder/4-spec.md:223 OLD manifests/p4-gauntlet-gates.md:52 OLD scripts/devflow-integration-regression.sh:2 OLD docs/dev/tools/devflow-integration-regression.sh:2 tooth-shape demo: fixtures match intended AS-1 predicate ``` - 答案: 1. 填檔牙形狀成立（throwaway）：void-only 紅；重綁 SHA 或明示 FAIL 綠。 2. 發動時機成立：n-a／未結論 draft 不預先紅；FAIL 即使未勾也算合法結論。 3. 活教師五條路徑仍教舊序／舊檔頭（T-now 工還在）；intended 改口見 `proto/live-teacher-intended.md`。本 PR **未改**那些正本。 4. 順序 = tip 已鎖的 2c→2d；本站不重編號。 - **CLI Demo 足夠**：互動形已由 Decision lock；剩餘是結論形狀，不是第二套 UI。 - 正式守衛／example 改寫 **尚未**寫入 production 路徑（留給 Stage 6 + 5-tasks Files）。 - 回寫對象:2-decision Risks 第 1–2 條 + 確認紀錄「prototype 回寫」行。</p></div></section>
+<section class="r-block" id="writeback"><div class="r-head"><span class="r-name">回寫 2-decision</span></div><div class="r-body"><p>- 回寫 2-decision Risks 第 1 條：填檔牙擬定形狀 = `ALREADY_SYNCED` 時必須「Rebound Source SHA」或「本項 FAIL」，只寫「證據不算數／輸出不算數」→ 紅。欄位／掛進哪一支既有檢查，仍進 4-spec（OC-1）。 - 回寫 2-decision Risks 第 2 條：牙只在宣稱勾過／送 G3／明示 FAIL 時發動；`N_A_NO_INCOMING` 與未結論 draft 不預先紅。已用 fixture 跑過。 - 回寫活教師：T-now 清單確認五條活路徑仍舊；intended 改口已展示、**未改正本**。 - 互動／Human verdict：仍待 owner 親填（本檔 `status: draft`）。 - proto 產物處置:留在 `docs/dev/integration-before-verdict/proto/` 當本站 Demo 證據；Stage 6 正式碼另寫，不把本目錄當 production 入口。</p></div></section>
+<section class="r-block" id="feedback"><div class="r-head"><span class="r-name">User Demo Feedback</span></div><div class="r-body"><p>- Demo date: 2026-09-12（agent 已代跑 CLI；待人類親走 Demo Script） - Participants: - Variant reviewed: CLI-only（無 UI Variant；Pattern A+AS-1+T-now） - Accepted interaction: - Rejected interaction: - Confusions observed: - Missing real-world steps: - Permission corrections: - External handoffs: - Required changes: - Human verdict: NOT_REVIEWED - Verdict attestation:</p></div></section>
+<p class="src">由 <code>scripts/build-stage3-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
