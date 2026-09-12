@@ -25,14 +25,14 @@
 > 在同一 checkout 手改,後寫會靜默蓋掉先寫的列。手改而不走寫入口會讓
 > 蓋章對不上,`check-status-policy.sh` 會紅。feature branch 上本腳本拒改正本表列。
 
-<!-- status-writer-rev:c794014796d1e217533610b2dd0c14e06610516826d0522ccd3713341cd6dea4 -->
+<!-- status-writer-rev:7301e37dd8830b3688446701f7e637f66b7b48f350679369015cbc8eb754306f -->
 
 ## Active
 
 | Feature | Lane | Stage | Owner | Branch | OverlapRef | Gates | Updated |
 |---|---|---|---|---|---|---|---|
 | [integration-before-verdict](./integration-before-verdict/) | full | 3-prototype | rick | n-a:尚未建立 branch | n-a:尚未建立 branch | G1✅ G2⬜ G3⬜ | 2026-09-12 |
-| [diagram-ir-gate](./diagram-ir-gate/) | full | 1-discussion | rick | n-a:尚未建立 branch | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | 2026-09-12 |
+| [diagram-ir-gate](./diagram-ir-gate/) | full | 3-prototype | rick | n-a:尚未建立 branch | n-a:尚未建立 branch | G1✅ G2⬜ G3⬜ | 2026-09-12 |
 
 ## 已完成
 
