@@ -109,7 +109,7 @@ FORK_INTEGRATION_SHA: 25997871a86fce87a1b1f0658512d7f96e07dea3
 
 - 2026-09-12 | T-1..T-6 | 3ec2a6ca23f72c80c557b98dd8fa429b13deaad2 feat(diagram-ir-gate): Stage 6 implement T-1..T-6 (impl-C)
 - 2026-09-12 | L1 D-3 | 註冊 `test-diagir.sh` 進 methodology;補 filemap + EXPECTED_MAPPED_FILES 205
-- 2026-09-12 | L1 D-1 | S-5.2 改量 merge-base,避免 main 前進把 STATUS／HISTORY 算進本 PR
+- 2026-09-12 | L1 D-1 | S-5.2 改三點 `origin/main...HEAD`,避免 main 前進把 STATUS／HISTORY 算進本 PR
 - 2026-09-12 | L1 D-4 | MIN_HEREDOCS 220→221(test-diagir.sh 一枚),避免 PF-2 假綠
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
@@ -213,8 +213,8 @@ Run: n-a-manual-impl-C
 
 ### D-1(L1)
 - 現象:S-5.2 寫「相對 9877652」列變更檔;該區間 main 已含其他 feature 的 STATUS／IBV／HISTORY。雙點 `git diff origin/main` 在 main 往前走後,會把本 branch 沒改的 STATUS／HISTORY 列進變更(兩棵樹不同)。
-- 保守選擇:以 `git merge-base origin/main HEAD` 當範圍,再加未追蹤檔。plugin `version` 仍 `3.23.3`。
-- 理由:S-5.2 觀測欄寫「用本 slug 各 hop 的 PR diff 測」;量的是本側提交,不是 main 後來別人改的檔。
+- 保守選擇:三點 `git diff origin/main...HEAD`(+ 未追蹤檔)。plugin `version` 仍 `3.23.3`。
+- 理由:S-5.2 觀測欄寫「用本 slug 各 hop 的 PR diff 測」;三點 = merge-base→HEAD,量本側提交,不是 main 後來別人改的檔。3-review must-fix 指定這個形狀。
 - 影響:T-6 / R-5 / S-5.2(測法收斂,契約「本 slug 不碰那些檔」不變)
 
 ### D-2(L1)
