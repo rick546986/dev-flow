@@ -491,3 +491,9 @@
 - 落在哪:memory/agentmem/yamlmini.py, knowledge_index, build-knowledge-index.py; scripts/build-gate-twin.py + check-gate-twin fig-ascii-191; plugin.json ×3 + runtime_version
 - 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.23.2
 
+## 2026-09-12 · fix-194 · v3.23.3
+- 做了什麼:should_consult triggers on query containment of CJK/space topic keys; multi-hit unions pointers
+- 為什麼:#194/#195: long/CJK questions skipped short index because only short ASCII/slug looked topic-like
+- 落在哪:memory/agentmem/knowledge_index.py query.py; memory/tests; docs/knowledge; guides
+- 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.23.3
+
