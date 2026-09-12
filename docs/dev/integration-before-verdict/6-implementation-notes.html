@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>integration-before-verdict · 6-implementation-notes</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  -webkit-font-smoothing:antialiased}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;font-variant-numeric:tabular-nums}
+code{background:var(--sunk);border-radius:3px;padding:1px 5px;color:var(--ink-2)}
+a{color:var(--accent)}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem;max-width:62ch}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;
+  border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
+.r-name{font-weight:650}
+.r-body{padding:14px 18px 16px;font-size:.94rem;color:var(--ink)}
+.r-body p{margin:0 0 8px}
+.r-body p:last-child{margin-bottom:0}
+.tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600}
+.tag.base{background:var(--sunk);color:var(--ink-3)}
+details.hunk{border:1px solid var(--rule);border-radius:9px;margin:10px 12px 12px;
+  background:var(--sunk);overflow:hidden}
+details.hunk>summary{cursor:pointer;padding:11px 15px;font-weight:600;font-size:.9rem;
+  list-style:none;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+details.hunk>summary::-webkit-details-marker{display:none}
+.hunk-why,.hunk-rel{margin:8px 15px;font-size:.9rem}
+.hunk-why{color:var(--ink)}
+.hunk-rel{color:var(--ink-2)}
+.diff{margin:0 12px 12px;border:1px solid var(--rule);border-radius:7px;overflow:auto;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82rem}
+.ln{display:flex;white-space:pre;padding:1px 10px;line-height:1.55}
+.ln .m{display:inline-block;width:1.2em;flex:none;color:var(--ink-3)}
+.ln.ctx{color:var(--ink-3);background:var(--panel)}
+.ln.add{background:var(--ok-soft);color:var(--ok)}
+.ln.del{background:var(--bad-soft);color:var(--bad)}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+@media (max-width:560px){h1{font-size:1.35rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 6-implementation-notes · 審查介面</p>
+  <h1>integration-before-verdict</h1>
+  <p class="sub">status draft／owner rick。正本是 md 的 ## Diff,這頁由產檔器重生。不要當第二份正本。</p>
+</header>
+<section class="r-block" id="summary"><div class="r-head"><span class="r-name">摘要</span></div><div class="r-body"><p>T-1 把 AS-1 填檔牙掛進既有 `check-stage67` ST 組。T-2 只改整合腳本檔頭／GUIDANCE 與 manifest 2d。T-3 把 example／衍生 fixture 的 Fresh／gauntlet 針從 2c 改 2d。未寫 G3。</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1</span></div><div class="r-body"><p>- reviewer identity:Implementer A self-check(獨立 reviewer 另 agent) - reviewer kind:fresh-context Agent - reviewed-at:2026-09-12 - Verify:5-tasks T-1 原指令 → `ST-filled count=5`;check-stage67 80/80;integration-regression-guard 36/36;evidence-gauntlet 68/68;`S-4.1-ok` - Covers finding:S-1.1 void-only 紅;S-1.2 rebind SHA 綠;S-1.3 本項 FAIL 綠;S-2.1／S-2.2 no-fire;S-4.1／S-4.2 既有牙仍綠 - Files finding:只動 `scripts/check-stage67-enforcement.sh` + `scripts/fixtures/stage67-filled-tooth/` - Test Integrity finding:none(未刪／放寬既有 ST 項;無 skip) - Design boundary finding:同一入口;未新開 `check-already-synced.sh`;未改整合腳本 exit 碼 - verdict:PASS(implementer);正式 T review 留給獨立 reviewer</p></div></section>
+<section class="r-block" id="T-2"><div class="r-head"><span class="r-name">T-2</span></div><div class="r-body"><p>- reviewer identity:Implementer A self-check - reviewed-at:2026-09-12 - Verify:5-tasks T-2 原指令 → `T-2-ok`;integration-regression-guard 仍 36/36 - Covers finding:S-1.4 GUIDANCE 含重綁／FAIL;S-3.2 檔頭不再自稱 Exit Checklist 計算工具;S-4.3 `sys.exit(code)`／STATUS／0／10／11／2／絕不動樹仍在 - Files finding:兩支整合腳本 + `manifests/p4-gauntlet-gates.md` - Test Integrity finding:none - Design boundary finding:未改演算法、未自動重綁、未把 ALREADY_SYNCED 當 FAIL - verdict:PASS(implementer)</p></div></section>
+<section class="r-block" id="T-3"><div class="r-head"><span class="r-name">T-3</span></div><div class="r-body"><p>- reviewer identity:Implementer A self-check - reviewed-at:2026-09-12 - Verify:5-tasks T-3 原指令 → `T-3-ok`;`check-spec-gate` 對 bad-dd-unresolved 仍 exit 1(C5) - Covers finding:S-3.1／S-3.3／S-3.4 活路徑舊針歸零 - Files finding:example 7-review md/html、4-spec.md、bad-dd-unresolved.md(4-spec.html 無舊針,未改) - Test Integrity finding:none - Design boundary finding:未改 HISTORY／dispatch／stage7-loop - verdict:PASS(implementer)</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1 / S-1.1</span></div><div class="r-body"><p>- RED: tip 上 `grep -c 'ST-filled:'` = 0,`test -ge 5` 紅(5-tasks 開工前原樣) - GREEN:`ST-filled: void-only.md fail:void-only`;全檔 exit 0(對照自我斷言,不是把 void-only 當綠)</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1 / S-1.2</span></div><div class="r-body"><p>- RED:同上(牙未落地) - GREEN:`ST-filled: rebind-sha.md pass:rebind-sha:def4567890abc`</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1 / S-1.3</span></div><div class="r-body"><p>- RED:同上 - GREEN:`ST-filled: item-fail.md pass:item-FAIL`</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1 / S-2.1</span></div><div class="r-body"><p>- RED:同上 - GREEN:`ST-filled: na-incoming.md no-fire:N_A_NO_INCOMING`</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1 / S-2.2</span></div><div class="r-body"><p>- RED:同上 - GREEN:`ST-filled: draft-unclaimed.md no-fire:draft`</p></div></section>
+<section class="r-block" id="T-2"><div class="r-head"><span class="r-name">T-2 / S-1.4</span></div><div class="r-body"><p>- RED:GUIDANCE 無「重綁」／「FAIL」 - GREEN:`T-2-ok`(兩檔 GUIDANCE 皆含重綁與 FAIL)</p></div></section>
+<section class="r-block" id="T-3"><div class="r-head"><span class="r-name">T-3 / S-3.1</span></div><div class="r-body"><p>- RED:example 舊針命中 - GREEN:example `rg` 零命中;`T-3-ok`</p></div></section>
+<section class="r-block" id="hunks"><div class="r-head"><span class="r-name">Hunks</span></div><details class="hunk" open><summary>classify_filled · <code>scripts/check-stage67-enforcement.sh</code> 389-402 <span class="tag base">T-1</span></summary><p class="hunk-why">改什麼：填檔牙判宣稱＋恢復二選一;void-only 紅,重綁／FAIL／n-a／draft 綠。</p><p class="hunk-rel">關聯：`_filled_claimed` → 五份 fixture → ST-filled token</p><div class="diff">
+<div class="ln add"><span class="m">+</span>def classify_filled(body):</div>
+<div class="ln add"><span class="m">+</span>    has_as = "ALREADY_SYNCED" in body</div>
+<div class="ln add"><span class="m">+</span>    claimed = _filled_claimed(body)</div>
+<div class="ln add"><span class="m">+</span>    if not (has_as and claimed):</div>
+<div class="ln add"><span class="m">+</span>        if "N_A_NO_INCOMING" in body and not has_as:</div>
+<div class="ln add"><span class="m">+</span>            return True, "no-fire:N_A_NO_INCOMING"</div>
+<div class="ln add"><span class="m">+</span>        return True, "no-fire:draft"</div>
+<div class="ln add"><span class="m">+</span>    sha_m = re.search(r"Source SHA:\s*([0-9a-fA-F]{7,})", body)</div>
+<div class="ln add"><span class="m">+</span>    if sha_m:</div>
+<div class="ln add"><span class="m">+</span>        return True, "pass:rebind-sha:" + sha_m.group(1)</div>
+<div class="ln add"><span class="m">+</span>    if "本項 FAIL" in body:</div>
+<div class="ln add"><span class="m">+</span>        return True, "pass:item-FAIL"</div>
+<div class="ln add"><span class="m">+</span>    return False, "fail:void-only"</div>
+</div></details>
+<details class="hunk" open><summary>_filled_claimed · <code>scripts/check-stage67-enforcement.sh</code> 375-386 <span class="tag base">T-1</span></summary><p class="hunk-why">改什麼：DD-2 四條宣稱(approved／PASS／結論列／2c [x])。</p><p class="hunk-rel">關聯：classify_filled</p><div class="diff">
+<div class="ln add"><span class="m">+</span>def _filled_claimed(body):</div>
+<div class="ln add"><span class="m">+</span>    if re.search(r"(?m)^status:\s*approved\b", body):</div>
+<div class="ln add"><span class="m">+</span>        return True</div>
+<div class="ln add"><span class="m">+</span>    if re.search(r"(?m)^verdict:\s*PASS\b", body):</div>
+<div class="ln add"><span class="m">+</span>        return True</div>
+<div class="ln add"><span class="m">+</span>    if re.search(r"(?m)^[ \t&gt;]*結論:STATUS=ALREADY_SYNCED\b", body):</div>
+<div class="ln add"><span class="m">+</span>        return True</div>
+<div class="ln add"><span class="m">+</span>    if re.search(r"(?im)^[-*]\s*\[x\].{0,80}2c", body):</div>
+<div class="ln add"><span class="m">+</span>        return True</div>
+<div class="ln add"><span class="m">+</span>    if re.search(r"(?im)^[-*]\s*\[x\].{0,80}整合回歸", body):</div>
+<div class="ln add"><span class="m">+</span>        return True</div>
+<div class="ln add"><span class="m">+</span>    return False</div>
+</div></details>
+<details class="hunk" open><summary>GUIDANCE · <code>scripts/devflow-integration-regression.sh</code> 202-210 <span class="tag base">T-2</span></summary><p class="hunk-why">改什麼：ALREADY_SYNCED GUIDANCE 寫出重綁或本項 FAIL。</p><p class="hunk-rel">關聯：散發副本同一句;`sys.exit(code)` 不動</p><div class="diff">
+<div class="ln del"><span class="m">-</span>    "ALREADY_SYNCED": "你已經同步過了,本次輸出不算數 —— 交集必須在動樹之前算,"</div>
+<div class="ln del"><span class="m">-</span>                      "拿同步後的輸出當證據就是原本那個假綠",</div>
+<div class="ln add"><span class="m">+</span>    "ALREADY_SYNCED": "你已經同步過了,本次輸出不算數 —— 交集必須在動樹之前算。"</div>
+<div class="ln add"><span class="m">+</span>                      "恢復二選一:重綁 Final Fresh(Source SHA ≥7 hex),或寫本項 FAIL;"</div>
+<div class="ln add"><span class="m">+</span>                      "不得只寫「輸出不算數」就結束",</div>
+</div></details>
+<details class="hunk" open><summary>header · <code>scripts/devflow-integration-regression.sh</code> 2-2 <span class="tag base">T-2</span></summary><p class="hunk-why">改什麼：檔頭改成步 2c 在 Fresh 之前,不是 Exit 程序。</p><p class="hunk-rel">關聯：docs/dev/tools 散發副本同一行</p><div class="diff">
+<div class="ln del"><span class="m">-</span># devflow-integration-regression.sh — Stage 7 Exit Checklist「(條件式)整合回歸」計算工具</div>
+<div class="ln add"><span class="m">+</span># devflow-integration-regression.sh — 步 2c 整合回歸,Fresh 之前,不是 Exit 程序</div>
+</div></details></section>
+<p class="src">由 <code>scripts/build-stage6-html.py</code> 從 md ## Diff 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
