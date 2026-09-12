@@ -226,7 +226,7 @@ Owner confirmation:rick 確認上列兩場已 ACCEPTED 的 Demo 場景明示排�
   - 非主管不得標「已續約」(1-discussion Q5;S-6)
   - 不得自動轉移狀態、不得逾時自動升級(Out of Scope)
 - Required layers:Full test suite、Changed-line coverage、Real execution
-  (= 7-review 執行清單 2c gauntlet 命令的 `--require-layer` 清單,逐層一個 flag)
+  (= 7-review 執行清單 2d gauntlet 命令的 `--require-layer` 清單,逐層一個 flag)
 - Conditional layers:Types/compile(TS 檔變動觸發)、e2e(新前端互動流程觸發)、
   Rollback rehearsal(schema migration 觸發)—— 本次三者皆觸發,列入 Final Fresh Run
 - Explicitly excluded layers:Mutation(本示範 repo 未配 mutation 工具鏈;實案 Risk: high
