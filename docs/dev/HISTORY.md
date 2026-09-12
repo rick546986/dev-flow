@@ -503,3 +503,9 @@
 - 落在哪:notes/review-requirement-discovery-gaps.md docs/dev/STATUS.md docs/dev/integration-before-verdict/
 - 詳細:notes/review-requirement-discovery-gaps.md
 
+## 2026-09-12 · integration-before-verdict
+- 做了什麼:G3 PASS / shipped after #239；Gates G1✅ G2✅ G3✅；Active 移出該列
+- 為什麼:Human G3 PASS 已落檔於 7-review；核准樹即出貨樹，看板不得再把 IBV 列成進行中
+- 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
+- 詳細:docs/dev/integration-before-verdict/7-review.md (#239)
+
