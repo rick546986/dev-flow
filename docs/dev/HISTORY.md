@@ -497,3 +497,9 @@
 - 落在哪:memory/agentmem/knowledge_index.py query.py; memory/tests; docs/knowledge; guides
 - 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.23.3
 
+## 2026-09-12 · b8-gate-twin-owner-pass
+- 做了什麼:owner tony 對 b8 gate twin html 簽 Human PASS（「好不好審」）;STATUS Backlog 該列移除
+- 為什麼:owner 已在 2026-09-12 對話驗收審查介面可審度;這列本來就寫「只有 owner 做得了」。本 PASS 非正式 G3、不宣稱原 feature 走過 Stage 1–6
+- 落在哪:docs/dev/b8-gate-twin-review-ui/7-review.md + 7-review.html + 7-review-review.artifact.html、docs/dev/STATUS.md、docs/dev/HISTORY.md
+- 詳細:docs/dev/b8-gate-twin-review-ui/7-review.md
+

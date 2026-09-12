@@ -25,7 +25,7 @@
 > 在同一 checkout 手改,後寫會靜默蓋掉先寫的列。手改而不走寫入口會讓
 > 蓋章對不上,`check-status-policy.sh` 會紅。feature branch 上本腳本拒改正本表列。
 
-<!-- status-writer-rev:ab16737ca13528a1b992c7f5d7d014b0b8ad5eb5a7c6ebf68bc6701feea4dd92 -->
+<!-- status-writer-rev:9836d466e0d54bfb218f7d1d9ea5596b3f2dfd5949e36332cdcfce0922ea2a26 -->
 
 ## Active
 
@@ -45,7 +45,6 @@ scripts/history-append.sh --slug <代號> --what <做了什麼> --why <為什麼
 
 | 級 | 一句 | 來源 |
 |---|---|---|
-| B | owner 親自打開 gate twin 產出的 html 驗收「好不好審」,b8 的 verdict 才能從 `REQUEST_CHANGES` 改掉 —— **這件事只有 owner 做得了** | `docs/dev/b8-gate-twin-review-ui/7-review.md:5,180,181` |
 | B | 拿 dev-flow 自己跑一次完整 normal-risk full lane(1-discussion → 7-review、過 G1/G2/G3)當觀測實驗 —— owner 已排定,是下一輪的事;在那之前不動 Stage 1–4 模板內容,免得污染觀測 | `notes/dispatch-parallel-feature-gaps.md` 末節 |
 | B | 需求討論的九條制度缺口(A-1~A-7、B-1、B-2)逐條裁決 —— owner 已裁定暫緩,等上一列的 full lane 觀測跑完再對照裁決 | `notes/review-requirement-discovery-gaps.md` |
 | B | 把「整合回歸與同步」移到 Final Fresh Run/雙軸審查/Verdict **之前** —— 現在的節序是 Final Fresh(`_templates/7-review.md:94`)→ Verdict(`:133`)→ Exit Checklist 的整合同步(`:281`),所以審過並核准的那棵樹不是最後出貨的那棵樹(Exit 階段合併 `INTEGRATION_SHA` 之後 HEAD 就變了);且 `ALREADY_SYNCED`(`:291`)只說「證據不算數」沒給恢復路徑。owner 已裁決:獨立成 feature 走完整七站,拿它當第一個真實 full lane 的題目 —— 它動的是模板節序(母版最核心結構),會影響 gate-consistency 機械錨點,不該塞進發版前補丁 | `notes/dispatch-v380-landing.md` 收尾節 |
