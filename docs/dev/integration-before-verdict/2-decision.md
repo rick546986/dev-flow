@@ -80,8 +80,8 @@ A 留下已綠的 2c/2d 與模板牙，把力氣放在填檔牙與活教師。B 
 ## Risks & Mitigations
 | 風險 | 對策 |
 |---|---|
-| 填檔牙形狀未釘，Stage 4 之前各寫各的 | Decision 只鎖「有重綁 SHA 或明示 FAIL，否則紅」。欄位／腳本名進 4-spec；OC-1 先收窄「沿用既有檢查家族，不另造第二套整合工具」 |
-| 咬填檔時誤殺 `N_A_NO_INCOMING` 或未跑 2c 的 draft | 牙只在宣稱勾過整合項／送 G3 時發動；n-a 與 draft 不預先紅。細節 4-spec |
+| 填檔牙形狀未釘，Stage 4 之前各寫各的 | Decision 只鎖「有重綁 SHA 或明示 FAIL，否則紅」。**Stage 3 throwaway 已演示該形狀**（void-only／skip-2c+G3 → exit 2；重綁 SHA／明示 FAIL → exit 0）。欄位／腳本名進 4-spec；OC-1 先收窄「沿用既有檢查家族，不另造第二套整合工具」 |
+| 咬填檔時誤殺 `N_A_NO_INCOMING` 或未跑 2c 的 draft | 牙只在宣稱勾過整合項／送 G3 時發動；n-a 與 draft 不預先紅。**Stage 3 fixture `n-a-no-incoming.md`／`draft-no-claim.md` 皆 silent exit 0**。細節 4-spec |
 | 掃 example 編號牽動 fixture（`spec-gate-dd-subsection` 抄了 4-spec 的 2c gauntlet 句） | Stage 6 把衍生 fixture 與正本 example 列進同一 T；改編號不同步 = 該 T 紅 |
 | 重編號誘惑（B）在實作時回流 | B 進 Rejected；要重編號必須回本站改 Decision |
 | 有人把歷史派工改口當「對帳完成」 | T-hist 進 Rejected；OC-2 釘死不改 HISTORY／dispatch 當時句 |
@@ -113,8 +113,8 @@ A 留下已綠的 2c/2d 與模板牙，把力氣放在填檔牙與活教師。B 
 - 本 hop 不 bump plugin、不改 `_templates/7-review.md` 正文（散文已對）。
 - `1-discussion.md` 保留 draft／「不送 G1」原文；本檔才改口成 Decision。
 - Q6 錨句候選（4-spec 再釘確切字）：「整合回歸在 Final Fresh 之前」「ALREADY_SYNCED 不得只寫證據不算數」。
-- Stage 3 不預先跳過；觸發判定留給第 3 站（本檔無「跳過 Stage 3」流程層 OC）。
-- 本 hop 產審頁用 `scripts/build-stage2-html.py --action`，不手包 html-shell，不把審頁塞進 `build-gate-twin.py` STAGES。
+- Stage 3 不預先跳過；觸發判定留給第 3 站（本檔無「跳過 Stage 3」流程層 OC）。**Stage 3 已行使**：命中 6 條、CLI Demo 一條、Human verdict 仍 NOT_REVIEWED → `3-prototype.md` status 留 draft。
+- 本 hop 產審頁用 `scripts/build-stage2-html.py --action`，不手包 html-shell，不把審頁塞進 `build-gate-twin.py` STAGES。第 3 站審頁用 `scripts/build-stage3-html.py --action`。
 
 ## ADR 晉升檢查
 - 難逆轉:否（G3 前可改本檔 Decision／OC；牙尚未落地）
@@ -126,3 +126,4 @@ A 留下已綠的 2c/2d 與模板牙，把力氣放在填檔牙與活教師。B 
 - 決策點清單確認 | 2026-09-12 | owner chat「對」核准 Stage 1 方向（整合在 Fresh／雙軸／Verdict 前、full lane）。本 hop brief 指定 Stage 2 收斂並對帳模板 vs 腳本／守衛／範例／文件。三決策點：對帳策略／ALREADY_SYNCED 牙／活教師時機。
 - Stage 1 改口 | 2026-09-12 | 1-discussion 仍 draft、Q5 `[~]`、Q6／Q7 `[>]`；本檔改口為 Decision。不回改正本討論。
 - G1 | 2026-09-12 | owner 在 chat 說「都過」（G1 / Owner Calls passed）。3 位 reviewer 一致選 #202（已合為 `0afc1fd`）。OC-1～OC-3 隨 Decision 一併視為接受。owner 自審(有記錄)；reviewers: [user]
+- prototype 回寫 | 2026-09-12 | Stage 3 throwaway CLI（`/tmp/ibv-stage3-proto/`）演示擬定序 2c→2d→雙軸→Verdict→Exit 文件，以及 AS-1 填檔牙（void-only 紅；重綁 SHA／明示 FAIL 綠；n-a／draft 沉默）。活教師五處 + 衍生 fixture 只列不改。不改 Decision 方向、不代填 G2／G3、不改正本 STATUS。正本 `docs/dev/integration-before-verdict/3-prototype.md`。
