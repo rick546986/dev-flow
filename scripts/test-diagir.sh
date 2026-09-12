@@ -493,12 +493,17 @@ try:
         case("S-5.2_no_plugin_bump_no_196")
         ver = json.loads(open(plugin, encoding="utf-8").read()).get("version")
         fork = "origin/main"
+        base_run = subprocess.run(
+            ["git", "merge-base", fork, "HEAD"],
+            cwd=root, capture_output=True, text=True,
+        )
+        scope = base_run.stdout.strip() or fork
         plugin_diff = subprocess.run(
-            ["git", "diff", fork, "--", ".claude-plugin/plugin.json"],
+            ["git", "diff", scope, "--", ".claude-plugin/plugin.json"],
             cwd=root, capture_output=True, text=True,
         )
         tracked = subprocess.run(
-            ["git", "diff", "--name-only", fork],
+            ["git", "diff", "--name-only", scope],
             cwd=root, capture_output=True, text=True,
         ).stdout.splitlines()
         untracked = subprocess.run(
