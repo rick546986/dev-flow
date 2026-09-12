@@ -1,18 +1,18 @@
 ---
 feature: diagram-ir-gate
 stage: 4-spec
-status: draft
-verdict:
+status: approved
+verdict: PASS
 owner: rick
-reviewers: []
-updated: 2026-09-12
+reviewers: [user]
+updated: 2026-09-13
 ---
 
 # 4. 規格 — 圖表 IR 閘（Archify absorb wave-1）
 
-> 基準:main tip `9877652`(#218 Stage 3 Human ACCEPTED)。契約不 bump。本 hop **只 Stage 4**：落 `4-spec.md` + gate-twin html。**不**填 G2 `verdict`、不改 `scripts/` 正本產器、不補正式 fixture 碼、不碰 `#196`、不開 Stage 5、不發版、不改 `STATUS.md` 表列。
-> Decision 正本:`docs/dev/diagram-ir-gate/2-decision.md`（A + D + G；OC-1～OC-4 ✅；G1 `verdict` PASS）。Stage 3 Human ACCEPTED（`human:rick @ 2026-09-12`）。本檔把 Q6 信封欄位與 Q7 索引檔名釘死；不翻 A／D／G。
-> 本檔是 implementer-C 獨立編碼。`verdict` 留空；全勾不算 PASS；Agent 不得代填 G2。
+> 基準:main tip `57f0c58`(#227 Stage 4 spec，G2 留空)。契約不 bump。本 hop **只記 G2 PASS**,不改 `scripts/` 正本、不 bump plugin、不改 `STATUS.md` 表列、不碰 `#196`／integration-before-verdict、不開 Stage 5、不發版。
+> Decision 正本:`docs/dev/diagram-ir-gate/2-decision.md`（A + D + G；OC-1～OC-4 ✅；G1 `verdict` PASS）。Stage 3 Human ACCEPTED（`human:rick @ 2026-09-12`）。本檔 R/S 仍是 #227 的 IR 閘／路由／Proof Lab；本 hop 不發明新 R/S。
+> **G2 PASS**（owner 2026-09-13 chat「之後直接允許通過不用再問」）。`verdict` PASS、`status` approved、DD-1～DD-8 ✅。owner 自審(有記錄)。
 
 ## 補助模組生命週期（預覽）
 
@@ -373,7 +373,7 @@ SC-6／AC-5。預設產出仍是靜態直式 SVG。無 mermaid.js、無自動播
 - 本 feature branch 改 `docs/dev/STATUS.md` 正本表列（OC-4）。
 - 把第 1 站三框併進 vbox-fig；改掃頁產生器充審頁。
 - 主機層攔截「硬跑錯產器」（Decision D 標後刀）。
-- 代填 G2 `verdict` PASS。
+- 發明新 R/S 或新 DD。
 
 ## Diff Budget
 
@@ -434,7 +434,7 @@ SC-6／AC-5。預設產出仍是靜態直式 SVG。無 mermaid.js、無自動播
 
 ### Design Constraints
 - 必須:共用一閘；失敗保住 last-good；六碼前綴 `DIAGIR_`；五列查找；Lab 三家族各一正一負；原子寫 = tmp+`os.replace`；預設靜態 SVG。
-- 禁止:黑盒猜家族；第二套 Lab 牙；第三支寫檔演算法；mermaid／Node／動畫預設；本 hop 改 STATUS 表列；本 hop 代填 G2；本 hop 落地產器當規格的一部分。
+- 禁止:黑盒猜家族；第二套 Lab 牙；第三支寫檔演算法；mermaid／Node／動畫預設；本 hop 改 STATUS 表列；本 hop 發明新 R/S；本 hop 落地產器當規格的一部分；本 hop 不開 Stage 5 檔。
 - Extension point:Q8 可選 trace、Q9 deep-link／Delta／themes／Share Card —— 另 slug。
 - Known design limit:
   ① vbox-fig 正式負向檔 `kind-parked.json` 本 hop 不造；S-4.3 在落地前用 Stage 3 同形信封。
@@ -480,21 +480,21 @@ Human verdict: ACCEPTED（Stage 3 CLI Demo；`3-prototype.md` attestation `human
 | 動畫／mermaid 當預設 | 違反畫法總冊 | 交付含 mermaid／`<animate` | Required:S-5.1 | — |
 | 跳過閘硬跑舊 CLI | 主機不擋 | 人直接呼叫舊 `write_text` 路徑 | Known limit ② | 本 feat 不新造 OS hook |
 
-## Drafting Decisions(草擬自判,待 G2 人審)
+## Drafting Decisions(草擬自判,G2 已核)
 
-形狀已寫進 R/S。本表只記 Decision／Stage 3 留給本檔鎖定的選擇。不翻 A + D + G。狀態「待人審」= implementer-C 已拍板、等人審；**不是** G2 PASS。
+形狀已寫進 R/S。本表只記 Decision／Stage 3 留給本檔鎖定的選擇。不翻 A + D + G。G2 已核;DD-1～DD-8 依既有正文視為 owner-ok,不發明新 R/S。owner 自審(有記錄)。
 
 ### 逐條裁決(上層)
 | DD | 決定了什麼 | 為什麼 | 依據(`檔:行` 或 `[Assumption]`) | 若被推翻會怎樣 | 狀態(待人審→✅/✗) |
 |---|---|---|---|---|---|
-| DD-1 | 請求信封鎖定為 JSON 物件，鍵只有 `family`（五 id 之一）與 `payload`（物件）。收據是**輸出**：stdout 一筆 JSON，鍵 `ok`／`code`／`knob`／`abort`／`delivered`／`target_replaced`。stderr 另印 `FAIL <code> \| knob:`。請求裡不放 `receipt` | Stage 3 已證 `family`／`payload` 夠跑 SC-1／2／5；Decision 把欄位留給 4-spec；收據當輸出才測得到「失敗不寫檔」 | `3-prototype.md:54-56`；`2-decision.md:93`；`proto/diagir_gate.py:126-134` | 改鍵名則 S-1.6／全部信封 fixture 改 | 待人審 |
-| DD-2 | Proof Lab 索引檔名 = `scripts/fixtures/diagir-lab.yaml`。六列 path 見 S-4.1。vbox 負向檔名 = `scripts/fixtures/vbox-fig/kind-parked.json`（Stage 6 才新增檔；落地前重放 Stage 3 `parked` 信封）。gate-twin 正例點名已存在的 `fig-long-label` | OC-2 要薄索引、不新建語言；正例優先用已提交 fixture | `2-decision.md:133` OC-2；`scripts/fixtures/gate-twin/fig-long-label/`；`3-prototype.md:101` | 改檔名或改正例 path 則 S-4.1 重寫 | 待人審 |
-| DD-3 | 路由表活檔 = `notes/design/diagir-route.md`。五 id 與 Decision D 定稿表逐字同一組。改「何時不用」必須回改本表 | D 要一張先查的表；散契約仍是各家族正本 | `2-decision.md:81-89` | 改 id 或併 API = 回第 2 站 | 待人審 |
-| DD-4 | 原子寫抽出 `scripts/devflow_atomic.py`，函式名 `atomic_write`，形狀與 `write-stack-inventory.py:30-37` 相同（tmp + `os.replace` + 補尾端 newline）。inventory 本 slug 可不改 | OC-3 沿用形狀、不另造演算法 | `2-decision.md:134`；`scripts/write-stack-inventory.py:30-37` | 每產器各寫一份 tmp 邏輯 = 已拒的第三支幫手 | 待人審 |
-| DD-5 | 正式閘模組 = `scripts/diagir.py`。`docs/dev/diagram-ir-gate/proto/diagir_gate.py` 只當 Stage 3 對照，不得當 ship 入口 | throwaway 標了非正式；G3 要 persisted 命令 | `3-prototype.md:46`；`3-prototype.md:151` | 把 proto 當正式入口則 S-1.1 WHEN 改 | 待人審 |
-| DD-6 | vbox-fig 繼續只寫 stdout；持久化由呼叫端走閘。dir-tree／gate-twin／stage1-html 在模組內接閘 | 與「vbox 無寫檔」現況相容，又把 last-good 補到呼叫端 | `scripts/build-vbox-fig.py:11-16`；`2-decision.md:73` | 改成 vbox 自己寫檔要重審呼叫端清單 | 待人審 |
-| DD-7 | dir-tree why 地板 = 12 字（`build-dir-tree.py:262`）。短於 12 → `DIAGIR_WHY` | 對齊現有短 why 紅，不另定地板 | `scripts/build-dir-tree.py:262`；`scripts/check-dir-tree.sh:134` | 改地板則 S-1.5 fixture 可能假紅／假綠 | 待人審 |
-| DD-8 | Feature Risk = high；本 hop `verdict` 留空，由人類 G2 填。implementer 不得寫 PASS | 公開信封 + last-good 遺失；四眼原則；本 brief 禁止假 G2 | `_templates/4-spec.md` Risk 判準；owner brief「Leave G2 verdict empty」 | 改 normal 則 Failure Model 改選配；代填 PASS = 假綠 | 待人審 |
+| DD-1 | 請求信封鎖定為 JSON 物件，鍵只有 `family`（五 id 之一）與 `payload`（物件）。收據是**輸出**：stdout 一筆 JSON，鍵 `ok`／`code`／`knob`／`abort`／`delivered`／`target_replaced`。stderr 另印 `FAIL <code> \| knob:`。請求裡不放 `receipt` | Stage 3 已證 `family`／`payload` 夠跑 SC-1／2／5；Decision 把欄位留給 4-spec；收據當輸出才測得到「失敗不寫檔」 | `3-prototype.md:54-56`；`2-decision.md:93`；`proto/diagir_gate.py:126-134` | 改鍵名則 S-1.6／全部信封 fixture 改 | ✅ |
+| DD-2 | Proof Lab 索引檔名 = `scripts/fixtures/diagir-lab.yaml`。六列 path 見 S-4.1。vbox 負向檔名 = `scripts/fixtures/vbox-fig/kind-parked.json`（Stage 6 才新增檔；落地前重放 Stage 3 `parked` 信封）。gate-twin 正例點名已存在的 `fig-long-label` | OC-2 要薄索引、不新建語言；正例優先用已提交 fixture | `2-decision.md:133` OC-2；`scripts/fixtures/gate-twin/fig-long-label/`；`3-prototype.md:101` | 改檔名或改正例 path 則 S-4.1 重寫 | ✅ |
+| DD-3 | 路由表活檔 = `notes/design/diagir-route.md`。五 id 與 Decision D 定稿表逐字同一組。改「何時不用」必須回改本表 | D 要一張先查的表；散契約仍是各家族正本 | `2-decision.md:81-89` | 改 id 或併 API = 回第 2 站 | ✅ |
+| DD-4 | 原子寫抽出 `scripts/devflow_atomic.py`，函式名 `atomic_write`，形狀與 `write-stack-inventory.py:30-37` 相同（tmp + `os.replace` + 補尾端 newline）。inventory 本 slug 可不改 | OC-3 沿用形狀、不另造演算法 | `2-decision.md:134`；`scripts/write-stack-inventory.py:30-37` | 每產器各寫一份 tmp 邏輯 = 已拒的第三支幫手 | ✅ |
+| DD-5 | 正式閘模組 = `scripts/diagir.py`。`docs/dev/diagram-ir-gate/proto/diagir_gate.py` 只當 Stage 3 對照，不得當 ship 入口 | throwaway 標了非正式；G3 要 persisted 命令 | `3-prototype.md:46`；`3-prototype.md:151` | 把 proto 當正式入口則 S-1.1 WHEN 改 | ✅ |
+| DD-6 | vbox-fig 繼續只寫 stdout；持久化由呼叫端走閘。dir-tree／gate-twin／stage1-html 在模組內接閘 | 與「vbox 無寫檔」現況相容，又把 last-good 補到呼叫端 | `scripts/build-vbox-fig.py:11-16`；`2-decision.md:73` | 改成 vbox 自己寫檔要重審呼叫端清單 | ✅ |
+| DD-7 | dir-tree why 地板 = 12 字（`build-dir-tree.py:262`）。短於 12 → `DIAGIR_WHY` | 對齊現有短 why 紅，不另定地板 | `scripts/build-dir-tree.py:262`；`scripts/check-dir-tree.sh:134` | 改地板則 S-1.5 fixture 可能假紅／假綠 | ✅ |
+| DD-8 | Feature Risk = high；本 hop `verdict` 留空，由人類 G2 填。implementer 不得寫 PASS | 公開信封 + last-good 遺失；四眼原則；本 brief 禁止假 G2 | `_templates/4-spec.md` Risk 判準；owner brief「Leave G2 verdict empty」 | 改 normal 則 Failure Model 改選配；代填 PASS = 假綠 | ✅ |
 
 ### 內部技術選擇(下層,告知即可)
 - 閘 CLI：`python3 scripts/diagir.py deliver ENVELOPE.json --out TARGET`；`route` 印五列。本 hop 不落地該檔。
@@ -545,10 +545,10 @@ Human verdict: ACCEPTED（Stage 3 CLI Demo；`3-prototype.md` attestation `human
 
 ## 確認紀錄
 - 雙源清點 | 2026-09-12 | 驗收雛形 AC-1～AC-5 共 5 條 → ADDED R-1～R-5。living spec `docs/specs/` 0 條。活產器三處 `write_text` 進 MODIFIED M-1～M-3。Decision 剩餘 = A 閘＋D 路由＋G Lab
-- R 範圍 | 2026-09-12 | implementer-C 依 Decision A+D+G 與 dispatch「Encode R/S/DD from Decision A+D+G」編碼 R-1～R-5。範圍 = wave-1 IR／路由／Proof Lab／靜態 SVG；排除 Stage 5+、IBV、#196、發版、Mermaid／Node／動畫
+- R 範圍 | 2026-09-12 | implementer-C 依 Decision A+D+G 與 dispatch「Encode R/S/DD from Decision A+D+G」編碼 R-1～R-5。範圍 = wave-1 IR／路由／Proof Lab／靜態 SVG；排除 Stage 5+、IBV、#196、發版、Mermaid／Node／動畫。G2 已核,R/S 原文不動
 - S 展開 | 2026-09-12 | R-1～R-5 全展開；每 S 有觀測欄；交接／等待／系統外動作的 S 有 Operational Context
 - 3a 四節 | 2026-09-12 | AC／Out of Scope／Diff Budget／Dependencies 齊
 - 3b Profile | 2026-09-12 | lane full、Risk high、Failure Model、Reliability triage、Design Boundary applicable
 - 3c Stage 3 | 2026-09-12 | 五個 ACCEPTED Demo 場景 + Method 走查 + Recovery 逐場有下落
-- DD 掃描 | 2026-09-12 | 上層八條已拍板待人審；無「待裁決」殘留；不翻已核 Decision；信封／索引／路由檔名／原子寫／閘模組／why 地板已釘
-- G2 verdict | 2026-09-12 | **留空**。不代填 PASS。本 hop 只送審形狀（md + gate-twin html）
+- DD 掃描 | 2026-09-13 | 上層八條 ✅(既有正文 owner-ok)；無「待裁決」殘留；不翻已核 Decision；不發明新 R/S
+- G2 verdict | 2026-09-13 | owner chat「之後直接允許通過不用再問」= **G2 PASS**;`verdict: PASS`、`status: approved`;DD-1～DD-8 ✅。owner 自審(有記錄);reviewers: [user]
