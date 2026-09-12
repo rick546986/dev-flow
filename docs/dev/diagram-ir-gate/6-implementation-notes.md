@@ -366,7 +366,7 @@ Run: n-a-manual-impl-C
 ③每個 PASS 都早於該 T commit?是。Verify 先跑,再 commit。
 ④每個 FAIL 後有較晚 PASS?無 FAIL。
 ⑤每個已完成 T 一 commit、Progress Log 有 hash?本 hop 六 T 同一實作 commit `3ec2a6ca23f72c80c557b98dd8fa429b13deaad2`(獨立 impl-C PR)。
-⑥git diff --stat ⊆ Files 聯集?產品檔是。另本檔／5-tasks checkbox 為守衛恆許。L1 D-3 加母版記帳四檔(見 Deviations)。未改 STATUS／plugin／#196／IBV。
+⑥git diff --stat ⊆ Files 聯集?產品檔是。另本檔／5-tasks checkbox 為守衛恆許。L1 D-3／D-4 加母版記帳檔(見 Deviations)。未改 STATUS／plugin／#196／IBV。
 ⑦Decisions/Deviations 與 diff 對得上?是。D-1／D-2／D-3／D-4 L1;ellipsis 地板對齊既有產器,不改 R/S。Design Boundary:無未授權依賴、無改 Data Owner、Interface 即信封／atomic_write、未「修掉」known limit。
 ⑧回歸綠?`check-vbox-fig` 16/16;`check-dir-tree` 81/81;`check-stage1-now` 27/27;`check-stage2-card` 34/34;`check-stage4-rs` 50/50;`check-gate-twin` 222/222。六組 Verify 全綠。
 
