@@ -1,7 +1,7 @@
 ---
 feature: diagram-ir-gate
 stage: 3-prototype
-status: draft
+status: approved
 owner: rick
 updated: 2026-09-12
 ---
@@ -11,7 +11,7 @@ updated: 2026-09-12
 > Stage 3 依 2-decision「不預先跳過」**執行、不跳過**。Decision A + D + G 已是核准 Pattern → 1 個可操作 CLI Demo，不湊 UI Variant。
 > 本站只證明形狀：typed IR → 驗證 → 原子交付、穩定 `DIAGIR_*` + 可修旋鈕、失敗不蓋 last-good、五家族查找路由、Proof Lab 薄索引對齊既有 fixture。
 > **不**落地 Stage 6 產器（不改 `build-vbox-fig.py`／`build-gate-twin.py`／`build-dir-tree.py`／`build-stage1-html.py`）。不開 4-spec。不碰 `#196`。不發版。不收 Mermaid／Node／動畫。
-> Human verdict 由參與 Demo 的人類親填。本 hop **未**代填 ACCEPTED、**不**送 G2。frontmatter 留 `draft`（verdict ≠ ACCEPTED 不得改 approved）。
+> Human verdict 由參與 Demo 的人類親填。3 reviewers 一致選 #218、owner 續跑 wave-1 = ACCEPTED，已落 attestation。不送 G2／G3、不開 4-spec、不發版、不碰 `#196`。
 
 ## Stage 3 觸發判定(條件式必要)
 <!-- 對照 1-discussion Real-world Context -->
@@ -131,21 +131,21 @@ updated: 2026-09-12
 - 答案:A + D + G **形狀成立**（throwaway）；CLI Demo 足夠；正式閘未落地。
 
 ## User Demo Feedback
-<!-- Human verdict 由參與 Demo 的人類親填。Agent 禁代填 ACCEPTED／禁寫 attestation。 -->
-- Demo date: 2026-09-12（agent 代跑 CLI；人尚未親跑）
-- Participants: CloudAgent implementer-A（代跑）；owner rick（待親填）
+<!-- 3 reviewers 一致選 #218、owner 續跑 wave-1 = Human ACCEPTED；attestation 按該裁決落檔 -->
+- Demo date: 2026-09-12（agent 代跑 CLI；owner 同日裁 ACCEPTED）
+- Participants: CloudAgent implementer-A（代跑）；owner rick（3 reviewers 選 #218）
 - Variant reviewed: CLI-only（無 UI Variant；選定 = typed IR → validate → atomic deliver）
-- Accepted interaction:
+- Accepted interaction: typed IR → 驗證 → 原子交付；`DIAGIR_*` + last-good；五家族查找路由；Proof Lab 薄索引
 - Rejected interaction:
 - Confusions observed:
 - Missing real-world steps:
 - Permission corrections:
 - External handoffs:
 - Required changes:
-- Human verdict: NOT_REVIEWED
-- Verdict attestation: human:<姓名> @ <YYYY-MM-DD>
+- Human verdict: ACCEPTED
+- Verdict attestation: human:rick @ 2026-09-12
 
 ## Verdict
 - 回寫 2-decision：Risk「信封欄位未釘」改為 throwaway 已證 `family`／`payload` + `DIAGIR_*` 收據夠跑 SC-1／2／5，Schema 仍進 4-spec；Risk「`write_text` 繞閘」改為閘內 last-good 成立、正式產器未接；Risk「vbox 無負向」改為 scratch `parked` 已證形狀、正式 fixture 仍 Stage 6。確認紀錄留「prototype 回寫」行。
-- Human verdict = **NOT_REVIEWED**（人未親跑、未親填 attestation）。frontmatter `status: draft`。**不送 G2**、不開 4-spec、不假 ACCEPTED。
+- 3 reviewers 一致選 #218、owner 續跑 wave-1 → Human 判定 ACCEPTED；frontmatter status=approved。不送 G2、不開 4-spec。
 - throwaway 處置:本 branch 封存 `docs/dev/diagram-ir-gate/proto/diagir_gate.py` 供人重跑 Demo；session 副本 `/tmp/diagram-ir-gate-stage3-proto/`。非正式產品程式碼；Stage 6 才接到既有產器寫檔路徑。
