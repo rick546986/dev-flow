@@ -26,6 +26,8 @@ import pathlib
 import re
 import sys
 
+import diagir
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FIXTURE = ROOT / "scripts" / "fixtures" / "stage2-html" / "decision-page.md"
 
@@ -476,7 +478,19 @@ def build_html(text):
         "\n".join(group_html),
         bg_html,
     )
-    return page
+    hl_idx = next((i for i, title in enumerate(steps) if "選定" in title), 0)
+    payload = {
+        "kind": "vbox",
+        "steps": [
+            {
+                "kind": "hl" if i == hl_idx else "b",
+                "title": (title[:80] if title.strip() else "步驟"),
+                "lines": ["直式步驟"],
+            }
+            for i, title in enumerate(steps)
+        ],
+    }
+    return page, payload
 
 
 def parse_args(argv):
@@ -526,7 +540,7 @@ def main(argv):
             text = path.read_text(encoding="utf-8")
         except OSError as err:
             die(2, "讀不到 fixture:%s" % err)
-        sys.stdout.write(build_html(text))
+        sys.stdout.write(build_html(text)[0])
         return
     path = pathlib.Path(src)
     if not path.is_file():
@@ -535,10 +549,11 @@ def main(argv):
         text = path.read_text(encoding="utf-8")
     except OSError as err:
         die(2, "讀不到 md:%s" % err)
-    html_out = build_html(text)
+    html_out, payload = build_html(text)
     dest = pathlib.Path(out) if out else path.with_suffix(".html")
     try:
-        dest.write_text(html_out, encoding="utf-8")
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        diagir.require_write(dest, html_out, "stage2-arch", payload, die=die)
     except OSError as err:
         die(2, "寫不出 html:%s" % err)
     print("wrote %s" % dest)

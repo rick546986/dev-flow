@@ -1,0 +1,30 @@
+version: 1
+tooth_language: existing
+rows:
+  - family: vbox-fig
+    polarity: pos
+    path: scripts/fixtures/vbox-fig/lifecycle.json
+    tooth_language: existing
+  - family: vbox-fig
+    polarity: neg
+    path: scripts/fixtures/vbox-fig/kind-parked.json
+    expect_code: DIAGIR_KIND
+    tooth_language: existing
+  - family: gate-twin
+    polarity: pos
+    path: scripts/fixtures/gate-twin/fig-long-label
+    tooth_language: existing
+  - family: gate-twin
+    polarity: neg
+    path: scripts/fixtures/gate-twin/fig-tree-ascii
+    expect_code: DIAGIR_FAMILY
+    tooth_language: existing
+  - family: dir-tree
+    polarity: pos
+    path: scripts/fixtures/dir-tree/good
+    tooth_language: existing
+  - family: dir-tree
+    polarity: neg
+    path: scripts/fixtures/dir-tree/missing-why
+    expect_code: DIAGIR_WHY
+    tooth_language: existing

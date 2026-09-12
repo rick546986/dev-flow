@@ -28,6 +28,8 @@ import pathlib
 import re
 import sys
 
+import diagir
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PURPOSE_PATH = ROOT / "guides" / "dir-tree-purpose.yaml"
 GUIDE_PATH = ROOT / "guides" / "guide-dev-flow.html"
@@ -571,9 +573,9 @@ def splice_tree(page, fragment):
     return page[:start + len(TREE_BEGIN)] + "\n" + fragment + page[end:]
 
 
-def write_text(path, text):
+def write_text(path, text, payload):
     pathlib.Path(path).parent.mkdir(parents=True, exist_ok=True)
-    pathlib.Path(path).write_text(text, encoding="utf-8")
+    diagir.require_write(path, text, "dir-tree", payload, die=die)
 
 
 def main(argv):
@@ -630,7 +632,9 @@ def main(argv):
     if mode in ("write", "check"):
         purpose = purpose or str(PURPOSE_PATH)
         root = root or str(ROOT)
-        fragment_html = emit(load_yaml(purpose), root, True, "#filemap")
+        spec = load_yaml(purpose)
+        fragment_html = emit(spec, root, True, "#filemap")
+        payload = {"kind": "dir-tree", "root": prepare(spec, root)["root"]}
         try:
             current = GUIDE_PATH.read_text(encoding="utf-8")
         except OSError as err:
@@ -641,17 +645,18 @@ def main(argv):
                     "請跑 scripts/build-dir-tree.py --write")
             print("ok:guide-dev-flow.html #dirmap 對得上產器", file=sys.stderr)
             return
-        write_text(GUIDE_PATH, splice_tree(current, fragment_html))
+        write_text(GUIDE_PATH, splice_tree(current, fragment_html), payload)
         print("wrote %s #dirmap" % GUIDE_PATH, file=sys.stderr)
         return
 
     if not purpose:
         die(2, "要 --purpose(或 --write／--check／--fixture)")
-    page = emit(load_yaml(purpose), root, fragment)
+    spec = load_yaml(purpose)
+    page = emit(spec, root, fragment)
     if out in (None, "-"):
         sys.stdout.write(page)
         return
-    write_text(out, page)
+    write_text(out, page, {"kind": "dir-tree", "root": prepare(spec, root)["root"]})
     print("wrote %s" % out, file=sys.stderr)
 
 
