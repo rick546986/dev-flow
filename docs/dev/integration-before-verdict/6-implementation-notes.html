@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>integration-before-verdict · 6-implementation-notes</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  -webkit-font-smoothing:antialiased}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;font-variant-numeric:tabular-nums}
+code{background:var(--sunk);border-radius:3px;padding:1px 5px;color:var(--ink-2)}
+a{color:var(--accent)}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem;max-width:62ch}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;
+  border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
+.r-name{font-weight:650}
+.r-body{padding:14px 18px 16px;font-size:.94rem;color:var(--ink)}
+.r-body p{margin:0 0 8px}
+.r-body p:last-child{margin-bottom:0}
+.tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600}
+.tag.base{background:var(--sunk);color:var(--ink-3)}
+details.hunk{border:1px solid var(--rule);border-radius:9px;margin:10px 12px 12px;
+  background:var(--sunk);overflow:hidden}
+details.hunk>summary{cursor:pointer;padding:11px 15px;font-weight:600;font-size:.9rem;
+  list-style:none;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+details.hunk>summary::-webkit-details-marker{display:none}
+.hunk-why,.hunk-rel{margin:8px 15px;font-size:.9rem}
+.hunk-why{color:var(--ink)}
+.hunk-rel{color:var(--ink-2)}
+.diff{margin:0 12px 12px;border:1px solid var(--rule);border-radius:7px;overflow:auto;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82rem}
+.ln{display:flex;white-space:pre;padding:1px 10px;line-height:1.55}
+.ln .m{display:inline-block;width:1.2em;flex:none;color:var(--ink-3)}
+.ln.ctx{color:var(--ink-3);background:var(--panel)}
+.ln.add{background:var(--ok-soft);color:var(--ok)}
+.ln.del{background:var(--bad-soft);color:var(--bad)}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+@media (max-width:560px){h1{font-size:1.35rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 6-implementation-notes · 審查介面</p>
+  <h1>integration-before-verdict</h1>
+  <p class="sub">status approved／owner stage6-#231。正本是 md 的 ## Diff,這頁由產檔器重生。不要當第二份正本。</p>
+</header>
+<section class="r-block" id="summary"><div class="r-head"><span class="r-name">摘要</span></div><div class="r-body"><p>Stage 6 產品在 tip `#231` / `c7e69ac`：AS-1 填檔牙（`check-stage67` ST-filled）+ 活教師改口。R-5 真跑留本 Stage 7 hop。</p></div></section>
+<section class="r-block" id="T-s7-bookkeeping"><div class="r-head"><span class="r-name">T-s7-bookkeeping</span></div><div class="r-body"><p>—</p></div></section>
+<section class="r-block" id="hunks"><div class="r-head"><span class="r-name">Hunks</span></div><details class="hunk" open><summary>FORK 錨點欄 · <code>docs/dev/integration-before-verdict/6-implementation-notes.md</code> 11-11 <span class="tag base">T-s7-bookkeeping</span></summary><p class="hunk-why">改什麼：補 Stage 7 `--fork-sha` 吃的 40 碼錨點（#231 合 tip 後本 slug 仍缺 6-notes）。</p><p class="hunk-rel">關聯：`devflow-integration-regression.sh --fork-sha`／Stage 7 graph S2c</p><div class="diff">
+<div class="ln add"><span class="m">+</span>FORK_INTEGRATION_SHA: c7e69acb5f5cd070ef0ad8d6da8fda12ddd472ab</div>
+</div></details></section>
+<p class="src">由 <code>scripts/build-stage6-html.py</code> 從 md ## Diff 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
