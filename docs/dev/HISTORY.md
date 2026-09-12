@@ -503,3 +503,9 @@
 - 落在哪:notes/review-requirement-discovery-gaps.md docs/dev/STATUS.md docs/dev/integration-before-verdict/
 - 詳細:notes/review-requirement-discovery-gaps.md
 
+## 2026-09-12 · integration-before-verdict
+- 做了什麼:G3 PASS after Stage7; Active 列移出（shipped）
+- 為什麼:7-review.md 在 main 已是 verdict PASS（#239）；companion 只改 STATUS/HISTORY
+- 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/integration-before-verdict/7-review.md
+- 詳細:docs/dev/integration-before-verdict/7-review.md
+
