@@ -108,6 +108,7 @@ FORK_INTEGRATION_SHA: 25997871a86fce87a1b1f0658512d7f96e07dea3
 ## Progress Log
 
 - 2026-09-12 | T-1..T-6 | 3ec2a6ca23f72c80c557b98dd8fa429b13deaad2 feat(diagram-ir-gate): Stage 6 implement T-1..T-6 (impl-C)
+- 2026-09-12 | L1 D-3 | 註冊 `test-diagir.sh` 進 methodology;補 filemap + EXPECTED_MAPPED_FILES 205
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 Run: n-a-manual-impl-C
@@ -220,9 +221,15 @@ Run: n-a-manual-impl-C
 - 理由:S-4.5 THEN 是「不被當成取代三支牙的入口」,不是禁這個漢字。
 - 影響:T-5 / R-4 / S-4.5
 
+### D-3(L1)
+- 現象:母版自審要求每支 `scripts/test-*.sh` 必須出現在 `devflow-check.sh` 的執行行;`scripts/*.py`／`*.sh` 必須列進 `#filemap` 且 `EXPECTED_MAPPED_FILES` 與靜態互釘同步。這兩檔不在 5-tasks Files 聯集。
+- 保守選擇:把 `test-diagir.sh` 掛進 methodology 組(三支既有牙仍跑);補 `diagir.py`／`devflow_atomic.py`／`test-diagir.sh` 地圖列;常數 202→205。註解與執行行都不寫 Lab 專用 check 檔名、也不提 lab yaml,以免 S-4.5 假紅。
+- 理由:CI `REPO_REFERENCE` 先跑註冊自審再跑組;不註冊則永遠沒紅字。這是母版記帳,不是新 R/S、也不是第二套 Lab 入口。
+- 影響:無 R/S 變更。T-5／S-4.5 觀測「三支仍在、無第二套 Lab 牙」仍成立。
+
 ## Files Changed
 
-對照 Diff Budget(估計 ≤10 檔非測試):本 hop 落地 `diagir.py`、`devflow_atomic.py`、五支產器 + tools 副本、`diagir-route.md`、`diagir-lab.yaml`、`kind-parked.json`、`test-diagir.sh`、`scripts/fixtures/diagir/`、本檔 + twin。未改 plugin／STATUS／#196／IBV。
+對照 Diff Budget(估計 ≤10 檔非測試):本 hop 落地 `diagir.py`、`devflow_atomic.py`、五支產器 + tools 副本、`diagir-route.md`、`diagir-lab.yaml`、`kind-parked.json`、`test-diagir.sh`、`scripts/fixtures/diagir/`、本檔 + twin。L1(D-3):`devflow-check.sh`、`guide-dev-flow.html` `#filemap`、`check-file-map.sh`、`test-architecture-guards.sh`。未改 plugin／STATUS／#196／IBV。
 
 ## Diff(各 T commit,逐檔折疊)
 
@@ -351,8 +358,8 @@ Run: n-a-manual-impl-C
 ③每個 PASS 都早於該 T commit?是。Verify 先跑,再 commit。
 ④每個 FAIL 後有較晚 PASS?無 FAIL。
 ⑤每個已完成 T 一 commit、Progress Log 有 hash?本 hop 六 T 同一實作 commit `3ec2a6ca23f72c80c557b98dd8fa429b13deaad2`(獨立 impl-C PR)。
-⑥git diff --stat ⊆ Files 聯集?是。另本檔／5-tasks checkbox 為守衛恆許。未改 STATUS／plugin／#196／IBV。
-⑦Decisions/Deviations 與 diff 對得上?是。D-1／D-2 L1;ellipsis 地板對齊既有產器,不改 R/S。Design Boundary:無未授權依賴、無改 Data Owner、Interface 即信封／atomic_write、未「修掉」known limit。
+⑥git diff --stat ⊆ Files 聯集?產品檔是。另本檔／5-tasks checkbox 為守衛恆許。L1 D-3 加母版記帳四檔(見 Deviations)。未改 STATUS／plugin／#196／IBV。
+⑦Decisions/Deviations 與 diff 對得上?是。D-1／D-2／D-3 L1;ellipsis 地板對齊既有產器,不改 R/S。Design Boundary:無未授權依賴、無改 Data Owner、Interface 即信封／atomic_write、未「修掉」known limit。
 ⑧回歸綠?`check-vbox-fig` 16/16;`check-dir-tree` 81/81;`check-stage1-now` 27/27;`check-stage2-card` 34/34;`check-stage4-rs` 50/50;`check-gate-twin` 222/222。六組 Verify 全綠。
 
 ## Review Follow-up(G3 打回時才用)

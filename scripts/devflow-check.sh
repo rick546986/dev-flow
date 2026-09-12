@@ -133,6 +133,8 @@ group_methodology() {
   # 可摺疊目錄樹:無參數／吐 mermaid 必須紅;母版 #dirmap 必須是產器產出。
   # 不塞 hop graph,不改 vbox-fig／scan-now／七站三走廊,不進 ship-manifest。
   run "methodology/check-dir-tree"           scripts/check-dir-tree.sh         || return 1
+  # IR 閘六組驗收。加在既有三支牙旁邊,不當第二套 Lab 入口、不改走索引。
+  run "methodology/test-diagir"              scripts/test-diagir.sh            || return 1
   # 第 1／2／3／4／5／6／7 站審頁:契約丟了鎖死句子或產檔器吐錯形必須紅。
   # 不改 twin、不塞 gate-twin STAGES、不改 build-scan-html.py／build-stage6-html.py。
   run "methodology/check-stage1-now-contract" scripts/check-stage1-now-contract.sh || return 1
