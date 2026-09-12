@@ -407,8 +407,10 @@ for name, pred in EXPECTED_FILLED:
 # 新增檢查時把這個數字一起往上調(同 test-architecture-guards.sh 的 EXPECTED_* 體例)。
 # 2026-08-16 補 TF 群組(測試檔路徑必須列進 Files):+2(模板 needle 1 + 範例承接 1)。
 # 2026-09-12 補 ST-filled 填檔牙:+12(案例名釘死 1 + 目錄 1 + 五份存在 5 + 五份判定 5)。
-# 實跑 checks=85(既有迴圈項 + 本組);地板釘死實得數,刪 A1 整組仍會低於地板。
-MIN_CHECKS = 85
+# 全 repo 實跑 85(example 三份 5-tasks 都在)。S67 seed 只帶
+# contract-expiry-reminder → 73。地板釘 72:seed 對照組仍綠,S67-9 刪 A1
+# (~8 項)後低於地板。不得釘 85,否則未變異 seed 會被地板誤殺。
+MIN_CHECKS = 72
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
