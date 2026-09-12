@@ -1,7 +1,7 @@
 ---
 feature: diagram-ir-gate
 stage: 3-prototype
-status: draft
+status: approved
 owner: rick
 updated: 2026-09-12
 ---
@@ -11,7 +11,7 @@ updated: 2026-09-12
 > Stage 3 依 2-decision「不預先跳過」**執行、不跳過**。Decision **A + D + G** 已是核准 Pattern → 1 個可操作 CLI Demo，不湊 UI Variant。
 > 本 hop（IMPLEMENTER C，獨立）只證明形狀：**typed IR → 驗證 → 原子交付**、`DIAGIR_*` + 可修旋鈕、失敗／中斷不蓋 last-good、五家族查找路由表、Proof Lab 薄索引（vbox-fig／gate-twin／dirmap 各一正一負）。
 > **不**落地 Stage 6 產器、**不**改 `scripts/build-vbox-fig.py`／`build-dir-tree.py`／`build-gate-twin.py`／`build-stage1-html.py`、**不**另造第二套牙、**不**開 4-spec、**不**送 G2、**不**假 Human ACCEPTED、**不**碰 `#196`／`integration-before-verdict`／發版／Mermaid／Node／動畫。
-> Human verdict 由參與 Demo 的人類親填。本檔 **NOT_REVIEWED**（Agent 已代跑 CLI；人尚未親跑）。frontmatter 維持 `draft`。
+> Human verdict 由參與 Demo 的人類親填。本檔 **NOT_REVIEWED**（Agent 已代跑 CLI；人尚未親跑）。Stage 3 無 gate：回寫完成 → frontmatter `approved`。G2 Demo 仍拒（未親跑 ≠ ACCEPTED）。
 
 ## Stage 3 觸發判定(條件式必要)
 <!-- 對照 1-discussion Real-world Context -->
@@ -173,5 +173,5 @@ Proof Lab 薄索引（既有 fixture + 1 個 throwaway 負向）
 
 ## Verdict
 - 回寫 2-decision：A 的 IR 閘形狀經 throwaway 確認（綠交付原子換檔；六碼紅且不蓋 last-good；旋鈕可見）。D 的五列查找表可印可擋 `DIAGIR_FAMILY`。G 的 Proof Lab 薄索引可重放三家族各一正一負，負向不蓋檔。**第 3 站已行使**；CLI Demo 足夠，無跳過宣告。
-- Human verdict = **NOT_REVIEWED**（人未親跑）→ frontmatter 維持 `draft`，**不得過 G2**，不開 4-spec，不假 attestation。
+- Human verdict = **NOT_REVIEWED**（人未親跑）→ **不得過 G2**，不開 4-spec，不假 attestation。frontmatter `approved` 只表示本站回寫收尾（N5），不是 Demo ACCEPTED。
 - throwaway 處置:`proto/diagir_proto.py` 留在本 feature branch 供人重跑；標非正式碼；**不**當 Stage 6 產器。session 產物在 `/tmp/diagir-stage3-c/`，不進 Git。正式碼 Stage 6 再接到既有產器寫路徑與現有牙。
