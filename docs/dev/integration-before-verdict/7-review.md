@@ -39,7 +39,7 @@ updated: 2026-09-12
 | Human G3 | 未寫。本檔 `verdict: PRE-REVIEW`。建議 owner 親自「提交判定」 |
 | 讀取順序(可查) | ①`4-spec.md`(G2 PASS、16 S) ②`5-tasks.md`(T-1／T-2／T-3;R-5 不切 T) ③`git show c7e69ac`(#231 產品 diff,13 檔 +179/−13) ④測試碼／fixture(`check-stage67-enforcement.sh` `_filled_judge`、`scripts/fixtures/stage67-filled-tooth/` 五份) ⑤親跑 T-1／T-2／T-3 + 4-spec entry point + 步 2c(合併前兩次座標相同) → **之後才** ⑥`review-unlock` 讀薄 6-notes(無 Self-Review) |
 | 圍欄 | `hooks/devflow-exec.sh review integration-before-verdict` 武裝後再 `review-unlock`。doctor:`COMPATIBLE`(契約 2.0.0,runtime 3.23.3,gauntlet 1.3.3) |
-| 本輪性質 | 審查密封稿。產品碼已在 tip `#231`。本 PR 只加薄 6-notes + 本檔／html。**不是 G3 PASS** |
+| 本輪性質 | 審查密封稿。產品碼已在 tip `#231`。#237 squash-merge 後 tip=`4b751c5`。本 companion hop 只重綁 Final Fresh `Source SHA` + ALREADY_SYNCED 恢復欄,不改產品碼、不改 STATUS Active。**不是 G3 PASS** |
 
 ## Coverage Matrix
 
@@ -60,7 +60,7 @@ updated: 2026-09-12
 | S-4.1 | `_templates/7-review.md` 頂註「整合回歸」offset 929 < 「Final Fresh Run」5616 | ✅ |
 | S-4.2 | `check-stage67` 79 項 exit 0;`check-integration-regression-guard` 36/36;`test-evidence-gauntlet` 68/68 | ✅ |
 | S-4.3 | 兩腳本仍有「絕不動樹」與 `sys.exit(code)`;STATUS 名 + exit 0/10/11/2 不變;無 `scripts/check-already-synced.sh` | ✅ |
-| S-5.1 | Exit 文件寫成當下:`Source SHA` = `git rev-parse HEAD` = `a8793dfeb7d75c2347618d16f13a30ae807a9e6e`(見附錄 A1) | ✅ |
+| S-5.1 | Exit 文件寫成當下:`Source SHA` = `git rev-parse HEAD` = `4b751c541e532f76bdd050a5d0a1e8899c45d1ce`(見附錄 A1;#237 squash tip) | ✅ |
 | S-5.2 | 對照:若 Fresh／Verdict 先綁 `5742b55` 再合 `0294f8f`,HEAD 會變成 `a8793df`;兩 SHA 都印出且不等(見附錄 A1) | ✅ |
 | S-5.3 | `rg -n '跳過 2c&#124;Exit 才合併' docs/dev/integration-before-verdict/` 命中全是拒項／對照／spec,不是本 slug 執行指令(見附錄 A2) | ✅ |
 | 既有測試套件(回歸) | 4-spec entry point + T-1／T-2／T-3 Verify(數字見 Verification Evidence) | ✅ |
@@ -82,7 +82,7 @@ example 舊針=0; fixture 2c gauntlet=0; spec-gate fixture exit=1; live-path rg=
 
 ## Verification Evidence
 
-- Source SHA: a8793dfeb7d75c2347618d16f13a30ae807a9e6e
+- Source SHA: 4b751c541e532f76bdd050a5d0a1e8899c45d1ce
 - Final Fresh Run ID: 2026-09-12T1630Z-impl-B-s7
 - Entry point: `bash scripts/check-spec-gate.sh docs/dev/integration-before-verdict/4-spec.md && bash scripts/check-stage67-enforcement.sh && bash scripts/check-integration-regression-guard.sh && bash scripts/test-evidence-gauntlet.sh`
 - Toolchain: python3.12.3; markdown-it-py 4.0.0(gate-twin pin;`scripts/requirements-methodology-render.txt`); contract 2.0.0; runtime 3.23.3; git 2.43.0; gauntlet 1.3.3
@@ -114,7 +114,9 @@ example 舊針=0; fixture 2c gauntlet=0; spec-gate fixture exit=1; live-path rg=
 
 - STATUS: ALREADY_SYNCED
 - FORK / HEAD / INTEGRATION / REF: c7e69acb5f5cd070ef0ad8d6da8fda12ddd472ab / a8793dfeb7d75c2347618d16f13a30ae807a9e6e / 0294f8f4d39fb6d8858a62191fd82773dee30e96 / refs/remotes/origin/main
-- 恢復: 重綁 Final Fresh。Source SHA: a8793dfeb7d75c2347618d16f13a30ae807a9e6e
+- 恢復: 重綁 Final Fresh。Source SHA: 4b751c541e532f76bdd050a5d0a1e8899c45d1ce
+
+上一列 FORK／HEAD／INTEGRATION 是 #237 合完 `0294f8f` 當時腳本印的歷史座標(HEAD=`a8793df`)。恢復欄 SHA 已重綁到本 hop 開工 `git rev-parse HEAD`(`4b751c5` = #237 squash tip)。
 
 ## Negative Constraint Mapping
 
@@ -149,7 +151,7 @@ example 舊針=0; fixture 2c gauntlet=0; spec-gate fixture exit=1; live-path rg=
 | S-4.1 | 頂註 integ 偏移 < fresh 偏移 | python 印 `929 5616 True` | ✅ |
 | S-4.2 | 三支既有牙 exit 0 | 79;36/36;68/68 | ✅ |
 | S-4.3 | 絕不動樹;exit 0/10/11/2;無自動重綁 | T-2-ok;無 `check-already-synced.sh` | ✅ |
-| S-5.1 | 本檔 Source SHA 與 `git rev-parse HEAD` 逐字相同 | 附錄 A1:`a8793dfeb7d75c2347618d16f13a30ae807a9e6e` = HEAD(Exit 文件寫成當下) | ✅ |
+| S-5.1 | 本檔 Source SHA 與 `git rev-parse HEAD` 逐字相同 | 附錄 A1:`4b751c541e532f76bdd050a5d0a1e8899c45d1ce` = HEAD(本 hop 重綁寫成當下;#237 squash tip) | ✅ |
 | S-5.2 | 對照兩欄 SHA 都印且不等 | `5742b5575e9f4b2f63b4aa1d425e858d2bace5dc` ≠ `a8793dfeb7d75c2347618d16f13a30ae807a9e6e` | ✅ |
 | S-5.3 | 命中必須是拒項／對照,不是執行指令 | 附錄 A2 逐行;本檔不把那兩句寫成指令 | ✅ |
 
@@ -169,7 +171,7 @@ example 舊針=0; fixture 2c gauntlet=0; spec-gate fixture exit=1; live-path rg=
 | S-id | 角色 | 真實目標 | 系統操作 | 系統外步驟 | 等待／例外 | 結果 |
 |---|---|---|---|---|---|---|
 | S-1.1 | Stage 7 reviewer | 勾 2c 時不能靠「證據不算數」過關 | 跑 `check-stage67-enforcement.sh` | 終端機看 void-only 紅 | 檢查同步結束 | ✅ 人看見 fail:void-only 就不能勾過 |
-| S-1.2 | Stage 7 reviewer | 已合過時重綁 Fresh 到當下 HEAD | 寫「重綁 Final Fresh。Source SHA: <hex≥7>」 | 把 SHA 貼進恢復欄 | SHA 短於 7 當 void-only | ✅ 本檔恢復欄綁 `a8793df`(≥7) |
+| S-1.2 | Stage 7 reviewer | 已合過時重綁 Fresh 到當下 HEAD | 寫「重綁 Final Fresh。Source SHA: <hex≥7>」 | 把 SHA 貼進恢復欄 | SHA 短於 7 當 void-only | ✅ 本檔恢復欄綁 `4b751c5`(≥7) |
 | S-1.3 | Stage 7 reviewer | 座標已髒時停在 2c | 恢復欄寫「本項 FAIL」 | 從乾淨 FORK 重算 | 停到人重算 | ✅ fixture 綠;本 hop 走重綁不走 FAIL |
 | S-2.1 | Stage 7 reviewer | 零新 commit 記 n-a 即過 | 腳本 STATUS=`N_A_NO_INCOMING` | 不合併 | 後來有新 commit 就重跑 | ✅ fixture no-fire;本 hop 實際是 SYNC_REQUIRED |
 | S-2.2 | Stage 7 reviewer | 未勾草稿不被提前紅擋住 | 維持 `status: draft`、verdict 非 PASS | 繼續填,不要先送 G3 | 勾了或 verdict PASS 後改走 S-1.1 | ✅ 本檔 draft + PRE-REVIEW |
@@ -209,7 +211,7 @@ Dependency Direction／Boundary Leakage／Data Ownership／Interface Stability:�
 | R-2 放過 n-a／draft | 符合 | S-2.1／S-2.2 no-fire;本檔 `status: draft`、`verdict: PRE-REVIEW` |
 | R-3 清除活教師舊序 | 符合 | S-3.1～S-3.4 活路徑 0;example／manifest／檔頭改口;fixture 仍 C5 紅 |
 | R-4 保留 2c 編號與模板牙 | 符合 | 2c 仍叫整合回歸;模板 929<5616;三牙綠;演算法／exit 不變 |
-| R-5 出貨樹=核准樹 | 符合(本 hop 真跑) | S-5.1 Exit 文件寫成當下 SHA=HEAD;S-5.2 對照兩 SHA 不等;S-5.3 無執行指令。順序:2c 合 `0294f8f` → 全套 → 2d Fresh 綁 `a8793df` |
+| R-5 出貨樹=核准樹 | 符合(本 hop 真跑) | S-5.1 Exit 文件寫成當下 SHA=HEAD;S-5.2 對照兩 SHA 不等;S-5.3 無執行指令。順序:#237 2c 合 `0294f8f` → Fresh 綁 `a8793df`;#237 squash 後 tip=`4b751c5`,本 hop 重綁 Source SHA 到該 tip |
 | M-1～M-4 | 符合 | example 2d;fixture 2d;manifest 2d;檔頭「不是 Exit 程序」 |
 | Design Boundary | 符合 | 見 Design Integrity Check;無 L2、無未授權變更 |
 | 6-notes Deviations | 無作者 Self-Review 可對 | 薄 6-notes 只有 D-s7-fork(只記 FORK)。#231 PR 正文 T-1／T-2／T-3 與本 hop 獨立數字相符 |
@@ -237,10 +239,13 @@ Dependency Direction／Boundary Leakage／Data Ownership／Interface Stability:�
 [example/contract-expiry-reminder/4-spec.md]
     +--> scripts/fixtures/spec-gate-dd-subsection/bad-dd-unresolved.md
 
-本 PR(審查密封,不是產品碼):
+#237 審查密封(已 squash 進 tip `4b751c5`,不是產品碼):
 [6-implementation-notes.md]  FORK=c7e69ac
 [6-implementation-notes.html]
-[7-review.md]                Source SHA=a8793df (Fresh = 2c 後 HEAD)
+[7-review.md]                Source SHA 當時=`a8793df`(Fresh = 2c 後 HEAD)
+
+本 companion hop(docs-only 重綁,不是產品碼):
+[7-review.md]                Source SHA=4b751c5 (#237 squash tip = 本 hop 開工 HEAD)
 [7-review.html]              G3 twin
 ```
 
@@ -248,7 +253,7 @@ Dependency Direction／Boundary Leakage／Data Ownership／Interface Stability:�
 
 ## Diff(merge-base(main)..HEAD,逐檔折疊)
 
-`merge-base(origin/main, HEAD)` 在寫本檔時 = `0294f8f`。產品 #231 已在 main,不在本 PR diff。本 PR 相對 main 是薄 6-notes(+html)與本審查檔。
+`merge-base(origin/main, HEAD)` 在 #237 寫檔時 = `0294f8f`。產品 #231 已在 main。#237 squash 後 tip=`4b751c5`。本 companion PR 相對 main 只重綁本檔／twin 的 Final Fresh 座標。
 
 <details>
 <summary>docs/dev/integration-before-verdict/6-implementation-notes.md + 本檔 twin — 薄 FORK 錨點(+N 見 git show 5742b55)</summary>
@@ -260,7 +265,7 @@ FORK_INTEGRATION_SHA: c7e69acb5f5cd070ef0ad8d6da8fda12ddd472ab。無 Self-Review
 <details>
 <summary>docs/dev/integration-before-verdict/7-review.md + 7-review.html — 本審查正本</summary>
 
-本檔。`verdict: PRE-REVIEW`。Source SHA 綁 2c 後 HEAD `a8793dfeb7d75c2347618d16f13a30ae807a9e6e`。
+本檔。`verdict: PRE-REVIEW`。本 hop 重綁 Source SHA 到 #237 squash tip `4b751c541e532f76bdd050a5d0a1e8899c45d1ce`。
 
 </details>
 
@@ -282,7 +287,7 @@ FORK_INTEGRATION_SHA: c7e69acb5f5cd070ef0ad8d6da8fda12ddd472ab。無 Self-Review
 | 本次 S 全綠 | 16/16 自建矩陣 ✅ | Coverage Matrix |
 | 既有全綠 | entry point 四層 + T-1／T-2／T-3 | 6/6;79;36;68/68 |
 | 現象證據逐 S 相符 | 16/16 | 現象證據表 |
-| Evidence 契約 | Fresh 綁 HEAD;`--review-file` 見附錄 A3 | Source SHA=`a8793dfeb7d75c2347618d16f13a30ae807a9e6e` |
+| Evidence 契約 | Fresh 綁 HEAD;`--review-file` 見附錄 A3 | Source SHA=`4b751c541e532f76bdd050a5d0a1e8899c45d1ce` |
 | 無 🔴 | 無 | Standards／Spec |
 | 2c 在 Fresh 之前 | 是 | 先合 `0294f8f`,再 Fresh |
 | Human G3 | **未寫** | owner「提交判定」 |
@@ -294,10 +299,11 @@ FORK_INTEGRATION_SHA: c7e69acb5f5cd070ef0ad8d6da8fda12ddd472ab。無 Self-Review
 | # | 限制 | 嚴重度 | 建議處置 |
 |---|---|---|---|
 | 1 | 填檔牙讀字面,不重算 git merge-base(4-spec Known limit ①) | 低 | park;腳本座標真偽仍靠人貼結論塊。owner=方法論;追蹤=4-spec Design Constraints |
-| 2 | 編輯器不能擋 Verdict 後改碼,也不能讓「含 Source SHA 的 commit」等於該 commit 自己的 SHA(4-spec Known limit ②) | 中 | park。Exit 文件寫成當下 SHA=HEAD 已證。之後若再 commit 本檔,HEAD 會漂;合法恢復=重綁 Final Fresh(AS-1 路徑 ①),不得再合產品碼。owner=方法論 |
+| 2 | 編輯器不能擋 Verdict 後改碼,也不能讓「含 Source SHA 的 commit」等於該 commit 自己的 SHA(4-spec Known limit ②) | 中 | park。#237 Exit 寫成當時 `a8793df`=HEAD 已證;squash-merge 後 tip=`4b751c5`,本 hop 重綁 Source SHA 到該 tip。本重綁 commit 落地後 HEAD 會再漂(同一悖論);合法恢復=再重綁 Final Fresh(AS-1 路徑 ①),不得再合產品碼。owner=方法論 |
 | 3 | ~~本 hop 不產生 7-review(4-spec Known limit ③)~~ | — | 已解除:本檔即觀測物 |
 | 4 | MIN_CHECKS 地板 66 ≠ 母版實跑 79 | 低 | 接受;見 F-1／#231 說明 |
-| 5 | 本檔 `verdict: PRE-REVIEW`;全勾也不算 shipped | 資訊 | Human G3 仍必須「提交判定」 |
+| 5 | 本檔 `verdict: PRE-REVIEW`;全勾也不算 shipped | 資訊 | Human G3 仍必須「提交判定」。本 hop 不代填 PASS／shipped |
+| 6 | 本 hop(#237 後 docs-only 重綁)的 commit 自身也會漂 SHA | 中 | 同 ②。合法恢復=再重綁,不是再合產品碼。本 hop 不改 verdict、不寫 shipped |
 
 ## Exit Checklist(全勾才算 shipped)
 
@@ -319,16 +325,16 @@ FORK_INTEGRATION_SHA: c7e69acb5f5cd070ef0ad8d6da8fda12ddd472ab。無 Self-Review
 
 ```
 git rev-parse HEAD
-a8793dfeb7d75c2347618d16f13a30ae807a9e6e
+4b751c541e532f76bdd050a5d0a1e8899c45d1ce
 ```
 
-本檔 Verification Evidence `Source SHA:` 同一字串。證明指令(Fresh／Exit 文件寫成當下;工作樹可有未提交的本檔):
+本檔 Verification Evidence `Source SHA:` 同一字串(#237 squash tip = 本 hop 開工 HEAD)。#237 Exit 當時綁的是 `a8793df`(見下 S-5.2 歷史對照)。證明指令(重綁寫成當下;工作樹可有未提交的本檔):
 
 ```
 test "$(python3 -c "import re,pathlib; t=pathlib.Path('docs/dev/integration-before-verdict/7-review.md').read_text(); print(re.search(r'- Source SHA:\s*([0-9a-fA-F]{7,})', t).group(1))")" = "$(git rev-parse HEAD)" && echo S-5.1-ok
 ```
 
-這不是「commit 含自己的 SHA」(做不到)。這是 4-spec S-5.1 要的:勾／寫 Exit 文件時兩字串相同。之後若提交本檔,HEAD 會變 —— Known Limits ②;合法恢復=重綁,不是再合 INTEGRATION_SHA。
+這不是「commit 含自己的 SHA」(做不到)。這是 4-spec S-5.1 要的:勾／寫 Exit 文件時兩字串相同。本重綁 commit 落地後 HEAD 會再漂 —— Known Limits ②／⑥;合法恢復=再重綁,不是再合 INTEGRATION_SHA。
 
 **S-5.2 Verdict-then-merge 對照(本 hop 實樹,不是假 SHA)**
 
@@ -372,7 +378,7 @@ bash docs/dev/tools/devflow-evidence-gauntlet.sh docs/dev/integration-before-ver
   --require-layer test-evidence-gauntlet
 ```
 
-Fresh 實跑(工作樹有未提交本檔;HEAD 仍是 `a8793dfeb7d75c2347618d16f13a30ae807a9e6e`):
+#237 Fresh 實跑當時 HEAD=`a8793dfeb7d75c2347618d16f13a30ae807a9e6e`。本 hop 重綁 Source SHA 到開工 HEAD `4b751c541e532f76bdd050a5d0a1e8899c45d1ce`(工作樹可有未提交的本檔):
 
 ```
 ✅ evidence gauntlet: 60 checks passed — docs/dev/integration-before-verdict/7-review.md
