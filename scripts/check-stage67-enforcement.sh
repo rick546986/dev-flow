@@ -48,12 +48,13 @@ if [ -n "${1:-}" ]; then
   esac
 fi
 
-python3 - "$ROOT" <<'PY'
+python3 - "$ROOT" "$SELF_DIR" <<'PY'
 import os
 import re
 import sys
 
 root = sys.argv[1]
+self_dir = sys.argv[2]
 fails = []
 checks = 0
 
@@ -321,13 +322,88 @@ if rev:
          "ST:Exit Checklist 仍在 Verdict 之後合併 INTEGRATION_SHA"
          "(程式碼動作必須停在 Final Fresh 之前)")
 
+# ── ST-filled:填好的 7-review 牙(AS-1;射程從模板字串延到填檔)──────────────
+#
+# 同一入口 `bash scripts/check-stage67-enforcement.sh`,不另開
+# check-already-synced.sh。五份對照在 scripts/fixtures/stage67-filled-tooth/。
+# 發動:正文有 ALREADY_SYNCED 且已宣稱([x] 2c / 結論:STATUS=ALREADY_SYNCED /
+# verdict: PASS / status: approved)。void-only 紅;重綁 SHA≥7 或「本項 FAIL」綠;
+# N_A_NO_INCOMING 與未勾 draft 不開火。architecture-guards 的 seed() 不帶
+# fixtures/ → 找不到 root 底下的對照時,回落到本腳本旁的官方 fixture。
+_FILLED_NAMES = (
+    "void-only.md",
+    "rebind-sha.md",
+    "item-fail.md",
+    "na-incoming.md",
+    "draft-unclaimed.md",
+)
+_FILLED_HEX7 = re.compile(r"Source SHA:\s*([0-9a-fA-F]{7,})")
+_FILLED_CLAIMED = (
+    re.compile(r"^verdict:\s*PASS\b", re.M),
+    re.compile(r"^status:\s*approved\b", re.M),
+    re.compile(r"結論:STATUS=ALREADY_SYNCED"),
+    re.compile(r"\[x\][^\n]{0,80}2c", re.I),
+)
+
+
+def _filled_claimed(text):
+    return any(p.search(text) for p in _FILLED_CLAIMED)
+
+
+def _filled_judge(text):
+    already = "ALREADY_SYNCED" in text
+    claimed = _filled_claimed(text)
+    if "N_A_NO_INCOMING" in text and not (already and claimed):
+        return 0, "no-fire:N_A_NO_INCOMING"
+    if not already or not claimed:
+        kind = "draft" if re.search(r"^status:\s*draft\b", text, re.M) or not claimed else "unclaimed"
+        return 0, f"no-fire:{kind}"
+    sha = _FILLED_HEX7.search(text)
+    if sha:
+        return 0, f"pass:rebind-sha:{sha.group(1)}"
+    if "本項 FAIL" in text:
+        return 0, "pass:item-FAIL"
+    return 1, "fail:void-only"
+
+
+def _filled_dir():
+    for cand in (
+        os.path.join(root, "scripts", "fixtures", "stage67-filled-tooth"),
+        os.path.join(self_dir, "fixtures", "stage67-filled-tooth"),
+    ):
+        if all(os.path.isfile(os.path.join(cand, n)) for n in _FILLED_NAMES):
+            return cand
+    return None
+
+
+_filled_expected = {
+    "void-only.md": lambda code, reason: code != 0 and "void-only" in reason,
+    "rebind-sha.md": lambda code, reason: code == 0 and "def4567890abc" in reason,
+    "item-fail.md": lambda code, reason: code == 0 and ("item-FAIL" in reason or "本項 FAIL" in reason),
+    "na-incoming.md": lambda code, reason: code == 0 and "no-fire" in reason and "N_A_NO_INCOMING" in reason,
+    "draft-unclaimed.md": lambda code, reason: code == 0 and "no-fire" in reason and "draft" in reason,
+}
+_fxdir = _filled_dir()
+need(_fxdir is not None,
+     "ST-filled: 找不到五份對照 scripts/fixtures/stage67-filled-tooth/"
+     "({void-only,rebind-sha,item-fail,na-incoming,draft-unclaimed}.md)")
+if _fxdir:
+    for _name in _FILLED_NAMES:
+        with open(os.path.join(_fxdir, _name), encoding="utf-8") as _fh:
+            _body = _fh.read()
+        _code, _reason = _filled_judge(_body)
+        print(f"ST-filled: {_name[:-3]} {_reason}", file=sys.stderr)
+        _ok = _filled_expected[_name](_code, _reason)
+        need(_ok, f"ST-filled: {_name} 期望不符(code={_code} reason={_reason})")
+
 # ── 檢查數地板:防止有人把上面整段刪成空迴圈仍然 exit 0 ──────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」。
 # 負向測試 S67-6 實測:原本填 16(A1 那組恰好 8 項,24-8=16)→ 刪掉整組 A1 之後
 # 剛好等於地板,守衛照樣 exit 0。地板留餘裕 = 地板沒有牙齒。
 # 新增檢查時把這個數字一起往上調(同 test-architecture-guards.sh 的 EXPECTED_* 體例)。
 # 2026-08-16 補 TF 群組(測試檔路徑必須列進 Files):+2(模板 needle 1 + 範例承接 1)。
-MIN_CHECKS = 60
+# 2026-09-12 補 ST-filled 填檔牙:+6(目錄在場 1 + 五份對照各 1)。實得 79。
+MIN_CHECKS = 79
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
@@ -341,5 +417,5 @@ if fails:
 print(f"✅ check-stage67-enforcement: Stage 6/7 強制條款齊({checks} 項檢查全過)")
 print("   A1 守衛武裝自檢 / A3 Verify 案例數斷言 / A4 gauntlet 路徑 / A5 觀測可執行性 / "
       "VF Verify 單行純指令 / DOC doctor 必跑 / TF 測試檔路徑必列 Files / "
-      "ST 出貨樹=審過的樹")
+      "ST 出貨樹=審過的樹 / ST-filled 填檔牙")
 PY
