@@ -1,17 +1,17 @@
 ---
 feature: diagram-ir-gate
 stage: 2-decision
-status: draft
-verdict:
+status: approved
+verdict: PASS
 owner: rick
-reviewers: []
+reviewers: [user]
 updated: 2026-09-12
 ---
 
 # 2. 收斂 — 圖表 IR 閘（Archify absorb wave-1）
 
-> 把 `1-discussion.md` 的發散收成 Decision。**本 hop 不代填 G1**：`verdict` 空、`status` 留 draft、OC 維持待人審。契約不 bump。不實作產器、不碰 `#196`、不發版。
-> owner 2026-09-12 已 lock 方向（Stage 1 口頭「都過」）：wave-1 = typed IR → 驗證 → 原子交付、五家族路由表、Proof Lab；預設靜態直式 SVG。1-discussion 留當時「只 Stage 1、不送 G1」原文；本檔才改口成方案決策。本 Stage 2 的 G1 **不是** Stage 1 口頭核准。
+> 把 `1-discussion.md` 的發散收成 Decision。G1 已核:`verdict` PASS、`status` approved、OC-1～OC-4 ✅。契約不 bump。不實作產器、不碰 `#196`、不發版。
+> owner 2026-09-12 已 lock 方向（Stage 1 口頭「都過」）：wave-1 = typed IR → 驗證 → 原子交付、五家族路由表、Proof Lab；預設靜態直式 SVG。1-discussion 留當時「只 Stage 1、不送 G1」原文；本檔才改口成方案決策。本 Stage 2 的 G1 是 owner chat「可以」，**不是** Stage 1 口頭核准。
 
 ## Approaches Considered
 
@@ -42,7 +42,7 @@ updated: 2026-09-12
 [G] 對齊現有牙的 Proof Lab(選定)
 
 ## Decision
-採 **A + D + G**：在既有 Python SVG 產器上掛 typed IR → 驗證 → 原子交付（穩定 fail code + 可修旋鈕；驗證失敗或寫入中斷都不得取代 last-good）；用一張查找路由表把五個家族對到既有契約／產器（人／agent 先選家族，不是黑盒自動排版、不是 mermaid、不是一支 API 吃全家）；Proof Lab 對齊現有 selftest／`devflow-check` 牙，延伸既有 fixture 目錄加薄索引，vbox-fig／gate-twin／dirmap 各至少一正一負。Q6 本檔命名 fail-code 前綴與 wave-1 碼；JSON 信封欄位進 4-spec。Q7 本檔定落點＝既有 fixture + 薄索引。預設圖維持靜態直式 SVG。本 hop 不實作產器、不代填 G1。
+採 **A + D + G**：在既有 Python SVG 產器上掛 typed IR → 驗證 → 原子交付（穩定 fail code + 可修旋鈕；驗證失敗或寫入中斷都不得取代 last-good）；用一張查找路由表把五個家族對到既有契約／產器（人／agent 先選家族，不是黑盒自動排版、不是 mermaid、不是一支 API 吃全家）；Proof Lab 對齊現有 selftest／`devflow-check` 牙，延伸既有 fixture 目錄加薄索引，vbox-fig／gate-twin／dirmap 各至少一正一負。Q6 本檔命名 fail-code 前綴與 wave-1 碼；JSON 信封欄位進 4-spec。Q7 本檔定落點＝既有 fixture + 薄索引。預設圖維持靜態直式 SVG。G1 已核。本 hop 不實作產器。
 
 ## Rejected Alternatives
 | 不選 | 一句棄因 |
@@ -109,7 +109,7 @@ G-lab 要的是可重放樣張對齊現有牙，不是新語言。G 留下 `life
 | vbox-fig 尚無獨立負向樣張 | G 要求 Stage 6 補錯 kind／空步驟負例；本 hop 不實作。I 已拒 |
 | 路由表與契約「何時不用」漂 | 五列必須能指回 Context 已核出處；改契約「何時不用」= 回本站改表 |
 | 黑盒自動排版誘惑（E）在實作回流 | E／F／C 進 Rejected；翻案回本站 |
-| 有人把 Stage 1 口頭「都過」當成 Stage 2 G1 PASS | frontmatter `verdict` 空、`status` draft；Agent 不寫 Human PASS |
+| 有人把 Stage 1 口頭「都過」當成 Stage 2 G1 PASS | G1 已按 owner chat「可以」落檔（`verdict` PASS、`status` approved）；翻案回本站 |
 | feature branch 手改 STATUS 表列 | 流程層 OC-4：本 branch 不跑 `status-update.sh` 改正本 |
 
 ## Success Criteria
@@ -118,21 +118,21 @@ G-lab 要的是可重放樣張對齊現有牙，不是新語言。G 留下 `life
 - SC-3(G-route)：路由表五列都有「用這條／不用那條」+ 產器 + 契約；抽測五個現況入口（`build-stage1-html.py`、gate-twin 方案架構、gate-twin 行為流、`build-dir-tree.py`、vbox-fig lifecycle）只能落到該列，不能把 Stage 1 三框當生命週期、也不能把目錄樹收成單盒 vbox。
 - SC-4(G-lab)：Proof Lab 索引點名的樣張，vbox-fig／gate-twin／dirmap 各至少一正一負可獨立重放；負向 exit ≠ 0 且不蓋 last-good。不是「只有 `lifecycle.json` 綠過」。
 - SC-5(Q6 碼)：失敗輸出含上表六個碼之一（或 4-spec 增列的同前綴碼）；人能指出對應旋鈕句。
-- SC-6(Non-Goal)：預設產出仍是靜態直式 SVG；無 mermaid.js、無自動播放動畫當成功條件、無 Node render／hosted share／deep-link／Delta／themes／Share Card。本檔 `verdict` 不是 Agent 代填的 PASS。未改 `#196`、未 bump plugin、未在本 branch 改正本 `STATUS.md` 表列。
+- SC-6(Non-Goal)：預設產出仍是靜態直式 SVG；無 mermaid.js、無自動播放動畫當成功條件、無 Node render／hosted share／deep-link／Delta／themes／Share Card。未改 `#196`、未 bump plugin、未開 Stage 3 檔。本檔 `verdict` PASS 來自 owner chat「可以」，不是 Agent 自裁。
 
 ## Scope & Non-Goals(定稿)
 - In：A 共用 IR 閘＋原子交付＋`DIAGIR_*` 碼名；D 五家族路由表（上表）；G Proof Lab＝既有 fixture + 薄索引，三家族各一正一負；Q6／Q7 在本檔收口。
-- Out：B／C／E／F／H／I；Mermaid；黑盒自動排版；Node render／hosted／WYSIWYG；動畫當預設（Q8 後刀）；deep-link／Architecture Delta／themes／Share Card（Q9 後刀）；本 hop 實作產器或補負向 fixture 碼；`#196`／`#200`／`#201`；`integration-before-verdict`；發版／bump plugin；本 hop 代填 G1 PASS。
+- Out：B／C／E／F／H／I；Mermaid；黑盒自動排版；Node render／hosted／WYSIWYG；動畫當預設（Q8 後刀）；deep-link／Architecture Delta／themes／Share Card（Q9 後刀）；本 hop 實作產器或補負向 fixture 碼；`#196`／`#200`／`#201`；`integration-before-verdict`；發版／bump plugin；本 hop 不開 Stage 3 檔。
 
-## Owner Calls(自判裁決,待人審)
+## Owner Calls(自判裁決,已核)
 
 ### 逐條裁決(上層)
 | OC | 決定了什麼 | 為什麼 | 依據(`檔:行` 或 `[Assumption]`) | 若被推翻會怎樣 | 狀態(待人審→✅/✗) |
 |---|---|---|---|---|---|
-| OC-1 | wave-1 fail code 前綴 **`DIAGIR_`**，本檔鎖上表六碼。JSON 信封欄位留給 4-spec，本 hop 不鎖 Schema。使用者只被問到「有結構碼 + 可修旋鈕」；「前綴與六碼」是 owner 延伸 | Q6 期限＝Stage 2 必須命名；不定死全 Schema 才不會在本 hop 假鎖欄位 | `1-discussion.md:115` Q6；`1-discussion.md:129-131` AC-1 要穩定碼不是 traceback。六碼清單 `[Assumption]` | 改前綴或把 Schema 提前鎖進本檔；SC-5 觀測點變 | 待人審 |
-| OC-2 | Proof Lab **不**另開檢查語言。落點＝既有 `scripts/fixtures/{vbox-fig,gate-twin,dir-tree}` + 一份薄索引（檔名 4-spec 再釘）。使用者 brief 要 Lab；「延伸既有目錄、不新建語言」是 Q7 收口 | 另造目錄＋語言＝H，已拒 | `1-discussion.md:116` Q7；`1-discussion.md:98` 對齊現有牙。索引檔名 `[Assumption]` | Scope 改成 `scripts/proof-lab/` 或第二套牙 | 待人審 |
-| OC-3 | 原子寫**沿用**既有 `atomic_write`(tmp + `os.replace`) 形狀，抽到圖表寫路徑共用；不另造第三支寫檔幫手。使用者只鎖「原子交付」；「沿用 inventory 幫手」是延伸 | 他處已綠；另造幫手靠近第二套寫檔真相 | `scripts/write-stack-inventory.py:30-37`；`1-discussion.md:40` 圖表產器沒沿用。抽函式落點 `[Assumption]` | 每支產器各寫一份 tmp+replace，或改用別的原子原語 | 待人審 |
-| OC-4 | 本 feature branch **不**跑 `status-update.sh` 改正本 Active 列。Stage 欄留 main 現況，merge 後由整合分支更新。標**流程層** | 母版 STATUS 只在整合分支維護；腳本在 feature branch 拒改正本表列 | `docs/dev/STATUS.md:10-26`；`scripts/status-update.sh:408-415`；`1-discussion.md:121` | 本 PR 帶 STATUS 列改動，與並行 session 互蓋 | 待人審 |
+| OC-1 | wave-1 fail code 前綴 **`DIAGIR_`**，本檔鎖上表六碼。JSON 信封欄位留給 4-spec，本 hop 不鎖 Schema。使用者只被問到「有結構碼 + 可修旋鈕」；「前綴與六碼」是 owner 延伸 | Q6 期限＝Stage 2 必須命名；不定死全 Schema 才不會在本 hop 假鎖欄位 | `1-discussion.md:115` Q6；`1-discussion.md:129-131` AC-1 要穩定碼不是 traceback。六碼清單 `[Assumption]` | 改前綴或把 Schema 提前鎖進本檔；SC-5 觀測點變 | ✅ |
+| OC-2 | Proof Lab **不**另開檢查語言。落點＝既有 `scripts/fixtures/{vbox-fig,gate-twin,dir-tree}` + 一份薄索引（檔名 4-spec 再釘）。使用者 brief 要 Lab；「延伸既有目錄、不新建語言」是 Q7 收口 | 另造目錄＋語言＝H，已拒 | `1-discussion.md:116` Q7；`1-discussion.md:98` 對齊現有牙。索引檔名 `[Assumption]` | Scope 改成 `scripts/proof-lab/` 或第二套牙 | ✅ |
+| OC-3 | 原子寫**沿用**既有 `atomic_write`(tmp + `os.replace`) 形狀，抽到圖表寫路徑共用；不另造第三支寫檔幫手。使用者只鎖「原子交付」；「沿用 inventory 幫手」是延伸 | 他處已綠；另造幫手靠近第二套寫檔真相 | `scripts/write-stack-inventory.py:30-37`；`1-discussion.md:40` 圖表產器沒沿用。抽函式落點 `[Assumption]` | 每支產器各寫一份 tmp+replace，或改用別的原子原語 | ✅ |
+| OC-4 | 本 feature branch **不**跑 `status-update.sh` 改正本 Active 列。Stage 欄留 main 現況，merge 後由整合分支更新。標**流程層** | 母版 STATUS 只在整合分支維護；腳本在 feature branch 拒改正本表列 | `docs/dev/STATUS.md:10-26`；`scripts/status-update.sh:408-415`；`1-discussion.md:121` | 本 PR 帶 STATUS 列改動，與並行 session 互蓋 | ✅ |
 
 ### 內部技術選擇(下層,告知即可)
 - 本 hop 不 bump `.claude-plugin/plugin.json`（仍 3.23.3）、不改產器碼。
@@ -150,5 +150,5 @@ G-lab 要的是可重放樣張對齊現有牙，不是新語言。G 留下 `life
 ## 確認紀錄
 - 決策點清單確認 | 2026-09-12 | owner chat「都過」核准 Stage 1 方向（wave-1 三條 DO、預設靜態直式 SVG）。本 hop brief 指定 Stage 2 必須覆蓋 IR 閘／五家族路由表／Proof Lab，並駁回 Mermaid、黑盒自動排版、Node、動畫預設、後刀 deep-link／Delta／themes／Share Card。三決策點對應該鎖板。
 - Stage 1 改口 | 2026-09-12 | 1-discussion 仍 draft、Q4 寫「只 Stage 1 不送 G1」、Q6／Q7 仍 `[~]`。本檔改口為 Decision，並為 Q6 命名 `DIAGIR_*`、為 Q7 定既有 fixture + 薄索引。不回改正本討論。
-- G1 | 2026-09-12 | **未送**。`verdict` 空。Agent 不代填 Human PASS。本 Stage 2 G1 與 Stage 1 口頭「都過」分開。審查者依序：適格人類 reviewer → fresh-context reviewer Agent → owner 自審(有記錄的最後手段)。
+- G1 | 2026-09-12 | owner 在 chat 說「可以」（G1 / Decision approved）。基準 #212（`b7c285d`）。OC-1～OC-4 隨 Decision 一併視為接受。本 Stage 2 G1 與 Stage 1 口頭「都過」分開。owner 自審(有記錄)；reviewers: [user]
 - 自檢七掃 | 2026-09-12 | ①優劣皆有依據欄；②G-ir／G-route／G-lab 進 Decision，漏項進 Non-Goals；③Q8／Q9 `[>]` 進 Rejected＋Out；④SC-1～6 可量測；⑤Rejected 無空棄因；⑥三決策點由 owner brief 確認，OC-1～3 承接 Q6／Q7／原子寫延伸，OC-4 流程層；⑦既有脈絡表是對帳不是外移 schema。圖上 A／D／G 標選定，Rejected 未上圖。
