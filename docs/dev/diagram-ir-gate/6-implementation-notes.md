@@ -110,6 +110,7 @@ FORK_INTEGRATION_SHA: 25997871a86fce87a1b1f0658512d7f96e07dea3
 - 2026-09-12 | T-1..T-6 | 3ec2a6ca23f72c80c557b98dd8fa429b13deaad2 feat(diagram-ir-gate): Stage 6 implement T-1..T-6 (impl-C)
 - 2026-09-12 | L1 D-3 | 註冊 `test-diagir.sh` 進 methodology;補 filemap + EXPECTED_MAPPED_FILES 205
 - 2026-09-12 | L1 D-1 | S-5.2 改量 merge-base,避免 main 前進把 STATUS／HISTORY 算進本 PR
+- 2026-09-12 | L1 D-4 | MIN_HEREDOCS 220→221(test-diagir.sh 一枚),避免 PF-2 假綠
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 Run: n-a-manual-impl-C
@@ -227,6 +228,12 @@ Run: n-a-manual-impl-C
 - 保守選擇:把 `test-diagir.sh` 掛進 methodology 組(三支既有牙仍跑);補 `diagir.py`／`devflow_atomic.py`／`test-diagir.sh` 地圖列;常數 202→205。註解與執行行都不寫 Lab 專用 check 檔名、也不提 lab yaml,以免 S-4.5 假紅。
 - 理由:CI `REPO_REFERENCE` 先跑註冊自審再跑組;不註冊則永遠沒紅字。這是母版記帳,不是新 R/S、也不是第二套 Lab 入口。
 - 影響:無 R/S 變更。T-5／S-4.5 觀測「三支仍在、無第二套 Lab 牙」仍成立。
+
+### D-4(L1)
+- 現象:`test-diagir.sh` 多一個 `python3 <<'PY'` heredoc,實得數 221。`MIN_HEREDOCS` 仍 220 時,PF-2 關掉 `INTERP_TOKEN_RE` 後計數打平地板、負向案假綠。
+- 保守選擇:地板與靜態互釘同步改 221。不改掃描規則、不另造 heredoc。
+- 理由:PF-2 依賴「地板 == 實得、變異剛好少 1」。這是母版記帳,不是新 R/S。
+- 影響:無 R/S 變更。architecture／check-py-floor 自洽。
 
 ## Files Changed
 
