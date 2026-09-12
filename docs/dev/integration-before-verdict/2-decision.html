@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>integration-before-verdict · 2-decision</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+a.cell{text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px}
+.group{margin:0 0 16px}
+.group h3{margin:0 0 8px;font-size:.95rem}
+.card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 8px;background:var(--sunk)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+details.bg{margin:10px 0 0}
+details.bg>summary{cursor:pointer;color:var(--ink-2)}
+table.judge{width:100%;border-collapse:collapse;font-size:.86rem;margin:0}
+table.judge th,table.judge td{border:1px solid var(--rule);padding:6px 8px;
+  text-align:left;vertical-align:top}
+table.judge th{background:var(--sunk);font-weight:650}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 2-decision · 審查介面</p>
+  <h1>integration-before-verdict</h1>
+  <p class="sub">正本是 md。這頁是審頁分組卡,不是 gate-twin 勾選卡。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">in-review</span></div><div class="cell"><span class="k">分組</span><span class="v">3</span></div><div class="cell"><span class="k">方案</span><span class="v">9</span></div></div>
+</header>
+<section class="r-block" id="decision">
+  <div class="r-head"><span class="r-name">Decision</span></div>
+  <div class="r-body">
+    <p>採 **L + T1 + E1**:本 tree 的 7-review／指南／Stage 7 節點已經是 2c 整合 → 2d Fresh → 雙軸 → Verdict → Exit 只准文件,本 slug **不把節序當還沒搬再重寫一遍**。剩餘工作是把「還在教舊序」的活文件與人讀句鎖進既有 ST／模板順序家族:完整範例不得再寫「2c = Final Fresh／gauntlet」;整合腳本檔頭不得再把自己安在 Exit Checklist; `ALREADY_SYNCED` 的 GUIDANCE 必須點名「重綁 Fresh 或 FAIL」,不能只說「輸出不算數」。本 slug 繼續當第一條真實 full lane 的載體。不新造跳過 2c 的主機攔截,不改整合腳本判定演算法。</p>
+  </div>
+</section>
+<section class="r-block" id="fig">
+  <div class="r-head"><h2 class="r-name">方案架構圖</h2></div>
+  <div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 378" role="img" aria-label="選定方案步驟">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">[L] 散文不重寫 (選定)</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">[T1] 延伸既有牙 (選定)</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="b" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">[E1] 本 slug 改範例 (選定)</text>
+  <path class="flow" d="M140,216 L140,238"/>
+  <rect class="b" x="40" y="238" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="262">[2c] 先整合再 Fresh</text>
+  <path class="flow" d="M140,292 L140,314"/>
+  <rect class="b" x="40" y="314" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="338">[V] Verdict 後禁改碼</text>
+</svg>
+  </div></div>
+</section>
+
+<section class="r-block" id="owner-calls">
+<div class="r-head"><h2>Owner Calls</h2></div>
+<div class="r-body"><table class="judge">
+<tr><th>OC</th><th>決定了什麼</th><th>依據</th><th>若被推翻會怎樣</th><th>狀態</th></tr>
+<tr><td>OC-1</td><td>本 slug **不**新造「跳過 2c」主機攔截。使用者只裁「整合在 Fresh／Verdict 前」;「用既有 ST 家族延伸、不另開 T2」是 owner 延伸</td><td>`1-discussion.md:62` 假設無 log;`L86` 不重寫演算法;`docs/dev/host-stack-fit/2-decision.md:71` 已鎖 receipt。延伸本身 `[Assumption]`</td><td>Scope 加上主機入場券;要跟 host-stack-fit 對帳牙形,本 slug 不再是「鎖活文件」薄刀</td><td>待人審</td></tr>
+<tr><td>OC-2</td><td>整合腳本只改檔頭與 `ALREADY_SYNCED` GUIDANCE(及咬這些字的牙)。**不改** STATUS／exit code 判定。這是對「加強 ALREADY_SYNCED」的收窄</td><td>`1-discussion.md:86` 不重寫演算法;`scripts/devflow-integration-regression.sh:169-187` 判定已 fail-closed;`L203-205` 缺的是恢復句</td><td>要重簽 integration-regression 守衛;SC-7 改寫</td><td>待人審</td></tr>
+<tr><td>OC-3</td><td>歷史 notes／HISTORY 裡的舊序敘事不改(當時事實)。只改「還在教人怎麼做」的活文件。使用者 brief 說 reconcile docs;「活文件≠考古檔」是收窄</td><td>`1-discussion.md:21-22` 派工舊序是 Context;`docs/dev/HISTORY.md` 只增不改。收窄 `[Assumption]`</td><td>Scope 加上改 notes／HISTORY;跟「只增不改」衝突</td><td>待人審</td></tr>
+</table></div></section>
+<section class="r-block" id="point-1"><div class="r-head"><span class="r-name">決策點：剩餘工作性質（Q5）</span></div><div class="r-body"><div class="card"><strong>L 鎖牙對帳</strong><p>2c→2d 散文已對,本 slug 不重寫節序;剩餘是牙、活文件、用本 slug 跑通 full lane 優:對準本 tree 已核事實,不把已搬散文當還沒搬 劣:人可能以為「沒做事」;要明列還活著的舊序殘留 依據:`1-discussion.md:23-25` 模板／指南／節點已是 2c→2d;`L93` Q5 假設剩餘=鎖牙／範例／STATUS;`L155-157` 派工行號對不上現檔。成本 `[Assumption]`</p></div><div class="card"><strong>R 當舊序重寫</strong><p>當模板仍是 Fresh→Verdict→Exit 才合,再搬一次 2c／2d 散文 優:表面上對齊派工舊敘事 劣:現檔已搬;重寫會撞 ST／graph 已綠的針,製造假 diff 依據:`_templates/7-review.md:100-120` 2c 已在 2d 前;`L330-333` Exit 已禁補碼;`scripts/check-stage67-enforcement.sh:298-322` 已咬模板字面順序。成本 `[Assumption]`</p></div><div class="card"><strong>C 宣布做完結案</strong><p>散文已搬 → 關 feature,不當第一條 full lane 優:零施工 劣:範例仍教 2c=Fresh;腳本 GUIDANCE 仍只說「輸出不算數」;owner 要的是跑通鎖定 依據:`1-discussion.md:26` 範例舊編號;`L90-92` Q2/Q3 owner:必須在 Fresh 前、且當第一條 full lane;`scripts/devflow-integration-regression.sh:203-205` ALREADY_SYNCED 仍無恢復句。成本 `[Assumption]`</p></div></div></section>
+<section class="r-block" id="point-2"><div class="r-head"><span class="r-name">決策點：牙與錨怎麼鎖（Q6）</span></div><div class="r-body"><div class="card"><strong>T1 延伸既有 ST 家族</strong><p>既有模板順序牙留下;再咬「還在教人怎麼做」的活文件:範例編號、腳本檔頭／GUIDANCE、manifests 若當 SOP。ALREADY_SYNCED 人讀句必須點名重綁 Fresh 或 FAIL 優:不另造檢查家族;對準已綠的 ST／graph／integration-guard 劣:擋不住人跳過 2c(無主機攔截);只鎖文字與產物形狀 依據:`1-discussion.md:95` Q6 移交牙／錨;`L62` 誰都可跳過 2c;`scripts/check-stage67-enforcement.sh:298-322` 已咬模板;`scripts/check-integration-regression-guard.sh:469-518` 已咬 2c 工具先於合併;`scripts/devflow-integration-regression.sh:2` 檔頭仍寫 Exit Checklist;`L203-205` GUIDANCE 無恢復。成本 `[Assumption]`</p></div><div class="card"><strong>T2 新主機攔截</strong><p>跳過 2c 就 fail-closed(receipt／cursor 當入場券) 優:對準「現場仍走舊序」假設 劣:另造牙家族;跟 host-stack-fit 收據題重疊;本 slug 未裁主機策略 依據:`1-discussion.md:62` `[Assumption]` 現場跳過 2c、無採用 log;`L86` 不重寫整合腳本演算法;`docs/dev/host-stack-fit/2-decision.md:71` 已鎖 script-minted receipt。成本 `[Assumption]`</p></div><div class="card"><strong>T3 只改文件</strong><p>改範例與指南句,不加新機械檢查 優:最短 劣:範例再漂回去沒人紅;ST 現在只咬模板不咬範例 依據:`example/contract-expiry-reminder/7-review.md:24` 仍寫「執行清單 2c 的 Final Fresh」;`example/contract-expiry-reminder/4-spec.md:223` 仍寫「2c gauntlet」。成本 `[Assumption]`</p></div></div></section>
+<section class="r-block" id="point-3"><div class="r-head"><span class="r-name">決策點：範例舊編號何時改（Q7）</span></div><div class="r-body"><div class="card"><strong>E1 本 slug 改</strong><p>完整範例把 2c=Fresh／2c=gauntlet 改成現行編號(2c 整合、2d Fresh／gauntlet),當鎖牙的一部分 優:採用者抄範例就不會走舊編號;Q7 有著落 劣:Diff 含 example,不是純牙 依據:`1-discussion.md:26`／`L166-169` CONFIRMED 範例漂移;`L96` Q7 移交後續站(本站正是後續)。成本 `[Assumption]`</p></div><div class="card"><strong>E2 另開 follow-up</strong><p>本 slug 只寫牙,範例等下一條 feat 優:本 slug Diff 較瘦 劣:第一條 full lane 自己的範例仍教錯序;G-out-3 載體不完整 依據:`1-discussion.md:72-74` G-out-3 用本 slug 鎖出貨樹=核准樹。另開的接縫 `[Assumption]`</p></div><div class="card"><strong>E3 當歷史不改</strong><p>範例留舊編號,只加「舊寫法」橫幅 優:零改 example 劣:人仍會照 2c 跑 Fresh;橫幅救不了抄指令的人 依據:同 E1 出處;「橫幅夠用」為 `[Assumption]`</p></div></div></section>
+<details class="bg"><summary>背景</summary><p><strong>Rationale</strong> 痛的因果沒變:Verdict 綁當下 HEAD,之後再合 `INTEGRATION_SHA` 就讓核准樹≠出貨樹;`ALREADY_SYNCED` 若只寫「證據不算數」就能勾過,恢復路徑是空話。Owner 已裁「整合必須在 Fresh／雙軸／Verdict 之前」,而且要拿本 slug 當第一條真實 full lane。 Stage 2 對帳把 Q5 假設收成事實:**節序散文已經搬完,牙只咬母版模板,活文件還沒跟。** 派工／舊 Backlog 講的 Fresh→Verdict→Exit 才合,對不上現檔行號。指南 renderer 與 `S2c-integration → S2d-fresh` 已是新序。還在教舊序的是:(1) `example/contract-expiry-reminder` 把 2c 當 Fresh／gauntlet;(2) `devflow-integration-regression.sh` 檔頭仍自稱 Exit Checklist 工具,GUIDANCE 的 `ALREADY_SYNCED` 只有「輸出不算數」;(3) `manifests/p4-gauntlet-gates.md` 仍寫「執行清單 2c」當 gauntlet 命令。STATUS 舊 Backlog 句已在 #199 移進 Active,不是本 PR 能改的表列。 所以贏的組合是「承認散文已搬 + 把牙延伸到活文件 + 本 slug 改範例編號」。R 假裝還沒搬;C 假裝已經鎖住;T2 用沒有現場 log 的假設去開第二套主機牙;T3／E2／E3 都留下「完整範例教錯步號」這條最高流量的舊路。</p><p><strong>風險</strong> | 風險 | 對策 | |---|---| | 人以為 L=沒事做,G1 看不出剩餘範圍 | Decision／SC 逐條點名範例編號、腳本檔頭、GUIDANCE、既有 ST 必須繼續綠;4-spec 用可測句接這三點 | | T1 擋不住跳過 2c | 承認這是已知缺口。本 Decision 不開 T2。要做主機攔截另開 feat,並先對帳 host-stack-fit。現場跳過仍是 `[Assumption]`,過期不自動升級成本 slug 的 T2 | | 改腳本 GUIDANCE 被誤當成改演算法 | OC-2 收窄:exit code／STATUS 判定不動;只改檔頭與人讀句,以及咬這些字的牙 | | 改完整範例讓歷史 G3 紀錄對不上 | 只改「還在教人怎麼做」的編號句;示範 SHA／當時 verdict 不當成本次重審 | | 既有 ST 針因改模板誤紅 | L 禁止重寫已對的 2c／2d 散文;Stage 4+ 若動模板只加針、不改已綠順序句 | | 本 PR 去改 STATUS 跟別人搶列 | 流程層 OC:feature branch 不跑 `status-update.sh` 改正本;升 Stage 2 等合進 main 再寫 |</p><p><strong>未採</strong> | 不選 | 一句棄因 | |---|---| | R 當舊序重寫 | 模板頂註與 Exit 條已是 2c→2d;ST／graph／integration-guard 已綠。再搬一次是假施工,且會撞已咬住的針。 | | C 宣布做完結案 | 範例仍教 2c=Fresh;腳本仍把整合安在 Exit、ALREADY_SYNCED 仍無恢復句。Owner 要的是鎖住並跑通,不是關檔。 | | T2 新主機攔截 | 「現場跳過 2c」無採用 log;另造牙家族,跟已核的 host-stack-fit 收據重疊;超出「不重寫演算法／本 hop 不選定全新守衛家族」。 | | T3 只改文件 | 沒有牙,範例下次一漂就回到舊編號;現有 ST 只咬模板不咬範例。 | | E2 另開 follow-up | 本 slug 是鎖定載體;把最高槓桿的舊編號留在完整範例,等於第一條 full lane 自己示範錯序。 | | E3 當歷史不改 | 抄範例的人不會先讀橫幅;舊編號本身就是痛。 |</p></details>
+<p class="src">由 <code>scripts/build-stage2-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
