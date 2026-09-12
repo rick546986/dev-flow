@@ -2906,8 +2906,8 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   <p class="lead">長期記憶進 Git。不要手改記憶檔。安裝與重建入口只有 <code>dev-setup</code>。
   查詢與寫入只有 <code>${DEVFLOW_ROOT}/memory/dev-memory.py</code>。
   <strong>專案問答先短索引 / <code>dev-memory.py ask</code>;禁預載全部 <code>docs/adr/</code> 與全量 specs;再按回傳 path 載單檔。</strong>
-  ask 在 CURRENT／topic-like 時讀 <code>docs/knowledge/index.yaml</code>,於 envelope
-  <code>knowledge_index</code> 回指標 path(缺索引優雅降級)。
+  ask 在 CURRENT／短 ASCII topic-like／含既有 topic key(CJK／空白,#194)時讀 <code>docs/knowledge/index.yaml</code>,於 envelope
+  <code>knowledge_index</code> 回指標 path(缺索引優雅降級;多 key 命中回聯集、不自動擇一)。
   記得到：既有 <code>talk end</code>／Stage&nbsp;6 <code>checkpoint --end</code>（見 skill，勿另造寫入路徑）。
   叫得到：先短索引或 <code>ask</code>；索引 lookup 自測
   <code>scripts/proof-knowledge-index-call-path.py</code>（缺生產索引時用
@@ -4153,7 +4153,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>先判問句意圖(現況/歷史/為什麼/怎麼做/語意/打算)再選檢索路徑,回答一律附狀態、信心、證據、不確定性四件。</td>
         <td>被 CLI 的 ask 與評測harness 呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>knowledge_index.py</code></td>
-        <td>#155 knife-2:讀 <code>docs/knowledge/index.yaml</code> 短索引,把 CURRENT／topic-like 問句路由到 active ADR／durable 指標 path(不預載全 ADR);缺檔優雅降級。</td>
+        <td>#155 knife-2 / #194:讀 <code>docs/knowledge/index.yaml</code> 短索引,把 CURRENT／短 ASCII topic-like／含既有 topic key(CJK／空白)的問句路由到 active ADR／durable 指標 path(不預載全 ADR);多命中回聯集;缺檔優雅降級。</td>
         <td>被 <code>query.py</code> 的 ask 路徑呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>context.py</code></td>
         <td>組出開場要注入的最小脈絡(身分/branch/關鍵事實/不變量/未實作的打算/未解衝突/近期事件/查詢指引),有字數上限。</td>
@@ -4213,7 +4213,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>驗證問句意圖分類、打算不會冒充現況、衝突會被攤開、開場脈絡不讀舊詞彙表。</td>
         <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test_knowledge_index.py</code></td>
-        <td>#155 knife-2:驗證 ask 走短索引(topic hit→0003 path、未知 topic、缺索引降級)。</td>
+        <td>#155 knife-2 / #194:驗證 ask 走短索引(topic hit→0003 path、CJK/space key containment、未知 topic、缺索引降級、multi-hit 聯集)。</td>
         <td><code>run-tests.sh</code> 執行時自動收集</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test_devtalk.py</code></td>
         <td>驗證理解模式會主動提問、對話不進版本控制、更正會保留舊版本。</td>

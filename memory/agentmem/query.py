@@ -184,7 +184,7 @@ def _execute_prepared(store, repo_root, plan_dict, workspace_id, snapshot,
     kind = plan_dict["primary"]
     branch = plan_dict["branch"] or (snapshot or {}).get("branch")
 
-    # #155 knife-2:CURRENT / topic-like 先查短索引,只回指標 path(不預載全 ADR)。
+    # #155 knife-2 / #194:CURRENT / topic-like / topic-key containment 先查短索引。
     index_route = knowledge_index.route(
         repo_root, plan_dict["query"], plan_dict)
 

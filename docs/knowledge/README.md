@@ -105,25 +105,38 @@ python3 scripts/bootstrap-knowledge-index.py --check
 #   agent-memory: → active_adr: ["0003"]
 ```
 
-## Ask wiring (#155 knife-2)
+## Ask wiring (#155 knife-2 / #194)
 
-`dev-memory.py ask` consults this index when the query is **CURRENT** or
-**topic-like** (content looks like a topic key after frame-stripping):
+`dev-memory.py ask` consults this index when the query is **CURRENT**,
+**topic-like** (short ASCII/slug after frame-stripping), **or contains an
+existing topic key** from the loaded index (substring match; CJK and spaces
+OK — e.g. `Report 資料夾`, `Run Specimen`). Long natural-language questions
+with **no** topic-key substring still skip the index (`skipped` → FTS /
+embedding). Ask does **not** invent topics via NL understanding.
 
-1. Match `topics.<key>` against the question.
+1. Match `topics.<key>` against the question (`match_topics`).
 2. Resolve only that topic’s `active_adr` / `active_spec` / durable pointers →
    repo-relative paths (no preload of all `docs/adr/` or specs).
 3. Envelope field `knowledge_index`: `status` ∈
    `hit` | `unknown_topic` | `missing_index` | `unreadable` | `skipped`.
 
+**Multi-hit:** if several topic keys appear in the query, `matched_topics`
+lists all of them (stable sort) and `paths` is the **union** of their
+pointers. There is no auto-pick among matches; `note` may say
+`multi-topic match (…)`.
+
 **Missing / unreadable index:** degrade — keep existing store retrieval and
 status contract (`OK` / `NEEDS_VERIFICATION` / `CONFLICT` / `NO_RELIABLE_MATCH`);
 `knowledge_index.note` explains the degrade. Ask never fails closed solely
-because the index file is absent.
+because the index file is absent. (Long NL that was never topic-like may
+still report `skipped` when the index file is absent.)
 
 ```bash
 PYTHONPATH=memory python3 memory/dev-memory.py ask "目前 agent-memory 決策指向哪份 ADR?" --json
 # → knowledge_index.status=hit, paths include docs/adr/0003-*.md
+
+PYTHONPATH=memory python3 memory/dev-memory.py ask "請說明一下 Report 資料夾 在流程裡的角色" --json
+# → hit when index has topic key「Report 資料夾」(containment, #194)
 ```
 
 ## Non-goals (remaining)
