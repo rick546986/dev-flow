@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>integration-before-verdict · 4-spec</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+a.cell{text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px;overflow-wrap:anywhere;word-break:break-word}
+.r-body p{margin:0 0 8px}
+.s-card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 10px;background:var(--sunk)}
+.s-card h3{margin:0 0 8px;font-size:.95rem}
+.gwt{margin:0 0 6px}
+.gwt .k{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-3);display:block}
+.ask{margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--accent);
+  background:var(--accent-soft)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+.miss{background:var(--bad-soft);color:var(--bad);padding:2px 6px;border-radius:4px}
+.foot{margin:36px 0 0;padding:16px 18px;border:1px solid var(--rule);
+  border-radius:12px;background:var(--panel)}
+.gv-row{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0}
+.gv-field{display:block;margin:8px 0}
+.btn{background:var(--accent);color:#fff;border:0;border-radius:8px;
+  padding:8px 14px;font-weight:650;cursor:pointer}
+.gv-status{color:var(--ink-2);font-size:.86rem}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 4-spec · 審查介面</p>
+  <h1>integration-before-verdict</h1>
+  <p class="sub">正本是 md。這頁是 R/S 卡 + 生命週期直式圖,不是 gate-twin 勾選卡。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">draft</span></div><div class="cell"><span class="k">verdict</span><span class="v">PRE-REVIEW</span></div><div class="cell"><span class="k">R</span><span class="v">4</span></div><div class="cell"><span class="k">S</span><span class="v">17</span></div></div>
+</header>
+<section class="r-block" id="lifecycle"><div class="r-head"><span class="r-name">補助模組生命週期（預覽）</span></div><div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 414" role="img" aria-label="模組生命週期">
+  <rect class="b" x="40" y="10" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">新生</text>
+  <text class="sm" text-anchor="middle" x="140" y="52">不加欄</text>
+  <path class="flow" d="M140,92 L140,114"/>
+  <rect class="hl" x="40" y="114" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="138">改行為</text>
+  <text class="sm" text-anchor="middle" x="140" y="156">check-stage67 </text>
+  <text class="sm" text-anchor="middle" x="140" y="170">ST 射程伸到填好的 </text>
+  <text class="sm" text-anchor="middle" x="140" y="184">7-review;example／manifest／腳本檔頭改口;整合腳本 GUIDANCE 補恢復句</text>
+  <path class="flow" d="M140,196 L140,218"/>
+  <rect class="b" x="40" y="218" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="242">退役</text>
+  <text class="sm" text-anchor="middle" x="140" y="260">沒有</text>
+  <path class="flow" d="M140,300 L140,322"/>
+  <rect class="b" x="40" y="322" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="346">不動</text>
+  <text class="sm" text-anchor="middle" x="140" y="364">2c／2d 編號、整合腳本只</text>
+  <text class="sm" text-anchor="middle" x="140" y="378">算只判演算法、</text>
+  <text class="sm" text-anchor="middle" x="140" y="392">_templates/7-review.md 已對散文、HISTORY／dispatch／stage7-loop、#196、plugin 版號、STATUS 表列</text>
+</svg>
+</div></div></section>
+<section class="r-block" id="lifecycle-note"><div class="r-head"><span class="r-name">生命週期說明</span></div><div class="r-body"><p>主詞是 Stage 7 填檔檢查與活教師。有關聯的收成一格,不拆檔名。</p></div></section>
+<section class="r-block" id="R-1"><div class="r-head"><span class="r-name">R-1 系統 SHALL 對宣稱 2c 已勾或已送 G3、且正文記 ALREADY_SYNCED 的填好 7-review，只接受重綁 Final Fresh Source SHA 或本項 FAIL</span></div><div class="r-body"><article class="s-card" id="S-1.1"><h3>S-1.1 只寫作廢必須紅</h3><p class="ask"><strong>審的時候看什麼</strong> 從該次指令的 exit 與 stderr 原文看 | exit ≠ 0 且指定字串出現算過 | 用 void-only fixture 測(AC-2／SC-2;Stage 3 Demo void-only)</p><p class="gwt"><span class="k">GIVEN</span>一份填好的 7-review,frontmatter 含 `verdict: PASS` 與 `status: approved`,正文含 `ALREADY_SYNCED`,恢復欄只寫「證據不算數」與「輸出不算數」,沒有 `Source SHA:` 後接至少 7 個連續 hex,也沒有獨立一行「本項 FAIL」</p><p class="gwt"><span class="k">WHEN</span>`bash scripts/check-stage67-enforcement.sh` 掃到該檔(ST 填檔射程;fixture 落在 `scripts/fixtures/as1-filled-tooth/void-only.md` 或同等被掃路徑)</p><p class="gwt"><span class="k">THEN</span>exit ≠ 0;stdout 或 stderr 含 `ALREADY_SYNCED`,且含 `證據不算數` 或 `void-only`</p></article><article class="s-card" id="S-1.2"><h3>S-1.2 重綁 Source SHA 必須綠</h3><p class="ask"><strong>審的時候看什麼</strong> 從該次指令 exit 看 | exit 0 算過 | 用 `scripts/fixtures/as1-filled-tooth/rebind-sha.md`(SHA=`def4567890abc`)測(AC-2／SC-2;Stage 3 Demo rebind)</p><p class="gwt"><span class="k">GIVEN</span>一份填好的 7-review,宣稱與 S-1.1 相同(`verdict: PASS`、`status: approved`、正文 `ALREADY_SYNCED`),恢復欄寫「重綁 Final Fresh。Source SHA: def4567890abc」(至少 7 個連續 hex)</p><p class="gwt"><span class="k">WHEN</span>對該檔跑與 S-1.1 同一支指定檢查</p><p class="gwt"><span class="k">THEN</span>exit 0</p></article><article class="s-card" id="S-1.3"><h3>S-1.3 明示本項 FAIL 必須綠</h3><p class="ask"><strong>審的時候看什麼</strong> 從該次指令 exit 看 | exit 0 算過 | 用 `scripts/fixtures/as1-filled-tooth/item-fail.md` 測(AC-2／SC-2;Stage 3 Demo FAIL)</p><p class="gwt"><span class="k">GIVEN</span>一份填好的 7-review,宣稱與 S-1.1 相同,正文有獨立一行「本項 FAIL」,沒有重綁 `Source SHA:` hex</p><p class="gwt"><span class="k">WHEN</span>對該檔跑與 S-1.1 同一支指定檢查</p><p class="gwt"><span class="k">THEN</span>exit 0</p></article><article class="s-card" id="S-1.4"><h3>S-1.4 N_A_NO_INCOMING 不發動</h3><p class="ask"><strong>審的時候看什麼</strong> 從 exit 與輸出看 | exit 0 且無 void-only 紅算過 | 用 `scripts/fixtures/as1-filled-tooth/na-incoming.md` 測(Stage 3 Demo n-a)</p><p class="gwt"><span class="k">GIVEN</span>一份 7-review 記 `N_A_NO_INCOMING`,沒有 `verdict: PASS`,沒有 `status: approved`,沒有已勾(`[x]`)的整合項</p><p class="gwt"><span class="k">WHEN</span>對該檔跑與 S-1.1 同一支指定檢查</p><p class="gwt"><span class="k">THEN</span>exit 0;stdout／stderr 若提到本檔,含 `N_A_NO_INCOMING` 或 `no-fire`,不得把該檔當 S-1.1 的 void-only 紅</p></article><article class="s-card" id="S-1.5"><h3>S-1.5 未宣稱的 draft 不發動</h3><p class="ask"><strong>審的時候看什麼</strong> 從 exit 看 | exit 0 算過 | 用 `scripts/fixtures/as1-filled-tooth/draft-unclaimed.md` 測(Stage 3 Demo draft)</p><p class="gwt"><span class="k">GIVEN</span>一份 7-review,`status: draft`,正文出現 `ALREADY_SYNCED` 與「證據不算數」,沒有 `verdict: PASS`,沒有已勾(`[x]`)的整合項,也沒有 `結論:STATUS=ALREADY_SYNCED`</p><p class="gwt"><span class="k">WHEN</span>對該檔跑與 S-1.1 同一支指定檢查</p><p class="gwt"><span class="k">THEN</span>exit 0(不因該 draft 檔紅)</p></article><article class="s-card" id="S-1.6"><h3>S-1.6 GUIDANCE 必須寫出恢復下一步</h3><p class="ask"><strong>審的時候看什麼</strong> 從兩檔 GUIDANCE 字串看 | 兩個恢復詞都在、兩檔字串相同、exit 對照表未改算過 | 用 `rg -n 'ALREADY_SYNCED' scripts/devflow-integration-regression.sh docs/dev/tools/devflow-integration-regression.sh` 對出那句測</p><p class="gwt"><span class="k">GIVEN</span>`scripts/devflow-integration-regression.sh` 與 `docs/dev/tools/devflow-integration-regression.sh` 兩份檔頭後的 `ALREADY_SYNCED` GUIDANCE 字串(正本與散發副本)</p><p class="gwt"><span class="k">WHEN</span>讀兩份檔內 `GUIDANCE["ALREADY_SYNCED"]`(或同等印到「結論:STATUS=ALREADY_SYNCED」後面的那句)</p><p class="gwt"><span class="k">THEN</span>兩份同一句都同時含「重綁」或「重跑 Final Fresh」,以及「本項 FAIL」或「FAIL」;不得只剩「輸出不算數」而沒有這兩個恢復詞。腳本演算法、exit 0／10／11／2 對照表不變</p></article></div></section>
+<section class="r-block" id="R-2"><div class="r-head"><span class="r-name">R-2 系統 SHALL 在活教師路徑停止把 2c 教成 Final Fresh 或 gauntlet，並停止把整合腳本教成 Exit Checklist 工具</span></div><div class="r-body"><article class="s-card" id="S-2.1"><h3>S-2.1 完整範例不再把 2c 當 Fresh／gauntlet</h3><p class="ask"><strong>審的時候看什麼</strong> 從該 `rg` 的命中數與兩檔編號句看 | 零命中且兩處改稱 2d 算過 | 用現樹 example 兩檔測(SC-3;Stage 3 Demo 活教師)</p><p class="gwt"><span class="k">GIVEN</span>現樹 `example/contract-expiry-reminder/7-review.md` 與 `example/contract-expiry-reminder/4-spec.md`(含已提交的同名 html,若 html 含相同 needle 也要改)</p><p class="gwt"><span class="k">WHEN</span>跑 `rg -n '執行清單 2c 的 Final Fresh|執行清單 2c gauntlet' example/contract-expiry-reminder/`</p><p class="gwt"><span class="k">THEN</span>命中數為 0;7-review 把 Final Fresh／gauntlet 命令寫成執行清單 **2d**;4-spec Verification Profile 把 gauntlet 命令寫成執行清單 **2d**</p></article><article class="s-card" id="S-2.2"><h3>S-2.2 gauntlet manifest 不再把 2c 當文檔化命令</h3><p class="ask"><strong>審的時候看什麼</strong> 從該 `rg` 命中數與改口句看 | 零命中且改稱 2d 算過 | 用現樹該 manifest 測(SC-3)</p><p class="gwt"><span class="k">GIVEN</span>現樹 `manifests/p4-gauntlet-gates.md`</p><p class="gwt"><span class="k">WHEN</span>跑 `rg -n '執行清單 2c 的文檔化命令' manifests/p4-gauntlet-gates.md`</p><p class="gwt"><span class="k">THEN</span>命中數為 0;該句改成執行清單 **2d** 的文檔化命令</p></article><article class="s-card" id="S-2.3"><h3>S-2.3 整合腳本檔頭不再自稱 Exit Checklist 計算工具</h3><p class="ask"><strong>審的時候看什麼</strong> 從該 `rg` 命中數與兩檔頭句、parity 檢查 exit 看 | 零命中、兩檔頭同義、parity exit 0 算過 | 用現樹兩檔頭 + `bash scripts/check-integration-regression-guard.sh` 測(SC-3／SC-4)</p><p class="gwt"><span class="k">GIVEN</span>`scripts/devflow-integration-regression.sh` 與 `docs/dev/tools/devflow-integration-regression.sh` 檔頭註解</p><p class="gwt"><span class="k">WHEN</span>跑 `rg -n 'Exit Checklist.*整合回歸.*計算工具' scripts/devflow-integration-regression.sh docs/dev/tools/devflow-integration-regression.sh`</p><p class="gwt"><span class="k">THEN</span>命中數為 0;兩份檔頭改寫成步 2c 整合回歸、Fresh 之前、不是 Exit 程序。`scripts/check-integration-regression-guard.sh` 的正本／副本 parity 仍綠</p></article><article class="s-card" id="S-2.4"><h3>S-2.4 活路徑聯合 needle 歸零</h3><p class="ask"><strong>審的時候看什麼</strong> 從該 `rg` 命中數看 | 零命中算過 | 用 SC-3 那條指令測</p><p class="gwt"><span class="k">GIVEN</span>活路徑集合:`example/contract-expiry-reminder/`、`manifests/p4-gauntlet-gates.md`、`scripts/devflow-integration-regression.sh`、`docs/dev/tools/devflow-integration-regression.sh`</p><p class="gwt"><span class="k">WHEN</span>跑 `rg -n '執行清單 2c 的 Final Fresh|Exit Checklist.*整合回歸.*計算工具' example/contract-expiry-reminder/ manifests/p4-gauntlet-gates.md scripts/devflow-integration-regression.sh docs/dev/tools/devflow-integration-regression.sh`</p><p class="gwt"><span class="k">THEN</span>命中數為 0(SC-3 原句)</p></article><article class="s-card" id="S-2.5"><h3>S-2.5 衍生 fixture 與 example 同改</h3><p class="ask"><strong>審的時候看什麼</strong> 從 example 4-spec 與該 fixture 的 gauntlet 編號句看 | 兩處同號(皆 2d)或 fixture 已無該抄本算過 | 用這兩個檔對帳測</p><p class="gwt"><span class="k">GIVEN</span>`scripts/fixtures/spec-gate-dd-subsection/bad-dd-unresolved.md` 現含「執行清單 2c gauntlet」句(抄自 example 4-spec)</p><p class="gwt"><span class="k">WHEN</span>Stage 6 改 example 4-spec 的 2c gauntlet 編號</p><p class="gwt"><span class="k">THEN</span>同一 T 把該 fixture 同步改成 2d gauntlet(或刪掉這句抄本);不得只改 example 而留下 fixture 舊句</p></article></div></section>
+<section class="r-block" id="R-3"><div class="r-head"><span class="r-name">R-3 系統 SHALL 維持 tip 已搬的 2c 整合 → 2d Fresh 模板序與既有模板字串牙</span></div><div class="r-body"><article class="s-card" id="S-3.1"><h3>S-3.1 模板仍是 2c 整合在 2d Fresh 前</h3><p class="ask"><strong>審的時候看什麼</strong> 從頂註兩詞相對位置與 Exit 段看 | 整合在 Fresh 前、Exit 無合併步驟算過 | 用現樹 `_templates/7-review.md` 測(AC-3／SC-4)</p><p class="gwt"><span class="k">GIVEN</span>`_templates/7-review.md` 頂註執行清單</p><p class="gwt"><span class="k">WHEN</span>搜「整合回歸」與「Final Fresh Run」</p><p class="gwt"><span class="k">THEN</span>「整合回歸」出現在「Final Fresh Run」之前;Exit Checklist 只確認整合已在 Final Fresh 之前完成,正文沒有「Exit 才合併 `INTEGRATION_SHA`」的步驟</p></article><article class="s-card" id="S-3.2"><h3>S-3.2 三支既有模板牙仍綠</h3><p class="ask"><strong>審的時候看什麼</strong> 從三支指令 exit 看 | 皆 0 算過 | 在本 repo 根跑這三支測(SC-4)</p><p class="gwt"><span class="k">GIVEN</span>現樹 `scripts/check-stage67-enforcement.sh`、`scripts/check-integration-regression-guard.sh`、`scripts/test-evidence-gauntlet.sh`</p><p class="gwt"><span class="k">WHEN</span>分別跑 `bash scripts/check-stage67-enforcement.sh`、`bash scripts/check-integration-regression-guard.sh`、`bash scripts/test-evidence-gauntlet.sh`(P0-1 段含在內)</p><p class="gwt"><span class="k">THEN</span>三支皆 exit 0;ST 組「出貨樹=審過的樹」仍過</p></article><article class="s-card" id="S-3.3"><h3>S-3.3 不重編號、不重寫演算法</h3><p class="ask"><strong>審的時候看什麼</strong> 從 regex 命中與腳本檔頭／exit 對照表看 | regex 仍命中、演算法不動樹、exit 對照未改算過 | 用現樹模板 + 腳本檔頭 + `check-integration-regression-guard.sh` 測</p><p class="gwt"><span class="k">GIVEN</span>`scripts/check-integration-regression-guard.sh` 現用 `2c.\s*\*\*整合回歸\*\*` 抓段,且 `scripts/devflow-integration-regression.sh` 檔頭寫「只算與只判,絕不動樹」</p><p class="gwt"><span class="k">WHEN</span>本 slug Stage 6 落地 R-1／R-2</p><p class="gwt"><span class="k">THEN</span>該抓段 regex 仍能命中 `_templates/7-review.md`;整合腳本仍不 merge／rebase／checkout／寫入工作樹;exit 0＝`N_A_NO_INCOMING`、10／11＝SYNC_REQUIRED、2＝fail-closed 的對照不變</p></article></div></section>
+<section class="r-block" id="R-4"><div class="r-head"><span class="r-name">R-4 本 slug 走到 Stage 7 並勾 Exit 之後，7-review 所記 Source SHA SHALL 與 git rev-parse HEAD 逐字相同</span></div><div class="r-body"><article class="s-card" id="S-4.1"><h3>S-4.1 Exit 後兩 SHA 逐字相同</h3><p class="ask"><strong>審的時候看什麼</strong> 從 7-review Source SHA 欄與 `git rev-parse HEAD` 輸出看 | 逐字相同算過 | 用本 slug 後續真跑到 Stage 7 的那份 7-review 測(AC-1／SC-1)</p><p class="gwt"><span class="k">GIVEN</span>本 slug `docs/dev/integration-before-verdict/7-review.md` 已勾 Exit,且 Verification Evidence 寫了 Source SHA</p><p class="gwt"><span class="k">WHEN</span>在同一工作樹跑 `git rev-parse HEAD` 並與該 Source SHA 逐字比</p><p class="gwt"><span class="k">THEN</span>兩個字串相同</p></article><article class="s-card" id="S-4.2"><h3>S-4.2 對照樣本 Verdict 後才合則兩 SHA 不同</h3><p class="ask"><strong>審的時候看什麼</strong> 從對照檔 Source SHA 與合併後 HEAD 看 | 兩字串不同且紀錄寫出不相等算過 | 用 throwaway repo 或 fixture 對照測(AC-1／SC-1)</p><p class="gwt"><span class="k">GIVEN</span>一份對照 7-review,Source SHA 寫在 Verdict 當下,之後才合併 `INTEGRATION_SHA`(工作樹 HEAD 因此改變)</p><p class="gwt"><span class="k">WHEN</span>比對該 Source SHA 與合併後的 `git rev-parse HEAD`</p><p class="gwt"><span class="k">THEN</span>兩個字串不同;紀錄必須指出「核准 SHA ≠ 出貨 SHA」</p></article><article class="s-card" id="S-4.3"><h3>S-4.3 本 slug 流程文不宣告跳過 2c 或 Exit 才合併</h3><p class="ask"><strong>審的時候看什麼</strong> 從本 slug 資料夾全文搜那兩句看 | 無「本 slug 請跳過 2c／請 Exit 才合」的指令句算過 | 用 `rg -n '跳過 2c|Exit 才合' docs/dev/integration-before-verdict/` 並逐命中判讀測(SC-5)</p><p class="gwt"><span class="k">GIVEN</span>本 slug `docs/dev/integration-before-verdict/` 內 1-discussion／2-decision／3-prototype／本 4-spec,以及後續 5-tasks／6-notes／7-review</p><p class="gwt"><span class="k">WHEN</span>搜「跳過 2c」與「Exit 才合併」作為**本 slug 要執行的流程宣告**</p><p class="gwt"><span class="k">THEN</span>找不到把這兩句當本 slug SOP 的句子;1-discussion 裡描述舊序痛點的當時句可留(當時說法),不得改寫成現行步驟</p></article></div></section>
+<section class="r-block" id="behavior"><div class="r-head"><h2 class="r-name">行為流程圖(R 級)</h2></div><div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 372" role="img" aria-label="行為流程圖(R 級)">
+  <rect class="hl" x="40" y="10" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">[R-1] 填檔牙強制恢復二選一</text>
+  <text class="sm" text-anchor="middle" x="140" y="52">宣稱 2c／送 G3 且記 ALREADY_SYNCED</text>
+  <text class="sm" text-anchor="middle" x="140" y="66">只寫作廢紅;重綁 SHA 或 FAIL 綠</text>
+  <text class="sm" text-anchor="middle" x="140" y="80">n-a 或 draft 未宣稱則不發動</text>
+  <path class="flow" d="M140,92 L140,114"/>
+  <rect class="b" x="40" y="114" width="200" height="68" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="138">[R-2] 活教師停止教舊序</text>
+  <text class="sm" text-anchor="middle" x="140" y="156">example 與 manifest 的 Fresh／gauntlet 改稱 2d</text>
+  <text class="sm" text-anchor="middle" x="140" y="170">腳本檔頭不再自稱 Exit Checklist 工具</text>
+  <path class="flow" d="M140,182 L140,204"/>
+  <rect class="b" x="40" y="204" width="200" height="68" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="228">[R-3] 維持 2c 整合到 2d Fresh</text>
+  <text class="sm" text-anchor="middle" x="140" y="246">模板序與三支模板牙仍綠</text>
+  <text class="sm" text-anchor="middle" x="140" y="260">不重編號、不重寫演算法</text>
+  <path class="flow" d="M140,272 L140,294"/>
+  <rect class="b" x="40" y="294" width="200" height="68" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="318">[R-4] 本 slug Exit 後 SHA 相同</text>
+  <text class="sm" text-anchor="middle" x="140" y="336">7-review Source SHA 對 git rev-parse HEAD</text>
+  <text class="sm" text-anchor="middle" x="140" y="350">對照樣本 Verdict 後才合則兩 SHA 不同</text>
+</svg>
+</div></div></section>
+<footer class="foot gate-verdict" id="gate-verdict"
+  data-slug="integration-before-verdict" data-stage="4-spec" data-source-sha="">
+  <p class="gv-canon">正本是同目錄 <code>4-spec.md</code> 頂欄
+  <code>verdict:</code>。勾選只是瀏覽器草稿。全勾不算 PASS。
+  只有「提交判定」才寫入 Human verdict。sidecar／HTML／localStorage 都不是正本;
+  sidecar 與 md 衝突時 md 勝。</p>
+  <div class="gv-row" role="radiogroup" aria-label="Human verdict">
+    <label><input type="radio" name="gv-verdict" value="PASS"> PASS</label>
+    <label><input type="radio" name="gv-verdict" value="REQUEST_CHANGES"> REQUEST_CHANGES</label>
+    <label><input type="radio" name="gv-verdict" value="HOLD"> HOLD</label>
+  </div>
+  <label class="gv-field">備註 <input id="gv-notes" type="text" maxlength="200"></label>
+  <label class="gv-field">審查者 <input id="gv-reviewer" type="text" maxlength="80"></label>
+  <button type="button" class="btn" id="gv-submit">提交判定</button>
+  <p id="gv-status" class="gv-status"></p>
+</footer>
+<p class="src">由 <code>scripts/build-stage4-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+<script>
+(function(){
+  var panel = document.getElementById('gate-verdict');
+  if (!panel) return;
+  var statusEl = document.getElementById('gv-status');
+  function status(msg){ if (statusEl) statusEl.textContent = msg; }
+  function patchMd(text, verdict, notes){
+    if (text.slice(0, 4) !== '---\n') throw new Error('no frontmatter');
+    var end = text.indexOf('\n---\n', 3);
+    if (end < 0) throw new Error('unclosed frontmatter');
+    var fm = text.slice(4, end);
+    var rest = text.slice(end + 5);
+    if (/^verdict:\s*/m.test(fm)) {
+      fm = fm.replace(/^verdict:\s*.*$/m, 'verdict: ' + verdict);
+    } else if (/^status:\s*/m.test(fm)) {
+      fm = fm.replace(/^(status:\s*.*)$/m, '$1\nverdict: ' + verdict);
+    } else {
+      fm = 'verdict: ' + verdict + '\n' + fm;
+    }
+    if (notes) {
+      var line = '- Human verdict note: ' + notes.split('\n')[0];
+      if (/^- Human verdict note:/m.test(rest)) {
+        rest = rest.replace(/^- Human verdict note:.*$/m, line);
+      } else {
+        rest = line + '\n' + rest;
+      }
+    }
+    return '---\n' + fm + '\n---\n' + rest;
+  }
+  function payload(verdict){
+    return {
+      slug: panel.dataset.slug,
+      gate: panel.dataset.stage,
+      verdict: verdict,
+      notes: ((document.getElementById('gv-notes') || {}).value || '').trim(),
+      reviewer: ((document.getElementById('gv-reviewer') || {}).value || '').trim(),
+      checked: [],
+      source_sha: panel.dataset.sourceSha || '',
+      sidecar: true
+    };
+  }
+  function postVerdict(body){
+    var urls = ['/devflow-gate/verdict'];
+    if (location.protocol === 'file:') {
+      urls.push('http://127.0.0.1:8765/devflow-gate/verdict');
+    }
+    var i = 0;
+    function next(){
+      if (i >= urls.length) return Promise.reject(new Error('no serve'));
+      var url = urls[i++];
+      return fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      }).then(function(r){
+        if (!r.ok) throw new Error('http ' + r.status);
+        return r.json();
+      }).catch(function(){ return next(); });
+    }
+    return next();
+  }
+  async function writeViaFsa(body){
+    if (!window.showDirectoryPicker) {
+      throw new Error('no File System Access');
+    }
+    var dir = await window.showDirectoryPicker({id: 'devflow-gate-' + body.slug});
+    var mdName = body.gate + '.md';
+    var fh = await dir.getFileHandle(mdName);
+    var file = await fh.getFile();
+    var next = patchMd(await file.text(), body.verdict, body.notes);
+    var w = await fh.createWritable();
+    await w.write(next);
+    await w.close();
+    return mdName;
+  }
+  var submit = document.getElementById('gv-submit');
+  if (!submit) return;
+  submit.addEventListener('click', function(){
+    var picked = document.querySelector('input[name="gv-verdict"]:checked');
+    if (!picked) {
+      status('請先選 PASS / REQUEST_CHANGES / HOLD。全勾不算 PASS。');
+      return;
+    }
+    var body = payload(picked.value);
+    status('寫入中…');
+    postVerdict(body).then(function(res){
+      status('已寫入 ' + (res.path || (body.gate + '.md')) +
+        ' 的 verdict: ' + body.verdict + '。正本是 md，不是勾選、不是 sidecar。');
+    }).catch(function(){
+      writeViaFsa(body).then(function(name){
+        status('已用 File System Access 寫入 ' + name +
+          ' 的 verdict: ' + body.verdict + '。正本是 md。');
+      }).catch(function(){
+        status('寫不進 md。請跑 python3 scripts/devflow_gate.py serve <專案根> 再開這頁。勾選不是判定。');
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
