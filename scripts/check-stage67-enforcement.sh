@@ -402,8 +402,11 @@ if _fxdir:
 # 剛好等於地板,守衛照樣 exit 0。地板留餘裕 = 地板沒有牙齒。
 # 新增檢查時把這個數字一起往上調(同 test-architecture-guards.sh 的 EXPECTED_* 體例)。
 # 2026-08-16 補 TF 群組(測試檔路徑必須列進 Files):+2(模板 needle 1 + 範例承接 1)。
-# 2026-09-12 補 ST-filled 填檔牙:+6(目錄在場 1 + 五份對照各 1)。實得 79。
-MIN_CHECKS = 79
+# 2026-09-12 補 ST-filled 填檔牙:+6(目錄在場 1 + 五份對照各 1)。母版實得 79,
+# 但 architecture-guards seed() 只帶 example/contract-expiry-reminder,走訪項
+# 少於母版全量,seed 實得 67。地板必須 ≤ seed 實得,否則 S67-0 對照組假紅。
+# 舊值 60 對母版 73 / seed ~61;本輪 +6 → 66(母版 79 / seed 67)。
+MIN_CHECKS = 66
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
