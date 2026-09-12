@@ -116,3 +116,114 @@ class KnowledgeIndexRouteTest(MemoryCase):
             {"query": "agent-memory", "primary": "DISCOVERY"})
         self.assertEqual(route["status"], knowledge_index.HIT)
         self.assertEqual(route["paths"][0]["ref"], "0003")
+
+    def test_unquoted_cjk_space_topic_keys_load_and_ask_run_hits(self):
+        """#190: legacy unquoted CJK/space keys must not make whole index UNREADABLE.
+
+        Previously yamlmini rejected `Report 資料夾:` → status=unreadable even when
+        asking for an ASCII topic like Run that would otherwise hit.
+        """
+        from agentmem import durable
+
+        durable.write_knowledge(self.repo, {
+            "kind": "domain", "key": "Run",
+            "title": "Run = one processing execution",
+            "body": "A Run is one execution unit, not a folder.",
+            "authority": "domain_expert", "status": "CONFIRMED",
+            "confidence": 0.95, "recorded_at": "2026-09-12T00:00:00Z",
+        })
+        # Intentionally unquoted (pre-fix generator shape) + flow lists.
+        index = (
+            "schema_version: 1\n"
+            "generated_from:\n"
+            "  - docs/adr/*.md\n"
+            "notes:\n"
+            "topics:\n"
+            "  Report 資料夾:\n"
+            "    glossary: [Report 資料夾]\n"
+            "    active_adr: []\n"
+            "    active_spec: []\n"
+            "    durable:\n"
+            "      decisions: []\n"
+            "      knowledge: []\n"
+            "    supersedes: []\n"
+            "    conflicts: []\n"
+            "  來源衝突:\n"
+            "    glossary: [來源衝突]\n"
+            "    active_adr: []\n"
+            "    active_spec: []\n"
+            "    durable:\n"
+            "      decisions: []\n"
+            "      knowledge: []\n"
+            "    supersedes: []\n"
+            "    conflicts: []\n"
+            "  Run:\n"
+            "    glossary: [Run]\n"
+            "    active_adr: []\n"
+            "    active_spec: []\n"
+            "    durable:\n"
+            "      decisions: []\n"
+            "      knowledge: []\n"
+            "    supersedes: []\n"
+            "    conflicts: []\n"
+            "unscoped:\n"
+            "  decisions: []\n"
+            "  knowledge: []\n"
+        )
+        self._write_index(index)
+
+        status, data, _path = knowledge_index.load(self.repo)
+        self.assertEqual(status, "ok", "legacy CJK/space keys must load")
+        self.assertIn("Report 資料夾", data["topics"])
+        self.assertIn("來源衝突", data["topics"])
+        self.assertIn("Run", data["topics"])
+
+        route = knowledge_index.route(
+            self.repo, "Run",
+            {"query": "Run", "primary": "DISCOVERY"})
+        self.assertEqual(route["status"], knowledge_index.HIT)
+        self.assertEqual(route["matched_topics"], ["Run"])
+        self.assertTrue(any(
+            p["kind"] == "glossary" and p["ref"] == "Run"
+            and p["path"].startswith(".dev-flow/knowledge/domain/")
+            for p in route["paths"]), route["paths"])
+
+        answer = self.ask("Run")
+        self.assertEqual(answer["knowledge_index"]["status"], knowledge_index.HIT)
+        self.assertEqual(answer["knowledge_index"]["matched_topics"], ["Run"])
+        refs = [r["ref"] for r in answer["results"]
+                if r.get("item_type") == "knowledge_index"]
+        self.assertEqual(refs, ["Run"])
+
+    def test_quoted_cjk_space_topic_keys_also_load(self):
+        """#190: generator-quoted topic keys must load the same way."""
+        index = (
+            "schema_version: 1\n"
+            "topics:\n"
+            '  "Report 資料夾":\n'
+            '    glossary: ["Report 資料夾"]\n'
+            "    active_adr: []\n"
+            "    active_spec: []\n"
+            "    durable:\n"
+            "      decisions: []\n"
+            "      knowledge: []\n"
+            "    supersedes: []\n"
+            "    conflicts: []\n"
+            '  "Run":\n'
+            "    glossary: [Run]\n"
+            "    active_adr: []\n"
+            "    active_spec: []\n"
+            "    durable:\n"
+            "      decisions: []\n"
+            "      knowledge: []\n"
+            "    supersedes: []\n"
+            "    conflicts: []\n"
+        )
+        self._write_index(index)
+        status, data, _path = knowledge_index.load(self.repo)
+        self.assertEqual(status, "ok")
+        self.assertIn("Report 資料夾", data["topics"])
+        route = knowledge_index.route(
+            self.repo, "Run",
+            {"query": "Run", "primary": "DISCOVERY"})
+        self.assertEqual(route["status"], knowledge_index.HIT)

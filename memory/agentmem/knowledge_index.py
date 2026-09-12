@@ -25,7 +25,8 @@ UNREADABLE = "unreadable"
 SKIPPED = "skipped"
 
 _FLOW_LIST_LINE = re.compile(
-    r"^(\s*)([A-Za-z0-9_.-]+):\s*\[(.*)\]\s*(?:#.*)?$"
+    # key may be ASCII id, double-quoted, or plain Unicode/space (#190)
+    r'^(\s*)("(?:\\.|[^"\\])*"|[^:\[\]{#]+):\s*\[(.*)\]\s*(?:#.*)?$'
 )
 
 

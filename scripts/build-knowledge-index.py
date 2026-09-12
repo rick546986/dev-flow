@@ -195,6 +195,29 @@ def yaml_escape_scalar(value):
     return s
 
 
+def yaml_escape_key(key):
+    """Topic / mapping keys: quote when not a plain ASCII identifier (#190).
+
+    Unquoted keys with spaces or CJK make yamlmini (and many subset parsers)
+    reject the whole index.yaml — ask then degrades to unreadable.
+    """
+    s = str(key)
+    if not s:
+        return '""'
+    if re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_./@+-]*", s) and s.lower() not in (
+        "true",
+        "false",
+        "null",
+        "yes",
+        "no",
+        "on",
+        "off",
+        "~",
+    ):
+        return s
+    return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
 def emit_yaml(doc):
     """Emit index.yaml with stable key order."""
     out = []
@@ -214,7 +237,7 @@ def emit_yaml(doc):
     else:
         for topic in sorted(topics.keys()):
             row = topics[topic]
-            out.append("  %s:" % topic)
+            out.append("  %s:" % yaml_escape_key(topic))
             out.append("    glossary: %s" % emit_inline_list(row.get("glossary") or []))
             out.append(
                 "    active_adr: %s" % emit_inline_list(row.get("active_adr") or [])

@@ -17,6 +17,10 @@ class RoundTripTest(unittest.TestCase):
         {"cjk": "registration 代表一個客戶,不是 embryo"},
         {"quoted": 'has "quotes" and: colon'},
         {"numeric_string": "1.0.0"},
+        # #190: topic-like keys with spaces / CJK must round-trip via quoted emit
+        {"Report 資料夾": {"glossary": ["Report 資料夾"]},
+         "來源衝突": {"glossary": ["來源衝突"]},
+         "Run": {"glossary": ["Run"]}},
     )
 
     def test_round_trip(self):
@@ -50,6 +54,49 @@ class RoundTripTest(unittest.TestCase):
             text = yamlmini.dump({"v": value})
             self.assertEqual(yamlmini.load(text)["v"], value, text)
 
+    def test_space_and_cjk_keys_are_emitted_quoted(self):
+        text = yamlmini.dump({"Report 資料夾": 1, "來源衝突": 2})
+        self.assertIn('"Report 資料夾":', text)
+        self.assertIn('"來源衝突":', text)
+        self.assertEqual(yamlmini.load(text),
+                         {"Report 資料夾": 1, "來源衝突": 2})
+
+
+class QuotedAndUnicodeKeyLoadTest(unittest.TestCase):
+    """#190: old unquoted topic keys AND new quoted keys must both load."""
+
+    def test_load_unquoted_space_and_cjk_keys(self):
+        text = (
+            "topics:\n"
+            "  Report 資料夾:\n"
+            "    glossary:\n"
+            "      - Report 資料夾\n"
+            "  來源衝突:\n"
+            "    glossary:\n"
+            "      - 來源衝突\n"
+            "  Run:\n"
+            "    glossary:\n"
+            "      - Run\n"
+        )
+        data = yamlmini.load(text)
+        self.assertEqual(set(data["topics"]),
+                         {"Report 資料夾", "來源衝突", "Run"})
+        self.assertEqual(data["topics"]["Report 資料夾"]["glossary"],
+                         ["Report 資料夾"])
+
+    def test_load_double_quoted_space_and_cjk_keys(self):
+        text = (
+            "topics:\n"
+            '  "Report 資料夾":\n'
+            "    glossary:\n"
+            '      - "Report 資料夾"\n'
+            '  "來源衝突":\n'
+            "    glossary:\n"
+            '      - "來源衝突"\n'
+        )
+        data = yamlmini.load(text)
+        self.assertEqual(set(data["topics"]), {"Report 資料夾", "來源衝突"})
+
 
 class RejectTest(unittest.TestCase):
     BAD = (
@@ -64,6 +111,7 @@ class RejectTest(unittest.TestCase):
         "   a: 1",              # 奇數縮排
         "a 1",                  # 不是 key: value
         "a: 1\na: 2",           # 重複 key
+        "'Report': 1",          # 單引號 key
     )
 
     def test_unsupported_shapes_fail_loud(self):
