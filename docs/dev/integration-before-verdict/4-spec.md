@@ -1,10 +1,10 @@
 ---
 feature: integration-before-verdict
 stage: 4-spec
-status: draft
-verdict:
+status: approved
+verdict: PASS
 owner: rick
-reviewers: []
+reviewers: [user]
 updated: 2026-09-12
 ---
 
@@ -12,7 +12,7 @@ updated: 2026-09-12
 
 > 基準:main tip `1f8d992`(#211 Stage 3 Human ACCEPTED)。契約不 bump。本 hop **只寫規格**,不改 `scripts/` 正本、不改 example／manifest、不 bump plugin、不改 `STATUS.md` 表列、不碰 `#196`／diagram-ir-gate、不發版。
 > Decision 正本:`docs/dev/integration-before-verdict/2-decision.md`(A + AS-1 + T-now;OC-1～OC-3 ✅;G1 `verdict` PASS)。tip 模板／指南／Stage 7 節點鏈**已經**是 2c 整合 → 2d Fresh。本檔只把剩餘缺口釘成可測 R/S:**AS-1 填檔牙** + **活教師掃蕩** + 本 slug 後續真跑時「出貨樹=核准樹」。
-> G2 `verdict` 留空,留給人類;Agent 不代填 PASS。
+> G2 依 owner 口頭 PASS 2026-09-12 落檔(`verdict: PASS`／`status: approved`),好讓 Stage 5 graph 准寫 `5-tasks.md`。Agent 不重審 R/S 語意,也不代填 G3。
 
 ## 補助模組生命週期（預覽）
 
@@ -430,18 +430,18 @@ Human verdict: ACCEPTED(Stage 3 CLI Demo;`3-prototype.md` attestation `human:ric
 
 ## Drafting Decisions(草擬自判,待人審)
 
-形狀已寫進 R/S。本表只記 Decision／Stage 3 留給本檔鎖定的選擇。不翻 A + AS-1 + T-now。狀態留待人審;G2 由人類裁決,Agent 不代填 ✅、不代填 PASS。
+形狀已寫進 R/S。本表只記 Decision／Stage 3 留給本檔鎖定的選擇。不翻 A + AS-1 + T-now。狀態依 owner 口頭 G2 PASS 2026-09-12 改 ✅;本 Stage 5 hop 不重審語意、不代填 G3。
 
 ### 逐條裁決(上層)
 | DD | 決定了什麼 | 為什麼 | 依據(`檔:行` 或 `[Assumption]`) | 若被推翻會怎樣 | 狀態(待人審→✅/✗) |
 |---|---|---|---|---|---|
-| DD-1 | 2c 結論塊欄位鎖定為:`STATUS`、`FORK`／`HEAD`／`INTEGRATION`／`REF`、恢復欄二選一「重綁 Final Fresh。Source SHA: <hex≥7>」或「本項 FAIL」。標題用 `## 2c 整合結論` | Stage 3 throwaway 已鎖形狀;Decision 把欄位名留給 4-spec | `3-prototype.md:49-57`;`2-decision.md` 內部技術選擇 Q6 形狀 | 改欄名則 S-1.1～S-1.3 fixture 全改 | 待人審 |
-| DD-2 | 發動條件=正文有 `ALREADY_SYNCED` **且**已宣稱(2c 項 `[x]`、或 `結論:STATUS=ALREADY_SYNCED`、或 `verdict: PASS`、或 `status: approved`)。n-a 與未勾 draft 不發動 | Stage 3 發動時機;避免誤殺草稿 | `3-prototype.md:59`;`2-decision.md` Risk「n-a 與 draft」 | 改成見字就紅則 S-2.2 翻案 | 待人審 |
-| DD-3 | 填檔牙掛進 `check-stage67-enforcement.sh` ST 組(同家族可加 gate-consistency／7-review 形狀檢查)。不新開 `check-already-synced.sh` 當唯一入口 | OC-1 禁止第二套家族 | `2-decision.md` OC-1 | 改獨立腳本要重審「不另造方法論」 | 待人審 |
-| DD-4 | 重綁 SHA 地板 = **≥7 hex**(Stage 3 用 `def4567890abc`)。短於 7 當 void-only | 與 gauntlet Source SHA 地板對齊,避免 `abc` 這種過短值 | `3-prototype.md:140`;`_templates/7-review.md` Source SHA ≥7 慣例 | 改 40 或 64 則 S-1.2 地板句重寫 | 待人審 |
-| DD-5 | Q6 錨句只准這兩句:「整合回歸在 Final Fresh 之前」「ALREADY_SYNCED 不得只寫證據不算數」。不重寫已搬的 2c 散文 | Decision In 收窄 Q6 | `2-decision.md:100`;`2-decision.md:115` | 加第三句或重寫 2c 正文 = 回第 2 站 | 待人審 |
-| DD-6 | 活教師改口只動編號／檔頭:Fresh／gauntlet 從 2c 改 2d;2c 仍叫整合回歸。衍生 `spec-gate-dd-subsection` 與 example 同一 T | T-now + Stage 3 觀察「沒有重編號整份清單」 | `2-decision.md` T-now;`3-prototype.md:123` | 改成整表重編號 = 採 B,已拒 | 待人審 |
-| DD-7 | Feature Risk = high;`verdict` 本 hop 留空,由人類 G2 填 | 公開檢查契約 + G3 假綠;四眼原則 | `_templates/4-spec.md` Risk 判準;本 hop brief「Leave G2 verdict empty」 | 改 normal 則 Failure Model 改選配;代填 PASS = 假綠 | 待人審 |
+| DD-1 | 2c 結論塊欄位鎖定為:`STATUS`、`FORK`／`HEAD`／`INTEGRATION`／`REF`、恢復欄二選一「重綁 Final Fresh。Source SHA: <hex≥7>」或「本項 FAIL」。標題用 `## 2c 整合結論` | Stage 3 throwaway 已鎖形狀;Decision 把欄位名留給 4-spec | `3-prototype.md:49-57`;`2-decision.md` 內部技術選擇 Q6 形狀 | 改欄名則 S-1.1～S-1.3 fixture 全改 | ✅ |
+| DD-2 | 發動條件=正文有 `ALREADY_SYNCED` **且**已宣稱(2c 項 `[x]`、或 `結論:STATUS=ALREADY_SYNCED`、或 `verdict: PASS`、或 `status: approved`)。n-a 與未勾 draft 不發動 | Stage 3 發動時機;避免誤殺草稿 | `3-prototype.md:59`;`2-decision.md` Risk「n-a 與 draft」 | 改成見字就紅則 S-2.2 翻案 | ✅ |
+| DD-3 | 填檔牙掛進 `check-stage67-enforcement.sh` ST 組(同家族可加 gate-consistency／7-review 形狀檢查)。不新開 `check-already-synced.sh` 當唯一入口 | OC-1 禁止第二套家族 | `2-decision.md` OC-1 | 改獨立腳本要重審「不另造方法論」 | ✅ |
+| DD-4 | 重綁 SHA 地板 = **≥7 hex**(Stage 3 用 `def4567890abc`)。短於 7 當 void-only | 與 gauntlet Source SHA 地板對齊,避免 `abc` 這種過短值 | `3-prototype.md:140`;`_templates/7-review.md` Source SHA ≥7 慣例 | 改 40 或 64 則 S-1.2 地板句重寫 | ✅ |
+| DD-5 | Q6 錨句只准這兩句:「整合回歸在 Final Fresh 之前」「ALREADY_SYNCED 不得只寫證據不算數」。不重寫已搬的 2c 散文 | Decision In 收窄 Q6 | `2-decision.md:100`;`2-decision.md:115` | 加第三句或重寫 2c 正文 = 回第 2 站 | ✅ |
+| DD-6 | 活教師改口只動編號／檔頭:Fresh／gauntlet 從 2c 改 2d;2c 仍叫整合回歸。衍生 `spec-gate-dd-subsection` 與 example 同一 T | T-now + Stage 3 觀察「沒有重編號整份清單」 | `2-decision.md` T-now;`3-prototype.md:123` | 改成整表重編號 = 採 B,已拒 | ✅ |
+| DD-7 | Feature Risk = high;`verdict: PASS` 由 owner 口頭 G2 填入,非本 Stage 5 agent 代審 | 公開檢查契約 + G3 假綠;四眼原則 | `_templates/4-spec.md` Risk 判準;owner oral G2 PASS 2026-09-12 | 改 normal 則 Failure Model 改選配;無口頭依據代填 PASS = 假綠 | ✅ |
 
 ### 內部技術選擇(下層,告知即可)
 - 指定檢查入口字面沿用 `bash scripts/check-stage67-enforcement.sh`,不在本 hop 發明新 CLI 名。
@@ -491,5 +491,5 @@ Human verdict: ACCEPTED(Stage 3 CLI Demo;`3-prototype.md` attestation `human:ric
 - 3a 四節 | 2026-09-12 | AC／Out of Scope／Diff Budget／Dependencies 齊
 - 3b Profile | 2026-09-12 | lane full、Risk high、Failure Model、Reliability triage、Design Boundary applicable
 - 3c Stage 3 | 2026-09-12 | 五個 ACCEPTED Demo 場景逐場有 R/S 下落
-- DD 掃描 | 2026-09-12 | 上層七條待人審;無「待裁決」殘留;不翻已核 Decision
-- G2 verdict | 2026-09-12 | 留空,留給人類,不代填 PASS
+- DD 掃描 | 2026-09-12 | 上層七條依 owner 口頭 G2 PASS 改 ✅;無「待裁決」殘留;不翻已核 Decision
+- G2 verdict | 2026-09-12 | tip 上仍空;owner 口頭 **G2 PASS** 2026-09-12(中間站預核到 Stage 7,G3 仍人類親填)。本 hop 只落 frontmatter `verdict: PASS`／`status: approved` 與本行,不重審 R/S,不代填 G3
