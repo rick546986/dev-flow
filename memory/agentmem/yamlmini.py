@@ -8,11 +8,14 @@ runtime 路徑上)。
 支援的子集(**刻意窄**,不在子集內的一律 fail-loud,不猜):
 - block 風格的 mapping / sequence,2 空格縮排
 - scalar:str / int / float / bool(true|false)/ null(空值或 `null`)
+- mapping key:ASCII 識別字、雙引號字串、或無引號 Unicode/空白 key
+  (YAML plain key;`key: value` / `key:`；不含 `: ` 的 plain key)
 - 巢狀:map of map、map of list、list of map、list of scalar
 - 整行註解(縮排 + `#`)—— 只在 parse 時略過,emitter 只寫檔頭註解
 
 **明確不支援**(遇到直接丟 `YamlMiniError`):flow 風格(`{}` / `[]`)、anchor/alias
-(`&` / `*`)、多文件(`---` 分隔)、block scalar(`|` / `>`)、tab 縮排。
+(`&` / `*`)、多文件(`---` 分隔)、block scalar(`|` / `>`)、tab 縮排、
+單引號 key/字串。
 理由:一個手寫 parser 最大的風險是「看起來讀懂了,其實讀錯」——把不支援的形狀
 靜默讀成別的東西,會讓 durable memory 的內容在跨機器讀回時默默變形。窄且吵,
 比寬且靜默安全。
@@ -55,11 +58,23 @@ def _emit_scalar(value):
     raise YamlMiniError("不支援的 scalar 型別:{0!r}".format(type(value)))
 
 
+def _emit_key(key):
+    """mapping key → YAML token;非 ASCII 識別字一律雙引號(與 knowledge index 產生器對齊)。"""
+    if not isinstance(key, str):
+        raise YamlMiniError("mapping key 必須是 str:{0!r}".format(key))
+    if not key:
+        raise YamlMiniError("mapping key 不可為空")
+    if _PLAIN_SAFE.match(key) and key.lower() not in _RESERVED_PLAIN \
+            and not _INT.match(key) and not _FLOAT.match(key):
+        return key
+    return json.dumps(key, ensure_ascii=False)
+
+
 def _ordered_keys(mapping, key_order):
     keys = list(mapping.keys())
     for k in keys:
-        if not isinstance(k, str) or not _PLAIN_SAFE.match(k):
-            raise YamlMiniError("mapping key 必須是簡單識別字:{0!r}".format(k))
+        if not isinstance(k, str) or not k:
+            raise YamlMiniError("mapping key 必須是非空 str:{0!r}".format(k))
     head = [k for k in (key_order or []) if k in mapping]
     tail = sorted(k for k in keys if k not in head)
     return head + tail
@@ -72,17 +87,18 @@ def _emit(value, indent, key_order, lines):
             raise YamlMiniError("空 mapping 無法用 block 風格表示;請省略該 key")
         for k in _ordered_keys(value, key_order):
             v = value[k]
+            ek = _emit_key(k)
             if isinstance(v, dict) and v:
-                lines.append("{0}{1}:".format(pad, k))
+                lines.append("{0}{1}:".format(pad, ek))
                 _emit(v, indent + 1, key_order, lines)
             elif isinstance(v, list) and v:
-                lines.append("{0}{1}:".format(pad, k))
+                lines.append("{0}{1}:".format(pad, ek))
                 _emit(v, indent + 1, key_order, lines)
             elif isinstance(v, (dict, list)):
-                lines.append("{0}{1}: []".format(pad, k) if isinstance(v, list)
-                             else "{0}{1}: null".format(pad, k))
+                lines.append("{0}{1}: []".format(pad, ek) if isinstance(v, list)
+                             else "{0}{1}: null".format(pad, ek))
             else:
-                lines.append("{0}{1}: {2}".format(pad, k, _emit_scalar(v)))
+                lines.append("{0}{1}: {2}".format(pad, ek, _emit_scalar(v)))
         return
     if isinstance(value, list):
         for item in value:
@@ -90,12 +106,13 @@ def _emit(value, indent, key_order, lines):
                 keys = _ordered_keys(item, key_order)
                 first = keys[0]
                 fv = item[first]
+                ek = _emit_key(first)
                 if isinstance(fv, (dict, list)) and fv:
-                    lines.append("{0}- {1}:".format(pad, first))
+                    lines.append("{0}- {1}:".format(pad, ek))
                     _emit(fv, indent + 2, key_order, lines)
                 else:
                     lines.append("{0}- {1}: {2}".format(
-                        pad, first,
+                        pad, ek,
                         "[]" if isinstance(fv, list) else
                         ("null" if isinstance(fv, dict) else _emit_scalar(fv))))
                 rest = {k: item[k] for k in keys[1:]}
@@ -171,12 +188,64 @@ def _tokenize(text):
 
 
 def _split_key(content, lineno):
-    """`key: value` → (key, value_token)。value 可為空(代表巢狀區塊)。"""
-    m = re.match(r"^([A-Za-z0-9_][A-Za-z0-9_./@+-]*):(?:\s+(.*))?$", content)
-    if not m:
+    """`key: value` → (key, value_token)。value 可為空(代表巢狀區塊)。
+
+    接受:(1) ASCII 識別字 (2) 雙引號 key (3) 無引號 Unicode/空白 plain key
+    (不得含 `: `;不得以 flow/anchor 指示字開頭)。
+    """
+    if content.startswith('"'):
+        try:
+            key, end = json.JSONDecoder().raw_decode(content)
+        except ValueError as exc:
+            raise YamlMiniError(
+                "第 {0} 行:引號 key 解析失敗:{1}".format(lineno, exc))
+        if not isinstance(key, str):
+            raise YamlMiniError(
+                "第 {0} 行:mapping key 必須是字串:{1!r}".format(lineno, key))
+        rest = content[end:]
+        if not rest.startswith(":"):
+            raise YamlMiniError(
+                "第 {0} 行:不是合法的 `key: value`:{1!r}".format(lineno, content))
+        rest = rest[1:]
+        if rest == "":
+            return key, ""
+        if rest[0].isspace():
+            return key, rest.lstrip()
         raise YamlMiniError(
             "第 {0} 行:不是合法的 `key: value`:{1!r}".format(lineno, content))
-    return m.group(1), (m.group(2) or "")
+
+    if content.startswith("'"):
+        raise YamlMiniError(
+            "第 {0} 行:單引號 key 不在支援子集內(請用雙引號)".format(lineno))
+    if not content or content[0] in "{[&*|>!":
+        raise YamlMiniError(
+            "第 {0} 行:不是合法的 `key: value`:{1!r}".format(lineno, content))
+
+    # plain key: split on first ": " or a trailing ":" (YAML block mapping).
+    if ": " in content:
+        key, _, value = content.partition(": ")
+        key = key.rstrip()
+        if not key:
+            raise YamlMiniError(
+                "第 {0} 行:不是合法的 `key: value`:{1!r}".format(lineno, content))
+        return key, value
+    if content.endswith(":"):
+        key = content[:-1].rstrip()
+        if not key:
+            raise YamlMiniError(
+                "第 {0} 行:不是合法的 `key: value`:{1!r}".format(lineno, content))
+        return key, ""
+    raise YamlMiniError(
+        "第 {0} 行:不是合法的 `key: value`:{1!r}".format(lineno, content))
+
+
+def _looks_like_mapping_entry(content):
+    """sequence item 是 mapping entry 還是 scalar?用 _split_key 試探,失敗則當 scalar。"""
+    try:
+        _split_key(content, 0)
+        return True
+    except YamlMiniError:
+        return False
 
 
 def _parse_block(tokens, pos, level):
@@ -191,7 +260,7 @@ def _parse_block(tokens, pos, level):
             if ind != level or not content.startswith("- "):
                 break
             body = content[2:].strip()
-            if re.match(r"^[A-Za-z0-9_][A-Za-z0-9_./@+-]*:(\s|$)", body):
+            if _looks_like_mapping_entry(body):
                 key, token = _split_key(body, lineno)
                 if token:
                     item = {key: _parse_scalar(token, lineno)}
