@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>diagram-ir-gate · 2-decision</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+a.cell{text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px}
+.group{margin:0 0 16px}
+.group h3{margin:0 0 8px;font-size:.95rem}
+.card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 8px;background:var(--sunk)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+details.bg{margin:10px 0 0}
+details.bg>summary{cursor:pointer;color:var(--ink-2)}
+table.judge{width:100%;border-collapse:collapse;font-size:.86rem;margin:0}
+table.judge th,table.judge td{border:1px solid var(--rule);padding:6px 8px;
+  text-align:left;vertical-align:top}
+table.judge th{background:var(--sunk);font-weight:650}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 2-decision · 審查介面</p>
+  <h1>diagram-ir-gate</h1>
+  <p class="sub">正本是 md。這頁是審頁分組卡,不是 gate-twin 勾選卡。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">draft</span></div><div class="cell"><span class="k">分組</span><span class="v">3</span></div><div class="cell"><span class="k">方案</span><span class="v">9</span></div></div>
+</header>
+<section class="r-block" id="decision">
+  <div class="r-head"><span class="r-name">Decision</span></div>
+  <div class="r-body">
+    <p>採 **A + R-table + L-align**：wave-1 在既有 Python SVG 產器上加共用 typed IR 信封（先驗證、再原子交付）；失敗給穩定 fail code + 一句可修旋鈕，壞產出不得取代 last-good。另立一張五家族路由表，人／agent 先選家族，不是黑盒自動排版。Proof Lab 用薄索引對齊現有 `scripts/fixtures/{vbox-fig,gate-twin,dir-tree}` 與 `devflow-check` 牙，三家族各至少一正一負可重放。預設圖維持靜態直式 SVG。G1 留人審。本 hop 不改碼。 Q6 本檔收口的 fail-code 詞彙（穩定 token；JSON 欄位形進 4-spec）：`IR_EMPTY`、`IR_KIND`、`IR_TITLE`、`IR_LINES`、`IR_FAMILY`、`IR_TREE_AS_VBOX`、`IR_MISSING_WHY`、`DELIVER_SKIPPED`。信封必含 `family`／`version`／`payload`。`family` 枚舉：`stage1-now`｜`stage2-arch`｜`behavior-flow`｜`dir-tree`｜`module-lifecycle`。 Q7 本檔收口：樣張不另搬家；索引落 `scripts/fixtures/proof-lab/`。</p>
+  </div>
+</section>
+<section class="r-block" id="fig">
+  <div class="r-head"><h2 class="r-name">方案架構圖</h2></div>
+  <div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 302" role="img" aria-label="選定方案步驟">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">[A] IR驗證+原子交付(選定)</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">[R-table] 五家族路由表</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="b" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">[L-align] Proof Lab對齊牙</text>
+  <path class="flow" d="M140,216 L140,238"/>
+  <rect class="b" x="40" y="238" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="262">[keep] 靜態直式SVG預設</text>
+</svg>
+  </div></div>
+</section>
+
+<section class="r-block" id="owner-calls">
+<div class="r-head"><h2>Owner Calls</h2></div>
+<div class="r-body"><table class="judge">
+<tr><th>OC</th><th>決定了什麼</th><th>依據</th><th>若被推翻會怎樣</th><th>狀態</th></tr>
+<tr><td>OC-1</td><td>路由表正本落 `notes/design/diagram-route.md`（短冊，只索引）。使用者只被問到「要一張路由表」；「落在 notes/design、不寫進 `_templates/diagram-style.md`」是 owner 延伸</td><td>`_templates/diagram-style.md:1-7` 管風格不是 API；`notes/design/vbox-fig-contract.md:79-86` 各家族已有「何時不用」。落點本身 `[Assumption]`</td><td>表改掛 diagram-style 或某模板頂註；4-spec 引用路徑全改</td><td>待人審</td></tr>
+<tr><td>OC-2</td><td>原子交付約束**所有會覆寫目標檔的圖表寫路徑**（dir-tree／gate-twin／stage1-html／把 vbox-fig stdout 落檔的呼叫端）。vbox-fig 本體保持 stdout。使用者只被問到「壞產出不得取代 last-good」；「stdout 產器本身不改寫檔契約」是收窄</td><td>`scripts/build-vbox-fig.py:11-16` 只寫 stdout；`1-discussion.md:78` 呼叫端仍可蓋檔；`scripts/write-stack-inventory.py:30-37` 已有 helper 可抽</td><td>要改 vbox-fig 改成寫檔 API；`check-vbox-fig.sh` 與所有呼叫端一起動</td><td>待人審</td></tr>
+<tr><td>OC-3</td><td>本站只鎖 fail-code **token 集合**與信封三欄；JSON schema／收據檔路徑進 4-spec。使用者 brief 要「有結構碼＋可修旋鈕」；「本站枚舉 token、不鎖 JSON」是收窄</td><td>`1-discussion.md:115` Q6；`1-discussion.md:99` 本 hop 不選定 IR schema。收窄本身 `[Assumption]`</td><td>4-spec 前就有人當 schema 用；或 G2 因「未命名」被擋</td><td>待人審</td></tr>
+<tr><td>OC-4</td><td>本 feature branch **不**跑 `status-update.sh` 改正本 Active 列。標**流程層**。merge 後由整合分支補／改 `diagram-ir-gate` 列（Stage 改 `2-decision`，Gates 仍 G1⬜，除非人已核 G1）</td><td>`docs/dev/STATUS.md:10-26`；`scripts/status-update.sh:408-415`；`1-discussion.md:121` 表列只准腳本且必須在 main</td><td>本 PR 帶 STATUS 列改動，與 #206／並行 session 互蓋</td><td>待人審</td></tr>
+</table></div></section>
+<section class="r-block" id="point-1"><div class="r-head"><span class="r-name">決策點：IR 與原子交付</span></div><div class="r-body"><div class="card"><strong>A</strong><p>**共用 typed IR 信封 → 驗證 → 原子交付**。掛在既有 Python SVG 產器上。失敗印穩定 fail code + 一句可修旋鈕；驗證不過則目標檔位元組不變（last-good）。寫檔走 tmp + `os.replace` 優:對準 G-ir／AC-1／AC-2；吸收 Archify「驗證收據＋原子交付」而不搬 Node 堆疊；他處已有 `atomic_write` 可沿用 劣:要定信封欄位與 fail-code 詞彙（Q6）；vbox-fig 現只寫 stdout，呼叫端仍可能自己蓋檔 依據:`1-discussion.md:91` G-ir；`1-discussion.md:129-136` AC-1／AC-2；`1-discussion.md:96` 吸收驗證收據不搬堆疊；`scripts/write-stack-inventory.py:30-37` 已有 tmp+replace；`scripts/build-dir-tree.py:574-576`／`scripts/build-gate-twin.py:2327`／`scripts/build-stage1-html.py:479-482` 現況 `write_text` 直蓋。成本 `[Assumption]`</p></div><div class="card"><strong>B</strong><p>**各產器各自加驗證**，不共用信封／收據形 優:改動面窄；不必先發明跨家族 schema 劣:沒有共用收據可附 PR；agent 仍就近抄最近產器；G-ir「結構化 fail code」會裂成三套詞 依據:`1-discussion.md:18` 痛=沒有 IR 收據；`1-discussion.md:187-190` Interview 確認沒有 last-good；`1-discussion.md:43` 牙分開咬、沒有共用收據格式。劣的「三套詞」`[Assumption]`</p></div><div class="card"><strong>C</strong><p>**整包吸收 Archify**（Node IR／render／hosted／motion） 優:現成驗證＋排版 劣:owner 已否決整包吸收；母版禁 mermaid／外部庫／手包 html-shell 依據:`1-discussion.md:111` Q2：不要整包；`1-discussion.md:102-104` Non-Goals；`_templates/diagram-style.md:5-12` 禁 mermaid／外部庫</p></div></div></section>
+<section class="r-block" id="point-2"><div class="r-head"><span class="r-name">決策點：圖種路由</span></div><div class="r-body"><div class="card"><strong>R-table</strong><p>**一張顯式路由表**（人／agent 先選家族）。五列：Stage1 現況三框、Stage2 方案架構、行為流、目錄樹、模組生命週期。每列「用這條／不用那條」對到既有契約＋產器＋牙 優:對準 G-route／AC-3；補「何時不用」散落各契約的缺口；不是黑盒自動排版 劣:要選落點檔；表若與各契約「何時不用」漂會雙真相 依據:`1-discussion.md:92` G-route；`1-discussion.md:137-140` AC-3；`1-discussion.md:97` 路由表當契約不是自動排版；`1-discussion.md:182-186` Interview：缺口是路由表不是第四套畫法散文。落點 `[Assumption]`（本檔 OC-1）</p></div><div class="card"><strong>R-auto</strong><p>**黑盒自動辨家族**，從輸入猜該走哪支產器 優:agent 少查一張表 劣:owner 已拒黑盒自動排版；猜錯比混家族更難審；樹狀 ASCII 當 vbox 會再靜默壞圖 依據:`1-discussion.md:102` Non-Goals 不做黑盒自動排版；`1-discussion.md:31-32` 樹狀不得單盒硬裁；`notes/design/vbox-fig-contract.md:32-33` 樹狀改 WARNING+`&lt;pre&gt;`</p></div><div class="card"><strong>R-prose</strong><p>**維持現況**：分流只寫在各契約「何時不用」，不另開總表 優:零新檔 劣:痛仍在：agent 就近抄最近產器；Goals 的路由表落空 依據:`1-discussion.md:19-20` 現在怎麼繞=口頭分流；`1-discussion.md:60-61` 正式 SOP vs 實際混用；`1-discussion.md:186` 結論=缺口是路由表</p></div></div></section>
+<section class="r-block" id="point-3"><div class="r-head"><span class="r-name">決策點：Proof Lab 形狀</span></div><div class="r-body"><div class="card"><strong>L-align</strong><p>**對齊現有牙**。樣張仍住 `scripts/fixtures/{vbox-fig,gate-twin,dir-tree}`；薄索引 `scripts/fixtures/proof-lab/` 只點名可重放項。vbox-fig／gate-twin／dirmap 各至少一正一負；負向必須紅且不蓋 last-good。不另造第二套檢查語言 優:對準 G-lab／AC-4／Q7；沿用 `devflow-check` 已掛的牙；現況已有種子（lifecycle.json、fig-tree-ascii、dir-tree/good＋missing-why） 劣:現況負向不保證「不蓋 last-good」（產器還沒原子交付）；索引與牙清單可能漂 依據:`1-discussion.md:93` G-lab；`1-discussion.md:141-144` AC-4；`1-discussion.md:116` Q7 假設：對齊現有牙、目錄形狀 Stage 2 定；`scripts/devflow-check.sh:132-138` 牙已分開掛；`scripts/fixtures/vbox-fig/lifecycle.json`、`scripts/fixtures/gate-twin/fig-tree-ascii/`、`scripts/fixtures/dir-tree/good/`＋`missing-why/`。負向不蓋檔是新牙，現況沒有 `[Assumption]` 已在 Interview `1-discussion.md:196-198`</p></div><div class="card"><strong>L-newlang</strong><p>**另造 Proof Lab 檢查語言／新 runner** 優:收據形一次到位 劣:第二套方法論；與「對齊現有牙」相反；牙雙軌假綠風險 依據:`1-discussion.md:98` Proof Lab 不是另造第二套檢查語言；`1-discussion.md:196-198` 要對齊這些牙不是另造語言</p></div><div class="card"><strong>L-copy</strong><p>**新目錄整包複製 fixture**，不掛回現有牙 優:目錄名好看 劣:兩份樣張會漂；`devflow-check` 綠 ≠ Proof Lab 綠；AC-4 要對齊 selftest 依據:`1-discussion.md:141-144` AC-4 從 Proof Lab + `devflow-check` 對應牙看；`1-discussion.md:44` 現況沒有 Proof Lab 目錄名。漂 `[Assumption]`</p></div></div></section>
+<details class="bg"><summary>背景</summary><p><strong>既有脈絡</strong> 對帳快照（2026-09-12 tip `630cd41`，含 #205 Stage 1＋#207 他票 G1；本 slug 契約基準仍是 plugin `3.23.3`）： | 層 | 現況 | wave-1 缺口？ | |---|---|---| | vbox-fig 契約＋`build-vbox-fig.py`＋`check-vbox-fig.sh` | 直式 SVG；非法 exit 1；只寫 stdout | 無 IR 收據／無 last-good（呼叫端可蓋） | | gate-twin `write_text` 覆寫 `docs/dev/&lt;slug&gt;/&lt;stage&gt;.html` | #191 已禁靜默裁字；樹狀 WARNING+`&lt;pre&gt;` | 無 IR 收據；壞 html 仍可蓋好檔 | | dir-tree `write_text` 覆寫指南或 `--out` | 吃手寫 YAML，不掃 repo 猜 why | 同上 | | Stage1 審頁 `build-stage1-html.py` | 三框現況圖，不併 vbox-fig | 同上；路由要把它列成獨立家族 | | `atomic_write` | 只在 stack-inventory 等他處 | 圖表產器沒沿用 | | fixture／牙 | 分住 vbox-fig／gate-twin／dir-tree／stage1-html | 沒有 Proof Lab 索引；負向不保證不蓋檔 | | 預設畫法 | 靜態 inline SVG；禁 mermaid／外部庫 | 保持；不是本刀要改的 |</p><p><strong>Rationale</strong> owner 要的 wave-1 是三條能力，不是換渲染引擎。現況已有三套契約＋產器＋牙，缺的是（1）機器可讀驗證收據與「壞圖不得蓋好圖」，（2）給 agent 先查的一張路由表，（3）可重放、對齊現有牙的正負樣張。 A 把 Archify 的「驗證 → 原子交付」掛在本包 Python SVG 上。`write-stack-inventory.py` 已證明 tmp+`os.replace` 在本包可行；圖表產器現在的 `write_text` 直蓋是 #191 方向還沒建的閘，不是「牙綠就等於 last-good」。B 省掉共用信封，收據與 fail-code 會再裂；C 把渲染真相換成 Node，owner 已 lock 不做。 R-table 是契約，不是分類器。五個家族的「何時不用」已經寫在各短冊；缺的是一張入口。R-auto 是被拒的黑盒排版。R-prose 是現況，開這個 slug 就是因為它不夠。 L-align 讓 Proof Lab 當現有 fixture／牙的索引與缺口清單（IR 收據、負向不蓋檔），不是新語言、不是第二份複本。種子已在：`lifecycle.json`、`fig-tree-ascii`、`dir-tree/good`＋`missing-why`。</p><p><strong>風險</strong> | 風險 | 對策 | |---|---| | Q6 信封／fail-code 在 Stage 4 之前各寫各的 | Decision 已鎖 token 與信封三欄；JSON 形狀進 4-spec。OC-3 釘死「本站只鎖詞彙，不鎖 JSON」 | | vbox-fig 只寫 stdout，呼叫端仍 `write_text` 蓋掉 last-good | A 的原子交付約束**寫檔路徑**（dir-tree／gate-twin／stage1／任何把 SVG 落檔的呼叫端）。stdout 產器本身驗證失敗 exit ≠ 0 且不寫檔。OC-2 | | 路由表與各契約「何時不用」雙真相 | 路由表只做索引：五列指向既有契約，不改寫家族畫法。漂了以家族契約為準、表必改 | | Proof Lab 索引與 `devflow-check` 清單漂 | 索引只點名已被牙掛住的路徑；新樣張先掛進既有牙再進索引。禁第二套 runner | | 負向 fixture 在原子交付落地前仍會蓋檔 | 實作順序：先共享寫檔 helper + 驗證閘，再掛「負向不蓋 last-good」牙。SC-1／SC-4 綁在一起 | | 有人把「都過」當成 Stage 2 G1 PASS | frontmatter `verdict` 空、`status` draft；確認紀錄寫明那是 Stage 1 方向。Agent 不寫 Human PASS | | feature branch 手改 STATUS 表列 | 流程層 OC-4：本 branch 不跑 `status-update.sh` 改正本；#206 若合入只補 Stage 1 Active。本票 Stage 欄留給 merge 後的 main | | 實作時把後刀（動畫／deep-link／Delta／themes／Share Card）塞進來 | 上述進 Rejected；要做必須另開薄刀，回本站改 Decision 不算合法 DD |</p><p><strong>未採</strong> | 不選 | 一句棄因 | |---|---| | B 各產器自驗 | 沒有共用收據；fail-code 會裂成三套；混家族痛不消。 | | C 整包 Archify | Q2 已否決；會進口 Node／mermaid／hosted，違反母版看圖零依賴。 | | R-auto 黑盒猜家族 | Non-Goal；猜錯比口頭混用更難審。 | | R-prose 只靠「何時不用」 | 現況就是這樣，Goals 的路由表落空。 | | L-newlang 第二套檢查語言 | 與 G-lab「對齊現有牙」相反。 | | L-copy 複製不掛牙 | 雙份樣張會漂；selftest 綠 ≠ Proof Lab 綠。 | | Mermaid／黑盒自動排版／Node render／hosted share／WYSIWYG | Stage 1 Non-Goals；本 Decision 維持拒絕。 | | 動畫當預設 | Q1／Q8：第一刀不是動畫；可選 trace 是後刀。 | | deep-link `#focus`／`#route`、Architecture Delta、themes、Share Card | Q9 移交後刀，本 wave 不收。 |</p></details>
+<p class="src">由 <code>scripts/build-stage2-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
