@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>integration-before-verdict · 5-tasks</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  -webkit-font-smoothing:antialiased}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;font-variant-numeric:tabular-nums}
+code{background:var(--sunk);border-radius:3px;padding:1px 5px;color:var(--ink-2)}
+a{color:var(--accent)}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+
+/* ---- 頁首 ---- */
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem;max-width:62ch}
+
+/* ---- 動線格 ---- */
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:20px 0 4px}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:11px 13px;box-shadow:var(--shadow)}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;display:block;margin-bottom:5px}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+.cell .n{font-size:.78rem;color:var(--ink-2);display:block;margin-top:3px}
+.cell.is-bad .v{color:var(--bad)} .cell.is-ok .v{color:var(--ok)}
+.cell.is-warn .v{color:var(--warn)} .cell.is-accent .v{color:var(--accent)}
+
+/* ---- sticky 進度 ---- */
+.progress{position:sticky;top:0;z-index:20;background:var(--ground);
+  border-bottom:1px solid var(--rule);padding:11px 0;margin:22px 0 0}
+.progress-in{max-width:900px;margin:0 auto;padding:0 20px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.bar{flex:1 1 200px;height:7px;background:var(--sunk);border-radius:99px;overflow:hidden;
+  min-width:140px}
+.bar i{display:block;height:100%;width:0;background:var(--accent);
+  transition:width .25s ease;border-radius:99px}
+.count{font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.count b{color:var(--accent)}
+.btn{border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);
+  border-radius:7px;padding:5px 11px;font-size:.82rem;cursor:pointer;font-family:inherit}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---- 提示框 ---- */
+.criterion{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 26%,transparent);
+  border-radius:10px;padding:15px 17px;margin:26px 0}
+.criterion h2{margin:0 0 7px;font-size:.95rem;letter-spacing:.02em;border:0;padding:0}
+.criterion p{margin:0;color:var(--ink-2);font-size:.9rem}
+.criterion .ex{margin-top:9px;padding-top:9px;
+  border-top:1px dashed color-mix(in srgb,var(--accent) 30%,transparent);font-size:.85rem}
+
+/* ---- 區塊卡（R / T 共用）---- */
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;
+  border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
+.r-block.danger .r-head{border-left-color:var(--bad)}
+.r-id{font-weight:700;font-size:.95rem;letter-spacing:.02em;white-space:nowrap;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.r-block.danger .r-id{color:var(--bad)}
+.r-block.core .r-id{color:var(--accent)}
+.r-name{font-weight:650}
+.r-risk{display:block;font-size:.83rem;color:var(--ink-2);margin-top:3px}
+.r-rule{padding:12px 18px;background:var(--sunk);font-size:.9rem;color:var(--ink-2);
+  border-bottom:1px solid var(--rule-2)}
+.r-rule b{color:var(--ink)}
+
+/* ---- 圖 ---- */
+/* 直式現況圖／方案架構圖:外層撐滿欄、圖本身有限寬,水平置中。
+   禁 svg/pre width:100% —— 畫布撐滿時狹長圖會貼左。
+   max-width 360px 對齊鎖定手樣(subsidy 2-decision.html)。 */
+.fig{margin:26px 0;padding:17px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}
+.fig svg,.fig pre{display:block;width:auto;max-width:360px;margin:0 auto;height:auto}
+.fig pre.fig-ascii-fallback{max-width:100%;width:100%;box-sizing:border-box;
+  overflow-x:auto;text-align:left;white-space:pre;background:var(--sunk);
+  padding:11px;border-radius:7px;font-size:.82rem;line-height:1.5;margin-top:8px}
+.fig .fig-warn{color:var(--warn);text-align:left;margin:0 0 4px;max-width:100%}
+.pinned pre{display:block;width:max-content;max-width:100%;margin-left:auto;margin-right:auto}
+.cap{color:var(--ink-3);font-size:.82rem;line-height:1.6;margin-top:11px;text-align:center}
+svg .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.4}
+svg .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+svg .wn{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.4}
+svg .bd{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.4}
+svg .nl{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--ink)}
+svg .sm{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--ink-3)}
+svg .edge{fill:none;stroke:var(--ink-3);stroke-width:1.6}
+svg .ahead{fill:var(--ink-3);stroke:none}
+
+/* ---- 摺疊 ---- */
+.appendix{margin-top:42px;border-top:1px solid var(--rule);padding-top:22px}
+.appendix > h2{font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 13px;border:0;padding:0}
+details.doc{border:1px solid var(--rule);border-radius:9px;margin-bottom:9px;
+  background:var(--panel);overflow:hidden}
+details.doc > summary{cursor:pointer;padding:11px 15px;font-weight:600;font-size:.9rem;
+  list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:center}
+details.doc > summary::-webkit-details-marker{display:none}
+details.doc > summary::after{content:"展開";font-size:.76rem;color:var(--ink-3);font-weight:500}
+details.doc[open] > summary::after{content:"收合"}
+details.doc[open] > summary{border-bottom:1px solid var(--rule-2)}
+details.doc:hover{border-color:var(--accent)}
+.doc-in{padding:4px 17px 15px;font-size:.9rem;color:var(--ink-2)}
+.doc-in h2,.doc-in h3{color:var(--ink);font-size:.95rem;margin:16px 0 7px;border:0;padding:0}
+.doc-in table{border-collapse:collapse;width:100%;margin:11px 0;font-size:.84rem}
+.doc-in th,.doc-in td{border:1px solid var(--rule);padding:6px 9px;text-align:left;
+  vertical-align:top}
+.doc-in th{background:var(--sunk);font-weight:650;color:var(--ink)}
+.doc-in pre{background:var(--sunk);padding:11px;border-radius:7px;overflow-x:auto;
+  font-size:.82rem;line-height:1.5}
+.doc-in blockquote{margin:11px 0;padding:.4em 1em;border-left:3px solid var(--rule);
+  color:var(--ink-3)}
+.doc-in ul,.doc-in ol{padding-left:1.35em}
+.doc-in li{margin:4px 0}
+.tablewrap{overflow-x:auto}
+
+/* ---- 收尾 ---- */
+.verdict{margin-top:34px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);padding:19px 21px;box-shadow:var(--shadow)}
+.verdict h2{margin:0 0 9px;font-size:1rem;border:0;padding:0}
+.verdict p{margin:0 0 9px;color:var(--ink-2);font-size:.91rem}
+.verdict p:last-child{margin-bottom:0}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:560px){h1{font-size:1.35rem}}
+
+.pinned{border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:8px;
+        padding:14px 16px;margin:0 0 14px;background:var(--panel)}
+.pinned>h2{margin:0 0 8px;font-size:1rem;letter-spacing:.01em}
+.pinned .tablewrap{overflow-x:auto}
+.pinned table{width:100%;border-collapse:collapse;font-size:.86rem}
+.pinned th,.pinned td{border:1px solid var(--rule);padding:5px 8px;text-align:left;vertical-align:top}
+.pinned ul{margin:.3em 0 .3em 1.1em;padding:0}
+.pinned p{margin:.35em 0}
+a.cell{cursor:pointer;text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.s-card{border-bottom:1px solid var(--rule-2)}
+.s-card:last-child{border-bottom:0}
+.s-head{display:flex;gap:10px;align-items:center;padding:12px 18px;cursor:pointer;
+  flex-wrap:wrap}
+.s-head:hover{background:var(--sunk)}
+.s-chk{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex:none}
+.s-chk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.s-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.83rem;
+  font-weight:650;color:var(--accent);background:var(--accent-soft);
+  padding:2px 7px;border-radius:5px;flex:none}
+.s-title{font-weight:600;font-size:.94rem}
+.tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600;flex:none}
+.tag.base{background:var(--sunk);color:var(--ink-3)}
+.tag.main{background:var(--warn-soft);color:var(--warn)}
+.tag.rej{background:var(--bad-soft);color:var(--bad)}
+.s-card.done{background:var(--ok-soft)}
+.s-card.done .s-title{color:var(--ink-2)}
+.s-body{padding:0 18px 15px 45px}
+.gwt{display:grid;gap:5px;margin-bottom:11px}
+.gwt-row{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:baseline}
+.gwt-k{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.71rem;
+  font-weight:700;color:var(--ink-3);letter-spacing:.06em}
+.gwt-v{font-size:.9rem;color:var(--ink-2)}
+.obs{background:var(--sunk);border-left:3px solid var(--accent);border-radius:0 7px 7px 0;
+  padding:9px 13px}
+.obs.missing{border-left-color:var(--bad);background:var(--bad-soft)}
+.obs-k{display:block;font-size:.71rem;letter-spacing:.08em;text-transform:uppercase;
+  font-weight:700;color:var(--accent);margin-bottom:3px}
+.obs.missing .obs-k{color:var(--bad)}
+.obs-v{font-size:.88rem;color:var(--ink-2)}
+@media (max-width:560px){
+  .s-body{padding-left:18px}
+  .gwt-row{grid-template-columns:1fr;gap:2px}
+}
+
+.t-bound{border-top:1px solid var(--rule-2);margin-top:9px}
+.t-bound>summary{cursor:pointer;padding:9px 0 9px 45px;font-size:.84rem;font-weight:600;
+  color:var(--ink-2);list-style:none;display:flex;justify-content:space-between;gap:10px}
+.t-bound>summary::-webkit-details-marker{display:none}
+.t-bound>summary::after{content:"展開";font-size:.75rem;color:var(--ink-3);font-weight:500}
+.t-bound[open]>summary::after{content:"收合"}
+.t-bound .body{padding:2px 18px 13px 45px;font-size:.87rem;color:var(--ink-2);line-height:1.7}
+.t-bound .body code{font-size:.85em}
+.dag{margin:22px 0;padding:15px 17px;border:1px solid var(--rule);border-radius:10px;
+  background:var(--panel);box-shadow:var(--shadow)}
+.dag h2{margin:0 0 10px;font-size:.95rem;border:0;padding:0}
+.dag pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.82rem;
+  line-height:1.7;color:var(--ink-2);overflow-x:auto;white-space:pre}
+@media (max-width:560px){
+  .t-bound>summary{padding-left:18px}
+  .t-bound .body{padding-left:18px}
+}
+
+.t-chk-hint{font-size:.86rem;color:var(--ink-2);margin:18px 0 0}
+.t-ask{margin:0 0 12px}
+.t-ask-h{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-3);margin:0 0 6px}
+.t-ask ul{margin:0;padding:0;list-style:none}
+.t-ask li{display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:.9rem;
+  color:var(--ink)}
+.t-ask .qmark{color:var(--accent);font-weight:700;flex:none;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap" id="top">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 5-tasks · 執行板</p>
+  <h1>integration-before-verdict</h1>
+  <p class="sub">正本是 <code>docs/dev/integration-before-verdict/5-tasks.md</code>,
+  這頁隨時可重生。<strong>審完頂區五格再決定要不要動工。</strong></p>
+  <div class="dash"><a class="cell" href="#top"><span class="k">狀態</span><span class="v">approved</span><span class="n">frontmatter</span></a><a class="cell" href="#cards"><span class="k">任務</span><span class="v">3 個 T</span><span class="n">六欄齊全</span></a><a class="cell" href="#top"><span class="k">模式</span><span class="v">sequential</span><span class="n">execution.mode(未標=sequential)</span></a><a class="cell" href="#dag"><span class="k">依賴</span><span class="v">2 條</span><span class="n">Blocked-by 邊</span></a><a class="cell" href="#progress"><span class="k">進度</span><span class="v">0/3</span><span class="n">已勾 完成/總數</span></a></div>
+</header>
+
+<div class="progress" id="progress">
+  <div class="progress-in">
+    <span class="count">已完成 <b id="done">0</b> / 3 條</span>
+    <span class="bar"><i></i></span>
+    <button class="btn" id="clear" type="button">清除勾選</button>
+  </div>
+</div><section class="dag" id="dag"><h2>T 依賴 DAG(Blocked-by,自動衍生)</h2><pre>Wave 1: T-1
+Wave 2: T-2 ←(T-1)
+Wave 3: T-3 ←(T-2)</pre></section>
+<div id="cards">
+<p class="t-chk-hint">勾選 = 這張 T 不開口也能開工,不是已做完。</p><article class="s-card" data-sid="T-1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-1">
+    <span class="s-id">T-1</span>
+    <span class="s-title">讓 check-stage67 對已宣稱 void-only 填檔紅、對重綁／FAIL／n-a／draft 綠</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-1 的 Files 第一個檔 check-stage67-enforcement.sh，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-1 的 Blocked-by 沒點名任何 T，真的可以立刻開工嗎？</span></li><li><span class="qmark">?</span><span>T-1 蓋的 S-1.1、S-1.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-1 / S-1.1, S-1.2, S-1.3; R-2 / S-2.1, S-2.2; R-4 / S-4.1, S-4.2</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/check-stage67-enforcement.sh, scripts/fixtures/stage67-filled-tooth/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(bash scripts/check-stage67-enforcement.sh 2&gt;&amp;1 | grep -c &#x27;ST-filled:&#x27;); test &quot;$n&quot; -ge 5 &amp;&amp; bash scripts/check-stage67-enforcement.sh &amp;&amp; bash scripts/check-integration-regression-guard.sh &amp;&amp; bash scripts/test-evidence-gauntlet.sh &amp;&amp; python3 -c &quot;import pathlib; t=pathlib.Path(&#x27;_templates/7-review.md&#x27;).read_text(); h=t.split(&#x27;\n## &#x27;)[0]; i,f=h.find(&#x27;整合回歸&#x27;),h.find(&#x27;Final Fresh Run&#x27;); assert 0&lt;=i&lt;f; print(&#x27;S-4.1-ok&#x27;)&quot;</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">—</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常多一步：勾 2c／送 G3 之前，同一支 <code>check-stage67</code> 會讀填好的 7-review。只寫「證據不算數」的已宣稱 <code>ALREADY_SYNCED</code> 會紅；重綁 <code>Source SHA</code>（≥7 hex）或寫「本項 FAIL」會綠；零新 commit 的 n-a 與未勾 draft 不會被提前擋住。改的是檢查射程（從模板字串延到填檔），不是新發明一套整合工具。不會變成 Cursor 擋寫、不會改整合腳本 exit 碼、不會重寫模板已搬的 2c 散文。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>只准改 <code>check-stage67-enforcement.sh</code> 的 ST 組與 <code>scripts/fixtures/stage67-filled-tooth/</code> 五份對照（void-only／rebind-sha／item-fail／na-incoming／draft-unclaimed，形狀對齊 Stage 3）。入口字面必須仍是 <code>bash scripts/check-stage67-enforcement.sh</code>，禁止新開 <code>check-already-synced.sh</code> 當唯一入口。填檔牙擁有通過／失敗判定；整合腳本仍擁有 STATUS 名稱與三 SHA，本 T 不得改它的演算法或 exit 碼（0／10／11／2）。既有 ST 模板順序項、<code>check-integration-regression-guard.sh</code>、<code>test-evidence-gauntlet.sh</code> P0-1 必須仍綠；<code>_templates/7-review.md</code> 頂註「整合回歸」必須仍在「Final Fresh Run」之前。Actor=Stage 7 reviewer；Goal=勾 2c 時不能靠作廢句過關；Human decision=選重綁 SHA 或本項 FAIL；Authority=reviewer 寫恢復欄、檢查 exit 擋勾過；Recovery=補「重綁 Final Fresh。Source SHA: &lt;hex≥7&gt;」或改寫「本項 FAIL」後重跑，不要進 Verdict。看過 <code>ALREADY_SYNCED</code> ≠ 已恢復。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-2">
+    <span class="s-id">T-2</span>
+    <span class="s-title">改整合腳本 GUIDANCE 與檔頭、改口 manifest，且演算法不變</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-2 的 Files 第一個檔 devflow-integration-regression.sh，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-2 的 Blocked-by 寫 T-1，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-2 蓋的 S-1.4、S-3.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-1 / S-1.4; R-3 / S-3.2; R-4 / S-4.3</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/devflow-integration-regression.sh, docs/dev/tools/devflow-integration-regression.sh, manifests/p4-gauntlet-gates.md</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>python3 -c &quot;import pathlib,re,sys; a=pathlib.Path(&#x27;scripts/devflow-integration-regression.sh&#x27;).read_text(); b=pathlib.Path(&#x27;docs/dev/tools/devflow-integration-regression.sh&#x27;).read_text(); m=pathlib.Path(&#x27;manifests/p4-gauntlet-gates.md&#x27;).read_text(); ga=a[a.find(&#x27;GUIDANCE&#x27;):]; gb=b[b.find(&#x27;GUIDANCE&#x27;):]; assert &#x27;重綁&#x27; in ga and &#x27;FAIL&#x27; in ga and &#x27;重綁&#x27; in gb and &#x27;FAIL&#x27; in gb; assert &#x27;執行清單 2c 的文檔化命令&#x27; not in m; assert re.search(r&#x27;Exit Checklist.*整合回歸.*計算工具&#x27;, a) is None; assert re.search(r&#x27;Exit Checklist.*整合回歸.*計算工具&#x27;, b) is None; assert &#x27;絕不動樹&#x27; in a and &#x27;sys.exit(code)&#x27; in a; assert all(x in a for x in [&#x27;N_A_NO_INCOMING&#x27;,&#x27;ALREADY_SYNCED&#x27;,&#x27;SYNC_REQUIRED_NO_OVERLAP&#x27;,&#x27;SYNC_REQUIRED_WITH_OVERLAP&#x27;]); assert &#x27;, 2&#x27; in a and &#x27;, 10&#x27; in a and &#x27;, 11&#x27; in a; print(&#x27;T-2-ok&#x27;)&quot;</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-1</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常少一句誤導、多一句下一步：腳本印 <code>ALREADY_SYNCED</code> 時，GUIDANCE 要告訴人重綁 Final Fresh 或寫本項 FAIL，不能只說「輸出不算數」就結束。檔頭改成「步 2c 整合回歸，Fresh 之前，不是 Exit 程序」；manifest 若仍指 gauntlet 命令則寫 2d。不會變成腳本自己 merge／重綁／自動 FAIL，也不會改 STATUS 名稱或 exit 碼。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>兩支整合腳本只准改檔頭與 <code>GUIDANCE</code> 字串；正本與 <code>docs/dev/tools/</code> 散發副本必須一起改（parity 仍由既有 guard 咬）。禁止改 <code>sys.exit(code)</code>、禁止新增自動重綁、禁止把 <code>ALREADY_SYNCED</code> 自動當 FAIL、禁止 merge／rebase。manifest 只准把「執行清單 2c 的文檔化命令」改成 2d，不准重編號整份 Stage 7 清單。本 T 不改 example、不改 HISTORY／dispatch／stage7-loop。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-3">
+    <span class="s-id">T-3</span>
+    <span class="s-title">改口 example 與衍生 fixture，活路徑舊針歸零</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-3 的 Files 第一個檔 7-review.md，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-3 的 Blocked-by 寫 T-2，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-3 蓋的 S-3.1、S-3.3 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-3 / S-3.1, S-3.3, S-3.4</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">example/contract-expiry-reminder/7-review.md, example/contract-expiry-reminder/7-review.html, example/contract-expiry-reminder/4-spec.md, example/contract-expiry-reminder/4-spec.html, scripts/fixtures/spec-gate-dd-subsection/bad-dd-unresolved.md</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>test &quot;$(rg -n &#x27;執行清單 2c 的 Final Fresh|執行清單 2c gauntlet&#x27; example/contract-expiry-reminder/ | wc -l | tr -d &#x27; &#x27;)&quot; -eq 0 &amp;&amp; test &quot;$(rg -n &#x27;執行清單 2c gauntlet&#x27; scripts/fixtures/spec-gate-dd-subsection/bad-dd-unresolved.md | wc -l | tr -d &#x27; &#x27;)&quot; -eq 0 &amp;&amp; { bash scripts/check-spec-gate.sh scripts/fixtures/spec-gate-dd-subsection/bad-dd-unresolved.md; test $? -eq 1; } &amp;&amp; test &quot;$(rg -n &#x27;執行清單 2c 的 Final Fresh|Exit Checklist.*整合回歸.*計算工具&#x27; example/contract-expiry-reminder/ manifests/p4-gauntlet-gates.md scripts/devflow-integration-regression.sh docs/dev/tools/devflow-integration-regression.sh | wc -l | tr -d &#x27; &#x27;)&quot; -eq 0</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-2</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常抄範例時走 2c 整合 → 2d Fresh，不再把 2c 當成 Final Fresh 或 gauntlet。example 兩檔與衍生 <code>spec-gate-dd-subsection</code> fixture 同一刀改口；<code>check-spec-gate.sh</code> 對該負向 fixture 仍要紅（C5 待裁決牙不因改序號假綠）。活路徑聯合 <code>rg</code> 歸零。不會改 HISTORY／dispatch／stage7-loop 當時句，也不會重編號整份清單。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>Fresh／gauntlet 序號從 2c 改 2d；2c 仍只准出現在「整合回歸」語境。example 4-spec 與 <code>bad-dd-unresolved.md</code> 必須同一 T 改（DD-6）。7-review.html／4-spec.html 是同目錄 twin，舊針在 html 也要清。禁止改 <code>notes/dispatch-*</code>、<code>docs/dev/HISTORY.md</code>、<code>docs/dev/stage7-loop/</code>（OC-2 死紀錄）。本 T 不改整合腳本演算法（屬 T-2）。Files 五檔是同一刀「活教師 + 衍生副本」，不是按架構層切開。</p></div></details>
+  </div>
+</article>
+</div>
+<h2 class="apx-h">背景資料(預設收合,內容零刪減)</h2>
+<details class="doc" id="sec-開工前提"><summary><span>開工前提</span></summary><div class="doc-in"><p>Stage 4 已核准。G2 PASS 已在 tip（#221）。本 hop 不改 <code>4-spec.md</code>／<code>4-spec.html</code>。牙掛進既有 <code>check-stage67</code> ST 組，不是第二套 <code>check-already-synced.sh</code>。活教師改口只動編號／檔頭；2c 仍叫整合回歸。R-5 真跑（本 slug 自己的 Stage 7 Exit）不在本 hop 切 T。</p><p>### N1 R/S 盤點（16 S）</p><div class="tablewrap"><table><thead><tr><th>R</th><th>S</th><th>本 hop T</th></tr></thead><tbody><tr><td>R-1 拒絕 void-only <code>ALREADY_SYNCED</code> 填檔</td><td>S-1.1 void-only 紅；S-1.2 重綁 SHA 綠；S-1.3 本項 FAIL 綠</td><td>T-1</td></tr><tr><td>R-1（續）</td><td>S-1.4 GUIDANCE 寫重綁／FAIL</td><td>T-2</td></tr><tr><td>R-2 放過未宣稱 n-a／draft</td><td>S-2.1 <code>N_A_NO_INCOMING</code> no-fire；S-2.2 draft no-fire</td><td>T-1</td></tr><tr><td>R-3 清除活教師舊序</td><td>S-3.2 manifest／腳本檔頭</td><td>T-2</td></tr><tr><td>R-3（續）</td><td>S-3.1 example；S-3.3 衍生 fixture 同一 T；S-3.4 活路徑 <code>rg</code> 零</td><td>T-3</td></tr><tr><td>R-4 保留 2c 編號與既有牙</td><td>S-4.1 模板序；S-4.2 三支既有牙仍綠</td><td>T-1 Verify（不改模板正文）</td></tr><tr><td>R-4（續）</td><td>S-4.3 整合腳本演算法／exit 碼不變</td><td>T-2</td></tr><tr><td>R-5 出貨樹=核准樹</td><td>S-5.1／S-5.2／S-5.3</td><td>不切 T（Split Decisions）</td></tr></tbody></table></div><p>### Verify 開工前原樣跑（2026-09-12；牙尚未落地）</p><div class="tablewrap"><table><thead><tr><th>T</th><th>結果</th><th>處置</th></tr></thead><tbody><tr><td>T-1</td><td><code>ST-filled:</code> 計數 0，<code>test -ge 5</code> 紅</td><td>③綠不了但方向對（牙尚未落地）→ 開工條件成立</td></tr><tr><td>T-2</td><td>GUIDANCE 無「重綁」／「FAIL」恢復句，舊檔頭針仍在 → assert 紅</td><td>③方向對</td></tr><tr><td>T-3</td><td>example／fixture 舊針仍命中 → 第一個 <code>test -eq 0</code> 紅</td><td>③方向對</td></tr></tbody></table></div></div></details><details class="doc" id="sec-Split-Decisions-拆分自判"><summary><span>Split Decisions(拆分自判)</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>決策</th><th>理由</th><th>依據</th><th>棄項</th></tr></thead><tbody><tr><td>sequential，不開 parallel</td><td>T-2／T-3 檔案與 S-3.4 聯合 <code>rg</code> 有硬順序；T-1 是公開檢查契約（Feature Risk high）。三個 T 開 parallel 只省一波，tip 預設 sequential、須明確啟用才改。</td><td><code>_templates/5-tasks.md</code> <code>execution.mode</code> 缺省 sequential；4-spec Verification Profile Risk high</td><td>棄 T-1 ∥ T-2。兩 T 檔案不重疊，可平行，但本 hop 選保守序：先打通牙再改口教師。</td></tr><tr><td>T-1 含五份 fixture 當一刀</td><td>可觀測行為是同一支檢查的開火／不開火，不是五層架構。目錄一條算進 Files，避免按 fixture 橫切。</td><td>4-spec S-1.1「同一入口」；Stage 3 五份 scratchpad 對照；模板「一個 T 一個關注點」</td><td>棄「void-only 一 T、恢復一 T、no-fire 一 T」（同一函式、同一 Files）。</td></tr><tr><td>GUIDANCE + 檔頭 + manifest 同 T-2</td><td>S-1.4 與 S-3.2 腳本半部落在同一兩支檔；S-4.3 是這兩檔的 Non-Goal。拆開會讓兩 T 改同一檔。</td><td>4-spec S-1.4／S-3.2／S-4.3；DD-6 檔頭改口</td><td>棄「GUIDANCE 一 T、檔頭一 T」。</td></tr><tr><td>example + 衍生 fixture 同 T-3</td><td>DD-6／S-3.3 明寫同一 T。S-3.4 聯合 <code>rg</code> 含 T-2 路徑，故 Blocked-by T-2。</td><td>4-spec S-3.3、S-3.4、DD-6</td><td>棄把 S-3.4 再拆成第四 T。</td></tr><tr><td>R-5 不切 T</td><td>owner brief：本 hop 只切 AS-1 填檔牙 + 活教師。S-5.1 要等本 slug 自己的 Stage 7 Exit 才有 7-review Source SHA；4-spec Known limit ③。S-5.3 由本目錄過程檔禁寫「跳過 2c」「Exit 才合併」約束，不另開 T。</td><td>owner Stage 5 brief；4-spec R-5「真跑留後續 hop」、Known limit ③；<code>[Assumption]</code> R-5 另 hop</td><td>棄現在就寫 S-5.1 Verify（現檔沒有 7-review，會變成恆紅或假綠）。</td></tr></tbody></table></div></div></details>
+<footer class="foot">由 <code>scripts/build-gate-twin.py</code> 從 md 正本逐條解析產生,不手抄。</footer>
+</div>
+<script>
+(function(){
+  var boxes = [].slice.call(document.querySelectorAll('.s-chk'));
+  if (!boxes.length) return;
+  var bar = document.querySelector('.bar i'), done = document.getElementById('done');
+  var KEY = 'devflow-gate-twin:' + document.title;
+  function load(){ try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ return {}; } }
+  function save(s){ try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e){} }
+  var state = load();
+  function paint(){
+    var n = 0;
+    boxes.forEach(function(b){
+      var card = b.closest('.s-card');
+      if (b.checked){ n++; card.classList.add('done'); } else { card.classList.remove('done'); }
+    });
+    if (done) done.textContent = n;
+    if (bar) bar.style.width = (n / boxes.length * 100) + '%';
+  }
+  boxes.forEach(function(b){
+    if (state[b.dataset.sid]) b.checked = true;
+    b.addEventListener('change', function(){ state[b.dataset.sid] = b.checked; save(state); paint(); });
+  });
+  var clr = document.getElementById('clear');
+  if (clr) clr.addEventListener('click', function(){
+    state = {}; save(state); boxes.forEach(function(b){ b.checked = false; }); paint();
+  });
+  paint();
+})();
+</script>
+</body>
+</html>
