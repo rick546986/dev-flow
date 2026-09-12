@@ -104,9 +104,9 @@ G-lab 要的是可重放樣張對齊現有牙，不是新語言。G 留下 `life
 ## Risks & Mitigations
 | 風險 | 對策 |
 |---|---|
-| 信封欄位未釘，Stage 4 之前各寫各的 | Decision 只鎖「有 family／payload、先驗證再寫、失敗給 `DIAGIR_*`」。欄位進 4-spec；OC-1 收窄「本檔命名碼，不在本 hop 鎖 JSON Schema」 |
-| 現有產器仍被直接 `write_text` 繞過閘 | 4-spec 把三支寫檔路徑列進同一 S；未接閘不得宣稱 wave-1 完成。vbox-fig stdout 的呼叫端也算寫檔路徑 |
-| vbox-fig 尚無獨立負向樣張 | G 要求 Stage 6 補錯 kind／空步驟負例；本 hop 不實作。I 已拒 |
+| 信封欄位未釘，Stage 4 之前各寫各的 | Stage 3 throwaway 已證 `family`／`payload` + 先驗證再寫 + 失敗給 `DIAGIR_*` 收據夠跑 SC-1／SC-2／SC-5。JSON Schema 仍進 4-spec（OC-1） |
+| 現有產器仍被直接 `write_text` 繞過閘 | throwaway 閘內 last-good／原子寫成立；正式三支產器＋vbox 呼叫端仍未接閘。4-spec 把寫檔路徑列進同一 S；未接閘不得宣稱 wave-1 完成 |
+| vbox-fig 尚無獨立負向樣張 | throwaway scratch `parked` kind 已證 `DIAGIR_KIND` 形狀與不蓋 last-good。正式負例仍 Stage 6 補進既有 fixture；本 hop 不造假 `scripts/fixtures/` |
 | 路由表與契約「何時不用」漂 | 五列必須能指回 Context 已核出處；改契約「何時不用」= 回本站改表 |
 | 黑盒自動排版誘惑（E）在實作回流 | E／F／C 進 Rejected；翻案回本站 |
 | 有人把 Stage 1 口頭「都過」當成 Stage 2 G1 PASS | G1 已按 owner chat「可以」落檔（`verdict` PASS、`status` approved）；翻案回本站 |
@@ -118,7 +118,7 @@ G-lab 要的是可重放樣張對齊現有牙，不是新語言。G 留下 `life
 - SC-3(G-route)：路由表五列都有「用這條／不用那條」+ 產器 + 契約；抽測五個現況入口（`build-stage1-html.py`、gate-twin 方案架構、gate-twin 行為流、`build-dir-tree.py`、vbox-fig lifecycle）只能落到該列，不能把 Stage 1 三框當生命週期、也不能把目錄樹收成單盒 vbox。
 - SC-4(G-lab)：Proof Lab 索引點名的樣張，vbox-fig／gate-twin／dirmap 各至少一正一負可獨立重放；負向 exit ≠ 0 且不蓋 last-good。不是「只有 `lifecycle.json` 綠過」。
 - SC-5(Q6 碼)：失敗輸出含上表六個碼之一（或 4-spec 增列的同前綴碼）；人能指出對應旋鈕句。
-- SC-6(Non-Goal)：預設產出仍是靜態直式 SVG；無 mermaid.js、無自動播放動畫當成功條件、無 Node render／hosted share／deep-link／Delta／themes／Share Card。未改 `#196`、未 bump plugin、未開 Stage 3 檔。本檔 `verdict` PASS 來自 owner chat「可以」，不是 Agent 自裁。
+- SC-6(Non-Goal)：預設產出仍是靜態直式 SVG；無 mermaid.js、無自動播放動畫當成功條件、無 Node render／hosted share／deep-link／Delta／themes／Share Card。未改 `#196`、未 bump plugin。Stage 3 已開檔；Human verdict NOT_REVIEWED；不送 G2。本檔 `verdict` PASS 仍是 Stage 2 G1（owner chat「可以」），不是本 hop 自裁 G2。
 
 ## Scope & Non-Goals(定稿)
 - In：A 共用 IR 閘＋原子交付＋`DIAGIR_*` 碼名；D 五家族路由表（上表）；G Proof Lab＝既有 fixture + 薄索引，三家族各一正一負；Q6／Q7 在本檔收口。
@@ -137,9 +137,10 @@ G-lab 要的是可重放樣張對齊現有牙，不是新語言。G 留下 `life
 ### 內部技術選擇(下層,告知即可)
 - 本 hop 不 bump `.claude-plugin/plugin.json`（仍 3.23.3）、不改產器碼。
 - `1-discussion.md` 保留 draft／「不送 G1」原文；本檔才改口成 Decision。不把 Stage 1 口頭「都過」寫進 1-discussion `status: approved`。
-- Stage 3 不預先跳過；觸發判定留給第 3 站（本檔無「跳過 Stage 3」流程層 OC）。
-- 本 hop 產審頁用 `scripts/build-stage2-html.py --action`，不手包 html-shell，不把審頁塞進 `build-gate-twin.py` STAGES。
-- vbox-fig 負向樣張（錯 kind／空步驟）列為 Stage 6 必補，不在本 hop 造假 fixture。
+- 第 3 站依 Decision 執行（本檔 Owner Calls 沒有省略紀錄）。第 3 站已行使：命中 4 條、CLI Demo。Human verdict NOT_REVIEWED；3-prototype status=draft。不送 G2、不開 4-spec。
+- 本 hop 產審頁用 `scripts/build-stage2-html.py --action`，不手包 html-shell，不把審頁塞進 `build-gate-twin.py` STAGES。第 3 站審頁另用 `scripts/build-stage3-html.py --action`。
+- vbox-fig 負向樣張（錯 kind／空步驟）列為 Stage 6 必補，不在本 hop 造假 fixture。Stage 3 只用 scratch `parked` 證形狀。
+- Stage 3 throwaway 在 `docs/dev/diagram-ir-gate/proto/diagir_gate.py`（非正式產器）；未改 `scripts/` 產器碼。
 
 ## ADR 晉升檢查
 - 難逆轉:否（G3 前可改本檔 Decision／OC；閘尚未落地）
@@ -152,3 +153,4 @@ G-lab 要的是可重放樣張對齊現有牙，不是新語言。G 留下 `life
 - Stage 1 改口 | 2026-09-12 | 1-discussion 仍 draft、Q4 寫「只 Stage 1 不送 G1」、Q6／Q7 仍 `[~]`。本檔改口為 Decision，並為 Q6 命名 `DIAGIR_*`、為 Q7 定既有 fixture + 薄索引。不回改正本討論。
 - G1 | 2026-09-12 | owner 在 chat 說「可以」（G1 / Decision approved）。基準 #212（`b7c285d`）。OC-1～OC-4 隨 Decision 一併視為接受。本 Stage 2 G1 與 Stage 1 口頭「都過」分開。owner 自審(有記錄)；reviewers: [user]
 - 自檢七掃 | 2026-09-12 | ①優劣皆有依據欄；②G-ir／G-route／G-lab 進 Decision，漏項進 Non-Goals；③Q8／Q9 `[>]` 進 Rejected＋Out；④SC-1～6 可量測；⑤Rejected 無空棄因；⑥三決策點由 owner brief 確認，OC-1～3 承接 Q6／Q7／原子寫延伸，OC-4 流程層；⑦既有脈絡表是對帳不是外移 schema。圖上 A／D／G 標選定，Rejected 未上圖。
+- prototype 回寫 | 2026-09-12 | Stage 3 CLI Demo：pass-lifecycle 交付靜態 SVG；六碼 `DIAGIR_KIND`／`EMPTY`／`LINES`／`FAMILY`／`WHY`／`ABORT` 皆見；fail 後 last-good sha 不變；中斷 `.tmp` 截斷不碰目標；路由表五列；Lab 三家族各一正一負。Human NOT_REVIEWED。不送 G2。throwaway sha256 `90f04ae487197c148139527b6d8037ef92fae9fa5e2b81aa253f4615e3c55621`。

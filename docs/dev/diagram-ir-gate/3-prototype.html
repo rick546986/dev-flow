@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>diagram-ir-gate · 3-prototype</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px}
+.r-body p{margin:0 0 8px}
+.trigger{list-style:none;padding:0;margin:0}
+.trigger li{padding:4px 0;border-bottom:1px solid var(--rule-2)}
+.hit{color:var(--ok);font-weight:650}
+.miss{color:var(--ink-3)}
+.card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 8px;background:var(--sunk)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 3-prototype · 審查介面</p>
+  <h1>diagram-ir-gate</h1>
+  <p class="sub">正本是 md。觸發判定／Demo／答案回寫 2-decision。不是 html-shell 長文。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">draft</span></div><div class="cell"><span class="k">觸發命中</span><span class="v">4/9</span></div><div class="cell"><span class="k">Demo</span><span class="v">5</span></div><div class="cell"><span class="k">Human verdict</span><span class="v">NOT_REVIEWED</span></div></div>
+</header>
+<section class="r-block" id="trigger"><div class="r-head"><span class="r-name">觸發判定</span></div><div class="r-body"><ul class="trigger"><li class="miss">[未中] 有新的前端流程（本題是 CLI／收據閘，沒有新產品畫面）</li><li class="hit">[命中] 改變使用者下一步（開工 agent 必須先查路由表再組 IR；失敗看到穩定碼＋旋鈕，不能只 traceback 後直接 `write_text`）</li><li class="hit">[命中] 涉及角色交接（agent 產 IR → 閘驗證／交付 → 審查人看收據與 last-good 是否還在）</li><li class="miss">[未中] 涉及人工核准（IR 閘是機械碼；G1–G3 既有，本站不新增人批關卡）</li><li class="hit">[命中] 涉及等待/退回/逾時（驗證失敗＝退回修 IR；目標停在 last-good 直到重跑）</li><li class="miss">[未中] 涉及權限差異（角色權限與現況相同）</li><li class="hit">[命中] 涉及系統外動作（終端機跑產器／throwaway；審查人用瀏覽器開審頁）</li><li class="miss">[未中] 涉及多種可行互動設計（A + D + G 已 lock；單一路徑 CLI）</li><li class="miss">[未中] Stage 1 尚有操作流程不確定性（Journey 已是先選家族 → 驗證 → 交付或退回；信封欄位名進 4-spec）</li></ul></div></section>
+<section class="r-block" id="question"><div class="r-head"><span class="r-name">Question</span></div><div class="r-body"><p>2-decision Risk「信封欄位未釘／`write_text` 繞過閘／vbox-fig 無獨立負向」＋ SC-1～SC-5：在**不實作 Stage 6 產器**的前提下，throwaway CLI 能否鎖住這四個答案？ 1. **G-ir last-good（SC-1）**：先有通過驗證的目標 SVG，再餵 `DIAGIR_KIND`／`DIAGIR_FAMILY`／`DIAGIR_WHY`（以及 `EMPTY`／`LINES`）→ 目標位元組與 last-good 相同；stderr／收據含穩定碼 + 一句旋鈕，不是只 traceback。 2. **G-ir 原子（SC-2）**：通過後寫入要嘛全新、要嘛全舊；模擬中斷只留截斷 `.tmp`，目標不是半份新檔。 3. **G-route（SC-3）**：五列查找表都有「用這條／不用那條」+ 產器 + 契約；樹狀當 vbox、三框當生命週期、目錄樹收單盒 → `DIAGIR_FAMILY`。 4. **G-lab（SC-4）**：薄索引點名既有 fixture（vbox-fig／gate-twin／dir-tree），每家族一正一負可重放；負向 exit ≠ 0 且不蓋 last-good。不是「只有 `lifecycle.json` 綠過」。 答案長什麼樣才算回答了： - 六個 `DIAGIR_*` 碼都在輸出裡出現，且都帶旋鈕句。 - 所有負向案例 `target_unchanged=True`；中斷後目標 sha 仍是 last-good。 - 路由表 `ROUTE_ROWS 5`；Lab 三家族各一正一負 `got_ok` 對得上。 - 預設交付是靜態 SVG（`has_mermaid=False`）。 - 正式 `scripts/` 產器**沒有**因本站被改。</p></div></section>
+<section class="r-block" id="demo"><div class="r-head"><span class="r-name">Demo</span></div><div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 454" role="img" aria-label="結構圖">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">先查五家族路由表</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">組 typed IR</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="hl" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">validate＋DIAGIR_*（選定）</text>
+  <path class="flow" d="M140,216 L140,238"/>
+  <rect class="b" x="40" y="238" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="262">pass: atomic_write</text>
+  <path class="flow" d="M140,292 L140,314"/>
+  <rect class="b" x="40" y="314" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="338">fail: last-good 留下</text>
+  <path class="flow" d="M140,368 L140,390"/>
+  <rect class="b" x="40" y="390" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="414">Proof Lab 薄索引重放</text>
+</svg>
+</div><div class="card"><strong>Scenario AC-1（失敗不蓋 last-good）</strong><p>使用者角色:開工 agent</p><p>真實目標:壞 IR 不得取代上一張好圖</p><p>起始狀態:work 目錄已有 last-good 靜態 SVG（sha256 `8ed83a4d66100b71ed41a651553f453e38997b9f89d52df28bf13eac22354dbc`）</p><p>操作步驟:跑 `demo`；看 `kind-parked`／`tree-as-vbox`／`dir-short-why` 的 `unchanged` 與 stderr 碼</p><p>系統回應:三案皆 `ok=False`；碼分別 `DIAGIR_KIND`／`DIAGIR_FAMILY`／`DIAGIR_WHY`；另印 `DIAGIR_ABORT`；`LAST_GOOD_HELD True`</p><p>系統外下一步:依旋鈕句改 IR 或改選路由列，再重跑。不要 `git checkout` 舊 html</p><p>觀察問題:看到碼之後知道下一步嗎？系統有沒有暗示「exit 非 0 但檔已換掉」？</p></div><div class="card"><strong>Scenario AC-2（原子交付／中斷）</strong><p>使用者角色:產檔器</p><p>真實目標:看見的要嘛全新、要嘛全舊</p><p>起始狀態:同一 last-good 目標檔</p><p>操作步驟:先看 `pass-lifecycle`（綠 IR 交付）；再看 `INTERRUPT`（只寫截斷 `.tmp`、不 `replace`）</p><p>系統回應:通過時 `delivered=True`、`sha_changed=True`、`static_svg=True`、`has_mermaid=False`。中斷時 `target_unchanged=True`、`tmp_truncated=True`、目標不是半份新檔</p><p>系統外下一步:正式產器 Stage 6 才把三支 `write_text` 接到同一閘</p><p>觀察問題:失敗或中斷後目標還能不能當 last-good 打開？</p></div><div class="card"><strong>Scenario AC-3（五家族路由）</strong><p>使用者角色:開工 agent</p><p>真實目標:先選對家族，不要把三框當生命週期、樹收成單盒</p><p>起始狀態:Decision D 定稿五列</p><p>操作步驟:看 `ROUTE_ROWS`；再餵 `stage1-as-lifecycle`、`tree-as-vbox`、`dir-as-vbox`</p><p>系統回應:`ROUTE_COUNT_OK True`（五列皆有用這條／不用那條／產器／契約）。三個錯家族都是 `DIAGIR_FAMILY` + 旋鈕「查路由表，改呼叫對的產器」</p><p>系統外下一步:改呼叫對的產器；不要發明第六家族或 mermaid</p><p>觀察問題:表是查找還是機器猜？有沒有暗示黑盒自動排版？</p></div><div class="card"><strong>Scenario AC-4（Proof Lab 薄索引）</strong><p>使用者角色:owner／審查人</p><p>真實目標:三家族各一正一負可重放；負向不蓋 last-good</p><p>起始狀態:既有 `scripts/fixtures/vbox-fig/lifecycle.json`、`gate-twin/fig-tree-ascii`、`dir-tree/good` 與 `missing-why`</p><p>操作步驟:看 `LAB` 六列</p><p>系統回應:vbox-fig 正=`lifecycle.json`／負=scratch `parked`→`DIAGIR_KIND`；gate-twin 正=直式行為流 scratch／負=樹狀 ASCII→`DIAGIR_FAMILY`；dir-tree 正=`good`／負=`missing-why`→`DIAGIR_WHY`。三個負向 `neg_held=True`</p><p>系統外下一步:Stage 6 才把 vbox-fig 正式負例補進既有 fixture 目錄；索引檔名 4-spec 再釘。不另造檢查語言</p><p>觀察問題:是不是只有 `lifecycle.json` 綠過？負向紅了會不會仍覆寫目標？</p></div><div class="card"><strong>Scenario AC-5（預設仍是靜態 SVG）</strong><p>使用者角色:owner</p><p>真實目標:wave-1 預設圖不是動畫／Mermaid／Node</p><p>起始狀態:throwaway 交付路徑</p><p>操作步驟:看 `pass-lifecycle` 的 `static_svg`／`has_mermaid` 與 `NO_MERMAID_DEFAULT`</p><p>系統回應:三者皆證明預設是靜態直式 SVG</p><p>系統外下一步:可選 trace 仍是後刀（Q8）；本 slug 不收</p><p>觀察問題:成功條件有沒有變成「要會動」？</p></div></div></section>
+<section class="r-block" id="result"><div class="r-head"><span class="r-name">答案</span></div><div class="r-body"><p>- **2026-09-12 實跑**（CloudAgent；tip `1f8d992` = origin/main；throwaway sha256 `90f04ae487197c148139527b6d8037ef92fae9fa5e2b81aa253f4615e3c55621`）。回寫對象:2-decision Risk「信封／write_text 繞閘／vbox 負向」＋ SC-1～5 形狀。 | case | ok | code | last-good | |---|---|---|---| | `pass-lifecycle` | True | PASS | 允許換成新靜態 SVG | | `kind-parked` | False | `DIAGIR_KIND` | 保住 | | `empty-title` | False | `DIAGIR_EMPTY` | 保住 | | `four-lines` | False | `DIAGIR_LINES` | 保住 | | `tree-as-vbox` | False | `DIAGIR_FAMILY` | 保住 | | `stage1-as-lifecycle` | False | `DIAGIR_FAMILY` | 保住 | | `dir-as-vbox` | False | `DIAGIR_FAMILY` | 保住 | | `dir-short-why` | False | `DIAGIR_WHY` | 保住 | - `LAST_GOOD_HELD True` sha256=`8ed83a4d66100b71ed41a651553f453e38997b9f89d52df28bf13eac22354dbc`；`INTERRUPT` 目標不變、`.tmp` 截斷。 - `CODES_SEEN DIAGIR_ABORT,DIAGIR_EMPTY,DIAGIR_FAMILY,DIAGIR_KIND,DIAGIR_LINES,DIAGIR_WHY`（六碼齊；皆 `DIAGIR_` 前綴 + 旋鈕句）。 - `ROUTE_ROWS 5`；`LAB_INDEX_ROWS 6` 三家族各一正一負，負向 `neg_held=True`。 - `NO_MERMAID_DEFAULT True`。正式 `scripts/` 產器未改。 - 答案:A + D + G **形狀成立**（throwaway）；CLI Demo 足夠；正式閘未落地。</p></div></section>
+<section class="r-block" id="writeback"><div class="r-head"><span class="r-name">回寫 2-decision</span></div><div class="r-body"><p>- 回寫 2-decision：Risk「信封欄位未釘」改為 throwaway 已證 `family`／`payload` + `DIAGIR_*` 收據夠跑 SC-1／2／5，Schema 仍進 4-spec；Risk「`write_text` 繞閘」改為閘內 last-good 成立、正式產器未接；Risk「vbox 無負向」改為 scratch `parked` 已證形狀、正式 fixture 仍 Stage 6。確認紀錄留「prototype 回寫」行。 - Human verdict = **NOT_REVIEWED**（人未親跑、未親填 attestation）。frontmatter `status: draft`。**不送 G2**、不開 4-spec、不假 ACCEPTED。 - throwaway 處置:本 branch 封存 `docs/dev/diagram-ir-gate/proto/diagir_gate.py` 供人重跑 Demo；session 副本 `/tmp/diagram-ir-gate-stage3-proto/`。非正式產品程式碼；Stage 6 才接到既有產器寫檔路徑。</p></div></section>
+<section class="r-block" id="feedback"><div class="r-head"><span class="r-name">User Demo Feedback</span></div><div class="r-body"><p>- Demo date: 2026-09-12（agent 代跑 CLI；人尚未親跑） - Participants: CloudAgent implementer-A（代跑）；owner rick（待親填） - Variant reviewed: CLI-only（無 UI Variant；選定 = typed IR → validate → atomic deliver） - Accepted interaction: - Rejected interaction: - Confusions observed: - Missing real-world steps: - Permission corrections: - External handoffs: - Required changes: - Human verdict: NOT_REVIEWED - Verdict attestation: human:&lt;姓名&gt; @ &lt;YYYY-MM-DD&gt;</p></div></section>
+<p class="src">由 <code>scripts/build-stage3-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
