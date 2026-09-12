@@ -89,6 +89,7 @@ REQUIRED_GROUPS = [
     "tasks-review-shape",
     "g3-review-shape",
     "guard-selfpin",
+    "fig-ascii-191",
 ]
 # 群組數的釘死常數(比照 MIN_CHECKS 的做法)——REQUIRED_GROUPS 被連刪帶藏
 #(區塊本體 + 清單條目一起刪、再補等量填充檢查湊數)時,heartbeat 與 guard-selfpin
@@ -96,7 +97,7 @@ REQUIRED_GROUPS = [
 # 只有這個獨立釘死的數字會現形。逐次同步成 REQUIRED_GROUPS 的實際長度,不是抓下限
 #(理由同上方 MIN_CHECKS 說明)。這個字面值另外被 test-architecture-guards.sh 的
 # GS-9 靜態互釘釘了一份,兩處要一起改。
-EXPECTED_GROUPS = 28
+EXPECTED_GROUPS = 29
 CURRENT_GROUP = "gate-stage-baseline"
 GROUPS_SEEN = {}
 # 檢查數地板(次級 backstop):**釘死的常數**,不是跑完再回頭算 —— 回頭算等於
@@ -111,7 +112,7 @@ GROUPS_SEEN = {}
 # 之後每加一條檢查都要把這裡同步調高;只有整區塊被砍掉、實得數掉到這個值以下
 # 才會紅(這是本檔唯一的次級防線,見 test-architecture-guards.sh 的 GS-9 靜態互釘
 # ——那邊另外釘了這個數字的字面值,兩處要一起改,見該檔的防禦邊界說明)。
-MIN_CHECKS = 179
+MIN_CHECKS = 221
 
 
 def check(cond, label, detail=""):
@@ -525,6 +526,118 @@ for _st in ("2-decision", "4-spec", "7-review"):
               and "viewBox" in _beh_html and "mermaid" not in _beh_html,
               "4-spec:行為流程圖置頂且是直式 SVG、不是 pre(不只釘 id)",
               "缺節" if not _beh_sec else "缺 svg／仍是 pre／出現 mermaid")
+
+print("-- #191 行為流程圖:禁靜默裁字／樹狀 ASCII／steps 默丟 --")
+CURRENT_GROUP = "fig-ascii-191"
+_ui_path = ROOT / "scripts/devflow_twin_ui.py"
+_ui_src = _ui_path.read_text(encoding="utf-8")
+check(("text[:42]" not in _ui_src and "steps[:8]" not in _ui_src
+       and "extra[:42]" not in _ui_src),
+      "devflow_twin_ui.py 不得再有靜默 text[:42]／steps[:8]／extra[:42]",
+      "仍含硬裁字面")
+check("parse_ascii_fig" in _ui_src and "render_fig_pre" in _ui_src
+      and "is_tree_shaped_ascii" in _ui_src,
+      "twin UI 有 parse_ascii_fig／樹狀偵測／pre 後備")
+
+_ui_spec = importlib.util.spec_from_file_location("devflow_twin_ui_191", _ui_path)
+_ui_mod = importlib.util.module_from_spec(_ui_spec)
+_ui_spec.loader.exec_module(_ui_mod)
+_tree_body = (
+    "[Actor] --> [Page R-1]\n"
+    "|-- login with a very long branch label that must not be silently clipped at forty-two chars\n"
+    "|-- open list\n"
+)
+_tree_parsed = _ui_mod.parse_ascii_fig(_tree_body)
+check(_tree_parsed.get("mode") == "pre",
+      "單元:樹狀 ASCII → mode=pre(不是單盒)",
+      f"mode={_tree_parsed.get('mode')!r}")
+check(bool(_tree_parsed.get("warnings")),
+      "單元:樹狀 ASCII 必帶 warnings")
+check("forty-two chars" in (_tree_parsed.get("pre_text") or ""),
+      "單元:pre_text 保留完整長分支(不裁 42)",
+      "長句消失或被裁")
+_long_title = "[R-1] " + ("很長標題" * 16) + "\n  " + ("步驟內容" * 20)
+_long_parsed = _ui_mod.parse_ascii_fig(_long_title)
+check(_long_parsed.get("mode") == "vbox" and _long_parsed.get("steps"),
+      "單元:直式長標仍走 vbox")
+_long_step = _long_parsed["steps"][0]
+check(("很長標題" * 16) in _long_step[1],
+      "單元:長標題全文進 steps(不裁 42)")
+check(("步驟內容" * 20) in "".join(_long_step[2]),
+      "單元:長步驟全文進 steps(不裁 42)")
+_long_svg = _ui_mod.render_vbox_svg("行為流程圖", _long_parsed["steps"])
+check(_long_svg.count('<text class="nl"') >= 2,
+      "單元:長標題折成多行 <text class=\"nl\">",
+      "nl 數=%d" % _long_svg.count('<text class="nl"'))
+_many_body = "\n".join("[R-%d] Title %d\n  step" % (i, i) for i in range(1, 11))
+_many_parsed = _ui_mod.parse_ascii_fig(_many_body)
+check(len(_many_parsed.get("steps") or []) == 10,
+      "單元:10 個 [R-n] 全收(不默丟 steps[:8])",
+      f"實得 {len(_many_parsed.get('steps') or [])}")
+check(any("超過建議 8" in w for w in (_many_parsed.get("warnings") or [])),
+      "單元:超過 8 框必 WARNING")
+
+_fx_tree = TMP / "fig-tree"
+shutil.copytree(ROOT / "scripts/fixtures/gate-twin/fig-tree-ascii", _fx_tree)
+_tree_run = run(_fx_tree, "demo", "4-spec")
+check(_tree_run.returncode == 0, "樹狀 fixture 產得出來",
+      ((_tree_run.stderr or _tree_run.stdout).strip().splitlines()[-1:] or ["無"])[0])
+_tree_html = read_html_or_none(_fx_tree / "docs/dev/demo/4-spec.html")
+if _tree_html is None:
+    check(False, "樹狀 fixture html 存在", "缺檔")
+    check(False, "樹狀:行為節是 pre 後備不是裁過的單盒 svg", "缺檔")
+    check(False, "樹狀:stderr 含 WARNING", "缺檔")
+    check(False, "樹狀:長分支全文在 html", "缺檔")
+else:
+    _tree_sec = re.search(
+        r'<section class="pinned"[^>]*>.*?</section>', _tree_html, re.S)
+    _tree_chunk = _tree_sec.group(0) if _tree_sec else _tree_html
+    check("fig-ascii-fallback" in _tree_chunk and "<pre" in _tree_chunk
+          and "fig-warn" in _tree_chunk,
+          "樹狀:行為節是 pre 後備不是裁過的單盒 svg",
+          "缺 fig-ascii-fallback／pre／fig-warn")
+    check("WARNING:" in (_tree_run.stderr or "")
+          and ("樹狀" in (_tree_run.stderr or "") or "|" in (_tree_run.stderr or "")),
+          "樹狀:stderr 含 WARNING")
+    check("forty-two chars" in _tree_chunk,
+          "樹狀:長分支全文在 html(證明沒被 text[:42] 默裁)")
+
+_fx_many = TMP / "fig-many"
+shutil.copytree(ROOT / "scripts/fixtures/gate-twin/fig-many-r", _fx_many)
+_many_run = run(_fx_many, "demo", "4-spec")
+check(_many_run.returncode == 0, "多 R fixture 產得出來",
+      ((_many_run.stderr or "").strip().splitlines()[-1:] or ["無"])[0])
+_many_html = read_html_or_none(_fx_many / "docs/dev/demo/4-spec.html")
+if _many_html is None:
+    check(False, "多 R:html 含 R-9 與 R-10", "缺檔")
+    check(False, "多 R:stderr WARNING 超過建議 8", "缺檔")
+else:
+    check("[R-9]" in _many_html and "[R-10]" in _many_html
+          and "Title 9 must remain" in _many_html
+          and "Title 10 must remain" in _many_html,
+          "多 R:html 含 R-9 與 R-10(不默丟)")
+    check("WARNING:" in (_many_run.stderr or "")
+          and "超過建議 8" in (_many_run.stderr or ""),
+          "多 R:stderr WARNING 超過建議 8")
+
+_fx_long = TMP / "fig-long"
+shutil.copytree(ROOT / "scripts/fixtures/gate-twin/fig-long-label", _fx_long)
+_long_run = run(_fx_long, "demo", "4-spec")
+check(_long_run.returncode == 0, "長標 fixture 產得出來",
+      ((_long_run.stderr or "").strip().splitlines()[-1:] or ["無"])[0])
+_long_html = read_html_or_none(_fx_long / "docs/dev/demo/4-spec.html")
+if _long_html is None:
+    check(False, "長標:svg 多行 text 且標題片段齊", "缺檔")
+else:
+    _long_sec = re.search(
+        r'<section class="pinned"[^>]*>.*?</section>', _long_html, re.S)
+    _long_chunk = _long_sec.group(0) if _long_sec else ""
+    check("<svg" in _long_chunk
+          and _long_chunk.count('<text class="nl"') >= 2
+          and "很長標題" in _long_chunk
+          and "步驟內容" in _long_chunk,
+          "長標:svg 多行 text 且標題／步驟可讀",
+          "缺多行 nl 或字消失")
 
 print("-- T2 負向:缺必填欄要在卡上紅底現形 --")
 CURRENT_GROUP = "t2-missing-required"
