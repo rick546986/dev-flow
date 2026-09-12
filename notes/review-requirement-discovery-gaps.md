@@ -1,28 +1,34 @@
-# 審核區：需求討論與真實世界需求的制度缺口（**未裁定，暫緩處理**）
+# 審核區：需求討論與真實世界需求的制度缺口（**2026-09-12 已裁決；實作另開後續 feature**）
 
 > 2026-08-17 盤點 `dev-talk`、Stage 1–7 模板、real-world 守衛與完整範例後產出，
 > 2026-08-18 從 `notes/dispatch-parallel-feature-gaps.md` 拆出獨立成檔。
+> **Owner Call 落檔 2026-09-12**。下方分析原文保留，不當派工單。
 >
-> ## ⛔ 這份不是派工單，不要照著做
+> ## 本檔角色
 >
-> **owner 已裁定：這九條暫緩，等 dev-flow 自己跑完一次完整 full lane 之後再逐條裁決。**
->
-> 理由：這九條跟前七輪修的東西性質不同 —— 前七輪修的是具體缺陷（守衛假綠、路徑推導錯、
-> 字元集打錯），驗證方式是「弄壞它、看守衛會不會紅」；**這九條修的是方法論的設計是否恰當，
-> 只能靠真的跑一次流程看有沒有改善**。而且它們會動到 `dev-talk` 核心契約、Stage 1–4 模板
-> 與範例，採用專案全部要跟著動 —— 用單一實例的證據去改最核心的部分，風險不對稱。
->
-> A-7 自己就講出了答案：「流程能證明功能做對，不能證明真實問題有改善」。
->
-> **處理順序**：先跑一次完整 normal-risk full lane（1-discussion → 7-review、過 G1/G2/G3），
-> 走完之後拿實際踩到的東西對照這九條，再決定哪幾條是真痛點。
-
----
-
-> **本檔不是派工單。未經 owner 逐條裁決，不得實作本檔的任何一條。**
+> **裁決已完成，實作不是本檔的工作。** 九條不得從本檔直接開改 `dev-talk`／Stage 1–4
+> 模板／範例；各條落點另開獨立 feature，走自己的 G1/G2。本檔只當裁決正本與分析底稿。
 >
 > 分級沿用採用回饋的語意：**A**＝可能讓流程全綠、卻解錯問題；**B**＝不一定立刻解錯，
-> 但會讓證據不足或人機互動風險到後段才暴露。以下是供 owner 審核的候選，不是既定修法。
+> 但會讓證據不足或人機互動風險到後段才暴露。
+
+## Owner Call（2026-09-12）
+
+裁決人：owner tony。實作 = 另開後續 feature，本檔與本次 landing 都不改方法論契約。
+
+| ID | 裁決 | 採納範圍（本裁） | 不採／減輕 |
+|---|---|---|---|
+| A-1 | **DO** | Goals 只寫人的結果／工作狀態；使用者帶來的做法另標 `Requested solution`（候選，未定案），不得混成 Goal。驗收雛形只回答「人在真實工作中看到什麼結果才算改善」，**不鎖定**畫面路徑／API／元件／資料格式。Stage 2 在原因尚可能由流程／政策／資料品質解決時，至少比較一個 no-build／process-only 方案（不合理則寫理由，不為湊數硬塞）。 | 不在本裁指定機械黑名單（`dashboard`／`API` 不當禁詞）。 |
+| A-2 | **DO** | **發現題**（現況、最近案例、例外、證據）禁止附推薦答案。**裁決／設計題**（已核事實上的取捨）可以附選項、差異與推薦。 | 完成條件改寫留給後續 feature，不在本裁重寫停止規則全文。 |
+| A-3 | **DO** | 重要主張必須連到來源，或標 `Assumption` **並寫驗證期限**。使用者點頭 ≠ 升格為已核事實。 | 不強制本裁一次上齊 Observed/Reported/Inferred/Conflict 全套枚舉；後續 feature 可再加。 |
+| A-4 | **DO** | 高影響 `Assumption`／`[~]` 必須寫風險與驗證期限；**期限到期未驗 → 擋 G2**。 | 本裁不新開 Journey/Actor 第二 ID 鏈。 |
+| A-5 | **LIGHT** | Human verdict 加**一行**角色／場景（誰、在哪段情境按的）。 | 不採完整 Actor Coverage 表、不採 `covered roles`／`covered scenarios` 機械欄。未覆蓋角色的 Owner Call 例外留給後續 feature。 |
+| A-6 | **DO** | Stage 2→4 要有 disposition ledger：高影響痛點／workaround／exception 逐條標本方案處理／刻意維持／Non-Goal／另開 slug／仍待驗證。標「本方案處理」者 Stage 4 至少落到一條 R/S。 | 不新開 Journey ID 鏈。 |
+| A-7 | **DO** | 出貨後要有 improvement lookback：Exit 留下回看日期、owner、資料來源、低於何值要重開討論／回滾／另開 feature。 | shipped 不必等數週結果才過 G3。 |
+| B-1 | **DO** | 保留禁讀 2/3/4/5/6/7 與既有方案文件；另開 **owner 核准的事實型 evidence 入口**（使用者提供／授權的 support、incident、analytics、SOP、去識別化 log、表單、畫面）。未授權不得掃描。 | 不把 ticket 內的解法建議當事實。 |
+| B-2 | **DO** | Fast lane 在進 Stage 4 **之前**做最小 interaction risk triage（下一步／權限核准／等待完成語意／角色交接／系統外動作／中斷恢復）。全否且行為已有 approved spec 才可直接 fast。 | 命中不必一律升 full；owner 可裁 full 或 fast+mini real-world delta。純視覺、不改語意的 bug 可維持 fast。 |
+
+機械守衛是否要做、做到哪一層：留給各後續 feature 的 G1/G2，不在本裁決代決。
 
 ## 建議審核順序
 
@@ -51,8 +57,9 @@
 無人遵守。現行流程會把 dashboard 寫進 Goal／AC，Stage 2 只剩「dashboard 怎麼做」的
 方案比較；最後七關全綠，仍可能只是**準確做完被指定的功能，沒有準確處理原問題**。
 
-### 候選決定（待 owner 裁）
+### 候選決定（已裁：A-1 DO）
 
+- **Owner Call 2026-09-12：DO。** Goals 只寫結果；Requested solution 分開；驗收不鎖通道；Stage 2 適用時比 no-build。實作另開 feature。
 - Stage 1 把 `Goals` 限定為人的結果／工作狀態；使用者帶來的功能想法另標
   `Requested solution（候選，未定案）`，不得混成 Goal。
 - Stage 1 的驗收雛形只回答「人在真實工作中看到什麼結果才算改善」，不指定畫面路徑、
@@ -82,8 +89,9 @@ Stage 1 自檢與 G1 reviewer，避免用 `dashboard/API` 黑名單誤殺合法�
 `skills/dev-talk/SKILL.md:61-62` 的「連續兩輪無新問題」又是 agent 自己可提前達成的停止條件，
 不能補救這個偏誤。
 
-### 候選決定（待 owner 裁）
+### 候選決定（已裁：A-2 DO）
 
+- **Owner Call 2026-09-12：DO。** 發現題禁止附推薦答案；設計／裁決題可以附。實作另開 feature。
 - 明分兩種問題：**發現題**（現況、最近案例、例外、證據）一律先開放問、不得附推薦；
   **裁決題**（已核事實上的取捨）才提供選項、差異與推薦。
 - 發現題答完後可用中性覆述請對方校正；推薦只能出現在事實被覆述確認之後。
@@ -115,8 +123,9 @@ Stage 1 自檢與 G1 reviewer，避免用 `dashboard/API` 黑名單誤殺合法�
 同一種「不是 Assumption 的事實」。Stage 2 `_templates/2-decision.md:35-36` 只要引用
 `1-discussion` 的「事實」就能替方案優劣背書，fresh reviewer 無法重建證據強度。
 
-### 候選決定（待 owner 裁）
+### 候選決定（已裁：A-3 DO）
 
+- **Owner Call 2026-09-12：DO。** 主張必須連到來源，或標 Assumption 並寫驗證期限。實作另開 feature。
 - 不新增 Journey/Actor 第二 ID 鏈；改在重要主張就地標狀態：`Observed`（直接查到）、
   `Reported`（某角色陳述）、`Inferred`（明寫推理）、`Assumption`、`Conflict`。
 - Evidence 改成最小結構：來源類型、日期／as-of、角色或資料範圍、支持的段落／列、
@@ -147,8 +156,9 @@ Stage 1 自檢與 G1 reviewer，避免用 `dashboard/API` 黑名單誤殺合法�
 都能以 `[~]` 合法通過。等到 Stage 6 才發現為假時，只能走 L2 大幅返工；更糟時測試完全
 符合錯誤前提，G3 也會綠。
 
-### 候選決定（待 owner 裁）
+### 候選決定（已裁：A-4 DO）
 
+- **Owner Call 2026-09-12：DO。** 高影響 Assumption 必須寫風險與期限；到期未驗擋 G2。實作另開 feature。
 - 每個 `[Assumption]`／`[~]` 補四件事：若為假會影響什麼、影響級、怎麼驗、何時／由誰驗。
 - 涉權限／法規／金流／資料隔離／不可逆行為／外部承諾的高影響假設，在 G1 前只能二選一：
   驗證完轉成 Observed/Reported，或由人類 Owner Call 明示接受風險並指定後續落點。
@@ -179,8 +189,9 @@ Stage 1 自檢與 G1 reviewer，避免用 `dashboard/API` 黑名單誤殺合法�
 交接可行。runtime 看到合法 human attestation 就放行，文件卻把局部意見呈現成整個
 互動方案已驗證。
 
-### 候選決定（待 owner 裁）
+### 候選決定（已裁：A-5 LIGHT）
 
+- **Owner Call 2026-09-12：LIGHT。** Human verdict 加一行角色／場景。不採完整 Actor Coverage／covered roles 機械欄。實作另開 feature。
 - Stage 1 增加 Actor Coverage：每個關鍵角色標 direct interview／direct observation／
   proxy／not covered，proxy 必寫限制。
 - Stage 3 的 Participants 必填「對應 Actor／實際角色」，Human verdict 同時列
@@ -212,8 +223,9 @@ Journey 發現「代理主管事後不補知會」、Exception 發現「多人�
 只寫主要 happy path。Stage 2/4 沒有任何紅字要求處置這兩點，它們可以無聲消失；最後
 Operational Context 看起來很完整，只是從一份已漏資料的 R/S 往下展開。
 
-### 候選決定（待 owner 裁）
+### 候選決定（已裁：A-6 DO）
 
+- **Owner Call 2026-09-12：DO。** Stage 2→4 要有 disposition ledger。實作另開 feature。
 - Stage 2 增加 `Real-world Disposition`：逐條引用高影響痛點／workaround／exception，
   標記本方案處理、刻意維持、Non-Goal、另開 slug 或仍待驗證，並寫理由。
 - Stage 4 對帳：標「本方案處理」者至少落到一條 R/S；其他狀態至少落到 Out of Scope、
@@ -245,8 +257,9 @@ G3 能證明卡片、API、權限與等待狀態符合 S，不能回答使用者
 少用 Excel。流程把 `PASS/shipped` 當終點後沒有學習迴圈，錯的產品假設只會變成一份
 技術上正確的 living spec。
 
-### 候選決定（待 owner 裁）
+### 候選決定（已裁：A-7 DO）
 
+- **Owner Call 2026-09-12：DO。** 出貨後要有 improvement lookback（日期／owner／來源／失敗觸發）。實作另開 feature。
 - Stage 1 Problem 加最小 baseline：受影響者／事件量、頻率、影響、觀測期間、來源；
   無資料可明寫 Unknown/Assumption，不為填數字而捏造。
 - Stage 2 Success Criteria 分 `Delivery` 與 `Outcome`；Outcome 填 baseline、target、
@@ -276,8 +289,9 @@ anti-premature-convergence 的圍欄擋住下游解法是合理的，但目前�
 agent 最容易取得的只剩原始碼與眼前使用者的記憶，結果 Real-world Context 形式完整、
 證據仍偏向單一人的回想。
 
-### 候選決定（待 owner 裁）
+### 候選決定（已裁：B-1 DO）
 
+- **Owner Call 2026-09-12：DO。** owner 核准的事實型 evidence 入口；未授權不掃。實作另開 feature。
 - 保留禁讀 2/3/4/5/6/7 與既有方案文件；另開**事實型 evidence allowlist**：
   使用者提供／授權的 support、incident、analytics、SOP、去識別化 log、表單與畫面。
 - agent 可先列「想找哪類證據與原因」，由使用者授權來源或路徑；授權後才讀，避免無邊界
@@ -305,8 +319,9 @@ agent 最容易取得的只剩原始碼與眼前使用者的記憶，結果 Real
 把等待誤顯示為完成，或破壞中斷恢復。它會因檔案少／bugfix 先進 Fast lane，沒有 Actors、
 Journey、Demo，再靠一條技術重現 scenario 出貨。
 
-### 候選決定（待 owner 裁）
+### 候選決定（已裁：B-2 DO）
 
+- **Owner Call 2026-09-12：DO。** Fast lane 進 Stage 4 前做最小 interaction risk triage。實作另開 feature。
 - lane 選擇前加一個**最小 interaction triage**：是否改變下一步、權限／核准、等待／完成
   語意、角色交接、系統外動作、中斷恢復。全否且行為已有 approved spec 才可直接 fast。
 - 命中不必一律跑整套 full：owner 可裁「升 full」或「fast + mini real-world delta」；
@@ -318,14 +333,8 @@ Journey、Demo，再靠一條技術重現 scenario 出貨。
 可要求 Fast lane 4-spec 帶結構化 triage 結果，命中卻無 full／mini／Owner Call 即拒；
 是否真的「不改語意」仍由 reviewer 查 diff 與既有 spec。不能只靠檔案數判互動風險。
 
-## 本區 owner 裁決格式（建議）
+## 本區 owner 裁決格式（已用）
 
-每條只要補一行，避免把候選直接改寫成既定事項：
-
-```text
-- A-1: 採 / 不採 / 改案 — 理由；若採，指定落點與是否要機械守衛
-```
-
-若採用，建議另開一份新的 dispatch／feature，而不是把本區混進上面「四項已定」的驗收；
-這九條會改 `dev-talk` 的核心契約、Stage 1–4 模板與範例，應獨立走 G1/G2，並保留現行
-real-world 機制的回歸基準。
+2026-09-12 已依上表逐條裁完（見檔首 Owner Call）。實作另開後續 feature，
+不把本區混進既有驗收，也不在本檔改 `dev-talk`／Stage 1–4 模板／範例。
+機械守衛層留給各後續 feature 的 G1/G2。現行 real-world 機制仍是回歸基準。

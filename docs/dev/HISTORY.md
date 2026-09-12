@@ -497,3 +497,9 @@
 - 落在哪:memory/agentmem/knowledge_index.py query.py; memory/tests; docs/knowledge; guides
 - 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.23.3
 
+## 2026-09-12 · discovery-gaps-adjudication
+- 做了什麼:Owner 2026-09-12 裁決九條制度缺口(A-1~A-4/A-6/A-7/B-1/B-2=DO;A-5=LIGHT,實作另開)並開 full-lane slug integration-before-verdict 的 Stage 1(不簽 G1);STATUS 拿掉 Windows Backlog、九條改裁決指針、整合列移入 Active
+- 為什麼:九條已裁但不得從審核檔直接改 dev-talk/模板;整合必須在 Fresh/雙軸/Verdict 之前,核准樹必須等於出貨樹,且要走完整七站而不是迴圈補丁
+- 落在哪:notes/review-requirement-discovery-gaps.md docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/integration-before-verdict/
+- 詳細:notes/review-requirement-discovery-gaps.md
+
