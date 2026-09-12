@@ -99,7 +99,9 @@ FORK_INTEGRATION_SHA: 25997871a86fce87a1b1f0658512d7f96e07dea3
 
 ## Progress Log
 
-<!-- 日期 | T-id | hash；PASS 後填 -->
+| 日期 | T-id | hash |
+|---|---|---|
+| 2026-09-12 | T-1..T-6 | 0888b273c7352c229f5919c6f3eb3b62f9791899 |
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 Run:
