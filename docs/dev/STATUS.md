@@ -25,11 +25,13 @@
 > 在同一 checkout 手改,後寫會靜默蓋掉先寫的列。手改而不走寫入口會讓
 > 蓋章對不上,`check-status-policy.sh` 會紅。feature branch 上本腳本拒改正本表列。
 
-<!-- status-writer-rev:ab16737ca13528a1b992c7f5d7d014b0b8ad5eb5a7c6ebf68bc6701feea4dd92 -->
+<!-- status-writer-rev:a8eb90dbebb29fd5a7915e3e1fc0cab51fbb156bff6789b7240712f527779b37 -->
 
 ## Active
 
-目前無進行中的改版軌。
+| Feature | Lane | Stage | Owner | Branch | OverlapRef | Gates | Updated |
+|---|---|---|---|---|---|---|---|
+| [integration-before-verdict](./integration-before-verdict/) | full | 1-discussion | tony | n-a:尚未建立 branch | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | 2026-09-12 |
 
 ## 已完成
 
@@ -47,7 +49,5 @@ scripts/history-append.sh --slug <代號> --what <做了什麼> --why <為什麼
 |---|---|---|
 | B | owner 親自打開 gate twin 產出的 html 驗收「好不好審」,b8 的 verdict 才能從 `REQUEST_CHANGES` 改掉 —— **這件事只有 owner 做得了** | `docs/dev/b8-gate-twin-review-ui/7-review.md:5,180,181` |
 | B | 拿 dev-flow 自己跑一次完整 normal-risk full lane(1-discussion → 7-review、過 G1/G2/G3)當觀測實驗 —— owner 已排定,是下一輪的事;在那之前不動 Stage 1–4 模板內容,免得污染觀測 | `notes/dispatch-parallel-feature-gaps.md` 末節 |
-| B | 需求討論的九條制度缺口(A-1~A-7、B-1、B-2)逐條裁決 —— owner 已裁定暫緩,等上一列的 full lane 觀測跑完再對照裁決 | `notes/review-requirement-discovery-gaps.md` |
-| B | 把「整合回歸與同步」移到 Final Fresh Run/雙軸審查/Verdict **之前** —— 現在的節序是 Final Fresh(`_templates/7-review.md:94`)→ Verdict(`:133`)→ Exit Checklist 的整合同步(`:281`),所以審過並核准的那棵樹不是最後出貨的那棵樹(Exit 階段合併 `INTEGRATION_SHA` 之後 HEAD 就變了);且 `ALREADY_SYNCED`(`:291`)只說「證據不算數」沒給恢復路徑。owner 已裁決:獨立成 feature 走完整七站,拿它當第一個真實 full lane 的題目 —— 它動的是模板節序(母版最核心結構),會影響 gate-consistency 機械錨點,不該塞進發版前補丁 | `notes/dispatch-v380-landing.md` 收尾節 |
-| B | 在真實 Windows 機器上驗證整條安裝與守衛動線 —— v3.8.0 landing 輪 D 批修掉了寫死的直譯器路徑,但驗證是在 macOS 上用 `DEVFLOW_PYTHON` 模擬的(D-5 選 B 更是如此),模擬過不等於真環境會過(G1 同型)。現場那台目前把 dev-flow 整個關掉(`enabledPlugins` 裡 `"dev-flow@dev-flow": false`),重開需另裝 Python 並確認 Git Bash 找得到;要等 v3.8.0 推出去、那台 `/plugin update` 之後才做得到 | `notes/dispatch-v380-landing.md` D 批 |
+| B | 九條制度缺口（A-1~A-7、B-1、B-2）已於 2026-09-12 裁決，見 notes/review-requirement-discovery-gaps.md Owner Call；實作另開後續 feature，本列只作指針 | `notes/review-requirement-discovery-gaps.md` |
 | C | SDC 大表、Reference App(4cap §7 第 5 點收攏的低優先 deferred)。2026-08-17 清空輪裁決仍不做:投資未定且**零採用現場疼痛訊號**(G1/G2/G3 全是現場真踩到的,這兩件沒有);等有採用專案真的要 SDC 級指引再立案,不為清空而硬做 | `docs/dev/4cap-remediation/devflow-4cap-remediation-2026-08.md` §7 |

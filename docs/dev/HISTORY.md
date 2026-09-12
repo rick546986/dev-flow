@@ -497,3 +497,8 @@
 - 落在哪:memory/agentmem/knowledge_index.py query.py; memory/tests; docs/knowledge; guides
 - 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.23.3
 
+## 2026-09-12 · owner-adjudication-2026-09-12
+- 做了什麼:九條制度缺口 Owner Call 落檔（A-1~A-4/A-6/A-7/B-1/B-2=DO，A-5=LIGHT）；Windows Backlog 列移除；整合回歸節序獨立成 Active slug integration-before-verdict（Stage 1 only，無 G1 PASS）
+- 為什麼:owner 2026-09-12 書面裁決：分析保留、實作另開 feature；核准樹必須等於出貨樹這題走完整 full lane，不再掛在發版前補丁或過期 Windows 列
+- 落在哪:notes/review-requirement-discovery-gaps.md docs/dev/STATUS.md docs/dev/integration-before-verdict/
+

@@ -1,0 +1,187 @@
+<!-- html 外殼:把 md 轉出的 HTML 塞進 <main>,{{TITLE}} 換成頁題。
+     自足單檔、無外部資源、深淺色自適應。 -->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1. 討論 — 整合回歸必須發生在 Fresh／雙軸／Verdict 之前</title>
+<style>
+  :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;}
+  @media(prefers-color-scheme:dark){
+    :root{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+          --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+  main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
+  h2{font-size:1.15rem;margin-top:2em}
+  h3{font-size:1rem;margin-top:1.5em}
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:1em 0}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
+  th{background:var(--card)}
+  table td{vertical-align:top;word-break:normal;overflow-wrap:anywhere;line-height:1.55}
+  /* 掃頁短欄:只有著落徽章橫排。長文欄必須可換行(#151)。 */
+  #scan-qs th:last-child,
+  #scan-qs td:last-child{white-space:nowrap;word-break:keep-all}
+  #scan-log td{white-space:normal;word-break:normal;overflow-wrap:anywhere}
+  /* 一律卡片:#scan-people／#scan-ac／#scan-log。880px 主欄仍太窄塞 3–4 長欄,不限 media(#151)。 */
+  #scan-people thead,#scan-people tr:has(> th),
+  #scan-ac thead,#scan-ac tr:has(> th),
+  #scan-log thead,#scan-log tr:has(> th){display:none}
+  #scan-people,#scan-people tbody{display:block;width:100%}
+  #scan-people tr{display:block;margin:0 0 1em;border:1px solid var(--line);
+                  border-radius:8px;background:var(--card);overflow:hidden}
+  #scan-people td{display:block;border:0;border-top:1px solid var(--line);
+                  padding:10px 12px;white-space:normal;word-break:normal;overflow-wrap:anywhere}
+  #scan-people td:first-child{border-top:0}
+  #scan-people td::before{display:block;color:var(--muted);font-size:.75rem;
+                          font-weight:600;margin:0 0 .3em}
+  #scan-people td:nth-child(1)::before{content:"誰"}
+  #scan-people td:nth-child(2)::before{content:"要什麼"}
+  #scan-people td:nth-child(3)::before{content:"缺什麼"}
+  #scan-ac,#scan-ac tbody{display:block;width:100%}
+  #scan-ac tr{display:block;margin:0 0 1em;border:1px solid var(--line);
+              border-radius:8px;background:var(--card);overflow:hidden}
+  #scan-ac td{display:block;border:0;border-top:1px solid var(--line);
+              padding:10px 12px;white-space:normal;word-break:normal;overflow-wrap:anywhere}
+  #scan-ac td:first-child{border-top:0}
+  #scan-ac td::before{display:block;color:var(--muted);font-size:.75rem;
+                      font-weight:600;margin:0 0 .3em}
+  #scan-ac td:nth-child(1)::before{content:"假設…當…則…"}
+  #scan-ac td:nth-child(2)::before{content:"從哪看"}
+  #scan-ac td:nth-child(3)::before{content:"看到什麼"}
+  #scan-log .tablewrap{overflow:visible}
+  #scan-log table,#scan-log tbody{display:block;width:100%}
+  #scan-log tr{display:block;margin:0 0 1em;border:1px solid var(--line);
+               border-radius:8px;background:var(--card);overflow:hidden}
+  #scan-log td{display:block;border:0;border-top:1px solid var(--line);
+               padding:10px 12px;white-space:normal;word-break:normal;overflow-wrap:anywhere}
+  #scan-log td:first-child{border-top:0}
+  #scan-log td::before{display:block;color:var(--muted);font-size:.75rem;
+                       font-weight:600;margin:0 0 .3em}
+  #scan-log td:nth-child(1)::before{content:"Q"}
+  #scan-log td:nth-child(2)::before{content:"事實"}
+  #scan-log td:nth-child(3)::before{content:"推理"}
+  #scan-log td:nth-child(4)::before{content:"結論"}
+  code,pre{background:var(--card);border-radius:4px;
+           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
+  pre{padding:12px;overflow-x:auto}
+  code{padding:1px 5px}
+  blockquote{margin:1em 0;padding:.5em 1em;border-left:3px solid var(--line);color:var(--muted)}
+  ul,ol{padding-left:1.4em}
+  .meta{color:var(--muted);font-size:.85rem;margin-bottom:2em}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;
+         font-size:.8rem;font-weight:600;border:1px solid transparent}
+  .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+  .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+  /* 掃頁:摘要卡、直式 svg 節點、問答 details。舊 class 語意不動。 */
+  .sum{background:var(--card);border:1px solid var(--line);border-radius:10px;
+       padding:14px 16px;margin:1em 0}
+  .sum .k{display:block;color:var(--muted);font-size:.75rem;font-weight:600;
+          margin:0 0 .2em}
+  .sum .who,.sum .pain,.sum .bypass{margin:0 0 .75em;line-height:1.55}
+  .sum .pain{font-weight:400}
+  details{margin:.6em 0}
+  details>summary{cursor:pointer;color:var(--muted);user-select:none}
+  /* 直式現況圖:有限寬、欄內水平置中。禁 width:100% 把畫布撐滿而圖貼左。 */
+  .figwrap{display:flex;justify-content:center;width:100%;margin:1.2em 0}
+  svg#scan-now,.figwrap>svg{display:block;width:220px;max-width:100%;height:auto;margin:0 auto}
+  pre#scan-now,.figwrap>pre{display:block;width:max-content;max-width:100%;margin:0 auto}
+  svg text{font:11px -apple-system,"PingFang TC","Noto Sans TC",sans-serif;fill:var(--fg)}
+  svg .b{fill:var(--card);stroke:var(--line);stroke-width:1}
+  svg .hl{fill:color-mix(in srgb,var(--acc) 16%,var(--card));stroke:var(--acc)}
+  svg .no{fill:color-mix(in srgb,var(--bad) 12%,var(--card));stroke:var(--bad)}
+  svg .flow{fill:none;stroke:var(--muted);stroke-width:1.6}
+  svg .cap{fill:var(--muted);font:11px -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+</style>
+</head>
+<body>
+<main>
+  <section class="sum" id="scan-sum">
+  <p class="who"><span class="k">誰</span>Stage 7 reviewer 與要批 G3 的 owner</p>
+  <p class="pain"><span class="k">痛</span>2026-08 派工所見節序是 Final Fresh → Verdict → Exit 才合併 `INTEGRATION_SHA`，審過並核准的樹不是最後出貨的樹；`ALREADY_SYNCED` 當時只說「證據不算數」，沒有恢復路徑</p>
+  <p class="bypass"><span class="k">繞法</span>hardening 迴圈已把模板步 2c 挪到 Final Fresh 前，但看板直到本落地才把舊故事移出 Backlog；腳本檔頭仍寫 Exit Checklist。人可以跟新模板，也可以跟過期敘事</p>
+  <span class="badge ok">已解 4</span>
+  <span class="badge warn">假設 1</span>
+  <span class="badge">移交 2</span>
+</section>
+
+<div class="figwrap">
+<svg id="scan-now" viewBox="0 0 200 420" role="img" aria-label="現況:誰、做什麼、用什麼、痛在最後一步">
+  <rect class="hl" x="20" y="8" width="160" height="88" rx="6"/>
+  <text text-anchor="middle" x="100" y="26">reviewer</text>
+  <text text-anchor="middle" x="100" y="52">Fresh Run</text>
+  <text text-anchor="middle" x="100" y="72">7-review</text>
+  <text class="cap" text-anchor="middle" x="100" y="92">審的是舊樹</text>
+  <path class="flow" d="M100,96 L100,112"/>
+  <rect class="b" x="20" y="112" width="160" height="88" rx="6"/>
+  <text text-anchor="middle" x="100" y="130">owner</text>
+  <text text-anchor="middle" x="100" y="156">批 Verdict</text>
+  <text text-anchor="middle" x="100" y="176">7-review</text>
+  <text class="cap" text-anchor="middle" x="100" y="196">核准舊樹</text>
+  <path class="flow" d="M100,200 L100,216"/>
+  <rect class="no" x="20" y="216" width="160" height="88" rx="6"/>
+  <text text-anchor="middle" x="100" y="234">reviewer</text>
+  <text text-anchor="middle" x="100" y="260">Exit 合併</text>
+  <text text-anchor="middle" x="100" y="280">git merge</text>
+  <text class="no" text-anchor="middle" x="100" y="300">出貨樹已變</text>
+  <text class="cap" text-anchor="middle" x="100" y="332">痛在最後一步</text>
+</svg>
+</div>
+
+<table id="scan-people">
+  <tr><th>誰</th><th>要什麼</th><th>缺什麼</th></tr>
+  <tr><td>reviewer</td><td>在送審樹上核准，出貨樹仍是那棵</td><td>別人是否仍照 2026-08 舊節序做</td></tr>
+  <tr><td>owner</td><td>批的 PASS 對上最後出貨的 SHA</td><td>hardening 之後現場是否還有人 Exit 才合</td></tr>
+  <tr><td>author</td><td>要 PASS 然後出貨</td><td>何時准動 HEAD</td></tr>
+</table>
+
+<table id="scan-qs">
+  <tr><th>題目</th><th>著落</th></tr>
+  <tr><td>lane？?</td><td>已解</td></tr>
+  <tr><td>整合要在 Fresh／雙軸／Verdict 之前？?</td><td>已解</td></tr>
+  <tr><td>本 PR 是否送 G1 PASS？?</td><td>已解</td></tr>
+  <tr><td>slug？?</td><td>已解</td></tr>
+  <tr><td>hardening 已把 2c 挪到 Fresh 前，本 slug 還要改模板嗎？?</td><td>假設</td></tr>
+  <tr><td>九條 DO/LIGHT 的模板與守衛?</td><td>移交</td></tr>
+  <tr><td>SDC／Reference App?</td><td>移交</td></tr>
+</table>
+
+<table id="scan-ac">
+  <thead><tr><th>假設…當…則…</th><th>從哪看</th><th>看到什麼</th></tr></thead>
+  <tbody>
+  <tr><td>假設 reviewer 已批 PASS，當有人指出出貨 SHA，則該 SHA 就是批 PASS 時的 HEAD，中間沒有「再合併一次才出貨」。</td><td>該次 7-review 的 Verdict／Exit 文字與當下 git HEAD</td><td>Verdict 後沒有合併 `INTEGRATION_SHA` 的步驟；Source SHA = HEAD</td></tr>
+  <tr><td>假設腳本印 `ALREADY_SYNCED`，當 reviewer 要繼續，則文件出現「重跑 Fresh」或「本項 FAIL」，沒有「只寫證據不算數」就過。</td><td>7-review 該步結論</td><td>兩條恢復路徑之一落檔</td></tr>
+  <tr><td>假設整合同步尚未做，當人要做雙軸或 Verdict，則還沒到那一步。</td><td>執行清單順序與實際留下的 SHA</td><td>雙軸／Verdict 記錄的樹已含整合結果，或明確停在 2c</td></tr>
+  <tr><td>假設有人只看 STATUS 進行中／Backlog，當他找「現在的節序」，則看不到「Fresh→Verdict→Exit 才合併」被寫成現況。</td><td>`docs/dev/STATUS.md` Active／Backlog</td><td>Active 有本 slug；Backlog 無該舊節序句</td></tr>
+  </tbody>
+</table>
+
+<details id="scan-log">
+  <summary>問答摘要</summary>
+  <div class="tablewrap">
+  <table>
+  <thead><tr><th>Q</th><th>事實</th><th>推理</th><th>結論</th></tr></thead>
+  <tbody>
+  <tr><td>2026-08 為什麼說核准樹不是出貨樹？</td><td>notes/dispatch-v380-landing.md:L1011-L1018</td><td>Fresh 與 Verdict 綁 feature HEAD；Exit 才合 `INTEGRATION_SHA`，HEAD 變了。審的 SHA ≠ ship 的 SHA。</td><td>CONFIRMED 這是原痛，不是口味。</td></tr>
+  <tr><td>當下 7-review 還是 Fresh→Verdict→Exit 才合嗎？</td><td>_templates/7-review.md:L100-L120 _templates/7-review.md:L176-L177 _templates/7-review.md:L179 _templates/7-review.md:L330-L333</td><td>步 2c 已在 2d 前；Exit 禁再合併。派工行號 `:94/:133/:281` 已過期。</td><td>CONFIRMED 模板正文已改；舊行號不能當現況。</td></tr>
+  <tr><td>沒開 Stage 1 怎麼改到模板的？</td><td>docs/dev/stage7-g3-hardening/4-spec.md:L17-L31</td><td>hardening 用 4-spec 迴圈落地 R-1，明文不重開 1–3。人的旅程沒被討論檔接住。</td><td>CONFIRMED 本 slug 是補上被跳過的 full-lane 討論，不是假裝模板沒動過。</td></tr>
+  <tr><td>⚠️ `ALREADY_SYNCED` 現在有沒有恢復路徑？</td><td>_templates/7-review.md:L110-L113 scripts/devflow-integration-regression.sh:L2</td><td>模板已寫重跑 Fresh 或 FAIL。腳本檔頭仍掛 Exit，人可能從錯入口讀到「輸出不算數」。</td><td>CONFIRMED 模板有路徑；檔頭漂移是剩餘洞。</td></tr>
+  <tr><td>為什麼還要獨立 full lane，而不是改完模板就關單？</td><td>notes/dispatch-v380-landing.md:L1016-L1018 docs/dev/STATUS.md:L34</td><td>owner 要的是完整七站與機械錨點一起走。模板先改 ≠ 討論／決策／規格鏈完整。</td><td>CONFIRMED 本場只開 Stage 1；關單要走完 lane，不是本 PR。</td></tr>
+  <tr><td>⚠️ Fresh／雙軸／Verdict 是否都必須在整合之後？</td><td>_templates/7-review.md:L100-L120 _templates/7-review.md:L121-L122 _templates/7-review.md:L167-L177</td><td>整合改 HEAD。Fresh 若先跑，證據綁舊樹。雙軸與 Verdict 若先做，finding 也綁舊樹。owner 要三者都在整合後。</td><td>CONFIRMED 方向；具體節次微調留給 Stage 2。</td></tr>
+  <tr><td>what-if 若維持 Exit 才合併？</td><td>_templates/7-review.md:L30-L31 scripts/check-stage67-enforcement.sh:L298-L322</td><td>回到原痛，且 ST 牙會紅。what-if 只證明舊序走不通，不選方案。</td><td>OPEN 發散:Exit 合併不可恢復為 SOP。</td></tr>
+  <tr><td>⚠️ 沒說出口的預設是「模板已改就等於做完」嗎？</td><td>docs/dev/stage7-g3-hardening/4-spec.md:L9-L13 notes/review-requirement-discovery-gaps.md:L9-L11</td><td>hardening 自己說未重開 1–3。九條實作也禁混進本 slug。本場若把「已改 2c」寫成 Goal，會把結果與做法鎖死。</td><td>OPEN 帶假設 Q5:本 Stage 1 不重寫 2c；剩餘是看板、檔頭、完整 lane。</td></tr>
+  </tbody>
+  </table>
+  </div>
+</details>
+
+</main>
+</body>
+</html>
