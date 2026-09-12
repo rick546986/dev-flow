@@ -104,9 +104,9 @@ G-lab 要的是可重放樣張對齊現有牙，不是新語言。G 留下 `life
 ## Risks & Mitigations
 | 風險 | 對策 |
 |---|---|
-| 信封欄位未釘，Stage 4 之前各寫各的 | Decision 只鎖「有 family／payload、先驗證再寫、失敗給 `DIAGIR_*`」。欄位進 4-spec；OC-1 收窄「本檔命名碼，不在本 hop 鎖 JSON Schema」 |
+| 信封欄位未釘，Stage 4 之前各寫各的 | Decision 只鎖「有 family／payload、先驗證再寫、失敗給 `DIAGIR_*`」。欄位進 4-spec；OC-1 收窄「本檔命名碼，不在本 hop 鎖 JSON Schema」。Stage 3 throwaway 用假設欄位跑通形狀，**未**鎖 Schema |
 | 現有產器仍被直接 `write_text` 繞過閘 | 4-spec 把三支寫檔路徑列進同一 S；未接閘不得宣稱 wave-1 完成。vbox-fig stdout 的呼叫端也算寫檔路徑 |
-| vbox-fig 尚無獨立負向樣張 | G 要求 Stage 6 補錯 kind／空步驟負例；本 hop 不實作。I 已拒 |
+| vbox-fig 尚無獨立負向樣張 | G 要求 Stage 6 補錯 kind／空步驟負例；本 hop 不實作。I 已拒。Stage 3 Lab 負例只在 scratchpad，未寫進 `scripts/fixtures/vbox-fig/` |
 | 路由表與契約「何時不用」漂 | 五列必須能指回 Context 已核出處；改契約「何時不用」= 回本站改表 |
 | 黑盒自動排版誘惑（E）在實作回流 | E／F／C 進 Rejected；翻案回本站 |
 | 有人把 Stage 1 口頭「都過」當成 Stage 2 G1 PASS | G1 已按 owner chat「可以」落檔（`verdict` PASS、`status` approved）；翻案回本站 |
@@ -137,9 +137,10 @@ G-lab 要的是可重放樣張對齊現有牙，不是新語言。G 留下 `life
 ### 內部技術選擇(下層,告知即可)
 - 本 hop 不 bump `.claude-plugin/plugin.json`（仍 3.23.3）、不改產器碼。
 - `1-discussion.md` 保留 draft／「不送 G1」原文；本檔才改口成 Decision。不把 Stage 1 口頭「都過」寫進 1-discussion `status: approved`。
-- Stage 3 不預先跳過；觸發判定留給第 3 站（本檔無「跳過 Stage 3」流程層 OC）。
+- 第 3 站依 Decision 執行，不預先省略。觸發判定已落檔（命中 4 條，CLI Demo）。本檔 Owner Calls 沒有第 3 站省略紀錄。
 - 本 hop 產審頁用 `scripts/build-stage2-html.py --action`，不手包 html-shell，不把審頁塞進 `build-gate-twin.py` STAGES。
 - vbox-fig 負向樣張（錯 kind／空步驟）列為 Stage 6 必補，不在本 hop 造假 fixture。
+- Stage 3 throwaway（2026-09-12，`/tmp/diagir-stage3-proto/`）確認 A／D／G **形狀**：六個 `DIAGIR_*` 皆能紅、失敗／中斷 last-good 不變、五列路由可查、Proof Lab 薄索引三家族各一正一負。正本產器未改、信封 Schema 未鎖。Human verdict 仍 NOT_REVIEWED，不送 G2。
 
 ## ADR 晉升檢查
 - 難逆轉:否（G3 前可改本檔 Decision／OC；閘尚未落地）
@@ -152,3 +153,4 @@ G-lab 要的是可重放樣張對齊現有牙，不是新語言。G 留下 `life
 - Stage 1 改口 | 2026-09-12 | 1-discussion 仍 draft、Q4 寫「只 Stage 1 不送 G1」、Q6／Q7 仍 `[~]`。本檔改口為 Decision，並為 Q6 命名 `DIAGIR_*`、為 Q7 定既有 fixture + 薄索引。不回改正本討論。
 - G1 | 2026-09-12 | owner 在 chat 說「可以」（G1 / Decision approved）。基準 #212（`b7c285d`）。OC-1～OC-4 隨 Decision 一併視為接受。本 Stage 2 G1 與 Stage 1 口頭「都過」分開。owner 自審(有記錄)；reviewers: [user]
 - 自檢七掃 | 2026-09-12 | ①優劣皆有依據欄；②G-ir／G-route／G-lab 進 Decision，漏項進 Non-Goals；③Q8／Q9 `[>]` 進 Rejected＋Out；④SC-1～6 可量測；⑤Rejected 無空棄因；⑥三決策點由 owner brief 確認，OC-1～3 承接 Q6／Q7／原子寫延伸，OC-4 流程層；⑦既有脈絡表是對帳不是外移 schema。圖上 A／D／G 標選定，Rejected 未上圖。
+- prototype 回寫 | 2026-09-12 | Stage 3 CLI Demo（implementer-B）：六碼 `DIAGIR_KIND`／`EMPTY`／`LINES`／`FAMILY`／`WHY`／`ABORT` 各紅一次；失敗與 `--abort` last-good sha256 不變；成功才 replace。路由五列可查，`mermaid` → `DIAGIR_FAMILY`。Lab 三家族 pos+neg 可重放、`second_check_language=false`。形狀回寫本檔 Risk「信封／繞閘／vbox 負向」與內部技術選擇。throwaway 在 `/tmp/diagir-stage3-proto/`，不進 Git。Human verdict=NOT_REVIEWED；不送 G2、不開 4-spec。內部技術選擇原句「不預先跳過」改寫為「不預先省略」，避免 `_stage3_impl.py` 把「Stage 3」+「跳過」誤判成 skip OC。
