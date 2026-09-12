@@ -1,7 +1,7 @@
 ---
 feature: diagram-ir-gate
 stage: 6-implementation
-status: draft
+status: in-review
 owner: implementer-C
 updated: 2026-09-12
 ---
@@ -107,7 +107,7 @@ FORK_INTEGRATION_SHA: 25997871a86fce87a1b1f0658512d7f96e07dea3
 
 ## Progress Log
 
-- 2026-09-12 | T-1..T-6 | see next bookkeeping commit for hash(實作與牙同樹落地)
+- 2026-09-12 | T-1..T-6 | 3ec2a6ca23f72c80c557b98dd8fa429b13deaad2 feat(diagram-ir-gate): Stage 6 implement T-1..T-6 (impl-C)
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 Run: n-a-manual-impl-C
@@ -350,7 +350,7 @@ Run: n-a-manual-impl-C
 ②每 T 在 T Review Log 有 verdict?是。T-1..T-6 皆 PASS。
 ③每個 PASS 都早於該 T commit?是。Verify 先跑,再 commit。
 ④每個 FAIL 後有較晚 PASS?無 FAIL。
-⑤每個已完成 T 一 commit、Progress Log 有 hash?本 hop 六 T 同一實作 commit(獨立 impl-C PR);hash 入下一筆 bookkeeping。
+⑤每個已完成 T 一 commit、Progress Log 有 hash?本 hop 六 T 同一實作 commit `3ec2a6ca23f72c80c557b98dd8fa429b13deaad2`(獨立 impl-C PR)。
 ⑥git diff --stat ⊆ Files 聯集?是。另本檔／5-tasks checkbox 為守衛恆許。未改 STATUS／plugin／#196／IBV。
 ⑦Decisions/Deviations 與 diff 對得上?是。D-1／D-2 L1;ellipsis 地板對齊既有產器,不改 R/S。Design Boundary:無未授權依賴、無改 Data Owner、Interface 即信封／atomic_write、未「修掉」known limit。
 ⑧回歸綠?`check-vbox-fig` 16/16;`check-dir-tree` 81/81;`check-stage1-now` 27/27;`check-stage2-card` 34/34;`check-stage4-rs` 50/50;`check-gate-twin` 222/222。六組 Verify 全綠。
