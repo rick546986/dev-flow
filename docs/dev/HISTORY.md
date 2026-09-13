@@ -527,3 +527,9 @@
 - 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
 - 詳細:https://github.com/rick546986/dev-flow/pull/250
 
+## 2026-09-13 · diagram-ir-gate
+- 做了什麼:G3 PASS / shipped after #257；Gates G1✅ G2✅ G3✅；Active 移出該列；Stage7 #254 + G3 #257
+- 為什麼:Human G3 PASS 已落檔於 7-review（#257）；Stage 7 pack 已在 #254；看板不得再把 diagram-ir-gate 列成進行中
+- 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
+- 詳細:docs/dev/diagram-ir-gate/7-review.md (#257); Stage7 #254
+
