@@ -4,7 +4,7 @@ stage: 7-review
 status: draft
 verdict: PRE-REVIEW
 owner: implementer-B-stage7
-reviewers: []
+reviewers: [implementer-B-stage7]
 updated: 2026-09-13
 ---
 
@@ -13,7 +13,8 @@ updated: 2026-09-13
 > Independent Stage 7 Implementer B（fresh context；≠ Stage 6 implementer-A；≠ owner rick）。
 > 產品樹 = main `#286` `fdbd569`。本 hop 只寫本檔 + official html twin。
 > `verdict:` 留 **PRE-REVIEW**。Human 才准填 PASS／REQUEST_CHANGES／HOLD。全勾不算 PASS。
-> 建議 Human G3 路徑:Verdict 門檻表 → 附錄 A1（A-1 不採黑名單 + OC-1 三牙）→ 附錄 A2（SKILL／指南 S1 入口仍寫「認可後即已核事實」）→ Coverage 抽 S-1.4 或 S-8.2 → 再決定。
+> 建議 Human G3 路徑:Verdict 門檻表 → twin／步 5 抽驗格 **S-5.3**（`_templates/3-prototype.md:128` + `scripts/check-realworld.sh:458-459`）→ 附錄 A1（A-1／OC-1）→ 附錄 A2（F-1）→ 可選加抽 S-1.4 或 S-8.2 → 再決定。
+> **本場 twin 抽驗格 = Coverage 中位列 S-5.3**（決定論 `rows[len//2]`）。S-1.4／S-8.2 只是可選加抽，不是第五格。
 
 > ## Reviewer 閱讀動線(**必留;給看的人,不是給寫的人**)
 >
@@ -25,7 +26,7 @@ updated: 2026-09-13
 > | 2 | **Exit Checklist** | 還缺什麼才能出貨?哪幾項要 owner 親自動? |
 > | 3 | **附錄:本輪特有** | 本輪的爭點/分歧在哪,誰對? |
 > | 4 | **Known Limits** | 有沒有一條是 owner 不能接受的? |
-> | 5 | **抽驗一列** | 從 Coverage Matrix / Standards Axis / Spec Axis 任挑一列,照它給的 `檔:行` 去看。對得上就信剩下的,對不上就整份退回 |
+> | 5 | **抽驗一列** | 本場 twin 第五格鎖 **S-5.3**。打開 `_templates/3-prototype.md:128`（`role=`／`scenario=`；無 Actor Coverage 全表）與 `scripts/check-realworld.sh:458-459`。對得上就信剩下的,對不上就整份退回 |
 >
 > **只做一步就做第 5 步** —— verdict 可以寫得漂亮,`檔:行` 對不上就是對不上。
 > 三大節(Spec Axis / Coverage Matrix / Standards Axis)通常佔全文四成以上,
@@ -154,7 +155,7 @@ Final Fresh gauntlet（`--source-sha e922c2b0e5e39b2bafaa5c6aaf5a7b5f3303af8e --
 - 共同戰場:無（incoming = `#287` STATUS／HISTORY 列,3 檔 +9/−2）
 - 恢復: n-a（SYNC_REQUIRED_NO_OVERLAP;已 fast-forward 合 INTEGRATION_SHA,合後 realworld 174/174、本 slug spec-gate 9/9）
 
-本 hop **沒有撰寫** STATUS／HISTORY;那是 incoming `#287`。合完 HEAD=`37a4284`。之後若再跑同一支腳本會印 `ALREADY_SYNCED`（exit 2）——不當交集證據。本檔 Source SHA 已重綁第一份 7-review commit `e922c2b0e5e39b2bafaa5c6aaf5a7b5f3303af8e`。再一次 docs commit 仍會漂（Known Limit 本 hop ①）。
+本 hop **沒有撰寫** STATUS／HISTORY;那是 incoming `#287`。合完 HEAD=`37a4284`。之後若再跑同一支腳本會印 `ALREADY_SYNCED`（exit 2）——不當交集證據。`#287` `37a4284848fdcfd4d7ad2385ed6df2c74fd613fd` 已在 tip（本 hop must-fix 不重做 2c）。Source SHA 於本輪 must-fix 後重綁當下 HEAD。再一次 docs commit 仍會漂（Known Limit 本 hop ①）。
 
 ## Negative Constraint Mapping
 
@@ -227,7 +228,7 @@ S-1.2 觀測欄寫「THEN exit ≠ 0」。實作是**套件內斷言 fixture 必
 ### 進場
 - data-shot: n-a
 - src: （無）
-- caption: 無 GUI 進場。抽驗改跑 Coverage 任一列的 `檔:行`。
+- caption: 無 GUI 進場。twin 抽驗格是 Coverage 中位列 S-5.3（`_templates/3-prototype.md:128`）。
 - 進場:從列表打開已存在紀錄。不准新增。本目錄無已存在 shots。
 - hang-point: n-a（無 e2e）
 
@@ -236,7 +237,7 @@ S-1.2 觀測欄寫「THEN exit ≠ 0」。實作是**套件內斷言 fixture 必
 | S-id | 角色 | 真實目標 | 系統操作 | 系統外步驟 | 等待／例外 | 結果 |
 |---|---|---|---|---|---|---|
 | S-1.2 | G1 reviewer | 構想不能混成目標 | 跑 check-realworld;讀錯欄 stderr | 把該句搬到 Requested solution | 檢查同步結束 | ✅ 人看得見拒絕;Authority=形狀+G1 語意 |
-| S-1.3 | 採用者 | 抄範例時寫結果 | 打開 example 1-discussion | — | Goals 仍鎖通道則同一 T 改 | ✅ 人能抄對欄。AC 仍寫 dashboard 觀測面,見 F-2 |
+| S-1.3 | 採用者 | 抄範例時寫結果 | 打開 example 1-discussion | — | Goals 仍鎖通道則同一 T 改 | ✅ Goals 已改口。Q3／AC 仍教 dashboard 通道,見 F-2 🟡 |
 | S-2.1 | 訪談對象／討論 agent | 不被錨定 | 讀 N3 發現｜開放題 | 人口頭／Email 答現況 | 一題一答;不等推薦清單 | ✅ 問句本身不再塞推薦 |
 | S-3.3 | 討論 agent／G1 | 認可≠營運事實 | 跑主張牙;打開聲稱來源 | 補 path 或改 Assumption | — | ✅ 牙擋點頭獨源。SKILL／指南入口仍舊句,見 F-1 |
 | S-4.1 | G2 reviewer | 過期假設進不了 G2 | 跑 spec-gate | 改 resolved 或 oc-accepted | 拒絕發生在送審關 | ✅ 人看得見 C7 紅 |
@@ -269,11 +270,12 @@ S-1.2 觀測欄寫「THEN exit ≠ 0」。實作是**套件內斷言 fixture 必
 
 | F-id | 級 | 位置 | 問題 | 建議 | 影響 S/T |
 |---|---|---|---|---|---|
-| F-1 | 🟡 | `skills/dev-talk/SKILL.md:102`;`guides/guide-dev-talk.html:197-198,225` | M-5／S-3.3 節點 `S1-survey.md:29-30` 已改「認可不是來源升格」。SKILL 入口與指南完成條件仍寫「認可後即已核事實／認可清單 = 已核事實」。T-3 為 N3 前綴同步了 SKILL／指南;T-4 Files 不含這兩檔,複製層漏改。人先讀 SKILL／指南會抄舊規則 | 下一輪把 SKILL 步 1 入口與 guide 表／原文改成與節點一致。不開新檢查家族 | R-3／S-3.3／T-4 |
-| F-2 | 🟢 | `example/contract-expiry-reminder/1-discussion.md:97-117` | M-2 GIVEN 點名 AC 鎖 dashboard。S-1.3 THEN 只鎖 Goals 三句＋L119。T-2 Verify 也不查 AC。驗收雛形仍寫「登入 dashboard」當從哪看 | 接受為 S-1.3 範圍內。若 owner 要 AC 也去通道,回 G2 加 S,不要 silently 改 | R-1／M-2／T-2 |
-| F-3 | 🟢 | `scripts/check-realworld.sh:259-271` | `detect_goals_wrong_column` 只咬第一句「我要 dashboard」或「我要 」開頭 + Requested 空。不是 dashboard／API 黑名單（A-1） | 接受。其他錯欄句靠 G1。抽驗 S-1.4 fixture 含領域詞仍綠 | R-1／S-1.2／S-1.4／T-1 |
-| F-4 | 🟢 | `scripts/check-spec-gate.sh:307-311,351-357` | C8／C9 只對「新式」發動（D-impl-2／D-impl-3）。S-6.1／S-9.1 字面讀起來像所有 fast／full | 接受為 L1 grandfather（6-notes 已記）。本 feat fixture 有 feature:＋ADDED／Assumption refs,牙有咬到。見 KL-C8／KL-C9 | R-6／R-9 |
+| F-1 | 🟡 | `skills/dev-talk/SKILL.md:102`;`guides/guide-dev-talk.html:197-198,225` | M-5／S-3.3 節點 `S1-survey.md:29-30` 已改「認可不是來源升格」。SKILL 入口與指南完成條件仍寫「認可後即已核事實／認可清單 = 已核事實」。T-3 為 N3 前綴同步了 SKILL／指南;T-4 Files 不含這兩檔,複製層漏改。人先讀 SKILL／指南會抄舊規則 | Human 三擇一:①修 SKILL 步 1 入口＋guide 表／原文與節點一致（不開新檢查家族）②明示 park（落點 Known Limits #12）③REQUEST_CHANGES 回 Stage 6 補複製層 | R-3／S-3.3／T-4 |
+| F-2 | 🟡 | `example/contract-expiry-reminder/1-discussion.md:89,97-117` | S-1.3 THEN 第二句:若仍提 dashboard／卡片／URL,只准出現在 `## Requested solution` 且標未定案。Goals 已改口,但 Q3「本期只做站內 dashboard」與 AC-1…AC-5「從哪看」仍鎖 dashboard 通道。T-2 Verify 不查 AC。抄範例的人會把通道當驗收 | Human 三擇一:①park（接受 Q3／AC 是已核歷史觀測面;S-1.3 機械只鎖 Goals＋L119;落點 Known Limits #16）②L2 回 G2 加 S,要求 AC／Q 也不鎖通道③本 feat 外另開 slug 改 example AC。本 hop 不改產品碼 | R-1／S-1.3／M-2／T-2 |
+| F-3 | 🟢 | `scripts/check-realworld.sh:259-271` | `detect_goals_wrong_column` 只咬第一句「我要 dashboard」或「我要 」開頭 + Requested 空。不是 dashboard／API 黑名單（A-1） | 接受。其他錯欄句靠 G1。可選加抽 S-1.4 fixture 含領域詞仍綠（不是 twin 第五格） | R-1／S-1.2／S-1.4／T-1 |
+| F-4 | 🟡 | `scripts/check-spec-gate.sh:351-357` `fire_disp` | S-6.1 字面:凡 `lane: full` 缺 `## Real-world Disposition` 或去向空白 → spec-gate exit 1。實作 `fire_disp` 只對「新式」full（有 Assumption refs 或路徑含 `discovery-gaps`）發動。舊 full（如 `example/subsidy-3-0-plus/4-spec.md`）缺表 no-fire。本 feat fixture 有 refs,牙有咬到;契約字面比牙寬 | Human 三擇一:①park D-impl-3 grandfather（落點 Known Limits #7）②L2 改 S-6.1 寫明「僅新式 full」③加寬 C9 打所有 full（產品碼,本 hop 不做） | R-6／S-6.1／T-7 |
 | F-5 | 🟢 | `scripts/check-py-floor.sh:294`;`hooks/devtalk-guard.sh` `<<'READ'` | #286 後續 commit 撤回抬地板:RW-DG 改 tag MUT;Read 只靠 INTERP;`MIN_HEREDOCS=222`。PF-2 牙留下 | 接受。符合 OC-1「不另造家族、不為新牙毀舊牙」 | 過程／T-9／T-3 |
+| F-6 | 🟢 | `scripts/check-spec-gate.sh:307-311` C8 `fire_fast` | C8 只對新式 fast 發動（D-impl-2）。S-9.1 字面較寬;本 feat fixture 有 `feature:`＋ADDED,牙有咬到 | 接受為 L1。與 F-4 分開:三審 must-fix 點名的是 C9／S-6.1。見 KL-C8 | R-9／S-9.1 |
 
 **Dependency Direction**:符合 —— realworld → 模板／example／fixture;spec-gate → 4-spec 正文 + `spec_profile()`;guard → manifest + talk 游標。無反向。無第四 CLI。
 
@@ -283,7 +285,7 @@ S-1.2 觀測欄寫「THEN exit ≠ 0」。實作是**套件內斷言 fixture 必
 
 **Interface Stability**:符合 —— C1–C6 保留;寫入洩漏掃描保留;Read 加項且游標不在走舊邏輯。無 `check-discovery-gaps.sh`。
 
-無 🔴。F-1 是教師複製層 🟡,不是未授權 Boundary（節點正本已在契約內）。不得帶著 F-1 勾「Design Boundary finding 全數處置」除非 owner park 或修 SKILL／指南。
+無 🔴。🟡 三條:F-1（SKILL／指南 S1 入口）、F-2（example Q3／AC 仍教 dashboard 通道）、F-4（C9 只打新式 full）。都不是未授權 Boundary 變更（節點／牙在契約內,複製層或發動收窄）。不得帶著未 park／未修的 🟡 勾「Design Boundary finding 全數處置」。
 
 ## Spec Axis
 
@@ -291,12 +293,12 @@ Variant B 偏置:先壓 A-1（不採黑名單）與 OC-1（只延三支既有牙
 
 | R | 判定 | 出處 |
 |---|---|---|
-| R-1 分辨結果與構想 | **符合**（A-1 不採黑名單成立） | S-1.1 模板分欄;`S4-accept.md:20` 改問結果發生。S-1.2 同一入口指出錯欄,無 `check-discovery-gaps.sh`。S-1.3 example Goals 改口。**S-1.4**:`check-realworld.sh:262-263` 明文「不採 dashboard／API 黑名單」;outcome fixture 含領域詞仍綠。錯欄 detector 是分欄形狀 +「我要 」開頭,不是詞黑名單 |
+| R-1 分辨結果與構想 | **符合牙;活教師 AC／Q3 偏離一層（F-2 🟡）** | S-1.1 模板分欄;`S4-accept.md:20` 改問結果發生。S-1.2 同一入口指出錯欄,無 `check-discovery-gaps.sh`。S-1.3 Goals 三句已改口。**S-1.3 THEN 第二句**未落地:example Q3:89 與 AC:97-117 仍鎖 dashboard。**S-1.4** A-1 不採黑名單成立（可選加抽,不是 twin 第五格） |
 | R-2 發現題不先塞推薦 | 符合 | N3 兩路徑;`禁附推薦`;S-2.2 單邊缺失紅;S-2.3 裁決附選不紅。Known limit ①維持:不還原對話 |
 | R-3 高影響主張回來源或期限 | **偏離一層複製** | 牙與節點符合（S-3.1…S-3.5、S-8.4 同主張牙）。F-1:SKILL／指南入口仍教「認可後即已核事實」。機械 S-3.3 仍綠。不是 L2（R/S 沒翻） |
 | R-4 過期假設擋 G2 | 符合 | C7 在 `check-spec-gate.sh`（不另造家族）。expired-open exit 1;resolved／oc-accepted 放行;四欄地板在 |
 | R-5 verdict 一行 | 符合 | 殘行紅;完整行綠;無 Actor Coverage 全表;attestation 行仍在 |
-| R-6 痛點列有去向 | 符合（發動收窄已記） | 缺表紅;本方案處理要 R／S;非處理有 OOS／limit;第二鏈 `rg` 0。C9 只對新式 full 發動 = D-impl-3,見 KL-C9 |
+| R-6 痛點列有去向 | **符合本 feat fixture;字面偏離（F-4 🟡）** | 本 feat 缺表紅;本方案處理要 R／S;非處理有 OOS／limit;第二鏈 `rg` 0。C9 `fire_disp` 只打新式 full,S-6.1 寫凡 full。Human 見 F-4 三擇一 |
 | R-7 回看四欄 | 符合 | 模板／example 四欄在;有節缺門檻紅;結果入口 `history-append.sh`;無 lookback.md |
 | R-8 核准後讀得到且方案檔仍禁 | 符合 | S-8.1／8.2／8.3 真跑 Read 三案 exit。2–7 硬擋,核准格不能覆寫。Known limit ②維持:無 OS hook |
 | R-9 Fast 寫 4 前六問 | 符合（發動收窄已記） | 空白紅;等待誤標命中 Q3;待裁紅;全否可 Fast;本檔 full no-fire。C8 只對新式 fast 發動 = D-impl-2,見 KL-C8 |
@@ -423,7 +425,7 @@ Variant B 偏置:先壓 A-1（不採黑名單）與 OC-1（只延三支既有牙
 | 既有全綠 | realworld 174/174;本 slug spec-gate 9/9;S-2.2 突變紅 | Verification Evidence |
 | 現象證據逐 S 相符 | 35 列已填;S-1.2 套件 vs「exit ≠ 0」已說明 | 現象證據表 |
 | Evidence 契約 | gauntlet 61 checks、1 violation:E7 幽靈 token（附錄 A3）。`--source-sha e922c2b`。不是產品牙紅 | 附錄 A3 |
-| 無 🔴 | 無 🔴。有 🟡 F-1（SKILL／指南 S1 入口） | Standards Axis |
+| 無 🔴 | 無 🔴。🟡 F-1／F-2／F-4 待 Human park 或修 | Standards Axis |
 | 出貨樹=審過的樹 | 2c 合 `37a4284` 在 Fresh 之前;Source SHA 重綁 `e922c2b` | 2c 節 |
 
 PASS 條件未全滿足（Human 未判、F-1 未處置、gauntlet 幽靈 token、Source SHA 將漂）。故 **不得** 寫 PASS。
@@ -438,7 +440,7 @@ PASS 條件未全滿足（Human 未判、F-1 未處置、gauntlet 幽靈 token�
 | 4 | 4-spec Known design limit ③:「不改語意」與「算不算高影響」仍是人判 | 低 | 維持 |
 | 5 | 4-spec Known design limit ④:審頁產器行為圖硬切 8 框;R-5 SHALL 寫在 R-4 框 | 低 | 維持。本 hop 不改產器 |
 | 6 | KL-C8／D-impl-2:C8 只對 `lane: fast` 且 `feature:` + `## ADDED Requirements` 發動;legacy fast fixture grandfather | 中 | 已如實記 6-notes。新 Fast 4-spec 必須有 feature:＋ADDED,否則六問牙 no-fire |
-| 7 | KL-C9／D-impl-3:C9 只對 `lane: full` 且（有 Assumption refs 或路徑含 `discovery-gaps`）發動;`example/subsidy-3-0-plus/4-spec.md` grandfather | 中 | 已如實記 6-notes。舊 full 無 refs 表缺 Disposition 不紅 |
+| 7 | KL-C9／D-impl-3／F-4 🟡:`scripts/check-spec-gate.sh` `fire_disp`（約 L351–357）只對「新式」full 發動（有 Assumption refs 或路徑含 `discovery-gaps`）;`example/subsidy-3-0-plus/4-spec.md` grandfather。S-6.1 字面「凡 full 缺表就紅」比牙寬 | 中 | Human 三擇一:①park 本條為 D-impl-3 ②L2 改 S-6.1 寫明「僅新式 full」③加寬 C9 打所有 full（產品碼,本 hop 不做）。未選不得勾 Boundary 處置 |
 | 8 | L1 D-1:本 slug `2-decision.md` 4B 原文 `RW-1` 改成「第二鏈編號」,只為 S-6.4 `rg` 零命中 | 低 | 已如實。4A 未動 |
 | 9 | L1 D-2／D-5:T-8 回看表不用 `###`(parity);renderer 重生 `guides/guide-dev-flow.html` 與 example 7-review.html | 低 | 已如實。欄位字面仍在 |
 | 10 | L1 D-7:RW-DG 改 `<<'MUT'`;guard Read 改 `<<'READ'`;`MIN_HEREDOCS=222`。撤回抬地板 | 低 | 已如實。PF-2 牙留下 |
@@ -447,19 +449,20 @@ PASS 條件未全滿足（Human 未判、F-1 未處置、gauntlet 幽靈 token�
 | 13 | 4-spec Out of Scope／Disposition 仍待驗三列（OC-3）:採用現場仍把解法寫進 Goal;現場發現題仍附推薦;Fast 因檔數少漏判互動 | 中（契約已列） | 回看四欄追;本 slug 不捏訪談 |
 | 14 | `check-py-floor.sh` 本環境缺 Python 3.9–3.11 → exit 2;全套 `test-architecture-guards.sh` 未當正式綠（同 6-notes Self-Review ⑧） | 低（ENV） | 有 3.9–3.11 的機器重跑。本 hop 隔離做了 S-2.2 兩案 |
 | 15 | 本環境無 `devflow-exec.sh review` 武裝（無 `.devflow/exec.json`） | 低 | 讀取順序已落檔。有 runtime 的機器可補武裝 |
+| 16 | F-2 🟡:`example/contract-expiry-reminder/1-discussion.md` Q3:89 + AC:97–117 仍教 dashboard／渠道,對不上 S-1.3 THEN 第二句（若仍提 dashboard／卡片／URL,只准出現在 `## Requested solution` 且標未定案） | 中 | Human 三擇一:①park 本條（接受 Q3／AC 是已核歷史觀測面）②L2 回 G2 加 S,要求 AC／Q 也不鎖通道③本 feat 外另開 slug 改 example AC。本 hop 不改產品碼 |
 
 已解除的用刪除線保留 —— 本輪無已解除列。
 
 ## Exit Checklist(全勾才算 shipped)
 
-- [ ] **Design Boundary finding 全數處置**:無未授權 Boundary。F-1 🟡 是教師複製層,要 ①修 SKILL／指南 或 ③ owner 明示 park（寫本節 Known Limits #12,已寫落點）。未 park／未修不得勾
+- [ ] **Design Boundary finding 全數處置**:無未授權 Boundary。🟡 三條待 Human park 或修:F-1（KL #12）／F-2（KL #16）／F-4（KL #7）。未 park／未修不得勾
 - [ ] Quiz（不可逆:方法論教師 + 公開檢查契約）:見附錄 A4。Human 全對才准 merge
-- [ ] 整合回歸已在 Final Fresh **之前**完成:2c 結論（三個 SHA + ref）在 Verification Evidence。Source SHA 重綁 `e922c2b`。再 commit 後必須再綁。Verdict 後禁止再改產品碼
+- [x] 整合回歸已在 Final Fresh **之前**完成:2c 結論（三個 SHA + ref）在 Verification Evidence。`#287` `37a4284` 已在 tip。本 hop must-fix 後重綁 Source SHA。Verdict 後禁止再改產品碼
 - [ ] PR → develop／本專案 main（feature branch,禁直上 master）。本 hop brief:Draft PR,Do not merge
 - [ ] 4-spec delta 已併入 `docs/specs/<domain>.md` —— n-a:本 repo 無 `docs/specs/` living spec（4-spec 已寫）
 - [ ] STATUS.md 已更新為 shipped —— **不做**。brief:No STATUS／HISTORY。incoming `#287` 只記 Stage 6,不是本 hop shipped
 - [ ] 7-review frontmatter status: shipped —— **不做**。維持 `draft` + `PRE-REVIEW`
-- [ ] 7-review.html 已產生（build-gate-twin.py;含變更架構圖）
+- [x] 7-review.html 已產生（build-gate-twin.py;含變更架構圖）
 - [ ] feature branch 已刪／worktree 已清 —— **不做**。Draft PR 未 merge
 
 回看約定
