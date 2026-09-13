@@ -201,7 +201,7 @@ Q8 選 2A：A-3 的病是粒度，不是「少一個來源欄」。枚舉可灌�
 - 本 hop 不 bump plugin、不改 `_templates/`／`skills/`／`example/`／守衛正本。
 - `1-discussion.md` 保留 draft／「不送 G1」原文；本檔才改口成 Decision。
 - 審頁用 `scripts/build-stage2-html.py --action`，不手包 html-shell，不把審頁塞進 `build-gate-twin.py` STAGES。
-- 第 3 站維持條件式必要、本站執行（不預先標 N/A）；觸發判定留給該站（訪談問法、證據核准、Fast 六問都可能改下一步／核准／交接）。本檔無流程層 OC 把該站標成 N/A。
+- 第 3 站維持條件式必要、本站執行（不預先標 N/A）；觸發判定留給該站（訪談問法、證據核准、Fast 六問都可能改下一步／核准／交接）。本檔無流程層 OC 把該站標成 N/A。第 3 站已行使：命中 8 條、紙上模擬器。owner 2026-09-13 ACCEPTED Stage 3、開 Stage 4 = Human ACCEPTED；3-prototype status=approved。不送 G2、不開 4-spec。
 - 4-spec 再釘：Assumption 四欄機器可讀形、disposition 表頭、evidence manifest 檔名、Fast 六問欄位名、lookback Exit 四欄字面、高影響抽樣規則。
 - 字面形狀（不重開 1A）：結果節名 `## Goals`；構想節名 `## Requested solution`。發現題前綴 `發現｜`；裁決題前綴 `裁決｜`。
 - A-2 完成條件：必查面已覆蓋、關鍵反例已問、證據缺口已顯性化；「連續兩輪無新問題」只當輔助訊號。
@@ -220,3 +220,4 @@ Q8 選 2A：A-3 的病是粒度，不是「少一個來源欄」。枚舉可灌�
 - 自檢七掃 | 2026-09-13 | ①優劣皆有依據欄；②G-out-1～9 進 Decision／SC，漏項進 Non-Goals；③Q7–Q14 與 A-5 皆有選定或 Rejected；④SC 可量測；⑤Rejected 無空棄因；⑥八決策點由 brief + Reviewer 1 A-5 補點確認，OC-1～3／5／6 承接延伸或收窄，OC-4 流程層；⑦既有脈絡是對帳不是外移 schema。圖上 1A–8A 標選定，Rejected 未上圖。
 - G1 | 2026-09-13 | Human G1 PASS + OC-1…OC-6 @ 2026-09-13。human owner rick 全接受 OC-1～OC-6。基準 #266（`0f0fbaf`）／#267 STATUS Stage2（`a2bc5d1`）。owner 自審(有記錄)；reviewers: [user]
 - prototype 回寫 | 2026-09-13 | 第 3 站：內部技術選擇改寫，避免「Stage 3」與省略用語同句被誤認成 N/A；補 `## Goals`／`## Requested solution` 與 `發現｜`／`裁決｜` 字面。不改 OC-1…OC-6 表。Human verdict 仍 NOT_REVIEWED。
+- prototype Human ACCEPTED | 2026-09-13 | owner ACCEPTED Stage 3、開 Stage 4。3-prototype `Human verdict: ACCEPTED | role=owner | scenario=AC-1–AC-9` + `human:rick @ 2026-09-13`；frontmatter status=approved。不送 G2、不開 4-spec。
