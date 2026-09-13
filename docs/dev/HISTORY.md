@@ -590,3 +590,15 @@
 - 落在哪:docs/dev/requirement-discovery-gaps/6-implementation-notes + STATUS
 - 詳細:https://github.com/rick546986/dev-flow/pull/286
 
+## 2026-09-13 · requirement-discovery-gaps
+- 做了什麼:Stage 7 review #289 landed (Implementer B); Gates G1✅ G2✅ G3⬜; PRE-REVIEW at pack time
+- 為什麼:Stage 7 pack merged on main (3727f39); no invented G3 at pack time
+- 落在哪:docs/dev/requirement-discovery-gaps/7-review + STATUS
+- 詳細:https://github.com/rick546986/dev-flow/pull/289
+
+## 2026-09-13 · requirement-discovery-gaps
+- 做了什麼:G3 PASS / shipped after #291；Gates G1✅ G2✅ G3✅；Active 移出該列
+- 為什麼:Human G3 PASS 已落檔於 7-review（#291）；yellow F-1/F-2/F-4/E7 parked/accepted 2026-09-13；看板不得再把 requirement-discovery-gaps 列成進行中
+- 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
+- 詳細:docs/dev/requirement-discovery-gaps/7-review.md (#291); Stage7 #289
+
