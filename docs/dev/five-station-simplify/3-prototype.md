@@ -9,15 +9,15 @@ updated: 2026-09-14
 
 # 3. 原型 — 鎖定 Decision 人點得完嗎？（五站 vs 舊 7、A/B、假完成）
 
-> Lane = **full**。G1 已核（`2-decision.md` `verdict: PASS`、OC-1…OC-11 ✅）。本 hop **只本檔 + 審頁 html**；不改 `_templates/`／`graph.yaml`／gate／`scripts/` 牙、不改 STATUS／HISTORY、不改 `2-decision.md`、不發明 Human `ACCEPTED`、不合併。獨立於 B／C Stage 3。
-> 2-decision 無「Stage 3」+「跳過」流程層 OC → **不跳過**。1A–7A 已是核准 Pattern → **1 個可操作 Demo**，不湊假 Variant。
-> Demo 形式 = **狀態流程模擬器**（人依 Demo Script 點／比對卡，不是只看散文）。**PROTOTYPE — not production**。F1 牙／coordinator 不在本站落地。
+> Lane = **full**。G1 已核（`2-decision.md` `verdict: PASS`、OC-1…OC-11 ✅）。coordinator 三線決勝選本檔（#306）；吸收 B（#307）／C（#305）為 soft-fix。本 hop **只本檔 + 審頁 html**；不改 `_templates/`／`graph.yaml`／gate／`scripts/` 牙、不改 STATUS／HISTORY（STATUS 另伴 PR）、不改 `2-decision.md`、不發明 Human `ACCEPTED`。
+> 2-decision 無「Stage 3」+「跳過」流程層 OC → **不跳過**。1A–7A 已是核准 Pattern → **1 個可操作 Demo（D1）**，不湊假互動 Variant。C 的「T 卡上就紅／hop 板／Ship 重建」是**人見面時機**，不是重開 1A–7A。
+> Demo 形式 = **狀態流程模擬器**（人依 Demo Script 點／比對卡）＋盤 5 對現檔實跑 `devflow-doctor.sh`／契約／marketplace。**PROTOTYPE — not production**。F1 牙不在本站落地。
 > Human verdict 由參與 Demo 的人類親填。Agent 禁代填 `ACCEPTED` 與 attestation。本檔 `status: draft` 直至人類 ACCEPTED + attestation。
 
 ## Stage 3 觸發判定(條件式必要)
 <!-- 對照 1-discussion Real-world Context：Actors／Journey／Workarounds／Exceptions -->
-- [x] 有新的前端流程（owner／coordinator 看到的站序與審頁 latch 面從「七站三次等人」改成 Intake→Decide→Spec→Build→Ship；A1–A10／B1 何時出現會變）
-- [x] 改變使用者下一步（Decide／Spec／Build 完成且 latch 未命中 → 下一步是 hop，不是「請按提交判定」；人預設下一動改到 Ship）
+- [ ] 有新的前端流程（誠實：本題只有方法論審頁／站序 latch 面，**不是**產品前端。B／C／R1 皆未把方法論 UI 算本條；審頁何時出現已由「改變下一步」覆蓋）
+- [x] 改變使用者下一步（Decide／Spec／Build 完成且 latch 未命中 → 下一步是 hop，不是「請按提交判定」；人預設下一動改到 Ship；方法論審頁 latch 面從七站三次等人改成五站）
 - [x] 涉及角色交接（討論 agent → 收斂者 → coordinator → Build 實作者 → 獨立 T reviewer → Ship 審查者 → 採用端 owner）
 - [x] 涉及人工核准（Ship `verdict: PASS` 唯人；B1 命中時 `ACCEPTED`+attestation 仍人類親填；Quiz 僅不可逆）
 - [x] 涉及等待/退回/逾時（`HumanWait`／`REVISE`／`HOLD`／rewrite cap 用盡 `Escalated`；舊 7 本 slug 仍例行等 G1／G2）
@@ -26,7 +26,7 @@ updated: 2026-09-14
 - [ ] 涉及多種可行互動設計（1A–7A 已 lock；本站只把鎖定面做成可走完的模擬器，不重開 1B／5B／6B）
 - [ ] Stage 1 尚有操作流程不確定性（五站怎麼等人已鎖；Q8／Q10／A1–A2 是 annex 鍵名，不是「下一步點哪」）
 
-→ 命中 7 條:第 3 站條件式必要,本站執行。2-decision 內部技術選擇已寫「不預先跳過 Stage 3」。
+→ 命中 6 條:第 3 站條件式必要,本站執行。2-decision 內部技術選擇已寫「不預先跳過 Stage 3」。
 
 ## Question
 引 2-decision **Risks**（寫手用「已經五站了」省 M11；空 attestation 被 chat 帶走；doctor 綠冒充已切；本 slug 被拿去試五站 hop）＋ **SC-1／SC-3／SC-4／SC-6／SC-8／SC-9／SC-10**。
@@ -35,21 +35,21 @@ updated: 2026-09-14
 
 1. **舊 7 三次等人 vs 新 5**（SC-1／1A）：新 slug、中間 latch 未命中時，前進紀錄有沒有「請人審 A4／A7／提交判定」？謂詞假時停修理由是該謂詞假，還是「先問 owner 要不要繼續」？
 2. **表 A／B 條件頁**（brief §3、Decision 首段）：給一列頁，人能否答「產不產／等不等」？A4／A7 twin 仍產但 latch=否；A10 機械綠仍等；A5 無 trigger → n-a；B1 命中才 Demo latch。
-3. **Must-keep 假完成**（SC-2／SC-3／6A／RP-1…3）：`Verify: 看起來沒問題`、缺四欄、無 RED、reviewer=implementer、S 寫「適當／TBD」——勾選能不能冒充完成？「已經五站了所以可省」是不是違 brief？
+3. **Must-keep 假完成**（SC-2／SC-3／6A／RP-1…3）：`Verify: 看起來沒問題`、缺四欄、無 RED、reviewer=implementer、S 寫「適當／TBD」——勾選能不能冒充完成？owner **何時**看見紅（T 卡上／hop 板／Ship）？「已經五站了所以可省」是不是違 brief？
 4. **空 attestation + chat「可以」**（SC-4／SC-6／5A／OC-6）：B1 命中、欄空、owner chat 准開 Stage 4 → 能不能離 Spec？Agent 代寫 `ACCEPTED`／Ship `PASS` 算不算已寫？
 5. **freeze × dual-read 誠實**（SC-8／SC-9／SC-10／4A／3A）：本目錄已有 `1-discussion.md` → 五站自動前進能不能跳過本 slug 的 G1／G2？`契約 2.0.0 + marketplace 已換五站 hops + doctor exit 0` 能不能說「已切五站」？
 
 答案長什麼樣才算回答了：
 - 每張好卡／壞卡人能指出**下一步**、**等不等**、**誰准寫判定**、**空／錯／權限不足怎麼辦**。
 - 壞卡（假完成 T、空 attestation、doctor 綠=已切、本 slug 當新 5 白老鼠）一眼是拒絕，不是「簡化成功」。
-- 選定 Demo 只有 D1；不另選互動方案。本 hop **不**改 2-decision 正文（回寫列名留給 Human ACCEPTED 之後）。
+- 選定 Demo 只有 D1；人見面時機選定 **T 卡上就紅**（hop 板／Ship 重建 = 晚發現，棄）。本 hop **不**改 2-decision 正文（回寫列名留給 Human ACCEPTED 之後）。
 
 ## Method
 - 實驗位置:本檔 Method 節的操作盤（**PROTOTYPE — not production**；純資料／紙上狀態機；不進 throwaway code、不改 `_templates/`／`scripts/`／`graph.yaml`）
 - Demo 形式:**狀態流程模擬器**（人依 Demo Script 走同一條 slug 的好卡 vs 壞卡）
-- 1A–7A 已 lock → **Demo D1 狀態流程模擬器（選定）**；不做假 Variant（同流程換字不算）
-- 驗法:用 Stage 1 AC-1／AC-3／AC-4／AC-6／AC-8 + SC-9 對照各走一遍；壞卡當負向
-- 本站**不**回寫 2-decision（獨立於 B；Human verdict 未出）。確認紀錄「prototype 回寫」等人類 ACCEPTED
+- 1A–7A 已 lock → **Demo D1 狀態流程模擬器（選定）**；不做假互動 Variant（同流程換字不算）。人見面時機另比三格（見盤 3），不是重開 6A
+- 驗法:用 Stage 1 AC-1／AC-3／AC-4／AC-5／AC-6／AC-8 + Decision SC-3／SC-9／SC-10 對照各走一遍；壞卡當負向。**不**把 AC-5 拿去貼 doctor 綠／dual-read（那是 SC-9／SC-10；AC-5 = G-out-5 舊檔不紅＋F3 cut 仍舊 7）
+- 本站**不**回寫 2-decision（Human verdict 未出）。確認紀錄「prototype 回寫」等人類 ACCEPTED
 
 ### Demo D1 — 狀態流程模擬器（選定）
 
@@ -117,7 +117,7 @@ coordinator 在 A4／A7 彈「請 owner 看一下／要不要繼續」→ **紅*
 <details>
 <summary>點我：好例 — A5 n-a（本盤對「純後端 feat」）</summary>
 
-九條全未勾 → 最小 `3-prototype.md`、不建 html、G2 Demo = N/A + 原因。**本 slug 不是這條**：上面已命中 7 條。
+九條全未勾 → 最小 `3-prototype.md`、不建 html、G2 Demo = N/A + 原因。**本 slug 不是這條**：上面已命中 6 條。
 </details>
 
 #### 盤 3 — Must-keep 假完成對照（SC-2／SC-3）
@@ -150,6 +150,22 @@ T-fake  五站簡化收尾
 
 人該看見：T-fake **未完成**。RP-1 缺四欄 → 紅；RP-2 無 RED 或 reviewer=implementer → 未完成；SC-2 少 M11／M3／M1 = 違 brief，不是簡化成功。勾選 ≠ 完成。
 
+**人見面時機（吸收 C；只比何時看見紅，不重開 6A／1A–7A）**
+
+| 時機 | owner 何時看見未完成 | 對 Decision SC-3 | 本 Demo |
+|---|---|---|---|
+| **T 卡上就紅（選定＝C Variant A）** | 寫 T／看 A8 當下：缺四欄、`Verify: 看起來沒問題`、無 RED、自審 → 卡上 RP，勾選無效 | **對齊**：該 T **不得標完成** | **選定** |
+| hop 才出拒收板（C Variant B） | 勾選可先綠，離開 Build 才列 RP | **晚**：完成標已寫上再救 | **棄**（晚發現） |
+| Ship 才重建（C Variant C） | 勾選綠到出貨，coverage 對不上才發現 | 現況病（Journey 步 6） | **棄**（晚發現） |
+
+**RP-1…3 ↔ Decision SC-3（吸收 C；後站不准改成可選）**
+
+| RP | Decision 原文 | 人在選定時機（T 卡上）看見 |
+|---|---|---|
+| RP-1 | T 缺 Covers／Files／Verify／Blocked-by → 紅 | T 卡上紅；`Verify: 看起來沒問題` 與缺欄同一紅；勾選無效 |
+| RP-2 | 無 RED 輸出或 reviewer=implementer → T 未完成 | 同一張 T 卡／縫上紅；自審不得標完成 |
+| RP-3 | S 含 TBD／不可測 → 紅 | Spec 卡紅（S-fuzzy）；不得靠它綠 T |
+
 **壞卡 S-fuzzy**
 
 ```
@@ -177,10 +193,10 @@ S-99  系統應適當處理錯誤（TBD，實作再定）
 
 本檔自己就是壞卡 dogfood 的**反面練習**：trigger 已命中、Human verdict = `NOT_REVIEWED`、attestation 空 → **語意上** G2 應拒，直到人類親填。Agent 不得把這段改成 ACCEPTED。
 
-**實跑假完成（本 hop 證據，不改牙）**：`python3 hooks/_stage3_impl.py five-station-simplify` 把 2-decision 內部技術選擇「不預先跳過 Stage 3…（本檔無「跳過 Stage 3」流程層 OC）」讀成 skip OC（同一行同時命中 `Stage 3` 與「跳過」）。句子的意思是**不准跳**。勾選綠、語意紅——與 T-fake 同型。本 hop 不改 `_stage3_impl.py`（F0／Backlog B；牙形交 F1）。人審本 Demo 時不要把這次誤 PASS 當成 Human ACCEPTED。
+**實跑假完成（本 hop 證據，不改牙；F1 記帳）**：`python3 hooks/_stage3_impl.py five-station-simplify` 把 2-decision 內部技術選擇「不預先跳過 Stage 3…（本檔無「跳過 Stage 3」流程層 OC）」讀成 skip OC（同一行同時命中 `Stage 3` 與「跳過」）。句子的意思是**不准跳**。勾選綠、語意紅——與 T-fake 同型。誠實改「有新的前端流程」未中之後命中數從 7→6，**誤 PASS 仍在**。本 hop 不改 `_stage3_impl.py`（F0／Backlog B；牙形交 F1）。人審本 Demo 時不要把這次誤 PASS 當成 Human ACCEPTED。
 
 ```
-# 原始輸出摘要 2026-09-14
+# 原始輸出摘要 2026-09-14（誠實改 trigger 後重跑）
 g2_demo=PASS
 trigger_source=owner-call
 verdict=NOT_REVIEWED
@@ -195,7 +211,24 @@ owner_call="- 不預先跳過 Stage 3；觸發判定留給該站（本檔無「�
 | 好卡 freeze | `docs/dev/five-station-simplify/` 已有 `1-discussion.md` | 整段**舊 7**到自己的 Ship。五站 hop 跳 G1／G2 → **跳不過**（RP-15） |
 | 壞卡 白老鼠 | 「本 slug 先吃五站藥驗證謂詞」 | 4C 已拒；觀測被自己污染 |
 | 好卡 舊檔 | 2.1.0 讀舊 7、新 5 欄缺省 | **不紅**（誠實句第 2 句） |
-| 壞卡 陷阱 | 契約仍 `2.0.0` + marketplace 已換五站 hops + doctor exit 0 | **不得**說「已切五站」。doctor 綠 = 握手，≠ 路線。未 upgrade = 舊 7（OC-1 第 3 句／SC-10） |
+| 壞卡 陷阱 | 契約仍 `2.0.0` + marketplace 已換五站 hops + doctor exit 0 | **不得**說「已切五站」。doctor 綠 = 握手，≠ 路線。未 upgrade = 舊 7（OC-1 第 3 句／**SC-10**） |
+
+**標籤（吸收 B 時修正）**：B 線把 dual-read／doctor 綠題標成 AC-5。AC-5 = G-out-5（F3 cut 已有站檔 → 仍舊 7；舊檔缺新欄不紅＝上表「好卡 舊檔」）。doctor 綠 ≠ 已切 = **SC-9**；marketplace × hops 仍可綠 = **SC-10**。本檔不偷 AC-5 的標。
+
+**現檔證據（吸收 B；2026-09-14 對本 tree 實跑；COMPATIBLE ≠ 已切）**
+
+| 訊號 | 現檔 | 觀測 |
+|---|---|---|
+| 契約 | `docs/dev/devflow-contract.json` | `devflow_contract_version=2.0.0` |
+| runtime | `hooks/runtime-capabilities.json` | `supported_contract_versions=['2.0.0']`；`runtime_version=3.24.0` |
+| doctor | `hooks/devflow-doctor.sh` | `✅ COMPATIBLE`；**exit 0**。握手句:`2.0.0 ∈ supported ['2.0.0']` |
+| doctor 讀什麼 | `hooks/_doctor_impl.py:L193-L202` | 只比對契約版本 ∈ supported。源碼**不含** `hops`／`graph.yaml`／`marketplace`／`Intake` |
+| marketplace | `.claude-plugin/marketplace.json` | 單一 plugin `dev-flow`、`source: ./`。更新 = 換整包 hops |
+| 現行 hops | `skills/dev-flow/stage2/graph.yaml` `N7-g1`；`stage4/graph.yaml` `N6-g2` | 仍是舊 7 例行停節點。F0 禁改。反事實:若這兩點被換成五站預設，doctor 仍可綠（握手不讀 hops） |
+| freeze | `docs/dev/five-station-simplify/` | `1-discussion.md` EXISTS；`2-decision.md` EXISTS；`3-prototype.md` 本 hop 才寫；`4-spec`…`7-review` absent。**in_flight=True**（任一 1–7 md） |
+| 裸 html | 同目錄 `1-discussion.html`／`2-decision.html` | OC-5:只認 md。html 在不算開工；本目錄因 md 已凍，不是因 html |
+
+人該判定：上表三格（契約／hops／freeze md）AND 之後才准說「路線」。`COMPATIBLE`／exit 0 **單獨**不得解釋成已切五站，也不得解釋成路線沒變。
 
 僅有 html、無 md ≠ in-flight（OC-5）。本 hop 不鎖 annex 鍵名（OC-3）。
 
@@ -204,7 +237,7 @@ owner_call="- 不預先跳過 Stage 3；觸發判定留給該站（本檔無「�
 - 舊7 三次例行等人（對照）
 - Decide／Spec 殺例行停
 - 表 A／B 產頁≠latch
-- 假完成 T 仍紅
+- T 卡上就紅（選定；hop板／Ship重建棄）
 - Ship 唯一人停
 
 ```
@@ -237,14 +270,14 @@ D1 selected: cards above; 1A-7A not reopened
 - 系統外下一步:把頁 URL 只在 latch=是時丟給人
 - 觀察問題:等待清不清楚？A4 還在會不會被當成「G1 仍要簽」？Quiz 有沒有被當成每次必停？
 
-### Scenario AC-3（假完成 T）
+### Scenario AC-3（假完成 T；人見面＝T 卡上就紅）
 - 使用者角色:獨立 T reviewer／Ship 審查者
-- 真實目標:缺四欄或無 RED／自審的 T 不得完成；「已五站故可省」是違規
-- 起始狀態:盤 3 好卡 T-ok vs 壞卡 T-fake、S-fuzzy
-- 操作步驟:只看該 T；數四欄是否非空；找 RED 輸出與 reviewer 是否別人；讀 S-fuzzy 有無 TBD
-- 系統回應:T-fake 即使 `[x] done` 仍未完成（RP-1／RP-2）。S-fuzzy 紅（RP-3）。少 M11 = 違 brief（SC-2）
+- 真實目標:缺四欄或無 RED／自審的 T 不得完成；「已五站故可省」是違規。選定時機＝**T 卡上就紅**（對齊 SC-3）
+- 起始狀態:盤 3 好卡 T-ok vs 壞卡 T-fake、S-fuzzy；對照 hop 板／Ship 重建兩張棄卡
+- 操作步驟:只看該 T；數四欄是否非空；找 RED 輸出與 reviewer 是否別人；讀 S-fuzzy 有無 TBD；再問「綠勾先寫上、hop／Ship 才紅」算不算完成
+- 系統回應:T-fake 即使 `[x] done` 仍未完成（RP-1／RP-2）。S-fuzzy 紅（RP-3）。少 M11 = 違 brief（SC-2）。hop 板／Ship 重建＝晚發現，違 SC-3「該 T 不得標完成」
 - 系統外下一步:退回補欄／補 RED／換 reviewer；不要用 chat「看起來可以」勾完
-- 觀察問題:系統有沒有暗示勾選=完成？空欄時知不知道怎麼辦？能否拒絕自審？
+- 觀察問題:系統有沒有暗示勾選=完成？空欄時知不知道怎麼辦？能否拒絕自審？紅是寫卡當下還是出貨才出現？
 
 ### Scenario AC-4（空 attestation + Agent 代寫）
 - 使用者角色:母版 owner
@@ -264,14 +297,23 @@ D1 selected: cards above; 1A-7A not reopened
 - 系統外下一步:本 slug 自己的 G1 已過；自己的 G2／G3 仍走舊 7 等人
 - 觀察問題:有沒有暗示「Decision 過了就可以改走五站」？中斷後能否從目錄裡的 md 恢復舊路？
 
-### Scenario SC-9（doctor 綠 ≠ 已切五站）
+### Scenario AC-5（G-out-5：舊檔不紅＋F3 cut 仍舊 7；**不是** doctor 綠題）
+- 使用者角色:採用專案 owner／母版維護者
+- 真實目標:F3 cut 當下已有站檔的 slug 仍走舊 7；2.1.0 讀舊 7 缺新 5 欄 → **不紅**
+- 起始狀態:盤 5 好卡 舊檔＋好卡 freeze。契約今天仍 `2.0.0`（尚無 2.1.0 annex）
+- 操作步驟:問「舊 slug 缺新 5 欄該不該紅？」；再問「F3 切線時本目錄會不會被改寫成五站狀態？」
+- 系統回應:缺新欄不該紅（SC-5 第 2 句／AC-5）。能解析兩套是未來 2.1.0，不是「已經切了」。本目錄因已有 md 整段舊 7（與 AC-8 重疊的是 freeze 半句，不是 doctor）
+- 系統外下一步:不要把「舊檔不紅」寫進採用說明當「可以默默切五站」
+- 觀察問題:看到「不紅」時，知道那是合法缺省、不是已切嗎？**本場不是**「doctor COMPATIBLE = 已切」（那是下一場 SC-9）
+
+### Scenario SC-9（dual-read 誠實：doctor 綠 ≠ 已切五站；**不是** AC-5）
 - 使用者角色:採用專案 owner
-- 真實目標:拒絕「doctor 綠 + marketplace 已更新 = 可以跟 hops 走」
-- 起始狀態:盤 5 壞卡陷阱：`devflow_contract_version=2.0.0`、hops 已被換成五站預設、doctor exit 0
-- 操作步驟:只看這三件事實，回答「現在走哪條路？」
-- 系統回應:未 upgrade = 舊 7，不得遠端改線。2.1.0 舊檔缺新欄不紅。綠+不紅 ≠ 已切（OC-1）
-- 系統外下一步:`marketplace update` 後仍核契約版本；F1 牙紅「2.0.0+五站 hops」（本站不寫牙）
-- 觀察問題:系統是否暗示握手綠=路線沒變？權限上採用端能否拒絕被改線？
+- 真實目標:拒絕「doctor 綠 + marketplace 已更新 = 可以跟 hops 走」（SC-9 對照句＋SC-10）
+- 起始狀態:盤 5 證據表＋壞卡陷阱：`devflow_contract_version=2.0.0`、marketplace `source: ./` 可換 hops、`devflow-doctor.sh` **COMPATIBLE／exit 0**
+- 操作步驟:跑 `hooks/devflow-doctor.sh`；讀握手段 `_doctor_impl.py` L193–L202；讀 marketplace `source`；讀 `N7-g1`／`N6-g2` 仍是舊 7；做反事實：hops 換成五站、契約仍 2.0.0，doctor 會不會仍綠？
+- 系統回應:今天 doctor 綠。綠的原因是 `2.0.0 ∈ ['2.0.0']`，**不是**路線沒變也**不是**已切。握手不讀 hops。反事實成立。COMPATIBLE ≠ cut（OC-1／SC-9／SC-10）
+- 系統外下一步:`marketplace update` 後仍核契約版本；未 2.1.0 不得遠端改線。F1 牙紅「2.0.0+五站 hops」（本站不寫牙）
+- 觀察問題:系統是否暗示握手綠=路線沒變或已經五站？權限上採用端能否拒絕被改線？
 
 ### Scenario RP-14（否定「跳過」被牙當成已跳）
 - 使用者角色:G2 reviewer／F1 寫牙的人
@@ -283,24 +325,24 @@ D1 selected: cards above; 1A-7A not reopened
 - 觀察問題:機械綠有沒有被當成「Stage 3 已跳過、可以開 Stage 4」？
 
 ## Result
-Agent 依 D1 走完七場（**不是** Human Demo）。答案:鎖定 Decision **點得完**——人只靠卡面就能分開「停點／完整度／握手／freeze」。回寫 2-decision 的條目見 Verdict；**本 hop 不改 2-decision**（獨立於 B；等 Human ACCEPTED）。
+Agent 依 D1 走完各場（**不是** Human Demo）。答案:鎖定 Decision **點得完**——人只靠卡面就能分開「停點／完整度／握手／freeze」。回寫 2-decision 的條目見 Verdict；**本 hop 不改 2-decision**（等 Human ACCEPTED）。
 
 | 問 | 模擬器證據 | 壞卡一眼拒絕 |
 |---|---|---|
 | 1 舊7 vs 新5 | 盤 1：新 5 中間無「請審 A4／A7」；謂詞假停修 | 舊 7 三次等人被當成選定 |
 | 2 表 A／B | 盤 2：A4／A7 產且不等；A10 必等；A5 未命中 n-a | latch 未命中卻問人 |
-| 3 假完成 | 盤 3：T-fake 缺欄+自審+「看起來沒問題」= 未完成 | 「已五站故可省四欄」 |
+| 3 假完成＋時機 | 盤 3：T-fake = 未完成；**選定 T 卡上就紅**（對齊 SC-3／RP-1…3） | hop 板／Ship 重建晚發現；「已五站故可省四欄」 |
 | 4 空 attestation | 盤 4：chat 准開 ≠ 判定；本檔 NOT_REVIEWED **應**卡本站 | Agent 代填 ACCEPTED |
-| 5 freeze×doctor | 盤 5：本目錄有 md → 舊 7；2.0.0+綠 ≠ 已切 | 本 slug 當新 5；doctor 綠當路線證據 |
-| 6 跳過 OC 誤匹配 | 實跑 `_stage3_impl.py`：否定句「無跳過 Stage 3」被當成 skip | `g2_demo=PASS` 冒充已 Demo |
+| 5 freeze×doctor | 盤 5 現檔表：契約 `2.0.0`＋doctor **COMPATIBLE／exit 0**＋marketplace `./`；握手不讀 hops。本目錄有 md → 舊 7。COMPATIBLE ≠ cut（SC-9／SC-10）。AC-5 只覆蓋「舊檔不紅」 | 本 slug 當新 5；doctor 綠當路線證據；把本題標成 AC-5 |
+| 6 跳過 OC 誤匹配 | 實跑 `_stage3_impl.py`：否定句「不預先跳過 Stage 3」被當成 skip | `g2_demo=PASS` 冒充已 Demo |
 
-選定互動 = **D1**（無第二方案）。未改模板、未寫 F1 牙、未切預設路線。Human verdict 仍 `NOT_REVIEWED`；**語意**不得過 G2。現行牙把否定跳過句讀成 skip（原始輸出見盤 4）——記給 F1，本 hop 不修。
+選定互動 = **D1**（無第二互動方案）。選定人見面 = **T 卡上就紅**。未改模板、未寫 F1 牙、未切預設路線。Human verdict 仍 `NOT_REVIEWED`；**語意**不得過 G2。現行牙把否定跳過句讀成 skip（原始輸出見盤 4）——記給 F1，本 hop 不修。觸發「有新的前端流程」已誠實改未中（只方法論 UI）。
 
 ## User Demo Feedback
 <!-- Human verdict 由參與 Demo 的人類親填；Agent 禁代填 ACCEPTED／attestation -->
 - Demo date:
 - Participants:
-- Variant reviewed: D1 狀態流程模擬器（選定；無第二 Variant）
+- Variant reviewed: D1 狀態流程模擬器（選定；無第二互動 Variant）。人見面時機：T 卡上就紅（選定）；hop 板／Ship 重建（棄）
 - Accepted interaction:
 - Rejected interaction:
 - Confusions observed:
@@ -312,7 +354,7 @@ Agent 依 D1 走完七場（**不是** Human Demo）。答案:鎖定 Decision **
 - Verdict attestation:
 
 ## Verdict
-- **擬回寫 2-decision**（Human ACCEPTED 之後才動；本 hop 不動該檔）:確認紀錄加一行「prototype 回寫 \| 2026-09-14 \| Stage3-A D1：SC-1／A-B／假完成／空 attestation／freeze×doctor 可走完；不重開 1A–7A」。Risks「寫手省 M11」「chat 帶走 attestation」「doctor 綠冒充已切」「本 slug 試五站 hop」旁註「D1 已給人點的對照卡」。內部技術選擇維持「不跳過 Stage 3」。
-- 互動／Human verdict：**NOT_REVIEWED**。本檔 `status: draft`。Agent 不發明 ACCEPTED、不填 attestation。
-- 實驗產物:操作盤留在本檔 Method；無 throwaway branch、無正式碼。審頁由 `scripts/build-stage3-html.py --action` 重生。第 3 站已行使，未跳過。
-- 本 PR 檔集只准 `3-prototype.md` + `3-prototype.html`。不改 STATUS。不合併。
+- **擬回寫 2-decision**（Human ACCEPTED 之後才動；本 hop 不動該檔）:確認紀錄加一行「prototype 回寫 \| 2026-09-14 \| Stage3-A D1＋吸收 B／C：SC-1／A-B／假完成（T 卡上就紅）／空 attestation／freeze×doctor 現檔表可走完；不重開 1A–7A」。Risks「寫手省 M11」「chat 帶走 attestation」「doctor 綠冒充已切」「本 slug 試五站 hop」旁註「D1 已給人點的對照卡」。內部技術選擇維持「不跳過 Stage 3」。人見面時機選定 T 卡上就紅（對齊 SC-3）。
+- 互動／Human verdict：**NOT_REVIEWED**。本檔 `status: draft`。Agent 不發明 ACCEPTED、不填 attestation。未 Demo ≠ ACCEPTED。
+- 實驗產物:操作盤留在本檔 Method；doctor／契約／marketplace 輸出摘要在盤 5；無 throwaway branch、無正式碼。審頁由 `scripts/build-stage3-html.py --action` 重生。第 3 站已行使，未跳過。
+- 本 PR 檔集只准 `3-prototype.md` + `3-prototype.html`。不改 STATUS（另伴 PR：Active Stage=3-prototype，Gates 仍 G1✅ G2⬜ G3⬜）。不發明 G2。
