@@ -182,6 +182,21 @@ def discovery_shape_issues(text):
     if discover_question_has_recommend(text):
         issues.append("發現題附推薦：發現｜問句禁附推薦")
     issues.extend(claim_issues(text))
+    issues.extend(verdict_issues(text))
+    return issues
+
+
+def verdict_issues(text):
+    """S-5.1／S-5.2：ENUM=ACCEPTED 時必須同行有 role= 與 scenario=。"""
+    issues = []
+    for line in text.splitlines():
+        if "Human verdict:" not in line:
+            continue
+        if not re.search(r"\bACCEPTED\b", line):
+            continue
+        if "role=" in line and "scenario=" in line:
+            continue
+        issues.append("Human verdict 殘行：ACCEPTED 缺 role 或 scenario")
     return issues
 
 
@@ -467,6 +482,15 @@ check(all(col in t1 for col in ASSUMPTION_COLS),
 check(all(col in e1 for col in ASSUMPTION_COLS),
       "example 1-discussion 含 Assumption 四欄字面")
 
+# ── 16. Human verdict 一行（S-5.1／S-5.2／S-5.3）──
+check("role=" in t3 and "scenario=" in t3, "template 3-prototype verdict 含 role=／scenario=")
+check("role=" in e3 and "scenario=" in e3, "example 3-prototype verdict 含 role=／scenario=")
+check("本包必填全表" not in t3 and "Actor Coverage" not in t3,
+      "template 3-prototype 不得要求 Actor Coverage 全表")
+_gaps_must_flag("verdict-accepted-only.md", ("role", "scenario"),
+                "殘行 ACCEPTED 無 role／scenario 必須紅")
+_gaps_must_pass("verdict-complete.md", "完整 verdict 一行必須綠")
+
 # ── 檢查數地板(N-2,2026-08-15)──────────────────────────────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」——地板留餘裕=沒有
 # 牙齒(同 repo 慣例:scripts/check-stage67-enforcement.sh:232、
@@ -474,7 +498,7 @@ check(all(col in e1 for col in ASSUMPTION_COLS),
 # 起因:刪掉整段(例如第 5 節「NOT_REVIEWED ≠ ACCEPTED」)之前,checks 只是印出來的
 # 數字,不是斷言——舊版刪光整節仍印「✅ 全過」。新增/刪除 check() 呼叫時,
 # 把這個數字一起往上/往下調。
-MIN_CHECKS = 156
+MIN_CHECKS = 161
 if checks < MIN_CHECKS:
     failures.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                      f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
