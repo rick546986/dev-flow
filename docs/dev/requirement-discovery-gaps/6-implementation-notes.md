@@ -164,7 +164,7 @@ FORK_INTEGRATION_SHA: ab78e8b90a48c002b6023e806a9bc4f1d7ea5703
 
 日期 | T-id | 一行
 ---|---|---
-2026-09-13 | T-1…T-10 | 單一 land commit(雲端單代理 sequential;hash 見本 hop 第一個 commit,bookkeeping 後回填)
+2026-09-13 | T-1…T-10 | `58250b33dfafdb04514bc7b35cc5c013dbb2d5f4` Stage 6 land (B)
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 Run: n-a
@@ -600,7 +600,7 @@ RED 來源:5-tasks「Verify 開工前原樣跑」(2026-09-13;牙尚未落地)。
 ②每 T 在 T Review Log 有 verdict?是。T-1…T-10 自檢 PASS;獨立 reviewer 留給 PR(不發明 G3)。
 ③每個 PASS 都早於該 T commit?本 hop 十 T 同一 land commit;Verify 全綠後才 commit。
 ④每個 FAIL 後有較晚 PASS?無 FAIL round。
-⑤每個已完成 T 一 commit、Progress Log 有 hash?十 T 單一 land(sequential 同樹改三支牙);hash 回填 Progress Log。
+⑤每個已完成 T 一 commit、Progress Log 有 hash?十 T 單一 land `58250b33dfafdb04514bc7b35cc5c013dbb2d5f4`(sequential 同樹改三支牙)。
 ⑥git diff --stat ⊆ Files 聯集?產品檔是。超出:D-1 本 slug 2-decision 一字;D-2 fixture 檔數;renderer 衍生 guide-dev-flow.html／example 7-review.html;本檔／5-tasks checkbox。未改 STATUS／HISTORY／4-spec R/S／plugin。
 ⑦Decisions/Deviations 與 diff 對得上?是。C7/C8/C9 grandfather、無第四家族、無 selftest pin、無 lookback.md。Design Boundary:無未授權模組;Data Owner 仍是三支牙／同檔欄;Interface 為 spec-gate 加項與 guard Read;未修掉 known limit ①②③。
 ⑧回歸綠?官方 T-1…T-10 Verify 全綠;realworld 181/181;design-contract 166/166;四份既有 4-spec 9/9;devtalk selfclean／guide-sync 綠。
