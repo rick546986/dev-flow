@@ -102,6 +102,13 @@ updated:
 ## Success Criteria
 <!-- 可量測,7-review 對照 -->
 
+## Real-world 去向帳
+<!-- Stage 1 高影響列逐條對帳。引用用原文片段,不發第二鏈編號。
+     去向 ∈ {本方案處理, 刻意維持, Non-Goal, 另開 slug, 仍待驗} + 一句理由。 -->
+| 引用（Stage 1 原文片段） | 去向 | 理由 |
+|---|---|---|
+| | | |
+
 ## Scope & Non-Goals(定稿)
 
 ## Owner Calls(自判裁決,待人審)

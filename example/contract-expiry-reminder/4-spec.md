@@ -148,6 +148,13 @@ updated: 2026-07-23
 - S-1 ~ S-6 測試全綠。
 - dashboard p95 載入延遲增加 < 100ms(8k 筆量級,EXPLAIN 驗證走索引)。
 
+## Real-world Disposition
+| 引用（Stage 1 原文片段） | 去向 | 下落 |
+|---|---|---|
+| Journey 靠 Excel 私表追到期 | 本方案處理 | S-1、S-2 |
+| 看過提醒被當成做完 | 本方案處理 | S-5 |
+| email／LINE 通知 | Non-Goal | Out of Scope |
+
 ## Out of Scope
 email/LINE 通知、自訂天數、主管彙總報表、自動寄信給法務/供應商、逾時自動升級提醒、法務簽核流程系統化。
 

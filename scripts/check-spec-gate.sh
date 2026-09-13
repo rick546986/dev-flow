@@ -284,6 +284,45 @@ record(
     c7_bad + (["過期未驗的 Assumption 擋下 G2；改 status=resolved 或 oc-accepted"] if c7_bad else []),
 )
 
+# ---- C9:full lane Real-world Disposition（缺表／去向空白／處理無 R-S → 紅）----
+c9_bad = []
+if prof["lane"] == "full":
+    disp = next((i for i in heads if re.match(r"^#{2,6}\s*Real-world Disposition", lines[i])), None)
+    if disp is None:
+        c9_bad.append("full lane 缺 ## Real-world Disposition")
+    else:
+        end = section_end(disp)
+        saw_row = False
+        for n in range(disp + 1, end):
+            line = lines[n]
+            if not line.lstrip().startswith("|"):
+                continue
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if not cells or re.match(r"^:?-+:?$", cells[0] or ""):
+                continue
+            if cells[0].startswith("引用"):
+                continue
+            saw_row = True
+            dest = cells[1] if len(cells) > 1 else ""
+            landing = cells[2] if len(cells) > 2 else ""
+            if not dest:
+                c9_bad.append(f"L{n + 1} 去向空白:{line.strip()[:70]}")
+                continue
+            if dest == "本方案處理":
+                if not re.search(r"\b[RS]-\d", landing):
+                    c9_bad.append(f"L{n + 1} 本方案處理下落缺 R- 或 S- id:{line.strip()[:70]}")
+            elif not landing:
+                c9_bad.append(f"L{n + 1} 非處理去向下落空白:{line.strip()[:70]}")
+            elif not re.search(r"Out of Scope|Known limit|docs/dev/", landing):
+                if not re.search(r"[A-Za-z0-9_-]{2,}", landing):
+                    c9_bad.append(f"L{n + 1} 非處理下落缺 Out of Scope／Known limit／slug")
+record(
+    "C9",
+    not c9_bad,
+    "Real-world Disposition（full 必有表;去向與下落形狀）",
+    c9_bad,
+)
+
 # ---- 輸出 ----
 print(f"=== G2 spec gate:{spec_path} ===")
 failed = 0

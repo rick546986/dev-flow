@@ -153,6 +153,13 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 <!-- 打包驗收:全部 S 綠 + 既有測試全綠(回歸)+ 非功能(效能/相容/安全)。
      行為不變類 → golden master:同輸入,改動前後輸出逐列一致 -->
 
+## Real-world Disposition
+<!-- Stage 1 高影響列下落。引用用原文片段,禁止 RW- 第二鏈。
+     去向五值;本方案處理 → 下落至少一條 R- 或 S-;其餘落到 Out of Scope／Known limit／後續 slug。 -->
+| 引用（Stage 1 原文片段） | 去向 | 下落 |
+|---|---|---|
+| | | |
+
 ## Out of Scope
 
 ## Diff Budget

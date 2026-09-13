@@ -52,6 +52,13 @@ updated: 2026-07-23
 - 30 天內到期且未續約的合約,dashboard 100% 可見。
 - dashboard 載入增加延遲 < 100ms(p95)。
 
+## Real-world 去向帳
+| 引用（Stage 1 原文片段） | 去向 | 理由 |
+|---|---|---|
+| Journey 靠 Excel 私表追到期 | 本方案處理 | 進站內清單,對應 Goal 1 |
+| 看過提醒被當成做完 | 本方案處理 | 狀態只由明確標記改 |
+| email／LINE 通知 | Non-Goal | 本期不做推播 |
+
 ## Scope & Non-Goals(定稿)
 - In:dashboard 卡片、API、詳情連結。
 - Out:email/LINE、自訂天數、主管彙總報表。
