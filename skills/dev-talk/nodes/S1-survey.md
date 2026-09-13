@@ -26,7 +26,8 @@ S0 已完成(slug / 起點 / 模式已定)。MEMORY_SESSION_ID 仍在。游標�
    其他狀態、`ask()` 非 `OK` 的答案一律不進 Context,可留 Log 待驗證。
    **signal ≠ evidence;memory ≠ current fact。**
 2. 讀白名單(記憶入口、`docs/specs/`、原始碼),條列事實並一併回報使用者。
-   認可後的清單 = 本次「已核事實」。
+   認可確認理解,不是來源升格。高影響主張仍要可重開來源,或 Assumption 加期限。
+   點頭／認可後清單不得當唯一來源。
 3. 寫進 Context 的每條 = 已驗證斷言 + 出處。出處語法只有一種:
    `path:L<起>` 或 `path:L<起>-L<迄>`;spec 用 `docs/specs/<domain>.md:L<起>-L<迄>`。
    驗證 = 在 current working tree 讀過該路徑、該行段內容支持斷言。沒讀過的路徑不進 Context。
@@ -38,8 +39,8 @@ S0 已完成(slug / 起點 / 模式已定)。MEMORY_SESSION_ID 仍在。游標�
 
 ## 完成條件
 
-brief 四欄位已逐項消化。使用者認可;認可後的清單就是本次已核事實,
-進 Context 者每條帶出處。重跑時出處已重驗。本機游標在 S1-survey。
+brief 四欄位已逐項消化。使用者認可確認理解;進 Context 者每條帶可重開出處。
+認可 ≠ 已核事實升格。重跑時出處已重驗。本機游標在 S1-survey。
 
 ## 下一跳
 

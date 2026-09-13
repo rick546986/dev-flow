@@ -106,11 +106,82 @@ def goals_wrong_column(text):
     return bool(re.search(r"我要\s*dashboard", first, re.I) and requested_empty)
 
 
+def prefix_symmetry_issues(text):
+    """S-2.2：教師／指南兩邊前綴必須成對。缺一邊指出缺的那一邊。"""
+    has_d = "發現｜" in text
+    has_j = "裁決｜" in text
+    if has_d and not has_j:
+        return ["缺 裁決｜"]
+    if has_j and not has_d:
+        return ["缺 發現｜"]
+    return []
+
+
+def discover_question_has_recommend(text):
+    """發現題附推薦 → 紅；裁決題附選項不算。"""
+    for line in text.splitlines():
+        if "發現｜" in line and ("推薦答案" in line or "建議選" in line or "附推薦" in line):
+            return True
+    return False
+
+
+CLAIM_ENUMS = ("Observed", "Reported", "Inferred", "Assumption", "Conflict")
+
+
+def high_impact_blocks(text):
+    blocks = []
+    for heading in ("Workarounds", "Exceptions", "Evidence"):
+        body = heading_body(text, heading)
+        if not body:
+            continue
+        current = None
+        for line in body.splitlines():
+            if re.match(r"^- ", line):
+                if current:
+                    blocks.append(current)
+                current = {"heading": heading, "title": line, "fields": line + "\n"}
+            elif current is not None:
+                current["fields"] += line + "\n"
+        if current:
+            blocks.append(current)
+    return blocks
+
+
+def claim_issues(text):
+    """S-3.*／S-8.4：高影響列來源 XOR 期限；點頭獨源紅；枚舉五值；ticket 解法不當事實。"""
+    issues = []
+    for block in high_impact_blocks(text):
+        fields = block["fields"]
+        status_m = re.search(r"狀態:\s*(\S+)", fields)
+        source_m = re.search(r"來源(?:類型)?:\s*(.+)", fields)
+        status = status_m.group(1).rstrip("。；,") if status_m else ""
+        source = source_m.group(1).strip() if source_m else ""
+        has_deadline = bool(re.search(r"期限", fields))
+        if status and status not in CLAIM_ENUMS:
+            issues.append(
+                f"枚舉不在五值集合:{status}（Observed／Reported／Inferred／Assumption／Conflict）")
+        if block["heading"] in ("Workarounds", "Exceptions"):
+            if not status and not source and not has_deadline:
+                issues.append("高影響列缺來源且缺期限（要可重開來源或 Assumption 期限）")
+            if source and any(tok in source for tok in ("使用者點頭", "認可後清單", "點頭")):
+                issues.append("點頭不是來源：點頭／認可不得當唯一來源")
+            if ("使用者反映" in block["title"] or "使用者反映" in fields) and not source and not has_deadline:
+                issues.append("高影響列缺來源且缺 Assumption 期限")
+        if (re.search(r"ticket|SOP", fields, re.I) and "建議" in fields
+                and status == "Observed"):
+            issues.append("解法不當事實：ticket／SOP 建議應進 Requested solution，不得標 Observed")
+    return issues
+
+
 def discovery_shape_issues(text):
     """discovery-gaps 形狀牙（掛在本入口，不另開 check-discovery-gaps.sh）。"""
     issues = []
     if goals_wrong_column(text):
         issues.append("構想在錯欄：Goals 把通道構想當目標，Requested solution 缺或空")
+    issues.extend(prefix_symmetry_issues(text))
+    if discover_question_has_recommend(text):
+        issues.append("發現題附推薦：發現｜問句禁附推薦")
+    issues.extend(claim_issues(text))
     return issues
 
 
@@ -333,6 +404,62 @@ e1_goals = heading_body(e1, "Goals") or ""
 check(all(p not in e1_goals for p in ("就能看到", "點擊可直達", "一眼可見")),
       "example Goals 不再把登入／點擊／一眼可見寫成目標本身")
 
+# ── 13. 發現｜／裁決｜前綴對稱（S-2.1／S-2.2／S-2.3）──
+n3_rel = "skills/dev-talk/nodes/N3-probe.md"
+n3_path = os.path.join(root, n3_rel)
+if os.path.isfile(n3_path):
+    n3 = read(n3_rel)
+    n3_pref = prefix_symmetry_issues(n3)
+    check(not n3_pref, "N3-probe 發現｜與裁決｜成對", f"issues={n3_pref}")
+    check("禁附推薦" in n3, "N3-probe 發現題路徑含禁附推薦")
+else:
+    check_skip("N3-probe 發現｜與裁決｜成對", "隔離根無 N3-probe")
+    check_skip("N3-probe 發現題路徑含禁附推薦", "隔離根無 N3-probe")
+probe_ok = os.path.join(GAPS, "probe-decision-with-options.md")
+if os.path.isfile(probe_ok):
+    probe_text = open(probe_ok, encoding="utf-8").read()
+    probe_issues = discovery_shape_issues(probe_text)
+    check(not probe_issues,
+          "裁決題附選項不得當發現題違規（probe-decision-with-options）",
+          f"issues={probe_issues}")
+else:
+    check_skip("裁決題附選項不得當發現題違規（probe-decision-with-options）",
+               "隔離測試根目錄無 discovery-gaps fixture")
+
+# ── 14. 高影響主張牙（S-3.1–S-3.4／S-8.4）──
+def _gaps_must_flag(name, needles, label):
+    path = os.path.join(GAPS, name)
+    if not os.path.isfile(path):
+        check_skip(label, "隔離測試根目錄無 discovery-gaps fixture")
+        return
+    flagged = discovery_shape_issues(open(path, encoding="utf-8").read())
+    blob = " ".join(flagged)
+    check(any(n in blob for n in needles), label, f"issues={flagged}")
+
+
+_gaps_must_flag("nod-as-only-source.md", ("點頭", "不是來源"),
+                "點頭獨源 fixture 必須紅")
+_gaps_must_flag("enum-unknown.md", ("枚舉", "Observed", "Reported"),
+                "枚舉 Unknown fixture 必須紅")
+_gaps_must_flag("ticket-solution-as-fact.md", ("解法", "Requested solution", "不當事實"),
+                "ticket 解法當 Observed 必須紅")
+_gaps_must_flag("high-impact-missing-source.md", ("來源", "Assumption", "期限"),
+                "高影響列缺來源且缺期限必須紅")
+
+
+def _gaps_must_pass(name, label):
+    path = os.path.join(GAPS, name)
+    if not os.path.isfile(path):
+        check_skip(label, "隔離測試根目錄無 discovery-gaps fixture")
+        return
+    flagged = discovery_shape_issues(open(path, encoding="utf-8").read())
+    check(not flagged, label, f"issues={flagged}")
+
+
+_gaps_must_pass("high-impact-with-source.md", "有可重開來源必須綠")
+_gaps_must_pass("high-impact-with-assumption.md", "Assumption 加期限必須綠")
+_gaps_must_pass("non-high-impact-context.md", "非高影響 Context 不貼枚舉不得紅")
+
 # ── 檢查數地板(N-2,2026-08-15)──────────────────────────────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」——地板留餘裕=沒有
 # 牙齒(同 repo 慣例:scripts/check-stage67-enforcement.sh:232、
@@ -340,7 +467,7 @@ check(all(p not in e1_goals for p in ("就能看到", "點擊可直達", "一眼
 # 起因:刪掉整段(例如第 5 節「NOT_REVIEWED ≠ ACCEPTED」)之前,checks 只是印出來的
 # 數字,不是斷言——舊版刪光整節仍印「✅ 全過」。新增/刪除 check() 呼叫時,
 # 把這個數字一起往上/往下調。
-MIN_CHECKS = 144
+MIN_CHECKS = 154
 if checks < MIN_CHECKS:
     failures.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                      f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")

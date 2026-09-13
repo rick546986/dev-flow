@@ -28,6 +28,7 @@
 #                    就會被掃到」,不是再補一條清單項)(check-no-stale-paths.sh)
 #   Real-world       RW-0 對照組 / RW-1 Out of Scope 整段 Stage 3 對帳被刪 / RW-2 一條
 #                    場景保留但拿掉逐場點名引用(check-realworld.sh;§7 第 1 點,2026-08-15)
+#                    / RW-3 刪 N3 發現｜ / RW-4 刪 N3 裁決｜（S-2.2 前綴對稱牙）
 #   TF(2026-08-16 補)  TF-1 模板「測試檔路徑也要列進 Files」紀律句被弱化 / TF-2
 #                    範例 T-1 的 Files 欄被拿掉測試檔路徑(check-stage67-enforcement.sh
 #                    的 D-39 紀律;對照組沿用既有 S67-0)
@@ -144,8 +145,8 @@ RESULTS=()
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
 EXPECTED_CONTROLS=17
-EXPECTED_NEGATIVES=127
-EXPECTED_TOTAL=144
+EXPECTED_NEGATIVES=129
+EXPECTED_TOTAL=146
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -188,6 +189,8 @@ seed() {
   # 都會跑到這道哨兵,不補就會讓既有 DC-0 對照組也變 exit 2。
   cp "$ROOT/scripts/check-realworld.sh" "$dst/scripts/"
   cp "$ROOT/scripts/check-gate-twin.sh" "$dst/scripts/"
+  mkdir -p "$dst/skills/dev-talk/nodes"
+  cp "$ROOT/skills/dev-talk/nodes/N3-probe.md" "$dst/skills/dev-talk/nodes/"
   echo "$dst"
 }
 
@@ -725,6 +728,26 @@ assert n != t, "RW-2 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
 expect fail check-realworld.sh "$D" "RW-2 一條 Out of Scope 場景保留但拿掉逐場點名引用(vacuous-truth 陷阱:len>=1 抓不到,需逐條比對)"
+
+D=$(seed rw3); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "skills/dev-talk/nodes/N3-probe.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("發現｜", "")
+assert n != t, "RW-3 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-realworld.sh "$D" "RW-3 N3-probe 刪掉發現｜(S-2.2 單邊前綴必須紅)"
+
+D=$(seed rw4); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "skills/dev-talk/nodes/N3-probe.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("裁決｜", "")
+assert n != t, "RW-4 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-realworld.sh "$D" "RW-4 N3-probe 刪掉裁決｜(S-2.2 單邊前綴必須紅)"
 
 # ─────────────────── 守衛本體被改弱(Guard Source;fresh review F-2)───────────────────
 # 這一整類原本零覆蓋:上面所有案例都只變異資料檔,守衛本體始終從正式 repo 執行。
