@@ -163,8 +163,7 @@ FORK_INTEGRATION_SHA: ab78e8b90a48c002b6023e806a9bc4f1d7ea5703
 
 ## Progress Log
 
-- 2026-09-13 | T-1..T-10 | （落地 commit，見本 hop 首筆 hash）
-- 2026-09-13 | 6-notes | （本檔＋html twin commit hash）
+- 2026-09-13 | T-1..T-10 | 901bbcce4a3924e1f39978b225c012c7f44eb925 docs+chore(requirement-discovery-gaps): Stage 6 land (A)
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 Run: n-a（sequential v1 start，無 run_id 事件通道）
