@@ -602,3 +602,9 @@
 - 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
 - 詳細:docs/dev/requirement-discovery-gaps/7-review.md (#291); Stage7 #289
 
+## 2026-09-13 · requirement-discovery-gaps · v3.24.0
+- 做了什麼:nine institutional-gap teachers+teeth shipped for full lane
+- 為什麼:close discovery gaps A-1..A-7/B-1/B-2
+- 落在哪:skills/guides/hooks/example as landed
+- 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.24.0
+
