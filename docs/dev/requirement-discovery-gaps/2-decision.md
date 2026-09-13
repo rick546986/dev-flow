@@ -41,7 +41,7 @@ updated: 2026-09-13
 | 方案 | 摘要 | 優 | 劣 | 成本 | 依據(`檔:行` 或 `[Assumption]`) |
 |---|---|---|---|---|---|
 | 4A | Stage 2 表：**引用 Stage 1 高影響痛點／workaround／exception 原文片段** + 去向（本方案處理／刻意維持／Non-Goal／另開 slug／仍待驗）+ 一句理由。不另發 RW-id。Stage 4：標「處理」者至少一條 R/S，其餘落到 Out of Scope／Known limit／後續 slug | 對準 A-6 與 G-out-6；沿用「不另發第二鏈」；G1 看得到未處置列 | 「哪些算高影響」仍要人判；引用片段要防截到無意義 | 中 | `1-discussion.md:94,117,130` G-out-6、禁第二鏈、Q10；`notes/review-requirement-discovery-gaps.md:221-231` 候選即引用原文；`_templates/2-decision.md` 頂註步 0／步 6 今只覆蓋 Goals／`[>]`。高影響抽樣 `[Assumption]` |
-| 4B | 發明 `RW-1`… 第二條 ID 鏈，R/S 引用 RW-id | 機械對帳最乾淨 | Stage 1 Non-Goal 與 ID 規則已禁；靠近第二套方法論 | 高 | `1-discussion.md:117`；`_templates/1-discussion.md:50-51` 不另發 Journey/Actor ID |
+| 4B | 發明第二鏈編號… 第二條 ID 鏈，R/S 引用該編號 | 機械對帳最乾淨 | Stage 1 Non-Goal 與 ID 規則已禁；靠近第二套方法論 | 高 | `1-discussion.md:117`；`_templates/1-discussion.md:50-51` 不另發 Journey/Actor ID |
 | 4C | 散文寫「痛點有處理」，無逐條表 | 最短 | 正是現況失效：Journey 列可無聲消失 | 低 | `1-discussion.md:34,62-63,235-238` 收斂只吃 Goals／AC；Stage 3 場景有牙、Stage 1 痛點沒有 |
 
 ### 決策點 5 lookback 落點（Q11）

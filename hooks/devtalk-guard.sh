@@ -10,6 +10,85 @@
 #       判定 —— 整段包 || true 且吞掉 stdout/stderr,之後照樣 exit 2。
 . "$(dirname "$0")/devflow-python-lib.sh"  # 直譯器解析;缺直譯器 fail-open(理由見該檔)
 INPUT=$(cat)
+# Read 分支:talk 游標在時才發動。放行 Evidence manifest 核准=是;
+# 仍禁 2–7 方案檔(核准格不能覆寫)。游標不在 → 維持只掃 skills/dev-talk 寫入洩漏。
+_HOOK_JSON=$(mktemp "${TMPDIR:-/tmp}/devtalk-guard-read.XXXXXX")
+printf '%s' "$INPUT" > "$_HOOK_JSON"
+"$DEVFLOW_PY" - "$PWD" "$_HOOK_JSON" <<'READ'
+import json, os, re, sys
+from pathlib import Path
+root = Path(sys.argv[1]).resolve()
+try:
+    data = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8") or "{}")
+except Exception:
+    raise SystemExit(0)
+if data.get("tool_name") != "Read":
+    raise SystemExit(0)
+path = str((data.get("tool_input") or {}).get("file_path") or "")
+if not path:
+    raise SystemExit(0)
+if not (root / ".devtalk-cursor.json").is_file():
+    raise SystemExit(0)
+posix = path.replace("\\", "/")
+sol = re.compile(
+    r"(?:^|/)(?:2-decision|3-prototype|4-spec|5-tasks|"
+    r"6-implementation-notes|7-review)(?:\.(?:md|html))?$"
+)
+if sol.search(posix):
+    print("⛔ devtalk-guard:方案檔仍禁讀(2-decision／4-spec／2–7;核准格不能覆寫)",
+          file=sys.stderr)
+    raise SystemExit(2)
+def _manifest_texts():
+    seen = set()
+    env = os.environ.get("DEVTALK_MANIFEST")
+    if env:
+        p = Path(env)
+        if p.is_file():
+            try:
+                yield p.read_text(encoding="utf-8")
+                seen.add(p.resolve())
+            except Exception:
+                pass
+    docs = root / "docs" / "dev"
+    if docs.is_dir():
+        for p in docs.glob("*/1-discussion.md"):
+            try:
+                rp = p.resolve()
+                if rp in seen:
+                    continue
+                text = p.read_text(encoding="utf-8")
+            except Exception:
+                continue
+            if "## Evidence manifest" in text:
+                yield text
+
+matched_deny = False
+for text in _manifest_texts():
+    idx = text.find("## Evidence manifest")
+    if idx < 0:
+        continue
+    for line in text[idx:].splitlines():
+        raw = line.strip()
+        if not raw.startswith("|") or set(raw.replace("|", "").replace(":", "").strip()) <= {"-"}:
+            continue
+        cells = [c.strip() for c in raw.strip("|").split("|")]
+        if len(cells) < 4 or "擬路徑" in cells[2] or "owner 核准" in cells[3]:
+            continue
+        proposed, approved = cells[2], cells[3]
+        if proposed and proposed in posix:
+            if approved == "是":
+                raise SystemExit(0)
+            matched_deny = True
+if matched_deny:
+    print("⛔ devtalk-guard:未核路徑不得當已授權 evidence", file=sys.stderr)
+    raise SystemExit(2)
+raise SystemExit(0)
+READ
+READ_ST=$?
+rm -f "$_HOOK_JSON"
+if [ "$READ_ST" -eq 2 ]; then
+  exit 2
+fi
 FILE=$(printf '%s' "$INPUT" | "$DEVFLOW_PY" -c "import json,sys
 try: print(json.load(sys.stdin).get('tool_input',{}).get('file_path',''))
 except Exception: pass" 2>/dev/null)

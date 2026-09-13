@@ -125,7 +125,7 @@ updated:
 - Permission corrections:
 - External handoffs:
 - Required changes:
-- Human verdict: ACCEPTED | REVISE | NOT_REVIEWED
+- Human verdict: ACCEPTED | REVISE | NOT_REVIEWED | role=<Actors 表角色> | scenario=<AC-id 或 Demo Script 場景名>
 - Verdict attestation: human:<姓名> @ <YYYY-MM-DD>
 
 ## Verdict

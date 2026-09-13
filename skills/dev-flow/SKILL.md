@@ -33,7 +33,7 @@ description: 開發流程 SOP 的唯一對外入口(7 階段路由器,SDD 為主
 
 ## 1. Lane 判準
 - **full**(預設):新能力 / 不可逆改動(schema、API 契約、跨模組介面)→ 1-7 全套(3 選配)。
-- **fast**:bugfix / ≤2 檔小改 / 行為已有 spec 條目(可逆的跨模組小改也算)→ 4-spec(補 bug scenario) → 5-tasks(mini) → 6-implementation-notes → 7-review(mini)。Stage 1–3 省略;5-tasks 仍用同一模板,可只有一個 T,但 Covers/Files/Verify/Blocked-by 必填,供 `devflow-exec.sh start <slug>` 解析 scope。起手 = **診斷迴圈**(重現→最小化→假設→定位→修→回歸),bug scenario 從重現步驟長出。
+- **fast**:bugfix / ≤2 檔小改 / 行為已有 spec 條目(可逆的跨模組小改也算)→ **進 4 前六問**(Fast early risk triage:改變下一步／權限核准語意／等待完成語意／角色交接／系統外動作／中斷恢復;每問是或否加一句)。命中由 owner 裁去向 ∈ {full, fast+mini, OC}。全否且不改語意的純視覺 → 去向=Fast,仍可跳過 1–3。然後 4-spec(補 bug scenario) → 5-tasks(mini) → 6-implementation-notes → 7-review(mini)。Stage 1–3 省略仍合法;5-tasks 仍用同一模板,可只有一個 T,但 Covers/Files/Verify/Blocked-by 必填,供 `devflow-exec.sh start <slug>` 解析 scope。起手 = **診斷迴圈**(重現→最小化→假設→定位→修→回歸),bug scenario 從重現步驟長出。
 - **大案與切片**:訊號與可切判準一律看指南 `#large-work`,本檔不重述 —— 條件多且互相牽動,摘要過就會與正本分歧。
 
 ## 2. 階段動作
