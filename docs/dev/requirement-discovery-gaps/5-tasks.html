@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>requirement-discovery-gaps · 5-tasks</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  -webkit-font-smoothing:antialiased}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;font-variant-numeric:tabular-nums}
+code{background:var(--sunk);border-radius:3px;padding:1px 5px;color:var(--ink-2)}
+a{color:var(--accent)}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+
+/* ---- 頁首 ---- */
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem;max-width:62ch}
+
+/* ---- 動線格 ---- */
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:20px 0 4px}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:11px 13px;box-shadow:var(--shadow)}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;display:block;margin-bottom:5px}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+.cell .n{font-size:.78rem;color:var(--ink-2);display:block;margin-top:3px}
+.cell.is-bad .v{color:var(--bad)} .cell.is-ok .v{color:var(--ok)}
+.cell.is-warn .v{color:var(--warn)} .cell.is-accent .v{color:var(--accent)}
+
+/* ---- sticky 進度 ---- */
+.progress{position:sticky;top:0;z-index:20;background:var(--ground);
+  border-bottom:1px solid var(--rule);padding:11px 0;margin:22px 0 0}
+.progress-in{max-width:900px;margin:0 auto;padding:0 20px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.bar{flex:1 1 200px;height:7px;background:var(--sunk);border-radius:99px;overflow:hidden;
+  min-width:140px}
+.bar i{display:block;height:100%;width:0;background:var(--accent);
+  transition:width .25s ease;border-radius:99px}
+.count{font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.count b{color:var(--accent)}
+.btn{border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);
+  border-radius:7px;padding:5px 11px;font-size:.82rem;cursor:pointer;font-family:inherit}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---- 提示框 ---- */
+.criterion{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 26%,transparent);
+  border-radius:10px;padding:15px 17px;margin:26px 0}
+.criterion h2{margin:0 0 7px;font-size:.95rem;letter-spacing:.02em;border:0;padding:0}
+.criterion p{margin:0;color:var(--ink-2);font-size:.9rem}
+.criterion .ex{margin-top:9px;padding-top:9px;
+  border-top:1px dashed color-mix(in srgb,var(--accent) 30%,transparent);font-size:.85rem}
+
+/* ---- 區塊卡（R / T 共用）---- */
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;
+  border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
+.r-block.danger .r-head{border-left-color:var(--bad)}
+.r-id{font-weight:700;font-size:.95rem;letter-spacing:.02em;white-space:nowrap;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.r-block.danger .r-id{color:var(--bad)}
+.r-block.core .r-id{color:var(--accent)}
+.r-name{font-weight:650}
+.r-risk{display:block;font-size:.83rem;color:var(--ink-2);margin-top:3px}
+.r-rule{padding:12px 18px;background:var(--sunk);font-size:.9rem;color:var(--ink-2);
+  border-bottom:1px solid var(--rule-2)}
+.r-rule b{color:var(--ink)}
+
+/* ---- 圖 ---- */
+/* 直式現況圖／方案架構圖:外層撐滿欄、圖本身有限寬,水平置中。
+   禁 svg/pre width:100% —— 畫布撐滿時狹長圖會貼左。
+   max-width 360px 對齊鎖定手樣(subsidy 2-decision.html)。 */
+.fig{margin:26px 0;padding:17px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}
+.fig svg,.fig pre{display:block;width:auto;max-width:360px;margin:0 auto;height:auto}
+.fig pre.fig-ascii-fallback{max-width:100%;width:100%;box-sizing:border-box;
+  overflow-x:auto;text-align:left;white-space:pre;background:var(--sunk);
+  padding:11px;border-radius:7px;font-size:.82rem;line-height:1.5;margin-top:8px}
+.fig .fig-warn{color:var(--warn);text-align:left;margin:0 0 4px;max-width:100%}
+.pinned pre{display:block;width:max-content;max-width:100%;margin-left:auto;margin-right:auto}
+.cap{color:var(--ink-3);font-size:.82rem;line-height:1.6;margin-top:11px;text-align:center}
+svg .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.4}
+svg .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+svg .wn{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.4}
+svg .bd{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.4}
+svg .nl{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--ink)}
+svg .sm{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--ink-3)}
+svg .edge{fill:none;stroke:var(--ink-3);stroke-width:1.6}
+svg .ahead{fill:var(--ink-3);stroke:none}
+
+/* ---- 摺疊 ---- */
+.appendix{margin-top:42px;border-top:1px solid var(--rule);padding-top:22px}
+.appendix > h2{font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 13px;border:0;padding:0}
+details.doc{border:1px solid var(--rule);border-radius:9px;margin-bottom:9px;
+  background:var(--panel);overflow:hidden}
+details.doc > summary{cursor:pointer;padding:11px 15px;font-weight:600;font-size:.9rem;
+  list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:center}
+details.doc > summary::-webkit-details-marker{display:none}
+details.doc > summary::after{content:"展開";font-size:.76rem;color:var(--ink-3);font-weight:500}
+details.doc[open] > summary::after{content:"收合"}
+details.doc[open] > summary{border-bottom:1px solid var(--rule-2)}
+details.doc:hover{border-color:var(--accent)}
+.doc-in{padding:4px 17px 15px;font-size:.9rem;color:var(--ink-2)}
+.doc-in h2,.doc-in h3{color:var(--ink);font-size:.95rem;margin:16px 0 7px;border:0;padding:0}
+.doc-in table{border-collapse:collapse;width:100%;margin:11px 0;font-size:.84rem}
+.doc-in th,.doc-in td{border:1px solid var(--rule);padding:6px 9px;text-align:left;
+  vertical-align:top}
+.doc-in th{background:var(--sunk);font-weight:650;color:var(--ink)}
+.doc-in pre{background:var(--sunk);padding:11px;border-radius:7px;overflow-x:auto;
+  font-size:.82rem;line-height:1.5}
+.doc-in blockquote{margin:11px 0;padding:.4em 1em;border-left:3px solid var(--rule);
+  color:var(--ink-3)}
+.doc-in ul,.doc-in ol{padding-left:1.35em}
+.doc-in li{margin:4px 0}
+.tablewrap{overflow-x:auto}
+
+/* ---- 收尾 ---- */
+.verdict{margin-top:34px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);padding:19px 21px;box-shadow:var(--shadow)}
+.verdict h2{margin:0 0 9px;font-size:1rem;border:0;padding:0}
+.verdict p{margin:0 0 9px;color:var(--ink-2);font-size:.91rem}
+.verdict p:last-child{margin-bottom:0}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:560px){h1{font-size:1.35rem}}
+
+.pinned{border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:8px;
+        padding:14px 16px;margin:0 0 14px;background:var(--panel)}
+.pinned>h2{margin:0 0 8px;font-size:1rem;letter-spacing:.01em}
+.pinned .tablewrap{overflow-x:auto}
+.pinned table{width:100%;border-collapse:collapse;font-size:.86rem}
+.pinned th,.pinned td{border:1px solid var(--rule);padding:5px 8px;text-align:left;vertical-align:top}
+.pinned ul{margin:.3em 0 .3em 1.1em;padding:0}
+.pinned p{margin:.35em 0}
+a.cell{cursor:pointer;text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.s-card{border-bottom:1px solid var(--rule-2)}
+.s-card:last-child{border-bottom:0}
+.s-head{display:flex;gap:10px;align-items:center;padding:12px 18px;cursor:pointer;
+  flex-wrap:wrap}
+.s-head:hover{background:var(--sunk)}
+.s-chk{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex:none}
+.s-chk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.s-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.83rem;
+  font-weight:650;color:var(--accent);background:var(--accent-soft);
+  padding:2px 7px;border-radius:5px;flex:none}
+.s-title{font-weight:600;font-size:.94rem}
+.tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600;flex:none}
+.tag.base{background:var(--sunk);color:var(--ink-3)}
+.tag.main{background:var(--warn-soft);color:var(--warn)}
+.tag.rej{background:var(--bad-soft);color:var(--bad)}
+.s-card.done{background:var(--ok-soft)}
+.s-card.done .s-title{color:var(--ink-2)}
+.s-body{padding:0 18px 15px 45px}
+.gwt{display:grid;gap:5px;margin-bottom:11px}
+.gwt-row{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:baseline}
+.gwt-k{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.71rem;
+  font-weight:700;color:var(--ink-3);letter-spacing:.06em}
+.gwt-v{font-size:.9rem;color:var(--ink-2)}
+.obs{background:var(--sunk);border-left:3px solid var(--accent);border-radius:0 7px 7px 0;
+  padding:9px 13px}
+.obs.missing{border-left-color:var(--bad);background:var(--bad-soft)}
+.obs-k{display:block;font-size:.71rem;letter-spacing:.08em;text-transform:uppercase;
+  font-weight:700;color:var(--accent);margin-bottom:3px}
+.obs.missing .obs-k{color:var(--bad)}
+.obs-v{font-size:.88rem;color:var(--ink-2)}
+@media (max-width:560px){
+  .s-body{padding-left:18px}
+  .gwt-row{grid-template-columns:1fr;gap:2px}
+}
+
+.t-bound{border-top:1px solid var(--rule-2);margin-top:9px}
+.t-bound>summary{cursor:pointer;padding:9px 0 9px 45px;font-size:.84rem;font-weight:600;
+  color:var(--ink-2);list-style:none;display:flex;justify-content:space-between;gap:10px}
+.t-bound>summary::-webkit-details-marker{display:none}
+.t-bound>summary::after{content:"展開";font-size:.75rem;color:var(--ink-3);font-weight:500}
+.t-bound[open]>summary::after{content:"收合"}
+.t-bound .body{padding:2px 18px 13px 45px;font-size:.87rem;color:var(--ink-2);line-height:1.7}
+.t-bound .body code{font-size:.85em}
+.dag{margin:22px 0;padding:15px 17px;border:1px solid var(--rule);border-radius:10px;
+  background:var(--panel);box-shadow:var(--shadow)}
+.dag h2{margin:0 0 10px;font-size:.95rem;border:0;padding:0}
+.dag pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.82rem;
+  line-height:1.7;color:var(--ink-2);overflow-x:auto;white-space:pre}
+@media (max-width:560px){
+  .t-bound>summary{padding-left:18px}
+  .t-bound .body{padding-left:18px}
+}
+
+.t-chk-hint{font-size:.86rem;color:var(--ink-2);margin:18px 0 0}
+.t-ask{margin:0 0 12px}
+.t-ask-h{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-3);margin:0 0 6px}
+.t-ask ul{margin:0;padding:0;list-style:none}
+.t-ask li{display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:.9rem;
+  color:var(--ink)}
+.t-ask .qmark{color:var(--accent);font-weight:700;flex:none;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap" id="top">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 5-tasks · 執行板</p>
+  <h1>requirement-discovery-gaps</h1>
+  <p class="sub">正本是 <code>docs/dev/requirement-discovery-gaps/5-tasks.md</code>,
+  這頁隨時可重生。<strong>審完頂區五格再決定要不要動工。</strong></p>
+  <div class="dash"><a class="cell" href="#top"><span class="k">狀態</span><span class="v">draft</span><span class="n">frontmatter</span></a><a class="cell" href="#cards"><span class="k">任務</span><span class="v">10 個 T</span><span class="n">六欄齊全</span></a><a class="cell" href="#top"><span class="k">模式</span><span class="v">sequential</span><span class="n">execution.mode(未標=sequential)</span></a><a class="cell" href="#dag"><span class="k">依賴</span><span class="v">9 條</span><span class="n">Blocked-by 邊</span></a><a class="cell" href="#progress"><span class="k">進度</span><span class="v">0/10</span><span class="n">已勾 完成/總數</span></a></div>
+</header>
+
+<div class="progress" id="progress">
+  <div class="progress-in">
+    <span class="count">已完成 <b id="done">0</b> / 10 條</span>
+    <span class="bar"><i></i></span>
+    <button class="btn" id="clear" type="button">清除勾選</button>
+  </div>
+</div><section class="dag" id="dag"><h2>T 依賴 DAG(Blocked-by,自動衍生)</h2><pre>Wave 1: T-1
+Wave 2: T-2 ←(T-1)
+Wave 3: T-3 ←(T-2)
+Wave 4: T-4 ←(T-3)
+Wave 5: T-5 ←(T-4)
+Wave 6: T-6 ←(T-5)、T-7 ←(T-5)、T-9 ←(T-5)
+Wave 7: T-8 ←(T-6)、T-10 ←(T-7)</pre></section>
+<div id="cards">
+<p class="t-chk-hint">勾選 = 這張 T 不開口也能開工,不是已做完。</p><article class="s-card" data-sid="T-1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-1">
+    <span class="s-id">T-1</span>
+    <span class="s-title">鎖定三支既有牙為唯一入口，並讓 check-realworld 指出 Goals 錯欄</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-1 的 Files 第一個檔 check-realworld.sh，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-1 的 Blocked-by 沒點名任何 T，真的可以立刻開工嗎？</span></li><li><span class="qmark">?</span><span>T-1 蓋的 S-1.2、S-1.4 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-1 / S-1.2, S-1.4</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/check-realworld.sh, scripts/fixtures/discovery-gaps/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>test ! -e scripts/check-discovery-gaps.sh &amp;&amp; test -f scripts/fixtures/discovery-gaps/goals-dashboard-in-wrong-column.md &amp;&amp; test -f scripts/fixtures/discovery-gaps/goals-outcome-with-requested-dashboard.md &amp;&amp; python3 -c &quot;import pathlib; t=pathlib.Path(&#x27;scripts/check-realworld.sh&#x27;).read_text(); assert &#x27;goals-dashboard-in-wrong-column&#x27; in t and &#x27;goals-outcome-with-requested-dashboard&#x27; in t; assert &#x27;構想在錯欄&#x27; in t or &#x27;Requested solution&#x27; in t; print(&#x27;T-1-wired&#x27;)&quot; &amp;&amp; bash scripts/check-realworld.sh</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">—</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常多一次終端機拒絕：有人把「我要 dashboard」寫進 Goals、Requested solution 空著，同一支 <code>check-realworld.sh</code> 會紅並留下「構想在錯欄」。合法結果句即使正文出現 dashboard／API 當領域詞，只要構想在 Requested solution，不會只因這兩個詞被誤殺。改的是既有牙的射程與 <code>scripts/fixtures/discovery-gaps/</code> 對照稿，不是新發明一套檢查 CLI。不會變成 Cursor 擋寫、不會新開 <code>check-discovery-gaps.sh</code>、不會在本 T 改模板正文。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>OC-1：機械牙只延伸既有 <code>check-realworld.sh</code>／<code>check-spec-gate.sh</code>／<code>devtalk-guard.sh</code>（及已掛進的 <code>devflow-check.sh</code>）。本 T 只准改 realworld 與 discovery-gaps fixture；禁止新增 <code>scripts/check-discovery-gaps.sh</code>、禁止新開 <code>check-evidence-allow.sh</code>。realworld 擁有教師地板與指定 fixture 判定，不得當過期假設的 G2 Gate（那是 spec-gate）。MIN_CHECKS 必須改成加完後的實際檢查數，不是寬放下限。本 T 不改正本模板、不改 spec-gate、不改 guard。Actor=G1 reviewer；Goal=構想不能混成目標；Authority=形狀檢查擋錯欄，G1 抽查語意；Recovery=把該句搬到 Requested solution 並標未定案後重跑。看過 fixture 路徑 ≠ 已分欄。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-2">
+    <span class="s-id">T-2</span>
+    <span class="s-title">改口模板與範例，讓 Goals 只寫結果、構想進 Requested solution</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-2 的 Files 第一個檔 1-discussion.md，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-2 的 Blocked-by 寫 T-1，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-2 蓋的 S-1.1、S-1.3 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-1 / S-1.1, S-1.3</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">_templates/1-discussion.md, skills/dev-talk/nodes/S4-accept.md, example/contract-expiry-reminder/1-discussion.md, scripts/check-realworld.sh</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>python3 -c &quot;import pathlib; t=pathlib.Path(&#x27;_templates/1-discussion.md&#x27;).read_text(); e=pathlib.Path(&#x27;example/contract-expiry-reminder/1-discussion.md&#x27;).read_text(); s=pathlib.Path(&#x27;skills/dev-talk/nodes/S4-accept.md&#x27;).read_text(); sec=lambda text,h: (lambda i: &#x27;&#x27; if i&lt;0 else text[i+len(h):].split(chr(10)+&#x27;## &#x27;,1)[0])(text.find(h)); assert &#x27;## Goals&#x27; in t and &#x27;## Requested solution&#x27; in t; assert &#x27;畫面路徑 | API 端點&#x27; not in sec(t,&#x27;## Goals&#x27;) and &#x27;畫面路徑 | API 端點&#x27; not in sec(t,&#x27;## 驗收雛形&#x27;); assert &#x27;從哪裡看出結果發生&#x27; in s or &#x27;結果發生&#x27; in s; g=sec(e,&#x27;## Goals&#x27;); assert &#x27;就能看到&#x27; not in g and &#x27;點擊可直達&#x27; not in g and &#x27;一眼可見&#x27; not in g; assert &#x27;## Requested solution&#x27; in e; print(&#x27;T-2-ok&#x27;)&quot; &amp;&amp; bash scripts/check-realworld.sh</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-1</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常少抄到「Goal = dashboard」：打開模板會看到結果欄與構想欄分開；驗收雛形改問結果在哪被看見，不再預填畫面／API 通道。抄完整範例時，Goals 三句不再把登入／點擊／一眼可見當成目標本身；若仍要提 dashboard／卡片／URL，只出現在 Requested solution 且標未定案。改的是人會抄的那三層指令，不是另寫一份討論指南。不會變成黑名單掃 dashboard 詞、不會在本 T 改 N3 問法、不會把 example Interview「最低成本呈現面」留成已核目標。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>只准改 Files 四檔。1-discussion 同檔欄擁有 Goals／Requested solution 節名；S4-accept 只改「從哪看」問句，不得把元件／JSON 當 Goal。example 是活教師，必須同期改口（1A／Q14），禁止另開 slug 才改範例。禁止 dashboard／API 黑名單（S-1.4 已由 T-1 守）。realworld 本 T 只准加模板／範例地板 check，不得撤回 T-1 的錯欄 fixture。禁止改 STATUS／HISTORY、禁止 bump plugin。Actor=採用者（會抄 example）；Goal=抄範例時寫結果；Recovery=若 Goals 仍鎖通道，同一 T 改到符合 THEN。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-3">
+    <span class="s-id">T-3</span>
+    <span class="s-title">讓發現題路徑禁附推薦，刪掉一邊前綴就紅</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-3 的 Files 第一個檔 N3-probe.md，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-3 的 Blocked-by 寫 T-2，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-3 蓋的 S-2.1、S-2.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-2 / S-2.1, S-2.2, S-2.3</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">skills/dev-talk/nodes/N3-probe.md, skills/dev-talk/SKILL.md, guides/guide-dev-talk.html, scripts/check-realworld.sh, scripts/fixtures/discovery-gaps/, scripts/test-architecture-guards.sh</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>python3 -c &quot;import pathlib; n=pathlib.Path(&#x27;skills/dev-talk/nodes/N3-probe.md&#x27;).read_text(); k=pathlib.Path(&#x27;skills/dev-talk/SKILL.md&#x27;).read_text(); assert &#x27;發現｜&#x27; in n and &#x27;裁決｜&#x27; in n and &#x27;禁附推薦&#x27; in n; assert &#x27;發現｜&#x27; in k or &#x27;禁附推薦&#x27; in k; assert &#x27;連續兩輪無新問題&#x27; not in n.split(&#x27;## 完成條件&#x27;,1)[-1].split(&#x27;## &#x27;,1)[0] or &#x27;輔助&#x27; in n; print(&#x27;T-3-skill&#x27;)&quot; &amp;&amp; test -f scripts/fixtures/discovery-gaps/probe-decision-with-options.md &amp;&amp; python3 -c &quot;import pathlib; t=pathlib.Path(&#x27;scripts/check-realworld.sh&#x27;).read_text(); assert &#x27;發現｜&#x27; in t and &#x27;裁決｜&#x27; in t; print(&#x27;T-3-wired&#x27;)&quot; &amp;&amp; bash scripts/check-realworld.sh</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-2</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常被問「上次真的怎麼做」時，題目本身不再先塞推薦答案。發現題帶 <code>發現｜</code>、禁附推薦；裁決題帶 <code>裁決｜</code>、可以附本方案／Non-Goal／另開 slug。有人從 N3 或指南刪掉其中一邊前綴，同一支 realworld 會紅。裁決題附選項不會被當成發現題違規。改的是問句前綴與靜態對稱牙，不是還原整場對話。不會變成從最終 1-discussion 重放訪談、不會把「連續兩輪無新問題」留成唯一完成條件。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>只准改 Files 六檔。N3-probe 擁有發現／裁決路徑硬規則；<code>skills/dev-talk/SKILL.md</code> 入口摘要必須同期改口（指南 <code>guide-dev-talk.html</code> 抄的是 SKILL 摘要，只改指南會漂）。指南與 SKILL 不得新造第二份問句正本。realworld 擁有前綴對稱與「發現題附推薦」形，不還原對話（Known limit ①）。S-2.2 隔離複本突變可寫進 <code>test-architecture-guards.sh</code>，禁止另開檢查家族。完成條件改為必查面已覆蓋、關鍵反例已問、證據缺口已顯性化；兩輪只標輔助。禁止改 S4-accept（屬 T-2）、禁止改 guard。Actor=訪談對象／討論 agent；Goal=不被錨定；Recovery=若問句已附推薦，重寫為 <code>發現｜</code> 開放題再問。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-4">
+    <span class="s-id">T-4</span>
+    <span class="s-title">讓高影響主張缺來源且缺期限就紅，點頭不得當獨源</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-4 的 Files 第一個檔 S1-survey.md，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-4 的 Blocked-by 寫 T-3，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-4 蓋的 S-3.1、S-3.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-3 / S-3.1, S-3.2, S-3.3, S-3.4, S-3.5; R-8 / S-8.4</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">skills/dev-talk/nodes/S1-survey.md, scripts/check-realworld.sh, scripts/fixtures/discovery-gaps/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>python3 -c &quot;import pathlib; s=pathlib.Path(&#x27;skills/dev-talk/nodes/S1-survey.md&#x27;).read_text(); assert &#x27;認可後的清單 = 本次「已核事實」&#x27; not in s and &#x27;認可&#x27; in s; print(&#x27;T-4-skill&#x27;)&quot; &amp;&amp; test -f scripts/fixtures/discovery-gaps/nod-as-only-source.md &amp;&amp; test -f scripts/fixtures/discovery-gaps/enum-unknown.md &amp;&amp; test -f scripts/fixtures/discovery-gaps/ticket-solution-as-fact.md &amp;&amp; python3 -c &quot;import pathlib; t=pathlib.Path(&#x27;scripts/check-realworld.sh&#x27;).read_text(); assert &#x27;點頭&#x27; in t and &#x27;Observed&#x27; in t and &#x27;Reported&#x27; in t; print(&#x27;T-4-wired&#x27;)&quot; &amp;&amp; bash scripts/check-realworld.sh</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-3</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常沿一條高影響痛點往回走時，要嘛碰到可重開來源，要嘛碰到 Assumption 加期限。只寫「使用者反映」或「使用者點頭」會紅；狀態寫 Unknown／Fact 會紅。有 Observed+可重開來源，或 Assumption+期限+四欄，會綠。普通已核 path:L 句沒寫「風險=高」不必貼枚舉。ticket／SOP 裡的「建議做 dashboard」不得標 Observed。改的是高影響列形狀與 S1 認可語意，不是每句 Context 都貼標籤。不會變成全句枚舉儀式、不會把點頭升成已核事實。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>只准改 Files 三檔。高影響抽樣鎖定 4-spec R-3／DD-1（Workarounds／Exceptions／Journey 痛點非空／<code>[Assumption]</code> 或 <code>[~]</code> 且風險或影響級為高／Interview ⚠️）。狀態 ∈ {Observed, Reported, Inferred, Assumption, Conflict}。來源 XOR Assumption+期限。S-8.4 與 S-3.1 同一支主張牙，不另開入口。S1-survey 改「認可 ≠ 來源升格」，禁止把認可後清單當唯一來源。realworld 擁有枚舉／來源／點頭／ticket 解法判定；不得把過期假設擋點放進來（屬 T-5 spec-gate）。禁止發第二鏈編號。Actor=討論 agent／G1 reviewer；Goal=認可是確認理解不是驗證營運事實；Recovery=改標 Assumption 或補可重開 path 後重跑。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-5">
+    <span class="s-id">T-5</span>
+    <span class="s-title">讓過期未驗 Assumption 在 spec-gate 被拒，已驗或 OC 放行</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-5 的 Files 第一個檔 check-spec-gate.sh，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-5 的 Blocked-by 寫 T-4，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-5 蓋的 S-4.1、S-4.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-4 / S-4.1, S-4.2, S-4.3, S-4.4</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/check-spec-gate.sh, _templates/1-discussion.md, example/contract-expiry-reminder/1-discussion.md, scripts/check-realworld.sh, scripts/fixtures/discovery-gaps/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>{ bash scripts/check-spec-gate.sh scripts/fixtures/discovery-gaps/assumption-expired-open.md; test $? -eq 1; } &amp;&amp; bash scripts/check-spec-gate.sh scripts/fixtures/discovery-gaps/assumption-resolved.md &amp;&amp; bash scripts/check-spec-gate.sh docs/dev/requirement-discovery-gaps/4-spec.md &amp;&amp; python3 -c &quot;import pathlib; t=pathlib.Path(&#x27;_templates/1-discussion.md&#x27;).read_text(); e=pathlib.Path(&#x27;example/contract-expiry-reminder/1-discussion.md&#x27;).read_text(); assert all(x in t for x in [&#x27;若為假影響什麼&#x27;,&#x27;影響級&#x27;,&#x27;怎麼驗&#x27;]); assert all(x in e for x in [&#x27;若為假影響什麼&#x27;,&#x27;影響級&#x27;,&#x27;怎麼驗&#x27;]); print(&#x27;T-5-floor&#x27;)&quot; &amp;&amp; bash scripts/check-realworld.sh</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-4</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常送 G2 前，過期還 open 的高影響假設會在同一支 <code>check-spec-gate.sh</code> 被拒，人看得見拒絕，不是「模板有欄就綠」。已轉 resolved，或 Owner Call 寫 oc-accepted，該列不擋。模板與範例看得到 Assumption 四欄（若為假影響什麼／影響級／怎麼驗／何時／由誰驗）。改的是既有 G2 Gate 加項與教師地板，不是第二支送審 CLI。不會變成 spec-gate 判語意、不會把過期假設檢查塞進 realworld。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>spec-gate 擁有 4-spec 送審通過／失敗；只讀、不寫 4-spec。新項與 C1–C6 同檔（建議 C7 Assumption refs）；C1–C6 保留，只加項。refs 表三欄：引用／deadline／status∈{open,resolved,oc-accepted}；deadline=<code>YYYY-MM-DD</code> 或 <code>stage-2</code>／<code>stage-3</code>。open + 已過站或過去日且無 oc-accepted → exit 1。禁止新開第二支 G2 CLI。S-4.4 四欄地板走 realworld，不得把過期擋點放到 realworld。本 T 改 1-discussion 只加 Assumption 四欄，不得撤回 T-2 分欄。本 slug 4-spec 三列 oc-accepted 必須仍綠（S-4.3）。Actor=G2 reviewer；Goal=過期高影響假設進不了 G2；Recovery=改 status=resolved 或 oc-accepted 後重跑，不要口頭說「知道有假設」。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-6">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-6">
+    <span class="s-id">T-6</span>
+    <span class="s-title">讓 Human verdict 一行看出驗了哪個角色與哪場</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-6 的 Files 第一個檔 3-prototype.md，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-6 的 Blocked-by 寫 T-5，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-6 蓋的 S-5.1、S-5.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-5 / S-5.1, S-5.2, S-5.3</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">_templates/3-prototype.md, example/contract-expiry-reminder/3-prototype.md, scripts/check-realworld.sh, scripts/fixtures/discovery-gaps/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>python3 -c &quot;import pathlib; t=pathlib.Path(&#x27;_templates/3-prototype.md&#x27;).read_text(); e=pathlib.Path(&#x27;example/contract-expiry-reminder/3-prototype.md&#x27;).read_text(); assert &#x27;role=&#x27; in t and &#x27;scenario=&#x27; in t; assert &#x27;role=&#x27; in e and &#x27;scenario=&#x27; in e; assert &#x27;本包必填全表&#x27; not in t and &#x27;Actor Coverage&#x27; not in t; print(&#x27;T-6-template&#x27;)&quot; &amp;&amp; test -f scripts/fixtures/discovery-gaps/verdict-accepted-only.md &amp;&amp; python3 -c &quot;import pathlib; r=pathlib.Path(&#x27;scripts/check-realworld.sh&#x27;).read_text(); assert &#x27;role=&#x27; in r and &#x27;scenario=&#x27; in r; print(&#x27;T-6-wired&#x27;)&quot; &amp;&amp; bash scripts/check-realworld.sh</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-5</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常後讀 3-prototype 時，遮住前後文只看 Human verdict 那一行，要答得出驗了誰、驗了哪場。只寫 ACCEPTED 加姓名日期會紅。寫成 <code>ACCEPTED | role=… | scenario=…</code> 且 attestation 仍在，會綠。模板與範例不得要求 Actor Coverage 全表。改的是 verdict 一行格式與 realworld 殘行牙，不是新造角色覆蓋表。不會變成 Agent 代填 attestation、不會把 LIGHT 做成全表。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>格式鎖定 <code>&lt;ENUM&gt; | role=&lt;Actors 表角色&gt; | scenario=&lt;AC-id 或 Demo Script 場景名&gt;</code>（DD-7／8A）。既有 attestation 牙（不是 Agent 代填）必須仍在；無 attestation 的 ACCEPTED 仍拒。realworld 在 ENUM=ACCEPTED 時發動 role／scenario 檢查。禁止加 Actor Coverage 全表必填指令（已拒 8B）。本 T 不改 guard、不改 spec-gate。Actor=後讀 3-prototype 的人；Goal=一行內答出驗了誰、驗了哪場；Recovery=改成完整一行後重跑，或改 NOT_REVIEWED。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-7">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-7">
+    <span class="s-id">T-7</span>
+    <span class="s-title">讓 Stage 1 高影響痛點到 Stage 4 每條都有去向</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-7 的 Files 第一個檔 check-spec-gate.sh，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-7 的 Blocked-by 寫 T-5，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-7 蓋的 S-6.1、S-6.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-6 / S-6.1, S-6.2, S-6.3, S-6.4</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/check-spec-gate.sh, _templates/2-decision.md, _templates/4-spec.md, example/contract-expiry-reminder/2-decision.md, example/contract-expiry-reminder/4-spec.md, scripts/fixtures/discovery-gaps/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>{ bash scripts/check-spec-gate.sh scripts/fixtures/discovery-gaps/disposition-missing.md; test $? -eq 1; } &amp;&amp; python3 -c &quot;import pathlib; t2=pathlib.Path(&#x27;_templates/2-decision.md&#x27;).read_text(); t4=pathlib.Path(&#x27;_templates/4-spec.md&#x27;).read_text(); assert &#x27;去向&#x27; in t2 and &#x27;## Real-world Disposition&#x27; in t4; print(&#x27;T-7-template&#x27;)&quot; &amp;&amp; test &quot;$(rg -n &#x27;RW-[0-9]&#x27; _templates/2-decision.md _templates/4-spec.md docs/dev/requirement-discovery-gaps/2-decision.md docs/dev/requirement-discovery-gaps/4-spec.md example/contract-expiry-reminder/2-decision.md example/contract-expiry-reminder/4-spec.md | wc -l | tr -d &#x27; &#x27;)&quot; -eq 0 &amp;&amp; bash scripts/check-spec-gate.sh docs/dev/requirement-discovery-gaps/4-spec.md</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-5</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常對一次 Stage 1 原文片段，後面還看得到去向。full lane 缺 <code>## Real-world Disposition</code>、或去向空白，同一支 spec-gate 會紅。標「本方案處理」的下落必須有 <code>R-</code> 或 <code>S-</code> id；其餘落到 Out of Scope／Known limit／後續 slug。引用欄是原文，不是 RW-1 這種第二鏈編號。改的是 Stage 2／4 對帳表與 Gate 形狀項，不是另發 ID 鏈。不會變成每句 Context 都建帳、不會讓本 slug 已寫好的 disposition 表被誤殺。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>spec-gate 加 disposition 形狀項（建議 C9）；full 必有表，去向五值。本方案處理 → 下落匹配 <code>R-</code> 或 <code>S-</code>（4A／DD-4）。引用 = Stage 1 原文片段，禁止 <code>RW-[0-9]</code> 第二鏈。2-decision／4-spec disposition 擁有去向與下落；不得改 STATUS 寫入口。example 對應檔同一刀改口。Verify 用的 <code>scripts/fixtures/discovery-gaps/disposition-missing.md</code> 必須列在 Files（本 T 已含目錄），否則 Stage 6 寫 fixture 會被 scope guard 擋。本 T 不改 1-discussion、不改 Fast 六問（屬 T-10）。S-6.4 的 <code>rg</code> 零命中含本 slug 已核准檔；負向對照句只寫「不得發第二鏈」不算發 ID。Actor=收斂者／G2 reviewer；Goal=痛點不能無聲消失；Recovery=按 2-decision 表抄進 4-spec 並填 S-id 或 Out of Scope。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-8">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-8">
+    <span class="s-id">T-8</span>
+    <span class="s-title">讓出貨 Exit 留下回看四欄，結果走 HISTORY 追加</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-8 的 Files 第一個檔 7-review.md，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-8 的 Blocked-by 寫 T-6，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-8 蓋的 S-7.1、S-7.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-7 / S-7.1, S-7.2, S-7.3</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">_templates/7-review.md, example/contract-expiry-reminder/7-review.md, scripts/check-realworld.sh, scripts/fixtures/discovery-gaps/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>python3 -c &quot;import pathlib; t=pathlib.Path(&#x27;_templates/7-review.md&#x27;).read_text(); e=pathlib.Path(&#x27;example/contract-expiry-reminder/7-review.md&#x27;).read_text(); assert all(x in t for x in [&#x27;回看日期&#x27;,&#x27;回看 owner&#x27;,&#x27;資料來源&#x27;,&#x27;低於何值重開&#x27;]); assert all(x in e for x in [&#x27;回看日期&#x27;,&#x27;回看 owner&#x27;,&#x27;資料來源&#x27;,&#x27;低於何值重開&#x27;]); assert &#x27;lookback.md&#x27; not in t and &#x27;history-append.sh&#x27; in t; print(&#x27;T-8-floor&#x27;)&quot; &amp;&amp; test -f scripts/fixtures/discovery-gaps/lookback-missing-threshold.md &amp;&amp; bash scripts/check-realworld.sh</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-6</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常勾 Exit 準備 shipped 時，人看得到誰／何時／用什麼資料回看、低於何值重開。模板或範例缺四欄之一會紅。已宣稱 shipped 且出現回看節卻缺「低於何值重開」會紅；舊 7-review 根本沒回看節不誤殺。結果到期用既有 <code>history-append.sh</code> 追加，不另造永久 lookback 檔。改的是 Exit 約定與 realworld 地板，不是新文件種類。不會變成 G3 要等數週結果、不會讓牙去判「指標是否代表改善」。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>7-review Exit 擁有回看四欄；結果入口鎖定 <code>scripts/history-append.sh</code>。禁止新建 <code>lookback.md</code> 或永久 lookback 檔（已拒 5C）。填檔牙只在 7-review 已出現回看節或四欄名時發動（DD-6）。指標是否代表問題改善是人判；到期未回看不得把問題寫成已改善。本 T 不改 STATUS 正本表列、不改 history-append.sh 演算法。Actor=owner；Goal=出貨時留下回看約定；Recovery=補缺欄後重跑，不要另造 lookback.md。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-9">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-9">
+    <span class="s-id">T-9</span>
+    <span class="s-title">讓 owner 核准後的事實路徑讀得到，方案檔與未核路徑仍禁</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-9 的 Files 第一個檔 devtalk-guard.sh，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-9 的 Blocked-by 寫 T-5，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-9 蓋的 S-8.1、S-8.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-8 / S-8.1, S-8.2, S-8.3</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">hooks/devtalk-guard.sh, hooks/selftest.sh, _templates/1-discussion.md, example/contract-expiry-reminder/1-discussion.md, scripts/fixtures/discovery-gaps/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>python3 -c &quot;import json,os,pathlib,subprocess; t=pathlib.Path(&#x27;_templates/1-discussion.md&#x27;).read_text(); e=pathlib.Path(&#x27;example/contract-expiry-reminder/1-discussion.md&#x27;).read_text(); assert &#x27;## Evidence manifest&#x27; in t and &#x27;owner 核准&#x27; in t; assert &#x27;## Evidence manifest&#x27; in e; man=pathlib.Path(&#x27;scripts/fixtures/discovery-gaps/guard-read-1-discussion.md&#x27;); assert man.is_file(); mt=man.read_text(); assert &#x27;## Evidence manifest&#x27; in mt and &#x27;_templates/1-discussion.md&#x27; in mt and &#x27;是&#x27; in mt; assert &#x27;2-decision&#x27; in mt; assert &#x27;notes/review-requirement-discovery-gaps.md&#x27; in mt and (&#x27;未核&#x27; in mt or &#x27;空白&#x27; in mt); root=pathlib.Path(&#x27;.&#x27;).resolve(); guard=str(root/&#x27;hooks/devtalk-guard.sh&#x27;); cur=root/&#x27;.devtalk-cursor.json&#x27;; old=cur.read_text() if cur.is_file() else None; cur.write_text(json.dumps({&#x27;node&#x27;:&#x27;N3-probe&#x27;,&#x27;MEMORY_SESSION_ID&#x27;:&#x27;t9-verify&#x27;})+&#x27;\n&#x27;); env=os.environ.copy(); env[&#x27;DEVTALK_MANIFEST&#x27;]=str(man.resolve()); run=lambda rel: subprocess.run([&#x27;bash&#x27;,guard],input=json.dumps({&#x27;tool_name&#x27;:&#x27;Read&#x27;,&#x27;tool_input&#x27;:{&#x27;file_path&#x27;:str(root/rel)}}),text=True,capture_output=True,env=env); ps=[(&#x27;S-8.1&#x27;,run(&#x27;_templates/1-discussion.md&#x27;),0,()), (&#x27;S-8.2&#x27;,run(&#x27;docs/dev/requirement-discovery-gaps/2-decision.md&#x27;),2,(&#x27;2-decision&#x27;,&#x27;4-spec&#x27;,&#x27;方案檔&#x27;)), (&#x27;S-8.3&#x27;,run(&#x27;notes/review-requirement-discovery-gaps.md&#x27;),2,())]; cur.write_text(old) if old is not None else cur.unlink(missing_ok=True); bad=[(tag,p.returncode,(p.stdout or &#x27;&#x27;)+(p.stderr or &#x27;&#x27;)) for tag,p,want,need in ps if not ((p.returncode==want) and (not need or any(x in ((p.stdout or &#x27;&#x27;)+(p.stderr or &#x27;&#x27;)) for x in need)))]; assert not bad, bad; print(&#x27;T-9-read-ok&#x27;)&quot;</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-5</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常討論期，owner 在 1-discussion 同檔的 Evidence manifest 把核准格寫成「是」之後，Read 該擬路徑不再被圍欄擋下。有人把 2-decision／4-spec 列進去且誤寫核准=是，Read 仍 exit 2。核准=未核或空白的路徑不得當已授權 evidence，Read 會擋。改的是同一支 <code>devtalk-guard.sh</code> 的 Read 允許集合，不是另開 evidence CLI。不會變成主機層 OS hook、不會讓核准格覆寫 2–7 禁令、不會另造永久 manifest 檔。Verify 必須真的餵 <code>tool_name=Read</code> 跑三案 exit，不准只數 selftest 字樣。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>guard 擁有討論期擋讀。talk 游標在時才發動 Read 分支；游標不在維持今日只掃 <code>skills/dev-talk/*</code> 寫入洩漏。放行核准=是；仍禁 2-decision／3-prototype／4-spec／5-tasks／6-implementation-notes／7-review（含 html twin）。核准 ∈ {是, 未核, 禁}；是不能覆寫 2–7 禁令。manifest 節名 <code>## Evidence manifest</code>，住 1-discussion 同檔，五欄：想找哪類／為什麼／擬路徑或來源／owner 核准／已讀（DD-5／6A）。測試縫：fixture <code>scripts/fixtures/discovery-gaps/guard-read-1-discussion.md</code> 列出三列（核准=是的 <code>_templates/1-discussion.md</code>、核准即使為是的 <code>2-decision</code>、核准=未核的 <code>notes/review-requirement-discovery-gaps.md</code>）；Verify 寫 ephemeral <code>.devtalk-cursor.json</code> 並設 <code>DEVTALK_MANIFEST</code> 指向該 fixture，再對三條路徑跑 Read。禁止新開 <code>check-evidence-allow.sh</code>、禁止另檔 evidence-manifest.md。selftest 可加 Read 回歸，但 Verify 不靠 <code>grep -c</code>。S-8.4 已由 T-4 同一主張牙承接，本 T 不改 realworld。Known limit ②：人跳過 hook 硬讀方案檔，本 feat 不新造 OS hook。Actor=討論 agent；Goal=核准後讀得到事件／行為／結果，方案檔仍進不去；Recovery=先列「想找哪類＋為什麼」等 owner 核；方案檔從擬路徑刪掉。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-10">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-10">
+    <span class="s-id">T-10</span>
+    <span class="s-title">讓 Fast 寫規格前收完六問，空白不是已分診</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-10 的 Files 第一個檔 check-spec-gate.sh，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-10 的 Blocked-by 寫 T-7，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-10 蓋的 S-9.1、S-9.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-9 / S-9.1, S-9.2, S-9.3, S-9.4, S-9.5</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/check-spec-gate.sh, _templates/4-spec.md, skills/dev-flow/SKILL.md, scripts/fixtures/discovery-gaps/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>{ bash scripts/check-spec-gate.sh scripts/fixtures/discovery-gaps/fast-blank-triage.md; test $? -eq 1; } &amp;&amp; { bash scripts/check-spec-gate.sh scripts/fixtures/discovery-gaps/fast-hit-no-dest.md; test $? -eq 1; } &amp;&amp; bash scripts/check-spec-gate.sh scripts/fixtures/discovery-gaps/fast-visual-all-no.md &amp;&amp; bash scripts/check-spec-gate.sh docs/dev/requirement-discovery-gaps/4-spec.md &amp;&amp; python3 -c &quot;import pathlib,re; t=pathlib.Path(&#x27;_templates/4-spec.md&#x27;).read_text(); s=pathlib.Path(&#x27;skills/dev-flow/SKILL.md&#x27;).read_text(); assert &#x27;## Fast early risk triage&#x27; in t; assert &#x27;六問&#x27; in s or &#x27;Fast early risk&#x27; in s; w=pathlib.Path(&#x27;scripts/fixtures/discovery-gaps/fast-wait-shown-as-done.md&#x27;).read_text(); assert &#x27;等待被顯示成完成&#x27; in w; assert re.search(r&#x27;是.+等待被顯示成完成|等待被顯示成完成&#x27;, w); assert any(x in w for x in (&#x27;full&#x27;,&#x27;fast+mini&#x27;,&#x27;OC&#x27;)); assert &#x27;待裁&#x27; not in w; assert re.search(r&#x27;去向&#x27;, w) and not re.search(r&#x27;去向\s*[|=:：]\s*Fast\b&#x27;, w); print(&#x27;T-10-ok&#x27;)&quot;</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-7</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常 Fast 想直接開寫 4-spec 時，必須先填六問（改變下一步／權限核准語意／等待完成語意／角色交接／系統外動作／中斷恢復），每問是或否加一句。表空白或六問答欄空，spec-gate 會紅。只改一個狀態字、把等待顯示成完成，第 3 問必須是「是」，去向不得空白也不得是 Fast。命中卻寫「待裁」會紅。六問全否、已有 approved spec、不改語意的純視覺，去向=Fast 仍可 Fast。本檔 lane=full 沒有六問表，不得被 Fast 項誤殺。改的是進 4 前分診與同一支 spec-gate，不是拆掉 Fast 可跳過 1–3。不會變成命中一律升 full、不會新造 triage 卡檔。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>節名鎖定 <code>## Fast early risk triage</code>，必須在 <code>## ADDED Requirements</code> 之前（DD-3）。僅 <code>lane: fast</code> 發動；full 缺表 no-fire（S-9.5 用本 slug 4-spec）。去向 ∈ {Fast, full, fast+mini, OC}。命中後去向空白或 <code>待裁</code> → exit 1。禁止改七關結構、禁止刪「Fast 合法跳過 1–3」（刻意維持）。spec-gate 加 Fast 項（建議 C8），不判「不改語意」（仍是 reviewer 對 diff）。禁止新造 triage 卡或另檔。SKILL Fast 段改「進 4 前六問；命中由 owner 裁」，不得把六問寫成進 4 之後才列。Actor=Fast 實作者／owner；Goal=寫 4-spec 前先收完六問，等待誤標不能當純視覺 Fast；Recovery=填滿六問與去向後重跑。</p></div></details>
+  </div>
+</article>
+</div>
+<h2 class="apx-h">背景資料(預設收合,內容零刪減)</h2>
+<details class="doc" id="sec-開工前提"><summary><span>開工前提</span></summary><div class="doc-in"><p>Stage 4 已核准。G2 PASS 已在 tip（#278）。本 hop 不改 <code>4-spec.md</code>／<code>4-spec.html</code>。</p><p>牙只延伸既有 <code>check-realworld.sh</code>／<code>check-spec-gate.sh</code>／<code>devtalk-guard.sh</code>（及它們已掛進的 <code>devflow-check.sh</code>），禁止新開 <code>check-discovery-gaps.sh</code> 或任何第二檢查家族（OC-1）。</p><p>fixture 目錄建議 <code>scripts/fixtures/discovery-gaps/</code>（4-spec DD 下層；本 hop 只點名，Stage 6 才新增檔）。</p><p>Design Boundary Contract = applicable。每個 T 的 Boundaries 只摘該 T 碰得到的禁區。</p><p>### N1 R/S 盤點（35 S）</p><div class="tablewrap"><table><thead><tr><th>R</th><th>S</th><th>本 hop T</th></tr></thead><tbody><tr><td>R-1 分辨工作結果與解法構想</td><td>S-1.2 錯欄紅；S-1.4 不採黑名單</td><td>T-1（OC-1 同一入口）</td></tr><tr><td>R-1（續）</td><td>S-1.1 模板分欄；S-1.3 example 改口</td><td>T-2</td></tr><tr><td>R-2 發現題不先塞推薦</td><td>S-2.1、S-2.2、S-2.3</td><td>T-3</td></tr><tr><td>R-3 高影響主張回來源或期限</td><td>S-3.1、S-3.2、S-3.3、S-3.4、S-3.5</td><td>T-4</td></tr><tr><td>R-8（同主張牙）</td><td>S-8.4 ticket／SOP 解法不當事實</td><td>T-4</td></tr><tr><td>R-4 過期假設擋 G2</td><td>S-4.1、S-4.2、S-4.3、S-4.4</td><td>T-5</td></tr><tr><td>R-5 verdict 一行角色場景</td><td>S-5.1、S-5.2、S-5.3</td><td>T-6</td></tr><tr><td>R-6 痛點列逐條有去向</td><td>S-6.1、S-6.2、S-6.3、S-6.4</td><td>T-7</td></tr><tr><td>R-7 出貨留下回看四欄</td><td>S-7.1、S-7.2、S-7.3</td><td>T-8</td></tr><tr><td>R-8 核准後讀得到且方案檔仍禁</td><td>S-8.1、S-8.2、S-8.3</td><td>T-9</td></tr><tr><td>R-9 Fast 寫規格前收完六問</td><td>S-9.1、S-9.2、S-9.3、S-9.4、S-9.5</td><td>T-10</td></tr></tbody></table></div><p>### Verify 開工前原樣跑（2026-09-13；牙尚未落地）</p><div class="tablewrap"><table><thead><tr><th>T</th><th>結果</th><th>處置</th></tr></thead><tbody><tr><td>T-1</td><td><code>scripts/fixtures/discovery-gaps/</code> 不存在；<code>check-realworld.sh</code> 無錯欄 fixture 針</td><td>③綠不了但方向對</td></tr><tr><td>T-2</td><td><code>_templates/1-discussion.md</code> 無 <code>## Requested solution</code>；L96 仍寫 `畫面路徑 \</td><td>API 端點`</td><td>③方向對</td></tr><tr><td>T-3</td><td><code>N3-probe.md</code> 仍寫「附推薦答案」；無 <code>發現｜</code>／<code>裁決｜</code></td><td>③方向對</td></tr><tr><td>T-4</td><td><code>S1-survey.md</code> 仍寫「認可後的清單 = 已核事實」；無點頭／枚舉 fixture</td><td>③方向對</td></tr><tr><td>T-5</td><td><code>assumption-expired-open.md</code> 不存在；spec-gate 尚無 Assumption 項</td><td>③方向對</td></tr><tr><td>T-6</td><td><code>_templates/3-prototype.md</code> Human verdict 只有 ENUM，無 <code>role=</code>／<code>scenario=</code></td><td>③方向對</td></tr><tr><td>T-7</td><td>模板無 <code>## Real-world Disposition</code>；缺表 fixture 不存在</td><td>③方向對</td></tr><tr><td>T-8</td><td><code>_templates/7-review.md</code> 無「回看日期」四欄</td><td>③方向對</td></tr><tr><td>T-9</td><td>模板無 <code>## Evidence manifest</code>；guard 無 Read 分支；<code>guard-read-1-discussion.md</code> 不存在</td><td>③方向對</td></tr><tr><td>T-10</td><td>Fast triage fixture 不存在；<code>fast-wait-shown-as-done.md</code> 無 S-9.2 表內容</td><td>③方向對</td></tr></tbody></table></div></div></details><details class="doc" id="sec-Split-Decisions-拆分自判"><summary><span>Split Decisions(拆分自判)</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>決策</th><th>理由</th><th>依據</th><th>棄項</th></tr></thead><tbody><tr><td>sequential，不開 parallel</td><td>Feature Risk high；多 T 重疊 <code>check-realworld.sh</code>／<code>check-spec-gate.sh</code>／<code>_templates/1-discussion.md</code>。parallel 須明確啟用，本 hop 選缺省。</td><td><code>_templates/5-tasks.md</code> execution.mode 缺省 sequential；4-spec Verification Profile Risk high</td><td>棄 T-6 ∥ T-7。檔案不重疊可平行，但 sequential 較保守。</td></tr><tr><td>T-1 先鎖 OC-1 三牙 + S-1.2／S-1.4</td><td>Variant B：三牙約束若混進教師改口，Verify 會變成「錯欄 fixture」與「改模板」兩套不相干指令。先打通最薄縱切：同一入口指出錯欄、不採黑名單、沒有第四家族。</td><td>4-spec OC-1／S-1.2「同一入口，不另開 check-discovery-gaps.sh」；模板「Verify 要跑兩套不相干指令 → 拆 T」</td><td>棄「R-1 九個 S 一 T」（Files 恰 5，但 Verify 兩套不相干）。棄新開 <code>check-discovery-gaps.sh</code>。</td></tr><tr><td>R-1 其餘教師獨立 T-2</td><td>S-1.1／S-1.3 是人抄的活教師；T-1 若同時改模板，錯欄牙與分欄地板會綁死，T-1 無法單獨 RED→GREEN。</td><td>4-spec S-1.1／S-1.3；T 自足律</td><td>棄 T-1 含模板（T-1 Verify 會等 T-2 才綠）。</td></tr><tr><td>其餘一 R 一 T</td><td>Variant B 偏置：Files ≤5 且 Verify 同一支牙就合併。R-2…R-7、R-9 各一 T。</td><td>模板「一個 T 一個關注點」；owner brief 一 T 每 R</td><td>棄按 check-realworld／spec-gate／guard 三層橫切（那是架構層）。</td></tr><tr><td>S-8.4 併進 T-4</td><td>S-8.4 明文與 S-3.1 同一支主張牙；拆開會讓兩 T 改同一 realworld 函式、Verify 重複。</td><td>4-spec S-8.4「跑 S-3.1 同一支主張牙」</td><td>棄 S-8.4 跟 T-9（T-9 Files 會超過 ~5：guard＋selftest＋兩份 1-discussion＋realworld＋fixture）。</td></tr><tr><td>T-9 不含 realworld</td><td>Read 圍欄是 guard；S-8.4 已在 T-4。T-9 Files 含 fixture 目錄供 <code>guard-read-1-discussion.md</code>。Verify 真跑 Read 三案 exit，不數 selftest 字樣。</td><td>4-spec S-8.1 觀測「guard 對該 Read 的 exit」；Reviewer must-fix</td><td>棄 <code>grep -c &#x27;devtalk-guard Read&#x27; hooks/selftest.sh</code>。</td></tr><tr><td>T-7 與 T-10 都改 spec-gate，硬順序 T-7→T-10</td><td>兩 T 加的是不同項（disposition vs Fast），但同一檔。T-10 也改 <code>_templates/4-spec.md</code>（T-7 先加 Disposition）。</td><td>4-spec DD 下層 C8／C9；Files overlap</td><td>棄 T-10 Blocked-by T-5（會與 T-7 搶 4-spec 模板）。</td></tr><tr><td>不切 G3、不切 Stage 6 落地碼</td><td>owner brief：只寫 Stage 5；status 留 draft。</td><td>本 hop brief；4-spec Out of Scope「本 hop 開 5-tasks／發明 G3」指的是 Stage 4 hop</td><td>棄本 hop 把 status 轉 approved（N6 定案權在 owner；brief 要求 draft）。</td></tr></tbody></table></div></div></details>
+<footer class="foot">由 <code>scripts/build-gate-twin.py</code> 從 md 正本逐條解析產生,不手抄。</footer>
+</div>
+<script>
+(function(){
+  var boxes = [].slice.call(document.querySelectorAll('.s-chk'));
+  if (!boxes.length) return;
+  var bar = document.querySelector('.bar i'), done = document.getElementById('done');
+  var KEY = 'devflow-gate-twin:' + document.title;
+  function load(){ try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ return {}; } }
+  function save(s){ try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e){} }
+  var state = load();
+  function paint(){
+    var n = 0;
+    boxes.forEach(function(b){
+      var card = b.closest('.s-card');
+      if (b.checked){ n++; card.classList.add('done'); } else { card.classList.remove('done'); }
+    });
+    if (done) done.textContent = n;
+    if (bar) bar.style.width = (n / boxes.length * 100) + '%';
+  }
+  boxes.forEach(function(b){
+    if (state[b.dataset.sid]) b.checked = true;
+    b.addEventListener('change', function(){ state[b.dataset.sid] = b.checked; save(state); paint(); });
+  });
+  var clr = document.getElementById('clear');
+  if (clr) clr.addEventListener('click', function(){
+    state = {}; save(state); boxes.forEach(function(b){ b.checked = false; }); paint();
+  });
+  paint();
+})();
+</script>
+</body>
+</html>
