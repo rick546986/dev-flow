@@ -1,7 +1,9 @@
 #!/bin/bash
 # devtalk-guard.sh — dev-flow plugin 內建:dev-talk 盲原則守衛(PostToolUse hook)
 # 單一正本(隨 plugin 走,兩帳號共用同一 local plugin 目錄)。
-# 行為:非 skills/dev-talk/ 路徑靜默放行;dev-talk 檔案寫入後跑洩漏掃描,
+# 行為:非 skills/dev-talk/ 路徑靜默放行(talk 游標不在時);dev-talk 檔案寫入後跑洩漏掃描。
+#       talk 游標在時加 Read 分支:放行 Evidence manifest 核准=是;仍禁 2–7 方案檔;
+#       未核／空白不得當已授權。核准格不能覆寫 2–7 禁令。不另開 check-evidence-allow.sh。
 #       命中 → exit 2(stderr 回饋給模型要求立即修正),並 best-effort 記一筆
 #       observability 事件(P3 hook-event,通道與 _guard/_prebash/_postbash 的
 #       _obs_deny 相同 —— 都是呼叫 _obs_impl.py hook-event)。這裡是 bash 不是
@@ -13,6 +15,75 @@ INPUT=$(cat)
 FILE=$(printf '%s' "$INPUT" | "$DEVFLOW_PY" -c "import json,sys
 try: print(json.load(sys.stdin).get('tool_input',{}).get('file_path',''))
 except Exception: pass" 2>/dev/null)
+TOOL=$(printf '%s' "$INPUT" | "$DEVFLOW_PY" -c "import json,sys
+try: print(json.load(sys.stdin).get('tool_name',''))
+except Exception: pass" 2>/dev/null)
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+if [ -f "$REPO_ROOT/.devtalk-cursor.json" ] && [ "$TOOL" = "Read" ]; then
+  MANIFEST="${DEVTALK_MANIFEST:-}"
+  export DEVTALK_READ_FILE="$FILE"
+  export DEVTALK_MANIFEST_PATH="$MANIFEST"
+  export DEVTALK_REPO_ROOT="$REPO_ROOT"
+  "$DEVFLOW_PY" - <<'PY'
+import os, re, sys
+
+file_path = os.environ.get("DEVTALK_READ_FILE", "")
+root = os.environ.get("DEVTALK_REPO_ROOT", "")
+manifest_path = os.environ.get("DEVTALK_MANIFEST_PATH", "")
+
+def rel(path):
+    try:
+        return os.path.relpath(os.path.realpath(path), os.path.realpath(root)).replace("\\", "/")
+    except Exception:
+        return path.replace("\\", "/")
+
+rel_file = rel(file_path)
+base = os.path.basename(rel_file)
+# 2–7 方案檔硬擋（含 html twin）；核准=是不能覆寫
+solution = (
+    "2-decision", "3-prototype", "4-spec", "5-tasks",
+    "6-implementation-notes", "7-review",
+)
+stem = base.replace(".html", "").replace(".md", "")
+if stem in solution or any(name in rel_file for name in solution):
+    print(f"⛔ devtalk-guard:方案檔仍禁 —— Read {rel_file}（2-decision／4-spec／2–7 不得當事實）", file=sys.stderr)
+    raise SystemExit(2)
+
+if not manifest_path or not os.path.isfile(manifest_path):
+    print("⛔ devtalk-guard:未核路徑不得當已授權（無 Evidence manifest）", file=sys.stderr)
+    raise SystemExit(2)
+
+text = open(manifest_path, encoding="utf-8").read()
+sec = re.search(r"^## Evidence manifest.*?(?=^## |\Z)", text, re.M | re.S)
+if not sec:
+    print("⛔ devtalk-guard:未核路徑不得當已授權（無 ## Evidence manifest）", file=sys.stderr)
+    raise SystemExit(2)
+
+approved = False
+for line in sec.group(0).splitlines():
+    if not line.lstrip().startswith("|"):
+        continue
+    cells = [c.strip() for c in line.strip().strip("|").split("|")]
+    if len(cells) < 4 or cells[0].startswith("想找") or re.match(r"^:?-+:?$", cells[0] or ""):
+        continue
+    planned = cells[2] if len(cells) > 2 else ""
+    approval = cells[3] if len(cells) > 3 else ""
+    planned_norm = planned.replace("\\", "/").lstrip("./")
+    if planned_norm and (rel_file == planned_norm or rel_file.endswith(planned_norm) or planned_norm.endswith(rel_file)):
+        if approval == "是":
+            approved = True
+        else:
+            print(f"⛔ devtalk-guard:未核路徑不得當已授權 —— {planned}（核准={approval or '空白'}）", file=sys.stderr)
+            raise SystemExit(2)
+
+if not approved:
+    print(f"⛔ devtalk-guard:未核路徑不得當已授權 —— {rel_file}", file=sys.stderr)
+    raise SystemExit(2)
+raise SystemExit(0)
+PY
+  rc=$?
+  exit "$rc"
+fi
 case "$FILE" in
   */skills/dev-talk/*) : ;;
   *) exit 0 ;;

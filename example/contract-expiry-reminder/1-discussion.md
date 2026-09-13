@@ -64,6 +64,13 @@ updated: 2026-07-23
 | 法務回覆其實不到 3 天,提醒窗口過寬 | 中 | 抽 Email 時間戳 | Stage 2／業務主管 |
 | 共管重複聯絡頻率不是一季一次 | 低 | 對共管名單抽樣 | Stage 2／owner |
 
+## Evidence manifest
+| 想找哪類 | 為什麼 | 擬路徑或來源 | owner 核准 | 已讀 |
+|---|---|---|---|---|
+| 合約現況 | 核 end_date 與 CRUD 已在 | docs/specs/contracts.md | 是 | 是 |
+| 下游方案 | 不得當事實 | docs/dev/contract-expiry-reminder/2-decision.md | 禁 | |
+| 現場逐字稿 | 無採用 log | notes/review-requirement-discovery-gaps.md | 未核 | |
+
 ## Goals
 - 負責業務在合約到期前做完續約決定,不必靠記憶與私表拼出該處理哪些合約。
 - 後來接手的人接得起某一筆到期合約的處理進度,不因換人或隔夜而斷。
