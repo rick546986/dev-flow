@@ -9,16 +9,23 @@
 set -eu
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
+FILE_MODE=""
 if [ -n "${1:-}" ]; then
-  ROOT=$(cd "$1" && pwd) || exit 2
+  if [ -f "$1" ]; then
+    # 單檔形狀檢查（discovery-gaps 對照稿）：對該 md 跑錯欄／主張牙，不掃模板。
+    FILE_MODE=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
+  else
+    ROOT=$(cd "$1" && pwd) || exit 2
+  fi
 fi
-python3 - "$ROOT" <<'PY'
+python3 - "$ROOT" "$FILE_MODE" <<'PY'
 import os
 import re
 import subprocess
 import sys
 
 root = sys.argv[1]
+file_mode = sys.argv[2] if len(sys.argv) > 2 else ""
 checks = 0
 failures = []
 
@@ -59,6 +66,65 @@ def section(source, heading, level="###"):
 def table_rows(body):
     rows = [line for line in body.splitlines() if line.lstrip().startswith("|")]
     return max(0, len(rows) - 2)  # minus header + separator
+
+
+def heading_body(source, heading):
+    """`## heading` 本文，直到下一條 `## `。"""
+    match = re.search(
+        rf"^## {re.escape(heading)}[^\n]*\n(.*?)(?=^## |\Z)", source, re.M | re.S)
+    return match.group(1) if match else None
+
+
+def content_lines(body):
+    if body is None:
+        return []
+    out = []
+    for line in body.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("<!--") or stripped.startswith("-->"):
+            continue
+        if stripped.startswith(">"):
+            continue
+        out.append(stripped)
+    return out
+
+
+def goals_wrong_column(text):
+    """S-1.2：Goals 第一句「我要 dashboard」且 Requested solution 缺或空。
+
+    不採 dashboard／API 黑名單（S-1.4）：領域詞出現在結果句或他處不構成錯欄。
+    """
+    goals = heading_body(text, "Goals")
+    if goals is None:
+        return False
+    requested = heading_body(text, "Requested solution")
+    first_lines = content_lines(goals)
+    if not first_lines:
+        return False
+    first = first_lines[0].lstrip("-* ").strip()
+    requested_empty = requested is None or not content_lines(requested)
+    return bool(re.search(r"我要\s*dashboard", first, re.I) and requested_empty)
+
+
+def discovery_shape_issues(text):
+    """discovery-gaps 形狀牙（掛在本入口，不另開 check-discovery-gaps.sh）。"""
+    issues = []
+    if goals_wrong_column(text):
+        issues.append("構想在錯欄：Goals 把通道構想當目標，Requested solution 缺或空")
+    return issues
+
+
+# 單檔模式：只咬對照稿，exit ≠ 0 當構想在錯欄（S-1.2 觀測）。
+if file_mode:
+    subject = open(file_mode, encoding="utf-8").read()
+    issues = discovery_shape_issues(subject)
+    if issues:
+        print(f"❌ discovery-gaps 形狀:{file_mode}")
+        for issue in issues:
+            print(f"  - {issue}")
+        raise SystemExit(1)
+    print(f"✅ discovery-gaps 形狀:{file_mode}")
+    raise SystemExit(0)
 
 
 t1 = read("_templates/1-discussion.md")
@@ -231,6 +297,31 @@ check(bool(reconcile_bullets) and len(named_bullets) == len(reconcile_bullets),
       "Stage 3 對帳段每一條都逐場點名(引用 3-prototype「Scenario …」)",
       f"未點名 {len(reconcile_bullets) - len(named_bullets)}/{len(reconcile_bullets)} 條")
 
+# ── 11. discovery-gaps：Goals 錯欄牙（S-1.2／S-1.4；fixture 自測）──
+# 隔離 root（test-architecture-guards seed）沒有 scripts/fixtures/discovery-gaps/
+# 時顯性跳過，兩環境檢查數一致。不另開 check-discovery-gaps.sh。
+GAPS = os.path.join(root, "scripts", "fixtures", "discovery-gaps")
+WRONG_COL = os.path.join(GAPS, "goals-dashboard-in-wrong-column.md")
+OK_COL = os.path.join(GAPS, "goals-outcome-with-requested-dashboard.md")
+if os.path.isfile(WRONG_COL):
+    wrong_text = open(WRONG_COL, encoding="utf-8").read()
+    wrong_issues = discovery_shape_issues(wrong_text)
+    check(any("構想在錯欄" in item or "Requested solution" in item for item in wrong_issues),
+          "負向 fixture goals-dashboard-in-wrong-column 必須被指出構想在錯欄",
+          f"issues={wrong_issues}")
+else:
+    check_skip("負向 fixture goals-dashboard-in-wrong-column 必須被指出構想在錯欄",
+               "隔離測試根目錄無 discovery-gaps fixture")
+if os.path.isfile(OK_COL):
+    ok_text = open(OK_COL, encoding="utf-8").read()
+    ok_issues = discovery_shape_issues(ok_text)
+    check(not any("構想在錯欄" in item for item in ok_issues),
+          "正向 fixture goals-outcome-with-requested-dashboard 不因 dashboard/API 誤殺",
+          f"issues={ok_issues}")
+else:
+    check_skip("正向 fixture goals-outcome-with-requested-dashboard 不因 dashboard/API 誤殺",
+               "隔離測試根目錄無 discovery-gaps fixture")
+
 # ── 檢查數地板(N-2,2026-08-15)──────────────────────────────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」——地板留餘裕=沒有
 # 牙齒(同 repo 慣例:scripts/check-stage67-enforcement.sh:232、
@@ -238,7 +329,7 @@ check(bool(reconcile_bullets) and len(named_bullets) == len(reconcile_bullets),
 # 起因:刪掉整段(例如第 5 節「NOT_REVIEWED ≠ ACCEPTED」)之前,checks 只是印出來的
 # 數字,不是斷言——舊版刪光整節仍印「✅ 全過」。新增/刪除 check() 呼叫時,
 # 把這個數字一起往上/往下調。
-MIN_CHECKS = 137
+MIN_CHECKS = 140
 if checks < MIN_CHECKS:
     failures.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                      f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
