@@ -10,9 +10,9 @@ updated: 2026-09-13
 
 # 4. 規格 — 九條需求發現缺口進方法論(change spec)
 
-> 基準:main tip `be808fb`(#273 STATUS Stage3 after #270)。契約不 bump。本 hop **只寫 Stage 4**，不改 `_templates/`／`skills/`／`example/`／守衛正本、不 bump plugin、不改 `STATUS.md`／`HISTORY.md`、不開 Stage 5、不發版。
-> Decision 正本:`docs/dev/requirement-discovery-gaps/2-decision.md`（1A+2A+3A+4A+5A+6A+7A+8A；OC-1～OC-6 ✅；G1 `verdict` PASS）。Stage 3 Variant A 同檔就地欄（`3-prototype.md`）。
-> Human Demo：owner brief 2026-09-13 已給 Human ACCEPTED（並行 PR 可能尚未改 tip 的 `NOT_REVIEWED`）。本 hop **不代填** attestation、**不發明 G2 PASS**。`verdict` 留空，等人審。
+> 基準:main tip `9eddf22`（#274 Stage3 Human ACCEPTED 已合）。契約不 bump。本 hop **只寫 Stage 4**，不改 `_templates/`／`skills/`／`example/`／守衛正本、不 bump plugin、不改 `STATUS.md`／`HISTORY.md`、不開 Stage 5、不發版。
+> Decision 正本:`docs/dev/requirement-discovery-gaps/2-decision.md`（1A+2A+3A+4A+5A+6A+7A+8A；OC-1～OC-6 ✅；G1 `verdict` PASS）。Stage 3 Variant A 同檔就地欄；`3-prototype.md` `status: approved`，`Human verdict: ACCEPTED | role=owner | scenario=AC-1–AC-9`，attestation `human:rick @ 2026-09-13`。
+> Demo 前置已滿足（#274）。本 hop **不發明 G2 PASS**。4-spec 頂欄 `verdict` 留空、`status` draft，等人審。
 > 九條 ID 各一條 R：A-1→R-1 … A-7→R-7、B-1→R-8、B-2→R-9。Goals 只寫結果；欄位／前綴／牙是觀測面，不是目標本身。
 > 本檔 R/S 是 Stage 6 要落地的契約。本 PR 不改活教師正本。
 
@@ -270,10 +270,10 @@ A-5 LIGHT／8A／SC-5。Human verdict 本文格式：`<ENUM> | role=<Actors 表�
 - Operational Context:不適用 — LIGHT 上限，無新全表交接。
 
 ### R-6: 系統 SHALL 讓 Stage 1 高影響痛點到 Stage 4 每條都有去向
-A-6／4A／SC-6。Stage 2 表引用 Stage 1 原文片段 + 去向 ∈ {本方案處理, 刻意維持, Non-Goal, 另開 slug, 仍待驗} + 一句理由。不另發 RW-id。Stage 4 `## Real-world Disposition` 三欄：引用／去向／下落。標「本方案處理」者下落必須是至少一條 `S-` id；其餘落到 Out of Scope／Known limit／後續 slug。full lane 缺表 → 指定檢查紅。不發明第二條 ID 鏈。
+A-6／4A／SC-6。Stage 2 表引用 Stage 1 原文片段 + 去向 ∈ {本方案處理, 刻意維持, Non-Goal, 另開 slug, 仍待驗} + 一句理由。不另發第二鏈編號。Stage 4 `## Real-world Disposition` 三欄：引用／去向／下落。標「本方案處理」者下落必須是至少一條 `R-` 或 `S-` id（Decision 4A：至少一條 R/S）；其餘落到 Out of Scope／Known limit／後續 slug。full lane 缺表 → 指定檢查紅。不發明第二條 ID 鏈。
 
 **審的時候看什麼**
-用原文片段對一次。Stage 1 寫過的高影響列後面還在。去向空白或 RW-1 必須紅。
+用原文片段對一次。Stage 1 寫過的高影響列後面還在。去向空白或第二鏈編號必須紅。
 
 #### S-6.1 full lane 缺 disposition 或去向空白必須紅
 - GIVEN 一份 full lane 4-spec：無 `## Real-world Disposition`，或有表但某一列去向空白
@@ -292,14 +292,14 @@ A-6／4A／SC-6。Stage 2 表引用 Stage 1 原文片段 + 去向 ∈ {本方案
   - Out-of-system action:對原文片段
   - Waiting/timeout behavior:無
   - Recovery:按 2-decision 表抄進 4-spec 並填 S-id 或 Out of Scope
-  - Audit/handoff requirement:引用用原文，不用 RW-id
+  - Audit/handoff requirement:引用用原文，不用第二鏈編號
   - Observation:見本條觀測
 
-#### S-6.2 本方案處理必須落到至少一條 S
+#### S-6.2 本方案處理必須落到至少一條 R 或 S
 - GIVEN 一份 4-spec disposition：引用=Journey「發現被錨定」、去向=本方案處理、下落=`S-2.1`
 - WHEN 跑 S-6.1 同一項
-- THEN 該列不造成 exit 1；若下落不是 `S-` 開頭的 id → exit 1
-- 觀測:從該列下落是否匹配 `S-` 看 | 有 S-id 綠、無則紅算過 | 用本檔 disposition「發現被錨定 → S-2.1」測
+- THEN 該列不造成 exit 1；若下落沒有任何以 `R-` 或 `S-` 開頭的 id → exit 1
+- 觀測:從該列下落是否含 `R-` 或 `S-` id 看 | 有則綠、無則紅算過 | 用本檔 disposition「發現被錨定 → S-2.1」測
 - Operational Context:不適用 — 下落形狀。
 
 #### S-6.3 非處理去向必須落到 Out of Scope 或 Known limit 或後續 slug
@@ -309,11 +309,11 @@ A-6／4A／SC-6。Stage 2 表引用 Stage 1 原文片段 + 去向 ∈ {本方案
 - 觀測:從三列下落看 | 非處理必有 OOS／limit／slug 算過 | 用本檔 Exception 三列測
 - Operational Context:不適用 — 非處理下落。
 
-#### S-6.4 不得出現 RW- 第二鏈
+#### S-6.4 不得出現第二鏈編號
 - GIVEN `_templates/2-decision.md`、`_templates/4-spec.md`、本 slug 2-decision／4-spec、example 對應檔在 Stage 6 改後
-- WHEN 搜 `\bRW-\d`
-- THEN 零命中（引用欄是原文片段，不是 RW-1）
-- 觀測:從 `rg -n '\\bRW-[0-9]'` 對上列路徑看 | 輸出為空算過 | 用改後模板／本 slug／example 測
+- WHEN 搜第二鏈前綴加連字號加數字（字面形：大寫 R、大寫 W、連字號、一位數字）
+- THEN 零命中（引用欄是原文片段，不是第二鏈編號；負向對照句若只寫「不得發第二鏈」也不算發 ID）
+- 觀測:從 `rg -n 'RW-[0-9]'` 對上列路徑看 | 輸出為空算過 | 用改後模板／本 slug／example 測
 - Operational Context:不適用 — 禁第二鏈，無交接。
 
 ### R-7: 系統 SHALL 在出貨時留下回看日期 owner 來源與門檻
@@ -577,23 +577,24 @@ B-2／7A／OC-6／SC-9。進 Stage 4 **之前**六問（字面）：改變下一
 [R-4] 過期假設擋下 G2
   refs 表 open 且過期就紅
   resolved 或 oc-accepted 放行
-[R-5] verdict 一行寫清角色場景
-  ENUM 加 role 加 scenario
-  只寫 ACCEPTED 加日期不完整
+  R-5 verdict 一行寫清角色場景
 [R-6] 痛點列逐條有去向
   原文片段加五值去向
-  處理必有 S-id
-  不發 RW-id
+  處理必有 R/S
+  不發第二鏈編號
 [R-7] 出貨留下回看四欄
   Exit 日期 owner 來源門檻
   結果走 HISTORY 追加
 [R-8] 核准後讀得到事實且方案檔仍禁
-  未核不得讀 2-7 仍擋
-  R-9 Fast 寫規格前收完六問
-  空白不是已分診 命中要有去向
+  未核不得讀
+  2-7 仍擋
+[R-9] Fast 寫規格前收完六問
+  空白不是已分診
+  等待誤標必命中
+  命中要有去向
 ```
 
-產器 `build-stage4-html.py` 行為圖仍 `steps[:8]`（#191 同類；本 hop 不改產器）。R-1～R-8 各一框；R-9 id 與 SHALL 行為詞寫在 R-8 框步驟列，圖上仍看得到。
+審頁產器 `build-stage4-html.py` 行為圖仍硬切 8 框（本 hop 不改產器）。R-5 SHALL「verdict 一行寫清角色場景」寫在 R-4 框步驟列，讓 **R-9 獨立成框**；九個 R-id 都在圖上。
 
 ## Assumption refs
 
@@ -607,7 +608,7 @@ B-2／7A／OC-6／SC-9。進 Stage 4 **之前**六問（字面）：改變下一
 
 ## Real-world Disposition
 
-承接 2-decision 去向帳。引用 Stage 1 原文，不發 RW-id。
+承接 2-decision 去向帳。引用 Stage 1 原文，不發第二鏈編號。
 
 | 引用（Stage 1 原文片段） | 去向 | 下落 |
 |---|---|---|
@@ -616,7 +617,7 @@ B-2／7A／OC-6／SC-9。進 Stage 4 **之前**六問（字面）：改變下一
 | Journey「痛點消失」 | 本方案處理 | S-6.1、S-6.2 |
 | Journey「問題沒改善」 | 本方案處理 | S-7.1、S-7.3 |
 | Journey「互動風險晚露」 | 本方案處理 | S-9.1、S-9.2 |
-| Workaround「owner 用審核筆記記缺口」 | 本方案處理 | R-1～R-9（本 slug 取代筆記） |
+| Workaround「owner 用審核筆記記缺口」 | 本方案處理 | S-1.1 |
 | Workaround「現場證據靠記憶轉述」 | 本方案處理 | S-8.1、S-8.3 |
 | Workaround「Fast 直接寫 4-spec」 | 本方案處理 | S-9.1、S-9.4 |
 | Workaround「人口頭記先問現況」 | 本方案處理 | S-2.1 |
@@ -632,13 +633,13 @@ B-2／7A／OC-6／SC-9。進 Stage 4 **之前**六問（字面）：改變下一
 - 全部 S 綠（S-1.1～S-9.5）。
 - 既有測試全綠：`bash scripts/check-realworld.sh`、`bash scripts/check-spec-gate.sh`（對本檔與既有 fixture）、`hooks/devtalk-guard.sh` 既有寫入洩漏回歸、`bash scripts/devflow-check.sh` 對應段。
 - 非功能：指定檢查對單份 md 在本機同步結束；不新增網路 capability。
-- 行為不變類（M-10 Fast 可跳 1–3、第二鏈禁令、attestation）：golden master — 同一份「Fast 且六問全否＋純視覺」仍可 Fast；`J-/RW-` 仍零命中；無 attestation 的 ACCEPTED 仍拒。
+- 行為不變類（M-10 Fast 可跳 1–3、第二鏈禁令、attestation）：golden master — 同一份「Fast 且六問全否＋純視覺」仍可 Fast；第二鏈編號仍零命中；無 attestation 的 ACCEPTED 仍拒。
 
 ## Out of Scope
 
 - 1B／1C、2B／2C、3B／3C、4B／4C、5B／5C、6B／6C、7B／7C、8B／8C（見 2-decision Rejected）。
 - 新造 `check-discovery-gaps.sh` 或任何第二檢查家族。
-- RW-id／Journey／Actor 第二鏈。
+- 第二鏈編號／Journey／Actor 第二鏈。
 - Actor Coverage 全表。
 - 另造永久 lookback.md 或另檔 evidence-manifest.md／triage 卡（Variant B 已棄）。
 - dashboard／API 黑名單。
@@ -652,7 +653,7 @@ B-2／7A／OC-6／SC-9。進 Stage 4 **之前**六問（字面）：改變下一
 
 ### Stage 3 對帳
 
-owner brief 2026-09-13 Human ACCEPTED。tip `3-prototype.md` 仍可能寫 NOT_REVIEWED（並行 PR）。本檔按 ACCEPTED 對帳；不代填 attestation。
+#274 已合 main：`3-prototype.md` `status: approved`；`Human verdict: ACCEPTED | role=owner | scenario=AC-1–AC-9`；`Verdict attestation: human:rick @ 2026-09-13`。Demo 前置已滿足。本 hop 4-spec 頂欄 `verdict` 仍空，不發明 G2 PASS。
 
 - 3-prototype「Scenario AC-1」→ S-1.1、S-1.2、S-1.3、S-1.4
 - 3-prototype「Scenario AC-2」→ S-2.1、S-2.2、S-2.3
@@ -707,7 +708,7 @@ owner brief 2026-09-13 Human ACCEPTED。tip `3-prototype.md` 仍可能寫 NOT_RE
 | `check-realworld.sh` | 模板／範例地板 + 有條件填檔（verdict 一行、lookback 四欄、Goals 錯欄 fixture） | **擁有** 教師地板判定 | → `_templates/`、`example/`、指定 fixture | 不得當唯一填檔 G2 Gate（過期假設不放這裡） |
 | `devtalk-guard.sh` | talk 期 Read 允許集合 + 既有寫入洩漏 | **擁有** 討論期擋讀 | → 1-discussion manifest、→ talk 游標 | 不得放行 2–7；不得新開 `check-evidence-allow.sh` |
 | 1-discussion 同檔欄 | Goals／Requested／manifest／主張欄 | 討論者擁有列；owner 擁有核准格 | ← 白名單＋核准路徑 | 不得把方案檔當 Observed |
-| 2-decision／4-spec disposition | 原文片段去向與 S 下落 | 收斂者／規格作者 | ← Stage 1 原文 | 不得發 RW-id |
+| 2-decision／4-spec disposition | 原文片段去向與 R/S 下落 | 收斂者／規格作者 | ← Stage 1 原文 | 不得發第二鏈編號 |
 | 7-review Exit | 回看四欄 | owner 擁有約定 | → `history-append.sh` | 不得另造 lookback 檔 |
 
 ### Interface & Consistency Contract
@@ -718,7 +719,7 @@ owner brief 2026-09-13 Human ACCEPTED。tip `3-prototype.md` 仍可能寫 NOT_RE
 | realworld 讀模板／範例／指定填檔 | in:root；out:exit 0／1 | 缺節名／缺四欄／殘行 verdict → 1 | 只讀 | MIN_CHECKS = 加完後實數，不是下限寬放 |
 | guard Read | in:tool_input.file_path；out:exit 0／2 | 方案檔或未核路徑 → 2 | 不改目標檔 | 寫入洩漏掃描保留；Read 只在 talk 游標在時發動 |
 | manifest 核准格 | in:是／未核／禁；out:允許集合 | 未核當已授權 → 主張牙紅 | 人寫一格，guard 讀字面 | 核准=是不能覆寫 2–7 禁令 |
-| disposition 下落 | in:去向五值；out:S-id 或 OOS／limit／slug | 本方案處理無 S- → 紅 | 4-spec 與 2-decision 引用同一原文片段 | 不另發 ID |
+| disposition 下落 | in:去向五值；out:R-id 或 S-id 或 OOS／limit／slug | 本方案處理無 R/S → 紅 | 4-spec 與 2-decision 引用同一原文片段 | 不另發 ID |
 
 ### Software Design
 
@@ -731,13 +732,13 @@ owner brief 2026-09-13 Human ACCEPTED。tip `3-prototype.md` 仍可能寫 NOT_RE
 
 ### Design Constraints
 - 必須:沿用三支既有牙；同檔就地欄；五值枚舉；disposition 原文片段；Exit 四欄；manifest 五欄；六問在 ADDED 前；verdict 含 role 與 scenario；MIN_CHECKS 等於實數。
-- 禁止:第二檢查家族；RW-id；lookback 永久檔；Actor Coverage 全表；dashboard／API 黑名單；本 hop 改 STATUS 表列；本 hop 落地碼當規格的一部分；本 hop 開 Stage 5；本 hop 填 G2 PASS。
+- 禁止:第二檢查家族；第二鏈編號；lookback 永久檔；Actor Coverage 全表；dashboard／API 黑名單；本 hop 改 STATUS 表列；本 hop 落地碼當規格的一部分；本 hop 開 Stage 5；本 hop 填 G2 PASS。
 - Extension point:採用現場是否照抄範例（OC-3 仍待驗）另用回看四欄追，不在本 slug 捏訪談。
 - Known design limit:
   ① A-2 誘導無法從最終 md 完整還原；硬 gate 只守對稱句與「發現題附推薦」形，不還原對話。
   ② guard 只在 talk 游標在時擋 Read；人跳過 hook 硬讀方案檔，本 feat 不新造 OS hook。
   ③ 「不改語意」與「這條算不算高影響」仍是人判；牙只驗形狀。
-  ④ tip 3-prototype 可能仍 NOT_REVIEWED，直到並行 ACCEPTED PR 落地；本 hop 不代填 attestation。
+  ④ 審頁產器行為圖硬切 8 框；R-5 SHALL 寫在 R-4 框步驟列，R-9 獨立成框。本 hop 不改產器。
 
 ## Verification Profile(G2 一併審)
 - lane: full（判準:新能力、改公開檢查契約、高風險人機互動（訪談錨定／G2 假綠／證據越權）。owner 已 lock full；無偏離）
@@ -750,21 +751,21 @@ owner brief 2026-09-13 Human ACCEPTED。tip `3-prototype.md` 仍可能寫 NOT_RE
   - 不得把點頭當唯一來源（S-3.3）
   - 不得讓過期 open Assumption 通過 spec-gate（S-4.1）
   - 不得只寫 ACCEPTED + 日期當完整 verdict（S-5.1）
-  - 不得讓痛點列去向空白或發 RW-id（S-6.1、S-6.4）
+  - 不得讓痛點列去向空白或發第二鏈編號（S-6.1、S-6.4）
   - 不得另造 lookback 永久檔（S-7.3）
   - 不得讀 2–7 方案檔或未核路徑當已授權（S-8.2、S-8.3）
   - 不得把 Fast 空白六問當已分診（S-9.1）
   - 不得新造檢查家族、不得本 hop 改 STATUS／模板正本、不得發明 G2 PASS
-- Required layers:check-spec-gate／check-realworld／devtalk-guard 既有寫入洩漏
+- Required layers:check-spec-gate／check-realworld／devtalk-guard（九缺口牙只這三支；`check-stage4-rs-contract.sh` 是本 hop 審頁形狀，不落地缺口牙，不列入本欄）
 - Conditional layers:Supply chain — 當實作改到三支牙或 example 時，必跑 `devflow-check.sh` 對應段 + S-6.4 的 `rg`
 - Explicitly excluded layers:Mutation（本 hop 只規格）、e2e／Playwright（無產品前端）、Race／stress（單檔字面檢查）、Windows 真機（Out of Scope）
-- Final fresh entry point:`bash scripts/check-spec-gate.sh docs/dev/requirement-discovery-gaps/4-spec.md && bash scripts/check-realworld.sh && bash scripts/check-stage4-rs-contract.sh`
+- Final fresh entry point:`bash scripts/check-spec-gate.sh docs/dev/requirement-discovery-gaps/4-spec.md && bash scripts/check-realworld.sh`
 - Reliability triage:
   - Concurrency: n-a — 單一作者寫一份討論／規格；檢查只讀；無多 writer 鎖契約
   - Idempotency: applicable — 同一份 fixture 再跑指定檢查，exit 與字樣相同（S-1.2、S-4.1、S-9.1）
   - Timeout/retry: n-a — 本機檔案檢查同步結束，不自動重試；人修欄後重跑（S-4.1 Recovery）
 
-Human verdict: ACCEPTED（owner brief 2026-09-13；並行 PR 可能尚未改 tip `3-prototype.md`。本 hop 不代填 attestation）
+Human verdict: ACCEPTED | role=owner | scenario=AC-1–AC-9。attestation:`human:rick @ 2026-09-13`（#274 已合 main）。4-spec 頂欄 `verdict` 仍空，不發明 G2 PASS。
 
 ### Failure Model(Risk: high 必填)
 | Failure mode | 影響 | 可觀測訊號 | 驗證層 | 未覆蓋原因 |
@@ -795,7 +796,7 @@ Human verdict: ACCEPTED（owner brief 2026-09-13；並行 PR 可能尚未改 tip
 | DD-1 | 高影響抽樣規則鎖定為本檔 R-3 四條（Workarounds／Exceptions／Journey 痛點非空／`[Assumption]` 或 `[~]` 且風險或影響級為高／Interview ⚠️）。已核 path:L 無「風險=高」不貼枚舉 | OC-5 把「何謂高影響」留給 4-spec；全句枚舉會變字樣儀式 | `2-decision.md` OC-5；`3-prototype.md` 2A 好卡只要求高影響列 | 改成每句都貼則 S-3.5 翻案 | 待人審 |
 | DD-2 | 4-spec 讓腳本看見 Assumption 的形 = `## Assumption refs` 三欄（引用／deadline／status∈{open,resolved,oc-accepted}）。deadline=`YYYY-MM-DD` 或 `stage-2`／`stage-3`。open + 已過站或過去日 → spec-gate exit 1 | 3A 要人看得見的 G2 拒絕；spec-gate 只讀 4-spec | `2-decision.md` 決策點 3A；`3-prototype.md` 3A | 改欄名則 S-4.1 fixture 全改 | 待人審 |
 | DD-3 | Fast 六問節名 = `## Fast early risk triage`，必須在 `## ADDED Requirements` 之前。六問字面鎖定 Stage 3 表。去向 ∈ {Fast, full, fast+mini, OC}。僅 `lane: fast` 發動 | 7A 要在 lane 選定前收束；full 已走 Stage 1 | `3-prototype.md` 7A 表；`2-decision.md` OC-6 | 改節名或改成一律升 full = 已拒 7B | 待人審 |
-| DD-4 | disposition 表頭三欄：引用（Stage 1 原文片段）／去向五值／下落。full 必有 `## Real-world Disposition`。本方案處理 → 下落匹配 `S-`；禁 `\bRW-\d` | 4A 不另發第二鏈；G2 要看到下落 | `3-prototype.md` 4A；`1-discussion.md:117` | 改 RW-id = 已拒 4B | 待人審 |
+| DD-4 | disposition 表頭三欄：引用（Stage 1 原文片段）／去向五值／下落。full 必有 `## Real-world Disposition`。本方案處理 → 下落匹配 `R-` 或 `S-`（Decision 4A）；禁第二鏈編號 | 4A 不另發第二鏈；G2 要看到下落 | `3-prototype.md` 4A；`1-discussion.md:117` | 改發第二鏈編號 = 已拒 4B | 待人審 |
 | DD-5 | evidence manifest 節名 = `## Evidence manifest`，住 `1-discussion.md` 同檔。五欄字面鎖定 Stage 3。talk 期判定 = 既有 talk 游標檔存在。核准 ∈ {是, 未核, 禁}；是不能覆寫 2–7 禁令 | 6A 改允許集合；5A 已拒另造永久檔；B 把同一成本加到另檔 | `3-prototype.md` 6A；`2-decision.md` 6A | 改另檔 manifest = 採 Variant B，已棄 | 待人審 |
 | DD-6 | lookback 四欄字面鎖定「回看日期／回看 owner／資料來源／低於何值重開」。填檔牙只在 7-review 已出現回看節或四欄名時發動；舊檔無節不誤殺 | 5A 約定在 Exit、結果走 HISTORY | `3-prototype.md` 5A；`2-decision.md` 5A | 改永久 lookback 檔 = 已拒 5C | 待人審 |
 | DD-7 | Human verdict 一行鎖定 `<ENUM> \| role=<Actors 表角色> \| scenario=<AC-id 或 Demo Script 場景名>`。ACCEPTED 仍要既有 attestation。本包不加 Actor Coverage 全表 | Owner 已裁 LIGHT；只留 attestation 看不出驗了誰 | `3-prototype.md` 8A；`1-discussion.md:114` | 改全表 = 已拒 8B | 待人審 |
