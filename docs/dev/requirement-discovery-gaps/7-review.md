@@ -122,7 +122,7 @@ T-1 第一次因環境缺 `markdown-it-py` 紅（`renderer --check`）—— ENV
 
 ## Verification Evidence
 
-- Source SHA: 37a4284848fdcfd4d7ad2385ed6df2c74fd613fd
+- Source SHA: e922c2b0e5e39b2bafaa5c6aaf5a7b5f3303af8e
 - Final Fresh Run ID: 2026-09-13T0705Z-impl-B-s7
 - Entry point: `bash scripts/check-spec-gate.sh docs/dev/requirement-discovery-gaps/4-spec.md && bash scripts/check-realworld.sh`
 - Toolchain: python3.12.3; markdown-it-py 4.0.0(`scripts/requirements-methodology-render.txt`); contract 2.0.0; runtime 3.23.4; git 2.43.0; gauntlet 1.3.3
@@ -143,6 +143,8 @@ T-1 第一次因環境缺 `markdown-it-py` 紅（`renderer --check`）—— ENV
 
 開工前 `test -x docs/dev/tools/devflow-evidence-gauntlet.sh` → exit 0。
 
+Final Fresh gauntlet（`--source-sha e922c2b0e5e39b2bafaa5c6aaf5a7b5f3303af8e --review-file`）:61 checks、1 violation — E7 required layer 第二幽靈 token 未 pass。見附錄 A3。不把幽靈 token 標 pass。
+
 ### 2c 整合結論
 
 授權合併的那一次（Fresh **之前**跑兩次,STATUS／座標完全相同,然後合印出的 INTEGRATION_SHA,不是 branch 名）:
@@ -152,7 +154,7 @@ T-1 第一次因環境缺 `markdown-it-py` 紅（`renderer --check`）—— ENV
 - 共同戰場:無（incoming = `#287` STATUS／HISTORY 列,3 檔 +9/−2）
 - 恢復: n-a（SYNC_REQUIRED_NO_OVERLAP;已 fast-forward 合 INTEGRATION_SHA,合後 realworld 174/174、本 slug spec-gate 9/9）
 
-本 hop **沒有撰寫** STATUS／HISTORY;那是 incoming `#287`。合完 HEAD=`37a4284`。之後若再跑同一支腳本會印 `ALREADY_SYNCED`（exit 2）——不當交集證據。本檔 Source SHA 綁合完後、寫本檔當下的 HEAD。本 docs commit 會再漂 SHA（Known Limit 本 hop ①）。
+本 hop **沒有撰寫** STATUS／HISTORY;那是 incoming `#287`。合完 HEAD=`37a4284`。之後若再跑同一支腳本會印 `ALREADY_SYNCED`（exit 2）——不當交集證據。本檔 Source SHA 已重綁第一份 7-review commit `e922c2b0e5e39b2bafaa5c6aaf5a7b5f3303af8e`。再一次 docs commit 仍會漂（Known Limit 本 hop ①）。
 
 ## Negative Constraint Mapping
 
@@ -348,7 +350,7 @@ Variant B 偏置:先壓 A-1（不採黑名單）與 OC-1（只延三支既有牙
 [docs/dev/STATUS.md] [docs/dev/HISTORY.md]
 
 本 hop(docs-only,不是產品碼):
-[7-review.md]     Source SHA=37a4284 (2c 後 HEAD;本 commit 會漂)
+[7-review.md]     Source SHA=e922c2b (第一份 7-review commit;再 commit 仍漂)
 [7-review.html]   official G3 twin
 ```
 
@@ -420,9 +422,9 @@ Variant B 偏置:先壓 A-1（不採黑名單）與 OC-1（只延三支既有牙
 | 本次 S 全綠 | 35 S 機械牙／教師原文／Read 三案皆綠 | Coverage + 現象證據 |
 | 既有全綠 | realworld 174/174;本 slug spec-gate 9/9;S-2.2 突變紅 | Verification Evidence |
 | 現象證據逐 S 相符 | 35 列已填;S-1.2 套件 vs「exit ≠ 0」已說明 | 現象證據表 |
-| Evidence 契約 | 形狀已按模板填。gauntlet 尚未對**本檔 commit 後 SHA**跑完（本 hop ①）;Required 第二幽靈 token 會 E7 | 附錄 A3 |
+| Evidence 契約 | gauntlet 61 checks、1 violation:E7 幽靈 token（附錄 A3）。`--source-sha e922c2b`。不是產品牙紅 | 附錄 A3 |
 | 無 🔴 | 無 🔴。有 🟡 F-1（SKILL／指南 S1 入口） | Standards Axis |
-| 出貨樹=審過的樹 | 2c 合 `37a4284` 在 Fresh 之前;Source SHA 先綁該 tip | 2c 節 |
+| 出貨樹=審過的樹 | 2c 合 `37a4284` 在 Fresh 之前;Source SHA 重綁 `e922c2b` | 2c 節 |
 
 PASS 條件未全滿足（Human 未判、F-1 未處置、gauntlet 幽靈 token、Source SHA 將漂）。故 **不得** 寫 PASS。
 
@@ -430,7 +432,7 @@ PASS 條件未全滿足（Human 未判、F-1 未處置、gauntlet 幽靈 token�
 
 | # | 限制 | 嚴重度 | 建議處置 |
 |---|---|---|---|
-| 1 | 本 docs commit 之後 `git rev-parse HEAD` ≠ 上表 Source SHA（`37a4284`）。Gauntlet `--source-sha` 必須等於當下 HEAD | 中 | 下一棒重綁 Source SHA + 重跑 gauntlet。park:本節 |
+| 1 | 重綁 Source SHA=`e922c2b0e5e39b2bafaa5c6aaf5a7b5f3303af8e` 之後若再 commit,HEAD 又漂。Gauntlet `--source-sha` 必須等於當下 HEAD | 中 | 下一棒重綁 Source SHA + 重跑 gauntlet。park:本節 |
 | 2 | 4-spec Known design limit ①:A-2 誘導無法從最終 md 還原;硬 gate 只守對稱句與「發現題附推薦」形 | 低（契約已列） | 維持。不要加對話還原器 |
 | 3 | 4-spec Known design limit ②:guard 只在 talk 游標在時擋 Read;人跳過 hook 硬讀方案檔,本 feat 不新造 OS hook | 中（契約已列） | 維持。owner 不能接受就另開 slug,不要在本 feat 加 OS hook |
 | 4 | 4-spec Known design limit ③:「不改語意」與「算不算高影響」仍是人判 | 低 | 維持 |
@@ -452,7 +454,7 @@ PASS 條件未全滿足（Human 未判、F-1 未處置、gauntlet 幽靈 token�
 
 - [ ] **Design Boundary finding 全數處置**:無未授權 Boundary。F-1 🟡 是教師複製層,要 ①修 SKILL／指南 或 ③ owner 明示 park（寫本節 Known Limits #12,已寫落點）。未 park／未修不得勾
 - [ ] Quiz（不可逆:方法論教師 + 公開檢查契約）:見附錄 A4。Human 全對才准 merge
-- [ ] 整合回歸已在 Final Fresh **之前**完成:2c 結論（三個 SHA + ref）在 Verification Evidence。Source SHA 先綁 `37a4284`。本 docs commit 後必須重綁。Verdict 後禁止再改產品碼
+- [ ] 整合回歸已在 Final Fresh **之前**完成:2c 結論（三個 SHA + ref）在 Verification Evidence。Source SHA 重綁 `e922c2b`。再 commit 後必須再綁。Verdict 後禁止再改產品碼
 - [ ] PR → develop／本專案 main（feature branch,禁直上 master）。本 hop brief:Draft PR,Do not merge
 - [ ] 4-spec delta 已併入 `docs/specs/<domain>.md` —— n-a:本 repo 無 `docs/specs/` living spec（4-spec 已寫）
 - [ ] STATUS.md 已更新為 shipped —— **不做**。brief:No STATUS／HISTORY。incoming `#287` 只記 Stage 6,不是本 hop shipped
