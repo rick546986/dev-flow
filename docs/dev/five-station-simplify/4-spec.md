@@ -11,11 +11,12 @@ updated: 2026-09-14
 # 4. 規格 — 五站簡化 change spec（Implementer C：anti-hollow）
 
 > 基準:main tip `fdd39c5`（#310 Human Demo ACCEPTED 已合）。Lane = **full**。契約不 bump。
-> 本 hop **只寫** `4-spec.md` + `4-spec.html`（`scripts/build-stage4-html.py --action`）。不改 `_templates/`／`graph.yaml`／`scripts/` 牙、不 bump `devflow-contract.json`、不改 `STATUS.md`／`HISTORY.md`、不開 Stage 5、不發明 G2 PASS、不合併。
+> 本 hop **只寫** `4-spec.md` + `4-spec.html`（`scripts/build-stage4-html.py --action`）。不改 `_templates/`／`graph.yaml`／`scripts/` 牙、不 bump `devflow-contract.json`、不改 `STATUS.md`／`HISTORY.md`、不開 Stage 5、不發明 G2 PASS。合 main 與 STATUS 伴列是 owner 另核的 hop，不在本檔宣稱 G2 PASS。
 > Decision 正本:`docs/dev/five-station-simplify/2-decision.md`（1A+2A+3A+4A+5A+6A+7A；OC-1～OC-11 ✅；G1 `verdict` PASS）。`3-prototype.md` `status: approved`；`Human verdict: ACCEPTED | role=母版 owner | scenario=AC-1`；attestation `human:rick @ 2026-09-14`。
 > 本檔定義 F1／F2／F3 **必須滿足**的契約。本 PR 不實作那三刀。本 slug Stage 5–7（G2 之後）只准落地 **F1 annex + teeth（`scripts/`／annex）**；F2 coordinator 與 F3 cut **不在**本 slug Stage 5–7。
-> C 線：每個 SC-1…SC-13 至少一條 S；M→R/S 去向齊；OC 掛 S-id；rewrite cap 數字鎖給 F2 計數器（落點交 F2，OC-3／Q10）；1B／2B／4C／6B／7C 進 Non-Goals，Stage 5 不得重開。
-> 獨立於 A／B 線 Stage 4；未讀他線 4-spec。`verdict` 留空，由人類 G2 填。
+> C 線保留：S-8.5 本 slug Stage 5–7 只 F1；S-8.6 重開 1B／2B／4C／6B／7C 失敗；Diff Budget F2／F3 = 0；Q6 保持 open（**不是** oc-accepted）；DD 狀態 = 待人審（**不是** ✅ 草擬自判）；rewrite cap 數字已鎖，計數落點交 F2，不鎖 schema 鍵名。
+> Soft-fix（owner 核准吸收評審；多數勝 C、次 A；B 因 Q6=oc-accepted + DD ✅ 落選，只吸表 A／B 獨立 S，不吸那兩項）：表 A／B 拆成可測獨立 S；Concurrency = applicable 並有契約版本 vs marketplace hops 的 S；M6→Ship Evidence 八點物質；M13→對應 builder 重生 html；RP-5／RP-6 獨立 S；RP-7 不可逆無 Quiz → 紅；#313 annex 九個 SLOT 語意槽（只 id＋意思，不鎖欄位鍵名，OC-3）；SC-1…SC-13→S 完整表。S 數 >40 誠實記帳，**不**另切開新 slug。
+> `verdict` 留空，由人類 G2 填。
 
 ## 補助模組生命週期（預覽）
 
@@ -31,7 +32,7 @@ updated: 2026-09-14
 
 | 引用（Stage 1 原文片段） | 去向 | 下落 |
 |---|---|---|
-| 「例行 G1／S3-ACCEPTED／G2 讓方向、互動、契約三次都要等人」 | 本方案處理 | S-1.2、S-1.3、S-1.4 |
+| 「例行 G1／S3-ACCEPTED／G2 讓方向、互動、契約三次都要等人」 | 本方案處理 | S-1.2、S-1.3、S-1.4、S-1.5、S-1.6 |
 | 「Treat as PASS／都過／可以落成 verdict: PASS，審查物質沒進人腦」 | 本方案處理 | S-3.1、S-3.2 |
 | 「摺站若只殺等待、卻讓 Spec／Build 拿掉 ID 鏈、反模糊、T 四欄、acceptance seam」 | 本方案處理 | S-2.1、S-2.2、S-2.3、S-2.4、S-2.5 |
 | Journey「owner chat 蓋章；方向卡沒被讀完也過」 | 本方案處理 | S-3.1、S-4.2 |
@@ -66,15 +67,15 @@ updated: 2026-09-14
 | M3 反模糊 | 本方案處理 | S-2.4 |
 | M4 Real-world→Demo→OC | 本方案處理 | S-4.1、S-4.3 |
 | M5 人寫 ACCEPTED／Ship PASS | 本方案處理 | S-3.1、S-3.2 |
-| M6 G3 Evidence 八點 | 本方案處理 | S-3.2（Ship 物質不因摺站省略） |
+| M6 G3 Evidence 八點 | 本方案處理 | S-3.3（Ship Evidence 八點物質不因摺站省略） |
 | M7 Profile + fast+high 拒 | 刻意維持 | 本檔 Verification Profile；Fast 仍吃 G2 物質 |
 | M8 DBC 條件式 | 刻意維持 | 本檔 Design Boundary Contract |
-| M9 Files ⊆ 5-tasks | 本方案處理 | S-2.2 |
-| M10 驗證五律 | 本方案處理 | S-2.3（無原始輸出 → 未完成） |
+| M9 Files ⊆ 5-tasks | 本方案處理 | S-2.8 |
+| M10 驗證五律 | 本方案處理 | S-2.9（無原始輸出 → 紅） |
 | M11 T seam + 四欄 | 本方案處理 | S-2.2、S-2.3 |
 | M12 author≠approver | 刻意維持 | S-2.3（reviewer=implementer → 未完成） |
-| M13 html 重生 | 本方案處理 | S-8.4 |
-| M14 不可逆才 Quiz | 刻意維持 | S-1.4（Quiz 可併 Ship；不准第三例行停） |
+| M13 html 重生 | 本方案處理 | S-8.7（對應 `scripts/build-stageN-html.py --action`，不手包） |
+| M14 不可逆才 Quiz | 刻意維持 | S-1.10（不可逆無 Quiz → 紅；可逆強制 Quiz = 第三例行停） |
 | M15 token／檔仍在 | 本方案處理 | S-1.1；禁刪 token 是約束 |
 | M16 F0 不改 graph／牙 | 本方案處理 | S-8.4、S-8.1；禁改 graph／既有牙是約束 |
 
@@ -82,25 +83,45 @@ updated: 2026-09-14
 
 | OC | 掛到 |
 |---|---|
-| OC-1 dual-read 誠實三句 | S-5.4、S-5.5、S-5.7 |
-| OC-2 2.0.0+五站 hops → 紅／不得改線 | S-5.5、S-5.6 |
-| OC-3 不鎖 annex 鍵名／event schema | S-5.4、S-7.4 |
+| OC-1 dual-read 誠實三句 | S-5.4、S-5.5、S-5.7、S-5.8 |
+| OC-2 2.0.0+五站 hops → 紅／不得改線 | S-5.5、S-5.6、S-5.9 |
+| OC-3 不鎖 annex 鍵名／event schema | S-5.4、S-5.8、S-7.4 |
 | OC-4 本 Decision hop 不改 STATUS／不發明 G1 PASS | S-8.4（本 hop 對稱：不改 STATUS、不發明 G2 PASS） |
 | OC-5 in-flight 只認 1–7 `.md` | S-5.3 |
 | OC-6 chat 不是判定 | S-3.1、S-4.2 |
 | OC-7 本 Decision hop 連 scripts／annex 也不寫 | S-8.4、S-8.6 |
 | OC-8 Q6 保持 Assumption；升格擋本 slug G2 | S-6.2、S-6.3 |
 | OC-9 SC 用對照稿／拒絕／檔集 | 全 S 觀測欄 |
-| OC-10 RP-1…16 只准加不准減 | S-2.6 |
+| OC-10 RP-1…16 只准加不准減 | S-2.6、S-2.8、S-2.9、S-1.10 |
 | OC-11 後站把 Must-keep／四欄／seam 標可選 → 擋本 slug G2 | S-2.7 |
+
+## SC → S 對照
+
+每條 SC-1…SC-13 至少一條獨立可測 S。本表是完整鏈，不是摘要。S 總數見確認紀錄；>40 誠實記帳，不另切開新 slug。
+
+| SC | 一句 | 本檔 S |
+|---|---|---|
+| SC-1 | 新 slug 中間 latch 未命中 → 無請人審 A4／A7／提交判定；謂詞假停修 | S-1.2、S-1.3、S-1.4、S-1.5 |
+| SC-2 | 少任一 Must-keep 的簡化宣稱 = 違 brief | S-2.1 |
+| SC-3 | 缺四欄／假 Verify／無 RED／自審 → T 卡上就紅、不得標完成 | S-2.2、S-2.3、S-2.4、S-2.5 |
+| SC-4 | Agent 代寫 ACCEPTED／Ship PASS = 未寫 | S-3.1、S-3.2 |
+| SC-5 | in-flight 已有 md → 舊 7；舊檔缺新欄不紅 | S-5.1、S-5.4 |
+| SC-6 | B1 命中才 Demo latch；未命中不產頁；空 attestation 不得離 Spec | S-4.1、S-4.2、S-4.3、S-1.7 |
+| SC-7 | 高影響列每條有 M→R/S 或 Non-Goal | S-6.1 |
+| SC-8 | 本 slug 五站 hop 跳 G1／G2 必須跳不過 | S-5.2 |
+| SC-9 | doctor 綠 ≠ 已切五站 | S-5.5、S-5.8、S-5.9 |
+| SC-10 | 契約 2.0.0 + 五站 hops + doctor 綠 → 仍舊 7；「跟 hops 走」文案紅 | S-5.6、S-5.7、S-5.9 |
+| SC-11 | 本 PR 只 4-spec 雙檔；本 slug Stage 5–7 只 F1 | S-8.4、S-8.5 |
+| SC-12 | Q6 保持 Assumption／仍待驗／open；升格擋本 slug G2 | S-6.2、S-6.3 |
+| SC-13 | F1 牙能紅 RP-1…16；annex 只准加 | S-2.6、S-2.7、S-2.8、S-2.9、S-1.10 |
 
 ## ADDED Requirements
 
 ### R-1: 系統 SHALL 凍結七檔名並殺掉例行等人
-SC-1／1A／表 A。五站 Intake／Decide／Spec／Build／Ship 是路線**別名**。檔名家族仍是 `1-discussion.md`…`7-review.md`。摺的是例行 G1／S3-`ACCEPTED`／G2 人類停，不是 token、不是 twin。謂詞假 = 停該站修。A4／A7 twin 仍產、latch=否。A10 唯一預設人停。Quiz 可併 Ship，不准第三例行停。不採 1B。
+SC-1／1A／表 A／表 B。五站 Intake／Decide／Spec／Build／Ship 是路線**別名**。檔名家族仍是 `1-discussion.md`…`7-review.md`。摺的是例行 G1／S3-`ACCEPTED`／G2 人類停，不是 token、不是 twin。謂詞假 = 停該站修。表 A／B **每列一條可測 S**：A4／A7 產≠latch；A10 HumanWait；未命中不建頁；A8／A9 不是停點；B2 與 B1 同一停；B4 僅不可逆。A1／A2／A3／A6／B3／B5 有獨立或列舉 S。不採 1B。
 
 **審的時候看什麼**
-目錄裡仍是七個舊檔名。新 slug 中間前進紀錄沒有「請人審 A4／A7／提交判定」。謂詞假的停修句寫該謂詞，不寫「先問 owner」。
+目錄裡仍是七個舊檔名。對每一列只問：產不產、latch 開不開、是不是停點。新 slug 中間前進紀錄沒有「請人審 A4／A7／提交判定」。謂詞假的停修句寫該謂詞，不寫「先問 owner」。
 
 #### S-1.1 五站別名對到七個凍結檔名
 - GIVEN F3 之後一條新 slug 的 `docs/dev/<slug>/` 已有 `1-discussion.md`、`2-decision.md`、`4-spec.md`、`5-tasks.md`、`6-implementation-notes.md`、`7-review.md`；條件命中時另有 `3-prototype.md`
@@ -149,28 +170,162 @@ SC-1／1A／表 A。五站 Intake／Decide／Spec／Build／Ship 是路線**別�
   - Audit/handoff requirement:停修理由留在該站 md 或 hop 拒絕輸出
   - Observation:見本條觀測
 
-#### S-1.4 A4／A7 仍產且不 latch；A10 機械綠仍等人
-- GIVEN 新 slug 已有 `2-decision.md` 與 `4-spec.md`；稍後有 `7-review.md` 且 G3 物質檢查全綠；本改動不是不可逆（非 schema／公開 API／權限／金流／資料遺失）
-- WHEN 產檔器跑 A4／A7／A10；coordinator 評 latch
-- THEN A4／A7 html twin 存在且 latch=否；A10 存在且進入 HumanWait；本條不另開 Quiz 第三次例行停
-- 觀測:從三個 html 是否存在與 hop 是否在 A10 停看 | twin 在、A4／A7 不等、A10 等、無第三停算過 | n-a:F2／F3 未落地。替代：`3-prototype.md` 盤 2 表 A4／A7／A10／B4 列
+#### S-1.4 A4 產頁且 latch=否
+- GIVEN F3 後新 slug 目錄已有 `2-decision.md`；`## Decision` 非空；Owner Calls 無未裁決列
+- WHEN coordinator 評 Decide→Spec，並讀該 slug 前進紀錄
+- THEN 生成 A4 方向卡（舊 G1 twin）=是；人類 latch=否；前進紀錄無字面「請人審 A4」與「請按提交判定」；stop-at 不是 Decide 等人
+- 觀測:從 brief 表 A 的 A4 列與 `3-prototype.md` 盤 2 A4 列對照 | 生成=是、latch=否、無「請人審 A4」算過 | n-a:F2 coordinator 未落地。替代：brief §3.1 A4 + 盤 2 A4
 - Operational Context:
-  - Actor:母版 owner
-  - Goal:只在出貨停
-  - Situation:機械項已綠
-  - Known information:A10 latch=是
-  - Missing information:人會不會把 twin 當成還要簽 G1／G2
-  - Human decision:寫 Ship `verdict:`；不在 A4／A7 簽
-  - Authority:只有人准寫 Ship `verdict:`
+  - Actor:coordinator（F2 後）／母版 owner
+  - Goal:Decide 物質留下、例行 G1 不停
+  - Situation:Decision 與 OC 已裁決
+  - Known information:A4 生成謂詞=有 `2-decision.md`；latch=否
+  - Missing information:人會不會把 twin URL 當成還要簽 G1
+  - Human decision:不在 A4 按提交判定
+  - Authority:coordinator 評謂詞；人禁被叫來繞假謂詞
   - External dependency:無
-  - Out-of-system action:人打開 A10 審頁
-  - Waiting/timeout behavior:機械綠仍等頂欄
-  - Recovery:誤在 A4／A7 等人 → RP-14 紅
-  - Audit/handoff requirement:頂欄 `verdict:` 才是判定
+  - Out-of-system action:不把 A4 URL 當「請簽 G1」丟進 chat
+  - Waiting/timeout behavior:不等 G1；謂詞假才停修
+  - Recovery:OC 有未裁列 → 停 Decide 補裁，不改問「要不要繼續」
+  - Audit/handoff requirement:前進紀錄可核對無「請人審 A4」
   - Observation:見本條觀測
 
+#### S-1.5 A7 產頁且 latch=否
+- GIVEN 同一新 slug 已有 `4-spec.md`；每個 S 有觀測欄；`lane:`／`Risk:` 可解析；Drafting Decisions 無「待裁決」殘留
+- WHEN coordinator 評 Spec→Build
+- THEN 生成 A7 契約卡（舊 G2 twin）=是；人類 latch=否；前進紀錄無字面「請人審 A7」
+- 觀測:從 brief 表 A 的 A7 列與盤 2 A7 列對照 | 生成=是、latch=否、無「請人審 A7」算過 | n-a:F2 未落地。替代：brief §3.1 A7 + 盤 2 A7
+- Operational Context:
+  - Actor:coordinator／母版 owner
+  - Goal:G2 物質留下、例行 G2 不停
+  - Situation:規格形狀已綠
+  - Known information:A7 生成=有 `4-spec.md`；Demo 條件在 B1 不在 A7
+  - Missing information:人會不會把 twin 當成還要簽 G2
+  - Human decision:不在 A7 按提交判定
+  - Authority:同 S-1.4
+  - External dependency:無
+  - Out-of-system action:不把 A7 URL 當「請簽 G2」
+  - Waiting/timeout behavior:不等 G2
+  - Recovery:形狀紅 → 停 Spec 修 S，不改問人
+  - Audit/handoff requirement:前進紀錄無「請人審 A7」
+  - Observation:見本條觀測
+
+#### S-1.6 A10 機械綠仍 HumanWait
+- GIVEN 新 slug 已有 `7-review.md`；G3 物質檢查全綠；md 頂欄 `verdict:` 空白
+- WHEN coordinator 評 Ship→Done
+- THEN 生成 A10 =是；人類 latch=是；stop-at = Ship／`HumanWait`；不得標 Done
+- 觀測:從狀態機 `notes/design/five-station-simplify-f0-state-machine.md` §2.5 與 brief 表 A A10 列看 | 機械綠仍必須進 HumanWait、無人 PASS 不得 Done 算過 | 用該兩檔原文測
+- Operational Context:
+  - Actor:Ship 審查者
+  - Goal:出貨仍由人寫頂欄
+  - Situation:機械項全綠
+  - Known information:A10 latch=是；Agent 禁寫 PASS
+  - Missing information:人是否讀完 Evidence 八點
+  - Human decision:寫 `PASS`／`REQUEST_CHANGES`／`HOLD`
+  - Authority:只有人寫 md 頂欄 `verdict:`
+  - External dependency:無
+  - Out-of-system action:人打開出貨審頁
+  - Waiting/timeout behavior:停到人寫；無逾時自動 Done
+  - Recovery:`HOLD` 留 Ship；`REQUEST_CHANGES` 回可改的上一站
+  - Audit/handoff requirement:判定正本=同目錄 md 頂欄，不是勾選
+  - Observation:見本條觀測
+
+#### S-1.7 A5 未命中不建頁
+- GIVEN 一條純守衛 feat：`3-prototype.md` 不存在，或九條 trigger 全未勾且已寫 n-a 原因
+- WHEN coordinator 評 A5 是否建 html
+- THEN 不建原型審頁；latch=否；n-a 原因可讀；Gates 不標「缺 Stage 3」為缺陷
+- 觀測:從 brief 表 A A5 列與 3-prototype 盤 2「A5 n-a」對照 | 無檔或全未勾 → 不建頁、n-a 有原因算過 | 用盤 2 好例「純後端 feat」測
+- Operational Context:
+  - Actor:母版 owner
+  - Goal:沒命中不第二次等人
+  - Situation:九條 trigger 全假
+  - Known information:A5 生成謂詞要「有檔且 trigger≥1」
+  - Missing information:無
+  - Human decision:不補假 Demo
+  - Authority:未命中不准產頁、不准問人
+  - External dependency:無
+  - Out-of-system action:無
+  - Waiting/timeout behavior:無第二次人停
+  - Recovery:後來才命中 trigger → 改走 S-4.1
+  - Audit/handoff requirement:n-a 原因寫在 3-prototype 或 G2 Demo 欄
+  - Observation:見本條觀測
+
+#### S-1.8 A8／A9 產頁且不是停點
+- GIVEN 新 slug 已有 `5-tasks.md` 與 `6-implementation-notes.md`
+- WHEN coordinator 評 Build；有人說「想給人看任務板／實作審頁所以停一下」
+- THEN A8／A9 生成=是；人類 latch=否；不得因「想給人看板」進入 HumanWait；T 級 seam 不是第三例行閘
+- 觀測:從 brief 表 A A8／A9 列與 3-prototype 盤 1 Build 列看 | 兩列 latch=否、想看板 ≠ 停點算過 | 用 brief §3.1 A8／A9 + 盤 1
+- Operational Context:
+  - Actor:獨立 T reviewer／coordinator
+  - Goal:任務板可看、例行不停
+  - Situation:Build 進行中
+  - Known information:A8／A9 latch=否；T 四欄在卡上紅
+  - Missing information:有沒有人把看板當 G 閘
+  - Human decision:不把「給人看 A8」寫成 hop 停點
+  - Authority:coordinator 禁因看板停
+  - External dependency:無
+  - Out-of-system action:人可自己打開 A8，不等人叫
+  - Waiting/timeout behavior:例行不等；T seam 另算
+  - Recovery:誤停 → RP-14 紅，刪停點紀錄
+  - Audit/handoff requirement:前進紀錄無「請人審 A8／A9」
+  - Observation:見本條觀測
+
+#### S-1.9 B2 與 B1 同一人停
+- GIVEN 新 slug 命中 B1 的前端／下一步／多種互動三條之一，或 feat 自己改了人點的流程
+- WHEN 評 B2 UI twin
+- THEN B2 與 B1 共用**一次** HumanWait，不另開第二次人停；純守衛／API／文件 feat 不產 UI twin
+- 觀測:從 brief 表 B B2 列看 | 同一人停、沒命中不產算過 | 用 brief §3.2 B2
+- Operational Context:
+  - Actor:母版 owner
+  - Goal:UI twin 不變成第二次例行停
+  - Situation:B1 已命中前端／下一步／多種互動
+  - Known information:B2 latch 與 B1 同一
+  - Missing information:無
+  - Human decision:只在 B1 那次寫 attestation
+  - Authority:不准拆第二次人停
+  - External dependency:無
+  - Out-of-system action:人走 Demo Script，不另簽 UI twin
+  - Waiting/timeout behavior:與 B1 同一等待
+  - Recovery:誤開第二次停 → 違 G-out-1，刪該停
+  - Audit/handoff requirement:前進紀錄只有一次 B1 HumanWait
+  - Observation:見本條觀測
+
+#### S-1.10 B4 僅不可逆；無 Quiz 則紅
+- GIVEN 兩份對照：①改動命中不可逆（schema／公開 API／權限／金流／資料遺失）且無 Quiz；②改動非不可逆，卻被強制 Quiz 當作例行第三停
+- WHEN 評 B4
+- THEN ①紅（RP-7）；②違 SC-1／G-out-1。B4 可與 A10 同一人停；不准拆成第三次例行停
+- 觀測:從 Quiz 是否開火與 Decision RP-7 列看 | ①無 Quiz 必紅；②可逆強制 Quiz 當例行停必紅算過 | 用 brief 表 B4 + RP-7
+- Operational Context:
+  - Actor:Ship 審查者／approver
+  - Goal:不可逆才考 approver；可逆不加人停
+  - Situation:有人想每次都 Quiz
+  - Known information:B4 命中謂詞=不可逆；M14
+  - Missing information:無
+  - Human decision:不可逆時與 Ship 同一次停答 Quiz
+  - Authority:approver
+  - External dependency:無
+  - Out-of-system action:不可逆時人答 Quiz
+  - Waiting/timeout behavior:可併 A10；不准第三次例行停
+  - Recovery:可逆的 Quiz 拆掉；不可逆缺 Quiz → 補 Quiz 後才能離 Ship
+  - Audit/handoff requirement:Quiz 紀錄只在不可逆
+  - Observation:見本條觀測
+
+#### S-1.11 A1／A2／A3／A6 產頁且 latch=否
+- GIVEN 新 slug 分別已有 `1-discussion.md`／`2-decision.md`／`4-spec.md`
+- WHEN 逐列評 A1／A2／A3／A6
+- THEN 各列生成=是；人類 latch=否；不得因「想給人看 Intake／Decide／規格審頁」進入 HumanWait
+- 觀測:從 brief 表 A 各列「人類 latch」欄看 | A1／A2／A3／A6 四格皆否算過 | 用 brief §3.1 L86–L93
+- Operational Context:不適用 — 與 S-1.4／S-1.5 同型的列舉對照，無新的人員交接。
+
+#### S-1.12 B3 併 B1；B5 不 latch
+- GIVEN 兩份對照：①B1 已命中且互動方案尚未被既有核准 Pattern 決定；②4-spec 命中 Design Boundary 觸發
+- WHEN 評 B3 Variant 與 B5 Design Boundary
+- THEN ①B3 做 2–4 個結構不同 Variant，latch 併 B1、不另停；已有 Pattern → 1 個可操作 Demo，不准湊假 Variant。②B5 物質寫進 4-spec 該節；人類 latch=否；人在 Ship 一併看
+- 觀測:從 brief 表 B B3／B5 列看 | B3 併 B1、B5 latch=否算過 | 用 brief §3.2 B3／B5
+- Operational Context:不適用 — 與 S-1.9 同一人停家族；B5 是文件物質不是交接。
+
 ### R-2: 系統 SHALL 把假完成任務與短缺 Must-keep 點名成違 brief
-SC-2／SC-3／SC-13／6A／RP-1…RP-4／OC-10／OC-11。少任一 M1–M16 = 違 brief，不能寫成簡化成功。T 四欄與 RED→獨立審查 seam 不可選。人見面時機 = **T 卡上就紅**（Stage 3 選定）。F1 牙最小集 = RP-1…RP-16，annex 只准加不准減。不採 6B。
+SC-2／SC-3／SC-13／6A／RP-1…RP-7／OC-10／OC-11。少任一 M1–M16 = 違 brief，不能寫成簡化成功。T 四欄與 RED→獨立審查 seam 不可選。RP-5／RP-6 各有獨立 S。人見面時機 = **T 卡上就紅**（Stage 3 選定）。F1 牙最小集 = RP-1…RP-16，annex 只准加不准減。不採 6B。
 
 **審的時候看什麼**
 打開 T-fake：缺四欄、`Verify: 看起來沒問題`、無 RED、自審、勾選已打。卡上必須已紅，勾選不算完成。少 M 的「五站已簡化」宣稱被點名違 brief。
@@ -263,6 +418,20 @@ SC-2／SC-3／SC-13／6A／RP-1…RP-4／OC-10／OC-11。少任一 M1–M16 = �
   - Audit/handoff requirement:OC-11 列
   - Observation:見本條觀測
 
+#### S-2.8 缺 Files 或 Files 超出聯集必須紅
+- GIVEN 一個 T 缺 Files 欄，或 Files 列出的路徑 ⊈ 同份 `5-tasks.md` 全部 T 的 Files 聯集
+- WHEN 跑 F1 牙（RP-5／M9）
+- THEN 紅；該 T 不得標完成
+- 觀測:從該 T Files 欄與 5-tasks Files 聯集差集看 | 缺欄或超出聯集 → 紅算過 | n-a:F1 牙未落地。替代：本條 + Decision RP-5 字面；盤 3 T-fake 缺欄路徑
+- Operational Context:不適用 — scope guard 牙，無新交接。
+
+#### S-2.9 完成宣稱無原始輸出必須紅
+- GIVEN 一個 T 的完成宣稱只附摘要句、沒有原始指令輸出、也沒有 `檔:行`
+- WHEN 跑 F1 牙（RP-6／M10）
+- THEN 紅；摘要不得當證據
+- 觀測:從 6-notes 該 T 證據欄看 | 只有摘要、無原始輸出或 `檔:行` → 紅算過 | n-a:F1 牙未落地。替代：本條 + Decision RP-6 字面；盤 3「看起來沒問題」
+- Operational Context:不適用 — 驗證五律牙。S-2.3 仍咬無 RED／自審；本條只咬證據物質。
+
 ### R-3: 系統 SHALL 把 Agent 代寫判定當成未寫
 SC-4／RP-8／RP-16／5A。預設人類停點只有 Ship。Agent 或 coordinator 寫入 `ACCEPTED` 或 Ship `PASS`（無人類 attestation／無人類頂欄）= 未寫。不採 5B／5C。
 
@@ -307,6 +476,26 @@ SC-4／RP-8／RP-16／5A。預設人類停點只有 Ship。Agent 或 coordinator
   - Waiting/timeout behavior:綠了仍等
   - Recovery:HOLD 留 Ship；REQUEST_CHANGES 回上一站並吃 cap
   - Audit/handoff requirement:頂欄 `verdict:`
+  - Observation:見本條觀測
+
+#### S-3.3 Ship 必須帶 G3 Evidence 八點物質
+- GIVEN 一份 `7-review.md` 宣稱 G3 可過或標 Done；摺站後的新 slug 同樣走 Ship
+- WHEN 人核 `docs/dev/readme-contract-extract.md` G3 錨定義八點
+- THEN 八點全部成立才算 Evidence 契約過：①Final Fresh Run 綁定送審 HEAD；②Required Layer 全 pass；③已觸發 Conditional Layer 全 pass；④零 fail；⑤Required 不得 unverified／n-a；⑥Explicitly Excluded 可 n-a 但必須附理由；⑦Optional 可 unverified 但必須標示；⑧Gauntlet PASS 不取代 Standards／Spec／Walkthrough／Coverage／現象複驗。摺站不得省略任一點
+- 觀測:從 7-review Evidence 節與八點清單對照看 | 少一點或摺站當省略理由 → 未過算過 | n-a:本 hop 不跑 G3。替代：契約抽 L119–L128；本檔 Verification Profile Required／Excluded 欄已在
+- Operational Context:
+  - Actor:Ship 審查者
+  - Goal:出貨樹帶齊八點物質
+  - Situation:機械測試已綠
+  - Known information:M6；A10 latch=是
+  - Missing information:人是否讀完八點
+  - Human decision:八點不齊就 HOLD 或 REQUEST_CHANGES
+  - Authority:只有人簽 Ship
+  - External dependency:Gauntlet 腳本（不取代第 8 點）
+  - Out-of-system action:人打開 7-review 對八點
+  - Waiting/timeout behavior:八點不齊就留 HumanWait
+  - Recovery:補 Final Fresh／層旗標後重送
+  - Audit/handoff requirement:Evidence 節對得上八點
   - Observation:見本條觀測
 
 ### R-4: 系統 SHALL 拒空 attestation 且未命中不產 Demo
@@ -509,6 +698,33 @@ SC-5／SC-8／SC-9／SC-10／2A／3A／4A／OC-1／OC-2／OC-5。F3 cut 當下�
   - Audit/handoff requirement:F1 拒絕輸出
   - Observation:見本條觀測
 
+#### S-5.8 annex 必須具備九個 SLOT 語意槽
+- GIVEN F1 annex 文本（本 slug F1 產出；JSON／YAML 鍵名本檔不鎖，OC-3）
+- WHEN 人用本條 SLOT- id 清單核對 annex
+- THEN annex 必須同時具備這九個語意槽（F1 可另命名鍵，但每個 SLOT- id 要能指到一欄或等效句）：SLOT-PARSE-OLD7＝能解析舊 7；SLOT-PARSE-NEW5＝能解析新 5；SLOT-MISSING-NEW5-DEFAULT＝舊檔缺新欄是合法缺席、不紅；SLOT-UNDECLARED-ROUTE＝未宣告 2.1.0 則路線=舊 7；SLOT-REJECT-2.0.0-PLUS-FIVE-HOPS＝契約仍 2.0.0 且 hops 已是五站預設 → 紅／不得改線；SLOT-DOCTOR-GREEN-MEANS＝握手，≠路線沒變，≠已切；SLOT-IN-FLIGHT-DETECT＝`docs/dev/<slug>/` 已有 1–7 任一 `.md`；SLOT-RP-MIN-SET＝RP-1…RP-16 只准加不准減；SLOT-SKIP-NEGATION＝「不／無／不得」加「跳過」不得當 skip OC。少一槽 = F1 未完成
+- 觀測:從 F1 annex 正文對九個 SLOT- id 看 | 每個 id 有對應欄或等效句、零個欄位鍵名被本檔鎖死算過 | n-a:annex 本 hop 不落地。替代：本條清單當核對表
+- Operational Context:不適用 — annex 契約清單，無現場交接。
+
+#### S-5.9 契約版本與 marketplace hops 兩源並改仍舊 7
+- GIVEN 採用端兩條可獨立更新的來源：①`devflow_contract_version` 仍是 2.0.0；②marketplace 已把方法包 hops 換成五站預設；兩源可在不同時刻寫入
+- WHEN 任一源先改、另一源後改，或兩源在同一更新視窗寫入
+- THEN 採用端路線必須仍是舊 7；F1 紅「契約仍 2.0.0 且 hops 已是五站預設」；doctor 握手綠不得當仲裁
+- 觀測:從契約版本欄與 hops 是否五站預設兩格 AND 看 | 任一寫入順序，2.0.0+五站 hops → 仍舊 7 且紅算過 | n-a:F1 牙未掛。替代：OC-2；本檔 S-5.7；Reliability Concurrency
+- Operational Context:
+  - Actor:採用專案 owner
+  - Goal:兩個更新源同時變也不被改線
+  - Situation:plugin update 與契約檔不是同一筆寫入
+  - Known information:doctor 只握手版本
+  - Missing information:哪一源先落地
+  - Human decision:未 upgrade 拒絕跟 hops
+  - Authority:契約版本，不是 marketplace 包裝
+  - External dependency:`marketplace update` 與契約檔
+  - Out-of-system action:人核兩格
+  - Waiting/timeout behavior:無
+  - Recovery:釘契約 2.0.0 並把 hops 當未授權
+  - Audit/handoff requirement:兩格 AND 輸出
+  - Observation:見本條觀測
+
 ### R-6: 系統 SHALL 把每條 Must-keep 與 Owner Call 掛到 Scenario 並拒 Q6 升格
 SC-7／SC-12／OC-8。高影響列必須有 `M… → R-x/S-y` 或 `Non-Goal:<reason>`。Q6「採用現場也 chat 蓋章」保持 Assumption 或仍待驗。寫成已核事實 → 本 slug G2 打回。
 
@@ -670,6 +886,13 @@ SC-11／7A／brief §7。本 Spec 定義 F1／F2／F3 必須滿足什麼。本 P
   - Audit/handoff requirement:Non-Goals
   - Observation:見本條觀測
 
+#### S-8.7 審頁必須由對應 builder 重生
+- GIVEN 本目錄 `4-spec.md` 已改；或其他站 md 在後站改過
+- WHEN 產同名 html twin
+- THEN 必須跑對應 `scripts/build-stageN-html.py --action`（本 hop = `python3 scripts/build-stage4-html.py --action docs/dev/five-station-simplify/4-spec.md`）。不得手包 `_templates/html-shell.html`；不得把審頁塞進 `build-gate-twin.py` STAGES
+- 觀測:從 html 檔頭／產檔指令與 diff 是否含手寫 shell 看 | 本 hop html 由 stage4 builder 產出；無手包 shell 算過 | 在本 branch 重跑該指令後 `4-spec.html` 可解析 R/S
+- Operational Context:不適用 — 產檔紀律，無人員交接。
+
 ## MODIFIED Requirements
 
 本 slug Stage 5–7 **不改** living 契約句。現行正本仍是七份文檔 + 例行 G1／G2／G3：
@@ -690,7 +913,9 @@ SC-11／7A／brief §7。本 Spec 定義 F1／F2／F3 必須滿足什麼。本 P
 [R-1] 凍結七檔名並殺掉例行等人
   五站是別名
   謂詞假停修
+  表 A B 各列獨立 S
   A4 A7 產而不 latch
+  A10 HumanWait
 [R-2] 把假完成任務與短缺 Must-keep 點名成違 brief
   T 卡上就紅
   RP 只准加
@@ -712,7 +937,7 @@ SC-11／7A／brief §7。本 Spec 定義 F1／F2／F3 必須滿足什麼。本 P
 
 ## Acceptance Criteria
 
-- 全部 S 綠（S-1.1～S-8.6）。本 hop 能綠的是形狀與對照：`check-spec-gate.sh`、本 PR 檔集、本目錄 freeze md、doctor 握手、Disposition／Non-Goals／Assumption 用詞。F1／F2／F3 行為 S 的綠發生在各刀落地之後，不在本 PR。
+- 全部 S 綠（S-1.1～S-8.7）。本 hop 能綠的是形狀與對照：`check-spec-gate.sh`、本 PR 檔集、本目錄 freeze md、doctor 握手、Disposition／Non-Goals／Assumption 用詞。F1／F2／F3 行為 S 的綠發生在各刀落地之後，不在本 PR。S 數 >40（見確認紀錄）誠實記帳，不另切開新 slug。
 - 既有測試全綠：`bash scripts/check-spec-gate.sh docs/dev/five-station-simplify/4-spec.md`；`python3 scripts/build-stage4-html.py --action docs/dev/five-station-simplify/4-spec.md` 後審頁可解析 R/S。不回歸改既有牙（本 hop 禁改 `scripts/`）。
 - 非功能：本 slug 自己仍走舊 7（SC-8）。dual-read 未 bump（F0／本 hop 不 bump）。
 - 無 golden master（可見路線行為在 F3 才變；本 hop 不改 runtime）。
@@ -722,7 +947,7 @@ SC-11／7A／brief §7。本 Spec 定義 F1／F2／F3 必須滿足什麼。本 P
 `3-prototype.md` `status: approved`；`Human verdict: ACCEPTED | role=母版 owner | scenario=AC-1`；`Verdict attestation: human:rick @ 2026-09-14`（#309／#310）。Demo 前置已滿足。本 hop **不**發明 G2 PASS。
 
 - Scenario AC-1（新 slug 中間不停）→ S-1.2、S-1.3
-- Scenario AC-6（表 A／B）→ S-1.4、S-4.3、S-4.4
+- Scenario AC-6（表 A／B）→ S-1.4、S-1.5、S-1.6、S-1.7、S-1.8、S-1.9、S-1.10、S-1.11、S-1.12、S-4.3、S-4.4
 - Scenario AC-3（假完成 T；T 卡上就紅）→ S-2.1、S-2.2、S-2.3、S-2.4
 - Scenario AC-4（空 attestation + Agent 代寫）→ S-3.1、S-4.2
 - Scenario AC-8（本 slug 仍舊 7）→ S-5.2
@@ -762,8 +987,8 @@ SC-11／7A／brief §7。本 Spec 定義 F1／F2／F3 必須滿足什麼。本 P
 
 | 區塊 | 檔 | 行(非測試) | 行(測試) |
 |---|---|---|---|
-| `4-spec.md` | 1 | ≤900 | 0 |
-| `4-spec.html`（產檔器） | 1 | ≤800（生成） | 0 |
+| `4-spec.md` | 1 | ≤1500 | 0 |
+| `4-spec.html`（產檔器） | 1 | ≤1200（生成） | 0 |
 | `_templates/`／`graph.yaml`／`scripts/`／STATUS／HISTORY／契約 | 0 | 0 | 0 |
 
 **G2 之後、本 slug Stage 5–7（只 F1）**［Assumption：牙形未鎖］
@@ -846,14 +1071,16 @@ SC-11／7A／brief §7。本 Spec 定義 F1／F2／F3 必須滿足什麼。本 P
   - 不得在本 slug Stage 5–7 做 F2／F3（S-8.5）
   - 不得重開 1B／2B／4C／6B／7C（S-8.6）
   - 不得本 hop 改 STATUS／模板／graph／scripts 牙／契約 bump
+  - 不得鎖 annex 欄位鍵名或 event schema（S-5.8、S-7.4、OC-3）
+  - 不得把 Q6 標 oc-accepted 或把 DD 標 ✅ 草擬自判（S-6.2）
 - Required layers:check-spec-gate（本 hop 形狀）。文件層：本 PR 檔集（S-8.4）、Disposition C9、Assumption 用詞（S-6.2）
 - Conditional layers:F1 落地 → 該刀牙列入 Required 並重跑對照稿；改 doctor 文案 → 重跑 `hooks/devflow-doctor.sh` + S-5.5 對照
 - Explicitly excluded layers:Mutation（本 hop 只規格）、e2e／Playwright（無產品前端）、Race／stress（無多 writer runtime）、Windows 真機、本 hop 跑 coordinator（F2 Out of Scope）
 - Final fresh entry point:`bash scripts/check-spec-gate.sh docs/dev/five-station-simplify/4-spec.md && python3 scripts/build-stage4-html.py --action docs/dev/five-station-simplify/4-spec.md`
 - Reliability triage:
-  - Concurrency: n-a — 一 slug 一機；本 hop 無多 writer 鎖契約；F2 才有 coordinator
+  - Concurrency: applicable — 契約版本與 marketplace hops 是兩個可獨立寫入的更新源；落到 S-5.7、S-5.9
   - Idempotency: applicable — 同一對照再評 freeze／doctor 綠≠已切／本 PR 檔集，結果相同（S-5.2、S-5.5、S-8.4）
-  - Timeout/retry: n-a — 機械檢查同步結束；HumanWait 是 latch 不是重試（S-1.4、S-3.2）
+  - Timeout/retry: n-a — 機械檢查同步結束；HumanWait 是 latch 不是重試（S-1.6、S-3.2）
 
 ### Failure Model(Risk: high 必填)
 
@@ -866,7 +1093,10 @@ SC-11／7A／brief §7。本 Spec 定義 F1／F2／F3 必須滿足什麼。本 P
 | chat 帶走空欄 | Demo 沒做就進 Build | 欄空 +「可以開 Stage 4」過 Spec | Required:S-4.2 | — |
 | 否定跳過當 skip | 沒 Demo 卻 g2_demo=PASS | `_stage3_impl.py` trigger_source=owner-call | Conditional:S-4.5 | 本 hop 不修該牙（Known limit） |
 | 本 slug 當新 5 | F0–F2 觀測被污染 | 五站狀態寫入本目錄 | Required:S-5.2 | — |
-| doctor 綠冒充已切 | 採用端被遠端改線 | 文案寫「COMPATIBLE = 五站」 | Required:S-5.5、S-5.6 | — |
+| doctor 綠冒充已切 | 採用端被遠端改線 | 文案寫「COMPATIBLE = 五站」 | Required:S-5.5、S-5.6、S-5.9 | — |
+| 契約與 hops 兩源並改 | 先改 hops 仍被當已切 | 2.0.0 + 五站 hops 仍綠 | Required:S-5.9 | F1 後才跑牙 |
+| Ship 省略 Evidence 八點 | 摺站當省略理由 | 7-review 缺八點任一 | Required:S-3.3 | 本 hop 不跑 G3 |
+| 審頁手包 | html 與 md 分叉 | 未跑 stage builder | Required:S-8.7 | — |
 | Q6 升格 | 假 Observed 替殺等待背書 | 「採用現場都蓋章」無 Assumption | Required:S-6.3 | 採用逐字稿禁收 |
 | cap 暗改或套舊 7 | 重寫無限或誤殺 in-flight | 第 3 次 hop 仍過；舊 7 被 cap 紅 | Required:S-7.1、S-7.4 | 落點 F2 |
 | 併刀或後站做 F2／F3 | in-flight 與採用端同時爆 | 5-tasks Files 含 coordinator／graph 切線 | Required:S-8.5、S-8.6 | — |
@@ -890,7 +1120,7 @@ Q6 期限 = F1 annex 前抽一案。升格成已核事實仍擋本 slug G2（S-6
 
 | DD | 決定了什麼 | 為什麼 | 依據(`檔:行` 或 `[Assumption]`) | 若被推翻會怎樣 | 狀態(待人審→✅/✗) |
 |---|---|---|---|---|---|
-| DD-1 | SC-1…SC-13 收成 R-1…R-8；每條 SC 至少一條 S（對照見確認紀錄） | C 線 anti-hollow；單份避免 >40 S 切片 | 本 hop brief；`2-decision.md` Success Criteria | 拆 slug 或漏 SC | 待人審 |
+| DD-1 | SC-1…SC-13 收成 R-1…R-8；每條 SC 至少一條 S（對照見 SC → S 表） | C 線 anti-hollow。Soft-fix 後 S>40，誠實記帳、不另切開新 slug | 本 hop brief；`2-decision.md` Success Criteria | 拆 slug 或漏 SC | 待人審 |
 | DD-2 | 本 slug Stage 5–7 只落地 F1 annex+teeth；F2／F3 本檔定義但不施工 | 7A 四刀不併；Diff Budget 本 hop 只文件 | `2-decision.md` 7A／OC-7 | 後站寫 coordinator = 違 S-8.5 | 待人審 |
 | DD-3 | rewrite 三 cap 數字鎖在 S-7.1…S-7.3；計數落點交 F2，不鎖鍵名 | OC-3／Q10 | `2-decision.md` OC-3；狀態機 §3 | 本檔鎖 event 欄名 = 偷做 F2 | 待人審 |
 | DD-4 | Q6 Assumption refs = open／2026-10-31；升格句另由 S-6.3 擋 G2 | C7 不得用已過站 deadline 擋形狀；SC-12 仍咬語意升格 | `2-decision.md` OC-8／SC-12 | 改 resolved = 假裝已抽採用案 | 待人審 |
@@ -898,12 +1128,13 @@ Q6 期限 = F1 annex 前抽一案。升格成已核事實仍擋本 slug G2（S-6
 | DD-6 | 假完成紅的觀測落點 = T 卡上就紅（Stage 3 選定），不是 hop 板或 Ship 重建 | 對齊 SC-3「該 T 不得標完成」 | `3-prototype.md` 盤 3 | 改 hop 才紅 = 已棄 Variant B | 待人審 |
 | DD-7 | 行為圖 8 框對 8 個 R；審頁產器硬切 8 框 | 產器 `steps[:8]`；不改 scripts | `scripts/build-stage4-html.py` L450 | 增 R-9 則圖丟框 | 待人審 |
 | DD-8 | Non-Goals 點名 1B／2B／4C／6B／7C（及同表其餘已拒案），Stage 5 不得重開 | C 線：後站不能把已拒案當可選 | `2-decision.md` Rejected Alternatives | 刪這五個代號 = Stage 5 可重開 | 待人審 |
+| DD-9 | Soft-fix 拆表 A／B 為獨立 S；吸 #313 SLOT- id 語意（不鎖鍵名）；S>40 留在本檔、不另切開新 slug。Q6 維持 open。DD 維持待人審 | owner 核准吸收評審；C 勝、A 次；B 的 Q6=oc-accepted 與 DD ✅ 不吸 | 本 hop owner 指令；`2-decision.md` OC-3／OC-8 | 改 oc-accepted 或 DD ✅ = 抄 B 落選項 | 待人審 |
 
 ### 內部技術選擇(下層,告知即可)
 
 - 審頁用 `scripts/build-stage4-html.py --action`；不手包 html-shell；不把審頁塞進 `build-gate-twin.py` STAGES。
 - 本 hop 不改 `STATUS.md`、不 bump plugin、不開 5-tasks。
-- 未讀 A／B 線 Stage 4。
+- Soft-fix 讀 #311 R-1 與 #313 SLOT 清單當吸收原料；不抄 B 的 Q6=oc-accepted 或 DD ✅ 草擬自判。
 - 負向 fixture 目錄建議 `scripts/fixtures/five-station-simplify/`（F1 才新增檔）。
 - 本檔不寫 C4 未定事項三詞字面，改指 `check-spec-gate.sh` `VAGUE_ALL`。
 - skip-OC 誤匹配記 S-4.5，本 hop 不改 `_stage3_impl.py`。
@@ -913,7 +1144,15 @@ Q6 期限 = F1 annex 前抽一案。升格成已核事實仍擋本 slug G2（S-6
 - `test_s_1_1_aliases_keep_seven_filenames`
 - `test_s_1_2_no_please_review_a4_a7`
 - `test_s_1_3_false_predicate_stops_without_asking`
-- `test_s_1_4_a4_a7_produce_no_latch_a10_waits`
+- `test_s_1_4_a4_generate_not_latch`
+- `test_s_1_5_a7_generate_not_latch`
+- `test_s_1_6_a10_mech_green_still_humanwait`
+- `test_s_1_7_a5_miss_builds_no_page`
+- `test_s_1_8_a8_a9_not_stop`
+- `test_s_1_9_b2_same_wait_as_b1`
+- `test_s_1_10_b4_quiz_only_irreversible`
+- `test_s_1_11_a1_a2_a3_a6_generate_not_latch`
+- `test_s_1_12_b3_merges_b1_b5_no_latch`
 - `test_s_2_1_missing_must_keep_is_brief_violation`
 - `test_s_2_2_t_fake_red_on_card`
 - `test_s_2_3_no_red_or_self_review_incomplete`
@@ -921,8 +1160,11 @@ Q6 期限 = F1 annex 前抽一案。升格成已核事實仍擋本 slug G2（S-6
 - `test_s_2_5_test_name_requires_s_id`
 - `test_s_2_6_rp_min_set_add_only`
 - `test_s_2_7_optional_fields_block_this_g2`
+- `test_s_2_8_files_not_subset_red`
+- `test_s_2_9_no_raw_output_red`
 - `test_s_3_1_agent_written_verdict_unread`
 - `test_s_3_2_ship_done_without_human_pass_fails`
+- `test_s_3_3_ship_evidence_eight_points`
 - `test_s_4_1_b1_requires_human_accepted_attestation`
 - `test_s_4_2_empty_attestation_plus_chat_cannot_leave_spec`
 - `test_s_4_3_miss_skips_demo_forced_accepted_fails`
@@ -935,6 +1177,8 @@ Q6 期限 = F1 annex 前抽一案。升格成已核事實仍擋本 slug G2（S-6
 - `test_s_5_5_doctor_green_is_not_cut`
 - `test_s_5_6_doctor_green_follow_hops_text_fails`
 - `test_s_5_7_unupgraded_adopter_stays_old_7`
+- `test_s_5_8_annex_nine_slot_semantics`
+- `test_s_5_9_contract_vs_marketplace_hops_concurrency`
 - `test_s_6_1_high_impact_rows_have_disposition`
 - `test_s_6_2_q6_stays_assumption`
 - `test_s_6_3_q6_as_fact_blocks_g2`
@@ -948,6 +1192,7 @@ Q6 期限 = F1 annex 前抽一案。升格成已核事實仍擋本 slug G2（S-6
 - `test_s_8_4_this_pr_docs_only`
 - `test_s_8_5_this_slug_stage_5_to_7_is_f1_only`
 - `test_s_8_6_rejected_1b_2b_4c_6b_7c_cannot_reopen`
+- `test_s_8_7_html_rebuilt_via_stage_builder`
 
 ## 確認紀錄
 
@@ -955,9 +1200,10 @@ Q6 期限 = F1 annex 前抽一案。升格成已核事實仍擋本 slug G2（S-6
 - 雙源清點 | 2026-09-14 | 雛形 8 條 + SC 13 條 → ADDED R-1…R-8。living 契約句 L7–L17 列 MODIFIED 說明（本 slug Stage 5–7 不改正文）。REMOVED 無。
 - R 範圍 | 2026-09-14 | Implementer C brief：每個 SC 至少一 S；F0→F3 分刀；別名 vs 七檔名；Ship 唯人；Agent 判定=未寫；cap 給 F2；M／OC 掛 S；本 hop 只文件。使用者本指令 = 範圍確認。
 - S 展開 | 2026-09-14 | R-1…R-8 全展開；每 S 有觀測欄；交接／核准／等待／權限 S 有 Operational Context。
-- SC 鏈 | 2026-09-14 | SC-1→S-1.2／S-1.3／S-1.4；SC-2→S-2.1；SC-3→S-2.2…S-2.5；SC-4→S-3.1／S-3.2；SC-5→S-5.1／S-5.4；SC-6→S-4.1…S-4.3；SC-7→S-6.1；SC-8→S-5.2；SC-9→S-5.5；SC-10→S-5.6／S-5.7；SC-11→S-8.4／S-8.5；SC-12→S-6.2／S-6.3；SC-13→S-2.6／S-2.7。
+- SC 鏈 | 2026-09-14 | 完整表見「SC → S 對照」。SC-1→S-1.2／S-1.3／S-1.4／S-1.5；SC-2→S-2.1；SC-3→S-2.2…S-2.5；SC-4→S-3.1／S-3.2；SC-5→S-5.1／S-5.4；SC-6→S-4.1…S-4.3／S-1.7；SC-7→S-6.1；SC-8→S-5.2；SC-9→S-5.5／S-5.8／S-5.9；SC-10→S-5.6／S-5.7／S-5.9；SC-11→S-8.4／S-8.5；SC-12→S-6.2／S-6.3；SC-13→S-2.6／S-2.7／S-2.8／S-2.9／S-1.10。
+- Soft-fix | 2026-09-14 | 吸收 #311 表 A／B 獨立 S 與 #313 SLOT 語意槽。不吸 B 的 Q6=oc-accepted、不吸 DD ✅。S 數 52 >40，誠實記帳，不另切開新 slug。
 - 3a 四節 | 2026-09-14 | AC／Out of Scope／Diff Budget／Dependencies 齊。
-- 3b Profile | 2026-09-14 | lane full、Risk high、Failure Model、Reliability triage、DBC applicable。
+- 3b Profile | 2026-09-14 | lane full、Risk high、Failure Model、Reliability Concurrency=applicable（S-5.9）、DBC applicable。
 - 3c Stage 3 | 2026-09-14 | AC-1／AC-3／AC-4／AC-5／AC-6／AC-8／SC-9／RP-14 + Method／Recovery 逐場有下落。
-- DD 掃描 | 2026-09-14 | 上層八條待人審；無「待裁決」殘留；不翻已核 Decision。
-- 機械關卡 | 2026-09-14 | `scripts/check-spec-gate.sh` 9/9。審頁 `scripts/build-stage4-html.py --action` → 8 R／38 S、status=draft、verdict=PRE-REVIEW。
+- DD 掃描 | 2026-09-14 | 上層九條待人審；無「待裁決」殘留；不翻已核 Decision；無 ✅ 草擬自判。
+- 機械關卡 | 2026-09-14 | `scripts/check-spec-gate.sh` 須 9/9。審頁 `scripts/build-stage4-html.py --action`。
