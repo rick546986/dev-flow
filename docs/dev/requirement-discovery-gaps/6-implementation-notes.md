@@ -319,10 +319,10 @@ Run:
 - 影響: 模板／example／指南 Exit 區塊標題從 h3 改 strong。未發明 G3、未改 STATUS／HISTORY。
 
 ### D-5(L1)
-- 現象: `EXPECTED_CHECK_SKIP_CALLS` 釘 1，`check-realworld.sh` 現有 9 處 `check_skip(`（原 1 = renderer 隔離根；新 8 = 隔離 seed 無 discovery-gaps／N3）。
-- 保守選擇: 常數與 self-pin、architecture-guards 靜態釘改 9；每個新呼叫點加 SKIP-REASON。
-- 理由: 母規則「新顯性 skip 必須同步常數並在呼叫處註明理由」。隔離 seed 真斷言跑不了，skip 是為 N-2 兩環境檢查數一致，不是卸武裝。
-- 影響: 逃生門從 1 放到 9。未新開第四檢查家族。
+- 現象: 隔離 seed 無 `scripts/fixtures/discovery-gaps/`。先寫 8 處 `check_skip` 會把 pin 從 1 拉到 9。
+- 保守選擇: 改走同形內嵌稿（檔在用檔、檔不在用 embed），一律 `check()`。`EXPECTED_CHECK_SKIP_CALLS` 維持 1（只留 renderer 隔離根那一處）。
+- 理由: pin 要誠實；新 skip 不如 fixture-shaped embed。不新開第四檢查家族、不加 .sh heredoc（不碰 `MIN_HEREDOCS`）。
+- 影響: 逃生門仍是 1。N-2 兩環境檢查數一致，因為隔離根也跑真斷言。
 
 ### D-6(L1)
 - 現象: methodology 組 fail-fast 過 `check-methodology-corrections` 後，下一刀是 `check-spec-gate example/subsidy-3-0-plus/4-spec.md`。該檔 lane=full、無 Disposition，C9 紅。原 CI 在第一刀就停，名單沒列到它。

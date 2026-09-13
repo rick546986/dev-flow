@@ -48,13 +48,11 @@ MIN_CHECKS = 164
 
 # check_skip( 呼叫點零圍堵(2026-08-17 F-2 HIGH-2):scripts/*.sh 全體(不含定義行)
 # 允許存在的 check_skip( 呼叫點總數上限。check_skip 是「顯性跳過仍計入 checks」的
-# 合法逃生門(見 check-realworld.sh 的 check_skip 定義與其呼叫點),但逃生門
+# 合法逃生門(見 check-realworld.sh 的 check_skip 定義與其唯一呼叫點),但逃生門
 # 一多就形同讓真斷言全面下崗卻沒人管制。新增顯性跳過必須同步調高這個數字,並在
 # 呼叫處註明理由 —— 這裡的常數本身也被 guard-selfpin 釘死,不能悄悄改大。
-# 2026-09-13 requirement-discovery-gaps Stage 6:1 → 9。原 1 = renderer
-# 隔離根略過。新 8 = 隔離 seed 無 discovery-gaps fixture／N3-probe 時的
-# 顯性 skip(N-2 兩環境檢查數一致;理由寫在各 check_skip 呼叫處)。
-EXPECTED_CHECK_SKIP_CALLS = 9
+# discovery-gaps 對照走同形內嵌稿,不新增 check_skip。本常數維持 1(renderer 隔離根)。
+EXPECTED_CHECK_SKIP_CALLS = 1
 
 TEMPLATE = "_templates/4-spec.md"
 EXAMPLE = "example/contract-expiry-reminder/4-spec.md"
@@ -481,9 +479,8 @@ for _name, (_actual, _want) in PINNED_SIZES.items():
           f"改語意正本 notes/design/design-boundary-contract.md、"
           f"並在 scripts/test-architecture-guards.sh 補對應負向案")
 check(MIN_CHECKS == 164, "MIN_CHECKS 未被調低(釘死 164;地板=實得數)", f"實得 {MIN_CHECKS}")
-check(EXPECTED_CHECK_SKIP_CALLS == 9,
-      "EXPECTED_CHECK_SKIP_CALLS 未被調整(釘死 9;check_skip 零圍堵的常數本身不得被悄悄改大;"
-      "1=renderer 隔離根;+8=discovery-gaps/N3 隔離 seed 顯性 skip)",
+check(EXPECTED_CHECK_SKIP_CALLS == 1,
+      "EXPECTED_CHECK_SKIP_CALLS 未被調整(釘死 1;check_skip 零圍堵的常數本身不得被悄悄改大)",
       f"實得 {EXPECTED_CHECK_SKIP_CALLS}")
 
 # (b) 三張表的欄名必須與 canon §2.2/2.3/2.4 的欄位表逐字相同
@@ -581,7 +578,7 @@ if len(_scan_files) == 0:
 # 掃描清單哨兵(2026-08-17 F-2 MED):跨檔掃描的「掃到誰」完全交給 glob 結果決定,
 # 若掃描目錄/pattern 被悄悄改窄(例如改成只掃某個子集、副檔名判斷被弱化),
 # 上面「len == 0」的防線擋不住 —— 目錄裡還有其他 .sh 檔,glob 不會回傳 0。
-# 這裡改成白名單式哨兵:check-realworld.sh(check_skip 的定義與呼叫點所在)
+# 這裡改成白名單式哨兵:check-realworld.sh(check_skip 的定義與唯一呼叫點所在)
 # 與 check-gate-twin.sh(另一支帶自己 check() 系列 helper 的常駐檢查腳本)兩支
 # 一定要出現在掃描清單裡,少一支就代表掃描來源被縮小,顯性 exit 2(不是靜默略過
 # 這批檢查,也不是留給 check() 記一筆失敗后繼續跑其他檢查 —— 掃描清單本身失格,

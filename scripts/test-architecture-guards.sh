@@ -2533,7 +2533,7 @@ check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 29" "EXPECTED_G
 # EXPECTED_CHECK_SKIP_CALLS 是「顯性跳過 check() 次數」的釘死地板(見該檔第 480、
 # 612 行的 check() 呼叫),盤點時漏掉、沒有比照其餘六支補上這裡的靜態釘,是「同型
 # 病灶在新守衛裡再犯」的一種:別的地板都有這一層外部互釘,它原本沒有。
-check_static_pin "scripts/check-design-contract.sh" "EXPECTED_CHECK_SKIP_CALLS = 9" "EXPECTED_CHECK_SKIP_CALLS 釘死 9(1 renderer 隔離根 + 8 discovery-gaps/N3 隔離 seed)"
+check_static_pin "scripts/check-design-contract.sh" "EXPECTED_CHECK_SKIP_CALLS = 1" "EXPECTED_CHECK_SKIP_CALLS 釘死 1"
 
 # X-3 HIGH-1:上面只釘了 EXPECTED_GROUPS 這個常數宣告本身,沒釘「用它的斷言」——
 # guard-selfpin 整區塊(含這兩條 meta 斷言)連同 REQUIRED_GROUPS 對應條目一起被刪掉、

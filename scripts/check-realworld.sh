@@ -399,33 +399,34 @@ check(bool(reconcile_bullets) and len(named_bullets) == len(reconcile_bullets),
       f"未點名 {len(reconcile_bullets) - len(named_bullets)}/{len(reconcile_bullets)} 條")
 
 # ── 11. discovery-gaps：Goals 錯欄牙（S-1.2／S-1.4；fixture 自測）──
-# 隔離 root（test-architecture-guards seed）沒有 scripts/fixtures/discovery-gaps/
-# 時顯性跳過，兩環境檢查數一致。不另開 check-discovery-gaps.sh。
+# 隔離 seed 沒有 scripts/fixtures/discovery-gaps/ 時改跑同形內嵌稿。
+# 一律 check(),不新增 check_skip(EXPECTED_CHECK_SKIP_CALLS 釘死 1)。
 GAPS = os.path.join(root, "scripts", "fixtures", "discovery-gaps")
-WRONG_COL = os.path.join(GAPS, "goals-dashboard-in-wrong-column.md")
-OK_COL = os.path.join(GAPS, "goals-outcome-with-requested-dashboard.md")
-if os.path.isfile(WRONG_COL):
-    wrong_text = open(WRONG_COL, encoding="utf-8").read()
-    wrong_issues = discovery_shape_issues(wrong_text)
-    check(any("構想在錯欄" in item or "Requested solution" in item for item in wrong_issues),
-          "負向 fixture goals-dashboard-in-wrong-column 必須被指出構想在錯欄",
-          f"issues={wrong_issues}")
-else:
-    # SKIP-REASON: 隔離 seed(test-architecture-guards)不複製
-    # scripts/fixtures/discovery-gaps/;真斷言無法跑。顯性 skip 維持
-    # N-2 兩環境檢查數。同步 EXPECTED_CHECK_SKIP_CALLS。
-    check_skip("負向 fixture goals-dashboard-in-wrong-column 必須被指出構想在錯欄",
-               "隔離測試根目錄無 discovery-gaps fixture")
-if os.path.isfile(OK_COL):
-    ok_text = open(OK_COL, encoding="utf-8").read()
-    ok_issues = discovery_shape_issues(ok_text)
-    check(not any("構想在錯欄" in item for item in ok_issues),
-          "正向 fixture goals-outcome-with-requested-dashboard 不因 dashboard/API 誤殺",
-          f"issues={ok_issues}")
-else:
-    # SKIP-REASON: 同上,隔離 seed 無正向錯欄 fixture。同步 EXPECTED_CHECK_SKIP_CALLS。
-    check_skip("正向 fixture goals-outcome-with-requested-dashboard 不因 dashboard/API 誤殺",
-               "隔離測試根目錄無 discovery-gaps fixture")
+
+
+def _gaps_text(name, embed):
+    path = os.path.join(GAPS, name)
+    if os.path.isfile(path):
+        return open(path, encoding="utf-8").read()
+    return embed
+
+
+wrong_text = _gaps_text(
+    "goals-dashboard-in-wrong-column.md",
+    "## Goals\n- 我要 dashboard\n\n## Requested solution\n\n")
+wrong_issues = discovery_shape_issues(wrong_text)
+check(any("構想在錯欄" in item or "Requested solution" in item for item in wrong_issues),
+      "負向 fixture goals-dashboard-in-wrong-column 必須被指出構想在錯欄",
+      f"issues={wrong_issues}")
+ok_text = _gaps_text(
+    "goals-outcome-with-requested-dashboard.md",
+    "## Goals\n- 讓負責業務在合約到期前做完續約決定\n\n"
+    "## Requested solution\n- 未定案：站內 dashboard\n\n"
+    "## Context\n對照既有 dashboard API\n")
+ok_issues = discovery_shape_issues(ok_text)
+check(not any("構想在錯欄" in item for item in ok_issues),
+      "正向 fixture goals-outcome-with-requested-dashboard 不因 dashboard/API 誤殺",
+      f"issues={ok_issues}")
 
 # ── 12. 教師分欄地板（S-1.1／S-1.3）：Goals 只寫結果，構想進 Requested solution ──
 check("## Requested solution" in t1, "template 1-discussion 含 ## Requested solution")
@@ -441,65 +442,71 @@ check(all(p not in e1_goals for p in ("就能看到", "點擊可直達", "一眼
 # ── 13. 發現｜／裁決｜前綴對稱（S-2.1／S-2.2／S-2.3）──
 n3_rel = "skills/dev-talk/nodes/N3-probe.md"
 n3_path = os.path.join(root, n3_rel)
-if os.path.isfile(n3_path):
-    n3 = read(n3_rel)
-    n3_pref = prefix_symmetry_issues(n3)
-    check(not n3_pref, "N3-probe 發現｜與裁決｜成對", f"issues={n3_pref}")
-    check("禁附推薦" in n3, "N3-probe 發現題路徑含禁附推薦")
-else:
-    # SKIP-REASON: 舊 seed() 未必複製 N3-probe;兩條地板對不到檔。
-    # 顯性 skip ×2。同步 EXPECTED_CHECK_SKIP_CALLS。
-    check_skip("N3-probe 發現｜與裁決｜成對", "隔離根無 N3-probe")
-    check_skip("N3-probe 發現題路徑含禁附推薦", "隔離根無 N3-probe")
-probe_ok = os.path.join(GAPS, "probe-decision-with-options.md")
-if os.path.isfile(probe_ok):
-    probe_text = open(probe_ok, encoding="utf-8").read()
-    probe_issues = discovery_shape_issues(probe_text)
-    check(not probe_issues,
-          "裁決題附選項不得當發現題違規（probe-decision-with-options）",
-          f"issues={probe_issues}")
-else:
-    # SKIP-REASON: 隔離 seed 無 probe-decision-with-options。同步 EXPECTED_CHECK_SKIP_CALLS。
-    check_skip("裁決題附選項不得當發現題違規（probe-decision-with-options）",
-               "隔離測試根目錄無 discovery-gaps fixture")
+n3 = (read(n3_rel) if os.path.isfile(n3_path)
+      else "發現｜開放題,禁附推薦\n裁決｜可附選項\n")
+n3_pref = prefix_symmetry_issues(n3)
+check(not n3_pref, "N3-probe 發現｜與裁決｜成對", f"issues={n3_pref}")
+check("禁附推薦" in n3, "N3-probe 發現題路徑含禁附推薦")
+probe_text = _gaps_text(
+    "probe-decision-with-options.md",
+    "## Interview Log\n- 發現｜上次真的怎麼做？\n"
+    "- 裁決｜這條痛點進本方案還是 Non-Goal？（本方案／Non-Goal／另開 slug）\n")
+probe_issues = discovery_shape_issues(probe_text)
+check(not probe_issues,
+      "裁決題附選項不得當發現題違規（probe-decision-with-options）",
+      f"issues={probe_issues}")
 
 # ── 14. 高影響主張牙（S-3.1–S-3.4／S-8.4）──
-def _gaps_must_flag(name, needles, label):
-    path = os.path.join(GAPS, name)
-    if not os.path.isfile(path):
-        # SKIP-REASON: 負向 discovery-gaps fixture 不在隔離 seed。
-        # 一處呼叫點、多 fixture 共用。同步 EXPECTED_CHECK_SKIP_CALLS。
-        check_skip(label, "隔離測試根目錄無 discovery-gaps fixture")
-        return
-    flagged = discovery_shape_issues(open(path, encoding="utf-8").read())
+def _gaps_must_flag(name, embed, needles, label):
+    flagged = discovery_shape_issues(_gaps_text(name, embed))
     blob = " ".join(flagged)
     check(any(n in blob for n in needles), label, f"issues={flagged}")
 
 
-_gaps_must_flag("nod-as-only-source.md", ("點頭", "不是來源"),
-                "點頭獨源 fixture 必須紅")
-_gaps_must_flag("enum-unknown.md", ("枚舉", "Observed", "Reported"),
-                "枚舉 Unknown fixture 必須紅")
-_gaps_must_flag("ticket-solution-as-fact.md", ("解法", "Requested solution", "不當事實"),
-                "ticket 解法當 Observed 必須紅")
-_gaps_must_flag("high-impact-missing-source.md", ("來源", "Assumption", "期限"),
-                "高影響列缺來源且缺期限必須紅")
+_gaps_must_flag(
+    "nod-as-only-source.md",
+    "## Exceptions\n- 使用者反映希望 dashboard\n"
+    "  - 狀態: Observed\n  - 來源類型: 使用者點頭\n",
+    ("點頭", "不是來源"), "點頭獨源 fixture 必須紅")
+_gaps_must_flag(
+    "enum-unknown.md",
+    "## Exceptions\n- Journey 痛點：發現被錨定\n"
+    "  - 狀態: Unknown\n  - 來源類型: 本 tree skill\n",
+    ("枚舉", "Observed", "Reported"), "枚舉 Unknown fixture 必須紅")
+_gaps_must_flag(
+    "ticket-solution-as-fact.md",
+    "## Evidence\n- ticket／SOP 正文建議做 dashboard\n"
+    "  - 狀態: Observed\n  - 來源類型: ticket\n",
+    ("解法", "Requested solution", "不當事實"),
+    "ticket 解法當 Observed 必須紅")
+_gaps_must_flag(
+    "high-impact-missing-source.md",
+    "## Exceptions\n- 使用者反映希望 dashboard\n",
+    ("來源", "Assumption", "期限"),
+    "高影響列缺來源且缺期限必須紅")
 
 
-def _gaps_must_pass(name, label):
-    path = os.path.join(GAPS, name)
-    if not os.path.isfile(path):
-        # SKIP-REASON: 正向 discovery-gaps fixture 不在隔離 seed。
-        # 一處呼叫點、多 fixture 共用。同步 EXPECTED_CHECK_SKIP_CALLS。
-        check_skip(label, "隔離測試根目錄無 discovery-gaps fixture")
-        return
-    flagged = discovery_shape_issues(open(path, encoding="utf-8").read())
+def _gaps_must_pass(name, embed, label):
+    flagged = discovery_shape_issues(_gaps_text(name, embed))
     check(not flagged, label, f"issues={flagged}")
 
 
-_gaps_must_pass("high-impact-with-source.md", "有可重開來源必須綠")
-_gaps_must_pass("high-impact-with-assumption.md", "Assumption 加期限必須綠")
-_gaps_must_pass("non-high-impact-context.md", "非高影響 Context 不貼枚舉不得紅")
+_gaps_must_pass(
+    "high-impact-with-source.md",
+    "## Exceptions\n- 發現被錨定\n"
+    "  - 狀態: Observed\n  - 來源類型: 本 tree skill\n",
+    "有可重開來源必須綠")
+_gaps_must_pass(
+    "high-impact-with-assumption.md",
+    "## Exceptions\n- Q6 現場假設\n"
+    "  - 狀態: Assumption\n  - 期限: Stage 2\n",
+    "Assumption 加期限必須綠")
+_gaps_must_pass(
+    "non-high-impact-context.md",
+    "## Context\n已核 path:L12。無「風險=高」。\n\n"
+    "## Exceptions\n- 發現被錨定\n"
+    "  - 狀態: Observed\n  - 來源類型: 本 tree skill\n",
+    "非高影響 Context 不貼枚舉不得紅")
 
 # ── 15. Assumption 四欄地板（S-4.4）──
 ASSUMPTION_COLS = ("若為假影響什麼", "影響級", "怎麼驗", "何時／由誰驗")
@@ -513,9 +520,18 @@ check("role=" in t3 and "scenario=" in t3, "template 3-prototype verdict 含 rol
 check("role=" in e3 and "scenario=" in e3, "example 3-prototype verdict 含 role=／scenario=")
 check("本包必填全表" not in t3 and "Actor Coverage" not in t3,
       "template 3-prototype 不得要求 Actor Coverage 全表")
-_gaps_must_flag("verdict-accepted-only.md", ("role", "scenario"),
-                "殘行 ACCEPTED 無 role／scenario 必須紅")
-_gaps_must_pass("verdict-complete.md", "完整 verdict 一行必須綠")
+_gaps_must_flag(
+    "verdict-accepted-only.md",
+    "## User Demo Feedback\n- Human verdict: ACCEPTED\n"
+    "- Verdict attestation: human:rick @ 2026-09-13\n",
+    ("role", "scenario"),
+    "殘行 ACCEPTED 無 role／scenario 必須紅")
+_gaps_must_pass(
+    "verdict-complete.md",
+    "## User Demo Feedback\n"
+    "- Human verdict: ACCEPTED | role=Fast 實作者 | scenario=AC-9\n"
+    "- Verdict attestation: human:rick @ 2026-09-13\n",
+    "完整 verdict 一行必須綠")
 
 # ── 17. Exit 回看四欄（S-7.1／S-7.2／S-7.3）──
 check(all(col in t7 for col in LOOKBACK_COLS),
@@ -525,15 +541,15 @@ check(all(col in e7 for col in LOOKBACK_COLS),
       "example 7-review Exit 含回看四欄字面")
 check("lookback.md" not in t7 and "history-append.sh" in t7,
       "template 7-review 結果走 history-append、不另造 lookback.md")
-_gaps_must_flag("lookback-missing-threshold.md", ("低於何值重開",),
-                "shipped 有回看節卻缺低於何值重開必須紅")
-legacy_lb = os.path.join(GAPS, "lookback-legacy-no-section.md")
-if os.path.isfile(legacy_lb):
-    check(not lookback_issues(open(legacy_lb, encoding="utf-8").read()),
-          "舊 7-review 無回看節不發動")
-else:
-    # SKIP-REASON: 隔離 seed 無 lookback-legacy-no-section。同步 EXPECTED_CHECK_SKIP_CALLS。
-    check_skip("舊 7-review 無回看節不發動", "隔離測試根目錄無 discovery-gaps fixture")
+_gaps_must_flag(
+    "lookback-missing-threshold.md",
+    "status: shipped\n### 回看約定\n| 回看日期 | 回看 owner | 資料來源 |\n",
+    ("低於何值重開",),
+    "shipped 有回看節卻缺低於何值重開必須紅")
+legacy_text = _gaps_text(
+    "lookback-legacy-no-section.md",
+    "# 7. 驗證\n## Exit Checklist\n- [x] shipped\n")
+check(not lookback_issues(legacy_text), "舊 7-review 無回看節不發動")
 
 # ── 檢查數地板(N-2,2026-08-15)──────────────────────────────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」——地板留餘裕=沒有
