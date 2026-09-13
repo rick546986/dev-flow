@@ -69,15 +69,15 @@ a.cell:hover{border-color:var(--accent)}
   <p class="eyebrow">dev-flow · 1-discussion · 審查介面</p>
   <h1>five-station-simplify</h1>
   <p class="sub">正本是 md。這頁由產檔器重生,不是掃頁 html-shell。</p>
-  <div class="dash"><div class="cell"><span class="k">已解</span><span class="v">5</span></div><div class="cell"><span class="k">假設</span><span class="v">1</span></div><div class="cell"><span class="k">移交</span><span class="v">6</span></div></div>
+  <div class="dash"><div class="cell"><span class="k">已解</span><span class="v">8</span></div><div class="cell"><span class="k">假設</span><span class="v">1</span></div><div class="cell"><span class="k">移交</span><span class="v">3</span></div></div>
 </header>
 <section class="r-block" id="sum-card">
   <div class="r-head"><span class="r-name">摘要</span></div>
   <div class="r-body">
     <section class="sum" id="scan-sum">
-      <p class="pain">痛:母版七站加上例行 G1／Stage 3 `ACCEPTED`／G2,讓「方向、互動、契約」三次都要等人。現場 dogfood 與採用回報裡,這三次常被 owner 用 chat 一句「Treat as PASS／都過／可以」蓋過——等人的次數等於站數,審查物質卻沒進人腦。摺站若只殺等待、卻讓 Spec／Build 以「已經五站了」拿掉 ID 鏈、反模糊、T 四欄、acceptance seam,勾選會綠、工作沒做完。 受影響:母版維護者、coordinator、採用專案 owner、Build 實作者、Ship 審查者。頻率:每條 full lane；Fast 仍吃 G2 物質。影響:中間卡排隊,或摺完後任務假完成</p>
+      <p class="pain">痛:母版七站加上例行 G1／Stage 3 `ACCEPTED`／G2,讓「方向、互動、契約」三次都要等人——等人的次數等於站數。採用現場 2026-08-17 兩案回報的是 G1／G2／G3 **物質洞**(散發路徑、守衛自打),不是蓋章證據。母版 dogfood 另證例行中閘已被 chat 蓋過:「Treat as PASS／都過／可以」落成 `verdict: PASS`,審查物質沒進人腦。摺站若只殺等待、卻讓 Spec／Build 以「已經五站了」拿掉 ID 鏈、反模糊、T 四欄、acceptance seam,勾選會綠、工作沒做完。 受影響:母版維護者、coordinator、採用專案 owner、Build 實作者、Ship 審查者。頻率:每條 full lane；Fast 仍吃 G2 物質。影響:中間卡排隊,或摺完後任務假完成</p>
       <p>現在怎麼繞:owner 在 chat 簽 G1／G2；Agent 把 `verdict: PASS` 落進 md；未跑完的 full lane 靠記憶判斷模板好不好用；F0 只鎖設計、牙與路線都還沒切</p>
-      <span class="badge ok">已解 5</span> <span class="badge warn">假設 1</span> <span class="badge base">移交 6</span>
+      <span class="badge ok">已解 8</span> <span class="badge warn">假設 1</span> <span class="badge base">移交 3</span>
     </section>
   </div>
 </section>
@@ -132,6 +132,7 @@ a.cell:hover{border-color:var(--accent)}
       <tr><td>8</td><td>採用現場</td><td>owner 中繼</td></tr>
       <tr><td>若為假影響什麼</td><td>影響級</td><td></td></tr>
       <tr><td>「採用現場也 chat 蓋章」為假 → 殺例行停的現場理由變弱,但不改 Must-keep</td><td>高</td><td></td></tr>
+      <tr><td>A1／A2 其實已分檔 → F1 不必為雙檔名加牙</td><td>中</td><td></td></tr>
       <tr><td>「後站會偷 Must-keep」為假 → F1 牙主要防未來漂移</td><td>高</td><td></td></tr>
     </table>
   </div>
