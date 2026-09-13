@@ -491,6 +491,10 @@ try:
             "S-5.1 static SVG, no mermaid/animate",
         )
         case("S-5.2_no_plugin_bump_no_196")
+        # Landing-scope tooth: only when this PR still touches diagram-ir-gate
+        # *product* files. A permanent origin/main...HEAD ban on STATUS/HISTORY/b8
+        # would freeze the board after v3.23.4 (exactly the #196 close-out).
+        # This test file itself is not "product".
         ver = json.loads(open(plugin, encoding="utf-8").read()).get("version")
         scope = "origin/main...HEAD"
         plugin_diff = subprocess.run(
@@ -506,20 +510,27 @@ try:
             cwd=root, capture_output=True, text=True,
         ).stdout.splitlines()
         names = tracked + untracked
-        banned_paths = (
-            "docs/dev/b8-gate-twin-review-ui/",
-            "docs/dev/STATUS.md",
-            "docs/dev/HISTORY.md",
-            "docs/dev/HISTORY.html",
-            "docs/dev/integration-before-verdict/",
+        touches_product = any(
+            n == "scripts/diagir.py" or n.startswith("docs/dev/diagram-ir-gate/")
+            for n in names
         )
-        hit = [n for n in names if any(n == b.rstrip("/") or n.startswith(b) for b in banned_paths)]
-        check(
-            ver == "3.23.4"
-            and plugin_diff.stdout.strip() == ""
-            and hit == [],
-            "S-5.2 plugin version unchanged; no #196 / IBV / STATUS files",
-        )
+        if not touches_product:
+            check(not touches_product, "S-5.2 skipped: PR does not touch diagram-ir-gate product")
+        else:
+            banned_paths = (
+                "docs/dev/b8-gate-twin-review-ui/",
+                "docs/dev/STATUS.md",
+                "docs/dev/HISTORY.md",
+                "docs/dev/HISTORY.html",
+                "docs/dev/integration-before-verdict/",
+            )
+            hit = [n for n in names if any(n == b.rstrip("/") or n.startswith(b) for b in banned_paths)]
+            check(
+                ver == "3.23.4"
+                and plugin_diff.stdout.strip() == ""
+                and hit == [],
+                "S-5.2 plugin version unchanged; no #196 / IBV / STATUS files",
+            )
 finally:
     shutil.rmtree(work, ignore_errors=True)
 
