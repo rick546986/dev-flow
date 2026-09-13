@@ -614,3 +614,9 @@
 - 落在哪:docs/dev/five-station-simplify/ + STATUS
 - 詳細:https://github.com/rick546986/dev-flow/pull/295
 
+## 2026-09-13 · five-station-simplify
+- 做了什麼:Stage 2 decision landed (#300); Active Stage → 2-decision, Gates still G1⬜ G2⬜ G3⬜
+- 為什麼:Winner B 2:1 (R1+R2); R3 absorb C anti-hollow as soft-fix. No G1 PASS invented.
+- 落在哪:docs/dev/five-station-simplify/2-decision.md + STATUS
+- 詳細:https://github.com/rick546986/dev-flow/pull/300
+
