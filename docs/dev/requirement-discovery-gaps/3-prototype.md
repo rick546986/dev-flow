@@ -1,7 +1,7 @@
 ---
 feature: requirement-discovery-gaps
 stage: 3-prototype
-status: draft
+status: approved
 owner: rick
 updated: 2026-09-13
 ---
@@ -12,9 +12,9 @@ updated: 2026-09-13
 > 本站只答**欄位放哪**與字面（節名、前綴、表頭、六問、ledger、manifest、verdict 一行）。
 > Variant **不**重開落地策略。輕量方法論原型：column mocks／triage checklist／ledger shape。
 > **不**改 `_templates/`、`skills/`、守衛、範例、STATUS、HISTORY。**不**當 Stage 6 施工。
-> **不**發明 G2／G3、**不**代填 Human ACCEPTED。
+> **不**發明 G2／G3。
 > Demo 形式 = 狀態流程模擬器（填好的欄位卡 vs 故意壞卡，人實際走 Demo Script）。
-> Human verdict 留 NOT_REVIEWED。
+> Human verdict 由參與 Demo 的人類親填。owner 2026-09-13 ACCEPTED Stage 3、開 Stage 4 = ACCEPTED，已落 attestation。不送 G2／G3、不開 4-spec、不發版。
 
 ## Stage 3 觸發判定(條件式必要)
 <!-- 對照 1-discussion Real-world Context：Actors／Journey／核准／期限／圍欄／Fast -->
@@ -284,24 +284,24 @@ updated: 2026-09-13
 | 8A verdict | `ENUM \| role=… \| scenario=…` | 只寫 ACCEPTED + 姓名日期 |
 
 證據:用本 slug 已核列填滿 A 的好卡；壞卡與 C 無法指出「痛點消失」去向，也無法在進 4 前攔住等待誤標。正式模板／牙未改。
-`hooks/_stage3_impl.py` 在 Human verdict = NOT_REVIEWED 且無 N/A 宣告時應 REJECT（不得過 G2）。本 hop 不發明 ACCEPTED／attestation。
+`hooks/_stage3_impl.py` 在 Human verdict = ACCEPTED + 人類 attestation 時 Demo 條件可過。本 hop 只落檔 owner 2026-09-13 的 ACCEPTED；**不**發明 G2、不開 4-spec。
 
 ## User Demo Feedback
-<!-- Agent 禁代填 ACCEPTED／attestation。未 Demo = NOT_REVIEWED。本 hop 不送 G2。 -->
-- Demo date:
-- Participants:
-- Variant reviewed: A / B / C（紙上模擬器；人類尚未走）
-- Accepted interaction:
-- Rejected interaction:
+<!-- owner 2026-09-13 ACCEPTED Stage 3、開 Stage 4 = Human ACCEPTED；attestation 按該裁決落檔 -->
+- Demo date: 2026-09-13（紙上模擬器；owner 同日裁 ACCEPTED）
+- Participants: 對應 Actor: owner（rick；裁 ACCEPTED）
+- Variant reviewed: A（同檔就地欄；選定）。B 另造檔種類未選；C 棄
+- Accepted interaction: Variant A 同檔就地欄；1A–8A 字面（節名／前綴／主張欄／假設四欄／disposition／lookback／manifest／六問／verdict 一行）
+- Rejected interaction: Variant C 審查時才重建；只寫 ACCEPTED + 姓名日期的殘行
 - Confusions observed:
 - Missing real-world steps:
 - Permission corrections:
 - External handoffs:
 - Required changes:
-- Human verdict: NOT_REVIEWED
-- Verdict attestation:
+- Human verdict: ACCEPTED | role=owner | scenario=AC-1–AC-9
+- Verdict attestation: human:rick @ 2026-09-13
 
 ## Verdict
-- 已回寫 2-decision 內部技術選擇：第 3 站維持條件式必要、本站執行（不預先標 N/A）；字面 `## Goals`／`## Requested solution` 與 `發現｜`／`裁決｜`。推薦 Variant A 其餘欄位字面見上表。**未改** OC-1…OC-6 表。確認紀錄已留「prototype 回寫」。
-- Human verdict = NOT_REVIEWED（無人親走 Demo；Agent 不代填 ACCEPTED、不寫 attestation）。frontmatter 留 **draft**。不送 G2、不開 4-spec、不改 STATUS。
+- 已回寫 2-decision 內部技術選擇：第 3 站維持條件式必要、本站執行（不預先標 N/A）；字面 `## Goals`／`## Requested solution` 與 `發現｜`／`裁決｜`。推薦 Variant A 其餘欄位字面見上表。**未改** OC-1…OC-6 表。確認紀錄已留「prototype 回寫」與「prototype Human ACCEPTED」。
+- owner 2026-09-13 ACCEPTED Stage 3、開 Stage 4 → Human 判定 ACCEPTED；frontmatter status=approved。不送 G2、不開 4-spec。
 - 實驗產物:欄位卡留在本檔 Method；無 throwaway branch、無正式碼。第 3 站已行使。
