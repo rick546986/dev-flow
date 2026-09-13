@@ -164,6 +164,7 @@ FORK_INTEGRATION_SHA: ab78e8b90a48c002b6023e806a9bc4f1d7ea5703
 ## Progress Log
 
 - 2026-09-13 | T-1..T-10 | 901bbcce4a3924e1f39978b225c012c7f44eb925 docs+chore(requirement-discovery-gaps): Stage 6 land (A)
+- 2026-09-13 | PF-2 tooth | (本 commit) RW-DG tag MUT 移出掃描集; guard Read `<<'READ'` 只靠 INTERP; `MIN_HEREDOCS=222`（撤回抬地板）
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 Run: n-a（sequential v1 start，無 run_id 事件通道）
@@ -355,9 +356,9 @@ Run: n-a（sequential v1 start，無 run_id 事件通道）
 - 影響:無 R/S 變更。T-4 隔離與正式 repo 同針。
 
 ### D-7(L1)
-- 現象:RW-DG1／RW-DG2 兩個 `mutate <<'PY'` 後,CI 未變異 heredoc=224;PF-2 關掉 INTERP 後實得 223。地板 221／223 都仍 ≤223 → PF-2 假綠。
-- 保守選擇:`MIN_HEREDOCS` 與靜態釘改 224。
-- 理由:與 diagram-ir-gate D-4 同形母版記帳;地板必須等於未變異實數。
+- 現象:RW-DG1／RW-DG2 兩個 `mutate <<'PY'` + guard Read `<<'PY'` 後,未變異=224;關掉 INTERP 仍 223(三枚都不是 INTERP 獨佔:tag 含 PY 或只靠 wrapper)。把地板抬到 223／224 不能恢復 PF-2 牙。
+- 保守選擇:RW-DG 改 `<<'MUT'`(移出掃描集);guard Read 改 `<<'READ'`(只靠 INTERP);`MIN_HEREDOCS`=222。撤回地板=全數。
+- 理由:PF-2 契約是關掉 INTERP 必跌破地板。新 heredoc 必須 INTERP 關掉時計數消失,或根本不進掃描集。host-stack-fit D-heredoc-1 同形。
 - 影響:無 R/S 變更。
 
 ### D-8(L1)

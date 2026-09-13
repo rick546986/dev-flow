@@ -102,13 +102,11 @@ if not sh_files:
 # heredoc 起頭有三種形狀,都要收(#113 兩輪 fresh 驗收陸續補的):
 # ①字面 interpreter token:`python3`/`python`,或指向直譯器的**變數呼叫**——
 #   `"$DEVFLOW_PY"`、`$DEVFLOW_RENDER_PYTHON` 這種 `$...PY...` 形狀(含不含雙引號
-#   都算)。⚠️ 誠實記錄:目前這條路徑對 repo 裡任何一支真實檔案都不是必要的
-#   ——凡是靠變數呼叫的 heredoc,tag 也剛好都含 PY,②單獨就吃得下,這條路徑
-#   目前零獨佔貢獻(第二輪複驗把 INTERP_TOKEN_RE 改成 `(?!)` 重跑,掃到的
-#   heredoc 數量、PF-1 結果都不變,證實了這件事)。仍然留著是因為:handler 形狀
-#   在語法上合法、遲早會有人這樣寫;它的負向覆蓋現在**只**靠
-#   test-architecture-guards.sh 的 PF-2 fixture(對 check-adr-integrity.sh 複本
-#   改形成「只有變數呼叫,tag 不含 PY」的形狀,逼這條路徑成為唯一判準)。
+#   都算)。hooks/devtalk-guard.sh Read 分支(`"$DEVFLOW_PY" … <<'READ'`)是真實檔案
+#   裡 INTERP 獨佔的一枚:tag 不含 PY,wrapper/redirect 咬不到,關掉 INTERP_TOKEN_RE
+#   這枚會從計數消失。其餘變數呼叫 heredoc 的 tag 仍含 PY,②單獨就吃得下。
+#   PF-2 仍對 check-adr-integrity.sh 複本改形成「只有變數呼叫,tag 不含 PY」,
+#   關掉 INTERP 時那枚 + guard Read 都會消失,地板必須跌破。
 # ②wrapper 呼叫:呼叫行完全看不到 python 字樣(例如 test-architecture-guards.sh
 #   的 `mutate() { python3 - "$1"; }`,呼叫處是 `mutate "$D" <<'PY'`),但 heredoc
 #   tag**含** PY(不限開頭,子字串即可 —— 見 hooks/selftest.sh:695 的
@@ -287,14 +285,13 @@ if checked < MIN_FILES:
 # 直接掉到 0(FATAL 已經擋這種),真實檔案(hooks/selftest.sh、
 # test-architecture-guards.sh 那批 mutate wrapper 等)都靠它們才被收進來,窄了
 # 這個地板就會現形。
-# ⚠️ 唯一例外是①INTERP_TOKEN_RE:這個 repo 裡沒有任何一支真實檔案的計數是
-# **只**靠它才收得到(見上方①段落的頂註)——它被改窄不會讓這個地板掉,負向覆蓋
-# 另外靠 test-architecture-guards.sh 的 PF-2 fixture(對 check-py-floor.sh 複本
-# 本身做 INTERP_TOKEN_RE 變異,逼一個自造的變數呼叫 heredoc 從計數裡消失),
-# 不是這裡。增刪 .sh 或 heredoc 時一起改下面這個數字。
-# Exact pin (no slack): measured 224 on CI (unmutated). RW-DG1/2 +2 from 221;
-# PF-2 mutant drops exactly one INTERP-only heredoc → 223. Floor must be 224.
-MIN_HEREDOCS = 224
+# ①INTERP_TOKEN_RE 現在對 hooks/devtalk-guard.sh Read 分支(`<<'READ'`)是獨佔路徑;
+# 關掉它,這枚 + PF-2 整形的 adr 變數呼叫都會從計數消失,地板必須跌破。增刪 .sh
+# 或 heredoc 時一起改下面這個數字。新 heredoc:tag 不含 PY(只靠 INTERP)或移出
+# 掃描集;禁止把地板抬到「含 dual-path 全數」——那會讓 PF-2 假綠。
+# Exact pin (no slack): unmutated 222 = baseline 221 + guard Read INTERP-only.
+# RW-DG1/2 use <<'MUT' (not scanned). PF-2 disables INTERP → 220 < 222.
+MIN_HEREDOCS = 222
 if heredoc_checked < MIN_HEREDOCS:
     failures.append(
         f"⛔ 只掃到 {heredoc_checked} 個 heredoc(地板 {MIN_HEREDOCS})—— "

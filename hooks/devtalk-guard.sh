@@ -14,7 +14,7 @@ INPUT=$(cat)
 # 仍禁 2–7 方案檔(核准格不能覆寫)。游標不在 → 維持只掃 skills/dev-talk 寫入洩漏。
 _HOOK_JSON=$(mktemp "${TMPDIR:-/tmp}/devtalk-guard-read.XXXXXX")
 printf '%s' "$INPUT" > "$_HOOK_JSON"
-"$DEVFLOW_PY" - "$PWD" "$_HOOK_JSON" <<'PY'
+"$DEVFLOW_PY" - "$PWD" "$_HOOK_JSON" <<'READ'
 import json, os, re, sys
 from pathlib import Path
 root = Path(sys.argv[1]).resolve()
@@ -83,7 +83,7 @@ if matched_deny:
     print("⛔ devtalk-guard:未核路徑不得當已授權 evidence", file=sys.stderr)
     raise SystemExit(2)
 raise SystemExit(0)
-PY
+READ
 READ_ST=$?
 rm -f "$_HOOK_JSON"
 if [ "$READ_ST" -eq 2 ]; then
