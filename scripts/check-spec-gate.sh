@@ -13,7 +13,7 @@
 # 讓 reviewer 把時間花在判斷 R/S 寫得對不對、DD 決策合不合理 —— 那些仍然是人審的事。
 # 本腳本永遠不判斷內容好壞。
 #
-# 九項檢查(逐項印結果,全過才 exit 0;C7–C9 本 feat 加項,C1–C6 保留):
+# 九項檢查(C1–C6 保留 + C7 Assumption + C8 Fast + C9 Disposition):
 #   C1 每個 S 都有觀測欄          _templates/4-spec.md:53(完成條件)、:99(欄位形式)
 #   C2 Verification Profile 節存在,且 `- lane:` 與 `- Risk:` 可被解析
 #                                 _templates/4-spec.md:181-182、:200(runtime 讀這兩行)
@@ -282,6 +282,60 @@ record(
     not c7_bad,
     "Assumption refs（open + 過期／過站且無 oc-accepted → 拒）",
     c7_bad + (["過期未驗的 Assumption 擋下 G2；改 status=resolved 或 oc-accepted"] if c7_bad else []),
+)
+
+# ---- C8:Fast early risk triage（僅 lane: fast；空白／命中無去向 → 紅）----
+c8_bad = []
+if prof["lane"] == "fast":
+    triage = next((i for i in heads if re.match(r"^#{2,6}\s*Fast early risk triage", lines[i])), None)
+    added = next((i for i in heads if re.match(r"^#{2,6}\s*ADDED Requirements", lines[i])), None)
+    if triage is None:
+        if added is None:
+            pass  # 舊 fast fixture／無 ADDED 不發動（不誤殺 C1–C6 回歸檔）
+        else:
+            c8_bad.append("lane: fast 缺 ## Fast early risk triage（六問空白不得當已分診）")
+    else:
+        if added is not None and triage > added:
+            c8_bad.append("Fast early risk triage 必須在 ## ADDED Requirements 之前")
+        end = section_end(triage)
+        body = "\n".join(lines[triage:end])
+        answers = []
+        dest = ""
+        for n in range(triage + 1, end):
+            line = lines[n]
+            if not line.lstrip().startswith("|"):
+                m = re.search(r"去向\s*[|=:：]\s*(\S+)", line)
+                if m:
+                    dest = m.group(1)
+                continue
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if not cells or re.match(r"^:?-+:?$", cells[0] or ""):
+                continue
+            if cells[0] in ("#", "問") or cells[0].startswith("問"):
+                continue
+            if cells[0] == "去向":
+                dest = cells[1] if len(cells) > 1 else ""
+                continue
+            ans = cells[2] if len(cells) > 2 else (cells[1] if len(cells) > 1 else "")
+            answers.append(ans)
+        filled = [a for a in answers if a and a not in ("答",)]
+        if len(filled) < 6:
+            c8_bad.append("Fast 六問答欄空白（不是已分診）")
+        yes_hit = any(re.match(r"^是", a) for a in filled)
+        dest_n = dest.strip().strip("`")
+        if yes_hit:
+            if dest_n in ("", "待裁", "Fast"):
+                c8_bad.append(
+                    "命中後去向必須 ∈ {full, fast+mini, OC}，不得空白／待裁／Fast")
+            elif dest_n not in ("full", "fast+mini", "OC"):
+                c8_bad.append("命中後去向必須 ∈ {full, fast+mini, OC}")
+        elif dest_n and dest_n not in ("Fast", "full", "fast+mini", "OC"):
+            c8_bad.append(f"去向不在允許集合:{dest_n}")
+record(
+    "C8",
+    not c8_bad,
+    "Fast early risk triage（僅 fast 發動；空白／命中無去向 → 拒）",
+    c8_bad,
 )
 
 # ---- C9:full lane Real-world Disposition（缺表／去向空白／處理無 R-S → 紅）----

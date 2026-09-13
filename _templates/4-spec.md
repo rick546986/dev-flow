@@ -105,6 +105,20 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 > 3-prototype 有 User Demo Feedback 時:Human verdict ≠ ACCEPTED → 相關互動 S 不得
 > 定案(列 Drafting Decisions 待裁決,或退回 Stage 3 重新 Demo)。
 
+## Fast early risk triage
+<!-- 僅 lane: fast 必填,且必須出現在 ## ADDED Requirements 之前。full 不填不紅。
+     六問每問答 是 或 否 + 一句。空白 ≠ 已分診。
+     全否且不改語意的純視覺 → 去向=Fast。任一「是」→ 去向 ∈ {full, fast+mini, OC}。 -->
+| # | 問 | 答 |
+|---|---|---|
+| 1 | 改變下一步？ | |
+| 2 | 改權限／核准語意？ | |
+| 3 | 改等待／完成語意？ | |
+| 4 | 改角色交接？ | |
+| 5 | 改系統外動作？ | |
+| 6 | 改中斷恢復？ | |
+| 去向 | Fast／full／fast+mini／OC | |
+
 ## ADDED Requirements
 <!-- Scenario 種子:先收割 1-discussion.md 的「驗收雛形」,逐條升級為正式 GWT -->
 ### R-1: 系統 SHALL <行為>

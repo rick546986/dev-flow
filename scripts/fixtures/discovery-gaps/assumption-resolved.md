@@ -6,6 +6,17 @@ status: draft
 
 # 4. 規格
 
+## Fast early risk triage
+| # | 問 | 答 |
+|---|---|---|
+| 1 | 改變下一步？ | 否。本 fixture 只驗 Assumption status |
+| 2 | 改權限／核准語意？ | 否。本 fixture 只驗 Assumption status |
+| 3 | 改等待／完成語意？ | 否。本 fixture 只驗 Assumption status |
+| 4 | 改角色交接？ | 否。本 fixture 只驗 Assumption status |
+| 5 | 改系統外動作？ | 否。本 fixture 只驗 Assumption status |
+| 6 | 改中斷恢復？ | 否。本 fixture 只驗 Assumption status |
+| 去向 | Fast | 不改語意 |
+
 ## Verification Profile
 - lane: fast
 - Risk: normal
