@@ -907,43 +907,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
     0. 接手盤點:只讀 1-discussion.md(對話不是契約)+ 長期記憶查詢結果(業務語意)。核 status=approved、
     OQ 全三態;缺 → 退回討論。從 Goals/驗收雛形/[&gt;] 移交項提煉「待收斂決策點」,
     連同討論期 owner 已自拍的板一併清點。
-    完成 = 決策點清單經使用者確認(確認紀錄節留一行)。</p>
-    <ol>
-    <li>方案生成:每決策點 2-3 個 approach 填表,禁單案過場;優劣必有背書 ——
-    引 1-discussion 事實或本階段查證,寫進「依據」欄;引不出就在該欄寫
-    <code>[Assumption]</code>,不得留空、不得憑空斷言。完成 = 表齊、每格非空。</li>
-    <li>壓測定案:對推薦案逼問失敗模式/邊界/最貴風險 → Risks &amp; Mitigations(每風險
-    有對策);Success Criteria 逐條可量測(7-review 對照用)。完成 = 兩節齊、
-    無不可量測句。</li>
-    <li>定稿:Decision 一句話+範圍、Rejected 逐案一句棄因、Rationale、Scope &amp; Non-Goals。
-    晚改可見行為(開工後或自稱「完工」但 G3 未過 / 已過 G3):
-    G3 未過 → 同一 feat。先改本檔 Decision / Owner Call,再走 4→5→6→7。
-    1-discussion 保留當時說法,另記後來改口;不准假裝第一次裁決本來就是新的。
-    G3 已過 → 另開薄刀 feat/delta,不准改已封包。
-    純文字、行為不變 → 原包 HISTORY。
-    推翻已核 Decision 不是合法 DD;回本站。DD 寫「不採 2-decision /
-    兩份並存 / 產品跟 4-spec 不跟 Decision」= 流程 bug。
-    完成 = 節全齊、無佔位符。</li>
-    <li>Owner Calls 清點:owner 沒問使用者、自己拍的板逐條收進 Owner Calls 節
-    (收錄判準見該節註;上層逐條 OC-n,下層內部項一段帶過)。特別掃兩型必收必標:
-    裁決延伸(使用者只被問到 X,owner 套到 Y/Z)、裁決收窄(使用者要 A,
-    實作成 A 減某部分)。完成 = 步 6 第⑥掃的歸屬雙向對應成立。</li>
-    <li>ADR 晉升檢查:三條件逐條答;全是 → 抄 docs/adr/。完成 = 三答落檔。</li>
-    <li>自檢(交審前重讀全檔):①每案優劣有背書?②Decision 覆蓋 1 的每條 Goal
-    (漏的進 Non-Goals)?③[&gt;] 移交項都有著落?④Success Criteria 可量測?
-    ⑤Rejected 無空棄因?⑥歸屬雙向對應:正向 — 步 0 每個決策點皆有使用者
-    裁決(確認紀錄有痕)或 ≥1 條 OC 承接(一對多合法)?反向 — 每條 OC(上層、
-    下層皆算)皆可追溯到某決策點,或標「流程層」?延伸/收窄算新增決策點。
-    任一向斷鏈 = 漏收或無主。問題 → 改檔或回步 1。⑦現況外移:產出有無
-    成段/成表的「是什麼」內容(描述系統現況或既有結構——schema、資料字典、
-    介面清單——而非本次決策)?有 → 外移 docs/specs/,本檔只留決策與為什麼。
-    完成 = 七掃清零(⑥含雙向對應成立)。</li>
-    <li>G1 送審:html twin(方案架構圖,比較期並排;OC 待裁決置頂)→ in-review →
-    reviewer。審查者依序:適格人類 reviewer → fresh-context reviewer Agent →
-    owner 自審(有記錄的最後手段)。G1 = 方向核准 +
-    Owner Calls 全裁決(有未裁決 OC 不得過;正本 <code>guides/guide-dev-flow.html#gates</code>)。核准 → 三連動
-    (frontmatter/STATUS/twin)。完成 = verdict 記錄+三連動齊。</li>
-    </ol>
+    完成 = 決策點清單經使用者確認(確認紀錄節留一行)。Stage 1 高影響痛點</p>
     </blockquote>
     <!-- parity:end template2-checklist -->
   </details>
@@ -1127,7 +1091,8 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     完成 = 掃描零殘留。</li>
     <li>自檢(反模糊掃描):<strong>先跑機械關卡</strong> <code>scripts/check-spec-gate.sh &lt;本檔路徑&gt;</code>
     (C1 每 S 有觀測欄 / C2 Profile 可解析 / C3 lane×Risk 合法 / C4 模糊詞 /
-    C5 DD 無殘留待裁決 / C6 晚改可見行為不得停成「4-spec 壓 Decision」);
+    C5 DD 無殘留待裁決 / C6 晚改可見行為不得停成「4-spec 壓 Decision」/
+    C7 Assumption refs／C8 Fast triage／C9 Disposition);
     紅了先修再往下,它擋的都是模板明文要求卻沒人擋的項。
     機械過了才做人工部分:鏈檢每條驗收雛形 ≥1 個 S 承接、每 MODIFIED 有原文引用。
     任一否 → 重寫該 S;(選配)每 S 產 named test skeleton 入 Test Skeletons 節。
@@ -1860,6 +1825,11 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   <li>[ ] 7-review frontmatter status: shipped;上游 artifact 可保留 approved(各自 gate 核准紀錄)</li>
   <li>[ ] 7-review.html 已產生(含變更架構圖,規格見指南 <code>#diagram-style</code>;diff 折疊規格見指南 <code>#diff-fold</code>)</li>
   <li>[ ] feature branch 已刪 / worktree 已清</li>
+  <li>[ ] <strong>回看約定</strong>(四欄必填;結果到期用 <code>scripts/history-append.sh</code> 追加,不另造永久回看檔):
+  - 回看日期:
+  - 回看 owner:
+  - 資料來源:
+  - 低於何值重開:</li>
   </ul>
   <!-- parity:end template7-exit-quickstart -->
   </div>

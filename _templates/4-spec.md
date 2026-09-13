@@ -81,7 +81,8 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 >    完成 = 掃描零殘留。
 > 5. 自檢(反模糊掃描):**先跑機械關卡** `scripts/check-spec-gate.sh <本檔路徑>`
 >    (C1 每 S 有觀測欄 / C2 Profile 可解析 / C3 lane×Risk 合法 / C4 模糊詞 /
->    C5 DD 無殘留待裁決 / C6 晚改可見行為不得停成「4-spec 壓 Decision」);
+>    C5 DD 無殘留待裁決 / C6 晚改可見行為不得停成「4-spec 壓 Decision」/
+>    C7 Assumption refs／C8 Fast triage／C9 Disposition);
 >    紅了先修再往下,它擋的都是模板明文要求卻沒人擋的項。
 >    機械過了才做人工部分:鏈檢每條驗收雛形 ≥1 個 S 承接、每 MODIFIED 有原文引用。
 >    任一否 → 重寫該 S;(選配)每 S 產 named test skeleton 入 Test Skeletons 節。
@@ -97,6 +98,9 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 >
 > 起草前估 S 數,單份 >~40 → 先切片(見指南 `#large-work`)。
 >
+> Fast lane 寫本檔**之前**先填 `## Fast early risk triage`(六問,在 `## ADDED Requirements` 之前)。
+> full lane 必有 `## Real-world Disposition`(引用 Stage 1 原文／去向／下落;本方案處理 → R- 或 S-)。
+>
 > Operational Context(承接 1-discussion Real-world Context 與 3-prototype Demo 回饋):
 > 涉人員操作/交接/等待/權限的重要 S 必附(欄位見 S-1 樣板);純內部行為 S 寫
 > 「不適用 + 一句理由」。每個重要 S 須同時答得出五問 —— 系統要做什麼?人看到後要做
@@ -104,6 +108,22 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 > Operational Context 附著於 S-id,不另發 Journey/Actor/Interaction ID(單一 ID 鏈)。
 > 3-prototype 有 User Demo Feedback 時:Human verdict ≠ ACCEPTED → 相關互動 S 不得
 > 定案(列 Drafting Decisions 待裁決,或退回 Stage 3 重新 Demo)。
+
+## Fast early risk triage
+<!-- 僅 lane: fast 必填,且必須出現在 `## ADDED Requirements` 之前。
+     六問每問答 是 或 否 + 一句。去向 ∈ {Fast, full, fast+mini, OC}。
+     空白 ≠ 已分診。任一「是」→ 去向不得是 Fast,也不得空白／待裁。
+     full lane 可省略本表。 -->
+| 問 | 答 |
+|---|---|
+| 改變下一步？ | |
+| 改權限／核准語意？ | |
+| 改等待／完成語意？ | |
+| 改角色交接？ | |
+| 改系統外動作？ | |
+| 改中斷恢復？ | |
+
+去向:
 
 ## ADDED Requirements
 <!-- Scenario 種子:先收割 1-discussion.md 的「驗收雛形」,逐條升級為正式 GWT -->
@@ -228,6 +248,13 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 - Known design limit:
 <!-- Known design limit = 明知做不到或不保證的事,誠實列出不扣分;
      把已知缺口寫成「已處理」才是問題。與 7-review known limits 同一件事,不另立追蹤鏈 -->
+
+## Real-world Disposition
+<!-- full lane 必填。引用 = Stage 1 原文片段,不發第二鏈編號。
+     去向 ∈ {本方案處理, 刻意維持, Non-Goal, 另開 slug, 仍待驗}。
+     本方案處理 → 下落至少一條 R- 或 S-;其餘落到 Out of Scope／Known limit／後續 slug。 -->
+| 引用（Stage 1 原文片段） | 去向 | 下落 |
+|---|---|---|
 
 ## Verification Profile(G2 一併審)
 <!-- Risk 二值的唯一定義住本節;本節 Risk = Feature Risk(決定 Profile 深度與 lane

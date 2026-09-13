@@ -139,7 +139,7 @@ Variant C: 詳情頁時間軸(決策最深,留歷程)
 - Permission corrections: 第 1 輪 B 讓業務標「已續約」直接成功 —— 暗示了不存在的權限;修正為僅主管可標,業務見灰階 + 提示
 - External handoffs: 「下一步:電話聯絡供應商」為系統外動作;系統只記「已聯絡供應商 + 誰 + 時間」,參與者確認可追蹤、改派後接得起來
 - Required changes: 等待對象文字化、加最後動作時間欄、「已續約」權限灰階(三項均已修正並於第 2 輪複驗)
-- Human verdict: ACCEPTED(第 2 輪;第 1 輪為 REVISE,修正上列三項後重新 Demo)
+- Human verdict: ACCEPTED | role=業務主管 | scenario=AC-1–AC-5(第 2 輪;第 1 輪為 REVISE,修正上列三項後重新 Demo)
 - Verdict attestation: human:業務主管 @ 2026-07-23(test-only human fixture;示範值 —— 實案由人類親填姓名與日期,檔內不得含此標記)
 
 ## Verdict

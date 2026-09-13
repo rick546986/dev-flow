@@ -340,6 +340,11 @@ updated:
 - [ ] 7-review frontmatter status: shipped;上游 artifact 可保留 approved(各自 gate 核准紀錄)
 - [ ] 7-review.html 已產生(含變更架構圖,規格見指南 `#diagram-style`;diff 折疊規格見指南 `#diff-fold`)
 - [ ] feature branch 已刪 / worktree 已清
+- [ ] **回看約定**(四欄必填;結果到期用 `scripts/history-append.sh` 追加,不另造永久回看檔):
+      - 回看日期:
+      - 回看 owner:
+      - 資料來源:
+      - 低於何值重開:
 
 ## 附錄:本輪特有
 <!-- 2026-08-13 補,2026-08-15 加 Design Integrity Check 後節數同步更新。**模板固定

@@ -57,7 +57,7 @@ Design Boundary Contract = applicable。每個 T 的 Boundaries 只摘該 T 碰�
 | T-10 | Fast triage fixture 不存在；`fast-wait-shown-as-done.md` 無 S-9.2 表內容 | ③方向對 |
 
 ## T-1 鎖定三支既有牙為唯一入口，並讓 check-realworld 指出 Goals 錯欄
-- [ ] 完成
+- [x] 完成
 - Covers: R-1 / S-1.2, S-1.4
 - Files: scripts/check-realworld.sh, scripts/fixtures/discovery-gaps/
 - Verify: `test ! -e scripts/check-discovery-gaps.sh && test -f scripts/fixtures/discovery-gaps/goals-dashboard-in-wrong-column.md && test -f scripts/fixtures/discovery-gaps/goals-outcome-with-requested-dashboard.md && python3 -c "import pathlib; t=pathlib.Path('scripts/check-realworld.sh').read_text(); assert 'goals-dashboard-in-wrong-column' in t and 'goals-outcome-with-requested-dashboard' in t; assert '構想在錯欄' in t or 'Requested solution' in t; print('T-1-wired')" && bash scripts/check-realworld.sh`
@@ -66,7 +66,7 @@ Design Boundary Contract = applicable。每個 T 的 Boundaries 只摘該 T 碰�
 - Boundaries: OC-1：機械牙只延伸既有 `check-realworld.sh`／`check-spec-gate.sh`／`devtalk-guard.sh`（及已掛進的 `devflow-check.sh`）。本 T 只准改 realworld 與 discovery-gaps fixture；禁止新增 `scripts/check-discovery-gaps.sh`、禁止新開 `check-evidence-allow.sh`。realworld 擁有教師地板與指定 fixture 判定，不得當過期假設的 G2 Gate（那是 spec-gate）。MIN_CHECKS 必須改成加完後的實際檢查數，不是寬放下限。本 T 不改正本模板、不改 spec-gate、不改 guard。Actor=G1 reviewer；Goal=構想不能混成目標；Authority=形狀檢查擋錯欄，G1 抽查語意；Recovery=把該句搬到 Requested solution 並標未定案後重跑。看過 fixture 路徑 ≠ 已分欄。
 
 ## T-2 改口模板與範例，讓 Goals 只寫結果、構想進 Requested solution
-- [ ] 完成
+- [x] 完成
 - Covers: R-1 / S-1.1, S-1.3
 - Files: _templates/1-discussion.md, skills/dev-talk/nodes/S4-accept.md, example/contract-expiry-reminder/1-discussion.md, scripts/check-realworld.sh
 - Verify: `python3 -c "import pathlib; t=pathlib.Path('_templates/1-discussion.md').read_text(); e=pathlib.Path('example/contract-expiry-reminder/1-discussion.md').read_text(); s=pathlib.Path('skills/dev-talk/nodes/S4-accept.md').read_text(); sec=lambda text,h: (lambda i: '' if i<0 else text[i+len(h):].split(chr(10)+'## ',1)[0])(text.find(h)); assert '## Goals' in t and '## Requested solution' in t; assert '畫面路徑 | API 端點' not in sec(t,'## Goals') and '畫面路徑 | API 端點' not in sec(t,'## 驗收雛形'); assert '從哪裡看出結果發生' in s or '結果發生' in s; g=sec(e,'## Goals'); assert '就能看到' not in g and '點擊可直達' not in g and '一眼可見' not in g; assert '## Requested solution' in e; print('T-2-ok')" && bash scripts/check-realworld.sh`
@@ -75,7 +75,7 @@ Design Boundary Contract = applicable。每個 T 的 Boundaries 只摘該 T 碰�
 - Boundaries: 只准改 Files 四檔。1-discussion 同檔欄擁有 Goals／Requested solution 節名；S4-accept 只改「從哪看」問句，不得把元件／JSON 當 Goal。example 是活教師，必須同期改口（1A／Q14），禁止另開 slug 才改範例。禁止 dashboard／API 黑名單（S-1.4 已由 T-1 守）。realworld 本 T 只准加模板／範例地板 check，不得撤回 T-1 的錯欄 fixture。禁止改 STATUS／HISTORY、禁止 bump plugin。Actor=採用者（會抄 example）；Goal=抄範例時寫結果；Recovery=若 Goals 仍鎖通道，同一 T 改到符合 THEN。
 
 ## T-3 讓發現題路徑禁附推薦，刪掉一邊前綴就紅
-- [ ] 完成
+- [x] 完成
 - Covers: R-2 / S-2.1, S-2.2, S-2.3
 - Files: skills/dev-talk/nodes/N3-probe.md, skills/dev-talk/SKILL.md, guides/guide-dev-talk.html, scripts/check-realworld.sh, scripts/fixtures/discovery-gaps/, scripts/test-architecture-guards.sh
 - Verify: `python3 -c "import pathlib; n=pathlib.Path('skills/dev-talk/nodes/N3-probe.md').read_text(); k=pathlib.Path('skills/dev-talk/SKILL.md').read_text(); assert '發現｜' in n and '裁決｜' in n and '禁附推薦' in n; assert '發現｜' in k or '禁附推薦' in k; assert '連續兩輪無新問題' not in n.split('## 完成條件',1)[-1].split('## ',1)[0] or '輔助' in n; print('T-3-skill')" && test -f scripts/fixtures/discovery-gaps/probe-decision-with-options.md && python3 -c "import pathlib; t=pathlib.Path('scripts/check-realworld.sh').read_text(); assert '發現｜' in t and '裁決｜' in t; print('T-3-wired')" && bash scripts/check-realworld.sh`
@@ -84,7 +84,7 @@ Design Boundary Contract = applicable。每個 T 的 Boundaries 只摘該 T 碰�
 - Boundaries: 只准改 Files 六檔。N3-probe 擁有發現／裁決路徑硬規則；`skills/dev-talk/SKILL.md` 入口摘要必須同期改口（指南 `guide-dev-talk.html` 抄的是 SKILL 摘要，只改指南會漂）。指南與 SKILL 不得新造第二份問句正本。realworld 擁有前綴對稱與「發現題附推薦」形，不還原對話（Known limit ①）。S-2.2 隔離複本突變可寫進 `test-architecture-guards.sh`，禁止另開檢查家族。完成條件改為必查面已覆蓋、關鍵反例已問、證據缺口已顯性化；兩輪只標輔助。禁止改 S4-accept（屬 T-2）、禁止改 guard。Actor=訪談對象／討論 agent；Goal=不被錨定；Recovery=若問句已附推薦，重寫為 `發現｜` 開放題再問。
 
 ## T-4 讓高影響主張缺來源且缺期限就紅，點頭不得當獨源
-- [ ] 完成
+- [x] 完成
 - Covers: R-3 / S-3.1, S-3.2, S-3.3, S-3.4, S-3.5; R-8 / S-8.4
 - Files: skills/dev-talk/nodes/S1-survey.md, scripts/check-realworld.sh, scripts/fixtures/discovery-gaps/
 - Verify: `python3 -c "import pathlib; s=pathlib.Path('skills/dev-talk/nodes/S1-survey.md').read_text(); assert '認可後的清單 = 本次「已核事實」' not in s and '認可' in s; print('T-4-skill')" && test -f scripts/fixtures/discovery-gaps/nod-as-only-source.md && test -f scripts/fixtures/discovery-gaps/enum-unknown.md && test -f scripts/fixtures/discovery-gaps/ticket-solution-as-fact.md && python3 -c "import pathlib; t=pathlib.Path('scripts/check-realworld.sh').read_text(); assert '點頭' in t and 'Observed' in t and 'Reported' in t; print('T-4-wired')" && bash scripts/check-realworld.sh`
@@ -93,7 +93,7 @@ Design Boundary Contract = applicable。每個 T 的 Boundaries 只摘該 T 碰�
 - Boundaries: 只准改 Files 三檔。高影響抽樣鎖定 4-spec R-3／DD-1（Workarounds／Exceptions／Journey 痛點非空／`[Assumption]` 或 `[~]` 且風險或影響級為高／Interview ⚠️）。狀態 ∈ {Observed, Reported, Inferred, Assumption, Conflict}。來源 XOR Assumption+期限。S-8.4 與 S-3.1 同一支主張牙，不另開入口。S1-survey 改「認可 ≠ 來源升格」，禁止把認可後清單當唯一來源。realworld 擁有枚舉／來源／點頭／ticket 解法判定；不得把過期假設擋點放進來（屬 T-5 spec-gate）。禁止發第二鏈編號。Actor=討論 agent／G1 reviewer；Goal=認可是確認理解不是驗證營運事實；Recovery=改標 Assumption 或補可重開 path 後重跑。
 
 ## T-5 讓過期未驗 Assumption 在 spec-gate 被拒，已驗或 OC 放行
-- [ ] 完成
+- [x] 完成
 - Covers: R-4 / S-4.1, S-4.2, S-4.3, S-4.4
 - Files: scripts/check-spec-gate.sh, _templates/1-discussion.md, example/contract-expiry-reminder/1-discussion.md, scripts/check-realworld.sh, scripts/fixtures/discovery-gaps/
 - Verify: `{ bash scripts/check-spec-gate.sh scripts/fixtures/discovery-gaps/assumption-expired-open.md; test $? -eq 1; } && bash scripts/check-spec-gate.sh scripts/fixtures/discovery-gaps/assumption-resolved.md && bash scripts/check-spec-gate.sh docs/dev/requirement-discovery-gaps/4-spec.md && python3 -c "import pathlib; t=pathlib.Path('_templates/1-discussion.md').read_text(); e=pathlib.Path('example/contract-expiry-reminder/1-discussion.md').read_text(); assert all(x in t for x in ['若為假影響什麼','影響級','怎麼驗']); assert all(x in e for x in ['若為假影響什麼','影響級','怎麼驗']); print('T-5-floor')" && bash scripts/check-realworld.sh`
@@ -102,7 +102,7 @@ Design Boundary Contract = applicable。每個 T 的 Boundaries 只摘該 T 碰�
 - Boundaries: spec-gate 擁有 4-spec 送審通過／失敗；只讀、不寫 4-spec。新項與 C1–C6 同檔（建議 C7 Assumption refs）；C1–C6 保留，只加項。refs 表三欄：引用／deadline／status∈{open,resolved,oc-accepted}；deadline=`YYYY-MM-DD` 或 `stage-2`／`stage-3`。open + 已過站或過去日且無 oc-accepted → exit 1。禁止新開第二支 G2 CLI。S-4.4 四欄地板走 realworld，不得把過期擋點放到 realworld。本 T 改 1-discussion 只加 Assumption 四欄，不得撤回 T-2 分欄。本 slug 4-spec 三列 oc-accepted 必須仍綠（S-4.3）。Actor=G2 reviewer；Goal=過期高影響假設進不了 G2；Recovery=改 status=resolved 或 oc-accepted 後重跑，不要口頭說「知道有假設」。
 
 ## T-6 讓 Human verdict 一行看出驗了哪個角色與哪場
-- [ ] 完成
+- [x] 完成
 - Covers: R-5 / S-5.1, S-5.2, S-5.3
 - Files: _templates/3-prototype.md, example/contract-expiry-reminder/3-prototype.md, scripts/check-realworld.sh, scripts/fixtures/discovery-gaps/
 - Verify: `python3 -c "import pathlib; t=pathlib.Path('_templates/3-prototype.md').read_text(); e=pathlib.Path('example/contract-expiry-reminder/3-prototype.md').read_text(); assert 'role=' in t and 'scenario=' in t; assert 'role=' in e and 'scenario=' in e; assert '本包必填全表' not in t and 'Actor Coverage' not in t; print('T-6-template')" && test -f scripts/fixtures/discovery-gaps/verdict-accepted-only.md && python3 -c "import pathlib; r=pathlib.Path('scripts/check-realworld.sh').read_text(); assert 'role=' in r and 'scenario=' in r; print('T-6-wired')" && bash scripts/check-realworld.sh`
@@ -111,7 +111,7 @@ Design Boundary Contract = applicable。每個 T 的 Boundaries 只摘該 T 碰�
 - Boundaries: 格式鎖定 `<ENUM> | role=<Actors 表角色> | scenario=<AC-id 或 Demo Script 場景名>`（DD-7／8A）。既有 attestation 牙（不是 Agent 代填）必須仍在；無 attestation 的 ACCEPTED 仍拒。realworld 在 ENUM=ACCEPTED 時發動 role／scenario 檢查。禁止加 Actor Coverage 全表必填指令（已拒 8B）。本 T 不改 guard、不改 spec-gate。Actor=後讀 3-prototype 的人；Goal=一行內答出驗了誰、驗了哪場；Recovery=改成完整一行後重跑，或改 NOT_REVIEWED。
 
 ## T-7 讓 Stage 1 高影響痛點到 Stage 4 每條都有去向
-- [ ] 完成
+- [x] 完成
 - Covers: R-6 / S-6.1, S-6.2, S-6.3, S-6.4
 - Files: scripts/check-spec-gate.sh, _templates/2-decision.md, _templates/4-spec.md, example/contract-expiry-reminder/2-decision.md, example/contract-expiry-reminder/4-spec.md, scripts/fixtures/discovery-gaps/
 - Verify: `{ bash scripts/check-spec-gate.sh scripts/fixtures/discovery-gaps/disposition-missing.md; test $? -eq 1; } && python3 -c "import pathlib; t2=pathlib.Path('_templates/2-decision.md').read_text(); t4=pathlib.Path('_templates/4-spec.md').read_text(); assert '去向' in t2 and '## Real-world Disposition' in t4; print('T-7-template')" && test "$(rg -n 'RW-[0-9]' _templates/2-decision.md _templates/4-spec.md docs/dev/requirement-discovery-gaps/2-decision.md docs/dev/requirement-discovery-gaps/4-spec.md example/contract-expiry-reminder/2-decision.md example/contract-expiry-reminder/4-spec.md | wc -l | tr -d ' ')" -eq 0 && bash scripts/check-spec-gate.sh docs/dev/requirement-discovery-gaps/4-spec.md`
@@ -120,7 +120,7 @@ Design Boundary Contract = applicable。每個 T 的 Boundaries 只摘該 T 碰�
 - Boundaries: spec-gate 加 disposition 形狀項（建議 C9）；full 必有表，去向五值。本方案處理 → 下落匹配 `R-` 或 `S-`（4A／DD-4）。引用 = Stage 1 原文片段，禁止 `RW-[0-9]` 第二鏈。2-decision／4-spec disposition 擁有去向與下落；不得改 STATUS 寫入口。example 對應檔同一刀改口。Verify 用的 `scripts/fixtures/discovery-gaps/disposition-missing.md` 必須列在 Files（本 T 已含目錄），否則 Stage 6 寫 fixture 會被 scope guard 擋。本 T 不改 1-discussion、不改 Fast 六問（屬 T-10）。S-6.4 的 `rg` 零命中含本 slug 已核准檔；負向對照句只寫「不得發第二鏈」不算發 ID。Actor=收斂者／G2 reviewer；Goal=痛點不能無聲消失；Recovery=按 2-decision 表抄進 4-spec 並填 S-id 或 Out of Scope。
 
 ## T-8 讓出貨 Exit 留下回看四欄，結果走 HISTORY 追加
-- [ ] 完成
+- [x] 完成
 - Covers: R-7 / S-7.1, S-7.2, S-7.3
 - Files: _templates/7-review.md, example/contract-expiry-reminder/7-review.md, scripts/check-realworld.sh, scripts/fixtures/discovery-gaps/
 - Verify: `python3 -c "import pathlib; t=pathlib.Path('_templates/7-review.md').read_text(); e=pathlib.Path('example/contract-expiry-reminder/7-review.md').read_text(); assert all(x in t for x in ['回看日期','回看 owner','資料來源','低於何值重開']); assert all(x in e for x in ['回看日期','回看 owner','資料來源','低於何值重開']); assert 'lookback.md' not in t and 'history-append.sh' in t; print('T-8-floor')" && test -f scripts/fixtures/discovery-gaps/lookback-missing-threshold.md && bash scripts/check-realworld.sh`
@@ -129,7 +129,7 @@ Design Boundary Contract = applicable。每個 T 的 Boundaries 只摘該 T 碰�
 - Boundaries: 7-review Exit 擁有回看四欄；結果入口鎖定 `scripts/history-append.sh`。禁止新建 `lookback.md` 或永久 lookback 檔（已拒 5C）。填檔牙只在 7-review 已出現回看節或四欄名時發動（DD-6）。指標是否代表問題改善是人判；到期未回看不得把問題寫成已改善。本 T 不改 STATUS 正本表列、不改 history-append.sh 演算法。Actor=owner；Goal=出貨時留下回看約定；Recovery=補缺欄後重跑，不要另造 lookback.md。
 
 ## T-9 讓 owner 核准後的事實路徑讀得到，方案檔與未核路徑仍禁
-- [ ] 完成
+- [x] 完成
 - Covers: R-8 / S-8.1, S-8.2, S-8.3
 - Files: hooks/devtalk-guard.sh, hooks/selftest.sh, _templates/1-discussion.md, example/contract-expiry-reminder/1-discussion.md, scripts/fixtures/discovery-gaps/
 - Verify: `python3 -c "import json,os,pathlib,subprocess; t=pathlib.Path('_templates/1-discussion.md').read_text(); e=pathlib.Path('example/contract-expiry-reminder/1-discussion.md').read_text(); assert '## Evidence manifest' in t and 'owner 核准' in t; assert '## Evidence manifest' in e; man=pathlib.Path('scripts/fixtures/discovery-gaps/guard-read-1-discussion.md'); assert man.is_file(); mt=man.read_text(); assert '## Evidence manifest' in mt and '_templates/1-discussion.md' in mt and '是' in mt; assert '2-decision' in mt; assert 'notes/review-requirement-discovery-gaps.md' in mt and ('未核' in mt or '空白' in mt); root=pathlib.Path('.').resolve(); guard=str(root/'hooks/devtalk-guard.sh'); cur=root/'.devtalk-cursor.json'; old=cur.read_text() if cur.is_file() else None; cur.write_text(json.dumps({'node':'N3-probe','MEMORY_SESSION_ID':'t9-verify'})+'\n'); env=os.environ.copy(); env['DEVTALK_MANIFEST']=str(man.resolve()); run=lambda rel: subprocess.run(['bash',guard],input=json.dumps({'tool_name':'Read','tool_input':{'file_path':str(root/rel)}}),text=True,capture_output=True,env=env); ps=[('S-8.1',run('_templates/1-discussion.md'),0,()), ('S-8.2',run('docs/dev/requirement-discovery-gaps/2-decision.md'),2,('2-decision','4-spec','方案檔')), ('S-8.3',run('notes/review-requirement-discovery-gaps.md'),2,())]; cur.write_text(old) if old is not None else cur.unlink(missing_ok=True); bad=[(tag,p.returncode,(p.stdout or '')+(p.stderr or '')) for tag,p,want,need in ps if not ((p.returncode==want) and (not need or any(x in ((p.stdout or '')+(p.stderr or '')) for x in need)))]; assert not bad, bad; print('T-9-read-ok')"`
@@ -138,7 +138,7 @@ Design Boundary Contract = applicable。每個 T 的 Boundaries 只摘該 T 碰�
 - Boundaries: guard 擁有討論期擋讀。talk 游標在時才發動 Read 分支；游標不在維持今日只掃 `skills/dev-talk/*` 寫入洩漏。放行核准=是；仍禁 2-decision／3-prototype／4-spec／5-tasks／6-implementation-notes／7-review（含 html twin）。核准 ∈ {是, 未核, 禁}；是不能覆寫 2–7 禁令。manifest 節名 `## Evidence manifest`，住 1-discussion 同檔，五欄：想找哪類／為什麼／擬路徑或來源／owner 核准／已讀（DD-5／6A）。測試縫：fixture `scripts/fixtures/discovery-gaps/guard-read-1-discussion.md` 列出三列（核准=是的 `_templates/1-discussion.md`、核准即使為是的 `2-decision`、核准=未核的 `notes/review-requirement-discovery-gaps.md`）；Verify 寫 ephemeral `.devtalk-cursor.json` 並設 `DEVTALK_MANIFEST` 指向該 fixture，再對三條路徑跑 Read。禁止新開 `check-evidence-allow.sh`、禁止另檔 evidence-manifest.md。selftest 可加 Read 回歸，但 Verify 不靠 `grep -c`。S-8.4 已由 T-4 同一主張牙承接，本 T 不改 realworld。Known limit ②：人跳過 hook 硬讀方案檔，本 feat 不新造 OS hook。Actor=討論 agent；Goal=核准後讀得到事件／行為／結果，方案檔仍進不去；Recovery=先列「想找哪類＋為什麼」等 owner 核；方案檔從擬路徑刪掉。
 
 ## T-10 讓 Fast 寫規格前收完六問，空白不是已分診
-- [ ] 完成
+- [x] 完成
 - Covers: R-9 / S-9.1, S-9.2, S-9.3, S-9.4, S-9.5
 - Files: scripts/check-spec-gate.sh, _templates/4-spec.md, skills/dev-flow/SKILL.md, scripts/fixtures/discovery-gaps/
 - Verify: `{ bash scripts/check-spec-gate.sh scripts/fixtures/discovery-gaps/fast-blank-triage.md; test $? -eq 1; } && { bash scripts/check-spec-gate.sh scripts/fixtures/discovery-gaps/fast-hit-no-dest.md; test $? -eq 1; } && bash scripts/check-spec-gate.sh scripts/fixtures/discovery-gaps/fast-visual-all-no.md && bash scripts/check-spec-gate.sh docs/dev/requirement-discovery-gaps/4-spec.md && python3 -c "import pathlib,re; t=pathlib.Path('_templates/4-spec.md').read_text(); s=pathlib.Path('skills/dev-flow/SKILL.md').read_text(); assert '## Fast early risk triage' in t; assert '六問' in s or 'Fast early risk' in s; w=pathlib.Path('scripts/fixtures/discovery-gaps/fast-wait-shown-as-done.md').read_text(); assert '等待被顯示成完成' in w; assert re.search(r'是.+等待被顯示成完成|等待被顯示成完成', w); assert any(x in w for x in ('full','fast+mini','OC')); assert '待裁' not in w; assert re.search(r'去向', w) and not re.search(r'去向\s*[|=:：]\s*Fast\b', w); print('T-10-ok')"`

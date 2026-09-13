@@ -33,7 +33,7 @@ description: 開發流程 SOP 的唯一對外入口(7 階段路由器,SDD 為主
 
 ## 1. Lane 判準
 - **full**(預設):新能力 / 不可逆改動(schema、API 契約、跨模組介面)→ 1-7 全套(3 選配)。
-- **fast**:bugfix / ≤2 檔小改 / 行為已有 spec 條目(可逆的跨模組小改也算)→ 4-spec(補 bug scenario) → 5-tasks(mini) → 6-implementation-notes → 7-review(mini)。Stage 1–3 省略;5-tasks 仍用同一模板,可只有一個 T,但 Covers/Files/Verify/Blocked-by 必填,供 `devflow-exec.sh start <slug>` 解析 scope。起手 = **診斷迴圈**(重現→最小化→假設→定位→修→回歸),bug scenario 從重現步驟長出。
+- **fast**:bugfix / ≤2 檔小改 / 行為已有 spec 條目(可逆的跨模組小改也算)→ 4-spec(補 bug scenario) → 5-tasks(mini) → 6-implementation-notes → 7-review(mini)。Stage 1–3 省略;5-tasks 仍用同一模板,可只有一個 T,但 Covers/Files/Verify/Blocked-by 必填,供 `devflow-exec.sh start <slug>` 解析 scope。起手 = **診斷迴圈**(重現→最小化→假設→定位→修→回歸),bug scenario 從重現步驟長出。**進 4 前先收六問**(改變下一步／權限核准語意／等待完成語意／角色交接／系統外動作／中斷恢復);命中由 owner 裁 full／fast+mini／OC。Fast 合法跳過 1–3 維持。
 - **大案與切片**:訊號與可切判準一律看指南 `#large-work`,本檔不重述 —— 條件多且互相牽動,摘要過就會與正本分歧。
 
 ## 2. 階段動作
@@ -107,8 +107,8 @@ gate 條件人看正本 = 指南 `#gates`;機械正本 = 契約檔 §7。本表 
 - **跳過**:命中觸發仍要跳過 → 人類明示,記 2-decision「Owner Calls」節流程層 OC,
   該行同時含「Stage 3」與「跳過」字樣(供機械比對);Agent 不得代決跳過。
 - **G2 送審前先跑 spec 形狀檢查**(B-9;Stage 4 步驟 6 送審的前置動作):
-  `bash <master>/scripts/check-spec-gate.sh docs/dev/<slug>/4-spec.md`。它查六項,
-  一項一條、六項都要過:
+  `bash <master>/scripts/check-spec-gate.sh docs/dev/<slug>/4-spec.md`。它查九項,
+  一項一條、九項都要過(C1–C6 原形 + C7 Assumption refs／C8 Fast 六問／C9 Disposition):
   1. 每個 S 有觀測欄。
   2. Verification Profile 節在,且 `- lane:` 與 `- Risk:` 兩行可解析
      (runtime `devflow-exec.sh start` 讀的就是這兩行)。

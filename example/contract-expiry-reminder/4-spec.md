@@ -208,6 +208,13 @@ Owner confirmation:rick 確認上列兩場已 ACCEPTED 的 Demo 場景明示排�
   ③**查詢失敗的前端呈現缺口** —— `GET /contracts/expiring` 失敗時無專用錯誤畫面,可能被誤讀為「今天沒有到期合約」(Stage 3 已 ACCEPTED 但本期排除的場景,理由見 Out of Scope)。
   三項皆為既有設計的顯性化,本期不新增樂觀鎖、idempotency key、重試 UI、新 API 或新 schema。
 
+## Real-world Disposition
+| 引用（Stage 1 原文片段） | 去向 | 下落 |
+|---|---|---|
+| 私表更新靠自律,常漏 | 本方案處理 | S-1 |
+| 口頭交辦無紀錄 | 本方案處理 | S-4 |
+| email / LINE 通知 | Non-Goal | Out of Scope |
+
 ## Verification Profile(G2 一併審)
 - lane: full(Risk: high 命中自動升 Full 清單,不得 fast;本節 Risk = Feature Risk,
   5-tasks 逐 T `Risk:` 欄 = Task Risk,判準同一正本)

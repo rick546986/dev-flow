@@ -143,9 +143,9 @@ RESULTS=()
 # 改法:由 expect()/expect_local() 依 want 實際累計 control 與 negative,尾聲與釘死值比對。
 CONTROL_RUN=0     # 實際跑過的「未變異必須 pass」對照組
 NEGATIVE_RUN=0    # 實際跑過的「變異必須 fail」負向案
-EXPECTED_CONTROLS=17
-EXPECTED_NEGATIVES=127
-EXPECTED_TOTAL=144
+EXPECTED_CONTROLS=18
+EXPECTED_NEGATIVES=129
+EXPECTED_TOTAL=147
 
 count_case() { # count_case <pass|fail>
   if [ "$1" = "pass" ]; then CONTROL_RUN=$((CONTROL_RUN + 1)); else NEGATIVE_RUN=$((NEGATIVE_RUN + 1)); fi
@@ -725,6 +725,36 @@ assert n != t, "RW-2 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
 expect fail check-realworld.sh "$D" "RW-2 一條 Out of Scope 場景保留但拿掉逐場點名引用(vacuous-truth 陷阱:len>=1 抓不到,需逐條比對)"
+
+# S-2.2 隔離複本:N3 兩邊前綴都在則綠;刪掉發現｜或裁決｜其中一邊必須紅。
+seed_n3() {
+  local d
+  d=$(seed "$1")
+  mkdir -p "$d/skills/dev-talk/nodes"
+  cp "$ROOT/skills/dev-talk/nodes/N3-probe.md" "$d/skills/dev-talk/nodes/"
+  echo "$d"
+}
+D=$(seed_n3 dg0); expect pass check-realworld.sh "$D" "DG-0 N3 發現｜與裁決｜都在"
+
+D=$(seed_n3 dg1); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "skills/dev-talk/nodes/N3-probe.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("發現｜", "", 1)
+assert n != t, "DG-1 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-realworld.sh "$D" "DG-1 刪掉 N3 發現｜前綴必須紅"
+
+D=$(seed_n3 dg2); mutate "$D" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "skills/dev-talk/nodes/N3-probe.md"
+t = p.read_text(encoding="utf-8")
+n = t.replace("裁決｜", "", 1)
+assert n != t, "DG-2 mutation 沒生效"
+p.write_text(n, encoding="utf-8")
+PY
+expect fail check-realworld.sh "$D" "DG-2 刪掉 N3 裁決｜前綴必須紅"
 
 # ─────────────────── 守衛本體被改弱(Guard Source;fresh review F-2)───────────────────
 # 這一整類原本零覆蓋:上面所有案例都只變異資料檔,守衛本體始終從正式 repo 執行。

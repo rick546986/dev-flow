@@ -269,6 +269,7 @@ Design Boundary Contract 為 `applicable`,本軸另查四項(4-spec Design Bound
 - [x] 7-review frontmatter status: shipped;上游 artifact 保留 approved(各自 gate 核准紀錄,依 7-review 模板 Exit 規則)
 - [x] 7-review.html 已產生(含變更架構圖 + diff 折疊)
 - [x] feature branch 已刪
+- [x] 回看約定:回看日期 2026-10-23;回看 owner `<owner>`;資料來源 採用專案 Stage 1 抽「到期前做完續約決定」漏約數;低於何值重開 漏約 > 0。結果到期用 `scripts/history-append.sh` 追加,不另造永久回看檔
 
 ## 附錄:本輪特有
 

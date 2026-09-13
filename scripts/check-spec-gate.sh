@@ -13,7 +13,7 @@
 # 讓 reviewer 把時間花在判斷 R/S 寫得對不對、DD 決策合不合理 —— 那些仍然是人審的事。
 # 本腳本永遠不判斷內容好壞。
 #
-# 六項檢查(逐項印結果,全過才 exit 0):
+# 九項檢查(逐項印結果,全過才 exit 0):
 #   C1 每個 S 都有觀測欄          _templates/4-spec.md:53(完成條件)、:99(欄位形式)
 #   C2 Verification Profile 節存在,且 `- lane:` 與 `- Risk:` 可被解析
 #                                 _templates/4-spec.md:181-182、:200(runtime 讀這兩行)
@@ -24,6 +24,9 @@
 #   C5 Drafting Decisions 無殘留「待裁決」  _templates/4-spec.md:47(掃描零殘留)
 #   C6 晚改可見行為不得停成「4-spec 壓 Decision」
 #                                 _templates/4-spec.md 步 0／步 4;掃 DD 與確認紀錄
+#   C7 Assumption refs            open + 過期(日期或 stage-2/3)且無 oc-accepted → FAIL
+#   C8 Fast early risk triage     僅 lane: fast;空白六問或命中無去向 → FAIL
+#   C9 Real-world Disposition     full + 有表或缺表(discovery-gaps)時驗去向／下落
 #
 # C2/C3 的 lane/Risk/Owner Call 解析**直接 import runtime 正本**
 # (hooks/devflow-lib.py 的 `spec_profile()`),不另寫一份 —— G2 前置檢查與
@@ -32,7 +35,7 @@
 # **exit code 契約(重要;與 scripts/check-task-slicing.sh 相反,別看混)**:
 #   check-task-slicing.sh 是 warning-only,對真實檔案永遠不 exit 1。
 #   **本腳本是 Gate**:FAIL 就是要擋下流程。
-#     0 = 六項全過
+#     0 = 九項全過
 #     1 = 任一項 FAIL —— G2 不得送審,修完再跑
 #     2 = 用法錯誤 / 檔案讀不到 / runtime 正本載不進來(檢查本身故障)
 #
@@ -49,7 +52,7 @@ if [ -z "$SPEC" ]; then
   cat >&2 <<'USAGE'
 usage: scripts/check-spec-gate.sh <4-spec.md 路徑>
 
-G2 機械關卡:對一份 4-spec.md 做形狀檢查(六項,見腳本頂註)。
+G2 機械關卡:對一份 4-spec.md 做形狀檢查(九項,見腳本頂註)。
 exit 0 = 全過 / 1 = 有 FAIL,G2 不得送審 / 2 = 用法錯誤或檢查本身故障。
 USAGE
   exit 2
@@ -244,6 +247,103 @@ record(
     if c6_hits
     else [],
 )
+
+# ---- C7:Assumption refs(有表才發動;無表 no-fire,不誤殺舊 fixture)----
+from datetime import date as _date
+
+assump_i = next((i for i in heads if re.match(r"^#{2,6}\s*Assumption refs", lines[i])), None)
+c7_bad = []
+if assump_i is not None:
+    end = section_end(assump_i)
+    for n in range(assump_i + 1, end):
+        line = lines[n].strip()
+        if not line.startswith("|") or re.match(r"^\|[\s\-|:]+\|$", line):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) < 3:
+            continue
+        if cells[0].startswith("引用") or cells[1] == "deadline":
+            continue
+        deadline, status = cells[1], cells[2].lower()
+        if status in ("resolved", "oc-accepted"):
+            continue
+        expired = False
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", deadline):
+            expired = _date.fromisoformat(deadline) < _date.today()
+        elif deadline in ("stage-2", "stage-3"):
+            expired = True
+        if status == "open" and expired:
+            c7_bad.append(f"L{n + 1} Assumption 過期仍 open:{line[:70]}")
+    record("C7", not c7_bad,
+           "Assumption refs 無過期 open(有表才驗)",
+           c7_bad or [])
+else:
+    record("C7", True, "Assumption refs 無表 = no-fire")
+
+# ---- C8:Fast early risk triage(僅 lane: fast;discovery-gaps 或缺表／有表都驗)----
+triage_i = next((i for i in heads if re.match(r"^#{2,6}\s*Fast early risk triage", lines[i])), None)
+in_gaps = "discovery-gaps" in spec_path.replace("\\", "/")
+c8_bad = []
+if prof["lane"] == "fast" and (triage_i is not None or in_gaps):
+    if triage_i is None:
+        c8_bad.append("lane: fast 缺 `## Fast early risk triage`(六問空白 ≠ 已分診)")
+    else:
+        end = section_end(triage_i)
+        body = "\n".join(lines[triage_i:end])
+        six = ("改變下一步", "權限", "等待", "角色交接", "系統外", "中斷")
+        answers = []
+        for n in range(triage_i + 1, end):
+            line = lines[n]
+            if not line.strip().startswith("|"):
+                continue
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if len(cells) < 2 or cells[0] in ("問", "---"):
+                continue
+            q, a = cells[0], cells[1]
+            if any(key in q for key in six):
+                answers.append((q, a, n))
+        if any(not a.strip() for _, a, _ in answers) or len(answers) < 6:
+            c8_bad.append("Fast 六問答欄空白或不足")
+        yes_hits = [(q, a) for q, a, _ in answers if a.strip().startswith("是")]
+        dest_m = re.search(r"去向\s*[:：]\s*(\S+)", body)
+        dest = dest_m.group(1) if dest_m else ""
+        if yes_hits:
+            if dest in ("", "待裁", "Fast"):
+                c8_bad.append("命中後去向必須是 full／fast+mini／OC,不得空白、待裁或 Fast")
+        elif dest == "待裁":
+            c8_bad.append("去向不得是待裁")
+    record("C8", not c8_bad, "Fast early risk triage(僅 fast 發動)", c8_bad)
+else:
+    record("C8", True, "Fast 項 no-fire(full 或缺表舊 fixture)")
+
+# ---- C9:Real-world Disposition(有表必驗;discovery-gaps + full 缺表必紅)----
+disp_i = next((i for i in heads if re.match(r"^#{2,6}\s*Real-world Disposition", lines[i])), None)
+c9_bad = []
+if disp_i is not None or (prof["lane"] == "full" and in_gaps):
+    if disp_i is None:
+        c9_bad.append("full lane 缺 `## Real-world Disposition` 或去向空白")
+    else:
+        end = section_end(disp_i)
+        for n in range(disp_i + 1, end):
+            line = lines[n].strip()
+            if not line.startswith("|") or re.match(r"^\|[\s\-|:]+\|$", line):
+                continue
+            cells = [c.strip() for c in line.strip("|").split("|")]
+            if len(cells) < 3:
+                continue
+            if cells[0].startswith("引用") or cells[1] == "去向":
+                continue
+            dest, drop = cells[1], cells[2]
+            if not dest:
+                c9_bad.append(f"L{n + 1} 去向空白")
+                continue
+            if dest == "本方案處理" and not re.search(r"\b[RS]-\S+", drop):
+                c9_bad.append(f"L{n + 1} 本方案處理下落必須有 R- 或 S-")
+            if dest != "本方案處理" and not drop:
+                c9_bad.append(f"L{n + 1} 非處理去向下落空白")
+    record("C9", not c9_bad, "Real-world Disposition 去向／下落", c9_bad)
+else:
+    record("C9", True, "Disposition no-fire(無表且非 discovery-gaps full)")
 
 # ---- 輸出 ----
 print(f"=== G2 spec gate:{spec_path} ===")

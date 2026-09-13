@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>requirement-discovery-gaps · 6-implementation-notes</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  -webkit-font-smoothing:antialiased}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;font-variant-numeric:tabular-nums}
+code{background:var(--sunk);border-radius:3px;padding:1px 5px;color:var(--ink-2)}
+a{color:var(--accent)}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem;max-width:62ch}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;
+  border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
+.r-name{font-weight:650}
+.r-body{padding:14px 18px 16px;font-size:.94rem;color:var(--ink)}
+.r-body p{margin:0 0 8px}
+.r-body p:last-child{margin-bottom:0}
+.tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600}
+.tag.base{background:var(--sunk);color:var(--ink-3)}
+details.hunk{border:1px solid var(--rule);border-radius:9px;margin:10px 12px 12px;
+  background:var(--sunk);overflow:hidden}
+details.hunk>summary{cursor:pointer;padding:11px 15px;font-weight:600;font-size:.9rem;
+  list-style:none;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+details.hunk>summary::-webkit-details-marker{display:none}
+.hunk-why,.hunk-rel{margin:8px 15px;font-size:.9rem}
+.hunk-why{color:var(--ink)}
+.hunk-rel{color:var(--ink-2)}
+.diff{margin:0 12px 12px;border:1px solid var(--rule);border-radius:7px;overflow:auto;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82rem}
+.ln{display:flex;white-space:pre;padding:1px 10px;line-height:1.55}
+.ln .m{display:inline-block;width:1.2em;flex:none;color:var(--ink-3)}
+.ln.ctx{color:var(--ink-3);background:var(--panel)}
+.ln.add{background:var(--ok-soft);color:var(--ok)}
+.ln.del{background:var(--bad-soft);color:var(--bad)}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+@media (max-width:560px){h1{font-size:1.35rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 6-implementation-notes · 審查介面</p>
+  <h1>requirement-discovery-gaps</h1>
+  <p class="sub">status in-review／owner implementer-B。正本是 md 的 ## Diff,這頁由產檔器重生。不要當第二份正本。</p>
+</header>
+<section class="r-block" id="summary"><div class="r-head"><span class="r-name">摘要</span></div><div class="r-body"><p>slug `requirement-discovery-gaps`／status in-review／owner implementer-B／updated 2026-09-13</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1</span></div><div class="r-body"><p>- reviewer identity:implementer-B self-check(雲端單代理;獨立 T review 留給 PR) - reviewer kind:fresh-context Agent - reviewed-at:2026-09-13T06:20Z - Verify:`test ! -e scripts/check-discovery-gaps.sh &amp;&amp; … T-1-wired &amp;&amp; bash scripts/check-realworld.sh` → `T-1-wired`;`181/181`(地板 181);第四家族檔不存在 - Covers finding:S-1.2 錯欄 fixture 紅;S-1.4 結果句 + Requested solution 不因 dashboard/API 誤殺 - Files finding:只動 `check-realworld.sh` + `scripts/fixtures/discovery-gaps/` - RED→GREEN finding:Stage 5 開工前表「fixture 目錄不存在／無錯欄針」;落地後官方 Verify 綠。隔離複本走 inline,未加 `check_skip` - Test Integrity finding:none(無 skip/xfail;無 `check(True`;MIN_CHECKS=實數) - Design boundary finding:未新開第四家族;realworld 不擋過期假設;MIN_CHECKS=181=實數 - verdict:PASS - correction + re-review after FAIL:N/A</p></div></section>
+<section class="r-block" id="T-2"><div class="r-head"><span class="r-name">T-2</span></div><div class="r-body"><p>- reviewer identity:implementer-B self-check(雲端單代理;獨立 T review 留給 PR) - reviewer kind:fresh-context Agent - reviewed-at:2026-09-13T06:20Z - Verify:官方 T-2 指令 → `T-2-ok`;realworld 181/181 - Covers finding:S-1.1 模板分欄;S-1.3 example Goals 無「就能看到／點擊可直達／一眼可見」 - Files finding:模板／S4-accept／example 1-discussion／realworld 地板。未撤回 T-1 fixture - RED→GREEN finding:開工前無 `## Requested solution`、驗收雛形仍寫畫面路徑;落地後 T-2-ok - Test Integrity finding:none - Design boundary finding:無 dashboard/API 黑名單;S4 只改「從哪看」 - verdict:PASS - correction + re-review after FAIL:N/A</p></div></section>
+<section class="r-block" id="T-3"><div class="r-head"><span class="r-name">T-3</span></div><div class="r-body"><p>- reviewer identity:implementer-B self-check(雲端單代理;獨立 T review 留給 PR) - reviewer kind:fresh-context Agent - reviewed-at:2026-09-13T06:20Z - Verify:`T-3-skill` + `T-3-wired` + realworld 181/181;`check-devtalk-guide-sync.sh` PASS(13 段原文) - Covers finding:S-2.1 前綴;S-2.2 architecture DG-1/DG-2 刪一邊必紅;S-2.3 裁決附選不紅 - Files finding:N3／SKILL／guide-dev-talk／realworld／fixture／test-architecture-guards - RED→GREEN finding:開工前 N3 仍「附推薦答案」;落地後刪一邊前綴必紅 - Test Integrity finding:none;`EXPECTED_*` 與實跑互釘 18/129/147 - Design boundary finding:指南原文仍是 SKILL 子字串;未另造問句正本;未改 guard - verdict:PASS - correction + re-review after FAIL:N/A</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4</span></div><div class="r-body"><p>- reviewer identity:implementer-B self-check(雲端單代理;獨立 T review 留給 PR) - reviewer kind:fresh-context Agent - reviewed-at:2026-09-13T06:21Z - Verify:`T-4-skill` + 三負向 fixture 存在 + `T-4-wired` + realworld 181/181 - Covers finding:S-3.1–S-3.5 與 S-8.4 同一 `detect_claim_shape`;點頭／Unknown／ticket→Observed 紅;Observed+來源與 Assumption+期限綠 - Files finding:S1-survey／realworld／discovery-gaps fixture。只掃 `### 高影響列` - RED→GREEN finding:開工前 S1 仍「認可後的清單 = 已核事實」;落地後舊句消失 - Test Integrity finding:none - Design boundary finding:未把過期假設擋點放進 realworld;未發第二鏈 - verdict:PASS - correction + re-review after FAIL:N/A</p></div></section>
+<section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5</span></div><div class="r-body"><p>- reviewer identity:implementer-B self-check(雲端單代理;獨立 T review 留給 PR) - reviewer kind:fresh-context Agent - reviewed-at:2026-09-13T06:21Z - Verify:expired-open exit 1(C7);resolved 9/9;本 slug 4-spec 9/9;`T-5-floor`;realworld 181/181 - Covers finding:S-4.1 過期 open 擋;S-4.2 resolved 放行;S-4.3 oc-accepted 本 slug 綠;S-4.4 四欄地板 - Files finding:spec-gate／1-discussion 模板+example／realworld／fixture - RED→GREEN finding:開工前無 C7、無 expired fixture;落地後 C7 咬過期 open - Test Integrity finding:none - Design boundary finding:C1–C6 保留;無第二支 G2 CLI;無表 no-fire - verdict:PASS - correction + re-review after FAIL:N/A</p></div></section>
+<section class="r-block" id="T-6"><div class="r-head"><span class="r-name">T-6</span></div><div class="r-body"><p>- reviewer identity:implementer-B self-check(雲端單代理;獨立 T review 留給 PR) - reviewer kind:fresh-context Agent - reviewed-at:2026-09-13T06:21Z - Verify:`T-6-template` + `T-6-wired` + realworld 181/181 - Covers finding:S-5.1 只寫 ACCEPTED 紅;S-5.2 模板／example 含 role=／scenario=;S-5.3 無 Actor Coverage 全表 - Files finding:3-prototype 模板+example／realworld／verdict fixture - RED→GREEN finding:開工前 Human verdict 只有 ENUM;落地後殘行 fixture 紅 - Test Integrity finding:none - Design boundary finding:未改 attestation 牙;未加全表;未改 guard／spec-gate - verdict:PASS - correction + re-review after FAIL:N/A</p></div></section>
+<section class="r-block" id="T-7"><div class="r-head"><span class="r-name">T-7</span></div><div class="r-body"><p>- reviewer identity:implementer-B self-check(雲端單代理;獨立 T review 留給 PR) - reviewer kind:fresh-context Agent - reviewed-at:2026-09-13T06:21Z - Verify:disposition-missing exit 1(C9);`T-7-template`;`rg RW-[0-9]` 六檔 = 0;本 slug 4-spec 9/9 - Covers finding:S-6.1–S-6.4 表／去向／R-S 下落／無第二鏈字面 - Files finding:spec-gate／2-decision+4-spec 模板／example 對應檔／fixture。L1:本 slug 2-decision 4B 格(D-1) - RED→GREEN finding:開工前無 Disposition 節;落地後缺表 fixture C9 紅;subsidy 無表 no-fire - Test Integrity finding:none - Design boundary finding:未改 STATUS;引用用原文;C9 不誤殺無表舊 full(非 discovery-gaps) - verdict:PASS - correction + re-review after FAIL:N/A</p></div></section>
+<section class="r-block" id="T-8"><div class="r-head"><span class="r-name">T-8</span></div><div class="r-body"><p>- reviewer identity:implementer-B self-check(雲端單代理;獨立 T review 留給 PR) - reviewer kind:fresh-context Agent - reviewed-at:2026-09-13T06:21Z - Verify:`T-8-floor`;lookback fixture 在;realworld 181/181;`lookback.md` 字面不在模板 - Covers finding:S-7.1 四欄;S-7.2 shipped+回看節缺閾值紅、舊檔無節 no-fire;S-7.3 結果入口 history-append.sh - Files finding:7-review 模板+example／realworld／fixture。L1:renderer 衍生 `7-review.html` 與 `guide-dev-flow.html` - RED→GREEN finding:開工前無四欄;落地後地板綠 - Test Integrity finding:none - Design boundary finding:未造 lookback 永久檔;未改 history-append 演算法 - verdict:PASS - correction + re-review after FAIL:N/A</p></div></section>
+<section class="r-block" id="T-9"><div class="r-head"><span class="r-name">T-9</span></div><div class="r-body"><p>- reviewer identity:implementer-B self-check(雲端單代理;獨立 T review 留給 PR) - reviewer kind:fresh-context Agent - reviewed-at:2026-09-13T06:22Z - Verify:官方 T-9 python 真跑 Read 三案 → `T-9-read-ok`(S-8.1 exit 0;S-8.2 exit 2 含「方案檔」;S-8.3 exit 2) - Covers finding:核准=是可讀模板;2-decision 即使列進 manifest 仍禁;未核路徑禁 - Files finding:guard／1-discussion 模板+example／fixture。未改 `hooks/selftest.sh`(Files 准改、非必改;Verify 不靠 grep selftest;避免 MIN_CASES pin) - RED→GREEN finding:開工前無 Read 分支、無 manifest;落地後三案 exit 對 - Test Integrity finding:none(未加 skip;未用字數代替 exit) - Design boundary finding:未新開 evidence CLI;2–7 不可被核准格覆寫;游標不在走舊寫入洩漏 - verdict:PASS - correction + re-review after FAIL:N/A</p></div></section>
+<section class="r-block" id="T-10"><div class="r-head"><span class="r-name">T-10</span></div><div class="r-body"><p>- reviewer identity:implementer-B self-check(雲端單代理;獨立 T review 留給 PR) - reviewer kind:fresh-context Agent - reviewed-at:2026-09-13T06:22Z - Verify:fast-blank／fast-hit-no-dest exit 1;fast-visual-all-no 9/9;本 slug 4-spec 9/9;`T-10-ok` - Covers finding:S-9.1–S-9.4 Fast 六問與去向;S-9.5 full 本 slug no-fire - Files finding:spec-gate／4-spec 模板／dev-flow SKILL／fixture - RED→GREEN finding:開工前無 C8;落地後空白六問與命中無去向紅;既有 fast CI fixture(無表、非 discovery-gaps)no-fire - Test Integrity finding:none - Design boundary finding:未拆 Fast 7 關;未新造 triage 檔;C1–C6 保留 - verdict:PASS - correction + re-review after FAIL:N/A</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1 / S-1.2</span></div><div class="r-body"><p>- RED: fixture 目錄不存在;`check-realworld.sh` 無錯欄針 → T-1-wired 不能成立 - GREEN: `T-1-wired`;`goals-dashboard-in-wrong-column` → `構想在錯欄`;realworld 181/181</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1 / S-1.4</span></div><div class="r-body"><p>- RED: 無合法對照稿,無法證明「不因 dashboard/API 誤殺」 - GREEN: `goals-outcome-with-requested-dashboard` → `detect_goals_wrong_column` 回 None;`test ! -e scripts/check-discovery-gaps.sh`</p></div></section>
+<section class="r-block" id="T-2"><div class="r-head"><span class="r-name">T-2 / S-1.1</span></div><div class="r-body"><p>- RED: 模板無 `## Requested solution`;驗收雛形仍 `畫面路徑 | API 端點` - GREEN: `T-2-ok`</p></div></section>
+<section class="r-block" id="T-2"><div class="r-head"><span class="r-name">T-2 / S-1.3</span></div><div class="r-body"><p>- RED: example Goals 含「就能看到／點擊可直達／一眼可見」 - GREEN: Goals 三句已改口;Requested solution 未定案 dashboard;Interview → `NEEDS_VERIFICATION 呈現面尚未定案`</p></div></section>
+<section class="r-block" id="T-3"><div class="r-head"><span class="r-name">T-3 / S-2.1</span></div><div class="r-body"><p>- RED: N3 寫「附推薦答案」;無 `發現｜`／`裁決｜` - GREEN: `T-3-skill`;完成條件改必查面／反例／證據缺口;兩輪只標輔助</p></div></section>
+<section class="r-block" id="T-3"><div class="r-head"><span class="r-name">T-3 / S-2.2</span></div><div class="r-body"><p>- RED: 無隔離突變案,刪一邊前綴不會紅 - GREEN: architecture `DG-0` pass / `DG-1` fail / `DG-2` fail;`EXPECTED_CONTROLS=18` `NEGATIVES=129` `TOTAL=147`</p></div></section>
+<section class="r-block" id="T-3"><div class="r-head"><span class="r-name">T-3 / S-2.3</span></div><div class="r-body"><p>- RED: 無裁決附選 fixture - GREEN: `probe-decision-with-options.md` 不觸發「發現題禁附推薦」</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4 / S-3.1</span></div><div class="r-body"><p>- RED: 無高影響列解析 - GREEN: `detect_claim_shape` 只讀 `### 高影響列`</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4 / S-3.2</span></div><div class="r-body"><p>- RED: 無 Observed+來源／Assumption+期限正例 - GREEN: 兩正例 `is None`</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4 / S-3.3</span></div><div class="r-body"><p>- RED: 點頭可當獨源 - GREEN: `nod-as-only-source.md` → 「點頭不是來源」</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4 / S-3.4</span></div><div class="r-body"><p>- RED: Unknown 可過 - GREEN: `enum-unknown.md` → 枚舉必須落在五值</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4 / S-3.5</span></div><div class="r-body"><p>- RED: S1 把認可當已核事實 - GREEN: `T-4-skill`;舊句刪除</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4 / S-8.4</span></div><div class="r-body"><p>- RED: ticket 解法可標 Observed - GREEN: `ticket-solution-as-fact.md` → 「解法建議不當事實」</p></div></section>
+<section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5 / S-4.1</span></div><div class="r-body"><p>- RED: spec-gate 無 C7 - GREEN: `assumption-expired-open.md` exit 1,C7 印過期 open</p></div></section>
+<section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5 / S-4.2</span></div><div class="r-body"><p>- RED: 無 resolved 對照 - GREEN: `assumption-resolved.md` 9/9</p></div></section>
+<section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5 / S-4.3</span></div><div class="r-body"><p>- RED: 本 slug oc-accepted 可能被新項誤殺 - GREEN: `docs/dev/requirement-discovery-gaps/4-spec.md` 9/9</p></div></section>
+<section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5 / S-4.4</span></div><div class="r-body"><p>- RED: 模板／example 無四欄字 - GREEN: `T-5-floor`</p></div></section>
+<section class="r-block" id="T-6"><div class="r-head"><span class="r-name">T-6 / S-5.1</span></div><div class="r-body"><p>- RED: 無殘行 fixture - GREEN: `verdict-accepted-only.md` → 缺 role=/scenario=</p></div></section>
+<section class="r-block" id="T-6"><div class="r-head"><span class="r-name">T-6 / S-5.2</span></div><div class="r-body"><p>- RED: 模板／example 無 role=／scenario= - GREEN: `T-6-template`</p></div></section>
+<section class="r-block" id="T-6"><div class="r-head"><span class="r-name">T-6 / S-5.3</span></div><div class="r-body"><p>- RED: 可能被寫成全表 - GREEN: 模板無「本包必填全表」／`Actor Coverage`</p></div></section>
+<section class="r-block" id="T-7"><div class="r-head"><span class="r-name">T-7 / S-6.1</span></div><div class="r-body"><p>- RED: 無 Disposition 節 - GREEN: 模板 `## Real-world Disposition`;2-decision `## Real-world 去向帳`</p></div></section>
+<section class="r-block" id="T-7"><div class="r-head"><span class="r-name">T-7 / S-6.2</span></div><div class="r-body"><p>- RED: 缺表不擋 G2 - GREEN: `disposition-missing.md` exit 1,C9</p></div></section>
+<section class="r-block" id="T-7"><div class="r-head"><span class="r-name">T-7 / S-6.3</span></div><div class="r-body"><p>- RED: 本方案處理可無 R/S - GREEN: C9 要求下落 `\b[RS]-\S+`</p></div></section>
+<section class="r-block" id="T-7"><div class="r-head"><span class="r-name">T-7 / S-6.4</span></div><div class="r-body"><p>- RED: Verify `rg RW-[0-9]` 命中 4B 格 `RW-1` - GREEN: 六檔 rg = 0(D-1 改寫 4B,不翻 4A)</p></div></section>
+<section class="r-block" id="T-8"><div class="r-head"><span class="r-name">T-8 / S-7.1</span></div><div class="r-body"><p>- RED: 7-review 無四欄 - GREEN: `T-8-floor`</p></div></section>
+<section class="r-block" id="T-8"><div class="r-head"><span class="r-name">T-8 / S-7.2</span></div><div class="r-body"><p>- RED: 無缺閾值 fixture - GREEN: `lookback-missing-threshold.md` 紅;舊 7-review 無節 no-fire</p></div></section>
+<section class="r-block" id="T-8"><div class="r-head"><span class="r-name">T-8 / S-7.3</span></div><div class="r-body"><p>- RED: 可能另造 lookback 檔 - GREEN: 模板含 `history-append.sh`;`lookback.md` 字面不在模板／example</p></div></section>
+<section class="r-block" id="T-9"><div class="r-head"><span class="r-name">T-9 / S-8.1</span></div><div class="r-body"><p>- RED: guard 無 Read 分支 - GREEN: Read 核准=是的 `_templates/1-discussion.md` exit 0</p></div></section>
+<section class="r-block" id="T-9"><div class="r-head"><span class="r-name">T-9 / S-8.2</span></div><div class="r-body"><p>- RED: 方案檔可被核准格放行 - GREEN: Read `2-decision.md` exit 2,stderr 含「方案檔」</p></div></section>
+<section class="r-block" id="T-9"><div class="r-head"><span class="r-name">T-9 / S-8.3</span></div><div class="r-body"><p>- RED: 未核路徑可當已授權 - GREEN: Read `notes/review-requirement-discovery-gaps.md` exit 2</p></div></section>
+<section class="r-block" id="T-10"><div class="r-head"><span class="r-name">T-10 / S-9.1</span></div><div class="r-body"><p>- RED: 無 Fast 六問節 - GREEN: 模板 `## Fast early risk triage` 在 ADDED 之前;SKILL「進 4 前六問」</p></div></section>
+<section class="r-block" id="T-10"><div class="r-head"><span class="r-name">T-10 / S-9.2</span></div><div class="r-body"><p>- RED: 空白可當已分診 - GREEN: `fast-blank-triage.md` exit 1,C8「缺節」;`fast-wait-shown-as-done.md` Q3=是且去向非 Fast</p></div></section>
+<section class="r-block" id="T-10"><div class="r-head"><span class="r-name">T-10 / S-9.3</span></div><div class="r-body"><p>- RED: 命中無去向不擋 - GREEN: `fast-hit-no-dest.md` exit 1</p></div></section>
+<section class="r-block" id="T-10"><div class="r-head"><span class="r-name">T-10 / S-9.4</span></div><div class="r-body"><p>- RED: 六問全否仍可能被誤殺 - GREEN: `fast-visual-all-no.md` 9/9,去向=Fast</p></div></section>
+<section class="r-block" id="T-10"><div class="r-head"><span class="r-name">T-10 / S-9.5</span></div><div class="r-body"><p>- RED: full 本 slug 可能被 C8 誤殺 - GREEN: 本 slug 4-spec C8 no-fire,9/9</p></div></section>
+<section class="r-block" id="hunks"><div class="r-head"><span class="r-name">Hunks</span></div><details class="hunk" open><summary>detect_goals_wrong_column · <code>scripts/check-realworld.sh</code> L260-278 <span class="tag base">T-1</span></summary><p class="hunk-why">改什麼：Goals 第一句「我要 dashboard」且 Requested solution 空 → 構想在錯欄</p><p class="hunk-rel">關聯：load_fix 錯欄／合法對照稿;不掃黑名單詞</p><div class="diff">
+<div class="ln add"><span class="m">+</span>def detect_goals_wrong_column(text):</div>
+<div class="ln add"><span class="m">+</span>    goals = heading_body(text, "Goals")</div>
+<div class="ln add"><span class="m">+</span>    req = heading_body(text, "Requested solution")</div>
+<div class="ln add"><span class="m">+</span>    ...</div>
+<div class="ln add"><span class="m">+</span>    if first.startswith("我要 dashboard") and req_empty:</div>
+<div class="ln add"><span class="m">+</span>        return "構想在錯欄：我要 dashboard 寫在 Goals，Requested solution 空"</div>
+<div class="ln add"><span class="m">+</span>    return None</div>
+</div></details>
+<details class="hunk" open><summary>no_fourth_family · <code>scripts/check-realworld.sh</code> L295-296 <span class="tag base">T-1</span></summary><p class="hunk-why">改什麼：鎖定沒有 `scripts/check-discovery-gaps.sh`</p><p class="hunk-rel">關聯：OC-1 同一入口;T-1 Verify `test ! -e`</p><div class="diff">
+<div class="ln add"><span class="m">+</span>check(not os.path.isfile(os.path.join(root, "scripts/check-discovery-gaps.sh")),</div>
+<div class="ln add"><span class="m">+</span>      "未新開 check-discovery-gaps.sh(OC-1 同一入口)")</div>
+</div></details>
+<details class="hunk" open><summary>MIN_CHECKS · <code>scripts/check-realworld.sh</code> L547-547 <span class="tag base">T-1</span></summary><p class="hunk-why">改什麼：地板改成加完後實數 181</p><p class="hunk-rel">關聯：N-2;刪 check 必連地板</p><div class="diff">
+<div class="ln del"><span class="m">-</span>MIN_CHECKS = &lt;舊實數&gt;</div>
+<div class="ln add"><span class="m">+</span>MIN_CHECKS = 181</div>
+</div></details>
+<details class="hunk" open><summary>Requested solution · <code>_templates/1-discussion.md</code> L76-81 <span class="tag base">T-2</span></summary><p class="hunk-why">改什麼：Goals 只寫工作結果;構想進 Requested solution</p><p class="hunk-rel">關聯：S4-accept「從哪裡看出結果發生」;example 同期改口</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>## Goals</div>
+<div class="ln add"><span class="m">+</span>&lt;!-- 條列,可驗證的「想達成」。只寫工作結果,不把畫面／API／元件寫成目標本身。 --&gt;</div>
+<div class="ln add"><span class="m">+</span></div>
+<div class="ln add"><span class="m">+</span>## Requested solution</div>
+<div class="ln add"><span class="m">+</span>&lt;!-- 解法構想(未定案)。「我要 dashboard／某 API／某元件」寫這裡,並標未定案。 --&gt;</div>
+</div></details>
+<details class="hunk" open><summary>怎麼看到 · <code>skills/dev-talk/nodes/S4-accept.md</code> L18-22 <span class="tag base">T-2</span></summary><p class="hunk-why">改什麼：從哪看改問結果發生,不把畫面／端點當 Goal</p><p class="hunk-rel">關聯：模板驗收雛形不再預填畫面路徑 \| API 端點</p><div class="diff">
+<div class="ln del"><span class="m">-</span>不綁做法),每條再問出「怎麼看到」三件:①從哪裡看(畫面/端點/檔案/log)</div>
+<div class="ln add"><span class="m">+</span>不綁做法),每條再問出「怎麼看到」三件:①從哪裡看出結果發生(不把畫面/</div>
+<div class="ln add"><span class="m">+</span>端點/元件當成 Goal 本身)</div>
+</div></details>
+<details class="hunk" open><summary>N3 前綴 · <code>skills/dev-talk/nodes/N3-probe.md</code> L23-30 <span class="tag base">T-3</span></summary><p class="hunk-why">改什麼：發現｜禁附推薦;裁決｜可附選;兩輪只標輔助</p><p class="hunk-rel">關聯：SKILL 入口摘要／guide 原文必須 substring-sync</p><div class="diff">
+<div class="ln del"><span class="m">-</span>①一次只問一題、附推薦答案,同題多種解讀 → 列差異讓使用者選、**禁默選**;</div>
+<div class="ln add"><span class="m">+</span>①一次只問一題。發現題前綴字面 `發現｜`,禁附推薦;裁決題前綴字面 `裁決｜`,</div>
+<div class="ln add"><span class="m">+</span>可附本方案／Non-Goal／另開 slug 等選項。同題多種解讀 → 列差異讓使用者選、**禁默選**;</div>
+<div class="ln add"><span class="m">+</span>「連續兩輪無新問題」只標輔助,不是唯一完成條件。</div>
+</div></details>
+<details class="hunk" open><summary>seed_n3 · <code>scripts/test-architecture-guards.sh</code> L730-757 <span class="tag base">T-3</span></summary><p class="hunk-why">改什麼：隔離複本帶 N3;刪發現｜或裁決｜一邊必紅</p><p class="hunk-rel">關聯：realworld 在 N3 已改口後只盯 N3 正文</p><div class="diff">
+<div class="ln add"><span class="m">+</span>seed_n3() {</div>
+<div class="ln add"><span class="m">+</span>  d=$(seed "$1")</div>
+<div class="ln add"><span class="m">+</span>  mkdir -p "$d/skills/dev-talk/nodes"</div>
+<div class="ln add"><span class="m">+</span>  cp "$ROOT/skills/dev-talk/nodes/N3-probe.md" "$d/skills/dev-talk/nodes/"</div>
+<div class="ln add"><span class="m">+</span>  echo "$d"</div>
+<div class="ln add"><span class="m">+</span>}</div>
+<div class="ln add"><span class="m">+</span>D=$(seed_n3 dg0); expect pass check-realworld.sh "$D" "DG-0 N3 發現｜與裁決｜都在"</div>
+<div class="ln add"><span class="m">+</span>...</div>
+<div class="ln add"><span class="m">+</span>expect fail check-realworld.sh "$D" "DG-1 刪掉 N3 發現｜前綴必須紅"</div>
+<div class="ln add"><span class="m">+</span>expect fail check-realworld.sh "$D" "DG-2 刪掉 N3 裁決｜前綴必須紅"</div>
+</div></details>
+<details class="hunk" open><summary>detect_claim_shape · <code>scripts/check-realworld.sh</code> L401-423 <span class="tag base">T-4</span></summary><p class="hunk-why">改什麼：高影響列五值枚舉;點頭非獨源;ticket 解法不當 Observed</p><p class="hunk-rel">關聯：只吃 `### 高影響列`;S-8.4 同函式</p><div class="diff">
+<div class="ln add"><span class="m">+</span>def detect_claim_shape(fields):</div>
+<div class="ln add"><span class="m">+</span>    if status and status not in CLAIM_ENUM:</div>
+<div class="ln add"><span class="m">+</span>        return f"枚舉必須落在 {', '.join(sorted(CLAIM_ENUM))}"</div>
+<div class="ln add"><span class="m">+</span>    if nod and not reopen:</div>
+<div class="ln add"><span class="m">+</span>        return "點頭不是來源"</div>
+<div class="ln add"><span class="m">+</span>    if ticketish and status == "Observed":</div>
+<div class="ln add"><span class="m">+</span>        return "解法建議不當事實"</div>
+</div></details>
+<details class="hunk" open><summary>認可語意 · <code>skills/dev-talk/nodes/S1-survey.md</code> L29-31 <span class="tag base">T-4</span></summary><p class="hunk-why">改什麼：認可 ≠ 來源升格</p><p class="hunk-rel">關聯：SKILL S1 摘要同期;guide 原文 sync</p><div class="diff">
+<div class="ln del"><span class="m">-</span>   認可後的清單 = 本次「已核事實」。</div>
+<div class="ln add"><span class="m">+</span>   使用者認可代表確認理解,認可 ≠ 來源升格;高影響主張仍要可重開來源或</div>
+<div class="ln add"><span class="m">+</span>   Assumption+期限,不得把認可後清單當唯一來源。</div>
+</div></details>
+<details class="hunk" open><summary>C7 · <code>scripts/check-spec-gate.sh</code> L251-281 <span class="tag base">T-5</span></summary><p class="hunk-why">改什麼：有 Assumption refs 表才驗;open+過期日或 stage-2/3 → FAIL</p><p class="hunk-rel">關聯：resolved／oc-accepted 放行;無表 no-fire</p><div class="diff">
+<div class="ln add"><span class="m">+</span># ---- C7:Assumption refs(有表才發動;無表 no-fire,不誤殺舊 fixture)----</div>
+<div class="ln add"><span class="m">+</span>        if status == "open" and expired:</div>
+<div class="ln add"><span class="m">+</span>            c7_bad.append(f"L{n + 1} Assumption 過期仍 open:{line[:70]}")</div>
+<div class="ln add"><span class="m">+</span>    record("C7", not c7_bad, "Assumption refs 無過期 open(有表才驗)", c7_bad or [])</div>
+<div class="ln add"><span class="m">+</span>else:</div>
+<div class="ln add"><span class="m">+</span>    record("C7", True, "Assumption refs 無表 = no-fire")</div>
+</div></details>
+<details class="hunk" open><summary>detect_verdict_incomplete · <code>scripts/check-realworld.sh</code> L467-472 <span class="tag base">T-6</span></summary><p class="hunk-why">改什麼：ACCEPTED 殘行缺 role= 或 scenario= 必紅</p><p class="hunk-rel">關聯：既有 attestation 牙仍在;模板不要求全表</p><div class="diff">
+<div class="ln add"><span class="m">+</span>def detect_verdict_incomplete(text):</div>
+<div class="ln add"><span class="m">+</span>    for match in re.finditer(r"Human verdict:\s*(.+)", text):</div>
+<div class="ln add"><span class="m">+</span>        line = match.group(1)</div>
+<div class="ln add"><span class="m">+</span>        if re.match(r"ACCEPTED\b", line) and ("role=" not in line or "scenario=" not in line):</div>
+<div class="ln add"><span class="m">+</span>            return "ACCEPTED 殘行缺 role= 或 scenario="</div>
+</div></details>
+<details class="hunk" open><summary>Human verdict · <code>_templates/3-prototype.md</code> L129-129 <span class="tag base">T-6</span></summary><p class="hunk-why">改什麼：一行加 role=／scenario= 槽</p><p class="hunk-rel">關聯：example 3-prototype 同期</p><div class="diff">
+<div class="ln del"><span class="m">-</span>- Human verdict: ACCEPTED | REVISE | NOT_REVIEWED</div>
+<div class="ln add"><span class="m">+</span>- Human verdict: ACCEPTED | REVISE | NOT_REVIEWED | role=&lt;Actors 表角色&gt; | scenario=&lt;AC-id 或 Demo Script 場景名&gt;</div>
+</div></details>
+<details class="hunk" open><summary>C9 · <code>scripts/check-spec-gate.sh</code> L319-346 <span class="tag base">T-7</span></summary><p class="hunk-why">改什麼：有表必驗去向／下落;discovery-gaps + full 缺表必紅</p><p class="hunk-rel">關聯：subsidy 等舊 full 無表 no-fire</p><div class="diff">
+<div class="ln add"><span class="m">+</span># ---- C9:Real-world Disposition(有表必驗;discovery-gaps + full 缺表必紅)----</div>
+<div class="ln add"><span class="m">+</span>            if dest == "本方案處理" and not re.search(r"\b[RS]-\S+", drop):</div>
+<div class="ln add"><span class="m">+</span>                c9_bad.append(f"L{n + 1} 本方案處理下落必須有 R- 或 S-")</div>
+</div></details>
+<details class="hunk" open><summary>4B 字面 · <code>docs/dev/requirement-discovery-gaps/2-decision.md</code> L44-44 <span class="tag base">T-7</span></summary><p class="hunk-why">改什麼：駁回格不再寫會被 `RW-[0-9]` 咬到的示範 id</p><p class="hunk-rel">關聯：D-1;Decision 4A 不動</p><div class="diff">
+<div class="ln del"><span class="m">-</span>| 4B | 發明 `RW-1`… 第二條 ID 鏈，R/S 引用 RW-id | …</div>
+<div class="ln add"><span class="m">+</span>| 4B | 發明第二鏈編號（大寫 R、大寫 W、連字號、一位數字）第二條 ID 鏈，R/S 引用該 id | …</div>
+</div></details>
+<details class="hunk" open><summary>missing_lookback · <code>scripts/check-realworld.sh</code> L501-508 <span class="tag base">T-8</span></summary><p class="hunk-why">改什麼：已出現回看節才驗四欄;缺「低於何值重開」紅</p><p class="hunk-rel">關聯：舊 7-review 無節 no-fire;模板禁 lookback.md 字面</p><div class="diff">
+<div class="ln add"><span class="m">+</span>def missing_lookback(text):</div>
+<div class="ln add"><span class="m">+</span>    present = any(field in text for field in LOOKBACK_FIELDS) or (</div>
+<div class="ln add"><span class="m">+</span>        "回看" in text and "Exit" in text)</div>
+<div class="ln add"><span class="m">+</span>    if not present:</div>
+<div class="ln add"><span class="m">+</span>        return None</div>
+<div class="ln add"><span class="m">+</span>    return [field for field in LOOKBACK_FIELDS if field not in text]</div>
+</div></details>
+<details class="hunk" open><summary>回看約定 · <code>_templates/7-review.md</code> L343-348 <span class="tag base">T-8</span></summary><p class="hunk-why">改什麼：Exit 加四欄;結果走 history-append.sh</p><p class="hunk-rel">關聯：example 7-review 一行四欄;renderer 衍生 html</p><div class="diff">
+<div class="ln add"><span class="m">+</span>- [ ] **回看約定**(四欄必填;結果到期用 `scripts/history-append.sh` 追加,不另造永久回看檔):</div>
+<div class="ln add"><span class="m">+</span>      - 回看日期:</div>
+<div class="ln add"><span class="m">+</span>      - 回看 owner:</div>
+<div class="ln add"><span class="m">+</span>      - 資料來源:</div>
+<div class="ln add"><span class="m">+</span>      - 低於何值重開:</div>
+</div></details>
+<details class="hunk" open><summary>Read 分支 · <code>hooks/devtalk-guard.sh</code> L20-72 <span class="tag base">T-9</span></summary><p class="hunk-why">改什麼：talk 游標在時 Read 方案檔永禁;manifest 核准≠是禁</p><p class="hunk-rel">關聯：DEVTALK_MANIFEST 測試縫;游標不在走舊寫入洩漏</p><div class="diff">
+<div class="ln add"><span class="m">+</span>if [ "$TOOL" = "Read" ]; then</div>
+<div class="ln add"><span class="m">+</span>    ...</div>
+<div class="ln add"><span class="m">+</span>if sol:</div>
+<div class="ln add"><span class="m">+</span>    print('方案檔', file=sys.stderr)</div>
+<div class="ln add"><span class="m">+</span>    sys.exit(2)</div>
+<div class="ln add"><span class="m">+</span>if listed is not None:</div>
+<div class="ln add"><span class="m">+</span>    if approved != '是':</div>
+<div class="ln add"><span class="m">+</span>        sys.exit(2)</div>
+</div></details>
+<details class="hunk" open><summary>Evidence manifest · <code>_templates/1-discussion.md</code> L93-97 <span class="tag base">T-9</span></summary><p class="hunk-why">改什麼：同檔五欄核准表</p><p class="hunk-rel">關聯：guard 讀字面;example 同期</p><div class="diff">
+<div class="ln add"><span class="m">+</span>## Evidence manifest</div>
+<div class="ln add"><span class="m">+</span>&lt;!-- 討論期想讀的事實路徑。owner 核准 ∈ {是, 未核, 禁}。核准=是才能讀;</div>
+<div class="ln add"><span class="m">+</span>     2-decision／3-prototype／4-spec／5-tasks／6-implementation-notes／7-review 即使誤寫「是」仍禁。 --&gt;</div>
+<div class="ln add"><span class="m">+</span>| 想找哪類 | 為什麼 | 擬路徑或來源 | owner 核准 | 已讀 |</div>
+</div></details>
+<details class="hunk" open><summary>C8 · <code>scripts/check-spec-gate.sh</code> L283-317 <span class="tag base">T-10</span></summary><p class="hunk-why">改什麼：僅 lane:fast 且(有表或 discovery-gaps)才驗六問／去向</p><p class="hunk-rel">關聯：命中後去向不得 Fast／待裁／空白;full no-fire</p><div class="diff">
+<div class="ln add"><span class="m">+</span># ---- C8:Fast early risk triage(僅 lane: fast;discovery-gaps 或缺表／有表都驗)----</div>
+<div class="ln add"><span class="m">+</span>        if any(not a.strip() for _, a, _ in answers) or len(answers) &lt; 6:</div>
+<div class="ln add"><span class="m">+</span>            c8_bad.append("Fast 六問答欄空白或不足")</div>
+<div class="ln add"><span class="m">+</span>        if yes_hits:</div>
+<div class="ln add"><span class="m">+</span>            if dest in ("", "待裁", "Fast"):</div>
+<div class="ln add"><span class="m">+</span>                c8_bad.append("命中後去向必須是 full／fast+mini／OC,不得空白、待裁或 Fast")</div>
+</div></details>
+<details class="hunk" open><summary>Fast triage 節 · <code>_templates/4-spec.md</code> L112-126 <span class="tag base">T-10</span></summary><p class="hunk-why">改什麼：ADDED 之前放六問表</p><p class="hunk-rel">關聯：SKILL「進 4 前六問」;full 可省略</p><div class="diff">
+<div class="ln add"><span class="m">+</span>## Fast early risk triage</div>
+<div class="ln add"><span class="m">+</span>| 改變下一步？ | |</div>
+<div class="ln add"><span class="m">+</span>| 改權限／核准語意？ | |</div>
+<div class="ln add"><span class="m">+</span>| 改等待／完成語意？ | |</div>
+<div class="ln add"><span class="m">+</span>| 改角色交接？ | |</div>
+<div class="ln add"><span class="m">+</span>| 改系統外動作？ | |</div>
+<div class="ln add"><span class="m">+</span>| 改中斷恢復？ | |</div>
+</div></details>
+<details class="hunk" open><summary>spec-gate 九項 · <code>skills/dev-flow/SKILL.md</code> L108-112 <span class="tag base">T-10</span></summary><p class="hunk-why">改什麼：G2 文案六項 → 九項(C7/C8/C9)</p><p class="hunk-rel">關聯：check-spec-gate 檔頭同步</p><div class="diff">
+<div class="ln del"><span class="m">-</span>  `bash &lt;master&gt;/scripts/check-spec-gate.sh docs/dev/&lt;slug&gt;/4-spec.md`。它查六項,</div>
+<div class="ln del"><span class="m">-</span>  一項一條、六項都要過:</div>
+<div class="ln add"><span class="m">+</span>  `bash &lt;master&gt;/scripts/check-spec-gate.sh docs/dev/&lt;slug&gt;/4-spec.md`。它查九項,</div>
+<div class="ln add"><span class="m">+</span>  一項一條、九項都要過(C1–C6 原形 + C7 Assumption refs／C8 Fast 六問／C9 Disposition):</div>
+</div></details></section>
+<p class="src">由 <code>scripts/build-stage6-html.py</code> 從 md ## Diff 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>

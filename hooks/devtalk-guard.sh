@@ -13,6 +13,64 @@ INPUT=$(cat)
 FILE=$(printf '%s' "$INPUT" | "$DEVFLOW_PY" -c "import json,sys
 try: print(json.load(sys.stdin).get('tool_input',{}).get('file_path',''))
 except Exception: pass" 2>/dev/null)
+TOOL=$(printf '%s' "$INPUT" | "$DEVFLOW_PY" -c "import json,sys
+try: print(json.load(sys.stdin).get('tool_name',''))
+except Exception: pass" 2>/dev/null)
+
+# Read 分支:talk 游標在時放行 manifest 核准=是;仍禁 2–7;未核不得當已授權。
+# 游標不在 → 維持今日只掃 skills/dev-talk/* 寫入洩漏。
+if [ "$TOOL" = "Read" ]; then
+  READ_RC=$(printf '%s' "$FILE" | "$DEVFLOW_PY" -c "
+import os, re, sys
+file_path = sys.stdin.read().strip()
+cwd = os.getcwd()
+cursor = os.path.join(cwd, '.devtalk-cursor.json')
+if not os.path.isfile(cursor):
+    sys.exit(0)
+norm = file_path.replace('\\\\', '/')
+sol = re.search(r'(?:^|/)(2-decision|3-prototype|4-spec|5-tasks|6-implementation-notes|7-review)(?:\\.(?:md|html))?$', norm)
+man = os.environ.get('DEVTALK_MANIFEST', '')
+rows = []
+if man and os.path.isfile(man):
+    text = open(man, encoding='utf-8').read()
+    in_man = False
+    for line in text.splitlines():
+        if line.startswith('## Evidence manifest'):
+            in_man = True
+            continue
+        if in_man and line.startswith('## '):
+            break
+        if in_man and line.strip().startswith('|'):
+            cells = [c.strip().strip('\`') for c in line.strip().strip('|').split('|')]
+            if len(cells) >= 4 and cells[0] != '想找哪類' and not set(cells[1]) <= set('-:'):
+                rows.append(cells)
+listed = None
+for cells in rows:
+    listed_path = cells[2]
+    if listed_path and (norm.endswith(listed_path) or listed_path in norm):
+        listed = cells
+        break
+if sol:
+    print('方案檔', file=sys.stderr)
+    print(sol.group(1), file=sys.stderr)
+    sys.exit(2)
+if listed is not None:
+    approved = listed[3] if len(listed) > 3 else ''
+    if approved != '是':
+        print('未核不得當已授權', file=sys.stderr)
+        sys.exit(2)
+sys.exit(0)
+" 2>/tmp/devtalk-guard-read.err)
+  RC=$?
+  if [ "$RC" -eq 2 ]; then
+    {
+      echo "⛔ devtalk-guard:Read 圍欄 —— 方案檔仍禁,或核准≠是:"
+      cat /tmp/devtalk-guard-read.err 2>/dev/null
+    } >&2
+    exit 2
+  fi
+fi
+
 case "$FILE" in
   */skills/dev-talk/*) : ;;
   *) exit 0 ;;
