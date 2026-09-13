@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>five-station-simplify · 2-decision</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+a.cell{text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px}
+.group{margin:0 0 16px}
+.group h3{margin:0 0 8px;font-size:.95rem}
+.card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 8px;background:var(--sunk)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+details.bg{margin:10px 0 0}
+details.bg>summary{cursor:pointer;color:var(--ink-2)}
+table.judge{width:100%;border-collapse:collapse;font-size:.86rem;margin:0}
+table.judge th,table.judge td{border:1px solid var(--rule);padding:6px 8px;
+  text-align:left;vertical-align:top}
+table.judge th{background:var(--sunk);font-weight:650}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 2-decision · 審查介面</p>
+  <h1>five-station-simplify</h1>
+  <p class="sub">正本是 md。這頁是審頁分組卡,不是 gate-twin 勾選卡。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">draft</span></div><div class="cell"><span class="k">分組</span><span class="v">5</span></div><div class="cell"><span class="k">方案</span><span class="v">15</span></div></div>
+</header>
+<section class="r-block" id="decision">
+  <div class="r-head"><span class="r-name">Decision</span></div>
+  <div class="r-body">
+    <p>採 **A + D + G + J + M**。Goal 維持結果、不解成施工：人預設只在出貨停下來寫判定，中間謂詞假 = 停在該站修、不是改問人（G-out-1）；摺站之後 M1–M16 每一項仍成立，少一項是違規不是簡化成功（G-out-2）；後來寫規格／切任務的人，不能把「已經五站了」當成省略 ID 鏈、反模糊、T 四欄或 RED→獨立審查 seam 的理由，省略後的勾選仍看得出是未完成（G-out-3）；殺掉的是例行等人，Agent 代寫 `ACCEPTED`／Ship `PASS`、無 attestation 的 `ACCEPTED` 仍當沒寫（G-out-4）；已開工 slug 與舊契約讀舊 7 不一次變紅（G-out-5）；命中互動 trigger 時人仍親做 Demo 並寫 attestation，沒命中不產頁、不等第二次人（G-out-6）；本討論列出的 Must-keep 與現場痛點每條都有去向（G-out-7）；本 slug 自己出貨路徑仍是舊 7 直到 Ship，不拿自己當新 5 白老鼠（G-out-8）。 範圍：本 Decision 鎖定**怎麼綁** Must-keep／拒收謂詞／去向／Q11／dual-read 原則，供後站 4-spec 寫 R／S。F0 十條（五站別名、殺例行停、Ship 唯人、條件頁、UI twin 條件、Must-keep、dual-read 2.1.0、F0–F3 切刀、in-flight 凍舊 7、禁刪 G1／G2／`ACCEPTED`）**不重開**。本 hop 不改模板／graph／gate、不寫 coordinator、不 bump 契約。</p>
+  </div>
+</section>
+<section class="r-block" id="fig">
+  <div class="r-head"><h2 class="r-name">方案架構圖</h2></div>
+  <div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 378" role="img" aria-label="選定方案步驟">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">[A] Must-keep 當約束(選定)</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">[D] 拒收謂詞升 OC(選定)</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="b" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">[G] 空 attestation 拒(選定)</text>
+  <path class="flow" d="M140,216 L140,238"/>
+  <rect class="b" x="40" y="238" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="262">[J] Q9 去向語法(選定)</text>
+  <path class="flow" d="M140,292 L140,314"/>
+  <rect class="b" x="40" y="314" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="338">[M] dual-read 原則交 F1(選定)</text>
+</svg>
+  </div></div>
+</section>
+
+<section class="r-block" id="owner-calls">
+<div class="r-head"><h2>Owner Calls</h2></div>
+<div class="r-body"><table class="judge">
+<tr><th>OC</th><th>決定了什麼</th><th>依據</th><th>若被推翻會怎樣</th><th>狀態</th></tr>
+<tr><td>OC-1</td><td>RP-1…RP-16 是 F1 牙**最小集**：annex 只准加、不准減。使用者只鎖 Q7 三句＋「牙對 M 表」；把狀態機 §6 與 M1／M9／M10／M14 一併釘死是 owner 延伸</td><td>`1-discussion.md:L175` Q7；`L199-L215` 拒收欄；狀態機 §6。延伸本身 `[Assumption]`（§6 八條與 M 表對齊是本檔對帳）</td><td>F1 可刪 RP；SC-9 與 4-spec 對帳清單要重寫</td><td>待人審</td></tr>
+<tr><td>OC-2</td><td>本 slug 後站文檔若把 M1／M3／M11 或四欄／seam 標成可選，擋本 slug G2。這是對 Assumption「後站會偷 M」的 Stage 2 對帳，不是新 Goal</td><td>`1-discussion.md:L107`；`L125`</td><td>可選四欄可進 4-spec；假完成 T 變合法簡化</td><td>待人審</td></tr>
+<tr><td>OC-3</td><td>F1 牙只准長在 `scripts/` 與 annex，不准改 Stage 1–4 模板。使用者 Backlog B 已凍模板；「本 slug F1 也遵守」是收窄到本 feat</td><td>`1-discussion.md:L181`；`L29`；`L36` STATUS Backlog B</td><td>F1 可改 4-spec 模板句；與 F0 OC-10／觀測凍結衝突</td><td>待人審</td></tr>
+<tr><td>OC-4</td><td>Q6 過期仍擋**本 slug G2**；不得把「採用現場都蓋章」寫成已核事實。使用者已鎖期限；本檔只收進 OC</td><td>`1-discussion.md:L104`；`L123`；`L183`</td><td>可把採用蓋章當 G2 事實；殺等待的現場理由被誇大</td><td>待人審</td></tr>
+<tr><td>OC-5</td><td>Q8 欄位名與舊檔不紅缺省**不在本 Decision 發明**，只准 F1 annex。使用者把 Q8 標 `[&gt;]`；「本檔連候選欄位名都不寫」是收窄</td><td>`1-discussion.md:L177` Q8</td><td>4-spec／本檔先發明欄位；F1 annex 變追認</td><td>待人審</td></tr>
+<tr><td>OC-6</td><td>本 slug 整段舊 7 到 Ship，禁止當新 5 第一個白老鼠。使用者 Q12 已鎖；寫進 OC 是流程層複述，防後站「順便試五站 hop」</td><td>`1-discussion.md:L181` Q12；`L146` G-out-8</td><td>本 slug 可被寫入五站狀態；觀測被自己污染</td><td>待人審</td></tr>
+<tr><td>OC-7</td><td>Q10 coordinator event 與 cap **計數落點**移交 F2；本檔不選 event schema。cap 數字本身已鎖，不准暗改。使用者標 `[&gt;]`；「schema 不在本檔」是收窄</td><td>`1-discussion.md:L178` Q10；`L186` rewrite cap</td><td>本檔或 F1 先發明 schema／放寬 cap</td><td>待人審</td></tr>
+<tr><td>OC-8</td><td>不可逆才 Quiz；不准把 Quiz 加回每次例行第三個人停。使用者 Goal 是少等人；「Quiz ≠ 預設第三停」是對 M14 的收窄複述</td><td>`1-discussion.md:L213` M14；`L139` G-out-1</td><td>Quiz 變每 feat 必停；或不可逆無 Quiz 也能合</td><td>待人審</td></tr>
+<tr><td>OC-9</td><td>本 hop **不**寫「跳過 Stage 3」。觸發判定留給第 3 站開場。無「Stage 3」+「跳過」流程層放行</td><td>`_templates/3-prototype.md` 觸發判定（討論 L47 引用）；模板跳過須人類明示</td><td>本檔先跳過 Stage 3；有 trigger 也無 Demo 紀錄</td><td>待人審</td></tr>
+</table></div></section>
+<section class="r-block" id="point-1"><div class="r-head"><span class="r-name">決策點：Must-keep 防掏空綁法</span></div><div class="r-body"><div class="card"><strong>A 約束+去向+牙</strong><p>M1–M16 與 T 四欄／seam 寫進 Decision 約束；高影響列用 Q9 去向；後站用「已五站」省略 = 違規不是簡化 優:對準 C 線假完成；Stage 2 對帳可擋「可選四欄」；Goal 仍是結果句 劣:約束面長；F1 才有牙咬 依據:`1-discussion.md:L138-L147` G-out-2／3／7；`L195-L215` 帶走表；`L172-L177` Q7／Q9。成本 `[Assumption]`</p></div><div class="card"><strong>B 只當 brief 備忘</strong><p>摺等待；Must-keep 留在 F0 brief，本檔不升約束 優:文短 劣:後站可裝沒看見；Assumption「會偷 M」過期擋不住 Decision 寫可選 依據:`1-discussion.md:L15` 假完成；`L107` 後站會偷 M；`L125` 過期擋把可選四欄寫進 Decision；`L307-L310` 偷 M11 = 假完成 T</p></div><div class="card"><strong>C 另發 Must-keep ID 鏈</strong><p>給 M 新的 R／S 家族 優:機器好追 劣:違 Q9 與 Non-Goals；第二條鏈 依據:`1-discussion.md:L165` 不新增第二條 ID 鏈；`L177` Q9 不另發 ID</p></div></div></section>
+<section class="r-block" id="point-2"><div class="r-head"><span class="r-name">決策點：F1 拒收謂詞落點</span></div><div class="r-body"><div class="card"><strong>D 升成本方案要求+OC</strong><p>Q7＋M 表拒收句＋狀態機 §6 最小咬集合進本方案要求；OC 釘「只准加不准減」 優:後站不能裝沒看見；F1 有對帳清單 劣:謂詞形狀細節仍交 annex 依據:`1-discussion.md:L175` Q7 最小集已鎖；`L199-L215` F1 拒收謂詞欄；狀態機 §6 見 brief 並列檔。成本 `[Assumption]`</p></div><div class="card"><strong>E 形狀全交 F1</strong><p>本檔只寫「會有牙」 優:本 hop 最短 劣:規格／任務可先把四欄寫成可選；牙落地時已晚 依據:`1-discussion.md:L175` 最小集**已鎖**不是未定案；`L125` Stage 2 對帳就是擋這招</p></div><div class="card"><strong>F 現改 gate／模板</strong><p>把拒收句寫進 `_templates/` 或 gate token 優:機械立刻咬 劣:違 F0 OC-10 與 Backlog B；本 hop 禁施工 依據:`1-discussion.md:L29` F0 不准改模板／graph／牙；`L158` 本 hop 不改 `_templates/`；`L181` 牙只准 scripts／annex</p></div></div></section>
+<section class="r-block" id="point-3"><div class="r-head"><span class="r-name">決策點：Q11 空 attestation</span></div><div class="r-body"><div class="card"><strong>G 空欄仍機械拒</strong><p>B1 命中且 attestation 空 → 不得 hop 出 Spec；五站後同一拒；chat「准開下一站」≠ attestation 優:補上 dogfood 洞；對齊 G-out-4／6 劣:現場不能再靠口頭章跳 Demo 依據:`1-discussion.md:L179` Q11 現行牙已拒、五站後要保持；`L85`／`L241` AC-4；`L113` dogfood 空欄仍開 4</p></div><div class="card"><strong>H chat 准開可當 attestation</strong><p>口頭「可以」視同人簽 優:摩擦低 劣:重演 Treat as PASS；蓋章從 G1 搬到 Demo 依據:`1-discussion.md:L93-L95` workaround 就是 chat 蓋章；`L142` G-out-4 Agent 代寫仍當沒寫</p></div><div class="card"><strong>I 只警告不擋 hop</strong><p>空欄 warning-only 優:不擋前進 劣:假完成 hop；違「現行牙已拒」 依據:`1-discussion.md:L179` 要保持機械拒，不是降成 warning</p></div></div></section>
+<section class="r-block" id="point-4"><div class="r-head"><span class="r-name">決策點：Must-keep 去向語法</span></div><div class="r-body"><div class="card"><strong>J 採 Q9 種子</strong><p>`M11 → R-x/S-y \ 優:Non-Goal:&lt;reason&gt;`；不另發 ID；每條高影響 M 必有去向 劣:與討論種子一致；Stage 4 可對帳 依據:低</p></div><div class="card"><strong>K 新 ID 家族</strong><p>另發明 M-R／M-S 優:看起來更「規格化」 劣:第二條鏈；違 Q9／Non-Goals 依據:`1-discussion.md:L165`；`L177`</p></div><div class="card"><strong>L 只敘事不去向表</strong><p>散文說「Must-keep 都要留」 優:寫起來快 劣:AC-7 對不到列；條目可無聲消失 依據:`1-discussion.md:L145` G-out-7；`L250-L253` AC-7 要形去向</p></div></div></section>
+<section class="r-block" id="point-5"><div class="r-head"><span class="r-name">決策點：Q8 dual-read 本檔鎖到哪</span></div><div class="r-body"><div class="card"><strong>M 原則鎖、欄位交 F1</strong><p>鎖：`2.0.0` 舊 7 不因 2.1.0 一次變紅；未 upgrade = 舊 7；doctor 綠 ≠ 路線沒變。欄位名／缺省不在本檔發明 優:不偷做 F1 annex；帶走 hop 身分 劣:annex 仍要寫欄位 依據:`1-discussion.md:L177` Q8 移交 F1；`L187` 採用 hop 身分；`L160-L167` brief 遷移（討論 L34／L57）</p></div><div class="card"><strong>N 本檔寫死 annex 欄位名</strong><p>Decision 先發明 dual-read 欄位 優:F1 少爭一次 劣:F0 寫明 annex 才寫；本 hop 會偷刀 依據:`1-discussion.md:L154` F1 才釘牙與 dual-read annex；`L177` Q8 `[&gt;]`</p></div><div class="card"><strong>O doctor 綠=路線沒變</strong><p>用握手綠當「沒被遠端改線」 優:現場好記 劣:討論已證 marketplace 可換 hops 而 doctor 仍綠 依據:`1-discussion.md:L187`；`L327-L330`</p></div></div></section>
+<details class="bg"><summary>背景</summary><p><strong>Rationale</strong> C 線的第一因不是「五站別名還沒取好」，而是摺掉例行等人之後，Spec／Build 最容易用完整度填那個洞。Goal 是結果（人只在出貨停、M 全留、勾選看得到未完成），不是施工單。A 把 M 表與四欄／seam 升成 Decision 約束，讓後站省略必須留下去向或被看成違規。D 把已鎖的 F1 拒收謂詞寫進本方案要求＋OC「只准加不准減」，避免 E 把牙推成「形狀全交後刀、本檔不鎖」。G 守住 dogfood 已踩過的空 attestation 洞，不讓 H／I 把蓋章搬到 Demo。J 用討論已給的 Q9 種子，不另發明鏈。M 只鎖 dual-read 原則與 hop 身分，欄位留給 F1，避免 N 偷刀、O 誤讀 doctor。 F0 已鎖的五站路線、殺例行停、Ship 唯人、條件頁、禁刪 token，本檔當約束引用，不當再比一次的方案。重比那些 = 新 brief。</p><p><strong>風險</strong> | 風險 | 對策 | |---|---| | 後站仍把 M11／M3／M1 寫成可選 | OC-2：出現「可選四欄／可選 seam／已五站故省反模糊」→ 本 slug G2 擋；Assumption「會偷 M」在本站按「會偷」處理 | | F1 annex 減掉本表 RP | OC-1：最小集只准加不准減；減項 = 翻本 Decision，回本站 | | Q6「採用現場也蓋章」為假 | 殺例行停的現場理由變弱，Must-keep 仍在；過期擋本 slug G2，不得把該假設當已核事實 | | 本檔約束面長，被看成已施工 | 正文反覆寫「F0 不重開、本 hop 零模板／零牙／零 coordinator」；施工落 F1–F3 | | 把本 slug 當新 5 白老鼠 | G-out-8＋OC-6；目錄已有站檔 = in-flight 舊 7 到 Ship | | Quiz 被加回每次例行第三停 | RP-7＋OC-10；Quiz 只綁不可逆，可與 Ship 同一次人停 | | dual-read 欄位在 4-spec 被先發明 | OC-7：欄位名／舊檔缺省只准 F1 annex；4-spec 只准引用原則 | | 空 attestation 被 chat 蓋過 | 方案 G：口頭准開 ≠ attestation；RP-13 |</p><p><strong>未採</strong> - B:只把 Must-keep 當 brief 備忘，後站可裝沒看見；擋不住「可選四欄」寫進 Decision。 - C:另發 Must-keep ID 鏈，違 Q9 與「不新增第二條鏈」。 - E:拒收謂詞形狀全交 F1，本檔不升約束，規格可先把四欄寫成可選。 - F:現改 gate／模板把謂詞寫進去，違 F0 OC-10 與 Backlog B。 - H:chat「准開」當 attestation，重演 dogfood 蓋章，違 G-out-4。 - I:空 attestation 只警告不擋 hop，把已鎖的機械拒降成軟提醒。 - K:新 ID 家族，第二條鏈。 - L:只敘事不去向表，G-out-7／AC-7 對不到列。 - N:本檔寫死 dual-read 欄位名，偷做 F1 annex。 - O:把 doctor 綠當成路線沒變，忽略 marketplace 可換 hops。</p></details>
+<p class="src">由 <code>scripts/build-stage2-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
