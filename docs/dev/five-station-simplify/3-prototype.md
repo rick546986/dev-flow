@@ -1,18 +1,18 @@
 ---
 feature: five-station-simplify
 stage: 3-prototype
-status: draft
+status: approved
 owner: rick
-reviewers: []
+reviewers: [user]
 updated: 2026-09-14
 ---
 
 # 3. 原型 — 鎖定 Decision 人點得完嗎？（五站 vs 舊 7、A/B、假完成）
 
-> Lane = **full**。G1 已核（`2-decision.md` `verdict: PASS`、OC-1…OC-11 ✅）。coordinator 三線決勝選本檔（#306）；吸收 B（#307）／C（#305）為 soft-fix。本 hop **只本檔 + 審頁 html**；不改 `_templates/`／`graph.yaml`／gate／`scripts/` 牙、不改 STATUS／HISTORY（STATUS 另伴 PR）、不改 `2-decision.md`、不發明 Human `ACCEPTED`。
+> Lane = **full**。G1 已核（`2-decision.md` `verdict: PASS`、OC-1…OC-11 ✅）。coordinator 三線決勝選本檔（#306）；吸收 B（#307）／C（#305）為 soft-fix。本 hop **只本檔 + 審頁 html**：owner chat「接受」= Human Demo ACCEPTED。不改 `_templates/`／`graph.yaml`／gate／`scripts/` 牙、不改 STATUS／HISTORY（STATUS 另伴 PR）、不改 `2-decision.md`、**不發明 G2 PASS**、不開 Stage 4。
 > 2-decision 無「Stage 3」+「跳過」流程層 OC → **不跳過**。1A–7A 已是核准 Pattern → **1 個可操作 Demo（D1）**，不湊假互動 Variant。C 的「T 卡上就紅／hop 板／Ship 重建」是**人見面時機**，不是重開 1A–7A。
 > Demo 形式 = **狀態流程模擬器**（人依 Demo Script 點／比對卡）＋盤 5 對現檔實跑 `devflow-doctor.sh`／契約／marketplace。**PROTOTYPE — not production**。F1 牙不在本站落地。
-> Human verdict 由參與 Demo 的人類親填。Agent 禁代填 `ACCEPTED` 與 attestation。本檔 `status: draft` 直至人類 ACCEPTED + attestation。
+> Human verdict 由參與 Demo 的人類親填。owner chat 2026-09-14「接受」= ACCEPTED，已落 attestation `human:rick @ 2026-09-14`。本檔 `status: approved`。不送 G2、不開 4-spec。
 
 ## Stage 3 觸發判定(條件式必要)
 <!-- 對照 1-discussion Real-world Context：Actors／Journey／Workarounds／Exceptions -->
@@ -42,14 +42,14 @@ updated: 2026-09-14
 答案長什麼樣才算回答了：
 - 每張好卡／壞卡人能指出**下一步**、**等不等**、**誰准寫判定**、**空／錯／權限不足怎麼辦**。
 - 壞卡（假完成 T、空 attestation、doctor 綠=已切、本 slug 當新 5 白老鼠）一眼是拒絕，不是「簡化成功」。
-- 選定 Demo 只有 D1；人見面時機選定 **T 卡上就紅**（hop 板／Ship 重建 = 晚發現，棄）。本 hop **不**改 2-decision 正文（回寫列名留給 Human ACCEPTED 之後）。
+- 選定 Demo 只有 D1；人見面時機選定 **T 卡上就紅**（hop 板／Ship 重建 = 晚發現，棄）。本 hop **不**改 2-decision 正文（只落 Human ACCEPTED；回寫列名不在本 hop，不開 Stage 4）。
 
 ## Method
 - 實驗位置:本檔 Method 節的操作盤（**PROTOTYPE — not production**；純資料／紙上狀態機；不進 throwaway code、不改 `_templates/`／`scripts/`／`graph.yaml`）
 - Demo 形式:**狀態流程模擬器**（人依 Demo Script 走同一條 slug 的好卡 vs 壞卡）
 - 1A–7A 已 lock → **Demo D1 狀態流程模擬器（選定）**；不做假互動 Variant（同流程換字不算）。人見面時機另比三格（見盤 3），不是重開 6A
 - 驗法:用 Stage 1 AC-1／AC-3／AC-4／AC-5／AC-6／AC-8 + Decision SC-3／SC-9／SC-10 對照各走一遍；壞卡當負向。**不**把 AC-5 拿去貼 doctor 綠／dual-read（那是 SC-9／SC-10；AC-5 = G-out-5 舊檔不紅＋F3 cut 仍舊 7）
-- 本站**不**回寫 2-decision（Human verdict 未出）。確認紀錄「prototype 回寫」等人類 ACCEPTED
+- 本 hop **不**回寫 2-decision（只落 Human ACCEPTED；確認紀錄「prototype 回寫」不在本 hop，不開 Stage 4）。
 
 ### Demo D1 — 狀態流程模擬器（選定）
 
@@ -191,7 +191,7 @@ S-99  系統應適當處理錯誤（TBD，實作再定）
 | 壞卡 dogfood | Human verdict 空；attestation 空 | 「可以開 Stage 4」 | **不得離 Spec**（RP-13／OC-6）。chat 不是判定 |
 | 壞卡 Agent | Agent 寫入 `ACCEPTED` 或 Ship `PASS` | 「Treat as PASS」 | **視為未寫**（RP-16）。本 hop **不**示範填 ACCEPTED |
 
-本檔自己就是壞卡 dogfood 的**反面練習**：trigger 已命中、Human verdict = `NOT_REVIEWED`、attestation 空 → **語意上** G2 應拒，直到人類親填。Agent 不得把這段改成 ACCEPTED。
+本檔曾是壞卡 dogfood 的**反面練習**（trigger 已命中、Human verdict = `NOT_REVIEWED`、attestation 空 → 語意上 G2 應拒）。owner chat 2026-09-14「接受」已親裁 ACCEPTED + attestation。**仍不發明 G2 PASS**、不開 Stage 4。Agent 不得把 chat「可以／准開下一站」當成 attestation 替代（OC-6）；本欄是 owner 明示「接受」= Stage 3 Human ACCEPTED。
 
 **實跑假完成（本 hop 證據，不改牙；F1 記帳）**：`python3 hooks/_stage3_impl.py five-station-simplify` 把 2-decision 內部技術選擇「不預先跳過 Stage 3…（本檔無「跳過 Stage 3」流程層 OC）」讀成 skip OC（同一行同時命中 `Stage 3` 與「跳過」）。句子的意思是**不准跳**。勾選綠、語意紅——與 T-fake 同型。誠實改「有新的前端流程」未中之後命中數從 7→6，**誤 PASS 仍在**。本 hop 不改 `_stage3_impl.py`（F0／Backlog B；牙形交 F1）。人審本 Demo 時不要把這次誤 PASS 當成 Human ACCEPTED。
 
@@ -284,7 +284,7 @@ D1 selected: cards above; 1A-7A not reopened
 - 真實目標:B1 命中時無 attestation 不得離 Spec；Agent 寫 `ACCEPTED`／Ship `PASS` = 未寫
 - 起始狀態:盤 4 三張卡；對照 dogfood-ping DOGFOOD-NOTES L9
 - 操作步驟:先看好卡完整行；再看「欄空 + chat 可以開 Stage 4」；最後看 Agent 代填
-- 系統回應:壞卡不得 hop 出 Spec（RP-13）。代寫視為未寫（RP-16）。本檔現況 = NOT_REVIEWED，**正該**卡在本站
+- 系統回應:壞卡不得 hop 出 Spec（RP-13）。代寫視為未寫（RP-16）。Demo 當時本檔 = NOT_REVIEWED，**正該**卡在本站；owner 親裁後才 ACCEPTED
 - 系統外下一步:人類親做 Demo、親寫 attestation；不要叫 Agent 代填
 - 觀察問題:chat「可以」有沒有被當成 attestation？系統是否暗示 Agent 有權簽？
 
@@ -318,43 +318,43 @@ D1 selected: cards above; 1A-7A not reopened
 ### Scenario RP-14（否定「跳過」被牙當成已跳）
 - 使用者角色:G2 reviewer／F1 寫牙的人
 - 真實目標:「無跳過 Stage 3」不得被讀成 Owner Call 跳過
-- 起始狀態:2-decision 內部技術選擇該行；本檔 `NOT_REVIEWED`、attestation 空
+- 起始狀態:2-decision 內部技術選擇該行；Demo 當時本檔 `NOT_REVIEWED`、attestation 空
 - 操作步驟:跑 `python3 hooks/_stage3_impl.py five-station-simplify`；對照該行中文
 - 系統回應:2026-09-14 實跑 stdout `g2_demo=PASS`、`trigger_source=owner-call`，引用的正是「不預先跳過／無跳過」句。語意應 REJECT
 - 系統外下一步:F1 收緊 skip 謂詞（須同時否定「不／無／不得」）；本 hop 不改牙
 - 觀察問題:機械綠有沒有被當成「Stage 3 已跳過、可以開 Stage 4」？
 
 ## Result
-Agent 依 D1 走完各場（**不是** Human Demo）。答案:鎖定 Decision **點得完**——人只靠卡面就能分開「停點／完整度／握手／freeze」。回寫 2-decision 的條目見 Verdict；**本 hop 不改 2-decision**（等 Human ACCEPTED）。
+Agent 依 D1 走完各場（**不是** Human Demo）。答案:鎖定 Decision **點得完**——人只靠卡面就能分開「停點／完整度／握手／freeze」。回寫 2-decision 的條目見 Verdict；**本 hop 不改 2-decision**（只落 Human ACCEPTED；不開 Stage 4）。
 
 | 問 | 模擬器證據 | 壞卡一眼拒絕 |
 |---|---|---|
 | 1 舊7 vs 新5 | 盤 1：新 5 中間無「請審 A4／A7」；謂詞假停修 | 舊 7 三次等人被當成選定 |
 | 2 表 A／B | 盤 2：A4／A7 產且不等；A10 必等；A5 未命中 n-a | latch 未命中卻問人 |
 | 3 假完成＋時機 | 盤 3：T-fake = 未完成；**選定 T 卡上就紅**（對齊 SC-3／RP-1…3） | hop 板／Ship 重建晚發現；「已五站故可省四欄」 |
-| 4 空 attestation | 盤 4：chat 准開 ≠ 判定；本檔 NOT_REVIEWED **應**卡本站 | Agent 代填 ACCEPTED |
+| 4 空 attestation | 盤 4：chat 准開 ≠ 判定；Demo 當時 NOT_REVIEWED **應**卡本站；owner「接受」後才 ACCEPTED | Agent 代填 ACCEPTED |
 | 5 freeze×doctor | 盤 5 現檔表：契約 `2.0.0`＋doctor **COMPATIBLE／exit 0**＋marketplace `./`；握手不讀 hops。本目錄有 md → 舊 7。COMPATIBLE ≠ cut（SC-9／SC-10）。AC-5 只覆蓋「舊檔不紅」 | 本 slug 當新 5；doctor 綠當路線證據；把本題標成 AC-5 |
 | 6 跳過 OC 誤匹配 | 實跑 `_stage3_impl.py`：否定句「不預先跳過 Stage 3」被當成 skip | `g2_demo=PASS` 冒充已 Demo |
 
-選定互動 = **D1**（無第二互動方案）。選定人見面 = **T 卡上就紅**。未改模板、未寫 F1 牙、未切預設路線。Human verdict 仍 `NOT_REVIEWED`；**語意**不得過 G2。現行牙把否定跳過句讀成 skip（原始輸出見盤 4）——記給 F1，本 hop 不修。觸發「有新的前端流程」已誠實改未中（只方法論 UI）。
+選定互動 = **D1**（無第二互動方案）。選定人見面 = **T 卡上就紅**。未改模板、未寫 F1 牙、未切預設路線。Human verdict = `ACCEPTED` + `human:rick @ 2026-09-14`。STATUS Gates **仍** `G1✅ G2⬜ G3⬜`（不發明 G2 PASS）。現行牙把否定跳過句讀成 skip（原始輸出見盤 4）——記給 F1，本 hop 不修。觸發「有新的前端流程」已誠實改未中（只方法論 UI）。
 
 ## User Demo Feedback
-<!-- Human verdict 由參與 Demo 的人類親填；Agent 禁代填 ACCEPTED／attestation -->
-- Demo date:
-- Participants:
+<!-- owner chat 2026-09-14「接受」= Human ACCEPTED；attestation 按該裁決落檔。不送 G2、不開 Stage 4。 -->
+- Demo date: 2026-09-14（owner chat 同日「接受」）
+- Participants: owner rick（chat「接受」= Stage 3 Human ACCEPTED）
 - Variant reviewed: D1 狀態流程模擬器（選定；無第二互動 Variant）。人見面時機：T 卡上就紅（選定）；hop 板／Ship 重建（棄）
-- Accepted interaction:
-- Rejected interaction:
+- Accepted interaction: D1 狀態流程模擬器；人見面時機 T 卡上就紅
+- Rejected interaction: hop 板／Ship 重建（晚發現）
 - Confusions observed:
 - Missing real-world steps:
 - Permission corrections:
 - External handoffs:
 - Required changes:
-- Human verdict: NOT_REVIEWED | role=母版 owner | scenario=AC-1
-- Verdict attestation:
+- Human verdict: ACCEPTED | role=母版 owner | scenario=AC-1
+- Verdict attestation: human:rick @ 2026-09-14
 
 ## Verdict
-- **擬回寫 2-decision**（Human ACCEPTED 之後才動；本 hop 不動該檔）:確認紀錄加一行「prototype 回寫 \| 2026-09-14 \| Stage3-A D1＋吸收 B／C：SC-1／A-B／假完成（T 卡上就紅）／空 attestation／freeze×doctor 現檔表可走完；不重開 1A–7A」。Risks「寫手省 M11」「chat 帶走 attestation」「doctor 綠冒充已切」「本 slug 試五站 hop」旁註「D1 已給人點的對照卡」。內部技術選擇維持「不跳過 Stage 3」。人見面時機選定 T 卡上就紅（對齊 SC-3）。
-- 互動／Human verdict：**NOT_REVIEWED**。本檔 `status: draft`。Agent 不發明 ACCEPTED、不填 attestation。未 Demo ≠ ACCEPTED。
+- **擬回寫 2-decision**（本 hop 仍不動該檔；不開 Stage 4）:確認紀錄加一行「prototype 回寫 \| 2026-09-14 \| Stage3-A D1＋吸收 B／C：SC-1／A-B／假完成（T 卡上就紅）／空 attestation／freeze×doctor 現檔表可走完；不重開 1A–7A」。Risks「寫手省 M11」「chat 帶走 attestation」「doctor 綠冒充已切」「本 slug 試五站 hop」旁註「D1 已給人點的對照卡」。內部技術選擇維持「不跳過 Stage 3」。人見面時機選定 T 卡上就紅（對齊 SC-3）。
+- owner chat 2026-09-14「接受」→ Human 判定 **ACCEPTED**；attestation `human:rick @ 2026-09-14`。本檔 `status: approved`。**不送 G2、不開 4-spec / Stage 4**。STATUS Gates 仍 `G1✅ G2⬜ G3⬜`。
 - 實驗產物:操作盤留在本檔 Method；doctor／契約／marketplace 輸出摘要在盤 5；無 throwaway branch、無正式碼。審頁由 `scripts/build-stage3-html.py --action` 重生。第 3 站已行使，未跳過。
-- 本 PR 檔集只准 `3-prototype.md` + `3-prototype.html`。不改 STATUS（另伴 PR：Active Stage=3-prototype，Gates 仍 G1✅ G2⬜ G3⬜）。不發明 G2。
+- 本 PR 檔集只准 `3-prototype.md` + `3-prototype.html`。不改 STATUS（另伴 PR：Active Stage 仍 3-prototype，Gates 仍 G1✅ G2⬜ G3⬜）。不發明 G2。
