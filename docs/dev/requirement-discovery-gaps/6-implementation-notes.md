@@ -342,6 +342,24 @@ Run: n-a（sequential v1 start，無 run_id 事件通道）
 - 理由:母版記帳，不是新 R/S。T-3 Files 已含該檔。
 - 影響:無 R/S 變更。
 
+### D-5(L1)
+- 現象:Exit 加回看表後,`template7-exit-quickstart` 的 markdown_visible 留下 `###`,HTML `<h3>` 可見文字沒有。CI methodology 122/123。
+- 保守選擇:教師保留「回看約定」四欄,不用 `###` ATX(parity 才能過)。`renderer --write` 重生 guide twin。
+- 理由:不改 checker;T-8 Verify 不要求 `###`。
+- 影響:T-8 / R-7 / S-7.1(欄位字面不變)
+
+### D-6(L1)
+- 現象:隔離 seed 沒有 `scripts/fixtures/discovery-gaps/`;舊 embed 沒有 `- 狀態:` 前綴,`_field` 吃不到,S-3.3／S-3.4／S-8.4 在 RW-0 對照組紅。
+- 保守選擇:embed 改成與 fixture 同形(`### Exceptions` + `- 狀態:`)。不新增 `check_skip(`。
+- 理由:D-impl-1;EXPECTED_CHECK_SKIP_CALLS 仍 1。
+- 影響:無 R/S 變更。T-4 隔離與正式 repo 同針。
+
+### D-7(L1)
+- 現象:RW-DG1／RW-DG2 兩個 `mutate <<'PY'` 讓 CI 實得 heredoc 223;`MIN_HEREDOCS` 221 時 PF-2 漏收一枚仍 ≥221 → 假綠。
+- 保守選擇:`MIN_HEREDOCS` 與靜態釘改 223。
+- 理由:與 diagram-ir-gate D-4 同形母版記帳。
+- 影響:無 R/S 變更。
+
 ## Files Changed
 
 對照 Diff Budget（估計合計 ≤30 檔）：落地教師 1／2／3／4／7 + skills／指南 + example 改口 + 三支牙 + `scripts/fixtures/discovery-gaps/` + `test-architecture-guards.sh` + 本檔／html。L1：本 slug `2-decision.md`／`.html`、`guides/guide-dev-flow.html`、example `7-review.html`。未改 STATUS／HISTORY／plugin；無 `scripts/check-discovery-gaps.sh`。

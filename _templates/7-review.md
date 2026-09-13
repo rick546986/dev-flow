@@ -341,9 +341,10 @@ updated:
 - [ ] 7-review.html 已產生(含變更架構圖,規格見指南 `#diagram-style`;diff 折疊規格見指南 `#diff-fold`)
 - [ ] feature branch 已刪 / worktree 已清
 
-### 回看約定
+回看約定
 <!-- 出貨時留下誰／何時／用什麼資料回看、低於何值重開。結果到期用
-     `scripts/history-append.sh` 追加,不另造永久 lookback 檔。 -->
+     `scripts/history-append.sh` 追加,不另造永久 lookback 檔。Exit 節內不用
+     ### 標題:parity 的 markdown_visible 會留下 ###,HTML <h3> 不會。 -->
 | 回看日期 | 回看 owner | 資料來源 | 低於何值重開 |
 |---|---|---|---|
 

@@ -405,11 +405,14 @@ def _load_gap(rel, embed):
 
 
 _nod = _load_gap("scripts/fixtures/discovery-gaps/nod-as-only-source.md",
-                 "狀態: Observed\n來源類型: 使用者點頭\n風險=高")
+                 "## Real-world Context\n### Exceptions\n- 點頭獨源\n"
+                 "  - 狀態: Observed\n  - 來源類型: 使用者點頭\n  - 風險=高\n")
 _enum = _load_gap("scripts/fixtures/discovery-gaps/enum-unknown.md",
-                  "狀態: Unknown\n來源類型: 本 tree skill\n風險=高")
+                  "## Real-world Context\n### Exceptions\n- 枚舉外\n"
+                  "  - 狀態: Unknown\n  - 來源類型: 本 tree skill\n  - 風險=高\n")
 _ticket = _load_gap("scripts/fixtures/discovery-gaps/ticket-solution-as-fact.md",
-                    "ticket／SOP 建議做 dashboard\n狀態: Observed\n來源類型: ticket\n風險=高")
+                    "## Real-world Context\n### Evidence\n- ticket／SOP 建議做 dashboard\n"
+                    "  - 狀態: Observed\n  - 來源類型: ticket\n  - 風險=高\n")
 _user = _load_gap("scripts/fixtures/discovery-gaps/user-report-only.md",
                   "## Real-world Context\n### Exceptions\n- 使用者反映希望 dashboard\n")
 _unapproved = _load_gap("scripts/fixtures/discovery-gaps/unapproved-as-only-source.md",

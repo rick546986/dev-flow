@@ -270,7 +270,7 @@ Design Boundary Contract 為 `applicable`,本軸另查四項(4-spec Design Bound
 - [x] 7-review.html 已產生(含變更架構圖 + diff 折疊)
 - [x] feature branch 已刪
 
-### 回看約定
+回看約定
 結果到期用 `scripts/history-append.sh` 追加,不另造永久 lookback 檔。
 | 回看日期 | 回看 owner | 資料來源 | 低於何值重開 |
 |---|---|---|---|
