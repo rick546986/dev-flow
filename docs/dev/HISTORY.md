@@ -608,3 +608,9 @@
 - 落在哪:skills/guides/hooks/example as landed
 - 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.24.0
 
+## 2026-09-13 · five-station-simplify
+- 做了什麼:Stage 1 discussion landed (#295); Active opened
+- 為什麼:five-station-simplify Stage 1 winner C merged after 2:1 review + must-fixes; first live freeze sample stays old 7
+- 落在哪:docs/dev/five-station-simplify/ + STATUS
+- 詳細:https://github.com/rick546986/dev-flow/pull/295
+
