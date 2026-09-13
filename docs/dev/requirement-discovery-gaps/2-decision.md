@@ -162,7 +162,7 @@ Q8 選 2A：A-3 的病是粒度，不是「少一個來源欄」。枚舉可灌�
 
 ## Scope & Non-Goals(定稿)
 - In：1A 落地策略（Q7 延既有牙、Q14 同 slug 改範例）；2A 高影響枚舉 + Evidence 最小欄；3A 過期假設擋 G2；4A 原文片段 disposition；5A Exit 約定 + HISTORY 結果；6A 本輪 evidence manifest + 改允許集合；7A Fast 六問 + owner 三擇一；8A Human verdict 一行角色／場景（A-5 LIGHT）；Q6 以範例教師對帳。腳本家族落點見決策點 1／OC-1。
-- Out：1B／1C；2B／2C；3B／3C；4B／4C；5B／5C；6B／6C；7B／7C；8B／8C；新造檢查家族；RW-id；lookback 永久檔；Actor Coverage 全表；拆 slug；本 hop 改模板／守衛／範例正本；本 hop 改 STATUS／HISTORY；本 hop 開 Stage 3／4 檔；本 hop 發明 G2／G3；本 hop 跳過 Stage 3；重開九條 DO／LIGHT；dashboard／API 黑名單。
+- Out：1B／1C；2B／2C；3B／3C；4B／4C；5B／5C；6B／6C；7B／7C；8B／8C；新造檢查家族；RW-id；lookback 永久檔；Actor Coverage 全表；拆 slug；本 hop 改模板／守衛／範例正本；本 hop 改 STATUS／HISTORY；本 hop 開第 3／4 站檔；本 hop 發明 G2／G3；本 hop 把第 3 站標成 N/A；重開九條 DO／LIGHT；dashboard／API 黑名單。
 
 ## Real-world Disposition
 本檔先做 A-6 要求的去向帳（引用 Stage 1 原文，不另發 ID）。實作落地後，後續 feature 的 2-decision 用同一形。
@@ -201,8 +201,9 @@ Q8 選 2A：A-3 的病是粒度，不是「少一個來源欄」。枚舉可灌�
 - 本 hop 不 bump plugin、不改 `_templates/`／`skills/`／`example/`／守衛正本。
 - `1-discussion.md` 保留 draft／「不送 G1」原文；本檔才改口成 Decision。
 - 審頁用 `scripts/build-stage2-html.py --action`，不手包 html-shell，不把審頁塞進 `build-gate-twin.py` STAGES。
-- Stage 3 不預先跳過；觸發判定留給第 3 站（訪談問法、證據核准、Fast 六問都可能改下一步／核准／交接）。本檔無「跳過 Stage 3」流程層 OC。
+- 第 3 站維持條件式必要、本站執行（不預先標 N/A）；觸發判定留給該站（訪談問法、證據核准、Fast 六問都可能改下一步／核准／交接）。本檔無流程層 OC 把該站標成 N/A。
 - 4-spec 再釘：Assumption 四欄機器可讀形、disposition 表頭、evidence manifest 檔名、Fast 六問欄位名、lookback Exit 四欄字面、高影響抽樣規則。
+- 字面形狀（不重開 1A）：結果節名 `## Goals`；構想節名 `## Requested solution`。發現題前綴 `發現｜`；裁決題前綴 `裁決｜`。
 - A-2 完成條件：必查面已覆蓋、關鍵反例已問、證據缺口已顯性化；「連續兩輪無新問題」只當輔助訊號。
 
 ## ADR 晉升檢查
@@ -218,3 +219,4 @@ Q8 選 2A：A-3 的病是粒度，不是「少一個來源欄」。枚舉可灌�
 - Q6 對帳 | 2026-09-13 | 本 tree 範例 Goals／AC／Interview 鎖定 dashboard = Observed 教師（「最低成本呈現面」=`example/contract-expiry-reminder/1-discussion.md:119`）。採用現場是否照抄 = 仍 Assumption，見 OC-3。未捏造現場 log。
 - 自檢七掃 | 2026-09-13 | ①優劣皆有依據欄；②G-out-1～9 進 Decision／SC，漏項進 Non-Goals；③Q7–Q14 與 A-5 皆有選定或 Rejected；④SC 可量測；⑤Rejected 無空棄因；⑥八決策點由 brief + Reviewer 1 A-5 補點確認，OC-1～3／5／6 承接延伸或收窄，OC-4 流程層；⑦既有脈絡是對帳不是外移 schema。圖上 1A–8A 標選定，Rejected 未上圖。
 - G1 | 2026-09-13 | Human G1 PASS + OC-1…OC-6 @ 2026-09-13。human owner rick 全接受 OC-1～OC-6。基準 #266（`0f0fbaf`）／#267 STATUS Stage2（`a2bc5d1`）。owner 自審(有記錄)；reviewers: [user]
+- prototype 回寫 | 2026-09-13 | 第 3 站：內部技術選擇改寫，避免「Stage 3」與省略用語同句被誤認成 N/A；補 `## Goals`／`## Requested solution` 與 `發現｜`／`裁決｜` 字面。不改 OC-1…OC-6 表。Human verdict 仍 NOT_REVIEWED。

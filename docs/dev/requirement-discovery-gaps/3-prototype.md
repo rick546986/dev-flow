@@ -8,13 +8,13 @@ updated: 2026-09-13
 
 # 3. 原型 — 九缺口欄位／分診／ledger 長什麼樣？
 
-> Stage 3 依 2-decision「不預先跳過」**執行、不跳過**。1A–8A 已是落地策略；本站只答
-> 2-decision 留給第 3／4 站的**形狀**（欄名、表頭、六問、ledger、manifest、verdict 一行）。
-> 輕量方法論原型：column mocks／triage checklist／ledger shape。**不**改 `_templates/`、
-> `skills/`、守衛、範例、STATUS、HISTORY。**不**當 Stage 6 施工。**不**發明 G2／G3、
-> **不**代填 Human ACCEPTED。
+> 第 3 站依 2-decision 維持條件式必要、本站執行（不預先標 N/A）。1A–8A 落地策略已 lock；
+> 本站只答**欄位放哪**與字面（節名、前綴、表頭、六問、ledger、manifest、verdict 一行）。
+> Variant **不**重開落地策略。輕量方法論原型：column mocks／triage checklist／ledger shape。
+> **不**改 `_templates/`、`skills/`、守衛、範例、STATUS、HISTORY。**不**當 Stage 6 施工。
+> **不**發明 G2／G3、**不**代填 Human ACCEPTED。
 > Demo 形式 = 狀態流程模擬器（填好的欄位卡 vs 故意壞卡，人實際走 Demo Script）。
-> 互動形尚未 lock → 3 個結構不同 Variant。Human verdict 留 NOT_REVIEWED。
+> Human verdict 留 NOT_REVIEWED。
 
 ## Stage 3 觸發判定(條件式必要)
 <!-- 對照 1-discussion Real-world Context：Actors／Journey／核准／期限／圍欄／Fast -->
@@ -25,39 +25,42 @@ updated: 2026-09-13
 - [x] 涉及等待/退回/逾時（等 owner 核准才讀；Assumption 期限；lookback 到期；G2 退回）
 - [x] 涉及權限差異（討論者禁讀 2–7；owner 才能放行路徑；G2 才能擋過期假設）
 - [x] 涉及系統外動作（訪談、GitHub、審核筆記、日曆回看）
-- [x] 涉及多種可行互動設計（欄位就地填／先過核准卡再開寫／審查時才重建，操作序不同）
-- [x] Stage 1 尚有操作流程不確定性（2-decision 內部技術選擇：欄位名／檔名／抽樣規則尚未釘）
+- [x] 涉及多種可行互動設計（1A–8A 落地策略已 lock；Variant 只比欄位放同檔／另卡／審查重建，不重開策略）
+- [x] Stage 1 尚有操作流程不確定性（策略已 lock；未釘的是欄位放哪、節名與題目前綴字面）
 
-→ 命中 8 條:Stage 3 條件式必要,執行(不跳過)。2-decision 無「跳過 Stage 3」流程層 OC。
+→ 命中 8 條:第 3 站條件式必要,本站執行。2-decision 無流程層 OC 把該站標成 N/A。
 
 ## Question
-2-decision Risk「B-1 manifest 形狀未釘」＋內部技術選擇「4-spec 再釘」＋ SC-3～SC-9：
-在**不改模板正本**的前提下，三張結構不同的欄位卡能否鎖住這六個形狀？
+2-decision Risk「B-1 manifest 形狀未釘」＋內部技術選擇「4-spec 再釘」＋ SC-1～SC-9：
+在**不改模板正本、不重開 1A–8A**的前提下，三張只比「欄位放哪」的卡能否鎖住這八個形狀？
 
-1. **高影響主張欄（2A／SC-3）**：狀態枚舉 ∈ {Observed, Reported, Inferred, Assumption, Conflict}；來源類型、as-of、角色或範圍、支持哪一段、限制。來源 XOR Assumption+期限。點頭不得當唯一來源。
-2. **Assumption 四欄（3A／SC-4）**：若為假影響什麼／影響級／怎麼驗／何時由誰驗。過期 + 未 resolved + 無 OC 接受 → 進不了 G2。
-3. **disposition 表頭（4A／SC-6）**：引用 Stage 1 原文片段 + 去向 ∈ {本方案處理, 刻意維持, Non-Goal, 另開 slug, 仍待驗} + 一句理由。不另發 RW-id。
-4. **lookback 四欄字面（5A／SC-7）**：回看日期／回看 owner／資料來源／低於何值重開。結果走 HISTORY，不另造永久檔。
-5. **evidence manifest（6A／SC-8）**：想找哪類／為什麼／擬路徑／owner 核准／已讀。未核准不得當已授權。仍禁 2–7。
-6. **Fast 六問 + A-5 一行（7A／8A／SC-5／SC-9）**：下一步／權限／等待語意／交接／系統外／中斷恢復，每問是／否＋一句。命中必須有 full／mini／OC。Human verdict 一行內有角色與場景。
+1. **Goals vs Requested solution 節名（1A／SC-1，不重開策略）**：結果節名字面 `## Goals`；構想節名字面 `## Requested solution`。構想不寫進 Goals。
+2. **發現 vs 裁決題目前綴（1A／SC-2，不重開策略）**：發現題前綴字面 `發現｜`（禁附推薦）；裁決題前綴字面 `裁決｜`（可附選項／差異／推薦）。
+3. **高影響主張欄（2A／SC-3）**：狀態枚舉 ∈ {Observed, Reported, Inferred, Assumption, Conflict}；來源類型、as-of、角色或範圍、支持哪一段、限制。來源 XOR Assumption+期限。點頭不得當唯一來源。
+4. **Assumption 四欄（3A／SC-4）**：若為假影響什麼／影響級／怎麼驗／何時由誰驗。過期 + 未 resolved + 無 OC 接受 → 進不了 G2。
+5. **disposition 表頭（4A／SC-6）**：引用 Stage 1 原文片段 + 去向 ∈ {本方案處理, 刻意維持, Non-Goal, 另開 slug, 仍待驗} + 一句理由。不另發 RW-id。
+6. **lookback 四欄字面（5A／SC-7）**：回看日期／回看 owner／資料來源／低於何值重開。結果走 HISTORY，不另造永久檔。
+7. **evidence manifest（6A／SC-8）**：想找哪類／為什麼／擬路徑／owner 核准／已讀。未核准不得當已授權。仍禁 2–7。
+8. **Fast 六問 + A-5 一行（7A／8A／SC-5／SC-9）**：下一步／權限／等待語意／交接／系統外／中斷恢復，每問是／否＋一句。命中必須有 full／mini／OC。Human verdict 一行內有角色與場景。
 
 答案長什麼樣才算回答了：
 - 每張卡能用本 slug 自己的 Journey／Exception 列填滿，壞卡（只寫「使用者反映」、空白六問、無去向）一眼看出缺哪欄。
 - 「只改狀態字、把等待顯示成完成」在六問卡上必須命中等待語意。
 - 選定 Variant 的操作序與決策點寫得清：誰填、等誰、空／錯／過期／權限不足怎麼辦。
-- 本 hop **不**改 2-decision 正文、**不**改模板；形狀只落在本檔，供後續回寫。
+- 本 hop **不**改模板、**不**改 OC-1…OC-6 表；2-decision 只改內部技術選擇用詞與兩條字面。
 
 ## Method
 - 實驗位置:本檔 Method 節的欄位卡（**PROTOTYPE — not production**；純資料實驗，不進 throwaway code、不改 `scripts/`／`_templates/`）
 - Demo 形式:**狀態流程模擬器**（人依 Demo Script 把同一列放進三張卡，比較能否重建來源／去向／下一步）
-- 互動形未定 → **3 個結構不同 Variant**（不同操作序／資訊階層／決策點；不是換色換字）
+- 1A–8A 策略已 lock → **3 個結構不同 Variant 只比欄位放哪**（同檔／另卡／審查重建；不是換色換字，不重開落地策略）
 - 驗法:用本 feature 已核列（Journey「發現被錨定」「痛點消失」「互動風險晚露」；Exception Q6；AC-9 等待誤標對照）各走一遍；壞卡當負向
-- 本站**不**改 2-decision、不寫 STATUS、不落地牙
+- 本站只回寫 2-decision 內部技術選擇用詞與兩條字面；**不**改 OC-1…OC-6 表、不寫 STATUS、不落地牙
 
 ### Variant 對照（必含項）
 
 | 項 | Variant A 同檔就地欄 | Variant B 先過核准卡再開寫 | Variant C 審查時才重建 |
 |---|---|---|---|
+| 節名／前綴（1A 字面，不重開策略） | 同檔 `## Goals` 後接 `## Requested solution`；問句加 `發現｜`／`裁決｜` | 構想節與前綴另卡，Goals 填完才開 | 審查時才補節名；發現題無前綴 |
 | 主要角色 | 討論 agent 寫列時順便填 | owner 先核卡，討論者才能讀 | G1／G2 reviewer 事後補表 |
 | 真實目標 | 欄在主張旁邊，後讀者當下能走回來源 | 未核准前零事實讀取 | 送審前看起來像有 Evidence |
 | 入口 | 1-discussion／2-decision／Fast 4-spec 本文 | 另開 manifest／triage 卡，過了才開寫 | 4-spec／G2 checklist |
@@ -70,8 +73,19 @@ updated: 2026-09-13
 | 中斷恢復 | 列還在原文位置，接著填 | 卡在，從核准格恢復 | 靠記憶找哪條痛點消失 |
 | 系統外下一步 | 訪談／日曆回看寫在 lookback 四欄 | 先送核准卡給 owner | reviewer 口頭問 |
 
-### Variant A — 同檔就地欄（推薦）
-操作序:寫主張 → 立刻填枚舉與來源欄 → Stage 2 引用原文做 disposition → Fast 在進 4 前填六問（可附在 4-spec 頂，但必須先於 R/S）→ Exit 四欄。不另造檔種類。
+### Variant A — 同檔就地欄（推薦；只比放置，不重開 1A）
+操作序:Goals 與 Requested solution 先後同檔 → 發現／裁決題在問句上加前綴 → 寫主張立刻填枚舉與來源欄 → Stage 2 引用原文做 disposition → Fast 在進 4 前填六問（可附在 4-spec 頂，但必須先於 R/S）→ Exit 四欄。不另造檔種類。
+
+**1A 節名與題目前綴（不重開策略；只釘字面與放置）**
+
+```
+## Goals
+## Requested solution
+發現｜上次真的怎麼做？
+裁決｜這條痛點進本方案還是 Non-Goal？
+```
+
+壞卡：把「我要 dashboard」寫進 `## Goals`；發現題無 `發現｜` 卻附推薦答案。
 
 **高影響主張欄（2A）** — 只要求高影響列（OC-5），不要求每句 Context 都貼。
 
@@ -150,15 +164,15 @@ updated: 2026-09-13
 
 只寫 `ACCEPTED` + 姓名日期 = 不完整（SC-5）。本 hop 不填 ACCEPTED。
 
-### Variant B — 先過核准卡再開寫
-操作序:另開 `docs/dev/<slug>/evidence-manifest.md` 與 Fast `triage` 卡 → owner 核准 → 才准讀事實／才准開 4-spec。disposition 改成 append-only 日誌（日期｜片段｜去向｜落點）。
+### Variant B — 先過核准卡再開寫（只比放置）
+操作序:另開 `docs/dev/<slug>/evidence-manifest.md` 與 Fast `triage` 卡 → owner 核准 → 才准讀事實／才准開 4-spec。disposition 改成 append-only 日誌（日期｜片段｜去向｜落點）。`## Requested solution` 與 `發現｜`／`裁決｜` 題另卡，填完 Goals 才開。仍是 1A 分欄，只是不在同檔。
 
 與 A 的結構差:決策點前移、資訊不在主張旁邊、多一個「卡不存在就不能開工」的空狀態。2-decision 已拒 lookback 永久檔；B 把同一成本加到 manifest／triage。欄位集合與 A 相同，只是分檔＋閘門。
 
 等候面:討論者停在「擬路徑已列、核准格空白」。權限不足:核准空白仍去讀 = 越權。中斷:從核准格恢復，不必重寫主張。
 
-### Variant C — 審查時才重建（對照現況，棄）
-操作序:作者自由散文 → G1／G2 才補枚舉與去向。Fast 六問寫在 4-spec Verification Profile（lane 已選完）。
+### Variant C — 審查時才重建（對照現況，棄；不重開 1A）
+操作序:作者自由散文 → G1／G2 才補枚舉、去向、節名與前綴。Fast 六問寫在 4-spec Verification Profile（lane 已選完）。構想仍可混進 Goals；發現題無 `發現｜`。這是放置失敗，不是另選 1B／1C。
 
 與 A／B 的結構差:決策點在審查、不在書寫。空狀態可被「有 Evidence 字」蓋過。Journey「痛點消失」與等待誤標可以無聲進規格。這是本包要修的病，不當選定。
 
@@ -171,7 +185,25 @@ updated: 2026-09-13
 - Exit 回看四欄
 
 ## Demo Script
-帶使用者走模擬器:同一列先放 A，再放 B，再放 C。不要問「喜不喜歡」。逐場確認:看到欄位後知道下一步嗎？系統是否暗示了不存在的權限？等待是否清楚？系統外交接能否追蹤？欄空時知不知道怎麼辦？能否撤回、重試、改派或恢復？
+帶使用者走模擬器:同一列先放 A，再放 B，再放 C。不要問「喜不喜歡」。逐場確認:看到欄位後知道下一步嗎？系統是否暗示了不存在的權限？等待是否清楚？系統外交接能否追蹤？欄空時知不知道怎麼辦？能否撤回、重試、改派或恢復？1A–8A 策略已 lock；比的是欄位放哪。
+
+### Scenario AC-1
+- 使用者角色:討論 agent／G1 reviewer
+- 真實目標:結果在 `## Goals`，構想在 `## Requested solution`；不重開 1A
+- 起始狀態:好卡兩節名分開；壞卡「我要 dashboard」寫進 Goals
+- 操作步驟:只看節名與第一句；對照 A（同檔先後）／B（構想另卡）／C（混進 Goals）
+- 系統回應:A／B 能指出構想在錯欄；C 看不出分欄。策略仍是 1A
+- 系統外下一步:把構想搬到 `## Requested solution`；不要改 Goals 指令去鎖畫面
+- 觀察問題:看到「dashboard」時，知道它不該在 Goals 嗎？
+
+### Scenario AC-2
+- 使用者角色:訪談對象／討論 agent
+- 真實目標:發現題本身不塞推薦；前綴字面 `發現｜`／`裁決｜`
+- 起始狀態:好卡 `發現｜上次真的怎麼做？`（無推薦）；壞卡發現題先給答案且無前綴
+- 操作步驟:只看問句本身；A = 問句上加前綴；B = 發現／裁決分卡；C = 無前綴
+- 系統回應:有 `發現｜` 的問句不該附推薦；`裁決｜` 才可附選項。C 分不出題型
+- 系統外下一步:重寫發現題；不要把推薦提前
+- 觀察問題:受訪者是否看得出這題是在問現況，不是在挑方案？
 
 ### Scenario AC-3
 - 使用者角色:G2 reviewer
@@ -237,10 +269,12 @@ updated: 2026-09-13
 - 觀察問題:全打「否」有沒有被當成儀式？中斷後能否從六問表恢復？
 
 ## Result
-回寫 2-decision 內部技術選擇「4-spec 再釘」與 Risk「B-1 manifest 形狀未釘」：本站用紙上模擬器走完 AC-3～AC-9，**推薦 Variant A**（同檔就地欄）。B 把核准決策點前移但另造檔種類，與 5A「不另造永久檔」同型成本；C 重演痛點消失與 Fast 晚露。欄位字面見 Method；本 hop 不改 2-decision 正文。
+回寫 2-decision 內部技術選擇「4-spec 再釘」與 Risk「B-1 manifest 形狀未釘」：本站用紙上模擬器走完 AC-1～AC-9，**推薦 Variant A**（同檔就地欄；只比放置，不重開 1A–8A）。B 把核准決策點前移但另造檔種類，與 5A「不另造永久檔」同型成本；C 重演痛點消失與 Fast 晚露。欄位字面見 Method。2-decision 只改內部技術選擇用詞與兩條字面，不改 OC 表。
 
 | 形狀 | 選定字面（A） | 負向 |
 |---|---|---|
+| 1A 節名 | `## Goals`／`## Requested solution` | 構想寫進 Goals |
+| 1A 前綴 | `發現｜`／`裁決｜` | 發現題無前綴或先附推薦 |
 | 2A 主張欄 | 狀態／來源類型／as-of／角色或範圍／支持哪一段／限制 | 只有「使用者反映」 |
 | 3A 假設 | 若為假影響什麼／影響級／怎麼驗／何時由誰驗 | 過期仍送 G2 |
 | 4A ledger | 引用（原文片段）／去向／理由 | 去向空白或 RW-id |
@@ -250,7 +284,7 @@ updated: 2026-09-13
 | 8A verdict | `ENUM \| role=… \| scenario=…` | 只寫 ACCEPTED + 姓名日期 |
 
 證據:用本 slug 已核列填滿 A 的好卡；壞卡與 C 無法指出「痛點消失」去向，也無法在進 4 前攔住等待誤標。正式模板／牙未改。
-`hooks/_stage3_impl.py` 對本檔會印 `g2_demo=PASS`，那是誤咬 2-decision「不預先跳過／無跳過 Stage 3」含「Stage 3」+「跳過」字樣，**不是**本 hop 的 G2、也不是 ACCEPTED。本檔 verdict 仍是 NOT_REVIEWED。
+`hooks/_stage3_impl.py` 在 Human verdict = NOT_REVIEWED 且無 N/A 宣告時應 REJECT（不得過 G2）。本 hop 不發明 ACCEPTED／attestation。
 
 ## User Demo Feedback
 <!-- Agent 禁代填 ACCEPTED／attestation。未 Demo = NOT_REVIEWED。本 hop 不送 G2。 -->
@@ -268,6 +302,6 @@ updated: 2026-09-13
 - Verdict attestation:
 
 ## Verdict
-- 回寫 2-decision（**本 hop 不改該檔**，只鎖定回寫對象）:內部技術選擇「4-spec 再釘」改為 Stage 3 推薦 Variant A 字面（上表）；Risk「B-1 manifest 形狀未釘」改為同檔 `## Evidence manifest` 五欄 + 核准後才讀。B／C 不選。確認紀錄擬留「prototype 回寫 \| 2026-09-13」，等人類 Demo 後由後續 hop 寫入。
+- 已回寫 2-decision 內部技術選擇：第 3 站維持條件式必要、本站執行（不預先標 N/A）；字面 `## Goals`／`## Requested solution` 與 `發現｜`／`裁決｜`。推薦 Variant A 其餘欄位字面見上表。**未改** OC-1…OC-6 表。確認紀錄已留「prototype 回寫」。
 - Human verdict = NOT_REVIEWED（無人親走 Demo；Agent 不代填 ACCEPTED、不寫 attestation）。frontmatter 留 **draft**。不送 G2、不開 4-spec、不改 STATUS。
-- 實驗產物:欄位卡留在本檔 Method；無 throwaway branch、無正式碼。第 3 站已行使，未省略。
+- 實驗產物:欄位卡留在本檔 Method；無 throwaway branch、無正式碼。第 3 站已行使。
