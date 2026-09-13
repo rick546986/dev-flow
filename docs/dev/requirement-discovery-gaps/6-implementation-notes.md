@@ -165,6 +165,7 @@ FORK_INTEGRATION_SHA: ab78e8b90a48c002b6023e806a9bc4f1d7ea5703
 日期 | T-id | 一行
 ---|---|---
 2026-09-13 | T-1…T-10 | `58250b33dfafdb04514bc7b35cc5c013dbb2d5f4` Stage 6 land (B)
+2026-09-13 | T-3 T-8 | `3d7d62cf13268b36f0244cb549d751fe26aa3ad8` CI REPO_REFERENCE: MIN_HEREDOCS 223 + exit-checklist parity
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 Run: n-a
