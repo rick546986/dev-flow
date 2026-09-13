@@ -549,3 +549,8 @@
 - 為什麼:nine Owner Call gaps implement as one package
 - 落在哪:docs/dev/requirement-discovery-gaps/ + STATUS
 
+## 2026-09-13 · requirement-discovery-gaps
+- 做了什麼:Stage 2 decision #266; Active → 2-decision; Gates G1⬜ G2⬜ G3⬜; awaiting human G1
+- 為什麼:nine-gap package HOW chosen
+- 落在哪:docs/dev/requirement-discovery-gaps/2-decision
+
