@@ -1,18 +1,18 @@
 ---
 feature: diagram-ir-gate
 stage: 7-review
-status: draft
-verdict: PRE-REVIEW
-owner: implementer-C-stage7
-reviewers: []
-updated: 2026-09-12
+status: shipped
+verdict: PASS
+owner: rick
+reviewers: [user]
+updated: 2026-09-13
 ---
 
-# 7. 驗證 —— **不是 G3 PASS**
+# 7. 驗證 —— **G3 PASS**
 
-> 本檔是 implementer-C 獨立 Stage 7 審查包。`verdict:` 留 `PRE-REVIEW`。
-> Human 判定才是 PASS／REQUEST_CHANGES／HOLD。全勾不算 PASS。不發明 G3 PASS。
-> 建議下一棒:適格人類 reviewer → 另一個 fresh-context reviewer Agent（≠ #250 實作 session）→ owner 自審(有記錄)為最後手段。
+> Human G3 PASS recorded:`user` @ 2026-09-13（chat / widget）。
+> 機械審查正本仍是獨立 implementer-C 的 Stage 7 檔(#254)。`Source SHA` 重綁本 hop 開工 Fresh tip `83722a922efceb2455e0cbe35750b4a621ce41a0`（Known Limit ②：本 docs commit 會再漂 SHA）。
+> STATUS.md Active 不在本 PR 改。
 
 > ## Reviewer 閱讀動線(**必留;給看的人,不是給寫的人**)
 >
@@ -37,11 +37,11 @@ updated: 2026-09-12
 | | |
 |---|---|
 | 審查者 | `implementer-C-stage7`(獨立 fresh-context Cloud Agent;`bc-e842c9ff`)。**≠** Stage 6 #250 實作 session `bc-5ab0653d`。產品 owner 欄仍是 `rick`。 |
-| Human G3 | **未寫入**。本檔不得把機械綠寫成 G3 PASS。 |
+| Human G3 | **PASS** recorded:`user` @ 2026-09-13（chat / widget）。`reviewers: [user]`；`owner: rick` |
 | 讀取順序(可查) | ①`4-spec.md`(G2 `approved`／`verdict` PASS、21 S) ②`5-tasks.md`(T-1～T-6) ③`git show 3b22f01`(#250 產品 diff) ④`scripts/test-diagir.sh` + 三支既有牙 ⑤親跑 test-diagir 25/25 + check-vbox-fig 16/16 + check-dir-tree 81/81 + check-gate-twin 222 + 逐 S CLI 現象 + 2c 兩次座標相同 → **之後才** ⑥`review-unlock` 讀 6-notes |
 | 圍欄 | `hooks/devflow-exec.sh review diagram-ir-gate` 武裝後再 `review-unlock`。doctor:`COMPATIBLE`(契約 2.0.0,runtime 3.23.3,gauntlet 1.3.3) |
-| 本輪性質 | 產品碼已在 tip `#250`=`3b22f01`。本 hop **只寫** `7-review.md` + twin。不改產品碼、不改 `STATUS.md` 表列、不代填 Human G3。 |
-| 可信／打折 | 機械數字(exit／checks／sha256)可信。F 分級與「沒想到的事」由下一棒 Human 裁量。本 session 與 #250 同標 impl-C,只保證讀取順序與獨立重跑,不保證四眼身分被 hook 擋住。 |
+| 本輪性質 | 產品碼已在 tip `#250`=`3b22f01`。#254 squash-merge 後 tip=`83722a9`。本 companion hop 重綁 Final Fresh `Source SHA` + 落檔 Human G3 PASS,不改產品碼、不改 STATUS Active。**Human G3 PASS recorded** |
+| 可信／打折 | 機械數字(exit／checks／sha256)仍以 #254 為準,本 hop 不新造 R/S。F-2 🟡 已 park。Human G3 已由 `user` 落檔,不再留給下一棒裁量。 |
 
 ## Coverage Matrix
 
@@ -72,7 +72,7 @@ updated: 2026-09-12
 | S-5.2 | `scripts/test-diagir.sh:493-522` 三點 `origin/main...HEAD` + untracked;plugin `3.23.3` 空 diff | ✅ |
 | 既有測試套件(回歸) | 4-spec entry point 四層 + `scripts/test-diagir.sh` 25/25 + `scripts/check-file-map.sh` scanned=205 | ✅ |
 
-**Verify 親跑**(5-tasks 原指令;2026-09-12;2c 兩次 `N_A_NO_INCOMING` 之後、Fresh 綁 `3b22f01`):
+**Verify 親跑**(5-tasks 原指令;#254 機械正本;2026-09-12;2c 兩次 `N_A_NO_INCOMING` 之後、當時 Fresh 綁 `3b22f01`;本 hop 不重跑、不新造 R/S):
 
 ```
 === CASE 24 列(validate 6 / deliver 2 / wire 4 / route 5 / lab 5 / static-scope 2)
@@ -82,7 +82,7 @@ checks=25
 
 ## Verification Evidence
 
-- Source SHA: 3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4
+- Source SHA: 83722a922efceb2455e0cbe35750b4a621ce41a0
 - Final Fresh Run ID: 2026-09-12T1814Z-impl-C-s7
 - Entry point: `bash scripts/check-spec-gate.sh docs/dev/diagram-ir-gate/4-spec.md && bash scripts/check-vbox-fig.sh && bash scripts/check-dir-tree.sh && bash scripts/check-gate-twin.sh`
 - Toolchain: python3.12.3; markdown-it-py 4.0.0(gate-twin pin;`scripts/requirements-methodology-render.txt`); contract 2.0.0; runtime 3.23.3; git 2.43.0; gauntlet 1.3.3
@@ -117,7 +117,7 @@ checks=25
 結論:STATUS=N_A_NO_INCOMING FORK=3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4 HEAD=3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4 INTEGRATION=3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4(refs/remotes/origin/main)—— 分岔後對方零新 commit,Exit Checklist 可記 n-a
 ```
 
-第二次座標逐字相同。Source SHA 綁產品樹 `3b22f01`。本 docs commit 落地後 HEAD 會漂 —— Known Limits ②。
+第二次座標逐字相同。#254 當時 Source SHA 綁產品樹 `3b22f01`。本 hop 開工 `git rev-parse HEAD`=`83722a922efceb2455e0cbe35750b4a621ce41a0`(#254 squash tip);Verification Evidence `Source SHA` 已重綁到該 tip。本 docs commit 落地後 HEAD 會再漂 —— Known Limits ②／⑬。
 
 ## Negative Constraint Mapping
 
@@ -265,8 +265,12 @@ Dependency Direction／Boundary Leakage／Interface Stability:未發現反向依
     :137 test-diagir(註冊,不是 Lab 牙)
     :236 check-gate-twin(architecture 組,不是 :132 一包三支)
 
-本 hop(docs-only,不是產品碼):
-[7-review.md]   Source SHA=3b22f01 (#250 tip)
+#254 審查密封(已 squash 進 tip `83722a9`,不是產品碼):
+[7-review.md]   Source SHA 當時=`3b22f01`(Fresh = #250 產品樹)
+[7-review.html] G3 twin PRE-REVIEW
+
+本 hop(docs-only 重綁 + Human G3,不是產品碼):
+[7-review.md]   Source SHA=83722a9 (#254 squash tip = 本 hop 開工 HEAD)
 [7-review.html] G3 twin
 ```
 
@@ -274,7 +278,7 @@ Dependency Direction／Boundary Leakage／Interface Stability:未發現反向依
 
 ## Diff(merge-base(main)..HEAD,逐檔折疊)
 
-`merge-base(origin/main, HEAD)` 在寫本檔時 = `3b22f01`。產品 #250 已在 main。本 PR 相對 main 只加審查密封。
+`merge-base(origin/main, HEAD)` 在 #254 寫檔時 = `3b22f01`。產品 #250 已在 main。#254 squash 後 tip=`83722a9`。本 companion PR 相對 main 只重綁本檔／twin 的 Final Fresh 座標 + 落檔 Human G3 PASS。
 
 <details>
 <summary>產品 #250(已在 tip;審查對象,不是本 PR 新增)</summary>
@@ -286,54 +290,55 @@ Dependency Direction／Boundary Leakage／Interface Stability:未發現反向依
 <details>
 <summary>docs/dev/diagram-ir-gate/7-review.md + 7-review.html — 本審查正本</summary>
 
-本檔。`verdict: PRE-REVIEW`。Source SHA 維持 Fresh 產品樹 `3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4`。不是 G3 PASS。
+本檔。`verdict: PASS`（Human G3,`user` @ 2026-09-13）。Source SHA 維持 Fresh tip `83722a922efceb2455e0cbe35750b4a621ce41a0`。
 
 </details>
 
 ## Verdict
 
-**PRE-REVIEW。不是 G3 PASS。** Human 尚未判定。
+**Human G3 PASS。** `user` @ 2026-09-13（chat / widget）。`reviewers: [user]`。
 
-機械面(本 hop 獨立重跑,不新造 R/S):
+機械面(#254 implementer-C 抽驗表,不新造 R/S 證據):
 
 | 門檻 | 本 hop | 證據 |
 |---|---|---|
 | 本次 S 全綠 | 21/21 自建矩陣 ✅ | Coverage Matrix;每列有 `檔:行` |
 | 既有全綠 | entry point 四層 + test-diagir 25/25 | 6/6;16/16;81/81;222;25/25 |
 | 現象證據逐 S 相符 | 21/21 | 現象證據表;附錄 A3 |
-| Evidence 契約 | Fresh 綁產品 HEAD `3b22f01`;`--review-file` 見附錄 A5 | Source SHA=`3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4`(不追本 docs commit) |
+| Evidence 契約 | Fresh 綁 tip `#254`;`--review-file` 見附錄 A5 | Source SHA=`83722a922efceb2455e0cbe35750b4a621ce41a0`（不追本 docs commit） |
 | 無 🔴 | 無。F-2 為 🟡 park | Standards／Spec;Data Ownership 不是全綠 |
 | 2c 在 Fresh 之前 | 是 | 兩次 `N_A_NO_INCOMING`,座標相同,未合併 |
-| Human G3 | **未寫入** | 本檔禁止發明 PASS |
+| Human G3 | **PASS** | `user` @ 2026-09-13（chat / widget） |
 
-建議 Human:Verdict 門檻表 → 抽驗 S-3.3 `test-diagir.sh:310` → Fresh 三牙數字 → F-2 🟡／Known Limits ⑫ → 再決定。不要因為「無 🔴」就把 Data Ownership 當成全綠。
+- G3 | 2026-09-13 | owner chat / widget 明示 G3 PASS。owner 自審(有記錄)；reviewers: [user]
 
 ## Known Limits
 
 | # | 限制 | 嚴重度 | 建議處置 |
 |---|---|---|---|
 | 1 | 主機層不擋「跳過閘硬跑舊 write_text」(4-spec Known limit ②) | 中 | park。S-2.3 仍用 diff 咬接線,不是 OS hook。owner=方法論;追蹤=4-spec Design Constraints |
-| 2 | 含 Source SHA 的 docs commit 不能等於該 commit 自己的 SHA | 中 | park。本檔 Source SHA 綁 Fresh 產品樹 `3b22f01`。本 hop commit 落地後 HEAD 會漂。合法恢復=再重綁 Final Fresh,不得再合產品碼 |
+| 2 | 含 Source SHA 的 docs commit 不能等於該 commit 自己的 SHA | 中 | park。#254 Exit 寫成當時 `3b22f01`=產品 Fresh 樹;#254 squash 後 tip=`83722a9`,本 hop 重綁 Source SHA 到該 tip。本重綁 commit 落地後 HEAD 會再漂(同一悖論);合法恢復=再重綁 Final Fresh,不得再合產品碼。owner=方法論 |
 | 3 | gate-twin `require_write` 驗的是固定兩步 payload,不是頁面正文(`build-gate-twin.py:2343-2356`) | 低 | 接受為接線。#191 樹仍 WARNING+`<pre>`。不要把 twin html 品質當成閘契約 |
 | 4 | `test-diagir.sh` S-4.2 不直接呼叫三支 `check-*.sh` | 低 | 本 hop Fresh 已補跑。下一棒抽驗用 16/16、81/81、222,不要只信 CASE 名 |
 | 5 | S-4.3 閘負向的 FAMILY 列用 `tree-as-vbox.json`,不是把 `fig-tree-ascii/` 目錄當信封(該 path 是牙 fixture,不是 deliver JSON) | 低 | 接受。碼仍是 `DIAGIR_FAMILY`。索引 path 給牙,閘用同碼信封 |
 | 6 | S-2.2 是旁路寫 tmp,不是 `atomic_write` 中途崩潰 | 低 | 接受;與 4-spec GIVEN 相符 |
 | 7 | ~~vbox-fig 正式負向檔本 hop 不造(4-spec Known limit ①)~~ | — | 已解除:`scripts/fixtures/vbox-fig/kind-parked.json` 已在 #250 |
 | 8 | `proto/diagir_gate.py` 仍在樹裡(非正式通道) | 低 | 接受。G3 現象以 `scripts/diagir.py` 為準(本 hop 已遵守) |
-| 9 | 本檔 `verdict: PRE-REVIEW`;全勾也不算 shipped | 中 | 留給 Human G3。owner=rick |
+| 9 | ~~本檔 `verdict: PRE-REVIEW`;全勾也不算 shipped~~ | — | 已解除:Human G3 PASS recorded by `user` @ 2026-09-13（chat / widget）。STATUS.md Active 仍不在本 PR 改 |
 | 10 | #250 改了 file-map／py-floor／architecture-guards／devflow-check／guide-dev-flow.html,超出 5-tasks Files 聯集 | 低 | L1 已記 F-5。作者 D-3／D-4 如實。不要當 L2 |
-| 11 | Stage 6 T Review Log 是 implementer-C self-check,不是獨立 T reviewer | 中 | 本 hop 用獨立 Fresh／現象表補四眼的一半。Human G3 仍要另眼 |
+| 11 | Stage 6 T Review Log 是 implementer-C self-check,不是獨立 T reviewer | 中 | #254 用獨立 Fresh／現象表補四眼的一半。Human G3 已另眼 PASS(`user` @ 2026-09-13) |
 | 12 | 路由表雙份:Data owner=`notes/design/diagir-route.md`;`scripts/diagir.py:30-66` `ROUTE` 是複本(F-2 🟡;吸收 #253) | 低 | park。兩份目前對得上。S-3.1 咬 md、S-3.5 咬 CLI。不要本 hop 合併單一來源。owner=方法論;追蹤=本表 + F-2 |
+| 13 | 本 hop(#254 後 docs-only 重綁 + G3 落檔)的 commit 自身也會漂 SHA | 中 | 同 ②。Source SHA 維持 Fresh tip `83722a9`,不追本 commit SHA。合法恢復=再重綁,不是再合產品碼 |
 
 ## Exit Checklist(全勾才算 shipped)
 
 - [x] **Design Boundary finding 全數處置**(applicable):無未授權 Boundary 變更。F-2 🟡 為複本風險,已 park Known Limits ⑫(Owner 路徑 ③),未改 R/S／所有權宣告／公開 Interface。無須 L2。不得把 Data Ownership 讀成全綠
-- [ ] Quiz(**不可逆改動必做**;其餘 full lane 選配,fast 免):公開信封 + last-good。題在附錄 A6,留給 Human G3
-- [x] (條件式)整合回歸已在 Final Fresh **之前**完成:步 2c 兩次 `N_A_NO_INCOMING`(三 SHA 與 ref 在「2c 整合結論」)。Source SHA 綁產品樹 `3b22f01`。Verdict 之後不得再改程式碼
+- [ ] Quiz(**不可逆改動必做**;其餘 full lane 選配,fast 免):公開信封 + last-good。題在附錄 A6;產品碼已在 #250
+- [x] (條件式)整合回歸已在 Final Fresh **之前**完成:步 2c 兩次 `N_A_NO_INCOMING`(三 SHA 與 ref 在「2c 整合結論」)。Source SHA 在 Exit 文件寫成當下等於開工 HEAD `83722a9`。Verdict 之後不得再改程式碼
 - [ ] PR → develop(feature branch,禁直上 master;本專案整合分支是 `main`)
 - [ ] 4-spec delta 已併入 `docs/specs/<domain>.md`(本 repo 無 living spec;`n-a`)
 - [ ] STATUS.md 已更新為 shipped(整合分支上、PR 合併後由合併者做,不塞進本 branch)
-- [ ] 7-review frontmatter status: shipped;上游 artifact 可保留 approved(**本檔仍 draft／PRE-REVIEW**)
+- [x] 7-review frontmatter status: shipped;上游 artifact 可保留 approved
 - [x] 7-review.html 已產生(G3 twin;`scripts/build-gate-twin.py`;審頁另跑 `scripts/build-stage7-html.py --action` → `/tmp/diagram-ir-gate-stage7-shots.html`,不覆寫 twin)
 - [ ] feature branch 已刪 / worktree 已清
 
@@ -341,7 +346,7 @@ Dependency Direction／Boundary Leakage／Interface Stability:未發現反向依
 
 ### A1　爭點
 
-1. **本檔是不是 G3 PASS?** 不是。機械 21 S 綠 + 三牙綠 ≠ Human G3。`verdict:` 必須留 `PRE-REVIEW`。
+1. **本檔是不是 G3 PASS?** 是。機械 21 S 綠 + 三牙綠仍是 #254 正本;Human G3 PASS 已由 `user` @ 2026-09-13（chat / widget）寫入。`verdict: PASS`／`status: shipped`。
 2. **2c 該用哪一個 FORK?** 本審查分支從 #250 tip `3b22f01` 切開,兩次腳本都是 `N_A_NO_INCOMING`。6-notes 步 0 錨是 `25997871a86fce87a1b1f0658512d7f96e07dea3`(#244 Stage 5 tip,Stage 6 開工)。產品已合進 main;拿那個錨再跑會 `ALREADY_SYNCED`,不得當「沒有共同戰場」的證據。
 3. **S-4.2 牙夠不夠?** CASE 本身偏弱(F-3)。本 hop 用三支既有牙 Fresh 補上。抽驗請看 16/16、81/81、222。
 4. **twin 罐頭 payload 算不算繞閘?** 寫檔路徑經閘(S-2.3 要的)。內容不經閘(Known Limits ③)。不升 🟡 Boundary。
@@ -405,14 +410,14 @@ S-5.2 plugin 3.23.3; origin/main...HEAD plugin diff empty
 ```
 test -x docs/dev/tools/devflow-evidence-gauntlet.sh
 bash docs/dev/tools/devflow-evidence-gauntlet.sh docs/dev/diagram-ir-gate/7-review.md \
-  --source-sha 3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4 --review-file \
+  --source-sha 83722a922efceb2455e0cbe35750b4a621ce41a0 --review-file \
   --require-layer check-spec-gate \
   --require-layer check-vbox-fig \
   --require-layer check-dir-tree \
   --require-layer check-gate-twin
 ```
 
-Fresh 當時 HEAD=`3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4`:
+#254 Fresh 實跑當時 HEAD=`3b22f01a72240ed9c4d57dc0ab8568678e8d6ea4`。本 hop 重綁 Source SHA 到開工 HEAD `83722a922efceb2455e0cbe35750b4a621ce41a0`(工作樹可有未提交的本檔):
 
 ```
 ✅ evidence gauntlet: 67 checks passed — docs/dev/diagram-ir-gate/7-review.md
@@ -428,4 +433,4 @@ Profile Required 是一條全形 `／` 字串,Evidence 表第一列 Layer 必須
 4. 失敗收據一定要有哪六個鍵?少了 `DIAGIR_ABORT` 算不算過?
 5. S-5.2 為什麼用三點 `origin/main...HEAD` 而不是雙點 `origin/main`?
 
-全對才准把 `verdict:` 從 PRE-REVIEW 改成 Human PASS,且必須由人類寫入。
+Human G3 PASS 已由 `user` @ 2026-09-13（chat / widget）寫入;`verdict:` 不再是 PRE-REVIEW。題旨仍供抽驗,不重考。
