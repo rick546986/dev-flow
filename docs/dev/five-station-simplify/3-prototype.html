@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>five-station-simplify · 3-prototype</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px}
+.r-body p{margin:0 0 8px}
+.trigger{list-style:none;padding:0;margin:0}
+.trigger li{padding:4px 0;border-bottom:1px solid var(--rule-2)}
+.hit{color:var(--ok);font-weight:650}
+.miss{color:var(--ink-3)}
+.card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 8px;background:var(--sunk)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 3-prototype · 審查介面</p>
+  <h1>five-station-simplify</h1>
+  <p class="sub">正本是 md。觸發判定／Demo／答案回寫 2-decision。不是 html-shell 長文。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">draft</span></div><div class="cell"><span class="k">觸發命中</span><span class="v">8/9</span></div><div class="cell"><span class="k">Demo</span><span class="v">8</span></div><div class="cell"><span class="k">Human verdict</span><span class="v">NOT_REVIEWED</span></div></div>
+</header>
+<section class="r-block" id="trigger"><div class="r-head"><span class="r-name">觸發判定</span></div><div class="r-body"><ul class="trigger"><li class="miss">[未中] 有新的前端流程（本題是方法論任務卡／拒收面，沒有新產品畫面）</li><li class="hit">[命中] 改變使用者下一步（摺站後 Decide／Spec／Build 不再等人按提交；缺 Verify 的下一步必須是停修，不是問 owner 要不要繼續）</li><li class="hit">[命中] 涉及角色交接（Build 實作者 → 獨立 T reviewer → Ship 審查者；seam 被偷走就沒有第二人可審）</li><li class="hit">[命中] 涉及人工核准（Ship 仍唯人寫 `verdict:`；B1 仍人類 `ACCEPTED`+attestation；Agent 代寫 = 未寫）</li><li class="hit">[命中] 涉及等待/退回/逾時（謂詞假停修；B1 latch；rewrite cap 用盡 Escalated；Q6 過期擋本 slug G2）</li><li class="hit">[命中] 涉及權限差異（實作者禁讀 1／2／3；coordinator 禁代填判定；未 2.1.0 採用端不得被遠端改線）</li><li class="hit">[命中] 涉及系統外動作（Cursor chat 蓋章、marketplace update、採用現場口頭中繼）</li><li class="hit">[命中] 涉及多種可行互動設計（Decision 已鎖 RP-1…RP-16 **要紅**；未鎖 owner **何時、在哪張卡**看見紅）</li><li class="hit">[命中] Stage 1 尚有操作流程不確定性（假完成 T 的人見面未釘；Q8 欄位名／Q10 計數落點仍移交 F1／F2）</li></ul></div></section>
+<section class="r-block" id="question"><div class="r-head"><span class="r-name">Question</span></div><div class="r-body"><p>2-decision Risk「寫手用『已經五站了』省略 M11／M3／M1」＋ SC-3 對照稿「`Verify: 看起來沒問題` 的假 T」＋ SC-13／RP-1…RP-16＋ OC-10／OC-11：摺掉例行 G1／G2／S3 停之後，**owner 在哪一張卡、哪一步**看出 T 未完成，而不是看見綠勾？ 三張結構不同的卡要比的是「人見面」，不是重開 6A／RP 表： 1. **缺欄當下就紅（推薦）**：A8 任務卡上，缺 Covers／Files／Verify／Blocked-by、或 Verify 只寫「看起來沒問題」，checkbox 不得冒充完成。 2. **hop 才出拒收板**：勾選可先綠，離開 Build 才列出 RP。 3. **Ship 才重建**：勾選綠到出貨，coverage 對不上才發現（現況病，棄）。 答案長什麼樣才算回答了： - owner 能指著一張卡說「缺 Verify 時我看見 RP-1，下一步是停修，不是問我要不要繼續」。 - 同一張假 T 在三個 Variant 的決策點不同（寫卡時／hop 時／Ship 時）。 - 選定（推薦）Variant 寫得清：誰填、等誰、空／錯／權限不足／過期怎麼辦。 - 本 hop **不**改模板、**不**改 2-decision、**不**填 ACCEPTED。</p></div></section>
+<section class="r-block" id="demo"><div class="r-head"><span class="r-name">Demo</span></div><div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 454" role="img" aria-label="結構圖">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">Variant A T卡上就紅（選定）</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">Variant B hop才出拒收板</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="b" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">Variant C Ship才重建（棄）</text>
+  <path class="flow" d="M140,216 L140,238"/>
+  <rect class="b" x="40" y="238" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="262">缺Verify不得完成</text>
+  <path class="flow" d="M140,292 L140,314"/>
+  <rect class="b" x="40" y="314" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="338">Agent代寫=未寫</text>
+  <path class="flow" d="M140,368 L140,390"/>
+  <rect class="b" x="40" y="390" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="414">本slug仍舊7</text>
+</svg>
+</div><div class="card"><strong>Scenario AC-3</strong><p>使用者角色:owner／Ship 審查者（先當 A8 讀者）</p><p>真實目標:缺 Verify 或 `Verify: 看起來沒問題` 的 T 不得標完成</p><p>起始狀態:Method 好卡 vs 壞卡 1（SC-3 對照稿）</p><p>操作步驟:只看該 T 四欄與勾選；對照 A（卡上 RP-1、勾選無效）／B（勾選綠、hop 板才紅）／C（勾選綠到 Ship）</p><p>系統回應:A 當下未完成。B 有兩套真相。C 重演 Journey 步 6 假完成</p><p>系統外下一步:補 Verify 為可跑命令＋貼輸出；不要 chat「都過」</p><p>觀察問題:看到綠勾時，知不知道它不算完成？系統有沒有暗示「已經五站了所以可省 Verify」？</p></div><div class="card"><strong>Scenario AC-3（seam／自審）</strong><p>使用者角色:獨立 T reviewer</p><p>真實目標:無 RED 或 reviewer=implementer → T 未完成（RP-2／M11 seam）</p><p>起始狀態:壞卡 2（有 Verify 字、無 RED、自審）</p><p>操作步驟:要 RED 輸出與 reviewer 欄；A 同卡拒絕；B hop 才列 RP-2；C Ship 才問誰審的</p><p>系統回應:A 縫上紅。B 中間看起來已勾。C 四眼只剩欄位名</p><p>系統外下一步:另開 session 審；實作者不得自簽；重跑 RED 並貼原始輸出</p><p>觀察問題:系統是否暗示「有 Verify 字就等於跑過」？權限不足（自審）時下一步清不清楚？</p></div><div class="card"><strong>Scenario AC-2</strong><p>使用者角色:owner</p><p>真實目標:宣稱「五站已簡化」但 M 表少 M11／M3／M1 → 看成違規，不是簡化成功</p><p>起始狀態:一份 4-spec／5-tasks 把四欄標「可選（已五站）」</p><p>操作步驟:對照 brief §5 與 Decision 約束 1–2、OC-11；A 在該列就紅；C 到 Ship 才點名</p><p>系統回應:少項被點名。不得寫成簡化成功。後站標可選 → 擋本 slug G2</p><p>系統外下一步:收回「可選」；去向維持 `M11 → R-x/S-y`，不另發 ID</p><p>觀察問題:「已經五站了」這句出現時，下一動作是停修還是繼續摺？</p></div><div class="card"><strong>Scenario AC-4</strong><p>使用者角色:Ship 審查者</p><p>真實目標:Agent 寫入 `ACCEPTED` 或 Ship `PASS` = 未寫（RP-16／RP-8／M5）</p><p>起始狀態:md 頂欄被 Agent 填了 PASS；無人類 attestation</p><p>操作步驟:只看頂欄與 attestation 行；嘗試 hop 出 Spec／標 Done</p><p>系統回應:A／B 當沒寫並紅。C 看起來已出貨。chat「Treat as PASS」不得入欄（OC-6）</p><p>系統外下一步:人親寫頂欄；Agent 禁改 attestation。本 hop 不示範填 ACCEPTED</p><p>觀察問題:系統有沒有暗示「欄位有字=人審過」？</p></div><div class="card"><strong>Scenario AC-1</strong><p>使用者角色:coordinator（F2 後）／owner</p><p>真實目標:謂詞假 = 停該站修，不是改問人（G-out-1）</p><p>起始狀態:新 slug Decide／Spec／Build 完成、中間 latch 未命中；另有一 T 缺 Verify</p><p>操作步驟:看前進紀錄有沒有「請人審 A4／A7」；缺欄時看停修理由</p><p>系統回應:中間無人停。缺 Verify 的停因是 RP-1 假，不是「先問 owner 要不要繼續」。A 在 T 卡；B 在 hop 板；C 沒停</p><p>系統外下一步:修該 T。不要開審查 widget</p><p>觀察問題:等待狀態是「停修」還是「等人蓋章」？</p></div><div class="card"><strong>Scenario AC-6</strong><p>使用者角色:owner</p><p>真實目標:B1 命中且 attestation 空 → 不得 hop 出 Spec（RP-13）；chat「可以」不是判定</p><p>起始狀態:本檔 Human verdict=`NOT_REVIEWED`；attestation 空（本 hop 真實狀態）；對照 dogfood-ping 空欄仍開 Stage 4</p><p>操作步驟:嘗試用 chat「准開 Stage 4」帶走；看 A 是否仍拒</p><p>系統回應:A 停 Spec。B 若把 chat 當 hop 准許 = 5B 回流（已拒）。未 Demo = NOT_REVIEWED ≠ ACCEPTED</p><p>系統外下一步:人類親做 Demo、親填 ENUM＋attestation。Agent 禁代填</p><p>觀察問題:系統是否暗示「有 3-prototype.md 就能進 4」？</p></div><div class="card"><strong>Scenario AC-8</strong><p>使用者角色:本 slug 執行者</p><p>真實目標:對 `docs/dev/five-station-simplify/` 要求五站自動前進、跳過例行 G1／G2 → 跳不過（RP-15）</p><p>起始狀態:本目錄已有 1／2／3 的 md = in-flight</p><p>操作步驟:要求五站 hop 跳過本 slug 的 G1／G2</p><p>系統回應:拒。仍舊 7 直到自己的 Ship。A 在 hop 當下拒；C 會拿自己當新 5 白老鼠</p><p>系統外下一步:本 slug 繼續走舊 7 閘。不要改 STATUS 假裝已切五站</p><p>觀察問題:doctor 綠或 marketplace 已換 hops，會不會被讀成「本目錄已經五站了」？</p></div><div class="card"><strong>Scenario AC-7</strong><p>使用者角色:後站規格者</p><p>真實目標:M 表每條高影響列有 `M11 → R-x/S-y | Non-Goal:&lt;reason&gt;`；禁把 M15／M16 寫成 Non-Goal</p><p>起始狀態:2-decision Must-keep Disposition 種子表</p><p>操作步驟:抽 M11／M3／M1／M15；看 A 是否能從種子恢復；C 散文「有處理」</p><p>系統回應:A／B 指得到列。C 與去向空白無法證明列還在。M15／M16 是約束</p><p>系統外下一步:4-spec 落具體 R/S id（本 hop 不發 id）</p><p>觀察問題:中斷後能否從 M 編號恢復，還是要靠記憶？</p></div></div></section>
+<section class="r-block" id="result"><div class="r-head"><span class="r-name">答案</span></div><div class="r-body"><p>回寫 2-decision 的預定答案（本 hop **不**改 Decision 檔）：推薦 **Variant A**（T 卡上就紅）。B 讓完成標先寫上、hop 再救，違反 SC-3「該 T 不得標完成」。C 重演假完成，棄。RP 人見面見 Method 表。Risk「已五站故省 M11／M3／M1」的人對面 = A8／A9 當下紅，不是 Ship 才重建。2-decision OC 表不改。 | 場 | 選定人見面（A） | 負向 | |---|---|---| | AC-3 缺 Verify | 卡上 RP-1；勾選無效 | `Verify: 看起來沒問題` 仍綠 | | AC-3 seam | 卡上 RP-2；自審無效 | 無 RED 仍勾 | | AC-2 少 M | 少項=違 brief | 「已五站」當省略理由 | | AC-4 代寫 | Agent PASS=未寫 | 頂欄有字算出貨 | | AC-1 停修 | 理由=謂詞假 | 改問 owner | | AC-6 B1 | 空 attestation 不得離 Spec | chat「可以」帶走 | | AC-8 freeze | 本 slug hop 拒 | 當新 5 白老鼠 | | AC-7 去向 | `M11 → R-x/S-y` | M15／M16 標 Non-Goal | 證據:用 SC-3 壞卡走完 A／B／C；只有 A 讓 owner 在勾選當下看見未完成。正式模板／牙未改。本 hop Human verdict 留 NOT_REVIEWED。</p></div></section>
+<section class="r-block" id="writeback"><div class="r-head"><span class="r-name">回寫 2-decision</span></div><div class="r-body"><p>- 預定回寫 2-decision：內部技術選擇加一行「第 3 站推薦 Variant A（T 卡上就紅）；不重開 6A／RP」。確認紀錄預定留「prototype 回寫 | 2026-09-13 | C 線模擬器推薦 A；Human verdict 仍 NOT_REVIEWED」。**本 hop 不改 2-decision.md**（獨立、draft、待人類 Demo）。 - 實驗產物:好卡／壞卡留在本檔 Method；無 throwaway branch、無正式碼。 - frontmatter `status: draft`。未 Demo = NOT_REVIEWED ≠ ACCEPTED。Agent 未代填 attestation。不送 G2、不開 4-spec、不改 STATUS、不合併。</p></div></section>
+<section class="r-block" id="feedback"><div class="r-head"><span class="r-name">User Demo Feedback</span></div><div class="r-body"><p>- Demo date: - Participants: - Variant reviewed: A（推薦）／B／C（棄）；待人類親走 - Accepted interaction: - Rejected interaction: - Confusions observed: - Missing real-world steps: - Permission corrections: - External handoffs: - Required changes: - Human verdict: NOT_REVIEWED | role=owner | scenario=AC-3 - Verdict attestation:</p></div></section>
+<p class="src">由 <code>scripts/build-stage3-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
