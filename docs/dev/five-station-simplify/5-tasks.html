@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>five-station-simplify · 5-tasks</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  -webkit-font-smoothing:antialiased}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;font-variant-numeric:tabular-nums}
+code{background:var(--sunk);border-radius:3px;padding:1px 5px;color:var(--ink-2)}
+a{color:var(--accent)}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+
+/* ---- 頁首 ---- */
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem;max-width:62ch}
+
+/* ---- 動線格 ---- */
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:20px 0 4px}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:11px 13px;box-shadow:var(--shadow)}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;display:block;margin-bottom:5px}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+.cell .n{font-size:.78rem;color:var(--ink-2);display:block;margin-top:3px}
+.cell.is-bad .v{color:var(--bad)} .cell.is-ok .v{color:var(--ok)}
+.cell.is-warn .v{color:var(--warn)} .cell.is-accent .v{color:var(--accent)}
+
+/* ---- sticky 進度 ---- */
+.progress{position:sticky;top:0;z-index:20;background:var(--ground);
+  border-bottom:1px solid var(--rule);padding:11px 0;margin:22px 0 0}
+.progress-in{max-width:900px;margin:0 auto;padding:0 20px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.bar{flex:1 1 200px;height:7px;background:var(--sunk);border-radius:99px;overflow:hidden;
+  min-width:140px}
+.bar i{display:block;height:100%;width:0;background:var(--accent);
+  transition:width .25s ease;border-radius:99px}
+.count{font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.count b{color:var(--accent)}
+.btn{border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);
+  border-radius:7px;padding:5px 11px;font-size:.82rem;cursor:pointer;font-family:inherit}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---- 提示框 ---- */
+.criterion{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 26%,transparent);
+  border-radius:10px;padding:15px 17px;margin:26px 0}
+.criterion h2{margin:0 0 7px;font-size:.95rem;letter-spacing:.02em;border:0;padding:0}
+.criterion p{margin:0;color:var(--ink-2);font-size:.9rem}
+.criterion .ex{margin-top:9px;padding-top:9px;
+  border-top:1px dashed color-mix(in srgb,var(--accent) 30%,transparent);font-size:.85rem}
+
+/* ---- 區塊卡（R / T 共用）---- */
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;
+  border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
+.r-block.danger .r-head{border-left-color:var(--bad)}
+.r-id{font-weight:700;font-size:.95rem;letter-spacing:.02em;white-space:nowrap;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.r-block.danger .r-id{color:var(--bad)}
+.r-block.core .r-id{color:var(--accent)}
+.r-name{font-weight:650}
+.r-risk{display:block;font-size:.83rem;color:var(--ink-2);margin-top:3px}
+.r-rule{padding:12px 18px;background:var(--sunk);font-size:.9rem;color:var(--ink-2);
+  border-bottom:1px solid var(--rule-2)}
+.r-rule b{color:var(--ink)}
+
+/* ---- 圖 ---- */
+/* 直式現況圖／方案架構圖:外層撐滿欄、圖本身有限寬,水平置中。
+   禁 svg/pre width:100% —— 畫布撐滿時狹長圖會貼左。
+   max-width 360px 對齊鎖定手樣(subsidy 2-decision.html)。 */
+.fig{margin:26px 0;padding:17px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}
+.fig svg,.fig pre{display:block;width:auto;max-width:360px;margin:0 auto;height:auto}
+.fig pre.fig-ascii-fallback{max-width:100%;width:100%;box-sizing:border-box;
+  overflow-x:auto;text-align:left;white-space:pre;background:var(--sunk);
+  padding:11px;border-radius:7px;font-size:.82rem;line-height:1.5;margin-top:8px}
+.fig .fig-warn{color:var(--warn);text-align:left;margin:0 0 4px;max-width:100%}
+.pinned pre{display:block;width:max-content;max-width:100%;margin-left:auto;margin-right:auto}
+.cap{color:var(--ink-3);font-size:.82rem;line-height:1.6;margin-top:11px;text-align:center}
+svg .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.4}
+svg .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+svg .wn{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.4}
+svg .bd{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.4}
+svg .nl{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--ink)}
+svg .sm{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--ink-3)}
+svg .edge{fill:none;stroke:var(--ink-3);stroke-width:1.6}
+svg .ahead{fill:var(--ink-3);stroke:none}
+
+/* ---- 摺疊 ---- */
+.appendix{margin-top:42px;border-top:1px solid var(--rule);padding-top:22px}
+.appendix > h2{font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 13px;border:0;padding:0}
+details.doc{border:1px solid var(--rule);border-radius:9px;margin-bottom:9px;
+  background:var(--panel);overflow:hidden}
+details.doc > summary{cursor:pointer;padding:11px 15px;font-weight:600;font-size:.9rem;
+  list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:center}
+details.doc > summary::-webkit-details-marker{display:none}
+details.doc > summary::after{content:"展開";font-size:.76rem;color:var(--ink-3);font-weight:500}
+details.doc[open] > summary::after{content:"收合"}
+details.doc[open] > summary{border-bottom:1px solid var(--rule-2)}
+details.doc:hover{border-color:var(--accent)}
+.doc-in{padding:4px 17px 15px;font-size:.9rem;color:var(--ink-2)}
+.doc-in h2,.doc-in h3{color:var(--ink);font-size:.95rem;margin:16px 0 7px;border:0;padding:0}
+.doc-in table{border-collapse:collapse;width:100%;margin:11px 0;font-size:.84rem}
+.doc-in th,.doc-in td{border:1px solid var(--rule);padding:6px 9px;text-align:left;
+  vertical-align:top}
+.doc-in th{background:var(--sunk);font-weight:650;color:var(--ink)}
+.doc-in pre{background:var(--sunk);padding:11px;border-radius:7px;overflow-x:auto;
+  font-size:.82rem;line-height:1.5}
+.doc-in blockquote{margin:11px 0;padding:.4em 1em;border-left:3px solid var(--rule);
+  color:var(--ink-3)}
+.doc-in ul,.doc-in ol{padding-left:1.35em}
+.doc-in li{margin:4px 0}
+.tablewrap{overflow-x:auto}
+
+/* ---- 收尾 ---- */
+.verdict{margin-top:34px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);padding:19px 21px;box-shadow:var(--shadow)}
+.verdict h2{margin:0 0 9px;font-size:1rem;border:0;padding:0}
+.verdict p{margin:0 0 9px;color:var(--ink-2);font-size:.91rem}
+.verdict p:last-child{margin-bottom:0}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:560px){h1{font-size:1.35rem}}
+
+.pinned{border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:8px;
+        padding:14px 16px;margin:0 0 14px;background:var(--panel)}
+.pinned>h2{margin:0 0 8px;font-size:1rem;letter-spacing:.01em}
+.pinned .tablewrap{overflow-x:auto}
+.pinned table{width:100%;border-collapse:collapse;font-size:.86rem}
+.pinned th,.pinned td{border:1px solid var(--rule);padding:5px 8px;text-align:left;vertical-align:top}
+.pinned ul{margin:.3em 0 .3em 1.1em;padding:0}
+.pinned p{margin:.35em 0}
+a.cell{cursor:pointer;text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.s-card{border-bottom:1px solid var(--rule-2)}
+.s-card:last-child{border-bottom:0}
+.s-head{display:flex;gap:10px;align-items:center;padding:12px 18px;cursor:pointer;
+  flex-wrap:wrap}
+.s-head:hover{background:var(--sunk)}
+.s-chk{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex:none}
+.s-chk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.s-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.83rem;
+  font-weight:650;color:var(--accent);background:var(--accent-soft);
+  padding:2px 7px;border-radius:5px;flex:none}
+.s-title{font-weight:600;font-size:.94rem}
+.tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600;flex:none}
+.tag.base{background:var(--sunk);color:var(--ink-3)}
+.tag.main{background:var(--warn-soft);color:var(--warn)}
+.tag.rej{background:var(--bad-soft);color:var(--bad)}
+.s-card.done{background:var(--ok-soft)}
+.s-card.done .s-title{color:var(--ink-2)}
+.s-body{padding:0 18px 15px 45px}
+.gwt{display:grid;gap:5px;margin-bottom:11px}
+.gwt-row{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:baseline}
+.gwt-k{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.71rem;
+  font-weight:700;color:var(--ink-3);letter-spacing:.06em}
+.gwt-v{font-size:.9rem;color:var(--ink-2)}
+.obs{background:var(--sunk);border-left:3px solid var(--accent);border-radius:0 7px 7px 0;
+  padding:9px 13px}
+.obs.missing{border-left-color:var(--bad);background:var(--bad-soft)}
+.obs-k{display:block;font-size:.71rem;letter-spacing:.08em;text-transform:uppercase;
+  font-weight:700;color:var(--accent);margin-bottom:3px}
+.obs.missing .obs-k{color:var(--bad)}
+.obs-v{font-size:.88rem;color:var(--ink-2)}
+@media (max-width:560px){
+  .s-body{padding-left:18px}
+  .gwt-row{grid-template-columns:1fr;gap:2px}
+}
+
+.t-bound{border-top:1px solid var(--rule-2);margin-top:9px}
+.t-bound>summary{cursor:pointer;padding:9px 0 9px 45px;font-size:.84rem;font-weight:600;
+  color:var(--ink-2);list-style:none;display:flex;justify-content:space-between;gap:10px}
+.t-bound>summary::-webkit-details-marker{display:none}
+.t-bound>summary::after{content:"展開";font-size:.75rem;color:var(--ink-3);font-weight:500}
+.t-bound[open]>summary::after{content:"收合"}
+.t-bound .body{padding:2px 18px 13px 45px;font-size:.87rem;color:var(--ink-2);line-height:1.7}
+.t-bound .body code{font-size:.85em}
+.dag{margin:22px 0;padding:15px 17px;border:1px solid var(--rule);border-radius:10px;
+  background:var(--panel);box-shadow:var(--shadow)}
+.dag h2{margin:0 0 10px;font-size:.95rem;border:0;padding:0}
+.dag pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.82rem;
+  line-height:1.7;color:var(--ink-2);overflow-x:auto;white-space:pre}
+@media (max-width:560px){
+  .t-bound>summary{padding-left:18px}
+  .t-bound .body{padding-left:18px}
+}
+
+.t-chk-hint{font-size:.86rem;color:var(--ink-2);margin:18px 0 0}
+.t-ask{margin:0 0 12px}
+.t-ask-h{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-3);margin:0 0 6px}
+.t-ask ul{margin:0;padding:0;list-style:none}
+.t-ask li{display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:.9rem;
+  color:var(--ink)}
+.t-ask .qmark{color:var(--accent);font-weight:700;flex:none;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap" id="top">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 5-tasks · 執行板</p>
+  <h1>five-station-simplify</h1>
+  <p class="sub">正本是 <code>docs/dev/five-station-simplify/5-tasks.md</code>,
+  這頁隨時可重生。<strong>審完頂區五格再決定要不要動工。</strong></p>
+  <div class="dash"><a class="cell" href="#top"><span class="k">狀態</span><span class="v">draft</span><span class="n">frontmatter</span></a><a class="cell" href="#cards"><span class="k">任務</span><span class="v">12 個 T</span><span class="n">六欄齊全</span></a><a class="cell" href="#top"><span class="k">模式</span><span class="v">sequential</span><span class="n">execution.mode(未標=sequential)</span></a><a class="cell" href="#dag"><span class="k">依賴</span><span class="v">11 條</span><span class="n">Blocked-by 邊</span></a><a class="cell" href="#progress"><span class="k">進度</span><span class="v">0/12</span><span class="n">已勾 完成/總數</span></a></div>
+</header>
+
+<div class="progress" id="progress">
+  <div class="progress-in">
+    <span class="count">已完成 <b id="done">0</b> / 12 條</span>
+    <span class="bar"><i></i></span>
+    <button class="btn" id="clear" type="button">清除勾選</button>
+  </div>
+</div><section class="dag" id="dag"><h2>T 依賴 DAG(Blocked-by,自動衍生)</h2><pre>Wave 1: T-1
+Wave 2: T-2 ←(T-1)
+Wave 3: T-3 ←(T-2)
+Wave 4: T-4 ←(T-3)
+Wave 5: T-5 ←(T-4)
+Wave 6: T-6 ←(T-5)
+Wave 7: T-7 ←(T-6)
+Wave 8: T-8 ←(T-7)
+Wave 9: T-9 ←(T-8)
+Wave 10: T-10 ←(T-9)
+Wave 11: T-11 ←(T-10)
+Wave 12: T-12 ←(T-11)</pre></section>
+<div id="cards">
+<p class="t-chk-hint">勾選 = 這張 T 不開口也能開工,不是已做完。</p><article class="s-card" data-sid="T-1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-1">
+    <span class="s-id">T-1</span>
+    <span class="s-title">打通 Agent 代寫 Ship PASS 的 RP-16 拒收縱切</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-1 的 Files 第一個檔 five_station_f1.py，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-1 的 Blocked-by 沒點名任何 T，真的可以立刻開工嗎？</span></li><li><span class="qmark">?</span><span>T-1 蓋的 S-3.1 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-3 / S-3.1</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/five_station_f1.py, scripts/check-five-station-f1.sh, scripts/test-five-station-f1.sh, scripts/fixtures/five-station-simplify/, notes/design/five-station-simplify-f1-rp-min-set.md</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(bash scripts/test-five-station-f1.sh --group rp16 -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;); test &quot;$n&quot; -ge 2 &amp;&amp; bash scripts/test-five-station-f1.sh --group rp16</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">—</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常多一次終端機拒絕：有人（或 Agent）把 <code>7-review.md</code> 頂欄寫成 <code>verdict: PASS</code>、或把 <code>3-prototype.md</code> 寫成 <code>Human verdict: ACCEPTED</code> 卻沒有 <code>Verdict attestation: human:</code> 行，同一支新牙必須當沒寫並紅（RP-16），不得標 Done、不得當已離 Spec。人親寫 attestation／頂欄的對照稿，不得因本條被誤殺。改的是新牙入口與 RP-16 對照稿，不是 Cursor 擋寫、不是改既有 doctor、不是先鋪十六列散文。不會變成 F2 狀態機、不會在本 T 寫完整九個 SLOT。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>F1 模組只准 <code>scripts/</code> 新牙與 <code>notes/design/</code> 本 slug annex。本 T 只准建立牙骨架＋RP-16 一列＋兩份對照稿（Agent 代寫紅／人類親寫不因本條紅）。禁改 <code>_templates/</code> Stage 1–4、禁改 <code>graph.yaml</code>、禁寫 coordinator、禁刪 G1／G2／<code>ACCEPTED</code> token、禁改 <code>hooks/_stage3_impl.py</code> 與 doctor 握手語義、禁鎖 annex 鍵名。Data owner = 母版 scripts／annex 文本。Interface = <code>check-five-station-f1.sh</code> 讀 fixture；selftest 印 <code>=== CASE</code>。Error seam = Agent／coordinator 寫入 = 未寫。本 T 不掛 file-map／devflow-check 地板（既有牙；紅了停判 L1）。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-2">
+    <span class="s-id">T-2</span>
+    <span class="s-title">寫齊 dual-read 九個 SLOT 語意槽並讓缺槽變紅</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-2 的 Files 第一個檔 five-station-simplify-f1-dual-read-annex.md，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-2 的 Blocked-by 寫 T-1，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-2 蓋的 S-5.8 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-5 / S-5.8</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">notes/design/five-station-simplify-f1-dual-read-annex.md, scripts/five_station_f1.py, scripts/check-five-station-f1.sh, scripts/test-five-station-f1.sh, scripts/fixtures/five-station-simplify/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(bash scripts/test-five-station-f1.sh --group slots -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;); test &quot;$n&quot; -ge 2 &amp;&amp; bash scripts/test-five-station-f1.sh --group slots</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-1</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常核 annex 時，九個 SLOT- id 都能指到一欄或等效句；少一槽，F1 檢查必須紅、不得宣稱 dual-read 已完成。改的是 dual-read annex 正文與「缺槽對照稿」，不是選定 JSON 鍵名、不是 bump 契約到 2.1.0。不會變成舊檔缺新欄就紅（那是已拒 2B）、不會在本 T 實作 doctor 改線。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>annex 必須同時具備且可用 SLOT- id 指到：SLOT-PARSE-OLD7、SLOT-PARSE-NEW5、SLOT-MISSING-NEW5-DEFAULT、SLOT-UNDECLARED-ROUTE、SLOT-REJECT-2.0.0-PLUS-FIVE-HOPS、SLOT-DOCTOR-GREEN-MEANS、SLOT-IN-FLIGHT-DETECT、SLOT-RP-MIN-SET、SLOT-SKIP-NEGATION。OC-3：本檔與 annex <strong>不鎖欄位鍵名</strong>。Forbidden = 把 SLOT 寫成必填 schema 鍵、把缺槽當 warning-only。Allowed module = 本 slug dual-read annex + 既有牙入口加厚。本 T 不改 RP-16 行為、不寫 coordinator event。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-3">
+    <span class="s-id">T-3</span>
+    <span class="s-title">讓舊檔缺新欄不紅且把 doctor 綠說成已切變紅</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-3 的 Files 第一個檔 five-station-simplify-f1-dual-read-annex.md，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-3 的 Blocked-by 寫 T-2，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-3 蓋的 S-5.4、S-5.5 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-5 / S-5.4, S-5.5, S-5.6, S-5.7, S-5.9</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">notes/design/five-station-simplify-f1-dual-read-annex.md, scripts/five_station_f1.py, scripts/check-five-station-f1.sh, scripts/test-five-station-f1.sh, scripts/fixtures/five-station-simplify/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(bash scripts/test-five-station-f1.sh --group dual-read -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;); test &quot;$n&quot; -ge 5 &amp;&amp; bash scripts/test-five-station-f1.sh --group dual-read</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-2</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常採用端更新 plugin 之後，不能再靠「doctor 印 COMPATIBLE」就以為已切五站。舊 7 站檔缺新 5 欄必須當合法缺席、不紅。文案或謂詞寫「doctor exit 0 所以可以跟 hops 走」必須紅。契約仍 2.0.0 且 hops 已是五站預設必須紅、路線仍舊 7；契約版本與 marketplace hops 哪個先寫入都一樣。改的是 dual-read 讀法與拒收句，不是改 doctor 握手本身、不是遠端改線。不會變成 3B（本刀改 doctor）、不會 bump <code>devflow-contract.json</code>。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>SLOT-MISSING-NEW5-DEFAULT／SLOT-DOCTOR-GREEN-MEANS／SLOT-REJECT-2.0.0-PLUS-FIVE-HOPS／SLOT-UNDECLARED-ROUTE 在本 T 必須可測。讀既有 <code>hooks/devflow-doctor.sh</code> 與 <code>_doctor_impl.py</code> 當證據，<strong>不准寫進 Files、不准改握手語義</strong>。Concurrency：兩源任一順序，2.0.0+五站 hops → 仍舊 7 且紅；doctor 綠不得當仲裁。禁鎖讀檔器欄位鍵名。禁把本 repo 現況 doctor 綠解釋成已切。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-4">
+    <span class="s-id">T-4</span>
+    <span class="s-title">讓有 md 的 slug 凍在舊 7 且本資料夾五站 hop 跳不過</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-4 的 Files 第一個檔 five_station_f1.py，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-4 的 Blocked-by 寫 T-3，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-4 蓋的 S-5.1、S-5.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-5 / S-5.1, S-5.2, S-5.3</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/five_station_f1.py, scripts/check-five-station-f1.sh, scripts/test-five-station-f1.sh, scripts/fixtures/five-station-simplify/, notes/design/five-station-simplify-f1-dual-read-annex.md</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(bash scripts/test-five-station-f1.sh --group inflight -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;); test &quot;$n&quot; -ge 3 &amp;&amp; bash scripts/test-five-station-f1.sh --group inflight</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-3</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常有人要把已有 <code>1-discussion.md</code>…<code>7-review.md</code> 任一檔的 slug（含本資料夾）改走五站自動前進、跳過例行 G1／G2，必須跳不過，且不得寫入五站狀態（RP-15）。只有 html、零個 1–7 <code>.md</code> 的目錄不算 in-flight，F3 後才可開五站機——本 T 只釘偵測布林，不切預設路線。改的是 in-flight 偵測牙，不是折本 slug、不是 F3 cut。不會變成 4C（拿本 slug 當新 5 白老鼠）。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>SLOT-IN-FLIGHT-DETECT = <code>docs/dev/&lt;slug&gt;/</code> 已有 1–7 任一 <code>.md</code>。本目錄因 md 而凍，不是因 html。Forbidden = 改 <code>graph.yaml</code>、寫五站狀態進 <code>docs/dev/five-station-simplify/</code>、把僅 html 當凍結。對照稿必須含：有 md → 凍舊 7；僅 html → <code>in_flight=false</code>；對本 slug 下五站 hop → 拒。不實作 coordinator hop 引擎。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-5">
+    <span class="s-id">T-5</span>
+    <span class="s-title">讓缺四欄或 Verify 寫看起來沒問題的 T 卡上就紅</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-5 的 Files 第一個檔 five_station_f1.py，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-5 的 Blocked-by 寫 T-4，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-5 蓋的 S-2.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-2 / S-2.2</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/five_station_f1.py, scripts/check-five-station-f1.sh, scripts/test-five-station-f1.sh, scripts/fixtures/five-station-simplify/, notes/design/five-station-simplify-f1-rp-min-set.md</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(bash scripts/test-five-station-f1.sh --group rp1 -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;); test &quot;$n&quot; -ge 2 &amp;&amp; bash scripts/test-five-station-f1.sh --group rp1</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-4</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常寫手勾了 done、卡上卻缺 Covers／Files／Verify／Blocked-by，或 Verify 只寫「看起來沒問題」，打開任務卡當下就要看見 RP-1 紅；勾選不得把該 T 標完成。改的是 F1 牙對 T 卡形狀的拒絕，不是等 hop 板或 Ship 才重建紅燈。不會變成改 <code>_templates/5-tasks.md</code>、不會把四欄標成可選。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>人見面時機 = T 卡上就紅（4-spec DD-6）。對照稿輸入用 4-spec 指向的 T-fake 形（缺欄或 <code>Verify</code> 無鑑別力句）。Allowed = 加厚既有 F1 牙。Forbidden = 改 Stage 1–4 模板、把紅燈延後到 Ship、把 checkbox 當完成正本。本 T 不咬 RED 輸出／自審（屬 T-6）。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-6">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-6">
+    <span class="s-id">T-6</span>
+    <span class="s-title">讓無 RED、自審、無原始輸出的完成宣稱變紅</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-6 的 Files 第一個檔 five_station_f1.py，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-6 的 Blocked-by 寫 T-5，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-6 蓋的 S-2.3、S-2.9 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-2 / S-2.3, S-2.9</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/five_station_f1.py, scripts/check-five-station-f1.sh, scripts/test-five-station-f1.sh, scripts/fixtures/five-station-simplify/, notes/design/five-station-simplify-f1-rp-min-set.md</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(bash scripts/test-five-station-f1.sh --group seam -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;); test &quot;$n&quot; -ge 3 &amp;&amp; bash scripts/test-five-station-f1.sh --group seam</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-5</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常有人要把一個沒有失敗測試原始輸出、或 reviewer 欄等於實作者、或完成宣稱只附摘要沒有原始輸出／<code>檔:行</code> 的 T 標完成，必須紅（RP-2／RP-6），該 T 未完成。改的是 seam／證據物質牙，不是開第二條審查產品。不會變成 Agent 代填 reviewer、不會把摘要當證據。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>RP-2 = 無 RED 或 reviewer=implementer → 未完成。RP-6／M10 = 只有摘要、無原始輸出或 <code>檔:行</code> → 紅。Test seam = 6-notes 證據欄對照稿，不是真開第二 session。Forbidden = 把自審寫成可選 seam（6B）、改 author≠approver 正本。本 T 不咬 Files 聯集（屬 T-8）。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-7">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-7">
+    <span class="s-id">T-7</span>
+    <span class="s-title">讓模糊 S 與不含 S-id 的測試名變紅</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-7 的 Files 第一個檔 five_station_f1.py，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-7 的 Blocked-by 寫 T-6，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-7 蓋的 S-2.4、S-2.5 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-2 / S-2.4, S-2.5</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/five_station_f1.py, scripts/check-five-station-f1.sh, scripts/test-five-station-f1.sh, scripts/fixtures/five-station-simplify/, notes/design/five-station-simplify-f1-rp-min-set.md</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(bash scripts/test-five-station-f1.sh --group spec-name -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;); test &quot;$n&quot; -ge 3 &amp;&amp; bash scripts/test-five-station-f1.sh --group spec-name</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-6</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常一份 S 寫了 <code>check-spec-gate.sh</code> C4 <code>VAGUE_ALL</code> 三詞之一、或只寫「系統應處理錯誤」且無可斷言輸出，F1 必須紅（RP-3），該 S 不得當 T 的 Covers 綠燈。測試函數名像 <code>test_store_half_slot</code>（不含 <code>s_</code>／<code>S-</code> 與 S-id）必須紅（RP-4）；對照名 <code>test_s_2_5_test_name_requires_s_id</code> 不因本條紅。改的是接上既有 spec-gate C4 的對照、加上測試名牙，不是另造規格檢查家族、不是改 <code>check-spec-gate.sh</code> 檔。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>S-2.4 明寫 F1 <strong>接</strong>既有 <code>scripts/check-spec-gate.sh</code> C4，不另造家族；該檔只准呼叫、不准列入 Files、不准改 C4 詞表。RP-4 只咬測試名是否含對應 S-id。Forbidden = 新開 <code>check-spec-vague.sh</code> 第二家族、把模糊詞牙改成 warning-only。正向對照：名含 <code>s_</code> 與 S-id 的測試不因本條紅。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-8">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-8">
+    <span class="s-id">T-8</span>
+    <span class="s-title">讓少 Must-keep 宣稱、可選四欄句、Files 超出聯集變紅</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-8 的 Files 第一個檔 five_station_f1.py，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-8 的 Blocked-by 寫 T-7，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-8 蓋的 S-2.1、S-2.7 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-2 / S-2.1, S-2.7, S-2.8</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/five_station_f1.py, scripts/check-five-station-f1.sh, scripts/test-five-station-f1.sh, scripts/fixtures/five-station-simplify/, notes/design/five-station-simplify-f1-rp-min-set.md</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(bash scripts/test-five-station-f1.sh --group brief-files -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;); test &quot;$n&quot; -ge 3 &amp;&amp; bash scripts/test-five-station-f1.sh --group brief-files</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-7</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常有人寫「五站已簡化」卻拿掉 T 的 Verify（少 M11），或在本 slug 後站寫「四欄可選／seam 可選／已五站故省 Must-keep」，或一個 T 缺 Files、或 Files 路徑超出同份 5-tasks 聯集，都必須紅；少 M 的簡化宣稱要被點名違 brief，可選句要擋本 slug G2，缺／超 Files 的 T 不得標完成（RP-5）。改的是 brief／scope 牙，不是重寫 Must-keep 正本。不會變成 6B（把 M 標可選）。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>S-2.7 對本 slug <code>4-spec.md</code>／後續 <code>5-tasks.md</code> 掃「可選四欄｜可選 seam｜已五站故省」；本檔正文必須維持零命中。RP-5／M9 = 缺 Files 或 Files ⊈ 聯集 → 紅。Forbidden = 把四欄／seam／Must-keep 標可選、把本 T 拿去改 <code>_templates/</code>。本 T 不重開 Disposition 表（S-6.1 已綠）。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-9">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-9">
+    <span class="s-id">T-9</span>
+    <span class="s-title">讓空 attestation、強迫 ACCEPTED、請人審與否定跳過變紅</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-9 的 Files 第一個檔 five_station_f1.py，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-9 的 Blocked-by 寫 T-8，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-9 蓋的 S-4.1、S-4.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-4 / S-4.1, S-4.2, S-4.3, S-4.4, S-4.5</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/five_station_f1.py, scripts/check-five-station-f1.sh, scripts/test-five-station-f1.sh, scripts/fixtures/five-station-simplify/, notes/design/five-station-simplify-f1-dual-read-annex.md</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(bash scripts/test-five-station-f1.sh --group attest -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;); test &quot;$n&quot; -ge 5 &amp;&amp; bash scripts/test-five-station-f1.sh --group attest</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-8</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常 B1 已命中時，沒有人類 <code>ACCEPTED</code>+<code>Verdict attestation: human:&lt;名&gt; @ &lt;日&gt;</code> 就不得進 Build；欄空加上 chat「可以開 Stage 4」仍不得離 Spec（RP-13）。未命中卻被要求 <code>ACCEPTED</code> 必須紅（RP-12），且不建 Demo 頁。A4／A7 latch=否卻留下「請 owner 看一下／要不要繼續」必須紅（RP-14）。「不／無／不得」加上「跳過」不得再被讀成 skip OC（SLOT-SKIP-NEGATION／S-4.5）。改的是 F1 新牙謂詞，不是修既有 <code>_stage3_impl.py</code>（該檔不進 Files）。不會變成 5B／5C（chat 繞或取消 attestation）。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>SLOT-SKIP-NEGATION 本 T 必須可測。讀 <code>_stage3_impl.py</code> 只當 Known limit 證據，<strong>不准改、不准列入 Files</strong>。chat 文字不得寫入 Human verdict。Forbidden = 把否定跳過句當 skip OC、把 chat 當 attestation、未命中仍產 Demo 頁。S-4.1 正向：兩行都在才准 hop（對照稿，不是真跑 F2 coordinator）。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-10">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-10">
+    <span class="s-id">T-10</span>
+    <span class="s-title">讓不可逆無 Quiz 與無人 PASS 的 Ship Done 變紅</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-10 的 Files 第一個檔 five_station_f1.py，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-10 的 Blocked-by 寫 T-9，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-10 蓋的 S-1.10、S-3.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-1 / S-1.10; R-3 / S-3.2, S-3.3</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/five_station_f1.py, scripts/check-five-station-f1.sh, scripts/test-five-station-f1.sh, scripts/fixtures/five-station-simplify/, notes/design/five-station-simplify-f1-rp-min-set.md</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(bash scripts/test-five-station-f1.sh --group ship-quiz -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;); test &quot;$n&quot; -ge 4 &amp;&amp; bash scripts/test-five-station-f1.sh --group ship-quiz</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-9</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常改了 schema／公開 API／權限／金流／資料遺失卻沒 Quiz，必須紅（RP-7）；可逆改動被強制 Quiz 當第三例行停也必須紅。<code>7-review.md</code> 頂欄沒有人類 <code>verdict: PASS</code>（空／HOLD／REQUEST_CHANGES）卻標 Done，必須紅（RP-8），狀態留 Ship。宣稱 G3 可過或 Done 但 Evidence 八點少一點，或用「已經五站了」當省略理由，必須未過（S-3.3）。改的是 Quiz／Ship／八點對照牙，不是 F2 狀態機、不是本 hop 跑 G3。不會變成可逆也加人停、不會讓機械綠自動 Done。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>B4 僅不可逆；可與 A10 同一人停，不准第三次例行停。RP-8 對照稿即可，不實作 coordinator HumanWait。S-3.3 八點對 <code>docs/dev/readme-contract-extract.md</code> G3 錨，摺站不得省略。Forbidden = 放寬 Quiz 到每次 feat、Agent 寫 PASS 當已寫（已由 T-1 咬）、本 T 改 7-review 模板。Files 不列 <code>7-review.md</code> 正本。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-11">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-11">
+    <span class="s-id">T-11</span>
+    <span class="s-title">釘 RP-1 到 RP-16 只准加並讓十六個對照各紅一次</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-11 的 Files 第一個檔 five-station-simplify-f1-rp-min-set.md，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-11 的 Blocked-by 寫 T-10，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-11 Boundaries 要照觀測取值，S-2.6 那欄在 4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-2 / S-2.6</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">notes/design/five-station-simplify-f1-rp-min-set.md, scripts/five_station_f1.py, scripts/check-five-station-f1.sh, scripts/test-five-station-f1.sh, scripts/fixtures/five-station-simplify/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(bash scripts/test-five-station-f1.sh --group rp-min-set -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;); test &quot;$n&quot; -ge 17 &amp;&amp; bash scripts/test-five-station-f1.sh --group rp-min-set</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-10</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常有人從 annex 刪掉 RP-8（Ship 無人 PASS 卻 Done），這份殘缺 annex 必須紅。完整集必須能對 T-fake、S-fuzzy、Agent 代寫、超 cap、空 attestation、in-flight 寫五站狀態各紅至少一次；十六列各自至少一張對照稿紅。超 cap 三張對照稿只證明謂詞在（RP-9／10／11），不實作 F2 計數器、不鎖 event 鍵名。改的是最小集對照，不是加第十七個必刪 RP。不會變成減列仍綠。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>OC-10／SLOT-RP-MIN-SET = 只准加不准減。annex 必須列出 RP-1…RP-16 語意（與 4-spec／Decision 表同義，不另發明編號）。超 cap 對照稿是 fixture，計數落點仍交 F2（S-7.4 不在本 T 落地）。Forbidden = 刪列、把 cap 數字改鬆、把舊 7 slug 套這三 cap。Files 超過五檔是因為可觀測行為是「最小集 + 十六紅 + 減列紅」同一刀，不是按 RP 水平切十六個 T。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-12">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-12">
+    <span class="s-id">T-12</span>
+    <span class="s-title">收口 F1：七檔名與 token 仍在、Files 不越界、Q6 不升格</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-12 的 Files 第一個檔 five_station_f1.py，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-12 的 Blocked-by 寫 T-11，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-12 蓋的 S-1.1、S-6.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-1 / S-1.1; R-6 / S-6.2, S-6.3; R-8 / S-8.1, S-8.5</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/five_station_f1.py, scripts/check-five-station-f1.sh, scripts/test-five-station-f1.sh, scripts/fixtures/five-station-simplify/, notes/design/five-station-simplify-f1-dual-read-annex.md</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>n=$(bash scripts/test-five-station-f1.sh --group f1-close -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;); test &quot;$n&quot; -ge 4 &amp;&amp; bash scripts/test-five-station-f1.sh --group f1-close</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-11</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常 F1 結束時，目錄仍是七個舊檔名、G1／G2／<code>ACCEPTED</code> token 仍在，沒有 <code>intake.md</code> 家族；本 slug Stage 5–7 的 Files 聯集沒有 coordinator、沒有 <code>graph.yaml</code> 切線、沒有 Stage 1–4 模板；任何「採用現場也 chat 蓋章」句仍帶 Assumption 或仍待驗，寫成已核事實必須擋。改的是收口對照（檔名／token／diff 聯集／Q6 用詞），不是 F3 切新 slug 預設、不是抽採用逐字稿。不會變成 bump 契約、不會改 STATUS。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>S-8.1 THEN = 有 annex／scripts 牙；無 graph 預設切線；無 coordinator 碼；不刪 token。S-8.5 Files 聯集 = 本檔「F1 Files 聯集」六條。S-1.1 本 T 只釘「七舊名在、新家族名不在、token 仍在」；F3 才切新 slug 預設（延後表）。S-6.2／S-6.3：Q6 status 不是 resolved；升格句擋。Forbidden = 1B 刪 token、4C 折本 slug、7C 併刀、把 Q6 標 oc-accepted。若新檔讓 file-map 紅 → 停、判 L1，不得把既有地板檔預先寫進 Files。</p></div></details>
+  </div>
+</article>
+</div>
+<h2 class="apx-h">背景資料(預設收合,內容零刪減)</h2>
+<details class="doc" id="sec-開工前提"><summary><span>開工前提</span></summary><div class="doc-in"><p>Stage 4 已核准。本 slug 自己仍走舊 7（S-5.2）。F1 牙是<strong>新家族</strong> <code>scripts/check-five-station-f1.sh</code>（加 <code>scripts/five_station_f1.py</code> 實作、<code>scripts/test-five-station-f1.sh</code> 自檢），不是改既有 doctor 握手、不是改 <code>_stage3_impl.py</code>、不是新開 coordinator。</p><p>負向對照稿目錄：<code>scripts/fixtures/five-station-simplify/</code>（4-spec DD 下層建議；本 hop 只點名，Stage 6 才新增檔）。</p><p>annex 兩檔（OC-3：<strong>不鎖鍵名</strong>，只鎖 SLOT- id 與 RP 列語意）：</p><ul><li><code>notes/design/five-station-simplify-f1-dual-read-annex.md</code>（九個 SLOT）</li><li><code>notes/design/five-station-simplify-f1-rp-min-set.md</code>（RP-1…RP-16 只准加）</li></ul><p>Design Boundary Contract = applicable。每個 T 的 Boundaries 只摘該 T 碰得到的禁區。</p><p>Q6 維持 Assumption／open（S-6.2／S-6.3）。1B／2B／4C／6B／7C 不得重開（S-8.6）。</p><p>### N1 R/S 盤點（52 S；本 hop 只承 F1）</p><div class="tablewrap"><table><thead><tr><th>R</th><th>F1 必須落地的 S</th><th>本 hop T</th></tr></thead><tbody><tr><td>R-3</td><td>S-3.1 Agent 代寫判定 = 未寫（RP-16）</td><td>T-1</td></tr><tr><td>R-5</td><td>S-5.8 annex 九個 SLOT</td><td>T-2</td></tr><tr><td>R-5</td><td>S-5.4、S-5.5、S-5.6、S-5.7、S-5.9 dual-read 誠實</td><td>T-3</td></tr><tr><td>R-5</td><td>S-5.1、S-5.2、S-5.3 in-flight／本 slug 凍舊 7</td><td>T-4</td></tr><tr><td>R-2</td><td>S-2.2 缺四欄或 Verify 看起來沒問題 → 卡上紅（RP-1）</td><td>T-5</td></tr><tr><td>R-2</td><td>S-2.3 無 RED／自審（RP-2）；S-2.9 無原始輸出（RP-6）</td><td>T-6</td></tr><tr><td>R-2</td><td>S-2.4 模糊／不可測 S（RP-3）；S-2.5 測試名無 S-id（RP-4）</td><td>T-7</td></tr><tr><td>R-2</td><td>S-2.1 少 Must-keep 違 brief；S-2.7 可選四欄擋 G2；S-2.8 Files 聯集（RP-5）</td><td>T-8</td></tr><tr><td>R-4</td><td>S-4.1…S-4.5 attestation／強迫 ACCEPTED／請人審／否定跳過（RP-12／13／14）</td><td>T-9</td></tr><tr><td>R-1／R-3</td><td>S-1.10 不可逆無 Quiz（RP-7）；S-3.2 Ship 無人 PASS 卻 Done（RP-8）；S-3.3 Evidence 八點</td><td>T-10</td></tr><tr><td>R-2</td><td>S-2.6 RP-1…16 只准加；十六個對照各紅一次（含超 cap 對照稿）</td><td>T-11</td></tr><tr><td>R-1／R-6／R-8</td><td>S-1.1 七檔名＋token 仍在；S-6.2／S-6.3 Q6 不升格；S-8.1／S-8.5 F1 收口</td><td>T-12</td></tr></tbody></table></div><p>### Out-of-this-slug 延後表（F2／F3／已綠；不發明 T）</p><div class="tablewrap"><table><thead><tr><th>S</th><th>為什麼本 hop 不開 T</th><th>去向</th></tr></thead><tbody><tr><td>S-1.2、S-1.3、S-1.4、S-1.5、S-1.6、S-1.7、S-1.8、S-1.9、S-1.11、S-1.12</td><td>F2 coordinator 評表 A／B、產頁／latch／HumanWait</td><td>另刀 F2（S-8.2）。本檔 Non-Goal</td></tr><tr><td>S-7.1、S-7.2、S-7.3、S-7.4</td><td>計數落點交 F2；舊 7 不套三 cap</td><td>另刀 F2。F1 只在 T-11 用<strong>對照稿</strong>讓 RP-9／10／11 各紅一次，不選 event 鍵名、不寫計數器</td></tr><tr><td>S-8.2</td><td>F2 coordinator + event</td><td>另刀／另 slug</td></tr><tr><td>S-8.3</td><td>F3 新 slug 預設五站</td><td>另刀 F3。本 hop Files 零 <code>graph.yaml</code></td></tr><tr><td>S-8.4</td><td>本 Stage 4 PR 只 4-spec 雙檔</td><td>已在 G2 過。不是 Stage 6 工作</td></tr><tr><td>S-6.1</td><td>高影響列去向帳</td><td>已在本 slug 4-spec 綠（spec-gate C9）。F1 不重做 Disposition</td></tr><tr><td>S-8.6</td><td>已拒 1B／2B／4C／6B／7C 不得重開</td><td>約束，不是新行為。本檔零 T 把它們當可選實作</td></tr><tr><td>S-8.7</td><td>審頁／執行板由對應 builder 重生</td><td>本 hop 產 <code>5-tasks.html</code>；不是 Stage 6 牙</td></tr></tbody></table></div><p>### F1 Files 聯集（S-8.5 可核）</p><p>Stage 6 全部 T 的 Files 聯集只准這六條（fixture 目錄當前綴）：</p><ul><li><code>scripts/five_station_f1.py</code></li><li><code>scripts/check-five-station-f1.sh</code></li><li><code>scripts/test-five-station-f1.sh</code></li><li><code>scripts/fixtures/five-station-simplify/</code></li><li><code>notes/design/five-station-simplify-f1-dual-read-annex.md</code></li><li><code>notes/design/five-station-simplify-f1-rp-min-set.md</code></li></ul><p>超出上列 = L2／違 R-8。禁把 <code>_templates/</code>、<code>graph.yaml</code>、<code>hooks/_stage3_impl.py</code>、<code>hooks/_doctor_impl.py</code>、<code>scripts/check-spec-gate.sh</code>、<code>STATUS.md</code>、<code>devflow-contract.json</code>、coordinator 碼寫進任一 T 的 Files。</p><p>### Verify 開工前原樣跑（2026-09-14；牙尚未落地）</p><div class="tablewrap"><table><thead><tr><th>T</th><th>結果</th><th>處置</th></tr></thead><tbody><tr><td>T-1…T-12</td><td><code>scripts/test-five-station-f1.sh</code> 不存在 → 非零</td><td>③綠不了但方向對</td></tr></tbody></table></div></div></details><details class="doc" id="sec-Split-Decisions"><summary><span>Split Decisions</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>決策</th><th>理由</th><th>依據</th><th>棄項</th></tr></thead><tbody><tr><td><code>execution.mode: sequential</code>；Blocked-by 成 T-1→…→T-12 單鏈</td><td>Feature Risk high；A 線指定先 tracer 再加厚 annex 再補 RP。前置牙入口不存在時後 T 不該開工</td><td>4-spec Verification Profile Risk high；使用者 A-line brief</td><td>parallel 讓 T-5 與 T-2 同時改同一支牙。棄：Files 重疊、review 吵</td></tr><tr><td>T-1 選 RP-16 不當 RP-1</td><td>最薄端到端是「機器寫判定 → 當沒寫並紅」；卡上缺欄是加厚，不是第一刀可觀測主權</td><td>4-spec S-3.1／RP-16；使用者 e.g. RP-16 或 RP-1</td><td>T-1 先做 RP-1。棄：那是形狀牙，還沒打通判定主權縱切</td></tr><tr><td>單一檢查家族 <code>check-five-station-f1</code></td><td>Diff Budget <code>scripts/</code> 新牙 ≤4；S-2.4 接既有 spec-gate、不另造模糊詞家族</td><td>4-spec Diff Budget；S-2.4；S-8.1</td><td>每 RP 一支 <code>check-rp-N.sh</code>。棄：爆檔數、水平切層</td></tr><tr><td>annex 拆兩檔、不鎖鍵名</td><td>Budget annex ≤2；S-5.8 與 S-2.6 兩份語意；OC-3 禁鎖鍵</td><td>4-spec S-5.8／S-2.6／OC-3</td><td>一份 JSON schema。棄：2B／鎖鍵</td></tr><tr><td>S-7.1…S-7.4 不開 T</td><td>計數落點交 F2；使用者禁發明 F2 T。T-11 只用對照稿讓 RP-9／10／11 紅</td><td>4-spec S-7.4／S-8.2；本檔延後表</td><td>本 slug 寫 coordinator 計數器。棄：違 S-8.5</td></tr><tr><td>表 A／B latch S 不開 T</td><td>F2 coordinator 才評產頁／latch／HumanWait</td><td>4-spec S-1.2…S-1.12 n-a:F2</td><td>為 A4／A7 寫假 coordinator。棄：7C 味道</td></tr><tr><td>不改 <code>_stage3_impl.py</code>／doctor</td><td>S-8.5 Files 聯集不含 hooks；Out of Scope 既有牙；S-4.5 由新牙 SLOT-SKIP-NEGATION 收緊</td><td>4-spec S-4.5 Known limit；S-8.5</td><td>F1 直接改 skip 舊牙。棄：越 Diff Budget 與 Files 圍欄</td></tr><tr><td>file-map／devflow-check 不進 Files</td><td>既有牙／地板；S-8.5 只准新牙＋annex。紅了是 L1 訊號不是本 hop 預授權</td><td>4-spec S-8.5；<code>scripts/check-file-map.sh</code></td><td>T-12 順便改 EXPECTED_MAPPED_FILES。棄：把既有牙寫進 F1 Files</td></tr><tr><td>Verify 開工前實跑（2026-09-14）</td><td><code>scripts/test-five-station-f1.sh</code> 不存在 → 十二欄皆非零</td><td>模板 Verify 三律 ③</td><td>用已綠的 doctor exit 0 當 T-3 牙。棄：無鑑別力且違 S-5.5</td></tr></tbody></table></div></div></details>
+<footer class="foot">由 <code>scripts/build-gate-twin.py</code> 從 md 正本逐條解析產生,不手抄。</footer>
+</div>
+<script>
+(function(){
+  var boxes = [].slice.call(document.querySelectorAll('.s-chk'));
+  if (!boxes.length) return;
+  var bar = document.querySelector('.bar i'), done = document.getElementById('done');
+  var KEY = 'devflow-gate-twin:' + document.title;
+  function load(){ try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ return {}; } }
+  function save(s){ try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e){} }
+  var state = load();
+  function paint(){
+    var n = 0;
+    boxes.forEach(function(b){
+      var card = b.closest('.s-card');
+      if (b.checked){ n++; card.classList.add('done'); } else { card.classList.remove('done'); }
+    });
+    if (done) done.textContent = n;
+    if (bar) bar.style.width = (n / boxes.length * 100) + '%';
+  }
+  boxes.forEach(function(b){
+    if (state[b.dataset.sid]) b.checked = true;
+    b.addEventListener('change', function(){ state[b.dataset.sid] = b.checked; save(state); paint(); });
+  });
+  var clr = document.getElementById('clear');
+  if (clr) clr.addEventListener('click', function(){
+    state = {}; save(state); boxes.forEach(function(b){ b.checked = false; }); paint();
+  });
+  paint();
+})();
+</script>
+</body>
+</html>
