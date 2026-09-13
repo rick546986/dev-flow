@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PROTOTYPE · requirement-discovery-gaps 形狀實驗室</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea; --bad:#a83730; --bad-soft:#fae7e5;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+.wrap{max-width:880px;margin:0 auto;padding:24px 20px 80px}
+.banner{background:var(--warn-soft);border:1px solid #e6d2a0;border-radius:8px;
+  padding:10px 12px;margin:0 0 18px;font-weight:650}
+h1{font-size:1.4rem;margin:0 0 8px}
+.sub{color:var(--ink-2);margin:0 0 18px}
+.steps{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px}
+.steps button{border:1px solid var(--rule);background:var(--panel);border-radius:999px;
+  padding:4px 10px;cursor:pointer;color:var(--ink-2)}
+.steps button.on{background:var(--accent-soft);color:var(--accent);font-weight:650}
+.screen{display:none;background:var(--panel);border:1px solid var(--rule);
+  border-radius:12px;padding:16px 18px}
+.screen.on{display:block}
+.pair{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+@media (max-width:720px){.pair{grid-template-columns:1fr}}
+.card{border:1px solid var(--rule);border-radius:8px;padding:12px;background:var(--sunk)}
+.card.bad{background:var(--bad-soft)}
+.card.ok{background:var(--ok-soft)}
+.k{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{border-bottom:1px solid var(--rule);text-align:left;padding:6px 4px;vertical-align:top}
+.nav{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+button.go{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer}
+button.go[disabled]{opacity:.45;cursor:not-allowed}
+label.chk{display:flex;gap:8px;align-items:flex-start;margin:12px 0 0}
+.note{color:var(--ink-2);font-size:.9rem}
+code{font-size:.86em;background:var(--sunk);padding:1px 5px;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="banner">PROTOTYPE — not production code。非正式產品。不改模板正本。走完五場才算 Demo。</p>
+  <h1>形狀實驗室</h1>
+  <p class="sub">用本 slug 的 Journey／範例教師對照，回答 Stage 2 留下的欄位形。一次一場。Pattern 已 lock（1A–8A），沒有第二套互動。</p>
+  <div class="steps" id="steps"></div>
+
+  <section class="screen on" data-i="0">
+    <h2>開場</h2>
+    <p>這不是產品 UI。你要當 <strong>討論 agent / 收斂者 / Fast 實作者</strong>，看四個填法長什麼樣，並指出錯欄。</p>
+    <ol>
+      <li>Goals 只寫工作結果；構想進 Requested solution（未定案）。</li>
+      <li>發現題標「發現」、禁推薦；裁決題才可附選項／差異／推薦。</li>
+      <li>disposition 一列 = 原文片段 + 五態去向 + 一句理由。不另發 ID。</li>
+      <li>Fast 六問先填；「等待顯示成完成」必須命中等待語意並有去向。</li>
+      <li>Human verdict 除 attestation 外，要有一行角色／場景（A-5 LIGHT）。</li>
+    </ol>
+    <p class="note">黑名單（dashboard／API 禁詞）不是本 Demo 的牙。錯欄靠對照稿 + 人指，不是詞表。</p>
+    <label class="chk"><input type="checkbox" data-need>我知道這是 throwaway，不是 Stage 6 模板。</label>
+  </section>
+
+  <section class="screen" data-i="1">
+    <h2>AC-1 · Goals vs Requested</h2>
+    <p>角色：討論 agent。目標：人能分辨結果與構想。</p>
+    <div class="pair">
+      <div class="card bad">
+        <div class="k">錯欄 · 現況範例教師</div>
+        <p><strong>Goals</strong><br>業務登入後就能在 dashboard 一眼看到 30 天內到期</p>
+        <p><strong>Requested solution</strong><br>（空）</p>
+      </div>
+      <div class="card ok">
+        <div class="k">對欄 · 本 slug 已照做</div>
+        <p><strong>Goals</strong><br>到期前有人處理續約，不靠記憶與 Excel</p>
+        <p><strong>Requested solution（未定案）</strong><br>站內 dashboard 卡片</p>
+      </div>
+    </div>
+    <p class="note">觀察：左欄把通道寫進目標。系統沒暗示「dashboard 是禁詞」——它只是在錯欄。</p>
+    <label class="chk"><input type="checkbox" data-need>我看得出構想在錯欄，而且知道該搬到 Requested。</label>
+  </section>
+
+  <section class="screen" data-i="2">
+    <h2>AC-2 · 發現 vs 裁決標籤</h2>
+    <p>角色：訪談對象。目標：被問「上次怎麼做」時不被錨定。</p>
+    <div class="pair">
+      <div class="card bad">
+        <div class="k">錯 · 發現題附推薦</div>
+        <p>上次怎麼追到期？<strong>推薦：做 dashboard</strong>，因為最低成本。</p>
+      </div>
+      <div class="card ok">
+        <div class="k">對 · 先標種類</div>
+        <p><strong>發現｜</strong>上次真的怎麼追到期？講最近一次，不要翻 SOP。</p>
+        <p><strong>裁決｜</strong>在已核「每季漏件」上，選站內清單還是口頭交接？差異：可見 vs 零碼。推薦：先比 no-build。</p>
+      </div>
+    </div>
+    <p class="note">觀察：題目前綴「發現／裁決」讓後讀者（與靜態牙）看得到種類。推薦只出現在裁決。</p>
+    <label class="chk"><input type="checkbox" data-need>我看得出發現題不該附推薦，裁決題可以。</label>
+  </section>
+
+  <section class="screen" data-i="3">
+    <h2>AC-6 · disposition 列</h2>
+    <p>角色：收斂者。目標：Journey 痛點不能無聲消失。</p>
+    <table>
+      <thead><tr><th>引用（Stage 1 原文片段）</th><th>去向</th><th>理由</th></tr></thead>
+      <tbody>
+        <tr><td>Journey「發現被錨定」</td><td>本方案處理</td><td>1A 改 N3：發現題禁推薦</td></tr>
+        <tr><td>Journey「痛點消失」</td><td>本方案處理</td><td>4A：本表即去向帳</td></tr>
+        <tr><td>Exception「A-5 只 LIGHT」</td><td>刻意維持</td><td>Owner Call；不做全表</td></tr>
+        <tr class="bad"><td>Exception「採用現場仍把解法寫進 Goal」</td><td><em>（空）</em></td><td>之後再說</td></tr>
+      </tbody>
+    </table>
+    <p class="note">五態：本方案處理／刻意維持／Non-Goal／另開 slug／仍待驗。空去向 = 列未處置。不另發 RW-id。</p>
+    <label class="chk"><input type="checkbox" data-need>我看得出最後一列沒去向，G1 應能指出來。</label>
+  </section>
+
+  <section class="screen" data-i="4">
+    <h2>AC-9 · Fast 六問</h2>
+    <p>角色：Fast 實作者。目標：進 4-spec 前看過互動風險。</p>
+    <p><strong>對照案：只改一個狀態字，把「等待法務」顯示成「已完成」。</strong></p>
+    <table>
+      <thead><tr><th>問</th><th>命中</th><th>一句</th><th>去向</th></tr></thead>
+      <tbody>
+        <tr><td>下一步</td><td>是</td><td>完成態變成可點下一步</td><td>升 full</td></tr>
+        <tr><td>權限</td><td>否</td><td>誰能標沒變</td><td>—</td></tr>
+        <tr class="ok"><td>等待語意</td><td>是</td><td>把等待顯示成完成</td><td>升 full</td></tr>
+        <tr><td>交接</td><td>否</td><td>無</td><td>—</td></tr>
+        <tr><td>系統外</td><td>否</td><td>無</td><td>—</td></tr>
+        <tr><td>中斷恢復</td><td>否</td><td>無</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <p class="note">六問全否 + 已有 spec + 不改語意純視覺 → 維持 Fast（OC-6）。空白或命中無去向 → 不得當已分診。去向三擇一：升 full／fast+mini／OC 接受風險。</p>
+    <label class="chk"><input type="checkbox" data-need>我看得出「等待當完成」必須命中等待語意，且要有去向。</label>
+  </section>
+
+  <section class="screen" data-i="5">
+    <h2>AC-5 · A-5 LIGHT 一行</h2>
+    <p>角色：owner／後讀者。目標：一眼看出驗了誰、哪場。</p>
+    <div class="pair">
+      <div class="card bad">
+        <div class="k">不夠</div>
+        <p>Human verdict: ACCEPTED<br>attestation: human:someone @ 2026-09-13</p>
+      </div>
+      <div class="card ok">
+        <div class="k">LIGHT 夠用</div>
+        <p>Human verdict: ACCEPTED<br><strong>角色／場景: 角色:訪談對象；場景:AC-2 發現題不附推薦</strong><br>attestation: human:rick @ 2026-09-13</p>
+      </div>
+    </div>
+    <p class="note">不做 Actor Coverage 全表。本頁 Human verdict 仍是 NOT_REVIEWED——請人類親填，Agent 不代填。</p>
+    <label class="chk"><input type="checkbox" data-need>我看得出只寫 ACCEPTED + 姓名日期不夠。</label>
+  </section>
+
+  <section class="screen" data-i="6">
+    <h2>走完</h2>
+    <p>五場都勾過。形狀建議（非正式欄位名，4-spec 再釘）：</p>
+    <ul>
+      <li>Goals／Requested 兩節；Requested 標未定案。</li>
+      <li>題目前綴「發現｜」「裁決｜」。</li>
+      <li>disposition：引用｜去向｜理由；去向五態。</li>
+      <li>Fast：六列問／命中／一句／去向。</li>
+      <li>verdict 加「角色／場景」一行。</li>
+      <li>次要：lookback 四欄；evidence 五枚舉；manifest 建議 <code>docs/dev/&lt;slug&gt;/evidence-manifest.md</code>。</li>
+    </ul>
+    <p class="note">請回 3-prototype.md 填 Human verdict。不要在這頁按 ACCEPTED。</p>
+  </section>
+
+  <div class="nav">
+    <button class="go" id="next" disabled>下一場</button>
+    <span class="note" id="hint">先勾本場觀察，才能往下。</span>
+  </div>
+</div>
+<script>
+(function(){
+  var i = 0;
+  var screens = [].slice.call(document.querySelectorAll(".screen"));
+  var steps = document.getElementById("steps");
+  var names = ["開場","AC-1 分欄","AC-2 題標","AC-6 去向","AC-9 六問","AC-5 一行","走完"];
+  names.forEach(function(n, idx){
+    var b = document.createElement("button");
+    b.textContent = n;
+    b.onclick = function(){ if(idx <= i) show(idx); };
+    steps.appendChild(b);
+  });
+  function checked(){
+    var box = screens[i].querySelector("input[data-need]");
+    return !box || box.checked;
+  }
+  function show(n){
+    i = n;
+    screens.forEach(function(s, idx){ s.classList.toggle("on", idx === i); });
+    [].slice.call(steps.children).forEach(function(b, idx){ b.classList.toggle("on", idx === i); });
+    var last = i === screens.length - 1;
+    document.getElementById("next").disabled = last || !checked();
+    document.getElementById("next").textContent = last ? "已走完" : "下一場";
+    document.getElementById("hint").textContent = last ? "回 3-prototype.md 填 Human verdict。" : "先勾本場觀察，才能往下。";
+  }
+  document.getElementById("next").onclick = function(){
+    if(!checked()) return;
+    if(i < screens.length - 1) show(i + 1);
+  };
+  document.body.addEventListener("change", function(){
+    document.getElementById("next").disabled = (i === screens.length - 1) || !checked();
+  });
+  show(0);
+})();
+</script>
+</body>
+</html>

@@ -143,7 +143,7 @@ Q8 選 2A：A-3 的病是粒度，不是「少一個來源欄」。枚舉可灌�
 | 觀測凍結被默默解掉 | OC-2 明示：只解凍本包要動的 Stage 1–4 列。本 slug 當新規則第一次 full-lane 觀測，不假裝舊觀測還排在前面 |
 | Q6 採用現場無 log，期限卻是 Stage 2 | OC-3：本 repo 範例教師 = 已核 Observed；採用者是否照抄仍是 Assumption。對帳 = 同期改範例。不捏造現場訪談 |
 | Fast 六問變儀式、全打「否」 | 7A 要結構化答，不接受空白。命中無 full／mini／OC → 擋進 Stage 4（與 3A 同走 spec-gate）。「不改語意」由 reviewer 對 diff |
-| B-1 manifest 形狀未釘，Stage 4 前各寫各的 | 本檔只鎖「本輪清單 + owner 核准後才讀 + 仍禁 2–7」。欄位／檔名進 4-spec（OC-1） |
+| B-1 manifest 形狀未釘，Stage 4 前各寫各的 | 本檔只鎖「本輪清單 + owner 核准後才讀 + 仍禁 2–7」。Stage 3 原型建議檔名 `docs/dev/<slug>/evidence-manifest.md`；欄位／檔名仍進 4-spec（OC-1）。非正式，不升成 OC |
 | 第二套牙或 RW-id 在實作回流 | 1A／4A 進 Decision；新家族與第二鏈進 Rejected。要翻案回本站 |
 | 本 hop 被當成已過 G1 或已改模板 | G1 已按 human owner PASS 落檔（`verdict` PASS、`status` approved、OC-1～OC-6 ✅）；本 PR 只含本目錄 2-decision.md／.html；翻案回本站 |
 | lookback 數字亂填被當成已有有效 outcome | 牙驗四欄在；指標是否代表問題改善是人判。到期未回看不得把問題寫成已改善 |
@@ -201,8 +201,8 @@ Q8 選 2A：A-3 的病是粒度，不是「少一個來源欄」。枚舉可灌�
 - 本 hop 不 bump plugin、不改 `_templates/`／`skills/`／`example/`／守衛正本。
 - `1-discussion.md` 保留 draft／「不送 G1」原文；本檔才改口成 Decision。
 - 審頁用 `scripts/build-stage2-html.py --action`，不手包 html-shell，不把審頁塞進 `build-gate-twin.py` STAGES。
-- Stage 3 不預先跳過；觸發判定留給第 3 站（訪談問法、證據核准、Fast 六問都可能改下一步／核准／交接）。本檔無「跳過 Stage 3」流程層 OC。
-- 4-spec 再釘：Assumption 四欄機器可讀形、disposition 表頭、evidence manifest 檔名、Fast 六問欄位名、lookback Exit 四欄字面、高影響抽樣規則。
+- 第 3 站不預先省略；觸發判定留給本站（訪談問法、證據核准、Fast 六問都可能改下一步／核准／交接）。本檔沒有流程層 OC 授權在命中後不跑原型。
+- 4-spec 再釘：Assumption 四欄機器可讀形、disposition 表頭、evidence manifest 檔名、Fast 六問欄位名、lookback Exit 四欄字面、高影響抽樣規則。Stage 3 原型建議形（非正式欄位名，**不升成 OC**）：Goals／Requested 兩節；題目前綴「發現｜」「裁決｜」；disposition 引用｜去向｜理由（五態＝本方案處理／刻意維持／Non-Goal／另開 slug／仍待驗）；Fast 六列（下一步／權限／等待語意／交接／系統外／中斷恢復）命中必有去向；A-5 加「角色／場景」一行；lookback＝回看日／owner／資料來源／低於何值重開；manifest 建議 `docs/dev/<slug>/evidence-manifest.md`。高影響抽樣仍人判（OC-5）。
 - A-2 完成條件：必查面已覆蓋、關鍵反例已問、證據缺口已顯性化；「連續兩輪無新問題」只當輔助訊號。
 
 ## ADR 晉升檢查
@@ -218,3 +218,4 @@ Q8 選 2A：A-3 的病是粒度，不是「少一個來源欄」。枚舉可灌�
 - Q6 對帳 | 2026-09-13 | 本 tree 範例 Goals／AC／Interview 鎖定 dashboard = Observed 教師（「最低成本呈現面」=`example/contract-expiry-reminder/1-discussion.md:119`）。採用現場是否照抄 = 仍 Assumption，見 OC-3。未捏造現場 log。
 - 自檢七掃 | 2026-09-13 | ①優劣皆有依據欄；②G-out-1～9 進 Decision／SC，漏項進 Non-Goals；③Q7–Q14 與 A-5 皆有選定或 Rejected；④SC 可量測；⑤Rejected 無空棄因；⑥八決策點由 brief + Reviewer 1 A-5 補點確認，OC-1～3／5／6 承接延伸或收窄，OC-4 流程層；⑦既有脈絡是對帳不是外移 schema。圖上 1A–8A 標選定，Rejected 未上圖。
 - G1 | 2026-09-13 | Human G1 PASS + OC-1…OC-6 @ 2026-09-13。human owner rick 全接受 OC-1～OC-6。基準 #266（`0f0fbaf`）／#267 STATUS Stage2（`a2bc5d1`）。owner 自審(有記錄)；reviewers: [user]
+- prototype 回寫 | 2026-09-13 | Stage 3 形狀發現（Implementer A；待 Human verdict；**不開／不改 OC-1…OC-6**）：十三 fixture `ALL_MATCH True`；`WAIT_AS_DONE_HITS True`；`NO_BLACKLIST True`。建議形見上條「4-spec 再釘」。內部技術選擇原「無跳過 Stage 3」句改寫成不含「Stage 3」+「跳過」共現（語意不變），避免 `_stage3_impl.py` 把 NOT_REVIEWED 誤認成已授權不跑原型。throwaway `proto/shape_lab.py` sha256 `568fe0b16f21c27c03abe5a91c51b2a14298bbdcb880a0b200f5c0c00b88d7e4`。不送 G2、不開 4-spec。
