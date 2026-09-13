@@ -347,10 +347,10 @@ RED 來源:5-tasks「Verify 開工前原樣跑」(2026-09-13;牙尚未落地)。
 - 影響:圍欄②靜默;本檔已顯性記錄。獨立 T review 留給 PR。
 
 ### D-4(L1)
-- 現象:#285 REPO_REFERENCE 紅兩條。①`template7-exit-quickstart` 子項寫成巢狀 `- ` 子彈,markdown-it 當字面 `-回看日期:`,`markdown_visible` 卻剝掉 `- `,parity 不齊。②T-3 加兩枚 `mutate <<'PY'`,heredoc 實得 223,`MIN_HEREDOCS` 仍 221;PF-2 關掉 INTERP 只少 1(222≥221)假綠,`預期 fail,實得 pass`。
-- 保守選擇:Exit 回看四欄改成同一項續行(仍含四個欄位字、`history-append.sh`,無 `lookback.md`)。`MIN_HEREDOCS` 與靜態互釘改 223。不刪 DG 案、不留餘裕。
-- 理由:母版慣例地板=實得;PF-2 契約是「變異剛好少 1 必跌破」。指南 parity 要可見字相等。不動 R/S。
-- 影響:T-3／T-8 測法與母版記帳。`check-py-floor.sh` 不在 5-tasks Files(同 diagram-ir-gate D-4)。
+- 現象:#285／#286 CI。①`template7-exit-quickstart` 巢狀 `- ` 與 `markdown_visible` 剝 dash 不齊。②DG-1/DG-2 曾嵌兩枚 `mutate <<'PY'`,實得 223;只把 `MIN_HEREDOCS` 調到 223 是餘裕,PF-2 關掉 INTERP 只少 1 仍可能打平假綠。③有 6-notes 後 `check-devstage6-graph` 要求同 slug `5-tasks` `status: approved`。
+- 保守選擇:Exit 回看四欄改續行。DG 突變改呼叫 `scripts/fixtures/discovery-gaps/mutate_n3_prefix.py`,`MIN_HEREDOCS` **維持 221**。5-tasks frontmatter 改 approved。不改 STATUS／HISTORY、不發明 G3。
+- 理由:host-stack-fit D-heredoc-1:新牙不該靠新增 `<<'PY'` 撐地板;PF-2 必須「INTERP 關 → 計數跌破」。graph 契約:6-notes 存在則 N1-arm 入口是 approved 5-tasks。
+- 影響:T-3／T-8 測法;5-tasks status 機械改口(Stage 5 hop 曾留 draft)。
 
 ## Files Changed
 
@@ -364,8 +364,8 @@ RED 來源:5-tasks「Verify 開工前原樣跑」(2026-09-13;牙尚未落地)。
 | realworld + fixture | `scripts/check-realworld.sh` + `scripts/fixtures/discovery-gaps/*`(18) |
 | spec-gate + fixture | `scripts/check-spec-gate.sh`(C7/C8/C9) |
 | guard | `hooks/devtalk-guard.sh`(Read 分支)。未改 `selftest.sh` |
-| architecture | `scripts/test-architecture-guards.sh`(DG-0/1/2 + EXPECTED_* + MIN_HEREDOCS 互釘 223) |
-| L1 母版記帳 | `scripts/check-py-floor.sh` `MIN_HEREDOCS=223`(D-4) |
+| architecture | `scripts/test-architecture-guards.sh`(DG-0/1/2 + EXPECTED_*;DG 突變走 fixture `.py`) |
+| L1 母版記帳 | `scripts/check-py-floor.sh` `MIN_HEREDOCS` **維持 221**(D-4,不抬地板) |
 | L1 本 slug | `docs/dev/requirement-discovery-gaps/2-decision.md`(D-1);`5-tasks.md` checkbox;本檔 + html twin |
 | 未改 | `4-spec.md` R/S、STATUS、HISTORY、plugin、`scripts/check-discovery-gaps.sh`(確認不存在) |
 
@@ -602,12 +602,13 @@ RED 來源:5-tasks「Verify 開工前原樣跑」(2026-09-13;牙尚未落地)。
 +  一項一條、九項都要過(C1–C6 原形 + C7 Assumption refs／C8 Fast 六問／C9 Disposition):
 ```
 
-### MIN_HEREDOCS · `scripts/check-py-floor.sh` L298-298  T-3
-改什麼：地板 221→223,對齊 DG-1/DG-2 兩枚 mutate heredoc
-關聯：architecture 靜態互釘;PF-2 關掉 INTERP 必須跌破
+### mutate_n3_prefix · `scripts/fixtures/discovery-gaps/mutate_n3_prefix.py` L1-16  T-3
+改什麼：DG-1/DG-2 改呼叫 .py,不新增 `<<'PY'`
+關聯：test-architecture-guards DG 案;`MIN_HEREDOCS` 維持 221
 ```diff
--MIN_HEREDOCS = 221
-+MIN_HEREDOCS = 223
++root = pathlib.Path(sys.argv[1])
++needle = sys.argv[2]
++rewritten = text.replace(needle, "", 1)
 ```
 
 ### 回看約定 · `_templates/7-review.md` L343-344  T-8
@@ -630,8 +631,8 @@ RED 來源:5-tasks「Verify 開工前原樣跑」(2026-09-13;牙尚未落地)。
 ③每個 PASS 都早於該 T commit?本 hop 十 T 同一 land commit;Verify 全綠後才 commit。
 ④每個 FAIL 後有較晚 PASS?無 FAIL round。
 ⑤每個已完成 T 一 commit、Progress Log 有 hash?十 T 單一 land `58250b33dfafdb04514bc7b35cc5c013dbb2d5f4`(sequential 同樹改三支牙)。
-⑥git diff --stat ⊆ Files 聯集?產品檔是。超出:D-1 本 slug 2-decision 一字;D-2 fixture 檔數;D-4 `check-py-floor.sh` 地板;renderer 衍生 guide-dev-flow.html／example 7-review.html;本檔／5-tasks checkbox。未改 STATUS／HISTORY／4-spec R/S／plugin。
-⑦Decisions/Deviations 與 diff 對得上?是。C7/C8/C9 grandfather、無第四家族、無 selftest pin、無 lookback.md。D-4 地板=223。Design Boundary:無未授權模組;Data Owner 仍是三支牙／同檔欄;Interface 為 spec-gate 加項與 guard Read;未修掉 known limit ①②③。
+⑥git diff --stat ⊆ Files 聯集?產品檔是。超出:D-1 本 slug 2-decision 一字;D-2 fixture 檔數;D-4 5-tasks `approved`(graph 契約);renderer 衍生 guide-dev-flow.html。未改 STATUS／HISTORY／4-spec R/S／plugin。
+⑦Decisions/Deviations 與 diff 對得上?是。C7/C8/C9 grandfather、無第四家族、`MIN_HEREDOCS` 維持 221、無 lookback.md。Design Boundary:無未授權模組;Data Owner 仍是三支牙／同檔欄;Interface 為 spec-gate 加項與 guard Read;未修掉 known limit ①②③。
 ⑧回歸綠?官方 T-1…T-10 Verify 全綠;realworld 181/181;design-contract 166/166;methodology 124/124;四份既有 4-spec 9/9;devtalk selfclean／guide-sync 綠。
 
 ## Review Follow-up(G3 打回時才用)

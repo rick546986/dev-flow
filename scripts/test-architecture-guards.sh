@@ -736,24 +736,12 @@ seed_n3() {
 }
 D=$(seed_n3 dg0); expect pass check-realworld.sh "$D" "DG-0 N3 發現｜與裁決｜都在"
 
-D=$(seed_n3 dg1); mutate "$D" <<'PY'
-import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "skills/dev-talk/nodes/N3-probe.md"
-t = p.read_text(encoding="utf-8")
-n = t.replace("發現｜", "", 1)
-assert n != t, "DG-1 mutation 沒生效"
-p.write_text(n, encoding="utf-8")
-PY
+# 不嵌 <<'PY':新 heredoc 會抬 MIN_HEREDOCS,PF-2 關掉 INTERP 只少 1 會假綠。
+DG_MUT="$ROOT/scripts/fixtures/discovery-gaps/mutate_n3_prefix.py"
+D=$(seed_n3 dg1); python3 "$DG_MUT" "$D" "發現｜"
 expect fail check-realworld.sh "$D" "DG-1 刪掉 N3 發現｜前綴必須紅"
 
-D=$(seed_n3 dg2); mutate "$D" <<'PY'
-import sys, pathlib
-p = pathlib.Path(sys.argv[1]) / "skills/dev-talk/nodes/N3-probe.md"
-t = p.read_text(encoding="utf-8")
-n = t.replace("裁決｜", "", 1)
-assert n != t, "DG-2 mutation 沒生效"
-p.write_text(n, encoding="utf-8")
-PY
+D=$(seed_n3 dg2); python3 "$DG_MUT" "$D" "裁決｜"
 expect fail check-realworld.sh "$D" "DG-2 刪掉 N3 裁決｜前綴必須紅"
 
 # ─────────────────── 守衛本體被改弱(Guard Source;fresh review F-2)───────────────────
@@ -2532,7 +2520,7 @@ check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 221" "MIN_CHECKS 釘
 check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 36" "MIN_CHECKS 釘死 36(parity 遷到 check-ship-manifest.sh 後,情境/mutant/模板順序實得數)"
 check_static_pin "scripts/check-ship-manifest.sh" "MIN_CHECKS = 21" "MIN_CHECKS 釘死 21(結構+parity+地圖對帳+負向 fixture 的實得數;issue #92 補全列 source 存在 +2、第三類列負向 fixture +4,15→21)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 55" "MIN_CHECKS 釘死 55(STATUS 單寫入者 + OverlapRef 單一座標:⑬b/⑬c + 負向㉘–㉟ 後的實得數)"
-check_static_pin "scripts/check-py-floor.sh" "MIN_HEREDOCS = 223" "MIN_HEREDOCS 釘死 223(精確實測;含 bootstrap + check-preload-ban.sh + test-diagir.sh + requirement-discovery-gaps DG mutate +2;不留餘裕否則 PF-2 假綠)"
+check_static_pin "scripts/check-py-floor.sh" "MIN_HEREDOCS = 221" "MIN_HEREDOCS 釘死 221(精確實測;含 bootstrap + check-preload-ban.sh + test-diagir.sh;不留餘裕否則 PF-2 假綠)"
 check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 205" "EXPECTED_MAPPED_FILES 釘死 205(精確值;knowledge-index +2、proof +1、knife-2 ask +2、knowledge bootstrap +2、check-preload-ban.sh +1、diagram-ir-gate +3)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 29" "EXPECTED_GROUPS 釘死 29(REQUIRED_GROUPS 實際長度;#191 加 fig-ascii-191)"
 
