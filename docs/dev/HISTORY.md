@@ -584,3 +584,9 @@
 - 落在哪:docs/dev/requirement-discovery-gaps/5-tasks + STATUS
 - 詳細:https://github.com/rick546986/dev-flow/pull/282
 
+## 2026-09-13 · requirement-discovery-gaps
+- 做了什麼:Stage 6 land #286 (Implementer A); Active → 6-implementation-notes; Gates G1✅ G2✅ G3⬜; Stage 7 not opened
+- 為什麼:Stage 6 winner merged; no invented G3
+- 落在哪:docs/dev/requirement-discovery-gaps/6-implementation-notes + STATUS
+- 詳細:https://github.com/rick546986/dev-flow/pull/286
+
