@@ -341,10 +341,11 @@ updated:
 - [ ] 7-review.html 已產生(含變更架構圖,規格見指南 `#diagram-style`;diff 折疊規格見指南 `#diff-fold`)
 - [ ] feature branch 已刪 / worktree 已清
 
-### 回看約定
+**回看約定**
 <!-- 出貨時留下誰／何時／用什麼回看、低於何值重開。結果到期用
      `scripts/history-append.sh` 追加，不另造永久回看檔。
-     指標是否代表改善是人判；到期未回看不得把問題寫成已改善。 -->
+     指標是否代表改善是人判；到期未回看不得把問題寫成已改善。
+     標題用粗體不用 ###（guide Exit 抽取的 markdown_visible 會留下井號）。 -->
 | 回看日期 | 回看 owner | 資料來源 | 低於何值重開 |
 |---|---|---|---|
 | | | | |

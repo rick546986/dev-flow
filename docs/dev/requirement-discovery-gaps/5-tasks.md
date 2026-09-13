@@ -1,7 +1,7 @@
 ---
 feature: requirement-discovery-gaps
 stage: 5-tasks
-status: draft
+status: approved
 owner: rick
 updated: 2026-09-13
 execution:

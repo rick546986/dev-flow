@@ -319,6 +319,17 @@ PLUS 表本身是三筆（取卵、形成、植入），畫面上只出現兩格
 - 顆數不硬擋；正式區／191 無寫入；180 不加欄除非使用者另准。
 - 本 mothership 形狀關卡：`scripts/check-spec-gate.sh example/subsidy-3-0-plus/4-spec.md` exit 0。
 
+## Real-world Disposition
+<!-- C9：full lane 必有表。手樣痛點對回既有 R/S 或 Out of Scope，不新開產品行為。 -->
+| 引用（Stage 1 原文片段） | 去向 | 下落 |
+|---|---|---|
+| 依主檔 apply_date 切 3.0／PLUS，不是 today | 本方案處理 | S-1.1、S-1.2 |
+| PLUS 畫面兩格不是三格 | 本方案處理 | S-2.1 |
+| 年齡鎖不重判 | 本方案處理 | S-3.1 |
+| 上限格列出形成胚胎 OPU 小字 | 本方案處理 | S-4.1 |
+| 只寫本 worktree、不切 27004 bind | 本方案處理 | S-5.1 |
+| today 開關／顆數硬擋／低收入改／191 寫入 | Non-Goal | Out of Scope |
+
 ## Out of Scope
 - Revised。顆數 38 硬擋。低收入改。主目錄 ERP。today 開關。國健署正文衝突（1-discussion `[>]`）。191／正式區寫入。另開第二個 27004 容器。
 - 以上都不進本 feat；國健署正文若跟 briefing 衝突另開討論，不在這裡改金額。

@@ -270,7 +270,7 @@ Design Boundary Contract 為 `applicable`,本軸另查四項(4-spec Design Bound
 - [x] 7-review.html 已產生(含變更架構圖 + diff 折疊)
 - [x] feature branch 已刪
 
-### 回看約定
+**回看約定**
 | 回看日期 | 回看 owner | 資料來源 | 低於何值重開 |
 |---|---|---|---|
 | 2026-10-23 | `<owner>` | 採用專案下一輪 Stage 1「最近一次真的怎麼追到期」 | 仍靠私表、漏看到期 > 0 件則重開 |

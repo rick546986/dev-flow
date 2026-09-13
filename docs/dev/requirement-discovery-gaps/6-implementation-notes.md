@@ -8,6 +8,8 @@ updated: 2026-09-13
 
 # 6. 實作筆記
 
+FORK_INTEGRATION_SHA: ab78e8b90a48c002b6023e806a9bc4f1d7ea5703
+
 > Variant C：教師改口依人怎麼填檔的旅程（Goals／Requested solution → 前綴 → Assumption → disposition → manifest → Fast → verdict 一行），再延三支既有牙。本 hop 不改 STATUS／HISTORY、不發明 G3、不新開 R/S、不新開第四檢查家族。
 
 ## 步 0 守衛武裝自檢
@@ -15,6 +17,7 @@ updated: 2026-09-13
 - `devflow-exec.sh status`:`slug=requirement-discovery-gaps started=2026-09-13T06:03:38 scope=22 extra=0 sentinel=在`
 - `devflow-doctor.sh`:`✅ devflow doctor: COMPATIBLE`
 - feature branch:`cursor/rdg-s6-land-c-5ac5`（base `ab78e8b` = #282 Stage 5）
+- FORK_INTEGRATION_SHA:`ab78e8b90a48c002b6023e806a9bc4f1d7ea5703`（開 branch 當下 `origin/main`；寫了不准改）
 - 圍欄：只讀 4-spec／5-tasks／6-notes／活教師；未讀本 slug 1／2／3。
 - ENV：本機缺 `markdown-it-py==4.0.0` 時 renderer 節會紅；已裝 `scripts/requirements-methodology-render.txt` 釘版（不計升階）。
 
@@ -308,6 +311,36 @@ Run:
 - 保守選擇: 缺 `## Fast early risk triage` 且無 `## ADDED Requirements` → no-fire；有 ADDED 無表仍紅。
 - 理由: S-9.1 對照稿帶 ADDED；舊回歸檔沒有 ADDED。
 - 影響: T-10／S-9.1 仍咬空白開寫的 Fast spec。
+
+### D-4(L1)
+- 現象: `### 回看約定` 落在 Exit Checklist 抽取範圍；`markdown_visible` 留下 `###`，指南 `<h3>` 沒有，`template7-exit-quickstart` parity 紅。renderer `--check` 已 byte-identical，只重跑 `--write` 不夠。
+- 保守選擇: 教師標題改 `**回看約定**`，再走官方 `render-methodology-corrections.sh --write`。
+- 理由: 粗體與 `<strong>` 正規化後同形；四欄字面與 `history-append.sh` 不變；lookback 牙同時認 `### 回看` 與 `**回看約定**`。
+- 影響: 模板／example／指南 Exit 區塊標題從 h3 改 strong。未發明 G3、未改 STATUS／HISTORY。
+
+### D-5(L1)
+- 現象: `EXPECTED_CHECK_SKIP_CALLS` 釘 1，`check-realworld.sh` 現有 9 處 `check_skip(`（原 1 = renderer 隔離根；新 8 = 隔離 seed 無 discovery-gaps／N3）。
+- 保守選擇: 常數與 self-pin、architecture-guards 靜態釘改 9；每個新呼叫點加 SKIP-REASON。
+- 理由: 母規則「新顯性 skip 必須同步常數並在呼叫處註明理由」。隔離 seed 真斷言跑不了，skip 是為 N-2 兩環境檢查數一致，不是卸武裝。
+- 影響: 逃生門從 1 放到 9。未新開第四檢查家族。
+
+### D-6(L1)
+- 現象: methodology 組 fail-fast 過 `check-methodology-corrections` 後，下一刀是 `check-spec-gate example/subsidy-3-0-plus/4-spec.md`。該檔 lane=full、無 Disposition，C9 紅。原 CI 在第一刀就停，名單沒列到它。
+- 保守選擇: 按既有 R/S／Out of Scope 補表，不新開產品行為；`build-stage4-html.py` 重生 twin。
+- 理由: CI 要綠；C9 對所有 full lane 發動。不改 STATUS／HISTORY、不發明 G3。
+- 影響: subsidy 手樣多一張對帳表。
+
+### D-7(L1)
+- 現象: 再下一刀 `check-devtalk-guide-sync`：N3「原文」blockquote 用頓號 `、`，SKILL 入口摘要用半形逗號。
+- 保守選擇: 指南原文段改成與 SKILL 逐字一致（逗號）。步驟表摘要列不動。
+- 理由: T-3 改口 SKILL 後原文段未同步標點。檢查要比對正規化子字串。
+- 影響: 只動 `guides/guide-dev-talk.html` 第 3 段原文。
+
+### D-8(L1)
+- 現象: `check-devstage6-graph`：已有 graph 契約下的 6-notes，5-tasks 仍 draft、缺 `FORK_INTEGRATION_SHA` 行。
+- 保守選擇: 5-tasks `status: approved`（#282 已併、本 hop 全 T 勾完）；6-notes 獨立一行寫開 branch 當下 `origin/main` 40 碼。
+- 理由: N1-arm 契約。不是 G3、不是改 STATUS／HISTORY。
+- 影響: 5-tasks 從 draft 轉 approved；錨點寫了不准改。
 
 ## Files Changed
 

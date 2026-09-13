@@ -193,6 +193,7 @@ LOOKBACK_COLS = ("回看日期", "回看 owner", "資料來源", "低於何值�
 def lookback_issues(text):
     """S-7.2：已出現回看節或四欄名之一時，缺任一欄名就紅；舊檔無節不發動。"""
     triggered = bool(re.search(r"^#{2,3}\s+\S*回看", text, re.M))
+    triggered = triggered or bool(re.search(r"\*\*回看約定\*\*", text))
     triggered = triggered or any(col in text for col in LOOKBACK_COLS)
     if not triggered:
         return []
@@ -410,6 +411,9 @@ if os.path.isfile(WRONG_COL):
           "負向 fixture goals-dashboard-in-wrong-column 必須被指出構想在錯欄",
           f"issues={wrong_issues}")
 else:
+    # SKIP-REASON: 隔離 seed(test-architecture-guards)不複製
+    # scripts/fixtures/discovery-gaps/;真斷言無法跑。顯性 skip 維持
+    # N-2 兩環境檢查數。同步 EXPECTED_CHECK_SKIP_CALLS。
     check_skip("負向 fixture goals-dashboard-in-wrong-column 必須被指出構想在錯欄",
                "隔離測試根目錄無 discovery-gaps fixture")
 if os.path.isfile(OK_COL):
@@ -419,6 +423,7 @@ if os.path.isfile(OK_COL):
           "正向 fixture goals-outcome-with-requested-dashboard 不因 dashboard/API 誤殺",
           f"issues={ok_issues}")
 else:
+    # SKIP-REASON: 同上,隔離 seed 無正向錯欄 fixture。同步 EXPECTED_CHECK_SKIP_CALLS。
     check_skip("正向 fixture goals-outcome-with-requested-dashboard 不因 dashboard/API 誤殺",
                "隔離測試根目錄無 discovery-gaps fixture")
 
@@ -442,6 +447,8 @@ if os.path.isfile(n3_path):
     check(not n3_pref, "N3-probe 發現｜與裁決｜成對", f"issues={n3_pref}")
     check("禁附推薦" in n3, "N3-probe 發現題路徑含禁附推薦")
 else:
+    # SKIP-REASON: 舊 seed() 未必複製 N3-probe;兩條地板對不到檔。
+    # 顯性 skip ×2。同步 EXPECTED_CHECK_SKIP_CALLS。
     check_skip("N3-probe 發現｜與裁決｜成對", "隔離根無 N3-probe")
     check_skip("N3-probe 發現題路徑含禁附推薦", "隔離根無 N3-probe")
 probe_ok = os.path.join(GAPS, "probe-decision-with-options.md")
@@ -452,6 +459,7 @@ if os.path.isfile(probe_ok):
           "裁決題附選項不得當發現題違規（probe-decision-with-options）",
           f"issues={probe_issues}")
 else:
+    # SKIP-REASON: 隔離 seed 無 probe-decision-with-options。同步 EXPECTED_CHECK_SKIP_CALLS。
     check_skip("裁決題附選項不得當發現題違規（probe-decision-with-options）",
                "隔離測試根目錄無 discovery-gaps fixture")
 
@@ -459,6 +467,8 @@ else:
 def _gaps_must_flag(name, needles, label):
     path = os.path.join(GAPS, name)
     if not os.path.isfile(path):
+        # SKIP-REASON: 負向 discovery-gaps fixture 不在隔離 seed。
+        # 一處呼叫點、多 fixture 共用。同步 EXPECTED_CHECK_SKIP_CALLS。
         check_skip(label, "隔離測試根目錄無 discovery-gaps fixture")
         return
     flagged = discovery_shape_issues(open(path, encoding="utf-8").read())
@@ -479,6 +489,8 @@ _gaps_must_flag("high-impact-missing-source.md", ("來源", "Assumption", "期�
 def _gaps_must_pass(name, label):
     path = os.path.join(GAPS, name)
     if not os.path.isfile(path):
+        # SKIP-REASON: 正向 discovery-gaps fixture 不在隔離 seed。
+        # 一處呼叫點、多 fixture 共用。同步 EXPECTED_CHECK_SKIP_CALLS。
         check_skip(label, "隔離測試根目錄無 discovery-gaps fixture")
         return
     flagged = discovery_shape_issues(open(path, encoding="utf-8").read())
@@ -520,6 +532,7 @@ if os.path.isfile(legacy_lb):
     check(not lookback_issues(open(legacy_lb, encoding="utf-8").read()),
           "舊 7-review 無回看節不發動")
 else:
+    # SKIP-REASON: 隔離 seed 無 lookback-legacy-no-section。同步 EXPECTED_CHECK_SKIP_CALLS。
     check_skip("舊 7-review 無回看節不發動", "隔離測試根目錄無 discovery-gaps fixture")
 
 # ── 檢查數地板(N-2,2026-08-15)──────────────────────────────────────────────
