@@ -650,3 +650,9 @@
 - 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
 - 詳細:https://github.com/rick546986/dev-flow/pull/315
 
+## 2026-09-14 · five-station-simplify
+- 做了什麼:Stage 5 tasks landed (#317); Active Stage → 5-tasks; Gates G1✅ G2✅ G3⬜
+- 為什麼:Winner A majority R1+R2; soft-fix S-8.6 named reopen fixtures + S-1.7 on T-9 + named T-9/T-11 fixtures. No G3 invented; Stage 6 not opened
+- 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
+- 詳細:https://github.com/rick546986/dev-flow/pull/317
+
