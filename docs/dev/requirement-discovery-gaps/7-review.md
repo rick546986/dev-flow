@@ -123,7 +123,7 @@ T-1 第一次因環境缺 `markdown-it-py` 紅（`renderer --check`）—— ENV
 
 ## Verification Evidence
 
-- Source SHA: e922c2b0e5e39b2bafaa5c6aaf5a7b5f3303af8e
+- Source SHA: 89dd10d5060b1580b16429e4a4c45775c49944d2
 - Final Fresh Run ID: 2026-09-13T0705Z-impl-B-s7
 - Entry point: `bash scripts/check-spec-gate.sh docs/dev/requirement-discovery-gaps/4-spec.md && bash scripts/check-realworld.sh`
 - Toolchain: python3.12.3; markdown-it-py 4.0.0(`scripts/requirements-methodology-render.txt`); contract 2.0.0; runtime 3.23.4; git 2.43.0; gauntlet 1.3.3
@@ -144,7 +144,7 @@ T-1 第一次因環境缺 `markdown-it-py` 紅（`renderer --check`）—— ENV
 
 開工前 `test -x docs/dev/tools/devflow-evidence-gauntlet.sh` → exit 0。
 
-Final Fresh gauntlet（`--source-sha e922c2b0e5e39b2bafaa5c6aaf5a7b5f3303af8e --review-file`）:61 checks、1 violation — E7 required layer 第二幽靈 token 未 pass。見附錄 A3。不把幽靈 token 標 pass。
+Final Fresh gauntlet（`--source-sha 89dd10d5060b1580b16429e4a4c45775c49944d2 --review-file`）:61 checks、1 violation — E7 required layer 第二幽靈 token 未 pass。見附錄 A3。不把幽靈 token 標 pass。
 
 ### 2c 整合結論
 
@@ -352,7 +352,7 @@ Variant B 偏置:先壓 A-1（不採黑名單）與 OC-1（只延三支既有牙
 [docs/dev/STATUS.md] [docs/dev/HISTORY.md]
 
 本 hop(docs-only,不是產品碼):
-[7-review.md]     Source SHA=e922c2b (第一份 7-review commit;再 commit 仍漂)
+[7-review.md]     Source SHA=89dd10d (must-fix 內容 commit;再 commit 仍漂)
 [7-review.html]   official G3 twin
 ```
 
@@ -424,9 +424,9 @@ Variant B 偏置:先壓 A-1（不採黑名單）與 OC-1（只延三支既有牙
 | 本次 S 全綠 | 35 S 機械牙／教師原文／Read 三案皆綠 | Coverage + 現象證據 |
 | 既有全綠 | realworld 174/174;本 slug spec-gate 9/9;S-2.2 突變紅 | Verification Evidence |
 | 現象證據逐 S 相符 | 35 列已填;S-1.2 套件 vs「exit ≠ 0」已說明 | 現象證據表 |
-| Evidence 契約 | gauntlet 61 checks、1 violation:E7 幽靈 token（附錄 A3）。`--source-sha e922c2b`。不是產品牙紅 | 附錄 A3 |
+| Evidence 契約 | gauntlet 61 checks、1 violation:E7 幽靈 token（附錄 A3）。`--source-sha 89dd10d`。不是產品牙紅 | 附錄 A3 |
 | 無 🔴 | 無 🔴。🟡 F-1／F-2／F-4 待 Human park 或修 | Standards Axis |
-| 出貨樹=審過的樹 | 2c 合 `37a4284` 在 Fresh 之前;Source SHA 重綁 `e922c2b` | 2c 節 |
+| 出貨樹=審過的樹 | 2c 合 `37a4284` 已在 tip;Source SHA 重綁 `89dd10d` | 2c 節 |
 
 PASS 條件未全滿足（Human 未判、F-1 未處置、gauntlet 幽靈 token、Source SHA 將漂）。故 **不得** 寫 PASS。
 
@@ -434,7 +434,7 @@ PASS 條件未全滿足（Human 未判、F-1 未處置、gauntlet 幽靈 token�
 
 | # | 限制 | 嚴重度 | 建議處置 |
 |---|---|---|---|
-| 1 | 重綁 Source SHA=`e922c2b0e5e39b2bafaa5c6aaf5a7b5f3303af8e` 之後若再 commit,HEAD 又漂。Gauntlet `--source-sha` 必須等於當下 HEAD | 中 | 下一棒重綁 Source SHA + 重跑 gauntlet。park:本節 |
+| 1 | 重綁 Source SHA=`89dd10d5060b1580b16429e4a4c45775c49944d2` 之後若再 commit,HEAD 又漂。Gauntlet `--source-sha` 必須等於當下 HEAD | 中 | 下一棒重綁 Source SHA + 重跑 gauntlet。park:本節 |
 | 2 | 4-spec Known design limit ①:A-2 誘導無法從最終 md 還原;硬 gate 只守對稱句與「發現題附推薦」形 | 低（契約已列） | 維持。不要加對話還原器 |
 | 3 | 4-spec Known design limit ②:guard 只在 talk 游標在時擋 Read;人跳過 hook 硬讀方案檔,本 feat 不新造 OS hook | 中（契約已列） | 維持。owner 不能接受就另開 slug,不要在本 feat 加 OS hook |
 | 4 | 4-spec Known design limit ③:「不改語意」與「算不算高影響」仍是人判 | 低 | 維持 |
