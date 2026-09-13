@@ -25,11 +25,13 @@
 > 在同一 checkout 手改,後寫會靜默蓋掉先寫的列。手改而不走寫入口會讓
 > 蓋章對不上,`check-status-policy.sh` 會紅。feature branch 上本腳本拒改正本表列。
 
-<!-- status-writer-rev:97305811582e836c5a9a0c9417985db0f3e5ec0cf1d273377117c9caaa11722c -->
+<!-- status-writer-rev:ab1a4641f30e9e27b6a29921a29469d2c342c425085394d16cb5c592d372804c -->
 
 ## Active
 
-目前無進行中的改版軌。
+| Feature | Lane | Stage | Owner | Branch | OverlapRef | Gates | Updated |
+|---|---|---|---|---|---|---|---|
+| [requirement-discovery-gaps](./requirement-discovery-gaps/) | full | 1-discussion | rick | n-a:尚未建立 branch | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | 2026-09-13 |
 
 ## 已完成
 
@@ -46,5 +48,5 @@ scripts/history-append.sh --slug <代號> --what <做了什麼> --why <為什麼
 | 級 | 一句 | 來源 |
 |---|---|---|
 | B | 拿 dev-flow 自己跑一次完整 normal-risk full lane(1-discussion → 7-review、過 G1/G2/G3)當觀測實驗 —— owner 已排定,是下一輪的事;在那之前不動 Stage 1–4 模板內容,免得污染觀測 | `notes/dispatch-parallel-feature-gaps.md` 末節 |
-| B | 需求討論九條制度缺口已於 2026-09-12 裁決（A-1~A-4/A-6/A-7/B-1/B-2 DO；A-5 LIGHT）；實作另開後續 feature，見 Owner Call | notes/review-requirement-discovery-gaps.md Owner Call |
+| B | 九條制度缺口見 Active `requirement-discovery-gaps`（#260 Stage 1 已落地；不再另開 feature） | notes/review-requirement-discovery-gaps.md Owner Call |
 | C | SDC 大表、Reference App(4cap §7 第 5 點收攏的低優先 deferred)。2026-08-17 清空輪裁決仍不做:投資未定且**零採用現場疼痛訊號**(G1/G2/G3 全是現場真踩到的,這兩件沒有);等有採用專案真的要 SDC 級指引再立案,不為清空而硬做 | `docs/dev/4cap-remediation/devflow-4cap-remediation-2026-08.md` §7 |

@@ -544,3 +544,8 @@
 - 落在哪:docs/dev/b8-gate-twin-review-ui/7-review.md + 7-review.html + 7-review-review.artifact.html、docs/dev/STATUS.md、docs/dev/HISTORY.md
 - 詳細:docs/dev/b8-gate-twin-review-ui/7-review.md
 
+## 2026-09-13 · requirement-discovery-gaps
+- 做了什麼:Stage 1 discussion landed (#260); Active opened
+- 為什麼:nine Owner Call gaps implement as one package
+- 落在哪:docs/dev/requirement-discovery-gaps/ + STATUS
+
