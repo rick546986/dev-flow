@@ -460,6 +460,13 @@ _gaps_must_pass("high-impact-with-source.md", "有可重開來源必須綠")
 _gaps_must_pass("high-impact-with-assumption.md", "Assumption 加期限必須綠")
 _gaps_must_pass("non-high-impact-context.md", "非高影響 Context 不貼枚舉不得紅")
 
+# ── 15. Assumption 四欄地板（S-4.4）──
+ASSUMPTION_COLS = ("若為假影響什麼", "影響級", "怎麼驗", "何時／由誰驗")
+check(all(col in t1 for col in ASSUMPTION_COLS),
+      "template 1-discussion 含 Assumption 四欄字面")
+check(all(col in e1 for col in ASSUMPTION_COLS),
+      "example 1-discussion 含 Assumption 四欄字面")
+
 # ── 檢查數地板(N-2,2026-08-15)──────────────────────────────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」——地板留餘裕=沒有
 # 牙齒(同 repo 慣例:scripts/check-stage67-enforcement.sh:232、
@@ -467,7 +474,7 @@ _gaps_must_pass("non-high-impact-context.md", "非高影響 Context 不貼枚舉
 # 起因:刪掉整段(例如第 5 節「NOT_REVIEWED ≠ ACCEPTED」)之前,checks 只是印出來的
 # 數字,不是斷言——舊版刪光整節仍印「✅ 全過」。新增/刪除 check() 呼叫時,
 # 把這個數字一起往上/往下調。
-MIN_CHECKS = 154
+MIN_CHECKS = 156
 if checks < MIN_CHECKS:
     failures.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                      f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")

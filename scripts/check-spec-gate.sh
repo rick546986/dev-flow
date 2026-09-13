@@ -13,7 +13,7 @@
 # 讓 reviewer 把時間花在判斷 R/S 寫得對不對、DD 決策合不合理 —— 那些仍然是人審的事。
 # 本腳本永遠不判斷內容好壞。
 #
-# 六項檢查(逐項印結果,全過才 exit 0):
+# 九項檢查(逐項印結果,全過才 exit 0;C7–C9 本 feat 加項,C1–C6 保留):
 #   C1 每個 S 都有觀測欄          _templates/4-spec.md:53(完成條件)、:99(欄位形式)
 #   C2 Verification Profile 節存在,且 `- lane:` 與 `- Risk:` 可被解析
 #                                 _templates/4-spec.md:181-182、:200(runtime 讀這兩行)
@@ -32,7 +32,7 @@
 # **exit code 契約(重要;與 scripts/check-task-slicing.sh 相反,別看混)**:
 #   check-task-slicing.sh 是 warning-only,對真實檔案永遠不 exit 1。
 #   **本腳本是 Gate**:FAIL 就是要擋下流程。
-#     0 = 六項全過
+#     0 = 全項全過
 #     1 = 任一項 FAIL —— G2 不得送審,修完再跑
 #     2 = 用法錯誤 / 檔案讀不到 / runtime 正本載不進來(檢查本身故障)
 #
@@ -49,7 +49,7 @@ if [ -z "$SPEC" ]; then
   cat >&2 <<'USAGE'
 usage: scripts/check-spec-gate.sh <4-spec.md 路徑>
 
-G2 機械關卡:對一份 4-spec.md 做形狀檢查(六項,見腳本頂註)。
+G2 機械關卡:對一份 4-spec.md 做形狀檢查(C1–C6 + Assumption／Fast／disposition 加項)。
 exit 0 = 全過 / 1 = 有 FAIL,G2 不得送審 / 2 = 用法錯誤或檢查本身故障。
 USAGE
   exit 2
@@ -64,6 +64,7 @@ import importlib.util
 import os
 import re
 import sys
+from datetime import date, datetime
 
 spec_path, root = sys.argv[1], sys.argv[2]
 
@@ -243,6 +244,44 @@ record(
     ]
     if c6_hits
     else [],
+)
+
+# ---- C7:Assumption refs（過期 open 無 OC → 紅；resolved／oc-accepted 放行）----
+ASSUME_HEAD = next((i for i in heads if re.match(r"^#{2,6}\s*Assumption refs", lines[i])), None)
+c7_bad = []
+if ASSUME_HEAD is not None:
+    end = section_end(ASSUME_HEAD)
+    for n in range(ASSUME_HEAD + 1, end):
+        line = lines[n]
+        if not line.lstrip().startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if not cells or re.match(r"^:?-+:?$", cells[0] or ""):
+            continue
+        if cells[0].startswith("引用"):
+            continue
+        deadline = cells[1] if len(cells) > 1 else ""
+        status = (cells[2] if len(cells) > 2 else "").strip().lower()
+        if status in ("resolved", "oc-accepted"):
+            continue
+        expired = False
+        dl = deadline.strip().strip("`")
+        if re.fullmatch(r"stage-[23]", dl, re.I):
+            expired = True  # 本檔是 4-spec，已過 stage-2／stage-3
+        else:
+            try:
+                expired = datetime.strptime(dl, "%Y-%m-%d").date() < date.today()
+            except ValueError:
+                expired = False
+        if status == "open" and expired:
+            c7_bad.append(
+                f"L{n + 1} Assumption 過期仍 open:{line.strip()[:70]}"
+            )
+record(
+    "C7",
+    not c7_bad,
+    "Assumption refs（open + 過期／過站且無 oc-accepted → 拒）",
+    c7_bad + (["過期未驗的 Assumption 擋下 G2；改 status=resolved 或 oc-accepted"] if c7_bad else []),
 )
 
 # ---- 輸出 ----
