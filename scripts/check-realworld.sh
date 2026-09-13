@@ -183,7 +183,20 @@ def discovery_shape_issues(text):
         issues.append("發現題附推薦：發現｜問句禁附推薦")
     issues.extend(claim_issues(text))
     issues.extend(verdict_issues(text))
+    issues.extend(lookback_issues(text))
     return issues
+
+
+LOOKBACK_COLS = ("回看日期", "回看 owner", "資料來源", "低於何值重開")
+
+
+def lookback_issues(text):
+    """S-7.2：已出現回看節或四欄名之一時，缺任一欄名就紅；舊檔無節不發動。"""
+    triggered = bool(re.search(r"^#{2,3}\s+\S*回看", text, re.M))
+    triggered = triggered or any(col in text for col in LOOKBACK_COLS)
+    if not triggered:
+        return []
+    return [f"回看缺欄:{col}" for col in LOOKBACK_COLS if col not in text]
 
 
 def verdict_issues(text):
@@ -216,6 +229,7 @@ if file_mode:
 t1 = read("_templates/1-discussion.md")
 t3 = read("_templates/3-prototype.md")
 t4 = read("_templates/4-spec.md")
+t7 = read("_templates/7-review.md")
 e1 = read("example/contract-expiry-reminder/1-discussion.md")
 e3 = read("example/contract-expiry-reminder/3-prototype.md")
 e4 = read("example/contract-expiry-reminder/4-spec.md")
@@ -491,6 +505,23 @@ _gaps_must_flag("verdict-accepted-only.md", ("role", "scenario"),
                 "殘行 ACCEPTED 無 role／scenario 必須紅")
 _gaps_must_pass("verdict-complete.md", "完整 verdict 一行必須綠")
 
+# ── 17. Exit 回看四欄（S-7.1／S-7.2／S-7.3）──
+check(all(col in t7 for col in LOOKBACK_COLS),
+      "template 7-review Exit 含回看四欄字面")
+e7 = read("example/contract-expiry-reminder/7-review.md")
+check(all(col in e7 for col in LOOKBACK_COLS),
+      "example 7-review Exit 含回看四欄字面")
+check("lookback.md" not in t7 and "history-append.sh" in t7,
+      "template 7-review 結果走 history-append、不另造 lookback.md")
+_gaps_must_flag("lookback-missing-threshold.md", ("低於何值重開",),
+                "shipped 有回看節卻缺低於何值重開必須紅")
+legacy_lb = os.path.join(GAPS, "lookback-legacy-no-section.md")
+if os.path.isfile(legacy_lb):
+    check(not lookback_issues(open(legacy_lb, encoding="utf-8").read()),
+          "舊 7-review 無回看節不發動")
+else:
+    check_skip("舊 7-review 無回看節不發動", "隔離測試根目錄無 discovery-gaps fixture")
+
 # ── 檢查數地板(N-2,2026-08-15)──────────────────────────────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」——地板留餘裕=沒有
 # 牙齒(同 repo 慣例:scripts/check-stage67-enforcement.sh:232、
@@ -498,7 +529,7 @@ _gaps_must_pass("verdict-complete.md", "完整 verdict 一行必須綠")
 # 起因:刪掉整段(例如第 5 節「NOT_REVIEWED ≠ ACCEPTED」)之前,checks 只是印出來的
 # 數字,不是斷言——舊版刪光整節仍印「✅ 全過」。新增/刪除 check() 呼叫時,
 # 把這個數字一起往上/往下調。
-MIN_CHECKS = 161
+MIN_CHECKS = 166
 if checks < MIN_CHECKS:
     failures.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                      f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")
