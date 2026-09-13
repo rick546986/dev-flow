@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>requirement-discovery-gaps · 4-spec</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+a.cell{text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px;overflow-wrap:anywhere;word-break:break-word}
+.r-body p{margin:0 0 8px}
+.s-card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 10px;background:var(--sunk)}
+.s-card h3{margin:0 0 8px;font-size:.95rem}
+.gwt{margin:0 0 6px}
+.gwt .k{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-3);display:block}
+.ask{margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--accent);
+  background:var(--accent-soft)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+.miss{background:var(--bad-soft);color:var(--bad);padding:2px 6px;border-radius:4px}
+.foot{margin:36px 0 0;padding:16px 18px;border:1px solid var(--rule);
+  border-radius:12px;background:var(--panel)}
+.gv-row{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0}
+.gv-field{display:block;margin:8px 0}
+.btn{background:var(--accent);color:#fff;border:0;border-radius:8px;
+  padding:8px 14px;font-weight:650;cursor:pointer}
+.gv-status{color:var(--ink-2);font-size:.86rem}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 4-spec · 審查介面</p>
+  <h1>requirement-discovery-gaps</h1>
+  <p class="sub">正本是 md。這頁是 R/S 卡 + 生命週期直式圖,不是 gate-twin 勾選卡。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">draft</span></div><div class="cell"><span class="k">verdict</span><span class="v">PRE-REVIEW</span></div><div class="cell"><span class="k">R</span><span class="v">9</span></div><div class="cell"><span class="k">S</span><span class="v">29</span></div></div>
+</header>
+<section class="r-block" id="lifecycle"><div class="r-head"><span class="r-name">補助模組生命週期（預覽）</span></div><div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 414" role="img" aria-label="模組生命週期">
+  <rect class="b" x="40" y="10" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">新生</text>
+  <text class="sm" text-anchor="middle" x="140" y="52">不加 </text>
+  <text class="sm" text-anchor="middle" x="140" y="66">check-discovery-gaps.sh</text>
+  <text class="sm" text-anchor="middle" x="140" y="80">、不加 RW-id、不加每 feature lookback.md。</text>
+  <path class="flow" d="M140,92 L140,114"/>
+  <rect class="hl" x="40" y="114" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="138">改行為</text>
+  <text class="sm" text-anchor="middle" x="140" y="156">延 </text>
+  <text class="sm" text-anchor="middle" x="140" y="170">check-realworld.sh</text>
+  <text class="sm" text-anchor="middle" x="140" y="184">／check-spec-gate.sh／devtalk-guard.sh 射程；改 Stage 1–4／7 模板、skills/dev-talk 發現題路徑、完整範例教師。</text>
+  <path class="flow" d="M140,196 L140,218"/>
+  <rect class="b" x="40" y="218" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="242">退役</text>
+  <text class="sm" text-anchor="middle" x="140" y="260">沒有。</text>
+  <path class="flow" d="M140,300 L140,322"/>
+  <rect class="b" x="40" y="322" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="346">不動</text>
+  <text class="sm" text-anchor="middle" x="140" y="364">七關結構、Fast 合法跳過</text>
+  <text class="sm" text-anchor="middle" x="140" y="378"> Stage 1–3、A-5</text>
+  <text class="sm" text-anchor="middle" x="140" y="392"> LIGHT（不做 Actor Coverage 全表）、STATUS／HISTORY 寫入口、plugin 版號、本 hop 的 G2／G3。</text>
+</svg>
+</div></div></section>
+<section class="r-block" id="lifecycle-note"><div class="r-head"><span class="r-name">生命週期說明</span></div><div class="r-body"><p>主詞是「九缺口活教師 + 既有牙射程」,不是整份方法論。直式圖,置中。</p></div></section>
+<section class="r-block" id="R-1"><div class="r-head"><span class="r-name">R-1 系統 SHALL 把工作結果與解法構想分欄</span></div><div class="r-body"><article class="s-card" id="S-1.1"><h3>S-1.1 模板 Goals 不再把通道列成從哪看候選</h3><p class="ask"><strong>審的時候看什麼</strong> 從兩節標題與「從哪看」那一行看 | 兩節名都在,且「從哪看」行不再列出畫面路徑與 API 端點 | 落地前 n-a:模板正本未改;替代=`rg -n "Requested solution|畫面路徑|API 端點" _templates/1-discussion.md`,現況 L96 仍列通道、無 Requested solution 節;Stage 6 改模板後重跑同一搜尋</p><p class="gwt"><span class="k">GIVEN</span>`_templates/1-discussion.md` 落地後的 `## Goals` 指令與「驗收雛形」觀測三件</p><p class="gwt"><span class="k">WHEN</span>搜字面 `## Goals`、`## Requested solution`、以及「從哪看」候選列</p><p class="gwt"><span class="k">THEN</span>`## Requested solution` 節存在；Goals 與雛形「從哪看」不再把「畫面路徑 | API 端點」寫成必填候選；通道只能出現在 Requested solution 或 Stage 2／4 選定解法之後</p></article><article class="s-card" id="S-1.2"><h3>S-1.2 「我要 dashboard」寫進 Goals 的對照稿必須現形</h3><p class="ask"><strong>審的時候看什麼</strong> 從該檢查 exit 與 stdout／stderr 看 | exit ≠ 0 且含 Goals 或 Requested solution 字樣 | 落地前 n-a:牙射程未延伸;替代=本條 GIVEN 對照稿字面；Stage 6 把稿放進 `scripts/fixtures/discovery-gaps/goals-channel-in-wrong-column/`</p><p class="gwt"><span class="k">GIVEN</span>一份 1-discussion 對照稿,`## Goals` 第一條字面為「我要 dashboard」,`## Requested solution` 為空或缺失</p><p class="gwt"><span class="k">WHEN</span>跑本包掛進 `check-realworld.sh` 家族的指定形狀檢查（同一入口,不另開腳本）</p><p class="gwt"><span class="k">THEN</span>exit ≠ 0；輸出指出構想在 Goals 或缺 `## Requested solution`</p></article><article class="s-card" id="S-1.3"><h3>S-1.3 完整範例 Goals 不再把登入／點擊／一眼可見當成目標本身</h3><p class="ask"><strong>審的時候看什麼</strong> 從範例 Goals 與 Interview Log 看 | Goals 無「登入後」「點擊」「一眼可見」當目標謂語 | 落地前 n-a:範例未改口;替代=現況 L62–L65、L83–L103、L119；Stage 6 同期改範例後重讀</p><p class="gwt"><span class="k">GIVEN</span>落地後的 `example/contract-expiry-reminder/1-discussion.md`</p><p class="gwt"><span class="k">WHEN</span>讀 `## Goals` 與 Interview Log 結「最低成本呈現面」的那條</p><p class="gwt"><span class="k">THEN</span>Goals 三條不再指定登入後、點擊直達、一眼可見為目標本身；dashboard／卡片／URL 若仍出現,只在 `## Requested solution` 且標未定案；Interview Log 不得把「dashboard 是最低成本的呈現面」寫成 Goal 結論</p></article></div></section>
+<section class="r-block" id="R-2"><div class="r-head"><span class="r-name">R-2 系統 SHALL 讓發現題不附推薦答案</span></div><div class="r-body"><article class="s-card" id="S-2.1"><h3>S-2.1 發現題路徑不再把附推薦當硬規則</h3><p class="ask"><strong>審的時候看什麼</strong> 從 N3 與對稱句看 | 發現題禁推薦、裁決題可附,兩前綴都在 | 落地前 n-a:skill 未改;替代=`rg -n "附推薦答案|發現｜|裁決｜" skills/dev-talk/nodes/N3-probe.md`,現況 L22 仍要附推薦、無前綴；Stage 6 改節點後重跑</p><p class="gwt"><span class="k">GIVEN</span>落地後的 `skills/dev-talk` 發現題路徑（至少 `nodes/N3-probe.md`）</p><p class="gwt"><span class="k">WHEN</span>搜「附推薦答案」與前綴 `發現｜`／`裁決｜`</p><p class="gwt"><span class="k">THEN</span>發現題指令含 `發現｜` 且含「禁附推薦」或同等「不得附推薦答案」；裁決題指令含 `裁決｜` 且允許附選項／差異／推薦；N3 三律不再把「附推薦答案」套在發現題</p></article><article class="s-card" id="S-2.2"><h3>S-2.2 刪掉一邊對稱句必須讓靜態牙紅</h3><p class="ask"><strong>審的時候看什麼</strong> 從該檢查 exit 與輸出看 | exit ≠ 0 且點名缺失前綴 | 落地前 n-a:牙未延伸;替代=本條 GIVEN；Stage 6 放 `scripts/fixtures/discovery-gaps/prefix-one-side-deleted/`</p><p class="gwt"><span class="k">GIVEN</span>一份隔離複本,只刪 `發現｜` 指令或只刪 `裁決｜` 指令,其餘不變</p><p class="gwt"><span class="k">WHEN</span>跑本包掛進既有家族的靜態牙（`check-realworld.sh` 或同等已掛入口,不另開腳本）</p><p class="gwt"><span class="k">THEN</span>exit ≠ 0；輸出指出缺失的那一邊前綴</p></article><article class="s-card" id="S-2.3"><h3>S-2.3 發現題無前綴卻先給答案的對照問句必須現形</h3><p class="ask"><strong>審的時候看什麼</strong> 從問句字面看 | 壞卡無 `發現｜` 且含 dashboard 建議；好卡有前綴且無建議 | 用紙上對照或 Stage 6 fixture `discovery-gaps/discover-question-with-recommend/`</p><p class="gwt"><span class="k">GIVEN</span>對照問句字面「上次真的怎麼做？建議用 dashboard,你覺得呢？」且無 `發現｜`</p><p class="gwt"><span class="k">WHEN</span>人只看問句本身（Stage 3 AC-2 好卡／壞卡）或跑指定形狀檢查</p><p class="gwt"><span class="k">THEN</span>該問句不得當已完成的發現題；好卡字面為 `發現｜上次真的怎麼做？` 且問句內無推薦通道</p></article></div></section>
+<section class="r-block" id="R-3"><div class="r-head"><span class="r-name">R-3 系統 SHALL 要求高影響主張回到來源或 Assumption+期限</span></div><div class="r-body"><article class="s-card" id="S-3.1"><h3>S-3.1 高影響列缺來源且缺期限必須紅</h3><p class="ask"><strong>審的時候看什麼</strong> 從 exit 與輸出看 | exit ≠ 0 且含來源或期限或 Assumption 字樣 | 落地前 n-a:牙只驗「有 Evidence 字」;替代=現況 `scripts/check-realworld.sh` L88–L91；Stage 6 放 `scripts/fixtures/discovery-gaps/claim-no-source-no-deadline/`</p><p class="gwt"><span class="k">GIVEN</span>一份 1-discussion 對照稿,高影響列主張為 Journey「發現被錨定」,狀態欄空、來源類型空、亦無 Assumption+期限</p><p class="gwt"><span class="k">WHEN</span>跑本包掛進 `check-realworld.sh` 家族的指定檢查</p><p class="gwt"><span class="k">THEN</span>exit ≠ 0；輸出指出缺來源或缺期限</p></article><article class="s-card" id="S-3.2"><h3>S-3.2 有來源或有期限的對照稿必須綠</h3><p class="ask"><strong>審的時候看什麼</strong> 從兩次 exit 看 | 皆 0 | 落地前 n-a:牙未延伸;替代=Stage 3 Method 2A 好卡字面；Stage 6 放 `scripts/fixtures/discovery-gaps/claim-observed/` 與 `claim-assumption-with-deadline/`</p><p class="gwt"><span class="k">GIVEN</span>同一形狀檢查；對照稿 A:狀態=Observed、來源類型=本 tree skill、as-of=2026-09-13、角色或範圍=討論 agent、支持哪一段=1-discussion Context N3、限制=無採用現場逐字稿；對照稿 B:狀態=Assumption、來源類型為「—」、期限=Stage 2、四欄齊</p><p class="gwt"><span class="k">WHEN</span>各跑一次指定檢查</p><p class="gwt"><span class="k">THEN</span>兩份都 exit 0</p></article><article class="s-card" id="S-3.3"><h3>S-3.3 點頭紀錄不得當唯一來源</h3><p class="ask"><strong>審的時候看什麼</strong> 從 exit 與輸出看 | exit ≠ 0 且含點頭或認可或來源字樣 | 落地前 n-a:牙未延伸;替代=本條 GIVEN；Stage 6 放 `scripts/fixtures/discovery-gaps/nod-as-only-source/`</p><p class="gwt"><span class="k">GIVEN</span>對照稿高影響列來源類型字面為「使用者點頭」或「S1-survey 認可」,無其他來源、亦無 Assumption+期限</p><p class="gwt"><span class="k">WHEN</span>跑 S-3.1 同一支指定檢查</p><p class="gwt"><span class="k">THEN</span>exit ≠ 0；輸出指出點頭不是來源</p></article><article class="s-card" id="S-3.4"><h3>S-3.4 狀態枚舉必須落在五值集合</h3><p class="ask"><strong>審的時候看什麼</strong> 從 exit 與輸出看 | exit ≠ 0 且列出合法枚舉或點名非法值 | 落地前 n-a:牙未延伸;替代=本條 GIVEN；Stage 6 放 `scripts/fixtures/discovery-gaps/claim-bad-enum/`</p><p class="gwt"><span class="k">GIVEN</span>對照稿狀態欄字面為 `Unknown` 或 `Fact`</p><p class="gwt"><span class="k">WHEN</span>跑 S-3.1 同一支指定檢查</p><p class="gwt"><span class="k">THEN</span>exit ≠ 0；輸出指出枚舉不在 {Observed, Reported, Inferred, Assumption, Conflict}</p></article></div></section>
+<section class="r-block" id="R-4"><div class="r-head"><span class="r-name">R-4 系統 SHALL 拒絕過期未驗的高影響 Assumption 送 G2</span></div><div class="r-body"><article class="s-card" id="S-4.1"><h3>S-4.1 過期 + 未 resolved + 無 OC 必須讓 spec-gate exit 1</h3><p class="ask"><strong>審的時候看什麼</strong> 從 spec-gate exit 與輸出看 | exit 1 且含 Assumption 或過期或期限字樣 | 落地前 n-a:現況 spec-gate 無此項;替代=`bash scripts/check-spec-gate.sh docs/dev/requirement-discovery-gaps/4-spec.md` 今日只做 C1–C6；Stage 6 放 `scripts/fixtures/discovery-gaps/expired-assumption-blocks-g2/`</p><p class="gwt"><span class="k">GIVEN</span>一份 4-spec 引用高影響 `假設` 原文片段「採用現場仍把解法寫進 Goal」；來源列 `影響級`=高、`期限=Stage 2`、`resolved` 空、無 `OC-accept:`；同 slug `2-decision.md` 為 `status: approved`</p><p class="gwt"><span class="k">WHEN</span>跑 `bash scripts/check-spec-gate.sh &lt;該 4-spec.md&gt;`</p><p class="gwt"><span class="k">THEN</span>exit 1；輸出指出過期 Assumption 或同等「未驗假設」字樣</p></article><article class="s-card" id="S-4.2"><h3>S-4.2 已驗轉 Observed／Reported 的對照稿必須 exit 0</h3><p class="ask"><strong>審的時候看什麼</strong> 從 exit 看 | 不得只因該列過期而紅 | 落地前 n-a:牙未延伸;替代=本條 GIVEN；Stage 6 放 `scripts/fixtures/discovery-gaps/assumption-resolved-observed/`</p><p class="gwt"><span class="k">GIVEN</span>與 S-4.1 同一引用,但 `resolved=Observed` 或 `resolved=Reported`,其餘相同</p><p class="gwt"><span class="k">WHEN</span>跑同一支 `check-spec-gate.sh`</p><p class="gwt"><span class="k">THEN</span>本項（過期假設）不造成 exit 1；若無其他 C1–C6 失敗則 exit 0</p></article><article class="s-card" id="S-4.3"><h3>S-4.3 有 OC-accept 的對照稿必須 exit 0</h3><p class="ask"><strong>審的時候看什麼</strong> 從 exit 看 | 不得只因該列過期而紅 | 落地前 n-a:牙未延伸;替代=本 slug OC-3 已收窄 Q6；Stage 6 放 `scripts/fixtures/discovery-gaps/assumption-oc-accept/`</p><p class="gwt"><span class="k">GIVEN</span>與 S-4.1 同一引用,`resolved=OC-accept:OC-3`,其餘相同</p><p class="gwt"><span class="k">WHEN</span>跑同一支 `check-spec-gate.sh`</p><p class="gwt"><span class="k">THEN</span>本項不造成 exit 1；若無其他 C1–C6 失敗則 exit 0</p></article></div></section>
+<section class="r-block" id="R-5"><div class="r-head"><span class="r-name">R-5 系統 SHALL 要求 Human verdict 一行寫出角色與場景</span></div><div class="r-body"><article class="s-card" id="S-5.1"><h3>S-5.1 模板必須含 role= 與 scenario= 字面</h3><p class="ask"><strong>審的時候看什麼</strong> 從模板該節看 | 三字面都在 | 落地前 n-a:模板未改;替代=`rg -n "Human verdict|role=|scenario=" _templates/3-prototype.md`；Stage 6 改模板後重跑</p><p class="gwt"><span class="k">GIVEN</span>落地後的 `_templates/3-prototype.md` User Demo Feedback</p><p class="gwt"><span class="k">WHEN</span>搜 `Human verdict`、`role=`、`scenario=`</p><p class="gwt"><span class="k">THEN</span>三個字面都在；模板說明只寫 ACCEPTED + 姓名日期 = 不完整</p></article><article class="s-card" id="S-5.2"><h3>S-5.2 只寫 ACCEPTED + 姓名日期的對照稿不得當完整 verdict</h3><p class="ask"><strong>審的時候看什麼</strong> 從 exit 與輸出看 | exit ≠ 0 且含 role 或 scenario 字樣 | 落地前 n-a:牙未延伸;替代=本條 GIVEN；Stage 6 放 `scripts/fixtures/discovery-gaps/verdict-accepted-name-only/`</p><p class="gwt"><span class="k">GIVEN</span>對照稿 3-prototype 含 `Human verdict: ACCEPTED` 與 `Verdict attestation: human:rick @ 2026-09-13`,但無 `role=`、無 `scenario=`</p><p class="gwt"><span class="k">WHEN</span>跑本包掛進 `check-realworld.sh` 家族的指定檢查（模板地板 + 對照稿）</p><p class="gwt"><span class="k">THEN</span>exit ≠ 0；該稿不得被當成完整 verdict</p></article><article class="s-card" id="S-5.3"><h3>S-5.3 本包不要求 Actor Coverage 全表</h3><p class="ask"><strong>審的時候看什麼</strong> 從模板與本檔 Out of Scope 看 | 無全表欄位,且 Out of Scope 點名 A-5 全表 | 本檔 Out of Scope 節可跑；模板落地前 n-a:現況本就無全表</p><p class="gwt"><span class="k">GIVEN</span>落地後的 `_templates/3-prototype.md` 與本包 4-spec Out of Scope</p><p class="gwt"><span class="k">WHEN</span>搜 `Actor Coverage`</p><p class="gwt"><span class="k">THEN</span>模板不新增每個關鍵角色的 direct interview／observation／proxy／not covered 全表；本包 Out of Scope 列明不做全表</p></article></div></section>
+<section class="r-block" id="R-6"><div class="r-head"><span class="r-name">R-6 系統 SHALL 讓 Stage 1 高影響列在 Stage 4 仍有去向</span></div><div class="r-body"><article class="s-card" id="S-6.1"><h3>S-6.1 去向空白的對照表必須現形</h3><p class="ask"><strong>審的時候看什麼</strong> 從檢查 exit 或審面字樣看 | 該列被點名 | 落地前 n-a:牙未延伸;替代=Stage 3 Method 4A 壞卡；Stage 6 放 `scripts/fixtures/discovery-gaps/disposition-blank/`</p><p class="gwt"><span class="k">GIVEN</span>一份 2-decision 對照表,列「Journey「痛點消失」」的去向欄為空</p><p class="gwt"><span class="k">WHEN</span>跑本包掛進 `check-realworld.sh` 家族的指定檢查,或 G1 審面點名</p><p class="gwt"><span class="k">THEN</span>exit ≠ 0 或審面指出該列無去向；不得只靠「痛點有處理」散文過關</p></article><article class="s-card" id="S-6.2"><h3>S-6.2 本方案處理的列必須落到至少一條 R／S</h3><p class="ask"><strong>審的時候看什麼</strong> 從本檔 R 標題與上列對照看 | 十列皆指向一個 R-id | 本檔可跑,無需等牙</p><p class="gwt"><span class="k">GIVEN</span>本 slug 2-decision Real-world Disposition 中去向=本方案處理的列</p><p class="gwt"><span class="k">WHEN</span>對本 4-spec 的 R／S 標題與 THEN</p><p class="gwt"><span class="k">THEN</span>下列列各至少命中一條 R:Journey「發現被錨定」→ R-2；Journey「點頭當證據」→ R-3；Journey「痛點消失」→ R-6；Journey「問題沒改善」→ R-7；Journey「互動風險晚露」→ R-9；Workaround「owner 用審核筆記記缺口」→ R-1；Workaround「現場證據靠記憶轉述」→ R-8；Workaround「Fast 直接寫 4-spec」→ R-9；Workaround「人口頭記先問現況」→ R-2；Exception「`[~]` 可走到 G2」→ R-4</p></article><article class="s-card" id="S-6.3"><h3>S-6.3 不得發明 RW-id</h3><p class="ask"><strong>審的時候看什麼</strong> 從三檔搜尋看 | 無「引用 RW-」規則 | `rg -n "RW-[0-9]" docs/dev/requirement-discovery-gaps/4-spec.md _templates/2-decision.md _templates/4-spec.md`；本 hop 本檔必須零命中</p><p class="gwt"><span class="k">GIVEN</span>落地後的 `_templates/2-decision.md`、`_templates/4-spec.md`、本檔</p><p class="gwt"><span class="k">WHEN</span>搜 `RW-` 後接數字作為第二條 ID 鏈</p><p class="gwt"><span class="k">THEN</span>模板與本檔都不要求 R／S 引用 `RW-n`；disposition 只引用原文片段</p></article></div></section>
+<section class="r-block" id="R-7"><div class="r-head"><span class="r-name">R-7 系統 SHALL 在出貨 Exit 留下回看四欄</span></div><div class="r-body"><article class="s-card" id="S-7.1"><h3>S-7.1 Exit 缺四欄之一必須紅</h3><p class="ask"><strong>審的時候看什麼</strong> 從 exit 與輸出看 | exit ≠ 0 且點名缺欄 | 落地前 n-a:7-review Exit 現無四欄;替代=`rg -n "回看日期|回看 owner|資料來源|低於何值重開" _templates/7-review.md`；Stage 6 改 Exit 並放 `scripts/fixtures/discovery-gaps/lookback-missing-field/`</p><p class="gwt"><span class="k">GIVEN</span>一份已宣稱 shipped 的 7-review,Exit 缺「回看日期」「回看 owner」「資料來源」「低於何值重開」任一欄</p><p class="gwt"><span class="k">WHEN</span>跑本包掛進既有家族的指定檢查（`check-realworld.sh` 地板或與 7-review 同家族的已掛入口,不另開腳本）</p><p class="gwt"><span class="k">THEN</span>exit ≠ 0；輸出指出缺失欄名</p></article><article class="s-card" id="S-7.2"><h3>S-7.2 結果必須走 history-append,不得另造 lookback.md</h3><p class="ask"><strong>審的時候看什麼</strong> 從 Exit 與本檔 Out of Scope 看 | 四欄名在模板,lookback.md 在 Out of Scope | 落地前模板 n-a:Exit 無四欄；本檔 Out of Scope 可跑</p><p class="gwt"><span class="k">GIVEN</span>落地後的 `_templates/7-review.md` Exit 與本包 Decision 5A</p><p class="gwt"><span class="k">WHEN</span>搜 lookback 落點</p><p class="gwt"><span class="k">THEN</span>Exit 含 S-7.1 四個欄位名；正文指向 `history-append.sh` 或同等既有 HISTORY 寫入口；不要求每 feature 一份 `lookback.md`</p></article><article class="s-card" id="S-7.3"><h3>S-7.3 任意數字不得被當成問題已改善</h3><p class="ask"><strong>審的時候看什麼</strong> 從 Exit 指令句與 HISTORY 寫法看 | 指令含「已改善」的否定或同等「不得把問題寫成已改善」 | 落地前 n-a:指令未寫;替代=本條 THEN；Stage 6 把該句寫進 7-review Exit</p><p class="gwt"><span class="k">GIVEN</span>一份 7-review Exit 四欄都填了,但「低於何值重開」為「0」或「之後看」且無資料來源可重開</p><p class="gwt"><span class="k">WHEN</span>人讀該 Exit,或跑指定檢查</p><p class="gwt"><span class="k">THEN</span>牙若只驗欄在,該稿可以形狀綠；正文與 7-review 指令必須寫明「數字在 ≠ 問題已改善」；到期未用寫下的來源核對真實問題,不得在 HISTORY 把原問題寫成已改善</p></article></div></section>
+<section class="r-block" id="R-8"><div class="r-head"><span class="r-name">R-8 系統 SHALL 只放行 owner 核准的事實路徑</span></div><div class="r-body"><article class="s-card" id="S-8.1"><h3>S-8.1 未核准路徑不得當已授權 evidence</h3><p class="ask"><strong>審的時候看什麼</strong> 從該檢查／hook 的 exit 與輸出看 | 非 0 且含核准或未核字樣 | 落地前 n-a:guard 只管 skill 寫入洩漏;替代=`rg -n "2-decision|4-spec" hooks/devtalk-guard.sh` 現況 L21 只掃洩漏字;Stage 6 放 `scripts/fixtures/discovery-gaps/manifest-unapproved-cited/`</p><p class="gwt"><span class="k">GIVEN</span>manifest 一列「採用現場逐字稿」、擬路徑空、`owner 核准`=未核、`已讀`=否；1-discussion 高影響列卻把該路徑當來源</p><p class="gwt"><span class="k">WHEN</span>跑本包掛進 `devtalk-guard.sh` 或 `check-realworld.sh` 家族的指定檢查（改允許集合,仍是既有入口）</p><p class="gwt"><span class="k">THEN</span>exit ≠ 0（或 hook exit 2）；該列不得當已授權 evidence</p></article><article class="s-card" id="S-8.2"><h3>S-8.2 讀 2-decision／4-spec 仍被擋</h3><p class="ask"><strong>審的時候看什麼</strong> 從 exit 與輸出看 | 非 0 且含 2-decision 或 4-spec 或方案檔字樣 | 落地前 n-a:guard 未管事實入口;替代=本條 GIVEN；Stage 6 放 `scripts/fixtures/discovery-gaps/manifest-solution-file-cited/`</p><p class="gwt"><span class="k">GIVEN</span>manifest 或 1-discussion 引用 `docs/dev/*/2-decision.md` 或 `docs/dev/*/4-spec.md` 當事實來源,即使有人把核准格寫成「是」</p><p class="gwt"><span class="k">WHEN</span>跑 S-8.1 同一圍欄／檢查</p><p class="gwt"><span class="k">THEN</span>exit ≠ 0（或 hook exit 2）；方案檔仍禁,核准格不能覆寫這條禁令</p></article><article class="s-card" id="S-8.3"><h3>S-8.3 ticket／SOP 解法建議不得當事實</h3><p class="ask"><strong>審的時候看什麼</strong> 從檢查輸出或 G1 抽查紀錄看 | 該列被拒或被改欄 | 落地前 n-a:牙未延伸;替代=本條 GIVEN；Stage 6 放 `scripts/fixtures/discovery-gaps/ticket-solution-as-fact/`</p><p class="gwt"><span class="k">GIVEN</span>高影響列來源類型字面為「ticket 建議做 dashboard」或「SOP 規定要 API」,無事件／行為／結果出處</p><p class="gwt"><span class="k">WHEN</span>跑 S-8.1 同一檢查,或 G1 抽查</p><p class="gwt"><span class="k">THEN</span>該來源不得當事實；要嘛改成事件／行為／結果,要嘛改 Assumption+期限</p></article></div></section>
+<section class="r-block" id="R-9"><div class="r-head"><span class="r-name">R-9 系統 SHALL 在 Fast 寫 4-spec 前收完六問</span></div><div class="r-body"><article class="s-card" id="S-9.1"><h3>S-9.1 Fast 4-spec 六問未收束不得當已分診</h3><p class="ask"><strong>審的時候看什麼</strong> 從 spec-gate exit 與輸出看 | exit 1 且含 Fast 或六問或 triage 字樣 | 落地前 n-a:現況 spec-gate 無此項;替代=本條 GIVEN；Stage 6 放 `scripts/fixtures/discovery-gaps/fast-triage-blank/`</p><p class="gwt"><span class="k">GIVEN</span>一份 `lane: fast` 的 4-spec,無 `## Fast triage`,或六問任一「答」欄為空</p><p class="gwt"><span class="k">WHEN</span>跑 `bash scripts/check-spec-gate.sh &lt;該 4-spec.md&gt;`</p><p class="gwt"><span class="k">THEN</span>exit 1；輸出指出 Fast triage 未收束或空白</p></article><article class="s-card" id="S-9.2"><h3>S-9.2 等待顯示成完成必須命中第 3 問</h3><p class="ask"><strong>審的時候看什麼</strong> 從該表第 3 列與去向列看 | 第 3 問命中且去向是三擇一 | 落地前用紙上 Stage 3 AC-9 對照案；Stage 6 放 `scripts/fixtures/discovery-gaps/fast-wait-shown-as-done/`</p><p class="gwt"><span class="k">GIVEN</span>對照案六問答:1 否「只改狀態字顯示」；2 否；3 是「等待被顯示成完成」；4–6 否</p><p class="gwt"><span class="k">WHEN</span>把該表放進 `## Fast triage`</p><p class="gwt"><span class="k">THEN</span>`命中` 欄第 3 問為是；去向不得為空,必須 ∈ {升 full, fast+mini, OC 接受風險}；不得把去向填 Fast</p></article><article class="s-card" id="S-9.3"><h3>S-9.3 命中無去向必須擋進 Stage 4</h3><p class="ask"><strong>審的時候看什麼</strong> 從 exit 與輸出看 | exit 1 且含去向或命中字樣 | 落地前 n-a:牙未延伸;替代=本條 GIVEN；Stage 6 放 `scripts/fixtures/discovery-gaps/fast-hit-no-disposition/`</p><p class="gwt"><span class="k">GIVEN</span>一份 Fast 4-spec,第 3 問命中,去向欄空</p><p class="gwt"><span class="k">WHEN</span>跑 `check-spec-gate.sh`</p><p class="gwt"><span class="k">THEN</span>exit 1；輸出指出命中無去向</p></article><article class="s-card" id="S-9.4"><h3>S-9.4 純視覺全否維持 Fast</h3><p class="ask"><strong>審的時候看什麼</strong> 從去向列與 OC-6 看 | 去向=Fast | 本條是 OC-6 收窄；Stage 6 放 `scripts/fixtures/discovery-gaps/fast-visual-only/` 且 spec-gate exit 0（無其他 C 失敗時）</p><p class="gwt"><span class="k">GIVEN</span>六問皆否＋一句「只改 CSS 顏色／文案錯字」；同 slug 已有 approved 4-spec；diff 不改權限／等待／交接語意</p><p class="gwt"><span class="k">WHEN</span>讀 `## Fast triage` 去向</p><p class="gwt"><span class="k">THEN</span>去向可以是 Fast；不必 mini、不必升 full</p></article></div></section>
+<section class="r-block" id="behavior"><div class="r-head"><h2 class="r-name">行為流程圖(R 級)</h2></div><div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 718" role="img" aria-label="行為流程圖(R 級)">
+  <rect class="hl" x="40" y="10" width="200" height="68" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">[R-1] 分欄結果與構想</text>
+  <text class="sm" text-anchor="middle" x="140" y="52">Goals 只寫工作結果</text>
+  <text class="sm" text-anchor="middle" x="140" y="66">構想進 Requested solution</text>
+  <path class="flow" d="M140,78 L140,100"/>
+  <rect class="b" x="40" y="100" width="200" height="68" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="124">[R-2] 發現題不附推薦</text>
+  <text class="sm" text-anchor="middle" x="140" y="142">問句加 發現｜</text>
+  <text class="sm" text-anchor="middle" x="140" y="156">裁決題才可附選項</text>
+  <path class="flow" d="M140,168 L140,190"/>
+  <rect class="b" x="40" y="190" width="200" height="68" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="214">[R-3] 主張回到來源</text>
+  <text class="sm" text-anchor="middle" x="140" y="232">高影響列選五值枚舉</text>
+  <text class="sm" text-anchor="middle" x="140" y="246">來源 XOR Assumption+期限</text>
+  <path class="flow" d="M140,258 L140,280"/>
+  <rect class="b" x="40" y="280" width="200" height="68" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="304">[R-4] 拒絕過期假設</text>
+  <text class="sm" text-anchor="middle" x="140" y="322">四欄可被 spec-gate 看見</text>
+  <text class="sm" text-anchor="middle" x="140" y="336">過期未驗 exit 1</text>
+  <path class="flow" d="M140,348 L140,370"/>
+  <rect class="b" x="40" y="370" width="200" height="68" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="394">[R-5] 寫出角色與場景</text>
+  <text class="sm" text-anchor="middle" x="140" y="412">verdict 一行含 role= scenario=</text>
+  <text class="sm" text-anchor="middle" x="140" y="426">殘行不得當完整</text>
+  <path class="flow" d="M140,438 L140,460"/>
+  <rect class="b" x="40" y="460" width="200" height="68" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="484">[R-6] 痛點仍有去向</text>
+  <text class="sm" text-anchor="middle" x="140" y="502">引用原文填五值去向</text>
+  <text class="sm" text-anchor="middle" x="140" y="516">本方案處理對到 R/S</text>
+  <path class="flow" d="M140,528 L140,550"/>
+  <rect class="b" x="40" y="550" width="200" height="68" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="574">[R-7] 留下回看四欄</text>
+  <text class="sm" text-anchor="middle" x="140" y="592">Exit 日期 owner 來源 門檻</text>
+  <text class="sm" text-anchor="middle" x="140" y="606">結果走 HISTORY 追加</text>
+  <path class="flow" d="M140,618 L140,640"/>
+  <rect class="b" x="40" y="640" width="200" height="68" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="664">[R-8] 放行核准事實</text>
+  <text class="sm" text-anchor="middle" x="140" y="682">manifest 同檔五欄</text>
+  <text class="sm" text-anchor="middle" x="140" y="696">方案檔仍禁讀</text>
+</svg>
+</div></div></section>
+<footer class="foot gate-verdict" id="gate-verdict"
+  data-slug="requirement-discovery-gaps" data-stage="4-spec" data-source-sha="">
+  <p class="gv-canon">正本是同目錄 <code>4-spec.md</code> 頂欄
+  <code>verdict:</code>。勾選只是瀏覽器草稿。全勾不算 PASS。
+  只有「提交判定」才寫入 Human verdict。sidecar／HTML／localStorage 都不是正本;
+  sidecar 與 md 衝突時 md 勝。</p>
+  <div class="gv-row" role="radiogroup" aria-label="Human verdict">
+    <label><input type="radio" name="gv-verdict" value="PASS"> PASS</label>
+    <label><input type="radio" name="gv-verdict" value="REQUEST_CHANGES"> REQUEST_CHANGES</label>
+    <label><input type="radio" name="gv-verdict" value="HOLD"> HOLD</label>
+  </div>
+  <label class="gv-field">備註 <input id="gv-notes" type="text" maxlength="200"></label>
+  <label class="gv-field">審查者 <input id="gv-reviewer" type="text" maxlength="80"></label>
+  <button type="button" class="btn" id="gv-submit">提交判定</button>
+  <p id="gv-status" class="gv-status"></p>
+</footer>
+<p class="src">由 <code>scripts/build-stage4-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+<script>
+(function(){
+  var panel = document.getElementById('gate-verdict');
+  if (!panel) return;
+  var statusEl = document.getElementById('gv-status');
+  function status(msg){ if (statusEl) statusEl.textContent = msg; }
+  function patchMd(text, verdict, notes){
+    if (text.slice(0, 4) !== '---\n') throw new Error('no frontmatter');
+    var end = text.indexOf('\n---\n', 3);
+    if (end < 0) throw new Error('unclosed frontmatter');
+    var fm = text.slice(4, end);
+    var rest = text.slice(end + 5);
+    if (/^verdict:\s*/m.test(fm)) {
+      fm = fm.replace(/^verdict:\s*.*$/m, 'verdict: ' + verdict);
+    } else if (/^status:\s*/m.test(fm)) {
+      fm = fm.replace(/^(status:\s*.*)$/m, '$1\nverdict: ' + verdict);
+    } else {
+      fm = 'verdict: ' + verdict + '\n' + fm;
+    }
+    if (notes) {
+      var line = '- Human verdict note: ' + notes.split('\n')[0];
+      if (/^- Human verdict note:/m.test(rest)) {
+        rest = rest.replace(/^- Human verdict note:.*$/m, line);
+      } else {
+        rest = line + '\n' + rest;
+      }
+    }
+    return '---\n' + fm + '\n---\n' + rest;
+  }
+  function payload(verdict){
+    return {
+      slug: panel.dataset.slug,
+      gate: panel.dataset.stage,
+      verdict: verdict,
+      notes: ((document.getElementById('gv-notes') || {}).value || '').trim(),
+      reviewer: ((document.getElementById('gv-reviewer') || {}).value || '').trim(),
+      checked: [],
+      source_sha: panel.dataset.sourceSha || '',
+      sidecar: true
+    };
+  }
+  function postVerdict(body){
+    var urls = ['/devflow-gate/verdict'];
+    if (location.protocol === 'file:') {
+      urls.push('http://127.0.0.1:8765/devflow-gate/verdict');
+    }
+    var i = 0;
+    function next(){
+      if (i >= urls.length) return Promise.reject(new Error('no serve'));
+      var url = urls[i++];
+      return fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      }).then(function(r){
+        if (!r.ok) throw new Error('http ' + r.status);
+        return r.json();
+      }).catch(function(){ return next(); });
+    }
+    return next();
+  }
+  async function writeViaFsa(body){
+    if (!window.showDirectoryPicker) {
+      throw new Error('no File System Access');
+    }
+    var dir = await window.showDirectoryPicker({id: 'devflow-gate-' + body.slug});
+    var mdName = body.gate + '.md';
+    var fh = await dir.getFileHandle(mdName);
+    var file = await fh.getFile();
+    var next = patchMd(await file.text(), body.verdict, body.notes);
+    var w = await fh.createWritable();
+    await w.write(next);
+    await w.close();
+    return mdName;
+  }
+  var submit = document.getElementById('gv-submit');
+  if (!submit) return;
+  submit.addEventListener('click', function(){
+    var picked = document.querySelector('input[name="gv-verdict"]:checked');
+    if (!picked) {
+      status('請先選 PASS / REQUEST_CHANGES / HOLD。全勾不算 PASS。');
+      return;
+    }
+    var body = payload(picked.value);
+    status('寫入中…');
+    postVerdict(body).then(function(res){
+      status('已寫入 ' + (res.path || (body.gate + '.md')) +
+        ' 的 verdict: ' + body.verdict + '。正本是 md，不是勾選、不是 sidecar。');
+    }).catch(function(){
+      writeViaFsa(body).then(function(name){
+        status('已用 File System Access 寫入 ' + name +
+          ' 的 verdict: ' + body.verdict + '。正本是 md。');
+      }).catch(function(){
+        status('寫不進 md。請跑 python3 scripts/devflow_gate.py serve <專案根> 再開這頁。勾選不是判定。');
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
