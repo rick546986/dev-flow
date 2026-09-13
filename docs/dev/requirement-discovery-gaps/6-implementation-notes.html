@@ -275,6 +275,19 @@ details.hunk>summary::-webkit-details-marker{display:none}
 <div class="ln del"><span class="m">-</span>  一項一條、六項都要過:</div>
 <div class="ln add"><span class="m">+</span>  `bash &lt;master&gt;/scripts/check-spec-gate.sh docs/dev/&lt;slug&gt;/4-spec.md`。它查九項,</div>
 <div class="ln add"><span class="m">+</span>  一項一條、九項都要過(C1–C6 原形 + C7 Assumption refs／C8 Fast 六問／C9 Disposition):</div>
+</div></details>
+<details class="hunk" open><summary>MIN_HEREDOCS · <code>scripts/check-py-floor.sh</code> L298-298 <span class="tag base">T-3</span></summary><p class="hunk-why">改什麼：地板 221→223,對齊 DG-1/DG-2 兩枚 mutate heredoc</p><p class="hunk-rel">關聯：architecture 靜態互釘;PF-2 關掉 INTERP 必須跌破</p><div class="diff">
+<div class="ln del"><span class="m">-</span>MIN_HEREDOCS = 221</div>
+<div class="ln add"><span class="m">+</span>MIN_HEREDOCS = 223</div>
+</div></details>
+<details class="hunk" open><summary>回看約定 · <code>_templates/7-review.md</code> L343-344 <span class="tag base">T-8</span></summary><p class="hunk-why">改什麼：四欄改同一項續行,避免指南 parity 留下字面 `-`</p><p class="hunk-rel">關聯：renderer `template7-exit-quickstart`;欄位字與 history-append.sh 仍在</p><div class="diff">
+<div class="ln del"><span class="m">-</span>- [ ] **回看約定**(四欄必填;結果到期用 `scripts/history-append.sh` 追加,不另造永久回看檔):</div>
+<div class="ln del"><span class="m">-</span>      - 回看日期:</div>
+<div class="ln del"><span class="m">-</span>      - 回看 owner:</div>
+<div class="ln del"><span class="m">-</span>      - 資料來源:</div>
+<div class="ln del"><span class="m">-</span>      - 低於何值重開:</div>
+<div class="ln add"><span class="m">+</span>- [ ] **回看約定**(四欄必填;結果到期用 `scripts/history-append.sh` 追加,不另造永久回看檔):</div>
+<div class="ln add"><span class="m">+</span>      回看日期: ／ 回看 owner: ／ 資料來源: ／ 低於何值重開:</div>
 </div></details></section>
 <p class="src">由 <code>scripts/build-stage6-html.py</code> 從 md ## Diff 解析產生,不包 html-shell。</p>
 </div>
