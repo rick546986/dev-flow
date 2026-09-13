@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>requirement-discovery-gaps · 3-prototype</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px}
+.r-body p{margin:0 0 8px}
+.trigger{list-style:none;padding:0;margin:0}
+.trigger li{padding:4px 0;border-bottom:1px solid var(--rule-2)}
+.hit{color:var(--ok);font-weight:650}
+.miss{color:var(--ink-3)}
+.card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 8px;background:var(--sunk)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 3-prototype · 審查介面</p>
+  <h1>requirement-discovery-gaps</h1>
+  <p class="sub">正本是 md。觸發判定／Demo／答案回寫 2-decision。不是 html-shell 長文。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">draft</span></div><div class="cell"><span class="k">觸發命中</span><span class="v">6/9</span></div><div class="cell"><span class="k">Demo</span><span class="v">4</span></div><div class="cell"><span class="k">Human verdict</span><span class="v">NOT_REVIEWED</span></div></div>
+</header>
+<section class="r-block" id="trigger"><div class="r-head"><span class="r-name">觸發判定</span></div><div class="r-body"><ul class="trigger"><li class="miss">[未中] 有新的前端流程（本題是模板教師＋CLI 牙，沒有新產品畫面）</li><li class="hit">[命中] 改變使用者下一步（討論者要分欄寫結果／構想；發現題不能先塞推薦；Fast 寫 4-spec 前先答六問）</li><li class="hit">[命中] 涉及角色交接（討論 agent ↔ 訪談對象 ↔ 收斂者 ↔ owner 核准證據 ↔ Fast 實作者 ↔ G2 reviewer）</li><li class="hit">[命中] 涉及人工核准（owner 核准事實入口；過期高影響 Assumption 要 OC 才准進 G2；Human verdict 人類親填）</li><li class="hit">[命中] 涉及等待/退回/逾時（Assumption 驗證期限；lookback 回看日；G2 因過期假設退回）</li><li class="hit">[命中] 涉及權限差異（核准過的事實進得來；2／3／4／5／6／7 方案檔仍進不去）</li><li class="hit">[命中] 涉及系統外動作（訪談、SOP／ticket、終端機跑牙、GitHub 審頁）</li><li class="miss">[未中] 涉及多種可行互動設計（1A–8A 已 lock；教師＋既有牙是同一條路，不另做 UI Variant）</li><li class="miss">[未中] Stage 1 尚有操作流程不確定性（Journey 已清；剩欄位名字面進 4-spec）</li></ul></div></section>
+<section class="r-block" id="question"><div class="r-head"><span class="r-name">Question</span></div><div class="r-body"><p>2-decision 內部技術選擇「4-spec 再釘」＋ Risk「B-1 manifest 形狀未釘」＋ Risk「新欄被填 Unknown」＋ SC-1～SC-9：在**不改模板／守衛、不開 4-spec**的前提下，throwaway CLI 能否鎖住這三個答案？ 1. **教師形**：九條落地時，人要填的最小欄長什麼樣（Goals／Requested 分欄、發現題／裁決題、高影響枚舉＋來源 XOR、Assumption 四欄、verdict 角色／場景、disposition 原文片段、lookback 四欄、evidence manifest、Fast 六問＋去向）。 2. **牙形**：同一形狀掛在既有 `check-realworld.sh`／`check-spec-gate.sh`／`devtalk-guard.sh` 時，缺欄／過期／未核准分別紅什麼；不新造檢查家族、不發 RW-id、不掃 dashboard／API 黑名單。 3. **本 hop 邊界**：正式腳本與模板位元組不變；不把本站輸出當成 G2 PASS。 答案長什麼樣才算回答了： - 印出 `TEACHER_CARDS 9`，A-1…A-7／B-1／B-2 各一張。 - 16 個對照 fixture 的 expect／got 全對（`SHAPE_MATCH True`）。 - `NO_NEW_FAMILY`／`NO_RW_ID`／`NO_G2_INVENTED` 皆 True；正本 `scripts/`／`_templates/` **沒有**因本站被改。</p></div></section>
+<section class="r-block" id="demo"><div class="r-head"><span class="r-name">Demo</span></div><div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 454" role="img" aria-label="結構圖">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">throwaway CLI 先印九張教師卡再咬牙</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">realworld 地板：分欄／來源 XOR／v</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="b" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">spec-gate：過期假設／Fast 六問</text>
+  <path class="flow" d="M140,216 L140,238"/>
+  <rect class="b" x="40" y="238" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="262">devtalk-guard：核准入口、方案檔仍禁</text>
+  <path class="flow" d="M140,292 L140,314"/>
+  <rect class="b" x="40" y="314" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="338">不新造檢查家族、不發 RW-id</text>
+  <path class="flow" d="M140,368 L140,390"/>
+  <rect class="b" x="40" y="390" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="414">正本模板／守衛未改、不開 4-spec</text>
+</svg>
+</div><div class="card"><strong>Scenario AC-1（教師：結果與構想分欄）</strong><p>使用者角色:討論 agent／G1 reviewer</p><p>真實目標:人能分辨「要達成的工作結果」與「帶來的解法構想」</p><p>起始狀態:scratchpad 兩份對照：`goal-mixed`（Goals 寫「我要 dashboard」、Requested 空）／`goal-split`（Goals 寫結果、構想在 Requested）</p><p>操作步驟:跑 throwaway；看 `goal-mixed`／`goal-split` 兩行</p><p>系統回應:`goal-mixed` fail（缺 Requested 欄，不是因為寫了 dashboard）；`goal-split` pass</p><p>系統外下一步:正本模板本站不改；落地時才把分欄寫進 1-discussion 教師</p><p>觀察問題:看到紅之後知道要補的是「另欄」嗎？系統有沒有暗示「不准寫 dashboard 這個詞」？（不該有；黑名單已拒）</p></div><div class="card"><strong>Scenario AC-4（牙：過期 Assumption 擋 G2 形）</strong><p>使用者角色:G2 reviewer</p><p>真實目標:高影響假設到期仍未驗時，人進不了 G2</p><p>起始狀態:`assum-expired`（high、期限 2026-09-01、open、無 OC）／`assum-oc`（同樣過期但有 OC 接受風險）；旁掛 `claim-bare`／`claim-src`（地板：來源 XOR）</p><p>操作步驟:跑 throwaway；看 spec-gate 兩行與 realworld 主張兩行</p><p>系統回應:`assum-expired` fail；`assum-oc` pass；`claim-bare` fail；`claim-src` pass。家族名是 `check-spec-gate`／`check-realworld`，不是新腳本</p><p>系統外下一步:退回補驗證或寫 Owner Call；不要當警告繼續送 G2</p><p>觀察問題:拒絕是否看得見？有沒有暗示「模板有欄就綠、填檔仍過」？等待／過期狀態清不清楚？</p></div><div class="card"><strong>Scenario AC-5（教師：verdict 一行角色場景）＋ AC-6／AC-7</strong><p>使用者角色:Demo 參與者／後讀者</p><p>真實目標:一眼看出驗了誰、哪場；痛點有去向；出貨時留下回看四欄</p><p>起始狀態:`verdict-name`（只有 ACCEPTED）／`verdict-role-scene`（角色=訪談對象、場景=AC-2）；`disp-empty`／`disp-cited`；`lookback-3`／`lookback-4`</p><p>操作步驟:跑 throwaway；逐對看 fail／pass</p><p>系統回應:缺角色／場景、去向空、回看缺門檻 → fail；三組補齊 → pass。不做 Actor Coverage 全表；不發 RW-id；不另造 lookback 檔</p><p>系統外下一步:人類親填 verdict＋attestation（本 hop 未填）。disposition「本方案處理」落到 R/S 是 Stage 4 的事</p><p>觀察問題:只寫姓名日期會不會被當成已驗過代表角色？空 disposition 能不能 silently 過？權限上誰能代填 attestation？（不能；Agent 禁寫）</p></div><div class="card"><strong>Scenario AC-8（牙：核准證據 vs 方案檔）＋ AC-9</strong><p>使用者角色:討論 agent／Fast 實作者</p><p>真實目標:owner 核准的事實讀得到；方案檔仍打不開；Fast 六問未收束不能開寫 4-spec</p><p>起始狀態:`ev-unapproved`（路徑在、未核准）／`ev-ok-block-spec`（核准 SOP + 試圖讀 4-spec）；`fast-blank`／`fast-all-no`</p><p>操作步驟:跑 throwaway；看 `devtalk-guard` 與 `check-spec-gate` 四行</p><p>系統回應:未核准 fail；核准事實 pass 且 4-spec 仍標記 blocked；六問空白 fail；六問全否＋維持 Fast pass</p><p>系統外下一步:先列「想找哪類＋原因」等 owner 核准；命中六問則等 owner 裁升 full／mini／OC。本站不寫 4-spec</p><p>觀察問題:系統有沒有暗示「規定了但讀不到」或「空白六問也能 Fast」？中斷後（沒核准、沒去向）能不能恢復？系統外的 SOP 是否可追蹤到核准行？</p></div></div></section>
+<section class="r-block" id="result"><div class="r-head"><span class="r-name">答案</span></div><div class="r-body"><p>- **2026-09-13 實跑**（CloudAgent Implementer C；tip `77ccb52` = origin/main #269 之後；scratchpad sha256 `b7f8703a35bf01f70c123e3de42dc4dfba1fd010679d09b6e52785e2087fa932`）。回寫對象:2-decision 內部技術選擇「4-spec 再釘」＋ Risk「B-1 manifest 形狀未釘」＋ Risk「新欄被填 Unknown」＋ SC-1～SC-9 形狀。本 hop 依 brief **只落本目錄 3-prototype**，不改正本 2-decision 正文（人類 Demo 後再回寫確認紀錄）。 | fixture | 家族 | expect | got | |---|---|---|---| | `goal-mixed` | check-realworld | fail | fail | | `goal-split` | check-realworld | pass | pass | | `claim-bare` | check-realworld | fail | fail | | `claim-src` | check-realworld | pass | pass | | `verdict-name` | check-realworld | fail | fail | | `verdict-role-scene` | check-realworld | pass | pass | | `disp-empty` | check-realworld | fail | fail | | `disp-cited` | check-realworld | pass | pass | | `lookback-3` | check-realworld | fail | fail | | `lookback-4` | check-realworld | pass | pass | | `assum-expired` | check-spec-gate | fail | fail | | `assum-oc` | check-spec-gate | pass | pass | | `fast-blank` | check-spec-gate | fail | fail | | `fast-all-no` | check-spec-gate | pass | pass | | `ev-unapproved` | devtalk-guard | fail | fail | | `ev-ok-block-spec` | devtalk-guard | pass | pass | - `TEACHER_CARDS 9`；`FIXTURE_ROWS 16`；`SHAPE_MATCH True`；`NO_NEW_FAMILY True`；`NO_RW_ID True`；`NO_G2_INVENTED True` - `goal-mixed` 紅在「Requested 欄空」，**不是** dashboard 字黑名單（Decision 已拒誤殺領域詞） - throwaway 零 import 正式檢查腳本；`git status` 於實驗當下未改 `scripts/`／`_templates/`／`hooks/` - 答案:教師／牙形狀**成立**（throwaway）；CLI Demo 足夠；正式教師與牙未落地。**不是 G2**。 - `hooks/_stage3_impl.py` 對本檔可能印 `g2_demo=PASS`：那是誤咬 2-decision「不預先跳過／無跳過 Stage 3」同時含「Stage 3」+「跳過」字樣，**不是**本 hop 的 G2，也不是 ACCEPTED。本檔 Human verdict 仍是 NOT_REVIEWED。本 hop 不改正本 2-decision 去消誤咬。</p></div></section>
+<section class="r-block" id="writeback"><div class="r-head"><span class="r-name">回寫 2-decision</span></div><div class="r-body"><p>- 回寫 2-decision：內部技術選擇「4-spec 再釘」的**形狀**已由 throwaway 鎖住（九張教師卡＋三家族 16 對照）。欄位名字面、高影響抽樣規則仍待 4-spec，本站不開 4-spec、不發明 G2。Risk「B-1 manifest 形狀未釘」→ 本輪清單四欄（想找／原因／路徑／核准）+ 方案檔仍禁。Risk「新欄被填 Unknown」→ 牙只驗形狀；語意留給人審。 - 本 hop brief：只落 Stage 3 原型文件；不改 2-decision 正文、不改 STATUS／模板。確認紀錄一行等人類 Demo 後再寫。 - Human verdict = NOT_REVIEWED → frontmatter status 留 **draft**（≠ ACCEPTED 不得改 approved）。機械閘若因既有「不預先跳過」句印 PASS，視為誤咬，**不得當 G2**。 - throwaway 腳本處置:留在 session `/tmp/rdg-stage3-proto/`，**不進 Git**；形狀已錄於 Question／Method／Result。正式碼 Stage 6 再把射程伸進既有檢查家族。</p></div></section>
+<section class="r-block" id="feedback"><div class="r-head"><span class="r-name">User Demo Feedback</span></div><div class="r-body"><p>- Demo date: 2026-09-13（agent 代跑 CLI；人類尚未親走） - Participants: CloudAgent Implementer C（代跑） - Variant reviewed: CLI-only（無 UI Variant；選定 = 教師卡＋既有三家族牙） - Accepted interaction: - Rejected interaction: - Confusions observed: - Missing real-world steps: 人類尚未按 Demo Script 走完四場 - Permission corrections: - External handoffs: - Required changes: - Human verdict: NOT_REVIEWED</p></div></section>
+<p class="src">由 <code>scripts/build-stage3-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
