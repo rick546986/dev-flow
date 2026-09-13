@@ -554,3 +554,9 @@
 - 為什麼:nine-gap package HOW chosen
 - 落在哪:docs/dev/requirement-discovery-gaps/2-decision
 
+## 2026-09-13 · requirement-discovery-gaps
+- 做了什麼:Human G1 PASS + OC-1…OC-6; Gates G1✅ G2⬜ G3⬜; Stage stays 2-decision
+- 為什麼:human owner rick PASSed G1 2026-09-13; no G2/G3 invented; Stage 3 not opened
+- 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
+- 詳細:https://github.com/rick546986/dev-flow/pull/268
+
