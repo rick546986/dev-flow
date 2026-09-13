@@ -25,7 +25,7 @@
 > 在同一 checkout 手改,後寫會靜默蓋掉先寫的列。手改而不走寫入口會讓
 > 蓋章對不上,`check-status-policy.sh` 會紅。feature branch 上本腳本拒改正本表列。
 
-<!-- status-writer-rev:42c61926fdbc35bbff5d97d4263e9faefb859725824bff17a506da390aaceb6b -->
+<!-- status-writer-rev:c0baf383fa34841a626c93fb6c314cb21de40928abb4a506cd497dea0ceb8655 -->
 
 ## Active
 
@@ -47,3 +47,4 @@ scripts/history-append.sh --slug <代號> --what <做了什麼> --why <為什麼
 |---|---|---|
 | B | 拿 dev-flow 自己跑一次完整 normal-risk full lane(1-discussion → 7-review、過 G1/G2/G3)當觀測實驗 —— owner 已排定,是下一輪的事;在那之前不動 Stage 1–4 模板內容,免得污染觀測 | `notes/dispatch-parallel-feature-gaps.md` 末節 |
 | C | SDC 大表、Reference App(4cap §7 第 5 點收攏的低優先 deferred)。2026-08-17 清空輪裁決仍不做:投資未定且**零採用現場疼痛訊號**(G1/G2/G3 全是現場真踩到的,這兩件沒有);等有採用專案真的要 SDC 級指引再立案,不為清空而硬做 | `docs/dev/4cap-remediation/devflow-4cap-remediation-2026-08.md` §7 |
+| A | five-station-simplify：Owner 已鎖 F0 brief＋狀態機(五站 Intake→Decide→Spec→Build→Ship;殺例行 G1/S3-ACCEPTED/G2;Ship 唯人);下一刀 F1 teeth＋dual-read annex | `notes/design/five-station-simplify-brief-v3.md` · `notes/design/five-station-simplify-f0-state-machine.md` |
