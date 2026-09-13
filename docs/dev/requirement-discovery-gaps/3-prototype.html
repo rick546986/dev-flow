@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>requirement-discovery-gaps · 3-prototype</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px}
+.r-body p{margin:0 0 8px}
+.trigger{list-style:none;padding:0;margin:0}
+.trigger li{padding:4px 0;border-bottom:1px solid var(--rule-2)}
+.hit{color:var(--ok);font-weight:650}
+.miss{color:var(--ink-3)}
+.card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 8px;background:var(--sunk)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 3-prototype · 審查介面</p>
+  <h1>requirement-discovery-gaps</h1>
+  <p class="sub">正本是 md。觸發判定／Demo／答案回寫 2-decision。不是 html-shell 長文。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">draft</span></div><div class="cell"><span class="k">觸發命中</span><span class="v">8/9</span></div><div class="cell"><span class="k">Demo</span><span class="v">9</span></div><div class="cell"><span class="k">Human verdict</span><span class="v">NOT_REVIEWED</span></div></div>
+</header>
+<section class="r-block" id="trigger"><div class="r-head"><span class="r-name">觸發判定</span></div><div class="r-body"><ul class="trigger"><li class="miss">[未中] 有新的前端流程（本題是方法論文檔欄位與清單，沒有新產品畫面）</li><li class="hit">[命中] 改變使用者下一步（Fast 寫 4-spec 前必須先收六問；討論者未獲 owner 核准不得讀事實路徑）</li><li class="hit">[命中] 涉及角色交接（訪談對象 → 討論 agent → 收斂者 → owner → Fast 實作者 → G2 reviewer）</li><li class="hit">[命中] 涉及人工核准（evidence manifest 要 owner 核；Fast 命中要 owner 裁 full／mini／OC；過期假設擋 G2）</li><li class="hit">[命中] 涉及等待/退回/逾時（等 owner 核准才讀；Assumption 期限；lookback 到期；G2 退回）</li><li class="hit">[命中] 涉及權限差異（討論者禁讀 2–7；owner 才能放行路徑；G2 才能擋過期假設）</li><li class="hit">[命中] 涉及系統外動作（訪談、GitHub、審核筆記、日曆回看）</li><li class="hit">[命中] 涉及多種可行互動設計（1A–8A 落地策略已 lock；Variant 只比欄位放同檔／另卡／審查重建，不重開策略）</li><li class="hit">[命中] Stage 1 尚有操作流程不確定性（策略已 lock；未釘的是欄位放哪、節名與題目前綴字面）</li></ul></div></section>
+<section class="r-block" id="question"><div class="r-head"><span class="r-name">Question</span></div><div class="r-body"><p>2-decision Risk「B-1 manifest 形狀未釘」＋內部技術選擇「4-spec 再釘」＋ SC-1～SC-9： 在**不改模板正本、不重開 1A–8A**的前提下，三張只比「欄位放哪」的卡能否鎖住這八個形狀？ 1. **Goals vs Requested solution 節名（1A／SC-1，不重開策略）**：結果節名字面 `## Goals`；構想節名字面 `## Requested solution`。構想不寫進 Goals。 2. **發現 vs 裁決題目前綴（1A／SC-2，不重開策略）**：發現題前綴字面 `發現｜`（禁附推薦）；裁決題前綴字面 `裁決｜`（可附選項／差異／推薦）。 3. **高影響主張欄（2A／SC-3）**：狀態枚舉 ∈ {Observed, Reported, Inferred, Assumption, Conflict}；來源類型、as-of、角色或範圍、支持哪一段、限制。來源 XOR Assumption+期限。點頭不得當唯一來源。 4. **Assumption 四欄（3A／SC-4）**：若為假影響什麼／影響級／怎麼驗／何時由誰驗。過期 + 未 resolved + 無 OC 接受 → 進不了 G2。 5. **disposition 表頭（4A／SC-6）**：引用 Stage 1 原文片段 + 去向 ∈ {本方案處理, 刻意維持, Non-Goal, 另開 slug, 仍待驗} + 一句理由。不另發 RW-id。 6. **lookback 四欄字面（5A／SC-7）**：回看日期／回看 owner／資料來源／低於何值重開。結果走 HISTORY，不另造永久檔。 7. **evidence manifest（6A／SC-8）**：想找哪類／為什麼／擬路徑／owner 核准／已讀。未核准不得當已授權。仍禁 2–7。 8. **Fast 六問 + A-5 一行（7A／8A／SC-5／SC-9）**：下一步／權限／等待語意／交接／系統外／中斷恢復，每問是／否＋一句。命中必須有 full／mini／OC。Human verdict 一行內有角色與場景。 答案長什麼樣才算回答了： - 每張卡能用本 slug 自己的 Journey／Exception 列填滿，壞卡（只寫「使用者反映」、空白六問、無去向）一眼看出缺哪欄。 - 「只改狀態字、把等待顯示成完成」在六問卡上必須命中等待語意。 - 選定 Variant 的操作序與決策點寫得清：誰填、等誰、空／錯／過期／權限不足怎麼辦。 - 本 hop **不**改模板、**不**改 OC-1…OC-6 表；2-decision 只改內部技術選擇用詞與兩條字面。</p></div></section>
+<section class="r-block" id="demo"><div class="r-head"><span class="r-name">Demo</span></div><div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 454" role="img" aria-label="結構圖">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">Variant A 同檔就地欄（選定）</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">Variant B 先過核准卡再開寫</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="b" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">Variant C 審查時才重建（棄）</text>
+  <path class="flow" d="M140,216 L140,238"/>
+  <rect class="b" x="40" y="238" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="262">Fast 六問未收束不得進 4</text>
+  <path class="flow" d="M140,292 L140,314"/>
+  <rect class="b" x="40" y="314" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="338">disposition 引用原文去向</text>
+  <path class="flow" d="M140,368 L140,390"/>
+  <rect class="b" x="40" y="390" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="414">Exit 回看四欄</text>
+</svg>
+</div><div class="card"><strong>Scenario AC-1</strong><p>使用者角色:討論 agent／G1 reviewer</p><p>真實目標:結果在 `## Goals`，構想在 `## Requested solution`；不重開 1A</p><p>起始狀態:好卡兩節名分開；壞卡「我要 dashboard」寫進 Goals</p><p>操作步驟:只看節名與第一句；對照 A（同檔先後）／B（構想另卡）／C（混進 Goals）</p><p>系統回應:A／B 能指出構想在錯欄；C 看不出分欄。策略仍是 1A</p><p>系統外下一步:把構想搬到 `## Requested solution`；不要改 Goals 指令去鎖畫面</p><p>觀察問題:看到「dashboard」時，知道它不該在 Goals 嗎？</p></div><div class="card"><strong>Scenario AC-2</strong><p>使用者角色:訪談對象／討論 agent</p><p>真實目標:發現題本身不塞推薦；前綴字面 `發現｜`／`裁決｜`</p><p>起始狀態:好卡 `發現｜上次真的怎麼做？`（無推薦）；壞卡發現題先給答案且無前綴</p><p>操作步驟:只看問句本身；A = 問句上加前綴；B = 發現／裁決分卡；C = 無前綴</p><p>系統回應:有 `發現｜` 的問句不該附推薦；`裁決｜` 才可附選項。C 分不出題型</p><p>系統外下一步:重寫發現題；不要把推薦提前</p><p>觀察問題:受訪者是否看得出這題是在問現況，不是在挑方案？</p></div><div class="card"><strong>Scenario AC-3</strong><p>使用者角色:G2 reviewer</p><p>真實目標:沿高影響主張走回來源，或看到 Assumption+期限；點頭不當來源</p><p>起始狀態:Method 的 2A 好卡（「發現被錨定」= Observed）與壞卡（「使用者反映希望 dashboard」）</p><p>操作步驟:先讀好卡六欄；再讀壞卡；問能否重開來源、枚舉是否 ∈ 集合</p><p>系統回應:好卡能回到本 tree skill；壞卡無枚舉、無來源 → 形狀失敗。Variant C 把兩張壓成同一句「事實」</p><p>系統外下一步:退回 Stage 1 補來源或期限；不要用點頭紀錄補欄</p><p>觀察問題:看到壞卡是否知道缺的是枚舉還是來源？系統有沒有暗示「寫了 Evidence 就算數」？</p></div><div class="card"><strong>Scenario AC-4</strong><p>使用者角色:G2 reviewer</p><p>真實目標:過期高影響假設進不了 G2</p><p>起始狀態:3A 四欄已填、期限=Stage 2、OC-3 已收窄；對照一張過期且無 OC 的假卡</p><p>操作步驟:核四欄是否都在；對照卡是否仍能宣稱送 G2</p><p>系統回應:有 OC-3 的列可走；過期+未驗+無 OC 必須是人看得見的拒絕（落點=`check-spec-gate.sh`，本站不寫腳本）</p><p>系統外下一步:驗轉 Observed／Reported，或 owner 明示接受風險</p><p>觀察問題:拒絕是否發生在送審那一關，還是只在模板有欄就綠？等待期限清不清楚？</p></div><div class="card"><strong>Scenario AC-5</strong><p>使用者角色:後讀 3-prototype 的人</p><p>真實目標:一行內答出「驗了誰、驗了哪場」</p><p>起始狀態:完整行 `Human verdict: NOT_REVIEWED | role=Fast 實作者 | scenario=AC-9` vs 只寫 `ACCEPTED` + 姓名日期</p><p>操作步驟:遮住前後文，只看該行</p><p>系統回應:完整行能答角色與場景；殘行不能。本 hop 不把殘行或完整行標 ACCEPTED</p><p>系統外下一步:人類 Demo 後親填 ENUM + attestation；Agent 禁代填</p><p>觀察問題:有沒有暗示「有人按過 = 代表性角色驗過」？</p></div><div class="card"><strong>Scenario AC-6</strong><p>使用者角色:收斂者</p><p>真實目標:Stage 1「痛點消失」到 Stage 4 仍有去向</p><p>起始狀態:4A 表已有「痛點消失 → 本方案處理」；壞卡去向空白</p><p>操作步驟:用原文片段（不是 RW-id）對一次；再看 Variant C 散文「痛點有處理」</p><p>系統回應:A／B 能指出該列去向；C 與壞卡無法證明列還在</p><p>系統外下一步:標「本方案處理」者 Stage 4 至少一條 R/S；其餘落到 Out of Scope／Known limit／後續 slug</p><p>觀察問題:中斷後能否從片段恢復，還是要靠記憶？</p></div><div class="card"><strong>Scenario AC-7</strong><p>使用者角色:owner</p><p>真實目標:出貨時留下回看四欄，到期能重開，不另造 lookback 檔</p><p>起始狀態:5A 四個欄位名；結果入口 = `history-append.sh`</p><p>操作步驟:嘗試只填「之後再看」或只寫 HISTORY、Exit 無約定</p><p>系統回應:缺任一欄 = 形狀失敗（SC-7）。5B／5C 已在 2-decision Rejected</p><p>系統外下一步:shipped 當時填四欄；到期用 HISTORY 追加結果</p><p>觀察問題:填了任意數字會不會被當成問題已改善？</p></div><div class="card"><strong>Scenario AC-8</strong><p>使用者角色:討論 agent</p><p>真實目標:owner 核准後讀得到事件／行為／結果；打不開 2-decision／4-spec</p><p>起始狀態:6A 表：本 tree 路徑已核；採用現場逐字稿未核；2-decision 列為禁</p><p>操作步驟:A = 同節核准格；B = 另檔卡空白就不能讀；嘗試把 ticket 解法當事實</p><p>系統回應:未核路徑不得引用。方案檔仍禁。ticket 解法建議不當事實。B 多一次「等 owner」空狀態</p><p>系統外下一步:列「想找哪類＋原因」送 owner；核准後才讀</p><p>觀察問題:系統是否暗示未指名資料夾可以先列目錄？權限不足時下一步清不清楚？</p></div><div class="card"><strong>Scenario AC-9</strong><p>使用者角色:Fast 實作者</p><p>真實目標:寫 4-spec 前收完六問；「等待顯示成完成」必須命中</p><p>起始狀態:7A 空白表 vs 對照案（#3 = 是）</p><p>操作步驟:把對照案填進 A；再想像 C（lane 已選 Fast，六問寫在 Verification Profile）</p><p>系統回應:A／B 在進 4 前就標命中，去向必須是 full／mini／OC。C 會等規格寫完才看到風險。空白表 ≠ 已分診</p><p>系統外下一步:owner 裁去向；純視覺不改語意（OC-6）才可維持 Fast</p><p>觀察問題:全打「否」有沒有被當成儀式？中斷後能否從六問表恢復？</p></div></div></section>
+<section class="r-block" id="result"><div class="r-head"><span class="r-name">答案</span></div><div class="r-body"><p>回寫 2-decision 內部技術選擇「4-spec 再釘」與 Risk「B-1 manifest 形狀未釘」：本站用紙上模擬器走完 AC-1～AC-9，**推薦 Variant A**（同檔就地欄；只比放置，不重開 1A–8A）。B 把核准決策點前移但另造檔種類，與 5A「不另造永久檔」同型成本；C 重演痛點消失與 Fast 晚露。欄位字面見 Method。2-decision 只改內部技術選擇用詞與兩條字面，不改 OC 表。 | 形狀 | 選定字面（A） | 負向 | |---|---|---| | 1A 節名 | `## Goals`／`## Requested solution` | 構想寫進 Goals | | 1A 前綴 | `發現｜`／`裁決｜` | 發現題無前綴或先附推薦 | | 2A 主張欄 | 狀態／來源類型／as-of／角色或範圍／支持哪一段／限制 | 只有「使用者反映」 | | 3A 假設 | 若為假影響什麼／影響級／怎麼驗／何時由誰驗 | 過期仍送 G2 | | 4A ledger | 引用（原文片段）／去向／理由 | 去向空白或 RW-id | | 5A lookback | 回看日期／回看 owner／資料來源／低於何值重開 | 另造 lookback.md | | 6A manifest | 想找哪類／為什麼／擬路徑／owner 核准／已讀；節名 `## Evidence manifest` | 未核當已授權；讀 2–7 | | 7A 六問 | 上表六問＋去向；進 4 前 | 空白當已分診；等待誤標未命中 | | 8A verdict | `ENUM \| role=… \| scenario=…` | 只寫 ACCEPTED + 姓名日期 | 證據:用本 slug 已核列填滿 A 的好卡；壞卡與 C 無法指出「痛點消失」去向，也無法在進 4 前攔住等待誤標。正式模板／牙未改。 `hooks/_stage3_impl.py` 在 Human verdict = NOT_REVIEWED 且無 N/A 宣告時應 REJECT（不得過 G2）。本 hop 不發明 ACCEPTED／attestation。</p></div></section>
+<section class="r-block" id="writeback"><div class="r-head"><span class="r-name">回寫 2-decision</span></div><div class="r-body"><p>- 已回寫 2-decision 內部技術選擇：第 3 站維持條件式必要、本站執行（不預先標 N/A）；字面 `## Goals`／`## Requested solution` 與 `發現｜`／`裁決｜`。推薦 Variant A 其餘欄位字面見上表。**未改** OC-1…OC-6 表。確認紀錄已留「prototype 回寫」。 - Human verdict = NOT_REVIEWED（無人親走 Demo；Agent 不代填 ACCEPTED、不寫 attestation）。frontmatter 留 **draft**。不送 G2、不開 4-spec、不改 STATUS。 - 實驗產物:欄位卡留在本檔 Method；無 throwaway branch、無正式碼。第 3 站已行使。</p></div></section>
+<section class="r-block" id="feedback"><div class="r-head"><span class="r-name">User Demo Feedback</span></div><div class="r-body"><p>- Demo date: - Participants: - Variant reviewed: A / B / C（紙上模擬器；人類尚未走） - Accepted interaction: - Rejected interaction: - Confusions observed: - Missing real-world steps: - Permission corrections: - External handoffs: - Required changes: - Human verdict: NOT_REVIEWED - Verdict attestation:</p></div></section>
+<p class="src">由 <code>scripts/build-stage3-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
