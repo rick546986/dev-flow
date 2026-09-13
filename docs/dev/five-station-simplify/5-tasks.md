@@ -27,7 +27,24 @@ annex 兩檔（OC-3：**不鎖鍵名**，只鎖 SLOT- id 與 RP 列語意）：
 - `notes/design/five-station-simplify-f1-dual-read-annex.md`（九個 SLOT）
 - `notes/design/five-station-simplify-f1-rp-min-set.md`（RP-1…RP-16 只准加）
 Design Boundary Contract = applicable。每個 T 的 Boundaries 只摘該 T 碰得到的禁區。
-Q6 維持 Assumption／open（S-6.2／S-6.3）。1B／2B／4C／6B／7C 不得重開（S-8.6）。
+Q6 維持 Assumption／open（S-6.2／S-6.3）。1B／2B／4C／6B／7C 不得重開（S-8.6，T-12 具名對照稿）。
+
+### 本 hop 點名對照稿（Stage 6 才建檔；Verify 必須點到檔名，不是只寫 `-ge N`）
+
+| T | 檔（皆在 `scripts/fixtures/five-station-simplify/`） | 紅什麼 |
+|---|---|---|
+| T-9 | `rp-13-empty-attestation-plus-chat.md` | 空 attestation + chat「可以開 Stage 4」仍不得離 Spec（RP-13） |
+| T-9 | `rp-12-miss-forced-accepted.md` | 未命中卻強迫 ACCEPTED（RP-12）；同時不建 Demo 頁（S-1.7） |
+| T-9 | `rp-14-please-review-latch-false.md` | latch=否卻留下請人審（RP-14） |
+| T-9 | `skip-negation-as-oc.md` | 「不／無／不得」+「跳過」不得當 skip OC（S-4.5） |
+| T-11 | `rp-09-third-hop-rewrite.md` | hop 重寫第 3 次仍繼續（RP-9 超 cap） |
+| T-11 | `rp-10-second-decide-reopen.md` | Decide 重開第 2 次仍繼續（RP-10 超 cap） |
+| T-11 | `rp-11-second-goal-reopen.md` | Goal 重開第 2 次仍繼續（RP-11 超 cap） |
+| T-12 | `reopen-1b-delete-tokens.md` | 正文含「改採」+ 1B（刪 token）→ 紅 |
+| T-12 | `reopen-2b-old-file-red.md` | 正文含「改採」+ 2B（舊檔缺欄就紅）→ 紅 |
+| T-12 | `reopen-4c-this-slug-as-new5.md` | 正文含「改採」+ 4C（本 slug 當新 5）→ 紅 |
+| T-12 | `reopen-6b-must-keep-optional.md` | 正文含「改採」+ 6B（M 可選）→ 紅 |
+| T-12 | `reopen-7c-merge-knives.md` | 正文含「改採」+ 7C（併刀）→ 紅 |
 
 ### N1 R/S 盤點（52 S；本 hop 只承 F1）
 
@@ -41,22 +58,21 @@ Q6 維持 Assumption／open（S-6.2／S-6.3）。1B／2B／4C／6B／7C 不得�
 | R-2 | S-2.3 無 RED／自審（RP-2）；S-2.9 無原始輸出（RP-6） | T-6 |
 | R-2 | S-2.4 模糊／不可測 S（RP-3）；S-2.5 測試名無 S-id（RP-4） | T-7 |
 | R-2 | S-2.1 少 Must-keep 違 brief；S-2.7 可選四欄擋 G2；S-2.8 Files 聯集（RP-5） | T-8 |
-| R-4 | S-4.1…S-4.5 attestation／強迫 ACCEPTED／請人審／否定跳過（RP-12／13／14） | T-9 |
+| R-4／R-1 | S-4.1…S-4.5 attestation／強迫 ACCEPTED／請人審／否定跳過（RP-12／13／14）；S-1.7 未命中不建頁 | T-9 |
 | R-1／R-3 | S-1.10 不可逆無 Quiz（RP-7）；S-3.2 Ship 無人 PASS 卻 Done（RP-8）；S-3.3 Evidence 八點 | T-10 |
-| R-2 | S-2.6 RP-1…16 只准加；十六個對照各紅一次（含超 cap 對照稿） | T-11 |
-| R-1／R-6／R-8 | S-1.1 七檔名＋token 仍在；S-6.2／S-6.3 Q6 不升格；S-8.1／S-8.5 F1 收口 | T-12 |
+| R-2 | S-2.6 RP-1…16 只准加；十六個對照各紅一次（含超 cap 三張具名卡） | T-11 |
+| R-1／R-6／R-8 | S-1.1 七檔名＋token 仍在；S-6.2／S-6.3 Q6 不升格；S-8.1／S-8.5 F1 收口；S-8.6 不得重開已拒案 | T-12 |
 
 ### Out-of-this-slug 延後表（F2／F3／已綠；不發明 T）
 
 | S | 為什麼本 hop 不開 T | 去向 |
 |---|---|---|
-| S-1.2、S-1.3、S-1.4、S-1.5、S-1.6、S-1.7、S-1.8、S-1.9、S-1.11、S-1.12 | F2 coordinator 評表 A／B、產頁／latch／HumanWait | 另刀 F2（S-8.2）。本檔 Non-Goal |
+| S-1.2、S-1.3、S-1.4、S-1.5、S-1.6、S-1.8、S-1.9、S-1.11、S-1.12 | F2 coordinator 評表 A／B、產頁／latch／HumanWait | 另刀 F2（S-8.2）。S-1.7 未命中不建頁謂詞由 T-9 承接；coordinator 產頁引擎仍交 F2 |
 | S-7.1、S-7.2、S-7.3、S-7.4 | 計數落點交 F2；舊 7 不套三 cap | 另刀 F2。F1 只在 T-11 用**對照稿**讓 RP-9／10／11 各紅一次，不選 event 鍵名、不寫計數器 |
 | S-8.2 | F2 coordinator + event | 另刀／另 slug |
 | S-8.3 | F3 新 slug 預設五站 | 另刀 F3。本 hop Files 零 `graph.yaml` |
 | S-8.4 | 本 Stage 4 PR 只 4-spec 雙檔 | 已在 G2 過。不是 Stage 6 工作 |
 | S-6.1 | 高影響列去向帳 | 已在本 slug 4-spec 綠（spec-gate C9）。F1 不重做 Disposition |
-| S-8.6 | 已拒 1B／2B／4C／6B／7C 不得重開 | 約束，不是新行為。本檔零 T 把它們當可選實作 |
 | S-8.7 | 審頁／執行板由對應 builder 重生 | 本 hop 產 `5-tasks.html`；不是 Stage 6 牙 |
 
 ### F1 Files 聯集（S-8.5 可核）
@@ -153,12 +169,12 @@ Stage 6 全部 T 的 Files 聯集只准這六條（fixture 目錄當前綴）：
 
 ## T-9 讓空 attestation、強迫 ACCEPTED、請人審與否定跳過變紅
 - [ ] 完成
-- Covers: R-4 / S-4.1, S-4.2, S-4.3, S-4.4, S-4.5
+- Covers: R-4 / S-4.1, S-4.2, S-4.3, S-4.4, S-4.5; R-1 / S-1.7
 - Files: scripts/five_station_f1.py, scripts/check-five-station-f1.sh, scripts/test-five-station-f1.sh, scripts/fixtures/five-station-simplify/, notes/design/five-station-simplify-f1-dual-read-annex.md
-- Verify: `n=$(bash scripts/test-five-station-f1.sh --group attest -v 2>&1 | grep -c '^=== CASE'); test "$n" -ge 5 && bash scripts/test-five-station-f1.sh --group attest`
+- Verify: `test -f scripts/fixtures/five-station-simplify/rp-13-empty-attestation-plus-chat.md && test -f scripts/fixtures/five-station-simplify/rp-12-miss-forced-accepted.md && test -f scripts/fixtures/five-station-simplify/rp-14-please-review-latch-false.md && test -f scripts/fixtures/five-station-simplify/skip-negation-as-oc.md && n=$(bash scripts/test-five-station-f1.sh --group attest -v 2>&1 | grep -c '^=== CASE'); test "$n" -ge 5 && bash scripts/test-five-station-f1.sh --group attest`
 - Blocked-by: T-8
-- Intent: 日常 B1 已命中時，沒有人類 `ACCEPTED`+`Verdict attestation: human:<名> @ <日>` 就不得進 Build；欄空加上 chat「可以開 Stage 4」仍不得離 Spec（RP-13）。未命中卻被要求 `ACCEPTED` 必須紅（RP-12），且不建 Demo 頁。A4／A7 latch=否卻留下「請 owner 看一下／要不要繼續」必須紅（RP-14）。「不／無／不得」加上「跳過」不得再被讀成 skip OC（SLOT-SKIP-NEGATION／S-4.5）。改的是 F1 新牙謂詞，不是修既有 `_stage3_impl.py`（該檔不進 Files）。不會變成 5B／5C（chat 繞或取消 attestation）。
-- Boundaries: SLOT-SKIP-NEGATION 本 T 必須可測。讀 `_stage3_impl.py` 只當 Known limit 證據，**不准改、不准列入 Files**。chat 文字不得寫入 Human verdict。Forbidden = 把否定跳過句當 skip OC、把 chat 當 attestation、未命中仍產 Demo 頁。S-4.1 正向：兩行都在才准 hop（對照稿，不是真跑 F2 coordinator）。
+- Intent: 日常 B1 已命中時，沒有人類 `ACCEPTED`+`Verdict attestation: human:<名> @ <日>` 就不得進 Build；欄空加上 chat「可以開 Stage 4」仍不得離 Spec（RP-13，對照稿 `rp-13-empty-attestation-plus-chat.md`）。未命中卻被要求 `ACCEPTED` 必須紅（RP-12，`rp-12-miss-forced-accepted.md`），且不建 Demo 頁（S-1.7）。A4／A7 latch=否卻留下「請 owner 看一下／要不要繼續」必須紅（RP-14，`rp-14-please-review-latch-false.md`）。「不／無／不得」加上「跳過」不得再被讀成 skip OC（SLOT-SKIP-NEGATION／S-4.5，`skip-negation-as-oc.md`）。改的是 F1 新牙謂詞，不是修既有 `_stage3_impl.py`（該檔不進 Files）。不會變成 5B／5C（chat 繞或取消 attestation）。
+- Boundaries: SLOT-SKIP-NEGATION 本 T 必須可測。讀 `_stage3_impl.py` 只當 Known limit 證據，**不准改、不准列入 Files**。chat 文字不得寫入 Human verdict。Forbidden = 把否定跳過句當 skip OC、把 chat 當 attestation、未命中仍產 Demo 頁。S-1.7／S-4.3：trigger 未命中 → 不建頁且強迫 ACCEPTED 紅。S-4.1 正向：兩行都在才准 hop（對照稿，不是真跑 F2 coordinator）。
 
 ## T-10 讓不可逆無 Quiz 與無人 PASS 的 Ship Done 變紅
 - [ ] 完成
@@ -174,19 +190,19 @@ Stage 6 全部 T 的 Files 聯集只准這六條（fixture 目錄當前綴）：
 - [ ] 完成
 - Covers: R-2 / S-2.6
 - Files: notes/design/five-station-simplify-f1-rp-min-set.md, scripts/five_station_f1.py, scripts/check-five-station-f1.sh, scripts/test-five-station-f1.sh, scripts/fixtures/five-station-simplify/
-- Verify: `n=$(bash scripts/test-five-station-f1.sh --group rp-min-set -v 2>&1 | grep -c '^=== CASE'); test "$n" -ge 17 && bash scripts/test-five-station-f1.sh --group rp-min-set`
+- Verify: `test -f scripts/fixtures/five-station-simplify/rp-09-third-hop-rewrite.md && test -f scripts/fixtures/five-station-simplify/rp-10-second-decide-reopen.md && test -f scripts/fixtures/five-station-simplify/rp-11-second-goal-reopen.md && n=$(bash scripts/test-five-station-f1.sh --group rp-min-set -v 2>&1 | grep -c '^=== CASE'); test "$n" -ge 17 && bash scripts/test-five-station-f1.sh --group rp-min-set`
 - Blocked-by: T-10
-- Intent: 日常有人從 annex 刪掉 RP-8（Ship 無人 PASS 卻 Done），這份殘缺 annex 必須紅。完整集必須能對 T-fake、S-fuzzy、Agent 代寫、超 cap、空 attestation、in-flight 寫五站狀態各紅至少一次；十六列各自至少一張對照稿紅。超 cap 三張對照稿只證明謂詞在（RP-9／10／11），不實作 F2 計數器、不鎖 event 鍵名。改的是最小集對照，不是加第十七個必刪 RP。不會變成減列仍綠。
-- Boundaries: OC-10／SLOT-RP-MIN-SET = 只准加不准減。annex 必須列出 RP-1…RP-16 語意（與 4-spec／Decision 表同義，不另發明編號）。超 cap 對照稿是 fixture，計數落點仍交 F2（S-7.4 不在本 T 落地）。Forbidden = 刪列、把 cap 數字改鬆、把舊 7 slug 套這三 cap。Files 超過五檔是因為可觀測行為是「最小集 + 十六紅 + 減列紅」同一刀，不是按 RP 水平切十六個 T。
+- Intent: 日常有人從 annex 刪掉 RP-8（Ship 無人 PASS 卻 Done），這份殘缺 annex 必須紅。完整集必須能對 T-fake、S-fuzzy、Agent 代寫、超 cap、空 attestation、in-flight 寫五站狀態各紅至少一次；十六列各自至少一張對照稿紅。超 cap 三張具名卡只證明謂詞在：`rp-09-third-hop-rewrite.md`（RP-9）、`rp-10-second-decide-reopen.md`（RP-10）、`rp-11-second-goal-reopen.md`（RP-11）；不實作 F2 計數器、不鎖 event 鍵名。改的是最小集對照，不是加第十七個必刪 RP、不是把 RP 集縮成 12–16。不會變成減列仍綠。
+- Boundaries: OC-10／SLOT-RP-MIN-SET = 只准加不准減。annex 必須列出 RP-1…RP-16 語意（與 4-spec／Decision 表同義，不另發明編號）。超 cap 對照稿是上列三張具名 fixture，計數落點仍交 F2（S-7.4 不在本 T 落地）。Forbidden = 刪列、把最小集縮到 RP-12…16、把 cap 數字改鬆、把舊 7 slug 套這三 cap。Files 超過五檔是因為可觀測行為是「最小集 + 十六紅 + 減列紅」同一刀，不是按 RP 水平切十六個 T。
 
-## T-12 收口 F1：七檔名與 token 仍在、Files 不越界、Q6 不升格
+## T-12 收口 F1：七檔名與 token 仍在、Files 不越界、Q6 不升格、已拒案不得重開
 - [ ] 完成
-- Covers: R-1 / S-1.1; R-6 / S-6.2, S-6.3; R-8 / S-8.1, S-8.5
+- Covers: R-1 / S-1.1; R-6 / S-6.2, S-6.3; R-8 / S-8.1, S-8.5, S-8.6
 - Files: scripts/five_station_f1.py, scripts/check-five-station-f1.sh, scripts/test-five-station-f1.sh, scripts/fixtures/five-station-simplify/, notes/design/five-station-simplify-f1-dual-read-annex.md
-- Verify: `n=$(bash scripts/test-five-station-f1.sh --group f1-close -v 2>&1 | grep -c '^=== CASE'); test "$n" -ge 4 && bash scripts/test-five-station-f1.sh --group f1-close`
+- Verify: `test -f scripts/fixtures/five-station-simplify/reopen-1b-delete-tokens.md && test -f scripts/fixtures/five-station-simplify/reopen-2b-old-file-red.md && test -f scripts/fixtures/five-station-simplify/reopen-4c-this-slug-as-new5.md && test -f scripts/fixtures/five-station-simplify/reopen-6b-must-keep-optional.md && test -f scripts/fixtures/five-station-simplify/reopen-7c-merge-knives.md && python3 -c "import pathlib,re; t=pathlib.Path('docs/dev/five-station-simplify/5-tasks.md').read_text(); assert not re.search(r'改採\\s*[12467][BC]', t); print('T-12-no-reopen')" && n=$(bash scripts/test-five-station-f1.sh --group f1-close -v 2>&1 | grep -c '^=== CASE'); test "$n" -ge 9 && bash scripts/test-five-station-f1.sh --group f1-close`
 - Blocked-by: T-11
-- Intent: 日常 F1 結束時，目錄仍是七個舊檔名、G1／G2／`ACCEPTED` token 仍在，沒有 `intake.md` 家族；本 slug Stage 5–7 的 Files 聯集沒有 coordinator、沒有 `graph.yaml` 切線、沒有 Stage 1–4 模板；任何「採用現場也 chat 蓋章」句仍帶 Assumption 或仍待驗，寫成已核事實必須擋。改的是收口對照（檔名／token／diff 聯集／Q6 用詞），不是 F3 切新 slug 預設、不是抽採用逐字稿。不會變成 bump 契約、不會改 STATUS。
-- Boundaries: S-8.1 THEN = 有 annex／scripts 牙；無 graph 預設切線；無 coordinator 碼；不刪 token。S-8.5 Files 聯集 = 本檔「F1 Files 聯集」六條。S-1.1 本 T 只釘「七舊名在、新家族名不在、token 仍在」；F3 才切新 slug 預設（延後表）。S-6.2／S-6.3：Q6 status 不是 resolved；升格句擋。Forbidden = 1B 刪 token、4C 折本 slug、7C 併刀、把 Q6 標 oc-accepted。若新檔讓 file-map 紅 → 停、判 L1，不得把既有地板檔預先寫進 Files。
+- Intent: 日常 F1 結束時，目錄仍是七個舊檔名、G1／G2／`ACCEPTED` token 仍在，沒有 `intake.md` 家族；本 slug Stage 5–7 的 Files 聯集沒有 coordinator、沒有 `graph.yaml` 切線、沒有 Stage 1–4 模板；任何「採用現場也 chat 蓋章」句仍帶 Assumption 或仍待驗，寫成已核事實必須擋。五張具名對照稿（`reopen-1b-delete-tokens.md`…`reopen-7c-merge-knives.md`）若把已拒案寫成可選實作，同一支牙必須紅；本份 5-tasks 自己也不能出現「改採」接上那些已拒代號。改的是收口對照（檔名／token／diff 聯集／Q6 用詞／已拒案守門），不是 F3 切新 slug 預設、不是抽採用逐字稿。不會變成 bump 契約、不會改 STATUS。
+- Boundaries: S-8.1 THEN = 有 annex／scripts 牙；無 graph 預設切線；無 coordinator 碼；不刪 token。S-8.5 Files 聯集 = 本檔「F1 Files 聯集」六條。S-8.6 對照稿只准新牙讀 `scripts/fixtures/five-station-simplify/reopen-*.md`，禁把 hooks／guides／`check-file-map.sh`／`check-spec-gate.sh` 寫進 Files。S-1.1 本 T 只釘「七舊名在、新家族名不在、token 仍在」；F3 才切新 slug 預設（延後表）。S-6.2／S-6.3：Q6 status 不是 resolved；升格句擋。Forbidden = 把 1B／2B／4C／6B／7C 當可選實作、折本 slug、併刀、把 Q6 標 oc-accepted。若新檔讓 file-map 紅 → 停、判 L1，不得把既有地板檔預先寫進 Files。
 
 ## Split Decisions
 
@@ -197,7 +213,9 @@ Stage 6 全部 T 的 Files 聯集只准這六條（fixture 目錄當前綴）：
 | 單一檢查家族 `check-five-station-f1` | Diff Budget `scripts/` 新牙 ≤4；S-2.4 接既有 spec-gate、不另造模糊詞家族 | 4-spec Diff Budget；S-2.4；S-8.1 | 每 RP 一支 `check-rp-N.sh`。棄：爆檔數、水平切層 |
 | annex 拆兩檔、不鎖鍵名 | Budget annex ≤2；S-5.8 與 S-2.6 兩份語意；OC-3 禁鎖鍵 | 4-spec S-5.8／S-2.6／OC-3 | 一份 JSON schema。棄：2B／鎖鍵 |
 | S-7.1…S-7.4 不開 T | 計數落點交 F2；使用者禁發明 F2 T。T-11 只用對照稿讓 RP-9／10／11 紅 | 4-spec S-7.4／S-8.2；本檔延後表 | 本 slug 寫 coordinator 計數器。棄：違 S-8.5 |
-| 表 A／B latch S 不開 T | F2 coordinator 才評產頁／latch／HumanWait | 4-spec S-1.2…S-1.12 n-a:F2 | 為 A4／A7 寫假 coordinator。棄：7C 味道 |
+| 表 A／B latch S 不開 T；S-1.7 未命中不建頁掛 T-9 | F2 coordinator 才評產頁／latch／HumanWait。T-9 Intent 已寫不建 Demo 頁，Covers 補上 S-1.7 | 4-spec S-1.2…S-1.6／S-1.8…S-1.12 n-a:F2；S-1.7 與 S-4.3 同刀 | 為 A4／A7 寫假 coordinator。棄：7C 味道 |
+| S-8.6 收進 T-12，不另開 T-13 | 收口刀已禁 1B／4C／7C；C 線 T-19 的可紅對照改成五張具名 fixture，掛同一支 `--group f1-close` | 4-spec S-8.6；3-review absorb C T-19 | 另開 T-13。棄：拆開收口。棄：C 把 hooks／selftest／check-spec-gate／guide 寫進 Files |
+| T-9／T-11 Verify 點具名檔 | 空欄+chat、強迫 ACCEPTED、請人審、否定跳過、RP-9／10／11 超 cap 三卡必須是檔名，不是只寫 `-ge N` | 3-review soft-fix；A 線新牙 selftest | 只留散文 case 數。棄：B 把 RP 最小集縮成 12–16 |
 | 不改 `_stage3_impl.py`／doctor | S-8.5 Files 聯集不含 hooks；Out of Scope 既有牙；S-4.5 由新牙 SLOT-SKIP-NEGATION 收緊 | 4-spec S-4.5 Known limit；S-8.5 | F1 直接改 skip 舊牙。棄：越 Diff Budget 與 Files 圍欄 |
 | file-map／devflow-check 不進 Files | 既有牙／地板；S-8.5 只准新牙＋annex。紅了是 L1 訊號不是本 hop 預授權 | 4-spec S-8.5；`scripts/check-file-map.sh` | T-12 順便改 EXPECTED_MAPPED_FILES。棄：把既有牙寫進 F1 Files |
 | Verify 開工前實跑（2026-09-14） | `scripts/test-five-station-f1.sh` 不存在 → 十二欄皆非零 | 模板 Verify 三律 ③ | 用已綠的 doctor exit 0 當 T-3 牙。棄：無鑑別力且違 S-5.5 |
