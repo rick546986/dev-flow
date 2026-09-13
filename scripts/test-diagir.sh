@@ -515,7 +515,7 @@ try:
         )
         hit = [n for n in names if any(n == b.rstrip("/") or n.startswith(b) for b in banned_paths)]
         check(
-            ver == "3.23.3"
+            ver == "3.23.4"
             and plugin_diff.stdout.strip() == ""
             and hit == [],
             "S-5.2 plugin version unchanged; no #196 / IBV / STATUS files",

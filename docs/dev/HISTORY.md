@@ -533,3 +533,9 @@
 - 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
 - 詳細:docs/dev/diagram-ir-gate/7-review.md (#257); Stage7 #254
 
+## 2026-09-13 · diagram-ir-gate · v3.23.4
+- 做了什麼:wave-1 IR gate shipped
+- 為什麼:bad IR must not clobber last-good
+- 落在哪:scripts/diagir.py + atomic + builders + fixtures
+- 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.23.4
+
