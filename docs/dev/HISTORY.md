@@ -566,3 +566,15 @@
 - 落在哪:docs/dev/requirement-discovery-gaps/3-prototype + STATUS
 - 詳細:https://github.com/rick546986/dev-flow/pull/270
 
+## 2026-09-13 · requirement-discovery-gaps
+- 做了什麼:Stage 4 spec #277 landed; Active → 4-spec; Gates G1✅ G2⬜ G3⬜; awaiting human G2
+- 為什麼:Stage 4 winner merged; no invented G2 PASS at land time
+- 落在哪:docs/dev/requirement-discovery-gaps/4-spec + STATUS
+- 詳細:https://github.com/rick546986/dev-flow/pull/277
+
+## 2026-09-13 · requirement-discovery-gaps
+- 做了什麼:Human G2 PASS #278; Gates G1✅ G2✅ G3⬜; Stage stays 4-spec; Stage 5 not opened
+- 為什麼:human owner rick PASSed G2 2026-09-13; no G3 invented
+- 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
+- 詳細:https://github.com/rick546986/dev-flow/pull/278
+
