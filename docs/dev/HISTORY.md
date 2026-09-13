@@ -632,3 +632,9 @@
 - 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
 - 詳細:https://github.com/rick546986/dev-flow/pull/306
 
+## 2026-09-14 · five-station-simplify
+- 做了什麼:Human Demo ACCEPTED; Active stays 3-prototype; Gates G1✅ G2⬜ G3⬜
+- 為什麼:owner chat「接受」= Stage 3 Human ACCEPTED; attestation human:rick @ 2026-09-14; no G2 PASS invented; Stage 4 not opened
+- 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
+- 詳細:https://github.com/rick546986/dev-flow/pull/309
+
