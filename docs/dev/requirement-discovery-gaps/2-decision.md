@@ -1,17 +1,17 @@
 ---
 feature: requirement-discovery-gaps
 stage: 2-decision
-status: in-review
-verdict:
+status: approved
+verdict: PASS
 owner: rick
-reviewers: []
+reviewers: [user]
 updated: 2026-09-13
 ---
 
 # 2. 收斂 — 九條需求發現缺口怎麼進方法論
 
-> 把 `1-discussion.md` 的發散收成 Decision。本 hop **只交 Stage 2 決策包**，不改 `_templates/`／`skills/`／守衛／範例／STATUS／HISTORY。**不宣稱 G1 PASS**（`verdict` 空、OC 待人審）。
-> Stage 1 原文仍寫「只討論、不送 G1、status 留 draft」；owner 2026-09-13 已說方向可、進 Stage 2。改口記在本檔，不回改正本討論。
+> 把 `1-discussion.md` 的發散收成 Decision。G1 已核:`verdict` PASS、`status` approved、OC-1～OC-6 ✅。不改 `_templates/`／`skills/`／守衛／範例／STATUS／HISTORY。
+> Stage 1 原文仍寫「只討論、不送 G1、status 留 draft」；owner 2026-09-13 已說方向可、進 Stage 2。改口記在本檔，不回改正本討論。本 Stage 2 的 G1 是 human owner PASS（2026-09-13），**不是** Agent 自裁。
 > Lane = full。九條 DO／LIGHT 不重開。A-1 要求：原因仍可能由流程解決時，比較 no-build。
 
 ## Approaches Considered
@@ -83,7 +83,7 @@ updated: 2026-09-13
 [8A] Human verdict一行角色場景(選定)
 
 ## Decision
-採 **1A+2A+3A+4A+5A+6A+7A+8A**：人讀 Stage 1 能分辨「要達成的工作結果」與「帶來的解法構想」；被問「上次真的怎麼做」時，題目本身不先塞推薦答案；高影響 Assumption 到期仍未驗，人進不了 G2。九條一包、同一 slug 改活教師（模板／dev-talk 節點／指南對稱句／完整範例）與對帳形狀，不另造檢查家族、不發明第二條 ID 鏈。高影響主張用 Observed／Reported／Inferred／Assumption／Conflict + 來源欄；Stage 2→4 用原文片段做 disposition；出貨時 7-review Exit 留下回看四欄，結果走 HISTORY 追加；事實入口用本輪 owner 核准清單，方案檔仍禁讀；Fast 在寫 4-spec 前做六問，命中由 owner 裁升 full、fast+mini 或接受風險。Human verdict 一行寫清角色／場景（A-5 LIGHT）。腳本家族名見決策點 1 與 OC-1。不選 no-build、不選只改散文、不選 Actor Coverage 全表、不選只留 attestation。本 hop 不改模板正本、不宣稱 G1 PASS。
+採 **1A+2A+3A+4A+5A+6A+7A+8A**：人讀 Stage 1 能分辨「要達成的工作結果」與「帶來的解法構想」；被問「上次真的怎麼做」時，題目本身不先塞推薦答案；高影響 Assumption 到期仍未驗，人進不了 G2。九條一包、同一 slug 改活教師（模板／dev-talk 節點／指南對稱句／完整範例）與對帳形狀，不另造檢查家族、不發明第二條 ID 鏈。高影響主張用 Observed／Reported／Inferred／Assumption／Conflict + 來源欄；Stage 2→4 用原文片段做 disposition；出貨時 7-review Exit 留下回看四欄，結果走 HISTORY 追加；事實入口用本輪 owner 核准清單，方案檔仍禁讀；Fast 在寫 4-spec 前做六問，命中由 owner 裁升 full、fast+mini 或接受風險。Human verdict 一行寫清角色／場景（A-5 LIGHT）。腳本家族名見決策點 1 與 OC-1。不選 no-build、不選只改散文、不選 Actor Coverage 全表、不選只留 attestation。G1 已核。本 hop 不改模板正本。
 
 ## Rejected Alternatives
 | 不選 | 一句棄因 |
@@ -145,7 +145,7 @@ Q8 選 2A：A-3 的病是粒度，不是「少一個來源欄」。枚舉可灌�
 | Fast 六問變儀式、全打「否」 | 7A 要結構化答，不接受空白。命中無 full／mini／OC → 擋進 Stage 4（與 3A 同走 spec-gate）。「不改語意」由 reviewer 對 diff |
 | B-1 manifest 形狀未釘，Stage 4 前各寫各的 | 本檔只鎖「本輪清單 + owner 核准後才讀 + 仍禁 2–7」。欄位／檔名進 4-spec（OC-1） |
 | 第二套牙或 RW-id 在實作回流 | 1A／4A 進 Decision；新家族與第二鏈進 Rejected。要翻案回本站 |
-| 本 hop 被當成已過 G1 或已改模板 | `verdict` 空；OC 待人審；本 PR 只含本目錄 2-decision.md／.html |
+| 本 hop 被當成已過 G1 或已改模板 | G1 已按 human owner PASS 落檔（`verdict` PASS、`status` approved、OC-1～OC-6 ✅）；本 PR 只含本目錄 2-decision.md／.html；翻案回本站 |
 | lookback 數字亂填被當成已有有效 outcome | 牙驗四欄在；指標是否代表問題改善是人判。到期未回看不得把問題寫成已改善 |
 
 ## Success Criteria
@@ -158,11 +158,11 @@ Q8 選 2A：A-3 的病是粒度，不是「少一個來源欄」。枚舉可灌�
 - SC-7(G-out-7)：7-review Exit 缺回看日期／owner／來源／門檻四欄之一 → 指定檢查 exit ≠ 0。本包自己 shipped 時四欄都在；到期結果走 HISTORY 追加，不另造 lookback 檔。
 - SC-8(G-out-8)：owner 核准的事實路徑讀得到事件／行為／結果；讀 `2-decision`／`4-spec` 仍被擋。未核准路徑不得當已授權 evidence。ticket 解法建議不當事實。
 - SC-9(G-out-9)：Fast 4-spec 六問未收束 → 不得當已完成早期分診（指定檢查 exit ≠ 0）。命中列有升 full／mini／OC 去向。「只改狀態字、把等待顯示成完成」的對照案必須命中等待語意問。
-- SC-10(Non-Goal)：未新造 Journey／Actor／RW ID 鏈；未做 A-5 全表；未拆九個 slug；本 PR 未改 STATUS／HISTORY／模板正本；本檔 `verdict` 不是 Agent 自填的 PASS。
+- SC-10(Non-Goal)：未新造 Journey／Actor／RW ID 鏈；未做 A-5 全表；未拆九個 slug；本 PR 未改 STATUS／HISTORY／模板正本；未開 Stage 3／4 檔、未發明 G2／G3。本檔 `verdict` PASS 來自 human owner G1（2026-09-13），不是 Agent 自裁。
 
 ## Scope & Non-Goals(定稿)
 - In：1A 落地策略（Q7 延既有牙、Q14 同 slug 改範例）；2A 高影響枚舉 + Evidence 最小欄；3A 過期假設擋 G2；4A 原文片段 disposition；5A Exit 約定 + HISTORY 結果；6A 本輪 evidence manifest + 改允許集合；7A Fast 六問 + owner 三擇一；8A Human verdict 一行角色／場景（A-5 LIGHT）；Q6 以範例教師對帳。腳本家族落點見決策點 1／OC-1。
-- Out：1B／1C；2B／2C；3B／3C；4B／4C；5B／5C；6B／6C；7B／7C；8B／8C；新造檢查家族；RW-id；lookback 永久檔；Actor Coverage 全表；拆 slug；本 hop 改模板／守衛／範例正本；本 hop 改 STATUS／HISTORY；本 hop 宣稱 G1 PASS；本 hop 跳過 Stage 3；重開九條 DO／LIGHT；dashboard／API 黑名單。
+- Out：1B／1C；2B／2C；3B／3C；4B／4C；5B／5C；6B／6C；7B／7C；8B／8C；新造檢查家族；RW-id；lookback 永久檔；Actor Coverage 全表；拆 slug；本 hop 改模板／守衛／範例正本；本 hop 改 STATUS／HISTORY；本 hop 開 Stage 3／4 檔；本 hop 發明 G2／G3；本 hop 跳過 Stage 3；重開九條 DO／LIGHT；dashboard／API 黑名單。
 
 ## Real-world Disposition
 本檔先做 A-6 要求的去向帳（引用 Stage 1 原文，不另發 ID）。實作落地後，後續 feature 的 2-decision 用同一形。
@@ -185,17 +185,17 @@ Q8 選 2A：A-3 的病是粒度，不是「少一個來源欄」。枚舉可灌�
 | Exception「現場發現題仍附推薦」 | 仍待驗 | 無逐字稿；1A 改未來問法。殘餘 OC-3 |
 | Exception「Fast 因檔數少漏判互動」 | 仍待驗 | 本 repo 有省略實例；採用現場是否踩過權限／等待誤標無 log → OC-3 |
 
-## Owner Calls(自判裁決,待人審)
+## Owner Calls(自判裁決,已核)
 
 ### 逐條裁決(上層)
 | OC | 決定了什麼 | 為什麼 | 依據(`檔:行` 或 `[Assumption]`) | 若被推翻會怎樣 | 狀態(待人審→✅/✗) |
 |---|---|---|---|---|---|
-| OC-1 | 機械牙**只延伸既有** `check-realworld.sh`／`check-spec-gate.sh`／`devtalk-guard.sh`（及它們已掛進的 `devflow-check`）。不新造 `check-discovery-gaps.sh`。使用者 brief 只鎖「九條怎麼進方法論」；「沿用既有家族」是 owner 延伸 | 另造家族靠近第二套方法論；現有 G2 Gate 與討論圍欄已在，缺的是射程 | `1-discussion.md:127` Q7 未選定改哪支；`scripts/check-spec-gate.sh:32-37` 已是 Gate；`1-discussion.md:243-246` 要部分牙。延伸本身 `[Assumption]` | 要新入口／新腳本；與「不另造家族」重審 | 待人審 |
-| OC-2 | 本 slug **取代**「完整 full lane 觀測前不動 Stage 1–4 模板」那條凍結，範圍僅限本包要動的列。後續用本 slug 真跑 1→7 當新規則第一次觀測。使用者只被問到 Stage 2 收斂；「解凍並改觀測對象」是延伸 | 2026-09-12 已裁九條並開本 feature；再拍舊模板會繼續教 Goal = dashboard | `docs/dev/STATUS.md:50` 凍結原文；`notes/review-requirement-discovery-gaps.md:16-18` 實作另開即本 slug；`1-discussion.md:23-24` 裁決與本 feature 已分開記 | 改回 1B／1C，或另等一次舊模板觀測才動模板 | 待人審 |
-| OC-3 | Q6 與三條現場 `[Assumption]`：**不**用假訪談收尾。本 repo 範例教師當 Observed 對帳；採用現場是否照抄維持 Assumption。不因無 log 擋本 G1。這是對「期限 = Stage 2 對帳」的收窄 | 沒有採用專案逐字稿；捏造現場 = A-3 自己犯的病 | `1-discussion.md:126,77-79,86` Q6 + 三條期限 Stage 2；`example/contract-expiry-reminder/1-discussion.md:62-65` 教師在本 tree。收窄本身 `[Assumption]` | 要補現場訪談才准 G1；或把 Q6 升成已核「採用者一定照抄」 | 待人審 |
-| OC-4 | 本 feature branch **不**跑 `status-update.sh` 改正本 Active 列；不改 HISTORY；`1-discussion.md` 保持 draft／「不送 G1」原文。本檔 `verdict` 空到人類寫入。標**流程層** | 母版 STATUS 只在整合分支維護；使用者禁發明 G1 PASS | `docs/dev/STATUS.md:10-26`；`1-discussion.md:136-137`；本 hop brief | 本 PR 帶 STATUS 列或自填 PASS，與並行 session 互蓋 | 待人審 |
-| OC-5 | 2A 枚舉**只要求高影響主張**，不要求 Stage 1 每一句 Context 都貼狀態。這是對 A-3「主張→來源」的收窄 | 全句枚舉會變成另一種字樣儀式，重演「有 Evidence 字就綠」 | `notes/review-requirement-discovery-gaps.md:125` 「重要主張就地標」；`1-discussion.md:128` Q8。何謂高影響 4-spec 再釘 | Scope 變成每句都貼；牙誤殺普通 Context | 待人審 |
-| OC-6 | Fast：六問全否 + 已有 approved spec + **不改語意的純視覺／文案** → 維持 Fast，不必 mini。這是對 B-2 的收窄 | 候選已寫「純視覺不改語意可維持 Fast」；不收窄會把 CSS 錯字拖進訪談 | `notes/review-requirement-discovery-gaps.md:319`；`1-discussion.md:180` 對照案是等待誤標不是換色 | 每個 Fast 都要 mini；或視覺 bug 被 7B 拖去 full | 待人審 |
+| OC-1 | 機械牙**只延伸既有** `check-realworld.sh`／`check-spec-gate.sh`／`devtalk-guard.sh`（及它們已掛進的 `devflow-check`）。不新造 `check-discovery-gaps.sh`。使用者 brief 只鎖「九條怎麼進方法論」；「沿用既有家族」是 owner 延伸 | 另造家族靠近第二套方法論；現有 G2 Gate 與討論圍欄已在，缺的是射程 | `1-discussion.md:127` Q7 未選定改哪支；`scripts/check-spec-gate.sh:32-37` 已是 Gate；`1-discussion.md:243-246` 要部分牙。延伸本身 `[Assumption]` | 要新入口／新腳本；與「不另造家族」重審 | ✅ human:rick @ 2026-09-13 |
+| OC-2 | 本 slug **取代**「完整 full lane 觀測前不動 Stage 1–4 模板」那條凍結，範圍僅限本包要動的列。後續用本 slug 真跑 1→7 當新規則第一次觀測。使用者只被問到 Stage 2 收斂；「解凍並改觀測對象」是延伸 | 2026-09-12 已裁九條並開本 feature；再拍舊模板會繼續教 Goal = dashboard | `docs/dev/STATUS.md:50` 凍結原文；`notes/review-requirement-discovery-gaps.md:16-18` 實作另開即本 slug；`1-discussion.md:23-24` 裁決與本 feature 已分開記 | 改回 1B／1C，或另等一次舊模板觀測才動模板 | ✅ human:rick @ 2026-09-13 |
+| OC-3 | Q6 與三條現場 `[Assumption]`：**不**用假訪談收尾。本 repo 範例教師當 Observed 對帳；採用現場是否照抄維持 Assumption。不因無 log 擋本 G1。這是對「期限 = Stage 2 對帳」的收窄 | 沒有採用專案逐字稿；捏造現場 = A-3 自己犯的病 | `1-discussion.md:126,77-79,86` Q6 + 三條期限 Stage 2；`example/contract-expiry-reminder/1-discussion.md:62-65` 教師在本 tree。收窄本身 `[Assumption]` | 要補現場訪談才准 G1；或把 Q6 升成已核「採用者一定照抄」 | ✅ human:rick @ 2026-09-13 |
+| OC-4 | 本 feature branch **不**跑 `status-update.sh` 改正本 Active 列；不改 HISTORY；`1-discussion.md` 保持 draft／「不送 G1」原文。本檔 `verdict` 空到人類寫入。標**流程層** | 母版 STATUS 只在整合分支維護；使用者禁發明 G1 PASS | `docs/dev/STATUS.md:10-26`；`1-discussion.md:136-137`；本 hop brief | 本 PR 帶 STATUS 列或自填 PASS，與並行 session 互蓋 | ✅ human:rick @ 2026-09-13 |
+| OC-5 | 2A 枚舉**只要求高影響主張**，不要求 Stage 1 每一句 Context 都貼狀態。這是對 A-3「主張→來源」的收窄 | 全句枚舉會變成另一種字樣儀式，重演「有 Evidence 字就綠」 | `notes/review-requirement-discovery-gaps.md:125` 「重要主張就地標」；`1-discussion.md:128` Q8。何謂高影響 4-spec 再釘 | Scope 變成每句都貼；牙誤殺普通 Context | ✅ human:rick @ 2026-09-13 |
+| OC-6 | Fast：六問全否 + 已有 approved spec + **不改語意的純視覺／文案** → 維持 Fast，不必 mini。這是對 B-2 的收窄 | 候選已寫「純視覺不改語意可維持 Fast」；不收窄會把 CSS 錯字拖進訪談 | `notes/review-requirement-discovery-gaps.md:319`；`1-discussion.md:180` 對照案是等待誤標不是換色 | 每個 Fast 都要 mini；或視覺 bug 被 7B 拖去 full | ✅ human:rick @ 2026-09-13 |
 
 ### 內部技術選擇(下層,告知即可)
 - 本 hop 不 bump plugin、不改 `_templates/`／`skills/`／`example/`／守衛正本。
@@ -217,4 +217,4 @@ Q8 選 2A：A-3 的病是粒度，不是「少一個來源欄」。枚舉可灌�
 - Stage 1 改口 | 2026-09-13 | 1-discussion 仍 draft、Q6 `[~]`、Q7–Q14 `[>]`；owner 已說方向可、進 Stage 2。本檔改口為 Decision。不回改正本討論。
 - Q6 對帳 | 2026-09-13 | 本 tree 範例 Goals／AC／Interview 鎖定 dashboard = Observed 教師（「最低成本呈現面」=`example/contract-expiry-reminder/1-discussion.md:119`）。採用現場是否照抄 = 仍 Assumption，見 OC-3。未捏造現場 log。
 - 自檢七掃 | 2026-09-13 | ①優劣皆有依據欄；②G-out-1～9 進 Decision／SC，漏項進 Non-Goals；③Q7–Q14 與 A-5 皆有選定或 Rejected；④SC 可量測；⑤Rejected 無空棄因；⑥八決策點由 brief + Reviewer 1 A-5 補點確認，OC-1～3／5／6 承接延伸或收窄，OC-4 流程層；⑦既有脈絡是對帳不是外移 schema。圖上 1A–8A 標選定，Rejected 未上圖。
-- G1 | 未寫入 | `verdict` 空。全勾不算 PASS。等人類或 fresh-context reviewer 寫入。
+- G1 | 2026-09-13 | Human G1 PASS + OC-1…OC-6 @ 2026-09-13。human owner rick 全接受 OC-1～OC-6。基準 #266（`0f0fbaf`）／#267 STATUS Stage2（`a2bc5d1`）。owner 自審(有記錄)；reviewers: [user]
