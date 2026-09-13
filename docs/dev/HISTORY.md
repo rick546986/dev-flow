@@ -560,3 +560,9 @@
 - 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
 - 詳細:https://github.com/rick546986/dev-flow/pull/268
 
+## 2026-09-13 · requirement-discovery-gaps
+- 做了什麼:Stage 3 prototype #270 landed; Active → 3-prototype; Gates G1✅ G2⬜ G3⬜; Human verdict still NOT_REVIEWED
+- 為什麼:Stage 3 winner merged; no invented ACCEPTED; awaiting human Demo verdict
+- 落在哪:docs/dev/requirement-discovery-gaps/3-prototype + STATUS
+- 詳細:https://github.com/rick546986/dev-flow/pull/270
+
