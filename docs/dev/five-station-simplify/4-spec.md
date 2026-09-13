@@ -1,22 +1,22 @@
 ---
 feature: five-station-simplify
 stage: 4-spec
-status: draft
-verdict:
+status: approved
+verdict: PASS
 owner: rick
-reviewers: []
+reviewers: [user]
 updated: 2026-09-14
 ---
 
 # 4. 規格 — 五站簡化 change spec（Implementer C：anti-hollow）
 
-> 基準:main tip `fdd39c5`（#310 Human Demo ACCEPTED 已合）。Lane = **full**。契約不 bump。
-> 本 hop **只寫** `4-spec.md` + `4-spec.html`（`scripts/build-stage4-html.py --action`）。不改 `_templates/`／`graph.yaml`／`scripts/` 牙、不 bump `devflow-contract.json`、不改 `STATUS.md`／`HISTORY.md`、不開 Stage 5、不發明 G2 PASS。合 main 與 STATUS 伴列是 owner 另核的 hop，不在本檔宣稱 G2 PASS。
-> Decision 正本:`docs/dev/five-station-simplify/2-decision.md`（1A+2A+3A+4A+5A+6A+7A；OC-1～OC-11 ✅；G1 `verdict` PASS）。`3-prototype.md` `status: approved`；`Human verdict: ACCEPTED | role=母版 owner | scenario=AC-1`；attestation `human:rick @ 2026-09-14`。
+> 基準:main tip `74ce36c`（#314 Active Stage → 4-spec 已合）。Lane = **full**。契約不 bump。
+> G2 已核:`verdict` PASS、`status` approved、DD-1～DD-9 ✅ Owner PASS。本 hop 只落 Human G2 attestation + 審頁重生（`scripts/build-stage4-html.py --action`）；不改 `_templates/`／`graph.yaml`／`scripts/` 牙、不 bump `devflow-contract.json`、不改 `STATUS.md`／`HISTORY.md`（STATUS 另 companion）、不開 Stage 5、不發明 G3 PASS。
+> Decision 正本:`docs/dev/five-station-simplify/2-decision.md`（1A+2A+3A+4A+5A+6A+7A；OC-1～OC-11 ✅；G1 `verdict` PASS）。`3-prototype.md` `status: approved`；`Human verdict: ACCEPTED | role=母版 owner | scenario=AC-1`；attestation `human:rick @ 2026-09-14`。本 Stage 4 的 G2 是 human owner rick PASS（2026-09-14 Asia/Taipei owner chat「過」），**不是** Agent 自裁。
 > 本檔定義 F1／F2／F3 **必須滿足**的契約。本 PR 不實作那三刀。本 slug Stage 5–7（G2 之後）只准落地 **F1 annex + teeth（`scripts/`／annex）**；F2 coordinator 與 F3 cut **不在**本 slug Stage 5–7。
-> C 線保留：S-8.5 本 slug Stage 5–7 只 F1；S-8.6 重開 1B／2B／4C／6B／7C 失敗；Diff Budget F2／F3 = 0；Q6 保持 open（**不是** oc-accepted）；DD 狀態 = 待人審（**不是** ✅ 草擬自判）；rewrite cap 數字已鎖，計數落點交 F2，不鎖 schema 鍵名。
+> C 線保留：S-8.5 本 slug Stage 5–7 只 F1；S-8.6 重開 1B／2B／4C／6B／7C 失敗；Diff Budget F2／F3 = 0；Q6 保持 open（**不是** oc-accepted）；DD 看板 = ✅ Owner PASS（**不是** 草擬自判）；rewrite cap 數字已鎖，計數落點交 F2，不鎖 schema 鍵名。
 > Soft-fix（owner 核准吸收評審；多數勝 C、次 A；B 因 Q6=oc-accepted + DD ✅ 落選，只吸表 A／B 獨立 S，不吸那兩項）：表 A／B 拆成可測獨立 S；Concurrency = applicable 並有契約版本 vs marketplace hops 的 S；M6→Ship Evidence 八點物質；M13→對應 builder 重生 html；RP-5／RP-6 獨立 S；RP-7 不可逆無 Quiz → 紅；#313 annex 九個 SLOT 語意槽（只 id＋意思，不鎖欄位鍵名，OC-3）；SC-1…SC-13→S 完整表。S 數 >40 誠實記帳，**不**另切開新 slug。
-> `verdict` 留空，由人類 G2 填。
+> `verdict` PASS 來自 human owner G2（2026-09-14 Asia/Taipei owner chat「過」），不是 Agent 自裁。未發明 G3 PASS。
 
 ## 補助模組生命週期（預覽）
 
@@ -86,7 +86,7 @@ updated: 2026-09-14
 | OC-1 dual-read 誠實三句 | S-5.4、S-5.5、S-5.7、S-5.8 |
 | OC-2 2.0.0+五站 hops → 紅／不得改線 | S-5.5、S-5.6、S-5.9 |
 | OC-3 不鎖 annex 鍵名／event schema | S-5.4、S-5.8、S-7.4 |
-| OC-4 本 Decision hop 不改 STATUS／不發明 G1 PASS | S-8.4（本 hop 對稱：不改 STATUS、不發明 G2 PASS） |
+| OC-4 本 Decision hop 不改 STATUS／不發明 G1 PASS | S-8.4（本 hop 對稱：不改 STATUS、不發明 G3 PASS；STATUS 另 companion） |
 | OC-5 in-flight 只認 1–7 `.md` | S-5.3 |
 | OC-6 chat 不是判定 | S-3.1、S-4.2 |
 | OC-7 本 Decision hop 連 scripts／annex 也不寫 | S-8.4、S-8.6 |
@@ -842,8 +842,8 @@ SC-11／7A／brief §7。本 Spec 定義 F1／F2／F3 必須滿足什麼。本 P
 #### S-8.4 本 Stage 4 PR 只含四規格雙檔
 - GIVEN 本 branch 相對 `origin/main`
 - WHEN 跑 `git diff --name-only origin/main`
-- THEN 輸出只含 `docs/dev/five-station-simplify/4-spec.md` 與 `docs/dev/five-station-simplify/4-spec.html`。零 `_templates/`、零 `graph.yaml`、零 `scripts/` 新牙、零 `STATUS.md`、零 `HISTORY.md`、零 `devflow-contract.json`。本檔 `verdict` 空；`status: draft`
-- 觀測:從該指令 stdout 與本檔 frontmatter 看 | 兩檔、頂欄 draft／verdict 空算過 | 在本 branch 跑 `git diff --name-only origin/main`
+- THEN 輸出只含 `docs/dev/five-station-simplify/4-spec.md` 與 `docs/dev/five-station-simplify/4-spec.html`。零 `_templates/`、零 `graph.yaml`、零 `scripts/` 新牙、零 `STATUS.md`、零 `HISTORY.md`、零 `devflow-contract.json`。頂欄 `verdict` PASS 來自 human owner G2（2026-09-14 Asia/Taipei），`status: approved`，不是 Agent 自裁
+- 觀測:從該指令 stdout 與本檔 frontmatter 看 | 兩檔、頂欄 approved／verdict PASS 算過 | 在本 branch 跑 `git diff --name-only origin/main`
 - Operational Context:不適用 — 本 PR 檔集。
 
 #### S-8.5 本 slug Stage 5 到 7 只准落地 F1
@@ -944,7 +944,7 @@ SC-11／7A／brief §7。本 Spec 定義 F1／F2／F3 必須滿足什麼。本 P
 
 ### Stage 3 對帳
 
-`3-prototype.md` `status: approved`；`Human verdict: ACCEPTED | role=母版 owner | scenario=AC-1`；`Verdict attestation: human:rick @ 2026-09-14`（#309／#310）。Demo 前置已滿足。本 hop **不**發明 G2 PASS。
+`3-prototype.md` `status: approved`；`Human verdict: ACCEPTED | role=母版 owner | scenario=AC-1`；`Verdict attestation: human:rick @ 2026-09-14`（#309／#310）。Demo 前置已滿足。G2 已按 owner chat「過」落檔。未發明 G3 PASS。
 
 - Scenario AC-1（新 slug 中間不停）→ S-1.2、S-1.3
 - Scenario AC-6（表 A／B）→ S-1.4、S-1.5、S-1.6、S-1.7、S-1.8、S-1.9、S-1.10、S-1.11、S-1.12、S-4.3、S-4.4
@@ -967,7 +967,7 @@ SC-11／7A／brief §7。本 Spec 定義 F1／F2／F3 必須滿足什麼。本 P
 - F3 cut／改新 slug 預設 `graph.yaml` 路線（S-8.3）
 - 本 Stage 4 PR 寫 F1 牙或 annex 檔（S-8.4；F1 只准 G2 **之後**）
 - 改 `_templates/`、各站 `graph.yaml`、既有牙、`devflow-contract.json` bump
-- 改 `STATUS.md`／`HISTORY.md`；發明 G2 PASS；合併本 PR 當已過 G2
+- 改 `STATUS.md`／`HISTORY.md`（STATUS 另 companion）；發明 G3 PASS；開 Stage 5
 - 拿本 slug 當新 5 白老鼠（4C）
 - 刪 G1／G2／`ACCEPTED`（1B）
 - 舊檔缺新欄就紅（2B）
@@ -1112,7 +1112,7 @@ SC-11／7A／brief §7。本 Spec 定義 F1／F2／F3 必須滿足什麼。本 P
 
 Q6 期限 = F1 annex 前抽一案。升格成已核事實仍擋本 slug G2（S-6.3），與 status=open 並行：open 不是「已核」。第三列 Stage 2 已用 6A／OC-11 收束，故 resolved。
 
-## Drafting Decisions(草擬自判,待人審)
+## Drafting Decisions(草擬自判,已核)
 
 形狀已寫進 R/S。本表只記本檔鎖定的選擇。不翻 1A–7A。推翻 Decision 不是合法 DD。
 
@@ -1120,15 +1120,15 @@ Q6 期限 = F1 annex 前抽一案。升格成已核事實仍擋本 slug G2（S-6
 
 | DD | 決定了什麼 | 為什麼 | 依據(`檔:行` 或 `[Assumption]`) | 若被推翻會怎樣 | 狀態(待人審→✅/✗) |
 |---|---|---|---|---|---|
-| DD-1 | SC-1…SC-13 收成 R-1…R-8；每條 SC 至少一條 S（對照見 SC → S 表） | C 線 anti-hollow。Soft-fix 後 S>40，誠實記帳、不另切開新 slug | 本 hop brief；`2-decision.md` Success Criteria | 拆 slug 或漏 SC | 待人審 |
-| DD-2 | 本 slug Stage 5–7 只落地 F1 annex+teeth；F2／F3 本檔定義但不施工 | 7A 四刀不併；Diff Budget 本 hop 只文件 | `2-decision.md` 7A／OC-7 | 後站寫 coordinator = 違 S-8.5 | 待人審 |
-| DD-3 | rewrite 三 cap 數字鎖在 S-7.1…S-7.3；計數落點交 F2，不鎖鍵名 | OC-3／Q10 | `2-decision.md` OC-3；狀態機 §3 | 本檔鎖 event 欄名 = 偷做 F2 | 待人審 |
-| DD-4 | Q6 Assumption refs = open／2026-10-31；升格句另由 S-6.3 擋 G2 | C7 不得用已過站 deadline 擋形狀；SC-12 仍咬語意升格 | `2-decision.md` OC-8／SC-12 | 改 resolved = 假裝已抽採用案 | 待人審 |
-| DD-5 | Feature Risk = high；本檔 `verdict` 空、`status: draft`；implementer 不寫 PASS | 公開路線＋判定主權＋採用端改線；四眼 | `_templates/4-spec.md` Risk 判準；本 hop brief | 改 normal 則 Failure Model 變選配；代填 PASS = 假綠 | 待人審 |
-| DD-6 | 假完成紅的觀測落點 = T 卡上就紅（Stage 3 選定），不是 hop 板或 Ship 重建 | 對齊 SC-3「該 T 不得標完成」 | `3-prototype.md` 盤 3 | 改 hop 才紅 = 已棄 Variant B | 待人審 |
-| DD-7 | 行為圖 8 框對 8 個 R；審頁產器硬切 8 框 | 產器 `steps[:8]`；不改 scripts | `scripts/build-stage4-html.py` L450 | 增 R-9 則圖丟框 | 待人審 |
-| DD-8 | Non-Goals 點名 1B／2B／4C／6B／7C（及同表其餘已拒案），Stage 5 不得重開 | C 線：後站不能把已拒案當可選 | `2-decision.md` Rejected Alternatives | 刪這五個代號 = Stage 5 可重開 | 待人審 |
-| DD-9 | Soft-fix 拆表 A／B 為獨立 S；吸 #313 SLOT- id 語意（不鎖鍵名）；S>40 留在本檔、不另切開新 slug。Q6 維持 open。DD 維持待人審 | owner 核准吸收評審；C 勝、A 次；B 的 Q6=oc-accepted 與 DD ✅ 不吸 | 本 hop owner 指令；`2-decision.md` OC-3／OC-8 | 改 oc-accepted 或 DD ✅ = 抄 B 落選項 | 待人審 |
+| DD-1 | SC-1…SC-13 收成 R-1…R-8；每條 SC 至少一條 S（對照見 SC → S 表） | C 線 anti-hollow。Soft-fix 後 S>40，誠實記帳、不另切開新 slug | 本 hop brief；`2-decision.md` Success Criteria | 拆 slug 或漏 SC | ✅ Owner PASS human:rick @ 2026-09-14 |
+| DD-2 | 本 slug Stage 5–7 只落地 F1 annex+teeth；F2／F3 本檔定義但不施工 | 7A 四刀不併；Diff Budget 本 hop 只文件 | `2-decision.md` 7A／OC-7 | 後站寫 coordinator = 違 S-8.5 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| DD-3 | rewrite 三 cap 數字鎖在 S-7.1…S-7.3；計數落點交 F2，不鎖鍵名 | OC-3／Q10 | `2-decision.md` OC-3；狀態機 §3 | 本檔鎖 event 欄名 = 偷做 F2 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| DD-4 | Q6 Assumption refs = open／2026-10-31；升格句另由 S-6.3 擋 G2 | C7 不得用已過站 deadline 擋形狀；SC-12 仍咬語意升格 | `2-decision.md` OC-8／SC-12 | 改 resolved = 假裝已抽採用案 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| DD-5 | Feature Risk = high；本檔 `verdict` 空、`status: draft`；implementer 不寫 PASS | 公開路線＋判定主權＋採用端改線；四眼 | `_templates/4-spec.md` Risk 判準；本 hop brief | 改 normal 則 Failure Model 變選配；代填 PASS = 假綠 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| DD-6 | 假完成紅的觀測落點 = T 卡上就紅（Stage 3 選定），不是 hop 板或 Ship 重建 | 對齊 SC-3「該 T 不得標完成」 | `3-prototype.md` 盤 3 | 改 hop 才紅 = 已棄 Variant B | ✅ Owner PASS human:rick @ 2026-09-14 |
+| DD-7 | 行為圖 8 框對 8 個 R；審頁產器硬切 8 框 | 產器 `steps[:8]`；不改 scripts | `scripts/build-stage4-html.py` L450 | 增 R-9 則圖丟框 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| DD-8 | Non-Goals 點名 1B／2B／4C／6B／7C（及同表其餘已拒案），Stage 5 不得重開 | C 線：後站不能把已拒案當可選 | `2-decision.md` Rejected Alternatives | 刪這五個代號 = Stage 5 可重開 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| DD-9 | Soft-fix 拆表 A／B 為獨立 S；吸 #313 SLOT- id 語意（不鎖鍵名）；S>40 留在本檔、不另切開新 slug。Q6 維持 open。DD 維持待人審 | owner 核准吸收評審；C 勝、A 次；B 的 Q6=oc-accepted 與 DD ✅ 不吸 | 本 hop owner 指令；`2-decision.md` OC-3／OC-8 | 改 oc-accepted 或 DD ✅ = 抄 B 落選項 | ✅ Owner PASS human:rick @ 2026-09-14 |
 
 ### 內部技術選擇(下層,告知即可)
 
@@ -1207,3 +1207,4 @@ Q6 期限 = F1 annex 前抽一案。升格成已核事實仍擋本 slug G2（S-6
 - 3c Stage 3 | 2026-09-14 | AC-1／AC-3／AC-4／AC-5／AC-6／AC-8／SC-9／RP-14 + Method／Recovery 逐場有下落。
 - DD 掃描 | 2026-09-14 | 上層九條待人審；無「待裁決」殘留；不翻已核 Decision；無 ✅ 草擬自判。
 - 機械關卡 | 2026-09-14 | `scripts/check-spec-gate.sh` 須 9/9。審頁 `scripts/build-stage4-html.py --action`。
+- G2 | 2026-09-14 | Human G2 PASS + DD-1…DD-9 Owner PASS @ 2026-09-14 Asia/Taipei。owner chat「過」。未發明新 DD 答案；看板依 Spec 原文標 Owner PASSed。基準 #312（`93f55e2`）／#314 STATUS Stage4（`74ce36c`）。owner 自審(有記錄)；reviewers: [user]；operator tony 經 `scripts/devflow_gate.py write` 落頂欄。未發明 G3 PASS。不開 Stage 5。
