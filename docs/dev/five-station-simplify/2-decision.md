@@ -32,14 +32,14 @@ updated: 2026-09-13
 | Exception「F0–F2 母版新開改版軌仍舊 7」 | 本方案處理 | brief §6；避免雙路線污染觀測 |
 | Exception「[Assumption] 採用現場仍 chat 蓋章」 | 仍待驗 | Q6；過期擋本 slug G2；本 G1 不升成已核事實 |
 | Exception「後站會用『已經五站了』省略 M11／M3／M1」 | 本方案處理 | Stage 2 對帳：Decision 把三者標不可選 |
-| Exception「A1／A2 共寫 1-discussion.html」 | 另開 slug | 移交 F1 annex；本檔不選定產檔器分檔 |
+| Exception「A1／A2 共寫 1-discussion.html」 | 仍待驗／F1 annex | 本 slug F1 annex 核對產檔器 dest；本檔不選定分檔。不是另開 slug |
 | 「marketplace 可換 hops，doctor 仍可因 2.0.0 握手綠」 | 本方案處理 | 3A：doctor 綠 ≠ 路線沒變／已切 |
 | 「本 slug = live freeze 樣本」 | 本方案處理 | 4A／7A：自己出貨路徑仍舊 7 |
-| Q8 dual-read 2.1.0 欄位與舊檔不紅缺省 | 另開 slug | 誠實定義本檔鎖；欄位名移交 F1 annex |
-| Q10 coordinator event 與 rewrite cap 計數落點 | 另開 slug | cap 數字已鎖；落點移交 F2 |
+| Q8 dual-read 2.1.0 欄位與舊檔不紅缺省 | 本方案處理 | 誠實定義本檔鎖（2A／OC-1）；欄位名仍待驗／本 slug F1 annex。不是另開 slug |
+| Q10 coordinator event 與 rewrite cap 計數落點 | 本方案處理 | cap 數字已鎖；計數落點仍待驗／本 slug F2。不是另開 slug |
 | Q11 空 attestation 五站後是否仍機械拒 | 本方案處理 | 5A：仍拒；chat 准開不構成判定 |
 | M1–M16 帶走表 | 本方案處理 | 每條高影響 M 必有去向；見下 Disposition |
-| rewrite cap hop≤2／Decide≤1／Goal reopen≤1 | 本方案處理 | Constraints 已鎖；計數落點仍 F2 |
+| rewrite cap hop≤2／Decide≤1／Goal reopen≤1 | 本方案處理 | Constraints 已鎖；計數落點仍本 slug F2 |
 | 「本 hop 不改模板、不送 G1」 | 刻意維持 | 7A：本 PR 只 Decision＋html |
 
 ## Approaches Considered
@@ -105,7 +105,38 @@ updated: 2026-09-13
 ```
 
 ## Decision
-採 **1A+2A+3A+4A+5A+6A+7A**：預設路線用五個別名 Intake→Decide→Spec→Build→Ship，舊七份檔名不動。摺的是例行人類停點，不是完整度。G1／S3-`ACCEPTED`／G2 的物質、token、twin、牙留下，預設不再等人按提交判定；謂詞假就停在該站修。Ship（舊 G3 物質）是唯一預設人類必停；coordinator／Agent 代寫 `verdict: PASS` 或 `ACCEPTED` = 未寫。條件頁走表 A／B：生成謂詞假不產頁，latch 假不准問人。契約 minor 2.1.0（F1 annex 寫；F0 不 bump）必須同時讀舊 7 與新 5，舊檔缺新欄不得一次變紅。**dual-read 誠實** = 能解析兩套格式，不得把「doctor 因 2.0.0 握手綠」或「marketplace 已換 hops」說成採用端已切五站；未 upgrade = 舊 7，不得遠端改線。`docs/dev/<slug>/` 已有 1–7 任一 `.md` 的 slug 整段舊 7 到 Ship；本 slug 是第一個 live freeze 樣本，自己的 G1／G2／G3 仍走舊 7。B1 命中且 attestation 空仍機械拒；chat 准開不是判定。Must-keep M1–M16 少一條 = 違 brief；T 四欄與 RED→獨立審查 seam 不可選；去向語法用 Q9 種子；F1 牙只長 scripts／annex。本 PR 只落 Decision＋審頁，不實作 F1。不選 1B／2B／2C／3C／4B／4C／5B／5C／6B／6C／7B／7C。
+採 **1A+2A+3A+4A+5A+6A+7A**：預設路線用五個別名 Intake→Decide→Spec→Build→Ship，舊七份檔名不動。摺的是例行人類停點，不是完整度。G1／S3-`ACCEPTED`／G2 的物質、token、twin、牙留下，預設不再等人按提交判定；謂詞假就停在該站修。Ship（舊 G3 物質）是唯一預設人類必停；coordinator／Agent 代寫 `verdict: PASS` 或 `ACCEPTED` = 未寫。條件頁走表 A／B：生成謂詞假不產頁，latch 假不准問人。契約 minor 2.1.0（F1 annex 寫；F0 不 bump）必須同時讀舊 7 與新 5，舊檔缺新欄不得一次變紅。**dual-read 誠實** = 能解析兩套格式，不得把「doctor 因 2.0.0 握手綠」或「marketplace 已換 hops」說成採用端已切五站；未 upgrade = 舊 7，不得遠端改線。`docs/dev/<slug>/` 已有 1–7 任一 `.md` 的 slug 整段舊 7 到 Ship；本 slug 是第一個 live freeze 樣本，自己的 G1／G2／G3 仍走舊 7。B1 命中且 attestation 空仍機械拒；chat 准開不是判定。Must-keep M1–M16 少一條 = 違 brief；T 四欄與 RED→獨立審查 seam 不可選；去向語法用 Q9 種子；F1 牙只長 scripts／annex。**Decision 約束 + RP-1…RP-16** 是後站不准改成可選的最小拒收集（Q7＋M 表＋狀態機 §6）；F1 annex 只准加牙、不准減。本 PR 只落 Decision＋審頁，不實作 F1。不選 1B／2B／2C／3C／4B／4C／5B／5C／6B／6C／7B／7C。
+
+## Decision 約束（後站不准改成可選）
+1. **Must-keep M1–M16 少一條 = 違 brief**，不能寫成「已經五站了所以可省」。
+2. **T 四欄（Covers／Files／Verify／Blocked-by）與 RED→獨立審查 seam 不可選。** Owner-locked。缺欄、無 RED 輸出、reviewer=implementer → 勾選仍算未完成。
+3. Spec 的 S 仍吃反模糊三律；TBD／不可測／測試名不含 S-id 不得當完成。
+4. 去向語法採 Q9：`M11 → R-x/S-y | Non-Goal:<reason>`。不另發 ID 鏈。禁刪 token／禁改 graph／牙是**約束**，不得寫成 `M15 → Non-Goal`／`M16 → Non-Goal`。
+5. rewrite cap 已鎖：hop≤2／Decide≤1／Goal reopen≤1；用盡 Escalated；不准暗改。舊 7 不套這三 cap。
+6. 採用 hop 身分：未 2.1.0 dual-read 前，marketplace 可換 hops 而 doctor 仍可綠；未 upgrade = 必須仍走舊 7。
+7. dual-read 誠實三句（OC-1）與本 slug live freeze（4A）維持已鎖；後站不得改成可選。
+
+## 本方案要求（F1 拒收謂詞；annex 只准加不准減）
+| # | 拒收謂詞 | 來源 |
+|---|---|---|
+| RP-1 | T 缺 Covers／Files／Verify／Blocked-by → 紅 | Q7、M11 |
+| RP-2 | 無 RED 輸出或 reviewer=implementer → T 未完成 | Q7、M11 |
+| RP-3 | S 含 TBD／不可測 → 紅 | Q7、M3 |
+| RP-4 | 測試名不含 S-id → 紅 | M1 |
+| RP-5 | 缺 Files 欄或 Files ⊈ 5-tasks 聯集 → 紅 | M9 |
+| RP-6 | 無原始輸出 → 紅 | M10 |
+| RP-7 | 不可逆且無 Quiz → 紅；非不可逆被強制 Quiz 當例行停 → 違 G-out-1 | M14 |
+| RP-8 | Ship 無人寫 `verdict: PASS` 卻標 Done → 紅 | 狀態機 §6.1、G-out-4 |
+| RP-9 | hop 重寫第 3 次仍繼續 → 紅 | 狀態機 §6.2 |
+| RP-10 | Decide 重開第 2 次仍繼續 → 紅 | 狀態機 §6.3 |
+| RP-11 | Goal 離開 Intake 後重開第 2 次仍繼續 → 紅 | 狀態機 §6.4 |
+| RP-12 | B1 未命中卻要求 `ACCEPTED` → 紅 | 狀態機 §6.5 |
+| RP-13 | B1 命中、無 attestation，卻 hop 出 Spec → 紅 | 狀態機 §6.6、Q11、5A |
+| RP-14 | latch 未命中卻留下「請人審」紀錄 → 紅 | 狀態機 §6.7 |
+| RP-15 | 舊 7 in-flight slug 被寫入五站狀態 → 紅 | 狀態機 §6.8、G-out-5／8 |
+| RP-16 | Agent 代寫 `ACCEPTED` 或 Ship `PASS` → 視為未寫並紅 | G-out-4、M5 |
+
+F1 牙長在 `scripts/` 與 annex，不准改 Stage 1–4 模板。形狀欄位名交本 slug F1 annex；本表是最小集合。
 
 ## Rejected Alternatives
 | 不選 | 一句棄因 |
@@ -164,7 +195,9 @@ B 線要把「看起來已經切了」這句話拆開。doctor 只問契約版�
 | 有人把 2A「舊檔不紅」讀成「可以默默切五站」 | 誠實句寫進 Decision 首段；2C／3C 進 Rejected。綠＋不紅 ≠ 已切 |
 | Q6 採用蓋章為假，殺例行停的現場理由變弱 | 不升成已核事實（OC-8）。母版 dogfood 三案仍夠撐「殺等待」。Must-keep 不依賴 Q6。過期擋本 slug G2 |
 | 本 slug 被拿去試五站自動前進 | 4A／SC-8：目錄已存在 = freeze。五站 hop 必須被拒 |
-| F1 欄位名未釘，Stage 4 前各寫各的 | OC-3：本檔只鎖誠實定義與陷阱謂詞，不鎖 annex 鍵名。Q8／Q10 仍移交 |
+| F1 欄位名未釘，Stage 4 前各寫各的 | OC-3：本檔只鎖誠實定義與陷阱謂詞，不鎖 annex 鍵名。Q8／Q10 落本 slug F1／F2，不是另開 slug |
+| 後站把 M11／M3／M1 或四欄／seam 標成可選 | OC-11：4-spec／5-tasks 出現「可選四欄／可選 seam／已五站故省 Must-keep」→ 擋本 slug G2 |
+| F1 annex 減掉 RP-1…RP-16 | OC-10：最小集只准加不准減；減項 = 翻本 Decision，回本站 |
 | 本 PR 被當成已過 G1 或已落地 F1 | 頂欄 `verdict` 空；status=in-review；SC-11 檔集可核。7B 進 Rejected |
 | 空 attestation 被 chat「可以」帶走 | 5A／OC-6：chat 不是判定。對照 dogfood-ping DOGFOOD-NOTES L9 |
 | rewrite cap 被暗改或套到舊 7 | cap 數字已鎖；舊 7 不套。落點 F2。X5 進後站禁則 |
@@ -186,9 +219,10 @@ B 線要把「看起來已經切了」這句話拆開。doctor 只問契約版�
 - SC-10(marketplace × doctor-green)：固定對照：`devflow_contract_version=2.0.0` + marketplace 已更新使 hops 預設五站 + doctor 對 2.0.0 握手綠 → 採用端仍必須走舊 7；把「doctor 綠」寫成「可以跟 hops 走」的文案／謂詞 → 紅。未 upgrade 不得遠端改線。
 - SC-11(本 PR 範圍)：本 PR 的 `git diff --name-only origin/main` 只含 `docs/dev/five-station-simplify/2-decision.md` 與 `docs/dev/five-station-simplify/2-decision.html`。無 `_templates/`、`graph.yaml`、`scripts/` 新牙、`STATUS.md`、`HISTORY.md`、`devflow-contract.json` bump。頂欄 `verdict` 空。
 - SC-12(Q6 不升格)：本檔任何「採用現場也 chat 蓋章」句仍標 Assumption 或「仍待驗」。把 Q6 寫成已核事實 → 本 G1 應打回。
+- SC-13(C 線 anti-hollow／F1 最小集)：F1 牙能紅 RP-1…RP-16；annex 新增謂詞可以，刪本表任一列不行。後站 4-spec／5-tasks 把 Must-keep 或 T 四欄／seam 標成可選 → 擋本 slug G2（OC-10／OC-11）。
 
 ## Scope & Non-Goals(定稿)
-- In：1A 摺停點留物質；2A dual-read 誠實定義；3A 採用端陷阱與 F1 最少拒收謂詞（契約 2.0.0 + 五站 hops → 紅／拒改線）；4A in-flight 偵測（任一 1–7 `.md`）+ 本 slug 活樣本；5A Q11 空 attestation 仍拒；6A Must-keep 去向語法 + 四欄／seam 不可選 + F1 牙落點；7A 本 PR 只 Decision＋html、四刀不併。Q9 種子語法。rewrite cap 數字維持已鎖。
+- In：1A 摺停點留物質；2A dual-read 誠實定義；3A 採用端陷阱與 F1 最少拒收謂詞（契約 2.0.0 + 五站 hops → 紅／拒改線）；4A in-flight 偵測（任一 1–7 `.md`）+ 本 slug 活樣本；5A Q11 空 attestation 仍拒；6A Must-keep 去向語法 + 四欄／seam 不可選 + F1 牙落點；7A 本 PR 只 Decision＋html、四刀不併。Decision 約束 + RP-1…RP-16 最小拒收集（只准加不准減）。Q8／Q10／A1–A2 落本 slug F1／F2，不是另開 slug。Q9 種子語法。rewrite cap 數字維持已鎖。
 - Out：1B／1C；2B／2C；3B／3C；4B／4C；5B／5C；6B／6C；7B／7C；重開 F0 十條；刪 G1／G2／`ACCEPTED`；改七檔名；廢 Fast；第二條 ID 鏈；本 PR 實作 F1 牙／annex／doctor 路線欄；本 PR 寫 coordinator；本 PR 切預設路線；本 PR 改 STATUS／HISTORY／模板／graph／既有牙；本 PR 填 G1 PASS；本 PR 合併；拿本 slug 當新 5 白老鼠；把 Q6 升成已核事實；選定 dual-read 欄位名或 event schema。
 
 ## Must-keep Disposition（給 Stage 4 用的種子，不另發 ID）
@@ -208,8 +242,8 @@ B 線要把「看起來已經切了」這句話拆開。doctor 只問契約版�
 | M12 author≠approver | 刻意維持 | Ship 與任何 latch |
 | M13 html 重生 | 本方案處理 | 本 hop 產審頁 |
 | M14 不可逆才 Quiz | 刻意維持 | Quiz ≠ 預設第三停 |
-| M15 token／檔仍在 | 本方案處理 | 1A；拒 1B |
-| M16 F0 不改 graph／牙 | 本方案處理 | 7A；本 PR 不動 |
+| M15 token／檔仍在 | 本方案處理 | 1A；拒 1B。禁刪 token 是**約束**，不是 Non-Goal |
+| M16 F0 不改 graph／牙 | 本方案處理 | 7A；本 PR 不動。禁改 graph／牙是**約束**，不是 Non-Goal |
 
 ## Owner Calls(自判裁決,待人審)
 
@@ -218,13 +252,15 @@ B 線要把「看起來已經切了」這句話拆開。doctor 只問契約版�
 |---|---|---|---|---|---|
 | OC-1 | **dual-read 誠實**定義成三句：(1) 2.1.0 可解析舊 7 與新 5；(2) 舊 7 缺新欄不紅；(3) 未宣告 2.1.0 的採用端，即使 marketplace 已換 hops，仍必須走舊 7。使用者／F0 只鎖「dual-read 2.1.0」；「doctor 綠不得冒充路線已切」是 owner 延伸 | 少第 3 句，2A 會被讀成 2C | `notes/design/five-station-simplify-brief-v3.md:L160-L169`；`docs/dev/five-station-simplify/1-discussion.md:L187`。延伸本身 `[Assumption]` | SC-9／Decision 首段改寫；F1 annex 不必咬「2.0.0+五站 hops」 | 待人審 |
 | OC-2 | F1 最少採用端拒收謂詞 = **契約仍 2.0.0 且 hops 已是五站預設 → 紅／不得改線**。使用者只被問到「採用 hop 身分」；具體拒收形是延伸 | 沒有這條牙，3A 只是散文，陷阱還在 | `docs/dev/five-station-simplify/1-discussion.md:L222`；`hooks/_doctor_impl.py:L193-L202`。牙掛哪支腳本 `[Assumption]`（F1） | 改咬別的訊號（例如只警告）；SC-10 觀測點變 | 待人審 |
-| OC-3 | 本 Stage 2 **不選定** dual-read 欄位名、缺省鍵、coordinator event schema。Q8／Q10 仍移交 F1／F2。這是對「把 dual-read 誠實寫進 Decision」的收窄 | 本 PR 不實作 F1；鎖鍵名 = 偷做 annex | `docs/dev/five-station-simplify/1-discussion.md:L177-L178` Q8／Q10 `[>]` | Scope 膨脹進 annex 欄位表；與 7A 衝突 | 待人審 |
-| OC-4 | 本 feature branch **不**跑 `status-update.sh`、不改 HISTORY、不改 1-discussion 頂欄、不填本檔 `verdict: PASS`、不合併。標**流程層** | 母版 STATUS 只在整合分支維護；使用者禁發明 G1 PASS | `docs/dev/STATUS.md:L10-L26`；本 hop brief | PR 帶 STATUS 列或自填 PASS，與並行 A／C session 互蓋 | 待人審 |
+| OC-3 | 本 Stage 2 **不選定** dual-read 欄位名、缺省鍵、coordinator event schema。Q8／Q10 落**本 slug** F1／F2 annex，不是另開 slug。這是對「把 dual-read 誠實寫進 Decision」的收窄 | 本 PR 不實作 F1；鎖鍵名 = 偷做 annex | `docs/dev/five-station-simplify/1-discussion.md:L177-L178` Q8／Q10 `[>]` | Scope 膨脹進 annex 欄位表；與 7A 衝突 | 待人審 |
+| OC-4 | 本 Decision hop **不**跑 `status-update.sh`、不改 HISTORY、不改 1-discussion 頂欄、不把本檔 `verdict` 寫成 PASS、**不發明 G1 PASS**、本 Decision hop **不合併**。標**流程層** | 母版 STATUS 只在整合分支維護；使用者禁發明 G1 PASS | `docs/dev/STATUS.md:L10-L26`；本 hop brief | PR 帶 STATUS 列或自填 PASS，與並行 A／C session 互蓋 | 待人審 |
 | OC-5 | in-flight 偵測 = `docs/dev/<slug>/` **已有 1–7 任一 `.md`**。僅有 html、無 md 不算開工。使用者 brief 寫「任一站檔」；「只認 md」是收窄 | html 可被產檔器誤生；md 才是站正本 | `notes/design/five-station-simplify-brief-v3.md:L165`「任一站檔」；`docs/dev/five-station-simplify/1-discussion.md:L192` 寫任一 md。收窄本身 `[Assumption]` | 裸 html 也會凍結；或空目錄被誤凍 | 待人審 |
 | OC-6 | owner chat「可以／准開下一站／Treat as PASS」**不得**寫入 Human verdict，也不得當 attestation 替代。使用者只把 Q11 交給 Stage 2；「chat 不是判定」是延伸 | dogfood 捷徑就是這樣開 Stage 4 的 | `docs/dev/dogfood-ping/DOGFOOD-NOTES.md:L9`；`notes/design/gate-verdict-write.md`（1-discussion `:L48`）。延伸 `[Assumption]` | 5B 回流；空欄可被口頭帶走 | 待人審 |
 | OC-7 | 本 PR **連 `scripts/`／annex 也不寫**。F1 牙落點維持 scripts／annex，但本 hop 零碼。這是對 6A「牙長在 scripts／annex」的收窄 | 使用者：No F1 implementation in this PR | 本 hop brief；`notes/design/five-station-simplify-brief-v3.md:L178` | 7B 回流；未過 G1 就長牙 | 待人審 |
 | OC-8 | Q6 與「採用現場仍蓋章」保持 `[Assumption]`。**不**因無採用逐字稿擋本 G1；**仍**過期擋本 slug G2。這是對「期限 = F1 annex 前抽一案」的收窄（本 G1 放行、本 G2 仍咬） | 沒有採用逐字稿；捏造現場 = 自己犯 A-3 病。母版 dogfood 已夠撐殺等待 | `docs/dev/five-station-simplify/1-discussion.md:L174` Q6 `[~]`；同檔 `:L193` 過期擋 G2。收窄 `[Assumption]` | 要補現場訪談才准 G1；或把 Q6 升成已核 | 待人審 |
 | OC-9 | Success Criteria 用「對照稿 + 可觀察拒絕／檔集」量測；本檔不寫測試檔或 fixture。量測形是對「可量測 SC」的延伸 | 本 PR 不實作 F1；fixture 進 F1／後站 | 模板頂註步 2；使用者強調 measurable SC。延伸 `[Assumption]` | SC 改成口頭「看起來對」；7-review 對不到 | 待人審 |
+| OC-10 | RP-1…RP-16 是 F1 牙**最小集**：annex 只准加、不准減。使用者只鎖 Q7 三句＋「牙對 M 表」；把狀態機 §6 與 M1／M9／M10／M14 一併釘死是 owner 延伸 | 減項會讓「已五站」再次變成省略理由 | `docs/dev/five-station-simplify/1-discussion.md:L175` Q7；同檔 `:L199-L215` 拒收欄；`notes/design/five-station-simplify-f0-state-machine.md:L202-L213` §6。延伸本身 `[Assumption]` | F1 可刪 RP；SC-13 與 4-spec 對帳清單要重寫 | 待人審 |
+| OC-11 | 本 slug 後站文檔（4-spec／5-tasks）若把 Must-keep（尤其 M1／M3／M11）或 T 四欄／seam 標成可選，擋本 slug G2。這是對 Assumption「後站會偷 M」的 Stage 2 對帳，不是新 Goal | 討論已寫過期擋「可選四欄」寫進 Decision；本檔選 6A 之後，後站再寫可選 = 違本 Decision | `docs/dev/five-station-simplify/1-discussion.md:L107`；同檔 `:L125` | 可選四欄可進 4-spec；假完成 T 變合法簡化 | 待人審 |
 
 ### 內部技術選擇(下層,告知即可)
 - 契約維持 `2.0.0`；本 hop 不 bump plugin／`devflow-contract.json`。
@@ -232,9 +268,10 @@ B 線要把「看起來已經切了」這句話拆開。doctor 只問契約版�
 - 審頁用 `scripts/build-stage2-html.py --action`，不手包 html-shell，不把審頁塞進 `build-gate-twin.py` STAGES。
 - 不預先跳過 Stage 3；觸發判定留給該站（本檔無「跳過 Stage 3」流程層 OC）。
 - 未讀 A／C 線 Stage 2；本檔獨立收斂。
-- A1／A2 共寫 `1-discussion.html` 保持 Assumption，移交 F1。
-- rewrite cap 數字不重開；計數落點仍 F2。
+- A1／A2 共寫 `1-discussion.html` 保持 Assumption，落本 slug F1 annex（不是另開 slug）。
+- rewrite cap 數字不重開；計數落點仍本 slug F2。
 - 4-spec 再釘：每條高影響 M 的具體 R/S id、dual-read 欄位名、F1 牙腳本名。
+- 吸收 C 線 anti-hollow：Decision 約束 + RP-1…RP-16 + OC-10／OC-11。M15／M16 維持約束，不抄 Non-Goal 種子。
 
 ## ADR 晉升檢查
 - 難逆轉:否（F3 才切新 slug 預設路線；本檔與 F1／F2 在 G3 前可改 Decision／OC；本 hop 零 runtime）
@@ -247,4 +284,5 @@ B 線要把「看起來已經切了」這句話拆開。doctor 只問契約版�
 - Stage 1 改口 | 2026-09-13 | 1-discussion 仍 draft、當時寫不送 G1；使用者標 Human PASS 後開本站。不回改正本討論。
 - 獨立於 A／C | 2026-09-13 | 未讀他線 Stage 2 產出；只讀 1-discussion＋brief＋狀態機＋模板。
 - Q6 對帳 | 2026-09-13 | 母版 dogfood 三案蓋章 = Observed。採用現場是否同一手勢 = 仍 Assumption（OC-8）。未捏造採用逐字稿。
-- 自檢七掃 | 2026-09-13 | ①每案優劣有依據欄（空格標 `[Assumption]`）。②G-out-1…8 進 Decision／SC-1…8；漏項進 Non-Goals。③`[>]` Q8／Q10 另開 slug＋OC-3；Q11=5A。④SC 皆對照稿／拒絕／檔集。⑤Rejected 無空棄因。⑥七決策點由 B brief 確認；OC-1／2／6／9 延伸、OC-3／5／7／8 收窄、OC-4 流程層，皆可回溯決策點。⑦既有脈絡是對帳不是外移 schema。圖上 1A–7A 標選定，Rejected 未上圖。
+- 自檢七掃 | 2026-09-13 | ①每案優劣有依據欄（空格標 `[Assumption]`）。②G-out-1…8 進 Decision／SC-1…8；漏項進 Non-Goals。③`[>]` Q8／Q10 本方案處理（本 slug F1／F2 annex，不是另開 slug）＋OC-3；A1／A2=仍待驗／F1 annex；Q11=5A。④SC 皆對照稿／拒絕／檔集。⑤Rejected 無空棄因。⑥七決策點由 B brief 確認；OC-1／2／6／9 延伸、OC-3／5／7／8 收窄、OC-4 流程層、OC-10／OC-11 吸收 C 線 anti-hollow（最小拒收只准加、後站標可選擋 G2），皆可回溯決策點。⑦既有脈絡是對帳不是外移 schema。圖上 1A–7A 標選定，Rejected 未上圖。
+- R2／R3 收斂修 | 2026-09-13 | R2 must-fix：Q8／Q10／A1–A2 去向不再寫「另開 slug」（本 slug F1／F2）。R3 吸收 C：Decision 約束＋RP-1…RP-16＋OC-10／OC-11；M15／M16 禁刪／禁改標約束不標 Non-Goal。A 線流程鎖留在 OC-4（不發明 G1 PASS、Decision hop 不合併）。不重開 dual-read／OC-1／SC-9／SC-10。
