@@ -71,6 +71,12 @@ updated:
 >    Owner Calls 全裁決(有未裁決 OC 不得過;正本 `guides/guide-dev-flow.html#gates`)。核准 → 三連動
 >    (frontmatter/STATUS/twin)。完成 = verdict 記錄+三連動齊。
 
+## Real-world 去向
+<!-- 引用 Stage 1 原文片段。去向 ∈ {本方案處理, 刻意維持, Non-Goal, 另開 slug, 仍待驗}。
+     不得發第二鏈編號。本方案處理者 Stage 4 下落必須有 R- 或 S-。 -->
+| 引用（Stage 1 原文片段） | 去向 | 理由 |
+|---|---|---|
+
 ## Approaches Considered
 <!-- 「依據」欄:本列的優/劣/成本從哪來 —— 寫得出出處就寫 `檔:行`、1-discussion 的
      哪一條、或實際跑過的指令輸出;寫不出就寫 `[Assumption]`。

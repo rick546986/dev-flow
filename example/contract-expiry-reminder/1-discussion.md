@@ -59,10 +59,24 @@ updated: 2026-07-23
 - [Assumption] 法務平均回覆 3 天:僅主管口述印象,未取 Email 時間戳驗證。
 - [Assumption] 共管重複聯絡「約一季一次」:無記錄,僅訪談印象。
 
+### Assumption 四欄
+| 若為假影響什麼 | 影響級 | 怎麼驗 | 何時／由誰驗 |
+|---|---|---|---|
+| 法務回覆不是 3 天,狀態「等待法務」門檻錯 | 高 | 抽 Email 時間戳 | Stage 2 / owner |
+| 共管頻率不是一季一次,通知節奏錯 | 中 | 對週會紀錄 | Stage 2 / owner |
+
+## Evidence manifest
+| 想找哪類 | 為什麼 | 擬路徑或來源 | owner 核准 | 已讀 |
+|---|---|---|---|---|
+| 到期定義 | 核 30 天從哪來 | docs/specs/contracts.md | 是 | 是 |
+
 ## Goals
-- 業務登入後,不用翻任何清單就能看到「30 天內到期」的合約。
-- 點擊可直達該合約詳情。
-- 續約處理進行到哪(等待法務/等待主管/已聯絡供應商)有一眼可見的目前狀態與下一步,不再靠記憶與 Excel。
+- 負責業務在合約到期前能做完續約決定。
+- 負責業務能核對該筆到期合約的細節,不必靠記憶或私表。
+- 續約處理進行到哪、下一步是誰,可被核對,不再只存在記憶與 Excel。
+
+## Requested solution
+- 未定案：站內 dashboard 卡片與詳情 URL（通道構想,不是 Goal）。
 
 ## Non-Goals(初稿)
 - email / LINE 通知(之後再議)。
@@ -116,7 +130,7 @@ updated: 2026-07-23
 - Q:現況有沒有通知或排程機制?
   - 事實:docs/specs/contracts.md:L1-L20
   - 推理:CRUD 與 end_date 已在,通知與排程都不在;dashboard 有空白卡片。
-  - 結論:CONFIRMED dashboard 是最低成本的呈現面。
+  - 結論:NEEDS_VERIFICATION 呈現面未定案,通道構想見 Requested solution,不得當已核目標。
 - Q:Expiring 怎麼定義?
   - 事實:docs/specs/contracts.md:L1-L20
   - 推理:議約約一個月,更短來不及。

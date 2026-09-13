@@ -9,6 +9,13 @@ updated: 2026-07-23
 
 # 4. 規格 — 合約到期提醒(change spec)
 
+## Real-world Disposition
+
+| 引用（Stage 1 原文片段） | 去向 | 下落 |
+|---|---|---|
+| Journey 靠 Excel 私表追到期 | 本方案處理 | S-1 |
+| Exception 急件先口頭續 | 刻意維持 | Out of Scope：本期不做 workflow |
+
 ## ADDED Requirements
 
 ### R-1: 系統 SHALL 在 dashboard 顯示登入者可見、30 天內到期且未續約的合約卡片

@@ -80,7 +80,7 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 同日 fresh 驗收 r3-#103:cmd_repair run_id 路徑穿越攔截(相對路徑/絕對
 # 路徑/含空白各一案,拒絕且無檔案變動)+5,ensure_manifest hardlink 不支援
 # 退回 os.replace(mock os.link EPERM)+1,疊上 → 454。
-MIN_CASES=454
+MIN_CASES=459
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -546,6 +546,42 @@ DT_OUT=$(echo "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$DTT/ski
   | (cd "$DTT" && env DEVFLOW_RUNS_ROOT="$DTBAD/x" "$H/devtalk-guard.sh") 2>&1); DT_RC=$?
 ck_msg "③ devtalk-guard obs 通道壞掉(目錄不可寫):deny 判定不變" 2 "盲原則洩漏" "$DT_RC" "$DT_OUT"
 rm -f "$DTBAD"; rm -rf "$DTT"
+# S-8.1～S-8.3 Read 分支(talk 游標在 + DEVTALK_MANIFEST)
+mkdir -p "$T/_templates" "$T/docs/dev/foo" "$T/notes"
+echo '# teacher' > "$T/_templates/1-discussion.md"
+echo '# decision' > "$T/docs/dev/foo/2-decision.md"
+echo '# notes' > "$T/notes/review-requirement-discovery-gaps.md"
+printf '{"node":"N3-probe"}\n' > "$T/.devtalk-cursor.json"
+cat > "$T/man-read.md" <<'MAN'
+## Evidence manifest
+| 想找哪類 | 為什麼 | 擬路徑或來源 | owner 核准 | 已讀 |
+|---|---|---|---|---|
+| 教師 | 核 | _templates/1-discussion.md | 是 | |
+| 方案 | 誤 | docs/dev/foo/2-decision.md | 是 | |
+| 稿 | 未 | notes/review-requirement-discovery-gaps.md | 未核 | |
+MAN
+dt_capture Read _templates/1-discussion.md DEVTALK_MANIFEST="$T/man-read.md"
+ck "S-8.1 核准=是 Read 放行" 0 "$DT_RC"
+dt_capture Read docs/dev/foo/2-decision.md DEVTALK_MANIFEST="$T/man-read.md"
+ck_msg "S-8.2 方案檔即使核准=是仍擋" 2 "2-decision" "$DT_RC" "$DT_OUT"
+dt_capture Read notes/review-requirement-discovery-gaps.md DEVTALK_MANIFEST="$T/man-read.md"
+ck_msg "S-8.3 未核路徑不得 Read" 2 "未核" "$DT_RC" "$DT_OUT"
+# 生產路徑:無 DEVTALK_MANIFEST 時讀 docs/dev/<slug>/1-discussion.md 同檔表
+mkdir -p "$T/docs/dev/foo"
+cat > "$T/docs/dev/foo/1-discussion.md" <<'MAN'
+## Evidence manifest
+| 想找哪類 | 為什麼 | 擬路徑或來源 | owner 核准 | 已讀 |
+|---|---|---|---|---|
+| 教師 | 核 | _templates/1-discussion.md | 是 | |
+| 稿 | 未 | notes/review-requirement-discovery-gaps.md | 未核 | |
+MAN
+DT_OUT=$(echo "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$T/_templates/1-discussion.md\"}}" \
+  | (cd "$T" && "$H/devtalk-guard.sh") 2>&1); DT_RC=$?
+ck "S-8.1 同檔 1-discussion manifest 核准=是放行(無 env)" 0 "$DT_RC"
+DT_OUT=$(echo "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"$T/notes/review-requirement-discovery-gaps.md\"}}" \
+  | (cd "$T" && "$H/devtalk-guard.sh") 2>&1); DT_RC=$?
+ck_msg "S-8.3 同檔 1-discussion manifest 未核仍擋(無 env)" 2 "未核" "$DT_RC" "$DT_OUT"
+rm -f "$T/.devtalk-cursor.json"
 
 echo "-- #101 壞 payload 的武裝判斷跟正常路徑同一套(state/armed/err 任一為真 → 擋)--"
 # 主 $T fixture 此刻仍是 f1 從第 264 行附近武裝至今、從未 stop 過的狀態:
