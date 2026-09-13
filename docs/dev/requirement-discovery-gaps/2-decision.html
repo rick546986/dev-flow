@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>requirement-discovery-gaps · 2-decision</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+a.cell{text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px}
+.group{margin:0 0 16px}
+.group h3{margin:0 0 8px;font-size:.95rem}
+.card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 8px;background:var(--sunk)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+details.bg{margin:10px 0 0}
+details.bg>summary{cursor:pointer;color:var(--ink-2)}
+table.judge{width:100%;border-collapse:collapse;font-size:.86rem;margin:0}
+table.judge th,table.judge td{border:1px solid var(--rule);padding:6px 8px;
+  text-align:left;vertical-align:top}
+table.judge th{background:var(--sunk);font-weight:650}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 2-decision · 審查介面</p>
+  <h1>requirement-discovery-gaps</h1>
+  <p class="sub">正本是 md。這頁是審頁分組卡,不是 gate-twin 勾選卡。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">in-review</span></div><div class="cell"><span class="k">分組</span><span class="v">5</span></div><div class="cell"><span class="k">方案</span><span class="v">15</span></div></div>
+</header>
+<section class="r-block" id="decision">
+  <div class="r-head"><span class="r-name">Decision</span></div>
+  <div class="r-body">
+    <p>採 **DEPTH-A + SURF-A + EV-A + DISP-A + TALK-A**：九條一包、不重開 DO／LIGHT；落地是「形狀牙延伸既有家族 + 人審語意」，不是 no-build 備忘、也不是語意硬閘。G2 後同一 slug 改模板、skill 節點、既有牙（`check-realworld`／`check-spec-gate`／`devtalk-guard` 讀取允許集合）、以及完整範例；不另造第二套守衛、不新增 Journey／Actor ID 鏈。A-5 停在 Human verdict 一行角色／場景。本 hop 只交本檔 + Stage 2 審頁，不改模板、不宣稱 G1 PASS。</p>
+  </div>
+</section>
+<section class="r-block" id="fig">
+  <div class="r-head"><h2 class="r-name">方案架構圖</h2></div>
+  <div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 378" role="img" aria-label="選定方案步驟">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">[DEPTH-A] 形狀牙+人審(選定)</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">[SURF-A] 同slug改四層(選定)</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="b" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">[EV-A] 就地狀態+G2牙(選定)</text>
+  <path class="flow" d="M140,216 L140,238"/>
+  <rect class="b" x="40" y="238" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="262">[DISP-A] ledger+Exit回看(選定)</text>
+  <path class="flow" d="M140,292 L140,314"/>
+  <rect class="b" x="40" y="314" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="338">[TALK-A] 核准入口+六問(選定)</text>
+</svg>
+  </div></div>
+</section>
+
+<section class="r-block" id="owner-calls">
+<div class="r-head"><h2>Owner Calls</h2></div>
+<div class="r-body"><table class="judge">
+<tr><th>OC</th><th>決定了什麼</th><th>依據</th><th>若被推翻會怎樣</th><th>狀態</th></tr>
+<tr><td>OC-1</td><td>接受 Q6 與兩條姊妹 Assumption 的**採用者行為**尚未 Observed。本站只把「範例是錯教師／N3 仍命令附推薦／Fast 省略 1–3」升成 Observed。未驗截的落點＝SURF-A 改範例 + DEPTH-A 形狀牙。使用者只被問到九條怎麼落地；「接受無現場 log 繼續」是 A-4 期限到本站的風險門</td><td>`1-discussion.md:126` Q6；`:77-79` 三條 Exception；`:251` Q6 過期擋 G2。採用者行為 `[Assumption]`</td><td>停到有現場 log，或改口「採用者假設已 Observed」</td><td>待人審</td></tr>
+<tr><td>OC-2</td><td>本 feature branch **不**跑 `status-update.sh`／`history-append.sh` 改正本。本 PR 不改 STATUS／HISTORY／`_templates/`。標**流程層**</td><td>`docs/dev/STATUS.md:10-26`；`1-discussion.md:137`；本 hop brief</td><td>本 PR 帶表列／模板，與並行 session 互蓋</td><td>待人審</td></tr>
+<tr><td>OC-3</td><td>Backlog「觀測實驗前不動 Stage 1–4 模板」：**本 Stage 2 PR 遵守**；**G2 通過後本 slug 實作站才准改那些模板**。觀測實驗可用本 slug 當第一條真實 full lane，或延後。使用者只被問到九條落地；「何時解凍模板」是與 Backlog 的延伸對帳。標**流程層**</td><td>`docs/dev/STATUS.md:50`；`1-discussion.md:41` 受影響面後續才動</td><td>要嘛本 slug 永不改模板（等於 DEPTH-B），要嘛本 PR 先改模板</td><td>待人審</td></tr>
+<tr><td>OC-4</td><td>過期高影響假設擋 G2 的牙**掛進既有** `check-spec-gate.sh`（主）＋ `check-realworld.sh` 形狀延伸（輔），不另造 gate 入口、不 bump 成 G4。使用者只被問到「過期擋 G2」；掛哪支腳本是 Q9 延伸</td><td>`scripts/check-spec-gate.sh:32-37`；`1-discussion.md:129` Q9。主／輔切分 `[Assumption]`</td><td>新腳本當第四道 Gate，或只寫 checklist（EV-C）</td><td>待人審</td></tr>
+<tr><td>OC-5</td><td>Fast 六問命中後的菜單＝**升 full／mini real-world delta／Owner Call 接受**，不是自動升 full。mini 至少 Actor、工作影響、權限／等待／例外、代表性驗證。使用者只被問到「Stage 4 前要分診」；菜單是 Q13 延伸</td><td>`notes/review-requirement-discovery-gaps.md:313-319`；`1-discussion.md:133` Q13</td><td>任一命中強制 full（TALK-C），或菜單刪 mini</td><td>待人審</td></tr>
+</table></div></section>
+<section class="r-block" id="point-1"><div class="r-head"><span class="r-name">決策點：落地深度（九條共用：牙 vs 散文 vs 語意硬閘）</span></div><div class="r-body"><div class="card"><strong>DEPTH-A</strong><p>**形狀牙 + reviewer**。可機械的只守欄位／分欄／枚舉／期限／去向非空；Goal 是否偷帶解法、發現題是否誘導，留給自檢與 G1／G2 人審 優:對準九條「只能部分機械化」；不假裝關鍵字能判語意；既有牙家族可延伸射程 劣:人審仍可能放水；形狀綠 ≠ 問題解對 依據:`notes/review-requirement-discovery-gaps.md:69-73` A-1 部分機械化；`:98-102` A-2 不值得硬 gate；`:133-136` A-3 欄位可機械、來源是否支持仍是人；`1-discussion.md:243-246` 只改散文現場仍照範例走偏。成本 `[Assumption]`</p></div><div class="card"><strong>DEPTH-B</strong><p>**no-build／process-only**：指南／筆記加清單，靠 reviewer 與 owner 記憶執行；不改模板、skill、範例、守衛 優:A-1 要求原因仍可能由流程／政策解決時要比較本案；最短；零迴歸 劣:現制牙只驗章節／`[Assumption]`／「訪談」字樣；官方範例仍教把 dashboard 寫進 Goal；B-1 會變成「規定了但讀不到」 依據:`notes/review-requirement-discovery-gaps.md:22` Stage 2 適用時比 no-build；`1-discussion.md:99-100` 同句；`scripts/check-realworld.sh:88-91` 牙只驗字樣；`example/contract-expiry-reminder/1-discussion.md:62-65` Goals 已鎖登入／點擊；`notes/review-requirement-discovery-gaps.md:293-296` 只改散文不改允許集合</p></div><div class="card"><strong>DEPTH-C</strong><p>**語意硬閘**：Goal 禁 dashboard／API 等詞；從最終 md 還原誘導題；過期假設靠全文關鍵字猜影響級 優:看起來最硬 劣:A-1 已警告黑名單誤殺領域詞；A-2 對話語意無法從 md 還原；假綠或誤殺都會讓採用者繞開牙 依據:`notes/review-requirement-discovery-gaps.md:69-73` 禁 dashboard／API 黑名單；`:98-102` 不值得假裝硬 gate；誤殺率 `[Assumption]`</p></div></div></section>
+<section class="r-block" id="point-2"><div class="r-head"><span class="r-name">決策點：落地面與範例時機（Q7＋Q14）</span></div><div class="r-body"><div class="card"><strong>SURF-A</strong><p>**同一 slug** 在 G2 後改四層：模板 + `dev-talk`／`dev-flow` skill 節點 + 既有牙家族（`check-realworld`／`check-spec-gate`／`devtalk-guard`）+ 完整範例 `contract-expiry-reminder` 優:模板說結果、範例不再教解法；Q7／Q14 一次收口；採用者抄範例不會走偏 劣:與 Backlog「觀測實驗前不動 Stage 1–4 模板」打架（見 OC-3）；Diff 較大 依據:`1-discussion.md:109` 同步改正完整範例；`:127` Q7；`:134` Q14；`example/contract-expiry-reminder/1-discussion.md:62-65` 與 `:83-103` 仍教 dashboard／卡片／URL；`docs/dev/STATUS.md:50` 觀測實驗禁改 Stage 1–4 模板</p></div><div class="card"><strong>SURF-B</strong><p>**範例另開後片**；本 slug 只改模板／skill／牙 優:本包 Diff 較小；觀測實驗可先看舊範例 劣:模板說結果、範例仍教解法的窗口拉長；Q6 的教師還活著 依據:`1-discussion.md:126` Q6 假設採用者照範例走；`1-discussion.md:249` 「改模板就夠」不成立。窗口傷害 `[Assumption]`</p></div><div class="card"><strong>SURF-C</strong><p>**另造第二套守衛家族**／新入口腳本一次吃九條 優:入口唯一、好講 劣:第二套方法論；與現有 `check-realworld`／`check-spec-gate`／`devtalk-guard` 雙源會漂；靠近 DEPTH-C 的過度機械化 依據:`scripts/check-realworld.sh:71-91` 與 `scripts/check-spec-gate.sh:16-30` 已是形狀牙入口；`hooks/devtalk-guard.sh:16-21` 已守寫入圍欄。雙源漂 `[Assumption]`</p></div></div></section>
+<section class="r-block" id="point-3"><div class="r-head"><span class="r-name">決策點：證據與過期假設（A-3／A-4，Q8／Q9）</span></div><div class="r-body"><div class="card"><strong>EV-A</strong><p>**就地狀態標**（Observed／Reported／Inferred／Assumption／Conflict）+ 假設四欄（若為假影響什麼／級／怎麼驗／何時誰驗）+ **既有 G2 形狀檢查延伸**：高影響過期且無 Owner Call → `check-spec-gate` 拒；不新增主張 ID 鏈 優:對準 G-out-3／G-out-4；G1 抽查沿引用回來源；牙延伸現有 Gate 而不是新入口 劣:影響級仍是人判；欄位形狀要進 4-spec 依據:`notes/review-requirement-discovery-gaps.md:123-131` 候選枚舉與點頭不升格；`:155-167` 四欄＋high 必 resolved 或 OC；`1-discussion.md:128-129` Q8／Q9；`1-discussion.md:116-117` 不新增第二 ID 鏈；`scripts/check-spec-gate.sh:32-37` 已是 G2 Gate。欄位字面 `[Assumption]`（4-spec 再釘）</p></div><div class="card"><strong>EV-B</strong><p>**主張／Journey 第二 ID 鏈**，每個 claim 有穩定 ID，S 機械引用 優:推翻假設時好列受影響 S 劣:Stage 1 Non-Goals 與審核區都禁第二鏈；討論／規格多一層編號稅 依據:`1-discussion.md:117` 不新增第二條 Journey／Actor ID 鏈；`notes/review-requirement-discovery-gaps.md:125` 不新增 Journey／Actor 第二 ID 鏈</p></div><div class="card"><strong>EV-C</strong><p>**只寫 G1／G2 checklist 散文**，不加欄、不加牙 優:最短 劣:A-4 失效模式原樣：`[~]` 合法走到 G2；牙繼續只驗「有 Evidence 字樣」 依據:`_templates/1-discussion.md:82-86` `[~]` 是合法終態；`_templates/2-decision.md:35-37` 接手只核 status 與三態；`scripts/check-realworld.sh:88-91` 只驗字樣</p></div></div></section>
+<section class="r-block" id="point-4"><div class="r-head"><span class="r-name">決策點：去向帳與回看（A-6／A-7，Q10／Q11）</span></div><div class="r-body"><div class="card"><strong>DISP-A</strong><p>Stage 2 加 **Real-world Disposition**：高影響痛點／workaround／exception **引原文片段**（不另發 ID）標 addressed／unchanged／Non-Goal／另開 slug／仍待驗。Stage 4：addressed 至少一條 R／S；其餘落到 Out／Known limit／後續 slug。**lookback** 四欄寫進 7-review Exit；回看**結果**只准 `history-append.sh` 追加 HISTORY 優:對準 G-out-6／G-out-7；沿用 Stage 3 場景對帳牙的負向 fixture 思路；不另造永久檔族 劣:G1 twin 頂區「未處置列」是後續產器改動，本 slug 實作站才做 依據:`notes/review-requirement-discovery-gaps.md:220-231` ledger 候選；`:253-262` lookback 落 HISTORY 或 7-review 附錄、不要無維護者的新檔；`1-discussion.md:130-131` Q10／Q11；`scripts/check-realworld.sh:215-232` 已有 Stage 3 逐場點名牙；`_templates/7-review.md:316-342` Exit 現無回看四欄；`docs/dev/STATUS.md:36-42` HISTORY 只准 writer</p></div><div class="card"><strong>DISP-B</strong><p>**第二條 Journey ID 鏈** + **獨立 lookback 檔族**（例如 `docs/dev/&lt;slug&gt;/8-lookback.md`） 優:對帳好寫腳本 劣:禁第二鏈；新檔族無維護者；Exit 已超載還再平行一份 依據:`1-discussion.md:117` 禁第二鏈；`notes/review-requirement-discovery-gaps.md:261-262` 不要另造永久文件卻沒維護者</p></div><div class="card"><strong>DISP-C</strong><p>**只在審頁頂區提醒**未處置列；Stage 4 不對帳；lookback 口頭／行事曆 優:本包幾乎不改 4／7 劣:痛點仍可在 2→4 靜默消失；G3 綠仍不能證明問題改善——現況原樣 依據:`_templates/2-decision.md:35-37` 只從 Goals／AC／`[&gt;]` 提煉；`_templates/4-spec.md:72-75` 對帳 Stage 3 不對帳 Stage 1 痛點；`_templates/7-review.md:316-342` Exit 停在 shipped</p></div></div></section>
+<section class="r-block" id="point-5"><div class="r-head"><span class="r-name">決策點：事實入口與 Fast 分診（A-2／B-1／B-2，Q12／Q13）</span></div><div class="r-body"><div class="card"><strong>TALK-A</strong><p>**發現題禁推薦、裁決題可附**（skill／guide 對稱措辭 + 靜態牙防一邊漂移，不對 Interview Log 做硬 gate）。**事實型 evidence allowlist**：owner 先核准來源／路徑才讀；**改 `dev-talk` 讀取允許集合**（及對等圍欄），下游 2／3／4／5／6／7 仍禁。**lane 選擇前**六問（下一步／權限／等待語意／交接／系統外／中斷恢復）；全否且已有 approved spec 才可 fast；命中由 owner 裁升 full／mini real-world delta／OC 接受；純視覺不改語意維持 fast 優:對準 G-out-2／8／9；B-1 不會「規定了但讀不到」；B-2 把分診移到選 lane 之前 劣:允許集合形狀未釘；mini delta 欄位進 4-spec 依據:`skills/dev-talk/nodes/N3-probe.md:22-23` 現況每題附推薦；`:41` 完成條件=兩輪無新問題；`skills/dev-talk/SKILL.md:17-21` 讀取白名單擋未指名文件；`hooks/devtalk-guard.sh:16-21` 只掃寫入洩漏、不管事實入口；`skills/dev-flow/SKILL.md:34-36` Fast 從 4-spec 起跑；`_templates/4-spec.md:266-269` 高風險人機互動寫在 4-spec、lane 已選完；`1-discussion.md:132-133` Q12／Q13；`notes/review-requirement-discovery-gaps.md:284-296` 核准後才讀。允許集合字面 `[Assumption]`</p></div><div class="card"><strong>TALK-B</strong><p>**只改 skill 句子**、不改允許集合；分診**只寫進 4-spec**（lane 已選定後補填） 優:最短碼；Fast 模板已有 Operational Context 劣:B-1 讀不到未指名 SOP／ticket；B-2 順序病仍在——檔數少已進 fast，六問變成事後補紙 依據:`1-discussion.md:244-246` 只改散文會「規定了但讀不到」；`docs/dev/engine-fence-masking/4-spec.md:11-12` 本 repo 已有 Fast 省略 1–3。現場漏判 `[Assumption]`（Q6 姊妹條）</p></div><div class="card"><strong>TALK-C</strong><p>**整夾文件可列可搜**；六問任一命中**強制升 full** 優:證據最多；互動風險零漏網 劣:拆掉 anti-premature-convergence 的上游圍欄；小修全拖進訪談，違反 B-2「純視覺可維持 fast」 依據:`skills/dev-talk/SKILL.md:17-21` 圍欄擋住下游方案是合理的；`notes/review-requirement-discovery-gaps.md:316-319` 命中不必一律 full；`:319` 純視覺可維持 fast</p></div></div></section>
+<details class="bg"><summary>背景</summary><p><strong>既有脈絡</strong> 對帳快照（2026-09-13 tip `bcdfee1`，#260／#263 之後）： | 層 | 現況 | 本 Decision 怎麼用 | |---|---|---| | Owner Call 九條 | 2026-09-12 已裁；#260 Stage 1 一包落地 | 不重開；本檔只收落地形 | | `_templates/1-discussion.md` | Stage 1「不做決定」；驗收雛形「從哪看」列畫面／API／檔／log | A-1 改分欄與觀測通道；本 hop 不動 | | `skills/dev-talk/nodes/N3-probe.md` | 一次一題、附推薦；完成=兩輪無新問題 | A-2 改發現／裁決分流 | | Evidence／real-world 牙 | 二分 `[Assumption]`；牙驗字樣 | EV-A 延伸形狀，不另造入口 | | `check-spec-gate.sh` | G2 形狀 Gate（觀測欄／Profile／模糊詞／DD） | A-4 過期假設掛這裡 | | Human verdict | 人類 attestation；不守角色／場景 | A-5 LIGHT 加一行 | | Stage 2／4 對帳 | 只吃 Goals／AC／`[&gt;]`／Stage 3 場景 | DISP-A 補 Stage 1 痛點列 | | Exit Checklist | 出貨前驗證；無回看四欄 | A-7 加 lookback，結果走 HISTORY writer | | `dev-talk` 白名單 | 長期記憶／specs／源碼／已指名檔 | B-1 加核准後的事實入口 | | Fast lane | 省略 1–3；本 repo `engine-fence-masking` 已走 | B-2 把六問移到選 lane 前 | | 完整範例 | Goals／AC 已鎖解法通道 | SURF-A 同 slug 改口 | | STATUS Active | 本 slug 在 1-discussion；G1⬜ | 本 branch 不改正本（OC-2） | | STATUS Backlog | 觀測實驗前不動 Stage 1–4 模板 | OC-3：本 Stage 2 PR 不動；G2 後本 slug 才准改 | ### Q6 與姊妹 Assumption 對帳（期限＝本站） Stage 1 三條高影響 Assumption 期限都是「Stage 2 對帳，過期擋 G2」。本站能驗／不能驗： | 假設 | 本站查證 | 狀態 | |---|---|---| | 採用現場仍照範例把解法寫進 Goal（Q6） | 無採用專案 log／訪談。**能驗的是教師**：範例 Goals 鎖登入／點擊／一眼可見，AC 鎖 dashboard／卡片／URL | 採用者行為仍是 Assumption（高）。教師＝Observed。接受採用者未驗風險＝OC-1；緩解＝SURF-A 改範例 | | 現場訪談仍在發現題附推薦 | 無逐字稿。**能驗的是規則**：`N3-probe` 仍命令附推薦 | 現場行為仍 Assumption（高）。規則＝Observed。緩解＝TALK-A | | Fast 現場因檔數少漏判互動風險 | 採用現場無 log。**能驗的是本 repo**：`engine-fence-masking` 合法省略 1–3；4-spec 才列高風險人機互動 | 採用者漏判仍 Assumption（高）。順序病＝Observed。緩解＝TALK-A | 未把「採用者一定照抄」升成 Observed。未驗部分不擋本站送審，但必須由 OC-1 明示接受，否則 A-4 對本 slug 自己不成立。</p><p><strong>Rationale</strong> 九條要修的不是「文件沒寫過這句話」。審核區 2026-09-12 已經寫完 Owner Call；Stage 1 也已經用結果句寫 Goals。還活著的病是**教師與牙的射程**：`check-realworld` 綠的是章節表頭與 `[Assumption]` 字樣；`N3-probe` 仍命令「每題附推薦答案」；官方範例 Goals 鎖登入／點擊、AC 鎖 dashboard；Fast 用檔數起跑，互動風險寫在 4-spec。DEPTH-B 重複「備忘已寫所以結束」。DEPTH-C 用關鍵字假裝能判語意，審核區已點名不要。 DEPTH-A 把機械力用在「欄在不在、分欄在不在、期限在不在、去向非空、允許集合是否真的放得進核准過的事實」，把「這句 Goal 算不算解法」「這題算不算誘導」留給人。SURF-A 同一 slug 改範例，因為 Stage 1 已確認「改模板就夠」不成立。EV-A／DISP-A 用就地標記與原文片段，避開第二 ID 鏈。TALK-A 同時修三個順序病：發現題錨定、事實被圍欄擋住、Fast 先選 lane 再問互動。 A-1 的 no-build 比較落在 DEPTH-B：原因確實可能是「reviewer 再嚴一點、owner 用筆記盯」。本 tree 對帳後，no-build 不夠——官方範例與現有牙會繼續教舊形。不合理硬塞的是 DEPTH-C，不是 DEPTH-B；DEPTH-B 有比、有棄因。</p><p><strong>風險</strong> | 風險 | 對策 | |---|---| | 形狀牙變「有欄就綠」，Goal 仍偷帶解法 | DEPTH-A 明寫語意留給 G1／G2；禁 DEPTH-C 黑名單。4-spec 可加負向 fixture（故意把 dashboard 寫進 Goals）給 reviewer 抽查，不當硬 gate | | B-1 只改句子、實作時忘了改允許集合 | TALK-B 進 Rejected；SC-8 要「核准後讀得到 + 方案檔仍擋」。允許集合與圍欄同一 T | | 過期假設牙誤殺 draft／低影響 `[~]` | 牙只打高影響 + 已過期限 + 無 OC；影響級仍是人標。欄位形狀 4-spec | | SURF-A 污染 Backlog 觀測實驗 | OC-3：本 PR 零模板改動；G2 後才改 Stage 1–4。觀測可用本 slug 當第一條真實 full lane，或延後 | | 範例改口牽動 fixture／real-world 牙 | Stage 6 把 `example/contract-expiry-reminder` 與 `check-realworld` 衍生斷言列進同一 T | | Q6 採用者假設為假（沒人抄範例） | 仍要改範例——教師自己錯是 Observed。OC-1 只接受「現場無 log」這一截 | | 有人把本 hop 當成已過 G1 | `verdict` 空；OC 待人審；翻案回本站，不在 4-spec 用 DD 覆寫 | | feature branch 手改 STATUS | OC-2 流程層：不跑 `status-update.sh` | | Stage 3 被默跳 | 本檔無「跳過 Stage 3」字樣。觸發判定是第 3 站第一動，不在本 hop 代決 |</p><p><strong>未採</strong> | 不選 | 一句棄因 | |---|---| | DEPTH-B no-build | 流程備忘已存在（本審核區）；痛仍在——牙只驗字樣、範例仍教解法、事實入口讀不到。A-1 要比本案，比完不採用 | | DEPTH-C 語意硬閘 | 黑名單誤殺領域詞；誘導題無法從最終 md 還原；假綠／誤殺 | | SURF-B 範例另開 | 教師與模板分裂；Q6 的走偏路徑繼續活 | | SURF-C 第二套牙家族 | 雙源；現有 `check-realworld`／`check-spec-gate`／`devtalk-guard` 已是入口 | | EV-B 第二 ID 鏈 | Non-Goal；審核區已拒 | | EV-C 只寫 checklist | `[~]` 與「有 Evidence 字樣」原樣走到 G2 | | DISP-B 新 ID + 新 lookback 檔 | 禁第二鏈；無維護者的新檔族 | | DISP-C 只提醒不對帳 | A-6／A-7 失效模式原樣 | | TALK-B 只改句子 | 「規定了但讀不到」+ 分診仍在 lane 選定之後 | | TALK-C 開整夾／一律 full | 拆上游圍欄；把小修拖進訪談 |</p></details>
+<p class="src">由 <code>scripts/build-stage2-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
