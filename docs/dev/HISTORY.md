@@ -638,3 +638,9 @@
 - 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
 - 詳細:https://github.com/rick546986/dev-flow/pull/309
 
+## 2026-09-14 · five-station-simplify
+- 做了什麼:Stage 4 spec landed (#312); Active Stage → 4-spec; Gates G1✅ G2⬜ G3⬜
+- 為什麼:Winner C + soft-fix; Human G2 still empty; no G2 PASS invented
+- 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
+- 詳細:https://github.com/rick546986/dev-flow/pull/312
+
