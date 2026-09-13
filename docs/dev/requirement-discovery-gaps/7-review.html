@@ -243,12 +243,12 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <h1>requirement-discovery-gaps</h1>
   <p class="sub">正本是 <code>docs/dev/requirement-discovery-gaps/7-review.md</code>,
   這頁隨時可重生。<strong>審完頂區五格再決定要不要往下讀。</strong></p>
-  <div class="dash"><a class="cell" href="#sec-Verdict"><span class="k">判定</span><span class="v">PRE-REVIEW</span><span class="n">frontmatter verdict</span></a><a class="cell" href="#sec-Exit-Checklist-全勾才算-shipped"><span class="k">出貨</span><span class="v">2/9</span><span class="n">Exit Checklist</span></a><a class="cell" href="#sec-附錄-本輪特有"><span class="k">爭點</span><span class="v">5 條</span><span class="n">附錄:本輪特有</span></a><a class="cell" href="#sec-Known-Limits"><span class="k">風險</span><span class="v">16 條</span><span class="n">Known Limits</span></a><a class="cell" href="#sec-Coverage-Matrix"><span class="k">抽驗</span><span class="v">S-5.3</span><span class="n">對得上才信剩下的</span></a></div>
+  <div class="dash"><a class="cell" href="#sec-Verdict"><span class="k">判定</span><span class="v">PASS</span><span class="n">frontmatter verdict</span></a><a class="cell" href="#sec-Exit-Checklist-全勾才算-shipped"><span class="k">出貨</span><span class="v">4/9</span><span class="n">Exit Checklist</span></a><a class="cell" href="#sec-附錄-本輪特有"><span class="k">爭點</span><span class="v">5 條</span><span class="n">附錄:本輪特有</span></a><a class="cell" href="#sec-Known-Limits"><span class="k">風險</span><span class="v">19 條</span><span class="n">Known Limits</span></a><a class="cell" href="#sec-Coverage-Matrix"><span class="k">抽驗</span><span class="v">S-5.3</span><span class="n">對得上才信剩下的</span></a></div>
 </header>
-<section class="pinned" id="sec-限制聲明-讀取順序-身分"><h2>限制聲明(讀取順序 + 身分)</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>審查者</th><th><code>implementer-B-stage7</code>（獨立 fresh-context Cloud Agent B;<strong>≠</strong> Stage 6 <code>#286</code> implementer-A;<code>≠</code> owner rick）</th></tr></thead><tbody><tr><td>Human G3</td><td><strong>未寫</strong>。本檔 <code>verdict: PRE-REVIEW</code>。不是 G3 PASS。</td></tr><tr><td>讀取順序(可查)</td><td>①<code>4-spec.md</code>（G2 PASS、R-1…R-9／35 S） ②<code>5-tasks.md</code>（T-1…T-10） ③<code>#286</code> diff（<code>2bfb906..fdbd569</code>、48 檔 +2429/−141） ④測試碼／fixture／三支牙 ⑤親跑 T-1…T-10 Verify + 4-spec entry point + S-2.2 隔離突變 + 步 2c（兩次座標相同後合 <code>37a4284</code>）→ <strong>之後才</strong> ⑥讀 <code>6-implementation-notes.md</code>（Self-Review／Deviations D-1…D-8）</td></tr><tr><td>圍欄</td><td>本環境無 <code>.devflow/exec.json</code>（<code>scripts/devflow-exec.sh</code> 不存在;runtime 在 <code>hooks/devflow-exec.sh</code>）。讀取順序靠散文紀律,不靠 review hook。doctor:<code>COMPATIBLE</code>（契約 2.0.0,runtime 3.23.4,gauntlet 1.3.3）</td></tr><tr><td>本輪性質</td><td>產品碼已在 tip <code>#286</code>。2c 合進 <code>#287</code> STATUS／HISTORY 列（incoming,不是本 hop 撰寫）。本 hop <strong>只寫</strong> <code>7-review.md</code> + html twin。不改 STATUS／HISTORY 正本、不新造檢查家族、不 merge 本 PR。</td></tr></tbody></table></div><p>本檔不是 owner 自審。機械數字（exit／174/174／9/9／Read 三案）可抽驗;F-id 分級與「沒想到的事」交給下一棒 Human。</p></div></section><section class="pinned" id="sec-Verdict"><h2>Verdict</h2><div class="doc-in"><p><strong>PRE-REVIEW</strong> —— 不是 G3 PASS。Implementer B 不得代填 Human 判定。</p><p>建議下一棒:適格人類 reviewer（≠ rick 若他要避 owner 自審;或 owner 自審但必須另寫限制聲明）。Agent 再審必須 fresh context。</p><div class="tablewrap"><table><thead><tr><th>門檻</th><th>本 hop</th><th>證據</th></tr></thead><tbody><tr><td>本次 S 全綠</td><td>35 S 機械牙／教師原文／Read 三案皆綠</td><td>Coverage + 現象證據</td></tr><tr><td>既有全綠</td><td>realworld 174/174;本 slug spec-gate 9/9;S-2.2 突變紅</td><td>Verification Evidence</td></tr><tr><td>現象證據逐 S 相符</td><td>35 列已填;S-1.2 套件 vs「exit ≠ 0」已說明</td><td>現象證據表</td></tr><tr><td>Evidence 契約</td><td>gauntlet 61 checks、1 violation:E7 幽靈 token（附錄 A3）。<code>--source-sha 89dd10d</code>。不是產品牙紅</td><td>附錄 A3</td></tr><tr><td>無 🔴</td><td>無 🔴。🟡 F-1／F-2／F-4 待 Human park 或修</td><td>Standards Axis</td></tr><tr><td>出貨樹=審過的樹</td><td>2c 合 <code>37a4284</code> 已在 tip;Source SHA 重綁 <code>89dd10d</code></td><td>2c 節</td></tr></tbody></table></div><p>PASS 條件未全滿足（Human 未判、F-1 未處置、gauntlet 幽靈 token、Source SHA 將漂）。故 <strong>不得</strong> 寫 PASS。</p></div></section><section class="pinned" id="sec-Known-Limits"><h2>Known Limits</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>#</th><th>限制</th><th>嚴重度</th><th>建議處置</th></tr></thead><tbody><tr><td>1</td><td>重綁 Source SHA=<code>89dd10d5060b1580b16429e4a4c45775c49944d2</code> 之後若再 commit,HEAD 又漂。Gauntlet <code>--source-sha</code> 必須等於當下 HEAD</td><td>中</td><td>下一棒重綁 Source SHA + 重跑 gauntlet。park:本節</td></tr><tr><td>2</td><td>4-spec Known design limit ①:A-2 誘導無法從最終 md 還原;硬 gate 只守對稱句與「發現題附推薦」形</td><td>低（契約已列）</td><td>維持。不要加對話還原器</td></tr><tr><td>3</td><td>4-spec Known design limit ②:guard 只在 talk 游標在時擋 Read;人跳過 hook 硬讀方案檔,本 feat 不新造 OS hook</td><td>中（契約已列）</td><td>維持。owner 不能接受就另開 slug,不要在本 feat 加 OS hook</td></tr><tr><td>4</td><td>4-spec Known design limit ③:「不改語意」與「算不算高影響」仍是人判</td><td>低</td><td>維持</td></tr><tr><td>5</td><td>4-spec Known design limit ④:審頁產器行為圖硬切 8 框;R-5 SHALL 寫在 R-4 框</td><td>低</td><td>維持。本 hop 不改產器</td></tr><tr><td>6</td><td>KL-C8／D-impl-2:C8 只對 <code>lane: fast</code> 且 <code>feature:</code> + <code>## ADDED Requirements</code> 發動;legacy fast fixture grandfather</td><td>中</td><td>已如實記 6-notes。新 Fast 4-spec 必須有 feature:＋ADDED,否則六問牙 no-fire</td></tr><tr><td>7</td><td>KL-C9／D-impl-3／F-4 🟡:<code>scripts/check-spec-gate.sh</code> <code>fire_disp</code>（約 L351–357）只對「新式」full 發動（有 Assumption refs 或路徑含 <code>discovery-gaps</code>）;<code>example/subsidy-3-0-plus/4-spec.md</code> grandfather。S-6.1 字面「凡 full 缺表就紅」比牙寬</td><td>中</td><td>Human 三擇一:①park 本條為 D-impl-3 ②L2 改 S-6.1 寫明「僅新式 full」③加寬 C9 打所有 full（產品碼,本 hop 不做）。未選不得勾 Boundary 處置</td></tr><tr><td>8</td><td>L1 D-1:本 slug <code>2-decision.md</code> 4B 原文 <code>RW-1</code> 改成「第二鏈編號」,只為 S-6.4 <code>rg</code> 零命中</td><td>低</td><td>已如實。4A 未動</td></tr><tr><td>9</td><td>L1 D-2／D-5:T-8 回看表不用 <code>###</code>(parity);renderer 重生 <code>guides/guide-dev-flow.html</code> 與 example 7-review.html</td><td>低</td><td>已如實。欄位字面仍在</td></tr><tr><td>10</td><td>L1 D-7:RW-DG 改 <code>&lt;&lt;&#x27;MUT&#x27;</code>;guard Read 改 <code>&lt;&lt;&#x27;READ&#x27;</code>;<code>MIN_HEREDOCS=222</code>。撤回抬地板</td><td>低</td><td>已如實。PF-2 牙留下</td></tr><tr><td>11</td><td>L1 D-8:5-tasks frontmatter 改 <code>approved</code>（graph P0）</td><td>低</td><td>已如實。不是 G3</td></tr><tr><td>12</td><td>F-1:SKILL／指南 S1 入口仍寫認可=已核事實</td><td>中</td><td>見 Standards F-1。owner park 或修複製層後才能勾 Boundary 處置</td></tr><tr><td>13</td><td>4-spec Out of Scope／Disposition 仍待驗三列（OC-3）:採用現場仍把解法寫進 Goal;現場發現題仍附推薦;Fast 因檔數少漏判互動</td><td>中（契約已列）</td><td>回看四欄追;本 slug 不捏訪談</td></tr><tr><td>14</td><td><code>check-py-floor.sh</code> 本環境缺 Python 3.9–3.11 → exit 2;全套 <code>test-architecture-guards.sh</code> 未當正式綠（同 6-notes Self-Review ⑧）</td><td>低（ENV）</td><td>有 3.9–3.11 的機器重跑。本 hop 隔離做了 S-2.2 兩案</td></tr><tr><td>15</td><td>本環境無 <code>devflow-exec.sh review</code> 武裝（無 <code>.devflow/exec.json</code>）</td><td>低</td><td>讀取順序已落檔。有 runtime 的機器可補武裝</td></tr><tr><td>16</td><td>F-2 🟡:<code>example/contract-expiry-reminder/1-discussion.md</code> Q3:89 + AC:97–117 仍教 dashboard／渠道,對不上 S-1.3 THEN 第二句（若仍提 dashboard／卡片／URL,只准出現在 <code>## Requested solution</code> 且標未定案）</td><td>中</td><td>Human 三擇一:①park 本條（接受 Q3／AC 是已核歷史觀測面）②L2 回 G2 加 S,要求 AC／Q 也不鎖通道③本 feat 外另開 slug 改 example AC。本 hop 不改產品碼</td></tr></tbody></table></div><p>已解除的用刪除線保留 —— 本輪無已解除列。</p></div></section>
+<section class="pinned" id="sec-限制聲明-讀取順序-身分"><h2>限制聲明(讀取順序 + 身分)</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>審查者</th><th><code>implementer-B-stage7</code>（獨立 fresh-context Cloud Agent B;<strong>≠</strong> Stage 6 <code>#286</code> implementer-A）。機械正本 = #289。產品 owner 欄仍是 <code>rick</code>。</th></tr></thead><tbody><tr><td>Human G3</td><td><strong>PASS</strong> recorded:<code>user</code> @ 2026-09-13（chat / widget）。owner rick (tony) 明示「G3 PASS（含黃燈 park／接受）」。<code>reviewers: [user]</code>；<code>owner: rick</code></td></tr><tr><td>讀取順序(可查)</td><td>①<code>4-spec.md</code>（G2 PASS、R-1…R-9／35 S） ②<code>5-tasks.md</code>（T-1…T-10） ③<code>#286</code> diff（<code>2bfb906..fdbd569</code>、48 檔 +2429/−141） ④測試碼／fixture／三支牙 ⑤#289 親跑 T-1…T-10 Verify + 4-spec entry point + S-2.2 隔離突變 + 步 2c（兩次座標相同後合 <code>37a4284</code>）→ <strong>之後才</strong> ⑥讀 <code>6-implementation-notes.md</code>（Self-Review／Deviations D-1…D-8）</td></tr><tr><td>圍欄</td><td>本環境無 <code>.devflow/exec.json</code>（<code>scripts/devflow-exec.sh</code> 不存在;runtime 在 <code>hooks/devflow-exec.sh</code>）。讀取順序靠散文紀律,不靠 review hook。doctor:<code>COMPATIBLE</code>（契約 2.0.0,runtime 3.23.4,gauntlet 1.3.3）</td></tr><tr><td>本輪性質</td><td>產品碼已在 tip <code>#286</code>=<code>fdbd569</code>。#289 merge 後 tip=<code>3727f39</code>。本 companion hop 重綁 Final Fresh <code>Source SHA</code> + 落檔 Human G3 PASS,不改產品碼、不改 STATUS Active。<strong>Human G3 PASS recorded</strong></td></tr><tr><td>可信／打折</td><td>機械數字(exit／174/174／9/9／Read 三案)仍以 #289 為準,本 hop 不新造 R/S。F-1／F-2／F-4 🟡 與 E7 已 park／接受。Human G3 已由 <code>user</code> 落檔,不再留給下一棒裁量。</td></tr></tbody></table></div></div></section><section class="pinned" id="sec-Verdict"><h2>Verdict</h2><div class="doc-in"><p><strong>Human G3 PASS。</strong> <code>user</code> @ 2026-09-13（chat / widget）。owner rick (tony) 明示「G3 PASS（含黃燈 park／接受）」。<code>reviewers: [user]</code>。</p><p>機械面(#289 Implementer B 抽驗表,不新造 R/S 證據):</p><div class="tablewrap"><table><thead><tr><th>門檻</th><th>本 hop</th><th>證據</th></tr></thead><tbody><tr><td>本次 S 全綠</td><td>35 S 機械牙／教師原文／Read 三案皆綠</td><td>Coverage + 現象證據</td></tr><tr><td>既有全綠</td><td>realworld 174/174;本 slug spec-gate 9/9;S-2.2 突變紅</td><td>Verification Evidence</td></tr><tr><td>現象證據逐 S 相符</td><td>35 列已填;S-1.2 套件 vs「exit ≠ 0」已說明</td><td>現象證據表</td></tr><tr><td>Evidence 契約</td><td>gauntlet 61 checks、1 violation:E7 幽靈 token（附錄 A3）。<code>--source-sha 3727f39</code>。E7 已 park／接受。不是產品牙紅</td><td>附錄 A3</td></tr><tr><td>無 🔴</td><td>無 🔴。🟡 F-1／F-2／F-4 已 park／接受</td><td>Standards Axis</td></tr><tr><td>出貨樹=審過的樹</td><td>2c 合 <code>37a4284</code> 已在 tip;#289 merge tip=<code>3727f39</code>;Source SHA 重綁該 tip</td><td>2c 節</td></tr><tr><td>Human G3</td><td><strong>PASS</strong></td><td><code>user</code> @ 2026-09-13（chat / widget）;黃燈 F-1／F-2／F-4／E7 park／接受</td></tr></tbody></table></div><ul><li>G3 | 2026-09-13 | owner chat 明示 G3 PASS（含黃燈 park／接受）。owner 自審(有記錄)；reviewers: [user]</li></ul></div></section><section class="pinned" id="sec-Known-Limits"><h2>Known Limits</h2><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>#</th><th>限制</th><th>嚴重度</th><th>建議處置</th></tr></thead><tbody><tr><td>1</td><td>含 Source SHA 的 docs commit 不能等於該 commit 自己的 SHA。#289 must-fix 曾綁 <code>89dd10d</code>;#289 merge 後 tip=<code>3727f39</code>,本 hop 重綁 Source SHA 到該 tip。本重綁 commit 落地後 HEAD 會再漂(同一悖論)</td><td>中</td><td>park。合法恢復=再重綁 Final Fresh,不得再合產品碼。owner=方法論</td></tr><tr><td>2</td><td>4-spec Known design limit ①:A-2 誘導無法從最終 md 還原;硬 gate 只守對稱句與「發現題附推薦」形</td><td>低（契約已列）</td><td>維持。不要加對話還原器</td></tr><tr><td>3</td><td>4-spec Known design limit ②:guard 只在 talk 游標在時擋 Read;人跳過 hook 硬讀方案檔,本 feat 不新造 OS hook</td><td>中（契約已列）</td><td>維持。owner 不能接受就另開 slug,不要在本 feat 加 OS hook</td></tr><tr><td>4</td><td>4-spec Known design limit ③:「不改語意」與「算不算高影響」仍是人判</td><td>低</td><td>維持</td></tr><tr><td>5</td><td>4-spec Known design limit ④:審頁產器行為圖硬切 8 框;R-5 SHALL 寫在 R-4 框</td><td>低</td><td>維持。本 hop 不改產器</td></tr><tr><td>6</td><td>KL-C8／D-impl-2:C8 只對 <code>lane: fast</code> 且 <code>feature:</code> + <code>## ADDED Requirements</code> 發動;legacy fast fixture grandfather</td><td>中</td><td>已如實記 6-notes。新 Fast 4-spec 必須有 feature:＋ADDED,否則六問牙 no-fire</td></tr><tr><td>7</td><td>KL-C9／D-impl-3／F-4 🟡:<code>scripts/check-spec-gate.sh</code> <code>fire_disp</code>（約 L351–357）只對「新式」full 發動（有 Assumption refs 或路徑含 <code>discovery-gaps</code>）;<code>example/subsidy-3-0-plus/4-spec.md</code> grandfather。S-6.1 字面「凡 full 缺表就紅」比牙寬</td><td>中</td><td><strong>owner 已 park／接受</strong>（2026-09-13）。本 hop 不改 S-6.1、不加寬 C9。owner=方法論;追蹤=本表 + F-4</td></tr><tr><td>8</td><td>L1 D-1:本 slug <code>2-decision.md</code> 4B 原文 <code>RW-1</code> 改成「第二鏈編號」,只為 S-6.4 <code>rg</code> 零命中</td><td>低</td><td>已如實。4A 未動</td></tr><tr><td>9</td><td>L1 D-2／D-5:T-8 回看表不用 <code>###</code>(parity);renderer 重生 <code>guides/guide-dev-flow.html</code> 與 example 7-review.html</td><td>低</td><td>已如實。欄位字面仍在</td></tr><tr><td>10</td><td>L1 D-7:RW-DG 改 <code>&lt;&lt;&#x27;MUT&#x27;</code>;guard Read 改 <code>&lt;&lt;&#x27;READ&#x27;</code>;<code>MIN_HEREDOCS=222</code>。撤回抬地板</td><td>低</td><td>已如實。PF-2 牙留下</td></tr><tr><td>11</td><td>L1 D-8:5-tasks frontmatter 改 <code>approved</code>（graph P0）</td><td>低</td><td>已如實。不是 G3</td></tr><tr><td>12</td><td>F-1:SKILL／指南 S1 入口仍寫認可=已核事實</td><td>中</td><td><strong>owner 已 park／接受</strong>（2026-09-13）。本 hop 不修 SKILL／指南複製層。owner=方法論;追蹤=本表 + F-1</td></tr><tr><td>13</td><td>4-spec Out of Scope／Disposition 仍待驗三列（OC-3）:採用現場仍把解法寫進 Goal;現場發現題仍附推薦;Fast 因檔數少漏判互動</td><td>中（契約已列）</td><td>回看四欄追;本 slug 不捏訪談</td></tr><tr><td>14</td><td><code>check-py-floor.sh</code> 本環境缺 Python 3.9–3.11 → exit 2;全套 <code>test-architecture-guards.sh</code> 未當正式綠（同 6-notes Self-Review ⑧）</td><td>低（ENV）</td><td>有 3.9–3.11 的機器重跑。本 hop 隔離做了 S-2.2 兩案</td></tr><tr><td>15</td><td>本環境無 <code>devflow-exec.sh review</code> 武裝（無 <code>.devflow/exec.json</code>）</td><td>低</td><td>讀取順序已落檔。有 runtime 的機器可補武裝</td></tr><tr><td>16</td><td>F-2 🟡:<code>example/contract-expiry-reminder/1-discussion.md</code> Q3:89 + AC:97–117 仍教 dashboard／渠道,對不上 S-1.3 THEN 第二句（若仍提 dashboard／卡片／URL,只准出現在 <code>## Requested solution</code> 且標未定案）</td><td>中</td><td><strong>owner 已 park／接受</strong>（2026-09-13;接受 Q3／AC 是已核歷史觀測面）。本 hop 不改 example AC、不發明新 R/S。owner=方法論;追蹤=本表 + F-2</td></tr><tr><td>17</td><td>E7 幽靈 token:4-spec Required layers 全形分號被 gauntlet 切出第二 token;<code>check-stage4-rs-contract.sh</code> 未 pass（附錄 A3）。不是產品牙紅</td><td>中</td><td><strong>owner 已 park／接受</strong>（2026-09-13）。修法是 L2 形狀（動 Verification Profile）,本 hop 不回 G2</td></tr><tr><td>18</td><td>~~本檔 <code>verdict: PRE-REVIEW</code>;全勾也不算 shipped~~</td><td>—</td><td>已解除:Human G3 PASS recorded by <code>user</code> @ 2026-09-13（chat / widget）。STATUS.md Active 仍不在本 PR 改</td></tr><tr><td>19</td><td>本 hop(#289 後 docs-only 重綁 + G3 落檔)的 commit 自身也會漂 SHA</td><td>中</td><td>同 ①。Source SHA 維持 Fresh tip <code>3727f39</code>,不追本 commit SHA。合法恢復=再重綁,不是再合產品碼</td></tr></tbody></table></div></div></section>
 <div class="progress">
   <div class="progress-in">
-    <span class="count">已審 <b id="done">0</b> / 102 條</span>
+    <span class="count">已審 <b id="done">0</b> / 105 條</span>
     <span class="bar"><i></i></span>
     <button class="btn" id="clear" type="button">清除勾選</button>
   </div>
@@ -258,55 +258,55 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="判定">
     <span class="s-id">判定</span>
-    <span class="s-title">PRE-REVIEW</span>
+    <span class="s-title">PASS</span>
     <span class="tag base">判定</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>判定 這列不打開 7-review.md、只靠標的檔:行能判失敗嗎？</span></li><li><span class="qmark">?</span><span>判定 這列的結論，有沒有被 Coverage Matrix 授權？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">判定</span><span class="gwt-v">PRE-REVIEW</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>判定寫 PASS，Coverage Matrix 每一列都授權了嗎？</span></li><li><span class="qmark">?</span><span>判定正文沒有檔:行，不打開 7-review.md 能判 PASS 失敗嗎？</span></li><li><span class="qmark">?</span><span>帶著 🟡 仍 PASS，Matrix 授權這樣出貨了嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">判定</span><span class="gwt-v">PASS</span></div></div>
     
   </div>
 </article></section><section class="r-block" id="sec-Exit-Checklist-全勾才算-shipped"><div class="r-head"><span class="r-name">Exit Checklist(全勾才算 shipped)</span></div><article class="s-card" data-sid="EC-1">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="EC-1">
     <span class="s-id">EC-1</span>
-    <span class="s-title"><strong>Design Boundary finding 全數處置</strong>:無未授權 Boundary。🟡 三條待 Human park 或修:F-1（KL #12）／F-2（KL #16）／F-4（KL #7）。未 park／未修不得勾</span>
-    <span class="tag base">出貨</span>
+    <span class="s-title"><strong>Design Boundary finding 全數處置</strong>(applicable):無未授權 Boundary。F-1／F-2／F-4 🟡 與 E7 已由 owner park／接受（KL #12／#16／#7／#17）,未改 R/S／所有權宣告／公開 Interface。無須 L2。本 hop 不修產品教師／守衛</span>
+    <span class="tag base">已勾</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-1 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-1 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-1 只改文件、測試沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-1 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-1 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-1 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article><article class="s-card" data-sid="EC-2">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="EC-2">
     <span class="s-id">EC-2</span>
-    <span class="s-title">Quiz（不可逆:方法論教師 + 公開檢查契約）:見附錄 A4。Human 全對才准 merge</span>
+    <span class="s-title">Quiz（不可逆:方法論教師 + 公開檢查契約）:題在附錄 A4;產品碼已在 #286。Human G3 已簽,題旨仍供抽驗,不重考</span>
     <span class="tag base">出貨</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-2 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-2 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-2 標了不可逆，Quiz 沒過能否決出貨嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-2 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-2 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-2 標了不可逆，Quiz 沒過能否決出貨嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article><article class="s-card" data-sid="EC-3">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="EC-3">
     <span class="s-id">EC-3</span>
-    <span class="s-title">整合回歸已在 Final Fresh <strong>之前</strong>完成:2c 結論（三個 SHA + ref）在 Verification Evidence。<code>#287</code> <code>37a4284</code> 已在 tip。本 hop must-fix 後重綁 Source SHA。Verdict 後禁止再改產品碼</span>
+    <span class="s-title">整合回歸已在 Final Fresh <strong>之前</strong>完成:2c 結論（三個 SHA + ref）在 Verification Evidence。<code>#287</code> <code>37a4284</code> 已在 tip。本 hop 重綁 Source SHA 到 <code>#289</code> merge tip <code>3727f39</code>。Verdict 後禁止再改產品碼</span>
     <span class="tag base">已勾</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-3 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-3 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-3 只改文件、測試沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-3 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-3 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-3 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article><article class="s-card" data-sid="EC-4">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="EC-4">
     <span class="s-id">EC-4</span>
-    <span class="s-title">PR → develop／本專案 main（feature branch,禁直上 master）。本 hop brief:Draft PR,Do not merge</span>
+    <span class="s-title">PR → develop／本專案 main（feature branch,禁直上 master）。本 hop brief:Do not merge — coordinator merges</span>
     <span class="tag base">出貨</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-4 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-4 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-4 這項跟 Matrix 綠不綠無關，沒做完 PRE-REVIEW 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-4 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-4 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-4 這項跟 Matrix 綠不綠無關，沒做完 PASS 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article><article class="s-card" data-sid="EC-5">
@@ -317,51 +317,51 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">出貨</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-5 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-5 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-5 只改文件、測試沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-5 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-5 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-5 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article><article class="s-card" data-sid="EC-6">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="EC-6">
     <span class="s-id">EC-6</span>
-    <span class="s-title">STATUS.md 已更新為 shipped —— <strong>不做</strong>。brief:No STATUS／HISTORY。incoming <code>#287</code> 只記 Stage 6,不是本 hop shipped</span>
+    <span class="s-title">STATUS.md 已更新為 shipped —— <strong>不做</strong>。brief:No STATUS／HISTORY。另開 companion</span>
     <span class="tag base">出貨</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-6 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-6 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-6 只改文件、測試沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-6 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-6 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-6 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article><article class="s-card" data-sid="EC-7">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="EC-7">
     <span class="s-id">EC-7</span>
-    <span class="s-title">7-review frontmatter status: shipped —— <strong>不做</strong>。維持 <code>draft</code> + <code>PRE-REVIEW</code></span>
-    <span class="tag base">出貨</span>
+    <span class="s-title">7-review frontmatter status: shipped;上游 artifact 可保留 approved</span>
+    <span class="tag base">已勾</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-7 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-7 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-7 這項跟 Matrix 綠不綠無關，沒做完 PRE-REVIEW 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-7 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-7 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-7 這項跟 Matrix 綠不綠無關，沒做完 PASS 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article><article class="s-card" data-sid="EC-8">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="EC-8">
     <span class="s-id">EC-8</span>
-    <span class="s-title">7-review.html 已產生（build-gate-twin.py;含變更架構圖）</span>
+    <span class="s-title">7-review.html 已產生（G3 twin;<code>scripts/build-gate-twin.py</code>;審頁另跑 <code>scripts/build-stage7-html.py --action</code> → <code>/tmp/rdg-stage7-shots.html</code>,不覆寫 twin）</span>
     <span class="tag base">已勾</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-8 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-8 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-8 只改文件、測試沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-8 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-8 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-8 只改文件、測試沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article><article class="s-card" data-sid="EC-9">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="EC-9">
     <span class="s-id">EC-9</span>
-    <span class="s-title">feature branch 已刪／worktree 已清 —— <strong>不做</strong>。Draft PR 未 merge</span>
+    <span class="s-title">feature branch 已刪／worktree 已清 —— <strong>不做</strong>。本 PR 未 merge</span>
     <span class="tag base">出貨</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-9 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-9 沒勾完的話，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-9 這項跟 Matrix 綠不綠無關，沒做完 PRE-REVIEW 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>EC-9 這項只靠標的檔:行能判沒做完嗎？</span></li><li><span class="qmark">?</span><span>EC-9 沒勾完的話，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>EC-9 這項跟 Matrix 綠不綠無關，沒做完 PASS 仍算授權嗎？</span></li></ul></div><div class="gwt"></div>
     
   </div>
 </article></section><section class="r-block" id="sec-爭點"><div class="r-head"><span class="r-name">爭點</span></div><article class="s-card" data-sid="A1">
@@ -372,7 +372,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">爭點</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A1 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A1 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A1 這則若成立，Coverage Matrix 還授權 PRE-REVIEW 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">這是本 hop 要人先看的爭點</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A1 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A1 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A1 這則若成立，Coverage Matrix 還授權 PASS 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">這是本 hop 要人先看的爭點</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="A2">
@@ -383,7 +383,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">爭點</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A2 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A2 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A2 的 L1 分級，4-spec Dependencies 還罩得住嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">skills/dev-talk/nodes/S1-survey.md:29-30（T-4 Files 內）:</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A2 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A2 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A2 的 L1 分級，4-spec Dependencies 還罩得住嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">skills/dev-talk/nodes/S1-survey.md:29-30（T-4 Files 內）:</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="A3">
@@ -394,7 +394,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">爭點</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A3 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A3 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A3 的 L1 分級，4-spec Dependencies 還罩得住嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">4-spec.md:759 Required layers 用全形 ／ 連三牙</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A3 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A3 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A3 的 L1 分級，4-spec Dependencies 還罩得住嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">4-spec.md:759 Required layers 用全形 ／ 連三牙</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="A4">
@@ -405,7 +405,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">爭點</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A4 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A4 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A4 這則若成立，Coverage Matrix 還授權 PRE-REVIEW 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">1. 錯欄牙掃的是 dashboard／API 詞黑名單</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A4 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A4 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A4 這則若成立，Coverage Matrix 還授權 PASS 嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">1. 錯欄牙掃的是 dashboard／API 詞黑名單</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="A5">
@@ -416,18 +416,18 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">爭點</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A5 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A5 若其實該回 G2，PRE-REVIEW 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A5 的 L1 分級，4-spec Dependencies 還罩得住嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">無作者把 L2 寫成 L1</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>A5 這則爭點只靠標的檔:行能判分級站不住嗎？</span></li><li><span class="qmark">?</span><span>A5 若其實該回 G2，PASS 還被 Matrix 授權嗎？</span></li><li><span class="qmark">?</span><span>A5 的 L1 分級，4-spec Dependencies 還罩得住嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">爭點</span><span class="gwt-v">無作者把 L2 寫成 L1</span></div></div>
     
   </div>
 </article></section><section class="r-block" id="sec-風險"><div class="r-head"><span class="r-name">風險</span></div><article class="s-card" data-sid="KL-1">
   <label class="s-head">
     <input type="checkbox" class="s-chk" data-sid="KL-1">
     <span class="s-id">KL-1</span>
-    <span class="s-title">重綁 Source SHA=<code>89dd10d5060b1580b16429e4a4c45775c49944d2</code> 之後若再 commit,HEAD 又漂。Gauntlet <code>--source-sha</code> 必須等於當下 HEAD</span>
+    <span class="s-title">含 Source SHA 的 docs commit 不能等於該 commit 自己的 SHA。#289 must-fix 曾綁 <code>89dd10d</code>;#289 merge 後 tip=<code>3727f39</code>,本 hop 重綁 Source SHA 到該 tip。本重綁 commit 落地後 HEAD 會再漂(同一悖論)</span>
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-1 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-1 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-1 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">下一棒重綁 Source SHA + 重跑 gauntlet。park:本節</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-1 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-1 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-1 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">park。合法恢復=再重綁 Final Fresh,不得再合產品碼。owner=方法論</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-2">
@@ -438,7 +438,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-2 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-2 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-2 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低（契約已列）</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">維持。不要加對話還原器</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-2 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-2 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-2 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低（契約已列）</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">維持。不要加對話還原器</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-3">
@@ -449,7 +449,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-3 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-3 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-3 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中（契約已列）</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">維持。owner 不能接受就另開 slug,不要在本 feat 加 OS hook</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-3 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-3 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-3 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中（契約已列）</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">維持。owner 不能接受就另開 slug,不要在本 feat 加 OS hook</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-4">
@@ -460,7 +460,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-4 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-4 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-4 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">維持</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-4 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-4 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-4 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">維持</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-5">
@@ -471,7 +471,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-5 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-5 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-5 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">維持。本 hop 不改產器</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-5 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-5 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-5 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">維持。本 hop 不改產器</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-6">
@@ -482,7 +482,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-6 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-6 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-6 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">已如實記 6-notes。新 Fast 4-spec 必須有 feature:＋ADDED,否則六問牙 no-fire</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-6 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-6 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-6 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">已如實記 6-notes。新 Fast 4-spec 必須有 feature:＋ADDED,否則六問牙 no-fire</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-7">
@@ -493,7 +493,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-7 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-7 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-7 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">Human 三擇一:①park 本條為 D-impl-3 ②L2 改 S-6.1 寫明「僅新式 full」③加寬 C9 打所有 full（產品碼,本 hop 不做）。未選不得勾 Boundary 處置</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-7 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-7 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-7 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v"><strong>owner 已 park／接受</strong>（2026-09-13）。本 hop 不改 S-6.1、不加寬 C9。owner=方法論;追蹤=本表 + F-4</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-8">
@@ -504,7 +504,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-8 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-8 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-8 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">已如實。4A 未動</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-8 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-8 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-8 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">已如實。4A 未動</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-9">
@@ -515,7 +515,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-9 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-9 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-9 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">已如實。欄位字面仍在</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-9 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-9 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-9 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">已如實。欄位字面仍在</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-10">
@@ -526,7 +526,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-10 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-10 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-10 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">已如實。PF-2 牙留下</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-10 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-10 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-10 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">已如實。PF-2 牙留下</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-11">
@@ -537,7 +537,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-11 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-11 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-11 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">已如實。不是 G3</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-11 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-11 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-11 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">已如實。不是 G3</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-12">
@@ -548,7 +548,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-12 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-12 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-12 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">見 Standards F-1。owner park 或修複製層後才能勾 Boundary 處置</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-12 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-12 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-12 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v"><strong>owner 已 park／接受</strong>（2026-09-13）。本 hop 不修 SKILL／指南複製層。owner=方法論;追蹤=本表 + F-1</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-13">
@@ -559,7 +559,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-13 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-13 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-13 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中（契約已列）</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">回看四欄追;本 slug 不捏訪談</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-13 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-13 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-13 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中（契約已列）</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">回看四欄追;本 slug 不捏訪談</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-14">
@@ -570,7 +570,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-14 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-14 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-14 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低（ENV）</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">有 3.9–3.11 的機器重跑。本 hop 隔離做了 S-2.2 兩案</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-14 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-14 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-14 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低（ENV）</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">有 3.9–3.11 的機器重跑。本 hop 隔離做了 S-2.2 兩案</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-15">
@@ -581,7 +581,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-15 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-15 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-15 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">讀取順序已落檔。有 runtime 的機器可補武裝</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-15 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-15 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-15 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">低</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">讀取順序已落檔。有 runtime 的機器可補武裝</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="KL-16">
@@ -592,7 +592,40 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag base">風險</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-16 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-16 這條 🟡 還讓 PRE-REVIEW 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-16 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">Human 三擇一:①park 本條（接受 Q3／AC 是已核歷史觀測面）②L2 回 G2 加 S,要求 AC／Q 也不鎖通道③本 feat 外另開 slug 改 example AC。本 hop 不改產品碼</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-16 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-16 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-16 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v"><strong>owner 已 park／接受</strong>（2026-09-13;接受 Q3／AC 是已核歷史觀測面）。本 hop 不改 example AC、不發明新 R/S。owner=方法論;追蹤=本表 + F-2</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-17">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-17">
+    <span class="s-id">KL-17</span>
+    <span class="s-title">E7 幽靈 token:4-spec Required layers 全形分號被 gauntlet 切出第二 token;<code>check-stage4-rs-contract.sh</code> 未 pass（附錄 A3）。不是產品牙紅</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-17 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-17 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-17 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v"><strong>owner 已 park／接受</strong>（2026-09-13）。修法是 L2 形狀（動 Verification Profile）,本 hop 不回 G2</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-18">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-18">
+    <span class="s-id">KL-18</span>
+    <span class="s-title">~~本檔 <code>verdict: PRE-REVIEW</code>;全勾也不算 shipped~~</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-18 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-18 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-18 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">—</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">已解除:Human G3 PASS recorded by <code>user</code> @ 2026-09-13（chat / widget）。STATUS.md Active 仍不在本 PR 改</span></div></div>
+    
+  </div>
+</article><article class="s-card" data-sid="KL-19">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="KL-19">
+    <span class="s-id">KL-19</span>
+    <span class="s-title">本 hop(#289 後 docs-only 重綁 + G3 落檔)的 commit 自身也會漂 SHA</span>
+    <span class="tag base">風險</span>
+  </label>
+  <div class="s-body">
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>KL-19 這條沒有檔:行，只靠敘述能判它還在嗎？</span></li><li><span class="qmark">?</span><span>KL-19 這條 🟡 還讓 PASS 站得住嗎？</span></li><li><span class="qmark">?</span><span>KL-19 帶著這條限界出貨，Matrix 有授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">嚴重度</span><span class="gwt-v">中</span></div><div class="gwt-row"><span class="gwt-k">建議處置</span><span class="gwt-v">同 ①。Source SHA 維持 Fresh tip <code>3727f39</code>,不追本 commit SHA。合法恢復=再重綁,不是再合產品碼</span></div></div>
     
   </div>
 </article></section><section class="r-block" id="sec-Coverage-Matrix"><div class="r-head"><span class="r-name">Coverage Matrix</span></div><article class="s-card" data-sid="S-1.1">
@@ -603,7 +636,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.1 這列只靠 scripts/check-realworld.sh:294 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-1.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.1 這列只靠 scripts/check-realworld.sh:294 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.1 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-1.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-1.2">
@@ -614,7 +647,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.2 這列只靠 scripts/check-realworld.sh:259 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-1.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.2 這列只靠 scripts/check-realworld.sh:259 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.2 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-1.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-1.3">
@@ -625,7 +658,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.3 這列只靠 scripts/check-realworld.sh:300 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-1.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.3 這列只靠 scripts/check-realworld.sh:300 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.3 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-1.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-1.4">
@@ -636,7 +669,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.4 這列只靠 scripts/check-realworld.sh:262 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.4 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-1.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-1.4 這列只靠 scripts/check-realworld.sh:262 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-1.4 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-1.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-2.1">
@@ -647,7 +680,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2.1 這列只靠 skills/dev-talk/nodes/N3-probe.md:22 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-2.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2.1 這列只靠 skills/dev-talk/nodes/N3-probe.md:22 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2.1 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-2.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-2.2">
@@ -658,7 +691,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2.2 這列只靠 scripts/test-architecture-guards.sh:732 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-2.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2.2 這列只靠 scripts/test-architecture-guards.sh:732 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2.2 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-2.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-2.3">
@@ -669,7 +702,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2.3 這列只靠 scripts/check-realworld.sh:333 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-2.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-2.3 這列只靠 scripts/check-realworld.sh:333 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-2.3 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-2.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-3.1">
@@ -680,7 +713,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.1 這列只靠 scripts/check-realworld.sh:436 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-3.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.1 這列只靠 scripts/check-realworld.sh:436 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.1 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-3.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-3.2">
@@ -691,7 +724,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.2 這列只靠 scripts/check-realworld.sh:444 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-3.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.2 這列只靠 scripts/check-realworld.sh:444 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.2 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-3.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-3.3">
@@ -702,7 +735,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.3 這列只靠 scripts/check-realworld.sh:440 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-3.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.3 這列只靠 scripts/check-realworld.sh:440 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.3 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-3.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-3.4">
@@ -713,7 +746,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.4 這列只靠 scripts/check-realworld.sh:441 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.4 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-3.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.4 這列只靠 scripts/check-realworld.sh:441 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.4 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-3.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-3.5">
@@ -724,7 +757,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.5 這列只靠 scripts/check-realworld.sh:446 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.5 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-3.5 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-3.5 這列只靠 scripts/check-realworld.sh:446 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-3.5 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-3.5 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-4.1">
@@ -735,7 +768,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4.1 這列只靠 scripts/check-spec-gate.sh:251 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-4.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4.1 這列只靠 scripts/check-spec-gate.sh:251 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4.1 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-4.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-4.2">
@@ -746,7 +779,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4.2 這列只靠 scripts/fixtures/discovery-gaps/assumption-resolved.md:25 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-4.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4.2 這列只靠 scripts/fixtures/discovery-gaps/assumption-resolved.md:25 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4.2 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-4.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-4.3">
@@ -757,7 +790,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4.3 這列只靠 docs/dev/requirement-discovery-gaps/4-spec.md:603 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-4.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4.3 這列只靠 docs/dev/requirement-discovery-gaps/4-spec.md:603 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4.3 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-4.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-4.4">
@@ -768,7 +801,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4.4 這列只靠 scripts/check-realworld.sh:450 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4.4 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-4.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-4.4 這列只靠 scripts/check-realworld.sh:450 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-4.4 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-4.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-5.1">
@@ -779,7 +812,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-5.1 這列只靠 scripts/check-realworld.sh:462 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-5.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-5.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-5.1 這列只靠 scripts/check-realworld.sh:462 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-5.1 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-5.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-5.2">
@@ -790,7 +823,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-5.2 這列只靠 scripts/check-realworld.sh:472 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-5.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-5.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-5.2 這列只靠 scripts/check-realworld.sh:472 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-5.2 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-5.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-5.3">
@@ -801,7 +834,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-5.3 這列只靠 scripts/check-realworld.sh:458 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-5.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-5.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-5.3 這列只靠 scripts/check-realworld.sh:458 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-5.3 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-5.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-6.1">
@@ -812,7 +845,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-6.1 這列只靠 scripts/check-spec-gate.sh:348 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-6.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-6.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-6.1 這列只靠 scripts/check-spec-gate.sh:348 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-6.1 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-6.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-6.2">
@@ -823,7 +856,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-6.2 這列只靠 scripts/check-spec-gate.sh:368 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-6.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-6.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-6.2 這列只靠 scripts/check-spec-gate.sh:368 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-6.2 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-6.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-6.3">
@@ -834,7 +867,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-6.3 這列只靠 4-spec.md:624 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-6.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-6.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-6.3 這列只靠 4-spec.md:624 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-6.3 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-6.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-6.4">
@@ -845,7 +878,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-6.4 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-6.4 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-6.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-6.4 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-6.4 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-6.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-7.1">
@@ -856,7 +889,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-7.1 這列只靠 scripts/check-realworld.sh:478 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-7.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-7.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-7.1 這列只靠 scripts/check-realworld.sh:478 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-7.1 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-7.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-7.2">
@@ -867,7 +900,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-7.2 這列只靠 scripts/check-realworld.sh:486 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-7.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-7.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-7.2 這列只靠 scripts/check-realworld.sh:486 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-7.2 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-7.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-7.3">
@@ -878,7 +911,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-7.3 這列只靠 _templates/7-review.md:345 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-7.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-7.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-7.3 這列只靠 _templates/7-review.md:345 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-7.3 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-7.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-8.1">
@@ -889,7 +922,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-8.1 這列只靠 hooks/devtalk-guard.sh:13 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-8.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-8.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-8.1 這列只靠 hooks/devtalk-guard.sh:13 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-8.1 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-8.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-8.2">
@@ -900,7 +933,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-8.2 這列只靠 hooks/devtalk-guard.sh:33 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-8.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-8.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-8.2 這列只靠 hooks/devtalk-guard.sh:33 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-8.2 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-8.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-8.3">
@@ -911,7 +944,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-8.3 這列只靠 hooks/devtalk-guard.sh:82 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-8.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-8.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-8.3 這列只靠 hooks/devtalk-guard.sh:82 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-8.3 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-8.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-8.4">
@@ -922,7 +955,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-8.4 這列只靠 scripts/check-realworld.sh:442 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-8.4 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-8.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-8.4 這列只靠 scripts/check-realworld.sh:442 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-8.4 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-8.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-9.1">
@@ -933,7 +966,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-9.1 這列只靠 scripts/check-spec-gate.sh:294 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-9.1 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-9.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-9.1 這列只靠 scripts/check-spec-gate.sh:294 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-9.1 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-9.1 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-9.2">
@@ -944,7 +977,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-9.2 這列只靠 fast-wait-shown-as-done.md:9 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-9.2 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-9.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-9.2 這列只靠 fast-wait-shown-as-done.md:9 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-9.2 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-9.2 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-9.3">
@@ -955,7 +988,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-9.3 這列只靠 fast-hit-no-dest.md:9 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-9.3 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-9.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-9.3 這列只靠 fast-hit-no-dest.md:9 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-9.3 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-9.3 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-9.4">
@@ -966,7 +999,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-9.4 這列只靠 fast-visual-all-no.md:9 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-9.4 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-9.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-9.4 這列只靠 fast-visual-all-no.md:9 能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-9.4 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-9.4 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-9.5">
@@ -977,7 +1010,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-9.5 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-9.5 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>S-9.5 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>S-9.5 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>S-9.5 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>S-9.5 這列測試打得到 4-spec 那條觀測嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="既有測試套件(回歸)">
@@ -988,7 +1021,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="tag main">抽驗</span>
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列的結果，有沒有授權 Verdict 的 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列若其實沒綠，PRE-REVIEW 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列沒寫檔:行，只靠測試名能判失敗嗎？</span></li><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列的結果，有沒有授權 Verdict 的 PASS？</span></li><li><span class="qmark">?</span><span>既有測試套件(回歸) 這列若其實沒綠，PASS 還被 Matrix 授權嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">狀態</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article></section><section class="r-block" id="sec-現象證據-逐-S-對照-4-spec-的-觀測-欄"><div class="r-head"><span class="r-name">現象證據(逐 S,對照 4-spec 的「觀測」欄)</span></div><article class="s-card" data-sid="S-1.1">
@@ -999,7 +1032,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1.1 只靠 _templates/1-discussion.md:86 能判這列失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1.1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-1.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>_templates/1-discussion.md:86-90</code> 有 <code>## Goals</code> 與 <code>## Requested solution</code>;驗收雛形:110 寫「不預填畫面／API 通道」;<code>S4-accept.md:20</code>「從哪裡看出結果發生」</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1.1 只靠 _templates/1-discussion.md:86 能判這列失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1.1 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-1.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>_templates/1-discussion.md:86-90</code> 有 <code>## Goals</code> 與 <code>## Requested solution</code>;驗收雛形:110 寫「不預填畫面／API 通道」;<code>S4-accept.md:20</code>「從哪裡看出結果發生」</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-1.2">
@@ -1010,7 +1043,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1.2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-1.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">套件內對 fixture 斷言 <code>_wrong_hit</code> 為真並印 <code>構想在錯欄:goals-dashboard-in-wrong-column</code>;套件本身 exit 0（T-1 Verify 設計）。同一入口,無第四家族</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1.2 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-1.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">套件內對 fixture 斷言 <code>_wrong_hit</code> 為真並印 <code>構想在錯欄:goals-dashboard-in-wrong-column</code>;套件本身 exit 0（T-1 Verify 設計）。同一入口,無第四家族</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-1.3">
@@ -1021,7 +1054,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1.3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-1.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">Goals:73-76 三句是結果;Requested solution:78-79「未定案：站內 dashboard」;Interview:133「通道構想見 Requested solution」</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1.3 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-1.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">Goals:73-76 三句是結果;Requested solution:78-79「未定案：站內 dashboard」;Interview:133「通道構想見 Requested solution」</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-1.4">
@@ -1032,7 +1065,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1.4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1.4 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-1.4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">fixture 含 dashboard／API 當領域詞;<code>detect_goals_wrong_column</code> 回 False;<code>check(not _ok_hit, …不因 dashboard/API 誤殺)</code> 綠</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-1.4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-1.4 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-1.4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">fixture 含 dashboard／API 當領域詞;<code>detect_goals_wrong_column</code> 回 False;<code>check(not _ok_hit, …不因 dashboard/API 誤殺)</code> 綠</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-2.1">
@@ -1043,7 +1076,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-2.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-2.1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-2.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">N3:22-25 發現禁推薦、裁決可附;完成條件:44-45 兩輪只標輔助;SKILL:104 與 guide:201 同步</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-2.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-2.1 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-2.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">N3:22-25 發現禁推薦、裁決可附;完成條件:44-45 兩輪只標輔助;SKILL:104 與 guide:201 同步</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-2.2">
@@ -1054,7 +1087,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-2.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-2.2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-2.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">隔離複本刪一邊前綴 → realworld 173/174 紅;失敗項 <code>N3-probe 含發現｜前綴</code>／<code>含裁決｜前綴</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-2.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-2.2 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-2.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">隔離複本刪一邊前綴 → realworld 173/174 紅;失敗項 <code>N3-probe 含發現｜前綴</code>／<code>含裁決｜前綴</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-2.3">
@@ -1065,7 +1098,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-2.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-2.3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-2.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">fixture 兩邊前綴都在;裁決附三選;<code>_discover_line_has_recommend</code> 假</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-2.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-2.3 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-2.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">fixture 兩邊前綴都在;裁決附三選;<code>_discover_line_has_recommend</code> 假</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-3.1">
@@ -1076,7 +1109,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3.1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-3.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>user-report-only.md</code> 只寫「使用者反映希望 dashboard」→ problems 含 <code>來源</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3.1 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-3.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>user-report-only.md</code> 只寫「使用者反映希望 dashboard」→ problems 含 <code>來源</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-3.2">
@@ -1087,7 +1120,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3.2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-3.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>_good_obs</code>（Observed+path:L）與 <code>_good_assume</code>（Assumption+期限+四欄）<code>not _claim_problems</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3.2 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-3.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>_good_obs</code>（Observed+path:L）與 <code>_good_assume</code>（Assumption+期限+四欄）<code>not _claim_problems</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-3.3">
@@ -1098,7 +1131,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3.3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-3.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>nod-as-only-source.md</code> 來源=使用者點頭 → <code>點頭</code>;節點 S1-survey:29-30 已改「認可不是來源升格」</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3.3 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-3.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>nod-as-only-source.md</code> 來源=使用者點頭 → <code>點頭</code>;節點 S1-survey:29-30 已改「認可不是來源升格」</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-3.4">
@@ -1109,7 +1142,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3.4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3.4 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-3.4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>enum-unknown.md</code> 狀態=Unknown → <code>枚舉</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3.4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3.4 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-3.4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>enum-unknown.md</code> 狀態=Unknown → <code>枚舉</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-3.5">
@@ -1120,7 +1153,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3.5 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3.5 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-3.5 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>_low</code> 普通 path:L 句無風險=高、高影響列齊 → 不紅</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-3.5 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-3.5 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-3.5 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>_low</code> 普通 path:L 句無風險=高、高影響列齊 → 不紅</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-4.1">
@@ -1131,7 +1164,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-4.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-4.1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-4.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">expired-open C7 ❌;<code>L29:Assumption 過期仍 open(2020-01-01)</code>;exit 1</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-4.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-4.1 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-4.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">expired-open C7 ❌;<code>L29:Assumption 過期仍 open(2020-01-01)</code>;exit 1</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-4.2">
@@ -1142,7 +1175,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-4.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-4.2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-4.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">resolved 9/9;C7 ✅</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-4.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-4.2 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-4.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">resolved 9/9;C7 ✅</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-4.3">
@@ -1153,7 +1186,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-4.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-4.3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-4.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">三列 status=oc-accepted;本 slug 9/9</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-4.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-4.3 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-4.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">三列 status=oc-accepted;本 slug 9/9</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-4.4">
@@ -1164,7 +1197,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-4.4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-4.4 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-4.4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">模板:77-78 與 example:63-66 四欄齊</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-4.4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-4.4 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-4.4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">模板:77-78 與 example:63-66 四欄齊</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-5.1">
@@ -1175,7 +1208,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-5.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-5.1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-5.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>verdict-accepted-only.md</code> 只有 ACCEPTED+attestation → <code>_accepted_missing_role_scenario</code> 真</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-5.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-5.1 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-5.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v"><code>verdict-accepted-only.md</code> 只有 ACCEPTED+attestation → <code>_accepted_missing_role_scenario</code> 真</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-5.2">
@@ -1186,7 +1219,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-5.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-5.2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-5.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">完整行放行</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-5.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-5.2 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-5.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">完整行放行</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-5.3">
@@ -1197,7 +1230,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-5.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-5.3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-5.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">模板:128 有 role=／scenario=;<code>Actor Coverage</code> 零命中</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-5.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-5.3 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-5.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">模板:128 有 role=／scenario=;<code>Actor Coverage</code> 零命中</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-6.1">
@@ -1208,7 +1241,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-6.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-6.1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-6.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">disposition-missing C9 ❌;<code>缺 ## Real-world Disposition</code>;exit 1</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-6.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-6.1 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-6.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">disposition-missing C9 ❌;<code>缺 ## Real-world Disposition</code>;exit 1</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-6.2">
@@ -1219,7 +1252,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-6.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-6.2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-6.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">本檔「發現被錨定 → S-2.1、S-2.2」;C9 本方案處理匹配 <code>R-</code>／<code>S-</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-6.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-6.2 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-6.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">本檔「發現被錨定 → S-2.1、S-2.2」;C9 本方案處理匹配 <code>R-</code>／<code>S-</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-6.3">
@@ -1230,7 +1263,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-6.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-6.3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-6.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">Exception 三列:Out of Scope／Known limit 都在;C9 不紅</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-6.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-6.3 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-6.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">Exception 三列:Out of Scope／Known limit 都在;C9 不紅</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-6.4">
@@ -1241,7 +1274,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-6.4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-6.4 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-6.4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">輸出為空</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-6.4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-6.4 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-6.4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">輸出為空</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-7.1">
@@ -1252,7 +1285,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-7.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-7.1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-7.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">模板:348 與 example:275 四欄齊</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-7.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-7.1 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-7.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">模板:348 與 example:275 四欄齊</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-7.2">
@@ -1263,7 +1296,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-7.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-7.2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-7.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">lookback-missing-threshold 缺「低於何值重開」必紅;舊檔無節不發動</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-7.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-7.2 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-7.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">lookback-missing-threshold 缺「低於何值重開」必紅;舊檔無節不發動</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-7.3">
@@ -1274,7 +1307,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-7.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-7.3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-7.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">模板／example 7-review 無永久檔;有 history-append.sh</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-7.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-7.3 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-7.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">模板／example 7-review 無永久檔;有 history-append.sh</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-8.1">
@@ -1285,7 +1318,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-8.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-8.1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-8.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">T-9:核准=是 → exit 0</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-8.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-8.1 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-8.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">T-9:核准=是 → exit 0</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-8.2">
@@ -1296,7 +1329,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-8.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-8.2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-8.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">T-9:2-decision 即使核准=是 → exit 2;<code>方案檔仍禁讀(2-decision／4-spec／2–7</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-8.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-8.2 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-8.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">T-9:2-decision 即使核准=是 → exit 2;<code>方案檔仍禁讀(2-decision／4-spec／2–7</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-8.3">
@@ -1307,7 +1340,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-8.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-8.3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-8.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">T-9:未核 → exit 2;<code>未核路徑不得當已授權 evidence</code>;填檔牙含來源</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-8.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-8.3 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-8.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">T-9:未核 → exit 2;<code>未核路徑不得當已授權 evidence</code>;填檔牙含來源</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-8.4">
@@ -1318,7 +1351,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-8.4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-8.4 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-8.4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">ticket-solution-as-fact → <code>解法</code>／<code>不當事實</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-8.4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-8.4 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-8.4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">ticket-solution-as-fact → <code>解法</code>／<code>不當事實</code></span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-9.1">
@@ -1329,7 +1362,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-9.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-9.1 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-9.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">fast-blank C8 ❌;<code>六問缺表</code>;exit 1</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-9.1 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-9.1 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-9.1 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">fast-blank C8 ❌;<code>六問缺表</code>;exit 1</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-9.2">
@@ -1340,7 +1373,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-9.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-9.2 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-9.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">Q3 是+「等待被顯示成完成」;去向 fast+mini;無待裁</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-9.2 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-9.2 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-9.2 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">Q3 是+「等待被顯示成完成」;去向 fast+mini;無待裁</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-9.3">
@@ -1351,7 +1384,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-9.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-9.3 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-9.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">fast-hit-no-dest 去向=待裁 → C8 ❌;exit 1</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-9.3 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-9.3 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-9.3 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">fast-hit-no-dest 去向=待裁 → C8 ❌;exit 1</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-9.4">
@@ -1362,7 +1395,7 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-9.4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-9.4 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-9.4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">fast-visual-all-no 六問皆否+去向 Fast → 9/9</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-9.4 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-9.4 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-9.4 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">fast-visual-all-no 六問皆否+去向 Fast → 9/9</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article><article class="s-card" data-sid="S-9.5">
@@ -1373,13 +1406,13 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     
   </label>
   <div class="s-body">
-    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-9.5 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-9.5 相符，有沒有出現在 Matrix 裡授權 PRE-REVIEW？</span></li><li><span class="qmark">?</span><span>現象 S-9.5 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">C8 <code>full 缺表 no-fire</code>;9/9</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
+    <div class="g3-ask"><div class="g3-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>現象 S-9.5 沒寫檔:行，只靠敘述能判失敗嗎？</span></li><li><span class="qmark">?</span><span>現象 S-9.5 相符，有沒有出現在 Matrix 裡授權 PASS？</span></li><li><span class="qmark">?</span><span>現象 S-9.5 這列跟 4-spec 觀測對得上嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">實跑證據</span><span class="gwt-v">C8 <code>full 缺表 no-fire</code>;9/9</span></div><div class="gwt-row"><span class="gwt-k">相符?</span><span class="gwt-v">✅</span></div></div>
     
   </div>
 </article></section>
 </div>
 <h2 class="apx-h">背景資料(預設收合,內容零刪減)</h2>
-<details class="doc" id="sec-Verification-Evidence"><summary><span>Verification Evidence</span></summary><div class="doc-in"><ul><li>Source SHA: 89dd10d5060b1580b16429e4a4c45775c49944d2</li><li>Final Fresh Run ID: 2026-09-13T0705Z-impl-B-s7</li><li>Entry point: <code>bash scripts/check-spec-gate.sh docs/dev/requirement-discovery-gaps/4-spec.md &amp;&amp; bash scripts/check-realworld.sh</code></li><li>Toolchain: python3.12.3; markdown-it-py 4.0.0(<code>scripts/requirements-methodology-render.txt</code>); contract 2.0.0; runtime 3.23.4; git 2.43.0; gauntlet 1.3.3</li></ul><div class="tablewrap"><table><thead><tr><th>Layer</th><th>Command</th><th>Status</th><th>Result</th><th>Skipped reason</th></tr></thead><tbody><tr><td>check-spec-gate／check-realworld／devtalk-guard（九缺口牙只這三支</td><td>4-spec Required 被全形分號切出的第一 token;三牙親跑</td><td>pass</td><td>spec-gate 9/9 exit 0;realworld 174/174 exit 0;T-9 Read 三案 0/2/2</td><td></td></tr><tr><td>check-spec-gate</td><td><code>bash scripts/check-spec-gate.sh docs/dev/requirement-discovery-gaps/4-spec.md</code></td><td>pass</td><td>exit 0;9/9;35 條 S</td><td></td></tr><tr><td>check-realworld</td><td><code>bash scripts/check-realworld.sh</code></td><td>pass</td><td>exit 0;174/174;stdout 含構想在錯欄 1 行</td><td></td></tr><tr><td>devtalk-guard</td><td>T-9 Verify <code>tool_name=Read</code> 三案</td><td>pass</td><td>S-8.1 exit 0;S-8.2 exit 2;S-8.3 exit 2</td><td></td></tr><tr><td>Supply chain</td><td><code>rg -n &#x27;RW-[0-9]&#x27;</code> 指定六檔 + <code>test ! -e scripts/check-discovery-gaps.sh</code></td><td>pass</td><td>RW 命中 0;第四家族檔不存在</td><td></td></tr><tr><td>check-stage4-rs-contract.sh` 是本 hop 審頁形狀，不落地缺口牙，不列入本欄）</td><td>（幽靈 token）</td><td>unverified</td><td></td><td>4-spec Required layers 欄含全形分號,gauntlet tokenize 切出第二 token;4-spec 自己寫「不列入本欄」。見附錄 A3</td></tr><tr><td>Mutation</td><td></td><td>n-a</td><td></td><td>Explicitly excluded(4-spec Verification Profile)</td></tr><tr><td>e2e／Playwright</td><td></td><td>n-a</td><td></td><td>Explicitly excluded;無產品前端</td></tr><tr><td>Race／stress</td><td></td><td>n-a</td><td></td><td>Explicitly excluded</td></tr><tr><td>Windows 真機</td><td></td><td>n-a</td><td></td><td>Explicitly excluded／Out of Scope</td></tr><tr><td>check-py-floor</td><td><code>bash scripts/check-py-floor.sh</code></td><td>n-a</td><td></td><td>ENV:本機無 Python 3.9–3.11;exit 2 找不到直譯器。不是本 feat 產品紅</td></tr></tbody></table></div><p>開工前 <code>test -x docs/dev/tools/devflow-evidence-gauntlet.sh</code> → exit 0。</p><p>Final Fresh gauntlet（<code>--source-sha 89dd10d5060b1580b16429e4a4c45775c49944d2 --review-file</code>）:61 checks、1 violation — E7 required layer 第二幽靈 token 未 pass。見附錄 A3。不把幽靈 token 標 pass。</p><p>### 2c 整合結論</p><p>授權合併的那一次（Fresh <strong>之前</strong>跑兩次,STATUS／座標完全相同,然後合印出的 INTEGRATION_SHA,不是 branch 名）:</p><ul><li>STATUS: SYNC_REQUIRED_NO_OVERLAP</li><li>FORK / HEAD / INTEGRATION / REF: <code>fdbd5696aeb491538276caa09370744370189601</code> / <code>fdbd5696aeb491538276caa09370744370189601</code> / <code>37a4284848fdcfd4d7ad2385ed6df2c74fd613fd</code> / <code>refs/remotes/origin/main</code></li><li>共同戰場:無（incoming = <code>#287</code> STATUS／HISTORY 列,3 檔 +9/−2）</li><li>恢復: n-a（SYNC_REQUIRED_NO_OVERLAP;已 fast-forward 合 INTEGRATION_SHA,合後 realworld 174/174、本 slug spec-gate 9/9）</li></ul><p>本 hop <strong>沒有撰寫</strong> STATUS／HISTORY;那是 incoming <code>#287</code>。合完 HEAD=<code>37a4284</code>。之後若再跑同一支腳本會印 <code>ALREADY_SYNCED</code>（exit 2）——不當交集證據。<code>#287</code> <code>37a4284848fdcfd4d7ad2385ed6df2c74fd613fd</code> 已在 tip（本 hop must-fix 不重做 2c）。Source SHA 於本輪 must-fix 後重綁當下 HEAD。再一次 docs commit 仍會漂（Known Limit 本 hop ①）。</p></div></details><details class="doc" id="sec-Negative-Constraint-Mapping"><summary><span>Negative Constraint Mapping</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>Constraint</th><th>Test/Layer</th><th>Status</th></tr></thead><tbody><tr><td>不得把構想寫進 Goals 還當已完成分欄(S-1.2)</td><td>check-realworld S-1.2 fixture;stdout 構想在錯欄</td><td>pass</td></tr><tr><td>不得用 dashboard／API 黑名單誤殺結果句(S-1.4)</td><td>check-realworld S-1.4;detector 只咬空 Requested +「我要 」</td><td>pass</td></tr><tr><td>不得讓發現題附推薦仍當硬規則(S-2.1)</td><td>N3-probe:22-25 禁附推薦;T-3-skill</td><td>pass</td></tr><tr><td>不得把點頭當唯一來源(S-3.3)</td><td>nod-as-only-source + S1-survey.md:29-30</td><td>pass</td></tr><tr><td>不得讓過期 open Assumption 通過 spec-gate(S-4.1)</td><td>C7 expired-open exit 1</td><td>pass</td></tr><tr><td>不得只寫 ACCEPTED + 日期當完整 verdict(S-5.1)</td><td>verdict-accepted-only 殘行必紅</td><td>pass</td></tr><tr><td>不得讓痛點列去向空白或發第二鏈編號(S-6.1、S-6.4)</td><td>C9 缺表 exit 1;<code>rg RW-[0-9]</code> = 0</td><td>pass</td></tr><tr><td>不得另造 lookback 永久檔(S-7.3)</td><td>模板無 lookback.md;有 history-append.sh</td><td>pass</td></tr><tr><td>不得讀 2–7 方案檔或未核路徑當已授權(S-8.2、S-8.3)</td><td>guard Read exit 2 兩案</td><td>pass</td></tr><tr><td>不得把 Fast 空白六問當已分診(S-9.1)</td><td>C8 blank-triage exit 1</td><td>pass</td></tr><tr><td>不得新造檢查家族、不得本 hop 改 STATUS／模板正本、不得發明 G3</td><td><code>test ! -e scripts/check-discovery-gaps.sh</code>;本 hop 只寫 7-review*;verdict PRE-REVIEW</td><td>pass</td></tr></tbody></table></div></div></details><details class="doc" id="sec-執行記錄-dev-run-引擎案-手動實作留白"><summary><span>執行記錄(dev-run 引擎案;手動實作留白)</span></summary><div class="doc-in"><p>本 feat Stage 6 為手動 sequential（6-notes:Run n-a）。本 Stage 7 亦手動。本節留白,不虛構模型歷史。</p></div></details><details class="doc" id="sec-截圖槽"><summary><span>截圖槽</span></summary><div class="doc-in"><p>本 feat 無產品前端、無 <code>shots/</code>、無進場紀錄。觀測是 CLI 牙與教師原文。不准發明編輯 URL、不准新增截圖。</p><p>### 進場</p><ul><li>data-shot: n-a</li><li>src: （無）</li><li>caption: 無 GUI 進場。twin 抽驗格是 Coverage 中位列 S-5.3（<code>_templates/3-prototype.md:128</code>）。</li><li>進場:從列表打開已存在紀錄。不准新增。本目錄無已存在 shots。</li><li>hang-point: n-a（無 e2e）</li></ul></div></details><details class="doc" id="sec-Operational-Walkthrough"><summary><span>Operational Walkthrough</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>S-id</th><th>角色</th><th>真實目標</th><th>系統操作</th><th>系統外步驟</th><th>等待／例外</th><th>結果</th></tr></thead><tbody><tr><td>S-1.2</td><td>G1 reviewer</td><td>構想不能混成目標</td><td>跑 check-realworld;讀錯欄 stderr</td><td>把該句搬到 Requested solution</td><td>檢查同步結束</td><td>✅ 人看得見拒絕;Authority=形狀+G1 語意</td></tr><tr><td>S-1.3</td><td>採用者</td><td>抄範例時寫結果</td><td>打開 example 1-discussion</td><td>—</td><td>Goals 仍鎖通道則同一 T 改</td><td>✅ Goals 已改口。Q3／AC 仍教 dashboard 通道,見 F-2 🟡</td></tr><tr><td>S-2.1</td><td>訪談對象／討論 agent</td><td>不被錨定</td><td>讀 N3 發現｜開放題</td><td>人口頭／Email 答現況</td><td>一題一答;不等推薦清單</td><td>✅ 問句本身不再塞推薦</td></tr><tr><td>S-3.3</td><td>討論 agent／G1</td><td>認可≠營運事實</td><td>跑主張牙;打開聲稱來源</td><td>補 path 或改 Assumption</td><td>—</td><td>✅ 牙擋點頭獨源。SKILL／指南入口仍舊句,見 F-1</td></tr><tr><td>S-4.1</td><td>G2 reviewer</td><td>過期假設進不了 G2</td><td>跑 spec-gate</td><td>改 resolved 或 oc-accepted</td><td>拒絕發生在送審關</td><td>✅ 人看得見 C7 紅</td></tr><tr><td>S-5.1</td><td>後讀 3-prototype 的人</td><td>一行答出驗了誰／哪場</td><td>讀 Human verdict 行</td><td>人類親填 role／scenario</td><td>無 attestation 仍被既有 runtime 拒</td><td>✅ 殘行紅;Agent 仍禁代填</td></tr><tr><td>S-6.1</td><td>收斂者／G2</td><td>痛點不能無聲消失</td><td>跑 spec-gate;對原文片段</td><td>補表或標刻意維持</td><td>—</td><td>✅ 新式 full 缺表紅。legacy full grandfather,見 KL-C9</td></tr><tr><td>S-7.1</td><td>owner</td><td>出貨留下誰／何時／用什麼／門檻</td><td>填 Exit 四欄</td><td>到期 history-append;日曆回看</td><td>回看日未到不得寫已改善</td><td>✅ 欄在。指標是否改善仍人判</td></tr><tr><td>S-8.1</td><td>討論 agent</td><td>核准後讀得到事實</td><td>Read 核准=是的擬路徑</td><td>先列「想找哪類＋為什麼」等 owner 核</td><td>核准格空白不得往下</td><td>✅ 放行</td></tr><tr><td>S-8.2</td><td>討論 agent</td><td>方案檔仍進不去</td><td>Read 2-decision</td><td>改讀 specs／原始碼</td><td>—</td><td>✅ 核准格不能覆寫禁令</td></tr><tr><td>S-8.3</td><td>討論 agent／owner</td><td>未核不得當已授權</td><td>Read 未核 path</td><td>送核准卡或維持 Assumption</td><td>顯性等 owner</td><td>✅ 擋。Known limit:跳過 hook 硬讀不擋</td></tr><tr><td>S-9.1</td><td>Fast 實作者</td><td>寫 4 前先收完六問</td><td>跑 spec-gate</td><td>對 diff 答六問</td><td>未收束不得進 R/S</td><td>✅ 新式 fast 空白紅</td></tr><tr><td>S-9.2</td><td>Fast 實作者／owner</td><td>等待誤標不能當純視覺 Fast</td><td>填六問第 3=是</td><td>owner 裁 full／mini／OC</td><td>待裁期間不得開寫</td><td>✅ fixture 去向 fast+mini</td></tr><tr><td>S-1.1／S-1.4／S-2.2／S-2.3／S-3.1／S-3.2／S-3.4／S-3.5／S-4.2／S-4.3／S-4.4／S-5.2／S-5.3／S-6.2／S-6.3／S-6.4／S-7.2／S-7.3／S-8.4／S-9.3／S-9.4／S-9.5</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>不適用（4-spec Operational Context 標不適用或純字面／靜態牙）</td></tr></tbody></table></div><p>六條掃描:技術通過但人無法完成工作 — 未見（SKILL 入口舊句會誤導,但是節點正本已改,見 F-1）。看得到但沒有決策權 — Fast 命中去向仍要 owner 裁,牙擋待裁。等待誤標為完成 — S-9.2 命中第 3 問。系統外動作 — 訪談／回看／owner 核准卡可追。中斷恢復 — 改欄後重跑。資訊過期 — C7 過期 open 紅。</p></div></details><details class="doc" id="sec-Design-Integrity-Check-Design-Boundary-Contract-"><summary><span>Design Integrity Check(Design Boundary Contract 為 <code>applicable</code>)</span></summary><div class="doc-in"><p>1. <strong>依賴反向被間接繞過</strong>:未命中 —— 牙仍是三支既有 CLI;guard 讀 manifest,不經新 util／event bus 放行 2–7。無 <code>check-discovery-gaps.sh</code>。</p><p>2. <strong>資料所有權被繞過寫入</strong>:未命中 —— spec-gate／realworld 只讀;guard 不改目標檔。過期假設擋點在 spec-gate,不在 realworld（4-spec Boundary）。</p><p>3. <strong>相容性破壞包成新增</strong>:未命中 —— C1–C6 保留,只加 C7／C8／C9。realworld <code>MIN_CHECKS=174</code> 改成實數。guard 寫入洩漏掃描仍在;Read 只在 talk 游標在時發動。</p><p>4. <strong>一致性邊界被拆解</strong>:未命中 —— 無多筆寫入交易。核准格是人寫一格、guard 讀字面。</p><p>5. <strong>宣告的 Test seam 未被使用</strong>:未命中 —— fixture 目錄 <code>scripts/fixtures/discovery-gaps/</code> 就是契約 seam;T-1…T-10 Verify 真跑那三支牙,不是只數 selftest 字樣（T-9 真餵 Read）。</p><p>6. <strong>Known design limit 被實作悄悄「解決」</strong>:未命中 —— ①A-2 仍只守對稱句,不還原對話;②guard 仍只在 talk 游標在時擋 Read,無 OS hook;③「不改語意／算不算高影響」仍人判;④審頁產器 8 框未改。C8／C9 收窄發動是 6-notes D-impl-2／D-impl-3（grandfather 既有 fixture）,不是把 Known limit 修掉。</p><p>無未經授權 Boundary 變更。無 🔴。C8／C9 收窄已記 L1,見 Known Limits。</p></div></details><details class="doc" id="sec-Standards-Axis"><summary><span>Standards Axis</span></summary><div class="doc-in"><p>產品樹 = <code>git diff --stat 2bfb906..fdbd569</code>（#286）。本 PR vs 合完 2c 的 main = 本審查檔 + twin。</p><div class="tablewrap"><table><thead><tr><th>F-id</th><th>級</th><th>位置</th><th>問題</th><th>建議</th><th>影響 S/T</th></tr></thead><tbody><tr><td>F-1</td><td>🟡</td><td><code>skills/dev-talk/SKILL.md:102</code>;<code>guides/guide-dev-talk.html:197-198,225</code></td><td>M-5／S-3.3 節點 <code>S1-survey.md:29-30</code> 已改「認可不是來源升格」。SKILL 入口與指南完成條件仍寫「認可後即已核事實／認可清單 = 已核事實」。T-3 為 N3 前綴同步了 SKILL／指南;T-4 Files 不含這兩檔,複製層漏改。人先讀 SKILL／指南會抄舊規則</td><td>Human 三擇一:①修 SKILL 步 1 入口＋guide 表／原文與節點一致（不開新檢查家族）②明示 park（落點 Known Limits #12）③REQUEST_CHANGES 回 Stage 6 補複製層</td><td>R-3／S-3.3／T-4</td></tr><tr><td>F-2</td><td>🟡</td><td><code>example/contract-expiry-reminder/1-discussion.md:89,97-117</code></td><td>S-1.3 THEN 第二句:若仍提 dashboard／卡片／URL,只准出現在 <code>## Requested solution</code> 且標未定案。Goals 已改口,但 Q3「本期只做站內 dashboard」與 AC-1…AC-5「從哪看」仍鎖 dashboard 通道。T-2 Verify 不查 AC。抄範例的人會把通道當驗收</td><td>Human 三擇一:①park（接受 Q3／AC 是已核歷史觀測面;S-1.3 機械只鎖 Goals＋L119;落點 Known Limits #16）②L2 回 G2 加 S,要求 AC／Q 也不鎖通道③本 feat 外另開 slug 改 example AC。本 hop 不改產品碼</td><td>R-1／S-1.3／M-2／T-2</td></tr><tr><td>F-3</td><td>🟢</td><td><code>scripts/check-realworld.sh:259-271</code></td><td><code>detect_goals_wrong_column</code> 只咬第一句「我要 dashboard」或「我要 」開頭 + Requested 空。不是 dashboard／API 黑名單（A-1）</td><td>接受。其他錯欄句靠 G1。可選加抽 S-1.4 fixture 含領域詞仍綠（不是 twin 第五格）</td><td>R-1／S-1.2／S-1.4／T-1</td></tr><tr><td>F-4</td><td>🟡</td><td><code>scripts/check-spec-gate.sh:351-357</code> <code>fire_disp</code></td><td>S-6.1 字面:凡 <code>lane: full</code> 缺 <code>## Real-world Disposition</code> 或去向空白 → spec-gate exit 1。實作 <code>fire_disp</code> 只對「新式」full（有 Assumption refs 或路徑含 <code>discovery-gaps</code>）發動。舊 full（如 <code>example/subsidy-3-0-plus/4-spec.md</code>）缺表 no-fire。本 feat fixture 有 refs,牙有咬到;契約字面比牙寬</td><td>Human 三擇一:①park D-impl-3 grandfather（落點 Known Limits #7）②L2 改 S-6.1 寫明「僅新式 full」③加寬 C9 打所有 full（產品碼,本 hop 不做）</td><td>R-6／S-6.1／T-7</td></tr><tr><td>F-5</td><td>🟢</td><td><code>scripts/check-py-floor.sh:294</code>;<code>hooks/devtalk-guard.sh</code> <code>&lt;&lt;&#x27;READ&#x27;</code></td><td>#286 後續 commit 撤回抬地板:RW-DG 改 tag MUT;Read 只靠 INTERP;<code>MIN_HEREDOCS=222</code>。PF-2 牙留下</td><td>接受。符合 OC-1「不另造家族、不為新牙毀舊牙」</td><td>過程／T-9／T-3</td></tr><tr><td>F-6</td><td>🟢</td><td><code>scripts/check-spec-gate.sh:307-311</code> C8 <code>fire_fast</code></td><td>C8 只對新式 fast 發動（D-impl-2）。S-9.1 字面較寬;本 feat fixture 有 <code>feature:</code>＋ADDED,牙有咬到</td><td>接受為 L1。與 F-4 分開:三審 must-fix 點名的是 C9／S-6.1。見 KL-C8</td><td>R-9／S-9.1</td></tr></tbody></table></div><p><strong>Dependency Direction</strong>:符合 —— realworld → 模板／example／fixture;spec-gate → 4-spec 正文 + <code>spec_profile()</code>;guard → manifest + talk 游標。無反向。無第四 CLI。</p><p><strong>Boundary Leakage</strong>:符合 —— 無內部 struct 漏出;檢查輸出是 exit + 字樣。</p><p><strong>Data Ownership</strong>:符合 —— spec-gate 擁有 G2 形狀;realworld 擁有教師地板;guard 擁有討論期擋讀。過期假設未塞進 realworld。</p><p><strong>Interface Stability</strong>:符合 —— C1–C6 保留;寫入洩漏掃描保留;Read 加項且游標不在走舊邏輯。無 <code>check-discovery-gaps.sh</code>。</p><p>無 🔴。🟡 三條:F-1（SKILL／指南 S1 入口）、F-2（example Q3／AC 仍教 dashboard 通道）、F-4（C9 只打新式 full）。都不是未授權 Boundary 變更（節點／牙在契約內,複製層或發動收窄）。不得帶著未 park／未修的 🟡 勾「Design Boundary finding 全數處置」。</p></div></details><details class="doc" id="sec-Spec-Axis"><summary><span>Spec Axis</span></summary><div class="doc-in"><p>Variant B 偏置:先壓 A-1（不採黑名單）與 OC-1（只延三支既有牙）。</p><div class="tablewrap"><table><thead><tr><th>R</th><th>判定</th><th>出處</th></tr></thead><tbody><tr><td>R-1 分辨結果與構想</td><td><strong>符合牙;活教師 AC／Q3 偏離一層（F-2 🟡）</strong></td><td>S-1.1 模板分欄;<code>S4-accept.md:20</code> 改問結果發生。S-1.2 同一入口指出錯欄,無 <code>check-discovery-gaps.sh</code>。S-1.3 Goals 三句已改口。<strong>S-1.3 THEN 第二句</strong>未落地:example Q3:89 與 AC:97-117 仍鎖 dashboard。<strong>S-1.4</strong> A-1 不採黑名單成立（可選加抽,不是 twin 第五格）</td></tr><tr><td>R-2 發現題不先塞推薦</td><td>符合</td><td>N3 兩路徑;<code>禁附推薦</code>;S-2.2 單邊缺失紅;S-2.3 裁決附選不紅。Known limit ①維持:不還原對話</td></tr><tr><td>R-3 高影響主張回來源或期限</td><td><strong>偏離一層複製</strong></td><td>牙與節點符合（S-3.1…S-3.5、S-8.4 同主張牙）。F-1:SKILL／指南入口仍教「認可後即已核事實」。機械 S-3.3 仍綠。不是 L2（R/S 沒翻）</td></tr><tr><td>R-4 過期假設擋 G2</td><td>符合</td><td>C7 在 <code>check-spec-gate.sh</code>（不另造家族）。expired-open exit 1;resolved／oc-accepted 放行;四欄地板在</td></tr><tr><td>R-5 verdict 一行</td><td>符合</td><td>殘行紅;完整行綠;無 Actor Coverage 全表;attestation 行仍在</td></tr><tr><td>R-6 痛點列有去向</td><td><strong>符合本 feat fixture;字面偏離（F-4 🟡）</strong></td><td>本 feat 缺表紅;本方案處理要 R／S;非處理有 OOS／limit;第二鏈 <code>rg</code> 0。C9 <code>fire_disp</code> 只打新式 full,S-6.1 寫凡 full。Human 見 F-4 三擇一</td></tr><tr><td>R-7 回看四欄</td><td>符合</td><td>模板／example 四欄在;有節缺門檻紅;結果入口 <code>history-append.sh</code>;無 lookback.md</td></tr><tr><td>R-8 核准後讀得到且方案檔仍禁</td><td>符合</td><td>S-8.1／8.2／8.3 真跑 Read 三案 exit。2–7 硬擋,核准格不能覆寫。Known limit ②維持:無 OS hook</td></tr><tr><td>R-9 Fast 寫 4 前六問</td><td>符合（發動收窄已記）</td><td>空白紅;等待誤標命中 Q3;待裁紅;全否可 Fast;本檔 full no-fire。C8 只對新式 fast 發動 = D-impl-2,見 KL-C8</td></tr><tr><td>OC-1 三牙、不另造家族</td><td><strong>符合</strong>（Variant B 主壓）</td><td><code>test ! -e scripts/check-discovery-gaps.sh</code>;<code>test ! -e scripts/check-evidence-allow.sh</code>。擋點只加在 <code>check-realworld.sh</code>／<code>check-spec-gate.sh</code>／<code>hooks/devtalk-guard.sh</code>（+ 已掛進的 devflow-check）。MIN_CHECKS=174 實數。PF-2 用 MUT／READ tag 保住舊牙,不抬地板假綠</td></tr><tr><td>A-1 不採黑名單</td><td><strong>符合</strong>（Variant B 主壓）</td><td>見 R-1／S-1.4。Out of Scope「dashboard／API 黑名單」未被實作偷偷做起來</td></tr><tr><td>M-1…M-11</td><td>符合（M-5 複製層除外）</td><td>活教師改口對得上各 M;M-5 節點改了、SKILL／指南入口沒改（F-1）</td></tr><tr><td>Design Boundary</td><td>符合</td><td>見 Design Integrity Check。無未授權 Boundary。無悄悄修掉 Known design limit ①②③④</td></tr><tr><td>6-notes Deviations</td><td><strong>如實</strong></td><td>D-1…D-8 皆 L1,抽驗對得上 diff:4B 去 <code>RW-1</code>（<code>2-decision.md</code> 決策點 4）;guide／example 7-review html 回看表;2-decision.html 重生;MIN_CASES／MIN_HEREDOCS 記帳;embed 同形;5-tasks <code>status: approved</code>。D-impl-1…3 與 C8／C9／內嵌稿對得上。<strong>沒有</strong>把 F-1 寫進 Deviations —— 那是本 hop 自建,不是作者隱匿 L2</td></tr></tbody></table></div></div></details><details class="doc" id="sec-變更架構圖"><summary><span>變更架構圖</span></summary><div class="doc-in"><p>產品（#286,已在 tip <code>fdbd569</code>）與本 hop 審查密封:</p><pre><code>[check-realworld.sh]     MIN_CHECKS=174
+<details class="doc" id="sec-Verification-Evidence"><summary><span>Verification Evidence</span></summary><div class="doc-in"><ul><li>Source SHA: 3727f3999794e6fd30cec739553be105c6ddf95e</li><li>Final Fresh Run ID: 2026-09-13T0705Z-impl-B-s7</li><li>Entry point: <code>bash scripts/check-spec-gate.sh docs/dev/requirement-discovery-gaps/4-spec.md &amp;&amp; bash scripts/check-realworld.sh</code></li><li>Toolchain: python3.12.3; markdown-it-py 4.0.0(<code>scripts/requirements-methodology-render.txt</code>); contract 2.0.0; runtime 3.23.4; git 2.43.0; gauntlet 1.3.3</li></ul><div class="tablewrap"><table><thead><tr><th>Layer</th><th>Command</th><th>Status</th><th>Result</th><th>Skipped reason</th></tr></thead><tbody><tr><td>check-spec-gate／check-realworld／devtalk-guard（九缺口牙只這三支</td><td>4-spec Required 被全形分號切出的第一 token;三牙親跑</td><td>pass</td><td>spec-gate 9/9 exit 0;realworld 174/174 exit 0;T-9 Read 三案 0/2/2</td><td></td></tr><tr><td>check-spec-gate</td><td><code>bash scripts/check-spec-gate.sh docs/dev/requirement-discovery-gaps/4-spec.md</code></td><td>pass</td><td>exit 0;9/9;35 條 S</td><td></td></tr><tr><td>check-realworld</td><td><code>bash scripts/check-realworld.sh</code></td><td>pass</td><td>exit 0;174/174;stdout 含構想在錯欄 1 行</td><td></td></tr><tr><td>devtalk-guard</td><td>T-9 Verify <code>tool_name=Read</code> 三案</td><td>pass</td><td>S-8.1 exit 0;S-8.2 exit 2;S-8.3 exit 2</td><td></td></tr><tr><td>Supply chain</td><td><code>rg -n &#x27;RW-[0-9]&#x27;</code> 指定六檔 + <code>test ! -e scripts/check-discovery-gaps.sh</code></td><td>pass</td><td>RW 命中 0;第四家族檔不存在</td><td></td></tr><tr><td>check-stage4-rs-contract.sh` 是本 hop 審頁形狀，不落地缺口牙，不列入本欄）</td><td>（幽靈 token）</td><td>unverified</td><td></td><td>4-spec Required layers 欄含全形分號,gauntlet tokenize 切出第二 token;4-spec 自己寫「不列入本欄」。見附錄 A3</td></tr><tr><td>Mutation</td><td></td><td>n-a</td><td></td><td>Explicitly excluded(4-spec Verification Profile)</td></tr><tr><td>e2e／Playwright</td><td></td><td>n-a</td><td></td><td>Explicitly excluded;無產品前端</td></tr><tr><td>Race／stress</td><td></td><td>n-a</td><td></td><td>Explicitly excluded</td></tr><tr><td>Windows 真機</td><td></td><td>n-a</td><td></td><td>Explicitly excluded／Out of Scope</td></tr><tr><td>check-py-floor</td><td><code>bash scripts/check-py-floor.sh</code></td><td>n-a</td><td></td><td>ENV:本機無 Python 3.9–3.11;exit 2 找不到直譯器。不是本 feat 產品紅</td></tr></tbody></table></div><p>開工前 <code>test -x docs/dev/tools/devflow-evidence-gauntlet.sh</code> → exit 0。</p><p>#289 Final Fresh gauntlet（當時 <code>--source-sha 89dd10d5060b1580b16429e4a4c45775c49944d2 --review-file</code>）:61 checks、1 violation — E7 required layer 第二幽靈 token 未 pass。見附錄 A3。不把幽靈 token 標 pass。本 hop 重綁宣告 Source SHA=<code>3727f3999794e6fd30cec739553be105c6ddf95e</code>;E7 已 park／接受。不重跑產品牙。</p><p>### 2c 整合結論</p><p>授權合併的那一次（Fresh <strong>之前</strong>跑兩次,STATUS／座標完全相同,然後合印出的 INTEGRATION_SHA,不是 branch 名）:</p><ul><li>STATUS: SYNC_REQUIRED_NO_OVERLAP</li><li>FORK / HEAD / INTEGRATION / REF: <code>fdbd5696aeb491538276caa09370744370189601</code> / <code>fdbd5696aeb491538276caa09370744370189601</code> / <code>37a4284848fdcfd4d7ad2385ed6df2c74fd613fd</code> / <code>refs/remotes/origin/main</code></li><li>共同戰場:無（incoming = <code>#287</code> STATUS／HISTORY 列,3 檔 +9/−2）</li><li>恢復: n-a（SYNC_REQUIRED_NO_OVERLAP;已 fast-forward 合 INTEGRATION_SHA,合後 realworld 174/174、本 slug spec-gate 9/9）</li></ul><p>本 hop <strong>沒有撰寫</strong> STATUS／HISTORY;那是 incoming <code>#287</code>。#289 merge 後 tip=<code>3727f39</code>。之後若再跑同一支腳本會印 <code>ALREADY_SYNCED</code>（exit 2）——不當交集證據。<code>#287</code> <code>37a4284848fdcfd4d7ad2385ed6df2c74fd613fd</code> 已在 tip（本 hop 不重做 2c）。Source SHA 於本 companion 重綁開工 Fresh tip <code>3727f3999794e6fd30cec739553be105c6ddf95e</code>。本 docs commit 仍會漂（Known Limit ①）。合法恢復=再重綁 Final Fresh,不得再合產品碼。</p></div></details><details class="doc" id="sec-Negative-Constraint-Mapping"><summary><span>Negative Constraint Mapping</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>Constraint</th><th>Test/Layer</th><th>Status</th></tr></thead><tbody><tr><td>不得把構想寫進 Goals 還當已完成分欄(S-1.2)</td><td>check-realworld S-1.2 fixture;stdout 構想在錯欄</td><td>pass</td></tr><tr><td>不得用 dashboard／API 黑名單誤殺結果句(S-1.4)</td><td>check-realworld S-1.4;detector 只咬空 Requested +「我要 」</td><td>pass</td></tr><tr><td>不得讓發現題附推薦仍當硬規則(S-2.1)</td><td>N3-probe:22-25 禁附推薦;T-3-skill</td><td>pass</td></tr><tr><td>不得把點頭當唯一來源(S-3.3)</td><td>nod-as-only-source + S1-survey.md:29-30</td><td>pass</td></tr><tr><td>不得讓過期 open Assumption 通過 spec-gate(S-4.1)</td><td>C7 expired-open exit 1</td><td>pass</td></tr><tr><td>不得只寫 ACCEPTED + 日期當完整 verdict(S-5.1)</td><td>verdict-accepted-only 殘行必紅</td><td>pass</td></tr><tr><td>不得讓痛點列去向空白或發第二鏈編號(S-6.1、S-6.4)</td><td>C9 缺表 exit 1;<code>rg RW-[0-9]</code> = 0</td><td>pass</td></tr><tr><td>不得另造 lookback 永久檔(S-7.3)</td><td>模板無 lookback.md;有 history-append.sh</td><td>pass</td></tr><tr><td>不得讀 2–7 方案檔或未核路徑當已授權(S-8.2、S-8.3)</td><td>guard Read exit 2 兩案</td><td>pass</td></tr><tr><td>不得把 Fast 空白六問當已分診(S-9.1)</td><td>C8 blank-triage exit 1</td><td>pass</td></tr><tr><td>不得新造檢查家族、不得本 hop 改 STATUS／模板正本、不得發明新 R/S</td><td><code>test ! -e scripts/check-discovery-gaps.sh</code>;本 hop 只寫 7-review* + Human G3 落檔;黃燈 park／接受</td><td>pass</td></tr></tbody></table></div></div></details><details class="doc" id="sec-執行記錄-dev-run-引擎案-手動實作留白"><summary><span>執行記錄(dev-run 引擎案;手動實作留白)</span></summary><div class="doc-in"><p>本 feat Stage 6 為手動 sequential（6-notes:Run n-a）。本 Stage 7 亦手動。本節留白,不虛構模型歷史。</p></div></details><details class="doc" id="sec-截圖槽"><summary><span>截圖槽</span></summary><div class="doc-in"><p>本 feat 無產品前端、無 <code>shots/</code>、無進場紀錄。觀測是 CLI 牙與教師原文。不准發明編輯 URL、不准新增截圖。</p><p>### 進場</p><ul><li>data-shot: n-a</li><li>src: （無）</li><li>caption: 無 GUI 進場。twin 抽驗格是 Coverage 中位列 S-5.3（<code>_templates/3-prototype.md:128</code>）。</li><li>進場:從列表打開已存在紀錄。不准新增。本目錄無已存在 shots。</li><li>hang-point: n-a（無 e2e）</li></ul></div></details><details class="doc" id="sec-Operational-Walkthrough"><summary><span>Operational Walkthrough</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>S-id</th><th>角色</th><th>真實目標</th><th>系統操作</th><th>系統外步驟</th><th>等待／例外</th><th>結果</th></tr></thead><tbody><tr><td>S-1.2</td><td>G1 reviewer</td><td>構想不能混成目標</td><td>跑 check-realworld;讀錯欄 stderr</td><td>把該句搬到 Requested solution</td><td>檢查同步結束</td><td>✅ 人看得見拒絕;Authority=形狀+G1 語意</td></tr><tr><td>S-1.3</td><td>採用者</td><td>抄範例時寫結果</td><td>打開 example 1-discussion</td><td>—</td><td>Goals 仍鎖通道則同一 T 改</td><td>✅ Goals 已改口。Q3／AC 仍教 dashboard 通道,見 F-2 🟡</td></tr><tr><td>S-2.1</td><td>訪談對象／討論 agent</td><td>不被錨定</td><td>讀 N3 發現｜開放題</td><td>人口頭／Email 答現況</td><td>一題一答;不等推薦清單</td><td>✅ 問句本身不再塞推薦</td></tr><tr><td>S-3.3</td><td>討論 agent／G1</td><td>認可≠營運事實</td><td>跑主張牙;打開聲稱來源</td><td>補 path 或改 Assumption</td><td>—</td><td>✅ 牙擋點頭獨源。SKILL／指南入口仍舊句,見 F-1</td></tr><tr><td>S-4.1</td><td>G2 reviewer</td><td>過期假設進不了 G2</td><td>跑 spec-gate</td><td>改 resolved 或 oc-accepted</td><td>拒絕發生在送審關</td><td>✅ 人看得見 C7 紅</td></tr><tr><td>S-5.1</td><td>後讀 3-prototype 的人</td><td>一行答出驗了誰／哪場</td><td>讀 Human verdict 行</td><td>人類親填 role／scenario</td><td>無 attestation 仍被既有 runtime 拒</td><td>✅ 殘行紅;Agent 仍禁代填</td></tr><tr><td>S-6.1</td><td>收斂者／G2</td><td>痛點不能無聲消失</td><td>跑 spec-gate;對原文片段</td><td>補表或標刻意維持</td><td>—</td><td>✅ 新式 full 缺表紅。legacy full grandfather,見 KL-C9</td></tr><tr><td>S-7.1</td><td>owner</td><td>出貨留下誰／何時／用什麼／門檻</td><td>填 Exit 四欄</td><td>到期 history-append;日曆回看</td><td>回看日未到不得寫已改善</td><td>✅ 欄在。指標是否改善仍人判</td></tr><tr><td>S-8.1</td><td>討論 agent</td><td>核准後讀得到事實</td><td>Read 核准=是的擬路徑</td><td>先列「想找哪類＋為什麼」等 owner 核</td><td>核准格空白不得往下</td><td>✅ 放行</td></tr><tr><td>S-8.2</td><td>討論 agent</td><td>方案檔仍進不去</td><td>Read 2-decision</td><td>改讀 specs／原始碼</td><td>—</td><td>✅ 核准格不能覆寫禁令</td></tr><tr><td>S-8.3</td><td>討論 agent／owner</td><td>未核不得當已授權</td><td>Read 未核 path</td><td>送核准卡或維持 Assumption</td><td>顯性等 owner</td><td>✅ 擋。Known limit:跳過 hook 硬讀不擋</td></tr><tr><td>S-9.1</td><td>Fast 實作者</td><td>寫 4 前先收完六問</td><td>跑 spec-gate</td><td>對 diff 答六問</td><td>未收束不得進 R/S</td><td>✅ 新式 fast 空白紅</td></tr><tr><td>S-9.2</td><td>Fast 實作者／owner</td><td>等待誤標不能當純視覺 Fast</td><td>填六問第 3=是</td><td>owner 裁 full／mini／OC</td><td>待裁期間不得開寫</td><td>✅ fixture 去向 fast+mini</td></tr><tr><td>S-1.1／S-1.4／S-2.2／S-2.3／S-3.1／S-3.2／S-3.4／S-3.5／S-4.2／S-4.3／S-4.4／S-5.2／S-5.3／S-6.2／S-6.3／S-6.4／S-7.2／S-7.3／S-8.4／S-9.3／S-9.4／S-9.5</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>不適用（4-spec Operational Context 標不適用或純字面／靜態牙）</td></tr></tbody></table></div><p>六條掃描:技術通過但人無法完成工作 — 未見（SKILL 入口舊句會誤導,但是節點正本已改,見 F-1）。看得到但沒有決策權 — Fast 命中去向仍要 owner 裁,牙擋待裁。等待誤標為完成 — S-9.2 命中第 3 問。系統外動作 — 訪談／回看／owner 核准卡可追。中斷恢復 — 改欄後重跑。資訊過期 — C7 過期 open 紅。</p></div></details><details class="doc" id="sec-Design-Integrity-Check-Design-Boundary-Contract-"><summary><span>Design Integrity Check(Design Boundary Contract 為 <code>applicable</code>)</span></summary><div class="doc-in"><p>1. <strong>依賴反向被間接繞過</strong>:未命中 —— 牙仍是三支既有 CLI;guard 讀 manifest,不經新 util／event bus 放行 2–7。無 <code>check-discovery-gaps.sh</code>。</p><p>2. <strong>資料所有權被繞過寫入</strong>:未命中 —— spec-gate／realworld 只讀;guard 不改目標檔。過期假設擋點在 spec-gate,不在 realworld（4-spec Boundary）。</p><p>3. <strong>相容性破壞包成新增</strong>:未命中 —— C1–C6 保留,只加 C7／C8／C9。realworld <code>MIN_CHECKS=174</code> 改成實數。guard 寫入洩漏掃描仍在;Read 只在 talk 游標在時發動。</p><p>4. <strong>一致性邊界被拆解</strong>:未命中 —— 無多筆寫入交易。核准格是人寫一格、guard 讀字面。</p><p>5. <strong>宣告的 Test seam 未被使用</strong>:未命中 —— fixture 目錄 <code>scripts/fixtures/discovery-gaps/</code> 就是契約 seam;T-1…T-10 Verify 真跑那三支牙,不是只數 selftest 字樣（T-9 真餵 Read）。</p><p>6. <strong>Known design limit 被實作悄悄「解決」</strong>:未命中 —— ①A-2 仍只守對稱句,不還原對話;②guard 仍只在 talk 游標在時擋 Read,無 OS hook;③「不改語意／算不算高影響」仍人判;④審頁產器 8 框未改。C8／C9 收窄發動是 6-notes D-impl-2／D-impl-3（grandfather 既有 fixture）,不是把 Known limit 修掉。</p><p>無未經授權 Boundary 變更。無 🔴。C8／C9 收窄已記 L1,見 Known Limits。</p></div></details><details class="doc" id="sec-Standards-Axis"><summary><span>Standards Axis</span></summary><div class="doc-in"><p>產品樹 = <code>git diff --stat 2bfb906..fdbd569</code>（#286）。本 PR vs 合完 2c 的 main = 本審查檔 + twin。</p><div class="tablewrap"><table><thead><tr><th>F-id</th><th>級</th><th>位置</th><th>問題</th><th>建議</th><th>影響 S/T</th></tr></thead><tbody><tr><td>F-1</td><td>🟡</td><td><code>skills/dev-talk/SKILL.md:102</code>;<code>guides/guide-dev-talk.html:197-198,225</code></td><td>M-5／S-3.3 節點 <code>S1-survey.md:29-30</code> 已改「認可不是來源升格」。SKILL 入口與指南完成條件仍寫「認可後即已核事實／認可清單 = 已核事實」。T-3 為 N3 前綴同步了 SKILL／指南;T-4 Files 不含這兩檔,複製層漏改。人先讀 SKILL／指南會抄舊規則</td><td><strong>owner 已 park／接受</strong>（2026-09-13;KL #12）。本 hop 不修複製層</td><td>R-3／S-3.3／T-4</td></tr><tr><td>F-2</td><td>🟡</td><td><code>example/contract-expiry-reminder/1-discussion.md:89,97-117</code></td><td>S-1.3 THEN 第二句:若仍提 dashboard／卡片／URL,只准出現在 <code>## Requested solution</code> 且標未定案。Goals 已改口,但 Q3「本期只做站內 dashboard」與 AC-1…AC-5「從哪看」仍鎖 dashboard 通道。T-2 Verify 不查 AC。抄範例的人會把通道當驗收</td><td><strong>owner 已 park／接受</strong>（2026-09-13;KL #16;接受 Q3／AC 是已核歷史觀測面）。本 hop 不改產品碼</td><td>R-1／S-1.3／M-2／T-2</td></tr><tr><td>F-3</td><td>🟢</td><td><code>scripts/check-realworld.sh:259-271</code></td><td><code>detect_goals_wrong_column</code> 只咬第一句「我要 dashboard」或「我要 」開頭 + Requested 空。不是 dashboard／API 黑名單（A-1）</td><td>接受。其他錯欄句靠 G1。可選加抽 S-1.4 fixture 含領域詞仍綠（不是 twin 第五格）</td><td>R-1／S-1.2／S-1.4／T-1</td></tr><tr><td>F-4</td><td>🟡</td><td><code>scripts/check-spec-gate.sh:351-357</code> <code>fire_disp</code></td><td>S-6.1 字面:凡 <code>lane: full</code> 缺 <code>## Real-world Disposition</code> 或去向空白 → spec-gate exit 1。實作 <code>fire_disp</code> 只對「新式」full（有 Assumption refs 或路徑含 <code>discovery-gaps</code>）發動。舊 full（如 <code>example/subsidy-3-0-plus/4-spec.md</code>）缺表 no-fire。本 feat fixture 有 refs,牙有咬到;契約字面比牙寬</td><td><strong>owner 已 park／接受</strong>（2026-09-13;KL #7;D-impl-3 grandfather）。本 hop 不加寬 C9</td><td>R-6／S-6.1／T-7</td></tr><tr><td>F-5</td><td>🟢</td><td><code>scripts/check-py-floor.sh:294</code>;<code>hooks/devtalk-guard.sh</code> <code>&lt;&lt;&#x27;READ&#x27;</code></td><td>#286 後續 commit 撤回抬地板:RW-DG 改 tag MUT;Read 只靠 INTERP;<code>MIN_HEREDOCS=222</code>。PF-2 牙留下</td><td>接受。符合 OC-1「不另造家族、不為新牙毀舊牙」</td><td>過程／T-9／T-3</td></tr><tr><td>F-6</td><td>🟢</td><td><code>scripts/check-spec-gate.sh:307-311</code> C8 <code>fire_fast</code></td><td>C8 只對新式 fast 發動（D-impl-2）。S-9.1 字面較寬;本 feat fixture 有 <code>feature:</code>＋ADDED,牙有咬到</td><td>接受為 L1。與 F-4 分開:三審 must-fix 點名的是 C9／S-6.1。見 KL-C8</td><td>R-9／S-9.1</td></tr></tbody></table></div><p><strong>Dependency Direction</strong>:符合 —— realworld → 模板／example／fixture;spec-gate → 4-spec 正文 + <code>spec_profile()</code>;guard → manifest + talk 游標。無反向。無第四 CLI。</p><p><strong>Boundary Leakage</strong>:符合 —— 無內部 struct 漏出;檢查輸出是 exit + 字樣。</p><p><strong>Data Ownership</strong>:符合 —— spec-gate 擁有 G2 形狀;realworld 擁有教師地板;guard 擁有討論期擋讀。過期假設未塞進 realworld。</p><p><strong>Interface Stability</strong>:符合 —— C1–C6 保留;寫入洩漏掃描保留;Read 加項且游標不在走舊邏輯。無 <code>check-discovery-gaps.sh</code>。</p><p>無 🔴。🟡 三條:F-1（SKILL／指南 S1 入口）、F-2（example Q3／AC 仍教 dashboard 通道）、F-4（C9 只打新式 full）。都不是未授權 Boundary 變更（節點／牙在契約內,複製層或發動收窄）。<strong>Human G3 已 park／接受</strong> F-1／F-2／F-4（＋E7 幽靈 token）。本 hop 不修產品碼。可勾 Boundary 處置。</p></div></details><details class="doc" id="sec-Spec-Axis"><summary><span>Spec Axis</span></summary><div class="doc-in"><p>Variant B 偏置:先壓 A-1（不採黑名單）與 OC-1（只延三支既有牙）。</p><div class="tablewrap"><table><thead><tr><th>R</th><th>判定</th><th>出處</th></tr></thead><tbody><tr><td>R-1 分辨結果與構想</td><td><strong>符合牙;活教師 AC／Q3 偏離一層（F-2 🟡）</strong></td><td>S-1.1 模板分欄;<code>S4-accept.md:20</code> 改問結果發生。S-1.2 同一入口指出錯欄,無 <code>check-discovery-gaps.sh</code>。S-1.3 Goals 三句已改口。<strong>S-1.3 THEN 第二句</strong>未落地:example Q3:89 與 AC:97-117 仍鎖 dashboard。<strong>S-1.4</strong> A-1 不採黑名單成立（可選加抽,不是 twin 第五格）</td></tr><tr><td>R-2 發現題不先塞推薦</td><td>符合</td><td>N3 兩路徑;<code>禁附推薦</code>;S-2.2 單邊缺失紅;S-2.3 裁決附選不紅。Known limit ①維持:不還原對話</td></tr><tr><td>R-3 高影響主張回來源或期限</td><td><strong>偏離一層複製</strong></td><td>牙與節點符合（S-3.1…S-3.5、S-8.4 同主張牙）。F-1:SKILL／指南入口仍教「認可後即已核事實」。機械 S-3.3 仍綠。不是 L2（R/S 沒翻）</td></tr><tr><td>R-4 過期假設擋 G2</td><td>符合</td><td>C7 在 <code>check-spec-gate.sh</code>（不另造家族）。expired-open exit 1;resolved／oc-accepted 放行;四欄地板在</td></tr><tr><td>R-5 verdict 一行</td><td>符合</td><td>殘行紅;完整行綠;無 Actor Coverage 全表;attestation 行仍在</td></tr><tr><td>R-6 痛點列有去向</td><td><strong>符合本 feat fixture;字面偏離（F-4 🟡,已 park／接受）</strong></td><td>本 feat 缺表紅;本方案處理要 R／S;非處理有 OOS／limit;第二鏈 <code>rg</code> 0。C9 <code>fire_disp</code> 只打新式 full,S-6.1 寫凡 full。owner 已 park／接受</td></tr><tr><td>R-7 回看四欄</td><td>符合</td><td>模板／example 四欄在;有節缺門檻紅;結果入口 <code>history-append.sh</code>;無 lookback.md</td></tr><tr><td>R-8 核准後讀得到且方案檔仍禁</td><td>符合</td><td>S-8.1／8.2／8.3 真跑 Read 三案 exit。2–7 硬擋,核准格不能覆寫。Known limit ②維持:無 OS hook</td></tr><tr><td>R-9 Fast 寫 4 前六問</td><td>符合（發動收窄已記）</td><td>空白紅;等待誤標命中 Q3;待裁紅;全否可 Fast;本檔 full no-fire。C8 只對新式 fast 發動 = D-impl-2,見 KL-C8</td></tr><tr><td>OC-1 三牙、不另造家族</td><td><strong>符合</strong>（Variant B 主壓）</td><td><code>test ! -e scripts/check-discovery-gaps.sh</code>;<code>test ! -e scripts/check-evidence-allow.sh</code>。擋點只加在 <code>check-realworld.sh</code>／<code>check-spec-gate.sh</code>／<code>hooks/devtalk-guard.sh</code>（+ 已掛進的 devflow-check）。MIN_CHECKS=174 實數。PF-2 用 MUT／READ tag 保住舊牙,不抬地板假綠</td></tr><tr><td>A-1 不採黑名單</td><td><strong>符合</strong>（Variant B 主壓）</td><td>見 R-1／S-1.4。Out of Scope「dashboard／API 黑名單」未被實作偷偷做起來</td></tr><tr><td>M-1…M-11</td><td>符合（M-5 複製層除外）</td><td>活教師改口對得上各 M;M-5 節點改了、SKILL／指南入口沒改（F-1）</td></tr><tr><td>Design Boundary</td><td>符合</td><td>見 Design Integrity Check。無未授權 Boundary。無悄悄修掉 Known design limit ①②③④</td></tr><tr><td>6-notes Deviations</td><td><strong>如實</strong></td><td>D-1…D-8 皆 L1,抽驗對得上 diff:4B 去 <code>RW-1</code>（<code>2-decision.md</code> 決策點 4）;guide／example 7-review html 回看表;2-decision.html 重生;MIN_CASES／MIN_HEREDOCS 記帳;embed 同形;5-tasks <code>status: approved</code>。D-impl-1…3 與 C8／C9／內嵌稿對得上。<strong>沒有</strong>把 F-1 寫進 Deviations —— 那是本 hop 自建,不是作者隱匿 L2</td></tr></tbody></table></div></div></details><details class="doc" id="sec-變更架構圖"><summary><span>變更架構圖</span></summary><div class="doc-in"><p>產品（#286,已在 tip <code>fdbd569</code>）與本 hop 審查密封:</p><pre><code>[check-realworld.sh]     MIN_CHECKS=174
     |  Goals 錯欄 / 不採黑名單
     |  發現｜裁決｜對稱
     |  高影響主張 / 點頭 / ticket
@@ -1417,12 +1450,12 @@ a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #287 incoming(2c 合進,不是本 hop 撰寫):
 [docs/dev/STATUS.md] [docs/dev/HISTORY.md]
 
-本 hop(docs-only,不是產品碼):
-[7-review.md]     Source SHA=89dd10d (must-fix 內容 commit;再 commit 仍漂)
-[7-review.html]   official G3 twin</code></pre><p>無新公開 HTTP 端點、無新表、無第四檢查家族。改 Diff 必須改本圖。</p></div></details><details class="doc" id="sec-Diff-merge-base-main-HEAD-逐檔折疊"><summary><span>Diff(merge-base(main)..HEAD,逐檔折疊)</span></summary><div class="doc-in"><p>2c 合完後 HEAD=<code>37a4284</code> = <code>origin/main</code> tip。本 hop 相對 main 只會多本檔／twin。下面先摺 <strong>#286 產品</strong>（審查對象）,再摺本 hop。</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;+267/-?; detect_goals_wrong_column + 11-17 節&quot;&gt;&lt;code&gt;scripts/check-realworld.sh&lt;/code&gt; (+267; &lt;code&gt;detect_goals_wrong_column&lt;/code&gt;／主張牙／verdict／lookback)&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;add&quot;&gt;+def detect_goals_wrong_column(source):&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+    &quot;&quot;&quot;構想寫進 Goals、Requested solution 缺或空 → 構想在錯欄。&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+    不採 dashboard／API 黑名單:結果句即使含這兩個詞,只要構想在 Requested&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+    solution,不算錯欄。&quot;&quot;&quot;&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+    ...&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+    return first == &quot;我要 dashboard&quot; or first.startswith(&quot;我要 &quot;)&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+MIN_CHECKS = 174&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;+132; C7 C8 C9&quot;&gt;&lt;code&gt;scripts/check-spec-gate.sh&lt;/code&gt; (+132; &lt;code&gt;C7&lt;/code&gt;／&lt;code&gt;C8&lt;/code&gt;／&lt;code&gt;C9&lt;/code&gt;)&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;add&quot;&gt;+#   C7 Assumption refs:open + 過期 ... → FAIL&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+#   C8 Fast early risk triage:僅 lane:fast + 新式 ... → FAIL&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+#   C9 Real-world Disposition:full + 新式 ... → FAIL&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+fire_fast = prof[&quot;lane&quot;] == &quot;fast&quot; and has_feature and added_i is not None&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+fire_disp = prof[&quot;lane&quot;] == &quot;full&quot; and (&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+    assume_i is not None or &quot;discovery-gaps&quot; in spec_path)&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;+79; Read 分支&quot;&gt;&lt;code&gt;hooks/devtalk-guard.sh&lt;/code&gt; (+79; Read + 方案檔硬擋)&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;add&quot;&gt;+if sol.search(posix):&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+    print(&quot;⛔ devtalk-guard:方案檔仍禁讀...&quot;, file=sys.stderr)&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+    raise SystemExit(2)&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+            if approved == &quot;是&quot;:&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+                raise SystemExit(0)&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;教師改口&quot;&gt;&lt;code&gt;_templates/1-discussion.md&lt;/code&gt; &lt;code&gt;_templates/2-decision.md&lt;/code&gt; &lt;code&gt;_templates/3-prototype.md&lt;/code&gt; &lt;code&gt;_templates/4-spec.md&lt;/code&gt; &lt;code&gt;_templates/7-review.md&lt;/code&gt;&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;add&quot;&gt;+## Requested solution&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+## Evidence manifest&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+## Fast early risk triage&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+## Real-world Disposition&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+| 回看日期 | 回看 owner | 資料來源 | 低於何值重開 |&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+- Human verdict: ... | role=&amp;lt;…&amp;gt; | scenario=&amp;lt;…&amp;gt;&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;N3／S1／S4／Fast 入口&quot;&gt;&lt;code&gt;skills/dev-talk/nodes/N3-probe.md&lt;/code&gt; &lt;code&gt;S1-survey.md&lt;/code&gt; &lt;code&gt;S4-accept.md&lt;/code&gt; &lt;code&gt;skills/dev-flow/SKILL.md:36&lt;/code&gt;&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;add&quot;&gt;+- <code>發現｜</code> ...禁附推薦。&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+- <code>裁決｜</code> ...可附選項&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+   認可確認的是理解對了,不是來源升格。&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+①從哪裡看出結果發生&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+→ <strong>進 4 前六問</strong>(Fast early risk triage:…)&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>#286 其餘 fixture／example／guide／<code>check-py-floor.sh</code>／<code>test-architecture-guards.sh</code>／6-notes 見 <code>git diff --stat 2bfb906..fdbd569</code>（48 檔）。本 hop 落檔後本節加 <code>7-review.md</code>／<code>7-review.html</code>。</p></div></details><details class="doc" id="sec-附錄-本輪特有"><summary><span>附錄:本輪特有</span></summary><div class="doc-in"><p>### A1　Variant B:A-1 不採黑名單 + OC-1 三牙</p><p>這是本 hop 要人先看的爭點。</p><p><strong>A-1</strong>（已拒 dashboard／API 黑名單）落地在 <code>scripts/check-realworld.sh:260-271</code>。錯欄條件是:Goals 第一句存在 <strong>且</strong> Requested solution 缺或空 <strong>且</strong>（第一句 ==「我要 dashboard」或 startswith「我要 」）。S-1.4 fixture 正文有 dashboard／API,構想在 Requested solution → 不紅。抽驗:<code>goals-outcome-with-requested-dashboard.md:3-10</code>。</p><p><strong>OC-1</strong>（只延三支既有牙）:本 hop 親跑 <code>test ! -e scripts/check-discovery-gaps.sh</code>、<code>test ! -e scripts/check-evidence-allow.sh</code>。S-1.2／S-2.*／S-3.*／S-5.*／S-7.*／S-8.4 走 <code>check-realworld.sh</code>。S-4／S-6／S-9 走 <code>check-spec-gate.sh</code>。S-8.1…S-8.3 走 <code>devtalk-guard.sh</code>。沒有第四入口。</p><p>S-1.2 THEN 寫「exit ≠ 0」。實作選擇與 T-1 Verify 相同:套件綠、fixture 必須被指出錯欄、stdout 含「構想在錯欄」。這不是黑名單,也不是第二家族。</p><p>### A2　F-1 SKILL／指南 S1 入口漂移（本 hop 自建,6-notes 未列）</p><p><code>skills/dev-talk/nodes/S1-survey.md:29-30</code>（T-4 Files 內）:</p><p>&gt; 認可確認的是理解對了,不是來源升格。認可後清單不得當唯一來源</p><p><code>skills/dev-talk/SKILL.md:102</code>（T-4 未改）:</p><p>&gt; 入口摘要:…認可後即已核事實</p><p><code>guides/guide-dev-talk.html:197</code> 完成條件「認可清單 = 「已核事實」」;<code>:198</code> 原文 blockquote 抄 SKILL 舊句。</p><p>T-3 Boundaries 自己寫過:「指南抄的是 SKILL 摘要,只改指南會漂」。N3 做了同步,S1 沒做。牙仍擋點頭獨源,所以不是 🔴。人抄 SKILL／指南會把認可升格教回去,所以是 🟡。</p><p>6-notes Deviations 沒寫這條。不是作者隱匿 L2（R/S 沒翻、節點已改）;是複製層漏網。本 hop 如實補上。</p><p>### A3　Required layers 幽靈 token</p><p><code>4-spec.md:759</code> Required layers 用全形 <code>／</code> 連三牙,後面括號說明含全形 <code>；</code>。gauntlet <code>tokenize_layer_field</code> 認 <code>；</code> 為分隔,切成:</p><p>1. <code>check-spec-gate／check-realworld／devtalk-guard（九缺口牙只這三支</code></p><p>2. `<code> check-stage4-rs-contract.sh</code> 是本 hop 審頁形狀，不落地缺口牙，不列入本欄） ``</p><p>第二 token 是解析事故,4-spec 自己說不列入本欄。本檔不給它假 pass。Final Fresh gauntlet 對本檔很可能 E7。這是 PRE-REVIEW 的另一個理由,不是產品牙紅。</p><p>修法（不在本 hop）:4-spec Required layers 改成頓號分隔三個短名,說明放到下一行或 <code>——</code> 之後。那是 L2 形狀（動 Verification Profile 欄）,要回 G2。</p><p>### A4　Quiz（給 approver;不可逆方法論改動）</p><p>1. 錯欄牙掃的是 dashboard／API <strong>詞黑名單</strong>,還是分欄形狀?答案必須指出 <code>detect_goals_wrong_column</code> 與 S-1.4 fixture。</p><p>2. 九缺口的機械入口是哪三支?有沒有 <code>check-discovery-gaps.sh</code>?</p><p>3. owner 把 2-decision 寫進 Evidence manifest 且核准=是,Read 會怎樣?哪一支、exit code?</p><p>4. Fast 六問第 3 題「是。等待被顯示成完成」、去向寫 Fast 或待裁,spec-gate 會怎樣?</p><p>5. 本檔為什麼不是 G3 PASS?至少要提到 PRE-REVIEW、F-1、或幽靈 token／SHA 會漂 其中兩件。</p><p>### A5　對照作者（N4;先自建矩陣後才讀）</p><div class="tablewrap"><table><thead><tr><th>作者主張</th><th>本 hop 裁定</th></tr></thead><tbody><tr><td>T-1…T-10 review PASS;不是 G3</td><td>同意。本 hop 也不發明 G3</td></tr><tr><td>無第四家族;MIN_CHECKS=174</td><td>同意。親跑</td></tr><tr><td>D-1…D-8 皆 L1</td><td>同意。抽驗 4B 改口、回看 twin、MUT／READ、5-tasks approved</td></tr><tr><td>D-impl-2／3 C8／C9 收窄</td><td>同意為 L1。Spec 字面較寬,已進 Known Limits,不升 L2</td></tr><tr><td>Self-Review ⑧ architecture-guards 因缺 3.9–3.11 未正式綠</td><td>同意。本 hop 同 ENV;改隔離跑 S-2.2</td></tr><tr><td>未列 SKILL／指南 S1 舊句</td><td><strong>補 F-1</strong>。不是 L2,但是 🟡</td></tr><tr><td>Files 聯集外的 L1 檔</td><td>同意範圍:2-decision.md／html、guide-dev-flow.html、example 7-review.html、check-py-floor.sh、5-tasks status。6-notes 恆許</td></tr></tbody></table></div><p>無作者把 L2 寫成 L1。無 Decisions 實為翻 R/S。</p></div></details>
+本 hop(docs-only 重綁 + Human G3,不是產品碼):
+[7-review.md]     Source SHA=3727f39 (#289 merge tip = 本 hop 開工 HEAD)
+[7-review.html]   official G3 twin</code></pre><p>無新公開 HTTP 端點、無新表、無第四檢查家族。改 Diff 必須改本圖。</p></div></details><details class="doc" id="sec-Diff-merge-base-main-HEAD-逐檔折疊"><summary><span>Diff(merge-base(main)..HEAD,逐檔折疊)</span></summary><div class="doc-in"><p><code>merge-base(origin/main, HEAD)</code> 在 #289 寫檔時 = <code>37a4284</code>。產品 #286 已在 main。#289 merge 後 tip=<code>3727f39</code>。本 companion PR 相對 main 只重綁本檔／twin 的 Final Fresh 座標 + 落檔 Human G3 PASS。下面先摺 <strong>#286 產品</strong>（審查對象）,再摺本 hop。</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;+267/-?; detect_goals_wrong_column + 11-17 節&quot;&gt;&lt;code&gt;scripts/check-realworld.sh&lt;/code&gt; (+267; &lt;code&gt;detect_goals_wrong_column&lt;/code&gt;／主張牙／verdict／lookback)&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;add&quot;&gt;+def detect_goals_wrong_column(source):&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+    &quot;&quot;&quot;構想寫進 Goals、Requested solution 缺或空 → 構想在錯欄。&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+    不採 dashboard／API 黑名單:結果句即使含這兩個詞,只要構想在 Requested&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+    solution,不算錯欄。&quot;&quot;&quot;&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+    ...&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+    return first == &quot;我要 dashboard&quot; or first.startswith(&quot;我要 &quot;)&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+MIN_CHECKS = 174&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;+132; C7 C8 C9&quot;&gt;&lt;code&gt;scripts/check-spec-gate.sh&lt;/code&gt; (+132; &lt;code&gt;C7&lt;/code&gt;／&lt;code&gt;C8&lt;/code&gt;／&lt;code&gt;C9&lt;/code&gt;)&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;add&quot;&gt;+#   C7 Assumption refs:open + 過期 ... → FAIL&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+#   C8 Fast early risk triage:僅 lane:fast + 新式 ... → FAIL&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+#   C9 Real-world Disposition:full + 新式 ... → FAIL&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+fire_fast = prof[&quot;lane&quot;] == &quot;fast&quot; and has_feature and added_i is not None&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+fire_disp = prof[&quot;lane&quot;] == &quot;full&quot; and (&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+    assume_i is not None or &quot;discovery-gaps&quot; in spec_path)&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;+79; Read 分支&quot;&gt;&lt;code&gt;hooks/devtalk-guard.sh&lt;/code&gt; (+79; Read + 方案檔硬擋)&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;add&quot;&gt;+if sol.search(posix):&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+    print(&quot;⛔ devtalk-guard:方案檔仍禁讀...&quot;, file=sys.stderr)&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+    raise SystemExit(2)&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+            if approved == &quot;是&quot;:&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+                raise SystemExit(0)&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;教師改口&quot;&gt;&lt;code&gt;_templates/1-discussion.md&lt;/code&gt; &lt;code&gt;_templates/2-decision.md&lt;/code&gt; &lt;code&gt;_templates/3-prototype.md&lt;/code&gt; &lt;code&gt;_templates/4-spec.md&lt;/code&gt; &lt;code&gt;_templates/7-review.md&lt;/code&gt;&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;add&quot;&gt;+## Requested solution&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+## Evidence manifest&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+## Fast early risk triage&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+## Real-world Disposition&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+| 回看日期 | 回看 owner | 資料來源 | 低於何值重開 |&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+- Human verdict: ... | role=&amp;lt;…&amp;gt; | scenario=&amp;lt;…&amp;gt;&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>&lt;details&gt;</p><p>&lt;summary title=&quot;N3／S1／S4／Fast 入口&quot;&gt;&lt;code&gt;skills/dev-talk/nodes/N3-probe.md&lt;/code&gt; &lt;code&gt;S1-survey.md&lt;/code&gt; &lt;code&gt;S4-accept.md&lt;/code&gt; &lt;code&gt;skills/dev-flow/SKILL.md:36&lt;/code&gt;&lt;/summary&gt;</p><p>&lt;pre&gt;&lt;span class=&quot;add&quot;&gt;+- <code>發現｜</code> ...禁附推薦。&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+- <code>裁決｜</code> ...可附選項&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+   認可確認的是理解對了,不是來源升格。&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+①從哪裡看出結果發生&lt;/span&gt;</p><p>&lt;span class=&quot;add&quot;&gt;+→ <strong>進 4 前六問</strong>(Fast early risk triage:…)&lt;/span&gt;&lt;/pre&gt;</p><p>&lt;/details&gt;</p><p>#286 其餘 fixture／example／guide／<code>check-py-floor.sh</code>／<code>test-architecture-guards.sh</code>／6-notes 見 <code>git diff --stat 2bfb906..fdbd569</code>（48 檔）。</p><p>&lt;details&gt;</p><p>&lt;summary&gt;docs/dev/requirement-discovery-gaps/7-review.md + 7-review.html — 本審查正本&lt;/summary&gt;</p><p>本檔。<code>verdict: PASS</code>（Human G3,<code>user</code> @ 2026-09-13）。Source SHA 維持 Fresh tip <code>3727f3999794e6fd30cec739553be105c6ddf95e</code>。</p><p>&lt;/details&gt;</p></div></details><details class="doc" id="sec-附錄-本輪特有"><summary><span>附錄:本輪特有</span></summary><div class="doc-in"><p>### A1　Variant B:A-1 不採黑名單 + OC-1 三牙</p><p>這是本 hop 要人先看的爭點。</p><p><strong>A-1</strong>（已拒 dashboard／API 黑名單）落地在 <code>scripts/check-realworld.sh:260-271</code>。錯欄條件是:Goals 第一句存在 <strong>且</strong> Requested solution 缺或空 <strong>且</strong>（第一句 ==「我要 dashboard」或 startswith「我要 」）。S-1.4 fixture 正文有 dashboard／API,構想在 Requested solution → 不紅。抽驗:<code>goals-outcome-with-requested-dashboard.md:3-10</code>。</p><p><strong>OC-1</strong>（只延三支既有牙）:本 hop 親跑 <code>test ! -e scripts/check-discovery-gaps.sh</code>、<code>test ! -e scripts/check-evidence-allow.sh</code>。S-1.2／S-2.*／S-3.*／S-5.*／S-7.*／S-8.4 走 <code>check-realworld.sh</code>。S-4／S-6／S-9 走 <code>check-spec-gate.sh</code>。S-8.1…S-8.3 走 <code>devtalk-guard.sh</code>。沒有第四入口。</p><p>S-1.2 THEN 寫「exit ≠ 0」。實作選擇與 T-1 Verify 相同:套件綠、fixture 必須被指出錯欄、stdout 含「構想在錯欄」。這不是黑名單,也不是第二家族。</p><p>### A2　F-1 SKILL／指南 S1 入口漂移（本 hop 自建,6-notes 未列）</p><p><code>skills/dev-talk/nodes/S1-survey.md:29-30</code>（T-4 Files 內）:</p><p>&gt; 認可確認的是理解對了,不是來源升格。認可後清單不得當唯一來源</p><p><code>skills/dev-talk/SKILL.md:102</code>（T-4 未改）:</p><p>&gt; 入口摘要:…認可後即已核事實</p><p><code>guides/guide-dev-talk.html:197</code> 完成條件「認可清單 = 「已核事實」」;<code>:198</code> 原文 blockquote 抄 SKILL 舊句。</p><p>T-3 Boundaries 自己寫過:「指南抄的是 SKILL 摘要,只改指南會漂」。N3 做了同步,S1 沒做。牙仍擋點頭獨源,所以不是 🔴。人抄 SKILL／指南會把認可升格教回去,所以是 🟡。</p><p>6-notes Deviations 沒寫這條。不是作者隱匿 L2（R/S 沒翻、節點已改）;是複製層漏網。本 hop 如實補上。</p><p>### A3　Required layers 幽靈 token</p><p><code>4-spec.md:759</code> Required layers 用全形 <code>／</code> 連三牙,後面括號說明含全形 <code>；</code>。gauntlet <code>tokenize_layer_field</code> 認 <code>；</code> 為分隔,切成:</p><p>1. <code>check-spec-gate／check-realworld／devtalk-guard（九缺口牙只這三支</code></p><p>2. `<code> check-stage4-rs-contract.sh</code> 是本 hop 審頁形狀，不落地缺口牙，不列入本欄） ``</p><p>第二 token 是解析事故,4-spec 自己說不列入本欄。本檔不給它假 pass。#289 Final Fresh gauntlet 對本檔 E7。<strong>不是產品牙紅</strong>。Human G3 已 park／接受（KL #17）。</p><p>修法（不在本 hop）:4-spec Required layers 改成頓號分隔三個短名,說明放到下一行或 <code>——</code> 之後。那是 L2 形狀（動 Verification Profile 欄）,要回 G2。本 hop 不回 G2、不發明新 R/S。</p><p>### A4　Quiz（給 approver;不可逆方法論改動）</p><p>1. 錯欄牙掃的是 dashboard／API <strong>詞黑名單</strong>,還是分欄形狀?答案必須指出 <code>detect_goals_wrong_column</code> 與 S-1.4 fixture。</p><p>2. 九缺口的機械入口是哪三支?有沒有 <code>check-discovery-gaps.sh</code>?</p><p>3. owner 把 2-decision 寫進 Evidence manifest 且核准=是,Read 會怎樣?哪一支、exit code?</p><p>4. Fast 六問第 3 題「是。等待被顯示成完成」、去向寫 Fast 或待裁,spec-gate 會怎樣?</p><p>5. 本檔 Human G3 為什麼仍接受 F-1／F-2／F-4／E7?答案必須指出 owner 已 park／接受、本 hop 不修產品碼、不發明新 R/S。</p><p>Human G3 PASS 已由 <code>user</code> @ 2026-09-13（chat / widget）寫入;<code>verdict:</code> 不再是 PRE-REVIEW。題旨仍供抽驗,不重考。</p><p>### A5　對照作者（N4;先自建矩陣後才讀）</p><div class="tablewrap"><table><thead><tr><th>作者主張</th><th>本 hop 裁定</th></tr></thead><tbody><tr><td>T-1…T-10 review PASS;不是 G3</td><td>同意機械面。Human G3 另由 <code>user</code> @ 2026-09-13 落檔,不由作者／Implementer B 代填</td></tr><tr><td>無第四家族;MIN_CHECKS=174</td><td>同意。親跑</td></tr><tr><td>D-1…D-8 皆 L1</td><td>同意。抽驗 4B 改口、回看 twin、MUT／READ、5-tasks approved</td></tr><tr><td>D-impl-2／3 C8／C9 收窄</td><td>同意為 L1。Spec 字面較寬,已進 Known Limits,不升 L2</td></tr><tr><td>Self-Review ⑧ architecture-guards 因缺 3.9–3.11 未正式綠</td><td>同意。本 hop 同 ENV;改隔離跑 S-2.2</td></tr><tr><td>未列 SKILL／指南 S1 舊句</td><td><strong>補 F-1</strong>。不是 L2,但是 🟡</td></tr><tr><td>Files 聯集外的 L1 檔</td><td>同意範圍:2-decision.md／html、guide-dev-flow.html、example 7-review.html、check-py-floor.sh、5-tasks status。6-notes 恆許</td></tr></tbody></table></div><p>無作者把 L2 寫成 L1。無 Decisions 實為翻 R/S。</p></div></details>
 <footer class="foot gate-verdict" id="gate-verdict"
   data-slug="requirement-discovery-gaps" data-stage="7-review"
-  data-source-sha="89dd10d5060b1580b16429e4a4c45775c49944d2">
+  data-source-sha="3727f3999794e6fd30cec739553be105c6ddf95e">
   <p class="gv-canon">正本是同目錄 <code>7-review.md</code> 頂欄
   <code>verdict:</code>。勾選只是瀏覽器草稿。全勾不算 PASS。
   只有「提交判定」才寫入 Human verdict。sidecar／HTML／localStorage 都不是正本;
