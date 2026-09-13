@@ -355,10 +355,16 @@ Run: n-a（sequential v1 start，無 run_id 事件通道）
 - 影響:無 R/S 變更。T-4 隔離與正式 repo 同針。
 
 ### D-7(L1)
-- 現象:RW-DG1／RW-DG2 兩個 `mutate <<'PY'` 讓 CI 實得 heredoc 223;`MIN_HEREDOCS` 221 時 PF-2 漏收一枚仍 ≥221 → 假綠。
-- 保守選擇:`MIN_HEREDOCS` 與靜態釘改 223。
-- 理由:與 diagram-ir-gate D-4 同形母版記帳。
+- 現象:RW-DG1／RW-DG2 兩個 `mutate <<'PY'` 後,CI 未變異 heredoc=224;PF-2 關掉 INTERP 後實得 223。地板 221／223 都仍 ≤223 → PF-2 假綠。
+- 保守選擇:`MIN_HEREDOCS` 與靜態釘改 224。
+- 理由:與 diagram-ir-gate D-4 同形母版記帳;地板必須等於未變異實數。
 - 影響:無 R/S 變更。
+
+### D-8(L1)
+- 現象:`check-devstage6-graph` P0:已有 6-notes 且 5-tasks 不是 approved → 退回第 5 站。Stage 5 hop 把 5-tasks 留 draft。
+- 保守選擇:本 slug `5-tasks.md` frontmatter `status: approved` 並重生 twin。不改 STATUS／HISTORY、不發明 G3。
+- 理由:同 repo 其他已寫 6-notes 的 slug 皆 approved;這是 graph 入口契約,不是新 R/S。
+- 影響:無 R/S 變更。N1-arm 入口對得上。
 
 ## Files Changed
 

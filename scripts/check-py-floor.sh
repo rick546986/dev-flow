@@ -292,9 +292,9 @@ if checked < MIN_FILES:
 # 另外靠 test-architecture-guards.sh 的 PF-2 fixture(對 check-py-floor.sh 複本
 # 本身做 INTERP_TOKEN_RE 變異,逼一個自造的變數呼叫 heredoc 從計數裡消失),
 # 不是這裡。增刪 .sh 或 heredoc 時一起改下面這個數字。
-# Exact pin (no slack): measured 223 after requirement-discovery-gaps RW-DG1/2 +2.
-# PF-2 drops exactly one INTERP-only heredoc; slack would make that mutant stay green.
-MIN_HEREDOCS = 223
+# Exact pin (no slack): measured 224 on CI (unmutated). RW-DG1/2 +2 from 221;
+# PF-2 mutant drops exactly one INTERP-only heredoc → 223. Floor must be 224.
+MIN_HEREDOCS = 224
 if heredoc_checked < MIN_HEREDOCS:
     failures.append(
         f"⛔ 只掃到 {heredoc_checked} 個 heredoc(地板 {MIN_HEREDOCS})—— "
