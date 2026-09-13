@@ -322,6 +322,17 @@ else:
     check_skip("正向 fixture goals-outcome-with-requested-dashboard 不因 dashboard/API 誤殺",
                "隔離測試根目錄無 discovery-gaps fixture")
 
+# ── 12. 教師分欄地板（S-1.1／S-1.3）：Goals 只寫結果，構想進 Requested solution ──
+check("## Requested solution" in t1, "template 1-discussion 含 ## Requested solution")
+check("## Requested solution" in e1, "example 1-discussion 含 ## Requested solution")
+t1_goals = heading_body(t1, "Goals") or ""
+t1_ac = heading_body(t1, "驗收雛形") or ""
+check("畫面路徑 | API 端點" not in t1_goals and "畫面路徑 | API 端點" not in t1_ac,
+      "template Goals／驗收雛形不再預填畫面路徑 | API 端點")
+e1_goals = heading_body(e1, "Goals") or ""
+check(all(p not in e1_goals for p in ("就能看到", "點擊可直達", "一眼可見")),
+      "example Goals 不再把登入／點擊／一眼可見寫成目標本身")
+
 # ── 檢查數地板(N-2,2026-08-15)──────────────────────────────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」——地板留餘裕=沒有
 # 牙齒(同 repo 慣例:scripts/check-stage67-enforcement.sh:232、
@@ -329,7 +340,7 @@ else:
 # 起因:刪掉整段(例如第 5 節「NOT_REVIEWED ≠ ACCEPTED」)之前,checks 只是印出來的
 # 數字,不是斷言——舊版刪光整節仍印「✅ 全過」。新增/刪除 check() 呼叫時,
 # 把這個數字一起往上/往下調。
-MIN_CHECKS = 140
+MIN_CHECKS = 144
 if checks < MIN_CHECKS:
     failures.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                      f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")

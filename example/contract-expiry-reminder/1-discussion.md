@@ -60,9 +60,14 @@ updated: 2026-07-23
 - [Assumption] 共管重複聯絡「約一季一次」:無記錄,僅訪談印象。
 
 ## Goals
-- 業務登入後,不用翻任何清單就能看到「30 天內到期」的合約。
-- 點擊可直達該合約詳情。
-- 續約處理進行到哪(等待法務/等待主管/已聯絡供應商)有一眼可見的目前狀態與下一步,不再靠記憶與 Excel。
+- 負責業務在合約到期前做完續約決定,不必靠記憶與私表拼出該處理哪些合約。
+- 後來接手的人接得起某一筆到期合約的處理進度,不因換人或隔夜而斷。
+- 看過提醒不算處理完成;狀態只由明確標記改變。
+
+## Requested solution
+- 未定案：站內 dashboard 卡片列出 30 天內到期且未續約的合約。
+- 未定案：從該清單到達合約詳情（卡片／URL 只是構想,不是 Goal）。
+- 未定案：處理狀態與下一步呈现在同一張卡片上。
 
 ## Non-Goals(初稿)
 - email / LINE 通知(之後再議)。
@@ -116,7 +121,7 @@ updated: 2026-07-23
 - Q:現況有沒有通知或排程機制?
   - 事實:docs/specs/contracts.md:L1-L20
   - 推理:CRUD 與 end_date 已在,通知與排程都不在;dashboard 有空白卡片。
-  - 結論:CONFIRMED dashboard 是最低成本的呈現面。
+  - 結論:NEEDS_VERIFICATION 呈現面未定案;dashboard 只是 Requested solution 構想,不是已核 Goal。
 - Q:Expiring 怎麼定義?
   - 事實:docs/specs/contracts.md:L1-L20
   - 推理:議約約一個月,更短來不及。
