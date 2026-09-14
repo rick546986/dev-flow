@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>five-station-f2 · 4-spec</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+a.cell{text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px;overflow-wrap:anywhere;word-break:break-word}
+.r-body p{margin:0 0 8px}
+.s-card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 10px;background:var(--sunk)}
+.s-card h3{margin:0 0 8px;font-size:.95rem}
+.gwt{margin:0 0 6px}
+.gwt .k{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-3);display:block}
+.ask{margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--accent);
+  background:var(--accent-soft)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+.miss{background:var(--bad-soft);color:var(--bad);padding:2px 6px;border-radius:4px}
+.foot{margin:36px 0 0;padding:16px 18px;border:1px solid var(--rule);
+  border-radius:12px;background:var(--panel)}
+.gv-row{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0}
+.gv-field{display:block;margin:8px 0}
+.btn{background:var(--accent);color:#fff;border:0;border-radius:8px;
+  padding:8px 14px;font-weight:650;cursor:pointer}
+.gv-status{color:var(--ink-2);font-size:.86rem}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 4-spec · 審查介面</p>
+  <h1>five-station-f2</h1>
+  <p class="sub">正本是 md。這頁是 R/S 卡 + 生命週期直式圖,不是 gate-twin 勾選卡。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">draft</span></div><div class="cell"><span class="k">verdict</span><span class="v">PRE-REVIEW</span></div><div class="cell"><span class="k">R</span><span class="v">8</span></div><div class="cell"><span class="k">S</span><span class="v">48</span></div></div>
+</header>
+<section class="r-block" id="lifecycle"><div class="r-head"><span class="r-name">補助模組生命週期（預覽）</span></div><div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 414" role="img" aria-label="模組生命週期">
+  <rect class="b" x="40" y="10" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">新生</text>
+  <text class="sm" text-anchor="middle" x="140" y="52">coordinator 評 </text>
+  <text class="sm" text-anchor="middle" x="140" y="66">brief §3 謂詞；</text>
+  <text class="sm" text-anchor="middle" x="140" y="80">slug 級只增倉；五問可答的 hop／latch／cap 紀錄；檔→五站五桶觸發表；同一入口 NEW5+OLD7 具名 CASE</text>
+  <path class="flow" d="M140,92 L140,114"/>
+  <rect class="hl" x="40" y="114" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="138">改行為</text>
+  <text class="sm" text-anchor="middle" x="140" y="156">F2 起 </text>
+  <text class="sm" text-anchor="middle" x="140" y="170">coordinator 真則</text>
+  <text class="sm" text-anchor="middle" x="140" y="184"> hop、假則停修、Must-keep 紅不得 hop；RP-9／10／11 改讀真計數。本 hop 只把契約寫進本檔</text>
+  <path class="flow" d="M140,196 L140,218"/>
+  <rect class="b" x="40" y="218" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="242">退役</text>
+  <text class="sm" text-anchor="middle" x="140" y="260">沒有</text>
+  <path class="flow" d="M140,300 L140,322"/>
+  <rect class="b" x="40" y="322" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="346">不動</text>
+  <text class="sm" text-anchor="middle" x="140" y="364">七檔名、G1／G2／</text>
+  <text class="sm" text-anchor="middle" x="140" y="378">ACCEPTED token</text>
+  <text class="sm" text-anchor="middle" x="140" y="392">、既有 graph.yaml／Stage 1–4 模板、本 slug 舊 7、F1 十二群牙、agent-event schema 1.1、契約 2.0.0</text>
+</svg>
+</div></div></section>
+<section class="r-block" id="lifecycle-note"><div class="r-head"><span class="r-name">生命週期說明</span></div><div class="r-body"><p>主詞是「F2 coordinator 自動前進 + slug 級 hop／latch／cap 紀錄 + NEW5／OLD7 同一電池」，不是整份方法論。直式圖，置中。</p></div></section>
+<section class="r-block" id="R-1"><div class="r-head"><span class="r-name">R-1 系統 SHALL 只在自動前進謂詞全真時 hop</span></div><div class="r-body"><article class="s-card" id="S-1.1"><h3>S-1.1 Intake→Decide 四條全真才 hop</h3><p class="ask"><strong>審的時候看什麼</strong> 從該 slug 前進紀錄與目錄檔看 | from-to=Intake→Decide 且無請人審 A1／A2 算過 | n-a:F2 coordinator 本 hop 不落地。替代：狀態機 §2.1 四條；本條 GWT；後站電池 NEW5-HOP-OK stdout</p><p class="gwt"><span class="k">GIVEN</span>NEW5 合成 fixture 已過 R-6 三前置；`docs/dev/&lt;slug&gt;/1-discussion.md` 可解析；Open Questions 全數已解或明標 `[Assumption]`；有 `## Real-world Context`（或 brief 承認的 legacy 且標了 legacy）；A1／A2 若應產則 `build-stage1-html.py`／`build-scan-html.py` exit 0</p><p class="gwt"><span class="k">WHEN</span>coordinator 評 Intake → Decide</p><p class="gwt"><span class="k">THEN</span>hop 發生；前進紀錄寫 from=Intake、to=Decide；A1／A2 latch=否 → 紀錄不含「請人審 A1」「請人審 A2」</p></article><article class="s-card" id="S-1.2"><h3>S-1.2 Decide→Spec 不等 G1 verdict</h3><p class="ask"><strong>審的時候看什麼</strong> 從前進紀錄看 | Decide→Spec 發生且無「請填 G1 verdict」算過 | n-a:coordinator 未落地。替代：狀態機 §2.2；brief A3／A4；本條</p><p class="gwt"><span class="k">GIVEN</span>同一 NEW5 fixture；`2-decision.md` 在；`## Decision` 非空；Owner Calls／OC 全裁決、無「待裁決」字樣；A3 自動前進謂詞真；A4 twin 已產或可產</p><p class="gwt"><span class="k">WHEN</span>coordinator 評 Decide → Spec</p><p class="gwt"><span class="k">THEN</span>hop 發生；**不**等人寫 G1 `verdict:`；紀錄 from=Decide、to=Spec</p></article><article class="s-card" id="S-1.3"><h3>S-1.3 Spec→Build 無 trigger 時不建 3-prototype</h3><p class="ask"><strong>審的時候看什麼</strong> 從目錄 `ls` 與前進紀錄看 | Spec→Build 發生、無 `3-prototype.md`、無請填 G2 算過 | n-a:coordinator 未落地。替代：狀態機 §2.3 第 5 條；Decision 約束 14；本 slug 自身 0 trigger</p><p class="gwt"><span class="k">GIVEN</span>NEW5 fixture；九條 Stage 3 trigger 全未命中（與本 slug Decision 相同）；`4-spec.md` 在；每個 S 有觀測欄；`lane:`／`Risk:` 可解析；Drafting Decisions 無「待裁決」；`check-spec-gate.sh` 形狀綠；A6／A7 可產</p><p class="gwt"><span class="k">WHEN</span>coordinator 評 Spec → Build</p><p class="gwt"><span class="k">THEN</span>hop 發生；目錄**沒有**新建 `3-prototype.md`；A5 不建頁；B1 未命中條款視為真；**不**等人寫 G2 `verdict:`</p></article><article class="s-card" id="S-1.4"><h3>S-1.4 Spec→Build 命中 B1 時必須 ACCEPTED 加 attestation</h3><p class="ask"><strong>審的時候看什麼</strong> 從 hop 拒絕理由與狀態看 | 狀態=HumanWait 或停 Spec；未 hop 到 Build 算過 | n-a:coordinator 未落地。替代：狀態機 §2.3 第 6 條；F1 RP-13</p><p class="gwt"><span class="k">GIVEN</span>另一份 NEW5 fixture；九條 trigger 至少一條命中；`3-prototype.md` 在</p><p class="gwt"><span class="k">WHEN</span>Human verdict ≠ `ACCEPTED`、或 `ACCEPTED` 但無 `Verdict attestation: human:&lt;名&gt;` 行，且 coordinator 被求 hop 出 Spec</p><p class="gwt"><span class="k">THEN</span>不 hop；B1 命中且 attestation 未寫 → 進 HumanWait，不是偷偷 hop；無 attestation 的 `ACCEPTED` = 謂詞假</p></article><article class="s-card" id="S-1.5"><h3>S-1.5 Build→Ship 四欄與獨立 review 全真才 hop</h3><p class="ask"><strong>審的時候看什麼</strong> 從前進紀錄與 T 卡看 | Build→Ship 發生且無請人審任務板算過 | n-a:coordinator 未落地。替代：狀態機 §2.4；RP-1／RP-2</p><p class="gwt"><span class="k">GIVEN</span>NEW5 fixture；`5-tasks.md` 每 T 有 Covers／Files／Verify／Blocked-by；`6-implementation-notes.md` 每 T 有獨立 review PASS 且 reviewer ≠ implementer；本次 S 全綠；Files ⊆ 5-tasks Files 聯集</p><p class="gwt"><span class="k">WHEN</span>coordinator 評 Build → Ship</p><p class="gwt"><span class="k">THEN</span>hop 發生；A8／A9 latch=否 → 紀錄不含「想給人看看任務板」「請人審 A8」</p></article><article class="s-card" id="S-1.6"><h3>S-1.6 Ship 沒有自動前進</h3><p class="ask"><strong>審的時候看什麼</strong> 從狀態與頂欄看 | 狀態=HumanWait 或留 Ship；`verdict` 仍空算過 | n-a:coordinator 未落地。替代：狀態機 §2.5；S-2.4 NEW5-SHIP-MECH</p><p class="gwt"><span class="k">GIVEN</span>NEW5 fixture 已在 Ship；`7-review.md` 在；機械項全綠（Evidence 八點可勾）；md 頂欄 `verdict:` 仍空或不是人寫的 `PASS`</p><p class="gwt"><span class="k">WHEN</span>coordinator 評 Ship → Done</p><p class="gwt"><span class="k">THEN</span>**不** hop；必須進 HumanWait（A10 latch=是）；不得把機械綠寫成 `verdict: PASS`</p></article><article class="s-card" id="S-1.7"><h3>S-1.7 NEW5-HOP-OK 綠格：合法 hop 加五問紀錄</h3><p class="ask"><strong>審的時候看什麼</strong> 從單一電池 NEW5-HOP-OK 格與該筆紀錄看 | 該格綠；五問各有可指答案算過 | n-a:電池入口檔名本 hop 不鎖（Decision 交 4-spec 形、鍵名 OPEN）。替代：本條 GWT；Decision CASE NEW5-HOP-OK；後站入口 stdout 含該 CASE 名且該格綠</p><p class="gwt"><span class="k">GIVEN</span>NEW5 合成 fixture（不是 `docs/dev/five-station-f2/`、不是 `docs/dev/five-station-simplify/`）；當下 hop 的自動前進謂詞全真；latch 假；Must-keep 全綠；該 hop_id 桶 &lt; 2</p><p class="gwt"><span class="k">WHEN</span>coordinator 評該 hop</p><p class="gwt"><span class="k">THEN</span>發生 hop；人指得到一筆前進紀錄且五問有答（誰／從哪到哪／哪條謂詞／哪只 cap／是否 Escalated=否）；不是 chat、不是 `attempt_completed` 冒充</p></article><article class="s-card" id="S-1.8"><h3>S-1.8 NEW5-PRED-STOP 綠格：謂詞假就停修</h3><p class="ask"><strong>審的時候看什麼</strong> 從 NEW5-PRED-STOP 格與拒絕理由看 | 該格綠；理由含謂詞名；零「要不要繼續」算過 | n-a:coordinator 未落地。替代：Decision CASE NEW5-PRED-STOP；本條</p><p class="gwt"><span class="k">GIVEN</span>同一家族 NEW5 fixture；自動前進謂詞至少一條為假（例：`4-spec.md` 缺觀測欄、或 OC 仍有「待裁決」）</p><p class="gwt"><span class="k">WHEN</span>coordinator 評該 hop</p><p class="gwt"><span class="k">THEN</span>不 hop；拒絕理由點名**該條**謂詞假；紀錄與 stdout **不含**「要不要繼續」「請人審」「確認一下」</p></article></div></section>
+<section class="r-block" id="R-2"><div class="r-head"><span class="r-name">R-2 系統 SHALL 在 Must-keep 紅時 fail-closed 拒 hop</span></div><div class="r-body"><article class="s-card" id="S-2.1"><h3>S-2.1 Must-keep 未綠不得 hop</h3><p class="ask"><strong>審的時候看什麼</strong> 從拒絕理由與狀態看 | 未 hop；理由含 Must-keep 或缺欄名算過 | n-a:coordinator 未落地。替代：brief §5；Decision 約束 7；本條</p><p class="gwt"><span class="k">GIVEN</span>NEW5 fixture；自動前進謂詞其餘為真；latch 假；Must-keep 至少一條紅（例：某一 T 缺 Verify，或測試名不含 S-id）</p><p class="gwt"><span class="k">WHEN</span>coordinator 評 hop</p><p class="gwt"><span class="k">THEN</span>不 hop；拒絕理由含 Must-keep／該 M-id／該缺欄；狀態留在原站</p></article><article class="s-card" id="S-2.2"><h3>S-2.2 NEW5-MK-RED：注入 Must-keep 紅仍 hop 該格必須紅</h3><p class="ask"><strong>審的時候看什麼</strong> 從單一電池該格顏色／exit 看 | 注入壞 hop → 該格紅；拒 hop 不得洗成綠算過 | n-a:電池未落地。替代：Decision CASE NEW5-MK-RED 極性句；本條 THEN</p><p class="gwt"><span class="k">GIVEN</span>NEW5 電池；測法＝**注入**「Must-keep 紅（例：T 缺 Verify）仍 hop」</p><p class="gwt"><span class="k">WHEN</span>跑該 CASE 格</p><p class="gwt"><span class="k">THEN</span>NEW5-MK-RED **獨立變紅**；不得把「coordinator 拒 hop」記成此格綠；此格紅時不得標 F2 成功</p></article><article class="s-card" id="S-2.3"><h3>S-2.3 NEW5-WAIT-RED：注入謂詞真仍等人該格必須紅</h3><p class="ask"><strong>審的時候看什麼</strong> 從該格顏色看 | 注入這三句任一 → 該格紅算過 | n-a:電池未落地。替代：Decision CASE NEW5-WAIT-RED；F1 RP-14 文案牙仍回歸；本條</p><p class="gwt"><span class="k">GIVEN</span>NEW5 電池；謂詞全真、latch 假；測法＝**注入**留下「要不要繼續」或「請人審」或「確認一下」</p><p class="gwt"><span class="k">WHEN</span>跑該 CASE 格</p><p class="gwt"><span class="k">THEN</span>NEW5-WAIT-RED 獨立變紅；中途等人不是客氣</p></article><article class="s-card" id="S-2.4"><h3>S-2.4 NEW5-SHIP-MECH：注入機械綠當 Done 該格必須紅</h3><p class="ask"><strong>審的時候看什麼</strong> 從該格顏色與狀態看 | 注入 Done → 該格紅；狀態不得為 Done 算過 | n-a:電池未落地。替代：Decision CASE NEW5-SHIP-MECH；F1 RP-8／RP-16</p><p class="gwt"><span class="k">GIVEN</span>NEW5 電池；`7-review.md` 機械項可全綠；無人寫頂欄 `verdict: PASS`；測法＝**注入**標狀態 Done</p><p class="gwt"><span class="k">WHEN</span>跑該 CASE 格</p><p class="gwt"><span class="k">THEN</span>NEW5-SHIP-MECH 獨立變紅；coordinator／Agent 寫入 `PASS` 視為未寫</p></article><article class="s-card" id="S-2.5"><h3>S-2.5 Must-keep 16 列都有去向且「已五站故省」必須紅</h3><p class="ask"><strong>審的時候看什麼</strong> 從本檔 Must-keep 表與牙／電池看 | 16 列有下落；「已五站故省」紅算過 | 讀本檔 Must-keep Disposition；`rg -n "已五站故省|四欄可選" docs/dev/five-station-f2/4-spec.md` 只出現在本條 THEN／Negative Constraints</p><p class="gwt"><span class="k">GIVEN</span>本檔 Must-keep Disposition 與一份宣稱「已經五站了所以可省 M11／四欄／seam」的稿</p><p class="gwt"><span class="k">WHEN</span>人核對 16 列去向；並把該稿送 F2 電池或 F1 牙</p><p class="gwt"><span class="k">THEN</span>16 列每列去向 ∈ {本方案處理, 刻意維持} 且處理列有 `S-` 或 `R-`；該「可省」稿紅（F1 S-2.1／S-2.7 回歸仍咬；F2 不得把 hop 當省略理由）</p></article></div></section>
+<section class="r-block" id="R-3"><div class="r-head"><span class="r-name">R-3 系統 SHALL 留下能答五問的 hop／latch／cap 紀錄</span></div><div class="r-body"><article class="s-card" id="S-3.1"><h3>S-3.1 一次成功 hop 的紀錄答得出五問</h3><p class="ask"><strong>審的時候看什麼</strong> 從該筆紀錄五格看 | 五格都有值；零 `attempt_completed` 冒充算過 | n-a:紀錄檔路徑本 hop 不鎖。替代：Decision Q23；本條五問清單</p><p class="gwt"><span class="k">GIVEN</span>NEW5 fixture 剛完成一次合法 hop（S-1.7）</p><p class="gwt"><span class="k">WHEN</span>人指該筆前進紀錄</p><p class="gwt"><span class="k">THEN</span>五問都有可指答案：誰＝coordinator（或同等執行者 id，鍵名不鎖）；從哪到哪＝兩個五站別名；哪條謂詞＝brief §3 表 A／B 的 id 或等效句；哪只 cap＝該 hop 桶當下數字；是否 Escalated＝否。不是 chat 逐字稿、不是 `attempt_completed` 冒充</p></article><article class="s-card" id="S-3.2"><h3>S-3.2 一次 latch 開火的紀錄答得出五問</h3><p class="ask"><strong>審的時候看什麼</strong> 從 latch 紀錄五格看 | 五格可指算過 | n-a:路徑不鎖。替代：brief §3 唯一出口；本條</p><p class="gwt"><span class="k">GIVEN</span>NEW5 fixture 命中 A10 或 B1 latch</p><p class="gwt"><span class="k">WHEN</span>coordinator 進 HumanWait 並留紀錄</p><p class="gwt"><span class="k">THEN</span>該筆答五問：誰；從哪到哪（或「留在 Ship／Spec」）；哪條 latch 謂詞（A10／B1／B2／B4）；哪只 cap（本次未加則寫未加）；是否 Escalated＝否</p></article><article class="s-card" id="S-3.3"><h3>S-3.3 一次 cap 用盡的紀錄答得出五問</h3><p class="ask"><strong>審的時候看什麼</strong> 從 cap 紀錄五格看 | Escalated=是且 cap 具名算過 | n-a:路徑不鎖。替代：S-4.5／S-4.6／S-4.7</p><p class="gwt"><span class="k">GIVEN</span>NEW5 fixture 觸發 hop≤2 或 Decide≤1 或 Goal reopen≤1 用盡</p><p class="gwt"><span class="k">WHEN</span>coordinator 進 Escalated 並留紀錄</p><p class="gwt"><span class="k">THEN</span>該筆答五問：誰；從哪到哪（被拒的 hop）；哪條謂詞（cap 用盡）；哪只 cap（hop／Decide／Goal 具名）；是否 Escalated＝是</p></article><article class="s-card" id="S-3.4"><h3>S-3.4 chat 與 STATUS 不得當 hop 正本</h3><p class="ask"><strong>審的時候看什麼</strong> 從「可指紀錄」有無看 | 只有 chat／STATUS → 未留下算過 | 本 tree `docs/dev/STATUS.md` Backlog A 過期是活樣本（Q24）；本 hop 不改該列</p><p class="gwt"><span class="k">GIVEN</span>一次 hop 只留下 Cursor chat「可以開下一站」或只改了 `STATUS.md` Backlog，沒有 slug ledger 紀錄</p><p class="gwt"><span class="k">WHEN</span>人問「有沒有留下」</p><p class="gwt"><span class="k">THEN</span>該 hop **不算**留下；G-obs-1 未滿足</p></article><article class="s-card" id="S-3.5"><h3>S-3.5 紀錄住 slug 級只增倉且不 bump schema、不鎖鍵</h3><p class="ask"><strong>審的時候看什麼</strong> 從 F2 diff 與本檔用詞看 | 無 `agent-event` bump；無「已核鍵名=…」；倉不在 `runs/&lt;run_id&gt;/` 下算過 | n-a:本 hop 零碼。替代：`rg -n "event_type=hop_advanced|已核鍵" docs/dev/five-station-f2/4-spec.md` 不得出現「已核」；Decision OC-2／約束 11</p><p class="gwt"><span class="k">GIVEN</span>現行 `observability/schema/agent-event.schema.json` 仍是 1.1；現行 run 級路徑是 `.devflow/runs/&lt;run_id&gt;/coordinator/events.jsonl`</p><p class="gwt"><span class="k">WHEN</span>F2 落地 hop／latch／cap 紀錄與三個計數器</p><p class="gwt"><span class="k">THEN</span>計數與五問紀錄住 **slug 級只增倉**（與 run 級 `events.jsonl` 分家）；本刀不新增 `event_type`、不 bump schema、不改 `hooks/_doctor_impl.py`；正文與 DD **沒有**把某一 JSON 鍵名寫成已核</p></article></div></section>
+<section class="r-block" id="R-4"><div class="r-head"><span class="r-name">R-4 系統 SHALL 用五桶檔→hop_id 觸發表計數</span></div><div class="r-body"><article class="s-card" id="S-4.1"><h3>S-4.1 七個寫入檔映射到五個 hop_id 桶</h3><p class="ask"><strong>審的時候看什麼</strong> 從 hop_id 指派表或紀錄 from／桶名看 | 七列與本檔「hop_id 觸發表」逐列相同算過 | n-a:coordinator 未落地。替代：本檔觸發表；Decision 約束 14；後站對該表的單元測試名含 `s_4_1`</p><p class="gwt"><span class="k">GIVEN</span>NEW5 fixture 已過三前置；coordinator 對下列檔做一次成功 persist</p><p class="gwt"><span class="k">WHEN</span>讀該次寫入對到的 `hop_id`</p><p class="gwt"><span class="k">THEN</span>映射必須是：`1-discussion.md`→Intake；`2-decision.md`→Decide；`3-prototype.md`→Spec；`4-spec.md`→Spec；`5-tasks.md`→Build；`6-implementation-notes.md`→Build；`7-review.md`→Ship。零個映射到 `N7-g1`／`N6-g2`／七個 stem 名</p></article><article class="s-card" id="S-4.2"><h3>S-4.2 同站兩檔同桶且無 trigger 不開 proto 桶</h3><p class="ask"><strong>審的時候看什麼</strong> 從各桶數字看 | A 無 proto 桶；B 的 Spec 數字=兩次 persist 之和（第一次=0 後規則見 S-4.4）算過 | n-a:未落地。替代：Decision 約束 14 末段</p><p class="gwt"><span class="k">GIVEN</span>NEW5 fixture A：無 Stage 3 trigger。NEW5 fixture B：有 trigger 且已寫 `3-prototype.md` 與 `4-spec.md`</p><p class="gwt"><span class="k">WHEN</span>各做成功 persist</p><p class="gwt"><span class="k">THEN</span>A：不建 `3-prototype.md`、不存在第六個 proto 桶、Spec 只因 `4-spec.md` +1。B：`3-prototype.md` 與 `4-spec.md` 加的是**同一個** Spec 桶（不是各 ≤2）。`5-tasks.md` 與 `6-implementation-notes.md` 加的是**同一個** Build 桶</p></article><article class="s-card" id="S-4.3"><h3>S-4.3 七 stem 各一桶必須被拒</h3><p class="ask"><strong>審的時候看什麼</strong> 從拒絕理由看 | 七 stem 方案不得當已核算過 | 本檔 Rejected／Out of Scope 含「七 stem」；`2-decision.md` 已拒 B 線 2A</p><p class="gwt"><span class="k">GIVEN</span>一份實作把 `3-prototype`／`4-spec`／`5-tasks`／`6-implementation-notes` 分成四個獨立 hop≤2 桶（B 線 2A）</p><p class="gwt"><span class="k">WHEN</span>送 F2 規格或電池</p><p class="gwt"><span class="k">THEN</span>拒；理由含「稀釋 hop≤2」或「七 stem」</p></article><article class="s-card" id="S-4.4"><h3>S-4.4 第一次成功 persist＝0，其後 +1</h3><p class="ask"><strong>審的時候看什麼</strong> 從該桶數字看 | 序列 0 然後 1 算過 | n-a:倉路徑不鎖。替代：Decision 約束 6；狀態機 §3「第一次寫不算」</p><p class="gwt"><span class="k">GIVEN</span>NEW5 fixture 某 `hop_id` 桶尚無成功 persist</p><p class="gwt"><span class="k">WHEN</span>第一次成功 persist 該桶對應檔；之後再成功 persist 同一桶一次</p><p class="gwt"><span class="k">THEN</span>第一次之後該桶數字＝0（第一次寫不算進 hop≤2）；第二次之後該桶數字＝1。計數看寫入發生，不看模型名／session</p></article><article class="s-card" id="S-4.5"><h3>S-4.5 NEW5-CAP-3：第 3 次 hop 重寫拒且數字仍 2</h3><p class="ask"><strong>審的時候看什麼</strong> 從 NEW5-CAP-3 格、拒絕理由、倉數字看 | 該格綠；Escalated；數字=2 算過 | n-a:倉未落地。替代：Decision CASE NEW5-CAP-3；F1 `five_station_f1.py` RP-9 字樣牙可留回歸，不得替代本倉</p><p class="gwt"><span class="k">GIVEN</span>NEW5 fixture 同一 hop_id 已重寫 2 次（第一次 persist＝0 不算；其後兩次 +1 使數字＝2）</p><p class="gwt"><span class="k">WHEN</span>第 3 次重寫被要求執行</p><p class="gwt"><span class="k">THEN</span>拒；狀態 Escalated；拒後該桶數字仍是 2（無人手改小、無 reset）。RP-9 讀的是這倉，不是 fixture 正文「第 3 次」</p></article><article class="s-card" id="S-4.6"><h3>S-4.6 NEW5-DECIDE-2：第 2 次 Decide 整站重開拒</h3><p class="ask"><strong>審的時候看什麼</strong> 從 NEW5-DECIDE-2 格與 Decide 桶看 | 該格綠；第 2 次重開未發生算過 | n-a:未落地。替代：Decision CASE NEW5-DECIDE-2；狀態機 §3.2</p><p class="gwt"><span class="k">GIVEN</span>NEW5 fixture 已離開 Decide 一次，且已重開 Decide 1 次</p><p class="gwt"><span class="k">WHEN</span>第 2 次整站重開 Decide（含 Decision 翻案、OC 重裁）</p><p class="gwt"><span class="k">THEN</span>拒（RP-10）。Decide 站內、尚未 hop 出去的小改不算一次。RP-10 讀倉，不是「Decide 重開第 2」字樣</p></article><article class="s-card" id="S-4.7"><h3>S-4.7 NEW5-GOAL-2：第 2 次 Goal 重開拒且與 Decide 一次寫</h3><p class="ask"><strong>審的時候看什麼</strong> 從 NEW5-GOAL-2 格與兩桶數字看 | 該格綠；兩桶同一次寫入；無「只加 Goal 不加 Decide」算過 | n-a:未落地。替代：Decision CASE NEW5-GOAL-2；OC-8</p><p class="gwt"><span class="k">GIVEN</span>NEW5 fixture 已 hop 出 Intake；Goal／Success Criteria／問題陳述已重開 1 次</p><p class="gwt"><span class="k">WHEN</span>第 2 次 Goal 重開被要求執行</p><p class="gwt"><span class="k">THEN</span>拒（RP-11）。若此次 Goal 重開會造成第二次 Decide，兩個計數**同一次 mutation** 寫入並用盡 Decide cap → Escalated。分兩次寫讓 Goal 躲掉 Decide cap＝違 OC-8</p></article><article class="s-card" id="S-4.8"><h3>S-4.8 T 嘗試 ≤4 不混進 hop 桶</h3><p class="ask"><strong>審的時候看什麼</strong> 從 Build 桶與 T 嘗試計數看 | 單 T 重做桶不變；整站重寫只 +1 Build 算過 | n-a:未落地。替代：狀態機 L107–L108；Decision 約束 5</p><p class="gwt"><span class="k">GIVEN</span>NEW5 fixture 在 Build；同一 T 重做第 2、第 3、第 4 次（acceptance seam）</p><p class="gwt"><span class="k">WHEN</span>每次只重做該 T，沒有整份重寫 `5-tasks.md` 或 `6-implementation-notes.md`</p><p class="gwt"><span class="k">THEN</span>hop／Build 桶數字不變；該 T 吃嘗試上限 4。整份 5-tasks／6-notes 被整站重寫 → 加 **Build** 桶 1，不是兩個 stem 各 +1</p></article><article class="s-card" id="S-4.9"><h3>S-4.9 NEW5-RUN2：新 run_id 不得把數字歸零</h3><p class="ask"><strong>審的時候看什麼</strong> 從 NEW5-RUN2 格與第二次讀數看 | 該格綠；數字≠0 算過 | n-a:倉路徑不鎖，只鎖「slug 級、只增、跨 run 仍在」。替代：Decision CASE NEW5-RUN2；ledger.py 現行是 run 級＝1B 已拒</p><p class="gwt"><span class="k">GIVEN</span>NEW5 fixture 某 hop 桶數字已是 1（或 Decide／Goal 已非 0）</p><p class="gwt"><span class="k">WHEN</span>另開新 `run_id`（或重開 process）再讀倉</p><p class="gwt"><span class="k">THEN</span>該 hop 桶／Decide／Goal 數字仍在，不是 0。把數字只寫在 `.devflow/runs/&lt;run_id&gt;/coordinator/events.jsonl` → 本條失敗（X5）</p></article></div></section>
+<section class="r-block" id="R-5"><div class="r-head"><span class="r-name">R-5 系統 SHALL 只在同一電池 NEW5+OLD7 都過時宣稱 F2 完</span></div><div class="r-body"><article class="s-card" id="S-5.1"><h3>S-5.1 單一入口缺一路即非 0</h3><p class="ask"><strong>審的時候看什麼</strong> 從該入口原始 stdout／exit 看 | 缺一路非 0；兩路過才 0 算過 | n-a:入口檔名不鎖。替代：Decision SC-BATTERY；本條四分支</p><p class="gwt"><span class="k">GIVEN</span>F2 電池入口（一支命令／一個 process；檔名本 hop 不鎖）</p><p class="gwt"><span class="k">WHEN</span>(a) 只跑 NEW5 組；(b) 只跑 OLD7 組；(c) 入口只轉呼叫 `scripts/test-five-station-f1.sh`；(d) 兩組都跑且都過</p><p class="gwt"><span class="k">THEN</span>(a)(b)(c) exit ≠ 0；(d) exit＝0 **當且僅當**兩組都過。兩支互不認識的腳本各綠一次 ≠ dual-path</p></article><article class="s-card" id="S-5.2"><h3>S-5.2 檔在／只跑 F1／只跑 NEW5-HOP-OK 不得標 F2 綠</h3><p class="ask"><strong>審的時候看什麼</strong> 從電池 exit 或審查拒絕看 | (a)(b)(c) 任一當完成 → 非 0 算過 | n-a:未落地。替代：Decision SC-HOLLOW；`scripts/test-five-station-f1.sh` 檔頭仍寫牙自檢不是 hop 電池</p><p class="gwt"><span class="k">GIVEN</span>下列任一被標「F2 綠」：(a) 僅證明 coordinator 檔存在；(b) 僅 `test-five-station-f1.sh` 十二群綠；(c) 僅 NEW5-HOP-OK 綠而 OLD7 組未跑</p><p class="gwt"><span class="k">WHEN</span>對該宣稱跑電池或審查</p><p class="gwt"><span class="k">THEN</span>必須非 0／必須被拒（SC-HOLLOW）</p></article><article class="s-card" id="S-5.3"><h3>S-5.3 NEW5 試體是合成 fixture</h3><p class="ask"><strong>審的時候看什麼</strong> 從 fixture 路徑看 | 兩目錄不在 NEW5 試體算過 | 本 hop `ls docs/dev/five-station-f2/` 已有 1／2 站檔＝in-flight；不得當 NEW5</p><p class="gwt"><span class="k">GIVEN</span>F2 電池 NEW5 組的 fixture 路徑清單</p><p class="gwt"><span class="k">WHEN</span>人核對路徑</p><p class="gwt"><span class="k">THEN</span>清單**不含** `docs/dev/five-station-f2/` 站檔當 hop 試體，也不含 `docs/dev/five-station-simplify/` 當 hop 試體</p></article><article class="s-card" id="S-5.4"><h3>S-5.4 OLD7-NO-FIVE：已有 1–7 md 無五站狀態</h3><p class="ask"><strong>審的時候看什麼</strong> 從 OLD7-NO-FIVE 格與該目錄看 | 該格綠；無五站狀態檔／無三 cap 數字算過 | n-a:未落地。替代：Decision CASE OLD7-NO-FIVE；狀態機 L49–L50</p><p class="gwt"><span class="k">GIVEN</span>OLD7 fixture 目錄已有 1–7 任一 `.md`（可為合成舊 7 樹，不是本目錄當 NEW5）</p><p class="gwt"><span class="k">WHEN</span>coordinator 看到該 slug</p><p class="gwt"><span class="k">THEN</span>不建立五站機；無五站狀態寫入；三 cap 不套（可走既有 T 上限 4）；走 `allow_legacy()`</p></article><article class="s-card" id="S-5.5"><h3>S-5.5 OLD7-FOLD-RED：注入折 in-flight 該格必須紅</h3><p class="ask"><strong>審的時候看什麼</strong> 從該格顏色看 | 注入折線 → 該格紅算過 | n-a:未落地。替代：Decision CASE OLD7-FOLD-RED；F1 inflight kind</p><p class="gwt"><span class="k">GIVEN</span>OLD7 fixture；測法＝**注入**對該 fixture 寫五站狀態或五站 hop</p><p class="gwt"><span class="k">WHEN</span>跑該 CASE 格</p><p class="gwt"><span class="k">THEN</span>OLD7-FOLD-RED 獨立變紅（RP-15）</p></article><article class="s-card" id="S-5.6"><h3>S-5.6 OLD7-TOKEN：token 與 F1 牙仍綠</h3><p class="ask"><strong>審的時候看什麼</strong> 從 OLD7-TOKEN 格與兩支腳本 exit 看 | 該格綠；token 掃描無缺算過 | 本 hop 不改 token；可在本 tree 跑 `bash scripts/check-gate-tokens.sh` 與 `bash scripts/test-five-station-f1.sh` 作回歸地板</p><p class="gwt"><span class="k">GIVEN</span>OLD7 fixture 與本 repo token／F1 牙</p><p class="gwt"><span class="k">WHEN</span>跑 `scripts/check-gate-tokens.sh`（或同等）與 `scripts/test-five-station-f1.sh`</p><p class="gwt"><span class="k">THEN</span>兩支仍綠；G1／G2／`ACCEPTED` 檔與 token 仍在</p></article><article class="s-card" id="S-5.7"><h3>S-5.7 OLD7-SELF：對本目錄求五站 hop 必須拒</h3><p class="ask"><strong>審的時候看什麼</strong> 從 OLD7-SELF 格與本目錄 `ls` 看 | 該格綠；無五站狀態寫入算過 | 本 hop 落 `4-spec.md` 後 in-flight 更凍；`ls docs/dev/five-station-f2/*.md`</p><p class="gwt"><span class="k">GIVEN</span>`docs/dev/five-station-f2/` 已有 `1-discussion.md`／`2-decision.md`（本 hop 之後另有 `4-spec.md`）</p><p class="gwt"><span class="k">WHEN</span>coordinator 被求對本目錄做五站自動前進</p><p class="gwt"><span class="k">THEN</span>拒；目錄仍是舊 7 站檔；試體不是把本目錄當 NEW5</p></article><article class="s-card" id="S-5.8"><h3>S-5.8 13 CASE 只准加且極性不得反</h3><p class="ask"><strong>審的時候看什麼</strong> 從兩張表列數與極性欄看 | 13 列都在；三張紅格仍寫注入算過 | 數本檔 CASE → S 表列；對到 Decision L159–L172</p><p class="gwt"><span class="k">GIVEN</span>Decision「本方案要求」13 列與本檔 CASE → S 表</p><p class="gwt"><span class="k">WHEN</span>後站 5-tasks／電池少任一列，或把紅格改成「拒 hop 算綠」</p><p class="gwt"><span class="k">THEN</span>翻 Decision；本檔不得減列。4-spec 可加列，不可把「檔在」加成通過條件</p></article></div></section>
+<section class="r-block" id="R-6"><div class="r-head"><span class="r-name">R-6 系統 SHALL 在專案樹路線未開時拒評五站謂詞</span></div><div class="r-body"><article class="s-card" id="S-6.1"><h3>S-6.1 三前置缺一條就 allow_legacy</h3><p class="ask"><strong>審的時候看什麼</strong> 從路線判定與是否寫入五站狀態看 | allow_legacy；零五站 hop 算過 | n-a:coordinator 未落地。替代：Decision 4A／約束 10；brief §6；本 tree 契約仍 `2.0.0`（`devflow-contract.json`）</p><p class="gwt"><span class="k">GIVEN</span>任一 live slug（含本目錄、含 F0–F2 母版新軌）；三前置至少一條假：契約不是已宣告 2.1.0、或 in-flight、或 F3 cut 尚未發生</p><p class="gwt"><span class="k">WHEN</span>coordinator 被求評五站 hop 謂詞</p><p class="gwt"><span class="k">THEN</span>不建五站機；走 `allow_legacy()`；不評 Intake→Decide 等五站謂詞</p></article><article class="s-card" id="S-6.2"><h3>S-6.2 SC-DOCTOR：COMPATIBLE 不是通行證</h3><p class="ask"><strong>審的時候看什麼</strong> 從 hop 拒絕理由與 F1 dual 牙看 | 理由不含「doctor 已綠」當許可；F1 S-5.6 對該文案仍紅算過 | 本 tree 可跑 doctor；`scripts/five_station_f1.py` L217–L224 仍咬文案</p><p class="gwt"><span class="k">GIVEN</span>採用端契約仍 `2.0.0`；`devflow-doctor.sh` 可印 `COMPATIBLE` 且 exit 0</p><p class="gwt"><span class="k">WHEN</span>coordinator 被求走五站 hop</p><p class="gwt"><span class="k">THEN</span>拒；拒絕理由是路線未宣告／仍舊 7，**不是**「doctor 已綠」。文案「doctor exit 0 所以可以跟 hops」仍紅（F1 S-5.6 回歸）</p></article><article class="s-card" id="S-6.3"><h3>S-6.3 marketplace update 單獨 ≠ cut</h3><p class="ask"><strong>審的時候看什麼</strong> 從路線判定看 | 未改線；2.0.0+五站 hops 紅算過 | n-a:採用假樹後站造。替代：F1 annex SLOT-UNDECLARED-ROUTE／SLOT-REJECT；本條</p><p class="gwt"><span class="k">GIVEN</span>只做了 `marketplace update`／`plugin update`；契約未宣告 2.1.0</p><p class="gwt"><span class="k">WHEN</span>有人把 hops 當五站預設</p><p class="gwt"><span class="k">THEN</span>該組合違規（SLOT-REJECT-2.0.0-PLUS-FIVE-HOPS）；路線仍舊 7</p></article><article class="s-card" id="S-6.4"><h3>S-6.4 plugin cache 只選碼不是路條</h3><p class="ask"><strong>審的時候看什麼</strong> 從兩 process 路線輸出看 | 兩路都是舊 7；cache 路徑不在「路線許可」欄算過 | n-a:多 cache 真機本 hop 不跑。替代：Decision 7A／OC-7；brief L168</p><p class="gwt"><span class="k">GIVEN</span>同一 repo 兩台機器／兩個 host 各一份 plugin cache；A 機 hops 已是五站碼，B 機仍舊 7 碼；專案樹契約仍 2.0.0 且 slug in-flight</p><p class="gwt"><span class="k">WHEN</span>各 process 啟動 coordinator</p><p class="gwt"><span class="k">THEN</span>各 process 讀自己 cache 的 hops **碼**；路線仍認專案樹（2.1.0 ∧ ¬in-flight ∧ F3 cut）。不得因 A 機 hops 新就把 B 機舊 7 slug 遠端改線。不掃磁碟上「最新」的其他 cache</p></article><article class="s-card" id="S-6.5"><h3>S-6.5 契約 2.0.0 加五站 hops 預設仍舊 7</h3><p class="ask"><strong>審的時候看什麼</strong> 從契約版本與 hops 是否五站預設兩格 AND 看 | 任一寫入順序 → 仍舊 7 算過 | n-a:F1 牙已咬文案；F2 行為牙本 hop 不落地。替代：F1 S-5.7／S-5.9；本條</p><p class="gwt"><span class="k">GIVEN</span>`devflow_contract_version`＝2.0.0 且方法包 hops 已是五站預設；兩源可不同時刻寫入</p><p class="gwt"><span class="k">WHEN</span>任一源先改或同窗寫入</p><p class="gwt"><span class="k">THEN</span>路線仍舊 7；F1 紅該組合；doctor 握手綠不得當仲裁</p></article></div></section>
+<section class="r-block" id="R-7"><div class="r-head"><span class="r-name">R-7 系統 SHALL 鎖死三把 Non-Goals</span></div><div class="r-body"><article class="s-card" id="S-7.1"><h3>S-7.1 本刀不做 F3 cut</h3><p class="ask"><strong>審的時候看什麼</strong> 從 diff 與 guide／graph 看 | 無 F3 cut 聲明算過 | 本 hop `git diff --name-only origin/main` 不得出現 `graph.yaml` 或 guide 切五站</p><p class="gwt"><span class="k">GIVEN</span>F2 落地（後站）或本 hop 宣稱範圍</p><p class="gwt"><span class="k">WHEN</span>人找「新 slug 預設五站」聲明（guide／STATUS 用語／`graph.yaml` 預設切線）</p><p class="gwt"><span class="k">THEN</span>找不到把新 slug 預設改五站的 cut；F0–F2 母版新軌仍舊 7</p></article><article class="s-card" id="S-7.2"><h3>S-7.2 不把 in-flight 折成五站</h3><p class="ask"><strong>審的時候看什麼</strong> 從 in-flight 目錄看 | 仍舊 7 算過 | 與 S-5.4／S-5.5 同一禁則；本條是刀鎖</p><p class="gwt"><span class="k">GIVEN</span>任一已有 1–7 `.md` 的 slug（含本目錄）</p><p class="gwt"><span class="k">WHEN</span>F2 完成</p><p class="gwt"><span class="k">THEN</span>該 slug 仍舊 7；無五站狀態寫入</p></article><article class="s-card" id="S-7.3"><h3>S-7.3 不刪 G1／G2／ACCEPTED token 或檔</h3><p class="ask"><strong>審的時候看什麼</strong> 從 `scripts/check-gate-tokens.sh` exit 看 | 綠算過 | 本 hop 不改 token 檔</p><p class="gwt"><span class="k">GIVEN</span>F2 完成前後</p><p class="gwt"><span class="k">WHEN</span>跑 token 檢查</p><p class="gwt"><span class="k">THEN</span>G1／G2／`ACCEPTED` 檔與 token 仍在</p></article><article class="s-card" id="S-7.4"><h3>S-7.4 SC-KNIFE：F2 宣稱完成後三把鎖仍鎖</h3><p class="ask"><strong>審的時候看什麼</strong> 從 F2 完成宣稱後的檔集／預設路線看 | 三鎖仍在算過 | n-a:F2 碼未落地。替代：Decision SC-KNIFE；本檔 Out of Scope 1–3</p><p class="gwt"><span class="k">GIVEN</span>有人標「F2 完成」</p><p class="gwt"><span class="k">WHEN</span>核對 (1) 新 slug 預設是否被改五站 (2) in-flight 是否被折 (3) token 是否被刪</p><p class="gwt"><span class="k">THEN</span>三項都否。任一被實作成「做了」→ F2 失敗，不是簡化成功</p></article></div></section>
+<section class="r-block" id="R-8"><div class="r-head"><span class="r-name">R-8 系統 SHALL 把本 hop 限在 4-spec 雙檔草稿</span></div><div class="r-body"><article class="s-card" id="S-8.1"><h3>S-8.1 本 PR 只含 4-spec 雙檔且不發明 G2 PASS</h3><p class="ask"><strong>審的時候看什麼</strong> 從該指令 stdout 與本檔 frontmatter 看 | 兩檔、頂欄 draft、verdict 空算過 | 在本 branch 跑 `git diff --name-only origin/main`</p><p class="gwt"><span class="k">GIVEN</span>本 branch 相對 `origin/main`</p><p class="gwt"><span class="k">WHEN</span>跑 `git diff --name-only origin/main`</p><p class="gwt"><span class="k">THEN</span>輸出只含 `docs/dev/five-station-f2/4-spec.md` 與 `docs/dev/five-station-f2/4-spec.html`。零 `_templates/`、零 `graph.yaml`、零 `scripts/` 新牙、零 `STATUS.md`、零 `HISTORY.md`、零 `devflow-contract.json`。頂欄 `status: draft`、`verdict` 空。無 G2 PASS</p></article><article class="s-card" id="S-8.2"><h3>S-8.2 審頁必須由 stage4 builder 重生</h3><p class="ask"><strong>審的時候看什麼</strong> 從 html 檔頭／產檔指令看 | 本 hop html 由 stage4 builder 產出算過 | 在本 branch 重跑該指令後 `4-spec.html` 可解析 R/S</p><p class="gwt"><span class="k">GIVEN</span>本目錄 `4-spec.md` 已改</p><p class="gwt"><span class="k">WHEN</span>產同名 html</p><p class="gwt"><span class="k">THEN</span>必須跑 `python3 scripts/build-stage4-html.py --action docs/dev/five-station-f2/4-spec.md`。不得手包 `_templates/html-shell.html`；不得把審頁塞進 `build-gate-twin.py` STAGES</p></article><article class="s-card" id="S-8.3"><h3>S-8.3 Q9–Q24 每條有去向且 Q21／Q22／Q23 不可選</h3><p class="ask"><strong>審的時候看什麼</strong> 從 Disposition 表看 | 十六題（Q9–Q24）皆有列；Q21→S-5.1／S-5.2；Q22→S-2.2／S-2.3／S-2.4；Q23→S-3.1／S-3.5 算過 | 讀本檔 Real-world Disposition</p><p class="gwt"><span class="k">GIVEN</span>Stage 1 Q9–Q24 與本檔 Real-world Disposition</p><p class="gwt"><span class="k">WHEN</span>人掃 Disposition</p><p class="gwt"><span class="k">THEN</span>Q9–Q24 各有去向；Q21／Q22／Q23 去向＝本方案處理且下落含 `S-`；後站把這三題標可選 → 擋本 slug G2</p></article><article class="s-card" id="S-8.4"><h3>S-8.4 本 hop 不改模板／graph／STATUS／既有牙</h3><p class="ask"><strong>審的時候看什麼</strong> 從 `git diff --name-only origin/main` 看 | 上列路徑零命中算過 | 同 S-8.1 指令</p><p class="gwt"><span class="k">GIVEN</span>本 branch diff</p><p class="gwt"><span class="k">WHEN</span>列路徑</p><p class="gwt"><span class="k">THEN</span>不含 `_templates/`、各站 `graph.yaml`、`STATUS.md`、`HISTORY.md`、`scripts/five_station_f1.py`、`hooks/_doctor_impl.py`</p></article></div></section>
+<section class="r-block" id="behavior"><div class="r-head"><h2 class="r-name">行為流程圖(R 級)</h2></div><div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 718" role="img" aria-label="行為流程圖(R 級)">
+  <rect class="hl" x="40" y="10" width="200" height="82" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">[R-1] 只在謂詞全真時 hop</text>
+  <text class="sm" text-anchor="middle" x="140" y="52">五跳各自評表 A B</text>
+  <text class="sm" text-anchor="middle" x="140" y="66">假則停修</text>
+  <text class="sm" text-anchor="middle" x="140" y="80">Ship 無自動前進</text>
+  <path class="flow" d="M140,92 L140,114"/>
+  <rect class="b" x="40" y="114" width="200" height="68" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="138">[R-2] Must-keep 紅則 fail-closed</text>
+  <text class="sm" text-anchor="middle" x="140" y="156">三失敗各自可紅</text>
+  <text class="sm" text-anchor="middle" x="140" y="170">注入壞行為該格紅</text>
+  <path class="flow" d="M140,182 L140,204"/>
+  <rect class="b" x="40" y="204" width="200" height="68" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="228">[R-3] 紀錄答得出五問</text>
+  <text class="sm" text-anchor="middle" x="140" y="246">hop latch cap 各一筆</text>
+  <text class="sm" text-anchor="middle" x="140" y="260">不鎖鍵 不 bump</text>
+  <path class="flow" d="M140,272 L140,294"/>
+  <rect class="b" x="40" y="294" width="200" height="68" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="318">[R-4] 五桶檔觸發 hop_id</text>
+  <text class="sm" text-anchor="middle" x="140" y="336">persist 0 後加一</text>
+  <text class="sm" text-anchor="middle" x="140" y="350">第三拒 新 run 不歸零</text>
+  <path class="flow" d="M140,362 L140,384"/>
+  <rect class="b" x="40" y="384" width="200" height="68" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="408">[R-5] 同一電池 NEW5 加 OLD7</text>
+  <text class="sm" text-anchor="middle" x="140" y="426">缺一路即非 0</text>
+  <text class="sm" text-anchor="middle" x="140" y="440">本目錄不是白老鼠</text>
+  <path class="flow" d="M140,452 L140,474"/>
+  <rect class="b" x="40" y="474" width="200" height="68" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="498">[R-6] 專案樹路線未開則拒評</text>
+  <text class="sm" text-anchor="middle" x="140" y="516">三前置</text>
+  <text class="sm" text-anchor="middle" x="140" y="530">doctor 綠不是通行證</text>
+  <path class="flow" d="M140,542 L140,564"/>
+  <rect class="b" x="40" y="564" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="588">[R-7] 三把 Non-Goals 鎖死</text>
+  <text class="sm" text-anchor="middle" x="140" y="606">不 F3 不折 不刪 token</text>
+  <path class="flow" d="M140,618 L140,640"/>
+  <rect class="b" x="40" y="640" width="200" height="68" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="664">[R-8] 本 hop 只 4-spec 雙檔</text>
+  <text class="sm" text-anchor="middle" x="140" y="682">draft 空 verdict</text>
+  <text class="sm" text-anchor="middle" x="140" y="696">builder 重生 html</text>
+</svg>
+</div></div></section>
+<footer class="foot gate-verdict" id="gate-verdict"
+  data-slug="five-station-f2" data-stage="4-spec" data-source-sha="">
+  <p class="gv-canon">正本是同目錄 <code>4-spec.md</code> 頂欄
+  <code>verdict:</code>。勾選只是瀏覽器草稿。全勾不算 PASS。
+  只有「提交判定」才寫入 Human verdict。sidecar／HTML／localStorage 都不是正本;
+  sidecar 與 md 衝突時 md 勝。</p>
+  <div class="gv-row" role="radiogroup" aria-label="Human verdict">
+    <label><input type="radio" name="gv-verdict" value="PASS"> PASS</label>
+    <label><input type="radio" name="gv-verdict" value="REQUEST_CHANGES"> REQUEST_CHANGES</label>
+    <label><input type="radio" name="gv-verdict" value="HOLD"> HOLD</label>
+  </div>
+  <label class="gv-field">備註 <input id="gv-notes" type="text" maxlength="200"></label>
+  <label class="gv-field">審查者 <input id="gv-reviewer" type="text" maxlength="80"></label>
+  <button type="button" class="btn" id="gv-submit">提交判定</button>
+  <p id="gv-status" class="gv-status"></p>
+</footer>
+<p class="src">由 <code>scripts/build-stage4-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+<script>
+(function(){
+  var panel = document.getElementById('gate-verdict');
+  if (!panel) return;
+  var statusEl = document.getElementById('gv-status');
+  function status(msg){ if (statusEl) statusEl.textContent = msg; }
+  function patchMd(text, verdict, notes){
+    if (text.slice(0, 4) !== '---\n') throw new Error('no frontmatter');
+    var end = text.indexOf('\n---\n', 3);
+    if (end < 0) throw new Error('unclosed frontmatter');
+    var fm = text.slice(4, end);
+    var rest = text.slice(end + 5);
+    if (/^verdict:\s*/m.test(fm)) {
+      fm = fm.replace(/^verdict:\s*.*$/m, 'verdict: ' + verdict);
+    } else if (/^status:\s*/m.test(fm)) {
+      fm = fm.replace(/^(status:\s*.*)$/m, '$1\nverdict: ' + verdict);
+    } else {
+      fm = 'verdict: ' + verdict + '\n' + fm;
+    }
+    if (notes) {
+      var line = '- Human verdict note: ' + notes.split('\n')[0];
+      if (/^- Human verdict note:/m.test(rest)) {
+        rest = rest.replace(/^- Human verdict note:.*$/m, line);
+      } else {
+        rest = line + '\n' + rest;
+      }
+    }
+    return '---\n' + fm + '\n---\n' + rest;
+  }
+  function payload(verdict){
+    return {
+      slug: panel.dataset.slug,
+      gate: panel.dataset.stage,
+      verdict: verdict,
+      notes: ((document.getElementById('gv-notes') || {}).value || '').trim(),
+      reviewer: ((document.getElementById('gv-reviewer') || {}).value || '').trim(),
+      checked: [],
+      source_sha: panel.dataset.sourceSha || '',
+      sidecar: true
+    };
+  }
+  function postVerdict(body){
+    var urls = ['/devflow-gate/verdict'];
+    if (location.protocol === 'file:') {
+      urls.push('http://127.0.0.1:8765/devflow-gate/verdict');
+    }
+    var i = 0;
+    function next(){
+      if (i >= urls.length) return Promise.reject(new Error('no serve'));
+      var url = urls[i++];
+      return fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      }).then(function(r){
+        if (!r.ok) throw new Error('http ' + r.status);
+        return r.json();
+      }).catch(function(){ return next(); });
+    }
+    return next();
+  }
+  async function writeViaFsa(body){
+    if (!window.showDirectoryPicker) {
+      throw new Error('no File System Access');
+    }
+    var dir = await window.showDirectoryPicker({id: 'devflow-gate-' + body.slug});
+    var mdName = body.gate + '.md';
+    var fh = await dir.getFileHandle(mdName);
+    var file = await fh.getFile();
+    var next = patchMd(await file.text(), body.verdict, body.notes);
+    var w = await fh.createWritable();
+    await w.write(next);
+    await w.close();
+    return mdName;
+  }
+  var submit = document.getElementById('gv-submit');
+  if (!submit) return;
+  submit.addEventListener('click', function(){
+    var picked = document.querySelector('input[name="gv-verdict"]:checked');
+    if (!picked) {
+      status('請先選 PASS / REQUEST_CHANGES / HOLD。全勾不算 PASS。');
+      return;
+    }
+    var body = payload(picked.value);
+    status('寫入中…');
+    postVerdict(body).then(function(res){
+      status('已寫入 ' + (res.path || (body.gate + '.md')) +
+        ' 的 verdict: ' + body.verdict + '。正本是 md，不是勾選、不是 sidecar。');
+    }).catch(function(){
+      writeViaFsa(body).then(function(name){
+        status('已用 File System Access 寫入 ' + name +
+          ' 的 verdict: ' + body.verdict + '。正本是 md。');
+      }).catch(function(){
+        status('寫不進 md。請跑 python3 scripts/devflow_gate.py serve <專案根> 再開這頁。勾選不是判定。');
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
