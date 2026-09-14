@@ -1,20 +1,20 @@
 ---
 feature: five-station-f2
 stage: 2-decision
-status: draft
-verdict:
+status: approved
+verdict: PASS
 owner: rick
-reviewers: []
+reviewers: [user]
 updated: 2026-09-14
 ---
+- Human verdict note: Human G1 PASS + OC-1…OC-12 Owner PASS @ 2026-09-14 Asia/Taipei。owner chat「可以」。未發明新 OC 答案。
 
 # 2. 收斂 — 五站 F2（Winner C + owner standing soft-fix：anti-hollow dual-path）
 
-> 把 `1-discussion.md` 收成一個選定方案。**本 hop 只落 `2-decision.md` + 審頁 html。status 留 draft。不送 G1、不發明 `verdict: PASS`、不改 STATUS／HISTORY／1-discussion 頂欄。**
-> Lane = **full**。本 slug 與 F0–F2 母版改版軌仍走**舊 7**。本目錄已有 `1-discussion.md` = 已 in-flight。
-> Stage 1 頂欄仍 `status: draft`、當時寫「不送 G1」。Owner 2026-09-14 以「ok」開本站。1-discussion 留當時說法；改口記本檔。
+> 把 `1-discussion.md` 收成一個選定方案。G1 已核:`verdict` PASS、`status` approved、OC-1～OC-12 ✅ Owner PASS。Lane = **full**。本 hop 只落 Human G1 attestation + 審頁重生；不實作 coordinator、不改 `_templates/`／`graph.yaml`／gate token、不改 STATUS／HISTORY（STATUS 另 companion）。
+> Stage 1 頂欄仍 `status: draft`、當時寫「不送 G1」。Owner 2026-09-14 以「ok」開本站。1-discussion 留當時說法；改口記本檔。本 Stage 2 的 G1 是 human owner rick PASS（2026-09-14 Asia/Taipei owner chat「可以」），**不是** Agent 自裁。
 > C 線主軸：**檔在 ≠ F2 完**。F2 完＝同一電池 NEW5+OLD7 都能獨立紅、也能一起綠。Non-Goals 鎖死 F3 cut／in-flight 折五站／刪 G1／G2／`ACCEPTED`。任何 owner 自拍板進 OC ledger。原文獨立於 A／B；**本檔含 owner standing soft-fix**（#330 全票勝出後吸收，非 C 線當時已讀他稿）。
-> Owner standing 2026-09-14 必釘：檔→五站 `hop_id` 觸發表（五桶，拒 B 七 stem）；7A 從屬專案樹路線 SoT；Q12 persist=0 後 +1 進約束正文；CASE 極性＝注入壞行為該格紅；吸收 B marketplace×doctor 約束句、A 中途等人拒法。C 線長處全留（13 具名 CASE 只准加、slug 倉、Must-keep 入謂詞、OC-1…12、draft、不發明 G1 PASS）。
+> Owner standing 2026-09-14 必釘：檔→五站 `hop_id` 觸發表（五桶，拒 B 七 stem）；7A 從屬專案樹路線 SoT；Q12 persist=0 後 +1 進約束正文；CASE 極性＝注入壞行為該格紅；吸收 B marketplace×doctor 約束句、A 中途等人拒法。C 線長處全留（13 具名 CASE 只准加、slug 倉、Must-keep 入謂詞、OC-1…12）。G1 依 owner chat「可以」落檔；不發明 G2／G3 PASS。
 
 ## Real-world 去向
 | 引用（Stage 1 原文片段） | 去向 | 理由 |
@@ -234,7 +234,7 @@ C 線要擋的 hollow 不是「少寫幾段散文」，是三種假綠：(1) 檔
 | RP-9／10／11 繼續只咬字樣 | 6A／OC-6；6C 棄 |
 | 多 cache 掃最新 hops | 7A／OC-7 |
 | feature branch 手改 STATUS | OC-10 流程層 |
-| 本 hop 被當成已過 G1 | 頂欄 `verdict` 空、`status: draft`；不發明 PASS |
+| 本 hop 被當成已過 G1 或已落地 Stage 3／4 | G1 已按 owner chat「可以」落檔（`verdict` PASS、`status` approved、OC-1～OC-12 ✅）；本 PR 只含本目錄 2-decision.md／.html；翻案回本站。不發明 G2／G3。不開 Stage 3／4 |
 | Q17／Q10／Q19 假設被當「討論已核、Decision 可改口」 | 本檔升格並進 OC-4／5／6；推翻＝回本站 |
 | 4-spec 減 CASE 表 | 「只准加不准減」；減列翻 Decision |
 | hop_id 改七 stem 或另開 3-proto 桶 | 約束 14；稀釋 hop≤2；無 trigger 不建 proto 桶 |
@@ -277,7 +277,7 @@ C 線要擋的 hollow 不是「少寫幾段散文」，是三種假綠：(1) 檔
   9. 本 PR 實作 coordinator、改 STATUS／HISTORY、填 G1 PASS、合併、改 `_templates/`／`graph.yaml`／既有牙、bump 契約。
   10. 選定 event／倉的 JSON 鍵名或 schema 版本號。
 
-## Owner Calls(自判裁決,待人審)
+## Owner Calls(自判裁決,已核)
 
 <!-- C 線 OC ledger：使用者只說 Stage1 OK「ok」+ 鎖 Non-Goals 三把／dual-path 可量測／拒檔在＝完。
      落點、事件接法、hop_id、三前置升格、真計數升格、多 cache、一次寫、CASE 名、本 PR 範圍
@@ -286,23 +286,23 @@ C 線要擋的 hollow 不是「少寫幾段散文」，是三種假綠：(1) 檔
 ### 逐條裁決(上層)
 | OC | 決定了什麼 | 為什麼 | 依據(`檔:行` 或 `[Assumption]`) | 若被推翻會怎樣 | 狀態(待人審→✅/✗) |
 |---|---|---|---|---|---|
-| OC-1 | **計數落點＝slug 級只增倉**（1A）。使用者只把 Q9 移交本站、未選倉；選 slug 倉是 owner 延伸 | 不選則後站可滑回 1B，X5 復活 | `docs/dev/five-station-f2/1-discussion.md:L185` Q9 `[>]`；`five-station-simplify-f0-state-machine.md:L122-L124`。延伸本身 `[Assumption]` | SC-NEW5-RUN2 改觀測點；1B 回流 | 待人審 |
-| OC-2 | **事件＝獨立 slug ledger，本刀不 bump `agent-event`**（2C）。使用者只鎖「要留＋五問＋不鎖鍵」；「不 bump」是延伸 | 2A 會把 Q18 變成採用端誤紅；本刀不含強迫 bump | `1-discussion.md:L189-L194` Q13／Q14／Q18；`hooks/_doctor_impl.py:L216-L233`。延伸 `[Assumption]` | 改走 2A；採用端 schema 紅被當成誠實成功 | 待人審 |
-| OC-3 | **`hop_id`＝五站別名＋檔→五站觸發表（五桶），不改 `graph.yaml`**（3A）。使用者只問 F3 前怎麼認；選別名圖＋同站同桶是延伸。standing 釘：拒 B 七 stem | 3B 污染舊 7；3C 偷 F3；七 stem 稀釋 hop≤2 | `1-discussion.md:L187` Q11；`brief-v3.md:L47-L58`；`state-machine.md:L129-L136`。延伸 `[Assumption]` | hop 桶改掛 N7-g1 或七 stem；in-flight 計數互踩；cap 被稀釋 | 待人審 |
-| OC-4 | **Q17 三前置升格為 Decision**（4A）。使用者在討論標 `[~]`；本檔升格是把假設收成選定 | 少「F3 已 cut」會在 F0–F2 母版軌提前切線 | `1-discussion.md:L193` 期限=F2 Decision；`brief-v3.md:L166`。升格 `[Assumption]` 已到期必須收 | 改成兩前置；F2 期間 live 可評五站 | 待人審 |
-| OC-5 | **Q10 升格：run 級倉不合法＝X5**。使用者帶假設「是」；本檔選定 1A、棄 1B | 過期不得把 run 級倉當已核——本檔正面選定「不合法」 | `1-discussion.md:L186`；`ledger.py:L3-L6`。升格 | 允許 run 級；SC-NEW5-RUN2 失效 | 待人審 |
-| OC-6 | **Q19 升格：RP-9／10／11 必須讀真計數**（6A）。使用者帶假設「必須」 | 不升格則 6C 可假裝牙已夠 | `1-discussion.md:L194`；`five_station_f1.py:L327-L333`。升格 | F2 可只留字樣牙；live 第三次仍假第一次 | 待人審 |
-| OC-7 | **plugin root 從屬專案樹路線 SoT**（7A）。cache 只選本 process 讀哪份 hops 碼，不是路線許可。使用者只移交 Q20；「碼／路分家」是延伸。standing 吸收 B「認專案樹不認 host cache」 | 7B 是遠端改線變種；把 cache 當 cut 會讓 4A 變空 | `1-discussion.md:L196` Q20；`brief-v3.md:L168`。延伸 `[Assumption]` | 改掃最新 cache 或把 marketplace／COMPATIBLE 當 cut；同一 repo 被他機 hops 拖走 | 待人審 |
-| OC-8 | **Goal+Decide 兩個計數同一次 mutation 寫入**。使用者只問是否必須同一落點；「一次寫」是延伸 | 分兩次寫可讓 Goal 重開躲掉 Decide cap | `1-discussion.md:L191` Q15；`state-machine.md:L137`。延伸 `[Assumption]` | 分倉；NEW5-GOAL-2 可綠而 Decide 被躲 | 待人審 |
-| OC-9 | **把 AC-9 收成具名 CASE 表＋同一入口**（上表 13 列，只准加不准減）。使用者要「measurable SC for dual-path」；CASE 名與「預期紅」格子是延伸。standing 釘極性：注入壞行為 → 該格紅，不是「拒 hop 算綠」 | 不具名則後站可把紅格改成可選或拆成兩支腳本；極性反了會把壞行為測成綠 | `1-discussion.md:L252-L255` AC-9；使用者 C-line brief。延伸 `[Assumption]` | CASE 改名消失；SC-HOLLOW 對不到；紅格被改成拒 hop 綠 | 待人審 |
-| OC-10 | 本 Decision hop **不**跑 `status-update.sh`、不改 HISTORY、不改 1-discussion 頂欄、**不發明 G1 PASS**、不合併、不寫 coordinator。標**流程層** | 母版 STATUS 只在整合分支維護；使用者：draft、No G1 PASS、ONLY 2-decision+html | `docs/dev/STATUS.md:L10-L26`；本 hop brief | PR 帶 STATUS 或自填 PASS，與並行 A／B session 互蓋 | 待人審 |
-| OC-11 | **Q12 已進 Decision 約束正文**：某 `hop_id` **第一次成功 persist＝0**；之後每一次 persist 該桶 +1。第一次寫不算進 hop≤2。使用者只鎖「計數看寫入、不看模型名」；切在 persist 是延伸。standing：不得只寫在本 OC | 不切則「開檔就算一次」或「換模型再寫不算」都會漂；只寫 OC 會被後站當可選帳 | `1-discussion.md:L188` Q12；`state-machine.md:L129` 第一次寫不算。延伸 `[Assumption]` | 初寫被算進 cap，或換模型可無限重寫 | 待人審 |
-| OC-12 | **F2 coordinator 準存在、但 F3 前對 live slug 禁評五站謂詞**（只打合成 fixture）。這是對 4A 的收窄：碼可以合進 plugin，預設路線仍舊 7 | 使用者鎖「F2 寫 coordinator」又鎖「F3 前新軌舊 7」；不收窄會被讀成 8B | `brief-v3.md:L176-L180` F2 做／不做；`:L166` F0–F2 新開軌仍舊 7。收窄 `[Assumption]` | 碼一合進就對 live 切五站＝偷 F3 | 待人審 |
+| OC-1 | **計數落點＝slug 級只增倉**（1A）。使用者只把 Q9 移交本站、未選倉；選 slug 倉是 owner 延伸 | 不選則後站可滑回 1B，X5 復活 | `docs/dev/five-station-f2/1-discussion.md:L185` Q9 `[>]`；`five-station-simplify-f0-state-machine.md:L122-L124`。延伸本身 `[Assumption]` | SC-NEW5-RUN2 改觀測點；1B 回流 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-2 | **事件＝獨立 slug ledger，本刀不 bump `agent-event`**（2C）。使用者只鎖「要留＋五問＋不鎖鍵」；「不 bump」是延伸 | 2A 會把 Q18 變成採用端誤紅；本刀不含強迫 bump | `1-discussion.md:L189-L194` Q13／Q14／Q18；`hooks/_doctor_impl.py:L216-L233`。延伸 `[Assumption]` | 改走 2A；採用端 schema 紅被當成誠實成功 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-3 | **`hop_id`＝五站別名＋檔→五站觸發表（五桶），不改 `graph.yaml`**（3A）。使用者只問 F3 前怎麼認；選別名圖＋同站同桶是延伸。standing 釘：拒 B 七 stem | 3B 污染舊 7；3C 偷 F3；七 stem 稀釋 hop≤2 | `1-discussion.md:L187` Q11；`brief-v3.md:L47-L58`；`state-machine.md:L129-L136`。延伸 `[Assumption]` | hop 桶改掛 N7-g1 或七 stem；in-flight 計數互踩；cap 被稀釋 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-4 | **Q17 三前置升格為 Decision**（4A）。使用者在討論標 `[~]`；本檔升格是把假設收成選定 | 少「F3 已 cut」會在 F0–F2 母版軌提前切線 | `1-discussion.md:L193` 期限=F2 Decision；`brief-v3.md:L166`。升格 `[Assumption]` 已到期必須收 | 改成兩前置；F2 期間 live 可評五站 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-5 | **Q10 升格：run 級倉不合法＝X5**。使用者帶假設「是」；本檔選定 1A、棄 1B | 過期不得把 run 級倉當已核——本檔正面選定「不合法」 | `1-discussion.md:L186`；`ledger.py:L3-L6`。升格 | 允許 run 級；SC-NEW5-RUN2 失效 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-6 | **Q19 升格：RP-9／10／11 必須讀真計數**（6A）。使用者帶假設「必須」 | 不升格則 6C 可假裝牙已夠 | `1-discussion.md:L194`；`five_station_f1.py:L327-L333`。升格 | F2 可只留字樣牙；live 第三次仍假第一次 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-7 | **plugin root 從屬專案樹路線 SoT**（7A）。cache 只選本 process 讀哪份 hops 碼，不是路線許可。使用者只移交 Q20；「碼／路分家」是延伸。standing 吸收 B「認專案樹不認 host cache」 | 7B 是遠端改線變種；把 cache 當 cut 會讓 4A 變空 | `1-discussion.md:L196` Q20；`brief-v3.md:L168`。延伸 `[Assumption]` | 改掃最新 cache 或把 marketplace／COMPATIBLE 當 cut；同一 repo 被他機 hops 拖走 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-8 | **Goal+Decide 兩個計數同一次 mutation 寫入**。使用者只問是否必須同一落點；「一次寫」是延伸 | 分兩次寫可讓 Goal 重開躲掉 Decide cap | `1-discussion.md:L191` Q15；`state-machine.md:L137`。延伸 `[Assumption]` | 分倉；NEW5-GOAL-2 可綠而 Decide 被躲 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-9 | **把 AC-9 收成具名 CASE 表＋同一入口**（上表 13 列，只准加不准減）。使用者要「measurable SC for dual-path」；CASE 名與「預期紅」格子是延伸。standing 釘極性：注入壞行為 → 該格紅，不是「拒 hop 算綠」 | 不具名則後站可把紅格改成可選或拆成兩支腳本；極性反了會把壞行為測成綠 | `1-discussion.md:L252-L255` AC-9；使用者 C-line brief。延伸 `[Assumption]` | CASE 改名消失；SC-HOLLOW 對不到；紅格被改成拒 hop 綠 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-10 | 本 Decision hop **不**跑 `status-update.sh`、不改 HISTORY、不改 1-discussion 頂欄、**不發明 G1 PASS**、不合併、不寫 coordinator。標**流程層** | 母版 STATUS 只在整合分支維護；使用者：draft、No G1 PASS、ONLY 2-decision+html | `docs/dev/STATUS.md:L10-L26`；本 hop brief | PR 帶 STATUS 或自填 PASS，與並行 A／B session 互蓋 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-11 | **Q12 已進 Decision 約束正文**：某 `hop_id` **第一次成功 persist＝0**；之後每一次 persist 該桶 +1。第一次寫不算進 hop≤2。使用者只鎖「計數看寫入、不看模型名」；切在 persist 是延伸。standing：不得只寫在本 OC | 不切則「開檔就算一次」或「換模型再寫不算」都會漂；只寫 OC 會被後站當可選帳 | `1-discussion.md:L188` Q12；`state-machine.md:L129` 第一次寫不算。延伸 `[Assumption]` | 初寫被算進 cap，或換模型可無限重寫 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-12 | **F2 coordinator 準存在、但 F3 前對 live slug 禁評五站謂詞**（只打合成 fixture）。這是對 4A 的收窄：碼可以合進 plugin，預設路線仍舊 7 | 使用者鎖「F2 寫 coordinator」又鎖「F3 前新軌舊 7」；不收窄會被讀成 8B | `brief-v3.md:L176-L180` F2 做／不做；`:L166` F0–F2 新開軌仍舊 7。收窄 `[Assumption]` | 碼一合進就對 live 切五站＝偷 F3 | ✅ Owner PASS human:rick @ 2026-09-14 |
 
 ### 內部技術選擇(下層,告知即可)
 - 契約維持 `2.0.0`；本 hop 不 bump plugin／`devflow-contract.json`／`agent-event`。
 - `1-discussion.md` 保留 draft／「不送 G1」原文；本檔才改口（Owner「ok」）。
-- 審頁用 `scripts/build-stage2-html.py --action`，不手包 html-shell，不把審頁塞進 `build-gate-twin.py` STAGES。本 hop 產審頁、不產 G1 勾選 twin（未送 G1）。
+- 審頁用 `scripts/build-stage2-html.py --action`，不手包 html-shell，不把審頁塞進 `build-gate-twin.py` STAGES。G1 經 `scripts/devflow_gate.py write` 落頂欄；審頁重生。不產 G1 勾選 twin。
 - 不預先跳過 Stage 3；觸發判定留給該站（本檔無「跳過 Stage 3」流程層 OC）。
 - 原文獨立收斂；standing soft-fix 才讀 A／B 吸收：A＝中途等人拒法；B＝marketplace×doctor 約束句＋認專案樹。不採 B 七 stem。
 - slug ledger 的具體路徑／檔名交 4-spec，本檔只鎖「slug 級、只增、可指、五問可答」。
@@ -324,4 +324,5 @@ C 線要擋的 hollow 不是「少寫幾段散文」，是三種假綠：(1) 檔
 - Owner standing soft-fix | 2026-09-14 | Winner C 全票 #330。釘：檔→五站觸發表（五桶，拒 B 2A 七 stem）；7A 從屬專案樹 SoT（cache 只選碼）；Q12 persist=0/+1 進約束正文；CASE 極性＝注入壞行為該格紅；吸收 B marketplace×doctor 約束句、A 中途等人拒法。C 線長處全留。不發明 G1 PASS。
 - Q10／Q17／Q19 對帳 | 2026-09-14 | 三條 `[~]` 到期收進 Decision（OC-4／5／6），不再當「仍待驗可改口」。
 - 自檢七掃 | 2026-09-14 | ①每案優劣有依據欄（空格標 `[Assumption]`）。②Goals G-locus／honest／trap／self／knife／obs／carry／dual／keep 進 Decision／SC；漏項進 Non-Goals。③`[>]` Q9–Q16／Q18／Q20 皆本方案處理（本 slug 後站，不是另開 slug）。④SC 皆具名 CASE／exit／檔集；紅格極性＝注入。⑤Rejected 無空棄因（含七 stem）。⑥八決策點由 C-line brief 確認；OC-1／2／3／7／8／9／11 延伸、OC-4／5／6 升格、OC-12 收窄、OC-10 流程層，皆可回溯決策點。⑦既有脈絡是對帳不是外移 schema。圖上 1A–8A 標選定，Rejected 未上圖。
-- 本 hop 不送 G1 | 2026-09-14 | `verdict` 空；OC 全「待人審」；不跑 N8 三連動。standing 合稿後仍不發明 PASS。
+- 本 hop 不送 G1 | 2026-09-14 | Decision hop：`verdict` 空；OC 全「待人審」；不跑 N8 三連動。standing 合稿後仍不發明 PASS。
+- G1 | 2026-09-14 | Human G1 PASS + OC-1…OC-12 Owner PASS @ 2026-09-14 Asia/Taipei。owner chat「可以」。未發明新 OC 答案；看板依 Decision 原文標 Owner PASSed。基準 #330（`dbf3d86`）／#332 STATUS Stage2（`3036eda`）。owner 自審(有記錄)；reviewers: [user]；operator tony 經 `scripts/devflow_gate.py write` 落頂欄。未發明 G2／G3 PASS。不開 Stage 3／4。
