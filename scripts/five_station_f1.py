@@ -180,7 +180,7 @@ def ship_pass(meta, body):
     return bool(PASS_LN.search(body))
 
 
-def evaluate(text, path="", root=None):
+def evaluate(text, path="", root=None, caps_from_store=True):
     root = root or str(ROOT)
     meta, body = parse_fm(text)
     kind = infer_kind(path, meta)
@@ -325,6 +325,19 @@ def evaluate(text, path="", root=None):
             result.red("S-3.3", "Evidence 八點不齊或摺站省略")
 
     if kind == "cap":
+        if caps_from_store:
+            try:
+                import five_station_f2 as f2
+                caps = f2.caps_near(path)
+            except Exception:
+                caps = None
+            if caps:
+                if int(caps.get("hop_max") or 0) >= 2:
+                    result.red("RP-9", "hop 重寫第三次 store=%s" % caps["hop_max"])
+                if int(caps.get("decide_reopen") or 0) >= 1:
+                    result.red("RP-10", "Decide 重開第二次 store=%s" % caps["decide_reopen"])
+                if int(caps.get("goal_reopen") or 0) >= 1:
+                    result.red("RP-11", "Goal 重開第二次 store=%s" % caps["goal_reopen"])
         if re.search(r"第\s*3\s*次|重寫第 3", body):
             result.red("RP-9", "hop 重寫第三次")
         if re.search(r"Decide 重開第\s*2|第\s*2\s*次.*Decide", body):
