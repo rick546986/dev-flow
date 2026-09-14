@@ -1,13 +1,15 @@
 ---
 feature: five-station-simplify
 stage: 7-review
-status: draft
-verdict: PRE-REVIEW
-owner: s7-fresh-reviewer
+status: approved
+verdict: PASS
+owner: rick
+reviewers: [user]
 updated: 2026-09-14
 ---
+- Human verdict note: human:rick @ 2026-09-14 Asia/Taipei, owner chat「過」
 
-# 7. 驗證 —— **不是 G3 PASS**（PRE-REVIEW；F1 only）
+# 7. 驗證 —— **G3 PASS**（F1 only）
 
 > ## Reviewer 閱讀動線(**必留;給看的人,不是給寫的人**)
 >
@@ -25,8 +27,9 @@ updated: 2026-09-14
 > 三大節(Spec Axis / Coverage Matrix / Standards Axis)通常佔全文四成以上,
 > 用途是**查證庫**(懷疑某一格時去查),不是通讀對象。
 >
-> 用途:**G3 出貨關卡** 的交接包，**不是** Human G3 PASS。本檔 `verdict: PRE-REVIEW`。
-> 建議 reviewer 路徑：適格人類 owner（rick）在審頁「提交判定」；說「過」／「g3 pass」才准改頂欄。Agent 禁代填 PASS。
+> 用途:**G3 出貨關卡**。Human G3 PASS recorded:`human:rick` @ 2026-09-14 Asia/Taipei（owner chat「過」）。operator tony 經 `scripts/devflow_gate.py write` 落頂欄。`status: approved`（Exit 人項未全勾 → 尚未 shipped）。
+> 機械審查正本仍是獨立 `s7-fresh-reviewer` 的 Stage 7 檔。`Source SHA` 維持 Fresh tip `75a54b432d51f9cc705e7a10de5fc6e37b73380c`（本 docs commit 會再漂 SHA，不重綁、不發明 Final Fresh）。
+> D-2 L1（`five_station_f1.py` 420 行）由 owner 經本 PASS **接受／park**。STATUS.md Active 不在本 PR 改。
 
 ## 限制聲明（讀取順序 + 身分）
 
@@ -34,11 +37,11 @@ updated: 2026-09-14
 |---|---|
 | 審查者 | `s7-fresh-reviewer`（fresh-context Cloud Agent；**≠** Stage 6 實作 owner `implementer-A`／#321 實作 session） |
 | Stage 6 實作 | `implementer-A`；T Review 原列 implementer-self PRE，#321 獨立授權後記帳 ACCEPTED。**不是** G3 |
-| Human G3 | **尚未提交**。本檔不發明 PASS／REQUEST_CHANGES／HOLD |
+| Human G3 | **PASS** recorded:`human:rick` @ 2026-09-14 Asia/Taipei（owner chat「過」）。`reviewers: [user]`；`owner: rick`。operator tony 經 `scripts/devflow_gate.py write` |
 | 讀取順序（可查） | ①`4-spec.md`（G2 PASS、52 S） ②`5-tasks.md`（T-1…T-12 F1 聯集） ③`scripts/test-five-station-f1.sh` + `scripts/five_station_f1.py` + fixtures／annex ④`git show ace0f9e`（#321 vs `f3f28bd`） ⑤親跑 `test-five-station-f1.sh`／spec-gate／file-map → **之後才** ⑥讀 `6-implementation-notes.md` Self-Review／D-1／D-2 |
 | 圍欄 | 本雲端未武裝 `devflow-exec.sh review`（無 session runtime）。讀取順序靠散文紀律：矩陣與實跑先於 Self-Review |
-| 本輪性質 | 產品碼已在 `main` tip `#321`=`ace0f9e` + `#322` STATUS companion。審核樹 Source SHA = `75a54b432d51f9cc705e7a10de5fc6e37b73380c`。本 PR **只** 7-review 雙檔。Scope = **F1 only**。不宣稱 F2／F3 完成。不改 STATUS。不 merge |
-| 可信／打折 | 機械數字（63 CASE／failed=0／spec-gate 9/9／file-map 208）可信。F-id 分級與「沒想到的事」是本 reviewer 獨立掃，不是作者自評升級。Human 仍可整份退回 |
+| 本輪性質 | 產品碼已在 `main` tip `#321`=`ace0f9e` + `#322` STATUS companion。審核樹 Source SHA = `75a54b432d51f9cc705e7a10de5fc6e37b73380c`。本 PR **只** 7-review 雙檔。Scope = **F1 only**。不宣稱 F2／F3 完成。不改 STATUS。**Human G3 PASS recorded**；owner standing 准 merge |
+| 可信／打折 | 機械數字（63 CASE／failed=0／spec-gate 9/9／file-map 208）仍以 PRE-REVIEW 場為準，本 hop 不新造證據。F-s7-1 🟡 = D-2 已由 owner 接受／park。Human G3 已由 rick 落檔 |
 
 ## Coverage Matrix
 
@@ -239,7 +242,7 @@ DBC = applicable（4-spec）。命中項併入雙軸；本清單不另立 Gate�
 
 獨立掃（未先採信 Self-Review）。無 🔴。無未授權 Boundary 變更。
 
-- F-s7-1 🟡 `scripts/five_station_f1.py` 420 行 | 超過 4-spec Diff Budget「scripts 新牙非測試 ≤250」 | 作者已記 **D-2(L1)**：不拆第二家族（會撞 ≤4 檔）。不改 R/S。建議 Human 接受或 park（見 Known Limits #1）。本 reviewer 實測 420（作者寫 ≈407）——同一 L1，不升 L2
+- F-s7-1 🟡 `scripts/five_station_f1.py` 420 行 | 超過 4-spec Diff Budget「scripts 新牙非測試 ≤250」 | 作者已記 **D-2(L1)**：不拆第二家族（會撞 ≤4 檔）。不改 R/S。**Owner accepted／park** via Human G3 PASS（`human:rick` @ 2026-09-14 Asia/Taipei owner chat「過」；見 Known Limits #1）。本 reviewer 實測 420（作者寫 ≈407）——同一 L1，不升 L2
 - F-s7-2 🟢 `five_station_f1.py:106-114` `infer_kind` 檔名前綴／`f1-kind` | 牙靠 fixture 命名分派，不是 live coordinator 事件流 | 誠實 F1 範圍；F2 不得把此前綴當狀態機
 - F-s7-3 🟢 `five_station_f1.py:327-333` RP-9／10／11 | 對照稿字面紅，無 live 計數器 | 4-spec DD-3／S-7.4；不鎖 event 鍵。F2 工作
 - F-s7-4 🟢 `five_station_f1.py:193-200` RP-16 | `f1-writer`／正文「寫入者是 Agent」辨識，不是 Cursor 擋寫 | S-3.1 觀測是對照稿紅；人親寫頂欄不誤殺已驗
@@ -261,7 +264,7 @@ DBC = applicable（4-spec）。命中項併入雙軸；本清單不另立 Gate�
 | R-7 | **未做（F2）** | 只對照稿紅 RP-9／10／11。計數落點／event 未選。不得當 coordinator 已交付 |
 | R-8 | **部分符合** | S-8.1／S-8.5／S-8.6 ✅。S-8.2 = F2；S-8.3 = F3；S-8.4 已 G2（Stage 4 PR）。S-8.7 = 本 hop 用 builder 產 7-review.html（不是 F1 牙） |
 | D-1(L1) | 如實；已收口 | file-map 208；devflow-check 註冊兩牙；聯集仍六條 |
-| D-2(L1) | 如實；未收口 | 420 > 250；不拆家族。見 F-s7-1／KL #1 |
+| D-2(L1) | 如實；Owner accepted／park | 420 > 250；不拆家族。見 F-s7-1／KL #1。human:rick @ 2026-09-14 Asia/Taipei owner chat「過」 |
 | Design Boundary | 符合契約 | 無未授權 Boundary；未偷偷修掉 Known design limit |
 
 ## 變更架構圖
@@ -341,16 +344,19 @@ NOT in this knife:
 
 ## Verdict
 
-**PRE-REVIEW** —— **不是 G3 PASS。** 本 reviewer 建議：F1 牙機械面可交人審；Human 說「過」／「g3 pass」之前頂欄維持 PRE-REVIEW。不發明 Human 判定。
+**Human G3 PASS。** `human:rick` @ 2026-09-14 Asia/Taipei（owner chat「過」）。`reviewers: [user]`。operator tony 經 `scripts/devflow_gate.py write`。D-2 L1 Owner accepted／park。不發明新 Final Fresh；Source SHA 維持 `75a54b4`。
 
 | 門檻 | 證據 | 簽署 |
 |---|---|---|
-| 本次 F1 S 全綠 | Coverage 34 列 ✅；63 CASE failed=0 | reviewer 實跑；**待 Human G3** |
-| 既有回歸綠 | spec-gate 9/9；file-map 208 | reviewer 實跑；**待 Human G3** |
-| 現象證據逐 F1 S | 上表＋附錄 A4 | reviewer 親跑 selftest；**待 Human G3** |
-| Evidence 契約 | 本節四欄＋層表；gauntlet 見附錄 A5 | 機械面交給本檔；**待 Human G3** |
-| 無 🔴 | 無產品行為 🔴；F-s7-1 🟡 = D-2 行數 L1 | **待 Human 接受／park D-2** |
+| 本次 F1 S 全綠 | Coverage 34 列 ✅；63 CASE failed=0 | reviewer 實跑；**Human G3 PASS** |
+| 既有回歸綠 | spec-gate 9/9；file-map 208 | reviewer 實跑；**Human G3 PASS** |
+| 現象證據逐 F1 S | 上表＋附錄 A4 | reviewer 親跑 selftest；**Human G3 PASS** |
+| Evidence 契約 | 本節四欄＋層表；gauntlet 見附錄 A5 | 機械面交給本檔；**Human G3 PASS** |
+| 無 🔴 | 無產品行為 🔴；F-s7-1 🟡 = D-2 行數 L1 | **Owner accepted／park D-2** |
 | F2／F3 | 明確未做 | 不得當五站已切 |
+| Human G3 | **PASS** | `human:rick` @ 2026-09-14 Asia/Taipei owner chat「過」 |
+
+- G3 | 2026-09-14 | owner chat「過」= Human G3 PASS。D-2 L1 accepted／park。owner 自審(有記錄)；reviewers: [user]；operator tony 經 `scripts/devflow_gate.py write` 落頂欄。Source SHA 維持 `75a54b432d51f9cc705e7a10de5fc6e37b73380c`。不開 F2。STATUS 另 companion。
 
 ### 步 2c 整合回歸（Final Fresh 之前）
 
@@ -365,13 +371,13 @@ INTEGRATION_REF: refs/remotes/origin/main
 結論:STATUS=ALREADY_SYNCED FORK=f3f28bdb183c3d0e1ccbecd7e6cde261e7679c62 HEAD=75a54b432d51f9cc705e7a10de5fc6e37b73380c INTEGRATION=75a54b432d51f9cc705e7a10de5fc6e37b73380c(refs/remotes/origin/main)—— 你已經同步過了,本次輸出不算數
 ```
 
-路徑①：**重綁 Final Fresh** 到當下 HEAD = `75a54b4`（本檔 Source SHA）。共同戰場 = #321／#322 本身，已當審核對象逐檔看過，不得用此次腳本輸出當「沒有共同戰場」。**不 merge**（產品碼已在 main；本 PR 只文件）。
+路徑①：**重綁 Final Fresh** 到當下 HEAD = `75a54b4`（本檔 Source SHA）。共同戰場 = #321／#322 本身，已當審核對象逐檔看過，不得用此次腳本輸出當「沒有共同戰場」。本 hop **不重綁 Fresh、不改產品碼**。產品碼已在 main；本 PR 只文件。owner standing 准合本文件 PR。
 
 ## Known Limits
 
 | # | 限制 | 嚴重度 | 建議處置 |
 |---|---|---|---|
-| 1 | D-2(L1)：`five_station_f1.py` 420 行 > Diff Budget 非測試 ≤250。作者不拆第二家族（會撞 ≤4 檔格）。不改 R/S | L1／🟡 | **park 待 Human 接受**。落點=本表。owner=rick。不在本 PR 拆檔 |
+| 1 | D-2(L1)：`five_station_f1.py` 420 行 > Diff Budget 非測試 ≤250。作者不拆第二家族（會撞 ≤4 檔格）。不改 R/S | L1／🟡 | **Owner accepted／park** via Human G3 PASS（`human:rick` @ 2026-09-14 Asia/Taipei owner chat「過」）。落點=本表。owner=rick。不在本 PR 拆檔 |
 | 2 | F2 coordinator／event／三 cap 計數器未落地（R-7、S-1.2…中間 latch、S-7.1…S-7.4）。F1 只對照稿讓 RP-9／10／11 各紅一次 | 範圍 | 另刀 F2。本場不宣稱完成 |
 | 3 | F3 新 slug 預設五站未切（S-8.3）。`graph.yaml` 未改 | 範圍 | 另刀 F3 |
 | 4 | `_stage3_impl.py` 仍可能把否定跳過讀成 skip OC（4-spec Known design limit）。F1 只另收 SLOT-SKIP-NEGATION | 🟢／已知 | 維持；不在本場改舊牙 |
@@ -379,17 +385,17 @@ INTEGRATION_REF: refs/remotes/origin/main
 | 6 | A1／A2 dest 未核；annex 鍵名未鎖（OC-3） | 已知 | F1 刻意不鎖；勿當 schema 已定 |
 | 7 | RP-16／多數 RP 是 fixture 牙，不是 Cursor 擋寫或 live hop 引擎 | 誠實 | F2 才接 coordinator |
 | 8 | 步 2c `ALREADY_SYNCED`（F1 已合 main）。交集輸出不作「無共同戰場」證據 | 流程 | 已走路徑① 重綁 Fresh |
-| 9 | 本檔 `verdict: PRE-REVIEW`。全勾 ≠ PASS。Human 未簽 | 流程 | 建議路徑：owner 開審頁提交判定 |
+| 9 | ~~本檔 `verdict: PRE-REVIEW`。全勾 ≠ PASS。Human 未簽~~ | — | 已解除:Human G3 PASS recorded by `human:rick` @ 2026-09-14 Asia/Taipei（owner chat「過」）。STATUS.md Active 仍不在本 PR 改 |
 
 ## Exit Checklist(全勾才算 shipped)
 
 - [x] **Design Boundary finding 全數處置**:無未授權 Boundary 變更（DIC 六項未命中；D-2 是行數 L1 不是 Boundary）。DBC applicable 下無 🟡 Boundary 待處置
 - [ ] Quiz（不可逆改動必做；其餘 full lane 選配）:F1 不 bump 契約、不切 `graph.yaml` 預設。Quiz 留給 Human 若認為本刀仍算不可逆；本 reviewer **不代考、不代答**
 - [x] (條件式)整合回歸已在 Final Fresh **之前**記錄:ALREADY_SYNCED 三 SHA＋canonical ref 貼於 Verdict；Fresh 重綁 `75a54b4`。Verdict 後禁改產品碼
-- [ ] PR → main:本 hop 開 Stage 7 PR；**禁直上 master；未 merge**
+- [ ] PR → main:本 hop 開 Stage 7 PR；**禁直上 master**。Human G3 已簽；合入由 merger 做（本 Exit 項 merge 後勾）
 - [x] 4-spec delta 已併入 `docs/specs/<domain>.md`: n-a（F1 不改 living 契約句；F3 才動）
 - [ ] STATUS.md 已更新為 shipped:**merge 後由 merger 在 main 做**。本 branch **不改 STATUS**
-- [ ] 7-review frontmatter status: shipped:維持 `draft`；`verdict: PRE-REVIEW` 直到 Human
+- [ ] 7-review frontmatter status: shipped:本 hop `status: approved` + `verdict: PASS`（G3 先過；Exit 人項未全勾故尚未 shipped）
 - [x] 7-review.html 已產生:先 `scripts/build-stage7-html.py --action`，再 `docs/dev/tools/build-gate-twin.py /workspace five-station-simplify 7-review`（twin 覆寫同檔；抽驗格 S-4.3）
 - [ ] feature branch 已刪 / worktree 已清:merge 後再做
 
@@ -403,23 +409,23 @@ INTEGRATION_REF: refs/remotes/origin/main
 
 ### A1　本輪爭點
 
-1. **G3 主權**：機械全綠 ≠ Human PASS。本檔停 PRE-REVIEW。
-2. **D-2 行數**：420 vs 250。L1 已記；Human 要不要接受。
+1. **G3 主權**：機械全綠 ≠ Human PASS。本 hop 已按 owner chat「過」落 `verdict: PASS`。
+2. **D-2 行數**：420 vs 250。L1 已記；**Owner accepted／park** via 本 PASS。
 3. **Scope**：只 F1。把 R-1 中間 latch 或 R-7 cap 當成已交付 = 錯。
-4. **2c ALREADY_SYNCED**：F1 已在 main。不重 merge。Fresh 綁 `75a54b4`。
-5. **作者 vs 本場**：Self-Review 主張 F1 牙群組全綠＋未發明 G3 —— 與本場實跑一致。作者 T 列原為 implementer-self PRE；#321 獨立授權 ACCEPTED。本場不把那份授權升級成 G3。
+4. **2c ALREADY_SYNCED**：F1 已在 main。不重 merge。Fresh 綁 `75a54b4`（本 hop 不重綁、不發明 Fresh）。
+5. **作者 vs 本場**：Self-Review 主張 F1 牙群組全綠＋未發明 G3 —— 與本場實跑一致。作者 T 列原為 implementer-self PRE；#321 獨立授權 ACCEPTED。Human G3 另由 rick 落檔，不由作者／s7-fresh-reviewer 代填。
 
 ### A2　本場不宣稱的 S（F2／F3／已綠他站）
 
 S-1.2、S-1.3、S-1.4、S-1.5、S-1.6、S-1.8、S-1.9、S-1.11、S-1.12、S-7.1、S-7.2、S-7.3、S-7.4、S-8.2 → F2。S-8.3 → F3。S-8.4／S-6.1 → 已 G2。S-8.7 → 本 hop builder，不是 F1 牙行為。
 
-### A3　建議 Human 路徑
+### A3　Human 路徑（已走完）
 
 1. 開 Pages／本機審頁（路徑見 PR）。
 2. 抽驗 S-4.3 三個 `檔:行`。
-3. 看 Known Limits #1（D-2）能不能接受。
-4. 提交判定：過／g3 pass → PASS；要改 → REQUEST_CHANGES；停 → HOLD。
-5. **不要**叫 Agent 把頂欄改成 PASS。
+3. Known Limits #1（D-2）：owner 經本 PASS 接受／park。
+4. 判定已落：owner chat「過」→ `verdict: PASS`、`status: approved`（`scripts/devflow_gate.py write`）。
+5. 頂欄由官方 write 路徑寫入，attestation `human:rick @ 2026-09-14 Asia/Taipei`。
 
 ### A4　Final Fresh 原始輸出（索引）
 
