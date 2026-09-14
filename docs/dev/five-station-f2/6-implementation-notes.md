@@ -170,7 +170,7 @@ n-a:本 feature 未並行。單一 checkout、無第二 worktree；不改 STATUS
 
 | 日期 | T-id | 一行 |
 |---|---|---|
-| 2026-09-14 | T-1…T-10 | implementer commit pending independent T review（hash 見本 PR HEAD） |
+| 2026-09-14 | T-1…T-10 | `4f0a136` implementer commit；T Review 待獨立審 |
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 Run:
