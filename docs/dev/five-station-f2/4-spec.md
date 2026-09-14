@@ -1088,6 +1088,6 @@ Stage 3 觸發判定（0 命中）：
 - 3b Profile | 2026-09-14 | lane full、Risk high、Failure Model、Reliability Concurrency=applicable（S-3.4／S-6.7）、DBC applicable。
 - 3c Stage 3 | 2026-09-14 | N/A + 九條觸發 0 命中；AC-1…AC-10 逐條掛 S。
 - DD 掃描 | 2026-09-14 | 上層十條待人審；DD 節無未決殘留；不翻已核 Decision；無 ✅ 草擬自判；不發明 G2 PASS。
-- 機械關卡 | 2026-09-14 | `scripts/check-spec-gate.sh` 須 9/9。審頁 `scripts/build-stage4-html.py --action`。
+- 機械關卡 | 2026-09-14 | `scripts/check-spec-gate.sh` 9/9。審頁 `python3 scripts/build-stage4-html.py --action docs/dev/five-station-f2/4-spec.md` 寫出 `4-spec.html`（dash：draft／PRE-REVIEW／8 R／45 S）。
 - 獨立於 A／B | 2026-09-14 | 不讀他線 4-spec。
 - 本 hop 不送 G2 | 2026-09-14 | `verdict` 空；`status: draft`；DD 全「待人審」。
