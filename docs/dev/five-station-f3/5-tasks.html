@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>five-station-f3 · 5-tasks</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  -webkit-font-smoothing:antialiased}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;font-variant-numeric:tabular-nums}
+code{background:var(--sunk);border-radius:3px;padding:1px 5px;color:var(--ink-2)}
+a{color:var(--accent)}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+
+/* ---- 頁首 ---- */
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem;max-width:62ch}
+
+/* ---- 動線格 ---- */
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:20px 0 4px}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:11px 13px;box-shadow:var(--shadow)}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;display:block;margin-bottom:5px}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+.cell .n{font-size:.78rem;color:var(--ink-2);display:block;margin-top:3px}
+.cell.is-bad .v{color:var(--bad)} .cell.is-ok .v{color:var(--ok)}
+.cell.is-warn .v{color:var(--warn)} .cell.is-accent .v{color:var(--accent)}
+
+/* ---- sticky 進度 ---- */
+.progress{position:sticky;top:0;z-index:20;background:var(--ground);
+  border-bottom:1px solid var(--rule);padding:11px 0;margin:22px 0 0}
+.progress-in{max-width:900px;margin:0 auto;padding:0 20px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.bar{flex:1 1 200px;height:7px;background:var(--sunk);border-radius:99px;overflow:hidden;
+  min-width:140px}
+.bar i{display:block;height:100%;width:0;background:var(--accent);
+  transition:width .25s ease;border-radius:99px}
+.count{font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.count b{color:var(--accent)}
+.btn{border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);
+  border-radius:7px;padding:5px 11px;font-size:.82rem;cursor:pointer;font-family:inherit}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---- 提示框 ---- */
+.criterion{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 26%,transparent);
+  border-radius:10px;padding:15px 17px;margin:26px 0}
+.criterion h2{margin:0 0 7px;font-size:.95rem;letter-spacing:.02em;border:0;padding:0}
+.criterion p{margin:0;color:var(--ink-2);font-size:.9rem}
+.criterion .ex{margin-top:9px;padding-top:9px;
+  border-top:1px dashed color-mix(in srgb,var(--accent) 30%,transparent);font-size:.85rem}
+
+/* ---- 區塊卡（R / T 共用）---- */
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;
+  border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
+.r-block.danger .r-head{border-left-color:var(--bad)}
+.r-id{font-weight:700;font-size:.95rem;letter-spacing:.02em;white-space:nowrap;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.r-block.danger .r-id{color:var(--bad)}
+.r-block.core .r-id{color:var(--accent)}
+.r-name{font-weight:650}
+.r-risk{display:block;font-size:.83rem;color:var(--ink-2);margin-top:3px}
+.r-rule{padding:12px 18px;background:var(--sunk);font-size:.9rem;color:var(--ink-2);
+  border-bottom:1px solid var(--rule-2)}
+.r-rule b{color:var(--ink)}
+
+/* ---- 圖 ---- */
+/* 直式現況圖／方案架構圖:外層撐滿欄、圖本身有限寬,水平置中。
+   禁 svg/pre width:100% —— 畫布撐滿時狹長圖會貼左。
+   max-width 360px 對齊鎖定手樣(subsidy 2-decision.html)。 */
+.fig{margin:26px 0;padding:17px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}
+.fig svg,.fig pre{display:block;width:auto;max-width:360px;margin:0 auto;height:auto}
+.fig pre.fig-ascii-fallback{max-width:100%;width:100%;box-sizing:border-box;
+  overflow-x:auto;text-align:left;white-space:pre;background:var(--sunk);
+  padding:11px;border-radius:7px;font-size:.82rem;line-height:1.5;margin-top:8px}
+.fig .fig-warn{color:var(--warn);text-align:left;margin:0 0 4px;max-width:100%}
+.pinned pre{display:block;width:max-content;max-width:100%;margin-left:auto;margin-right:auto}
+.cap{color:var(--ink-3);font-size:.82rem;line-height:1.6;margin-top:11px;text-align:center}
+svg .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.4}
+svg .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+svg .wn{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.4}
+svg .bd{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.4}
+svg .nl{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--ink)}
+svg .sm{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--ink-3)}
+svg .edge{fill:none;stroke:var(--ink-3);stroke-width:1.6}
+svg .ahead{fill:var(--ink-3);stroke:none}
+
+/* ---- 摺疊 ---- */
+.appendix{margin-top:42px;border-top:1px solid var(--rule);padding-top:22px}
+.appendix > h2{font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 13px;border:0;padding:0}
+details.doc{border:1px solid var(--rule);border-radius:9px;margin-bottom:9px;
+  background:var(--panel);overflow:hidden}
+details.doc > summary{cursor:pointer;padding:11px 15px;font-weight:600;font-size:.9rem;
+  list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:center}
+details.doc > summary::-webkit-details-marker{display:none}
+details.doc > summary::after{content:"展開";font-size:.76rem;color:var(--ink-3);font-weight:500}
+details.doc[open] > summary::after{content:"收合"}
+details.doc[open] > summary{border-bottom:1px solid var(--rule-2)}
+details.doc:hover{border-color:var(--accent)}
+.doc-in{padding:4px 17px 15px;font-size:.9rem;color:var(--ink-2)}
+.doc-in h2,.doc-in h3{color:var(--ink);font-size:.95rem;margin:16px 0 7px;border:0;padding:0}
+.doc-in table{border-collapse:collapse;width:100%;margin:11px 0;font-size:.84rem}
+.doc-in th,.doc-in td{border:1px solid var(--rule);padding:6px 9px;text-align:left;
+  vertical-align:top}
+.doc-in th{background:var(--sunk);font-weight:650;color:var(--ink)}
+.doc-in pre{background:var(--sunk);padding:11px;border-radius:7px;overflow-x:auto;
+  font-size:.82rem;line-height:1.5}
+.doc-in blockquote{margin:11px 0;padding:.4em 1em;border-left:3px solid var(--rule);
+  color:var(--ink-3)}
+.doc-in ul,.doc-in ol{padding-left:1.35em}
+.doc-in li{margin:4px 0}
+.tablewrap{overflow-x:auto}
+
+/* ---- 收尾 ---- */
+.verdict{margin-top:34px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);padding:19px 21px;box-shadow:var(--shadow)}
+.verdict h2{margin:0 0 9px;font-size:1rem;border:0;padding:0}
+.verdict p{margin:0 0 9px;color:var(--ink-2);font-size:.91rem}
+.verdict p:last-child{margin-bottom:0}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:560px){h1{font-size:1.35rem}}
+
+.pinned{border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:8px;
+        padding:14px 16px;margin:0 0 14px;background:var(--panel)}
+.pinned>h2{margin:0 0 8px;font-size:1rem;letter-spacing:.01em}
+.pinned .tablewrap{overflow-x:auto}
+.pinned table{width:100%;border-collapse:collapse;font-size:.86rem}
+.pinned th,.pinned td{border:1px solid var(--rule);padding:5px 8px;text-align:left;vertical-align:top}
+.pinned ul{margin:.3em 0 .3em 1.1em;padding:0}
+.pinned p{margin:.35em 0}
+a.cell{cursor:pointer;text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+a.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.s-card{border-bottom:1px solid var(--rule-2)}
+.s-card:last-child{border-bottom:0}
+.s-head{display:flex;gap:10px;align-items:center;padding:12px 18px;cursor:pointer;
+  flex-wrap:wrap}
+.s-head:hover{background:var(--sunk)}
+.s-chk{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex:none}
+.s-chk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.s-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.83rem;
+  font-weight:650;color:var(--accent);background:var(--accent-soft);
+  padding:2px 7px;border-radius:5px;flex:none}
+.s-title{font-weight:600;font-size:.94rem}
+.tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600;flex:none}
+.tag.base{background:var(--sunk);color:var(--ink-3)}
+.tag.main{background:var(--warn-soft);color:var(--warn)}
+.tag.rej{background:var(--bad-soft);color:var(--bad)}
+.s-card.done{background:var(--ok-soft)}
+.s-card.done .s-title{color:var(--ink-2)}
+.s-body{padding:0 18px 15px 45px}
+.gwt{display:grid;gap:5px;margin-bottom:11px}
+.gwt-row{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:baseline}
+.gwt-k{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.71rem;
+  font-weight:700;color:var(--ink-3);letter-spacing:.06em}
+.gwt-v{font-size:.9rem;color:var(--ink-2)}
+.obs{background:var(--sunk);border-left:3px solid var(--accent);border-radius:0 7px 7px 0;
+  padding:9px 13px}
+.obs.missing{border-left-color:var(--bad);background:var(--bad-soft)}
+.obs-k{display:block;font-size:.71rem;letter-spacing:.08em;text-transform:uppercase;
+  font-weight:700;color:var(--accent);margin-bottom:3px}
+.obs.missing .obs-k{color:var(--bad)}
+.obs-v{font-size:.88rem;color:var(--ink-2)}
+@media (max-width:560px){
+  .s-body{padding-left:18px}
+  .gwt-row{grid-template-columns:1fr;gap:2px}
+}
+
+.t-bound{border-top:1px solid var(--rule-2);margin-top:9px}
+.t-bound>summary{cursor:pointer;padding:9px 0 9px 45px;font-size:.84rem;font-weight:600;
+  color:var(--ink-2);list-style:none;display:flex;justify-content:space-between;gap:10px}
+.t-bound>summary::-webkit-details-marker{display:none}
+.t-bound>summary::after{content:"展開";font-size:.75rem;color:var(--ink-3);font-weight:500}
+.t-bound[open]>summary::after{content:"收合"}
+.t-bound .body{padding:2px 18px 13px 45px;font-size:.87rem;color:var(--ink-2);line-height:1.7}
+.t-bound .body code{font-size:.85em}
+.dag{margin:22px 0;padding:15px 17px;border:1px solid var(--rule);border-radius:10px;
+  background:var(--panel);box-shadow:var(--shadow)}
+.dag h2{margin:0 0 10px;font-size:.95rem;border:0;padding:0}
+.dag pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.82rem;
+  line-height:1.7;color:var(--ink-2);overflow-x:auto;white-space:pre}
+@media (max-width:560px){
+  .t-bound>summary{padding-left:18px}
+  .t-bound .body{padding-left:18px}
+}
+
+.t-chk-hint{font-size:.86rem;color:var(--ink-2);margin:18px 0 0}
+.t-ask{margin:0 0 12px}
+.t-ask-h{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-3);margin:0 0 6px}
+.t-ask ul{margin:0;padding:0;list-style:none}
+.t-ask li{display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:.9rem;
+  color:var(--ink)}
+.t-ask .qmark{color:var(--accent);font-weight:700;flex:none;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap" id="top">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 5-tasks · 執行板</p>
+  <h1>five-station-f3</h1>
+  <p class="sub">正本是 <code>docs/dev/five-station-f3/5-tasks.md</code>,
+  這頁隨時可重生。<strong>審完頂區五格再決定要不要動工。</strong></p>
+  <div class="dash"><a class="cell" href="#top"><span class="k">狀態</span><span class="v">draft</span><span class="n">frontmatter</span></a><a class="cell" href="#cards"><span class="k">任務</span><span class="v">9 個 T</span><span class="n">六欄齊全</span></a><a class="cell" href="#top"><span class="k">模式</span><span class="v">sequential</span><span class="n">execution.mode(未標=sequential)</span></a><a class="cell" href="#dag"><span class="k">依賴</span><span class="v">8 條</span><span class="n">Blocked-by 邊</span></a><a class="cell" href="#progress"><span class="k">進度</span><span class="v">0/9</span><span class="n">已勾 完成/總數</span></a></div>
+</header>
+
+<div class="progress" id="progress">
+  <div class="progress-in">
+    <span class="count">已完成 <b id="done">0</b> / 9 條</span>
+    <span class="bar"><i></i></span>
+    <button class="btn" id="clear" type="button">清除勾選</button>
+  </div>
+</div><section class="dag" id="dag"><h2>T 依賴 DAG(Blocked-by,自動衍生)</h2><pre>Wave 1: T-1
+Wave 2: T-2 ←(T-1)
+Wave 3: T-3 ←(T-2)
+Wave 4: T-4 ←(T-3)
+Wave 5: T-5 ←(T-4)
+Wave 6: T-6 ←(T-5)
+Wave 7: T-7 ←(T-6)
+Wave 8: T-8 ←(T-7)
+Wave 9: T-9 ←(T-8)</pre></section>
+<div id="cards">
+<p class="t-chk-hint">勾選 = 這張 T 不開口也能開工,不是已做完。</p><article class="s-card" data-sid="T-1">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-1">
+    <span class="s-id">T-1</span>
+    <span class="s-title">打通可見三槽 cut 紀錄且 silent True 該格紅</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-1 的 Files 第一個檔 test-five-station-f3.sh，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-1 的 Blocked-by 沒點名任何 T，真的可以立刻開工嗎？</span></li><li><span class="qmark">?</span><span>T-1 蓋的 S-1.1、S-1.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-1 / S-1.1, S-1.2, S-1.3, S-1.4, S-1.5, S-1.6</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/test-five-station-f3.sh, scripts/five_station_f2.py, scripts/five_station_f3.py, docs/dev/f3-cut-attestation.json, scripts/fixtures/five-station-f3/attest/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>test -d scripts/fixtures/five-station-f3/attest &amp;&amp; n=$(bash scripts/test-five-station-f3.sh --case ATTEST-VISIBLE --case ATTEST-SILENT-RED -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;) &amp;&amp; test &quot;$n&quot; -ge 2 &amp;&amp; bash scripts/test-five-station-f3.sh --case ATTEST-VISIBLE --case ATTEST-SILENT-RED</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">—</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常有人要宣稱「F3 已切」，必須先在獨立檔留下誰／何時／切哪個位元，打開檔案就能指到三個非空槽；讀函式回真的依據是這份檔，不是函式裡寫死 True。檔不在或任一槽空，讀端必須回假，契約已是 2.1.0 或 guide 已寫「五站」也救不了。有人只把函式改成 return True、檔卻缺，電池 ATTEST-SILENT-RED 那一格必須自己紅，不得把「函式回真」記成該格綠。改的是 cut 紀錄檔與只讀函式，試體在 <code>attest/</code>，不是把 cut 塞進契約 JSON、不是用 git blame 冒充誰／何時。不會變成 silent 空切、不會把 declare／in-flight 捆進 <code>which_condition</code>、不會讓本 T 去切 graph 或 bump 契約。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>准改模組＝cut 紀錄檔 + <code>f3_cut_happened</code> 讀端 + 電池入口骨架 + 具名 attest fixture。Data owner＝寫入該檔的人類。SoT 路徑＝<code>docs/dev/f3-cut-attestation.json</code>（DD-1）。Interface＝讀三槽 → bool；缺檔／空槽 → False；函式不建立、不覆寫、不刪該檔。<code>which_condition</code> 只命名 cut 位元（例 <code>f3-cut</code>）；禁止三前置 AND；禁止字面 <code>F3-cut-happened</code> 當唯一合法戳記。Forbidden＝契約兄弟布林、blame／STATUS／guide 用語當 SoT、本 T 改 <code>graph.yaml</code>／doctor／token、拿本目錄當 NEW5。Test seam＝換 fixture 根可注入缺檔／空槽／silent True。S-1.6 用語切是交付物但仍 ≠ 成功充分條件；本 T 不改 STATUS。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-2">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-2">
+    <span class="s-id">T-2</span>
+    <span class="s-title">讓正本鍵宣告可讀且只 bump 不修 reader 該格紅</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-2 的 Files 第一個檔 test-five-station-f3.sh，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-2 的 Blocked-by 寫 T-1，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-2 蓋的 S-2.1、S-2.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-2 / S-2.1, S-2.2, S-2.3</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/test-five-station-f3.sh, scripts/five_station_f2.py, scripts/five_station_f3.py, scripts/fixtures/five-station-f3/pre/read-seam-old-reader/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>test -d scripts/fixtures/five-station-f3/pre/read-seam-old-reader &amp;&amp; n=$(bash scripts/test-five-station-f3.sh --case READ-SEAM -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;) &amp;&amp; test &quot;$n&quot; -ge 1 &amp;&amp; bash scripts/test-five-station-f3.sh --case READ-SEAM</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-1</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常打開本樹契約，落地後的版本讀函式必須回 <code>2.0.0</code>（或之後的正本鍵值），不准再去翻 <code>version</code>／<code>contract_version</code> 兩個錯鍵、也不准因此回空字串。有人只把正本鍵改成 2.1.0、reader 卻仍讀錯鍵，卻嘴上說「已宣告」，電池 READ-SEAM 那一格必須自己紅，<code>declared</code> 仍假。正本鍵真的是 2.1.0 且 reader 已修，<code>declared</code> 才真——這仍不是 cut。改的是讀鍵，試體是 <code>pre/read-seam-old-reader/</code>，不是 bump 當 cut、不是本 T 改 hops 預設。不會變成錯鍵 fallback、不會讓 2.1.0 單獨冒充已切。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>准改模組＝<code>contract_version()</code> 讀徑 + READ-SEAM 具名 fixture。Data owner＝<code>devflow-contract.json</code> 的 <code>devflow_contract_version</code>。Allowed＝只讀正本鍵。Forbidden＝<code>version</code>／<code>contract_version</code> fallback、本 T 把 cut 寫進契約檔、本 T 改 hops／graph、把 <code>declared</code> 真寫成 cut 真。Interface＝正本鍵以 <code>2.1</code> 開頭 → <code>declared</code> 真；cut 位元仍獨立。Test seam＝假契約檔：正本已 2.1.0、reader 仍舊。本 T 不評三前置 AND（屬 T-3）。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-3">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-3">
+    <span class="s-id">T-3</span>
+    <span class="s-title">讓三前置缺一仍舊 7 且 2.0.0 加五站 hops 被拒</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-3 的 Files 第一個檔 test-five-station-f3.sh，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-3 的 Blocked-by 寫 T-2，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-3 蓋的 S-2.4、S-2.5 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-2 / S-2.4, S-2.5, S-2.6, S-2.7</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/test-five-station-f3.sh, scripts/five_station_f2.py, scripts/five_station_f3.py, scripts/fixtures/five-station-f3/pre/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>test -d scripts/fixtures/five-station-f3/pre/210-ne-cut &amp;&amp; test -d scripts/fixtures/five-station-f3/pre/hops-200 &amp;&amp; n=$(bash scripts/test-five-station-f3.sh --case PRE-210-NE-CUT --case PRE-AND --case PRE-HOPS-200 -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;) &amp;&amp; test &quot;$n&quot; -ge 3 &amp;&amp; bash scripts/test-five-station-f3.sh --case PRE-210-NE-CUT --case PRE-AND --case PRE-HOPS-200</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-2</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常契約已經 2.1.0、目錄也還沒有站檔，只要 cut 紀錄缺，求五站必須仍走舊 7，拒絕理由要看得到「F3 cut 未發生」，不准寫「已宣告所以切了」。三條前置少一條都一樣——缺宣告理由含「路線未宣告」或「仍舊 7」，缺 ¬in-flight 理由含「in-flight」，缺 cut 理由含「F3 cut 未發生」。有人契約還停在 2.0.0 就把 hops 預設當五站，必須 SLOT-REJECT，路線不得改；marketplace／cache 換了 hops 也不算。hops 預設五站不得早於 2.1.0 已宣告，必須同刀或宣告在先。改的是路線閘三前置，試體在 <code>pre/</code> 四組缺一／hops-200，不是本 T 去改 graph 邊、不是 doctor 綠當票。不會變成 2.1.0 當 cut、不會遠端改線。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>准改模組＝路線閘 <code>allow_legacy</code>／<code>refuse_hop_reason</code> + 上列五份具名 pre fixture。三前置＝<code>declared</code> ∧ ¬in-flight ∧ cut；缺一 → legacy。Forbidden＝把 bump 當 cut、marketplace／cache 當第四前置、只切 graph 契約仍 2.0.0 卻放行、本 T 刪 <code>N7-g1</code>。Interface＝拒因字面分缺哪一條；2.0.0＋五站 hops＝SLOT-REJECT、未改線。Idempotency：同一三前置重複評必須同一答案。本 T 結束時不得單邊改 <code>graph.yaml</code> 預設跳過（與宣告同刀屬 T-4）。Test seam＝三組缺一 fixture + hops-200 假樹。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-4">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-4">
+    <span class="s-id">T-4</span>
+    <span class="s-title">讓 cut 後新 slug 預設五站且只改用字該格紅</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-4 的 Files 第一個檔 test-five-station-f3.sh，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-4 的 Blocked-by 寫 T-3，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-4 蓋的 S-3.1、S-3.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-3 / S-3.1, S-3.2, S-3.3, S-3.5, S-3.6</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/test-five-station-f3.sh, scripts/five_station_f2.py, scripts/five_station_f3.py, skills/dev-flow/stage2/graph.yaml, skills/dev-flow/stage4/graph.yaml, guides/guide-dev-flow.html, scripts/fixtures/five-station-f3/new5/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>test -d scripts/fixtures/five-station-f3/new5 &amp;&amp; n=$(bash scripts/test-five-station-f3.sh --case NEW5-CUT-OK --case GRAPH-WORD-NE -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;) &amp;&amp; test &quot;$n&quot; -ge 2 &amp;&amp; bash scripts/test-five-station-f3.sh --case NEW5-CUT-OK --case GRAPH-WORD-NE</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-3</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常 cut 之後才開、目錄裡還沒有任何 1–7 站檔的新 slug，預設必須走五站，中間不准再停下來等人審例行 G1／G2，也不准再進 <code>N7-g1</code>／<code>N6-g2</code> 當例行停點。契約還是 2.0.0 的採用端，即使 graph 檔已經寫了條件邊，仍必須舊 7，條件邊的「跳過」側不得生效。路線閘與條件邊對同一組三前置必須給同一答案，不准出現一邊已跳過、一邊仍 legacy。有人只把 guide 改成「五站」、新 slug 卻仍停在 <code>N7-g1</code>，卻標 F3 成功，GRAPH-WORD-NE 那一格必須自己紅。改的是條件邊＋同一謂詞的路線閘，試體是合成 <code>new5/</code>，不是刪節點、不是只翻函式留例行停（3D）。不會變成用語切、不會未宣告就被改線、不會本 T 刪 token。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>准改模組＝<code>stage2</code>／<code>stage4</code> <code>graph.yaml</code> 條件邊 + 路線閘 + guide 七站單行用語 + NEW5 合成根。機制形＝條件邊＋路線閘（DD-5）；兩邊讀同一三前置（S-3.5）。Forbidden＝刪 <code>N7-g1.md</code>／<code>N6-g2.md</code>、只 hop-skip、只改用字當成功、未宣告就跳過、拿本目錄當 NEW5、marketplace 單獨改線。Data owner＝各站 graph + 專案樹契約／cut／該 slug 1–7 <code>.md</code>。Compatibility＝節點檔保留。guide 用語是交付物 ≠ SoT ≠ GRAPH-WORD-NE 綠條件。本 T 不測 fold 三紅（屬 T-6）、不測 in-flight freeze（屬 T-7）。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-5">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-5">
+    <span class="s-id">T-5</span>
+    <span class="s-title">讓 2.1.0 進 supported 且 doctor 綠當不成路條</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-5 的 Files 第一個檔 test-five-station-f3.sh，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-5 的 Blocked-by 寫 T-4，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-5 蓋的 S-4.1、S-4.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-4 / S-4.1, S-4.2, S-4.3, S-4.4, S-4.5</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/test-five-station-f3.sh, scripts/five_station_f2.py, scripts/five_station_f3.py, hooks/runtime-capabilities.json, devflow-contract.json, scripts/fixtures/five-station-f3/doctor/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>test -d scripts/fixtures/five-station-f3/doctor &amp;&amp; n=$(bash scripts/test-five-station-f3.sh --case DOCTOR-HONEST --case DOCTOR-NE-TICKET -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;) &amp;&amp; test &quot;$n&quot; -ge 2 &amp;&amp; bash scripts/test-five-station-f3.sh --case DOCTOR-HONEST --case DOCTOR-NE-TICKET</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-4</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常契約 bump 到 2.1.0 的同一刀，supported 清單必須出現字面 <code>2.1.0</code>；漏了，doctor 要印 INCOMPATIBLE 且非 0，不准為了好看改成 COMPATIBLE。現況 doctor 對 2.0.0 可以 COMPATIBLE／exit 0，有人拿這次綠當 cut 或求五站 hop，必須拒絕，理由是路線（未宣告／仍舊 7／F3 cut 未發生），不准寫「doctor 已綠所以可 hop」。只證明 marketplace 或 plugin cache 已有五站 hops，仍舊 7——那不是第四條前置。改的是 supported 清單與路線閘丟棄 doctor 綠，試體在 <code>doctor/</code>，不是改握手實作、不是出貨態故意 doctor 紅。不會變成 4B／4C（綠變 ticket 或放寬握手）。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>准改模組＝<code>hooks/runtime-capabilities.json</code> 的 <code>supported_contract_versions</code>（只加 <code>2.1.0</code>）+ 契約正本鍵 bump（只 <code>devflow_contract_version</code>）+ 路線閘丟棄 doctor 綠 + 具名 doctor fixture。Forbidden＝改 <code>hooks/_doctor_impl.py</code> 握手語意（版本 ∈ supported 才 COMPATIBLE）、放寬 2.1.0 ∉ supported 仍綠、把綠定義改成「路線 OK／已切」、marketplace／cache 當 cut 或路條、把 <code>_doctor_impl.py</code> 列入 Files。握手語意 Diff Budget＝0。doctor 綠只證明握手。本 T 可呼叫既有 <code>devflow-doctor.sh</code>，不准改它的握手檔。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-6">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-6">
+    <span class="s-id">T-6</span>
+    <span class="s-title">注入例行停／Must-keep 紅仍 hop／機械 Ship 讓該格獨立紅</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-6 的 Files 第一個檔 test-five-station-f3.sh，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-6 的 Blocked-by 寫 T-5，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-6 蓋的 S-6.1、S-6.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-6 / S-6.1, S-6.2, S-6.3</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/test-five-station-f3.sh, scripts/five_station_f2.py, scripts/five_station_f3.py, scripts/fixtures/five-station-f3/new5/inject-wait-red.md, scripts/fixtures/five-station-f3/new5/inject-mk-red.md, scripts/fixtures/five-station-f3/new5/inject-ship-mech.md</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>test -f scripts/fixtures/five-station-f3/new5/inject-wait-red.md &amp;&amp; test -f scripts/fixtures/five-station-f3/new5/inject-mk-red.md &amp;&amp; test -f scripts/fixtures/five-station-f3/new5/inject-ship-mech.md &amp;&amp; n=$(bash scripts/test-five-station-f3.sh --case NEW5-WAIT-RED --case KEEP-MK-RED --case KEEP-SHIP-MECH -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;) &amp;&amp; test &quot;$n&quot; -ge 3 &amp;&amp; bash scripts/test-five-station-f3.sh --case NEW5-WAIT-RED --case KEEP-MK-RED --case KEEP-SHIP-MECH</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-5</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常電池必須能<strong>餵壞行為</strong>讓三格各自紅，而且不得因「已經 cut 了」變綠。謂詞已真、latch 仍假，卻還例行走進 <code>N7-g1</code> 或留下「要不要繼續／請人審」（<code>inject-wait-red.md</code>）→ NEW5-WAIT-RED 該格紅。Must-keep 任一條已經紅（具名例：M3 缺觀測欄、M5 代填 ACCEPTED、M9 Files 超出聯集、M11 缺 Verify、M12 reviewer＝implementer、M15 token 被刪）卻仍 hop，還用「已經 cut 了」當理由（<code>inject-mk-red.md</code>）→ KEEP-MK-RED 該格紅；只擋 M11、其餘 M 紅仍 hop＝本格紅。機械全綠、7-review 頂欄沒有人寫 <code>verdict: PASS</code>，卻標 Ship Done（<code>inject-ship-mech.md</code>）→ KEEP-SHIP-MECH 該格紅。把「coordinator 拒 hop／拒寫」標成這些紅格綠＝極性反了，整電池必須非 0。三失敗不得互抵銷。改的是 fold 紅格測法，不是把完整度摺掉、不是讓機械自己 Ship。不會變成 hollow（那是 T-8）、不會本 T 去折 in-flight（那是 T-7）。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>准改模組＝F3 電池 fold／keep CASE 跑者 + 上列三張具名注入稿。摺的是新 slug 例行 <code>N7-g1</code>／<code>N6-g2</code>，不是 Must-keep、不是 Ship 唯人。Test seam＝各 CASE 獨立 exit；紅格只接受注入壞行為的紅。Forbidden＝極性反了仍標 F3 成功、用 cut 省略 Must-keep、只測 M11 當完整 KEEP-MK、Ship 自動 Done、Agent 代填 PASS。Error／State seam＝注入等人句／M 紅仍 hop／頂欄空白卻 Done。本 T 不跑六支 hollow（屬 T-8）、不跑完整 25 格（屬 T-9）、不對 OLD7 寫五站（屬 T-7）。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-7">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-7">
+    <span class="s-id">T-7</span>
+    <span class="s-title">凍結已有站檔的 slug 且對 in-flight 寫五站該格紅</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-7 的 Files 第一個檔 test-five-station-f3.sh，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-7 的 Blocked-by 寫 T-6，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-7 蓋的 S-7.1、S-7.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-7 / S-7.1, S-7.2, S-7.3, S-7.4, S-7.5; R-3 / S-3.4</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/test-five-station-f3.sh, scripts/five_station_f2.py, scripts/five_station_f3.py, scripts/fixtures/five-station-f3/old7/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>test -d scripts/fixtures/five-station-f3/old7 &amp;&amp; n=$(bash scripts/test-five-station-f3.sh --case OLD7-FREEZE --case OLD7-FOLD-RED --case SELF-OLD7 -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;) &amp;&amp; test &quot;$n&quot; -ge 3 &amp;&amp; bash scripts/test-five-station-f3.sh --case OLD7-FREEZE --case OLD7-FOLD-RED --case SELF-OLD7</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-6</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常已經有任一 1–7 <code>.md</code> 的 slug（<code>old7/</code>）必須整段走完舊 7：例行 G1／條件 S3／G2／G3 都還在，目錄不准被寫入五站狀態，三 cap 不套。有人對這種目錄注入五站狀態或五站 hop（<code>old7/inject-fold-red.md</code>），OLD7-FOLD-RED 該格必須自己紅；把「清回舊 7／拒寫」記成此格綠＝極性反了。對 <code>docs/dev/five-station-f3/</code>、<code>docs/dev/five-station-f2/</code>、<code>docs/dev/five-station-simplify/</code> 求五站自動前進必須跳不過，本目錄出貨路徑仍舊 7。NEW5 試體根只能是合成 <code>scripts/fixtures/five-station-f3/new5/</code>，或一個 cut <strong>之後</strong>才開、cut 當下沒有 1–7 <code>.md</code> 的 slug——不准發明「第一隻活五站」名字當已核目標。節點 <code>N7-g1</code>／<code>N6-g2</code> 與 token 檔必須仍在。改的是 freeze／自保與折線紅格，不是把 in-flight 折成五站、不是拿本 slug 當白老鼠。不會變成對 live 建五站機。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>准改模組＝路線閘對 in-flight／本目錄／f2／simplify 的拒 + OLD7 fixture 根 + 折線注入稿。NEW5 試體＝DD-3 合成根。Forbidden＝本目錄／f2／simplify 當 NEW5、對 OLD7 寫五站狀態當綠格義務、刪 <code>N7-g1</code>／<code>N6-g2</code>、發明活五站 slug 名、把僅 html 當 in-flight（那是 T-8 HOLLOW-HTML-NE-GWT）。OLD7-FREEZE 的 Data owner＝OLD7 fixture，不是本目錄 hop 主詞。S-3.4 節點與 token 檔保留：<code>ls</code> 仍見節點；token 牙回歸掛 T-9 呼叫、不進本 T Files。本 T 不改 STATUS。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-8">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-8">
+    <span class="s-id">T-8</span>
+    <span class="s-title">讓六支 hollow 探針各自現形且僅 html 不當站檔</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-8 的 Files 第一個檔 test-five-station-f3.sh，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-8 的 Blocked-by 寫 T-7，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-8 蓋的 S-5.4、S-5.5 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-5 / S-5.4, S-5.5, S-5.6, S-5.9, S-5.10, S-5.11</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/test-five-station-f3.sh, scripts/five_station_f2.py, scripts/five_station_f3.py, scripts/check-five-station-f3.sh, scripts/fixtures/five-station-f3/hollow/, scripts/fixtures/five-station-f3/old7/html-only/</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>test -d scripts/fixtures/five-station-f3/hollow &amp;&amp; test -d scripts/fixtures/five-station-f3/old7/html-only &amp;&amp; n=$(bash scripts/test-five-station-f3.sh --case HOLLOW-TRUE --case HOLLOW-FILES --case HOLLOW-F2 --case HOLLOW-WORD --case HOLLOW-TWO-SCRIPT --case HOLLOW-HTML-NE-GWT -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;) &amp;&amp; test &quot;$n&quot; -ge 6 &amp;&amp; bash scripts/test-five-station-f3.sh --help 2&gt;&amp;1 | grep -q -- &#x27;--probe&#x27; &amp;&amp; test &quot;$(bash scripts/test-five-station-f3.sh --probe hollow-true &gt;/dev/null 2&gt;&amp;1; echo $?)&quot; -eq 3 &amp;&amp; test &quot;$(bash scripts/test-five-station-f3.sh --probe hollow-files &gt;/dev/null 2&gt;&amp;1; echo $?)&quot; -eq 3 &amp;&amp; test &quot;$(bash scripts/test-five-station-f3.sh --probe hollow-f2 &gt;/dev/null 2&gt;&amp;1; echo $?)&quot; -eq 3 &amp;&amp; test &quot;$(bash scripts/test-five-station-f3.sh --probe hollow-word &gt;/dev/null 2&gt;&amp;1; echo $?)&quot; -eq 3 &amp;&amp; test &quot;$(bash scripts/test-five-station-f3.sh --probe two-script &gt;/dev/null 2&gt;&amp;1; echo $?)&quot; -eq 3 &amp;&amp; bash scripts/test-five-station-f3.sh --case HOLLOW-TRUE --case HOLLOW-FILES --case HOLLOW-F2 --case HOLLOW-WORD --case HOLLOW-TWO-SCRIPT --case HOLLOW-HTML-NE-GWT</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-7</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常有人想用捷徑宣稱 F3 完，六件事必須各自被抓到，不能互當附註。只證明函式回 True（無三路、無可見紀錄）→ HOLLOW-TRUE 紅。只證明 F3 相關檔存在 → HOLLOW-FILES 紅。只跑 F2 電池拿到 exit 0／<code>failed=0</code> → HOLLOW-F2 紅。只改 guide／STATUS 用語 → HOLLOW-WORD <strong>獨立</strong>紅（S-3.3 咬的是「graph 仍停卻標成功」；本格咬「只用字＝hollow」）。NEW5 腳本與 OLD7 腳本（或 <code>test-five-station-f3.sh</code> 與 <code>check-five-station-f3.sh</code>）分開跑各綠一次、沒有單一 process 把三路跑完，卻標 SC-BATTERY 綠 → HOLLOW-TWO-SCRIPT 紅。目錄只有 html twin、一個 1–7 <code>.md</code> 都沒有 → <code>has_old7</code> 必須假，不准把 html 當成 in-flight 站檔。<code>--probe</code> 必須是 <code>--help</code> 裡的一等旗標；五支 hollow <code>--probe</code> 各須 exit <strong>3</strong>。未知旗標是 exit 2，<strong>不得</strong>被「exit≠0」誤當本探針綠。改的是 hollow 探針與 html-only fixture，不是把 hollow 加成通過條件。不會變成「檔在／F2 綠／用字」當 F3 完。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>准改模組＝電池 hollow CASE 跑者 + <code>--probe</code> 一等旗標 + <code>hollow/</code> 五張注入稿 + <code>old7/html-only/</code>。Interface＝hollow <code>--probe</code> exit 3；用法／未知旗標 exit 2；HOLLOW-HTML-NE-GWT 是綠格義務（<code>has_old7</code> 假），不是 exit 3。Forbidden＝用未知旗標非 0 冒充 hollow、把 HOLLOW-WORD 併進 GRAPH-WORD-NE、把兩支腳本各綠當同一電池、把僅 html 當 GWT、把 F2 綠寫進 SC-BATTERY IFF、掃 4-spec／5-tasks markdown 當綠。可選 <code>check-five-station-f3.sh</code> 若本 T 用來示範「兩支各綠」，必須列入 Files，且<strong>不得</strong>當第四條電池路。本 T Verify 不含 <code>--only</code> 三路（屬 T-9）也不含完整 25 格。</p></div></details>
+  </div>
+</article><article class="s-card" data-sid="T-9">
+  <label class="s-head">
+    <input type="checkbox" class="s-chk" data-sid="T-9">
+    <span class="s-id">T-9</span>
+    <span class="s-title">收口同一電池 25 CASE、極性鎖與 Files／Diff Budget 0</span>
+    
+  </label>
+  <div class="s-body">
+    <div class="t-ask"><div class="t-ask-h">你要審什麼</div><ul><li><span class="qmark">?</span><span>只看 T-9 的 Files 第一個檔 test-five-station-f3.sh，不打開 md 能不能開工？</span></li><li><span class="qmark">?</span><span>T-9 的 Blocked-by 寫 T-8，那是這份 5-tasks 裡的真 T 嗎？</span></li><li><span class="qmark">?</span><span>T-9 蓋的 S-5.1、S-5.2 觀測欄，4-spec 還在嗎？</span></li></ul></div><div class="gwt"><div class="gwt-row"><span class="gwt-k">Covers</span><span class="gwt-v">R-5 / S-5.1, S-5.2, S-5.3, S-5.7, S-5.8; R-8 / S-8.2, S-8.3, S-8.4; S-8.1（gate：Stage 4 hop 雙檔已 G2 綠，不准重開）；S-8.5（gate：Q15–Q27 去向已綠，不得標可選）；S-8.6（gate：F2 park 四項保持 Out）</span></div><div class="gwt-row"><span class="gwt-k">Files</span><span class="gwt-v">scripts/test-five-station-f3.sh, scripts/five_station_f2.py, scripts/five_station_f3.py, scripts/check-five-station-f3.sh, scripts/fixtures/five-station-f3/new5/, scripts/fixtures/five-station-f3/old7/, scripts/fixtures/five-station-f3/token/, docs/dev/five-station-f3/5-tasks.md, docs/dev/five-station-f3/6-implementation-notes.md, docs/dev/five-station-f3/7-review.md</span></div><div class="gwt-row"><span class="gwt-k">Verify</span><span class="gwt-v"><code>test -d scripts/fixtures/five-station-f3/new5 &amp;&amp; test -d scripts/fixtures/five-station-f3/old7 &amp;&amp; n=$(bash scripts/test-five-station-f3.sh -v 2&gt;&amp;1 | grep -c &#x27;^=== CASE&#x27;) &amp;&amp; test &quot;$n&quot; -ge 25 &amp;&amp; bash scripts/test-five-station-f3.sh &amp;&amp; bash scripts/test-five-station-f3.sh --help 2&gt;&amp;1 | grep -q -- &#x27;--only&#x27; &amp;&amp; test &quot;$(bash scripts/test-five-station-f3.sh --only new5 &gt;/dev/null 2&gt;&amp;1; echo $?)&quot; -eq 3 &amp;&amp; test &quot;$(bash scripts/test-five-station-f3.sh --only old7 &gt;/dev/null 2&gt;&amp;1; echo $?)&quot; -eq 3 &amp;&amp; test &quot;$(bash scripts/test-five-station-f3.sh --only token &gt;/dev/null 2&gt;&amp;1; echo $?)&quot; -eq 3 &amp;&amp; test &quot;$(bash scripts/test-five-station-f3.sh --probe polarity &gt;/dev/null 2&gt;&amp;1; echo $?)&quot; -eq 1 &amp;&amp; bash scripts/test-five-station-f2.sh &amp;&amp; bash scripts/check-gate-tokens.sh</code></span></div><div class="gwt-row"><span class="gwt-k">Blocked-by</span><span class="gwt-v">T-8</span></div></div>
+    <div class="obs"><span class="obs-k">Intent · 做完差什麼</span><span class="obs-v">日常宣稱 F3 完，必須是<strong>同一支</strong> <code>scripts/test-five-station-f3.sh</code> 在同一 process 把 NEW5 組、OLD7 組、TOKEN 組都跑完才 exit 0。缺一路、跳過一路、入口只 exec／只轉呼叫 <code>test-five-station-f2.sh</code>、只證明檔在、只 F2 綠、只用字、兩支腳本各綠 → 整電池非 0。<code>--only</code> 必須是 <code>--help</code> 裡的一等旗標；<code>--only new5</code>／<code>--only old7</code>／<code>--only token</code> 各須 exit <strong>3</strong>（即使那一路本身綠）。<code>--probe polarity</code> 模擬「把拒 hop 記成紅格綠」必須讓入口 exit <strong>1</strong>，不准變成 0，也不准冒充 hollow 的 3。未知旗標是 exit 2。25 個官方 CASE 名都在，原 20 列一格都不能少；F2 電池另跑當地板（exit 0 且 stdout 含 <code>failed=0</code>），<strong>不得</strong>寫進 IFF 第四路。token 牙仍綠；有人注入刪 G1／G2／<code>ACCEPTED</code> 卻標 F3 成功 → TOKEN-DEL-RED 該格紅。Files 聯集不超出 S-8.2 准許清單；<code>_templates/</code>、doctor 握手、STATUS／HISTORY、本目錄當 NEW5、刪 token、重開 F2 park 行數＝0。S-8.1／S-8.5／S-8.6 gate：不准重開已過的 Stage 4 hop 檔集、不准把 Q15–Q27 標可選、不准把 F2 park 四項改成 In。改的是收口對照與鎖，不是順便改 STATUS，也不是掃 markdown 字串當綠。不會變成 hollow F3、不會發明 G3 PASS。</span></div><details class="t-bound"><summary>Boundaries —— 這個 T 的硬約束與禁區</summary><div class="body"><p>准改模組＝電池入口收口（可動上列 impl／fixture／本 slug 過程檔）。Interface＝單一 process 三組都跑完才 0；F2 腳本不是入口；可選 check 不是第四路。<code>--only</code> 一等旗標；子集 hollow＝exit 3；極性反了＝exit 1；用法／未知旗標＝exit 2。Forbidden＝F3 完成樹把 in-flight 折成五站、刪 token、重開 F2 park、把 Q 標可選、減 Decision 原 20 列、Files 超出 S-8.2、把 F2 綠寫進 IFF、用 python 掃 markdown 當 Stage 6 綠、用未知旗標非 0 冒充 hollow、本 hop 改 4-spec 頂欄。Diff Budget 0 區塊命中＝本條紅。token 牙與 F2 電池只呼叫、不准列入「要改的檔」之外的禁區、不准改。禁改 STATUS／HISTORY。本目錄過程檔在清單內 ≠ NEW5 fixture。</p></div></details>
+  </div>
+</article>
+</div>
+<h2 class="apx-h">背景資料(預設收合,內容零刪減)</h2>
+<details class="doc" id="sec-開工前提"><summary><span>開工前提</span></summary><div class="doc-in"><p>Stage 4 已核准。本 slug 自己仍走舊 7（S-7.3）。F3 入口是<strong>新家族</strong> <code>scripts/test-five-station-f3.sh</code>（加 <code>scripts/five_station_f2.py</code> 與／或後繼 <code>scripts/five_station_f3.py</code> 的 cut 讀端／讀鍵／路線閘；電池 CASE 可同檔）。可選 <code>scripts/check-five-station-f3.sh</code> <strong>不是</strong>第四條電池路。</p><p>Cut SoT（DD-1）＝獨立檔 <code>docs/dev/f3-cut-attestation.json</code> 三槽 <code>who</code>／<code>when</code>／<code>which_condition</code> 皆非空字串。<strong>禁止</strong>寫進 <code>devflow-contract.json</code> 當兄弟布林。函式只讀、不寫。</p><p>NEW5 fixture 根（DD-3）＝<code>scripts/fixtures/five-station-f3/new5/</code>（合成；cut 當下無 1–7 <code>.md</code>）。<strong>禁止</strong>本目錄、<code>five-station-f2</code>、<code>five-station-simplify</code>。</p><p>OLD7 fixture 根（DD-4）＝<code>scripts/fixtures/five-station-f3/old7/</code>（已有至少一個 1–7 <code>.md</code>）。</p><p>graph 切換（DD-5）＝<code>stage2</code>／<code>stage4</code> <code>graph.yaml</code> <strong>條件邊</strong> + 路線閘讀<strong>同一</strong>三前置。節點 <code>N7-g1</code>／<code>N6-g2</code> <strong>不刪</strong>。</p><p>Design Boundary Contract = applicable。每個 T 的 Boundaries 只摘該 T 碰得到的禁區。</p><p>Decision 原 20 列 CASE 只准加；本 hop 承接 20＋standing 加列 5＝<strong>官方 25 名</strong>，減一列＝翻 Decision。發明名不是通過條件。加列不得把「函式真／檔在／F2 綠／用字／兩支腳本各綠／僅 html」加成通過條件。</p><p>紅格極性＝<strong>注入該壞行為 → 該格獨立紅</strong>。把「coordinator 拒 hop／拒寫」記成紅格綠＝極性反了，整電池必須非 0（S-5.3）。</p><p><code>--only new5|old7|token</code> 與 <code>--probe hollow-true|hollow-files|hollow-f2|hollow-word|two-script|polarity</code> 是入口<strong>一等旗標</strong>（必須出現在 <code>--help</code>）。<code>--only</code>／hollow <code>--probe</code>（除 polarity）＝exit <strong>3</strong>（即使那一路本身綠）。<code>--probe polarity</code>＝模擬「拒 hop 當紅格綠」→ 入口必須 exit <strong>1</strong>（非整電池 0）。未知旗標／用法錯誤＝exit <strong>2</strong>，<strong>不得</strong>被 <code>exit≠0</code> 誤當 hollow 綠。</p><p>F2 綠是地板（F3-F2-REGRESS），<strong>不是</strong> SC-BATTERY 第四條 IFF。</p><p>本 hop 不發明第一隻活五站名字。不重開 F2 park D-1／D-2／D-3／F-c-4。</p><p>### 本 hop 點名對照（Stage 6 才建檔；Verify 必須點到官方 CASE 名＋具名路徑）</p><div class="tablewrap"><table><thead><tr><th>T</th><th>路／CASE</th><th>檔（皆在 <code>scripts/fixtures/five-station-f3/</code>，另加 cut 正本）</th><th>紅／綠什麼</th></tr></thead><tbody><tr><td>T-1</td><td>ATTEST-VISIBLE</td><td><code>attest/three-slots.json</code>（落地後對照 <code>docs/dev/f3-cut-attestation.json</code>）</td><td>綠：三槽非空、人指得到、讀端回真；<code>which_condition</code> 只命名 cut 位元</td></tr><tr><td>T-1</td><td>（S-1.2／S-1.4／S-1.5）</td><td><code>attest/missing-file/</code>、<code>attest/empty-slot.json</code></td><td>綠義務：缺檔／空槽回假；函式不寫檔；契約檔無 cut 兄弟鍵</td></tr><tr><td>T-1</td><td>ATTEST-SILENT-RED</td><td><code>attest/inject-silent-true.md</code></td><td><strong>注入</strong> 只 <code>return True</code>、無合格三槽，卻稱已切 → <strong>該格紅</strong></td></tr><tr><td>T-2</td><td>READ-SEAM</td><td><code>pre/read-seam-old-reader/</code></td><td><strong>注入</strong> 只 bump 正本、reader 仍讀錯鍵，卻稱已宣告 → <strong>該格紅</strong></td></tr><tr><td>T-3</td><td>PRE-210-NE-CUT</td><td><code>pre/210-ne-cut/</code></td><td>綠：2.1.0 真、cut 假 → <code>allow_legacy()</code>；理由含字面 <code>F3 cut 未發生</code></td></tr><tr><td>T-3</td><td>PRE-AND</td><td><code>pre/and-missing-declared/</code>、<code>pre/and-missing-cut/</code>、<code>pre/and-missing-inflight/</code></td><td>綠：三前置缺一 → legacy；理由對得上缺的那一條</td></tr><tr><td>T-3</td><td>PRE-HOPS-200</td><td><code>pre/hops-200/</code></td><td>綠：2.0.0＋五站 hops 預設 → SLOT-REJECT、未改線</td></tr><tr><td>T-4</td><td>NEW5-CUT-OK</td><td><code>new5/</code>（零個 1–7 <code>.md</code>）</td><td>綠：三前置全真 → 預設五站、不進 <code>N7-g1</code>／<code>N6-g2</code></td></tr><tr><td>T-4</td><td>GRAPH-WORD-NE</td><td><code>new5/inject-graph-word.md</code></td><td><strong>注入</strong> 只改 guide 用字、新 slug 仍停 <code>N7-g1</code>，卻標成功 → <strong>該格紅</strong></td></tr><tr><td>T-5</td><td>DOCTOR-HONEST</td><td><code>doctor/honest-no-supported/</code></td><td>綠：2.1.0 ∉ supported → <code>INCOMPATIBLE</code>、非 exit 0</td></tr><tr><td>T-5</td><td>DOCTOR-NE-TICKET</td><td><code>doctor/compatible-still-old7.md</code></td><td>綠：<code>COMPATIBLE</code>＋2.0.0 求五站 hop → 拒；理由是路線，不含「doctor 已綠」</td></tr><tr><td>T-6</td><td>NEW5-WAIT-RED</td><td><code>new5/inject-wait-red.md</code></td><td><strong>注入</strong> 謂詞真、latch 假，仍例行停 <code>N7-g1</code>／留下「要不要繼續」→ <strong>該格紅</strong></td></tr><tr><td>T-6</td><td>KEEP-MK-RED</td><td><code>new5/inject-mk-red.md</code></td><td><strong>注入</strong> Must-keep 任一紅仍 hop（例 M3／M5／M9／M11／M12／M15）→ <strong>該格紅</strong>；只擋 M11＝本格紅</td></tr><tr><td>T-6</td><td>KEEP-SHIP-MECH</td><td><code>new5/inject-ship-mech.md</code></td><td><strong>注入</strong> 機械全綠、無人寫 <code>verdict: PASS</code> 卻標 Ship Done → <strong>該格紅</strong></td></tr><tr><td>T-7</td><td>OLD7-FREEZE</td><td><code>old7/</code>（已有 1–7 <code>.md</code>）</td><td>綠：整段舊 7；無五站狀態；三 cap 不套</td></tr><tr><td>T-7</td><td>OLD7-FOLD-RED</td><td><code>old7/inject-fold-red.md</code></td><td><strong>注入</strong> 對 in-flight 寫五站狀態／五站 hop → <strong>該格紅</strong></td></tr><tr><td>T-7</td><td>SELF-OLD7</td><td><code>old7/</code>＋本目錄／<code>five-station-f2</code>／<code>five-station-simplify</code> 只讀探</td><td>綠：對上述求五站自動前進跳不過</td></tr><tr><td>T-8</td><td>HOLLOW-TRUE</td><td><code>hollow/inject-true.md</code></td><td><strong>注入</strong> 把 <code>f3_cut_happened==True</code> 標成 F3 綠 → <strong>該格紅</strong>；<code>--probe hollow-true</code> exit 3</td></tr><tr><td>T-8</td><td>HOLLOW-FILES</td><td><code>hollow/inject-files.md</code></td><td><strong>注入</strong> 把「檔在」標成 F3 綠 → <strong>該格紅</strong>；<code>--probe hollow-files</code> exit 3</td></tr><tr><td>T-8</td><td>HOLLOW-F2</td><td><code>hollow/inject-f2.md</code></td><td><strong>注入</strong> 只跑 F2 電池綠就標 F3 綠 → <strong>該格紅</strong>；<code>--probe hollow-f2</code> exit 3</td></tr><tr><td>T-8</td><td>HOLLOW-WORD</td><td><code>hollow/inject-word.md</code></td><td><strong>注入</strong> 只用字標 F3 綠 → <strong>該格獨立紅</strong>（不是 GRAPH-WORD-NE 附註）；<code>--probe hollow-word</code> exit 3</td></tr><tr><td>T-8</td><td>HOLLOW-TWO-SCRIPT</td><td><code>hollow/inject-two-script.md</code></td><td><strong>注入</strong> 兩支腳本各綠一次就標同一電池綠 → <strong>該格紅</strong>；<code>--probe two-script</code> exit 3</td></tr><tr><td>T-8</td><td>HOLLOW-HTML-NE-GWT</td><td><code>old7/html-only/</code>（只有 <code>*.html</code>、零個 1–7 <code>.md</code>）</td><td>綠：<code>has_old7</code> 假；僅 html ≠ in-flight GWT</td></tr><tr><td>T-9</td><td>TOKEN-KEEP</td><td>（呼叫既有 token 牙，不改）</td><td>綠：<code>check-gate-tokens.sh</code> exit 0；G1／G2／<code>ACCEPTED</code> 仍在</td></tr><tr><td>T-9</td><td>TOKEN-DEL-RED</td><td><code>token/inject-del.md</code></td><td><strong>注入</strong> 刪 token 卻標 F3 成功 → <strong>該格紅</strong></td></tr><tr><td>T-9</td><td>F3-F2-REGRESS</td><td>（呼叫既有 F2 電池，不改）</td><td>綠：<code>test-five-station-f2.sh</code> exit 0 且 <code>failed=0</code>；<strong>不是</strong>第四路 IFF</td></tr><tr><td>T-9</td><td>SC-BATTERY</td><td><code>new5/</code> + <code>old7/</code> + TOKEN</td><td>單一 process 三路都過才 exit 0；`--only new5</td><td>old7</td><td>token<code> 各 exit 3；</code>--probe polarity` exit 1</td></tr></tbody></table></div><p>官方 25 名＝Decision 原 20＋standing 5：NEW5-CUT-OK、NEW5-WAIT-RED、OLD7-FREEZE、OLD7-FOLD-RED、TOKEN-KEEP、TOKEN-DEL-RED、ATTEST-VISIBLE、ATTEST-SILENT-RED、PRE-210-NE-CUT、PRE-HOPS-200、READ-SEAM、DOCTOR-HONEST、DOCTOR-NE-TICKET、GRAPH-WORD-NE、SELF-OLD7、HOLLOW-TRUE、HOLLOW-FILES、HOLLOW-F2、KEEP-MK-RED、KEEP-SHIP-MECH、PRE-AND、F3-F2-REGRESS、HOLLOW-WORD、HOLLOW-TWO-SCRIPT、HOLLOW-HTML-NE-GWT。<code>--group</code>／<code>--probe</code> 印出的 <code>=== CASE</code> 名詞也必須落在這 25 名內。</p><p>### N1 R/S 盤點（49 S；49／49 皆被至少一個 T 的 Covers 承接）</p><div class="tablewrap"><table><thead><tr><th>R</th><th>F3 必須落地的 S</th><th>本 hop T</th></tr></thead><tbody><tr><td>R-1</td><td>S-1.1、S-1.2、S-1.3、S-1.4、S-1.5、S-1.6</td><td>T-1</td></tr><tr><td>R-2</td><td>S-2.1、S-2.2、S-2.3</td><td>T-2</td></tr><tr><td>R-2</td><td>S-2.4、S-2.5、S-2.6、S-2.7</td><td>T-3</td></tr><tr><td>R-3</td><td>S-3.1、S-3.2、S-3.3、S-3.5、S-3.6</td><td>T-4</td></tr><tr><td>R-4</td><td>S-4.1、S-4.2、S-4.3、S-4.4、S-4.5</td><td>T-5</td></tr><tr><td>R-6</td><td>S-6.1、S-6.2、S-6.3</td><td>T-6</td></tr><tr><td>R-7／R-3</td><td>S-7.1、S-7.2、S-7.3、S-7.4、S-7.5；S-3.4</td><td>T-7</td></tr><tr><td>R-5</td><td>S-5.4、S-5.5、S-5.6、S-5.9、S-5.10、S-5.11</td><td>T-8</td></tr><tr><td>R-5／R-8</td><td>S-5.1、S-5.2、S-5.3、S-5.7、S-5.8；S-8.2、S-8.3、S-8.4；S-8.1、S-8.5、S-8.6（Covers gate）</td><td>T-9</td></tr></tbody></table></div><p>### 已綠／掛 Covers gate（不另開水平抄表 T）</p><div class="tablewrap"><table><thead><tr><th>S</th><th>為什麼不另開 T</th><th>去向</th></tr></thead><tbody><tr><td>S-8.1</td><td>本條是 Stage 4 hop 檔集（當時只 4-spec 雙檔、draft、無 G2 PASS）。G2 已過。不是 Stage 6 工作</td><td>T-9 Covers gate one-liner。不准重開、不准改 4-spec 頂欄、不准把本 hop 再填 PASS</td></tr><tr><td>S-8.5</td><td>Q15–Q27 去向已在 4-spec Real-world Disposition</td><td>T-9 Covers gate one-liner。後站不得把任一 Q 標可選／消失</td></tr><tr><td>S-8.6</td><td>F2 park D-1／D-2／D-3／F-c-4 已封；本刀 In 不得出現</td><td>T-9 Covers gate one-liner。不准改 <code>docs/dev/five-station-f2/</code> 已封 R／S</td></tr></tbody></table></div><p>### F3 Files 准許清單（S-8.2 可核；禁區 Diff Budget 0 寫在同一條）</p><p>Stage 6 全部 T 的 Files 聯集只准（可少用、不可超）：</p><ul><li><code>guides/guide-dev-flow.html</code>（七站單行 → 五站用語；≠ SoT）</li><li><code>devflow-contract.json</code>（<strong>只</strong> bump <code>devflow_contract_version</code>→<code>2.1.0</code>）</li><li><code>hooks/runtime-capabilities.json</code>（<strong>只</strong>加 <code>2.1.0</code>）</li><li><code>skills/dev-flow/stage2/graph.yaml</code>、<code>skills/dev-flow/stage4/graph.yaml</code>（條件邊；節點檔不刪）</li><li><code>scripts/five_station_f2.py</code> 與／或 <code>scripts/five_station_f3.py</code>（讀鍵＋cut 讀端＋路線閘）</li><li><code>docs/dev/f3-cut-attestation.json</code></li><li><code>scripts/test-five-station-f3.sh</code>（單一電池入口；每個跑 F3 Verify 的 T 必列）</li><li><code>scripts/check-five-station-f3.sh</code>（可選；有也不構成第四條電池路）</li><li><code>scripts/fixtures/five-station-f3/</code>（含上表具名路徑；Stage 6 才建檔）</li><li>本目錄 <code>5-tasks.md</code>／<code>6-implementation-notes.md</code>／<code>7-review.md</code> 及其 html</li></ul><p>下列區塊 Diff Budget <strong>必須＝0</strong>，否則 S-8.2／S-8.3 紅：<code>_templates/</code> Stage 1–4 正文；<code>hooks/_doctor_impl.py</code> 握手語意；<code>docs/dev/STATUS.md</code>／<code>HISTORY.md</code>（看板另 companion）；把本目錄當 NEW5 fixture；刪 G1／G2／<code>ACCEPTED</code> token 檔；重開 F2 park D-1／D-2／D-3／F-c-4；改 <code>docs/dev/five-station-f2/</code> 已封 R／S。</p><p>超出上列 = L2／違 S-8.2。禁把 <code>_doctor_impl.py</code>、<code>STATUS.md</code>、<code>HISTORY.md</code>、<code>_templates/</code>、本目錄當 NEW5、token 刪檔、F2 已封稿寫進任一 T 的 Files。F2 電池與 token 牙只准呼叫。</p><p>### Verify 開工前原樣跑（2026-09-14；F3 電池尚未落地）</p><div class="tablewrap"><table><thead><tr><th>T</th><th>結果</th><th>處置</th></tr></thead><tbody><tr><td>T-1…T-9</td><td><code>scripts/test-five-station-f3.sh</code> 不存在 → 非零</td><td>③綠不了但方向對</td></tr></tbody></table></div></div></details><details class="doc" id="sec-Split-Decisions"><summary><span>Split Decisions</span></summary><div class="doc-in"><div class="tablewrap"><table><thead><tr><th>決策</th><th>理由</th><th>依據</th><th>棄項</th></tr></thead><tbody><tr><td><code>execution.mode: sequential</code>；Blocked-by 成 T-1→…→T-9 單鏈</td><td>Feature Risk high；cut 讀端／讀鍵／閘／graph／電池改同一支 coordinator。Files 重疊時 parallel 會吵</td><td>4-spec Verification Profile Risk high；C 線 brief「sequential」</td><td>讓 T-4 與 T-5 平行。棄：graph／契約同刀約束 S-2.7</td></tr><tr><td>T-1 選 ATTEST-VISIBLE＋SILENT-RED 當第一刀</td><td>最薄端到端是「人指得到三槽、空切該格紅」；graph／doctor 是加厚，不是第一刀可觀測主詞</td><td>4-spec S-1.1／S-1.3；C 線 cut SoT</td><td>T-1 先做 NEW5-CUT-OK。棄：還沒有可見紀錄，五站預設是假切</td></tr><tr><td>fold 三紅獨立 T-6，freeze／折線獨立 T-7</td><td>C 強調 polarity＋freeze／fold；WAIT／MK／SHIP 是「摺停點不摺完整度」，OLD7 是「已有站檔不准折」。混一 T 會把拒 hop 測成 FOLD-RED 綠</td><td>4-spec R-6／R-7；S-5.3 極性</td><td>一 T 兼 fold 與 freeze。棄：測法對調</td></tr><tr><td>hollow 六格獨立 T-8，不塞進 T-9 收口</td><td>C 強調探針利；<code>--probe</code> exit 3 必須與 <code>--only</code> 三路、<code>--probe polarity</code> exit 1 分開數。HOLLOW-WORD 必須是獨立格，不是 GRAPH-WORD-NE 附註</td><td>4-spec S-5.4…S-5.6／S-5.9…S-5.11；standing hollow</td><td>只在 T-9 用 <code>--only</code> 冒充六支 hollow。棄：WORD／TWO-SCRIPT／HTML 變附註</td></tr><tr><td><code>--probe</code> 一等旗標；hollow＝exit 3；polarity＝exit 1；未知＝exit 2</td><td>未知旗標 exit≠0 會假綠；拒 hop 當紅格綠必須是電池失敗（1），不是 hollow（3）</td><td>4-spec S-5.3；F2 T-10 standing 吸 C 的 exit 3 慣例</td><td><code>! bash --only new5</code> 靠未知旗標非 0。棄：假綠</td></tr><tr><td>單一檢查家族 <code>test-five-station-f3</code>；可選 <code>check-five-station-f3.sh</code> 不是第四路</td><td>Diff Budget 入口 1 檔；SC-BATTERY 禁兩支腳本各綠（HOLLOW-TWO-SCRIPT）</td><td>4-spec DD-2；S-5.1／S-5.10</td><td>每 CASE 一支 sh。棄：hollow 變種</td></tr><tr><td>S-8.1／S-8.5／S-8.6 掛 T-9 Covers gate，不另開 T</td><td>49／49 可追；Stage 4 檔集、Disposition、F2 park 已在 G2 綠</td><td>4-spec S-8.1／S-8.5／S-8.6</td><td>發明 T-10 重抄 Disposition。棄：水平切帳</td></tr><tr><td>TOKEN-KEEP／F3-F2-REGRESS 掛 T-9 呼叫、不進 Files</td><td>既有牙／F2 電池是地板，不是本刀要改的檔；改它們＝越刀</td><td>4-spec S-5.7／S-5.8；S-8.2 准許清單</td><td>把 <code>test-five-station-f2.sh</code> 列入 Files。棄：F2 綠冒充 F3</td></tr><tr><td>不改 doctor 握手／token／STATUS／<code>_templates/</code></td><td>S-8.2 Diff Budget 0；Non-Goals 後站不准改成 In</td><td>4-spec S-4.4／S-8.2／S-8.3／Out of Scope</td><td>T-5 順便修 <code>_doctor_impl.py</code>。棄：越刀</td></tr><tr><td>不發明活五站名字；NEW5 只用合成根</td><td>Q25／OC-9／S-7.5；本 slug 一有 1–4 就是 in-flight</td><td>4-spec S-7.4／S-7.5</td><td>在 5-tasks 寫「第一隻活五站＝\&lt;name\&gt;」。棄：X4</td></tr><tr><td>Verify 開工前實跑（2026-09-14）</td><td><code>scripts/test-five-station-f3.sh</code> 不存在 → 九欄皆非零</td><td>模板 Verify 三律 ③</td><td>用已綠的 F2 電池當 T-9。棄：違 S-5.6／S-5.7</td></tr></tbody></table></div></div></details>
+<footer class="foot">由 <code>scripts/build-gate-twin.py</code> 從 md 正本逐條解析產生,不手抄。</footer>
+</div>
+<script>
+(function(){
+  var boxes = [].slice.call(document.querySelectorAll('.s-chk'));
+  if (!boxes.length) return;
+  var bar = document.querySelector('.bar i'), done = document.getElementById('done');
+  var KEY = 'devflow-gate-twin:' + document.title;
+  function load(){ try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ return {}; } }
+  function save(s){ try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e){} }
+  var state = load();
+  function paint(){
+    var n = 0;
+    boxes.forEach(function(b){
+      var card = b.closest('.s-card');
+      if (b.checked){ n++; card.classList.add('done'); } else { card.classList.remove('done'); }
+    });
+    if (done) done.textContent = n;
+    if (bar) bar.style.width = (n / boxes.length * 100) + '%';
+  }
+  boxes.forEach(function(b){
+    if (state[b.dataset.sid]) b.checked = true;
+    b.addEventListener('change', function(){ state[b.dataset.sid] = b.checked; save(state); paint(); });
+  });
+  var clr = document.getElementById('clear');
+  if (clr) clr.addEventListener('click', function(){
+    state = {}; save(state); boxes.forEach(function(b){ b.checked = false; }); paint();
+  });
+  paint();
+})();
+</script>
+</body>
+</html>
