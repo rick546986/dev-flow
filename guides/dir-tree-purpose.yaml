@@ -87,7 +87,7 @@ root:
                     - name: N8-end.md
                       why: Decide（第 2 站）收尾。過 G1 才往規格或原型走。
             - name: stage3/
-              why: Spec（第 3 站）原型站，可 skip。開場先觸發判定；0 命中走 N-skip，有命中才實驗。
+              why: Spec 的原型子步驟（舊 Stage 3），可略過。開場先觸發判定；0 命中走 N-skip。規格本身不略過。
               id: flow-stage3
               children:
                 - name: graph.yaml
@@ -113,7 +113,7 @@ root:
                     - name: S4-close.md
                       why: 原型收尾自檢。frontmatter 與回寫對得上才往結束走。
                     - name: N5-end.md
-                      why: Spec（第 3 站）結束。skip 或做完都走這裡，再進 Spec（第 4 站）。
+                      why: 原型子步驟結束。略過或做完都走這裡，再進規格（4-spec）。
             - name: stage4/
               why: Spec（第 4 站）規格站，出口 G2。R/S/DD/Profile 寫死；過了才切任務。
               id: flow-stage4
@@ -147,7 +147,7 @@ root:
                     - name: N7-end.md
                       why: Spec（第 4 站）收尾。規格是後面實作唯一準繩。
             - name: stage5/
-              why: Build（第 5 站）任務板，無 G。把規格切成 T；人同意這張板才進實作。
+              why: Build（第 5 站）任務板，無人類 gate。把規格切成 T；欄位齊且 approved 才進寫碼，新工作不預設等人。
               id: flow-stage5
               children:
                 - name: graph.yaml
@@ -171,7 +171,7 @@ root:
                     - name: N5-twin.md
                       why: 產 Build（第 5 站）執行板／審頁 twin。人看任務總表用，不改 hop。
                     - name: N6-end.md
-                      why: Build（第 5 站）任務板定稿。無 G；人同意這張板才進實作。
+                      why: Build（第 5 站）任務板定稿。無人類 gate；欄位齊且 approved 才進寫碼，不是新工作預設人停。
             - name: stage6/
               why: Build（第 6 站）實作站。守衛 + 逐 T；平行時另走 parallel 契約，不是這棵 hop 的另一張圖。
               id: flow-stage6
@@ -255,7 +255,7 @@ root:
         - name: 2-decision.md
           why: Decide（第 2 站）決策骨架。頂註是收斂執行清單，出口對 G1。
         - name: 3-prototype.md
-          why: Spec（第 3 站）原型骨架。選配；命中觸發判定才填，否則整站 skip。
+          why: Spec 的原型子步驟（舊 Stage 3）。選配；未命中 trigger 時略過原型，仍須完成規格。
         - name: 4-spec.md
           why: Spec（第 4 站）規格骨架。反模糊三律與 G2 要審的欄都在頂註。
         - name: 5-tasks.md
@@ -278,7 +278,7 @@ root:
             - name: 2-decision.md
               why: 填好的決策正本。旁邊同名 html 是 G1 審頁 twin。
             - name: 3-prototype.md
-              why: 填好的原型正本。這個 feat 有做 Spec（第 3 站）；旁邊是審頁 twin。
+              why: 填好的原型正本。這個 feat 有做 Spec 的原型子步驟（舊 Stage 3）；旁邊是審頁 twin。
             - name: 4-spec.md
               why: 填好的規格正本。R/S/DD 都在；旁邊是 G2 審頁 twin。
             - name: 5-tasks.md
@@ -288,7 +288,7 @@ root:
             - name: 7-review.md
               why: 填好的驗證正本。旁邊 7-review.html 是 G3 審頁 twin。
         - name: subsidy-3-0-plus/
-          why: 補助手樣。沒有 3-prototype（該站 skip）；shots/ 給 Ship（第 7 站）現象截圖。
+          why: 補助手樣。沒有 3-prototype（略過原型子步驟）；shots/ 給 Ship（第 7 站）現象截圖。
           id: ex-subsidy
           children:
             - name: 1-discussion.md
@@ -296,7 +296,7 @@ root:
             - name: 2-decision.md
               why: 補助決策正本。旁邊是 G1 審頁 twin。
             - name: 4-spec.md
-              why: 補助規格正本。沒有 Spec（第 3 站），規格直接接決策。
+              why: 補助規格正本。未做原型子步驟，規格直接承接決策。
             - name: 5-tasks.md
               why: 補助任務板。旁邊是執行板 twin。
             - name: 6-implementation-notes.md
