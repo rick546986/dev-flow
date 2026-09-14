@@ -716,3 +716,9 @@
 - 落在哪:docs/dev/five-station-f2/7-review.md + 7-review.html
 - 詳細:https://github.com/rick546986/dev-flow/pull/354
 
+## 2026-09-14 · five-station-f2
+- 做了什麼:F2 coordinator G3 PASS；Gates G1✅ G2✅ G3✅；Active 移出該列
+- 為什麼:owner chat「G3過」; park D-1/D-2/D-3/F-c-4; no F3 opened
+- 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
+- 詳細:https://github.com/rick546986/dev-flow/pull/357
+
