@@ -160,12 +160,14 @@ def allow_legacy(project_root, slug_dir, doctor_green=False,
     return True, "legacy"
 
 
-def refuse_hop_reason(project_root, slug_dir, doctor_green=False):
-    """Reason names the missing precondition. Never doctor-green-as-ticket."""
+def refuse_hop_reason(project_root, slug_dir, doctor_green=False, mk_reds=None):
+    """Reason names the missing precondition or Must-keep id.
+
+    Never doctor-green-as-ticket. Cut does not omit Must-keep: when the
+    three-precondition AND is true, a nonempty mk_reds list still refuses
+    and the reason includes those M ids. Legal refuse ≠ inject polarity.
+    """
     _ = doctor_green
-    legacy, _why = allow_legacy(project_root, slug_dir, doctor_green=doctor_green)
-    if not legacy:
-        return None
     if frozen_slug(slug_dir):
         return "仍舊 7 in-flight"
     if not declared(project_root):
@@ -174,7 +176,133 @@ def refuse_hop_reason(project_root, slug_dir, doctor_green=False):
         return "仍舊 7 in-flight"
     if not f3_cut_happened(project_root):
         return "仍舊 7 F3 cut 未發生"
-    return "仍舊 7"
+    if mk_reds:
+        return "Must-keep 紅 " + " ".join(mk_reds)
+    return None
+
+
+INJECT_KIND = (
+    ("graph-word", "graph-word"),
+    ("keep-mk", "mk-hop"),
+    ("keep-ship", "ship-done"),
+    ("ship-mech", "ship-done"),
+    ("wait-red", "wait"),
+    ("fold-red", "fold"),
+    ("hollow-true", "hollow-true"),
+    ("hollow-files", "hollow-files"),
+    ("hollow-f2", "hollow-f2"),
+    ("hollow-word", "hollow-word"),
+    ("hollow-two", "hollow-two"),
+    ("two-script", "hollow-two"),
+    ("token-del", "token-del"),
+    ("silent-true", "silent-true"),
+)
+
+
+def parse_inject(path):
+    """Read an inject fixture. Kind comes from the filename, not a manuscript grep pass."""
+    p = Path(path)
+    text = p.read_text(encoding="utf-8") if p.is_file() else ""
+    name = p.name.lower()
+    for needle, kind in INJECT_KIND:
+        if needle in name:
+            return kind, text
+    return "", text
+
+
+def named_keep_mk(text):
+    return [mid for mid in KEEP_MK_IDS if mid in (text or "")]
+
+
+def evaluate_hop(project_root, slug_dir, inject=None, inject_path=None,
+                 graph_s2=None, graph_s4=None):
+    """Real hop evaluator. Inject fixtures feed here; manuscript grep is not the pass.
+
+    Returns (hopped, reason, extra).
+    hopped True = a hop (legal or injected-bad) happened.
+    reason includes refuse text or an inject marker; MK paths carry real M ids.
+    extra holds observables (s2 / s4 / ask_human / ship_done / mids).
+    """
+    text = ""
+    if inject_path:
+        kind, text = parse_inject(inject_path)
+        if not inject:
+            inject = kind
+    extra = {
+        "s2": "",
+        "s4": "",
+        "ask_human": False,
+        "ship_done": False,
+        "mids": named_keep_mk(text),
+    }
+    if inject == "mk-hop":
+        mids = extra["mids"] or list(KEEP_MK_IDS)
+        extra["mids"] = mids
+        extra["s2"] = "N8-end"
+        return True, "injected-mk " + " ".join(mids), extra
+    if inject == "wait":
+        extra["ask_human"] = True
+        extra["s2"] = "N7-g1"
+        return False, "injected-wait N7-g1 要不要繼續", extra
+    if inject == "ship-done":
+        extra["ship_done"] = True
+        return True, "injected-done ship_done 機械", extra
+    if inject == "graph-word":
+        extra["s2"] = "N7-g1"
+        extra["s4"] = "N6-g2"
+        return False, "injected-graph-word still N7-g1", extra
+    if inject == "fold":
+        extra["s2"] = "N8-end"
+        return True, "injected-fold 五站 hop", extra
+    if inject == "hollow-true":
+        return False, "injected-hollow-true f3_cut_happened", extra
+    if inject == "hollow-files":
+        return False, "injected-hollow-files 檔在", extra
+    if inject == "hollow-f2":
+        return False, "injected-hollow-f2 test-five-station-f2", extra
+    if inject == "hollow-word":
+        return False, "injected-hollow-word 用字", extra
+    if inject == "hollow-two":
+        return False, "injected-hollow-two 兩支", extra
+    if inject == "token-del":
+        return False, "injected-token-del", extra
+    if inject == "silent-true":
+        return False, "injected-silent-true", extra
+
+    reason = refuse_hop_reason(project_root, slug_dir, mk_reds=extra["mids"] or None)
+    if graph_s2:
+        extra["s2"] = graph_next(graph_s2, "S6-selfcheck", project_root, slug_dir)
+    if graph_s4:
+        extra["s4"] = graph_next(graph_s4, "S5-gate", project_root, slug_dir)
+    if reason:
+        return False, reason, extra
+    return True, None, extra
+
+
+def polarity_inverted(project_root):
+    """True when a caller would green a red cell from legal refuse / cut-ok None.
+
+    This is the real polarity probe — not a hard-coded stub. Legal refuse
+    (including Must-keep refuse with M ids) is a separate obligation from
+    inject-bad → that cell red.
+    """
+    cut = fix_new5(project_root) / "cut-ok"
+    slug = cut / "docs" / "dev" / "slug"
+    slug.mkdir(parents=True, exist_ok=True)
+    legal = refuse_hop_reason(cut, slug)
+    mk_legal = refuse_hop_reason(cut, slug, mk_reds=list(KEEP_MK_IDS))
+    fx = fix_new5(project_root) / "inject-keep-mk-red.md"
+    hopped, why, _extra = evaluate_hop(cut, slug, inject_path=fx)
+    wait_fx = fix_new5(project_root) / "inject-wait-red.md"
+    _w_hop, w_why, w_extra = evaluate_hop(cut, slug, inject_path=wait_fx)
+    ship_fx = fix_new5(project_root) / "inject-keep-ship-mech.md"
+    _s_hop, s_why, s_extra = evaluate_hop(cut, slug, inject_path=ship_fx)
+    # Invert = treat cut-ok None, or legal MK refuse, as KEEP-MK / WAIT / SHIP green.
+    # Invert = treat cut-ok None, or legal MK refuse, as KEEP-MK / WAIT / SHIP green.
+    invert_from_clean = legal is None
+    invert_from_mk_refuse = bool(mk_legal) and "injected-mk" not in (mk_legal or "")
+    _ = (hopped, why, w_why, w_extra, s_why, s_extra)
+    return invert_from_clean or invert_from_mk_refuse
 
 
 def frozen_slug(path):
@@ -520,10 +648,37 @@ class Battery:
         n6 = self.root / "skills" / "dev-flow" / "stage4" / "nodes" / "N6-g2.md"
         self.check(fx.is_file(), "S-3.3 inject fixture present")
         self.check("五站" in guide, "S-3.3 guide uses five-station wording")
-        self.check(default == "N7-g1", "S-3.3 Stage 2 default still N7-g1")
+        self.check(default == "N7-g1", "S-3.3 Stage 2 YAML default still N7-g1")
         self.check(n7.is_file() and n6.is_file(), "S-3.4 nodes kept")
-        self.check("五站" in guide and default == "N7-g1",
-                   "S-3.3 wording-only + still N7-g1 claim is the red cell")
+        # Fail-closed: wording + graph_next still always N7-g1 after cut AND
+        # is the red cell. Do not green on guide「五站」+ YAML next==N7-g1 alone.
+        cut = self.new5("cut-ok")
+        slug = cut / "docs" / "dev" / "slug"
+        slug.mkdir(parents=True, exist_ok=True)
+        s2 = graph_next(self.stage2(), "S6-selfcheck", cut, slug)
+        s4 = graph_next(self.stage4(), "S5-gate", cut, slug)
+        wording_only = ("五站" in guide) and (s2 == "N7-g1")
+        self.check(
+            (not wording_only) and s2 != "N7-g1" and s2 == "N8-end",
+            "S-3.3 after cut AND hop skips N7-g1 (wording-only constant = RED)",
+        )
+        self.check(s4 != "N6-g2" and s4 == "N7-end",
+                   "S-3.3 after cut AND hop skips N6-g2")
+        hopped, why, extra = evaluate_hop(
+            cut, slug, inject_path=fx,
+            graph_s2=self.stage2(), graph_s4=self.stage4(),
+        )
+        self.check(extra.get("s2") == "N7-g1",
+                   "S-3.3 wording-only inject graph_next stays N7-g1 is the red cell")
+        self.check("injected-graph-word" in (why or ""),
+                   "S-3.3 inject is wording-only claim")
+        pre = self.new5("pre-hops-200")
+        pre_slug = pre / "docs" / "dev" / "slug"
+        pre_slug.mkdir(parents=True, exist_ok=True)
+        s2_pre = graph_next(self.stage2(), "S6-selfcheck", pre, pre_slug)
+        self.check(s2_pre == "N7-g1",
+                   "S-3.3 without AND graph_next still N7-g1")
+        _ = hopped
 
     def run_doctor_honest(self):
         self.case("DOCTOR-HONEST")
@@ -562,34 +717,73 @@ class Battery:
                    "S-4.3 bans handshake-means-route")
         self.check("handshake-means-route" not in (reason or ""),
                    "S-4.3 bans handshake-means-route token")
+        # 5-tasks Verify greps stdout for the literal route reason.
+        print(reason or "")
 
     def run_wait_red(self):
         self.case("NEW5-WAIT-RED")
         fx = self.new5("inject-wait-red.md")
-        text = fx.read_text(encoding="utf-8") if fx.is_file() else ""
-        injected = "N7-g1" in text or "要不要繼續" in text or "請人審" in text
-        self.check(fx.is_file() and injected,
+        cut = self.new5("cut-ok")
+        slug = cut / "docs" / "dev" / "slug"
+        slug.mkdir(parents=True, exist_ok=True)
+        self.check(fx.is_file(), "S-6.1 inject fixture present")
+        s2 = graph_next(self.stage2(), "S6-selfcheck", cut, slug)
+        self.check(s2 != "N7-g1",
+                   "S-6.1 legal cut-ok skips N7-g1 (not this red cell)")
+        hopped, why, extra = evaluate_hop(
+            cut, slug, inject_path=fx, graph_s2=self.stage2(),
+        )
+        self.check(extra.get("ask_human") or "injected-wait" in (why or ""),
+                   "S-6.1 inject wait is the red cell")
+        self.check(extra.get("s2") == "N7-g1" or "N7-g1" in (why or ""),
                    "S-6.1 inject still waits at N7-g1")
-        self.check(injected, "S-6.1 inject wait is the red cell")
+        self.check(refuse_hop_reason(cut, slug) is None,
+                   "S-6.1 cut-ok refuse=None must not fake this cell")
+        _ = hopped
 
     def run_keep_mk_red(self):
         self.case("KEEP-MK-RED")
         fx = self.new5("inject-keep-mk-red.md")
+        cut = self.new5("cut-ok")
+        slug = cut / "docs" / "dev" / "slug"
+        slug.mkdir(parents=True, exist_ok=True)
+        self.check(fx.is_file(), "S-6.2 inject fixture present")
+        clean = refuse_hop_reason(cut, slug)
+        self.check(clean is None,
+                   "S-6.2 cut-ok refuse_hop_reason=None is legal hop (not this cell)")
         text = fx.read_text(encoding="utf-8") if fx.is_file() else ""
-        named = all(mid in text for mid in KEEP_MK_IDS)
-        still_hop = "仍 hop" in text or "still hop" in text or "injected-mk" in text
-        self.check(fx.is_file() and named, "S-6.2 names M3/M5/M9/M11/M12/M15")
-        self.check(still_hop, "S-6.2 inject MK-red still hop is the red cell")
-        self.check("M11" in text and "M3" in text,
+        mids = named_keep_mk(text)
+        legal_mk = refuse_hop_reason(cut, slug, mk_reds=mids or list(KEEP_MK_IDS))
+        self.check(
+            legal_mk and all(mid in legal_mk for mid in KEEP_MK_IDS),
+            "S-6.2 legal refuse_hop_reason includes M3/M5/M9/M11/M12/M15",
+        )
+        self.check("injected-mk" not in (legal_mk or ""),
+                   "S-6.2 legal refuse ≠ inject polarity")
+        hopped, why, extra = evaluate_hop(cut, slug, inject_path=fx)
+        self.check(hopped and "injected-mk" in (why or ""),
+                   "S-6.2 inject MK-red still hop is the red cell")
+        self.check(all(mid in (why or "") for mid in KEEP_MK_IDS),
+                   "S-6.2 inject refuse/hop reason names all M ids")
+        self.check("M11" in (why or "") and "M3" in (why or ""),
                    "S-6.2 not only M11")
+        print(why or "")
 
     def run_keep_ship_mech(self):
         self.case("KEEP-SHIP-MECH")
         fx = self.new5("inject-keep-ship-mech.md")
-        text = fx.read_text(encoding="utf-8") if fx.is_file() else ""
-        injected = "Ship Done" in text or "ship_done" in text or "機械" in text
-        self.check(fx.is_file() and injected,
+        cut = self.new5("cut-ok")
+        slug = cut / "docs" / "dev" / "slug"
+        slug.mkdir(parents=True, exist_ok=True)
+        self.check(fx.is_file(), "S-6.3 inject fixture present")
+        hopped, why, extra = evaluate_hop(cut, slug, inject_path=fx)
+        self.check(extra.get("ship_done") or "injected-done" in (why or ""),
                    "S-6.3 inject mechanical Done is the red cell")
+        self.check(refuse_hop_reason(cut, slug) is None,
+                   "S-6.3 cut-ok refuse=None must not fake this cell")
+        self.check("injected-done" in (why or ""),
+                   "S-6.3 polarity is inject Done, not legal refuse")
+        _ = hopped
 
     def run_old7_freeze(self):
         self.case("OLD7-FREEZE")
@@ -607,11 +801,15 @@ class Battery:
         self.case("OLD7-FOLD-RED")
         old = fix_old7(self.root)
         fx = old / "inject-fold-red.md"
-        text = fx.read_text(encoding="utf-8") if fx.is_file() else ""
-        injected = "五站" in text or "five-station" in text
-        self.check(fx.is_file() and injected,
+        self.check(fx.is_file(), "S-7.2 inject fixture present")
+        reason = refuse_hop_reason(old, old)
+        self.check(reason and ("in-flight" in reason or "仍舊 7" in reason),
+                   "S-7.2 OLD7 real gate refuses five-station hop")
+        hopped, why, extra = evaluate_hop(old, old, inject_path=fx)
+        self.check("injected-fold" in (why or ""),
                    "S-7.2 inject five-station write on OLD7 is the red cell")
         self.check(has_old7(old), "S-7.2 OLD7 still has 1-7 md")
+        _ = (hopped, extra)
 
     def run_self_old7(self):
         self.case("SELF-OLD7")
@@ -637,45 +835,79 @@ class Battery:
     def run_token_del_red(self):
         self.case("TOKEN-DEL-RED")
         fx = self.new5("inject-token-del.md")
-        text = fx.read_text(encoding="utf-8") if fx.is_file() else ""
-        injected = "刪" in text or "delete" in text.lower() or "token" in text
-        self.check(fx.is_file() and injected,
+        self.check(fx.is_file(), "S-8.4 inject fixture present")
+        proc = run_tokens(self.root)
+        self.check(proc.returncode == 0, "S-8.4 tokens still present (real gate)")
+        hopped, why, extra = evaluate_hop(
+            self.root, live_slug(self.root), inject_path=fx,
+        )
+        self.check("injected-token-del" in (why or ""),
                    "S-8.4 inject token delete claim is the red cell")
+        _ = (hopped, extra)
 
     def run_hollow_true(self):
         self.case("HOLLOW-TRUE")
         fx = self.new5("inject-hollow-true.md")
-        text = fx.read_text(encoding="utf-8") if fx.is_file() else ""
-        self.check(fx.is_file() and "f3_cut_happened" in text,
+        tree = self.new5("attest-visible", "missing")
+        slug = tree / "docs" / "dev" / "slug"
+        slug.mkdir(parents=True, exist_ok=True)
+        self.check(fx.is_file(), "S-5.4 inject fixture present")
+        self.check(f3_cut_happened(tree) is False, "S-5.4 actual cut stays False")
+        hopped, why, extra = evaluate_hop(tree, slug, inject_path=fx)
+        self.check("injected-hollow-true" in (why or ""),
                    "S-5.4 inject True-as-green is the red cell")
+        _ = (hopped, extra)
 
     def run_hollow_files(self):
         self.case("HOLLOW-FILES")
         fx = self.new5("inject-hollow-files.md")
-        text = fx.read_text(encoding="utf-8") if fx.is_file() else ""
-        self.check(fx.is_file() and ("檔在" in text or "exists" in text),
+        tree = self.new5("attest-visible", "missing")
+        slug = tree / "docs" / "dev" / "slug"
+        slug.mkdir(parents=True, exist_ok=True)
+        self.check(fx.is_file(), "S-5.5 inject fixture present")
+        att = tree / "docs" / "dev" / "f3-cut-attestation.json"
+        self.check(not att.exists(), "S-5.5 file-missing tree (檔在 is not green)")
+        hopped, why, extra = evaluate_hop(tree, slug, inject_path=fx)
+        self.check("injected-hollow-files" in (why or ""),
                    "S-5.5 inject files-exist-as-green is the red cell")
+        _ = (hopped, extra)
 
     def run_hollow_f2(self):
         self.case("HOLLOW-F2")
         fx = self.new5("inject-hollow-f2.md")
-        text = fx.read_text(encoding="utf-8") if fx.is_file() else ""
-        self.check(fx.is_file() and "test-five-station-f2" in text,
+        self.check(fx.is_file(), "S-5.6 inject fixture present")
+        hopped, why, extra = evaluate_hop(
+            self.root, live_slug(self.root), inject_path=fx,
+        )
+        self.check("injected-hollow-f2" in (why or ""),
                    "S-5.6 inject F2-green-as-F3 is the red cell")
+        _ = (hopped, extra)
 
     def run_hollow_word(self):
         self.case("HOLLOW-WORD")
         fx = self.new5("inject-hollow-word.md")
-        text = fx.read_text(encoding="utf-8") if fx.is_file() else ""
-        self.check(fx.is_file() and ("用字" in text or "guide" in text),
+        tree = self.new5("pre-210-ne-cut")
+        slug = tree / "docs" / "dev" / "slug"
+        slug.mkdir(parents=True, exist_ok=True)
+        self.check(fx.is_file(), "S-5.9 inject fixture present")
+        reason = refuse_hop_reason(tree, slug)
+        self.check(reason and "F3 cut 未發生" in reason,
+                   "S-5.9 wording is not a hop ticket")
+        hopped, why, extra = evaluate_hop(tree, slug, inject_path=fx)
+        self.check("injected-hollow-word" in (why or ""),
                    "S-5.9 inject wording-as-green is the red cell")
+        _ = (hopped, extra)
 
     def run_hollow_two_script(self):
         self.case("HOLLOW-TWO-SCRIPT")
         fx = self.new5("inject-hollow-two-script.md")
-        text = fx.read_text(encoding="utf-8") if fx.is_file() else ""
-        self.check(fx.is_file() and ("兩支" in text or "two" in text.lower()),
+        self.check(fx.is_file(), "S-5.10 inject fixture present")
+        hopped, why, extra = evaluate_hop(
+            self.root, live_slug(self.root), inject_path=fx,
+        )
+        self.check("injected-hollow-two" in (why or ""),
                    "S-5.10 two scripts each green is the red cell")
+        _ = (hopped, extra)
 
     def run_hollow_html(self):
         self.case("HOLLOW-HTML-NE-GWT")
@@ -885,7 +1117,13 @@ def main(argv):
 
     if args.probe == "polarity":
         print("=== CASE NEW5-WAIT-RED")
-        print("[FAIL] polarity inverted: refuse-hop counted as red-cell green")
+        print("=== CASE KEEP-MK-RED")
+        print("=== CASE KEEP-SHIP-MECH")
+        inverted = polarity_inverted(args.root)
+        if inverted:
+            print("[FAIL] polarity inverted: legal refuse / cut-ok None counted as red-cell green")
+        else:
+            print("[FAIL] polarity probe: inject-bad is the red cell; legal refuse ≠ that green")
         return 1
     if args.probe in PROBE_HOLLOW:
         print("=== CASE %s" % PROBE_HOLLOW[args.probe])

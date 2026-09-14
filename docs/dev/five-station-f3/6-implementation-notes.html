@@ -116,17 +116,17 @@ details.hunk>summary::-webkit-details-marker{display:none}
 <section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5 / S-3.5</span></div><div class="r-body"><p>- RED: 發明 GRAPH-AGREE - GREEN: `--group graph-edges` 只印官方名</p></div></section>
 <section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5 / S-3.6</span></div><div class="r-body"><p>- RED: 刪節點或只翻函式 - GREEN: `next_when_five` 條件邊＋路線閘；節點檔仍在</p></div></section>
 <section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5 / S-7.4</span></div><div class="r-body"><p>- RED: 本目錄當 NEW5 - GREEN: 試體根 `scripts/fixtures/five-station-f3/new5/cut-ok/`</p></div></section>
-<section class="r-block" id="T-6"><div class="r-head"><span class="r-name">T-6 / S-3.3</span></div><div class="r-body"><p>- RED: 只用字當成功 - GREEN: GRAPH-WORD-NE 該格紅</p></div></section>
+<section class="r-block" id="T-6"><div class="r-head"><span class="r-name">T-6 / S-3.3</span></div><div class="r-body"><p>- RED: 只用字當成功 - GREEN: GRAPH-WORD-NE 該格紅 - GREEN（standing）: `graph_next(cut-ok)` → N8-end／N7-end；wording-only inject 仍 N7-g1；不是 guide+YAML 字串綠</p></div></section>
 <section class="r-block" id="T-6"><div class="r-head"><span class="r-name">T-6 / S-3.4</span></div><div class="r-body"><p>- RED: 刪 N7-g1／token - GREEN: 節點檔在；`check-gate-tokens.sh` 綠</p></div></section>
 <section class="r-block" id="T-7"><div class="r-head"><span class="r-name">T-7 / S-4.1</span></div><div class="r-body"><p>- RED: supported 無 2.1.0 - GREEN: `hooks/runtime-capabilities.json` 含 `2.1.0`</p></div></section>
 <section class="r-block" id="T-7"><div class="r-head"><span class="r-name">T-7 / S-4.2</span></div><div class="r-body"><p>- RED: 漏加仍印 COMPATIBLE - GREEN: DOCTOR-HONEST 印 INCOMPATIBLE 且非 0</p></div></section>
-<section class="r-block" id="T-7"><div class="r-head"><span class="r-name">T-7 / S-4.3</span></div><div class="r-body"><p>- RED: 綠當 hop 票 - GREEN: DOCTOR-NE-TICKET 理由是路線</p></div></section>
+<section class="r-block" id="T-7"><div class="r-head"><span class="r-name">T-7 / S-4.3</span></div><div class="r-body"><p>- RED: 綠當 hop 票 - GREEN: DOCTOR-NE-TICKET 理由是路線 - GREEN（standing）: stdout 印字面 `路線未宣告 仍舊 7`（Verify `grep` 打得到）</p></div></section>
 <section class="r-block" id="T-7"><div class="r-head"><span class="r-name">T-7 / S-4.4</span></div><div class="r-body"><p>- RED: 改握手 - GREEN: `git diff --exit-code -- hooks/_doctor_impl.py`</p></div></section>
 <section class="r-block" id="T-7"><div class="r-head"><span class="r-name">T-7 / S-4.5</span></div><div class="r-body"><p>- RED: marketplace 當第四前置 - GREEN: 閘丟棄 marketplace／cache</p></div></section>
 <section class="r-block" id="T-8"><div class="r-head"><span class="r-name">T-8 / S-6.1</span></div><div class="r-body"><p>- RED: 謂詞真仍等人卻標成功 - GREEN: NEW5-WAIT-RED 該格紅</p></div></section>
-<section class="r-block" id="T-8"><div class="r-head"><span class="r-name">T-8 / S-6.2</span></div><div class="r-body"><p>- RED: Must-keep 紅仍 hop - GREEN: KEEP-MK-RED 具名六 M</p></div></section>
+<section class="r-block" id="T-8"><div class="r-head"><span class="r-name">T-8 / S-6.2</span></div><div class="r-body"><p>- RED: Must-keep 紅仍 hop - GREEN: KEEP-MK-RED 具名六 M - GREEN（standing）: `evaluate_hop(inject-keep-mk-red)` → `injected-mk M3 M5 M9 M11 M12 M15`；合法拒含 M 編號；cut-ok `None` 不假綠</p></div></section>
 <section class="r-block" id="T-8"><div class="r-head"><span class="r-name">T-8 / S-6.3</span></div><div class="r-body"><p>- RED: 機械 Ship Done - GREEN: KEEP-SHIP-MECH 該格紅</p></div></section>
-<section class="r-block" id="T-8"><div class="r-head"><span class="r-name">T-8 / S-5.3</span></div><div class="r-body"><p>- RED: 拒 hop 記成紅格綠 - GREEN: `--probe polarity` exit 1</p></div></section>
+<section class="r-block" id="T-8"><div class="r-head"><span class="r-name">T-8 / S-5.3</span></div><div class="r-body"><p>- RED: 拒 hop 記成紅格綠 - GREEN: `--probe polarity` exit 1 - GREEN（standing）: 探針真跑 cut-ok／MK 拒／三注入，不再硬編碼 stub</p></div></section>
 <section class="r-block" id="T-9"><div class="r-head"><span class="r-name">T-9 / S-7.1</span></div><div class="r-body"><p>- RED: OLD7 被折五站 - GREEN: OLD7-FREEZE 無五站機</p></div></section>
 <section class="r-block" id="T-9"><div class="r-head"><span class="r-name">T-9 / S-7.2</span></div><div class="r-body"><p>- RED: 對 in-flight 寫五站當綠 - GREEN: OLD7-FOLD-RED 該格紅</p></div></section>
 <section class="r-block" id="T-9"><div class="r-head"><span class="r-name">T-9 / S-7.3</span></div><div class="r-body"><p>- RED: 本目錄自動五站 - GREEN: SELF-OLD7 三凍結 slug 跳不過</p></div></section>
@@ -159,14 +159,49 @@ details.hunk>summary::-webkit-details-marker{display:none}
 <div class="ln add"><span class="m">+</span>        return False, "five"</div>
 <div class="ln add"><span class="m">+</span>    return True, "legacy"</div>
 </div></details>
-<details class="hunk" open><summary>refuse_hop_reason · <code>scripts/five_station_f3.py</code> refuse_hop_reason <span class="tag base">T-4</span></summary><p class="hunk-why">改什麼：拒因咬缺的那一條；必含 `F3 cut 未發生`；禁「已宣告所以切了」。</p><p class="hunk-rel">關聯：caller Battery.run_pre_210／run_pre_and</p><div class="diff">
-<div class="ln ctx"><span class="m"> </span>def refuse_hop_reason(project_root, slug_dir, doctor_green=False):</div>
+<details class="hunk" open><summary>refuse_hop_reason · <code>scripts/five_station_f3.py</code> refuse_hop_reason <span class="tag base">T-4</span><span class="tag base">T-8</span></summary><p class="hunk-why">改什麼：拒因咬缺的那一條；必含 `F3 cut 未發生`；禁「已宣告所以切了」。standing：AND 真仍查 Must-keep；`mk_reds` 非空 → 理由含該 M 編號。cut-ok `None` 不是紅格綠。</p><p class="hunk-rel">關聯：caller Battery.run_pre_210／run_pre_and／run_keep_mk_red</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>def refuse_hop_reason(project_root, slug_dir, doctor_green=False, mk_reds=None):</div>
 <div class="ln add"><span class="m">+</span>    if not declared(project_root):</div>
 <div class="ln add"><span class="m">+</span>        return "路線未宣告 仍舊 7"</div>
 <div class="ln add"><span class="m">+</span>    if has_old7(slug_dir):</div>
 <div class="ln add"><span class="m">+</span>        return "仍舊 7 in-flight"</div>
 <div class="ln add"><span class="m">+</span>    if not f3_cut_happened(project_root):</div>
 <div class="ln add"><span class="m">+</span>        return "仍舊 7 F3 cut 未發生"</div>
+<div class="ln add"><span class="m">+</span>    if mk_reds:</div>
+<div class="ln add"><span class="m">+</span>        return "Must-keep 紅 " + " ".join(mk_reds)</div>
+<div class="ln add"><span class="m">+</span>    return None</div>
+</div></details>
+<details class="hunk" open><summary>evaluate_hop · <code>scripts/five_station_f3.py</code> evaluate_hop <span class="tag base">T-8</span></summary><p class="hunk-why">改什麼：注入稿餵進真 hop 評測；KEEP-MK 理由含 M3／M5／M9／M11／M12／M15。合法拒 ≠ 注入極性。</p><p class="hunk-rel">關聯：caller Battery.run_keep_mk_red／run_wait_red／run_keep_ship_mech／polarity_inverted</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>def evaluate_hop(project_root, slug_dir, inject=None, inject_path=None, ...):</div>
+<div class="ln add"><span class="m">+</span>    kind, text = parse_inject(inject_path)</div>
+<div class="ln add"><span class="m">+</span>    if inject == "mk-hop":</div>
+<div class="ln add"><span class="m">+</span>        return True, "injected-mk " + " ".join(mids), extra</div>
+<div class="ln add"><span class="m">+</span>    if inject == "wait":</div>
+<div class="ln add"><span class="m">+</span>        return False, "injected-wait N7-g1 要不要繼續", extra</div>
+<div class="ln add"><span class="m">+</span>    if inject == "ship-done":</div>
+<div class="ln add"><span class="m">+</span>        return True, "injected-done ship_done 機械", extra</div>
+<div class="ln add"><span class="m">+</span>    reason = refuse_hop_reason(..., mk_reds=extra["mids"] or None)</div>
+</div></details>
+<details class="hunk" open><summary>run_graph_word_ne · <code>scripts/five_station_f3.py</code> run_graph_word_ne <span class="tag base">T-6</span></summary><p class="hunk-why">改什麼：fail-closed：cut AND 後 `graph_next` 必須跳過 N7-g1／N6-g2；用語＋`graph_next` 仍恆 N7-g1＝該格紅。不靠 guide「五站」+ YAML `next==N7-g1` 字串綠。</p><p class="hunk-rel">關聯：callee graph_next／evaluate_hop</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>def run_graph_word_ne(self):</div>
+<div class="ln add"><span class="m">+</span>    s2 = graph_next(stage2, "S6-selfcheck", cut, slug)</div>
+<div class="ln add"><span class="m">+</span>    wording_only = ("五站" in guide) and (s2 == "N7-g1")</div>
+<div class="ln add"><span class="m">+</span>    self.check((not wording_only) and s2 == "N8-end",</div>
+<div class="ln add"><span class="m">+</span>               "S-3.3 after cut AND hop skips N7-g1")</div>
+<div class="ln add"><span class="m">+</span>    hopped, why, extra = evaluate_hop(cut, slug, inject_path=fx)</div>
+<div class="ln add"><span class="m">+</span>    self.check(extra.get("s2") == "N7-g1", "wording-only inject is the red cell")</div>
+</div></details>
+<details class="hunk" open><summary>run_doctor_ne_ticket · <code>scripts/five_station_f3.py</code> run_doctor_ne_ticket <span class="tag base">T-7</span></summary><p class="hunk-why">改什麼：拒因印到 stdout，5-tasks Verify `grep` 打得到 `路線未宣告`／`仍舊 7`。</p><p class="hunk-rel">關聯：callee refuse_hop_reason</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>def run_doctor_ne_ticket(self):</div>
+<div class="ln add"><span class="m">+</span>    reason = refuse_hop_reason(tree, slug, doctor_green=True)</div>
+<div class="ln add"><span class="m">+</span>    print(reason or "")</div>
+</div></details>
+<details class="hunk" open><summary>polarity_inverted · <code>scripts/five_station_f3.py</code> polarity_inverted <span class="tag base">T-8</span></summary><p class="hunk-why">改什麼：`--probe polarity` 真跑 cut-ok／MK 拒／三張注入；不再硬編碼 stub。合法拒當紅格綠 → 探針 FAIL exit 1。</p><p class="hunk-rel">關聯：caller main --probe polarity</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>def polarity_inverted(project_root):</div>
+<div class="ln add"><span class="m">+</span>    legal = refuse_hop_reason(cut, slug)</div>
+<div class="ln add"><span class="m">+</span>    mk_legal = refuse_hop_reason(cut, slug, mk_reds=list(KEEP_MK_IDS))</div>
+<div class="ln add"><span class="m">+</span>    hopped, why, _ = evaluate_hop(cut, slug, inject_path=fx)</div>
+<div class="ln add"><span class="m">+</span>    return (legal is None) or (mk_legal and "injected-mk" not in mk_legal)</div>
 </div></details>
 <details class="hunk" open><summary>graph_next · <code>scripts/five_station_f3.py</code> graph_next <span class="tag base">T-5</span></summary><p class="hunk-why">改什麼：預設 `next` 仍例行閘；`next_when_five` 只在三前置真時生效。</p><p class="hunk-rel">關聯：caller Battery.run_cut_ok／run_pre_hops_200</p><div class="diff">
 <div class="ln ctx"><span class="m"> </span>def graph_next(graph_path, from_node, project_root, slug_dir):</div>

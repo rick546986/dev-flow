@@ -33,6 +33,8 @@ n-a:本 feature 未並行。單一 checkout、無第二 worktree；不改 STATUS
 
 implementer-A 不得自裁 ACCEPTED。下列每 T 等獨立 reviewer（fresh-context Agent 或適格人類）親跑 Verify。未發明 G3。未勾 5-tasks checkbox。
 
+R1 #386／R2 #387 的 FAIL 表在那些 notes PR，**本檔不覆寫**。standing rework 見文末「Owner standing rework」；重審 Ts 的 verdict 是 **PENDING_INDEPENDENT_RE-REVIEW**，不是 ACCEPTED。
+
 | T | verdict | 分類 | 一句 |
 |---|---|---|---|
 | T-1 | PENDING_INDEPENDENT_REVIEW | — | ATTEST-VISIBLE 五切片 `--slot`；讀端只讀 |
@@ -263,6 +265,7 @@ Run: n-a:manual-implementer-stream
 ### T-6 / S-3.3
 - RED: 只用字當成功
 - GREEN: GRAPH-WORD-NE 該格紅
+- GREEN（standing）: `graph_next(cut-ok)` → N8-end／N7-end；wording-only inject 仍 N7-g1；不是 guide+YAML 字串綠
 
 ### T-6 / S-3.4
 - RED: 刪 N7-g1／token
@@ -279,6 +282,7 @@ Run: n-a:manual-implementer-stream
 ### T-7 / S-4.3
 - RED: 綠當 hop 票
 - GREEN: DOCTOR-NE-TICKET 理由是路線
+- GREEN（standing）: stdout 印字面 `路線未宣告 仍舊 7`（Verify `grep` 打得到）
 
 ### T-7 / S-4.4
 - RED: 改握手
@@ -295,6 +299,7 @@ Run: n-a:manual-implementer-stream
 ### T-8 / S-6.2
 - RED: Must-keep 紅仍 hop
 - GREEN: KEEP-MK-RED 具名六 M
+- GREEN（standing）: `evaluate_hop(inject-keep-mk-red)` → `injected-mk M3 M5 M9 M11 M12 M15`；合法拒含 M 編號；cut-ok `None` 不假綠
 
 ### T-8 / S-6.3
 - RED: 機械 Ship Done
@@ -303,6 +308,7 @@ Run: n-a:manual-implementer-stream
 ### T-8 / S-5.3
 - RED: 拒 hop 記成紅格綠
 - GREEN: `--probe polarity` exit 1
+- GREEN（standing）: 探針真跑 cut-ok／MK 拒／三注入，不再硬編碼 stub
 
 ### T-9 / S-7.1
 - RED: OLD7 被折五站
@@ -422,17 +428,68 @@ D-1 L1 准許清單修訂（不是 silent extras、也不是第二次 cut）：
 +    return True, "legacy"
 ```
 
-### refuse_hop_reason · `scripts/five_station_f3.py` refuse_hop_reason  T-4
-改什麼：拒因咬缺的那一條；必含 `F3 cut 未發生`；禁「已宣告所以切了」。
-關聯：caller Battery.run_pre_210／run_pre_and
+### refuse_hop_reason · `scripts/five_station_f3.py` refuse_hop_reason  T-4 T-8
+改什麼：拒因咬缺的那一條；必含 `F3 cut 未發生`；禁「已宣告所以切了」。standing：AND 真仍查 Must-keep；`mk_reds` 非空 → 理由含該 M 編號。cut-ok `None` 不是紅格綠。
+關聯：caller Battery.run_pre_210／run_pre_and／run_keep_mk_red
 ```diff
- def refuse_hop_reason(project_root, slug_dir, doctor_green=False):
+ def refuse_hop_reason(project_root, slug_dir, doctor_green=False, mk_reds=None):
 +    if not declared(project_root):
 +        return "路線未宣告 仍舊 7"
 +    if has_old7(slug_dir):
 +        return "仍舊 7 in-flight"
 +    if not f3_cut_happened(project_root):
 +        return "仍舊 7 F3 cut 未發生"
++    if mk_reds:
++        return "Must-keep 紅 " + " ".join(mk_reds)
++    return None
+```
+
+### evaluate_hop · `scripts/five_station_f3.py` evaluate_hop  T-8
+改什麼：注入稿餵進真 hop 評測；KEEP-MK 理由含 M3／M5／M9／M11／M12／M15。合法拒 ≠ 注入極性。
+關聯：caller Battery.run_keep_mk_red／run_wait_red／run_keep_ship_mech／polarity_inverted
+```diff
+ def evaluate_hop(project_root, slug_dir, inject=None, inject_path=None, ...):
++    kind, text = parse_inject(inject_path)
++    if inject == "mk-hop":
++        return True, "injected-mk " + " ".join(mids), extra
++    if inject == "wait":
++        return False, "injected-wait N7-g1 要不要繼續", extra
++    if inject == "ship-done":
++        return True, "injected-done ship_done 機械", extra
++    reason = refuse_hop_reason(..., mk_reds=extra["mids"] or None)
+```
+
+### run_graph_word_ne · `scripts/five_station_f3.py` run_graph_word_ne  T-6
+改什麼：fail-closed：cut AND 後 `graph_next` 必須跳過 N7-g1／N6-g2；用語＋`graph_next` 仍恆 N7-g1＝該格紅。不靠 guide「五站」+ YAML `next==N7-g1` 字串綠。
+關聯：callee graph_next／evaluate_hop
+```diff
+ def run_graph_word_ne(self):
++    s2 = graph_next(stage2, "S6-selfcheck", cut, slug)
++    wording_only = ("五站" in guide) and (s2 == "N7-g1")
++    self.check((not wording_only) and s2 == "N8-end",
++               "S-3.3 after cut AND hop skips N7-g1")
++    hopped, why, extra = evaluate_hop(cut, slug, inject_path=fx)
++    self.check(extra.get("s2") == "N7-g1", "wording-only inject is the red cell")
+```
+
+### run_doctor_ne_ticket · `scripts/five_station_f3.py` run_doctor_ne_ticket  T-7
+改什麼：拒因印到 stdout，5-tasks Verify `grep` 打得到 `路線未宣告`／`仍舊 7`。
+關聯：callee refuse_hop_reason
+```diff
+ def run_doctor_ne_ticket(self):
++    reason = refuse_hop_reason(tree, slug, doctor_green=True)
++    print(reason or "")
+```
+
+### polarity_inverted · `scripts/five_station_f3.py` polarity_inverted  T-8
+改什麼：`--probe polarity` 真跑 cut-ok／MK 拒／三張注入；不再硬編碼 stub。合法拒當紅格綠 → 探針 FAIL exit 1。
+關聯：caller main --probe polarity
+```diff
+ def polarity_inverted(project_root):
++    legal = refuse_hop_reason(cut, slug)
++    mk_legal = refuse_hop_reason(cut, slug, mk_reds=list(KEEP_MK_IDS))
++    hopped, why, _ = evaluate_hop(cut, slug, inject_path=fx)
++    return (legal is None) or (mk_legal and "injected-mk" not in mk_legal)
 ```
 
 ### graph_next · `scripts/five_station_f3.py` graph_next  T-5
@@ -521,8 +578,42 @@ D-1 L1 准許清單修訂（不是 silent extras、也不是第二次 cut）：
 ⑤每個已完成 T 一 commit、Progress Log 每列有 hash？未勾 checkbox；Progress Log 空（等獨立審）。
 ⑥git diff --stat 檔案 ⊆ Files 聯集、Diff Budget 內？是（S-8.2 准許清單 + **D-1 L1** 四檔 CI 註冊；四檔具名，不是 silent extras）。
 ⑦Decisions/Deviations 與 diff 對得上？是；D-1 L1 已列；無 silent drift；DBC applicable：未改握手／未刪節點／未重開 park。
-⑧回歸綠？`bash scripts/test-five-station-f3.sh -v` → `=== CASE` ×33、unique 官方 25 名、`failed=0` exit 0。`--only new5|old7|token` 各 exit 3；`--probe hollow-*`／`two-script` 各 exit 3；`--probe polarity` exit 1；未知旗標 exit 2；`--group hollow` ≥6。`test-five-station-f2.sh` `failed=0`。`check-gate-tokens.sh` 綠。`check-devstage2-graph.sh`／`check-devstage4-graph.sh` 綠。`git diff --exit-code -- hooks/_doctor_impl.py`。未發明 G3。
+⑧回歸綠？standing rework 後親跑：`bash scripts/test-five-station-f3.sh -v` → `=== CASE` ×33、unique 官方 25 名、`failed=0` exit 0。`--only new5|old7|token` 各 exit 3；`--probe hollow-*`／`two-script` 各 exit 3；`--probe polarity` exit 1（真評測，非法拒當紅格綠）；未知旗標 exit 2；`--group hollow` ≥6。`test-five-station-f2.sh` `failed=0`。`check-gate-tokens.sh` 綠。`check-devstage2/4/6-graph.sh` 綠。`git diff --exit-code -- hooks/_doctor_impl.py`。未發明 G3。T-6／T-7／T-8 5-tasks Verify 原文本地過。
 
 ## Review Follow-up(G3 打回時才用)
 
 n-a:未送 G3。
+
+## Owner standing rework（post R1+#386／R2+#387）— 待獨立重審
+
+implementer ≠ R1／R2 reviewer。本塊只記修正與自檢，**verdict 不是 ACCEPTED**。未發明 G3。未勾 5-tasks checkbox。R1／R2 FAIL 表留在 #386／#387，本節不覆寫。
+
+| T | standing | 一句 |
+|---|---|---|
+| T-6 | REWORKED · 待重審 | GRAPH-WORD-NE fail-closed：cut AND 後 `graph_next` 跳過 N7-g1／N6-g2；用語＋恆 N7-g1＝該格紅 |
+| T-7 | REWORKED · 待重審 | DOCTOR-NE-TICKET stdout 印 `路線未宣告 仍舊 7`；Verify `grep` 打得到 |
+| T-8 | REWORKED · 待重審 | 三注入進 `evaluate_hop`；`refuse_hop_reason` 含 M 編號；cut-ok `None` 不假綠；polarity 真探針 |
+| T-9 | REWORKED · 待重審（殘） | FOLD-RED 走真閘＋inject-fold，不再只 grep 稿 |
+| T-10 | REWORKED · 待重審（殘） | hollow／TOKEN-DEL 走評測器；token 牙真閘 |
+
+### Rework T-6 / S-3.3
+- Verify: 5-tasks 原指令（GRAPH-WORD-NE＋`check-gate-tokens.sh`）本地過。`graph_next(cut-ok)` → `N8-end`／`N7-end`；注入 wording-only → extra.s2=`N7-g1`；未 AND 仍 `N7-g1`
+- Covers finding: S-3.3 不再只咬 guide「五站」+ YAML `next==N7-g1`。S-3.4 節點／token 未刪
+- Files finding: ⊆ T-6 Files（電池＋注入稿；guide 用語交付已在）
+- verdict: **PENDING_INDEPENDENT_RE-REVIEW**（不是 ACCEPTED）
+
+### Rework T-7 / S-4.3
+- Verify: 5-tasks 原指令。`DOCTOR-NE-TICKET -v` stdout 含字面 `路線未宣告 仍舊 7`；禁「doctor 已綠所以可 hop」／`COMPATIBLE so hop`／`handshake-means-route`。`_doctor_impl.py` 0 diff
+- Covers finding: S-4.3 拒因可被 Verify `grep` 打到（不再只計算）。S-4.2 HONEST 仍印 INCOMPATIBLE
+- verdict: **PENDING_INDEPENDENT_RE-REVIEW**
+
+### Rework T-8 / S-6.1–S-6.3
+- Verify: 5-tasks 原指令 `-ge 3`。KEEP-MK stdout 含 `injected-mk M3 M5 M9 M11 M12 M15`；合法 `refuse_hop_reason(..., mk_reds=)` 含同組 M 且不含 `injected-mk`；cut-ok `refuse_hop_reason` 是 `None` 且不拿來綠這三格。WAIT 注入仍停 N7-g1；SHIP 注入 `injected-done`。`--probe polarity` 真跑三注入＋cut-ok，exit 1
+- Covers finding: S-6.1／S-6.2／S-6.3 紅格＝注入壞行為；S-5.3 極性探針不再硬編碼 stub
+- Files finding: ⊆ T-8 Files
+- verdict: **PENDING_INDEPENDENT_RE-REVIEW**
+
+### Rework T-9／T-10 residual
+- Verify: T-9 原指令 `-ge 3`；T-10 hollow group `-ge 6`；TOKEN-DEL 真跑 `check-gate-tokens.sh` 仍綠＋inject 評測
+- Covers finding: S-7.2／S-5.4…S-5.6／S-5.9／S-5.10／S-8.4 不再只 grep 注入稿
+- verdict: **PENDING_INDEPENDENT_RE-REVIEW**（殘項 polish，不是 self-ACCEPTED）
