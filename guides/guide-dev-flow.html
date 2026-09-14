@@ -4044,6 +4044,19 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>F2 單一電池入口。NEW5+OLD7 都過才 exit 0；
             <code>--only new5|old7|f1</code> hollow＝exit 3。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>five_station_f3.py</code></td>
+        <td>five-station-f3 讀端＋官方 25 CASE 電池：三前置 AND、
+            條件邊 <code>next_when_five</code>、獨立三槽 cut、doctor 綠≠票。</td>
+        <td>被 <code>test-five-station-f3.sh</code> 呼叫</td>
+        <td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-five-station-f3.sh</code></td>
+        <td>F3 選配薄殼：只印「不是電池入口」、exit 0。
+            不是第四路；HOLLOW-TWO-SCRIPT 仍紅。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-five-station-f3.sh</code></td>
+        <td>F3 單一電池入口。官方 25 CASE；
+            <code>--only new5|old7|token</code> hollow＝exit 3。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>dogfood-ping.sh</code></td>
         <td>dogfood-ping 極小可觀測 CLI:stdout 恰好 <code>dogfood-ok</code>+LF,exit 0。
             給整套 1→7 試跑用,不是業務功能。</td>

@@ -359,13 +359,13 @@ Run: n-a:manual-implementer-stream
 
 ## Deviations
 
-無。未動 R/S。未重開 F2 park。未發明 G3。
+- **D-1 L1 — CI 註冊四檔**（同 F2 D-1 L1 綁死）。新增 `scripts/test-five-station-f3.sh` + `scripts/check-five-station-f3.sh` + `scripts/five_station_f3.py` 後，`devflow-check.sh` 註冊自審與 `check-file-map.sh` 會紅（`check-*.sh`／`test-*.sh` 必須出現在會被執行的 `run` 行；必列檔必須進檔案地圖）。S-8.2 准許清單正文不含這四檔；4-spec「超出 → L2」字面張力仍在。本 hop 誠實處：四檔具名、不假裝已在 5-tasks Files、不重開 4-spec、不把這層當成第二次 F3 cut、不刪 G1/G2/token。這四檔是新電池腳本的 host CI 註冊（縮了 `REPO_REFERENCE`／file-map 會紅），不是再切一次預設路線。不動 R/S。未發明 G3。
 
 ## Files Changed
 
 對照 4-spec S-8.2 Diff Budget：
 
-- `guides/guide-dev-flow.html`（T-6 七站單行 → 五站用語）
+- `guides/guide-dev-flow.html`（T-6 七站單行 → 五站用語；**D-1 L1** 另加檔案地圖三列）
 - `devflow-contract.json`（只 bump `devflow_contract_version` → `2.1.0`）
 - `hooks/runtime-capabilities.json`（只加 `2.1.0`）
 - `skills/dev-flow/stage2/graph.yaml`（`next_when_five`；不刪 N7-g1）
@@ -376,6 +376,13 @@ Run: n-a:manual-implementer-stream
 - `scripts/fixtures/five-station-f3/`
 - `docs/dev/f3-cut-attestation.json`（T-10）
 - `docs/dev/five-station-f3/6-implementation-notes.md` + html
+
+D-1 L1 准許清單修訂（不是 silent extras、也不是第二次 cut）：
+
+1. `guides/guide-dev-flow.html` `#filemap` 三列（`five_station_f3.py`／`check-five-station-f3.sh`／`test-five-station-f3.sh`）
+2. `scripts/check-file-map.sh`（`EXPECTED_MAPPED_FILES` 210→213）
+3. `scripts/test-architecture-guards.sh`（靜態釘 210→213）
+4. `scripts/devflow-check.sh`（architecture `run` 行註冊 F3 check + test）
 
 未改：`_templates/`、`hooks/_doctor_impl.py`、STATUS／HISTORY、`scripts/five_station_f2.py`、token 檔、`docs/dev/five-station-f2/` 已封 R／S、5-tasks checkbox。
 
@@ -511,8 +518,8 @@ Run: n-a:manual-implementer-stream
 ③每個 PASS 都早於該 T commit？n-a：無 PASS。
 ④每個 FAIL 後有較晚 PASS？n-a：尚無獨立 FAIL。
 ⑤每個已完成 T 一 commit、Progress Log 每列有 hash？未勾 checkbox；Progress Log 空（等獨立審）。
-⑥git diff --stat 檔案 ⊆ Files 聯集、Diff Budget 內？是（S-8.2 准許清單）。
-⑦Decisions/Deviations 與 diff 對得上？是；無 silent drift；DBC applicable：未改握手／未刪節點／未重開 park。
+⑥git diff --stat 檔案 ⊆ Files 聯集、Diff Budget 內？是（S-8.2 准許清單 + **D-1 L1** 四檔 CI 註冊；四檔具名，不是 silent extras）。
+⑦Decisions/Deviations 與 diff 對得上？是；D-1 L1 已列；無 silent drift；DBC applicable：未改握手／未刪節點／未重開 park。
 ⑧回歸綠？`bash scripts/test-five-station-f3.sh -v` → `=== CASE` ×33、unique 官方 25 名、`failed=0` exit 0。`--only new5|old7|token` 各 exit 3；`--probe hollow-*`／`two-script` 各 exit 3；`--probe polarity` exit 1；未知旗標 exit 2；`--group hollow` ≥6。`test-five-station-f2.sh` `failed=0`。`check-gate-tokens.sh` 綠。`check-devstage2-graph.sh`／`check-devstage4-graph.sh` 綠。`git diff --exit-code -- hooks/_doctor_impl.py`。未發明 G3。
 
 ## Review Follow-up(G3 打回時才用)
