@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>five-station-f3 · 3-prototype</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px}
+.r-body p{margin:0 0 8px}
+.trigger{list-style:none;padding:0;margin:0}
+.trigger li{padding:4px 0;border-bottom:1px solid var(--rule-2)}
+.hit{color:var(--ok);font-weight:650}
+.miss{color:var(--ink-3)}
+.card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 8px;background:var(--sunk)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 3-prototype · 審查介面</p>
+  <h1>five-station-f3</h1>
+  <p class="sub">正本是 md。觸發判定／Demo／答案回寫 2-decision。不是 html-shell 長文。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">draft</span></div><div class="cell"><span class="k">觸發命中</span><span class="v">6/9</span></div><div class="cell"><span class="k">Demo</span><span class="v">5</span></div><div class="cell"><span class="k">Human verdict</span><span class="v">NOT_REVIEWED</span></div></div>
+</header>
+<section class="r-block" id="trigger"><div class="r-head"><span class="r-name">觸發判定</span></div><div class="r-body"><ul class="trigger"><li class="miss">[未中] 有新的前端流程（誠實：本題是方法論預設路線／契約／doctor CLI，**不是**產品前端。審頁何時出現已由「改變下一步」覆蓋）</li><li class="hit">[命中] 改變使用者下一步（cut 後、cut 當下無 1–7 `.md` 的新 slug：下一步是五站 hop，不再例行停 `N7-g1`／`N6-g2` 等人按提交；現況 Journey 步 4 仍等人）</li><li class="hit">[命中] 涉及角色交接（母版 owner 簽可見 cut 紀錄 → coordinator 讀端 → 新 slug 寫手 hop → 採用端 owner 拒遠端改線 → in-flight 執行者仍走舊 7 → Ship 審查者簽 `verdict: PASS`）</li><li class="hit">[命中] 涉及人工核准（cut SoT＝誰／何時／哪個條件的人類可見紀錄；Ship 仍唯人；本 slug 自己的 G2／G3 仍等人；Agent 禁寫 `ACCEPTED`／Ship `PASS`）</li><li class="hit">[命中] 涉及等待/退回/逾時（NEW5 不再例行等 G1／G2；OLD7 仍等；SLOT-REJECT／`allow_legacy()` 是退回；NEW5-WAIT-RED＝謂詞真卻仍留下「要不要繼續」）</li><li class="hit">[命中] 涉及權限差異（Agent／coordinator 禁把 silent `True` 當已切；未宣告 2.1.0 的採用端不得被遠端改線；本目錄禁當活五站；feature branch 禁碰 STATUS）</li><li class="hit">[命中] 涉及系統外動作（現行痛是 Cursor chat 當 hop 開關；採用端 `marketplace update`＋doctor CLI；指南讀者只看書）</li><li class="miss">[未中] 涉及多種可行互動設計（1A–6A 已 lock；切換機制／attestation 檔名交 4-spec，不是「下一步點哪」的第二套互動）</li><li class="miss">[未中] Stage 1 尚有操作流程不確定性（Journey 已鎖；Q15–Q27 已在 Decision 有去向；剩下 OPEN 是鍵名／檔名／入口腳本名，不是操作順序）</li></ul></div></section>
+<section class="r-block" id="question"><div class="r-head"><span class="r-name">Question</span></div><div class="r-body"><p>引 2-decision **Risks**（silent True 冒充已切；2.1.0 當 cut；只 bump 正本不修 reader；只改用字；doctor 綠當 ticket；本 slug 當白老鼠）＋ **SC-NEW5-CUT-OK／SC-ATTEST-SILENT-RED／SC-PRE-210-NE-CUT／SC-DOCTOR-NE-TICKET／SC-GRAPH-WORD-NE／SC-SELF-OLD7**。 在**不改 graph、不 bump 契約、不重開 1A–6A**的前提下，一張狀態流程模擬器能不能讓人**不靠作者口頭**答完這四問？ 1. **下一步變了沒**（SC-NEW5-CUT-OK／NEW5-WAIT-RED）：cut 後新 slug，中間 latch 未命中時，前進紀錄有沒有「請人審 G1／G2」？ 2. **誰說已切**（SC-ATTEST-VISIBLE／ATTEST-SILENT-RED）：只把 `f3_cut_happened` 改 `return True`、tree 裡沒有誰／何時／哪個條件 → 算不算切完？ 3. **假綠能不能當票**（SC-PRE-210-NE-CUT／SC-DOCTOR-NE-TICKET／SC-GRAPH-WORD-NE）：2.1.0、doctor `COMPATIBLE`、guide 寫「五站」——哪一張能讓新 slug 改下一步？ 4. **本目錄會不會被折**（SC-SELF-OLD7）：對 `docs/dev/five-station-f3/` 求五站自動前進，下一步是 hop 還是拒？ 答案長什麼樣才算回答了： - 每張好卡／壞卡人能指出**現在下一步**、**等不等人**、**誰有權寫「已切」**、**空／錯／權限不足怎麼辦**。 - 壞卡（silent True、doctor 綠、只改用字、本 slug 當 NEW5）一眼是拒絕，不是「F3 完了」。 - 選定 Demo 只有 D1。本 hop **不**回寫 2-decision 正文、**不**代填 Human ACCEPTED。</p></div></section>
+<section class="r-block" id="demo"><div class="r-head"><span class="r-name">Demo</span></div><div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 378" role="img" aria-label="結構圖">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">Demo D1 狀態流程模擬器（選定）</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">現況：三前置缺 → 仍舊 7、等人</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="b" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">好卡 NEW5：可見紀錄 ∧ 2.1.0 ∧ 非</text>
+  <path class="flow" d="M140,216 L140,238"/>
+  <rect class="b" x="40" y="238" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="262">壞卡：silent True／doctor 綠／</text>
+  <path class="flow" d="M140,292 L140,314"/>
+  <rect class="b" x="40" y="314" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="338">本目錄：已有 md → OLD7 到 Ship</text>
+</svg>
+</div><div class="card"><strong>Scenario AC-1（cut 後新 slug 下一步）</strong><p>使用者角色:新 slug 寫手／coordinator</p><p>真實目標:cut 後、當下無 1–7 `.md` 時，中間不等例行 G1／G2</p><p>起始狀態:盤 1 三張卡；現況實跑 `f3_cut_happened False`</p><p>操作步驟:先看現況卡「現在等誰？」；再看好卡 NEW5；最後看壞卡 WAIT 彈「要不要繼續」</p><p>系統回應:現況仍舊 7。好卡中間無「請人審」。WAIT → 紅</p><p>系統外下一步:不准改問 owner 來繞假謂詞</p><p>觀察問題:下一步是 hop 還是等人？有沒有暗示「G1 twin 產了 = 要按提交」？</p></div><div class="card"><strong>Scenario AC-4（silent True 不算切）</strong><p>使用者角色:母版 owner</p><p>真實目標:無可見紀錄不得宣稱已切</p><p>起始狀態:盤 2 四張卡</p><p>操作步驟:遮住作者說明，只看「函式 True／無誰何時哪個條件」；再對照 blame／看板</p><p>系統回應:SILENT／BLAME／BOARD 皆未切。好卡才讓第三位元真，且仍要另外兩條</p><p>系統外下一步:人類寫可見紀錄；不要叫 Agent 把函式改 True</p><p>觀察問題:chat「可以切了」有沒有被當成 attestation？系統是否暗示 Agent 有權簽 cut？</p></div><div class="card"><strong>Scenario AC-6（doctor 綠 ≠ 路條）</strong><p>使用者角色:採用專案 owner／doctor 操作者</p><p>真實目標:拒絕「COMPATIBLE + marketplace 已更新 = 已切五站」</p><p>起始狀態:盤 3 證據；契約 `2.0.0`；doctor exit 0</p><p>操作步驟:跑 `hooks/devflow-doctor.sh`；讀握手句；問「綠了能不能 hop 五站」</p><p>系統回應:今天綠。綠的原因是握手，**不是**已切。求五站 hop → 拒；理由是路線</p><p>系統外下一步:`marketplace update` 後仍核契約版本與 cut 紀錄</p><p>觀察問題:系統是否暗示握手綠=路線沒變或已經五站？</p></div><div class="card"><strong>Scenario AC-7（只用字 ≠ 成功）</strong><p>使用者角色:指南讀者／Ship 審查者</p><p>真實目標:guide／STATUS 改「五站」但新 slug 仍停 `N7-g1` → 不得標完</p><p>起始狀態:盤 3 壞卡 WORD；現況 `guides/guide-dev-flow.html` 仍七站單行、`stage2/graph.yaml` 仍進 `N7-g1`</p><p>操作步驟:只改用字、不改 hop 預設；問「F3 完了嗎」</p><p>系統回應:GRAPH-WORD-NE 紅。用語是交付物，不是 SoT</p><p>系統外下一步:3C 要行為 + 宣告同時真；節點不刪</p><p>觀察問題:看到「五站」二字時，知道下一步仍可能等人嗎？</p></div><div class="card"><strong>Scenario AC-8（本目錄仍舊 7）</strong><p>使用者角色:in-flight 執行者／coordinator</p><p>真實目標:對本目錄要求五站自動前進 → 跳不過</p><p>起始狀態:盤 4；本資料夾已有 1／2 站 md（本 hop 再加 3）</p><p>操作步驟:嘗試把本 slug 寫進五站狀態；對照「僅有 html、無 md」</p><p>系統回應:已有 1–7 任一 `.md` → 整段舊 7。裸 html 不凍。白老鼠已拒</p><p>系統外下一步:本 slug 自己的 G2／G3 仍走舊 7 等人</p><p>觀察問題:有沒有暗示「Decision 過了就可以改走五站」？中斷後能否從目錄裡的 md 恢復舊路？</p></div></div></section>
+<section class="r-block" id="result"><div class="r-head"><span class="r-name">答案</span></div><div class="r-body"><p>Agent 依 D1 走完各場（**不是** Human Demo）。答案:鎖定 Decision **點得完**——人只靠卡面就能分開「下一步／誰准切／握手／freeze」。回寫 2-decision 的條目見 Verdict；**本 hop 不改 2-decision**、**不**代填 Human ACCEPTED。 | 問 | 模擬器證據 | 壞卡一眼拒絕 | |---|---|---| | 1 下一步 | 盤 1：現況 `cut=False`／reader=`''` → 仍舊 7；好卡 NEW5 中間無「請審」 | 謂詞真仍問「要不要繼續」 | | 2 誰准切 | 盤 2：可見紀錄才是 SoT；函式只讀 | silent True／blame／看板當已切 | | 3 假綠 | 盤 3：doctor **COMPATIBLE／exit 0** 只握手；token 綠是地板 | doctor 綠當票；2.1.0 當 cut；只用字當完 | | 4 freeze | 盤 4：本目錄已有 md → OLD7 | 本 slug 當 NEW5 白老鼠 | 選定互動 = **D1**（無第二互動方案）。未改模板、未寫 cut 碼、未切預設路線。Human verdict = `NOT_REVIEWED`（待人類親 Demo）。STATUS 本 hop **不改**。 附記（不修牙）：2-decision 內部技術選擇有一句同時含「Stage 3」與「跳過」字樣（「不預先跳過…無跳過 Stage 3」）。`hooks/_stage3_impl.py` 會把否定句讀成 skip OC——與 five-station-simplify 同型。本 hop 不改該牙、不改 2-decision。人審本 Demo 時不要把機械誤 PASS 當成 Human ACCEPTED。</p></div></section>
+<section class="r-block" id="writeback"><div class="r-head"><span class="r-name">回寫 2-decision</span></div><div class="r-body"><p>- **擬回寫 2-decision**（本 hop 仍不動該檔）:確認紀錄加一行「prototype 回寫 \| 2026-09-14 \| Stage3-C D1：六條命中；下一步／可見紀錄／假綠／本目錄 freeze 可走完；不重開 1A–6A」。Risks「silent True」「doctor 綠冒充已切」「只用字」「本 slug 試五站 hop」旁註「D1 已給人點的對照卡」。內部技術選擇維持「第 3 站要評九條、不預先省略」。 - Human 判定 **NOT_REVIEWED**。無 attestation。本檔 `status: draft`。**不發明 ACCEPTED、不送 G2、不開 4-spec**。 - 實驗產物:操作盤留在本檔 Method；doctor／reader／token 輸出摘要在盤 1／3；無 throwaway branch、無正式碼。審頁由 `scripts/build-stage3-html.py --action` 重生。第 3 站已行使，未省略。 - 本 PR 檔集只准 `3-prototype.md` + `3-prototype.html`。不改 STATUS。不發明 G2。</p></div></section>
+<section class="r-block" id="feedback"><div class="r-head"><span class="r-name">User Demo Feedback</span></div><div class="r-body"><p>- Demo date: 2026-09-14（agent 已走 D1 卡面；Human Demo 未做） - Participants: - Variant reviewed: D1 狀態流程模擬器（選定；無第二互動 Variant） - Accepted interaction: - Rejected interaction: - Confusions observed: - Missing real-world steps: - Permission corrections: - External handoffs: - Required changes: - Human verdict: NOT_REVIEWED</p></div></section>
+<p class="src">由 <code>scripts/build-stage3-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
