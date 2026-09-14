@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "dev-flow",
-  "description": "DevFlow runtime —— 開發流程 SOP 路由器 + 執行引擎 + 守衛 hooks + 訪談引導",
+  "description": "DevFlow runtime —— 開發流程 SOP 五站路由器 + 執行引擎 + 守衛 hooks + 訪談引導",
   "owner": {
     "name": "rick",
     "email": "8232011+rick546986@users.noreply.github.com"

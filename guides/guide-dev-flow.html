@@ -372,7 +372,8 @@
   <h3 id="walkthrough">一個 feature 的完整走位</h3>
   <p class="lead">這章要你懂:<strong>新工作走五站,你只打少數指令</strong>,其餘 AI 在跑;
   預設會等人的只有 <a href="#ship">Ship</a>。Build 裡的守衛三步順序仍不可調,順序錯了安全網會失效。</p>
-  <p>以下以「加一個 X 功能」為例。欄「能做什麼」寫指令、自動或人停、產出檔。
+  <p>以下以「加一個 X 功能」為例。欄「能做什麼」寫這一站做什麼
+  （不是指令、也不是人停或產出檔；那三欄各自獨立）。
   舊七檔名是機器別名,不是第二條人走路線。</p>
 
   <div class="tablewrap"><table>
@@ -414,8 +415,8 @@
     </tr>
     <tr>
       <td><a href="#ship">Ship</a></td>
-      <td>雙軸審 + coverage。<strong>G3</strong> 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → Exit Checklist(PR 是其中一項)。
-        <code>verdict:</code> 人類親寫,agent 禁發明 G3。</td>
+      <td>雙軸審 + coverage。<strong>G3</strong> 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(<a href="#gates">全文見 §7</a>);PASS → Exit Checklist(PR 是其中一項)。
+        人看正本 <a href="#gates">#gates</a>。<code>verdict:</code> 人類親寫,agent 禁發明 G3。</td>
       <td><span class="badge you">跟 AI 說</span> <code>/dev-flow 繼續 &lt;slug&gt;</code></td>
       <td><strong>唯預設人類停點</strong>。不得自動前進。</td>
       <td><code>7-review.md</code> + <code>.html</code></td>
@@ -615,12 +616,12 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   <div class="figwrap">
     <img id="fig-flow" src="fig-flow-full.svg" alt="五站流程圖：Intake→Decide→Spec→Build→Ship，只有 Ship 是預設人類停點">
   </div>
-  <p class="figcap">單列由左往右。<strong>紫 = 規劃/派工層</strong>(Claude 對照 opus)、
-  <strong>青 = 執行/產檔層</strong>(對照 sonnet)、
-  <strong>灰 = 起步層</strong>(對照 haiku)、<strong>藍框 Ship = 預設人類停點</strong>(依能力與 fallback 選,不指定模型)。
+  <p class="figcap">單列由左往右。<strong>紫 = 規劃/派工層</strong>(Claude 對照 opus；Intake／Decide／Spec)、
+  <strong>灰 = 起步/執行</strong>(Build；對照 haiku,實際仍是三層升階,見下表)、
+  <strong>藍框 Ship = 預設人類停點</strong>(依能力與 fallback 選,不指定模型)。
+  <strong>綠 = PR</strong>（verdict 人類親寫才准開）。
   <strong>虛線框</strong> = Intake 必開新 session。
   Build 的守衛武裝區間仍是 <code>start</code> 到 <code>stop</code>。
-  6 實作以<strong>起步層</strong>標色 —— 它實際是三層,升階規則見下表。
   reviewer 不綁型號。</p>
 
   <div class="tablewrap"><table>
@@ -918,7 +919,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   <code>**</code>/<code>&lt;br&gt;</code>/<code>&lt;strong&gt;</code>等格式標記後逐字元比對,結果見任務回報 —— 不是宣稱位元組全同,
   是宣稱「拿掉格式標記後,文字內容零差異」。</p>
 
-  <h3 id="stage2">Stage 2 — 收斂(G1)</h3>
+  <h3 id="stage2">Stage 2 — 收斂(G1)＝Decide</h3>
   <p>節點鏈正本 <code>skills/dev-flow/stage2/graph.yaml</code>:
   <code>N1-handoff</code> → <code>S1-approaches</code> → <code>S2-stress</code> →
   <code>N3-write-md</code> → <code>S4-oc</code> → <code>S5-adr</code> →
@@ -1005,7 +1006,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   </div>
   </details>
 
-  <h3 id="stage3">Stage 3 — 原型(選配)</h3>
+  <h3 id="stage3">Stage 3 — 原型(選配)＝Spec（UI 才用）</h3>
   <p>節點鏈正本 <code>skills/dev-flow/stage3/graph.yaml</code>:
   <code>N1-trigger</code> → <code>N-skip</code>(九條全未命中,落檔最小 <code>3-prototype.md</code>);任一命中 →
   <code>S0-question</code> → <code>S1-experiment</code> → <code>S2-evidence</code> →
@@ -1062,7 +1063,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   </div>
   </details>
 
-  <h3 id="stage4">Stage 4 — 規格(G2)</h3>
+  <h3 id="stage4">Stage 4 — 規格(G2)＝Spec</h3>
   <p>節點鏈正本 <code>skills/dev-flow/stage4/graph.yaml</code>:
   <code>N1-handoff</code> → <code>S1-requirements</code> → <code>S2-scenarios</code> →
   <code>S3a-close</code> → <code>S3b-profile</code> → <code>S3c-stage3</code> →
@@ -1204,7 +1205,7 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
   </div>
   </details>
 
-  <h3 id="stage5">Stage 5 — 任務(執行板,無 G 編號)</h3>
+  <h3 id="stage5">Stage 5 — 任務(執行板,無 G 編號)＝Build</h3>
   <p>節點鏈正本 <code>skills/dev-flow/stage5/graph.yaml</code>:
   <code>N1-handoff</code> → <code>S1-slice</code> → <code>S2-fields</code> →
   <code>S3-deps</code> → <code>N4-write-md</code> → <code>S4-selfcheck</code> →
@@ -1301,7 +1302,7 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
   </div>
   </details>
 
-  <h3 id="stage6">Stage 6 — 實作(TDD)</h3>
+  <h3 id="stage6">Stage 6 — 實作(TDD)＝Build</h3>
   <p>節點鏈正本 <code>skills/dev-flow/stage6/graph.yaml</code>:
   <code>N1-arm</code> → <code>N2-handoff</code> → <code>S2-tdd</code> →
   <code>N4-selfcheck</code> → <code>N5-end</code>。
@@ -1676,7 +1677,7 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   契約檔 §7 G3 錨)全過才進 G3。語意見 <code>notes/design/parallel-stage6.md</code>；SVG 見
   <a href="#guard">⑥ 執行守衛 · T 級並行</a>。</p>
 
-  <h3 id="stage7">Stage 7 — 驗證(G3)</h3>
+  <h3 id="stage7">Stage 7 — 驗證(G3)＝Ship</h3>
   <p>節點鏈正本 <code>skills/dev-flow/stage7/graph.yaml</code>:
   <code>N0-role</code> → <code>N1-matrix</code> → <code>S2-run</code> →
   <code>S2b-phenomena</code> → <code>S2c-integration</code> →
@@ -2693,49 +2694,47 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   <h2 id="fence">⑦ 資訊圍欄(四道,anti-premature-convergence)</h2>
   <p class="lead">這章要你懂:<strong>圍欄是在防兩件事</strong> ——「LLM 太早收斂」(它一旦知道終點要產
   plan,就會引導式提問、提早定案)與「reviewer 太早錨定」(先看到作者主張,審查就變成找理由同意)。
-  對策都是<strong>只用文件交接,對上游/對作者主張隱藏</strong>,疊在同一條 1→7 流程線上:</p>
+  對策都是<strong>只用文件交接,對上游/對作者主張隱藏</strong>,疊在同一條
+  Intake→Decide→Spec→Build→Ship 流程線上（舊 1–7 檔名是別名,不是第二條人走路線）:</p>
 
   <div class="figwrap"><svg id="fig-fence" viewBox="0 0 880 200" role="img"
-       aria-label="四道資訊圍欄疊在 1 到 7 的流程線上:討論盲下游、實作盲討論、審查防錨定、Quiz gate">
+       aria-label="四道資訊圍欄疊在五站流程線上:討論盲下游、實作盲討論、審查防錨定、Quiz gate">
     <defs><marker id="ar-fc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
 
-    <g class="n"><rect x="25" y="80" width="88" height="46" rx="6" class="m-opus"/><text class="dt" x="34" y="107">1 討論</text></g>
-    <g class="n"><rect x="131" y="80" width="88" height="46" rx="6" class="m-opus"/><text class="dt" x="140" y="107">2 收斂</text></g>
-    <g class="n"><rect x="237" y="80" width="88" height="46" rx="6" class="m-sonnet"/><text class="dt" x="246" y="107">3 原型</text></g>
-    <g class="n"><rect x="343" y="80" width="88" height="46" rx="6" class="m-opus"/><text class="dt" x="352" y="107">4 規格</text></g>
-    <g class="n"><rect x="449" y="80" width="88" height="46" rx="6" class="m-sonnet"/><text class="dt" x="458" y="107">5 任務</text></g>
-    <g class="n"><rect x="555" y="80" width="88" height="46" rx="6" class="m-haiku"/><text class="dt" x="564" y="107">6 實作</text></g>
-    <g class="n"><rect x="661" y="80" width="88" height="46" rx="6" class="m-sonnet"/><text class="dt" x="670" y="107">7 驗證</text></g>
-    <g class="n"><rect x="767" y="80" width="88" height="46" rx="6" class="go"/><text class="dt" x="776" y="107">PR</text></g>
+    <g class="n"><rect x="10" y="78" width="132" height="52" rx="6" class="m-opus"/><text class="dt" x="20" y="98">Intake</text><text class="dc" x="20" y="116">1-discussion</text></g>
+    <g class="n"><rect x="154" y="78" width="132" height="52" rx="6" class="m-opus"/><text class="dt" x="164" y="98">Decide</text><text class="dc" x="164" y="116">2-decision</text></g>
+    <g class="n"><rect x="298" y="78" width="132" height="52" rx="6" class="m-opus"/><text class="dt" x="308" y="98">Spec</text><text class="dc" x="308" y="116">4-spec(+3 若 UI)</text></g>
+    <g class="n"><rect x="442" y="78" width="132" height="52" rx="6" class="m-haiku"/><text class="dt" x="452" y="98">Build</text><text class="dc" x="452" y="116">5-tasks + 6-notes</text></g>
+    <g class="n"><rect x="586" y="78" width="132" height="52" rx="6" class="hl"/><text class="dt" x="596" y="98">Ship</text><text class="dc" x="596" y="116">7-review</text></g>
+    <g class="n"><rect x="730" y="78" width="140" height="52" rx="6" class="go"/><text class="dt" x="740" y="98">PR</text><text class="dc" x="740" y="116">verdict 人類親寫</text></g>
 
-    <path class="edge" marker-end="url(#ar-fc)" d="M113,103 L131,103"/>
-    <path class="edge" marker-end="url(#ar-fc)" d="M219,103 L237,103"/>
-    <path class="edge" marker-end="url(#ar-fc)" d="M325,103 L343,103"/>
-    <path class="edge" marker-end="url(#ar-fc)" d="M431,103 L449,103"/>
-    <path class="edge" marker-end="url(#ar-fc)" d="M537,103 L555,103"/>
-    <path class="edge" marker-end="url(#ar-fc)" d="M643,103 L661,103"/>
-    <path class="edge" marker-end="url(#ar-fc)" d="M749,103 L767,103"/>
+    <path class="edge" marker-end="url(#ar-fc)" d="M142,104 L154,104"/>
+    <path class="edge" marker-end="url(#ar-fc)" d="M286,104 L298,104"/>
+    <path class="edge" marker-end="url(#ar-fc)" d="M430,104 L442,104"/>
+    <path class="edge" marker-end="url(#ar-fc)" d="M574,104 L586,104"/>
+    <path class="edge" marker-end="url(#ar-fc)" d="M718,104 L730,104"/>
 
-    <path class="fenceline" d="M122,44 L122,158"/>
-    <text class="dbad" x="117" y="38">①</text>
-    <text class="dl" x="60" y="176">討論盲下游</text>
+    <path class="fenceline" d="M148,40 L148,158"/>
+    <text class="dbad" x="143" y="34">①</text>
+    <text class="dl" x="18" y="176">討論盲下游</text>
 
-    <path class="fenceline" d="M334,44 L334,158"/>
-    <text class="dbad" x="329" y="38">②</text>
-    <text class="dl" x="250" y="176">實作盲討論(機械強制)</text>
+    <path class="fenceline" d="M436,40 L436,158"/>
+    <text class="dbad" x="431" y="34">②</text>
+    <text class="dl" x="318" y="176">實作盲討論(機械強制)</text>
 
-    <path class="fenceline" d="M705,58 L705,74"/>
-    <text class="dbad" x="700" y="52">③</text>
-    <text class="dl" x="620" y="176">審查防錨定(站內順序)</text>
+    <path class="fenceline" d="M652,56 L652,72"/>
+    <text class="dbad" x="647" y="50">③</text>
+    <text class="dl" x="560" y="176">審查防錨定(站內順序)</text>
 
-    <path class="fenceline" d="M758,44 L758,158"/>
-    <text class="dbad" x="753" y="38">④</text>
-    <text class="dl" x="790" y="176">Quiz gate</text>
+    <path class="fenceline" d="M724,40 L724,158"/>
+    <text class="dbad" x="719" y="34">④</text>
+    <text class="dl" x="780" y="176">Quiz gate</text>
   </svg></div>
   <p class="figcap">①②④ 是<strong>站與站之間</strong>的縱貫圍欄(跨過它就換人/換 context);③ 不跨站,是
-  <strong>Stage 7 站內</strong>的讀取順序圍欄 —— reviewer 先自建矩陣、後讀 6-notes 的 Self-Review,
-  所以只標在 7 驗證這一站上方。各道規則、以及各自實際掛在生命週期哪一格,見下表。</p>
+  <strong>Ship 站內</strong>的讀取順序圍欄 —— reviewer 先自建矩陣、後讀 6-notes 的 Self-Review,
+  所以只標在 Ship 這一站上方。各道規則、以及各自實際掛在生命週期哪一格,見下表。
+  框下舊檔名是機器別名,不是第二條人走路線。</p>
 
   <div class="tablewrap"><table>
     <tr><th>#</th><th>圍欄</th><th>生命週期格</th><th>規則</th></tr>
@@ -2760,7 +2759,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             AI 出 3-5 題考 approver,全對才 merge;其餘 full lane 選配,fast lane 免。</td></tr>
   </table></div>
 
-  <blockquote>⚠️ 本頁是給團隊看的導覽頁,講的正是「討論階段存在、之後還有 6 站」——但這件事本身不能讓
+  <blockquote>⚠️ 本頁是給團隊看的導覽頁,講的正是「Intake 存在、之後還有 Decide→Spec→Build→Ship」——但這件事本身不能讓
   <code>/dev-talk</code> 知道。<code>/dev-talk</code> 執行討論時只認讀取白名單(長期記憶 / docs/specs / 原始碼 /
   使用者指名檔案),本頁 <code>guide-dev-flow.html</code> 不在白名單內,討論 agent 看不到、也不會讀到這份導覽頁的
   任何內容 —— 圍欄①不因本頁存在而破。</blockquote>
