@@ -1,9 +1,9 @@
 ---
 name: dev-run
-description: dev-flow Stage 6 內部執行引擎 — 多模型派工(Claude Code:haiku 寫碼 → sonnet 審 → 錯誤升階;Cursor／Grok 預設 Auto、執行者 ≠ reviewer),配 devflow-exec 執行守衛,全程不打斷問人。正常由 /dev-flow 定位到 Stage 6 時自動載入,使用者不需直接呼叫;使用者說「dev-run <slug>」「開始執行 <slug>」「跑實作」時亦啟用(相容直呼)。
+description: dev-flow Build 站（舊 Stage 6）內部執行引擎 — 多模型派工(Claude Code:haiku 寫碼 → sonnet 審 → 錯誤升階;Cursor／Grok 預設 Auto、執行者 ≠ reviewer),配 devflow-exec 執行守衛,全程不打斷問人。正常由 /dev-flow 定位到 Stage 6 時自動載入,使用者不需直接呼叫;使用者說「dev-run <slug>」「開始執行 <slug>」「跑實作」時亦啟用(相容直呼)。
 ---
 
-# dev-run — Stage 6 執行引擎
+# dev-run — Build（Stage 6）執行引擎
 
 方法包根目錄叫 `DEVFLOW_ROOT`（舊名 `CLAUDE_PLUGIN_ROOT` 當別名，不准刪）。找不到就停，不准猜。
 

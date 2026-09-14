@@ -521,9 +521,9 @@
   紅線是失敗回路 —— 回頭前一定要先分類,因為 ENV 類不計入嘗試次數。</p>
 
   <p class="muted"><strong>過 gate 三連動</strong>:每過一個 gate,frontmatter <code>status</code> +
-  <code>STATUS.md</code> + 同名 html twin 三者同步更新,禁漏一項。Stage 1 完成後就該去
+  <code>STATUS.md</code> + 同名 html twin 三者同步更新,禁漏一項。Intake（Stage 1）完成後就該去
   <code>STATUS.md</code> 加第一列（格式見 <code>_templates/STATUS.md</code>）:<code>| &lt;slug&gt; | full | 1-discussion | &lt;你的名字&gt; | n-a:尚未建立 branch | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | &lt;日期&gt; |</code>
-(<code>Branch</code> 欄 Stage 6 開 branch 並推上去後換成 <code>origin/feat/&lt;slug&gt;</code>;
+(<code>Branch</code> 欄 Build（Stage 6）開 branch 並推上去後換成 <code>origin/feat/&lt;slug&gt;</code>;
 <code>OverlapRef</code> 是直接補修讀的唯一座標,sequential 就是 Branch,
 parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;</code>),
   之後每過一個 gate 回來更新 Stage 欄與對應的 G⬜ → G✅。</p>
@@ -552,7 +552,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   <code>/dev-talk</code> 收尾時若你說「開始做」「實作吧」,它只會回「討論記錄已完成,實作請另開 session」然後停。
   這頁本身(<code>guide-dev-flow.html</code>)也不在 <code>/dev-talk</code> 的讀取白名單內 —— 討論 agent 看不到、
   也不會讀到這份導覽頁提前偷跑下游知識,圍欄①不因本頁存在而破。</blockquote>
-  <p class="muted">Stage 6 三步順序與 Stage 7 G3 + Exit 的逐字摘要在下方
+  <p class="muted">Build（Stage 6）三步順序與 Ship（Stage 7）G3 + Exit 的逐字摘要在下方
   <a href="#stage6">④ Stage 6</a> / <a href="#stage7">④ Stage 7</a>,不另開一章。</p>
 
   <h3 id="faq">常見卡關 FAQ</h3>
@@ -627,7 +627,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   <div class="tablewrap"><table>
     <tr><th>層</th><th>做什麼</th><th>能力</th><th>Claude對照（只是對照）</th></tr>
     <tr><td>規劃/派工層</td>
-        <td>長文檔、多方案、Stage 6 派工主對話</td>
+        <td>長文檔、多方案、Build（Stage 6）派工主對話</td>
         <td>長上下文、多方案辯論;派工主對話<strong>不下場寫碼</strong></td>
         <td><span class="badge opus">opus</span>（或 fable5）</td></tr>
     <tr><td>執行/產檔層</td>
@@ -635,7 +635,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
         <td>機械與執行活;fresh context 審查</td>
         <td><span class="badge sonnet">sonnet</span></td></tr>
     <tr><td>起步層</td>
-        <td>Stage 6 T 寫碼第一槍</td>
+        <td>Build（Stage 6）T 寫碼第一槍</td>
         <td>便宜、可丟。升階仍是 <strong>起步 → 執行 → 規劃</strong>
             （誤 1 次升執行;執行同 T 最多 2 次才升規劃）。升階時帶<strong>完整失敗軌跡</strong></td>
         <td><span class="badge haiku">haiku</span></td></tr>
@@ -643,15 +643,15 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
         <td>gate verdict</td>
         <td>依<strong>能力與 fallback</strong> 選(順序見 ⑤ Gate 規則卡),不綁型號或供應商</td>
         <td>不指定模型</td></tr>
-    <tr><td>Stage 6 · Wave review<br><span class="muted">(parallel 選配)</span></td>
+    <tr><td>Build（Stage 6）· Wave review<br><span class="muted">(parallel 選配)</span></td>
         <td>一次審一個 wave</td>
         <td><strong>必須</strong>輸出每 T 獨立 verdict + finding 歸屬 + integration verdict</td>
         <td><span class="badge sonnet">sonnet</span>（fresh）</td></tr>
-    <tr><td>Stage 6 · Mechanical Gate<br><span class="muted">(parallel 選配)</span></td>
+    <tr><td>Build（Stage 6）· Mechanical Gate<br><span class="muted">(parallel 選配)</span></td>
         <td>14 項機械檢查</td>
         <td>全 PASS 才 READY_FOR_INTEGRATION</td>
         <td>無模型（機械）</td></tr>
-    <tr><td>Stage 6 · adviser</td>
+    <tr><td>Build（Stage 6）· adviser</td>
         <td>連敗才診斷</td>
         <td>規劃層、唯讀;判 T 定義問題 vs 純執行</td>
         <td><span class="badge opus">opus</span></td></tr>
@@ -3653,7 +3653,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     <tr><td><code>build-vbox-fig.py</code></td>
         <td>直式置中方塊圖產圖器:抽象步驟列(kind／標題／一到三行小字)→ 完整
             <code>&lt;svg viewBox&gt;</code>(框寬 200、畫布 280、max-width 360px)。
-            第 2／4 站及同類圖走這支,不是掃頁三框,也不是七站三走廊圖。
+            第 2／4 站及同類圖走這支,不是掃頁三框,也不是舊七站三走廊圖。
             契約 <code>notes/design/vbox-fig-contract.md</code>。</td>
         <td>各站畫直式步驟方塊時呼叫;<code>check-vbox-fig.sh</code> 對 lifecycle fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>build-dir-tree.py</code></td>
@@ -3772,7 +3772,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>可摺疊目錄樹產器的小牙:無參數／<code>--help</code> 必須 exit 2;
             母版 <code>#dirmap</code> 必須跟產器
             <code>--check</code> 對得上;吐 mermaid／<code>&lt;pre&gt;</code>／svg／
-            預設展開必須紅。不塞 hop graph,不改 vbox-fig／scan-now／七站三走廊。</td>
+            預設展開必須紅。不塞 hop graph,不改 vbox-fig／scan-now／舊七站三走廊。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-stage1-now-contract.sh</code></td>
         <td>第 1 站審頁三框契約牙:正本 <code>notes/design/stage1-review-ui-contract.md</code>
