@@ -1,9 +1,9 @@
 ---
 feature: five-station-f3
 stage: 3-prototype
-status: draft
+status: approved
 owner: rick
-reviewers: []
+reviewers: [user]
 updated: 2026-09-14
 ---
 
@@ -13,8 +13,8 @@ updated: 2026-09-14
 > Writer A 主軸：**先做觸發判定**，不預先跳過、也不預先當必要。
 > Decision 內部技術選擇：「不預先跳過 Stage 3；觸發判定留給該站（本檔無「跳過 Stage 3」流程層 OC）。」(`docs/dev/five-station-f3/2-decision.md:L305`)
 > 本刀 = 新 slug 預設五站的 **cut**（契約／guide／graph+dual-read／doctor 誠實）。**沒有新前端 UI。** 五站 vs 舊 7 的下一步 UX 已在 `five-station-simplify` Stage 3 D1 ACCEPTED；本站不重做那張模擬器。**不吸收 C（#372）的 6／9 或 D1 四板。**
-> 本 hop **只本檔**。N-skip／`_templates/3-prototype.md` 零命中：**不建** `3-prototype.html`（standing 已刪 A 審頁 twin；產檔器若數到反事實 `### Scenario` 會假顯「Demo: 2」）。不改 `_templates/`／`graph.yaml`／gate／契約／doctor／coordinator、不改 STATUS／HISTORY、**不改 `2-decision.md`**、**不發明 Human ACCEPTED**、不開 Stage 4、不發明 G2 PASS。
-> **Demo verdict = N/A**（機械：0／9 無互動風險）。**Human verdict = `NOT_REVIEWED`**（人還沒裁觸發表；不是 N/A 字串、不是 ACCEPTED）。attestation 空。Agent 禁代填 ACCEPTED。coordinator 下一問才是人。
+> 本 hop **只本檔**。N-skip／`_templates/3-prototype.md` 零命中：**不建** `3-prototype.html`（standing 已刪 A 審頁 twin；產檔器若數到反事實 `### Scenario` 會假顯「Demo: 2」）。不改 `_templates/`／`graph.yaml`／gate／契約／doctor／coordinator、不改 STATUS／HISTORY、**不改 `2-decision.md`**、不開 4-spec、不發明 G2 PASS。
+> **Demo verdict = N/A**（機械：0／9 無互動風險）。owner chat 2026-09-14 Asia/Taipei「接受」= Human ACCEPTED（scenario=0/9 Demo N/A accepted）。attestation `human:rick @ 2026-09-14`。N-skip 慣例 `status: approved`。**不發明 G2。** coordinator 下一刀才開 Stage 4 writers。
 
 ## Stage 3 觸發判定(條件式必要)
 <!-- 對照 1-discussion Real-world Context：Actors／Journey／Workarounds／Exceptions；
@@ -60,7 +60,7 @@ updated: 2026-09-14
 1. 九條各有 YES／NO + 引用 Decision／1-discussion；不得用「方法論所以全中」或「後端所以全空」一句帶過。
 2. **0 命中** → Demo verdict = N/A + 原因落檔；**不**發明可點／可跑的互動原型。
 3. 反事實寫清：若某條當時被判中，最薄 Demo 會是哪一條、驗證什麼——本站**不執行**。下列反事實 **不是 Demo**（產檔器不得把它們數成 Demo 場）。
-4. Human verdict 留 `NOT_REVIEWED`；不發明 ACCEPTED；不改 2-decision 正文；不改 STATUS。
+4. Human verdict 由人類親裁。本 hop 落 `ACCEPTED` + attestation（owner chat「接受」；scenario=0/9 Demo N/A accepted）。不改 2-decision 正文；不改 STATUS（另伴 PR）。
 
 ## Method
 - 實驗位置:本檔觸發表（**PROTOTYPE — not production**；紙上對照；不進 throwaway code、不改 `_templates/`／`scripts/`／`graph.yaml`／契約／doctor）
@@ -100,7 +100,7 @@ RWC + Decision 1A-6A
         +-- 0 命中 --> Demo verdict N/A（選定）
         |                 不建可操作 Demo
         |                 不建 3-prototype.html
-        |                 Human = NOT_REVIEWED
+        |                 Human = ACCEPTED (0/9 N/A)
         +-- 若命中 --> 只走該條最薄紙卡（本站不執行）
 ```
 
@@ -133,13 +133,13 @@ Agent 依九條對完 RWC／Decision（**不是** Human Demo）。答案:
 | 九條有沒有中？ | 上表 0／9；各條附 Decision／1-discussion 行 | 「方法論所以全中」；把 cut 當新前端；C 的 6／9 |
 | Demo 要不要做？ | 0 命中 → **Demo verdict = N/A** + 各條原因 | 為湊 Stage 3 發明可點原型（假 hit → ACCEPTED 欠債） |
 | 若命中最薄是什麼？ | Method 反事實表（非 Demo）；只該條紙卡；不重做 simplify D1 | 重開 1A–6A；假 Variant；C 的 D1 四板 |
-| Human？ | `NOT_REVIEWED`（不是 N/A 字串）；attestation 空 | Agent 代填 ACCEPTED |
+| Human？ | owner chat「接受」→ `ACCEPTED` + `human:rick @ 2026-09-14`；scenario=0/9 Demo N/A accepted。Demo N/A ≠ Human 寫成 N/A 字串 | Agent 代填 ACCEPTED（無 chat「接受」） |
 
 回寫對象:2-decision 內部技術選擇「觸發判定留給該站」——判定已做、結果＝0 命中 N/A。**本 hop 不改 2-decision 正文。**
 
 `python3 hooks/_stage3_impl.py five-station-f3` 本 hop 實跑（exit 0）。0 命中走 **N/A 支路**（`hooks/_stage3_impl.py` 全未勾即 PASS），**不**走「有命中 + Owner Call 跳過」。`2-decision.md:L305`「不預先跳過 Stage 3」同時含「Stage 3」與「跳過」字樣，會被 `find_owner_call_skip` 掃進 `owner_call` 欄——**那不是 skip-OC 命中**。本檔不靠該句當跳過。本 hop 不改 `_stage3_impl.py`。
 
-機械 JSON 的 `verdict=null` 是 0-hit 短路（未讀 Human 列），**不是**把 Human 寫成 N/A。檔內 Human 列仍是 `NOT_REVIEWED`。`owner_call` 欄掃到 L305 否決句本身——見上；`reason` 仍是 0/9 N/A，不是 `SKIPPED_OWNER_CALL`。
+機械 JSON 的 `verdict=null` 是 0-hit 短路（未讀 Human 列），**不是**把 Human 寫成 N/A。檔內 Human 列已是 `ACCEPTED` + attestation。`owner_call` 欄掃到 L305 否決句本身——見上；`reason` 仍是 0/9 N/A，不是 `SKIPPED_OWNER_CALL`。
 
 ```
 stage3(five-station-f3): PASS — 觸發判定 0/9 命中(全未勾清單即 N/A + 明確原因記錄)→ Demo verdict N/A,可過 G2
@@ -163,26 +163,26 @@ stage3(five-station-f3): PASS — 觸發判定 0/9 命中(全未勾清單即 N/A
 - 本 hop **不**回寫 2-decision。0 命中無實驗答案；Decision 約束不變。
 
 ## User Demo Feedback
-<!-- Human verdict 由參與 Demo 的人類親填。0 命中＝無 Demo 可做。
-     Demo verdict N/A ≠ Human verdict N/A。Human 欄位枚舉只有 ACCEPTED｜REVISE｜NOT_REVIEWED。
-     Agent 禁代填 ACCEPTED／attestation。coordinator 下一問才是人。 -->
-- Demo date:
-- Participants:
-- Variant reviewed:
-- Accepted interaction:
-- Rejected interaction:
+<!-- owner chat 2026-09-14 Asia/Taipei「接受」= Human ACCEPTED Stage 3 N/A。
+     Demo verdict N/A ≠ Human verdict N/A。0 命中＝無 Demo 可點；人裁的是觸發表。
+     attestation 按該裁決落檔。不送 G2、不寫 4-spec。 -->
+- Demo date: 2026-09-14（owner chat 同日「接受」；0/9 無 Demo 可點）
+- Participants: owner rick（chat「接受」= Stage 3 Human ACCEPTED for N/A）
+- Variant reviewed: 無（0/9 Demo N/A；不建可操作 Demo、不建 html）
+- Accepted interaction: Demo N/A（0/9 無互動風險）
+- Rejected interaction: 為湊 Stage 3 發明可點原型（假 hit）
 - Confusions observed:
 - Missing real-world steps:
 - Permission corrections:
 - External handoffs:
 - Required changes:
-- Human verdict: NOT_REVIEWED
-- Verdict attestation:
+- Human verdict: ACCEPTED | role=母版 owner | scenario=0/9 Demo N/A accepted
+- Verdict attestation: human:rick @ 2026-09-14
 
 ## Verdict
-- **Demo verdict = N/A**（觸發判定 0／9 + 上表原因）。不是 REVISE，不是 ACCEPTED。未 Demo ≠ 失敗；本刀無互動風險可點。
-- **Human verdict = `NOT_REVIEWED`**（人未裁觸發表）。**不是**把 Human 寫成 N/A 字串。attestation 空。**不發明 ACCEPTED。**
-- **擬回寫 2-decision**（本 hop 仍不動該檔；不開 Stage 4）:確認紀錄加一行「prototype 回寫 \| 2026-09-14 \| Stage3-A+standing：九條 0 命中，Demo N/A；N-skip 不建 html；Human NOT_REVIEWED」。內部技術選擇維持「不跳過 Stage 3；觸發判定留給該站」——該站已行使判定。
-- 本檔 `status: draft` 直至人類親裁觸發表（0 命中無 Demo 可接受）。**不送 G2、不開 4-spec。** coordinator 下一問才是人。
-- 實驗產物:觸發表＋RWC 原因表留在本檔；無 throwaway branch、無正式碼。**已刪 `3-prototype.html`**：母版 N-skip／模板零命中「不建 html」。A 原 twin 會讓產檔器把兩段反事實腳本數成「Demo: 2」——假 Demo 計數。無 htmlpreview。
-- 本 PR 檔集只准 `3-prototype.md`。不改 STATUS（#370 已把 Active 推到 `3-prototype`／G1✅）。不發明 G2。第 3 站已做判定，未跳過、未做互動實驗。
+- **Demo verdict = N/A**（觸發判定 0／9 + 上表原因）。不是 REVISE。未 Demo ≠ 失敗；本刀無互動風險可點。
+- **Human verdict = `ACCEPTED`**（owner chat 2026-09-14 Asia/Taipei「接受」；scenario=0/9 Demo N/A accepted）。attestation `human:rick @ 2026-09-14`。**不是**把 Human 寫成 N/A 字串。
+- **擬回寫 2-decision**（本 hop 仍不動該檔；不寫 4-spec）:確認紀錄加一行「prototype 回寫 \| 2026-09-14 \| Stage3-A+standing：九條 0 命中，Demo N/A；N-skip 不建 html；Human ACCEPTED」。內部技術選擇維持「不跳過 Stage 3；觸發判定留給該站」——該站已行使判定。
+- 本檔 `status: approved`（N-skip 慣例；人類已裁觸發表）。**不送 G2、不寫 4-spec。** coordinator 下一刀才開 Stage 4 writers。
+- 實驗產物:觸發表＋RWC 原因表留在本檔；無 throwaway branch、無正式碼。**不建 `3-prototype.html`**：母版 N-skip／模板零命中「不建 html」。A 原 twin 會讓產檔器把兩段反事實腳本數成「Demo: 2」——假 Demo 計數。無 htmlpreview。
+- 本 PR 檔集只准 `3-prototype.md`。不改 STATUS（另伴 PR：Active Stage → `4-spec`，Gates 仍 `G1✅ G2⬜ G3⬜`）。不發明 G2。第 3 站已做判定，未跳過、未做互動實驗。
