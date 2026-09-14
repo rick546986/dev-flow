@@ -87,7 +87,7 @@ root:
                     - name: N8-end.md
                       why: Decide（第 2 站）收尾。過 G1 才往規格或原型走。
             - name: stage3/
-              why: Spec 的原型子步驟（舊 Stage 3），可略過。開場先觸發判定；0 命中走 N-skip。規格本身不略過。
+              why: Spec 的原型子步驟（舊 Stage 3），可略過；規格本身不略過。開場先觸發判定，0 命中走 N-skip。
               id: flow-stage3
               children:
                 - name: graph.yaml
