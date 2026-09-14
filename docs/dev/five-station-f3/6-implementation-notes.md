@@ -176,6 +176,181 @@ implementer-A 不得自裁 ACCEPTED。下列每 T 等獨立 reviewer（fresh-con
 - verdict: PENDING_INDEPENDENT_REVIEW
 - correction + re-review after FAIL: N/A
 
+## T Review Log — Independent R1
+
+Independent T-Reviewer **R1**（fresh-context Agent；cloud run `bc-5462f531-edfa-431e-8503-344139ffbd16`）。Implementer = #385／`47514a2` implementer-A。**不覆蓋上面 PENDING 列**。author≠approver（M12）。未讀 implementer Self-Review 當錨。未發明 Human G3。5-tasks checkbox 保持未勾。未改碼。
+
+Gold：`origin/main` `822f842` 的 `5-tasks.md`＋`4-spec.md`（與 #385 tip 零 diff）。審 tip `47514a2367b0c18d73317dc3fae13359fa1b0ca9`。
+
+R1 親跑 battery（2026-09-14）：
+
+| Probe | Result |
+|---|---|
+| `scripts/test-five-station-f3.sh -v` | `failed=0` exit 0；`=== CASE` ×**33**；unique 官方名 **25**；無 `NEW5-MKTG-*`／`GRAPH-AGREE`／`HOLLOW-OK` |
+| `--only new5` | exit **3** |
+| `--only old7` | exit **3** |
+| `--only token` | exit **3** |
+| `--probe hollow-true` | exit **3** |
+| `--probe hollow-files` | exit **3** |
+| `--probe hollow-f2` | exit **3** |
+| `--probe hollow-word` | exit **3** |
+| `--probe two-script` | exit **3** |
+| `--probe polarity` | exit **1** |
+| `--not-a-real-flag` | exit **2** |
+| `--help` | `--only`／`--probe` 是一等旗標 |
+| `--group hollow` | `=== CASE` ≥6；六個官方 HOLLOW 名皆在 |
+| `scripts/test-five-station-f2.sh` | `failed=0` exit 0（地板） |
+| `git diff --exit-code origin/main -- hooks/_doctor_impl.py` | **0** |
+| `scripts/check-gate-tokens.sh` | 綠 |
+| `scripts/check-devstage2-graph.sh`／`check-devstage4-graph.sh` | 綠 |
+
+獨立探針（不靠電池自述）：`f3_cut_happened(ok)=True`／missing／empty-who＝`False`；live 三槽檔 True。F2 `contract_version(read-seam)`＝`''`；F3 canonical-200＝`2.0.0`、canonical-210＝`2.1.0`、cut 仍假。PRE-210 理由＝`仍舊 7 F3 cut 未發生`。PRE-AND 三缺理由＝`路線未宣告 仍舊 7`／`仍舊 7 in-flight`／`仍舊 7 F3 cut 未發生`。cut-ok `graph_next`＝`N8-end`／`N7-end` 且 `allow_legacy=False`。h200 跳過側不生效（`N7-g1`）。NE-TICKET `doctor_green=True` 理由＝`路線未宣告 仍舊 7`。html-only 在 `new5/` 不在 `old7/`；`has_old7=False`。無 `or True`。Files 聯集 ⊆ S-8.2。STATUS／HISTORY／`_templates/`／handshake／token 刪檔＝0。未發明 G3。
+
+| T | R1 verdict | class | S／hunk | 一句 |
+|---|---|---|---|---|
+| T-1 | ACCEPTED | — | S-1.1…S-1.5 · `f3_cut_happened` L128–146 | 五切片可數；缺檔／空槽 False；只讀；無 silent True |
+| T-2 | ACCEPTED | — | S-1.3／S-1.6 · `run_silent_red` L370–380 | 缺三槽 → False；未改 STATUS。殘：注入是 fixture 字、未 monkeypatch |
+| T-3 | ACCEPTED | — | S-2.1…S-2.3 · `contract_version` L104–110；F2 舊 reader | 三切片；只讀正本鍵；cut 獨立假 |
+| T-4 | ACCEPTED | — | S-2.4…S-2.7 · `refuse_hop_reason` L163–177 | PRE 五棵可數；`F3 cut 未發生`；禁「已宣告所以切了」 |
+| T-5 | ACCEPTED | — | S-3.1／S-3.2／S-3.5／S-3.6／S-7.4 · `graph_next` L211–219；`next_when_five` | 條件邊 AND；節點仍在；禁 GRAPH-AGREE |
+| T-6 | ACCEPTED | — | S-3.3／S-3.4 · `run_graph_word_ne` L513–526 | 指南五站 ∧ 預設仍 N7-g1；token 牙綠 |
+| T-7 | **FAIL** | **TEST** | **S-4.3** · `run_doctor_ne_ticket` L544–564 | 5-tasks Verify 咬 stdout `路線未宣告\|仍舊 7\|F3 cut 未發生`；跑者沒印理由 |
+| T-8 | **FAIL** | **IMPL** | **S-6.2** · `run_keep_mk_red` L575–584 | 三格只 grep 注入稿；無 `evaluate_hop`；拒因無 M 編號 |
+| T-9 | ACCEPTED | — | S-7.1／S-7.3／S-7.5 · `run_old7_freeze`／`run_self_old7` | OLD7 無五站機；三凍結 slug 跳不過。殘：S-7.2 標籤 |
+| T-10 | ACCEPTED | — | S-5.1…S-5.11／S-8.2…S-8.6 · `main` `--only`／`--probe` | 25＋hollow exit 3＋未知 2；活樹 cut 本 T；html-only∈new5 |
+
+D-n：無。implementer Decisions（F3 reader 分檔、`next_when_five` 鍵名、INCOMPATIBLE 禁綠詞只咬握手綠句）不升 L2。S-8.2 准許清單無超出。不發明 G3。
+
+### T-1
+- reviewer identity: Independent T-Reviewer R1（fresh-context Agent；cloud run `bc-5462f531-edfa-431e-8503-344139ffbd16`；≠ #385 implementer-A）
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14；#385 tip `47514a2`（非 implementer PRE）
+- Verify: 5-tasks 原指令 → n=5；五 `--slot` 各 exit 0
+- Covers finding: S-1.1 三槽＋`which_condition=f3-cut`＋`f3_cut_happened True`（親探 ok 樹）。S-1.2 missing／empty-who → False。S-1.4 位元組不變、缺檔仍缺。S-1.5 活契約無 cut 兄弟鍵。函式成功路徑末行 `return True` 是三槽齊之後，不是 silent True
+- Files finding: ⊆ T-1 Files；活樹 cut 不在本 T Files（T-10 才寫）
+- RED→GREEN finding: 開工前腳本不存在＝RED 可信；GREEN 親見
+- Test Integrity finding: none。殘：sibling-reject 主測活契約＋fixture 描述，未另造兄弟鍵 JSON 樹
+- Design boundary finding: `which_condition` 未捆 AND；未寫本目錄當 NEW5
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-2
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14
+- Verify: `--case ATTEST-SILENT-RED` n≥1；exit 0
+- Covers finding: S-1.3 親探 missing 樹 `f3_cut_happened is False`；fixture 含字面 `return True`。S-1.6：`git diff` STATUS 空；guide 不在本 T Files
+- Files finding: ⊆ T-2 Files
+- RED→GREEN finding: 若把讀端改 silent True，`cut is False` 會紅——有鑑別力
+- Test Integrity finding: none。殘：未 monkeypatch 函式（5-tasks Test seam＝fixture 字＋無三槽；本對 Verify 要求 CASE exit 0）
+- Design boundary finding: 未改 STATUS
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-3
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14
+- Verify: READ-SEAM 三切片 `-ge 3`；各 exit 0
+- Covers finding: S-2.2 無旗標＝F2 舊 reader 對正本 2.1.0 回 `''`（親探）。S-2.1 canonical-200＝`2.0.0`。S-2.3 canonical-210 以 `2.1` 開頭、`declared` 真、cut 仍假。F3 `contract_version` 只 `blob.get("devflow_contract_version")`（L104–110）
+- Files finding: ⊆ T-3 Files；未 bump 活樹（T-7）
+- RED→GREEN finding: 親見 GREEN
+- Test Integrity finding: none。殘：S-2.2 兩行 `[ok]` 同條件（`not old.startswith("2.1")` 重複）
+- Design boundary finding: 無 fallback 錯鍵；2.1.0 ≠ cut
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-4
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14
+- Verify: PRE 五棵 `-ge 5`＋拒因字面全過；各 CASE exit 0
+- Covers finding: S-2.4 親探理由 `仍舊 7 F3 cut 未發生`，無「已宣告所以切了」。S-2.5 三缺可數、理由對得上。S-2.6／S-2.7：h200 `SLOT-REJECT` 且 `graph_next==N7-g1`
+- Files finding: ⊆ T-4 Files；本 T 未改 `graph.yaml`
+- RED→GREEN finding: 親見 GREEN
+- Test Integrity finding: none
+- Design boundary finding: doctor／marketplace／cache 不當路條
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-5
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14
+- Verify: NEW5-CUT-OK＋PRE-HOPS-200＋`--group graph-edges` `-ge 3`；無 `GRAPH-AGREE`／`GRAPH-SKIP`／`NEW5-EDGE`；`N7-g1.md`／`N6-g2.md` 仍在
+- Covers finding: S-3.1 親探 cut-ok `s2=N8-end` `s4=N7-end`、`allow_legacy=False`。S-3.2／S-2.7：未宣告跳過側不生效。S-3.5 閘與邊同意。S-3.6＝`next_when_five` 條件邊，不是刪節點。S-7.4 試體根 `new5/cut-ok/`
+- Files finding: ⊆ T-5 Files
+- RED→GREEN finding: 親見 GREEN
+- Test Integrity finding: none
+- Design boundary finding: 預設 `next` 字串仍 `N7-g1`／`N6-g2`
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-6
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14
+- Verify: GRAPH-WORD-NE n≥1 exit 0；`check-gate-tokens.sh` 綠
+- Covers finding: S-3.3 guide 含「五站」∧ Stage 2 預設仍 `N7-g1`（`run_graph_word_ne` L522–526）。S-3.4 節點檔在、token 牙綠
+- Files finding: ⊆ T-6 Files；token 腳本只呼叫
+- RED→GREEN finding: 親見 GREEN
+- Test Integrity finding: none。殘：「標成功」在注入稿
+- Design boundary finding: 未刪節點／token
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-7
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14
+- Verify: **5-tasks 原文未過**。`ticket=$(… --case DOCTOR-NE-TICKET -v)` 後 `grep -E -q '路線未宣告|仍舊 7|F3 cut 未發生'` → **exit 1**。stdout 只有 `[ok] S-4.3 reason is route`，沒有拒因字面。DOCTOR-HONEST 親跑 doctor＋fixture caps 印 `INCOMPATIBLE` 且非 0（S-4.2 邏輯過）。`git diff --exit-code origin/main -- hooks/_doctor_impl.py`＝0。`hooks/runtime-capabilities.json` 含 `2.1.0`
+- Covers finding: S-4.1／S-4.2／S-4.4／S-4.5 成立。**S-4.3 Verify 縫失敗**：`run_doctor_ne_ticket`（L544–564）內部 `refuse_hop_reason(..., doctor_green=True)` 親探＝`路線未宣告 仍舊 7`（閘邏輯對），但**不 print**，5-tasks 牙咬不到。綠≠票的理由集合必須出現在該 CASE 的 stdout
+- Files finding: ⊆ T-7 Files；未改 `_doctor_impl.py`；未寫活樹 cut
+- RED→GREEN finding: HONEST 誠實紅親見；NE-TICKET 的 Verify 綠是假綠（指令列）
+- Test Integrity finding: **⑥** Verify 字面牙與跑者輸出脫節
+- Design boundary finding: 握手 0 diff；doctor 綠被丟棄（親探）
+- verdict: FAIL
+- correction + re-review after FAIL: 待 implementer 讓 `--case DOCTOR-NE-TICKET -v` stdout 含 `路線未宣告` 或 `仍舊 7` 或 `F3 cut 未發生`（印 `reason` 即可）後重審。不改握手
+
+### T-8
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14
+- Verify: 5-tasks 原指令 n≥3、三 CASE exit 0（指令綠；Covers 無鑑別力）
+- Covers finding: **S-6.2 不成立**。4-spec 觀測＝「注入後該格紅；**拒絕理由含該 M 編號**」。`run_keep_mk_red`（L575–584）只 `all(mid in text for mid in KEEP_MK_IDS)`＋稿內「仍 hop／injected-mk」。`five_station_f3.py` **無** `evaluate_hop`；未呼叫 F2 `evaluate_hop`。S-6.1／S-6.3 同形（`inject-wait-red.md`／`inject-keep-ship-mech.md` 字搜）。S-5.3 `--probe polarity` 是硬編碼 `return 1`（L886–889），不是偵測到極性反了。同 F2 R1 T-8：標籤假綠
+- Files finding: ⊆ T-8 Files
+- RED→GREEN finding: 腳本綠是假綠——fixture 字 ≠ hop 拒
+- Test Integrity finding: **④** 用 markdown 重新定義「注入仍 hop」；**⑥** 只追 n≥3
+- Design boundary finding: 未把 coordinator 拒 hop 記成這些格綠（極性方向沒反；是沒餵進 hop 機）
+- verdict: FAIL
+- correction + re-review after FAIL: 待 implementer 把三張注入真正餵進 hop 機（例 F2 `evaluate_hop`），KEEP-MK 拒因含 M3／M5／M9／M11／M12／M15（只擋 M11＝仍紅）後重審
+
+### T-9
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14
+- Verify: OLD7-FREEZE／OLD7-FOLD-RED／SELF-OLD7 n≥3；exit 0
+- Covers finding: S-7.1 親探 OLD7 `allow_legacy` 真、無 `.five-station` 機、理由含 `仍舊 7`。S-7.3 三凍結 slug `frozen_slug` 真、求五站跳不過。S-7.5 未寫活五站 slug 名。S-7.2 只 grep `old7/inject-fold-red.md`（殘項，不單獨翻 T；FREEZE／SELF 已覆蓋「不折 in-flight」）
+- Files finding: ⊆ T-9 Files；NEW5 不是本目錄／f2／simplify
+- RED→GREEN finding: FREEZE／SELF GREEN 可信
+- Test Integrity finding: S-7.2 標籤（殘）
+- Design boundary finding: 未對 live 建五站機
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-10
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14
+- Verify: 5-tasks 原文全過。`-v` n=33（unique 25）exit 0；`--only` 三路 exit 3；五支 hollow `--probe` exit 3；`--probe polarity` exit 1；未知旗標 exit 2；`--group hollow` ≥6 官方名；F2 地板＋token 牙
+- Covers finding: S-5.1 同一 process 三路。S-5.2 官方 25 名齊。S-5.4…S-5.6／S-5.9…S-5.10 由 `--probe` exit 3 獨立紅（CASE 跑者仍是 fixture 字，探針才是紅）。S-5.11 `new5/html-only/`、`has_old7 False`、無 `old7/html-only/`。S-5.7 F2 `failed=0`。S-5.8 token 牙。S-8.2 准許清單無超出（親列 `git diff --name-only origin/main...HEAD`）。S-8.3／S-8.1／S-8.5／S-8.6：未刪 token、未重開 4-spec／F2 park、Q21–23 未標可選。活樹 `docs/dev/f3-cut-attestation.json` 三槽、`which_condition=f3-cut`
+- Files finding: ⊆ S-8.2；5-tasks checkbox 仍 `[ ]`；無 STATUS／HISTORY
+- RED→GREEN finding: 入口／探針 GREEN 可信
+- Test Integrity finding: none。殘：TOKEN-DEL-RED CASE 仍是稿內字；`--probe polarity` 硬編碼
+- Design boundary finding: 無 L2；未發明 G3；check-five-station-f3.sh 不是第四路
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
 ## Progress Log
 
 <!-- T Review PASS 後才記 hash。本 stream 未自裁 PASS，故無 ACCEPTED 列。 -->
