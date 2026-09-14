@@ -800,15 +800,25 @@ with tempfile.TemporaryDirectory(prefix="host-adapter-test-") as tmpbase:
         failed += 1
         print("  ✗ S-6.2 缺 --action:" + ",".join(missing_action), file=sys.stderr)
 
-    contract = json.loads(
+    root_contract = json.loads(
+        open(os.path.join(root, "devflow-contract.json"), encoding="utf-8").read()
+    )
+    docs_contract = json.loads(
         open(os.path.join(root, "docs", "dev", "devflow-contract.json"), encoding="utf-8").read()
     )
-    if contract.get("devflow_contract_version") == "2.0.0":
+    root_ver = root_contract.get("devflow_contract_version")
+    docs_ver = docs_contract.get("devflow_contract_version")
+    # F3 已把根正本升到 2.1.0;發版技能要求 docs/dev 副本跟根走。
+    # 本牙仍禁 host-adapter 自己漂契約,改釘「兩份同為現況 2.1.0」。
+    if root_ver == docs_ver == "2.1.0":
         passed += 1
-        print("  ✓ S-6.2 契約仍 2.0.0")
+        print("  ✓ S-6.2 契約副本與根正本同為 2.1.0")
     else:
         failed += 1
-        print("  ✗ S-6.2 契約漂了:" + repr(contract.get("devflow_contract_version")), file=sys.stderr)
+        print(
+            "  ✗ S-6.2 契約漂了: root=%r docs/dev=%r" % (root_ver, docs_ver),
+            file=sys.stderr,
+        )
 
     if not os.path.exists(os.path.join(root, "scripts", "check-host-receipt.sh")):
         passed += 1
