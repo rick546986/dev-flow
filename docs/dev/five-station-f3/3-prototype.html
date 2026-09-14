@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>five-station-f3 · 3-prototype</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px}
+.r-body p{margin:0 0 8px}
+.trigger{list-style:none;padding:0;margin:0}
+.trigger li{padding:4px 0;border-bottom:1px solid var(--rule-2)}
+.hit{color:var(--ok);font-weight:650}
+.miss{color:var(--ink-3)}
+.card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 8px;background:var(--sunk)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 3-prototype · 審查介面</p>
+  <h1>five-station-f3</h1>
+  <p class="sub">正本是 md。觸發判定／Demo／答案回寫 2-decision。不是 html-shell 長文。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">draft</span></div><div class="cell"><span class="k">觸發命中</span><span class="v">0/9</span></div><div class="cell"><span class="k">Demo</span><span class="v">2</span></div><div class="cell"><span class="k">Human verdict</span><span class="v">N/A</span></div></div>
+</header>
+<section class="r-block" id="trigger"><div class="r-head"><span class="r-name">觸發判定</span></div><div class="r-body"><ul class="trigger"><li class="miss">[未中] 有新的前端流程（F3 是預設路線位元／契約鍵／graph 預設／doctor 清單／guide 用語，沒有新產品畫面）</li><li class="miss">[未中] 改變使用者下一步（新 slug「不等例行 G1／G2」已是 F0–F2 + Decision 3C 的核准 Pattern，不是本刀要試的新「點哪」）</li><li class="miss">[未中] 涉及角色交接（角色表沿用 F0–F2；F3 不新增誰把工作遞給誰的交接面）</li><li class="miss">[未中] 涉及人工核准（不新增人批關卡；token 不刪；cut SoT 是可見紀錄格，不是新核准畫面）</li><li class="miss">[未中] 涉及等待/退回/逾時（等待語意已 lock：新 slug 中間不等、in-flight 仍等、Ship 仍等；本刀不設計新等待面）</li><li class="miss">[未中] 涉及權限差異（Agent 禁寫判定、未 upgrade 不得遠端改線＝F1／F2 牙；F3 不新增權限畫面）</li><li class="miss">[未中] 涉及系統外動作（marketplace／doctor／chat 語意已鎖：綠≠切線、chat≠判定；F3 不設計新系統外交接）</li><li class="miss">[未中] 涉及多種可行互動設計（Q21 四選項已收斂 3C；OPEN 是落點／機制形，不是互動 Variant）</li><li class="miss">[未中] Stage 1 尚有操作流程不確定性（Journey 已清；OPEN 不是「下一步點哪」）</li></ul></div></section>
+<section class="r-block" id="question"><div class="r-head"><span class="r-name">Question</span></div><div class="r-body"><p>引 2-decision **內部技術選擇**「不預先跳過 Stage 3」＋ **Risks**（silent True、只改用字、本 slug 當白老鼠）＋ Real-world Context。 本站要回答的不是「cut 怎麼切」（1A–6A 已 lock），而是： 1. **九條對 F3 cut／defaults 有沒有互動風險命中？** 2. **0 命中時，Demo = N/A 是否仍是合法 Stage 3 記錄**（機械閘可過、不是空白跳過、不是 Agent 代填 ACCEPTED）？ 答案長什麼樣才算回答了： - 九條各有一句對照 Real-world Context 的原因；命中數可數。 - 命中 0 → 九條全未勾 + Demo N/A + 原因表；`_stage3_impl.py` 讀成 N/A PASS。無 Human ACCEPTED、無 attestation。 - 若有命中 → 做最薄 Demo（本評 = 0，不走這路）。 - 本 hop **不**回寫 2-decision 正文（Writer B draft；0 命中無實驗答案要回寫）。</p></div></section>
+<section class="r-block" id="demo"><div class="r-head"><span class="r-name">Demo</span></div><div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 378" role="img" aria-label="結構圖">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">N/A 路徑（選定；0 命中）</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">九條全未勾</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="b" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">Demo N/A</text>
+  <path class="flow" d="M140,216 L140,238"/>
+  <rect class="b" x="40" y="238" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="262">機械閘 N/A PASS</text>
+  <path class="flow" d="M140,292 L140,314"/>
+  <rect class="b" x="40" y="314" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="338">本 hop 不回寫 2-decision</text>
+</svg>
+</div><div class="card"><strong>Scenario N/A（0 命中，不走可操作 Demo）</strong><p>使用者角色:G2 reviewer／後站寫 4-spec 的人</p><p>真實目標:確認 F3 cut／defaults 沒有新互動風險；不要為湊數做假 Demo</p><p>起始狀態:本檔九條全未勾；2-decision 無「跳過 Stage 3」OC；G1 已 PASS</p><p>操作步驟:讀上表九行原因；對照 1-discussion Journey 步 1–8 與 Decision 1A–6A；確認沒有「點哪／等誰的新畫面」仍 OPEN</p><p>系統回應:命中 0。不產可點 HTML／CLI flow／Storybook。機械閘讀全未勾 → Demo verdict N/A</p><p>系統外下一步:無 Demo 邀約。協調者比稿後才決定要不要開 Stage 4。本 hop 不改 2-decision、不改 STATUS</p><p>觀察問題:有沒有把「預設路線變了」誤加成「新前端／新下一步」？有沒有 Agent 代填 ACCEPTED？</p></div><div class="card"><strong>Scenario AC-8（對照：本目錄仍舊 7，不是白老鼠）</strong><p>使用者角色:in-flight 執行者／coordinator</p><p>真實目標:就算本檔多了 `3-prototype.md`，本 slug 仍不是第一隻活五站</p><p>起始狀態:本目錄已有 `1-discussion.md`／`2-decision.md`（＋本檔）= in-flight</p><p>操作步驟:問「本 hop 落 3-prototype 會不會把本 slug 切成五站機？」</p><p>系統回應:SLOT-IN-FLIGHT-DETECT：任一 1–7 `.md` → 整段舊 7。本檔是舊 7 的 Stage 3 記錄，不是五站 hop</p><p>系統外下一步:無</p><p>觀察問題:系統有沒有暗示「寫了 Stage 3 就可以試五站」？</p></div></div></section>
+<section class="r-block" id="result"><div class="r-head"><span class="r-name">答案</span></div><div class="r-body"><p>- **命中數 = 0／9**。九條全未勾。Demo = **N/A**（無互動風險，不是還沒 Demo）。 - 證據：上表九行原因 + 1-discussion Real-world Context（Journey 步 1–8、G-cut／G-graph／G-self）+ 2-decision「不預先跳過」且無 skip OC + 1A–6A 已 lock。 - `_stage3_impl.py five-station-f3` 本 hop 實跑（exit 0）： ``` stage3(five-station-f3): PASS — 觸發判定 0/9 命中(全未勾清單即 N/A + 明確原因記錄)→ Demo verdict N/A,可過 G2 trigger=false trigger_hits=[] verdict=null verdict_attestation=null g2_demo=PASS prototype_status=draft ``` `owner_call` 欄位掃到 2-decision「不預先跳過 Stage 3」句（同時含「Stage 3」與「跳過」）——與 simplify 盤 4 同型誤匹配。本檔 **0 命中走 N/A 支路**，不靠該句當 skip OC。本 hop 不改 `_stage3_impl.py`。 - 不選「為了看起來有做 Stage 3 而做最薄假 Demo」。那會把 0 命中做成假 hit，G2 反而要 ACCEPTED。 - 本 hop **不**回寫 2-decision。0 命中無實驗答案；Decision 約束不變。</p></div></section>
+<section class="r-block" id="writeback"><div class="r-head"><span class="r-name">回寫 2-decision</span></div><div class="r-body"><p>- **本 hop 不回寫 2-decision**（Writer B draft；使用者：only `3-prototype.md` + html）。0 命中無需把實驗答案寫回 Risks／SC。2-decision 內部技術選擇「不預先跳過 Stage 3」已被本檔行使：九條已評、不是預跳。 - Human 判定：**不填 ACCEPTED**。無 attestation。`status: draft`（Writer B 比稿；不是 Human Stage 3 收尾）。 - 實驗產物:判定表留在本檔；無 throwaway branch。審頁由 `scripts/build-stage3-html.py --action` 重生（有檔即印頁，供人讀 0／9；不是可操作 Demo）。 - 第 3 站：已評價、0 命中、Demo N/A。未跳過（無 skip OC）。未發明 G2。</p></div></section>
+<section class="r-block" id="feedback"><div class="r-head"><span class="r-name">User Demo Feedback</span></div><div class="r-body"><p>- Demo date: n-a（無 Demo） - Participants: Writer B（評九條；未邀人點） - Variant reviewed: n-a（無 Variant） - Accepted interaction: n-a - Rejected interaction: 為湊數做的假可操作 Demo（0 命中仍做點擊／CLI） - Confusions observed: 「預設路線變了」容易被誤讀成「改變使用者下一步」——本表把該條標否，並寫清：設計已 lock，本刀只切開關 - Missing real-world steps: 無（Journey 已清） - Permission corrections: 無 - External handoffs: 無新交接 - Required changes: 無 - Human verdict: N/A （0 命中；未 Demo ≠ NOT_REVIEWED 欠債；機械閘走 N/A，不走 ACCEPTED。Agent 不寫 attestation）</p></div></section>
+<p class="src">由 <code>scripts/build-stage3-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
