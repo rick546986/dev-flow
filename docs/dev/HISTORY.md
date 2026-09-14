@@ -704,3 +704,9 @@
 - 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
 - 詳細:https://github.com/rick546986/dev-flow/pull/344
 
+## 2026-09-14 · five-station-f2
+- 做了什麼:Open Stage 7 after #351; Active Stage → 7-review; Gates stay G1✅ G2✅ G3⬜
+- 為什麼:Stage 6 T-1…T-10 + independent reviews already on main (#346/#347/#348/#349/#350/#351). Owner standing opens Stage 7. No G3 invented; 7-review.md is a follow-up
+- 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
+- 詳細:https://github.com/rick546986/dev-flow/pull/351
+
