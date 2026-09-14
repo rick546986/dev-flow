@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>five-station-f2 · 2-decision</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+a.cell{text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px}
+.group{margin:0 0 16px}
+.group h3{margin:0 0 8px;font-size:.95rem}
+.card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 8px;background:var(--sunk)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+details.bg{margin:10px 0 0}
+details.bg>summary{cursor:pointer;color:var(--ink-2)}
+table.judge{width:100%;border-collapse:collapse;font-size:.86rem;margin:0}
+table.judge th,table.judge td{border:1px solid var(--rule);padding:6px 8px;
+  text-align:left;vertical-align:top}
+table.judge th{background:var(--sunk);font-weight:650}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 2-decision · 審查介面</p>
+  <h1>five-station-f2</h1>
+  <p class="sub">正本是 md。這頁是審頁分組卡,不是 gate-twin 勾選卡。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">draft</span></div><div class="cell"><span class="k">分組</span><span class="v">8</span></div><div class="cell"><span class="k">方案</span><span class="v">24</span></div></div>
+</header>
+<section class="r-block" id="decision">
+  <div class="r-head"><span class="r-name">Decision</span></div>
+  <div class="r-body">
+    <p>採 **1A+2C+3A+4A+5A+6A+7A+8A**：F2 寫 coordinator，讀 brief §3 謂詞——真則 hop、假則停修、latch 開火進 HumanWait、cap 用盡 Escalated。謂詞全真 ∧ latch 假 → **立刻 hop**，不准留下「要不要繼續／請人審／確認一下」（A 線中途等人＝失敗 1）。三個 cap 計數與 hop／latch／cap 紀錄都住 **slug 級只增倉**（獨立 ledger，與 run 級 `events.jsonl` 分家）。新 `run_id` 不得把數字歸零。Goal reopen 連帶回到 Decide 時，兩個計數**同一次 mutation** 寫入。某 `hop_id` **第一次成功 persist＝0**，其後每一次成功 persist 該桶 +1；第一次寫不算進 hop≤2。`hop_id` 用五站別名＋**檔→五站觸發表**（五桶，不是七 stem），不改 `graph.yaml`，不用舊節點 `N7-g1` 冒充。紀錄必須讓人指得到並回答五問（誰／從哪到哪／哪條謂詞／哪只 cap／是否 Escalated）；**不鎖鍵名；本刀不 bump `agent-event`**。Coordinator 評五站謂詞之前先問**專案樹**路線：未宣告 2.1.0、或 in-flight、或 F3 cut 尚未發生 → `allow_legacy()`。**marketplace × doctor 誠實是約束不是功能**：`COMPATIBLE`／exit 0 只證明握手；`marketplace update` 單獨 ≠ cut；plugin cache 只選本 process 讀哪份 hops 碼，不是路條。F3 前 live slug（含 `docs/dev/five-station-f2/`）不建五站機；NEW5 只准合成 fixture。**F2 完＝同一電池 NEW5+OLD7 都能獨立紅、也能一起綠。** coordinator 檔在、F1 十二群綠、單路開心 hop、只重跑 `test-five-station-f1.sh` **都不算** F2 綠。Must-keep 未綠不得 hop；RP-9／10／11 讀真計數。Non-Goals 鎖死：不做 F3 cut、不折 in-flight、不刪 G1／G2／`ACCEPTED`。不選 1B／1C／2A／2B／3B／3C／4B／4C／5B／5C／6B／6C／7B／7C／8B／8C；亦不選 B 線七 stem 各一桶。</p>
+  </div>
+</section>
+<section class="r-block" id="fig">
+  <div class="r-head"><h2 class="r-name">方案架構圖</h2></div>
+  <div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 606" role="img" aria-label="選定方案步驟">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">[1A] slug級只增倉(選定)</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">[2C] slug ledger不bump schema(選定)</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="b" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">[3A] hop_id=五站桶觸發表(選定)</text>
+  <path class="flow" d="M140,216 L140,238"/>
+  <rect class="b" x="40" y="238" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="262">[4A] 三前置;marketplace×doctor是約束(選定)</text>
+  <path class="flow" d="M140,292 L140,314"/>
+  <rect class="b" x="40" y="314" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="338">[5A] 同一電池NEW5+OLD7(選定)</text>
+  <path class="flow" d="M140,368 L140,390"/>
+  <rect class="b" x="40" y="390" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="414">[6A] Must-keep入謂詞+真計數(選定)</text>
+  <path class="flow" d="M140,444 L140,466"/>
+  <rect class="b" x="40" y="466" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="490">[7A] cache只選碼;路線認專案樹(選定)</text>
+  <path class="flow" d="M140,520 L140,542"/>
+  <rect class="b" x="40" y="542" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="566">[8A] 不F3/不折/不刪token(選定)</text>
+</svg>
+  </div></div>
+</section>
+
+<section class="r-block" id="owner-calls">
+<div class="r-head"><h2>Owner Calls</h2></div>
+<div class="r-body"><table class="judge">
+<tr><th>OC</th><th>決定了什麼</th><th>依據</th><th>若被推翻會怎樣</th><th>狀態</th></tr>
+<tr><td>OC-1</td><td>**計數落點＝slug 級只增倉**（1A）。使用者只把 Q9 移交本站、未選倉；選 slug 倉是 owner 延伸</td><td>`docs/dev/five-station-f2/1-discussion.md:L185` Q9 `[&gt;]`；`five-station-simplify-f0-state-machine.md:L122-L124`。延伸本身 `[Assumption]`</td><td>SC-NEW5-RUN2 改觀測點；1B 回流</td><td>待人審</td></tr>
+<tr><td>OC-2</td><td>**事件＝獨立 slug ledger，本刀不 bump `agent-event`**（2C）。使用者只鎖「要留＋五問＋不鎖鍵」；「不 bump」是延伸</td><td>`1-discussion.md:L189-L194` Q13／Q14／Q18；`hooks/_doctor_impl.py:L216-L233`。延伸 `[Assumption]`</td><td>改走 2A；採用端 schema 紅被當成誠實成功</td><td>待人審</td></tr>
+<tr><td>OC-3</td><td>**`hop_id`＝五站別名＋檔→五站觸發表（五桶），不改 `graph.yaml`**（3A）。使用者只問 F3 前怎麼認；選別名圖＋同站同桶是延伸。standing 釘：拒 B 七 stem</td><td>`1-discussion.md:L187` Q11；`brief-v3.md:L47-L58`；`state-machine.md:L129-L136`。延伸 `[Assumption]`</td><td>hop 桶改掛 N7-g1 或七 stem；in-flight 計數互踩；cap 被稀釋</td><td>待人審</td></tr>
+<tr><td>OC-4</td><td>**Q17 三前置升格為 Decision**（4A）。使用者在討論標 `[~]`；本檔升格是把假設收成選定</td><td>`1-discussion.md:L193` 期限=F2 Decision；`brief-v3.md:L166`。升格 `[Assumption]` 已到期必須收</td><td>改成兩前置；F2 期間 live 可評五站</td><td>待人審</td></tr>
+<tr><td>OC-5</td><td>**Q10 升格：run 級倉不合法＝X5**。使用者帶假設「是」；本檔選定 1A、棄 1B</td><td>`1-discussion.md:L186`；`ledger.py:L3-L6`。升格</td><td>允許 run 級；SC-NEW5-RUN2 失效</td><td>待人審</td></tr>
+<tr><td>OC-6</td><td>**Q19 升格：RP-9／10／11 必須讀真計數**（6A）。使用者帶假設「必須」</td><td>`1-discussion.md:L194`；`five_station_f1.py:L327-L333`。升格</td><td>F2 可只留字樣牙；live 第三次仍假第一次</td><td>待人審</td></tr>
+<tr><td>OC-7</td><td>**plugin root 從屬專案樹路線 SoT**（7A）。cache 只選本 process 讀哪份 hops 碼，不是路線許可。使用者只移交 Q20；「碼／路分家」是延伸。standing 吸收 B「認專案樹不認 host cache」</td><td>`1-discussion.md:L196` Q20；`brief-v3.md:L168`。延伸 `[Assumption]`</td><td>改掃最新 cache 或把 marketplace／COMPATIBLE 當 cut；同一 repo 被他機 hops 拖走</td><td>待人審</td></tr>
+<tr><td>OC-8</td><td>**Goal+Decide 兩個計數同一次 mutation 寫入**。使用者只問是否必須同一落點；「一次寫」是延伸</td><td>`1-discussion.md:L191` Q15；`state-machine.md:L137`。延伸 `[Assumption]`</td><td>分倉；NEW5-GOAL-2 可綠而 Decide 被躲</td><td>待人審</td></tr>
+<tr><td>OC-9</td><td>**把 AC-9 收成具名 CASE 表＋同一入口**（上表 13 列，只准加不准減）。使用者要「measurable SC for dual-path」；CASE 名與「預期紅」格子是延伸。standing 釘極性：注入壞行為 → 該格紅，不是「拒 hop 算綠」</td><td>`1-discussion.md:L252-L255` AC-9；使用者 C-line brief。延伸 `[Assumption]`</td><td>CASE 改名消失；SC-HOLLOW 對不到；紅格被改成拒 hop 綠</td><td>待人審</td></tr>
+<tr><td>OC-10</td><td>本 Decision hop **不**跑 `status-update.sh`、不改 HISTORY、不改 1-discussion 頂欄、**不發明 G1 PASS**、不合併、不寫 coordinator。標**流程層**</td><td>`docs/dev/STATUS.md:L10-L26`；本 hop brief</td><td>PR 帶 STATUS 或自填 PASS，與並行 A／B session 互蓋</td><td>待人審</td></tr>
+<tr><td>OC-11</td><td>**Q12 已進 Decision 約束正文**：某 `hop_id` **第一次成功 persist＝0**；之後每一次 persist 該桶 +1。第一次寫不算進 hop≤2。使用者只鎖「計數看寫入、不看模型名」；切在 persist 是延伸。standing：不得只寫在本 OC</td><td>`1-discussion.md:L188` Q12；`state-machine.md:L129` 第一次寫不算。延伸 `[Assumption]`</td><td>初寫被算進 cap，或換模型可無限重寫</td><td>待人審</td></tr>
+<tr><td>OC-12</td><td>**F2 coordinator 準存在、但 F3 前對 live slug 禁評五站謂詞**（只打合成 fixture）。這是對 4A 的收窄：碼可以合進 plugin，預設路線仍舊 7</td><td>`brief-v3.md:L176-L180` F2 做／不做；`:L166` F0–F2 新開軌仍舊 7。收窄 `[Assumption]`</td><td>碼一合進就對 live 切五站＝偷 F3</td><td>待人審</td></tr>
+</table></div></section>
+<section class="r-block" id="point-1"><div class="r-head"><span class="r-name">決策點 1：計數落點（Q9／Q10／Q12／Q15）</span></div><div class="r-body"><div class="card"><strong>1A</strong><p>**slug 級只增倉**。三計數器（`hop_rewrites[hop_id]`／`decide_reopen`／`goal_reopen`）住 slug 範圍、只增不減、新 `run_id`／重開 process 之後仍在。Goal 連帶回到 Decide 時與 Decide 計數**同一次 mutation** 寫入。舊 7 走 `allow_legacy()` 不碰這倉 優:對準狀態機「slug 級、只增不減」；擋 X5；AC-1／AC-2 可量測 劣:本檔不鎖檔路徑／鍵名（F1 OC-3）；4-spec 才釘形 依據:`notes/design/five-station-simplify-f0-state-machine.md:L122-L155` 偽碼與分桶；`:L17` 狀態在 slug 級；`docs/dev/five-station-f2/1-discussion.md:L31-L36` 計數看寫入；同檔 `:L185-L186` Q9／Q10。路徑形 `[Assumption]`（4-spec）</p></div><div class="card"><strong>1B</strong><p>**寫進現行 run 級** `.devflow/runs/&lt;run_id&gt;/coordinator/events.jsonl` 優:現成 writer；不必新倉 劣:新 run 讀空檔＝計數 0＝X5；違「只增不減」 依據:`observability/devflow_obs/ledger.py:L3-L6` run 級目錄；`five-station-simplify-f0-state-machine.md:L198` X5；`docs/dev/five-station-f2/1-discussion.md:L186` Q10 `[~]` 暫定 run 級不合法</p></div><div class="card"><strong>1C</strong><p>**重放 git 當計數器**（數該 slug 的站檔 commit） 優:零新檔；跨 run 自然在 劣:不是機械倉；rebase／amend／空 commit 會漂；無法同 mutation 寫 Goal+Decide；人改歷史＝暗改 cap 依據:`[Assumption]` git 不是 cap 正本。`1-discussion.md:L100-L102` 這些步驟常不留「已重寫幾次」。狀態機要的是寫入發生,不是 VCS 故事</p></div></div></section>
+<section class="r-block" id="point-2"><div class="r-head"><span class="r-name">決策點 2：hop／latch／cap 紀錄怎麼接（Q13／Q14／Q18／G-obs-1）</span></div><div class="r-body"><div class="card"><strong>2A</strong><p>**新 `event_type` + bump `agent-event` schema**，寫進現有 run ledger 優:觀測棧統一；validator 認得 劣:未定義型別今日會 `unknown_event_type`；`stage` 正則吃不進 Intake／Decide；bump 讓只 update plugin、契約 schema 仍 1.1 的採用端 doctor 變 INCOMPATIBLE（Q18）；且 run 級倉仍踩 Q10 依據:`observability/schema/agent-event.schema.json:L18` stage 正則；`:L81-L103` 無 hop／latch／cap 型別；`observability/devflow_obs/event_validate.py:L499-L503` 未定義拒；`hooks/_doctor_impl.py:L216-L233` schema major.minor 不合 fail-closed</p></div><div class="card"><strong>2B</strong><p>**既有 `stage_*` 加 `x_` 欄**，不 bump schema 優:2.0.0 採用端 doctor 可繼續握手綠 劣:`stage` 仍要 `1-discussion` 形；五站別名塞不進；`x_` 只躲隱私掃描、不是語意正本；仍 run 級 依據:`observability/devflow_obs/event_validate.py:L542-L546` 未列欄且無 `x_` 拒；`agent-event.schema.json:L18`。用 `x_` 冒充 hop 紀錄 = 討論已拒的「attempt_completed 冒充」（`1-discussion.md:L246`）</p></div><div class="card"><strong>2C</strong><p>**獨立 slug ledger**（與 1A 同壽命）。前進／latch／cap 各留一筆人指得到的紀錄，能答五問（誰／從哪到哪／哪條謂詞／哪只 cap／是否 Escalated）。**不鎖 JSON／YAML 鍵名。本刀不 bump `agent-event`。** 看板／chat／`STATUS.md` 不是正本 優:擋 X5；擋 Q18 誤紅；對準 Q23／F1 annex「不鎖鍵」；STATUS 過期已是活證據 劣:觀測棧暫時兩套；4-spec 才選檔形 依據:`notes/design/five-station-simplify-brief-v3.md:L133` F2 才接 event、F0 只鎖要留；`notes/design/five-station-simplify-f1-dual-read-annex.md:L1-L4` SLOT 不是必填鍵；`docs/dev/five-station-f2/1-discussion.md:L199` Q23；同檔 `:L50` Backlog A 過期。檔形 `[Assumption]`（4-spec）</p></div></div></section>
+<section class="r-block" id="point-3"><div class="r-head"><span class="r-name">決策點 3：F3 前 `hop_id` 怎麼認（Q11）</span></div><div class="r-body"><div class="card"><strong>3A</strong><p>**別名圖＋檔→五站觸發表、不改 `graph.yaml`**。`hop_id` ∈ {Intake, Decide, Spec, Build, Ship}。寫檔觸發：`1-discussion`→Intake；`2-decision`→Decide；`3-prototype`\ 優:`4-spec`→**同一 Spec 桶**；`5-tasks`\ 劣:`6-notes`→**同一 Build 桶**；`7-review`→Ship。無 Stage 3 trigger → 不建 `3-prototype`、也不另開 proto 桶。對準狀態機「同一 hop 節點（或同一站內同一寫檔動作）」。**禁止**七個 stem 各一桶（B 線 2A）——那會把 hop≤2 稀釋成七個獨立 2。舊節點 `N7-g1`／`N6-g2` **不是**五站 hop_id。F2 不長新 graph 節點 依據:寫手可能把舊 7 節點名或七 stem 寫進五站倉</p></div><div class="card"><strong>3B</strong><p>**沿用舊 graph 節點當 hop_id**（`N7-g1` 當 Decide） 優:現成 id 劣:舊 7 的例行停點節點 ≠ 五站 hop；in-flight 與 NEW5 會共用 id 污染計數；F2 不該改 graph 卻把舊節點語意偷換 依據:`notes/design/five-station-simplify-f0-state-machine.md:L10-L15` 本機不管舊 7 hop；`:L49-L50` 已有舊 7 檔不建立本機</p></div><div class="card"><strong>3C</strong><p>**coordinator 私自發明新 hop 節點家族**（另寫一份五站 graph） 優:看起來「真的五站了」 劣:雙 graph；F3 才切預設；本刀偷做 F3；本 slug 若吃新 graph = 白老鼠 依據:`notes/design/five-station-simplify-brief-v3.md:L176-L180` F2 不做 F3 cut；`docs/dev/five-station-f2/1-discussion.md:L170` 本 slug 不是新 5 白老鼠</p></div></div></section>
+<section class="r-block" id="point-4"><div class="r-head"><span class="r-name">決策點 4：何時准評五站謂詞（Q17／G-honest／G-trap）</span></div><div class="r-body"><div class="card"><strong>4A</strong><p>**三前置全要**：契約已宣告 2.1.0 ∧ 非 in-flight ∧ **F3 cut 已發生**。缺一條 → `allow_legacy()`，不建五站機。**marketplace × doctor 誠實是約束不是功能**：`doctor COMPATIBLE`／exit 0 只證明握手（`2.0.0 ∈ supported`），≠ 路線沒變、≠ 已切五站；`marketplace update` 單獨 ≠ cut。本刀不改 `hooks/_doctor_impl.py`、不改 marketplace。「我已在 plugin cache」也不是第四條。F3 前 coordinator 碼可以存在，但 live slug 一律舊 7；NEW5 只打合成 fixture 優:對準 brief §6＋Q17；擋採用端升級陷阱；本 slug 自保；約束句比「綠≠切線」更緊 劣:F3 前現場痛還在（本來就該如此） 依據:`docs/dev/five-station-f2/1-discussion.md:L193` Q17 `[~]`；`notes/design/five-station-simplify-brief-v3.md:L160-L168`；`notes/design/five-station-simplify-f1-dual-read-annex.md:L18-L28` 三個 SLOT；`hooks/_doctor_impl.py:L193-L202` 綠只握手版本；`:L492-L500` 印 COMPATIBLE；B 線 6A 約束句</p></div><div class="card"><strong>4B</strong><p>**doctor 綠即可評五站 hop** 優:寫手少記一條規則 劣:這就是 SLOT-DOCTOR-GREEN-MEANS 要紅的謊；F1 牙已咬文案、F2 若用綠當通行證則文案牙變裝飾 依據:`scripts/five_station_f1.py:L60-L62` `DOCTOR_HOP`；`:L217-L224` S-5.5／S-5.6；`docs/dev/five-station-f2/1-discussion.md:L182` Q7</p></div><div class="card"><strong>4C</strong><p>**plugin cache 版本當路線**（cache 裡 hops 已是五站 → 切） 優:跟「我已經更新了」的直覺合 劣:marketplace 單獨換 hops；契約可仍 2.0.0；多主機各一份 cache（Q20）會讓同一 repo 兩條路 依據:`skills/dev-setup/SKILL.md:L16` 節點／graph 不複製進採用專案；`:L62-L71` update 換 cache；`notes/design/five-station-simplify-f1-dual-read-annex.md:L22-L24` 2.0.0+五站 hops 紅</p></div></div></section>
+<section class="r-block" id="point-5"><div class="r-head"><span class="r-name">決策點 5：F2 完的定義（Q21／G-dual-1）— C 線主軸</span></div><div class="r-body"><div class="card"><strong>5A</strong><p>**同一電池、兩路都要能獨立紅也能一起綠**。單一入口（一支 selftest／一個 process）。NEW5＝合成 fixture（不是本目錄、不是 `five-station-simplify`）。OLD7＝已有 1–7 `.md` 的 fixture（不折、token 在、三 cap 不套、F1 牙仍綠）。缺一路、跳過一路、只跑 `test-five-station-f1.sh`、只證明「coordinator 檔在」→ 整電池非 0。具名 CASE 見 Success Criteria 優:對準 Q21／AC-9；擋 hollow F2 劣:CASE 表要後站實作；本 PR 不寫測 依據:`docs/dev/five-station-f2/1-discussion.md:L154` G-dual-1；`:L197` Q21；`:L252-L255` AC-9；`docs/dev/five-station-simplify/4-spec.md:L828-L832` F1 十二群不證明 hop；`scripts/test-five-station-f1.sh:L1-L16` 牙自檢不是 hop 電池。入口檔名 `[Assumption]`（4-spec）</p></div><div class="card"><strong>5B</strong><p>**coordinator 檔存在 = F2 完** 優:最快宣告 劣:沒 hop、沒事件、沒雙路；這就是 hollow 依據:`docs/dev/five-station-f2/1-discussion.md:L173` 不把檔在寫成 F2 完成；`:L20` 檔在或 F1 綠 ≠ F2 完</p></div><div class="card"><strong>5C</strong><p>**F1 十二群仍綠 = F2 完**（回歸地板冒充完工） 優:現成綠 劣:F1 證明對照稿牙；沒有 live 倉、沒有 hop。只測 NEW5 還會讓 OLD7 被折／token 被刪而電池仍綠 依據:`docs/dev/five-station-simplify/5-tasks.md:L66-L72` coordinator 延後 F2；`scripts/test-five-station-f1.sh:L1-L16`</p></div></div></section>
+<section class="r-block" id="point-6"><div class="r-head"><span class="r-name">決策點 6：Must-keep vs hop，以及真計數（Q19／Q22）</span></div><div class="r-body"><div class="card"><strong>6A</strong><p>**自動前進謂詞含完整度**。Must-keep 未綠不得 hop。三失敗各自要能紅：(1)謂詞真仍留下「要不要繼續」；(2)Must-keep 紅仍 hop；(3)機械綠 → Ship Done。**RP-9／10／11 必須讀 1A 倉**，不得只咬 fixture「第 3 次」字樣。T 重做吃該 T 嘗試上限 4，不另吃 hop cap，除非整份 5-tasks／6-notes 被整站重寫 優:擋比舊 7 更快的假完成；live 第三次重寫牙看得到 劣:F1 正則牙可留作回歸；F2 要加讀倉路徑 依據:`notes/design/five-station-simplify-brief-v3.md:L135-L158` M1–M16；`five-station-simplify-f0-state-machine.md:L110-L120` Ship 無自動前進；`:L107-L108` T≤4；`docs/dev/five-station-f2/1-discussion.md:L194-L198` Q19／Q22；`scripts/five_station_f1.py:L327-L333` 現行咬字樣</p></div><div class="card"><strong>6B</strong><p>**先 hop 再補 Must-keep**（「已經五站了所以可省」） 優:Build 看起來短 劣:假完成更快；違 brief；G-keep-1 反面 依據:`docs/dev/five-station-f2/1-discussion.md:L174` 不把 hop 比較快解讀成 Must-keep 可 hop 掉；`brief-v3.md:L158` 少一條=違 brief</p></div><div class="card"><strong>6C</strong><p>**F2 繼續只靠 fixture 字樣牙，不餵真計數** 優:零新接線 劣:live 第三次重寫牙看不見；Q19 過期擋 G2 依據:`notes/design/five-station-simplify-f1-rp-min-set.md:L4` 計數落點交 F2；`docs/dev/five-station-f2/1-discussion.md:L111` 若不餵真計數牙繼續只咬 fixture</p></div></div></section>
+<section class="r-block" id="point-7"><div class="r-head"><span class="r-name">決策點 7：多份 plugin cache（Q20）</span></div><div class="r-body"><div class="card"><strong>7A</strong><p>**plugin root 從屬於專案樹路線 SoT**。當下行程 host plugin root **只**決定本 process 讀哪一份 hops **碼**，**不是**路線許可。路線仍要 2.1.0 已宣告 ∧ ¬in-flight ∧ F3 cut 已發生（4A）。`doctor COMPATIBLE`／`marketplace update` ≠ cut。認專案樹（契約檔 + `docs/dev/&lt;slug&gt;/` 是否已有 1–7 `.md`），不認「我從哪一份 plugin cache 啟動」。不掃磁碟上「最新」的其他 cache。同一 repo 多 cache 時各行程各讀各的碼；**不得**因 A 機 hops 新就把 B 機舊 7 slug 遠端改線 優:對準「不得遠端改線」；cache 與路線分家，行為可測 劣:人會看到「同一 repo 兩台機器 hops 碼不同」——那是升級陷阱,要寫進採用說明,不是用共識掃描或 cache 當路條掩蓋 依據:`docs/dev/five-station-f2/1-discussion.md:L196` Q20；`notes/design/five-station-simplify-brief-v3.md:L168` 不得遠端改線；`skills/dev-setup/SKILL.md:L62-L71` plugin root 在 cache、隨版本變；B 線 6A「認專案樹不認 host cache」</p></div><div class="card"><strong>7B</strong><p>**掃主機上所有 plugin cache，取最新 hops** 優:看起來「永遠最新」 劣:把未宣告 2.1.0 的舊 7 行程拖進五站；遠端改線的變種 依據:同 4C；`SLOT-UNDECLARED-ROUTE`。共識掃描 `[Assumption]` 會跨過契約宣告</p></div><div class="card"><strong>7C</strong><p>**F2 不管 Q20**（留給 F3 散文） 優:範圍小 劣:升級陷阱少一顆牙；coordinator 若預設掃 cache 會靜默 7B 依據:`docs/dev/five-station-f2/1-discussion.md:L340` 多 cache 是已確認陷阱。不管 = 讓 7B 當預設</p></div></div></section>
+<section class="r-block" id="point-8"><div class="r-head"><span class="r-name">決策點 8：F2 刀與三把 Non-Goals 鎖（G-knife-1）</span></div><div class="r-body"><div class="card"><strong>8A</strong><p>**F2 = coordinator + hop／latch／cap 紀錄**。三把鎖寫進 Non-Goals、不准後站改成可選：(1) **不做 F3 cut**（新 slug 仍舊 7）；(2) **不把 in-flight 折成五站**；(3) **不刪** G1／G2／`ACCEPTED` token 與檔。本 slug 自己走到 G1／G2／G3 仍舊 7。本 PR 只 Decision＋html，零碼 優:對準 brief §7；擋偷做 F3；本目錄當 freeze 樣本 劣:採用端預設痛留到 F3 依據:`notes/design/five-station-simplify-brief-v3.md:L176-L182`；`docs/dev/five-station-f2/1-discussion.md:L168-L170` Non-Goals 初稿鎖；`:L180-L181` Q3／Q4；`:L206` Owner-locked F2 刀</p></div><div class="card"><strong>8B</strong><p>**本刀順便 F3 cut**（新 slug 預設五站） 優:現場立刻少停 劣:違「不准併刀」；雙路線污染觀測；本目錄已 in-flight 語意漂 依據:`brief-v3.md:L173` 不准併刀；`:L166` F3 cut 之後才預設五站</p></div><div class="card"><strong>8C</strong><p>**刪 token／折 in-flight，謂詞比較好寫** 優:狀態機短 劣:X2／X4；dual-read 與舊 7 失去錨；hollow 的另一面 依據:`five-station-simplify-f0-state-machine.md:L193-L196` X2／X4；`brief-v3.md:L182` 刪 G1／G2／`ACCEPTED` = 新 brief</p></div></div></section>
+<details class="bg"><summary>背景</summary><p><strong>既有脈絡</strong> 對帳快照（2026-09-14 `origin/main` `838e20a`，Stage1-B `#325` 已合，STATUS Active 已開 `#328`）： | 層 | 現況 | 本 Decision 怎麼用 | |---|---|---| | F0 brief＋狀態機 | Owner 已核；十條與三 cap 鎖死 | 本檔只收 F2 落點；不重開 | | F1 | Human G3 PASS；牙咬字樣與 doctor 文案 | 回歸地板，不是 F2 完成條件 | | Stage 1 `#325` | 1-discussion status=draft；OQ 全三態 | 留當時說法；Owner「ok」後本檔改口 | | 契約／doctor | `2.0.0`；綠＝握手；schema 1.1 | 4A：綠 ≠ 五站；2C：本刀不 bump | | ledger | run 級 `coordinator/events.jsonl` | 1B 棄；1A／2C 另倉 | | 本 slug STATUS | Active 在 1-discussion；Gates 全白 | 本 branch **不**改這列（OC-10） | | 本資料夾 | 已有 1-discussion.md／.html | 已 in-flight；出貨走舊 7 | | F2 碼 | 無 | 本 PR 仍無；電池在後站 |</p><p><strong>Rationale</strong> F1 把數字與拒收謂詞釘死，但把「倉在哪」明文交給 F2。現行牙讀的是 fixture 正文「第 3 次」。沒有 slug 倉，live 第三次重寫可以當第一次——這不是牙不夠嚴，是牙咬錯東西。1B 把計數放進 run 級 `events.jsonl`，看起來接了觀測棧，其實新 run 就是 reset，正好踩 X5。1A 是狀態機偽碼已經寫出來的落點；本檔只是把它從「未選」收成選定，鍵名仍 OPEN。 事件也是同一條縫。2A bump schema 會讓只 update plugin 的採用端被 doctor 因 schema 握手誤紅——那是誠實紅，但 F2 刀不包含「逼所有 2.0.0 採用端一起 bump」。2B 用 `x_` 躲 validator，答不了五問。2C 讓紀錄與計數同壽命、不 bump、不鎖鍵。 C 線要擋的 hollow 不是「少寫幾段散文」，是三種假綠：(1) 檔在；(2) F1 回歸綠；(3) 只打 NEW5 開心 hop。5A 把完成定義收成同一電池兩路。OLD7 路必須能獨立紅（折 in-flight、刪 token），否則五站機可以靠犧牲舊 7 換綠。 4B／4C 是採用端陷阱的實作版。doctor 綠只證明 `2.0.0 ∈ supported`。hops 住方法包，`marketplace update` 就能換。三前置少「F3 cut 已發生」這條，F2 會在母版改版軌上提前切線，違反 brief §6。 8B／8C 把後兩刀偷進本刀。摺的是停點，不是完整度，也不是「把舊閘檔刪掉比較好寫謂詞」。</p><p><strong>風險</strong> | 風險 | 對策 | |---|---| | 後站把「coordinator 檔在」寫成 F2 完 | 5B 進 Rejected；約束 1；SC-HOLLOW；OC-9 具名 CASE | | 只跑 NEW5 或只重跑 F1 十二群 | 5A 同一入口；SC-BATTERY 缺一路即非 0 | | 把 cap 寫進 run 級 events「先接上再說」 | 1B 棄；OC-5；SC-NEW5-RUN2 | | bump schema 當唯一事件路，採用端 doctor 誤紅 | 2C；Q18 去向＝避免 bump，不是接受誤紅 | | 對本目錄或 `five-station-simplify` 開五站機 | 8A／OLD7-SELF；NEW5 合成 fixture | | 後站把 F3 cut／折 in-flight／刪 token 標可選 | 約束 4；OC-12；8B／8C 棄因 | | RP-9／10／11 繼續只咬字樣 | 6A／OC-6；6C 棄 | | 多 cache 掃最新 hops | 7A／OC-7 | | feature branch 手改 STATUS | OC-10 流程層 | | 本 hop 被當成已過 G1 | 頂欄 `verdict` 空、`status: draft`；不發明 PASS | | Q17／Q10／Q19 假設被當「討論已核、Decision 可改口」 | 本檔升格並進 OC-4／5／6；推翻＝回本站 | | 4-spec 減 CASE 表 | 「只准加不准減」；減列翻 Decision | | hop_id 改七 stem 或另開 3-proto 桶 | 約束 14；稀釋 hop≤2；無 trigger 不建 proto 桶 | | 把 Q12 只留在 OC、後站當可選 | 約束 6 正文；第一次 persist＝0 |</p><p><strong>未採</strong> | 不選 | 一句棄因 | |---|---| | 1B run 級 events 當 cap 倉 | 新 run 歸零＝X5；ledger 按 `run_id` 分目錄。 | | 1C git 重放當計數 | 歷史可改；不是只增倉；Goal+Decide 無法一次寫。 | | 2A bump agent-event | 現行型別接不住；Q18 讓 2.0.0 採用端 doctor 誤紅；且常仍 run 級。 | | 2B stage_* + x_ | stage 正則拒五站別名；`x_` 不是語意正本；attempt 冒充已拒。 | | 3B 舊 graph 節點當 hop_id | 舊 7 停點節點 ≠ 五站 hop；污染 in-flight 計數。 | | 3C 另寫五站 graph | 偷做 F3；雙路線。 | | 七 stem 各一桶（B 線 2A） | 把 hop≤2 稀釋成七個獨立 2；口稱「同一寫檔動作」卻讓 `3-prototype`／`4-spec`、`5-tasks`／`6-notes` 各一桶。 | | 4B doctor 綠當通行證 | SLOT-DOCTOR-GREEN-MEANS；F1 文案牙變裝飾。 | | 4C cache 當路線 | marketplace 可單獨換 hops；多 cache 會遠端改線。cache 不是路條。 | | 5B 檔在＝完 | hollow F2；Q21 已否。 | | 5C F1 綠＝完 | 十二群不證明 hop；單路綠會遮 OLD7 被折。 | | 6B 先 hop 再補完整度 | 比舊 7 更快假完成。 | | 6C 繼續只咬「第 3 次」字樣 | live 第三次重寫牙看不見；Q19 過期擋 G2。 | | 7B 掃全機最新 cache | 把未宣告 2.1.0 的行程拖進五站。 | | 7C 不管 Q20 | coordinator 預設會滑向 7B。 | | 8B 本刀 F3 cut | 不准併刀；觀測被自己污染。 | | 8C 刪 token／折 in-flight | X2／X4；新 brief，不是本切法尾巴。 | | 重開 F0 十條或放寬三 cap | 翻＝新 brief。 | | 拿本 slug 當 NEW5 白老鼠 | 目錄已 in-flight；G-self-1 反面。 | | 本 PR 寫 coordinator／改 STATUS／填 G1 PASS | 使用者：draft、only 2-decision+html、No G1 PASS。 |</p></details>
+<p class="src">由 <code>scripts/build-stage2-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
