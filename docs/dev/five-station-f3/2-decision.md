@@ -1,19 +1,20 @@
 ---
 feature: five-station-f3
 stage: 2-decision
-status: draft
-verdict:
+status: approved
+verdict: PASS
 owner: rick
-reviewers: []
+reviewers: [user]
 updated: 2026-09-14
 ---
+- Human verdict note: Human G1 PASS + OC-1…OC-12 Owner PASS @ 2026-09-14 Asia/Taipei。owner chat「可以」。未發明新 OC 答案。
 
 # 2. 收斂 — 五站 F3（Winner B + owner standing soft-fix：cut 證明／讀鍵縫／graph+dual-read／doctor 誠實／成功≠空切）
 
-> 把 `1-discussion.md`（C+soft-fix）收成一個選定方案。Lane = **full**。本 hop 只落 `2-decision.md` + `2-decision.html`。**不改 STATUS／HISTORY**（STATUS 另 companion）。頂欄 `status: draft`、`verdict` 空。**不發明 G1 PASS**、不寫碼、不 bump 契約。
-> Stage 1 頂欄仍 `status: draft`、當時寫「不送 G1」。Owner 2026-09-14 以「ok」開本站。1-discussion 留當時說法；改口記本檔。
+> 把 `1-discussion.md`（C+soft-fix）收成一個選定方案。G1 已核:`verdict` PASS、`status` approved、OC-1～OC-12 ✅ Owner PASS。Lane = **full**。本 hop 只落 Human G1 attestation + 審頁重生；不寫 cut 碼、不改 `_templates/`／`graph.yaml`／gate token、不 bump 契約、不改 STATUS／HISTORY（STATUS 另 companion）。
+> Stage 1 頂欄仍 `status: draft`、當時寫「不送 G1」。Owner 2026-09-14 以「ok」開本站。1-discussion 留當時說法；改口記本檔。本 Stage 2 的 G1 是 human owner rick PASS（2026-09-14 Asia/Taipei owner chat「可以」），**不是** Agent 自裁。
 > Writer B 主軸：**F3 = 新 slug 預設五站的 cut**。繼承 F2 完成樹 **與** 4A 三前置形狀。`2.1.0 ≠ cut`。禁 silent `True`。保護 in-flight／token。doctor 綠 ≠ 路條。成功必須可量測，檔在／用字／函式真 ≠ 完。**Non-Goal 鎖：不重開 F2 park D-1／D-2／D-3／F-c-4。** 不重開「要不要三條」。
-> 原文獨立於 A／C（B 線當時未讀他稿）。**本檔含 owner standing soft-fix**（#363 全票勝出後吸收，非 B 線當時已讀他稿）。不換 winner。骨架仍 **1A+2A+3C+4A+5A+6A**。cut SoT＝語意槽（誰／何時／哪個條件），路徑 OPEN 交 4-spec——**不**鎖 A 的 `devflow-contract.json` 兄弟布林。F2 綠是地板，不是第四條 IFF 成功路。G1 未審；OC 全「待人審」。coordinator 下一問才是人審 G1。
+> 原文獨立於 A／C（B 線當時未讀他稿）。**本檔含 owner standing soft-fix**（#363 全票勝出後吸收，非 B 線當時已讀他稿）。不換 winner。骨架仍 **1A+2A+3C+4A+5A+6A**。cut SoT＝語意槽（誰／何時／哪個條件），路徑 OPEN 交 4-spec——**不**鎖 A 的 `devflow-contract.json` 兄弟布林。F2 綠是地板，不是第四條 IFF 成功路。G1 依 owner chat「可以」落檔；不發明 G2／G3 PASS。不開 Stage 3／4。
 
 ## Real-world 去向
 | 引用（Stage 1 原文片段） | 去向 | 理由 |
@@ -223,7 +224,7 @@ doctor 綠的定義已經寫在握手：契約版本 ∈ supported。F3 若為�
 | 拿本目錄當活五站 | 約束 12／13；SELF-OLD7 |
 | 只跑 F2 電池或「檔在」當 F3 完 | HOLLOW-F2／HOLLOW-FILES；約束 10／11 |
 | feature branch 手改 STATUS | OC-10 流程層；Q24 companion |
-| 本 hop 被當成已過 G1 或已落地 Stage 3／4 | 頂欄 draft、verdict 空；不發明 PASS；不開 Stage 3／4 |
+| 本 hop 被當成已過 G1 或已落地 Stage 3／4 | G1 已按 owner chat「可以」落檔（`verdict` PASS、`status` approved、OC-1～OC-12 ✅）；本 PR 只含本目錄 2-decision.md／.html；翻案回本站。不發明 G2／G3。不開 Stage 3／4 |
 | Q15–Q19 假設被當「討論已核、Decision 可改口」 | 本檔升格並進 OC；推翻＝回本站 |
 | 4-spec 減 CASE 表 | 「只准加不准減」；減列翻 Decision |
 | 發明活五站 slug 名 | 約束 12；Q25 |
@@ -274,7 +275,7 @@ doctor 綠的定義已經寫在握手：契約版本 ∈ supported。F3 若為�
   15. 改已經 freeze 的 slug 的路線。
   16. fallback／dual-read 錯鍵當 `contract_version()` 正讀；錯鍵 bump 當已宣告。
 
-## Owner Calls(自判裁決,待人審)
+## Owner Calls(自判裁決,已核)
 
 <!-- Writer B OC ledger：使用者只說 Stage1 OK「ok」+ 鎖 inherit F2／前置、2.1.0≠cut、
      禁 silent True、保護 in-flight／token、doctor≠ticket、measurable SC、no G1 invent。
@@ -284,23 +285,23 @@ doctor 綠的定義已經寫在握手：契約版本 ∈ supported。F3 若為�
 ### 逐條裁決(上層)
 | OC | 決定了什麼 | 為什麼 | 依據(`檔:行` 或 `[Assumption]`) | 若被推翻會怎樣 | 狀態(待人審→✅/✗) |
 |---|---|---|---|---|---|
-| OC-1 | **cut SoT＝人類可見獨立紀錄；`f3_cut_happened()` 只讀不寫判定**（1A）。使用者只移交 Q20「怎麼被指認」；選「獨立紀錄＋讀端」是 owner 延伸 | 不選則後站可滑回 silent True 或 2.1.0＝cut | `1-discussion.md:L210` Q20；`:L205` Q15；`five_station_f2.py:L276-L278`。延伸 `[Assumption]` | AC-4 失效；函式真冒充已切 | 待人審 |
-| OC-2 | **guide／STATUS 用語是 F3 交付物，不是 SoT**。STATUS 用語切走整合分支 companion，本 feature branch 不例外。guide 至少 `guides/guide-dev-flow.html` 七站單行。F2 D-1 檔案地圖列 ≠ cut。使用者只問 Q23／Q24 算哪些檔／誰寫看板；「用語≠SoT + companion」是延伸 | 看板政策禁 feature branch 碰 STATUS；#359 已證明看板開 ≠ 刀切 | `1-discussion.md:L213-L214`；`docs/dev/STATUS.md:L10-L13`；7-review `:L445`。延伸 `[Assumption]` | 本 PR 改 STATUS 互蓋；或用字被當成 cut | 待人審 |
-| OC-3 | **讀端只讀正本鍵 `devflow_contract_version`**。禁止 fallback／dual-read `version`／`contract_version`。錯鍵 bump ≠ 已宣告。使用者只帶 Q17「仍假」；「只讀正本、殺 fallback」是 standing 收 A 後的延伸 | 不修則 bump 正本仍 `""`；fallback 會讓錯鍵冒充 declared | `1-discussion.md:L204` Q27；`:L207` Q17；`five_station_f2.py:L260-L268`。standing 收 A。延伸 `[Assumption]` | READ-SEAM 無法紅；假宣告 | 待人審 |
-| OC-4 | **Q16 升格：hops 預設五站不得早於 2.1.0 已宣告**（同刀或先）。使用者在討論標 `[~]`；本檔升格 | 過期不得把「只切 hops」當已核 | `1-discussion.md:L206`；annex `:L22-L24`。升格 | SLOT-REJECT 變可選；遠端改線 | 待人審 |
-| OC-5 | **Q21 選定 3C（兩者都要）；節點不刪；切換機制交 4-spec**。使用者只要求四選項對帳、不得默選；選 3C 是本站收斂。機制 OPEN 是收窄（不鎖實作形） | 3A 遠端改線；3B／3D 空切；刪節點＝刪舊機械 | `1-discussion.md:L211`；`brief-v3.md:L167`；`:L180`。選定＋收窄 `[Assumption]` | 新 slug 仍等人，或 in-flight 被折，或 token 被刪 | 待人審 |
-| OC-6 | **Q22＝不改 `_doctor_impl.py` 握手語意，只加 `supported` 清單**（4A）。使用者只移交落點；「不改實作」是延伸（繼承 F2 Out #12） | 改握手會讓綠變 ticket | `1-discussion.md:L212`；F2 4-spec `:L974`。延伸 `[Assumption]` | doctor 綠被讀成切線 | 待人審 |
-| OC-7 | **Q18 升格：2.1.0 ∉ supported → 誠實 INCOMPATIBLE**。使用者帶假設「應紅」 | 不升格則 4C 可假裝升級成功 | `1-discussion.md:L208`；`_doctor_impl.py:L193-L202`。升格 | 放寬握手；綠掩蓋漏清單 | 待人審 |
-| OC-8 | **把 AC-9 收成具名 CASE 表＋同一入口**（原 20 列只准加不准減；standing 加 PRE-AND、F3-F2-REGRESS）。使用者要 measurable SC；CASE 名與「預期紅」格子是延伸。極性：注入壞行為 → **該格**紅（不收 C 的整電池空心）。F3-F2-REGRESS 是地板綠，不是 SC-BATTERY 第四路 | 不具名則後站可把紅格改可選或拆兩支腳本 | `1-discussion.md:L269-L272` AC-9。延伸 `[Assumption]` | CASE 消失；SC-HOLLOW 對不到 | 待人審 |
-| OC-9 | **Q25 不發明第一隻活五站名字**。試體＝合成 fixture 或 cut 之後才開的 slug。這是對「要有活五站證明」的收窄 | 本討論明文不發明；本目錄已 in-flight | `1-discussion.md:L215` Q25；`:L118`。收窄 `[Assumption]` | 本目錄被當白老鼠 | 待人審 |
-| OC-10 | 本 Decision 檔 **不**跑 `status-update.sh`、不改 HISTORY、不改 1-discussion 頂欄、**不發明 G1 PASS**、不寫 cut 碼。STATUS Stage→`2-decision`、Gates 仍 G1⬜ 走合併後 companion。標**流程層** | 母版 STATUS 只在整合分支維護；使用者：draft、No G1 invent、ONLY 2-decision+html；standing 合稿後另 companion | `docs/dev/STATUS.md:L10-L26`；本 hop brief | PR 帶 STATUS 或自填 PASS，與並行 session 互蓋 | 待人審 |
-| OC-11 | **Q15 升格：silent flip 不合法＝Decision 正文**（不得只寫在 OC）。使用者帶假設「必須可見」 | 只寫 OC 會被後站當可選帳 | `1-discussion.md:L205`；`:L229` 過期擋 G2。升格 | 函式 True 被當已核 cut | 待人審 |
-| OC-12 | **Q19 升格：同一電池三路缺一即紅**；`f3_cut_happened==True`／檔在／只 F2 綠都不算。使用者帶假設「是」 | 不升格則 5B／5C 可假裝完 | `1-discussion.md:L209`；`:L161` G-success-1。升格 | hollow 當完 | 待人審 |
+| OC-1 | **cut SoT＝人類可見獨立紀錄；`f3_cut_happened()` 只讀不寫判定**（1A）。使用者只移交 Q20「怎麼被指認」；選「獨立紀錄＋讀端」是 owner 延伸 | 不選則後站可滑回 silent True 或 2.1.0＝cut | `1-discussion.md:L210` Q20；`:L205` Q15；`five_station_f2.py:L276-L278`。延伸 `[Assumption]` | AC-4 失效；函式真冒充已切 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-2 | **guide／STATUS 用語是 F3 交付物，不是 SoT**。STATUS 用語切走整合分支 companion，本 feature branch 不例外。guide 至少 `guides/guide-dev-flow.html` 七站單行。F2 D-1 檔案地圖列 ≠ cut。使用者只問 Q23／Q24 算哪些檔／誰寫看板；「用語≠SoT + companion」是延伸 | 看板政策禁 feature branch 碰 STATUS；#359 已證明看板開 ≠ 刀切 | `1-discussion.md:L213-L214`；`docs/dev/STATUS.md:L10-L13`；7-review `:L445`。延伸 `[Assumption]` | 本 PR 改 STATUS 互蓋；或用字被當成 cut | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-3 | **讀端只讀正本鍵 `devflow_contract_version`**。禁止 fallback／dual-read `version`／`contract_version`。錯鍵 bump ≠ 已宣告。使用者只帶 Q17「仍假」；「只讀正本、殺 fallback」是 standing 收 A 後的延伸 | 不修則 bump 正本仍 `""`；fallback 會讓錯鍵冒充 declared | `1-discussion.md:L204` Q27；`:L207` Q17；`five_station_f2.py:L260-L268`。standing 收 A。延伸 `[Assumption]` | READ-SEAM 無法紅；假宣告 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-4 | **Q16 升格：hops 預設五站不得早於 2.1.0 已宣告**（同刀或先）。使用者在討論標 `[~]`；本檔升格 | 過期不得把「只切 hops」當已核 | `1-discussion.md:L206`；annex `:L22-L24`。升格 | SLOT-REJECT 變可選；遠端改線 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-5 | **Q21 選定 3C（兩者都要）；節點不刪；切換機制交 4-spec**。使用者只要求四選項對帳、不得默選；選 3C 是本站收斂。機制 OPEN 是收窄（不鎖實作形） | 3A 遠端改線；3B／3D 空切；刪節點＝刪舊機械 | `1-discussion.md:L211`；`brief-v3.md:L167`；`:L180`。選定＋收窄 `[Assumption]` | 新 slug 仍等人，或 in-flight 被折，或 token 被刪 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-6 | **Q22＝不改 `_doctor_impl.py` 握手語意，只加 `supported` 清單**（4A）。使用者只移交落點；「不改實作」是延伸（繼承 F2 Out #12） | 改握手會讓綠變 ticket | `1-discussion.md:L212`；F2 4-spec `:L974`。延伸 `[Assumption]` | doctor 綠被讀成切線 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-7 | **Q18 升格：2.1.0 ∉ supported → 誠實 INCOMPATIBLE**。使用者帶假設「應紅」 | 不升格則 4C 可假裝升級成功 | `1-discussion.md:L208`；`_doctor_impl.py:L193-L202`。升格 | 放寬握手；綠掩蓋漏清單 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-8 | **把 AC-9 收成具名 CASE 表＋同一入口**（原 20 列只准加不准減；standing 加 PRE-AND、F3-F2-REGRESS）。使用者要 measurable SC；CASE 名與「預期紅」格子是延伸。極性：注入壞行為 → **該格**紅（不收 C 的整電池空心）。F3-F2-REGRESS 是地板綠，不是 SC-BATTERY 第四路 | 不具名則後站可把紅格改可選或拆兩支腳本 | `1-discussion.md:L269-L272` AC-9。延伸 `[Assumption]` | CASE 消失；SC-HOLLOW 對不到 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-9 | **Q25 不發明第一隻活五站名字**。試體＝合成 fixture 或 cut 之後才開的 slug。這是對「要有活五站證明」的收窄 | 本討論明文不發明；本目錄已 in-flight | `1-discussion.md:L215` Q25；`:L118`。收窄 `[Assumption]` | 本目錄被當白老鼠 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-10 | 本 Decision 檔 **不**跑 `status-update.sh`、不改 HISTORY、不改 1-discussion 頂欄、**不發明 G1 PASS**、不寫 cut 碼。STATUS Stage→`2-decision`、Gates 仍 G1⬜ 走合併後 companion。標**流程層** | 母版 STATUS 只在整合分支維護；使用者：draft、No G1 invent、ONLY 2-decision+html；standing 合稿後另 companion | `docs/dev/STATUS.md:L10-L26`；本 hop brief | PR 帶 STATUS 或自填 PASS，與並行 session 互蓋 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-11 | **Q15 升格：silent flip 不合法＝Decision 正文**（不得只寫在 OC）。使用者帶假設「必須可見」 | 只寫 OC 會被後站當可選帳 | `1-discussion.md:L205`；`:L229` 過期擋 G2。升格 | 函式 True 被當已核 cut | ✅ Owner PASS human:rick @ 2026-09-14 |
+| OC-12 | **Q19 升格：同一電池三路缺一即紅**；`f3_cut_happened==True`／檔在／只 F2 綠都不算。使用者帶假設「是」 | 不升格則 5B／5C 可假裝完 | `1-discussion.md:L209`；`:L161` G-success-1。升格 | hollow 當完 | ✅ Owner PASS human:rick @ 2026-09-14 |
 
 ### 內部技術選擇(下層,告知即可)
 - 本 hop 不 bump `devflow-contract.json`／`runtime-capabilities.json`／`agent-event`。
 - `1-discussion.md` 保留 draft／「不送 G1」原文；本檔才改口（Owner「ok」）。
-- 審頁用 `scripts/build-stage2-html.py --action`，不手包 html-shell，不把審頁塞進 `build-gate-twin.py` STAGES。不產 G1 勾選 twin。不跑 `devflow_gate.py write`。
+- 審頁用 `scripts/build-stage2-html.py --action`，不手包 html-shell，不把審頁塞進 `build-gate-twin.py` STAGES。G1 經 `scripts/devflow_gate.py write` 落頂欄；審頁重生。不產 G1 勾選 twin。
 - 不預先跳過 Stage 3；觸發判定留給該站（本檔無「跳過 Stage 3」流程層 OC）。
 - 原文獨立收斂（Writer B）；standing soft-fix 才讀 A／C 吸收：A＝`contract_version()` 只讀正本鍵＋「F3 cut 未發生」拒因＋可選 F3-F2-REGRESS 地板；C＝Rejected 拆 silent True／用語＋可選「出貨態故意 doctor 紅」＋可選 PRE-AND。不採 A 的同檔兄弟布林 SoT／blame-as-who-when；不採 A 的四路 IFF；不採 C 的整電池空心。
 - attestation 檔路徑／鍵名交 4-spec，本檔只鎖語意槽「誰／何時／哪個條件、函式只讀」。不鎖 `devflow-contract.json` 兄弟鍵。
@@ -326,3 +327,4 @@ doctor 綠的定義已經寫在握手：契約版本 ∈ supported。F3 若為�
 - Q20–Q25 對帳 | 2026-09-14 | `[>]` 本站選定：SoT＝可見紀錄；graph＝3C；doctor＝清單；成功＝三路電池；活五站名不發明；STATUS 用語＝companion。
 - 自檢七掃 | 2026-09-14 | ①每案優劣有依據欄（空格標 `[Assumption]`）。②Goals G-cut／freeze／token／attest／pre／honest／graph／self／success／keep／carry 進 Decision／SC；漏項進 Non-Goals。③`[>]` Q20–Q25 皆本方案處理。④SC 皆具名 CASE／exit／檔集；紅格極性＝注入。⑤Rejected 無空棄因（含 Q21 其餘三選項）。⑥六決策點由 Writer B dispatch 確認；OC-1／2／3／5／6／8 延伸、OC-4／7／11／12 升格、OC-5 機制收窄＋OC-9 收窄、OC-10 流程層，皆可回溯決策點。⑦既有脈絡是對帳不是外移 schema。圖上 1A–6A 標選定，Rejected 未上圖。
 - 本 hop 不送 G1 | 2026-09-14 | Decision hop：`verdict` 空；OC 全「待人審」；不跑 N8 三連動。standing 合稿後仍不發明 PASS。coordinator 下一問才是人審 G1。
+- G1 | 2026-09-14 | Human G1 PASS + OC-1…OC-12 Owner PASS @ 2026-09-14 Asia/Taipei。owner chat「可以」。未發明新 OC 答案；看板依 Decision 原文標 Owner PASSed。基準 #366（`35e0f47`）／#367 STATUS Stage2（`6ab48b3`）。owner 自審(有記錄)；reviewers: [user]；operator tony 經 `scripts/devflow_gate.py write` 落頂欄。未發明 G2／G3 PASS。不開 Stage 3／4。
