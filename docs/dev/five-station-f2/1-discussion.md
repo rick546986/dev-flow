@@ -7,17 +7,18 @@ reviewers: []
 updated: 2026-09-14
 ---
 
-# 1. 討論 — 五站 F2（Implementer B：計數落點／doctor 誠實／採用升級陷阱）
+# 1. 討論 — 五站 F2（Implementer B + soft-fix：計數落點／doctor 誠實／採用升級陷阱）
 
 > 用途:發散。**不做決定**。本場依 owner 已鎖 F0 brief／狀態機／F1 annex,不是現場一問一答。
-> Lane = **full**。本 hop **只 Stage 1 討論**；不送 G1、不改 STATUS、不合併。
+> Lane = **full**。本檔 **只 Stage 1 討論**；status 留 **draft**；**不送 G1**、不宣稱 Human Stage1 PASS。本 PR 不改 STATUS／HISTORY（看板由合併後 companion 寫）。
 > 原料:brief-v3、F0 狀態機、F1 annex、F1 RP 最小集、`_templates/1-discussion.md`。
 > B 線只挖三件事:①hop≤2／Decide≤1／Goal≤1 的**計數落點**；②marketplace × doctor 誠實 × coordinator；③採用端升級陷阱。
+> Soft-fix 吸收:現況圖只畫 CURRENT；`#scan-people` 只吃獨立 H2 人表；dual-path 同一電池可獨立紅；Must-keep vs hop 三失敗；事件可答性不鎖鍵；STATUS Active 空／Backlog A 過期老實寫。
 > F2 刀(brief §7):Coordinator + hop／latch／cap 事件；舊 token 全留；**不做 F3 cut**；**不刪** G1／G2／`ACCEPTED`。本 slug 與 F0–F2 母版改版軌仍走**舊 7**。
 
 ## Problem
-痛:F1 已鎖 cap 數字與拒收謂詞,但「計數落在哪、鍵叫什麼」明文交給 F2。現行牙只對 fixture 字樣「第 3 次」正則紅——沒有倉,第三次重寫在 live 裡可以假裝第一次。採用端 `marketplace update` 換 hops,doctor 仍印 `COMPATIBLE`;若 F2 coordinator 把「綠」或「我已在 plugin cache」當成切五站,舊 7 slug 會被折。若三個 cap 寫進 run 級 `events.jsonl`,新 run 歸零 = 暗改 cap(X5)。
-現在怎麼繞:F1 牙對文案「doctor 綠所以跟 hops」紅;沒有 live coordinator;沒有 slug 級計數倉;本資料夾本 hop 才開。
+痛:F1 已鎖 cap 數字與拒收謂詞,但「計數落在哪、鍵叫什麼」明文交給 F2。現行牙只對 fixture 字樣「第 3 次」正則紅——沒有倉,第三次重寫在 live 裡可以假裝第一次。採用端 `marketplace update` 換 hops,doctor 仍印 `COMPATIBLE`;若後續 coordinator 把「綠」或「我已在 plugin cache」當成切五站,舊 7 slug 會被折。若三個 cap 寫進 run 級 `events.jsonl`,新 run 歸零 = 暗改 cap(X5)。另:謂詞真仍等人、Must-keep 紅仍 hop、機械綠當 Ship Done,會比舊 7 更快假完成;檔在或 F1 綠 ≠ F2 完。
+現在怎麼繞:F1 牙對文案「doctor 綠所以跟 hops」紅;沒有 live coordinator;沒有 slug 級計數倉;下一站靠 chat／手寫;本資料夾本 hop 才開。
 
 ## Context(已知事實)
 - F2 刀=Coordinator／runtime 接自動前進;event 留前進／latch／cap;仍不刪舊 token。不做:把 in-flight 折成五站;拿掉 G1／G2／`ACCEPTED` 檔:notes/design/five-station-simplify-brief-v3.md:L176-L180
@@ -52,39 +53,52 @@ updated: 2026-09-14
 - 未列欄且無 `x_` 前綴 → `unknown_field` 拒;`x_` 只受隱私掃描:observability/devflow_obs/event_validate.py:L542-L546
 - 現行 ledger 是 run 級:`.devflow/runs/<run_id>/coordinator/events.jsonl`:observability/devflow_obs/ledger.py:L3-L6
 - coordinator 事件檔單一寫入者、跨 worktree 分檔(state per-worktree):observability/devflow_obs/writer.py:L5-L6
-- F1 母軌 G3 PASS、Active 已移出:docs/dev/HISTORY.md:L659-L663
+- 摺的是預設人類停點,不是完整度;Must-keep M1–M16 少一條=違 brief:notes/design/five-station-simplify-brief-v3.md:L13-L28 notes/design/five-station-simplify-brief-v3.md:L135-L158
+- Runtime:謂詞真 hop、假停修,不准問「要不要繼續」;Ship 無自動前進;機械全綠仍必須 HumanWait;代寫 `verdict: PASS`=違 OC-3:notes/design/five-station-simplify-brief-v3.md:L119-L133 notes/design/five-station-simplify-f0-state-machine.md:L110-L120
+- F1 父 slug 把 coordinator 評表 A／B、計數落點、coordinator+event 延後 F2;F1 十二群自檢證明對照稿牙,不證明 hop 發生過:docs/dev/five-station-simplify/5-tasks.md:L66-L72 docs/dev/five-station-simplify/4-spec.md:L828-L832 scripts/test-five-station-f1.sh:L1-L16
+- F1 母軌 Human G3 PASS、Active 已移出:docs/dev/HISTORY.md:L659-L663 docs/dev/five-station-simplify/7-review.md:L1-L12
+- 本 tree Active **空**(`目前無進行中的改版軌。`):docs/dev/STATUS.md:L32
+- STATUS Backlog A **仍寫**「下一刀 F1 teeth＋dual-read annex」—— F1 已出貨,此列是過期看板,不是「F1 沒做完」:docs/dev/STATUS.md:L50
 - 本 tree 搜過:沒有 F2 coordinator 實作檔(只有 obs 的 coordinator 寫者與 ledger 路徑)。
 - 受影響面(本 hop 不動):尚未存在的 F2 coordinator、`observability/schema/agent-event.schema.json`、`hooks/_doctor_impl.py`、採用端 plugin cache、各 in-flight slug 的路線、本目錄自己(一落檔即 in-flight)。
 
-## Real-world Context
-
-### Actors
+## Actors
 | Actor | 真實目標 | 權限 | 掌握資訊 | 缺少資訊 | 系統外工具 |
 |---|---|---|---|---|---|
 | 母版 owner(tony／rick) | F2 接自動前進與事件,但不切 F3、不折舊 7 | 裁 brief、簽 gate | F0／F1 落盤、本 tree | 採用端會不會把 doctor 綠當切線 | GitHub、Cursor chat |
 | F2 討論／實作 agent | 把計數落點與升級陷阱問清楚;本 hop 只寫討論 | 寫本目錄討論檔 | brief、annex、schema、doctor | 計數倉選哪一種才不會 X5 | Cloud Agent、PR |
-| coordinator(F2 後才有) | 謂詞真 hop;latch 開火停;cap 用盡 Escalated | 讀謂詞、寫事件、**禁**寫判定 | 表 A／B、狀態機 | 計數讀哪;doctor 綠能不能當通行證 | 尚未落地 |
+| 下一站寫手 | 謂詞真就動手寫下一站,不要等「要不要繼續」 | 寫 2／4／5／6 檔 | 模板、F1 對照稿 | 沒有 runtime 告訴他「可以 hop」 | PR、chat |
+| coordinator(尚未落地) | 謂詞真 hop;latch 開火停;cap 用盡 Escalated | 讀謂詞、寫事件、**禁**寫判定 | 表 A／B、狀態機 | 計數讀哪;doctor 綠能不能當通行證 | 無(碼不存在) |
 | 採用專案 owner | 更新 plugin 後路線不要被遠端改 | 系統外(自己 repo 的契約檔) | 自己的 `devflow-contract.json`、doctor 輸出 | hops 已換、契約仍 2.0.0 時誰說了算 | marketplace／plugin 指令、口頭 |
 | in-flight slug 執行者 | 走完手上舊 7,不被五站狀態寫入 | 既有 graph／模板 | 自己目錄已有 1–7 `.md` | F2 coordinator 會不會誤建五站機 | 既有 hop |
 | doctor 操作者 | 看握手綠／紅 | 跑 `devflow-doctor.sh` | `COMPATIBLE`／`INCOMPATIBLE` 一行 | 綠 ≠ 路線;schema 不合也會紅 | 終端機 |
+| Ship 審查者 | 出貨樹=審過的樹;機械綠 ≠ PASS | 寫 7-review `verdict:` | G3 八點 | hop 有沒有跳過 Must-keep | 瀏覽器審頁 |
+
+## Real-world Context
+
+### Actors
+表見上節獨立 H2 `## Actors`。產檔器只吃該表的誰／要什麼／缺什麼;`#scan-people` 不捲 Journey 或 Assumption。
 
 ### Current Journey
-正式 SOP(F3 後才預設):五站別名 + coordinator 評謂詞 hop。實際做法(**現在、F2 尚未落地**)如下。兩者都記。
+正式 SOP(F3 後才預設):五站別名 + coordinator 評謂詞 hop。實際做法(**現在、F2 尚未落地**)如下。兩者都記。現況圖只畫這段,不畫尚未存在的 coordinator 箱。
 
 | Step | 誰 | 真實動作 | 使用工具 | 等待誰 | 系統留下什麼 | 痛點 |
 |---|---|---|---|---|---|---|
 | 1 | 母版 | 把 F1 牙與 annex 合進 plugin(`./` 單一 entry) | marketplace／git | — | RP-9…11 正則牙;SLOT 文案牙 | 超 cap 沒有 live 計數倉 |
 | 2 | 採用 owner | `marketplace update` + `plugin update` | plugin cache | — | 新 hops／新牙;契約檔常未動 | hops 已換,契約仍 2.0.0 |
-| 3 | 同一人 | 跑 doctor | `devflow-doctor.sh` | — | `COMPATIBLE` + exit 0 | 綠只證明 `2.0.0 ∈ supported` |
+| 3 | 同一人 | 跑 doctor | `devflow-doctor.sh` | — | `COMPATIBLE` + exit 0 | 綠只證明 `2.0.0 ∈ supported`≠切線 |
 | 4 | `[Assumption]` 採用寫手 | 把綠讀成「可以跟新 hops」 | chat／README | — | 可能寫出 F1 已紅的那句 | 文案牙紅、行為還沒人擋 |
-| 5 | 舊 7 slug 執行者 | 仍走 graph `N7-g1`／`N6-g2` | 既有 graph | owner 簽閘 | G1／G2 twin | 若 coordinator 提前開火就會被折 |
+| 5 | 舊 7 slug 執行者 | 仍走 graph `N7-g1`／`N6-g2` | 既有 graph | owner 簽閘 | G1／G2 twin | 若後續 coordinator 用綠當通行證就會被折 |
 | 6 | F1 牙 | 對 fixture 寫「第 3 次」的稿紅 | `five_station_f1.py` | — | RED RP-9 | live 第三次重寫沒倉可對 |
-| 7 | 本討論 | 把落點與陷阱問成 OQ | 本檔 | 後續 F2 收斂 | 討論檔 | 本 hop 不選定倉 |
+| 7 | owner／寫手 | chat「可以開下一站」 | Cursor chat | owner | 下一站 md 被手開 | 謂詞真也等人;Must-keep 紅也可被准 |
+| 8 | 本討論 | 把落點與陷阱問成 OQ | 本檔 | 後續 F2 收斂 | 討論檔 | 本 hop 不選定倉 |
 
 ### Workarounds
 - F1 用文案正則擋「doctor 綠所以跟 hops」;擋的是**寫出來的謊**,不是 coordinator 行為(coordinator 還不存在)。
 - cap 牙用 fixture 字樣「第 3 次」充當計數;沒有 slug 級倉。
 - 採用端路線實際靠「人記得 brief §6」與「不要遠端改別人 repo」;沒有 coordinator 閘。
+- owner 用 chat 當 hop 開關。系統留下下一站檔,不留下「哪一條謂詞為真」或「Must-keep 哪幾條綠」。
+- STATUS／HISTORY 當 hop log:人記得改看板,看板可以停在過期的「下一刀 F1」。
 - 這些步驟常不留「這次 hop 已重寫幾次」或「doctor 綠之後有沒有人改線」。
 
 ### Exceptions
@@ -95,13 +109,15 @@ updated: 2026-09-14
 - `[Assumption]` 採用端典型升級=先 marketplace update、後(或不)bump 契約:無採用逐字稿;風險=高。
 - `[Assumption]` 把 cap 放進 run 級 events = X5:無未來 log;風險=高。
 - `[Assumption]` F2 若不把真計數餵給 RP-9／10／11,牙會繼續只咬 fixture:風險=高。
+- `[Assumption]` dual-path 電池是**同一入口**兩路都必須能獨立變紅(不是兩支互不認識的腳本各綠一次)。風險=高;期限=Stage 2;過期擋把「只跑 F1 回歸」或「檔在」寫進 Decision。
+- `[Assumption]` NEW5 試體是合成 fixture,不是本 slug、也不是 `five-station-simplify`:風險=高;期限=Stage 2;過期擋把本目錄當白老鼠。
 
 ### Evidence
 - F0／F1 書面:brief-v3、狀態機、F1 annex、F1 RP 最小集;Owner 已核准(檔頭)。本 hop 不改那些檔。
 - 本 tree 已核:上列 Context 出處(2026-09-14 讀過,行段支持斷言)。
-- F1 已出貨:docs/dev/HISTORY.md:L659-L663。
+- F1 已出貨:docs/dev/HISTORY.md:L659-L663。Active 空:docs/dev/STATUS.md:L32。Backlog A 過期:docs/dev/STATUS.md:L50。
 - doctor／marketplace／schema／ledger:上列 hooks／skills／observability 出處。
-- `[Assumption]` 三條見 Exceptions;採用升級逐字稿／未來 coordinator log／真計數倉皆無。
+- `[Assumption]` 見 Exceptions;採用升級逐字稿／未來 coordinator log／真計數倉皆無。
 
 ### Assumption 四欄
 | 若為假影響什麼 | 影響級 | 怎麼驗 | 何時／由誰驗 |
@@ -109,6 +125,8 @@ updated: 2026-09-14
 | 「run 級 events 當 cap 倉 = X5」為假 → 計數落點可以住現有 ledger | 高 | 同一 slug 開第二個 `run_id` 後,三個計數是否仍在 | F2 收斂／實作者;過期不得把 run 級倉寫進 Decision 當已核 |
 | 「採用端先更新 plugin、契約仍 2.0.0」為假 → marketplace×doctor 陷阱變窄 | 高 | 抽一採用 repo:update 後契約版本與 hops 是否同動 | F2 規格前／owner;過期擋把「現場都會一起 bump」當事實 |
 | 「F2 必須餵真計數給 RP-9／10／11」為假 → 牙可繼續咬字樣 | 高 | Stage 2 對帳:Decision 有無把「正則字樣」標成可選 | Stage 2／收斂者;過期擋「牙已夠、不必倉」 |
+| 「同一入口兩路都能紅」為假 → 兩支腳本各綠可冒充 dual-path | 高 | Stage 2 對帳:Decision 是否要求同一電池缺一路即紅 | Stage 2／收斂者;過期擋 G2 |
+| 「NEW5 用合成 fixture」為假 → 拿本 slug 當白老鼠 | 高 | Files／fixture 路徑不含本目錄站檔當 hop 試體 | Stage 2;過期擋 |
 
 ## Evidence manifest
 | 想找哪類 | 為什麼 | 擬路徑或來源 | owner 核准 | 已讀 |
@@ -120,7 +138,7 @@ updated: 2026-09-14
 | doctor／契約 | 綠=握手 | hooks/_doctor_impl.py、devflow-contract.json、hooks/runtime-capabilities.json | 是(本 tree) | 是 |
 | marketplace | 單一 entry、update 換 hops | .claude-plugin/marketplace.json、skills/dev-setup/SKILL.md | 是(本 tree) | 是 |
 | event／ledger | 無 hop 事件;run 級倉;stage 正則舊 7 | observability/schema/agent-event.schema.json、observability/devflow_obs/event_validate.py、observability/devflow_obs/ledger.py | 是(brief §4 觀測句指向) | 是 |
-| F1 出貨 | 下一刀才是 F2 | docs/dev/HISTORY.md | 是(本 tree) | 是 |
+| F1 出貨＋看板 | Active 空;HISTORY G3 PASS;Backlog A 過期 | docs/dev/HISTORY.md、docs/dev/STATUS.md、docs/dev/five-station-simplify/7-review.md | 是(本 tree) | 是 |
 | 採用升級逐字稿 | 驗證「先 update 後 bump」 | 無;public repo 禁收公司路徑 | 禁 | 否 |
 
 ## Goals
@@ -131,27 +149,33 @@ updated: 2026-09-14
 - G-trap-1:採用端更新了 plugin、契約仍 2.0.0 時,路線仍是舊 7;2.0.0 + 五站 hops 預設被看成違規。
 - G-self-1:本 slug 自己走到 G1／G2／G3 時仍是舊 7;沒有五站狀態寫入。
 - G-knife-1:F2 做完之後,G1／G2／`ACCEPTED` token 與檔仍在;沒有 F3 cut;沒有 in-flight 被折。
-- G-obs-1:前進／latch 開火／cap 觸發各留一筆人指得到的機械紀錄。
+- G-obs-1:前進／latch 開火／cap 觸發各留一筆人指得到的機械紀錄。紀錄要能回答**誰／從哪到哪／哪條謂詞／哪只 cap／是否 Escalated**;不鎖定 JSON／YAML 鍵名。
 - G-carry-1:本檔列出的計數落點題與升級陷阱,到規格時每條有去向,不能無聲消失。
+- G-dual-1:**同一電池** NEW5+OLD7 都能獨立變紅、也能一起綠,才算 F2 完。檔在、F1 十二群綠、單路開心 hop ≠ F2 完。
+- G-keep-1:點名三個失敗且不得當成功:(1)謂詞真仍等人;(2)Must-keep 紅仍 hop;(3)機械綠 → Ship Done。
 
 ## Requested solution
 - F2 寫 coordinator:讀 brief §3 謂詞,真則 hop,假則停修;latch 開火進 HumanWait;cap 用盡 Escalated。
-- 事件留下前進／latch／cap。**計數落點(倉、鍵、hop_id、是否 bump schema)本討論不選定。**
+- 事件留下前進／latch／cap。**計數落點(倉、鍵、hop_id、是否 bump schema)本討論不選定。**語意槽(誰／從哪到哪／謂詞／哪只 cap／Escalated)要能被指出。
 - coordinator 評五站謂詞之前,先問路線:未宣告 2.1.0、或 in-flight、或 F3 前的母版新軌 → 放手舊 7。doctor 綠不是這道問的答案。
+- Must-keep 未綠不得 hop。自動前進謂詞必須含完整度;不是未定案。
+- 候選(未定案):同一入口 dual-path selftest,NEW5 與 OLD7 缺一路即紅。
 - 舊 token／twin／graph 不刪。本 hop 不選定 event 型別名、sidecar 路徑、或 schema 版本號。
 
 ## Non-Goals(初稿)
 - 本 hop 不改 `_templates/`、`graph.yaml`、gate token、STATUS、HISTORY、契約版本。
-- 本 hop 不送 G1;status 留 draft;不合併。
-- 不刪 G1／G2／`ACCEPTED`;不做 F3 cut;不把 in-flight 折成五站。
+- 本 hop 不送 G1;status 留 draft;不宣稱 Human Stage1 PASS。
+- **鎖:不刪 G1／G2／`ACCEPTED`;不做 F3 cut;不把 in-flight 折成五站。**
 - 不重開 F0 十條;不放寬 hop≤2／Decide≤1／Goal≤1。
-- 不把本 slug 當新 5 的第一個白老鼠。
+- 不把本 slug 當新 5 的第一個白老鼠。NEW5 只准合成 fixture。
 - 不在本討論選定計數倉或 event 鍵名(那是 OQ,不是 Goal)。
 - 不把「doctor 綠」寫成路線許可。
+- 不把「檔在」或「F1 綠」寫成 F2 完成。
+- 不把「hop 比較快」解讀成「Must-keep 也可以 hop 掉」。
 
 ## Open Questions
 - [x] Q1:lane 是否 full?→ 使用者:full
-- [x] Q2:本 hop 是否只 Stage 1、不改 STATUS、不合併?→ 使用者:是
+- [x] Q2:本 hop 是否只 Stage 1、不改 STATUS、不合併?→ 原 implementer brief:是。soft-fix 仍不改本 PR 內 STATUS;合併由 standing 在 CI 綠後做;仍不送 G1
 - [x] Q3:F2 刀是否只做 coordinator + hop／latch／cap 事件、留舊 token、不做 F3、不刪閘?→ brief §7;翻=新 brief
 - [x] Q4:本 slug 與 F0–F2 母版新軌是否仍走舊 7?→ brief §6 + OC-9。本目錄一有 1–7 `.md` = in-flight,整段舊 7 到 Ship
 - [x] Q5:cap **數字**是否已鎖、F2 不得放寬?→ hop≤2／Decide≤1／Goal reopen≤1;用盡 Escalated;不准暗改
@@ -170,19 +194,26 @@ updated: 2026-09-14
 - [>] Q18:F2 若 bump `agent_event`,採用端只 update plugin、契約仍寫 1.1 → doctor 變 INCOMPATIBLE。這是可接受的誠實紅,還是該避免 bump?與 Q13 綁。移交 F2
 - [~] Q19:F2 是否必須讓 RP-9／10／11 讀真計數,而不是繼續咬 fixture 字樣?(帶假設:**必須餵真計數**;否則 live 第三次重寫牙看不見;期限=F2 Decision,過期擋「牙已夠」)
 - [>] Q20:Cursor／Claude／Codex 各有一份 plugin cache 時,一主機 hops 新、另一主機仍舊 7——coordinator 認哪一份?移交 F2(採用升級陷阱)
+- [x] Q21:F2 完成是否=「coordinator 檔在」或「F1 綠」?→ 否。判準=同一電池 NEW5+OLD7 都能獨立紅、也能一起綠
+- [x] Q22:Must-keep vs hop 哪三種失敗不得當成功?→ (1)謂詞真仍等人 (2)Must-keep 紅仍 hop (3)機械綠 → Ship Done
+- [x] Q23:事件要能回答什麼、可否鎖鍵?→ 誰／從哪到哪／謂詞／哪只 cap／Escalated。不鎖 JSON 鍵名(`[>]`/`[~]` 維持;不發明假鎖)
+- [x] Q24:STATUS Active 是否仍列五站 F1?Backlog A「下一刀 F1」算不算現況?→ Active 空;F1 G3 PASS 在 HISTORY;Backlog A 是過期看板,老實標 stale,不是反證
 
 ## Constraints
-- 本 PR 不宣稱 G1 PASS;不改 STATUS／HISTORY。
+- 本 PR 不宣稱 G1 PASS、不宣稱 Human Stage1 PASS;不改 STATUS／HISTORY。
 - 討論盲下游:本檔不指定腳本／API／元件當目標;落點題只寫成 OQ。
 - **Owner-locked cap 數字:**hop≤2／Decide≤1／Goal reopen≤1;用盡 Escalated;不准暗改。舊 7 不套。
 - **Owner-locked F2 刀:**coordinator + 事件;留 token;不 F3;不刪閘;不折 in-flight。
 - **Owner-locked 本 slug 路線:**舊 7 到 Ship。
+- **Owner-locked:Must-keep 未綠不得 hop。**
 - **採用 hop 身分:**graph／hooks 住方法包。未宣告 2.1.0 之前,marketplace 可換 hops 而 doctor 仍可因 `2.0.0` 握手綠。綠 ≠ 切線。
-- 詞條(語言,不是方案):**計數落點**=三個 cap 存在哪、鍵叫什麼、誰寫誰讀。**hop 桶**=同一 hop 節點的重寫次數,不是全 slug 共用一個 2。**暗改 cap**=用盡後 reset 再 hop(X5)。**doctor 誠實**=綠只證明握手。**升級陷阱**=plugin 與契約不同步、或把綠當切線。**in-flight freeze**=已有 1–7 `.md` 的 slug 走舊 7。本 hop 不寫進長期記憶。
+- **OC-3:**不鎖 event／annex 欄位鍵名。Q9–Q16 維持 `[>]`／`[~]`,不把鍵名升成已核。
+- 詞條(語言,不是方案):**計數落點**=三個 cap 存在哪、鍵叫什麼、誰寫誰讀。**hop 桶**=同一 hop 節點的重寫次數,不是全 slug 共用一個 2。**暗改 cap**=用盡後 reset 再 hop(X5)。**doctor 誠實**=綠只證明握手。**升級陷阱**=plugin 與契約不同步、或把綠當切線。**in-flight freeze**=已有 1–7 `.md` 的 slug 走舊 7。**dual-path**=同一電池的 NEW5(合成 fixture hop+事件)與 OLD7(不折、token 在、三 cap 不套)。**語意槽**=要能回答的事實格,不是 JSON key。**三失敗**=謂詞真仍等／Must-keep 紅仍 hop／機械綠當 Done。本 hop 不寫進長期記憶。
 
 ### F2 移交種子(不是施工)
-- Q9–Q16 是計數落點家族;Q13 與 Q18 綁(schema bump × doctor)。
+- Q9–Q16 是計數落點家族;Q13 與 Q18 綁(schema bump × doctor)。維持未鎖。
 - Q17／Q10／Q19 過期 → 擋本 slug G2(不得把假設升格成已核)。
+- Q21／Q22／Q23 是 soft-fix 已解;後站不得把 dual-path／三失敗／語意槽標可選。
 - 本資料夾已有本檔 = 已 in-flight;後站不得對自己開五站機。
 
 ## 驗收雛形
@@ -210,51 +241,76 @@ updated: 2026-09-14
   - 從哪看:token 檢查、in-flight 目錄、預設路線聲明
   - 看到什麼算對:token 在;in-flight 仍舊 7;新 slug 預設五站尚未發生
   - 拿什麼試:既有 `check-gate-tokens.sh` 與任一已有站檔的 slug
-- AC-7(G-obs-1):假設一次 hop 成功、一次 latch 開火、一次 cap 用盡,當人問「有沒有留下」,則三筆都能指出。
-  - 從哪看:機械紀錄(落點未定,只問「指得到」)
-  - 看到什麼算對:三類各至少一筆;不是只靠 chat
+- AC-7(G-obs-1):假設一次 hop 成功、一次 latch 開火、一次 cap 用盡,當人問「有沒有留下」,則三筆都能指出,且能回答誰／從哪到哪／哪條謂詞／哪只 cap／是否 Escalated。
+  - 從哪看:機械紀錄(落點未定,只問「指得到」;不預填鍵名)
+  - 看到什麼算對:三類各至少一筆;五個問題有答;不是只靠 chat;不是 `attempt_completed` 冒充
   - 拿什麼試:F2 之後造;本 hop 不選鍵名
-- AC-8(G-carry-1):假設本檔 Q9–Q20 列了一題,當人讀到 F2 Decision／Spec,則該題有去向。
+- AC-8(G-carry-1):假設本檔 Q9–Q24 列了一題,當人讀到 F2 Decision／Spec,則該題有去向。
   - 從哪看:Stage 2 對帳
   - 看到什麼算對:每條高影響 OQ 有處理／Non-Goal／仍待驗;沒有消失
-  - 拿什麼試:Q9 落點、Q10 X5、Q17 三前置、Q19 真計數
+  - 拿什麼試:Q9 落點、Q10 X5、Q17 三前置、Q19 真計數、Q21 dual-path、Q22 三失敗
+- AC-9(G-dual-1):假設 F2 宣稱完成,當人只跑成功電池,則 NEW5 與 OLD7 兩組具名案都必須能獨立變紅、也必須能一起綠;只重跑 `test-five-station-f1.sh`、或只證明「檔在」不算 F2 綠。
+  - 從哪看:F2 selftest 出口與具名 CASE 清單(後續造;本 hop 不跑)
+  - 看到什麼算對:兩 path 都有至少一條正向綠、一條缺行為紅;整電池 exit 0 當且僅當兩路都過
+  - 拿什麼試:合成 NEW5 fixture + 已有 1–7 `.md` 的 OLD7 fixture;不是本目錄
+- AC-10(G-keep-1):假設出現下列任一,當有人標 F2 成功,則失敗:(1)謂詞全真且 latch 假,卻仍留下「要不要繼續」;(2)Must-keep 紅(例如 T 缺 Verify)仍 hop;(3)機械全綠且無人寫 `verdict: PASS` 卻標 Ship Done。
+  - 從哪看:hop 紀錄／拒絕理由／7-review 頂欄
+  - 看到什麼算對:三條各自可紅;沒有「已經五站了所以可省」
+  - 拿什麼試:後續造的三張對照;F1 `rp-01`／`rp-08` 那型活 slug
 
 ## 現況圖
 誰:採用 owner
-做什麼:marketplace 更新
+做什麼:marketplace 換 hops
 工具:plugin cache
-痛點:doctor 仍綠
+痛點:契約常未動
 ↓
-誰:F2 coordinator
-做什麼:把綠當切線
-工具:hops／謂詞
-痛點:舊 7 被折
+誰:doctor
+做什麼:印 COMPATIBLE
+工具:devflow-doctor.sh
+痛點:綠≠切線
 ↓
-誰:計數器
-做什麼:run 級重算
-工具:events.jsonl
-痛點:cap 暗重置
+誰:live 第三次重寫
+做什麼:假裝第一次
+工具:無計數倉
+痛點:牙只咬 fixture
 
 ## 邏輯圖(ASCII)
 ```
 now
+|-- marketplace update       [hops move]
+|-- contract still 2.0.0
+|-- doctor COMPATIBLE        [handshake != route]
 |-- F1 teeth
 |   |-- RP-9/10/11 regex     [fixture text only]
-|   +-- doctor phrase red    [not coordinator]
-|-- adopter
-|   |-- marketplace update   [hops move]
-|   |-- contract still 2.0.0
-|   +-- doctor COMPATIBLE    [handshake only]
-|-- F2 knife
-|   |-- write coordinator
-|   |-- emit hop/latch/cap
-|   |-- keep tokens
-|   +-- no F3 cut
-+-- counting locus           [OPEN]
-    |-- run events.jsonl     [new run => 0 => X5?]
-    |-- slug store           [survives run]
-    |-- schema bump          [doctor may go red]
-    +-- this slug            [old 7 / in-flight]
+|   +-- doctor phrase red    [not live hop]
+|-- live 3rd rewrite         [no store => pretend 1st]
+|-- chat "open next"         [pred true still wait]
++-- STATUS Backlog A         [stale: still says next=F1]
+
+counting-locus               [OPEN; Q9-Q16]
+|-- run events.jsonl         [new run => 0 => X5?]
+|-- slug store               [survives run]
+|-- schema bump              [doctor may go red]
++-- this slug                [old 7 / in-flight]
+
+f2-must-prove
+|-- NEW5 fixture             [not this dir]
+|   |-- pred true = hop
+|   |-- pred false = stop-fix
+|   +-- events answerable    [who/from-to/pred/cap/Esc]
+|-- OLD7 fixture
+|   |-- no five-state
+|   |-- no three-cap
+|   +-- tokens + F1 still green
++-- same battery             [each path can red]
+
+fail
+|-- hop while must-keep red  -> fake-done faster
+|-- stay while pred true     -> still wait
+|-- mech green => Ship Done  -> steal OC-3
+|-- file exists / F1 green   -> hollow F2
+|-- doctor green as route    -> SLOT lie
++-- F3 cut smuggled          -> Non-Goal
 ```
 
 ## Interview Log(推理鏈外顯)
@@ -265,7 +321,7 @@ now
 - ⚠️ Q:cap 數字已鎖,為什麼還要把「落點」写成 Open Question,而不是當成已有牙?
   - 事實:notes/design/five-station-simplify-f1-rp-min-set.md:L4 notes/design/five-station-simplify-f1-dual-read-annex.md:L36 scripts/five_station_f1.py:L327-L333 notes/design/five-station-simplify-f0-state-machine.md:L122-L139
   - 推理:數字與拒收謂詞是 F0／F1 的鎖。落點(倉、鍵、`hop_id`)明文不在 F1。現行牙讀的是 fixture 字樣。沒有倉,live 第三次重寫可以當第一次。B 線必須把落點問開,不能在 Stage 1 偷選。
-  - 結論:CONFIRMED 數字已鎖、落點未鎖;Q9–Q16 移交 F2;本討論不選定倉。
+  - 結論:CONFIRMED 數字已鎖、落點未鎖;Q9–Q16 移交 F2;本討論不選定倉。`[>]`／`[~]` 不改成假鎖。
 - ⚠️ Q:為什麼把 cap 寫進現有 `coordinator/events.jsonl` 會變成暗改 cap?
   - 事實:observability/devflow_obs/ledger.py:L3-L6 notes/design/five-station-simplify-f0-state-machine.md:L124 notes/design/five-station-simplify-f0-state-machine.md:L198
   - 推理:ledger 按 `run_id` 分目錄。計數器卻是 slug 級、只增不減。新 run 讀空檔 = 計數 0 = X5。這是假設(Q10),不是已核「F2 會這麼做」。
@@ -287,6 +343,30 @@ now
   - 推理:本檔落盤後目錄已有 `1-discussion.md`。偵測規則只認 1–7 `.md`,不認 html。整段舊 7 到 Ship。F2 coordinator 對本目錄建五站機 = RP-15。
   - 結論:CONFIRMED 本 slug = live freeze 樣本(G-self-1、Q4);不是新 5 白老鼠。
 - ⚠️ Q:本 hop 有沒有偷選落點或偷做 F3?(盲點)
-  - 事實:notes/design/five-station-simplify-brief-v3.md:L7-L9 本 hop brief(只 Stage 1、不改 STATUS、獨立 B 線)
-  - 推理:Requested solution 只列候選。Q9 維持 `[>]`。隱含預設(run 級=X5、必須餵真計數、三前置)已標 `[~]` 與期限。不改 STATUS,避免跟「feature branch 不碰看板」撞車。
-  - 結論:CONFIRMED 本 PR 只落討論;不選倉;不 F3;不改 STATUS。Q10／Q17／Q19 過期擋本 slug G2。
+  - 事實:notes/design/five-station-simplify-brief-v3.md:L7-L9 本 hop brief(只 Stage 1、本 PR 不改 STATUS)
+  - 推理:Requested solution 只列候選。Q9 維持 `[>]`。隱含預設(run 級=X5、必須餵真計數、三前置)已標 `[~]` 與期限。不改本 PR 的 STATUS,避免跟「feature branch 不碰看板」撞車。
+  - 結論:CONFIRMED 本檔只落討論;不選倉;不 F3;不鎖鍵名。Q10／Q17／Q19 過期擋本 slug G2。不宣稱 Human Stage1／G1。
+- ⚠️ Q:現況圖為什麼不能畫「F2 coordinator 把綠當切線」?
+  - 事實:本 tree 無 F2 coordinator 實作檔。docs/dev/STATUS.md:L32 scripts/five_station_f1.py:L327-L333 hooks/_doctor_impl.py:L492-L500
+  - 推理:審頁三框吃的是 Current Journey,不是未來失敗故事。coordinator 箱是虛構。CURRENT=marketplace 換 hops → doctor `COMPATIBLE`≠切線 → live 第三次重寫沒倉、牙只咬 fixture。
+  - 結論:CONFIRMED 現況圖三框只畫現況;未來 coordinator 失敗留在邏輯圖 `fail` 枝。
+- ⚠️ Q:為什麼 `#scan-people` 必須用獨立 H2,不能吃 Real-world 整節?
+  - 事實:_templates/1-discussion.md 把 Actors／Journey／Assumption 分成三表。scripts/build-stage1-html.py 的 `section_named` 若命中 Real-world H2,會把後續表一併 parse。
+  - 推理:Journey 的「誰／痛點」與 Assumption 四欄會混進人表缺什麼。獨立 `## Actors` 只留誰／要什麼／缺什麼。
+  - 結論:CONFIRMED 人表=獨立 H2;Journey+Assumption 不進 `#scan-people`。
+- Q:為什麼 F2 完成不能等於「檔在」或「F1 還綠」?
+  - 事實:notes/design/five-station-simplify-brief-v3.md:L171-L180 docs/dev/five-station-simplify/4-spec.md:L828-L832 scripts/test-five-station-f1.sh:L1-L16
+  - 推理:brief F2 列要自動前進 + 三類紀錄。F1 十二群證明對照稿牙。沒 hop 也能綠。只測 NEW5 會讓 in-flight 被折、token 被刪、舊 7 被三 cap 誤殺而電池仍綠。
+  - 結論:CONFIRMED G-dual-1／Q21;同一電池兩路可獨立紅。F1 綠是回歸地板。
+- ⚠️ Q:自動前進與 Must-keep 撞車時,哪三種失敗不得當成功?
+  - 事實:notes/design/five-station-simplify-brief-v3.md:L13-L28 notes/design/five-station-simplify-brief-v3.md:L135-L158 notes/design/five-station-simplify-f0-state-machine.md:L110-L120
+  - 推理:(1)謂詞真、Must-keep 綠、latch 假,卻仍等人=現況浪費停點。(2)Must-keep 紅仍 hop=比舊 7 更快假完成。(3)Ship 機械綠就 Done=偷 OC-3。
+  - 結論:CONFIRMED Q22／G-keep-1;三條各自要能紅。
+- Q:event 需要記下什麼,為什麼本討論不能鎖欄名?
+  - 事實:notes/design/five-station-simplify-brief-v3.md:L133 notes/design/five-station-simplify-f1-dual-read-annex.md:L34-L36 observability/schema/agent-event.schema.json:L81-L103
+  - 推理:brief 鎖「要留」。F1 OC-3 延後鍵名。語意槽足夠:誰、從哪到哪、哪條謂詞、哪只 cap、是否 Escalated。鎖 `event_type=hop_advanced` 就是偷做 annex。
+  - 結論:CONFIRMED Q23;五問可答、鍵名 OPEN(Q13)。
+- Q:STATUS Backlog 仍指 F1,這算證據還是噪音?
+  - 事實:docs/dev/STATUS.md:L32 docs/dev/STATUS.md:L50 docs/dev/HISTORY.md:L659-L663
+  - 推理:Active 已空、HISTORY 已記 F1 G3 PASS,Backlog A 仍寫「下一刀 F1」。這是「人記 hop、看板可過期」的活樣本,不是 F1 沒出貨。支持「STATUS 不能當 hop／cap 正本」。
+  - 結論:CONFIRMED Q24;看板 lag 老實標 stale。
