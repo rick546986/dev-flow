@@ -205,7 +205,7 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 
 | 日期 | T-id | 一行 |
 |---|---|---|
-| 2026-09-14 | T-1…T-12 | 實作落地（review=PRE，非正式 PASS）。hash 見後續 commit |
+| 2026-09-14 | T-1…T-12 | 3c8d718 實作落地（review=PRE，非正式 PASS） |
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 
