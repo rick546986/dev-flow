@@ -692,3 +692,9 @@
 - 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
 - 詳細:https://github.com/rick546986/dev-flow/pull/339
 
+## 2026-09-14 · five-station-f2
+- 做了什麼:Stage 5 tasks landed (#341); Active Stage → 5-tasks; Gates G1✅ G2✅ G3⬜
+- 為什麼:Winner B majority R2+R3; soft-fix absorbed C named fixtures/hollow/events/Covers gates + A official-18-name rules. No G3 invented; Stage 6 not opened
+- 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
+- 詳細:https://github.com/rick546986/dev-flow/pull/341
+
