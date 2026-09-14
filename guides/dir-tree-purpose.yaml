@@ -13,7 +13,7 @@ root:
       id: skills
       children:
         - name: dev-talk/
-          why: 第 1 站討論技能。獨立 session、全盲下游；產出 1-discussion.md，不進 G1。
+          why: Intake 討論技能。獨立 session、全盲下游；產出 1-discussion.md，無人停。
           id: skill-dev-talk
           children:
             - name: SKILL.md
@@ -53,11 +53,11 @@ root:
                 - name: N13-end.md
                   why: 討論收尾：md 與掃頁都在就停。不另存第二份討論檔。
         - name: dev-flow/
-          why: 第 2–7 站路由器。定位 stage 後接手該站；第 6 站會再載 dev-run。
+          why: 五站路由器（Decide→Ship；Intake 在 dev-talk）。定位後接手該站；Build 會再載 dev-run。舊七檔名不動。
           id: skill-dev-flow
           children:
             - name: SKILL.md
-              why: 第 2–7 站入口與 lane／gate 摘要。細節以 README 為準，各站 hop 在 stage*/。
+              why: 五站入口與 lane／gate 摘要。細節以主指南為準，各站 hop 在 stage*/。七檔名不動。
             - name: stage2/
               why: 收斂站，出口 G1。把討論收成方向；過了才寫規格或做原型。
               id: flow-stage2
@@ -247,7 +247,7 @@ root:
             - name: SKILL.md
               why: 整棵掛，裡面只有這份。產出回報檔，給守衛與人看，不代替 issue。
     - name: _templates/
-      why: 七站骨架。產品專案抄進 docs/dev/ 當空白模子；example/ 才是填好的範例。
+      why: 五站路線骨架（七檔名 1–7 不動）。產品專案抄進 docs/dev/ 當空白模子；example/ 才是填好的範例。
       id: templates
       children:
         - name: 1-discussion.md
@@ -310,7 +310,7 @@ root:
       id: guides
       children:
         - name: guide-dev-flow.html
-          why: "七站導覽。#dirmap 目錄樹與附錄 #filemap 都在本頁；不是獨立頁。"
+          why: "五站路線導覽。#dirmap 目錄樹與附錄 #filemap 都在本頁；不是獨立頁。七檔名不動。"
         - name: guide-dev-talk.html
           why: 討論站導覽。對 skills/dev-talk/ 的鏡像，改 hop 要兩邊一起看。
         - name: guide-quickstart.html
@@ -338,7 +338,7 @@ root:
           why: 主指南 #dirmap 那棵樹的產器。產品有需要才從方法包跑，不進 ship-manifest。
       ellipsis: "其餘腳本不整包列進樹，逐支職責見 #filemap"
     - name: tests/
-      why: 契約測試。平行第 6 站等機器可跑的套件；不是七站文檔、也不是 selftest。
+      why: 契約測試。平行 Build（舊第 6 站）等機器可跑的套件；不是五站文檔、也不是 selftest。
       id: tests
       children:
         - name: parallel-stage6/

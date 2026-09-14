@@ -103,8 +103,9 @@
 
 ## 範本
 
-抄現成的最快:七階段全程圖 `guides/guide-dev-flow.html` ① `#flow`(單列+gate+區間+session 框
-全部齊)、資訊圍欄圖 `guides/guide-dev-flow.html` ⑦(圍欄紅線用法)、直式生命週期全還原圖
+抄現成的最快:五站全程圖 `guides/guide-dev-flow.html` ① `#flow`(Intake→Decide→Spec→Build→Ship,
+只有 Ship 是預設人類停點;舊七檔名是機器別名,不要把七階段全程圖當預設範本)、
+資訊圍欄圖 `guides/guide-dev-flow.html` ⑦(圍欄紅線用法)、直式生命週期全還原圖
 `guides/guide-dev-flow.html` ⑥ `fig-lifecycle`(三走廊+雙層範圍框+多色主幹,上面「直式
 生命週期版式」整節即以此圖定案)。新圖先挑最像的抄結構,再改節點。
 直式步驟方塊另見 `notes/design/vbox-fig-contract.md`。

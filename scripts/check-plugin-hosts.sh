@@ -18,7 +18,8 @@
 #   ⑧guide #host 四邊都寫了怎麼裝／怎麼更新
 #   ⑨Grok 牙:必須有「不要假裝能從產品 repo 自動灌進 Grok」;正面宣稱自動灌就紅
 #   ⑩README 第一屏必須有 A/B 分層 + 四主機清單(真指令,不是表格)
-#     +全圖 fig-flow-full.svg;不准灌 PLUGIN 長文。README 要有 PLUGIN.md 入口。
+#     +全圖 fig-flow-full.svg(五站臉;alt 准五站用語,不再鎖死七階段字面);
+#     不准灌 PLUGIN 長文。README 要有 PLUGIN.md 入口。
 #
 # 用法:scripts/check-plugin-hosts.sh [root]
 # exit:0 = 全過 / 1 = 真違規 / 2 = 檢查自身故障
@@ -402,8 +403,21 @@ if readme:
         fail("README 沒有 docs/PLUGIN.md 入口")
     if "fig-flow-full.svg" not in first:
         fail("README 第一屏沒有全圖 fig-flow-full.svg")
-    if "七階段流程圖含 Gate 與能力分層" not in first:
-        fail("README 第一屏全圖 alt 必須是「七階段流程圖含 Gate 與能力分層」")
+    five_face = (
+        "五站流程圖" in first
+        or "Intake→Decide→Spec→Build→Ship" in first
+        or "只有 Ship 是預設人類停點" in first
+    )
+    if not five_face and "七階段流程圖含 Gate 與能力分層" in first:
+        fail(
+            "README 第一屏全圖仍鎖七階段 alt;"
+            "改成五站（Intake→Decide→Spec→Build→Ship；只有 Ship 是預設人類停點）"
+        )
+    if not five_face and "七階段流程圖含 Gate 與能力分層" not in first:
+        fail(
+            "README 第一屏全圖 alt 必須是五站"
+            "（Intake→Decide→Spec→Build→Ship；只有 Ship 是預設人類停點）"
+        )
     if "fig-readme-flow.svg" in first:
         fail("README 第一屏還在用舊的瘦七格圖")
     print("readme-first-screen: ok")

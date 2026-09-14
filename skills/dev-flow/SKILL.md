@@ -1,9 +1,12 @@
 ---
 name: dev-flow
-description: 開發流程 SOP 的唯一對外入口(7 階段路由器,SDD 為主、TDD 驗證;定位到 Stage 6 自動載入 dev-run 引擎)。當使用者說「dev-flow」「繼續 <feature>」「開新 feature」「初始化開發流程」,或對進行中 feature 說「繼續做」「跑下一階段」時啟用。方法論內建於本 plugin repo 根目錄。
+description: 開發流程 SOP 的唯一對外入口(五站路由器 Intake→Decide→Spec→Build→Ship,SDD 為主、TDD 驗證;in-flight 仍可 dual-read 舊七檔;定位到 Build 自動載入 dev-run 引擎)。當使用者說「dev-flow」「繼續 <feature>」「開新 feature」「初始化開發流程」,或對進行中 feature 說「繼續做」「跑下一階段」時啟用。方法論內建於本 plugin repo 根目錄。
 ---
 
 # dev-flow 路由器
+
+人看五站 **Intake→Decide→Spec→Build→Ship**（只有 Ship 是預設人類停點）。
+機器仍讀舊七檔名與 G1/G2/`ACCEPTED` token；in-flight 票 dual-read 舊七站。
 
 方法包根目錄叫 `DEVFLOW_ROOT`（舊名 `CLAUDE_PLUGIN_ROOT` 當別名，不准刪）。找不到就停，不准猜。
 

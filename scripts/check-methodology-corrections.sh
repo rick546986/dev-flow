@@ -268,19 +268,14 @@ for _stage in "1234567":
           f"README §3 / guide 第 {_stage} 列 Gate 一致(用途欄不比)")
 walkthrough = re.search(
     r'<h[23] id="walkthrough".*?<table>(.*?)</table>', read("guides/guide-dev-flow.html"), re.S)
-walkthrough_rows = {}
-if walkthrough:
-    for row in re.findall(r"<tr>(.*?)</tr>", walkthrough.group(1), re.S):
-        cells = re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", row, re.S)
-        if cells:
-            stage = re.match(r"\s*([1-7])\b", visible(cells[0]))
-            if stage:
-                walkthrough_rows[stage.group(1)] = cells
+walkthrough_text = visible(walkthrough.group(1)) if walkthrough else ""
+for name in ("Intake", "Decide", "Spec", "Build", "Ship"):
+    check(name in walkthrough_text, f"walkthrough 五站表有 {name} 列")
+# 人看五站;機器 5/6/7 gate 句仍要出現在同一張表(Build 吃 5+6,Ship 吃 7)
 for stage in ("5", "6", "7"):
     canonical_gate = norm(markdown_visible(readme_stage_rows.get(stage, ["", "", "", ""])[3]))
-    guide_gate = norm(visible(walkthrough_rows.get(stage, ["", "", "", "", ""])[4]))
-    check(bool(canonical_gate) and canonical_gate in guide_gate,
-          f"主指南 Stage {stage} gate 包含 README §3 canonical summary")
+    check(bool(canonical_gate) and canonical_gate in norm(walkthrough_text),
+          f"主指南 walkthrough 含 README §3 Stage {stage} gate 摘要")
 
 tasks = read("example/contract-expiry-reminder/5-tasks.md")
 task_blocks = re.split(r"(?=^## T-\d+)", tasks, flags=re.M)[1:]
