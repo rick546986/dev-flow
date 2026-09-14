@@ -787,3 +787,9 @@
 - 落在哪:guides/guide-dev-flow.html、guides/fig-flow-full.svg、README.md、skills/dev-flow/SKILL.md、plugin 描述;STATUS Backlog A 刪除。機器七檔檔名與 G1/G2/ACCEPTED token 不動。
 - 詳細:https://github.com/rick546986/dev-flow/pull/397
 
+## 2026-09-14 · release-v3-25-0 · v3.25.0
+- 做了什麼:發布 v3.25.0：五站人類面（Intake→Decide→Spec→Build→Ship，只有 Ship 是預設人類停點）+ F0–F3 cut 已在 main；#399 清完殘餘；plugin 3.24.0→3.25.0；docs/dev 契約副本同步到 2.1.0
+- 為什麼:外掛更新比對版本字串不是 commit；五站臉與 F3 已出貨但 plugin 仍停在 3.24.0，其他機器 /plugin update 拿不到
+- 落在哪:.claude-plugin/plugin.json、.cursor-plugin/plugin.json、.codex-plugin/plugin.json、hooks/runtime-capabilities.json、docs/dev/devflow-contract.json
+- 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.25.0
+
