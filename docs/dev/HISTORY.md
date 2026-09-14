@@ -739,3 +739,9 @@
 - 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
 - 詳細:https://github.com/rick546986/dev-flow/pull/368
 
+## 2026-09-14 · five-station-f3
+- 做了什麼:Active Stage → 3-prototype; Gates stay G1✅ G2⬜ G3⬜; no 3-prototype.md
+- 為什麼:Owner standing opens Stage 3 board after G1 (#369); no G2/G3 invented; prototype file is a follow-up
+- 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
+- 詳細:https://github.com/rick546986/dev-flow/pull/369
+
