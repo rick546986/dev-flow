@@ -59,11 +59,11 @@ root:
             - name: SKILL.md
               why: 五站入口與 lane／gate 摘要。細節以主指南為準，各站 hop 在 stage*/。七檔名不動。
             - name: stage2/
-              why: 收斂站，出口 G1。把討論收成方向；過了才寫規格或做原型。
+              why: Decide（第 2 站）收斂站，出口 G1。把討論收成方向；過了才寫規格或做原型。
               id: flow-stage2
               children:
                 - name: graph.yaml
-                  why: 第 2 站下一跳正本。九個 hop，從接手寫到 G1。
+                  why: Decide（第 2 站）下一跳正本。九個 hop，從接手寫到 G1。
                 - name: nodes/
                   why: 一 hop 一檔。生方案、壓測、寫 2-decision、送 G1。
                   id: flow-stage2-nodes
@@ -85,13 +85,13 @@ root:
                     - name: N7-g1.md
                       why: 送 G1。方向核准 + OC 全裁決才過，作者不能當 approver。
                     - name: N8-end.md
-                      why: 第 2 站收尾。過 G1 才往規格或原型走。
+                      why: Decide（第 2 站）收尾。過 G1 才往規格或原型走。
             - name: stage3/
-              why: 原型站，可 skip。開場先觸發判定；0 命中走 N-skip，有命中才實驗。
+              why: Spec（第 3 站）原型站，可 skip。開場先觸發判定；0 命中走 N-skip，有命中才實驗。
               id: flow-stage3
               children:
                 - name: graph.yaml
-                  why: 第 3 站下一跳正本。分叉用 next + fork_required，禁止 via。
+                  why: Spec（第 3 站）下一跳正本。分叉用 next + fork_required，禁止 via。
                 - name: nodes/
                   why: 一 hop 一檔。含 skip 與實驗兩條，不要漏 fork 那側。
                   id: flow-stage3-nodes
@@ -113,13 +113,13 @@ root:
                     - name: S4-close.md
                       why: 原型收尾自檢。frontmatter 與回寫對得上才往結束走。
                     - name: N5-end.md
-                      why: 第 3 站結束。skip 或做完都走這裡，再進第 4 站。
+                      why: Spec（第 3 站）結束。skip 或做完都走這裡，再進 Spec（第 4 站）。
             - name: stage4/
-              why: 規格站，出口 G2。R/S/DD/Profile 寫死；過了才切任務。
+              why: Spec（第 4 站）規格站，出口 G2。R/S/DD/Profile 寫死；過了才切任務。
               id: flow-stage4
               children:
                 - name: graph.yaml
-                  why: 第 4 站下一跳正本。從接手列 R 寫到 G2。
+                  why: Spec（第 4 站）下一跳正本。從接手列 R 寫到 G2。
                 - name: nodes/
                   why: 一 hop 一檔。反模糊三律在這裡落地，不是在任務站補。
                   id: flow-stage4-nodes
@@ -145,13 +145,13 @@ root:
                     - name: N6-g2.md
                       why: 送 G2。R/S 全審 + DD 全裁決，過了才切任務。
                     - name: N7-end.md
-                      why: 第 4 站收尾。規格是後面實作唯一準繩。
+                      why: Spec（第 4 站）收尾。規格是後面實作唯一準繩。
             - name: stage5/
-              why: 任務板，無 G。把規格切成 T；人同意這張板才進實作。
+              why: Build（第 5 站）任務板，無 G。把規格切成 T；人同意這張板才進實作。
               id: flow-stage5
               children:
                 - name: graph.yaml
-                  why: 第 5 站下一跳正本。切 T、填欄、產執行板。
+                  why: Build（第 5 站）下一跳正本。切 T、填欄、產執行板。
                 - name: nodes/
                   why: 一 hop 一檔。Covers／Files／Verify／Blocked-by 都在這幾跳填。
                   id: flow-stage5-nodes
@@ -165,25 +165,25 @@ root:
                     - name: S3-deps.md
                       why: 標依賴。Blocked-by 決定能不能平行，不要事後口頭講。
                     - name: N4-write-md.md
-                      why: 寫 5-tasks.md。這是第 6 站的工作單，不是進度日誌。
+                      why: 寫 5-tasks.md。這是 Build（第 6 站）的工作單，不是進度日誌。
                     - name: S4-selfcheck.md
                       why: 自檢每 T 的 Verify 與 Files。缺欄不准往下產執行板。
                     - name: N5-twin.md
-                      why: 產第 5 站執行板／審頁 twin。人看任務總表用，不改 hop。
+                      why: 產 Build（第 5 站）執行板／審頁 twin。人看任務總表用，不改 hop。
                     - name: N6-end.md
-                      why: 任務板定稿。無 G；人同意這張板才進實作。
+                      why: Build（第 5 站）任務板定稿。無 G；人同意這張板才進實作。
             - name: stage6/
-              why: 實作站。守衛 + 逐 T；平行時另走 parallel 契約，不是這棵 hop 的另一張圖。
+              why: Build（第 6 站）實作站。守衛 + 逐 T；平行時另走 parallel 契約，不是這棵 hop 的另一張圖。
               id: flow-stage6
               children:
                 - name: graph.yaml
-                  why: 第 6 站下一跳正本。武裝、接手、逐 T、自檢、結束。
+                  why: Build（第 6 站）下一跳正本。武裝、接手、逐 T、自檢、結束。
                 - name: nodes/
                   why: 一 hop 一檔。真正寫碼在 S2-tdd，前後是守衛與自檢。
                   id: flow-stage6-nodes
                   children:
                     - name: N1-arm.md
-                      why: 武裝執行守衛。沒 start 不准當第 6 站在跑。
+                      why: 武裝執行守衛。沒 start 不准當 Build（第 6 站）在跑。
                     - name: N2-handoff.md
                       why: 核對 4-spec + 5-tasks + 6-notes。禁讀 1/2/3，缺東西回 G2。
                     - name: S2-tdd.md
@@ -191,13 +191,13 @@ root:
                     - name: N4-selfcheck.md
                       why: 實作自檢：每 T review PASS、改動 ⊆ Files 聯集。
                     - name: N5-end.md
-                      why: 第 6 站結束。驗證另開第 7 站，不在這裡宣佈 G3。
+                      why: Build（第 6 站）結束。驗證另開 Ship（第 7 站），不在這裡宣佈 G3。
             - name: stage7/
-              why: 驗證站，出口 G3。reviewer 自建矩陣再親跑，不是複誦作者結論。
+              why: Ship（第 7 站）驗證站，出口 G3。reviewer 自建矩陣再親跑，不是複誦作者結論。
               id: flow-stage7
               children:
                 - name: graph.yaml
-                  why: 第 7 站下一跳正本。從角色防錨定寫到 Verdict。
+                  why: Ship（第 7 站）下一跳正本。從角色防錨定寫到 Verdict。
                 - name: nodes/
                   why: 一 hop 一檔。現象、回歸、Fresh、走查都在送 G3 之前。
                   id: flow-stage7-nodes
@@ -223,7 +223,7 @@ root:
                     - name: N5-verdict.md
                       why: 寫 Verdict。G3 要本次 S + 回歸 + 現象 + Evidence 契約全過。
         - name: dev-run/
-          why: 第 6 站內部引擎。正常由 dev-flow 定位到 stage 6 時載入，不必當第二個指令學。
+          why: Build（第 6 站）內部引擎。正常由 dev-flow 定位到 stage 6 時載入，不必當第二個指令學。
           id: skill-dev-run
           children:
             - name: SKILL.md
@@ -251,19 +251,19 @@ root:
       id: templates
       children:
         - name: 1-discussion.md
-          why: 第 1 站討論骨架。頂註是可選目錄樹三步食譜；掃頁六件仍走 build-scan-html.py。
+          why: Intake（第 1 站）討論骨架。頂註是可選目錄樹三步食譜；掃頁六件仍走 build-scan-html.py。
         - name: 2-decision.md
-          why: 第 2 站決策骨架。頂註是收斂執行清單，出口對 G1。
+          why: Decide（第 2 站）決策骨架。頂註是收斂執行清單，出口對 G1。
         - name: 3-prototype.md
-          why: 第 3 站原型骨架。選配；命中觸發判定才填，否則整站 skip。
+          why: Spec（第 3 站）原型骨架。選配；命中觸發判定才填，否則整站 skip。
         - name: 4-spec.md
-          why: 第 4 站規格骨架。反模糊三律與 G2 要審的欄都在頂註。
+          why: Spec（第 4 站）規格骨架。反模糊三律與 G2 要審的欄都在頂註。
         - name: 5-tasks.md
-          why: 第 5 站任務骨架。再小也要 Covers／Files／Verify／Blocked-by。
+          why: Build（第 5 站）任務骨架。再小也要 Covers／Files／Verify／Blocked-by。
         - name: 6-implementation-notes.md
-          why: 第 6 站實作日誌骨架。Progress Log 與 T Review 記這裡，不是任務板。
+          why: Build（第 6 站）實作日誌骨架。Progress Log 與 T Review 記這裡，不是任務板。
         - name: 7-review.md
-          why: 第 7 站驗證骨架。G3 證據與雙軸審的欄位在這份。
+          why: Ship（第 7 站）驗證骨架。G3 證據與雙軸審的欄位在這份。
       ellipsis: "其餘骨架不整包列進樹，STATUS／HISTORY／html-shell 見 #filemap"
     - name: example/
       why: 填好的範例 feat。對模板看「空白該長怎樣」；對這裡看「填完長怎樣」。
@@ -278,7 +278,7 @@ root:
             - name: 2-decision.md
               why: 填好的決策正本。旁邊同名 html 是 G1 審頁 twin。
             - name: 3-prototype.md
-              why: 填好的原型正本。這個 feat 有做第 3 站；旁邊是審頁 twin。
+              why: 填好的原型正本。這個 feat 有做 Spec（第 3 站）；旁邊是審頁 twin。
             - name: 4-spec.md
               why: 填好的規格正本。R/S/DD 都在；旁邊是 G2 審頁 twin。
             - name: 5-tasks.md
@@ -288,7 +288,7 @@ root:
             - name: 7-review.md
               why: 填好的驗證正本。旁邊 7-review.html 是 G3 審頁 twin。
         - name: subsidy-3-0-plus/
-          why: 補助手樣。沒有 3-prototype（該站 skip）；shots/ 給第 7 站現象截圖。
+          why: 補助手樣。沒有 3-prototype（該站 skip）；shots/ 給 Ship（第 7 站）現象截圖。
           id: ex-subsidy
           children:
             - name: 1-discussion.md
@@ -296,7 +296,7 @@ root:
             - name: 2-decision.md
               why: 補助決策正本。旁邊是 G1 審頁 twin。
             - name: 4-spec.md
-              why: 補助規格正本。沒有第 3 站，規格直接接決策。
+              why: 補助規格正本。沒有 Spec（第 3 站），規格直接接決策。
             - name: 5-tasks.md
               why: 補助任務板。旁邊是執行板 twin。
             - name: 6-implementation-notes.md
@@ -304,7 +304,7 @@ root:
             - name: 7-review.md
               why: 補助驗證正本。現象截圖在 shots/，不要跟這份搶槽。
             - name: shots/
-              why: 第 7 站現象截圖。Pages 掛相對路；不是目錄樹、也不是掃頁三框。
+              why: Ship（第 7 站）現象截圖。Pages 掛相對路；不是目錄樹、也不是掃頁三框。
     - name: guides/
       why: "給人看的導覽 HTML。跟 skills/ 鏡像，不代替 README，也不代替 #filemap。"
       id: guides
@@ -342,7 +342,7 @@ root:
       id: tests
       children:
         - name: parallel-stage6/
-          why: 第 6 站平行契約套件。對 notes/design/parallel-stage6.md，缺 fixture 會紅。
+          why: Build（第 6 站）平行契約套件。對 notes/design/parallel-stage6.md，缺 fixture 會紅。
           id: tests-p6
           children:
             - name: contract_ref.py
@@ -368,7 +368,7 @@ root:
         - name: PLUGIN.md
           why: 四邊安裝說明。人裝 Claude／Cursor／Codex／手動時看這份，不是技能 hop。
         - name: adr/
-          why: 架構決策紀錄。不可逆方向才抄過來；第 2 站 S5 對應這裡。
+          why: 架構決策紀錄。不可逆方向才抄過來；Decide（第 2 站）S5 對應這裡。
           id: docs-adr
           children:
             - name: 0001-merge-plugin-into-methodology-repo.md
@@ -418,19 +418,19 @@ root:
             - name: pages-hosting.md
               why: 站審 html 掛 Pages。7-review.html 與 shots 相對路，跟目錄樹頁不是同一條。
             - name: stage1-review-ui-contract.md
-              why: "第 1 站審頁。三框 #scan-now，不要跟本樹或掃頁殼併張。"
+              why: "Intake（第 1 站）審頁。三框 #scan-now，不要跟本樹或掃頁殼併張。"
             - name: stage2-review-ui-contract.md
-              why: 第 2 站審頁。Decision 置頂 + 直式 SVG，不是目錄樹。
+              why: Decide（第 2 站）審頁。Decision 置頂 + 直式 SVG，不是目錄樹。
             - name: stage3-review-ui-contract.md
-              why: 第 3 站審頁。觸發判定與 Demo，feat 沒原型就 n-a。
+              why: Spec（第 3 站）審頁。觸發判定與 Demo，feat 沒原型就 n-a。
             - name: stage4-review-ui-contract.md
-              why: 第 4 站審頁。R/S 與生命週期圖分卡，不是本樹。
+              why: Spec（第 4 站）審頁。R/S 與生命週期圖分卡，不是本樹。
             - name: stage5-review-ui-contract.md
-              why: 第 5 站審頁。任務總表 chrome，執行板 twin 對這份。
+              why: Build（第 5 站）審頁。任務總表 chrome，執行板 twin 對這份。
             - name: stage7-review-ui-contract.md
-              why: 第 7 站審頁。現象與 Evidence 欄，shots 另掛。
+              why: Ship（第 7 站）審頁。現象與 Evidence 欄，shots 另掛。
             - name: parallel-stage6.md
-              why: 第 6 站平行契約。tests/parallel-stage6/ 對這份，不是 hop 圖。
+              why: Build（第 6 站）平行契約。tests/parallel-stage6/ 對這份，不是 hop 圖。
             - name: gate-verdict-write.md
               why: "gate 判定寫入。正本是 md 頂欄 verdict:，全勾不算 PASS。"
             - name: vnext-shared-contract.md
