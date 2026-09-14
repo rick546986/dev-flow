@@ -1,7 +1,7 @@
 ---
 feature: five-station-simplify
 stage: 5-tasks
-status: draft
+status: approved
 owner: implementer-A
 updated: 2026-09-14
 execution:

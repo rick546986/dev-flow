@@ -210,6 +210,7 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 | 2026-09-14 | T-1…T-12 | 3c8d718 實作落地（review=PRE，非正式 PASS） |
 | 2026-09-14 | T-1 T-9 | 0c3bbf4e1dca2abe61a2ea4bae04c82e499b58e5 soft-fix #321：FM verdict + 偽造 attest 不洗白 + S-4.1 正向（review=PRE） |
 | 2026-09-14 | T-1…T-12 | 獨立授權後記帳 ACCEPTED（R1 APPROVE／R2 PASS；PRE≠block）。未發明 G3 PASS。CI 地板：註冊兩支牙 + file-map 205→208（D-1 收口） |
+| 2026-09-14 | — | CI `check-devstage6-graph`：6-notes 已落則 5-tasks 必須 `approved`（N1-arm 入口）。只改 frontmatter，不勾 T、不發明 G3 PASS |
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 
