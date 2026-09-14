@@ -4021,6 +4021,20 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             <code>tests/parallel-stage6/</code> 底下每支腳本有沒有被這張表點名到,也反查表裡寫的檔名是不是
             真的存在,雙向防這張表腐化。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>five_station_f1.py</code></td>
+        <td>five-station-simplify F1 牙本體:依 <code>f1-kind</code>／檔名前綴分派
+            RP-1…16、dual-read 九槽、attestation hop、Ship YAML
+            <code>verdict:</code>、live 收口(七舊名／Files 聯集／Q6)。不鎖 annex 鍵名。</td>
+        <td>被 <code>check-five-station-f1.sh</code>／<code>test-five-station-f1.sh</code>
+            呼叫</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-five-station-f1.sh</code></td>
+        <td>F1 牙薄殼:把路徑或 <code>--live</code> 轉給
+            <code>five_station_f1.py</code>。紅則 exit 1。</td>
+        <td><code>devflow-check.sh</code> architecture 組(<code>--live</code>)</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-five-station-f1.sh</code></td>
+        <td>F1 牙 CASE 自檢(T-1…T-12 群組)。印 <code>=== CASE</code>;
+            <code>failed=0</code> 才綠。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>dogfood-ping.sh</code></td>
         <td>dogfood-ping 極小可觀測 CLI:stdout 恰好 <code>dogfood-ok</code>+LF,exit 0。
             給整套 1→7 試跑用,不是業務功能。</td>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>five-station-simplify · 6-implementation-notes</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  -webkit-font-smoothing:antialiased}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;font-variant-numeric:tabular-nums}
+code{background:var(--sunk);border-radius:3px;padding:1px 5px;color:var(--ink-2)}
+a{color:var(--accent)}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem;max-width:62ch}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;
+  border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
+.r-name{font-weight:650}
+.r-body{padding:14px 18px 16px;font-size:.94rem;color:var(--ink)}
+.r-body p{margin:0 0 8px}
+.r-body p:last-child{margin-bottom:0}
+.tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600}
+.tag.base{background:var(--sunk);color:var(--ink-3)}
+details.hunk{border:1px solid var(--rule);border-radius:9px;margin:10px 12px 12px;
+  background:var(--sunk);overflow:hidden}
+details.hunk>summary{cursor:pointer;padding:11px 15px;font-weight:600;font-size:.9rem;
+  list-style:none;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+details.hunk>summary::-webkit-details-marker{display:none}
+.hunk-why,.hunk-rel{margin:8px 15px;font-size:.9rem}
+.hunk-why{color:var(--ink)}
+.hunk-rel{color:var(--ink-2)}
+.diff{margin:0 12px 12px;border:1px solid var(--rule);border-radius:7px;overflow:auto;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82rem}
+.ln{display:flex;white-space:pre;padding:1px 10px;line-height:1.55}
+.ln .m{display:inline-block;width:1.2em;flex:none;color:var(--ink-3)}
+.ln.ctx{color:var(--ink-3);background:var(--panel)}
+.ln.add{background:var(--ok-soft);color:var(--ok)}
+.ln.del{background:var(--bad-soft);color:var(--bad)}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+@media (max-width:560px){h1{font-size:1.35rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 6-implementation-notes · 審查介面</p>
+  <h1>five-station-simplify</h1>
+  <p class="sub">status draft／owner implementer-A。正本是 md 的 ## Diff,這頁由產檔器重生。不要當第二份正本。</p>
+</header>
+<section class="r-block" id="summary"><div class="r-head"><span class="r-name">摘要</span></div><div class="r-body"><p>slug `five-station-simplify`／status draft／owner implementer-A／updated 2026-09-14</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self（非獨立） - reviewed-at: 2026-09-14 PRE - Verify: `n=$(bash scripts/test-five-station-f1.sh --group rp16 -v 2&gt;&amp;1 | grep -c '^=== CASE'); test "$n" -ge 2 &amp;&amp; bash scripts/test-five-station-f1.sh --group rp16` → n=5；failed=0；agent 案 `unread=True` - Covers finding: S-3.1 讀 YAML `verdict:`；偽造 Demo attestation 不洗白 Ship；人類頂欄 PASS 不誤殺；Agent ACCEPTED 無 attestation 紅 - Files finding: 牙骨架＋RP-16 列＋兩份對照稿，未出聯集 - RED→GREEN finding: 5-tasks 開工前腳本不存在＝RED；本 T Verify 綠 - Test Integrity finding: none（自檢；待獨立審） - Design boundary finding: 未改 hooks／模板／graph；未鎖鍵名 - verdict: ACCEPTED - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-2"><div class="r-head"><span class="r-name">T-2</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: `--group slots` → n=2；failed=0（完整 annex 綠；缺 SLOT-DOCTOR-GREEN-MEANS 紅） - Covers finding: S-5.8 九槽可指到 - Files finding: dual-read annex + 牙加厚 - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: 未把 SLOT 寫成必填 schema 鍵 - verdict: ACCEPTED - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-3"><div class="r-head"><span class="r-name">T-3</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: `--group dual-read` → n=5；failed=0 - Covers finding: S-5.4 缺新欄不紅；S-5.5／S-5.6 doctor 綠≠已切／不得跟 hops；S-5.7／S-5.9 2.0.0+五站 hops 仍舊 7 - Files finding: annex + 牙 + fixtures - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: 未改 doctor 握手 - verdict: ACCEPTED - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: `--group inflight` → n=3；failed=0 - Covers finding: 有 md 凍＋拒 hop（RP-15）；僅 html → in_flight=false - Files finding: 未改 graph.yaml、未寫五站狀態進本 slug - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: 只釘偵測布林 - verdict: ACCEPTED - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: `--group rp1` → n=2；failed=0 - Covers finding: S-2.2 缺欄／「看起來沒問題」→ RP-1 - Files finding: 未改 5-tasks 模板 - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: 紅在卡上，未延後 Ship - verdict: ACCEPTED - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-6"><div class="r-head"><span class="r-name">T-6</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: `--group seam` → n=3；failed=0 - Covers finding: S-2.3 無 RED／自審；S-2.9 摘要無原始輸出 - Files finding: 牙 + rp-min-set + fixtures - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: 未把自審寫成可選 - verdict: ACCEPTED - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-7"><div class="r-head"><span class="r-name">T-7</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: `--group spec-name` → n=3；failed=0；`c4_fail=True`（實呼 `check-spec-gate.sh`） - Covers finding: S-2.4 接 C4；S-2.5 `test_store_half_slot` 紅 - Files finding: 未把 check-spec-gate.sh 列入 Files、未改 C4 詞表 - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: 無第二模糊詞家族 - verdict: ACCEPTED - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-8"><div class="r-head"><span class="r-name">T-8</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: `--group brief-files` → n=3；failed=0 - Covers finding: S-2.1 少 M11；S-2.7 可選句；S-2.8 Files 超聯集 - Files finding: 未改 _templates/ - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: 未把 M 標可選 - verdict: ACCEPTED - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-9"><div class="r-head"><span class="r-name">T-9</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: 四張具名檔存在 + `--group attest` n=6；failed=0；S-4.1 正向 `hop_spec_build=True` - Covers finding: S-4.1 兩行齊才 hop（獨立 attest fixture，不重用 T-1 verdict 檔）；RP-13／12／14、S-4.5、S-1.7 - Files finding: 未改 `_stage3_impl.py` - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: chat 不是 attestation - verdict: ACCEPTED - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-10"><div class="r-head"><span class="r-name">T-10</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: `--group ship-quiz` → n=4；failed=0 - Covers finding: RP-7、可逆強制 Quiz、RP-8、S-3.3 八點 - Files finding: 未改 7-review 模板 - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: 未實作 coordinator HumanWait - verdict: ACCEPTED - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-11"><div class="r-head"><span class="r-name">T-11</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: 三張超 cap 具名檔 + `--group rp-min-set` n=17；failed=0 - Covers finding: RP-1…16 各紅一次；刪 RP-8 annex → S-2.6 - Files finding: rp-min-set annex 列齊 16 - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: 未實作 F2 計數器、未鎖 event 鍵 - verdict: ACCEPTED - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-12"><div class="r-head"><span class="r-name">T-12</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: 五張 reopen 具名檔 + `T-12-no-reopen` + `--group f1-close` n=10 ≥9；failed=0 - Covers finding: 七舊名／token／Files 閉聯集／Q6 open／五張已拒案紅 - Files finding: 未越六條聯集 - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: 未 bump 契約、未改 STATUS - verdict: ACCEPTED - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1 / S-3.1</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零。soft-fix：Agent `verdict: PASS` 只在 YAML 時舊牙 `unread=False`（6 fail） - GREEN: `--group rp16` ×5；`failed=0`；Agent FM PASS／Agent ACCEPTED／偽造 attest → `unread=True`；人類頂欄 PASS 與人類 ACCEPTED → `unread=False`</p></div></section>
+<section class="r-block" id="T-2"><div class="r-head"><span class="r-name">T-2 / S-5.8</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `--group slots` ×2；完整 annex `slots_ok=True`；`slots-missing-one.md` → `RED S-5.8 缺 SLOT: SLOT-DOCTOR-GREEN-MEANS`</p></div></section>
+<section class="r-block" id="T-3"><div class="r-head"><span class="r-name">T-3 / S-5.4</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `dual-old7-missing-new5.md` red=False；`missing_new5_legal=True`</p></div></section>
+<section class="r-block" id="T-3"><div class="r-head"><span class="r-name">T-3 / S-5.5</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `dual-doctor-green-means-cut.md` → `RED S-5.5`</p></div></section>
+<section class="r-block" id="T-3"><div class="r-head"><span class="r-name">T-3 / S-5.6</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `dual-doctor-follow-hops.md` → `RED S-5.6 doctor 綠不得跟 hops`</p></div></section>
+<section class="r-block" id="T-3"><div class="r-head"><span class="r-name">T-3 / S-5.7</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `dual-200-plus-five-hops.md` → `RED S-5.7`；`route=old-7`</p></div></section>
+<section class="r-block" id="T-3"><div class="r-head"><span class="r-name">T-3 / S-5.9</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `dual-hops-first-then-contract.md` → 同 S-5.7；任一寫入順序仍舊 7</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4 / S-5.1</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `inflight-has-md.md` → RP-15；`in_flight=True`</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4 / S-5.2</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `inflight-this-slug-five-hop.md` → RP-15；`hop_blocked=True`</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4 / S-5.3</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `inflight-html-only.md` red=False；`in_flight=False`</p></div></section>
+<section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5 / S-2.2</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `--group rp1` ×2；缺欄／`看起來沒問題` → RP-1</p></div></section>
+<section class="r-block" id="T-6"><div class="r-head"><span class="r-name">T-6 / S-2.3</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `rp-02-no-red.md`／`rp-02-self-review.md` → RP-2</p></div></section>
+<section class="r-block" id="T-6"><div class="r-head"><span class="r-name">T-6 / S-2.9</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `rp-06-summary-only.md` → RP-6</p></div></section>
+<section class="r-block" id="T-7"><div class="r-head"><span class="r-name">T-7 / S-2.4</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `rp-03-vague-tbd.md` → RP-3 且 `c4_fail=True`（呼叫既有 C4）；不可測句 → RP-3</p></div></section>
+<section class="r-block" id="T-7"><div class="r-head"><span class="r-name">T-7 / S-2.5</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `test_store_half_slot` → RP-4</p></div></section>
+<section class="r-block" id="T-8"><div class="r-head"><span class="r-name">T-8 / S-2.1</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `brief-missing-must-keep.md` → S-2.1</p></div></section>
+<section class="r-block" id="T-8"><div class="r-head"><span class="r-name">T-8 / S-2.7</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `brief-optional-four-fields.md` → S-2.7</p></div></section>
+<section class="r-block" id="T-8"><div class="r-head"><span class="r-name">T-8 / S-2.8</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `rp-05-files-outside-union.md` → RP-5（`hooks/_stage3_impl.py`、`graph.yaml`）</p></div></section>
+<section class="r-block" id="T-9"><div class="r-head"><span class="r-name">T-9 / S-4.1</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零；舊筆記誤用 T-1 `f1-kind: verdict` 當 S-4.1 - GREEN: `s-4-1-human-accepted-attest.md`（`f1-kind: attest`）→ `hop_spec_build=True`、red=False</p></div></section>
+<section class="r-block" id="T-9"><div class="r-head"><span class="r-name">T-9 / S-4.2</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `rp-13-empty-attestation-plus-chat.md` → RP-13；`leave_spec=False`</p></div></section>
+<section class="r-block" id="T-9"><div class="r-head"><span class="r-name">T-9 / S-4.3</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `rp-12-miss-forced-accepted.md` → RP-12</p></div></section>
+<section class="r-block" id="T-9"><div class="r-head"><span class="r-name">T-9 / S-4.4</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `rp-14-please-review-latch-false.md` → RP-14</p></div></section>
+<section class="r-block" id="T-9"><div class="r-head"><span class="r-name">T-9 / S-4.5</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `skip-negation-as-oc.md` → S-4.5；`skip_oc=False`</p></div></section>
+<section class="r-block" id="T-9"><div class="r-head"><span class="r-name">T-9 / S-1.7</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: 同一 miss fixture → `demo_page=False`</p></div></section>
+<section class="r-block" id="T-10"><div class="r-head"><span class="r-name">T-10 / S-1.10</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: 不可逆無 Quiz → RP-7；可逆強制 Quiz → S-1.10</p></div></section>
+<section class="r-block" id="T-10"><div class="r-head"><span class="r-name">T-10 / S-3.2</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `rp-08-done-without-pass.md` → RP-8</p></div></section>
+<section class="r-block" id="T-10"><div class="r-head"><span class="r-name">T-10 / S-3.3</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `s-3-3-evidence-omit-eight.md` → S-3.3</p></div></section>
+<section class="r-block" id="T-11"><div class="r-head"><span class="r-name">T-11 / S-2.6</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `--group rp-min-set` ×17；RP-1…16 各紅；`rp-min-set-delete-rp8.md` → `少 RP: RP-8`</p></div></section>
+<section class="r-block" id="T-12"><div class="r-head"><span class="r-name">T-12 / S-1.1</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: live `seven_old_count=5`；`new_family=False`；G1／G2／ACCEPTED token 仍在</p></div></section>
+<section class="r-block" id="T-12"><div class="r-head"><span class="r-name">T-12 / S-6.2</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: live `q6_open=True` 且未對 4-spec 誤紅 S-6.3</p></div></section>
+<section class="r-block" id="T-12"><div class="r-head"><span class="r-name">T-12 / S-6.3</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: `q6-as-fact.md` → S-6.3</p></div></section>
+<section class="r-block" id="T-12"><div class="r-head"><span class="r-name">T-12 / S-8.1</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: 有 annex／scripts 牙；diff 無 graph 切線、無 coordinator</p></div></section>
+<section class="r-block" id="T-12"><div class="r-head"><span class="r-name">T-12 / S-8.5</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: live `files_closed=True`</p></div></section>
+<section class="r-block" id="T-12"><div class="r-head"><span class="r-name">T-12 / S-8.6</span></div><div class="r-body"><p>- RED: 腳本不存在 → 非零 - GREEN: 五張 `reopen-*.md` → S-8.6；5-tasks 無 `改採 [12467][BC]`</p></div></section>
+<section class="r-block" id="hunks"><div class="r-head"><span class="r-name">Hunks</span></div><details class="hunk" open><summary>Result.red · <code>scripts/five_station_f1.py</code> 70-76 <span class="tag base">T-1</span></summary><p class="hunk-why">改什麼：Finding 只收 red code，給 selftest 對 RP。</p><p class="hunk-rel">關聯：caller `evaluate`</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>class Result:</div>
+<div class="ln ctx"><span class="m"> </span>    def __init__(self):</div>
+<div class="ln ctx"><span class="m"> </span>        self.items = []</div>
+<div class="ln ctx"><span class="m"> </span>        self.info = {}</div>
+<div class="ln add"><span class="m">+</span>    def red(self, code, msg):</div>
+<div class="ln add"><span class="m">+</span>        self.items.append((code, True, msg))</div>
+</div></details>
+<details class="hunk" open><summary>infer_kind · <code>scripts/five_station_f1.py</code> 106-113 <span class="tag base">T-1</span></summary><p class="hunk-why">改什麼：長前綴先配，避免 dual-read annex 被當成 dual 文案規則。</p><p class="hunk-rel">關聯：caller `evaluate`</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>def infer_kind(path, meta):</div>
+<div class="ln add"><span class="m">+</span>    if meta.get("f1-kind"):</div>
+<div class="ln add"><span class="m">+</span>        return meta["f1-kind"]</div>
+<div class="ln add"><span class="m">+</span>    name = os.path.basename(path)</div>
+<div class="ln add"><span class="m">+</span>    for prefix, kind in KIND_PREFIX:</div>
+<div class="ln add"><span class="m">+</span>        if prefix in name:</div>
+<div class="ln add"><span class="m">+</span>            return kind</div>
+<div class="ln add"><span class="m">+</span>    return "generic"</div>
+</div></details>
+<details class="hunk" open><summary>in_flight · <code>scripts/five_station_f1.py</code> 123-125 <span class="tag base">T-4</span></summary><p class="hunk-why">改什麼：只認 1–7 `.md` basename，html 不算凍。</p><p class="hunk-rel">關聯：caller `evaluate` inflight 包</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>def in_flight(files):</div>
+<div class="ln add"><span class="m">+</span>    bases = {os.path.basename(item) for item in files}</div>
+<div class="ln add"><span class="m">+</span>    return any(name in bases for name in STAGE_MD)</div>
+</div></details>
+<details class="hunk" open><summary>run_c4 · <code>scripts/five_station_f1.py</code> 156-168 <span class="tag base">T-7</span></summary><p class="hunk-why">改什麼：F1 接既有 spec-gate C4，不另造模糊詞家族。</p><p class="hunk-rel">關聯：caller `evaluate` spec 包／callee `scripts/check-spec-gate.sh`</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>def run_c4(path, root):</div>
+<div class="ln add"><span class="m">+</span>    proc = subprocess.run(["bash", script, path], capture_output=True, text=True)</div>
+<div class="ln add"><span class="m">+</span>    if re.search(r"❌\s*C4\b", blob):</div>
+<div class="ln add"><span class="m">+</span>        return True</div>
+</div></details>
+<details class="hunk" open><summary>ship_pass · <code>scripts/five_station_f1.py</code> 176-180 <span class="tag base">T-1</span></summary><p class="hunk-why">改什麼：讀 7-review YAML `verdict:`，正文列只是後備。</p><p class="hunk-rel">關聯：caller `evaluate`／peer `fm_token`</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>def ship_pass(meta, body):</div>
+<div class="ln add"><span class="m">+</span>    if fm_token(meta, "verdict") == "PASS":</div>
+<div class="ln add"><span class="m">+</span>        return True</div>
+<div class="ln add"><span class="m">+</span>    return bool(PASS_LN.search(body))</div>
+</div></details>
+<details class="hunk" open><summary>evaluate · <code>scripts/five_station_f1.py</code> 193-200 <span class="tag base">T-1</span></summary><p class="hunk-why">改什麼：Agent FM PASS＝未寫；偽造 Demo attestation 不得洗白；人類頂欄不誤殺。</p><p class="hunk-rel">關聯：caller `check_path`／callee `ship_pass`</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>    if kind == "verdict":</div>
+<div class="ln del"><span class="m">-</span>        if PASS_LN.search(body) and writer != "human" and not attest:</div>
+<div class="ln add"><span class="m">+</span>        if ACCEPTED.search(body) and not demo_attest:</div>
+<div class="ln add"><span class="m">+</span>            result.red("RP-16", "ACCEPTED 無 human attestation = 未寫")</div>
+<div class="ln add"><span class="m">+</span>        if ship_pass(meta, body) and writer != "human":</div>
+<div class="ln ctx"><span class="m"> </span>            result.red("RP-16", "Ship PASS 無人類頂欄 = 未寫")</div>
+</div></details>
+<details class="hunk" open><summary>evaluate · <code>scripts/five_station_f1.py</code> 189-193 <span class="tag base">T-2</span></summary><p class="hunk-why">改什麼：九 SLOT 缺一紅。</p><p class="hunk-rel">關聯：dual-read annex</p><div class="diff">
+<div class="ln add"><span class="m">+</span>    if kind in ("slots", "annex"):</div>
+<div class="ln add"><span class="m">+</span>        missing = [slot for slot in SLOTS if slot not in body]</div>
+<div class="ln add"><span class="m">+</span>        if missing:</div>
+<div class="ln add"><span class="m">+</span>            result.red("S-5.8", "缺 SLOT: " + ",".join(missing))</div>
+</div></details>
+<details class="hunk" open><summary>evaluate · <code>scripts/five_station_f1.py</code> 201-210 <span class="tag base">T-3</span></summary><p class="hunk-why">改什麼：doctor／2.0.0+hops 文案紅；缺新 5 欄不紅。</p><p class="hunk-rel">關聯：dual-read fixtures</p><div class="diff">
+<div class="ln add"><span class="m">+</span>    if ("2.0.0" in body and re.search(r"五站預設|five-station-default", body)):</div>
+<div class="ln add"><span class="m">+</span>        result.red("S-5.7", "2.0.0+五站 hops → 仍舊 7")</div>
+<div class="ln add"><span class="m">+</span>        result.info["route"] = "old-7"</div>
+</div></details>
+<details class="hunk" open><summary>evaluate · <code>scripts/five_station_f1.py</code> 195-199 <span class="tag base">T-11</span></summary><p class="hunk-why">改什麼：RP 最小集減列紅。</p><p class="hunk-rel">關聯：rp-min-set annex</p><div class="diff">
+<div class="ln add"><span class="m">+</span>    if kind in ("rpset", "annex"):</div>
+<div class="ln add"><span class="m">+</span>        missing = [rp for rp in RPS if not re.search(r"\b%s\b" % rp, body)]</div>
+<div class="ln add"><span class="m">+</span>        if missing:</div>
+<div class="ln add"><span class="m">+</span>            result.red("S-2.6", "annex 少 RP: " + ",".join(missing))</div>
+</div></details>
+<details class="hunk" open><summary>evaluate · <code>scripts/five_station_f1.py</code> 212-221 <span class="tag base">T-4</span></summary><p class="hunk-why">改什麼：in-flight 五站 hop＝RP-15。</p><p class="hunk-rel">關聯：fixtures `inflight-*`</p><div class="diff">
+<div class="ln add"><span class="m">+</span>        if flying and ("five-station" in want or "五站 hop" in body):</div>
+<div class="ln add"><span class="m">+</span>            result.red("RP-15", "in-flight 不得五站 hop／寫五站狀態")</div>
+</div></details>
+<details class="hunk" open><summary>evaluate · <code>scripts/five_station_f1.py</code> 223-250 <span class="tag base">T-5</span></summary><p class="hunk-why">改什麼：T 卡缺四欄或 Verify「看起來沒問題」→ RP-1。</p><p class="hunk-rel">關聯：fixtures `rp-01-*`</p><div class="diff">
+<div class="ln add"><span class="m">+</span>            if miss:</div>
+<div class="ln add"><span class="m">+</span>                result.red("RP-1", "%s 缺欄 %s" % (task["name"], miss))</div>
+<div class="ln add"><span class="m">+</span>            if task["verify"] and "看起來沒問題" in task["verify"]:</div>
+<div class="ln add"><span class="m">+</span>                result.red("RP-1", "%s Verify 無鑑別力" % task["name"])</div>
+</div></details>
+<details class="hunk" open><summary>evaluate · <code>scripts/five_station_f1.py</code> 252-260 <span class="tag base">T-6</span></summary><p class="hunk-why">改什麼：無 RED／自審／無原始輸出。</p><p class="hunk-rel">關聯：fixtures `rp-02-*`／`rp-06-*`</p><div class="diff">
+<div class="ln add"><span class="m">+</span>        if re.search(r"無 RED|RED:\s*(無|—|n/a|缺失)", body):</div>
+<div class="ln add"><span class="m">+</span>            result.red("RP-2", "無 RED 輸出")</div>
+</div></details>
+<details class="hunk" open><summary>evaluate · <code>scripts/five_station_f1.py</code> 262-273 <span class="tag base">T-7</span></summary><p class="hunk-why">改什麼：接 C4 三詞與測試名無 S-id。</p><p class="hunk-rel">關聯：callee `run_c4`</p><div class="diff">
+<div class="ln add"><span class="m">+</span>        if any(word in body for word in VAGUE_ALL):</div>
+<div class="ln add"><span class="m">+</span>            result.red("RP-3", "未定事項三詞")</div>
+<div class="ln add"><span class="m">+</span>            result.info["c4_fail"] = bool(run_c4(path, root))</div>
+</div></details>
+<details class="hunk" open><summary>evaluate · <code>scripts/five_station_f1.py</code> 244-250 <span class="tag base">T-8</span></summary><p class="hunk-why">改什麼：少 Must-keep 與可選句、Files 超聯集。</p><p class="hunk-rel">關聯：fixtures `brief-*`／`rp-05-*`</p><div class="diff">
+<div class="ln add"><span class="m">+</span>        if OPTIONAL.search(body):</div>
+<div class="ln add"><span class="m">+</span>            result.red("S-2.7", "可選句擋 G2")</div>
+</div></details>
+<details class="hunk" open><summary>evaluate · <code>scripts/five_station_f1.py</code> 275-293 <span class="tag base">T-9</span></summary><p class="hunk-why">改什麼：空 attestation＋chat／強迫 ACCEPTED／請人審／否定跳過。</p><p class="hunk-rel">關聯：fixtures `rp-12`…`rp-14`／`skip-negation-as-oc.md`</p><div class="diff">
+<div class="ln add"><span class="m">+</span>        if CHAT.search(body) and not attest:</div>
+<div class="ln add"><span class="m">+</span>            result.red("RP-13", "空 attestation + chat 不得離 Spec")</div>
+</div></details>
+<details class="hunk" open><summary>evaluate · <code>scripts/five_station_f1.py</code> 296-312 <span class="tag base">T-10</span></summary><p class="hunk-why">改什麼：不可逆無 Quiz、無人 PASS 卻 Done、八點不齊。</p><p class="hunk-rel">關聯：fixtures `rp-07`／`rp-08`／`s-3-3-*`</p><div class="diff">
+<div class="ln add"><span class="m">+</span>        if value != "PASS":</div>
+<div class="ln add"><span class="m">+</span>            result.red("RP-8", "無人 PASS 卻 Done")</div>
+</div></details>
+<details class="hunk" open><summary>evaluate · <code>scripts/five_station_f1.py</code> 314-320 <span class="tag base">T-11</span></summary><p class="hunk-why">改什麼：三 cap 對照稿各紅（不寫計數器）。</p><p class="hunk-rel">關聯：fixtures `rp-09`…`rp-11`</p><div class="diff">
+<div class="ln add"><span class="m">+</span>        if re.search(r"第\s*3\s*次|重寫第 3", body):</div>
+<div class="ln add"><span class="m">+</span>            result.red("RP-9", "hop 重寫第三次")</div>
+</div></details>
+<details class="hunk" open><summary>evaluate · <code>scripts/five_station_f1.py</code> 322-329 <span class="tag base">T-12</span></summary><p class="hunk-why">改什麼：改採已拒案與 Q6 升格。</p><p class="hunk-rel">關聯：fixtures `reopen-*`／`q6-as-fact.md`</p><div class="diff">
+<div class="ln add"><span class="m">+</span>        for match in REOPEN.finditer(body):</div>
+<div class="ln add"><span class="m">+</span>            result.red("S-8.6", "重開已拒案 %s" % match.group(1))</div>
+</div></details>
+<details class="hunk" open><summary>live_close · <code>scripts/five_station_f1.py</code> 332-381 <span class="tag base">T-12</span></summary><p class="hunk-why">改什麼：本 slug 七舊名／token／Files 閉聯集／Q6 open；4-spec GIVEN 例句不誤殺。</p><p class="hunk-rel">關聯：讀 `docs/dev/five-station-simplify/5-tasks.md`（不寫入）</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>def live_close(root):</div>
+<div class="ln add"><span class="m">+</span>    result.info["new_family"] = any(name in names for name in NEW_FAMILY)</div>
+<div class="ln add"><span class="m">+</span>    result.info["files_closed"] = closed</div>
+<div class="ln add"><span class="m">+</span>    result.info["q6_open"] = bool(re.search(</div>
+<div class="ln add"><span class="m">+</span>        r"Q6[^\n]*採用現場[^\n]*\|\s*open\b", spec_text</div>
+<div class="ln add"><span class="m">+</span>    ))</div>
+</div></details>
+<details class="hunk" open><summary>check_path · <code>scripts/five_station_f1.py</code> 384-386 <span class="tag base">T-1</span></summary><p class="hunk-why">改什麼：牙入口讀單一 fixture。</p><p class="hunk-rel">關聯：`check-five-station-f1.sh`</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>def check_path(path, root=None):</div>
+<div class="ln add"><span class="m">+</span>    return evaluate(Path(path).read_text(encoding="utf-8"), path=str(path), root=root)</div>
+</div></details></section>
+<p class="src">由 <code>scripts/build-stage6-html.py</code> 從 md ## Diff 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>

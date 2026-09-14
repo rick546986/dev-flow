@@ -266,6 +266,11 @@ group_architecture() {
   # 新增/改名/刪除 hooks|scripts|observability|memory|tests/parallel-stage6 底下的 *.sh/*.py 沒同步
   # 更新那張表就紅;表裡寫了不存在的檔名也紅。
   run "architecture/check-file-map" scripts/check-file-map.sh || return 1
+  # F1 five-station-simplify 牙：check 入口走 --live（無 path 會 exit 2）；
+  # test 是 CASE 自檢。兩支必須同 commit 出現在會被執行的 run 行上，
+  # 否則開頭註冊自審會紅（第 7 型：檔在、沒人跑）。
+  run "architecture/check-five-station-f1" scripts/check-five-station-f1.sh --live || return 1
+  run "architecture/test-five-station-f1" scripts/test-five-station-f1.sh || return 1
   # STATUS 規則對帳(S-1):模板/母版自用兩份要點、Active 表頭 Branch 欄、
   # 主指南手寫 STATUS 範例列與 Stage 6 可複製指令(renderer 不同步那段)。
   run "architecture/check-status-policy" scripts/check-status-policy.sh || return 1
