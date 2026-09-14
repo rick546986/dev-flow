@@ -775,3 +775,9 @@
 - 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
 - 詳細:https://github.com/rick546986/dev-flow/pull/391
 
+## 2026-09-14 · five-station-f3
+- 做了什麼:F3 coordinator G3 PASS；Gates G1✅ G2✅ G3✅；Active 移出該列
+- 為什麼:owner chat「G3過」; park D-1/fixture 49>12/1162>200/N1-arm/contract dual-copy; entry docs in #395; no new knife
+- 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
+- 詳細:https://github.com/rick546986/dev-flow/pull/395
+
