@@ -769,3 +769,9 @@
 - 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
 - 詳細:https://github.com/rick546986/dev-flow/pull/385
 
+## 2026-09-14 · five-station-f3
+- 做了什麼:Stage 7 review landed (#391); Active Stage → 7-review; Gates G1✅ G2✅ G3⬜
+- 為什麼:Winner B + standing soft-fix after 3-review. No Human G3 invented; verdict stays PRE-REVIEW
+- 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
+- 詳細:https://github.com/rick546986/dev-flow/pull/391
+
