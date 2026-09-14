@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>five-station-f2 · 2-decision</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+a.cell{text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px}
+.group{margin:0 0 16px}
+.group h3{margin:0 0 8px;font-size:.95rem}
+.card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 8px;background:var(--sunk)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+details.bg{margin:10px 0 0}
+details.bg>summary{cursor:pointer;color:var(--ink-2)}
+table.judge{width:100%;border-collapse:collapse;font-size:.86rem;margin:0}
+table.judge th,table.judge td{border:1px solid var(--rule);padding:6px 8px;
+  text-align:left;vertical-align:top}
+table.judge th{background:var(--sunk);font-weight:650}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 2-decision · 審查介面</p>
+  <h1>five-station-f2</h1>
+  <p class="sub">正本是 md。這頁是審頁分組卡,不是 gate-twin 勾選卡。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">draft</span></div><div class="cell"><span class="k">分組</span><span class="v">6</span></div><div class="cell"><span class="k">方案</span><span class="v">18</span></div></div>
+</header>
+<section class="r-block" id="decision">
+  <div class="r-head"><span class="r-name">Decision</span></div>
+  <div class="r-body">
+    <p>採 **1A+2A+3A+4A+5A+6A**：coordinator 讀 brief §3 謂詞，**Must-keep 綠是 hop 謂詞的一部分（fail-closed）**。謂詞全真且 latch 假 → 立刻 hop，不准留下「要不要繼續」。Must-keep 任一條紅 → 拒 hop、停該站修，不准改問人。Ship 機械全綠仍必須 HumanWait；coordinator／Agent 代寫 `verdict: PASS` 或 `ACCEPTED` = 未寫。前進／latch 開火／cap 觸發各留人指得到的機械紀錄，必須能答**誰／從哪到哪／哪條謂詞／哪只 cap／是否 Escalated**；不鎖 JSON／YAML 鍵名。開火五站謂詞前先問路線：未宣告 2.1.0、或 in-flight、或 F3 前母版新軌 → 放手舊 7、不建立五站機；doctor 綠不是這道問的答案。本 slug 已 in-flight，對自己求五站 hop 必須拒。本 PR 只落 Decision＋審頁，不實作 coordinator、不寫 F1 牙、不切 F3、不改 STATUS、不發明 G1 PASS。不選 1B／1C／2B／2C／3B／3C／4B／4C／5B／5C／6B／6C。</p>
+  </div>
+</section>
+<section class="r-block" id="fig">
+  <div class="r-head"><h2 class="r-name">方案架構圖</h2></div>
+  <div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 454" role="img" aria-label="選定方案步驟">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">[1A] 謂詞真立刻 hop(選定)</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">[2A] Must-keep 紅拒 hop(選定)</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="b" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">[3A] 機械綠仍 HumanWait(選定)</text>
+  <path class="flow" d="M140,216 L140,238"/>
+  <rect class="b" x="40" y="238" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="262">[4A] 五語意槽不鎖鍵(選定)</text>
+  <path class="flow" d="M140,292 L140,314"/>
+  <rect class="b" x="40" y="314" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="338">[5A] 三前置後才評五站(選定)</text>
+  <path class="flow" d="M140,368 L140,390"/>
+  <rect class="b" x="40" y="390" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="414">[6A] 本 PR 只 Decision(選定)</text>
+</svg>
+  </div></div>
+</section>
+
+<section class="r-block" id="owner-calls">
+<div class="r-head"><h2>Owner Calls</h2></div>
+<div class="r-body"><table class="judge">
+<tr><th>OC</th><th>決定了什麼</th><th>依據</th><th>若被推翻會怎樣</th><th>狀態</th></tr>
+<tr><td>OC-1</td><td>**Must-keep 綠寫進 hop 謂詞**（fail-closed），不是 hop 後再查、不是警告。使用者已鎖「未綠不得 hop」；「謂詞本身含完整度、紅則停修不准問人」是 owner 延伸</td><td>`docs/dev/five-station-f2/1-discussion.md:L161`；同檔 `:L208`。延伸本身 `[Assumption]`</td><td>SC-2 變警告；失敗 2 回流</td><td>待人審</td></tr>
+<tr><td>OC-2</td><td>三失敗（Q22）寫進 Decision 約束，後站標可選 → 擋本 slug G2。使用者只把 Q22 標已解；「後站不得改可選」是延伸</td><td>`docs/dev/five-station-f2/1-discussion.md:L199`；同檔 `:L216`。延伸 `[Assumption]`</td><td>只測檔在也可稱 F2 完</td><td>待人審</td></tr>
+<tr><td>OC-3</td><td>事件**五語意槽鎖定、鍵名不鎖**。不選定 `event_type`、sidecar、schema 版本。這是對「事件要留」的收窄（能答五問 ≠ 已選 Q13）</td><td>`docs/dev/five-station-f2/1-discussion.md:L199` Q23；同檔 `:L210`；`notes/design/five-station-simplify-f1-dual-read-annex.md:L1-L3`</td><td>Scope 膨脹進 schema；SC-9 要重寫</td><td>待人審</td></tr>
+<tr><td>OC-4</td><td>本 Decision hop **不**跑 `status-update.sh`、不改 HISTORY、不改 1-discussion 頂欄、不把本檔 `verdict` 寫成 PASS、**不發明 G1 PASS**、**不合併**、不實作 F1／coordinator／F3。標**流程層**</td><td>`docs/dev/STATUS.md:L10-L16`；本 hop brief</td><td>PR 帶 STATUS 或自填 PASS，與並行 B／C 互蓋</td><td>待人審</td></tr>
+<tr><td>OC-5</td><td>Q17 `[~]` **升成本 Decision**：三前置全要才准評五站謂詞；doctor 綠不是第四條。使用者只被問到假設；「三條全要」是把過期期限收到本站</td><td>`docs/dev/five-station-f2/1-discussion.md:L193`；同檔 `:L160`。升格本身 `[Assumption]`（採討論暫定值）</td><td>5B 回流；本 slug 可被折</td><td>待人審</td></tr>
+<tr><td>OC-6</td><td>Q9–Q16／Q10／Q19 **維持未鎖**（仍待驗）。A 線不選計數倉、不餵真計數、不宣告 X5 已核。這是對 4A「要留紀錄」的收窄</td><td>`docs/dev/five-station-f2/1-discussion.md:L185-L192`；同檔 `:L214`。收窄 `[Assumption]`</td><td>A 偷選 run 級倉；與 B 衝突</td><td>待人審</td></tr>
+<tr><td>OC-7</td><td>NEW5 只准**合成 fixture**；本目錄與 `five-station-simplify` 不得當 hop 試體。使用者 Non-Goal 已寫；「Files 路徑不含本目錄站檔」是收窄</td><td>`docs/dev/five-station-f2/1-discussion.md:L113`；同檔 `:L170`。收窄 `[Assumption]`</td><td>5C 回流；觀測自污</td><td>待人審</td></tr>
+<tr><td>OC-8</td><td>Success Criteria 用「對照稿 + 可觀察拒絕／檔集」量測；本檔不寫測試檔或 fixture。量測形是對「可量測 SC」的延伸</td><td>模板頂註步 2；使用者強調 measurable。延伸 `[Assumption]`</td><td>SC 改成口頭「看起來會 hop」</td><td>待人審</td></tr>
+</table></div></section>
+<section class="r-block" id="point-1"><div class="r-head"><span class="r-name">決策點 1：謂詞真時要不要等人（失敗 1）</span></div><div class="r-body"><div class="card"><strong>1A</strong><p>**謂詞全真 ∧ latch 假 → 立刻 hop**。不准留下「要不要繼續」「請人審 A4／A7」。假 → 停該站修，不是改問人。latch 真才進 HumanWait 優:對準 G-keep-1(1)／brief §4；殺掉 Journey 的 chat 開關 劣:寫手少一次「確認再走」的安全感 依據:`notes/design/five-station-simplify-brief-v3.md:L127-L129`；`notes/design/five-station-simplify-f0-state-machine.md:L54-L55`；`docs/dev/five-station-f2/1-discussion.md:L155`；同檔 `:L94` Step 7。成本 `[Assumption]`</p></div><div class="card"><strong>1B</strong><p>**謂詞真仍等人按「繼續」**（把 chat 開關寫進 runtime） 優:跟現況 Journey 相容；owner 可在中間攔 劣:失敗 1 本身；例行停從 G1 搬家沒消失；G-keep-1 反面 依據:`docs/dev/five-station-f2/1-discussion.md:L94`；同檔 `:L256` AC-10(1)；`notes/design/five-station-simplify-f0-state-machine.md:L199` X6 是「latch 未命中卻等人」，1B 就是這條</p></div><div class="card"><strong>1C</strong><p>**維持七站例行 G1／G2 人停**，F2 不接自動前進 優:零 runtime 風險 劣:違 F2 刀；痛原封不動；G-knife-1 的「接自動前進」落空 依據:`notes/design/five-station-simplify-brief-v3.md:L176-L179` F2=Coordinator 接自動前進；`docs/dev/five-station-f2/1-discussion.md:L179` Q3</p></div></div></section>
+<section class="r-block" id="point-2"><div class="r-head"><span class="r-name">決策點 2：Must-keep 紅能不能 hop（失敗 2）</span></div><div class="r-body"><div class="card"><strong>2A</strong><p>**Must-keep 綠是 hop 謂詞的一部分（fail-closed）**。任一條紅（T 缺 Verify、無 RED、reviewer=implementer、S 含 TBD、Agent 代寫判定…）→ 拒 hop、停該站修。完整度不是 hop 後再查 優:對準 Owner-locked「未綠不得 hop」；擋「已經五站了所以可省」 劣:中間站看起來「比較慢」——慢在修完整度，不是等人 依據:`docs/dev/five-station-f2/1-discussion.md:L161`；同檔 `:L208`；`notes/design/five-station-simplify-brief-v3.md:L135-L158`；`notes/design/five-station-simplify-f1-rp-min-set.md:L7-L23` RP-1…RP-3／RP-16。成本 `[Assumption]`</p></div><div class="card"><strong>2B</strong><p>**Must-keep 紅仍 hop，只記警告** 優:hop 看起來快；警告以後再補 劣:比舊 7 更快假完成；失敗 2 本身；警告不是 fail-closed 依據:`docs/dev/five-station-f2/1-discussion.md:L20`；同檔 `:L174`「不把 hop 比較快解讀成 Must-keep 也可以 hop 掉」；同檔 `:L256` AC-10(2)</p></div><div class="card"><strong>2C</strong><p>**五站之後 Must-keep 改可選**（「已經簡化了」） 優:Build 短；少牙 劣:少一條 = 違 brief 不是簡化成功；F1 RP 最小集被掏空 依據:`notes/design/five-station-simplify-brief-v3.md:L158`；`notes/design/five-station-simplify-f1-dual-read-annex.md:L36` RP 只准加不准減；`docs/dev/five-station-f2/1-discussion.md:L56`</p></div></div></section>
+<section class="r-block" id="point-3"><div class="r-head"><span class="r-name">決策點 3：機械綠能不能當 Ship Done（失敗 3）</span></div><div class="r-body"><div class="card"><strong>3A</strong><p>**Ship 沒有自動前進**。機械全綠仍必須 HumanWait（A10 latch=是）。coordinator／Agent 代寫 `verdict: PASS` = 未寫（RP-8／RP-16）。人寫頂欄 `PASS` 才准 Done 優:對準 brief OC-3／狀態機 §2.5；擋偷章 劣:Ship 仍等人——這是唯一預設人停，不是回歸 依據:`notes/design/five-station-simplify-brief-v3.md:L39`；同檔 `:L119-L120`；`notes/design/five-station-simplify-f0-state-machine.md:L110-L120`；`notes/design/five-station-simplify-f1-rp-min-set.md:L14` RP-8；`:L23` RP-16</p></div><div class="card"><strong>3B</strong><p>**機械全綠自動標 Done** 優:無人停；F2 看起來「全自動」 劣:失敗 3 本身；偷 OC-3；出貨樹≠審過的樹 依據:`docs/dev/five-station-f2/1-discussion.md:L155`；同檔 `:L256` AC-10(3)；`notes/design/five-station-simplify-f0-state-machine.md:L189-L193` X1</p></div><div class="card"><strong>3C</strong><p>**coordinator 機械綠時代寫 `verdict: PASS`** 優:頂欄有字；檢查看起來過 劣:代寫=未寫；違「誰准寫判定=人」；RP-16 必紅 依據:`notes/design/five-station-simplify-brief-v3.md:L127-L128`；`notes/design/five-station-simplify-f0-state-machine.md:L187`；`docs/dev/five-station-f2/1-discussion.md:L71` coordinator **禁**寫判定</p></div></div></section>
+<section class="r-block" id="point-4"><div class="r-head"><span class="r-name">決策點 4：事件記什麼、能不能鎖鍵（G-obs-1／Q23）</span></div><div class="r-body"><div class="card"><strong>4A</strong><p>**五語意槽必須可答**：誰／從哪到哪／哪條謂詞／哪只 cap／是否 Escalated。前進、latch 開火、cap 觸發各至少一筆人指得到的機械紀錄。**不鎖** JSON／YAML 鍵名、`event_type`、sidecar 路徑、schema 版本（OC-3） 優:對準 Q23／F1 OC-3；後站能驗「指得到」而不偷做 annex 劣:落點（倉／鍵／hop_id）仍 OPEN；本檔驗不了 live 第三次 依據:`docs/dev/five-station-f2/1-discussion.md:L152`；同檔 `:L199` Q23；同檔 `:L210`；`notes/design/five-station-simplify-brief-v3.md:L133`；`notes/design/five-station-simplify-f1-dual-read-annex.md:L1-L3`</p></div><div class="card"><strong>4B</strong><p>**本檔鎖鍵名**（例如 `event_type=hop_advanced`、寫進 run 級 `events.jsonl`） 優:後站少一次收斂 劣:偷做 annex／Q13；可能把 run 級倉升成已核（Q10）；違 OC-3 依據:`docs/dev/five-station-f2/1-discussion.md:L189` Q13 `[&gt;]`；同檔 `:L186` Q10 `[~]`；`notes/design/five-station-simplify-f1-dual-read-annex.md:L36` 計數落點不在 F1 鎖定</p></div><div class="card"><strong>4C</strong><p>**不留機械紀錄**；chat／STATUS／HISTORY 當 hop log 優:零 schema 風險 劣:看板可過期（Q24 Backlog A 仍寫下一刀 F1）；人指不到五問；G-obs-1 落空 依據:`docs/dev/five-station-f2/1-discussion.md:L101`；同檔 `:L244-L247` AC-7「不是只靠 chat；不是 attempt_completed 冒充」；同檔 `:L200` Q24</p></div></div></section>
+<section class="r-block" id="point-5"><div class="r-head"><span class="r-name">決策點 5：何時准評五站謂詞（Q17＋本 slug freeze）</span></div><div class="r-body"><div class="card"><strong>5A</strong><p>**三前置全要**：契約已宣告 2.1.0 ∧ 非 in-flight ∧ 預設路線只在 F3 後。任一假 → 放手舊 7，**不建立五站機**。doctor `COMPATIBLE`／exit 0 **不是**這道問的答案。本目錄已有 `1-discussion.md` = in-flight，對自己求五站 hop 必須拒 優:對準 Q17 過期期限=F2 Decision；擋把本 slug 折成五站；SLOT-DOCTOR-GREEN-MEANS 變成行為不只文案 劣:採用升級細節（多 cache、2.0.0+五站 hops 牙形）仍交 C；本檔不寫牙 依據:`docs/dev/five-station-f2/1-discussion.md:L193` Q17；同檔 `:L160`；同檔 `:L180` Q4；`notes/design/five-station-simplify-f0-state-machine.md:L49-L50`；`notes/design/five-station-simplify-f1-dual-read-annex.md:L26-L32`；`hooks/_doctor_impl.py:L193-L202`。牙形 `[Assumption]`（C／後站）</p></div><div class="card"><strong>5B</strong><p>**doctor 綠即可開火五站謂詞** 優:最少一問；跟「更新後 hops 已換」的直覺一致 劣:綠只證明握手；SLOT 變成裝飾；舊 7 slug 會被折 依據:`docs/dev/five-station-f2/1-discussion.md:L147` G-honest-1；同檔 `:L42` SLOT-DOCTOR-GREEN-MEANS；`hooks/_doctor_impl.py:L193-L202`</p></div><div class="card"><strong>5C</strong><p>**本 slug 當 NEW5 白老鼠**（對自己建五站機驗 hop） 優:立刻看到 1A–3A 活著 劣:違 G-self-1／X4／RP-15；觀測被自己污染；Assumption「NEW5=合成 fixture」過期擋 依據:`docs/dev/five-station-f2/1-discussion.md:L170`；同檔 `:L217`；`notes/design/five-station-simplify-f0-state-machine.md:L196` X4；`notes/design/five-station-simplify-f1-rp-min-set.md:L22` RP-15</p></div></div></section>
+<section class="r-block" id="point-6"><div class="r-head"><span class="r-name">決策點 6：本 PR 與 F2 刀切到哪</span></div><div class="r-body"><div class="card"><strong>6A</strong><p>**本 PR 只 Decision＋審頁 html**。不實作 coordinator、不寫 F1 牙、不 bump schema、不切 F3、不刪 token、不改 STATUS／HISTORY、**不發明 G1 PASS**。F2 刀（後站）仍是 coordinator＋hop／latch／cap 事件；F3 才切新 slug 預設 優:對準使用者本 hop；本 slug 自己當 freeze 樣本；A／B／C 不互蓋看板 劣:自動前進要到後站才有碼；痛暫時還在 依據:本 hop brief；`notes/design/five-station-simplify-brief-v3.md:L176-L180`；`docs/dev/five-station-f2/1-discussion.md:L166-L168`；`docs/dev/STATUS.md:L10-L16` feature branch 不碰看板。本 PR 檔集可 `git diff --name-only` 核對</p></div><div class="card"><strong>6B</strong><p>**本 PR 順便寫 coordinator 碼** 優:少一次 hop；1A–3A 立刻可跑 劣:未過 G1 就施工；違「只 Decision」；還可能偷選 Q13 鍵名 依據:`docs/dev/five-station-f2/1-discussion.md:L12` 本檔只 Stage 1 時已禁施工；使用者：No F1 implementation／no F3 cut／Produce ONLY 2-decision</p></div><div class="card"><strong>6C</strong><p>**併刀 F3 cut**（新 slug 預設五站＋本檔當第一隻） 優:看起來一次做完 劣:雙路線、in-flight、採用端同時爆；違「不准併刀」 依據:`notes/design/five-station-simplify-brief-v3.md:L173` 不准併刀；同檔 `:L180` F3 才 Cut</p></div></div></section>
+<details class="bg"><summary>背景</summary><p><strong>既有脈絡</strong> 對帳快照（2026-09-14 tip `838e20a`，Stage 1-B＋soft-fix 已合 `#325`，STATUS Active 已開 `#328`）： | 層 | 現況 | 本 Decision 怎麼用 | |---|---|---| | F0 brief＋狀態機 | Owner 已核；十條鎖死；§4 runtime 從 F2 落地 | 本檔只收 hop 規則；不重開、不寫碼 | | F1 annex／RP | SLOT 九槽＋RP-1…16 只准加；計數落點明文交 F2 | 4A 不鎖鍵；2A 引用 RP 當完整度牙，不減列 | | Stage 1 `#325` | 1-discussion status=draft；winner B soft-fixed | 留當時說法；chat「ok」後本檔改口 | | 契約／runtime | `2.0.0`；doctor 只握手版本 | 5A：綠 ≠ 准評五站 | | 現行事件 | `stage` 正則舊 7；無 hop／latch／cap 型別；ledger 是 run 級 | 4A 只鎖五問；不選 Q13／Q14 接法 | | F1 cap 牙 | 咬 fixture 字樣「第 3 次」，不是倉 | A 不選倉；Q19 仍待驗 | | 本 slug STATUS | Active 在 1-discussion；Gates 全白 | 本 branch **不**改這列（OC-4） | | 本資料夾 | 已有 `1-discussion.md` | 已 in-flight；出貨走舊 7 |</p><p><strong>Rationale</strong> F2 的痛不是「沒有檔」，是 **hop 規則與完整度脫鉤**。現況 Journey 用 chat 當下一站開關：謂詞真也等、Must-keep 紅也可被准。若 F2 只接「比較快的 hop」而不把 Must-keep 寫進謂詞，假完成會比舊 7 更快——這是失敗 2。若接了 hop 卻仍在中間問「要不要繼續」，失敗 1 原封不動。若機械綠就標 Ship Done，失敗 3 偷走 OC-3。 1A＋2A＋3A 是同一條規則的三面，不能拆開只做最快的那面。latch 未命中 → 禁問人；latch 命中（A10／B1…）→ 必須 HumanWait，即使機械全綠。Must-keep 紅 → 停修，不是警告、不是可選。 4A 把「要留」收成可驗的五問，但不鎖鍵——鎖鍵就是偷做 F1 annex／Q13。4C 已被 Q24 證偽：STATUS Backlog A 仍寫「下一刀 F1」，而 F1 已 G3 PASS。 5A 是 hop 規則的前門。沒有這扇門，1A 會被讀成「對本 slug、對未 upgrade 採用端也自動前進」。doctor 綠不是前門的鑰匙。5C 拿自己當白老鼠會讓「F0–F2 仍舊 7」的觀測禁令失效。 6A 把本 hop 停在方向核准之前。A 線不選計數倉、不寫升級牙、不施工，讓 B／C 獨立收斂 Q9–Q16／Q18／Q20。</p><p><strong>風險</strong> | 風險 | 對策 | |---|---| | 後站把三失敗標成可選，或只測「檔在」當 F2 完 | Decision 約束 1／8；SC-1…3；4-spec 出現「可選 Must-keep／可選等人」→ 擋本 slug G2（OC-2） | | coordinator 實作時 hop 先走、Must-keep 後查 | 2A：完整度在謂詞裡，不是 hop 後警告。2B 進 Rejected | | 本檔鎖了 `event_type` 或 run 級倉 | 4A／OC-3／OC-6：鍵名與倉維持 OPEN。出現選定鍵名 → 本 G1 應打回 | | 有人用 doctor 綠當 5A 的通行證 | 5A＋SC-5：拒絕理由必須是路線未宣告／仍舊 7，不是「doctor 已綠」 | | 本 slug 被拿去試五站 hop | 5A／SC-6：目錄已存在 = freeze。五站機寫入 = RP-15 | | Q10 被升成「F2 已決定用／不用 run 級倉」 | OC-6：本檔不選倉。過期不得當已核 | | 本 hop 被當成已過 G1 或已落地 coordinator | 頂欄 draft／verdict 空；SC-10／SC-7。不發明 PASS | | A／B／C 互蓋 STATUS | OC-4 流程層：本 PR 不跑 `status-update.sh` | | 客氣問「請 owner 看一下任務板」 | 1A：A8／A9 latch=否 → 不得因想給人看而停（狀態機 §2.4） |</p><p><strong>未採</strong> | 不選 | 一句棄因 | |---|---| | 1B 謂詞真仍等人 | 失敗 1 本身；chat 開關寫進 runtime；X6。 | | 1C 不接自動前進 | 違 F2 刀；痛原封不動。 | | 2B 紅了仍 hop＋警告 | 比舊 7 更快假完成；警告不是 fail-closed。 | | 2C Must-keep 可選 | 少一條=違 brief；掏空 F1 RP 最小集。 | | 3B 機械綠自動 Done | 失敗 3；偷 OC-3；X1。 | | 3C coordinator 代寫 PASS | 誰准寫判定=人；RP-16 視為未寫。 | | 4B 本檔鎖鍵名 | 偷做 annex／Q13；可能把 Q10 升成已核。 | | 4C chat／STATUS 當 hop log | 看板可 stale；五問指不到；AC-7 反面。 | | 5B doctor 綠就開火 | 綠只證明握手；舊 7 會被折。 | | 5C 本 slug 當 NEW5 | X4／RP-15；觀測自污；過期擋。 | | 6B 本 PR 寫 coordinator | 未過 G1 就施工；違「只 Decision」。 | | 6C 併刀 F3 | brief 不准併刀；in-flight 與採用端同時爆。 | | 重開 F0 十條 | 翻任一條 = 新 brief。 | | 等人在 hop 中間「確認一下」 | 1B 的客氣說法；latch 未命中卻問人。 | | 選定 run 級 `events.jsonl` 當 cap 倉 | Q10 仍是假設；A 不選倉。 |</p></details>
+<p class="src">由 <code>scripts/build-stage2-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
