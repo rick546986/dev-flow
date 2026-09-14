@@ -354,6 +354,8 @@ Run: n-a:manual-implementer-stream
 - graph 預設 `next` 維持字串 `N7-g1`／`N6-g2`，另加 `next_when_five`。[Assumption] 既有 `check-devstage2-graph.sh`／`check-devstage4-graph.sh` 把 `next` 當字串與節點「下一跳」對帳；改成 map 會炸 P0。YAML 鍵名不鎖（5-tasks）。
 - 可選 `scripts/check-five-station-f3.sh` 只印「不是電池入口」、exit 0。依據 4-spec DD-2／S-5.10。
 - `frozen_slug` 只認 `/docs/dev/<slug>`，且 `/scripts/fixtures/` 一律假。[Assumption] NEW5 根路徑字面含 `five-station-f3`，若用 substring 會把合成 fixture 誤凍成 SELF-OLD7。
+- DOCTOR-HONEST 禁綠詞只咬 `✅ devflow doctor: COMPATIBLE`。[Assumption] `INCOMPATIBLE` 含 substring `COMPATIBLE`，用 `not in out` 會假紅。
+- OLD7-FREEZE 拒因接受 `仍舊 7` 或 `in-flight`。OLD7 fixture 無契約檔 → 先走「路線未宣告 仍舊 7」，仍是整段舊 7。
 
 ## Deviations
 
@@ -511,7 +513,7 @@ Run: n-a:manual-implementer-stream
 ⑤每個已完成 T 一 commit、Progress Log 每列有 hash？未勾 checkbox；Progress Log 空（等獨立審）。
 ⑥git diff --stat 檔案 ⊆ Files 聯集、Diff Budget 內？是（S-8.2 准許清單）。
 ⑦Decisions/Deviations 與 diff 對得上？是；無 silent drift；DBC applicable：未改握手／未刪節點／未重開 park。
-⑧回歸綠？F2 地板＋F3 電池待本 branch 實跑（見 Verify）；未發明 G3。
+⑧回歸綠？`bash scripts/test-five-station-f3.sh -v` → `=== CASE` ×33、unique 官方 25 名、`failed=0` exit 0。`--only new5|old7|token` 各 exit 3；`--probe hollow-*`／`two-script` 各 exit 3；`--probe polarity` exit 1；未知旗標 exit 2；`--group hollow` ≥6。`test-five-station-f2.sh` `failed=0`。`check-gate-tokens.sh` 綠。`check-devstage2-graph.sh`／`check-devstage4-graph.sh` 綠。`git diff --exit-code -- hooks/_doctor_impl.py`。未發明 G3。
 
 ## Review Follow-up(G3 打回時才用)
 

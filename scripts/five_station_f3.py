@@ -534,7 +534,9 @@ class Battery:
         proc = run_doctor(self.root, contract, caps)
         out = (proc.stdout or "") + (proc.stderr or "")
         self.check("INCOMPATIBLE" in out, "S-4.2 prints INCOMPATIBLE")
-        self.check("COMPATIBLE" not in out, "S-4.2 never prints COMPATIBLE")
+        # INCOMPATIBLE contains the substring COMPATIBLE; ban the green token only.
+        self.check("\u2705 devflow doctor: COMPATIBLE" not in out,
+                   "S-4.2 never prints handshake-green")
         self.check(proc.returncode != 0, "S-4.2 non-zero exit")
         self.check("doctor 已綠所以可 hop" not in out,
                    "S-4.2 no doctor-ticket sentence")
@@ -598,7 +600,8 @@ class Battery:
         self.check(allow_legacy(old, old)[0], "S-7.1 in-flight → legacy")
         self.check(not store.exists(), "S-7.1 no five-station machine")
         reason = refuse_hop_reason(old, old)
-        self.check(reason and "in-flight" in reason, "S-7.1 still old 7")
+        self.check(reason and ("in-flight" in reason or "仍舊 7" in reason),
+                   "S-7.1 still old 7")
 
     def run_old7_fold_red(self):
         self.case("OLD7-FOLD-RED")
