@@ -656,3 +656,9 @@
 - 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
 - 詳細:https://github.com/rick546986/dev-flow/pull/317
 
+## 2026-09-14 · five-station-simplify
+- 做了什麼:F1 teeth+dual-read annex G3 PASS；Gates G1✅ G2✅ G3✅；Active 移出該列
+- 為什麼:owner 過
+- 落在哪:#323/#321
+- 詳細:https://github.com/rick546986/dev-flow/pull/323 ; https://github.com/rick546986/dev-flow/pull/321
+
