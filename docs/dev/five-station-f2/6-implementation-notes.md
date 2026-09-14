@@ -10,8 +10,8 @@ updated: 2026-09-14
 
 FORK_INTEGRATION_SHA: 56c8019c1058c375755ca03944140f79ff8bbe55
 
-> Implementer notes. T Review Log is **self-check pending independent review**.
-> Do not read these verdicts as T Review ACCEPTED or Human G3 PASS.
+> Implementer notes + independent T-Review: **R2** (#347／`6681e1f`) then **R1** (this hop, author≠#346)。
+> R2 列不得刪。R1 另塊接在 R2 之後。未發明 Human G3 PASS。5-tasks checkbox 保持未勾。
 
 ## 0. 起手
 
@@ -182,6 +182,157 @@ R2 親跑 battery（2026-09-14）：全入口 `failed=0` exit 0；`=== CASE` ×1
 ### implementer-A PRE（非獨立；保留軌跡）
 Round 0 十列皆 `PENDING_INDEPENDENT_REVIEW`／`reviewed-at: 2026-09-14 PRE`。R2 不把那些列當 ACCEPTED。
 
+## T Review Log — Independent R1
+
+Independent T-Reviewer R1（fresh-context Agent；cloud run `bc-db09eb6e-df95-4384-b757-7d0c4ed245a4`）。Implementer = #346／`481e9cc` implementer-A。**不覆蓋上面 R2 列**。author≠approver（M12）。未發明 Human G3。5-tasks checkbox 保持未勾。
+
+R1 親跑（main tip then `481e9cc`）：`scripts/test-five-station-f2.sh -v` exit **0**；`=== CASE` **18** 名＝官方 18，無 `NEW5-MKTG-*`／`NEW5-EVT-*`／`NEW5-MK-ANY`。`--only new5|old7|f1` 各 exit **3**；未知旗標／`--only bogus` exit **2**。T-1…T-10 書面 Verify 皆 exit 0（含 T-5 F1 `--group dual-read`）。
+
+R1 與 R2 一致：T-8 **FAIL IMPL**（S-6.5 標籤假綠）。R1 另 FAIL T-4（S-2.5 `or True`）、T-6（S-4.3 PRED-STOP 拒因 M8）、T-10（S-8.9／D-1 應 L2）。R2 對 T-4／T-6／T-10 為 ACCEPTED（T-4／T-6 殘項、T-10 準 D-1 L1）。兩份並存，不互相塗改。
+
+| T | R1 verdict | class | 一句 |
+|---|---|---|---|
+| T-1 | ACCEPTED | — | persist 0→1→2；新 process 仍 2；倉不在 `runs/` |
+| T-2 | ACCEPTED | — | 倉＝2 拒第 3 次；STORE-READ 關讀倉＝該格紅；字樣牙仍在 |
+| T-3 | ACCEPTED | — | Decide／Goal 讀倉拒；Goal+Decide 同 mutation；T retry ≠ hop |
+| T-4 | **FAIL** | IMPL | S-2.5 断言 `not file or True` 恆真（`five_station_f2.py` L690） |
+| T-5 | ACCEPTED | — | doctor／marketplace／cache 不當路條；未改 `_doctor_impl.py` |
+| T-6 | **FAIL** | IMPL | S-4.3 PRED-STOP `pred_false(Sp)=None`，拒因是 M8 不是缺觀測欄 |
+| T-7 | ACCEPTED | — | 四格餵 `inject=` 壞行為；拒 hop 不會被記成紅格綠 |
+| T-8 | **FAIL** | IMPL | S-6.5：16 份只是 `f2-omit:` 標籤；`evaluate_hop(hop-ok,Bu)` 仍 hop |
+| T-9 | ACCEPTED | — | OLD7 無本樹五站機；token＋F1 綠；本目錄／simplify 不當 NEW5 |
+| T-10 | **FAIL** | SPEC | S-8.9：`481e9cc` 改了准許清單外 4 檔；D-1 標 L1 但 4-spec 寫「超出→L2」 |
+
+### T-1
+- reviewer identity: Independent T-Reviewer R1（fresh-context Agent；≠ #346 implementer-A）
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`481e9cc`（post-merge R1，不是 pre-commit seam）
+- Verify: 親跑 5-tasks 原文 → n=2；exit 0；S-1.1 first persist=0；S-1.2＝1；S-1.3＝2；S-1.4 新 process 仍 2/0/0
+- Covers finding: S-1.1／S-1.2／S-1.3／S-1.4／S-1.11／S-4.12 各有含 S-id 的 assertion；倉路徑 `…/docs/dev/<slug>/.five-station/store`
+- Files finding: ⊆ T-1 Files ⊆ S-8.9（入口＋`five_station_f2.py`＋`new5/q12-first-persist/`）
+- RED→GREEN finding: 5-tasks 開工前「腳本不存在」RED 可接受；GREEN 親見
+- Test Integrity finding: none
+- Design boundary finding: 未鎖 JSON 鍵名；正本不在 `runs/<run_id>/`
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-2
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`481e9cc`
+- Verify: 親跑 → n=2；exit 0。CAP-3：fixture 無「第 3 次」仍拒、Escalated、數字仍 2。STORE-READ：`caps_from_store=False` 且無字樣 → 該格紅
+- Covers finding: S-1.5／S-1.8／S-1.12／S-4.11。F1 `evaluate(..., caps_from_store=True)` 讀 `caps_near`（`five_station_f1.py` L327–L340）；字樣正則仍在
+- Files finding: ⊆ T-2 Files（含 `five_station_f1.py` 最小接線）
+- RED→GREEN finding: 親見 GREEN；極性未把「拒 hop」記成 STORE-READ 綠
+- Test Integrity finding: none
+- Design boundary finding: 字樣牙回歸未關
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-3
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`481e9cc`
+- Verify: 親跑 → n=2；exit 0。Goal+Decide pair==(1,1) 同一次 `save_store`；第二次 Goal 拒；T retry 不加成 Build hop
+- Covers finding: S-1.6／S-1.7／S-1.9／S-1.10。`goal_reopen` hunk `five_station_f2.py` L231–L249
+- Files finding: ⊆ T-3 Files
+- RED→GREEN finding: 親見 GREEN
+- Test Integrity finding: none
+- Design boundary finding: 未分兩次寫躲 Decide cap
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-4
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`481e9cc`
+- Verify: 親跑 SPEC-SHARE／BUILD-SHARE／SEVEN-STEM → n=3；exit 0（指令綠；S-2.5 無鑑別力）
+- Covers finding: S-2.2／S-4.13 Spec 同桶、S-2.3／S-4.14 Build 同桶、S-2.1／S-2.6 hop_id 五字、S-2.7 `481e9cc` 未碰 `graph.yaml` 成立。**S-2.5 不成立**：`run_share` 寫 `self.check(not (repo / "3-prototype.md").is_file() or True, "S-2.5 no extra proto bucket")`（`five_station_f2.py` L690）。`or True` 恆真。R2 視同殘項仍 ACCEPTED；R1 因 Covers 含 S-2.5 且断言無鑑別力 → FAIL
+- Files finding: ⊆ T-4 Files；未改 `graph.yaml`
+- RED→GREEN finding: 同桶 GREEN 可信；S-2.5 無可信 RED／GREEN
+- Test Integrity finding: **⑥** 無有意義 assertion（vacuous `or True`）
+- Design boundary finding: 七 stem 走 `seven_stem=True` 注入旗標，極性方向對；S-2.5 仍缺
+- verdict: FAIL
+- correction + re-review after FAIL: 待 implementer 刪 `or True`，改測「無 trigger 不建 proto 檔／不另開 proto 桶」後重審
+
+### T-5
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`481e9cc`
+- Verify: `--group doctor-route` n=4 exit 0（CASE 名重用 OLD7-NO-FIVE／OLD7-SELF／OLD7-TOKEN／NEW5-Q12-ZERO，落在官方 18）。F1 `--group dual-read` 另跑 exit 0，未綁進同一行
+- Covers finding: S-3.1 理由含「路線未宣告／仍舊 7」、不含「doctor 已綠所以可 hop」。`allow_legacy` 丟棄 `doctor_green`／`marketplace_updated`／`cache_has_hops`（L281–L282）。`f3_cut_happened` 恆 False。S-7.1–S-7.3：cache 不是第四前置
+- Files finding: ⊆ T-5 Files；`481e9cc` 未改 `hooks/_doctor_impl.py`／marketplace／契約
+- RED→GREEN finding: 親見 GREEN
+- Test Integrity finding: none
+- Design boundary finding: doctor 綠／marketplace／cache ≠ 路條
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-6
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`481e9cc`
+- Verify: 親跑 hop I／D／Sp／Bu／Sp5b＋PRED-STOP n=6；`--group events` n=3（NEW5-HOP-OK／NEW5-PRED-STOP／NEW5-CAP-3）；exit 0。指令綠；S-4.3 理由不對
+- Covers finding: I／D／Sp／Bu／Sp5b 具名 hop 與 events 五問（S-4.15–S-4.19／S-5.1）成立。**S-4.3 FAIL**：`pred-stop/docs/dev/stop/4-spec.md` L11–12 寫「故意不寫觀測欄」——字面含「觀測」，`pred_false(Sp)` 回 `None`。`evaluate_hop(pred-stop, stop, Sp)` → `ok=False, why=M8`（缺 DBC），不是缺觀測欄／OC 未裁。S-4.3 要求「理由含該謂詞假」；電池只断言 `(not ok) and why`。R2 ACCEPTED 此 T；R1 不改 R2 列
+- Files finding: ⊆ T-6 Files；未 bump `agent-event` schema
+- RED→GREEN finding: hop-ok／Sp5b GREEN 可信；PRED-STOP 的 RED 理由不是 S-4.3 寫的謂詞
+- Test Integrity finding: ⑥ PRED-STOP 不檢驗 `why` 是否為謂詞 id
+- Design boundary finding: 鍵名 OPEN；events 未發明 `NEW5-EVT-*`
+- verdict: FAIL
+- correction + re-review after FAIL: 待 implementer 讓 PRED-STOP 對照真的缺「觀測」欄（勿在說明句寫出該字）且 `why` 指到該謂詞後重審
+
+### T-7
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`481e9cc`
+- Verify: 親跑四 CASE n=4；exit 0。`inject=mk-hop|ship-done|wait` 與 OLD7 `persist(..., "folded")` 寫入
+- Covers finding: S-4.4–S-4.8／S-6.3／S-6.4。極性：`self.check(ok and why == "injected-mk")`——coordinator **拒** hop 不會被記成 NEW5-MK-RED 綠
+- Files finding: 四張具名注入稿在 Files 內；`five_station_f2_battery.py` 未拆檔（T-7 選配）
+- RED→GREEN finding: 親見四格 CASE 綠＝偵測到注入
+- Test Integrity finding: none
+- Design boundary finding: 極性未反
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-8
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`481e9cc`
+- Verify: `--group must-keep` n=16；exit 0。CASE 名皆 `NEW5-HOP-OK`（未發明 `NEW5-MK-ANY`）
+- Covers finding: S-6.6 Disposition 未改（gate 過）。**S-6.5／S-6.1 FAIL**（與 R2 同結論）。16 份只有 `f2-omit: Mxx`。`run_must_keep`（L888–L913）對 hop-ok 呼叫 `evaluate_hop(..., "Bu")`；R1 探針：`ok=True, why=None`（**仍 hop**）。`ok`／`why` 未斷言
+- Files finding: 16 檔在 `new5/must-keep/`（路徑 ⊆ Files）；檔不是「各少一條 M」的對照樹
+- RED→GREEN finding: 指令綠不能當 S-6.5「16 份皆不 hop」
+- Test Integrity finding: **④** 用 `f2-omit` 重定義「少一 M」；**⑥** 未 assert 拒 hop
+- Design boundary finding: 未改 4-spec Disposition 表
+- verdict: FAIL
+- correction + re-review after FAIL: 待 16 份成為真缺該 M 的 slug 樹，且 `evaluate_hop` 對該樹 `ok=False`、理由含該 M 後重審（R2 同要求）
+
+### T-9
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`481e9cc`
+- Verify: 親跑 n=3；exit 0。`check-gate-tokens.sh`＋完整 `test-five-station-f1.sh` 在 OLD7-TOKEN 內綠
+- Covers finding: S-7.4 old7 根有 1–7 `.md`；S-7.5 token／F1；S-7.6 本目錄拒 hop；S-7.7 NEW5＝`scripts/fixtures/five-station-f2/new5/`
+- Files finding: ⊆ T-9 Files；未把本目錄或 `five-station-simplify` 當 NEW5
+- RED→GREEN finding: 親見 GREEN
+- Test Integrity finding: none
+- Design boundary finding: 未刪 token
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-10
+- reviewer identity: Independent T-Reviewer R1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`481e9cc`
+- Verify: 親跑 `-v` n=18 exit 0；`--help` 有 `--only`；`--only new5|old7|f1` 各 exit 3；未知旗標 exit 2。官方 18 名齊
+- Covers finding: S-4.1／S-4.9／S-4.10／S-8.1–S-8.3／S-8.5／S-8.6／S-8.8 電池側成立。S-8.4／S-8.7 gate 成立。**S-8.9 FAIL**：`481e9cc` 超出准許清單四檔（guide 檔案地圖列、`check-file-map.sh`、`devflow-check.sh`、`test-architecture-guards.sh`）。4-spec L1004「超出 → L2」；D-1 寫 L1。R2 準 D-1 為 L1 且 T-10 ACCEPTED；R1 不改 R2 列
+- Files finding: T-10 Files 聯集本身 ⊆ S-8.9；**同 commit 多了 D-1 四檔**
+- RED→GREEN finding: 18 CASE＋hollow GREEN 可信；S-8.9 檔集不綠
+- Test Integrity finding: none
+- Design boundary finding: 未把 F3／折線／刪 token 改成 In
+- verdict: FAIL
+- correction + re-review after FAIL: 待 L2 補 S-8.9／5-tasks Files 准許 host file-map 註冊，或把 D-1 四檔移出 F2 實作 commit 後重審
+
 ## Progress Log
 
 <!-- hash 在本 PR 的實作 commit 寫入；獨立 T review 前不勾 5-tasks -->
@@ -267,6 +418,11 @@ Run:
 - **D-1 L1 — CONCUR**。S-8.9 禁的是 `guides/` **F3 cut 聲明**與 graph／token／doctor／契約／STATUS。#346 只加檔案地圖兩列、`EXPECTED_MAPPED_FILES` 208→210、architecture 靜態釘、`devflow-check.sh` 註冊 F2 電池。不是切五站預設。准許清單上的兩支新腳本必須進地圖，否則 CI 自審紅。不動 R/S。後站仍不准把 F3／token／graph 改成 In。
 - **D-2 L1 — CONCUR**。Stage 4「≤12」是估計；5-tasks T-8 已寫 16 份 must-keep。超支不是 R/S 變更。R2 **不**因份數 CONCUR 就放行 T-8 測法（見上 FAIL IMPL）。
 - **D-3 L1 — CONCUR**。`5-tasks.md` 在 S-8.9 准許清單內。只改 `status: approved` 給 N1-arm／graph P0，未勾 T、未自稱 ACCEPTED、未發明 G3。F1 同例。不是完成宣告。
+
+### R1 on D-1／D-2／D-3（獨立評；不刪 R2 上列）
+- **D-1 CHALLENGE**（R1 認為應 L2／S-8.9）。准許清單外四檔同上。guide 加列是檔案地圖、**不是** F3 cut（此點與 R2 一致）。4-spec L1004 寫「超出 → L2」；「分不清一律 L2」。R2 CONCUR L1 列保留。
+- **D-2 ACCEPT**（與 R2 CONCUR 同向）。估計 vs 具名路徑；不動 R/S。不因此放行 T-8。
+- **D-3 ACCEPT**（與 R2 CONCUR 同向）。N1-arm only；非 G3。
 
 ## Files Changed
 
