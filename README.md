@@ -1,6 +1,6 @@
 # dev-flow
 
-七站開發流程，給 agent 跑、人還握著方向（不拿走控制，不像 GSD／BMAD 整包代操）。
+新工作預設五站（Intake→Decide→Spec→Build→Ship）；進行中票仍七站。給 agent 跑、人還握著方向（不拿走控制，不像 GSD／BMAD 整包代操）。
 
 <p align="center">
   <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-flow.html#flow">
