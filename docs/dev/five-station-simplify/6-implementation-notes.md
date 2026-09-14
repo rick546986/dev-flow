@@ -41,7 +41,9 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 
 ## T Review Log
 
-獨立 T review **未做**。implementer 自檢只標 PRE，不得當最終 PASS。5-tasks checkbox 保持未勾。
+獨立審查已授權合併（PR #321）：R1 APPROVE yes；R2 PASS yes（澄清 PRE≠block）。
+下列 T verdict 改 **ACCEPTED**（獨立授權後記帳）。implementer 自檢列仍標 PRE 來源，不是 G3。
+**未發明 G3 PASS。** 5-tasks checkbox 保持未勾（Stage 7 由 coordinator 開）。
 
 ### T-1
 - reviewer identity: implementer-A（self）
@@ -53,7 +55,7 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 - RED→GREEN finding: 5-tasks 開工前腳本不存在＝RED；本 T Verify 綠
 - Test Integrity finding: none（自檢；待獨立審）
 - Design boundary finding: 未改 hooks／模板／graph；未鎖鍵名
-- verdict: PRE
+- verdict: ACCEPTED
 - correction + re-review after FAIL: N/A
 
 ### T-2
@@ -66,7 +68,7 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 - RED→GREEN finding: 見 TDD Evidence
 - Test Integrity finding: none（自檢）
 - Design boundary finding: 未把 SLOT 寫成必填 schema 鍵
-- verdict: PRE
+- verdict: ACCEPTED
 - correction + re-review after FAIL: N/A
 
 ### T-3
@@ -79,7 +81,7 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 - RED→GREEN finding: 見 TDD Evidence
 - Test Integrity finding: none（自檢）
 - Design boundary finding: 未改 doctor 握手
-- verdict: PRE
+- verdict: ACCEPTED
 - correction + re-review after FAIL: N/A
 
 ### T-4
@@ -92,7 +94,7 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 - RED→GREEN finding: 見 TDD Evidence
 - Test Integrity finding: none（自檢）
 - Design boundary finding: 只釘偵測布林
-- verdict: PRE
+- verdict: ACCEPTED
 - correction + re-review after FAIL: N/A
 
 ### T-5
@@ -105,7 +107,7 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 - RED→GREEN finding: 見 TDD Evidence
 - Test Integrity finding: none（自檢）
 - Design boundary finding: 紅在卡上，未延後 Ship
-- verdict: PRE
+- verdict: ACCEPTED
 - correction + re-review after FAIL: N/A
 
 ### T-6
@@ -118,7 +120,7 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 - RED→GREEN finding: 見 TDD Evidence
 - Test Integrity finding: none（自檢）
 - Design boundary finding: 未把自審寫成可選
-- verdict: PRE
+- verdict: ACCEPTED
 - correction + re-review after FAIL: N/A
 
 ### T-7
@@ -131,7 +133,7 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 - RED→GREEN finding: 見 TDD Evidence
 - Test Integrity finding: none（自檢）
 - Design boundary finding: 無第二模糊詞家族
-- verdict: PRE
+- verdict: ACCEPTED
 - correction + re-review after FAIL: N/A
 
 ### T-8
@@ -144,7 +146,7 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 - RED→GREEN finding: 見 TDD Evidence
 - Test Integrity finding: none（自檢）
 - Design boundary finding: 未把 M 標可選
-- verdict: PRE
+- verdict: ACCEPTED
 - correction + re-review after FAIL: N/A
 
 ### T-9
@@ -157,7 +159,7 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 - RED→GREEN finding: 見 TDD Evidence
 - Test Integrity finding: none（自檢）
 - Design boundary finding: chat 不是 attestation
-- verdict: PRE
+- verdict: ACCEPTED
 - correction + re-review after FAIL: N/A
 
 ### T-10
@@ -170,7 +172,7 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 - RED→GREEN finding: 見 TDD Evidence
 - Test Integrity finding: none（自檢）
 - Design boundary finding: 未實作 coordinator HumanWait
-- verdict: PRE
+- verdict: ACCEPTED
 - correction + re-review after FAIL: N/A
 
 ### T-11
@@ -183,7 +185,7 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 - RED→GREEN finding: 見 TDD Evidence
 - Test Integrity finding: none（自檢）
 - Design boundary finding: 未實作 F2 計數器、未鎖 event 鍵
-- verdict: PRE
+- verdict: ACCEPTED
 - correction + re-review after FAIL: N/A
 
 ### T-12
@@ -196,7 +198,7 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 - RED→GREEN finding: 見 TDD Evidence
 - Test Integrity finding: none（自檢）
 - Design boundary finding: 未 bump 契約、未改 STATUS
-- verdict: PRE
+- verdict: ACCEPTED
 - correction + re-review after FAIL: N/A
 
 ## Progress Log
@@ -207,6 +209,7 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 |---|---|---|
 | 2026-09-14 | T-1…T-12 | 3c8d718 實作落地（review=PRE，非正式 PASS） |
 | 2026-09-14 | T-1 T-9 | 0c3bbf4e1dca2abe61a2ea4bae04c82e499b58e5 soft-fix #321：FM verdict + 偽造 attest 不洗白 + S-4.1 正向（review=PRE） |
+| 2026-09-14 | T-1…T-12 | 獨立授權後記帳 ACCEPTED（R1 APPROVE／R2 PASS；PRE≠block）。未發明 G3 PASS。CI 地板：註冊兩支牙 + file-map 205→208（D-1 收口） |
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 
@@ -358,16 +361,16 @@ RED 共用基準（5-tasks「Verify 開工前原樣跑」2026-09-14）：`script
 - fixture 目錄 `scripts/fixtures/five-station-simplify/`：4-spec DD 下層建議。依據：4-spec 內部技術選擇。
 - T-11 一次寫齊 RP-1…16 列（T-1 只要求 RP-16 一列）：最終 annex 必須可對十六紅。依據：S-2.6／T-11 Intent。
 - live Q6 掃描跳過 4-spec 自己的 GIVEN／「寫成 Observed」例句。依據：[Assumption] S-6.3 觀測是擋升格句，不是讓契約自紅。
-- 不把新牙掛進 `hooks/selftest.sh` MIN_CASES／`EXPECTED_MAPPED_FILES`。依據：S-8.5 Files 聯集不含 hooks／file-map；Split Decisions。
+- 不把新牙掛進 `hooks/selftest.sh` MIN_CASES／`EXPECTED_MAPPED_FILES`。依據：S-8.5 Files 聯集不含 hooks／file-map；Split Decisions。Owner 後授權 CI 綠後合併：file-map／devflow-check 註冊改走 D-1 收口，不改 5-tasks Files 聯集、不改 hooks。
 - Ship PASS 只認 YAML／頂欄作者，不認 Demo `Verdict attestation`。依據：S-3.1「無人類頂欄的 PASS」；R2 anti false-green。
 
 ## Deviations
 
-### D-1(L1)
-- 現象:`bash scripts/check-file-map.sh` → `scanned=208 ≠ EXPECTED_MAPPED_FILES=205`（新 3 支 scripts/*.py|sh）
-- 保守選擇:不改 `check-file-map.sh`、`guides/guide-dev-flow.html`、`test-architecture-guards.sh`
-- 理由:S-8.5／T-12 Boundaries：紅了是 L1 訊號不是本 hop 預授權
-- 影響:T-12／R-8／S-8.5；CI file-map 會紅直到 coordinator 另刀地板
+### D-1(L1) — resolved 2026-09-14
+- 現象:`bash scripts/check-file-map.sh` → `scanned=208 ≠ EXPECTED_MAPPED_FILES=205`（新 3 支 scripts/*.py|sh）；另 `devflow-check` 註冊自審缺 `check-five-station-f1.sh`／`test-five-station-f1.sh`
+- 原保守選擇:不改 file-map 地板（S-8.5 本 hop 未預授權）
+- 收口:owner 授權 CI 綠後合併。同 commit 把兩支牙註冊進 `devflow-check.sh` architecture 組、`EXPECTED_MAPPED_FILES=208`、filemap 三列、靜態釘。未改 5-tasks Files 聯集、未改 hooks、未發明 G3 PASS
+- 影響:T-12／R-8／S-8.5 閉聯集仍只六條；CI 地板與聯集分開記帳
 
 ### D-2(L1)
 - 現象:`five_station_f1.py` ≈407 行，超過 Diff Budget「scripts 新牙非測試 ≤250」
@@ -378,6 +381,7 @@ RED 共用基準（5-tasks「Verify 開工前原樣跑」2026-09-14）：`script
 ## Files Changed
 
 對照 4-spec Diff Budget F1：annex 2 檔；scripts 新牙 3 檔 + fixture 目錄；本目錄 6-notes（+html）。零 graph／hooks／_templates／STATUS。
+D-1 收口（CI 地板，不進 5-tasks Files 聯集）：`devflow-check.sh` 註冊兩支牙；file-map 常數／表／靜態釘。
 
 - `scripts/five_station_f1.py`（新）
 - `scripts/check-five-station-f1.sh`（新）
@@ -387,6 +391,10 @@ RED 共用基準（5-tasks「Verify 開工前原樣跑」2026-09-14）：`script
 - `notes/design/five-station-simplify-f1-rp-min-set.md`（新）
 - `docs/dev/five-station-simplify/6-implementation-notes.md`（新）
 - `docs/dev/five-station-simplify/6-implementation-notes.html`（產檔器）
+- `scripts/devflow-check.sh`（D-1：註冊兩支牙）
+- `scripts/check-file-map.sh`（D-1：205→208）
+- `scripts/test-architecture-guards.sh`（D-1：靜態釘）
+- `guides/guide-dev-flow.html`（D-1：filemap 三列）
 
 ## Diff(各 T commit,逐檔折疊)
 
@@ -584,13 +592,13 @@ RED 共用基準（5-tasks「Verify 開工前原樣跑」2026-09-14）：`script
 ## Self-Review
 
 ①每個 T×S 有含 S-id 的 CASE 名 + 該 T 自己的 RED（開工前腳本不存在）與 GREEN（上列 Verify）。不得跨 T 把 GREEN 輸出當另一 T 的唯一證據；T-9／T-11／T-12 另點具名檔。
-②每 T 在 T Review Log 有 verdict=PRE（不是獨立 PASS）。
-③PRE ≠ PASS；沒有「PASS 早於 commit」可填。獨立 reviewer 尚未跑。
+②每 T 在 T Review Log 原列 implementer PRE；獨立授權後記帳 verdict=ACCEPTED。不是 G3 PASS。
+③PRE ≠ block（R2 澄清）。沒有「PASS 早於 commit」可填。未發明 G3 PASS。
 ④無 FAIL 後未收斂的 T。
-⑤實作一次落地 T-1…T-12（sequential 依賴同一牙）；正式「每 T 一 commit」等獨立 PASS 後由 reviewer／coordinator 切。Progress Log 尚未填 PASS hash。
-⑥`git status` 新增檔 ⊆ 5-tasks Files 聯集 + 本目錄 6-notes。file-map 紅＝D-1 L1。
+⑤實作一次落地 T-1…T-12（sequential 依賴同一牙）。Progress Log 記獨立授權 ACCEPTED，不是 G3 hash。
+⑥5-tasks Files 聯集仍只六條。D-1 CI 地板（devflow-check 註冊 + file-map 208）另記，不進聯集。
 ⑦Decisions／D-1／D-2 對得上 diff。DBC：無未授權模組依賴；Data owner 仍是母版 scripts／annex；未改 Interface 正本（doctor／_stage3）；未「修好」Known limit（仍不改 `_stage3_impl.py`，改由 F1 SLOT-SKIP-NEGATION 收）。
-⑧本次 S 的 F1 牙群組全綠。既有 `check-file-map.sh` 紅（D-1）。未發明 G3 PASS。未跑全 repo selftest（S-8.5 禁改 hooks 地板）。
+⑧本次 S 的 F1 牙群組全綠。file-map／註冊自審已收口。未發明 G3 PASS。未改 hooks 地板。
 
 ## Review Follow-up(G3 打回時才用)
 
