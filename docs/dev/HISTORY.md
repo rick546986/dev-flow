@@ -727,3 +727,9 @@
 - 為什麼:Owner standing opens F3 board after F2 G3 (#358); no G1 invented; discussion is a follow-up
 - 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
 
+## 2026-09-14 · five-station-f3
+- 做了什麼:Stage 2 decision landed (#366); Active Stage → 2-decision; Gates still G1⬜ G2⬜ G3⬜
+- 為什麼:Winner B unanimous; standing soft-fix canonical-only reader + 「F3 cut 未發生」 + split silent-True/wording + PRE-AND/F3-F2-REGRESS floor + elevate F2 park. No G1 PASS invented.
+- 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
+- 詳細:https://github.com/rick546986/dev-flow/pull/366
+
