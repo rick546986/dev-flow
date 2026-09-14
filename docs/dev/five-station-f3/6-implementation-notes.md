@@ -187,6 +187,7 @@ implementer commits（軌跡，不是 Progress Log 驗收列）：見 impl branc
 | 日期 | T | 一句 |
 |---|---|---|
 | 2026-09-14 | T-1…T-10 | Independent RR2 re-review after #385／`ae9c064`：10／10 ACCEPTED；未發明 G3；未勾 checkbox |
+| 2026-09-14 | T-1…T-10 | Independent RR1 re-review after #385／`ae9c064`：10／10 ACCEPTED；未發明 G3 |
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 
@@ -597,6 +598,7 @@ n-a:未送 G3。
 implementer ≠ R1／R2 reviewer。本塊只記修正與自檢，**verdict 不是 ACCEPTED**。未發明 G3。未勾 5-tasks checkbox。R1／R2 FAIL 表留在 #386／#387，本節不覆寫。
 
 > RR2 已審（#385 tip `ae9c064`）：上表 standing 列仍不是 self-ACCEPTED。獨立 verdict 見 **T Review Log — Independent RR2 re-review**。
+> RR1 已審（#385 tip `ae9c064`）：上表 standing 列仍不是 self-ACCEPTED。獨立 verdict 見 **T Review Log — Independent RR1**。R1 #386／R2 #387 FAIL 表與 RR2 #388 表不覆寫。
 
 | T | standing | 一句 |
 |---|---|---|
@@ -793,3 +795,181 @@ RR2 親跑（#385 tip `ae9c064`）：
 - Design boundary finding: D-1 CONCUR L1。未發明 G3。checkbox 未勾
 - verdict: ACCEPTED
 - correction + re-review after FAIL: N/A（本 T 先前 ACCEPTED；殘項不翻）
+
+## T Review Log — Independent RR1 re-review（post #385／`ae9c064`）
+
+Independent Re-Reviewer **RR1**（fresh-context Agent；cloud run `bc-59df7e8d-44c0-45fb-8cab-b13c5631b75d`）。Implementer = #385／`ae9c064` standing rework（≠ 本 reviewer）。**不覆蓋**上面 implementer PENDING／standing 列，也不覆寫 R1 #386／R2 #387 FAIL 表，也不覆寫 **Independent RR2**（#388）表。author≠approver（M12）。未讀 implementer Self-Review 當錨。未發明 Human G3。5-tasks checkbox 保持未勾。未改碼。
+
+Gold：`origin/main` `822f842` 的 `4-spec.md`（與 tip 零 diff）＋`5-tasks.md`（僅 N1-arm `status: draft`→`approved`；Verify／checkbox 原文不變）。審 tip `ae9c0647dee0eb9d646d6ec432857e4b7b12ecbf`。
+
+RR1 親跑 battery（2026-09-14；#385 tip `ae9c064`）：
+
+| Probe | Result |
+|---|---|
+| `scripts/test-five-station-f3.sh -v` | `failed=0` exit 0；`=== CASE` ×**33**；unique 官方名 **25**；無 `NEW5-MKTG-*`／`GRAPH-AGREE`／`HOLLOW-OK` |
+| `--only new5` | exit **3** |
+| `--only old7` | exit **3** |
+| `--only token` | exit **3** |
+| `--probe hollow-true` | exit **3** |
+| `--probe hollow-files` | exit **3** |
+| `--probe hollow-f2` | exit **3** |
+| `--probe hollow-word` | exit **3** |
+| `--probe two-script` | exit **3** |
+| `--probe polarity` | exit **1**（`polarity_inverted()` 真跑 cut-ok／MK 拒／三注入，不是 `return 1` stub） |
+| `--not-a-real-flag` | exit **2** |
+| `--help` | `--only`／`--probe` 是一等旗標 |
+| `--group hollow` | `=== CASE`＝6；六個官方 HOLLOW 名皆在；根＝`new5/html-only/` |
+| `--group graph-edges` | 只印 NEW5-CUT-OK＋PRE-HOPS-200（無 GRAPH-AGREE） |
+| `scripts/test-five-station-f2.sh` | `failed=0` exit 0（地板，不是 IFF） |
+| `git diff --exit-code origin/main -- hooks/_doctor_impl.py` | **0** |
+| `scripts/check-gate-tokens.sh` | 綠 |
+| `scripts/check-devstage2-graph.sh`／`check-devstage4-graph.sh`／`check-devstage6-graph.sh` | 綠 |
+
+獨立探針（不靠電池自述）：`graph_next(cut-ok)`＝`N8-end`／`N7-end`；`graph_next(pre-hops-200)`＝`N7-g1`／`N6-g2`；`wording_only=(「五站」in guide ∧ graph_next==N7-g1)`＝**False**。`refuse_hop_reason(doctor-ne-ticket, doctor_green=True)`＝`路線未宣告 仍舊 7`。`refuse_hop_reason(cut-ok)`＝`None`；`refuse_hop_reason(cut-ok, mk_reds=KEEP_MK_IDS)`＝`Must-keep 紅 M3 M5 M9 M11 M12 M15`（無 `injected-mk`）。`evaluate_hop(inject-keep-mk-red)`→`hopped=True why=injected-mk M3 M5 M9 M11 M12 M15`；wait→`injected-wait N7-g1 要不要繼續`；ship→`injected-done`。DOCTOR-HONEST 真跑 doctor＝`INCOMPATIBLE`／rc≠0。無 `or True`。Files ⊆ S-8.2＋**D-1 L1** 四檔具名。STATUS／HISTORY／`_templates/`／handshake／token 刪檔＝0。未發明 G3。5-tasks checkbox 仍 `[ ]`。
+
+| T | RR1 | class | S／hunk | 一句 |
+|---|---|---|---|---|
+| T-1 | ACCEPTED | — | S-1.1…S-1.5 · `f3_cut_happened` L128–146 | 五切片可數；缺檔／空槽 False；只讀 |
+| T-2 | ACCEPTED | — | S-1.3／S-1.6 · `run_silent_red` | 缺三槽 → False；STATUS diff 空 |
+| T-3 | ACCEPTED | — | S-2.1…S-2.3 · `contract_version` L104–110 | 三切片；只讀正本鍵；cut 獨立假 |
+| T-4 | ACCEPTED | — | S-2.4…S-2.7 · `refuse_hop_reason` L163–181 | PRE 五棵；`F3 cut 未發生`；禁「已宣告所以切了」 |
+| T-5 | ACCEPTED | — | S-3.1／S-3.2／S-3.5／S-3.6／S-7.4 · `graph_next` L339–347 | cut-ok skip；未宣告跳過側不生效；節點仍在 |
+| T-6 | ACCEPTED | — | **S-3.3** · `run_graph_word_ne` L641–681；`graph_next` | 用語＋恆 N7-g1＝紅；cut AND → N8-end／N7-end（R2 FAIL 已修） |
+| T-7 | ACCEPTED | — | **S-4.3** · `run_doctor_ne_ticket` L699–721 | stdout 字面 `路線未宣告 仍舊 7`（R1 FAIL 已修） |
+| T-8 | ACCEPTED | — | **S-6.1–6.3／S-5.3** · `evaluate_hop` L217–279；`run_keep_mk_red` L744–770 | 真 hop 機＋六 M；cut-ok `None` 不假綠；polarity 真探針（R1／R2 FAIL 已修） |
+| T-9 | ACCEPTED | — | S-7.1／S-7.2／S-7.3／S-7.5 · `run_old7_*`／`run_self_old7` | FREEZE＋SELF 真閘；FOLD-RED 走 `evaluate_hop` |
+| T-10 | ACCEPTED | — | S-5.1…S-5.11／S-8.2…S-8.6 · `main` `--only`／`--probe` | 25＋hollow exit 3＋未知 2；活樹 cut；html-only∈new5 |
+
+D-n：implementer **D-1 L1**（CI 註冊四檔）— RR1 **CONCUR L1**。四檔具名、不是 silent extras、不是第二次 cut。不自改成 L2、不重開 G2。不發明 D-n。未發明 G3。
+
+殘（不翻 T）：`--probe polarity` 在呼叫 `polarity_inverted()` 後仍無條件 `return 1`（T-10 契約要 exit 1）；GRAPH-WORD-NE 注入支路 `evaluate_hop(graph-word)` 仍依檔名填 `s2=N7-g1`（fail-closed 牙在真 `graph_next`）。OLD7 fixture 無契約 → 拒因先走 `路線未宣告 仍舊 7`（仍舊 7）。
+
+### T-1
+- reviewer identity: Independent Re-Reviewer RR1（fresh-context Agent；cloud run `bc-59df7e8d-44c0-45fb-8cab-b13c5631b75d`；≠ #385 implementer）
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`ae9c064`（#385 standing 後獨立重審）
+- Verify: 5-tasks 原指令 → n=5；五 `--slot` 各 exit 0
+- Covers finding: S-1.1 親探 ok 樹 `f3_cut_happened True`、`which_condition=f3-cut`。S-1.2 missing／empty-who → False。S-1.4 位元組不變。S-1.5 活契約無 cut 兄弟鍵。live 三槽檔 True
+- Files finding: ⊆ T-1 Files；活樹 cut 屬 T-10
+- RED→GREEN finding: 可信
+- Test Integrity finding: none
+- Design boundary finding: `which_condition` 未捆 AND；未寫本目錄當 NEW5
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-2
+- reviewer identity: Independent Re-Reviewer RR1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`ae9c064`
+- Verify: `--case ATTEST-SILENT-RED` n≥1；exit 0。`git diff origin/main -- docs/dev/STATUS.md` 空
+- Covers finding: S-1.3 缺三槽 → False；fixture 含字面 `return True`。S-1.6 未改 STATUS
+- Files finding: ⊆ T-2 Files
+- RED→GREEN finding: 可信
+- Test Integrity finding: none
+- Design boundary finding: 未改 STATUS
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-3
+- reviewer identity: Independent Re-Reviewer RR1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`ae9c064`
+- Verify: READ-SEAM 三切片 `-ge 3`；各 exit 0
+- Covers finding: 親探 F2 舊 reader 對 seam＝`''`；F3 canonical-200＝`2.0.0`；canonical-210＝`2.1.0`、`declared` 真、cut 仍假。`contract_version` 只 `blob.get("devflow_contract_version")`
+- Files finding: ⊆ T-3 Files
+- RED→GREEN finding: 可信
+- Test Integrity finding: none
+- Design boundary finding: 無 fallback 錯鍵；2.1.0 ≠ cut
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-4
+- reviewer identity: Independent Re-Reviewer RR1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`ae9c064`
+- Verify: PRE 五棵 `-ge 5`；各 CASE exit 0
+- Covers finding: 親探 PRE-210＝`仍舊 7 F3 cut 未發生`。PRE-AND 三缺＝`路線未宣告 仍舊 7`／`仍舊 7 in-flight`／`仍舊 7 F3 cut 未發生`。無「已宣告所以切了」
+- Files finding: ⊆ T-4 Files
+- RED→GREEN finding: 可信
+- Test Integrity finding: none
+- Design boundary finding: doctor／marketplace／cache 不當路條
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-5
+- reviewer identity: Independent Re-Reviewer RR1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`ae9c064`
+- Verify: NEW5-CUT-OK＋PRE-HOPS-200＋`--group graph-edges` `-ge 3`；無 `GRAPH-AGREE`；節點檔仍在
+- Covers finding: 親探 cut-ok `s2=N8-end` `s4=N7-end`、`allow_legacy=False`。未宣告跳過側不生效（`N7-g1`）。S-3.6＝`next_when_five` 條件邊
+- Files finding: ⊆ T-5 Files
+- RED→GREEN finding: 可信
+- Test Integrity finding: none
+- Design boundary finding: 預設 `next` 字串仍 `N7-g1`／`N6-g2`
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-6
+- reviewer identity: Independent Re-Reviewer RR1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`ae9c064`
+- Verify: 5-tasks 原文 GRAPH-WORD-NE＋`check-gate-tokens.sh` → exit 0。**親探** `graph_next(cut-ok)`＝`N8-end`／`N7-end`；`graph_next(pre-hops-200)`＝`N7-g1`／`N6-g2`；guide 含「五站」且 YAML `next` 仍 `N7-g1`，但 `wording_only` 常數路＝False（cut AND 已跳過）
+- Covers finding: **S-3.3 成立**（R2 FAIL 已修）。不再只咬 guide「五站」+ YAML `next==N7-g1`。fail-closed：用語＋`graph_next` 仍恆 N7-g1 → 該格紅。S-3.4 節點／token 未刪
+- Files finding: ⊆ T-6 Files；token 腳本只呼叫
+- RED→GREEN finding: cut AND skip GREEN 可信；wording-only 常數路現在會紅
+- Test Integrity finding: none。殘：注入支路 `evaluate_hop(graph-word)` 依檔名填 `s2=N7-g1`；牙在真 `graph_next`
+- Design boundary finding: 未刪節點／token；guide ≠ SoT
+- verdict: ACCEPTED
+- correction + re-review after FAIL: R2 FAIL 已由 #385／`ae9c064` 修；本列為重審 PASS
+
+### T-7
+- reviewer identity: Independent Re-Reviewer RR1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`ae9c064`
+- Verify: 5-tasks 原文 HONEST＋NE-TICKET → n≥2；`ticket=$(… --case DOCTOR-NE-TICKET -v)` 含字面 `路線未宣告 仍舊 7`（`grep -F` 打到）。HONEST 印 `INCOMPATIBLE` 且非 0。`git diff --exit-code origin/main -- hooks/_doctor_impl.py`＝0。`runtime-capabilities.json` 含 `2.1.0`
+- Covers finding: **S-4.3 成立**（R1 FAIL 已修）。`run_doctor_ne_ticket` L721 `print(reason)`。親探 `refuse_hop_reason(..., doctor_green=True)`＝`路線未宣告 仍舊 7`；禁「doctor 已綠所以可 hop」／`COMPATIBLE so hop`。S-4.1／S-4.2／S-4.4／S-4.5 仍綠
+- Files finding: ⊆ T-7 Files；未改 `_doctor_impl.py`；未寫活樹 cut
+- RED→GREEN finding: HONEST 誠實紅親見；NE-TICKET stdout 牙現在對上 Verify
+- Test Integrity finding: none（⑥ Verify 字面牙與跑者輸出對上）
+- Design boundary finding: 握手 0 diff；doctor 綠被丟棄
+- verdict: ACCEPTED
+- correction + re-review after FAIL: R1 FAIL 已由 #385／`ae9c064` 修；本列為重審 PASS
+
+### T-8
+- reviewer identity: Independent Re-Reviewer RR1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`ae9c064`
+- Verify: 5-tasks 原指令 n≥3；三 CASE exit 0。KEEP-MK stdout＝`injected-mk M3 M5 M9 M11 M12 M15`
+- Covers finding: **S-6.1／S-6.2／S-6.3 成立**（R1／R2 FAIL 已修）。親探 `evaluate_hop`：wait→`injected-wait N7-g1 要不要繼續`／`ask_human`；mk→`hopped=True` 且六 M 皆在 why（不只 M11）；ship→`injected-done`。合法 `refuse_hop_reason(..., mk_reds=)` 含同組 M、不含 `injected-mk`。cut-ok `refuse_hop_reason`＝`None` 且三格都斷言不得拿來假綠。S-5.3：`polarity_inverted()` 真跑 cut-ok／MK 拒／三注入；`--probe polarity` exit 1
+- Files finding: ⊆ T-8 Files
+- RED→GREEN finding: 指令綠＝注入餵進 hop 機，不是稿 grep
+- Test Integrity finding: none（④ 不再用 markdown 重定義「仍 hop」）。殘：`--probe polarity` 呼叫後仍無條件 `return 1`（T-10 契約）
+- Design boundary finding: 合法拒 ≠ 注入極性；未把 coordinator 拒 hop 記成紅格綠
+- verdict: ACCEPTED
+- correction + re-review after FAIL: R1／R2 FAIL 已由 #385／`ae9c064` 修；本列為重審 PASS
+
+### T-9
+- reviewer identity: Independent Re-Reviewer RR1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`ae9c064`
+- Verify: OLD7-FREEZE／OLD7-FOLD-RED／SELF-OLD7 n≥3；exit 0
+- Covers finding: S-7.1 親探 `allow_legacy` 真、無 `.five-station` 機、理由含 `仍舊 7`。S-7.2 FOLD-RED 走真閘＋`evaluate_hop(inject-fold)`。S-7.3 三凍結 slug 跳不過。S-7.5 未寫活五站 slug 名
+- Files finding: ⊆ T-9 Files；NEW5 不是本目錄／f2／simplify
+- RED→GREEN finding: 可信
+- Test Integrity finding: none。殘：OLD7 fixture 無契約 → 拒因先走 `路線未宣告 仍舊 7`
+- Design boundary finding: 未對 live 建五站機
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
+
+### T-10
+- reviewer identity: Independent Re-Reviewer RR1
+- reviewer kind: fresh-context Agent
+- reviewed-at: 2026-09-14 post-`ae9c064`
+- Verify: 5-tasks 原文關鍵牙全過。`-v` n=33（unique 25）exit 0；`--only` 三路 exit 3；五支 hollow `--probe` exit 3；`--probe polarity` exit 1；未知旗標 exit 2；`--group hollow`＝6 官方名；F2 地板＋token 牙；活樹三槽 `which_condition=f3-cut`；`html-only`∈`new5/`
+- Covers finding: S-5.1 同一 process 三路。S-5.2 官方 25 名齊。S-5.4…S-5.6／S-5.9…S-5.11 hollow 具名。S-5.7 F2 `failed=0`。S-5.8 token 牙。S-8.2 ⊆ 准許清單＋D-1 L1 四檔具名。S-8.3／S-8.1／S-8.5／S-8.6：未刪 token、未重開 4-spec／F2 park、Q21–23 未標可選
+- Files finding: ⊆ S-8.2＋D-1 L1；5-tasks checkbox 仍 `[ ]`；無 STATUS／HISTORY
+- RED→GREEN finding: 入口／探針 GREEN 可信
+- Test Integrity finding: none
+- Design boundary finding: **D-1 L1 CONCUR**（CI 註冊，不是第二次 cut）。未發明 G3
+- verdict: ACCEPTED
+- correction + re-review after FAIL: N/A
