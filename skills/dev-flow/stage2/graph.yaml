@@ -45,6 +45,7 @@ nodes:
   S6-selfcheck:
     file: nodes/S6-selfcheck.md
     next: N7-g1
+    next_when_five: N8-end
     write:
       - docs/dev/<slug>/2-decision.md
     write_mode: overwrite
