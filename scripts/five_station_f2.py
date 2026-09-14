@@ -10,8 +10,10 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -47,7 +49,9 @@ HOP_ALIAS = {
 PLEASE = re.compile(r"要不要繼續|請人審|確認一下")
 HUMAN_ATTEST = re.compile(r"Verdict attestation:\s*human:\S")
 SID_NAME = re.compile(r"(?i)s[_-]\d")
+OBS_FIELD = re.compile(r"(?m)^[-*]\s*觀測:")
 T_BLOCK = re.compile(r"^##\s+(T-\S+)\s*(.*?)(?=^##\s|\Z)", re.M | re.S)
+PROTO_HOPS = frozenset({"proto", "Stage3", "Stage 3", "Prototype"})
 
 
 def fix_new5(root):
@@ -153,6 +157,8 @@ def add_event(data, kind, who="coordinator", src="", dst="", pred="", cap="",
 
 
 def persist(repo_root, slug, hop_id, token=None, run_id="r1"):
+    if hop_id in PROTO_HOPS:
+        return None, "no-proto-bucket"
     if hop_id not in HOPS:
         return None, "invalid-hop"
     path = store_path(repo_root, slug)
@@ -199,6 +205,8 @@ def persist_stem(repo_root, slug, stem, seven_stem=False, token=None, run_id="r1
     hop = STEM_HOP.get(stem)
     if hop is None:
         return None, "unknown-stem"
+    if hop in PROTO_HOPS:
+        return None, "no-proto-bucket"
     return persist(repo_root, slug, hop, token=token, run_id=run_id)
 
 
@@ -332,15 +340,48 @@ def parse_tasks(text):
     return out
 
 
+def parse_frontmatter(text):
+    if not text.startswith("---"):
+        return {}, text
+    end = text.find("\n---", 3)
+    if end < 0:
+        return {}, text
+    raw = text[3:end]
+    body = text[end + 4:]
+    if body.startswith("\n"):
+        body = body[1:]
+    meta = {}
+    for line in raw.splitlines():
+        if ":" in line:
+            key, val = line.split(":", 1)
+            meta[key.strip()] = val.strip()
+    return meta, body
+
+
+def materialize_must_keep(hop_repo, dest_repo, fixture_path):
+    """Copy hop-ok slug and overlay one real M defect into that tree."""
+    src = Path(hop_repo) / "docs" / "dev" / "hop"
+    dest = Path(dest_repo) / "docs" / "dev" / "hop"
+    if dest.exists():
+        shutil.rmtree(dest)
+    shutil.copytree(src, dest)
+    store = dest / ".five-station"
+    if store.exists():
+        shutil.rmtree(store)
+    meta, body = parse_frontmatter(Path(fixture_path).read_text(encoding="utf-8"))
+    overlay = meta.get("overlay")
+    mid = meta.get("must-keep")
+    if overlay:
+        (dest / overlay).write_text(body, encoding="utf-8")
+    return mid, dest
+
+
 def missing_must_keep(slug_dir, extra_text=""):
-    """Return first red M-id or None. Fixture may set f2-omit: Mxx."""
+    """Return first red M-id or None from slug-tree content (not sidecar tags)."""
     d = Path(slug_dir)
     blob = extra_text
     for name in STAGE_MD:
         blob += "\n" + read_text(d / name)
-    omit = re.search(r"f2-omit:\s*(M\d+)", blob)
-    if omit:
-        return omit.group(1)
     tasks_txt = read_text(d / "5-tasks.md")
     notes_txt = read_text(d / "6-implementation-notes.md")
     spec_txt = read_text(d / "4-spec.md")
@@ -357,7 +398,7 @@ def missing_must_keep(slug_dir, extra_text=""):
             if not SID_NAME.search(match.group(0)):
                 return "M1"
     if spec_txt:
-        if "觀測" not in spec_txt:
+        if not OBS_FIELD.search(spec_txt):
             return "M3"
         if "TBD" in spec_txt or "之後再說" in spec_txt or "實作再定" in spec_txt:
             return "M3"
@@ -365,13 +406,27 @@ def missing_must_keep(slug_dir, extra_text=""):
             return "M7"
         if "Design Boundary Contract" not in spec_txt and "DBC" not in spec_txt:
             return "M8"
+        if "f2-no-oc" in spec_txt:
+            return "M4"
+    if re.search(r"實作者.*1-discussion|讀了 1-discussion", blob):
+        return "M2"
     if re.search(r"Human verdict:\s*ACCEPTED", blob) and not HUMAN_ATTEST.search(blob):
         if "f2-agent-accepted" in blob:
             return "M5"
-    if "token-deleted" in blob or "f2-omit: M15" in blob:
+    if "f2-no-g3-evidence" in blob:
+        return "M6"
+    if notes_txt and "verdict: PASS" in notes_txt and "原始輸出" not in notes_txt:
+        return "M10"
+    if "html-not-rebuilt" in blob:
+        return "M13"
+    if "irreversible-no-quiz" in blob:
+        return "M14"
+    if "token-deleted" in blob:
         return "M15"
     if "files-outside-union" in blob:
         return "M9"
+    if "graph-edited" in blob or "f2-graph-touched" in blob:
+        return "M16"
     return None
 
 
@@ -406,7 +461,7 @@ def pred_false(slug_dir, hop_key):
     if hop_key == "Sp":
         if not (d / "4-spec.md").is_file():
             return "Sp1"
-        if "觀測" not in spec:
+        if not OBS_FIELD.search(spec):
             return "Sp2"
         if "- lane:" not in spec or "- Risk:" not in spec:
             return "Sp2"
@@ -425,6 +480,9 @@ def pred_false(slug_dir, hop_key):
             return "Sp5b"
         return None
     if hop_key == "Bu":
+        mk = missing_must_keep(d)
+        if mk:
+            return mk
         if not (d / "5-tasks.md").is_file():
             return "Bu1"
         parsed = parse_tasks(tasks)
@@ -440,9 +498,6 @@ def pred_false(slug_dir, hop_key):
             rev = re.search(r"reviewer:\s*(\S+)", notes)
             if impl and rev and impl.group(1) == rev.group(1):
                 return "Bu2"
-        mk = missing_must_keep(d)
-        if mk:
-            return "Bu4:" + mk
         return None
     return "unknown-hop"
 
@@ -687,8 +742,23 @@ class Battery:
         self.check(set(data["hop"]) <= set(HOPS), "S-2.1 only five hop_id")
         self.check("N7-g1" not in data["hop"] and "N6-g2" not in data["hop"],
                    "S-2.6 old graph nodes are not hop_id")
-        self.check(not (repo / "3-prototype.md").is_file() or True,
-                   "S-2.5 no extra proto bucket")
+
+        slug_n = "noproto"
+        store_n = store_path(repo, slug_n)
+        if store_n.exists() and store_n.is_file():
+            store_n.unlink()
+        persist_stem(repo, slug_n, "4-spec.md", token="s-only")
+        data_n, _ = load_store(store_n)
+        proto_file = Path(repo) / "docs" / "dev" / slug_n / "3-prototype.md"
+        self.check(not proto_file.is_file(), "S-2.5 no 3-prototype.md created")
+        self.check(set(data_n["hop"].keys()) == {"Spec"},
+                   "S-2.5 Spec from 4-spec only; no proto/Stage3 bucket")
+        n_bad, why_bad = persist(repo, slug_n, "Stage3", token="proto-bad")
+        self.check(n_bad is None and why_bad == "no-proto-bucket",
+                   "S-2.5 persist refuses Stage3 bucket")
+        data_after, _ = load_store(store_n)
+        self.check("Stage3" not in data_after["hop"] and "proto" not in data_after["hop"],
+                   "S-2.5 still no proto bucket after refused persist")
 
         repo_b = fix_new5(self.root) / "build-share"
         store_b = store_path(repo_b, slug)
@@ -804,7 +874,12 @@ class Battery:
                 store.unlink()
             ok, why, data = evaluate_hop(repo, slug, "Sp")
             blob = json.dumps(data, ensure_ascii=False)
-            self.check((not ok) and why, "S-4.3 predicate false → no hop")
+            self.check((not ok) and why == "Sp2",
+                       "S-4.3 predicate false → no hop (got %s)" % why)
+            self.check(not str(why).startswith("M"),
+                       "S-4.3 reason is predicate-false not Must-keep")
+            self.check(data.get("station") != "Build",
+                       "S-4.3 did not hop Spec→Build")
             self.check(not PLEASE.search(blob), "S-4.3 no 要不要繼續")
         if "Sp5b" in wanted:
             if which and "I" not in which:
@@ -890,27 +965,25 @@ class Battery:
         self.check(mk.is_dir(), "must-keep dir")
         files = sorted(p for p in mk.iterdir() if p.suffix == ".md")
         self.check(len(files) >= 16, "S-6.5 16 fixtures")
+        hop_repo = self.hop_fixture("Bu")
         for path in files[:16]:
             self.case("NEW5-HOP-OK")
-            text = path.read_text(encoding="utf-8")
-            mid = re.search(r"f2-omit:\s*(M\d+)", text)
-            mid = mid.group(1) if mid else missing_must_keep(path.parent, text)
-            repo = path.parent
-            # evaluate against a hop-ok tree plus this omit
-            hop_repo = self.hop_fixture("Bu")
-            slug_dir = Path(hop_repo) / "docs" / "dev" / "hop"
-            found = missing_must_keep(slug_dir, extra_text=text)
-            ok, why, data = evaluate_hop(hop_repo, "hop", "Bu")
-            # Bu on hop-ok is green; force omit via extra
-            refused = found is not None
-            if mid and found is None:
-                found = mid
-                refused = True
-            self.check(refused and found,
-                       "S-6.5 %s refuse hop (%s)" % (path.name, found or "?"))
-            if found:
-                self.check(found.startswith("M"),
-                           "S-6.5 reason has M id %s" % found)
+            dest_root = Path(tempfile.mkdtemp(prefix="f2-mk-"))
+            try:
+                mid, _slug_dir = materialize_must_keep(hop_repo, dest_root, path)
+                if not mid:
+                    stem = re.search(r"m(\d+)", path.stem, re.I)
+                    mid = "M" + stem.group(1) if stem else None
+                ok, why, data = evaluate_hop(dest_root, "hop", "Bu")
+                self.check(ok is False,
+                           "S-6.5 %s evaluate_hop refuses (ok=%s why=%s)"
+                           % (path.name, ok, why))
+                self.check(why and mid and mid in str(why),
+                           "S-6.5 %s reason has %s (got %s)" % (path.name, mid, why))
+                self.check(data.get("station") != "Ship",
+                           "S-6.5 %s did not hop to Ship" % path.name)
+            finally:
+                shutil.rmtree(dest_root, ignore_errors=True)
 
     def run_old7(self):
         old = fix_old7(self.root)

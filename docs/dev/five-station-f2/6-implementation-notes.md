@@ -10,8 +10,8 @@ updated: 2026-09-14
 
 FORK_INTEGRATION_SHA: 56c8019c1058c375755ca03944140f79ff8bbe55
 
-> Implementer notes + independent T-Review: **R2** (#347／`6681e1f`) then **R1** (this hop, author≠#346)。
-> R2 列不得刪。R1 另塊接在 R2 之後。未發明 Human G3 PASS。5-tasks checkbox 保持未勾。
+> Implementer notes + independent T-Review: **R2** (#347／`6681e1f`) then **R1** (#348；author≠#346)。
+> R2 列不得刪。R1 另塊接在 R2 之後。Owner standing rework **不是** self-ACCEPTED。未發明 Human G3 PASS。5-tasks checkbox 保持未勾。
 
 ## 0. 起手
 
@@ -333,6 +333,43 @@ R1 與 R2 一致：T-8 **FAIL IMPL**（S-6.5 標籤假綠）。R1 另 FAIL T-4�
 - verdict: FAIL
 - correction + re-review after FAIL: 待 L2 補 S-8.9／5-tasks Files 准許 host file-map 註冊，或把 D-1 四檔移出 F2 實作 commit 後重審
 
+## Owner standing rework（post R1+#348／R2+#347）— 待獨立重審
+
+implementer ≠ 上列 reviewer。本塊只記修正與自檢，**verdict 不是 ACCEPTED**。未發明 G3。
+
+| T | standing | 一句 |
+|---|---|---|
+| T-4 | REWORKED · 待重審 | 刪 `or True`；無 trigger 只 persist `4-spec` → 無 proto 檔／無 Stage3 桶；`persist(Stage3)` 拒 |
+| T-6 | REWORKED · 待重審 | PRED-STOP 真缺 `- 觀測:` 欄（說明句不寫該字）＋有 DBC；`why==Sp2`，不是 M8 |
+| T-8 | REWORKED · 待重審 | 16 份 overlay 進 hop-ok 樹；`evaluate_hop` `ok is False` 且 `why` 含該 M；未 hop→Ship |
+| T-10 | REWORKED · 待重審 | 電池／hollow 不變。D-1 四檔保留為 CI 註冊 L1，准許清單在本檔明文修訂；不切 F3／不刪 graph／token |
+
+### Rework T-4
+- Verify: 5-tasks 原指令（SPEC-SHARE／BUILD-SHARE／SEVEN-STEM）仍 `-ge 3`。另親斷：無 trigger slug 無 `3-prototype.md`、hop 鍵＝`{Spec}`、`persist(..., "Stage3")` → `no-proto-bucket`
+- Covers finding: S-2.5 現在有可紅断言（不再 `or True`）。S-2.1…S-2.4／S-2.6／S-4.13／S-4.14 未改語意
+- verdict: **PENDING_INDEPENDENT_RE-REVIEW**（不是 ACCEPTED）
+
+### Rework T-6
+- Verify: 六具名 hop + PRED-STOP + events 仍 `-ge 6`／`-ge 3`。PRED-STOP：`why==Sp2`、`station!=Build`、理由不以 `M` 開頭
+- Covers finding: S-4.3 停修理由是謂詞假（缺觀測欄＝Sp2），不是 M8。觀測欄偵測改為 `[-*] 觀測:` 欄位，說明句含「觀測」不再當有欄
+- verdict: **PENDING_INDEPENDENT_RE-REVIEW**
+
+### Rework T-8
+- Verify: `--group must-keep` n≥16。每一份 materialize 進 hop-ok 樹後 `evaluate_hop(..., Bu)` → `ok is False`、`mid in why`、`station!=Ship`
+- Covers finding: S-6.5 16 份各少一 M（M1 測名無 S-id／M3 TBD／M5 代填 ACCEPTED／M11 缺 Verify／M12 reviewer＝implementer／M15 token-deleted 等）。不是 sidecar `f2-omit`。T-7 注入紅極性未對調
+- Files finding: 仍在 `new5/must-keep/`
+- verdict: **PENDING_INDEPENDENT_RE-REVIEW**
+
+### Rework T-10 / D-1
+- Verify: 全入口 `-ge 18` exit 0；`--only new5|old7|f1` 各 exit 3；未知旗標 exit 2（與 5-tasks T-10 原文同）
+- Files finding（誠實）: 5-tasks S-8.9 准許清單本身不含 host 守衛四檔。#346 已合入的 companion 是 CI 自審必要註冊，不是 F3 cut：
+  - `scripts/check-file-map.sh`（`EXPECTED_MAPPED_FILES` 208→210）
+  - `scripts/test-architecture-guards.sh`（靜態釘）
+  - `scripts/devflow-check.sh`（`run` 行註冊 F2 電池）
+  - `guides/guide-dev-flow.html` **檔案地圖列**（不是 F3 切線／預設路線）
+- Disposition: **keep L1 D-1**（R2 CONCUR）。R1 CHALLENGE（應 L2／S-8.9）記錄在案，不改 4-spec（S-8.4 禁重開）、不發明 G3。本 hop **不縮** 那四檔（縮了 CI `REPO_REFERENCE`／file-map 會紅）；也不擴 F3／graph／token。准許清單修訂正本＝本節 + 下面 D-1，不是 silent drift
+- verdict: **PENDING_INDEPENDENT_RE-REVIEW**
+
 ## Progress Log
 
 <!-- hash 在本 PR 的實作 commit 寫入；獨立 T review 前不勾 5-tasks -->
@@ -340,6 +377,7 @@ R1 與 R2 一致：T-8 **FAIL IMPL**（S-6.5 標籤假綠）。R1 另 FAIL T-4�
 | 日期 | T-id | 一行 |
 |---|---|---|
 | 2026-09-14 | T-1…T-10 | `4f0a136` implementer commit；T Review 待獨立審 |
+| 2026-09-14 | T-4 T-6 T-8 T-10 | owner standing rework after R1+#348／R2+#347；待獨立重審（不自標 ACCEPTED） |
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 Run:
@@ -360,7 +398,8 @@ Run:
 
 ### T-4 / S-2.1…S-2.7 S-4.13 S-4.14
 - RED: 無 spec-share／build-share／seven-stem → 非零
-- GREEN: n=3；同桶；注入七 stem 紅
+- GREEN（#346）: n=3；同桶；注入七 stem 紅。**假綠**：S-2.5 `or True`
+- GREEN（rework）: 刪 `or True`。無 trigger 只 persist `4-spec.md` → 無 `3-prototype.md`、hop 鍵＝`{Spec}`；`persist(Stage3)` 拒 `no-proto-bucket`
 
 ### T-5 / S-3.1…S-3.6 S-7.1…S-7.3
 - RED: 無 doctor-route → 非零
@@ -368,7 +407,8 @@ Run:
 
 ### T-6 / S-4.2 S-4.3 S-4.15…S-4.19 S-5.1…S-5.4 S-6.2
 - RED: 無 hop 評 → 非零
-- GREEN: hop CASE×6；events CASE×3（NEW5-HOP-OK／PRED-STOP／CAP-3）
+- GREEN（#346）: hop CASE×6；events CASE×3。**假綠**：PRED-STOP 拒因 M8
+- GREEN（rework）: fixture 真缺 `- 觀測:` 欄且有 DBC；`why==Sp2`；未 hop Spec→Build
 
 ### T-7 / S-4.4…S-4.8 S-6.3 S-6.4
 - RED: 無注入稿 → 非零
@@ -376,7 +416,8 @@ Run:
 
 ### T-8 / S-6.1 S-6.5 S-6.6
 - RED: 無 must-keep/ → 非零
-- GREEN: `--group must-keep` n=16；各 M 拒 hop
+- GREEN（#346）: n=16 CASE 名。**假綠**：只掃 `f2-omit`；`evaluate_hop` 仍 hop
+- GREEN（rework）: 16 overlay 進 slug 樹；`ok is False` 且理由含該 M；`station!=Ship`
 
 ### T-9 / S-7.4…S-7.7
 - RED: 無 old7/ → 非零
@@ -385,6 +426,7 @@ Run:
 ### T-10 / S-4.1 S-4.9 S-4.10 S-8.1…S-8.9
 - RED: 入口不存在 → 非零
 - GREEN: `-v` CASE≥18 exit 0；`--only new5|old7|f1` 各 exit 3；未知旗標 exit 2
+- Files（rework 誠實）: 5-tasks Verify 原文不變。companion 守衛四檔＝D-1 L1 准許清單修訂（見 Deviations），不是 T-10 默許越界、也不是 F3 cut
 
 ## Decisions(spec 未載明的自由選擇)
 
@@ -393,14 +435,23 @@ Run:
 - `--only` 即使該路全綠也 exit 3（hollow 探針）。依據：S-4.1 b／c／d、S-8.8。
 - must-keep 16 格 CASE 名用官方 `NEW5-HOP-OK`（Bu4 謂詞），不發明 `NEW5-MK-ANY`。依據：standing 禁發明名。
 - F1 `evaluate(..., caps_from_store=True)` 預設讀倉；STORE-READ 注入關讀倉。依據：S-1.12。
+- T-8 16 份用 hop-ok 複本 + `overlay:` 真缺陷，不用 sidecar `f2-omit`。依據：R1／R2 T-8 FAIL；S-6.5 觀測「16 份各少一 M」。
+- 觀測欄機讀＝行首 `[-*] 觀測:`，不是內文出現「觀測」。依據：R1 T-6；S-4.3。
+- D-1 四檔保留為 CI 註冊，准許清單在本檔修訂、不改 4-spec。依據：R2 CONCUR L1；owner standing「若 CI 必要就留 L1」。
 
 ## Deviations
 
-### D-1(L1)
+### D-1(L1) — host CI 註冊；准許清單修訂（standing 誠實 disposition）
 - 現象:新增 `scripts/test-five-station-f2.sh` + `scripts/five_station_f2.py` 後，`check-file-map.sh` 與 `devflow-check.sh` 註冊自審會紅（`test-*.sh` 必須出現在 run 行）。
 - 保守選擇:上修 `EXPECTED_MAPPED_FILES` 208→210；檔案地圖加兩列；architecture 靜態釘同步；`devflow-check.sh` 註冊 F2 電池。**不是** F3 cut（guide 用語／預設路線未切五站）。
-- 理由:line-count Known Limit；不動 R/S。
-- 影響:T-10 / R-8 / S-8.9（准許清單外的守衛檔）。後站不准把 F3／token／graph 改成 In。
+- 理由:line-count Known Limit；不動 R/S。縮這四檔 → CI 自審紅。不改 4-spec S-8.9 正文（S-8.4）。
+- 影響:T-10 / R-8 / S-8.9。後站不准把 F3／token／graph 改成 In。
+- **Allowlist amendment（本檔為準）**: T-10 Files／Verify 的行為收口仍是 5-tasks 原文（18 CASE＋hollow）。companion 守衛四檔視為 **documented L1**，不是 silent extras：
+  1. `scripts/check-file-map.sh`
+  2. `scripts/test-architecture-guards.sh`
+  3. `scripts/devflow-check.sh`
+  4. `guides/guide-dev-flow.html` 檔案地圖列（非 F3 cut）
+- Independent disposition: R2 **CONCUR L1**；R1 **CHALLENGE**（4-spec L1004「超出→L2」）。standing **keep L1**（CI 必要；未切 F3／未刪 graph／token）。待重審者可再挑戰，本 hop 不自改成 L2、不重開 G2。
 
 ### D-2(L1)
 - 現象:Stage 4 Diff Budget 估 fixture ≤12 檔；T-8 要求 16 份 must-keep + 具名 hop／注入稿，實得超過估計。
@@ -420,7 +471,7 @@ Run:
 - **D-3 L1 — CONCUR**。`5-tasks.md` 在 S-8.9 准許清單內。只改 `status: approved` 給 N1-arm／graph P0，未勾 T、未自稱 ACCEPTED、未發明 G3。F1 同例。不是完成宣告。
 
 ### R1 on D-1／D-2／D-3（獨立評；不刪 R2 上列）
-- **D-1 CHALLENGE**（R1 認為應 L2／S-8.9）。准許清單外四檔同上。guide 加列是檔案地圖、**不是** F3 cut（此點與 R2 一致）。4-spec L1004 寫「超出 → L2」；「分不清一律 L2」。R2 CONCUR L1 列保留。
+- **D-1 CHALLENGE**（R1 認為應 L2／S-8.9）。准許清單外四檔同上。guide 加列是檔案地圖、**不是** F3 cut（此點與 R2 一致）。4-spec L1004 寫「超出 → L2」；「分不清一律 L2」。R2 CONCUR L1 列保留。standing **keep L1** + 本檔准許清單修訂（見 D-1 與 Rework T-10）。
 - **D-2 ACCEPT**（與 R2 CONCUR 同向）。估計 vs 具名路徑；不動 R/S。不因此放行 T-8。
 - **D-3 ACCEPT**（與 R2 CONCUR 同向）。N1-arm only；非 G3。
 
@@ -466,6 +517,18 @@ Run:
 +    return persist(repo_root, slug, hop, token=token, run_id=run_id)
 ```
 
+### persist proto gate · `scripts/five_station_f2.py` persist / run_share  T-4 rework
+改什麼：拒 `Stage3`／`proto` hop_id；無 trigger 只 persist `4-spec` 不斷言 `or True`。
+關聯：caller Battery.run_share／callee persist
+```diff
+ def persist(...):
++    if hop_id in PROTO_HOPS:
++        return None, "no-proto-bucket"
+-        self.check(not (repo / "3-prototype.md").is_file() or True, ...)
++        persist_stem(repo, "noproto", "4-spec.md")
++        self.check(set(data_n["hop"].keys()) == {"Spec"}, "S-2.5 ...")
+```
+
 ### goal_reopen · `scripts/five_station_f2.py` 232-250  T-3
 改什麼：Goal 與 Decide 計數同一 mutation。
 關聯：caller Battery.run_reopen／peer decide_reopen
@@ -501,6 +564,18 @@ Run:
 +        return False, false, data
 ```
 
+### pred_false / missing_must_keep / run_must_keep  T-6 T-8 rework
+改什麼：觀測欄＝`[-*] 觀測:`；Bu 先評 Must-keep（理由含 M-id）；16 份 overlay 進 hop-ok 樹後才 `evaluate_hop`。
+關聯：caller Battery.run_hop／run_must_keep
+```diff
+-        if "觀測" not in spec: return "Sp2"
++        if not OBS_FIELD.search(spec): return "Sp2"
+-        # f2-omit sidecar + evaluate_hop(hop-ok) discarded
++        materialize_must_keep(hop_ok, dest, fixture)
++        ok, why, data = evaluate_hop(dest, "hop", "Bu")
++        assert ok is False and mid in why and station != "Ship"
+```
+
 ### allow_legacy · `scripts/five_station_f2.py` 260-280  T-5 T-9
 改什麼：三前置缺一條就舊 7；doctor／marketplace／cache 不當路條。
 關聯：caller refuse_hop_reason／Battery.run_doctor
@@ -525,14 +600,14 @@ Run:
 ## Self-Review
 
 ①每個 T×S 有含 S-id 的 assertion + 該 T RED/GREEN：是（TDD Evidence）。不得跨 T 共用入口不存在當唯一證據——各 T 另有 CASE 綠輸出。
-②每 T 在 T Review Log 有 verdict：有，皆 PENDING_INDEPENDENT_REVIEW（非 ACCEPTED）。
-③每個 PASS 都早於該 T commit：獨立 review 尚未做；本檔不謊稱 PASS 早於 commit。
-④FAIL 後有較晚 PASS：T-9 S-7.7 路徑字串誤判已修，自檢重跑綠。
-⑤每 T 一 commit：本 PR 收成單一實作 commit（sequential 同檔重疊）；獨立審後可再切。
-⑥git diff 檔案：准許清單 + D-1 守衛。graph／token／doctor／契約／STATUS＝0。
-⑦Decisions／D-1／D-2 對得上 diff。DBC：無未授權模組；Data owner 仍是 slug coordinator；Goal+Decide 同 mutation 未拆。
-⑧回歸：`test-five-station-f1.sh` exit 0；F2 全入口 exit 0。
+②每 T 在 T Review Log 有獨立 verdict（R2＋R1）。rework 的 T-4／T-6／T-8／T-10 是 **PENDING_INDEPENDENT_RE-REVIEW**，不是 self-ACCEPTED。
+③每個 PASS 都早於該 T commit：獨立重審尚未做；本檔不謊稱 rework 已 ACCEPTED。
+④FAIL 後有較晚 PASS：本 hop 修 T-4／T-6／T-8 假綠；T Review 仍待重審，不自寫 PASS。
+⑤每 T 一 commit：rework 收成單一 standing commit（同檔重疊）。
+⑥git diff 檔案：准許清單 + 已記錄的 D-1 守衛（本 hop 不新加那四檔）。graph／token／doctor／契約／STATUS＝0。
+⑦Decisions／D-1／D-2 對得上 diff。DBC：無未授權模組；Data owner 仍是 slug coordinator。
+⑧回歸：`test-five-station-f1.sh`；F2 全入口＋hollow 探針。
 
-未發明 G3 PASS。未開 Stage 7。
+未發明 G3 PASS。未開 Stage 7。未勾 5-tasks。
 
 ## Review Follow-up(G3 打回時才用)
