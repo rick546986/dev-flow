@@ -271,6 +271,7 @@ group_architecture() {
   # 否則開頭註冊自審會紅（第 7 型：檔在、沒人跑）。
   run "architecture/check-five-station-f1" scripts/check-five-station-f1.sh --live || return 1
   run "architecture/test-five-station-f1" scripts/test-five-station-f1.sh || return 1
+  run "architecture/test-five-station-f2" scripts/test-five-station-f2.sh || return 1
   # STATUS 規則對帳(S-1):模板/母版自用兩份要點、Active 表頭 Branch 欄、
   # 主指南手寫 STATUS 範例列與 Stage 6 可複製指令(renderer 不同步那段)。
   run "architecture/check-status-policy" scripts/check-status-policy.sh || return 1

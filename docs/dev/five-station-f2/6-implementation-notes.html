@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>five-station-f2 · 6-implementation-notes</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+    --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+    --rule:#2a303b; --rule-2:#212731;
+    --accent:#7fa0e0; --accent-soft:#1b2436;
+    --ok:#4fbe86; --ok-soft:#132a20;
+    --warn:#dda944; --warn-soft:#2c2415;
+    --bad:#e4796f; --bad-soft:#2e1a19;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1116; --panel:#161a21; --sunk:#1b2029;
+  --ink:#e6e9f0; --ink-2:#a6afc1; --ink-3:#7b8598;
+  --rule:#2a303b; --rule-2:#212731;
+  --accent:#7fa0e0; --accent-soft:#1b2436;
+  --ok:#4fbe86; --ok-soft:#132a20;
+  --warn:#dda944; --warn-soft:#2c2415;
+  --bad:#e4796f; --bad-soft:#2e1a19;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  -webkit-font-smoothing:antialiased}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;font-variant-numeric:tabular-nums}
+code{background:var(--sunk);border-radius:3px;padding:1px 5px;color:var(--ink-2)}
+a{color:var(--accent)}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem;max-width:62ch}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;
+  border-bottom:1px solid var(--rule-2);border-left:4px solid var(--accent)}
+.r-name{font-weight:650}
+.r-body{padding:14px 18px 16px;font-size:.94rem;color:var(--ink)}
+.r-body p{margin:0 0 8px}
+.r-body p:last-child{margin-bottom:0}
+.tag{font-size:.71rem;padding:2px 8px;border-radius:99px;font-weight:600}
+.tag.base{background:var(--sunk);color:var(--ink-3)}
+details.hunk{border:1px solid var(--rule);border-radius:9px;margin:10px 12px 12px;
+  background:var(--sunk);overflow:hidden}
+details.hunk>summary{cursor:pointer;padding:11px 15px;font-weight:600;font-size:.9rem;
+  list-style:none;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+details.hunk>summary::-webkit-details-marker{display:none}
+.hunk-why,.hunk-rel{margin:8px 15px;font-size:.9rem}
+.hunk-why{color:var(--ink)}
+.hunk-rel{color:var(--ink-2)}
+.diff{margin:0 12px 12px;border:1px solid var(--rule);border-radius:7px;overflow:auto;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82rem}
+.ln{display:flex;white-space:pre;padding:1px 10px;line-height:1.55}
+.ln .m{display:inline-block;width:1.2em;flex:none;color:var(--ink-3)}
+.ln.ctx{color:var(--ink-3);background:var(--panel)}
+.ln.add{background:var(--ok-soft);color:var(--ok)}
+.ln.del{background:var(--bad-soft);color:var(--bad)}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+@media (max-width:560px){h1{font-size:1.35rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 6-implementation-notes · 審查介面</p>
+  <h1>five-station-f2</h1>
+  <p class="sub">status draft／owner implementer-A。正本是 md 的 ## Diff,這頁由產檔器重生。不要當第二份正本。</p>
+</header>
+<section class="r-block" id="summary"><div class="r-head"><span class="r-name">摘要</span></div><div class="r-body"><p>slug `five-station-f2`／status draft／owner implementer-A／updated 2026-09-14</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self（非獨立） - reviewed-at: 2026-09-14 PRE - Verify: `--case NEW5-Q12-ZERO --case NEW5-RUN2` → n=2；failed=0 - Covers finding: S-1.1／S-1.2／S-1.3／S-1.4／S-1.11／S-4.12 有含 S-id 的 assertion - Files finding: 入口＋coordinator＋`new5/q12-first-persist/` - RED→GREEN finding: 開工前腳本不存在＝RED；本 T Verify 綠 - Test Integrity finding: none（自檢；待獨立審） - Design boundary finding: 倉在 `docs/dev/&lt;slug&gt;/.five-station/store`；未鎖鍵名 - verdict: PENDING_INDEPENDENT_REVIEW - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-2"><div class="r-head"><span class="r-name">T-2</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: `--case NEW5-CAP-3 --case NEW5-STORE-READ` → n=2；failed=0 - Covers finding: S-1.5／S-1.8／S-1.12／S-4.11 - Files finding: 含 `five_station_f1.py` 讀倉最小接線；字樣牙回歸仍在 - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: 字樣牙未關掉 - verdict: PENDING_INDEPENDENT_REVIEW - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-3"><div class="r-head"><span class="r-name">T-3</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: `--case NEW5-DECIDE-2 --case NEW5-GOAL-2` → n=2；failed=0 - Covers finding: S-1.6／S-1.7／S-1.9／S-1.10 - Files finding: RP-10／11 讀倉；Goal+Decide 同 mutation - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: 未分兩次寫 - verdict: PENDING_INDEPENDENT_REVIEW - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: SPEC-SHARE／BUILD-SHARE／SEVEN-STEM → n=3；failed=0 - Covers finding: S-2.1…S-2.7／S-4.13／S-4.14 - Files finding: 未改 `graph.yaml` - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: 七 stem 是注入紅格，不是拒寫當綠 - verdict: PENDING_INDEPENDENT_REVIEW - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: `--group doctor-route` → n=4；F1 `--group dual-read` 另跑 - Covers finding: S-3.1…S-3.6／S-7.1…S-7.3 - Files finding: 未改 doctor／marketplace - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: doctor 綠不是路條 - verdict: PENDING_INDEPENDENT_REVIEW - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-6"><div class="r-head"><span class="r-name">T-6</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: `--hop I/D/Sp/Bu/Sp5b` + PRED-STOP n=6；`--group events` n=3 - Covers finding: S-4.2／S-4.3／S-4.15…S-4.19／S-5.1…S-5.4／S-6.2 - Files finding: 未 bump agent-event - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: 鍵名 OPEN；events CASE 用官方 18 名 - verdict: PENDING_INDEPENDENT_REVIEW - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-7"><div class="r-head"><span class="r-name">T-7</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: MK-RED／SHIP-MECH／WAIT-RED／FOLD-RED → n=4；failed=0 - Covers finding: S-4.4…S-4.8／S-6.3／S-6.4 - Files finding: 四張注入稿 - RED→GREEN finding: 紅格餵壞行為 - Test Integrity finding: none（自檢） - Design boundary finding: 極性未反 - verdict: PENDING_INDEPENDENT_REVIEW - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-8"><div class="r-head"><span class="r-name">T-8</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: `--group must-keep` → n=16；failed=0 - Covers finding: S-6.1／S-6.5／S-6.6 gate（未改 Disposition 表） - Files finding: `new5/must-keep/` 16 份 - RED→GREEN finding: 合法拒，不是 NEW5-MK-RED - Test Integrity finding: none（自檢） - Design boundary finding: 未發明 NEW5-MK-ANY - verdict: PENDING_INDEPENDENT_REVIEW - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-9"><div class="r-head"><span class="r-name">T-9</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: OLD7-NO-FIVE／TOKEN／SELF → n=3；failed=0 - Covers finding: S-7.4…S-7.7 - Files finding: OLD7 fixture 根；未把本目錄當 NEW5 - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: 未刪 token - verdict: PENDING_INDEPENDENT_REVIEW - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-10"><div class="r-head"><span class="r-name">T-10</span></div><div class="r-body"><p>- reviewer identity: implementer-A（self） - reviewer kind: implementer-self - reviewed-at: 2026-09-14 PRE - Verify: 全入口 n≥18 exit 0；`--only` 三探針 exit 3；未知旗標 exit 2 - Covers finding: S-4.1／S-4.9／S-4.10／S-8.1…S-8.9 - Files finding: 見 D-1（file-map／CI 註冊為 L1） - RED→GREEN finding: 見 TDD Evidence - Test Integrity finding: none（自檢） - Design boundary finding: 未改 graph／token／doctor／契約／STATUS - verdict: PENDING_INDEPENDENT_REVIEW - correction + re-review after FAIL: N/A</p></div></section>
+<section class="r-block" id="T-1"><div class="r-head"><span class="r-name">T-1 / S-1.1 S-1.2 S-1.3 S-1.4 S-1.11 S-4.12</span></div><div class="r-body"><p>- RED: `scripts/test-five-station-f2.sh` 不存在 → 非零（5-tasks 開工前原樣） - GREEN: `--case NEW5-Q12-ZERO --case NEW5-RUN2` → CASE×2；first persist=0；新 process 仍 2</p></div></section>
+<section class="r-block" id="T-2"><div class="r-head"><span class="r-name">T-2 / S-1.5 S-1.8 S-1.12 S-4.11</span></div><div class="r-body"><p>- RED: 無 CAP-3／STORE-READ fixture＋入口 → 非零 - GREEN: n=2；倉＝2 拒第 3 次；字樣牙不讀倉＝該格紅</p></div></section>
+<section class="r-block" id="T-3"><div class="r-head"><span class="r-name">T-3 / S-1.6 S-1.7 S-1.9 S-1.10</span></div><div class="r-body"><p>- RED: 無 DECIDE-2／GOAL-2 → 非零 - GREEN: n=2；Goal+Decide 同 mutation；T retry ≠ hop</p></div></section>
+<section class="r-block" id="T-4"><div class="r-head"><span class="r-name">T-4 / S-2.1…S-2.7 S-4.13 S-4.14</span></div><div class="r-body"><p>- RED: 無 spec-share／build-share／seven-stem → 非零 - GREEN: n=3；同桶；注入七 stem 紅</p></div></section>
+<section class="r-block" id="T-5"><div class="r-head"><span class="r-name">T-5 / S-3.1…S-3.6 S-7.1…S-7.3</span></div><div class="r-body"><p>- RED: 無 doctor-route → 非零 - GREEN: `--group doctor-route` n=4；理由含「路線未宣告／仍舊 7」；F1 dual-read 另跑仍綠</p></div></section>
+<section class="r-block" id="T-6"><div class="r-head"><span class="r-name">T-6 / S-4.2 S-4.3 S-4.15…S-4.19 S-5.1…S-5.4 S-6.2</span></div><div class="r-body"><p>- RED: 無 hop 評 → 非零 - GREEN: hop CASE×6；events CASE×3（NEW5-HOP-OK／PRED-STOP／CAP-3）</p></div></section>
+<section class="r-block" id="T-7"><div class="r-head"><span class="r-name">T-7 / S-4.4…S-4.8 S-6.3 S-6.4</span></div><div class="r-body"><p>- RED: 無注入稿 → 非零 - GREEN: n=4；四格餵壞行為</p></div></section>
+<section class="r-block" id="T-8"><div class="r-head"><span class="r-name">T-8 / S-6.1 S-6.5 S-6.6</span></div><div class="r-body"><p>- RED: 無 must-keep/ → 非零 - GREEN: `--group must-keep` n=16；各 M 拒 hop</p></div></section>
+<section class="r-block" id="T-9"><div class="r-head"><span class="r-name">T-9 / S-7.4…S-7.7</span></div><div class="r-body"><p>- RED: 無 old7/ → 非零 - GREEN: n=3；token＋F1 回歸綠；本目錄跳不過</p></div></section>
+<section class="r-block" id="T-10"><div class="r-head"><span class="r-name">T-10 / S-4.1 S-4.9 S-4.10 S-8.1…S-8.9</span></div><div class="r-body"><p>- RED: 入口不存在 → 非零 - GREEN: `-v` CASE≥18 exit 0；`--only new5|old7|f1` 各 exit 3；未知旗標 exit 2</p></div></section>
+<section class="r-block" id="hunks"><div class="r-head"><span class="r-name">Hunks</span></div><details class="hunk" open><summary>persist · <code>scripts/five_station_f2.py</code> 155-187 <span class="tag base">T-1</span><span class="tag base">T-2</span></summary><p class="hunk-why">改什麼：第一次成功 persist＝0，其後 +1；桶＝2 再寫 → Escalated 且數字不減。</p><p class="hunk-rel">關聯：caller Battery.run_q12／run_cap／callee save_store</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>def persist(repo_root, slug, hop_id, token=None, run_id="r1"):</div>
+<div class="ln add"><span class="m">+</span>    if hop_id not in hops:</div>
+<div class="ln add"><span class="m">+</span>        hops[hop_id] = 0</div>
+<div class="ln add"><span class="m">+</span>        return 0, "ok"</div>
+<div class="ln add"><span class="m">+</span>    if current &gt;= 2:</div>
+<div class="ln add"><span class="m">+</span>        data["status"] = "Escalated"</div>
+<div class="ln add"><span class="m">+</span>        return current, "refused"</div>
+<div class="ln add"><span class="m">+</span>    hops[hop_id] = current + 1</div>
+</div></details>
+<details class="hunk" open><summary>persist_stem · <code>scripts/five_station_f2.py</code> 190-204 <span class="tag base">T-4</span></summary><p class="hunk-why">改什麼：檔名映射五站桶；seven_stem 注入另記，不當綠格。</p><p class="hunk-rel">關聯：caller Battery.run_share</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>def persist_stem(repo_root, slug, stem, seven_stem=False, token=None, run_id="r1"):</div>
+<div class="ln add"><span class="m">+</span>    if seven_stem:</div>
+<div class="ln add"><span class="m">+</span>        data["seven_stem"] = True</div>
+<div class="ln add"><span class="m">+</span>        return 0, "injected-seven"</div>
+<div class="ln add"><span class="m">+</span>    hop = STEM_HOP.get(stem)</div>
+<div class="ln add"><span class="m">+</span>    return persist(repo_root, slug, hop, token=token, run_id=run_id)</div>
+</div></details>
+<details class="hunk" open><summary>goal_reopen · <code>scripts/five_station_f2.py</code> 232-250 <span class="tag base">T-3</span></summary><p class="hunk-why">改什麼：Goal 與 Decide 計數同一 mutation。</p><p class="hunk-rel">關聯：caller Battery.run_reopen／peer decide_reopen</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>def goal_reopen(repo_root, slug, run_id="r1"):</div>
+<div class="ln add"><span class="m">+</span>    data["goal_reopen"] = g + 1</div>
+<div class="ln add"><span class="m">+</span>    if d &lt; 1:</div>
+<div class="ln add"><span class="m">+</span>        data["decide_reopen"] = d + 1</div>
+</div></details>
+<details class="hunk" open><summary>evaluate · <code>scripts/five_station_f1.py</code> 327-345 <span class="tag base">T-2</span><span class="tag base">T-3</span></summary><p class="hunk-why">改什麼：RP-9／10／11 讀附近 slug 倉；字樣正則留下做回歸。</p><p class="hunk-rel">關聯：caller f1_check／callee five_station_f2.caps_near</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>    if kind == "cap":</div>
+<div class="ln add"><span class="m">+</span>        if caps_from_store:</div>
+<div class="ln add"><span class="m">+</span>            caps = f2.caps_near(path)</div>
+<div class="ln add"><span class="m">+</span>            if caps and int(caps.get("hop_max") or 0) &gt;= 2:</div>
+<div class="ln add"><span class="m">+</span>                result.red("RP-9", "hop 重寫第三次 store=%s" % caps["hop_max"])</div>
+<div class="ln ctx"><span class="m"> </span>        if re.search(r"第\s*3\s*次|重寫第 3", body):</div>
+<div class="ln ctx"><span class="m"> </span>            result.red("RP-9", "hop 重寫第三次")</div>
+</div></details>
+<details class="hunk" open><summary>allow_legacy · <code>scripts/five_station_f2.py</code> 260-280 <span class="tag base">T-5</span><span class="tag base">T-9</span></summary><p class="hunk-why">改什麼：三前置缺一條就舊 7；doctor／marketplace／cache 不當路條。</p><p class="hunk-rel">關聯：caller refuse_hop_reason／Battery.run_doctor</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>def allow_legacy(project_root, slug_dir, doctor_green=False,</div>
+<div class="ln ctx"><span class="m"> </span>                 marketplace_updated=False, cache_has_hops=False,</div>
+<div class="ln ctx"><span class="m"> </span>                 synthetic_new5=False):</div>
+<div class="ln add"><span class="m">+</span>    if not (declared and (not flying) and cut):</div>
+<div class="ln add"><span class="m">+</span>        return True, "legacy"</div>
+</div></details>
+<details class="hunk" open><summary>main · <code>scripts/five_station_f2.py</code> 980-1040 <span class="tag base">T-10</span></summary><p class="hunk-why">改什麼：單一入口；`--only` 一等旗標 exit 3；未知旗標 exit 2。</p><p class="hunk-rel">關聯：caller `test-five-station-f2.sh`</p><div class="diff">
+<div class="ln ctx"><span class="m"> </span>    p.add_argument("--only", choices=("new5", "old7", "f1"),</div>
+<div class="ln ctx"><span class="m"> </span>                   help="hollow probe (exit 3); first-class flag")</div>
+<div class="ln add"><span class="m">+</span>    if args.only in ("new5", "old7", "f1"):</div>
+<div class="ln add"><span class="m">+</span>        return 3</div>
+</div></details></section>
+<p class="src">由 <code>scripts/build-stage6-html.py</code> 從 md ## Diff 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
