@@ -2527,7 +2527,7 @@ check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 3
 check_static_pin "scripts/check-ship-manifest.sh" "MIN_CHECKS = 21" "MIN_CHECKS 釘死 21(結構+parity+地圖對帳+負向 fixture 的實得數;issue #92 補全列 source 存在 +2、第三類列負向 fixture +4,15→21)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 55" "MIN_CHECKS 釘死 55(STATUS 單寫入者 + OverlapRef 單一座標:⑬b/⑬c + 負向㉘–㉟ 後的實得數)"
 check_static_pin "scripts/check-py-floor.sh" "MIN_HEREDOCS = 222" "MIN_HEREDOCS 釘死 222(精確實測;baseline 221 + guard Read INTERP-only +1;RW-DG1/2 改 tag MUT 不進掃描集;關掉 INTERP 必跌破,不靠抬地板)"
-check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 210" "EXPECTED_MAPPED_FILES 釘死 210(精確值;knowledge-index +2、proof +1、knife-2 ask +2、knowledge bootstrap +2、check-preload-ban.sh +1、diagram-ir-gate +3、five-station-f1 +3、five-station-f2 +2)"
+check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 213" "EXPECTED_MAPPED_FILES 釘死 213(精確值;knowledge-index +2、proof +1、knife-2 ask +2、knowledge bootstrap +2、check-preload-ban.sh +1、diagram-ir-gate +3、five-station-f1 +3、five-station-f2 +2、five-station-f3 +3)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 29" "EXPECTED_GROUPS 釘死 29(REQUIRED_GROUPS 實際長度;#191 加 fig-ascii-191)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的

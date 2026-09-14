@@ -1,7 +1,7 @@
 ---
 feature: five-station-f3
 stage: 5-tasks
-status: draft
+status: approved
 owner: rick
 updated: 2026-09-14
 execution:

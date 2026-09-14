@@ -83,6 +83,7 @@ nodes:
   S5-gate:
     file: nodes/S5-gate.md
     next: N6-g2
+    next_when_five: N7-end
     write:
       - docs/dev/<slug>/4-spec.md
     write_mode: overwrite

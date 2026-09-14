@@ -570,7 +570,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   也不把它當成官方替代執行系統。</p>
 
   <h2 id="flow">① 七階段流程圖(含 Gate 與能力分層)</h2>
-  <p class="lead">這章要你懂:<strong>七站單行,只有 G1 / G2 / G3 會被人擋</strong>。
+  <p class="lead">這章要你懂:<strong>五站單行,只有 Ship 會被人擋</strong>。
   綁死的是<strong>層</strong>(規劃 / 執行 / 起步 / 審查),不是產品型號。
   Claude 的 opus / sonnet / haiku 只是對照,不是契約。
   非 Claude 主機不跑 haiku→sonnet→opus 產品階梯。G1 過且沒技術疑問,可以跳過選配的 3。
@@ -4043,6 +4043,19 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     <tr><td><code>test-five-station-f2.sh</code></td>
         <td>F2 單一電池入口。NEW5+OLD7 都過才 exit 0；
             <code>--only new5|old7|f1</code> hollow＝exit 3。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>five_station_f3.py</code></td>
+        <td>five-station-f3 讀端＋官方 25 CASE 電池：三前置 AND、
+            條件邊 <code>next_when_five</code>、獨立三槽 cut、doctor 綠≠票。</td>
+        <td>被 <code>test-five-station-f3.sh</code> 呼叫</td>
+        <td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-five-station-f3.sh</code></td>
+        <td>F3 選配薄殼：只印「不是電池入口」、exit 0。
+            不是第四路；HOLLOW-TWO-SCRIPT 仍紅。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-five-station-f3.sh</code></td>
+        <td>F3 單一電池入口。官方 25 CASE；
+            <code>--only new5|old7|token</code> hollow＝exit 3。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>dogfood-ping.sh</code></td>
         <td>dogfood-ping 極小可觀測 CLI:stdout 恰好 <code>dogfood-ok</code>+LF,exit 0。
