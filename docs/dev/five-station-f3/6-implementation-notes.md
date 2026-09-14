@@ -49,6 +49,7 @@ R2 親跑（2026-09-14，`47514a2`）：
 | `check-devstage2-graph.sh`／`check-devstage4-graph.sh` | 綠 |
 | `git diff --exit-code -- hooks/_doctor_impl.py` | 0 |
 | Files vs S-8.2 | #385 60 檔 ⊆ 准許清單；`_templates/`／handshake／STATUS／HISTORY／F2 park／token 刪檔 **Diff Budget 0** |
+| `scripts/devflow-check.sh all`（REPO_REFERENCE） | **紅**（#385 繼承，不是筆記 diff）：`check-five-station-f3.sh`／`test-five-station-f3.sh` 未註冊。`devflow-check.sh` 不在 S-8.2；guide 檔案地圖也無這兩支（F2 D-1／S-8.6 不准重開）。不翻 T-10 |
 
 | T | verdict | 分類 | 一句 |
 |---|---|---|---|
@@ -61,7 +62,7 @@ R2 親跑（2026-09-14，`47514a2`）：
 | T-7 | ACCEPTED | — | HONEST 真跑 doctor INCOMPATIBLE；NE-TICKET 丟棄 `doctor_green`。殘：Verify 原文 stdout 無拒因字面 |
 | T-8 | **FAIL** | **IMPL** | S-6.1／S-6.2／S-6.3：三格只 grep 注入稿（L566–592）；cut-ok `refuse_hop_reason=None`，無 M 編號拒因 |
 | T-9 | ACCEPTED | — | FREEZE＋SELF 真閘。殘：OLD7-FOLD-RED 只 grep md |
-| T-10 | ACCEPTED | — | 25 名＋`--only`／`--probe` 出口對；Files⊆S-8.2。殘：電池內 HOLLOW／TOKEN-DEL 是稿 grep |
+| T-10 | ACCEPTED | — | 25 名＋`--only`／`--probe` 出口對；Files⊆S-8.2。殘：稿 grep；REPO_REFERENCE 註冊接縫（見下） |
 
 ### T-1
 - reviewer identity: Independent T-Reviewer R2（fresh-context Agent；≠ #385 implementer-A）
@@ -186,9 +187,9 @@ R2 親跑（2026-09-14，`47514a2`）：
 - reviewed-at: 2026-09-14
 - Verify: `-v` `=== CASE` n≥25；exit 0；`--help` 含 `--only`／`--probe`；`--only new5|old7|token` 各 3；`--probe hollow-*`／`two-script` 各 3；`--probe polarity` 1；未知旗標 2；TOKEN／F3-F2-REGRESS n≥3；`--group hollow` ≥6 且六官方名、無 `HOLLOW-OK`／`NEW5-MKTG`；F2 地板綠；token 牙綠
 - Covers finding: S-5.1 單一 process 三路；S-5.2 官方 25 名全在；S-5.4–S-5.6／S-5.9–S-5.10 入口牙＝`--probe`／`--only` exit 3（不是 `! bash` 未知旗標）；S-5.11 `new5/html-only/` → `has_old7` 假；S-5.7 F2 地板不是第四路 IFF；S-5.8 TOKEN-KEEP。S-8.2／S-8.3 Files⊆准許清單、禁區 0。S-8.1／S-8.5／S-8.6 gate：未改 4-spec 頂欄、未把 Q21–23 標可選、未重開 F2 park D-1…F-c-4。S-8.4 TOKEN-DEL-RED 是稿 grep（殘；TOKEN-KEEP 是活牙）
-- Files finding: #385 檔集 ⊆ S-8.2。`check-five-station-f3.sh` 選配、恒 exit 0、不是第四路
+- Files finding: #385 檔集 ⊆ S-8.2。`check-five-station-f3.sh` 選配、恒 exit 0、不是第四路。`scripts/devflow-check.sh` **不在**准許清單
 - RED→GREEN finding: 入口／探針／25 名可信
-- Test Integrity finding: none。殘：電池內 HOLLOW-*／TOKEN-DEL 只 grep 稿；`--probe polarity` 硬編碼（T-8 正犯）
+- Test Integrity finding: none。殘：電池內 HOLLOW-*／TOKEN-DEL 只 grep 稿；`--probe polarity` 硬編碼（T-8 正犯）。**CI 接縫**：`devflow-check.sh` 註冊自審（第 7 型）要求每支 `scripts/test-*.sh`／`check-*.sh` 有 `run` 行；F2 已註冊 `test-five-station-f2.sh`，F3 兩支沒註冊 → REPO_REFERENCE 紅。註冊要改 `devflow-check.sh`（超出 S-8.2）；補檔案地圖列會重開 F2 D-1（S-8.6）。gold T-10 Verify 不含 `devflow-check all`，不翻本 T。R2 不修碼、不重開 park
 - Design boundary finding: 未發明 G3；未勾 checkbox；未改 STATUS／HISTORY
 - verdict: ACCEPTED
 - correction + re-review after FAIL: N/A
