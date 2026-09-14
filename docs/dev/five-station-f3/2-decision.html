@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>five-station-f3 · 2-decision</title>
+<style>
+:root{
+  --ground:#fbfbfd; --panel:#ffffff; --sunk:#f2f3f7;
+  --ink:#161920; --ink-2:#4d5566; --ink-3:#79839a;
+  --rule:#dfe2ea; --rule-2:#eceef4;
+  --accent:#31508f; --accent-soft:#e8edf8;
+  --ok:#1f7a4d; --ok-soft:#e3f3ea;
+  --warn:#9a6407; --warn-soft:#fbf0dc;
+  --bad:#a83730; --bad-soft:#fae7e5;
+  --shadow:0 1px 2px rgba(20,26,40,.05),0 6px 18px -10px rgba(20,26,40,.18);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.86em;background:var(--sunk);border-radius:3px;padding:1px 5px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 96px}
+.masthead{padding:34px 0 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin:0 0 8px}
+h1{font-size:1.62rem;line-height:1.3;margin:0 0 10px}
+.sub{color:var(--ink-2);margin:0;font-size:.94rem}
+.dash{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin:18px 0 0}
+.cell{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px}
+.cell .k{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3)}
+.cell .v{font-size:1.02rem;font-weight:650;line-height:1.3;display:block}
+a.cell{text-decoration:none;color:inherit}
+a.cell:hover{border-color:var(--accent)}
+.r-block{margin:30px 0 0;border:1px solid var(--rule);border-radius:12px;
+  background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+.r-head{padding:15px 18px;border-bottom:1px solid var(--rule-2);
+  border-left:4px solid var(--accent)}
+.r-name{font-weight:650;text-decoration:none}
+.r-body{padding:14px 18px 16px}
+.group{margin:0 0 16px}
+.group h3{margin:0 0 8px;font-size:.95rem}
+.card{border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+  margin:0 0 8px;background:var(--sunk)}
+.figwrap{display:flex;justify-content:center;margin:8px 0}
+.vbox{width:100%;max-width:360px;height:auto;display:block}
+.vbox .b{fill:var(--panel);stroke:var(--rule);stroke-width:1.2}
+.vbox .hl{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+.vbox .nl{font-size:12px;fill:var(--ink);font-weight:650}
+.vbox .sm{font-size:10px;fill:var(--ink-2)}
+.vbox .flow{stroke:var(--ink-3);stroke-width:1.2;fill:none}
+details.bg{margin:10px 0 0}
+details.bg>summary{cursor:pointer;color:var(--ink-2)}
+table.judge{width:100%;border-collapse:collapse;font-size:.86rem;margin:0}
+table.judge th,table.judge td{border:1px solid var(--rule);padding:6px 8px;
+  text-align:left;vertical-align:top}
+table.judge th{background:var(--sunk);font-weight:650}
+.src{color:var(--ink-3);font-size:.8rem;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">dev-flow · 2-decision · 審查介面</p>
+  <h1>five-station-f3</h1>
+  <p class="sub">正本是 md。這頁是審頁分組卡,不是 gate-twin 勾選卡。</p>
+  <div class="dash"><div class="cell"><span class="k">狀態</span><span class="v">draft</span></div><div class="cell"><span class="k">分組</span><span class="v">6</span></div><div class="cell"><span class="k">方案</span><span class="v">22</span></div></div>
+</header>
+<section class="r-block" id="decision">
+  <div class="r-head"><span class="r-name">Decision</span></div>
+  <div class="r-body">
+    <p>採 **1A+2A+3C+4A+5A+6A**：F3 做 Cut——cut 當下沒有 1–7 `.md` 的新 slug 預設走五站，中間不等例行 G1／G2 提交判定。舊 7 只服務 freeze + dual-read。guide／STATUS 用語切五站，但**用語不是 cut SoT、也不是成功**。三前置繼承 F2 4A／S-7.1：**宣告 2.1.0 ∧ ¬in-flight ∧ cut 已發生**；缺一條 → `allow_legacy()`。**cut 是獨立位元**：2.1.0 ≠ cut；第三位元可單獨為假。attestation＝獨立、人類可見的紀錄（誰／何時／讀哪個條件）；`f3_cut_happened` 讀這份紀錄，禁止 silent `True`；2.1.0／STATUS／guide 都不是第三位元。2.1.0 讀鍵縫：同刀 bump 正本鍵 **且** 修 reader 讀 `devflow_contract_version`（或 dual-read 三鍵）；hops 預設五站不得早於此次 bump。graph：**兩者都要**——dual-read 已宣告，且新 slug 預設 hop 不再例行進 `N7-g1`／`N6-g2`；這兩節點檔留著給 freeze／未宣告。doctor：綠只握手；同刀把 2.1.0 列入 `supported_contract_versions`；不改握手語意；清單沒跟上＝誠實紅，不是改 doctor 的理由。F3 完＝同一電池 (a)(b)(c) 都能獨立紅、也能一起綠。hollow（`True`／檔在／只 F2 綠／只用字）標成功 → 失敗。不發明第一隻活五站名字。不選 1B／1C／1D／2B／2C／2D／3A／3B／3D／4B／4C／4D／5B／5C／6B／6C。</p>
+  </div>
+</section>
+<section class="r-block" id="fig">
+  <div class="r-head"><h2 class="r-name">方案架構圖</h2></div>
+  <div class="r-body"><div class="figwrap">
+<svg class="vbox" viewBox="0 0 280 454" role="img" aria-label="選定方案步驟">
+  <rect class="hl" x="40" y="10" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="34">[1A] 獨立可見cut紀錄(選定)</text>
+  <path class="flow" d="M140,64 L140,86"/>
+  <rect class="b" x="40" y="86" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="110">[2A] bump+修讀鍵同刀(選定)</text>
+  <path class="flow" d="M140,140 L140,162"/>
+  <rect class="b" x="40" y="162" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="186">[3C] dual-read+行為切;節點留(選定)</text>
+  <path class="flow" d="M140,216 L140,238"/>
+  <rect class="b" x="40" y="238" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="262">[4A] doctor清單+誠實紅(選定)</text>
+  <path class="flow" d="M140,292 L140,314"/>
+  <rect class="b" x="40" y="314" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="338">[5A] 三路電池;hollow紅(選定)</text>
+  <path class="flow" d="M140,368 L140,390"/>
+  <rect class="b" x="40" y="390" width="200" height="54" rx="8"/>
+  <text class="nl" text-anchor="middle" x="140" y="414">[6A] 新slug切;freeze/token鎖(選定)</text>
+</svg>
+  </div></div>
+</section>
+
+<section class="r-block" id="owner-calls">
+<div class="r-head"><h2>Owner Calls</h2></div>
+<div class="r-body"><table class="judge">
+<tr><th>OC</th><th>決定了什麼</th><th>依據</th><th>若被推翻會怎樣</th><th>狀態</th></tr>
+<tr><td>OC-1</td><td>**attestation＝獨立可見紀錄**（1A）。`f3_cut_happened` 讀它。使用者只移交 Q20 五選；選獨立標記、拒 2.1.0／STATUS／guide／silent True 是 owner 延伸</td><td>`1-discussion.md:L210` Q20 `[&gt;]`；`:L205` Q15。延伸 `[Assumption]`</td><td>第三位元塌進 2.1.0 或函式 True；獨立位元消失</td><td>待人審</td></tr>
+<tr><td>OC-2</td><td>**Q15 升格：silent True 不合法**。使用者帶假設「必須可見」；本檔選定 1A、棄 1B</td><td>`1-discussion.md:L205` 期限=F3 Decision。升格</td><td>AC-4 失效；空切可過 G2</td><td>待人審</td></tr>
+<tr><td>OC-3</td><td>**Q16／Q17 升格＝2A**。同刀 bump 正本鍵＋修 reader；hops 不得先於 bump。使用者兩條都 `[~]`；選 2A 是升格</td><td>`1-discussion.md:L206-L207`；`five_station_f2.py:L260-L268`。升格</td><td>declared 空切或 SLOT-REJECT</td><td>待人審</td></tr>
+<tr><td>OC-4</td><td>**Q21 選 3C（兩者都要）**。使用者只列四選項、未選；選 3C 是延伸。standing：節點檔留下、禁刪</td><td>`1-discussion.md:L211` 不得默選；`brief-v3.md:L167`。延伸 `[Assumption]`</td><td>用語切或遠端改線</td><td>待人審</td></tr>
+<tr><td>OC-5</td><td>**Q18／Q22＝4A**。加 `2.1.0` 進 supported；不改 `_doctor_impl.py` 握手。使用者 Q22 `[&gt;]`；「只動清單」是延伸</td><td>`1-discussion.md:L208` Q18；`:L212` Q22。延伸 `[Assumption]`</td><td>綠變路條或出貨故意紅</td><td>待人審</td></tr>
+<tr><td>OC-6</td><td>**Q19 升格＝5A 三路電池＋hollow 失敗格**。使用者帶假設「是」；CASE 名與預期紅是延伸</td><td>`1-discussion.md:L209`；`:L269-L272` AC-9。升格＋延伸 `[Assumption]`</td><td>HOLLOW-* 消失；檔在＝完</td><td>待人審</td></tr>
+<tr><td>OC-7</td><td>**Q25：不發明第一隻活五站名字**。NEW＝合成 fixture 或 cut 後才開。使用者只禁本目錄／已 freeze 母軌；「不取名」是延伸</td><td>`1-discussion.md:L215`。延伸 `[Assumption]`</td><td>本目錄或虛構 slug 當白老鼠</td><td>待人審</td></tr>
+<tr><td>OC-8</td><td>**Q23：guide 用語至少 `guides/guide-dev-flow.html` L573 那句**；檔案地圖列 ≠ cut。使用者只問「算哪些檔」；「至少這一句、≠ SoT」是延伸</td><td>`1-discussion.md:L213`；`five-station-f2/7-review.md:L445`。延伸 `[Assumption]`</td><td>用語漏改或冒充 cut</td><td>待人審</td></tr>
+<tr><td>OC-9</td><td>**Q24：STATUS 用語走整合分支 companion**；本 feature branch 不碰 STATUS 正本。看板 ≠ cut。標**流程層**</td><td>`docs/dev/STATUS.md:L10-L13`；`1-discussion.md:L214`</td><td>PR 帶 STATUS 與並行 session 互蓋；或看板被當已切</td><td>待人審</td></tr>
+<tr><td>OC-10</td><td>本 Decision hop **不**跑 `status-update.sh`、不改 HISTORY、不改 1-discussion 頂欄、**不發明 G1 PASS**、不合併、不 bump、不改 graph／doctor／coordinator。標**流程層**</td><td>本 hop brief；`1-discussion.md:L190` Q2</td><td>PR 自填 PASS 或夾帶碼</td><td>待人審</td></tr>
+<tr><td>OC-11</td><td>**獨立 cut 位元寫進 Decision 約束正文**（約束 2＋PRE-CUT-INDEPENDENT）。使用者鎖「inherit F2 AND + independent cut bit」；「具名 CASE」是延伸</td><td>`1-discussion.md:L203` Q26；本 hop brief。延伸 `[Assumption]`</td><td>AND 塌成兩條；2.1.0 被當 cut</td><td>待人審</td></tr>
+<tr><td>OC-12</td><td>**本刀後站才落地 cut／bump／graph 行為／doctor 清單**；本 PR 零碼。這是對 6A 的收窄：Decision 選定範圍 ≠ 本 PR 施工</td><td>本 hop brief。收窄 `[Assumption]`</td><td>本 PR 偷 bump／改 graph＝超 scope</td><td>待人審</td></tr>
+</table></div></section>
+<section class="r-block" id="point-1"><div class="r-head"><span class="r-name">決策點 1：cut attestation（Q15／Q20／Q23／Q24）</span></div><div class="r-body"><div class="card"><strong>1A</strong><p>**獨立、人類可見的 cut 紀錄**。人指得到誰／何時／讀哪個條件。`f3_cut_happened` **讀這份紀錄**，禁止 hardcode `True`。紀錄 **不是** 2.1.0、**不是** STATUS、**不是** guide 用字。鍵名／檔路徑交 4-spec（本檔不鎖） 優:對準 G-attest-1／AC-4；第三位元可獨立為假；擋 silent flip 劣:多一份 SoT；後站要寫讀徑 依據:`docs/dev/five-station-f3/1-discussion.md:L156` G-attest-1；`:L205` Q15；`:L210` Q20；`:L249-L252` AC-4。路徑形 `[Assumption]`（4-spec）</p></div><div class="card"><strong>1B</strong><p>**silent flip**：只把 `f3_cut_happened` 改 `return True`，不留可見紀錄 優:一行碼 劣:人看不見誰准了、讀哪個條件；與 F2 D-1「加列 ≠ cut」同形；Q15 過期擋 依據:`scripts/five_station_f2.py:L276-L278` 恒 False；`docs/dev/five-station-f2/7-review.md:L445` 檔案地圖列 ≠ cut；`1-discussion.md:L205` silent flip 不合法</p></div><div class="card"><strong>1C</strong><p>**契約 2.1.0 本身當 cut 位元** 優:少一個開關 劣:違 F2 4A／Q26：2.1.0 ≠ cut；第三位元無法獨立為假；AND 塌成兩條 依據:`docs/dev/five-station-f2/2-decision.md:L79` 4A；`1-discussion.md:L203` Q26；`:L225` 三前置形狀不重開</p></div><div class="card"><strong>1D</strong><p>**STATUS／guide 用字當 attestation SoT** 優:brief §7 本來要切用語 劣:看板 ≠ 刀；feature branch 禁碰 STATUS 正本；F2 D-1 已拒「加列＝cut」 依據:`docs/dev/STATUS.md:L10-L13` 分支不碰正本；`1-discussion.md:L211-L214` Q23／Q24；`guides/guide-dev-flow.html:L573` 仍寫七站單行</p></div></div></section>
+<section class="r-block" id="point-2"><div class="r-head"><span class="r-name">決策點 2：2.1.0 讀鍵縫（Q16／Q17／Q27）</span></div><div class="r-body"><div class="card"><strong>2A</strong><p>**同刀**：bump 正本鍵 `devflow_contract_version`→`2.1.0`，**並且**修 `contract_version()` 讀正本鍵（或 dual-read `devflow_contract_version`／`version`／`contract_version`）。hops 預設五站只准與此次 bump **同刀或之後**。2.1.0 仍 ≠ cut 優:擋「bump 了所以已宣告」空切；擋 2.0.0+五站 hops；獨立 cut 位元仍在 劣:本刀後站要動契約＋reader；採用端未 upgrade 仍舊 7 依據:`scripts/five_station_f2.py:L260-L268` 讀錯鍵回 `""`；`:L286` `startswith("2.1")`；`devflow-contract.json:L1-L2` 正本鍵；`1-discussion.md:L206-L207` Q16／Q17；`:L204` Q27</p></div><div class="card"><strong>2B</strong><p>**只 bump 正本鍵，不修 reader** 優:看起來已 2.1.0 劣:live `declared` 仍假（空字串）；新 slug 繼續 legacy＝空切 依據:`1-discussion.md:L207` Q17 帶假設「仍假」；`five_station_f2.py:L268` 不讀正本鍵</p></div><div class="card"><strong>2C</strong><p>**先切 hops 預設五站，稍後再 bump 2.1.0** 優:現場立刻少停 劣:SLOT-REJECT-2.0.0-PLUS-FIVE-HOPS；或關牙後遠端改線 依據:`notes/design/five-station-simplify-f1-dual-read-annex.md:L22-L24`；`1-discussion.md:L206` Q16 過期擋「只切 hops」</p></div><div class="card"><strong>2D</strong><p>**假寫 `version`／`contract_version`，正本鍵留 2.0.0** 優:reader 立刻成真 劣:對醫生／採用端說謊；正本仍 2.0.0＋五站 hops＝SLOT-REJECT 依據:`[Assumption]` 雙寫假鍵＝瞞 declared。`devflow-contract.json:L86` 正本是本檔</p></div></div></section>
+<section class="r-block" id="point-3"><div class="r-head"><span class="r-name">決策點 3：graph vs dual-read（Q21）— C 線主縫</span></div><div class="r-body"><div class="card"><strong>3A</strong><p>**只改各站 `graph.yaml` 預設**（拿掉 `N7-g1`／`N6-g2` 當大家的下一步），不 bump 2.1.0 dual-read 優:新 slug 不再例行等人 劣:未宣告 2.0.0 也被拖進五站；SLOT-REJECT 或遠端改線；in-flight 若吃新預設＝折 freeze 依據:`1-discussion.md:L211` Q21 選項一；`f1-dual-read-annex.md:L18-L24` 未宣告＝舊 7；`brief-v3.md:L165` freeze</p></div><div class="card"><strong>3B</strong><p>**只宣告 2.1.0 dual-read**，graph 預設仍進 `N7-g1`／`N6-g2` 優:採用端未 upgrade 安全 劣:新 slug 仍例行等人；G-cut-1／AC-7 失敗＝用語／契約切、行為沒切 依據:`skills/dev-flow/stage2/graph.yaml:L53-L57` 預設 N7-g1；`stage4/graph.yaml:L93-L98` N6-g2；`1-discussion.md:L261-L264` AC-7</p></div><div class="card"><strong>3C</strong><p>**兩者都要**。①契約 2.1.0 dual-read（未宣告仍舊 7）。②cut 後新 slug 預設 hop **不再例行進入** `N7-g1`／`N6-g2`。③這兩個節點**檔與節點留在 repo**，專供 freeze＋未宣告 2.0.0。禁刪節點、禁炸模板 優:對帳 brief「做」與 F2 Out of Scope「graph 用語」；擋空切與折舊 劣:後站要同時動宣告與 hop 路徑；graph.yaml 具體改邊交 4-spec 依據:`brief-v3.md:L180` F3 做＝新 slug 預設五站＋用語；`docs/dev/five-station-f2/4-spec.md:L963` graph 用語捆進 F3；`brief-v3.md:L167` 舊機械不刪；`1-discussion.md:L211` 不得默選</p></div><div class="card"><strong>3D</strong><p>**只翻 coordinator／`f3_cut_happened`，留下所有人的預設 `N7-g1`／`N6-g2`** 優:不動 graph 檔 劣:若新 slug 仍進 N7-g1，G-cut-1 失敗；與 1B 疊加＝空切 依據:`1-discussion.md:L170` 四選項之四；`:L261` 指南已改五站但 graph 仍停 G1 ≠ 成功</p></div></div></section>
+<section class="r-block" id="point-4"><div class="r-head"><span class="r-name">決策點 4：doctor 誠實（Q18／Q22／G-honest-1）</span></div><div class="r-body"><div class="card"><strong>4A</strong><p>**約束不是功能**。綠／`COMPATIBLE`／exit 0 **只**證明 `契約版本 ∈ supported`，≠ 切線、≠ cut、不是第四條前置。F3 **同刀**把 `2.1.0` 加進 `supported_contract_versions`。**不改** `_doctor_impl.py` 握手語意。若有人 bump 到 2.1.0 而清單仍 `{2.0.0}` → **誠實 INCOMPATIBLE**（Q18 升格）；本刀不得把這種紅當「更新壞了所以改握手」 優:對準 SLOT-DOCTOR-GREEN-MEANS；F2 已棄「綠當路條」 劣:採用端必須跟 supported 一起 upgrade 依據:`hooks/_doctor_impl.py:L193-L202` 綠＝∈ supported；`:L492-L500` 印 COMPATIBLE；`hooks/runtime-capabilities.json:L1-L4` 現只 2.0.0；`f1-dual-read-annex.md:L26-L28`；`1-discussion.md:L208` Q18；`:L212` Q22</p></div><div class="card"><strong>4B</strong><p>**改 `_doctor_impl.py`**，讓 2.1.0 未列 supported 仍 COMPATIBLE 優:少一次清單維護 劣:握手說謊；SLOT 變裝飾；人把綠讀成切線 依據:`[Assumption]` 放寬握手＝關牙。F2 Out of Scope「不改 doctor 握手語意」`docs/dev/five-station-f2/4-spec.md:L974`</p></div><div class="card"><strong>4C</strong><p>**bump 2.1.0 但不加 supported**，接受現場 doctor 紅 優:Q18 字面誠實 劣:人以為「更新壞了」；壓力會滑向 4B 依據:`1-discussion.md:L208` 應 INCOMPATIBLE＝約束，不是出貨目標態</p></div><div class="card"><strong>4D</strong><p>**把 doctor 綠寫成 cut 或第四條前置** 優:跟「我跑過 doctor」直覺合 劣:F1／F2 已鎖死的謊；marketplace 可單獨換 hops 依據:`1-discussion.md:L197-L199` Q9／Q10／Q11 `[x]`；`five_station_f2.py:L289-L290` 丟棄 doctor／marketplace／cache</p></div></div></section>
+<section class="r-block" id="point-5"><div class="r-head"><span class="r-name">決策點 5：成功判準與第一隻活五站（Q19／Q25／G-success-1）</span></div><div class="r-body"><div class="card"><strong>5A</strong><p>**同一電池、三路都能獨立紅也能一起綠**。(a)cut 後新 slug 預設五站、不等例行 G1／G2；(b)in-flight OLD7 無五站狀態；(c)G1／G2／`ACCEPTED` token 仍在。具名 hollow 任一被標成功 → 整電池非 0。NEW 試體＝合成 fixture 或 **cut 之後才開** 的 slug。**本檔不發明第一隻活五站名字** 優:對準 AC-9／Q19；擋四種 hollow 劣:CASE 表後站實作；本 PR 不寫測 依據:`1-discussion.md:L161` G-success-1；`:L209` Q19；`:L215` Q25；`:L269-L272` AC-9。入口檔名 `[Assumption]`（4-spec）</p></div><div class="card"><strong>5B</strong><p>**`f3_cut_happened==True` 或「coordinator／cut 檔在」＝ F3 完** 優:最快宣告 劣:這就是具名 hollow；AC-4／AC-9 反面 依據:`1-discussion.md:L184` hollow 清單；`:L161` 檔在／用字／`True` ≠ 完</p></div><div class="card"><strong>5C</strong><p>**guide／STATUS 用字切五站＝ F3 完**（或只重跑 F2 電池綠） 優:零行為改動 劣:AC-7 用語 ≠ 行為；F2 綠是地板不是 F3 依據:`1-discussion.md:L261-L264` AC-7；`:L149` F2 電池地板 ≠ F3 完；`scripts/test-five-station-f2.sh:L1-L11`</p></div></div></section>
+<section class="r-block" id="point-6"><div class="r-head"><span class="r-name">決策點 6：F3 刀範圍與 Non-Goals（G-cut／G-freeze／G-token／G-self／G-keep）</span></div><div class="r-body"><div class="card"><strong>6A</strong><p>**F3 = Cut**：新 slug 預設五站；舊 7 只服務 freeze + dual-read；guide／STATUS 用語切五站。繼承 F2 AND。Must-keep／三失敗仍在。本 slug／`five-station-f2`／`five-station-simplify` 整段舊 7。**不刪** G1／G2／`ACCEPTED`。**不折** in-flight。**不炸**模板全文。本 PR 只 Decision＋html 優:對準 brief §7；本目錄當 freeze 樣本 劣:採用端預設痛要等後站落地 依據:`brief-v3.md:L180-L182`；`1-discussion.md:L191-L192` Q3／Q4；`:L195` Q7；`:L200` Q12 Must-keep 仍在</p></div><div class="card"><strong>6B</strong><p>**本刀順便刪 token／折 in-flight**（謂詞比較好寫） 優:狀態機短 劣:X2／X4；新 brief，不是本切法尾巴 依據:`five-station-simplify-f0-state-machine.md:L196` X4；`brief-v3.md:L182` 刪閘＝新 brief</p></div><div class="card"><strong>6C</strong><p>**拿本目錄當第一隻活五站**（狗食自己） 優:少造 fixture 劣:本檔已是 `1-discussion.md`＝in-flight；觀測自污染；RP-15 依據:`f1-dual-read-annex.md:L30-L32`；`1-discussion.md:L193` Q4；`:L265-L268` AC-8</p></div></div></section>
+<details class="bg"><summary>背景</summary><p><strong>既有脈絡</strong> 對帳快照（2026-09-14 `origin/main` `ff9b0bc`，Stage1-C+soft-fix 已合）： | 層 | 現況 | 本 Decision 怎麼用 | |---|---|---| | F0 brief＋狀態機 | Owner 已核；十條與三 cap 鎖死 | 本檔只收 F3 落點；不重開 | | F1 | Human G3 PASS；dual-read annex 九 SLOT | 回歸地板；SLOT-REJECT／DOCTOR／IN-FLIGHT 當約束 | | F2 | Human G3 PASS；coordinator 在；`f3_cut_happened` 恒 False；4A AND | 繼承 AND 與獨立 cut 位元；F2 綠 ≠ F3 完 | | Stage 1 `#` gold | 1-discussion status=draft；OQ 全三態；soft-fix 在 main | 留當時說法；Owner「ok」後本檔改口 | | 契約／reader | 正本 `2.0.0`；reader 回 `""` | 2A：bump+修讀；2.1.0 ≠ cut | | doctor | 綠＝握手；supported 只 2.0.0 | 4A：加清單、不改握手 | | graph | Stage2→N7-g1；Stage4→N6-g2 | 3C：行為切、節點留 | | guide | 「七站單行,只有 G1 / G2 / G3 會被人擋」 | 用語 In；≠ 成功 | | 本 slug STATUS | Active 在 1-discussion；Gates 全白 | 本 branch **不**改這列（OC-9／OC-10） | | 本資料夾 | 已有 1-discussion.md／.html | 已 in-flight；出貨走舊 7 | | F3 碼 | 無；cut 未發生 | 本 PR 仍無；電池在後站 |</p><p><strong>Rationale</strong> F2 把 coordinator 寫進樹，但把 cut 做成永遠假的布林，好測「未切」。F3 若只翻真，人在 tree 裡看不到誰准了——這跟 D-1「檔案地圖列 ≠ cut」同一形。1A 把第三位元收成**可指出的紀錄**；2.1.0 繼續當宣告位元，兩位元才能 AND。 讀鍵縫是前置主縫。正本鍵已是 `devflow_contract_version`，live reader 卻讀 `version`／`contract_version` 回空字串（Q27 已核）。2B 會讓「我們 bump 了」變成現場仍 legacy。2A 同刀修讀＋bump，hops 不得搶跑（2C＝SLOT-REJECT）。 Q21 是 C 線主縫。brief「做」寫 guide／STATUS 用語；F2 Out of Scope 把 graph 用語捆進 F3；現場痛是新 slug 仍進 `N7-g1`。只選一邊都會空切或折舊。3C 要**宣告與行為**同時真，節點檔留下。 doctor 綠的定義已經是「∈ supported」。F3 若 bump 卻不改清單，誠實紅是對的——但出貨必須把 2.1.0 寫進清單，而不是改握手讓它假綠。 完成定義沿 F2 anti-hollow：同一電池三路。hollow 四格（True／檔在／F2 綠／用字）是預期紅，不是可選散文。</p><p><strong>風險</strong> | 風險 | 對策 | |---|---| | 後站 silent flip `True` 當已切 | 1B 棄；約束 1；ATTEST-SILENT-RED；OC-1 | | 把 2.1.0 寫成 cut | 約束 2；PRE-CUT-INDEPENDENT；OC-2 | | 只 bump 正本鍵、不修 reader | 2B 棄；KEY-READER-RED；OC-3 | | hops 先切、契約仍 2.0.0 | 2C 棄；PRE-HOPS-20-RED | | 只改 guide／STATUS、graph 仍停 N7-g1 | 3B／3D 棄；約束 6；HOLLOW-WORDING | | 刪 N7-g1／N6-g2 或折 in-flight | 約束 7；6B 棄；OLD7-FOLD-RED | | 改 doctor 握手讓 2.1.0 假綠 | 4B 棄；4A 只動清單 | | 把本目錄當 NEW 白老鼠 | 6C 棄；OLD7-SELF；約束 10 | | 後站把 hollow 標成功 | SC-HOLLOW；HOLLOW-* 四格；約束 9 | | feature branch 手改 STATUS | OC-9／OC-10 流程層 | | 本 hop 被當成已過 G1 | `verdict` 空；不跑 N8 三連動；不發明 PASS | | 4-spec 減 CASE 表 | 「只准加不准減」；減列翻 Decision | | Q15–Q19 假設被當「仍待驗可改口」 | 本檔升格並進 OC；推翻＝回本站 |</p><p><strong>未採</strong> | 不選 | 一句棄因 | |---|---| | 1B silent True | 無可見紀錄；Q15 過期不得當已核 cut。 | | 1C 2.1.0 當 cut | 塌掉獨立位元；違 4A／Q26。 | | 1D STATUS／guide 當 SoT | 看板／用字 ≠ 刀；D-1 已拒加列＝cut。 | | 2B 只 bump 不修 reader | live `declared` 仍 `""`。 | | 2C hops 先於 2.1.0 | SLOT-REJECT 或遠端改線。 | | 2D 假寫 version 鍵 | 正本仍 2.0.0；對醫生說謊。 | | 3A 只改 graph、不 dual-read | 未宣告也被拖走；可折 freeze。 | | 3B 只宣告、graph 仍停 N7-g1 | 用語／契約切、行為沒切。 | | 3D 只翻函式、大家仍進 N7-g1 | 空切；與 1B 同形。 | | 4B 改 doctor 握手 | 綠變謊；SLOT 變裝飾。 | | 4C 出貨態故意 doctor 紅 | 逼現場滑向 4B。 | | 4D 綠當 cut／第四條 | Q9／Q10／Q11 已否。 | | 5B True／檔在＝完 | 具名 hollow。 | | 5C 用字／F2 綠＝完 | AC-7；地板冒充完工。 | | 6B 刪 token／折 freeze | X2／X4；新 brief。 | | 6C 本目錄當白老鼠 | 已 in-flight；G-self-1 反面。 | | 重開 F0 十條或放寬三 cap | 翻＝新 brief。 | | 重開 F2 4A 形狀或 park D-1／D-2／D-3／F-c-4 | Stage 1 已鎖不重開。 | | 本 PR 改 STATUS／填 G1 PASS／合併／bump／改 graph／改 doctor | 使用者：only 2-decision+html、No G1、No STATUS。 |</p></details>
+<p class="src">由 <code>scripts/build-stage2-html.py</code> 從 md 解析產生,不包 html-shell。</p>
+</div>
+</body>
+</html>
