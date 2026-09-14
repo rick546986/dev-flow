@@ -662,3 +662,9 @@
 - 落在哪:#323/#321
 - 詳細:https://github.com/rick546986/dev-flow/pull/323 ; https://github.com/rick546986/dev-flow/pull/321
 
+## 2026-09-14 · five-station-f2
+- 做了什麼:Stage 1 discussion landed (#325); Active opened; Stage=1-discussion; Gates G1⬜ G2⬜ G3⬜
+- 為什麼:Winner B majority R1+R2; soft-fix absorbed A/C must-fixes. No Human Stage1 PASS / G1 invented.
+- 落在哪:docs/dev/five-station-f2/ + STATUS
+- 詳細:https://github.com/rick546986/dev-flow/pull/325
+
