@@ -376,6 +376,7 @@ Run: n-a:manual-implementer-stream
 - `scripts/fixtures/five-station-f3/`
 - `docs/dev/f3-cut-attestation.json`（T-10）
 - `docs/dev/five-station-f3/6-implementation-notes.md` + html
+- `docs/dev/five-station-f3/5-tasks.md` 頂欄 `status` 僅 N1-arm（`draft`→`approved`；checkbox 未勾）
 
 D-1 L1 准許清單修訂（不是 silent extras、也不是第二次 cut）：
 
@@ -384,7 +385,7 @@ D-1 L1 准許清單修訂（不是 silent extras、也不是第二次 cut）：
 3. `scripts/test-architecture-guards.sh`（靜態釘 210→213）
 4. `scripts/devflow-check.sh`（architecture `run` 行註冊 F3 check + test）
 
-未改：`_templates/`、`hooks/_doctor_impl.py`、STATUS／HISTORY、`scripts/five_station_f2.py`、token 檔、`docs/dev/five-station-f2/` 已封 R／S、5-tasks checkbox。
+未改：`_templates/`、`hooks/_doctor_impl.py`、STATUS／HISTORY、`scripts/five_station_f2.py`、token 檔、`docs/dev/five-station-f2/` 已封 R／S、5-tasks checkbox（只動頂欄 status）。
 
 ## Diff(各 T commit,逐檔折疊)
 
