@@ -668,3 +668,9 @@
 - 落在哪:docs/dev/five-station-f2/ + STATUS
 - 詳細:https://github.com/rick546986/dev-flow/pull/325
 
+## 2026-09-14 · five-station-f2
+- 做了什麼:Stage 2 decision landed (#330); Active Stage → 2-decision, Gates still G1⬜ G2⬜ G3⬜
+- 為什麼:Winner C unanimous; standing soft-fix hop buckets + route SoT + Q12 + CASE polarity. No G1 PASS invented.
+- 落在哪:docs/dev/five-station-f2/2-decision.md + STATUS
+- 詳細:https://github.com/rick546986/dev-flow/pull/330
+
