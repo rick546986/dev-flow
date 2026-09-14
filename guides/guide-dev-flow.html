@@ -180,7 +180,8 @@
 <body>
 <main>
   <h1>dev-flow 導覽 · 開發流程 SOP</h1>
-  <p class="muted">七個階段怎麼走、三道 gate 卡哪裡、哪<strong>層</strong>做哪類活
+  <p class="muted">新 slug 預設五站(Intake→Decide→Spec→Build→Ship);進行中票 dual-read 仍舊 7。
+  七個階段怎麼走、三道 gate 卡哪裡、哪<strong>層</strong>做哪類活
   （產品型號是主機對照,不是契約）。入口是 repo 根
   <code>README.md</code>（只當第一屏）。契約句檢查器抽
   <code>docs/dev/readme-contract-extract.md</code>；人看本頁。</p>
@@ -206,7 +207,7 @@
 
   <h2 id="start">⓪ 開工(零到一 → 一個 feature → FAQ)</h2>
   <p class="lead">這章要你懂:<strong>先裝機、再走一個 feature、卡關對 FAQ</strong>。
-  七站圖、兩軌、每站清單在後面各章,不另開第二頁。</p>
+  新工作預設五站;進行中票仍七站。五站圖、兩軌、每站清單在後面各章,不另開第二頁。</p>
   <blockquote>本頁指令分兩種管道,下文用固定標籤區分:<br>
   <span class="badge you">跟 AI 說</span> —— 對話裡打的觸發語(<code>dev-setup</code>、<code>/dev-talk …</code>、
   <code>/dev-flow 繼續 …</code>、<code>dev-run …</code>),由 plugin 的 skill 描述以自然語言匹配,不是 shell 指令。<br>
@@ -571,6 +572,8 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
 
   <h2 id="flow">① 七階段流程圖(含 Gate 與能力分層)</h2>
   <p class="lead">這章要你懂:<strong>五站單行,只有 Ship 會被人擋</strong>。
+  這是<strong>新 slug</strong>預設(Intake→Decide→Spec→Build→Ship)。進行中票 dual-read 仍舊 7,G1/G2/G3 人閘不變;<code>N7-g1</code>/<code>N6-g2</code> 節點不刪。
+  cut SoT＝<code>docs/dev/f3-cut-attestation.json</code>;根契約 <code>2.1.0</code>(≠ cut)。用語 ≠ SoT。
   綁死的是<strong>層</strong>(規劃 / 執行 / 起步 / 審查),不是產品型號。
   Claude 的 opus / sonnet / haiku 只是對照,不是契約。
   非 Claude 主機不跑 haiku→sonnet→opus 產品階梯。G1 過且沒技術疑問,可以跳過選配的 3。
