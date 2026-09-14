@@ -206,7 +206,7 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 | 日期 | T-id | 一行 |
 |---|---|---|
 | 2026-09-14 | T-1…T-12 | 3c8d718 實作落地（review=PRE，非正式 PASS） |
-| 2026-09-14 | T-1 T-9 | soft-fix #321：FM verdict + 偽造 attest 不洗白 + S-4.1 正向（review=PRE） |
+| 2026-09-14 | T-1 T-9 | 0c3bbf4e1dca2abe61a2ea4bae04c82e499b58e5 soft-fix #321：FM verdict + 偽造 attest 不洗白 + S-4.1 正向（review=PRE） |
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 
