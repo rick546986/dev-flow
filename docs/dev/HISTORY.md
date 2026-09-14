@@ -680,3 +680,9 @@
 - 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
 - 詳細:https://github.com/rick546986/dev-flow/pull/333
 
+## 2026-09-14 · five-station-f2
+- 做了什麼:Stage 4 spec landed (#336); Active Stage → 4-spec; Gates G1✅ G2⬜ G3⬜
+- 為什麼:Winner B majority R1+R2; standing soft-fix M1–M16 + HOP-OK table. No G2 PASS invented
+- 落在哪:docs/dev/five-station-f2/4-spec.md + STATUS
+- 詳細:https://github.com/rick546986/dev-flow/pull/336
+
