@@ -1,20 +1,23 @@
 ---
 feature: five-station-f2
 stage: 4-spec
-status: draft
-verdict:
+status: approved
+verdict: PASS
 owner: rick
-reviewers: []
+reviewers: [user]
 updated: 2026-09-14
 ---
+- Human verdict note: Human G2 PASS + DD-1…DD-10 Owner PASS @ 2026-09-14 Asia/Taipei。owner chat「G2過」。未發明新 DD 答案。
 
 # 4. 規格 — 五站 F2 change spec（Winner B + owner standing soft-fix）
 
-> 基準:`origin/main`（G1 PASS after #333／#334）。Lane = **full**。契約不 bump。
-> G1 已過。Stage 3：**無 trigger**（本刀 coordinator／slug 倉／電池，無新前端、無新互動方案）→ 不建 `3-prototype.md`、不另開 proto 桶。**本 hop 不送 G2**：頂欄 `status: draft`、`verdict` 空。不發明 PASS。
+> 基準:`origin/main` tip `783322b`（#338 Active Stage → 4-spec 已合；#336 winner B）。Lane = **full**。契約不 bump。
+> G2 已核:`verdict` PASS、`status` approved、DD-1～DD-10 ✅ Owner PASS。本 hop 只落 Human G2 attestation + 審頁重生（`scripts/build-stage4-html.py --action`）；不改 `_templates/`／`graph.yaml`／`scripts/` 牙、不 bump `devflow-contract.json`、不改 `STATUS.md`／`HISTORY.md`（STATUS 另 companion）、不開 Stage 5、不發明 G3 PASS。
+> Stage 3：**無 trigger**（本刀 coordinator／slug 倉／電池，無新前端、無新互動方案）→ 不建 `3-prototype.md`、不另開 proto 桶。Demo verdict＝N/A＋原因。
 > 原文獨立於 A／C（B 線當時未讀他稿）。**本檔含 owner standing soft-fix**（#336 多數勝出後吸收，非 B 線當時已讀他稿）。
 > B 線主軸全留：① RP-9／10／11 **讀 slug 倉真計數**（禁只咬 fixture「第 3 次」）；② marketplace×doctor **約束不是功能**；③ Q12 **第一次成功 persist＝0，其後 +1**；④ Spec／Build **同桶**（拒七 stem）；⑤ CASE 極性＝**注入壞行為 → 該格紅**。Decision 原 13 列只准加；入口＝`scripts/test-five-station-f2.sh`。
 > Standing 必釘：M1–M16 去向＋**任一 Must-keep 紅 → 拒 hop**（不只 M11／T Verify）；NEW5-HOP-OK 用可解析謂詞表／逐 hop GWT（吸 A）；Verification Profile 寫 lane／Risk 判準句、F2 電池進 Conditional（Required 不得 unverified）、本 hop Final Fresh＝`check-spec-gate.sh` 一條；DBC Trigger 含 ⑨ Feature Risk=high；Out of Scope 三把鎖「後站不准改成 In」；hollow 三陷阱各一 S（吸 C）；Stage 5 Files 具名准許清單，F3／token／graph Diff Budget＝0 且有失敗 S（吸 C）。
+> 本 Stage 4 的 G2 是 human owner rick PASS（2026-09-14 Asia/Taipei owner chat「G2過」），**不是** Agent 自裁。未發明 G3 PASS。
 > 本 PR **只** `4-spec.md` + `4-spec.html`。不改 STATUS／HISTORY／2-decision／模板／graph／scripts 牙／契約。不寫 coordinator 碼。
 
 ## 補助模組生命週期（預覽）
@@ -1096,7 +1099,7 @@ Stage 5 Files 准許清單正本＝S-8.9。超出 → L2。
 
 Q10／Q17／Q19 已由 Decision OC-4／5／6 升格，故 oc-accepted。後兩列是本檔釘形，期限給後站落地，不是已過站。
 
-## Drafting Decisions(草擬自判,待人審)
+## Drafting Decisions(草擬自判,已核)
 
 形狀已寫進 R/S。本表只記本檔鎖定的選擇。不翻 1A–8A。推翻 Decision 不是合法 DD。
 
@@ -1104,21 +1107,21 @@ Q10／Q17／Q19 已由 Decision OC-4／5／6 升格，故 oc-accepted。後兩�
 
 | DD | 決定了什麼 | 為什麼 | 依據(`檔:行` 或 `[Assumption]`) | 若被推翻會怎樣 | 狀態(待人審→✅/✗) |
 |---|---|---|---|---|---|
-| DD-1 | slug 倉路徑形＝`docs/dev/<slug>/.five-station/store`（檔或目錄皆可，正本不在 `.devflow/runs/<run_id>/`）。鍵名仍 OPEN | Decision 把路徑形交給 4-spec；必須可測且躲 X5 | `2-decision.md` 決策點 1A 劣欄「4-spec 才釘形」；狀態機 `:L122-L124`。路徑本身 `[Assumption]` | 改回 run 級＝X5；改鎖 JSON 鍵＝違 OC-3 | 待人審 |
-| DD-2 | 單一電池入口檔名＝`scripts/test-five-station-f2.sh` | Decision 只鎖同一 process、缺一路即非 0；檔名交給 4-spec | `2-decision.md` 5A 劣欄；內部技術選擇「入口檔名交 4-spec」。檔名 `[Assumption]` | 改兩支腳本各綠＝hollow | 待人審 |
-| DD-3 | NEW5 fixture 根＝`scripts/fixtures/five-station-f2/new5/`（合成；不當 hop 主詞的 live 目錄） | Decision 約束 3 | `2-decision.md` 約束 3。路徑 `[Assumption]` | 拿本目錄當白老鼠＝RP-15 | 待人審 |
-| DD-4 | OLD7 fixture 根＝`scripts/fixtures/five-station-f2/old7/`（已有 1–7 `.md`） | 與 NEW5 分家，供同一入口第二路 | `2-decision.md` 5A。路徑 `[Assumption]` | 與 NEW5 混目錄會折線 | 待人審 |
-| DD-5 | Feature Risk = high；本檔 `verdict` 空、`status: draft`；implementer 不寫 G2 PASS | 計數完整性＋採用端改線＋狀態機；四眼 | `_templates/4-spec.md` Risk 判準；本 hop brief「No G2 PASS」 | 改 normal 則 Failure Model 變選配；代填 PASS＝假綠 | 待人審 |
-| DD-6 | 加 5 列 CASE：NEW5-STORE-READ／NEW5-SEVEN-STEM／NEW5-SPEC-SHARE／NEW5-BUILD-SHARE／NEW5-Q12-ZERO。Decision 原 13 列不減 | B 線主軸可測；Decision 只准加 | `2-decision.md`「只准加不准減」；本 hop B-line brief | 減原列＝翻 Decision | 待人審 |
-| DD-7 | S 數 >40 留在本檔、不另切開新 slug；行為圖 8 框對 8 個 R（產器 `steps[:8]`） | 誠實記帳；不改 scripts | `scripts/build-stage4-html.py` L450；本 hop 不改牙 | 增 R-9 則圖丟框 | 待人審 |
-| DD-8 | Stage 3 對帳＝0 命中 N/A，不是「命中仍跳過」 | Decision 無 skip OC；本刀無新互動 | `2-decision.md` 內部技術選擇「不預先跳過」；本 hop dispatch skip＝不建 3-prototype | 寫 skip OC 而無命中＝假跳過 | 待人審 |
-| DD-9 | 原文獨立於 A／C；standing 才吸 A 謂詞表／C hollow＋Files 准許清單。不換 winner | owner standing soft-fix；B 線主軸（讀倉／同桶／doctor／Q12／注入紅）全留 | 本 hop owner 指令；#336 多數勝 | 改換 C 當 winner＝丟 B 讀倉主軸 | 待人審 |
-| DD-10 | M1–M16 任一紅拒 hop；HOP-OK 用謂詞表不寫「謂詞全真」；F2 電池列 Conditional；DBC 含 ⑨；三把鎖後站不准改成 In；F3／token／graph Diff Budget＝0 | R1／R2 must-fix + 吸 C／A | owner standing 清單 | 只擋 M11 或 Required 列未落地電池＝形狀／語意裂 | 待人審 |
+| DD-1 | slug 倉路徑形＝`docs/dev/<slug>/.five-station/store`（檔或目錄皆可，正本不在 `.devflow/runs/<run_id>/`）。鍵名仍 OPEN | Decision 把路徑形交給 4-spec；必須可測且躲 X5 | `2-decision.md` 決策點 1A 劣欄「4-spec 才釘形」；狀態機 `:L122-L124`。路徑本身 `[Assumption]` | 改回 run 級＝X5；改鎖 JSON 鍵＝違 OC-3 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| DD-2 | 單一電池入口檔名＝`scripts/test-five-station-f2.sh` | Decision 只鎖同一 process、缺一路即非 0；檔名交給 4-spec | `2-decision.md` 5A 劣欄；內部技術選擇「入口檔名交 4-spec」。檔名 `[Assumption]` | 改兩支腳本各綠＝hollow | ✅ Owner PASS human:rick @ 2026-09-14 |
+| DD-3 | NEW5 fixture 根＝`scripts/fixtures/five-station-f2/new5/`（合成；不當 hop 主詞的 live 目錄） | Decision 約束 3 | `2-decision.md` 約束 3。路徑 `[Assumption]` | 拿本目錄當白老鼠＝RP-15 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| DD-4 | OLD7 fixture 根＝`scripts/fixtures/five-station-f2/old7/`（已有 1–7 `.md`） | 與 NEW5 分家，供同一入口第二路 | `2-decision.md` 5A。路徑 `[Assumption]` | 與 NEW5 混目錄會折線 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| DD-5 | Feature Risk = high；本檔 `verdict` 空、`status: draft`；implementer 不寫 G2 PASS | 計數完整性＋採用端改線＋狀態機；四眼 | `_templates/4-spec.md` Risk 判準；本 hop brief「No G2 PASS」 | 改 normal 則 Failure Model 變選配；代填 PASS＝假綠 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| DD-6 | 加 5 列 CASE：NEW5-STORE-READ／NEW5-SEVEN-STEM／NEW5-SPEC-SHARE／NEW5-BUILD-SHARE／NEW5-Q12-ZERO。Decision 原 13 列不減 | B 線主軸可測；Decision 只准加 | `2-decision.md`「只准加不准減」；本 hop B-line brief | 減原列＝翻 Decision | ✅ Owner PASS human:rick @ 2026-09-14 |
+| DD-7 | S 數 >40 留在本檔、不另切開新 slug；行為圖 8 框對 8 個 R（產器 `steps[:8]`） | 誠實記帳；不改 scripts | `scripts/build-stage4-html.py` L450；本 hop 不改牙 | 增 R-9 則圖丟框 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| DD-8 | Stage 3 對帳＝0 命中 N/A，不是「命中仍跳過」 | Decision 無 skip OC；本刀無新互動 | `2-decision.md` 內部技術選擇「不預先跳過」；本 hop dispatch skip＝不建 3-prototype | 寫 skip OC 而無命中＝假跳過 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| DD-9 | 原文獨立於 A／C；standing 才吸 A 謂詞表／C hollow＋Files 准許清單。不換 winner | owner standing soft-fix；B 線主軸（讀倉／同桶／doctor／Q12／注入紅）全留 | 本 hop owner 指令；#336 多數勝 | 改換 C 當 winner＝丟 B 讀倉主軸 | ✅ Owner PASS human:rick @ 2026-09-14 |
+| DD-10 | M1–M16 任一紅拒 hop；HOP-OK 用謂詞表不寫「謂詞全真」；F2 電池列 Conditional；DBC 含 ⑨；三把鎖後站不准改成 In；F3／token／graph Diff Budget＝0 | R1／R2 must-fix + 吸 C／A | owner standing 清單 | 只擋 M11 或 Required 列未落地電池＝形狀／語意裂 | ✅ Owner PASS human:rick @ 2026-09-14 |
 
 ### 內部技術選擇(下層,告知即可)
 
 - 審頁用 `scripts/build-stage4-html.py --action`；不手包 html-shell；不把審頁塞進 `build-gate-twin.py` STAGES。
-- 本 hop 不改 `STATUS.md`、不 bump plugin、不開 5-tasks、不發明 G2 PASS。
+- 本 hop 只落 Human G2 attestation；不改 `STATUS.md`（另 companion）、不 bump plugin、不開 5-tasks、不發明 G3 PASS。
 - 本檔不寫 C4 未定事項三詞字面，改指 `check-spec-gate.sh` `VAGUE_ALL`。
 - F1 字樣正則牙留作回歸；不得替代 1A 倉。
 - 舊 7 in-flight 仍走既有 `graph.yaml` 與 T 嘗試上限 4。
@@ -1205,3 +1208,4 @@ Q10／Q17／Q19 已由 Decision OC-4／5／6 升格，故 oc-accepted。後兩�
 - 獨立於 A／C（原文） | 2026-09-14 | B 線當時只讀 2-decision＋brief F2＋狀態機＋4-spec 模板。
 - Owner standing soft-fix | 2026-09-14 | Winner B 多數 #336。釘：M1–M16 去向＋任一 M 紅拒 hop；HOP-OK 謂詞表／逐 hop GWT（吸 A）；Profile 判準句＋電池 Conditional＋Fresh＝spec-gate；DBC ⑨；OOS「後站不准改成 In」；hollow 三 S（吸 C）；Stage 5 Files 准許清單＋F3／token／graph＝0（吸 C）。B 線讀倉／同桶／doctor／Q12／注入紅全留。不發明 G2 PASS。
 - 本 hop 不送 G2 | 2026-09-14 | `verdict` 空；`status: draft`。
+- G2 | 2026-09-14 | Human G2 PASS + DD-1…DD-10 Owner PASS @ 2026-09-14 Asia/Taipei。owner chat「G2過」。未發明新 DD 答案；看板依 Spec 原文標 Owner PASSed。基準 #336（`0c337ec`）／#338 STATUS Stage4（`783322b`）。owner 自審(有記錄)；reviewers: [user]；operator tony 經 `scripts/devflow_gate.py write` 落頂欄。未發明 G3 PASS。不開 Stage 5。
