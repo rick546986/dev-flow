@@ -168,6 +168,18 @@ def run_c4(path, root):
     return None
 
 
+def fm_token(meta, key):
+    raw = (meta.get(key) or "").strip()
+    return raw.split()[0] if raw else ""
+
+
+def ship_pass(meta, body):
+    """7-review 正本：YAML `verdict:`；正文列只是後備。"""
+    if fm_token(meta, "verdict") == "PASS":
+        return True
+    return bool(PASS_LN.search(body))
+
+
 def evaluate(text, path="", root=None):
     root = root or str(ROOT)
     meta, body = parse_fm(text)
@@ -179,10 +191,11 @@ def evaluate(text, path="", root=None):
         writer = writer or "agent"
 
     if kind == "verdict":
-        attest = bool(HUMAN_ATTEST.search(body))
-        if ACCEPTED.search(body) and not attest:
+        demo_attest = bool(HUMAN_ATTEST.search(body))
+        if ACCEPTED.search(body) and not demo_attest:
             result.red("RP-16", "ACCEPTED 無 human attestation = 未寫")
-        if PASS_LN.search(body) and writer != "human" and not attest:
+        # Ship 未寫看頂欄作者，不看 Demo attestation（偽造 human: 不得洗白）
+        if ship_pass(meta, body) and writer != "human":
             result.red("RP-16", "Ship PASS 無人類頂欄 = 未寫")
         result.info["unread"] = "RP-16" in result.red_codes
 

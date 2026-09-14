@@ -115,9 +115,20 @@ def expect(name, fixture, should_red, codes=(), extras=()):
 # T-1
 if want_group("rp16"):
     expect("test_s_3_1_agent_written_verdict_unread",
-           "rp-16-agent-ship-pass.md", True, ["RP-16"])
+           "rp-16-agent-ship-pass.md", True, ["RP-16"],
+           extras=[("unread", True)])
+    expect("test_s_3_1_agent_accepted_no_attest_unread",
+           "rp-16-agent-accepted-no-attest.md", True, ["RP-16"],
+           extras=[("unread", True)])
+    expect("test_s_3_1_agent_ship_forged_attest_still_unread",
+           "rp-16-agent-ship-forged-attest.md", True, ["RP-16"],
+           extras=[("unread", True)])
+    expect("test_s_3_1_human_topbar_pass_not_killed",
+           "rp-16-human-ship-pass.md", False,
+           extras=[("unread", False)])
     expect("test_s_3_1_human_accepted_not_killed",
-           "rp-16-human-accepted-attest.md", False)
+           "rp-16-human-accepted-attest.md", False,
+           extras=[("unread", False)])
 
 # T-2
 if want_group("slots"):
@@ -189,6 +200,9 @@ if want_group("brief-files"):
 
 # T-9
 if want_group("attest"):
+    expect("test_s_4_1_b1_requires_human_accepted_attestation",
+           "s-4-1-human-accepted-attest.md", False,
+           extras=[("hop_spec_build", True)])
     expect("test_s_4_2_empty_attestation_plus_chat_cannot_leave_spec",
            "rp-13-empty-attestation-plus-chat.md", True, ["RP-13"],
            extras=[("leave_spec", False)])

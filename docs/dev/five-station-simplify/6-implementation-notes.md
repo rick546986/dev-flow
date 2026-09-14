@@ -47,8 +47,8 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 - reviewer identity: implementer-A（self）
 - reviewer kind: implementer-self（非獨立）
 - reviewed-at: 2026-09-14 PRE
-- Verify: `n=$(bash scripts/test-five-station-f1.sh --group rp16 -v 2>&1 | grep -c '^=== CASE'); test "$n" -ge 2 && bash scripts/test-five-station-f1.sh --group rp16` → n=2；failed=0
-- Covers finding: S-3.1 Agent 代寫紅、人類 attestation 不誤殺
+- Verify: `n=$(bash scripts/test-five-station-f1.sh --group rp16 -v 2>&1 | grep -c '^=== CASE'); test "$n" -ge 2 && bash scripts/test-five-station-f1.sh --group rp16` → n=5；failed=0；agent 案 `unread=True`
+- Covers finding: S-3.1 讀 YAML `verdict:`；偽造 Demo attestation 不洗白 Ship；人類頂欄 PASS 不誤殺；Agent ACCEPTED 無 attestation 紅
 - Files finding: 牙骨架＋RP-16 列＋兩份對照稿，未出聯集
 - RED→GREEN finding: 5-tasks 開工前腳本不存在＝RED；本 T Verify 綠
 - Test Integrity finding: none（自檢；待獨立審）
@@ -151,8 +151,8 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 - reviewer identity: implementer-A（self）
 - reviewer kind: implementer-self
 - reviewed-at: 2026-09-14 PRE
-- Verify: 四張具名檔存在 + `--group attest` n=5；failed=0
-- Covers finding: RP-13／12／14、S-4.5、S-1.7 demo_page=false
+- Verify: 四張具名檔存在 + `--group attest` n=6；failed=0；S-4.1 正向 `hop_spec_build=True`
+- Covers finding: S-4.1 兩行齊才 hop（獨立 attest fixture，不重用 T-1 verdict 檔）；RP-13／12／14、S-4.5、S-1.7
 - Files finding: 未改 `_stage3_impl.py`
 - RED→GREEN finding: 見 TDD Evidence
 - Test Integrity finding: none（自檢）
@@ -206,6 +206,7 @@ slug=five-station-simplify started=2026-09-14T00:02:18 scope=6 extra=0 sentinel=
 | 日期 | T-id | 一行 |
 |---|---|---|
 | 2026-09-14 | T-1…T-12 | 3c8d718 實作落地（review=PRE，非正式 PASS） |
+| 2026-09-14 | T-1 T-9 | soft-fix #321：FM verdict + 偽造 attest 不洗白 + S-4.1 正向（review=PRE） |
 
 ## 執行軌跡(選配,只供 dev-run 引擎;手動實作留白,不虛構模型歷史)
 
@@ -216,8 +217,8 @@ Run: n-a（sequential 手動；無 exec-v2 run_id 事件）
 RED 共用基準（5-tasks「Verify 開工前原樣跑」2026-09-14）：`scripts/test-five-station-f1.sh` 不存在 → 十二欄皆非零。
 
 ### T-1 / S-3.1
-- RED: 腳本不存在 → 非零
-- GREEN: `--group rp16` → `=== CASE` ×2；`failed=0`；Agent `verdict: PASS` → RP-16；人類 attestation 不紅
+- RED: 腳本不存在 → 非零。soft-fix：Agent `verdict: PASS` 只在 YAML 時舊牙 `unread=False`（6 fail）
+- GREEN: `--group rp16` ×5；`failed=0`；Agent FM PASS／Agent ACCEPTED／偽造 attest → `unread=True`；人類頂欄 PASS 與人類 ACCEPTED → `unread=False`
 
 ### T-2 / S-5.8
 - RED: 腳本不存在 → 非零
@@ -288,8 +289,8 @@ RED 共用基準（5-tasks「Verify 開工前原樣跑」2026-09-14）：`script
 - GREEN: `rp-05-files-outside-union.md` → RP-5（`hooks/_stage3_impl.py`、`graph.yaml`）
 
 ### T-9 / S-4.1
-- RED: 腳本不存在 → 非零
-- GREEN: 人類兩行在的對照屬 T-1 正向；本群組以空欄／強迫／請人審／否定跳過為負向
+- RED: 腳本不存在 → 非零；舊筆記誤用 T-1 `f1-kind: verdict` 當 S-4.1
+- GREEN: `s-4-1-human-accepted-attest.md`（`f1-kind: attest`）→ `hop_spec_build=True`、red=False
 
 ### T-9 / S-4.2
 - RED: 腳本不存在 → 非零
@@ -358,6 +359,7 @@ RED 共用基準（5-tasks「Verify 開工前原樣跑」2026-09-14）：`script
 - T-11 一次寫齊 RP-1…16 列（T-1 只要求 RP-16 一列）：最終 annex 必須可對十六紅。依據：S-2.6／T-11 Intent。
 - live Q6 掃描跳過 4-spec 自己的 GIVEN／「寫成 Observed」例句。依據：[Assumption] S-6.3 觀測是擋升格句，不是讓契約自紅。
 - 不把新牙掛進 `hooks/selftest.sh` MIN_CASES／`EXPECTED_MAPPED_FILES`。依據：S-8.5 Files 聯集不含 hooks／file-map；Split Decisions。
+- Ship PASS 只認 YAML／頂欄作者，不認 Demo `Verdict attestation`。依據：S-3.1「無人類頂欄的 PASS」；R2 anti false-green。
 
 ## Deviations
 
@@ -433,16 +435,26 @@ RED 共用基準（5-tasks「Verify 開工前原樣跑」2026-09-14）：`script
 +        return True
 ```
 
-### evaluate · `scripts/five_station_f1.py` 171-188  T-1
-改什麼：Agent 代寫 ACCEPTED／Ship PASS 無人類 attestation = RP-16 未寫。
-關聯：caller `check_path`／peer `Result.red`
+### ship_pass · `scripts/five_station_f1.py` 176-180  T-1
+改什麼：讀 7-review YAML `verdict:`，正文列只是後備。
+關聯：caller `evaluate`／peer `fm_token`
 ```diff
- def evaluate(text, path="", root=None):
-+    if kind == "verdict":
-+        if ACCEPTED.search(body) and not attest:
+ def ship_pass(meta, body):
++    if fm_token(meta, "verdict") == "PASS":
++        return True
++    return bool(PASS_LN.search(body))
+```
+
+### evaluate · `scripts/five_station_f1.py` 193-200  T-1
+改什麼：Agent FM PASS＝未寫；偽造 Demo attestation 不得洗白；人類頂欄不誤殺。
+關聯：caller `check_path`／callee `ship_pass`
+```diff
+     if kind == "verdict":
+-        if PASS_LN.search(body) and writer != "human" and not attest:
++        if ACCEPTED.search(body) and not demo_attest:
 +            result.red("RP-16", "ACCEPTED 無 human attestation = 未寫")
-+        if PASS_LN.search(body) and writer != "human" and not attest:
-+            result.red("RP-16", "Ship PASS 無人類頂欄 = 未寫")
++        if ship_pass(meta, body) and writer != "human":
+             result.red("RP-16", "Ship PASS 無人類頂欄 = 未寫")
 ```
 
 ### evaluate · `scripts/five_station_f1.py` 189-193  T-2
