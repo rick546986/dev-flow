@@ -781,3 +781,9 @@
 - 落在哪:docs/dev/STATUS.md docs/dev/HISTORY.md docs/dev/HISTORY.html
 - 詳細:https://github.com/rick546986/dev-flow/pull/395
 
+## 2026-09-14 · five-station-face
+- 做了什麼:人類面改成五站預設(Intake→Decide→Spec→Build→Ship,只有 Ship 是預設人類停點)。STATUS Backlog A「下一刀 F1」刪除:F0–F3 已關,不再開下一刀 F1,不發明 G3 ticket。
+- 為什麼:F0–F3 把機器契約與 lead 講完;人類面文件與圖仍教七站。#397 把可見面改成五站。Backlog A 若留著會再被當成下一刀。
+- 落在哪:guides/guide-dev-flow.html、guides/fig-flow-full.svg、README.md、skills/dev-flow/SKILL.md、plugin 描述;STATUS Backlog A 刪除。機器七檔檔名與 G1/G2/ACCEPTED token 不動。
+- 詳細:https://github.com/rick546986/dev-flow/pull/397
+
