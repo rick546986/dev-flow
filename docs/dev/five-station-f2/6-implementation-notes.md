@@ -239,6 +239,12 @@ Run:
 - 理由:超支是估計訊號，不是 R/S 變更。
 - 影響:T-8／T-10 fixture 數。
 
+### D-3(L1) — 5-tasks frontmatter `draft` → `approved`(N1-arm / graph P0)
+- 現象:6-notes 已存在時 `check-devstage6-graph.sh` P0 要求同 slug `5-tasks.md` 必須 `status: approved`，否則 N1-arm 不是入口。初版 PR 漏改，CI `REPO_REFERENCE` 紅在這條。
+- 保守選擇:只改 frontmatter 並重建 html twin。不勾 T checkbox、不把 T Review 標 ACCEPTED、不發明 Human G3。
+- 理由:F1 `five-station-simplify/5-tasks.md` 同例；approved 是 Stage 6 入口握手，不是 G3 PASS。
+- 影響:`5-tasks.md` / `5-tasks.html` status 欄；graph 檢查。電池 CASE / persist / hop 不變。
+
 ## Files Changed
 
 對照 4-spec Diff Budget（G2 之後只 F2 scripts）+ D-1 守衛：
@@ -249,6 +255,7 @@ Run:
 - `scripts/fixtures/five-station-f2/**`
 - `docs/dev/five-station-f2/6-implementation-notes.md` + html
 - L1 D-1: `scripts/check-file-map.sh`、`scripts/test-architecture-guards.sh`、`scripts/devflow-check.sh`、`guides/guide-dev-flow.html` 檔案地圖列（非 F3 cut）
+- L1 D-3: `docs/dev/five-station-f2/5-tasks.md` / `5-tasks.html` frontmatter `status: approved`（N1-arm；非勾選 T、非 G3）
 
 未改：`graph.yaml`、`_templates/`、`hooks/_doctor_impl.py`、`devflow-contract.json`、STATUS／HISTORY、token 檔。
 
