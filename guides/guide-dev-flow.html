@@ -180,17 +180,22 @@
 <body>
 <main>
   <h1>dev-flow 導覽 · 開發流程 SOP</h1>
-  <p class="muted">新 slug 預設五站(Intake→Decide→Spec→Build→Ship);進行中票 dual-read 仍舊 7。
-  七個階段怎麼走、三道 gate 卡哪裡、哪<strong>層</strong>做哪類活
+  <p class="muted">五站怎麼走（Intake→Decide→Spec→Build→Ship）、哪一站才等人、哪<strong>層</strong>做哪類活
   （產品型號是主機對照,不是契約）。入口是 repo 根
   <code>README.md</code>（只當第一屏）。契約句檢查器抽
-  <code>docs/dev/readme-contract-extract.md</code>；人看本頁。</p>
+  <code>docs/dev/readme-contract-extract.md</code>；人看本頁。
+  舊七檔名仍是機器別名；in-flight 票 dual-read 舊七站。</p>
 
   <nav>
     <a href="#start">⓪ 開工</a>
-    <a href="#flow">① 七階段流程圖</a>
+    <a href="#flow">① 五站流程圖</a>
+    <a href="#intake">Intake</a>
+    <a href="#decide">Decide</a>
+    <a href="#spec">Spec</a>
+    <a href="#build">Build</a>
+    <a href="#ship">Ship</a>
     <a href="#lanes">② 兩軌</a>
-    <a href="#docs">③ 七份文件</a>
+    <a href="#docs">③ 五站產物</a>
     <a href="#checklists">④ 每站執行清單</a>
     <a href="#gates">⑤ Gate 規則卡</a>
     <a href="#guard">⑥ 執行守衛</a>
@@ -365,87 +370,113 @@
   可執行並看 verdict —— 報 INCOMPATIBLE 是刻意 fail-closed,不得繞過或改綠。</p>
 
   <h3 id="walkthrough">一個 feature 的完整走位</h3>
-  <p class="lead">這章要你懂:<strong>七個階段裡你只打四種指令</strong>,其餘都是 AI 在跑;
-  真正卡人的是 Stage 6 —— 它有一組不可調的三步順序,順序錯了安全網會失效。</p>
-  <p>以下以「加一個 X 功能」為例,逐階段列出:使用者打什麼 / AI 做什麼 / 產出什麼檔 / gate 誰審 / 哪一層
-  （Claude 名只是對照,不是契約）。</p>
+  <p class="lead">這章要你懂:<strong>新工作走五站,你只打少數指令</strong>,其餘 AI 在跑;
+  預設會等人的只有 <a href="#ship">Ship</a>。Build 裡的守衛三步順序仍不可調,順序錯了安全網會失效。</p>
+  <p>以下以「加一個 X 功能」為例。欄「能做什麼」寫指令、自動或人停、產出檔。
+  舊七檔名是機器別名,不是第二條人走路線。</p>
 
   <div class="tablewrap"><table>
-    <tr><th>階段</th><th>使用者打什麼</th><th>AI 做什麼</th><th>產出檔</th><th>Gate</th><th>層（Claude 對照）</th></tr>
+    <tr><th>站</th><th>能做什麼</th><th>指令</th><th>自動／人停</th><th>產出檔</th></tr>
     <tr>
-      <td>1 討論</td>
-      <td><span class="badge you">跟 AI 說</span>(<strong>建議另開新 session</strong>)<br>
+      <td><a href="#intake">Intake</a></td>
+      <td>把不知道變成可收斂的問題。一次一問,只寫討論,不做決定。
+        Open Questions 全解或明標假設(無人工簽核,是自我完成條件)。</td>
+      <td><span class="badge you">跟 AI 說</span>(<strong>必開新 session</strong>)<br>
         <code>/dev-talk 我想做 X</code></td>
-      <td>一次一問。乘客地圖 12 步,執行是節點鏈(下一跳看 <code>graph.yaml</code>)。
-        只覆寫一份 <code>1-discussion.md</code>。已有 OPEN 場不要再 <code>talk start</code>。
-        細節見 <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map">guide-dev-talk 全程地圖</a></td>
-      <td><code>docs/dev/&lt;slug&gt;/1-discussion.md</code> + <code>.html</code></td>
-      <td>Open Questions 全解或明標假設(無人工簽核,是自我完成條件)</td>
-      <td><span class="badge opus">規劃層</span> <span class="muted">對照 opus</span></td>
+      <td>自動 hop。無人停。</td>
+      <td><code>1-discussion.md</code> + <code>.html</code></td>
     </tr>
     <tr>
-      <td>2 收斂</td>
-      <td><span class="badge you">跟 AI 說</span> 回主 session:<br><code>/dev-flow 繼續 &lt;slug&gt;</code></td>
-      <td><code>brainstorming</code>(2-3 approaches)+ <code>grill-me</code> 壓測定案</td>
+      <td><a href="#decide">Decide</a></td>
+      <td>2–3 方案並排,壓測定案,Owner Calls 全裁決。G1 物質留下,新工作不例行等人。</td>
+      <td><span class="badge you">跟 AI 說</span> 回主 session:<br>
+        <code>/dev-flow 繼續 &lt;slug&gt;</code></td>
+      <td>OC 全裁決 → 自動 hop。G1 不是例行人停。</td>
       <td><code>2-decision.md</code>(+html);三條件成立 → 抄 <code>docs/adr/</code></td>
-      <td><strong>G1</strong> 方向核准 + Owner Calls 全裁決;reviewer 順序見表後正本摘錄</td>
-      <td><span class="badge opus">規劃層</span> <span class="muted">對照 opus</span> 撰寫;Gate reviewer 不指定模型</td>
     </tr>
     <tr>
-      <td>3 原型<br><span class="muted">(選配)</span></td>
+      <td><a href="#spec">Spec</a></td>
+      <td>寫可測契約。原型只在 UI/flow trigger 才做(B1 latch 也只在那時)。
+        G2 物質留下,新工作不例行等人。</td>
       <td><span class="badge you">跟 AI 說</span> <code>/dev-flow 繼續 &lt;slug&gt;</code></td>
-      <td>mattpocock <code>prototype</code>(code 進 throwaway branch,禁進 main)
-        + visual companion(UI 多 variant 互動挑);命中觸發判定(前端/交接/核准/等待/權限/
-        系統外/多互動設計)→ <strong>條件式必要</strong>,產可操作 Demo + User Demo Feedback</td>
-      <td><code>3-prototype.md</code>;答案回寫 <code>2-decision.md</code></td>
-      <td>回寫完成即終態 approved(無獨立 gate);Demo 的 <strong>Human verdict 由人類親填</strong>
-        (Agent 不得代填),是 G2「Demo verdict」錨的輸入</td>
-      <td><span class="badge sonnet">執行層</span> <span class="muted">對照 sonnet</span></td>
+      <td>形狀綠 + DD 全裁決 → hop。B1 命中才等人填 Demo verdict。</td>
+      <td><code>4-spec.md</code>(+html);UI 才有 <code>3-prototype.md</code></td>
     </tr>
     <tr>
-      <td>4 規格</td>
+      <td><a href="#build">Build</a></td>
+      <td>拆 T 四欄(Covers/Files/Verify/Blocked-by;每 T 欄位完整)後
+        <code>dev-run</code> 寫碼與獨立 review(每 T review PASS + 全 S 綠)。無人停。</td>
+      <td><span class="badge you">跟 AI 說</span> <code>/dev-flow 繼續 &lt;slug&gt;</code>
+        後接 <span class="badge warn">終端機</span>
+        <code>devflow-exec.sh start</code> → <code>dev-run</code></td>
+      <td>自動。無人類 gate。</td>
+      <td><code>5-tasks.md</code> + <code>6-implementation-notes.md</code></td>
+    </tr>
+    <tr>
+      <td><a href="#ship">Ship</a></td>
+      <td>雙軸審 + coverage。<strong>G3</strong> 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → Exit Checklist(PR 是其中一項)。
+        <code>verdict:</code> 人類親寫,agent 禁發明 G3。</td>
       <td><span class="badge you">跟 AI 說</span> <code>/dev-flow 繼續 &lt;slug&gt;</code></td>
-      <td>openspec delta 格式 + 反模糊三律,一次一個 R 段段展開、段段給你確認</td>
-      <td><code>4-spec.md</code>(+html)</td>
-      <td><strong>G2</strong> R/S 全審 + Drafting Decisions 全裁決 + Verification Profile
-        + Demo verdict(有未裁決不得過;全文見 §7)</td>
-      <td><span class="badge opus">規劃層</span> <span class="muted">對照 opus</span> 撰寫;Gate reviewer 不指定模型</td>
-    </tr>
-    <tr>
-      <td>5 任務</td>
-      <td><span class="badge you">跟 AI 說</span> <code>/dev-flow 繼續 &lt;slug&gt;</code></td>
-      <td><code>to-tickets</code> 概念,tracer-bullet 順序拆 T,標 Covers/Verify/Blocked-by</td>
-      <td><code>5-tasks.md</code></td>
-      <td>每 T 欄位完整(Covers/Files/Verify/Blocked-by;無人工 gate)</td>
-      <td><span class="badge sonnet">執行層</span> <span class="muted">對照 sonnet</span></td>
-    </tr>
-    <tr>
-      <td>6 實作</td>
-      <td><span class="badge warn">終端機</span>(順序不可調,完整指令見下方「Stage 6 三步順序為何不可調」):<br>
-        1. 進 worktree/branch<br>
-        2. <code>devflow-exec.sh start &lt;slug&gt;</code><br>
-        3. <code>devflow-exec.sh status</code> 核對<br>
-        <span class="badge you">跟 AI 說</span> 4. <code>dev-run &lt;slug&gt;</code></td>
-      <td>派工者(規劃層)讀 4-spec/5-tasks/長期記憶/living spec,逐 T 派工(起步層)
-        → fresh 執行層審(親跑 Verify)→ 錯誤升階 → 派工者 commit + 記帳</td>
-      <td><code>6-implementation-notes.md</code> + 逐 T commit</td>
-      <td>每 T review PASS + 全 S 綠;PASS 前不得 commit</td>
-      <td><span class="badge opus">規劃層</span> 派工 <span class="muted">對照 opus</span><br>
-        <span class="badge haiku">起步</span>→<span class="badge sonnet">執行</span>→<span class="badge opus">規劃</span> 升階<br>
-        <span class="muted">對照 haiku→sonnet→opus</span><br>
-        <span class="badge sonnet">執行層</span> review <span class="muted">對照 sonnet</span></td>
-    </tr>
-    <tr>
-      <td>7 驗證</td>
-      <td><span class="badge you">跟 AI 說</span> <code>/dev-flow 繼續 &lt;slug&gt;</code></td>
-      <td>mattpocock <code>code-review</code> 雙軸(Standards + Spec)+ coverage matrix,
-        reviewer 先自建矩陣才看 Self-Review(防錨定)</td>
+      <td><strong>唯預設人類停點</strong>。不得自動前進。</td>
       <td><code>7-review.md</code> + <code>.html</code></td>
-      <td><strong>G3</strong> 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見 §7);PASS → Exit Checklist(PR 是其中一項);
-        模板另要求無 🔴</td>
-      <td><span class="badge sonnet">執行層</span> <span class="muted">對照 sonnet</span> 產檔;Gate reviewer 不指定模型</td>
     </tr>
   </table></div>
+
+  <h2 id="intake">Intake</h2>
+  <p class="lead">這一站做什麼:<strong>發散,不做決定</strong>。</p>
+  <ul>
+    <li><strong>這一站做什麼</strong>:<code>/dev-talk</code> 一次一問,收集 Real-world Context
+      (人、現況旅程、繞過、例外、證據)。討論 agent 全盲下游。</li>
+    <li><strong>產出</strong>:<code>1-discussion.md</code>(+ 掃頁 html)。接手只讀此檔,對話不是契約。</li>
+    <li><strong>何時前進</strong>:Open Questions 全解或明標假設。</li>
+    <li><strong>誰停</strong>:無人停。沒有人類 gate。</li>
+    <li><strong>舊檔名對照</strong>:舊 Stage 1 / <code>1-discussion.md</code>。檔名不動。</li>
+  </ul>
+
+  <h2 id="decide">Decide</h2>
+  <p class="lead">這一站做什麼:<strong>收成一個選定方案</strong>。</p>
+  <ul>
+    <li><strong>這一站做什麼</strong>:打「繼續」後比較 2–3 案、壓測、寫 Owner Calls。G1 物質
+      (Decision + OC 全裁決 + twin)留下,新工作不例行等人按提交判定。</li>
+    <li><strong>產出</strong>:<code>2-decision.md</code>(+html)。三條件成立才抄 <code>docs/adr/</code>。</li>
+    <li><strong>何時前進</strong>:Decision 非空且 OC 全裁決 → hop。</li>
+    <li><strong>誰停</strong>:預設不停人。G1 token／twin 仍產,不是日常人等。</li>
+    <li><strong>舊檔名對照</strong>:舊 Stage 2 / <code>2-decision.md</code> / <code>N7-g1</code> 節點仍在。</li>
+  </ul>
+
+  <h2 id="spec">Spec</h2>
+  <p class="lead">這一站做什麼:<strong>寫可測契約</strong>。</p>
+  <ul>
+    <li><strong>這一站做什麼</strong>:openspec delta + 反模糊三律。原型只在 UI/flow 九條 trigger
+      命中才做;那時才有 B1 latch(人類親填 <code>ACCEPTED</code> + attestation)。</li>
+    <li><strong>產出</strong>:<code>4-spec.md</code> 必產。UI 才有 <code>3-prototype.md</code>。</li>
+    <li><strong>何時前進</strong>:<code>check-spec-gate.sh</code> 形狀綠、DD 無「待裁決」、
+      Profile 的 <code>lane:</code>／<code>Risk:</code> 可解析。B1 沒命中不等人。</li>
+    <li><strong>誰停</strong>:預設不停人。G2 物質留下。B1 命中才等人。</li>
+    <li><strong>舊檔名對照</strong>:舊 Stage 4(+ UI 時的 Stage 3)。<code>N6-g2</code> 節點仍在。</li>
+  </ul>
+
+  <h2 id="build">Build</h2>
+  <p class="lead">這一站做什麼:<strong>拆票、寫碼、獨立審每一張 T</strong>。</p>
+  <ul>
+    <li><strong>這一站做什麼</strong>:先寫執行板,再 <code>dev-run</code>。每 T 四欄
+      Covers／Files／Verify／Blocked-by。acceptance seam 與獨立 T review 不動。</li>
+    <li><strong>產出</strong>:<code>5-tasks.md</code> + <code>6-implementation-notes.md</code>。</li>
+    <li><strong>何時前進</strong>:每 T review PASS + 本次 S 全綠 + Files ⊆ 5-tasks 聯集。</li>
+    <li><strong>誰停</strong>:無人停。沒有人類 gate。</li>
+    <li><strong>舊檔名對照</strong>:舊 Stage 5 + Stage 6。兩檔同屬 Build 一桶。</li>
+  </ul>
+
+  <h2 id="ship">Ship</h2>
+  <p class="lead">這一站做什麼:<strong>出貨核准。這是唯一預設人類停點</strong>。</p>
+  <ul>
+    <li><strong>這一站做什麼</strong>:雙軸審(Standards + Spec)+ coverage matrix + Evidence 契約。
+      <code>7-review.md</code> 頂欄 <code>verdict:</code> 必須人類親寫。agent 禁發明 G3、禁代填 PASS。</li>
+    <li><strong>產出</strong>:<code>7-review.md</code> + <code>7-review.html</code>。</li>
+    <li><strong>何時前進</strong>:不得自動 hop。等人寫 <code>PASS</code>／<code>REQUEST_CHANGES</code>／<code>HOLD</code>。</li>
+    <li><strong>誰停</strong>:人。這是新工作唯一預設人停。</li>
+    <li><strong>舊檔名對照</strong>:舊 Stage 7 / G3 物質。檔名與 token 不動。</li>
+  </ul>
 
   <div class="parity">
   <p class="parity-tag">規則正本 · Stage 6 固定 acceptance seam(逐字抄自 契約檔 §5)</p>
@@ -570,25 +601,25 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   不移動、不覆蓋、不刪除。外部 workflow 是專案層選擇,dev-flow 不轉換、不接管、
   也不把它當成官方替代執行系統。</p>
 
-  <h2 id="flow">① 七階段流程圖(含 Gate 與能力分層)</h2>
+  <h2 id="flow">① 五站流程圖(Intake→Decide→Spec→Build→Ship)</h2>
   <p class="lead">這章要你懂:<strong>五站單行,只有 Ship 會被人擋</strong>。
-  這是<strong>新 slug</strong>預設(Intake→Decide→Spec→Build→Ship)。進行中票 dual-read 仍舊 7,G1/G2/G3 人閘不變;<code>N7-g1</code>/<code>N6-g2</code> 節點不刪。
-  cut SoT＝<code>docs/dev/f3-cut-attestation.json</code>;根契約 <code>2.1.0</code>(≠ cut)。用語 ≠ SoT。
+  新工作預設 Intake→Decide→Spec→Build→Ship。G1／G2 物質留下,新工作不例行等人。
   綁死的是<strong>層</strong>(規劃 / 執行 / 起步 / 審查),不是產品型號。
   Claude 的 opus / sonnet / haiku 只是對照,不是契約。
-  非 Claude 主機不跑 haiku→sonnet→opus 產品階梯。G1 過且沒技術疑問,可以跳過選配的 3。
-  Stage 1 本身是可重跑的節點鏈,下一跳看 <code>graph.yaml</code>,細節見
-  <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map">guide-dev-talk 全程地圖</a>。</p>
+  非 Claude 主機不跑 haiku→sonnet→opus 產品階梯。
+  Intake 本身是可重跑的節點鏈,下一跳看 <code>graph.yaml</code>,細節見
+  <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map">guide-dev-talk 全程地圖</a>。
+  <span class="muted">次要:in-flight 票 dual-read 舊七站;<code>N7-g1</code>／<code>N6-g2</code> 不刪。</span></p>
 
   <span id="diagram" hidden></span>
   <div class="figwrap">
-    <img id="fig-flow" src="fig-flow-full.svg" alt="七階段流程圖含 Gate 與能力分層">
+    <img id="fig-flow" src="fig-flow-full.svg" alt="五站流程圖：Intake→Decide→Spec→Build→Ship，只有 Ship 是預設人類停點">
   </div>
-  <p class="figcap">下排由右往左走。<strong>紫 = 規劃/派工層</strong>(Claude 對照 opus)、
+  <p class="figcap">單列由左往右。<strong>紫 = 規劃/派工層</strong>(Claude 對照 opus)、
   <strong>青 = 執行/產檔層</strong>(對照 sonnet)、
-  <strong>灰 = 起步層</strong>(對照 haiku)、<strong>藍 = 審查層 / gate</strong>(依能力與 fallback 選,不指定模型)。
-  <strong>虛線框</strong> = 要/建議另開 session 的站(1 討論<strong>必開</strong>;3 原型、6 實作<strong>建議另開</strong>)。
-  <strong>紅色虛線括號</strong> = 執行守衛的武裝區間(<code>start</code> 到 <code>stop</code>)。
+  <strong>灰 = 起步層</strong>(對照 haiku)、<strong>藍框 Ship = 預設人類停點</strong>(依能力與 fallback 選,不指定模型)。
+  <strong>虛線框</strong> = Intake 必開新 session。
+  Build 的守衛武裝區間仍是 <code>start</code> 到 <code>stop</code>。
   6 實作以<strong>起步層</strong>標色 —— 它實際是三層,升階規則見下表。
   reviewer 不綁型號。</p>
 
@@ -666,45 +697,39 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   <h2 id="lanes">② 兩軌(full / fast)</h2>
   <p class="lead"><strong>先確認你走哪一軌</strong>:本頁示範與清單以 <strong>full lane</strong> 為主。
   你手上這件事若命中右欄任一條,走 <strong>fast lane</strong> 更省。
-  兩軌差的只有「前段」 —— 從 4 規格開始的後半段兩軌完全一樣,
-  fast lane 省掉的是 Stage 1–3,不是省掉 gate、也不是省掉 Stage 5。</p>
+  兩軌差的只有「前段」 —— 從 Spec 起後半段兩軌完全一樣。
+  fast lane 省掉 Intake／Decide(與無 trigger 的原型),不是省掉 Build 四欄,也不是省掉 Ship。</p>
 
   <div class="figwrap"><svg id="fig-lanes" viewBox="0 0 880 290" role="img"
-       aria-label="兩軌比較:full lane 走 Stage 1 到 3 的前段,fast lane 以診斷迴圈起手,兩軌從 4 規格起完全共用">
+       aria-label="兩軌比較:full 走 Intake 與 Decide,fast 以診斷迴圈起手,兩軌從 Spec 起完全共用,只有 Ship 是預設人停">
     <defs><marker id="ar-ln" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
 
-    <g class="cluster"><rect x="10" y="18" width="434" height="80" rx="8" class="grpbox"/><text class="dl" x="16" y="32">full lane 專屬前段 —— fast lane 整段省略</text></g>
+    <g class="cluster"><rect x="10" y="18" width="434" height="80" rx="8" class="grpbox"/><text class="dl" x="16" y="32">full lane 專屬前段 —— fast 整段省略</text></g>
     <g class="cluster"><rect x="460" y="18" width="410" height="80" rx="8" class="grpbox"/><text class="dl" x="466" y="32">fast lane 起手 —— 不寫討論文件</text></g>
 
-    <g class="n"><rect x="20" y="40" width="96" height="50" rx="6" class="m-opus"/><text class="dt" x="29" y="58">1 討論</text><text class="dc" x="29" y="74">opus</text></g>
-    <g class="n"><rect x="126" y="40" width="96" height="50" rx="6" class="m-opus"/><text class="dt" x="135" y="58">2 收斂</text><text class="dc" x="135" y="74">opus</text></g>
-    <g class="n"><rect x="232" y="40" width="96" height="50" rx="6" class="hl"/><text class="dt" x="241" y="58">G1</text><text class="dc" x="241" y="74">方向核准</text></g>
-    <g class="n"><rect x="338" y="40" width="96" height="50" rx="6" class="m-sonnet"/><text class="dt" x="347" y="58">3 原型</text><text class="dc" x="347" y="74">選配</text></g>
+    <g class="n"><rect x="20" y="40" width="200" height="50" rx="6" class="m-opus"/><text class="dt" x="32" y="58">Intake</text><text class="dc" x="32" y="74">/dev-talk · 1-discussion</text></g>
+    <g class="n"><rect x="232" y="40" width="200" height="50" rx="6" class="m-opus"/><text class="dt" x="244" y="58">Decide</text><text class="dc" x="244" y="74">OC 即 hop · 不例行等人</text></g>
 
     <g class="n"><rect x="470" y="40" width="390" height="50" rx="6" class="note"/><text class="dt" x="482" y="58">診斷迴圈(mattpocock×superpowers 聯集)</text><text class="dc" x="482" y="74">重現 → 最小化 → 假設 → 驗證定位 → 修 → 回歸測試</text></g>
 
-    <g class="n"><rect x="20" y="170" width="160" height="60" rx="6" class="m-opus"/><text class="dt" x="32" y="188">4 規格 → G2</text><text class="dc" x="32" y="203">full:完整 Profile</text><text class="dc" x="32" y="218">fast:最小五欄</text></g>
-    <g class="n"><rect x="190" y="170" width="160" height="60" rx="6" class="m-sonnet"/><text class="dt" x="202" y="188">5 任務</text><text class="dc" x="202" y="203">兩軌相同,不得省</text><text class="dc" x="202" y="218">fast 可只有一個 T</text></g>
-    <g class="n"><rect x="360" y="170" width="160" height="60" rx="6" class="m-haiku"/><text class="dt" x="372" y="188">6 實作</text><text class="dc" x="372" y="203">TDD + 逐 T review</text></g>
-    <g class="n"><rect x="530" y="170" width="160" height="60" rx="6" class="m-sonnet"/><text class="dt" x="542" y="188">7 驗證 → G3</text><text class="dc" x="542" y="203">兩軌都必過</text><text class="dc" x="542" y="218">fast 走 mini 版</text></g>
-    <g class="n"><rect x="700" y="170" width="160" height="60" rx="6" class="go"/><text class="dt" x="712" y="188">PR → develop</text><text class="dc" x="712" y="203">G3 PASS 才准開</text></g>
+    <g class="n"><rect x="20" y="170" width="200" height="60" rx="6" class="m-opus"/><text class="dt" x="32" y="188">Spec</text><text class="dc" x="32" y="203">4-spec · UI 才 3-prototype</text><text class="dc" x="32" y="218">fast:最小五欄</text></g>
+    <g class="n"><rect x="232" y="170" width="200" height="60" rx="6" class="m-haiku"/><text class="dt" x="244" y="188">Build</text><text class="dc" x="244" y="203">5-tasks + 6-notes</text><text class="dc" x="244" y="218">四欄必填,無人停</text></g>
+    <g class="n"><rect x="444" y="170" width="200" height="60" rx="6" class="hl"/><text class="dt" x="456" y="188">Ship</text><text class="dc" x="456" y="203">唯預設人類停點</text><text class="dc" x="456" y="218">fast 走 mini 版</text></g>
+    <g class="n"><rect x="656" y="170" width="204" height="60" rx="6" class="go"/><text class="dt" x="668" y="188">PR</text><text class="dc" x="668" y="203">verdict 人類親寫</text><text class="dc" x="668" y="218">才准開</text></g>
 
-    <path class="edge" marker-end="url(#ar-ln)" d="M116,65 L126,65"/>
-    <path class="edge" marker-end="url(#ar-ln)" d="M222,65 L232,65"/>
-    <path class="edge" marker-end="url(#ar-ln)" d="M328,65 L338,65"/>
-    <path class="edge" marker-end="url(#ar-ln)" d="M386,90 L386,130 L60,130 L60,170"/>
-    <path class="edge" marker-end="url(#ar-ln)" d="M665,90 L665,148 L140,148 L140,170"/>
-    <path class="edge" marker-end="url(#ar-ln)" d="M180,200 L190,200"/>
-    <path class="edge" marker-end="url(#ar-ln)" d="M350,200 L360,200"/>
-    <path class="edge" marker-end="url(#ar-ln)" d="M520,200 L530,200"/>
-    <path class="edge" marker-end="url(#ar-ln)" d="M690,200 L700,200"/>
+    <path class="edge" marker-end="url(#ar-ln)" d="M220,65 L232,65"/>
+    <path class="edge" marker-end="url(#ar-ln)" d="M332,90 L332,130 L120,130 L120,170"/>
+    <path class="edge" marker-end="url(#ar-ln)" d="M665,90 L665,148 L332,148 L332,170"/>
+    <path class="edge" marker-end="url(#ar-ln)" d="M220,200 L232,200"/>
+    <path class="edge" marker-end="url(#ar-ln)" d="M432,200 L444,200"/>
+    <path class="edge" marker-end="url(#ar-ln)" d="M644,200 L656,200"/>
 
-    <text class="dl" x="200" y="162">兩軌從這裡起完全共用</text>
+    <text class="dl" x="200" y="162">兩軌從 Spec 起完全共用</text>
     <text class="dl" x="20" y="252">拿不準 → 走 full。被流程煩到 → 檢討判準,不要繞過流程。</text>
-    <text class="dbad" x="20" y="272">命中「自動升 Full」清單仍寫 fast → G2 不得過;lane: fast 配 Risk: high → runtime(start 時)與 G2 一律拒絕</text>
+    <text class="dbad" x="20" y="272">命中「自動升 Full」清單仍寫 fast → Spec 形狀檢查不得過;lane: fast 配 Risk: high → runtime(start 時)一律拒絕</text>
   </svg></div>
-  <p class="figcap">上排兩塊是<strong>互斥的入口</strong>,下排五塊兩軌共用。fast lane 的
+  <p class="figcap">上排兩塊是<strong>互斥的入口</strong>,下排四塊兩軌共用。fast lane 的
   <code>4-spec</code> bug scenario 直接從診斷迴圈的「重現步驟」長出:<strong>GIVEN = 重現前置 /
   WHEN = 觸發 / THEN = 正確行為</strong>。<strong>修根因,禁 symptom patch</strong>。</p>
 
@@ -712,15 +737,16 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
     <tr><th>　</th><th>Full lane</th><th>Fast lane</th></tr>
     <tr><td>判準</td><td>新能力 / 不可逆改動(schema、API 契約、跨模組介面)</td>
         <td>bugfix / ≤2 檔小改 / 行為已有 spec 條目(可逆的跨模組小改也算)</td></tr>
-    <tr><td>起手式</td><td>Stage 1 討論(<code>/dev-talk</code>)</td>
+    <tr><td>起手式</td><td>Intake(<code>/dev-talk</code>)</td>
         <td><strong>診斷迴圈</strong>:重現 → 最小化 → 假設 → 驗證定位 → 修 → 回歸測試</td></tr>
-    <tr><td>文檔</td><td>1→7 全套(3 選配)</td>
-        <td><code>4-spec</code>(補 bug scenario) → <code>5-tasks</code>(mini) → <code>6-implementation-notes</code> → <code>7-review</code>(mini)</td></tr>
-    <tr><td>Gate</td><td>G1 G2 G3</td><td>G3(spec 改動大再補 G2)</td></tr>
+    <tr><td>五站</td><td>Intake→Decide→Spec→Build→Ship(原型只在 UI)</td>
+        <td>Spec→Build→Ship(別名仍是 4-spec／5-tasks／6-notes／7-review)</td></tr>
+    <tr><td>人停</td><td>只有 Ship 是預設人停;G1／G2 物質不例行等人</td>
+        <td>只有 Ship;Spec 改動大才動到 G2 物質</td></tr>
     <tr><td>Verification Profile<br>的 <code>lane:</code> 欄</td><td>完整 Profile</td>
         <td>最小五欄(<strong>Reliability triage 三問不計入這五欄,但兩個 lane 都要答</strong>)</td></tr>
-    <tr><td>Stage 5</td><td colspan="2"><strong>兩軌相同</strong> —— fast lane 省略 Stage 1–3,但<strong>保留 mini Stage 5</strong>,
-        直接使用同一份 <code>_templates/5-tasks.md</code>;可只有一個 T,但 <code>Covers</code>、<code>Files</code>、
+    <tr><td>Build</td><td colspan="2"><strong>兩軌相同</strong> —— fast 省略 Intake／Decide,但<strong>保留 mini Build</strong>,
+        同一份 <code>_templates/5-tasks.md</code>;可只有一個 T,但 <code>Covers</code>、<code>Files</code>、
         <code>Verify</code>、<code>Blocked-by</code> <strong>必填</strong>,<code>devflow-exec.sh start &lt;slug&gt;</code>
         才能照常解析 scope。</td></tr>
   </table></div>
@@ -729,10 +755,18 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   <code>Risk: high</code> → <strong>runtime(start 時)與 G2 一律拒絕</strong>,例外僅限 Owner Call 明示
   (條件全文見 契約檔 §7 G2 錨定義)。拿不準 → Full;被流程煩到 → 檢討判準,不要繞過流程。</blockquote>
 
-  <h2 id="docs">③ 七份文件</h2>
-  <p class="lead">這章要你懂:<strong>七份文件跟著 feature 生死,<code>.claude/rules/</code> 不跟</strong> ——
-  前者過完 gate 就封存,後者永生且每 session 自動注入。搞混會出事:把流程規則寫進 rules,
-  圍欄② 的「盲」會全滅。</p>
+  <h2 id="docs">③ 五站產物(七檔名是別名)</h2>
+  <p class="lead">這章要你懂:<strong>五站產物跟著 feature 生死,<code>.claude/rules/</code> 不跟</strong> ——
+  前者過完 Ship 就封存,後者永生且每 session 自動注入。搞混會出事:把流程規則寫進 rules,
+  圍欄② 的「盲」會全滅。機器對帳仍抽下面那張七檔名表。</p>
+  <div class="tablewrap"><table>
+    <tr><th>站</th><th>必產別名</th><th>條件別名</th></tr>
+    <tr><td>Intake</td><td><code>1-discussion.md</code></td><td>—</td></tr>
+    <tr><td>Decide</td><td><code>2-decision.md</code></td><td>—</td></tr>
+    <tr><td>Spec</td><td><code>4-spec.md</code></td><td>UI trigger 才有 <code>3-prototype.md</code></td></tr>
+    <tr><td>Build</td><td><code>5-tasks.md</code> + <code>6-implementation-notes.md</code></td><td>—</td></tr>
+    <tr><td>Ship</td><td><code>7-review.md</code> + <code>.html</code></td><td>—</td></tr>
+  </table></div>
   <p>人要翻長期決策或改版歷史,不要讀生 md:
   <a href="https://rick546986.github.io/dev-flow/docs/adr/index.html">決策列表</a> ·
   <a href="https://rick546986.github.io/dev-flow/docs/dev/HISTORY.html">改版歷史</a>。
@@ -742,7 +776,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   裁決用 ID 不入鏈:<code>OC-n</code>(2-decision)、<code>DD-n</code>(4-spec)不被 T 實作。</p>
 
   <div class="parity">
-  <p class="parity-tag">規則正本 · 七份文件與各自的 Gate(逐字抄自契約檔 階段表)</p>
+  <p class="parity-tag">機器對帳 · 七檔名與各自的 Gate(逐字抄自契約檔 階段表;人看上面五站桶)</p>
   <!-- parity:start readme-stage-table -->
   <div class="tablewrap"><table>
   <thead>
@@ -801,22 +835,20 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   <!-- parity:end readme-stage-table -->
   </div>
 
-  <h3>七份文件 vs <code>.claude/rules/*.md</code>:兩種生命週期</h3>
+  <h3>五站產物 vs <code>.claude/rules/*.md</code>:兩種生命週期</h3>
   <div class="figwrap"><svg id="fig-docs" viewBox="0 0 880 270" role="img"
-       aria-label="七份文件隨 feature 生死並跟著 gate 走,.claude/rules 永生且由 dev-setup 產草稿後每 session 自動注入">
+       aria-label="五站產物隨 feature 生死,七檔名是別名;.claude/rules 永生且由 dev-setup 產草稿後每 session 自動注入">
     <defs><marker id="ar-dc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
 
-    <g class="cluster"><rect x="10" y="18" width="860" height="90" rx="8" class="grpbox"/><text class="dl" x="16" y="34">七份文件 —— 隨 feature 生,跟 gate 走,結案封存</text></g>
-    <g class="cluster"><rect x="10" y="140" width="860" height="100" rx="8" class="grpbox"/><text class="dl" x="16" y="156">.claude/rules/*.md —— 永生,不算七份文件之一,不跟 gate 流程走</text></g>
+    <g class="cluster"><rect x="10" y="18" width="860" height="90" rx="8" class="grpbox"/><text class="dl" x="16" y="34">五站產物 —— 隨 feature 生,結案封存;框內是舊檔名別名</text></g>
+    <g class="cluster"><rect x="10" y="140" width="860" height="100" rx="8" class="grpbox"/><text class="dl" x="16" y="156">.claude/rules/*.md —— 永生,不算五站產物,不跟 Ship 走</text></g>
 
-    <g class="n"><rect x="22" y="44" width="112" height="50" rx="6" class="m-opus"/><text class="dm" x="31" y="62">1-discussion</text><text class="dc" x="31" y="78">OQ 全解或標假設</text></g>
-    <g class="n"><rect x="144" y="44" width="112" height="50" rx="6" class="m-opus"/><text class="dm" x="153" y="62">2-decision</text><text class="dc" x="153" y="78">G1 方向核准</text></g>
-    <g class="n"><rect x="266" y="44" width="112" height="50" rx="6" class="m-sonnet"/><text class="dm" x="275" y="62">3-prototype</text><text class="dc" x="275" y="78">回寫即終態</text></g>
-    <g class="n"><rect x="388" y="44" width="112" height="50" rx="6" class="m-opus"/><text class="dm" x="397" y="62">4-spec</text><text class="dc" x="397" y="78">G2 契約核准</text></g>
-    <g class="n"><rect x="510" y="44" width="112" height="50" rx="6" class="m-sonnet"/><text class="dm" x="519" y="62">5-tasks</text><text class="dc" x="519" y="78">每 T 欄位完整</text></g>
-    <g class="n"><rect x="632" y="44" width="112" height="50" rx="6" class="m-haiku"/><text class="dm" x="641" y="62">6-notes</text><text class="dc" x="641" y="78">每 T review PASS</text></g>
-    <g class="n"><rect x="754" y="44" width="112" height="50" rx="6" class="m-sonnet"/><text class="dm" x="763" y="62">7-review</text><text class="dc" x="763" y="78">G3 → PR</text></g>
+    <g class="n"><rect x="22" y="44" width="160" height="50" rx="6" class="m-opus"/><text class="dm" x="31" y="62">Intake</text><text class="dc" x="31" y="78">1-discussion</text></g>
+    <g class="n"><rect x="194" y="44" width="160" height="50" rx="6" class="m-opus"/><text class="dm" x="203" y="62">Decide</text><text class="dc" x="203" y="78">2-decision</text></g>
+    <g class="n"><rect x="366" y="44" width="160" height="50" rx="6" class="m-opus"/><text class="dm" x="375" y="62">Spec</text><text class="dc" x="375" y="78">4-spec(+3 若 UI)</text></g>
+    <g class="n"><rect x="538" y="44" width="160" height="50" rx="6" class="m-haiku"/><text class="dm" x="547" y="62">Build</text><text class="dc" x="547" y="78">5-tasks + 6-notes</text></g>
+    <g class="n"><rect x="710" y="44" width="148" height="50" rx="6" class="hl"/><text class="dm" x="719" y="62">Ship</text><text class="dc" x="719" y="78">7-review · 人停</text></g>
 
     <g class="n"><rect x="24" y="166" width="130" height="50" rx="6" class="hl"/><text class="dt" x="36" y="184">dev-setup</text><text class="dc" x="36" y="200">install 時產草稿</text></g>
     <g class="n"><rect x="166" y="166" width="130" height="50" rx="6" class="b"/><text class="dt" x="178" y="184">收割既有素材</text><text class="dc" x="178" y="200">指名的外部 artifacts</text></g>
@@ -825,12 +857,10 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
     <g class="n"><rect x="592" y="166" width="130" height="50" rx="6" class="hl"/><text class="dt" x="604" y="184">你逐條核可</text><text class="dc" x="604" y="200">拿掉標記或刪掉</text></g>
     <g class="n"><rect x="734" y="166" width="130" height="50" rx="6" class="go"/><text class="dt" x="746" y="184">每 session 注入</text><text class="dc" x="746" y="200">全員 + dev-run 引擎</text></g>
 
-    <path class="edge" marker-end="url(#ar-dc)" d="M134,69 L144,69"/>
-    <path class="edge" marker-end="url(#ar-dc)" d="M256,69 L266,69"/>
-    <path class="edge" marker-end="url(#ar-dc)" d="M378,69 L388,69"/>
-    <path class="edge" marker-end="url(#ar-dc)" d="M500,69 L510,69"/>
-    <path class="edge" marker-end="url(#ar-dc)" d="M622,69 L632,69"/>
-    <path class="edge" marker-end="url(#ar-dc)" d="M744,69 L754,69"/>
+    <path class="edge" marker-end="url(#ar-dc)" d="M182,69 L194,69"/>
+    <path class="edge" marker-end="url(#ar-dc)" d="M354,69 L366,69"/>
+    <path class="edge" marker-end="url(#ar-dc)" d="M526,69 L538,69"/>
+    <path class="edge" marker-end="url(#ar-dc)" d="M698,69 L710,69"/>
     <path class="edge" marker-end="url(#ar-dc)" d="M154,191 L166,191"/>
     <path class="edge" marker-end="url(#ar-dc)" d="M296,191 L308,191"/>
     <path class="edge" marker-end="url(#ar-dc)" d="M438,191 L450,191"/>
@@ -854,36 +884,33 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
 
   <h2 id="checklists">④ 每站執行清單(逐字收錄自 <code>_templates/</code> 頂註)</h2>
   <p class="lead">這章要你懂:<strong>綠條是規則原文,一個字沒改</strong>。灰條是伴讀。打架以綠條為準。
-  Stage 1 不在這裡:12 步與節點鏈見 <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map">guide-dev-talk 全程地圖</a>。</p>
+  新工作預設五站,只有 Ship 等人。底下仍按舊七檔名收錄,因為機器對帳咬檔名。
+  Intake 不在這裡:12 步與節點鏈見 <a href="https://rick546986.github.io/dev-flow/guides/guide-dev-talk.html#map">guide-dev-talk 全程地圖</a>。</p>
 
   <div class="figwrap"><svg id="fig-checklist" viewBox="0 0 880 210" role="img"
-       aria-label="七站中哪些有逐字收錄的執行清單區塊:6 站共 8 塊,Stage 1 不在收錄之列">
+       aria-label="五站對到哪些逐字收錄區塊:Decide/Spec/Build/Ship 共 8 塊,Intake 走 /dev-talk">
     <defs><marker id="ar-ck" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path class="arrowhead" d="M0,0 L10,5 L0,10 Z"/></marker></defs>
 
-    <g class="n"><rect x="12" y="60" width="112" height="60" rx="6" class="b"/><text class="dt" x="21" y="80">1 討論</text><text class="dc" x="21" y="96">無獨立清單</text><text class="dc" x="21" y="110">機制內建於 /dev-talk</text></g>
-    <g class="n"><rect x="137" y="60" width="112" height="60" rx="6" class="go"/><text class="dt" x="146" y="80">2 收斂</text><text class="dc" x="146" y="96">1 塊 · 逐字收錄</text><text class="dc" x="146" y="110">步 0–6 + G1 送審</text></g>
-    <g class="n"><rect x="262" y="60" width="112" height="60" rx="6" class="go"/><text class="dt" x="271" y="80">3 原型</text><text class="dc" x="271" y="96">1 塊 · 逐字收錄</text><text class="dc" x="271" y="110">步 0–4 + 回寫</text></g>
-    <g class="n"><rect x="387" y="60" width="112" height="60" rx="6" class="go"/><text class="dt" x="396" y="80">4 規格</text><text class="dc" x="396" y="96">2 塊 · 逐字收錄</text><text class="dc" x="396" y="110">反模糊三律 + 清單</text></g>
-    <g class="n"><rect x="512" y="60" width="112" height="60" rx="6" class="go"/><text class="dt" x="521" y="80">5 任務</text><text class="dc" x="521" y="96">1 塊 · 逐字收錄</text><text class="dc" x="521" y="110">步 0–6(執行板)</text></g>
-    <g class="n"><rect x="637" y="60" width="112" height="60" rx="6" class="go"/><text class="dt" x="646" y="80">6 實作</text><text class="dc" x="646" y="96">2 塊 · 逐字收錄</text><text class="dc" x="646" y="110">清單 + 實作期規則</text></g>
-    <g class="n"><rect x="762" y="60" width="112" height="60" rx="6" class="go"/><text class="dt" x="771" y="80">7 驗證</text><text class="dc" x="771" y="96">1 塊 · 逐字收錄</text><text class="dc" x="771" y="110">步 0/0a/0b–5</text></g>
+    <g class="n"><rect x="12" y="60" width="160" height="60" rx="6" class="b"/><text class="dt" x="21" y="80">Intake</text><text class="dc" x="21" y="96">無獨立清單</text><text class="dc" x="21" y="110">機制內建於 /dev-talk</text></g>
+    <g class="n"><rect x="184" y="60" width="160" height="60" rx="6" class="go"/><text class="dt" x="193" y="80">Decide</text><text class="dc" x="193" y="96">1 塊 · 2-decision</text><text class="dc" x="193" y="110">G1 物質,不例行等人</text></g>
+    <g class="n"><rect x="356" y="60" width="160" height="60" rx="6" class="go"/><text class="dt" x="365" y="80">Spec</text><text class="dc" x="365" y="96">3 塊 · 3+4</text><text class="dc" x="365" y="110">UI 才用原型塊</text></g>
+    <g class="n"><rect x="528" y="60" width="160" height="60" rx="6" class="go"/><text class="dt" x="537" y="80">Build</text><text class="dc" x="537" y="96">3 塊 · 5+6</text><text class="dc" x="537" y="110">四欄 + 實作期規則</text></g>
+    <g class="n"><rect x="700" y="60" width="168" height="60" rx="6" class="hl"/><text class="dt" x="709" y="80">Ship</text><text class="dc" x="709" y="96">1 塊 · 7-review</text><text class="dc" x="709" y="110">唯預設人類停點</text></g>
 
-    <path class="edge" marker-end="url(#ar-ck)" d="M124,90 L137,90"/>
-    <path class="edge" marker-end="url(#ar-ck)" d="M249,90 L262,90"/>
-    <path class="edge" marker-end="url(#ar-ck)" d="M374,90 L387,90"/>
-    <path class="edge" marker-end="url(#ar-ck)" d="M499,90 L512,90"/>
-    <path class="edge" marker-end="url(#ar-ck)" d="M624,90 L637,90"/>
-    <path class="edge" marker-end="url(#ar-ck)" d="M749,90 L762,90"/>
+    <path class="edge" marker-end="url(#ar-ck)" d="M172,90 L184,90"/>
+    <path class="edge" marker-end="url(#ar-ck)" d="M344,90 L356,90"/>
+    <path class="edge" marker-end="url(#ar-ck)" d="M516,90 L528,90"/>
+    <path class="edge" marker-end="url(#ar-ck)" d="M688,90 L700,90"/>
 
-    <text class="dbad" x="12" y="40">綠底 = 有逐字收錄區塊(6 站 · 共 8 塊);白底 = 本節不收錄,不代表該站沒規則</text>
-    <text class="dl" x="12" y="152">Stage 1 沒有獨立執行清單:12 步住 /dev-talk;下一跳看 graph.yaml。每步都有節點檔,不能跳。</text>
-    <text class="dl" x="12" y="172">Stage 5 是執行板、不是 gate 站(無 G 編號、免 reviewer 核准),執行清單步 0–6 一樣逐字收錄自 _templates/5-tasks.md 頂註(K-3,2026-08-16 補)。</text>
-    <text class="dl" x="12" y="192">Stage 4 拆成「反模糊三律」+「執行清單」兩個獨立頂註區塊;Stage 6 拆成「執行清單」+「實作期規則」兩個獨立頂註區塊;其餘 4 站各一塊。</text>
+    <text class="dbad" x="12" y="40">綠底 = 有逐字收錄區塊(Decide/Spec/Build/Ship · 共 8 塊);白底 Intake = 走 /dev-talk</text>
+    <text class="dl" x="12" y="152">Intake 沒有獨立執行清單:12 步住 /dev-talk;下一跳看 graph.yaml。每步都有節點檔,不能跳。</text>
+    <text class="dl" x="12" y="172">Build 的 5-tasks 是執行板、不是人停(無 G 編號、免 reviewer 核准),四欄一樣逐字收錄自 _templates/5-tasks.md 頂註。</text>
+    <text class="dl" x="12" y="192">新工作只有 Ship 等人。底下綠條仍是七檔名模板原文,給機器對帳,不是教你再走七次人停。</text>
   </svg></div>
-  <p class="figcap">本節收錄 <strong>6 站(Stage 2/3/4/5/6/7)、共 8 個區塊</strong>。這章是
+  <p class="figcap">本節收錄 <strong>Decide／Spec／Build／Ship 的舊檔名清單、共 8 個區塊</strong>。這章是
   <strong>保護區,不是壓縮對象</strong> —— 底下每一塊的內容都與 <code>_templates/</code> 逐字相同,
-  只在區塊外圍加了綠色標記讓你分辨「規則」與「解釋」。</p>
+  只在區塊外圍加了綠色標記讓你分辨「規則」與「解釋」。人走五站,檔名仍是 1–7。</p>
 
   <p class="muted">每個區塊皆逐字抽自對應模板檔頂端的 blockquote 註解,只做 markdown → HTML 的格式轉換:
   <code>**粗體**</code> → <code>&lt;strong&gt;</code>、去掉行首 <code>&gt;</code> 引言符號、條列項目換行 → <code>&lt;br&gt;</code>
@@ -899,7 +926,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   乘客清單仍是下方模板頂註 0–7。</p>
   <p>晚改可見行為:G3 未過 → 同一 feat 先改 Decision / Owner Call,再走 4→5→6→7;
   G3 已過 → 另開薄刀,不准改已封包。推翻已核 Decision 不是合法 DD。</p>
-  <p>把 1 的發散收成一個選定方案;完成後依 契約檔 §7 的 reviewer fallback 取得 G1 核准才進 4。</p>
+  <p>把 Intake 的發散收成一個選定方案。G1 物質留下;新工作 OC 全裁決即 hop,不例行等人。</p>
   <div class="parity">
   <p class="parity-tag">規則正本 · Stage 2 執行清單(逐字抄自 <code>_templates/2-decision.md</code> 頂註)</p>
   <details>
@@ -1882,13 +1909,14 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   </div>
 
   <h2 id="gates">⑤ Gate 規則卡</h2>
-  <p class="lead">這章要你懂:<strong>三道 gate 問的是三個不同的問題</strong> ——
-  G1 問方向、G2 問契約寫得對不對、G3 問做出來的對不對。共同的硬規則只有一條:
+  <p class="lead">這章要你懂:<strong>新工作預設只在 Ship 等人</strong>。
+  G1／G2 物質(方向、契約、OC／DD／Demo 條件)留下,不是日常人類等待。
+  G3 物質 = Ship:做出來的對不對,<code>verdict:</code> 人類親寫。共同的硬規則只有一條:
   <strong>核准者不能是該文檔的 owner</strong>。</p>
   <div class="cardgrid">
-    <div class="card"><h4>G1 —— 方向對不對</h4><p><code>2-decision</code>:方向核准 + Owner Calls 全裁決,有未裁決 OC 不得過。</p></div>
-    <div class="card"><h4>G2 —— 契約寫得對不對</h4><p><code>4-spec</code>:R/S 全審 + Drafting Decisions 全裁決 + Verification Profile(依 lane 正確填寫)+ Demo verdict(條件式),有未裁決項不得過(條件全文見 契約檔 §7)。</p></div>
-    <div class="card"><h4>G3 —— 做出來的對不對</h4><p><code>7-review</code>:本次 S 全綠 + 既有測試套件全綠 + 現象證據逐 S 相符 + Evidence 契約全過(八點定義見 契約檔 §7);本模板另要求無 🔴 才 PASS。</p></div>
+    <div class="card"><h4>G1 物質 —— 方向對不對</h4><p><code>2-decision</code>:方向核准 + Owner Calls 全裁決,有未裁決 OC 不得 hop。新工作不例行等人按提交判定。</p></div>
+    <div class="card"><h4>G2 物質 —— 契約寫得對不對</h4><p><code>4-spec</code>:R/S 全審 + Drafting Decisions 全裁決 + Verification Profile(依 lane 正確填寫)+ Demo verdict(條件式),有未裁決項不得 hop(條件全文見 契約檔 §7)。新工作不例行等人。</p></div>
+    <div class="card"><h4>Ship / G3 物質 —— 做出來的對不對</h4><p><code>7-review</code>:本次 S 全綠 + 既有測試套件全綠 + 現象證據逐 S 相符 + Evidence 契約全過(八點定義見 契約檔 §7);本模板另要求無 🔴 才 PASS。<strong>這是唯一預設人類停點</strong>;<code>verdict:</code> 人類親寫,agent 禁發明 G3。</p></div>
     <div class="card"><h4>author ≠ approver</h4><p>G1/G2/G3 的核准者不可以是該文檔的 owner。無適格人類第二人不跳過 Agent fallback;只有前兩種 reviewer 都不可用時才記錄 owner 自審,不假裝有四眼。</p></div>
     <div class="card"><h4>Quiz gate</h4><p><strong>不可逆改動</strong>(schema/API 契約/跨模組介面)merge 前<strong>必做</strong>:AI 出 3-5 題考 approver,全對才 merge;其餘 full lane <strong>選配</strong>(approver 可要求),fast lane <strong>免</strong>。</p></div>
     <div class="card"><h4>三連動</h4><p>每過一個 gate:frontmatter status + <code>STATUS.md</code> + 同名 html twin 三者同步更新,禁漏一項。</p></div>
@@ -2804,25 +2832,24 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   dev-flow 不依賴也不規範它。完整規則見本頁 <a href="#large-work">⑧ 大案與切片</a>。</p>
 
   <h2 id="example">⑨ 範例:合約到期提醒(<code>example/contract-expiry-reminder/</code>)</h2>
-  <p class="lead">這章要你懂:<strong>前面八章講的東西,有一份填好的實例可以對照</strong> ——
-  full lane、G1/G2/G3 皆已過、狀態 <code>shipped</code>。看不懂某一節該寫什麼,就去翻對應那份。</p>
+  <p class="lead">這章要你懂:<strong>前面講的五站,有一份填好的實例可以對照</strong> ——
+  full lane、狀態 <code>shipped</code>。看不懂某一站該寫什麼,就去翻對應別名檔。
+  這份是<strong>舊七檔填好樣本</strong>(archive/sample),檔名 1–7 不動,用來對五站別名,不是教你再走七次人停。</p>
   <p class="muted">html 有視覺版時優先連 html;<code>.md</code> 才是 git 正本。</p>
   <div class="tablewrap"><table>
-    <tr><th>#</th><th>檔</th><th>連結</th></tr>
-    <tr><td>1</td><td>討論</td><td><a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/1-discussion.html">1-discussion.html</a> ·
-        <code>example/contract-expiry-reminder/1-discussion.md</code></td></tr>
-    <tr><td>2</td><td>決策</td><td><a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/2-decision.html">2-decision.html</a> ·
-        <code>example/contract-expiry-reminder/2-decision.md</code></td></tr>
-    <tr><td>3</td><td>原型</td><td><a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/3-prototype.html">3-prototype.html</a> ·
-        <code>example/contract-expiry-reminder/3-prototype.md</code></td></tr>
-    <tr><td>4</td><td>規格</td><td><a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/4-spec.html">4-spec.html</a> ·
-        <code>example/contract-expiry-reminder/4-spec.md</code></td></tr>
-    <tr><td>5</td><td>任務</td><td><a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/5-tasks.html">5-tasks.html</a> ·
-        <code>example/contract-expiry-reminder/5-tasks.md</code></td></tr>
-    <tr><td>6</td><td>實作筆記</td><td><a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/6-implementation-notes.html">6-implementation-notes.html</a> ·
-        <code>example/contract-expiry-reminder/6-implementation-notes.md</code></td></tr>
-    <tr><td>7</td><td>驗證</td><td><a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/7-review.html">7-review.html</a> ·
-        <code>example/contract-expiry-reminder/7-review.md</code></td></tr>
+    <tr><th>站</th><th>舊檔名別名(樣本)</th><th>連結</th></tr>
+    <tr><td>Intake</td><td><code>1-discussion.md</code></td>
+        <td><a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/1-discussion.html">1-discussion.html</a></td></tr>
+    <tr><td>Decide</td><td><code>2-decision.md</code></td>
+        <td><a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/2-decision.html">2-decision.html</a></td></tr>
+    <tr><td>Spec</td><td><code>4-spec.md</code> + UI 樣本 <code>3-prototype.md</code></td>
+        <td><a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/4-spec.html">4-spec.html</a> ·
+            <a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/3-prototype.html">3-prototype.html</a></td></tr>
+    <tr><td>Build</td><td><code>5-tasks.md</code> + <code>6-implementation-notes.md</code></td>
+        <td><a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/5-tasks.html">5-tasks.html</a> ·
+            <a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/6-implementation-notes.html">6-implementation-notes.html</a></td></tr>
+    <tr><td>Ship</td><td><code>7-review.md</code></td>
+        <td><a href="https://rick546986.github.io/dev-flow/example/contract-expiry-reminder/7-review.html">7-review.html</a></td></tr>
   </table></div>
 
   <h2 id="host">主機發現(Cursor／Grok／Codex)</h2>
@@ -2933,7 +2960,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   <em>Limit：Cursor／Grok 薄殼無 PreToolUse Read 擋；不造假 hook，可攜牙停在 script+CI。</em></p>
   <div class="tablewrap"><table>
     <tr><th>目錄</th><th>是什麼</th><th>進 Git?</th></tr>
-    <tr><td><code>docs/dev/</code></td><td>給人看的七階段文檔、STATUS、HISTORY</td><td>是</td></tr>
+    <tr><td><code>docs/dev/</code></td><td>給人看的五站文檔(七檔名別名)、STATUS、HISTORY</td><td>是</td></tr>
     <tr><td><code>.dev-flow/</code></td><td>Agent 要帶走的長期記憶。這才是正本</td><td>是</td></tr>
     <tr><td><code>.devflow/</code></td><td>執行期暫存（旗標、runs、reports）</td><td>否</td></tr>
   </table></div>
@@ -2962,7 +2989,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     <details id="skills">
       <summary class="tline"><span class="g">├─ </span><span class="name">skills/</span><span class="why">方法包正本，三邊 plugin 整棵掛這裡。要看流程從這點下去，不要從 hooks／scripts 找規則。</span></summary>
     <details id="skill-dev-talk">
-      <summary class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">dev-talk/</span><span class="why">第 1 站討論技能。獨立 session、全盲下游；產出 1-discussion.md，不進 G1。</span></summary>
+      <summary class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">dev-talk/</span><span class="why">Intake 討論技能。獨立 session、全盲下游；產出 1-discussion.md，無人停。</span></summary>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">SKILL.md</span><span class="why">討論站入口。觸發才載全文；只留盲原則與摘要，下一跳看 graph.yaml。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">graph.yaml</span><span class="why">討論站下一跳正本。本機游標不進 Git；改 hop 先改這份再對 nodes/。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">html-shell.html</span><span class="why">掃頁殼。S10 用來包 1-discussion.html，不准手寫、不准拿去充審頁。</span></div>
@@ -2984,8 +3011,8 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     </details>
     </details>
     <details id="skill-dev-flow">
-      <summary class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">dev-flow/</span><span class="why">第 2–7 站路由器。定位 stage 後接手該站；第 6 站會再載 dev-run。</span></summary>
-      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">SKILL.md</span><span class="why">第 2–7 站入口與 lane／gate 摘要。細節以 README 為準，各站 hop 在 stage*/。</span></div>
+      <summary class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">dev-flow/</span><span class="why">五站路由器（Decide→Ship；Intake 在 dev-talk）。定位後接手該站；Build 會再載 dev-run。舊七檔名不動。</span></summary>
+      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">SKILL.md</span><span class="why">五站入口與 lane／gate 摘要。細節以主指南為準，各站 hop 在 stage*/。七檔名不動。</span></div>
     <details id="flow-stage2">
       <summary class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">stage2/</span><span class="why">收斂站，出口 G1。把討論收成方向；過了才寫規格或做原型。</span></summary>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">graph.yaml</span><span class="why">第 2 站下一跳正本。九個 hop，從接手寫到 G1。</span></div>
@@ -3099,7 +3126,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     </details>
     </details>
     <details id="templates">
-      <summary class="tline"><span class="g">├─ </span><span class="name">_templates/</span><span class="why">七站骨架。產品專案抄進 docs/dev/ 當空白模子；example/ 才是填好的範例。</span></summary>
+      <summary class="tline"><span class="g">├─ </span><span class="name">_templates/</span><span class="why">五站路線骨架（七檔名 1–7 不動）。產品專案抄進 docs/dev/ 當空白模子；example/ 才是填好的範例。</span></summary>
       <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">1-discussion.md</span><span class="why">第 1 站討論骨架。頂註是可選目錄樹三步食譜；掃頁六件仍走 build-scan-html.py。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">2-decision.md</span><span class="why">第 2 站決策骨架。頂註是收斂執行清單，出口對 G1。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">3-prototype.md</span><span class="why">第 3 站原型骨架。選配；命中觸發判定才填，否則整站 skip。</span></div>
@@ -3134,7 +3161,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     </details>
     <details id="guides">
       <summary class="tline"><span class="g">├─ </span><span class="name">guides/</span><span class="why">給人看的導覽 HTML。跟 skills/ 鏡像，不代替 README，也不代替 <a href="#filemap">#filemap</a>。</span></summary>
-      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">guide-dev-flow.html</span><span class="why">七站導覽。#dirmap 目錄樹與附錄 <a href="#filemap">#filemap</a> 都在本頁；不是獨立頁。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">guide-dev-flow.html</span><span class="why">五站路線導覽。#dirmap 目錄樹與附錄 <a href="#filemap">#filemap</a> 都在本頁；不是獨立頁。七檔名不動。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">guide-dev-talk.html</span><span class="why">討論站導覽。對 skills/dev-talk/ 的鏡像，改 hop 要兩邊一起看。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">guide-quickstart.html</span><span class="why">舊獨立頁。只留一句轉去 guide-dev-flow.html#start，不要當正本、不要第二份正文。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">guide-dir-map.html</span><span class="why">舊獨立頁。只留一句轉去 guide-dev-flow.html#dirmap，不要當正本、不要第二棵樹。</span></div>
@@ -3153,7 +3180,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
       <div class="tline"><span class="g last"><span class="v">│</span>  └─ </span><span class="name">…</span><span class="why">其餘腳本不整包列進樹，逐支職責見 <a href="#filemap">#filemap</a></span></div>
     </details>
     <details id="tests">
-      <summary class="tline"><span class="g">├─ </span><span class="name">tests/</span><span class="why">契約測試。平行第 6 站等機器可跑的套件；不是七站文檔、也不是 selftest。</span></summary>
+      <summary class="tline"><span class="g">├─ </span><span class="name">tests/</span><span class="why">契約測試。平行 Build（舊第 6 站）等機器可跑的套件；不是五站文檔、也不是 selftest。</span></summary>
     <details id="tests-p6">
       <summary class="tline"><span class="g last"><span class="v">│</span>  └─ </span><span class="name">parallel-stage6/</span><span class="why">第 6 站平行契約套件。對 notes/design/parallel-stage6.md，缺 fixture 會紅。</span></summary>
       <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">contract_ref.py</span><span class="why">契約對照。測試讀這份對正本，不要在用例裡複製一份規則。</span></div>

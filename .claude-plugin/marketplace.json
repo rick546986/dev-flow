@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "dev-flow",
-      "description": "開發流程 SOP 路由器(7 階段,SDD 主幹 + TDD 驗證,方法論內建於本 repo 根目錄)+ dev-run 執行引擎(多模型升階)+ dev-setup 專案安裝器 + dev-talk 訪談引導 + devtalk/devflow 守衛 hooks。",
+      "description": "開發流程 SOP 路由器(五站 Intake→Decide→Spec→Build→Ship,SDD 主幹 + TDD 驗證;in-flight 可 dual-read 舊七檔,方法論內建於本 repo 根目錄)+ dev-run 執行引擎(多模型升階)+ dev-setup 專案安裝器 + dev-talk 訪談引導 + devtalk/devflow 守衛 hooks。",
       "source": "./",
       "category": "productivity"
     }
