@@ -81,7 +81,7 @@ feat worktree 產的 `docs/dev` html/md 併回整合線(常是 `develop`／`test
 
 | 目錄 | 用途 |
 |---|---|
-| `hooks/` | 執行守衛與 CLI:`devflow-exec.sh`(Stage 6 task-scoped guard)、`devflow-guard.sh`、`devflow-prebash.sh`、`devflow-postbash.sh`、`devflow-dispatch-guard.sh`、`devtalk-guard.sh`、`devflow-report-guard.sh`、`devflow-plainspeak.sh`、`history-guard.sh`、`gate-consistency.sh`、`devflow-doctor.sh`、`devflow-obs.sh`、`selftest.sh` 與其 `_*_impl.py`(本表由 `scripts/check-hooks-accounting.sh` 對帳) |
+| `hooks/` | 執行守衛與 CLI:`devflow-exec.sh`(Build（Stage 6）task-scoped guard)、`devflow-guard.sh`、`devflow-prebash.sh`、`devflow-postbash.sh`、`devflow-dispatch-guard.sh`、`devtalk-guard.sh`、`devflow-report-guard.sh`、`devflow-plainspeak.sh`、`history-guard.sh`、`gate-consistency.sh`、`devflow-doctor.sh`、`devflow-obs.sh`、`selftest.sh` 與其 `_*_impl.py`(本表由 `scripts/check-hooks-accounting.sh` 對帳) |
 | `skills/` | `dev-flow`(五站路由器 Intake→Decide→Spec→Build→Ship;in-flight 可 dual-read 舊七檔)、`dev-run`(Build 執行引擎)、`dev-setup`(專案安裝器)、`dev-talk`(訪談引導)、`dev-release`(母版發版器)、`dev-report`(缺陷回報產生器)(本表由 `scripts/check-hooks-accounting.sh` 對帳) |
 | `agents/` | `devflow-reviewer`(role=reviewer,唯讀收驗)、`devflow-adviser`(role=adviser,唯讀連敗診斷)——兩者 frontmatter 皆 `tools: Read`,不給 Bash/Edit/Write;plugin 載入後型別字串帶命名空間:`dev-flow:devflow-reviewer` 與 `dev-flow:devflow-adviser` **兩支都實測叫得出來**(臨時載入兩次 + v3.9.0 正式安裝一次;證據鏈與「本輪拿不到什麼」見 `agents/devflow-reviewer.md` 的「型別字串」與「正式安裝那條路」兩節;本表由 `scripts/check-hooks-accounting.sh` 對帳) |
 | `manifests/` | prompt registry 與版本聲明 |
