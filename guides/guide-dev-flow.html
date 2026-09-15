@@ -521,9 +521,9 @@
   紅線是失敗回路 —— 回頭前一定要先分類,因為 ENV 類不計入嘗試次數。</p>
 
   <p class="muted"><strong>過 gate 三連動</strong>:每過一個 gate,frontmatter <code>status</code> +
-  <code>STATUS.md</code> + 同名 html twin 三者同步更新,禁漏一項。Stage 1 完成後就該去
+  <code>STATUS.md</code> + 同名 html twin 三者同步更新,禁漏一項。Intake（Stage 1）完成後就該去
   <code>STATUS.md</code> 加第一列（格式見 <code>_templates/STATUS.md</code>）:<code>| &lt;slug&gt; | full | 1-discussion | &lt;你的名字&gt; | n-a:尚未建立 branch | n-a:尚未建立 branch | G1⬜ G2⬜ G3⬜ | &lt;日期&gt; |</code>
-(<code>Branch</code> 欄 Stage 6 開 branch 並推上去後換成 <code>origin/feat/&lt;slug&gt;</code>;
+(<code>Branch</code> 欄 Build（Stage 6）開 branch 並推上去後換成 <code>origin/feat/&lt;slug&gt;</code>;
 <code>OverlapRef</code> 是直接補修讀的唯一座標,sequential 就是 Branch,
 parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;</code>),
   之後每過一個 gate 回來更新 Stage 欄與對應的 G⬜ → G✅。</p>
@@ -552,7 +552,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   <code>/dev-talk</code> 收尾時若你說「開始做」「實作吧」,它只會回「討論記錄已完成,實作請另開 session」然後停。
   這頁本身(<code>guide-dev-flow.html</code>)也不在 <code>/dev-talk</code> 的讀取白名單內 —— 討論 agent 看不到、
   也不會讀到這份導覽頁提前偷跑下游知識,圍欄①不因本頁存在而破。</blockquote>
-  <p class="muted">Stage 6 三步順序與 Stage 7 G3 + Exit 的逐字摘要在下方
+  <p class="muted">Build（Stage 6）三步順序與 Ship（Stage 7）G3 + Exit 的逐字摘要在下方
   <a href="#stage6">④ Stage 6</a> / <a href="#stage7">④ Stage 7</a>,不另開一章。</p>
 
   <h3 id="faq">常見卡關 FAQ</h3>
@@ -627,7 +627,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
   <div class="tablewrap"><table>
     <tr><th>層</th><th>做什麼</th><th>能力</th><th>Claude對照（只是對照）</th></tr>
     <tr><td>規劃/派工層</td>
-        <td>長文檔、多方案、Stage 6 派工主對話</td>
+        <td>長文檔、多方案、Build（Stage 6）派工主對話</td>
         <td>長上下文、多方案辯論;派工主對話<strong>不下場寫碼</strong></td>
         <td><span class="badge opus">opus</span>（或 fable5）</td></tr>
     <tr><td>執行/產檔層</td>
@@ -635,7 +635,7 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
         <td>機械與執行活;fresh context 審查</td>
         <td><span class="badge sonnet">sonnet</span></td></tr>
     <tr><td>起步層</td>
-        <td>Stage 6 T 寫碼第一槍</td>
+        <td>Build（Stage 6）T 寫碼第一槍</td>
         <td>便宜、可丟。升階仍是 <strong>起步 → 執行 → 規劃</strong>
             （誤 1 次升執行;執行同 T 最多 2 次才升規劃）。升階時帶<strong>完整失敗軌跡</strong></td>
         <td><span class="badge haiku">haiku</span></td></tr>
@@ -643,15 +643,15 @@ parallel 合回並 push 前填已發布的 <code>origin/integration/&lt;slug&gt;
         <td>gate verdict</td>
         <td>依<strong>能力與 fallback</strong> 選(順序見 ⑤ Gate 規則卡),不綁型號或供應商</td>
         <td>不指定模型</td></tr>
-    <tr><td>Stage 6 · Wave review<br><span class="muted">(parallel 選配)</span></td>
+    <tr><td>Build（Stage 6）· Wave review<br><span class="muted">(parallel 選配)</span></td>
         <td>一次審一個 wave</td>
         <td><strong>必須</strong>輸出每 T 獨立 verdict + finding 歸屬 + integration verdict</td>
         <td><span class="badge sonnet">sonnet</span>（fresh）</td></tr>
-    <tr><td>Stage 6 · Mechanical Gate<br><span class="muted">(parallel 選配)</span></td>
+    <tr><td>Build（Stage 6）· Mechanical Gate<br><span class="muted">(parallel 選配)</span></td>
         <td>14 項機械檢查</td>
         <td>全 PASS 才 READY_FOR_INTEGRATION</td>
         <td>無模型（機械）</td></tr>
-    <tr><td>Stage 6 · adviser</td>
+    <tr><td>Build（Stage 6）· adviser</td>
         <td>連敗才診斷</td>
         <td>規劃層、唯讀;判 T 定義問題 vs 純執行</td>
         <td><span class="badge opus">opus</span></td></tr>
@@ -3013,8 +3013,8 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
       <summary class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">dev-flow/</span><span class="why">五站路由器（Decide→Ship；Intake 在 dev-talk）。定位後接手該站；Build 會再載 dev-run。舊七檔名不動。</span></summary>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">SKILL.md</span><span class="why">五站入口與 lane／gate 摘要。細節以主指南為準，各站 hop 在 stage*/。七檔名不動。</span></div>
     <details id="flow-stage2">
-      <summary class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">stage2/</span><span class="why">收斂站，出口 G1。把討論收成方向；過了才寫規格或做原型。</span></summary>
-      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">graph.yaml</span><span class="why">第 2 站下一跳正本。九個 hop，從接手寫到 G1。</span></div>
+      <summary class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">stage2/</span><span class="why">Decide（第 2 站）收斂站，出口 G1。把討論收成方向；過了才寫規格或做原型。</span></summary>
+      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">graph.yaml</span><span class="why">Decide（第 2 站）下一跳正本。九個 hop，從接手寫到 G1。</span></div>
     <details id="flow-stage2-nodes">
       <summary class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>  └─ </span><span class="name">nodes/</span><span class="why">一 hop 一檔。生方案、壓測、寫 2-decision、送 G1。</span></summary>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">N1-handoff.md</span><span class="why">從已核准的 1-discussion 接手。只讀討論檔，確認能收斂再往下生方案。</span></div>
@@ -3025,12 +3025,12 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">S5-adr.md</span><span class="why">該抄 ADR 的決策抄到 docs/adr/。不是每案都有，有不可逆方向才寫。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">S6-selfcheck.md</span><span class="why">交 G1 前自檢：方案、OC、ADR 對得上 2-decision.md。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">N7-g1.md</span><span class="why">送 G1。方向核准 + OC 全裁決才過，作者不能當 approver。</span></div>
-      <div class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     └─ </span><span class="name">N8-end.md</span><span class="why">第 2 站收尾。過 G1 才往規格或原型走。</span></div>
+      <div class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     └─ </span><span class="name">N8-end.md</span><span class="why">Decide（第 2 站）收尾。過 G1 才往規格或原型走。</span></div>
     </details>
     </details>
     <details id="flow-stage3">
-      <summary class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">stage3/</span><span class="why">原型站，可 skip。開場先觸發判定；0 命中走 N-skip，有命中才實驗。</span></summary>
-      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">graph.yaml</span><span class="why">第 3 站下一跳正本。分叉用 next + fork_required，禁止 via。</span></div>
+      <summary class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">stage3/</span><span class="why">Spec 的原型子步驟（舊 Stage 3），可略過；規格本身不略過。開場先觸發判定，0 命中走 N-skip。</span></summary>
+      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">graph.yaml</span><span class="why">Spec（第 3 站）下一跳正本。分叉用 next + fork_required，禁止 via。</span></div>
     <details id="flow-stage3-nodes">
       <summary class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>  └─ </span><span class="name">nodes/</span><span class="why">一 hop 一檔。含 skip 與實驗兩條，不要漏 fork 那側。</span></summary>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">N1-trigger.md</span><span class="why">先做觸發判定。0 命中走 N-skip，有命中才進 S0-question，禁止 via。</span></div>
@@ -3041,12 +3041,12 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">N3-write-md.md</span><span class="why">寫 3-prototype.md。涉互動要有可操作 Demo 與人填 verdict。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">S3-writeback.md</span><span class="why">答案回寫 2-decision.md。原型站的出口是決策檔，不是另開一條規格。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">S4-close.md</span><span class="why">原型收尾自檢。frontmatter 與回寫對得上才往結束走。</span></div>
-      <div class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     └─ </span><span class="name">N5-end.md</span><span class="why">第 3 站結束。skip 或做完都走這裡，再進第 4 站。</span></div>
+      <div class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     └─ </span><span class="name">N5-end.md</span><span class="why">原型子步驟結束。略過或做完都走這裡，再進規格（4-spec）。</span></div>
     </details>
     </details>
     <details id="flow-stage4">
-      <summary class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">stage4/</span><span class="why">規格站，出口 G2。R/S/DD/Profile 寫死；過了才切任務。</span></summary>
-      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">graph.yaml</span><span class="why">第 4 站下一跳正本。從接手列 R 寫到 G2。</span></div>
+      <summary class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">stage4/</span><span class="why">Spec（第 4 站）規格站，出口 G2。R/S/DD/Profile 寫死；過了才切任務。</span></summary>
+      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">graph.yaml</span><span class="why">Spec（第 4 站）下一跳正本。從接手列 R 寫到 G2。</span></div>
     <details id="flow-stage4-nodes">
       <summary class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>  └─ </span><span class="name">nodes/</span><span class="why">一 hop 一檔。反模糊三律在這裡落地，不是在任務站補。</span></summary>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">N1-handoff.md</span><span class="why">從決策（與可選原型）接手寫規格。只帶討論的驗收雛形與 OC，不回引逐字稿。</span></div>
@@ -3059,39 +3059,39 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">N5-write-md.md</span><span class="why">寫 4-spec.md。openspec delta，單產物。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">S5-gate.md</span><span class="why">機械關自檢：R/S/DD/Profile 齊了才准送 G2。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">N6-g2.md</span><span class="why">送 G2。R/S 全審 + DD 全裁決，過了才切任務。</span></div>
-      <div class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     └─ </span><span class="name">N7-end.md</span><span class="why">第 4 站收尾。規格是後面實作唯一準繩。</span></div>
+      <div class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     └─ </span><span class="name">N7-end.md</span><span class="why">Spec（第 4 站）收尾。規格是後面實作唯一準繩。</span></div>
     </details>
     </details>
     <details id="flow-stage5">
-      <summary class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">stage5/</span><span class="why">任務板，無 G。把規格切成 T；人同意這張板才進實作。</span></summary>
-      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">graph.yaml</span><span class="why">第 5 站下一跳正本。切 T、填欄、產執行板。</span></div>
+      <summary class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">stage5/</span><span class="why">Build（第 5 站）任務板，無人類 gate。把規格切成 T；欄位齊且 approved 才進寫碼，新工作不預設等人。</span></summary>
+      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">graph.yaml</span><span class="why">Build（第 5 站）下一跳正本。切 T、填欄、產執行板。</span></div>
     <details id="flow-stage5-nodes">
       <summary class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>  └─ </span><span class="name">nodes/</span><span class="why">一 hop 一檔。Covers／Files／Verify／Blocked-by 都在這幾跳填。</span></summary>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">N1-handoff.md</span><span class="why">從已核准 4-spec 接手切任務。實作者之後不准回讀 1/2/3。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">S1-slice.md</span><span class="why">切 T：tracer-bullet 順序。每 T 要有 Covers，對得上 S。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">S2-fields.md</span><span class="why">填欄：Files／Verify／Blocked-by 必填，給 devflow-exec 解析 scope。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">S3-deps.md</span><span class="why">標依賴。Blocked-by 決定能不能平行，不要事後口頭講。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">N4-write-md.md</span><span class="why">寫 5-tasks.md。這是第 6 站的工作單，不是進度日誌。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">N4-write-md.md</span><span class="why">寫 5-tasks.md。這是 Build（第 6 站）的工作單，不是進度日誌。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">S4-selfcheck.md</span><span class="why">自檢每 T 的 Verify 與 Files。缺欄不准往下產執行板。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">N5-twin.md</span><span class="why">產第 5 站執行板／審頁 twin。人看任務總表用，不改 hop。</span></div>
-      <div class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     └─ </span><span class="name">N6-end.md</span><span class="why">任務板定稿。無 G；人同意這張板才進實作。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">N5-twin.md</span><span class="why">產 Build（第 5 站）執行板／審頁 twin。人看任務總表用，不改 hop。</span></div>
+      <div class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     └─ </span><span class="name">N6-end.md</span><span class="why">Build（第 5 站）任務板定稿。無人類 gate；欄位齊且 approved 才進寫碼，不是新工作預設人停。</span></div>
     </details>
     </details>
     <details id="flow-stage6">
-      <summary class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">stage6/</span><span class="why">實作站。守衛 + 逐 T；平行時另走 parallel 契約，不是這棵 hop 的另一張圖。</span></summary>
-      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">graph.yaml</span><span class="why">第 6 站下一跳正本。武裝、接手、逐 T、自檢、結束。</span></div>
+      <summary class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">stage6/</span><span class="why">Build（第 6 站）實作站。守衛 + 逐 T；平行時另走 parallel 契約，不是這棵 hop 的另一張圖。</span></summary>
+      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">graph.yaml</span><span class="why">Build（第 6 站）下一跳正本。武裝、接手、逐 T、自檢、結束。</span></div>
     <details id="flow-stage6-nodes">
       <summary class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>  └─ </span><span class="name">nodes/</span><span class="why">一 hop 一檔。真正寫碼在 S2-tdd，前後是守衛與自檢。</span></summary>
-      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">N1-arm.md</span><span class="why">武裝執行守衛。沒 start 不准當第 6 站在跑。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">N1-arm.md</span><span class="why">武裝執行守衛。沒 start 不准當 Build（第 6 站）在跑。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">N2-handoff.md</span><span class="why">核對 4-spec + 5-tasks + 6-notes。禁讀 1/2/3，缺東西回 G2。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">S2-tdd.md</span><span class="why">逐 T：RED→GREEN→scope→Verify→獨立 review→PASS→commit。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">N4-selfcheck.md</span><span class="why">實作自檢：每 T review PASS、改動 ⊆ Files 聯集。</span></div>
-      <div class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     └─ </span><span class="name">N5-end.md</span><span class="why">第 6 站結束。驗證另開第 7 站，不在這裡宣佈 G3。</span></div>
+      <div class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  <span class="v">│</span>     └─ </span><span class="name">N5-end.md</span><span class="why">Build（第 6 站）結束。驗證另開 Ship（第 7 站），不在這裡宣佈 G3。</span></div>
     </details>
     </details>
     <details id="flow-stage7">
-      <summary class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  └─ </span><span class="name">stage7/</span><span class="why">驗證站，出口 G3。reviewer 自建矩陣再親跑，不是複誦作者結論。</span></summary>
-      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">graph.yaml</span><span class="why">第 7 站下一跳正本。從角色防錨定寫到 Verdict。</span></div>
+      <summary class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  └─ </span><span class="name">stage7/</span><span class="why">Ship（第 7 站）驗證站，出口 G3。reviewer 自建矩陣再親跑，不是複誦作者結論。</span></summary>
+      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>     ├─ </span><span class="name">graph.yaml</span><span class="why">Ship（第 7 站）下一跳正本。從角色防錨定寫到 Verdict。</span></div>
     <details id="flow-stage7-nodes">
       <summary class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>     └─ </span><span class="name">nodes/</span><span class="why">一 hop 一檔。現象、回歸、Fresh、走查都在送 G3 之前。</span></summary>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>        ├─ </span><span class="name">N0-role.md</span><span class="why">角色與防錨定：先自建矩陣，才准看作者 Self-Review。</span></div>
@@ -3108,7 +3108,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     </details>
     </details>
     <details id="skill-dev-run">
-      <summary class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">dev-run/</span><span class="why">第 6 站內部引擎。正常由 dev-flow 定位到 stage 6 時載入，不必當第二個指令學。</span></summary>
+      <summary class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">dev-run/</span><span class="why">Build（第 6 站）內部引擎。正常由 dev-flow 定位到 stage 6 時載入，不必當第二個指令學。</span></summary>
       <div class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  └─ </span><span class="name">SKILL.md</span><span class="why">整棵掛，裡面只有這份。haiku 寫碼、sonnet 審、錯誤升階，配 devflow-exec。</span></div>
     </details>
     <details id="skill-dev-setup">
@@ -3126,13 +3126,13 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     </details>
     <details id="templates">
       <summary class="tline"><span class="g">├─ </span><span class="name">_templates/</span><span class="why">五站路線骨架（七檔名 1–7 不動）。產品專案抄進 docs/dev/ 當空白模子；example/ 才是填好的範例。</span></summary>
-      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">1-discussion.md</span><span class="why">第 1 站討論骨架。頂註是可選目錄樹三步食譜；掃頁六件仍走 build-scan-html.py。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">2-decision.md</span><span class="why">第 2 站決策骨架。頂註是收斂執行清單，出口對 G1。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">3-prototype.md</span><span class="why">第 3 站原型骨架。選配；命中觸發判定才填，否則整站 skip。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">4-spec.md</span><span class="why">第 4 站規格骨架。反模糊三律與 G2 要審的欄都在頂註。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">5-tasks.md</span><span class="why">第 5 站任務骨架。再小也要 Covers／Files／Verify／Blocked-by。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">6-implementation-notes.md</span><span class="why">第 6 站實作日誌骨架。Progress Log 與 T Review 記這裡，不是任務板。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">7-review.md</span><span class="why">第 7 站驗證骨架。G3 證據與雙軸審的欄位在這份。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">1-discussion.md</span><span class="why">Intake（第 1 站）討論骨架。頂註是可選目錄樹三步食譜；掃頁六件仍走 build-scan-html.py。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">2-decision.md</span><span class="why">Decide（第 2 站）決策骨架。頂註是收斂執行清單，出口對 G1。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">3-prototype.md</span><span class="why">Spec 的原型子步驟（舊 Stage 3）。選配；未命中 trigger 時略過原型，仍須完成規格。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">4-spec.md</span><span class="why">Spec（第 4 站）規格骨架。反模糊三律與 G2 要審的欄都在頂註。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">5-tasks.md</span><span class="why">Build（第 5 站）任務骨架。再小也要 Covers／Files／Verify／Blocked-by。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">6-implementation-notes.md</span><span class="why">Build（第 6 站）實作日誌骨架。Progress Log 與 T Review 記這裡，不是任務板。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">7-review.md</span><span class="why">Ship（第 7 站）驗證骨架。G3 證據與雙軸審的欄位在這份。</span></div>
       <div class="tline"><span class="g last"><span class="v">│</span>  └─ </span><span class="name">…</span><span class="why">其餘骨架不整包列進樹，STATUS／HISTORY／html-shell 見 <a href="#filemap">#filemap</a></span></div>
     </details>
     <details id="dir-example">
@@ -3141,21 +3141,21 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
       <summary class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">contract-expiry-reminder/</span><span class="why">合約到期提醒，full lane 填好。1–7 都有 md，旁邊同名 html 是審頁 twin。</span></summary>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">1-discussion.md</span><span class="why">填好的討論正本。旁邊 1-discussion.html 是掃頁／審頁 twin，不必再佔一列。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">2-decision.md</span><span class="why">填好的決策正本。旁邊同名 html 是 G1 審頁 twin。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">3-prototype.md</span><span class="why">填好的原型正本。這個 feat 有做第 3 站；旁邊是審頁 twin。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">3-prototype.md</span><span class="why">填好的原型正本。這個 feat 有做 Spec 的原型子步驟（舊 Stage 3）；旁邊是審頁 twin。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">4-spec.md</span><span class="why">填好的規格正本。R/S/DD 都在；旁邊是 G2 審頁 twin。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">5-tasks.md</span><span class="why">填好的任務板。旁邊是執行板 twin，不是另一份 md。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">6-implementation-notes.md</span><span class="why">填好的實作日誌。旁邊是 twin，進度以 md 為準。</span></div>
       <div class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  └─ </span><span class="name">7-review.md</span><span class="why">填好的驗證正本。旁邊 7-review.html 是 G3 審頁 twin。</span></div>
     </details>
     <details id="ex-subsidy">
-      <summary class="tline"><span class="g last"><span class="v">│</span>  └─ </span><span class="name">subsidy-3-0-plus/</span><span class="why">補助手樣。沒有 3-prototype（該站 skip）；shots/ 給第 7 站現象截圖。</span></summary>
+      <summary class="tline"><span class="g last"><span class="v">│</span>  └─ </span><span class="name">subsidy-3-0-plus/</span><span class="why">補助手樣。沒有 3-prototype（略過原型子步驟）；shots/ 給 Ship（第 7 站）現象截圖。</span></summary>
       <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">1-discussion.md</span><span class="why">補助討論正本。旁邊同名 html 是掃頁／審頁 twin。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">2-decision.md</span><span class="why">補助決策正本。旁邊是 G1 審頁 twin。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">4-spec.md</span><span class="why">補助規格正本。沒有第 3 站，規格直接接決策。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">4-spec.md</span><span class="why">補助規格正本。未做原型子步驟，規格直接承接決策。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">5-tasks.md</span><span class="why">補助任務板。旁邊是執行板 twin。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">6-implementation-notes.md</span><span class="why">補助實作日誌。旁邊是 twin。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">7-review.md</span><span class="why">補助驗證正本。現象截圖在 shots/，不要跟這份搶槽。</span></div>
-      <div class="tline"><span class="g last"><span class="v">│</span>     └─ </span><span class="name">shots/</span><span class="why">第 7 站現象截圖。Pages 掛相對路；不是目錄樹、也不是掃頁三框。</span></div>
+      <div class="tline"><span class="g last"><span class="v">│</span>     └─ </span><span class="name">shots/</span><span class="why">Ship（第 7 站）現象截圖。Pages 掛相對路；不是目錄樹、也不是掃頁三框。</span></div>
     </details>
     </details>
     <details id="guides">
@@ -3181,7 +3181,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     <details id="tests">
       <summary class="tline"><span class="g">├─ </span><span class="name">tests/</span><span class="why">契約測試。平行 Build（舊第 6 站）等機器可跑的套件；不是五站文檔、也不是 selftest。</span></summary>
     <details id="tests-p6">
-      <summary class="tline"><span class="g last"><span class="v">│</span>  └─ </span><span class="name">parallel-stage6/</span><span class="why">第 6 站平行契約套件。對 notes/design/parallel-stage6.md，缺 fixture 會紅。</span></summary>
+      <summary class="tline"><span class="g last"><span class="v">│</span>  └─ </span><span class="name">parallel-stage6/</span><span class="why">Build（第 6 站）平行契約套件。對 notes/design/parallel-stage6.md，缺 fixture 會紅。</span></summary>
       <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">contract_ref.py</span><span class="why">契約對照。測試讀這份對正本，不要在用例裡複製一份規則。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">run_tests.py</span><span class="why">跑平行契約測試。改契約先改正本再跑這支。</span></div>
       <div class="tline"><span class="g last"><span class="v">│</span>     └─ </span><span class="name">fixtures/</span><span class="why">契約樣本。好／壞案例都在這，不必把每份 json 再佔一列。</span></div>
@@ -3197,7 +3197,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
       <summary class="tline"><span class="g">├─ </span><span class="name">docs/</span><span class="why">PLUGIN、ADR、母版自己的專案帳。產品專案的 feat 文檔不寫在這裡。</span></summary>
       <div class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">PLUGIN.md</span><span class="why">四邊安裝說明。人裝 Claude／Cursor／Codex／手動時看這份，不是技能 hop。</span></div>
     <details id="docs-adr">
-      <summary class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">adr/</span><span class="why">架構決策紀錄。不可逆方向才抄過來；第 2 站 S5 對應這裡。</span></summary>
+      <summary class="tline"><span class="g"><span class="v">│</span>  ├─ </span><span class="name">adr/</span><span class="why">架構決策紀錄。不可逆方向才抄過來；Decide（第 2 站）S5 對應這裡。</span></summary>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">0001-merge-plugin-into-methodology-repo.md</span><span class="why">方法包與 plugin 併成一份 repo。之後技能與薄殼一起改，不再分兩個正本。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>  <span class="v">│</span>  ├─ </span><span class="name">0002-markdown-it-py-for-twin-parsing.md</span><span class="why">twin 解析鎖 markdown-it-py。審頁產生器吃 md 用這套，不准另引一套。</span></div>
       <div class="tline"><span class="g last"><span class="v">│</span>  <span class="v">│</span>  └─ </span><span class="name">0003-agent-memory-two-layer-split.md</span><span class="why">長期記憶與執行暫存分開。durable 進 Git，SQLite／逐字稿只住本機。</span></div>
@@ -3225,13 +3225,13 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
       <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">vbox-fig-contract.md</span><span class="why">直式置中方塊圖契約。步驟一格一步走那份，不要拿來畫目錄樹。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">dir-tree-contract.md</span><span class="why">本頁這棵樹的畫法契約。預設 L1、每列 why、禁 mermaid／vbox 步驟方塊。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">pages-hosting.md</span><span class="why">站審 html 掛 Pages。7-review.html 與 shots 相對路，跟目錄樹頁不是同一條。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">stage1-review-ui-contract.md</span><span class="why">第 1 站審頁。三框 #scan-now，不要跟本樹或掃頁殼併張。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">stage2-review-ui-contract.md</span><span class="why">第 2 站審頁。Decision 置頂 + 直式 SVG，不是目錄樹。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">stage3-review-ui-contract.md</span><span class="why">第 3 站審頁。觸發判定與 Demo，feat 沒原型就 n-a。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">stage4-review-ui-contract.md</span><span class="why">第 4 站審頁。R/S 與生命週期圖分卡，不是本樹。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">stage5-review-ui-contract.md</span><span class="why">第 5 站審頁。任務總表 chrome，執行板 twin 對這份。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">stage7-review-ui-contract.md</span><span class="why">第 7 站審頁。現象與 Evidence 欄，shots 另掛。</span></div>
-      <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">parallel-stage6.md</span><span class="why">第 6 站平行契約。tests/parallel-stage6/ 對這份，不是 hop 圖。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">stage1-review-ui-contract.md</span><span class="why">Intake（第 1 站）審頁。三框 #scan-now，不要跟本樹或掃頁殼併張。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">stage2-review-ui-contract.md</span><span class="why">Decide（第 2 站）審頁。Decision 置頂 + 直式 SVG，不是目錄樹。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">stage3-review-ui-contract.md</span><span class="why">Spec（第 3 站）審頁。觸發判定與 Demo，feat 沒原型就 n-a。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">stage4-review-ui-contract.md</span><span class="why">Spec（第 4 站）審頁。R/S 與生命週期圖分卡，不是本樹。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">stage5-review-ui-contract.md</span><span class="why">Build（第 5 站）審頁。任務總表 chrome，執行板 twin 對這份。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">stage7-review-ui-contract.md</span><span class="why">Ship（第 7 站）審頁。現象與 Evidence 欄，shots 另掛。</span></div>
+      <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">parallel-stage6.md</span><span class="why">Build（第 6 站）平行契約。tests/parallel-stage6/ 對這份，不是 hop 圖。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">gate-verdict-write.md</span><span class="why">gate 判定寫入。正本是 md 頂欄 verdict:，全勾不算 PASS。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">vnext-shared-contract.md</span><span class="why">vnext 共用契約。執行期欄位與事件，不是目錄樹。</span></div>
       <div class="tline"><span class="g"><span class="v">│</span>     ├─ </span><span class="name">evidence-gauntlet.md</span><span class="why">證據關卡。G3 要過的機器檢查清單。</span></div>
@@ -3653,7 +3653,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     <tr><td><code>build-vbox-fig.py</code></td>
         <td>直式置中方塊圖產圖器:抽象步驟列(kind／標題／一到三行小字)→ 完整
             <code>&lt;svg viewBox&gt;</code>(框寬 200、畫布 280、max-width 360px)。
-            第 2／4 站及同類圖走這支,不是掃頁三框,也不是七站三走廊圖。
+            第 2／4 站及同類圖走這支,不是掃頁三框,也不是舊七站三走廊圖。
             契約 <code>notes/design/vbox-fig-contract.md</code>。</td>
         <td>各站畫直式步驟方塊時呼叫;<code>check-vbox-fig.sh</code> 對 lifecycle fixture 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>build-dir-tree.py</code></td>
@@ -3772,7 +3772,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>可摺疊目錄樹產器的小牙:無參數／<code>--help</code> 必須 exit 2;
             母版 <code>#dirmap</code> 必須跟產器
             <code>--check</code> 對得上;吐 mermaid／<code>&lt;pre&gt;</code>／svg／
-            預設展開必須紅。不塞 hop graph,不改 vbox-fig／scan-now／七站三走廊。</td>
+            預設展開必須紅。不塞 hop graph,不改 vbox-fig／scan-now／舊七站三走廊。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-stage1-now-contract.sh</code></td>
         <td>第 1 站審頁三框契約牙:正本 <code>notes/design/stage1-review-ui-contract.md</code>
