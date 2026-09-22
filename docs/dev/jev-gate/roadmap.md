@@ -82,8 +82,8 @@ inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、
 |---|---|---|---|---|---|---|
 | P0-1 | 煙霧測試：本機 `export TYPESAFE_API_KEY=...`（只在 shell，不寫 profile、不進檔），跑草稿 §10 的 curl | 回 200；`noul`／`choice`／`score` 三種回應欄位名與草稿 §3 一致；`model` 回實際版號；順手記下觀察到的延遲（供 P1-G2 判斷 2s 逾時夠不夠） | S | — | rick 跑，agent 核對 | 出處核對、R2 |
 | P0-2 | 實測 state 上限：同一 curl 把 state 灌到 20k／32k／40k tokens | 記下實際 4xx 門檻；32k 只有二手來源 | S | P0-1 | agent | 出處核對 |
-| P0-3 | **Owner Call A**：Stage 3 極性要不要從「觸發即必要」翻成「人要求才看」 | rick 一句話裁決，記進 `2-decision.md` Owner Calls（P3-4 據此做或不做） | S | — | rick | R3 |
-| P0-4 | **Owner Call B**：出境預設。建議 = key + 專案內 `.dev-flow/jev.yaml` 兩者都在才呼叫；`jev.yaml` 由 `dev-setup` 問過才寫 | rick 裁決預設值 | S | — | rick | R2、R3 |
+| P0-3 | **Owner Call A**：Stage 3 極性要不要從「觸發即必要」翻成「人要求才看」 | **已裁 2026-09-22：翻成「人要求才看」→ P3-4 要做，且可提前排進 P1／P2 窗口（§5）**；正式進 dev-flow 時抄進 `2-decision.md` Owner Calls | S | — | rick | R3 |
+| P0-4 | **Owner Call B**：出境預設。建議 = key + 專案內 `.dev-flow/jev.yaml` 兩者都在才呼叫；`jev.yaml` 由 `dev-setup` 問過才寫 | **已裁 2026-09-22：選雙閘門（key + 專案 `.dev-flow/jev.yaml`，預設不建，`dev-setup` 逐專案問一次）→ P1-G3 照設計做**；正式進 dev-flow 時抄進 `2-decision.md` | S | — | rick | R2、R3 |
 | P0-5 | 實測 Stage 7 有沒有 run：Build 的 run 在 Stage 6 收尾 `stop`，Stage 7 是否另開、何時 `stop`（`hooks/_exec_impl.py`） | 一句結論 + 檔案:行號；決定 J5 能不能寫 observability 事件；J1–J3 確定不能 | S | — | agent | R1 |
 | P0-6 | 確認 `memory/agentmem/durable.py` 的 `append_events()` 能收自訂 kind（例 `jev`），與 `check-memory-architecture.sh`／`test-architecture-guards.sh` 有無目錄白名單 | 能 → ledger 走 events（R3 §8 的建議方向）；不能 → `.dev-flow/jev/<session>.jsonl` | S | — | agent | R3、R1 |
 | P0-7 | 補讀清單（P1 動工前）：`hooks/_exec_impl.py`、`hooks/devflow-lib.py`、`hooks/_obs_impl.py`、`memory/agentmem/sync.py`、`durable.py`、`notes/design/gate-verdict-write.md`、`scripts/check-file-map.sh`、`scripts/check-write-scope.sh`、**`skills/dev-setup/SKILL.md`（升級模式段落）**、**`scripts/check-dev-setup-discipline.sh`**、**`guides/guide-dev-flow.html` 的 parity 區塊清單**（先確認 P3-2 的影響範圍） | 每支一段「對 jev-gate 的約束」筆記；guide 的 parity 區塊列出區塊名 + 行號 | M | — | agent | R1、D3-priority-3、D3-priority-4 |
@@ -175,7 +175,7 @@ inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、
 | P3-1 | **J5 AUTO_SHIP（risk ≤1）**：`gates.J5: live` 鎖檔 + hash 蓋章；AUTO 時 reviewer agent 簽 `verdict: PASS`，`reviewers` 記 `jev-routed/agent`，人事後回饋（P2-6） | Wilson 下界 ≥85%、n≥30 影子標籤（`source: unverified` 不算，見 P1-G7）、labeled_fraction ≥ 配額；熔斷 = **凍結**（暫停新 AUTO，退回 HUMAN），不自動歸零；歸零只在換 model_resolved／題組 hash／人工 `manual_regression`。**「恢復」的精確語意：人審完那一筆、記「恢復，這筆計入既有樣本」之後，`meets_gate_floor` 照常以 `wilson_lower(x, n)` 重算，不做任何覆寫**——所以「恢復」不等於立刻能再 AUTO_SHIP（算例：n=30／x=30 時下界 88.6% 過關；出現一次推翻後變 n=31／x=30，下界掉到 83.8% 不過；要回到 85% 得累積到 n=34／x=33（85.08%），即通常還要再吃 3～4 筆零推翻樣本才真的解凍） | L | P1 全部、P2-2、P2-4、P2-5 | R4、D4-safety-1 |
 | P3-2 | **契約同步**：5 處 reviewer-selection 子句改寫 + **`guides/guide-dev-flow.html` 的對應 parity 區塊**（`readme-reviewer-selection-quickstart` 行 535-545、`readme-reviewer-selection-flow` 行 1929-1939 一類，是同一子句的第三份鏡像）+ `hooks/_gate_consistency_impl.py` 的 `REVIEWER_SELECTION_STEPS` 有序 tuple 加一步（是插入位置的決策，不是調 regex）+ `notes/design/gate-verdict-write.md` 族 **10 檔**（CONTRACT 1：`notes/design/gate-verdict-write.md`；HOPS 4：`skills/dev-flow/stage7/nodes/N5-verdict.md`、`stage2/nodes/N7-g1.md`、`stage4/nodes/N7-end.md`、`skills/dev-flow/SKILL.md`；TEMPLATES 3：`_templates/2-decision.md`、`4-spec.md`、`7-review.md`；BUILDER 1：`scripts/build-gate-twin.py`；HELPER 1：`scripts/devflow_gate.py`）+ `check-gate-verdict-write.sh`；**完整版機械檢查「`verdict:` 是誰寫的」**（P1-G7 先上 tripwire，這裡做完整版）；小心 `find_table_cell` 唯一性：SKILL.md 出現第二個 `**G1**` 會讓檢查自壞 exit 2 | `gate-consistency.sh` exit 0；**`scripts/check-methodology-corrections.sh` 綠**（guide 的 parity 區塊沒漂）；新檢查對 agent 未授權寫入 verdict 會紅 | L | P3-1 同步 | R1、R2、D2-feasibility-5、D3-priority-4 |
 | P3-3 | **J2 AUTO_PASS**：排最後或不做。若做：下界 ≥75%、n≥20；熔斷 = 滾動窗跌破退 shadow；OC 仍逐條人裁（五律 #4、G1 全裁決） | 同 P3-1 形式 | L | P3-2 | R3、R4 |
-| P3-4 | **Stage 3 極性**（只在 P0-3 裁決「翻」時做）：`SKILL.md` §4、`_templates/3-prototype.md`、`vnext-shared-contract` §2、`hooks/_stage3_impl.py` | attestation 規則不變；只有「預設要不要 Demo」翻轉 | M | P0-3 | R3、D3-priority-7 |
+| P3-4 | **Stage 3 極性**（P0-3 已裁「翻」，要做）：`SKILL.md` §4、`_templates/3-prototype.md`、`vnext-shared-contract` §2、`hooks/_stage3_impl.py` | attestation 規則不變；只有「預設要不要 Demo」翻轉 | M | P0-3 | R3、D3-priority-7 |
 
 ## 6. P4 — 延後／不做
 
@@ -215,8 +215,8 @@ P0-10 STATUS 登記（落地整合分支 main 時執行，不擋任何項目）
 ## 8. rick 要親自做的事（其餘都是 agent 的活）
 
 1. P0-1：本機 shell `export TYPESAFE_API_KEY=...`，跑 curl，把回應貼回來。
-2. P0-3：裁 Stage 3 極性翻不翻。
-3. P0-4：裁出境預設（建議雙閘門、預設不建）。
+2. ~~P0-3：裁 Stage 3 極性翻不翻。~~ 已裁：翻成「人要求才看」（2026-09-22）。
+3. ~~P0-4：裁出境預設。~~ 已裁：雙閘門、預設不建（2026-09-22）。
 4. P3 之前：什麼都不用做；影子期的回饋是自動配對。
 5. P3 之後：每週最多一次是非題（P2-6），加 10–20% 抽查。
 6. 每個要啟用 jev 的專案，`dev-setup` 跑到時回答一次 opt-in 是非題（初裝與升級都算，逐專案各一次，可能發生在 P3 之前——這是 P1-G3 雙閘門的必然成本，不是可省的步驟）。
@@ -225,7 +225,7 @@ P0-10 STATUS 登記（落地整合分支 main 時執行，不擋任何項目）
 
 | 階段 | 完成 = |
 |---|---|
-| P0 | 煙霧測試回應貼在本檔 §10；兩個 Owner Call 記進 2-decision；P0-5／P0-6／P0-8／P0-9 各一句結論 + 檔案:行號 |
+| P0 | 煙霧測試回應貼在本檔 §10；兩個 Owner Call 已記在 P0-3／P0-4（正式進 dev-flow 時抄進 2-decision）；P0-5／P0-6／P0-8／P0-9 各一句結論 + 檔案:行號 |
 | P1 | `devflow-check.sh all` 綠，且輸出裡看得到 `methodology/test-devflow-jev` 這一行 PASS；七組守衛各有負面測試；一個真 feature 走完 Intake→Ship，ledger 有 J1／J3／J5 三筆，report 配對成功；機械代理指標：該 feature 的 J1 ledger entry 存在且 `route_recommended` 有記錄值。**另列的人工確認（主觀，不當機械驗收）**：rick 確認 J1 省略了原本「這樣夠了嗎」那一問，且 dev-talk 的 N13 人類點頭仍在、不受影響 |
 | P2 | e2e 缺失會擋 G2（P2-1 實際在 P1 窗口就完成）；report 指標與 `ci_calc.py` 一致；migration 改動必轉人 |
 | P3 | 自家 ADR accepted；`gate-consistency.sh` 綠；第一次 AUTO_SHIP 發生且事後回饋為 agree |
