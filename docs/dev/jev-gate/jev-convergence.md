@@ -62,6 +62,30 @@ jev 判「不做 J2」的依據是審查裡的事實：J2 對不到 rick 任一�
 - 延遲：5k tokens 約 0.6–0.7s，20k 約 1.2s，32k 約 1.4s。
 - 同一包三次呼叫 `input_tokens` 完全相同；打亂順序不改 token 數。
 
-## 6. 這輪呼叫的成本
+## 6. 換問法測試（rick 要求：不只換順序，還要換問法）
+
+同一份 v2 中性包，三種問題措辭 × 兩種呈現（結構化 JSON／純文字敘述），每題六個變體（`evidence/jev-phrasing-result.json`）：
+
+| 措辭 | 內容 |
+|---|---|
+| w0 | Weighing the facts and the arguments for and against each option, which option should the roadmap adopt? |
+| w1 | You advise the project owner. Considering every constraint listed, select the single option whose drawbacks are most tolerable. |
+| w2 | Which option is most consistent with the owner's stated goals and with the calibration warning in the context? Pick exactly one. |
+
+| 分叉 | 六變體 | 判定 |
+|---|---|---|
+| F1 | 六個同，0.82–0.96 | 穩 |
+| F2 | 六個同，0.79–0.93 | 穩 |
+| **F3** | w0 → 全齊才寫 0.68／0.72；w1 → 0.50／0.51；w2 → 拆兩層 0.72／0.75 | **隨問法翻**，是偏好題不是事實題 |
+| F4 | w0／w1 → 85%／30（0.58–0.69）；w2 → 零推翻 59 筆微勝（0.52／0.53） | 大致穩；rick 已裁 |
+| F5 | 六個同傾向不做，0.66–0.82 | 穩；rick 已推翻 |
+| F6 | 六個同，0.94–1.0 | 穩 |
+| F7 | 六個同，全 1.0 | 穩 |
+
+**F3 裁決（rick，2026-09-22，看過換問法結果後）：維持「七組全齊才寫」。** 理由：拆兩層只讓 J5 影子記帳早約一週開始，但那段期間的樣本因為沒有 verdict 出處檢查而不能算進畢業的 30 筆，幾乎白記；全齊才寫少一條「哪些樣本算數」的例外。
+
+JSON 與純文字呈現對答案幾乎無影響（同措辭下差 ≤0.1），差別全在措辭。F3 的規律：問「權衡事實」偏安全（全齊才寫），問「缺點最能忍」或「最符合 owner 目標」偏速度（拆兩層）。**教訓寫進 P1-G1**：正式題組的 `instructions` 要固定、進 `questionset_hash`，而且每個 gate 的題目在 shadow 期要用 ≥3 種措辭跑過，措辭之間翻的題不准當放行依據。
+
+## 7. 這輪呼叫的成本
 
 七題 v1 + 七題 v2 三跑 + F4 六跑 + 上限探測十次，合計約 20 萬 input tokens，輸入 $0.042／M，不到一美分。
