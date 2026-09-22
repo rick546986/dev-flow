@@ -1,7 +1,7 @@
 ---
 title: jev-gate roadmap（有優先級）
 slug: jev-gate
-status: draft-v2
+status: draft-v3（v2 + jev 收斂裁決）
 date: 2026-09-22
 base: origin/main 79b7aab
 inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、R2 對抗性風險、R3 流程與 HITL、R4 校準量測）+ 一份出處核對；v2 另加一輪四維度 findings 覆核（D1 出處忠實度、D2 可行性、D3 優先級、D4 安全）
@@ -24,6 +24,10 @@ inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、
 | J2 AUTO_PASS 與 J5 同列 | J2 對不到 rick 任何一句需求、體感低於 J5、又是最貴的契約改動 → **排最後或不做** | R3 |
 
 沒改的結論：jev 接、supermemory 不接（R3 覆核維持，重啟條件已寫在草稿 §9）。
+
+### 0.2 jev 收斂（2026-09-22，見 `jev-convergence.md`）
+
+七個方向分叉各寫成中性證據包問 jev（jev-1.13.0），rick 逐題裁決：F1／F2／F3／F6／F7 jev 與本檔一致，一次過；F4 維持 85%／30 筆加凍結（jev 0.72，並明知它統計上只證明 ≤15%）；**F5 rick 推翻 jev**：J2 不刪，改為把 J2 證據包做厚（新增 P2-8）。證據包寫法規則（非決策 agent 組包、零評價詞、正反引原文、打亂三跑）收進 P1-G1。
 
 ## 0.1 v2 相對 v1 的改動（每條 = 一個已確認 finding）
 
@@ -97,7 +101,7 @@ inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、
 
 | ID | 做什麼 | 驗收 | 量 | 依賴 | 出處 |
 |---|---|---|---|---|---|
-| P1-G1 | **證據包結構化**：`pack` 分 header（exit code、pass/fail 表、E1–E13、Final Fresh Run 逐 layer、review_verdict）永不砍；body（findings 原文、輸出 tail）可砍。砍了就 `truncated: true` → 該次路由強制 HUMAN；ledger 記截斷 bytes | 單元測試：塞超大 tail，header 完整、`truncated` 為真、route 為 HUMAN | M | P0-2 | R2 blocker |
+| P1-G1 | **證據包結構化**：`pack` 分 header（exit code、pass/fail 表、E1–E13、Final Fresh Run 逐 layer、review_verdict）永不砍；body（findings 原文、輸出 tail）可砍。砍了就 `truncated: true` → 該次路由強制 HUMAN；ledger 記截斷 bytes。砍線 30,000 tokens（P0-2 實測上限 32,768 含 questions）。**中性化規則**（`jev-convergence.md` §2 實證，v1 帶風向的包讓 F3 答案對調）：凡是「選路線」型的包（J1 的 next、J2 的 g1_route、J5 的 g3_route），選項描述不含評價詞、長度差 ≤20%、正反論點各 ≥2 條引原文、事實含對每個選項不利者；組包程式不得讀取任何「目前傾向」；`pack --self-check` 對描述跑評價詞 grep，命中即拒絕 | 單元測試：塞超大 tail，header 完整、`truncated` 為真、route 為 HUMAN；評價詞 fixture 被 `--self-check` 擋下 | M | P0-2 | R2 blocker、jev-convergence §2 |
 | P1-G2 | **失敗即視同未設 key**：401／429／529／**逾時（2s + 1 retry，R2 B2 建議值；要偏離必須拿 P0-1 實測的延遲數據當理由寫在這一格）**／JSON 不合 schema，一律回傳「no-op」，走現行流程；熔斷同時看兩層——**同 session 跨 gate 累計連續 3 次錯**，或同 session 同 gate 連續 3 次錯，任一先到就本 session 全面停呼叫；停用本身寫一筆顯式狀態列（`call_breaker_tripped`，見 §3.3），不是只靠「之後沒有列」推斷 | 單元測試：mock 每種錯誤，路由結果 = 未設 key；三次錯誤**分散在 J1／J3／J5** 也要觸發 session 級停呼叫；`report` 看得到 `call_breaker_state` | S | — | R2 blocker、D1-sources-5、D1-sources-9、D4-safety-7 |
 | P1-G3 | **出境雙閘門**：`TYPESAFE_API_KEY` + 專案 `.dev-flow/jev.yaml`（`enabled`、`mode: shadow\|live\|off`、`gates: {J1: live, J3: live, J5: shadow}`、`risk_paths: [...]`）兩者都在才呼叫；**兩欄的優先序寫死成一條可測規則：實際生效等級 = min(`mode`, `gates[Jn]`)，序 off < shadow < live——`mode` 只能把所有 gate 一起往下壓（kill switch），不能單獨把某個 gate 往上拉**；`dev-setup` 問一次才寫，預設不建；文件明寫不要把 key 放 shell profile | 沒有 `jev.yaml` 的專案（含 autoloop 環境）零呼叫，用 mock server 驗；**負面測試：`mode: off` + `gates.J5: live` → `ask --gate J5` 不呼叫**（min 規則給出唯一答案） | S | P0-4 | R2 blocker、R3、R1、D4-safety-5 |
 | P1-G4 | **ledger 按 session 分檔**：P0-6 決定走 `append_events()` 還是 `.dev-flow/jev/<session>.jsonl`；欄位見 §3.3 | 兩個程序同時寫，report 彙總筆數 = 呼叫數 | S | P0-6 | R2 blocker、R4 |
@@ -164,6 +168,7 @@ inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、
 | P2-4 | **機械 risk 天花板**（不靠 jev）：diff 觸及 `jev.yaml` 的 `risk_paths`（migrations／auth／payment／secrets／CI 設定）→ J5 一律 HUMAN，不看 jev 分數；`route_reason` 記 `risk_ceiling_override` | 負面測試：改一個 migration 檔，route = HUMAN（清單本身被改窄的防線在 P1-G6(c)） | S | P1-G3 | R2 |
 | P2-5 | **隨機抽查配額**：live 期每 gate 10–20% 的 AUTO 案子強制人看，維持標籤新鮮 | report 顯示 labeled_fraction 不低於配額 | S | P2-2 | R4 |
 | P2-6 | **次要回饋機制**：只給 P3 真跳過人的 gate；掛在 `/dev-flow` 開場橫幅，批次是非題，每週最多提醒一次，逾時算 none、不進分母；**呈現順序寫死：先只給案子本身，等人給出獨立的是非題答案之後，才顯示 jev 的 route／risk 判斷**（R4 §2 錨定效應——shadow 期回饋已改自動配對，這是全案唯一還會主動問人的機制，錨定風險全落在這裡） | rick 一週不超過五分鐘；負面測試：作答前的橫幅字串不得含 jev 的 route／risk 值 | S | P3-1 | R3、R4 §2、D1-sources-13 |
+| P2-8 | **J2 證據包規格**（F5 裁決：J2 不刪，證據做厚）：`pack --gate J2` 必含 2-decision 的方案比較表全文、每個方案的取捨原文、1-discussion 的 Real-world Context 節與 Open Questions 結論欄（不含逐字稿）、Owner Calls 的人類答案、fresh reviewer findings；每個方案附正反論點；照 P1-G1 中性化規則組包；先在 shadow 跑三次打亂順序，`g1_route` 三跑不一致就記 `unstable: true`、不進畢業分母 | 一個真 feature 的 J2 包 ≥3,000 tokens 且過 `--self-check`；三跑一致率有紀錄 | M | P1-G1、P1-F1 | jev-convergence §4 |
 | P2-7 | **AUTO 事件可稽核**：AUTO 路由自動附註到 7-review.md Exit Checklist 與 PR 描述；**附註內容限定於封閉集合 `{gate, questionset_hash 前 12 碼, model_resolved, route_recommended, ledger_id}`，並比照 `observability/schema/agent-event.schema.json` 既有的 privacy 紅線（R4 §1 對 `packet.hash` 的同一要求：只外露雜湊與識別碼，不外露內容）——`answers`／`probabilities`／`route_reason`／任何證據細節都不得出現在 PR 描述**（這是整套設計裡唯一把 ledger 衍生資料送出本機的管道） | PR 描述有一行 jev 附註；負面測試：附註字串出現 `answers`／`probabilities` 等關鍵字時要被擋下 | S | P1-F4 | R2、D4-safety-9 |
 
 ## 5. P3 — 契約改動（AUTO gate）
@@ -174,7 +179,7 @@ inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、
 |---|---|---|---|---|---|
 | P3-1 | **J5 AUTO_SHIP（risk ≤1）**：`gates.J5: live` 鎖檔 + hash 蓋章；AUTO 時 reviewer agent 簽 `verdict: PASS`，`reviewers` 記 `jev-routed/agent`，人事後回饋（P2-6） | Wilson 下界 ≥85%、n≥30 影子標籤（`source: unverified` 不算，見 P1-G7）、labeled_fraction ≥ 配額；熔斷 = **凍結**（暫停新 AUTO，退回 HUMAN），不自動歸零；歸零只在換 model_resolved／題組 hash／人工 `manual_regression`。**「恢復」的精確語意：人審完那一筆、記「恢復，這筆計入既有樣本」之後，`meets_gate_floor` 照常以 `wilson_lower(x, n)` 重算，不做任何覆寫**——所以「恢復」不等於立刻能再 AUTO_SHIP（算例：n=30／x=30 時下界 88.6% 過關；出現一次推翻後變 n=31／x=30，下界掉到 83.8% 不過；要回到 85% 得累積到 n=34／x=33（85.08%），即通常還要再吃 3～4 筆零推翻樣本才真的解凍） | L | P1 全部、P2-2、P2-4、P2-5 | R4、D4-safety-1 |
 | P3-2 | **契約同步**：5 處 reviewer-selection 子句改寫 + **`guides/guide-dev-flow.html` 的對應 parity 區塊**（`readme-reviewer-selection-quickstart` 行 535-545、`readme-reviewer-selection-flow` 行 1929-1939 一類，是同一子句的第三份鏡像）+ `hooks/_gate_consistency_impl.py` 的 `REVIEWER_SELECTION_STEPS` 有序 tuple 加一步（是插入位置的決策，不是調 regex）+ `notes/design/gate-verdict-write.md` 族 **10 檔**（CONTRACT 1：`notes/design/gate-verdict-write.md`；HOPS 4：`skills/dev-flow/stage7/nodes/N5-verdict.md`、`stage2/nodes/N7-g1.md`、`stage4/nodes/N7-end.md`、`skills/dev-flow/SKILL.md`；TEMPLATES 3：`_templates/2-decision.md`、`4-spec.md`、`7-review.md`；BUILDER 1：`scripts/build-gate-twin.py`；HELPER 1：`scripts/devflow_gate.py`）+ `check-gate-verdict-write.sh`；**完整版機械檢查「`verdict:` 是誰寫的」**（P1-G7 先上 tripwire，這裡做完整版）；小心 `find_table_cell` 唯一性：SKILL.md 出現第二個 `**G1**` 會讓檢查自壞 exit 2 | `gate-consistency.sh` exit 0；**`scripts/check-methodology-corrections.sh` 綠**（guide 的 parity 區塊沒漂）；新檢查對 agent 未授權寫入 verdict 會紅 | L | P3-1 同步 | R1、R2、D2-feasibility-5、D3-priority-4 |
-| P3-3 | **J2 AUTO_PASS**：排最後或不做。若做：下界 ≥75%、n≥20；熔斷 = 滾動窗跌破退 shadow；OC 仍逐條人裁（五律 #4、G1 全裁決） | 同 P3-1 形式 | L | P3-2 | R3、R4 |
+| P3-3 | **J2 AUTO_PASS**：排最後，**要做**（F5 rick 裁決；前置 P2-8 證據包規格）。下界 ≥75%、n≥20；熔斷 = 滾動窗跌破退 shadow；OC 仍逐條人裁（五律 #4、G1 全裁決） | 同 P3-1 形式 | L | P3-2 | R3、R4 |
 | P3-4 | **Stage 3 極性**（P0-3 已裁「翻」，要做）：`SKILL.md` §4、`_templates/3-prototype.md`、`vnext-shared-contract` §2、`hooks/_stage3_impl.py` | attestation 規則不變；只有「預設要不要 Demo」翻轉 | M | P0-3 | R3、D3-priority-7 |
 
 ## 6. P4 — 延後／不做
@@ -185,7 +190,7 @@ inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、
 | observability 整合 J1–J3 | 不可行（`run_id` fail-closed） | observability 契約放寬非 Stage 6 事件 |
 | PostToolUse hook 強制呼叫 jev | 不做 | live 穩定後；且 schema 對 `writer: hook` 禁 `agent_role`／`model` 要先解 |
 | 第三方 MCP（gnapse/jev 等） | 不採 | 官方出 MCP |
-| J2 AUTO_PASS | 見 P3-3，最低優先 | — |
+| J2 AUTO_PASS | 見 P3-3：要做、排最後、先做 P2-8 證據包規格（F5 rick 裁決） | — |
 
 ## 7. 依賴圖
 
@@ -214,7 +219,7 @@ P0-10 STATUS 登記（落地整合分支 main 時執行，不擋任何項目）
 
 ## 8. rick 要親自做的事（其餘都是 agent 的活）
 
-1. P0-1：本機 shell `export TYPESAFE_API_KEY=...`，跑 curl，把回應貼回來。
+1. ~~P0-1：本機 shell `export TYPESAFE_API_KEY=...`，跑 curl，把回應貼回來。~~ 已做（§10；P0-2 上限也已實測）。
 2. ~~P0-3：裁 Stage 3 極性翻不翻。~~ 已裁：翻成「人要求才看」（2026-09-22）。
 3. ~~P0-4：裁出境預設。~~ 已裁：雙閘門、預設不建（2026-09-22）。
 4. P3 之前：什麼都不用做；影子期的回饋是自動配對。
@@ -234,4 +239,15 @@ P0-10 STATUS 登記（落地整合分支 main 時執行，不擋任何項目）
 
 ## 10. P0-1 煙霧測試結果
 
-（待填：rick 跑完貼回應 JSON，agent 核對欄位）
+2026-09-22 實跑（草稿 §10 的請求，key 由 shell 環境提供）：HTTP 200、0.67s、`model: jev-1.13.0`、`usage: 555 in / 84 out`。欄位與草稿 §3 完全一致：
+
+```json
+{"model":"jev-1.13.0","answers":{
+  "consistent":{"type":"noul","noul":0.95},
+  "route":{"type":"choice","choice":"ACCEPT","confidence":1.0,"probabilities":{"STOP_L2":0.0,"ACCEPT":1.0,"REWORK":0.0,"ESCALATE":0.0}},
+  "risk":{"type":"score","score":1.25,"confidence":0.75,"legend":{"0":"cosmetic or test-only change","1":"contained logic change with tests","2":"touches persisted data or external calls","3":"irreversible or security-relevant change"},"probabilities":{"0":0.0,"1":0.75,"2":0.25,"3":0.0}}},
+ "usage":{"input_tokens":555,"output_tokens":84}}
+```
+
+- `noul` 確認沒有 `confidence` 欄；`choice`／`score` 有。P1-G2 的 2s 逾時對這個延遲（0.67s）足夠。
+- **P0-2 已實測（2026-09-22）**：filler state 逐級加大，`usage.input_tokens` 32,593 回 200（1.4s），約 33,400 回 **HTTP 400** `{"detail":{"error_type":"max_tokens_exceeded"}}`。上限就是 32k（32,768）tokens，含 questions；超限是 400 不是文件寫的 422（與 typesafe-ai/skills issue #1 一致）。P1-G1 的 `pack` 以 30,000 tokens 為砍線，留 questions 空間；20k tokens 的包延遲約 1.2s，P1-G2 逾時要看包大小調（小包 2s、大包 4s）。
