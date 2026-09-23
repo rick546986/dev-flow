@@ -52,7 +52,7 @@ base: research/jev-supermemory baff8d3（W0/W1 squash）→ 本 PR 分支 claude
 | ① 套件內不得 import 任何網路模組 | ① 網路 import **白名單只有** `http_transport.py`；其餘模組與 `scripts/devflow-jev.py` 本身零網路 import（`test_*.py` 不掃；測試只打假 opener 與 loopback 閉埠） |
 | ② repo 內不得存在 `scripts/devflow-jev.py` | ② runtime **必須存在、可執行、`GRADUATED = False`**；並實跑：未設 key 的 `ask` → exit 0、`no_api_key`、`.devflow/`／`.dev-flow/` 都沒被建 |
 | — | ⑤ 新增：key + opt-in 但 endpoint 是 `http://127.0.0.1:9/` → exit 0、`transport:network|timeout`、`route_taken=HUMAN`、key 不出現在輸出 |
-| ③ 地板 127（只算 `test_guards.py`） | ③ 地板 168（三份 `test_*.py` 合計）**且** `test_guards.py` 仍 ≥ 127 |
+| ③ 地板 127（只算 `test_guards.py`） | ③ 地板 180（三份 `test_*.py` 合計）**且** `test_guards.py` 仍 ≥ 127 |
 
 `test_guards.py::W1Boundary` 同步明改：`test_no_network_modules_imported` → `test_network_modules_only_in_http_transport`；`test_no_runtime_script_exists_yet` → `test_runtime_script_exists_and_is_network_free_itself`。案數不變（127），其餘 125 案一字未動。
 
