@@ -4119,7 +4119,8 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>devflow-jev.py</code></td>
         <td>jev-gate stdlib runtime(W2 P1-F1;Python 3.9+,零第三方套件)。子命令 status／pack／ask／replay／
-            reevaluate／feedback／report／handoff。雙閘門 off → exit 0、不建 transport、不落盤;shadow/live → 送一次,
+            reevaluate／feedback／report／handoff;W4 enqueue／drain／label／enqueue-bench(J5 shadow:S2d 後排隊、
+            N5 verdict 後 worker 另送、same-evidence 配對,HEAD/evidence 變了就拒)。雙閘門 off → exit 0、不建 transport、不落盤;shadow/live → 送一次,
             失敗 no-op(G2),route 只由 policy 導出(G6),replay store + durable 雙層 ledger(G4)。
             W3 <code>handoff --gate J1|J3</code> 內部只呼叫本檔的 ask,不另寫 HTTP client。
             <code>GRADUATED = False</code> 寫死、無旗標:W6 前沒有任何 AUTO 會被採取;J3/J5 永不寫 verdict。

@@ -837,5 +837,259 @@ class W3Handoff(RuntimeBase):
         self.assertNotIn("ACCEPTED", denied.stdout + denied.stderr)
 
 
+
+class W4Shadow(RuntimeBase):
+    """P1-F4:J5 shadow enqueue(前景零網路)+ drain(worker,失敗只記 shadow failure)+ same-evidence label binding。
+    合成 Ship case 住隔離 git repo;**不是** W0 那 21 次外部稽核(那些不在 replay/durable,進不了 n)。"""
+
+    REVIEW_FM = "---\nfeature: demo-feature\nstage: 7-review\nstatus: approved\nverdict: {verdict}\n{extra}owner: rick\n---\n\n# 7. 驗證\n\nbody {body}\n"
+
+    def seed_feature(self, verdict="", extra="", body="v1", gauntlet_verdict="PASS", commit=True):
+        folder = os.path.join(self.tmp, "docs", "dev", "demo-feature")
+        os.makedirs(os.path.join(folder, "evidence"), exist_ok=True)
+        with open(os.path.join(folder, "4-spec.md"), "w", encoding="utf-8") as fh:
+            fh.write("---\nstatus: approved\n---\n## Verification Profile\n- E2E entry point: bash scripts/e2e.sh\n")
+        with open(os.path.join(folder, "6-implementation-notes.md"), "w", encoding="utf-8") as fh:
+            fh.write("# notes\n")
+        with open(os.path.join(folder, "7-review.md"), "w", encoding="utf-8") as fh:
+            fh.write(self.REVIEW_FM.format(verdict=verdict, extra=extra, body=body))
+        with open(os.path.join(folder, "evidence", "gauntlet-report.md"), "w", encoding="utf-8") as fh:
+            fh.write("# devflow evidence gauntlet report\n- run-id: 20260923T000000Z-p1\n- tool-version: 1.4.0\n"
+                     "- declared-source-sha: abc\n- verdict: %s\n- checks: 13\n- violations: 0\n" % gauntlet_verdict)
+        if commit:
+            subprocess.run(["git", "add", "-A"], cwd=self.tmp, check=True)
+            subprocess.run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "ship"], cwd=self.tmp, check=True)
+        return folder
+
+    def review_sha(self):
+        with open(os.path.join(self.tmp, "docs", "dev", "demo-feature", "7-review.md"), "rb") as fh:
+            return fh.read()
+
+    def enqueue(self, **kw):
+        return rt.run_enqueue(self.tmp, "demo-feature", "agent-A", "sess-A", environ=kw.pop("env", self.env_on), **kw)
+
+    def drain(self, transport=None, factory=None):
+        if transport is not None and isinstance(transport, FakeTransport):
+            transport.clock = self.clock
+        return rt.run_drain(self.tmp, environ=self.env_on, transport_factory=factory or (lambda *a: transport), clock=self.clock)
+
+    def test_off_enqueue_is_noop_zero_network_nothing_written(self):
+        self.seed_feature()
+        out = self.enqueue(env={})
+        self.assertEqual((out["status"], out["noop_reason"], out["network"], out["g3_blocked"]), ("noop", "no_api_key", False, False))
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, ".devflow")))
+        self.assertEqual(rt.run_drain(self.tmp, environ={}, transport_factory=never_called)["drained"], 0)
+
+    def test_evidence_not_fixed_is_noop_and_does_not_block(self):
+        self.optin()
+        folder = self.seed_feature()
+        os.unlink(os.path.join(folder, "evidence", "gauntlet-report.md"))
+        out = self.enqueue()
+        self.assertEqual(out["status"], "noop")
+        self.assertTrue(out["noop_reason"].startswith("evidence_not_fixed:"))
+        self.assertEqual(out["effect"], "continue_existing_flow")
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, ".devflow")))
+
+    def test_enqueue_writes_queue_only_measures_latency_and_hides_human_verdict(self):
+        self.optin()
+        self.seed_feature(verdict="REQUEST_CHANGES")      # 人的 G3 判定已在檔上;gauntlet 是 PASS
+        before = self.review_sha()
+        out = self.enqueue()
+        self.assertEqual(out["status"], "enqueued")
+        self.assertFalse(out["network"])
+        self.assertFalse(out["writes_g3_verdict"])
+        self.assertIsInstance(out["enqueue_latency_s"], float)
+        self.assertGreater(out["enqueue_latency_s"], 0.0)
+        self.assertEqual(len(rt.list_queue(self.tmp)), 1)
+        with open(out["written"][0], encoding="utf-8") as fh:
+            item = json.load(fh)
+        text = json.dumps(item["packet"], ensure_ascii=False)
+        self.assertNotIn("REQUEST_CHANGES", text)                       # 人的 verdict 不進 packet(預測者不能先看答案)
+        self.assertEqual(item["packet"]["header"]["gauntlet_verdict"], "PASS")
+        self.assertEqual(item["packet"]["header"]["e2e_summary"], "bash scripts/e2e.sh")
+        self.assertEqual(self.review_sha(), before)                     # 7-review.md 一個 byte 都沒動
+        self.assertEqual(self.durable_records(), [])                    # enqueue 不落 durable(還沒 evaluation)
+
+    def test_drain_shadow_evaluates_and_never_touches_g3(self):
+        self.optin()
+        self.seed_feature()
+        before = self.review_sha()
+        q = self.enqueue()
+        out = self.drain(fake(perfect_j5()))
+        self.assertEqual(out["drained"], 1)
+        res = out["results"][0]
+        self.assertEqual((res["status"], res["route_recommended"], res["route_taken"], res["route_taken_reason"]),
+                         ("ok", "AUTO", "HUMAN", "shadow_mode"))
+        self.assertEqual(res["case_id"], q["case_id"])
+        self.assertFalse(out["writes_g3_verdict"])
+        self.assertEqual(rt.list_queue(self.tmp), [])
+        self.assertTrue(os.path.isfile(res["done_path"]))
+        self.assertEqual(self.review_sha(), before)
+        self.assertEqual(len(self.durable_records()), 1)
+
+    def test_drain_transport_failure_is_only_a_shadow_failure(self):
+        self.optin()
+        self.seed_feature()
+        before = self.review_sha()
+        self.enqueue()
+        self.enqueue(variant_id="v1")
+        out = self.drain(factory=lambda *a: FakeTransport([{"error": "timeout"}]))
+        self.assertEqual(out["drained"], 2)
+        for res in out["results"]:
+            self.assertTrue(res["shadow_failure"])
+            self.assertEqual((res["status"], res["noop_reason"], res["route_taken"]), ("noop", "transport:timeout", "HUMAN"))
+        self.assertEqual(self.review_sha(), before)
+        self.assertEqual(out["remaining"], 0)
+
+    def test_drain_respects_gate_turned_off_after_enqueue(self):
+        self.optin()
+        self.seed_feature()
+        self.enqueue()
+        out = rt.run_drain(self.tmp, environ={}, transport_factory=never_called)
+        self.assertEqual(out["results"][0]["status"], "skipped_gate_off")
+        self.assertFalse(out["network"])
+        self.assertEqual(rt.list_queue(self.tmp), [])
+
+    def test_variants_retry_reevaluate_share_case_and_n_stays_one(self):
+        self.optin()
+        self.seed_feature(verdict="PASS", extra="verdict_source: human_attested\nattested_by: human:rick\n")
+        self.enqueue(variant_id="v0")
+        self.enqueue(variant_id="v1")
+        out = self.drain(factory=lambda *a: fake(perfect_j5()))
+        ids = {r["case_id"] for r in out["results"]}
+        self.assertEqual(len(ids), 1)
+        first_eval = out["results"][0]["evaluation_id"]
+        re_out = rt.run_reevaluate(self.tmp, first_eval, "agent-B", "sess-B", environ=self.env_on,
+                                   transport_factory=lambda *a: fake(perfect_j5()), clock=self.clock)
+        self.assertEqual(re_out["case_id"], out["results"][0]["case_id"])
+        lab = rt.run_label(self.tmp, "demo-feature", "rick", "sess-R", from_review=True, environ=self.env_on)
+        self.assertEqual(lab["status"], "labelled")
+        self.assertEqual(lab["verdict"], "agree")
+        self.assertEqual(len(lab["duplicates_same_case"]), 2)
+        rep = rt.run_report(self.tmp, "J5", environ=self.env_on)
+        self.assertEqual(rep["layers"]["human_attested"]["n"], 1)      # 三筆 evaluation,n 仍 1
+        self.assertEqual(rep["evaluations_replayable"], 3)
+
+    def test_label_refuses_when_head_or_evidence_moved(self):
+        self.optin()
+        folder = self.seed_feature(verdict="PASS", extra="verdict_source: human_attested\nattested_by: human:rick\n")
+        self.enqueue()
+        self.drain(fake(perfect_j5()))
+        # evidence 檔變了(7-review.md 內容改)
+        with open(os.path.join(folder, "7-review.md"), "a", encoding="utf-8") as fh:
+            fh.write("\nlate edit\n")
+        lab = rt.run_label(self.tmp, "demo-feature", "rick", "sess-R", from_review=True, environ=self.env_on)
+        self.assertEqual((lab["status"], lab["reason"]), ("refused", "no_evaluation_for_this_evidence_version"))
+        self.assertEqual(len([r for r in self.durable_records() if r["jev"].get("record_type") == "feedback"]), 0)
+        # 回復內容但 HEAD 動了(程式碼 commit)→ 同樣拒絕
+        with open(os.path.join(folder, "7-review.md"), "w", encoding="utf-8") as fh:
+            fh.write(self.REVIEW_FM.format(verdict="PASS", extra="verdict_source: human_attested\nattested_by: human:rick\n", body="v1"))
+        with open(os.path.join(self.tmp, "src.py"), "w") as fh:
+            fh.write("x = 2\n")
+        subprocess.run(["git", "add", "-A"], cwd=self.tmp, check=True)
+        subprocess.run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "late code"], cwd=self.tmp, check=True)
+        lab2 = rt.run_label(self.tmp, "demo-feature", "rick", "sess-R", from_review=True, environ=self.env_on)
+        self.assertEqual(lab2["status"], "refused")
+        self.assertNotEqual(lab2["current_binding"]["head_sha"], lab["current_binding"]["head_sha"])
+
+    def test_synthetic_ship_case_pairs_to_n_equals_one(self):
+        self.optin()
+        self.seed_feature(verdict="PASS", extra="verdict_source: human_attested\nattested_by: human:rick\n")
+        self.enqueue()
+        self.drain(fake(perfect_j5()))
+        lab = rt.run_label(self.tmp, "demo-feature", "rick", "sess-R", from_review=True, environ=self.env_on)
+        self.assertEqual((lab["status"], lab["verdict"], lab["source"], lab["counts_toward_n"]), ("labelled", "agree", "human_attested", True))
+        rep = rt.run_report(self.tmp, "J5", environ=self.env_on)
+        self.assertEqual(rep["layers"]["human_attested"]["n"], 1)
+        self.assertEqual(rep["layers"]["human_attested"]["n_agree"], 1)
+        self.assertFalse(rep["layers"]["human_attested"]["floor_met"])   # n=1 遠低於 30
+        self.assertFalse(rep["auto_allowed"])
+        self.assertFalse(rep["graduated"])
+
+    def test_overturn_when_human_rejects_auto_recommendation(self):
+        self.optin()
+        self.seed_feature(verdict="REQUEST_CHANGES", extra="verdict_source: fresh_agent_reviewer\nattested_by: agent:fresh-1\n")
+        self.enqueue()
+        self.drain(fake(perfect_j5()))
+        lab = rt.run_label(self.tmp, "demo-feature", "fresh-1", "sess-F", from_review=True, environ=self.env_on)
+        self.assertEqual((lab["verdict"], lab["source"]), ("overturn", "fresh_agent_reviewer"))
+        rep = rt.run_report(self.tmp, "J5", environ=self.env_on)
+        self.assertEqual(rep["layers"]["fresh_agent_reviewer"]["n_overturn"], 1)
+        self.assertTrue(rep["layers"]["fresh_agent_reviewer"]["frozen"])
+        self.assertEqual(rep["layers"]["human_attested"]["n"], 0)
+
+    def test_human_route_is_not_a_prediction_and_unattested_review_refused(self):
+        self.optin()
+        self.seed_feature(verdict="PASS", extra="verdict_source: human_attested\nattested_by: human:rick\n")
+        self.enqueue()
+        with open(os.path.join(SCRIPTS, "fixtures", "devflow-jev", "auto-argmax-036.json"), encoding="utf-8") as fh:
+            fx = json.load(fh)
+        self.drain(fake(fx["answers"]))
+        lab = rt.run_label(self.tmp, "demo-feature", "rick", "sess-R", from_review=True, environ=self.env_on)
+        self.assertEqual(lab["status"], "not_labelable")
+        self.assertEqual(rt.run_report(self.tmp, "J5", environ=self.env_on)["layers"]["human_attested"]["n"], 0)
+        # 沒有 verdict_source/attested_by(P3-2 前的模板)→ unverified → 拒,不落盤
+        folder = os.path.join(self.tmp, "docs", "dev", "demo-feature")
+        with open(os.path.join(folder, "7-review.md"), "w", encoding="utf-8") as fh:
+            fh.write(self.REVIEW_FM.format(verdict="PASS", extra="", body="v1"))
+        subprocess.run(["git", "add", "-A"], cwd=self.tmp, check=True)
+        subprocess.run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "unattested"], cwd=self.tmp, check=True)
+        self.enqueue()
+        self.drain(fake(perfect_j5()))
+        lab2 = rt.run_label(self.tmp, "demo-feature", "rick", "sess-R", from_review=True, environ=self.env_on)
+        self.assertEqual((lab2["status"], lab2["reason"]), ("refused", "review_unverified"))
+
+    def test_explicit_label_requires_verdict_and_source(self):
+        self.optin()
+        self.seed_feature()
+        self.enqueue()
+        self.drain(fake(perfect_j5()))
+        from devflow_jev import JevError
+        with self.assertRaises(JevError):
+            rt.run_label(self.tmp, "demo-feature", "rick", "sess-R", environ=self.env_on)
+        lab = rt.run_label(self.tmp, "demo-feature", "rick", "sess-R", verdict="agree", source="human_attested", environ=self.env_on)
+        self.assertEqual(lab["status"], "labelled")
+
+    def test_handoff_still_refuses_j5_and_drain_has_auto_tripwire(self):
+        from devflow_jev import JevError
+        with self.assertRaises(JevError):
+            rt.run_handoff(self.tmp, "J5", "demo-feature", "a", "s")
+        self.optin()
+        self.seed_feature()
+        self.enqueue()
+        original = rt.run_ask
+
+        def forged(*a, **k):
+            out = original(*a, **k)
+            out["route_taken"] = "AUTO"
+            return out
+        rt.run_ask = forged
+        try:
+            with self.assertRaises(JevError):
+                self.drain(fake(perfect_j5()))
+        finally:
+            rt.run_ask = original
+
+    def test_enqueue_bench_reports_measured_numbers(self):
+        out = rt.run_enqueue_bench(n=20)
+        for key in ("serialize_only", "serialize_and_write"):
+            self.assertEqual(out[key]["n"], 20)
+            self.assertGreater(out[key]["p50_s"], 0.0)
+            self.assertGreaterEqual(out[key]["p95_s"], out[key]["p50_s"])
+        self.assertIn("not a claim of 0ms", out["note"])
+
+    def test_cli_enqueue_no_key_exit0_and_drain_empty_exit0(self):
+        self.seed_feature()
+        env = {k: v for k, v in os.environ.items() if k != "TYPESAFE_API_KEY"}
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
+        r = subprocess.run([sys.executable, RUNTIME_PATH, "--root", self.tmp, "enqueue", "--slug", "demo-feature",
+                            "--author-ref", "a", "--session-ref", "s"], capture_output=True, text=True, env=env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn('"noop_reason": "no_api_key"', r.stdout)
+        r2 = subprocess.run([sys.executable, RUNTIME_PATH, "--root", self.tmp, "drain"], capture_output=True, text=True, env=env)
+        self.assertEqual(r2.returncode, 0, r2.stderr)
+        self.assertIn('"drained": 0', r2.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
