@@ -1,5 +1,6 @@
 {
   "schema": "devflow-ship-manifest-v1",
+  "version": "v1-50dce597421a238b",
   "files": [
     {
       "source": "scripts/history-append.sh",
@@ -44,6 +45,81 @@
     {
       "source": "docs/dev/readme-contract-extract.md",
       "destination": "docs/dev/readme-contract-extract.md",
+      "mode": "644"
+    },
+    {
+      "source": "scripts/devflow-jev.py",
+      "destination": "docs/dev/tools/devflow-jev.py",
+      "mode": "755"
+    },
+    {
+      "source": "scripts/devflow_jev/__init__.py",
+      "destination": "docs/dev/tools/devflow_jev/__init__.py",
+      "mode": "644"
+    },
+    {
+      "source": "scripts/devflow_jev/attestation.py",
+      "destination": "docs/dev/tools/devflow_jev/attestation.py",
+      "mode": "644"
+    },
+    {
+      "source": "scripts/devflow_jev/gate.py",
+      "destination": "docs/dev/tools/devflow_jev/gate.py",
+      "mode": "644"
+    },
+    {
+      "source": "scripts/devflow_jev/http_transport.py",
+      "destination": "docs/dev/tools/devflow_jev/http_transport.py",
+      "mode": "644"
+    },
+    {
+      "source": "scripts/devflow_jev/jev-questions.json",
+      "destination": "docs/dev/tools/devflow_jev/jev-questions.json",
+      "mode": "644"
+    },
+    {
+      "source": "scripts/devflow_jev/ledger.py",
+      "destination": "docs/dev/tools/devflow_jev/ledger.py",
+      "mode": "644"
+    },
+    {
+      "source": "scripts/devflow_jev/manifest.py",
+      "destination": "docs/dev/tools/devflow_jev/manifest.py",
+      "mode": "644"
+    },
+    {
+      "source": "scripts/devflow_jev/packet.py",
+      "destination": "docs/dev/tools/devflow_jev/packet.py",
+      "mode": "644"
+    },
+    {
+      "source": "scripts/devflow_jev/policy.py",
+      "destination": "docs/dev/tools/devflow_jev/policy.py",
+      "mode": "644"
+    },
+    {
+      "source": "scripts/devflow_jev/provenance.py",
+      "destination": "docs/dev/tools/devflow_jev/provenance.py",
+      "mode": "644"
+    },
+    {
+      "source": "scripts/devflow_jev/report.py",
+      "destination": "docs/dev/tools/devflow_jev/report.py",
+      "mode": "644"
+    },
+    {
+      "source": "scripts/devflow_jev/state.py",
+      "destination": "docs/dev/tools/devflow_jev/state.py",
+      "mode": "644"
+    },
+    {
+      "source": "scripts/devflow_jev/transport.py",
+      "destination": "docs/dev/tools/devflow_jev/transport.py",
+      "mode": "644"
+    },
+    {
+      "source": "docs/dev/ship-manifest.json",
+      "destination": "docs/dev/ship-manifest.json",
       "mode": "644"
     }
   ]

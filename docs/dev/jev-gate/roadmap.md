@@ -9,7 +9,7 @@ inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、
 
 # jev-gate roadmap
 
-> **文件狀態**：本檔是 `research/jev-supermemory` 的研究／落地規劃 draft-v4。它不代表 `main` 已改、Jev 已部署、任何 AUTO gate 已核准，也不把 guard pure-function prototype 當成完成產品。  
+> **文件狀態**：本檔是 `research/jev-supermemory` 的研究／落地規劃 draft-v4。它不代表 `main` 已改、Jev 已部署、任何 AUTO gate 已核准，也不把 guard pure-function prototype 當成完成產品。**進度**：W0（2026-09-22）、W1（2026-09-22）、W2（2026-09-23）已在 `research/jev-supermemory` 落地；W2 是 shadow／no-op runtime，沒有 hook 接線、沒有 AUTO。  
 > **基線**：研究分支鎖定 `8a4370ad97d2c842057c281ecf56ead8b94f4a43`，相對 `main@79b7aaba2ee65ba5953873064a8f93962f86d097` 只新增研究文件，沒有 runtime code 變更。
 
 ## 0. 不再重投票的 Owner Decisions
@@ -70,7 +70,7 @@ draft-v4 以 draft-v3／`jev-convergence.md` 已記錄的 owner 裁決為約束�
 |---|---|---|
 | **W0 Source closure** | P0-1～P0-10 的 source/probe closure | P0 未決 source 不再阻塞 guard 設計 |
 | **W1 七組守衛 + 提前 e2e** | P1-G1～G7 的 pure/schema/fake-transport foundation + P2-1 | 七組負面測試與 e2e gate 全綠；仍沒有真 runtime |
-| **W2 stdlib runtime / replay / manifest 分發** | P1-F1、P1-F5、P1-F6、P0-8 落地 | 七 guard foundation 已完成；replay/data boundary 通過 |
+| **W2 stdlib runtime / replay / manifest 分發** | ✅ 2026-09-23：P1-F1、P1-F5、P1-F6、P0-8（C1）落地，見 `w2-runtime.md`；仍無 hook 接線、無 AUTO | 七 guard foundation 已完成；replay/data boundary 通過 |
 | **W3 J1 / J3** | P1-F2、P1-F3 | J1 no-op fallback 正確；J3 只 recommendation |
 | **W4 J5 shadow** | P1-F4、P1-F7 + label binding/dedupe | J5 不阻塞現有 G3；case provenance 可驗 |
 | **W5 評估 / J2 厚包 / J4 實驗** | P2-2～P2-8 | 只 shadow/research；不自動放行 |
@@ -88,7 +88,7 @@ draft-v4 以 draft-v3／`jev-convergence.md` 已記錄的 owner 裁決為約束�
 | **P0-5** | ✅ probe 完成（W0）；結論見 `w0-source-closure.md` §P0-5：run_id 有三個生成點、Stage6→7 同 run、同 slug re-arm／bare 每次新 run、obs 只在武裝期 | 核對 Stage 7 run lifecycle：`_exec_impl.py:981-994` 可沿用 Stage6 state；`1023-1030` bare review 可 new `run_id`/`exec-v4`/`phase=review`；但 `_templates/7-review.md:62` 武裝只是建議 | 跑一個真 Stage6→Stage7 與一個 bare Stage7 review，記錄何時有 `exec.json`、`run_id`、何時 stop；用結果決定 J5 run_id/observability 可用性 | S | — | repo source + `evidence/w0/p0-5-run-lifecycle.json` |
 | **P0-6** | ✅ probe 完成（W0）；`append_events()` 可沿用但有四條硬邊界（canonical 欄位／`evt_` id／每 writer 獨立 session／自帶 `signal.gate`），見 `w0-source-closure.md` §P0-6 | 優先驗 `append_events()`：已證 `kind=jev` + extra metadata 可 append，同 event_id 重複只一列；再補 full sync/index roundtrip、custom metadata 保存、多 writer lost-update 測試 | 若 full roundtrip 與 multiwriter 安全滿足需要 → durable metadata 走 `.dev-flow/events`；否則提出最小備選，不直接新開 raw ledger namespace | M | — | `evidence/w0/p0-6-durable-events.json`；`sync.py:198-212` 已驗（自訂欄位被丟、`:210-212` 非法 id 重生） |
 | **P0-7** | ✅ 完成（W0）；每支一段限制 + guide parity 14 錨行號，見 `w0-source-closure.md` §P0-7 | 精讀 `_exec_impl.py`、`devflow-lib.py`、`_obs_impl.py`、`memory/agentmem/sync.py`、`durable.py`、`notes/design/gate-verdict-write.md`、file/write-scope 檢查、`skills/dev-setup/SKILL.md` 升級段落、`check-dev-setup-discipline.sh`、guide parity 區塊 | 每支一段「對 jev-gate 的限制」；guide parity 區塊列出實際 section/line | M | — | R1、D3 |
-| **P0-8** | ✅ probe 完成（W0）：**不會自動同步**；母版側 `check-ship-manifest.sh` 有牙、採用側零牙 → W2 要 manifest 版本 + doctor 逐列，見 `w0-source-closure.md` §P0-8 | `dev-setup` 升級模式：既有採用專案遇到 ship-manifest 新增 `devflow-jev.py`／題組／schema 時是否會同步 | 實際 upgrade fixture；若不會自動同步，W2 必須增加 manifest-version 檢查或明列人工 upgrade | S | P0-7 | R3、D1 |
+| **P0-8** | ✅ probe 完成（W0）：**不會自動同步**；母版側 `check-ship-manifest.sh` 有牙、採用側零牙 → W2 要 manifest 版本 + doctor 逐列，見 `w0-source-closure.md` §P0-8 → ✅ W2 C1（2026-09-23）落地：契約 `ship_manifest_version` + manifest `version`（列內容指紋）+ `hooks/_doctor_impl.py` 6e 逐列存在性／mode + `check-ship-manifest.sh` ⑥；manifest 自身成散發列 | `dev-setup` 升級模式：既有採用專案遇到 ship-manifest 新增 `devflow-jev.py`／題組／schema 時是否會同步 | 實際 upgrade fixture；若不會自動同步，W2 必須增加 manifest-version 檢查或明列人工 upgrade | S | P0-7 | R3、D1 |
 | **P0-9** | ✅ source-closed（W0）：**不算**；J1 ASK_MORE 每輪從 S0–S2 重盤；讀白名單零機械執行，見 `w0-source-closure.md` §P0-9 | dev-talk 讀取白名單：路由層傳入舊 `1-discussion.md` 是否算使用者主動指名 | 一句結論 + source line；若不算，J1 ASK_MORE 每輪文件必須明說會從 S0–S2 重新盤查 | S | — | R3、D3 |
 | **P0-10** | ⏸ 落 main 時才做 | 以 `scripts/status-update.sh` 將 jev-gate 登記到 `docs/dev/STATUS.md` Active | `check-status-policy.sh` 綠；feature/research branch 不直接改 main-only Active 表 | S | — | D3 |
 
@@ -121,12 +121,12 @@ draft-v4 以 draft-v3／`jev-convergence.md` 已記錄的 owner 裁決為約束�
 
 | ID | 狀態 | 做什麼 | 驗收 | 量 | 依賴 |
 |---|---|---|---|---|---|
-| **P1-F1** | 🛠 未實作；W1 後才能開始 | `scripts/devflow-jev.py` stdlib runtime：`pack`／`ask`／`report`／`feedback`／`replay`；`urllib/json/hashlib`；新增 `scripts/test-devflow-jev.sh` 並在 `devflow-check.sh all` 顯式登記；ship-manifest 分發 | 七 guard foundation 已先全綠；未設 key/opt-in exit 0 且零網路；0.36 AUTO argmax fixture 不得導出 AUTO；`methodology/test-devflow-jev` 在 all 中實際 PASS | M | P0-7、P0-8、P1-G1～G7 |
+| **P1-F1** | ✅ W2（2026-09-23）：`scripts/devflow-jev.py` stdlib runtime（status／pack／ask／replay／reevaluate／feedback／report）；雙閘門 off → exit 0、零網路、零寫入；`test-devflow-jev.sh` 兩條 W1 tripwire 明改；ship-manifest 分發 runtime + `devflow_jev/` 套件（24 列）。**shadow／no-op runtime，`GRADUATED=False` 寫死，不是 production AUTO**；hook 接線在 W3／W4。見 `w2-runtime.md` | `scripts/devflow-jev.py` stdlib runtime：`pack`／`ask`／`report`／`feedback`／`replay`；`urllib/json/hashlib`；新增 `scripts/test-devflow-jev.sh` 並在 `devflow-check.sh all` 顯式登記；ship-manifest 分發 | 七 guard foundation 已先全綠；未設 key/opt-in exit 0 且零網路；0.36 AUTO argmax fixture 不得導出 AUTO；`methodology/test-devflow-jev` 在 all 中實際 PASS | M | P0-7、P0-8、P1-G1～G7 |
 | **P1-F2** | 🛠 未實作 | **J1 live：clarity first**。dev-talk 結束、Decide 前評估；不把 task type/mixed 當 MVP。題組至少拆 `goal_clear`、`scope_clear`、`acceptance_clear`、`owner_call_pending`、`ambiguity`、`next`。`next` 只決定 START_DECIDE／ASK_MORE／NEEDS_OWNER_DECISION，**不能拿 next probabilities 猜缺哪一維**；ASK_MORE 主題由 atomic clarity signals 決定。最多 2 輪，每輪仍是完整 11 步 dev-talk，N13 人類點頭不省 | J1 成功可省略重複「夠清楚嗎」；失敗/timeout 等同未啟用 Jev；最多兩輪後轉 owner question；主題句不抄題組原文；P0-9 白名單結果反映在流程 | M | P1-F1、P0-9 |
 | **P1-F3** | 🛠 未實作 | **J3 recommendation**：只顯示「值得人 Demo／不值得」建議；不是 G2 AUTO_PASS，不動 Demo verdict/attestation；與 Stage3 polarity contract change 分離 | `_stage3_impl.py` human attestation selftest 綠；任何 Jev response 都不能寫 ACCEPTED | S | P1-F1 |
 | **P1-F4** | 🛠 未實作／待 shadow | **J5 shadow + automatic evidence-bound pairing**：P2-1 先完成；Final Fresh Run/e2e/Gauntlet/review evidence 固定後 enqueue J5，現有 G3 繼續，不等 HTTP。Jev evaluation 與後續 label 綁 same `feature + gate + artifact_hash + evidence_hash + HEAD + timestamps`；不同 evidence version 不得配對 | 一個真 Ship case 能配成 n=1；J5 API 慢／失敗不延遲 G3；HEAD/evidence 改變後舊 evaluation 不被新 verdict 誤標；同 case variants/retries n 仍是 1 | M | P1-F1、P0-5、P2-1 |
-| **P1-F5** | 🛠 未實作 | **節流與 budget**：待核定候選 daily cap = **500 attempts 或 500k input tokens，先到者停**。retry、phrasing variants、remote reevaluation 都算 attempt/usage；未知 usage 不得當 0 再退款，應保守保留該 attempt 的預算上界，只有可信 usage 才 reconcile | 超任何一個 cap 後 no-op／停止新 evaluation；retry/variant 確實扣 budget；unknown usage 不會使帳面下降 | S | P1-F1 |
-| **P1-F6** | 🛠 未實作 | **對抗／reference fixtures**：exit_code=1 但 tail 說 pass；tail/quoted_context 含「ignore rules」；quoted governance adopt/no-adopt；feature+tests+docs mixed=.72 反例。primary/reference 分欄只是控制，不宣稱抗 injection | 全部 fixture 由 `test-devflow-jev.sh` 帶起；結果可顯示模型仍受污染，但不得因此繞過 deterministic header/policy | S | P1-G1 |
+| **P1-F5** | ✅ W2（2026-09-23）：`state.py` 把 `policy.Budget`／`Breaker` 落盤 `.devflow/jev/state/`（UTC 日切；attempts／tokens 先到者停；unknown usage 不退款；reevaluation 也扣）。候選值仍是 A2／A6，未校準 | **節流與 budget**：待核定候選 daily cap = **500 attempts 或 500k input tokens，先到者停**。retry、phrasing variants、remote reevaluation 都算 attempt/usage；未知 usage 不得當 0 再退款，應保守保留該 attempt 的預算上界，只有可信 usage 才 reconcile | 超任何一個 cap 後 no-op／停止新 evaluation；retry/variant 確實扣 budget；unknown usage 不會使帳面下降 | S | P1-F1 |
+| **P1-F6** | ✅ W1／W2：`scripts/fixtures/devflow-jev/`（exit_code/tail 衝突、quoted「ignore rules」、reference governance、mixed .72、0.36 argmax）全部由 `test-devflow-jev.sh` 帶起；W2 加 runtime 層 0.36 fixture 實跑不 AUTO。結果只證形式控制，不宣稱抗 injection | **對抗／reference fixtures**：exit_code=1 但 tail 說 pass；tail/quoted_context 含「ignore rules」；quoted governance adopt/no-adopt；feature+tests+docs mixed=.72 反例。primary/reference 分欄只是控制，不宣稱抗 injection | 全部 fixture 由 `test-devflow-jev.sh` 帶起；結果可顯示模型仍受污染，但不得因此繞過 deterministic header/policy | S | P1-G1 |
 | **P1-F7** | 🔎→🛠 | **Ship 出口 auto/human 歸屬**：commit/push/PR/merge/tag 逐步 source audit；核 `_guard_impl.py`／`_dispatch_impl.py` 實際保障。特別註明 `_dispatch_impl.py` 只是窄版「首派最高階」fail-open discipline guard，不能寫成完整權限守衛 | 每一步都有 `auto|human` + 真正 guard/source line；找不到實際 guard 的「永遠 human」要明列缺口，不靠文案想像 | M | P0-7 |
 
 ### 3.3 Durable event 與 local replay schema

@@ -61,6 +61,17 @@ def _find_contract(root, cli_path):
 PRINTER_PY_FLOOR = (3, 12)
 
 
+def _ship_manifest_version(rows):
+    """與 scripts/devflow_ship_manifest.py::compute_version 同一算法(hooks/ 不 import scripts/):
+    列內容(source/destination/mode)canonical JSON 的 sha256 前 16 hex,前綴 v1-。
+    兩邊字面同步由 check-ship-manifest.sh(母版側)與 selftest p3(doctor 側)各自釘。"""
+    import hashlib
+    canon_rows = [{"source": r.get("source"), "destination": r.get("destination"), "mode": r.get("mode")}
+                  for r in rows if isinstance(r, dict)]
+    canon = json.dumps(canon_rows, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return "v1-" + hashlib.sha256(canon.encode("utf-8")).hexdigest()[:16]
+
+
 def _python_version(exe):
     try:
         r = subprocess.run(
@@ -414,6 +425,72 @@ def run_doctor(root, contract_path="", gate_cmd=""):
     info("host-install",
          "四邊下一指令見 docs/PLUGIN.md；本機探針 "
          "scripts/check-host-adapter.sh --probe")
+
+    # 6e. ship-manifest 逐列(2026-09-23 W2 C1;W0 P0-8 結論:採用側零牙 —— 上游 manifest 新增列
+    #     時,採用專案沒有任何本地資料能說「少了一支」。契約帶 ship_manifest_version(列內容指紋),
+    #     manifest 自己也是散發列之一;doctor 讀採用樹 docs/dev/ship-manifest.json 逐列驗 destination
+    #     存在與 mode,並比對三個值:契約寫的 / manifest 自稱的 / 依列內容重算的)。
+    #     契約沒有這個欄 = 2026-09-23 前的舊契約 → 明示略過(不擋;升級契約後才生效,不冒充已驗)。
+    want_sm = contract.get("ship_manifest_version")
+    if not want_sm:
+        info("ship-manifest",
+             "契約無 ship_manifest_version(2026-09-23 前契約)—— 散發面逐列驗證略過;"
+             "跑 dev-setup upgrade 取得新契約後生效,不得視為已驗")
+    else:
+        sm_path = os.path.join(root, "docs", "dev", "ship-manifest.json")
+        if not os.path.exists(sm_path):
+            check(False, "ship-manifest",
+                  f"契約要 ship_manifest_version {want_sm},但採用樹缺 {sm_path}"
+                  f"(manifest 本身是散發列之一);fail-closed —— 跑 dev-setup upgrade 重散發。")
+        else:
+            try:
+                sm = _load_json(sm_path)
+                sm_rows = sm.get("files") or []
+                have_sm = sm.get("version")
+                calc_sm = _ship_manifest_version(sm_rows)
+            except Exception as e:
+                sm, sm_rows, have_sm, calc_sm = None, [], None, None
+                check(False, "ship-manifest", f"{sm_path} 解析失敗({e});fail-closed。")
+            if sm is not None:
+                if not (want_sm == have_sm == calc_sm):
+                    check(False, "ship-manifest",
+                          f"版本三值不一致:契約 {want_sm} / manifest 自稱 {have_sm} / 依列內容重算 {calc_sm}"
+                          f" —— 契約與 manifest 副本不是同一批散發,或 manifest 被手改;fail-closed —— 跑 dev-setup upgrade。")
+                else:
+                    problems, drift = [], []
+                    for row in sm_rows:
+                        dest = row.get("destination") if isinstance(row, dict) else None
+                        if not isinstance(dest, str) or not dest:
+                            problems.append(f"列形狀壞:{row!r}")
+                            continue
+                        segs = dest.split("/")
+                        if dest.startswith(("/", "\\")) or "\\" in dest or any(seg in ("", ".", "..") for seg in segs):
+                            problems.append(f"destination 路徑不合法(絕對/穿越/反斜線):{dest}")
+                            continue
+                        path = os.path.join(root, *segs)
+                        if not os.path.isfile(path):
+                            problems.append(f"缺 {dest}")
+                            continue
+                        mode = row.get("mode")
+                        if os.name == "nt":
+                            continue          # Windows 的 st_mode 不代表 mode 位元(.exe/.bat 才有 x);只驗存在
+                        is_exec = bool(os.stat(path).st_mode & 0o111)
+                        if mode == "755" and not is_exec:
+                            problems.append(f"{dest} 清單 755 但無可執行位元")
+                        elif mode == "644" and is_exec:
+                            drift.append(dest)     # 多了 x 位元多半是 FAT/DrvFs 掛載;留 info,不 fail-closed
+                    if drift:
+                        info("ship-manifest",
+                             f"{len(drift)} 列清單 644 但檔有可執行位元(常見於 FAT/DrvFs 掛載;不擋):"
+                             + ",".join(drift[:5]))
+                    if problems:
+                        check(False, "ship-manifest",
+                              f"版本 {want_sm} 一致,但逐列驗證 {len(problems)} 項不符:"
+                              + ";".join(problems[:8]) + (" …" if len(problems) > 8 else "")
+                              + " —— fail-closed,跑 dev-setup upgrade 逐列重散發。")
+                    else:
+                        check(True, "ship-manifest",
+                              f"版本 {want_sm} 三值一致;{len(sm_rows)} 列 destination 齊全、mode 一致")
 
     # 6c. wave_review schema(M3:契約 vs runtime-capabilities 聲明;
     #     runtime 實際字串 = devflow-lib wave review 驗證所認 schema)

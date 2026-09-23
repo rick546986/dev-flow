@@ -25,7 +25,7 @@ owner 對 W0／W1 品質的判定：**可進 research 討論，不可進 main、
 | C3 Stage 7 selftest | 盡快 P1 L1 | 0.74 | **已做**：`hooks/selftest.sh:2573-2580` s7c 段 +3 案（459→462），靜態釘同步；實跑新三案全綠，11 紅與乾淨 base 同集（環境：printer-python 3.11／root 唯讀） |
 | C4 roadmap 筆誤 | 本分支改 | 0.81 | **已做**：`984-994` → `981-994`；P1-F6 註解改寫（它屬 W2 fixtures，不是分發） |
 | D W2 | 等 A＋B 確認；PR 明改 tripwire | 0.86 | **已落檔**：A＋B 確認於 2026-09-23 → W2 開工；`scripts/test-devflow-jev.sh` 兩條 tripwire 在 W2 PR 明改（見 `w2-runtime.md`） |
-| 合併就緒 | `ready_with_decisions_pending`（0.92）：決策落檔後再 squash 進 `research/jev-supermemory`，現在不進 main | — | **已執行**：W0/W1 squash 進 `research/jev-supermemory`（SHA 見 `w2-runtime.md` §0）；不進 main |
+| 合併就緒 | `ready_with_decisions_pending`（0.92）：決策落檔後再 squash 進 `research/jev-supermemory`，現在不進 main | — | **已執行**：W0/W1 squash 進 `research/jev-supermemory` = `baff8d3`（pre-squash tip `97418a5`）；不進 main |
 
 **W2 開工的兩個前提（owner 原話；2026-09-23 前提 ① 已成立）**：① owner 明確認可 A＋B（「照建議」／「A B 過」）—— 沒認就開 W2 會把未校準門檻鎖進第一個 `questionset_hash`；② W2 那支 PR 必須明改 `scripts/test-devflow-jev.sh` 兩條 tripwire（准建 `scripts/devflow-jev.py`、准網路），不可靜默放行；C1 與 W2 同批。仍不進 main；runtime 在本分支或合回 `research/jev-supermemory` 做。
 
