@@ -48,7 +48,7 @@ base: claude/jev-w6-eligibility-3aslgp 7695d46（W6）→ 本分支 claude/jev-w
 
 ## 2. P3-3 J2 遠期軌道：window 未核定 → 永遠 shadow
 
-- `policy.J2_WINDOW_CANDIDATE = 50`（roadmap §4.1 候選值，**只是候選**）、`policy.J2_WINDOW_RATIFIED = False`（單一賦值；測試釘 `report`／`policy` 兩邊皆 False）。
+- `policy.J2_WINDOW_CANDIDATE = 50`（roadmap §4.1 候選值，**只是候選**）、`policy.J2_WINDOW_RATIFIED = False`（**只在 `policy.py` 一處賦值**；`report.py` 只 import 轉用，測試釘兩邊皆 False）。
 - `report.eligibility(...)`：evaluations 含 gate J2 → 多一條 blocker `j2_window_not_ratified(candidate=50; formal rolling window pending; J2 stays shadow)`，`eligible=False`。
 - runtime `eligibility --gate J2`：**空 store 也會**帶這條 blocker（不是「沒資料所以沒事」）；`status` 露出 `j2_window_ratified=False`。
 - `policy.route_taken("J2", "live", …)` 維持 W5 的 `("HUMAN", "j2_shadow_window_not_ratified")`：yaml 把 J2 設 live 也走 HUMAN。

@@ -220,8 +220,8 @@ def group_keys(evaluations):
     return sorted({(ev.get("gate"), ev.get("questionset_hash"), ev.get("model_resolved")) for ev in evaluations})
 
 
-J2_WINDOW_CANDIDATE = 50          # roadmap §4.1 候選;W7 P3-3:formal window 待核定 → J2 永遠 shadow
-J2_WINDOW_RATIFIED = False
+# W7 P3-3:J2 window 常數只有 policy.py 一處賦值(candidate=50 待核定、RATIFIED=False → J2 永遠 shadow);這裡只轉用。
+from .policy import J2_WINDOW_CANDIDATE, J2_WINDOW_RATIFIED  # noqa: E402
 
 
 def eligibility(evaluations, metrics, primary_source=None):
