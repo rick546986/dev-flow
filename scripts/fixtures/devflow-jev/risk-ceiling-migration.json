@@ -1,0 +1,11 @@
+{
+  "note": "P2-4 機械 risk ceiling:changed_paths 命中 risk_paths(migrations/)→ J5 一律 HUMAN、route_reason=risk_ceiling_override,不看 Jev 分數(這裡給滿分答案)。",
+  "changed_paths": ["src/app/service.py", "db/migrations/0042_add_index.sql"],
+  "answers": {
+    "g3_route": {"choice": "AUTO_SHIP", "probabilities": {"AUTO_SHIP": 0.97, "HUMAN_REVIEW": 0.02, "REQUEST_CHANGES": 0.01}, "confidence": 0.95},
+    "risk": {"score": 0},
+    "evidence_complete": {"noul": 0.99}
+  },
+  "expected_route": "HUMAN",
+  "expected_reason": "risk_ceiling_override"
+}

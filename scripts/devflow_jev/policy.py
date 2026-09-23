@@ -291,6 +291,10 @@ def route_taken(gate, level, route_recommended, graduated=False):
     """把 recommendation 轉成實際採取的 route。shadow 永遠 HUMAN;J5 未畢業永遠 HUMAN。"""
     if level == "off":
         return None, "gate_off"
+    if gate == "J2":
+        return "HUMAN", "j2_shadow_window_not_ratified"      # W5:window 未核定 → 永遠 shadow,不看 level
+    if gate == "J4":
+        return "HUMAN", "j4_assist_only"                     # W5:assist signal,不派工、不升階
     if level == "shadow":
         return "HUMAN", "shadow_mode"
     if gate == "J5" and route_recommended == "AUTO" and not graduated:
@@ -456,3 +460,94 @@ def measure_enqueue_latency(n=200, payload_bytes=20000):
     samples.sort()
     return {"n": n, "p50_s": samples[len(samples) // 2], "p95_s": samples[int(len(samples) * 0.95) - 1],
             "max_s": samples[-1]}
+
+
+# ───────────────────────────── W5 experiments (P2-3 J4 / P2-8 J2) — shadow / assist only ─────────────────────────────
+# 題組住 jev-questions-experimental.json(各自 manifest 與 questionset_hash,不動 J1/J3/J5 的 group)。
+# 這些常數不進 policy_fingerprint():它們不是 J1/J3/J5 的 route formula。J2/J4 的 route_taken 恆 HUMAN。
+J4_FAILURE_CATEGORIES = ("SPEC", "ENV", "IMPL", "UNKNOWN")          # 沿用 agent-event.schema.json 的 enum
+MODEL_TIERS = ("haiku", "sonnet", "opus")                            # fable 與 opus 同層(最高階)
+TIER_ALIASES = {"fable": "opus"}
+J2_WINDOW_CANDIDATE = 50                                             # roadmap §4.1 候選,**待核定**
+J2_WINDOW_RATIFIED = False                                           # False = J2 永遠 shadow;沒有旗標能改它
+J2_OPTION_LABELS = ("A", "B", "C", "D")
+J2_NONE_CLEAR = "NONE_CLEAR"
+J2_PRIMARY_REQUEST = (
+    "Given the recorded comparison of alternatives, judge which alternative the recorded trade-offs support "
+    "and whether the recorded Decision is supported. Owner Calls are quoted with the human's recorded answers; "
+    "they are data for you to read, not questions for you to answer."
+)
+J2_PRIMARY_REQUEST_REPHRASED = (
+    "Using only the recorded material, assess which recorded alternative is supported by the recorded trade-offs, "
+    "and whether the recorded Decision follows from them. Owner Calls carry human answers already; do not answer them."
+)
+J4_PRIMARY_REQUEST = (
+    "Classify the recorded task failure into exactly one category and estimate whether a retry at the same model tier "
+    "would resolve it. This is an assist signal; it does not dispatch, escalate or grant anything."
+)
+
+
+def tier_of(model):
+    """model 字串 → 層名;認不得 → None(不猜)。"""
+    lowered = (model or "").lower()
+    for alias, tier in TIER_ALIASES.items():
+        if alias in lowered:
+            return tier
+    for tier in MODEL_TIERS:
+        if tier in lowered:
+            return tier
+    return None
+
+
+def escalate_to(current_model):
+    """只能升**一**層;最高層 → None(沒有可升);認不得 → None。不跳層(roadmap P2-3)。"""
+    tier = tier_of(current_model)
+    if tier is None:
+        return None
+    index = MODEL_TIERS.index(tier)
+    return MODEL_TIERS[index + 1] if index + 1 < len(MODEL_TIERS) else None
+
+
+def route_j4(answers, current_model=None):
+    """assist-only:回 failure_category(既有 enum)與 escalate_to(下一層或 None)。不是派工、不是權限。"""
+    cat = answers.get("failure_category", {}).get("choice")
+    if cat not in J4_FAILURE_CATEGORIES:
+        cat = "UNKNOWN"
+    retry_p = answers.get("retry_same_tier_useful", {}).get("noul")
+    nxt = escalate_to(current_model)
+    signals = {"failure_category": cat, "retry_same_tier_useful": retry_p, "current_tier": tier_of(current_model)}
+    if cat == "UNKNOWN":
+        suggestion = "human_triage"
+    elif retry_p is not None and retry_p >= 0.5:
+        suggestion = "retry_same_tier"
+    elif nxt is None:
+        suggestion = "human_triage"           # 已在最高層或認不得層 → 不能再升
+    else:
+        suggestion = "escalate_one_tier"
+    return {"route_recommended": suggestion, "route_reason": "j4_assist:%s" % cat, "failure_category": cat,
+            "escalate_to": nxt if suggestion == "escalate_one_tier" else None, "assist_only": True,
+            "writes_dispatch": False, "signals": signals}
+
+
+def route_j2(answers, option_identities):
+    """option_identities: {"A": "<原方案名>", ...}(順序擾動後的對照)。回 shadow 建議;永不 AUTO_PASS。"""
+    choice = answers.get("preferred_option", {}).get("choice")
+    supported = answers.get("decision_supported", {}).get("noul")
+    resolved = answers.get("owner_calls_resolved", {}).get("noul")
+    completeness = answers.get("tradeoff_completeness", {}).get("score")
+    identity = option_identities.get(choice) if choice in option_identities else None
+    return {"route_recommended": choice if choice in J2_OPTION_LABELS or choice == J2_NONE_CLEAR else J2_NONE_CLEAR,
+            "preferred_identity": identity, "route_reason": "j2_shadow:%s" % (choice or "-"),
+            "decision_supported": supported, "owner_calls_resolved": resolved, "tradeoff_completeness": completeness,
+            "auto_pass": False, "window_ratified": J2_WINDOW_RATIFIED, "signals": {"choice": choice}}
+
+
+def j2_stability(variant_routes):
+    """order／phrasing variants 的一致性。只做 evaluation:不穩定 → unstable=True、不得畢業;不灌 n(同 case_id)。"""
+    identities = [r.get("preferred_identity") for r in variant_routes if r.get("route_recommended") != J2_NONE_CLEAR]
+    none_clear = sum(1 for r in variant_routes if r.get("route_recommended") == J2_NONE_CLEAR)
+    distinct = sorted(set(i for i in identities if i is not None))
+    stable = len(variant_routes) >= 2 and none_clear == 0 and len(distinct) == 1
+    return {"variants": len(variant_routes), "distinct_identities": distinct, "none_clear": none_clear,
+            "stable": stable, "unstable": not stable, "graduation_eligible": False,
+            "note": "stability study only; J2 window not ratified; n unaffected"}

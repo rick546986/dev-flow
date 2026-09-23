@@ -4120,7 +4120,8 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     <tr><td><code>devflow-jev.py</code></td>
         <td>jev-gate stdlib runtime(W2 P1-F1;Python 3.9+,零第三方套件)。子命令 status／pack／ask／replay／
             reevaluate／feedback／report／handoff;W4 enqueue／drain／label／enqueue-bench(J5 shadow:S2d 後排隊、
-            N5 verdict 後 worker 另送、same-evidence 配對,HEAD/evidence 變了就拒)。雙閘門 off → exit 0、不建 transport、不落盤;shadow/live → 送一次,
+            N5 verdict 後 worker 另送、same-evidence 配對,HEAD/evidence 變了就拒);W5 note(P2-7 封閉附註)、
+            j4-assist(P2-3 assist-only)、j2-shadow(P2-8 厚包 + stability,永遠 shadow),report 帶 P2-2 metrics。雙閘門 off → exit 0、不建 transport、不落盤;shadow/live → 送一次,
             失敗 no-op(G2),route 只由 policy 導出(G6),replay store + durable 雙層 ledger(G4)。
             W3 <code>handoff --gate J1|J3</code> 內部只呼叫本檔的 ask,不另寫 HTTP client。
             <code>GRADUATED = False</code> 寫死、無旗標:W6 前沒有任何 AUTO 會被採取;J3/J5 永不寫 verdict。
@@ -4134,6 +4135,11 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>G5:讀 <code>jev-questions.json</code>、驗題組形狀、Score entry <code>level==index</code> 嚴格驗證
             (不一致拒絕、不排序)、完整 evaluation manifest 六欄 → <code>questionset_hash</code>、三欄 group key。</td>
         <td>同套件;<code>test_guards.py</code> G5Manifest</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
+    <tr><td><code>scripts/devflow_jev/jev-questions-experimental.json</code></td>
+        <td>W5 實驗題組:J2(厚包:preferred_option／decision_supported／owner_calls_resolved／tradeoff_completeness)與
+            J4(failure_category 沿用 agent-event enum／retry_same_tier_useful)。與正式題組分檔、各自
+            <code>questionset_hash</code>,不動 J1/J3/J5 的 calibration group;J2 window 未核定前永遠 shadow,J4 只 assist。</td>
+        <td><code>devflow-jev.py j2-shadow</code>／<code>j4-assist</code> 讀</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>scripts/devflow_jev/jev-questions.json</code></td>
         <td>J1/J3/J5 題組正本(roadmap §11/§12;門檻設在 noul/score 值)。任何改動都改變
             <code>questionset_hash</code>,舊 calibration group 不延續。</td>

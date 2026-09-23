@@ -9,7 +9,7 @@ inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、
 
 # jev-gate roadmap
 
-> **文件狀態**：本檔是 `research/jev-supermemory` 的研究／落地規劃 draft-v4。它不代表 `main` 已改、Jev 已部署、任何 AUTO gate 已核准，也不把 guard pure-function prototype 當成完成產品。**進度**：W0（2026-09-22）、W1（2026-09-22）、W2（2026-09-23）、W3（2026-09-23）、W4（2026-09-23）已在 `research/jev-supermemory` 落地；J5 仍是 shadow（enqueue／drain／label），沒有 AUTO。  
+> **文件狀態**：本檔是 `research/jev-supermemory` 的研究／落地規劃 draft-v4。它不代表 `main` 已改、Jev 已部署、任何 AUTO gate 已核准，也不把 guard pure-function prototype 當成完成產品。**進度**：W0（2026-09-22）、W1（2026-09-22）、W2（2026-09-23）、W3（2026-09-23）、W4（2026-09-23）、W5（2026-09-23）已在 `research/jev-supermemory` 落地；J5 仍是 shadow（enqueue／drain／label），J2／J4 只實驗，沒有 AUTO。  
 > **基線**：研究分支鎖定 `8a4370ad97d2c842057c281ecf56ead8b94f4a43`，相對 `main@79b7aaba2ee65ba5953873064a8f93962f86d097` 只新增研究文件，沒有 runtime code 變更。
 
 ## 0. 不再重投票的 Owner Decisions
@@ -73,7 +73,7 @@ draft-v4 以 draft-v3／`jev-convergence.md` 已記錄的 owner 裁決為約束�
 | **W2 stdlib runtime / replay / manifest 分發** | ✅ 2026-09-23：P1-F1、P1-F5、P1-F6、P0-8（C1）落地，見 `w2-runtime.md`；仍無 hook 接線、無 AUTO | 七 guard foundation 已完成；replay/data boundary 通過 |
 | **W3 J1 / J3** | ✅ 2026-09-23：P1-F2、P1-F3，見 `w3-j1-j3.md` | J1 no-op fallback 正確；J3 只 recommendation |
 | **W4 J5 shadow** | ✅ 2026-09-23：P1-F4、P1-F7 + label binding/dedupe，見 `w4-j5-shadow.md`；仍 shadow、無 AUTO | J5 不阻塞現有 G3；case provenance 可驗 |
-| **W5 評估 / J2 厚包 / J4 實驗** | P2-2～P2-8 | 只 shadow/research；不自動放行 |
+| **W5 評估 / J2 厚包 / J4 實驗** | ✅ 2026-09-23：P2-2、P2-3、P2-4、P2-7、P2-8，見 `w5-eval-j2-j4.md`；P2-5／P2-6 留 AUTO live 之後 | 只 shadow/research；不自動放行 |
 | **W6 J5 AUTO + 契約先完成** | P3-1 + **先完成 P3-2** | eligibility 達標 + L2/ADR + P3-2 全同步後才可 live |
 | **W7 獨立 Stage3、後期 J2** | P3-4；之後 P3-3 | Stage3 可獨立 L2；J2 window 未核定前永遠 shadow |
 
@@ -251,20 +251,20 @@ owner 保留三欄 grouping：
 | ID | 狀態 | 做什麼 | 驗收 | 量 | 依賴 |
 |---|---|---|---|---|---|
 | **P2-1** | ✅ 有牙（W1 2026-09-22）：4-spec `E2E entry point` 欄 + `check-spec-gate.sh` C10（full lane 且未 G2 PASS 必答；legacy 不套）+ Gauntlet 1.4.0 e2e 視同 Required；見 `w1-guard-foundation.md` §3 | **Executable e2e 有牙**：涉互動／對外 API feature 的 Verification Profile 必含 `e2e` 單一入口，或明寫無 + 理由；Final Fresh Run 執行、Gauntlet 驗、J5 header 收摘要 | 缺 e2e 且無理由 → G2 紅；P1-F4 不得在本項前開始累 J5 樣本 | M | P0-7 |
-| **P2-2** | 🛠＋🧪 | **report/eval**：unique cases、human/fresh-agent 分層、same-evidence binding、n_agree/n_overturn、Wilson 95%、labeled_fraction、truncation_rate、Brier/逐題 metrics、call breaker/circuit freeze、route_reason 分層；21 次 smoke/audit 永遠不進 J5 n | 合成 ledger 只驗計算器；真實 J5 report 只數 unique valid Ship case；variant/retry 不增 n；wrong HEAD label fixture 被拒 | M | P1-G4、G7 |
-| **P2-3** | 🛠 實驗；非 MVP | **J4 升階路由**：failure_category 沿用既有 enum；escalate_to 不得跳 model tier；SPEC/ENV/IMPL/UNKNOWN 僅作 routing signal | 全程 shadow/assist 起跑；tiering 檢查綠；不把 `_dispatch_impl.py` 說成完整權限守衛 | M | P1-F1 |
-| **P2-4** | 🛠 | **機械 risk ceiling**：migrations/auth/payment/secrets/CI 等 `risk_paths` 命中 → J5 一律 HUMAN，不看 Jev 分數；清單縮小受 P1-G6 監控 | migration fixture 一律 HUMAN；route_reason=`risk_ceiling_override` | S | P1-G3 |
+| **P2-2** | ✅ W5（2026-09-23）：`report.eval_metrics`（unique cases／分層 n·agree·overturn·Wilson／labeled_fraction／truncation_rate／Brier／逐題／route_reason 分層／breaker·freeze）；mechanical override 不進 denominator；`report` 子命令走真實 replay store；合成 ledger 只驗計算器 | **report/eval**：unique cases、human/fresh-agent 分層、same-evidence binding、n_agree/n_overturn、Wilson 95%、labeled_fraction、truncation_rate、Brier/逐題 metrics、call breaker/circuit freeze、route_reason 分層；21 次 smoke/audit 永遠不進 J5 n | 合成 ledger 只驗計算器；真實 J5 report 只數 unique valid Ship case；variant/retry 不增 n；wrong HEAD label fixture 被拒 | M | P1-G4、G7 |
+| **P2-3** | ✅ W5 實驗（2026-09-23）：`j4-assist`＋`policy.route_j4`／`escalate_to`（只升一層、fable=opus 層）；failure_category 用 agent-event enum；題組在 `jev-questions-experimental.json`（獨立 hash）；assist-only，不動 `_dispatch_impl.py` | **J4 升階路由**：failure_category 沿用既有 enum；escalate_to 不得跳 model tier；SPEC/ENV/IMPL/UNKNOWN 僅作 routing signal | 全程 shadow/assist 起跑；tiering 檢查綠；不把 `_dispatch_impl.py` 說成完整權限守衛 | M | P1-F1 |
+| **P2-4** | ✅ W5（2026-09-23）：`enqueue` 自動推 changed_paths（merge-base／HEAD commit）→ `risk_ceiling_hit` → J5 一律 HUMAN、`route_reason=risk_ceiling_override`（fixture `risk-ceiling-migration.json`）；report 把它歸 mechanical override | **機械 risk ceiling**：migrations/auth/payment/secrets/CI 等 `risk_paths` 命中 → J5 一律 HUMAN，不看 Jev 分數；清單縮小受 P1-G6 監控 | migration fixture 一律 HUMAN；route_reason=`risk_ceiling_override` | S | P1-G3 |
 | **P2-5** | 🛠，僅 live 後 | **隨機抽查**：AUTO live 後 10–20% 候選範圍（待 formal spec 核定）強制人工看，以維持 fresh labels | report 顯示抽查率與 labeled_fraction；抽查不能被 agent 關閉 | S | P2-2、P3-1 |
 | **P2-6** | 🛠，僅 AUTO 後 | **次要回饋**：先讓人看 case 並獨立回答，再顯示 Jev route/risk，避免錨定；none 不算 agree | 作答前 UI/text 不含 Jev judgement；每週提醒頻率仍待正式產品決策 | S | P3-1 |
-| **P2-7** | 🛠 | **AUTO 可稽核附註**：PR/7-review 只允許封閉 metadata `{gate, questionset_hash prefix, model_resolved, route_recommended, ledger/evaluation id}`，不外露 raw packet/answers/probabilities | privacy negative fixture；附註不含敏感 evidence | S | P1-F4 |
-| **P2-8** | 🛠＋🧪；J2 保留 | **J2 厚證據包**：方案比較全文、各方案取捨、Real-world Context/Open Questions 結論、Owner Calls 人類答案、fresh reviewer findings；正反論點；order perturbation/phrasing stability 只做 evaluation，不灌 n | 真 feature J2 packet 通過 self-check；不穩定就標 unstable、不得畢業；J2 未核定 rolling window 前永遠 shadow | M | P1-G1、P1-F1 |
+| **P2-7** | ✅ W5（2026-09-23）形狀：`ledger.audit_note`／`note` 子命令，封閉五欄 `{gate, questionset_hash_prefix, model_resolved, route_recommended, evaluation_id}`；白名單＋privacy negative 測試；貼進 PR／7-review 的動線留 P3-2 | **AUTO 可稽核附註**：PR/7-review 只允許封閉 metadata `{gate, questionset_hash prefix, model_resolved, route_recommended, ledger/evaluation id}`，不外露 raw packet/answers/probabilities | privacy negative fixture；附註不含敏感 evidence | S | P1-F4 |
+| **P2-8** | ✅ W5 實驗（2026-09-23）：`j2-shadow` 讀 2-decision.md（方案表／Decision／Rejected／Rationale／Real-world／Owner Calls 人類答案）組厚包；order／phrasing 三 variants 同 case_id 只做 stability（不穩定→`unstable`、永不畢業）；`route_taken` 恆 HUMAN；window=50 只標待核定 | **J2 厚證據包**：方案比較全文、各方案取捨、Real-world Context/Open Questions 結論、Owner Calls 人類答案、fresh reviewer findings；正反論點；order perturbation/phrasing stability 只做 evaluation，不灌 n | 真 feature J2 packet 通過 self-check；不穩定就標 unstable、不得畢業；J2 未核定 rolling window 前永遠 shadow | M | P1-G1、P1-F1 |
 
 ### 4.1 J2 rolling window — 待核定候選
 
 owner 已裁 **J2 保留**，但沒有核定 rolling-window 長度。draft-v4：
 
 - 保留 draft-v3 的「J2 要有 Wilson floor」研究方向，不視為 live 核准。
-- **候選 window = 50 個 unique、有效 labeled cases**，明確標為待核定設計值。
+- **候選 window = 50 個 unique、有效 labeled cases**，明確標為待核定設計值（W5：`policy.J2_WINDOW_CANDIDATE=50`、`J2_WINDOW_RATIFIED=False`，沒有旗標能改）。
 - 20／30／50 的比較只能在 development set 做 sensitivity study；**不能拿 locked holdout 看完後挑最好數字**。
 - window 未正式核定前，J2 永遠 shadow。
 - J2 的 synthetic/rubric smoke 不可補 live/shadow graduation denominator。

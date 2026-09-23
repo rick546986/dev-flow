@@ -58,7 +58,8 @@ def evidence(gate="J5", slug="demo-feature"):
 
 
 def api_questions(gate):
-    return manifest.gate_questions_for_api(manifest.build_manifest(manifest.load_questions()), gate)
+    path = os.path.join(HERE, "jev-questions-experimental.json") if gate in ("J2", "J4") else None
+    return manifest.gate_questions_for_api(manifest.build_manifest(manifest.load_questions(path)), gate)
 
 
 def perfect_j5():
@@ -857,9 +858,13 @@ class W4Shadow(RuntimeBase):
             fh.write("# devflow evidence gauntlet report\n- run-id: 20260923T000000Z-p1\n- tool-version: 1.4.0\n"
                      "- declared-source-sha: abc\n- verdict: %s\n- checks: 13\n- violations: 0\n" % gauntlet_verdict)
         if commit:
-            subprocess.run(["git", "add", "-A"], cwd=self.tmp, check=True)
-            subprocess.run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "ship"], cwd=self.tmp, check=True)
+            self.commit("ship")
         return folder
+
+    def commit(self, msg, *paths):
+        # 只 add docs/(與明給的路徑):.dev-flow/jev.yaml 若進 HEAD,G6 會正確判 runtime_changed → HUMAN,那不是這些測試要測的
+        subprocess.run(["git", "add", "--", "docs", *paths], cwd=self.tmp, check=True)
+        subprocess.run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", msg], cwd=self.tmp, check=True)
 
     def review_sha(self):
         with open(os.path.join(self.tmp, "docs", "dev", "demo-feature", "7-review.md"), "rb") as fh:
@@ -986,8 +991,7 @@ class W4Shadow(RuntimeBase):
             fh.write(self.REVIEW_FM.format(verdict="PASS", extra="verdict_source: human_attested\nattested_by: human:rick\n", body="v1"))
         with open(os.path.join(self.tmp, "src.py"), "w") as fh:
             fh.write("x = 2\n")
-        subprocess.run(["git", "add", "-A"], cwd=self.tmp, check=True)
-        subprocess.run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "late code"], cwd=self.tmp, check=True)
+        self.commit("late code", "src.py")
         lab2 = rt.run_label(self.tmp, "demo-feature", "rick", "sess-R", from_review=True, environ=self.env_on)
         self.assertEqual(lab2["status"], "refused")
         self.assertNotEqual(lab2["current_binding"]["head_sha"], lab["current_binding"]["head_sha"])
@@ -1032,8 +1036,7 @@ class W4Shadow(RuntimeBase):
         folder = os.path.join(self.tmp, "docs", "dev", "demo-feature")
         with open(os.path.join(folder, "7-review.md"), "w", encoding="utf-8") as fh:
             fh.write(self.REVIEW_FM.format(verdict="PASS", extra="", body="v1"))
-        subprocess.run(["git", "add", "-A"], cwd=self.tmp, check=True)
-        subprocess.run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "unattested"], cwd=self.tmp, check=True)
+        self.commit("unattested")
         self.enqueue()
         self.drain(fake(perfect_j5()))
         lab2 = rt.run_label(self.tmp, "demo-feature", "rick", "sess-R", from_review=True, environ=self.env_on)
@@ -1089,6 +1092,175 @@ class W4Shadow(RuntimeBase):
         r2 = subprocess.run([sys.executable, RUNTIME_PATH, "--root", self.tmp, "drain"], capture_output=True, text=True, env=env)
         self.assertEqual(r2.returncode, 0, r2.stderr)
         self.assertIn('"drained": 0', r2.stdout)
+
+
+
+class W5EvalAndExperiments(RuntimeBase):
+    """W5:P2-2 report metrics 走真實 store;P2-4 changed_paths 自動推 + risk ceiling;P2-7 note;P2-3 J4 assist;P2-8 J2 shadow。"""
+
+    REVIEW_FM = W4Shadow.REVIEW_FM
+    seed_feature, review_sha, enqueue, drain, commit = (W4Shadow.seed_feature, W4Shadow.review_sha, W4Shadow.enqueue,
+                                                        W4Shadow.drain, W4Shadow.commit)
+
+    DECISION = (
+        "---\nstatus: approved\n---\n# 2. 決策\n\n## Real-world 去向\n站內卡片。\n\n## Approaches Considered\n"
+        "| 方案 | 摘要 | 優 | 劣 | 成本 | 依據 |\n|---|---|---|---|---|---|\n"
+        "| A 登入即時查 | dashboard 載入時查 | 零新 infra、實作最小 | 每次載入查一次;無主動推播 | 0.5 週 | `1-discussion.md:18` |\n"
+        "| B nightly cron | 排程掃描寫入表 | 可擴充 email;查詢便宜 | 要新增 cron 進程 + 新表 | 1.5 週 | `1-discussion.md:68` |\n"
+        "| C MQ 事件驅動 | 合約異動發事件 | 即時、可擴充 | 引入 MQ = 新 infra,違反 constraint | 3 週+ | `1-discussion.md:80` |\n\n"
+        "## Decision\n採 **A(登入即時查)**。\n\n## Rejected Alternatives\n- B:本期不做 email。\n- C:overkill。\n\n## Rationale\n最小可逆。\n\n"
+        "## Owner Calls(自判裁決,待人審)\n\n### 逐條裁決(上層)\n| OC | 決定了什麼 | 為什麼 | 依據 | 若被推翻 | 狀態 |\n|---|---|---|---|---|---|\n"
+        "| OC-1 | 已續約不列 | 雜訊 | `[Assumption]` | 改過濾 | ✅ |\n| OC-2 | 只處理有 end_date | 語意 | `[Assumption]` | 擴 scope | 待人審 |\n"
+    )
+
+    def seed_decision(self, text=None):
+        folder = os.path.join(self.tmp, "docs", "dev", "demo-feature")
+        os.makedirs(folder, exist_ok=True)
+        path = os.path.join(folder, "2-decision.md")
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(text or self.DECISION)
+        return path
+
+    def j2_answers(self, choice="A", supported=0.9):
+        probs = {k: (0.85 if k == choice else 0.0375) for k in ("A", "B", "C", "D", "NONE_CLEAR")}   # 合 1.0
+        return {"preferred_option": {"choice": choice, "probabilities": probs, "confidence": 0.8},
+                "decision_supported": {"noul": supported}, "owner_calls_resolved": {"noul": 0.5}, "tradeoff_completeness": {"score": 2}}
+
+    def test_enqueue_derives_changed_paths_and_risk_ceiling_forces_human(self):
+        self.optin()
+        self.seed_feature(commit=False)
+        os.makedirs(os.path.join(self.tmp, "db", "migrations"))
+        with open(os.path.join(self.tmp, "db", "migrations", "0042_add_index.sql"), "w") as fh:
+            fh.write("create index\n")
+        self.commit("ship+migration", "db")
+        q = self.enqueue()
+        self.assertEqual(q["status"], "enqueued")
+        self.assertIn("db/migrations/0042_add_index.sql", q["changed_paths"])
+        self.assertIn(q["changed_paths_source"], ("head_commit", "merge-base(master)", "merge-base(main)"))
+        self.assertTrue(q["risk_ceiling_hit"])
+        out = self.drain(fake(perfect_j5()))
+        res = out["results"][0]
+        self.assertEqual((res["route_recommended"], res["route_reason"], res["route_taken"]), ("HUMAN", "risk_ceiling_override", "HUMAN"))
+        rep = rt.run_report(self.tmp, "J5", environ=self.env_on)
+        self.assertEqual(rep["metrics"]["unique_cases_mechanical_override"], 1)
+        self.assertEqual(rep["metrics"]["unique_cases_model_route"], 0)
+        self.assertEqual(rep["metrics"]["route_class_counts"]["mechanical_override"], 1)
+
+    def test_report_exposes_p2_2_metrics_on_real_store(self):
+        self.optin()
+        self.seed_feature(verdict="PASS", extra="verdict_source: human_attested\nattested_by: human:rick\n")
+        self.enqueue()
+        self.drain(fake(perfect_j5()))
+        rt.run_label(self.tmp, "demo-feature", "rick", "sess-R", from_review=True, environ=self.env_on)
+        rep = rt.run_report(self.tmp, "J5", environ=self.env_on)
+        m = rep["metrics"]
+        self.assertEqual(m["evaluations_total"], 1)
+        self.assertEqual(m["layers"]["human_attested"]["n"], 1)
+        self.assertEqual(m["layers"]["human_attested"]["labeled_fraction"], 1.0)
+        self.assertAlmostEqual(m["layers"]["human_attested"]["brier_chosen_route"], 0.05 ** 2, places=6)
+        self.assertEqual(m["truncation_rate"], 0.0)
+        self.assertEqual(rep["circuit_breaker_state"], "closed")
+        self.assertIn("evidence_complete", m["question_metrics"])
+        self.assertFalse(m["layers"]["human_attested"]["floor_met"])
+
+    def test_note_is_closed_and_cli_emits_markdown(self):
+        self.optin()
+        self.seed_feature()
+        self.enqueue()
+        out = self.drain(fake(perfect_j5()))
+        eid = out["results"][0]["evaluation_id"]
+        note = rt.run_note(self.tmp, eid, environ=self.env_on)
+        self.assertEqual(set(note["note"]), set(ledger.AUDIT_NOTE_KEYS))
+        self.assertNotIn("probab", json.dumps(note))
+        self.assertIn(eid, note["markdown"])
+        env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", DEVFLOW_ROOT=REPO, AGENTMEM_HOME=self.home)
+        r = subprocess.run([sys.executable, RUNTIME_PATH, "--root", self.tmp, "note", "--evaluation-id", eid],
+                           capture_output=True, text=True, env=env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("jev shadow note", r.stdout)
+
+    def test_j4_assist_classifies_and_never_dispatches(self):
+        self.optin("mode: live\ngates:\n  J4: live\n")
+        answers = {"failure_category": {"choice": "ENV", "probabilities": {"SPEC": 0.1, "ENV": 0.7, "IMPL": 0.1, "UNKNOWN": 0.1}, "confidence": 0.7},
+                   "retry_same_tier_useful": {"noul": 0.2}}
+        transport = fake(answers, gate="J4")
+        transport.clock = self.clock
+        out = rt.run_j4_assist(self.tmp, "demo-feature", "T-3", "claude-haiku-4-5", "pip install failed: no network in sandbox",
+                               "agent-A", "sess-A", environ=self.env_on, transport_factory=lambda *a: transport, clock=self.clock)
+        self.assertEqual((out["status"], out["failure_category"], out["escalate_to"], out["suggestion"]), ("ok", "ENV", "sonnet", "escalate_one_tier"))
+        self.assertEqual((out["route_taken"], out["route_taken_reason"]), ("HUMAN", "j4_assist_only"))
+        self.assertTrue(out["assist_only"])
+        self.assertFalse(out["writes_dispatch"])
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, ".devflow", "exec.json")))
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, ".devflow", "tier-exempt.json")))
+        off = rt.run_j4_assist(self.tmp, "demo-feature", "T-3", "claude-haiku-4-5", "x", "a", "s", environ={}, transport_factory=never_called)
+        self.assertEqual(off["status"], "noop")
+
+    def test_j2_shadow_variants_share_case_and_stability_is_measured(self):
+        self.optin("mode: live\ngates:\n  J2: live\n")     # 即使有人把 J2 設 live,route_taken 仍 HUMAN
+        self.seed_decision()
+        self.commit("decision")
+        calls = {"n": 0}
+
+        def factory(*a):
+            calls["n"] += 1
+            # v0 順序 A=登入即時查;v1 反轉後 A=MQ、C=登入即時查 → 同一 identity 要選 C;v2 同 v0
+            choice = "C" if calls["n"] == 2 else "A"
+            t = fake(self.j2_answers(choice), gate="J2")
+            t.clock = self.clock
+            return t
+        out = rt.run_j2_shadow(self.tmp, "demo-feature", "agent-A", "sess-A", environ=self.env_on,
+                               transport_factory=factory, clock=self.clock)
+        self.assertEqual(out["status"], "ok")
+        self.assertEqual(len(out["results"]), 3)
+        self.assertEqual(len({r["case_id"] for r in out["results"]}), 1)
+        self.assertTrue(all(r["route_taken"] == "HUMAN" and r["route_taken_reason"] == "j2_shadow_window_not_ratified" for r in out["results"]))
+        self.assertTrue(out["stability"]["stable"], out["stability"])
+        self.assertFalse(out["stability"]["graduation_eligible"])
+        self.assertFalse(out["auto_pass"])
+        self.assertFalse(out["window_ratified"])
+        self.assertEqual(out["recorded_decision_letter"], "A")
+        self.assertTrue(out["results"][0]["matches_recorded_decision"])
+        self.assertFalse(out["writes_decision"])
+        stored = ledger.ReplayStore(self.tmp).read(out["results"][0]["evaluation_id"])
+        texts = [q["source"] for q in stored["packet"]["body"]["quoted_context"]]
+        self.assertTrue(any("OC-1" in t and "not a question for the model" in t for t in texts))
+        descs = [o["description"] for o in stored["packet"]["body"]["options"]]
+        self.assertEqual(len({len(d.split()) for d in descs}), 1)      # 等長 description(形式控制),全文在 quoted_context
+        rep = rt.run_report(self.tmp, "J2", environ=self.env_on)
+        self.assertEqual(rep["metrics"]["unique_cases_all"], 1)          # 三筆 variants,一個 case
+
+    def test_j2_unstable_when_order_flip_changes_identity_and_thin_doc_refused(self):
+        self.optin("mode: live\ngates:\n  J2: shadow\n")
+        self.seed_decision()
+        self.commit("decision")
+
+        def factory(*a):
+            t = fake(self.j2_answers("A"), gate="J2")      # 永遠選標籤 A → 反轉後 identity 變 → unstable
+            t.clock = self.clock
+            return t
+        out = rt.run_j2_shadow(self.tmp, "demo-feature", "agent-A", "sess-A", environ=self.env_on, transport_factory=factory, clock=self.clock)
+        self.assertTrue(out["stability"]["unstable"])
+        self.assertEqual(len(out["stability"]["distinct_identities"]), 2)
+        thin = self.DECISION.replace("| 零新 infra、實作最小 |", "| 零新 infra |")
+        self.seed_decision(thin)
+        out2 = rt.run_j2_shadow(self.tmp, "demo-feature", "agent-A", "sess-A", environ=self.env_on, transport_factory=never_called, clock=self.clock)
+        self.assertEqual(out2["status"], "noop")
+        self.assertTrue(out2["noop_reason"].startswith("packet_unbuildable:"))
+
+    def test_j2_off_is_noop_and_decision_missing_is_noop(self):
+        out = rt.run_j2_shadow(self.tmp, "demo-feature", "a", "s", environ={}, transport_factory=never_called)
+        self.assertEqual((out["status"], out["noop_reason"]), ("noop", "no_api_key"))
+        self.optin("mode: live\ngates:\n  J2: shadow\n")
+        out2 = rt.run_j2_shadow(self.tmp, "demo-feature", "a", "s", environ=self.env_on, transport_factory=never_called)
+        self.assertEqual(out2["noop_reason"], "decision_missing")
+
+    def test_parse_decision_doc_extracts_structure_only(self):
+        parsed = rt.parse_decision_doc(self.DECISION)
+        self.assertEqual([a["name"] for a in parsed["approaches"]], ["A 登入即時查", "B nightly cron", "C MQ 事件驅動"])
+        self.assertEqual(parsed["approaches"][1]["cons"], ["要新增 cron 進程", "新表"])
+        self.assertEqual(parsed["decision_letter"], "A")
+        self.assertEqual([oc["answered"] for oc in parsed["owner_calls"]], [True, False])
 
 
 if __name__ == "__main__":

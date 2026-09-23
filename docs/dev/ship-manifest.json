@@ -1,6 +1,6 @@
 {
   "schema": "devflow-ship-manifest-v1",
-  "version": "v1-50dce597421a238b",
+  "version": "v1-9bc5fa700e6d26e1",
   "files": [
     {
       "source": "scripts/history-append.sh",
@@ -75,6 +75,11 @@
     {
       "source": "scripts/devflow_jev/jev-questions.json",
       "destination": "docs/dev/tools/devflow_jev/jev-questions.json",
+      "mode": "644"
+    },
+    {
+      "source": "scripts/devflow_jev/jev-questions-experimental.json",
+      "destination": "docs/dev/tools/devflow_jev/jev-questions-experimental.json",
       "mode": "644"
     },
     {
