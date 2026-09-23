@@ -8,6 +8,10 @@ policy 導出 route → 雙層 ledger 落盤」的膠水,不含任何門檻、�
   status      各 gate 生效等級(key 有無 × .dev-flow/jev.yaml opt-in)、今日 budget、breaker、replay 數。零網路。
   pack        由 JSON 輸入組 evidence packet(G1;privacy 命中 = 拒絕組包)。零網路。
   handoff     W3:J1 在 Decide 前、J3 在 Demo 前。內部只呼叫本檔的 ask(不另寫 HTTP client)。
+  enqueue     W4:Stage 7 evidence 固定後,把 J5 shadow evaluation 序列化進 queue;零網路、不擋 G3。
+  drain       W4:worker,逐筆經 ask 送 J5 shadow;失敗只記 shadow failure;不寫 G3 verdict。
+  label       W4:same-evidence label binding;HEAD/evidence 變了就拒絕,不誤標舊 evaluation。
+  enqueue-bench  W4:實測 enqueue p50/p95。
               off／失敗／逾時 → exit 0、effect=continue_existing_flow。J3 只回顯示文案,不寫 verdict。
   ask         一次 evaluation:雙閘門 off → exit 0、什麼都不寫、零網路;shadow/live → 送一次,
               失敗 no-op(G2),route 由 policy 導出(G6),replay store + durable(G4)。
@@ -29,6 +33,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 
@@ -53,6 +58,7 @@ from devflow_jev import GATES, MODEL_PINNED, JevError  # noqa: E402
 from devflow_jev import gate as gate_mod  # noqa: E402
 from devflow_jev import ledger, manifest as manifest_mod, packet as packet_mod, policy, provenance  # noqa: E402
 from devflow_jev import report as report_mod  # noqa: E402
+from devflow_jev import attestation  # noqa: E402
 from devflow_jev.attestation import graduation_eligible  # noqa: E402
 from devflow_jev.state import StateStore, _atomic_write, utc_day  # noqa: E402
 from devflow_jev.transport import build_request  # noqa: E402
@@ -869,6 +875,308 @@ def run_handoff(root, gate, slug, author_ref, session_ref, **kwargs):
     raise JevError("handoff 只接 J1 與 J3(J2/J4 保留,J5 是 W4)")
 
 
+
+# ───────────────────────────── W4 J5 shadow: bind / enqueue / drain / label ─────────────────────────────
+# roadmap P1-F4:evidence 固定後 enqueue,現有 G3 立刻照走;worker(drain)另跑,失敗只記 shadow failure。
+# 本段沒有第二個 HTTP client:drain 呼叫本檔的 run_ask(→ devflow_jev.http_transport)。
+# 本段沒有任何寫 docs/dev/<slug>/ 的程式;J5 只讀已產生的 evidence,不產 evidence、不寫 G3 verdict。
+QUEUE_DIRNAME = os.path.join(".devflow", "jev", "queue")             # .devflow/ 已 gitignored
+QUEUE_DONE_DIRNAME = os.path.join(QUEUE_DIRNAME, "done")
+QUEUE_SCHEMA = "devflow-jev-queue/1"
+GAUNTLET_REPORT_DEFAULT = os.path.join("evidence", "gauntlet-report.md")   # 相對 docs/dev/<slug>/
+J5_PRIMARY_REQUEST = "Given only the mechanical evidence facts in this packet, assess whether the recorded evidence supports shipping this feature."
+# label --from-review:人類 G3 verdict 對 Jev route_recommended 的 agree/overturn 映射。HUMAN 建議不是預測,不進 n。
+REVIEW_LABEL_MAP = {
+    ("AUTO", "PASS"): "agree", ("AUTO", "REQUEST_CHANGES"): "overturn", ("AUTO", "HOLD"): "overturn",
+    ("REQUEST_CHANGES", "REQUEST_CHANGES"): "agree", ("REQUEST_CHANGES", "PASS"): "overturn",
+}
+
+
+def _git(root, *args):
+    try:
+        proc = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise JevError("git %s 失敗:%s" % (" ".join(args), exc))
+    if proc.returncode != 0:
+        raise JevError("git %s 失敗:%s" % (" ".join(args), (proc.stderr or proc.stdout).strip()[:200]))
+    return proc.stdout
+
+
+def _sha256_file(path):
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(65536), b""):
+            h.update(chunk)
+    return "sha256:" + h.hexdigest()
+
+
+def _parse_kv_report(text):
+    out = {}
+    for line in text.splitlines():
+        m = re.match(r"^\s*-\s*([A-Za-z][A-Za-z0-9-]*)\s*:\s*(.*)$", line)
+        if m and m.group(1) not in out:
+            out[m.group(1)] = m.group(2).strip()
+    return out
+
+
+def _e2e_entry_point(spec_path):
+    if not os.path.isfile(spec_path):
+        return "spec_missing"
+    with open(spec_path, encoding="utf-8") as fh:
+        for line in fh:
+            m = re.match(r"^\s*-\s*E2E entry point\s*[:：]\s*(.*)$", line, re.I)
+            if m:
+                return (m.group(1).strip() or "declared_empty")[:200]
+    return "not_declared"
+
+
+def bind_evidence(root, slug, gauntlet_report=None, now=None):
+    """自動 evidence binding(P1-F4):同一份 evidence 版本 → 同一組 hash → 同一 case_id。
+    artifact_hash = HEAD tree 全表(git ls-tree -r HEAD)的 sha256;evidence_hash = 逐檔 sha256 清單的 sha256
+    (7-review.md 必在、6-implementation-notes.md 若在、gauntlet report 必在);head_sha = HEAD。
+    任何一項缺 = evidence 未固定 → JevError(呼叫端 enqueue 轉 noop,不擋流程)。
+    **不讀** 7-review.md 的 `verdict:` 進 packet(那是人的 G3 判定,不能給預測者看)。"""
+    if not isinstance(slug, str) or not _SLUG_RE.match(slug):
+        raise JevError("slug 形狀不合法")
+    feature_dir = os.path.join(root, "docs", "dev", slug)
+    review_path = os.path.join(feature_dir, "7-review.md")
+    if not os.path.isfile(review_path):
+        raise JevError("evidence 未固定:找不到 docs/dev/%s/7-review.md" % slug)
+    report_path = gauntlet_report or os.path.join(feature_dir, GAUNTLET_REPORT_DEFAULT)
+    if not os.path.isfile(report_path):
+        raise JevError("evidence 未固定:找不到 gauntlet report %s(S2d-fresh 先跑 devflow-evidence-gauntlet.sh --report)" % report_path)
+    with open(report_path, encoding="utf-8") as fh:
+        report = _parse_kv_report(fh.read())
+    gauntlet_verdict = report.get("verdict") or ""
+    if not gauntlet_verdict:
+        raise JevError("gauntlet report 缺 `- verdict:`")
+    head_sha = _git(root, "rev-parse", "HEAD").strip()
+    if not _HEAD_RE.match(head_sha):
+        raise JevError("HEAD 形狀不對:%r" % head_sha)
+    tree = _git(root, "ls-tree", "-r", "HEAD")
+    artifact_hash = manifest_mod.sha256_hex(tree)
+    files = [("7-review.md", review_path)]
+    notes_path = os.path.join(feature_dir, "6-implementation-notes.md")
+    if os.path.isfile(notes_path):
+        files.append(("6-implementation-notes.md", notes_path))
+    files.append((os.path.relpath(report_path, feature_dir).replace(os.sep, "/"), report_path))
+    digests = [{"file": name, "sha256": _sha256_file(path)} for name, path in files]
+    evidence_hash = manifest_mod.sha256_hex(manifest_mod.canonical_json(digests))
+    with open(review_path, encoding="utf-8") as fh:
+        review_fm = attestation.parse_frontmatter(fh.read())
+    evaluated_at = now or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    evidence = {"feature": slug, "gate": "J5", "artifact_hash": artifact_hash, "evidence_hash": evidence_hash,
+                "head_sha": head_sha, "evaluated_at": evaluated_at}
+    header = {
+        "slug": slug, "head_sha": head_sha, "artifact_hash": artifact_hash, "evidence_hash": evidence_hash,
+        "gauntlet_verdict": gauntlet_verdict,
+        "required_layers_status": "gauntlet:%s;checks:%s;violations:%s" % (
+            gauntlet_verdict, report.get("checks", "?"), report.get("violations", "?")),
+        "e2e_summary": _e2e_entry_point(os.path.join(feature_dir, "4-spec.md")),
+        "final_fresh_run_id": report.get("run-id") or "missing",
+    }
+    facts = ["gauntlet verdict: %s" % gauntlet_verdict,
+             "gauntlet checks: %s; violations: %s" % (report.get("checks", "?"), report.get("violations", "?")),
+             "gauntlet declared-source-sha: %s; HEAD: %s" % (report.get("declared-source-sha", "?"), head_sha),
+             "e2e entry point: %s" % header["e2e_summary"],
+             "evidence files: %s" % ", ".join(d["file"] for d in digests)]
+    return {"evidence": evidence, "header": header, "source_facts": facts, "files": digests,
+            "review_frontmatter": {k: v for k, v in review_fm.items() if k in ("status", "verdict", "verdict_source", "attested_by")},
+            "case_id": ledger.case_id(slug, "J5", artifact_hash, evidence_hash, head_sha)}
+
+
+def build_j5_packet(binding, variant_id="v0"):
+    return packet_mod.build_packet(
+        "J5", binding["header"], J5_PRIMARY_REQUEST, source_facts=binding["source_facts"],
+        evidence_summary_claims_pass=(binding["header"]["gauntlet_verdict"].upper() == "PASS"), variant_id=variant_id)
+
+
+def _queue_dirs(root):
+    return os.path.join(root, QUEUE_DIRNAME), os.path.join(root, QUEUE_DONE_DIRNAME)
+
+
+def run_enqueue(root, slug, author_ref, session_ref, environ=None, gauntlet_report=None, variant_id="v0",
+                clock=time.perf_counter, changed_paths=(), run_id=None, now=None):
+    """前景:雙閘門 → 綁 evidence → 組包 → 序列化到 queue。零網路;失敗一律 noop、不擋 G3。
+    latency 是實測(clock 差),不宣稱 0ms。"""
+    environ = os.environ if environ is None else environ
+    base = {"gate": "J5", "slug": slug, "network": False, "g3_blocked": False, "writes_g3_verdict": False,
+            "effect": "continue_existing_flow", "graduated": GRADUATED, "written": []}
+    level, level_reason = gate_level(root, "J5", environ)
+    base.update({"level": level, "level_reason": level_reason})
+    if not gate_mod.may_call(level):
+        base.update({"status": "noop", "noop_reason": level_reason})
+        return base
+    try:
+        binding = bind_evidence(root, slug, gauntlet_report=gauntlet_report, now=now)
+        packet = build_j5_packet(binding, variant_id=variant_id)
+        validate_packet(packet, "J5", binding["evidence"])
+    except JevError as exc:
+        base.update({"status": "noop", "noop_reason": "evidence_not_fixed:" + str(exc)[:160]})
+        return base
+    started = clock()
+    qdir, _ = _queue_dirs(root)
+    os.makedirs(qdir, exist_ok=True)
+    queue_id = ledger.new_ulid("q")
+    item = {"schema": QUEUE_SCHEMA, "queue_id": queue_id, "gate": "J5", "slug": slug,
+            "enqueued_at": now or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "author_ref": author_ref, "session_ref": session_ref,
+            "run_id": run_id if run_id is not None else read_run_id(root),
+            "changed_paths": list(changed_paths), "variant_id": variant_id,
+            "packet": packet, "evidence": binding["evidence"], "case_id": binding["case_id"],
+            "evidence_files": binding["files"]}
+    payload = json.dumps(item, ensure_ascii=False, sort_keys=True)
+    path = os.path.join(qdir, queue_id + ".json")
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write(payload)
+    os.replace(tmp, path)
+    latency = clock() - started
+    base.update({"status": "enqueued", "queue_id": queue_id, "case_id": binding["case_id"],
+                 "packet_hash": packet["packet_hash"], "enqueue_latency_s": latency,
+                 "payload_bytes": len(payload.encode("utf-8")), "written": [path],
+                 "evidence": binding["evidence"], "note": "G3 continues now; evaluation happens in drain"})
+    return base
+
+
+def list_queue(root):
+    qdir, _ = _queue_dirs(root)
+    if not os.path.isdir(qdir):
+        return []
+    return sorted(os.path.join(qdir, n) for n in os.listdir(qdir) if n.startswith("q_") and n.endswith(".json"))
+
+
+def _finish_item(root, path, item, result):
+    _, done = _queue_dirs(root)
+    os.makedirs(done, exist_ok=True)
+    item = dict(item)
+    item["drain_result"] = result
+    item["drained_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    target = os.path.join(done, os.path.basename(path))
+    with open(target + ".tmp", "w", encoding="utf-8") as fh:
+        json.dump(item, fh, ensure_ascii=False, sort_keys=True)
+    os.replace(target + ".tmp", target)
+    os.unlink(path)
+    return target
+
+
+def run_drain(root, environ=None, transport_factory=None, clock=time.monotonic, max_items=None, memory_dir=None):
+    """worker:逐筆送 J5 shadow evaluation(經 run_ask)。任何失敗 = shadow failure,只記帳;
+    exit 0;不碰 docs/dev/<slug>/。drain 時再查一次雙閘門:off → 跳過、零網路。"""
+    environ = os.environ if environ is None else environ
+    results, network = [], False
+    for path in list_queue(root)[: max_items or None]:
+        with open(path, encoding="utf-8") as fh:
+            item = json.load(fh)
+        if item.get("schema") != QUEUE_SCHEMA or item.get("gate") != "J5":
+            res = {"status": "failed", "noop_reason": "queue_item_schema", "network": False}
+            results.append(dict(res, queue_id=item.get("queue_id"), done_path=_finish_item(root, path, item, res)))
+            continue
+        level, level_reason = gate_level(root, "J5", environ)
+        if not gate_mod.may_call(level):
+            res = {"status": "skipped_gate_off", "noop_reason": level_reason, "network": False}
+            results.append(dict(res, queue_id=item["queue_id"], done_path=_finish_item(root, path, item, res)))
+            continue
+        try:
+            out = run_ask(root, "J5", item["slug"], item["packet"], item["evidence"], item["author_ref"],
+                          item["session_ref"], environ=environ, transport_factory=transport_factory, clock=clock,
+                          changed_paths=item.get("changed_paths") or (), run_id=item.get("run_id"), memory_dir=memory_dir)
+            network = network or bool(out.get("network"))
+            res = {k: out.get(k) for k in ("status", "noop_reason", "evaluation_id", "case_id", "route_recommended",
+                                            "route_reason", "route_taken", "route_taken_reason", "replay_status", "network")}
+            res["shadow_failure"] = out.get("status") != "ok"
+        except JevError as exc:
+            res = {"status": "failed", "noop_reason": "shadow_failure:" + str(exc)[:160], "network": False,
+                   "shadow_failure": True}
+        if res.get("route_taken") == "AUTO":
+            raise JevError("tripwire: drain 得到 route_taken=AUTO —— shadow 下不可能,拒絕落盤")
+        results.append(dict(res, queue_id=item["queue_id"], done_path=_finish_item(root, path, item, res)))
+    return {"drained": len(results), "results": results, "network": network, "writes_g3_verdict": False,
+            "g3_blocked": False, "graduated": GRADUATED, "remaining": len(list_queue(root))}
+
+
+def _case_evaluations(root, case_id):
+    store = ledger.ReplayStore(root)
+    out = []
+    if not os.path.isdir(store.dir):
+        return out
+    for name in sorted(os.listdir(store.dir)):
+        if name.startswith("eval_") and name.endswith(".json"):
+            ev = store.read(name[:-5])["evaluation"]
+            if ev.get("case_id") == case_id and ev.get("gate") == "J5":
+                out.append(ev)
+    return out
+
+
+def run_label(root, slug, reviewer_ref, session_ref, verdict=None, source=None, from_review=False,
+              environ=None, memory_dir=None, gauntlet_report=None, feedback_at=None):
+    """same-evidence label binding:用**現在**的 evidence 版本重算 case_id,只配得上同版本的 evaluation。
+    HEAD／evidence 一變 → 沒有可配對的 evaluation → refused(不誤標舊 evaluation)。
+    同 case 多筆 evaluation(variants／retry／reevaluate)→ label 落在最新一筆,其餘由 report 當 duplicate_case,n 仍 1。"""
+    environ = os.environ if environ is None else environ
+    binding = bind_evidence(root, slug, gauntlet_report=gauntlet_report)
+    cid = binding["case_id"]
+    evals = [ev for ev in _case_evaluations(root, cid) if ev.get("status") == "ok"]
+    base = {"slug": slug, "gate": "J5", "case_id": cid, "network": False, "writes_g3_verdict": False,
+            "current_binding": {k: binding["evidence"][k] for k in ("artifact_hash", "evidence_hash", "head_sha")}}
+    if not evals:
+        base.update({"status": "refused", "reason": "no_evaluation_for_this_evidence_version",
+                     "hint": "HEAD 或 evidence 檔在 evaluation 之後變了,或 evaluation 尚未 drain;舊 evaluation 不得被新 verdict 標記"})
+        return base
+    evals.sort(key=lambda ev: ev.get("occurred_at") or "")
+    target = evals[-1]
+    duplicates = [ev["evaluation_id"] for ev in evals[:-1]]
+    if from_review:
+        cls = attestation.classify(binding["review_frontmatter"])
+        if cls["label"] in ("none", "unverified"):
+            base.update({"status": "refused", "reason": "review_%s" % cls["label"], "classification": cls,
+                         "evaluation_id": target["evaluation_id"]})
+            return base
+        source = cls["label"]
+        mapped = REVIEW_LABEL_MAP.get((target.get("route_recommended"), cls["verdict"]))
+        if mapped is None:
+            base.update({"status": "not_labelable", "reason": "route_recommended=%s vs review verdict=%s is not a prediction pair"
+                         % (target.get("route_recommended"), cls["verdict"]), "classification": cls,
+                         "evaluation_id": target["evaluation_id"], "duplicates_same_case": duplicates})
+            return base
+        verdict = mapped
+    if verdict not in ledger.FEEDBACK_VERDICTS or not source:
+        raise JevError("label 需要 --from-review,或明示 --verdict agree|overturn 與 --source")
+    fb = run_feedback(root, target["evaluation_id"], verdict, source, reviewer_ref, session_ref,
+                      binding["evidence"]["artifact_hash"], binding["evidence"]["evidence_hash"],
+                      binding["evidence"]["head_sha"], feedback_at=feedback_at, environ=environ, memory_dir=memory_dir)
+    base.update({"status": "labelled", "evaluation_id": target["evaluation_id"], "duplicates_same_case": duplicates,
+                 "verdict": verdict, "source": source, "suspect": fb["suspect"], "counts_toward_n": fb["counts_toward_n"],
+                 "written": fb["written"], "route_recommended": target.get("route_recommended")})
+    return base
+
+
+def run_enqueue_bench(n=200, payload_bytes=20000):
+    """實測 enqueue 成本(p50/p95):記憶體序列化(policy.measure_enqueue_latency)+ 真寫檔到暫存 queue。"""
+    import tempfile
+    mem = policy.measure_enqueue_latency(n=n, payload_bytes=payload_bytes)
+    tmp = tempfile.mkdtemp(prefix="jev-enqueue-bench.")
+    samples = []
+    item = {"schema": QUEUE_SCHEMA, "packet": {"body": "x" * payload_bytes}, "gate": "J5"}
+    try:
+        for i in range(n):
+            started = time.perf_counter()
+            payload = json.dumps(item, ensure_ascii=False, sort_keys=True)
+            path = os.path.join(tmp, "q_%06d.json" % i)
+            with open(path + ".tmp", "w", encoding="utf-8") as fh:
+                fh.write(payload)
+            os.replace(path + ".tmp", path)
+            samples.append(time.perf_counter() - started)
+    finally:
+        import shutil
+        shutil.rmtree(tmp, ignore_errors=True)
+    samples.sort()
+    disk = {"n": n, "p50_s": samples[len(samples) // 2], "p95_s": samples[int(len(samples) * 0.95) - 1], "max_s": samples[-1]}
+    return {"payload_bytes": payload_bytes, "serialize_only": mem, "serialize_and_write": disk,
+            "note": "measured on this machine; not a claim of 0ms"}
+
+
 # ───────────────────────────── CLI ─────────────────────────────
 def _emit(payload):
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=1))
@@ -921,6 +1229,27 @@ def build_parser():
     sh.add_argument("--spec", default=None)
     sh.add_argument("--prototype", default=None)
     sh.add_argument("--stage3-trigger", default=None, choices=("hit", "none", "unrecorded"))
+    sq5 = sub.add_parser("enqueue", help="W4:evidence 固定後把 J5 shadow evaluation 排進 queue;零網路、不擋 G3")
+    sq5.add_argument("--slug", required=True)
+    sq5.add_argument("--author-ref", required=True)
+    sq5.add_argument("--session-ref", required=True)
+    sq5.add_argument("--gauntlet-report", default=None, help="預設 docs/dev/<slug>/evidence/gauntlet-report.md")
+    sq5.add_argument("--variant-id", default="v0")
+    sq5.add_argument("--changed-paths", default=None)
+    sq5.add_argument("--run-id", default=None)
+    sd = sub.add_parser("drain", help="W4:worker;逐筆送 J5 shadow(經 ask),失敗只記 shadow failure;不寫 G3")
+    sd.add_argument("--max", type=int, default=None)
+    sl = sub.add_parser("label", help="W4:same-evidence label binding;HEAD/evidence 變了就拒絕")
+    sl.add_argument("--slug", required=True)
+    sl.add_argument("--reviewer-ref", required=True)
+    sl.add_argument("--session-ref", required=True)
+    sl.add_argument("--from-review", action="store_true", help="從 7-review.md frontmatter(verdict/verdict_source/attested_by)推 label")
+    sl.add_argument("--verdict", default=None, choices=ledger.FEEDBACK_VERDICTS)
+    sl.add_argument("--source", default=None, choices=("human_attested", "fresh_agent_reviewer", "owner_self_review"))
+    sl.add_argument("--gauntlet-report", default=None)
+    sl.add_argument("--feedback-at", default=None)
+    sb = sub.add_parser("enqueue-bench", help="W4:實測 enqueue p50/p95(序列化 + 寫檔)")
+    sb.add_argument("--n", type=int, default=200)
     return p
 
 
@@ -959,6 +1288,21 @@ def main(argv=None):
             _emit(run_handoff(root, args.gate, args.slug, args.author_ref, args.session_ref,
                               discussion_path=args.discussion, spec_path=args.spec,
                               prototype_path=args.prototype, stage3_trigger=args.stage3_trigger))
+            return EXIT_OK
+        if args.cmd == "enqueue":
+            _emit(run_enqueue(root, args.slug, args.author_ref, args.session_ref, gauntlet_report=args.gauntlet_report,
+                              variant_id=args.variant_id, changed_paths=read_lines(args.changed_paths), run_id=args.run_id))
+            return EXIT_OK
+        if args.cmd == "drain":
+            _emit(run_drain(root, max_items=args.max))
+            return EXIT_OK
+        if args.cmd == "label":
+            out = run_label(root, args.slug, args.reviewer_ref, args.session_ref, verdict=args.verdict, source=args.source,
+                            from_review=args.from_review, gauntlet_report=args.gauntlet_report, feedback_at=args.feedback_at)
+            _emit(out)
+            return EXIT_OK if out["status"] == "labelled" else EXIT_INCONSISTENT
+        if args.cmd == "enqueue-bench":
+            _emit(run_enqueue_bench(n=args.n))
             return EXIT_OK
     except JevError as exc:
         print("⛔ devflow-jev %s: %s" % (args.cmd, exc), file=sys.stderr)
