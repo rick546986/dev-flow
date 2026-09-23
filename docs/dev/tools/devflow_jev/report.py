@@ -87,3 +87,116 @@ def graduation(evaluations, feedbacks, level="shadow", primary_source=None):
         "excluded": excluded,
         "note": "engineering acceptance threshold; not a proof of accuracy; primary layer pending formal spec",
     }
+
+
+# ───────────────────────────── W5 P2-2 eval metrics(計算器;真實 report 路徑由 runtime 餵資料)─────────────────────────────
+# mechanical override(truncated／header-body conflict／risk ceiling／runtime changed)與純 model route **分開**:
+# override 的 evaluation 不進 graduation denominator(roadmap §5.1 第 7 條),另列計數。
+MECHANICAL_OVERRIDE_PREFIXES = ("runtime_modified_this_session", "risk_ceiling_override", "packet_truncated",
+                                "header_body_conflict")
+
+
+def route_class(evaluation):
+    if evaluation.get("status") != "ok":
+        return "noop"
+    reason = evaluation.get("route_reason") or ""
+    if reason.startswith(MECHANICAL_OVERRIDE_PREFIXES):
+        return "mechanical_override"
+    return "model_route"
+
+
+def _chosen_probability(evaluation):
+    summary = evaluation.get("answers_summary") or {}
+    g3 = summary.get("g3_route") or {}
+    return g3.get("probability")
+
+
+def brier(pairs):
+    """pairs: [(p, y)];y ∈ {0,1}。空 → None(不填 0 冒充)。"""
+    pairs = [(p, y) for p, y in pairs if isinstance(p, (int, float))]
+    if not pairs:
+        return None
+    return sum((float(p) - float(y)) ** 2 for p, y in pairs) / len(pairs)
+
+
+def question_metrics(evaluations):
+    """逐題結構化指標(只用 answers_summary,沒有 raw):noul 平均、score 直方、choice 分布。"""
+    acc = {}
+    for ev in evaluations:
+        if ev.get("status") != "ok":
+            continue
+        for qid, val in (ev.get("answers_summary") or {}).items():
+            slot = acc.setdefault(qid, {"n": 0, "noul_sum": 0.0, "scores": {}, "choices": {}})
+            slot["n"] += 1
+            if "noul" in val:
+                slot["noul_sum"] += float(val["noul"])
+            elif "score" in val:
+                slot["scores"][str(val["score"])] = slot["scores"].get(str(val["score"]), 0) + 1
+            elif "choice" in val:
+                slot["choices"][val["choice"]] = slot["choices"].get(val["choice"], 0) + 1
+    out = {}
+    for qid, slot in acc.items():
+        row = {"n": slot["n"]}
+        if slot["noul_sum"] or any("noul" in (ev.get("answers_summary") or {}).get(qid, {}) for ev in evaluations):
+            row["noul_mean"] = round(slot["noul_sum"] / slot["n"], 4) if slot["n"] else None
+        if slot["scores"]:
+            row["score_histogram"] = slot["scores"]
+        if slot["choices"]:
+            row["choice_distribution"] = slot["choices"]
+        out[qid] = row
+    return out
+
+
+def eval_metrics(evaluations, feedbacks_by_layer, breaker_failures=None):
+    """P2-2 報表:unique cases、分層 n/agree/overturn/Wilson/floor/frozen、labeled_fraction、truncation_rate、
+    Brier(以被選 route 的機率對 agree=1/overturn=0)、逐題 metrics、route_reason 分層、breaker/freeze 狀態。
+    evaluations 應是**真實 replay store** 的 evaluation;合成 ledger 只拿來驗計算器。"""
+    total = len(evaluations)
+    classes = {"model_route": [], "mechanical_override": [], "noop": []}
+    for ev in evaluations:
+        classes[route_class(ev)].append(ev)
+    truncated = sum(1 for ev in evaluations if ev.get("packet_truncated"))
+    unique_all = len({ev["case_id"] for ev in evaluations})
+    unique_model = len({ev["case_id"] for ev in classes["model_route"]})
+    unique_override = len({ev["case_id"] for ev in classes["mechanical_override"]})
+    reason_counts = {}
+    for ev in evaluations:
+        key = (ev.get("route_reason") or ("noop:" + str(ev.get("noop_reason")))).split("(")[0]
+        reason_counts[key] = reason_counts.get(key, 0) + 1
+    layers = {}
+    any_frozen = False
+    for source in ("human_attested", "fresh_agent_reviewer"):
+        fbs = feedbacks_by_layer.get(source) or {}
+        grad = graduation(classes["model_route"], fbs, level="shadow", primary_source=source)
+        row = dict(grad["layers"][source])
+        row["labeled_fraction"] = round(row["n"] / float(unique_model), 4) if unique_model else None
+        pairs = []
+        for ev in classes["model_route"]:
+            fb = fbs.get(ev["evaluation_id"])
+            if not fb or fb.get("verdict") not in ("agree", "overturn"):
+                continue
+            if feedback_suspect(ev, fb) or not graduation_eligible(fb.get("source")):
+                continue
+            if ev.get("route_recommended") in ("AUTO", "REQUEST_CHANGES"):
+                pairs.append((_chosen_probability(ev), 1 if fb["verdict"] == "agree" else 0))
+        row["brier_chosen_route"] = brier(pairs)
+        row["brier_n"] = len([p for p in pairs if isinstance(p[0], (int, float))])
+        row["excluded"] = grad["excluded"]
+        layers[source] = row
+        any_frozen = any_frozen or row["frozen"]
+    return {
+        "evaluations_total": total,
+        "unique_cases_all": unique_all,
+        "unique_cases_model_route": unique_model,          # graduation denominator 候選(仍要 label 才進 n)
+        "unique_cases_mechanical_override": unique_override,
+        "route_class_counts": {k: len(v) for k, v in classes.items()},
+        "route_reason_counts": reason_counts,
+        "truncation_rate": round(truncated / float(total), 4) if total else None,
+        "layers": layers,
+        "question_metrics": question_metrics(classes["model_route"]),
+        "circuit_breaker_state": "frozen" if any_frozen else "closed",
+        "transport_breaker_failures": dict(breaker_failures or {}),
+        "floors": {"wilson_lower_95": WILSON_FLOOR, "n": N_FLOOR},
+        "note": "engineering acceptance threshold; not accuracy; mechanical overrides excluded from denominator; "
+                "synthetic/smoke/audit evaluations never enter this store",
+    }

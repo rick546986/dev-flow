@@ -1301,5 +1301,187 @@ class W3FlowPolicy(unittest.TestCase):
         self.assertEqual(original, "proto-original\n")
 
 
+
+# ───────────────────────────────── W5 P2-2 / P2-3 / P2-4 / P2-7 / P2-8 ─────────────────────────────
+class W5RiskCeilingAndRouteClass(unittest.TestCase):
+    def test_migration_fixture_forces_human_regardless_of_score(self):
+        fx = fixture("risk-ceiling-migration.json")
+        hits = provenance.risk_ceiling_hit(fx["changed_paths"])
+        self.assertTrue(hits)
+        route = policy.route_j5(fx["answers"], risk_ceiling_hit=bool(hits))
+        self.assertEqual((route["route_recommended"], route["route_reason"]), (fx["expected_route"], fx["expected_reason"]))
+        self.assertEqual(policy.route_j5(fx["answers"])["route_recommended"], "AUTO")   # 同分數、沒命中 → 才會 AUTO
+
+    def test_route_class_separates_mechanical_override_from_model_route(self):
+        ev_model = make_evaluation(perfect_j5_answers())
+        ev_override = make_evaluation(perfect_j5_answers(), risk_ceiling_hit=True)
+        ev_noop = make_evaluation(None, status="noop")
+        self.assertEqual(report.route_class(ev_model), "model_route")
+        self.assertEqual(report.route_class(ev_override), "mechanical_override")
+        self.assertEqual(report.route_class(ev_noop), "noop")
+        self.assertEqual(ev_override["route_reason"], "risk_ceiling_override")
+
+
+class W5EvalMetrics(unittest.TestCase):
+    def _fb(self, ev, verdict="agree", source="human_attested"):
+        return {"verdict": verdict, "source": source, "session_ref": "ses_reviewer", "feedback_at": "2026-09-23T00:00:00Z",
+                "reviewer_ref": "human:rick", "artifact_hash": ev["evidence"]["artifact_hash"],
+                "evidence_hash": ev["evidence"]["evidence_hash"], "head_sha": ev["evidence"]["head_sha"]}
+
+    def _case(self, i, answers=None, **kw):
+        ev = dict(EVIDENCE, evidence_hash="sha256:" + ("%064x" % i))
+        return make_evaluation(answers or perfect_j5_answers(), evidence=ev, **kw)
+
+    def test_metrics_shape_layers_labeled_fraction_and_brier(self):
+        evs = [self._case(i) for i in range(4)]
+        overturned = self._case(9)
+        fbs = {"human_attested": {evs[0]["evaluation_id"]: self._fb(evs[0]), evs[1]["evaluation_id"]: self._fb(evs[1]),
+                                  overturned["evaluation_id"]: self._fb(overturned, "overturn")},
+               "fresh_agent_reviewer": {evs[2]["evaluation_id"]: self._fb(evs[2], source="fresh_agent_reviewer")}}
+        m = report.eval_metrics(evs + [overturned], fbs, breaker_failures={"J5": 1})
+        self.assertEqual(m["evaluations_total"], 5)
+        self.assertEqual(m["unique_cases_model_route"], 5)
+        self.assertEqual(m["unique_cases_mechanical_override"], 0)
+        human = m["layers"]["human_attested"]
+        self.assertEqual((human["n"], human["n_agree"], human["n_overturn"]), (3, 2, 1))
+        self.assertTrue(human["frozen"])
+        self.assertEqual(m["circuit_breaker_state"], "frozen")
+        self.assertAlmostEqual(human["labeled_fraction"], 3 / 5.0, places=4)
+        # Brier:兩筆 agree(p=.97,y=1)+ 一筆 overturn(p=.97,y=0)
+        self.assertAlmostEqual(human["brier_chosen_route"], (2 * 0.03 ** 2 + 0.97 ** 2) / 3, places=6)
+        self.assertEqual(m["layers"]["fresh_agent_reviewer"]["n"], 1)
+        self.assertEqual(m["transport_breaker_failures"], {"J5": 1})
+        self.assertIn("g3_route", m["question_metrics"])
+        self.assertEqual(m["question_metrics"]["evidence_complete"]["noul_mean"], 0.99)
+        self.assertEqual(m["floors"], {"wilson_lower_95": 0.85, "n": 30})
+
+    def test_override_and_noop_excluded_from_denominator_and_truncation_rate(self):
+        model = self._case(1)
+        override = self._case(2, risk_ceiling_hit=True)
+        noop = self._case(3, status="noop")
+        truncated_pk = j5_packet()
+        truncated_pk["truncated"] = True
+        truncated = make_evaluation(perfect_j5_answers(), evidence=dict(EVIDENCE, evidence_hash="sha256:" + "4" * 64), pk=truncated_pk)
+        fbs = {"human_attested": {override["evaluation_id"]: self._fb(override)}, "fresh_agent_reviewer": {}}
+        m = report.eval_metrics([model, override, noop, truncated], fbs)
+        # truncated packet 的 route_reason 是 packet_truncated → 也是 mechanical override
+        self.assertEqual(m["route_class_counts"], {"model_route": 1, "mechanical_override": 2, "noop": 1})
+        self.assertEqual(m["layers"]["human_attested"]["n"], 0)          # label 在 override 上 → 不進 n
+        self.assertEqual(m["unique_cases_mechanical_override"], 2)
+        self.assertEqual(m["truncation_rate"], 0.25)
+        self.assertIn("risk_ceiling_override", m["route_reason_counts"])
+        self.assertIsNone(m["layers"]["human_attested"]["brier_chosen_route"])
+
+    def test_variants_and_wrong_head_label_do_not_inflate_n(self):
+        base = self._case(1)
+        variant = make_evaluation(perfect_j5_answers(), evidence=base["evidence"], variant="v1")
+        self.assertEqual(base["case_id"], variant["case_id"])
+        wrong = fixture("wrong-head-label.json")
+        fb_ok = self._fb(base)
+        fb_wrong = dict(self._fb(variant), head_sha=wrong.get("feedback", {}).get("head_sha", "f" * 40))
+        m = report.eval_metrics([base, variant], {"human_attested": {base["evaluation_id"]: fb_ok, variant["evaluation_id"]: fb_wrong},
+                                                  "fresh_agent_reviewer": {}})
+        self.assertEqual(m["unique_cases_model_route"], 1)
+        self.assertEqual(m["layers"]["human_attested"]["n"], 1)
+        reasons = dict(m["layers"]["human_attested"]["excluded"])
+        self.assertTrue(any("evidence_version_mismatch" in r or r == "duplicate_case" for r in reasons.values()))
+
+    def test_empty_store_reports_zero_not_fake_numbers(self):
+        m = report.eval_metrics([], {"human_attested": {}, "fresh_agent_reviewer": {}})
+        self.assertEqual(m["evaluations_total"], 0)
+        self.assertIsNone(m["truncation_rate"])
+        self.assertIsNone(m["layers"]["human_attested"]["labeled_fraction"])
+        self.assertEqual(m["circuit_breaker_state"], "closed")
+
+    def test_brier_helper(self):
+        self.assertIsNone(report.brier([]))
+        self.assertAlmostEqual(report.brier([(1.0, 1), (0.0, 1)]), 0.5)
+        self.assertAlmostEqual(report.brier([(None, 1), (0.5, 0)]), 0.25)
+
+
+class W5AuditNote(unittest.TestCase):
+    def test_note_is_closed_shape_without_answers_or_probabilities(self):
+        ev = make_evaluation(perfect_j5_answers())
+        note = ledger.audit_note(ev)
+        self.assertEqual(set(note), set(ledger.AUDIT_NOTE_KEYS))
+        text = json.dumps(note) + ledger.audit_note_markdown(note)
+        for banned in ("probab", "answers", "packet", "0.97", "AUTO_SHIP", "route_taken", "session"):
+            self.assertNotIn(banned, text)
+        self.assertEqual(note["questionset_hash_prefix"], QHASH[7:23])
+        self.assertEqual(note["route_recommended"], "AUTO")
+        self.assertIn("not a verdict", ledger.audit_note_markdown(note))
+
+    def test_note_rejects_extra_keys_and_privacy_hits(self):
+        ev = make_evaluation(perfect_j5_answers())
+        note = ledger.audit_note(ev)
+        with self.assertRaises(JevError):
+            ledger.assert_audit_note_safe(dict(note, probabilities={"AUTO_SHIP": 0.97}))
+        with self.assertRaises(JevError):
+            ledger.assert_audit_note_safe(dict(note, evaluation_id="token = SUPERSECRET123456"))
+        with self.assertRaises(JevError):
+            ledger.audit_note_markdown({k: note[k] for k in list(note)[:3]})
+
+
+class W5J4Assist(unittest.TestCase):
+    def test_escalation_moves_exactly_one_tier_and_never_skips(self):
+        self.assertEqual(policy.escalate_to("claude-haiku-4-5"), "sonnet")
+        self.assertEqual(policy.escalate_to("claude-sonnet-5"), "opus")
+        self.assertIsNone(policy.escalate_to("claude-opus-5-5"))
+        self.assertIsNone(policy.escalate_to("claude-fable-5-1"))         # fable 與 opus 同層
+        self.assertIsNone(policy.escalate_to("mystery-model"))
+
+    def test_route_j4_uses_existing_enum_and_is_assist_only(self):
+        route = policy.route_j4({"failure_category": {"choice": "ENV", "probabilities": {}, "confidence": 0.8},
+                                 "retry_same_tier_useful": {"noul": 0.2}}, current_model="claude-haiku-4-5")
+        self.assertEqual((route["failure_category"], route["route_recommended"], route["escalate_to"]), ("ENV", "escalate_one_tier", "sonnet"))
+        self.assertTrue(route["assist_only"])
+        self.assertFalse(route["writes_dispatch"])
+        retry = policy.route_j4({"failure_category": {"choice": "IMPL"}, "retry_same_tier_useful": {"noul": 0.9}}, "sonnet")
+        self.assertEqual((retry["route_recommended"], retry["escalate_to"]), ("retry_same_tier", None))
+        unknown = policy.route_j4({"failure_category": {"choice": "WEIRD"}}, "haiku")
+        self.assertEqual((unknown["failure_category"], unknown["route_recommended"]), ("UNKNOWN", "human_triage"))
+        top = policy.route_j4({"failure_category": {"choice": "IMPL"}, "retry_same_tier_useful": {"noul": 0.1}}, "opus")
+        self.assertEqual(top["route_recommended"], "human_triage")
+        self.assertEqual(policy.route_taken("J4", "live", "escalate_one_tier"), ("HUMAN", "j4_assist_only"))
+
+    def test_j4_enum_matches_agent_event_schema(self):
+        schema = json.load(open(os.path.join(REPO, "hooks", "devflow_obs_vendor", "schema", "agent-event.schema.json"), encoding="utf-8"))
+        self.assertEqual(tuple(schema["fields"]["failure_category"]["values"]), policy.J4_FAILURE_CATEGORIES)
+        qs = manifest.load_questions(os.path.join(HERE, "jev-questions-experimental.json"))
+        self.assertEqual(tuple(qs["J4"]["failure_category"]["criteria"]), policy.J4_FAILURE_CATEGORIES)
+
+
+class W5J2Shadow(unittest.TestCase):
+    def test_experimental_questions_have_their_own_hash_and_do_not_touch_official_group(self):
+        qs = manifest.load_questions(os.path.join(HERE, "jev-questions-experimental.json"))
+        self.assertEqual(set(qs), {"J2", "J4"})
+        exp_hash = manifest.questionset_hash(manifest.build_manifest(qs))
+        self.assertNotEqual(exp_hash, QHASH)
+        self.assertEqual(set(manifest.load_questions()), {"J1", "J3", "J5"})
+
+    def test_route_j2_never_auto_pass_and_taken_always_human(self):
+        route = policy.route_j2({"preferred_option": {"choice": "B", "probabilities": {}, "confidence": 0.7},
+                                 "decision_supported": {"noul": 0.9}, "owner_calls_resolved": {"noul": 1.0},
+                                 "tradeoff_completeness": {"score": 3}}, {"A": "登入即時查", "B": "nightly cron"})
+        self.assertEqual((route["route_recommended"], route["preferred_identity"]), ("B", "nightly cron"))
+        self.assertFalse(route["auto_pass"])
+        self.assertFalse(route["window_ratified"])
+        self.assertFalse(policy.J2_WINDOW_RATIFIED)
+        for level in ("shadow", "live"):
+            self.assertEqual(policy.route_taken("J2", level, "B"), ("HUMAN", "j2_shadow_window_not_ratified"))
+
+    def test_stability_flags_unstable_and_never_graduates(self):
+        stable = policy.j2_stability([{"route_recommended": "A", "preferred_identity": "x"},
+                                      {"route_recommended": "C", "preferred_identity": "x"}])
+        self.assertTrue(stable["stable"])
+        self.assertFalse(stable["graduation_eligible"])
+        flipped = policy.j2_stability([{"route_recommended": "A", "preferred_identity": "x"},
+                                       {"route_recommended": "A", "preferred_identity": "y"}])
+        self.assertTrue(flipped["unstable"])
+        unclear = policy.j2_stability([{"route_recommended": "A", "preferred_identity": "x"},
+                                       {"route_recommended": policy.J2_NONE_CLEAR, "preferred_identity": None}])
+        self.assertTrue(unclear["unstable"])
+        self.assertTrue(policy.j2_stability([{"route_recommended": "A", "preferred_identity": "x"}])["unstable"])
+
 if __name__ == "__main__":
     unittest.main()

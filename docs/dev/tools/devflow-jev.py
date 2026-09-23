@@ -12,6 +12,9 @@ policy 導出 route → 雙層 ledger 落盤」的膠水,不含任何門檻、�
   drain       W4:worker,逐筆經 ask 送 J5 shadow;失敗只記 shadow failure;不寫 G3 verdict。
   label       W4:same-evidence label binding;HEAD/evidence 變了就拒絕,不誤標舊 evaluation。
   enqueue-bench  W4:實測 enqueue p50/p95。
+  note        W5 P2-7:封閉五欄附註(gate/qhash prefix/model/route_recommended/eval id),無 answers/probabilities。
+  j4-assist   W5 P2-3(實驗):失敗分類 + 升一層建議;assist-only,不派工、不動 dispatch guard。
+  j2-shadow   W5 P2-8(實驗):J2 厚包 shadow + order/phrasing stability;window 未核定 → 永遠 shadow。
               off／失敗／逾時 → exit 0、effect=continue_existing_flow。J3 只回顯示文案,不寫 verdict。
   ask         一次 evaluation:雙閘門 off → exit 0、什麼都不寫、零網路;shadow/live → 送一次,
               失敗 no-op(G2),route 由 policy 導出(G6),replay store + durable(G4)。
@@ -40,6 +43,7 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 GRADUATED = False            # W6 前恆 False;沒有 CLI 旗標、沒有環境變數能改它
 SHADOW_DEADLINE_S = 60.0     # 非 J1 的單次 HTTP 等待上限(J1 用 policy.J1_DEADLINE_S)
+EXPERIMENTAL_GATES = ("J2", "J4")   # W5:題組在 jev-questions-experimental.json,各自 manifest/hash;永遠 shadow/assist
 EXIT_OK, EXIT_INCONSISTENT, EXIT_USAGE = 0, 1, 2
 
 
@@ -54,6 +58,7 @@ def _package_parent():
 
 
 sys.path.insert(0, _package_parent())
+EXPERIMENTAL_QUESTIONS_PATH = os.path.join(_package_parent(), "devflow_jev", "jev-questions-experimental.json")
 from devflow_jev import GATES, MODEL_PINNED, JevError  # noqa: E402
 from devflow_jev import gate as gate_mod  # noqa: E402
 from devflow_jev import ledger, manifest as manifest_mod, packet as packet_mod, policy, provenance  # noqa: E402
@@ -221,7 +226,13 @@ def route_for(gate, answers, packet, risk_hit, runtime_changed):
         return {"route_recommended": safe["recommendation"],
                 "route_reason": "demo_worth_it=%s(writes_verdict=false)" % safe["demo_worth_it"],
                 "signals": safe}
-    raise JevError("gate %s 沒有 route formula(J2/J4 保留,不在 MVP)" % gate)
+    if gate == "J4":
+        return policy.route_j4(answers, current_model=(packet.get("header") or {}).get("current_model"))
+    if gate == "J2":
+        identities = (packet.get("header") or {}).get("option_identities") or ""
+        identities = dict(item.split("=", 1) for item in identities.split("|") if "=" in item)
+        return policy.route_j2(answers, identities)
+    raise JevError("gate %s 沒有 route formula" % gate)
 
 
 def replay_route_fn(evaluation):
@@ -236,6 +247,10 @@ def replay_route_fn(evaluation):
             route = policy.route_j1(answers, truncated=truncated, packet_flags=packet_flags)
             route["route_recommended"] = route["next"]
             return route
+        if gate == "J4":
+            return policy.route_j4(answers, current_model=None)
+        if gate == "J2":
+            return policy.route_j2(answers, {})
         safe = policy.sanitize_j3(policy.route_j3(answers))
         if safe is None:
             return {"route_recommended": None, "signals": {"writes_verdict": False}}
@@ -255,8 +270,10 @@ def _taken(gate, level, outcome, route):
 
 # ───────────────────────────── core operations ─────────────────────────────
 def run_ask(root, gate, slug, packet, evidence, author_ref, session_ref, environ=None, transport_factory=None,
-            clock=time.monotonic, changed_paths=(), deadline_s=None, run_id=None, memory_dir=None, day=None):
-    """回 dict(可直接 json.dumps)。off → 什麼都不寫、transport_factory 不會被呼叫。"""
+            clock=time.monotonic, changed_paths=(), deadline_s=None, run_id=None, memory_dir=None, day=None,
+            questions_path=None):
+    """回 dict(可直接 json.dumps)。off → 什麼都不寫、transport_factory 不會被呼叫。
+    J2/J4(實驗)用 jev-questions-experimental.json 自己的 manifest/hash;J1/J3/J5 用正式題組。"""
     environ = os.environ if environ is None else environ
     if gate not in GATES:
         raise JevError("未知 gate %r" % gate)
@@ -273,7 +290,9 @@ def run_ask(root, gate, slug, packet, evidence, author_ref, session_ref, environ
     memory_dir = _require_memory_dir(root, environ, memory_dir)   # durable writer 缺 → 在送出／寫檔前就 fail-loud
     deadline = _deadline(gate, deadline_s)
 
-    questions = manifest_mod.load_questions()
+    if questions_path is None and gate in EXPERIMENTAL_GATES:
+        questions_path = EXPERIMENTAL_QUESTIONS_PATH
+    questions = manifest_mod.load_questions(questions_path)
     manifest = manifest_mod.build_manifest(questions)
     qhash = manifest_mod.questionset_hash(manifest)
     api_questions = manifest_mod.gate_questions_for_api(manifest, gate)
@@ -480,16 +499,21 @@ def run_report(root, gate="J5", primary_source=None, environ=None, memory_dir=No
             body = dict(kv.split("=", 1) for kv in record.get("body", "").split(";") if "=" in kv)
             if body.get("gate") == gate:
                 not_replayable.append(jev["evaluation_id"])
+    # P2-2 / §5.1 第 7 條:mechanical override 不進 graduation denominator;純 model route 才算
+    model_route_evals = [ev for ev in evaluations if report_mod.route_class(ev) == "model_route"]
     layers, excluded, conflicting, primary = {}, {}, set(), None
     for source, fbs in by_layer.items():
-        one = report_mod.graduation(evaluations, fbs, level="shadow", primary_source=source)
+        one = report_mod.graduation(model_route_evals, fbs, level="shadow", primary_source=source)
         layers[source] = one["layers"][source]
         excluded[source] = one["excluded"]
         conflicting.update(one["conflicting_label_cases"])
         if source == primary_source:
             primary = one
+    metrics = report_mod.eval_metrics(evaluations, by_layer, breaker_failures=StateStore(root).load_breaker().failures)
     out = {
         "gate": gate, "graduated": GRADUATED, "auto_allowed": False, "network": False,
+        "metrics": metrics,                                   # P2-2:labeled_fraction／truncation_rate／Brier／逐題／route_reason 分層
+        "circuit_breaker_state": metrics["circuit_breaker_state"],
         "layers": layers,                                     # 分層;沒有 combined 主率
         "primary_source": primary_source,
         "floor_met": primary["floor_met"] if primary else None,
@@ -996,8 +1020,30 @@ def _queue_dirs(root):
     return os.path.join(root, QUEUE_DIRNAME), os.path.join(root, QUEUE_DONE_DIRNAME)
 
 
+def derive_changed_paths(root, base_ref=None):
+    """P2-4:沒明給 --changed-paths 時,從 git 推(merge-base(<base>, HEAD)..HEAD;找不到 base → HEAD 那個 commit)。
+    回 (paths, source)。推不出 → ([], "unavailable"),不猜。"""
+    candidates = [base_ref] if base_ref else []
+    candidates += ["develop", "main", "master", "origin/develop", "origin/main"]
+    for ref in candidates:
+        try:
+            _git(root, "rev-parse", "--verify", "--quiet", ref + "^{commit}")
+            base = _git(root, "merge-base", ref, "HEAD").strip()
+            head = _git(root, "rev-parse", "HEAD").strip()
+        except JevError:
+            continue
+        if base and base != head:
+            out = _git(root, "diff", "--name-only", base, "HEAD")
+            return sorted(p for p in out.splitlines() if p.strip()), "merge-base(%s)" % ref
+    try:
+        out = _git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD")
+        return sorted(p for p in out.splitlines() if p.strip()), "head_commit"
+    except JevError:
+        return [], "unavailable"
+
+
 def run_enqueue(root, slug, author_ref, session_ref, environ=None, gauntlet_report=None, variant_id="v0",
-                clock=time.perf_counter, changed_paths=(), run_id=None, now=None):
+                clock=time.perf_counter, changed_paths=(), run_id=None, now=None, base_ref=None):
     """前景:雙閘門 → 綁 evidence → 組包 → 序列化到 queue。零網路;失敗一律 noop、不擋 G3。
     latency 是實測(clock 差),不宣稱 0ms。"""
     environ = os.environ if environ is None else environ
@@ -1015,6 +1061,10 @@ def run_enqueue(root, slug, author_ref, session_ref, environ=None, gauntlet_repo
     except JevError as exc:
         base.update({"status": "noop", "noop_reason": "evidence_not_fixed:" + str(exc)[:160]})
         return base
+    changed_paths = list(changed_paths)
+    changed_source = "explicit"
+    if not changed_paths:
+        changed_paths, changed_source = derive_changed_paths(root, base_ref)     # P2-4:risk ceiling 要看到改了什麼
     started = clock()
     qdir, _ = _queue_dirs(root)
     os.makedirs(qdir, exist_ok=True)
@@ -1023,7 +1073,8 @@ def run_enqueue(root, slug, author_ref, session_ref, environ=None, gauntlet_repo
             "enqueued_at": now or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "author_ref": author_ref, "session_ref": session_ref,
             "run_id": run_id if run_id is not None else read_run_id(root),
-            "changed_paths": list(changed_paths), "variant_id": variant_id,
+            "changed_paths": changed_paths, "changed_paths_source": changed_source, "variant_id": variant_id,
+            "risk_ceiling_hit": provenance.risk_ceiling_hit(changed_paths),
             "packet": packet, "evidence": binding["evidence"], "case_id": binding["case_id"],
             "evidence_files": binding["files"]}
     payload = json.dumps(item, ensure_ascii=False, sort_keys=True)
@@ -1036,6 +1087,8 @@ def run_enqueue(root, slug, author_ref, session_ref, environ=None, gauntlet_repo
     base.update({"status": "enqueued", "queue_id": queue_id, "case_id": binding["case_id"],
                  "packet_hash": packet["packet_hash"], "enqueue_latency_s": latency,
                  "payload_bytes": len(payload.encode("utf-8")), "written": [path],
+                 "changed_paths": changed_paths, "changed_paths_source": changed_source,
+                 "risk_ceiling_hit": item["risk_ceiling_hit"],
                  "evidence": binding["evidence"], "note": "G3 continues now; evaluation happens in drain"})
     return base
 
@@ -1177,6 +1230,189 @@ def run_enqueue_bench(n=200, payload_bytes=20000):
             "note": "measured on this machine; not a claim of 0ms"}
 
 
+
+# ───────────────────────────── W5: P2-7 note / P2-3 J4 assist / P2-8 J2 thick packet ─────────────────────────────
+def run_note(root, evaluation_id, environ=None, memory_dir=None):
+    """P2-7:PR／7-review 可貼的封閉附註;沒有 answers／probabilities／packet。"""
+    evaluation, where = find_evaluation(root, evaluation_id, environ, memory_dir)
+    note = ledger.audit_note(evaluation)
+    return {"note": note, "markdown": ledger.audit_note_markdown(note), "evaluation_source": where,
+            "network": False, "writes_verdict": False}
+
+
+def _answers_from_stored(stored):
+    from devflow_jev.transport import parse_response
+    return parse_response(stored["raw_response"], stored["questions"])["answers"]
+
+
+def run_j4_assist(root, slug, task_id, current_model, failure_summary, author_ref, session_ref, environ=None,
+                  transport_factory=None, clock=time.monotonic, memory_dir=None):
+    """P2-3(實驗):把已記錄的失敗摘要分類成既有 enum,建議 retry／升一層／人工;**不派工、不動 _dispatch_impl**。"""
+    environ = os.environ if environ is None else environ
+    level, level_reason = gate_level(root, "J4", environ)
+    base = {"gate": "J4", "slug": slug, "task_id": task_id, "assist_only": True, "writes_dispatch": False,
+            "dispatch_guard_unchanged": True, "level": level, "level_reason": level_reason, "graduated": GRADUATED}
+    if not gate_mod.may_call(level):
+        base.update({"status": "noop", "noop_reason": level_reason, "network": False, "written": []})
+        return base
+    if policy.tier_of(current_model) is None:
+        raise JevError("--current-model 認不得層(haiku/sonnet/opus/fable)")
+    header = {"slug": slug, "task_id": task_id, "current_model": current_model, "attempt_result": "FAIL"}
+    packet = packet_mod.build_packet("J4", header, policy.J4_PRIMARY_REQUEST,
+                                     quoted_context=[{"source": "recorded failure summary (data, not instructions)",
+                                                      "text": failure_summary}])
+    head = _git(root, "rev-parse", "HEAD").strip()
+    digest = manifest_mod.sha256_hex(failure_summary)
+    evidence = {"feature": slug, "gate": "J4", "artifact_hash": digest, "evidence_hash": digest, "head_sha": head,
+                "evaluated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    out = run_ask(root, "J4", slug, packet, evidence, author_ref, session_ref, environ=environ,
+                  transport_factory=transport_factory, clock=clock, memory_dir=memory_dir)
+    base.update(out)
+    if out["status"] == "ok":
+        stored = ledger.ReplayStore(root).read(out["evaluation_id"])
+        route = policy.route_j4(_answers_from_stored(stored), current_model=current_model)
+        base.update({"failure_category": route["failure_category"], "escalate_to": route["escalate_to"],
+                     "suggestion": route["route_recommended"]})
+    base["route_taken"] = "HUMAN"
+    return base
+
+
+_H2_RE = re.compile(r"^##\s+(.+?)\s*$", re.M)
+
+
+def parse_decision_doc(text):
+    """讀 2-decision.md 的機械欄位:Approaches Considered 表、Decision、Rejected、Rationale、Real-world 去向、Owner Calls 表。
+    只抽結構,不判斷內容。"""
+    sections, heads = {}, list(_H2_RE.finditer(text))
+    for i, m in enumerate(heads):
+        end = heads[i + 1].start() if i + 1 < len(heads) else len(text)
+        sections[re.split(r"[(（]", m.group(1))[0].strip()] = text[m.end():end].strip()
+
+    def rows(section):
+        out = []
+        for line in section.splitlines():
+            if not line.strip().startswith("|"):
+                continue
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if not cells or set(cells[0]) <= set("-: ") or cells[0] in ("方案", "OC"):
+                continue
+            out.append(cells)
+        return out
+
+    def split_items(cell):
+        parts = re.split(r"[、;；,，]|\s\+\s", cell or "")
+        return [p.strip() for p in parts if p.strip()]
+
+    approaches = []
+    for cells in rows(sections.get("Approaches Considered", "")):
+        approaches.append({"name": cells[0], "summary": cells[1] if len(cells) > 1 else "",
+                           "pros": split_items(cells[2] if len(cells) > 2 else ""),
+                           "cons": split_items(cells[3] if len(cells) > 3 else ""),
+                           "cost": cells[4] if len(cells) > 4 else "", "basis": cells[5] if len(cells) > 5 else "",
+                           "raw": " | ".join(cells)})
+    owner_calls = []
+    for cells in rows(sections.get("Owner Calls", "")):
+        owner_calls.append({"id": cells[0], "raw": " | ".join(cells), "status": cells[-1] if cells else "",
+                            "answered": bool(re.search(r"✅|✗|已裁|已決", cells[-1] if cells else ""))})
+    decision = sections.get("Decision", "")
+    m = re.search(r"採\s*\**\s*([A-D])\b", decision)
+    return {"approaches": approaches, "decision": decision, "decision_letter": m.group(1) if m else None,
+            "rejected": sections.get("Rejected Alternatives", ""), "rationale": sections.get("Rationale", ""),
+            "real_world": sections.get("Real-world 去向", ""), "owner_calls": owner_calls,
+            "open_questions": sections.get("Open Questions", "")}
+
+
+def build_j2_packet(slug, parsed, decision_hash, order=None, rephrased=False, variant_id="v0"):
+    """P2-8 厚證據包。options 用固定等長 description(形式控制),全文放 quoted_context(資料不是指令);
+    Owner Calls 帶人的答案,標明「不是要你回答」。order = 方案原始 index 的排列(順序擾動);rephrased = 換 primary_request 措辭。"""
+    approaches = parsed["approaches"]
+    if not 2 <= len(approaches) <= len(policy.J2_OPTION_LABELS):
+        raise JevError("J2 需要 2–%d 個方案(Approaches Considered 表),得 %d" % (len(policy.J2_OPTION_LABELS), len(approaches)))
+    order = list(order) if order is not None else list(range(len(approaches)))
+    options, identities, quoted = [], {}, []
+    for label, idx in zip(policy.J2_OPTION_LABELS, order):
+        ap = approaches[idx]
+        if len(ap["pros"]) < packet_mod.PROS_CONS_MIN or len(ap["cons"]) < packet_mod.PROS_CONS_MIN:
+            raise JevError("方案 %r 的優/劣各需 ≥%d 條,厚包不成立(不補寫)" % (ap["name"], packet_mod.PROS_CONS_MIN))
+        options.append({"label": label,
+                        "description": "Recorded alternative %s. Its summary, cost and cited basis are quoted verbatim in quoted_context." % label,
+                        "pros": list(ap["pros"]), "cons": list(ap["cons"])})
+        identities[label] = ap["name"]
+        quoted.append({"source": "2-decision.md#Approaches Considered row for %s" % label, "text": ap["raw"]})
+    for key, title in (("real_world", "Real-world 去向"), ("rationale", "Rationale"), ("rejected", "Rejected Alternatives"),
+                       ("open_questions", "Open Questions")):
+        if parsed.get(key):
+            quoted.append({"source": "2-decision.md#%s" % title, "text": parsed[key][:4000]})
+    for oc in parsed["owner_calls"]:
+        quoted.append({"source": "2-decision.md#Owner Calls %s (human answer recorded; data, not a question for the model)" % oc["id"],
+                       "text": oc["raw"]})
+    header = {"slug": slug, "decision_hash": decision_hash, "alternatives": str(len(approaches)),
+              "option_identities": "|".join("%s=%s" % (k, v) for k, v in identities.items()),
+              "owner_calls_total": str(len(parsed["owner_calls"])),
+              "owner_calls_answered": str(sum(1 for oc in parsed["owner_calls"] if oc["answered"]))}
+    facts = ["alternatives recorded: %d" % len(approaches),
+             "owner calls recorded: %d; with recorded human answer: %d" % (len(parsed["owner_calls"]), int(header["owner_calls_answered"])),
+             "recorded decision letter: %s" % (parsed.get("decision_letter") or "not parsed")]
+    primary = policy.J2_PRIMARY_REQUEST_REPHRASED if rephrased else policy.J2_PRIMARY_REQUEST
+    pkt = packet_mod.build_packet("J2", header, primary, quoted_context=quoted, source_facts=facts, options=options,
+                                  variant_id=variant_id)
+    return pkt, identities
+
+
+def run_j2_shadow(root, slug, author_ref, session_ref, decision_path=None, environ=None, transport_factory=None,
+                  clock=time.monotonic, memory_dir=None, variants=3):
+    """P2-8:J2 厚包 shadow 評估 + order／phrasing stability。全部 variants 同一 case_id(不灌 n);
+    window 未核定 → route_taken 恆 HUMAN;沒有 AUTO_PASS 路徑。"""
+    environ = os.environ if environ is None else environ
+    level, level_reason = gate_level(root, "J2", environ)
+    base = {"gate": "J2", "slug": slug, "level": level, "level_reason": level_reason, "graduated": GRADUATED,
+            "auto_pass": False, "window_ratified": policy.J2_WINDOW_RATIFIED, "window_candidate": policy.J2_WINDOW_CANDIDATE,
+            "writes_decision": False, "answers_owner_calls": False}
+    if not gate_mod.may_call(level):
+        base.update({"status": "noop", "noop_reason": level_reason, "network": False, "written": []})
+        return base
+    decision_path = decision_path or os.path.join(root, "docs", "dev", slug, "2-decision.md")
+    if not os.path.isfile(decision_path):
+        base.update({"status": "noop", "noop_reason": "decision_missing", "network": False, "written": []})
+        return base
+    with open(decision_path, encoding="utf-8") as fh:
+        text = fh.read()
+    parsed = parse_decision_doc(text)
+    decision_hash = manifest_mod.sha256_hex(text)
+    head = _git(root, "rev-parse", "HEAD").strip()
+    evidence = {"feature": slug, "gate": "J2", "artifact_hash": decision_hash, "evidence_hash": decision_hash,
+                "head_sha": head, "evaluated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    n = len(parsed["approaches"])
+    plans = [("v0", list(range(n)), False), ("v1", list(reversed(range(n))), False), ("v2", list(range(n)), True)][:max(1, variants)]
+    results, routes = [], []
+    for variant_id, order, rephrased in plans:
+        try:
+            pkt, identities = build_j2_packet(slug, parsed, decision_hash, order=order, rephrased=rephrased, variant_id=variant_id)
+        except JevError as exc:
+            base.update({"status": "noop", "noop_reason": "packet_unbuildable:" + str(exc)[:160], "network": False, "written": []})
+            return base
+        out = run_ask(root, "J2", slug, pkt, evidence, author_ref, session_ref, environ=environ,
+                      transport_factory=transport_factory, clock=clock, memory_dir=memory_dir)
+        entry = {k: out.get(k) for k in ("status", "noop_reason", "evaluation_id", "case_id", "route_recommended",
+                                          "route_taken", "route_taken_reason")}
+        entry["variant_id"] = variant_id
+        if out["status"] == "ok":
+            stored = ledger.ReplayStore(root).read(out["evaluation_id"])
+            route = policy.route_j2(_answers_from_stored(stored), identities)
+            recorded = identities.get(parsed["decision_letter"]) if (parsed.get("decision_letter") and order == list(range(n))) else None
+            entry.update({"preferred_identity": route["preferred_identity"], "decision_supported": route["decision_supported"],
+                          "matches_recorded_decision": (route["preferred_identity"] == recorded) if recorded else None})
+            routes.append(route)
+        results.append(entry)
+    stability = policy.j2_stability(routes)
+    base.update({"status": "ok" if routes else "noop",
+                 "noop_reason": None if routes else (results[0].get("noop_reason") if results else "no_variants"),
+                 "results": results, "stability": stability,
+                 "case_id": results[0]["case_id"] if results else None, "network": True,
+                 "route_taken": "HUMAN", "recorded_decision_letter": parsed.get("decision_letter")})
+    return base
+
+
 # ───────────────────────────── CLI ─────────────────────────────
 def _emit(payload):
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=1))
@@ -1250,6 +1486,22 @@ def build_parser():
     sl.add_argument("--feedback-at", default=None)
     sb = sub.add_parser("enqueue-bench", help="W4:實測 enqueue p50/p95(序列化 + 寫檔)")
     sb.add_argument("--n", type=int, default=200)
+    sq5.add_argument("--base-ref", default=None, help="P2-4:推 changed_paths 的 merge-base 對象(預設 develop/main/master)")
+    sn = sub.add_parser("note", help="W5 P2-7:PR/7-review 可貼的封閉附註(五欄;無 answers/probabilities/packet)")
+    sn.add_argument("--evaluation-id", required=True)
+    s4 = sub.add_parser("j4-assist", help="W5 P2-3(實驗):失敗分類 + 升一層建議;assist-only,不派工")
+    s4.add_argument("--slug", required=True)
+    s4.add_argument("--task-id", required=True)
+    s4.add_argument("--current-model", required=True)
+    s4.add_argument("--failure-summary", required=True, help="文字檔:已記錄的失敗摘要(不要貼 log 全文)")
+    s4.add_argument("--author-ref", required=True)
+    s4.add_argument("--session-ref", required=True)
+    s2 = sub.add_parser("j2-shadow", help="W5 P2-8(實驗):J2 厚包 shadow + order/phrasing stability;永遠 shadow")
+    s2.add_argument("--slug", required=True)
+    s2.add_argument("--author-ref", required=True)
+    s2.add_argument("--session-ref", required=True)
+    s2.add_argument("--decision", default=None, help="預設 docs/dev/<slug>/2-decision.md")
+    s2.add_argument("--variants", type=int, default=3)
     return p
 
 
@@ -1291,7 +1543,20 @@ def main(argv=None):
             return EXIT_OK
         if args.cmd == "enqueue":
             _emit(run_enqueue(root, args.slug, args.author_ref, args.session_ref, gauntlet_report=args.gauntlet_report,
-                              variant_id=args.variant_id, changed_paths=read_lines(args.changed_paths), run_id=args.run_id))
+                              variant_id=args.variant_id, changed_paths=read_lines(args.changed_paths), run_id=args.run_id,
+                              base_ref=args.base_ref))
+            return EXIT_OK
+        if args.cmd == "note":
+            _emit(run_note(root, args.evaluation_id))
+            return EXIT_OK
+        if args.cmd == "j4-assist":
+            with open(args.failure_summary, encoding="utf-8") as fh:
+                summary = fh.read()
+            _emit(run_j4_assist(root, args.slug, args.task_id, args.current_model, summary, args.author_ref, args.session_ref))
+            return EXIT_OK
+        if args.cmd == "j2-shadow":
+            _emit(run_j2_shadow(root, args.slug, args.author_ref, args.session_ref, decision_path=args.decision,
+                                variants=args.variants))
             return EXIT_OK
         if args.cmd == "drain":
             _emit(run_drain(root, max_items=args.max))

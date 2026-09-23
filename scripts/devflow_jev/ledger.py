@@ -374,3 +374,40 @@ def write_durable(repo_root, record, memory_dir=None):
     if not verdict["durable_allowed"]:
         raise JevError("signal.gate 拒絕:" + "; ".join(verdict["reasons"]))
     return durable.append_events(repo_root, record["session_id"], [record])
+
+
+# ───────────────────────────── W5 P2-7 AUTO 可稽核附註(封閉形狀)─────────────────────────────
+AUDIT_NOTE_KEYS = ("gate", "questionset_hash_prefix", "model_resolved", "route_recommended", "evaluation_id")
+
+
+def audit_note(evaluation):
+    """PR／7-review 只准帶這五欄;沒有 answers、probabilities、packet、route_taken 以外的東西。"""
+    qhash = evaluation.get("questionset_hash") or ""
+    note = {
+        "gate": evaluation.get("gate"),
+        "questionset_hash_prefix": qhash[7:23] if qhash.startswith("sha256:") else None,
+        "model_resolved": evaluation.get("model_resolved"),
+        "route_recommended": evaluation.get("route_recommended"),
+        "evaluation_id": evaluation.get("evaluation_id"),
+    }
+    assert_audit_note_safe(note)
+    return note
+
+
+def assert_audit_note_safe(note):
+    if not isinstance(note, dict) or set(note) != set(AUDIT_NOTE_KEYS):
+        raise JevError("audit note 只准 %s" % list(AUDIT_NOTE_KEYS))
+    for key, value in note.items():
+        if value is not None and (not isinstance(value, str) or len(value) > MAX_KEY_TEXT):
+            raise JevError("audit note.%s 必須是 ≤%d 字的字串或 None" % (key, MAX_KEY_TEXT))
+    if privacy_scan(note):
+        raise JevError("audit note privacy 命中")
+    return True
+
+
+def audit_note_markdown(note):
+    assert_audit_note_safe(note)
+    return ("<!-- jev shadow note: gate=%s qhash=%s model=%s route_recommended=%s eval=%s "
+            "(recommendation only; not a verdict; no AUTO) -->"
+            % (note["gate"], note["questionset_hash_prefix"], note["model_resolved"],
+               note["route_recommended"], note["evaluation_id"]))
