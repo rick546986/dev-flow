@@ -4111,66 +4111,95 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             legacy(verdict 已 PASS)不套。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-devflow-jev.sh</code></td>
-        <td>jev-gate 七組守衛 foundation 的牙(roadmap W1:P1-G1～G7)。跑
-            <code>scripts/devflow_jev/test_guards.py</code>,並釘「套件零網路 import」與
-            「<code>scripts/devflow-jev.py</code> 尚不存在」(七守衛全綠前不寫 runtime,shadow 也算)。
-            這不是 runtime、不是 production-ready。</td>
+        <td>jev-gate 七組守衛 foundation(W1:P1-G1～G7)+ stdlib runtime(W2:P1-F1/F5/F6)的牙。跑
+            <code>scripts/devflow_jev/test_*.py</code>;釘「網路 import 只准 <code>http_transport.py</code>」、
+            「<code>scripts/devflow-jev.py</code> 必須存在且未設 key 時 exit 0、零網路、不落盤」、
+            「key+opt-in 但 endpoint 閉埠 → no-op 不 crash」、案例數地板。W1 的兩條 tripwire(零網路 import／
+            runtime 不得存在)於 2026-09-23 W2 PR 明改,不是靜默放行。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
-    <tr><td><code>scripts/devflow_jev/</code> 套件:<code>__init__.py</code></td>
-        <td>jev-gate 守衛 foundation 套件根:manifest 六欄版本常數、gate/level 全序、<code>JevError</code>。
-            stdlib only、Python 3.9 語法地板;沒有任何 HTTP 程式。</td>
-        <td>被 <code>test_guards.py</code> import;W2 P1-F1 的 runtime 才會 import 它</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>devflow-jev.py</code></td>
+        <td>jev-gate stdlib runtime(W2 P1-F1;Python 3.9+,零第三方套件)。子命令 status／pack／ask／replay／
+            reevaluate／feedback／report。雙閘門 off → exit 0、不建 transport、不落盤;shadow/live → 送一次,
+            失敗 no-op(G2),route 只由 policy 導出(G6),replay store + durable 雙層 ledger(G4)。
+            <code>GRADUATED = False</code> 寫死、無旗標:W6 前沒有任何 AUTO 會被採取;J3/J5 永不寫 verdict。
+            採用專案只有在 <code>TYPESAFE_API_KEY</code> 與 <code>.dev-flow/jev.yaml</code> 都在時才會出境。</td>
+        <td>人工／後續 W3/W4 的 hook 接線呼叫;<code>test_runtime.py</code> 與 <code>test-devflow-jev.sh</code> ②⑤ 實跑</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
+    <tr><td><code>__init__.py</code>(<code>scripts/devflow_jev/</code> 套件根)</td>
+        <td>jev-gate 守衛套件根:manifest 六欄版本常數、gate/level 全序、<code>JevError</code>。
+            stdlib only、Python 3.9 語法地板;套件內只有 <code>http_transport.py</code> 一支碰網路。</td>
+        <td>被 <code>devflow-jev.py</code> 與 <code>test_*.py</code> import</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>manifest.py</code></td>
         <td>G5:讀 <code>jev-questions.json</code>、驗題組形狀、Score entry <code>level==index</code> 嚴格驗證
             (不一致拒絕、不排序)、完整 evaluation manifest 六欄 → <code>questionset_hash</code>、三欄 group key。</td>
-        <td>同套件;<code>test_guards.py</code> G5Manifest</td><td>人工/CI(不在生命週期上)</td></tr>
+        <td>同套件;<code>test_guards.py</code> G5Manifest</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>scripts/devflow_jev/jev-questions.json</code></td>
         <td>J1/J3/J5 題組正本(roadmap §11/§12;門檻設在 noul/score 值)。任何改動都改變
             <code>questionset_hash</code>,舊 calibration group 不延續。</td>
-        <td><code>manifest.py</code> 讀</td><td>人工/CI(不在生命週期上)</td></tr>
+        <td><code>manifest.py</code> 讀</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>packet.py</code></td>
         <td>G1:evidence packet + reference isolation。header 機械事實永不砍、body 才裁(裁過 →
             <code>truncated</code> + 強制 HUMAN);<code>primary_request</code>/<code>quoted_context</code>/
             <code>source_facts</code> 分欄;選路題中性標籤/長度差/正反證據 lint;privacy 命中拒絕組包。
             self-check 是形式控制,不構成 prompt-injection immunity。</td>
-        <td>同套件;<code>test_guards.py</code> G1Packet</td><td>人工/CI(不在生命週期上)</td></tr>
+        <td>同套件;<code>test_guards.py</code> G1Packet</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>transport.py</code></td>
         <td>fake transport + response schema 驗證(noul 無 confidence、choice/score 分布合法、score 在 criteria 內)。
-            <strong>沒有真 HTTP</strong>;W1 唯一的「傳輸」實作。</td>
-        <td>同套件;<code>policy.evaluate</code> 吃它</td><td>人工/CI(不在生命週期上)</td></tr>
+            沒有 HTTP;真傳輸在 <code>http_transport.py</code>,兩者回同一種 raw dict 給 <code>policy.evaluate</code>。</td>
+        <td>同套件;<code>policy.evaluate</code> 吃它;測試用</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
+    <tr><td><code>http_transport.py</code></td>
+        <td>真 HTTP transport(W2):套件內**唯一**准 import urllib 的檔。POST 一次、收 raw JSON,錯誤全部轉
+            <code>TransportError(kind)</code> 讓 policy no-op;沒有 retry;endpoint 只准 https(loopback http 僅測試);
+            key 只住物件內、不進 log／錯誤訊息／replay。</td>
+        <td><code>devflow-jev.py</code> 在雙閘門通過後才建;<code>test_http_transport.py</code>(假 opener + 閉埠)</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>gate.py</code></td>
         <td>G3:雙閘門。<code>TYPESAFE_API_KEY</code> + <code>.dev-flow/jev.yaml</code>;生效等級 =
             min(mode, gates[Jn]),off &lt; shadow &lt; live;只有 key 或只有 opt-in 都是 off;yaml 子集 fail-loud。</td>
-        <td>同套件;<code>test_guards.py</code> G3DualGate</td><td>人工/CI(不在生命週期上)</td></tr>
+        <td>同套件;<code>test_guards.py</code> G3DualGate</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>policy.py</code></td>
         <td>G2 + route formula:HTTP/JSON/schema/error 一律 no-op 回現況、J1 2s deadline 無 foreground retry、
             breaker、daily budget(reserve 上界、可信 usage 才 reconcile)、shadow enqueue 實測 latency;
             J5/J1/J3 deterministic route(不相乘機率;0.36 argmax 不導出 AUTO;J5 未畢業 route_taken 恆 HUMAN)。</td>
-        <td>同套件;<code>test_guards.py</code> G2FailureNoop / RouteFormula</td><td>人工/CI(不在生命週期上)</td></tr>
+        <td>同套件;<code>test_guards.py</code> G2FailureNoop / RouteFormula</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
+    <tr><td><code>state.py</code></td>
+        <td>P1-F5 落盤:daily budget(UTC 日切、attempts／tokens 先到者停、unknown usage 不退款)與 breaker
+            per key 連續失敗數,住 gitignored <code>.devflow/jev/state/</code>;成本護欄不是帳本,帳本在 durable。</td>
+        <td><code>devflow-jev.py</code> ask/reevaluate 前後讀寫;<code>test_runtime.py</code></td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>ledger.py</code></td>
         <td>G4:雙層 ledger。durable 只存 ID/hash/結構化指標(canonical title/body、<code>evt_</code> ULID、
             每 writer 自己的 session 檔、先過 <code>signal.gate</code>);local replay store(gitignored)存
             sanitized packet/questions/raw response;stored-response deterministic replay 與 remote
-            reevaluation(新 id、保 lineage、不覆蓋、同 case 不增 n)。</td>
-        <td>同套件;<code>test_guards.py</code> G4Ledger / G4DurableIntegration(真走 memory/agentmem)</td><td>人工/CI(不在生命週期上)</td></tr>
+            reevaluation(新 id、保 lineage、不覆蓋、同 case 不增 n);feedback record(agree/overturn,
+            suspect 留痕不進 n)。</td>
+        <td>同套件;<code>test_guards.py</code> G4Ledger / G4DurableIntegration(真走 memory/agentmem)</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>provenance.py</code></td>
         <td>G6:derived-only。route 只能由 policy 導出、integrity hash 重算抓 tamper(hash 是完整性不是
             identity/auth)、risk_paths 縮窄留痕且未核准即 HUMAN、runtime/questions/config 當次改動一律 HUMAN、
             可疑 feedback(同 session/時間倒置/reviewer=author/evidence 版本不符)不進 n。</td>
-        <td>同套件;<code>test_guards.py</code> G6Provenance</td><td>人工/CI(不在生命週期上)</td></tr>
+        <td>同套件;<code>test_guards.py</code> G6Provenance</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>attestation.py</code></td>
         <td>G7:verdict provenance tripwire。讀 frontmatter <code>verdict_source</code>/<code>attested_by</code>,
             缺或非法 → <code>unverified</code> 不進 graduation;human_attested 與 fresh_agent_reviewer 分層,
-            不混成同一主率。格式 attestation 不是 authentication。模板不在 W1 改(P3-2)。</td>
-        <td>同套件;<code>test_guards.py</code> G7Attestation</td><td>人工/CI(不在生命週期上)</td></tr>
+            不混成同一主率。格式 attestation 不是 authentication。模板不在 W1/W2 改(P3-2)。</td>
+        <td>同套件;<code>test_guards.py</code> G7Attestation</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>report.py</code></td>
         <td>最小 report helper:Wilson 95% 下界、graduation floor(≥.85 且 n≥30,首次 overturn 凍結)、
             unique case / same-evidence / 可疑 feedback / unverified 排除、分層計數。P2-2 之前的計算器。</td>
-        <td>同套件;<code>test_guards.py</code> ReportMinimal</td><td>人工/CI(不在生命週期上)</td></tr>
+        <td>同套件;<code>devflow-jev.py report</code>;<code>test_guards.py</code> ReportMinimal</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>test_guards.py</code></td>
         <td>七組守衛的 unittest(負面 fixtures 在 <code>scripts/fixtures/devflow-jev/</code>):quoted injection、
             exit_code/tail 衝突、reference governance lint、mixed .72 反例、0.36 AUTO argmax、Score level≠index、
-            雙閘門矣陣、multiwriter、replay 決定性、tamper、attestation unverified。</td>
+            雙閘門矣陣、multiwriter、replay 決定性、tamper、attestation unverified;W1Boundary 兩案於 W2 明改為
+            「網路 import 只准 http_transport.py」「runtime 必須存在且自身零網路」。</td>
+        <td><code>test-devflow-jev.sh</code> 帶起</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_runtime.py</code></td>
+        <td>W2 runtime 的 unittest(FakeTransport／隔離 git repo + AGENTMEM_HOME,零外部網路):雙閘門 off 路徑
+            零寫入、0.36 argmax 不 AUTO、shadow/live 未畢業恆 HUMAN、AUTO tripwire、risk ceiling／runtime_changed、
+            transport 失敗 no-op 仍留 durable、breaker／budget 跨 process、replay 決定性與 tamper、reevaluate lineage、
+            feedback suspect、report 分層、J1/J3 路徑、pack privacy、CLI exit 0。</td>
+        <td><code>test-devflow-jev.sh</code> 帶起</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test_http_transport.py</code></td>
+        <td><code>http_transport.py</code> 的 unittest:假 opener(bearer／JSON／狀態碼→kind／timeout／malformed)、
+            loopback 閉埠實連、key 不外露、endpoint 只准 https 或 loopback。</td>
         <td><code>test-devflow-jev.sh</code> 帶起</td><td>人工/CI(不在生命週期上)</td></tr>
   </table></div>
 

@@ -1173,16 +1173,31 @@ class ReportMinimal(unittest.TestCase):
 
 # ───────────────────────────────── meta(W1 邊界)──────────────────────────
 class W1Boundary(unittest.TestCase):
-    def test_no_network_modules_imported(self):
-        for name in os.listdir(HERE):
-            if not name.endswith(".py") or name.startswith("test_"):
+    """W1 邊界 → W2 明改(owner 2026-09-23 前提 ②:tripwire 不得靜默放行)。
+    ① 網路 import 只准 `http_transport.py` 一支;② runtime 必須存在、且本身零網路 import(只經套件送)。"""
+
+    NETWORK_ALLOWED = ("http_transport.py",)
+    # 整行 import 語句才算(`from devflow_jev import http_transport` 這種只是名字含 http,不算)
+    NET_IMPORT = __import__("re").compile(r"^\s*(?:import|from)\s+(?:urllib|http|socket|requests|ssl)\b", __import__("re").M)
+
+    def test_network_modules_only_in_http_transport(self):
+        offenders = []
+        for name in sorted(os.listdir(HERE)):
+            if not name.endswith(".py") or name.startswith("test_") or name in self.NETWORK_ALLOWED:
                 continue
             src = read_text(os.path.join(HERE, name))
-            for mod in ("import " + "urllib", "from " + "urllib", "import " + "http", "import " + "socket", "import " + "requests"):
-                self.assertNotIn(mod, src, "%s imports %s" % (name, mod))
+            for m in self.NET_IMPORT.finditer(src):
+                offenders.append("%s: %s" % (name, m.group(0).strip()))
+        self.assertEqual(offenders, [])
+        allowed_src = read_text(os.path.join(HERE, "http_transport.py"))
+        self.assertTrue(self.NET_IMPORT.search(allowed_src))      # 白名單那支真的是唯一出口
 
-    def test_no_runtime_script_exists_yet(self):
-        self.assertFalse(os.path.exists(os.path.join(REPO, "scripts", "devflow-jev.py")))
+    def test_runtime_script_exists_and_is_network_free_itself(self):
+        runtime = os.path.join(REPO, "scripts", "devflow-jev.py")
+        self.assertTrue(os.path.isfile(runtime), "W2 P1-F1:runtime 必須存在(W1 的「尚不得存在」已於 W2 明改)")
+        src = read_text(runtime)
+        self.assertIsNone(self.NET_IMPORT.search(src), "runtime 自己不得碰網路模組,只能經 devflow_jev.http_transport")
+        self.assertRegex(src, r"(?m)^GRADUATED = False\b")
 
     def test_versions_present_and_semver(self):
         import devflow_jev

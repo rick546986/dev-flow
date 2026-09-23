@@ -18,6 +18,7 @@
 # 用法(診斷):
 #   python3 scripts/devflow_ship_manifest.py --list [root]
 #   python3 scripts/devflow_ship_manifest.py --validate [root]
+#   python3 scripts/devflow_ship_manifest.py --version [root]   # 依列內容算 manifest.version(W2 C1)
 
 from __future__ import print_function
 
@@ -35,6 +36,23 @@ TOOLS_PREFIX = "docs/dev/tools/"
 FILEMAP_MARK = "散發面:<code>docs/dev/tools/</code>"
 CONTRACT_SOURCE = "devflow-contract.json"
 CONTRACT_DEST = "docs/dev/devflow-contract.json"
+
+
+VERSION_KEY = "version"
+VERSION_PREFIX = "v1-"
+CONTRACT_VERSION_KEY = "ship_manifest_version"
+
+
+def compute_version(data):
+    """manifest 版本 = 列內容(source/destination/mode)的機械指紋,不是人手填的標籤:
+    任何列增刪改 → 值必變(P0-8:採用側零牙的根因是「沒有任何本地資料能說上游多了一列」)。
+    同一算法在 hooks/_doctor_impl.py 複製一份(hooks/ 不 import scripts/);兩邊字面同步由
+    check-ship-manifest.sh 的 fixture 釘(算錯任一邊 → 正本自檢就紅)。"""
+    import hashlib
+    rows_ = [{"source": r.get("source"), "destination": r.get("destination"), "mode": r.get("mode")}
+             for r in (data.get("files") or []) if isinstance(r, dict)]
+    canon = json.dumps(rows_, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return VERSION_PREFIX + hashlib.sha256(canon.encode("utf-8")).hexdigest()[:16]
 
 
 class ManifestError(Exception):
@@ -65,6 +83,11 @@ def schema_problems(data):
         return ["正本頂層不是 object"]
     if data.get("schema") != SCHEMA:
         fails.append("schema 必須是 %s,得 %r" % (SCHEMA, data.get("schema")))
+    if not isinstance(data.get(VERSION_KEY), str) or not data[VERSION_KEY].startswith(VERSION_PREFIX):
+        fails.append("缺 %s(或前綴不是 %s)—— 採用側 doctor 逐列驗證靠它" % (VERSION_KEY, VERSION_PREFIX))
+    unknown_top = set(data) - {"schema", "files", VERSION_KEY}
+    if unknown_top:
+        fails.append("頂層多了不認識的鍵:%s" % ",".join(sorted(unknown_top)))
     files = data.get("files")
     if not isinstance(files, list):
         fails.append("files 必須是 array")
@@ -228,6 +251,35 @@ def unclassified_sync_failures(root, data=None):
     return fails
 
 
+def version_failures(root, data=None):
+    """①manifest.version == compute_version(rows);②母版 devflow-contract.json 的 ship_manifest_version 同值;
+    ③散發副本 docs/dev/devflow-contract.json 同值(dev-release 的 diff -q 之外多一道,因為採用側 doctor 讀的是副本)。"""
+    fails = []
+    if data is None:
+        try:
+            data = load(root)
+        except ManifestError as exc:
+            return list(exc.problems)
+    want = compute_version(data)
+    have = data.get(VERSION_KEY)
+    if have != want:
+        fails.append("manifest.version 過期:記 %s,依列內容應為 %s(改列沒重算版本)" % (have, want))
+    for rel in (CONTRACT_SOURCE, CONTRACT_DEST):
+        path = os.path.join(root, rel)
+        if not os.path.isfile(path):
+            fails.append("找不到 %s,無法比對 %s" % (rel, CONTRACT_VERSION_KEY))
+            continue
+        try:
+            contract = json.loads(open(path, encoding="utf-8").read())
+        except ValueError as exc:
+            fails.append("%s 不是合法 JSON:%s" % (rel, exc))
+            continue
+        got = contract.get(CONTRACT_VERSION_KEY)
+        if got != want:
+            fails.append("%s.%s = %r ≠ manifest 應有版本 %s" % (rel, CONTRACT_VERSION_KEY, got, want))
+    return fails
+
+
 def mode_int(mode_str):
     return int(mode_str, 8)
 
@@ -252,7 +304,9 @@ def filemap_ship_names(root):
         cell = re.search(r"<td>(.*?)</td>", row, re.S)
         code = re.search(r"<code>(.*?)</code>", cell.group(1), re.S) if cell else None
         if code:
-            names.add(html.unescape(code.group(1)).strip())
+            # 地圖「檔名」欄可以寫完整相對路徑(check-file-map 的 reverse 對路徑 token 查 isfile);
+            # 對帳一律取 basename,與 tools 列的 basename 同一維度。
+            names.add(os.path.basename(html.unescape(code.group(1)).strip().rstrip("/")))
     return names, []
 
 
@@ -334,7 +388,7 @@ def _cli(argv):
     root = argv[2] if len(argv) > 2 else os.path.dirname(
         os.path.dirname(os.path.abspath(__file__)))
     if cmd in ("-h", "--help", "help"):
-        print("usage: devflow_ship_manifest.py --list|--validate [root]")
+        print("usage: devflow_ship_manifest.py --list|--validate|--version [root]")
         return 0
     if cmd == "--validate":
         try:
@@ -343,6 +397,14 @@ def _cli(argv):
             print("⛔ " + "; ".join(exc.problems), file=sys.stderr)
             return 1
         print("✅ %s 結構合法" % MANIFEST_REL)
+        return 0
+    if cmd == "--version":
+        try:
+            data = load_raw(root)
+        except ManifestError as exc:
+            print("⛔ " + "; ".join(exc.problems), file=sys.stderr)
+            return 1
+        print(compute_version(data))
         return 0
     if cmd == "--list":
         try:
@@ -353,7 +415,7 @@ def _cli(argv):
         for row in rows(data):
             print("%s\t%s\t%s" % (row["source"], row["destination"], row["mode"]))
         return 0
-    print("usage: devflow_ship_manifest.py --list|--validate [root]", file=sys.stderr)
+    print("usage: devflow_ship_manifest.py --list|--validate|--version [root]", file=sys.stderr)
     return 2
 
 

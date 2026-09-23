@@ -13,6 +13,9 @@
 #     時,舊版①②③全綠 —— ②只掃 tools 列,③只比檔案地圖,兩者都碰不到它)
 #   ⑤負向 fixture:漏記、正副本同刪、mode 不一致、結構壞掉、
 #     第三類列 source 被刪都必須紅
+#   ⑥manifest.version(列內容指紋)與 devflow-contract.json 正副本的 ship_manifest_version
+#     同值(2026-09-23 W2 C1,P0-8 結論:採用側 doctor 逐列驗證靠這個值);加列沒重算、
+#     副本契約漂移都必須紅
 #
 # contract 列在正本,但 destination 不住 tools/;獨立比對(dev-release 步驟 2 的
 # `diff -q devflow-contract.json docs/dev/devflow-contract.json`)不得刪 ——
@@ -47,6 +50,9 @@ root = sys.argv[1]
 sys.path.insert(0, sys.argv[2])
 from devflow_ship_manifest import (
     CONTRACT_DEST,
+    CONTRACT_VERSION_KEY,
+    compute_version,
+    version_failures,
     CONTRACT_SOURCE,
     SCHEMA,
     filemap_sync_failures,
@@ -127,6 +133,12 @@ check(not sync_fails,
       "第三類列(非 tools/非 contract)若母版內也有同步副本,內容/mode 一致",
       "; ".join(sync_fails))
 
+print("-- manifest 版本 ↔ 契約 ship_manifest_version(W2 C1;採用側 doctor 逐列驗證的依據)--")
+ver_fails = version_failures(root, data if raw_ok else None)
+check(not ver_fails,
+      "manifest.version = 列內容指紋,且 devflow-contract.json 正副本的 %s 同值" % CONTRACT_VERSION_KEY,
+      "; ".join(ver_fails))
+
 print("-- 結構負向(缺欄/重複 destination/非法 mode)--")
 
 
@@ -195,6 +207,7 @@ try:
     os.makedirs(os.path.join(fixture, "docs", "dev", "tools"))
     man = {
         "schema": SCHEMA,
+        "version": None,
         "files": [
             {"source": "scripts/tool-x.sh",
              "destination": "docs/dev/tools/tool-x.sh",
@@ -211,6 +224,7 @@ try:
         ],
     }
     import json
+    man["version"] = compute_version(man)
     os.makedirs(os.path.join(fixture, "docs", "dev"), exist_ok=True)
     with open(os.path.join(fixture, "docs", "dev", "ship-manifest.json"), "w") as fh:
         json.dump(man, fh)
@@ -227,11 +241,12 @@ try:
             with open(path, "w") as fh:
                 fh.write("#!/bin/bash\n")
             os.chmod(path, 0o755)
+    contract_text = json.dumps({CONTRACT_VERSION_KEY: man["version"]}) + "\n"
     with open(os.path.join(fixture, CONTRACT_SOURCE), "w") as fh:
-        fh.write("{}\n")
+        fh.write(contract_text)
     os.makedirs(os.path.join(fixture, "docs", "dev"), exist_ok=True)
     with open(os.path.join(fixture, CONTRACT_DEST), "w") as fh:
-        fh.write("{}\n")
+        fh.write(contract_text)
     os.chmod(os.path.join(fixture, CONTRACT_SOURCE), 0o644)
     os.chmod(os.path.join(fixture, CONTRACT_DEST), 0o644)
     # 第三類列(source == destination 的同步宣告列;issue #92 的殘留就是這種列
@@ -243,6 +258,27 @@ try:
 
     check(not parity_failures(fixture),
           "parity 負向 fixture 基線:兩工具齊全 → 綠")
+
+    # ── 版本負向(W2 C1)──────────────────────────────────────────────────
+    check(not version_failures(fixture), "版本負向 fixture 基線:manifest.version 與兩份契約同值 → 綠")
+    stale = dict(man)
+    stale["files"] = man["files"] + [{"source": "scripts/tool-z.sh", "destination": "docs/dev/tools/tool-z.sh", "mode": "755"}]
+    with open(os.path.join(fixture, "docs", "dev", "ship-manifest.json"), "w") as fh:
+        json.dump(stale, fh)             # 加了一列、沒重算 version
+    stale_fails = version_failures(fixture)
+    check(any("過期" in f for f in stale_fails),
+          "版本負向:加列沒重算 manifest.version → 紅(P0-8:採用側靠這個值知道上游多了一列)",
+          "實得 %s" % stale_fails)
+    with open(os.path.join(fixture, "docs", "dev", "ship-manifest.json"), "w") as fh:
+        json.dump(man, fh)
+    with open(os.path.join(fixture, CONTRACT_DEST), "w") as fh:
+        fh.write(json.dumps({CONTRACT_VERSION_KEY: "v1-0000000000000000"}) + "\n")
+    drift_fails = version_failures(fixture)
+    check(any(CONTRACT_DEST in f for f in drift_fails),
+          "版本負向:散發副本契約的 ship_manifest_version 漂移 → 紅(採用側 doctor 讀的是副本)",
+          "實得 %s" % drift_fails)
+    with open(os.path.join(fixture, CONTRACT_DEST), "w") as fh:
+        fh.write(contract_text)
 
     # ── 第三類列(issue #92):source == destination 的同步宣告列 ──────────────
     # 必須在 tool-y.sh 被刪掉(下面)之前做完 —— tool-y.sh 刪掉後不會再復原,
@@ -295,7 +331,7 @@ finally:
     shutil.rmtree(fixture, ignore_errors=True)
 
 # ── 檢查數地板 ──────────────────────────────────────────────────────────
-MIN_CHECKS = 21
+MIN_CHECKS = 25
 if CHECKS < MIN_CHECKS:
     FAILED += 1
     print("  ✗ 檢查數地板:實際只跑了 %s 項(地板 %s)" % (CHECKS, MIN_CHECKS))
