@@ -85,8 +85,9 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # Stage 7 review 三條拒絕路徑(無 exec.json 的 review-unlock/不存在 slug 的 review/
 # 已武裝時 review 其他 slug)各 1 案 +3 → 462。同一 commit 同步
 # scripts/test-architecture-guards.sh 的 check_static_pin 字面。同日 W2 C1:p3 doctor
-# ship-manifest 逐列(舊契約略過/三值一致/缺列/755 無 x/版本不一致/缺 manifest)+6 → 468。
-MIN_CASES=468
+# ship-manifest 逐列(舊契約略過/三值一致/缺列/755 無 x/版本不一致/缺 manifest)+6 → 468;
+# 同日對抗審查補 destination 穿越 +1 → 469。
+MIN_CASES=469
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -2147,6 +2148,23 @@ mv "$P3T/docs/dev/ship-manifest.json" "$P3T/docs/dev/ship-manifest.json.bak"
 p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
 ck_msg "p3 doctor 契約要版本但採用樹缺 ship-manifest.json → fail" 1 "採用樹缺" "$P3_RC" "$P3_OUT"
 mv "$P3T/docs/dev/ship-manifest.json.bak" "$P3T/docs/dev/ship-manifest.json"
+# 審查補案:destination 帶 .. 穿越 → 不得算「齊全」;版本重算後餵 doctor,只有路徑那條該紅
+"$DEVFLOW_PY" - "$P3T/docs/dev/ship-manifest.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p))
+d["files"].append({"source": "scripts/x.sh", "destination": "docs/dev/tools/../../../etc/hostname", "mode": "644"})
+json.dump(d, open(p, "w"))
+PY
+SMV2=$("$DEVFLOW_PY" "${DEVFLOW_MASTER:-$(dirname "$H")}/scripts/devflow_ship_manifest.py" --version "$P3T" 2>/dev/null || echo "v1-unavailable")
+"$DEVFLOW_PY" - "$P3T/docs/dev/ship-manifest.json" "$SMV2" <<'PY'
+import json, sys
+p, v = sys.argv[1], sys.argv[2]; d = json.load(open(p)); d["version"] = v; json.dump(d, open(p, "w"))
+PY
+printf '%s\n' '{"devflow_contract_version": "2.0.0", "ship_manifest_version": "'"$SMV2"'",' \
+  ' "required_runtime_capabilities": ["attempt_ledger"],' \
+  ' "schema_versions": {"agent_event": "1.1"}}' > "$P3T/contract-sm2.json"
+p3_doctor "$P3T/contract-sm2.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor ship-manifest destination 含 .. 穿越 → fail 不算齊全" 1 "路徑不合法" "$P3_RC" "$P3_OUT"
 rm -f "$P3T/docs/dev/tools/sm-a.sh" "$P3T/docs/dev/tools/sm-b.py" "$P3T/docs/dev/ship-manifest.json"
 p3_obs registry validate
 ck "p3 prompt registry schema 綠" 0 "$P3_RC"

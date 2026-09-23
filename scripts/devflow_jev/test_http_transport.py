@@ -50,9 +50,32 @@ class HttpTransportShape(unittest.TestCase):
     def test_endpoint_must_be_https_or_loopback(self):
         http_transport.validate_endpoint("https://api.typesafe.ai/v1/systemone")
         http_transport.validate_endpoint("http://127.0.0.1:9/")
-        for bad in ("http://api.typesafe.ai/v1/systemone", "ftp://x", "not-a-url", "http://evil.example/"):
-            with self.assertRaises(JevError):
+        http_transport.validate_endpoint("http://[::1]:9/")
+        http_transport.validate_endpoint("HTTP://LOCALHOST:9/")
+        for bad in ("http://api.typesafe.ai/v1/systemone", "ftp://x", "not-a-url", "http://evil.example/",
+                    "http://192.0.2.1#@localhost", "http://192.0.2.1?x=@localhost", "http://evil.example#@127.0.0.1",
+                    "http://user@127.0.0.1:9/", "https://user:pw@api.typesafe.ai/v1", " https://api.typesafe.ai/v1"):
+            with self.assertRaises(JevError, msg=bad):
                 http_transport.validate_endpoint(bad)
+
+    def test_loopback_opener_bypasses_environment_proxy(self):
+        import os
+        old = {k: os.environ.get(k) for k in ("http_proxy", "HTTP_PROXY", "no_proxy", "NO_PROXY")}
+        try:
+            os.environ["http_proxy"] = "http://192.0.2.9:3128"
+            os.environ.pop("no_proxy", None)
+            os.environ.pop("NO_PROXY", None)
+            t = http_transport.HttpTransport(KEY, endpoint="http://127.0.0.1:9/", timeout_s=1.0)
+            with self.assertRaises(TransportError) as cm:
+                t.send({"model": "jev-1.13.0", "state": {}, "questions": {"q": {"type": "noul", "text": "x"}}})
+            # 打的是 loopback 閉埠(connection refused → network),不是 192.0.2.9 那個假 proxy(會 timeout)
+            self.assertEqual(cm.exception.kind, "network")
+        finally:
+            for k, v in old.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
 
     def test_sends_bearer_json_and_returns_raw(self):
         opener, seen = opener_returning(json.dumps({"model": "jev-1.13.0", "answers": {}}).encode())

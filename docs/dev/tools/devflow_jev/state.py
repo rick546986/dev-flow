@@ -3,7 +3,7 @@
 - budget 檔按 UTC 日切:`budget-YYYY-MM-DD.json`;attempts 與 tokens_committed 跨 process 累計,
   先到者停(§8.2)。unknown usage 的保留額**不退款**,所以落盤的是 `tokens_committed`(settled+reserved 合計)。
 - breaker 檔:`breaker.json`,per key 連續失敗數。
-- 寫入 tmp + os.replace;同一台機器同時兩個 process 可能 lost update —— 這裡是成本護欄不是帳本,
+- 寫入 mkstemp tmp + os.replace;同一台機器同時兩個 process 可能 lost update(不會壞檔) —— 這裡是成本護欄不是帳本,
   漏算一次 attempt 的方向是「多花一次」,不會放行 AUTO;帳本正本仍是 durable evaluation 的 usage 欄。
 """
 import json
@@ -21,10 +21,20 @@ def utc_day(now=None):
 
 
 def _atomic_write(path, payload):
-    tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as fh:
-        json.dump(payload, fh, ensure_ascii=False, sort_keys=True, indent=1)
-    os.replace(tmp, path)
+    """每個 writer 自己的 tmp(mkstemp),不共用固定 .tmp 名 —— 同日兩個 ask 同時存檔時,共用名會讓後者
+    os.replace 撲空或把半截 JSON 留在檔裡,之後整天的 ask/status 都讀不出 budget。"""
+    import tempfile
+    fd, tmp = tempfile.mkstemp(prefix=os.path.basename(path) + ".", suffix=".tmp", dir=os.path.dirname(path))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, ensure_ascii=False, sort_keys=True, indent=1)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 
 class StateStore(object):

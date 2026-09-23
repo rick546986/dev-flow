@@ -374,6 +374,148 @@ class J1J3Paths(RuntimeBase):
         self.assertFalse(os.path.exists(os.path.join(self.tmp, "docs")))
 
 
+class ReviewRoundHardening(RuntimeBase):
+    """2026-09-23 對抗審查確認的 14 條(見 w2-runtime.md §7):送出前驗 packet、memory lib 先解析、deadline 只收緊…"""
+
+    def test_tampered_packet_with_secret_rejected_before_transport(self):
+        self.optin()
+        pkt = j5_packet()
+        pkt["body"]["primary_request"] = "Evaluate. token = SUPERSECRET123456"      # pack 之後被改,hash 留舊
+        from devflow_jev import JevError
+        with self.assertRaises(JevError) as cm:
+            rt.run_ask(self.tmp, "J5", "demo-feature", pkt, evidence(), "a", "s", environ=self.env_on,
+                       transport_factory=never_called, clock=self.clock)
+        self.assertIn("packet_hash", str(cm.exception))
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, ".devflow")))     # state/replay 都沒寫
+
+    def test_privacy_hit_with_recomputed_hash_still_rejected(self):
+        self.optin()
+        pkt = j5_packet()
+        pkt["body"]["primary_request"] = "Evaluate. token = SUPERSECRET123456"
+        pkt["packet_hash"] = packet_mod.packet_hash(pkt)                          # 攻擊者連 hash 也重算
+        from devflow_jev import JevError
+        with self.assertRaises(JevError) as cm:
+            rt.run_ask(self.tmp, "J5", "demo-feature", pkt, evidence(), "a", "s", environ=self.env_on,
+                       transport_factory=never_called, clock=self.clock)
+        self.assertIn("privacy", str(cm.exception))
+
+    def test_packet_gate_or_header_mismatch_rejected(self):
+        self.optin()
+        from devflow_jev import JevError
+        pkt = j5_packet()
+        pkt["gate"] = "J1"
+        pkt["packet_hash"] = packet_mod.packet_hash(pkt)
+        with self.assertRaises(JevError):
+            rt.run_ask(self.tmp, "J5", "demo-feature", pkt, evidence(), "a", "s", environ=self.env_on,
+                       transport_factory=never_called, clock=self.clock)
+        pkt = j5_packet()
+        pkt["header"]["head_sha"] = "deadbeef" * 5
+        pkt["packet_hash"] = packet_mod.packet_hash(pkt)
+        with self.assertRaises(JevError) as cm:
+            rt.run_ask(self.tmp, "J5", "demo-feature", pkt, evidence(), "a", "s", environ=self.env_on,
+                       transport_factory=never_called, clock=self.clock)
+        self.assertIn("header.head_sha", str(cm.exception))
+
+    def test_evidence_strict_shapes_same_case_cannot_split(self):
+        self.optin()
+        from devflow_jev import JevError
+        for mutate in (lambda e: e.update(head_sha=HEAD.upper()), lambda e: e.update(head_sha=HEAD + " "),
+                       lambda e: e.update(artifact_hash=SHA.replace("a", "A")), lambda e: e.update(evidence_hash="sha256:" + "z" * 64)):
+            ev = evidence()
+            mutate(ev)
+            with self.assertRaises(JevError):
+                rt.run_ask(self.tmp, "J5", "demo-feature", j5_packet(), ev, "a", "s", environ=self.env_on,
+                           transport_factory=never_called, clock=self.clock)
+        with self.assertRaises(JevError):
+            rt.run_ask(self.tmp, "J5", "demo feature", j5_packet(), dict(evidence(), feature="demo feature"), "a", "s",
+                       environ=self.env_on, transport_factory=never_called, clock=self.clock)
+
+    def test_off_path_does_not_even_validate_inputs(self):
+        out = rt.run_ask(self.tmp, "J5", "demo-feature", {"garbage": True}, {"garbage": True}, "a", "s",
+                         environ={}, transport_factory=never_called, clock=self.clock)
+        self.assertEqual(out["status"], "noop")
+
+    def test_missing_memory_lib_fails_before_transport_and_writes(self):
+        self.optin()
+        from devflow_jev import JevError
+        empty = tempfile.mkdtemp(prefix="jev-nomem.")
+        try:
+            with self.assertRaises(JevError) as cm:
+                rt.run_ask(self.tmp, "J5", "demo-feature", j5_packet(), evidence(), "a", "s", environ=self.env_on,
+                           transport_factory=never_called, clock=self.clock, memory_dir=empty)
+            self.assertIn("agentmem", str(cm.exception))
+            self.assertFalse(os.path.exists(os.path.join(self.tmp, ".devflow")))
+        finally:
+            shutil.rmtree(empty, ignore_errors=True)
+
+    def test_deadline_argv_can_only_tighten(self):
+        self.assertEqual(rt._deadline("J1", 999), policy.J1_DEADLINE_S)
+        self.assertEqual(rt._deadline("J1", 0.5), 0.5)
+        self.assertEqual(rt._deadline("J5", None), rt.SHADOW_DEADLINE_S)
+        from devflow_jev import JevError
+        with self.assertRaises(JevError):
+            rt._deadline("J1", -1)
+        self.optin()
+        slow = fake({"goal_clear": {"noul": 0.9}}, gate="J1", latency=policy.J1_DEADLINE_S + 0.5)
+        out = self.ask(slow, gate="J1", deadline_s=999)
+        self.assertTrue(out["noop_reason"].startswith("deadline_exceeded"))
+
+    def test_transport_factory_receives_deadline_as_timeout(self):
+        self.optin()
+        seen = {}
+
+        def factory(timeout_s=None):
+            seen["timeout"] = timeout_s
+            return fake({"goal_clear": {"noul": 0.9}}, gate="J1")
+        rt.run_ask(self.tmp, "J1", "demo-feature", j1_packet(), evidence("J1"), "a", "s", environ=self.env_on,
+                   transport_factory=factory, clock=self.clock)
+        self.assertEqual(seen["timeout"], policy.J1_DEADLINE_S)
+        real = rt.make_transport_factory({"TYPESAFE_API_KEY": "k", "DEVFLOW_JEV_ENDPOINT": "http://127.0.0.1:9/"})(1.5)
+        self.assertEqual(real.timeout_s, 1.5)
+
+    def test_report_layers_do_not_overwrite_each_other_and_skip_suspect(self):
+        self.optin()
+        ok = self.ask(fake(perfect_j5()))
+        rt.run_feedback(self.tmp, ok["evaluation_id"], "agree", "human_attested", "rick", "sess-Z",
+                        SHA, SHA2, HEAD, feedback_at="2099-01-01T00:00:00Z", environ=self.env_on)
+        rt.run_feedback(self.tmp, ok["evaluation_id"], "agree", "fresh_agent_reviewer", "agent-Q", "sess-Q",
+                        SHA, SHA2, HEAD, feedback_at="2099-01-02T00:00:00Z", environ=self.env_on)
+        rt.run_feedback(self.tmp, ok["evaluation_id"], "overturn", "human_attested", "agent-A", "sess-A",   # same session + author → suspect
+                        SHA, SHA2, HEAD, feedback_at="2099-01-03T00:00:00Z", environ=self.env_on)
+        rep = rt.run_report(self.tmp, "J5", environ=self.env_on)
+        self.assertEqual(rep["layers"]["human_attested"]["n"], 1)
+        self.assertEqual(rep["layers"]["human_attested"]["n_overturn"], 0)      # 可疑 overturn 不蓋掉有效 agree
+        self.assertEqual(rep["layers"]["fresh_agent_reviewer"]["n"], 1)
+        self.assertEqual(rep["feedbacks_skipped_suspect"], 1)
+        self.assertIsNone(rep["floor_met"])
+
+    def test_cli_malformed_packet_exits_2_not_1(self):
+        tmp = tempfile.mkdtemp(prefix="jev-cli2.")
+        try:
+            with open(os.path.join(tmp, "p.json"), "w", encoding="utf-8") as fh:
+                json.dump([1, 2, 3], fh)
+            with open(os.path.join(tmp, "e.json"), "w", encoding="utf-8") as fh:
+                json.dump(evidence("J1"), fh)
+            os.makedirs(os.path.join(tmp, ".dev-flow"))
+            with open(os.path.join(tmp, ".dev-flow", "jev.yaml"), "w") as fh:
+                fh.write("mode: live\n")
+            env = dict(os.environ, TYPESAFE_API_KEY="not-a-real-key", PYTHONDONTWRITEBYTECODE="1", DEVFLOW_ROOT=REPO)
+            r = subprocess.run([sys.executable, RUNTIME_PATH, "--root", tmp, "ask", "--gate", "J1", "--slug", "demo-feature",
+                                "--packet", os.path.join(tmp, "p.json"), "--evidence", os.path.join(tmp, "e.json"),
+                                "--author-ref", "a", "--session-ref", "s"], capture_output=True, text=True, env=env)
+            self.assertEqual(r.returncode, 2, r.stderr)
+            self.assertNotIn("Traceback", r.stderr)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_state_writes_use_private_tmp_and_leave_no_leftovers(self):
+        store = rt.StateStore(self.tmp)
+        b = store.load_budget("2026-01-01")
+        store.save_budget(b, "2026-01-01")
+        names = os.listdir(store.dir)
+        self.assertEqual(names, ["budget-2026-01-01.json"])
+
+
 class PackAndInputs(RuntimeBase):
     def test_pack_builds_and_self_checks(self):
         spec = {"header": {"slug": "demo-feature", "discussion_hash": SHA, "open_questions_state": "none_open"},
@@ -410,7 +552,8 @@ class CliSurface(unittest.TestCase):
         with open(RUNTIME_PATH, encoding="utf-8") as fh:
             src = fh.read()
         import re
-        self.assertIsNone(re.search(r"(?m)^\s*(?:import|from)\s+(?:urllib|http|socket|requests|ssl)\b", src))
+        self.assertIsNone(re.search(r"(?m)^\s*(?:import\s+(?:[\w.]+\s*,\s*)*|from\s+)(?:urllib|http|socket|requests|ssl)\b"
+                                    r"|(?:__import__|import_module)\(\s*[\"'](?:urllib|http|socket|requests|ssl)", src))
         self.assertIn("from devflow_jev import http_transport", src)     # 只在 factory 內延遲 import
 
     def test_cli_status_no_key_exit0(self):

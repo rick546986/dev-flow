@@ -457,22 +457,32 @@ def run_doctor(root, contract_path="", gate_cmd=""):
                           f"版本三值不一致:契約 {want_sm} / manifest 自稱 {have_sm} / 依列內容重算 {calc_sm}"
                           f" —— 契約與 manifest 副本不是同一批散發,或 manifest 被手改;fail-closed —— 跑 dev-setup upgrade。")
                 else:
-                    problems = []
+                    problems, drift = [], []
                     for row in sm_rows:
                         dest = row.get("destination") if isinstance(row, dict) else None
                         if not isinstance(dest, str) or not dest:
                             problems.append(f"列形狀壞:{row!r}")
                             continue
-                        path = os.path.join(root, *dest.split("/"))
+                        segs = dest.split("/")
+                        if dest.startswith(("/", "\\")) or "\\" in dest or any(seg in ("", ".", "..") for seg in segs):
+                            problems.append(f"destination 路徑不合法(絕對/穿越/反斜線):{dest}")
+                            continue
+                        path = os.path.join(root, *segs)
                         if not os.path.isfile(path):
                             problems.append(f"缺 {dest}")
                             continue
                         mode = row.get("mode")
+                        if os.name == "nt":
+                            continue          # Windows 的 st_mode 不代表 mode 位元(.exe/.bat 才有 x);只驗存在
                         is_exec = bool(os.stat(path).st_mode & 0o111)
                         if mode == "755" and not is_exec:
                             problems.append(f"{dest} 清單 755 但無可執行位元")
-                        elif mode == "644" and is_exec and os.name != "nt":
-                            problems.append(f"{dest} 清單 644 但有可執行位元")
+                        elif mode == "644" and is_exec:
+                            drift.append(dest)     # 多了 x 位元多半是 FAT/DrvFs 掛載;留 info,不 fail-closed
+                    if drift:
+                        info("ship-manifest",
+                             f"{len(drift)} 列清單 644 但檔有可執行位元(常見於 FAT/DrvFs 掛載;不擋):"
+                             + ",".join(drift[:5]))
                     if problems:
                         check(False, "ship-manifest",
                               f"版本 {want_sm} 一致,但逐列驗證 {len(problems)} 項不符:"

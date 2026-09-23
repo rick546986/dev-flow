@@ -317,6 +317,17 @@ try:
           "實得 %s" % mode_fails)
     os.chmod(os.path.join(fixture, "scripts", "tool-x.sh"), 0o755)
 
+    # 反向要走子目錄(W2 把 devflow_jev/ 整包散發進 tools/):子目錄裡沒記帳的檔也要紅
+    sub = os.path.join(fixture, "docs", "dev", "tools", "subpkg")
+    os.makedirs(sub)
+    with open(os.path.join(sub, "stray.py"), "w") as fh:
+        fh.write("x = 1\n")
+    stray = parity_failures(fixture)
+    check(any("subpkg/stray.py" in f for f in stray),
+          "parity 負向:tools/ 子目錄裡散發了沒記帳的檔 → 紅(反向不只掃頂層)",
+          "實得 %s" % stray)
+    shutil.rmtree(sub)
+
     with open(os.path.join(fixture, "guides", "guide-dev-flow.html"), "w") as fh:
         fh.write(
             "<h2 id=\"filemap\">map</h2><table>"
@@ -331,7 +342,7 @@ finally:
     shutil.rmtree(fixture, ignore_errors=True)
 
 # ── 檢查數地板 ──────────────────────────────────────────────────────────
-MIN_CHECKS = 25
+MIN_CHECKS = 26
 if CHECKS < MIN_CHECKS:
     FAILED += 1
     print("  ✗ 檢查數地板:實際只跑了 %s 項(地板 %s)" % (CHECKS, MIN_CHECKS))

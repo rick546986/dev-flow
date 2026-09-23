@@ -46,8 +46,9 @@ CONTRACT_VERSION_KEY = "ship_manifest_version"
 def compute_version(data):
     """manifest 版本 = 列內容(source/destination/mode)的機械指紋,不是人手填的標籤:
     任何列增刪改 → 值必變(P0-8:採用側零牙的根因是「沒有任何本地資料能說上游多了一列」)。
-    同一算法在 hooks/_doctor_impl.py 複製一份(hooks/ 不 import scripts/);兩邊字面同步由
-    check-ship-manifest.sh 的 fixture 釘(算錯任一邊 → 正本自檢就紅)。"""
+    同一算法在 hooks/_doctor_impl.py::_ship_manifest_version 複製一份(hooks/ 不 import scripts/);
+    兩邊同值由 hooks/selftest.sh p3「ship-manifest 三值一致」案釘(用本檔 --version 算值餵 doctor,
+    doctor 自己重算不同 → 紅)。"""
     import hashlib
     rows_ = [{"source": r.get("source"), "destination": r.get("destination"), "mode": r.get("mode")}
              for r in (data.get("files") or []) if isinstance(r, dict)]
@@ -354,12 +355,15 @@ def parity_failures(root, data=None):
                              % (name, src_m, dst_m))
     tools_dir = os.path.join(root, "docs", "dev", "tools")
     if os.path.isdir(tools_dir):
-        named = set(expected_names)
-        for fname in sorted(os.listdir(tools_dir)):
-            path = os.path.join(tools_dir, fname)
-            if os.path.isfile(path) and fname not in named:
-                fails.append("反向:docs/dev/tools/%s 不在正本 tools 列裡"
-                             "(散發了但沒記帳)" % fname)
+        # 反向走整棵 tools/(含 devflow_jev/ 這種子目錄),比對的是 destination 相對路徑不是 basename;
+        # __pycache__ 是執行殘留,不算散發。
+        dests = {row["destination"] for row in expected}
+        for dirpath, dirnames, filenames in os.walk(tools_dir):
+            dirnames[:] = sorted(d for d in dirnames if d != "__pycache__")
+            for fname in sorted(filenames):
+                rel = os.path.relpath(os.path.join(dirpath, fname), root).replace(os.sep, "/")
+                if rel not in dests:
+                    fails.append("反向:%s 不在正本 tools 列裡(散發了但沒記帳)" % rel)
     return fails
 
 

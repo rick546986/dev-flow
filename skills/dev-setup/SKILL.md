@@ -276,6 +276,8 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
 - **manifest 新增列的分類**(2026-09-23,W0 P0-8 結論):三方比對只定義了「本地現況 ≠ 上游舊 blob ⇒ 客製」;
   **本地缺、baseline 也缺**的 destination 一律歸 ①「母版新增」—— 直接散發,且**必須出現在 diff 摘要**
   (列成「新增:<destination>」),不得因為本地沒有這個檔就從摘要漏掉、也不得反過來漏建。
+  destination 可能落在 `docs/dev/tools/` 的**子目錄**(例:`docs/dev/tools/devflow_jev/…`),cp 前先
+  `mkdir -p "$(dirname <destination>)"`;install 步 1 的 `mkdir -p docs/dev/tools` 不涵蓋子目錄。
   `docs/dev/ship-manifest.json` 本身是散發列之一(source == destination 的同步宣告列),
   覆蓋後在專案內跑 `devflow-exec.sh doctor`:契約 `ship_manifest_version` 與 manifest `version`
   是同一批列內容的指紋,doctor 逐列驗 destination 存在與 mode;不一致 = 這次 upgrade 漏列,

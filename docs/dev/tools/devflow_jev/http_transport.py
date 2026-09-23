@@ -11,6 +11,7 @@
 import json
 import socket
 import urllib.error
+import urllib.parse
 import urllib.request
 
 from . import JevError
@@ -21,21 +22,42 @@ ENDPOINT_ENV = "DEVFLOW_JEV_ENDPOINT"
 DEFAULT_TIMEOUT_S = 30.0
 USER_AGENT = "devflow-jev/1.0"
 HTTP_STATUS_KINDS = {400: "http_400", 401: "http_401", 422: "http_422", 429: "http_429", 529: "http_529"}
-_LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "[::1]")
+_LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
+
+
+def endpoint_host(url):
+    """用 urllib 自己的 parser 拆 host(手拆會被 `#@localhost`／`?x=@localhost` 騙)。回 (scheme, hostname)。"""
+    if not isinstance(url, str) or url != url.strip() or "://" not in url:
+        raise JevError("endpoint 形狀不對:%r" % (url,))
+    parts = urllib.parse.urlsplit(url)
+    if parts.username is not None or parts.password is not None:
+        raise JevError("endpoint 不得含 userinfo:%s" % url)
+    hostname = parts.hostname
+    if not hostname:
+        raise JevError("endpoint 缺 host:%s" % url)
+    return parts.scheme.lower(), hostname.lower()
+
+
+def is_loopback(url):
+    return endpoint_host(url)[1] in _LOOPBACK_HOSTS
 
 
 def validate_endpoint(url):
     """https 為預設;http 只准 loopback(測試用閉埠)。其它形狀 fail-loud。"""
-    if not isinstance(url, str) or "://" not in url:
-        raise JevError("endpoint 形狀不對:%r" % (url,))
-    scheme, rest = url.split("://", 1)
-    host = rest.split("/", 1)[0].split("@")[-1]
-    hostname = host.rsplit(":", 1)[0] if host.count(":") == 1 and not host.startswith("[") else host.split("]")[0] + ("]" if host.startswith("[") else "")
+    scheme, hostname = endpoint_host(url)
     if scheme == "https":
         return url
     if scheme == "http" and hostname in _LOOPBACK_HOSTS:
         return url
     raise JevError("endpoint 必須是 https(或 loopback 的 http,僅測試):%s" % url)
+
+
+def default_opener(url):
+    """loopback endpoint 一律繞過環境 proxy(否則 `http_proxy` 在、`no_proxy` 不在時,「閉埠零網路」測試會
+    把 Bearer key 送到 proxy);https 正式 endpoint 沿用環境 proxy 設定(企業出口)。"""
+    if is_loopback(url):
+        return urllib.request.build_opener(urllib.request.ProxyHandler({})).open
+    return urllib.request.urlopen
 
 
 class HttpTransport(object):
@@ -47,7 +69,7 @@ class HttpTransport(object):
         self._key = api_key.strip()
         self.endpoint = validate_endpoint(endpoint)
         self.timeout_s = float(timeout_s)
-        self._opener = opener or urllib.request.urlopen
+        self._opener = opener or default_opener(self.endpoint)
         self.calls = 0
 
     def __repr__(self):

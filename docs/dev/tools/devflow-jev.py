@@ -26,6 +26,7 @@ policy 導出 route → 雙層 ledger 落盤」的膠水,不含任何門檻、�
 import argparse
 import json
 import os
+import re
 import sys
 import time
 
@@ -76,6 +77,14 @@ def resolve_memory_dir(root, environ=None):
     raise JevError("找不到 memory/agentmem(找過 %s)—— durable ledger 是正本,缺它不落盤;設 DEVFLOW_ROOT 或 DEVFLOW_MEMORY_LIB" % candidates)
 
 
+def _require_memory_dir(root, environ, memory_dir):
+    if memory_dir is not None:
+        if not os.path.isfile(os.path.join(memory_dir, "agentmem", "durable.py")):
+            raise JevError("memory_dir %s 沒有 agentmem/durable.py" % memory_dir)
+        return memory_dir
+    return resolve_memory_dir(root, environ)
+
+
 def read_run_id(root):
     """`.devflow/exec.json` 的 run_id 只作 provenance(P0-5:同 slug re-arm 會換 run_id,不作 case identity)。"""
     path = os.path.join(root, ".devflow", "exec.json")
@@ -103,26 +112,87 @@ def make_transport_factory(environ=None):
     """只在雙閘門通過後才被呼叫;這是整支 runtime 唯一會 import 網路模組的地方。"""
     environ = os.environ if environ is None else environ
 
-    def factory():
+    def factory(timeout_s=None):
         from devflow_jev import http_transport   # 延遲 import:off 路徑連 urllib 都不載入
         endpoint = environ.get(http_transport.ENDPOINT_ENV) or http_transport.ENDPOINT_DEFAULT
-        return http_transport.HttpTransport(environ.get(gate_mod.KEY_ENV, ""), endpoint=endpoint)
+        kwargs = {"endpoint": endpoint}
+        if timeout_s is not None:
+            kwargs["timeout_s"] = timeout_s          # socket 層等待 = policy deadline;J1 不會在線上卡 30s
+        return http_transport.HttpTransport(environ.get(gate_mod.KEY_ENV, ""), **kwargs)
     return factory
 
 
+def _build_transport(factory, deadline_s):
+    try:
+        return factory(deadline_s)
+    except TypeError:
+        return factory()                              # 測試注入的無參 factory
+
+
+def _deadline(gate, deadline_s):
+    """policy 的 deadline 只能被 argv 收緊,不能放寬(G2 常數不在 runtime 覆寫)。"""
+    base = policy.J1_DEADLINE_S if gate == "J1" else SHADOW_DEADLINE_S
+    if deadline_s is None:
+        return base
+    if not isinstance(deadline_s, (int, float)) or deadline_s <= 0:
+        raise JevError("--deadline 必須是正數")
+    return min(base, float(deadline_s))
+
+
+_SHA256_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+_HEAD_RE = re.compile(r"^[0-9a-f]{7,40}$")
+_SLUG_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+PACKET_SCHEMA = "devflow-jev-packet/1"
+
+
 def validate_evidence(evidence, gate, slug):
+    """六欄全必填、形狀嚴格(小寫 hex、無空白):case_id 直接 hash 這些字串,大小寫／尾空白不同就會裂成兩個 case。"""
+    if not isinstance(evidence, dict):
+        raise JevError("evidence 必須是 JSON 物件")
     for key in sorted(ledger.EVIDENCE_ALLOWED_KEYS):
-        if not isinstance(evidence.get(key), str) or not evidence[key].strip():
-            raise JevError("evidence 缺 %s(六欄全必填:%s)" % (key, sorted(ledger.EVIDENCE_ALLOWED_KEYS)))
+        if not isinstance(evidence.get(key), str) or not evidence[key] or evidence[key] != evidence[key].strip():
+            raise JevError("evidence.%s 必填且不得有前後空白(六欄:%s)" % (key, sorted(ledger.EVIDENCE_ALLOWED_KEYS)))
     extra = set(evidence) - ledger.EVIDENCE_ALLOWED_KEYS
     if extra:
         raise JevError("evidence 多了白名單外的欄 %s" % sorted(extra))
     if evidence["gate"] != gate or evidence["feature"] != slug:
         raise JevError("evidence.gate/feature 必須等於 --gate/--slug(%s/%s)" % (gate, slug))
+    if not _SLUG_RE.match(slug):
+        raise JevError("--slug 只准 [A-Za-z0-9._-](無空白、無分號)")
     for key in ("artifact_hash", "evidence_hash"):
-        if not evidence[key].startswith("sha256:") or len(evidence[key]) != 71:
-            raise JevError("evidence.%s 必須是 sha256:<64 hex>" % key)
+        if not _SHA256_RE.match(evidence[key]):
+            raise JevError("evidence.%s 必須是 sha256:<64 小寫 hex>" % key)
+    if not _HEAD_RE.match(evidence["head_sha"]):
+        raise JevError("evidence.head_sha 必須是 7–40 位小寫 hex")
     return dict(evidence)
+
+
+def validate_packet(packet, gate, evidence):
+    """送出前的 caller 端檢查(不是 G1 本體;G1 在 pack 時已跑,這裡防 pack 之後被改):
+    schema／gate 對得上、packet_hash 重算一致、privacy 零命中、self_check 全過、header 的機械事實與 evidence 同值。
+    任一不符 → fail-loud,**在建 transport／寫任何檔之前**。"""
+    if not isinstance(packet, dict) or packet.get("schema") != PACKET_SCHEMA:
+        raise JevError("packet.schema 必須是 %s(用 pack 子命令產出)" % PACKET_SCHEMA)
+    if packet.get("gate") != gate:
+        raise JevError("packet.gate=%r 與 --gate=%s 不符" % (packet.get("gate"), gate))
+    for key in ("header", "body", "packet_hash", "truncated", "consistency_flags"):
+        if key not in packet:
+            raise JevError("packet 缺 %s" % key)
+    if packet_mod.packet_hash(packet) != packet["packet_hash"]:
+        raise JevError("packet_hash 對不上 —— packet 在 pack 之後被改過,拒送")
+    hits = packet_mod.privacy_scan(packet)
+    if hits:
+        raise JevError("packet privacy 命中 %s —— 拒送(不遮罩後放行)" % hits[:3])
+    failed = [c for c, ok, _ in packet_mod.self_check(packet) if not ok]
+    if failed:
+        raise JevError("packet self_check 未過:%s" % failed)
+    header = packet["header"]
+    for hkey, ekey in (("slug", "feature"), ("head_sha", "head_sha"), ("artifact_hash", "artifact_hash"),
+                       ("evidence_hash", "evidence_hash")):
+        if hkey in header and header[hkey] != evidence[ekey]:
+            raise JevError("packet.header.%s=%r 與 evidence.%s=%r 不符 —— 同一 case 的 header 與 evidence 必須同值"
+                           % (hkey, header[hkey], ekey, evidence[ekey]))
+    return packet
 
 
 def route_for(gate, answers, packet, risk_hit, runtime_changed):
@@ -178,13 +248,16 @@ def run_ask(root, gate, slug, packet, evidence, author_ref, session_ref, environ
         raise JevError("未知 gate %r" % gate)
     if not isinstance(slug, str) or not slug.strip():
         raise JevError("--slug 必填")
-    evidence = validate_evidence(evidence, gate, slug)
-    level, level_reason = gate_level(root, gate, environ)
+    level, level_reason = gate_level(root, gate, environ)       # 雙閘門最先:off 路徑不驗、不讀、不寫
     result = {"gate": gate, "slug": slug, "level": level, "level_reason": level_reason,
               "model_requested": MODEL_PINNED, "graduated": GRADUATED}
     if not gate_mod.may_call(level):
         result.update({"status": "noop", "noop_reason": level_reason, "network": False, "written": []})
         return result
+    evidence = validate_evidence(evidence, gate, slug)
+    packet = validate_packet(packet, gate, evidence)
+    memory_dir = _require_memory_dir(root, environ, memory_dir)   # durable writer 缺 → 在送出／寫檔前就 fail-loud
+    deadline = _deadline(gate, deadline_s)
 
     questions = manifest_mod.load_questions()
     manifest = manifest_mod.build_manifest(questions)
@@ -197,8 +270,7 @@ def run_ask(root, gate, slug, packet, evidence, author_ref, session_ref, environ
     day = day or utc_day()
     budget = state.load_budget(day)
     breaker = state.load_breaker()
-    transport = (transport_factory or make_transport_factory(environ))()
-    deadline = deadline_s if deadline_s is not None else (policy.J1_DEADLINE_S if gate == "J1" else SHADOW_DEADLINE_S)
+    transport = _build_transport(transport_factory or make_transport_factory(environ), deadline)
     outcome = policy.evaluate(transport, request, api_questions, clock, est, deadline_s=deadline,
                               budget=budget, breaker=breaker, breaker_key=gate)
     state.save_budget(budget, day)
@@ -225,7 +297,7 @@ def run_ask(root, gate, slug, packet, evidence, author_ref, session_ref, environ
         replay_path = replay.write(evaluation, packet, api_questions, outcome["raw"], manifest)
         replay_status = "available"
     record = ledger.build_durable_record(evaluation, replay_status)
-    written = ledger.write_durable(root, record, memory_dir=memory_dir or resolve_memory_dir(root, environ))
+    written = ledger.write_durable(root, record, memory_dir=memory_dir)
     result.update({
         "status": outcome["status"], "noop_reason": outcome.get("reason") or None, "network": True,
         "evaluation_id": evaluation["evaluation_id"], "case_id": evaluation["case_id"],
@@ -268,10 +340,11 @@ def run_reevaluate(root, evaluation_id, author_ref, session_ref, environ=None, t
     if not gate_mod.may_call(level):
         return {"status": "noop", "noop_reason": level_reason, "level": level, "network": False,
                 "parent_evaluation_id": evaluation_id, "written": []}
+    memory_dir = _require_memory_dir(root, environ, memory_dir)   # 送出前先確認 durable writer 在
     state = StateStore(root)
     day = day or utc_day()
     budget, breaker = state.load_budget(day), state.load_breaker()
-    transport = (transport_factory or make_transport_factory(environ))()
+    transport = _build_transport(transport_factory or make_transport_factory(environ), SHADOW_DEADLINE_S)
 
     def builder(parent_eval, packet, outcome):
         if outcome["status"] == "ok":
@@ -291,7 +364,7 @@ def run_reevaluate(root, evaluation_id, author_ref, session_ref, environ=None, t
     state.save_breaker(breaker)
     replay_status = child.pop("replay_status", "not_replayable")
     record = ledger.build_durable_record(child, replay_status)
-    written = ledger.write_durable(root, record, memory_dir=memory_dir or resolve_memory_dir(root, environ))
+    written = ledger.write_durable(root, record, memory_dir=memory_dir)
     return {"status": child["status"], "noop_reason": child.get("noop_reason"), "level": level, "network": True,
             "parent_evaluation_id": evaluation_id, "evaluation_id": child["evaluation_id"], "case_id": child["case_id"],
             "route_recommended": child["route_recommended"], "route_taken": child["route_taken"],
@@ -368,23 +441,52 @@ def run_report(root, gate="J5", primary_source=None, environ=None, memory_dir=No
                 if ev["gate"] == gate:
                     evaluations.append(ev)
                     replay_ids.add(ev["evaluation_id"])
-    feedbacks, not_replayable = {}, []
+    # feedback 依 (source 層, evaluation_id) 分桶:兩層各看各的,不互相蓋掉;落盤時已標 suspect 的先剔除
+    # (report.graduation 之後還會再用 feedback_suspect 重算一次,這裡剔除只是不讓可疑票蓋掉同層有效票)。
+    by_layer = {"human_attested": {}, "fresh_agent_reviewer": {}}
+    skipped_suspect, not_replayable, feedback_total = 0, [], 0
     durable = _agentmem(root, environ, memory_dir)
     for record in durable.iter_events(root):
         if record.get("kind") != "jev":
             continue
         jev = record.get("jev") or {}
         if jev.get("record_type") == "feedback":
-            if jev.get("gate") == gate:
-                feedbacks[jev["evaluation_id"]] = _pick_feedback(feedbacks.get(jev["evaluation_id"]), jev)
+            if jev.get("gate") != gate:
+                continue
+            feedback_total += 1
+            if jev.get("suspect"):
+                skipped_suspect += 1
+                continue
+            layer = by_layer.get(jev.get("source"))
+            if layer is None:
+                continue                                      # owner_self_review 等不進 graduation 的層
+            layer[jev["evaluation_id"]] = _pick_feedback(layer.get(jev["evaluation_id"]), jev)
         elif jev.get("evaluation_id") and jev["evaluation_id"] not in replay_ids:
             body = dict(kv.split("=", 1) for kv in record.get("body", "").split(";") if "=" in kv)
             if body.get("gate") == gate:
                 not_replayable.append(jev["evaluation_id"])
-    out = report_mod.graduation(evaluations, feedbacks, level="shadow", primary_source=primary_source)
-    out.update({"gate": gate, "graduated": GRADUATED, "evaluations_replayable": len(evaluations),
-                "evaluations_not_replayable": sorted(not_replayable), "feedbacks": len(feedbacks), "network": False,
-                "auto_allowed": False})
+    layers, excluded, conflicting, primary = {}, {}, set(), None
+    for source, fbs in by_layer.items():
+        one = report_mod.graduation(evaluations, fbs, level="shadow", primary_source=source)
+        layers[source] = one["layers"][source]
+        excluded[source] = one["excluded"]
+        conflicting.update(one["conflicting_label_cases"])
+        if source == primary_source:
+            primary = one
+    out = {
+        "gate": gate, "graduated": GRADUATED, "auto_allowed": False, "network": False,
+        "layers": layers,                                     # 分層;沒有 combined 主率
+        "primary_source": primary_source,
+        "floor_met": primary["floor_met"] if primary else None,
+        "frozen": primary["frozen"] if primary else None,
+        "wilson_lower_95": primary["wilson_lower_95"] if primary else None,
+        "n_unique_valid_by_layer": {k: v["n"] for k, v in layers.items()},
+        "conflicting_label_cases": sorted(conflicting),
+        "excluded_by_layer": excluded,
+        "evaluations_replayable": len(evaluations), "evaluations_not_replayable": sorted(not_replayable),
+        "feedbacks": feedback_total, "feedbacks_skipped_suspect": skipped_suspect,
+        "note": "engineering acceptance threshold; not a proof of accuracy; primary layer pending formal spec (B3 leave_unset)",
+    }
     return out
 
 
@@ -465,7 +567,7 @@ def build_parser():
     sa.add_argument("--session-ref", required=True)
     sa.add_argument("--run-id", default=None)
     sa.add_argument("--changed-paths", default=None, help="一行一個路徑;risk ceiling / runtime_changed 判定用")
-    sa.add_argument("--deadline", type=float, default=None)
+    sa.add_argument("--deadline", type=float, default=None, help="只能比 policy deadline 更短(收緊),不能放寬")
     sr = sub.add_parser("replay")
     sr.add_argument("--evaluation-id", required=True)
     se = sub.add_parser("reevaluate")
@@ -522,7 +624,7 @@ def main(argv=None):
     except JevError as exc:
         print("⛔ devflow-jev %s: %s" % (args.cmd, exc), file=sys.stderr)
         return EXIT_USAGE
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError, KeyError, TypeError) as exc:
         print("⛔ devflow-jev %s: 輸入/檔案錯誤 %s: %s" % (args.cmd, type(exc).__name__, exc), file=sys.stderr)
         return EXIT_USAGE
     return EXIT_USAGE

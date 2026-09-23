@@ -27,7 +27,8 @@ RUNTIME="$ROOT/scripts/devflow-jev.py"
 [ -d "$PKG" ] || { echo "FATAL: 找不到 $PKG" >&2; exit 2; }
 [ -f "$PKG/test_guards.py" ] || { echo "FATAL: 找不到 $PKG/test_guards.py" >&2; exit 2; }
 [ -f "$PKG/test_runtime.py" ] || { echo "FATAL: 找不到 $PKG/test_runtime.py" >&2; exit 2; }
-NET_RE='^\s*(import|from)\s+(urllib|http|socket|requests|ssl)\b'
+# 也抓 `import os, socket`(逗號串)與 `__import__("socket")`／`import_module("urllib.request")`
+NET_RE='^\s*(import\s+([A-Za-z_][A-Za-z0-9_.]*\s*,\s*)*|from\s+)(urllib|http|socket|requests|ssl)\b|(__import__|import_module)\(\s*["'"'"'](urllib|http|socket|requests|ssl)'
 
 echo "-- ① 網路 import 白名單(只准 http_transport.py)--"
 # test_*.py 不在掃描內(test_http_transport.py 要 import urllib.error 造假錯誤;測試本身只用假 opener 與 loopback 閉埠)
@@ -51,16 +52,13 @@ python3 - "$T" <<'PY'
 import json, sys
 t = sys.argv[1]
 sha = "sha256:" + "a" * 64
-json.dump({"schema": "devflow-jev-packet/1", "gate": "J1", "variant_id": "v0",
-           "header": {"slug": "s", "discussion_hash": sha, "open_questions_state": "none_open"},
-           "body": {"primary_request": "clear?", "quoted_context": [], "source_facts": [], "options": [],
-                    "verify_tails": [], "evidence_summary_claims_pass": False},
-           "truncated": False, "truncated_bytes": 0, "dropped_items": 0, "still_oversize": False,
-           "body_bytes_before": 10, "max_body_bytes": 120000, "consistency_flags": [], "route_forced": None,
-           "packet_hash": sha, "packet_builder_version": "x"}, open(t + "/p.json", "w"))
+json.dump({"header": {"slug": "s", "discussion_hash": sha, "open_questions_state": "none_open"},
+           "primary_request": "clear?"}, open(t + "/spec.json", "w"))
 json.dump({"feature": "s", "gate": "J1", "artifact_hash": sha, "evidence_hash": sha,
            "head_sha": "0" * 40, "evaluated_at": "2026-09-23T00:00:00Z"}, open(t + "/e.json", "w"))
 PY
+# packet 走真的 pack(送出前 runtime 會重算 packet_hash;手拼的包會被拒 —— 那正是審查後補的檢查)
+PYTHONDONTWRITEBYTECODE=1 python3 "$RUNTIME" pack --gate J1 --in "$T/spec.json" --out "$T/p.json" >/dev/null || { echo "⛔ pack 治具失敗" >&2; exit 2; }
 OUT=$(cd "$T" && env -u TYPESAFE_API_KEY PYTHONDONTWRITEBYTECODE=1 python3 "$RUNTIME" --root "$T" ask --gate J1 --slug s \
       --packet "$T/p.json" --evidence "$T/e.json" --author-ref a --session-ref s 2>&1); RC=$?
 if [ "$RC" -ne 0 ] || ! grep -q '"noop_reason": "no_api_key"' <<<"$OUT" || [ -e "$T/.devflow" ] || [ -e "$T/.dev-flow" ]; then
@@ -75,7 +73,9 @@ AGENTMEM_HOME="$T/agentmem-home" python3 - "$T" "$ROOT" <<'PY'
 import sys; sys.path.insert(0, sys.argv[2] + "/memory")
 from agentmem import identity; identity.ensure_project(sys.argv[1], name="jev-tripwire")
 PY
-OUT=$(cd "$T" && AGENTMEM_HOME="$T/agentmem-home" TYPESAFE_API_KEY=not-a-real-key DEVFLOW_JEV_ENDPOINT="http://127.0.0.1:9/" \
+# 清掉環境 proxy:否則 http_proxy 在、no_proxy 不在時,這一發會帶著 Bearer key 出去找 proxy,而不是打 loopback 閉埠
+OUT=$(cd "$T" && env -u http_proxy -u HTTP_PROXY -u https_proxy -u HTTPS_PROXY -u all_proxy -u ALL_PROXY no_proxy="127.0.0.1,localhost" \
+      AGENTMEM_HOME="$T/agentmem-home" TYPESAFE_API_KEY=not-a-real-key DEVFLOW_JEV_ENDPOINT="http://127.0.0.1:9/" \
       DEVFLOW_ROOT="$ROOT" PYTHONDONTWRITEBYTECODE=1 python3 "$RUNTIME" --root "$T" ask --gate J1 --slug s \
       --packet "$T/p.json" --evidence "$T/e.json" --author-ref a --session-ref s 2>&1); RC=$?
 if [ "$RC" -ne 0 ] || ! grep -qE '"noop_reason": "transport:(network|timeout)"' <<<"$OUT" || ! grep -q '"route_taken": "HUMAN"' <<<"$OUT"; then
@@ -85,7 +85,7 @@ grep -q "not-a-real-key" <<<"$OUT" && { echo "⛔ key 出現在輸出" >&2; exit
 echo "  ✓ transport 失敗 → no-op(exit 0)、route_taken=HUMAN、key 不外露"
 
 echo "-- ③ 案例數地板 --"
-MIN_TESTS=168
+MIN_TESTS=180
 ACTUAL=$(cat "$PKG"/test_*.py | grep -cE '^\s+def test_')
 if [ "$ACTUAL" -lt "$MIN_TESTS" ]; then
   echo "⛔ test_*.py 只有 $ACTUAL 個 test_(地板 $MIN_TESTS)—— 案例被刪" >&2; exit 1

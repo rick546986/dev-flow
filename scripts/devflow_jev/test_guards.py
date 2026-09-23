@@ -1178,7 +1178,10 @@ class W1Boundary(unittest.TestCase):
 
     NETWORK_ALLOWED = ("http_transport.py",)
     # 整行 import 語句才算(`from devflow_jev import http_transport` 這種只是名字含 http,不算)
-    NET_IMPORT = __import__("re").compile(r"^\s*(?:import|from)\s+(?:urllib|http|socket|requests|ssl)\b", __import__("re").M)
+    # 也抓 `import os, socket`(逗號串)與 `__import__("socket")`／`import_module("urllib.request")`
+    NET_IMPORT = __import__("re").compile(
+        r"^\s*(?:import\s+(?:[\w.]+\s*,\s*)*|from\s+)(?:urllib|http|socket|requests|ssl)\b"
+        r"|(?:__import__|import_module)\(\s*[\"'](?:urllib|http|socket|requests|ssl)", __import__("re").M)
 
     def test_network_modules_only_in_http_transport(self):
         offenders = []
