@@ -6,15 +6,18 @@ owner:
 updated:
 ---
 
-# 3. 原型(選配;命中觸發判定 → 條件式必要)— <要回答的問題>
+# 3. 原型(選配;命中觸發判定 → 人要求才 Demo)— <要回答的問題>
 
 > 用途:用 throwaway 實驗回答 2-decision 遺留的技術/UI 疑問。**code 一律進 throwaway
 > branch,禁進 main**;純資料實驗(如複製 DB 查驗)→ 產物放 session scratchpad,
 > repo 零污染。LOGIC 疑問 → pure module + 最小介面驗證;UI 疑問 → 2-4 個結構
 > 不同的 variant(搭 superpowers visual companion 互動挑)。
 > 選配的邊界:純後端、無互動風險的 feature 照舊可跳過;命中下方「Stage 3 觸發判定」
-> 任一條 → 本階段**條件式必要**。此時仍要跳過 → 必須由人類明示、記 2-decision 流程層
-> Owner Call、記錄跳過風險;Agent 不得自行替人決定跳過。
+> 任一條 → **問人要不要 Demo(人要求才 Demo;P3-4 極性)**:人親填
+> `- Demo request: requested | not requested by human:<姓名> @ <YYYY-MM-DD>`。不要求 → N/A 記錄
+> 即可過 G2、兩檔皆不建;要求 → 走 Demo,下方 Human verdict／attestation 規則一字不變。
+> 舊路徑保留:命中後仍要跳過也可記 2-decision 流程層 Owner Call(等同不要求)。
+> Agent 不得代填 Demo request、不得代決;Jev(J3)只出「值得／可選」建議,不寫任何一行。
 > 涉互動的案子不只產文件:須產**可操作 Demo**(使用者實際點/跑,不是只看靜態說明),
 > 以 Demo Script 帶使用者走過,回饋記入 User Demo Feedback,Human verdict 由人類親填。
 > Human verdict 即 G2「Demo verdict」錨的輸入(條件正本 `guides/guide-dev-flow.html#gates`):ACCEPTED 必須由
@@ -45,11 +48,12 @@ updated:
 >    回寫完成即終態)、註解**同步為最新事實**(內文說已回寫,註解不得還寫待回寫)。
 >    完成 = status=approved 且 frontmatter 與內文零矛盾。
 
-## Stage 3 觸發判定(條件式必要)
+## Stage 3 觸發判定(命中 → 人決定要不要 Demo)
 <!-- 對照 1-discussion Real-world Context 逐條判定,命中打 [x]。全未命中且無互動風險 →
      本階段維持選配;仍須落檔本節九條全未勾(G2 機械閘讀它當 N/A 記錄),不建 html。
-     命中任一條 → 條件式必要;仍要跳過 → 人類明示 + 2-decision Owner Call
-     (該行同時含「Stage 3」與「跳過」)+ 記跳過風險,兩檔皆不建,Agent 不得代決 -->
+     命中任一條 → 人要求才 Demo:人親填下方 Demo request 行(requested → 做 Demo;
+     not requested → N/A 記錄,兩檔皆不建)。仍可改記 2-decision Owner Call
+     (該行同時含「Stage 3」與「跳過」)。Agent 不得代填、不得代決 -->
 - [ ] 有新的前端流程
 - [ ] 改變使用者下一步
 - [ ] 涉及角色交接
@@ -59,6 +63,8 @@ updated:
 - [ ] 涉及系統外動作
 - [ ] 涉及多種可行互動設計
 - [ ] Stage 1 尚有操作流程不確定性
+- Demo request: requested | not requested by human:<姓名> @ <YYYY-MM-DD>
+<!-- 命中任一條才需要這行;人親自輸入姓名與日期,Agent 禁寫/禁改/禁代填。零命中不填。 -->
 
 ## Question
 <!-- 引 2-decision 哪個 risk / open point -->

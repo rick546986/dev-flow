@@ -1,7 +1,7 @@
 ---
 title: jev-gate roadmap（有優先級）
 slug: jev-gate
-status: draft-v4（draft-v3 + 三輪 Jev 實測 + source/probe closure + W0–W7 整合）；W0 P0-5～P0-9 於 2026-09-22 收閘（見 `w0-source-closure.md`）；W1 七守衛 foundation + P2-1 同日落地（見 `w1-guard-foundation.md`；runtime 仍未寫）
+status: draft-v4（draft-v3 + 三輪 Jev 實測 + source/probe closure + W0–W7 整合）；W0 P0-5～P0-9 於 2026-09-22 收閘（見 `w0-source-closure.md`）；W1 七守衛 foundation + P2-1 同日落地（見 `w1-guard-foundation.md`）；W2–W7 於 2026-09-23 依序落地（`w2-runtime.md`…`w7-stage3-j2.md`；J5/J2 皆 shadow、無 AUTO live）
 date: 2026-09-22
 base: origin/main 79b7aab
 inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、R2 對抗性風險、R3 流程與 HITL、R4 校準量測）+ 一份出處核對 + v2 四維度 findings 覆核（D1 出處忠實度、D2 可行性、D3 優先級、D4 安全）+ jev-convergence.md owner 裁決 + 2026-09-22 外部 Codex/Jev smoke、rubric 與文件稽核結果（待另行歸檔，不視為 repo 內既存 evidence）
@@ -75,7 +75,7 @@ draft-v4 以 draft-v3／`jev-convergence.md` 已記錄的 owner 裁決為約束�
 | **W4 J5 shadow** | ✅ 2026-09-23：P1-F4、P1-F7 + label binding/dedupe，見 `w4-j5-shadow.md`；仍 shadow、無 AUTO | J5 不阻塞現有 G3；case provenance 可驗 |
 | **W5 評估 / J2 厚包 / J4 實驗** | ✅ 2026-09-23：P2-2、P2-3、P2-4、P2-7、P2-8，見 `w5-eval-j2-j4.md`；P2-5／P2-6 留 AUTO live 之後 | 只 shadow/research；不自動放行 |
 | **W6 J5 AUTO + 契約先完成** | 🧪 2026-09-23：P3-1 **只有資格計算器**（`eligibility`；live 開關不存在，`gate.J5_LIVE_RATIFIED=False` 把 yaml live cap 成 shadow）；P3-2 研究分支可做的同步已做，缺口明列（`w6-j5-eligibility-contract.md` §3）；**live 未核准** | eligibility 達標 + L2/ADR + P3-2 全同步後才可 live |
-| **W7 獨立 Stage3、後期 J2** | P3-4；之後 P3-3 | Stage3 可獨立 L2；J2 window 未核定前永遠 shadow |
+| **W7 獨立 Stage3、後期 J2** | 🛠 2026-09-23：P3-4 契約面翻成「人要求才 Demo」（`_stage3_impl.py` 收 `- Demo request:` 人親填行、模板／SKILL／stage3 nodes／shared contract／guide 同步；attestation human-only 不動）；P3-3 只釘 `policy.J2_WINDOW_RATIFIED=False` → `eligibility` 永遠 blocker、無 AUTO_PASS（見 `w7-stage3-j2.md`） | Stage3 L2/ADR 由 owner 走 main 流程；J2 window 未核定前永遠 shadow |
 
 ## 2. P0 — 開工前 source closure
 
@@ -278,8 +278,8 @@ owner 已裁 **J2 保留**，但沒有核定 rolling-window 長度。draft-v4：
 |---|---|---|---|---|---|
 | **P3-1** | 🧪 W6（2026-09-23）資格計算器已備、**live 未核准**：`report.eligibility`（§5.1 八條機械化、floor、first-overturn freeze、n 不歸零、無覆寫參數）+ `eligibility` 子命令；`gate.J5_LIVE_RATIFIED=False` 讓 `gates.J5: live` 只到 shadow（硬拒，非旗標）；`GRADUATED=False` 不動 | **J5 AUTO_SHIP candidate**：risk≤1、mechanical gate 全綠、author≠approver、Quiz gate/risk ceiling 不動。先只計算 eligibility；真正 live 開關受 P3-2 阻擋 | **Wilson 95% lower ≥ .85、n≥30 個 unique valid real Ship shadow cases**；source unverified 不算；同 evidence label；一次有效 overturn 立即 freeze；這是工程接受門檻，**不是錯誤率≤5%證明**。freeze 後仍按最新 unique cases 重算 Wilson，不人工覆寫通過 | L | P1/P2 必要項 + P3-2 before live |
 | **P3-2** | 🛠 W6 部分（2026-09-23）：三模板頂欄加 `verdict_source`／`attested_by`；`gate-verdict-write.md` 鎖死 6（verdict 必附出處、Jev 不得寫）；`check-gate-verdict-write.sh` 25 項；`devflow_gate.py` 有 reviewer 時代填 human_attested、agent/Jev 拒收；新 `check-verdict-attestation.sh`。**缺口**：L2/ADR、README 公開面 parity、`_gate_consistency_impl.py` 不動（Jev 不是 reviewer）—— 見 w6 doc §3；**AUTO live 前仍必完成** | **契約同步**：reviewer-selection 5 處 + guide parity + `_gate_consistency_impl.py` ordered tuple + `notes/design/gate-verdict-write.md` 契約族 10 檔 + `check-gate-verdict-write.sh`；完整版「誰寫 verdict」機械檢查。需走 dev-flow 自己 Decide、L2/ADR | ADR accepted；`gate-consistency.sh`、`check-methodology-corrections.sh`、verdict-write checks 全綠；未授權 agent verdict 會紅。**完成前 P3-1 live 不可 enable** | L | P3-1 eligibility report、P1-G7 |
-| **P3-3** | ⏸ 遠期；J2 保留 | **J2 AUTO_PASS**：排在 J5 後；P2-8 厚包 + formal rolling window + shadow evidence；Owner Calls 仍逐條人裁 | window 未核定 → no-go；正式 floor/window/source mix 必須進 formal spec，不沿用 dev-set 調參結果偷上線 | L | P2-8、P3-2 |
-| **P3-4** | ✅ owner 已裁方向；🛠 可獨立 L2 | **Stage 3 polarity**：改成「人要求才 Demo」；動 `SKILL.md`、`_templates/3-prototype.md`、vnext shared contract、`_stage3_impl.py` 等實際契約面 | 只翻「預設要不要 Demo」；Demo verdict/attestation human-only 規則完全不動；可獨立排進 P1/P2 時窗，不等 J5 n≥30 | M | P0-3 |
+| **P3-3** | ⏸ 遠期；J2 保留。🛠 W7（2026-09-23）釘死：`policy.J2_WINDOW_CANDIDATE=50` 只是候選、`J2_WINDOW_RATIFIED=False` 單一賦值；`eligibility` 對 J2 永遠多 `j2_window_not_ratified` blocker（空 store 亦然）、`route_taken("J2","live")` → HUMAN | **J2 AUTO_PASS**：排在 J5 後；P2-8 厚包 + formal rolling window + shadow evidence；Owner Calls 仍逐條人裁 | window 未核定 → no-go；正式 floor/window/source mix 必須進 formal spec，不沿用 dev-set 調參結果偷上線 | L | P2-8、P3-2 |
+| **P3-4** | ✅ owner 已裁方向；🛠 W7（2026-09-23）契約面已翻：`_stage3_impl.py` `polarity=human_requests_demo`＋`demo_request`、模板 Demo request 行、SKILL §4、N1/N-skip/S0、shared contract、extract §7、guide、4-spec 執行清單；selftest p2 +4（473）、jev 測 243；**L2/ADR 與 README 公開面留 owner 走 main** | **Stage 3 polarity**：改成「人要求才 Demo」；動 `SKILL.md`、`_templates/3-prototype.md`、vnext shared contract、`_stage3_impl.py` 等實際契約面 | 只翻「預設要不要 Demo」；Demo verdict/attestation human-only 規則完全不動；可獨立排進 P1/P2 時窗，不等 J5 n≥30 | M | P0-3 |
 
 ### 5.1 J5 case eligibility
 

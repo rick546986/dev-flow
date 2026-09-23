@@ -1300,5 +1300,15 @@ class W6Eligibility(RuntimeBase):
         self.assertNotIn("--live", open(RUNTIME_PATH, encoding="utf-8").read())
 
 
+
+class W7J2Track(RuntimeBase):
+    def test_eligibility_j2_blocked_even_on_empty_store(self):
+        out = rt.run_eligibility(self.tmp, "J2", primary_source="human_attested", environ=self.env_on)
+        self.assertFalse(out["eligible"])
+        self.assertTrue(any(b.startswith("j2_window_not_ratified") for b in out["blockers"]))
+        self.assertFalse(out["j2_window_ratified"])
+        self.assertEqual(out["live_switch"], "absent")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -86,8 +86,8 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 已武裝時 review 其他 slug)各 1 案 +3 → 462。同一 commit 同步
 # scripts/test-architecture-guards.sh 的 check_static_pin 字面。同日 W2 C1:p3 doctor
 # ship-manifest 逐列(舊契約略過/三值一致/缺列/755 無 x/版本不一致/缺 manifest)+6 → 468;
-# 同日對抗審查補 destination 穿越 +1 → 469。
-MIN_CASES=469
+# 同日對抗審查補 destination 穿越 +1 → 469;同日 W7 P3-4 人要求才 Demo(Demo request 行)p2 四案 +4 → 473。
+MIN_CASES=473
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -1826,7 +1826,7 @@ p2_proto() { # p2_proto <slug> <checked:0|1> [User Demo Feedback 行...]
   local p2slug="$1" p2hit="$2"; shift 2
   { printf -- '---\nfeature: %s\nstage: 3-prototype\nstatus: draft\n---\n' "$p2slug"
     echo '# 3. 原型'
-    echo '## Stage 3 觸發判定(條件式必要)'
+    echo '## Stage 3 觸發判定(命中 → 人決定要不要 Demo)'
     if [ "$p2hit" = 1 ]; then echo '- [x] 涉及人工核准'; else echo '- [ ] 涉及人工核准'; fi
     echo '- [ ] 涉及權限差異'
     echo '## User Demo Feedback'
@@ -1881,6 +1881,20 @@ ck_msg "p2:test-only fixture + flag(僅測試)→ 放行" 0 "ACCEPTED" "$S3_RC" 
 p2_proto v3 1 '- Human verdict: ACCEPTED(第 2 輪;第 1 輪 REVISE)' '- Verdict attestation: human:rick @ 2026-08-02'
 p2_s3 v3
 ck_msg "p2:ACCEPTED 帶尾註仍可解析 → 放行" 0 "ACCEPTED" "$S3_RC" "$S3_OUT"
+# P3-4 人要求才 Demo(2026-09-23 W7):Demo request 行由人親填,Agent 不得代填/代決
+p2_feature v5; p2_disc_rwc v5
+p2_proto v5 1 '- Demo request: not requested by human:rick @ 2026-09-23'
+p2_s3 v5
+ck_msg "p2:命中 + 人明示不要求 Demo → N/A 放行" 0 "不要求" "$S3_RC" "$S3_OUT"
+p2_proto v5 1 '- Demo request: not requested by agent:claude @ 2026-09-23'
+p2_s3 v5
+ck_msg "p2:Demo request 由 agent 代填 → 拒" 2 "不得代填" "$S3_RC" "$S3_OUT"
+p2_proto v5 1 '- Demo request: requested by human:rick @ 2026-09-23' '- Human verdict: NOT_REVIEWED'
+p2_s3 v5
+ck_msg "p2:人要求 Demo + NOT_REVIEWED 無 Owner Call → 拒" 2 "人要求了 Demo" "$S3_RC" "$S3_OUT"
+p2_proto v5 1 '- Demo request: requested by human:rick @ 2026-09-23' '- Human verdict: ACCEPTED' '- Verdict attestation: human:rick @ 2026-09-23'
+p2_s3 v5
+ck_msg "p2:人要求 Demo + ACCEPTED + 人類 attestation → 放行" 0 "\"demo_request\": \"requested\"" "$S3_RC" "$S3_OUT"
 p2_feature v4; p2_disc_rwc v4; p2_proto_old v4
 p2_s3 v4
 ck_msg "p2:VNext 檔配舊 3-prototype 缺判定節 → 拒" 2 "觸發判定" "$S3_RC" "$S3_OUT"

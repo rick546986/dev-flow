@@ -20,6 +20,9 @@
 
 逐條判定九條,命中打 `[x]`(判定紀錄可記在確認紀錄,或本機游標旁的判定結果;
 0 命中不在本節點建檔,交 N-skip 落檔最小觸發判定)。
+任一命中 → **問人要不要 Demo**(P3-4 極性:人要求才 Demo)。人親填
+`- Demo request: requested | not requested by human:<姓名> @ <日期>`(落在 3-prototype 九條之後,由寫檔節點帶進去);
+Agent 不得代填、不得代決。不要求 → 交 N-skip 落檔(九條判定 + 該行);要求 → 走 S0-question。
 
 J3 只在判定做完之後、寫任何 Demo 紀錄之前。在專案根跑（不要另寫 HTTP client；
 live 時這支才呼叫同一個 runtime 的 `ask --gate J3`。失敗、逾時、沒開雙閘門 → 不顯示，照原流程）：
@@ -44,4 +47,4 @@ python3 ${DEVFLOW_ROOT}/scripts/devflow-jev.py handoff --gate J3 --slug <slug> \
 
 ## 下一跳
 
-0 命中 → N-skip;任一命中 → S0-question。
+0 命中 → N-skip;任一命中且人不要求 Demo → N-skip;任一命中且人要求 Demo → S0-question。

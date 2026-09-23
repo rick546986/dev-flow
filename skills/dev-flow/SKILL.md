@@ -98,19 +98,21 @@ gate 條件人看正本 = 指南 `#gates`;機械正本 = 契約檔 §7。本表 
   模板九條觸發條件(新前端流程/改變下一步/角色交接/人工核准/等待退回逾時/權限差異/
   系統外動作/多種互動設計/操作流程不確定),命中打 [x] **落檔**於 3-prototype
   「Stage 3 觸發判定」節。0 命中 → 全未勾清單落檔即為「無 trigger,N/A + 原因」記錄,
-  Stage 3 維持選配。命中任一條 → 本階段條件式必要。
-- **Demo 必要性**:觸發命中 → **可操作 Demo 必要**(人實際點/跑;形式與鐵則見模板)。
+  Stage 3 維持選配。命中任一條 → **問人要不要 Demo**(P3-4 極性:人要求才 Demo)。
+- **Demo 由人要求**:命中後人親填 `- Demo request: requested | not requested by human:<姓名> @ <日期>`
+  (緊接九條之後;**Agent 禁寫/禁代填/禁代決**)。`not requested` → N/A 記錄可過 G2、兩檔皆不建;
+  `requested` → **可操作 Demo**(人實際點/跑;形式與鐵則見模板)。人未決定 → G2 不得過。
 - **Demo 與 Variant 分離**:方案未定 → 2-4 個結構不同 Variant;已由核准 Pattern
   決定 → 1 個 Demo。禁無結構差異的假 Variant。細節見模板。
 - **J3 只建議**:觸發判定做完後可跑 `scripts/devflow-jev.py handoff --gate J3`
   （內部才是 `ask --gate J3`；沒開雙閘門、失敗、逾時 = 沒啟用）。只顯示「值得人親手 Demo」
-  或「Demo 可選」。不改「命中就要 Demo」，不寫 Human verdict、不寫 ACCEPTED、不寫 attestation。
+  或「Demo 可選」。只是給人決定 Demo request 的參考；不代填 Demo request、不寫 Human verdict、不寫 ACCEPTED、不寫 attestation。
 - **Human verdict 人類主權**:ACCEPTED/REVISE/NOT_REVIEWED 由參與 Demo 的人類親填;
   未 Demo = NOT_REVIEWED ≠ ACCEPTED。ACCEPTED 必須伴隨人類 attestation 行:
   `- Verdict attestation: human:<姓名> @ <YYYY-MM-DD>`(緊隨 Human verdict 行;
   **人類親自輸入,Agent 禁寫/禁改/禁代填**)。無 attestation 的 ACCEPTED 機械拒收。
   fixture 必須含 `test-only human fixture` 字樣(正式判定拒收該字樣)。
-- **跳過**:命中觸發仍要跳過 → 人類明示,記 2-decision「Owner Calls」節流程層 OC,
+- **跳過(舊路徑,等同不要求)**:命中觸發仍要跳過 → 人類明示,記 2-decision「Owner Calls」節流程層 OC,
   該行同時含「Stage 3」與「跳過」字樣(供機械比對);Agent 不得代決跳過。
 - **G2 送審前先跑 spec 形狀檢查**(B-9;Stage 4 步驟 6 送審的前置動作):
   `bash <master>/scripts/check-spec-gate.sh docs/dev/<slug>/4-spec.md`。它查六項,
@@ -126,8 +128,9 @@ gate 條件人看正本 = 指南 `#gates`;機械正本 = 契約檔 §7。本表 
   **exit 1 = 不得送審**(這支是 Gate,不是 warning-only);exit 0 只代表**形狀**齊,
   R/S 寫得對不對、DD 決策合不合理仍是 reviewer 的事,機械不判語意。
 - **G2 Demo verdict 條件**(條件正本指南 `#gates`;機械句在契約檔 §7;語意全文 vnext-shared-contract §2):
-  無 trigger → N/A + 明確原因可過;有 trigger 完成 Demo → 須 ACCEPTED(+attestation);
-  REVISE / NOT_REVIEWED → 不得過;有 trigger 但跳過 → 須 Owner Call 明示。機械檢查:
+  無 trigger → N/A + 明確原因可過;有 trigger → 人親填 Demo request,不要求 → N/A 可過,
+  要求且完成 Demo → 須 ACCEPTED(+attestation);REVISE / NOT_REVIEWED → 不得過;
+  有 trigger 但跳過 → 須 Owner Call 明示;人未決定 → 不得過。機械檢查:
   `python3 <plugin>/hooks/_stage3_impl.py <slug>`(專案根執行;exit 0 可過 / 2 拒 /
   1 錯誤;stdout JSON `stage3-verdict-v1`)。**legacy 相容**:1-discussion 無
   Real-world Context 節的舊 feature(或 fast lane 無 1/3 檔)→ 明確判 legacy/N-A
