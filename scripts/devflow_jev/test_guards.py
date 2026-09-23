@@ -1210,5 +1210,96 @@ class W1Boundary(unittest.TestCase):
             self.assertTrue(re.match(r"^\d+\.\d+\.\d+$", v))
 
 
+class W3FlowPolicy(unittest.TestCase):
+    """W3:主題句不抄題組、弱維度不看 next 機率、兩輪封頂、J3 任何回應都不能寫 ACCEPTED。"""
+
+    def test_flow_constants_stay_outside_questionset_fingerprint(self):
+        fp = policy.policy_fingerprint()
+        qh = manifest.questionset_hash(manifest.build_manifest(manifest.load_questions()))
+        old = policy.J1_ASK_MORE_MAX_ROUNDS
+        policy.J1_ASK_MORE_MAX_ROUNDS = 9
+        try:
+            self.assertEqual(policy.policy_fingerprint(), fp)
+            self.assertEqual(manifest.questionset_hash(manifest.build_manifest(manifest.load_questions())), qh)
+        finally:
+            policy.J1_ASK_MORE_MAX_ROUNDS = old
+
+    def test_theme_follows_weakest_dimension_and_does_not_copy_rubric(self):
+        for dim in list(policy.J1_THEMES) + [None, "not_a_dimension"]:
+            theme = policy.j1_theme(dim)
+            policy.assert_no_rubric_copy(theme, "J1")
+            for qid in policy.J1_CLARITY_DIMS:
+                self.assertNotIn(qid, theme)
+        policy.assert_no_rubric_copy(policy.J1_ASK_MORE_INSTRUCTION, "J1")
+        policy.assert_no_rubric_copy(policy.J1_ROUND_CAP_INSTRUCTION, "J1")
+        policy.assert_no_rubric_copy(policy.J1_PRIMARY_REQUEST, "J1")
+        policy.assert_no_rubric_copy(policy.J3_PRIMARY_REQUEST, "J3")
+        effect = policy.j1_effect("ASK_MORE", "acceptance_clear", 1)
+        self.assertEqual(effect["weakest_dimension"], "acceptance_clear")
+        self.assertEqual(effect["theme"], policy.J1_THEMES["acceptance_clear"])
+        self.assertNotIn("probabilities", policy.j1_effect.__code__.co_varnames)
+
+    def test_ask_more_restart_names_s0_s2_and_keeps_n13(self):
+        effect = policy.j1_effect("ASK_MORE", "scope_clear", 1)
+        self.assertEqual(effect["effect"], "ask_more")
+        self.assertEqual(effect["restart"]["restart_nodes"], ["S0-scope", "S1-survey", "S2-world"])
+        self.assertTrue(effect["restart"]["full_11_steps"])
+        self.assertTrue(effect["restart"]["n13_human_nod_required"])
+        self.assertTrue(effect["restart"]["read_whitelist_is_not_mechanical_execution"])
+        self.assertTrue(effect["restart"]["prior_discussion_is_not_established_fact"])
+        self.assertTrue(effect["restart"]["do_not_read_old_discussion_to_skip_a_round"])
+        self.assertIn("S0-scope", effect["instruction"])
+        self.assertIn("不是已核事實", effect["instruction"])
+        self.assertIn("不是機械執行", effect["instruction"])
+        self.assertIn("N13", effect["instruction"])
+
+    def test_second_ask_more_becomes_owner_decision(self):
+        first = policy.j1_effect("ASK_MORE", "goal_clear", 1)
+        self.assertEqual(first["effect"], "ask_more")
+        self.assertFalse(first["round_capped"])
+        second = policy.j1_effect("ASK_MORE", "goal_clear", 2)
+        self.assertEqual(second["effect"], "needs_owner_decision")
+        self.assertEqual(second["model_next"], "ASK_MORE")
+        self.assertTrue(second["round_capped"])
+        self.assertIsNone(second["theme"])
+        self.assertIsNone(second["restart"])
+        self.assertTrue(second["stop_before_decide"])
+        self.assertIn("不要再開第三輪", second["instruction"])
+        clear = policy.j1_effect("START_DECIDE", None, 2)
+        self.assertEqual(clear["effect"], "start_decide")
+        self.assertTrue(clear["skip_redundant_clarity_question"])
+
+    def test_j3_closed_display_has_no_accepted_and_refuses_any_other_blob(self):
+        original = "proto-original\n"
+        for name, text in policy.J3_DISPLAY.items():
+            advice = policy.j3_effect(name)
+            self.assertEqual(advice["display"], text)
+            self.assertFalse(advice["writes_verdict"])
+            self.assertFalse(advice["changes_demo_requirement"])
+            self.assertNotIn("ACCEPTED", json.dumps(advice, ensure_ascii=False))
+            self.assertEqual(policy.refuse_j3_write(original, advice), original)
+        self.assertIsNone(policy.j3_effect("ACCEPTED"))
+        blobs = [
+            "Human verdict: ACCEPTED",
+            {"recommendation": "ACCEPTED", "display": "- Human verdict: ACCEPTED", "writes_verdict": True},
+            {"effect": "show_recommendation", "recommendation": "DEMO_WORTH_IT",
+             "display": policy.J3_DISPLAY["DEMO_WORTH_IT"] + "\n- Verdict attestation: human:jev @ 2026-09-23",
+             "writes_verdict": False, "writes_attestation": False, "writes_g2_verdict": False,
+             "writes_g3_verdict": False, "changes_demo_requirement": False},
+            {"effect": "show_recommendation", "recommendation": "DEMO_WORTH_IT",
+             "display": policy.J3_DISPLAY["DEMO_WORTH_IT"], "writes_verdict": True,
+             "writes_attestation": False, "writes_g2_verdict": False, "writes_g3_verdict": False,
+             "changes_demo_requirement": False},
+            {"effect": "show_recommendation", "recommendation": "DEMO_OPTIONAL",
+             "display": policy.J3_DISPLAY["DEMO_OPTIONAL"], "writes_verdict": False,
+             "writes_attestation": False, "writes_g2_verdict": True, "writes_g3_verdict": False,
+             "changes_demo_requirement": False},
+        ]
+        for blob in blobs:
+            with self.assertRaises(JevError):
+                policy.refuse_j3_write(original, blob)
+        self.assertEqual(original, "proto-original\n")
+
+
 if __name__ == "__main__":
     unittest.main()

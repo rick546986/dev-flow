@@ -102,6 +102,9 @@ gate 條件人看正本 = 指南 `#gates`;機械正本 = 契約檔 §7。本表 
 - **Demo 必要性**:觸發命中 → **可操作 Demo 必要**(人實際點/跑;形式與鐵則見模板)。
 - **Demo 與 Variant 分離**:方案未定 → 2-4 個結構不同 Variant;已由核准 Pattern
   決定 → 1 個 Demo。禁無結構差異的假 Variant。細節見模板。
+- **J3 只建議**:觸發判定做完後可跑 `scripts/devflow-jev.py handoff --gate J3`
+  （內部才是 `ask --gate J3`；沒開雙閘門、失敗、逾時 = 沒啟用）。只顯示「值得人親手 Demo」
+  或「Demo 可選」。不改「命中就要 Demo」，不寫 Human verdict、不寫 ACCEPTED、不寫 attestation。
 - **Human verdict 人類主權**:ACCEPTED/REVISE/NOT_REVIEWED 由參與 Demo 的人類親填;
   未 Demo = NOT_REVIEWED ≠ ACCEPTED。ACCEPTED 必須伴隨人類 attestation 行:
   `- Verdict attestation: human:<姓名> @ <YYYY-MM-DD>`(緊隨 Human verdict 行;
