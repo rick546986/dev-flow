@@ -1,0 +1,232 @@
+{
+ "pack": "/home/user/dev-flow",
+ "steps": [
+  {
+   "rc": 0,
+   "project_id": "prj_01M34SG2E62RHB1BPN57D4N7RX",
+   "durable_dir": ".dev-flow",
+   "rebuilt": {
+    "decisions": 0,
+    "entities": 0,
+    "events": 0,
+    "facts": 0,
+    "knowledge": 0,
+    "skills": 0
+   },
+   "err": "",
+   "step": "00-setup"
+  },
+  {
+   "ok": true,
+   "written": [
+    ".dev-flow/events/2026/09/jev-shadow.31c73de97c.jsonl"
+   ],
+   "good_id": "evt_01M34SG2FG4A37XSWXSWT75VXB",
+   "bad_id": "jev-feature-x-J5-0001",
+   "step": "10-append-kind-jev"
+  },
+  {
+   "ok": true,
+   "written": [],
+   "step": "11-append-same-id-same-content"
+  },
+  {
+   "ok": false,
+   "error": "/tmp/p06-durable.hy8pz0c3/.dev-flow/events/2026/09/jev-shadow.31c73de97c.jsonl:event_id evt_01M34SG2FG4A37XSWXSWT75VXB 已經存在但內容不同 —— 這不是重跑,是兩件事共用一個身分。靜默跳過會讓後者永遠不存在,請人裁決(推導 id 的來源撞號,或推導規則有瑕疵)",
+   "note": "rejected as designed",
+   "step": "12-append-same-id-diff-content"
+  },
+  {
+   "rejected": true,
+   "error": "內容含絕對路徑(1 處)—— durable memory 只收 repo-relative 路徑",
+   "step": "13-writer-boundary-abs-path"
+  },
+  {
+   "rejected": true,
+   "error": "疑似敏感內容(github_token,assigned_secret)—— durable memory 會被 push,拒絕固化(不做遮罩後放行)",
+   "step": "13-writer-boundary-secret"
+  },
+  {
+   "rejected": false,
+   "note": "custom dict NOT scanned by writer",
+   "step": "14-writer-boundary-custom-field"
+  },
+  {
+   "files": [
+    ".dev-flow/events/2026/09/jev-shadow.31c73de97c.jsonl"
+   ],
+   "n_lines": 3,
+   "custom_preserved_in_file": true,
+   "step": "15-durable-file-state"
+  },
+  {
+   "rc": 0,
+   "indexed_items": 3,
+   "events_cols": [
+    "event_id",
+    "project_id",
+    "session_id",
+    "kind",
+    "title",
+    "body",
+    "branch",
+    "commit_sha",
+    "occurred_at",
+    "recorded_at",
+    "signal",
+    "durable",
+    "durable_ref",
+    "paths_json",
+    "source_type",
+    "source_ref",
+    "legacy"
+   ],
+   "n_events": 3,
+   "n_jev": 3,
+   "jev_rows": [
+    {
+     "event_id": "evt_01M34SG2FG4A37XSWXSWT75VXB",
+     "kind": "jev",
+     "title": "J5 shadow evaluation feature-x",
+     "source_type": "jev",
+     "source_ref": "J5:feature-x",
+     "durable": 1,
+     "signal": "high",
+     "paths_json": "[\"docs/dev/feature-x/7-review.md\"]",
+     "session_id": "jev-shadow"
+    },
+    {
+     "event_id": "evt_01M34SG2FK3X39Y4HH40KRNYM9",
+     "kind": "jev",
+     "title": "custom-field-leak",
+     "source_type": "jev",
+     "source_ref": "J5:feature-x",
+     "durable": 1,
+     "signal": "high",
+     "paths_json": "[\"docs/dev/feature-x/7-review.md\"]",
+     "session_id": "jev-shadow"
+    },
+    {
+     "event_id": "evt_01M34SG2HQ2B7VTX33F3KRWSG8",
+     "kind": "jev",
+     "title": "J5 shadow evaluation feature-y",
+     "source_type": "jev",
+     "source_ref": "J5:feature-y",
+     "durable": 1,
+     "signal": "high",
+     "paths_json": "[\"docs/dev/feature-x/7-review.md\"]",
+     "session_id": "jev-shadow"
+    }
+   ],
+   "custom_column_exists": false,
+   "index_text_for_jev": [
+    "jev\nJ5 shadow evaluation feature-x\nroute=HUMAN confidence=0.42 (shadow, not counted)",
+    "jev\nJ5 shadow evaluation feature-y\nroute=HUMAN confidence=0.42 (shadow, not counted)",
+    "jev\ncustom-field-leak\nroute=HUMAN confidence=0.42 (shadow, not counted)"
+   ],
+   "step": "20-rebuild-via-status"
+  },
+  {
+   "rc": 0,
+   "ids_first": [
+    "evt_01M34SG2FG4A37XSWXSWT75VXB",
+    "evt_01M34SG2FK3X39Y4HH40KRNYM9",
+    "evt_01M34SG2HQ2B7VTX33F3KRWSG8"
+   ],
+   "ids_second": [
+    "evt_01M34SG2FG4A37XSWXSWT75VXB",
+    "evt_01M34SG2FK3X39Y4HH40KRNYM9",
+    "evt_01M34SG2J536DJK97S0X60DWJY",
+    "evt_01M34SG2N2FWEE9QVX3AF6J9FB"
+   ],
+   "valid_id_stable": true,
+   "invalid_id_row_ids": [
+    "evt_01M34SG2J536DJK97S0X60DWJY",
+    "evt_01M34SG2N2FWEE9QVX3AF6J9FB"
+   ],
+   "n_jev_rows_after": 4,
+   "step": "21-second-rebuild-id-stability"
+  },
+  {
+   "rc": 0,
+   "retrieval_status": "OK",
+   "query_kind": "HISTORY",
+   "n_event_hits": 2,
+   "hit_titles": [
+    "J5 shadow evaluation feature-y",
+    "J5 shadow evaluation feature-x"
+   ],
+   "hit_keys": [
+    "authority",
+    "branch",
+    "channels",
+    "coverage",
+    "item_id",
+    "item_type",
+    "item_uid",
+    "occurred_at",
+    "paths",
+    "score",
+    "status",
+    "text",
+    "title"
+   ],
+   "step": "30-ask-history"
+  },
+  {
+   "rc": 0,
+   "jev_in_context": true,
+   "snippet": [
+    "- 2026-09-22 · jev:J5 shadow evaluation feature-y",
+    "- 2026-09-22 · jev:J5 shadow evaluation feature-x"
+   ],
+   "step": "31-context-recent-events"
+  },
+  {
+   "rc": 1,
+   "out": "g_revisions\": [],\n \"preflight_not_known_local\": false,\n \"problems\": [\n  \"DURABLE_UNCOMMITTED:3 個 durable 檔還沒 commit —— 記憶只在工作樹裡,checkout 就沒了\",\n  \"DURABLE_UNPUSHED:這個分支沒有 upstream —— 無法驗證記憶是否離開本機\"\n ],\n \"pushed\": false,\n \"remote_head\": \"\",\n \"remote_observed\": false,\n \"remote_ref_matches\": false,\n \"uncommitted\": [\n  \".dev-flow/events/2026/09/jev-shadow-2.7fcfbe67d8.jsonl\",\n  \".dev-flow/events/2026/09/jev-shadow.31c73de97c.jsonl\",\n  \".dev-flow/project.yaml\"\n ],\n \"upstream\": \"\",\n \"verdict\": \"FAIL\"\n}\n",
+   "err": "",
+   "step": "40-durable-check-uncommitted"
+  },
+  {
+   "expected": 80,
+   "present": 80,
+   "lost": 0,
+   "lost_from": [],
+   "files": [
+    ".dev-flow/events/2026/09/shared.a4d2686801.jsonl"
+   ],
+   "step": "50-multiwriter-same-session-file-race"
+  },
+  {
+   "expected": 10,
+   "present": 5,
+   "lost": 5,
+   "lost_from": [
+    "B"
+   ],
+   "files": [
+    ".dev-flow/events/2026/09/shared2.c5aa2dadb9.jsonl"
+   ],
+   "step": "51-multiwriter-same-session-file-deterministic-interleave"
+  },
+  {
+   "expected": 80,
+   "present": 80,
+   "lost": 0,
+   "lost_from": [],
+   "files": [
+    ".dev-flow/events/2026/09/sess-a.e808f6286c.jsonl",
+    ".dev-flow/events/2026/09/sess-b.5168f72571.jsonl"
+   ],
+   "step": "52-multiwriter-different-session-files"
+  },
+  {
+   "has_fcntl": false,
+   "has_flock": false,
+   "has_o_excl": true,
+   "note": "O_EXCL 只出現在 atomic write 的 tmp 檔建立,不是跨 writer 的檔級互斥",
+   "step": "60-source-lock-scan"
+  }
+ ]
+}

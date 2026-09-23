@@ -657,7 +657,7 @@ D=$(seed vs1); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "docs/dev/readme-contract-extract.md"
 t = p.read_text(encoding="utf-8")
-n = t.replace("devflow-evidence-gauntlet.sh`(1.3.3,", "devflow-evidence-gauntlet.sh`(9.9.9,", 1)
+n = t.replace("devflow-evidence-gauntlet.sh`(1.4.0,", "devflow-evidence-gauntlet.sh`(9.9.9,", 1)
 assert n != t, "VS-1 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
@@ -667,7 +667,7 @@ D=$(seed vs2); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "devflow-contract.json"
 t = p.read_text(encoding="utf-8")
-n = t.replace('"gauntlet": "1.3.3"', '"gauntlet": "9.9.9"', 1)
+n = t.replace('"gauntlet": "1.4.0"', '"gauntlet": "9.9.9"', 1)
 assert n != t, "VS-2 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
@@ -677,7 +677,7 @@ D=$(seed vs3); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "notes/design/evidence-gauntlet.md"
 t = p.read_text(encoding="utf-8")
-n = t.replace("**現行 Gauntlet 版本:1.3.3**", "**現行 Gauntlet 版本:9.9.9**", 1)
+n = t.replace("**現行 Gauntlet 版本:1.4.0**", "**現行 Gauntlet 版本:9.9.9**", 1)
 assert n != t, "VS-3 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
@@ -687,7 +687,7 @@ D=$(seed vs4); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "notes/design/evidence-gauntlet.md"
 t = p.read_text(encoding="utf-8")
-n = t.replace("**現行 Gauntlet 版本:1.3.3**\n", "", 1)
+n = t.replace("**現行 Gauntlet 版本:1.4.0**\n", "", 1)
 assert n != t, "VS-4 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
@@ -697,7 +697,7 @@ D=$(seed vs5); mutate "$D" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]) / "docs/dev/tools/devflow-evidence-gauntlet.sh"
 t = p.read_text(encoding="utf-8")
-n = t.replace('GAUNTLET_VERSION="1.3.3"', 'GAUNTLET_VERSION="9.9.9"', 1)
+n = t.replace('GAUNTLET_VERSION="1.4.0"', 'GAUNTLET_VERSION="9.9.9"', 1)
 assert n != t, "VS-5 mutation 沒生效"
 p.write_text(n, encoding="utf-8")
 PY
@@ -2519,7 +2519,7 @@ check_static_pin_sub() { # check_static_pin_sub <相對路徑> <期望子字串>
     STATIC_PIN_FAIL=1
   fi
 }
-check_static_pin "hooks/selftest.sh" "MIN_CASES=459" "MIN_CASES 釘死 459(2026-08-17 清空輪 378 之後,2026-08-19 §7 前置修復:s7 legacy sequential 真跑 start 驗證+6/s7b VNext feature-scope 同型驗證+2/s7c Stage 7 review 自建武裝同型驗證+3 → 389,同日 §7-3b 探針 pst 真實 subagent_type payload 形狀釘住+3 → 392,2026-08-20 issue #7 路徑分隔符 w1 組+6 → 398,同日派工單 §2.1 TMPDIR 跨平台正規化 w2 組+2 → 400,同日 report-guard 覆蓋缺口+2 → 402,2026-08-29 Bash 寫入 prevent-before +3 → 405,2026-09-02 PR #110 fail-closed 收斂 +5 → 410,2026-09-04 #98 值掃描重做 +1/#101 壞 payload 武裝判斷 +12/#103 --strict 重讀漏包 +7 → 430,同日 r2-#98 對抗審查 F1 x_ 剝除迴圈補案(x__customer_data)+1 → 431,同日 #102 仲裁拆半 EXEC_SCHEMAS 對帳 +1 → 432,同日 issue #109 report-guard 三處路徑判定誤擋回歸補 4 案 → 436,同日 fresh 驗收 medium:DEVFLOW_MASTER 優先序 1 補 name=dev-flow 驗證 +1 → 437,同日 #103 repair 子命令 +8/ensure_manifest O_EXCL 互斥 +3 → 448,同日 fresh 驗收 r3-#103:cmd_repair run_id 路徑穿越攔截 +5/ensure_manifest hardlink 不支援退回 +1 → 454,2026-09-13 requirement-discovery-gaps S-8 Read 三案 +3 → 457,同日 S-8 同檔 1-discussion 無 env 兩案 +2 → 459)"
+check_static_pin "hooks/selftest.sh" "MIN_CASES=462" "MIN_CASES 釘死 462(2026-08-17 清空輪 378 之後,2026-08-19 §7 前置修復:s7 legacy sequential 真跑 start 驗證+6/s7b VNext feature-scope 同型驗證+2/s7c Stage 7 review 自建武裝同型驗證+3 → 389,同日 §7-3b 探針 pst 真實 subagent_type payload 形狀釘住+3 → 392,2026-08-20 issue #7 路徑分隔符 w1 組+6 → 398,同日派工單 §2.1 TMPDIR 跨平台正規化 w2 組+2 → 400,同日 report-guard 覆蓋缺口+2 → 402,2026-08-29 Bash 寫入 prevent-before +3 → 405,2026-09-02 PR #110 fail-closed 收斂 +5 → 410,2026-09-04 #98 值掃描重做 +1/#101 壞 payload 武裝判斷 +12/#103 --strict 重讀漏包 +7 → 430,同日 r2-#98 對抗審查 F1 x_ 剝除迴圈補案(x__customer_data)+1 → 431,同日 #102 仲裁拆半 EXEC_SCHEMAS 對帳 +1 → 432,同日 issue #109 report-guard 三處路徑判定誤擋回歸補 4 案 → 436,同日 fresh 驗收 medium:DEVFLOW_MASTER 優先序 1 補 name=dev-flow 驗證 +1 → 437,同日 #103 repair 子命令 +8/ensure_manifest O_EXCL 互斥 +3 → 448,同日 fresh 驗收 r3-#103:cmd_repair run_id 路徑穿越攔截 +5/ensure_manifest hardlink 不支援退回 +1 → 454,2026-09-13 requirement-discovery-gaps S-8 Read 三案 +3 → 457,同日 S-8 同檔 1-discussion 無 env 兩案 +2 → 459,2026-09-23 jev-gate W0 P0-5 C3 Stage 7 review 三條拒絕路徑 +3 → 462)"
 check_static_pin "tests/parallel-stage6/run_tests.py" "EXPECTED_CHECKS = 131" "EXPECTED_CHECKS 釘死 131"
 check_static_pin "scripts/check-dev-setup-discipline.sh" "MIN_CHECKS = 38" "MIN_CHECKS 釘死 38(A-2/B-5 輪 → 18;2026-08-28 ⑪殘件 +5 → 23;⑫Python 地板 +2 → 25;HISTORY 種子不准自動清 +1 → 26;ship-manifest ⑩ +1 → 27;2026-09-04 #96 ⑬trash 目錄進 .gitignore +1 → 28;同日複驗 ⑬改 scoped 兩段斷言 +1 → 29;2026-09-10 host-stack-fit I2 +3 → 32;#155 knife-2 knowledge bootstrap +4 → 36;#176 context-warn PRE/POST + empty-glossary loud +2 → 38)"
 check_static_pin "scripts/check-gate-twin.sh" "MIN_CHECKS = 221" "MIN_CHECKS 釘死 221(#191 fig-ascii 樹狀／長標／多 R +20 後的實得數)"
@@ -2527,7 +2527,7 @@ check_static_pin "scripts/check-integration-regression-guard.sh" "MIN_CHECKS = 3
 check_static_pin "scripts/check-ship-manifest.sh" "MIN_CHECKS = 21" "MIN_CHECKS 釘死 21(結構+parity+地圖對帳+負向 fixture 的實得數;issue #92 補全列 source 存在 +2、第三類列負向 fixture +4,15→21)"
 check_static_pin "scripts/check-status-policy.sh" "MIN_CHECKS = 55" "MIN_CHECKS 釘死 55(STATUS 單寫入者 + OverlapRef 單一座標:⑬b/⑬c + 負向㉘–㉟ 後的實得數)"
 check_static_pin "scripts/check-py-floor.sh" "MIN_HEREDOCS = 222" "MIN_HEREDOCS 釘死 222(精確實測;baseline 221 + guard Read INTERP-only +1;RW-DG1/2 改 tag MUT 不進掃描集;關掉 INTERP 必跌破,不靠抬地板)"
-check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 213" "EXPECTED_MAPPED_FILES 釘死 213(精確值;knowledge-index +2、proof +1、knife-2 ask +2、knowledge bootstrap +2、check-preload-ban.sh +1、diagram-ir-gate +3、five-station-f1 +3、five-station-f2 +2、five-station-f3 +3)"
+check_static_pin "scripts/check-file-map.sh" "EXPECTED_MAPPED_FILES = 226" "EXPECTED_MAPPED_FILES 釘死 226(精確值;knowledge-index +2、proof +1、knife-2 ask +2、knowledge bootstrap +2、check-preload-ban.sh +1、diagram-ir-gate +3、five-station-f1 +3、five-station-f2 +2、five-station-f3 +3、jev-gate W1 守衛套件 scripts/devflow_jev/ 11 .py(jev-questions.json 不計)+ test-devflow-jev.sh +12 → 225、P2-1 test-spec-gate-e2e.sh +1 → 226)"
 check_static_pin "scripts/check-gate-twin.sh" "EXPECTED_GROUPS = 29" "EXPECTED_GROUPS 釘死 29(REQUIRED_GROUPS 實際長度;#191 加 fig-ascii-191)"
 
 # 第七支地板(二次複審,GS-9 區補上):check-design-contract.sh 的

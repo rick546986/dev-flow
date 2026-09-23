@@ -384,6 +384,8 @@ G3 前對涉互動 feature 派 fresh-context reviewer 做 Operational Walkthroug
    = stale,E2 機械擋)。
 4. **單一入口**:用 4-spec Verification Profile `Final fresh entry point` 指名的
    persisted 一條命令跑完整驗證;所有 Evidence 數字出自這一次 run,禁混入舊結果。
+   4-spec `E2E entry point` 寫了命令(P2-1 executable e2e)→ 這一次 run 必須也跑它,並在
+   Evidence 表列 `e2e` 層 pass;Gauntlet 1.4.0 起把它視同 Required(E7),J5 header 收其摘要。
 5. **Required 層以 4-spec 為準**:Gauntlet 自己讀 sibling 4-spec Verification
    Profile;`--require-layer` 只能加嚴,漏帶不再 fail-open。Required 層
    unverified/n-a/缺席 = E7 機械擋(同 7-review 執行清單 2d)。

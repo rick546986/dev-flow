@@ -1,0 +1,8 @@
+{
+  "note": "P1-G5 負面 fixture:Score entry 帶 level:1 放在 index 0 → 必須紅,不得排序。",
+  "criteria": [
+    {"level": 1, "label": "minor", "description": "Open items exist but none changes what would be built first."},
+    {"level": 0, "label": "none", "description": "Every open question is answered."},
+    {"level": 2, "label": "material", "description": "At least one open item changes scope."}
+  ]
+}

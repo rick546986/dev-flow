@@ -1,0 +1,5 @@
+{
+  "note": "P2-2/P1-F4 負面 fixture:feedback 綁的 HEAD 與 evaluation 不同 → 不得配對、不進 n。",
+  "evaluation_evidence": {"artifact_hash": "sha256:aaaa", "evidence_hash": "sha256:bbbb", "head_sha": "1111111abcdef"},
+  "feedback": {"verdict": "agree", "source": "human_attested", "artifact_hash": "sha256:aaaa", "evidence_hash": "sha256:bbbb", "head_sha": "2222222abcdef", "reviewer_ref": "human:rick", "feedback_at": "2026-09-23T00:00:00Z"}
+}

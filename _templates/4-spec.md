@@ -265,6 +265,10 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 - Conditional layers:(條件觸發;註明觸發條件,如「dependency set 變動 → Supply chain」)
 - Explicitly excluded layers:(明示排除 + 一句理由;禁默排)
 - Final fresh entry point:(單一 persisted 命令,CI/人類皆一條命令重跑)
+- E2E entry point:(P2-1 executable e2e。涉互動／對外 API 的 feature 必填**單一 persisted 命令**;
+  不適用寫「無 — <一句理由>」。full lane 缺欄或空值 = G2 機械關卡 C10 紅;寫了命令 →
+  Final Fresh Run 必跑它、7-review Evidence 表必列 `e2e` 層且 pass(Gauntlet 1.4.0 起視同 Required,E7),
+  J5 header 收其摘要)
 - Reliability triage:(Full 與 Fast lane 都必答;逐項二選一 + 具體理由)
   - Concurrency: applicable | n-a — <理由;適用時指向 S／Failure Model／Out of Scope／Known limit>
   - Idempotency: applicable | n-a — <理由;適用時指向契約或未覆蓋風險>
@@ -276,7 +280,7 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 
 ### Lane 規則(lane 欄的填寫契約;runtime 讀 `lane:` 行與 `- Risk:` 首值)
 - Full lane = 完整 Profile:上列全欄(Feature Risk/Failure Model/Negative Constraints/
-  Required/Conditional/Explicitly Excluded/Final Fresh Entry Point)。
+  Required/Conditional/Explicitly Excluded/Final Fresh Entry Point/E2E Entry Point)。
 - Fast lane = 最小 Profile,本節只填五欄:`Risk: normal` / `Verify:` /
   `Negative Constraints:` / `Advanced verification excluded:` / `Exclusion reason:`
   (排除的重驗證層明示 + 一句理由,禁默排)。

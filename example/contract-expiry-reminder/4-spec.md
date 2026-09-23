@@ -233,6 +233,7 @@ Owner confirmation:rick 確認上列兩場已 ACCEPTED 的 Demo 場景明示排�
 - Explicitly excluded layers:Mutation(本示範 repo 未配 mutation 工具鏈;實案 Risk: high
   應評估納入 Required)、Race/stress(狀態更新走單一交易,本次無新增併發寫入路徑)
 - Final fresh entry point:`go test ./... && npm test && npx playwright test`
+- E2E entry point:`npx playwright test`(涉互動:主管卡片標記與到期看板;Conditional 的 e2e 觸發時即跑此命令,Evidence 表列 `e2e` 層)
 - Reliability triage:(Full 與 Fast lane 都必答)
   - Concurrency: applicable — 3-prototype 第 2 輪 ACCEPTED 的「資料過期」場景就是併發編輯:卡片開著隔夜、他人已改 `end_date` 或狀態。本期不做衝突偵測,已列 Out of Scope 並附 known risk(後手標記會以過期畫面覆蓋,歷程留兩筆但無衝突提示)。注意本節 Explicitly excluded 的 Race/stress 排除的是「新增併發寫入路徑」的壓力驗證層,與此處的 stale read 缺口不是同一件事,不得互相抵充。
   - Idempotency: applicable — 狀態欄位採 set-to-value(enum 六值,見 Drafting Decisions),重送相同標記後最終狀態值相同、且本次不新增任何對外副作用(自動寄信給法務/供應商、email/LINE 通知皆在 Out of Scope);但每次請求可能新增一筆同值歷程,因此「狀態值收斂」不等於「完整操作冪等」—— 完整操作目前不保證冪等。本期不新增 idempotency key,也不做歷程去重,列為 known limit;此裁決只把既有性質寫明,不新增產品行為。

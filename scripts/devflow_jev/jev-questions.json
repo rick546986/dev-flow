@@ -1,0 +1,74 @@
+{
+  "schema": "devflow-jev-questions/1",
+  "note": "題組正本(roadmap §11/§12)。門檻設在 noul/score 值,不設在 confidence。criteria 寫成可驗證的句子。任何改動都會改變 questionset_hash(見 manifest.py)。",
+  "questions": {
+    "J1": {
+      "goal_clear": {
+        "type": "noul",
+        "text": "Given only the discussion record's Goals and Real-world Context sections, can a reader state the single primary outcome this change must produce without asking the author?"
+      },
+      "scope_clear": {
+        "type": "noul",
+        "text": "Does the discussion record name what is inside and outside this change precisely enough that a Decide-stage writer could list the affected files, interfaces or data without guessing?"
+      },
+      "acceptance_clear": {
+        "type": "noul",
+        "text": "Does the record contain at least one acceptance statement that could be turned into a pass/fail check, or state exactly what the spec stage still has to define?"
+      },
+      "owner_call_pending": {
+        "type": "noul",
+        "text": "Does the record contain a product or value choice that only the project owner may decide and that has not yet been decided in the record?"
+      },
+      "ambiguity": {
+        "type": "score",
+        "text": "How much executable ambiguity remains in the record?",
+        "criteria": [
+          {"level": 0, "label": "none", "description": "Every open question is either answered or marked as an explicit assumption with an owner."},
+          {"level": 1, "label": "minor", "description": "Open items exist but none changes what would be built first."},
+          {"level": 2, "label": "material", "description": "At least one open item changes the scope or the primary outcome."},
+          {"level": 3, "label": "blocking", "description": "The primary outcome or the affected system boundary is undefined."}
+        ]
+      },
+      "next": {
+        "type": "choice",
+        "text": "Which next step does the record support?",
+        "criteria": {
+          "START_DECIDE": "Goals, scope and acceptance are stated well enough to compare solution options.",
+          "ASK_MORE": "A specific clarity dimension is missing and can be resolved by asking the requester.",
+          "NEEDS_OWNER_DECISION": "Progress depends on a value or product choice that only the owner may make."
+        }
+      }
+    },
+    "J3": {
+      "demo_worth_it": {
+        "type": "noul",
+        "text": "Given the spec's Operational Context and the prototype's trigger assessment, would a human operating the demo be likely to change at least one requirement or scenario?"
+      }
+    },
+    "J5": {
+      "g3_route": {
+        "type": "choice",
+        "text": "Given the mechanical header facts and the reviewer evidence summary, which G3 handling does the evidence support?",
+        "criteria": {
+          "AUTO_SHIP": "Every required layer passed in the Final Fresh Run bound to the current HEAD, the gauntlet passed, e2e ran, and no reviewer axis reports an open finding.",
+          "HUMAN_REVIEW": "Evidence is present but at least one item needs a human judgement before shipping.",
+          "REQUEST_CHANGES": "A required layer failed, a finding is open, or the evidence contradicts itself."
+        }
+      },
+      "risk": {
+        "type": "score",
+        "text": "What kind of change does the evidence describe?",
+        "criteria": [
+          {"level": 0, "label": "cosmetic", "description": "Only presentation or wording changed; no persisted data, no external call, no permission."},
+          {"level": 1, "label": "contained", "description": "Logic changed but no persisted data, external call, permission or migration is touched."},
+          {"level": 2, "label": "persisted_or_external", "description": "Persisted data, an external call, or a permission rule is touched."},
+          {"level": 3, "label": "irreversible_or_security", "description": "A migration, deletion, security or payment path is touched."}
+        ]
+      },
+      "evidence_complete": {
+        "type": "noul",
+        "text": "Does the evidence summary cover every layer the spec's Verification Profile requires, with a numeric result for each passed layer?"
+      }
+    }
+  }
+}

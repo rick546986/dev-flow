@@ -1,0 +1,15 @@
+{
+  "note": "P1-G3 雙閘門矩陣:key × opt-in × mode × gates → 生效等級。",
+  "cases": [
+    {"has_key": false, "optin": null, "gate": "J1", "expect": "off"},
+    {"has_key": false, "optin": "mode: live\n", "gate": "J1", "expect": "off"},
+    {"has_key": true, "optin": null, "gate": "J5", "expect": "off"},
+    {"has_key": true, "optin": "mode: off\ngates:\n  J5: live\n", "gate": "J5", "expect": "off"},
+    {"has_key": true, "optin": "mode: live\n", "gate": "J5", "expect": "shadow"},
+    {"has_key": true, "optin": "mode: live\n", "gate": "J1", "expect": "live"},
+    {"has_key": true, "optin": "mode: live\n", "gate": "J2", "expect": "off"},
+    {"has_key": true, "optin": "mode: shadow\ngates:\n  J1: live\n", "gate": "J1", "expect": "shadow"},
+    {"has_key": true, "optin": "mode: live\ngates:\n  J5: live\n", "gate": "J5", "expect": "live"}
+  ],
+  "bad_yaml": ["mode: on\n", "gates:\n  J9: live\nmode: live\n", "mode: live\n\tgates: x\n", "foo: bar\nmode: live\n", "gates:\n  J1: live\n"]
+}

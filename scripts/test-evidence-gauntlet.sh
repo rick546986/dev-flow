@@ -43,6 +43,11 @@ run_case_on() {
 
 # run_case <label> <expected_exit> <required_output_pattern|-> [tool args...]
 run_case() {
+  if [ "${4:-}" = "--tool-dist" ]; then
+    local label="$1" expected_exit="$2" pattern="$3"; shift 4
+    run_case_on "$DIST_TOOL" "$label" "$expected_exit" "$pattern" "$@"
+    return
+  fi
   run_case_on "$TOOL" "$@"
 }
 
@@ -182,6 +187,16 @@ run_case "已觸發 Conditional(Supply chain unverified)→ E7 紅" 1 "E7" \
 run_case "旗標加嚴(Mutation unverified)仍 E7 紅,不能當覆寫拿掉 Required" 1 "E7" \
   "$FIX/profile-unverified/7-review.md" --review-file --source-sha abc1234def5678 \
   --require-layer "Mutation"
+
+echo "== P2-1.E2E entry point 宣告為命令 → e2e 層視同 Required(1.4.0)=="
+run_case "4-spec E2E entry point=命令、Evidence 無 e2e 層 → E7 紅" 1 "e2e" \
+  "$FIX/profile-e2e-declared/7-review.md" --review-file --source-sha abc1234def5678
+run_case "4-spec E2E entry point=命令、Evidence e2e pass → 綠" 0 "-" \
+  "$FIX/profile-e2e-pass/7-review.md" --review-file --source-sha abc1234def5678
+run_case "4-spec E2E entry point=「無 — 理由」→ 不要求 e2e 層,綠" 0 "-" \
+  "$FIX/profile-e2e-none/7-review.md" --review-file --source-sha abc1234def5678
+run_case "散發副本同樣把宣告命令的 e2e 視同 Required" 1 "e2e" \
+  --tool-dist "$FIX/profile-e2e-declared/7-review.md" --review-file --source-sha abc1234def5678
 
 echo "== P0-3.--review-file 漏帶 --source-sha 預設當下 HEAD,宣告不符即紅=="
 # 舊實作:不帶 --source-sha 只驗宣告存在 → good-review(SHA=abc1234)仍綠。

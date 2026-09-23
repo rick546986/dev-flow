@@ -176,6 +176,12 @@ group_methodology() {
   # Claude 舊 /plugin 指令不准改;Grok 不准發明 marketplace。
   run "methodology/check-plugin-hosts"        scripts/check-plugin-hosts.sh      || return 1
   run "methodology/test-plugin-hosts"         scripts/test-plugin-hosts.sh       || return 1
+  # jev-gate 七組守衛 foundation(roadmap W1:P1-G1～G7 schema/pure/fake transport 負面測試)。
+  # 這支同時釘「套件零網路 import」與「scripts/devflow-jev.py 尚不存在」(§0 第 2 條:
+  # 七守衛全綠前不寫 runtime,shadow 也算);W2 P1-F1 落地時由那次 PR 明改。
+  run "methodology/test-devflow-jev"          scripts/test-devflow-jev.sh        || return 1
+  # P2-1 executable e2e 的紅路:check-spec-gate C10 缺欄／空值／「無」無理由必須紅;legacy verdict=PASS 不套。
+  run "methodology/test-spec-gate-e2e"        scripts/test-spec-gate-e2e.sh      || return 1
 }
 
 group_contracts() {

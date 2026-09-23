@@ -1,7 +1,7 @@
 ---
 title: jev-gate roadmap（有優先級）
 slug: jev-gate
-status: draft-v4（draft-v3 + 三輪 Jev 實測 + source/probe closure + W0–W7 整合）
+status: draft-v4（draft-v3 + 三輪 Jev 實測 + source/probe closure + W0–W7 整合）；W0 P0-5～P0-9 於 2026-09-22 收閘（見 `w0-source-closure.md`）；W1 七守衛 foundation + P2-1 同日落地（見 `w1-guard-foundation.md`；runtime 仍未寫）
 date: 2026-09-22
 base: origin/main 79b7aab
 inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、R2 對抗性風險、R3 流程與 HITL、R4 校準量測）+ 一份出處核對 + v2 四維度 findings 覆核（D1 出處忠實度、D2 可行性、D3 優先級、D4 安全）+ jev-convergence.md owner 裁決 + 2026-09-22 外部 Codex/Jev smoke、rubric 與文件稽核結果（待另行歸檔，不視為 repo 內既存 evidence）
@@ -26,6 +26,7 @@ draft-v4 以 draft-v3／`jev-convergence.md` 已記錄的 owner 裁決為約束�
 8. **Stage 3 polarity 翻成「人要求才 Demo」**，另走契約變更；Demo verdict／attestation 仍為 human-only，不交給 Jev。
 9. **supermemory 現在不接。**只有「現有 `dev-memory.py ask` 檢索已證實不足」且「確實需要跨專案共享記憶」兩條同時成立才重啟評估。
 10. G1/G2/G3、scope guard、author≠approver、mechanical gate、risk ceiling、Quiz gate、human attestation 等既有控制，不得因 Jev 接入而被暗中繞過。
+11. **2026-09-23（W0/W1 審核後）**：W1 工程候選值 A1–A7（J1 2s 無 retry、daily 500 attempts／500k tokens、J5 .85／.90／risk≤1、J1 .70／.80／.50／ambiguity≤1、J3 .60、breaker 三連敗、risk_paths 預設清單）與設計選擇 B1–B5（`signal.gate` 借 `important_discovery`、shadow 寫 Git + `[jev]` 前綴、graduation 主層 leave_unset、C10 legacy = PASS + approved／shipped／superseded、C10 只強制 full lane）**照建議落檔**；全部標「未校準」，改任一個 = 新 `questionset_hash`。C1 與 W2 同批、C2 另排、C3／C4 已做。正本：`owner-decisions-pending.md`。
 
 ### 0.1 draft-v4 相對 draft-v3 的實質修正
 
@@ -33,8 +34,8 @@ draft-v4 以 draft-v3／`jev-convergence.md` 已記錄的 owner 裁決為約束�
 
 - **API context limit 修正**：官方 `https://docs.typesafe.ai/models` 現行明示 Jev 1.13 為 **64k tokens per request**，同時另有 **32k tokens for `state` plus the longest question**。2026-09-22 的單題壓測（32,593 tokens 200、約 33,400 tokens 400）只支持 32k 單題路徑附近的行為，**不得再推成全 request 只有 32k**。
 - **Score structured criteria 修正**：官方 `https://docs.typesafe.ai/primitives/advanced` 明示 Score `criteria` 的每個 entry 可以是 object。內部可用 `{level,label,description}`，但 API score index 仍由**陣列位置**決定；`level` 不控制 API index。adapter 必須嚴格驗證 `level == array_index`，不一致直接拒絕，**不得偷偷排序**，避免改變 questionset hash／rubric 語義。
-- **Stage 7 run 說法修正**：`hooks/_exec_impl.py:984-994` 可沿用 Stage 6 state；`1023-1030` 在 Stage 7 bare review 無 state 時可 new `run_id`、寫 `exec-v4`、`phase=review`。因此刪除「只有 Stage 6 start 才會有 run_id」的絕對說法；但 `_templates/7-review.md:62` 的武裝是建議，不是 runtime 保證，**P0-5 lifecycle 實測仍未完成**。
-- **durable events 修正**：已在隔離目錄小 probe 證實 `append_events()` 可接受 `kind=jev` 與額外 metadata，且同 `event_id` append 兩次只留一列；但尚未證明 full sync/index roundtrip、custom 欄位經 `sync.py:198-211` 後的保存方式，以及多 writer 無 lost update。`append_events()` 的 read-modify-atomic-replace 也不能自行推成「同 session 多 writer 安全」。
+- **Stage 7 run 說法修正**：`hooks/_exec_impl.py:981-994` 可沿用 Stage 6 state；`1023-1030` 在 Stage 7 bare review 無 state 時可 new `run_id`、寫 `exec-v4`、`phase=review`。因此刪除「只有 Stage 6 start 才會有 run_id」的絕對說法；但 `_templates/7-review.md:62` 的武裝是建議，不是 runtime 保證，**P0-5 lifecycle 實測仍未完成**。→ 2026-09-22 W0 已實測，結論見 `w0-source-closure.md` §P0-5（同 slug re-arm 會換 `run_id`；`run_id` 只作 provenance，不作 case identity）。
+- **durable events 修正**：已在隔離目錄小 probe 證實 `append_events()` 可接受 `kind=jev` 與額外 metadata，且同 `event_id` append 兩次只留一列；但尚未證明 full sync/index roundtrip、custom 欄位經 `sync.py:198-211` 後的保存方式，以及多 writer 無 lost update。`append_events()` 的 read-modify-atomic-replace 也不能自行推成「同 session 多 writer 安全」。→ W0 P0-6 已實測：同 session 檔決定性交錯 lost update 5/10、異 session 檔 0 lost；見 `w0-source-closure.md` §P0-6。
 - **label 綁定修正**：目前的 verdict 不能自動當成歷史同一 Jev decision 的 label。必須綁 `feature/gate + artifact/evidence hash + HEAD + evaluation timestamp + reviewer source`；只允許同一證據版本配對。
 - **重跑去重修正**：同一次 semantic decision 的 timeout retry、措辭 variants、remote reevaluation、同 feature 同證據重跑都不得增加 graduation `n`。
 - **replay 修正**：Git durable 只放 identifier/hash/結構化指標；完整已去識別 packet、questions、raw response 住 gitignored local replay store。replay 分成「stored-response deterministic replay」與「remote reevaluation」兩種，不混為一談。
@@ -84,11 +85,11 @@ draft-v4 以 draft-v3／`jev-convergence.md` 已記錄的 owner 裁決為約束�
 | **P0-2** | ✅ source-closed；probe 有邊界 | 修正 context limit：官方現行為 request 總 64k；另有 `state + longest question` 32k。保留既有 32k 單題 probe 作實測證據，但不外推總 request | 文件不得再寫「總上限=32k」；packet builder 同時檢查兩條限制；需要 fan-out 壓測時另作 W0 診斷，不改 owner 流程 | S | P0-1 | `docs.typesafe.ai/models` + 外部單題 probe |
 | **P0-3** | ✅ Owner 已裁 | Stage 3 polarity 從「觸發即必要」翻成「人要求才看」 | 2026-09-22 owner call 已記；正式落地另走 P3-4 L2/contract change | S | — | R3 + owner |
 | **P0-4** | ✅ Owner 已裁 | 出境預設採 key + 每專案 `.dev-flow/jev.yaml` opt-in | 預設不建；`dev-setup` 每專案只在使用者同意後建立 | S | — | R2/R3 + owner |
-| **P0-5** | 🔎 待 runtime lifecycle 實測 | 核對 Stage 7 run lifecycle：`_exec_impl.py:984-994` 可沿用 Stage6 state；`1023-1030` bare review 可 new `run_id`/`exec-v4`/`phase=review`；但 `_templates/7-review.md:62` 武裝只是建議 | 跑一個真 Stage6→Stage7 與一個 bare Stage7 review，記錄何時有 `exec.json`、`run_id`、何時 stop；用結果決定 J5 run_id/observability 可用性 | S | — | repo source + 待 probe |
-| **P0-6** | 🟨 custom-kind/idempotency probe 通過；其餘待證 | 優先驗 `append_events()`：已證 `kind=jev` + extra metadata 可 append，同 event_id 重複只一列；再補 full sync/index roundtrip、custom metadata 保存、多 writer lost-update 測試 | 若 full roundtrip 與 multiwriter 安全滿足需要 → durable metadata 走 `.dev-flow/events`；否則提出最小備選，不直接新開 raw ledger namespace | M | — | `durable.py` probe；`sync.py:198-211` 待驗 |
-| **P0-7** | 🔎 待 W0 收尾 | 精讀 `_exec_impl.py`、`devflow-lib.py`、`_obs_impl.py`、`memory/agentmem/sync.py`、`durable.py`、`notes/design/gate-verdict-write.md`、file/write-scope 檢查、`skills/dev-setup/SKILL.md` 升級段落、`check-dev-setup-discipline.sh`、guide parity 區塊 | 每支一段「對 jev-gate 的限制」；guide parity 區塊列出實際 section/line | M | — | R1、D3 |
-| **P0-8** | 🔎 待實測 | `dev-setup` 升級模式：既有採用專案遇到 ship-manifest 新增 `devflow-jev.py`／題組／schema 時是否會同步 | 實際 upgrade fixture；若不會自動同步，W2 必須增加 manifest-version 檢查或明列人工 upgrade | S | P0-7 | R3、D1 |
-| **P0-9** | 🔎 待核對 | dev-talk 讀取白名單：路由層傳入舊 `1-discussion.md` 是否算使用者主動指名 | 一句結論 + source line；若不算，J1 ASK_MORE 每輪文件必須明說會從 S0–S2 重新盤查 | S | — | R3、D3 |
+| **P0-5** | ✅ probe 完成（W0）；結論見 `w0-source-closure.md` §P0-5：run_id 有三個生成點、Stage6→7 同 run、同 slug re-arm／bare 每次新 run、obs 只在武裝期 | 核對 Stage 7 run lifecycle：`_exec_impl.py:981-994` 可沿用 Stage6 state；`1023-1030` bare review 可 new `run_id`/`exec-v4`/`phase=review`；但 `_templates/7-review.md:62` 武裝只是建議 | 跑一個真 Stage6→Stage7 與一個 bare Stage7 review，記錄何時有 `exec.json`、`run_id`、何時 stop；用結果決定 J5 run_id/observability 可用性 | S | — | repo source + `evidence/w0/p0-5-run-lifecycle.json` |
+| **P0-6** | ✅ probe 完成（W0）；`append_events()` 可沿用但有四條硬邊界（canonical 欄位／`evt_` id／每 writer 獨立 session／自帶 `signal.gate`），見 `w0-source-closure.md` §P0-6 | 優先驗 `append_events()`：已證 `kind=jev` + extra metadata 可 append，同 event_id 重複只一列；再補 full sync/index roundtrip、custom metadata 保存、多 writer lost-update 測試 | 若 full roundtrip 與 multiwriter 安全滿足需要 → durable metadata 走 `.dev-flow/events`；否則提出最小備選，不直接新開 raw ledger namespace | M | — | `evidence/w0/p0-6-durable-events.json`；`sync.py:198-212` 已驗（自訂欄位被丟、`:210-212` 非法 id 重生） |
+| **P0-7** | ✅ 完成（W0）；每支一段限制 + guide parity 14 錨行號，見 `w0-source-closure.md` §P0-7 | 精讀 `_exec_impl.py`、`devflow-lib.py`、`_obs_impl.py`、`memory/agentmem/sync.py`、`durable.py`、`notes/design/gate-verdict-write.md`、file/write-scope 檢查、`skills/dev-setup/SKILL.md` 升級段落、`check-dev-setup-discipline.sh`、guide parity 區塊 | 每支一段「對 jev-gate 的限制」；guide parity 區塊列出實際 section/line | M | — | R1、D3 |
+| **P0-8** | ✅ probe 完成（W0）：**不會自動同步**；母版側 `check-ship-manifest.sh` 有牙、採用側零牙 → W2 要 manifest 版本 + doctor 逐列，見 `w0-source-closure.md` §P0-8 | `dev-setup` 升級模式：既有採用專案遇到 ship-manifest 新增 `devflow-jev.py`／題組／schema 時是否會同步 | 實際 upgrade fixture；若不會自動同步，W2 必須增加 manifest-version 檢查或明列人工 upgrade | S | P0-7 | R3、D1 |
+| **P0-9** | ✅ source-closed（W0）：**不算**；J1 ASK_MORE 每輪從 S0–S2 重盤；讀白名單零機械執行，見 `w0-source-closure.md` §P0-9 | dev-talk 讀取白名單：路由層傳入舊 `1-discussion.md` 是否算使用者主動指名 | 一句結論 + source line；若不算，J1 ASK_MORE 每輪文件必須明說會從 S0–S2 重新盤查 | S | — | R3、D3 |
 | **P0-10** | ⏸ 落 main 時才做 | 以 `scripts/status-update.sh` 將 jev-gate 登記到 `docs/dev/STATUS.md` Active | `check-status-policy.sh` 綠；feature/research branch 不直接改 main-only Active 表 | S | — | D3 |
 
 ### 2.1 P0 已確認的 API / protocol facts
@@ -108,13 +109,13 @@ draft-v4 以 draft-v3／`jev-convergence.md` 已記錄的 owner 裁決為約束�
 
 | ID | 狀態 | 做什麼 | 驗收 | 量 | 依賴 |
 |---|---|---|---|---|---|
-| **P1-G1** | 🛠 未實作 | **Evidence packet + reference isolation**：header 機械事實永不砍；body 才可裁剪。分 `primary_request`、`quoted_context`、`source_facts` 等欄位；選路題維持中性描述、長度差控制、正反證據。self-check/grep 只作形式控制，文件明寫「不構成 prompt-injection immunity」。shadow/eval 可跑 wording variants，但 variants 同 semantic case 不增加 n | 超大 body → `truncated=true` 且 route 強制 HUMAN；quoted injection／exit_code 與 tail 衝突／reference governance fixtures 均有負面測試；`feature+tests+docs` mixed=.72 反例保留 | M | P0-2 |
-| **P1-G2** | 🛠 未實作 | **Failure/no-op、deadline、breaker、budget**：HTTP/JSON/schema/error 一律 no-op 回現況。候選工程值：J1 foreground **總 deadline 2s、無 foreground retry**；這是 v4 新增待核定預設，不冒充 owner 裁決。J5 shadow 不等待 HTTP，只 enqueue；本地 enqueue 成本要量測，不宣稱 0ms。舊 draft「2s + 1 retry」保留為歷史提案，不自動沿用 | mock 400/401/422/429/529/timeout/schema error 均不改現有 route；session/gate breaker 可測；J1 超時立即走原流程；J5 enqueue latency 有測量 | M | W0 |
-| **P1-G3** | 🛠 未實作 | **雙閘門**：key + `.dev-flow/jev.yaml`；`mode` 與 `gates[Jn]` 生效等級 = min，`off < shadow < live`。owner default：J1 live、J3 recommendation/live、J5 shadow；專案未 opt-in 零出境 | `mode:off + gates.J5:live` 不呼叫；只有 key 沒 opt-in 不呼叫；只有 opt-in 沒 key no-op | S | P0-4 |
-| **P1-G4** | 🛠 未實作 | **雙層 ledger/replay**：durable 優先 `append_events()`，只存 IDs/hashes/結構化指標；完整 sanitized packet、exact questions、raw response 放 gitignored local replay store。local 缺檔時 durable 記 `not_replayable`，不得假重建。若 P0-6 判定 append_events fullroundtrip/multiwriter 不適合，再提出備選 | Git diff 不含 raw packet/醫療資料/log；stored-response deterministic replay 可離線重算 route；remote reevaluation 產新 evaluation，不覆蓋舊 response；multiwriter 測試結果明確 | M | P0-6 |
-| **P1-G5** | 🛠 未實作 | **Question/evaluation manifest 治理**：`jev-questions.json` + schema；`questionset_hash` 實際 hash 完整 evaluation manifest：questions、rubric/schema version、packet_builder_version、policy_version、route_formula_version、normalization_version。Score object entries 可用，但 `level==index` 嚴格驗證，不一致拒絕、不排序 | 任一 manifest component 改變 → 新 hash、舊 calibration group 不延續；Score `[level:1,...]` 放在 index0 fixture 必須紅 | M | — |
-| **P1-G6** | 🛠 未實作 | **防造假／derived-only**：`route_recommended`、`route_taken` 只能由核算 policy 導出；gate live 狀態需受控核算／stamp；risk_paths 變窄跨 session 留痕；修改 Jev runtime/questions/config 當次一律 HUMAN。hash 只做完整性，不假裝 identity/auth | 手改 route、偽造 matching hash、縮 risk_paths、同 session 可疑 feedback 各有負面測試；report 能重算不一致 | M | P1-G4、G5 |
-| **P1-G7** | 🛠 未實作 | **Verdict provenance tripwire**：G1/G2/G3 frontmatter 附 `human_attested`／`fresh_agent_reviewer`／`owner_self_review` 等來源。格式 attestation 是 provenance tripwire，**不是 authentication**；`human:<name>` 或換 session 都不能證明真實身份。P1-G7 前的舊 label = `unverified` | 缺／不合法 attestation → unverified 且不進 graduation；report 分層顯示 human_attested 與 fresh_agent，不把兩者偷偷混成同一主率 | M | P1-G4 |
+| **P1-G1** | ✅ foundation（W1 2026-09-22；pure/schema/fake transport + 負面測試，**不是 runtime**）：`scripts/devflow_jev/packet.py`；見 `w1-guard-foundation.md` | **Evidence packet + reference isolation**：header 機械事實永不砍；body 才可裁剪。分 `primary_request`、`quoted_context`、`source_facts` 等欄位；選路題維持中性描述、長度差控制、正反證據。self-check/grep 只作形式控制，文件明寫「不構成 prompt-injection immunity」。shadow/eval 可跑 wording variants，但 variants 同 semantic case 不增加 n | 超大 body → `truncated=true` 且 route 強制 HUMAN；quoted injection／exit_code 與 tail 衝突／reference governance fixtures 均有負面測試；`feature+tests+docs` mixed=.72 反例保留 | M | P0-2 |
+| **P1-G2** | ✅ foundation（W1 2026-09-22；pure/schema/fake transport + 負面測試，**不是 runtime**）：`policy.py`（2s／500／500k 仍是候選值） | **Failure/no-op、deadline、breaker、budget**：HTTP/JSON/schema/error 一律 no-op 回現況。候選工程值：J1 foreground **總 deadline 2s、無 foreground retry**；這是 v4 新增待核定預設，不冒充 owner 裁決。J5 shadow 不等待 HTTP，只 enqueue；本地 enqueue 成本要量測，不宣稱 0ms。舊 draft「2s + 1 retry」保留為歷史提案，不自動沿用 | mock 400/401/422/429/529/timeout/schema error 均不改現有 route；session/gate breaker 可測；J1 超時立即走原流程；J5 enqueue latency 有測量 | M | W0 |
+| **P1-G3** | ✅ foundation（W1 2026-09-22；pure/schema/fake transport + 負面測試，**不是 runtime**）：`gate.py` | **雙閘門**：key + `.dev-flow/jev.yaml`；`mode` 與 `gates[Jn]` 生效等級 = min，`off < shadow < live`。owner default：J1 live、J3 recommendation/live、J5 shadow；專案未 opt-in 零出境 | `mode:off + gates.J5:live` 不呼叫；只有 key 沒 opt-in 不呼叫；只有 opt-in 沒 key no-op | S | P0-4 |
+| **P1-G4** | ✅ foundation（W1 2026-09-22；pure/schema/fake transport + 負面測試，**不是 runtime**）：`ledger.py`（依 P0-6 四條邊界；備選未啟用） | **雙層 ledger/replay**：durable 優先 `append_events()`，只存 IDs/hashes/結構化指標；完整 sanitized packet、exact questions、raw response 放 gitignored local replay store。local 缺檔時 durable 記 `not_replayable`，不得假重建。若 P0-6 判定 append_events fullroundtrip/multiwriter 不適合，再提出備選 | Git diff 不含 raw packet/醫療資料/log；stored-response deterministic replay 可離線重算 route；remote reevaluation 產新 evaluation，不覆蓋舊 response；multiwriter 測試結果明確 | M | P0-6 |
+| **P1-G5** | ✅ foundation（W1 2026-09-22；pure/schema/fake transport + 負面測試，**不是 runtime**）：`manifest.py` + `jev-questions.json` | **Question/evaluation manifest 治理**：`jev-questions.json` + schema；`questionset_hash` 實際 hash 完整 evaluation manifest：questions、rubric/schema version、packet_builder_version、policy_version、route_formula_version、normalization_version。Score object entries 可用，但 `level==index` 嚴格驗證，不一致拒絕、不排序 | 任一 manifest component 改變 → 新 hash、舊 calibration group 不延續；Score `[level:1,...]` 放在 index0 fixture 必須紅 | M | — |
+| **P1-G6** | ✅ foundation（W1 2026-09-22；pure/schema/fake transport + 負面測試，**不是 runtime**）：`provenance.py` | **防造假／derived-only**：`route_recommended`、`route_taken` 只能由核算 policy 導出；gate live 狀態需受控核算／stamp；risk_paths 變窄跨 session 留痕；修改 Jev runtime/questions/config 當次一律 HUMAN。hash 只做完整性，不假裝 identity/auth | 手改 route、偽造 matching hash、縮 risk_paths、同 session 可疑 feedback 各有負面測試；report 能重算不一致 | M | P1-G4、G5 |
+| **P1-G7** | ✅ foundation（W1 2026-09-22；pure/schema/fake transport + 負面測試，**不是 runtime**）：`attestation.py`（模板欄位留 P3-2） | **Verdict provenance tripwire**：G1/G2/G3 frontmatter 附 `human_attested`／`fresh_agent_reviewer`／`owner_self_review` 等來源。格式 attestation 是 provenance tripwire，**不是 authentication**；`human:<name>` 或換 session 都不能證明真實身份。P1-G7 前的舊 label = `unverified` | 缺／不合法 attestation → unverified 且不進 graduation；report 分層顯示 human_attested 與 fresh_agent，不把兩者偷偷混成同一主率 | M | P1-G4 |
 
 ### 3.2 P1 功能
 
@@ -249,7 +250,7 @@ owner 保留三欄 grouping：
 
 | ID | 狀態 | 做什麼 | 驗收 | 量 | 依賴 |
 |---|---|---|---|---|---|
-| **P2-1** | 🛠 **提前到 W1；J5 shadow 前必做** | **Executable e2e 有牙**：涉互動／對外 API feature 的 Verification Profile 必含 `e2e` 單一入口，或明寫無 + 理由；Final Fresh Run 執行、Gauntlet 驗、J5 header 收摘要 | 缺 e2e 且無理由 → G2 紅；P1-F4 不得在本項前開始累 J5 樣本 | M | P0-7 |
+| **P2-1** | ✅ 有牙（W1 2026-09-22）：4-spec `E2E entry point` 欄 + `check-spec-gate.sh` C10（full lane 且未 G2 PASS 必答；legacy 不套）+ Gauntlet 1.4.0 e2e 視同 Required；見 `w1-guard-foundation.md` §3 | **Executable e2e 有牙**：涉互動／對外 API feature 的 Verification Profile 必含 `e2e` 單一入口，或明寫無 + 理由；Final Fresh Run 執行、Gauntlet 驗、J5 header 收摘要 | 缺 e2e 且無理由 → G2 紅；P1-F4 不得在本項前開始累 J5 樣本 | M | P0-7 |
 | **P2-2** | 🛠＋🧪 | **report/eval**：unique cases、human/fresh-agent 分層、same-evidence binding、n_agree/n_overturn、Wilson 95%、labeled_fraction、truncation_rate、Brier/逐題 metrics、call breaker/circuit freeze、route_reason 分層；21 次 smoke/audit 永遠不進 J5 n | 合成 ledger 只驗計算器；真實 J5 report 只數 unique valid Ship case；variant/retry 不增 n；wrong HEAD label fixture 被拒 | M | P1-G4、G7 |
 | **P2-3** | 🛠 實驗；非 MVP | **J4 升階路由**：failure_category 沿用既有 enum；escalate_to 不得跳 model tier；SPEC/ENV/IMPL/UNKNOWN 僅作 routing signal | 全程 shadow/assist 起跑；tiering 檢查綠；不把 `_dispatch_impl.py` 說成完整權限守衛 | M | P1-F1 |
 | **P2-4** | 🛠 | **機械 risk ceiling**：migrations/auth/payment/secrets/CI 等 `risk_paths` 命中 → J5 一律 HUMAN，不看 Jev 分數；清單縮小受 P1-G6 監控 | migration fixture 一律 HUMAN；route_reason=`risk_ceiling_override` | S | P1-G3 |
@@ -537,13 +538,13 @@ AND
 
 ## 15. 實作前剩餘 source 驗證
 
-在 W1/W2 之前仍需完成：
+在 W1/W2 之前仍需完成（**P0-5／P0-6／P0-8／P0-9 已於 2026-09-22 W0 收閘，證據與結論在 `w0-source-closure.md` 與 `evidence/w0/`；下列 1–4 保留原文供對照**）：
 
 1. **P0-5**：真 Stage6→Stage7 / bare Stage7 lifecycle；確認 run_id/exec state/stop 的實際生命週期。
 2. **P0-6**：`append_events()` custom Jev metadata 的 durable → sync/index → read/report roundtrip；測同 session multiwriter 是否可能 lost update。若 custom metadata 在 sync.py 被丟棄，要決定是擴 schema/index 還是 durable event 只留 canonical payload。
 3. **P0-8**：既有專案 `dev-setup` upgrade 對新增 ship-manifest items 的實際同步。
 4. **P0-9**：dev-talk 舊 discussion path 在 read whitelist 的實際定義。
-5. **P1-F7 source audit**：Ship commit/push/PR/merge/tag 的真正 hard guard；`_dispatch_impl.py` 只算 fail-open tier discipline guard，不能拿來補不存在的權限保證。
+5. **P1-F7 source audit（仍開）**：Ship commit/push/PR/merge/tag 的真正 hard guard；`_dispatch_impl.py` 只算 fail-open tier discipline guard，不能拿來補不存在的權限保證。
 
 ## 16. 遠期 AUTO 的正式驗收
 

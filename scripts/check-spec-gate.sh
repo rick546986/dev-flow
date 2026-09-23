@@ -13,7 +13,7 @@
 # 讓 reviewer 把時間花在判斷 R/S 寫得對不對、DD 決策合不合理 —— 那些仍然是人審的事。
 # 本腳本永遠不判斷內容好壞。
 #
-# 九項檢查(逐項印結果,全過才 exit 0):
+# 十項檢查(逐項印結果,全過才 exit 0):
 #   C1 每個 S 都有觀測欄          _templates/4-spec.md:53(完成條件)、:99(欄位形式)
 #   C2 Verification Profile 節存在,且 `- lane:` 與 `- Risk:` 可被解析
 #                                 _templates/4-spec.md:181-182、:200(runtime 讀這兩行)
@@ -27,6 +27,11 @@
 #   C7 Assumption refs:open + 過期(過去日或已過站 stage-2／stage-3)且無 oc-accepted → FAIL
 #   C8 Fast early risk triage:僅 lane:fast + 新式(feature: 且 ADDED)缺表／答空白／命中無去向 → FAIL
 #   C9 Real-world Disposition:full + 新式(有 Assumption refs 或 discovery-gaps 路徑)缺表／去向空白 → FAIL
+#   C10 E2E entry point(P2-1 executable e2e):full lane 必有 `- E2E entry point:`;值是單一命令,
+#       或「無 — 理由」;缺欄／空值／寫「無」但無理由 → FAIL(缺 e2e 且無理由 → G2 紅)。fast lane 選配,
+#       但寫了就不得空值;括號起頭的模板佈局字 = 沒填;無／沒有／不適用／none 後接任何標點仍是「只寫了無」。
+#       frontmatter verdict: PASS 且 status ∈ {approved,shipped,superseded} 的舊 4-spec 不套(legacy;不回頭打紅已出貨 feature)。
+#                                 _templates/4-spec.md Verification Profile 節
 #
 # C2/C3 的 lane/Risk/Owner Call 解析**直接 import runtime 正本**
 # (hooks/devflow-lib.py 的 `spec_profile()`),不另寫一份 —— G2 前置檢查與
@@ -35,7 +40,7 @@
 # **exit code 契約(重要;與 scripts/check-task-slicing.sh 相反,別看混)**:
 #   check-task-slicing.sh 是 warning-only,對真實檔案永遠不 exit 1。
 #   **本腳本是 Gate**:FAIL 就是要擋下流程。
-#     0 = 九項全過
+#     0 = 十項全過
 #     1 = 任一項 FAIL —— G2 不得送審,修完再跑
 #     2 = 用法錯誤 / 檔案讀不到 / runtime 正本載不進來(檢查本身故障)
 #
@@ -370,6 +375,81 @@ else:
         if dest != "本方案處理" and not fall:
             c9_bad.append(f"L{n + 1}:非處理去向下落空白")
     record("C9", not c9_bad, "Real-world Disposition 去向／下落形狀", c9_bad)
+
+# ---- C10:E2E entry point(P2-1 executable e2e;full lane 必填;無 + 理由亦可)----
+# 只驗形狀:欄在不在、是命令還是「無 — 理由」。命令能不能跑、理由成不成立仍是 G2 reviewer 的判斷;
+# 命令有沒有真的被 Final Fresh Run 跑過由 Gauntlet 1.4.0 的 E7(e2e 視同 Required)機械擋。
+E2E_RE = re.compile(r"^\s*-\s*E2E entry point\s*[:：]\s*(.*)$", re.I)
+# 「無」的同義形(字尾要有邊界,`nats` 不是 `na`):無／沒有／不適用／暫無／不需要／none／n-a／n/a／n.a.／na／not applicable。
+NONE_RE = re.compile(r"^(?:無|沒有|不適用|暫無|不需要|none|n-a|n/a|n\.\s?a\.?|na|not\s+applicable)(?![A-Za-z0-9])(?P<rest>.*)$", re.I)
+# 沒填的形狀:模板佈局字、常見佔位詞、或整個值沒有任何字母／數字(-、—、?、… 之類)。
+PLACEHOLDER_WORDS = {"command", "cmd", "todo", "tbd", "待補", "待定", "略", "命令"}
+TEMPLATE_MARK = "P2-1 executable e2e"
+
+
+def _alnum_core(text):
+    return "".join(ch for ch in text if ch.isalnum())
+
+
+def _unfilled(value):
+    if TEMPLATE_MARK in value:
+        return "仍是模板佈局字"
+    core = _alnum_core(value)
+    if not core:
+        return "只有標點／符號,沒有字母或數字"
+    bare = value.strip("`*<>{}「」[]【】（）() \t").strip().lower()
+    if bare in PLACEHOLDER_WORDS:
+        return "佔位詞「%s」" % bare
+    return None
+
+
+vp_i = next((i for i in heads if re.match(r"^#{2,6}\s*Verification Profile", lines[i])), None)
+e2e_val = None
+if vp_i is not None:
+    for n in range(vp_i, section_end(vp_i)):
+        m = E2E_RE.match(lines[n])
+        if m:
+            e2e_val = m.group(1).strip()
+            break
+# legacy:frontmatter verdict 已是 PASS(G2 已關)的 4-spec 不套 C10 —— 欄位是 1.4.0 才引進,
+# 不得回頭把已出貨 feature 的 4-spec 打紅(絕不動 docs/dev/<slug>/ 已產出的 feature 檔);
+# 仍在 draft／送審中的 full lane 一律要答。
+_fm_verdict = _fm_status = ""
+if lines and lines[0].strip() == "---":
+    for _l in lines[1:40]:
+        if _l.strip() == "---":
+            break
+        _m = re.match(r"^verdict:\s*([A-Z_]+)", _l)
+        if _m:
+            _fm_verdict = _m.group(1)
+        _m = re.match(r"^status:\s*([a-z_-]+)", _l)
+        if _m:
+            _fm_status = _m.group(1)
+# legacy = G2 真的關過:verdict PASS **且** status 已在關後狀態(approved／shipped／superseded);
+# draft／in-review 打上 verdict: PASS 不算關過(1-discussion 模板的 status 詞彙表就這五值)。
+c10_legacy = _fm_verdict == "PASS" and _fm_status in ("approved", "shipped", "superseded")
+c10_bad = []
+if c10_legacy:
+    pass
+elif prof["lane"] == "full":
+    if e2e_val is None:
+        c10_bad.append("full lane 缺 `- E2E entry point:` 欄 —— 涉互動／對外 API 必填單一 persisted 命令;"
+                       "不適用寫「無 — <理由>」(模板 Verification Profile 節)")
+    elif not e2e_val:
+        c10_bad.append("E2E entry point 空值 —— 空欄不是明示「無」")
+    elif _unfilled(e2e_val):
+        c10_bad.append("E2E entry point %s(%r)—— 沒填不算答" % (_unfilled(e2e_val), e2e_val[:30]))
+    else:
+        m = NONE_RE.match(e2e_val)
+        if m:
+            # 理由 = 去掉所有標點／符號／空白後至少 4 個字母或數字(「無!!!!」「無，，，，」都不是理由)
+            if len(_alnum_core(m.group("rest"))) < 4:
+                c10_bad.append("E2E entry point 寫「無／不適用」但沒附理由(%r)—— 缺 e2e 且無理由 → G2 紅" % e2e_val[:30])
+elif e2e_val is not None and not e2e_val:
+    c10_bad.append("E2E entry point 欄存在但空值(fast lane 可省欄,不可留空)")
+record("C10", not c10_bad,
+       f"E2E entry point(lane={prof['lane']};full 必填:命令或「無 — 理由」"
+       f"{';legacy verdict=PASS 不套' if c10_legacy else ''})", c10_bad)
 
 # ---- 輸出 ----
 print(f"=== G2 spec gate:{spec_path} ===")

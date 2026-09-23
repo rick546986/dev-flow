@@ -1,0 +1,6 @@
+{
+  "note": "P1-G1/P1-F6 負面 fixture:Verify exit_code=1 但 tail 說 all tests passed。header 機械事實贏,policy 一律 HUMAN。",
+  "verify_exit_codes": [0, 1],
+  "verify_tails": ["... 42 passed in 3.1s", "All tests passed. OK"],
+  "expected_flag": "exit_code_tail_conflict"
+}

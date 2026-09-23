@@ -80,7 +80,12 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 同日 fresh 驗收 r3-#103:cmd_repair run_id 路徑穿越攔截(相對路徑/絕對
 # 路徑/含空白各一案,拒絕且無檔案變動)+5,ensure_manifest hardlink 不支援
 # 退回 os.replace(mock os.link EPERM)+1,疊上 → 454。
-MIN_CASES=459
+# 2026-09-13 requirement-discovery-gaps S-8:Read 三案 +3 → 457、同檔 1-discussion
+# 無 env 兩案 +2 → 459。2026-09-23 jev-gate W0 P0-5 結論 7(owner 裁 C3):s7c 段補
+# Stage 7 review 三條拒絕路徑(無 exec.json 的 review-unlock/不存在 slug 的 review/
+# 已武裝時 review 其他 slug)各 1 案 +3 → 462。同一 commit 同步
+# scripts/test-architecture-guards.sh 的 check_static_pin 字面。
+MIN_CASES=462
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -2565,8 +2570,14 @@ mkdir -p "$S7CT/docs/dev/s7creview"
 ( cd "$S7CT" && git init -q . && git config user.email t@t && git config user.name t )
 echo "占位:s7c review 自建武裝 fixture" > "$S7CT/docs/dev/s7creview/4-spec.md"
 ( cd "$S7CT" && git add -A >/dev/null && git commit -qm s7cinit )
+# W0 P0-5 補洞(2026-09-23,C3):三條拒絕路徑先前零 selftest 案例 —— 無 exec.json 的
+# review-unlock、slug 目錄不存在的 review、武裝中對異 slug review。probe 有實證,這裡釘成常設。
+mkdir -p "$S7CT/docs/dev/s7cother"
+ck "s7c 無 exec.json 的 review-unlock → 拒" 1 "$(cd "$S7CT" && "$H/devflow-exec.sh" review-unlock s7creview >/dev/null 2>&1; echo $?)"
+ck "s7c review 不存在的 slug 目錄 → 拒" 1 "$(cd "$S7CT" && "$H/devflow-exec.sh" review s7cnosuch >/dev/null 2>&1; echo $?)"
 # 無 .devflow/exec.json(未跑過 Stage 6 start)→ review <slug> 走事後補審自建分支
 ( cd "$S7CT" && "$H/devflow-exec.sh" review s7creview >/dev/null 2>&1 )
+ck "s7c 武裝中對異 slug review → 拒(exec.json 屬 s7creview)" 1 "$(cd "$S7CT" && "$H/devflow-exec.sh" review s7cother >/dev/null 2>&1; echo $?)"
 ck "s7c Stage 7 review 事後補審自建武裝真寫出 schema=exec-v4+run_id(仍是 phase=review,非 task-scoped)" 0 "$("$DEVFLOW_PY" -c "
 import json, sys
 d = json.load(open('$S7CT/.devflow/exec.json'))
