@@ -1483,5 +1483,102 @@ class W5J2Shadow(unittest.TestCase):
         self.assertTrue(unclear["unstable"])
         self.assertTrue(policy.j2_stability([{"route_recommended": "A", "preferred_identity": "x"}])["unstable"])
 
+
+# ───────────────────────────────── W6 P3-1 eligibility / live cap ─────────────────────────────
+class W6LiveCapAndEligibility(unittest.TestCase):
+    def _fb(self, ev, verdict="agree", source="human_attested"):
+        return {"verdict": verdict, "source": source, "session_ref": "ses_reviewer", "feedback_at": "2026-09-23T00:00:00Z",
+                "reviewer_ref": "human:rick", "artifact_hash": ev["evidence"]["artifact_hash"],
+                "evidence_hash": ev["evidence"]["evidence_hash"], "head_sha": ev["evidence"]["head_sha"]}
+
+    def _cases(self, n, start=0):
+        return [make_evaluation(perfect_j5_answers(), evidence=dict(EVIDENCE, evidence_hash="sha256:" + ("%064x" % (start + i))))
+                for i in range(n)]
+
+    def test_yaml_j5_live_is_capped_to_shadow_with_reason(self):
+        self.assertIs(gate.J5_LIVE_RATIFIED, False)
+        level, reason = gate.effective_level("J5", True, gate.parse_optin("mode: live\ngates:\n  J5: live\n"))
+        self.assertEqual(level, "shadow")
+        self.assertIn("j5_live_not_ratified", reason)
+        # 其它 gate 不受影響;J5 shadow/off 照舊
+        self.assertEqual(gate.effective_level("J1", True, gate.parse_optin("mode: live\n"))[0], "live")
+        self.assertEqual(gate.effective_level("J5", True, gate.parse_optin("mode: live\n"))[0], "shadow")
+        self.assertEqual(gate.effective_level("J5", True, gate.parse_optin("mode: shadow\ngates:\n  J5: live\n"))[0], "shadow")
+        src = read_text(os.path.join(HERE, "gate.py"))
+        self.assertEqual(len(__import__("re").findall(r"(?m)^J5_LIVE_RATIFIED\s*=", src)), 1)
+        self.assertIn("J5_LIVE_RATIFIED = False", src)
+
+    def test_eligibility_blocked_without_primary_even_when_floor_met(self):
+        evs = self._cases(30)
+        fbs = {"human_attested": {ev["evaluation_id"]: self._fb(ev) for ev in evs}, "fresh_agent_reviewer": {}}
+        m = report.eval_metrics(evs, fbs)
+        self.assertTrue(m["layers"]["human_attested"]["floor_met"])
+        out = report.eligibility(evs, m, primary_source=None)
+        self.assertFalse(out["eligible"])
+        self.assertIn("no_primary_layer", out["blockers"])
+        self.assertFalse(out["rules"]["8_primary_layer_ratified"]["ok"])
+        self.assertEqual(out["live_switch"], "absent")
+
+    def test_eligibility_true_is_only_a_fact_and_freeze_keeps_n(self):
+        evs = self._cases(30)
+        fbs = {"human_attested": {ev["evaluation_id"]: self._fb(ev) for ev in evs}, "fresh_agent_reviewer": {}}
+        m = report.eval_metrics(evs, fbs)
+        out = report.eligibility(evs, m, primary_source="human_attested")
+        self.assertTrue(out["eligible"], out["blockers"])
+        self.assertEqual(out["live_switch"], "absent")
+        self.assertEqual(out["circuit_breaker_state"], "closed")
+        # 第 31 筆 overturn → frozen;n 變 31 不歸零;Wilson 照公式重算;沒有參數能覆寫
+        extra = self._cases(1, start=100)[0]
+        fbs["human_attested"][extra["evaluation_id"]] = self._fb(extra, "overturn")
+        m2 = report.eval_metrics(evs + [extra], fbs)
+        out2 = report.eligibility(evs + [extra], m2, primary_source="human_attested")
+        self.assertFalse(out2["eligible"])
+        self.assertEqual(out2["circuit_breaker_state"], "frozen")
+        self.assertEqual(out2["floor"]["n"], 31)
+        self.assertAlmostEqual(out2["floor"]["wilson_lower_95"], round(report.wilson_lower(30, 31), 4))
+        self.assertTrue(any(b.startswith("frozen_after_overturn") for b in out2["blockers"]))
+        import inspect
+        params = inspect.signature(report.eligibility).parameters
+        self.assertNotIn("wilson_override", params)
+        self.assertNotIn("force", params)
+        self.assertEqual(set(params), {"evaluations", "metrics", "primary_source"})
+
+    def test_eligibility_floor_not_met_and_multiple_groups_block(self):
+        evs = self._cases(5)
+        other_group = make_evaluation(perfect_j5_answers(), evidence=dict(EVIDENCE, evidence_hash="sha256:" + "9" * 64))
+        other_group["questionset_hash"] = "sha256:" + "e" * 64
+        provenance.stamp(other_group)
+        fbs = {"human_attested": {ev["evaluation_id"]: self._fb(ev) for ev in evs}, "fresh_agent_reviewer": {}}
+        m = report.eval_metrics(evs + [other_group], fbs)
+        out = report.eligibility(evs + [other_group], m, primary_source="human_attested")
+        self.assertFalse(out["eligible"])
+        self.assertIn("4_single_group", out["blockers"])
+        self.assertEqual(out["rules"]["4_single_group"]["detail"], "groups=2")
+        self.assertTrue(any(b.startswith("floor_not_met") for b in out["blockers"]))
+        self.assertEqual(len(out["rules"]), 8)
+
+
+class W6AttestationContract(unittest.TestCase):
+    def test_templates_carry_provenance_fields_and_writer_stamps_human_only(self):
+        for name in ("2-decision.md", "4-spec.md", "7-review.md"):
+            text = read_text(os.path.join(REPO, "_templates", name))
+            self.assertIn("verdict_source:", text, name)
+            self.assertIn("attested_by:", text, name)
+            fm = attestation.parse_frontmatter(text)
+            self.assertEqual(attestation.classify(fm)["label"], "none")      # 模板本身沒有 verdict
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("devflow_gate", os.path.join(REPO, "scripts", "devflow_gate.py"))
+        gate_mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(gate_mod)
+        src = "---\nfeature: d\nstage: 7-review\nstatus: draft\nverdict:\nowner: x\n---\n\nbody\n"
+        patched = gate_mod.patch_md(src, "PASS", reviewer="rick")
+        cls = attestation.classify_document(patched)
+        self.assertEqual((cls["label"], cls["attested_by"]), ("human_attested", "human:rick"))
+        unnamed = attestation.classify_document(gate_mod.patch_md(src, "PASS"))
+        self.assertEqual(unnamed["label"], "unverified")                     # 沒 reviewer 不假填
+        with self.assertRaises(ValueError):
+            gate_mod.patch_md(src, "PASS", reviewer="agent:jev")
+        self.assertIn("verdict_source", read_text(os.path.join(REPO, "notes", "design", "gate-verdict-write.md")))
+
 if __name__ == "__main__":
     unittest.main()

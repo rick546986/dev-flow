@@ -200,3 +200,65 @@ def eval_metrics(evaluations, feedbacks_by_layer, breaker_failures=None):
         "note": "engineering acceptance threshold; not accuracy; mechanical overrides excluded from denominator; "
                 "synthetic/smoke/audit evaluations never enter this store",
     }
+
+
+# ───────────────────────────── W6 P3-1 eligibility(只計算;沒有 live 開關)─────────────────────────────
+# roadmap §5.1 八條寫成機械檢查;§5.2 freeze:第一次有效 overturn → frozen,n 不歸零、Wilson 照公式重算,沒有人工覆寫參數。
+ELIGIBILITY_RULES = (
+    ("1_real_ship_path", "evaluations come from this runtime's replay store (synthetic/smoke/audit never enter it)"),
+    ("2_unique_case_dedupe", "retry / variants / reevaluation share case_id; duplicates excluded"),
+    ("3_same_evidence_binding", "feedback binds feature+gate+artifact_hash+evidence_hash+HEAD (mismatch excluded)"),
+    ("4_single_group", "all counted evaluations share (gate, questionset_hash, model_resolved)"),
+    ("5_source_class_allowed", "labels only from graduation-eligible sources; unverified excluded"),
+    ("6_none_excluded", "none is not agree"),
+    ("7_override_separated", "mechanical overrides reported separately, not in denominator"),
+    ("8_primary_layer_ratified", "primary graduation source ratified by formal spec (B3: leave_unset until then)"),
+)
+
+
+def group_keys(evaluations):
+    return sorted({(ev.get("gate"), ev.get("questionset_hash"), ev.get("model_resolved")) for ev in evaluations})
+
+
+def eligibility(evaluations, metrics, primary_source=None):
+    """P3-1 資格計算器。回 {eligible, blockers, rules, circuit_breaker_state, live_switch, ...}。
+    沒有任何參數能覆寫 Wilson／n／frozen;eligible=True 也**不會**開任何東西(runtime 沒有 live 路徑)。"""
+    model_route = [ev for ev in evaluations if route_class(ev) == "model_route"]
+    groups = group_keys(model_route)
+    rules = {}
+    rules["1_real_ship_path"] = {"ok": True, "detail": "store-scoped by construction; %d evaluations" % len(evaluations)}
+    rules["2_unique_case_dedupe"] = {"ok": True, "detail": "unique model-route cases=%d of %d evaluations"
+                                    % (metrics["unique_cases_model_route"], len(model_route))}
+    rules["3_same_evidence_binding"] = {"ok": True, "detail": "feedback_suspect enforces evidence version; see excluded lists"}
+    rules["4_single_group"] = {"ok": len(groups) <= 1, "detail": "groups=%d" % len(groups),
+                               "groups": [{"gate": g, "questionset_hash_prefix": (q or "")[7:23], "model_resolved": m} for g, q, m in groups]}
+    rules["5_source_class_allowed"] = {"ok": True, "detail": "graduation_eligible() filter applied per layer"}
+    rules["6_none_excluded"] = {"ok": True, "detail": "verdict must be agree|overturn; none never counts"}
+    rules["7_override_separated"] = {"ok": True, "detail": "mechanical_override cases=%d (not in denominator)"
+                                    % metrics["unique_cases_mechanical_override"]}
+    rules["8_primary_layer_ratified"] = {"ok": primary_source is not None,
+                                         "detail": "primary_source=%s" % (primary_source or "leave_unset (B3)")}
+    blockers = [name for name, row in rules.items() if not row["ok"]]
+    layer = metrics["layers"].get(primary_source) if primary_source else None
+    floor = {"n": layer["n"] if layer else None, "wilson_lower_95": layer["wilson_lower_95"] if layer else None,
+             "n_overturn": layer["n_overturn"] if layer else None,
+             "floor_met": bool(layer and layer["floor_met"]), "frozen": bool(layer and layer["frozen"])}
+    if layer is None:
+        blockers.append("no_primary_layer")
+    else:
+        if not layer["floor_met"]:
+            blockers.append("floor_not_met(n=%s, wilson=%s; need n>=%d and wilson>=%.2f)"
+                            % (layer["n"], layer["wilson_lower_95"], N_FLOOR, WILSON_FLOOR))
+        if layer["frozen"]:
+            blockers.append("frozen_after_overturn(n_overturn=%d; n stays %d, Wilson recomputed, no manual override)"
+                            % (layer["n_overturn"], layer["n"]))
+    return {
+        "eligible": not blockers,
+        "blockers": blockers,
+        "rules": rules,
+        "primary_source": primary_source,
+        "floor": floor,
+        "circuit_breaker_state": "frozen" if floor["frozen"] else metrics.get("circuit_breaker_state", "closed"),
+        "live_switch": "absent",           # 沒有 live 開關;eligible 只是報表事實
+        "note": "eligibility is an engineering acceptance fact, not an error-rate proof; live requires P3-2 + L2/ADR",
+    }

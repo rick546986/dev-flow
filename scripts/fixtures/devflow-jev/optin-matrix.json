@@ -1,15 +1,67 @@
 {
-  "note": "P1-G3 雙閘門矩陣:key × opt-in × mode × gates → 生效等級。",
+  "note": "P1-G3 雙閘門矩陣:key × opt-in × mode × gates → 生效等級。 W6(2026-09-23):J5 live 未核准,yaml 寫 live 只到 shadow。",
   "cases": [
-    {"has_key": false, "optin": null, "gate": "J1", "expect": "off"},
-    {"has_key": false, "optin": "mode: live\n", "gate": "J1", "expect": "off"},
-    {"has_key": true, "optin": null, "gate": "J5", "expect": "off"},
-    {"has_key": true, "optin": "mode: off\ngates:\n  J5: live\n", "gate": "J5", "expect": "off"},
-    {"has_key": true, "optin": "mode: live\n", "gate": "J5", "expect": "shadow"},
-    {"has_key": true, "optin": "mode: live\n", "gate": "J1", "expect": "live"},
-    {"has_key": true, "optin": "mode: live\n", "gate": "J2", "expect": "off"},
-    {"has_key": true, "optin": "mode: shadow\ngates:\n  J1: live\n", "gate": "J1", "expect": "shadow"},
-    {"has_key": true, "optin": "mode: live\ngates:\n  J5: live\n", "gate": "J5", "expect": "live"}
+    {
+      "has_key": false,
+      "optin": null,
+      "gate": "J1",
+      "expect": "off"
+    },
+    {
+      "has_key": false,
+      "optin": "mode: live\n",
+      "gate": "J1",
+      "expect": "off"
+    },
+    {
+      "has_key": true,
+      "optin": null,
+      "gate": "J5",
+      "expect": "off"
+    },
+    {
+      "has_key": true,
+      "optin": "mode: off\ngates:\n  J5: live\n",
+      "gate": "J5",
+      "expect": "off"
+    },
+    {
+      "has_key": true,
+      "optin": "mode: live\n",
+      "gate": "J5",
+      "expect": "shadow"
+    },
+    {
+      "has_key": true,
+      "optin": "mode: live\n",
+      "gate": "J1",
+      "expect": "live"
+    },
+    {
+      "has_key": true,
+      "optin": "mode: live\n",
+      "gate": "J2",
+      "expect": "off"
+    },
+    {
+      "has_key": true,
+      "optin": "mode: shadow\ngates:\n  J1: live\n",
+      "gate": "J1",
+      "expect": "shadow"
+    },
+    {
+      "has_key": true,
+      "optin": "mode: live\ngates:\n  J5: live\n",
+      "gate": "J5",
+      "expect": "shadow",
+      "note": "W6 P3-1: J5 live not ratified -> capped to shadow (gate.J5_LIVE_RATIFIED=False)"
+    }
   ],
-  "bad_yaml": ["mode: on\n", "gates:\n  J9: live\nmode: live\n", "mode: live\n\tgates: x\n", "foo: bar\nmode: live\n", "gates:\n  J1: live\n"]
+  "bad_yaml": [
+    "mode: on\n",
+    "gates:\n  J9: live\nmode: live\n",
+    "mode: live\n\tgates: x\n",
+    "foo: bar\nmode: live\n",
+    "gates:\n  J1: live\n"
+  ]
 }

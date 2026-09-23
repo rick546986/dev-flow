@@ -3,6 +3,8 @@ feature: <slug>
 stage: 4-spec
 status: draft
 verdict:             # 空 | PASS | REQUEST_CHANGES | HOLD(Human 判定;全勾不算 PASS)
+verdict_source:      # human_attested | fresh_agent_reviewer | owner_self_review(P3-2:verdict 的出處;缺 = unverified,不進任何 graduation)
+attested_by:         # human:<名> 或 agent:<id>(格式 tripwire,不是身份驗證;Jev/自動化不得填、不得寫 verdict)
 owner:
 reviewers: []        # G2 審查者,不可 = owner
 updated:

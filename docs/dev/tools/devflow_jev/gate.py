@@ -6,7 +6,8 @@
 - `mode: off` + `gates: {J5: live}` → off(min)。
 - opt-in 檔存在但沒列該 gate → owner default:J1 live、J3 live(recommendation)、J5 shadow、其餘 off。
 - 預設**不建** opt-in 檔;dev-setup 只在使用者同意後建(P0-4)。
-- J5 的 live 只是「允許呼叫」,route_taken 是否能 AUTO 由 policy 的 graduation 門檻另管(G6)。
+- J5 的 live **未核准**(W6 `J5_LIVE_RATIFIED = False`):yaml 寫 live 也 cap 成 shadow、reason 留痕;
+  即使日後核准,route_taken 是否能 AUTO 仍由 policy 的 graduation 門檻另管(G6)。
 
 yaml 解析刻意窄(同 memory/agentmem/yamlmini 的哲學):只認 `mode:` 與 `gates:` 兩鍵、
 兩層縮排、純 scalar;其它形狀 fail-loud,不猜。
@@ -18,6 +19,9 @@ from . import GATES, JevError, LEVELS
 OPTIN_RELPATH = os.path.join(".dev-flow", "jev.yaml")
 KEY_ENV = "TYPESAFE_API_KEY"
 OWNER_DEFAULT_GATES = {"J1": "live", "J2": "off", "J3": "live", "J4": "off", "J5": "shadow"}
+# W6 P3-1(2026-09-23):J5 live 未核准。yaml 寫 `gates.J5: live` 也只到 shadow —— 這是硬拒不是旗標:
+# 沒有環境變數、CLI 參數或 yaml 鍵能翻它;要開 live 必須改這個常數(= 新 commit、走 P3-2 契約同步 + L2/ADR)。
+J5_LIVE_RATIFIED = False
 _RANK = {level: i for i, level in enumerate(LEVELS)}
 
 
@@ -96,6 +100,9 @@ def effective_level(gate, has_key, optin):
     level = level_min(optin["mode"], gate_level)
     if level == "off":
         return "off", "min(mode=%s, gates.%s=%s)=off" % (optin["mode"], gate, gate_level)
+    if gate == "J5" and level == "live" and not J5_LIVE_RATIFIED:
+        return "shadow", "j5_live_not_ratified(requested min(mode=%s, gates.J5=%s)=live; capped to shadow)" % (
+            optin["mode"], gate_level)
     return level, "min(mode=%s, gates.%s=%s)" % (optin["mode"], gate, gate_level)
 
 
