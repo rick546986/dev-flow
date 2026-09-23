@@ -1580,5 +1580,94 @@ class W6AttestationContract(unittest.TestCase):
             gate_mod.patch_md(src, "PASS", reviewer="agent:jev")
         self.assertIn("verdict_source", read_text(os.path.join(REPO, "notes", "design", "gate-verdict-write.md")))
 
+
+# ───────────────────────────────── W7 P3-3 J2 track / P3-4 Stage 3 polarity ─────────────────────────────
+class W7J2TrackAndStage3Polarity(unittest.TestCase):
+    def test_j2_eligibility_always_blocked_until_window_ratified(self):
+        self.assertIs(report.J2_WINDOW_RATIFIED, False)
+        self.assertIs(policy.J2_WINDOW_RATIFIED, False)
+        ev = make_evaluation(perfect_j5_answers())
+        ev["gate"] = "J2"
+        provenance.stamp(ev)
+        m = report.eval_metrics([ev], {"human_attested": {}, "fresh_agent_reviewer": {}})
+        out = report.eligibility([ev], m, primary_source="human_attested")
+        self.assertFalse(out["eligible"])
+        self.assertTrue(any(b.startswith("j2_window_not_ratified") for b in out["blockers"]))
+        self.assertEqual(policy.route_taken("J2", "live", "A"), ("HUMAN", "j2_shadow_window_not_ratified"))
+
+    def _run_stage3(self, tmp, slug, *args):
+        return subprocess.run([sys.executable, os.path.join(REPO, "hooks", "_stage3_impl.py"), slug, "--root", tmp, *args],
+                              capture_output=True, text=True)
+
+    def _seed(self, tmp, slug, proto_lines, decision_skip=False):
+        folder = os.path.join(tmp, "docs", "dev", slug)
+        os.makedirs(folder, exist_ok=True)
+        with open(os.path.join(folder, "1-discussion.md"), "w", encoding="utf-8") as fh:
+            fh.write("# 1\n## Problem\nx\n## Real-world Context\n### Actors\n| Actor | 真實目標 |\n|---|---|\n| 業務 | 跟催 |\n")
+        with open(os.path.join(folder, "2-decision.md"), "w", encoding="utf-8") as fh:
+            fh.write("# 2\n## Owner Calls(自判裁決,待人審)\n" + ("- OC-9(流程層):跳過 Stage 3 — 人類明示。\n" if decision_skip else "- OC-1:別的。\n"))
+        with open(os.path.join(folder, "3-prototype.md"), "w", encoding="utf-8") as fh:
+            fh.write("---\nfeature: %s\nstage: 3-prototype\nstatus: draft\n---\n# 3\n## Stage 3 觸發判定(命中 → 人決定要不要 Demo)\n- [x] 涉及人工核准\n- [ ] 涉及權限差異\n%s\n## User Demo Feedback\n"
+                     % (slug, "\n".join(proto_lines)))
+
+    def test_stage3_polarity_human_requests_demo(self):
+        tmp = tempfile.mkdtemp(prefix="jev-w7-s3.")
+        try:
+            # 命中、人尚未決定 → 拒(訊息點名 Demo request 與 NOT_REVIEWED)
+            self._seed(tmp, "f1", [])
+            r = self._run_stage3(tmp, "f1")
+            self.assertEqual(r.returncode, 2, r.stderr)
+            self.assertIn("Demo request", r.stderr)
+            self.assertIn("NOT_REVIEWED", r.stderr)
+            # 人明示不要求 → 放行,N/A 記錄
+            self._seed(tmp, "f2", ["- Demo request: not requested by human:rick @ 2026-09-23"])
+            r = self._run_stage3(tmp, "f2")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            data = json.loads(r.stdout)
+            self.assertEqual((data["g2_demo"], data["demo_request"], data["polarity"]), ("PASS", "not_requested", "human_requests_demo"))
+            # Agent 代填 → 拒
+            self._seed(tmp, "f3", ["- Demo request: not requested by agent:jev-1.13.0 @ 2026-09-23"])
+            r = self._run_stage3(tmp, "f3")
+            self.assertEqual(r.returncode, 2)
+            self.assertIn("Agent 不得代填", r.stderr)
+            # 人要求但沒 Demo → 拒
+            self._seed(tmp, "f4", ["- Demo request: requested by human:rick @ 2026-09-23", "- Human verdict: NOT_REVIEWED"])
+            r = self._run_stage3(tmp, "f4")
+            self.assertEqual(r.returncode, 2)
+            self.assertIn("人要求了 Demo", r.stderr)
+            # 人要求 + ACCEPTED + 人類 attestation → 放行(attestation 規則不變)
+            self._seed(tmp, "f5", ["- Demo request: requested by human:rick @ 2026-09-23", "- Human verdict: ACCEPTED",
+                                   "- Verdict attestation: human:rick @ 2026-09-23"])
+            r = self._run_stage3(tmp, "f5")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual(json.loads(r.stdout)["demo_request"], "requested")
+            # 人要求 + ACCEPTED 但沒 attestation → 仍拒(human-only 不變)
+            self._seed(tmp, "f6", ["- Demo request: requested by human:rick @ 2026-09-23", "- Human verdict: ACCEPTED"])
+            r = self._run_stage3(tmp, "f6")
+            self.assertEqual(r.returncode, 2)
+            self.assertIn("attestation", r.stderr)
+            # 舊檔:沒有 Demo request 行但 ACCEPTED + attestation → implied_by_verdict 放行
+            self._seed(tmp, "f7", ["- Human verdict: ACCEPTED", "- Verdict attestation: human:rick @ 2026-08-02"])
+            r = self._run_stage3(tmp, "f7")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual(json.loads(r.stdout)["demo_request"], "implied_by_verdict")
+            # 模板佔位行不算已填
+            self._seed(tmp, "f8", ["- Demo request: requested | not requested by human:<姓名> @ <YYYY-MM-DD>"])
+            r = self._run_stage3(tmp, "f8")
+            self.assertEqual(r.returncode, 2)
+            self.assertIn("尚未決定", r.stderr)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_contract_faces_carry_polarity_sentence(self):
+        for rel in ("_templates/3-prototype.md", "notes/design/vnext-shared-contract.md", "skills/dev-flow/SKILL.md",
+                    "docs/dev/readme-contract-extract.md", "skills/dev-flow/stage3/nodes/N1-trigger.md"):
+            text = read_text(os.path.join(REPO, rel))
+            self.assertIn("人要求才 Demo", text, rel)
+            self.assertIn("Demo request", text, rel)
+        impl = read_text(os.path.join(REPO, "hooks", "_stage3_impl.py"))
+        self.assertIn("ATTEST_HUMAN", impl)                 # attestation 防線仍在
+        self.assertNotIn("Jev 可填", impl)
+
 if __name__ == "__main__":
     unittest.main()

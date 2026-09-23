@@ -92,8 +92,9 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 >    審查者依序:適格人類 reviewer → fresh-context reviewer Agent → owner 自審
 >    (有記錄的最後手段)。G2 審查關鍵條件 = R/S 全審 + DD 全裁決
 >    + Verification Profile(依 lane 正確填寫;未填視為步 3 未完成)
->    + Demo verdict(條件式:無 Stage 3 trigger → N/A+原因;有 trigger → 需人類
->    ACCEPTED,REVISE/NOT_REVIEWED 不得過,跳過需 Owner Call;Agent 不得代填)——
+>    + Demo verdict(條件式,人要求才 Demo:無 Stage 3 trigger → N/A+原因;有 trigger → 人親填
+>    Demo request,不要求 → N/A,要求 → 需人類 ACCEPTED,REVISE/NOT_REVIEWED 不得過,跳過需 Owner Call;
+>    Agent 不得代填)——
 >    條件全文見 `guides/guide-dev-flow.html#gates`。核准 → 三連動。
 >    完成 = verdict+三連動。
 >

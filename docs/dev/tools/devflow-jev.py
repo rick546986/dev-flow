@@ -1430,7 +1430,12 @@ def run_eligibility(root, gate="J5", primary_source=None, environ=None, memory_d
                 if ev["gate"] == gate:
                     evaluations.append(ev)
     out = report_mod.eligibility(evaluations, rep["metrics"], primary_source=primary_source)
+    if gate == "J2" and not any(b.startswith("j2_window_not_ratified") for b in out["blockers"]):
+        out["blockers"].append("j2_window_not_ratified(candidate=%d; formal rolling window pending; J2 stays shadow)"
+                               % policy.J2_WINDOW_CANDIDATE)
+        out["eligible"] = False
     out.update({"gate": gate, "graduated": GRADUATED, "j5_live_ratified": gate_mod.J5_LIVE_RATIFIED,
+                "j2_window_ratified": policy.J2_WINDOW_RATIFIED,
                 "auto_allowed": False, "network": False,
                 "layers": rep["layers"], "evaluations_not_replayable": rep["evaluations_not_replayable"]})
     return out

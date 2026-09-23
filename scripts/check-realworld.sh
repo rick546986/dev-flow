@@ -93,7 +93,7 @@ check("[Assumption]" in e1, "example 1-discussion 有 [Assumption] 標記項")
 check("訪談" in section(e1, "Evidence"), "example Evidence 節含訪談證據")
 
 # ── 3. UI/workflow trigger 可判斷 Stage 3 ──
-check("條件式必要" in t3, "template 3-prototype 含條件式必要語意")
+check("人要求才 Demo" in t3 and "Demo request" in t3, "template 3-prototype 含人要求才 Demo 極性(P3-4)與 Demo request 行")
 for trigger in ("有新的前端流程", "改變使用者下一步", "涉及角色交接", "涉及人工核准",
                 "涉及等待/退回/逾時", "涉及權限差異", "涉及系統外動作",
                 "涉及多種可行互動設計", "操作流程不確定性"):

@@ -101,10 +101,11 @@ G2 = 契約寫得對不對
     Concurrency、Idempotency、Timeout/retry 三問(格式與規則見 4-spec 模板);fast lane
     多半三項皆 `n-a`,理由仍不得省。本項由本 repo 腳本驗欄位存在與理由非空,理由是否
     成立仍是 G2 reviewer 的判斷,無 Runtime 機械強制。
-  - 「Demo verdict」(條件式):無 Stage 3 trigger → N/A + 明確原因,可過 G2;
-    有 trigger 且完成 Demo → 必須 `Human verdict: ACCEPTED`;REVISE → 不得過 G2,
+  - 「Demo verdict」(條件式;極性 = 人要求才 Demo):無 Stage 3 trigger → N/A + 明確原因,可過 G2;
+    有 trigger → 人親填 `- Demo request: requested|not requested by human:<姓名> @ <日期>`,
+    不要求 → N/A + 記錄可過 G2,要求且完成 Demo → 必須 `Human verdict: ACCEPTED`;REVISE → 不得過 G2,
     必須重做 Demo;NOT_REVIEWED → 不得過 G2;有 trigger 但跳過 → 必須有 Owner Call
-    明示。Agent 不得自行填入 ACCEPTED;Runtime 必須拒絕 Agent 自產的 ACCEPTED。
+    明示。Agent 不得自行填入 ACCEPTED、不得代填 Demo request;Runtime 必須拒絕 Agent 自產的兩者。
 
  ### G3
 

@@ -25,12 +25,15 @@ G3 的粗體錨是「**Evidence 契約全過**」,展開為八點必須全部成
 新增兩粗體錨:
 
 - 「**Verification Profile**」:G2 必須確認 Profile 已依 lane 正確填寫(見 §4)。
-- 「**Demo verdict**」:條件式 —
+- 「**Demo verdict**」:條件式,極性 = **人要求才 Demo**(P3-4,owner 2026-09-22 裁;W7 2026-09-23 落地)—
   - 無 Stage 3 trigger → N/A + 明確原因,可過 G2。
-  - 有 trigger 且完成 Demo → 必須 `Human verdict: ACCEPTED`。
+  - 有 trigger → 人在 3-prototype 親填 `- Demo request: requested|not requested by human:<姓名> @ <日期>`:
+    `not requested` → N/A + 記錄,可過 G2;`requested` → 走 Demo。人未決定 → 不得過 G2。
+  - 要求且完成 Demo → 必須 `Human verdict: ACCEPTED`(+ 人類 attestation 行)。
   - REVISE → 不得過 G2,必須重做 Demo。NOT_REVIEWED → 不得過 G2。
-  - 有 trigger 但跳過 → 必須有 Owner Call 明示。
-  - **Agent 不得自行填入 ACCEPTED;Runtime 必須拒絕 Agent 自產的 ACCEPTED**。
+  - 有 trigger 但跳過(舊路徑,等同不要求)→ 必須有 Owner Call 明示。
+  - **Agent 不得自行填入 ACCEPTED、不得代填 Demo request;Runtime 必須拒絕 Agent 自產的兩者**。
+    Demo verdict／attestation 永遠 human-only;Jev(J3)只出建議,碰不得。
 
 ## 3. Risk:單一 rubric、兩個 scope(六修正 6.1)
 

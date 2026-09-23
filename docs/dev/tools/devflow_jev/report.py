@@ -220,9 +220,14 @@ def group_keys(evaluations):
     return sorted({(ev.get("gate"), ev.get("questionset_hash"), ev.get("model_resolved")) for ev in evaluations})
 
 
+# W7 P3-3:J2 window 常數只有 policy.py 一處賦值(candidate=50 待核定、RATIFIED=False → J2 永遠 shadow);這裡只轉用。
+from .policy import J2_WINDOW_CANDIDATE, J2_WINDOW_RATIFIED  # noqa: E402
+
+
 def eligibility(evaluations, metrics, primary_source=None):
     """P3-1 資格計算器。回 {eligible, blockers, rules, circuit_breaker_state, live_switch, ...}。
-    沒有任何參數能覆寫 Wilson／n／frozen;eligible=True 也**不會**開任何東西(runtime 沒有 live 路徑)。"""
+    沒有任何參數能覆寫 Wilson／n／frozen;eligible=True 也**不會**開任何東西(runtime 沒有 live 路徑)。
+    J2(W7 P3-3):window 未核定 → 永遠多一條 blocker `j2_window_not_ratified`;沒有 AUTO_PASS 路徑。"""
     model_route = [ev for ev in evaluations if route_class(ev) == "model_route"]
     groups = group_keys(model_route)
     rules = {}
@@ -239,6 +244,9 @@ def eligibility(evaluations, metrics, primary_source=None):
     rules["8_primary_layer_ratified"] = {"ok": primary_source is not None,
                                          "detail": "primary_source=%s" % (primary_source or "leave_unset (B3)")}
     blockers = [name for name, row in rules.items() if not row["ok"]]
+    gates = {ev.get("gate") for ev in evaluations}
+    if "J2" in gates and not J2_WINDOW_RATIFIED:
+        blockers.append("j2_window_not_ratified(candidate=%d; formal rolling window pending; J2 stays shadow)" % J2_WINDOW_CANDIDATE)
     layer = metrics["layers"].get(primary_source) if primary_source else None
     floor = {"n": layer["n"] if layer else None, "wilson_lower_95": layer["wilson_lower_95"] if layer else None,
              "n_overturn": layer["n_overturn"] if layer else None,

@@ -1,8 +1,9 @@
-# N-skip — 全未命中,維持選配
+# N-skip — 全未命中,或命中但人不要求 Demo
 
 ## 進條件
 
-N1 九條全未命中。若其實有命中 → 本節點不是入口,走 `fork_required`。
+N1 九條全未命中;**或**任一命中但人已親填 `not requested`(人要求才 Demo)。
+若有命中且人要求 Demo → 本節點不是入口,走 `fork_required`。
 
 ## 讀什麼
 
@@ -17,9 +18,9 @@ N1 判定結果(九條皆未勾)。不重抄九條條文。`graph.yaml` 是下�
 ## 做什麼
 
 寫最小 `3-prototype.md`:frontmatter `status: approved` + `## Stage 3 觸發判定`
-九條全未勾。不建 html。Owner Call 跳過路徑不在本節點
-(那是命中後仍要跳過才用:2-decision 該行同時含「Stage 3」與「跳過」)。
-Agent 不得代決跳過。
+九條(全未勾;或如實勾命中)。有命中時原樣帶進人親填的
+`- Demo request: not requested by human:<姓名> @ <日期>` 行 —— 那一行是人的,Agent 不得代填。不建 html。
+Owner Call 跳過路徑仍可用(2-decision 該行同時含「Stage 3」與「跳過」)。Agent 不得代決。
 跑 `${DEVFLOW_ROOT}/scripts/check-devstage3-graph.sh --write-cursor N-skip`。
 
 ## 完成條件

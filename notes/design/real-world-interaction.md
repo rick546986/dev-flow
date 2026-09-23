@@ -52,10 +52,12 @@ DevFlow 既有文件鏈(R → S → T → test → D → F)描述「系統規則
 
 ## 4. Stage 3:觸發判定 + Demo + Human verdict(已落地)
 
-**觸發判定(條件式必要)**:Stage 3 對純後端、無互動風險 feature 維持選配。
+**觸發判定(命中 → 人要求才 Demo;P3-4 極性,2026-09-23)**:Stage 3 對純後端、無互動風險 feature 維持選配。
 命中九條之一(新前端流程/改變下一步/角色交接/人工核准/等待退回逾時/權限差異/
-系統外動作/多種互動設計/操作流程不確定)→ 條件式必要。命中仍要跳過 → 人類明示 +
-2-decision Owner Call + 記跳過風險;Agent 不得代決。
+系統外動作/多種互動設計/操作流程不確定)→ 由人決定要不要 Demo(人親填 `- Demo request:
+requested | not requested by human:<姓名> @ <日期>`;Agent 不得代填、不得代決)。人要求 → 產可操作
+Demo + Human verdict;人不要求 → 落檔即 N/A。舊路徑保留:命中而未決定又要跳過 → 人類明示 +
+2-decision Owner Call + 記跳過風險。
 
 **可操作 Demo**:不只產文件。形式六選一(HTML prototype / throwaway route /
 Storybook / CLI flow / API mock+UI / 狀態流程模擬器)。鐵則:不直接變 production、
