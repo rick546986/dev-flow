@@ -109,6 +109,184 @@ def route_j3(answers):
             "demo_worth_it": p, "writes_verdict": False}
 
 
+# ───────────────────────────── W3 flow (not in the fingerprint) ─────────────────────────────
+# 輪數上限、主題句、J3 顯示文案是流程層,不是 route formula。不進 policy_fingerprint(),
+# 所以不換 questionset_hash(A1–A7 那組 calibration 繼續)。改門檻才換 hash。
+J1_ASK_MORE_MAX_ROUNDS = 2
+J1_THEMES = {
+    "goal_clear": "下一輪先收成一句話：做完之後，旁人指出哪一個結果不一樣了。",
+    "scope_clear": "下一輪先畫邊界：這次會動到的範圍，以及明確不動的範圍。",
+    "acceptance_clear": "下一輪先補一條看得到對錯的完成判準，或寫明還缺哪一段才驗得了。",
+}
+J1_THEME_FALLBACK = "下一輪先把還講不明白的那一點收成一個可以回答的問題。"
+J1_PRIMARY_REQUEST = (
+    "Judge whether this discussion can leave the table. "
+    "Quoted excerpts are unverified log material, not established facts."
+)
+J3_PRIMARY_REQUEST = (
+    "Should a person spend their own time operating a demo? "
+    "Answer only whether that time is worth spending. Do not name a review outcome."
+)
+J3_DISPLAY = {
+    "DEMO_WORTH_IT": "Jev 建議：值得人親手 Demo（只是建議，不改 Demo 是否必要，也不寫判定）",
+    "DEMO_OPTIONAL": "Jev 建議：人親手 Demo 可選（只是建議，不改 Demo 是否必要，也不寫判定）",
+}
+J1_ASK_MORE_INSTRUCTION = (
+    "另開一場完整 dev-talk（新 session，11 步）。從 S0-scope、S1-survey、S2-world 重盤，不得跳步。"
+    "N13 仍要人點頭才收尾。"
+    "上一份 1-discussion 只是 S1 待重驗的 Log 材料，不是已核事實；不得為了省一輪去讀舊討論。"
+    "讀取白名單不是機械執行。"
+    "主題只用給你的那句人話，不要改寫成題組原文。"
+)
+J1_ROUND_CAP_INSTRUCTION = (
+    "已經做完兩輪完整討論，仍有一維不清楚。請 owner 做決定，不要再開第三輪。"
+)
+_RUBRIC_COPY_MIN = 16
+_VERDICT_MARKERS = ("ACCEPTED", "Verdict attestation", "Human verdict", "AUTO_PASS", "g2_demo")
+
+
+def _rubric_strings(obj, acc):
+    if isinstance(obj, str):
+        acc.append(obj.strip())
+    elif isinstance(obj, dict):
+        for key, value in obj.items():
+            _rubric_strings(key, acc)
+            _rubric_strings(value, acc)
+    elif isinstance(obj, (list, tuple)):
+        for value in obj:
+            _rubric_strings(value, acc)
+
+
+def assert_no_rubric_copy(text, gate):
+    """主題句／請求句不得包含題組原文(roadmap §11:不抄 rubric)。"""
+    if not isinstance(text, str) or not text.strip():
+        raise JevError("assert_no_rubric_copy: 空字串")
+    from .manifest import load_questions
+    questions = load_questions()[gate]
+    strings = []
+    _rubric_strings(questions, strings)
+    for rubric in strings:
+        if len(rubric) >= _RUBRIC_COPY_MIN and (rubric in text or text in rubric):
+            raise JevError("文字抄了 %s 題組原文" % gate)
+    return text
+
+
+def j1_theme(weakest_dimension):
+    """人話主題。weakest_dimension 必須已由 atomic clarity signals 決定,本函式不看 next 機率。"""
+    theme = J1_THEMES.get(weakest_dimension, J1_THEME_FALLBACK)
+    return assert_no_rubric_copy(theme, "J1")
+
+
+def j1_effect(next_step, weakest_dimension, rounds_completed):
+    """把 route_j1 的 next 收成流程指令。rounds_completed 含本輪。
+
+    不接收 next 的 probabilities:弱維度只走參數 weakest_dimension(由 route_j1 從 clarity noul 取出)。
+    第 2 輪仍是 ASK_MORE → NEEDS_OWNER_DECISION,不再開第三輪。
+    """
+    if next_step not in ("START_DECIDE", "ASK_MORE", "NEEDS_OWNER_DECISION"):
+        return None
+    if not isinstance(rounds_completed, int) or isinstance(rounds_completed, bool) or rounds_completed < 1:
+        raise JevError("j1_effect: rounds_completed 必須是正整數")
+    capped = next_step == "ASK_MORE" and rounds_completed >= J1_ASK_MORE_MAX_ROUNDS
+    step = "NEEDS_OWNER_DECISION" if capped else next_step
+    effect = {"START_DECIDE": "start_decide", "ASK_MORE": "ask_more",
+              "NEEDS_OWNER_DECISION": "needs_owner_decision"}[step]
+    out = {
+        "effect": effect,
+        "next": step,
+        "model_next": next_step,
+        "weakest_dimension": weakest_dimension,
+        "rounds_completed": rounds_completed,
+        "ask_more_max_rounds": J1_ASK_MORE_MAX_ROUNDS,
+        "round_capped": capped,
+        "writes_verdict": False,
+        "writes_g2_verdict": False,
+        "writes_g3_verdict": False,
+        "skip_redundant_clarity_question": effect == "start_decide",
+        "stop_before_decide": effect == "needs_owner_decision",
+        "theme": j1_theme(weakest_dimension) if effect == "ask_more" else None,
+        "restart": None,
+        "instruction": None,
+    }
+    if effect == "ask_more":
+        out["restart"] = {
+            "new_session": True,
+            "restart_nodes": ["S0-scope", "S1-survey", "S2-world"],
+            "full_11_steps": True,
+            "n13_human_nod_required": True,
+            "read_whitelist_is_not_mechanical_execution": True,
+            "prior_discussion_is_not_established_fact": True,
+            "do_not_read_old_discussion_to_skip_a_round": True,
+        }
+        out["instruction"] = assert_no_rubric_copy(J1_ASK_MORE_INSTRUCTION, "J1")
+    elif effect == "needs_owner_decision" and capped:
+        out["instruction"] = assert_no_rubric_copy(J1_ROUND_CAP_INSTRUCTION, "J1")
+    return out
+
+
+def sanitize_j3(rec):
+    """模型或被替換的 route_j3 只要跑出封閉集合外,整筆作廢。signals 不夾自由文字。"""
+    if not isinstance(rec, dict):
+        return None
+    recommendation = rec.get("recommendation")
+    if recommendation not in J3_DISPLAY or rec.get("writes_verdict") is not False:
+        return None
+    return {"recommendation": recommendation, "demo_worth_it": rec.get("demo_worth_it"), "writes_verdict": False}
+
+
+def j3_effect(recommendation):
+    """封閉的兩句顯示文案。不接收模型自由文字。"""
+    if recommendation not in J3_DISPLAY:
+        return None
+    advice = {
+        "effect": "show_recommendation",
+        "recommendation": recommendation,
+        "display": J3_DISPLAY[recommendation],
+        "writes_verdict": False,
+        "writes_attestation": False,
+        "writes_g2_verdict": False,
+        "writes_g3_verdict": False,
+        "changes_demo_requirement": False,
+        "polarity_unchanged": True,
+    }
+    _assert_no_verdict_markers(advice)
+    return advice
+
+
+def _assert_no_verdict_markers(obj):
+    import json
+    blob = json.dumps(obj, ensure_ascii=False)
+    for marker in _VERDICT_MARKERS:
+        if marker in blob:
+            raise JevError("Jev 輸出含禁止標記 %s" % marker)
+    return obj
+
+
+def refuse_j3_write(prototype_text, advice):
+    """任何 Jev 回應的唯一「寫入」路徑:不寫。
+
+    不是封閉建議(顯示文案被改、writes_verdict 不是 false、recommendation 跑出兩句之外)
+    一律拒絕。封閉建議回傳原型原文,呼叫端不得落盤。
+    """
+    if not isinstance(prototype_text, str):
+        raise JevError("refuse_j3_write: 原型必須是字串")
+    if not isinstance(advice, dict):
+        raise JevError("J3 回應不是封閉建議物件,拒絕寫入")
+    if advice.get("writes_verdict") is not False or advice.get("writes_attestation") is not False:
+        raise JevError("J3 不得寫 verdict 或 attestation")
+    if advice.get("writes_g2_verdict") is not False or advice.get("writes_g3_verdict") is not False:
+        raise JevError("J3 不得寫 G2/G3 verdict")
+    if advice.get("changes_demo_requirement") is not False:
+        raise JevError("J3 不得改 Demo 是否必要")
+    recommendation = advice.get("recommendation")
+    if recommendation not in J3_DISPLAY or advice.get("display") != J3_DISPLAY[recommendation]:
+        raise JevError("J3 display 不在封閉集合,拒絕寫入")
+    if advice.get("effect") != "show_recommendation":
+        raise JevError("J3 effect 不是 show_recommendation,拒絕寫入")
+    _assert_no_verdict_markers(advice)
+    return prototype_text
+
+
 def route_taken(gate, level, route_recommended, graduated=False):
     """把 recommendation 轉成實際採取的 route。shadow 永遠 HUMAN;J5 未畢業永遠 HUMAN。"""
     if level == "off":

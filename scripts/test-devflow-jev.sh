@@ -1,5 +1,5 @@
 #!/bin/bash
-# test-devflow-jev.sh — jev-gate 七組守衛 foundation(W1:P1-G1～G7)+ stdlib runtime(W2:P1-F1/F5/F6)的牙。
+# test-devflow-jev.sh — jev-gate 七組守衛 foundation(W1:P1-G1～G7)+ stdlib runtime(W2:P1-F1/F5/F6)+ J1/J3 handoff(W3)的牙。
 #
 # 跑 scripts/devflow_jev/test_*.py(unittest,stdlib only;負面 fixtures 住 scripts/fixtures/devflow-jev/)。
 # 本檔同時釘五件事。①② 是 W1 的 tripwire,**2026-09-23 W2 PR 明改**(owner 前提 ②:不得靜默放行;
@@ -85,7 +85,7 @@ grep -q "not-a-real-key" <<<"$OUT" && { echo "⛔ key 出現在輸出" >&2; exit
 echo "  ✓ transport 失敗 → no-op(exit 0)、route_taken=HUMAN、key 不外露"
 
 echo "-- ③ 案例數地板 --"
-MIN_TESTS=180
+MIN_TESTS=194
 ACTUAL=$(cat "$PKG"/test_*.py | grep -cE '^\s+def test_')
 if [ "$ACTUAL" -lt "$MIN_TESTS" ]; then
   echo "⛔ test_*.py 只有 $ACTUAL 個 test_(地板 $MIN_TESTS)—— 案例被刪" >&2; exit 1
@@ -102,4 +102,4 @@ find "$PKG" -name '__pycache__' -type d -prune -exec rm -rf {} + 2>/dev/null || 
 if [ "$RC" -ne 0 ]; then
   echo "⛔ devflow_jev unittest 紅(exit $RC)" >&2; exit 1
 fi
-echo "✅ test-devflow-jev: 七組守衛 + W2 runtime 牙全過(shadow/no-op runtime;沒有 AUTO、沒有 verdict 寫入)"
+echo "✅ test-devflow-jev: 七組守衛 + W2 runtime + W3 J1/J3 handoff 牙全過(沒有 AUTO;J3 不寫 verdict)"

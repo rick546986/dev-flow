@@ -7,6 +7,8 @@ policy 導出 route → 雙層 ledger 落盤」的膠水,不含任何門檻、�
 子命令
   status      各 gate 生效等級(key 有無 × .dev-flow/jev.yaml opt-in)、今日 budget、breaker、replay 數。零網路。
   pack        由 JSON 輸入組 evidence packet(G1;privacy 命中 = 拒絕組包)。零網路。
+  handoff     W3:J1 在 Decide 前、J3 在 Demo 前。內部只呼叫本檔的 ask(不另寫 HTTP client)。
+              off／失敗／逾時 → exit 0、effect=continue_existing_flow。J3 只回顯示文案,不寫 verdict。
   ask         一次 evaluation:雙閘門 off → exit 0、什麼都不寫、零網路;shadow/live → 送一次,
               失敗 no-op(G2),route 由 policy 導出(G6),replay store + durable(G4)。
   replay      stored-response deterministic replay(零網路)+ 完整性重算;對不上 exit 1。
@@ -52,7 +54,7 @@ from devflow_jev import gate as gate_mod  # noqa: E402
 from devflow_jev import ledger, manifest as manifest_mod, packet as packet_mod, policy, provenance  # noqa: E402
 from devflow_jev import report as report_mod  # noqa: E402
 from devflow_jev.attestation import graduation_eligible  # noqa: E402
-from devflow_jev.state import StateStore, utc_day  # noqa: E402
+from devflow_jev.state import StateStore, _atomic_write, utc_day  # noqa: E402
 from devflow_jev.transport import build_request  # noqa: E402
 
 
@@ -206,9 +208,13 @@ def route_for(gate, answers, packet, risk_hit, runtime_changed):
         route["route_recommended"] = route["next"]
         return route
     if gate == "J3":
-        rec = policy.route_j3(answers)
-        return {"route_recommended": rec["recommendation"],
-                "route_reason": "demo_worth_it=%s(writes_verdict=false)" % rec["demo_worth_it"], "signals": rec}
+        safe = policy.sanitize_j3(policy.route_j3(answers))
+        if safe is None:
+            return {"route_recommended": None, "route_reason": "j3_route_rejected",
+                    "signals": {"writes_verdict": False}}
+        return {"route_recommended": safe["recommendation"],
+                "route_reason": "demo_worth_it=%s(writes_verdict=false)" % safe["demo_worth_it"],
+                "signals": safe}
     raise JevError("gate %s 沒有 route formula(J2/J4 保留,不在 MVP)" % gate)
 
 
@@ -224,8 +230,10 @@ def replay_route_fn(evaluation):
             route = policy.route_j1(answers, truncated=truncated, packet_flags=packet_flags)
             route["route_recommended"] = route["next"]
             return route
-        rec = policy.route_j3(answers)
-        return {"route_recommended": rec["recommendation"], "signals": rec}
+        safe = policy.sanitize_j3(policy.route_j3(answers))
+        if safe is None:
+            return {"route_recommended": None, "signals": {"writes_verdict": False}}
+        return {"route_recommended": safe["recommendation"], "signals": safe}
     return fn
 
 
@@ -308,6 +316,7 @@ def run_ask(root, gate, slug, packet, evidence, author_ref, session_ref, environ
         "replay_status": replay_status, "replay_path": replay_path, "written": list(written),
         "usage": outcome.get("usage"), "budget_remaining": budget.remaining(),
         "breaker_failures": breaker.failures.get(gate, 0),
+        "weakest_dimension": route.get("weakest_dimension") if gate == "J1" else None,
     })
     return result
 
@@ -544,6 +553,322 @@ def run_pack(gate, spec, out_path=None):
             "note": "self-check is a formal control, not prompt-injection immunity"}
 
 
+# ───────────────────────────── W3 handoff (J1 / J3) ─────────────────────────────
+_H2 = re.compile(r"^##\s+(.+?)\s*$", re.M)
+_FM = re.compile(r"\A---\n(.*?)\n---\n", re.S)
+_OQ = re.compile(r"^\s*[-*]\s+\[(.)\]", re.M)
+_STATUS = re.compile(r"^status:\s*(\S+)", re.M)
+J1_UNVERIFIED_SOURCE = "S1 待重驗的 Log 材料，不是已核事實"
+J1_SOURCE_FACT = "quoted excerpts are log material pending S1 re-check, not established facts; read whitelist is not mechanical execution"
+
+
+def _continue_flow(reason, gate, level=None, level_reason=None):
+    return {
+        "gate": gate, "status": "noop", "noop_reason": reason, "level": level, "level_reason": level_reason,
+        "effect": "continue_existing_flow", "steers_flow": False, "network": False, "written": [],
+        "writes_verdict": False, "writes_g2_verdict": False, "writes_g3_verdict": False,
+        "graduated": GRADUATED, "idempotent": False,
+    }
+
+
+def _split_sections(text):
+    matches = list(_H2.finditer(text))
+    out = {}
+    for index, match in enumerate(matches):
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        title = match.group(1).split("(")[0].strip()
+        out[title] = text[match.end():end].strip()
+    return out
+
+
+def _frontmatter_status(text):
+    match = _FM.match(text)
+    if not match:
+        return None
+    found = _STATUS.search(match.group(1))
+    return found.group(1) if found else None
+
+
+def _open_questions_state(body):
+    if body is None:
+        return "section_missing"
+    marks = _OQ.findall(body)
+    if not marks:
+        return "none_listed"
+    if any(mark == ">" for mark in marks):
+        return "has_handoff"
+    if any(mark in (" ", "~") for mark in marks):
+        return "has_open"
+    if all(mark in ("x", "X") for mark in marks):
+        return "none_open"
+    return "has_open"
+
+
+def _clip(text, limit=600):
+    text = (text or "").strip()
+    if len(text) <= limit:
+        return text
+    return text[:limit] + " …"
+
+
+def _read_optional(root, path):
+    if not path:
+        return None
+    full = path if os.path.isabs(path) else os.path.join(root, path)
+    if not os.path.isfile(full):
+        return None
+    with open(full, encoding="utf-8") as fh:
+        return fh.read()
+
+
+def _head_sha(root):
+    import subprocess
+    try:
+        out = subprocess.check_output(["git", "-C", root, "rev-parse", "HEAD"], stderr=subprocess.DEVNULL, text=True)
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    sha = out.strip()
+    if _HEAD_RE.match(sha):
+        return sha
+    return None
+
+
+def _sha_text(text):
+    return manifest_mod.sha256_hex(text if isinstance(text, str) else "")
+
+
+def _load_json_dict(path):
+    if not os.path.isfile(path):
+        return {}
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _save_json_dict(path, payload):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    _atomic_write(path, payload)
+
+
+def _j1_packet(slug, discussion, discussion_hash):
+    sections = _split_sections(discussion)
+    quoted = []
+    for title in ("Goals", "Non-Goals", "驗收雛形", "Open Questions", "Real-world Context"):
+        body = sections.get(title)
+        if not body:
+            continue
+        quoted.append({
+            "source": "1-discussion.md#%s | %s" % (title, J1_UNVERIFIED_SOURCE),
+            "text": _clip(body),
+        })
+    present = [title for title in ("Goals", "Non-Goals", "驗收雛形", "Open Questions", "Real-world Context")
+               if sections.get(title)]
+    header = {
+        "slug": slug,
+        "discussion_hash": discussion_hash,
+        "open_questions_state": _open_questions_state(sections.get("Open Questions")),
+    }
+    facts = [
+        J1_SOURCE_FACT,
+        "sections_present=%s" % ",".join(present),
+        "open_questions_state=%s" % header["open_questions_state"],
+    ]
+    policy.assert_no_rubric_copy(policy.J1_PRIMARY_REQUEST, "J1")
+    return packet_mod.build_packet("J1", header, policy.J1_PRIMARY_REQUEST,
+                                   quoted_context=quoted, source_facts=facts)
+
+
+def _evidence_for(gate, slug, artifact_text, bundle_text, head):
+    return {
+        "feature": slug, "gate": gate,
+        "artifact_hash": _sha_text(artifact_text),
+        "evidence_hash": _sha_text(bundle_text),
+        "head_sha": head,
+        "evaluated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+
+def _classify_failure(exc):
+    msg = str(exc)
+    if "privacy" in msg:
+        return "prepare_privacy_reject"
+    if "memory" in msg or "agentmem" in msg:
+        return "memory_lib_missing"
+    if "discussion" in msg:
+        return "prepare_discussion_rejected"
+    return "prepare_or_ask_failed"
+
+
+def _attach_j1(base, effect):
+    kept = ("effect", "next", "model_next", "weakest_dimension", "rounds_completed", "ask_more_max_rounds",
+            "round_capped", "skip_redundant_clarity_question", "stop_before_decide", "theme", "restart", "instruction")
+    for key in kept:
+        base[key] = effect[key]
+    base["steers_flow"] = effect["effect"] != "continue_existing_flow"
+    policy._assert_no_verdict_markers(base)
+    return base
+
+
+def run_handoff_j1(root, slug, author_ref, session_ref, discussion_path=None, environ=None,
+                   transport_factory=None, clock=None, memory_dir=None):
+    environ = os.environ if environ is None else environ
+    level, level_reason = gate_level(root, "J1", environ)
+    if not gate_mod.may_call(level):
+        return _continue_flow(level_reason, "J1", level, level_reason)
+    path = discussion_path or os.path.join("docs", "dev", slug, "1-discussion.md")
+    text = _read_optional(root, path)
+    if text is None:
+        return _continue_flow("missing_discussion", "J1", level, level_reason)
+    if _frontmatter_status(text) != "approved":
+        return _continue_flow("discussion_not_approved", "J1", level, level_reason)
+    discussion_hash = _sha_text(text)
+    cache_path = os.path.join(root, ".devflow", "jev", "state", "j1-rounds.json")
+    cache = _load_json_dict(cache_path)
+    by_slug = cache.get(slug) if isinstance(cache.get(slug), dict) else {"talks": [], "by_hash": {}}
+    talks = [item for item in by_slug.get("talks") or [] if isinstance(item, str)]
+    by_hash = by_slug.get("by_hash") if isinstance(by_slug.get("by_hash"), dict) else {}
+    cached = by_hash.get(discussion_hash)
+    if isinstance(cached, dict) and cached.get("status") == "ok":
+        again = dict(cached)
+        again["idempotent"] = True
+        again["network"] = False
+        return again
+    head = _head_sha(root)
+    if head is None:
+        return _continue_flow("no_head_sha", "J1", level, level_reason)
+    try:
+        packet = _j1_packet(slug, text, discussion_hash)
+        evidence = _evidence_for("J1", slug, text, discussion_hash, head)
+        ask = run_ask(root, "J1", slug, packet, evidence, author_ref, session_ref, environ=environ,
+                      transport_factory=transport_factory, clock=clock or time.monotonic, memory_dir=memory_dir)
+    except JevError as exc:
+        return _continue_flow(_classify_failure(exc), "J1", level, level_reason)
+    base = {
+        "gate": "J1", "slug": slug, "status": ask["status"], "noop_reason": ask.get("noop_reason"),
+        "level": ask["level"], "level_reason": ask.get("level_reason"), "network": ask.get("network"),
+        "evaluation_id": ask.get("evaluation_id"), "graduated": GRADUATED, "idempotent": False,
+        "written": list(ask.get("written") or []), "writes_verdict": False,
+        "writes_g2_verdict": False, "writes_g3_verdict": False,
+        "discussion_hash": discussion_hash,
+    }
+    if ask["status"] != "ok" or ask["level"] != "live":
+        base.update({"effect": "continue_existing_flow", "steers_flow": False,
+                     "model_route_taken": ask.get("route_taken") if ask["status"] != "ok" or ask.get("route_taken") == "HUMAN" else None})
+        # shadow 的 route_taken 恆 HUMAN,不拿來指揮流程;失敗也一樣。不把模型自由文字抄出來。
+        if ask["level"] == "shadow" and ask["status"] == "ok":
+            base["noop_reason"] = "shadow_mode"
+        return base
+    if discussion_hash not in talks:
+        talks.append(discussion_hash)
+    try:
+        effect = policy.j1_effect(ask.get("route_taken"), ask.get("weakest_dimension"), len(talks))
+        if effect is None:
+            base.update({"effect": "continue_existing_flow", "steers_flow": False, "noop_reason": "unusable_j1_route"})
+            return base
+        _attach_j1(base, effect)
+    except JevError:
+        return _continue_flow("handoff_output_rejected", "J1", level, level_reason)
+    by_hash[discussion_hash] = dict(base)
+    cache[slug] = {"talks": talks, "by_hash": by_hash}
+    _save_json_dict(cache_path, cache)
+    return base
+
+
+def _j3_packet(slug, discussion, spec_text, proto_text, trigger):
+    quoted = []
+    if discussion:
+        quoted.append({"source": "1-discussion.md | %s" % J1_UNVERIFIED_SOURCE, "text": _clip(discussion, 800)})
+    if spec_text:
+        quoted.append({"source": "4-spec.md | input excerpt, not a verdict", "text": _clip(spec_text, 800)})
+    if proto_text:
+        quoted.append({"source": "3-prototype.md | trigger excerpt, not a verdict", "text": _clip(proto_text, 800)})
+    bundle = "\n".join([trigger, discussion or "", spec_text or "", proto_text or ""])
+    header = {"slug": slug, "spec_hash": _sha_text(spec_text or bundle), "stage3_trigger": trigger}
+    policy.assert_no_rubric_copy(policy.J3_PRIMARY_REQUEST, "J3")
+    packet = packet_mod.build_packet(
+        "J3", header, policy.J3_PRIMARY_REQUEST, quoted_context=quoted,
+        source_facts=["stage3_trigger=%s" % trigger,
+                      "recommendation only; do not write a review outcome",
+                      J1_SOURCE_FACT])
+    return packet, bundle
+
+
+def run_handoff_j3(root, slug, author_ref, session_ref, stage3_trigger=None, discussion_path=None,
+                   spec_path=None, prototype_path=None, environ=None, transport_factory=None,
+                   clock=None, memory_dir=None):
+    environ = os.environ if environ is None else environ
+    level, level_reason = gate_level(root, "J3", environ)
+    if not gate_mod.may_call(level):
+        return _continue_flow(level_reason, "J3", level, level_reason)
+    trigger = stage3_trigger or "unrecorded"
+    if trigger not in ("hit", "none", "unrecorded"):
+        return _continue_flow("bad_stage3_trigger", "J3", level, level_reason)
+    discussion = _read_optional(root, discussion_path or os.path.join("docs", "dev", slug, "1-discussion.md"))
+    spec_text = _read_optional(root, spec_path)
+    proto_path = prototype_path or os.path.join("docs", "dev", slug, "3-prototype.md")
+    proto_text = _read_optional(root, proto_path)
+    # 有 frontmatter 但還沒 approved = 討論還沒走完,不當成 Demo 建議的輸入。
+    if discussion is not None and _frontmatter_status(discussion) not in (None, "approved"):
+        return _continue_flow("discussion_not_approved", "J3", level, level_reason)
+    head = _head_sha(root)
+    if head is None:
+        return _continue_flow("no_head_sha", "J3", level, level_reason)
+    try:
+        packet, bundle = _j3_packet(slug, discussion, spec_text, proto_text, trigger)
+        evidence = _evidence_for("J3", slug, bundle, trigger + "\n" + (discussion or ""), head)
+        ask = run_ask(root, "J3", slug, packet, evidence, author_ref, session_ref, environ=environ,
+                      transport_factory=transport_factory, clock=clock or time.monotonic, memory_dir=memory_dir)
+    except JevError as exc:
+        return _continue_flow(_classify_failure(exc), "J3", level, level_reason)
+    base = {
+        "gate": "J3", "slug": slug, "status": ask["status"], "noop_reason": ask.get("noop_reason"),
+        "level": ask["level"], "level_reason": ask.get("level_reason"), "network": ask.get("network"),
+        "evaluation_id": ask.get("evaluation_id"), "graduated": GRADUATED, "idempotent": False,
+        "written": list(ask.get("written") or []), "writes_verdict": False, "writes_attestation": False,
+        "writes_g2_verdict": False, "writes_g3_verdict": False, "changes_demo_requirement": False,
+        "polarity_unchanged": True, "steers_flow": False, "effect": "continue_existing_flow",
+    }
+    if ask["status"] == "ok" and ask["level"] == "live":
+        advice = policy.j3_effect(ask.get("route_taken"))
+        if advice is not None:
+            if proto_text is not None:
+                policy.refuse_j3_write(proto_text, advice)  # 不使用回傳值;不開檔寫
+            base.update({
+                "effect": advice["effect"], "recommendation": advice["recommendation"],
+                "display": advice["display"], "steers_flow": False,
+            })
+        else:
+            base["noop_reason"] = "unusable_j3_route"
+    elif ask["level"] == "shadow" and ask["status"] == "ok":
+        base["noop_reason"] = "shadow_mode"
+    try:
+        policy._assert_no_verdict_markers(base)
+    except JevError:
+        return _continue_flow("handoff_output_rejected", "J3", level, level_reason)
+    return base
+
+
+def run_handoff(root, gate, slug, author_ref, session_ref, **kwargs):
+    if gate == "J5":
+        raise JevError("handoff 不接 J5(W4);J5 永不寫 G3 verdict")
+    if gate == "J1":
+        return run_handoff_j1(root, slug, author_ref, session_ref,
+                              discussion_path=kwargs.get("discussion_path"), environ=kwargs.get("environ"),
+                              transport_factory=kwargs.get("transport_factory"), clock=kwargs.get("clock"),
+                              memory_dir=kwargs.get("memory_dir"))
+    if gate == "J3":
+        return run_handoff_j3(root, slug, author_ref, session_ref,
+                              stage3_trigger=kwargs.get("stage3_trigger"),
+                              discussion_path=kwargs.get("discussion_path"),
+                              spec_path=kwargs.get("spec_path"), prototype_path=kwargs.get("prototype_path"),
+                              environ=kwargs.get("environ"), transport_factory=kwargs.get("transport_factory"),
+                              clock=kwargs.get("clock"), memory_dir=kwargs.get("memory_dir"))
+    raise JevError("handoff 只接 J1 與 J3(J2/J4 保留,J5 是 W4)")
+
+
 # ───────────────────────────── CLI ─────────────────────────────
 def _emit(payload):
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=1))
@@ -587,6 +912,15 @@ def build_parser():
     sq = sub.add_parser("report")
     sq.add_argument("--gate", default="J5", choices=GATES)
     sq.add_argument("--primary-source", default=None, choices=("human_attested", "fresh_agent_reviewer"))
+    sh = sub.add_parser("handoff", help="W3:J1 Decide 前 / J3 Demo 建議。內部呼叫 ask,不另寫 HTTP client")
+    sh.add_argument("--gate", required=True, choices=("J1", "J3"))
+    sh.add_argument("--slug", required=True)
+    sh.add_argument("--author-ref", required=True)
+    sh.add_argument("--session-ref", required=True)
+    sh.add_argument("--discussion", default=None, help="預設 docs/dev/<slug>/1-discussion.md")
+    sh.add_argument("--spec", default=None)
+    sh.add_argument("--prototype", default=None)
+    sh.add_argument("--stage3-trigger", default=None, choices=("hit", "none", "unrecorded"))
     return p
 
 
@@ -620,6 +954,11 @@ def main(argv=None):
             return EXIT_OK
         if args.cmd == "report":
             _emit(run_report(root, args.gate, args.primary_source))
+            return EXIT_OK
+        if args.cmd == "handoff":
+            _emit(run_handoff(root, args.gate, args.slug, args.author_ref, args.session_ref,
+                              discussion_path=args.discussion, spec_path=args.spec,
+                              prototype_path=args.prototype, stage3_trigger=args.stage3_trigger))
             return EXIT_OK
     except JevError as exc:
         print("⛔ devflow-jev %s: %s" % (args.cmd, exc), file=sys.stderr)

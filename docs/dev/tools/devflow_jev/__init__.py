@@ -1,20 +1,24 @@
-"""devflow_jev — jev-gate 七組守衛的 **foundation**(W1;roadmap P1-G1～G7)。
+"""devflow_jev — jev-gate 套件(W1 七組守衛 + W2 起的 runtime 函式庫)。
 
-這是 pure functions / schema / fake transport,**不是 runtime**:
-- 沒有任何對真 API 發送的程式(`urllib` 完全不 import);
-- 沒有 `scripts/devflow-jev.py`;roadmap §0 第 2 條:七組守衛負面測試全綠前不准寫 runtime,shadow 也算。
-- 這裡通過只代表 guard foundation 完成,不等於 Jev 已部署、任何 AUTO gate 已核准。
+W1 是 pure functions / schema / fake transport。W2 起 runtime 在 `scripts/devflow-jev.py`
+(stdlib、雙閘門、`GRADUATED = False` 寫死、沒有 AUTO):
+- 套件內只有 `http_transport.py` 可以載入網路模組;其餘模組與 runtime 腳本本身都不碰網路。
+- `transport.py` 仍是 fake transport + response schema,不是真傳輸。
+- 雙閘門 off 時 runtime 不建 transport、不落盤。
+- 測試通過 ≠ Jev 已部署、≠ 任何 AUTO gate 已核准。
 
-模組對照(roadmap §3.1):
-  G1 packet.py       evidence packet + reference isolation(header 永不砍、body 才裁)
-  G2 policy.py       failure/no-op、deadline、breaker、budget、route formula
-  G3 gate.py         雙閘門:TYPESAFE_API_KEY + .dev-flow/jev.yaml,min(mode, gates[Jn])
-  G4 ledger.py       雙層 ledger:durable 只存 ID/hash/結構化指標;local replay store 存全文
-  G5 manifest.py     jev-questions.json + evaluation manifest → questionset_hash;Score level==index
-  G6 provenance.py   derived-only route、tamper 重算、risk_paths 縮窄留痕、runtime 改動當次 HUMAN
-  G7 attestation.py  verdict provenance tripwire(格式不是 authentication)
-     transport.py    fake transport + response schema 驗證(唯一的「傳輸」實作)
-     report.py       最小 Wilson / 分層計數(P2-2 之前的 helper)
+模組對照(roadmap §3.1;W2 加 runtime 層,不改守衛語意):
+  G1 packet.py         evidence packet + reference isolation(header 永不砍、body 才裁)
+  G2 policy.py         failure/no-op、deadline、breaker、budget、route formula
+  G3 gate.py           雙閘門:TYPESAFE_API_KEY + .dev-flow/jev.yaml,min(mode, gates[Jn])
+  G4 ledger.py         雙層 ledger:durable 只存 ID/hash/結構化指標;local replay store 存全文
+  G5 manifest.py       jev-questions.json + evaluation manifest → questionset_hash;Score level==index
+  G6 provenance.py     derived-only route、tamper 重算、risk_paths 縮窄留痕、runtime 改動當次 HUMAN
+  G7 attestation.py    verdict provenance tripwire(格式不是 authentication)
+     transport.py      fake transport + response schema 驗證
+     http_transport.py 唯一准碰網路的真傳輸(POST 一次、失敗即 TransportError)
+     state.py          budget / breaker 的原子狀態
+     report.py         最小 Wilson / 分層計數(P2-2 之前的 helper)
 
 相容地板:Python 3.9 語法(scripts/check-py-floor.sh);stdlib only。
 """
