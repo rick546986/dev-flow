@@ -22,6 +22,13 @@
    該 gate 已關;feature agent **不得手改** review／decision／spec 檔來記錄
    Human verdict。尚無寫入 → 才准在 chat 問人。`REQUEST_CHANGES` 走既有修迴圈,
    不是「把判定貼一遍」。
+6. **verdict 必附出處**(P3-2,2026-09-23)。同一頂欄 `verdict_source:`(`human_attested`／
+   `fresh_agent_reviewer`／`owner_self_review`)與 `attested_by:`(`human:<名>` 或 `agent:<id>`)
+   隨 `verdict:` 一起落盤;寫入器在有 reviewer 時代填 `human_attested` + `human:<reviewer>`。
+   缺或不合法 = **unverified**:verdict 仍是人的判定、gate 照關,但**不進任何 graduation n**。
+   **Jev／任何自動化不得寫 `verdict:`、不得填 `attested_by`**;`attested_by: agent:*` 只准搭
+   `fresh_agent_reviewer`,且 fresh agent 不得是實作者。格式 attestation 是 provenance tripwire,
+   不是身份驗證。機械檢查:`scripts/check-verdict-attestation.sh`。
 
 ## 何時不用
 

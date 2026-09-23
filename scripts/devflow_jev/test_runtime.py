@@ -172,12 +172,15 @@ class J5ShadowAndNoAuto(RuntimeBase):
         self.assertTrue(os.path.isfile(out["replay_path"]))
         self.assertEqual(len(out["written"]), 1)
 
-    def test_perfect_answers_live_still_human_not_graduated(self):
+    def test_perfect_answers_live_requested_is_capped_to_shadow(self):
+        # W6 P3-1:yaml 要 J5 live 也只到 shadow(gate.J5_LIVE_RATIFIED=False);W2 時這裡是 level=live + j5_auto_not_graduated,
+        # 兩道都保證 HUMAN,W6 把第一道也關上並留痕。
         self.optin("mode: live\ngates:\n  J5: live\n")
         out = self.ask(fake(perfect_j5()))
-        self.assertEqual(out["level"], "live")
+        self.assertEqual(out["level"], "shadow")
+        self.assertIn("j5_live_not_ratified", out["level_reason"])
         self.assertEqual((out["route_recommended"], out["route_taken"], out["route_taken_reason"]),
-                         ("AUTO", "HUMAN", "j5_auto_not_graduated"))
+                         ("AUTO", "HUMAN", "shadow_mode"))
 
     def test_graduated_constant_is_false_and_has_no_switch(self):
         self.assertIs(rt.GRADUATED, False)
@@ -1261,6 +1264,40 @@ class W5EvalAndExperiments(RuntimeBase):
         self.assertEqual(parsed["approaches"][1]["cons"], ["要新增 cron 進程", "新表"])
         self.assertEqual(parsed["decision_letter"], "A")
         self.assertEqual([oc["answered"] for oc in parsed["owner_calls"]], [True, False])
+
+
+
+class W6Eligibility(RuntimeBase):
+    REVIEW_FM = W4Shadow.REVIEW_FM
+    seed_feature, review_sha, enqueue, drain, commit = (W4Shadow.seed_feature, W4Shadow.review_sha, W4Shadow.enqueue,
+                                                        W4Shadow.drain, W4Shadow.commit)
+
+    def test_status_shows_live_not_ratified_and_yaml_live_is_capped(self):
+        self.optin("mode: live\ngates:\n  J5: live\n")
+        st = rt.run_status(self.tmp, environ=self.env_on)
+        self.assertFalse(st["j5_live_ratified"])
+        self.assertFalse(st["j2_window_ratified"])
+        self.assertEqual(st["levels"]["J5"]["level"], "shadow")
+        self.assertIn("j5_live_not_ratified", st["levels"]["J5"]["reason"])
+
+    def test_eligibility_on_real_store_n1_not_eligible_and_no_switch(self):
+        self.optin()
+        self.seed_feature(verdict="PASS", extra="verdict_source: human_attested\nattested_by: human:rick\n")
+        self.enqueue()
+        self.drain(fake(perfect_j5()))
+        rt.run_label(self.tmp, "demo-feature", "rick", "sess-R", from_review=True, environ=self.env_on)
+        out = rt.run_eligibility(self.tmp, "J5", primary_source="human_attested", environ=self.env_on)
+        self.assertFalse(out["eligible"])
+        self.assertTrue(any(b.startswith("floor_not_met(n=1") for b in out["blockers"]))
+        self.assertEqual(out["live_switch"], "absent")
+        self.assertFalse(out["j5_live_ratified"])
+        self.assertFalse(out["graduated"])
+        self.assertTrue(out["rules"]["4_single_group"]["ok"])
+        env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", DEVFLOW_ROOT=REPO, AGENTMEM_HOME=self.home)
+        r = subprocess.run([sys.executable, RUNTIME_PATH, "--root", self.tmp, "eligibility"], capture_output=True, text=True, env=env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn('"live_switch": "absent"', r.stdout)
+        self.assertNotIn("--live", open(RUNTIME_PATH, encoding="utf-8").read())
 
 
 if __name__ == "__main__":

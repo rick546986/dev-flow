@@ -291,7 +291,7 @@ if checked < MIN_FILES:
 # 掃描集;禁止把地板抬到「含 dual-path 全數」——那會讓 PF-2 假綠。
 # Exact pin (no slack): unmutated 222 = baseline 221 + guard Read INTERP-only.
 # RW-DG1/2 use <<'MUT' (not scanned). PF-2 disables INTERP → 220 < 222.
-MIN_HEREDOCS = 229
+MIN_HEREDOCS = 230
 if heredoc_checked < MIN_HEREDOCS:
     failures.append(
         f"⛔ 只掃到 {heredoc_checked} 個 heredoc(地板 {MIN_HEREDOCS})—— "

@@ -15,6 +15,7 @@ policy 導出 route → 雙層 ledger 落盤」的膠水,不含任何門檻、�
   note        W5 P2-7:封閉五欄附註(gate/qhash prefix/model/route_recommended/eval id),無 answers/probabilities。
   j4-assist   W5 P2-3(實驗):失敗分類 + 升一層建議;assist-only,不派工、不動 dispatch guard。
   j2-shadow   W5 P2-8(實驗):J2 厚包 shadow + order/phrasing stability;window 未核定 → 永遠 shadow。
+  eligibility W6 P3-1:J5 資格計算(§5.1 八條、floor、freeze);只展示。runtime 沒有 live 開關(gate.J5_LIVE_RATIFIED=False)。
               off／失敗／逾時 → exit 0、effect=continue_existing_flow。J3 只回顯示文案,不寫 verdict。
   ask         一次 evaluation:雙閘門 off → exit 0、什麼都不寫、零網路;shadow/live → 送一次,
               失敗 no-op(G2),route 由 policy 導出(G6),replay store + durable(G4)。
@@ -557,7 +558,8 @@ def run_status(root, environ=None):
     except JevError as exc:
         memory_dir = None
     return {"root": root, "api_key_present": has_key, "optin": optin_state, "optin_error": optin_error,
-            "levels": levels, "graduated": GRADUATED, "model_pinned": MODEL_PINNED,
+            "levels": levels, "graduated": GRADUATED, "j5_live_ratified": gate_mod.J5_LIVE_RATIFIED,
+            "j2_window_ratified": policy.J2_WINDOW_RATIFIED, "model_pinned": MODEL_PINNED,
             "questionset_hash": manifest_mod.questionset_hash(manifest),
             "versions": {k: manifest[k] for k in manifest_mod.MANIFEST_KEYS if k != "questions"},
             "budget_today": {"day": utc_day(), "remaining": budget.remaining(), "attempts_used": budget.attempts},
@@ -1413,6 +1415,26 @@ def run_j2_shadow(root, slug, author_ref, session_ref, decision_path=None, envir
     return base
 
 
+
+# ───────────────────────────── W6 P3-1 eligibility(只計算、只展示;沒有 live 開關)─────────────────────────────
+def run_eligibility(root, gate="J5", primary_source=None, environ=None, memory_dir=None):
+    """report → report_mod.eligibility。eligible=True 也不會開任何東西:runtime 沒有 live 路徑,
+    gate.J5_LIVE_RATIFIED=False、GRADUATED=False 都是常數。"""
+    rep = run_report(root, gate, primary_source=primary_source, environ=environ, memory_dir=memory_dir)
+    store = ledger.ReplayStore(root)
+    evaluations = []
+    if os.path.isdir(store.dir):
+        for name in sorted(os.listdir(store.dir)):
+            if name.startswith("eval_") and name.endswith(".json"):
+                ev = store.read(name[:-5])["evaluation"]
+                if ev["gate"] == gate:
+                    evaluations.append(ev)
+    out = report_mod.eligibility(evaluations, rep["metrics"], primary_source=primary_source)
+    out.update({"gate": gate, "graduated": GRADUATED, "j5_live_ratified": gate_mod.J5_LIVE_RATIFIED,
+                "auto_allowed": False, "network": False,
+                "layers": rep["layers"], "evaluations_not_replayable": rep["evaluations_not_replayable"]})
+    return out
+
 # ───────────────────────────── CLI ─────────────────────────────
 def _emit(payload):
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=1))
@@ -1502,6 +1524,9 @@ def build_parser():
     s2.add_argument("--session-ref", required=True)
     s2.add_argument("--decision", default=None, help="預設 docs/dev/<slug>/2-decision.md")
     s2.add_argument("--variants", type=int, default=3)
+    sel = sub.add_parser("eligibility", help="W6 P3-1:J5 資格計算(§5.1 八條 + floor + freeze);只展示,沒有 live 開關")
+    sel.add_argument("--gate", default="J5", choices=GATES)
+    sel.add_argument("--primary-source", default=None, choices=("human_attested", "fresh_agent_reviewer"))
     return p
 
 
@@ -1557,6 +1582,9 @@ def main(argv=None):
         if args.cmd == "j2-shadow":
             _emit(run_j2_shadow(root, args.slug, args.author_ref, args.session_ref, decision_path=args.decision,
                                 variants=args.variants))
+            return EXIT_OK
+        if args.cmd == "eligibility":
+            _emit(run_eligibility(root, args.gate, args.primary_source))
             return EXIT_OK
         if args.cmd == "drain":
             _emit(run_drain(root, max_items=args.max))

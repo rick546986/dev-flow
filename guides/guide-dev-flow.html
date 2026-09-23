@@ -3464,10 +3464,17 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>檢查給人審查用的 HTML 介面有沒有真的照規格產出——動線頂區、待審項目可勾選、預設只寫本機完整文件、
             設了 DEVFLOW_ARTIFACT_OUT 才寫的發布片段不得含外殼。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>check-verdict-attestation.sh</code></td>
+        <td>P3-2(jev-gate W6)「誰寫了 verdict」機械檢查:掃 docs/dev/*／example/* 的 G1/G2/G3 檔,verdict 必附
+            <code>verdict_source</code>／<code>attested_by</code>;Jev／agent 冒 human／未知 source 必紅;缺兩欄的舊檔只列
+            (<code>--strict</code> 才紅)。分類器沿用 <code>scripts/devflow_jev/attestation.py</code>;負向 fixtures 在
+            <code>scripts/fixtures/verdict-attestation/</code>。</td>
+        <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-gate-verdict-write.sh</code></td>
         <td>Human gate verdict 寫入契約牙:正本 <code>notes/design/gate-verdict-write.md</code>
             丟了「提交判定」／全勾不算 PASS／md 頂欄 <code>verdict:</code> 是正本／
-            sidecar 不是正本／md 勝／不得手改必須紅。並實跑 write + serve POST。</td>
+            sidecar 不是正本／md 勝／不得手改／<code>verdict_source</code>／<code>attested_by</code>(P3-2)必須紅。
+            並實跑 write + serve POST(有 reviewer 時代填 human_attested;reviewer 是 agent/Jev 拒收)。</td>
         <td><code>devflow-check.sh</code> methodology 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-hooks-accounting.sh</code></td>
         <td>對帳 hook 掛載清單檔與三份「列舉 hook 的文件」(安裝健檢清單、README、本頁註冊表)——

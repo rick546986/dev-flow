@@ -45,8 +45,18 @@ def read_canonical_verdict(text: str) -> str:
     return value if value in HUMAN_VERDICTS else ""
 
 
-def patch_md(text: str, verdict: str, notes: str | None = None) -> str:
-    """寫入同檔頂欄 verdict:;可另寫一行 Human verdict note。"""
+def _set_front_field(front: str, key: str, value: str) -> str:
+    """頂欄同名鍵有就換、沒有就緊接在 verdict: 之後補一行。"""
+    line_re = re.compile(r"^%s:\s*.*$" % re.escape(key), re.M)
+    if line_re.search(front):
+        return line_re.sub("%s: %s" % (key, value), front, count=1)
+    return re.sub(r"^(verdict:\s*.*)$", r"\1\n%s: %s" % (key, value), front, count=1, flags=re.M)
+
+
+def patch_md(text: str, verdict: str, notes: str | None = None, reviewer: str = "") -> str:
+    """寫入同檔頂欄 verdict:;可另寫一行 Human verdict note。
+    P3-2:有 reviewer 時同時落 `verdict_source: human_attested` 與 `attested_by: human:<reviewer>`
+    (本寫入器是人的「提交判定」介面;沒 reviewer 就不假填 —— 留 unverified,gate 照關但不進 graduation)。"""
     if verdict not in HUMAN_VERDICTS:
         raise ValueError("verdict 必須是 PASS | REQUEST_CHANGES | HOLD")
     match = FM_RE.match(text)
@@ -66,6 +76,12 @@ def patch_md(text: str, verdict: str, notes: str | None = None) -> str:
         )
     else:
         front = "verdict: " + verdict + "\n" + front
+    who = (reviewer or "").strip().replace(" ", "_")
+    if who:
+        if who.lower().startswith(("agent:", "jev")):
+            raise ValueError("reviewer 不得是 agent/Jev:本寫入器只收人的判定")
+        front = _set_front_field(front, "verdict_source", "human_attested")
+        front = _set_front_field(front, "attested_by", "human:" + who)
     if notes:
         line = "- Human verdict note: " + notes.splitlines()[0]
         if NOTE_RE.search(rest):
@@ -121,7 +137,7 @@ def write_verdict(root: pathlib.Path, slug: str, stage: str, verdict: str,
         raise FileNotFoundError(str(path))
     text = path.read_text(encoding="utf-8")
     sha = source_sha or git_sha(root)
-    patched = patch_md(text, verdict, notes or None)
+    patched = patch_md(text, verdict, notes or None, reviewer=reviewer)
     path.write_text(patched, encoding="utf-8")
     side_path = path.with_suffix(".verdict.json")
     if sidecar:
