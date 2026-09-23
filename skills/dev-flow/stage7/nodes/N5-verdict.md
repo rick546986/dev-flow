@@ -28,7 +28,7 @@ J5 shadow(W4)與本 G3 的關係:Jev **不寫**本檔頂欄 `verdict:`、不改 
 Human verdict 落檔**之後**才可跑 worker 與配對(順序不可反,否則 Jev 的 route 會在判定前被看到):
 `python3 ${DEVFLOW_ROOT}/scripts/devflow-jev.py drain` 送 queue 裡的 shadow evaluation(失敗只記 shadow failure);
 `python3 ${DEVFLOW_ROOT}/scripts/devflow-jev.py label --slug <slug> --from-review --reviewer-ref <reviewer> --session-ref <reviewer session>`
-把本檔的 Human verdict 配到**同一 evidence 版本**的 evaluation;HEAD 或 evidence 變了它會拒絕,不得手改讓它過。
+把本檔的 Human verdict 配到**同一 evidence 版本**的 evaluation;HEAD 或 evidence 變了它會拒絕;不要手動改東西讓它通過。
 兩步都可留給 owner 之後做;不做也不影響 G3。
 跑 `${DEVFLOW_ROOT}/scripts/check-devstage7-graph.sh --write-cursor N5-verdict`。
 
