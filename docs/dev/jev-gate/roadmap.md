@@ -1,32 +1,41 @@
 ---
 title: jev-gate roadmap（有優先級）
 slug: jev-gate
-status: draft-v4（draft-v3 + 三輪 Jev 實測 + source/probe closure + W0–W7 整合）；W0 P0-5～P0-9 於 2026-09-22 收閘（見 `w0-source-closure.md`）；W1 七守衛 foundation + P2-1 同日落地（見 `w1-guard-foundation.md`）；W2–W7 於 2026-09-23 依序落地（`w2-runtime.md`…`w7-stage3-j2.md`；J5/J2 皆 shadow、無 AUTO live）
-date: 2026-09-22
+status: draft-v5（draft-v4 + 2026-09-26 owner 裁決：人只參與討論，之後由 agent 完成 —— G2 自動審主線、G3 固定人審、J5／J2 降為 shadow 參考、supermemory 放棄改 Jev 記憶重排序；見 `v5-owner-direction.md`）；draft-v4 = draft-v3 + 三輪 Jev 實測 + source/probe closure + W0–W7 整合；W0 P0-5～P0-9 於 2026-09-22 收閘（見 `w0-source-closure.md`）；W1 七守衛 foundation + P2-1 同日落地（見 `w1-guard-foundation.md`）；W2–W7 於 2026-09-23 依序落地（`w2-runtime.md`…`w7-stage3-j2.md`；J5/J2 皆 shadow、無 AUTO live）
+date: 2026-09-26（draft-v5）；draft-v4 2026-09-22
 base: origin/main 79b7aab
-inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、R2 對抗性風險、R3 流程與 HITL、R4 校準量測）+ 一份出處核對 + v2 四維度 findings 覆核（D1 出處忠實度、D2 可行性、D3 優先級、D4 安全）+ jev-convergence.md owner 裁決 + 2026-09-22 外部 Codex/Jev smoke、rubric 與文件稽核結果（待另行歸檔，不視為 repo 內既存 evidence）
+inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、R2 對抗性風險、R3 流程與 HITL、R4 校準量測）+ 一份出處核對 + v2 四維度 findings 覆核（D1 出處忠實度、D2 可行性、D3 優先級、D4 安全）+ jev-convergence.md owner 裁決 + 2026-09-22 外部 Codex/Jev smoke、rubric 與文件稽核結果（待另行歸檔，不視為 repo 內既存 evidence）+ 2026-09-26 owner 裁決（`v5-owner-direction.md`）
 ---
 
 # jev-gate roadmap
 
-> **文件狀態**：本檔是 `research/jev-supermemory` 的研究／落地規劃 draft-v4。它不代表 `main` 已改、Jev 已部署、任何 AUTO gate 已核准，也不把 guard pure-function prototype 當成完成產品。**進度**：W0（2026-09-22）、W1（2026-09-22）、W2（2026-09-23）、W3（2026-09-23）、W4（2026-09-23）、W5（2026-09-23）、W6（2026-09-23，資格計算器＋契約部分同步）已在 `research/jev-supermemory` 落地；J5 仍是 shadow（enqueue／drain／label；yaml live 被 cap），J2／J4 只實驗，沒有 AUTO。  
+> **文件狀態**：本檔是 `research/jev-supermemory` 的研究／落地規劃 **draft-v5**。它不代表 `main` 已改、Jev 已部署、任何 AUTO gate 已核准（G2 自動審的 L2/ADR 仍待 owner 在 main 走流程），也不把 guard pure-function prototype 當成完成產品。**進度**：W0（2026-09-22）、W1（2026-09-22）、W2（2026-09-23）、W3（2026-09-23）、W4（2026-09-23）、W5（2026-09-23）、W6（2026-09-23，資格計算器＋契約部分同步）已在 `research/jev-supermemory` 落地；J5 仍是 shadow（enqueue／drain／label；yaml live 被 cap），J2／J4 只實驗，沒有 AUTO。W7（2026-09-23）Stage3 polarity 契約面已翻。
+>
+> **v5 方向（2026-09-26 owner）**：人只參與討論（G1 人審、Owner Calls 人裁），G2 由 fresh-context agent reviewer + 機械檢查自動審（主線），G3 固定人審；J5 AUTO_SHIP 退出目標、J2 永遠 shadow；supermemory 放棄，改做 Jev 記憶重排序（主線）。細節與候選值見 `v5-owner-direction.md`。
+>
 > **基線**：研究分支鎖定 `8a4370ad97d2c842057c281ecf56ead8b94f4a43`，相對 `main@79b7aaba2ee65ba5953873064a8f93962f86d097` 只新增研究文件，沒有 runtime code 變更。
 
 ## 0. 不再重投票的 Owner Decisions
 
-draft-v4 以 draft-v3／`jev-convergence.md` 已記錄的 owner 裁決為約束，不重新表決：
+draft-v4 以 draft-v3／`jev-convergence.md` 已記錄的 owner 裁決為約束，不重新表決。**draft-v5**：第 12 條是 owner 2026-09-26 本人新裁決，覆蓋第 6、7、9 條的上線語意（各條已就地標註），其餘條目不動：
 
 1. **落地順序固定：J1 live → J3 recommendation → J5 shadow。** task routing／mixed 分類保留為 rubric research，不強塞進 MVP。
 2. **七組守衛 P1-G1～P1-G7 的 foundation 全部完成且負面測試通過，才准寫 `scripts/devflow-jev.py` runtime；shadow 也算 runtime。**
 3. **P2-1 executable e2e 檢查要在 J5 shadow 開始前完成。**
 4. 出境必須 **`TYPESAFE_API_KEY` + 每專案 `.dev-flow/jev.yaml` opt-in** 雙閘門；預設不建 opt-in。
 5. durable ledger **優先沿用 `memory/agentmem/durable.py::append_events()`**；只有 P0-6 證實 full sync/index／資料模型不適合時，才採備選。
-6. **J5 graduation floor 保留：Wilson 95% 下界 ≥ 0.85 且 n ≥ 30 個有效、獨立、真實 Ship cases；第一次有效 overturn 立即 freeze。**這是 owner 接受的工程風險門檻，**不是「已證明錯誤率 ≤5%」**。
-7. **J2 保留**，先做 P2-8 厚證據包、shadow 與 rolling-window 研究，排在 J5 之後；不刪。
+6. **J5 graduation floor 保留：Wilson 95% 下界 ≥ 0.85 且 n ≥ 30 個有效、獨立、真實 Ship cases；第一次有效 overturn 立即 freeze。**這是 owner 接受的工程風險門檻，**不是「已證明錯誤率 ≤5%」**。**v5：floor 定義與計算器保留，但不再是上線路徑（G3 固定人審，見第 12 條）。**
+7. **J2 保留**，先做 P2-8 厚證據包、shadow 與 rolling-window 研究，排在 J5 之後；不刪。**v5：J2 永遠 shadow，沒有 AUTO_PASS 路徑（第 12 條）。**
 8. **Stage 3 polarity 翻成「人要求才 Demo」**，另走契約變更；Demo verdict／attestation 仍為 human-only，不交給 Jev。
-9. **supermemory 現在不接。**只有「現有 `dev-memory.py ask` 檢索已證實不足」且「確實需要跨專案共享記憶」兩條同時成立才重啟評估。
+9. **supermemory 現在不接。**只有「現有 `dev-memory.py ask` 檢索已證實不足」且「確實需要跨專案共享記憶」兩條同時成立才重啟評估。**v5：supermemory 正式放棄，無重啟條件；改做 Jev 記憶重排序 P2-11（第 12 條）。**
 10. G1/G2/G3、scope guard、author≠approver、mechanical gate、risk ceiling、Quiz gate、human attestation 等既有控制，不得因 Jev 接入而被暗中繞過。
 11. **2026-09-23（W0/W1 審核後）**：W1 工程候選值 A1–A7（J1 2s 無 retry、daily 500 attempts／500k tokens、J5 .85／.90／risk≤1、J1 .70／.80／.50／ambiguity≤1、J3 .60、breaker 三連敗、risk_paths 預設清單）與設計選擇 B1–B5（`signal.gate` 借 `important_discovery`、shadow 寫 Git + `[jev]` 前綴、graduation 主層 leave_unset、C10 legacy = PASS + approved／shipped／superseded、C10 只強制 full lane）**照建議落檔**；全部標「未校準」，改任一個 = 新 `questionset_hash`。C1 與 W2 同批、C2 另排、C3／C4 已做。正本：`owner-decisions-pending.md`。
+12. **2026-09-26（v5，owner）目標：人只參與討論，之後由 agent 完成。**正本：`v5-owner-direction.md`。
+    - **G1 維持人審**（討論的一部分）；**J2 永遠 shadow**；**Owner Calls 永遠人逐條裁決**。
+    - **G2 自動審、直接上線**（不並列影子方案）：放行 = fresh-context agent reviewer PASS + 機械檢查（`check-spec-gate.sh`、`_stage3_impl.py`、`check-verdict-attestation.sh`、author≠approver）全過；Jev `g2_route` 只分流、不是放行必要條件；無 `TYPESAFE_API_KEY` → 只靠 fresh agent + 機械檢查。Jev 判 HUMAN／信心不足、命中 `risk_paths`、risk score ≥2、有未裁決 OC、需要 Demo verdict → 一律轉人。寫 spec 的 agent ≠ 審 G2 的 agent。監控只記錄不擋門：隨機抽查（P2-5）、G3 退件可追溯到規格記「G2 放錯」、放錯比例超門檻退回人審。L2 契約變更，ADR 草稿在 `v5-owner-direction.md` §3.6，ADR 本身由 owner 在 main 走流程。
+    - **G3 固定人審**；J5 AUTO_SHIP 從目標移除，J5 保留 shadow 參考；`J5_LIVE_RATIFIED`、`GRADUATED` 維持 False；P3-1 `n≥30`／Wilson `≥.85` 標「不再是上線路徑」，計算器保留。
+    - **supermemory 正式放棄**；新增 **Jev 記憶重排序**（P2-11）。
+    - 主線 = G2 自動審軌道 + 記憶重排序；J5 降級為參考。硬約束不變：`GRADUATED=False`、雙閘門、J3 不寫 verdict、21 次外部稽核不算 n、Demo verdict／Quiz gate／author≠approver／risk ceiling 不鬆。
 
 ### 0.1 draft-v4 相對 draft-v3 的實質修正
 
@@ -54,6 +63,23 @@ draft-v4 以 draft-v3／`jev-convergence.md` 已記錄的 owner 裁決為約束�
 
 這些外部結果目前**不假裝是 repo 內既存 evidence 檔**；若日後歸檔，需另走正式 evidence naming／privacy 檢查。
 
+### 0.3 draft-v5 相對 draft-v4 的改動（2026-09-26 owner 裁決，§0 第 12 條）
+
+| # | 區段 | v4 | v5 |
+|---|---|---|---|
+| 1 | §0 | 十一條 owner decisions | 加第 12 條；第 6、7、9 條就地標 v5 語意 |
+| 2 | §1 | W0–W7；J5 AUTO 為 P3 終點 | 加 v5 主線優先級表與 W8–W12；J5 降為參考 |
+| 3 | §4 | P2-1～P2-8 | P2-5 抽查改服務 G2 自動審；新增 P2-9 `g2_route` 分流、P2-10 G2 監控、P2-11 Jev 記憶重排序 |
+| 4 | §5 | P3-1 J5 AUTO_SHIP candidate、P3-3 J2 AUTO_PASS 遠期 | P3-1 標「不再是上線路徑」（計算器保留）；P3-3 改「永久 shadow」；P3-2 範圍收斂到 G2 provenance；新增 **P3-5 G2 自動審（L2/ADR + live）** |
+| 5 | §6 | supermemory 不接（有重啟條件）；memory rerank P4 optional | supermemory **正式放棄**（無重啟條件）；memory rerank 升主線 P2-11 |
+| 6 | §7 | 依賴圖終點 = J5 AUTO live | 終點 = G2 auto live + 記憶重排序 live；J5／J2 為 shadow 旁支 |
+| 7 | §8 | 數值只有 J5 floor 為 owner 裁決 | J5 floor 標非上線路徑；新增 v5 候選值 C1–C6（待 owner 核定） |
+| 8 | §9 | W0–W7 Go/No-Go；W6 = J5 live | W6 改「計算器已備、不 live」；新增 W8–W12 |
+| 9 | §12 | J5 shadow、J2 未來 P3-3 | 新增 G2 自動審權限邊界；J5／J2 標 shadow 參考 |
+| 10 | §14 | supermemory P4 deferred | supermemory 放棄；Jev 記憶重排序規則 |
+| 11 | §16 | J5 AUTO live 驗收清單 | 改為 **G2 自動審 live 驗收**；J5 清單退役 |
+| 12 | §17 | 不開 J5 AUTO、不接 supermemory | 加：不改 main 契約面、不把 Jev 當 G2 reviewer；J5 AUTO 從目標移除 |
+
 ## 1. 優先級與工作包
 
 | 級 | 意思 | 完成才准進下一級？ |
@@ -74,8 +100,23 @@ draft-v4 以 draft-v3／`jev-convergence.md` 已記錄的 owner 裁決為約束�
 | **W3 J1 / J3** | ✅ 2026-09-23：P1-F2、P1-F3，見 `w3-j1-j3.md` | J1 no-op fallback 正確；J3 只 recommendation |
 | **W4 J5 shadow** | ✅ 2026-09-23：P1-F4、P1-F7 + label binding/dedupe，見 `w4-j5-shadow.md`；仍 shadow、無 AUTO | J5 不阻塞現有 G3；case provenance 可驗 |
 | **W5 評估 / J2 厚包 / J4 實驗** | ✅ 2026-09-23：P2-2、P2-3、P2-4、P2-7、P2-8，見 `w5-eval-j2-j4.md`；P2-5／P2-6 留 AUTO live 之後 | 只 shadow/research；不自動放行 |
-| **W6 J5 AUTO + 契約先完成** | 🧪 2026-09-23：P3-1 **只有資格計算器**（`eligibility`；live 開關不存在，`gate.J5_LIVE_RATIFIED=False` 把 yaml live cap 成 shadow）；P3-2 研究分支可做的同步已做，缺口明列（`w6-j5-eligibility-contract.md` §3）；**live 未核准** | eligibility 達標 + L2/ADR + P3-2 全同步後才可 live |
+| **W6 J5 AUTO + 契約先完成**（**v5：J5 AUTO 退出目標**，W6 成果保留作 shadow 參考量尺） | 🧪 2026-09-23：P3-1 **只有資格計算器**（`eligibility`；live 開關不存在，`gate.J5_LIVE_RATIFIED=False` 把 yaml live cap 成 shadow）；P3-2 研究分支可做的同步已做，缺口明列（`w6-j5-eligibility-contract.md` §3）；**live 未核准** | ~~eligibility 達標 + L2/ADR + P3-2 全同步後才可 live~~ **v5：不再規劃 J5 live**；`J5_LIVE_RATIFIED=False` 維持 |
 | **W7 獨立 Stage3、後期 J2** | 🛠 2026-09-23：P3-4 契約面翻成「人要求才 Demo」（`_stage3_impl.py` 收 `- Demo request:` 人親填行、模板／SKILL／stage3 nodes／shared contract／guide 同步；attestation human-only 不動）；P3-3 只釘 `policy.J2_WINDOW_RATIFIED=False` → `eligibility` 永遠 blocker、無 AUTO_PASS（見 `w7-stage3-j2.md`） | Stage3 L2/ADR 由 owner 走 main 流程；J2 window 未核定前永遠 shadow |
+| **W8 v5 方向落檔** | 📝 2026-09-26：本 roadmap draft-v5 + `v5-owner-direction.md`（含 G2 ADR 草稿、候選值 C1–C6）；只改文件 | owner 核定 C1–C6；ADR 由 owner 在 main 走流程 |
+| **W9 G2 自動審軌道（研究分支）** | P2-9 `g2_route` 分流題組／policy + P3-5 研究分支可做面（`authored_by`／provenance 欄位設計、轉人條件機械化、author≠approver 比對）；live 開關受 ADR 阻擋 | W8 候選值核定；新題組 = 新 `questionset_hash` |
+| **W10 G2 監控** | P2-10：抽查（沿用 P2-5）、`g2_misrelease` 記錄、`root_cause: spec` 欄、rolling 門檻自動 reverted（ratchet） | 監控在 G2 live 前就位；只記錄不擋門 |
+| **W11 Jev 記憶重排序** | P2-11：`dev-memory.py ask` 之後重排；雙閘門 off = 原結果零網路；mandatory 不可移除；retrieval eval | eval 證明優於原檢索（C5）才 live |
+| **W12 G2 自動審 live（main）** | ADR accepted + P3-5 契約四面同步（§7／guide／SKILL／`_gate_consistency_impl.py`）+ W9／W10 全綠 | 任一面未同步 → 不 live |
+
+### 1.1 v5 優先級（2026-09-26 owner）
+
+| 軌道 | 級 | 項目 | 定位 |
+|---|---|---|---|
+| **G2 自動審** | 主線 | P2-9、P2-10、P3-5（+ P2-5 抽查） | 放行 = fresh agent + 機械；Jev 只分流 |
+| **Jev 記憶重排序** | 主線 | P2-11 | 既有檢索之後；不寫記憶 |
+| J5 | 參考 | P1-F4（shadow 已落地）、P3-1 計算器 | 提示人注意哪裡；G3 固定人審；不 live |
+| J2 | 參考 | P2-8、P3-3 | 永遠 shadow；Owner Calls 人裁 |
+| J1／J3／J4 | 維持 | P1-F2、P1-F3、P2-3 | 不變 |
 
 ## 2. P0 — 開工前 source closure
 
@@ -254,12 +295,17 @@ owner 保留三欄 grouping：
 | **P2-2** | ✅ W5（2026-09-23）：`report.eval_metrics`（unique cases／分層 n·agree·overturn·Wilson／labeled_fraction／truncation_rate／Brier／逐題／route_reason 分層／breaker·freeze）；mechanical override 不進 denominator；`report` 子命令走真實 replay store；合成 ledger 只驗計算器 | **report/eval**：unique cases、human/fresh-agent 分層、same-evidence binding、n_agree/n_overturn、Wilson 95%、labeled_fraction、truncation_rate、Brier/逐題 metrics、call breaker/circuit freeze、route_reason 分層；21 次 smoke/audit 永遠不進 J5 n | 合成 ledger 只驗計算器；真實 J5 report 只數 unique valid Ship case；variant/retry 不增 n；wrong HEAD label fixture 被拒 | M | P1-G4、G7 |
 | **P2-3** | ✅ W5 實驗（2026-09-23）：`j4-assist`＋`policy.route_j4`／`escalate_to`（只升一層、fable=opus 層）；failure_category 用 agent-event enum；題組在 `jev-questions-experimental.json`（獨立 hash）；assist-only，不動 `_dispatch_impl.py` | **J4 升階路由**：failure_category 沿用既有 enum；escalate_to 不得跳 model tier；SPEC/ENV/IMPL/UNKNOWN 僅作 routing signal | 全程 shadow/assist 起跑；tiering 檢查綠；不把 `_dispatch_impl.py` 說成完整權限守衛 | M | P1-F1 |
 | **P2-4** | ✅ W5（2026-09-23）：`enqueue` 自動推 changed_paths（merge-base／HEAD commit）→ `risk_ceiling_hit` → J5 一律 HUMAN、`route_reason=risk_ceiling_override`（fixture `risk-ceiling-migration.json`）；report 把它歸 mechanical override | **機械 risk ceiling**：migrations/auth/payment/secrets/CI 等 `risk_paths` 命中 → J5 一律 HUMAN，不看 Jev 分數；清單縮小受 P1-G6 監控 | migration fixture 一律 HUMAN；route_reason=`risk_ceiling_override` | S | P1-G3 |
-| **P2-5** | 🛠，僅 live 後 | **隨機抽查**：AUTO live 後 10–20% 候選範圍（待 formal spec 核定）強制人工看，以維持 fresh labels | report 顯示抽查率與 labeled_fraction；抽查不能被 agent 關閉 | S | P2-2、P3-1 |
+| **P2-5** | 🛠，僅 live 後；**v5 改服務 G2 自動審**（J5 不再 live） | **隨機抽查**：自動通過的 G2 依 `sha256(case_id)` 決定性抽樣強制人工看；候選 **20% + 前 10 筆 100% burn-in**（`v5-owner-direction.md` §5 C1，**待 owner 核定**；原 10–20% 範圍取上緣） | report 顯示抽查率與 labeled_fraction；抽查不能被 agent 關閉、不能挑樣本；抽查 disagree 不回溯撤銷 G2，走一般修迴圈 | S | P2-2、P3-5 |
 | **P2-6** | 🛠，僅 AUTO 後 | **次要回饋**：先讓人看 case 並獨立回答，再顯示 Jev route/risk，避免錨定；none 不算 agree | 作答前 UI/text 不含 Jev judgement；每週提醒頻率仍待正式產品決策 | S | P3-1 |
 | **P2-7** | ✅ W5（2026-09-23）形狀：`ledger.audit_note`／`note` 子命令，封閉五欄 `{gate, questionset_hash_prefix, model_resolved, route_recommended, evaluation_id}`；白名單＋privacy negative 測試；貼進 PR／7-review 的動線留 P3-2 | **AUTO 可稽核附註**：PR/7-review 只允許封閉 metadata `{gate, questionset_hash prefix, model_resolved, route_recommended, ledger/evaluation id}`，不外露 raw packet/answers/probabilities | privacy negative fixture；附註不含敏感 evidence | S | P1-F4 |
-| **P2-8** | ✅ W5 實驗（2026-09-23）：`j2-shadow` 讀 2-decision.md（方案表／Decision／Rejected／Rationale／Real-world／Owner Calls 人類答案）組厚包；order／phrasing 三 variants 同 case_id 只做 stability（不穩定→`unstable`、永不畢業）；`route_taken` 恆 HUMAN；window=50 只標待核定 | **J2 厚證據包**：方案比較全文、各方案取捨、Real-world Context/Open Questions 結論、Owner Calls 人類答案、fresh reviewer findings；正反論點；order perturbation/phrasing stability 只做 evaluation，不灌 n | 真 feature J2 packet 通過 self-check；不穩定就標 unstable、不得畢業；J2 未核定 rolling window 前永遠 shadow | M | P1-G1、P1-F1 |
+| **P2-8** | ✅ W5 實驗（2026-09-23）：`j2-shadow` 讀 2-decision.md（方案表／Decision／Rejected／Rationale／Real-world／Owner Calls 人類答案）組厚包；order／phrasing 三 variants 同 case_id 只做 stability（不穩定→`unstable`、永不畢業）；`route_taken` 恆 HUMAN；window=50 只標待核定 | **J2 厚證據包**：方案比較全文、各方案取捨、Real-world Context/Open Questions 結論、Owner Calls 人類答案、fresh reviewer findings；正反論點；order perturbation/phrasing stability 只做 evaluation，不灌 n | 真 feature J2 packet 通過 self-check；不穩定就標 unstable、不得畢業；J2 未核定 rolling window 前永遠 shadow（**v5：J2 永遠 shadow**，厚包只作 G1 reviewer 參考） | M | P1-G1、P1-F1 |
+| **P2-9** | 🆕 v5 主線（W9） | **Jev `g2_route` 分流**：新 gate `G2R`（名稱候選；不沿用 J 編號以免與 J2＝G1 方向混淆）含 `g2_route`（Choice：`AUTO_PASS｜HUMAN_REVIEW｜REQUEST_CHANGES`）與 `risk`（Score 0–3，同 J5 刻度）；`policy.route_g2` deterministic：HUMAN／`p(AUTO_PASS)<0.85`（C3，**待 owner 核定**）／risk≥2／risk_paths 命中 → HUMAN。**只分流，不是放行必要條件**；無 key／未 opt-in／失敗 → no-op，等同沒有 Jev | Jev 判 AUTO 但 fresh agent 或機械檢查不過 → 不過；Jev 判 HUMAN → 必轉人；off 時零網路；新題組 = 新 `questionset_hash`；Jev 不寫 `verdict:`／`attested_by` | M | P1-F1、P2-4 |
+| **P2-10** | 🆕 v5 主線（W10） | **G2 監控（只記錄不擋門）**：(a) P2-5 抽查；(b) G3 退件且 7-review 人類 reviewer 勾 `root_cause: spec` → 記 `g2_misrelease`（綁 G2 evaluation／verdict hash）；(c) rolling 最近 20 筆自動 G2 中 misrelease ≥3，或前 10 筆 ≥2 → `g2_auto_state=reverted`，之後 G2 回人審，只有人能再開（C2，**待 owner 核定**） | 監控不擋單一 G2；reverted 後 agent 無法自行恢復；`root_cause: spec` 只准人勾；追不到規格的 G3 退件不計 | M | P2-2、P2-5 |
+| **P2-11** | 🆕 v5 主線（W11） | **Jev 記憶重排序**：放在既有 `memory/dev-memory.py ask`（`query.py`／`retrieval.py`）之後，Jev 只重排／挑選、**不寫記憶**；無 key 或未 opt-in → 原檢索結果、零網路；開場必讀 context、current truth、invariants、conflicts、exact hits **不送重排、不可移除**，`NO_RELIABLE_MATCH` 不得被升級；送出內容去識別，不送 secret／credential／原始醫療資料；候選池 top20 → top5（C6，**待 owner 核定**） | `dev-memory.py eval` 同一 locked set：Recall@5 不降且 MRR +≥0.05、mandatory 保留率 100%（C5，**待 owner 核定**）才 live；off 路徑輸出與原檢索 byte-identical | M | P1-G1、P1-G3、P1-F5 |
 
 ### 4.1 J2 rolling window — 待核定候選
+
+> **v5（2026-09-26）**：J2 永遠 shadow，本節 window 不再是任何上線門檻，只保留作歷史與 stability 研究。
 
 owner 已裁 **J2 保留**，但沒有核定 rolling-window 長度。draft-v4：
 
@@ -273,15 +319,20 @@ owner 已裁 **J2 保留**，但沒有核定 rolling-window 長度。draft-v4：
 
 > **重要順序修正**：編號保留 P3-1/P3-2，但 live enable 的工程順序是 **先達成 P3-1 eligibility evidence → 完成 P3-2 契約同步／L2/ADR → 才允許 P3-1 AUTO live switch**。  
 > 不得先把 `gates.J5: live` 打開，再補契約。
+>
+> **v5（2026-09-26）**：J5 AUTO live 已從目標移除（G3 固定人審），上述順序只保留作歷史；P3 主線改為 **P3-5 G2 自動審**，同樣是「先 L2/ADR + 契約同步 → 才 live」。
 
 | ID | 狀態 | 做什麼 | 驗收／放行條件 | 量 | 依賴 |
 |---|---|---|---|---|---|
-| **P3-1** | 🧪 W6（2026-09-23）資格計算器已備、**live 未核准**：`report.eligibility`（§5.1 八條機械化、floor、first-overturn freeze、n 不歸零、無覆寫參數）+ `eligibility` 子命令；`gate.J5_LIVE_RATIFIED=False` 讓 `gates.J5: live` 只到 shadow（硬拒，非旗標）；`GRADUATED=False` 不動 | **J5 AUTO_SHIP candidate**：risk≤1、mechanical gate 全綠、author≠approver、Quiz gate/risk ceiling 不動。先只計算 eligibility；真正 live 開關受 P3-2 阻擋 | **Wilson 95% lower ≥ .85、n≥30 個 unique valid real Ship shadow cases**；source unverified 不算；同 evidence label；一次有效 overturn 立即 freeze；這是工程接受門檻，**不是錯誤率≤5%證明**。freeze 後仍按最新 unique cases 重算 Wilson，不人工覆寫通過 | L | P1/P2 必要項 + P3-2 before live |
-| **P3-2** | 🛠 W6 部分（2026-09-23）：三模板頂欄加 `verdict_source`／`attested_by`；`gate-verdict-write.md` 鎖死 6（verdict 必附出處、Jev 不得寫）；`check-gate-verdict-write.sh` 25 項；`devflow_gate.py` 有 reviewer 時代填 human_attested、agent/Jev 拒收；新 `check-verdict-attestation.sh`。**缺口**：L2/ADR、README 公開面 parity、`_gate_consistency_impl.py` 不動（Jev 不是 reviewer）—— 見 w6 doc §3；**AUTO live 前仍必完成** | **契約同步**：reviewer-selection 5 處 + guide parity + `_gate_consistency_impl.py` ordered tuple + `notes/design/gate-verdict-write.md` 契約族 10 檔 + `check-gate-verdict-write.sh`；完整版「誰寫 verdict」機械檢查。需走 dev-flow 自己 Decide、L2/ADR | ADR accepted；`gate-consistency.sh`、`check-methodology-corrections.sh`、verdict-write checks 全綠；未授權 agent verdict 會紅。**完成前 P3-1 live 不可 enable** | L | P3-1 eligibility report、P1-G7 |
-| **P3-3** | ⏸ 遠期；J2 保留。🛠 W7（2026-09-23）釘死：`policy.J2_WINDOW_CANDIDATE=50` 只是候選、`J2_WINDOW_RATIFIED=False` 單一賦值；`eligibility` 對 J2 永遠多 `j2_window_not_ratified` blocker（空 store 亦然）、`route_taken("J2","live")` → HUMAN | **J2 AUTO_PASS**：排在 J5 後；P2-8 厚包 + formal rolling window + shadow evidence；Owner Calls 仍逐條人裁 | window 未核定 → no-go；正式 floor/window/source mix 必須進 formal spec，不沿用 dev-set 調參結果偷上線 | L | P2-8、P3-2 |
+| **P3-1** | ⛔ **v5：不再是上線路徑**（G3 固定人審；J5 保留 shadow 參考，計算器保留作參考品質量尺）。🧪 W6（2026-09-23）資格計算器已備、**live 未核准**：`report.eligibility`（§5.1 八條機械化、floor、first-overturn freeze、n 不歸零、無覆寫參數）+ `eligibility` 子命令；`gate.J5_LIVE_RATIFIED=False` 讓 `gates.J5: live` 只到 shadow（硬拒，非旗標）；`GRADUATED=False` 不動 | **J5 AUTO_SHIP candidate**：risk≤1、mechanical gate 全綠、author≠approver、Quiz gate/risk ceiling 不動。先只計算 eligibility；真正 live 開關受 P3-2 阻擋 | **Wilson 95% lower ≥ .85、n≥30 個 unique valid real Ship shadow cases**；source unverified 不算；同 evidence label；一次有效 overturn 立即 freeze；這是工程接受門檻，**不是錯誤率≤5%證明**。freeze 後仍按最新 unique cases 重算 Wilson，不人工覆寫通過 | L | P1/P2 必要項 + P3-2 before live |
+| **P3-2** | 🛠 **v5：範圍改服務 P3-5**（G2 auto verdict 的 `fresh_agent_reviewer`／`routed_by` provenance 規則；J5 live 前置不再適用）。W6 部分（2026-09-23）：三模板頂欄加 `verdict_source`／`attested_by`；`gate-verdict-write.md` 鎖死 6（verdict 必附出處、Jev 不得寫）；`check-gate-verdict-write.sh` 25 項；`devflow_gate.py` 有 reviewer 時代填 human_attested、agent/Jev 拒收；新 `check-verdict-attestation.sh`。**缺口**：L2/ADR、README 公開面 parity、`_gate_consistency_impl.py` 不動（Jev 不是 reviewer）—— 見 w6 doc §3；**AUTO live 前仍必完成** | **契約同步**：reviewer-selection 5 處 + guide parity + `_gate_consistency_impl.py` ordered tuple + `notes/design/gate-verdict-write.md` 契約族 10 檔 + `check-gate-verdict-write.sh`；完整版「誰寫 verdict」機械檢查。需走 dev-flow 自己 Decide、L2/ADR | ADR accepted；`gate-consistency.sh`、`check-methodology-corrections.sh`、verdict-write checks 全綠；未授權 agent verdict 會紅。**完成前 P3-1 live 不可 enable** | L | P3-1 eligibility report、P1-G7 |
+| **P3-3** | ⛔ **v5：J2 永遠 shadow，沒有 AUTO_PASS 路徑**（`J2_WINDOW_RATIFIED=False` 不規劃翻 True；Owner Calls 永遠人裁）。以下為歷史：⏸ 遠期；J2 保留。🛠 W7（2026-09-23）釘死：`policy.J2_WINDOW_CANDIDATE=50` 只是候選、`J2_WINDOW_RATIFIED=False` 單一賦值；`eligibility` 對 J2 永遠多 `j2_window_not_ratified` blocker（空 store 亦然）、`route_taken("J2","live")` → HUMAN | **J2 AUTO_PASS**：排在 J5 後；P2-8 厚包 + formal rolling window + shadow evidence；Owner Calls 仍逐條人裁 | window 未核定 → no-go；正式 floor/window/source mix 必須進 formal spec，不沿用 dev-set 調參結果偷上線 | L | P2-8、P3-2 |
 | **P3-4** | ✅ owner 已裁方向；🛠 W7（2026-09-23）契約面已翻：`_stage3_impl.py` `polarity=human_requests_demo`＋`demo_request`、模板 Demo request 行、SKILL §4、N1/N-skip/S0、shared contract、extract §7、guide、4-spec 執行清單；selftest p2 +4（473）、jev 測 243；**L2/ADR 與 README 公開面留 owner 走 main** | **Stage 3 polarity**：改成「人要求才 Demo」；動 `SKILL.md`、`_templates/3-prototype.md`、vnext shared contract、`_stage3_impl.py` 等實際契約面 | 只翻「預設要不要 Demo」；Demo verdict/attestation human-only 規則完全不動；可獨立排進 P1/P2 時窗，不等 J5 n≥30 | M | P0-3 |
+| **P3-5** | 🆕 v5 主線（W9 研究面 → W12 main live）；**ADR 草稿**在 `v5-owner-direction.md` §3.6，ADR 本身由 owner 在 main 走流程；本 PR 不改 main 契約面 | **G2 自動審（L2 契約變更，只放寬 G2）**：放行 = fresh-context agent reviewer PASS + 機械檢查（`check-spec-gate.sh`、`_stage3_impl.py`、`check-verdict-attestation.sh`、author≠approver）全過且未命中轉人條件（Jev HUMAN／信心不足、`risk_paths`、risk≥2、未裁決 OC、需要 Demo verdict、改 Jev runtime 當次）；無 key → 只靠 fresh agent + 機械。author≠approver：4-spec `authored_by` ≠ G2 `attested_by`。provenance：`verdict_source: fresh_agent_reviewer` + `attested_by: agent:<id>` + `g2_mode: auto` + `routed_by: jev:<evaluation_id>｜none`，對齊 P1-G7（不新增 source class；auto 路徑 provenance 不合法 = 不過，fail-closed）。四面：契約 §7 審查者句拆 G1/G3 與 G2 兩句、指南 `#gates`、`SKILL.md` G2 段、`hooks/_gate_consistency_impl.py` 新增 G2 子句 regex（G1/G3 順序逐字不動） | ADR accepted；四面同步後 `gate-consistency.sh`、`check-methodology-corrections.sh`、verdict-write／attestation checks 全綠；G2 子句把 G1/G3 一起放寬 → 紅；Jev 出現在 reviewer 順序 → 紅；P2-10 監控已就位 | L | P2-9、P2-10、P3-2 |
 
 ### 5.1 J5 case eligibility
+
+> **v5**：本節只定義 shadow 參考量尺的 denominator，**不連到任何 live 開關**。
 
 一筆 J5 case 要進 P3-1 denominator，至少同時滿足：
 
@@ -296,6 +347,8 @@ owner 已裁 **J2 保留**，但沒有核定 rolling-window 長度。draft-v4：
 
 ### 5.2 Freeze 語意
 
+> **v5**：freeze 只影響 shadow 參考報表；J5 本來就沒有 AUTO 可停。
+
 - 第一次有效 overturn → `circuit_breaker_state=frozen`，立即停止新 AUTO，回 HUMAN。
 - freeze **不等於抹掉舊資料，也不等於 n 歸零**。
 - model／evaluation manifest 改變本來就形成新 group；人工 `manual_regression` 是否重置另走 formal policy。
@@ -306,71 +359,68 @@ owner 已裁 **J2 保留**，但沒有核定 rolling-window 長度。draft-v4：
 
 | 項目 | 結論 | 重啟條件 |
 |---|---|---|
-| **supermemory** | **不接** | 現有 `dev-memory.py ask` 已有可重現的檢索不足，**且**有真實跨專案共享需求，兩者同時成立才重開 0-draft |
+| **supermemory** | **v5：正式放棄**（2026-09-26 owner） | 無重啟條件；檢索改善改走 P2-11 Jev 記憶重排序 |
 | **J1–J3 observability 強耦合** | 先不把它當必要條件 | P0-5 lifecycle 與 P0-6 event roundtrip 先證實；需要時再調整 observability contract |
 | **PostToolUse hook 強制 Jev** | 不做 | live 長期穩定，且 writer/schema/side-effect 邊界另審 |
 | **第三方 Jev MCP** | 不採 | 有官方、可稽核且比 stdlib HTTP runtime 更合適的正式介面再評估 |
-| **memory rerank / supermemory backend** | P4 optional，不進近期 MVP | 現有 query/retrieval 已多路召回；只有證實 retrieval 品質不足才做 optional rerank，而且 mandatory startup/current truth/invariants/NO_RELIABLE_MATCH 不得被 rerank 刪除 |
+| **memory rerank** | **v5：移出 P4，升主線 P2-11**（Jev 記憶重排序） | — |
+| **supermemory backend** | 放棄 | 無 |
+| **J5 AUTO_SHIP live** | **v5：從目標移除**；G3 固定人審 | 無（owner 另行裁決才重議） |
+| **J2 AUTO_PASS** | **v5：不做**；J2 永遠 shadow | 無 |
 | **task routing / mixed 自動化** | 保留 research suite，不進 J1 MVP | mixed rubric（含 `.72` 反例）有人工 gold + locked holdout 後再議 |
 
 ## 7. 依賴圖
 
 ```text
-research/jev-supermemory draft-v4
+research/jev-supermemory draft-v5
             │
             ▼
-W0 Source closure
-  P0-1..P0-10
+W0 Source closure ✅
             │
             ▼
-W1 Guard foundation + P2-1 executable e2e
-  P1-G1..G7 pure/schema/fake transport
-  （此時仍沒有 production runtime）
+W1 Guard foundation + P2-1 executable e2e ✅
             │
             ▼
-W2 stdlib runtime + dual replay/ledger + manifest distribution
-  P1-F1/F5/F6 + P0-8
+W2 stdlib runtime + replay/ledger + manifest ✅
             │
         ┌───┴────────────┐
         ▼                ▼
-W3 J1 live          W3 J3 recommendation
-P1-F2               P1-F3
+W3 J1 live ✅       W3 J3 recommendation ✅
         │                │
         └───────┬────────┘
                 ▼
-W4 J5 shadow
-P1-F4/F7
-same-evidence label + unique-case dedupe
+W4 J5 shadow ✅ ──▶ W5 eval / J2 thick / J4 ✅ ──▶ W6 J5 計算器 ✅（v5：參考，不 live）
+                                                   W7 Stage3 polarity ✅
                 │
                 ▼
-W5 evaluation / J2 thick pack / J4 experiment
-P2-2..P2-8
+W8 v5 方向落檔（本 PR；ADR 草稿；候選 C1–C6 待 owner 核定）
                 │
-                ▼
-J5 eligibility:
-Wilson lower >= .85
-n >= 30 valid unique real Ship cases
-                │
-                ▼
-L2 / ADR
-                │
-                ▼
-P3-2 CONTRACT SYNC FIRST
-                │
-                ▼
-W6 / P3-1 J5 AUTO live enable
+        ┌───────┴──────────────────────┐
+        ▼                              ▼
+主線 A：G2 自動審                  主線 B：Jev 記憶重排序
+W9  P2-9 g2_route 分流             W11 P2-11 rerank（dev-memory ask 之後）
+    P3-5 研究面（provenance、          雙閘門 off = 原結果零網路
+    author≠approver、轉人條件）        mandatory 不可移除
+W10 P2-10 監控（抽查／放錯／回退）      retrieval eval（C5）
+        │                              │
+        ▼                              ▼
+ADR accepted（owner 在 main）       eval 證明優於原檢索
+P3-5 四面同步                            │
+        │                              ▼
+        ▼                          rerank live
+W12 G2 自動審 live
 
-旁路：
-P0-3 ──▶ W7 / P3-4 Stage3 polarity（獨立 L2，可提前）
-P2-8 ──▶ W7 / P3-3 J2 future track（window 未核定前 shadow）
+參考旁支（永遠 shadow，不產 verdict）：
+J5 shadow ──▶ 提示 G3 人審注意哪裡（G3 固定人審）
+J2 shadow ──▶ 提示 G1 人審注意哪裡（Owner Calls 人裁）
 ```
 
 ## 8. Budget、deadline 與數值政策
 
 ### 8.1 Owner 已裁的數值
 
-- J5：Wilson 95% lower ≥ **0.85** 且 **n≥30** valid unique real Ship cases。
-- J5：第一次有效 overturn → freeze。
+- J5：Wilson 95% lower ≥ **0.85** 且 **n≥30** valid unique real Ship cases。**v5：不再是上線路徑**，只作 shadow 參考量尺。
+- J5：第一次有效 overturn → freeze（只影響參考報表）。
 
 ### 8.2 待核定候選工程值（未實作、不是 owner 裁決）
 
@@ -381,7 +431,20 @@ P2-8 ──▶ W7 / P3-3 J2 future track（window 未核定前 shadow）
 | J1 foreground total deadline | **2s** | 不做 foreground retry；失敗 no-op |
 | J5 shadow HTTP wait | **0 前景等待** | 只是不等 HTTP；local enqueue 仍要實測，不宣稱 0ms |
 | J2 rolling window | **50 unique labeled cases** | 待核定；未核定前 shadow |
-| AUTO random audit | **10–20% 候選** | 只在 live 後，需 formal spec |
+| AUTO random audit | ~~10–20% 候選~~ → v5 C1 | 改服務 G2 自動審，見下表 |
+
+### 8.3 v5 新候選值（**待 owner 核定**；理由全文見 `v5-owner-direction.md` §5）
+
+| # | 項目 | 候選值 | 理由摘要 |
+|---|---|---:|---|
+| C1 | G2 自動通過抽查比例 | **20%**（`sha256(case_id)` 決定性）+ 前 **10** 筆 **100%** burn-in | 文件審成本低；上線初期無 human-G2 baseline，burn-in 快速暴露系統性盲點 |
+| C2 | G2 退回人審門檻 | rolling 最近 **20** 筆自動 G2 中 misrelease **≥3**（>10%）；前 10 筆內 **≥2**；抽查 disagree 且確認 spec 缺陷亦計入 | G3 仍人審，放錯代價是返工；3/20 已屬系統性；小樣本規則避免等滿 20 筆 |
+| C3 | Jev `g2_route` 信心門檻 | `p(AUTO_PASS) ≥ **0.85**` | 沿用 A3 同數字；只分流，偏嚴只多轉人 |
+| C4 | 無 Jev 時 risk 映射 | `Risk: high` → risk≥2（轉人） | spec 已有 `Risk:` 欄；high ≈ Score 2–3 |
+| C5 | 記憶重排序 live eval 門檻 | Recall@5 不降、MRR **+≥0.05**、mandatory 保留 **100%** | 重排不該掉召回；0.05 為可量出最小有意義差 |
+| C6 | 記憶重排序候選池 | top **20** → top **5** | 有重排空間又不超 32k 單題限制 |
+
+C3、C5、C6 進 Jev manifest；改任一個 = 新 `questionset_hash`。
 
 Budget accounting：
 
@@ -401,8 +464,13 @@ Budget accounting：
 | **W3** | ✅ 2026-09-23（`w3-j1-j3.md`）：J1 失敗等同現況、最多兩輪完整 dev-talk、N13 保留；J3 recommendation 不得寫 verdict | J1 找弱點維度不穩或 J3 能繞 human attestation |
 | **W4** | J5 shadow 不阻塞 G3；same-evidence label binding、unique case dedupe 正確；一個真 feature 完整配對 | wrong HEAD/verdict 能誤標、variants 能灌 n、worker failure 影響 G3 |
 | **W5** | report 可分 human/fresh/unverified、Wilson/dedupe 正確；J2/J4 仍 shadow | 用 synthetic/文件稽核充 graduation、holdout 被拿來調 window |
-| **W6** | P3-1 eligibility 達標；L2/ADR accepted；**P3-2 先完整同步**；所有 mechanical/risk/Quiz/author≠approver 控制仍在 | 任一契約未同步、一次有效 overturn 後仍 AUTO、J5 floor 未達 |
-| **W7** | Stage3 polarity 獨立 contract change 綠；J2 只在正式 window/source policy 核定後考慮 live | Demo attestation 被改成 agent/Jev；J2 window 未核定就 live |
+| **W6** | ✅ 計算器已備；**v5：J5 不 live**，W6 完成定義改為「eligibility 計算器可重算、`J5_LIVE_RATIFIED=False`」 | 任何路徑讓 J5 產 G3 verdict 或 AUTO_SHIP |
+| **W7** | Stage3 polarity 獨立 contract change 綠；**v5：J2 永遠 shadow** | Demo attestation 被改成 agent/Jev；J2 出現任何 live／AUTO_PASS 路徑 |
+| **W8** | roadmap draft-v5 + `v5-owner-direction.md` 落檔；ADR 草稿含四面；候選值 C1–C6 明標待核定；`devflow-check.sh all` 綠、jev 測試數 ≥243 | 改到程式／測試／main 契約面；候選值被寫成已裁決 |
+| **W9** | `g2_route` 題組／policy 有負面測試（Jev AUTO 但 agent 不過 → 不過；off → 零網路）；author≠approver 與 provenance 規則可機械驗 | Jev 成為放行必要條件或能寫 verdict；無 key 時 G2 自動審不能運作 |
+| **W10** | 抽查、misrelease、reverted ratchet 有測試；監控不擋單一 G2 | agent 能關抽查、挑樣本、代勾 `root_cause: spec` 或自行解除 reverted |
+| **W11** | rerank off 路徑與原檢索 byte-identical、零網路；mandatory 保留 100%；eval 報表可重算 | rerank 寫記憶、移除 mandatory 項、送出未去識別內容 |
+| **W12** | ADR accepted；P3-5 四面同步全綠；W9／W10 全綠 | 任一面未同步；G1/G3 審查順序被連帶放寬 |
 
 ## 10. P0-1／P0-2 已有 probe 記錄
 
@@ -451,7 +519,28 @@ ASK_MORE：
 4. 最多兩輪；超過轉 `NEEDS_OWNER_DECISION`。
 5. TypeSafe failure/no-op → 現有 dev-flow 流程。
 
-## 12. J3、J5、J2 的權限邊界
+## 12. J3、J5、J2、G2 自動審的權限邊界
+
+### G2 自動審（v5 主線）
+
+```text
+4-spec（作者 agent A，authored_by）
+        ↓
+機械檢查：check-spec-gate / _stage3_impl / check-verdict-attestation / author≠approver
+        ↓
+fresh-context reviewer agent B（B ≠ A）
+        ↓
+（有 key + opt-in）Jev g2_route 只分流 ──▶ HUMAN／信心不足 ──▶ 轉人
+        ↓
+轉人條件：risk_paths／risk≥2／未裁決 OC／需要 Demo verdict ──▶ 轉人
+        ↓
+全過 → G2 PASS（verdict_source: fresh_agent_reviewer, attested_by: agent:B,
+                 g2_mode: auto, routed_by: jev:<id>|none）
+        ↓
+監控：抽查（P2-5）／G3 退件追溯 spec → g2_misrelease／超門檻 → reverted
+```
+
+Jev **不是** G2 reviewer、不寫 verdict、不是放行必要條件；沒有 Jev 時 G2 自動審照樣運作。
 
 ### J3
 
@@ -467,11 +556,11 @@ Jev says demo_worth_it
 若 Demo，verdict/attestation 仍 human-only
 ```
 
-J3 **不是 G2 AUTO_PASS**。
+J3 **不是 G2 AUTO_PASS**；v5 G2 自動審也不讀 J3 建議當放行條件（需要 Demo verdict 一律轉人）。
 
-### J5 shadow
+### J5 shadow（v5：參考，G3 固定人審）
 
-J5 只讀已產生的 evidence，不產 evidence：
+J5 只讀已產生的 evidence，不產 evidence；結果只提示 G3 人審注意哪裡：
 
 ```text
 Final Fresh Run
@@ -484,20 +573,14 @@ J5 shadow enqueue
         └─ background evaluation → replay/local → durable metadata
 ```
 
-### J2
-
-J2 保留但排後：
+### J2（v5：永遠 shadow）
 
 ```text
 P2-8 thick evidence
   ↓
 order/phrasing study
   ↓
-shadow
-  ↓
-正式 rolling-window/source policy
-  ↓
-未來 P3-3
+shadow（永久；提示 G1 人審注意哪裡）
 ```
 
 Owner Calls 永遠仍由人逐條裁決；J2 不得替 owner 回答。
@@ -512,9 +595,9 @@ Owner Calls 永遠仍由人逐條裁決；J2 不得替 owner 回答。
 6. mixed `.72` 反例固定留在 negative/adaptation suite，直到人工 gold/holdout 證明 rubric 改善；不得為了提高「文件明示稽核」分數反覆改文案。
 7. 不把不同 atomic risk probabilities 相乘；除非未來另有經驗證的統計模型與 formal spec。
 
-## 14. Supermemory
+## 14. Supermemory → Jev 記憶重排序（v5）
 
-結論維持 **P4 deferred**。
+**v5（2026-09-26 owner）：supermemory 正式放棄**，不再有重啟條件；0-draft 保留作歷史。
 
 目前 dev-flow 已有：
 
@@ -524,17 +607,21 @@ Owner Calls 永遠仍由人逐條裁決；J2 不得替 owner 回答。
 - `query.py`／`retrieval.py` 多路召回；
 - `NO_RELIABLE_MATCH` 與 current-truth/invariant 等保護。
 
-所以近期不能把 memory 畫成「embedding → topK → Jev」白紙流程。若未來做 Jev rerank，也只能放在既有 retrieval **之後**，且 mandatory startup/current truth/invariants/conflicts/authoritative exact hits 不得被 rerank 移除。
-
-supermemory 重啟條件：
+所以不能把 memory 畫成「embedding → topK → Jev」白紙流程。**P2-11 Jev 記憶重排序**的規則：
 
 ```text
-dev-memory.py ask 已被真實 eval 證明檢索不足
-AND
-存在跨專案共享記憶的真需求
+dev-memory.py ask
+  → query.py / retrieval.py 既有多路召回（不改）
+  → mandatory 項（startup context、current truth、invariants、conflicts、exact hits）直接釘前段，不送 Jev
+  → 其餘候選 top20（C6）去識別 → Jev 重排／挑選 → top5
+  → 合併輸出
 ```
 
-只有兩者同時成立才開新 0-draft。
+1. Jev **只重排與挑選，不寫記憶**。
+2. 沒有 `TYPESAFE_API_KEY` 或專案未 opt-in → 原檢索結果原樣回傳，**零網路**；Jev 失敗／逾時／budget 用完同樣。
+3. mandatory 項不可被移除；`NO_RELIABLE_MATCH` 不得被重排成 OK。
+4. 送出內容去識別：不送 secret、credential、原始醫療資料；沿用 P1-G1 packet privacy 規則。
+5. 上線條件：`dev-memory.py eval` 檢索品質 eval 證明重排序優於原檢索（C5，待 owner 核定）。
 
 ## 15. 實作前剩餘 source 驗證
 
@@ -546,9 +633,24 @@ AND
 4. **P0-9**：dev-talk 舊 discussion path 在 read whitelist 的實際定義。
 5. **P1-F7 source audit** → ✅ W4 2026-09-23 已做（`w4-j5-shadow.md` §3）：結論是 repo 內**沒有任何 hook 擋 git commit/push/merge/tag**，這些步驟靠散文、Exit Checklist 與使用者本機 `permissions.deny`；`_dispatch_impl.py` 只算 fail-open tier discipline guard，不能拿來補不存在的權限保證。
 
-## 16. 遠期 AUTO 的正式驗收
+## 16. G2 自動審 live 的正式驗收（v5）
 
-J5 AUTO live 之前，以下全部同時成立才 Go：
+G2 自動審 live（W12）之前，以下全部同時成立才 Go：
+
+- [ ] ADR accepted（owner 在 main 走流程；草稿見 `v5-owner-direction.md` §3.6）
+- [ ] 契約 §7、指南 `#gates`、`SKILL.md` G2 段、`hooks/_gate_consistency_impl.py` 四面同步，**只放寬 G2**，G1/G3 審查順序逐字不動
+- [ ] fresh-context agent reviewer + 機械檢查是唯一放行路徑；Jev `g2_route` 只分流
+- [ ] 無 `TYPESAFE_API_KEY` 時 G2 自動審仍能運作（只靠 fresh agent + 機械）
+- [ ] 轉人條件（Jev HUMAN／信心不足、`risk_paths`、risk≥2、未裁決 OC、需要 Demo verdict、改 Jev runtime 當次）全部機械化並有負面測試
+- [ ] author≠approver：`authored_by` ≠ `attested_by`，且 reviewer 不是實作者
+- [ ] provenance：`fresh_agent_reviewer` + `agent:<id>` + `g2_mode` + `routed_by`，對齊 P1-G7；auto 路徑不合法 = 不過
+- [ ] P2-10 監控就位：抽查、misrelease、reverted ratchet；候選值 C1／C2 已由 owner 核定
+- [ ] Demo verdict／Quiz gate／risk ceiling 不變；Jev 不寫任何 verdict
+- [ ] 每專案雙閘門 opt-in 規則不變
+
+### 16.1（退役）J5 AUTO live 驗收
+
+> **v5：J5 AUTO_SHIP 從目標移除**，以下清單只保留作歷史，不再是任何 Go 條件。
 
 - [ ] 真實 J5 shadow unique valid Ship cases `n >= 30`
 - [ ] Wilson 95% lower `>= .85`
@@ -571,8 +673,10 @@ J5 AUTO live 之前，以下全部同時成立才 Go：
 
 ## 17. 本階段明確不做的事
 
-- 不修改 `main` runtime。
-- 不開 J5 AUTO。
+- 不修改 `main` runtime；**本 PR（W8）也不改 main 契約面**（G2 ADR 只寫草稿）。
+- 不開 J5 AUTO；**v5：J5 AUTO_SHIP 已從目標移除**，G3 固定人審。
+- 不把 Jev 當 G2 reviewer；`g2_route` 只分流，不是放行必要條件。
+- J2 不開 AUTO_PASS（永遠 shadow）；Owner Calls 永遠人裁。
 - 不讓 J3 寫 G2 verdict。
 - 不讓 Jev 取代 Mechanical Gate。
 - 不把 task routing 當唯一或必要 MVP。
@@ -580,7 +684,8 @@ J5 AUTO live 之前，以下全部同時成立才 Go：
 - 不把 synthetic smoke／roadmap audit 轉成 J5 標籤。
 - 不把格式 attestation 宣稱成身份 authentication。
 - 不把 guard pure functions／fake transport 宣稱成 completed product。
-- 不接 supermemory。
+- 不接 supermemory（v5：正式放棄）。
+- Jev 記憶重排序不寫記憶、不移除 mandatory 項。
 - 不把 raw Jev packets、醫療資料或 logs 直接寫進 Git durable memory。
 
 ## 18. 外部交付待歸檔附錄
