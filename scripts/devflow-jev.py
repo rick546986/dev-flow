@@ -19,6 +19,11 @@ policy 導出 route → 雙層 ledger 落盤」的膠水,不含任何門檻、�
   g2-misrelease record|release|report
               W10 P2-10:G2 誤放行只記錄(綁 g2r-shadow AUTO 紀錄的 case_hash)+ 誤放行率(分母 = agent 放行紀錄);
               不抽查、不 revert、不擋。
+  mr-rerank   W11 P2-11(研究):MR 記憶重排序。吃 `dev-memory.py ask --json --limit 20` 的輸出,重排前 20 筆、回前 5 筆;
+              必留項一定在前 5(超過 5 筆 → status=mandatory_overflow、exit 1);雙閘門 off／Jev 失敗 → 原順序、exit 0。
+              不寫記憶、不改 retrieval_status、不接任何 gate。
+  mr-eval     W11 P2-11:離線評測(零網路)。原順序前 5 vs MR 前 5 的 Recall@5、MRR、必留保留率;C5 三條全過 exit 0,
+              不過或資料不足 exit 1。
   eligibility W6 P3-1:J5 資格計算(§5.1 八條、floor、freeze);只展示。runtime 沒有 live 開關(gate.J5_LIVE_RATIFIED=False)。
               off／失敗／逾時 → exit 0、effect=continue_existing_flow。J3 只回顯示文案,不寫 verdict。
   ask         一次 evaluation:雙閘門 off → exit 0、什麼都不寫、零網路;shadow/live → 送一次,
@@ -35,7 +40,8 @@ policy 導出 route → 雙層 ledger 落盤」的膠水,不含任何門檻、�
   - 七守衛行為不鬆:本檔不覆寫 policy/packet/ledger/provenance 任何常數。
   - J3 永不寫 G2 verdict、J5 永不寫 G3 verdict;本檔沒有任何寫 docs/dev/<slug>/ 的程式。
 
-退出碼:0 = ok 或 no-op(Jev 從不阻塞既有流程) / 1 = replay 完整性對不上 / 2 = 輸入或安裝錯誤(fail-loud)。
+退出碼:0 = ok 或 no-op(Jev 從不阻塞既有流程) / 1 = replay 完整性對不上(mr-rerank:必留溢出;mr-eval:不過或資料不足)
+       / 2 = 輸入或安裝錯誤(fail-loud)。
 """
 import argparse
 import json
@@ -1667,6 +1673,128 @@ def run_g2_misrelease_report(root):
             "j2_window_ratified": policy.J2_WINDOW_RATIFIED, "network": False}
 
 
+# ───────────────────────────── W11: P2-11 MR 記憶重排序(研究分支、離線) ─────────────────────────────
+# 定義正本:docs/dev/jev-gate/w11-mr-rerank.md。MR 接在 `memory/dev-memory.py ask --json --limit 20` 之後:
+# 吃它的 envelope(或 candidates list),重排前 20 筆、回前 5 筆。不換掉原檢索、不寫記憶、不改 retrieval_status、
+# 不接任何 gate、不寫 verdict。預設零網路;Jev 打分只在雙閘門(key + jev.yaml mode≠off)通過後經 http_transport,
+# 失敗/逾時/budget 用完/breaker open/privacy 命中 → 照原本的順序回前 5 筆(policy.mr_rerank fallback),不 crash。
+MR_SCHEMA = "devflow-jev-mr/1"
+
+
+def _mr_input(payload):
+    """接受三種形狀:dev-memory ask 的 envelope({query, retrieval_status, results})、{query, candidates}、純 list。"""
+    if isinstance(payload, list):
+        return None, None, payload
+    if not isinstance(payload, dict):
+        raise JevError("MR 輸入必須是 ask envelope、{query, candidates} 或 list")
+    if "results" in payload:
+        return payload.get("query"), payload.get("retrieval_status"), payload["results"]
+    if "candidates" in payload:
+        return payload.get("query"), payload.get("retrieval_status"), payload["candidates"]
+    raise JevError("MR 輸入缺 results/candidates")
+
+
+def _mr_summary(row):
+    """送 Jev 的去識別摘要:只有 item_type + 標題 + 內文前 MR_SUMMARY_MAX 字;不送 id/uid/path/evidence。"""
+    parts = [str(row.get(k)) for k in ("title", "text", "body", "value") if isinstance(row.get(k), str) and row.get(k)]
+    text = " — ".join(parts)
+    if len(text) > policy.MR_SUMMARY_MAX:
+        text = text[:policy.MR_SUMMARY_MAX] + "…"
+    return {"type": str(row.get("item_type") or "memory"), "summary": text}
+
+
+def build_mr_request(query, pool):
+    """非必留候選 → 每筆一題 Score(0–3 相關度)。回 (request, api_questions, qid→candidate id)。必留項不送。"""
+    criteria = manifest_mod.score_criteria_for_api(policy.MR_SCORE_CRITERIA)
+    questions, qmap, cands = {}, {}, {}
+    for pos, cand in enumerate([c for c in pool if not c["mandatory_reasons"]], 1):
+        qid = "mr_c%02d" % pos
+        qmap[qid] = cand["id"]
+        cands[qid] = _mr_summary(cand["row"])
+        questions[qid] = {"type": "score", "criteria": list(criteria),
+                          "text": "How relevant is state.candidates.%s to answering state.query?" % qid}
+    state = {"query": query or "", "candidates": cands}
+    return build_request(state, questions), questions, qmap
+
+
+def _mr_expected(answer):
+    """Score 答案 → 期望分數 Σ level·p(同一份 response 永遠算出同一個數)。"""
+    probs = answer.get("probabilities") or {}
+    return round(sum(int(k) * float(v) for k, v in probs.items()), 9)
+
+
+def run_mr_rerank(root, payload, scores=None, environ=None, transport_factory=None, clock=time.monotonic,
+                  deadline_s=None, day=None):
+    """一次 MR。scores(stored)→ 零網路;否則雙閘門 off → fallback 零網路;通過 → 送 Jev 一次,失敗 → fallback。"""
+    environ = os.environ if environ is None else environ
+    if deadline_s is not None and (isinstance(deadline_s, bool) or not isinstance(deadline_s, (int, float))
+                                   or not deadline_s > 0):
+        raise JevError("--deadline 必須是正數")
+    query, status_in, candidates = _mr_input(payload)
+    pool = policy.mr_pool(candidates)                      # 輸入形狀錯 → JevError(exit 2),在任何出境前
+    base = {"schema": MR_SCHEMA, "gate": "MR", "query": query, "retrieval_status": status_in,
+            "writes_memory": False, "writes_verdict": False, "gate_effect": "none", "wired_into": None,
+            "graduated": GRADUATED, "j5_live_ratified": gate_mod.J5_LIVE_RATIFIED,
+            "j2_window_ratified": policy.J2_WINDOW_RATIFIED, "written": []}
+    if scores is not None:
+        out = policy.mr_rerank(candidates, scores=scores)
+        base.update({"scorer": "stored_scores", "level": None, "level_reason": "stored scores(零網路)",
+                     "network": False})
+        base.update(out)
+        return base
+    level, level_reason = policy.mr_level(gate_mod.has_api_key(environ), gate_mod.load_optin(root))
+    base.update({"level": level, "level_reason": level_reason})
+    non_mandatory = [c for c in pool if not c["mandatory_reasons"]]
+    if not gate_mod.may_call(level):
+        base.update({"scorer": "none", "network": False})
+        base.update(policy.mr_rerank(candidates, fallback_reason=level_reason))
+        return base
+    if not non_mandatory:
+        base.update({"scorer": "none", "network": False})
+        base.update(policy.mr_rerank(candidates, fallback_reason="nothing_to_score"))
+        return base
+    request, api_questions, qmap = build_mr_request(query, pool)
+    hits = packet_mod.privacy_scan(request)
+    if hits:
+        base.update({"scorer": "jev", "network": False, "privacy_hits": sorted({k for k, _ in hits})})
+        base.update(policy.mr_rerank(candidates, fallback_reason="privacy_blocked"))
+        return base
+    est = (len(json.dumps(request, ensure_ascii=False).encode("utf-8")) + 1) // 2
+    deadline = policy.J1_DEADLINE_S if deadline_s is None else min(policy.J1_DEADLINE_S, float(deadline_s))
+    state = StateStore(root)
+    day = day or utc_day()
+    budget = state.load_budget(day)
+    breaker = state.load_breaker()
+    try:
+        transport = _build_transport(transport_factory or make_transport_factory(environ), deadline)
+        outcome = policy.evaluate(transport, request, api_questions, clock, est, deadline_s=deadline,
+                                  budget=budget, breaker=breaker, breaker_key="MR")
+    except Exception as exc:  # transport 建構失敗等:MR 不得打斷原檢索結果
+        outcome = policy.noop("unexpected:" + type(exc).__name__)
+    state.save_budget(budget, day)
+    state.save_breaker(breaker)
+    written = [os.path.relpath(state.budget_path(day), root).replace(os.sep, "/"),
+               os.path.relpath(state.breaker_path(), root).replace(os.sep, "/")]
+    base.update({"scorer": "jev", "network": True, "jev_status": outcome["status"], "usage": outcome.get("usage"),
+                 "budget_remaining": budget.remaining(), "breaker_failures": breaker.failures.get("MR", 0),
+                 "written": written})
+    if outcome["status"] != "ok":
+        base.update(policy.mr_rerank(candidates, fallback_reason="jev:" + outcome["reason"]))
+        return base
+    jev_scores = {qmap[qid]: _mr_expected(ans) for qid, ans in outcome["answers"].items() if qid in qmap}
+    base.update(policy.mr_rerank(candidates, scores=jev_scores))
+    return base
+
+
+def run_mr_eval(fixture, min_queries=None):
+    """離線評測(零網路、不寫檔)。fixture 形狀見 policy.mr_eval / w11 §4。"""
+    kwargs = {} if min_queries is None else {"min_queries": min_queries}
+    report = policy.mr_eval(fixture, **kwargs)
+    report.update({"network": False, "writes_memory": False, "gate_effect": "none", "graduated": GRADUATED,
+                   "j5_live_ratified": gate_mod.J5_LIVE_RATIFIED, "j2_window_ratified": policy.J2_WINDOW_RATIFIED})
+    return report
+
+
 # ───────────────────────────── CLI ─────────────────────────────
 def _emit(payload):
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=1))
@@ -1780,6 +1908,13 @@ def build_parser():
     sma.add_argument("--evidence-ref", required=True, help="agent reviewer 報告路徑／PR 連結")
     sma.add_argument("--reported-by", required=True, help="human:<名> 或 agent:<id>")
     smsub.add_parser("report", help="誤放行率(分母 = agent 放行數)+ shadow 反事實率;資料不足明講(不算成 0%%)")
+    smr2 = sub.add_parser("mr-rerank", help="W11 P2-11:MR 記憶重排序(研究);吃 dev-memory ask --json --limit 20 的輸出,"
+                          "回前 5 筆;雙閘門 off/Jev 失敗 → 原順序;不寫記憶、不接 gate")
+    smr2.add_argument("--answer", required=True, help="dev-memory.py ask --json --limit 20 的 JSON(- = stdin)")
+    smr2.add_argument("--scores", default=None, help="stored scores JSON {candidate_id: 數字}(零網路重放)")
+    smr2.add_argument("--deadline", type=float, default=None, help="秒;只能收緊 policy.J1_DEADLINE_S")
+    sme = sub.add_parser("mr-eval", help="W11 P2-11:MR 離線評測;Recall@5/MRR/必留保留率 + C5 三條通過條件;零網路")
+    sme.add_argument("--fixture", required=True, help="scripts/fixtures/devflow-jev/mr-eval-*.json")
     return p
 
 
@@ -1853,6 +1988,19 @@ def main(argv=None):
             out = run_g2_misrelease_report(root)
             _emit(out)
             return EXIT_OK if out["consistent"] else EXIT_INCONSISTENT
+        if args.cmd == "mr-rerank":
+            if args.answer == "-":
+                payload = json.load(sys.stdin)
+            else:
+                payload = load_json(args.answer)
+            out = run_mr_rerank(root, payload, scores=load_json(args.scores) if args.scores else None,
+                                deadline_s=args.deadline)
+            _emit(out)
+            return EXIT_INCONSISTENT if out["status"] == "mandatory_overflow" else EXIT_OK
+        if args.cmd == "mr-eval":
+            out = run_mr_eval(load_json(args.fixture))
+            _emit(out)
+            return EXIT_OK if out["verdict"] == "pass" else EXIT_INCONSISTENT
         if args.cmd == "drain":
             _emit(run_drain(root, max_items=args.max))
             return EXIT_OK
