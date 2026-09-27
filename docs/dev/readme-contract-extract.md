@@ -68,8 +68,10 @@ L1 出口 = `devflow-exec.sh allow`;L2 = `stop`。
 契約 / 檢查器抽(四眼與 reviewer 選法;下列第一條 `- ` 原文勿改):
 
 - **author ≠ approver**:G1/G2/G3 的核准者不可以是該文檔的 owner(四眼原則)。
-- **審查者產生**:G1/G2/G3 一律依序選 **適格人類 reviewer → fresh-context reviewer
-  Agent → owner 自審(有記錄的最後手段)**。Agent 必須是乾淨 context,只給審核對象+基準+回報格式,不給
+- **審查者產生**:G1/G3 一律依序選 **適格人類 reviewer → fresh-context reviewer
+  Agent → owner 自審(有記錄的最後手段)**。G2 審查者產生:依序選 **fresh-context reviewer Agent
+  (需機械檢查全過且未命中 G2 轉人條件)→ 適格人類 reviewer → owner 自審(有記錄的最後手段)**。
+  Agent 必須是乾淨 context,只給審核對象+基準+回報格式,不給
   作者結論;verdict 與審者身分記 reviewers 欄(如 `[independent-fresh-context-reviewer]`)
   + 檔內留 round 紀錄。owner 自審僅能作為**有記錄的最後手段**,不假裝有四眼。
 - 機械錨點註記:以下 G1/G2/G3 定義句內的粗體詞組是 gate-consistency 機械比對錨;增改 gate 條件務必加粗。
@@ -105,6 +107,27 @@ G2 = 契約寫得對不對
     有 trigger 且完成 Demo → 必須 `Human verdict: ACCEPTED`;REVISE → 不得過 G2,
     必須重做 Demo;NOT_REVIEWED → 不得過 G2;有 trigger 但跳過 → 必須有 Owner Call
     明示。Agent 不得自行填入 ACCEPTED;Runtime 必須拒絕 Agent 自產的 ACCEPTED。
+  - 「G2 自動放行」:G2 由 agent 放行要同時成立 (a) 乾淨 context 的 fresh-context agent reviewer
+    給 PASS;(b) 機械檢查全過(`scripts/check-spec-gate.sh`、`hooks/_stage3_impl.py`、
+    `scripts/check-verdict-attestation.sh`、author ≠ approver 比對);(c) 沒有命中下方任何一條轉人條件。
+    Jev G2R(`devflow-jev.py g2r`)只負責分流 —— 決定交給 agent 審還是交給人審;Jev 不 review、
+    不寫 verdict、不填 `attested_by`。
+  - 「G2 轉人條件」(任一成立 → 交給人審,不能自動放行;命中卻只有 agent 的 verdict → 機械擋下):
+    ① Jev 判 HUMAN,或信心 p(AUTO_PASS) < 0.85(p 剛好等於 0.85 交給 agent);
+    ② 宣告的 paths 命中 risk_paths,或 4-spec 沒有宣告 paths(Diff Budget 的 `- Paths:`);
+    ③ risk ≥ 2 —— 有 Jev 時只看 Jev 的 risk 分數,spec 寫的 `Risk: high` 不算;沒有 Jev 時
+    spec 寫 `Risk: high` 就算 risk ≥ 2;
+    ④ 還有沒解決的 Owner Call;
+    ⑤ 需要 Demo verdict(Stage 3 觸發命中;Demo verdict human-only);
+    ⑥ Jev 沒開(沒有 key、沒有 `.dev-flow/jev.yaml` opt-in、mode 不是 live)、雙閘沒通過,
+    或 Jev 呼叫失敗、逾時、回應格式錯誤 —— 一律交給人審,不能因為 Jev 不在就自動放行。
+  - 「G2 provenance」:agent 放行只由 `devflow_gate.py write-g2-auto` 寫 4-spec 頂欄
+    `verdict: PASS`、`verdict_source: fresh_agent_reviewer`、`attested_by: agent:<id>`、`g2_mode: auto`、
+    `routed_by: jev:<evaluation_id>`、`g2r_case`、`g2r_jev`、`mechanical`;人寫的 verdict 是
+    `verdict_source: human_attested`(或 `owner_self_review`)+ `attested_by: human:<名>`,兩者分得開。
+    `attested_by` 不得等於 `authored_by` 或 owner:agent reviewer 不能是寫這份 spec／這支 code 的同一個
+    agent,也不能共用它的 context(格式比對是 tripwire,不是身份驗證)。G1/G3 只收人寫的 verdict。
+    agent 放行時記 `devflow-jev.py g2-misrelease release`;G2 誤放行率只記錄,不設門檻、不自動回滾。
 
  ### G3
 
@@ -206,5 +229,6 @@ G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件�
 
 ## 8.
 
-- **G1/G2/G3 審查與 verdict**:依 §7 的人類→fresh-context reviewer Agent→有記錄的
-  owner 自審順序;Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。
+- **G1/G2/G3 審查與 verdict**:G1/G3 依 §7 的人類→fresh-context reviewer Agent→有記錄的
+  owner 自審順序,verdict 只收人寫的;G2 依 §7「G2 審查者產生」先交 fresh-context reviewer Agent
+  (機械檢查全過且未命中轉人條件),命中轉人條件才回人類→owner 自審;Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。

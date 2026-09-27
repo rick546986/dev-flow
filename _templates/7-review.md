@@ -3,6 +3,9 @@ feature: <slug>
 stage: 7-review
 status: draft
 verdict:             # PRE-REVIEW | REQUEST_CHANGES | PASS | HOLD(步 0a:自審一律 PRE-REVIEW;Human 判定才是 PASS/REQUEST_CHANGES/HOLD;全勾不算 PASS)
+verdict_source:      # human_attested | owner_self_review(G3 只收人寫的 verdict;fresh_agent_reviewer 不收)
+attested_by:         # human:<名>(格式 tripwire,不是身份驗證;agent／Jev 不得填、不得寫 verdict)
+root_cause:          # 空 | spec | other(verdict = REQUEST_CHANGES／HOLD 才填;只准 G3 人類 reviewer 勾,agent 不得代勾;spec = 退件原因追得到 4-spec:R/S 錯漏、DD 判錯、Verification Profile 漏層、spec 自相矛盾;勾 spec 且 4-spec 是 g2_mode: auto → 記 devflow-jev.py g2-misrelease record --stage G3)
 owner:               # reviewer,不可 = 實作 owner
 updated:
 ---

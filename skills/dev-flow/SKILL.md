@@ -47,7 +47,7 @@ description: 開發流程 SOP 的唯一對外入口(五站路由器 Intake→Dec
 |---|---|---|---|
 | Intake（`1-discussion.md`） | **本 skill 不執行**。討論由 `/dev-talk` 專職(資訊隔離:討論 agent 不知道有後續階段,防直奔結論;最好開獨立 session)。使用者在此要求討論 → 請他改跑 `/dev-talk`,並提醒:討論須收集 **Real-world Context**(人怎麼真的完成這件工作) | `1-discussion.md`(接手時**只讀此檔**,對話不是契約);必含 Real-world Context 節(Actors/Current Journey/Workarounds/Exceptions/Evidence)—— Stage 3 觸發判定與 4-spec Operational Context 的輸入;接手時缺此節 = legacy 檔(§4) | Open Questions 全解或明標假設 |
 | Decide（`2-decision.md`） | 2-3 方案並排比較 + 壓測定案(方法內建;可搭 mattpocock `grill-me`);**執行清單見 `_templates/2-decision.md` 頂註**;節點鏈見 `skills/dev-flow/stage2/` | `2-decision.md`;三條件中→抄 `docs/adr/` | **G1** 方向核准 + OC 全裁決(全文見指南 `#gates`) |
-| Spec（`4-spec.md`；UI 才 `3-prototype.md`） | 開場第一動先做**觸發判定**(§4);命中 → throwaway 實驗(code 進 throwaway branch,禁進 main;純資料實驗 → scratchpad);Demo 必要性與 Variant 數量規則見 §4。再開 openspec delta 格式,**step-by-step 生成** + **反模糊三律**(S 可轉單一測試、禁模糊詞、禁 TBD);**執行清單見 `_templates/3-prototype.md` 與 `_templates/4-spec.md` 頂註**;節點鏈見 `skills/dev-flow/stage3/` 與 `stage4/` | `4-spec.md`(含 Drafting Decisions);UI 才有 `3-prototype.md`(涉互動 → 含可操作 Demo + User Demo Feedback,Human verdict 人類親填 + attestation,見 §4) | **G2** R/S 全審 + DD 全裁決 + Verification Profile(依 lane 正確填寫)+ Demo verdict 條件(全文見指南 `#gates`;Demo verdict 語意正本見 §4 所引,機械檢查 `hooks/_stage3_impl.py`);原型答案回寫 2-decision + frontmatter 收尾同步 |
+| Spec（`4-spec.md`；UI 才 `3-prototype.md`） | 開場第一動先做**觸發判定**(§4);命中 → throwaway 實驗(code 進 throwaway branch,禁進 main;純資料實驗 → scratchpad);Demo 必要性與 Variant 數量規則見 §4。再開 openspec delta 格式,**step-by-step 生成** + **反模糊三律**(S 可轉單一測試、禁模糊詞、禁 TBD);**執行清單見 `_templates/3-prototype.md` 與 `_templates/4-spec.md` 頂註**;節點鏈見 `skills/dev-flow/stage3/` 與 `stage4/` | `4-spec.md`(含 Drafting Decisions);UI 才有 `3-prototype.md`(涉互動 → 含可操作 Demo + User Demo Feedback,Human verdict 人類親填 + attestation,見 §4) | **G2** R/S 全審 + DD 全裁決 + Verification Profile(依 lane 正確填寫)+ Demo verdict 條件(全文見指南 `#gates`;Demo verdict 語意正本見 §4 所引,機械檢查 `hooks/_stage3_impl.py`);自動審:fresh-context agent reviewer + 機械檢查,命中轉人條件 → 人審(見 §3「G2 自動審查」);原型答案回寫 2-decision + frontmatter 收尾同步 |
 | Build（`5-tasks.md` + `6-implementation-notes.md`） | `to-tickets` 概念:tracer-bullet 順序 + Covers/Verify/Blocked-by;節點鏈見 `skills/dev-flow/stage5/`。然後 **`dev-run` 引擎**(層與升階見指南 `#flow`;Cursor／Grok 預設 Auto、執行者 ≠ reviewer,見 `skills/dev-run/SKILL.md` 主機分流;守衛 `devflow-exec.sh` start/stop,詳其 SKILL;5-tasks 明寫 `execution.mode: parallel` 時走並行引擎(選配))或手動逐 T;兩者共用指南 `#stage6`／契約檔 §5 的 T acceptance seam:RED→GREEN→scope check→Verify→獨立 T review→PASS→commit→記 Progress Log/checkbox/review evidence;**執行清單見 `_templates/5-tasks.md` 與 `_templates/6-implementation-notes.md` 頂註**;節點鏈見 `skills/dev-flow/stage6/` | `5-tasks.md` + `6-implementation-notes.md`(含 T Review Log;執行軌跡只供 dev-run) | 每 T 有 Verify;每 T review PASS + 全 S 綠 |
 | Ship（`7-review.md` + `.html`） | 雙軸審(Standards + Spec)+ 自建 coverage matrix(可搭 mattpocock `code-review`);整合回歸在 Final Fresh 之前(出貨樹=審過的樹);4-spec Required layers 欄必須在(可寫「無」/none/n-a;空值不算零層;層名全等);**執行清單見 `_templates/7-review.md` 頂註**;節點鏈見 `skills/dev-flow/stage7/` | `7-review.md` + `7-review.html` | **G3** 本次 S 全綠 + 回歸綠 + 現象證據 + Evidence 契約全過(全文見指南 `#gates`);PASS → Exit Checklist(PR 是其中一項) |
 
@@ -79,15 +79,35 @@ gate 條件人看正本 = 指南 `#gates`;機械正本 = 契約檔 §7。本表 
 - **git**:feature branch → develop;禁直上 master。規劃層:起手 `git status`,有無關
   改動先回報使用者;每過 gate 該階段文檔 commit 一次(只含文檔)。
 - **層與 effort**:見指南 `#flow`。本檔不另定義層或型號。
-- **G1/G2/G3 審查與 verdict**:依指南 `#gates` 的人類→fresh-context reviewer Agent→
-  有記錄的 owner 自審順序；Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。
+- **G1/G2/G3 審查與 verdict**:G1/G3 依指南 `#gates` 的人類→fresh-context reviewer Agent→
+  有記錄的 owner 自審順序,verdict 只收人寫的;G2 先交 fresh-context reviewer Agent(機械檢查
+  全過且未命中轉人條件),命中轉人條件才回人審;Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。
   Human 判定正本是同目錄 md 頂欄 `verdict:`(PASS／REQUEST_CHANGES／HOLD)。
   若已寫入,該 gate 已關,feature agent 不得手改該檔來記錄判定;尚無寫入 → 才准在
   chat 問人。全勾不算 PASS;只有頁尾「提交判定」才落盤。sidecar 不是正本,與 md
   衝突時 md 勝。
-- **author ≠ approver**(G1/G2/G3 四眼原則)。審查者依序:適格人類 reviewer →
+- **author ≠ approver**(G1/G2/G3 四眼原則)。G1/G3 審查者依序:適格人類 reviewer →
   fresh-context reviewer Agent → owner 自審(有記錄的最後手段);身分記 reviewers 欄
-  (產生程序見指南 `#gates`)。
+  (產生程序見指南 `#gates`)。G2 審查者依序:fresh-context reviewer Agent(需機械檢查全過且
+  未命中轉人條件)→ 適格人類 reviewer → owner 自審(有記錄的最後手段)。4-spec 頂欄
+  `authored_by` 記寫 spec 的是誰,agent reviewer 的 `attested_by: agent:<id>` 不得等於它或 owner,
+  也不得共用寫 spec／code 那個 agent 的 context。
+- **G2 自動審查**(契約 §7「G2 自動放行」「G2 轉人條件」「G2 provenance」;ADR 0004):
+  1. `python3 <master>/scripts/devflow-jev.py g2r --slug <slug>` —— Jev G2R 只分流(AUTO 交給
+     agent／HUMAN 交給人),**不 review、不寫 verdict**。Jev 沒開(沒 key、沒
+     `.dev-flow/jev.yaml`、mode 不是 live)、失敗、逾時、回應格式錯 → 一律 HUMAN。
+  2. 轉人條件(任一 → 人審):Jev 判 HUMAN 或 p(AUTO_PASS) < 0.85(剛好 0.85 交給 agent);
+     命中 risk_paths 或 4-spec 沒宣告 `- Paths:`;risk ≥ 2(有 Jev 只看 Jev 分數,spec 的
+     `Risk: high` 不算;沒 Jev 時 `Risk: high` 就算);有沒解決的 Owner Call;需要 Demo verdict;
+     Jev 不在。
+  3. AUTO → 派乾淨 context 的 reviewer agent(只給 4-spec + 契約 §7 G2 錨定義 + 回報格式)。
+     PASS 才跑 `python3 <master>/scripts/devflow_gate.py write-g2-auto --root . --slug <slug>
+     --reviewer agent:<id> --evidence-ref <報告>`:它重跑機械檢查與轉人條件,任一不過就拒寫;
+     過了才寫 `verdict_source: fresh_agent_reviewer` + `g2_mode: auto` 等 provenance,並呼叫
+     `devflow-jev.py g2-misrelease release` 記一筆(誤放行率只記錄,不設門檻、不自動回滾)。
+     **feature agent 不得手寫這些頂欄**;`scripts/check-verdict-attestation.sh` 事後重驗。
+  4. 退回人審:把 `.dev-flow/jev.yaml` 的 `mode:` 改成 `shadow` 或 `off`(或拿掉 key)→ G2R
+     全部判 HUMAN、write-g2-auto 全拒;不需改程式。
 
 ## 4. Stage 3 操作面(觸發判定/Demo/verdict)
 

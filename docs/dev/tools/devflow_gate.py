@@ -10,7 +10,16 @@ HTML / localStorage / sidecar 都不是正本;sidecar 與 md 衝突時 md 勝。
   python3 scripts/devflow_gate.py write --root DIR --slug SLUG --stage STAGE \\
       --verdict PASS|REQUEST_CHANGES|HOLD [--notes TEXT] [--reviewer NAME] \\
       [--checked id,id] [--source-sha SHA] [--no-sidecar]
+  python3 scripts/devflow_gate.py write-g2-auto --root DIR --slug SLUG \\
+      --reviewer agent:<id> --evidence-ref <agent reviewer 報告路徑或 PR> [--notes TEXT]
   python3 scripts/devflow_gate.py serve --root DIR [--port 8765]
+
+write 是人的「提交判定」:有 reviewer 時同時落 verdict_source: human_attested + attested_by: human:<reviewer>;
+reviewer 是 agent／Jev → 拒收(G1/G2/G3 的 write 只收人)。
+write-g2-auto 是 **G2 agent reviewer 放行的唯一寫入路徑**(契約 §7「G2 審查者產生」):只收 4-spec、
+只收 PASS、只收 agent:<id> 且 ≠ authored_by／owner;寫前要 G2R 紀錄判 AUTO(雙閘門 live + Jev 在)、
+沒有命中任何轉人條件、機械檢查全過,缺一就不改檔(exit 2)。放行時呼叫
+`devflow-jev.py g2-misrelease release` 記一筆(誤放行率分母;只記錄、不設門檻、不回滾)。
 """
 from __future__ import annotations
 
@@ -45,8 +54,25 @@ def read_canonical_verdict(text: str) -> str:
     return value if value in HUMAN_VERDICTS else ""
 
 
-def patch_md(text: str, verdict: str, notes: str | None = None) -> str:
-    """寫入同檔頂欄 verdict:;可另寫一行 Human verdict note。"""
+def _set_front_field(front: str, key: str, value: str) -> str:
+    """頂欄同名鍵有就換、沒有就緊接在 verdict: 之後補一行。"""
+    line_re = re.compile(r"^%s:\s*.*$" % re.escape(key), re.M)
+    if line_re.search(front):
+        return line_re.sub(lambda _m: "%s: %s" % (key, value), front, count=1)
+    return re.sub(r"^(verdict:\s*.*)$", lambda m: "%s\n%s: %s" % (m.group(1), key, value), front, count=1,
+                  flags=re.M)
+
+
+def is_agent_reviewer(reviewer: str) -> bool:
+    who = (reviewer or "").strip().lower()
+    return who.startswith(("agent:", "jev"))
+
+
+def patch_md(text: str, verdict: str, notes: str | None = None, reviewer: str = "",
+             fields: dict | None = None) -> str:
+    """寫入同檔頂欄 verdict:;可另寫一行 Human verdict note。
+    有 reviewer 時同時落 `verdict_source: human_attested` 與 `attested_by: human:<reviewer>`
+    (本函式的 reviewer 只收人;agent 的 G2 放行走 write_g2_auto,由它傳 fields)。"""
     if verdict not in HUMAN_VERDICTS:
         raise ValueError("verdict 必須是 PASS | REQUEST_CHANGES | HOLD")
     match = FM_RE.match(text)
@@ -66,6 +92,14 @@ def patch_md(text: str, verdict: str, notes: str | None = None) -> str:
         )
     else:
         front = "verdict: " + verdict + "\n" + front
+    who = (reviewer or "").strip().replace(" ", "_")
+    if who:
+        if is_agent_reviewer(who):
+            raise ValueError("reviewer 不得是 agent/Jev:本寫入器只收人的判定(G2 agent 放行走 write-g2-auto)")
+        front = _set_front_field(front, "verdict_source", "human_attested")
+        front = _set_front_field(front, "attested_by", "human:" + who)
+    for key, value in (fields or {}).items():
+        front = _set_front_field(front, key, value)
     if notes:
         line = "- Human verdict note: " + notes.splitlines()[0]
         if NOTE_RE.search(rest):
@@ -121,7 +155,11 @@ def write_verdict(root: pathlib.Path, slug: str, stage: str, verdict: str,
         raise FileNotFoundError(str(path))
     text = path.read_text(encoding="utf-8")
     sha = source_sha or git_sha(root)
-    patched = patch_md(text, verdict, notes or None)
+    if is_agent_reviewer(reviewer):
+        raise ValueError("reviewer 不得是 agent/Jev:write 只收人的判定"
+                         "(G1/G3 維持人審;G2 agent 放行只走 write-g2-auto)")
+    extra = {"g2_mode": "human"} if stage == "4-spec" and reviewer.strip() else None
+    patched = patch_md(text, verdict, notes or None, reviewer=reviewer, fields=extra)
     path.write_text(patched, encoding="utf-8")
     side_path = path.with_suffix(".verdict.json")
     if sidecar:
@@ -133,6 +171,88 @@ def write_verdict(root: pathlib.Path, slug: str, stage: str, verdict: str,
     return {
         "path": str(path),
         "verdict": read_canonical_verdict(path.read_text(encoding="utf-8")),
+        "sidecar": str(side_path) if sidecar else "",
+        "source_sha": sha,
+    }
+
+
+def _load_g2auto():
+    """G2 auto 判定住 devflow_jev/g2auto.py(與本檔並排散發)。找不到 → 拒絕(fail-closed:不當成可放行)。"""
+    here = os.path.dirname(os.path.abspath(__file__))
+    if not os.path.isfile(os.path.join(here, "devflow_jev", "g2auto.py")):
+        raise ValueError("找不到 devflow_jev/g2auto.py —— G2 agent 放行無法驗證,交給人審")
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    from devflow_jev import attestation, g2auto  # noqa: E402
+    return attestation, g2auto
+
+
+def _record_agent_release(root: pathlib.Path, slug: str, case_hash: str, evidence_ref: str,
+                          reviewer: str) -> dict:
+    """呼叫 `devflow-jev.py g2-misrelease release` 記一筆 agent 放行(誤放行率分母)。失敗 → 不放行。"""
+    here = os.path.dirname(os.path.abspath(__file__))
+    script = os.path.join(here, "devflow-jev.py")
+    if not os.path.isfile(script):
+        raise ValueError("找不到 devflow-jev.py —— 記不了 g2-misrelease release,不放行")
+    run = subprocess.run(
+        [sys.executable, script, "--root", str(root), "g2-misrelease", "release", "--slug", slug,
+         "--case-hash", case_hash, "--evidence-ref", evidence_ref, "--reported-by", reviewer],
+        capture_output=True, text=True, timeout=60, check=False)
+    if run.returncode != 0:
+        raise ValueError("g2-misrelease release 失敗(exit %d):%s" % (run.returncode, run.stderr.strip()[-300:]))
+    return json.loads(run.stdout)
+
+
+def write_g2_auto(root: pathlib.Path, slug: str, reviewer: str, evidence_ref: str,
+                  notes: str = "", source_sha: str = "", sidecar: bool = True) -> dict:
+    """G2 agent reviewer 放行(契約 §7):agent PASS + 機械檢查全過 + G2R 判 AUTO(未命中任何轉人條件)。
+    任一不成立 → ValueError,md 不動、不記 release。成立 → 先記 release,再寫頂欄。"""
+    attestation, g2auto = _load_g2auto()
+    path = md_path(root, slug, "4-spec")
+    if not path.is_file():
+        raise FileNotFoundError(str(path))
+    reviewer = (reviewer or "").strip()
+    if not reviewer.startswith("agent:"):
+        raise ValueError("write-g2-auto 只收 agent:<id>(人的判定走 write)")
+    text = path.read_text(encoding="utf-8")
+    fm = attestation.parse_frontmatter(text)
+    record = g2auto.latest_g2r_record(str(root), slug)
+    if record is None:
+        raise ValueError("沒有 G2R 分流紀錄(.devflow/jev/g2r.jsonl)—— 先跑 devflow-jev.py g2r;"
+                         "Jev 沒開／失敗 = 交給人審")
+    mech = g2auto.mechanical_checks(str(root), slug)
+    candidate = dict(fm)
+    fields = {
+        "verdict_source": g2auto.AUTO_SOURCE,
+        "attested_by": reviewer,
+        "g2_mode": "auto",
+        "routed_by": "jev:%s" % record.get("evaluation_id"),
+        "g2r_case": str(record.get("case_hash")),
+        "g2r_jev": str(record.get("jev_snapshot")),
+        "mechanical": mech["digest"],
+    }
+    candidate.update(fields)
+    candidate["verdict"] = "PASS"
+    problems = g2auto.auto_release_problems(str(root), slug, candidate, g2r_record=record,
+                                            require_record=True, mechanical=mech)
+    if problems:
+        raise ValueError("G2 不能由 agent 放行,交給人審:" + ";".join(problems))
+    release = _record_agent_release(root, slug, fields["g2r_case"], evidence_ref, reviewer)
+    sha = source_sha or git_sha(root)
+    patched = patch_md(text, "PASS", None, fields=fields)       # agent 的 notes 只進 sidecar,不冒充 Human verdict note
+    path.write_text(patched, encoding="utf-8")
+    side_path = path.with_suffix(".verdict.json")
+    if sidecar:
+        payload = sidecar_payload("4-spec", "PASS", notes, [], reviewer, sha)
+        payload.update({"verdict_source": g2auto.AUTO_SOURCE, "g2_mode": "auto", "routed_by": fields["routed_by"]})
+        side_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return {
+        "path": str(path),
+        "verdict": read_canonical_verdict(path.read_text(encoding="utf-8")),
+        "verdict_source": g2auto.AUTO_SOURCE,
+        "g2_mode": "auto",
+        "routed_by": fields["routed_by"],
+        "g2_misrelease_release": release.get("written"),
         "sidecar": str(side_path) if sidecar else "",
         "source_sha": sha,
     }
@@ -256,6 +376,16 @@ def main(argv=None) -> int:
     write_p.add_argument("--source-sha", default="")
     write_p.add_argument("--no-sidecar", action="store_true")
 
+    auto_p = sub.add_parser("write-g2-auto",
+                            help="G2 agent reviewer 放行(只 4-spec;需 G2R AUTO + 機械檢查全過 + author≠approver)")
+    auto_p.add_argument("--root", required=True)
+    auto_p.add_argument("--slug", required=True)
+    auto_p.add_argument("--reviewer", required=True, help="agent:<id>(不得 = authored_by / owner / Jev)")
+    auto_p.add_argument("--evidence-ref", required=True, help="agent reviewer 報告路徑或 PR 連結")
+    auto_p.add_argument("--notes", default="")
+    auto_p.add_argument("--source-sha", default="")
+    auto_p.add_argument("--no-sidecar", action="store_true")
+
     serve_p = sub.add_parser("serve", help="本機 POST 寫入 md")
     serve_p.add_argument("--root", default=".")
     serve_p.add_argument("--port", type=int, default=int(os.environ.get("DEVFLOW_GATE_PORT", "8765")))
@@ -269,6 +399,18 @@ def main(argv=None) -> int:
                 args.slug, args.stage, args.verdict,
                 notes=args.notes, reviewer=args.reviewer, checked=checked,
                 source_sha=args.source_sha, sidecar=not args.no_sidecar,
+            )
+        except (ValueError, FileNotFoundError, OSError) as err:
+            print(str(err), file=sys.stderr)
+            return 2
+        print(json.dumps(result, ensure_ascii=False))
+        return 0
+    if args.cmd == "write-g2-auto":
+        try:
+            result = write_g2_auto(
+                pathlib.Path(args.root).expanduser().resolve(), args.slug, args.reviewer,
+                args.evidence_ref, notes=args.notes, source_sha=args.source_sha,
+                sidecar=not args.no_sidecar,
             )
         except (ValueError, FileNotFoundError, OSError) as err:
             print(str(err), file=sys.stderr)

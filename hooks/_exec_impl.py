@@ -68,6 +68,9 @@ def spec_gate(slug):
     if st != "approved":
         die(f"拒絕:4-spec status={st or '(空)'}(需 approved,先過審)。")
     prof = L.spec_profile(text)
+    if prof["risk_error"]:
+        die(f"⛔ 拒絕啟動:4-spec Verification Profile {prof['risk_error']} —— "
+            "Risk 讀不懂一律擋下,不當成低風險。→ 改成 `- Risk: normal` 或 `- Risk: high`。")
     if prof["lane"] == "fast" and prof["risk"] == "high" and not prof["owner_call_fast_high"]:
         die("⛔ 拒絕啟動:4-spec Verification Profile 為 lane: fast + Risk: high —— "
             "OC-4 規定 Runtime 一律拒絕(fast lane 命中 high 必須自動升 full)。\n"

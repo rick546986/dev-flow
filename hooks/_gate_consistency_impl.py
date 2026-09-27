@@ -31,6 +31,14 @@ exit 0 = 三處摘要皆一致;exit 1 = 發現漂移(非本檔失效,是真的�
 
 G3 的「本次 S 全綠」是機械錨點之一，須如其他 G3 條件一樣以 **粗體** 留在 §7 正本；
 因此會隨動態 token 抽取出現在每處摘要的比對中。
+
+reviewer-selection 分兩種子句(ADR 0004;G2 自動審查上線):
+  - 原子句(G1/G3):適格人類 reviewer → fresh-context reviewer Agent → owner 自審(有記錄的最後手段)。
+    **不得再列 G2**(G2 放寬不能靠原子句的範圍含糊帶過)。
+  - G2 子句(以「G2 審查者產生／依序」開頭):fresh-context reviewer Agent(需機械檢查全過且未命中
+    轉人條件)→ 適格人類 reviewer → owner 自審。**不得列 G1/G3**(G2 放寬不得連帶放寬 G1/G3),
+    agent 那一步必須帶「機械檢查」與「轉人條件」兩個前提。
+  位置:契約檔 §7 與 SKILL 兩種各恰好一句;2-decision／7-review 模板只准原子句;4-spec 模板只准 G2 子句。
 """
 import os
 import re
@@ -73,7 +81,9 @@ SYNONYMS = [
 
 TOKEN_TRUNC = re.compile(r'逐\s*[A-Z]\b.*$')
 SCRIPT_RUN = re.compile(r'[A-Za-z0-9/]+(?:\s[A-Za-z0-9/]+)*|[一-鿿]+')
-REVIEWER_SELECTION_CLAUSE = re.compile(r'審查者(?:產生|依序)[^。！？]*', re.IGNORECASE)
+# 子句含其前綴的 gate 標籤(如「G1/G2/G3 審查者產生」),範圍才驗得到;前綴恰為 G2 = G2 子句。
+REVIEWER_SELECTION_CLAUSE = re.compile(r'((?:\**G\d(?![A-Za-z])/?)+\**)?審查者(?:產生|依序)[^。！？]*', re.IGNORECASE)
+G2_PRECONDITIONS = (("機械檢查", re.compile(r'機械檢查')), ("轉人條件", re.compile(r'轉人條件')))
 REVIEWER_SELECTION_STEPS = (
     ("適格人類 reviewer", re.compile(r'適格人類(?:第二人|reviewer)?', re.IGNORECASE)),
     ("fresh-context reviewer Agent", re.compile(r'fresh-contextrevieweragent', re.IGNORECASE)),
@@ -220,37 +230,87 @@ def check(tokens, location_text):
     return [t for t in tokens if norm(t) not in nl]
 
 
-def reviewer_selection_error(location_text):
-    """驗一個正向、完整的 reviewer-selection 子句，而非在整段找 token。"""
+def reviewer_clauses(location_text):
+    """回 (原子句 list, G2 子句 list);每個元素是含前綴的攤平字串。"""
     flattened = re.sub(r'\s+', '', location_text)
-    clauses = REVIEWER_SELECTION_CLAUSE.findall(flattened)
-    if len(clauses) == 0:
-        return "缺少以「審查者產生」或「審查者依序」開始的正向選擇子句"
-    if len(clauses) > 1:
-        return "reviewer-selection 子句不唯一,無法安全判定唯一的 fallback 順序"
-    clause = clauses[0]
+    general, g2 = [], []
+    for m in REVIEWER_SELECTION_CLAUSE.finditer(flattened):
+        prefix = (m.group(1) or '').strip('*')
+        (g2 if prefix == 'G2' else general).append(m.group(0))
+    return general, g2
 
+
+def _clause_steps_error(clause, order, order_label):
     for label, negation in REVIEWER_NEGATED_STEPS:
         if negation.search(clause):
             return f"不得否定「{label}」步驟"
-
-    matches = [(label, pattern.search(clause)) for label, pattern in REVIEWER_SELECTION_STEPS]
-    absent = [label for label, match in matches if match is None]
+    steps = dict((label, pattern.search(clause)) for label, pattern in REVIEWER_SELECTION_STEPS)
+    absent = [label for label in order if steps[label] is None]
     if absent:
         return f"缺步驟「{'、'.join(absent)}」"
-
-    positions = [match.start() for _, match in matches]
+    positions = [steps[label].start() for label in order]
     if positions != sorted(positions):
-        return "順序必須是適格人類 reviewer → fresh-context reviewer Agent → owner 自審"
-
-    owner_start = matches[-1][1].start()
-    owner_tail = clause[owner_start:]
+        return f"順序必須是{order_label}"
+    owner_tail = clause[steps["owner 自審"].start():]
     if REVIEWER_NEGATED_RECORD.search(owner_tail):
         return "不得否定 owner 自審的記錄要求"
     if REVIEWER_NEGATED_LAST_RESORT.search(owner_tail):
         return "不得否定 owner 自審的最後手段限制"
     if not REVIEWER_RECORD.search(owner_tail) or not REVIEWER_LAST_RESORT.search(owner_tail):
         return "owner 自審必須明示為有記錄的最後手段"
+    return None
+
+
+GENERAL_ORDER = ("適格人類 reviewer", "fresh-context reviewer Agent", "owner 自審")
+G2_ORDER = ("fresh-context reviewer Agent", "適格人類 reviewer", "owner 自審")
+
+
+def general_clause_error(clause):
+    """原子句(G1/G3):人類 → fresh agent → owner 自審;不得再列 G2。"""
+    if re.search(r'G2(?![A-Za-z0-9])', clause):
+        return "原子句(G1/G3)不得再列 G2 —— G2 審查者另有一句(G2 審查者產生)"
+    return _clause_steps_error(clause, GENERAL_ORDER,
+                               "適格人類 reviewer → fresh-context reviewer Agent → owner 自審")
+
+
+def g2_clause_error(clause):
+    """G2 子句:fresh agent(機械檢查全過且未命中轉人條件)→ 人類 → owner 自審;不得列 G1/G3。"""
+    body = clause[2:] if clause.startswith('G2') else clause
+    if re.search(r'G[13](?![A-Za-z0-9])', body):
+        return "G2 子句不得列 G1/G3 —— G2 放寬不得連帶放寬 G1/G3"
+    error = _clause_steps_error(clause, G2_ORDER,
+                                "fresh-context reviewer Agent → 適格人類 reviewer → owner 自審")
+    if error:
+        return "G2 子句" + error
+    agent_at = REVIEWER_SELECTION_STEPS[1][1].search(clause).start()
+    human_at = REVIEWER_SELECTION_STEPS[0][1].search(clause).start()
+    missing = [label for label, pat in G2_PRECONDITIONS
+               if not pat.search(clause[agent_at:human_at])]
+    if missing:
+        return f"G2 子句的 fresh-context reviewer Agent 步驟缺前提「{'、'.join(missing)}」"
+    return None
+
+
+def reviewer_selection_error(location_text, need_general=True, need_g2=True):
+    """驗正向、完整的 reviewer-selection 子句，而非在整段找 token。
+    need_general / need_g2 = 該位置必須恰好一句原子句 / G2 子句;False = 該位置不得出現。"""
+    general, g2 = reviewer_clauses(location_text)
+    for need, found, label in ((need_general, general, "原子句(G1/G3 審查者產生/依序)"),
+                               (need_g2, g2, "G2 子句(G2 審查者產生/依序)")):
+        if need and len(found) == 0:
+            return f"缺少{label}"
+        if need and len(found) > 1:
+            return f"{label}不唯一,無法安全判定唯一的 fallback 順序"
+        if not need and found:
+            return f"此處不得出現{label}"
+    for clause in general:
+        error = general_clause_error(clause)
+        if error:
+            return error
+    for clause in g2:
+        error = g2_clause_error(clause)
+        if error:
+            return error
     return None
 
 
@@ -266,9 +326,10 @@ def main():
     n_checks = 0
     n_bad = 0
 
+    # (標籤, 文字, 需原子句, 需 G2 子句)
     reviewer_locations = [
-        ("契約檔 §7", g7_raw),
-        ("plugin dev-flow SKILL.md", skill_text),
+        ("契約檔 §7", g7_raw, True, True),
+        ("plugin dev-flow SKILL.md", skill_text, True, True),
     ]
 
     for idx, (gate, _) in enumerate(GATE_TABLE):
@@ -285,7 +346,8 @@ def main():
         tpl_text = read(tpl_path)
         tpl_header = find_template_header(tpl_text, os.path.basename(tpl_path))
         locations.append((f"_templates/{os.path.basename(tpl_path)} 頂註", tpl_header))
-        reviewer_locations.append((f"_templates/{os.path.basename(tpl_path)} 頂註", tpl_header))
+        reviewer_locations.append((f"_templates/{os.path.basename(tpl_path)} 頂註", tpl_header,
+                                   gate != "G2", gate == "G2"))
 
         for loc_label, loc_text in locations:
             n_checks += 1
@@ -297,10 +359,10 @@ def main():
             else:
                 lines_out.append(f"  ✓ {loc_label}")
 
-    lines_out.append("[reviewer-selection] 契約檔 §7 與 G1/G2/G3 模板的角色順序")
-    for loc_label, loc_text in reviewer_locations:
+    lines_out.append("[reviewer-selection] 契約檔 §7 與 G1/G2/G3 模板的角色順序(G1/G3 原子句 + G2 子句)")
+    for loc_label, loc_text, need_general, need_g2 in reviewer_locations:
         n_checks += 1
-        error = reviewer_selection_error(loc_text)
+        error = reviewer_selection_error(loc_text, need_general, need_g2)
         if error:
             all_ok = False
             n_bad += 1

@@ -2,7 +2,15 @@
 feature: <slug>
 stage: 4-spec
 status: draft
-verdict:             # 空 | PASS | REQUEST_CHANGES | HOLD(Human 判定;全勾不算 PASS)
+verdict:             # 空 | PASS | REQUEST_CHANGES | HOLD(全勾不算 PASS;人判走 devflow_gate.py write,agent 放行只走 write-g2-auto)
+verdict_source:      # human_attested | fresh_agent_reviewer | owner_self_review(verdict 由誰寫;缺 = unverified)
+attested_by:         # human:<名> 或 agent:<id>(格式 tripwire,不是身份驗證;Jev 不得填、不得寫 verdict)
+authored_by:         # agent:<id> 或 human:<名>(寫這份 4-spec 的是誰;G2 agent reviewer 不得同一個、不得共用它的 context)
+g2_mode:             # 空 | auto | human(auto = fresh-context agent reviewer 放行,只由 write-g2-auto 寫;命中轉人條件 → human)
+routed_by:           # jev:<evaluation_id>(G2R 分流紀錄;只記誰分流,不是 verdict source;沒有 Jev = 交給人審)
+g2r_case:            # sha256:…(G2R case hash;g2_mode: auto 才有,write-g2-auto 代填)
+g2r_jev:             # AUTO_PASS p=<0..1> risk=<0-3>(Jev 分流快照;g2_mode: auto 才有,write-g2-auto 代填)
+mechanical:          # sha256:…(機械檢查輸出摘要:check-spec-gate + stage3;g2_mode: auto 才有,write-g2-auto 代填)
 owner:
 reviewers: []        # G2 審查者,不可 = owner
 updated:
@@ -87,8 +95,13 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 >    任一否 → 重寫該 S;(選配)每 S 產 named test skeleton 入 Test Skeletons 節。
 >    完成 = 機械關卡 exit 0 + 逐 S 打勾 + 鏈檢清零。
 > 6. G2 送審:html twin(R 級行為流程圖;DD 待裁決置頂)→ in-review → reviewer。
->    審查者依序:適格人類 reviewer → fresh-context reviewer Agent → owner 自審
->    (有記錄的最後手段)。G2 審查關鍵條件 = R/S 全審 + DD 全裁決
+>    G2 審查者依序:fresh-context reviewer Agent(需機械檢查全過且未命中 G2 轉人條件)
+>    → 適格人類 reviewer → owner 自審(有記錄的最後手段)。先跑
+>    `devflow-jev.py g2r --slug <slug>`(Jev 只分流、不 review、不寫 verdict);判 AUTO →
+>    交乾淨 context 的 agent reviewer(≠ authored_by),PASS 才由
+>    `devflow_gate.py write-g2-auto` 寫 verdict(它再驗機械檢查 + 轉人條件,並記
+>    `g2-misrelease release`);判 HUMAN 或 Jev 沒開/失敗 → 人審。轉人條件全文見契約 §7。
+>    G2 審查關鍵條件 = R/S 全審 + DD 全裁決
 >    + Verification Profile(依 lane 正確填寫;未填視為步 3 未完成)
 >    + Demo verdict(條件式:無 Stage 3 trigger → N/A+原因;有 trigger → 需人類
 >    ACCEPTED,REVISE/NOT_REVIEWED 不得過,跳過需 Owner Call;Agent 不得代填)——
@@ -192,6 +205,9 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
         約為天真估法的 **3 倍**。理由:每一刀首輪全綠的突變都要補一條新測試,
         這是紀律的直接後果,不是估錯。
      ④ 超支本身非偏差,是停下判 L1/L2 的訊號;分不清一律當 L2(與原句一致,維持不變)。 -->
+<!-- `- Paths:` = 本次預計改動的檔案路徑或目錄前綴(逗號分隔;G2R 用來判 risk_paths)。
+     不寫、空值或留 `<…>` 占位 = 沒宣告 → G2 一律交給人審(fail-closed,不當成「沒命中」)。 -->
+- Paths: <逗號分隔,如 src/app/handler.py, tests/app/>
 
 ## Dependencies
 <!-- 依賴的其他 feature / 外部系統 / migration。每個新依賴/新工具一行 justification

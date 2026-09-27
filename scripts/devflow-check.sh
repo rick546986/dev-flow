@@ -146,6 +146,11 @@ group_methodology() {
   run "methodology/check-stage7-shot-contract" scripts/check-stage7-shot-contract.sh || return 1
   # Human gate verdict 寫入:正本是 md 頂欄 verdict:,全勾不算 PASS,sidecar 不是正本。
   run "methodology/check-gate-verdict-write" scripts/check-gate-verdict-write.sh || return 1
+  # 誰寫了 verdict:verdict_source/attested_by 出處;Jev/agent 冒 human、G1/G3 agent verdict、
+  # G2 agent verdict 命中轉人條件 → 紅;legacy 只列(ADR 0004 / 契約 §7「G2 provenance」)。
+  run "methodology/check-verdict-attestation" scripts/check-verdict-attestation.sh || return 1
+  # G2 自動審查:G2R 分流(Jev 只分流)+ write-g2-auto + g2-misrelease 的牙(FakeTransport,零外部網路)。
+  run "methodology/test-devflow-jev"          scripts/test-devflow-jev.sh        || return 1
   # 站審 html 掛 Pages:三邊食譜都在;拿掉 pages job 或漏掛 7-review.html／shots 必須紅。
   # 本機對應是既有 serve --root,不另開伺服器。
   run "methodology/check-pages-hosting" scripts/check-pages-hosting.sh || return 1

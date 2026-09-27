@@ -155,7 +155,9 @@ if not has_section:
     c2_bad.append("缺整節 `## Verification Profile` —— 模板 :175")
 if prof["lane"] is None:
     c2_bad.append("解析不到 `- lane: full|fast` 行(runtime start 會讀)—— 模板 :181")
-if prof["risk"] is None:
+if prof["risk_error"]:
+    c2_bad.append(f"{prof['risk_error']} —— Risk 讀不懂一律擋下,不當成低風險(runtime start 同一規則)")
+elif prof["risk"] is None:
     c2_bad.append("解析不到 `- Risk: normal|high` 行(runtime start 會讀)—— 模板 :182")
 record("C2", not c2_bad,
        f"Verification Profile 可解析(lane={prof['lane']} / Risk={prof['risk']})", c2_bad)

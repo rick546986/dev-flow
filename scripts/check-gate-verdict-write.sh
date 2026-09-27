@@ -3,7 +3,7 @@
 #
 # 咬什麼:notes/design/gate-verdict-write.md 丟了鎖死句子
 # (md 頂欄 verdict: 是正本／提交判定／全勾不算 PASS／sidecar 不是正本／
-# md 勝／不得手改／File System Access／dev-flow gate serve),
+# md 勝／不得手改／File System Access／dev-flow gate serve／verdict_source／attested_by),
 # 或 hop／產生器／寫入器不再點名這些句,必須紅。
 #
 # 另跑 write + serve POST 實測:寫的是 md verdict:,sidecar 衝突時 md 勝。
@@ -88,6 +88,10 @@ CONTRACT_NEEDLES = (
     "7-review.md",
     "2-decision.md",
     "4-spec.md",
+    "verdict_source:",
+    "attested_by:",
+    "unverified",
+    "不得寫 `verdict:`",
 )
 
 HOP_NEEDLES = (
@@ -178,6 +182,10 @@ def judge(contract_text, hop_texts, builder_text, helper_text, template_texts):
             fail("%s 存在" % rel)
         elif "verdict:" not in text:
             fail("%s 含頂欄 verdict:" % rel)
+        else:
+            for field in ("verdict_source:", "attested_by:"):
+                if field not in text:
+                    fail("%s 含頂欄 %s(P3-2 出處欄)" % (rel, field))
     return local
 
 
@@ -206,6 +214,13 @@ if contract_text is not None:
     stripped = contract_text.replace("md 勝", "")
     check(bool(judge(stripped, hop_texts, builder_text, helper_text, template_texts)),
           "牙咬:契約刪「md 勝」必須紅")
+    stripped = contract_text.replace("verdict_source:", "")
+    check(bool(judge(stripped, hop_texts, builder_text, helper_text, template_texts)),
+          "牙咬:契約刪「verdict_source:」必須紅(P3-2)")
+    tpl_stripped = dict(template_texts)
+    tpl_stripped[TEMPLATES[2]] = (template_texts[TEMPLATES[2]] or "").replace("attested_by:", "")
+    check(bool(judge(contract_text, hop_texts, builder_text, helper_text, tpl_stripped)),
+          "牙咬:7-review 模板刪「attested_by:」必須紅(P3-2)")
     poisoned = contract_text + "\n形成併取卵\n"
     check(bool(judge(poisoned, hop_texts, builder_text, helper_text, template_texts)),
           "牙咬:契約寫入補助產品詞必須紅")
@@ -248,6 +263,16 @@ with tempfile.TemporaryDirectory() as tmp:
     check(re.search(r"^verdict:\s*HOLD\s*$", got, re.M) is not None,
           "write:md 頂欄 verdict: HOLD")
     check("- Human verdict note: wait" in got, "write:可寫一行 Human verdict note")
+    check(re.search(r"^verdict_source:\s*human_attested\s*$", got, re.M) is not None
+          and re.search(r"^attested_by:\s*human:ada\s*$", got, re.M) is not None,
+          "write:有 reviewer 時代填 verdict_source: human_attested + attested_by: human:<reviewer>(P3-2)")
+    agent_rejected = False
+    try:
+        gate.write_verdict(Path(tmp), "demo", "7-review", "PASS", reviewer="agent:jev-1")
+    except ValueError:
+        agent_rejected = True
+    check(agent_rejected and gate.read_canonical_verdict(md.read_text(encoding="utf-8")) == "HOLD",
+          "write:reviewer 是 agent/Jev 必須拒收且不改 md(P3-2:Jev 不得寫 verdict)")
     side = slug_dir / "7-review.verdict.json"
     check(side.is_file(), "write:可另寫選配 sidecar")
     # sidecar 說 PASS、md 說 HOLD → 正本仍是 md

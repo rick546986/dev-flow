@@ -22,6 +22,17 @@
    該 gate 已關;feature agent **不得手改** review／decision／spec 檔來記錄
    Human verdict。尚無寫入 → 才准在 chat 問人。`REQUEST_CHANGES` 走既有修迴圈,
    不是「把判定貼一遍」。
+6. **verdict 必附出處**。同一頂欄 `verdict_source:`(`human_attested`／
+   `fresh_agent_reviewer`／`owner_self_review`)與 `attested_by:`(`human:<名>` 或 `agent:<id>`)
+   隨 `verdict:` 一起落盤;寫入器在有 reviewer 時代填 `human_attested` + `human:<reviewer>`,
+   reviewer 是 agent／Jev 一律拒收。缺兩欄 = **unverified**(legacy,gate 照關、只列不紅)。
+   **Jev／任何自動化不得寫 `verdict:`、不得填 `attested_by`**。G1(2-decision)／G3(7-review)
+   只收人寫的 verdict。**G2 auto**:agent reviewer 的 PASS 只由 `devflow_gate.py write-g2-auto`
+   寫入 —— 只收 4-spec、`fresh_agent_reviewer` + `agent:<id>` 且 ≠ `authored_by`／owner,寫前要
+   G2R 判 AUTO、未命中任何轉人條件、機械檢查全過,並記 `devflow-jev.py g2-misrelease release`;
+   頂欄另帶 `g2_mode: auto`、`routed_by: jev:<id>`、`g2r_case`、`g2r_jev`、`mechanical`(契約 §7
+   「G2 provenance」)。格式 attestation 是 provenance tripwire,不是身份驗證。
+   機械檢查:`scripts/check-verdict-attestation.sh`。
 
 ## 何時不用
 
