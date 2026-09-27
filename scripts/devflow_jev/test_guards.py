@@ -2081,5 +2081,319 @@ class W10MisreleaseRate(unittest.TestCase):
         self.assertNotIn("G2R", GATES)
 
 
+# ───────────────────────────── W11 MR 記憶重排序(P2-11) ─────────────────────────────
+def mr_cands(n=12, prefix="m", mandatory=()):
+    out = [{"id": "%s%02d" % (prefix, i), "item_type": "event", "title": "memory %d" % i} for i in range(1, n + 1)]
+    for rank in mandatory:
+        out[rank - 1]["mandatory"] = True
+    return out
+
+
+def mr_scores(cands, order):
+    """order = 分數由高到低的原排名(1-based);未列者依原排名墊後。"""
+    rest = [r for r in range(1, len(cands) + 1) if r not in order]
+    return {cands[r - 1]["id"]: 10.0 - 0.1 * pos for pos, r in enumerate(list(order) + rest)}
+
+
+def mr_query(qid, relevant, order, n=8, mandatory=()):
+    cs = mr_cands(n, prefix=qid + "-", mandatory=mandatory)
+    return {"id": qid, "candidates": cs, "relevant": [cs[r - 1]["id"] for r in relevant],
+            "scores": {k: v for k, v in mr_scores(cs, order).items()
+                       if not any(c["id"] == k and c.get("mandatory") for c in cs)}}
+
+
+def mr_fixture(queries, source="synthetic"):
+    return {"schema": policy.MR_EVAL_SCHEMA, "name": "t", "score_source": source, "queries": queries}
+
+
+def unchanged(qid, mandatory=()):
+    """答案在第 1、MR 也維持 → recall/rr 兩邊都 1。"""
+    return mr_query(qid, [1], [1, 2, 3, 4, 5], mandatory=mandatory)
+
+
+class W11MRRerank(unittest.TestCase):
+    """重排本體:確定性、tie-break、必留、必留溢出、fallback。零網路(pure)。"""
+
+    def test_constants_are_owner_c5_c6(self):
+        self.assertEqual((policy.MR_POOL_SIZE, policy.MR_TOP_K), (20, 5))
+        self.assertEqual((policy.MR_RECALL_DELTA_MIN, policy.MR_MRR_DELTA_MIN, policy.MR_MANDATORY_RETENTION_MIN),
+                         (0.0, 0.05, 1.0))
+        self.assertEqual(policy.MR_MANDATORY_FIELD, "mandatory")
+
+    def test_deterministic_same_input_same_output(self):
+        cs = mr_cands(15, mandatory=[9])
+        sc = mr_scores(cs, [7, 3, 12, 1])
+        first = policy.mr_rerank(copy.deepcopy(cs), scores=dict(sc))
+        for _ in range(5):
+            self.assertEqual(policy.mr_rerank(copy.deepcopy(cs), scores=dict(sc)), first)
+        reordered = dict(reversed(list(sc.items())))                 # dict 插入順序不影響結果
+        self.assertEqual(policy.mr_rerank(cs, scores=reordered)["top"], first["top"])
+
+    def test_tie_break_is_original_rank(self):
+        cs = mr_cands(8)
+        sc = {c["id"]: 1.0 for c in cs}
+        sc["m06"] = 2.0
+        self.assertEqual(policy.mr_rerank(cs, scores=sc)["top"], ["m06", "m01", "m02", "m03", "m04"])
+        sc2 = dict(sc, m08=2.0)                                      # 兩筆同分最高:原排名前者先
+        self.assertEqual(policy.mr_rerank(cs, scores=sc2)["top"][:2], ["m06", "m08"])
+
+    def test_scored_orders_by_score(self):
+        cs = mr_cands(12)
+        out = policy.mr_rerank(cs, scores=mr_scores(cs, [11, 7, 2]))
+        self.assertEqual((out["mode"], out["status"]), ("scored", "ok"))
+        self.assertEqual(out["top"], ["m11", "m07", "m02", "m01", "m03"])
+        self.assertEqual([r["id"] for r in out["results"]], out["top"])
+        self.assertEqual(out["original_top"], ["m01", "m02", "m03", "m04", "m05"])
+
+    def test_fallback_no_scores_is_original_top5(self):
+        cs = mr_cands(12)
+        out = policy.mr_rerank(cs, fallback_reason="no_api_key")
+        self.assertEqual((out["mode"], out["fallback_reason"]), ("fallback", "no_api_key"))
+        self.assertEqual(out["top"], ["m01", "m02", "m03", "m04", "m05"])
+        self.assertEqual(out["results"], cs[:5])
+        self.assertIsNone(out["scores_used"])
+
+    def test_fallback_still_keeps_mandatory_in_original_order(self):
+        cs = mr_cands(12, mandatory=[9])
+        out = policy.mr_rerank(cs)
+        self.assertEqual(out["top"], ["m01", "m02", "m03", "m04", "m09"])   # 擠掉原第 5,仍照原排名
+        self.assertEqual(out["mandatory"]["kept"], ["m09"])
+
+    def test_mandatory_with_lowest_score_still_in_top5_pinned_first(self):
+        cs = mr_cands(20, mandatory=[20])
+        sc = mr_scores(cs, [1, 2, 3, 4, 5, 6])
+        sc["m20"] = -100.0                                           # 必留項就算給了超低分也不看
+        out = policy.mr_rerank(cs, scores=sc)
+        self.assertEqual(out["top"][0], "m20")
+        self.assertEqual(out["top"], ["m20", "m01", "m02", "m03", "m04"])
+        self.assertNotIn("m20", out["scores_used"])                  # 必留不參與打分
+
+    def test_mandatory_exactly_five_ok(self):
+        cs = mr_cands(12, mandatory=[2, 4, 6, 8, 10])
+        out = policy.mr_rerank(cs, scores=mr_scores(cs, [1]))
+        self.assertEqual(out["status"], "ok")
+        self.assertEqual(out["top"], ["m02", "m04", "m06", "m08", "m10"])
+        self.assertEqual(out["mandatory"]["dropped"], [])
+
+    def test_mandatory_over_five_reports_overflow_not_silent(self):
+        cs = mr_cands(12, mandatory=[1, 3, 5, 7, 9, 11])
+        for out in (policy.mr_rerank(cs, scores=mr_scores(cs, [2])), policy.mr_rerank(cs)):
+            self.assertEqual(out["status"], "mandatory_overflow")
+            self.assertEqual(len(out["top"]), 5)
+            self.assertEqual(out["mandatory"]["kept"], ["m01", "m03", "m05", "m07", "m09"])
+            self.assertEqual(out["mandatory"]["dropped"], ["m11"])
+            self.assertEqual(len(out["mandatory"]["in_pool"]), 6)
+
+    def test_mandatory_outside_pool_20_not_considered(self):
+        cs = mr_cands(25, mandatory=[21])
+        out = policy.mr_rerank(cs)
+        self.assertEqual(out["pool_size"], 20)
+        self.assertEqual(out["mandatory"]["in_pool"], [])
+        self.assertNotIn("m21", out["top"])
+
+    def test_missing_score_falls_back_whole_batch(self):
+        cs = mr_cands(8)
+        sc = mr_scores(cs, [8])
+        del sc["m03"]
+        out = policy.mr_rerank(cs, scores=sc)
+        self.assertEqual(out["mode"], "fallback")
+        self.assertTrue(out["fallback_reason"].startswith("scores_invalid:missing=m03"))
+        self.assertEqual(out["top"], ["m01", "m02", "m03", "m04", "m05"])
+
+    def test_non_numeric_scores_fall_back(self):
+        cs = mr_cands(6)
+        for bad in (float("nan"), float("inf"), True, "3", None):
+            sc = mr_scores(cs, [6])
+            sc["m02"] = bad
+            out = policy.mr_rerank(cs, scores=sc)
+            self.assertEqual(out["mode"], "fallback", bad)
+            self.assertIn("non_numeric=m02", out["fallback_reason"])
+        out = policy.mr_rerank(cs, scores=[1, 2, 3])
+        self.assertEqual(out["fallback_reason"], "scores_invalid:not_a_dict")
+
+    def test_fewer_than_five_candidates_returns_all(self):
+        cs = mr_cands(3)
+        self.assertEqual(policy.mr_rerank(cs)["top"], ["m01", "m02", "m03"])
+        self.assertEqual(policy.mr_rerank([])["top"], [])
+
+    def test_duplicate_id_and_bad_mandatory_fail_loud(self):
+        cs = mr_cands(3)
+        cs[2]["id"] = "m01"
+        with self.assertRaises(JevError):
+            policy.mr_rerank(cs)
+        cs = mr_cands(3)
+        cs[0]["mandatory"] = "yes"
+        with self.assertRaises(JevError):
+            policy.mr_rerank(cs)
+        with self.assertRaises(JevError):
+            policy.mr_rerank({"not": "a list"})
+
+    def test_candidate_id_from_existing_retrieval_shapes(self):
+        self.assertEqual(policy.mr_candidate_id({"item_uid": "event:evt_1"}), "event:evt_1")
+        self.assertEqual(policy.mr_candidate_id({"item_type": "knowledge_index", "path": "docs/a.md"}), "path:docs/a.md")
+        self.assertEqual(policy.mr_candidate_id({"item_type": "knowledge", "key": "k.x"}), "knowledge:k.x")
+        self.assertEqual(policy.mr_candidate_id({"fast_path": True, "title": "file.x.y = 1"}), "fact:file.x.y = 1")
+        with self.assertRaises(JevError):
+            policy.mr_candidate_id({"title": "no id"})
+
+    def test_mandatory_reasons_derived_from_existing_fields(self):
+        self.assertEqual(policy.mr_mandatory_reasons({"fast_path": True}), ["current_truth"])
+        self.assertEqual(policy.mr_mandatory_reasons({"item_type": "knowledge", "kind": "invariant"}), ["invariant"])
+        self.assertEqual(policy.mr_mandatory_reasons({"status": "CONFLICT"}), ["conflict"])
+        self.assertEqual(policy.mr_mandatory_reasons({"channels": {"exact_symbol": 1, "fts": 3}}), ["exact_hit"])
+        self.assertEqual(policy.mr_mandatory_reasons({"mandatory": True}), ["explicit"])
+        self.assertEqual(policy.mr_mandatory_reasons({"mandatory": False, "channels": {"fts": 1}}), [])
+        self.assertEqual(policy.mr_mandatory_reasons({"item_type": "knowledge", "kind": "domain",
+                                                      "status": "CONFIRMED"}), [])
+
+    def test_mr_level_follows_dual_gate_inputs_without_touching_gate_py(self):
+        self.assertEqual(policy.mr_level(False, {"mode": "live", "gates": {}}), ("off", "no_api_key"))
+        self.assertEqual(policy.mr_level(True, None), ("off", "no_project_optin"))
+        self.assertEqual(policy.mr_level(True, {"mode": "off", "gates": {}})[0], "off")
+        self.assertEqual(policy.mr_level(True, {"mode": "shadow", "gates": {}})[0], "shadow")
+        self.assertEqual(policy.mr_level(True, {"mode": "live", "gates": {}})[0], "shadow")   # 沒有 MR live
+        with self.assertRaises(JevError):
+            policy.mr_level(True, {"mode": "on"})
+        self.assertNotIn("MR", GATES)                                # 雙閘門的 gate 清單不動
+        with self.assertRaises(JevError):
+            gate.parse_optin("mode: live\ngates:\n  MR: live\n")      # gate.py 不認 MR(本 PR 不改它)
+
+    def test_query_metrics(self):
+        self.assertEqual(policy.mr_query_metrics(["a", "b", "c"], ["c"]), {"recall": 1.0, "rr": 1.0 / 3})
+        self.assertEqual(policy.mr_query_metrics(["a", "b", "c", "d", "e", "f"], ["f"]), {"recall": 0.0, "rr": 0.0})
+        self.assertEqual(policy.mr_query_metrics(["a", "b"], ["b", "z"]), {"recall": 0.5, "rr": 0.5})
+        with self.assertRaises(JevError):
+            policy.mr_query_metrics(["a"], [])
+
+    def test_hard_constants_untouched(self):
+        self.assertFalse(policy.J2_WINDOW_RATIFIED)
+        self.assertFalse(gate.J5_LIVE_RATIFIED)
+        self.assertEqual(policy.G2R_THRESHOLDS, {"auto_pass_min": 0.85, "risk_human_min": 2})
+
+
+class W11MREval(unittest.TestCase):
+    """離線評測:三條通過條件的邊界值、資料不足、fixture 的正負面案例。"""
+
+    def base_queries(self, n=19):
+        qs = [unchanged("u%02d" % i) for i in range(n - 1)]
+        qs.append(unchanged("mand", mandatory=[1]))                   # 至少一筆必留,保留率才有分母
+        return qs
+
+    def cond(self, report, name):
+        return [c for c in report["conditions"] if c["name"] == name][0]
+
+    def test_mrr_delta_exactly_005_passes(self):
+        qs = self.base_queries(18) + [mr_query("up1", [2], [2, 1]), mr_query("up2", [2], [2, 1])]
+        r = policy.mr_eval(mr_fixture(qs))                           # 2 × (1 − 0.5) ÷ 20 = 0.05
+        self.assertEqual(r["queries"], 20)
+        self.assertEqual(self.cond(r, "mrr_gain_at_least_0.05")["actual"], 0.05)
+        self.assertTrue(self.cond(r, "mrr_gain_at_least_0.05")["pass"])
+        self.assertEqual(r["verdict"], "pass")
+
+    def test_mrr_delta_just_below_005_fails(self):
+        qs = self.base_queries(19) + [mr_query("up1", [2], [2, 1]), mr_query("up2", [2], [2, 1])]
+        r = policy.mr_eval(mr_fixture(qs))                           # 1 ÷ 21 ≈ 0.047619
+        c = self.cond(r, "mrr_gain_at_least_0.05")
+        self.assertLess(c["actual"], 0.05)
+        self.assertFalse(c["pass"])
+        self.assertEqual(r["verdict"], "fail")
+
+    def test_recall_delta_exactly_zero_passes_and_negative_fails(self):
+        gain = [mr_query("g%d" % i, [3], [3, 1]) for i in range(2)]
+        r = policy.mr_eval(mr_fixture(self.base_queries(18) + gain))
+        self.assertEqual(self.cond(r, "recall_at_5_not_lower")["actual"], 0.0)
+        self.assertTrue(self.cond(r, "recall_at_5_not_lower")["pass"])
+        self.assertEqual(r["verdict"], "pass")
+        drop = mr_query("drop", [1, 5], [1, 2, 3, 4, 6, 7, 8, 5])   # 原前 5 兩個都在;MR 把第 5 擠出去
+        r = policy.mr_eval(mr_fixture(self.base_queries(17) + gain + [drop]))
+        c = self.cond(r, "recall_at_5_not_lower")
+        self.assertEqual(c["actual"], -0.025)
+        self.assertFalse(c["pass"])
+        self.assertTrue(self.cond(r, "mrr_gain_at_least_0.05")["pass"])   # 只有 recall 不過也是 fail
+        self.assertEqual(r["verdict"], "fail")
+
+    def test_mandatory_retention_100_passes_below_fails(self):
+        gain = [mr_query("g%d" % i, [3], [3, 1]) for i in range(2)]
+        r = policy.mr_eval(mr_fixture(self.base_queries(18) + gain))
+        self.assertEqual(self.cond(r, "mandatory_retention_100pct")["actual"], 1.0)
+        over = mr_query("over", [1], [1], mandatory=[2, 3, 4, 5, 6, 7])
+        r = policy.mr_eval(mr_fixture(self.base_queries(17) + gain + [over]))
+        c = self.cond(r, "mandatory_retention_100pct")
+        self.assertEqual(c["actual"], round(6 / 7, 6))               # 7 筆必留,溢出 1 筆
+        self.assertFalse(c["pass"])
+        self.assertEqual(r["verdict"], "fail")
+        self.assertEqual([q["mandatory_dropped"] for q in r["per_query"] if q["id"] == "over"], [["over-07"]])
+
+    def test_insufficient_queries_never_pass(self):
+        gain = [mr_query("g%d" % i, [3], [3, 1]) for i in range(2)]
+        r = policy.mr_eval(mr_fixture(self.base_queries(17) + gain))  # 19 條
+        self.assertEqual(r["queries"], 19)
+        self.assertTrue(all(c["pass"] for c in r["conditions"]))     # 數字都過了
+        self.assertEqual(r["verdict"], "insufficient_data")          # 但資料不足,不是 pass
+        self.assertIn("資料不足", r["insufficient"][0])
+        r = policy.mr_eval(mr_fixture(self.base_queries(18) + gain))  # 20 條剛好到地板
+        self.assertEqual(r["verdict"], "pass")
+        r = policy.mr_eval(mr_fixture([]))
+        self.assertEqual(r["verdict"], "insufficient_data")
+        self.assertFalse(any(c["pass"] for c in r["conditions"]))
+
+    def test_no_mandatory_in_set_is_insufficient(self):
+        qs = [unchanged("u%02d" % i) for i in range(18)] + [mr_query("g%d" % i, [3], [3, 1]) for i in range(2)]
+        r = policy.mr_eval(mr_fixture(qs))
+        self.assertIsNone(self.cond(r, "mandatory_retention_100pct")["actual"])
+        self.assertEqual(r["verdict"], "insufficient_data")
+
+    def test_report_lists_actual_numbers_on_pass_and_fail(self):
+        for name in ("mr-eval-pass.json", "mr-eval-neg-mrr-small.json"):
+            r = policy.mr_eval(fixture(name))
+            for key in ("baseline", "mr", "delta"):
+                self.assertIn("recall_at_5", r[key])
+                self.assertIn("mrr", r[key])
+            for c in r["conditions"]:
+                self.assertIn("actual", c)
+                self.assertIn("threshold", c)
+                self.assertIsInstance(c["pass"], bool)
+            self.assertFalse(r["live_eligible"])
+
+    def test_fixture_pass(self):
+        r = policy.mr_eval(fixture("mr-eval-pass.json"))
+        self.assertEqual(r["verdict"], "pass")
+        self.assertGreaterEqual(r["queries"], policy.MR_EVAL_MIN_QUERIES)
+        self.assertEqual(r["mr"]["mandatory_retention"], 1.0)
+
+    def test_negative_fixtures_fail_on_the_intended_condition(self):
+        expect = {"mr-eval-neg-recall-drop.json": "recall_at_5_not_lower",
+                  "mr-eval-neg-mrr-small.json": "mrr_gain_at_least_0.05",
+                  "mr-eval-neg-mandatory-overflow.json": "mandatory_retention_100pct"}
+        for name, failing in expect.items():
+            r = policy.mr_eval(fixture(name))
+            self.assertEqual(r["verdict"], "fail", name)
+            self.assertEqual([c["name"] for c in r["conditions"] if not c["pass"]], [failing], name)
+        r = policy.mr_eval(fixture("mr-eval-neg-insufficient.json"))
+        self.assertEqual(r["verdict"], "insufficient_data")
+
+    def test_eval_is_deterministic(self):
+        fx = fixture("mr-eval-pass.json")
+        self.assertEqual(policy.mr_eval(copy.deepcopy(fx)), policy.mr_eval(copy.deepcopy(fx)))
+
+    def test_bad_fixture_shapes_fail_loud(self):
+        good = mr_fixture([unchanged("a")])
+        for mutate in (lambda f: f.update(schema="x"), lambda f: f.update(score_source="jev_live"),
+                       lambda f: f.update(queries="nope"), lambda f: f["queries"][0].update(relevant=[]),
+                       lambda f: f["queries"][0].pop("candidates"), lambda f: f["queries"].append(copy.deepcopy(f["queries"][0])),
+                       lambda f: f["queries"][0].update(scores=[1]), lambda f: f["queries"][0].update(relevant=["x", "x"])):
+            f = copy.deepcopy(good)
+            mutate(f)
+            with self.assertRaises(JevError):
+                policy.mr_eval(f)
+
+    def test_query_without_scores_falls_back_equals_baseline(self):
+        q = unchanged("a")
+        del q["scores"]
+        r = policy.mr_eval(mr_fixture([q]))
+        self.assertEqual(r["per_query"][0]["mr_mode"], "fallback")
+        self.assertEqual(r["delta"], {"recall_at_5": 0.0, "mrr": 0.0})
+
+
 if __name__ == "__main__":
     unittest.main()

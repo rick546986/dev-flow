@@ -1746,5 +1746,200 @@ class W10G2Misrelease(RuntimeBase):
         self.assertIsNone(json.loads(r.stdout)["misrelease_rate"])
 
 
+class W11MRRuntime(RuntimeBase):
+    """MR runtime:雙閘門 off → 原順序零網路;Jev 打分只經 transport;失敗 fallback 不 crash;CLI exit code。"""
+
+    FIXDIR = os.path.join(SCRIPTS, "fixtures", "devflow-jev")
+
+    def envelope(self, n=12, mandatory=(), status="OK"):
+        rows = [{"item_uid": "event:evt_%02d" % i, "item_type": "event", "title": "breaker 門檻 %d" % i,
+                 "text": "breaker threshold note %d" % i, "status": "high", "channels": {"lexical": i}}
+                for i in range(1, n + 1)]
+        for rank in mandatory:
+            rows[rank - 1]["mandatory"] = True
+        return {"query": "breaker 門檻幾次", "retrieval_status": status, "results": rows}
+
+    def jev_transport(self, env, order):
+        """依 build_mr_request 的題目給 Score 分布:order 裡的原排名依序拿高分,其餘 0。"""
+        _, questions, qmap = rt.build_mr_request(env["query"], policy.mr_pool(env["results"]))
+        wanted = {"event:evt_%02d" % r: pos for pos, r in enumerate(order)}
+        answers = {}
+        for qid, cid in qmap.items():
+            level = 3 - min(wanted.get(cid, 3), 3)
+            answers[qid] = {"score": level, "probabilities": {str(i): (1.0 if i == level else 0.0) for i in range(4)}}
+        return FakeTransport([{"response": canned_response(questions, answers), "latency_s": 0.1}]), questions
+
+    def mr(self, env, **kw):
+        kw.setdefault("clock", self.clock)
+        return rt.run_mr_rerank(self.tmp, env, **kw)
+
+    def cli(self, *args, stdin=None):
+        env = {k: v for k, v in os.environ.items() if k != "TYPESAFE_API_KEY"}
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
+        return subprocess.run([sys.executable, RUNTIME_PATH, "--root", self.tmp, *args],
+                              capture_output=True, text=True, env=env, input=stdin)
+
+    def test_off_no_key_original_order_zero_network_nothing_written(self):
+        self.optin()
+        env = self.envelope()
+        out = self.mr(env, environ={}, transport_factory=never_called)
+        self.assertEqual((out["level"], out["mode"], out["fallback_reason"], out["network"]),
+                         ("off", "fallback", "no_api_key", False))
+        self.assertEqual(out["results"], env["results"][:5])
+        self.assertEqual(out["written"], [])
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, ".devflow")))
+        self.assertEqual(self.durable_records(), [])
+
+    def test_key_without_optin_and_mode_off_are_fallback(self):
+        out = self.mr(self.envelope(), environ=self.env_on, transport_factory=never_called)
+        self.assertEqual(out["fallback_reason"], "no_project_optin")
+        self.optin("mode: off\n")
+        out = self.mr(self.envelope(), environ=self.env_on, transport_factory=never_called)
+        self.assertEqual((out["level"], out["mode"]), ("off", "fallback"))
+
+    def test_gate_on_scores_via_transport_and_skips_mandatory(self):
+        self.optin("mode: shadow\n")
+        env = self.envelope(mandatory=[10])
+        tr, questions = self.jev_transport(env, [7, 3, 11])
+        tr.clock = self.clock
+        out = self.mr(env, environ=self.env_on, transport_factory=lambda: tr)
+        self.assertEqual((out["level"], out["scorer"], out["mode"], out["network"]), ("shadow", "jev", "scored", True))
+        self.assertEqual(out["top"], ["event:evt_10", "event:evt_07", "event:evt_03", "event:evt_11", "event:evt_01"])
+        self.assertEqual(len(tr.calls), 1)
+        self.assertEqual(len(questions), 11)                          # 必留項不送
+        sent = json.dumps(tr.calls[0], ensure_ascii=False)
+        self.assertNotIn("evt_", sent)                                # 不送 id/uid
+        self.assertEqual(out["retrieval_status"], "OK")
+        self.assertFalse(out["writes_memory"])
+        self.assertEqual(self.durable_records(), [])                  # 不寫記憶 / durable
+        self.assertTrue(all(p.startswith(".devflow/jev/state/") for p in out["written"]))
+
+    def test_same_jev_response_same_output(self):
+        self.optin()
+        env = self.envelope()
+        outs = []
+        for _ in range(2):
+            tr, _q = self.jev_transport(env, [9, 4])
+            tr.clock = self.clock
+            outs.append(self.mr(env, environ=self.env_on, transport_factory=lambda: tr)["top"])
+        self.assertEqual(outs[0], outs[1])
+
+    def test_transport_failure_falls_back_original_order_no_crash(self):
+        self.optin()
+        env = self.envelope()
+        for script in ([{"error": "http_429"}], [{"error": "timeout"}], [{"raw_text": "x"}], [{"response": {"bad": 1}}]):
+            tr = FakeTransport(script, clock=self.clock)
+            out = self.mr(env, environ=self.env_on, transport_factory=lambda: tr)
+            self.assertEqual(out["mode"], "fallback", script)
+            self.assertTrue(out["fallback_reason"].startswith("jev:"), out["fallback_reason"])
+            self.assertEqual(out["top"], out["original_top"])
+
+    def test_deadline_exceeded_and_factory_error_fall_back(self):
+        self.optin()
+        env = self.envelope()
+        tr, _q = self.jev_transport(env, [9])
+        tr.script[0]["latency_s"] = 5.0
+        tr.clock = self.clock
+        out = self.mr(env, environ=self.env_on, transport_factory=lambda: tr)
+        self.assertTrue(out["fallback_reason"].startswith("jev:deadline_exceeded"))
+
+        def boom():
+            raise RuntimeError("no transport")
+        out = self.mr(env, environ=self.env_on, transport_factory=boom)
+        self.assertEqual(out["fallback_reason"], "jev:unexpected:RuntimeError")
+        self.assertEqual(out["top"], out["original_top"])
+
+    def test_budget_exhausted_falls_back(self):
+        self.optin()
+        from devflow_jev.state import StateStore, utc_day
+        st = StateStore(self.tmp)
+        b = st.load_budget()
+        b.attempts = b.attempts_cap
+        st.save_budget(b, utc_day())
+        out = self.mr(self.envelope(), environ=self.env_on, transport_factory=lambda: FakeTransport([]))
+        self.assertEqual(out["fallback_reason"], "jev:budget_exhausted")
+
+    def test_privacy_hit_not_sent(self):
+        self.optin()
+        env = self.envelope()
+        env["results"][2]["text"] = "api_key = sk-abcdefghijklmnop"
+        tr = FakeTransport([])
+        out = self.mr(env, environ=self.env_on, transport_factory=lambda: tr)
+        self.assertEqual((out["fallback_reason"], out["network"]), ("privacy_blocked", False))
+        self.assertEqual(tr.calls, [])
+
+    def test_stored_scores_zero_network_even_with_key(self):
+        self.optin()
+        env = self.envelope()
+        sc = {r["item_uid"]: float(i) for i, r in enumerate(env["results"])}
+        out = self.mr(env, scores=sc, environ=self.env_on, transport_factory=never_called)
+        self.assertEqual((out["scorer"], out["network"], out["mode"]), ("stored_scores", False, "scored"))
+        self.assertEqual(out["top"][0], "event:evt_12")
+
+    def test_no_reliable_match_never_upgraded(self):
+        env = {"query": "zzzz", "retrieval_status": "NO_RELIABLE_MATCH", "results": []}
+        out = self.mr(env, environ={}, transport_factory=never_called)
+        self.assertEqual((out["retrieval_status"], out["top"]), ("NO_RELIABLE_MATCH", []))
+
+    def test_mandatory_overflow_reported(self):
+        out = self.mr(self.envelope(mandatory=[1, 2, 3, 4, 5, 6]), environ={}, transport_factory=never_called)
+        self.assertEqual(out["status"], "mandatory_overflow")
+        self.assertEqual(out["mandatory"]["dropped"], ["event:evt_06"])
+
+    def test_after_real_dev_memory_ask(self):
+        """接在真的 dev-memory.py ask --json --limit 20 之後:off 路徑前 5 = 原檢索前 5。"""
+        mem = os.path.join(REPO, "memory", "dev-memory.py")
+        envs = dict(os.environ, AGENTMEM_HOME=self.home, PYTHONDONTWRITEBYTECODE="1")
+        subprocess.run([sys.executable, mem, "setup", "--no-embeddings"], cwd=self.tmp, env=envs,
+                       capture_output=True, check=True)
+        for i in range(7):
+            subprocess.run([sys.executable, mem, "remember", "--kind", "decision", "--title", "breaker 門檻 決定 %d" % i,
+                            "--body", "breaker threshold 第 %d 版" % i], cwd=self.tmp, env=envs,
+                           capture_output=True, check=True)
+        ask = subprocess.run([sys.executable, mem, "ask", "breaker 門檻", "--json", "--limit", "20"], cwd=self.tmp,
+                             env=envs, capture_output=True, text=True, check=True)
+        answer = json.loads(ask.stdout)
+        self.assertEqual(answer["retrieval_status"], "OK")
+        out = self.mr(answer, environ={}, transport_factory=never_called)
+        self.assertEqual(out["results"], answer["results"][:5])
+        self.assertEqual(out["pool_size"], len(answer["results"]))
+
+    def test_cli_mr_rerank_exit_codes(self):
+        path = os.path.join(self.tmp, "ans.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(self.envelope(), fh)
+        r = self.cli("mr-rerank", "--answer", path)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(json.loads(r.stdout)["fallback_reason"], "no_api_key")
+        r = self.cli("mr-rerank", "--answer", "-", stdin=json.dumps(self.envelope(mandatory=[1, 2, 3, 4, 5, 6])))
+        self.assertEqual(r.returncode, 1)                             # 必留溢出 → 明確 exit 1
+        r = self.cli("mr-rerank", "--answer", "-", stdin=json.dumps({"results": [{"title": "no id"}]}))
+        self.assertEqual(r.returncode, 2)
+        r = self.cli("mr-rerank")
+        self.assertEqual(r.returncode, 2)
+        self.assertEqual(self.cli("mr-rerank", "--answer", path, "--deadline", "0").returncode, 2)
+
+    def test_cli_mr_eval_exit_codes(self):
+        expect = {"mr-eval-pass.json": (0, "pass"), "mr-eval-neg-recall-drop.json": (1, "fail"),
+                  "mr-eval-neg-mrr-small.json": (1, "fail"), "mr-eval-neg-mandatory-overflow.json": (1, "fail"),
+                  "mr-eval-neg-insufficient.json": (1, "insufficient_data")}
+        for name, (code, verdict) in expect.items():
+            r = self.cli("mr-eval", "--fixture", os.path.join(self.FIXDIR, name))
+            self.assertEqual(r.returncode, code, name + r.stderr)
+            self.assertEqual(json.loads(r.stdout)["verdict"], verdict, name)
+        bad = os.path.join(self.tmp, "bad.json")
+        with open(bad, "w", encoding="utf-8") as fh:
+            json.dump({"schema": "nope"}, fh)
+        self.assertEqual(self.cli("mr-eval", "--fixture", bad).returncode, 2)
+        self.assertEqual(self.cli("mr-eval", "--fixture", os.path.join(self.tmp, "missing.json")).returncode, 2)
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, ".devflow")))   # 評測不寫檔
+
+    def test_mr_eval_runtime_flags(self):
+        r = rt.run_mr_eval(rt.load_json(os.path.join(self.FIXDIR, "mr-eval-pass.json")))
+        self.assertEqual((r["network"], r["writes_memory"], r["gate_effect"]), (False, False, "none"))
+        self.assertFalse(r["graduated"] or r["j5_live_ratified"] or r["j2_window_ratified"])
+        self.assertFalse(rt.GRADUATED)
+
+
 if __name__ == "__main__":
     unittest.main()

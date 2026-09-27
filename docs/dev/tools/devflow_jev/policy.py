@@ -9,6 +9,7 @@ route 規則(roadmap §11/§12/§13):
   - J1 ASK_MORE 的弱維度從 atomic clarity signals 取最弱者,**不從 next 分布逆推**。
   - J5 的 route_taken 要 AUTO 還需 graduated=True(W6 前永遠 False)→ 否則 HUMAN。
 """
+import math
 import re
 
 from . import GATES, JevError, POLICY_VERSION, ROUTE_FORMULA_VERSION
@@ -792,3 +793,281 @@ def g2_shadow_counterfactual_rate(human_released_spec_issue, auto_total):
                 "note": "AUTO 總數 = 0:沒有分母,反事實率無法計算(不是 0%)"}
     return {"rate": human_released_spec_issue / auto_total, "status": "counterfactual",
             "note": "反事實:這些 case 實際由人放行,不是誤放行率;n=%d(AUTO 總數)" % auto_total}
+
+
+# ───────────────────────────── W11 MR 記憶重排序(P2-11) — research / offline ─────────────────────────────
+# 定義正本:docs/dev/jev-gate/w11-mr-rerank.md。MR 接在既有 `memory/dev-memory.py ask`(query.py/retrieval.py)
+# **之後**:只重排原檢索的前 MR_POOL_SIZE 筆、回前 MR_TOP_K 筆;不換掉原檢索、不寫記憶、不改 retrieval_status、
+# 不接任何 gate、不寫 verdict。這裡全是 pure function(零網路);Jev 打分的出境只在 devflow-jev.py 過雙閘門後。
+MR_POOL_SIZE = 20                     # C6:原檢索前 20 筆
+MR_TOP_K = 5                          # C6:回前 5 筆
+MR_RECALL_DELTA_MIN = 0.0             # C5:Recall@5 不降
+MR_MRR_DELTA_MIN = 0.05               # C5:MRR 至少 +0.05
+MR_MANDATORY_RETENTION_MIN = 1.0      # C5:必留記憶 100% 保留(硬約束)
+MR_EVAL_MIN_QUERIES = 20              # 本 PR 定的資料量地板(未校準;不足 → insufficient_data,不算通過)
+MR_EPS = 1e-9                         # 門檻比較的浮點容忍(0.1+0.2 那種誤差不該決定過或不過)
+MR_MANDATORY_FIELD = "mandatory"      # 必留標記:候選列上的 `mandatory: true`(本 PR 定義;見 w11 §3)
+MR_MANDATORY_REASONS = ("explicit", "current_truth", "invariant", "conflict", "exact_hit")
+MR_SCORE_CRITERIA = [
+    {"level": 0, "label": "unrelated", "description": "The candidate memory does not mention the subject of the query."},
+    {"level": 1, "label": "topical", "description": "The candidate memory mentions the subject but does not help answer the query."},
+    {"level": 2, "label": "partial", "description": "The candidate memory answers part of the query or points to where the answer is."},
+    {"level": 3, "label": "direct", "description": "The candidate memory directly states the answer to the query."},
+]
+MR_SUMMARY_MAX = 280                  # 每筆候選送出的去識別摘要上限(字元)
+MR_EVAL_SCHEMA = "devflow-jev-mr-eval/1"
+MR_SCORE_SOURCES = ("synthetic", "stored_jev")
+
+
+def mr_fingerprint():
+    """C5/C6 常數 + 題目刻度的指紋;改任一個 → 指紋變(同 roadmap §3.4:C5/C6 進 manifest 會換 questionset_hash)。"""
+    from .manifest import canonical_json, sha256_hex
+    payload = {"pool": MR_POOL_SIZE, "top_k": MR_TOP_K, "recall_delta_min": MR_RECALL_DELTA_MIN,
+               "mrr_delta_min": MR_MRR_DELTA_MIN, "mandatory_retention_min": MR_MANDATORY_RETENTION_MIN,
+               "eval_min_queries": MR_EVAL_MIN_QUERIES, "criteria": MR_SCORE_CRITERIA,
+               "mandatory_reasons": list(MR_MANDATORY_REASONS), "summary_max": MR_SUMMARY_MAX}
+    return sha256_hex(canonical_json(payload))[7:19]
+
+
+def mr_level(has_key, optin):
+    """MR 的雙閘門:沿用 gate.py 的兩個輸入(key 有無 × `.dev-flow/jev.yaml` 解析結果),**不改 gate.py**。
+
+    現行 gate.parse_optin 只認 `gates: J1–J5`,`gates: MR:` 會 fail-loud —— 所以 MR 只看 `mode:`。
+    mode=off → off;shadow/live → shadow(研究分支沒有 MR live,也不接任何 gate)。回 (level, reason)。"""
+    if not has_key:
+        return "off", "no_api_key"
+    if optin is None:
+        return "off", "no_project_optin"
+    mode = optin.get("mode") if isinstance(optin, dict) else None
+    if mode == "off":
+        return "off", "mode=off"
+    if mode not in ("shadow", "live"):
+        raise JevError("jev.yaml mode %r 不認得" % (mode,))
+    return "shadow", "mode=%s(MR 研究分支只到 shadow:不接任何 gate)" % mode
+
+
+def mr_candidate_id(row):
+    """候選的穩定 id:fixture 的 `id` → retrieval 的 `item_uid` → knowledge_index 的 `path` →
+    knowledge 的 `key` → CURRENT fast path 的 `title`。都沒有 → JevError(不猜)。"""
+    if not isinstance(row, dict):
+        raise JevError("MR 候選必須是 dict")
+    for field, prefix in (("id", ""), ("item_uid", ""), ("path", "path:"), ("key", "knowledge:")):
+        value = row.get(field)
+        if isinstance(value, str) and value.strip():
+            return prefix + value.strip()
+    if row.get("fast_path") is True and isinstance(row.get("title"), str) and row["title"].strip():
+        return "fact:" + row["title"].strip()
+    raise JevError("MR 候選沒有 id/item_uid/path/key 可當穩定 id:%s" % sorted(row)[:8])
+
+
+def mr_mandatory_reasons(row):
+    """必留理由(空 list = 不是必留)。
+
+    - explicit:候選列 `mandatory: true`(本 PR 定義的欄位;值必須是 bool,其它型別 fail-loud)
+    - 其餘由既有欄位推得(roadmap P2-11 / v5 §6 列的不可移除類別,只取會出現在 ask results 裡的):
+      current_truth(`fast_path: true`)、invariant(knowledge `kind: invariant`)、conflict(`status: CONFLICT`)、
+      exact_hit(retrieval `channels` 含 `exact_symbol`)。"""
+    reasons = []
+    if MR_MANDATORY_FIELD in row:
+        flag = row[MR_MANDATORY_FIELD]
+        if not isinstance(flag, bool):
+            raise JevError("候選 `mandatory` 必須是 true/false,實得 %r" % (flag,))
+        if flag:
+            reasons.append("explicit")
+    if row.get("fast_path") is True:
+        reasons.append("current_truth")
+    if row.get("item_type") == "knowledge" and row.get("kind") == "invariant":
+        reasons.append("invariant")
+    if row.get("status") == "CONFLICT":
+        reasons.append("conflict")
+    channels = row.get("channels")
+    if isinstance(channels, dict) and "exact_symbol" in channels:
+        reasons.append("exact_hit")
+    return reasons
+
+
+def mr_pool(candidates):
+    """原檢索順序的前 MR_POOL_SIZE 筆 → [{"id","orig_rank","mandatory_reasons","row"}]。id 重複 → JevError。"""
+    if not isinstance(candidates, list):
+        raise JevError("MR candidates 必須是 list(原檢索順序)")
+    pool = []
+    seen = set()
+    for rank, row in enumerate(candidates[:MR_POOL_SIZE], 1):
+        cid = mr_candidate_id(row)
+        if cid in seen:
+            raise JevError("MR 候選 id 重複:%s(同一筆記憶不該出現兩次)" % cid)
+        seen.add(cid)
+        pool.append({"id": cid, "orig_rank": rank, "mandatory_reasons": mr_mandatory_reasons(row), "row": row})
+    return pool
+
+
+def _mr_valid_score(value):
+    return (isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value))
+
+
+def mr_rerank(candidates, scores=None, fallback_reason=None, top_k=MR_TOP_K):
+    """確定性重排。同輸入 → 同輸出;tie-break = (分數高 → 原排名前 → id 字典序)。
+
+    - scores=None(雙閘門沒開／打分失敗/沒給分數)→ fallback:**照原本的順序**回前 top_k 筆;
+      只有當必留項排在第 top_k 名之後時,才擠掉排最後的非必留項,輸出仍按原排名排。
+    - scores={id: 數字}:必留項不參與打分,依原排名釘在最前面;其餘依分數排。
+      非必留項缺分數、或分數不是有限數字 → 整批 fallback(`scores_invalid:…`),不 crash、不部分採用。
+    - 必留 > top_k:輸出前 top_k 筆必留(依原排名),其餘列在 mandatory_dropped,status=mandatory_overflow。
+    """
+    pool = mr_pool(candidates)
+    mandatory = [c for c in pool if c["mandatory_reasons"]]
+    others = [c for c in pool if not c["mandatory_reasons"]]
+    mode = "scored"
+    reason = None
+    if scores is None:
+        mode, reason = "fallback", fallback_reason or "no_scores"
+    elif not isinstance(scores, dict):
+        mode, reason = "fallback", "scores_invalid:not_a_dict"
+    else:
+        missing = [c["id"] for c in others if c["id"] not in scores]
+        bad = [c["id"] for c in others if c["id"] in scores and not _mr_valid_score(scores[c["id"]])]
+        if missing:
+            mode, reason = "fallback", "scores_invalid:missing=%s" % ",".join(missing[:5])
+        elif bad:
+            mode, reason = "fallback", "scores_invalid:non_numeric=%s" % ",".join(bad[:5])
+    kept = mandatory[:top_k]
+    dropped = mandatory[top_k:]
+    room = top_k - len(kept)
+    if mode == "scored":
+        ranked = sorted(others, key=lambda c: (-float(scores[c["id"]]), c["orig_rank"], c["id"]))
+        top = kept + ranked[:room]
+    else:
+        top = sorted(kept + others[:room], key=lambda c: c["orig_rank"])
+    return {
+        "mode": mode, "fallback_reason": reason,
+        "status": "mandatory_overflow" if dropped else "ok",
+        "top": [c["id"] for c in top],
+        "results": [c["row"] for c in top],
+        "original_top": [c["id"] for c in pool[:top_k]],
+        "pool_size": len(pool), "top_k": top_k,
+        "scores_used": ({c["id"]: float(scores[c["id"]]) for c in others} if mode == "scored" else None),
+        "mandatory": {"in_pool": [c["id"] for c in mandatory], "kept": [c["id"] for c in kept],
+                      "dropped": [c["id"] for c in dropped],
+                      "reasons": {c["id"]: c["mandatory_reasons"] for c in mandatory}},
+        "mr_policy": "mr+%s" % mr_fingerprint(),
+    }
+
+
+def mr_query_metrics(ranked_ids, relevant, k=MR_TOP_K):
+    """單一查詢:recall@k = |relevant ∩ 前 k| ÷ |relevant|;rr = 1 ÷ 前 k 內第一筆 relevant 的名次(沒有 → 0)。"""
+    rel = set(relevant)
+    if not rel:
+        raise JevError("relevant 不得為空(沒有標準答案的查詢不能算 recall/MRR)")
+    top = list(ranked_ids)[:k]
+    hits = len(rel.intersection(top))
+    rr = 0.0
+    for rank, cid in enumerate(top, 1):
+        if cid in rel:
+            rr = 1.0 / rank
+            break
+    return {"recall": hits / len(rel), "rr": rr}
+
+
+def _mr_validate_query(q, index):
+    if not isinstance(q, dict):
+        raise JevError("queries[%d] 必須是物件" % index)
+    for key in ("id", "candidates", "relevant"):
+        if key not in q:
+            raise JevError("queries[%d] 缺欄 %s" % (index, key))
+    if not isinstance(q["id"], str) or not q["id"].strip():
+        raise JevError("queries[%d].id 必須是非空字串" % index)
+    rel = q["relevant"]
+    if not isinstance(rel, list) or not rel or not all(isinstance(r, str) and r for r in rel):
+        raise JevError("queries[%d](%s).relevant 必須是非空字串 list" % (index, q["id"]))
+    if len(set(rel)) != len(rel):
+        raise JevError("queries[%d](%s).relevant 有重複" % (index, q["id"]))
+    if "scores" in q and q["scores"] is not None and not isinstance(q["scores"], dict):
+        raise JevError("queries[%d](%s).scores 必須是 {id: 數字} 或省略" % (index, q["id"]))
+
+
+def _mr_mean(values):
+    return sum(values) / len(values) if values else 0.0
+
+
+def mr_eval(fixture, min_queries=MR_EVAL_MIN_QUERIES):
+    """離線評測:同一組有標準答案的查詢,比「原本順序的前 5 筆」vs「MR 的前 5 筆」。
+
+    通過 = 三條同時成立(C5):Recall@5 差值 ≥ 0、MRR 差值 ≥ +0.05、必留保留率 = 100%。
+    查詢數 < min_queries → verdict=insufficient_data(數字照列,不當通過);整組沒有任何必留項 →
+    保留率無從證明,同樣 insufficient_data。回 report dict;fixture 形狀不對 → JevError。"""
+    if not isinstance(fixture, dict) or fixture.get("schema") != MR_EVAL_SCHEMA:
+        raise JevError("fixture schema 必須是 %s" % MR_EVAL_SCHEMA)
+    source = fixture.get("score_source")
+    if source not in MR_SCORE_SOURCES:
+        raise JevError("fixture score_source 必須是 %s" % "|".join(MR_SCORE_SOURCES))
+    queries = fixture.get("queries")
+    if not isinstance(queries, list):
+        raise JevError("fixture queries 必須是 list")
+    ids = set()
+    rows = []
+    base_recall, base_rr, mr_recall, mr_rr = [], [], [], []
+    mand_total = mand_kept = base_mand_kept = 0
+    for index, q in enumerate(queries):
+        _mr_validate_query(q, index)
+        if q["id"] in ids:
+            raise JevError("query id 重複:%s" % q["id"])
+        ids.add(q["id"])
+        out = mr_rerank(q["candidates"], scores=q.get("scores"))
+        pool_ids = [c["id"] for c in mr_pool(q["candidates"])]
+        base_top = pool_ids[:MR_TOP_K]
+        b = mr_query_metrics(base_top, q["relevant"])
+        m = mr_query_metrics(out["top"], q["relevant"])
+        in_pool = out["mandatory"]["in_pool"]
+        mand_total += len(in_pool)
+        mand_kept += len([c for c in in_pool if c in out["top"]])
+        base_mand_kept += len([c for c in in_pool if c in base_top])
+        base_recall.append(b["recall"])
+        base_rr.append(b["rr"])
+        mr_recall.append(m["recall"])
+        mr_rr.append(m["rr"])
+        rows.append({"id": q["id"], "baseline_top": base_top, "mr_top": out["top"], "mr_mode": out["mode"],
+                     "mr_fallback_reason": out["fallback_reason"], "mr_status": out["status"],
+                     "relevant": list(q["relevant"]),
+                     "relevant_outside_pool": sorted(set(q["relevant"]) - set(pool_ids)),
+                     "baseline_recall_at_5": round(b["recall"], 6), "mr_recall_at_5": round(m["recall"], 6),
+                     "baseline_rr": round(b["rr"], 6), "mr_rr": round(m["rr"], 6),
+                     "mandatory_in_pool": in_pool, "mandatory_dropped": out["mandatory"]["dropped"]})
+    n = len(rows)
+    b_recall, m_recall = _mr_mean(base_recall), _mr_mean(mr_recall)
+    b_mrr, m_mrr = _mr_mean(base_rr), _mr_mean(mr_rr)
+    recall_delta, mrr_delta = m_recall - b_recall, m_mrr - b_mrr
+    retention = (mand_kept / mand_total) if mand_total else None
+    conditions = [
+        {"name": "recall_at_5_not_lower", "actual": round(recall_delta, 6), "threshold": ">= %s" % MR_RECALL_DELTA_MIN,
+         "pass": n > 0 and recall_delta + MR_EPS >= MR_RECALL_DELTA_MIN},
+        {"name": "mrr_gain_at_least_0.05", "actual": round(mrr_delta, 6), "threshold": ">= %s" % MR_MRR_DELTA_MIN,
+         "pass": n > 0 and mrr_delta + MR_EPS >= MR_MRR_DELTA_MIN},
+        {"name": "mandatory_retention_100pct", "actual": None if retention is None else round(retention, 6),
+         "threshold": "== %s" % MR_MANDATORY_RETENTION_MIN,
+         "pass": retention is not None and retention + MR_EPS >= MR_MANDATORY_RETENTION_MIN},
+    ]
+    insufficient = []
+    if n < min_queries:
+        insufficient.append("queries=%d < min_queries=%d:資料不足,不能當成通過" % (n, min_queries))
+    if not mand_total:
+        insufficient.append("整組沒有任何必留項在候選池裡:必留 100%% 保留無從證明")
+    if insufficient:
+        verdict = "insufficient_data"
+    else:
+        verdict = "pass" if all(c["pass"] for c in conditions) else "fail"
+    return {
+        "schema": "devflow-jev-mr-eval-report/1", "gate": "MR", "fixture": fixture.get("name"),
+        "score_source": source, "queries": n, "min_queries": min_queries,
+        "pool_size": MR_POOL_SIZE, "top_k": MR_TOP_K,
+        "baseline": {"recall_at_5": round(b_recall, 6), "mrr": round(b_mrr, 6),
+                     "mandatory_retention": None if not mand_total else round(base_mand_kept / mand_total, 6)},
+        "mr": {"recall_at_5": round(m_recall, 6), "mrr": round(m_mrr, 6),
+               "mandatory_retention": None if retention is None else round(retention, 6)},
+        "delta": {"recall_at_5": round(recall_delta, 6), "mrr": round(mrr_delta, 6)},
+        "mandatory": {"in_pool": mand_total, "kept": mand_kept},
+        "conditions": conditions, "verdict": verdict, "insufficient": insufficient,
+        "per_query": rows, "mr_policy": "mr+%s" % mr_fingerprint(),
+        "live_eligible": False,
+        "note": ("fixture 分數來源 %s;通過 ≠ MR 可以 live(C5 要在 dev-memory.py eval 的 locked set 上成立,"
+                 "且本 PR 不接任何 gate)" % source),
+    }
