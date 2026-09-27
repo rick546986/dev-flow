@@ -15,6 +15,7 @@ policy 導出 route → 雙層 ledger 落盤」的膠水,不含任何門檻、�
   note        W5 P2-7:封閉五欄附註(gate/qhash prefix/model/route_recommended/eval id),無 answers/probabilities。
   j4-assist   W5 P2-3(實驗):失敗分類 + 升一層建議;assist-only,不派工、不動 dispatch guard。
   j2-shadow   W5 P2-8(實驗):J2 厚包 shadow + order/phrasing stability;window 未核定 → 永遠 shadow。
+  g2r-shadow  W9 P2-9:G2R 分流 shadow(AUTO = 交給 fresh agent reviewer + 機械檢查,不是通過);只記錄、零網路。
   eligibility W6 P3-1:J5 資格計算(§5.1 八條、floor、freeze);只展示。runtime 沒有 live 開關(gate.J5_LIVE_RATIFIED=False)。
               off／失敗／逾時 → exit 0、effect=continue_existing_flow。J3 只回顯示文案,不寫 verdict。
   ask         一次 evaluation:雙閘門 off → exit 0、什麼都不寫、零網路;shadow/live → 送一次,
@@ -1440,6 +1441,38 @@ def run_eligibility(root, gate="J5", primary_source=None, environ=None, memory_d
                 "layers": rep["layers"], "evaluations_not_replayable": rep["evaluations_not_replayable"]})
     return out
 
+
+# ───────────────────────────── W9: P2-9 G2R shadow ─────────────────────────────
+# 只記錄分流結果(policy.route_g2),不改任何 gate 的實際判定:沒有 route_taken、沒有 live 開關、
+# 不讀也不寫 docs/dev/<slug>/ 的 verdict、不碰雙閘門(本子命令本身零網路,不建 transport)。
+# Jev answers 由呼叫端放進 case.jev(沒有 Jev = null);G2R 題組尚未進 jev-questions.json。
+G2R_SHADOW_LOG = os.path.join(".devflow", "jev", "g2r-shadow.jsonl")   # .devflow/ 已 gitignored
+G2R_SHADOW_SCHEMA = "devflow-g2r-shadow/1"
+
+
+def run_g2r_shadow(root, case, now=None, record=True):
+    """G2R shadow:route_g2 分流 → append 一行到 .devflow/jev/g2r-shadow.jsonl。gate_effect 恆 none。"""
+    result = policy.route_g2(case)
+    entry = {
+        "schema": G2R_SHADOW_SCHEMA, "gate": "G2R", "mode": "shadow", "slug": case["slug"],
+        "recorded_at": now or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "case_hash": manifest_mod.sha256_hex(manifest_mod.canonical_json(case)),
+        "route_recommended": result["route"], "reasons": result["reasons"], "signals": result["signals"],
+        "auto_means": result["auto_means"], "g2r_policy": result["g2r_policy"],
+        "gate_effect": "none", "is_pass": False, "writes_verdict": False, "jev_role": "router_only",
+        "graduated": GRADUATED, "j5_live_ratified": gate_mod.J5_LIVE_RATIFIED,
+        "j2_window_ratified": policy.J2_WINDOW_RATIFIED, "network": False,
+    }
+    written = []
+    if record:
+        path = os.path.join(root, G2R_SHADOW_LOG)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(entry, ensure_ascii=False, sort_keys=True) + "\n")
+        written.append(G2R_SHADOW_LOG.replace(os.sep, "/"))
+    return dict(entry, written=written)
+
+
 # ───────────────────────────── CLI ─────────────────────────────
 def _emit(payload):
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=1))
@@ -1532,6 +1565,9 @@ def build_parser():
     sel = sub.add_parser("eligibility", help="W6 P3-1:J5 資格計算(§5.1 八條 + floor + freeze);只展示,沒有 live 開關")
     sel.add_argument("--gate", default="J5", choices=GATES)
     sel.add_argument("--primary-source", default=None, choices=("human_attested", "fresh_agent_reviewer"))
+    sg = sub.add_parser("g2r-shadow", help="W9 P2-9:G2R 分流(AUTO|HUMAN + 理由)只記錄;不改任何 gate 判定、零網路")
+    sg.add_argument("--case", required=True, help="JSON:slug/declared_paths/spec_risk/owner_calls_unresolved/demo_verdict_required/jev")
+    sg.add_argument("--no-record", action="store_true", help="只印結果,不 append .devflow/jev/g2r-shadow.jsonl")
     return p
 
 
@@ -1590,6 +1626,9 @@ def main(argv=None):
             return EXIT_OK
         if args.cmd == "eligibility":
             _emit(run_eligibility(root, args.gate, args.primary_source))
+            return EXIT_OK
+        if args.cmd == "g2r-shadow":
+            _emit(run_g2r_shadow(root, load_json(args.case), record=not args.no_record))
             return EXIT_OK
         if args.cmd == "drain":
             _emit(run_drain(root, max_items=args.max))

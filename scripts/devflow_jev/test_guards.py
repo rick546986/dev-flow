@@ -1669,5 +1669,206 @@ class W7J2TrackAndStage3Polarity(unittest.TestCase):
         self.assertIn("ATTEST_HUMAN", impl)                 # attestation 防線仍在
         self.assertNotIn("Jev 可填", impl)
 
+# ───────────────────────────── W9 P2-9:G2R 分流(shadow) ─────────────────────────────
+def g2r_case(**kw):
+    """預設 = 沒有任何轉人條件的案子(沒有 Jev);各測試只改一欄。"""
+    case = {"slug": "demo-feature", "declared_paths": ["src/app/handler.py", "tests/test_handler.py"],
+            "spec_risk": "normal", "owner_calls_unresolved": 0, "demo_verdict_required": False, "jev": None}
+    case.update(kw)
+    return case
+
+
+def g2r_jev(choice="AUTO_PASS", p_auto=0.95, risk=0):
+    rest = round((1.0 - p_auto) / 2.0, 6) if isinstance(p_auto, (int, float)) else 0.0
+    probs = {"AUTO_PASS": p_auto, "HUMAN_REVIEW": rest, "REQUEST_CHANGES": rest}
+    out = {"g2_route": {"choice": choice, "probabilities": probs}}
+    if risk is not None:
+        out["risk"] = {"score": risk}
+    return out
+
+
+class W9G2RRoute(unittest.TestCase):
+    """HUMAN 條件(v5-owner-direction §3.2 / C3 / C4)各至少一案 + 邊界。AUTO ≠ 通過。"""
+
+    def assertHuman(self, out, reason_prefix):
+        self.assertEqual(out["route"], "HUMAN", out)
+        self.assertTrue(any(r.startswith(reason_prefix) for r in out["reasons"]), out["reasons"])
+        self.assertIsNone(out["auto_means"])
+
+    # ── AUTO 基線 ──
+    def test_no_condition_no_jev_is_auto_and_auto_is_not_a_pass(self):
+        out = policy.route_g2(g2r_case())
+        self.assertEqual(out["route"], "AUTO")
+        self.assertEqual(out["reasons"], ["no_human_condition_hit"])
+        self.assertEqual(out["auto_means"], "handoff_to_fresh_agent_reviewer_and_mechanical_checks_not_a_pass")
+        self.assertFalse(out["is_pass"])
+        self.assertFalse(out["writes_verdict"])
+        self.assertEqual(out["jev_role"], "router_only")
+        self.assertEqual(out["signals"]["risk_source"], "spec")
+
+    def test_jev_auto_pass_high_confidence_low_risk_is_auto(self):
+        out = policy.route_g2(g2r_case(jev=g2r_jev()))
+        self.assertEqual(out["route"], "AUTO")
+        self.assertEqual(out["signals"]["risk_source"], "jev")
+        self.assertFalse(out["is_pass"])
+
+    def test_routes_are_only_auto_or_human(self):
+        self.assertEqual(policy.G2R_ROUTES, ("AUTO", "HUMAN"))
+        for choice in policy.G2R_JEV_CHOICES:
+            self.assertIn(policy.route_g2(g2r_case(jev=g2r_jev(choice=choice)))["route"], policy.G2R_ROUTES)
+
+    # ── ① Jev 判 HUMAN 或 p<0.85 ──
+    def test_jev_judges_human_review(self):
+        self.assertHuman(policy.route_g2(g2r_case(jev=g2r_jev(choice="HUMAN_REVIEW", p_auto=0.9))),
+                         "jev_g2_route=HUMAN_REVIEW")
+
+    def test_jev_request_changes_goes_to_human_not_request_changes(self):
+        out = policy.route_g2(g2r_case(jev=g2r_jev(choice="REQUEST_CHANGES", p_auto=0.05)))
+        self.assertHuman(out, "jev_g2_route=REQUEST_CHANGES")      # Jev 不是 reviewer,不能退件
+
+    def test_jev_confidence_below_threshold(self):
+        self.assertHuman(policy.route_g2(g2r_case(jev=g2r_jev(p_auto=0.84))), "jev_p_auto_pass_below_threshold")
+
+    def test_boundary_p_exactly_085_is_not_routed_to_human(self):
+        out = policy.route_g2(g2r_case(jev=g2r_jev(p_auto=0.85)))
+        self.assertEqual(out["route"], "AUTO", out["reasons"])      # C3:≥ 0.85 才走自動審,0.85 本身算 ≥
+        self.assertEqual(policy.G2R_THRESHOLDS["auto_pass_min"], 0.85)
+
+    def test_boundary_p_just_below_085_is_human(self):
+        self.assertHuman(policy.route_g2(g2r_case(jev=g2r_jev(p_auto=0.8499999))), "jev_p_auto_pass_below_threshold")
+
+    def test_jev_probability_nan_is_human(self):
+        self.assertHuman(policy.route_g2(g2r_case(jev=g2r_jev(p_auto=float("nan")))), "jev_p_auto_pass_below_threshold")
+
+    def test_jev_probability_missing_is_human(self):
+        jev = g2r_jev()
+        del jev["g2_route"]["probabilities"]["AUTO_PASS"]
+        self.assertHuman(policy.route_g2(g2r_case(jev=jev)), "jev_p_auto_pass_below_threshold(None")
+
+    # ── ② risk_paths 命中;spec 沒宣告 path 也算 ──
+    def test_risk_paths_hit(self):
+        out = policy.route_g2(g2r_case(declared_paths=["src/app/handler.py", "db/migrations/0007_add_col.sql"]))
+        self.assertHuman(out, "risk_paths_hit:db/migrations/0007_add_col.sql")
+        self.assertEqual(out["signals"]["risk_path_hits"], ["db/migrations/0007_add_col.sql"])
+
+    def test_risk_paths_hit_even_when_jev_says_auto(self):
+        out = policy.route_g2(g2r_case(declared_paths=[".github/workflows/ci.yml"], jev=g2r_jev(p_auto=0.99)))
+        self.assertHuman(out, "risk_paths_hit")
+
+    def test_boundary_spec_declares_no_paths_is_human(self):
+        self.assertHuman(policy.route_g2(g2r_case(declared_paths=[])), "spec_declares_no_paths")
+
+    def test_boundary_blank_paths_count_as_not_declared(self):
+        self.assertHuman(policy.route_g2(g2r_case(declared_paths=["", "   "])), "spec_declares_no_paths")
+
+    def test_boundary_no_paths_is_human_even_with_confident_jev(self):
+        out = policy.route_g2(g2r_case(declared_paths=[], jev=g2r_jev(p_auto=0.99, risk=0)))
+        self.assertEqual(out["reasons"], ["spec_declares_no_paths"])   # 不當成「沒命中」
+
+    def test_risk_paths_list_is_the_single_policy_list(self):
+        for marker in policy.RISK_PATHS_DEFAULT:
+            out = policy.route_g2(g2r_case(declared_paths=["x/%s/y" % marker.strip("/")]))
+            self.assertEqual(out["route"], "HUMAN", marker)
+
+    # ── ③ risk ≥ 2(沒有 Jev:Risk: high 算 ≥ 2) ──
+    def test_jev_risk_2_is_human(self):
+        self.assertHuman(policy.route_g2(g2r_case(jev=g2r_jev(risk=2))), "risk>=2(jev=2)")
+
+    def test_jev_risk_3_is_human(self):
+        self.assertHuman(policy.route_g2(g2r_case(jev=g2r_jev(risk=3))), "risk>=2(jev=3)")
+
+    def test_jev_risk_1_is_not_human(self):
+        self.assertEqual(policy.route_g2(g2r_case(jev=g2r_jev(risk=1)))["route"], "AUTO")
+
+    def test_jev_present_without_risk_score_fails_closed(self):
+        self.assertHuman(policy.route_g2(g2r_case(jev=g2r_jev(risk=None))), "jev_risk_missing")
+
+    def test_boundary_no_jev_spec_risk_high_is_human(self):
+        out = policy.route_g2(g2r_case(spec_risk="high", jev=None))
+        self.assertHuman(out, "risk>=2(spec_risk=high)")
+        self.assertEqual(out["signals"]["risk_source"], "spec")
+        self.assertEqual(out["signals"]["risk_score"], 2)
+
+    def test_no_jev_spec_risk_normal_medium_low_or_absent_is_below_2(self):
+        for risk in ("normal", "medium", "low", None):
+            self.assertEqual(policy.route_g2(g2r_case(spec_risk=risk))["route"], "AUTO", risk)
+
+    def test_with_jev_risk_comes_from_jev_score_not_spec_mapping(self):
+        # §3.2:有 Jev 用 risk Score;無 Jev 才用 4-spec 映射(C4)。記錄 spec_risk 供對照。
+        out = policy.route_g2(g2r_case(spec_risk="high", jev=g2r_jev(risk=0)))
+        self.assertEqual(out["signals"]["risk_source"], "jev")
+        self.assertEqual(out["signals"]["spec_risk"], "high")
+        self.assertEqual(out["route"], "AUTO")
+
+    # ── ④ 未解決 Owner Call ──
+    def test_unresolved_owner_call_is_human(self):
+        self.assertHuman(policy.route_g2(g2r_case(owner_calls_unresolved=1)), "owner_calls_unresolved=1")
+
+    def test_unresolved_owner_call_is_human_even_with_confident_jev(self):
+        self.assertHuman(policy.route_g2(g2r_case(owner_calls_unresolved=2, jev=g2r_jev(p_auto=0.99))),
+                         "owner_calls_unresolved=2")
+
+    # ── ⑤ 需要 Demo verdict ──
+    def test_demo_verdict_required_is_human(self):
+        self.assertHuman(policy.route_g2(g2r_case(demo_verdict_required=True)), "demo_verdict_required")
+
+    def test_demo_verdict_required_is_human_even_with_confident_jev(self):
+        self.assertHuman(policy.route_g2(g2r_case(demo_verdict_required=True, jev=g2r_jev(p_auto=0.99))),
+                         "demo_verdict_required")
+
+    # ── 綜合 / 輸入 ──
+    def test_all_hit_conditions_are_listed_not_just_first(self):
+        out = policy.route_g2(g2r_case(declared_paths=[], spec_risk="high", owner_calls_unresolved=1,
+                                       demo_verdict_required=True))
+        self.assertEqual(out["reasons"], ["spec_declares_no_paths", "risk>=2(spec_risk=high)",
+                                          "owner_calls_unresolved=1", "demo_verdict_required"])
+
+    def test_deterministic(self):
+        case = g2r_case(jev=g2r_jev(p_auto=0.9, risk=1))
+        self.assertEqual(policy.route_g2(case), policy.route_g2(json.loads(json.dumps(case))))
+
+    def test_missing_or_unknown_case_fields_fail_loud(self):
+        case = g2r_case()
+        del case["owner_calls_unresolved"]
+        with self.assertRaises(JevError):
+            policy.route_g2(case)
+        with self.assertRaises(JevError):
+            policy.route_g2(dict(g2r_case(), verdict="PASS"))
+        for bad in ({"spec_risk": "HIGH"}, {"spec_risk": "critical"}, {"owner_calls_unresolved": True},
+                    {"owner_calls_unresolved": -1}, {"declared_paths": "src/a.py"}, {"demo_verdict_required": "no"},
+                    {"jev": "AUTO_PASS"}, {"slug": ""}):
+            with self.assertRaises(JevError, msg=bad):
+                policy.route_g2(g2r_case(**bad))
+
+    def test_spec_risk_of_reads_first_risk_line(self):
+        text = "## Verification Profile\n- Risk: high\n- Failure model: x\n### T-1\n- Risk: normal\n"
+        self.assertEqual(policy.spec_risk_of(text), "high")
+        self.assertIsNone(policy.spec_risk_of("## Verification Profile\n- Verify: unit\n"))
+
+    def test_g2r_constants_do_not_move_existing_questionset_hash(self):
+        before = policy.policy_fingerprint()
+        g2r_before = policy.g2r_fingerprint()
+        old = dict(policy.G2R_THRESHOLDS)
+        try:
+            policy.G2R_THRESHOLDS["auto_pass_min"] = 0.5
+            self.assertEqual(policy.policy_fingerprint(), before)     # J1/J3/J5 group 不動
+            self.assertNotEqual(policy.g2r_fingerprint(), g2r_before)  # G2R 自己的指紋會動
+        finally:
+            policy.G2R_THRESHOLDS.clear()
+            policy.G2R_THRESHOLDS.update(old)
+        self.assertEqual(policy.g2r_fingerprint(), g2r_before)
+
+    def test_hard_constraints_untouched(self):
+        self.assertFalse(policy.J2_WINDOW_RATIFIED)
+        from devflow_jev import gate as gate_mod
+        self.assertFalse(gate_mod.J5_LIVE_RATIFIED)
+        from devflow_jev import GATES
+        self.assertNotIn("G2R", GATES)                 # 不進雙閘門 / opt-in 的 gate 表
+        src = open(policy.__file__, encoding="utf-8").read()
+        g2r_src = src[src.index("# ───────────────────────────── W9 G2R"):]
+        self.assertNotIn("verdict:", g2r_src)
+        self.assertNotIn("route_taken", g2r_src)
+
+
 if __name__ == "__main__":
     unittest.main()
