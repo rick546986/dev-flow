@@ -30,6 +30,17 @@ Schema: [`README.md`](./README.md).
 | durable.knowledge | `doctor-must-report-durable-mirror-freshness`, `durable-check-preflight-best-effort`, `durable-full-replace-no-window`, `durable-mirror-generation`, `durable-mirror-snapshot-consistent`, `durable-refresh-preserves-local-index`, `durable-root-lstat-only-enoent-is-absent`, `durable-root-must-be-real-directory`, `durable-snapshot-rejects-nonregular`, `durable-vs-local`, `durable-writer-must-confine-to-real-devflow`, `durable-writer-must-walk-via-nofollow-dirfd`, `durable-writer-secret-gate`, `read-must-revalidate-durable-generation`, `store-open-requires-worktree-or-path`, `unreadable-durable-file-fails-closed` |
 | conflicts | — |
 
+### `g2-auto-review`
+
+| Field | Pointers |
+|---|---|
+| active_adr | `0004` |
+| active_spec | — |
+| glossary | — |
+| durable.decisions | — |
+| durable.knowledge | — |
+| conflicts | — |
+
 ### `gate-twin-parsing`
 
 | Field | Pointers |
