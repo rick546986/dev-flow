@@ -34,7 +34,8 @@ HIST_HEAD = re.compile(r"^## (\d{4}-\d{2}-\d{2}) · ([a-z0-9-]+)(?: · (\S+))?$"
 HIST_FIELD = re.compile(r"^-\s+(做了什麼|為什麼|落在哪|詳細|長期決策|另含):\s*(.*)$")
 # code span 吃任意長度的反引號串(``a`b`` 內可含單反引號),開關兩端等長。
 INLINE = re.compile(r"(?<!`)(`+)(?!`)(.+?)(?<!`)\1(?!`)|\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)]+)\)")
-FENCE_OPEN = re.compile(r"^( {0,3})(`{3,}|~{3,})[ \t]*([^`\s]*)[^`]*$")
+# CommonMark:只有反引號 fence 的 info string 不能含反引號;~~~ fence 的 info 什麼都行。
+FENCE_OPEN = re.compile(r"^( {0,3})(?:(`{3,})[ \t]*([^`\s]*)[^`]*|(~{3,})[ \t]*(\S*).*)$")
 LIST_ITEM = re.compile(r"^([ \t]*)([-*]|\d+\.)\s+(.*)$")
 
 
@@ -182,8 +183,8 @@ def _fence_block(lines, i):
     """從開頭 fence 讀到等字元、不短於開頭的關閉 fence;沒關就吃到檔尾。"""
     m = FENCE_OPEN.match(lines[i])
     indent = len(m.group(1))
-    mark = m.group(2)
-    lang = m.group(3)
+    mark = m.group(2) or m.group(4)
+    lang = m.group(3) if m.group(2) else m.group(5)
     close = re.compile(r"^ {0,3}" + re.escape(mark[0]) + "{" + str(len(mark)) + r",}[ \t]*$")
     body = []
     i += 1
@@ -205,6 +206,8 @@ def _is_list_start(line):
 
 def _list_block(lines, i, base):
     """讀一段縮排 >= base 的清單;更深縮排的項目收成子清單放進父 <li>。
+
+    子清單的 base 是父項縮排 + 1:子項縮排不一致(4 格後接 2 格)仍留在同一個子清單。
 
     同層換 ol/ul 就收掉目前的清單、同層另開一個(CommonMark 同一行為)。
     空行、非縮排的非清單行、fence 開頭 → 清單結束。
@@ -241,7 +244,7 @@ def _list_block(lines, i, base):
                 sub = _indent_width(lm.group(1))
                 if sub <= indent:
                     break
-                sub_html, i = _list_block(lines, i, sub)
+                sub_html, i = _list_block(lines, i, indent + 1)
                 parts.append(("html", sub_html))
                 continue
             if not nxt.startswith("  "):
@@ -365,6 +368,16 @@ SELFTEST_CASES = [
         "扁平清單與接續行行為不變(+ 不是清單記號)",
         ["1. 一", "   + 接續", "2. 二"],
         "<ol><li>一 + 接續</li><li>二</li></ol>",
+    ),
+    (
+        "~~~ fence 的 info string 可含反引號,收尾 ~~~ 不另開 fence",
+        ["~~~ js `x`", "q", "~~~", "尾段"],
+        '<pre><code class="language-js">q</code></pre>\n<p>尾段</p>',
+    ),
+    (
+        "子清單縮排不一致仍留在同一個子清單",
+        ["- a", "    - b", "  - c"],
+        "<ul><li>a<ul><li>b</li><li>c</li></ul></li></ul>",
     ),
     (
         "雙反引號 code 可含單反引號,不留字面反引號",
