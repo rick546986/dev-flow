@@ -8,7 +8,8 @@ md 是 git 正本。html 隨時可重生,不是第二份正本,也不是 Agent M
 用法:
   python3 scripts/build-public-docs.py            # 寫入
   python3 scripts/build-public-docs.py --write    # 同上
-  python3 scripts/build-public-docs.py --check    # 跟現檔比,過期就紅
+  python3 scripts/build-public-docs.py --check    # 自檢 + 跟現檔比,過期就紅
+  python3 scripts/build-public-docs.py --selftest # 只跑 blocks_to_html 自檢 fixture
   python3 scripts/build-public-docs.py --root DIR # 指定 repo 根
 
 視覺 token 抄 _templates/html-shell.html,再加 guides 已有的 --acc / .lead / nav。
@@ -31,7 +32,10 @@ FIELD = re.compile(r"^-\s+(Status|Date|Source):\s*(.+?)\s*$")
 FM_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.S)
 HIST_HEAD = re.compile(r"^## (\d{4}-\d{2}-\d{2}) · ([a-z0-9-]+)(?: · (\S+))?$")
 HIST_FIELD = re.compile(r"^-\s+(做了什麼|為什麼|落在哪|詳細|長期決策|另含):\s*(.*)$")
-INLINE = re.compile(r"`([^`]+)`|\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)]+)\)")
+# code span 吃任意長度的反引號串(``a`b`` 內可含單反引號),開關兩端等長。
+INLINE = re.compile(r"(?<!`)(`+)(?!`)(.+?)(?<!`)\1(?!`)|\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)]+)\)")
+FENCE_OPEN = re.compile(r"^( {0,3})(`{3,}|~{3,})[ \t]*([^`\s]*)[^`]*$")
+LIST_ITEM = re.compile(r"^([ \t]*)([-*]|\d+\.)\s+(.*)$")
 
 
 def _unquote_meta(val):
@@ -126,18 +130,25 @@ def write_text(path, text):
         fh.write(text)
 
 
+def _code_span(raw):
+    # CommonMark:內容兩端各有一個空白且不全是空白時,各剝一個(讓 `` `x` `` 能包反引號)。
+    if len(raw) >= 2 and raw[0] == " " and raw[-1] == " " and raw.strip():
+        raw = raw[1:-1]
+    return "<code>" + html.escape(raw) + "</code>"
+
+
 def inline_md(text):
     out = []
     pos = 0
     for m in INLINE.finditer(text):
         out.append(html.escape(text[pos:m.start()]))
         if m.group(1) is not None:
-            out.append("<code>" + html.escape(m.group(1)) + "</code>")
-        elif m.group(2) is not None:
-            out.append("<strong>" + html.escape(m.group(2)) + "</strong>")
+            out.append(_code_span(m.group(2)))
+        elif m.group(3) is not None:
+            out.append("<strong>" + html.escape(m.group(3)) + "</strong>")
         else:
-            label = html.escape(m.group(3))
-            href = html.escape(m.group(4), quote=True)
+            label = html.escape(m.group(4))
+            href = html.escape(m.group(5), quote=True)
             out.append('<a href="' + href + '">' + label + "</a>")
         pos = m.end()
     out.append(html.escape(text[pos:]))
@@ -163,8 +174,102 @@ def _is_table_sep(line):
     return True
 
 
+def _indent_width(ws):
+    return len(ws.expandtabs(4))
+
+
+def _fence_block(lines, i):
+    """從開頭 fence 讀到等字元、不短於開頭的關閉 fence;沒關就吃到檔尾。"""
+    m = FENCE_OPEN.match(lines[i])
+    indent = len(m.group(1))
+    mark = m.group(2)
+    lang = m.group(3)
+    close = re.compile(r"^ {0,3}" + re.escape(mark[0]) + "{" + str(len(mark)) + r",}[ \t]*$")
+    body = []
+    i += 1
+    while i < len(lines) and not close.match(lines[i]):
+        raw = lines[i]
+        lead = len(raw) - len(raw.lstrip(" "))
+        body.append(raw[min(lead, indent):])
+        i += 1
+    if i < len(lines):
+        i += 1
+    cls = ' class="language-' + html.escape(lang, quote=True) + '"' if lang else ""
+    text = "\n".join(html.escape(b, quote=False) for b in body)
+    return "<pre><code" + cls + ">" + text + "</code></pre>", i
+
+
+def _is_list_start(line):
+    return bool(LIST_ITEM.match(line))
+
+
+def _list_block(lines, i, base):
+    """讀一段縮排 >= base 的清單;更深縮排的項目收成子清單放進父 <li>。
+
+    同層換 ol/ul 就收掉目前的清單、同層另開一個(CommonMark 同一行為)。
+    空行、非縮排的非清單行、fence 開頭 → 清單結束。
+    """
+    out = []
+    n = len(lines)
+    tag = None
+    items = []
+
+    def flush():
+        if tag:
+            out.append("<{0}>{1}</{0}>".format(tag, "".join(items)))
+
+    while i < n:
+        m = LIST_ITEM.match(lines[i])
+        if not m:
+            break
+        indent = _indent_width(m.group(1))
+        if indent < base:
+            break
+        this_tag = "ol" if m.group(2)[0].isdigit() else "ul"
+        if tag and this_tag != tag:
+            flush()
+            items = []
+        tag = this_tag
+        parts = [("text", m.group(3))]
+        i += 1
+        while i < n:
+            nxt = lines[i]
+            if not nxt.strip() or FENCE_OPEN.match(nxt.lstrip()):
+                break
+            lm = LIST_ITEM.match(nxt)
+            if lm:
+                sub = _indent_width(lm.group(1))
+                if sub <= indent:
+                    break
+                sub_html, i = _list_block(lines, i, sub)
+                parts.append(("html", sub_html))
+                continue
+            if not nxt.startswith("  "):
+                break
+            parts.append(("text", nxt.strip()))
+            i += 1
+        bits = []
+        buf = []
+        for kind, val in parts:
+            if kind == "text":
+                buf.append(val)
+                continue
+            if buf:
+                bits.append(inline_md(" ".join(buf)))
+                buf = []
+            bits.append(val)
+        if buf:
+            bits.append(inline_md(" ".join(buf)))
+        items.append("<li>" + "".join(bits) + "</li>")
+    flush()
+    return "".join(out), i
+
+
 def blocks_to_html(lines):
-    """夠用的 md 區塊轉換:標題、表、清單、引用、段落。不是通用 renderer。"""
+    """夠用的 md 區塊轉換:標題、fence、表、(巢狀)清單、引用、段落。不是通用 renderer。
+
+    維持零相依:ADR 0002 只准 gate twin 解析層用 markdown-it-py,這裡不吃。
+    """
     out = []
     i = 0
     n = len(lines)
@@ -172,6 +277,10 @@ def blocks_to_html(lines):
         line = lines[i]
         if not line.strip():
             i += 1
+            continue
+        if FENCE_OPEN.match(line):
+            block, i = _fence_block(lines, i)
+            out.append(block)
             continue
         hm = re.match(r"^(#{2,6})\s+(.+?)\s*$", line)
         if hm:
@@ -206,26 +315,72 @@ def blocks_to_html(lines):
             bits.append("</tbody></table></div>")
             out.append("".join(bits))
             continue
-        if re.match(r"^\s*[-*]\s+", line) or re.match(r"^\s*\d+\.\s+", line):
-            ordered = bool(re.match(r"^\s*\d+\.\s+", line))
-            tag = "ol" if ordered else "ul"
-            items = []
-            while i < n and (re.match(r"^\s*[-*]\s+", lines[i]) or re.match(r"^\s*\d+\.\s+", lines[i])):
-                item = re.sub(r"^\s*(?:[-*]|\d+\.)\s+", "", lines[i])
-                i += 1
-                while i < n and lines[i].startswith("  ") and not re.match(r"^\s*(?:[-*]|\d+\.)\s+", lines[i]):
-                    item = item + " " + lines[i].strip()
-                    i += 1
-                items.append("<li>" + inline_md(item) + "</li>")
-            out.append("<{0}>{1}</{0}>".format(tag, "".join(items)))
+        lm = LIST_ITEM.match(line)
+        if lm:
+            block, i = _list_block(lines, i, _indent_width(lm.group(1)))
+            out.append(block)
             continue
         para = [line]
         i += 1
-        while i < n and lines[i].strip() and not lines[i].startswith("#") and not lines[i].startswith(">") and not lines[i].lstrip().startswith("|") and not re.match(r"^\s*[-*]\s+", lines[i]) and not re.match(r"^\s*\d+\.\s+", lines[i]):
+        while i < n and lines[i].strip() and not lines[i].startswith("#") and not lines[i].startswith(">") and not lines[i].lstrip().startswith("|") and not _is_list_start(lines[i]) and not FENCE_OPEN.match(lines[i]):
             para.append(lines[i])
             i += 1
         out.append("<p>" + inline_md(" ".join(p.strip() for p in para)) + "</p>")
     return "\n".join(out)
+
+
+# 自檢 fixture:blocks_to_html 支援的語法各一條,--selftest 與 --check 都會跑。
+SELFTEST_CASES = [
+    (
+        "fence 帶語言、escape、保留換行與空行",
+        ["```python", "if a < b and c > d:", "", '    print("&")', "```"],
+        '<pre><code class="language-python">if a &lt; b and c &gt; d:\n\n'
+        '    print("&amp;")</code></pre>',
+    ),
+    (
+        "fence 無語言、內文 # / - / | 不被當成區塊",
+        ["段落", "~~~", "# 不是標題", "- 不是清單", "| 不是表 |", "~~~", "尾段"],
+        "<p>段落</p>\n<pre><code># 不是標題\n- 不是清單\n| 不是表 |</code></pre>\n<p>尾段</p>",
+    ),
+    (
+        "fence 四個反引號可包三個反引號",
+        ["````md", "```", "inner", "```", "````"],
+        '<pre><code class="language-md">```\ninner\n```</code></pre>',
+    ),
+    (
+        "巢狀清單:有序/無序混合,子清單在父 <li> 內",
+        [
+            "1. 甲",
+            "   - 甲一",
+            "   - 甲二",
+            "     1. 甲二之一",
+            "     接續行",
+            "2. 乙",
+            "- 換型別另開同層清單",
+        ],
+        "<ol><li>甲<ul><li>甲一</li><li>甲二<ol><li>甲二之一 接續行</li></ol></li></ul></li>"
+        "<li>乙</li></ol><ul><li>換型別另開同層清單</li></ul>",
+    ),
+    (
+        "扁平清單與接續行行為不變(+ 不是清單記號)",
+        ["1. 一", "   + 接續", "2. 二"],
+        "<ol><li>一 + 接續</li><li>二</li></ol>",
+    ),
+    (
+        "雙反引號 code 可含單反引號,不留字面反引號",
+        ["用 ``a`b`` 與 `` `x` `` 還有 `c`"],
+        "<p>用 <code>a`b</code> 與 <code>`x`</code> 還有 <code>c</code></p>",
+    ),
+]
+
+
+def selftest():
+    problems = []
+    for name, src, want in SELFTEST_CASES:
+        got = blocks_to_html(src)
+        if got != want:
+            problems.append(name + "\n      want: " + want + "\n      got:  " + got)
+    return problems
 
 
 def first_sentence(text):
@@ -506,15 +661,27 @@ def main(argv):
     parser.add_argument("--root", default=DEFAULT_ROOT)
     parser.add_argument("--write", action="store_true")
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--selftest", action="store_true")
     args = parser.parse_args(argv)
+    if args.selftest:
+        problems = selftest()
+        for p in problems:
+            print("  ✗ selftest:" + p)
+        if problems:
+            print("⛔ public-docs selftest:FAILED")
+            return 1
+        print("✅ public-docs selftest:{0} 條全過".format(len(SELFTEST_CASES)))
+        return 0
     root = os.path.abspath(args.root)
     files = planned_files(root)
     if args.check and args.write:
         print("不可同時 --check 與 --write", file=sys.stderr)
         return 2
     if args.check:
-        problems = check_files(files)
+        problems = ["selftest:" + p for p in selftest()]
+        problems += check_files(files)
         print("=== public-docs twin ===")
+        print("  • blocks_to_html 自檢 {0} 條".format(len(SELFTEST_CASES)))
         print("  • 應有 {0} 個 html".format(len(files)))
         if problems:
             for p in problems:
