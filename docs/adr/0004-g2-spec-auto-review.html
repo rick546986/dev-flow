@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>0004. G2(Stage 4 Spec)改為自動審:fresh-context agent reviewer + 機械檢查;人只審 G1/G3</title>
+<style>
+:root{--bg:#ffffff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--card:#f7f7f8;
+        --ok:#0a7d33;--warn:#b57700;--bad:#c0392b;--acc:#2563eb;}
+  @media(prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+      --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  }
+  :root[data-theme="dark"]{--bg:#141517;--fg:#e8e8e8;--muted:#9a9a9a;--line:#33363a;--card:#1e2023;
+        --ok:#37c871;--warn:#e0a93e;--bad:#e46a5a;--acc:#6ea8ff;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.7 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+  main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.4em}
+  h2{font-size:1.15rem;margin-top:2em}
+  h3{font-size:1rem;margin-top:1.5em}
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:1em 0}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+  th{background:var(--card)}
+  code,pre{background:var(--card);border-radius:4px;
+           font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
+  pre{padding:12px;overflow-x:auto}
+  code{padding:1px 5px}
+  blockquote{margin:1em 0;padding:.5em 1em;border-left:3px solid var(--line);color:var(--muted)}
+  ul,ol{padding-left:1.4em}
+  .meta{color:var(--muted);font-size:.85rem;margin-bottom:2em}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;
+         font-size:.8rem;font-weight:600;border:1px solid transparent}
+  .ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+  .warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  .bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+  details{margin:.6em 0}
+  details>summary{cursor:pointer;color:var(--muted)}
+  a{color:var(--acc)}
+  nav{background:var(--card);border:1px solid var(--line);border-radius:10px;
+      padding:10px 16px;margin:1em 0;display:flex;flex-wrap:wrap;gap:6px 16px}
+  nav a{text-decoration:none;font-size:.9rem}
+  .lead{margin:.2em 0 .9em;padding:.5em .85em;border-left:3px solid var(--acc);
+        background:var(--card);border-radius:0 6px 6px 0;font-size:.92rem}
+  .foot{margin-top:3em;font-size:.85rem;color:var(--muted);
+        border-top:1px solid var(--line);padding-top:1em}
+</style>
+</head>
+<body>
+<main>
+<h1>0004. G2(Stage 4 Spec)改為自動審:fresh-context agent reviewer + 機械檢查;人只審 G1/G3</h1>
+<p class="meta"><span class="badge ok">accepted</span> · 2026-09-27 · 出處:research/jev-supermemory <code>docs/dev/jev-gate/v5-owner-direction.md</code> §3.6 ADR 草稿(吸收 §3.2 轉人條件、§3.3 誤放率記錄);owner 2026-09-27 授權為 L2 契約變更</p>
+<nav><a href="https://rick546986.github.io/dev-flow/docs/adr/index.html">決策列表</a><a href="0004-g2-spec-auto-review.md">md 正本</a><a href="https://rick546986.github.io/dev-flow/docs/dev/HISTORY.html">改版歷史</a></nav>
+<h2>Context</h2>
+<p>owner 2026-09-26 裁「<strong>人只參與討論,之後由 agent 完成</strong>」:G1(Decide)是討論的一部分, 維持人審;Owner Calls 永遠人逐條裁決;G3(Review)固定人審。G2 審的是「契約寫得對不對」 —— 4-spec 的形狀大半已有機械檢查可驗,剩下的判斷交給乾淨 context 的 reviewer agent, 而 G3 人審仍在下游當安全網。</p>
+<p>現行契約 §7 對 G1/G2/G3 一律同一順序:適格人類 reviewer → fresh-context reviewer Agent → owner 自審(有記錄的最後手段)。要讓 G2 不再例行等人,必須明文改契約(L2), 不能靠暗中繞過。</p>
+<h2>Decision</h2>
+<h3>1. G2 審查者順序</h3>
+<p>G2 改為:<strong>fresh-context reviewer Agent(需機械檢查全過且未命中轉人條件)→ 適格人類 reviewer(轉人條件命中時)→ owner 自審(有記錄的最後手段)</strong>。 G1、G3 的審查者順序<strong>逐字不動</strong>。</p>
+<h3>2. 放行條件(全部同時成立才 PASS)</h3>
+<ol><li><strong>fresh-context agent reviewer PASS</strong>:乾淨 context,只給 4-spec + 基準(契約 §7 G2 錨定義) + 回報格式;不給作者結論。</li><li><strong>機械檢查全過</strong>:</li><li><code>scripts/check-spec-gate.sh docs/dev/&lt;slug&gt;/4-spec.md</code>(六項形狀,含 C10 E2E entry point);</li><li><code>hooks/_stage3_impl.py &lt;slug&gt;</code> 結果為 N/A 或人類 ACCEPTED(Demo verdict 仍 human-only);</li><li><code>scripts/check-verdict-attestation.sh</code>(provenance 合法,見 §5);</li><li>author ≠ approver 機械比對(見 §4)。</li><li><strong>沒有命中任何轉人條件</strong>(見 §3)。</li></ol>
+<p><strong>Jev `g2_route`(候選 gate 名 `G2R`)只分流,不是放行條件。</strong> 它只負責把「不確定」丟給人:</p>
+<ul><li>有 <code>TYPESAFE_API_KEY</code> 且專案 opt-in(<code>.dev-flow/jev.yaml</code>):跑 <code>g2_route</code>;判 HUMAN 或信心不足 → 轉人;判 AUTO → 仍需上面 1 + 2 + 3。</li><li>沒有 key 或未 opt-in:<strong>只靠 fresh agent + 機械檢查</strong>;零網路;provenance 標 <code>routed_by: none</code>。</li><li>Jev 失敗／逾時／breaker open／budget 用完 → 等同沒有 key(no-op),不擋、不放寬,轉人條件照判。</li></ul>
+<h3>3. 一律轉人(任一命中 → G2 回人審,fresh agent 結論只當 reviewer 參考)</h3>
+<div class="tablewrap"><table><thead><tr><th>條件</th><th>判定來源</th><th>備註</th></tr></thead><tbody><tr><td>Jev <code>g2_route</code> = HUMAN</td><td><code>policy.route_g2</code></td><td>只在有 key + opt-in 時存在</td></tr><tr><td>Jev 信心不足</td><td><code>p(AUTO_PASS) &lt; 0.85</code></td><td>owner 定案 C3:≥ 0.85 才走自動審</td></tr><tr><td>命中 <code>risk_paths</code></td><td><code>policy.RISK_PATHS_DEFAULT</code> 對 4-spec 宣告的 changed paths／R 列檔案</td><td>機械 ceiling,不看任何分數</td></tr><tr><td>4-spec <strong>沒宣告任何檔案路徑</strong></td><td>同上來源為空</td><td>G2 階段還沒有 diff 可推 changed paths,無從判定 → <strong>視同命中 `risk_paths`</strong>(fail-closed,不當成「沒命中」)</td></tr><tr><td>risk ≥ 2</td><td>有 Jev:<code>risk</code> Score(0–3,與 J5 同刻度);無 Jev:4-spec <code>- Risk:</code> 映射</td><td>owner 定案 C4:無 Jev 時 <code>Risk: high</code> 視同 ≥ 2;<code>medium</code>／<code>low</code> 視同 &lt; 2</td></tr><tr><td>有未裁決的 Owner Call</td><td><code>check-spec-gate.sh</code>／2-decision Owner Calls 無殘留</td><td>Owner Calls 永遠人裁</td></tr><tr><td>需要 Demo verdict</td><td><code>_stage3_impl.py</code> 回 <code>demo_request=requested</code>,或 Stage 3 觸發命中但人尚未填 Demo request</td><td>Demo verdict human-only 不動</td></tr><tr><td>當次修改 Jev runtime／questions／config</td><td>既有 P1-G6 規則</td><td>同 J5</td></tr><tr><td>缺 <code>authored_by</code></td><td>4-spec 頂欄</td><td>無法證明四眼 → 轉人</td></tr><tr><td>provenance 不合法或 author == approver</td><td>§4／§5</td><td>fail-closed:<strong>不是 unverified 放行,是不過</strong></td></tr></tbody></table></div>
+<h3>4. author ≠ approver</h3>
+<ul><li>寫 4-spec 的 agent 與審 G2 的 agent <strong>必須不同</strong>。</li><li>4-spec 頂欄新增 <code>authored_by: agent:&lt;id&gt;</code>(或 <code>human:&lt;名&gt;</code>);G2 verdict 的 <code>attested_by: agent:&lt;id&gt;</code> 必須 ≠ <code>authored_by</code>,且不得是本 feature Stage 6 實作者(沿用 <code>gate-verdict-write.md</code> 鎖死 6)。</li><li>格式比對是 <strong>provenance tripwire,不是身份驗證</strong>;換 session／換 id 字串不能證明真的是不同 agent, 補強靠下游 G3 固定人審。</li></ul>
+<h3>5. G2 verdict provenance</h3>
+<p>自動 G2 的 4-spec 頂欄:</p>
+<p>``<code>yaml verdict: PASS verdict_source: fresh_agent_reviewer      # 既有 source class,不新增 attested_by: agent:&lt;reviewer-id&gt;          # 必須 ≠ authored_by authored_by: agent:&lt;author-id&gt;            # 新增 g2_mode: auto                             # 新增:auto | human(命中轉人條件 → human) routed_by: jev:&lt;evaluation_id&gt;            # 新增:jev-routed;無 key／未 opt-in／no-op → none mechanical: sha256:&lt;check 輸出摘要&gt;       # 新增:check-spec-gate / stage3 / attestation 結果摘要 hash </code>``</p>
+<ol><li><code>verdict_source</code> 沿用既有三類(<code>human_attested</code>／<code>fresh_agent_reviewer</code>／<code>owner_self_review</code>), <strong>不為 Jev 新增 source</strong>;Jev 永遠不是 verdict source、不寫 <code>verdict:</code>、不填 <code>attested_by</code>。</li><li><code>routed_by</code> 只記「誰分流」,與「誰核准」分欄。</li><li><code>g2_mode: auto</code> 而 <code>verdict_source ≠ fresh_agent_reviewer</code> 或 <code>attested_by</code> 不是 <code>agent:*</code> → <strong>不合法,G2 不過</strong>(auto 路徑沒有人可以兜底,所以 fail-closed)。</li><li>轉人後的 G2 照現行:<code>g2_mode: human</code>,人類 verdict 經 <code>devflow_gate.py</code> 寫 <code>human_attested</code>; <code>routed_by</code> 仍記當次 Jev evaluation(若有)。</li><li>report 分層:<code>g2_mode × verdict_source × routed_by</code>,不把 auto 與 human G2 混成同一率。</li></ol>
+<h3>6. 放行後不需人工介入;G2 誤放率只記錄</h3>
+<ul><li><strong>不做人工抽查、不因誤放率自動退回人審</strong>(owner 2026-09-26 移除原 C1 抽查、C2 自動退回設計); 沒有模式切換、沒有 <code>g2_auto_state=reverted</code>。</li><li><strong>G2 誤放</strong>:G3 退件(REQUEST_CHANGES／HOLD),且退件原因追得到規格(R/S 錯漏、DD 判錯、 Verification Profile 漏層、spec 自相矛盾)→ 記一筆 <code>g2_misrelease</code>,綁同 feature 的 G2 evaluation／verdict hash;追不到規格的 G3 退件不算。</li><li>「追得到規格」由 <strong>G3 的人類 reviewer</strong> 在 7-review 退件理由勾 <code>root_cause: spec</code>;agent 不得代勾。 這是 G3 本來就由人做的退件判斷,不是 G2 放行後的額外人工步驟。</li><li><strong>G2 誤放率</strong> = <code>g2_misrelease</code> 筆數 ÷ 已走到 G3 的自動 G2 筆數。<strong>只進 report</strong>: 不阻擋任何 G2、不自動退回、不觸發抽查。要不要因數字改規則,由 owner 另行裁決。</li></ul>
+<h3>7. 不變</h3>
+<ul><li><strong>G1、G3 維持人審</strong>;審查者順序逐字不動。J2 永遠 shadow;J5 降為 shadow 參考。</li><li><strong>Demo verdict human-only</strong>、<strong>Quiz gate</strong>、<strong>risk ceiling</strong>、<strong>author ≠ approver</strong> 不鬆。</li><li><strong>J3 不寫 verdict</strong>;<strong>Jev 不是 reviewer</strong>(<code>_gate_consistency_impl.py</code> 不新增 Jev step)。</li><li><code>GRADUATED=False</code>、<code>J5_LIVE_RATIFIED=False</code>、<code>J2_WINDOW_RATIFIED=False</code> 原樣;本 ADR 不翻任何 live 開關。</li></ul>
+<h2>Considered Options</h2>
+<p><strong>①維持 G2 人審。</strong> 換到「每份 spec 都有人看過」。否決理由:違反 owner「人只參與討論, 之後由 agent 完成」的目標;G2 的形狀判斷大半已可機械驗,人審在這裡主要是排隊成本。</p>
+<p><strong>②先並列 shadow 方案、累積 n 再上線。</strong> 換到「上線前有數字」。否決理由:owner 已選直接上線; G3 固定人審已是下游安全網,且誤放率照樣記錄,不需要再多一段 shadow 過渡。</p>
+<p><strong>③讓 Jev `g2_route` AUTO 直接放行。</strong> 換到「少一個 agent 呼叫」。否決理由:Jev 不是 reviewer、 不寫 verdict 是既有不變量;Jev 只能把不確定的丟給人,不能替人或 reviewer 說 PASS。</p>
+<p><strong>④保留人工抽查／誤放達門檻自動退回人審(原 C1/C2)。</strong> 換到「放行後仍有人看」。否決理由: owner 2026-09-26 明確移除 —— 放行後需要人工介入就等於 G2 沒有真的交給 agent;誤放風險改由 G3 承接並量化。</p>
+<h2>Consequences</h2>
+<p><strong>換到:</strong></p>
+<ul><li>G2 不再是日常人類等待;人只出現在 G1、Owner Calls、G3 與命中轉人條件的 G2。</li><li>放行門檻有機械面(spec 形狀、Stage 3、provenance、四眼比對)兜底,不只靠一個 agent 的判斷。</li><li>沒有 Jev key 的採用專案照樣能用(零網路,只靠 fresh agent + 機械檢查)。</li><li>G2 漏網有數字可看(誤放率分層進 report),不是憑感覺。</li></ul>
+<p><strong>付出:</strong></p>
+<ul><li>G2 漏網的規格錯誤要到 G3 才被人抓到,返工成本比在 G2 擋下高。</li><li>author ≠ approver 只是格式 tripwire,無法證明兩個 id 背後真的是不同 agent;補強只有 G3 人審。</li><li>誤放率只記錄不阻擋:數字變差時不會自動收緊,要 owner 看 report 再裁。</li><li>契約 §7 從一句拆成兩句,guide parity、SKILL、gate-consistency 都要跟著改,且要有 selftest 釘住 「G2 放寬沒有連帶放寬 G1/G3」。</li></ul>
+<h2>實作面(本 ADR 不動;另開 PR)</h2>
+<p>只放寬 G2,G1/G3 逐字不動:</p>
+<div class="tablewrap"><table><thead><tr><th>面</th><th>改法</th></tr></thead><tbody><tr><td>契約 <code>docs/dev/readme-contract-extract.md</code> §7</td><td>審查者產生句拆兩句:「審查者產生:G1/G3 一律依序選 適格人類 reviewer → fresh-context reviewer Agent → owner 自審(有記錄的最後手段)。」+「G2 審查者產生:依序選 fresh-context reviewer Agent(需機械檢查全過且未命中轉人條件)→ 適格人類 reviewer → owner 自審(有記錄的最後手段)。」G2 錨定義後新增「G2 轉人條件」與「G2 provenance」列點</td></tr><tr><td>指南 <code>guides/guide-dev-flow.html#gates</code></td><td>逐字抄新兩句;G2 卡補「fresh agent + 機械檢查自動審;命中轉人條件 → 人審」;guide parity 錨同步</td></tr><tr><td><code>skills/dev-flow/SKILL.md</code> G2 段</td><td>同契約拆句;G2 階段格補「自動審(轉人條件見 #gates)」;author ≠ approver 補 <code>authored_by</code>／<code>attested_by</code></td></tr><tr><td><code>hooks/_gate_consistency_impl.py</code></td><td>新增 G2 審查者子句與步驟序;原子句只涵蓋 G1/G3、不得再含 G2;selftest 加:G2 子句缺 → 紅、G2 子句把 G1 也放寬 → 紅、原子句仍列 G2 → 紅</td></tr><tr><td>連帶</td><td><code>_templates/4-spec.md</code> 頂欄加 <code>authored_by</code>／<code>g2_mode</code>／<code>routed_by</code>／<code>mechanical</code>;<code>check-verdict-attestation.sh</code> 驗 §5 規則 3;<code>devflow_gate.py</code> G2 auto 寫入路徑(只收 <code>fresh_agent_reviewer</code> + <code>agent:&lt;id&gt;</code> 且 ≠ <code>authored_by</code>,Jev 仍拒收);<code>gate-verdict-write.md</code> 鎖死 6 補 G2 auto 句;<code>check-gate-verdict-write.sh</code>／<code>check-methodology-corrections.sh</code> 同步;Jev <code>policy.route_g2</code> 與誤放率 report;README 公開面 parity</td></tr></tbody></table></div>
+
+<p class="foot">md 是 git 正本。本頁由 <code>scripts/build-public-docs.py</code> 重生。不是 Agent Memory,不要把正文抄進 <code>.dev-flow/decisions</code>。</p>
+</main>
+</body>
+</html>
