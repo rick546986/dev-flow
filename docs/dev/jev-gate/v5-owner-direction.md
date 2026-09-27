@@ -1,7 +1,7 @@
 ---
 title: jev-gate v5 — owner 裁決（2026-09-26）：人只參與討論，之後由 agent 完成
 slug: jev-gate
-status: 已記錄 owner 方向；本檔只記錄與規劃，不改程式、不改測試、不改 main 契約面；C3–C6 已於 2026-09-26 由 owner 定案、C1／C2 整項移除（§5）；gate 名稱 `G2R`、`MR` 仍待 owner 核准
+status: 已記錄 owner 方向；本檔只記錄與規劃，不改程式、不改測試、不改 main 契約面；C3–C6 已於 2026-09-26 由 owner 定案、C1／C2 整項移除（§5）；gate 名稱 `G2R`、`MR` owner 2026-09-27 核准
 date: 2026-09-26
 base: research/jev-supermemory a65d78b（W7）
 supersedes: roadmap draft-v4 §0 第 6、7、9 條的「上線路徑」語意（見 §7）
@@ -12,7 +12,7 @@ supersedes: roadmap draft-v4 §0 第 6、7、9 條的「上線路徑」語意（
 > **一句話**：人只在討論階段參與（G1 人審、Owner Calls 人裁），G2 改成 **fresh-context agent reviewer + 機械檢查自動審**；
 > G3 **固定人審**，J5 AUTO_SHIP 退出目標；supermemory 正式放棄，改做「Jev 記憶重排序」。
 > **本 PR 只改文件**：roadmap draft-v4 → draft-v5、本檔新增。L2 契約變更（G2 放寬）只寫 **ADR 草稿內容**（§3.6），ADR 本身留 owner 在 `main` 走流程。
-> **作者 ≠ 審查者**：本檔是 agent 依 owner 裁決整理的落檔，不宣稱任何 reviewer PASS。數值以 §5 為準（owner 2026-09-26 定案）；gate 名稱 `G2R`、`MR` 仍待 owner 核准。
+> **作者 ≠ 審查者**：本檔是 agent 依 owner 裁決整理的落檔，不宣稱任何 reviewer PASS。數值以 §5 為準（owner 2026-09-26 定案）；gate 名稱 `G2R`、`MR` owner 2026-09-27 核准。
 
 ## 0. 分支與 SHA
 
@@ -163,14 +163,14 @@ mechanical: sha256:<check 輸出摘要>       # v5 新增：check-spec-gate / st
 
 C3–C6 是 owner 定案的數值，但數值本身**未經校準**；改任一個（C3、C5、C6 會進 Jev manifest）= 新 `questionset_hash`，舊 group 不延續。
 
-**仍待 owner 核准**：新 gate 名稱 `G2R`（`g2_route`，P2-9）與 `MR`（記憶重排序，P2-11）都只是候選名。
+**owner 2026-09-27 核准**：新 gate 名稱 `G2R`（`g2_route`，P2-9）與 `MR`（記憶重排序，P2-11）。
 
 ## 6. Jev 記憶重排序（主線，P2-11）
 
 | 規則 | 內容 |
 |---|---|
 | 位置 | 既有 `memory/dev-memory.py ask` → `memory/agentmem/query.py`／`retrieval.py` 多路召回**之後**；Jev 只重新排序與挑選，**不寫記憶**（不呼叫 `remember`／`fact`／`know`／durable append） |
-| 雙閘門 | 沒有 `TYPESAFE_API_KEY` 或專案未 opt-in（`.dev-flow/jev.yaml` 新 gate 名，候選 `MR`，**待 owner 核准**）→ **原樣回傳原檢索結果，零網路**；Jev 失敗／逾時／budget 用完同樣原樣回傳 |
+| 雙閘門 | 沒有 `TYPESAFE_API_KEY` 或專案未 opt-in（`.dev-flow/jev.yaml` 新 gate 名 `MR`，owner 2026-09-27 核准）→ **原樣回傳原檢索結果，零網路**；Jev 失敗／逾時／budget 用完同樣原樣回傳 |
 | 不可移除 | `memory/agentmem/context.py` 開場必讀 context（identity／verified_truths／invariants／intents／conflicts／events／instructions）、current truth、invariants、conflicts、exact hits；`NO_RELIABLE_MATCH` 不得被重排成 OK。這些項**不送去重排**，直接釘在結果前段 |
 | 去識別 | 送出的只有候選記憶的去識別摘要（沿用 P1-G1 packet builder privacy 規則）；不送 secret、credential、原始醫療資料；local replay store 同 gitignored 規則 |
 | 預算 | 共用既有 daily cap（A2：每日 500 attempts 或 500k input tokens，先到者停），計算規則同 P1-F5：每一次送到 Jev 的重排請求都算一個 attempt，包含 retry、換 phrasing 的 variant、重新評估；沒有送出網路請求就不扣（例如 off、已 no-op）。cap 用完 → 原樣回傳原檢索結果 |
