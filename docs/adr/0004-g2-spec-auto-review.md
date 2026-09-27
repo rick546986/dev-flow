@@ -52,7 +52,7 @@ G1、G3 的審查者順序**逐字不動**。
    - author ≠ approver 機械比對(見 §4)。
 3. **沒有命中任何轉人條件**(見 §3)。
 
-**Jev `g2_route`(候選 gate 名 `G2R`)只分流,不是放行條件。** 它只負責把「不確定」丟給人:
+**Jev `g2_route`(gate 名 `G2R`,owner 2026-09-27 核准)只分流,不是放行條件。** 它只負責把「不確定」丟給人:
 
 - 有 `TYPESAFE_API_KEY` 且專案 opt-in(`.dev-flow/jev.yaml`):跑 `g2_route`;判 HUMAN 或信心不足
   → 轉人;判 AUTO → 仍需上面 1 + 2 + 3。
