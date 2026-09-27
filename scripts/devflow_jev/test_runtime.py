@@ -1389,5 +1389,362 @@ class W9G2RShadow(RuntimeBase):
         self.assertEqual(len(self.log_lines()), 1)             # 壞輸入不落盤
 
 
+class W10G2Misrelease(RuntimeBase):
+    """G2 誤放行只記錄:綁 g2r-shadow AUTO 的 case_hash;report 算率,分母 0 明講;不改 gate、不寫 verdict。"""
+
+    def case(self, **kw):
+        c = {"slug": "demo-feature", "declared_paths": ["src/app/handler.py"], "spec_risk": "normal",
+             "owner_calls_unresolved": 0, "demo_verdict_required": False, "jev": None}
+        c.update(kw)
+        return c
+
+    def auto_hash(self, slug="demo-feature", path="src/app/handler.py"):
+        out = rt.run_g2r_shadow(self.tmp, self.case(slug=slug, declared_paths=[path]))
+        self.assertEqual(out["route_recommended"], "AUTO")
+        return out["case_hash"]
+
+    def record(self, case_hash, slug="demo-feature", stage="G3", via="g3_request_changes",
+               evidence="docs/dev/demo-feature/7-review.md", released="fresh_agent_reviewer", reporter="human:rick"):
+        return rt.run_g2_misrelease_record(self.tmp, slug, case_hash, stage, via, evidence, released, reporter,
+                                           now="2026-09-27T01:00:00Z")
+
+    def release(self, case_hash, slug="demo-feature", evidence="docs/dev/demo-feature/g2-agent-review.md",
+                reporter="agent:claude"):
+        return rt.run_g2_agent_release(self.tmp, slug, case_hash, evidence, reporter, now="2026-09-27T00:30:00Z")
+
+    def log_lines(self, log=None):
+        with open(os.path.join(self.tmp, log or rt.G2M_LOG), encoding="utf-8") as fh:
+            return [json.loads(line) for line in fh if line.strip()]
+
+    def cli(self, *args):
+        env = {k: v for k, v in os.environ.items() if k != "TYPESAFE_API_KEY"}
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
+        return subprocess.run([sys.executable, RUNTIME_PATH, "--root", self.tmp, "g2-misrelease", *args],
+                              capture_output=True, text=True, env=env)
+
+    def test_record_binds_auto_shadow_and_copies_its_reasons(self):
+        h = self.auto_hash()
+        out = self.record(h)
+        self.assertEqual(out["written"], [".devflow/jev/g2-misrelease.jsonl"])
+        row = self.log_lines()[0]
+        for key in ("slug", "case_hash", "g2r_reasons", "discovered_stage", "discovered_via", "recorded_at"):
+            self.assertIn(key, row)
+        self.assertEqual(row["case_hash"], h)
+        self.assertEqual(row["g2r_reasons"], ["no_human_condition_hit"])
+        self.assertEqual(row["recorded_at"], "2026-09-27T01:00:00Z")
+        self.assertTrue(row["counts_as_misrelease"])
+        self.assertEqual(row["gate_effect"], "none")
+        self.assertFalse(row["writes_verdict"])
+        self.assertFalse(row["auto_revert"])
+        self.assertFalse(row["spot_check"])
+
+    def test_record_rejects_unknown_or_human_routed_case_hash(self):
+        with self.assertRaises(rt.JevError):
+            self.record("sha256:" + "d" * 64)
+        human = rt.run_g2r_shadow(self.tmp, self.case(spec_risk="high"))
+        self.assertEqual(human["route_recommended"], "HUMAN")
+        with self.assertRaises(rt.JevError):
+            self.record(human["case_hash"])
+        with self.assertRaises(rt.JevError):         # slug 不同也綁不到
+            self.record(self.auto_hash(), slug="other-feature")
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, rt.G2M_LOG)))
+
+    def test_record_rejects_invalid_fields_without_writing(self):
+        h = self.auto_hash()
+        for kw in ({"stage": "G3", "via": "reverted"}, {"reporter": "agent:claude"}, {"evidence": ""},
+                   {"released": "jev"}, {"stage": "G2"}):
+            with self.assertRaises(rt.JevError, msg=kw):
+                self.record(h, **kw)
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, rt.G2M_LOG)))
+
+    def test_record_rejects_exact_duplicate_event(self):
+        h = self.auto_hash()
+        self.record(h)
+        with self.assertRaises(rt.JevError):
+            self.record(h)
+        self.record(h, stage="implementation", via="spec_amended", evidence="abc1234", reporter="agent:claude")
+        self.assertEqual(len(self.log_lines()), 2)
+
+    def test_report_without_any_shadow_log_is_insufficient_not_zero(self):
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertEqual(out["auto_total"], 0)
+        self.assertIsNone(out["misrelease_rate"])
+        self.assertEqual(out["rate_status"], "insufficient_data")
+        self.assertTrue(out["consistent"])
+
+    def test_report_zero_auto_denominator_is_insufficient(self):
+        rt.run_g2r_shadow(self.tmp, self.case(spec_risk="high"))       # 只有 HUMAN
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertEqual(out["auto_total"], 0)
+        self.assertIsNone(out["misrelease_rate"])
+        self.assertEqual(out["rate_status"], "insufficient_data")
+        self.assertIn("不是 0%", out["rate_note"])
+
+    def assert_no_agent_release(self, out):
+        self.assertEqual(out["agent_released"], 0)
+        self.assertIsNone(out["misrelease_rate"])
+        self.assertEqual(out["rate_status"], "insufficient_data")
+        self.assertIn("目前沒有任何由 fresh agent reviewer 放行的紀錄", out["rate_note"])
+        self.assertIn("不是 0%", out["rate_note"])
+
+    def test_shadow_period_three_auto_no_misrelease_is_insufficient_not_zero(self):
+        # PR #416 審查重現:3 筆 AUTO、不記任何誤放行 → 舊版回 0.0/ok;G2 仍人審,分母應是 agent 放行數 = 0
+        for path in ("src/app/a.py", "src/app/b.py", "src/app/c.py"):
+            self.auto_hash(path=path)
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertEqual((out["auto_total"], out["misreleased"]), (3, 0))
+        self.assert_no_agent_release(out)
+        self.assertTrue(out["consistent"])
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, rt.G2M_RELEASE_LOG)))
+
+    def test_shadow_period_only_human_released_misrelease_is_insufficient_not_zero(self):
+        hashes = [self.auto_hash(path=p) for p in ("src/app/a.py", "src/app/b.py", "src/app/c.py")]
+        self.record(hashes[0], released="human")
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assert_no_agent_release(out)
+        self.assertEqual(out["misreleased"], 0)
+        self.assertTrue(out["consistent"])
+
+    def test_report_zero_misrelease_with_agent_release_is_real_zero(self):
+        h = self.auto_hash()
+        self.auto_hash(path="src/app/b.py")                             # 沒被 agent 放行的 AUTO 不進分母
+        self.release(h)
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertEqual((out["auto_total"], out["agent_released"], out["misreleased"], out["misrelease_rate"],
+                          out["rate_status"]), (2, 1, 0, 0.0, "ok"))
+
+    def test_release_binds_auto_shadow_and_writes_only_release_log(self):
+        h = self.auto_hash()
+        out = self.release(h)
+        self.assertEqual(out["written"], [".devflow/jev/g2-agent-release.jsonl"])
+        row = self.log_lines(rt.G2M_RELEASE_LOG)[0]
+        self.assertEqual((row["slug"], row["case_hash"], row["g2r_reasons"]), ("demo-feature", h, ["no_human_condition_hit"]))
+        self.assertEqual(row["g2_released_by"], "fresh_agent_reviewer")
+        self.assertEqual(row["recorded_at"], "2026-09-27T00:30:00Z")
+        self.assertEqual(row["gate_effect"], "none")
+        for key in ("writes_verdict", "auto_revert", "spot_check", "graduated", "j5_live_ratified", "j2_window_ratified",
+                    "network"):
+            self.assertFalse(row[key], key)
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, rt.G2M_LOG)))
+
+    def test_release_rejects_non_auto_duplicate_and_bad_fields_without_writing(self):
+        with self.assertRaises(rt.JevError):
+            self.release("sha256:" + "d" * 64)
+        human = rt.run_g2r_shadow(self.tmp, self.case(spec_risk="high"))
+        with self.assertRaises(rt.JevError):
+            self.release(human["case_hash"])
+        h = self.auto_hash()
+        with self.assertRaises(rt.JevError):
+            self.release(h, slug="other-feature")
+        for kw in ({"evidence": ""}, {"evidence": " x"}, {"reporter": "claude"}, {"reporter": "human:"}):
+            with self.assertRaises(rt.JevError, msg=kw):
+                self.release(h, **kw)
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, rt.G2M_RELEASE_LOG)))
+        self.release(h)
+        with self.assertRaises(rt.JevError):                           # 同 case 重複放行 → 擋
+            self.release(h, evidence="https://github.com/x/y/pull/1", reporter="human:rick")
+        self.assertEqual(len(self.log_lines(rt.G2M_RELEASE_LOG)), 1)
+
+    def test_agent_misrelease_without_release_record_is_inconsistent(self):
+        h = self.auto_hash()
+        self.record(h)                                                  # fresh_agent_reviewer,但沒有放行紀錄
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertFalse(out["consistent"])
+        self.assertEqual(len(out["unreleased_agent_records"]), 1)
+        self.assertIsNone(out["misrelease_rate"])
+        self.assertEqual(out["misreleased"], 0)
+        self.assertIsNone(out["shadow_counterfactual_rate"])
+
+    def test_orphan_or_corrupt_release_rows_are_inconsistent(self):
+        h = self.auto_hash()
+        self.release(h)
+        with open(os.path.join(self.tmp, rt.G2M_RELEASE_LOG), "a", encoding="utf-8") as fh:
+            fh.write("{not json\n")
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertFalse(out["consistent"])
+        self.assertIsNone(out["misrelease_rate"])
+        row = dict(self.log_lines_raw_first(rt.G2M_RELEASE_LOG), case_hash="sha256:" + "e" * 64)
+        with open(os.path.join(self.tmp, rt.G2M_RELEASE_LOG), "w", encoding="utf-8") as fh:
+            fh.write(json.dumps(row) + "\n")                          # 對不到 AUTO 的孤兒放行
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertEqual(len(out["orphan_releases"]), 1)
+        self.assertEqual(out["agent_released"], 0)
+        self.assertFalse(out["consistent"])
+        del row["evidence_ref"]
+        with open(os.path.join(self.tmp, rt.G2M_RELEASE_LOG), "w", encoding="utf-8") as fh:
+            fh.write(json.dumps(dict(row, case_hash=h)) + "\n")
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertEqual(len(out["invalid_releases"]), 1)
+        self.assertFalse(out["consistent"])
+
+    def test_human_released_record_on_agent_released_case_is_inconsistent(self):
+        h = self.auto_hash()
+        self.release(h)
+        self.record(h, released="human")
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertFalse(out["consistent"])
+        self.assertEqual(len(out["released_by_conflicts"]), 1)
+        self.assertIsNone(out["misrelease_rate"])
+
+    def test_report_rate_counts_distinct_cases_and_stages(self):
+        h1, h2 = self.auto_hash(), self.auto_hash(path="src/app/b.py")
+        h3, h4 = self.auto_hash(path="src/app/c.py"), self.auto_hash(path="src/app/d.py")
+        self.auto_hash(path="src/app/e.py")                             # AUTO 但沒被 agent 放行
+        rt.run_g2r_shadow(self.tmp, self.case(declared_paths=["src/app/handler.py"]))   # 同 case 再記一次:不重算分母
+        self.record(h1, stage="implementation", via="spec_returned", evidence="docs/dev/demo-feature/5-tasks.md",
+                    reporter="agent:claude")
+        self.record(h1)                                                 # 同 case 第二次發現:分子不重算
+        self.record(h2, stage="implementation", via="reverted", evidence="deadbee", reporter="human:rick")
+        for h in (h1, h2, h3, h4):
+            self.release(h)
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertEqual(out["auto_total"], 5)
+        self.assertEqual(out["agent_released"], 4)                      # 分母 = agent 放行數,不是 AUTO 總數
+        self.assertEqual(out["misreleased"], 2)
+        self.assertEqual(out["misrelease_rate"], 0.5)
+        self.assertEqual(out["rate_status"], "ok")
+        self.assertEqual(out["misreleased_by_stage"], {"G3": 0, "implementation": 2})
+        self.assertFalse(out["blocks_anything"])
+
+    def test_human_released_is_counterfactual_not_misrelease(self):
+        h = self.auto_hash()
+        self.record(h, released="human")
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertEqual((out["misreleased"], out["shadow_counterfactual"], out["misrelease_rate"]), (0, 1, None))
+        self.assertEqual((out["shadow_counterfactual_rate"], out["shadow_counterfactual_status"]), (1.0, "counterfactual"))
+
+    def test_shadow_counterfactual_rate_is_separate_from_misrelease_rate(self):
+        hs = [self.auto_hash(path="src/app/%s.py" % n) for n in "abcd"]
+        self.record(hs[0], released="human")
+        self.record(hs[0], released="human", stage="implementation", via="spec_amended", evidence="abc1234",
+                    reporter="agent:claude")                           # 同 case 第二次:不重算
+        self.record(hs[1], released="human", stage="implementation", via="reverted", evidence="deadbee")
+        self.release(hs[2])
+        self.record(hs[2])                                              # agent 放行 → 真誤放行
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertTrue(out["consistent"])
+        self.assertEqual((out["shadow_counterfactual"], out["shadow_counterfactual_rate"]), (2, 0.5))   # 2 ÷ AUTO 4
+        self.assertEqual(out["shadow_counterfactual_status"], "counterfactual")
+        self.assertEqual((out["misreleased"], out["agent_released"], out["misrelease_rate"]), (1, 1, 1.0))
+        self.assertEqual(out["rate_status"], "ok")
+
+    def test_shadow_counterfactual_rate_null_when_no_auto(self):
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertIsNone(out["shadow_counterfactual_rate"])
+        self.assertEqual(out["shadow_counterfactual_status"], "insufficient_data")
+        rt.run_g2r_shadow(self.tmp, self.case(spec_risk="high"))       # 只有 HUMAN
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertEqual(out["auto_total"], 0)
+        self.assertIsNone(out["shadow_counterfactual_rate"])
+        self.assertEqual(out["shadow_counterfactual_status"], "insufficient_data")
+
+    def test_report_orphan_or_corrupt_records_are_inconsistent_and_rate_withheld(self):
+        h = self.auto_hash()
+        self.release(h)
+        self.record(h)
+        self.assertTrue(rt.run_g2_misrelease_report(self.tmp)["consistent"])
+        with open(os.path.join(self.tmp, rt.G2M_LOG), "a", encoding="utf-8") as fh:
+            fh.write("{not json\n")
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertFalse(out["consistent"])
+        self.assertIsNone(out["misrelease_rate"])
+        first = self.log_lines_raw_first()
+        rt.run_g2r_shadow(self.tmp, self.case(spec_risk="high"))          # 分母檔被換成只有 HUMAN → 紀錄成孤兒
+        with open(os.path.join(self.tmp, rt.G2R_SHADOW_LOG), encoding="utf-8") as fh:
+            human_only = [line for line in fh if '"HUMAN"' in line]
+        with open(os.path.join(self.tmp, rt.G2R_SHADOW_LOG), "w", encoding="utf-8") as fh:
+            fh.writelines(human_only)
+        with open(os.path.join(self.tmp, rt.G2M_LOG), "w", encoding="utf-8") as fh:
+            fh.write(json.dumps(first) + "\n")
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertEqual(len(out["orphan_records"]), 1)
+        self.assertIsNone(out["misrelease_rate"])
+        self.assertEqual(out["rate_status"], "insufficient_data")
+
+    def log_lines_raw_first(self, log=None):
+        with open(os.path.join(self.tmp, log or rt.G2M_LOG), encoding="utf-8") as fh:
+            return json.loads(fh.readline())
+
+    def test_report_invalid_record_field_is_inconsistent(self):
+        self.record(self.auto_hash())
+        row = self.log_lines()[0]
+        row["reported_by"] = "agent:claude"                            # G3 被 agent 代勾
+        with open(os.path.join(self.tmp, rt.G2M_LOG), "w", encoding="utf-8") as fh:
+            fh.write(json.dumps(row) + "\n")
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertEqual(len(out["invalid_records"]), 1)
+        self.assertFalse(out["consistent"])
+        self.assertIsNone(out["misrelease_rate"])
+
+    def test_record_and_report_change_no_gate_or_spec_and_stay_shadow(self):
+        feature = os.path.join(self.tmp, "docs", "dev", "demo-feature")
+        os.makedirs(feature)
+        spec = os.path.join(feature, "4-spec.md")
+        with open(spec, "w", encoding="utf-8") as fh:
+            fh.write("---\nfeature: demo-feature\nstage: 4-spec\nstatus: approved\nverdict:\n---\n")
+        before = open(spec, encoding="utf-8").read()
+        g2r_before = policy.g2r_fingerprint()
+        h = self.auto_hash()
+        self.release(h)
+        self.record(h)
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertEqual(open(spec, encoding="utf-8").read(), before)
+        self.assertEqual(policy.g2r_fingerprint(), g2r_before)
+        self.assertEqual(self.durable_records(), [])
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, ".dev-flow", "jev.yaml")))
+        self.assertEqual(rt.gate_level(self.tmp, "J5", {})[0], "off")
+        self.assertFalse(rt.GRADUATED)
+        for key in ("graduated", "j5_live_ratified", "j2_window_ratified", "network"):
+            self.assertFalse(out[key], key)
+            self.assertFalse(self.log_lines()[0][key], key)
+
+    def test_cli_exit_codes(self):
+        h = self.auto_hash()
+        r = self.cli("report")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIsNone(json.loads(r.stdout)["misrelease_rate"])      # shadow:沒有 agent 放行 → 不是 0%
+        self.assertEqual(json.loads(r.stdout)["rate_status"], "insufficient_data")
+        rel = ["release", "--slug", "demo-feature", "--case-hash", h, "--reported-by", "agent:claude"]
+        r = self.cli(*rel)                                               # 缺 --evidence-ref
+        self.assertEqual(r.returncode, 2)
+        r = self.cli(*rel, "--evidence-ref", "docs/dev/demo-feature/g2-agent-review.md")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(json.loads(r.stdout)["written"], [".devflow/jev/g2-agent-release.jsonl"])
+        r = self.cli(*rel, "--evidence-ref", "docs/dev/demo-feature/g2-agent-review.md")    # 重複放行
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("已記過", r.stderr)
+        r = self.cli("release", "--slug", "demo-feature", "--case-hash", "sha256:" + "d" * 64, "--evidence-ref", "x",
+                     "--reported-by", "agent:claude")                    # 對不到 AUTO
+        self.assertEqual(r.returncode, 2)
+        r = self.cli(*rel[:-1], "claude", "--evidence-ref", "x")        # reported_by 格式錯
+        self.assertEqual(r.returncode, 2)
+        self.assertEqual(len(self.log_lines(rt.G2M_RELEASE_LOG)), 1)
+        r = self.cli("report")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(json.loads(r.stdout)["misrelease_rate"], 0.0)
+        base = ["record", "--slug", "demo-feature", "--case-hash", h, "--evidence-ref", "docs/dev/demo-feature/7-review.md",
+                "--released-by", "fresh_agent_reviewer", "--reported-by", "human:rick"]
+        r = self.cli(*base, "--stage", "G3", "--via", "g3_hold")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(json.loads(r.stdout)["discovered_via"], "g3_hold")
+        r = self.cli(*base, "--stage", "G3", "--via", "reverted")        # via 不屬於 stage
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("不屬於", r.stderr)
+        r = self.cli(*base, "--stage", "G9", "--via", "g3_hold")          # argparse choices
+        self.assertEqual(r.returncode, 2)
+        r = self.cli("record", "--slug", "demo-feature")                 # 缺參數
+        self.assertEqual(r.returncode, 2)
+        r = self.cli()                                                   # 缺 record|report
+        self.assertEqual(r.returncode, 2)
+        r = self.cli("report")
+        self.assertEqual(r.returncode, 0)
+        self.assertEqual(json.loads(r.stdout)["misrelease_rate"], 1.0)
+        with open(os.path.join(self.tmp, rt.G2M_LOG), "a", encoding="utf-8") as fh:
+            fh.write("garbage\n")
+        r = self.cli("report")                                           # 不一致 → exit 1
+        self.assertEqual(r.returncode, 1)
+        self.assertIsNone(json.loads(r.stdout)["misrelease_rate"])
+
+
 if __name__ == "__main__":
     unittest.main()
