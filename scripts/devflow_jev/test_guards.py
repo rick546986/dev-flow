@@ -16,7 +16,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 FIX = os.path.join(REPO, "scripts", "fixtures", "devflow-jev")
 
-from devflow_jev import (JevError, MODEL_PINNED, attestation, gate, ledger, manifest,  # noqa: E402
+from devflow_jev import (GATES, JevError, MODEL_PINNED, attestation, gate, ledger, manifest,  # noqa: E402
                          packet, policy, provenance, report, transport)
 
 
@@ -1868,6 +1868,173 @@ class W9G2RRoute(unittest.TestCase):
         g2r_src = src[src.index("# ───────────────────────────── W9 G2R"):]
         self.assertNotIn("verdict:", g2r_src)
         self.assertNotIn("route_taken", g2r_src)
+
+
+# ───────────────────────────── W10 P2-10:G2 誤放行(只記錄) + W9 spec_risk_of 修 ─────────────────────────────
+def load_hooks_lib():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("devflow_hooks_lib", os.path.join(REPO, "hooks", "devflow-lib.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def g2m_rec(**kw):
+    rec = {"slug": "demo-feature", "case_hash": "sha256:" + "c" * 64, "g2r_reasons": ["no_human_condition_hit"],
+           "discovered_stage": "G3", "discovered_via": "g3_request_changes",
+           "evidence_ref": "docs/dev/demo-feature/7-review.md", "g2_released_by": "fresh_agent_reviewer",
+           "reported_by": "human:rick", "recorded_at": "2026-09-27T00:00:00Z"}
+    rec.update(kw)
+    return rec
+
+
+class W10SpecRiskOf(unittest.TestCase):
+    """spec_risk_of:值大小寫都認、正規化小寫;認不得 → JevError(不默默當 normal)。"""
+
+    def test_uppercase_and_mixed_case_normalize_to_lower(self):
+        for raw, want in (("High", "high"), ("HIGH", "high"), ("hIgH", "high"), ("Normal", "normal"),
+                          ("MEDIUM", "medium"), ("Low", "low")):
+            self.assertEqual(policy.spec_risk_of("## Verification Profile\n- Risk: %s\n" % raw), want, raw)
+
+    def test_uppercase_first_line_wins_over_later_task_risk(self):
+        # W9 bug:`- Risk: High` 不匹配 → 往下撿到 T-1 的 normal
+        text = "## Verification Profile\n- Risk: High\n### T-1\n- Risk: normal\n"
+        self.assertEqual(policy.spec_risk_of(text), "high")
+
+    def test_unknown_values_raise_instead_of_normal(self):
+        for raw in ("critical", "highest", "Bogus", "高", "2", "?"):
+            with self.assertRaises(JevError, msg=raw):
+                policy.spec_risk_of("- Risk: %s\n" % raw)
+
+    def test_absent_or_empty_is_none_and_template_placeholder_is_normal(self):
+        self.assertIsNone(policy.spec_risk_of("- Verify: unit\n"))
+        self.assertIsNone(policy.spec_risk_of("- Risk:\n"))
+        self.assertIsNone(policy.spec_risk_of("- Risk: —\n"))
+        self.assertEqual(policy.spec_risk_of("- Risk: normal | high(缺省 normal;判準…)\n"), "normal")
+        self.assertEqual(policy.spec_risk_of("- Risk: high(涉 auth)\n"), "high")
+
+    def test_normalized_value_feeds_route_g2(self):
+        risk = policy.spec_risk_of("- Risk: High\n")
+        out = policy.route_g2(g2r_case(spec_risk=risk))
+        self.assertEqual(out["route"], "HUMAN")
+        self.assertIn("risk>=2(spec_risk=high)", out["reasons"])
+
+    def test_agrees_with_hooks_spec_profile_on_canonical_inputs(self):
+        lib = load_hooks_lib()
+        for text in ("- Risk: high\n", "- Risk: normal\n", "- Verify: unit\n", "- Risk: normal | high(x)\n",
+                     "## P\n- Risk: high\n### T-1\n- Risk: normal\n", "- lane: fast\n- Risk: high\n"):
+            self.assertEqual(policy.spec_risk_of(text), lib.spec_profile(text)["risk"], text)
+
+    def test_divergence_from_hooks_is_on_uppercase_and_unknown_only(self):
+        # hooks/devflow-lib.py 不改(PR 說明記錄):hooks 對 `High` 回 None、對 `bogus` 原樣回;這裡改成認/報錯
+        lib = load_hooks_lib()
+        self.assertEqual(policy.spec_risk_of("- Risk: High\n"), "high")
+        self.assertNotEqual(lib.spec_profile("- Risk: High\n")["risk"], "high")
+        with self.assertRaises(JevError):
+            policy.spec_risk_of("- Risk: bogus\n")
+
+
+class W10MisreleaseFields(unittest.TestCase):
+    """validate_g2_misrelease:每個欄位都驗;不合 → JevError。"""
+
+    def test_valid_record_passes_for_every_stage_via_pair(self):
+        policy.validate_g2_misrelease(g2m_rec())
+        for stage, vias in policy.G2M_STAGES.items():
+            for via in vias:
+                policy.validate_g2_misrelease(g2m_rec(discovered_stage=stage, discovered_via=via))
+
+    def test_missing_each_field_fails(self):
+        for key in policy.G2M_RECORD_KEYS:
+            rec = g2m_rec()
+            del rec[key]
+            with self.assertRaises(JevError, msg=key):
+                policy.validate_g2_misrelease(rec)
+
+    def test_non_dict_fails(self):
+        with self.assertRaises(JevError):
+            policy.validate_g2_misrelease(["slug"])
+
+    def test_slug_validation(self):
+        for bad in ("", "a b", "a;b", "-x", None, 3):
+            with self.assertRaises(JevError, msg=bad):
+                policy.validate_g2_misrelease(g2m_rec(slug=bad))
+
+    def test_case_hash_validation(self):
+        for bad in ("c" * 64, "sha256:" + "C" * 64, "sha256:" + "c" * 63, "", None):
+            with self.assertRaises(JevError, msg=bad):
+                policy.validate_g2_misrelease(g2m_rec(case_hash=bad))
+
+    def test_reasons_validation(self):
+        for bad in ([], "no_human_condition_hit", [""], [1], None):
+            with self.assertRaises(JevError, msg=bad):
+                policy.validate_g2_misrelease(g2m_rec(g2r_reasons=bad))
+
+    def test_stage_and_via_validation(self):
+        with self.assertRaises(JevError):
+            policy.validate_g2_misrelease(g2m_rec(discovered_stage="G2"))
+        with self.assertRaises(JevError):
+            policy.validate_g2_misrelease(g2m_rec(discovered_stage="g3"))
+        with self.assertRaises(JevError):           # via 不屬於該階段
+            policy.validate_g2_misrelease(g2m_rec(discovered_stage="G3", discovered_via="reverted"))
+        with self.assertRaises(JevError):
+            policy.validate_g2_misrelease(g2m_rec(discovered_stage="implementation", discovered_via="g3_hold"))
+        with self.assertRaises(JevError):
+            policy.validate_g2_misrelease(g2m_rec(discovered_via="spot_check"))
+
+    def test_evidence_ref_validation(self):
+        for bad in ("", "   ", " x", "x ", "a\nb", "x" * (policy.G2M_EVIDENCE_MAX + 1), None):
+            with self.assertRaises(JevError, msg=bad):
+                policy.validate_g2_misrelease(g2m_rec(evidence_ref=bad))
+
+    def test_released_by_validation(self):
+        for bad in ("agent", "jev", "", None):
+            with self.assertRaises(JevError, msg=bad):
+                policy.validate_g2_misrelease(g2m_rec(g2_released_by=bad))
+
+    def test_reported_by_validation_and_g3_is_human_only(self):
+        for bad in ("rick", "human:", "bot:x", "human:a b", None):
+            with self.assertRaises(JevError, msg=bad):
+                policy.validate_g2_misrelease(g2m_rec(reported_by=bad))
+        with self.assertRaises(JevError):           # v5 §3.3:root_cause: spec agent 不得代勾
+            policy.validate_g2_misrelease(g2m_rec(reported_by="agent:claude"))
+        policy.validate_g2_misrelease(g2m_rec(discovered_stage="implementation", discovered_via="spec_amended",
+                                              reported_by="agent:claude"))
+
+    def test_recorded_at_validation(self):
+        for bad in ("2026-09-27", "2026-09-27T00:00:00", "2026-09-27 00:00:00Z", "", None):
+            with self.assertRaises(JevError, msg=bad):
+                policy.validate_g2_misrelease(g2m_rec(recorded_at=bad))
+
+
+class W10MisreleaseRate(unittest.TestCase):
+    def test_zero_denominator_is_insufficient_not_zero_percent(self):
+        out = policy.g2_misrelease_rate(0, 0)
+        self.assertIsNone(out["rate"])
+        self.assertEqual(out["status"], "insufficient_data")
+        self.assertIn("不是 0%", out["note"])
+
+    def test_rate_values(self):
+        self.assertEqual(policy.g2_misrelease_rate(0, 4)["rate"], 0.0)
+        self.assertEqual(policy.g2_misrelease_rate(1, 4)["rate"], 0.25)
+        self.assertEqual(policy.g2_misrelease_rate(3, 3)["rate"], 1.0)
+        self.assertEqual(policy.g2_misrelease_rate(1, 4)["status"], "ok")
+
+    def test_numerator_above_denominator_raises(self):
+        with self.assertRaises(JevError):
+            policy.g2_misrelease_rate(2, 1)
+        with self.assertRaises(JevError):
+            policy.g2_misrelease_rate(1, 0)
+
+    def test_bad_types_raise(self):
+        for m, a in ((-1, 3), (1, -1), (True, 3), (1, 3.0), ("1", 3)):
+            with self.assertRaises(JevError, msg=(m, a)):
+                policy.g2_misrelease_rate(m, a)
+
+    def test_misrelease_does_not_touch_g2r_thresholds_or_hard_constants(self):
+        self.assertEqual(policy.G2R_THRESHOLDS, {"auto_pass_min": 0.85, "risk_human_min": 2})
+        self.assertFalse(policy.J2_WINDOW_RATIFIED)
+        self.assertFalse(gate.J5_LIVE_RATIFIED)
+        self.assertNotIn("G2R", GATES)
 
 
 if __name__ == "__main__":

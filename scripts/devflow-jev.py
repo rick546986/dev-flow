@@ -16,6 +16,8 @@ policy 導出 route → 雙層 ledger 落盤」的膠水,不含任何門檻、�
   j4-assist   W5 P2-3(實驗):失敗分類 + 升一層建議;assist-only,不派工、不動 dispatch guard。
   j2-shadow   W5 P2-8(實驗):J2 厚包 shadow + order/phrasing stability;window 未核定 → 永遠 shadow。
   g2r-shadow  W9 P2-9:G2R 分流 shadow(AUTO = 交給 fresh agent reviewer + 機械檢查,不是通過);只記錄、零網路。
+  g2-misrelease record|report
+              W10 P2-10:G2 誤放行只記錄(綁 g2r-shadow AUTO 紀錄的 case_hash)+ 誤放行率;不抽查、不 revert、不擋。
   eligibility W6 P3-1:J5 資格計算(§5.1 八條、floor、freeze);只展示。runtime 沒有 live 開關(gate.J5_LIVE_RATIFIED=False)。
               off／失敗／逾時 → exit 0、effect=continue_existing_flow。J3 只回顯示文案,不寫 verdict。
   ask         一次 evaluation:雙閘門 off → exit 0、什麼都不寫、零網路;shadow/live → 送一次,
@@ -1473,6 +1475,127 @@ def run_g2r_shadow(root, case, now=None, record=True):
     return dict(entry, written=written)
 
 
+# ───────────────────────────── W10: P2-10 G2 誤放行(只記錄) ─────────────────────────────
+# 定義正本:docs/dev/jev-gate/w10-g2-misrelease.md。record 只 append .devflow/jev/g2-misrelease.jsonl;
+# report 只讀兩支 jsonl 算率。不抽查、不自動 revert、不讀也不寫 verdict、不改任何 gate 判定、不動 G2R 門檻、零網路。
+G2M_LOG = os.path.join(".devflow", "jev", "g2-misrelease.jsonl")      # .devflow/ 已 gitignored
+G2M_SCHEMA = "devflow-g2-misrelease/1"
+G2M_REPORT_SCHEMA = "devflow-g2-misrelease-report/1"
+
+
+def _read_jsonl(path):
+    """回 (rows, corrupt_line_numbers);檔不存在 → (None, [])。"""
+    if not os.path.exists(path):
+        return None, []
+    rows, corrupt = [], []
+    with open(path, encoding="utf-8") as fh:
+        for n, line in enumerate(fh, 1):
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+            except ValueError:
+                corrupt.append(n)
+                continue
+            if isinstance(row, dict):
+                rows.append((n, row))
+            else:
+                corrupt.append(n)
+    return rows, corrupt
+
+
+def _g2r_auto_index(root):
+    """g2r-shadow.jsonl 裡 route_recommended=AUTO 的 (slug, case_hash) → 最早那筆紀錄。"""
+    rows, corrupt = _read_jsonl(os.path.join(root, G2R_SHADOW_LOG))
+    index = {}
+    for _, row in rows or []:
+        if row.get("schema") == G2R_SHADOW_SCHEMA and row.get("route_recommended") == "AUTO":
+            index.setdefault((row.get("slug"), row.get("case_hash")), row)
+    return index, rows is not None, corrupt
+
+
+def run_g2_misrelease_record(root, slug, case_hash, discovered_stage, discovered_via, evidence_ref,
+                             g2_released_by, reported_by, now=None):
+    """記一筆誤放行。case_hash 必須對到 g2r-shadow 的 AUTO 紀錄(reasons 從那筆抄,不收呼叫端給的)。"""
+    index, _, _ = _g2r_auto_index(root)
+    shadow = index.get((slug, case_hash))
+    if shadow is None:
+        raise JevError("g2r-shadow.jsonl 找不到 slug=%s case_hash=%s 的 AUTO 紀錄 —— 綁不到 G2R AUTO 的不算誤放行,不落盤"
+                       % (slug, case_hash))
+    rec = {"slug": slug, "case_hash": case_hash, "g2r_reasons": shadow.get("reasons"),
+           "discovered_stage": discovered_stage, "discovered_via": discovered_via, "evidence_ref": evidence_ref,
+           "g2_released_by": g2_released_by, "reported_by": reported_by,
+           "recorded_at": now or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    policy.validate_g2_misrelease(rec)
+    path = os.path.join(root, G2M_LOG)
+    existing, _ = _read_jsonl(path)
+    key = (slug, case_hash, discovered_stage, discovered_via, evidence_ref)
+    for _, row in existing or []:
+        if (row.get("slug"), row.get("case_hash"), row.get("discovered_stage"), row.get("discovered_via"),
+                row.get("evidence_ref")) == key:
+            raise JevError("同一事件已記過(slug/case_hash/stage/via/evidence_ref 相同)—— 不重複落盤")
+    entry = dict(rec, schema=G2M_SCHEMA, event="g2_misrelease", g2r_policy=shadow.get("g2r_policy"),
+                 counts_as_misrelease=g2_released_by == "fresh_agent_reviewer",
+                 gate_effect="none", writes_verdict=False, auto_revert=False, spot_check=False,
+                 graduated=GRADUATED, j5_live_ratified=gate_mod.J5_LIVE_RATIFIED,
+                 j2_window_ratified=policy.J2_WINDOW_RATIFIED, network=False)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(entry, ensure_ascii=False, sort_keys=True) + "\n")
+    return dict(entry, written=[G2M_LOG.replace(os.sep, "/")])
+
+
+def run_g2_misrelease_report(root):
+    """誤放行數 ÷ AUTO 總數(皆以相異 (slug, case_hash) 計)。資料不足明講,不算成 0%。consistent=False → CLI exit 1。"""
+    auto_index, shadow_present, shadow_corrupt = _g2r_auto_index(root)
+    rows, corrupt = _read_jsonl(os.path.join(root, G2M_LOG))
+    invalid, orphans = [], []
+    misreleased, counterfactual, by_stage = set(), set(), {s: 0 for s in policy.G2M_STAGES}
+    for n, row in rows or []:
+        try:
+            policy.validate_g2_misrelease({k: row.get(k) for k in policy.G2M_RECORD_KEYS if k in row})
+        except JevError as exc:
+            invalid.append({"line": n, "error": str(exc)})
+            continue
+        key = (row["slug"], row["case_hash"])
+        if key not in auto_index:
+            orphans.append({"line": n, "slug": row["slug"], "case_hash": row["case_hash"]})
+            continue
+        if row["g2_released_by"] == "fresh_agent_reviewer":
+            if key not in misreleased:
+                by_stage[row["discovered_stage"]] += 1          # 以該 case 第一筆的發現階段計
+            misreleased.add(key)
+        else:
+            counterfactual.add(key)
+    counterfactual -= misreleased
+    problems = []
+    if not shadow_present:
+        problems.append("沒有 .devflow/jev/g2r-shadow.jsonl:沒有任何 G2R 分流紀錄,AUTO 總數無從得知")
+    if shadow_corrupt:
+        problems.append("g2r-shadow.jsonl 有壞行 %s" % shadow_corrupt)
+    if corrupt:
+        problems.append("g2-misrelease.jsonl 有壞行 %s" % corrupt)
+    if invalid:
+        problems.append("g2-misrelease.jsonl 有 %d 筆欄位不合法" % len(invalid))
+    if orphans:
+        problems.append("g2-misrelease.jsonl 有 %d 筆對不到 g2r-shadow AUTO 紀錄" % len(orphans))
+    auto_total = len(auto_index)
+    consistent = not (shadow_corrupt or corrupt or invalid or orphans)
+    if not shadow_present or not consistent:
+        rate = {"rate": None, "status": "insufficient_data",
+                "note": "資料不足或不一致,誤放行率不計算(不是 0%):" + ";".join(problems)}
+    else:
+        rate = policy.g2_misrelease_rate(len(misreleased), auto_total)
+    return {"schema": G2M_REPORT_SCHEMA, "gate": "G2R", "mode": "shadow",
+            "auto_total": auto_total, "misreleased": len(misreleased), "misreleased_by_stage": by_stage,
+            "shadow_counterfactual": len(counterfactual),
+            "misrelease_rate": rate["rate"], "rate_status": rate["status"], "rate_note": rate["note"],
+            "problems": problems, "invalid_records": invalid, "orphan_records": orphans, "consistent": consistent,
+            "gate_effect": "none", "blocks_anything": False, "auto_revert": False, "spot_check": False,
+            "graduated": GRADUATED, "j5_live_ratified": gate_mod.J5_LIVE_RATIFIED,
+            "j2_window_ratified": policy.J2_WINDOW_RATIFIED, "network": False}
+
+
 # ───────────────────────────── CLI ─────────────────────────────
 def _emit(payload):
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=1))
@@ -1568,6 +1691,18 @@ def build_parser():
     sg = sub.add_parser("g2r-shadow", help="W9 P2-9:G2R 分流(AUTO|HUMAN + 理由)只記錄;不改任何 gate 判定、零網路")
     sg.add_argument("--case", required=True, help="JSON:slug/declared_paths/spec_risk/owner_calls_unresolved/demo_verdict_required/jev")
     sg.add_argument("--no-record", action="store_true", help="只印結果,不 append .devflow/jev/g2r-shadow.jsonl")
+    sm = sub.add_parser("g2-misrelease", help="W10 P2-10:G2 誤放行只記錄 + 誤放行率;不抽查、不 revert、不改 gate 判定")
+    smsub = sm.add_subparsers(dest="g2m_cmd", required=True)
+    smr = smsub.add_parser("record", help="append 一筆到 .devflow/jev/g2-misrelease.jsonl(綁 g2r-shadow AUTO 的 case_hash)")
+    smr.add_argument("--slug", required=True)
+    smr.add_argument("--case-hash", required=True, help="當初 g2r-shadow 紀錄的 case_hash(sha256:…)")
+    smr.add_argument("--stage", required=True, choices=tuple(policy.G2M_STAGES), help="發現階段")
+    smr.add_argument("--via", required=True, choices=sorted({v for vs in policy.G2M_STAGES.values() for v in vs}),
+                     help="發現來源事件(須屬於 --stage)")
+    smr.add_argument("--evidence-ref", required=True, help="7-review 路徑／commit sha／PR 連結")
+    smr.add_argument("--released-by", required=True, choices=policy.G2M_RELEASED_BY, help="當初 G2 實際由誰放行")
+    smr.add_argument("--reported-by", required=True, help="human:<名> 或 agent:<id>;G3 階段只准 human")
+    smsub.add_parser("report", help="誤放行數、AUTO 總數、誤放行率;資料不足明講(不算成 0%%)")
     return p
 
 
@@ -1630,6 +1765,14 @@ def main(argv=None):
         if args.cmd == "g2r-shadow":
             _emit(run_g2r_shadow(root, load_json(args.case), record=not args.no_record))
             return EXIT_OK
+        if args.cmd == "g2-misrelease":
+            if args.g2m_cmd == "record":
+                _emit(run_g2_misrelease_record(root, args.slug, args.case_hash, args.stage, args.via, args.evidence_ref,
+                                               args.released_by, args.reported_by))
+                return EXIT_OK
+            out = run_g2_misrelease_report(root)
+            _emit(out)
+            return EXIT_OK if out["consistent"] else EXIT_INCONSISTENT
         if args.cmd == "drain":
             _emit(run_drain(root, max_items=args.max))
             return EXIT_OK

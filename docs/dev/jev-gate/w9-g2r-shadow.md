@@ -38,7 +38,7 @@ base: research/jev-supermemory 278dda8（W8 補 + G2R／MR 名稱核准）
 
 - `jev`：`null` = 沒有 Jev（無 key／未 opt-in／失敗），其餘條件照判；有 Jev 時形狀 `{"g2_route": {"choice", "probabilities"}, "risk": {"score"}}`。
 - 缺欄、未知欄、型別錯、`spec_risk` 不認得 → `JevError`（CLI exit 2），**不猜、不落盤**。
-- `policy.spec_risk_of(text)` 讀 4-spec 的 `- Risk:` 首值（與 `hooks/devflow-lib.py` 同一條 regex）。
+- `policy.spec_risk_of(text)` 讀 4-spec 的 `- Risk:` 首值。（W10 改：值大小寫都認、非法值報錯，已不再與 `hooks/devflow-lib.py` 同一條 regex，差異見 `w10-g2-misrelease.md` §5。）
 
 用法：`python3 scripts/devflow-jev.py --root <專案根> g2r-shadow --case case.json [--no-record]`
 
