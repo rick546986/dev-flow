@@ -9,6 +9,8 @@ route 規則(roadmap §11/§12/§13):
   - J1 ASK_MORE 的弱維度從 atomic clarity signals 取最弱者,**不從 next 分布逆推**。
   - J5 的 route_taken 要 AUTO 還需 graduated=True(W6 前永遠 False)→ 否則 HUMAN。
 """
+import re
+
 from . import GATES, JevError, POLICY_VERSION, ROUTE_FORMULA_VERSION
 from .transport import TransportError, parse_response
 
@@ -551,3 +553,131 @@ def j2_stability(variant_routes):
     return {"variants": len(variant_routes), "distinct_identities": distinct, "none_clear": none_clear,
             "stable": stable, "unstable": not stable, "graduation_eligible": False,
             "note": "stability study only; J2 window not ratified; n unaffected"}
+
+
+# ───────────────────────────── W9 G2R (P2-9) — shadow only ─────────────────────────────
+# 規則正本:docs/dev/jev-gate/v5-owner-direction.md §3.2(轉人條件)、§5 C3/C4(owner 2026-09-26 定案)、
+# gate 名稱 G2R(owner 2026-09-27 核准)。route_g2 只**分流**:
+#   - AUTO = 「可以交給 fresh-context agent reviewer + 機械檢查」,**不是通過**、不是 verdict。
+#   - HUMAN = G2 回人審。任一轉人條件命中即 HUMAN;reasons 列出**全部**命中的條件(不是第一個)。
+#   - Jev 只分流、不當 reviewer、不寫 verdict;沒有 Jev(無 key／未 opt-in／失敗)= jev=None,其餘條件照判。
+# W9 只跑 shadow:結果只記錄,不改任何 gate 的實際判定(不產生實際採取的 route、沒有 live 開關)。
+# 這些常數**不進 policy_fingerprint()**:G2R 題組尚未進 jev-questions.json,放進去會換掉 J1/J3/J5 既有
+# group 的 questionset_hash;G2R 自己的指紋見 g2r_fingerprint()(進 shadow 紀錄)。
+G2R_THRESHOLDS = {"auto_pass_min": 0.85,   # C3:p(AUTO_PASS) ≥ 0.85 才走自動審;< 0.85 → HUMAN(剛好 0.85 = 不轉人)
+                  "risk_human_min": 2}      # risk ≥ 2 → HUMAN
+G2R_JEV_CHOICES = ("AUTO_PASS", "HUMAN_REVIEW", "REQUEST_CHANGES")
+# C4:沒有 Jev 時 4-spec `- Risk:` 映射。模板的 Risk 是 normal|high(缺省 normal);C4 原文另列 medium/low。
+G2R_SPEC_RISK_SCORE = {"high": 2, "medium": 1, "normal": 0, "low": 0}
+G2R_ROUTES = ("AUTO", "HUMAN")
+G2R_AUTO_MEANS = "handoff_to_fresh_agent_reviewer_and_mechanical_checks_not_a_pass"
+G2R_CASE_KEYS = ("slug", "declared_paths", "spec_risk", "owner_calls_unresolved", "demo_verdict_required", "jev")
+
+
+def g2r_fingerprint():
+    from .manifest import canonical_json, sha256_hex
+    payload = {"g2r_thresholds": G2R_THRESHOLDS, "g2r_jev_choices": list(G2R_JEV_CHOICES),
+               "g2r_spec_risk_score": G2R_SPEC_RISK_SCORE, "risk_paths_default": list(RISK_PATHS_DEFAULT)}
+    return sha256_hex(canonical_json(payload))[7:19]
+
+
+def spec_risk_of(spec_text):
+    """4-spec `- Risk:` 首值(與 hooks/devflow-lib.py 同一條 regex);沒寫 → None(模板缺省 normal)。"""
+    for line in spec_text.splitlines():
+        m = re.match(r"^\s*-\s*Risk:\s*([a-z]+)\b", line)
+        if m:
+            return m.group(1)
+    return None
+
+
+def _validate_g2r_case(case):
+    if not isinstance(case, dict):
+        raise JevError("G2R case 必須是 dict")
+    missing = [k for k in G2R_CASE_KEYS if k not in case]
+    if missing:
+        raise JevError("G2R case 缺欄 %s(缺欄不猜,fail-loud)" % ",".join(missing))
+    extra = sorted(set(case) - set(G2R_CASE_KEYS))
+    if extra:
+        raise JevError("G2R case 有未知欄 %s" % ",".join(extra))
+    if not isinstance(case["slug"], str) or not case["slug"]:
+        raise JevError("G2R case.slug 必須是非空字串")
+    paths = case["declared_paths"]
+    if not isinstance(paths, list) or not all(isinstance(p, str) for p in paths):
+        raise JevError("G2R case.declared_paths 必須是字串 list(沒宣告 = [])")
+    risk = case["spec_risk"]
+    if risk is not None and risk not in G2R_SPEC_RISK_SCORE:
+        raise JevError("G2R case.spec_risk=%r 不認得(只收 %s 或 null)" % (risk, "|".join(sorted(G2R_SPEC_RISK_SCORE))))
+    oc = case["owner_calls_unresolved"]
+    if isinstance(oc, bool) or not isinstance(oc, int) or oc < 0:
+        raise JevError("G2R case.owner_calls_unresolved 必須是 ≥0 的整數")
+    if not isinstance(case["demo_verdict_required"], bool):
+        raise JevError("G2R case.demo_verdict_required 必須是 bool")
+    if case["jev"] is not None and not isinstance(case["jev"], dict):
+        raise JevError("G2R case.jev 必須是 null(沒有 Jev)或 answers dict")
+
+
+def route_g2(case):
+    """G2R 分流(deterministic)。回 {"route": AUTO|HUMAN, "reasons": [...], "signals": {...}, ...}。
+
+    case 欄位(全必填;缺欄 → JevError):
+      slug                   feature slug
+      declared_paths         4-spec 宣告的檔案路徑 list;[] = 沒宣告任何 path → HUMAN(fail-closed,不當成「沒命中」)
+      spec_risk              4-spec `- Risk:` 首值(normal|high|medium|low)或 None(模板缺省 normal)
+      owner_calls_unresolved 未裁決 Owner Call 條數;>0 → HUMAN
+      demo_verdict_required  需要 Demo verdict(human-only)→ HUMAN
+      jev                    None = 沒有 Jev;否則 {"g2_route": {"choice", "probabilities"}, "risk": {"score"}}
+    """
+    _validate_g2r_case(case)
+    t = G2R_THRESHOLDS
+    jev = case["jev"]
+    reasons = []
+    signals = {"jev_present": jev is not None, "declared_paths": len([p for p in case["declared_paths"] if p.strip()]),
+               "spec_risk": case["spec_risk"], "owner_calls_unresolved": case["owner_calls_unresolved"],
+               "demo_verdict_required": case["demo_verdict_required"]}
+    # ① Jev 判 HUMAN 或信心 p(AUTO_PASS) < 0.85(只在有 Jev 時存在)
+    if jev is not None:
+        g2 = jev.get("g2_route") if isinstance(jev.get("g2_route"), dict) else {}
+        choice = g2.get("choice")
+        probs = g2.get("probabilities") if isinstance(g2.get("probabilities"), dict) else {}
+        p_auto = probs.get("AUTO_PASS")
+        signals.update({"jev_choice": choice, "jev_p_auto_pass": p_auto})
+        if choice != "AUTO_PASS":
+            reasons.append("jev_g2_route=%s" % choice)
+        # 寫成 not (p >= 門檻):NaN 比較恆 False,也要落到 HUMAN(fail-closed)
+        if not isinstance(p_auto, (int, float)) or isinstance(p_auto, bool) or not p_auto >= t["auto_pass_min"]:
+            reasons.append("jev_p_auto_pass_below_threshold(%s<%s)" % (p_auto, t["auto_pass_min"]))
+    # ② 命中 risk_paths;spec 沒宣告任何 path 也算(全是空白字串 = 沒宣告)
+    paths = [p.strip() for p in case["declared_paths"] if p.strip()]
+    if not paths:
+        reasons.append("spec_declares_no_paths")
+    else:
+        from .provenance import risk_ceiling_hit
+        hits = risk_ceiling_hit(paths)
+        signals["risk_path_hits"] = hits
+        if hits:
+            reasons.append("risk_paths_hit:%s" % ",".join(hits))
+    # ③ risk ≥ 2:有 Jev 用 Jev risk Score;沒有 Jev 用 4-spec Risk 映射(C4:high → 2)
+    if jev is not None:
+        risk_obj = jev.get("risk") if isinstance(jev.get("risk"), dict) else {}
+        score = risk_obj.get("score")
+        signals.update({"risk_source": "jev", "risk_score": score})
+        if not isinstance(score, int) or isinstance(score, bool):
+            reasons.append("jev_risk_missing")               # 有 Jev 卻沒給 risk → 無從判 <2,fail-closed
+        elif score >= t["risk_human_min"]:
+            reasons.append("risk>=%s(jev=%s)" % (t["risk_human_min"], score))
+    else:
+        score = G2R_SPEC_RISK_SCORE[case["spec_risk"] or "normal"]
+        signals.update({"risk_source": "spec", "risk_score": score})
+        if score >= t["risk_human_min"]:
+            reasons.append("risk>=%s(spec_risk=%s)" % (t["risk_human_min"], case["spec_risk"]))
+    # ④ 有沒解決的 Owner Call
+    if case["owner_calls_unresolved"] > 0:
+        reasons.append("owner_calls_unresolved=%d" % case["owner_calls_unresolved"])
+    # ⑤ 需要 Demo verdict
+    if case["demo_verdict_required"]:
+        reasons.append("demo_verdict_required")
+    route = "HUMAN" if reasons else "AUTO"
+    return {"route": route, "reasons": reasons or ["no_human_condition_hit"], "signals": signals,
+            "auto_means": G2R_AUTO_MEANS if route == "AUTO" else None,
+            "is_pass": False, "writes_verdict": False, "jev_role": "router_only",
+            "g2r_policy": "g2r-shadow+%s" % g2r_fingerprint()}

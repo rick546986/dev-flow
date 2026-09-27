@@ -1309,6 +1309,85 @@ class W7J2Track(RuntimeBase):
         self.assertFalse(out["j2_window_ratified"])
         self.assertEqual(out["live_switch"], "absent")
 
+class W9G2RShadow(RuntimeBase):
+    """G2R 只跑 shadow:記錄分流結果,不改 gate 實際判定;零網路;硬約束不動。"""
+    SPEC = "---\nfeature: demo-feature\nstage: 4-spec\nstatus: draft\nverdict:\n---\n- Risk: high\n"
+
+    def case(self, **kw):
+        c = {"slug": "demo-feature", "declared_paths": ["src/app/handler.py"], "spec_risk": "normal",
+             "owner_calls_unresolved": 0, "demo_verdict_required": False, "jev": None}
+        c.update(kw)
+        return c
+
+    def log_lines(self):
+        path = os.path.join(self.tmp, rt.G2R_SHADOW_LOG)
+        with open(path, encoding="utf-8") as fh:
+            return [json.loads(line) for line in fh if line.strip()]
+
+    def test_shadow_records_route_and_changes_no_gate(self):
+        feature = os.path.join(self.tmp, "docs", "dev", "demo-feature")
+        os.makedirs(feature)
+        with open(os.path.join(feature, "4-spec.md"), "w", encoding="utf-8") as fh:
+            fh.write(self.SPEC)
+        before = open(os.path.join(feature, "4-spec.md"), encoding="utf-8").read()
+        out = rt.run_g2r_shadow(self.tmp, self.case(spec_risk="high"), now="2026-09-27T00:00:00Z")
+        self.assertEqual(out["route_recommended"], "HUMAN")
+        self.assertEqual(out["gate_effect"], "none")
+        self.assertEqual(out["mode"], "shadow")
+        self.assertNotIn("route_taken", out)
+        self.assertFalse(out["writes_verdict"])
+        self.assertEqual(out["written"], [".devflow/jev/g2r-shadow.jsonl"])
+        self.assertEqual(open(os.path.join(feature, "4-spec.md"), encoding="utf-8").read(), before)
+        lines = self.log_lines()
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(lines[0]["reasons"], ["risk>=2(spec_risk=high)"])
+        self.assertEqual(lines[0]["recorded_at"], "2026-09-27T00:00:00Z")
+        self.assertEqual(self.durable_records(), [])          # 不進 Jev durable ledger / 不灌任何 n
+
+    def test_shadow_appends_and_auto_is_recorded_as_handoff_not_pass(self):
+        rt.run_g2r_shadow(self.tmp, self.case(owner_calls_unresolved=1))
+        out = rt.run_g2r_shadow(self.tmp, self.case())
+        self.assertEqual(out["route_recommended"], "AUTO")
+        self.assertEqual(out["auto_means"], policy.G2R_AUTO_MEANS)
+        self.assertFalse(out["is_pass"])
+        self.assertEqual([r["route_recommended"] for r in self.log_lines()], ["HUMAN", "AUTO"])
+
+    def test_shadow_without_key_or_optin_is_zero_network_and_leaves_dual_gate_alone(self):
+        out = rt.run_g2r_shadow(self.tmp, self.case(jev=None))
+        self.assertFalse(out["network"])
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, ".dev-flow", "jev.yaml")))   # 不建 opt-in 檔
+        self.assertEqual(rt.gate_level(self.tmp, "J5", {})[0], "off")           # 雙閘門判定不變
+
+    def test_hard_constants_stay_false_and_are_recorded(self):
+        out = rt.run_g2r_shadow(self.tmp, self.case(), record=False)
+        self.assertEqual(out["written"], [])
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, rt.G2R_SHADOW_LOG)))
+        self.assertFalse(rt.GRADUATED)
+        self.assertFalse(out["graduated"])
+        self.assertFalse(out["j5_live_ratified"])
+        self.assertFalse(out["j2_window_ratified"])
+
+    def test_cli_g2r_shadow_exit0_and_bad_case_exit2(self):
+        good = os.path.join(self.tmp, "case.json")
+        with open(good, "w", encoding="utf-8") as fh:
+            json.dump(self.case(declared_paths=[]), fh)
+        env = {k: v for k, v in os.environ.items() if k != "TYPESAFE_API_KEY"}
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
+        r = subprocess.run([sys.executable, RUNTIME_PATH, "--root", self.tmp, "g2r-shadow", "--case", good],
+                           capture_output=True, text=True, env=env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        data = json.loads(r.stdout)
+        self.assertEqual(data["route_recommended"], "HUMAN")
+        self.assertEqual(data["reasons"], ["spec_declares_no_paths"])
+        bad = os.path.join(self.tmp, "bad.json")
+        with open(bad, "w", encoding="utf-8") as fh:
+            json.dump({"slug": "demo-feature"}, fh)
+        r = subprocess.run([sys.executable, RUNTIME_PATH, "--root", self.tmp, "g2r-shadow", "--case", bad],
+                           capture_output=True, text=True, env=env)
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("缺欄", r.stderr)
+        self.assertEqual(len(self.log_lines()), 1)             # 壞輸入不落盤
+
 
 if __name__ == "__main__":
     unittest.main()
