@@ -46,13 +46,13 @@ G1、G3 的審查者順序**逐字不動**。
 1. **fresh-context agent reviewer PASS**:乾淨 context,只給 4-spec + 基準(契約 §7 G2 錨定義)
    + 回報格式;不給作者結論。
 2. **機械檢查全過**:
-   - `scripts/check-spec-gate.sh docs/dev/<slug>/4-spec.md`(六項形狀,含 C10 E2E entry point);
-   - `hooks/_stage3_impl.py <slug>` 結果為 N/A 或人類 ACCEPTED(Demo verdict 仍 human-only);
-   - `scripts/check-verdict-attestation.sh`(provenance 合法,見 §5);
-   - author ≠ approver 機械比對(見 §4)。
+   `scripts/check-spec-gate.sh docs/dev/<slug>/4-spec.md`(六項形狀,含 C10 E2E entry point);
+   `hooks/_stage3_impl.py <slug>` 結果為 N/A 或人類 ACCEPTED(Demo verdict 仍 human-only);
+   `scripts/check-verdict-attestation.sh`(provenance 合法,見 §5);
+   author ≠ approver 機械比對(見 §4)。
 3. **沒有命中任何轉人條件**(見 §3)。
 
-**Jev `g2_route`(gate 名 `G2R`,owner 2026-09-27 核准)只分流,不是放行條件。** 它只負責把「不確定」丟給人:
+**Jev** `g2_route`(gate 名 `G2R`,owner 2026-09-27 核准)**只分流,不是放行條件。** 它只負責把「不確定」丟給人:
 
 - 有 `TYPESAFE_API_KEY` 且專案 opt-in(`.dev-flow/jev.yaml`):跑 `g2_route`;判 HUMAN 或信心不足
   → 轉人;判 AUTO → 仍需上面 1 + 2 + 3。
@@ -66,7 +66,7 @@ G1、G3 的審查者順序**逐字不動**。
 | Jev `g2_route` = HUMAN | `policy.route_g2` | 只在有 key + opt-in 時存在 |
 | Jev 信心不足 | `p(AUTO_PASS) < 0.85` | owner 定案 C3:≥ 0.85 才走自動審 |
 | 命中 `risk_paths` | `policy.RISK_PATHS_DEFAULT` 對 4-spec 宣告的 changed paths／R 列檔案 | 機械 ceiling,不看任何分數 |
-| 4-spec **沒宣告任何檔案路徑** | 同上來源為空 | G2 階段還沒有 diff 可推 changed paths,無從判定 → **視同命中 `risk_paths`**(fail-closed,不當成「沒命中」) |
+| 4-spec **沒宣告任何檔案路徑** | 同上來源為空 | G2 階段還沒有 diff 可推 changed paths,無從判定 → **視同命中** `risk_paths`(fail-closed,不當成「沒命中」) |
 | risk ≥ 2 | 有 Jev:`risk` Score(0–3,與 J5 同刻度);無 Jev:4-spec `- Risk:` 映射 | owner 定案 C4:無 Jev 時 `Risk: high` 視同 ≥ 2;`medium`／`low` 視同 < 2 |
 | 有未裁決的 Owner Call | `check-spec-gate.sh`／2-decision Owner Calls 無殘留 | Owner Calls 永遠人裁 |
 | 需要 Demo verdict | `_stage3_impl.py` 回 `demo_request=requested`,或 Stage 3 觸發命中但人尚未填 Demo request | Demo verdict human-only 不動 |
@@ -86,15 +86,15 @@ G1、G3 的審查者順序**逐字不動**。
 
 自動 G2 的 4-spec 頂欄:
 
-```yaml
-verdict: PASS
-verdict_source: fresh_agent_reviewer      # 既有 source class,不新增
-attested_by: agent:<reviewer-id>          # 必須 ≠ authored_by
-authored_by: agent:<author-id>            # 新增
-g2_mode: auto                             # 新增:auto | human(命中轉人條件 → human)
-routed_by: jev:<evaluation_id>            # 新增:jev-routed;無 key／未 opt-in／no-op → none
-mechanical: sha256:<check 輸出摘要>       # 新增:check-spec-gate / stage3 / attestation 結果摘要 hash
-```
+| 欄位 | 值 | 說明 |
+|---|---|---|
+| `verdict` | `PASS` | |
+| `verdict_source` | `fresh_agent_reviewer` | 既有 source class,不新增 |
+| `attested_by` | `agent:<reviewer-id>` | 必須 ≠ authored_by |
+| `authored_by` | `agent:<author-id>` | 新增 |
+| `g2_mode` | `auto` | 新增:auto ｜ human(命中轉人條件 → human) |
+| `routed_by` | `jev:<evaluation_id>` | 新增:jev-routed;無 key／未 opt-in／no-op → none |
+| `mechanical` | `sha256:<check 輸出摘要>` | 新增:check-spec-gate / stage3 / attestation 結果摘要 hash |
 
 1. `verdict_source` 沿用既有三類(`human_attested`／`fresh_agent_reviewer`／`owner_self_review`),
    **不為 Jev 新增 source**;Jev 永遠不是 verdict source、不寫 `verdict:`、不填 `attested_by`。
@@ -132,7 +132,7 @@ mechanical: sha256:<check 輸出摘要>       # 新增:check-spec-gate / stage3 
 **②先並列 shadow 方案、累積 n 再上線。** 換到「上線前有數字」。否決理由:owner 已選直接上線;
 G3 固定人審已是下游安全網,且誤放率照樣記錄,不需要再多一段 shadow 過渡。
 
-**③讓 Jev `g2_route` AUTO 直接放行。** 換到「少一個 agent 呼叫」。否決理由:Jev 不是 reviewer、
+**③讓 Jev** `g2_route` **AUTO 直接放行。** 換到「少一個 agent 呼叫」。否決理由:Jev 不是 reviewer、
 不寫 verdict 是既有不變量;Jev 只能把不確定的丟給人,不能替人或 reviewer 說 PASS。
 
 **④保留人工抽查／誤放達門檻自動退回人審(原 C1/C2)。** 換到「放行後仍有人看」。否決理由:
