@@ -710,6 +710,7 @@ G2M_STAGES = {  # 發現階段 → 准用的發現來源(事件)
 G2M_RELEASED_BY = ("fresh_agent_reviewer", "human")   # 當初 G2 實際由誰放行;只有前者算「誤放行」,後者 = shadow 反事實
 G2M_RECORD_KEYS = ("slug", "case_hash", "g2r_reasons", "discovered_stage", "discovered_via", "evidence_ref",
                    "g2_released_by", "reported_by", "recorded_at")
+G2M_RELEASE_KEYS = ("slug", "case_hash", "g2r_reasons", "evidence_ref", "reported_by", "recorded_at")  # agent 放行紀錄
 _G2M_HASH_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _G2M_SLUG_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _G2M_ACTOR_RE = re.compile(r"^(human|agent):\S{1,64}$")
@@ -717,13 +718,13 @@ _G2M_TS_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 G2M_EVIDENCE_MAX = 200
 
 
-def validate_g2_misrelease(rec):
-    """誤放行紀錄的欄位驗證(record 寫入前、report 讀回時都跑同一支)。不合 → JevError。"""
+def _g2m_check_common(rec, keys, what):
+    """誤放行紀錄與 agent 放行紀錄共用的欄位驗證(slug/case_hash/g2r_reasons/evidence_ref/reported_by/recorded_at)。"""
     if not isinstance(rec, dict):
-        raise JevError("g2_misrelease 紀錄必須是 dict")
-    missing = [k for k in G2M_RECORD_KEYS if k not in rec]
+        raise JevError("%s 紀錄必須是 dict" % what)
+    missing = [k for k in keys if k not in rec]
     if missing:
-        raise JevError("g2_misrelease 缺欄 %s" % ",".join(missing))
+        raise JevError("%s 缺欄 %s" % (what, ",".join(missing)))
     if not isinstance(rec["slug"], str) or not _G2M_SLUG_RE.match(rec["slug"]):
         raise JevError("slug 只准 [A-Za-z0-9._-]")
     if not isinstance(rec["case_hash"], str) or not _G2M_HASH_RE.match(rec["case_hash"]):
@@ -731,36 +732,63 @@ def validate_g2_misrelease(rec):
     reasons = rec["g2r_reasons"]
     if not isinstance(reasons, list) or not reasons or not all(isinstance(r, str) and r for r in reasons):
         raise JevError("g2r_reasons 必須是非空字串 list(抄自 g2r-shadow 紀錄)")
+    ev = rec["evidence_ref"]
+    if not isinstance(ev, str) or not ev.strip() or ev != ev.strip() or len(ev) > G2M_EVIDENCE_MAX or "\n" in ev:
+        raise JevError("evidence_ref 必須是單行非空字串、無前後空白、≤%d 字(7-review 路徑／commit sha／PR 連結)"
+                       % G2M_EVIDENCE_MAX)
+    if not isinstance(rec["reported_by"], str) or not _G2M_ACTOR_RE.match(rec["reported_by"]):
+        raise JevError("reported_by 必須是 human:<名> 或 agent:<id>")
+    if not isinstance(rec["recorded_at"], str) or not _G2M_TS_RE.match(rec["recorded_at"]):
+        raise JevError("recorded_at 必須是 YYYY-MM-DDTHH:MM:SSZ")
+
+
+def validate_g2_misrelease(rec):
+    """誤放行紀錄的欄位驗證(record 寫入前、report 讀回時都跑同一支)。不合 → JevError。"""
+    _g2m_check_common(rec, G2M_RECORD_KEYS, "g2_misrelease")
     stage = rec["discovered_stage"]
     if stage not in G2M_STAGES:
         raise JevError("discovered_stage=%r 不認得(只收 %s)" % (stage, "|".join(G2M_STAGES)))
     if rec["discovered_via"] not in G2M_STAGES[stage]:
         raise JevError("discovered_via=%r 不屬於 %s 階段(只收 %s)"
                        % (rec["discovered_via"], stage, "|".join(G2M_STAGES[stage])))
-    ev = rec["evidence_ref"]
-    if not isinstance(ev, str) or not ev.strip() or ev != ev.strip() or len(ev) > G2M_EVIDENCE_MAX or "\n" in ev:
-        raise JevError("evidence_ref 必須是單行非空字串、無前後空白、≤%d 字(7-review 路徑／commit sha／PR 連結)"
-                       % G2M_EVIDENCE_MAX)
     if rec["g2_released_by"] not in G2M_RELEASED_BY:
         raise JevError("g2_released_by=%r 不認得(只收 %s)" % (rec["g2_released_by"], "|".join(G2M_RELEASED_BY)))
-    actor = rec["reported_by"]
-    if not isinstance(actor, str) or not _G2M_ACTOR_RE.match(actor):
-        raise JevError("reported_by 必須是 human:<名> 或 agent:<id>")
-    if stage == "G3" and not actor.startswith("human:"):
+    if stage == "G3" and not rec["reported_by"].startswith("human:"):
         raise JevError("G3 階段的 root_cause: spec 只准人勾(v5 §3.3)—— reported_by 必須是 human:<名>")
-    if not isinstance(rec["recorded_at"], str) or not _G2M_TS_RE.match(rec["recorded_at"]):
-        raise JevError("recorded_at 必須是 YYYY-MM-DDTHH:MM:SSZ")
 
 
-def g2_misrelease_rate(misreleased, auto_total):
-    """誤放行率。分母 0 → rate=None、status=insufficient_data(**不是 0%**);分子 > 分母 → JevError。"""
-    for name, v in (("misreleased", misreleased), ("auto_total", auto_total)):
+def validate_g2_agent_release(rec):
+    """「G2 真的由 fresh agent reviewer 放行」紀錄的欄位驗證(release 寫入前、report 讀回時都跑同一支)。"""
+    _g2m_check_common(rec, G2M_RELEASE_KEYS, "g2_agent_release")
+
+
+G2M_NO_AGENT_RELEASE_NOTE = "目前沒有任何由 fresh agent reviewer 放行的紀錄(G2 仍由人審),不是 0%"
+
+
+def _g2m_counts(numerator, denominator, num_name, den_name):
+    for name, v in ((num_name, numerator), (den_name, denominator)):
         if isinstance(v, bool) or not isinstance(v, int) or v < 0:
             raise JevError("%s 必須是 ≥0 的整數" % name)
-    if misreleased > auto_total:
-        raise JevError("誤放行數 %d > AUTO 總數 %d —— 資料不一致,不算率" % (misreleased, auto_total))
+    if numerator > denominator:
+        raise JevError("%s %d > %s %d —— 資料不一致,不算率" % (num_name, numerator, den_name, denominator))
+
+
+def g2_misrelease_rate(misreleased, agent_released):
+    """誤放行率 = 誤放行數 ÷ 真的由 fresh agent reviewer 放行的 G2R AUTO case 數。
+    分母 0 → rate=None、status=insufficient_data(**不是 0%**);分子 > 分母 → JevError。"""
+    _g2m_counts(misreleased, agent_released, "誤放行數", "agent 放行數")
+    if agent_released == 0:
+        return {"rate": None, "status": "insufficient_data", "note": G2M_NO_AGENT_RELEASE_NOTE}
+    return {"rate": misreleased / agent_released, "status": "ok",
+            "note": "n=%d(agent 放行數;樣本門檻 owner 未定;率只進 report,不接任何阻擋)" % agent_released}
+
+
+def g2_shadow_counterfactual_rate(human_released_spec_issue, auto_total):
+    """shadow 反事實率 = 由人放行但後來發現 spec 有問題的 AUTO case 數 ÷ AUTO 總數。
+    不是誤放行率、不能跟它混用;AUTO 總數 0 → rate=None、status=insufficient_data。"""
+    _g2m_counts(human_released_spec_issue, auto_total, "人放行後發現 spec 問題數", "AUTO 總數")
     if auto_total == 0:
         return {"rate": None, "status": "insufficient_data",
-                "note": "AUTO 總數 = 0:沒有分母,誤放行率無法計算(不是 0%)"}
-    return {"rate": misreleased / auto_total, "status": "ok",
-            "note": "n=%d(樣本門檻 owner 未定;率只進 report,不接任何阻擋)" % auto_total}
+                "note": "AUTO 總數 = 0:沒有分母,反事實率無法計算(不是 0%)"}
+    return {"rate": human_released_spec_issue / auto_total, "status": "counterfactual",
+            "note": "反事實:這些 case 實際由人放行,不是誤放行率;n=%d(AUTO 總數)" % auto_total}

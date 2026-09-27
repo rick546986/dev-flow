@@ -2006,12 +2006,56 @@ class W10MisreleaseFields(unittest.TestCase):
                 policy.validate_g2_misrelease(g2m_rec(recorded_at=bad))
 
 
+def g2r_rel(**kw):
+    rec = {"slug": "demo-feature", "case_hash": "sha256:" + "c" * 64, "g2r_reasons": ["no_human_condition_hit"],
+           "evidence_ref": "docs/dev/demo-feature/g2-agent-review.md", "reported_by": "agent:claude",
+           "recorded_at": "2026-09-27T00:00:00Z"}
+    rec.update(kw)
+    return rec
+
+
+class W10AgentReleaseFields(unittest.TestCase):
+    """validate_g2_agent_release:誤放行率分母那筆紀錄的欄位驗證。"""
+
+    def test_valid_release_passes_for_human_or_agent_reporter(self):
+        policy.validate_g2_agent_release(g2r_rel())
+        policy.validate_g2_agent_release(g2r_rel(reported_by="human:rick"))
+
+    def test_missing_each_field_fails(self):
+        for key in policy.G2M_RELEASE_KEYS:
+            rec = g2r_rel()
+            del rec[key]
+            with self.assertRaises(JevError, msg=key):
+                policy.validate_g2_agent_release(rec)
+
+    def test_bad_values_fail(self):
+        for kw in ({"slug": "a b"}, {"case_hash": "c" * 64}, {"g2r_reasons": []}, {"evidence_ref": ""},
+                   {"evidence_ref": "a\nb"}, {"reported_by": "claude"}, {"recorded_at": "2026-09-27"}):
+            with self.assertRaises(JevError, msg=kw):
+                policy.validate_g2_agent_release(g2r_rel(**kw))
+        with self.assertRaises(JevError):
+            policy.validate_g2_agent_release("x")
+
+
 class W10MisreleaseRate(unittest.TestCase):
     def test_zero_denominator_is_insufficient_not_zero_percent(self):
         out = policy.g2_misrelease_rate(0, 0)
         self.assertIsNone(out["rate"])
         self.assertEqual(out["status"], "insufficient_data")
         self.assertIn("不是 0%", out["note"])
+        self.assertIn("目前沒有任何由 fresh agent reviewer 放行的紀錄", out["note"])
+        self.assertIn("G2 仍由人審", out["note"])
+
+    def test_counterfactual_rate_is_labelled_and_null_on_zero_auto(self):
+        out = policy.g2_shadow_counterfactual_rate(1, 4)
+        self.assertEqual((out["rate"], out["status"]), (0.25, "counterfactual"))
+        out = policy.g2_shadow_counterfactual_rate(0, 0)
+        self.assertIsNone(out["rate"])
+        self.assertEqual(out["status"], "insufficient_data")
+        with self.assertRaises(JevError):
+            policy.g2_shadow_counterfactual_rate(2, 1)
+        with self.assertRaises(JevError):
+            policy.g2_shadow_counterfactual_rate(True, 1)
 
     def test_rate_values(self):
         self.assertEqual(policy.g2_misrelease_rate(0, 4)["rate"], 0.0)
