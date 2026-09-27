@@ -1,7 +1,7 @@
 ---
 title: jev-gate v5 — owner 裁決（2026-09-26）：人只參與討論，之後由 agent 完成
 slug: jev-gate
-status: 已記錄 owner 方向；本檔只記錄與規劃，不改程式、不改測試、不改 main 契約面；標「待 owner 核定」的數值都是候選值
+status: 已記錄 owner 方向；本檔只記錄與規劃，不改程式、不改測試、不改 main 契約面；C3–C6 已於 2026-09-26 由 owner 定案、C1／C2 整項移除（§5）；gate 名稱 `G2R`、`MR` 仍待 owner 核准
 date: 2026-09-26
 base: research/jev-supermemory a65d78b（W7）
 supersedes: roadmap draft-v4 §0 第 6、7、9 條的「上線路徑」語意（見 §7）
@@ -12,7 +12,7 @@ supersedes: roadmap draft-v4 §0 第 6、7、9 條的「上線路徑」語意（
 > **一句話**：人只在討論階段參與（G1 人審、Owner Calls 人裁），G2 改成 **fresh-context agent reviewer + 機械檢查自動審**；
 > G3 **固定人審**，J5 AUTO_SHIP 退出目標；supermemory 正式放棄，改做「Jev 記憶重排序」。
 > **本 PR 只改文件**：roadmap draft-v4 → draft-v5、本檔新增。L2 契約變更（G2 放寬）只寫 **ADR 草稿內容**（§3.6），ADR 本身留 owner 在 `main` 走流程。
-> **作者 ≠ 審查者**：本檔是 agent 依 owner 裁決整理的落檔，不宣稱任何 reviewer PASS；候選數值一律「待 owner 核定」。
+> **作者 ≠ 審查者**：本檔是 agent 依 owner 裁決整理的落檔，不宣稱任何 reviewer PASS。數值以 §5 為準（owner 2026-09-26 定案）；gate 名稱 `G2R`、`MR` 仍待 owner 核准。
 
 ## 0. 分支與 SHA
 
@@ -21,6 +21,7 @@ supersedes: roadmap draft-v4 §0 第 6、7、9 條的「上線路徑」語意（
 | 基線 | `research/jev-supermemory` `a65d78b`（W7） |
 | 本分支 | `claude/roadmap-v5-owner-decisions-g2eenl` |
 | 改動 | `docs/dev/jev-gate/roadmap.md`（draft-v4 → draft-v5）、`docs/dev/jev-gate/v5-owner-direction.md`（新增） |
+| 定案輪 | `claude/jev-gate-owner-decision-cjyzy5`（基線 `research/jev-supermemory` `a0ec529`，W8 之後）：寫入 owner 2026-09-26 定案（§1 第 6 條）；只改本檔與 `roadmap.md` |
 | main | **未動**；契約 §7／guide／SKILL／`_gate_consistency_impl.py` 都沒改 |
 | 程式／測試 | **未動**；`GRADUATED=False`、`J5_LIVE_RATIFIED=False`、`J2_WINDOW_RATIFIED=False` 原樣 |
 
@@ -35,8 +36,9 @@ supersedes: roadmap draft-v4 §0 第 6、7、9 條的「上線路徑」語意（
 | 3 | G3 固定人審；J5 AUTO_SHIP 從目標移除；J5 保留 shadow 參考 | P3-1 標「不再是上線路徑」；計算器保留；§16 J5 AUTO 驗收清單退役 |
 | 4 | supermemory 正式放棄；新增「Jev 記憶重排序」 | §6／§14 改寫；新 P2-11；主線 |
 | 5 | 重排優先級與 W8 之後 wave | §1 新增 v5 主線表與 W8–W12 |
+| 6 | **2026-09-26 定案**：C1（人工抽查）、C2（誤放達門檻自動退回人審）**整項移除**，G2 放行後不需人工介入；G2 誤放率仍記錄，但只記錄、不阻擋、不自動退回；C3–C6 照 §5 定案；放行前的轉人條件維持不變（§3.2） | §3.3 改寫；§3.6 ADR 草稿同步；§5 表改為定案值；roadmap P2-5 退役、P2-10 改為只記錄 |
 
-硬約束（不變）：`GRADUATED=False`、雙閘門（`TYPESAFE_API_KEY` + `.dev-flow/jev.yaml` opt-in）、J3 不寫 verdict、21 次外部稽核不算 n、Demo verdict／Quiz gate／author≠approver／risk ceiling 不鬆。
+硬約束（不變）：`GRADUATED=False`、`J5_LIVE_RATIFIED=False`、`J2_WINDOW_RATIFIED=False`、雙閘門（`TYPESAFE_API_KEY` + `.dev-flow/jev.yaml` opt-in）、J3 不寫 verdict、21 次外部稽核不算 n、Jev 不當 reviewer、G1 與 G3 由人決定、Demo verdict／Quiz gate／author≠approver／risk ceiling 不鬆。
 
 ## 2. G1：人審、J2 永遠 shadow
 
@@ -67,32 +69,32 @@ supersedes: roadmap draft-v4 §0 第 6、7、9 條的「上線路徑」語意（
 | 條件 | 判定來源 | 備註 |
 |---|---|---|
 | Jev `g2_route` = HUMAN | `policy.route_g2`（P2-9 新增） | 只在有 key + opt-in 時存在 |
-| Jev 信心不足 | `p(AUTO_PASS) < 門檻` | 門檻候選見 §5 C3，**待 owner 核定** |
+| Jev 信心不足 | `p(AUTO_PASS) < 0.85` | §5 C3（owner 定案）：≥ 0.85 才走自動審 |
 | 命中 `risk_paths` | `policy.RISK_PATHS_DEFAULT`（A7）對 4-spec 宣告的 changed paths／R 列檔案 | 同 P2-4 機械 ceiling，不看任何分數 |
-| risk score ≥ 2 | 有 Jev：`risk` Score（0–3，與 J5 同刻度）；無 Jev：4-spec `- Risk:` 映射（§5 C4） | 映射**待 owner 核定** |
+| 4-spec 沒宣告任何檔案路徑 | 同上來源為空 | G2 階段還沒有 diff 可推 changed_paths，無從判定是否命中 `risk_paths` → **直接轉人**（fail-closed，不當成「沒命中」） |
+| risk score ≥ 2 | 有 Jev：`risk` Score（0–3，與 J5 同刻度）；無 Jev：4-spec `- Risk:` 映射（§5 C4） | C4（owner 定案）：無 Jev 時 `Risk: high` 視同 ≥2 → 轉人 |
 | 有未裁決的 OC | `check-spec-gate.sh`／2-decision Owner Calls 無殘留 | OC 永遠人裁 |
 | 需要 Demo verdict | `_stage3_impl.py` 回 `demo_request=requested`，或 Stage 3 觸發命中但人尚未填 Demo request | Demo verdict human-only 不動 |
 | 修改 Jev runtime／questions／config 當次 | P1-G6 既有規則 | 同 J5 |
 | provenance 不合法或 author==approver | §3.4／§3.5 | fail-closed：**不是 unverified 放行**，是不過 |
 
-### 3.3 監控：只記錄、不擋單一 gate
+### 3.3 監控：G2 誤放率只記錄（owner 2026-09-26 定案）
+
+C1（人工抽查）與 C2（誤放達門檻自動退回人審）**整項移除**：G2 自動放行後**不需人工介入**，沒有抽查、沒有模式切換、沒有 `g2_auto_state=reverted`。
 
 | 監控 | 定義 | 動作 |
 |---|---|---|
-| (a) 隨機抽查 | 自動通過的 G2，依 `case_id` 雜湊決定性抽樣給人看（沿用 P2-5；agent 不能挑、不能關） | 人看完記 `audit_verdict: agree|disagree`；不回溯撤銷已過的 G2，disagree 走一般修迴圈 |
-| (b) G2 放錯 | G3 退件（REQUEST_CHANGES／HOLD），且退件原因追得到規格（R/S 錯漏、DD 判錯、Verification Profile 漏層、spec 自相矛盾） | 記一筆 `g2_misrelease`，綁同 feature 的 G2 evaluation／verdict hash；追不到規格的 G3 退件不算 |
-| (c) 退回人審 | rolling 放錯比例超過門檻 | 自動把 G2 模式切回人審（`g2_auto_state=reverted`）；**只有人**能再開（ratchet，不自動恢復） |
+| G2 誤放 | G3 退件（REQUEST_CHANGES／HOLD），且退件原因追得到規格（R/S 錯漏、DD 判錯、Verification Profile 漏層、spec 自相矛盾） | 記一筆 `g2_misrelease`，綁同 feature 的 G2 evaluation／verdict hash；追不到規格的 G3 退件不算 |
+| G2 誤放率 | `g2_misrelease` 筆數 ÷ 已走到 G3 的自動 G2 筆數 | 只進 report；**不阻擋任何 G2、不自動退回人審、不觸發抽查** |
 
-「只記錄不擋門」的意思是：監控本身不擋任何一次 G2；只有 (c) 的**模式切換**會讓之後的 G2 回人審。抽查比例與門檻見 §5 C1／C2。
-
-G3 退件「原因追得到規格」由 **G3 的人類 reviewer** 在 7-review 退件理由勾 `root_cause: spec`（P2-10 新增欄），agent 不得代勾；這是監控資料正確性的前提。
+G3 退件「原因追得到規格」由 **G3 的人類 reviewer** 在 7-review 退件理由勾 `root_cause: spec`（P2-10 新增欄），agent 不得代勾。這是 G3 本來就由人做的退件判斷，不是 G2 放行後的額外人工步驟。
 
 ### 3.4 author ≠ approver
 
 - 寫 4-spec 的 agent 與審 G2 的 agent **必須不同**。
 - 4-spec 頂欄新增 `authored_by: agent:<id>`（或 `human:<名>`）；G2 verdict 的 `attested_by: agent:<id>` 必須 ≠ `authored_by`，且不得是本 feature Stage 6 實作者（沿用 `gate-verdict-write.md` 鎖死 6「fresh agent 不得是實作者」）。
 - 缺 `authored_by` → 不能證明四眼 → 轉人。
-- 格式比對是 **provenance tripwire，不是身份驗證**（同 P1-G7）；換 session／換 id 字串不能證明真的是不同 agent，所以抽查（§3.3a）是補強。
+- 格式比對是 **provenance tripwire，不是身份驗證**（同 P1-G7）；換 session／換 id 字串不能證明真的是不同 agent，補強靠下游 G3 固定人審（C1 抽查已移除）。
 
 ### 3.5 G2 verdict provenance（對齊 P1-G7）
 
@@ -103,7 +105,7 @@ verdict: PASS
 verdict_source: fresh_agent_reviewer      # P1-G7 既有 source class，不新增
 attested_by: agent:<reviewer-id>          # 必須 ≠ authored_by
 authored_by: agent:<author-id>            # v5 新增（§3.4）
-g2_mode: auto                             # v5 新增：auto | human（轉人或已 reverted → human）
+g2_mode: auto                             # v5 新增：auto | human（命中轉人條件 → human）
 routed_by: jev:<evaluation_id>            # v5 新增：jev-routed；無 key / 未 opt-in / no-op → none
 mechanical: sha256:<check 輸出摘要>       # v5 新增：check-spec-gate / stage3 / attestation 結果摘要 hash
 ```
@@ -114,7 +116,7 @@ mechanical: sha256:<check 輸出摘要>       # v5 新增：check-spec-gate / st
 2. `routed_by` 只記「誰分流」，與「誰核准」分欄：`jev:<evaluation_id>` 讓 report 能回查 durable ledger 的 route；`none` 代表沒有 Jev 參與。
 3. `g2_mode: auto` 而 `verdict_source ≠ fresh_agent_reviewer` 或 `attested_by` 不是 `agent:*` → **不合法**，G2 不過（fail-closed；與現行「人類 verdict 缺 provenance = unverified 但 gate 照關」不同，因為 auto 路徑沒有人可以兜底）。
 4. 轉人後的 G2 照現行：`g2_mode: human`，人類 verdict 經 `devflow_gate.py` 寫 `human_attested`；`routed_by` 仍記當次 Jev evaluation（若有），供 report 分層。
-5. report 分層：`g2_mode × verdict_source × routed_by`，不把 auto 與 human G2 混成同一率；G2 沒有 graduation n，這裡的分層只服務監控 (b)(c)。
+5. report 分層：`g2_mode × verdict_source × routed_by`，不把 auto 與 human G2 混成同一率；G2 沒有 graduation n，這裡的分層只服務 §3.3 誤放率記錄。
 
 ### 3.6 ADR 草稿內容（L2；**本 PR 不改 main 契約面**，由 owner 在 main 走流程）
 
@@ -123,7 +125,7 @@ mechanical: sha256:<check 輸出摘要>       # v5 新增：check-spec-gate / st
 
 **Context**：owner 2026-09-26 裁「人只參與討論，之後由 agent 完成」。G2 是契約寫得對不對；G3 仍人審可作下游安全網；Jev 不寫 verdict。
 
-**Decision**：G2 的審查者順序對 G2 改為 **fresh-context reviewer Agent（+機械檢查）→ 適格人類 reviewer（轉人條件命中時）→ owner 自審（有記錄的最後手段）**；G1、G3 順序不變。
+**Decision**：G2 的審查者順序對 G2 改為 **fresh-context reviewer Agent（+機械檢查）→ 適格人類 reviewer（轉人條件命中時）→ owner 自審（有記錄的最後手段）**；G1、G3 順序不變。自動放行後**不需人工介入**：不做人工抽查、不因誤放率自動退回人審（owner 2026-09-26 移除原 P2-5 抽查與自動退回設計）；G2 誤放率（G3 退件追溯到 spec 的比例）只記錄進 report。
 
 **要改的四個面（只放寬 G2，G1／G3 逐字不動）**：
 
@@ -136,7 +138,7 @@ mechanical: sha256:<check 輸出摘要>       # v5 新增：check-spec-gate / st
 
 **連帶實作面（ADR accepted 後才動；本 PR 不動）**：`_templates/4-spec.md` 頂欄加 `authored_by`／`g2_mode`／`routed_by`／`mechanical`；`scripts/check-verdict-attestation.sh` 驗 §3.5 規則 3；`scripts/devflow_gate.py` 新增 G2 auto 寫入路徑（只收 `fresh_agent_reviewer` + `agent:<id>` 且 ≠ `authored_by`，Jev 仍拒收）；`notes/design/gate-verdict-write.md` 鎖死 6 補 G2 auto 句；`check-gate-verdict-write.sh`／`check-methodology-corrections.sh` 同步；README 公開面 parity。
 
-**Consequences**：G2 不再是日常人類等待；下游 G3 人審承接 G2 漏網風險，監控 (b)(c) 量化並可自動退回。**不變**：Demo verdict human-only、Quiz gate、risk ceiling、author≠approver、J3 不寫 verdict、Jev 不是 reviewer（`_gate_consistency_impl.py` 不新增 Jev step）。
+**Consequences**：G2 不再是日常人類等待，放行後也不再有人工抽查；下游 G3 人審承接 G2 漏網風險；G2 誤放率只量化、不阻擋、不自動退回（要不要因數字改規則，由 owner 另行裁決）。**不變**：Demo verdict human-only、Quiz gate、risk ceiling、author≠approver、J3 不寫 verdict、Jev 不是 reviewer（`_gate_consistency_impl.py` 不新增 Jev step）。
 
 **Alternatives considered**：維持人審 G2（違反 owner 目標）。owner 已選直接上線，本 ADR 不列 shadow 過渡方案。
 
@@ -148,29 +150,32 @@ mechanical: sha256:<check 輸出摘要>       # v5 新增：check-spec-gate / st
 - P3-1 的 `n≥30`／Wilson `≥.85` 改標「**不再是上線路徑**」；`report.eligibility` 計算器保留（shadow 參考品質的量尺），但其結果不連到任何 live 開關。
 - 21 次外部稽核仍不算 n。
 
-## 5. 待 owner 核定的候選值
+## 5. owner 定案值（2026-09-26）
 
-| # | 項目 | 候選值 | 理由 |
+| # | 項目 | 定案 | 說明 |
 |---|---|---|---|
-| **C1** | G2 自動通過抽查比例 | **20%**，依 `sha256(case_id)` 決定性抽樣（agent 不能挑）；前 **10** 筆自動 G2 **100%** 人看（burn-in） | P2-5 原候選 10–20% 取上緣：G2 是文件審，人看一份 4-spec 成本遠低於 G3 實跑；上線初期沒有 human-G2 baseline，burn-in 10 筆可快速暴露系統性盲點（例如 fresh agent 對 Verification Profile 的理解偏差），之後 20% 在每月十來個 feature 的量下仍約每週一筆，維持 fresh labels |
-| **C2** | 退回人審門檻 | rolling **最近 20 筆**自動 G2 中 `g2_misrelease ≥ 3`（>10%）→ reverted；小樣本保護：前 10 筆內 `≥ 2` 即 reverted；抽查 `disagree` 且人確認為 spec 缺陷也計入 misrelease | G3 仍人審，G2 放錯的代價是返工而非出貨事故，容忍度可高於 J5 的 .85 floor；但 3/20 已代表系統性問題；小樣本規則避免前期連錯仍等滿 20 筆；計入抽查 disagree 讓 (a)(b) 用同一分子，不必等 G3 才發現。window 20 與 C1 的抽查節奏同量級，約一個月可滾完一輪 |
-| **C3** | Jev `g2_route` 信心門檻 | `p(AUTO_PASS) ≥ 0.85`，低於即轉人 | 沿用已落檔 A3（J5 `.85`）同一數字，避免新增一組未校準常數；`g2_route` 只分流不放行，門檻偏嚴只會多轉人，不會多放行 |
-| **C4** | 無 Jev 時的 risk 映射 | 4-spec `- Risk: high` → 視同 risk ≥2（轉人）；`medium`／`low` → <2 | 無 key 時沒有 Jev risk Score；spec 已有 `Risk:` 欄且 runtime 會讀；high 對應 Score 刻度 2–3（persisted/external、irreversible/security）最接近 |
-| **C5** | 記憶重排序上線 eval 門檻 | 同一 locked eval set 上 **Recall@5 不降** 且 **MRR 提升 ≥ 0.05**，mandatory 項保留率 **100%** | 重排只該讓對的更前面，不該掉召回；0.05 是 `dev-memory.py eval` 既有指標可量出的最小有意義差；mandatory 100% 是硬約束不是統計目標 |
-| **C6** | 記憶重排序候選池 | 原檢索 top **20** 送 Jev，回傳 top **5** | 候選池夠大才有重排空間，又不讓 packet 超 32k 單題限制（P0-2） |
+| **C1** | ~~G2 自動通過人工抽查~~ | **整項移除** | G2 放行後不需人工介入；原 20% 抽查與 burn-in 設計、及其理由段落一併刪除 |
+| **C2** | ~~誤放達門檻自動退回人審~~ | **整項移除** | 不做 rolling 門檻、不切 `reverted`；G2 誤放率改為只記錄（§3.3） |
+| **C3** | Jev `g2_route` 信心門檻 | `p(AUTO_PASS) ≥ 0.85` 才走自動審，低於即轉人 | 與 A3（J5 `.85`）同一數字；`g2_route` 只分流不放行，偏嚴只會多轉人 |
+| **C4** | 無 Jev 時的 risk 映射 | 4-spec `- Risk: high` 視同 risk ≥2 → 轉人；`medium`／`low` → <2 | 無 key 時沒有 Jev risk Score；high 對應 Score 刻度 2–3 |
+| **C5** | 記憶重排序上線條件 | 同一 locked eval set 上 **Recall@5 不降**、**MRR 至少 +0.05**、必帶記憶（mandatory 項）**100% 保留** | 三條同時成立才 live；mandatory 100% 是硬約束不是統計目標 |
+| **C6** | 記憶重排序候選池 | 取原檢索前 **20** 筆送 Jev，回傳前 **5** 筆 | 候選池夠大才有重排空間，又不讓 packet 超 32k 單題限制（P0-2） |
 
-每一項都**未校準**；改任一個（C3、C5、C6 會進 Jev manifest）= 新 `questionset_hash`，舊 group 不延續。
+C3–C6 是 owner 定案的數值，但數值本身**未經校準**；改任一個（C3、C5、C6 會進 Jev manifest）= 新 `questionset_hash`，舊 group 不延續。
+
+**仍待 owner 核准**：新 gate 名稱 `G2R`（`g2_route`，P2-9）與 `MR`（記憶重排序，P2-11）都只是候選名。
 
 ## 6. Jev 記憶重排序（主線，P2-11）
 
 | 規則 | 內容 |
 |---|---|
 | 位置 | 既有 `memory/dev-memory.py ask` → `memory/agentmem/query.py`／`retrieval.py` 多路召回**之後**；Jev 只重新排序與挑選，**不寫記憶**（不呼叫 `remember`／`fact`／`know`／durable append） |
-| 雙閘門 | 沒有 `TYPESAFE_API_KEY` 或專案未 opt-in（`.dev-flow/jev.yaml` 新 gate 名，候選 `MR`）→ **原樣回傳原檢索結果，零網路**；Jev 失敗／逾時／budget 用完同樣原樣回傳 |
+| 雙閘門 | 沒有 `TYPESAFE_API_KEY` 或專案未 opt-in（`.dev-flow/jev.yaml` 新 gate 名，候選 `MR`，**待 owner 核准**）→ **原樣回傳原檢索結果，零網路**；Jev 失敗／逾時／budget 用完同樣原樣回傳 |
 | 不可移除 | `memory/agentmem/context.py` 開場必讀 context（identity／verified_truths／invariants／intents／conflicts／events／instructions）、current truth、invariants、conflicts、exact hits；`NO_RELIABLE_MATCH` 不得被重排成 OK。這些項**不送去重排**，直接釘在結果前段 |
 | 去識別 | 送出的只有候選記憶的去識別摘要（沿用 P1-G1 packet builder privacy 規則）；不送 secret、credential、原始醫療資料；local replay store 同 gitignored 規則 |
-| 預算 | 算進既有 daily cap（A2）；同一 query 重跑不重扣以外的 variant 照扣 |
-| 上線條件 | `dev-memory.py eval` 檢索品質 eval 證明重排序優於原檢索（C5）；未達 → 保持 off，不做 shadow 以外的放行 |
+| 預算 | 共用既有 daily cap（A2：每日 500 attempts 或 500k input tokens，先到者停），計算規則同 P1-F5：每一次送到 Jev 的重排請求都算一個 attempt，包含 retry、換 phrasing 的 variant、重新評估；沒有送出網路請求就不扣（例如 off、已 no-op）。cap 用完 → 原樣回傳原檢索結果 |
+| 上線條件 | `dev-memory.py eval` 同一 locked eval set：Recall@5 不降、MRR 至少 +0.05、必帶記憶 100% 保留（C5，owner 定案）；未達 → 保持 off，不做 shadow 以外的放行 |
+| 候選池 | 原檢索前 20 筆 → Jev → 回傳前 5 筆（C6，owner 定案）；mandatory 項不在這 20 筆裡，另外釘在前段 |
 | 不做 | 不引入 supermemory、不引入新 embedding backend、不改 SQLite schema |
 
 ## 7. 對 draft-v4 §0 的修訂關係
