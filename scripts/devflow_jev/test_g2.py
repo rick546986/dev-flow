@@ -674,6 +674,13 @@ class StaticRecheck(unittest.TestCase):
     def test_forged_author_equals_approver_is_red(self):
         self.assertTrue(any("author == approver" in p for p in self.forge(attested_by="agent:author-1")))
 
+    def test_owner_self_review_agent_with_auto_mode_is_red(self):
+        # 冒人簽 + g2_mode: auto:classify 先判 bad(不走 auto),auto_release_problems 也不放行
+        fm = {"verdict": "PASS", "verdict_source": "owner_self_review", "attested_by": "agent:reviewer-9",
+              "g2_mode": "auto"}
+        self.assertEqual(g2auto.classify_gate_doc("4-spec", fm)[0], "bad")
+        self.assertTrue(any("verdict_source" in p for p in self.forge(verdict_source="owner_self_review")))
+
     def test_agent_verdict_without_auto_mode_is_red(self):
         self.assertTrue(any("g2_mode" in p for p in self.forge(g2_mode="human")))
 
@@ -695,6 +702,22 @@ class HumanOnlyG1G3(unittest.TestCase):
     def test_g1_g3_human_verdict_ok(self):
         for stage in ("2-decision", "7-review"):
             kind, problems = g2auto.classify_gate_doc(stage, {"verdict": "PASS", "verdict_source": "human_attested",
+                                                              "attested_by": "human:ada"})
+            self.assertEqual((kind, problems), ("human", []), stage)
+
+    def test_human_sources_with_agent_attested_by_are_red_on_every_stage(self):
+        # 人簽冒充:owner_self_review／human_attested + attested_by: agent:… 不得被當 human(G1/G2/G3 皆然)
+        for stage in ("2-decision", "4-spec", "7-review"):
+            for src in g2auto.HUMAN_SOURCES:
+                for by in ("agent:some-agent", "agent:reviewer-9"):
+                    kind, problems = g2auto.classify_gate_doc(stage, {"verdict": "PASS", "verdict_source": src,
+                                                                      "attested_by": by})
+                    self.assertEqual(kind, "bad", (stage, src, by))
+                    self.assertTrue(any("human:" in p for p in problems), problems)
+
+    def test_owner_self_review_with_human_prefix_still_human(self):
+        for stage in ("2-decision", "4-spec", "7-review"):
+            kind, problems = g2auto.classify_gate_doc(stage, {"verdict": "PASS", "verdict_source": "owner_self_review",
                                                               "attested_by": "human:ada"})
             self.assertEqual((kind, problems), ("human", []), stage)
 

@@ -1025,6 +1025,14 @@ class G7Attestation(unittest.TestCase):
         self.assertEqual(c["label"], "owner_self_review")
         self.assertFalse(attestation.graduation_eligible(c["label"]))
 
+    def test_owner_self_review_requires_human_prefix(self):
+        # owner_self_review 也是人簽:agent:… 不得冒充(以前只卡 human_attested)
+        for by in ("agent:opus", "agent:some-agent"):
+            c = attestation.classify_document(self._fm(verdict="PASS", verdict_source="owner_self_review", attested_by=by))
+            self.assertEqual(c["label"], "unverified", by)
+        self.assertEqual(attestation.classify_document(self._fm(verdict="PASS", verdict_source="owner_self_review"))["label"], "unverified")
+        self.assertEqual(attestation.HUMAN_SOURCES, ("human_attested", "owner_self_review"))
+
     def test_illegal_source_value_is_unverified(self):
         self.assertEqual(attestation.classify_document(self._fm(verdict="PASS", verdict_source="jev", attested_by="agent:jev"))["label"], "unverified")
 
