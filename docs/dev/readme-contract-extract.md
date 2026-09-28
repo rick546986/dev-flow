@@ -241,3 +241,9 @@ G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件�
 - **G1/G2/G3 審查與 verdict**:G1/G3 依 §7 的人類→fresh-context reviewer Agent→有記錄的
   owner 自審順序,verdict 只收人寫的;G2 依 §7「G2 審查者產生」先交 fresh-context reviewer Agent
   (機械檢查全過且未命中轉人條件),命中轉人條件才回人類→owner 自審;Agent 只要求乾淨 context、審核對象、基準與回報格式,不指定模型。
+- **Jev MR gate(選配,只到 shadow)**:`.dev-flow/jev.yaml` 的 `gates: MR:`(`level` 必填、
+  `min_queries` 選填;範本 `_templates/jev.yaml`)設定 MR rerank 與 `devflow-jev.py mr-gate`。mr-gate 照
+  mr-eval 同一判定(Recall@5 不降、MRR +0.05、必留 100% 保留、資料量地板)出 `pass`/`fail`/`insufficient_data`
+  (exit 0/1/3);設定缺或格式錯 → exit 2(fail loud);生效等級 off → 不評。`min_queries` 預設 20,是**未校準的暫定值**
+  (校準方法見 `docs/dev/jev-gate/w11-mr-rerank.md` §4.6)。MR live 未核准(`gate.MR_LIVE_RATIFIED = False`):
+  `enforced` 與 `live_eligible` 恆 false,不擋任何 gate;沒有 key 時 rerank 照原順序。MR 不是 G1/G2/G3,不寫 verdict。
