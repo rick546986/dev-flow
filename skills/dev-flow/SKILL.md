@@ -94,20 +94,21 @@ gate 條件人看正本 = 指南 `#gates`;機械正本 = 契約檔 §7。本表 
   也不得共用寫 spec／code 那個 agent 的 context。
 - **G2 自動審查**(契約 §7「G2 自動放行」「G2 轉人條件」「G2 provenance」;ADR 0004):
   1. `python3 <master>/scripts/devflow-jev.py g2r --slug <slug>` —— Jev G2R 只分流(AUTO 交給
-     agent／HUMAN 交給人),**不 review、不寫 verdict**。Jev 沒開(沒 key、沒
-     `.dev-flow/jev.yaml`、mode 不是 live)、失敗、逾時、回應格式錯 → 一律 HUMAN。
+     agent／HUMAN 交給人),**不 review、不寫 verdict**。沒有 Jev(沒 key、沒
+     `.dev-flow/jev.yaml`、mode 不是 live、失敗、逾時、breaker open、budget 用完)= no-op:
+     不擋、不放寬,`routed_by: none`,只靠 agent PASS + 機械檢查,其餘條件照判。
   2. 轉人條件(任一 → 人審):Jev 判 HUMAN 或 p(AUTO_PASS) < 0.85(剛好 0.85 交給 agent);
      命中 risk_paths 或 4-spec 沒宣告 `- Paths:`;risk ≥ 2(有 Jev 只看 Jev 分數,spec 的
-     `Risk: high` 不算;沒 Jev 時 `Risk: high` 就算);有沒解決的 Owner Call;需要 Demo verdict;
-     Jev 不在。
+     `Risk: high` 不算;沒 Jev 時 `Risk: high` 就算,不分大小寫);有沒解決的 Owner Call;需要 Demo verdict;
+     當次改到 Jev runtime／questions／config;缺 `authored_by`;provenance 不合法或 author == approver。
   3. AUTO → 派乾淨 context 的 reviewer agent(只給 4-spec + 契約 §7 G2 錨定義 + 回報格式)。
      PASS 才跑 `python3 <master>/scripts/devflow_gate.py write-g2-auto --root . --slug <slug>
      --reviewer agent:<id> --evidence-ref <報告>`:它重跑機械檢查與轉人條件,任一不過就拒寫;
      過了才寫 `verdict_source: fresh_agent_reviewer` + `g2_mode: auto` 等 provenance,並呼叫
      `devflow-jev.py g2-misrelease release` 記一筆(誤放行率只記錄,不設門檻、不自動回滾)。
      **feature agent 不得手寫這些頂欄**;`scripts/check-verdict-attestation.sh` 事後重驗。
-  4. 退回人審:把 `.dev-flow/jev.yaml` 的 `mode:` 改成 `shadow` 或 `off`(或拿掉 key)→ G2R
-     全部判 HUMAN、write-g2-auto 全拒;不需改程式。
+  4. 退回人審:把 `scripts/devflow_jev/g2auto.py` 的 `G2_AUTO_LIVE` 改成 `False`(一個 commit)→
+     write-g2-auto 全拒;或 revert 本功能。拿掉 Jev key／opt-in **不會**退回人審(那是 no-op,只少了分流)。
 
 ## 4. Stage 3 操作面(觸發判定/Demo/verdict)
 

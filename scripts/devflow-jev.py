@@ -8,8 +8,9 @@ Jev **只分流**:決定這個 G2 案子交給 fresh-context agent reviewer 還�
 子命令
   status      G2R 生效等級(key 有無 × .dev-flow/jev.yaml mode)與三個 live 開關(恆 False)。零網路。
   g2r         對 docs/dev/<slug>/4-spec.md 跑一次 G2R 分流 → append `.devflow/jev/g2r.jsonl`。
-              雙閘門(TYPESAFE_API_KEY + jev.yaml mode: live)通過才送 Jev 一次;沒開／失敗／逾時／格式錯
-              → jev=None → HUMAN。AUTO 不是通過:還要 agent reviewer PASS + 機械檢查(devflow_gate.py write-g2-auto)。
+              雙閘門(TYPESAFE_API_KEY + jev.yaml mode: live)通過才送 Jev 一次;沒 key／沒 opt-in／失敗／逾時／
+              breaker open／budget 用完 = 沒有 Jev(no-op,ADR 0004 §2):不擋、不放寬,routed_by=none,其餘轉人條件照判。
+              AUTO 不是通過:還要 agent reviewer PASS + 機械檢查(devflow_gate.py write-g2-auto)。
   g2-misrelease record|release|report
               G2 誤放行只記錄。release = agent 放行時記一筆(devflow_gate.py write-g2-auto 會呼叫);
               record = 之後在 G3／實作發現 spec 有問題;report = 誤放行率(不設門檻、不自動回滾、不擋任何東西)。
@@ -45,6 +46,7 @@ sys.path.insert(0, _package_parent())
 from devflow_jev import JevError  # noqa: E402
 from devflow_jev import gate as gate_mod  # noqa: E402
 from devflow_jev import g2auto, policy  # noqa: E402
+from devflow_jev.state import StateStore, utc_day  # noqa: E402
 from devflow_jev.transport import build_request  # noqa: E402
 
 G2R_LOG = g2auto.G2R_LOG
@@ -97,8 +99,8 @@ def _read_jsonl(path):
 # ───────────────────────────── 雙閘門(G2R)─────────────────────────────
 def g2r_level(has_key, optin):
     """G2R 的雙閘門:沿用 gate.py 的兩個輸入(key 有無 × `.dev-flow/jev.yaml` 解析結果),**不改 gate.py**。
-    G2R 不是 J1–J5,`gates:` 列不到它,所以只看 `mode:`。只有 mode: live 能讓 Jev 的 AUTO 生效;
-    shadow = 呼叫、記錄,但一律 HUMAN;off／沒 key／沒 opt-in = 不呼叫、HUMAN。回 (level, reason)。"""
+    G2R 不是 J1–J5,`gates:` 列不到它,所以只看 `mode:`。只有 mode: live 時 Jev 的分流才算數;
+    shadow = 呼叫、記錄,但分流上視同沒有 Jev;off／沒 key／沒 opt-in = 不呼叫、沒有 Jev(no-op)。回 (level, reason)。"""
     if not has_key:
         return "off", "no_api_key"
     if optin is None:
@@ -146,11 +148,11 @@ def _evaluation_id(case_hash, now):
 
 
 def _ask_jev(root, slug, environ, transport_factory, clock, deadline_s):
-    """回 (answers|None, jev_status, level, level_reason, extra)。任何失敗 → answers=None(= HUMAN)。"""
+    """回 (answers|None, jev_reason, level, level_reason, extra)。任何失敗 → answers=None(= 沒有 Jev,no-op)。"""
     environ = os.environ if environ is None else environ
     try:
         level, level_reason = g2r_level(gate_mod.has_api_key(environ), gate_mod.load_optin(root))
-    except JevError as exc:          # opt-in 檔壞了:不猜成 live,也不當成放行
+    except JevError as exc:          # opt-in 檔壞了:不猜成 live;視同沒有 Jev
         return None, "optin_error", "off", "optin_error:%s" % exc, {"network": False}
     if not gate_mod.may_call(level):
         return None, level_reason, level, level_reason, {"network": False}
@@ -167,15 +169,23 @@ def _ask_jev(root, slug, environ, transport_factory, clock, deadline_s):
         return None, "privacy_blocked", level, level_reason, {"network": False,
                                                              "privacy_hits": sorted({k for k, _ in hits})}
     request = build_request(state, policy.G2R_QUESTIONS)
+    est = (len(json.dumps(request, ensure_ascii=False).encode("utf-8")) + 1) // 2 + 1
+    store = StateStore(root)
+    day = utc_day()
+    budget = store.load_budget(day)
+    breaker = store.load_breaker()
     try:
         factory = transport_factory or make_transport_factory(environ)
         try:
             transport = factory(deadline_s)
         except TypeError:
             transport = factory()
-        outcome = policy.evaluate(transport, request, policy.G2R_QUESTIONS, clock, deadline_s=deadline_s)
-    except Exception as exc:          # transport 建構失敗等:一律 no-op = HUMAN
+        outcome = policy.evaluate(transport, request, policy.G2R_QUESTIONS, clock, deadline_s=deadline_s,
+                                  est_input_tokens=est, budget=budget, breaker=breaker, breaker_key="G2R")
+    except Exception as exc:          # transport 建構失敗等:一律 no-op = 沒有 Jev
         outcome = policy.noop("unexpected:" + type(exc).__name__)
+    store.save_budget(budget, day)
+    store.save_breaker(breaker)
     extra = {"network": True, "jev_model": outcome.get("model"), "usage": outcome.get("usage")}
     if outcome["status"] != "ok":
         return None, outcome["reason"], level, level_reason, extra
@@ -191,12 +201,15 @@ def run_g2r(root, slug, environ=None, transport_factory=None, clock=time.monoton
     deadline = policy.G2R_DEADLINE_S if deadline_s is None else min(policy.G2R_DEADLINE_S, float(deadline_s))
     now = now or _now()
     stage3 = g2auto.stage3_state(root, slug, environ)
-    answers, jev_status, level, level_reason, extra = _ask_jev(root, slug, environ, transport_factory, clock, deadline)
-    case = g2auto.build_case(root, slug, jev=answers, jev_status=jev_status, environ=environ, stage3=stage3)
+    answers, jev_reason, level, level_reason, extra = _ask_jev(root, slug, environ, transport_factory, clock, deadline)
+    case = g2auto.build_case(root, slug, jev=answers, environ=environ, stage3=stage3)
     routed = policy.route_g2(case)
     case_hash = policy.g2r_case_hash(case)
+    evaluation_id = _evaluation_id(case_hash, now)
     entry = {"schema": G2R_SCHEMA, "gate": "G2R", "slug": slug, "recorded_at": now,
-             "evaluation_id": _evaluation_id(case_hash, now), "level": level, "level_reason": level_reason,
+             "evaluation_id": evaluation_id, "level": level, "level_reason": level_reason,
+             "jev_reason": jev_reason,
+             "routed_by": ("jev:%s" % evaluation_id) if case["jev"] else g2auto.ROUTED_BY_NONE,
              "case": case, "case_hash": case_hash, "route": routed["route"], "reasons": routed["reasons"],
              "signals": routed["signals"], "auto_means": routed["auto_means"], "g2r_policy": routed["g2r_policy"],
              "jev_snapshot": g2auto.jev_snapshot(case["jev"]) if case["jev"] else None,
@@ -259,7 +272,8 @@ def run_g2_agent_release(root, slug, case_hash, evidence_ref, reported_by, now=N
         if (row.get("slug"), row.get("case_hash")) == (slug, case_hash):
             raise JevError("slug=%s case_hash=%s 已記過 agent 放行 —— 不重複落盤" % (slug, case_hash))
     entry = dict(rec, schema=G2M_RELEASE_SCHEMA, event="g2_agent_release", g2_released_by="fresh_agent_reviewer",
-                 evaluation_id=routed.get("evaluation_id"), g2r_policy=routed.get("g2r_policy"), gate_effect="none",
+                 evaluation_id=routed.get("evaluation_id"), routed_by=routed.get("routed_by"),
+                 g2r_policy=routed.get("g2r_policy"), gate_effect="none",
                  writes_verdict=False, auto_revert=False, spot_check=False, network=False, **_flags())
     return dict(entry, written=[_append_jsonl(root, G2M_RELEASE_LOG, entry)])
 
@@ -271,6 +285,8 @@ def run_g2_misrelease_report(root):
     release_rows, release_corrupt = _read_jsonl(os.path.join(root, G2M_RELEASE_LOG))
     rows, corrupt = _read_jsonl(os.path.join(root, G2M_LOG))
     invalid_releases, orphan_releases, released = [], [], set()
+    routed_of = {k: ("jev" if str(v.get("routed_by") or "").startswith("jev:") else "none")
+                 for k, v in auto_index.items()}
     for n, row in release_rows or []:
         try:
             policy.validate_g2_agent_release({k: row.get(k) for k in policy.G2M_RELEASE_KEYS if k in row})
@@ -329,6 +345,9 @@ def run_g2_misrelease_report(root):
     if conflicts:
         problems.append("g2-misrelease.jsonl 有 %d 筆 g2_released_by=human,但該 case 有 agent 放行紀錄" % len(conflicts))
     auto_total = len(auto_index)
+    layers = ("jev", "none")
+    released_by_routed = {r: sum(1 for k in released if routed_of.get(k) == r) for r in layers}
+    misreleased_by_routed = {r: sum(1 for k in misreleased if routed_of.get(k) == r) for r in layers}
     consistent = not (routed_corrupt or release_corrupt or invalid_releases or orphan_releases or corrupt or invalid
                       or orphans or unreleased or conflicts)
     if not consistent:
@@ -345,6 +364,7 @@ def run_g2_misrelease_report(root):
     out = {"schema": G2M_REPORT_SCHEMA, "gate": "G2R",
            "auto_total": auto_total, "agent_released": len(released),
            "misreleased": len(misreleased), "misreleased_by_stage": by_stage,
+           "agent_released_by_routed": released_by_routed, "misreleased_by_routed": misreleased_by_routed,
            "misrelease_rate": rate["rate"], "rate_status": rate["status"], "rate_note": rate["note"],
            "human_counterfactual": len(counterfactual), "human_counterfactual_rate": cf["rate"],
            "human_counterfactual_status": cf["status"], "human_counterfactual_note": cf["note"],

@@ -1172,7 +1172,8 @@ THEN  到期卡片列出 C,顯示合約名稱與剩餘天數「10 天」</pre>
     <code>devflow-jev.py g2r --slug &lt;slug&gt;</code>(Jev 只分流、不 review、不寫 verdict);判 AUTO →
     交乾淨 context 的 agent reviewer(≠ authored_by),PASS 才由
     <code>devflow_gate.py write-g2-auto</code> 寫 verdict(它再驗機械檢查 + 轉人條件,並記
-    <code>g2-misrelease release</code>);判 HUMAN 或 Jev 沒開/失敗 → 人審。轉人條件全文見契約 §7。
+    <code>g2-misrelease release</code>);判 HUMAN → 人審。沒有 Jev(沒 key/沒 opt-in/失敗)= no-op,
+    <code>routed_by: none</code>,其餘轉人條件照判。轉人條件全文見契約 §7。
     G2 審查關鍵條件 = R/S 全審 + DD 全裁決
     <ul>
     <li>Verification Profile(依 lane 正確填寫;未填視為步 3 未完成)</li>
@@ -1924,7 +1925,7 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   <strong>核准者不能是該文檔的 owner</strong>。</p>
   <div class="cardgrid">
     <div class="card"><h4>G1 物質 —— 方向對不對</h4><p><code>2-decision</code>:方向核准 + Owner Calls 全裁決,有未裁決 OC 不得 hop。新工作不例行等人按提交判定。</p></div>
-    <div class="card"><h4>G2 物質 —— 契約寫得對不對</h4><p><code>4-spec</code>:R/S 全審 + Drafting Decisions 全裁決 + Verification Profile(依 lane 正確填寫)+ Demo verdict(條件式),有未裁決項不得 hop(條件全文見 契約檔 §7)。新工作不例行等人。</p><p><strong>自動審</strong>:乾淨 context 的 fresh-context agent reviewer 給 PASS <strong>且</strong>機械檢查全過(<code>check-spec-gate.sh</code>、<code>_stage3_impl.py</code>、<code>check-verdict-attestation.sh</code>、author ≠ approver),才由 <code>devflow_gate.py write-g2-auto</code> 寫 <code>verdict_source: fresh_agent_reviewer</code> + <code>g2_mode: auto</code>;人寫的是 <code>human_attested</code>,兩者分得開。Jev G2R(<code>devflow-jev.py g2r</code>)只分流,不 review、不寫 verdict。</p><p><strong>交給人審</strong>(任一成立,只有 agent verdict 會被擋下):Jev 判 HUMAN 或 p(AUTO_PASS) &lt; 0.85(剛好 0.85 交給 agent);命中 risk_paths 或 spec 沒宣告 <code>- Paths:</code>;risk ≥ 2(有 Jev 只看 Jev 分數,spec 的 <code>Risk: high</code> 不算;沒 Jev 時 <code>Risk: high</code> 就算);有沒解決的 Owner Call;需要 Demo verdict;Jev 沒開、雙閘沒通過、呼叫失敗/逾時/格式錯。agent 放行記 <code>g2-misrelease release</code>,誤放行率只記錄、不設門檻、不自動回滾。退回人審:<code>.dev-flow/jev.yaml</code> 的 <code>mode:</code> 改 <code>shadow</code>/<code>off</code>。</p></div>
+    <div class="card"><h4>G2 物質 —— 契約寫得對不對</h4><p><code>4-spec</code>:R/S 全審 + Drafting Decisions 全裁決 + Verification Profile(依 lane 正確填寫)+ Demo verdict(條件式),有未裁決項不得 hop(條件全文見 契約檔 §7)。新工作不例行等人。</p><p><strong>自動審</strong>:乾淨 context 的 fresh-context agent reviewer 給 PASS <strong>且</strong>機械檢查全過(<code>check-spec-gate.sh</code>、<code>_stage3_impl.py</code>、<code>check-verdict-attestation.sh</code>、author ≠ approver),才由 <code>devflow_gate.py write-g2-auto</code> 寫 <code>verdict_source: fresh_agent_reviewer</code> + <code>g2_mode: auto</code>;人寫的是 <code>human_attested</code>,兩者分得開。Jev G2R(<code>devflow-jev.py g2r</code>)只分流,不 review、不寫 verdict。</p><p><strong>交給人審</strong>(任一成立,只有 agent verdict 會被擋下):Jev 判 HUMAN 或 p(AUTO_PASS) &lt; 0.85(剛好 0.85 交給 agent);命中 risk_paths 或 spec 沒宣告 <code>- Paths:</code>;risk ≥ 2(有 Jev 只看 Jev 分數,spec 的 <code>Risk: high</code> 不算;沒 Jev 時 <code>Risk: high</code> 就算,不分大小寫);有沒解決的 Owner Call;需要 Demo verdict;當次改到 Jev runtime／questions／config;缺 <code>authored_by</code>;provenance 不合法或 author = approver。<strong>沒有 Jev</strong>(沒 key、沒 opt-in、失敗、逾時、breaker open、budget 用完)= no-op:不擋、不放寬,<code>routed_by: none</code>。agent 放行記 <code>g2-misrelease release</code>,誤放行率只記錄、不設門檻、不自動回滾。全域退回人審:<code>g2auto.py</code> 的 <code>G2_AUTO_LIVE = False</code>。</p></div>
     <div class="card"><h4>Ship / G3 物質 —— 做出來的對不對</h4><p><code>7-review</code>:本次 S 全綠 + 既有測試套件全綠 + 現象證據逐 S 相符 + Evidence 契約全過(八點定義見 契約檔 §7);本模板另要求無 🔴 才 PASS。<strong>這是唯一預設人類停點</strong>;<code>verdict:</code> 人類親寫,agent 禁發明 G3。</p></div>
     <div class="card"><h4>author ≠ approver</h4><p>G1/G2/G3 的核准者不可以是該文檔的 owner。無適格人類第二人不跳過 Agent fallback;只有前兩種 reviewer 都不可用時才記錄 owner 自審,不假裝有四眼。G2 的 agent reviewer(<code>attested_by: agent:&lt;id&gt;</code>)不得等於 4-spec 的 <code>authored_by</code>,也不得共用寫 spec／code 那個 agent 的 context;G1/G3 只收人寫的 verdict。</p></div>
     <div class="card"><h4>Quiz gate</h4><p><strong>不可逆改動</strong>(schema/API 契約/跨模組介面)merge 前<strong>必做</strong>:AI 出 3-5 題考 approver,全對才 merge;其餘 full lane <strong>選配</strong>(approver 可要求),fast lane <strong>免</strong>。</p></div>
@@ -3663,7 +3664,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>G2 自動審查的 Jev 最小 runtime(從 research/jev-supermemory 只搬 W9 G2R 分流、W10 g2-misrelease)。
             <code>g2r --slug</code>:雙閘門(<code>TYPESAFE_API_KEY</code> + <code>.dev-flow/jev.yaml</code> <code>mode: live</code>)
             通過才送 Jev 一次,結果 append <code>.devflow/jev/g2r.jsonl</code>;Jev 只分流、不 review、不寫 verdict;
-            沒開／失敗／逾時／格式錯 → HUMAN。<code>g2-misrelease record|release|report</code>:誤放行只記錄,
+            沒開／失敗／逾時／breaker open／budget 用完 = no-op(<code>routed_by: none</code>),其餘條件照判。<code>g2-misrelease record|release|report</code>:誤放行只記錄,
             不設門檻、不自動回滾。<code>GRADUATED</code>／<code>J5_LIVE_RATIFIED</code>／<code>J2_WINDOW_RATIFIED</code> 寫死 False。</td>
         <td>Stage 4 G2 送審(<code>_templates/4-spec.md</code> 步 6);<code>devflow_gate.py write-g2-auto</code> 呼叫 release</td>
         <td>人工/CI(不在生命週期上)</td></tr>
@@ -3677,7 +3678,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             只有 key 或只有 opt-in 都是 off;yaml 子集 fail-loud;<code>J5_LIVE_RATIFIED = False</code>。G2R 不在 <code>gates:</code>,只看 <code>mode:</code>。</td>
         <td>同套件;<code>test_g2.py</code> LiveSwitchesStayOff</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>policy.py</code></td>
-        <td>G2R 分流 <code>route_g2</code>(轉人條件全列、p ≥ 0.85 才交 agent、有 Jev 只看 Jev risk、Jev 不在 = HUMAN)、
+        <td>G2R 分流 <code>route_g2</code>(轉人條件全列、p ≥ 0.85 才交 agent、有 Jev 只看 Jev risk、沒有 Jev = no-op、當次改 Jev runtime 與缺 authored_by 轉人)、budget／breaker、
             <code>spec_risk_of</code>(大小寫不拘、空值／非法值報錯,與 hooks <code>spec_risk_value</code> 同規則)、
             no-op 語意的一次 Jev 呼叫、送出前 privacy 掃描、G2 誤放行欄位驗證與率(只記錄)。</td>
         <td>同套件;<code>test_g2.py</code> RouteG2／SpecRisk</td><td>人工/CI(不在生命週期上)</td></tr>
@@ -3687,6 +3688,10 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             <code>G2_AUTO_LIVE</code> 是全域退回人審開關。寫入器與事後掃描共用同一支。</td>
         <td><code>devflow_gate.py write-g2-auto</code>、<code>check-verdict-attestation.sh</code>;<code>test_g2.py</code></td>
         <td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>state.py</code></td>
+        <td>G2R 的 daily budget 與 breaker 落盤(research 原檔;gitignored <code>.devflow/jev/state/</code>)。
+            budget 用完或 breaker open → 不呼叫 Jev = 沒有 Jev(no-op)。</td>
+        <td><code>devflow-jev.py g2r</code>;<code>test_g2.py</code> G2RRun</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>attestation.py</code></td>
         <td>verdict provenance tripwire(research W6 原檔):讀 frontmatter <code>verdict_source</code>/<code>attested_by</code>,
             缺或非法 → <code>unverified</code>;格式 attestation 不是 authentication。</td>
@@ -3701,7 +3706,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td><code>devflow-jev.py g2r</code> 在雙閘門通過後才建;<code>test_http_transport.py</code></td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test_g2.py</code></td>
         <td>G2 自動審查的 unittest(FakeTransport,零外部網路;機械檢查真跑):每條轉人條件只有 agent verdict 會被擋、
-            p = 0.85 交 agent／0.8499 交人、Jev 沒開／失敗／逾時／格式錯交人、author = approver 擋、agent 放行記
+            p = 0.85 交 agent／0.8499 交人、沒 key／沒 opt-in／失敗／逾時／格式錯／breaker／budget 皆 no-op(routed_by: none)、author = approver 擋、agent 放行記
             g2-misrelease、Risk 大小寫與非法值、有 Jev 時 <code>Risk: high</code> 不拉高 risk、G1/G3 只收人寫的 verdict。</td>
         <td><code>test-devflow-jev.sh</code> 帶起</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test_http_transport.py</code></td>

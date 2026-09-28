@@ -17,8 +17,8 @@ HTML / localStorage / sidecar 都不是正本;sidecar 與 md 衝突時 md 勝。
 write 是人的「提交判定」:有 reviewer 時同時落 verdict_source: human_attested + attested_by: human:<reviewer>;
 reviewer 是 agent／Jev → 拒收(G1/G2/G3 的 write 只收人)。
 write-g2-auto 是 **G2 agent reviewer 放行的唯一寫入路徑**(契約 §7「G2 審查者產生」):只收 4-spec、
-只收 PASS、只收 agent:<id> 且 ≠ authored_by／owner;寫前要 G2R 紀錄判 AUTO(雙閘門 live + Jev 在)、
-沒有命中任何轉人條件、機械檢查全過,缺一就不改檔(exit 2)。放行時呼叫
+只收 PASS、只收 agent:<id> 且 ≠ authored_by／owner;寫前要 G2R 紀錄判 AUTO(沒有命中任何轉人條件;
+沒有 Jev = no-op,routed_by: none)、機械檢查全過,缺一就不改檔(exit 2)。放行時呼叫
 `devflow-jev.py g2-misrelease release` 記一筆(誤放行率分母;只記錄、不設門檻、不回滾)。
 """
 from __future__ import annotations
@@ -219,16 +219,16 @@ def write_g2_auto(root: pathlib.Path, slug: str, reviewer: str, evidence_ref: st
     record = g2auto.latest_g2r_record(str(root), slug)
     if record is None:
         raise ValueError("沒有 G2R 分流紀錄(.devflow/jev/g2r.jsonl)—— 先跑 devflow-jev.py g2r;"
-                         "Jev 沒開／失敗 = 交給人審")
+                         "沒有 Jev 也要先跑(零網路,routed_by: none)")
     mech = g2auto.mechanical_checks(str(root), slug)
     candidate = dict(fm)
     fields = {
         "verdict_source": g2auto.AUTO_SOURCE,
         "attested_by": reviewer,
         "g2_mode": "auto",
-        "routed_by": "jev:%s" % record.get("evaluation_id"),
+        "routed_by": str(record.get("routed_by") or ""),
         "g2r_case": str(record.get("case_hash")),
-        "g2r_jev": str(record.get("jev_snapshot")),
+        "g2r_jev": str(record.get("jev_snapshot") or g2auto.ROUTED_BY_NONE),
         "mechanical": mech["digest"],
     }
     candidate.update(fields)

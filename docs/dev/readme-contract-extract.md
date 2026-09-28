@@ -110,20 +110,26 @@ G2 = 契約寫得對不對
   - 「G2 自動放行」:G2 由 agent 放行要同時成立 (a) 乾淨 context 的 fresh-context agent reviewer
     給 PASS;(b) 機械檢查全過(`scripts/check-spec-gate.sh`、`hooks/_stage3_impl.py`、
     `scripts/check-verdict-attestation.sh`、author ≠ approver 比對);(c) 沒有命中下方任何一條轉人條件。
-    Jev G2R(`devflow-jev.py g2r`)只負責分流 —— 決定交給 agent 審還是交給人審;Jev 不 review、
-    不寫 verdict、不填 `attested_by`。
+    Jev G2R(`devflow-jev.py g2r`)只負責分流 —— 把不確定的交給人審;Jev 不 review、
+    不寫 verdict、不填 `attested_by`。沒有 Jev(沒有 `TYPESAFE_API_KEY`、沒有 `.dev-flow/jev.yaml`
+    opt-in 或 mode 不是 live、Jev 失敗、逾時、回應格式錯、breaker open、budget 用完)= no-op:
+    不擋、不放寬,`routed_by: none`,只靠 (a)+(b),其餘轉人條件照判(ADR 0004 §2)。
   - 「G2 轉人條件」(任一成立 → 交給人審,不能自動放行;命中卻只有 agent 的 verdict → 機械擋下):
     ① Jev 判 HUMAN,或信心 p(AUTO_PASS) < 0.85(p 剛好等於 0.85 交給 agent);
     ② 宣告的 paths 命中 risk_paths,或 4-spec 沒有宣告 paths(Diff Budget 的 `- Paths:`);
-    ③ risk ≥ 2 —— 有 Jev 時只看 Jev 的 risk 分數,spec 寫的 `Risk: high` 不算;沒有 Jev 時
-    spec 寫 `Risk: high` 就算 risk ≥ 2;
+    ③ risk ≥ 2 —— 有 Jev 時只看 Jev 的 risk 分數,spec 寫的 `Risk: high` 不算;沒有 Jev 時看
+    spec 的 `- Risk:`(不分大小寫;`high` 算 ≥ 2,`normal`/`medium`/`low` 算 < 2,值不認得或空值 → 報錯擋下);
     ④ 還有沒解決的 Owner Call;
     ⑤ 需要 Demo verdict(Stage 3 觸發命中;Demo verdict human-only);
-    ⑥ Jev 沒開(沒有 key、沒有 `.dev-flow/jev.yaml` opt-in、mode 不是 live)、雙閘沒通過,
-    或 Jev 呼叫失敗、逾時、回應格式錯誤 —— 一律交給人審,不能因為 Jev 不在就自動放行。
+    ⑥ 當次修改 Jev runtime／questions／config(宣告的 paths 含 `devflow_jev/`、`devflow-jev.py`、
+    `jev-questions`、`.dev-flow/jev.yaml`);
+    ⑦ 4-spec 缺 `authored_by`(無法證明四眼);
+    ⑧ provenance 不合法或 author == approver —— fail-closed:不是 unverified 放行,是不過。
   - 「G2 provenance」:agent 放行只由 `devflow_gate.py write-g2-auto` 寫 4-spec 頂欄
     `verdict: PASS`、`verdict_source: fresh_agent_reviewer`、`attested_by: agent:<id>`、`g2_mode: auto`、
-    `routed_by: jev:<evaluation_id>`、`g2r_case`、`g2r_jev`、`mechanical`;人寫的 verdict 是
+    `authored_by`、`routed_by: jev:<evaluation_id> | none`、`mechanical: sha256:…`(另帶 `g2r_case`、
+    `g2r_jev` 供事後重算);`g2_mode: auto` 但 `verdict_source` 不是 `fresh_agent_reviewer` 或 `attested_by`
+    不是 `agent:*` → 不合法、G2 不過。人寫的 verdict 是
     `verdict_source: human_attested`(或 `owner_self_review`)+ `attested_by: human:<名>`,兩者分得開。
     `attested_by` 不得等於 `authored_by` 或 owner:agent reviewer 不能是寫這份 spec／這支 code 的同一個
     agent,也不能共用它的 context(格式比對是 tripwire,不是身份驗證)。G1/G3 只收人寫的 verdict。

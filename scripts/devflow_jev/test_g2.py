@@ -48,7 +48,7 @@ def jev_answers(choice="AUTO_PASS", p_auto=0.9, risk=1):
 
 def base_case(**over):
     case = {"slug": SLUG, "declared_paths": ["src/app/handler.py"], "spec_risk": "normal",
-            "owner_calls_unresolved": 0, "demo_verdict_required": False,
+            "owner_calls_unresolved": 0, "demo_verdict_required": False, "authored_by_present": True,
             "jev": {"g2_route": {"choice": "AUTO_PASS", "probabilities": {"AUTO_PASS": 0.9}}, "risk": {"score": 1}},
             "jev_status": "ok"}
     case.update(over)
@@ -96,6 +96,10 @@ class Repo(object):
             return []
         with open(path, encoding="utf-8") as fh:
             return [json.loads(line) for line in fh if line.strip()]
+
+    def set_mode(self, mode):
+        with open(os.path.join(self.root, ".dev-flow", "jev.yaml"), "w", encoding="utf-8") as fh:
+            fh.write("mode: %s\n" % mode)
 
     def g2r(self, script=None, env=None, clock=None):
         transport = FakeTransport(script if script is not None else [{"response": jev_answers()}],
@@ -172,14 +176,39 @@ class RouteG2(unittest.TestCase):
         self.assertEqual(out["signals"]["risk_source"], "jev")
 
     def test_without_jev_spec_risk_high_counts_as_risk_2(self):
-        out = policy.route_g2(base_case(spec_risk="high", jev=None, jev_status="no_api_key"))
-        self.assertIn("risk>=2(spec_risk=high)", out["reasons"])
-        self.assertIn("jev_unavailable:no_api_key", out["reasons"])
+        out = policy.route_g2(base_case(spec_risk="high", jev=None, jev_status="no_jev"))
+        self.assertEqual(out["reasons"], ["risk>=2(spec_risk=high)"])
+        self.assertEqual(out["signals"]["risk_source"], "spec")
 
-    def test_without_jev_always_human_even_if_everything_else_clean(self):
-        out = policy.route_g2(base_case(jev=None, jev_status="no_project_optin"))
-        self.assertEqual(out["route"], "HUMAN")
-        self.assertEqual(out["reasons"], ["jev_unavailable:no_project_optin"])
+    def test_without_jev_is_noop_clean_case_still_auto(self):
+        # ADR 0004 §2:沒有 Jev = no-op,不擋也不放寬 —— 其餘條件都沒命中就交給 agent(+機械檢查)
+        out = policy.route_g2(base_case(jev=None, jev_status="no_jev"))
+        self.assertEqual(out["route"], "AUTO")
+        self.assertFalse(any("jev" in r for r in out["reasons"]))
+
+    def test_without_jev_other_conditions_still_apply(self):
+        out = policy.route_g2(base_case(jev=None, jev_status="no_jev", declared_paths=["auth/x.py"]))
+        self.assertEqual(out["reasons"], ["risk_paths_hit:auth/x.py"])
+
+    def test_without_jev_spec_risk_medium_is_below_2(self):
+        self.assertEqual(policy.route_g2(base_case(spec_risk="medium", jev=None, jev_status="no_jev"))["route"], "AUTO")
+
+    def test_jev_runtime_changed_routes_human(self):
+        for path in ("scripts/devflow_jev/policy.py", "scripts/devflow-jev.py", ".dev-flow/jev.yaml",
+                     "docs/dev/tools/devflow_jev/gate.py", "scripts/devflow_jev/jev-questions.json"):
+            out = policy.route_g2(base_case(declared_paths=["src/app.py", path]))
+            self.assertIn("jev_runtime_changed:%s" % path, out["reasons"], path)
+
+    def test_jev_runtime_not_touched_does_not_route_human(self):
+        for path in ("src/app.py", "docs/jev-notes.md", "scripts/devflow_gate.py", "hooks/devflow-lib.py"):
+            out = policy.route_g2(base_case(declared_paths=[path]))
+            self.assertEqual(out["route"], "AUTO", (path, out["reasons"]))
+
+    def test_authored_by_present_does_not_route_human(self):
+        self.assertNotIn("authored_by_missing", policy.route_g2(base_case(authored_by_present=True))["reasons"])
+
+    def test_authored_by_missing_routes_human(self):
+        self.assertIn("authored_by_missing", policy.route_g2(base_case(authored_by_present=False))["reasons"])
 
     def test_jev_risk_missing_routes_human(self):
         case = base_case(jev={"g2_route": {"choice": "AUTO_PASS", "probabilities": {"AUTO_PASS": 0.95}}, "risk": {}})
@@ -193,14 +222,16 @@ class RouteG2(unittest.TestCase):
 
     def test_all_hit_reasons_listed_not_just_first(self):
         out = policy.route_g2(base_case(declared_paths=[], owner_calls_unresolved=2, demo_verdict_required=True,
-                                        jev=None, jev_status="transport:timeout"))
-        self.assertEqual(len(out["reasons"]), 4)
+                                        authored_by_present=False, spec_risk="high", jev=None, jev_status="no_jev"))
+        self.assertEqual(len(out["reasons"]), 5)
 
     def test_case_shape_is_fail_loud(self):
         with self.assertRaises(JevError):
             policy.route_g2({k: v for k, v in base_case().items() if k != "jev_status"})
         with self.assertRaises(JevError):
             policy.route_g2(base_case(jev=None, jev_status="ok"))
+        with self.assertRaises(JevError):
+            policy.route_g2(base_case(jev=None, jev_status="transport:timeout"))
         with self.assertRaises(JevError):
             policy.route_g2(base_case(spec_risk="High"))
 
@@ -260,82 +291,117 @@ class SpecRisk(unittest.TestCase):
 
 # ───────────────────────────── G2R CLI(雙閘門 + Jev 失敗 → HUMAN)─────────────────────────────
 class G2RRun(unittest.TestCase):
+    """沒有 Jev 的每一種原因 → no-op:routed_by=none、case.jev=None;Risk: normal 的乾淨 spec 仍判 AUTO(不擋)。"""
+
     def setUp(self):
-        self.repo = Repo()
+        self.repo = Repo(risk_line="- Risk: normal")
 
     def tearDown(self):
         self.repo.cleanup()
+
+    def assertNoJev(self, out, reason_prefix):
+        self.assertTrue(str(out["jev_reason"]).startswith(reason_prefix), out["jev_reason"])
+        self.assertEqual(out["routed_by"], "none")
+        self.assertIsNone(out["case"]["jev"])
+        self.assertEqual(out["case"]["jev_status"], "no_jev")
+        self.assertEqual(out["route"], "AUTO", out["reasons"])      # 不擋:其餘條件都沒命中
+        self.assertIsNone(out["jev_snapshot"])
 
     def test_live_jev_auto_routes_auto_and_records(self):
         out = self.repo.g2r()
         self.assertEqual(out["route"], "AUTO", out["reasons"])
         self.assertEqual(out["level"], "live")
-        self.assertTrue(out["evaluation_id"].startswith("g2r-"))
+        self.assertEqual(out["routed_by"], "jev:" + out["evaluation_id"])
         self.assertEqual(self.repo.jsonl(g2auto.G2R_LOG)[-1]["case_hash"], out["case_hash"])
 
-    def test_no_api_key_routes_human_without_network(self):
-        out = self.repo.g2r(env={"DEVFLOW_PLUGIN": ROOT})
+    def test_live_jev_human_routes_human(self):
+        out = self.repo.g2r(script=[{"response": jev_answers(choice="HUMAN_REVIEW", p_auto=0.2)}])
         self.assertEqual(out["route"], "HUMAN")
-        self.assertIn("jev_unavailable:no_api_key", out["reasons"])
+        self.assertTrue(out["routed_by"].startswith("jev:"))
+
+    def test_no_api_key_is_noop_without_network(self):
+        out = self.repo.g2r(env={"DEVFLOW_PLUGIN": ROOT})
+        self.assertNoJev(out, "no_api_key")
         self.assertFalse(out["network"])
         self.assertEqual(self.repo.transport.calls, [])
 
-    def test_no_optin_routes_human(self):
+    def test_no_api_key_with_spec_risk_high_routes_human(self):
+        self.repo.cleanup()
+        self.repo = Repo(risk_line="- Risk: HIGH")
+        out = self.repo.g2r(env={"DEVFLOW_PLUGIN": ROOT})
+        self.assertEqual(out["reasons"], ["risk>=2(spec_risk=high)"])
+        self.assertEqual(out["routed_by"], "none")
+
+    def test_no_optin_is_noop(self):
         os.remove(os.path.join(self.repo.root, ".dev-flow", "jev.yaml"))
-        out = self.repo.g2r()
-        self.assertIn("jev_unavailable:no_project_optin", out["reasons"])
+        self.assertNoJev(self.repo.g2r(), "no_project_optin")
         self.assertEqual(self.repo.transport.calls, [])
 
-    def test_mode_off_routes_human(self):
-        with open(os.path.join(self.repo.root, ".dev-flow", "jev.yaml"), "w") as fh:
-            fh.write("mode: off\n")
-        self.assertIn("jev_unavailable:mode=off", self.repo.g2r()["reasons"])
+    def test_mode_off_is_noop(self):
+        self.repo.set_mode("off")
+        self.assertNoJev(self.repo.g2r(), "mode=off")
 
-    def test_mode_shadow_calls_but_routes_human(self):
-        with open(os.path.join(self.repo.root, ".dev-flow", "jev.yaml"), "w") as fh:
-            fh.write("mode: shadow\n")
-        out = self.repo.g2r()
-        self.assertEqual(out["route"], "HUMAN")
+    def test_mode_shadow_calls_but_is_noop_for_routing(self):
+        self.repo.set_mode("shadow")
+        out = self.repo.g2r(script=[{"response": jev_answers(choice="HUMAN_REVIEW", p_auto=0.1)}])
+        self.assertNoJev(out, "level=shadow")
         self.assertEqual(len(self.repo.transport.calls), 1)
-        self.assertIsNotNone(out["jev_shadow_answers"])
+        self.assertEqual(out["jev_shadow_answers"]["g2_route"]["choice"], "HUMAN_REVIEW")
 
-    def test_broken_optin_routes_human(self):
-        with open(os.path.join(self.repo.root, ".dev-flow", "jev.yaml"), "w") as fh:
-            fh.write("mode: turbo\n")
-        out = self.repo.g2r()
-        self.assertEqual(out["route"], "HUMAN")
-        self.assertIn("jev_unavailable:optin_error", out["reasons"])
+    def test_broken_optin_is_noop(self):
+        self.repo.set_mode("turbo")
+        self.assertNoJev(self.repo.g2r(), "optin_error")
 
-    def test_transport_failure_routes_human(self):
-        out = self.repo.g2r(script=[{"error": "network"}])
-        self.assertIn("jev_unavailable:transport:network", out["reasons"])
+    def test_transport_failure_is_noop(self):
+        self.assertNoJev(self.repo.g2r(script=[{"error": "network"}]), "transport:network")
 
-    def test_transport_timeout_routes_human(self):
-        out = self.repo.g2r(script=[{"error": "timeout"}])
-        self.assertIn("jev_unavailable:transport:timeout", out["reasons"])
+    def test_transport_timeout_is_noop(self):
+        self.assertNoJev(self.repo.g2r(script=[{"error": "timeout"}]), "transport:timeout")
 
-    def test_deadline_exceeded_routes_human(self):
-        clock = FakeClock()
-        out = self.repo.g2r(script=[{"response": jev_answers(), "latency_s": policy.G2R_DEADLINE_S + 1}], clock=clock)
-        self.assertTrue(any(r.startswith("jev_unavailable:deadline_exceeded") for r in out["reasons"]))
+    def test_deadline_exceeded_is_noop(self):
+        out = self.repo.g2r(script=[{"response": jev_answers(), "latency_s": policy.G2R_DEADLINE_S + 1}],
+                            clock=FakeClock())
+        self.assertNoJev(out, "deadline_exceeded")
 
-    def test_malformed_response_routes_human(self):
+    def test_malformed_response_is_noop(self):
         bad = jev_answers()
         bad["answers"]["g2_route"]["choice"] = "SHIP_IT"
-        self.assertIn("jev_unavailable:transport:schema", self.repo.g2r(script=[{"response": bad}])["reasons"])
+        self.assertNoJev(self.repo.g2r(script=[{"response": bad}]), "transport:schema")
 
-    def test_non_json_response_routes_human(self):
-        self.assertIn("jev_unavailable:transport:malformed_json", self.repo.g2r(script=[{"raw_text": "x"}])["reasons"])
+    def test_non_json_response_is_noop(self):
+        self.assertNoJev(self.repo.g2r(script=[{"raw_text": "x"}]), "transport:malformed_json")
 
-    def test_privacy_hit_does_not_send_and_routes_human(self):
+    def test_breaker_open_is_noop_and_does_not_call(self):
+        from devflow_jev.state import StateStore
+        store = StateStore(self.repo.root)
+        breaker = store.load_breaker()
+        breaker.failures["G2R"] = policy.BREAKER_THRESHOLD
+        store.save_breaker(breaker)
+        self.assertNoJev(self.repo.g2r(), "breaker_open")
+        self.assertEqual(self.repo.transport.calls, [])
+
+    def test_consecutive_failures_open_breaker(self):
+        for _ in range(policy.BREAKER_THRESHOLD):
+            self.repo.g2r(script=[{"error": "http_529"}])
+        self.assertNoJev(self.repo.g2r(), "breaker_open")
+
+    def test_budget_exhausted_is_noop_and_does_not_call(self):
+        from devflow_jev.state import StateStore, utc_day
+        store = StateStore(self.repo.root)
+        budget = store.load_budget(utc_day())
+        budget.attempts = budget.attempts_cap
+        store.save_budget(budget, utc_day())
+        self.assertNoJev(self.repo.g2r(), "budget_exhausted")
+        self.assertEqual(self.repo.transport.calls, [])
+
+    def test_privacy_hit_does_not_send_and_is_noop(self):
         text = self.repo.read().replace("## Out of Scope", "## Out of Scope\napi_key = abcdefghijkl\n", 1)
         self.repo.write("4-spec.md", text)
-        out = self.repo.g2r()
-        self.assertIn("jev_unavailable:privacy_blocked", out["reasons"])
+        self.assertNoJev(self.repo.g2r(), "privacy_blocked")
         self.assertEqual(self.repo.transport.calls, [])
 
     def test_invalid_spec_risk_is_fail_loud(self):
-        self.repo.write("4-spec.md", self.repo.read().replace("- Risk: high(", "- Risk: hgih(", 1))
+        self.repo.write("4-spec.md", self.repo.read().replace("- Risk: normal(", "- Risk: hgih(", 1))
         with self.assertRaises(JevError):
             self.repo.g2r()
 
@@ -346,7 +412,8 @@ class G2RRun(unittest.TestCase):
         run = subprocess.run(["python3", os.path.join(SCRIPTS, "devflow-jev.py"), "--root", self.repo.root, "g2r",
                               "--slug", SLUG, "--no-record"], capture_output=True, text=True, env=env)
         self.assertEqual(run.returncode, 0, run.stderr)
-        self.assertEqual(json.loads(run.stdout)["route"], "HUMAN")
+        out = json.loads(run.stdout)
+        self.assertEqual((out["routed_by"], out["jev_reason"], out["network"]), ("none", "no_api_key", False))
 
 
 # ───────────────────────────── write-g2-auto(agent PASS + 機械檢查 + 未命中轉人條件)─────────────────────────────
@@ -457,27 +524,48 @@ class G2AutoRelease(unittest.TestCase):
         self.repo.g2r()
         self.assertBlocked("demo_verdict_required")
 
-    def test_jev_off_blocks_agent_verdict(self):
+    def test_no_jev_releases_with_routed_by_none(self):
+        # ADR 0004 §2:沒有 key → 只靠 fresh agent PASS + 機械檢查;例子 spec 的 Risk 改成 normal 才不命中 risk ≥ 2
+        self.repo.cleanup()
+        self.repo = Repo(risk_line="- Risk: normal")
         self.repo.g2r(env={"DEVFLOW_PLUGIN": ROOT})
-        self.assertBlocked("jev_unavailable:no_api_key")
+        self.assertEqual(self.repo.release()["routed_by"], "none")
+        fm = self.repo.fm()
+        self.assertEqual((fm["routed_by"], fm["g2r_jev"], fm["g2_mode"]), ("none", "none", "auto"))
+        self.assertEqual(self.repo.jsonl(JEV.G2M_RELEASE_LOG)[0]["routed_by"], "none")
+        shutil.rmtree(os.path.join(self.repo.root, ".devflow"))
+        self.assertEqual(g2auto.auto_release_problems(self.repo.root, SLUG, self.repo.fm(), environ=self.repo.env), [])
 
-    def test_jev_mode_shadow_blocks_agent_verdict(self):
-        with open(os.path.join(self.repo.root, ".dev-flow", "jev.yaml"), "w") as fh:
-            fh.write("mode: shadow\n")
-        self.repo.g2r()
-        self.assertBlocked("jev_unavailable:level=shadow")
+    def test_no_jev_spec_risk_high_blocks_agent_verdict(self):
+        self.repo.g2r(env={"DEVFLOW_PLUGIN": ROOT})
+        self.assertBlocked("risk>=2(spec_risk=high)")
 
-    def test_jev_failure_blocks_agent_verdict(self):
-        self.repo.g2r(script=[{"error": "http_529"}])
-        self.assertBlocked("jev_unavailable:transport:http_529")
+    def test_no_jev_spec_risk_capital_high_blocks_agent_verdict(self):
+        self.repo.write("4-spec.md", self.repo.read().replace("- Risk: high(", "- Risk: High(", 1))
+        self.repo.g2r(env={"DEVFLOW_PLUGIN": ROOT})
+        self.assertBlocked("risk>=2(spec_risk=high)")
 
-    def test_jev_timeout_blocks_agent_verdict(self):
+    def test_jev_failure_is_noop_not_a_block(self):
+        self.repo.cleanup()
+        self.repo = Repo(risk_line="- Risk: normal")
         self.repo.g2r(script=[{"error": "timeout"}])
-        self.assertBlocked("jev_unavailable:transport:timeout")
+        self.assertEqual(self.repo.release()["routed_by"], "none")
 
-    def test_jev_malformed_blocks_agent_verdict(self):
+    def test_jev_failure_does_not_relax_other_conditions(self):
+        self.repo.write("4-spec.md", self.repo.read().replace(GOOD_PATHS, "payments/charge.go", 1))
         self.repo.g2r(script=[{"raw_text": "not json"}])
-        self.assertBlocked("jev_unavailable:transport:malformed_json")
+        self.assertBlocked("risk_paths_hit:payments/charge.go")
+
+    def test_no_jev_invalid_spec_risk_is_error_not_release(self):
+        self.repo.write("4-spec.md", self.repo.read().replace("- Risk: high(", "- Risk: hgih(", 1))
+        with self.assertRaises(JevError):
+            self.repo.g2r(env={"DEVFLOW_PLUGIN": ROOT})
+        self.assertBlocked("沒有 G2R 分流紀錄")
+
+    def test_jev_runtime_changed_blocks_agent_verdict(self):
+        self.repo.write("4-spec.md", self.repo.read().replace(GOOD_PATHS, "scripts/devflow_jev/policy.py, src/app.py", 1))
+        self.repo.g2r()
+        self.assertBlocked("jev_runtime_changed:scripts/devflow_jev/policy.py")
 
     def test_author_equals_approver_blocks(self):
         self.repo.g2r()
@@ -494,7 +582,8 @@ class G2AutoRelease(unittest.TestCase):
     def test_missing_authored_by_blocks(self):
         self.repo.cleanup()
         self.repo = Repo(authored=None)
-        self.repo.g2r()
+        routed = self.repo.g2r()
+        self.assertIn("authored_by_missing", routed["reasons"])
         self.assertBlocked("缺 authored_by")
 
     def test_jev_as_reviewer_blocks(self):
@@ -562,10 +651,25 @@ class StaticRecheck(unittest.TestCase):
     def test_forged_auto_with_low_jev_confidence_is_red(self):
         self.assertTrue(any("jev_p_auto_pass_below_threshold" in p for p in self.forge(g2r_jev="AUTO_PASS p=0.8499 risk=1")))
 
-    def test_forged_auto_without_jev_is_red(self):
-        problems = self.forge(routed_by="none", g2r_jev="")
-        self.assertTrue(any("routed_by" in p for p in problems))
-        self.assertTrue(any("jev_unavailable" in p for p in problems))
+    def test_forged_auto_without_jev_on_high_risk_spec_is_red(self):
+        problems = self.forge(routed_by="none", g2r_jev="none")
+        self.assertTrue(any("risk>=2(spec_risk=high)" in p for p in problems), problems)
+
+    def test_forged_routed_by_jev_without_snapshot_is_red(self):
+        self.assertTrue(any("沒有 g2r_jev 快照" in p for p in self.forge(g2r_jev="none")))
+
+    def test_forged_routed_by_missing_is_red(self):
+        self.assertTrue(any("routed_by" in p for p in self.forge(routed_by="")))
+
+    def test_g2_mode_auto_with_human_source_is_invalid(self):
+        kind, _ = g2auto.classify_gate_doc("4-spec", {"verdict": "PASS", "verdict_source": "human_attested",
+                                                       "attested_by": "human:ada", "g2_mode": "auto"})
+        self.assertEqual(kind, "auto")          # 走 auto 判定 → 下面必紅
+        self.assertTrue(any("verdict_source" in p for p in self.forge(verdict_source="human_attested",
+                                                                       attested_by="human:ada")))
+
+    def test_g2_mode_auto_with_human_attested_by_is_invalid(self):
+        self.assertTrue(any("不是 agent:<id>" in p for p in self.forge(attested_by="human:ada")))
 
     def test_forged_author_equals_approver_is_red(self):
         self.assertTrue(any("author == approver" in p for p in self.forge(attested_by="agent:author-1")))
@@ -650,6 +754,8 @@ class Misrelease(unittest.TestCase):
         self.assertEqual((report["misreleased"], report["agent_released"], report["misrelease_rate"]), (1, 1, 1.0))
         self.assertFalse(report["blocks_anything"])
         self.assertEqual(report["gate_effect"], "none")
+        self.assertEqual(report["agent_released_by_routed"], {"jev": 1, "none": 0})
+        self.assertEqual(report["misreleased_by_routed"], {"jev": 1, "none": 0})
 
     def test_g3_record_by_agent_rejected(self):
         with self.assertRaises(JevError):

@@ -7,8 +7,9 @@
 G2 放行要**同時**成立:
   (a) fresh-context agent reviewer 給 PASS(verdict_source: fresh_agent_reviewer、attested_by: agent:<id>);
   (b) 機械檢查全過(check-spec-gate.sh、_stage3_impl.py);
-  (c) G2R(Jev)判 AUTO —— 也就是**沒有**命中任何轉人條件(policy.route_g2)。
-Jev 只分流,不是 verdict source;沒有 Jev(沒開／雙閘沒通過／失敗／逾時／格式錯)= HUMAN。
+  (c) 沒有命中任何轉人條件(policy.route_g2 判 AUTO)。
+Jev 只分流,不是 verdict source。沒有 Jev(沒 key／沒 opt-in／失敗／逾時／breaker open／budget 用完)= no-op
+(ADR 0004 §2):不擋、不放寬,`routed_by: none`,只靠 (a)+(b),其餘轉人條件照判。
 author ≠ approver:attested_by ≠ authored_by ≠ owner。格式比對是 tripwire,不是身份驗證。
 """
 import os
@@ -21,7 +22,7 @@ from . import attestation, policy
 
 # 全域退回人審開關:改成 False → write-g2-auto 一律拒寫,G2 全部回人審(已放行的 4-spec 不回頭打紅)。
 # 不吃環境變數、不吃 CLI 旗標:要關就改這行(= 一個 commit,看得到誰關的)。
-# 單一專案退回人審不用改程式:把 `.dev-flow/jev.yaml` 的 `mode:` 改成 shadow／off 即可(G2R 全判 HUMAN)。
+# 注意:拿掉 Jev key／opt-in 不會退回人審 —— 沒有 Jev 是 no-op(ADR 0004 §2),只少了分流。
 G2_AUTO_LIVE = True
 AUTO_SOURCE = "fresh_agent_reviewer"
 HUMAN_SOURCES = ("human_attested", "owner_self_review")
@@ -30,6 +31,7 @@ G2R_LOG = os.path.join(".devflow", "jev", "g2r.jsonl")      # .devflow/ 已 giti
 G2R_SCHEMA = "devflow-g2r/1"
 _ACTOR_RE = re.compile(r"^(human|agent):(\S{1,64})$")
 _ROUTED_BY_RE = re.compile(r"^jev:(g2r-[A-Za-z0-9._-]{1,80})$")
+ROUTED_BY_NONE = "none"
 _HASH_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _JEV_SNAPSHOT_RE = re.compile(r"^(AUTO_PASS|HUMAN_REVIEW|REQUEST_CHANGES) p=([0-9]*\.?[0-9]+) risk=([0-3])$")
 _PATHS_LINE_RE = re.compile(r"^\s*-\s*Paths\s*[:：](.*)$")
@@ -173,17 +175,19 @@ def jev_minimal(answers):
             "risk": {"score": risk.get("score")}}
 
 
-def build_case(root, slug, jev=None, jev_status="not_called", environ=None, stage3=None):
+def build_case(root, slug, jev=None, environ=None, stage3=None):
     """從 docs/dev/<slug>/ 組 G2R case。spec 的 `- Risk:` 非法／空值 → JevError(不猜)。"""
     spec_text = _read(spec_path(root, slug))
     if spec_text is None:
         raise JevError("找不到 %s" % os.path.relpath(spec_path(root, slug), root))
     decision_text = _read(os.path.join(root, "docs", "dev", slug, "2-decision.md"))
     st = stage3 if stage3 is not None else stage3_state(root, slug, environ)
+    authored = (attestation.parse_frontmatter(spec_text).get("authored_by") or "").strip()
     return {"slug": slug, "declared_paths": declared_paths(spec_text), "spec_risk": policy.spec_risk_of(spec_text),
             "owner_calls_unresolved": owner_calls_unresolved(decision_text),
             "demo_verdict_required": bool(st["demo_verdict_required"]),
-            "jev": jev_minimal(jev), "jev_status": "ok" if jev is not None else jev_status}
+            "authored_by_present": _actor(authored) is not None,
+            "jev": jev_minimal(jev), "jev_status": "ok" if jev is not None else policy.G2R_NO_JEV}
 
 
 def jev_snapshot(jev_min):
@@ -193,9 +197,13 @@ def jev_snapshot(jev_min):
 
 
 def parse_jev_snapshot(value):
-    m = _JEV_SNAPSHOT_RE.match((value or "").strip())
-    if not m:
+    """`AUTO_PASS p=0.91 risk=1` → jev 最小形狀;空／`none` → None(沒有 Jev);形狀不對 → False。"""
+    value = (value or "").strip()
+    if value in ("", ROUTED_BY_NONE):
         return None
+    m = _JEV_SNAPSHOT_RE.match(value)
+    if not m:
+        return False
     return {"g2_route": {"choice": m.group(1), "probabilities": {"AUTO_PASS": float(m.group(2))}},
             "risk": {"score": int(m.group(3))}}
 
@@ -271,20 +279,31 @@ def auto_release_problems(root, slug, fm, environ=None, g2r_record=None, require
         problems.append("g2_mode 不是 auto")
     routed = (fm.get("routed_by") or "").strip()
     m = _ROUTED_BY_RE.match(routed)
-    if not m:
-        problems.append("routed_by=%r 不是 jev:<evaluation_id> —— 沒有 Jev 分流紀錄 = 交給人審" % (routed or None))
     evaluation_id = m.group(1) if m else None
+    if not m and routed != ROUTED_BY_NONE:
+        problems.append("routed_by=%r 不是 jev:<evaluation_id> 或 none" % (routed or None))
     if not _HASH_RE.match((fm.get("mechanical") or "").strip()):
         problems.append("mechanical 不是 sha256:<hex>(機械檢查摘要)")
     fm_case = (fm.get("g2r_case") or "").strip()
     if not _HASH_RE.match(fm_case):
         problems.append("g2r_case 不是 sha256:<hex>")
     jev_min = parse_jev_snapshot(fm.get("g2r_jev"))
-    if jev_min is None:
-        problems.append("g2r_jev 快照缺或形狀不對(AUTO_PASS p=<0..1> risk=<0-3>)—— 沒有 Jev 分流 = 交給人審")
+    if jev_min is False:
+        problems.append("g2r_jev 快照形狀不對(AUTO_PASS p=<0..1> risk=<0-3> 或 none)")
+        jev_min = None
+    if evaluation_id and jev_min is None:
+        problems.append("routed_by 是 jev:… 卻沒有 g2r_jev 快照 —— Jev 分流結果無從重算")
+    if routed == ROUTED_BY_NONE and jev_min is not None:
+        problems.append("routed_by: none 卻帶 g2r_jev 快照 —— 分流來源自相矛盾")
+    # 本機分流紀錄(有就交叉比對;寫入器一定要有)
+    record = g2r_record
+    if record is None:
+        rows, _ = read_g2r_records(root)
+        hits = [r for r in rows if r.get("slug") == slug and r.get("case_hash") == fm_case]
+        record = hits[-1] if hits else None
     # 轉人條件:用現在的 spec／2-decision／stage3 + Jev 快照重算,不信頂欄自己寫的 route
     try:
-        case = build_case(root, slug, jev=jev_min, jev_status="missing_snapshot", environ=environ)
+        case = build_case(root, slug, jev=jev_min, environ=environ)
     except JevError as exc:
         problems.append("組 G2R case 失敗:%s" % exc)
         case = None
@@ -294,12 +313,6 @@ def auto_release_problems(root, slug, fm, environ=None, g2r_record=None, require
             problems.append("命中交給人審條件:%s" % ";".join(routed_now["reasons"]))
         if fm_case and policy.g2r_case_hash(case) != fm_case:
             problems.append("g2r_case 與現在的 spec 重算結果不同(分流後 spec 改過 → 重跑 G2R)")
-    # 本機分流紀錄交叉比對
-    record = g2r_record
-    if record is None:
-        rows, _ = read_g2r_records(root)
-        hits = [r for r in rows if r.get("slug") == slug and r.get("case_hash") == fm_case]
-        record = hits[-1] if hits else None
     if record is None:
         if require_record:
             problems.append("%s 找不到 slug=%s case_hash=%s 的分流紀錄 —— 先跑 devflow-jev.py g2r"
@@ -307,10 +320,8 @@ def auto_release_problems(root, slug, fm, environ=None, g2r_record=None, require
     else:
         if record.get("route") != "AUTO":
             problems.append("G2R 紀錄判 %s(%s)" % (record.get("route"), ";".join(record.get("reasons") or [])))
-        if evaluation_id and record.get("evaluation_id") != evaluation_id:
-            problems.append("routed_by 的 evaluation_id 與 G2R 紀錄不符")
-        if record.get("level") != "live":
-            problems.append("G2R 紀錄 level=%r(只有 live 能交給 agent)" % record.get("level"))
+        if record.get("routed_by") != routed:
+            problems.append("routed_by=%r 與 G2R 紀錄的 %r 不符" % (routed or None, record.get("routed_by")))
     mech = mechanical if mechanical is not None else mechanical_checks(root, slug, environ)
     for r in mech["results"]:
         if not r["ok"]:

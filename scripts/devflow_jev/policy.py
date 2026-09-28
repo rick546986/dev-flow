@@ -4,11 +4,14 @@
 ADR docs/adr/0004-g2-spec-auto-review.md。本檔只放**判定函式與常數**,不碰網路、不寫檔、不寫 verdict。
 
 與 research W9/W10 的差別(G2 上線 PR 明改,其餘逐字沿用):
-  - 沒有 Jev(沒 key／沒 opt-in／mode 不是 live／呼叫失敗／逾時／回應格式錯)→ **一律 HUMAN**
-    (`jev_unavailable:<原因>`);W9 當時是「沒有 Jev 就只看其餘條件」。
+  - 沒有 Jev(沒 key／沒 opt-in／mode 不是 live／失敗／逾時／breaker open／budget 用完)= no-op(ADR 0004 §2):
+    不擋、不放寬,`routed_by: none`,其餘轉人條件照判;risk 改看 spec 的 `- Risk:`(high → 2)。
+  - ADR §3 全表:另加「當次修改 Jev runtime/questions/config」(declared paths 命中 JEV_RUNTIME_MARKERS)
+    與「缺 authored_by」兩條轉人條件。
   - `spec_risk_of`:`- Risk:` 寫了卻是空值 → JevError(W10 當時回 None)。
   - 分流紀錄從 `g2r-shadow` 改名 `g2r`(live);誤放行／agent 放行紀錄綁的就是它。
-從 research 搬過來、語意不動:`RISK_PATHS_DEFAULT`、`evaluate`/`noop`(no-op 語意)、`J2_WINDOW_RATIFIED=False`。
+從 research 搬過來、語意不動:`RISK_PATHS_DEFAULT`、`Budget`/`Breaker`、`evaluate`/`noop`(no-op 語意)、
+`J2_WINDOW_RATIFIED=False`。
 """
 import hashlib
 import json
@@ -22,8 +25,14 @@ J2_WINDOW_RATIFIED = False
 # 機械 risk ceiling 的清單(research policy.py 原值;只能變寬)。
 RISK_PATHS_DEFAULT = ("migrations/", "migration/", "auth/", "payment", "payments/", "billing/",
                       "secrets", ".github/workflows/", "ci/", "Dockerfile", "infra/")
-G2R_DEADLINE_S = 60.0          # 單次 Jev 呼叫的等待上限;逾時 = no-op = HUMAN
-G2R_STATE_MAX_CHARS = 60000    # 4-spec 超過就不送(不裁切):jev_status=packet_too_large → HUMAN
+# 當次改到 Jev runtime／questions／config → 當次 HUMAN(research provenance.RUNTIME_PATH_MARKERS;
+# 本 PR 放寬成不限 scripts/ 前綴,散發副本 docs/dev/tools/devflow_jev/ 也算)。
+JEV_RUNTIME_MARKERS = ("devflow_jev/", "devflow-jev.py", "jev-questions", ".dev-flow/jev.yaml")
+G2R_DEADLINE_S = 60.0          # 單次 Jev 呼叫的等待上限;逾時 = no-op(沒有 Jev)
+G2R_STATE_MAX_CHARS = 60000    # 4-spec 超過就不送(不裁切):jev_status=packet_too_large = 沒有 Jev
+DAILY_ATTEMPTS_CAP = 500       # research 工程候選值(不是 owner 裁決);先到者停 = budget 用完 = 沒有 Jev
+DAILY_INPUT_TOKENS_CAP = 500000
+BREAKER_THRESHOLD = 3          # 連續失敗 ≥3 → breaker open = 沒有 Jev
 
 
 def canonical_json(obj):
@@ -33,6 +42,11 @@ def canonical_json(obj):
 
 def sha256_hex(text):
     return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def runtime_changed(changed_paths, markers=JEV_RUNTIME_MARKERS):
+    """當次改到 Jev runtime / questions / config 的路徑(ADR §3「當次修改 Jev runtime」)。"""
+    return [p for p in changed_paths if any(m in p for m in markers)]
 
 
 def risk_ceiling_hit(changed_paths, risk_paths=None):
@@ -93,28 +107,112 @@ def privacy_scan(obj):
     return hits
 
 
-# ───────────────────────────── 一次 Jev 呼叫(no-op 語意,research 原樣)─────────────────────────────
+# ───────────────────────────── budget / breaker / 一次 Jev 呼叫(research 原樣)─────────────────────────────
+class Budget(object):
+    """daily cap:attempts 與 input tokens 先到者停。reserve 上界在前、可信 usage 才 reconcile。"""
+
+    def __init__(self, attempts_cap=DAILY_ATTEMPTS_CAP, tokens_cap=DAILY_INPUT_TOKENS_CAP):
+        self.attempts_cap = attempts_cap
+        self.tokens_cap = tokens_cap
+        self.attempts = 0
+        self.reserved = {}
+        self.settled = 0
+        self._next = 1
+
+    def tokens_committed(self):
+        return self.settled + sum(self.reserved.values())
+
+    def can_reserve(self, upper_bound):
+        if upper_bound is None or upper_bound <= 0:
+            raise JevError("reserve 上界必須是正整數(未知用量不得當 0)")
+        return (self.attempts + 1 <= self.attempts_cap
+                and self.tokens_committed() + upper_bound <= self.tokens_cap)
+
+    def reserve(self, upper_bound):
+        if not self.can_reserve(upper_bound):
+            return None
+        rid = self._next
+        self._next += 1
+        self.attempts += 1
+        self.reserved[rid] = int(upper_bound)
+        return rid
+
+    def reconcile(self, rid, usage):
+        """只有 usage_status=known 才把保留額換成實際值;unknown 保留上界,不退款。"""
+        if rid not in self.reserved:
+            return False
+        if not isinstance(usage, dict) or usage.get("usage_status") != "known":
+            return False
+        actual = usage.get("input_tokens")
+        if not isinstance(actual, int) or actual < 0:
+            return False
+        self.settled += actual
+        del self.reserved[rid]
+        return True
+
+    def remaining(self):
+        return {"attempts": self.attempts_cap - self.attempts,
+                "input_tokens": self.tokens_cap - self.tokens_committed()}
+
+
+class Breaker(object):
+    """per key 連續失敗 ≥ threshold → open;成功歸零。"""
+
+    def __init__(self, threshold=BREAKER_THRESHOLD):
+        self.threshold = threshold
+        self.failures = {}
+
+    def is_open(self, key):
+        return self.failures.get(key, 0) >= self.threshold
+
+    def record(self, key, ok):
+        if ok:
+            self.failures[key] = 0
+        else:
+            self.failures[key] = self.failures.get(key, 0) + 1
+
+
 def noop(reason, usage=None):
     return {"status": "noop", "reason": reason, "answers": None, "model": None,
             "usage": usage or {"input_tokens": None, "output_tokens": None, "usage_status": "unknown_reserved"}}
 
 
-def evaluate(transport, request, questions, clock, deadline_s=G2R_DEADLINE_S):
-    """一次 attempt。任何傳輸／逾時／回應格式錯誤 → no-op(對 G2R = HUMAN),絕不 retry。"""
+def evaluate(transport, request, questions, clock, deadline_s=G2R_DEADLINE_S, est_input_tokens=None,
+             budget=None, breaker=None, breaker_key="G2R"):
+    """一次 attempt。breaker open／budget 用完／傳輸／逾時／回應格式錯誤 → no-op(對 G2R = 沒有 Jev),絕不 retry。"""
+    if breaker is not None and breaker.is_open(breaker_key):
+        return noop("breaker_open")
+    rid = None
+    if budget is not None:
+        if not isinstance(est_input_tokens, int) or isinstance(est_input_tokens, bool) or est_input_tokens <= 0:
+            raise JevError("evaluate: 有 budget 時 est_input_tokens 必須是正整數上界")
+        rid = budget.reserve(est_input_tokens)
+        if rid is None:
+            return noop("budget_exhausted")
+
+    def fail(reason):
+        if breaker is not None:
+            breaker.record(breaker_key, False)
+        return noop(reason)
+
     started = clock()
     try:
         raw = transport.send(request)
     except TransportError as exc:
-        return noop("transport:" + exc.kind)
+        return fail("transport:" + exc.kind)
     except Exception as exc:  # 任何未預期例外同樣 no-op,不得讓 Jev 例外變成放行
-        return noop("unexpected:" + type(exc).__name__)
+        return fail("unexpected:" + type(exc).__name__)
     elapsed = clock() - started
     if elapsed > deadline_s:
-        return noop("deadline_exceeded(%.3fs>%.3fs)" % (elapsed, deadline_s))
+        return fail("deadline_exceeded(%.3fs>%.3fs)" % (elapsed, deadline_s))
     try:
         parsed = parse_response(raw, questions)
     except TransportError as exc:
-        return noop("transport:" + exc.kind)
+        return fail("transport:" + exc.kind)
+    if budget is not None and rid is not None:
+        budget.reconcile(rid, parsed["usage"])       # unknown → 保留上界不退款
+    if breaker is not None:
+        breaker.record(breaker_key, True)
     return {"status": "ok", "reason": "", "answers": parsed["answers"],
             "model": parsed["model"], "usage": parsed["usage"], "elapsed_s": elapsed}
 
@@ -123,7 +221,7 @@ def evaluate(transport, request, questions, clock, deadline_s=G2R_DEADLINE_S):
 # route_g2 只**分流**:
 #   - AUTO  = 「可以交給 fresh-context agent reviewer + 機械檢查」,**不是通過**、不是 verdict。
 #   - HUMAN = G2 回人審。任一轉人條件命中即 HUMAN;reasons 列出**全部**命中的條件(不是第一個)。
-#   - Jev 只分流、不當 reviewer、不寫 verdict。
+#   - Jev 只分流、不當 reviewer、不寫 verdict。沒有 Jev = no-op:不擋、不放寬,其餘條件照判(ADR 0004 §2)。
 G2R_THRESHOLDS = {"auto_pass_min": 0.85,   # p(AUTO_PASS) ≥ 0.85 才走 agent;< 0.85 → HUMAN(剛好 0.85 = 交給 agent)
                   "risk_human_min": 2}      # risk ≥ 2 → HUMAN
 G2R_JEV_CHOICES = ("AUTO_PASS", "HUMAN_REVIEW", "REQUEST_CHANGES")
@@ -131,9 +229,10 @@ G2R_JEV_CHOICES = ("AUTO_PASS", "HUMAN_REVIEW", "REQUEST_CHANGES")
 # 模板的 Risk 是 normal|high(缺省 normal);另收 medium/low(policy 與 hooks 同一集合)。
 G2R_SPEC_RISK_SCORE = {"high": 2, "medium": 1, "normal": 0, "low": 0}
 G2R_ROUTES = ("AUTO", "HUMAN")
+G2R_NO_JEV = "no_jev"          # case.jev_status 只有 ok|no_jev;沒有 Jev 的細部原因記在分流紀錄 jev_reason(不進 case hash)
 G2R_AUTO_MEANS = "handoff_to_fresh_agent_reviewer_and_mechanical_checks_not_a_pass"
 G2R_CASE_KEYS = ("slug", "declared_paths", "spec_risk", "owner_calls_unresolved", "demo_verdict_required",
-                 "jev", "jev_status")
+                 "authored_by_present", "jev", "jev_status")
 # 送 Jev 的題組(G2R 自己的一組;不進任何 J1–J5 題組)。score criteria 位置 = level。
 G2R_QUESTIONS = {
     "g2_route": {
@@ -165,7 +264,8 @@ G2R_QUESTIONS = {
 def g2r_fingerprint():
     payload = {"g2r_thresholds": G2R_THRESHOLDS, "g2r_jev_choices": list(G2R_JEV_CHOICES),
                "g2r_spec_risk_score": G2R_SPEC_RISK_SCORE, "risk_paths_default": list(RISK_PATHS_DEFAULT),
-               "g2r_questions": G2R_QUESTIONS, "jev_absent": "human"}
+               "g2r_questions": G2R_QUESTIONS, "jev_absent": "noop",
+               "jev_runtime_markers": list(JEV_RUNTIME_MARKERS)}
     return sha256_hex(canonical_json(payload))[7:19]
 
 
@@ -223,11 +323,13 @@ def _validate_g2r_case(case):
         raise JevError("G2R case.owner_calls_unresolved 必須是 ≥0 的整數")
     if not isinstance(case["demo_verdict_required"], bool):
         raise JevError("G2R case.demo_verdict_required 必須是 bool")
+    if not isinstance(case["authored_by_present"], bool):
+        raise JevError("G2R case.authored_by_present 必須是 bool")
     jev, status = case["jev"], case["jev_status"]
     if jev is not None and not isinstance(jev, dict):
         raise JevError("G2R case.jev 必須是 null(沒有 Jev)或 answers dict")
-    if not isinstance(status, str) or not status.strip():
-        raise JevError("G2R case.jev_status 必須是非空字串(ok 或沒有 Jev 的原因)")
+    if status not in ("ok", G2R_NO_JEV):
+        raise JevError("G2R case.jev_status 必須是 ok 或 %s" % G2R_NO_JEV)
     if (jev is not None) != (status == "ok"):
         raise JevError("G2R case.jev_status=%r 與 jev 不一致(有 answers ⇔ ok)" % status)
 
@@ -241,8 +343,9 @@ def route_g2(case):
       spec_risk              spec_risk_of() 的結果(high|medium|normal|low)或 None(沒寫)
       owner_calls_unresolved 未裁決 Owner Call 條數;>0 → HUMAN
       demo_verdict_required  需要 Demo verdict(human-only)→ HUMAN
-      jev                    None = 沒有 Jev;否則 {"g2_route": {"choice", "probabilities"}, "risk": {"score"}}
-      jev_status             "ok"(有 answers)或沒有 Jev 的原因(no_api_key／mode=shadow／transport:timeout…)
+      authored_by_present    4-spec 頂欄有合法 authored_by;沒有 → HUMAN(無法證明四眼)
+      jev                    None = 沒有 Jev(no-op);否則 {"g2_route": {"choice", "probabilities"}, "risk": {"score"}}
+      jev_status             "ok"(有 answers)或 "no_jev"(細部原因在分流紀錄 jev_reason)
     """
     _validate_g2r_case(case)
     t = G2R_THRESHOLDS
@@ -251,11 +354,10 @@ def route_g2(case):
     signals = {"jev_present": jev is not None, "jev_status": case["jev_status"],
                "declared_paths": len([p for p in case["declared_paths"] if p.strip()]),
                "spec_risk": case["spec_risk"], "owner_calls_unresolved": case["owner_calls_unresolved"],
-               "demo_verdict_required": case["demo_verdict_required"]}
-    # ① 沒有 Jev → HUMAN(不能因為 Jev 不在就自動放行);有 Jev:判的不是 AUTO_PASS 或 p < 0.85 → HUMAN
-    if jev is None:
-        reasons.append("jev_unavailable:%s" % case["jev_status"])
-    else:
+               "demo_verdict_required": case["demo_verdict_required"],
+               "authored_by_present": case["authored_by_present"]}
+    # ① 有 Jev:判的不是 AUTO_PASS 或 p < 0.85 → HUMAN。沒有 Jev = no-op:這條不存在,不擋也不放寬。
+    if jev is not None:
         g2 = jev.get("g2_route") if isinstance(jev.get("g2_route"), dict) else {}
         choice = g2.get("choice")
         probs = g2.get("probabilities") if isinstance(g2.get("probabilities"), dict) else {}
@@ -275,6 +377,9 @@ def route_g2(case):
         signals["risk_path_hits"] = hits
         if hits:
             reasons.append("risk_paths_hit:%s" % ",".join(hits))
+        rt = runtime_changed(paths)
+        if rt:
+            reasons.append("jev_runtime_changed:%s" % ",".join(rt))
     # ③ risk ≥ 2:有 Jev 只看 Jev 的 risk 分數(spec 的 Risk: high 不算);沒有 Jev 用 4-spec Risk 映射
     if jev is not None:
         risk_obj = jev.get("risk") if isinstance(jev.get("risk"), dict) else {}
@@ -295,6 +400,9 @@ def route_g2(case):
     # ⑤ 需要 Demo verdict
     if case["demo_verdict_required"]:
         reasons.append("demo_verdict_required")
+    # ⑥ 缺 authored_by → 無法證明 author ≠ approver
+    if not case["authored_by_present"]:
+        reasons.append("authored_by_missing")
     route = "HUMAN" if reasons else "AUTO"
     return {"route": route, "reasons": reasons or ["no_human_condition_hit"], "signals": signals,
             "auto_means": G2R_AUTO_MEANS if route == "AUTO" else None,

@@ -7,9 +7,9 @@ verdict_source:      # human_attested | fresh_agent_reviewer | owner_self_review
 attested_by:         # human:<名> 或 agent:<id>(格式 tripwire,不是身份驗證;Jev 不得填、不得寫 verdict)
 authored_by:         # agent:<id> 或 human:<名>(寫這份 4-spec 的是誰;G2 agent reviewer 不得同一個、不得共用它的 context)
 g2_mode:             # 空 | auto | human(auto = fresh-context agent reviewer 放行,只由 write-g2-auto 寫;命中轉人條件 → human)
-routed_by:           # jev:<evaluation_id>(G2R 分流紀錄;只記誰分流,不是 verdict source;沒有 Jev = 交給人審)
+routed_by:           # jev:<evaluation_id> | none(誰分流;Jev 不是 verdict source;沒有 Jev = none,只靠 agent + 機械檢查)
 g2r_case:            # sha256:…(G2R case hash;g2_mode: auto 才有,write-g2-auto 代填)
-g2r_jev:             # AUTO_PASS p=<0..1> risk=<0-3>(Jev 分流快照;g2_mode: auto 才有,write-g2-auto 代填)
+g2r_jev:             # AUTO_PASS p=<0..1> risk=<0-3> | none(Jev 分流快照;g2_mode: auto 才有,write-g2-auto 代填)
 mechanical:          # sha256:…(機械檢查輸出摘要:check-spec-gate + stage3;g2_mode: auto 才有,write-g2-auto 代填)
 owner:
 reviewers: []        # G2 審查者,不可 = owner
@@ -100,7 +100,8 @@ parent:               # 選填,僅切片情境填:上游 1-discussion/2-decision
 >    `devflow-jev.py g2r --slug <slug>`(Jev 只分流、不 review、不寫 verdict);判 AUTO →
 >    交乾淨 context 的 agent reviewer(≠ authored_by),PASS 才由
 >    `devflow_gate.py write-g2-auto` 寫 verdict(它再驗機械檢查 + 轉人條件,並記
->    `g2-misrelease release`);判 HUMAN 或 Jev 沒開/失敗 → 人審。轉人條件全文見契約 §7。
+>    `g2-misrelease release`);判 HUMAN → 人審。沒有 Jev(沒 key/沒 opt-in/失敗)= no-op,
+>    `routed_by: none`,其餘轉人條件照判。轉人條件全文見契約 §7。
 >    G2 審查關鍵條件 = R/S 全審 + DD 全裁決
 >    + Verification Profile(依 lane 正確填寫;未填視為步 3 未完成)
 >    + Demo verdict(條件式:無 Stage 3 trigger → N/A+原因;有 trigger → 需人類
