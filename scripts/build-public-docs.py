@@ -200,17 +200,107 @@ def _fence_block(lines, i):
     return "<pre><code" + cls + ">" + text + "</code></pre>", i
 
 
+def _lead(line):
+    """行首縮排欄寬(tab 展成 4 欄)。"""
+    return _indent_width(line[:len(line) - len(line.lstrip(" \t"))])
+
+
+def _dedent(line, width):
+    """去掉 width 欄的行首縮排(tab 先展開);縮排不足就全去(懶惰接續行)。"""
+    ws = line[:len(line) - len(line.lstrip(" \t"))]
+    have = _indent_width(ws)
+    rest = line[len(ws):]
+    return " " * (have - width) + rest if have >= width else rest
+
+
+def _item_start(line):
+    """清單項目開頭(縮排 ≤ 3 欄)→ (marker 縮排, 是否有序, 內容縮排 W, 首行內容);否則 None。
+
+    W = marker 縮排 + marker 寬 + marker 後空白(1–4);空白 ≥ 5 時只算 1(其餘屬項目內容)。
+    項目內的後續行以 W 為基準:縮排 ≥ W 的行去掉 W 欄後遞迴當區塊解析。
+    """
+    m = LIST_ITEM.match(line)
+    if not m:
+        return None
+    indent = _indent_width(m.group(1))
+    if indent > 3:
+        return None
+    after = line[m.end(2):]
+    gap = _indent_width(after[:len(after) - len(after.lstrip(" \t"))])
+    width = indent + len(m.group(2)) + (gap if gap <= 4 else 1)
+    return indent, m.group(2)[0].isdigit(), width, m.group(3)
+
+
 def _is_list_start(line):
-    return bool(LIST_ITEM.match(line))
+    return _item_start(line) is not None
 
 
-def _list_block(lines, i, base):
-    """讀一段縮排 >= base 的清單;更深縮排的項目收成子清單放進父 <li>。
+def _fence_close(line):
+    """FENCE_OPEN 命中 → 對應的關閉 fence regex;否則 None。"""
+    m = FENCE_OPEN.match(line)
+    if not m:
+        return None
+    mark = m.group(2) or m.group(4)
+    return re.compile(r"^ {0,3}" + re.escape(mark[0]) + "{" + str(len(mark)) + r",}[ \t]*$")
 
-    子清單的 base 是父項縮排 + 1:子項縮排不一致(4 格後接 2 格)仍留在同一個子清單。
 
+def _is_loose(content):
+    """項目內容在 fence 外有空行夾在兩個區塊之間 → loose(段落包 <p>);否則 tight。"""
+    close = None
+    seen_blank = False
+    for line in content:
+        if close is not None:
+            if close.match(line):
+                close = None
+            continue
+        if not line.strip():
+            seen_blank = True
+            continue
+        if seen_blank:
+            return True
+        close = _fence_close(line)
+    return False
+
+
+def _starts_block(line):
+    """會打斷段落的區塊開頭(懶惰接續行不得是這些)。"""
+    return bool(FENCE_OPEN.match(line) or re.match(r"^ {0,3}(#{1,6}\s|>|\|)", line))
+
+
+def _open_paragraph(content):
+    """內容最後停在還開著的段落(不在 fence／indented code 內、不是空行、不是標題等區塊)。"""
+    state = None                                        # None | para | code | fence
+    close = None
+    for line in content:
+        if state == "fence":
+            if close.match(line):
+                state = None
+            continue
+        if not line.strip():
+            if state != "code":                         # 空行結束段落;indented code 可夾空行
+                state = None
+            continue
+        if _lead(line) >= 4 and state != "para":
+            state = "code"
+            continue
+        close = _fence_close(line)
+        if close is not None:
+            state = "fence"
+        elif _starts_block(line):
+            state = None
+        else:
+            state = "para"
+    return state == "para"
+
+
+def _list_block(lines, i):
+    """從 lines[i](清單項目)讀一段清單。
+
+    每個項目收集自己的內容行(縮排 ≥ W 的行去掉 W 欄;fence 內的空行與內文照收),
+    再遞迴 blocks_to_html —— fence、indented code、子清單因此都留在該 <li> 內。
     同層換 ol/ul 就收掉目前的清單、同層另開一個(CommonMark 同一行為)。
-    空行、非縮排的非清單行、fence 開頭 → 清單結束。
+    空行之後若下一個非空行縮排 < W → 清單結束(兄弟項目隔空行另開清單,沿用既有輸出)。
+    縮排介於 marker 與 W 之間的子項目仍收成子清單(舊輸出相容),此後以它的縮排為 W。
     """
     out = []
     n = len(lines)
@@ -222,55 +312,74 @@ def _list_block(lines, i, base):
             out.append("<{0}>{1}</{0}>".format(tag, "".join(items)))
 
     while i < n:
-        m = LIST_ITEM.match(lines[i])
-        if not m:
+        st = _item_start(lines[i])
+        if st is None:
             break
-        indent = _indent_width(m.group(1))
-        if indent < base:
-            break
-        this_tag = "ol" if m.group(2)[0].isdigit() else "ul"
+        indent, ordered, width, first = st
+        this_tag = "ol" if ordered else "ul"
         if tag and this_tag != tag:
             flush()
             items = []
         tag = this_tag
-        parts = [("text", m.group(3))]
+        content = [first]
+        close = _fence_close(first)
         i += 1
         while i < n:
-            nxt = lines[i]
-            if not nxt.strip() or FENCE_OPEN.match(nxt.lstrip()):
-                break
-            lm = LIST_ITEM.match(nxt)
-            if lm:
-                sub = _indent_width(lm.group(1))
-                if sub <= indent:
+            raw = lines[i]
+            if close is not None:                       # 項目內 fence:空行與內文照收,縮排不足才結束項目
+                if raw.strip() and _lead(raw) < width:
                     break
-                sub_html, i = _list_block(lines, i, indent + 1)
-                parts.append(("html", sub_html))
+                line = _dedent(raw, width)
+                content.append(line)
+                if close.match(line):
+                    close = None
+                i += 1
                 continue
-            if not nxt.startswith("  "):
+            if not raw.strip():
+                j = i
+                while j < n and not lines[j].strip():
+                    j += 1
+                if j < n and _lead(lines[j]) >= width:
+                    content.extend([""] * (j - i))
+                    i = j
+                    continue
                 break
-            parts.append(("text", nxt.strip()))
-            i += 1
-        bits = []
-        buf = []
-        for kind, val in parts:
-            if kind == "text":
-                buf.append(val)
+            lead = _lead(raw)
+            if lead < width and _item_start(raw) and lead > indent:
+                width = lead                            # 子項目縮排不足 W:仍收成子清單
+            if lead >= width:
+                line = _dedent(raw, width)
+                content.append(line)
+                close = _fence_close(line)
+                i += 1
                 continue
-            if buf:
-                bits.append(inline_md(" ".join(buf)))
-                buf = []
-            bits.append(val)
-        if buf:
-            bits.append(inline_md(" ".join(buf)))
-        items.append("<li>" + "".join(bits) + "</li>")
+            if _item_start(raw) or _starts_block(raw) or not _open_paragraph(content):
+                break
+            content.append(raw.strip())                 # 懶惰接續行:只接在還開著的段落後面
+            i += 1
+        body = blocks_to_html(content, tight=not _is_loose(content), joiner="")
+        items.append("<li>" + body + "</li>")
     flush()
     return "".join(out), i
 
 
-def blocks_to_html(lines):
-    """夠用的 md 區塊轉換:標題、fence、表、(巢狀)清單、引用、段落。不是通用 renderer。
+def _indented_code(lines, i):
+    """縮排 ≥ 4 欄的 indented code block;空行可夾在中間,尾端空行不算。"""
+    body = []
+    n = len(lines)
+    while i < n and (not lines[i].strip() or _lead(lines[i]) >= 4):
+        body.append(_dedent(lines[i], 4) if lines[i].strip() else "")
+        i += 1
+    while body and not body[-1]:
+        body.pop()
+    text = "\n".join(html.escape(b, quote=False) for b in body)
+    return "<pre><code>" + text + "</code></pre>", i
 
+
+def blocks_to_html(lines, tight=False, joiner="\n"):
+    """夠用的 md 區塊轉換:標題、fence、indented code、表、(巢狀)清單、引用、段落。不是通用 renderer。
+
+    tight=True(tight 清單項目內)段落不包 <p>。清單項目內容由 _list_block 去縮排後遞迴呼叫本函式。
     維持零相依:ADR 0002 只准 gate twin 解析層用 markdown-it-py,這裡不吃。
     """
     out = []
@@ -280,6 +389,10 @@ def blocks_to_html(lines):
         line = lines[i]
         if not line.strip():
             i += 1
+            continue
+        if _lead(line) >= 4:                            # indented code 不能打斷段落:只在區塊開頭判
+            block, i = _indented_code(lines, i)
+            out.append(block)
             continue
         if FENCE_OPEN.match(line):
             block, i = _fence_block(lines, i)
@@ -318,9 +431,8 @@ def blocks_to_html(lines):
             bits.append("</tbody></table></div>")
             out.append("".join(bits))
             continue
-        lm = LIST_ITEM.match(line)
-        if lm:
-            block, i = _list_block(lines, i, _indent_width(lm.group(1)))
+        if _is_list_start(line):
+            block, i = _list_block(lines, i)
             out.append(block)
             continue
         para = [line]
@@ -328,8 +440,9 @@ def blocks_to_html(lines):
         while i < n and lines[i].strip() and not lines[i].startswith("#") and not lines[i].startswith(">") and not lines[i].lstrip().startswith("|") and not _is_list_start(lines[i]) and not FENCE_OPEN.match(lines[i]):
             para.append(lines[i])
             i += 1
-        out.append("<p>" + inline_md(" ".join(p.strip() for p in para)) + "</p>")
-    return "\n".join(out)
+        text = inline_md(" ".join(p.strip() for p in para))
+        out.append(text if tight else "<p>" + text + "</p>")
+    return joiner.join(out)
 
 
 # 自檢 fixture:blocks_to_html 支援的語法各一條,--selftest 與 --check 都會跑。
@@ -378,6 +491,58 @@ SELFTEST_CASES = [
         "子清單縮排不一致仍留在同一個子清單",
         ["- a", "    - b", "  - c"],
         "<ul><li>a<ul><li>b</li><li>c</li></ul></li></ul>",
+    ),
+    (
+        "清單項目內縮排的 ``` fence 留在該 <li> 內(含 fence 內空行)",
+        ["- 步驟一", "  ```sh", "  make build", "", "  make test", "  ```", "- 步驟二"],
+        '<ul><li>步驟一<pre><code class="language-sh">make build\n\nmake test</code></pre></li>'
+        "<li>步驟二</li></ul>",
+    ),
+    (
+        "有序清單項目內的 ~~~ fence 以內容縮排(3 欄)為準,fence 內 - 不變清單",
+        ["1. 先跑", "   ~~~", "   - 不是清單", "     縮排保留", "   ~~~", "2. 再看"],
+        "<ol><li>先跑<pre><code>- 不是清單\n  縮排保留</code></pre></li><li>再看</li></ol>",
+    ),
+    (
+        "巢狀清單的子項目內 fence 留在子 <li> 內,父清單接續",
+        ["- 外", "  - 內", "    ```", "    x = 1", "    ```", "  - 內二", "- 外二"],
+        "<ul><li>外<ul><li>內<pre><code>x = 1</code></pre></li><li>內二</li></ul></li>"
+        "<li>外二</li></ul>",
+    ),
+    (
+        "fence 後縮排不足的行結束清單項目(反例:不硬吞)",
+        ["- a", "  ```", "  b", "  ```", "段落"],
+        "<ul><li>a<pre><code>b</code></pre></li></ul>\n<p>段落</p>",
+    ),
+    (
+        "4 空格縮排 = indented code(escape、中間空行保留、尾端空行不算)",
+        ["段落", "", "    if a < b:", "", "        return 1", "", "尾段"],
+        "<p>段落</p>\n<pre><code>if a &lt; b:\n\n    return 1</code></pre>\n<p>尾段</p>",
+    ),
+    (
+        "tab 縮排也是 indented code",
+        ["\tx = 1", "\ty = 2"],
+        "<pre><code>x = 1\ny = 2</code></pre>",
+    ),
+    (
+        "段落後直接 4 空格不打斷段落(反例:不變 code)",
+        ["第一行", "    第二行縮排", "    - 也不是清單"],
+        "<p>第一行 第二行縮排 - 也不是清單</p>",
+    ),
+    (
+        "清單項目內 indented code 以內容縮排 + 4 為準(loose 項目包 <p>)",
+        ["- 範例:", "", "      echo hi", "", "- 下一項"],
+        "<ul><li><p>範例:</p><pre><code>echo hi</code></pre></li></ul>\n<ul><li>下一項</li></ul>",
+    ),
+    (
+        "清單項目內只縮排到內容縮排 + 2 → 仍是段落接續(反例)",
+        ["- 項目", "    接續不是 code"],
+        "<ul><li>項目 接續不是 code</li></ul>",
+    ),
+    (
+        "有序清單項目內 indented code:內容縮排 3 + 4 = 7 欄",
+        ["1. 指令", "", "       ls -la", "2. 結束"],
+        "<ol><li><p>指令</p><pre><code>ls -la</code></pre></li><li>結束</li></ol>",
     ),
     (
         "雙反引號 code 可含單反引號,不留字面反引號",
