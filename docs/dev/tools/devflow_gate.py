@@ -14,6 +14,10 @@ HTML / localStorage / sidecar 都不是正本;sidecar 與 md 衝突時 md 勝。
       --reviewer agent:<id> --evidence-ref <agent reviewer 報告路徑或 PR> [--notes TEXT]
   python3 scripts/devflow_gate.py serve --root DIR [--port 8765]
 
+serve 只收本機同源(Host／Origin 限 127.0.0.1／localhost:<port>)、POST 只收 application/json,
+且必帶啟動時產生的 token(header X-Devflow-Gate-Token,或 GET 頁面時發的 SameSite=Strict cookie);
+不送 CORS `*`。file:// 開的頁面(Origin: null)會被拒 → 改從 serve 的 URL 開,或走頁面的 FSA 退路。
+
 write 是人的「提交判定」:有 reviewer 時同時落 verdict_source: human_attested + attested_by: human:<reviewer>;
 reviewer 是 agent／Jev → 拒收(G1/G2/G3 的 write 只收人)。
 write-g2-auto 是 **G2 agent reviewer 放行的唯一寫入路徑**(契約 §7「G2 審查者產生」):只收 4-spec、
@@ -27,7 +31,9 @@ import argparse
 import json
 import os
 import pathlib
+import hmac
 import re
+import secrets
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -258,35 +264,106 @@ def write_g2_auto(root: pathlib.Path, slug: str, reviewer: str, evidence_ref: st
     }
 
 
+TOKEN_HEADER = "X-Devflow-Gate-Token"
+TOKEN_COOKIE = "devflow_gate_token"
+_LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "[::1]")
+
+
+def new_serve_token() -> str:
+    """serve 每次啟動產生一次的 token(寫 verdict 必帶;不落檔、不吃環境變數)。"""
+    return secrets.token_urlsafe(32)
+
+
+def _cookie_value(header: str, name: str) -> str:
+    for part in (header or "").split(";"):
+        key, _, value = part.strip().partition("=")
+        if key == name:
+            return value.strip()
+    return ""
+
+
 def _send_json(handler: BaseHTTPRequestHandler, code: int, payload: dict) -> None:
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     handler.send_response(code)
     handler.send_header("Content-Type", "application/json; charset=utf-8")
     handler.send_header("Content-Length", str(len(body)))
-    handler.send_header("Access-Control-Allow-Origin", "*")
-    handler.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
-    handler.send_header("Access-Control-Allow-Headers", "Content-Type")
+    handler.send_header("Cache-Control", "no-store")
+    # 不送 Access-Control-Allow-Origin:只服務同源頁面(CORS `*` 會讓任何網站讀寫本機 serve)
     handler.end_headers()
     handler.wfile.write(body)
 
 
-def make_handler(root: pathlib.Path):
+def make_handler(root: pathlib.Path, token: str):
+    """serve 的 request handler。CSRF／DNS rebinding 收緊(寫的是人簽 verdict):
+    - Host 必須是 127.0.0.1／localhost／[::1] 加本 server 的 port;否則 403(擋 DNS rebinding)。
+    - 有 Origin 就必須是 http://127.0.0.1:<port> 或 http://localhost:<port>(`null`、file://、別的網站 → 403);
+      Sec-Fetch-Site 有送就必須是 same-origin／none。
+    - POST 只收 Content-Type: application/json(text/plain、form → 415,擋 simple-request CSRF)。
+    - POST 必帶啟動時產生的 token:header `X-Devflow-Gate-Token`,或 GET 頁面時發的
+      SameSite=Strict HttpOnly cookie(同源 twin 頁不用改 JS);比對用 hmac.compare_digest。
+    - 不送 CORS `*`;OPTIONS 只回允許的 Origin。"""
+    if not token:
+        raise ValueError("serve token 不得為空")
     docs = (root / "docs" / "dev").resolve()
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, fmt, *args):
             sys.stderr.write("dev-flow gate serve: " + (fmt % args) + "\n")
 
+        def _port(self) -> int:
+            return int(self.server.server_address[1])
+
+        def _allowed_origins(self):
+            port = self._port()
+            return ("http://127.0.0.1:%d" % port, "http://localhost:%d" % port, "http://[::1]:%d" % port)
+
+        def _origin_problem(self) -> str:
+            """回空字串 = 可以;否則是拒絕理由。每個 method 都先過這關。"""
+            host = (self.headers.get("Host") or "").strip().lower()
+            if host not in tuple("%s:%d" % (h, self._port()) for h in _LOOPBACK_HOSTS):
+                return "Host 必須是 127.0.0.1／localhost:%d(實得 %r)" % (self._port(), host)
+            origin = self.headers.get("Origin")
+            if origin is not None and origin.strip().lower() not in self._allowed_origins():
+                return "Origin 不是本機 serve(實得 %r)" % origin
+            site = self.headers.get("Sec-Fetch-Site")
+            if site is not None and site.strip().lower() not in ("same-origin", "none"):
+                return "Sec-Fetch-Site=%r(只收同源)" % site
+            return ""
+
+        def _token_ok(self) -> bool:
+            got = (self.headers.get(TOKEN_HEADER) or "").strip()
+            if not got:
+                got = _cookie_value(self.headers.get("Cookie") or "", TOKEN_COOKIE)
+            return bool(got) and hmac.compare_digest(got.encode("utf-8"), token.encode("utf-8"))
+
         def do_OPTIONS(self):
+            problem = self._origin_problem()
+            if problem:
+                _send_json(self, 403, {"error": problem})
+                return
             self.send_response(204)
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
-            self.send_header("Access-Control-Allow-Headers", "Content-Type")
+            origin = self.headers.get("Origin")
+            if origin:
+                self.send_header("Access-Control-Allow-Origin", origin.strip())
+                self.send_header("Vary", "Origin")
+                self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+                self.send_header("Access-Control-Allow-Headers", "Content-Type, " + TOKEN_HEADER)
             self.end_headers()
 
         def do_POST(self):
+            problem = self._origin_problem()
+            if problem:
+                _send_json(self, 403, {"error": problem})
+                return
             if urlparse(self.path).path != "/devflow-gate/verdict":
                 _send_json(self, 404, {"error": "not found"})
+                return
+            ctype = (self.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()
+            if ctype != "application/json":
+                _send_json(self, 415, {"error": "Content-Type 必須是 application/json"})
+                return
+            if not self._token_ok():
+                _send_json(self, 403, {"error": "缺 token 或 token 不符(serve 啟動時印出;同源頁面由 cookie 帶)"})
                 return
             length = int(self.headers.get("Content-Length") or "0")
             if length <= 0 or length > 1_000_000:
@@ -314,7 +391,15 @@ def make_handler(root: pathlib.Path):
                 return
             _send_json(self, 200, result)
 
+        def _token_cookie(self):
+            self.send_header("Set-Cookie", "%s=%s; Path=/; HttpOnly; SameSite=Strict" % (TOKEN_COOKIE, token))
+            self.send_header("Cache-Control", "no-store")
+
         def do_GET(self):
+            problem = self._origin_problem()
+            if problem:
+                self.send_error(403, "loopback only")
+                return
             raw = unquote(urlparse(self.path).path)
             if raw in ("/", "/index.html"):
                 body = (
@@ -325,6 +410,7 @@ def make_handler(root: pathlib.Path):
                 self.send_response(200)
                 self.send_header("Content-Type", "text/plain; charset=utf-8")
                 self.send_header("Content-Length", str(len(body)))
+                self._token_cookie()
                 self.end_headers()
                 self.wfile.write(body)
                 return
@@ -345,6 +431,7 @@ def make_handler(root: pathlib.Path):
             self.send_response(200)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(data)))
+            self._token_cookie()
             self.end_headers()
             self.wfile.write(data)
 
@@ -352,10 +439,14 @@ def make_handler(root: pathlib.Path):
 
 
 def serve(root: pathlib.Path, port: int) -> None:
-    httpd = ThreadingHTTPServer(("127.0.0.1", port), make_handler(root))
+    token = new_serve_token()
+    httpd = ThreadingHTTPServer(("127.0.0.1", port), make_handler(root, token))
+    port = httpd.server_address[1]
     print(
         f"dev-flow gate serve  http://127.0.0.1:{port}/  "
-        f"(POST /devflow-gate/verdict → md 頂欄 verdict:)",
+        f"(POST /devflow-gate/verdict → md 頂欄 verdict:)\n"
+        f"  只收本機同源:請從 http://127.0.0.1:{port}/docs/dev/<slug>/<stage>.html 開(file:// 會被拒)\n"
+        f"  本次 token(每次啟動重產;curl 用 -H '{TOKEN_HEADER}: …'):{token}",
         flush=True,
     )
     httpd.serve_forever()

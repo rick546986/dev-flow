@@ -295,33 +295,83 @@ with tempfile.TemporaryDirectory() as tmp:
         "write:全勾／非法值必須拒收,且不得改 md",
     )
 
-    # serve POST
+    # serve POST(CSRF／DNS rebinding 收緊:Host／Origin 限本機、只收 JSON、必帶啟動 token;不送 CORS `*`)
+    import http.client
     md.write_text(md_src, encoding="utf-8")
-    httpd = ThreadingHTTPServer(("127.0.0.1", 0), gate.make_handler(Path(tmp)))
+    token = gate.new_serve_token()
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), gate.make_handler(Path(tmp), token))
     port = httpd.server_address[1]
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()
+    payload = json.dumps({"slug": "demo", "gate": "7-review", "verdict": "PASS", "notes": "ok",
+                          "reviewer": "bea", "checked": ["S-1"]}).encode("utf-8")
+
+    def call(method, path, headers, body=None):
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        try:
+            conn.putrequest(method, path, skip_host=True, skip_accept_encoding=True)
+            for key, value in headers.items():
+                conn.putheader(key, value)
+            if body is not None:
+                conn.putheader("Content-Length", str(len(body)))
+            conn.endheaders(body)
+            resp = conn.getresponse()
+            return resp.status, dict((k.lower(), v) for k, v in resp.getheaders()), resp.read()
+        finally:
+            conn.close()
+
+    good = {"Host": "127.0.0.1:%d" % port, "Origin": "http://127.0.0.1:%d" % port,
+            "Content-Type": "application/json", gate.TOKEN_HEADER: token}
     try:
-        req = Request(
-            "http://127.0.0.1:%d/devflow-gate/verdict" % port,
-            data=json.dumps({
-                "slug": "demo",
-                "gate": "7-review",
-                "verdict": "PASS",
-                "notes": "ok",
-                "reviewer": "bea",
-                "checked": ["S-1"],
-            }).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
-            method="POST",
+        # 負向:每一種都必須被拒,而且 md 不得被改
+        negatives = (
+            ("缺 token", dict((k, v) for k, v in good.items() if k != gate.TOKEN_HEADER), 403),
+            ("token 不符", dict(good, **{gate.TOKEN_HEADER: token[:-2] + "xx"}), 403),
+            ("Origin 是別的網站", dict(good, Origin="https://evil.example"), 403),
+            ("Origin: null(file:// / sandbox)", dict(good, Origin="null"), 403),
+            ("Origin 是本機別的 port", dict(good, Origin="http://localhost:%d" % (port + 1)), 403),
+            ("Host 不是本機(DNS rebinding)", dict(good, Host="evil.example:%d" % port), 403),
+            ("Sec-Fetch-Site: cross-site", dict(good, **{"Sec-Fetch-Site": "cross-site"}), 403),
+            ("Content-Type text/plain(simple request)", dict(good, **{"Content-Type": "text/plain"}), 415),
+            ("Content-Type form", dict(good, **{"Content-Type": "application/x-www-form-urlencoded"}), 415),
         )
-        with urlopen(req, timeout=5) as resp:
-            body = json.loads(resp.read().decode("utf-8"))
+        for label, headers, want in negatives:
+            status, _, _ = call("POST", "/devflow-gate/verdict", headers, payload)
+            after = md.read_text(encoding="utf-8")
+            check(status == want and gate.read_canonical_verdict(after) == "",
+                  "serve 拒收:%s → %d 且不改 md(實得 %d)" % (label, want, status))
+        status, hdrs, _ = call("OPTIONS", "/devflow-gate/verdict",
+                               {"Host": "127.0.0.1:%d" % port, "Origin": "https://evil.example"})
+        check(status == 403 and "access-control-allow-origin" not in hdrs,
+              "serve OPTIONS:別的網站 preflight → 403、無 CORS 放行")
+        status, hdrs, _ = call("GET", "/docs/dev/demo/7-review.md", {"Host": "evil.example:%d" % port})
+        check(status == 403 and "set-cookie" not in hdrs, "serve GET:Host 不是本機 → 403、不發 token cookie")
+
+        # 正向:同源頁 GET 拿到 SameSite=Strict HttpOnly cookie,只帶 cookie 就能寫(twin 頁不用改 JS)
+        status, hdrs, _ = call("GET", "/docs/dev/demo/7-review.md", {"Host": "localhost:%d" % port})
+        cookie = hdrs.get("set-cookie", "")
+        check(status == 200 and ("%s=%s" % (gate.TOKEN_COOKIE, token)) in cookie
+              and "SameSite=Strict" in cookie and "HttpOnly" in cookie
+              and "access-control-allow-origin" not in hdrs,
+              "serve GET:同源發 SameSite=Strict HttpOnly token cookie、不送 CORS `*`")
+        cookie_headers = {"Host": "localhost:%d" % port, "Origin": "http://localhost:%d" % port,
+                          "Sec-Fetch-Site": "same-origin", "Content-Type": "application/json; charset=utf-8",
+                          "Cookie": "other=1; %s=%s" % (gate.TOKEN_COOKIE, token)}
+        status, hdrs, raw = call("POST", "/devflow-gate/verdict", cookie_headers, payload)
+        body = json.loads(raw.decode("utf-8")) if status == 200 else {}
         after = md.read_text(encoding="utf-8")
-        check(body.get("verdict") == "PASS", "serve POST:回傳 PASS")
+        check(status == 200 and body.get("verdict") == "PASS" and "access-control-allow-origin" not in hdrs,
+              "serve POST(同源 + cookie token):回傳 PASS、不送 CORS `*`")
         check(re.search(r"^verdict:\s*PASS\s*$", after, re.M) is not None,
               "serve POST:寫入 md 頂欄 verdict: PASS")
         check("- Human verdict note: ok" in after, "serve POST:可寫一行 note")
+        # 正向:CLI／curl 走 header token、無 Origin
+        md.write_text(md_src, encoding="utf-8")
+        status, _, _ = call("POST", "/devflow-gate/verdict",
+                            dict((k, v) for k, v in good.items() if k != "Origin"), payload)
+        check(status == 200 and gate.read_canonical_verdict(md.read_text(encoding="utf-8")) == "PASS",
+              "serve POST(header token、無 Origin):寫入 PASS")
+        check(gate.new_serve_token() != token, "serve token 每次啟動重產")
     finally:
         httpd.shutdown()
 

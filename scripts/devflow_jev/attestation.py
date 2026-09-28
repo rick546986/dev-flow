@@ -15,6 +15,7 @@ import re
 VERDICT_VALUES = ("PASS", "REQUEST_CHANGES", "HOLD")
 SOURCES = ("human_attested", "fresh_agent_reviewer", "owner_self_review")
 GRADUATION_ELIGIBLE = ("human_attested", "fresh_agent_reviewer")
+HUMAN_SOURCES = ("human_attested", "owner_self_review")      # 人簽:attested_by 必須 human:<名>
 _ATTESTED_BY = re.compile(r"^(human|agent):(\S+)$")
 
 
@@ -54,8 +55,9 @@ def classify(frontmatter):
         return {"label": "unverified", "verdict": verdict, "source": source,
                 "attested_by": attested or None, "notes": notes}
     kind = m.group(1)
-    if source == "human_attested" and kind != "human":
-        notes.append("human_attested but attested_by is agent → unverified")
+    if source in HUMAN_SOURCES and kind != "human":
+        # 人簽(human_attested／owner_self_review)一律要 `human:` 前綴;agent 冒人簽 → unverified(不是人簽)
+        notes.append("%s but attested_by is not human:<名> → unverified" % source)
         return {"label": "unverified", "verdict": verdict, "source": source, "attested_by": attested, "notes": notes}
     if source == "fresh_agent_reviewer" and kind != "agent":
         notes.append("fresh_agent_reviewer but attested_by is not agent → unverified")

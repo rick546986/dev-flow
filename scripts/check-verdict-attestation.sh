@@ -6,7 +6,8 @@
 # 與 scripts/devflow_gate.py write-g2-auto 寫入前跑的是**同一支**(手改頂欄繞過寫入器也會在這裡紅)。
 #
 # 掃 docs/dev/*/{2-decision,4-spec,7-review}.md 與 example/*/ 同名檔。對每一份有 Human 三值 verdict 的檔:
-#   紅(任何模式):verdict_source 不在允許集合;attested_by 指向 jev*;human_attested 卻 attested_by 是 agent;
+#   紅(任何模式):verdict_source 不在允許集合;attested_by 指向 jev*;人簽(human_attested／owner_self_review)
+#                 卻 attested_by 不是 human:<名>;
 #                 fresh_agent_reviewer 卻 attested_by 是 human;
 #                 G1(2-decision)／G3(7-review)是 agent 寫的(只收人寫的 verdict)或帶 g2_mode;
 #                 4-spec 是 agent 寫的(fresh_agent_reviewer 或 g2_mode: auto),卻不符合 G2 自動放行 ——
@@ -24,7 +25,7 @@ STRICT=0
 for arg in "$@"; do
   case "$arg" in
     --strict) STRICT=1 ;;
-    -h|--help) sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) ROOT=$(cd "$arg" && pwd) || exit 2 ;;
   esac
 done
@@ -37,7 +38,7 @@ root, strict, scripts = sys.argv[1], sys.argv[2] == "1", sys.argv[3]
 sys.path.insert(0, scripts)
 from devflow_jev import attestation, g2auto, policy
 
-MIN_CHECKS = 15
+MIN_CHECKS = 17
 checks, failures = 0, []
 
 
@@ -76,7 +77,8 @@ fixdir = os.path.join(scripts, "fixtures", "verdict-attestation")
 expect = {"good-human.md": "human", "good-g2-human.md": "human", "legacy-unverified.md": "legacy_unverified",
           "bad-jev-wrote-verdict.md": "bad", "bad-source-kind-mismatch.md": "bad", "bad-unknown-source.md": "bad",
           "bad-g2-agent-without-auto-path.md": "bad", "bad-g1-agent-verdict.md": "bad",
-          "bad-g3-agent-verdict.md": "bad", "bad-g3-g2-mode.md": "bad"}
+          "bad-g3-agent-verdict.md": "bad", "bad-g3-g2-mode.md": "bad",
+          "bad-owner-self-review-agent.md": "bad", "bad-g2-owner-self-review-agent.md": "bad"}
 present = sorted(n for n in os.listdir(fixdir) if n.endswith(".md"))
 check(present == sorted(expect), "fixture 清單與預期一致", "實得 %s" % present)
 for name, want in expect.items():

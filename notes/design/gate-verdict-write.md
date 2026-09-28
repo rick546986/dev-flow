@@ -18,6 +18,10 @@
 4. **寫入路徑**。優先 `dev-flow gate serve`(`python3 scripts/devflow_gate.py serve`)
    POST 到本機 helper,由 helper 改 md。`file://` 後備:File System Access 寫同一份
    md。不要假裝 localStorage 已落盤。
+   serve 只收本機同源:Host／Origin 限 `127.0.0.1`／`localhost:<port>`(`file://` 的
+   `Origin: null` 也拒)、POST 只收 `application/json`、必帶啟動時產生的一次性 token
+   (header `X-Devflow-Gate-Token`,或 GET 頁面時發的 `SameSite=Strict; HttpOnly` cookie);
+   不送 CORS `*`。要用 serve 寫,頁面就從 serve 的 URL 開。
 5. **skill／hop**。md 頂欄 `verdict:` 已是 `PASS`／`REQUEST_CHANGES`／`HOLD` →
    該 gate 已關;feature agent **不得手改** review／decision／spec 檔來記錄
    Human verdict。尚無寫入 → 才准在 chat 問人。`REQUEST_CHANGES` 走既有修迴圈,
