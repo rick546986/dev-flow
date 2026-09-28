@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import textwrap
 import unittest
 
 from devflow_jev import JevError, gate, policy
@@ -88,8 +89,65 @@ class MROptinParse(unittest.TestCase):
         with open(os.path.join(ROOT, "_templates", "jev.yaml"), encoding="utf-8") as fh:
             out = gate.parse_optin(fh.read())
         self.assertEqual(out["mode"], "off")
-        self.assertEqual(out["mr"], {"level": "off", "min_queries": policy.MR_EVAL_MIN_QUERIES})
+        # 範本不寫死 min_queries(未校準):不寫 = mr-gate 用預設,來源記 default
+        self.assertEqual(out["mr"], {"level": "off", "min_queries": None})
         self.assertEqual(policy.mr_level(True, out)[0], "off")
+
+    def test_template_min_queries_is_commented_not_hardcoded(self):
+        with open(os.path.join(ROOT, "_templates", "jev.yaml"), encoding="utf-8") as fh:
+            text = fh.read()
+        self.assertNotRegex(text, r"(?m)^\s*min_queries:\s*\d")
+        self.assertRegex(text, r"(?m)^\s*#\s*min_queries:")
+
+    def test_template_mr_only_minimal_example_parses(self):
+        # 範本裡「只開 MR、J gate 全 off」那段取消註解後:J1–J5 全 off、MR shadow
+        with open(os.path.join(ROOT, "_templates", "jev.yaml"), encoding="utf-8") as fh:
+            lines = fh.read().splitlines()
+        start = lines.index("# mode: shadow")
+        block = []
+        for line in lines[start:]:
+            if line.strip() == "#":
+                break
+            block.append(line[2:])
+        out = gate.parse_optin("\n".join(block) + "\n")
+        for g in ("J1", "J2", "J3", "J4", "J5"):
+            self.assertEqual(gate.effective_level(g, True, out)[0], "off", g)
+        self.assertEqual(policy.mr_level(True, out)[0], "shadow")
+
+    def test_inline_comment_after_value_is_fail_loud(self):
+        # 文件範例不得寫 `MR: shadow  # 簡寫`:解析器不剝行尾註解 → exit 2
+        with self.assertRaises(JevError):
+            gate.parse_optin("mode: shadow\ngates:\n  MR: shadow            # 簡寫\n")
+
+    def test_mode_off_makes_mr_off(self):
+        out = gate.parse_optin("mode: off\ngates:\n  MR: shadow\n")
+        self.assertEqual(policy.mr_level(True, out)[0], "off")
+
+    def test_doc_examples_parse(self):
+        # w11 §4.7 與 gate.py docstring 的 yaml 範例必須真的能解析(不是只看起來對)
+        import re
+        with open(os.path.join(ROOT, "docs", "dev", "jev-gate", "w11-mr-rerank.md"), encoding="utf-8") as fh:
+            w11 = fh.read()
+        sec = w11[w11.index("### 4.7"):]
+        blocks = re.findall(r"```yaml\n(.*?)```", sec, re.S)
+        self.assertGreaterEqual(len(blocks), 2)
+        for blk in blocks:
+            for part in textwrap.dedent(blk).split("# 或\n"):
+                out = gate.parse_optin(part)
+                self.assertIsNotNone(out["mr"], part)
+        # §4.2 手寫最小 fixture:形狀對(不是 exit 2)、單條查詢 = insufficient_data(不是通過)
+        sec42 = w11[w11.index("### 4.2"):w11.index("### 4.3")]
+        fixture = json.loads(re.findall(r"```json\n(.*?)```", sec42, re.S)[1])
+        report = policy.mr_eval(fixture)
+        self.assertEqual(report["verdict"], "insufficient_data")
+        self.assertTrue(any("min_queries" in r for r in report["insufficient"]), report["insufficient"])
+        doc = gate.__doc__
+        parts = doc[doc.index("    mode: shadow"):doc.index("註解一律自成一行")].split("    # 或")
+        for part in parts:
+            text = "\n".join(l[4:] for l in part.splitlines() if l.startswith("    ") and "區塊(" not in l)
+            if not text.startswith("mode"):
+                text = text[text.index("mode"):]
+            self.assertIsNotNone(gate.parse_optin(text + "\n")["mr"], text)
 
 
 class MRLevel(unittest.TestCase):

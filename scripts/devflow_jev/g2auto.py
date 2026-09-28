@@ -21,7 +21,8 @@ from . import JevError
 from . import attestation, policy
 
 # 全域退回人審開關:改成 False → write-g2-auto 一律拒寫,G2 全部回人審(已放行的 4-spec 不回頭打紅)。
-# 不吃環境變數、不吃 CLI 旗標:要關就改這行(= 一個 commit,看得到誰關的)。
+# 不吃環境變數、不吃 CLI 旗標:要關就改這行(= 一個 commit,看得到誰關的);散發副本
+# docs/dev/tools/devflow_jev/g2auto.py 要同一個 commit 一起改(兩份不一致 check-ship-manifest 會紅)。
 # 注意:拿掉 Jev key／opt-in 不會退回人審 —— 沒有 Jev 是 no-op(ADR 0004 §2),只少了分流。
 G2_AUTO_LIVE = True
 AUTO_SOURCE = "fresh_agent_reviewer"

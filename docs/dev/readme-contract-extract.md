@@ -115,6 +115,7 @@ G2 = 契約寫得對不對
     不寫 verdict、不填 `attested_by`。沒有 Jev(沒有 `TYPESAFE_API_KEY`、沒有 `.dev-flow/jev.yaml`
     opt-in 或 mode 不是 live、Jev 失敗、逾時、回應格式錯、breaker open、budget 用完)= no-op:
     不擋、不放寬,`routed_by: none`,只靠 (a)+(b),其餘轉人條件照判(ADR 0004 §2)。
+    `mode: shadow` 有 key 時仍會送一次 Jev,回答只記錄、分流當作沒有 Jev(= no-op);只有 `mode: live` 的回答拿來分流。
   - 「G2 轉人條件」(任一成立 → 交給人審,不能自動放行;命中卻只有 agent 的 verdict → 機械擋下):
     ① Jev 判 HUMAN,或信心 p(AUTO_PASS) < 0.85(p 剛好等於 0.85 交給 agent);
     ② 宣告的 paths 命中 risk_paths,或 4-spec 沒有宣告 paths(Diff Budget 的 `- Paths:`);
@@ -247,3 +248,6 @@ G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件�
   (exit 0/1/3);設定缺或格式錯 → exit 2(fail loud);生效等級 off → 不評。`min_queries` 預設 20,是**未校準的暫定值**
   (校準方法見 `docs/dev/jev-gate/w11-mr-rerank.md` §4.6)。MR live 未核准(`gate.MR_LIVE_RATIFIED = False`):
   `enforced` 與 `live_eligible` 恆 false,不擋任何 gate;沒有 key 時 rerank 照原順序。MR 不是 G1/G2/G3,不寫 verdict。
+  MR 生效等級 = min(mode, `gates.MR`):`mode: off` → MR 也 off;shadow 且有 key 時 rerank **會**送 Jev 並照分數改排序。
+  yaml 註解一律自成一行(值後面接 `#` → exit 2)。只開 MR 要把沒寫的 J1/J3/J5 明寫 off(mode 拉到 shadow 會讓它們有 key 就出境);
+  關 MR 寫 `MR: off`,不要只刪那行(沒寫 `gates.MR` → rerank 照 mode 走)。
