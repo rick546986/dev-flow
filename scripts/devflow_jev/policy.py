@@ -885,7 +885,10 @@ MR_TOP_K = 5                          # C6:回前 5 筆
 MR_RECALL_DELTA_MIN = 0.0             # C5:Recall@5 不降
 MR_MRR_DELTA_MIN = 0.05               # C5:MRR 至少 +0.05
 MR_MANDATORY_RETENTION_MIN = 1.0      # C5:必留記憶 100% 保留(硬約束)
-MR_EVAL_MIN_QUERIES = 20              # 本 PR 定的資料量地板(未校準;不足 → insufficient_data,不算通過)
+# 資料量地板:**未校準的暫定值**(W11 研究分支自訂,owner 沒給數字;不是統計推導)。可設定:
+# `mr-eval --min-queries N`、`mr-gate --min-queries N` 或 `.dev-flow/jev.yaml` 的 `gates.MR.min_queries`;
+# 沒設 = 這個預設。校準方法見 docs/dev/jev-gate/w11-mr-rerank.md §4.6(需要 locked eval set 的真資料)。
+MR_EVAL_MIN_QUERIES = 20              # 不足 → insufficient_data,不算通過
 MR_EPS = 1e-9                         # 門檻比較的浮點容忍(0.1+0.2 那種誤差不該決定過或不過)
 MR_MANDATORY_FIELD = "mandatory"      # 必留標記:候選列上的 `mandatory: true`(本 PR 定義;見 w11 §3)
 MR_MANDATORY_REASONS = ("explicit", "current_truth", "invariant", "conflict", "exact_hit")
@@ -911,20 +914,46 @@ def mr_fingerprint():
 
 
 def mr_level(has_key, optin):
-    """MR 的雙閘門:沿用 gate.py 的兩個輸入(key 有無 × `.dev-flow/jev.yaml` 解析結果),**不改 gate.py**。
+    """MR 的雙閘門:沿用 gate.py 的兩個輸入(key 有無 × `.dev-flow/jev.yaml` 解析結果)。
 
-    現行 gate.parse_optin 只認 `gates: J1–J5`,`gates: MR:` 會 fail-loud —— 所以 MR 只看 `mode:`。
-    mode=off → off;shadow/live → shadow(研究分支沒有 MR live,也不接任何 gate)。回 (level, reason)。"""
+    - 沒寫 `gates: MR:` → W11 原行為:只看 `mode:`;mode=off → off;shadow/live → shadow。
+    - 有寫 `gates: MR:` → gate.mr_effective_level:min(mode, gates.MR.level),live cap 成 shadow
+      (`gate.MR_LIVE_RATIFIED = False`)。回 (level, reason)。"""
     if not has_key:
         return "off", "no_api_key"
     if optin is None:
         return "off", "no_project_optin"
     mode = optin.get("mode") if isinstance(optin, dict) else None
+    if mode not in ("off", "shadow", "live"):
+        raise JevError("jev.yaml mode %r 不認得" % (mode,))
+    if optin.get("mr") is not None:
+        from . import gate as _gate
+        return _gate.mr_effective_level(has_key, optin)
     if mode == "off":
         return "off", "mode=off"
-    if mode not in ("shadow", "live"):
-        raise JevError("jev.yaml mode %r 不認得" % (mode,))
     return "shadow", "mode=%s(MR 研究分支只到 shadow:不接任何 gate)" % mode
+
+
+def mr_min_queries(value):
+    """驗證可設定的資料量地板(正整數;bool／0／負數／非整數 → JevError)。None → 預設 MR_EVAL_MIN_QUERIES。"""
+    if value is None:
+        return MR_EVAL_MIN_QUERIES
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise JevError("min_queries 必須是正整數,實得 %r" % (value,))
+    return value
+
+
+MR_GATE_RESULTS = ("pass", "fail", "insufficient_data", "off")
+
+
+def mr_gate_result(report):
+    """mr_eval 報表 → gate 結果(pass|fail|insufficient_data)+ 沒過的條件名。判定完全沿用 mr_eval 的 verdict。"""
+    verdict = report["verdict"]
+    if verdict not in ("pass", "fail", "insufficient_data"):
+        raise JevError("mr_eval verdict %r 不認得" % (verdict,))
+    failed = [c["name"] for c in report["conditions"] if not c["pass"]]
+    return {"gate_result": verdict, "failed_conditions": failed if verdict == "fail" else [],
+            "insufficient": list(report["insufficient"]) if verdict == "insufficient_data" else []}
 
 
 def mr_candidate_id(row):
@@ -1070,12 +1099,13 @@ def _mr_mean(values):
     return sum(values) / len(values) if values else 0.0
 
 
-def mr_eval(fixture, min_queries=MR_EVAL_MIN_QUERIES):
+def mr_eval(fixture, min_queries=None):
     """離線評測:同一組有標準答案的查詢,比「原本順序的前 5 筆」vs「MR 的前 5 筆」。
 
     通過 = 三條同時成立(C5):Recall@5 差值 ≥ 0、MRR 差值 ≥ +0.05、必留保留率 = 100%。
     查詢數 < min_queries → verdict=insufficient_data(數字照列,不當通過);整組沒有任何必留項 →
     保留率無從證明,同樣 insufficient_data。回 report dict;fixture 形狀不對 → JevError。"""
+    min_queries = mr_min_queries(min_queries)
     if not isinstance(fixture, dict) or fixture.get("schema") != MR_EVAL_SCHEMA:
         raise JevError("fixture schema 必須是 %s" % MR_EVAL_SCHEMA)
     source = fixture.get("score_source")
@@ -1139,6 +1169,7 @@ def mr_eval(fixture, min_queries=MR_EVAL_MIN_QUERIES):
     return {
         "schema": "devflow-jev-mr-eval-report/1", "gate": "MR", "fixture": fixture.get("name"),
         "score_source": source, "queries": n, "min_queries": min_queries,
+        "min_queries_calibrated": False,
         "pool_size": MR_POOL_SIZE, "top_k": MR_TOP_K,
         "baseline": {"recall_at_5": round(b_recall, 6), "mrr": round(b_mrr, 6),
                      "mandatory_retention": None if not mand_total else round(base_mand_kept / mand_total, 6)},
@@ -1150,5 +1181,5 @@ def mr_eval(fixture, min_queries=MR_EVAL_MIN_QUERIES):
         "per_query": rows, "mr_policy": "mr+%s" % mr_fingerprint(),
         "live_eligible": False,
         "note": ("fixture 分數來源 %s;通過 ≠ MR 可以 live(C5 要在 dev-memory.py eval 的 locked set 上成立,"
-                 "且本 PR 不接任何 gate)" % source),
+                 "MR gate 只到 shadow(gate.MR_LIVE_RATIFIED=False);min_queries 是未校準暫定值)" % source),
     }

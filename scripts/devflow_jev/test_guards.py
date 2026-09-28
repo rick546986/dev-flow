@@ -2253,7 +2253,7 @@ class W11MRRerank(unittest.TestCase):
         self.assertEqual(policy.mr_mandatory_reasons({"item_type": "knowledge", "kind": "domain",
                                                       "status": "CONFIRMED"}), [])
 
-    def test_mr_level_follows_dual_gate_inputs_without_touching_gate_py(self):
+    def test_mr_level_follows_dual_gate_inputs(self):
         self.assertEqual(policy.mr_level(False, {"mode": "live", "gates": {}}), ("off", "no_api_key"))
         self.assertEqual(policy.mr_level(True, None), ("off", "no_project_optin"))
         self.assertEqual(policy.mr_level(True, {"mode": "off", "gates": {}})[0], "off")
@@ -2261,9 +2261,11 @@ class W11MRRerank(unittest.TestCase):
         self.assertEqual(policy.mr_level(True, {"mode": "live", "gates": {}})[0], "shadow")   # 沒有 MR live
         with self.assertRaises(JevError):
             policy.mr_level(True, {"mode": "on"})
-        self.assertNotIn("MR", GATES)                                # 雙閘門的 gate 清單不動
-        with self.assertRaises(JevError):
-            gate.parse_optin("mode: live\ngates:\n  MR: live\n")      # gate.py 不認 MR(本 PR 不改它)
+        self.assertNotIn("MR", GATES)                                # 雙閘門的 J1–J5 清單不動
+        # gate.py 現在認 `gates: MR:`(mr-gate);但 MR 不進 J-gate 的 gates dict,live 仍 cap 成 shadow
+        parsed = gate.parse_optin("mode: live\ngates:\n  MR: live\n")
+        self.assertEqual((parsed["gates"], parsed["mr"]), ({}, {"level": "live", "min_queries": None}))
+        self.assertEqual(policy.mr_level(True, parsed)[0], "shadow")
 
     def test_query_metrics(self):
         self.assertEqual(policy.mr_query_metrics(["a", "b", "c"], ["c"]), {"recall": 1.0, "rr": 1.0 / 3})

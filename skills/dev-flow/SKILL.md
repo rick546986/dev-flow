@@ -110,6 +110,12 @@ gate 條件人看正本 = 指南 `#gates`;機械正本 = 契約檔 §7。本表 
   4. 退回人審:把 `scripts/devflow_jev/g2auto.py` 的 `G2_AUTO_LIVE` 改成 `False`(一個 commit)→
      write-g2-auto 全拒;或 revert 本功能。拿掉 Jev key／opt-in **不會**退回人審(那是 no-op,只少了分流)。
 
+- **Jev MR gate**(選配,只到 shadow;不是 G1/G2/G3、不寫 verdict):`.dev-flow/jev.yaml` 寫
+  `gates: MR:`(`level` 必填、`min_queries` 選填,範本 `_templates/jev.yaml`)後,
+  `python3 <master>/scripts/devflow-jev.py --root . mr-gate --fixture <mr-eval fixture>` 出
+  `pass`(exit 0)/`fail`(1)/`insufficient_data`(3);缺設定或格式錯 exit 2。`min_queries` 預設 20 是未校準暫定值
+  (`--min-queries` > yaml > 20)。`enforced`、`live_eligible` 恆 false;沒 key 時 rerank 照原順序。
+
 ## 4. Stage 3 操作面(觸發判定/Demo/verdict)
 
 行為正本 = 母版 `_templates/3-prototype.md` + `notes/design/vnext-shared-contract.md` §2

@@ -26,7 +26,11 @@ policy 導出 route → 雙層 ledger 落盤」的膠水,不含任何門檻、�
               必留項一定在前 5(超過 5 筆 → status=mandatory_overflow、exit 1);雙閘門 off／Jev 失敗 → 原順序、exit 0。
               不寫記憶、不改 retrieval_status、不接任何 gate。
   mr-eval     W11 P2-11:離線評測(零網路)。原順序前 5 vs MR 前 5 的 Recall@5、MRR、必留保留率;C5 三條全過 exit 0,
-              不過或資料不足 exit 1。
+              不過或資料不足 exit 1。`--min-queries N` 改資料量地板(預設 20,未校準暫定值)。
+  mr-gate     MR gate 檢查(零網路):讀 `.dev-flow/jev.yaml` 的 `gates: MR:`(缺檔／缺 gates.MR／格式錯 → exit 2),
+              照 mr-eval 同一判定出 gate_result = pass(exit 0)／fail(exit 1)／insufficient_data(exit 3);
+              生效等級 off → gate_result=off(exit 0,不評)。min_queries:--min-queries > gates.MR.min_queries > 20。
+              MR live 未核准(gate.MR_LIVE_RATIFIED=False):enforced 恆 false、live_eligible 恆 false。
   eligibility W6 P3-1:J5 資格計算(§5.1 八條、floor、freeze);只展示。runtime 沒有 live 開關(gate.J5_LIVE_RATIFIED=False)。
               off／失敗／逾時 → exit 0、effect=continue_existing_flow。J3 只回顯示文案,不寫 verdict。
   ask         一次 evaluation:雙閘門 off → exit 0、什麼都不寫、零網路;shadow/live → 送一次,
@@ -59,6 +63,7 @@ GRADUATED = False            # W6 前恆 False;沒有 CLI 旗標、沒有環境�
 SHADOW_DEADLINE_S = 60.0     # 非 J1 的單次 HTTP 等待上限(J1 用 policy.J1_DEADLINE_S)
 EXPERIMENTAL_GATES = ("J2", "J4")   # W5:題組在 jev-questions-experimental.json,各自 manifest/hash;永遠 shadow/assist
 EXIT_OK, EXIT_INCONSISTENT, EXIT_USAGE = 0, 1, 2
+EXIT_INSUFFICIENT = 3        # mr-gate:insufficient_data(與 fail 分開,不當成通過)
 
 
 def _package_parent():
@@ -1877,12 +1882,47 @@ def run_mr_rerank(root, payload, scores=None, environ=None, transport_factory=No
 
 
 def run_mr_eval(fixture, min_queries=None):
-    """離線評測(零網路、不寫檔)。fixture 形狀見 policy.mr_eval / w11 §4。"""
-    kwargs = {} if min_queries is None else {"min_queries": min_queries}
-    report = policy.mr_eval(fixture, **kwargs)
+    """離線評測(零網路、不寫檔)。fixture 形狀見 policy.mr_eval / w11 §4。min_queries=None → 預設(未校準暫定值)。"""
+    report = policy.mr_eval(fixture, min_queries=min_queries)
     report.update({"network": False, "writes_memory": False, "gate_effect": "none", "graduated": GRADUATED,
                    "j5_live_ratified": gate_mod.J5_LIVE_RATIFIED, "j2_window_ratified": policy.J2_WINDOW_RATIFIED})
     return report
+
+
+def run_mr_gate(root, fixture, min_queries=None, environ=None):
+    """MR gate 檢查:`.dev-flow/jev.yaml` 的 `gates: MR:` 必須在(缺 → JevError = exit 2,fail loud);
+    判定完全沿用 mr_eval(Recall@5 不降、MRR +0.05、必留 100%、資料量地板 → insufficient_data)。
+    零網路:只讀 fixture(stored/synthetic 分數),不建 transport,所以不看 key;等級只由 jev.yaml 決定。"""
+    optin = gate_mod.load_optin(root)                 # 檔壞 → JevError
+    if optin is None:
+        raise JevError("找不到 %s —— mr-gate 需要 opt-in 檔裡的 gates: MR: 設定" % gate_mod.OPTIN_RELPATH)
+    mr = optin.get("mr")
+    if mr is None:
+        raise JevError("%s 沒有 gates: MR: —— 寫 `gates:` 底下 `  MR: shadow` 或 MR 區塊(level / min_queries)"
+                       % gate_mod.OPTIN_RELPATH)
+    requested = gate_mod.level_min(optin["mode"], mr["level"])
+    level = "shadow" if requested == "live" and not gate_mod.MR_LIVE_RATIFIED else requested
+    if min_queries is not None:
+        mq, mq_source = policy.mr_min_queries(min_queries), "cli"
+    elif mr["min_queries"] is not None:
+        mq, mq_source = mr["min_queries"], "jev.yaml"
+    else:
+        mq, mq_source = policy.MR_EVAL_MIN_QUERIES, "default"
+    base = {"schema": "devflow-jev-mr-gate/1", "gate": "MR", "level": level, "requested_level": requested,
+            "level_reason": "min(mode=%s, gates.MR=%s)" % (optin["mode"], mr["level"])
+            + ("; mr_live_not_ratified → shadow" if requested != level else ""),
+            "min_queries": mq, "min_queries_source": mq_source, "min_queries_calibrated": False,
+            "enforced": False, "live_eligible": False, "gate_effect": "none", "network": False,
+            "writes_memory": False, "writes_verdict": False, "graduated": GRADUATED,
+            "j5_live_ratified": gate_mod.J5_LIVE_RATIFIED, "mr_live_ratified": gate_mod.MR_LIVE_RATIFIED,
+            "j2_window_ratified": policy.J2_WINDOW_RATIFIED}
+    if level == "off":
+        base.update({"gate_result": "off", "failed_conditions": [], "insufficient": [], "report": None})
+        return base
+    report = policy.mr_eval(fixture, min_queries=mq)
+    base.update(policy.mr_gate_result(report))
+    base["report"] = report
+    return base
 
 
 # ───────────────────────────── CLI ─────────────────────────────
@@ -2007,6 +2047,13 @@ def build_parser():
     smr2.add_argument("--deadline", type=float, default=None, help="秒;只能收緊 policy.J1_DEADLINE_S")
     sme = sub.add_parser("mr-eval", help="W11 P2-11:MR 離線評測;Recall@5/MRR/必留保留率 + C5 三條通過條件;零網路")
     sme.add_argument("--fixture", required=True, help="scripts/fixtures/devflow-jev/mr-eval-*.json")
+    sme.add_argument("--min-queries", type=int, default=None,
+                     help="資料量地板(預設 %d;未校準暫定值)" % policy.MR_EVAL_MIN_QUERIES)
+    smg = sub.add_parser("mr-gate", help="MR gate 檢查:讀 .dev-flow/jev.yaml 的 gates: MR:,照 mr-eval 判定 "
+                         "pass(0)/fail(1)/insufficient_data(3);設定缺或錯 exit 2;零網路")
+    smg.add_argument("--fixture", required=True, help="mr-eval fixture(schema devflow-jev-mr-eval/1)")
+    smg.add_argument("--min-queries", type=int, default=None,
+                     help="覆寫 gates.MR.min_queries(預設 %d;未校準暫定值)" % policy.MR_EVAL_MIN_QUERIES)
     return p
 
 
@@ -2090,9 +2137,14 @@ def main(argv=None):
             _emit(out)
             return EXIT_INCONSISTENT if out["status"] == "mandatory_overflow" else EXIT_OK
         if args.cmd == "mr-eval":
-            out = run_mr_eval(load_json(args.fixture))
+            out = run_mr_eval(load_json(args.fixture), min_queries=args.min_queries)
             _emit(out)
             return EXIT_OK if out["verdict"] == "pass" else EXIT_INCONSISTENT
+        if args.cmd == "mr-gate":
+            out = run_mr_gate(root, load_json(args.fixture), min_queries=args.min_queries)
+            _emit(out)
+            return {"pass": EXIT_OK, "off": EXIT_OK, "fail": EXIT_INCONSISTENT,
+                    "insufficient_data": EXIT_INSUFFICIENT}[out["gate_result"]]
         if args.cmd == "drain":
             _emit(run_drain(root, max_items=args.max))
             return EXIT_OK
