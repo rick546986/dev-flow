@@ -16,15 +16,18 @@ policy 導出 route → 雙層 ledger 落盤」的膠水,不含任何門檻、�
   j4-assist   W5 P2-3(實驗):失敗分類 + 升一層建議;assist-only,不派工、不動 dispatch guard。
   j2-shadow   W5 P2-8(實驗):J2 厚包 shadow + order/phrasing stability;window 未核定 → 永遠 shadow。
   g2r         G2R 分流(main #418,ADR 0004):對 docs/dev/<slug>/4-spec.md 跑一次 → append `.devflow/jev/g2r.jsonl`。
-              雙閘門(key + jev.yaml mode: live)通過才送 Jev;沒有 Jev(沒 key／沒 opt-in／失敗／逾時／breaker open／
-              budget 用完)= no-op,routed_by=none,其餘轉人條件照判。AUTO 不是通過(還要 agent PASS + 機械檢查)。
+              有 key + jev.yaml 且 mode 是 shadow／live 就會送 Jev;只有 mode: live 的回答拿來分流 ——
+              mode: shadow 的回答只記在 jev_shadow_answers,分流當作沒有 Jev。沒有 Jev(沒 key／沒 opt-in／
+              mode 不是 live／失敗／逾時／breaker open／budget 用完)= no-op,routed_by=none,其餘轉人條件照判。
+              AUTO 不是通過(還要 agent PASS + 機械檢查)。
               (research W9 的 `g2r-shadow` 已由本子命令取代。)
   g2-misrelease record|release|report
               G2 誤放行只記錄(綁 g2r AUTO 紀錄的 case_hash)+ 誤放行率(分母 = agent 放行紀錄,依 routed_by 分層);
               不設門檻、不抽查、不 revert、不擋。release 由 devflow_gate.py write-g2-auto 在 agent 放行時呼叫。
   mr-rerank   W11 P2-11(研究):MR 記憶重排序。吃 `dev-memory.py ask --json --limit 20` 的輸出,重排前 20 筆、回前 5 筆;
               必留項一定在前 5(超過 5 筆 → status=mandatory_overflow、exit 1);雙閘門 off／Jev 失敗 → 原順序、exit 0。
-              不寫記憶、不改 retrieval_status、不接任何 gate。
+              生效等級 = min(mode, gates.MR)(沒寫 gates.MR → 照 mode);shadow 且有 key 時會送 Jev、**會**照分數改排序。
+              不寫記憶、不改 retrieval_status、沒接進 dev-memory ask。
   mr-eval     W11 P2-11:離線評測(零網路)。原順序前 5 vs MR 前 5 的 Recall@5、MRR、必留保留率;C5 三條全過 exit 0,
               不過或資料不足 exit 1。`--min-queries N` 改資料量地板(預設 20,未校準暫定值)。
   mr-gate     MR gate 檢查(零網路):讀 `.dev-flow/jev.yaml` 的 `gates: MR:`(缺檔／缺 gates.MR／格式錯 → exit 2),
@@ -47,8 +50,9 @@ policy 導出 route → 雙層 ledger 落盤」的膠水,不含任何門檻、�
   - 七守衛行為不鬆:本檔不覆寫 policy/packet/ledger/provenance 任何常數。
   - J3 永不寫 G2 verdict、J5 永不寫 G3 verdict;本檔沒有任何寫 docs/dev/<slug>/ 的程式。
 
-退出碼:0 = ok 或 no-op(Jev 從不阻塞既有流程) / 1 = replay 完整性對不上(mr-rerank:必留溢出;mr-eval:不過或資料不足)
-       / 2 = 輸入或安裝錯誤(fail-loud)。
+退出碼:0 = ok 或 no-op(Jev 從不阻塞既有流程;mr-gate:pass 或 off) / 1 = replay 完整性對不上
+       (mr-rerank:必留溢出;mr-eval:不過或資料不足;mr-gate:fail) / 2 = 輸入或安裝錯誤(fail-loud)
+       / 3 = mr-gate 資料不足(insufficient_data,與 fail 分開,不算通過)。
 """
 import argparse
 import json

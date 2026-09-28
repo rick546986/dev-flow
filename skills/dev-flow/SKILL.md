@@ -97,24 +97,31 @@ gate 條件人看正本 = 指南 `#gates`;機械正本 = 契約檔 §7。本表 
      agent／HUMAN 交給人),**不 review、不寫 verdict**。沒有 Jev(沒 key、沒
      `.dev-flow/jev.yaml`、mode 不是 live、失敗、逾時、breaker open、budget 用完)= no-op:
      不擋、不放寬,`routed_by: none`,只靠 agent PASS + 機械檢查,其餘條件照判。
+     `mode: shadow` 有 key 時**仍會送**一次 Jev,回答只記錄、分流當作沒有 Jev。
   2. 轉人條件(任一 → 人審):Jev 判 HUMAN 或 p(AUTO_PASS) < 0.85(剛好 0.85 交給 agent);
      命中 risk_paths 或 4-spec 沒宣告 `- Paths:`;risk ≥ 2(有 Jev 只看 Jev 分數,spec 的
      `Risk: high` 不算;沒 Jev 時 `Risk: high` 就算,不分大小寫);有沒解決的 Owner Call;需要 Demo verdict;
      當次改到 Jev runtime／questions／config;缺 `authored_by`;provenance 不合法或 author == approver。
+     paths 類條件(risk_paths、沒宣告 paths、改到 Jev runtime)**只看 4-spec Diff Budget 的 `- Paths:` 宣告**,
+     不看實際 diff —— 宣告要寫實,漏寫就等於沒判到。
   3. AUTO → 派乾淨 context 的 reviewer agent(只給 4-spec + 契約 §7 G2 錨定義 + 回報格式)。
      PASS 才跑 `python3 <master>/scripts/devflow_gate.py write-g2-auto --root . --slug <slug>
      --reviewer agent:<id> --evidence-ref <報告>`:它重跑機械檢查與轉人條件,任一不過就拒寫;
      過了才寫 `verdict_source: fresh_agent_reviewer` + `g2_mode: auto` 等 provenance,並呼叫
      `devflow-jev.py g2-misrelease release` 記一筆(誤放行率只記錄,不設門檻、不自動回滾)。
      **feature agent 不得手寫這些頂欄**;`scripts/check-verdict-attestation.sh` 事後重驗。
-  4. 退回人審:把 `scripts/devflow_jev/g2auto.py` 的 `G2_AUTO_LIVE` 改成 `False`(一個 commit)→
-     write-g2-auto 全拒;或 revert 本功能。拿掉 Jev key／opt-in **不會**退回人審(那是 no-op,只少了分流)。
+  4. 退回人審:把 `scripts/devflow_jev/g2auto.py` **與散發副本 `docs/dev/tools/devflow_jev/g2auto.py`** 的
+     `G2_AUTO_LIVE` 一起改成 `False`(同一個 commit;兩份不一致 `check-ship-manifest` 會紅)→ write-g2-auto 全拒;
+     或 revert 本功能。已經 agent 放行的 4-spec **不回頭打紅**(事後掃描不看這個開關,照舊重驗轉人條件)。
+     拿掉 Jev key／opt-in **不會**退回人審(那是 no-op,只少了分流)。
 
 - **Jev MR gate**(選配,只到 shadow;不是 G1/G2/G3、不寫 verdict):`.dev-flow/jev.yaml` 寫
   `gates: MR:`(`level` 必填、`min_queries` 選填,範本 `_templates/jev.yaml`)後,
   `python3 <master>/scripts/devflow-jev.py --root . mr-gate --fixture <mr-eval fixture>` 出
   `pass`(exit 0)/`fail`(1)/`insufficient_data`(3);缺設定或格式錯 exit 2。`min_queries` 預設 20 是未校準暫定值
   (`--min-queries` > yaml > 20)。`enforced`、`live_eligible` 恆 false;沒 key 時 rerank 照原順序。
+  生效等級 = min(mode, MR):`mode: off` → MR off(mr-gate 回 off、exit 0);shadow 且有 key 時 rerank 會送 Jev、會改排序。
+  只開 MR 要把 J1/J3/J5 明寫 off;關 MR 寫 `MR: off`;yaml 註解自成一行(細節見 `docs/dev/jev-gate/w11-mr-rerank.md` §4.7)。
 
 ## 4. Stage 3 操作面(觸發判定/Demo/verdict)
 

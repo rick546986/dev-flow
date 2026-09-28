@@ -1,7 +1,7 @@
 ---
 title: jev-gate W11 — Jev 記憶重排序 MR（P2-11）：mr-rerank + mr-eval 離線評測
 slug: jev-gate
-status: W11 第一刀：MR 重排本體（確定性、必留、fallback）+ 離線評測指令（Recall@5／MRR／必留保留率，C5 三條）；研究分支、shadow／離線；不接進 dev-memory ask、不接任何 gate、不寫記憶、不寫 verdict
+status: W11 第一刀：MR 重排本體（確定性、必留、fallback）+ 離線評測指令（Recall@5／MRR／必留保留率，C5 三條）；已併入 main（#420），main #421 起另有 `gates: MR:` + `mr-gate`（只到 shadow、enforced 恆 false）；不接進 dev-memory ask、不寫記憶、不寫 verdict
 date: 2026-09-27
 base: research/jev-supermemory b519ba9（W10 G2 誤放行只記錄）
 ---
@@ -27,7 +27,8 @@ devflow-jev.py mr-rerank --answer <envelope.json | ->
 {top, results, original_top, mandatory, mode, fallback_reason, retrieval_status(原樣)}
 ```
 
-- **沒有接線**：`dev-memory.py ask`、`query.py`、`retrieval.py`、hooks、SKILL、契約都沒改；MR 只是一支獨立子命令。
+- **沒有接線**：`dev-memory.py ask`、`query.py`、`retrieval.py`、hooks 都沒改；MR 只是一支獨立子命令。
+  （main #421 起 SKILL、契約 §8、guide 多了 `mr-gate` 的用法說明，但 MR 仍沒有接進任何檢索或 stage。）
   `wired_into` 恆 `null`、`gate_effect` 恆 `none`。
 - **不寫記憶**：不呼叫 `remember`／`fact`／`know`／durable append；`writes_memory` 恆 `false`。
   唯一會寫的是 Jev 真的出境時的 budget／breaker 狀態檔（`.devflow/jev/state/`，gitignored，與其他 gate 共用 A2 daily cap）。
@@ -84,8 +85,12 @@ exit code：`0` = ok（含 fallback——Jev 從不阻塞）／`1` = `mandatory_
 
 - **雙閘門沿用既有兩個輸入**：`TYPESAFE_API_KEY` 有值 **且** `.dev-flow/jev.yaml` 存在
   （`gate.has_api_key` + `gate.load_optin`）。沒寫 `gates: MR:` → 原行為：`mode: off` → off；`shadow`／`live` → `shadow`。
-  **（main,MR gate PR 起）** `gate.parse_optin` 認得 `gates: MR:`（格式見 §4.7）：寫了就用 min(mode, gates.MR.level)，
+  **（main #421 起）** `gate.parse_optin` 認得 `gates: MR:`（格式見 §4.7）：寫了就用 min(mode, gates.MR.level)，
   live 仍 cap 成 shadow（`gate.MR_LIVE_RATIFIED = False`）；`gates.MR: off` → 不打分、照原順序。
+  所以 **MR 要生效，`mode` 至少要 `shadow`**：`mode: off` 時 `MR: shadow` 也是 off（照原順序、零網路；`mr-gate` 回 `off`、exit 0）。
+- **shadow 目前會改排序**（照現況描述，本檔不改行為）：MR 生效等級是 `shadow` 且有 key 時，`mr-rerank` **會**送 Jev 打分，
+  回的前 5 筆就是照 Jev 分數重排的結果（必留照留）；「shadow」在這裡只代表 live 未核准、`gate_effect: none`、
+  沒接進 `dev-memory.py ask`，**不是**「送了但不採用」。不想讓排序變，就把 MR 關掉（§4.7「關掉 MR」）。
   yaml 壞掉照 gate.py 的規矩 fail-loud（exit 2），不當成 off。
 - **只經 `http_transport`**：runtime 延遲 import，off 路徑連 urllib 都不載入（`test-devflow-jev.sh` ① 照舊只放行
   `http_transport.py`）。一次 request、每筆非必留候選一題 Score（`mr_c01`…）：0 unrelated／1 topical／2 partial／3 direct；
@@ -134,6 +139,7 @@ python3 scripts/devflow-jev.py mr-eval --fixture scripts/fixtures/devflow-jev/mr
 ```
 
 零網路、不寫檔。exit：`0` = 通過／`1` = 不通過或資料不足／`2` = fixture 形狀錯。
+（`mr-eval` 的資料不足也是 exit 1；要把資料不足跟不通過分開，用 `mr-gate`：資料不足 exit 3，見 §4.7。）
 
 ### 4.2 fixture 格式（schema `devflow-jev-mr-eval/1`）
 
@@ -148,6 +154,29 @@ python3 scripts/devflow-jev.py mr-eval --fixture scripts/fixtures/devflow-jev/mr
 - `relevant`：標準答案（非空、不重複；可以包含不在候選池的 id —— 那代表原檢索就漏了，recall 分母照算）。
 - `scores`：這條查詢的 stored scores；省略 → MR 走 fallback（= 原順序）。
 - `score_source`：`synthetic`（手工設計）或 `stored_jev`（Jev 真回應存下來的分數）。報表照印。
+
+**新專案的最小 fixture（手寫範例）**：從自己專案挑幾條真的會問的問題，把 `dev-memory.py ask "<問題>" --json --limit 20`
+回的前幾筆 id／標題抄進 `candidates`（**保持原檢索順序**），人標 `relevant` 與 `mandatory`，分數先手給（`synthetic`）：
+
+```json
+{"schema": "devflow-jev-mr-eval/1", "name": "my-project-first-queries", "score_source": "synthetic",
+ "queries": [
+  {"id": "q01", "query": "合約到期提醒要提前幾天?",
+   "candidates": [{"id": "m01", "title": "提醒排程的 cron 設定"},
+                  {"id": "m02", "title": "到期前 30 天寄信的決策", "mandatory": true},
+                  {"id": "m03", "title": "寄信模板的欄位"},
+                  {"id": "m04", "title": "時區換算的坑"},
+                  {"id": "m05", "title": "舊版提醒下線紀錄"},
+                  {"id": "m06", "title": "提前天數改成可設定(ADR)"}],
+   "relevant": ["m06", "m02"],
+   "scores": {"m01": 1, "m03": 0, "m04": 0.5, "m05": 0, "m06": 3}}
+ ]}
+```
+
+- 存成專案裡的檔（例如 `docs/dev/<slug>/mr-eval.json`），跑 `mr-eval --fixture <檔>`。exit 2 = 形狀錯（照錯誤訊息修）；
+  只有一條查詢時一定是 `insufficient_data`（exit 1），這是**預期的**：它只證明形狀對，不是通過。
+- 至少要有一筆 `mandatory` 在候選池裡，否則必留保留率無從證明、也是 `insufficient_data`。
+- 查詢數補到地板以上才有 `pass`／`fail` 可看；synthetic 分數通過仍然 ≠ MR 可以上線（§4.4）。
 
 ### 4.3 指標與通過條件（C5，owner 2026-09-26 定案）
 
@@ -172,6 +201,13 @@ python3 scripts/devflow-jev.py mr-eval --fixture scripts/fixtures/devflow-jev/mr
 - 整組沒有任何必留項在候選池 → 100% 保留無從證明。
 
 數字照列，`insufficient` 欄寫原因。
+
+**資料不足時怎麼辦**：補查詢，不要降地板。
+
+1. 從 locked eval set（或專案真的會問的問題）再抄查詢進 fixture，直到查詢數 ≥ `min_queries`，而且至少一筆必留在候選池。
+2. **不要**為了讓 `insufficient_data` 變成 `pass`／`fail` 而調低 `--min-queries`／`gates.MR.min_queries` —— 地板還沒校準（§4.6），
+   調低只是換一個同樣沒根據的數字。報表的 `min_queries_source` 會照實寫 `cli`／`jev.yaml`／`default`，審的人看得到。
+3. 真的補不到（專案記憶太少）→ 就維持 `insufficient_data`，照實回報；MR 本來就不擋任何東西（`enforced` 恆 false）。
 
 ### 4.4 fixture 的界線
 
@@ -203,6 +239,13 @@ python3 scripts/devflow-jev.py mr-eval --fixture scripts/fixtures/devflow-jev/mr
   3. **決定**：取「verdict 穩定」的最小 n 當地板。「多穩算穩」（可接受的翻轉比例、區間的信賴水準）由 **owner 裁決**，
      本 repo 不代定；裁決後在 2-decision／ADR 留紀錄，再改 `MR_EVAL_MIN_QUERIES`（會換 `mr_policy` 指紋）與範本
      `_templates/jev.yaml` 的註解，並把 `min_queries_calibrated` 的語意一起更新。
+- **校準結果落在哪**（一次改齊，同一個 PR）：
+  - 裁決紀錄：`docs/dev/jev-gate/` 的 2-decision 或 `docs/adr/` 新 ADR（寫資料來源、重抽樣方法、選的 n、owner 裁決）。
+  - 程式：`scripts/devflow_jev/policy.py` 的 `MR_EVAL_MIN_QUERIES`，以及散發副本 `docs/dev/tools/devflow_jev/policy.py`
+    （兩份必須一致，`check-ship-manifest` 會比）。
+  - 文件：本節、`_templates/jev.yaml` 的 `min_queries` 註解、`devflow-jev.py` docstring 的「預設 20」。
+  - 測試：`test_mr_gate.py`／`test_guards.py` 裡釘預設值的案例。
+- **專案自己的 `gates.MR.min_queries`**：專案有自己的校準結果才寫；沒有就不要寫（範本裡是註解），讓它走預設、報表記 `default`。
 - fixture 分數仍是 synthetic，`live_eligible` 恆 `false`；校準前後都一樣，校準只決定「幾條才算資料夠」。
 
 ### 4.7 MR gate：`gates: MR:` + `mr-gate`
@@ -212,13 +255,36 @@ python3 scripts/devflow-jev.py mr-eval --fixture scripts/fixtures/devflow-jev/mr
 ```yaml
 mode: shadow
 gates:
-  MR: shadow            # 簡寫
+  # 簡寫
+  MR: shadow
 # 或
+mode: shadow
 gates:
   MR:
-    level: shadow       # 必填 off|shadow|live
-    min_queries: 20     # 選填,正整數(見 §4.6)
+    # 必填 off|shadow|live
+    level: shadow
+    # 選填,正整數(見 §4.6);沒校準前不要寫,不寫 = 預設
+    # min_queries: <N>
 ```
+
+- **註解一律自成一行**：解析器不剝行尾 `#`。寫成 `MR: shadow  # 簡寫` 會被讀成值 `'shadow  # 簡寫'` → exit 2。
+- **MR 生效要 `mode` ≥ `shadow`**：等級 = min(mode, gates.MR.level)。`mode: off` → MR 也是 off（`mr-gate` 回 `gate_result: off`、exit 0，
+  `mr-rerank` 照原順序、零網路）。
+- **只開 MR、J gate 全 off 的最小設定**：把 `mode` 拉到 `shadow` 會讓沒寫的 J gate 走 owner default
+  （J1 live→shadow、J3 live→shadow、J5 shadow），**有 key 時就會出境**；所以要明寫 off（J2／J4 預設本來就 off）：
+
+  ```yaml
+  mode: shadow
+  gates:
+    J1: off
+    J3: off
+    J5: off
+    MR: shadow
+  ```
+
+  G2R 不在 `gates:`、只看 `mode:`：`mode: shadow` 且有 key 時 `g2r` 仍會送一次 Jev，但回答只記錄、分流當作沒有 Jev（ADR 0004）。
+- **關掉 MR**：寫 `MR: off`（或區塊 `level: off`）。**不要只刪掉 `MR` 那行**：沒寫 `gates.MR` 時 `mr-rerank` 退回照 `mode` 走
+  （`mode: shadow` → MR shadow，會出境、會改排序），`mr-gate` 則 exit 2。全部關：刪 `.dev-flow/jev.yaml` 或不設 `TYPESAFE_API_KEY`。
 
 - `MR` 不是 J1–J5：不進 `GATES`、不進 J-gate 的 `gates` dict（J1–J5 的解析與 `effective_level` 一行不變），結果在 `optin["mr"]`。
 - **fail-loud**：區塊缺 `level`、未知鍵、`level` 不在 off/shadow/live、`min_queries` 不是正整數、`MR` 重複、
@@ -239,14 +305,17 @@ fallback（無 key、無 opt-in、mode off、transport 錯、逾時、budget 用
 三個通過條件的邊界值（MRR 差值剛好 0.05 過、1/21 不過；Recall 差值 0 過、−0.025 不過；保留率 1.0 過、6/7 不過）、
 資料不足（19 條 vs 20 條、0 條、無必留）、fixture 形狀錯、`NO_RELIABLE_MATCH` 不升級、接在真的
 `dev-memory.py ask --json --limit 20` 之後、CLI exit code（mr-rerank 0／1／2、mr-eval 0／1／2）。
-`test-devflow-jev.sh` 地板 330 → 376。
+`test-devflow-jev.sh` 地板 330 → 376（研究分支當時）。main #421 另加 `test_mr_gate.py`（`gates: MR:` 解析、mr-gate exit 0／1／2／3、
+範本與文件範例可解析、行尾註解 fail-loud）。
 
 ## 6. 沒動的東西／留給後面
 
 - `GRADUATED`、`gate.J5_LIVE_RATIFIED`、`policy.J2_WINDOW_RATIFIED` 維持 `False`；`GATES` 不含 MR。
-  （main,MR gate PR：`gate.py` 加了 `gates: MR:` 解析與 `MR_LIVE_RATIFIED = False`，J1–J5 的雙閘門語意不變；
+  （main #421：`gate.py` 加了 `gates: MR:` 解析與 `MR_LIVE_RATIFIED = False`，J1–J5 的雙閘門語意不變；
   `scripts/devflow_jev/test_mr_gate.py` 釘住。）
-- Jev 不 review、不寫 verdict；G2R 門檻（`G2R_THRESHOLDS`）不動；hooks、契約、SKILL、guide 不動；main 不動。
+- Jev 不 review、不寫 verdict；G2R 門檻（`G2R_THRESHOLDS`）不動；hooks 不動。
+  （本檔最初寫於研究分支時「契約／SKILL／guide／main 不動」；W11 已併入 main（#420），#421 起 SKILL、契約 §8、guide
+  與 `_templates/jev.yaml` 多了 `mr-gate` 的用法說明 —— 只有說明，MR 沒有接進任何 stage 或檢索，`enforced` 恆 false。）
 - MR 常數與題目刻度**沒進** `jev-questions*.json`，現有 J1–J5 的 `questionset_hash` 不變；MR 自己的指紋在 `mr_policy`。
 - 待做：~~`gate.py` 認 `gates.MR`~~（已做，見 §4.7）；`min_queries` 校準（§4.6）；MR 題組進 manifest（新 `questionset_hash`）；
   `dev-memory.py eval` 的 locked set 產出 MR fixture（`score_source: stored_jev`）；接進 `dev-memory.py ask`（C5 在

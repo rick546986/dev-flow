@@ -614,6 +614,19 @@ class G2AutoRelease(unittest.TestCase):
         finally:
             g2auto.G2_AUTO_LIVE = old
 
+    def test_kill_switch_does_not_retro_flag_released_spec(self):
+        # 退回人審只擋之後的 write-g2-auto;已放行的 4-spec 事後掃描照舊過(不回頭打紅)
+        self.repo.g2r()
+        self.repo.release()
+        old = g2auto.G2_AUTO_LIVE
+        g2auto.G2_AUTO_LIVE = False
+        try:
+            self.assertEqual(g2auto.classify_gate_doc("4-spec", self.repo.fm())[0], "auto")
+            self.assertEqual(g2auto.auto_release_problems(self.repo.root, SLUG, self.repo.fm(),
+                                                          environ=self.repo.env), [])
+        finally:
+            g2auto.G2_AUTO_LIVE = old
+
     def test_second_release_of_same_case_rejected(self):
         self.repo.g2r()
         self.repo.release()

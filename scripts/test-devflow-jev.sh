@@ -114,7 +114,7 @@ grep -q "not-a-real-key" <<<"$OUT" && { echo "⛔ key 出現在輸出" >&2; exit
 echo "  ✓ transport 失敗 → exit 0、no-op(routed_by: none)、key 不外露"
 
 echo "-- ③ 案例數地板 --"
-MIN_TESTS=510
+MIN_TESTS=516
 ACTUAL=$(cat "$PKG"/test_*.py | grep -cE '^\s+def test_')
 if [ "$ACTUAL" -lt "$MIN_TESTS" ]; then
   echo "⛔ test_*.py 只有 $ACTUAL 個 test_(地板 $MIN_TESTS)—— 案例被刪" >&2; exit 1

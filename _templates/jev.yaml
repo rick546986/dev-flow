@@ -5,10 +5,14 @@
 # 純 scalar;格式錯一律 fail-loud(exit 2),不會被當成 off 靜默放過。
 #
 # 生效等級全序 off < shadow < live;每個 gate 的等級 = min(mode, gates.<gate>)。
+#   - mode 是總上限:`mode: off` 時底下寫什麼都是 off(包括 MR)。
+#   - shadow 不是「不出境」:有 key 時 shadow 仍會送 Jev,只是結果不拿來做決定(見各 gate)。
 #   - J5 live 未核准(gate.J5_LIVE_RATIFIED = False):寫 live 也只到 shadow。
 #   - J2 永遠 shadow(policy.J2_WINDOW_RATIFIED = False)。
 #   - MR live 未核准(gate.MR_LIVE_RATIFIED = False):寫 live 也只到 shadow;mr-gate 的 enforced 恆 false。
-#   - G2R(G2 分流)不在 gates:,只看 mode:;mode 不是 live = 沒有 Jev = no-op(ADR 0004)。
+#     MR shadow 目前**會**送 Jev 打分並改排序(mr-rerank 回的前 5 筆照 Jev 分數排;必留項照留)。
+#   - G2R(G2 分流)不在 gates:,只看 mode:。`mode: live` 才用 Jev 的回答分流;
+#     `mode: shadow` 有 key 時仍會送一次 Jev,但回答只記錄、分流當作沒有 Jev(no-op,ADR 0004)。
 # 本範本全部 off:複製過去不會打開任何東西。
 
 # 注意:值後面不能接行尾註解(解析器不剝 `#`,會當成非法值 fail-loud);註解一律自成一行。
@@ -17,14 +21,31 @@
 mode: off
 
 gates:
-  # 沒寫的 J gate 用 owner default:J1 live、J3 live、J5 shadow、其餘 off,例:
+  # 沒寫的 J gate 用 owner default:J1 live、J3 live、J5 shadow、其餘 off(再跟 mode 取 min),例:
   # J1: live
   # J5: shadow
   #
-  # MR:W11 MR rerank + mr-gate;也可簡寫成一行 `MR: shadow`。
+  # MR:W11 MR rerank + mr-gate;也可簡寫成一行 `MR: shadow`(註解要另起一行)。
   #   level       必填:off | shadow | live(live 會 cap 成 shadow)
-  #   min_queries 選填:mr-eval / mr-gate 的資料量地板(正整數)。20 是**未校準的暫定值**,
-  #               校準方法見 docs/dev/jev-gate/w11-mr-rerank.md §4.6;沒有校準資料前不要改。
+  #   min_queries 選填:mr-eval / mr-gate 的資料量地板(正整數)。不寫 = 20,**未校準的暫定值**;
+  #               校準方法見 docs/dev/jev-gate/w11-mr-rerank.md §4.6。沒有校準資料前不要寫,
+  #               要寫就在下面那行換成你的數字再取消註解。
   MR:
     level: off
-    min_queries: 20
+    # min_queries: <N>
+
+# ── 只開 MR、J gate 全 off 的最小設定(把上面整份換成下面這段、取消註解)──
+# MR 要生效,mode 至少要 shadow(MR 等級 = min(mode, MR.level));但 mode 一拉到 shadow,
+# 沒寫的 J1/J3/J5 就照 owner default 變成 shadow,有 key 時會出境 —— 所以要明寫 off。
+# J2/J4 的 owner default 本來就是 off。G2R 不在 gates:,mode: shadow 時有 key 仍會送(只記錄、不分流)。
+#
+# mode: shadow
+# gates:
+#   J1: off
+#   J3: off
+#   J5: off
+#   MR: shadow
+#
+# 關掉 MR:把 `MR:` 改成 `MR: off`(或區塊的 level: off)。
+# 不要只刪掉 MR 那段:沒寫 gates.MR 時,mr-rerank 照 mode 走(mode: shadow → MR shadow),mr-gate 則 exit 2。
+# 全部關:刪掉 .dev-flow/jev.yaml,或不設 TYPESAFE_API_KEY(雙閘門少一個 = off)。

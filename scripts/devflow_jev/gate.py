@@ -12,13 +12,22 @@
 yaml 解析刻意窄(同 memory/agentmem/yamlmini 的哲學):只認 `mode:` 與 `gates:` 兩鍵、
 兩層縮排、純 scalar;其它形狀 fail-loud,不猜。唯一例外是 `gates: MR:`(W11 MR rerank / mr-gate):
 
+    mode: shadow
     gates:
-      MR: shadow              # 簡寫 = {level: shadow}
+      # 簡寫 = {level: shadow}
+      MR: shadow
     # 或區塊(第三層縮排 4 格,只認下列兩鍵):
+    mode: shadow
     gates:
       MR:
-        level: shadow         # 必填;off|shadow|live
-        min_queries: 20       # 選填;正整數;mr-eval／mr-gate 的資料量地板(預設 20,未校準暫定值)
+        # level 必填:off|shadow|live
+        level: shadow
+        # min_queries 選填:正整數;mr-eval／mr-gate 的資料量地板(不寫 = 20,未校準暫定值)
+        # min_queries: <N>
+
+註解一律自成一行:值後面接 `# …` 會被當成值的一部分 → fail-loud(exit 2),例如
+`MR: shadow  # 簡寫` 解析成 `'shadow  # 簡寫'` 不在 off/shadow/live。
+MR 生效等級 = min(mode, gates.MR.level):`mode: off` 時 `MR: shadow` 也是 off(mr-gate 回 off、exit 0)。
 
 MR 不是 J1–J5:不進 `GATES`／`gates` dict,解析結果放在 `optin["mr"]`(沒寫 = None)。
 MR 的 live **未核准**(`MR_LIVE_RATIFIED = False`,同 J5):寫 live 也 cap 成 shadow。
