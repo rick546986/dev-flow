@@ -402,6 +402,7 @@ Stage 3 對帳(逐場核對 3-prototype Demo Script)—— N/A：本手樣資料
 - Conditional layers:Real execution（只有另一 session 切 27004 bind 之後才跑畫面；本 feat 未切則不列入 Final Fresh Run）
 - Explicitly excluded layers:Mutation（本 mothership 與 IVF PHP 5.3.3 測試機都未配 mutation 工具鏈）、e2e/Playwright（附表五在另一 repo／測試機；本 mothership 無該前端）、Race/stress（本期無新併發寫入路徑）
 - Final fresh entry point:`scripts/check-spec-gate.sh example/subsidy-3-0-plus/4-spec.md`
+- E2E entry point:無 — 附表五畫面在另一 session 切 27004 bind 之後才存在,本 feat 只在 mothership 驗算式(同 Explicitly excluded 的 e2e/Playwright 理由)
 - Reliability triage:(Full 與 Fast lane 都必答)
   - Concurrency: n-a — 本期無新併發寫入路徑；手改是單一存檔覆寫，不是雙人同時編（Out of Scope 未做衝突偵測）
   - Idempotency: applicable — 手改後重開不得算回自動值（S-2.2）；同一申請日重算必須仍得同一兩格自動值，除非已有手改

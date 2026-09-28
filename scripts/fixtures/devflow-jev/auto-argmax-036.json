@@ -1,0 +1,9 @@
+{
+  "note": "P1-F1 驗收:0.36 AUTO argmax fixture 不得導出 AUTO(argmax 不是門檻;AUTO 要 p≥0.85)。",
+  "answers": {
+    "g3_route": {"choice": "AUTO_SHIP", "probabilities": {"AUTO_SHIP": 0.36, "HUMAN_REVIEW": 0.34, "REQUEST_CHANGES": 0.30}, "confidence": 0.41},
+    "risk": {"score": 0},
+    "evidence_complete": {"noul": 0.99}
+  },
+  "expected_route": "HUMAN"
+}

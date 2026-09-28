@@ -1,0 +1,208 @@
+---
+title: jev-gate W11 — Jev 記憶重排序 MR（P2-11）：mr-rerank + mr-eval 離線評測
+slug: jev-gate
+status: W11 第一刀：MR 重排本體（確定性、必留、fallback）+ 離線評測指令（Recall@5／MRR／必留保留率，C5 三條）；研究分支、shadow／離線；不接進 dev-memory ask、不接任何 gate、不寫記憶、不寫 verdict
+date: 2026-09-27
+base: research/jev-supermemory b519ba9（W10 G2 誤放行只記錄）
+---
+
+# W11 Jev 記憶重排序 MR（研究分支、離線）
+
+> **一句話**：`memory/dev-memory.py ask --json --limit 20` 照舊檢索；`devflow-jev.py mr-rerank` 接在它**後面**，
+> 拿原檢索的前 20 筆候選重排、回前 5 筆。被標成必留的記憶只要在前 20 筆裡，就一定在前 5 筆裡。
+> 預設零網路：雙閘門沒開、或 Jev 打分失敗 → 照原本的順序回前 5 筆，不 crash。
+> `devflow-jev.py mr-eval --fixture …` 用一組有標準答案的查詢，比「原本順序的前 5 筆」與「MR 的前 5 筆」。
+> **作者 ≠ 審查者**：本檔是實作者的落檔，不宣稱任何 reviewer PASS。fixture 的分數是 synthetic，
+> fixture 通過 ≠ MR 可以上線（見 §4.4）。
+
+## 1. 位置：接在原檢索後面，不換掉它
+
+```
+dev-memory.py ask "<問題>" --json --limit 20      ← 原檢索（query.py → retrieval.py 多路召回 + RRF），一行不改
+        │  envelope：{query, retrieval_status, results[...]}
+        ▼
+devflow-jev.py mr-rerank --answer <envelope.json | ->
+        │  取 results 前 20 筆（C6）→ 重排 → 前 5 筆（C6）
+        ▼
+{top, results, original_top, mandatory, mode, fallback_reason, retrieval_status(原樣)}
+```
+
+- **沒有接線**：`dev-memory.py ask`、`query.py`、`retrieval.py`、hooks、SKILL、契約都沒改；MR 只是一支獨立子命令。
+  `wired_into` 恆 `null`、`gate_effect` 恆 `none`。
+- **不寫記憶**：不呼叫 `remember`／`fact`／`know`／durable append；`writes_memory` 恆 `false`。
+  唯一會寫的是 Jev 真的出境時的 budget／breaker 狀態檔（`.devflow/jev/state/`，gitignored，與其他 gate 共用 A2 daily cap）。
+- **不改 `retrieval_status`**：原樣帶出；`NO_RELIABLE_MATCH` 不會被 MR 變成 OK（results 空 → top 空）。
+
+## 2. 輸入輸出
+
+### 2.1 輸入（`--answer`，`-` = stdin）
+
+三種形狀都收：
+
+| 形狀 | 取用 |
+|---|---|
+| `dev-memory.py ask --json` 的 envelope | `query`、`retrieval_status`、`results` |
+| `{query, candidates}` | `candidates` |
+| 純 list | 當 candidates |
+
+candidates 必須已是**原檢索的順序**；MR 只看前 `MR_POOL_SIZE = 20` 筆。第 21 筆以後不進候選池，也不算必留。
+
+每筆候選要有穩定 id（依序取第一個有值的）：`id`（fixture）→ `item_uid`（retrieval）→ `path:<path>`（knowledge_index）→
+`knowledge:<key>`（knowledge）→ `fact:<title>`（CURRENT fast path）。都沒有 → exit 2。id 重複 → exit 2。
+
+`--scores <json>`（選填）：`{candidate_id: 數字}`，stored scores 重放，**零網路**（評測與重現用）。
+
+### 2.2 輸出（schema `devflow-jev-mr/1`）
+
+| 欄 | 意思 |
+|---|---|
+| `top` / `results` | MR 的前 5 筆 id／原始列（列內容原封不動） |
+| `original_top` | 原檢索順序的前 5 筆 id（對照用） |
+| `mode` | `scored`（用了分數）／`fallback`（照原順序） |
+| `fallback_reason` | `no_api_key`、`no_project_optin`、`mode=off`、`privacy_blocked`、`jev:<noop 原因>`、`scores_invalid:…`、`nothing_to_score` |
+| `scorer` | `stored_scores`／`jev`／`none` |
+| `status` | `ok`／`mandatory_overflow`（§3.3） |
+| `mandatory` | `in_pool`、`kept`、`dropped`、`reasons`（每筆必留的理由） |
+| `retrieval_status` | 原 envelope 的值，原樣 |
+| `network` | 這次有沒有真的出境 |
+| `mr_policy` | `mr+<指紋>`：C5／C6 常數 + 題目刻度的 hash；改任一個指紋就變 |
+
+exit code：`0` = ok（含 fallback——Jev 從不阻塞）／`1` = `mandatory_overflow`／`2` = 輸入錯（fail-loud）。
+
+### 2.3 排序規則（確定性）
+
+同樣的輸入一定得到同樣的輸出（dict 插入順序也不影響）。
+
+- **有分數（scored）**：必留項**不送打分**、依原排名釘在最前面；其餘依分數排，tie-break =
+  **分數高 → 原排名前 → id 字典序**。前 5 = 必留（最多 5 筆）+ 分數最高的非必留補滿。
+- **沒分數（fallback）**：**照原本的順序**回前 5 筆。唯一例外：必留項排在第 5 名之後時，擠掉排最後的非必留項；
+  輸出仍按原排名排。沒有這種情形時，fallback 的前 5 筆 = 原檢索前 5 筆，逐列相同。
+- **分數壞掉**：任一非必留候選缺分數、或分數不是有限數字（NaN／inf／bool／字串）→ **整批 fallback**
+  （`scores_invalid:missing=…`／`non_numeric=…`），不部分採用、不 crash。
+
+### 2.4 Jev 打分（選用，預設不出境）
+
+- **雙閘門沿用既有兩個輸入、不改 `gate.py`**：`TYPESAFE_API_KEY` 有值 **且** `.dev-flow/jev.yaml` 存在
+  （`gate.has_api_key` + `gate.load_optin`）。`mode: off` → off；`shadow`／`live` → `shadow`（研究分支沒有 MR live）。
+  現行 `gate.parse_optin` 只認 `gates: J1–J5`，寫 `gates: MR:` 會 fail-loud，所以 MR 只看 `mode:`
+  （要讓 `gates.MR` 生效必須改 `gate.py`，本 PR 不做，見 §6）。yaml 壞掉照 gate.py 的規矩 fail-loud（exit 2），不當成 off。
+- **只經 `http_transport`**：runtime 延遲 import，off 路徑連 urllib 都不載入（`test-devflow-jev.sh` ① 照舊只放行
+  `http_transport.py`）。一次 request、每筆非必留候選一題 Score（`mr_c01`…）：0 unrelated／1 topical／2 partial／3 direct；
+  候選分數 = Σ level × p（同一份 response 永遠同一個數）。
+- **去識別**：送出的只有 `query` 與每筆的 `item_type` + 標題／內文前 280 字；不送 id／uid／path／evidence。
+  整包先過 `packet.privacy_scan`（絕對路徑、secret、PHI）→ 命中就**不送**，`fallback_reason=privacy_blocked`。
+- **失敗一律 fallback**：deadline（`policy.J1_DEADLINE_S` = 2s，`--deadline` 只能收緊）、transport 錯誤、
+  回應 schema 錯、budget 用完、breaker open（key `MR`）、建 transport 例外 → `jev:<原因>`，照原順序回前 5，exit 0。
+  budget 照 P1-F5 規則扣（每次出境一個 attempt；未知用量不退款）。
+
+## 3. 必留規則
+
+### 3.1 現有資料怎麼標
+
+agentmem 現在**沒有**「必留」欄位。roadmap P2-11／v5 §6 列了不可移除的類別（開場必讀 context、current truth、
+invariants、conflicts、exact hits），其中會出現在 `ask` results 裡的四類，可以從既有欄位推出來。
+
+### 3.2 本 PR 定義的欄位與推導
+
+候選列上的 **`mandatory: true`**（bool；其他型別 → exit 2）= 明確標必留。另外四類從既有欄位推：
+
+| 理由 | 條件（既有欄位） |
+|---|---|
+| `explicit` | `mandatory: true`（本 PR 新定義） |
+| `current_truth` | `fast_path: true`（CURRENT fast path） |
+| `invariant` | `item_type: knowledge` 且 `kind: invariant` |
+| `conflict` | `status: CONFLICT` |
+| `exact_hit` | retrieval `channels` 含 `exact_symbol` |
+
+任一條成立就是必留。`mandatory: false` 不會蓋掉推導出來的理由。context.py 開場必讀段落本來就不在 ask results 裡，
+MR 碰不到它，自然不會移除它。
+
+### 3.3 保證與溢出
+
+- 必留項只要在前 20 筆候選裡，就一定在輸出的前 5 筆裡，不管分數多低（它根本不送打分）。scored 與 fallback 都一樣。
+- **必留 > 5 筆**：前 5 筆放原排名最前的 5 筆必留，其餘列在 `mandatory.dropped`，`status=mandatory_overflow`，
+  CLI **exit 1**。不默默丟掉。評測裡這會讓必留保留率 < 100%，那一組就不通過。
+- 必留剛好 5 筆 → 前 5 全是必留，`status=ok`。
+
+## 4. 離線評測：`mr-eval`
+
+### 4.1 用法
+
+```
+python3 scripts/devflow-jev.py mr-eval --fixture scripts/fixtures/devflow-jev/mr-eval-pass.json
+```
+
+零網路、不寫檔。exit：`0` = 通過／`1` = 不通過或資料不足／`2` = fixture 形狀錯。
+
+### 4.2 fixture 格式（schema `devflow-jev-mr-eval/1`）
+
+```json
+{"schema": "devflow-jev-mr-eval/1", "name": "…", "score_source": "synthetic | stored_jev",
+ "queries": [{"id": "q01", "query": "…",
+              "candidates": [{"id": "q01-m01", "title": "…", "mandatory": true}, "…原檢索順序…"],
+              "relevant": ["q01-m03"],
+              "scores": {"q01-m01": 2.8, "…": 0}}]}
+```
+
+- `relevant`：標準答案（非空、不重複；可以包含不在候選池的 id —— 那代表原檢索就漏了，recall 分母照算）。
+- `scores`：這條查詢的 stored scores；省略 → MR 走 fallback（= 原順序）。
+- `score_source`：`synthetic`（手工設計）或 `stored_jev`（Jev 真回應存下來的分數）。報表照印。
+
+### 4.3 指標與通過條件（C5，owner 2026-09-26 定案）
+
+每條查詢：**Recall@5** = |relevant ∩ 前 5| ÷ |relevant|；**RR** = 1 ÷ 前 5 內第一筆 relevant 的名次（沒有 → 0）。
+整組取平均（MRR = RR 平均）。**baseline = 原本順序的前 5 筆**（候選前 5，不做任何必留調整）；**MR = `mr_rerank` 的前 5 筆**。
+**必留保留率** = 各查詢候選池內必留項出現在 MR 前 5 的數量合計 ÷ 必留項合計。
+
+三個都成立才 `pass`：
+
+| 條件 | 判定 |
+|---|---|
+| `recall_at_5_not_lower` | MR Recall@5 − baseline Recall@5 ≥ 0 |
+| `mrr_gain_at_least_0.05` | MR MRR − baseline MRR ≥ 0.05 |
+| `mandatory_retention_100pct` | 必留保留率 = 1.0 |
+
+比較帶 1e-9 浮點容忍（差值剛好 0.05 算過）。**不管過或不過**，報表都列 baseline／MR 兩邊的 Recall@5、MRR、差值、
+必留保留率，以及每條條件的 `actual`／`threshold`／`pass`，和每條查詢的明細（`per_query`）。
+
+**資料不足**（`verdict=insufficient_data`，exit 1，不算通過）：
+
+- 查詢數 < `MR_EVAL_MIN_QUERIES = 20`（本 PR 定的地板，**未校準**；owner 沒給數字）；或
+- 整組沒有任何必留項在候選池 → 100% 保留無從證明。
+
+數字照列，`insufficient` 欄寫原因。
+
+### 4.4 fixture 的界線
+
+`scripts/fixtures/devflow-jev/mr-eval-*.json` 的分數是 **synthetic**（手工設計的情境），驗的是**評測器與重排規則**，
+不是 Jev 的品質。報表 `live_eligible` 恆 `false`：C5 要在 `dev-memory.py eval` 同一 locked eval set、用真的 Jev 分數成立，
+而且 MR 目前不接任何 gate —— 那是之後的事（§6）。
+
+### 4.5 內附 fixture 與實際結果
+
+| fixture | 情境 | verdict |
+|---|---|---|
+| `mr-eval-pass.json` | 25 條；答案被往前拉、原前 5 看不到的答案被拉進來、必留全留、有同分 tie-break | `pass` |
+| `mr-eval-neg-recall-drop.json` | MRR 大升，但兩個答案被擠掉一個 → Recall@5 −0.3 | `fail`（只有 recall 條件不過） |
+| `mr-eval-neg-mrr-small.json` | 只有一條查詢從第 5 名拉到第 1 → MRR +0.04 | `fail`（只有 MRR 條件不過） |
+| `mr-eval-neg-mandatory-overflow.json` | 一條查詢有 6 筆必留 → 保留率 5/6 | `fail`（只有必留條件不過） |
+| `mr-eval-neg-insufficient.json` | 只有 5 條查詢，數字都過 | `insufficient_data` |
+
+## 5. 測試
+
+`scripts/devflow_jev/test_guards.py`（`W11MRRerank`、`W11MREval`，pure）與 `test_runtime.py`（`W11MRRuntime`）：
+確定性（重跑、dict 順序）、tie-break、必留（最低分也在前 5、fallback 也保留、池外不算）、必留剛好 5／超過 5、
+fallback（無 key、無 opt-in、mode off、transport 錯、逾時、budget 用完、建 transport 例外、privacy 命中不送、分數缺／壞）、
+三個通過條件的邊界值（MRR 差值剛好 0.05 過、1/21 不過；Recall 差值 0 過、−0.025 不過；保留率 1.0 過、6/7 不過）、
+資料不足（19 條 vs 20 條、0 條、無必留）、fixture 形狀錯、`NO_RELIABLE_MATCH` 不升級、接在真的
+`dev-memory.py ask --json --limit 20` 之後、CLI exit code（mr-rerank 0／1／2、mr-eval 0／1／2）。
+`test-devflow-jev.sh` 地板 330 → 376。
+
+## 6. 沒動的東西／留給後面
+
+- `GRADUATED`、`gate.J5_LIVE_RATIFIED`、`policy.J2_WINDOW_RATIFIED` 維持 `False`；`gate.py`（雙閘門）一行沒改、`GATES` 不含 MR。
+- Jev 不 review、不寫 verdict；G2R 門檻（`G2R_THRESHOLDS`）不動；hooks、契約、SKILL、guide 不動；main 不動。
+- MR 常數與題目刻度**沒進** `jev-questions*.json`，現有 J1–J5 的 `questionset_hash` 不變；MR 自己的指紋在 `mr_policy`。
+- 待做：`gate.py` 認 `gates.MR`（雙閘門變更，要另走流程）；MR 題組進 manifest（新 `questionset_hash`）；
+  `dev-memory.py eval` 的 locked set 產出 MR fixture（`score_source: stored_jev`）；接進 `dev-memory.py ask`（C5 在
+  locked set 上成立之後才談）。

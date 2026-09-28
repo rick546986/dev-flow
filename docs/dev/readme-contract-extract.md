@@ -95,7 +95,7 @@ G2 = 契約寫得對不對
 - G2 錨定義(錨句在上;此處為條件式全文):
   - 「Verification Profile」:G2 必須確認 4-spec Verification Profile 已依 lane 正確
     填寫 —— full lane = 完整 Profile(Feature Risk/Failure Model/Negative Constraints/
-    Required/Conditional/Explicitly Excluded/Final Fresh Entry Point);fast lane =
+    Required/Conditional/Explicitly Excluded/Final Fresh Entry Point/E2E Entry Point);fast lane =
     最小 Profile(五欄,見 4-spec 模板);命中「自動升 Full」清單(見 4-spec 模板)
     仍寫 fast → 不得過。`lane: fast` 配 `Risk: high` → Runtime(start 時)、模板檢查
     與 Gate 一律拒絕,例外僅限 Owner Call 明示。
@@ -103,10 +103,11 @@ G2 = 契約寫得對不對
     Concurrency、Idempotency、Timeout/retry 三問(格式與規則見 4-spec 模板);fast lane
     多半三項皆 `n-a`,理由仍不得省。本項由本 repo 腳本驗欄位存在與理由非空,理由是否
     成立仍是 G2 reviewer 的判斷,無 Runtime 機械強制。
-  - 「Demo verdict」(條件式):無 Stage 3 trigger → N/A + 明確原因,可過 G2;
-    有 trigger 且完成 Demo → 必須 `Human verdict: ACCEPTED`;REVISE → 不得過 G2,
+  - 「Demo verdict」(條件式;極性 = 人要求才 Demo):無 Stage 3 trigger → N/A + 明確原因,可過 G2;
+    有 trigger → 人親填 `- Demo request: requested|not requested by human:<姓名> @ <日期>`,
+    不要求 → N/A + 記錄可過 G2,要求且完成 Demo → 必須 `Human verdict: ACCEPTED`;REVISE → 不得過 G2,
     必須重做 Demo;NOT_REVIEWED → 不得過 G2;有 trigger 但跳過 → 必須有 Owner Call
-    明示。Agent 不得自行填入 ACCEPTED;Runtime 必須拒絕 Agent 自產的 ACCEPTED。
+    明示。Agent 不得自行填入 ACCEPTED、不得代填 Demo request;Runtime 必須拒絕 Agent 自產的兩者。
   - 「G2 自動放行」:G2 由 agent 放行要同時成立 (a) 乾淨 context 的 fresh-context agent reviewer
     給 PASS;(b) 機械檢查全過(`scripts/check-spec-gate.sh`、`hooks/_stage3_impl.py`、
     `scripts/check-verdict-attestation.sh`、author ≠ approver 比對);(c) 沒有命中下方任何一條轉人條件。
@@ -156,13 +157,15 @@ G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件�
   8. Gauntlet PASS 不取代 Standards Axis / Spec Axis / Operational Walkthrough /
      Coverage Matrix / 真實現象複驗。
 
-  八點中的 Evidence 文件契約由 `scripts/devflow-evidence-gauntlet.sh`(1.3.3,E1–E13;
+  八點中的 Evidence 文件契約由 `scripts/devflow-evidence-gauntlet.sh`(1.4.0,E1–E13;
   採用專案散發於 `docs/dev/tools/`)機械驗證;第 2、5 點由 Gauntlet 讀 4-spec
   Verification Profile 的 Required layers(旗標 `--require-layer` 只能加嚴,不能拿掉
   Required;漏帶不再 fail-open;`--review-file` 找不到 Profile 亦不得退回 1.2.0;
   Profile 必須有 Required layers 欄,可寫「無」/none/n-a;缺欄或空值都紅;層名
   strip 後全等,不得 substring;`--profile` 只准本 feature
   的 4-spec,不得跨份覆寫)。
+  1.4.0 起(P2-1 executable e2e):4-spec Verification Profile 的 `E2E entry point` 寫了命令時,
+  `e2e` 層視同 Required(E7),Evidence 表缺席或未 pass 即紅;寫「無 — 理由」則不要求。
   第 3 點:Evidence 表已列且非 n-a 的 Conditional
   必須 pass;未列入視為未觸發,仍由 Reviewer 核對 Profile 條件。第 1 點的 HEAD
   綁定:`--review-file` 漏帶 `--source-sha` 時預設當下 HEAD;`docs/dev/<feature>/7-review.md`

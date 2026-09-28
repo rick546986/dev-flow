@@ -80,10 +80,18 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 同日 fresh 驗收 r3-#103:cmd_repair run_id 路徑穿越攔截(相對路徑/絕對
 # 路徑/含空白各一案,拒絕且無檔案變動)+5,ensure_manifest hardlink 不支援
 # 退回 os.replace(mock os.link EPERM)+1,疊上 → 454。
+# 2026-09-13 requirement-discovery-gaps S-8:Read 三案 +3 → 457、同檔 1-discussion
+# 無 env 兩案 +2 → 459。2026-09-23 jev-gate W0 P0-5 結論 7(owner 裁 C3):s7c 段補
+# Stage 7 review 三條拒絕路徑(無 exec.json 的 review-unlock/不存在 slug 的 review/
+# 已武裝時 review 其他 slug)各 1 案 +3 → 462。同一 commit 同步
+# scripts/test-architecture-guards.sh 的 check_static_pin 字面。同日 W2 C1:p3 doctor
+# ship-manifest 逐列(舊契約略過/三值一致/缺列/755 無 x/版本不一致/缺 manifest)+6 → 468;
+# 同日對抗審查補 destination 穿越 +1 → 469;同日 W7 P3-4 人要求才 Demo(Demo request 行)p2 四案 +4 → 473。
 # 2026-09-27 G2 自動審查上線(ADR 0004):gate-consistency G2 子句另立 +7(缺 G2 子句／G2 人類優先／
 # G2 缺機械檢查+轉人條件前提／G2 子句連帶放寬 G1/G3／原子句仍列 G2／G1/G3 被改成 agent 優先／
-# 4-spec 模板仍用舊子句)→ 466;hooks `- Risk:` 大小寫不拘 + 非法值／空值 start 拒 +3 → 469。
-MIN_CASES=469
+# 4-spec 模板仍用舊子句)→ (main)466;hooks `- Risk:` 大小寫不拘 + 非法值／空值 start 拒 +3 → (main)469。
+# 2026-09-28 research/jev-supermemory 合進 main:兩邊新增案例相加(459 + research 14 + main 10)→ 483。
+MIN_CASES=483
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -1866,7 +1874,7 @@ p2_proto() { # p2_proto <slug> <checked:0|1> [User Demo Feedback 行...]
   local p2slug="$1" p2hit="$2"; shift 2
   { printf -- '---\nfeature: %s\nstage: 3-prototype\nstatus: draft\n---\n' "$p2slug"
     echo '# 3. 原型'
-    echo '## Stage 3 觸發判定(條件式必要)'
+    echo '## Stage 3 觸發判定(命中 → 人決定要不要 Demo)'
     if [ "$p2hit" = 1 ]; then echo '- [x] 涉及人工核准'; else echo '- [ ] 涉及人工核准'; fi
     echo '- [ ] 涉及權限差異'
     echo '## User Demo Feedback'
@@ -1921,6 +1929,20 @@ ck_msg "p2:test-only fixture + flag(僅測試)→ 放行" 0 "ACCEPTED" "$S3_RC" 
 p2_proto v3 1 '- Human verdict: ACCEPTED(第 2 輪;第 1 輪 REVISE)' '- Verdict attestation: human:rick @ 2026-08-02'
 p2_s3 v3
 ck_msg "p2:ACCEPTED 帶尾註仍可解析 → 放行" 0 "ACCEPTED" "$S3_RC" "$S3_OUT"
+# P3-4 人要求才 Demo(2026-09-23 W7):Demo request 行由人親填,Agent 不得代填/代決
+p2_feature v5; p2_disc_rwc v5
+p2_proto v5 1 '- Demo request: not requested by human:rick @ 2026-09-23'
+p2_s3 v5
+ck_msg "p2:命中 + 人明示不要求 Demo → N/A 放行" 0 "不要求" "$S3_RC" "$S3_OUT"
+p2_proto v5 1 '- Demo request: not requested by agent:claude @ 2026-09-23'
+p2_s3 v5
+ck_msg "p2:Demo request 由 agent 代填 → 拒" 2 "不得代填" "$S3_RC" "$S3_OUT"
+p2_proto v5 1 '- Demo request: requested by human:rick @ 2026-09-23' '- Human verdict: NOT_REVIEWED'
+p2_s3 v5
+ck_msg "p2:人要求 Demo + NOT_REVIEWED 無 Owner Call → 拒" 2 "人要求了 Demo" "$S3_RC" "$S3_OUT"
+p2_proto v5 1 '- Demo request: requested by human:rick @ 2026-09-23' '- Human verdict: ACCEPTED' '- Verdict attestation: human:rick @ 2026-09-23'
+p2_s3 v5
+ck_msg "p2:人要求 Demo + ACCEPTED + 人類 attestation → 放行" 0 "\"demo_request\": \"requested\"" "$S3_RC" "$S3_OUT"
 p2_feature v4; p2_disc_rwc v4; p2_proto_old v4
 p2_s3 v4
 ck_msg "p2:VNext 檔配舊 3-prototype 缺判定節 → 拒" 2 "觸發判定" "$S3_RC" "$S3_OUT"
@@ -2146,6 +2168,66 @@ printf '%s\n' '{"devflow_contract_version": "2.0.0",' \
   ' "schema_versions": {"agent_event": "1.1", "future_thing": "9.0"}}' > "$P3T/contract-unk.json"
 p3_doctor "$P3T/contract-unk.json" "$P3T/caps-ok.json"
 ck_msg "p3 doctor 未知 schema key → info 不擋" 0 "future_thing" "$P3_RC" "$P3_OUT"
+# W2 C1(2026-09-23,W0 P0-8 結論):ship-manifest 逐列 —— 契約帶 ship_manifest_version 才生效。
+# 版本值用正本演算法(scripts/devflow_ship_manifest.py --version)算,同時釘住 hooks/_doctor_impl.py
+# 那份複本與正本同算法(算法漂移 → 「三值不一致」→ 下面的正向案紅)。
+mkdir -p "$P3T/docs/dev/tools"
+printf '#!/bin/bash\necho a\n' > "$P3T/docs/dev/tools/sm-a.sh"; chmod 755 "$P3T/docs/dev/tools/sm-a.sh"
+printf 'x = 1\n' > "$P3T/docs/dev/tools/sm-b.py"; chmod 644 "$P3T/docs/dev/tools/sm-b.py"
+printf '%s\n' '{"schema": "devflow-ship-manifest-v1", "version": "v1-placeholder", "files": [' \
+  ' {"source": "scripts/sm-a.sh", "destination": "docs/dev/tools/sm-a.sh", "mode": "755"},' \
+  ' {"source": "scripts/sm-b.py", "destination": "docs/dev/tools/sm-b.py", "mode": "644"},' \
+  ' {"source": "docs/dev/ship-manifest.json", "destination": "docs/dev/ship-manifest.json", "mode": "644"}]}' > "$P3T/docs/dev/ship-manifest.json"
+SMV=$("$DEVFLOW_PY" "${DEVFLOW_MASTER:-$(dirname "$H")}/scripts/devflow_ship_manifest.py" --version "$P3T" 2>/dev/null || echo "v1-unavailable")
+"$DEVFLOW_PY" - "$P3T/docs/dev/ship-manifest.json" "$SMV" <<'PY'
+import json, sys
+p, v = sys.argv[1], sys.argv[2]
+d = json.load(open(p)); d["version"] = v
+json.dump(d, open(p, "w"))
+PY
+printf '%s\n' '{"devflow_contract_version": "2.0.0", "ship_manifest_version": "'"$SMV"'",' \
+  ' "required_runtime_capabilities": ["attempt_ledger"],' \
+  ' "schema_versions": {"agent_event": "1.1"}}' > "$P3T/contract-sm.json"
+p3_doctor "$P3T/contract-ok.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor 契約無 ship_manifest_version(舊契約)→ 明示略過不擋" 0 "逐列驗證略過" "$P3_RC" "$P3_OUT"
+p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor ship-manifest 三值一致、逐列齊全 → ✓" 0 "✓ ship-manifest" "$P3_RC" "$P3_OUT"
+rm -f "$P3T/docs/dev/tools/sm-b.py"
+p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor ship-manifest 列 destination 缺 → fail 並點名" 1 "缺 docs/dev/tools/sm-b.py" "$P3_RC" "$P3_OUT"
+printf 'x = 1\n' > "$P3T/docs/dev/tools/sm-b.py"; chmod 644 "$P3T/docs/dev/tools/sm-b.py"
+chmod 644 "$P3T/docs/dev/tools/sm-a.sh"
+p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor ship-manifest 755 列無可執行位元 → fail" 1 "無可執行位元" "$P3_RC" "$P3_OUT"
+chmod 755 "$P3T/docs/dev/tools/sm-a.sh"
+"$DEVFLOW_PY" - "$P3T/docs/dev/ship-manifest.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["version"] = "v1-0000000000000000"; json.dump(d, open(p, "w"))
+PY
+p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor ship-manifest 版本三值不一致(manifest 手改/不同批散發)→ fail" 1 "三值不一致" "$P3_RC" "$P3_OUT"
+mv "$P3T/docs/dev/ship-manifest.json" "$P3T/docs/dev/ship-manifest.json.bak"
+p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor 契約要版本但採用樹缺 ship-manifest.json → fail" 1 "採用樹缺" "$P3_RC" "$P3_OUT"
+mv "$P3T/docs/dev/ship-manifest.json.bak" "$P3T/docs/dev/ship-manifest.json"
+# 審查補案:destination 帶 .. 穿越 → 不得算「齊全」;版本重算後餵 doctor,只有路徑那條該紅
+"$DEVFLOW_PY" - "$P3T/docs/dev/ship-manifest.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p))
+d["files"].append({"source": "scripts/x.sh", "destination": "docs/dev/tools/../../../etc/hostname", "mode": "644"})
+json.dump(d, open(p, "w"))
+PY
+SMV2=$("$DEVFLOW_PY" "${DEVFLOW_MASTER:-$(dirname "$H")}/scripts/devflow_ship_manifest.py" --version "$P3T" 2>/dev/null || echo "v1-unavailable")
+"$DEVFLOW_PY" - "$P3T/docs/dev/ship-manifest.json" "$SMV2" <<'PY'
+import json, sys
+p, v = sys.argv[1], sys.argv[2]; d = json.load(open(p)); d["version"] = v; json.dump(d, open(p, "w"))
+PY
+printf '%s\n' '{"devflow_contract_version": "2.0.0", "ship_manifest_version": "'"$SMV2"'",' \
+  ' "required_runtime_capabilities": ["attempt_ledger"],' \
+  ' "schema_versions": {"agent_event": "1.1"}}' > "$P3T/contract-sm2.json"
+p3_doctor "$P3T/contract-sm2.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor ship-manifest destination 含 .. 穿越 → fail 不算齊全" 1 "路徑不合法" "$P3_RC" "$P3_OUT"
+rm -f "$P3T/docs/dev/tools/sm-a.sh" "$P3T/docs/dev/tools/sm-b.py" "$P3T/docs/dev/ship-manifest.json"
 p3_obs registry validate
 ck "p3 prompt registry schema 綠" 0 "$P3_RC"
 ck "p3 registry 五 prompt id 齊" 0 "$(p3_json_has "$H/prompt-registry.json" registry5; echo $?)"
@@ -2612,8 +2694,14 @@ mkdir -p "$S7CT/docs/dev/s7creview"
 ( cd "$S7CT" && git init -q . && git config user.email t@t && git config user.name t )
 echo "占位:s7c review 自建武裝 fixture" > "$S7CT/docs/dev/s7creview/4-spec.md"
 ( cd "$S7CT" && git add -A >/dev/null && git commit -qm s7cinit )
+# W0 P0-5 補洞(2026-09-23,C3):三條拒絕路徑先前零 selftest 案例 —— 無 exec.json 的
+# review-unlock、slug 目錄不存在的 review、武裝中對異 slug review。probe 有實證,這裡釘成常設。
+mkdir -p "$S7CT/docs/dev/s7cother"
+ck "s7c 無 exec.json 的 review-unlock → 拒" 1 "$(cd "$S7CT" && "$H/devflow-exec.sh" review-unlock s7creview >/dev/null 2>&1; echo $?)"
+ck "s7c review 不存在的 slug 目錄 → 拒" 1 "$(cd "$S7CT" && "$H/devflow-exec.sh" review s7cnosuch >/dev/null 2>&1; echo $?)"
 # 無 .devflow/exec.json(未跑過 Stage 6 start)→ review <slug> 走事後補審自建分支
 ( cd "$S7CT" && "$H/devflow-exec.sh" review s7creview >/dev/null 2>&1 )
+ck "s7c 武裝中對異 slug review → 拒(exec.json 屬 s7creview)" 1 "$(cd "$S7CT" && "$H/devflow-exec.sh" review s7cother >/dev/null 2>&1; echo $?)"
 ck "s7c Stage 7 review 事後補審自建武裝真寫出 schema=exec-v4+run_id(仍是 phase=review,非 task-scoped)" 0 "$("$DEVFLOW_PY" -c "
 import json, sys
 d = json.load(open('$S7CT/.devflow/exec.json'))

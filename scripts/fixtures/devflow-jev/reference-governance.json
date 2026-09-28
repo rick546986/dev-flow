@@ -1,0 +1,23 @@
+{
+  "note": "P1-G1 選路題 fixture:adopt/no-adopt 治理引用。good 通過形式控制;bad_* 各命中一條 lint。",
+  "good": [
+    {"label": "A", "description": "Adopt the quoted governance clause as written and make the reviewer chain read it before any gate verdict is recorded in the document.", "pros": ["clause already exists", "no new file"], "cons": ["adds one read step", "wording drift risk"]},
+    {"label": "B", "description": "Do not adopt the quoted clause; keep the current reviewer chain and record the reason for not adopting it in the decision document instead.", "pros": ["no process change", "decision stays local"], "cons": ["clause stays unused", "reason may go stale"]}
+  ],
+  "bad_evaluative": [
+    {"label": "A", "description": "Adopt the clause, which is clearly the safest choice for the reviewer chain and the gate verdict record in the document.", "pros": ["x", "y"], "cons": ["x", "y"]},
+    {"label": "B", "description": "Do not adopt the clause; keep the current reviewer chain and record the reason for not adopting it in the decision.", "pros": ["x", "y"], "cons": ["x", "y"]}
+  ],
+  "bad_label": [
+    {"label": "Adopt", "description": "Adopt the quoted governance clause as written and make the reviewer chain read it before any gate verdict.", "pros": ["x", "y"], "cons": ["x", "y"]},
+    {"label": "B", "description": "Do not adopt the quoted clause; keep the current reviewer chain and record the reason for not adopting it.", "pros": ["x", "y"], "cons": ["x", "y"]}
+  ],
+  "bad_length": [
+    {"label": "A", "description": "Adopt it.", "pros": ["x", "y"], "cons": ["x", "y"]},
+    {"label": "B", "description": "Do not adopt the quoted clause; keep the current reviewer chain and record the reason for not adopting it in the decision document.", "pros": ["x", "y"], "cons": ["x", "y"]}
+  ],
+  "bad_onesided": [
+    {"label": "A", "description": "Adopt the quoted governance clause as written and make the reviewer chain read it before any gate verdict.", "pros": ["x", "y"], "cons": []},
+    {"label": "B", "description": "Do not adopt the quoted clause; keep the current reviewer chain and record the reason for not adopting it.", "pros": ["x", "y"], "cons": ["x", "y"]}
+  ]
+}

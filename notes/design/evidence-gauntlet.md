@@ -13,7 +13,7 @@
      本行、scripts/devflow-evidence-gauntlet.sh 的 GAUNTLET_VERSION、
      devflow-contract.json 的 schema_versions.gauntlet、README §7 的括注)。
      改版本時四處一起改,漏一處守衛會紅。 -->
-**現行 Gauntlet 版本:1.3.3**
+**現行 Gauntlet 版本:1.4.0**
 
 ## 0. 定位與邊界(先立不變量)
 
@@ -213,6 +213,12 @@ E12 stale report 清除+run-id/版本/SHA
 落 report、E13 malformed 表列 fail-closed(欄數 ≠ 預期 = 明確 error,禁靜默丟列;
 儲存格內勿用原生 `|`)。
 exit 碼:0 = 契約全過;1 = 有違規;2 = 用法/檔案錯誤(含值型 flag 缺值)。
+**E7 的 e2e 視同 Required(1.4.0,P2-1 executable e2e)**:4-spec Verification Profile 新增
+`E2E entry point` 欄(涉互動／對外 API feature 必填單一 persisted 命令,或「無 — 理由」;缺欄由
+G2 `check-spec-gate.sh` C10 擋)。值是命令時 Gauntlet 把 `e2e` 併入 Required(旗標同樣只能加嚴),
+Evidence 表缺席／unverified／n-a 即 E7 紅;J5 packet header 收 `e2e_summary`。fixtures:
+`scripts/fixtures/evidence-gauntlet/profile-e2e-{declared,pass,none}/`。
+
 **E7 的 4-spec 正本(1.3.3)**:Gauntlet 預設讀 sibling `4-spec.md` 的 Verification
 Profile Required layers;未 pass → E7 紅。`--require-layer` 只能加嚴,不能把
 Required 拿掉。漏帶旗標不再 fail-open。`--review-file` 找不到 Profile(無 sibling

@@ -1,0 +1,9 @@
+{
+  "note": "roadmap §0.1 / §13 第 6 條:feature+tests+docs 的 mixed rubric 反例。必須固定留在 negative/adaptation suite,直到人工 gold/holdout 證明 rubric 改善;不得因其他 case 表現好就宣稱 mixed 已解,也不得自動拆任務。",
+  "case": "feature-with-supporting-work",
+  "question": "multiple_independent_deliverables",
+  "observed_noul": 0.72,
+  "expected_by_author": 0.1,
+  "status": "unresolved",
+  "source": "2026-09-22 第二批 6 個 rubric smoke(外部 Codex 交付,未歸檔)"
+}

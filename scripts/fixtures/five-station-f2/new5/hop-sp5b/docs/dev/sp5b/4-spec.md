@@ -11,6 +11,7 @@ status: draft
 
 #### S-1.1 hop ok S-4.15
 - 觀測: hop 發生 | from-to 可指 | n-a:none
+- E2E entry point:無 — fixture(five-station-f2 hop 治具,無互動面)
 
 ## Design Boundary Contract
 - Applicability: applicable

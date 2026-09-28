@@ -5,6 +5,12 @@
 Feedback 結構)、`scripts/check-realworld.sh`(檢查語意)。本檔只做機械讀取與判定,
 不做語意猜測;語意判斷(九條觸發是否命中)由人/agent 在 3-prototype 落檔,本檔驗記錄。
 
+極性(P3-4,owner 2026-09-22 裁、jev-gate W7 2026-09-23 落地):**人要求才 Demo**。觸發命中不再自動等於
+「Demo 必要」;命中 → 人在 3-prototype 親填 `- Demo request: requested|not requested by human:<姓名> @ <YYYY-MM-DD>`。
+不要求 = N/A 記錄可過 G2;要求 → 走 Demo,Human verdict／attestation 規則**一字不變**(human-only)。
+Agent 不得代填 Demo request、不得代決;Jev(J3)只出建議,不寫任何一行。舊檔相容:沒有 Demo request 行但
+已有 ACCEPTED + 人類 attestation → 視為「已要求並完成」(implied_by_verdict);Owner Call 跳過路徑保留。
+
 判定矩陣(docs/dev/<slug>/ 底下):
 1. feature 目錄不存在 → exit 1(用法錯誤,防 typo 誤判)。
 2. 3-prototype.md 存在:
@@ -13,13 +19,18 @@ Feedback 結構)、`scripts/check-realworld.sh`(檢查語意)。本檔只做機�
         → REJECT(測試 fixture 不得產生正式 PASS)。
       - 命中 0 條 → PASS(N/A:全未勾清單即「無 trigger + 明確原因」記錄)。
       - 命中 ≥1 條 → 看 Human verdict(取最後一個非佔位行):
+        - 先看 Demo request 行(人要求才 Demo):
+          · `not requested by human:… @ 日期` → PASS(DEMO_NOT_REQUESTED;N/A 記錄)。
+          · 行在但不是 human:<名> @ 日期 格式(agent:／缺日期)→ REJECT(Agent 不得代填)。
+          · `requested by human:…` 或 沒有該行(舊檔)→ 往下看 verdict。
         - ACCEPTED → 必須伴隨人類 attestation 行
           `- Verdict attestation: human:<姓名> @ <YYYY-MM-DD>`;缺/格式不符 →
-          REJECT(**Agent 不得自行填入 ACCEPTED** 的機械防線)。
+          REJECT(**Agent 不得自行填入 ACCEPTED** 的機械防線)。沒有 Demo request 行時
+          視為 implied_by_verdict(舊檔相容)。
         - REVISE → REJECT(必須重做 Demo;Owner Call 不得繞過)。
         - NOT_REVIEWED / 未填 → 2-decision「## Owner Calls」節有含
           「Stage 3」+「跳過/skip/略過」的行 → PASS(SKIPPED_OWNER_CALL);
-          否則 REJECT。
+          否則 REJECT(人要求了 Demo 卻未完成,或人尚未決定要不要 Demo)。
    b. 無觸發判定節:1-discussion 有「## Real-world Context」→ REJECT(VNext 檔須
       補判定節);沒有 → legacy PASS(不誤殺舊 feature)。
 3. 3-prototype.md 不存在:
@@ -54,6 +65,10 @@ PLACEHOLDER = re.compile(r"ACCEPTED\s*\|\s*REVISE\s*\|\s*NOT_REVIEWED")
 VERDICT_LINE = re.compile(r"Human verdict\s*[:：]\s*(.+)$")
 ATTEST_LINE = re.compile(r"^\s*-\s*Verdict attestation\s*[:：]\s*(\S.*)$")
 ATTEST_HUMAN = re.compile(r"^human\s*[:：]\s*\S.*@\s*\d{4}-\d{2}-\d{2}")
+# P3-4 人要求才 Demo:`- Demo request: requested|not requested by human:<姓名> @ <YYYY-MM-DD>`
+DEMO_REQUEST_LINE = re.compile(r"^\s*-\s*Demo request\s*[:：]\s*(requested|not requested)\s+by\s+(\S.*)$",
+                               re.IGNORECASE | re.MULTILINE)
+DEMO_REQUEST_PLACEHOLDER = re.compile(r"requested\s*\|\s*not requested|<姓名>|<YYYY-MM-DD>")
 CHECKBOX = re.compile(r"^\s*-\s*\[( |x|X)\]\s*(.+?)\s*$")
 OC_SKIP_WORDS = re.compile(r"跳過|略過|skip", re.IGNORECASE)
 OC_STAGE3 = re.compile(r"Stage\s*3", re.IGNORECASE)
@@ -99,6 +114,16 @@ def parse_verdict(text):
         if value:
             found = value.group(1)
     return found
+
+
+def parse_demo_request(text):
+    """回 (kind, by, filled):kind ∈ requested|not_requested|None;by = 原文;filled=False 代表沒有行或只有模板佔位。"""
+    matches = [m for m in DEMO_REQUEST_LINE.finditer(text) if not DEMO_REQUEST_PLACEHOLDER.search(m.group(0))]
+    if not matches:
+        return None, None, False
+    m = matches[-1]
+    kind = "not_requested" if m.group(1).lower().startswith("not") else "requested"
+    return kind, m.group(2).strip(), True
 
 
 def parse_attestation(text):
@@ -190,6 +215,8 @@ def main(argv):
         "trigger_source": None,
         "verdict": None,
         "verdict_attestation": None,
+        "polarity": "human_requests_demo",
+        "demo_request": None,
         "owner_call": owner_call,
         "prototype_status": frontmatter_status(proto) if proto else None,
         "g2_demo": None,
@@ -260,6 +287,21 @@ def main(argv):
     result["verdict"] = verdict or "NOT_REVIEWED"
     attestation = parse_attestation(proto)
 
+    # P3-4 人要求才 Demo:先看人有沒有決定要不要 Demo
+    req_kind, req_by, req_filled = parse_demo_request(proto)
+    if req_filled:
+        if not ATTEST_HUMAN.match(req_by):
+            result["demo_request"] = "invalid"
+            verdict_reject(
+                f"Demo request 行不是人親填格式(要求 `human:<姓名> @ <YYYY-MM-DD>`,實得「{req_by}」)"
+                "→ Agent 不得代填 Demo request、不得代決,拒收")
+        result["demo_request"] = req_kind
+        if req_kind == "not_requested":
+            verdict_pass(f"觸發判定命中 {len(hits)} 條,人明示不要求 Demo(人要求才 Demo)"
+                         "→ Demo verdict N/A + 記錄,可過 G2", trigger_source="3-prototype-checklist")
+    elif verdict == "ACCEPTED":
+        result["demo_request"] = "implied_by_verdict"      # 舊檔:有完成的 Demo 就代表有人要求過
+
     if verdict == "ACCEPTED":
         if attestation and (ATTEST_HUMAN.match(attestation)
                             or (accept_test_fixture
@@ -283,8 +325,13 @@ def main(argv):
         verdict_pass(
             f"觸發判定命中 {len(hits)} 條、未完成 Demo(NOT_REVIEWED),但 2-decision "
             f"Owner Call 明示跳過:「{owner_call}」→ 可過 G2", trigger_source="owner-call")
+    if result["demo_request"] == "requested":
+        verdict_reject(
+            f"觸發判定命中 {len(hits)} 條,人要求了 Demo 但 Human verdict 未填或 NOT_REVIEWED,"
+            "且無 Owner Call 跳過記錄 → 不得過 G2(未 Demo = NOT_REVIEWED ≠ ACCEPTED)")
     verdict_reject(
-        f"觸發判定命中 {len(hits)} 條但 Human verdict 未填或 NOT_REVIEWED,"
+        f"觸發判定命中 {len(hits)} 條但人尚未決定要不要 Demo(缺 `- Demo request: requested|not requested "
+        "by human:<姓名> @ <YYYY-MM-DD>` 行,人親填;Agent 不得代決),Human verdict 未填或 NOT_REVIEWED,"
         "且無 Owner Call 跳過記錄 → 不得過 G2(未 Demo = NOT_REVIEWED ≠ ACCEPTED)")
 
 

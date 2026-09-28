@@ -21,6 +21,10 @@
 
 ## 做什麼
 
+若使用者帶來一句「本輪先講清的主題」：這仍是新 session。主題只決定先問什麼，不省步驟。
+S0、S1、S2 都要重跑。上一份 `1-discussion.md` 不是已核事實。不得為了省一輪去讀舊討論。
+讀取白名單不是機械執行。收尾仍要人點頭。
+
 1. 跑 `${DEVFLOW_ROOT}/memory/dev-memory.py talk start "<本輪主題>"`。
    它回 `session_id` 與 brief。把 `session_id` 當 MEMORY_SESSION_ID,**全程重用**。
    brief 全部欄位交 S1 消化:`known_facts`／`known_knowledge`／`repo_signals`／

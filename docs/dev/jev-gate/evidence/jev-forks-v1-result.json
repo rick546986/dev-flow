@@ -1,0 +1,331 @@
+[
+  {
+    "id": "F1",
+    "title": "Which integration point goes live first",
+    "our_pick": "A",
+    "http": 200,
+    "seconds": 0.72,
+    "response": {
+      "model": "jev-1.13.0",
+      "answers": {
+        "best_route": {
+          "type": "choice",
+          "choice": "A",
+          "confidence": 0.45,
+          "probabilities": {
+            "A": 0.63,
+            "B": 0.02,
+            "C": 0.35
+          }
+        },
+        "clear_cut": {
+          "type": "noul",
+          "noul": 0.54
+        },
+        "regret_if_wrong": {
+          "type": "score",
+          "score": 1.54,
+          "confidence": 0.37,
+          "legend": {
+            "0": "trivial: a one-line config or ordering change",
+            "1": "moderate: rework of one deliverable, no data loss",
+            "2": "expensive: recorded samples or contract text must be redone",
+            "3": "severe: unreviewed changes may already have shipped"
+          },
+          "probabilities": {
+            "0": 0.11,
+            "1": 0.33,
+            "2": 0.48,
+            "3": 0.08
+          }
+        }
+      },
+      "usage": {
+        "input_tokens": 1069,
+        "output_tokens": 73
+      }
+    }
+  },
+  {
+    "id": "F2",
+    "title": "Where the jev ledger lives",
+    "our_pick": "A",
+    "http": 200,
+    "seconds": 0.67,
+    "response": {
+      "model": "jev-1.13.0",
+      "answers": {
+        "best_route": {
+          "type": "choice",
+          "choice": "A",
+          "confidence": 0.96,
+          "probabilities": {
+            "B": 0.03,
+            "A": 0.97,
+            "C": 0.0
+          }
+        },
+        "clear_cut": {
+          "type": "noul",
+          "noul": 0.64
+        },
+        "regret_if_wrong": {
+          "type": "score",
+          "score": 1.5,
+          "confidence": 0.45,
+          "legend": {
+            "0": "trivial: a one-line config or ordering change",
+            "1": "moderate: rework of one deliverable, no data loss",
+            "2": "expensive: recorded samples or contract text must be redone",
+            "3": "severe: unreviewed changes may already have shipped"
+          },
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.47,
+            "2": 0.48,
+            "3": 0.02
+          }
+        }
+      },
+      "usage": {
+        "input_tokens": 1051,
+        "output_tokens": 73
+      }
+    }
+  },
+  {
+    "id": "F3",
+    "title": "Do all seven safety guards gate even the shadow-mode code",
+    "our_pick": "A",
+    "http": 200,
+    "seconds": 0.61,
+    "response": {
+      "model": "jev-1.13.0",
+      "answers": {
+        "best_route": {
+          "type": "choice",
+          "choice": "B",
+          "confidence": 0.98,
+          "probabilities": {
+            "A": 0.01,
+            "B": 0.99,
+            "C": 0.0
+          }
+        },
+        "clear_cut": {
+          "type": "noul",
+          "noul": 0.69
+        },
+        "regret_if_wrong": {
+          "type": "score",
+          "score": 2.04,
+          "confidence": 0.87,
+          "legend": {
+            "0": "trivial: a one-line config or ordering change",
+            "1": "moderate: rework of one deliverable, no data loss",
+            "2": "expensive: recorded samples or contract text must be redone",
+            "3": "severe: unreviewed changes may already have shipped"
+          },
+          "probabilities": {
+            "0": 0.01,
+            "1": 0.04,
+            "2": 0.87,
+            "3": 0.08
+          }
+        }
+      },
+      "usage": {
+        "input_tokens": 1199,
+        "output_tokens": 73
+      }
+    }
+  },
+  {
+    "id": "F4",
+    "title": "Graduation threshold for J5 auto-ship",
+    "our_pick": "A",
+    "http": 200,
+    "seconds": 0.63,
+    "response": {
+      "model": "jev-1.13.0",
+      "answers": {
+        "best_route": {
+          "type": "choice",
+          "choice": "A",
+          "confidence": 0.76,
+          "probabilities": {
+            "A": 0.84,
+            "B": 0.01,
+            "C": 0.15
+          }
+        },
+        "clear_cut": {
+          "type": "noul",
+          "noul": 0.48
+        },
+        "regret_if_wrong": {
+          "type": "score",
+          "score": 2.7,
+          "confidence": 0.7,
+          "legend": {
+            "0": "trivial: a one-line config or ordering change",
+            "1": "moderate: rework of one deliverable, no data loss",
+            "2": "expensive: recorded samples or contract text must be redone",
+            "3": "severe: unreviewed changes may already have shipped"
+          },
+          "probabilities": {
+            "0": 0.04,
+            "1": 0.06,
+            "2": 0.05,
+            "3": 0.85
+          }
+        }
+      },
+      "usage": {
+        "input_tokens": 1175,
+        "output_tokens": 73
+      }
+    }
+  },
+  {
+    "id": "F5",
+    "title": "What to do with J2 (auto-approve at the Decide gate G1)",
+    "our_pick": "B",
+    "http": 200,
+    "seconds": 0.67,
+    "response": {
+      "model": "jev-1.13.0",
+      "answers": {
+        "best_route": {
+          "type": "choice",
+          "choice": "B",
+          "confidence": 0.43,
+          "probabilities": {
+            "B": 0.62,
+            "C": 0.23,
+            "A": 0.15
+          }
+        },
+        "clear_cut": {
+          "type": "noul",
+          "noul": 0.5
+        },
+        "regret_if_wrong": {
+          "type": "score",
+          "score": 1.81,
+          "confidence": 0.73,
+          "legend": {
+            "0": "trivial: a one-line config or ordering change",
+            "1": "moderate: rework of one deliverable, no data loss",
+            "2": "expensive: recorded samples or contract text must be redone",
+            "3": "severe: unreviewed changes may already have shipped"
+          },
+          "probabilities": {
+            "0": 0.03,
+            "1": 0.16,
+            "2": 0.77,
+            "3": 0.04
+          }
+        }
+      },
+      "usage": {
+        "input_tokens": 1006,
+        "output_tokens": 73
+      }
+    }
+  },
+  {
+    "id": "F6",
+    "title": "When to make the e2e layer mandatory",
+    "our_pick": "A",
+    "http": 200,
+    "seconds": 0.65,
+    "response": {
+      "model": "jev-1.13.0",
+      "answers": {
+        "best_route": {
+          "type": "choice",
+          "choice": "A",
+          "confidence": 0.71,
+          "probabilities": {
+            "A": 0.81,
+            "B": 0.08,
+            "C": 0.11
+          }
+        },
+        "clear_cut": {
+          "type": "noul",
+          "noul": 0.64
+        },
+        "regret_if_wrong": {
+          "type": "score",
+          "score": 1.61,
+          "confidence": 0.57,
+          "legend": {
+            "0": "trivial: a one-line config or ordering change",
+            "1": "moderate: rework of one deliverable, no data loss",
+            "2": "expensive: recorded samples or contract text must be redone",
+            "3": "severe: unreviewed changes may already have shipped"
+          },
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.28,
+            "2": 0.64,
+            "3": 0.02
+          }
+        }
+      },
+      "usage": {
+        "input_tokens": 1029,
+        "output_tokens": 73
+      }
+    }
+  },
+  {
+    "id": "F7",
+    "title": "How human feedback labels are collected during shadow mode",
+    "our_pick": "A",
+    "http": 200,
+    "seconds": 0.61,
+    "response": {
+      "model": "jev-1.13.0",
+      "answers": {
+        "best_route": {
+          "type": "choice",
+          "choice": "A",
+          "confidence": 1.0,
+          "probabilities": {
+            "A": 1.0,
+            "C": 0.0,
+            "B": 0.0
+          }
+        },
+        "clear_cut": {
+          "type": "noul",
+          "noul": 0.84
+        },
+        "regret_if_wrong": {
+          "type": "score",
+          "score": 1.72,
+          "confidence": 0.35,
+          "legend": {
+            "0": "trivial: a one-line config or ordering change",
+            "1": "moderate: rework of one deliverable, no data loss",
+            "2": "expensive: recorded samples or contract text must be redone",
+            "3": "severe: unreviewed changes may already have shipped"
+          },
+          "probabilities": {
+            "0": 0.06,
+            "1": 0.34,
+            "2": 0.42,
+            "3": 0.18
+          }
+        }
+      },
+      "usage": {
+        "input_tokens": 1027,
+        "output_tokens": 73
+      }
+    }
+  }
+]
