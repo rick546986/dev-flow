@@ -80,7 +80,10 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 同日 fresh 驗收 r3-#103:cmd_repair run_id 路徑穿越攔截(相對路徑/絕對
 # 路徑/含空白各一案,拒絕且無檔案變動)+5,ensure_manifest hardlink 不支援
 # 退回 os.replace(mock os.link EPERM)+1,疊上 → 454。
-MIN_CASES=459
+# 2026-09-27 G2 自動審查上線(ADR 0004):gate-consistency G2 子句另立 +7(缺 G2 子句／G2 人類優先／
+# G2 缺機械檢查+轉人條件前提／G2 子句連帶放寬 G1/G3／原子句仍列 G2／G1/G3 被改成 agent 優先／
+# 4-spec 模板仍用舊子句)→ 466;hooks `- Risk:` 大小寫不拘 + 非法值／空值 start 拒 +3 → 469。
+MIN_CASES=469
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -132,9 +135,11 @@ cleanup_start_state() {
   x stop >/dev/null
   git checkout -- .gitignore
 }
-gate_fixture() { # gate_fixture <template sentence> [live-skill sentence]
+G2_REVIEWER_OK='G2 審查者依序：fresh-context reviewer Agent（需機械檢查全過且未命中轉人條件）→ 適格人類 reviewer → owner 自審（留痕的最後手段）。'
+gate_fixture() { # gate_fixture <G1/G3 template sentence> [live-skill sentence] [G2 sentence(契約/SKILL/4-spec 模板)]
   local template_clause="$1"
   local skill_clause="${2:-$1}"
+  local g2_clause="${3-$G2_REVIEWER_OK}"
   rm -rf "$C/master" "$C/plugin"
   mkdir -p "$C/master/_templates" "$C/master/docs/dev" "$C/plugin/skills/dev-flow"
   printf '%s\n' \
@@ -146,6 +151,7 @@ gate_fixture() { # gate_fixture <template sentence> [live-skill sentence]
     '## 5. 下一節' \
     '## 7. 角色與 Gate' \
     '- 審查者依序：適格人類 reviewer → fresh-context reviewer Agent → owner 自審（留痕的最後手段）。' \
+    "- $g2_clause" \
     '- G1 = 方向核准 + **Owner Calls 全裁決**。G2 = **R/S 全審 + Drafting Decisions 全裁決**。G3 = **本次 S 全綠 + 既有測試套件全綠 + 現象證據逐 S 相符**。' \
     '## 8. 下一節' > "$C/master/docs/dev/readme-contract-extract.md"
   printf '%s\n' \
@@ -153,14 +159,15 @@ gate_fixture() { # gate_fixture <template sentence> [live-skill sentence]
     '| 2 | **G1** Owner Calls 全裁決 |' \
     '| 4 | **G2** R/S 全審 + Drafting Decisions 全裁決 |' \
     '| 7 | **G3** 本次 S 全綠 + 既有測試套件全綠 + 現象證據 |' \
-    "$skill_clause" > "$C/plugin/skills/dev-flow/SKILL.md"
+    "$skill_clause" "$g2_clause" > "$C/plugin/skills/dev-flow/SKILL.md"
   for n in 2 4 7; do
+    local clause="$template_clause"
     case "$n" in
       2) gate='**G1** Owner Calls 全裁決' ;;
-      4) gate='**G2** R/S 全審 + Drafting Decisions 全裁決' ;;
+      4) gate='**G2** R/S 全審 + Drafting Decisions 全裁決'; clause="$g2_clause" ;;
       7) gate='**G3** 本次 S 全綠 + 既有測試套件全綠 + 現象證據' ;;
     esac
-    printf '%s\n' "$template_clause" "> $gate" '## 本文' > "$C/master/_templates/$n-fixture.md"
+    printf '%s\n' "$clause" "> $gate" '## 本文' > "$C/master/_templates/$n-fixture.md"
   done
   cp "$C/master/_templates/2-fixture.md" "$C/master/_templates/2-decision.md"
   cp "$C/master/_templates/4-fixture.md" "$C/master/_templates/4-spec.md"
@@ -676,6 +683,29 @@ gate_fixture \
   '審查者依序：適格人類 reviewer → 不派 fresh-context reviewer Agent → owner 自審（留痕的最後手段）。'
 gate_capture
 ck_msg "gate 擋 live skill 否定 fresh reviewer" 1 "plugin dev-flow SKILL.md" "$GATE_RC" "$GATE_OUT"
+# ---- G2 自動審查上線(ADR 0004):G2 子句另立,G1/G3 原子句逐字不放寬 ----
+GEN_OK='審查者依序：適格人類 reviewer → fresh-context reviewer Agent → owner 自審（留痕的最後手段）。'
+gate_fixture "$GEN_OK" "$GEN_OK" ''
+gate_capture
+ck_msg "gate 擋缺 G2 子句" 1 "缺少G2 子句" "$GATE_RC" "$GATE_OUT"
+gate_fixture "$GEN_OK" "$GEN_OK" 'G2 審查者依序：適格人類 reviewer → fresh-context reviewer Agent（需機械檢查全過且未命中轉人條件）→ owner 自審（留痕的最後手段）。'
+gate_capture
+ck_msg "gate 擋 G2 子句人類在 agent 前" 1 "G2 子句順序必須是fresh-context reviewer Agent" "$GATE_RC" "$GATE_OUT"
+gate_fixture "$GEN_OK" "$GEN_OK" 'G2 審查者依序：fresh-context reviewer Agent → 適格人類 reviewer → owner 自審（留痕的最後手段）。'
+gate_capture
+ck_msg "gate 擋 G2 子句缺機械檢查/轉人條件前提" 1 "缺前提「機械檢查、轉人條件」" "$GATE_RC" "$GATE_OUT"
+gate_fixture "$GEN_OK" "$GEN_OK" 'G2 審查者依序：fresh-context reviewer Agent（需機械檢查全過且未命中轉人條件；G1/G3 同）→ 適格人類 reviewer → owner 自審（留痕的最後手段）。'
+gate_capture
+ck_msg "gate 擋 G2 子句連帶放寬 G1/G3" 1 "G2 子句不得列 G1/G3" "$GATE_RC" "$GATE_OUT"
+gate_fixture 'G1/G2/G3 審查者依序：適格人類 reviewer → fresh-context reviewer Agent → owner 自審（留痕的最後手段）。'
+gate_capture
+ck_msg "gate 擋原子句仍列 G2" 1 "原子句(G1/G3)不得再列 G2" "$GATE_RC" "$GATE_OUT"
+gate_fixture 'G1/G3 審查者依序：fresh-context reviewer Agent（需機械檢查全過且未命中轉人條件）→ 適格人類 reviewer → owner 自審（留痕的最後手段）。'
+gate_capture
+ck_msg "gate 擋 G1/G3 原子句被改成 agent 優先" 1 "順序必須是適格人類 reviewer" "$GATE_RC" "$GATE_OUT"
+gate_fixture "$GEN_OK" "$GEN_OK" "$GEN_OK"
+gate_capture
+ck_msg "gate 擋 4-spec 模板仍用舊(人類優先)子句" 1 "_templates/4-spec.md 頂註:reviewer-selection" "$GATE_RC" "$GATE_OUT"
 
 # ---- p4_ gate-consistency VNext 錨(共享契約 §1/§2;fixture 自帶新舊條文,不依賴 live README)----
 p4_g2_echo='R/S 全審 + Drafting Decisions 全裁決 + Verification Profile + Demo verdict'
@@ -696,6 +726,7 @@ p4_gate_fixture_vnext() { # <tpl4 G2 摘要> <tpl7 G3 摘要> <skill G2 摘要> 
     '## 5. 下一節' \
     '## 7. 角色與 Gate' \
     "- $p4_reviewer" \
+    "- $G2_REVIEWER_OK" \
     "$p4_s7" \
     '## 8. 下一節' > "$C/master/docs/dev/readme-contract-extract.md"
   printf '%s\n' \
@@ -703,9 +734,9 @@ p4_gate_fixture_vnext() { # <tpl4 G2 摘要> <tpl7 G3 摘要> <skill G2 摘要> 
     '| 2 | **G1** Owner Calls 全裁決 |' \
     "| 4 | **G2** $3 |" \
     "| 7 | **G3** $4 |" \
-    "$p4_reviewer" > "$C/plugin/skills/dev-flow/SKILL.md"
+    "$p4_reviewer" "$G2_REVIEWER_OK" > "$C/plugin/skills/dev-flow/SKILL.md"
   printf '%s\n' "$p4_reviewer" '> **G1** Owner Calls 全裁決' '## 本文' > "$C/master/_templates/2-decision.md"
-  printf '%s\n' "$p4_reviewer" "> **G2** $1" '## 本文' > "$C/master/_templates/4-spec.md"
+  printf '%s\n' "$G2_REVIEWER_OK" "> **G2** $1" '## 本文' > "$C/master/_templates/4-spec.md"
   printf '%s\n' "$p4_reviewer" "> **G3** $2" '## 本文' > "$C/master/_templates/7-review.md"
 }
 
@@ -1560,6 +1591,22 @@ printf -- "---\nstatus: approved\n---\n- lane: fast\n- Risk: high\n- Owner Call 
 git add docs/dev/pf2/4-spec.md && git commit -qm oc-fullwidth >/dev/null
 ck "p1 G3 回歸:全形冒號 Owner Call 例外同樣放行" 0 "$(p1x start pf2)"
 "$H/devflow-exec.sh" stop >/dev/null 2>&1
+# G2 自動審查上線(owner 2026-09-27):`- Risk:` 不分大小寫;非法值／空值 → start 直接拒,不當成低風險。
+P1_PF2_SPEC=$(cat docs/dev/pf2/4-spec.md)
+printf -- "---\nstatus: approved\n---\n- lane: fast\n- Risk: HIGH\n" > docs/dev/pf2/4-spec.md
+git add docs/dev/pf2/4-spec.md && git commit -qm risk-upper >/dev/null
+p1x_cap start pf2
+ck_msg "p1 Risk: HIGH 大寫同樣觸發 OC-4 fast+high 拒" 1 "lane: fast + Risk: high" "$P1X_RC" "$P1X_OUT"
+printf -- "---\nstatus: approved\n---\n- lane: full\n- Risk: hgih\n" > docs/dev/pf2/4-spec.md
+git add docs/dev/pf2/4-spec.md && git commit -qm risk-typo >/dev/null
+p1x_cap start pf2
+ck_msg "p1 Risk: hgih 非法值 → start 拒(不當成低風險)" 1 "非法值" "$P1X_RC" "$P1X_OUT"
+printf -- "---\nstatus: approved\n---\n- lane: full\n- Risk:\n" > docs/dev/pf2/4-spec.md
+git add docs/dev/pf2/4-spec.md && git commit -qm risk-empty >/dev/null
+p1x_cap start pf2
+ck_msg "p1 Risk 空值 → start 拒(不當成低風險)" 1 "空值" "$P1X_RC" "$P1X_OUT"
+printf '%s\n' "$P1_PF2_SPEC" > docs/dev/pf2/4-spec.md
+git add docs/dev/pf2/4-spec.md && git commit -qm risk-restore >/dev/null
 p1x_cap start pf2 --task T-1
 ck_msg "p1 sequential 檔 --task → 拒" 1 "execution.mode: parallel" "$P1X_RC" "$P1X_OUT"
 p1x_cap start pf --task T-9

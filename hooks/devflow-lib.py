@@ -889,28 +889,54 @@ def validate_wave_review(review, wave_tasks):
 
 # ---------- 4-spec Verification Profile(OC-4:fast+high 拒絕)----------
 
+SPEC_RISK_VALUES = ("high", "low", "medium", "normal")
+_SPEC_RISK_LINE = re.compile(r"^\s*-\s*Risk:(.*)$")
+_SPEC_RISK_EMPTY = ("", "—", "-", "－")
+
+
+def spec_risk_value(spec_text):
+    """4-spec `- Risk:` 首值 → (risk, error)。規則與 scripts/devflow_jev/policy.py `spec_risk_of` 一致
+    (兩邊由 scripts/devflow_jev/test_g2.py 同一組案例釘住):
+    - 第一條 `- Risk:` 行就是答案;值不分大小寫(`High`／`HIGH` → `high`)。
+    - 整份沒有 `- Risk:` 行 → (None, None)(legacy;check-spec-gate C2 另外會紅)。
+    - 寫了卻是空值,或首字不是 high|medium|normal|low → (None, 錯誤訊息):呼叫端必須擋下,
+      **不得當成低風險**(舊版 `[a-z]+` 讀不到 `High` → 當成沒寫,OC-4 fast+high 靜默放過)。"""
+    for line in spec_text.splitlines():
+        m = _SPEC_RISK_LINE.match(line)
+        if not m:
+            continue
+        value = m.group(1).strip()
+        if value in _SPEC_RISK_EMPTY:
+            return None, "`- Risk:` 是空值(需 %s 其中之一,大小寫不拘)" % "|".join(SPEC_RISK_VALUES)
+        word = re.match(r"([A-Za-z]+)\b", value)
+        risk = word.group(1).lower() if word else None
+        if risk not in SPEC_RISK_VALUES:
+            return None, "`- Risk: %s` 非法值(需 %s 其中之一,大小寫不拘)" % (value, "|".join(SPEC_RISK_VALUES))
+        return risk, None
+    return None, None
+
+
 def spec_profile(spec_text):
     """讀 4-spec 的 lane / Risk(Verification Profile)。缺 = legacy(None)。
+    Risk 走 spec_risk_value():大小寫不拘;非法值／空值 → risk=None 且 risk_error 非空(呼叫端擋下)。
 
     Owner Call 例外(OC-4 fast+high)只認**結構化專用欄**,一行一欄、理由必填:
         - Owner Call 例外:<非空理由>
     (「Owner-Call 例外」/半形冒號亦可。)雜訊行 —— 標題、敘述、任何只是同時
     出現 Owner Call / fast / high 字樣的行 —— 一律不觸發(E2E N2 教訓:寬鬆
     關鍵字比對會被措辭誤觸,例外裁決必須是明確結構才算數)。"""
-    lane = risk = None
+    lane = None
+    risk, risk_error = spec_risk_value(spec_text)
     owner_call = False
     for line in spec_text.splitlines():
         m = re.match(r"^\s*-?\s*[Ll]ane:\s*([a-z]+)\b", line)
         if m:
             lane = m.group(1)
-        m = re.match(r"^\s*-\s*Risk:\s*([a-z]+)\b", line)
-        if m and risk is None:
-            risk = m.group(1)
         # G3(2026-08-17):冒號字元集曾是兩個半形 0x3a(本想寫「:或：」),全形冒號
         # 寫的例外欄偵測不到 → fast+high 明明寫了例外卻被擋,開不了工且不知道為什麼。
         if re.match(r"^\s*-\s*Owner[- ]Call ?例外\s*[:：]\s*\S", line, re.IGNORECASE):
             owner_call = True
-    return {"lane": lane, "risk": risk, "owner_call_fast_high": owner_call}
+    return {"lane": lane, "risk": risk, "risk_error": risk_error, "owner_call_fast_high": owner_call}
 
 
 def contract_agg_hash(contract_hashes):
