@@ -1,0 +1,1668 @@
+{
+ "description": "負面:Recall 不降、必留全留,但 MRR 只 +0.04 → MRR 條件不過",
+ "name": "mr-eval-neg-mrr-small",
+ "queries": [
+  {
+   "candidates": [
+    {
+     "id": "q00-m01",
+     "item_type": "event",
+     "title": "session token 存哪一張表:定案紀錄"
+    },
+    {
+     "id": "q00-m02",
+     "item_type": "event",
+     "title": "session token 存哪一張表:相關討論"
+    },
+    {
+     "id": "q00-m03",
+     "item_type": "event",
+     "title": "session token 存哪一張表:舊版說法"
+    },
+    {
+     "id": "q00-m04",
+     "item_type": "event",
+     "title": "session token 存哪一張表:實作位置"
+    },
+    {
+     "id": "q00-m05",
+     "item_type": "event",
+     "title": "session token 存哪一張表:測試案例"
+    },
+    {
+     "id": "q00-m06",
+     "item_type": "event",
+     "title": "session token 存哪一張表:roadmap 條目"
+    },
+    {
+     "id": "q00-m07",
+     "item_type": "event",
+     "title": "session token 存哪一張表:審查意見"
+    },
+    {
+     "id": "q00-m08",
+     "item_type": "event",
+     "title": "session token 存哪一張表:事件紀錄"
+    },
+    {
+     "id": "q00-m09",
+     "item_type": "event",
+     "title": "session token 存哪一張表:旁支設定"
+    },
+    {
+     "id": "q00-m10",
+     "item_type": "event",
+     "title": "session token 存哪一張表:過時筆記"
+    },
+    {
+     "id": "q00-m11",
+     "item_type": "event",
+     "title": "session token 存哪一張表:相鄰主題"
+    },
+    {
+     "id": "q00-m12",
+     "item_type": "event",
+     "title": "session token 存哪一張表:重複摘要"
+    }
+   ],
+   "id": "q01",
+   "query": "session token 存哪一張表?",
+   "relevant": [
+    "q00-m05"
+   ],
+   "scores": {
+    "q00-m01": 2.8,
+    "q00-m02": 2.6,
+    "q00-m03": 2.4,
+    "q00-m04": 2.2,
+    "q00-m05": 3.0,
+    "q00-m06": 2.0,
+    "q00-m07": 1.8,
+    "q00-m08": 1.6,
+    "q00-m09": 1.4,
+    "q00-m10": 1.2,
+    "q00-m11": 1.0,
+    "q00-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q01-m01",
+     "item_type": "event",
+     "title": "J1 deadline 為什麼是 2 秒:定案紀錄"
+    },
+    {
+     "id": "q01-m02",
+     "item_type": "event",
+     "title": "J1 deadline 為什麼是 2 秒:相關討論"
+    },
+    {
+     "id": "q01-m03",
+     "item_type": "event",
+     "title": "J1 deadline 為什麼是 2 秒:舊版說法"
+    },
+    {
+     "id": "q01-m04",
+     "item_type": "event",
+     "title": "J1 deadline 為什麼是 2 秒:實作位置"
+    },
+    {
+     "id": "q01-m05",
+     "item_type": "event",
+     "title": "J1 deadline 為什麼是 2 秒:測試案例"
+    },
+    {
+     "id": "q01-m06",
+     "item_type": "event",
+     "title": "J1 deadline 為什麼是 2 秒:roadmap 條目"
+    },
+    {
+     "id": "q01-m07",
+     "item_type": "event",
+     "title": "J1 deadline 為什麼是 2 秒:審查意見"
+    },
+    {
+     "id": "q01-m08",
+     "item_type": "event",
+     "title": "J1 deadline 為什麼是 2 秒:事件紀錄"
+    },
+    {
+     "id": "q01-m09",
+     "item_type": "event",
+     "title": "J1 deadline 為什麼是 2 秒:旁支設定"
+    },
+    {
+     "id": "q01-m10",
+     "item_type": "event",
+     "title": "J1 deadline 為什麼是 2 秒:過時筆記"
+    },
+    {
+     "id": "q01-m11",
+     "item_type": "event",
+     "title": "J1 deadline 為什麼是 2 秒:相鄰主題"
+    },
+    {
+     "id": "q01-m12",
+     "item_type": "event",
+     "title": "J1 deadline 為什麼是 2 秒:重複摘要"
+    }
+   ],
+   "id": "q02",
+   "query": "J1 deadline 為什麼是 2 秒?",
+   "relevant": [
+    "q01-m01"
+   ],
+   "scores": {
+    "q01-m01": 3.0,
+    "q01-m02": 2.8,
+    "q01-m03": 2.6,
+    "q01-m04": 2.4,
+    "q01-m05": 2.2,
+    "q01-m06": 2.0,
+    "q01-m07": 1.8,
+    "q01-m08": 1.6,
+    "q01-m09": 1.4,
+    "q01-m10": 1.2,
+    "q01-m11": 1.0,
+    "q01-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q02-m01",
+     "item_type": "event",
+     "title": "durable ledger 寫在哪:定案紀錄"
+    },
+    {
+     "id": "q02-m02",
+     "item_type": "event",
+     "title": "durable ledger 寫在哪:相關討論"
+    },
+    {
+     "id": "q02-m03",
+     "item_type": "event",
+     "title": "durable ledger 寫在哪:舊版說法"
+    },
+    {
+     "id": "q02-m04",
+     "item_type": "event",
+     "title": "durable ledger 寫在哪:實作位置"
+    },
+    {
+     "id": "q02-m05",
+     "item_type": "event",
+     "title": "durable ledger 寫在哪:測試案例"
+    },
+    {
+     "id": "q02-m06",
+     "item_type": "event",
+     "title": "durable ledger 寫在哪:roadmap 條目"
+    },
+    {
+     "id": "q02-m07",
+     "item_type": "event",
+     "title": "durable ledger 寫在哪:審查意見"
+    },
+    {
+     "id": "q02-m08",
+     "item_type": "event",
+     "title": "durable ledger 寫在哪:事件紀錄"
+    },
+    {
+     "id": "q02-m09",
+     "item_type": "event",
+     "title": "durable ledger 寫在哪:旁支設定"
+    },
+    {
+     "id": "q02-m10",
+     "item_type": "event",
+     "title": "durable ledger 寫在哪:過時筆記"
+    },
+    {
+     "id": "q02-m11",
+     "item_type": "event",
+     "title": "durable ledger 寫在哪:相鄰主題"
+    },
+    {
+     "id": "q02-m12",
+     "item_type": "event",
+     "title": "durable ledger 寫在哪:重複摘要"
+    }
+   ],
+   "id": "q03",
+   "query": "durable ledger 寫在哪?",
+   "relevant": [
+    "q02-m01"
+   ],
+   "scores": {
+    "q02-m01": 3.0,
+    "q02-m02": 2.8,
+    "q02-m03": 2.6,
+    "q02-m04": 2.4,
+    "q02-m05": 2.2,
+    "q02-m06": 2.0,
+    "q02-m07": 1.8,
+    "q02-m08": 1.6,
+    "q02-m09": 1.4,
+    "q02-m10": 1.2,
+    "q02-m11": 1.0,
+    "q02-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q03-m01",
+     "item_type": "event",
+     "title": "breaker 門檻幾次:定案紀錄"
+    },
+    {
+     "id": "q03-m02",
+     "item_type": "event",
+     "title": "breaker 門檻幾次:相關討論"
+    },
+    {
+     "id": "q03-m03",
+     "item_type": "event",
+     "title": "breaker 門檻幾次:舊版說法"
+    },
+    {
+     "id": "q03-m04",
+     "item_type": "event",
+     "title": "breaker 門檻幾次:實作位置"
+    },
+    {
+     "id": "q03-m05",
+     "item_type": "event",
+     "title": "breaker 門檻幾次:測試案例"
+    },
+    {
+     "id": "q03-m06",
+     "item_type": "event",
+     "title": "breaker 門檻幾次:roadmap 條目"
+    },
+    {
+     "id": "q03-m07",
+     "item_type": "event",
+     "title": "breaker 門檻幾次:審查意見"
+    },
+    {
+     "id": "q03-m08",
+     "item_type": "event",
+     "title": "breaker 門檻幾次:事件紀錄"
+    },
+    {
+     "id": "q03-m09",
+     "item_type": "event",
+     "title": "breaker 門檻幾次:旁支設定"
+    },
+    {
+     "id": "q03-m10",
+     "item_type": "event",
+     "title": "breaker 門檻幾次:過時筆記"
+    },
+    {
+     "id": "q03-m11",
+     "item_type": "event",
+     "title": "breaker 門檻幾次:相鄰主題"
+    },
+    {
+     "id": "q03-m12",
+     "item_type": "event",
+     "title": "breaker 門檻幾次:重複摘要"
+    }
+   ],
+   "id": "q04",
+   "query": "breaker 門檻幾次?",
+   "relevant": [
+    "q03-m01"
+   ],
+   "scores": {
+    "q03-m01": 3.0,
+    "q03-m02": 2.8,
+    "q03-m03": 2.6,
+    "q03-m04": 2.4,
+    "q03-m05": 2.2,
+    "q03-m06": 2.0,
+    "q03-m07": 1.8,
+    "q03-m08": 1.6,
+    "q03-m09": 1.4,
+    "q03-m10": 1.2,
+    "q03-m11": 1.0,
+    "q03-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q04-m01",
+     "item_type": "event",
+     "title": "budget 每日上限:定案紀錄"
+    },
+    {
+     "id": "q04-m02",
+     "item_type": "event",
+     "title": "budget 每日上限:相關討論"
+    },
+    {
+     "id": "q04-m03",
+     "item_type": "event",
+     "title": "budget 每日上限:舊版說法"
+    },
+    {
+     "id": "q04-m04",
+     "item_type": "event",
+     "title": "budget 每日上限:實作位置"
+    },
+    {
+     "id": "q04-m05",
+     "item_type": "event",
+     "title": "budget 每日上限:測試案例"
+    },
+    {
+     "id": "q04-m06",
+     "item_type": "event",
+     "title": "budget 每日上限:roadmap 條目"
+    },
+    {
+     "id": "q04-m07",
+     "item_type": "event",
+     "title": "budget 每日上限:審查意見"
+    },
+    {
+     "id": "q04-m08",
+     "item_type": "event",
+     "title": "budget 每日上限:事件紀錄"
+    },
+    {
+     "id": "q04-m09",
+     "item_type": "event",
+     "title": "budget 每日上限:旁支設定"
+    },
+    {
+     "id": "q04-m10",
+     "item_type": "event",
+     "title": "budget 每日上限:過時筆記"
+    },
+    {
+     "id": "q04-m11",
+     "item_type": "event",
+     "title": "budget 每日上限:相鄰主題"
+    },
+    {
+     "id": "q04-m12",
+     "item_type": "event",
+     "title": "budget 每日上限:重複摘要"
+    }
+   ],
+   "id": "q05",
+   "query": "budget 每日上限?",
+   "relevant": [
+    "q04-m01"
+   ],
+   "scores": {
+    "q04-m01": 3.0,
+    "q04-m02": 2.8,
+    "q04-m03": 2.6,
+    "q04-m04": 2.4,
+    "q04-m05": 2.2,
+    "q04-m06": 2.0,
+    "q04-m07": 1.8,
+    "q04-m08": 1.6,
+    "q04-m09": 1.4,
+    "q04-m10": 1.2,
+    "q04-m11": 1.0,
+    "q04-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q05-m01",
+     "item_type": "event",
+     "title": "replay store 放哪個目錄:定案紀錄"
+    },
+    {
+     "id": "q05-m02",
+     "item_type": "event",
+     "title": "replay store 放哪個目錄:相關討論"
+    },
+    {
+     "id": "q05-m03",
+     "item_type": "event",
+     "title": "replay store 放哪個目錄:舊版說法"
+    },
+    {
+     "id": "q05-m04",
+     "item_type": "event",
+     "title": "replay store 放哪個目錄:實作位置"
+    },
+    {
+     "id": "q05-m05",
+     "item_type": "event",
+     "title": "replay store 放哪個目錄:測試案例"
+    },
+    {
+     "id": "q05-m06",
+     "item_type": "event",
+     "title": "replay store 放哪個目錄:roadmap 條目"
+    },
+    {
+     "id": "q05-m07",
+     "item_type": "event",
+     "title": "replay store 放哪個目錄:審查意見"
+    },
+    {
+     "id": "q05-m08",
+     "item_type": "event",
+     "title": "replay store 放哪個目錄:事件紀錄"
+    },
+    {
+     "id": "q05-m09",
+     "item_type": "event",
+     "title": "replay store 放哪個目錄:旁支設定"
+    },
+    {
+     "id": "q05-m10",
+     "item_type": "event",
+     "title": "replay store 放哪個目錄:過時筆記"
+    },
+    {
+     "id": "q05-m11",
+     "item_type": "event",
+     "title": "replay store 放哪個目錄:相鄰主題"
+    },
+    {
+     "id": "q05-m12",
+     "item_type": "event",
+     "title": "replay store 放哪個目錄:重複摘要"
+    }
+   ],
+   "id": "q06",
+   "query": "replay store 放哪個目錄?",
+   "relevant": [
+    "q05-m01"
+   ],
+   "scores": {
+    "q05-m01": 3.0,
+    "q05-m02": 2.8,
+    "q05-m03": 2.6,
+    "q05-m04": 2.4,
+    "q05-m05": 2.2,
+    "q05-m06": 2.0,
+    "q05-m07": 1.8,
+    "q05-m08": 1.6,
+    "q05-m09": 1.4,
+    "q05-m10": 1.2,
+    "q05-m11": 1.0,
+    "q05-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q06-m01",
+     "item_type": "event",
+     "title": "packet privacy 規則:定案紀錄"
+    },
+    {
+     "id": "q06-m02",
+     "item_type": "event",
+     "title": "packet privacy 規則:相關討論"
+    },
+    {
+     "id": "q06-m03",
+     "item_type": "event",
+     "title": "packet privacy 規則:舊版說法"
+    },
+    {
+     "id": "q06-m04",
+     "item_type": "event",
+     "title": "packet privacy 規則:實作位置"
+    },
+    {
+     "id": "q06-m05",
+     "item_type": "event",
+     "title": "packet privacy 規則:測試案例"
+    },
+    {
+     "id": "q06-m06",
+     "item_type": "event",
+     "title": "packet privacy 規則:roadmap 條目"
+    },
+    {
+     "id": "q06-m07",
+     "item_type": "event",
+     "title": "packet privacy 規則:審查意見"
+    },
+    {
+     "id": "q06-m08",
+     "item_type": "event",
+     "title": "packet privacy 規則:事件紀錄"
+    },
+    {
+     "id": "q06-m09",
+     "item_type": "event",
+     "title": "packet privacy 規則:旁支設定"
+    },
+    {
+     "id": "q06-m10",
+     "item_type": "event",
+     "title": "packet privacy 規則:過時筆記"
+    },
+    {
+     "id": "q06-m11",
+     "item_type": "event",
+     "title": "packet privacy 規則:相鄰主題"
+    },
+    {
+     "id": "q06-m12",
+     "item_type": "event",
+     "title": "packet privacy 規則:重複摘要"
+    }
+   ],
+   "id": "q07",
+   "query": "packet privacy 規則?",
+   "relevant": [
+    "q06-m01"
+   ],
+   "scores": {
+    "q06-m01": 3.0,
+    "q06-m02": 2.8,
+    "q06-m03": 2.6,
+    "q06-m04": 2.4,
+    "q06-m05": 2.2,
+    "q06-m06": 2.0,
+    "q06-m07": 1.8,
+    "q06-m08": 1.6,
+    "q06-m09": 1.4,
+    "q06-m10": 1.2,
+    "q06-m11": 1.0,
+    "q06-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q07-m01",
+     "item_type": "event",
+     "title": "Stage 3 Demo 誰能要求:定案紀錄"
+    },
+    {
+     "id": "q07-m02",
+     "item_type": "event",
+     "title": "Stage 3 Demo 誰能要求:相關討論"
+    },
+    {
+     "id": "q07-m03",
+     "item_type": "event",
+     "title": "Stage 3 Demo 誰能要求:舊版說法"
+    },
+    {
+     "id": "q07-m04",
+     "item_type": "event",
+     "title": "Stage 3 Demo 誰能要求:實作位置"
+    },
+    {
+     "id": "q07-m05",
+     "item_type": "event",
+     "title": "Stage 3 Demo 誰能要求:測試案例"
+    },
+    {
+     "id": "q07-m06",
+     "item_type": "event",
+     "title": "Stage 3 Demo 誰能要求:roadmap 條目"
+    },
+    {
+     "id": "q07-m07",
+     "item_type": "event",
+     "title": "Stage 3 Demo 誰能要求:審查意見"
+    },
+    {
+     "id": "q07-m08",
+     "item_type": "event",
+     "title": "Stage 3 Demo 誰能要求:事件紀錄"
+    },
+    {
+     "id": "q07-m09",
+     "item_type": "event",
+     "title": "Stage 3 Demo 誰能要求:旁支設定"
+    },
+    {
+     "id": "q07-m10",
+     "item_type": "event",
+     "title": "Stage 3 Demo 誰能要求:過時筆記"
+    },
+    {
+     "id": "q07-m11",
+     "item_type": "event",
+     "title": "Stage 3 Demo 誰能要求:相鄰主題"
+    },
+    {
+     "id": "q07-m12",
+     "item_type": "event",
+     "title": "Stage 3 Demo 誰能要求:重複摘要"
+    }
+   ],
+   "id": "q08",
+   "query": "Stage 3 Demo 誰能要求?",
+   "relevant": [
+    "q07-m01"
+   ],
+   "scores": {
+    "q07-m01": 3.0,
+    "q07-m02": 2.8,
+    "q07-m03": 2.6,
+    "q07-m04": 2.4,
+    "q07-m05": 2.2,
+    "q07-m06": 2.0,
+    "q07-m07": 1.8,
+    "q07-m08": 1.6,
+    "q07-m09": 1.4,
+    "q07-m10": 1.2,
+    "q07-m11": 1.0,
+    "q07-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q08-m01",
+     "item_type": "event",
+     "title": "G2R 轉人條件:定案紀錄"
+    },
+    {
+     "id": "q08-m02",
+     "item_type": "event",
+     "title": "G2R 轉人條件:相關討論"
+    },
+    {
+     "id": "q08-m03",
+     "item_type": "event",
+     "title": "G2R 轉人條件:舊版說法"
+    },
+    {
+     "id": "q08-m04",
+     "item_type": "event",
+     "title": "G2R 轉人條件:實作位置"
+    },
+    {
+     "id": "q08-m05",
+     "item_type": "event",
+     "title": "G2R 轉人條件:測試案例"
+    },
+    {
+     "id": "q08-m06",
+     "item_type": "event",
+     "title": "G2R 轉人條件:roadmap 條目"
+    },
+    {
+     "id": "q08-m07",
+     "item_type": "event",
+     "title": "G2R 轉人條件:審查意見"
+    },
+    {
+     "id": "q08-m08",
+     "item_type": "event",
+     "title": "G2R 轉人條件:事件紀錄"
+    },
+    {
+     "id": "q08-m09",
+     "item_type": "event",
+     "title": "G2R 轉人條件:旁支設定"
+    },
+    {
+     "id": "q08-m10",
+     "item_type": "event",
+     "title": "G2R 轉人條件:過時筆記"
+    },
+    {
+     "id": "q08-m11",
+     "item_type": "event",
+     "title": "G2R 轉人條件:相鄰主題"
+    },
+    {
+     "id": "q08-m12",
+     "item_type": "event",
+     "title": "G2R 轉人條件:重複摘要"
+    }
+   ],
+   "id": "q09",
+   "query": "G2R 轉人條件?",
+   "relevant": [
+    "q08-m01"
+   ],
+   "scores": {
+    "q08-m01": 3.0,
+    "q08-m02": 2.8,
+    "q08-m03": 2.6,
+    "q08-m04": 2.4,
+    "q08-m05": 2.2,
+    "q08-m06": 2.0,
+    "q08-m07": 1.8,
+    "q08-m08": 1.6,
+    "q08-m09": 1.4,
+    "q08-m10": 1.2,
+    "q08-m11": 1.0,
+    "q08-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q09-m01",
+     "item_type": "event",
+     "title": "knowledge_index 路由:定案紀錄"
+    },
+    {
+     "id": "q09-m02",
+     "item_type": "event",
+     "title": "knowledge_index 路由:相關討論"
+    },
+    {
+     "id": "q09-m03",
+     "item_type": "event",
+     "title": "knowledge_index 路由:舊版說法"
+    },
+    {
+     "id": "q09-m04",
+     "item_type": "event",
+     "title": "knowledge_index 路由:實作位置"
+    },
+    {
+     "id": "q09-m05",
+     "item_type": "event",
+     "title": "knowledge_index 路由:測試案例"
+    },
+    {
+     "id": "q09-m06",
+     "item_type": "event",
+     "title": "knowledge_index 路由:roadmap 條目"
+    },
+    {
+     "id": "q09-m07",
+     "item_type": "event",
+     "title": "knowledge_index 路由:審查意見"
+    },
+    {
+     "id": "q09-m08",
+     "item_type": "event",
+     "title": "knowledge_index 路由:事件紀錄"
+    },
+    {
+     "id": "q09-m09",
+     "item_type": "event",
+     "title": "knowledge_index 路由:旁支設定"
+    },
+    {
+     "id": "q09-m10",
+     "item_type": "event",
+     "title": "knowledge_index 路由:過時筆記"
+    },
+    {
+     "id": "q09-m11",
+     "item_type": "event",
+     "title": "knowledge_index 路由:相鄰主題"
+    },
+    {
+     "id": "q09-m12",
+     "item_type": "event",
+     "title": "knowledge_index 路由:重複摘要"
+    }
+   ],
+   "id": "q10",
+   "query": "knowledge_index 路由?",
+   "relevant": [
+    "q09-m01"
+   ],
+   "scores": {
+    "q09-m01": 3.0,
+    "q09-m02": 2.8,
+    "q09-m03": 2.6,
+    "q09-m04": 2.4,
+    "q09-m05": 2.2,
+    "q09-m06": 2.0,
+    "q09-m07": 1.8,
+    "q09-m08": 1.6,
+    "q09-m09": 1.4,
+    "q09-m10": 1.2,
+    "q09-m11": 1.0,
+    "q09-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q10-m01",
+     "item_type": "event",
+     "title": "RRF 的 k 值:定案紀錄"
+    },
+    {
+     "id": "q10-m02",
+     "item_type": "event",
+     "title": "RRF 的 k 值:相關討論"
+    },
+    {
+     "id": "q10-m03",
+     "item_type": "event",
+     "title": "RRF 的 k 值:舊版說法"
+    },
+    {
+     "id": "q10-m04",
+     "item_type": "event",
+     "title": "RRF 的 k 值:實作位置"
+    },
+    {
+     "id": "q10-m05",
+     "item_type": "event",
+     "title": "RRF 的 k 值:測試案例"
+    },
+    {
+     "id": "q10-m06",
+     "item_type": "event",
+     "title": "RRF 的 k 值:roadmap 條目"
+    },
+    {
+     "id": "q10-m07",
+     "item_type": "event",
+     "title": "RRF 的 k 值:審查意見"
+    },
+    {
+     "id": "q10-m08",
+     "item_type": "event",
+     "title": "RRF 的 k 值:事件紀錄"
+    },
+    {
+     "id": "q10-m09",
+     "item_type": "event",
+     "title": "RRF 的 k 值:旁支設定"
+    },
+    {
+     "id": "q10-m10",
+     "item_type": "event",
+     "title": "RRF 的 k 值:過時筆記"
+    },
+    {
+     "id": "q10-m11",
+     "item_type": "event",
+     "title": "RRF 的 k 值:相鄰主題"
+    },
+    {
+     "id": "q10-m12",
+     "item_type": "event",
+     "title": "RRF 的 k 值:重複摘要"
+    }
+   ],
+   "id": "q11",
+   "query": "RRF 的 k 值?",
+   "relevant": [
+    "q10-m01"
+   ],
+   "scores": {
+    "q10-m01": 3.0,
+    "q10-m02": 2.8,
+    "q10-m03": 2.6,
+    "q10-m04": 2.4,
+    "q10-m05": 2.2,
+    "q10-m06": 2.0,
+    "q10-m07": 1.8,
+    "q10-m08": 1.6,
+    "q10-m09": 1.4,
+    "q10-m10": 1.2,
+    "q10-m11": 1.0,
+    "q10-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q11-m01",
+     "item_type": "event",
+     "title": "NO_RELIABLE_MATCH 何時回:定案紀錄"
+    },
+    {
+     "id": "q11-m02",
+     "item_type": "event",
+     "title": "NO_RELIABLE_MATCH 何時回:相關討論"
+    },
+    {
+     "id": "q11-m03",
+     "item_type": "event",
+     "title": "NO_RELIABLE_MATCH 何時回:舊版說法"
+    },
+    {
+     "id": "q11-m04",
+     "item_type": "event",
+     "title": "NO_RELIABLE_MATCH 何時回:實作位置"
+    },
+    {
+     "id": "q11-m05",
+     "item_type": "event",
+     "title": "NO_RELIABLE_MATCH 何時回:測試案例"
+    },
+    {
+     "id": "q11-m06",
+     "item_type": "event",
+     "title": "NO_RELIABLE_MATCH 何時回:roadmap 條目"
+    },
+    {
+     "id": "q11-m07",
+     "item_type": "event",
+     "title": "NO_RELIABLE_MATCH 何時回:審查意見"
+    },
+    {
+     "id": "q11-m08",
+     "item_type": "event",
+     "title": "NO_RELIABLE_MATCH 何時回:事件紀錄"
+    },
+    {
+     "id": "q11-m09",
+     "item_type": "event",
+     "title": "NO_RELIABLE_MATCH 何時回:旁支設定"
+    },
+    {
+     "id": "q11-m10",
+     "item_type": "event",
+     "title": "NO_RELIABLE_MATCH 何時回:過時筆記"
+    },
+    {
+     "id": "q11-m11",
+     "item_type": "event",
+     "title": "NO_RELIABLE_MATCH 何時回:相鄰主題"
+    },
+    {
+     "id": "q11-m12",
+     "item_type": "event",
+     "title": "NO_RELIABLE_MATCH 何時回:重複摘要"
+    }
+   ],
+   "id": "q12",
+   "query": "NO_RELIABLE_MATCH 何時回?",
+   "relevant": [
+    "q11-m01"
+   ],
+   "scores": {
+    "q11-m01": 3.0,
+    "q11-m02": 2.8,
+    "q11-m03": 2.6,
+    "q11-m04": 2.4,
+    "q11-m05": 2.2,
+    "q11-m06": 2.0,
+    "q11-m07": 1.8,
+    "q11-m08": 1.6,
+    "q11-m09": 1.4,
+    "q11-m10": 1.2,
+    "q11-m11": 1.0,
+    "q11-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q12-m01",
+     "item_type": "event",
+     "title": "exact_symbol 通道權重:定案紀錄"
+    },
+    {
+     "id": "q12-m02",
+     "item_type": "event",
+     "title": "exact_symbol 通道權重:相關討論"
+    },
+    {
+     "id": "q12-m03",
+     "item_type": "event",
+     "title": "exact_symbol 通道權重:舊版說法"
+    },
+    {
+     "id": "q12-m04",
+     "item_type": "event",
+     "title": "exact_symbol 通道權重:實作位置"
+    },
+    {
+     "id": "q12-m05",
+     "item_type": "event",
+     "title": "exact_symbol 通道權重:測試案例"
+    },
+    {
+     "id": "q12-m06",
+     "item_type": "event",
+     "title": "exact_symbol 通道權重:roadmap 條目"
+    },
+    {
+     "id": "q12-m07",
+     "item_type": "event",
+     "title": "exact_symbol 通道權重:審查意見"
+    },
+    {
+     "id": "q12-m08",
+     "item_type": "event",
+     "title": "exact_symbol 通道權重:事件紀錄"
+    },
+    {
+     "id": "q12-m09",
+     "item_type": "event",
+     "title": "exact_symbol 通道權重:旁支設定"
+    },
+    {
+     "id": "q12-m10",
+     "item_type": "event",
+     "title": "exact_symbol 通道權重:過時筆記"
+    },
+    {
+     "id": "q12-m11",
+     "item_type": "event",
+     "title": "exact_symbol 通道權重:相鄰主題"
+    },
+    {
+     "id": "q12-m12",
+     "item_type": "event",
+     "title": "exact_symbol 通道權重:重複摘要"
+    }
+   ],
+   "id": "q13",
+   "query": "exact_symbol 通道權重?",
+   "relevant": [
+    "q12-m01"
+   ],
+   "scores": {
+    "q12-m01": 3.0,
+    "q12-m02": 2.8,
+    "q12-m03": 2.6,
+    "q12-m04": 2.4,
+    "q12-m05": 2.2,
+    "q12-m06": 2.0,
+    "q12-m07": 1.8,
+    "q12-m08": 1.6,
+    "q12-m09": 1.4,
+    "q12-m10": 1.2,
+    "q12-m11": 1.0,
+    "q12-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q13-m01",
+     "item_type": "event",
+     "title": "workspace_id 怎麼算:定案紀錄"
+    },
+    {
+     "id": "q13-m02",
+     "item_type": "event",
+     "title": "workspace_id 怎麼算:相關討論"
+    },
+    {
+     "id": "q13-m03",
+     "item_type": "event",
+     "title": "workspace_id 怎麼算:舊版說法"
+    },
+    {
+     "id": "q13-m04",
+     "item_type": "event",
+     "title": "workspace_id 怎麼算:實作位置"
+    },
+    {
+     "id": "q13-m05",
+     "item_type": "event",
+     "title": "workspace_id 怎麼算:測試案例"
+    },
+    {
+     "id": "q13-m06",
+     "item_type": "event",
+     "title": "workspace_id 怎麼算:roadmap 條目"
+    },
+    {
+     "id": "q13-m07",
+     "item_type": "event",
+     "title": "workspace_id 怎麼算:審查意見"
+    },
+    {
+     "id": "q13-m08",
+     "item_type": "event",
+     "title": "workspace_id 怎麼算:事件紀錄"
+    },
+    {
+     "id": "q13-m09",
+     "item_type": "event",
+     "title": "workspace_id 怎麼算:旁支設定"
+    },
+    {
+     "id": "q13-m10",
+     "item_type": "event",
+     "title": "workspace_id 怎麼算:過時筆記"
+    },
+    {
+     "id": "q13-m11",
+     "item_type": "event",
+     "title": "workspace_id 怎麼算:相鄰主題"
+    },
+    {
+     "id": "q13-m12",
+     "item_type": "event",
+     "title": "workspace_id 怎麼算:重複摘要"
+    }
+   ],
+   "id": "q14",
+   "query": "workspace_id 怎麼算?",
+   "relevant": [
+    "q13-m01"
+   ],
+   "scores": {
+    "q13-m01": 3.0,
+    "q13-m02": 2.8,
+    "q13-m03": 2.6,
+    "q13-m04": 2.4,
+    "q13-m05": 2.2,
+    "q13-m06": 2.0,
+    "q13-m07": 1.8,
+    "q13-m08": 1.6,
+    "q13-m09": 1.4,
+    "q13-m10": 1.2,
+    "q13-m11": 1.0,
+    "q13-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q14-m01",
+     "item_type": "event",
+     "title": "verify 指令做什麼:定案紀錄"
+    },
+    {
+     "id": "q14-m02",
+     "item_type": "event",
+     "title": "verify 指令做什麼:相關討論"
+    },
+    {
+     "id": "q14-m03",
+     "item_type": "event",
+     "title": "verify 指令做什麼:舊版說法"
+    },
+    {
+     "id": "q14-m04",
+     "item_type": "event",
+     "title": "verify 指令做什麼:實作位置"
+    },
+    {
+     "id": "q14-m05",
+     "item_type": "event",
+     "title": "verify 指令做什麼:測試案例"
+    },
+    {
+     "id": "q14-m06",
+     "item_type": "event",
+     "title": "verify 指令做什麼:roadmap 條目"
+    },
+    {
+     "id": "q14-m07",
+     "item_type": "event",
+     "title": "verify 指令做什麼:審查意見"
+    },
+    {
+     "id": "q14-m08",
+     "item_type": "event",
+     "title": "verify 指令做什麼:事件紀錄"
+    },
+    {
+     "id": "q14-m09",
+     "item_type": "event",
+     "title": "verify 指令做什麼:旁支設定"
+    },
+    {
+     "id": "q14-m10",
+     "item_type": "event",
+     "title": "verify 指令做什麼:過時筆記"
+    },
+    {
+     "id": "q14-m11",
+     "item_type": "event",
+     "title": "verify 指令做什麼:相鄰主題"
+    },
+    {
+     "id": "q14-m12",
+     "item_type": "event",
+     "title": "verify 指令做什麼:重複摘要"
+    }
+   ],
+   "id": "q15",
+   "query": "verify 指令做什麼?",
+   "relevant": [
+    "q14-m01"
+   ],
+   "scores": {
+    "q14-m01": 3.0,
+    "q14-m02": 2.8,
+    "q14-m03": 2.6,
+    "q14-m04": 2.4,
+    "q14-m05": 2.2,
+    "q14-m06": 2.0,
+    "q14-m07": 1.8,
+    "q14-m08": 1.6,
+    "q14-m09": 1.4,
+    "q14-m10": 1.2,
+    "q14-m11": 1.0,
+    "q14-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q15-m01",
+     "item_type": "event",
+     "title": "invariant 怎麼標:定案紀錄"
+    },
+    {
+     "id": "q15-m02",
+     "item_type": "event",
+     "title": "invariant 怎麼標:相關討論"
+    },
+    {
+     "id": "q15-m03",
+     "item_type": "event",
+     "title": "invariant 怎麼標:舊版說法"
+    },
+    {
+     "id": "q15-m04",
+     "item_type": "event",
+     "title": "invariant 怎麼標:實作位置"
+    },
+    {
+     "id": "q15-m05",
+     "item_type": "event",
+     "title": "invariant 怎麼標:測試案例"
+    },
+    {
+     "id": "q15-m06",
+     "item_type": "event",
+     "title": "invariant 怎麼標:roadmap 條目"
+    },
+    {
+     "id": "q15-m07",
+     "item_type": "event",
+     "title": "invariant 怎麼標:審查意見"
+    },
+    {
+     "id": "q15-m08",
+     "item_type": "event",
+     "title": "invariant 怎麼標:事件紀錄"
+    },
+    {
+     "id": "q15-m09",
+     "item_type": "event",
+     "title": "invariant 怎麼標:旁支設定"
+    },
+    {
+     "id": "q15-m10",
+     "item_type": "event",
+     "title": "invariant 怎麼標:過時筆記"
+    },
+    {
+     "id": "q15-m11",
+     "item_type": "event",
+     "title": "invariant 怎麼標:相鄰主題"
+    },
+    {
+     "id": "q15-m12",
+     "item_type": "event",
+     "title": "invariant 怎麼標:重複摘要"
+    }
+   ],
+   "id": "q16",
+   "query": "invariant 怎麼標?",
+   "relevant": [
+    "q15-m01"
+   ],
+   "scores": {
+    "q15-m01": 3.0,
+    "q15-m02": 2.8,
+    "q15-m03": 2.6,
+    "q15-m04": 2.4,
+    "q15-m05": 2.2,
+    "q15-m06": 2.0,
+    "q15-m07": 1.8,
+    "q15-m08": 1.6,
+    "q15-m09": 1.4,
+    "q15-m10": 1.2,
+    "q15-m11": 1.0,
+    "q15-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q16-m01",
+     "item_type": "event",
+     "title": "ship-manifest 散發面:定案紀錄"
+    },
+    {
+     "id": "q16-m02",
+     "item_type": "event",
+     "title": "ship-manifest 散發面:相關討論"
+    },
+    {
+     "id": "q16-m03",
+     "item_type": "event",
+     "title": "ship-manifest 散發面:舊版說法"
+    },
+    {
+     "id": "q16-m04",
+     "item_type": "event",
+     "title": "ship-manifest 散發面:實作位置"
+    },
+    {
+     "id": "q16-m05",
+     "item_type": "event",
+     "title": "ship-manifest 散發面:測試案例"
+    },
+    {
+     "id": "q16-m06",
+     "item_type": "event",
+     "title": "ship-manifest 散發面:roadmap 條目"
+    },
+    {
+     "id": "q16-m07",
+     "item_type": "event",
+     "title": "ship-manifest 散發面:審查意見"
+    },
+    {
+     "id": "q16-m08",
+     "item_type": "event",
+     "title": "ship-manifest 散發面:事件紀錄"
+    },
+    {
+     "id": "q16-m09",
+     "item_type": "event",
+     "title": "ship-manifest 散發面:旁支設定"
+    },
+    {
+     "id": "q16-m10",
+     "item_type": "event",
+     "title": "ship-manifest 散發面:過時筆記"
+    },
+    {
+     "id": "q16-m11",
+     "item_type": "event",
+     "title": "ship-manifest 散發面:相鄰主題"
+    },
+    {
+     "id": "q16-m12",
+     "item_type": "event",
+     "title": "ship-manifest 散發面:重複摘要"
+    }
+   ],
+   "id": "q17",
+   "query": "ship-manifest 散發面?",
+   "relevant": [
+    "q16-m01"
+   ],
+   "scores": {
+    "q16-m01": 3.0,
+    "q16-m02": 2.8,
+    "q16-m03": 2.6,
+    "q16-m04": 2.4,
+    "q16-m05": 2.2,
+    "q16-m06": 2.0,
+    "q16-m07": 1.8,
+    "q16-m08": 1.6,
+    "q16-m09": 1.4,
+    "q16-m10": 1.2,
+    "q16-m11": 1.0,
+    "q16-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q17-m01",
+     "item_type": "event",
+     "title": "gate 名稱 MR 何時核准:定案紀錄"
+    },
+    {
+     "id": "q17-m02",
+     "item_type": "event",
+     "title": "gate 名稱 MR 何時核准:相關討論"
+    },
+    {
+     "id": "q17-m03",
+     "item_type": "event",
+     "title": "gate 名稱 MR 何時核准:舊版說法"
+    },
+    {
+     "id": "q17-m04",
+     "item_type": "event",
+     "title": "gate 名稱 MR 何時核准:實作位置"
+    },
+    {
+     "id": "q17-m05",
+     "item_type": "event",
+     "title": "gate 名稱 MR 何時核准:測試案例"
+    },
+    {
+     "id": "q17-m06",
+     "item_type": "event",
+     "title": "gate 名稱 MR 何時核准:roadmap 條目"
+    },
+    {
+     "id": "q17-m07",
+     "item_type": "event",
+     "title": "gate 名稱 MR 何時核准:審查意見"
+    },
+    {
+     "id": "q17-m08",
+     "item_type": "event",
+     "title": "gate 名稱 MR 何時核准:事件紀錄"
+    },
+    {
+     "id": "q17-m09",
+     "item_type": "event",
+     "title": "gate 名稱 MR 何時核准:旁支設定"
+    },
+    {
+     "id": "q17-m10",
+     "item_type": "event",
+     "title": "gate 名稱 MR 何時核准:過時筆記"
+    },
+    {
+     "id": "q17-m11",
+     "item_type": "event",
+     "title": "gate 名稱 MR 何時核准:相鄰主題"
+    },
+    {
+     "id": "q17-m12",
+     "item_type": "event",
+     "title": "gate 名稱 MR 何時核准:重複摘要"
+    }
+   ],
+   "id": "q18",
+   "query": "gate 名稱 MR 何時核准?",
+   "relevant": [
+    "q17-m01"
+   ],
+   "scores": {
+    "q17-m01": 3.0,
+    "q17-m02": 2.8,
+    "q17-m03": 2.6,
+    "q17-m04": 2.4,
+    "q17-m05": 2.2,
+    "q17-m06": 2.0,
+    "q17-m07": 1.8,
+    "q17-m08": 1.6,
+    "q17-m09": 1.4,
+    "q17-m10": 1.2,
+    "q17-m11": 1.0,
+    "q17-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q18-m01",
+     "item_type": "event",
+     "title": "J5 live 為何未核准:定案紀錄"
+    },
+    {
+     "id": "q18-m02",
+     "item_type": "event",
+     "title": "J5 live 為何未核准:相關討論"
+    },
+    {
+     "id": "q18-m03",
+     "item_type": "event",
+     "title": "J5 live 為何未核准:舊版說法"
+    },
+    {
+     "id": "q18-m04",
+     "item_type": "event",
+     "title": "J5 live 為何未核准:實作位置"
+    },
+    {
+     "id": "q18-m05",
+     "item_type": "event",
+     "title": "J5 live 為何未核准:測試案例"
+    },
+    {
+     "id": "q18-m06",
+     "item_type": "event",
+     "title": "J5 live 為何未核准:roadmap 條目"
+    },
+    {
+     "id": "q18-m07",
+     "item_type": "event",
+     "title": "J5 live 為何未核准:審查意見"
+    },
+    {
+     "id": "q18-m08",
+     "item_type": "event",
+     "title": "J5 live 為何未核准:事件紀錄"
+    },
+    {
+     "id": "q18-m09",
+     "item_type": "event",
+     "title": "J5 live 為何未核准:旁支設定"
+    },
+    {
+     "id": "q18-m10",
+     "item_type": "event",
+     "title": "J5 live 為何未核准:過時筆記"
+    },
+    {
+     "id": "q18-m11",
+     "item_type": "event",
+     "title": "J5 live 為何未核准:相鄰主題"
+    },
+    {
+     "id": "q18-m12",
+     "item_type": "event",
+     "title": "J5 live 為何未核准:重複摘要"
+    }
+   ],
+   "id": "q19",
+   "query": "J5 live 為何未核准?",
+   "relevant": [
+    "q18-m01"
+   ],
+   "scores": {
+    "q18-m01": 3.0,
+    "q18-m02": 2.8,
+    "q18-m03": 2.6,
+    "q18-m04": 2.4,
+    "q18-m05": 2.2,
+    "q18-m06": 2.0,
+    "q18-m07": 1.8,
+    "q18-m08": 1.6,
+    "q18-m09": 1.4,
+    "q18-m10": 1.2,
+    "q18-m11": 1.0,
+    "q18-m12": 0.8
+   }
+  },
+  {
+   "candidates": [
+    {
+     "id": "q19-m01",
+     "item_type": "event",
+     "mandatory": true,
+     "title": "eval locked set 在哪:定案紀錄"
+    },
+    {
+     "id": "q19-m02",
+     "item_type": "event",
+     "title": "eval locked set 在哪:相關討論"
+    },
+    {
+     "id": "q19-m03",
+     "item_type": "event",
+     "title": "eval locked set 在哪:舊版說法"
+    },
+    {
+     "id": "q19-m04",
+     "item_type": "event",
+     "title": "eval locked set 在哪:實作位置"
+    },
+    {
+     "id": "q19-m05",
+     "item_type": "event",
+     "title": "eval locked set 在哪:測試案例"
+    },
+    {
+     "id": "q19-m06",
+     "item_type": "event",
+     "title": "eval locked set 在哪:roadmap 條目"
+    },
+    {
+     "id": "q19-m07",
+     "item_type": "event",
+     "title": "eval locked set 在哪:審查意見"
+    },
+    {
+     "id": "q19-m08",
+     "item_type": "event",
+     "title": "eval locked set 在哪:事件紀錄"
+    },
+    {
+     "id": "q19-m09",
+     "item_type": "event",
+     "title": "eval locked set 在哪:旁支設定"
+    },
+    {
+     "id": "q19-m10",
+     "item_type": "event",
+     "title": "eval locked set 在哪:過時筆記"
+    },
+    {
+     "id": "q19-m11",
+     "item_type": "event",
+     "title": "eval locked set 在哪:相鄰主題"
+    },
+    {
+     "id": "q19-m12",
+     "item_type": "event",
+     "title": "eval locked set 在哪:重複摘要"
+    }
+   ],
+   "id": "q20",
+   "query": "eval locked set 在哪?",
+   "relevant": [
+    "q19-m01"
+   ],
+   "scores": {
+    "q19-m02": 3.0,
+    "q19-m03": 2.8,
+    "q19-m04": 2.6,
+    "q19-m05": 2.4,
+    "q19-m06": 2.2,
+    "q19-m07": 2.0,
+    "q19-m08": 1.8,
+    "q19-m09": 1.6,
+    "q19-m10": 1.4,
+    "q19-m11": 1.2,
+    "q19-m12": 1.0
+   }
+  }
+ ],
+ "schema": "devflow-jev-mr-eval/1",
+ "score_source": "synthetic"
+}

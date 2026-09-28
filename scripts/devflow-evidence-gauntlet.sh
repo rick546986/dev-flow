@@ -21,6 +21,8 @@
 #       不得用 substring 讓 unit 被 unit-smoke 滿足。
 #       --review-file 的 --profile 只准 sibling 或同一 feature 目錄的 4-spec,
 #       只能加嚴同一份,不得用別份 feature 覆寫。
+#       1.4.0(P2-1 executable e2e):4-spec `E2E entry point` 為命令時,`e2e` 層視同 Required
+#       (缺席／unverified／n-a 皆 E7 紅);寫「無 — 理由」則不要求。
 #   E8  coverage 層 pass → Result 必含 covered/total 分數(禁全域 % 虛榮數字)
 #   E9  mutation 層:Result 含 ERROR 不得 pass;killed<total 且未標 equivalent 不得 pass
 #   E10 Negative Constraint Mapping 節必在、狀態合法、skipped 列不得 pass
@@ -42,7 +44,7 @@ set -eu
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 # 版本聲明:與 devflow-contract.json 的 schema_versions.gauntlet 同步(doctor 比對用)
-GAUNTLET_VERSION="1.3.3"
+GAUNTLET_VERSION="1.4.0"
 export DEVFLOW_EG_VERSION="$GAUNTLET_VERSION"
 
 usage_error() {
@@ -287,6 +289,28 @@ def parse_profile_layers(spec_text):
     )
 
 
+E2E_FIELD_RE = re.compile(r"^\s*-\s*E2E entry point\s*[:：]\s*(.*)$", re.I | re.M)
+E2E_NONE_RE = re.compile(r"^(?:無|none|n-a|n/a)(?:[\s,;:—\-(（]|$)", re.I)
+
+
+def parse_profile_e2e(spec_text):
+    """4-spec Verification Profile 的 `E2E entry point`。回 (present, value, is_command)。
+
+    P2-1:值是命令 → e2e 層視同 Required;「無 — 理由」→ 不要求;缺欄 → 不要求
+    (缺欄由 G2 check-spec-gate C10 擋,Gauntlet 不重複判 spec 形狀)。
+    """
+    match = re.search(r"^##[ \t]+Verification Profile[^\n]*\n(.*?)(?=^## |\Z)", spec_text, re.M | re.S)
+    if not match:
+        return False, "", False
+    field = E2E_FIELD_RE.search(match.group(1))
+    if not field:
+        return False, "", False
+    value = field.group(1).strip()
+    if not value or E2E_NONE_RE.match(value):
+        return True, value, False
+    return True, value, True
+
+
 def is_allowed_review_profile(review_path, spec_path):
     """--review-file 只准 sibling 4-spec.md,或同一 docs/dev/<slug>/ 的 4-spec.md。"""
     review_real = os.path.realpath(review_path)
@@ -306,6 +330,7 @@ def is_allowed_review_profile(review_path, spec_path):
 
 
 spec_required, spec_conditional, spec_excluded = [], [], []
+e2e_is_command = False
 profile_section_missing = False
 required_field_missing = False
 required_field_empty = False
@@ -321,6 +346,7 @@ if profile_path:
         else:
             (spec_required, spec_conditional, spec_excluded,
              required_present, required_blank) = parse_profile_layers(spec_text)
+            _e2e_present, _e2e_value, e2e_is_command = parse_profile_e2e(spec_text)
             if review_mode and not required_present:
                 required_field_missing = True
             if review_mode and required_blank:
@@ -334,6 +360,9 @@ for name in spec_required + flag_layers:
         continue
     seen_req.add(key)
     required_layers.append(name)
+# P2-1(1.4.0):4-spec E2E entry point 是命令 → e2e 層視同 Required(旗標同樣只能加嚴)。
+if e2e_is_command and not any(layer_name_eq("e2e", n) for n in required_layers):
+    required_layers.append("e2e")
 del spec_excluded  # Excluded 仍走 E3/E5(n-a + 理由),不另設必跑義務
 
 
@@ -439,6 +468,11 @@ if review_mode and profile_cross:
 for wanted in required_layers:
     passed = any(layer_name_eq(wanted, row[0]) and row[2] == "pass"
                  for row in layers)
+    if layer_name_eq("e2e", wanted) and e2e_is_command:
+        check("E7", passed,
+              "required layer「e2e」缺席或未 pass —— 4-spec E2E entry point 宣告了命令,"
+              "Final Fresh Run 必須跑它並在 Evidence 表列 e2e 層 pass(P2-1 executable e2e)")
+        continue
     check("E7", passed,
           f"required layer「{wanted}」缺席或未 pass(unverified/n-a 不滿足 required)")
 

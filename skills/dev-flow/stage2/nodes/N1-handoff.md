@@ -19,6 +19,24 @@ Open Questions 全三態(`[x]` 已解 / `[~]` 帶假設 / `[>]` 移交)。
 
 ## 做什麼
 
+J1（討論已 approved、本節點開始之前；沒有 key、沒有 `.dev-flow/jev.yaml`、失敗、逾時，都當作沒啟用，照下面原文繼續）。
+在專案根跑（不要另寫 HTTP client；這支在雙閘門 live 時才呼叫同一個 runtime 的 `ask --gate J1`）：
+
+```
+python3 ${DEVFLOW_ROOT}/scripts/devflow-jev.py handoff --gate J1 --slug <slug> \
+  --author-ref <session 或人名> --session-ref "$MEMORY_SESSION_ID" \
+  --discussion docs/dev/<slug>/1-discussion.md
+```
+
+讀 stdout JSON 的 `effect`（`GRADUATED` 仍是 false；本命令不寫 `2-decision.md`、不寫任何 verdict）：
+
+- `continue_existing_flow` → 照下面原文繼續。
+- `start_decide` → 不要再問一次「夠清楚嗎」，直接做下面的決策點清點。
+- `ask_more` → 停。把 `theme` 唸給人。請人另開一場完整 dev-talk（11 步，收尾仍要人點頭）。
+  該場從 S0、S1、S2 重盤。`instruction` 寫明：上一份討論稿不是已核事實，不得靠讀舊討論省一輪，讀取白名單不是機械執行。
+  主題句不得改寫成題組原文。不要寫游標，不要進下一跳。
+- `needs_owner_decision` → 停。請 owner 做價值或產品選擇。第二輪仍不清楚時，命令自己改成這個，不要再開第三輪。
+
 從 Goals / 驗收雛形 / `[>]` 移交項提煉「待收斂決策點」,連同討論期
 owner 已自拍的板一併清點,給人確認。
 跑 `${DEVFLOW_ROOT}/scripts/check-devstage2-graph.sh --write-cursor N1-handoff`。

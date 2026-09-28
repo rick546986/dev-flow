@@ -146,11 +146,9 @@ group_methodology() {
   run "methodology/check-stage7-shot-contract" scripts/check-stage7-shot-contract.sh || return 1
   # Human gate verdict 寫入:正本是 md 頂欄 verdict:,全勾不算 PASS,sidecar 不是正本。
   run "methodology/check-gate-verdict-write" scripts/check-gate-verdict-write.sh || return 1
-  # 誰寫了 verdict:verdict_source/attested_by 出處;Jev/agent 冒 human、G1/G3 agent verdict、
+  # P3-2(jev-gate W6)+ main #418:誰寫了 verdict:verdict_source/attested_by 出處;Jev/agent 冒 human、G1/G3 agent verdict、
   # G2 agent verdict 命中轉人條件 → 紅;legacy 只列(ADR 0004 / 契約 §7「G2 provenance」)。
   run "methodology/check-verdict-attestation" scripts/check-verdict-attestation.sh || return 1
-  # G2 自動審查:G2R 分流(Jev 只分流)+ write-g2-auto + g2-misrelease 的牙(FakeTransport,零外部網路)。
-  run "methodology/test-devflow-jev"          scripts/test-devflow-jev.sh        || return 1
   # 站審 html 掛 Pages:三邊食譜都在;拿掉 pages job 或漏掛 7-review.html／shots 必須紅。
   # 本機對應是既有 serve --root,不另開伺服器。
   run "methodology/check-pages-hosting" scripts/check-pages-hosting.sh || return 1
@@ -181,6 +179,13 @@ group_methodology() {
   # Claude 舊 /plugin 指令不准改;Grok 不准發明 marketplace。
   run "methodology/check-plugin-hosts"        scripts/check-plugin-hosts.sh      || return 1
   run "methodology/test-plugin-hosts"         scripts/test-plugin-hosts.sh       || return 1
+  # jev-gate 七組守衛 foundation(roadmap W1:P1-G1～G7 schema/pure/fake transport 負面測試)。
+  # 這支同時釘「套件零網路 import」與「scripts/devflow-jev.py 尚不存在」(§0 第 2 條:
+  # 七守衛全綠前不寫 runtime,shadow 也算);W2 P1-F1 落地時由那次 PR 明改。
+  # 另含 G2 自動審查(main #418):G2R 分流(Jev 只分流、沒有 Jev = no-op)+ write-g2-auto + g2-misrelease。
+  run "methodology/test-devflow-jev"          scripts/test-devflow-jev.sh        || return 1
+  # P2-1 executable e2e 的紅路:check-spec-gate C10 缺欄／空值／「無」無理由必須紅;legacy verdict=PASS 不套。
+  run "methodology/test-spec-gate-e2e"        scripts/test-spec-gate-e2e.sh      || return 1
 }
 
 group_contracts() {

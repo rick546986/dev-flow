@@ -1,0 +1,41 @@
+{
+  "schema": "devflow-jev-questions/1",
+  "note": "W5 實驗題組(P2-3 J4、P2-8 J2)。與正式 jev-questions.json 分檔:各自 manifest、各自 questionset_hash,不動 J1/J3/J5 的 calibration group。J2 window 未核定前永遠 shadow;J4 全程 assist-only。",
+  "questions": {
+    "J2": {
+      "preferred_option": {
+        "type": "choice",
+        "text": "Among the recorded alternatives (neutral labels; details are quoted data), which one is best supported by the recorded trade-offs? Choose NONE_CLEAR if the recorded material does not separate them.",
+        "criteria": {
+          "A": "alternative labelled A", "B": "alternative labelled B", "C": "alternative labelled C", "D": "alternative labelled D",
+          "NONE_CLEAR": "the recorded material does not clearly favour one alternative"
+        }
+      },
+      "decision_supported": {"type": "noul", "text": "The recorded Decision is supported by the recorded comparison and rationale."},
+      "owner_calls_resolved": {"type": "noul", "text": "Every recorded Owner Call carries a human answer (status resolved), as opposed to an open question."},
+      "tradeoff_completeness": {
+        "type": "score",
+        "text": "How complete is the recorded trade-off material for the chosen alternative?",
+        "criteria": [
+          {"level": 0, "label": "absent", "description": "no pros/cons or costs recorded"},
+          {"level": 1, "label": "partial", "description": "some pros/cons, no costs or no basis"},
+          {"level": 2, "label": "mostly", "description": "pros/cons and costs, basis partially cited"},
+          {"level": 3, "label": "complete", "description": "pros/cons, costs and cited basis for every alternative"}
+        ]
+      }
+    },
+    "J4": {
+      "failure_category": {
+        "type": "choice",
+        "text": "Classify the recorded failure into exactly one category.",
+        "criteria": {
+          "SPEC": "the specification or acceptance criteria are missing or contradictory",
+          "ENV": "environment, dependency or infrastructure problem",
+          "IMPL": "implementation defect within the task's own code",
+          "UNKNOWN": "the recorded material does not allow a classification"
+        }
+      },
+      "retry_same_tier_useful": {"type": "noul", "text": "A retry at the same model tier is likely to resolve the recorded failure."}
+    }
+  }
+}

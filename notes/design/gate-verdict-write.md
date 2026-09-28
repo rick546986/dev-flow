@@ -25,7 +25,7 @@
 6. **verdict 必附出處**。同一頂欄 `verdict_source:`(`human_attested`／
    `fresh_agent_reviewer`／`owner_self_review`)與 `attested_by:`(`human:<名>` 或 `agent:<id>`)
    隨 `verdict:` 一起落盤;寫入器在有 reviewer 時代填 `human_attested` + `human:<reviewer>`,
-   reviewer 是 agent／Jev 一律拒收。缺兩欄 = **unverified**(legacy,gate 照關、只列不紅)。
+   reviewer 是 agent／Jev 一律拒收。缺兩欄 = **unverified**(legacy,gate 照關、只列不紅,**不進任何 graduation n**)。
    **Jev／任何自動化不得寫 `verdict:`、不得填 `attested_by`**。G1(2-decision)／G3(7-review)
    只收人寫的 verdict。**G2 auto**:agent reviewer 的 PASS 只由 `devflow_gate.py write-g2-auto`
    寫入 —— 只收 4-spec、`fresh_agent_reviewer` + `agent:<id>` 且 ≠ `authored_by`／owner,寫前要

@@ -2,7 +2,7 @@
 
 ## 進條件
 
-N1 任一命中。游標在 S0。不要寫 `3-prototype.md`(寫檔在 N3)。
+N1 任一命中,且人親填 `Demo request: requested`(人要求才 Demo)。游標在 S0。不要寫 `3-prototype.md`(寫檔在 N3)。
 不要另存第二份 `3-prototype*.md`。
 
 ## 讀什麼
