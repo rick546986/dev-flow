@@ -829,6 +829,12 @@ class G2RQuestionsZhTW(unittest.TestCase):
                          "只根據這份變更規格（4-spec）和它宣告的路徑，判斷它適合哪一種 G2 處理方式。"
                          "你只負責分流，不是審查者，你的答案也不是審查結論。")
         self.assertEqual(q["risk"]["text"], "這份規格描述的是哪一種改動？")
+        self.assertEqual(q["risk"]["criteria"], [
+            "cosmetic: 外觀：只改畫面呈現或文字；不動已儲存的資料、不呼叫外部服務、不涉及權限。",
+            "contained: 局部：在既有介面後面改邏輯；不改資料結構、權限或對外約定。",
+            "sensitive: 敏感：改動已儲存資料的格式、公開或跨模組的介面，或外部呼叫。",
+            "critical: 關鍵：涉及金流、登入驗證、授權、機密、資料遺失或不可逆的資料遷移。",
+        ])
         prefixes = {"AUTO_PASS": "自動放行：", "HUMAN_REVIEW": "轉人工：", "REQUEST_CHANGES": "退回修改："}
         for key, prefix in prefixes.items():
             self.assertTrue(q["g2_route"]["criteria"][key].startswith(prefix), key)
