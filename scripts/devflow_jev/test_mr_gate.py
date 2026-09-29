@@ -123,6 +123,16 @@ class MROptinParse(unittest.TestCase):
         out = gate.parse_optin("mode: off\ngates:\n  MR: shadow\n")
         self.assertEqual(policy.mr_level(True, out)[0], "off")
 
+    def test_docs_describe_true_shadow(self):
+        # owner 2026-09-29:shadow 不改回傳順序 —— 文件不得再說 shadow 會改排序,且要講到 shadow_top
+        for rel in (("docs", "dev", "jev-gate", "w11-mr-rerank.md"), ("skills", "dev-flow", "SKILL.md"),
+                    ("docs", "dev", "readme-contract-extract.md"), ("_templates", "jev.yaml")):
+            with open(os.path.join(ROOT, *rel), encoding="utf-8") as fh:
+                text = fh.read()
+            self.assertNotIn("會改排序", text, rel)
+            self.assertNotIn("會照分數改排序", text, rel)
+            self.assertIn("shadow_top", text, rel)
+
     def test_doc_examples_parse(self):
         # w11 §4.7 與 gate.py docstring 的 yaml 範例必須真的能解析(不是只看起來對)
         import re

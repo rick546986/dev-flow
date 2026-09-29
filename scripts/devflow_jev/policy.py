@@ -1063,6 +1063,34 @@ def mr_rerank(candidates, scores=None, fallback_reason=None, top_k=MR_TOP_K):
     }
 
 
+MR_SHADOW_FIELDS = ("shadow_mode", "shadow_top", "shadow_scores")
+
+
+def mr_rerank_at_level(candidates, level, scores, apply_live=False, top_k=MR_TOP_K):
+    """依 MR 生效等級決定分數**採不採用**(owner 2026-09-29:shadow 是真 shadow,不改回傳順序)。純函式。
+
+    - 分數本身不合法(缺、非數字…)→ 與 mr_rerank 相同的 fallback(`scores_invalid:…`),不記 shadow。
+    - level == "live" 且 apply_live(= gate.MR_LIVE_RATIFIED,今天 False → 走不到)→ 採用分數:回 mr_rerank(scores)。
+    - 其餘(shadow;live 未核准 cap 成 shadow)→ `top`／`results` = fallback(原順序、必留規則照舊),
+      mode="fallback"、fallback_reason="shadow_mode";Jev 排的順序只記在 `shadow_top`(ids)與 `shadow_scores`,
+      `shadow_mode="recorded_only"`。
+    off 不該呼叫本函式(呼叫端直接 fallback,不打分)。"""
+    if level not in ("shadow", "live"):
+        raise JevError("mr_rerank_at_level 只收 shadow/live(off 不打分),實得 %r" % (level,))
+    scored = mr_rerank(candidates, scores=scores, top_k=top_k)
+    blank = dict.fromkeys(MR_SHADOW_FIELDS)
+    if scored["mode"] != "scored":
+        scored.update(blank)
+        return scored
+    if level == "live" and apply_live:
+        scored.update(blank)
+        return scored
+    out = mr_rerank(candidates, fallback_reason="shadow_mode", top_k=top_k)
+    out.update({"shadow_mode": "recorded_only", "shadow_top": scored["top"],
+                "shadow_scores": scored["scores_used"]})
+    return out
+
+
 def mr_query_metrics(ranked_ids, relevant, k=MR_TOP_K):
     """單一查詢:recall@k = |relevant ∩ 前 k| ÷ |relevant|;rr = 1 ÷ 前 k 內第一筆 relevant 的名次(沒有 → 0)。"""
     rel = set(relevant)

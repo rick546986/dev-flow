@@ -120,7 +120,8 @@ gate 條件人看正本 = 指南 `#gates`;機械正本 = 契約檔 §7。本表 
   `python3 <master>/scripts/devflow-jev.py --root . mr-gate --fixture <mr-eval fixture>` 出
   `pass`(exit 0)/`fail`(1)/`insufficient_data`(3);缺設定或格式錯 exit 2。`min_queries` 預設 20 是未校準暫定值
   (`--min-queries` > yaml > 20)。`enforced`、`live_eligible` 恆 false;沒 key 時 rerank 照原順序。
-  生效等級 = min(mode, MR):`mode: off` → MR off(mr-gate 回 off、exit 0);shadow 且有 key 時 rerank 會送 Jev、會改排序。
+  生效等級 = min(mode, MR):`mode: off` → MR off(mr-gate 回 off、exit 0);shadow 且有 key 時 rerank 會送 Jev 打分,但**不改**回傳順序(原順序 fallback,Jev 排序只記在 `shadow_top`);
+  live 才採用分數(`MR_LIVE_RATIFIED = False`,今天走不到)。`--scores` 套同一條等級規則。
   只開 MR 要把 J1/J3/J5 明寫 off;關 MR 寫 `MR: off`;yaml 註解自成一行(細節見 `docs/dev/jev-gate/w11-mr-rerank.md` §4.7)。
 
 ## 4. Stage 3 操作面(觸發判定/Demo/verdict)

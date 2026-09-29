@@ -26,7 +26,10 @@ policy 導出 route → 雙層 ledger 落盤」的膠水,不含任何門檻、�
               不設門檻、不抽查、不 revert、不擋。release 由 devflow_gate.py write-g2-auto 在 agent 放行時呼叫。
   mr-rerank   W11 P2-11(研究):MR 記憶重排序。吃 `dev-memory.py ask --json --limit 20` 的輸出,重排前 20 筆、回前 5 筆;
               必留項一定在前 5(超過 5 筆 → status=mandatory_overflow、exit 1);雙閘門 off／Jev 失敗 → 原順序、exit 0。
-              生效等級 = min(mode, gates.MR)(沒寫 gates.MR → 照 mode);shadow 且有 key 時會送 Jev、**會**照分數改排序。
+              生效等級 = min(mode, gates.MR)(沒寫 gates.MR → 照 mode)。shadow 且有 key 時會送 Jev 打分,但**不改**
+              回傳順序:top/results = 原順序(mode=fallback、fallback_reason=shadow_mode),Jev 的排序只記在
+              shadow_top/shadow_scores(shadow_mode=recorded_only)。live 才採用分數(MR_LIVE_RATIFIED=False → 走不到)。
+              `--scores`(stored,零網路)套同一條等級規則:off → 原順序;shadow → 只記錄。
               不寫記憶、不改 retrieval_status、沒接進 dev-memory ask。
   mr-eval     W11 P2-11:離線評測(零網路)。原順序前 5 vs MR 前 5 的 Recall@5、MRR、必留保留率;C5 三條全過 exit 0,
               不過或資料不足 exit 1。`--min-queries N` 改資料量地板(預設 20,未校準暫定值)。
@@ -1777,6 +1780,7 @@ def run_g2_misrelease_report(root):
 # 吃它的 envelope(或 candidates list),重排前 20 筆、回前 5 筆。不換掉原檢索、不寫記憶、不改 retrieval_status、
 # 不接任何 gate、不寫 verdict。預設零網路;Jev 打分只在雙閘門(key + jev.yaml mode≠off)通過後經 http_transport,
 # 失敗/逾時/budget 用完/breaker open/privacy 命中 → 照原本的順序回前 5 筆(policy.mr_rerank fallback),不 crash。
+# shadow(今天最高就到 shadow)= 真 shadow:回傳照原順序,Jev 排序只記在 shadow_top/shadow_scores(owner 2026-09-29)。
 MR_SCHEMA = "devflow-jev-mr/1"
 
 
@@ -1824,7 +1828,10 @@ def _mr_expected(answer):
 
 def run_mr_rerank(root, payload, scores=None, environ=None, transport_factory=None, clock=time.monotonic,
                   deadline_s=None, day=None):
-    """一次 MR。scores(stored)→ 零網路;否則雙閘門 off → fallback 零網路;通過 → 送 Jev 一次,失敗 → fallback。"""
+    """一次 MR。生效等級 = policy.mr_level(key, jev.yaml)(stored scores 也一樣,只是打分來源換成檔案、零網路)。
+    off → fallback 零網路;shadow → 打分(stored 或送 Jev 一次)但**不改回傳順序**:top/results = 原順序 fallback,
+    Jev 的排序只記在 shadow_top/shadow_scores(owner 2026-09-29);live 才採用分數 —— MR_LIVE_RATIFIED=False,
+    live 已 cap 成 shadow,今天走不到。打分失敗 → fallback(原順序)。"""
     environ = os.environ if environ is None else environ
     if deadline_s is not None and (isinstance(deadline_s, bool) or not isinstance(deadline_s, (int, float))
                                    or not deadline_s > 0):
@@ -1834,15 +1841,19 @@ def run_mr_rerank(root, payload, scores=None, environ=None, transport_factory=No
     base = {"schema": MR_SCHEMA, "gate": "MR", "query": query, "retrieval_status": status_in,
             "writes_memory": False, "writes_verdict": False, "gate_effect": "none", "wired_into": None,
             "graduated": GRADUATED, "j5_live_ratified": gate_mod.J5_LIVE_RATIFIED,
-            "j2_window_ratified": policy.J2_WINDOW_RATIFIED, "written": []}
-    if scores is not None:
-        out = policy.mr_rerank(candidates, scores=scores)
-        base.update({"scorer": "stored_scores", "level": None, "level_reason": "stored scores(零網路)",
-                     "network": False})
-        base.update(out)
-        return base
+            "j2_window_ratified": policy.J2_WINDOW_RATIFIED, "mr_live_ratified": gate_mod.MR_LIVE_RATIFIED,
+            "written": []}
+    base.update(dict.fromkeys(policy.MR_SHADOW_FIELDS))
     level, level_reason = policy.mr_level(gate_mod.has_api_key(environ), gate_mod.load_optin(root))
     base.update({"level": level, "level_reason": level_reason})
+    if scores is not None:
+        # stored scores:零網路、不建 transport;等級規則與送 Jev 完全相同(off → 不打分;shadow → 只記錄)
+        base.update({"scorer": "stored_scores", "network": False})
+        if not gate_mod.may_call(level):
+            base.update(policy.mr_rerank(candidates, fallback_reason=level_reason))
+        else:
+            base.update(policy.mr_rerank_at_level(candidates, level, scores, apply_live=gate_mod.MR_LIVE_RATIFIED))
+        return base
     non_mandatory = [c for c in pool if not c["mandatory_reasons"]]
     if not gate_mod.may_call(level):
         base.update({"scorer": "none", "network": False})
@@ -1881,7 +1892,7 @@ def run_mr_rerank(root, payload, scores=None, environ=None, transport_factory=No
         base.update(policy.mr_rerank(candidates, fallback_reason="jev:" + outcome["reason"]))
         return base
     jev_scores = {qmap[qid]: _mr_expected(ans) for qid, ans in outcome["answers"].items() if qid in qmap}
-    base.update(policy.mr_rerank(candidates, scores=jev_scores))
+    base.update(policy.mr_rerank_at_level(candidates, level, jev_scores, apply_live=gate_mod.MR_LIVE_RATIFIED))
     return base
 
 
@@ -2045,9 +2056,11 @@ def build_parser():
     sma.add_argument("--reported-by", required=True, help="human:<名> 或 agent:<id>")
     smsub.add_parser("report", help="誤放行率(分母 = agent 放行數)+ shadow 反事實率;資料不足明講(不算成 0%%)")
     smr2 = sub.add_parser("mr-rerank", help="W11 P2-11:MR 記憶重排序(研究);吃 dev-memory ask --json --limit 20 的輸出,"
-                          "回前 5 筆;雙閘門 off/Jev 失敗 → 原順序;不寫記憶、不接 gate")
+                          "回前 5 筆;雙閘門 off/Jev 失敗 → 原順序;shadow 只把 Jev 排序記進 shadow_top、"
+                          "回傳仍是原順序;不寫記憶、不接 gate")
     smr2.add_argument("--answer", required=True, help="dev-memory.py ask --json --limit 20 的 JSON(- = stdin)")
-    smr2.add_argument("--scores", default=None, help="stored scores JSON {candidate_id: 數字}(零網路重放)")
+    smr2.add_argument("--scores", default=None, help="stored scores JSON {candidate_id: 數字}(零網路;等級規則同 Jev:"
+                      "shadow 只記進 shadow_top、不改 top)")
     smr2.add_argument("--deadline", type=float, default=None, help="秒;只能收緊 policy.J1_DEADLINE_S")
     sme = sub.add_parser("mr-eval", help="W11 P2-11:MR 離線評測;Recall@5/MRR/必留保留率 + C5 三條通過條件;零網路")
     sme.add_argument("--fixture", required=True, help="scripts/fixtures/devflow-jev/mr-eval-*.json")
