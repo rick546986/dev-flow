@@ -605,27 +605,27 @@ G2R_CASE_KEYS = ("slug", "declared_paths", "spec_risk", "owner_calls_unresolved"
                  "authored_by_present", "jev", "jev_status")
 # 送 Jev 的題組(G2R 自己的一組;不進任何 J1–J5 題組)。score criteria 位置 = level。
 G2R_QUESTIONS = {
+    # 送 Jev 的題目文字 = 繁體中文(owner 2026-09-29)。鍵、type、choice 鍵(AUTO_PASS／HUMAN_REVIEW／
+    # REQUEST_CHANGES)與 risk criteria 的順序(位置 = level 0–3)都不變;risk 每條保留英文等級前綴。
     "g2_route": {
         "type": "choice",
-        "text": "Given only this change spec (4-spec) and its declared paths, which G2 handling does it support? "
-                "You are routing only; you are not the reviewer and your answer is not a verdict.",
+        "text": "只根據這份變更規格（4-spec）和它宣告的路徑，判斷它適合哪一種 G2 處理方式。"
+                "你只負責分流，不是審查者，你的答案也不是審查結論。",
         "criteria": {
-            "AUTO_PASS": "Every requirement has scenarios with concrete inputs and assertable outputs, all drafting "
-                         "decisions are resolved, the verification profile matches the lane, and nothing needs a "
-                         "human judgement before a fresh reviewer agent checks it.",
-            "HUMAN_REVIEW": "The spec is complete enough to review, but at least one item needs a human judgement "
-                            "(product value, irreversible change, unclear ownership).",
-            "REQUEST_CHANGES": "The spec is missing scenarios, contradicts itself, or leaves decisions open.",
+            "AUTO_PASS": "自動放行：每一項需求都有具體輸入和可驗證輸出的情境，撰寫階段的決定都已定案，"
+                         "驗證方式符合這條路線，而且在交給新的審查代理檢查前，沒有任何事項需要人判斷。",
+            "HUMAN_REVIEW": "轉人工：規格已經完整到可以審查，但至少有一項需要人判斷（產品價值、不可逆的改動、權責不明）。",
+            "REQUEST_CHANGES": "退回修改：規格缺少情境、前後矛盾，或留有未定案的決定。",
         },
     },
     "risk": {
         "type": "score",
-        "text": "What kind of change does this spec describe?",
+        "text": "這份規格描述的是哪一種改動？",
         "criteria": [
-            "cosmetic: Only presentation or wording changes; no persisted data, no external call, no permission.",
-            "contained: Logic changes behind an existing interface; no schema, permission or external contract change.",
-            "sensitive: Changes persisted data shape, a public or cross-module interface, or an external call.",
-            "critical: Touches money, authentication, authorization, secrets, data loss or an irreversible migration.",
+            "cosmetic: 外觀：只改畫面呈現或文字；不動已儲存的資料、不呼叫外部服務、不涉及權限。",
+            "contained: 局部：在既有介面後面改邏輯；不改資料結構、權限或對外約定。",
+            "sensitive: 敏感：改動已儲存資料的形狀、公開或跨模組的介面，或外部呼叫。",
+            "critical: 關鍵：涉及金流、登入驗證、授權、機密、資料遺失或不可逆的資料遷移。",
         ],
     },
 }
