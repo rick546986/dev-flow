@@ -10,7 +10,7 @@
 #   - J5 live 未核准(gate.J5_LIVE_RATIFIED = False):寫 live 也只到 shadow。
 #   - J2 永遠 shadow(policy.J2_WINDOW_RATIFIED = False)。
 #   - MR live 未核准(gate.MR_LIVE_RATIFIED = False):寫 live 也只到 shadow;mr-gate 的 enforced 恆 false。
-#     MR shadow 目前**會**送 Jev 打分並改排序(mr-rerank 回的前 5 筆照 Jev 分數排;必留項照留)。
+#     MR shadow 有 key 時會送 Jev 打分,但**不改**回傳順序(原順序;Jev 排序只記在 shadow_top/shadow_scores)。
 #   - G2R(G2 分流)不在 gates:,只看 mode:。`mode: live` 才用 Jev 的回答分流;
 #     `mode: shadow` 有 key 時仍會送一次 Jev,但回答只記錄、分流當作沒有 Jev(no-op,ADR 0004)。
 # 本範本全部 off:複製過去不會打開任何東西。

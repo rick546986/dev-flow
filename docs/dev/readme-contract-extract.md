@@ -248,6 +248,7 @@ G3 = 做出來的對不對(7-review:**本次 S 全綠** **+ 既有測試套件�
   (exit 0/1/3);設定缺或格式錯 → exit 2(fail loud);生效等級 off → 不評。`min_queries` 預設 20,是**未校準的暫定值**
   (校準方法見 `docs/dev/jev-gate/w11-mr-rerank.md` §4.6)。MR live 未核准(`gate.MR_LIVE_RATIFIED = False`):
   `enforced` 與 `live_eligible` 恆 false,不擋任何 gate;沒有 key 時 rerank 照原順序。MR 不是 G1/G2/G3,不寫 verdict。
-  MR 生效等級 = min(mode, `gates.MR`):`mode: off` → MR 也 off;shadow 且有 key 時 rerank **會**送 Jev 並照分數改排序。
+  MR 生效等級 = min(mode, `gates.MR`):`mode: off` → MR 也 off;shadow 且有 key 時 rerank 仍送 Jev 打分,但**不改回傳順序**:`top`/`results` 是原順序 fallback(必留照留),
+  Jev 排序只記在 `shadow_top`/`shadow_scores`;live 才採用分數(MR live 未核准,今天走不到)。stored `--scores` 套同一條等級規則。
   yaml 註解一律自成一行(值後面接 `#` → exit 2)。只開 MR 要把沒寫的 J1/J3/J5 明寫 off(mode 拉到 shadow 會讓它們有 key 就出境);
   關 MR 寫 `MR: off`,不要只刪那行(沒寫 `gates.MR` → rerank 照 mode 走)。

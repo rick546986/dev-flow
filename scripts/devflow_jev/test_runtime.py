@@ -1740,8 +1740,16 @@ class W11MRRuntime(RuntimeBase):
         tr, questions = self.jev_transport(env, [7, 3, 11])
         tr.clock = self.clock
         out = self.mr(env, environ=self.env_on, transport_factory=lambda: tr)
-        self.assertEqual((out["level"], out["scorer"], out["mode"], out["network"]), ("shadow", "jev", "scored", True))
-        self.assertEqual(out["top"], ["event:evt_10", "event:evt_07", "event:evt_03", "event:evt_11", "event:evt_01"])
+        # 真 shadow(owner 2026-09-29):仍送 Jev,但回傳 = 原順序 fallback(必留照留),Jev 排序只記在 shadow_top
+        self.assertEqual((out["level"], out["scorer"], out["mode"], out["network"]), ("shadow", "jev", "fallback", True))
+        self.assertEqual((out["fallback_reason"], out["shadow_mode"]), ("shadow_mode", "recorded_only"))
+        self.assertEqual(out["top"], ["event:evt_01", "event:evt_02", "event:evt_03", "event:evt_04", "event:evt_10"])
+        self.assertEqual(out["results"], [env["results"][i - 1] for i in (1, 2, 3, 4, 10)])
+        self.assertIsNone(out["scores_used"])
+        self.assertEqual(out["shadow_top"], ["event:evt_10", "event:evt_07", "event:evt_03", "event:evt_11", "event:evt_01"])
+        self.assertEqual(out["shadow_scores"]["event:evt_07"], 3.0)
+        self.assertNotIn("event:evt_10", out["shadow_scores"])      # 必留項不打分
+        self.assertEqual(out["mandatory"]["kept"], ["event:evt_10"])
         self.assertEqual(len(tr.calls), 1)
         self.assertEqual(len(questions), 11)                          # 必留項不送
         sent = json.dumps(tr.calls[0], ensure_ascii=False)
@@ -1810,8 +1818,60 @@ class W11MRRuntime(RuntimeBase):
         env = self.envelope()
         sc = {r["item_uid"]: float(i) for i, r in enumerate(env["results"])}
         out = self.mr(env, scores=sc, environ=self.env_on, transport_factory=never_called)
-        self.assertEqual((out["scorer"], out["network"], out["mode"]), ("stored_scores", False, "scored"))
-        self.assertEqual(out["top"][0], "event:evt_12")
+        # stored scores 套同一條等級規則:mode: live → cap 成 shadow → 只記錄、回傳原順序
+        self.assertEqual((out["scorer"], out["network"], out["level"], out["mode"]),
+                         ("stored_scores", False, "shadow", "fallback"))
+        self.assertEqual(out["top"], out["original_top"])
+        self.assertEqual(out["shadow_top"][0], "event:evt_12")
+        self.assertEqual(out["written"], [])
+
+    def test_stored_scores_follow_level_off_records_nothing(self):
+        env = self.envelope()
+        sc = {r["item_uid"]: float(i) for i, r in enumerate(env["results"])}
+        for environ, optin, reason in (({}, "mode: live\n", "no_api_key"),
+                                       (self.env_on, "mode: off\n", "mode=off"),
+                                       (self.env_on, "mode: live\ngates:\n  MR: off\n", "gates.MR=off")):
+            self.optin(optin)
+            out = self.mr(env, scores=sc, environ=environ, transport_factory=never_called)
+            self.assertEqual((out["level"], out["mode"], out["network"]), ("off", "fallback", False), optin)
+            self.assertIn(reason, out["fallback_reason"])
+            self.assertEqual(out["top"], out["original_top"])
+            self.assertEqual((out["shadow_mode"], out["shadow_top"], out["shadow_scores"]), (None, None, None))
+
+    def test_shadow_keeps_mandatory_when_jev_ranks_it_last(self):
+        self.optin("mode: shadow\n")
+        env = self.envelope(mandatory=[12])
+        tr, _q = self.jev_transport(env, [9, 8, 7])
+        tr.clock = self.clock
+        out = self.mr(env, environ=self.env_on, transport_factory=lambda: tr)
+        self.assertEqual(out["top"], ["event:evt_01", "event:evt_02", "event:evt_03", "event:evt_04", "event:evt_12"])
+        # shadow_top:必留釘最前,其餘照 Jev 分數(同分 → 原排名)
+        self.assertEqual(out["shadow_top"], ["event:evt_12", "event:evt_09", "event:evt_08", "event:evt_07", "event:evt_01"])
+        self.assertEqual(out["mandatory"]["kept"], ["event:evt_12"])
+
+    def test_shadow_failures_still_fallback_without_shadow_record(self):
+        self.optin("mode: shadow\n")
+        env = self.envelope()
+        tr = FakeTransport([{"error": "http_429"}], clock=self.clock)
+        out = self.mr(env, environ=self.env_on, transport_factory=lambda: tr)
+        self.assertTrue(out["fallback_reason"].startswith("jev:"), out["fallback_reason"])
+        self.assertEqual((out["top"], out["shadow_mode"], out["shadow_top"]), (out["original_top"], None, None))
+        sc = {r["item_uid"]: float(i) for i, r in enumerate(env["results"])}
+        sc.pop("event:evt_03")
+        out = self.mr(env, scores=sc, environ=self.env_on, transport_factory=never_called)
+        self.assertTrue(out["fallback_reason"].startswith("scores_invalid:missing="), out["fallback_reason"])
+        self.assertEqual((out["top"], out["shadow_top"]), (out["original_top"], None))
+
+    def test_live_capped_so_scores_never_applied_today(self):
+        self.optin("mode: live\ngates:\n  MR: live\n")
+        env = self.envelope()
+        tr, _q = self.jev_transport(env, [9, 4])
+        tr.clock = self.clock
+        out = self.mr(env, environ=self.env_on, transport_factory=lambda: tr)
+        self.assertIs(rt.gate_mod.MR_LIVE_RATIFIED, False)
+        self.assertIs(out["mr_live_ratified"], False)
+        self.assertEqual((out["level"], out["mode"], out["top"]), ("shadow", "fallback", out["original_top"]))
+        self.assertEqual(out["shadow_top"][:2], ["event:evt_09", "event:evt_04"])
 
     def test_no_reliable_match_never_upgraded(self):
         env = {"query": "zzzz", "retrieval_status": "NO_RELIABLE_MATCH", "results": []}

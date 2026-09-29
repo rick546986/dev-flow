@@ -51,16 +51,18 @@ candidates 必須已是**原檢索的順序**；MR 只看前 `MR_POOL_SIZE = 20`
 每筆候選要有穩定 id（依序取第一個有值的）：`id`（fixture）→ `item_uid`（retrieval）→ `path:<path>`（knowledge_index）→
 `knowledge:<key>`（knowledge）→ `fact:<title>`（CURRENT fast path）。都沒有 → exit 2。id 重複 → exit 2。
 
-`--scores <json>`（選填）：`{candidate_id: 數字}`，stored scores 重放，**零網路**（評測與重現用）。
+`--scores <json>`（選填）：`{candidate_id: 數字}`，stored scores 重放，**零網路**（重現用）。等級規則與送 Jev **完全相同**（§2.4）：只是把打分來源從 Jev 換成檔案 —— off → 原順序、不記錄；shadow → 只記進 `shadow_top`，回傳仍是原順序。要離線比「原順序 vs MR 排序」請用 `mr-eval`（§4，它直接評 MR 排序，不看等級）。
 
 ### 2.2 輸出（schema `devflow-jev-mr/1`）
 
 | 欄 | 意思 |
 |---|---|
-| `top` / `results` | MR 的前 5 筆 id／原始列（列內容原封不動） |
+| `top` / `results` | 回傳的前 5 筆 id／原始列（列內容原封不動）。等級 < live（今天一律如此）= 原順序 fallback |
 | `original_top` | 原檢索順序的前 5 筆 id（對照用） |
-| `mode` | `scored`（用了分數）／`fallback`（照原順序） |
-| `fallback_reason` | `no_api_key`、`no_project_optin`、`mode=off`、`privacy_blocked`、`jev:<noop 原因>`、`scores_invalid:…`、`nothing_to_score` |
+| `mode` | `scored`（採用了分數；只有 live，今天走不到）／`fallback`（照原順序） |
+| `fallback_reason` | `no_api_key`、`no_project_optin`、`mode=off`、`privacy_blocked`、`jev:<noop 原因>`、`scores_invalid:…`、`nothing_to_score`、`shadow_mode`（打分成功但只記錄） |
+| `shadow_mode` | `recorded_only`（shadow 打分成功、只記錄）／`null`（沒打分、打分失敗或已採用） |
+| `shadow_top` / `shadow_scores` | shadow 時 MR 會排出的前 5 筆 id 與各非必留候選的分數（必留照樣釘最前）；其餘情況 `null` |
 | `scorer` | `stored_scores`／`jev`／`none` |
 | `status` | `ok`／`mandatory_overflow`（§3.3） |
 | `mandatory` | `in_pool`、`kept`、`dropped`、`reasons`（每筆必留的理由） |
@@ -88,9 +90,12 @@ exit code：`0` = ok（含 fallback——Jev 從不阻塞）／`1` = `mandatory_
   **（main #421 起）** `gate.parse_optin` 認得 `gates: MR:`（格式見 §4.7）：寫了就用 min(mode, gates.MR.level)，
   live 仍 cap 成 shadow（`gate.MR_LIVE_RATIFIED = False`）；`gates.MR: off` → 不打分、照原順序。
   所以 **MR 要生效，`mode` 至少要 `shadow`**：`mode: off` 時 `MR: shadow` 也是 off（照原順序、零網路；`mr-gate` 回 `off`、exit 0）。
-- **shadow 目前會改排序**（照現況描述，本檔不改行為）：MR 生效等級是 `shadow` 且有 key 時，`mr-rerank` **會**送 Jev 打分，
-  回的前 5 筆就是照 Jev 分數重排的結果（必留照留）；「shadow」在這裡只代表 live 未核准、`gate_effect: none`、
-  沒接進 `dev-memory.py ask`，**不是**「送了但不採用」。不想讓排序變，就把 MR 關掉（§4.7「關掉 MR」）。
+- **shadow = 真 shadow，不改回傳順序**（owner 2026-09-29）：MR 生效等級是 `shadow` 且有 key 時，`mr-rerank` 仍送 Jev 打分，
+  但 `top`／`results` 一律是原順序 fallback（必留規則照舊），`mode: fallback`、`fallback_reason: shadow_mode`、
+  `shadow_mode: recorded_only`；Jev 排出的順序只記在 `shadow_top`（ids）與 `shadow_scores`。打分失敗（Jev noop、
+  `scores_invalid`）照舊 fallback，不記 shadow。**live 才採用分數**（`policy.mr_rerank_at_level(..., apply_live=gate.MR_LIVE_RATIFIED)`）；
+  `MR_LIVE_RATIFIED = False`、live 已 cap 成 shadow，所以今天沒有任何路徑會把 Jev 分數套到回傳順序上。
+  （#423 當時照舊行為記的「shadow 會照 Jev 分數重排」已由本條取代。）
   yaml 壞掉照 gate.py 的規矩 fail-loud（exit 2），不當成 off。
 - **只經 `http_transport`**：runtime 延遲 import，off 路徑連 urllib 都不載入（`test-devflow-jev.sh` ① 照舊只放行
   `http_transport.py`）。一次 request、每筆非必留候選一題 Score（`mr_c01`…）：0 unrelated／1 topical／2 partial／3 direct；
@@ -125,7 +130,7 @@ MR 碰不到它，自然不會移除它。
 
 ### 3.3 保證與溢出
 
-- 必留項只要在前 20 筆候選裡，就一定在輸出的前 5 筆裡，不管分數多低（它根本不送打分）。scored 與 fallback 都一樣。
+- 必留項只要在前 20 筆候選裡，就一定在輸出的前 5 筆裡，不管分數多低（它根本不送打分）。scored 與 fallback 都一樣，`shadow_top` 也一樣。
 - **必留 > 5 筆**：前 5 筆放原排名最前的 5 筆必留，其餘列在 `mandatory.dropped`，`status=mandatory_overflow`，
   CLI **exit 1**。不默默丟掉。評測裡這會讓必留保留率 < 100%，那一組就不通過。
 - 必留剛好 5 筆 → 前 5 全是必留，`status=ok`。
@@ -284,7 +289,7 @@ gates:
 
   G2R 不在 `gates:`、只看 `mode:`：`mode: shadow` 且有 key 時 `g2r` 仍會送一次 Jev，但回答只記錄、分流當作沒有 Jev（ADR 0004）。
 - **關掉 MR**：寫 `MR: off`（或區塊 `level: off`）。**不要只刪掉 `MR` 那行**：沒寫 `gates.MR` 時 `mr-rerank` 退回照 `mode` 走
-  （`mode: shadow` → MR shadow，會出境、會改排序），`mr-gate` 則 exit 2。全部關：刪 `.dev-flow/jev.yaml` 或不設 `TYPESAFE_API_KEY`。
+  （`mode: shadow` → MR shadow，有 key 就會出境打分；回傳順序不變，只多記 `shadow_top`），`mr-gate` 則 exit 2。全部關：刪 `.dev-flow/jev.yaml` 或不設 `TYPESAFE_API_KEY`。
 
 - `MR` 不是 J1–J5：不進 `GATES`、不進 J-gate 的 `gates` dict（J1–J5 的解析與 `effective_level` 一行不變），結果在 `optin["mr"]`。
 - **fail-loud**：區塊缺 `level`、未知鍵、`level` 不在 off/shadow/live、`min_queries` 不是正整數、`MR` 重複、

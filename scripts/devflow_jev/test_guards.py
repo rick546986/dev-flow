@@ -2160,6 +2160,42 @@ class W11MRRerank(unittest.TestCase):
         self.assertEqual([r["id"] for r in out["results"]], out["top"])
         self.assertEqual(out["original_top"], ["m01", "m02", "m03", "m04", "m05"])
 
+    def test_at_level_shadow_returns_original_order_and_records_scored(self):
+        # owner 2026-09-29:shadow 是真 shadow —— 回傳照原順序,打分排序只記在 shadow_top/shadow_scores
+        cs = mr_cands(12, mandatory=(9,))
+        sc = mr_scores(cs, [11, 7, 2])
+        scored = policy.mr_rerank(cs, scores=sc)
+        out = policy.mr_rerank_at_level(copy.deepcopy(cs), "shadow", dict(sc))
+        self.assertEqual((out["mode"], out["fallback_reason"], out["shadow_mode"]),
+                         ("fallback", "shadow_mode", "recorded_only"))
+        self.assertEqual(out["top"], ["m01", "m02", "m03", "m04", "m09"])      # 必留 m09 照留
+        self.assertEqual(out["shadow_top"], scored["top"])
+        self.assertEqual(out["shadow_scores"], scored["scores_used"])
+        self.assertIsNone(out["scores_used"])
+        self.assertEqual(policy.mr_rerank_at_level(cs, "shadow", sc), out)    # 確定性
+
+    def test_at_level_live_applies_only_when_ratified_flag_passed(self):
+        cs = mr_cands(12)
+        sc = mr_scores(cs, [11, 7, 2])
+        capped = policy.mr_rerank_at_level(cs, "live", sc)                     # apply_live 預設 False
+        self.assertEqual((capped["mode"], capped["top"]), ("fallback", capped["original_top"]))
+        applied = policy.mr_rerank_at_level(cs, "live", sc, apply_live=True)   # 今天走不到(MR_LIVE_RATIFIED=False)
+        self.assertEqual((applied["mode"], applied["top"]), ("scored", ["m11", "m07", "m02", "m01", "m03"]))
+        self.assertIsNone(applied["shadow_top"])
+        self.assertEqual(policy.mr_rerank_at_level(cs, "shadow", sc, apply_live=True)["mode"], "fallback")
+
+    def test_at_level_invalid_scores_fallback_without_shadow(self):
+        cs = mr_cands(8)
+        sc = mr_scores(cs, [3])
+        sc.pop("m05")
+        out = policy.mr_rerank_at_level(cs, "shadow", sc)
+        self.assertTrue(out["fallback_reason"].startswith("scores_invalid:missing="))
+        self.assertEqual((out["top"], out["shadow_mode"], out["shadow_top"]), (out["original_top"], None, None))
+
+    def test_at_level_rejects_off(self):
+        with self.assertRaises(JevError):
+            policy.mr_rerank_at_level(mr_cands(3), "off", {})
+
     def test_fallback_no_scores_is_original_top5(self):
         cs = mr_cands(12)
         out = policy.mr_rerank(cs, fallback_reason="no_api_key")
