@@ -15,10 +15,10 @@ base: research/jev-supermemory 278dda8（W8 補 + G2R／MR 名稱核准）
 > | 本檔內文的舊說法 | 現況（已被取代，見…） |
 > |---|---|
 > | `devflow-jev.py g2r-shadow` → `.devflow/jev/g2r-shadow.jsonl`，`gate_effect` 恆 `none` | 已被取代：`devflow-jev.py g2r --slug <slug>` → `.devflow/jev/g2r.jsonl`（`g2auto.G2R_LOG`、schema `devflow-g2r/1`）；AUTO = 交給 fresh agent reviewer，`write-g2-auto` 才寫 verdict（`devflow_gate.py`） |
-> | 「G2R 題組（`jev-questions.json`）進 manifest」 | 已被取代：題組在 `policy.G2R_QUESTIONS`（繁體中文，#425），用自己的 `g2r_fingerprint()`（`e68b6aa6dad6`）；`jev-questions.json`／`manifest.py` 沒有收錄 |
-> | case「六欄全必填」 | 已被取代：`policy.G2R_CASE_KEYS` 八欄（多 `authored_by_present`、`jev_status`） |
+> | 「G2R 題組（`jev-questions.json`）進 manifest」 | 已被取代：題組在 `policy.G2R_QUESTIONS`（繁體中文，#425），用自己的 `g2r_fingerprint()`（#425 當時 `e68b6aa6dad6`；2026-10-12 risk_paths 來源改後現為 `229764f20d8a`）；`jev-questions.json`／`manifest.py` 沒有收錄 |
+> | case「六欄全必填」 | 已被取代：`policy.G2R_CASE_KEYS` 九欄（多 `authored_by_present`、`jev_status`，以及 2026-10-12 新增的 `r_paths`） |
 > | 轉人條件 ①–⑤ | 已擴充：另有「當次改到 Jev runtime」與「缺 `authored_by`」；provenance／author≠approver 在 `write-g2-auto` 重判（ADR 0004 §3 全表） |
-> | 風險路徑來源「spec 宣告的 path」 | 程式現況只看 4-spec Diff Budget 的 `- Paths:` 一行；ADR 0004 原寫「宣告的路徑／R 列檔案」—— **以何者為準待 owner 決定**（見 ADR 0004 §3） |
+> | 風險路徑來源「spec 宣告的 path」 | **2026-10-12 owner 拍板**：判 4-spec Diff Budget 的 `- Paths:` ∪ R 列提到的檔案（`declared_paths` ＋ `r_paths`；已改程式，見 ADR 0004 §3）；「沒宣告 paths」「改到 Jev runtime」仍只看 `- Paths:` |
 > | 「G2 還是人審」「main 的契約、SKILL、guide、hooks 都沒改」 | 已被取代：ADR 0004 accepted、契約 §7／guide／SKILL／hooks 已改、`G2_AUTO_LIVE = True` |
 > | 風險 `normal` 未提 | 補充：`G2R_SPEC_RISK_SCORE = {high:2, medium:1, normal:0, low:0}`，`normal` 算 < 2 |
 

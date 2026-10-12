@@ -601,7 +601,7 @@ G2R_SPEC_RISK_SCORE = {"high": 2, "medium": 1, "normal": 0, "low": 0}
 G2R_ROUTES = ("AUTO", "HUMAN")
 G2R_NO_JEV = "no_jev"          # case.jev_status 只有 ok|no_jev;沒有 Jev 的細部原因記在分流紀錄 jev_reason(不進 case hash)
 G2R_AUTO_MEANS = "handoff_to_fresh_agent_reviewer_and_mechanical_checks_not_a_pass"
-G2R_CASE_KEYS = ("slug", "declared_paths", "spec_risk", "owner_calls_unresolved", "demo_verdict_required",
+G2R_CASE_KEYS = ("slug", "declared_paths", "r_paths", "spec_risk", "owner_calls_unresolved", "demo_verdict_required",
                  "authored_by_present", "jev", "jev_status")
 # 送 Jev 的題組(G2R 自己的一組;不進任何 J1–J5 題組)。score criteria 位置 = level。
 G2R_QUESTIONS = {
@@ -635,7 +635,8 @@ def g2r_fingerprint():
     payload = {"g2r_thresholds": G2R_THRESHOLDS, "g2r_jev_choices": list(G2R_JEV_CHOICES),
                "g2r_spec_risk_score": G2R_SPEC_RISK_SCORE, "risk_paths_default": list(RISK_PATHS_DEFAULT),
                "g2r_questions": G2R_QUESTIONS, "jev_absent": "noop",
-               "jev_runtime_markers": list(JEV_RUNTIME_MARKERS)}
+               "jev_runtime_markers": list(JEV_RUNTIME_MARKERS),
+               "risk_paths_sources": ["diff_budget_paths", "r_rows"]}     # owner 2026-10-12:risk_paths 判 Paths ∪ R 列檔案
     return sha256_hex(canonical_json(payload))[7:19]
 
 
@@ -684,6 +685,9 @@ def _validate_g2r_case(case):
     paths = case["declared_paths"]
     if not isinstance(paths, list) or not all(isinstance(p, str) for p in paths):
         raise JevError("G2R case.declared_paths 必須是字串 list(沒宣告 = [])")
+    r_paths = case["r_paths"]
+    if not isinstance(r_paths, list) or not all(isinstance(p, str) for p in r_paths):
+        raise JevError("G2R case.r_paths 必須是字串 list(R 列沒提到檔案 = [])")
     risk = case["spec_risk"]
     if risk is not None and risk not in G2R_SPEC_RISK_SCORE:
         raise JevError("G2R case.spec_risk=%r 不認得(只收 %s 或 null;先過 spec_risk_of)"
@@ -709,7 +713,10 @@ def route_g2(case):
 
     case 欄位(全必填;缺欄 → JevError):
       slug                   feature slug
-      declared_paths         4-spec 宣告的檔案路徑 list;[] = 沒宣告 → HUMAN(fail-closed,不當成「沒命中」)
+      declared_paths         4-spec Diff Budget `- Paths:` 宣告的檔案路徑 list;[] = 沒宣告 → HUMAN(fail-closed,不當成「沒命中」)
+      r_paths                4-spec R 列(ADDED／MODIFIED／REMOVED Requirements 的 R-n 區塊)提到的檔案 list
+                             (owner 2026-10-12 拍板:risk_paths 判 declared_paths ∪ r_paths;
+                             「沒宣告 paths」與「改到 Jev runtime」仍只看 declared_paths;[] = R 列沒提到檔案)
       spec_risk              spec_risk_of() 的結果(high|medium|normal|low)或 None(沒寫)
       owner_calls_unresolved 未裁決 Owner Call 條數;>0 → HUMAN
       demo_verdict_required  需要 Demo verdict(human-only)→ HUMAN
@@ -723,6 +730,7 @@ def route_g2(case):
     reasons = []
     signals = {"jev_present": jev is not None, "jev_status": case["jev_status"],
                "declared_paths": len([p for p in case["declared_paths"] if p.strip()]),
+               "r_paths": len([p for p in case["r_paths"] if p.strip()]),
                "spec_risk": case["spec_risk"], "owner_calls_unresolved": case["owner_calls_unresolved"],
                "demo_verdict_required": case["demo_verdict_required"],
                "authored_by_present": case["authored_by_present"]}
@@ -738,12 +746,18 @@ def route_g2(case):
         # 寫成 not (p >= 門檻):NaN 比較恆 False,也要落到 HUMAN(fail-closed)
         if not isinstance(p_auto, (int, float)) or isinstance(p_auto, bool) or not p_auto >= t["auto_pass_min"]:
             reasons.append("jev_p_auto_pass_below_threshold(%s<%s)" % (p_auto, t["auto_pass_min"]))
-    # ② 命中 risk_paths;spec 沒宣告任何 path 也算(全是空白字串 = 沒宣告)
+    # ② 命中 risk_paths(判 `- Paths:` 宣告 ∪ R 列提到的檔案);spec 沒宣告任何 path 也算(全是空白字串 = 沒宣告;
+    #    R 列提到檔案不能補上「沒宣告」—— 那一條只看 `- Paths:`)
     paths = [p.strip() for p in case["declared_paths"] if p.strip()]
+    r_paths = [p.strip() for p in case["r_paths"] if p.strip()]
     if not paths:
         reasons.append("spec_declares_no_paths")
+        hits = risk_ceiling_hit(r_paths)
+        signals["risk_path_hits"] = hits
+        if hits:
+            reasons.append("risk_paths_hit:%s" % ",".join(hits))
     else:
-        hits = risk_ceiling_hit(paths)
+        hits = risk_ceiling_hit(paths + [p for p in r_paths if p not in paths])
         signals["risk_path_hits"] = hits
         if hits:
             reasons.append("risk_paths_hit:%s" % ",".join(hits))
@@ -846,6 +860,9 @@ def validate_g2_agent_release(rec):
 
 
 G2M_NO_AGENT_RELEASE_NOTE = "目前沒有任何由 fresh agent reviewer 放行的紀錄,不是 0%"
+# 有 agent 放行、但沒有任何一筆能證明「已走到 G3」(7-review.md 沒有人簽 verdict)→ fail-closed:不進分母
+G2M_NO_G3_REACHED_NOTE = ("有 %d 筆 agent 放行,但沒有任何一筆已走到 G3(docs/dev/<slug>/7-review.md 不存在或沒有人簽 verdict);"
+                          "分母為 0,不是 0%%")
 
 
 def _g2m_counts(numerator, denominator, num_name, den_name):
@@ -856,14 +873,19 @@ def _g2m_counts(numerator, denominator, num_name, den_name):
         raise JevError("%s %d > %s %d —— 資料不一致,不算率" % (num_name, numerator, den_name, denominator))
 
 
-def g2_misrelease_rate(misreleased, agent_released):
-    """誤放行率 = 誤放行數 ÷ 真的由 fresh agent reviewer 放行的 G2R AUTO case 數。
-    分母 0 → rate=None、status=insufficient_data(**不是 0%**)。只記錄:沒有門檻、不自動退回人審。"""
-    _g2m_counts(misreleased, agent_released, "誤放行數", "agent 放行數")
-    if agent_released == 0:
+def g2_misrelease_rate(misreleased, g3_reached_released, agent_released=None):
+    """誤放行率 = 誤放行數 ÷ 「已走到 G3 的 agent 自動放行 G2」的 case 數(owner 2026-10-12 拍板)。
+    分子必須是分母的子集(呼叫端只傳「分母內」的誤放行數)。
+    分母 0 → rate=None、status=insufficient_data(**不是 0%**);agent_released(全部 agent 放行數)> 0 時
+    note 另講「有放行但還沒有任何一筆走到 G3」。只記錄:沒有門檻、不自動退回人審。"""
+    _g2m_counts(misreleased, g3_reached_released, "誤放行數", "已走到 G3 的 agent 放行數")
+    if g3_reached_released == 0:
+        if isinstance(agent_released, int) and not isinstance(agent_released, bool) and agent_released > 0:
+            return {"rate": None, "status": "insufficient_data",
+                    "note": G2M_NO_G3_REACHED_NOTE % agent_released}
         return {"rate": None, "status": "insufficient_data", "note": G2M_NO_AGENT_RELEASE_NOTE}
-    return {"rate": misreleased / agent_released, "status": "ok",
-            "note": "n=%d(agent 放行數;不設門檻;率只進 report,不接任何阻擋或回滾)" % agent_released}
+    return {"rate": misreleased / g3_reached_released, "status": "ok",
+            "note": "n=%d(已走到 G3 的 agent 放行數;不設門檻;率只進 report,不接任何阻擋或回滾)" % g3_reached_released}
 
 
 def g2_human_counterfactual_rate(human_released_spec_issue, auto_total):

@@ -47,7 +47,7 @@ def jev_answers(choice="AUTO_PASS", p_auto=0.9, risk=1):
 
 
 def base_case(**over):
-    case = {"slug": SLUG, "declared_paths": ["src/app/handler.py"], "spec_risk": "normal",
+    case = {"slug": SLUG, "declared_paths": ["src/app/handler.py"], "r_paths": [], "spec_risk": "normal",
             "owner_calls_unresolved": 0, "demo_verdict_required": False, "authored_by_present": True,
             "jev": {"g2_route": {"choice": "AUTO_PASS", "probabilities": {"AUTO_PASS": 0.9}}, "risk": {"score": 1}},
             "jev_status": "ok"}
@@ -108,6 +108,11 @@ class Repo(object):
         return JEV.run_g2r(self.root, SLUG, environ=self.env if env is None else env,
                            transport_factory=lambda *a: transport, clock=clock or FakeClock(),
                            now="2026-09-27T00:00:00Z")
+
+    def g3_review(self, verdict="PASS", source="human_attested", by="human:ada"):
+        """寫 docs/dev/<slug>/7-review.md 頂欄(誤放行率分母的「已走到 G3」證據)。"""
+        self.write("7-review.md", "---\nfeature: %s\nstage: 7-review\nverdict: %s\nverdict_source: %s\n"
+                   "attested_by: %s\n---\n# 7. 驗證\n" % (SLUG, verdict, source, by))
 
     def release(self, reviewer="agent:reviewer-9"):
         return GATE.write_g2_auto(__import__("pathlib").Path(self.root), SLUG, reviewer,
@@ -449,6 +454,10 @@ class G2AutoRelease(unittest.TestCase):
         self.assertEqual(releases[0]["reported_by"], "agent:reviewer-9")
         self.assertEqual(out["g2_misrelease_release"], [JEV.G2M_RELEASE_LOG.replace(os.sep, "/")])
         report = JEV.run_g2_misrelease_report(self.repo.root)
+        self.assertEqual((report["agent_released"], report["misreleased"]), (1, 0))
+        self.assertIsNone(report["misrelease_rate"])          # 還沒走到 G3 → 不進分母,不是 0%
+        self.repo.g3_review("PASS")
+        report = JEV.run_g2_misrelease_report(self.repo.root)
         self.assertEqual((report["agent_released"], report["misreleased"], report["misrelease_rate"]), (1, 0, 0.0))
         self.assertIsNone(report["threshold"])
         self.assertFalse(report["auto_revert"])
@@ -785,6 +794,7 @@ class Misrelease(unittest.TestCase):
     def test_g3_root_cause_spec_record_counts_and_rate_only_reported(self):
         JEV.run_g2_misrelease_record(self.repo.root, SLUG, self.routed["case_hash"], "G3", "g3_request_changes",
                                      "docs/dev/demo/7-review.md", "fresh_agent_reviewer", "human:ada")
+        self.repo.g3_review("REQUEST_CHANGES")
         report = JEV.run_g2_misrelease_report(self.repo.root)
         self.assertTrue(report["consistent"])
         self.assertEqual((report["misreleased"], report["agent_released"], report["misrelease_rate"]), (1, 1, 1.0))
@@ -807,6 +817,162 @@ class Misrelease(unittest.TestCase):
         with open(os.path.join(SCRIPTS, "devflow_gate.py"), encoding="utf-8") as fh:
             src = fh.read()
         self.assertIn('"g2-misrelease", "release"', src)
+
+
+class MisreleaseDenominatorReachedG3(unittest.TestCase):
+    """owner 2026-10-12 拍板:誤放率分母 = 已走到 G3 的 agent 自動放行 G2;證據 = 7-review.md 人簽 verdict;
+    判不出來 → fail-closed 不進分母(不是 0%)。"""
+
+    def setUp(self):
+        self.repo = Repo()
+        self.routed = self.repo.g2r()
+        self.repo.release()
+
+    def tearDown(self):
+        self.repo.cleanup()
+
+    def report(self):
+        return JEV.run_g2_misrelease_report(self.repo.root)
+
+    def assertNoDenominator(self, out):
+        self.assertEqual((out["agent_released"], out["g3_reached_agent_released"]), (1, 0))
+        self.assertIsNone(out["misrelease_rate"])
+        self.assertEqual(out["rate_status"], "insufficient_data")
+        self.assertIn("沒有任何一筆已走到 G3", out["rate_note"])
+        self.assertIn("不是 0%", out["rate_note"])
+        self.assertTrue(out["consistent"])
+
+    def test_released_but_no_7_review_is_not_in_denominator(self):
+        self.assertNoDenominator(self.report())
+
+    def test_pre_review_or_empty_verdict_is_not_g3(self):
+        for verdict in ("PRE-REVIEW", ""):
+            self.repo.g3_review(verdict)
+            self.assertNoDenominator(self.report())
+
+    def test_non_human_signed_verdict_is_not_g3_evidence(self):
+        for source, by in (("fresh_agent_reviewer", "agent:x"), ("human_attested", "agent:x"),
+                           ("human_attested", ""), ("", "human:ada"), ("owner_self_review", "agent:x")):
+            self.repo.g3_review("PASS", source, by)
+            self.assertNoDenominator(self.report())
+
+    def test_human_signed_verdicts_count_for_all_three_values_and_both_sources(self):
+        for verdict, source in (("PASS", "human_attested"), ("REQUEST_CHANGES", "human_attested"),
+                                ("HOLD", "owner_self_review")):
+            self.repo.g3_review(verdict, source)
+            out = self.report()
+            self.assertEqual((out["g3_reached_agent_released"], out["misrelease_rate"]), (1, 0.0), verdict)
+            self.assertEqual(out["misrelease_denominator"], "g3_reached_agent_released")
+
+    def test_implementation_stage_misrelease_before_g3_is_listed_but_not_in_rate(self):
+        JEV.run_g2_misrelease_record(self.repo.root, SLUG, self.routed["case_hash"], "implementation", "spec_returned",
+                                     "docs/dev/demo/5-tasks.md", "fresh_agent_reviewer", "agent:x")
+        out = self.report()
+        self.assertTrue(out["consistent"])
+        self.assertEqual((out["misreleased"], out["misreleased_g3_reached"], out["misreleased_not_reached_g3"]), (1, 0, 1))
+        self.assertIsNone(out["misrelease_rate"])                    # 分母 0:不是 0%、也不是 100%
+        self.repo.g3_review("PASS")
+        out = self.report()
+        self.assertEqual((out["misreleased_g3_reached"], out["misreleased_not_reached_g3"], out["misrelease_rate"]),
+                         (1, 0, 1.0))
+
+    def test_g3_record_without_7_review_does_not_prove_g3(self):
+        JEV.run_g2_misrelease_record(self.repo.root, SLUG, self.routed["case_hash"], "G3", "g3_hold",
+                                     "docs/dev/demo/7-review.md", "fresh_agent_reviewer", "human:ada")
+        out = self.report()
+        self.assertEqual((out["misreleased"], out["misreleased_not_reached_g3"]), (1, 1))
+        self.assertIsNone(out["misrelease_rate"])                    # 紀錄自己說的不採信,檔案證據才算
+
+    def test_g3_reached_function_is_fail_closed(self):
+        self.assertEqual(g2auto.g3_reached(self.repo.root, SLUG)[0], False)
+        self.repo.g3_review("PASS")
+        self.assertEqual(g2auto.g3_reached(self.repo.root, SLUG)[0], True)
+        for bad in ("../demo", "demo/../demo", "", None, "a b"):
+            self.assertEqual(g2auto.g3_reached(self.repo.root, bad)[0], False, repr(bad))
+        os.remove(os.path.join(self.repo.dir, "7-review.md"))
+        os.mkdir(os.path.join(self.repo.dir, "7-review.md"))        # 讀不到(是目錄)→ False,不 crash
+        self.assertEqual(g2auto.g3_reached(self.repo.root, SLUG)[0], False)
+
+    def test_rate_function_notes(self):
+        self.assertEqual(policy.g2_misrelease_rate(1, 4, 9)["rate"], 0.25)
+        none = policy.g2_misrelease_rate(0, 0, 3)
+        self.assertEqual((none["rate"], none["status"]), (None, "insufficient_data"))
+        self.assertIn("3 筆 agent 放行", none["note"])
+        self.assertEqual(policy.g2_misrelease_rate(0, 0, 0)["note"], policy.G2M_NO_AGENT_RELEASE_NOTE)
+        with self.assertRaises(JevError):                           # 分子必須是分母的子集
+            policy.g2_misrelease_rate(2, 1, 5)
+
+
+class RiskPathsFromRRows(unittest.TestCase):
+    """owner 2026-10-12 拍板:risk_paths 判 `- Paths:` ∪ R 列提到的檔案;「沒宣告 paths」「改到 Jev runtime」仍只看 Paths。"""
+
+    SPEC = ("# x\n## ADDED Requirements\n"
+            "### R-1: 系統 SHALL 改 `auth/login.go` 與 src/app.py,見 http://a.b/c/d.py\n"
+            "#### S-1\n- 觀測: logs/app.log、Dockerfile、./db/migrations/0001.sql\n"
+            "### R-2: 沒檔案 SHALL 做事 v1.2\n"
+            "## Out of Scope\n### R-9: docs/not-in-r.md\n"
+            "## MODIFIED Requirements\n### Note: other/x.py\n### R-3: payments/charge.go\n"
+            "## REMOVED Requirements\n### R-4: 移除 old/thing.py\n```\n### R-5: fenced/skip.py\n```\n"
+            "<!-- ### R-6: commented/skip.py -->\n")
+
+    def test_r_row_paths_extracts_only_r_blocks_in_requirement_sections(self):
+        self.assertEqual(g2auto.r_row_paths(self.SPEC),
+                         ["auth/login.go", "src/app.py", "logs/app.log", "Dockerfile", "db/migrations/0001.sql",
+                          "payments/charge.go", "old/thing.py"])
+
+    def test_r_row_paths_empty_cases(self):
+        self.assertEqual(g2auto.r_row_paths(""), [])
+        self.assertEqual(g2auto.r_row_paths("## ADDED Requirements\n### R-1: 系統 SHALL <行為>\n"), [])
+        self.assertEqual(g2auto.r_row_paths("## Diff Budget\n- Paths: auth/x.py\n"), [])
+
+    def test_r_paths_hit_routes_human_even_with_safe_paths(self):
+        out = policy.route_g2(base_case(r_paths=["db/migrations/0007.sql", "src/ok.py"]))
+        self.assertEqual(out["route"], "HUMAN")
+        self.assertIn("risk_paths_hit:db/migrations/0007.sql", out["reasons"])
+        self.assertEqual(out["signals"]["risk_path_hits"], ["db/migrations/0007.sql"])
+        self.assertEqual(policy.route_g2(base_case(r_paths=["src/ok.py"]))["route"], "AUTO")
+
+    def test_r_paths_cannot_stand_in_for_missing_paths_declaration(self):
+        out = policy.route_g2(base_case(declared_paths=[], r_paths=["src/ok.py"]))
+        self.assertEqual(out["route"], "HUMAN")
+        self.assertIn("spec_declares_no_paths", out["reasons"])
+        out = policy.route_g2(base_case(declared_paths=[], r_paths=["auth/x.py"]))
+        self.assertIn("spec_declares_no_paths", out["reasons"])
+        self.assertIn("risk_paths_hit:auth/x.py", out["reasons"])
+
+    def test_jev_runtime_marker_in_r_paths_is_not_a_runtime_change(self):
+        out = policy.route_g2(base_case(r_paths=["scripts/devflow_jev/policy.py"]))
+        self.assertEqual(out["route"], "AUTO")                      # ⑥ 仍只看 `- Paths:`
+
+    def test_r_paths_must_be_a_string_list_and_present(self):
+        for bad in ("auth/x.py", [1], None):
+            with self.assertRaises(JevError, msg=repr(bad)):
+                policy.route_g2(base_case(r_paths=bad))
+        case = base_case()
+        del case["r_paths"]
+        with self.assertRaises(JevError):
+            policy.route_g2(case)
+
+    def test_r_paths_is_part_of_case_hash(self):
+        self.assertNotEqual(policy.g2r_case_hash(base_case()), policy.g2r_case_hash(base_case(r_paths=["a/b.py"])))
+
+    def test_build_case_and_release_use_r_row_files(self):
+        repo = Repo()
+        try:
+            self.assertEqual(g2auto.build_case(repo.root, SLUG)["r_paths"], g2auto.r_row_paths(repo.read()))
+            spec = repo.read().replace("### R-1: ", "### R-1: 同步改 `auth/session.go` — ", 1)
+            repo.write("4-spec.md", spec)
+            case = g2auto.build_case(repo.root, SLUG)
+            self.assertIn("auth/session.go", case["r_paths"])
+            self.assertEqual(case["declared_paths"], ["src/contracts/handler.go", "tests/contracts/"])
+            routed = repo.g2r()
+            self.assertEqual(routed["route"], "HUMAN")
+            self.assertIn("risk_paths_hit:auth/session.go", routed["reasons"])
+            with self.assertRaises(ValueError) as ctx:
+                repo.release()
+            self.assertIn("risk_paths_hit:auth/session.go", str(ctx.exception))
+        finally:
+            repo.cleanup()
 
 
 class G2RQuestionsZhTW(unittest.TestCase):

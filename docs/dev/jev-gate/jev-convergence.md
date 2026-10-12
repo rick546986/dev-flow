@@ -93,6 +93,6 @@ JSON 與純文字呈現對答案幾乎無影響（同措辭下差 ≤0.1），�
 ## 8. 後續紀錄：#425 G2R 題組改為繁體中文（2026-10-12 補記）
 
 - main #425：G2R（`g2_route` + `risk`）送 Jev 的題組文字改為**繁體中文**（鍵、type、choice 鍵 `AUTO_PASS`／`HUMAN_REVIEW`／`REQUEST_CHANGES`、risk criteria 順序＝level 0–3 都不變）。
-- 題組住在 `scripts/devflow_jev/policy.py` 的 `G2R_QUESTIONS`（不在 `jev-questions.json`，`manifest.py` 未收錄）；`policy.g2r_fingerprint()` = **`e68b6aa6dad6`**（main `5ca0a54`）。
+- 題組住在 `scripts/devflow_jev/policy.py` 的 `G2R_QUESTIONS`（不在 `jev-questions.json`，`manifest.py` 未收錄）；`policy.g2r_fingerprint()` = **`e68b6aa6dad6`**（main `5ca0a54`；2026-10-12 owner 拍板 risk_paths 來源改成 `- Paths:` ∪ R 列檔案後，現為 **`229764f20d8a`**）。
 - 與本檔 §6 的教訓直接相關：題組措辭會改變答案（F3 隨問法翻）。語言換了更是如此 —— `roadmap.md` §2.1 既有的「英文是主要訓練語言；**繁中／英文需分 slice 評估，不預設同 threshold**」現在適用 G2R：`p(AUTO_PASS) ≥ 0.85`、risk ≥ 2 是英文題組時期的未校準工程值，不得假設繁中題組沿用同一門檻；評估 G2R 時要以 fingerprint／題組語言分 slice。
 - 本檔 §6 的「≥3 種措辭跑過」要求對 G2R 繁中題組是否已滿足，文件未載明。

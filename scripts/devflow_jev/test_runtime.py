@@ -1319,7 +1319,7 @@ class W10G2Misrelease(RuntimeBase):
     route 仍由 policy.route_g2 算(不手填 AUTO)。"""
 
     def case(self, **kw):
-        c = {"slug": "demo-feature", "declared_paths": ["src/app/handler.py"], "spec_risk": "normal",
+        c = {"slug": "demo-feature", "declared_paths": ["src/app/handler.py"], "r_paths": [], "spec_risk": "normal",
              "owner_calls_unresolved": 0, "demo_verdict_required": False, "authored_by_present": True,
              "jev": None, "jev_status": "no_jev"}
         c.update(kw)
@@ -1348,6 +1348,14 @@ class W10G2Misrelease(RuntimeBase):
     def release(self, case_hash, slug="demo-feature", evidence="docs/dev/demo-feature/g2-agent-review.md",
                 reporter="agent:claude"):
         return rt.run_g2_agent_release(self.tmp, slug, case_hash, evidence, reporter, now="2026-09-27T00:30:00Z")
+
+    def g3_verdict(self, slug="demo-feature", verdict="REQUEST_CHANGES"):
+        """docs/dev/<slug>/7-review.md 人簽 verdict = 「已走到 G3」證據(誤放行率分母)。"""
+        d = os.path.join(self.tmp, "docs", "dev", slug)
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, "7-review.md"), "w", encoding="utf-8") as fh:
+            fh.write("---\nfeature: %s\nstage: 7-review\nverdict: %s\nverdict_source: human_attested\n"
+                     "attested_by: human:rick\n---\n" % (slug, verdict))
 
     def log_lines(self, log=None):
         with open(os.path.join(self.tmp, log or rt.G2M_LOG), encoding="utf-8") as fh:
@@ -1446,6 +1454,7 @@ class W10G2Misrelease(RuntimeBase):
         h = self.auto_hash()
         self.auto_hash(path="src/app/b.py")                             # 沒被 agent 放行的 AUTO 不進分母
         self.release(h)
+        self.g3_verdict(verdict="PASS")
         out = rt.run_g2_misrelease_report(self.tmp)
         self.assertEqual((out["auto_total"], out["agent_released"], out["misreleased"], out["misrelease_rate"],
                           out["rate_status"]), (2, 1, 0, 0.0, "ok"))
@@ -1534,14 +1543,35 @@ class W10G2Misrelease(RuntimeBase):
         self.record(h2, stage="implementation", via="reverted", evidence="deadbee", reporter="human:rick")
         for h in (h1, h2, h3, h4):
             self.release(h)
+        self.g3_verdict()
         out = rt.run_g2_misrelease_report(self.tmp)
         self.assertEqual(out["auto_total"], 5)
-        self.assertEqual(out["agent_released"], 4)                      # 分母 = agent 放行數,不是 AUTO 總數
+        self.assertEqual(out["agent_released"], 4)
+        self.assertEqual(out["g3_reached_agent_released"], 4)           # 分母 = 已走到 G3 的 agent 放行數,不是 AUTO 總數
         self.assertEqual(out["misreleased"], 2)
         self.assertEqual(out["misrelease_rate"], 0.5)
         self.assertEqual(out["rate_status"], "ok")
         self.assertEqual(out["misreleased_by_stage"], {"G3": 0, "implementation": 2})
         self.assertFalse(out["blocks_anything"])
+
+    def test_rate_denominator_is_only_agent_released_cases_that_reached_g3(self):
+        ha = self.auto_hash(slug="feat-a", path="src/a.py")
+        hb = self.auto_hash(slug="feat-b", path="src/b.py")
+        self.release(ha, slug="feat-a")
+        self.release(hb, slug="feat-b")
+        self.g3_verdict(slug="feat-a", verdict="PASS")                  # 只有 feat-a 走到 G3
+        self.record(hb, slug="feat-b", stage="implementation", via="spec_returned", evidence="abc1234",
+                    reporter="agent:claude")                            # feat-b 在實作階段就被發現
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertTrue(out["consistent"])
+        self.assertEqual((out["agent_released"], out["g3_reached_agent_released"], out["agent_released_not_reached_g3"]),
+                         (2, 1, 1))
+        self.assertEqual((out["misreleased"], out["misreleased_g3_reached"], out["misreleased_not_reached_g3"]), (1, 0, 1))
+        self.assertEqual((out["misrelease_rate"], out["rate_status"]), (0.0, "ok"))   # 0 ÷ 1(feat-a),不是 1 ÷ 2
+        self.assertIn("n=1", out["rate_note"])
+        self.record(ha, slug="feat-a")
+        out = rt.run_g2_misrelease_report(self.tmp)
+        self.assertEqual((out["misreleased"], out["misreleased_g3_reached"], out["misrelease_rate"]), (2, 1, 1.0))
 
     def test_human_released_is_counterfactual_not_misrelease(self):
         h = self.auto_hash()
@@ -1558,6 +1588,7 @@ class W10G2Misrelease(RuntimeBase):
         self.record(hs[1], released="human", stage="implementation", via="reverted", evidence="deadbee")
         self.release(hs[2])
         self.record(hs[2])                                              # agent 放行 → 真誤放行
+        self.g3_verdict()
         out = rt.run_g2_misrelease_report(self.tmp)
         self.assertTrue(out["consistent"])
         self.assertEqual((out["human_counterfactual"], out["human_counterfactual_rate"]), (2, 0.5))   # 2 ÷ AUTO 4
@@ -1658,6 +1689,10 @@ class W10G2Misrelease(RuntimeBase):
         self.assertEqual(len(self.log_lines(rt.G2M_RELEASE_LOG)), 1)
         r = self.cli("report")
         self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIsNone(json.loads(r.stdout)["misrelease_rate"])      # 有放行、但還沒走到 G3 → 分母 0,不是 0%
+        self.assertEqual(json.loads(r.stdout)["g3_reached_agent_released"], 0)
+        self.g3_verdict(verdict="PASS")
+        r = self.cli("report")
         self.assertEqual(json.loads(r.stdout)["misrelease_rate"], 0.0)
         base = ["record", "--slug", "demo-feature", "--case-hash", h, "--evidence-ref", "docs/dev/demo-feature/7-review.md",
                 "--released-by", "fresh_agent_reviewer", "--reported-by", "human:rick"]

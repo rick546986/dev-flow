@@ -11,7 +11,7 @@ supersedes: roadmap draft-v4 §0 第 6、7、9 條的「上線路徑」語意（
 
 > **2026-10-12 校對註記(以程式現況為準;原文保留)**:本檔是 2026-09-26 的方向紀錄。G2 自動審已由 main #418 上線(ADR 0004 accepted、`G2_AUTO_LIVE = True`);下列各處與程式不一致,已就地標註:
 > ① §3.2 risk「與 J5 同刻度」→ 已更正(0–3、門檻 2 相同,各級文字定義不同);
-> ② §3.2 risk_paths 判定來源、§3.3 誤放率分母、§3.3 誤放事件範圍 → **程式現況與本檔原文不同,以何者為準待 owner 決定**;
+> ② §3.2 risk_paths 判定來源、§3.3 誤放率分母、§3.3 誤放事件範圍 → **2026-10-12 owner 拍板**:risk_paths 判 `- Paths:` ∪ R 列檔案（改程式）、誤放率分母只算「已走到 G3 的 agent 自動放行 G2」（改程式）、誤放事件除 G3 退件外另收實作階段三種事件（只改文件）;各處已就地更新;
 > ③ §5 C4 補 `normal`。
 > 另:本檔 §3.6 ADR 草稿的正本已是 `docs/adr/0004-g2-spec-auto-review.md`。
 
@@ -76,7 +76,7 @@ supersedes: roadmap draft-v4 §0 第 6、7、9 條的「上線路徑」語意（
 |---|---|---|
 | Jev `g2_route` = HUMAN | `policy.route_g2`（P2-9 新增） | 只在有 key + opt-in 時存在 |
 | Jev 信心不足 | `p(AUTO_PASS) < 0.85` | §5 C3（owner 定案）：≥ 0.85 才走自動審 |
-| 命中 `risk_paths` | `policy.RISK_PATHS_DEFAULT`（A7）對 4-spec 宣告的 changed paths／R 列檔案 | 同 P2-4 機械 ceiling，不看任何分數。**⚠ 待 owner 決定**：程式現況只看 4-spec Diff Budget 的 `- Paths:` 一行；本欄原寫「changed paths／R 列檔案」；以何者為準待 owner 決定 |
+| 命中 `risk_paths` | `policy.RISK_PATHS_DEFAULT`（A7）對 4-spec 宣告的 changed paths／R 列檔案 | 同 P2-4 機械 ceiling，不看任何分數。**（2026-10-12 owner 拍板）**判 4-spec Diff Budget 的 `- Paths:` ∪ R 列（`### R-n` 區塊）提到的檔案（`g2auto.build_case` 的 `declared_paths` ＋ `r_paths`）；「沒宣告 paths」與「改到 Jev runtime」仍只看 `- Paths:` |
 | 4-spec 沒宣告任何檔案路徑 | 同上來源為空 | G2 階段還沒有 diff 可推 changed_paths，無從判定是否命中 `risk_paths` → **直接轉人**（fail-closed，不當成「沒命中」） |
 | risk score ≥ 2 | 有 Jev：`risk` Score（0–3；~~與 J5 同刻度~~ 已更正：與 J5 同為 0–3、門檻同在 2，但各級文字定義不同——權限 J5 在 level 2、G2R 在 level 3；跨模組介面 G2R 在 level 2、J5 未列；見 ADR 0004 §3 註）；無 Jev：4-spec `- Risk:` 映射（§5 C4） | C4（owner 定案）：無 Jev 時 `Risk: high` 視同 ≥2 → 轉人 |
 | 有未裁決的 OC | `check-spec-gate.sh`／2-decision Owner Calls 無殘留 | OC 永遠人裁 |
@@ -90,8 +90,8 @@ C1（人工抽查）與 C2（誤放達門檻自動退回人審）**整項移除*
 
 | 監控 | 定義 | 動作 |
 |---|---|---|
-| G2 誤放（**⚠ 事件範圍待 owner 決定**：程式現況另收實作階段 `spec_amended`／`spec_returned`／`reverted` 三種事件，見 `w10-g2-misrelease.md` §1） | G3 退件（REQUEST_CHANGES／HOLD），且退件原因追得到規格（R/S 錯漏、DD 判錯、Verification Profile 漏層、spec 自相矛盾） | 記一筆 `g2_misrelease`，綁同 feature 的 G2 evaluation／verdict hash；追不到規格的 G3 退件不算 |
-| G2 誤放率 | `g2_misrelease` 筆數 ÷ 已走到 G3 的自動 G2 筆數（**⚠ 待 owner 決定**：程式現況分母 = 所有 fresh agent 放行的 G2R AUTO 筆數，含尚未走到 G3 者；見 ADR 0004 §6、`w10-g2-misrelease.md` §4） | 只進 report；**不阻擋任何 G2、不自動退回人審、不觸發抽查** |
+| G2 誤放（**事件範圍，2026-10-12 owner 拍板照程式現況**：除 G3 退件外，另收實作階段 `spec_amended`／`spec_returned`／`reverted` 三種事件，見 `w10-g2-misrelease.md` §1） | G3 退件（REQUEST_CHANGES／HOLD），且退件原因追得到規格（R/S 錯漏、DD 判錯、Verification Profile 漏層、spec 自相矛盾） | 記一筆 `g2_misrelease`，綁同 feature 的 G2 evaluation／verdict hash；追不到規格的 G3 退件不算 |
+| G2 誤放率 | `g2_misrelease` 筆數 ÷ 已走到 G3 的自動 G2 筆數（**分母，2026-10-12 owner 拍板**：只算「已走到 G3 的 agent 自動放行 G2」；「已走到 G3」= `docs/dev/<slug>/7-review.md` 有人簽 verdict，判不出 fail-closed 不進分母；見 ADR 0004 §6、`w10-g2-misrelease.md` §4） | 只進 report；**不阻擋任何 G2、不自動退回人審、不觸發抽查** |
 
 G3 退件「原因追得到規格」由 **G3 的人類 reviewer** 在 7-review 退件理由勾 `root_cause: spec`（P2-10 新增欄），agent 不得代勾。這是 G3 本來就由人做的退件判斷，不是 G2 放行後的額外人工步驟。
 

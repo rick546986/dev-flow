@@ -72,6 +72,38 @@ def declared_paths(spec_text):
     return []
 
 
+_R_HEADING_RE = re.compile(r"^###\s+R-\d+\b")
+_R_SECTION_RE = re.compile(r"^##\s+(ADDED|MODIFIED|REMOVED)\s+Requirements\b")
+_PATH_EXT = r"(?:py|sh|js|jsx|ts|tsx|go|java|rb|rs|sql|ya?ml|json|toml|md|html?|css|tf|cfg|ini|env|conf|lock)"
+_PATH_TOKEN_RE = re.compile(r"[A-Za-z0-9_.@~\-]+(?:/[A-Za-z0-9_.@~\-]+)+/?|[A-Za-z0-9_\-][A-Za-z0-9_.\-]*\.%s\b|Dockerfile\b" % _PATH_EXT)
+
+
+def r_row_paths(spec_text):
+    """4-spec R 列(`## ADDED／MODIFIED／REMOVED Requirements` 底下 `### R-n` 區塊,含其 S 小節)提到的檔案路徑。
+
+    路徑形狀 = 含 `/` 的 token(`src/app/handler.py`、`db/migrations/`)、有常見副檔名的檔名(`handler.py`)、
+    或 `Dockerfile`;`http(s)://` 網址不算。這是**啟發式**:多抓只會讓 risk_paths 多命中一些 = 多交給人審
+    (fail-closed 方向),不會放寬;漏抓的檔案仍要靠 `- Paths:` 宣告寫實。fenced code、註解、模板占位 `<…>` 不算。
+    保序、去重;沒有 R 區塊或 R 區塊沒提到檔案 → []。"""
+    out, in_section, in_r = [], False, False
+    for line in _strip_fenced_and_comments(spec_text).splitlines():
+        if line.startswith("## "):
+            in_section = bool(_R_SECTION_RE.match(line))
+            in_r = False
+            continue
+        if not in_section:
+            continue
+        if line.startswith("### "):
+            in_r = bool(_R_HEADING_RE.match(line))
+        if not in_r:
+            continue
+        for tok in _PATH_TOKEN_RE.finditer(re.sub(r"https?://\S+|<[^>]*>", " ", line)):
+            item = re.sub(r"^(?:\.{1,2}/)+", "", tok.group(0))
+            if item and item not in out:
+                out.append(item)
+    return out
+
+
 def owner_calls_unresolved(decision_text):
     """2-decision「## Owner Calls」節裡狀態欄沒有 ✅／✗(或含「待」)的 OC 列數。沒有 2-decision → 0。
     整列除了 OC 編號全空 = 模板占位,不算。"""
@@ -102,6 +134,31 @@ def _read(path):
 
 def spec_path(root, slug):
     return os.path.join(root, "docs", "dev", slug, "4-spec.md")
+
+
+def review_path(root, slug):
+    return os.path.join(root, "docs", "dev", slug, "7-review.md")
+
+
+def g3_reached(root, slug):
+    """該 slug 的 G3 是否「已走到」—— 誤放行率分母的證據(owner 2026-10-12 拍板)。回 (bool, 原因)。
+
+    證據 = `docs/dev/<slug>/7-review.md` 頂欄有**人簽**的 G3 verdict:`verdict` ∈ PASS|REQUEST_CHANGES|HOLD
+    且 `verdict_source` ∈ human_attested|owner_self_review 且 `attested_by: human:<名>`(`attestation.classify`)。
+    **fail-closed**:檔案不存在、讀不到、頂欄缺、verdict 空／PRE-REVIEW、來源不是人簽 → 一律 False(不進分母)。
+    以 slug 為單位,不比對 verdict 與放行的先後;不採信 agent 或 misrelease 紀錄自己說的「已到 G3」。"""
+    if not isinstance(slug, str) or not re.match(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$", slug):
+        return False, "slug 不合法"
+    try:
+        text = _read(review_path(root, slug))
+    except (OSError, UnicodeDecodeError):
+        return False, "7-review.md 讀不到"
+    if text is None:
+        return False, "沒有 7-review.md"
+    cls = attestation.classify_document(text)
+    if cls["label"] in attestation.HUMAN_SOURCES:
+        return True, "7-review.md verdict=%s(%s)" % (cls["verdict"], cls["label"])
+    return False, "7-review.md 沒有人簽的 G3 verdict(label=%s)" % cls["label"]
 
 
 # ───────────────────────────── 機械檢查(check-spec-gate + stage3)─────────────────────────────
@@ -184,7 +241,8 @@ def build_case(root, slug, jev=None, environ=None, stage3=None):
     decision_text = _read(os.path.join(root, "docs", "dev", slug, "2-decision.md"))
     st = stage3 if stage3 is not None else stage3_state(root, slug, environ)
     authored = (attestation.parse_frontmatter(spec_text).get("authored_by") or "").strip()
-    return {"slug": slug, "declared_paths": declared_paths(spec_text), "spec_risk": policy.spec_risk_of(spec_text),
+    return {"slug": slug, "declared_paths": declared_paths(spec_text), "r_paths": r_row_paths(spec_text),
+            "spec_risk": policy.spec_risk_of(spec_text),
             "owner_calls_unresolved": owner_calls_unresolved(decision_text),
             "demo_verdict_required": bool(st["demo_verdict_required"]),
             "authored_by_present": _actor(authored) is not None,

@@ -1680,7 +1680,7 @@ class W7J2TrackAndStage3Polarity(unittest.TestCase):
 # ───────────────────────────── W9 P2-9:G2R 分流(shadow) ─────────────────────────────
 def g2r_case(**kw):
     """預設 = 沒有任何轉人條件的案子(沒有 Jev);各測試只改一欄。"""
-    case = {"slug": "demo-feature", "declared_paths": ["src/app/handler.py", "tests/test_handler.py"],
+    case = {"slug": "demo-feature", "declared_paths": ["src/app/handler.py", "tests/test_handler.py"], "r_paths": [],
             "spec_risk": "normal", "owner_calls_unresolved": 0, "demo_verdict_required": False, "jev": None,
             "authored_by_present": True}
     case.update(kw)
@@ -1846,7 +1846,7 @@ class W9G2RRoute(unittest.TestCase):
         with self.assertRaises(JevError):
             policy.route_g2(dict(g2r_case(), verdict="PASS"))
         for bad in ({"spec_risk": "HIGH"}, {"spec_risk": "critical"}, {"owner_calls_unresolved": True},
-                    {"owner_calls_unresolved": -1}, {"declared_paths": "src/a.py"}, {"demo_verdict_required": "no"},
+                    {"owner_calls_unresolved": -1}, {"declared_paths": "src/a.py"}, {"r_paths": "src/a.py"}, {"demo_verdict_required": "no"},
                     {"jev": "AUTO_PASS"}, {"slug": ""}):
             with self.assertRaises(JevError, msg=bad):
                 policy.route_g2(g2r_case(**bad))

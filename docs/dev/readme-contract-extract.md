@@ -118,7 +118,8 @@ G2 = 契約寫得對不對
     `mode: shadow` 有 key 時仍會送一次 Jev,回答只記錄、分流當作沒有 Jev(= no-op);只有 `mode: live` 的回答拿來分流。
   - 「G2 轉人條件」(任一成立 → 交給人審,不能自動放行;命中卻只有 agent 的 verdict → 機械擋下):
     ① Jev 判 HUMAN,或信心 p(AUTO_PASS) < 0.85(p 剛好等於 0.85 交給 agent);
-    ② 宣告的 paths 命中 risk_paths,或 4-spec 沒有宣告 paths(Diff Budget 的 `- Paths:`);
+    ② 宣告的 paths 或 R 列提到的檔案命中 risk_paths(Diff Budget 的 `- Paths:` ∪ `### R-n` 區塊提到的檔案),
+    或 4-spec 沒有宣告 paths(只看 `- Paths:`,R 列補不上);
     ③ risk ≥ 2 —— 有 Jev 時只看 Jev 的 risk 分數,spec 寫的 `Risk: high` 不算;沒有 Jev 時看
     spec 的 `- Risk:`(不分大小寫;`high` 算 ≥ 2,`normal`/`medium`/`low` 算 < 2,值不認得或空值 → 報錯擋下);
     ④ 還有沒解決的 Owner Call;
@@ -135,7 +136,8 @@ G2 = 契約寫得對不對
     `verdict_source: human_attested`(或 `owner_self_review`)+ `attested_by: human:<名>`,兩者分得開。
     `attested_by` 不得等於 `authored_by` 或 owner:agent reviewer 不能是寫這份 spec／這支 code 的同一個
     agent,也不能共用它的 context(格式比對是 tripwire,不是身份驗證)。G1/G3 只收人寫的 verdict。
-    agent 放行時記 `devflow-jev.py g2-misrelease release`;G2 誤放行率只記錄,不設門檻、不自動回滾。
+    agent 放行時記 `devflow-jev.py g2-misrelease release`;G2 誤放行率只記錄,不設門檻、不自動回滾;
+    分母只算「已走到 G3 的 agent 自動放行 G2」(證據 = `docs/dev/<slug>/7-review.md` 人簽 verdict,判不出 fail-closed 不進分母、不是 0%)。
 
  ### G3
 
