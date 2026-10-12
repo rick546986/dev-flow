@@ -1,7 +1,7 @@
 ---
 title: jev-gate roadmap（有優先級）
 slug: jev-gate
-status: draft-v5（draft-v4 + 2026-09-26 owner 裁決：人只參與討論，之後由 agent 完成 —— G2 自動審主線、G3 固定人審、J5／J2 降為 shadow 參考、supermemory 放棄改 Jev 記憶重排序；見 `v5-owner-direction.md`）；draft-v4 = draft-v3 + 三輪 Jev 實測 + source/probe closure + W0–W7 整合；W0 P0-5～P0-9 於 2026-09-22 收閘（見 `w0-source-closure.md`）；W1 七守衛 foundation + P2-1 同日落地（見 `w1-guard-foundation.md`）；W2–W7 於 2026-09-23 依序落地（`w2-runtime.md`…`w7-stage3-j2.md`；J5/J2 皆 shadow、無 AUTO live）
+status: draft-v5（draft-v4 + 2026-09-26 owner 裁決：人只參與討論，之後由 agent 完成 —— G2 自動審主線、G3 固定人審、J5／J2 降為 shadow 參考、supermemory 放棄改 Jev 記憶重排序；見 `v5-owner-direction.md`）；draft-v4 = draft-v3 + 三輪 Jev 實測 + source/probe closure + W0–W7 整合；W0 P0-5～P0-9 於 2026-09-22 收閘（見 `w0-source-closure.md`）；W1 七守衛 foundation + P2-1 同日落地（見 `w1-guard-foundation.md`）；W2–W7 於 2026-09-23 依序落地（`w2-runtime.md`…`w7-stage3-j2.md`；J5/J2 皆 shadow、無 AUTO live）；**2026-10-12 校對：W9–W12 已由 main #418 合入並上線 —— ADR 0004 accepted、契約 §7 已改、`g2auto.G2_AUTO_LIVE = True`（G2 自動審 live；J5／J2 仍 shadow）**
 date: 2026-09-26（draft-v5）；draft-v4 2026-09-22
 base: origin/main 79b7aab
 inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、R2 對抗性風險、R3 流程與 HITL、R4 校準量測）+ 一份出處核對 + v2 四維度 findings 覆核（D1 出處忠實度、D2 可行性、D3 優先級、D4 安全）+ jev-convergence.md owner 裁決 + 2026-09-22 外部 Codex/Jev smoke、rubric 與文件稽核結果（待另行歸檔，不視為 repo 內既存 evidence）+ 2026-09-26 owner 裁決（`v5-owner-direction.md`）
@@ -9,11 +9,15 @@ inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、
 
 # jev-gate roadmap
 
-> **文件狀態**：本檔是 `research/jev-supermemory` 的研究／落地規劃 **draft-v5**。它不代表 `main` 已改、Jev 已部署、任何 AUTO gate 已核准（G2 自動審的 L2/ADR 仍待 owner 在 main 走流程），也不把 guard pure-function prototype 當成完成產品。**進度**：W0（2026-09-22）、W1（2026-09-22）、W2（2026-09-23）、W3（2026-09-23）、W4（2026-09-23）、W5（2026-09-23）、W6（2026-09-23，資格計算器＋契約部分同步）已在 `research/jev-supermemory` 落地；J5 仍是 shadow（enqueue／drain／label；yaml live 被 cap），J2／J4 只實驗，沒有 AUTO。W7（2026-09-23）Stage3 polarity 契約面已翻。
+> **2026-10-12 校對（以程式現況為準）**：本檔原寫「本檔是 research/jev-supermemory 的研究規劃、不代表 `main` 已改、任何 AUTO gate 未核准」的說法**已被取代**。現況：本檔與 W0–W12 的程式已在 `main`（校對基線 main `5ca0a54`）；**G2 自動審已上線** —— ADR 0004 `accepted`（2026-09-27，見 `docs/adr/0004-g2-spec-auto-review.md`）、契約 §7 審查者句已拆 G1/G3 與 G2 兩句、`scripts/devflow_jev/g2auto.py` `G2_AUTO_LIVE = True`；G2 由 `g2r` 分流 + fresh-context agent reviewer + 機械檢查放行（`devflow_gate.py write-g2-auto`）。**仍然成立**：G1／G3 固定人審、J5 shadow（`J5_LIVE_RATIFIED=False`、`GRADUATED=False`）、J2 永遠 shadow（`J2_WINDOW_RATIFIED=False`）、沒有 J5／J2 的 AUTO。下方 W9–W12 表列、§16 驗收清單已依此補註；原「待做／未 live」敘述保留為歷史，以「已被取代」標明。
+>
+> **其他校對（2026-10-12）**：① **站數說法**：repo 現況是**五站**（Intake→Decide→Spec→Build→Ship）加**七份文件**（1-discussion…7-review）；「七站」是舊說法（`skills/dev-flow/SKILL.md` 稱舊七站／舊七檔名，僅作 in-flight 別名），本檔與相關頁面一律採 repo 的五站說法（見 `README.md`）。② **main #420、#421 的合併日期，文件未載明**（時間軸上照實標「文件未載明」，不推測）。③ #425（G2R 題組改繁體中文）見 §2.1 與 `jev-convergence.md` §8。④ 待 owner 決定項目（程式現況與文件不一致、無法判定意圖）：誤放率分母、誤放行事件範圍、risk_paths 判定來源 —— 見 P2-9／P2-10 與 `docs/adr/0004-g2-spec-auto-review.md`。
+>
+> **（歷史，已被取代，見上）文件狀態**：本檔是 `research/jev-supermemory` 的研究／落地規劃 **draft-v5**。它不代表 `main` 已改、Jev 已部署、任何 AUTO gate 已核准（G2 自動審的 L2/ADR 仍待 owner 在 main 走流程），也不把 guard pure-function prototype 當成完成產品。**進度**：W0（2026-09-22）、W1（2026-09-22）、W2（2026-09-23）、W3（2026-09-23）、W4（2026-09-23）、W5（2026-09-23）、W6（2026-09-23，資格計算器＋契約部分同步）已在 `research/jev-supermemory` 落地；J5 仍是 shadow（enqueue／drain／label；yaml live 被 cap），J2／J4 只實驗，沒有 AUTO。W7（2026-09-23）Stage3 polarity 契約面已翻。
 >
 > **v5 方向（2026-09-26 owner）**：人只參與討論（G1 人審、Owner Calls 人裁），G2 由 fresh-context agent reviewer + 機械檢查自動審（主線），G3 固定人審；J5 AUTO_SHIP 退出目標、J2 永遠 shadow；supermemory 放棄，改做 Jev 記憶重排序（主線）。細節與候選值見 `v5-owner-direction.md`。
 >
-> **基線**：研究分支鎖定 `8a4370ad97d2c842057c281ecf56ead8b94f4a43`，相對 `main@79b7aaba2ee65ba5953873064a8f93962f86d097` 只新增研究文件，沒有 runtime code 變更。
+> **基線（歷史；研究分支時期）**：研究分支鎖定 `8a4370ad97d2c842057c281ecf56ead8b94f4a43`，相對 `main@79b7aaba2ee65ba5953873064a8f93962f86d097` 只新增研究文件，沒有 runtime code 變更。
 
 ## 0. 不再重投票的 Owner Decisions
 
@@ -103,10 +107,10 @@ draft-v4 以 draft-v3／`jev-convergence.md` 已記錄的 owner 裁決為約束�
 | **W6 J5 AUTO + 契約先完成**（**v5：J5 AUTO 退出目標**，W6 成果保留作 shadow 參考量尺） | 🧪 2026-09-23：P3-1 **只有資格計算器**（`eligibility`；live 開關不存在，`gate.J5_LIVE_RATIFIED=False` 把 yaml live cap 成 shadow）；P3-2 研究分支可做的同步已做，缺口明列（`w6-j5-eligibility-contract.md` §3）；**live 未核准** | ~~eligibility 達標 + L2/ADR + P3-2 全同步後才可 live~~ **v5：不再規劃 J5 live**；`J5_LIVE_RATIFIED=False` 維持 |
 | **W7 獨立 Stage3、後期 J2** | 🛠 2026-09-23：P3-4 契約面翻成「人要求才 Demo」（`_stage3_impl.py` 收 `- Demo request:` 人親填行、模板／SKILL／stage3 nodes／shared contract／guide 同步；attestation human-only 不動）；P3-3 只釘 `policy.J2_WINDOW_RATIFIED=False` → `eligibility` 永遠 blocker、無 AUTO_PASS（見 `w7-stage3-j2.md`） | Stage3 L2/ADR 由 owner 走 main 流程；J2 window 未核定前永遠 shadow |
 | **W8 v5 方向落檔** | 📝 2026-09-26：本 roadmap draft-v5 + `v5-owner-direction.md`（含 G2 ADR 草稿、候選值 C1–C6）；只改文件。2026-09-26 同日定案：C1／C2 移除、C3–C6 定案（`v5-owner-direction.md` §5） | ✅ 數值已定案；gate 名稱 `G2R`、`MR` owner 2026-09-27 核准；ADR 由 owner 在 main 走流程 |
-| **W9 G2 自動審軌道（研究分支）** | 🧪 2026-09-27：P2-9 `policy.route_g2` + `g2r-shadow` 只記錄（見 `w9-g2r-shadow.md`；不改 gate 判定、題組未進 manifest）。待做：P2-9 `g2_route` 分流題組 + P3-5 研究分支可做面（`authored_by`／provenance 欄位設計、轉人條件機械化、author≠approver 比對）；live 開關受 ADR 阻擋 | gate 名稱 `G2R` owner 2026-09-27 核准；新題組 = 新 `questionset_hash` |
-| **W10 G2 誤放率記錄** | 🧪 2026-09-27：P2-10 `g2-misrelease record／report` 只記錄（見 `w10-g2-misrelease.md`；綁 g2r-shadow AUTO 的 `case_hash`；分母 = `g2-misrelease release` 記的 agent 放行數，shadow 期間 0 → `insufficient_data` 不算 0%；人放行的另列 `shadow_counterfactual_rate`；不改 gate 判定、不動 G2R 門檻）；順修 `policy.spec_risk_of` 大小寫／非法值。待做：7-review `root_cause: spec` 欄（main 模板面）、事件自動帶出；**不做抽查、不做自動退回**（C1／C2 已移除） | 記錄在 G2 live 前就位；只記錄、不阻擋 |
+| **W9 G2 自動審軌道（研究分支）** | ✅ **2026-10-12 校對：已由 main #418 上線**（ADR 0004 accepted、`G2_AUTO_LIVE=True`）。🧪 2026-09-27（歷史）：P2-9 `policy.route_g2` + ~~`g2r-shadow`~~（**已被取代**：現為 `devflow-jev.py g2r` → `.devflow/jev/g2r.jsonl`，見 `w9-g2r-shadow.md` 頂部註記）只記錄（見 `w9-g2r-shadow.md`）。**G2R 題組位置（程式現況）**：`g2_route` + `risk` 題組住在 `scripts/devflow_jev/policy.py` 的 `G2R_QUESTIONS`（繁體中文，#425），用自己的 `policy.g2r_fingerprint()`；**不在** `jev-questions.json`、`manifest.py` 沒有收錄，也不進 J1／J3／J5 的 `questionset_hash`。~~待做：G2R 題組（`jev-questions.json`）~~（**已被取代**：原寫進 `jev-questions.json`／manifest，實際沒這樣做）；~~P3-5 研究分支可做面~~（已在 main 完成：`authored_by`／provenance 欄位、轉人條件機械化、author≠approver 比對）；~~live 開關受 ADR 阻擋~~（ADR 已 accepted） | gate 名稱 `G2R` owner 2026-09-27 核准；新題組 = 新 `questionset_hash` |
+| **W10 G2 誤放率記錄** | 🧪 2026-09-27：P2-10 `g2-misrelease record／report` 只記錄（見 `w10-g2-misrelease.md`；綁 ~~g2r-shadow~~（已被取代：現為 `.devflow/jev/g2r.jsonl`）AUTO 的 `case_hash`；分母 = `g2-misrelease release` 記的 agent 放行數，shadow 期間 0 → `insufficient_data` 不算 0%；人放行的另列 `shadow_counterfactual_rate`；不改 gate 判定、不動 G2R 門檻）；順修 `policy.spec_risk_of` 大小寫／非法值。~~待做：7-review `root_cause: spec` 欄（main 模板面）~~（**已完成**：`_templates/7-review.md` 已有 `root_cause` 欄，只准 G3 人類 reviewer 勾）、事件自動帶出（仍待做）；**不做抽查、不做自動退回**（C1／C2 已移除） | 記錄在 G2 live 前就位；只記錄、不阻擋（✅ 2026-10-12 已隨 #418 就位） |
 | **W11 Jev 記憶重排序** | 🧪 2026-09-27：P2-11 `mr-rerank` + `mr-eval` 研究分支、離線（見 `w11-mr-rerank.md`）：接在 `dev-memory.py ask --json --limit 20` 之後、不換掉原檢索；前 20 → 前 5（C6）、確定性 tie-break（分數 → 原排名 → id）；必留欄位 `mandatory: true` + 既有欄位推導（current_truth／invariant／conflict／exact_hit），池內必留一定在前 5，超過 5 筆 → `mandatory_overflow`（exit 1）；雙閘門 off（key + jev.yaml `mode`，`gate.py` 不動）／Jev 失敗 → 原順序前 5、零網路；`mr-eval` 算 Recall@5／MRR／必留保留率、C5 三條全過才 pass，查詢 < 20 → `insufficient_data`；fixture 分數 synthetic、`live_eligible=false`。不接 ask、不接任何 gate、不寫記憶。待做：`gate.py` 認 `gates.MR`、MR 題組進 manifest、locked set 的 stored_jev fixture | eval 證明優於原檢索（C5）才 live |
-| **W12 G2 自動審 live（main）** | ADR accepted + P3-5 契約四面同步（§7／guide／SKILL／`_gate_consistency_impl.py`）+ W9／W10 全綠 | 任一面未同步 → 不 live |
+| **W12 G2 自動審 live（main）** | ✅ **2026-10-12 校對：已 live（main #418）**。ADR 0004 accepted + P3-5 契約四面同步（§7／guide／SKILL／`_gate_consistency_impl.py`）+ W9／W10 全綠；`g2auto.G2_AUTO_LIVE = True` | 任一面未同步 → 不 live（現況：四面皆已同步） |
 
 ### 1.1 v5 優先級（2026-09-26 owner）
 
@@ -140,6 +144,7 @@ draft-v4 以 draft-v3／`jev-convergence.md` 已記錄的 owner 裁決為約束�
 - Score `criteria` 可使用 object entry；但 index 由 ordered array position 決定。內部若使用 `level`，必須要求 `level == index`，不一致 fail validation。
 - Jev 不生成自由文字、不能代替長鏈架構 reasoning；J1/J2/J5 問題必須拆 atomic signals，再由 deterministic policy 組合。
 - 英文是主要訓練語言；繁中／英文需分 slice 評估，不預設同 threshold。
+  - **提醒（2026-10-12，與 #425 相關）**：main #425 已把 G2R 題組（`policy.G2R_QUESTIONS`，`g2_route` + `risk`）改為繁體中文，`g2r_fingerprint()` = `e68b6aa6dad6`（main `5ca0a54`）。G2R 的門檻（`p(AUTO_PASS) ≥ 0.85`、risk ≥ 2）原是沿用英文題組的工程值、**未經校準**；這條「zh／en 分 slice 評估、不共用門檻」正好適用 —— 題組語言一換，英文時期累積的任何觀察都不能直接套到繁中題組，之後評估 G2R 要以 fingerprint／題組語言分 slice。見 `jev-convergence.md` §8。
 
 ## 3. P1 — MVP
 
@@ -299,8 +304,8 @@ owner 保留三欄 grouping：
 | **P2-6** | 🛠，僅 AUTO 後 | **次要回饋**：先讓人看 case 並獨立回答，再顯示 Jev route/risk，避免錨定；none 不算 agree | 作答前 UI/text 不含 Jev judgement；每週提醒頻率仍待正式產品決策 | S | P3-1 |
 | **P2-7** | ✅ W5（2026-09-23）形狀：`ledger.audit_note`／`note` 子命令，封閉五欄 `{gate, questionset_hash_prefix, model_resolved, route_recommended, evaluation_id}`；白名單＋privacy negative 測試；貼進 PR／7-review 的動線留 P3-2 | **AUTO 可稽核附註**：PR/7-review 只允許封閉 metadata `{gate, questionset_hash prefix, model_resolved, route_recommended, ledger/evaluation id}`，不外露 raw packet/answers/probabilities | privacy negative fixture；附註不含敏感 evidence | S | P1-F4 |
 | **P2-8** | ✅ W5 實驗（2026-09-23）：`j2-shadow` 讀 2-decision.md（方案表／Decision／Rejected／Rationale／Real-world／Owner Calls 人類答案）組厚包；order／phrasing 三 variants 同 case_id 只做 stability（不穩定→`unstable`、永不畢業）；`route_taken` 恆 HUMAN；window=50 只標待核定 | **J2 厚證據包**：方案比較全文、各方案取捨、Real-world Context/Open Questions 結論、Owner Calls 人類答案、fresh reviewer findings；正反論點；order perturbation/phrasing stability 只做 evaluation，不灌 n | 真 feature J2 packet 通過 self-check；不穩定就標 unstable、不得畢業；J2 未核定 rolling window 前永遠 shadow（**v5：J2 永遠 shadow**，厚包只作 G1 reviewer 參考） | M | P1-G1、P1-F1 |
-| **P2-9** | 🆕 v5 主線（W9） | **Jev `g2_route` 分流**：新 gate `G2R`（owner 2026-09-27 核准；不沿用 J 編號以免與 J2＝G1 方向混淆）含 `g2_route`（Choice：`AUTO_PASS｜HUMAN_REVIEW｜REQUEST_CHANGES`）與 `risk`（Score 0–3，同 J5 刻度）；`policy.route_g2` deterministic：HUMAN／`p(AUTO_PASS)<0.85`（C3，owner 定案）／risk≥2／risk_paths 命中／spec 未宣告任何檔案路徑 → HUMAN。gate 名稱 `G2R` owner 2026-09-27 核准。**只分流，不是放行必要條件**；無 key／未 opt-in／失敗 → no-op，等同沒有 Jev | Jev 判 AUTO 但 fresh agent 或機械檢查不過 → 不過；Jev 判 HUMAN → 必轉人；off 時零網路；新題組 = 新 `questionset_hash`；Jev 不寫 `verdict:`／`attested_by` | M | P1-F1、P2-4 |
-| **P2-10** | 🆕 v5 主線（W10）；owner 2026-09-26 定案改為只記錄 | **G2 誤放率記錄（只記錄、不阻擋、不自動退回）**：G3 退件且 7-review 人類 reviewer 勾 `root_cause: spec` → 記 `g2_misrelease`（綁 G2 evaluation／verdict hash）；report 算 G2 誤放率 = misrelease ÷ 已走到 G3 的自動 G2。原 (a) 抽查（C1）與 (c) 門檻自動 reverted（C2）整項移除 | 記錄不擋任何 G2、不改 `g2_mode`；`root_cause: spec` 只准人勾；追不到規格的 G3 退件不計 | S | P2-2 |
+| **P2-9** | 🆕 v5 主線（W9） | **Jev `g2_route` 分流**：新 gate `G2R`（owner 2026-09-27 核准；不沿用 J 編號以免與 J2＝G1 方向混淆）含 `g2_route`（Choice：`AUTO_PASS｜HUMAN_REVIEW｜REQUEST_CHANGES`）與 `risk`（Score 0–3；~~同 J5 刻度~~ **已更正（2026-10-12）**：與 J5 同為 0–3、門檻同在 ≥2，但**各級文字定義不同** —— 權限：J5 `persisted_or_external` 把「permission rule」放 level 2、G2R 把「授權／登入驗證」放 level 3（`critical`）；跨模組介面：G2R level 2 `sensitive` 含「公開或跨模組的介面」、J5 沒列；G2R level 1 另要求「不改資料結構、權限或對外約定」。以 `jev-questions.json` 的 J5 `risk` 與 `policy.G2R_QUESTIONS` 的 `risk` 為準）；`policy.route_g2` deterministic：HUMAN／`p(AUTO_PASS)<0.85`（C3，owner 定案）／risk≥2／risk_paths 命中／spec 未宣告任何檔案路徑 → HUMAN。gate 名稱 `G2R` owner 2026-09-27 核准。**risk_paths 的判定來源（程式現況）**：只看 4-spec Diff Budget 的 `- Paths:` 一行（`g2auto.build_case` → `declared_paths`；SKILL 與契約 §7 同）；本欄與 ADR 0004／v5 原寫「4-spec 宣告的 changed paths／R 列檔案」—— **R 列檔案不在程式判定來源內；以何者為準待 owner 決定**。**無 Jev 時的 risk 對應（補充）**：`policy.G2R_SPEC_RISK_SCORE = {high:2, medium:1, normal:0, low:0}`；`normal`（模板缺省）算 < 2，v5 C4 原只提 `high`／`medium`／`low`，未提 `normal`，這是補充、不是衝突。**只分流，不是放行必要條件**；無 key／未 opt-in／失敗 → no-op，等同沒有 Jev | Jev 判 AUTO 但 fresh agent 或機械檢查不過 → 不過；Jev 判 HUMAN → 必轉人；off 時零網路；新題組 = 新 `questionset_hash`；Jev 不寫 `verdict:`／`attested_by` | M | P1-F1、P2-4 |
+| **P2-10** | 🆕 v5 主線（W10）；owner 2026-09-26 定案改為只記錄 | **G2 誤放率記錄（只記錄、不阻擋、不自動退回）**：G3 退件且 7-review 人類 reviewer 勾 `root_cause: spec` → 記 `g2_misrelease`（綁 G2 evaluation／verdict hash）；report 算 G2 誤放率 = misrelease ÷ 已走到 G3 的自動 G2（**⚠ 程式現況不同，待 owner 決定**：`policy.g2_misrelease_rate` 分母 = `g2-agent-release.jsonl` 的 agent 放行數〔所有 fresh agent 放行的 G2R AUTO case，含尚未走到 G3 者〕；分子另收實作階段 `spec_amended`／`spec_returned`／`reverted` 三種事件，不只 G3 退件。本欄文字為 v5 原文，以何者為準待 owner 決定；細節見 `w10-g2-misrelease.md` §4）。原 (a) 抽查（C1）與 (c) 門檻自動 reverted（C2）整項移除 | 記錄不擋任何 G2、不改 `g2_mode`；`root_cause: spec` 只准人勾；追不到規格的 G3 退件不計 | S | P2-2 |
 | **P2-11** | 🆕 v5 主線（W11） | **Jev 記憶重排序**：放在既有 `memory/dev-memory.py ask`（`query.py`／`retrieval.py`）之後，Jev 只重排／挑選、**不寫記憶**；無 key 或未 opt-in → 原檢索結果、零網路；開場必讀 context、current truth、invariants、conflicts、exact hits **不送重排、不可移除**，`NO_RELIABLE_MATCH` 不得被升級；送出內容去識別，不送 secret／credential／原始醫療資料；候選池：原檢索前 20 筆 → 回傳前 5 筆（C6，owner 定案）；gate 名稱 `MR` owner 2026-09-27 核准 | `dev-memory.py eval` 同一 locked set：Recall@5 不降、MRR 至少 +0.05、必帶記憶 100% 保留（C5，owner 定案）才 live；off 路徑輸出與原檢索 byte-identical | M | P1-G1、P1-G3、P1-F5 |
 
 ### 4.1 J2 rolling window — 待核定候選
@@ -636,19 +641,21 @@ dev-memory.py ask
 
 ## 16. G2 自動審 live 的正式驗收（v5）
 
-G2 自動審 live（W12）之前，以下全部同時成立才 Go：
+> **2026-10-12 校對**：W12 已 live（main #418；`G2_AUTO_LIVE = True`）。下列依 main 現況補打勾（證據：ADR 0004 accepted、契約 §7／`_gate_consistency_impl.py`／SKILL／模板／`g2auto.py`／`devflow_gate.py write-g2-auto`、`scripts/devflow_jev/test_g2.py`）；未打勾者標明原因。
 
-- [ ] ADR accepted（owner 在 main 走流程；草稿見 `v5-owner-direction.md` §3.6）
-- [ ] 契約 §7、指南 `#gates`、`SKILL.md` G2 段、`hooks/_gate_consistency_impl.py` 四面同步，**只放寬 G2**，G1/G3 審查順序逐字不動
-- [ ] fresh-context agent reviewer + 機械檢查是唯一放行路徑；Jev `g2_route` 只分流
-- [ ] 無 `TYPESAFE_API_KEY` 時 G2 自動審仍能運作（只靠 fresh agent + 機械）
-- [ ] 轉人條件（Jev HUMAN／`p(AUTO_PASS)<0.85`、`risk_paths`（含 spec 未宣告任何檔案路徑）、risk≥2（無 Jev 時 `Risk: high`）、未裁決 OC、需要 Demo verdict、改 Jev runtime 當次）全部機械化並有負面測試
-- [ ] author≠approver：`authored_by` ≠ `attested_by`，且 reviewer 不是實作者
-- [ ] provenance：`fresh_agent_reviewer` + `agent:<id>` + `g2_mode` + `routed_by`，對齊 P1-G7；auto 路徑不合法 = 不過
-- [ ] P2-10 誤放率記錄就位（只記錄、不阻擋、不自動退回）；無人工抽查、無 reverted 開關
+G2 自動審 live（W12）之前，以下全部同時成立才 Go（歷史驗收清單；現況以上方校對註記與打勾為準）：
+
+- [x] ADR accepted（owner 在 main 走流程；草稿見 `v5-owner-direction.md` §3.6）—— ADR 0004 `accepted`，2026-09-27
+- [x] 契約 §7、指南 `#gates`、`SKILL.md` G2 段、`hooks/_gate_consistency_impl.py` 四面同步，**只放寬 G2**，G1/G3 審查順序逐字不動
+- [x] fresh-context agent reviewer + 機械檢查是唯一放行路徑；Jev `g2_route` 只分流
+- [x] 無 `TYPESAFE_API_KEY` 時 G2 自動審仍能運作（只靠 fresh agent + 機械）
+- [x] 轉人條件（Jev HUMAN／`p(AUTO_PASS)<0.85`、`risk_paths`（含 spec 未宣告任何檔案路徑）、risk≥2（無 Jev 時 `Risk: high`）、未裁決 OC、需要 Demo verdict、改 Jev runtime 當次）全部機械化並有負面測試
+- [x] author≠approver：`authored_by` ≠ `attested_by`，且 reviewer 不是實作者
+- [x] provenance：`fresh_agent_reviewer` + `agent:<id>` + `g2_mode` + `routed_by`，對齊 P1-G7；auto 路徑不合法 = 不過
+- [x] P2-10 誤放率記錄就位（只記錄、不阻擋、不自動退回）；無人工抽查、無 reverted 開關
 - [x] gate 名稱 `G2R` 已由 owner 核准（2026-09-27）
-- [ ] Demo verdict／Quiz gate／risk ceiling 不變；Jev 不寫任何 verdict
-- [ ] 每專案雙閘門 opt-in 規則不變
+- [x] Demo verdict／Quiz gate／risk ceiling 不變；Jev 不寫任何 verdict
+- [x] 每專案雙閘門 opt-in 規則不變
 
 ### 16.1（退役）J5 AUTO live 驗收
 
