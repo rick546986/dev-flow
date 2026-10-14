@@ -2,16 +2,18 @@
 title: jev-gate roadmap（有優先級）
 slug: jev-gate
 status: draft-v5（draft-v4 + 2026-09-26 owner 裁決：人只參與討論，之後由 agent 完成 —— G2 自動審主線、G3 固定人審、J5／J2 降為 shadow 參考、supermemory 放棄改 Jev 記憶重排序；見 `v5-owner-direction.md`）；draft-v4 = draft-v3 + 三輪 Jev 實測 + source/probe closure + W0–W7 整合；W0 P0-5～P0-9 於 2026-09-22 收閘（見 `w0-source-closure.md`）；W1 七守衛 foundation + P2-1 同日落地（見 `w1-guard-foundation.md`）；W2–W7 於 2026-09-23 依序落地（`w2-runtime.md`…`w7-stage3-j2.md`；J5/J2 皆 shadow、無 AUTO live）；**2026-10-12 校對：W9–W12 已由 main #418 合入並上線 —— ADR 0004 accepted、契約 §7 已改、`g2auto.G2_AUTO_LIVE = True`（G2 自動審 live；J5／J2 仍 shadow）**
-date: 2026-09-26（draft-v5）；draft-v4 2026-09-22
-base: origin/main 79b7aab
+date: 2026-09-26（draft-v5）；draft-v4 2026-09-22；2026-10-12 校對、2026-10-14 補校（標題與 #426）
+base: origin/main 79b7aab（draft-v4 原基線，歷史）；2026-10-14 補校基線 main 14aead2（#426）
 inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、R2 對抗性風險、R3 流程與 HITL、R4 校準量測）+ 一份出處核對 + v2 四維度 findings 覆核（D1 出處忠實度、D2 可行性、D3 優先級、D4 安全）+ jev-convergence.md owner 裁決 + 2026-09-22 外部 Codex/Jev smoke、rubric 與文件稽核結果（待另行歸檔，不視為 repo 內既存 evidence）+ 2026-09-26 owner 裁決（`v5-owner-direction.md`）
 ---
 
 # jev-gate roadmap
 
-> **2026-10-12 校對（以程式現況為準）**：本檔原寫「本檔是 research/jev-supermemory 的研究規劃、不代表 `main` 已改、任何 AUTO gate 未核准」的說法**已被取代**。現況：本檔與 W0–W12 的程式已在 `main`（校對基線 main `5ca0a54`）；**G2 自動審已上線** —— ADR 0004 `accepted`（2026-09-27，見 `docs/adr/0004-g2-spec-auto-review.md`）、契約 §7 審查者句已拆 G1/G3 與 G2 兩句、`scripts/devflow_jev/g2auto.py` `G2_AUTO_LIVE = True`；G2 由 `g2r` 分流 + fresh-context agent reviewer + 機械檢查放行（`devflow_gate.py write-g2-auto`）。**仍然成立**：G1／G3 固定人審、J5 shadow（`J5_LIVE_RATIFIED=False`、`GRADUATED=False`）、J2 永遠 shadow（`J2_WINDOW_RATIFIED=False`）、沒有 J5／J2 的 AUTO。下方 W9–W12 表列、§16 驗收清單已依此補註；原「待做／未 live」敘述保留為歷史，以「已被取代」標明。
+> **2026-10-12 校對（以程式現況為準）**：本檔原寫「本檔是 research/jev-supermemory 的研究規劃、不代表 `main` 已改、任何 AUTO gate 未核准」的說法**已被取代**。現況：本檔與 W0–W12 的程式已在 `main`（初次校對基線 main `5ca0a54`；2026-10-14 補校基線 main `14aead2`，即 #426）；**G2 自動審已上線** —— ADR 0004 `accepted`（2026-09-27，見 `docs/adr/0004-g2-spec-auto-review.md`）、契約 §7 審查者句已拆 G1/G3 與 G2 兩句、`scripts/devflow_jev/g2auto.py` `G2_AUTO_LIVE = True`；G2 由 `g2r` 分流 + fresh-context agent reviewer + 機械檢查放行（`devflow_gate.py write-g2-auto`）。**仍然成立**：G1／G3 固定人審、J5 shadow（`J5_LIVE_RATIFIED=False`、`GRADUATED=False`）、J2 永遠 shadow（`J2_WINDOW_RATIFIED=False`）、沒有 J5／J2 的 AUTO。下方 W9–W12 表列、§16 驗收清單已依此補註；原「待做／未 live」敘述保留為歷史，以「已被取代」標明。
 >
 > **其他校對（2026-10-12）**：① **站數說法**：repo 現況是**五站**（Intake→Decide→Spec→Build→Ship）加**七份文件**（1-discussion…7-review）；「七站」是舊說法（`skills/dev-flow/SKILL.md` 稱舊七站／舊七檔名，僅作 in-flight 別名），本檔與相關頁面一律採 repo 的五站說法（見 `README.md`）。② **main #420、#421 的合併日期，文件未載明**（時間軸上照實標「文件未載明」，不推測）。③ #425（G2R 題組改繁體中文）見 §2.1 與 `jev-convergence.md` §8。④ 原標「待 owner 決定」的三項（誤放率分母、誤放行事件範圍、risk_paths 判定來源）已於 **2026-10-12 owner 拍板**：誤放率分母只算「已走到 G3 的 agent 自動放行 G2」（改程式）、誤放行事件除 G3 退件外另收實作階段三種事件（只改文件，照程式現況）、risk_paths 判 `- Paths:` ∪ R 列檔案（改程式）—— 見 P2-9／P2-10 與 `docs/adr/0004-g2-spec-auto-review.md`。
+>
+> **標題校對（2026-10-14）**：§4.1、§5、§8.2、§15、§16、§17 與 §12「G2 自動審」的標題原本停在研究分支時期（「待核定候選」「遠期 AUTO」「未實作」「剩餘驗證」「本階段」），已依程式現況改寫；**只改標題、依賴圖的 ✅／⛔ 標記與校對註記，原內文與表列一字未刪**。**Jev 各 gate 現況與旗標值（J1／J2／J3／G2R／J5／MR、`G2_AUTO_LIVE`、`GRADUATED`、`J5_LIVE_RATIFIED`、`J2_WINDOW_RATIFIED`、`MR_LIVE_RATIFIED`）一頁快照見 `docs/dev/STATUS.md`「Jev 現況」**，每值註明出處常數；本檔不另存一份以免兩處漂移。
 >
 > **（歷史，已被取代，見上）文件狀態**：本檔是 `research/jev-supermemory` 的研究／落地規劃 **draft-v5**。它不代表 `main` 已改、Jev 已部署、任何 AUTO gate 已核准（G2 自動審的 L2/ADR 仍待 owner 在 main 走流程），也不把 guard pure-function prototype 當成完成產品。**進度**：W0（2026-09-22）、W1（2026-09-22）、W2（2026-09-23）、W3（2026-09-23）、W4（2026-09-23）、W5（2026-09-23）、W6（2026-09-23，資格計算器＋契約部分同步）已在 `research/jev-supermemory` 落地；J5 仍是 shadow（enqueue／drain／label；yaml live 被 cap），J2／J4 只實驗，沒有 AUTO。W7（2026-09-23）Stage3 polarity 契約面已翻。
 >
@@ -308,7 +310,7 @@ owner 保留三欄 grouping：
 | **P2-10** | 🆕 v5 主線（W10）；owner 2026-09-26 定案改為只記錄 | **G2 誤放率記錄（只記錄、不阻擋、不自動退回）**：G3 退件且 7-review 人類 reviewer 勾 `root_cause: spec` → 記 `g2_misrelease`（綁 G2 evaluation／verdict hash）；report 算 G2 誤放率 = misrelease ÷ 已走到 G3 的自動 G2（**2026-10-12 owner 拍板**：分母只算「已走到 G3 的 agent 自動放行 G2」，證據 = `docs/dev/<slug>/7-review.md` 有人簽 verdict，判不出 fail-closed 不進分母〔不是 0%〕——已改 `policy.g2_misrelease_rate`／`devflow-jev.py g2-misrelease report`；事件範圍除 G3 退件外**另收**實作階段 `spec_amended`／`spec_returned`／`reverted` 三種事件，照程式現況、只改文件，實作階段事件〔還沒走到 G3〕列在 `misreleased` 但不進率；細節見 `w10-g2-misrelease.md` §4）。原 (a) 抽查（C1）與 (c) 門檻自動 reverted（C2）整項移除 | 記錄不擋任何 G2、不改 `g2_mode`；`root_cause: spec` 只准人勾；追不到規格的 G3 退件不計 | S | P2-2 |
 | **P2-11** | 🆕 v5 主線（W11） | **Jev 記憶重排序**：放在既有 `memory/dev-memory.py ask`（`query.py`／`retrieval.py`）之後，Jev 只重排／挑選、**不寫記憶**；無 key 或未 opt-in → 原檢索結果、零網路；開場必讀 context、current truth、invariants、conflicts、exact hits **不送重排、不可移除**，`NO_RELIABLE_MATCH` 不得被升級；送出內容去識別，不送 secret／credential／原始醫療資料；候選池：原檢索前 20 筆 → 回傳前 5 筆（C6，owner 定案）；gate 名稱 `MR` owner 2026-09-27 核准 | `dev-memory.py eval` 同一 locked set：Recall@5 不降、MRR 至少 +0.05、必帶記憶 100% 保留（C5，owner 定案）才 live；off 路徑輸出與原檢索 byte-identical | M | P1-G1、P1-G3、P1-F5 |
 
-### 4.1 J2 rolling window — 待核定候選
+### 4.1 J2 rolling window — 候選值（歷史；v5 起 J2 永遠 shadow，不再是上線門檻）
 
 > **v5（2026-09-26）**：J2 永遠 shadow，本節 window 不再是任何上線門檻，只保留作歷史與 stability 研究。
 
@@ -320,7 +322,7 @@ owner 已裁 **J2 保留**，但沒有核定 rolling-window 長度。draft-v4：
 - window 未正式核定前，J2 永遠 shadow。
 - J2 的 synthetic/rubric smoke 不可補 live/shadow graduation denominator。
 
-## 5. P3 — 契約改動與遠期 AUTO
+## 5. P3 — 契約改動（G2 自動審已 live；J5／J2 的 AUTO 已退役）
 
 > **重要順序修正**：編號保留 P3-1/P3-2，但 live enable 的工程順序是 **先達成 P3-1 eligibility evidence → 完成 P3-2 契約同步／L2/ADR → 才允許 P3-1 AUTO live switch**。  
 > 不得先把 `gates.J5: live` 打開，再補契約。
@@ -377,7 +379,7 @@ owner 已裁 **J2 保留**，但沒有核定 rolling-window 長度。draft-v4：
 ## 7. 依賴圖
 
 ```text
-research/jev-supermemory draft-v5
+research/jev-supermemory draft-v5（2026-10-14 補校：W9–W12 G2 軌已在 main）
             │
             ▼
 W0 Source closure ✅
@@ -409,11 +411,11 @@ W9  P2-9 g2_route 分流             W11 P2-11 rerank（dev-memory ask 之後）
 W10 P2-10 誤放率只記錄                 retrieval eval（C5）
         │                              │
         ▼                              ▼
-ADR accepted（owner 在 main）       eval 證明優於原檢索
-P3-5 四面同步                            │
+ADR accepted ✅（owner 在 main）    eval 證明優於原檢索
+P3-5 四面同步 ✅                         │
         │                              ▼
-        ▼                          rerank live
-W12 G2 自動審 live
+        ▼                          rerank live ⛔ 未 live（MR_LIVE_RATIFIED=False，只到 shadow）
+W12 G2 自動審 live ✅（main #418；G2_AUTO_LIVE=True）
 
 參考旁支（永遠 shadow，不產 verdict）：
 J5 shadow ──▶ 提示 G3 人審注意哪裡（G3 固定人審）
@@ -427,7 +429,9 @@ J2 shadow ──▶ 提示 G1 人審注意哪裡（Owner Calls 人裁）
 - J5：Wilson 95% lower ≥ **0.85** 且 **n≥30** valid unique real Ship cases。**v5：不再是上線路徑**，只作 shadow 參考量尺。
 - J5：第一次有效 overturn → freeze（只影響參考報表）。
 
-### 8.2 待核定候選工程值（未實作、不是 owner 裁決）
+### 8.2 工程候選值（已實作為 `policy.py` 常數、未校準；原標「未實作」已過時）
+
+> **2026-10-14 校對**：下表 attempts／input tokens／J1 deadline 已是 `scripts/devflow_jev/policy.py` 的 `DAILY_ATTEMPTS_CAP = 500`、`DAILY_INPUT_TOKENS_CAP = 500000`、`J1_DEADLINE_S = 2.0`（W1／W2 落地，仍標「未校準」；§0 第 11 條記 owner 2026-09-23「照建議落檔」）；J2 window = `J2_WINDOW_CANDIDATE = 50`、`J2_WINDOW_RATIFIED = False`，v5 起不再是門檻。原標題「不是 owner 裁決」與 §0 第 11 條「照建議落檔」兩句的關係，**待 owner 決定**，本檔不自行裁定。
 
 | 項目 | 候選值 | 限制 |
 |---|---:|---|
@@ -526,7 +530,7 @@ ASK_MORE：
 
 ## 12. J3、J5、J2、G2 自動審的權限邊界
 
-### G2 自動審（v5 主線）
+### G2 自動審（v5 主線；已 live：`G2_AUTO_LIVE = True`）
 
 ```text
 4-spec（作者 agent A，authored_by）
@@ -629,7 +633,7 @@ dev-memory.py ask
 5. 上線條件（C5，owner 定案）：`dev-memory.py eval` 同一 locked eval set 上 Recall@5 不降、MRR 至少 +0.05、必帶記憶 100% 保留。
 6. gate 名稱 `MR`：owner 2026-09-27 核准。
 
-## 15. 實作前剩餘 source 驗證
+## 15. 實作前剩餘 source 驗證（歷史：P0 項已於 W0／W4 收閘，無待辦）
 
 在 W1/W2 之前仍需完成（**P0-5／P0-6／P0-8／P0-9 已於 2026-09-22 W0 收閘，證據與結論在 `w0-source-closure.md` 與 `evidence/w0/`；下列 1–4 保留原文供對照**）：
 
@@ -639,7 +643,7 @@ dev-memory.py ask
 4. **P0-9**：dev-talk 舊 discussion path 在 read whitelist 的實際定義。
 5. **P1-F7 source audit** → ✅ W4 2026-09-23 已做（`w4-j5-shadow.md` §3）：結論是 repo 內**沒有任何 hook 擋 git commit/push/merge/tag**，這些步驟靠散文、Exit Checklist 與使用者本機 `permissions.deny`；`_dispatch_impl.py` 只算 fail-open tier discipline guard，不能拿來補不存在的權限保證。
 
-## 16. G2 自動審 live 的正式驗收（v5）
+## 16. G2 自動審 live 的正式驗收（v5；已通過，W12 於 main #418 live）
 
 > **2026-10-12 校對**：W12 已 live（main #418；`G2_AUTO_LIVE = True`）。下列依 main 現況補打勾（證據：ADR 0004 accepted、契約 §7／`_gate_consistency_impl.py`／SKILL／模板／`g2auto.py`／`devflow_gate.py write-g2-auto`、`scripts/devflow_jev/test_g2.py`）；未打勾者標明原因。
 
@@ -680,7 +684,7 @@ G2 自動審 live（W12）之前，以下全部同時成立才 Go（歷史驗收
 
 `.85/30` 只代表本專案選擇的工程接受門檻；不應在 README、report 或 UI 中翻譯成「95% 準確」、「≤5% 錯誤率」或其他未被統計設計證明的敘述。
 
-## 17. 本階段明確不做的事
+## 17. 明確不做的事（W8 研究分支當時的範圍；仍有效者以 §0、§12 與頂部校對為準）
 
 - 不修改 `main` runtime；**本 PR（W8）也不改 main 契約面**（G2 ADR 只寫草稿）。
 - 不開 J5 AUTO；**v5：J5 AUTO_SHIP 已從目標移除**，G3 固定人審。
