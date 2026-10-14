@@ -431,7 +431,7 @@ J2 shadow ──▶ 提示 G1 人審注意哪裡（Owner Calls 人裁）
 
 ### 8.2 工程候選值（已實作為 `policy.py` 常數、未校準；原標「未實作」已過時）
 
-> **2026-10-14 校對**：下表 attempts／input tokens／J1 deadline 已是 `scripts/devflow_jev/policy.py` 的 `DAILY_ATTEMPTS_CAP = 500`、`DAILY_INPUT_TOKENS_CAP = 500000`、`J1_DEADLINE_S = 2.0`（W1／W2 落地，仍標「未校準」；§0 第 11 條記 owner 2026-09-23「照建議落檔」）；J2 window = `J2_WINDOW_CANDIDATE = 50`、`J2_WINDOW_RATIFIED = False`，v5 起不再是門檻。原標題「不是 owner 裁決」與 §0 第 11 條「照建議落檔」兩句的關係，**待 owner 決定**，本檔不自行裁定。
+> **2026-10-14 校對**：下表 attempts／input tokens／J1 deadline 已是 `scripts/devflow_jev/policy.py` 的 `DAILY_ATTEMPTS_CAP = 500`、`DAILY_INPUT_TOKENS_CAP = 500000`、`J1_DEADLINE_S = 2.0`（W1／W2 落地，仍標「未校準」；§0 第 11 條記 owner 2026-09-23「照建議落檔」）；J2 window = `J2_WINDOW_CANDIDATE = 50`、`J2_WINDOW_RATIFIED = False`，v5 起不再是門檻。原標題「不是 owner 裁決」與 §0 第 11 條「照建議落檔」兩句的關係，**已定（2026-10-14 owner 拍板：以 §0 第 11 條照建議落檔為準）**——attempts／input tokens／J1 deadline 這三項算 owner 已決定（仍標「未校準」）；J2 window 不在第 11 條範圍，維持表內「待核定；未核定前 shadow」。
 
 | 項目 | 候選值 | 限制 |
 |---|---:|---|
