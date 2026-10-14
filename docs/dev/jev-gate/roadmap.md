@@ -13,7 +13,7 @@ inputs: 0-draft-jev-supermemory-fit.md + 四份獨立審查（R1 落地耦合、
 >
 > **其他校對（2026-10-12）**：① **站數說法**：repo 現況是**五站**（Intake→Decide→Spec→Build→Ship）加**七份文件**（1-discussion…7-review）；「七站」是舊說法（`skills/dev-flow/SKILL.md` 稱舊七站／舊七檔名，僅作 in-flight 別名），本檔與相關頁面一律採 repo 的五站說法（見 `README.md`）。② **main #420、#421 的合併日期，文件未載明**（時間軸上照實標「文件未載明」，不推測）。③ #425（G2R 題組改繁體中文）見 §2.1 與 `jev-convergence.md` §8。④ 原標「待 owner 決定」的三項（誤放率分母、誤放行事件範圍、risk_paths 判定來源）已於 **2026-10-12 owner 拍板**：誤放率分母只算「已走到 G3 的 agent 自動放行 G2」（改程式）、誤放行事件除 G3 退件外另收實作階段三種事件（只改文件，照程式現況）、risk_paths 判 `- Paths:` ∪ R 列檔案（改程式）—— 見 P2-9／P2-10 與 `docs/adr/0004-g2-spec-auto-review.md`。
 >
-> **標題校對（2026-10-14）**：§4.1、§5、§8.2、§15、§16、§17 與 §12「G2 自動審」的標題原本停在研究分支時期（「待核定候選」「遠期 AUTO」「未實作」「剩餘驗證」「本階段」），已依程式現況改寫；**改動僅限標題、檔頭 date／base、本段與上一段的基線字樣、§8.2 標題下註記、依賴圖的 ✅／⛔ 標記；除上述與 P2-10 內一處補充外，原內文與表列未刪**。**Jev 各 gate 現況與旗標值（J1／J2／J3／G2R／J5／MR、`G2_AUTO_LIVE`、`GRADUATED`、`J5_LIVE_RATIFIED`、`J2_WINDOW_RATIFIED`、`MR_LIVE_RATIFIED`）一頁快照見 `docs/dev/STATUS.md`「Jev 現況」**，每值註明出處常數；本檔不另存一份以免兩處漂移。
+> **標題校對（2026-10-14）**：§4.1、§5、§8.2、§15、§16、§17 與 §12「G2 自動審」的標題原本停在研究分支時期（「待核定候選」「遠期 AUTO」「未實作」「剩餘驗證」「本階段」），已依程式現況改寫；**改動僅限標題、檔頭 date／base、本段與上一段的基線字樣、§8.2 標題下註記、依賴圖的 ✅／⛔ 標記；除上述與 P2-10 內一處補充外，原內文與表列未刪**。**Jev 各 gate 現況與旗標值（J1／J2／J3／G2R／J5／MR、`G2_AUTO_LIVE`、`GRADUATED`、`J5_LIVE_RATIFIED`、`J2_WINDOW_RATIFIED`、`MR_LIVE_RATIFIED`）一頁快照見 `docs/dev/jev-gate/jev-status.md`**，每值註明出處常數；本檔不另存一份以免兩處漂移。
 >
 > **（歷史，已被取代，見上）文件狀態**：本檔是 `research/jev-supermemory` 的研究／落地規劃 **draft-v5**。它不代表 `main` 已改、Jev 已部署、任何 AUTO gate 已核准（G2 自動審的 L2/ADR 仍待 owner 在 main 走流程），也不把 guard pure-function prototype 當成完成產品。**進度**：W0（2026-09-22）、W1（2026-09-22）、W2（2026-09-23）、W3（2026-09-23）、W4（2026-09-23）、W5（2026-09-23）、W6（2026-09-23，資格計算器＋契約部分同步）已在 `research/jev-supermemory` 落地；J5 仍是 shadow（enqueue／drain／label；yaml live 被 cap），J2／J4 只實驗，沒有 AUTO。W7（2026-09-23）Stage3 polarity 契約面已翻。
 >
@@ -431,7 +431,7 @@ J2 shadow ──▶ 提示 G1 人審注意哪裡（Owner Calls 人裁）
 
 ### 8.2 工程候選值（已實作為 `policy.py` 常數、未校準；原標「未實作」已過時）
 
-> **2026-10-14 校對**：下表 attempts／input tokens／J1 deadline 已是 `scripts/devflow_jev/policy.py` 的 `DAILY_ATTEMPTS_CAP = 500`、`DAILY_INPUT_TOKENS_CAP = 500000`、`J1_DEADLINE_S = 2.0`（W1／W2 落地，仍標「未校準」；§0 第 11 條記 owner 2026-09-23「照建議落檔」）；J2 window = `J2_WINDOW_CANDIDATE = 50`、`J2_WINDOW_RATIFIED = False`，v5 起不再是門檻。原標題「不是 owner 裁決」與 §0 第 11 條「照建議落檔」兩句的關係，**待 owner 決定**，本檔不自行裁定。
+> **2026-10-14 校對**：下表 attempts／input tokens／J1 deadline 已是 `scripts/devflow_jev/policy.py` 的 `DAILY_ATTEMPTS_CAP = 500`、`DAILY_INPUT_TOKENS_CAP = 500000`、`J1_DEADLINE_S = 2.0`（W1／W2 落地，仍標「未校準」；§0 第 11 條記 owner 2026-09-23「照建議落檔」）；J2 window = `J2_WINDOW_CANDIDATE = 50`、`J2_WINDOW_RATIFIED = False`，v5 起不再是門檻。原標題「不是 owner 裁決」與 §0 第 11 條「照建議落檔」兩句的關係，**已定（2026-10-14 owner 拍板：以 §0 第 11 條照建議落檔為準）**——attempts／input tokens／J1 deadline 這三項算 owner 已決定（仍標「未校準」）；J2 window 不在第 11 條範圍，維持表內「待核定；未核定前 shadow」。
 
 | 項目 | 候選值 | 限制 |
 |---|---:|---|
