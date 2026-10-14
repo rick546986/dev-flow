@@ -99,16 +99,18 @@ gate 條件人看正本 = 指南 `#gates`;機械正本 = 契約檔 §7。本表 
      不擋、不放寬,`routed_by: none`,只靠 agent PASS + 機械檢查,其餘條件照判。
      `mode: shadow` 有 key 時**仍會送**一次 Jev,回答只記錄、分流當作沒有 Jev。
   2. 轉人條件(任一 → 人審):Jev 判 HUMAN 或 p(AUTO_PASS) < 0.85(剛好 0.85 交給 agent);
-     命中 risk_paths 或 4-spec 沒宣告 `- Paths:`;risk ≥ 2(有 Jev 只看 Jev 分數,spec 的
+     命中 risk_paths(判 `- Paths:` 宣告 ∪ R 列〔`### R-n` 區塊〕提到的檔案)或 4-spec 沒宣告 `- Paths:`;risk ≥ 2(有 Jev 只看 Jev 分數,spec 的
      `Risk: high` 不算;沒 Jev 時 `Risk: high` 就算,不分大小寫);有沒解決的 Owner Call;需要 Demo verdict;
      當次改到 Jev runtime／questions／config;缺 `authored_by`;provenance 不合法或 author == approver。
-     paths 類條件(risk_paths、沒宣告 paths、改到 Jev runtime)**只看 4-spec Diff Budget 的 `- Paths:` 宣告**,
-     不看實際 diff —— 宣告要寫實,漏寫就等於沒判到。
+     paths 類條件裡,「沒宣告 paths」「改到 Jev runtime」**只看 4-spec Diff Budget 的 `- Paths:` 宣告**;
+     risk_paths 另加 R 列提到的檔案(啟發式抓路徑形狀,多抓只會多轉人審)。都不看實際 diff ——
+     宣告要寫實,漏寫就等於沒判到。
   3. AUTO → 派乾淨 context 的 reviewer agent(只給 4-spec + 契約 §7 G2 錨定義 + 回報格式)。
      PASS 才跑 `python3 <master>/scripts/devflow_gate.py write-g2-auto --root . --slug <slug>
      --reviewer agent:<id> --evidence-ref <報告>`:它重跑機械檢查與轉人條件,任一不過就拒寫;
      過了才寫 `verdict_source: fresh_agent_reviewer` + `g2_mode: auto` 等 provenance,並呼叫
-     `devflow-jev.py g2-misrelease release` 記一筆(誤放行率只記錄,不設門檻、不自動回滾)。
+     `devflow-jev.py g2-misrelease release` 記一筆(誤放行率只記錄,不設門檻、不自動回滾;分母只算已走到 G3 者,
+     證據 = `docs/dev/<slug>/7-review.md` 人簽 verdict,判不出 fail-closed 不進分母)。
      **feature agent 不得手寫這些頂欄**;`scripts/check-verdict-attestation.sh` 事後重驗。
   4. 退回人審:把 `scripts/devflow_jev/g2auto.py` **與散發副本 `docs/dev/tools/devflow_jev/g2auto.py`** 的
      `G2_AUTO_LIVE` 一起改成 `False`(同一個 commit;兩份不一致 `check-ship-manifest` 會紅)→ write-g2-auto 全拒;

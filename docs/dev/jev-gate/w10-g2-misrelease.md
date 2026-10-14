@@ -1,7 +1,7 @@
 ---
 title: jev-gate W10 — G2 誤放行（P2-10）只記錄：g2-misrelease record／report
 slug: jev-gate
-status: W10 第一刀：誤放行定義 + 記錄指令（record／release）+ 誤放行率 report（shadow，只記錄；分母 = agent 放行紀錄，shadow 期間恆 insufficient_data）；不抽查、不自動 revert、不改任何 gate 判定、不動 G2R 門檻；7-review `root_cause: spec` 欄未進模板
+status: （歷史）W10 第一刀：誤放行定義 + 記錄指令（record／release）+ 誤放行率 report（shadow，只記錄；分母 = agent 放行紀錄，shadow 期間恆 insufficient_data）；不抽查、不自動 revert、不改任何 gate 判定、不動 G2R 門檻；~~7-review `root_cause: spec` 欄未進模板~~（2026-10-12 校對：已被取代，模板已有該欄；見下方現況對照表）
 date: 2026-09-27
 base: research/jev-supermemory 7e105df（W9 G2R 分流 shadow）
 ---
@@ -10,11 +10,21 @@ base: research/jev-supermemory 7e105df（W9 G2R 分流 shadow）
 
 # W10 G2 誤放行（只記錄）
 
+> **現況對照表（2026-10-12 校對；以程式為準。以下內文是 2026-09-27 研究紀錄，舊說法保留並標「已被取代」）**
+>
+> | 本檔內文的舊說法 | 現況（已被取代，見…） |
+> |---|---|
+> | 綁 `.devflow/jev/g2r-shadow.jsonl` 的 AUTO 紀錄（`route_recommended=AUTO`） | 已被取代：綁 `.devflow/jev/g2r.jsonl`（`g2auto.G2R_LOG`）的 `route=AUTO` 紀錄；`devflow-jev.py g2r`（`_g2r_auto_index`） |
+> | 「現在 G2 還是人審、沒有任何 agent 放行紀錄」「shadow 期間恆 `insufficient_data`」 | 已被取代：G2 已由 main #418 上線；`insufficient_data`（分母 0、不是 0%）仍是「還沒有任何 agent 放行紀錄」時的行為 |
+> | 「7-review 模板的 `root_cause: spec` 欄也還沒加」「`root_cause` 欄未進模板」 | **已被取代（舊說法錯誤／過時）**：`_templates/7-review.md` frontmatter 第 8 行已有 `root_cause:`（空｜spec｜other；只准 G3 人類 reviewer 勾；勾 spec 且 4-spec 是 `g2_mode: auto` → 記 `g2-misrelease record --stage G3`）。「從 7-review 自動帶出 `G3` 事件」仍待做 |
+> | 「main 的契約、SKILL、guide、hooks 都沒改」 | 已被取代：ADR 0004 accepted 後均已改 |
+> | 分母 = agent 放行數；事件含實作階段三種 | **2026-10-12 owner 拍板**：①**事件**照程式現況，除 G3 退件外另收實作階段三種事件（只改文件）；②**分母**改成 v5 §3.3／ADR 0004 §6 的口徑 ——「已走到 G3 的 agent 自動放行 G2」（已改程式；證據 = `docs/dev/<slug>/7-review.md` 人簽 verdict，判不出 fail-closed 不進分母；見本檔 §4） |
+
 > **一句話**：一份 spec 被 G2R 分流判 `AUTO`、G2 由 fresh-context agent reviewer + 機械檢查放行，之後在 **G3 人審**或
 > **實作階段**被發現 spec 本身有問題 → 用 `devflow-jev.py g2-misrelease record` 記一筆到
 > `.devflow/jev/g2-misrelease.jsonl`（gitignored）；G2 真的由 fresh agent reviewer 放行時用 `g2-misrelease release`
 > 記一筆到 `.devflow/jev/g2-agent-release.jsonl`（gitignored）；`g2-misrelease report` 算誤放行數 ÷ **agent 放行數**。
-> 現在 G2 還是人審、沒有任何 agent 放行紀錄 → 誤放行率是 `null`／`insufficient_data`，不是 0%。
+> ~~現在 G2 還是人審、沒有任何 agent 放行紀錄~~（已被取代：G2 已上線）→ 沒有任何 agent 放行紀錄時，誤放行率是 `null`／`insufficient_data`，不是 0%。
 > 只記錄：`gate_effect` 恆 `none`，率不接任何阻擋、抽查或退回。
 > **作者 ≠ 審查者**：本檔是實作者的落檔，不宣稱任何 reviewer PASS。
 
@@ -22,7 +32,7 @@ base: research/jev-supermemory 7e105df（W9 G2R 分流 shadow）
 
 **誤放行** = 下面三件事同時成立：
 
-1. **G2R 判 AUTO**：`.devflow/jev/g2r-shadow.jsonl` 有一筆同 `slug`、同 `case_hash`、`route_recommended=AUTO` 的紀錄（W9）。
+1. **G2R 判 AUTO**：~~`.devflow/jev/g2r-shadow.jsonl`~~（已被取代：現為 `.devflow/jev/g2r.jsonl`）有一筆同 `slug`、同 `case_hash`、AUTO 的紀錄（W9；原 `route_recommended=AUTO`，現為 `route=AUTO`）。
    紀錄綁的就是這個 `case_hash`；`g2r_reasons` 從那筆 shadow 紀錄**抄過來**，不收呼叫端自己給的。
 2. **G2 實際由 fresh-context agent reviewer + 機械檢查放行**：`g2_released_by=fresh_agent_reviewer`，**而且**
    `.devflow/jev/g2-agent-release.jsonl` 有同 `slug` + `case_hash` 的放行紀錄（`g2-misrelease release` 寫的）。
@@ -47,8 +57,10 @@ base: research/jev-supermemory 7e105df（W9 G2R 分流 shadow）
 用 `g2_released_by=human` 記，report 另列成 `shadow_counterfactual`／`shadow_counterfactual_rate`（見 §4），
 **不算進誤放行數、也不算進誤放行率**。
 
-**與 v5 §3.3 的差別**：v5 只把「G3 退件 + `root_cause: spec`」算誤放；本檔依 owner 2026-09-27 的 W10 指示多收「實作階段」三種事件。
-report 用 `misreleased_by_stage` 分開列，要回到 v5 的口徑只看 `G3` 那格即可。
+**與 v5 §3.3 的差別（2026-10-12 owner 拍板照程式現況）**：v5 原文只把「G3 退件 + `root_cause: spec`」算誤放；本檔依 owner 2026-09-27 的 W10 指示多收「實作階段」三種事件，
+2026-10-12 owner 確認事件範圍就是「G3 退件且 `root_cause: spec`，**另**收實作階段 `spec_amended`／`spec_returned`／`reverted`」。
+report 用 `misreleased_by_stage` 分開列；只想看 v5 原口徑就看 `G3` 那格。實作階段事件發生時該 case 通常還沒走到 G3，
+所以它列在 `misreleased`、**不進誤放率**（見 §4）。
 
 ## 2. 記錄格式（`.devflow/jev/g2-misrelease.jsonl`，schema `devflow-g2-misrelease/1`）
 
@@ -57,7 +69,7 @@ report 用 `misreleased_by_stage` 分開列，要回到 v5 的口徑只看 `G3` 
 | 欄 | 規則 |
 |---|---|
 | `slug` | `[A-Za-z0-9._-]`，首字英數 |
-| `case_hash` | `sha256:<64 小寫 hex>`，要對到 g2r-shadow 的 AUTO 紀錄 |
+| `case_hash` | `sha256:<64 小寫 hex>`，要對到 ~~g2r-shadow~~（現為 g2r.jsonl）的 AUTO 紀錄 |
 | `g2r_reasons` | 非空字串 list，從 shadow 紀錄抄 |
 | `discovered_stage` | `G3`／`implementation` |
 | `discovered_via` | 要屬於該階段（見上表） |
@@ -102,18 +114,24 @@ python3 scripts/devflow-jev.py --root <專案根> g2-misrelease report
 
 **誤放行率**（`misrelease_rate`，`rate_status=ok|insufficient_data`）
 
-- **分母 = agent 放行數**：`g2-agent-release.jsonl` 裡對得到 g2r-shadow AUTO 紀錄的相異 `(slug, case_hash)` 數。
-  只有 G2 **真的**由 fresh agent reviewer 放行的 case 才可能被 agent 誤放；拿全部 AUTO shadow 紀錄當分母，
-  shadow 期間分子必定是 0，會把「還沒開始」算成 0%。
-- **分子 = 誤放行數**：有 `g2_released_by=fresh_agent_reviewer` 紀錄、且對得到放行紀錄的相異 `(slug, case_hash)` 數
-  （同一 case 被發現多次只算一次；`misreleased_by_stage` 以該 case 第一筆的發現階段計）。
-- **誤放行率** = 誤放行數 ÷ agent 放行數。
+- **分母 = 已走到 G3 的 agent 自動放行 G2 數**（**2026-10-12 owner 拍板**，已改程式 `policy.g2_misrelease_rate`、`run_g2_misrelease_report`）：
+  `g2-agent-release.jsonl` 裡對得到 g2r.jsonl AUTO 紀錄的相異 `(slug, case_hash)`，再篩出「已走到 G3」者。
+  **「已走到 G3」的證據** = `docs/dev/<slug>/7-review.md` 頂欄有人簽的 G3 verdict（`g2auto.g3_reached`）：
+  `verdict` ∈ PASS｜REQUEST_CHANGES｜HOLD，`verdict_source` ∈ human_attested｜owner_self_review，`attested_by: human:<名>`。
+  **fail-closed**：檔案不存在、讀不到、頂欄缺、verdict 空或 PRE-REVIEW、來源不是人簽（含 `fresh_agent_reviewer`／`agent:*`）→ 判不出，**不進分母**。
+  不採信 misrelease 紀錄自己說的「G3 階段」—— 只認檔案證據。已知限制：以 slug 為單位，不比對 verdict 與放行的先後。
+  只有 G2 **真的**由 fresh agent reviewer 放行的 case 才可能被 agent 誤放；拿全部 AUTO 紀錄當分母會把「還沒開始」算成 0%。
+- **分子 = 分母內的誤放行數**：有 `g2_released_by=fresh_agent_reviewer` 紀錄、對得到放行紀錄、**且在分母內**的相異 `(slug, case_hash)` 數
+  （同一 case 被發現多次只算一次）。還沒走到 G3 就被發現的（實作階段事件）照樣計入 `misreleased`、`misreleased_by_stage`，
+  另以 `misreleased_not_reached_g3` 列出，**不進率**（避免分子大於分母）。
+- **誤放行率** = `misreleased_g3_reached` ÷ `g3_reached_agent_released`；report 另附 `agent_released`（全部 agent 放行）、
+  `agent_released_not_reached_g3`、`misrelease_denominator`（= `g3_reached_agent_released`）、`g3_evidence`（證據來源說明）。
 - **資料不足要明講，不能算成 0%**：沒有放行檔，或 agent 放行數 = 0 → `misrelease_rate=null`、`rate_status=insufficient_data`，
-  note 寫「目前沒有任何由 fresh agent reviewer 放行的紀錄（G2 仍由人審），不是 0%」。W9／W10 shadow 期間恆是這個狀態。
+  note 寫「目前沒有任何由 fresh agent reviewer 放行的紀錄，不是 0%」；**有 agent 放行但沒有任何一筆已走到 G3** → 同樣 `null`／`insufficient_data`，
+  note 寫「有 N 筆 agent 放行，但沒有任何一筆已走到 G3 …；分母為 0，不是 0%」（`policy.G2M_NO_G3_REACHED_NOTE`）。
   有壞行／不合法紀錄／孤兒紀錄／對不到放行紀錄的 agent 誤放行 → 也不算率（`consistent=false`，exit 1）。
-  agent 放行數 > 0 且沒有誤放行 → 這時才是真的 `0.0`。
-- 跟 v5 §3.3「已走到 G3 的自動 G2」比：agent 放行但還沒走到 G3 的 case 也在分母裡，所以 G2 live 初期這個率會偏低；
-  只看 `misreleased_by_stage.G3` 時分母仍是全部 agent 放行數，不是 v5 那個口徑。要對齊 v5 需要「已走到 G3」的事件，現在沒有這個來源。
+  分母 > 0 且分子 = 0 → 這時才是真的 `0.0`。
+- 與舊口徑（分母 = 全部 agent 放行數）比：G2 live 初期還沒走到 G3 的 case 不再稀釋誤放率。
 - 樣本數門檻 owner 未定；report 只附 `n`，不自己判「夠不夠」。
 
 **shadow 反事實率**（`shadow_counterfactual_rate`，`shadow_counterfactual_status=counterfactual|insufficient_data`）
@@ -149,11 +167,11 @@ W9 版的 regex 是 `[a-z]+`，`- Risk: High` 整行不匹配，被當成沒寫�
 - `GRADUATED=False`、`gate.J5_LIVE_RATIFIED=False`、`policy.J2_WINDOW_RATIFIED=False`；每筆紀錄和 report 都帶這三個值。
 - 雙閘門不動：`g2-misrelease` 零網路、不建 transport、不建 `.dev-flow/jev.yaml`、不寫 Jev durable ledger。
 - 不讀也不寫 `docs/dev/<slug>/` 的 `verdict:`；Jev 不寫 verdict。
-- main 的契約、SKILL、guide、hooks 都沒改；7-review 模板的 `root_cause: spec` 欄也還沒加（那是 main 模板面）。
+- ~~main 的契約、SKILL、guide、hooks 都沒改；7-review 模板的 `root_cause: spec` 欄也還沒加（那是 main 模板面）。~~（已被取代：ADR 0004 accepted 後契約面已改；`_templates/7-review.md` 已有 `root_cause` 欄。）
 
 ## 7. 留給後面
 
-- 7-review 模板加 `root_cause: spec`（人勾），之後從 7-review 自動帶出 `G3` 事件，不必手動 `record`。
+- ~~7-review 模板加 `root_cause: spec`（人勾）~~（已完成：模板已有 `root_cause` 欄），之後從 7-review 自動帶出 `G3` 事件，不必手動 `record`（仍待做）。
 - 實作階段三種事件的自動偵測（改 4-spec 的 commit、退回 Stage 4、revert）。
 - G2 live 的 PR 在 agent 放行當下呼叫 `g2-misrelease release`；之後 `g2_released_by` 改由放行紀錄帶出，不再由呼叫端給。
 - hooks `spec_profile` 的大小寫／非法值處理（見 §5）。

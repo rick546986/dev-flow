@@ -1677,8 +1677,10 @@ def run_g2_agent_release(root, slug, case_hash, evidence_ref, reported_by, now=N
 
 
 def run_g2_misrelease_report(root):
-    """誤放行率 = 誤放行數 ÷ agent 放行數(皆以相異 (slug, case_hash) 計)。放行數 0 → null + insufficient_data。
-    不設門檻、不自動回滾、不擋任何東西。consistent=False → CLI exit 1。"""
+    """誤放行率 = 誤放行數 ÷ 「已走到 G3 的 agent 放行數」(皆以相異 (slug, case_hash) 計;owner 2026-10-12 拍板)。
+    「已走到 G3」只認 docs/dev/<slug>/7-review.md 的人簽 verdict(g2auto.g3_reached);判不出來 = fail-closed、
+    不進分母。分子只算分母內的誤放行;還沒走到 G3 就被發現的(實作階段事件)照樣列在 misreleased,但不進率。
+    分母 0 → null + insufficient_data。不設門檻、不自動回滾、不擋任何東西。consistent=False → CLI exit 1。"""
     auto_index, routed_present, routed_corrupt = _g2r_auto_index(root)
     release_rows, release_corrupt = _read_jsonl(os.path.join(root, G2M_RELEASE_LOG))
     rows, corrupt = _read_jsonl(os.path.join(root, G2M_LOG))
@@ -1742,6 +1744,11 @@ def run_g2_misrelease_report(root):
                         % len(unreleased))
     if conflicts:
         problems.append("g2-misrelease.jsonl 有 %d 筆 g2_released_by=human,但該 case 有 agent 放行紀錄" % len(conflicts))
+    g3_cache = {}
+    for slug in {k[0] for k in released}:
+        g3_cache[slug] = g2auto.g3_reached(root, slug)
+    g3_reached_released = {k for k in released if g3_cache[k[0]][0]}
+    misreleased_g3_reached = misreleased & g3_reached_released
     auto_total = len(auto_index)
     layers = ("jev", "none")
     released_by_routed = {r: sum(1 for k in released if routed_of.get(k) == r) for r in layers}
@@ -1753,7 +1760,7 @@ def run_g2_misrelease_report(root):
         rate = {"rate": None, "status": "insufficient_data", "note": withheld}
         cf = {"rate": None, "status": "insufficient_data", "note": withheld}
     else:
-        rate = policy.g2_misrelease_rate(len(misreleased), len(released))
+        rate = policy.g2_misrelease_rate(len(misreleased_g3_reached), len(g3_reached_released), len(released))
         if release_rows is None:
             rate["note"] += "(沒有 .devflow/jev/g2-agent-release.jsonl)"
         cf = policy.g2_human_counterfactual_rate(len(counterfactual), auto_total)
@@ -1761,7 +1768,13 @@ def run_g2_misrelease_report(root):
             cf["note"] += ";" + problems[0]
     out = {"schema": G2M_REPORT_SCHEMA, "gate": "G2R",
            "auto_total": auto_total, "agent_released": len(released),
-           "misreleased": len(misreleased), "misreleased_by_stage": by_stage,
+           "g3_reached_agent_released": len(g3_reached_released),
+           "agent_released_not_reached_g3": len(released) - len(g3_reached_released),
+           "misreleased": len(misreleased), "misreleased_g3_reached": len(misreleased_g3_reached),
+           "misreleased_not_reached_g3": len(misreleased) - len(misreleased_g3_reached),
+           "misrelease_denominator": "g3_reached_agent_released",
+           "g3_evidence": "docs/dev/<slug>/7-review.md 人簽 verdict(PASS|REQUEST_CHANGES|HOLD);判不出 = 不進分母",
+           "misreleased_by_stage": by_stage,
            "agent_released_by_routed": released_by_routed, "misreleased_by_routed": misreleased_by_routed,
            "misrelease_rate": rate["rate"], "rate_status": rate["status"], "rate_note": rate["note"],
            "human_counterfactual": len(counterfactual), "human_counterfactual_rate": cf["rate"],

@@ -36,7 +36,7 @@ v2 的做法（之後 J1／J2／J5 的證據包都照這套）：
 3. 每個選項附正反論點各 ≥2 條，引審查原文段落，不轉述。
 4. 事實 8–15 條，含對每個選項不利的事實；數字逐一對得上來源。
 5. 每題跑 3 次，選項與事實順序打亂、標籤換成 OPTION_n；三跑選擇一致才算穩，機率區間一起看。
-6. 包長 2,500–5,000 詞（約 4,700–5,100 tokens），遠低於實測上限 32,768。
+6. 包長 2,500–5,000 詞（約 4,700–5,100 tokens），遠低於實測的 32,768 單題路徑上限（**這裡的 32,768 不是全 request 上限**，見 §5 更正）。
 
 ## 3. F4 深挖
 
@@ -58,7 +58,7 @@ jev 判「不做 J2」的依據是審查裡的事實：J2 對不到 rick 任一�
 ## 5. 順手實測到的 API 事實（已回填 roadmap §10）
 
 - 三種題型欄位與草稿一致；`noul` 無 `confidence`。
-- state 上限 32,768 tokens（含 questions）；超限回 **HTTP 400** `max_tokens_exceeded`，不是文件寫的 422。
+- ~~state 上限 32,768 tokens（含 questions）~~ **（舊說法，已被取代，2026-10-12 更正）**：官方現行為**整個 request 64k tokens**；另有「`state` 加最長單題 ≤ 32k」。2026-09-22 的單題壓測只支持後者（`state + 最長單題` 在 32k 附近）；不得再寫成「全部（state + 全部 questions）上限 32k」（見 `roadmap.md` §0.1、§10、P0-2）。超限回 **HTTP 400** `max_tokens_exceeded`，不是文件寫的 422。
 - 延遲：5k tokens 約 0.6–0.7s，20k 約 1.2s，32k 約 1.4s。
 - 同一包三次呼叫 `input_tokens` 完全相同；打亂順序不改 token 數。
 
@@ -89,3 +89,10 @@ JSON 與純文字呈現對答案幾乎無影響（同措辭下差 ≤0.1），�
 ## 7. 這輪呼叫的成本
 
 七題 v1 + 七題 v2 三跑 + F4 六跑 + 上限探測十次，合計約 20 萬 input tokens，輸入 $0.042／M，不到一美分。
+
+## 8. 後續紀錄：#425 G2R 題組改為繁體中文（2026-10-12 補記）
+
+- main #425：G2R（`g2_route` + `risk`）送 Jev 的題組文字改為**繁體中文**（鍵、type、choice 鍵 `AUTO_PASS`／`HUMAN_REVIEW`／`REQUEST_CHANGES`、risk criteria 順序＝level 0–3 都不變）。
+- 題組住在 `scripts/devflow_jev/policy.py` 的 `G2R_QUESTIONS`（不在 `jev-questions.json`，`manifest.py` 未收錄）；`policy.g2r_fingerprint()` = **`e68b6aa6dad6`**（main `5ca0a54`；2026-10-12 owner 拍板 risk_paths 來源改成 `- Paths:` ∪ R 列檔案後，現為 **`229764f20d8a`**）。
+- 與本檔 §6 的教訓直接相關：題組措辭會改變答案（F3 隨問法翻）。語言換了更是如此 —— `roadmap.md` §2.1 既有的「英文是主要訓練語言；**繁中／英文需分 slice 評估，不預設同 threshold**」現在適用 G2R：`p(AUTO_PASS) ≥ 0.85`、risk ≥ 2 是英文題組時期的未校準工程值，不得假設繁中題組沿用同一門檻；評估 G2R 時要以 fingerprint／題組語言分 slice。
+- 本檔 §6 的「≥3 種措辭跑過」要求對 G2R 繁中題組是否已滿足，文件未載明。

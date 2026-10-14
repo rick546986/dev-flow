@@ -8,6 +8,8 @@ base: claude/w0-source-closure-3aslgp（W0/W1 squash 進 research/jev-supermemor
 
 # owner 裁決清單（W0/W1 收尾）—— 2026-09-23 已落檔
 
+> **頁首註記（2026-10-12）：這是 2026-09-23 已關閉的紀錄，目前無待決事項。** A1–A7、B1–B5 於 2026-09-23 已裁定並落檔，C1–C4 與 D 亦已處理（見下表）；本檔檔名的「pending」是歷史名稱，不代表仍有待決。**注意**：另有三處原標「程式現況與文件不一致、以何者為準待 owner 決定」的項目（G2 誤放率分母、誤放行事件範圍、risk_paths 判定來源），已於 **2026-10-12 owner 拍板**（誤放率分母只算已走到 G3 的 agent 自動放行 G2〔改程式〕；誤放行事件除 G3 退件外另收實作階段三種事件〔只改文件〕；risk_paths 判 `- Paths:` ∪ R 列檔案〔改程式〕）。它們**不在本檔**，記在 `roadmap.md` P2-9／P2-10、`docs/adr/0004-g2-spec-auto-review.md` §3／§6、`v5-owner-direction.md` §3.2／§3.3 與 `w10-g2-misrelease.md`。
+
 ## 0. 2026-09-23 審核結果（owner 轉發的 Jev jev-1.13.0 建議；21 次合成／文件稽核一律不進 J5 n）
 
 owner 對 W0／W1 品質的判定：**可進 research 討論，不可進 main、不可開真 runtime**；七守衛 foundation／127 測／tripwire／C10＋Gauntlet 1.4.0 一致；沒有 Jev 寫 G2／G3 verdict、沒有宣稱 production AUTO。

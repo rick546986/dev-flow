@@ -18,9 +18,18 @@ superseded_by: null
 > 「放行不需要人、但分流器 Jev 又不能放行」與直覺相反(反直覺);
 > 換到 G2 不再是日常人類等待,付出的是 G2 漏網風險全部壓給下游 G3 人審(真 trade-off)。
 >
-> **狀態:Accepted(owner 2026-09-27)。** 本 ADR 只記錄決策;契約句、指南、SKILL、
-> `_gate_consistency_impl.py`、模板與腳本的改動另開 PR(見〈實作面〉),
-> 在那之前 main 上的 G2 仍照現行契約 §7 人審。
+> **狀態:Accepted(owner 2026-09-27),已實作並上線(main #418;`g2auto.G2_AUTO_LIVE = True`)。**
+> 本 ADR 只記錄決策;契約句、指南、SKILL、`_gate_consistency_impl.py`、模板與腳本的改動
+> 另開 PR(見〈實作面〉)。
+> ~~在那之前 main 上的 G2 仍照現行契約 §7 人審。~~ **(已被取代,2026-10-12 校對:契約 §7 已改成
+> G1/G3 與 G2 兩句審查者句,實作面各項已隨 #418 落地,main 上的 G2 現在走自動審;
+> 命中轉人條件才回人審。)**
+>
+> **2026-10-12 owner 拍板三處口徑**(此前程式現況與本 ADR 原文不一致、曾標「待 owner 決定」;
+> 現已定案並落地,見下方各處):① 風險路徑判定來源(§3 表):`- Paths:` ∪ R 列提到的檔案 →
+> **改程式**(`g2auto.build_case` 新增 `r_paths`);② 誤放率分母(§6):只算「已走到 G3 的 agent 自動放行 G2」→
+> **改程式**(`policy.g2_misrelease_rate`、`devflow-jev.py g2-misrelease report`);③ 誤放行事件範圍(§6):
+> G3 退件且 `root_cause: spec`,**另**收實作階段 `spec_amended`／`spec_returned`／`reverted` → **只改文件**(照程式現況)。
 
 ## Context
 
@@ -65,14 +74,19 @@ G1、G3 的審查者順序**逐字不動**。
 |---|---|---|
 | Jev `g2_route` = HUMAN | `policy.route_g2` | 只在有 key + opt-in 時存在 |
 | Jev 信心不足 | `p(AUTO_PASS) < 0.85` | owner 定案 C3:≥ 0.85 才走自動審 |
-| 命中 `risk_paths` | `policy.RISK_PATHS_DEFAULT` 對 4-spec 宣告的 changed paths／R 列檔案 | 機械 ceiling,不看任何分數 |
-| 4-spec **沒宣告任何檔案路徑** | 同上來源為空 | G2 階段還沒有 diff 可推 changed paths,無從判定 → **視同命中** `risk_paths`(fail-closed,不當成「沒命中」) |
-| risk ≥ 2 | 有 Jev:`risk` Score(0–3,與 J5 同刻度);無 Jev:4-spec `- Risk:` 映射 | owner 定案 C4:無 Jev 時 `Risk: high` 視同 ≥ 2;`medium`／`low` 視同 < 2 |
+| 命中 `risk_paths` | `policy.RISK_PATHS_DEFAULT` 對 4-spec Diff Budget 的 `- Paths:` 宣告 **∪ R 列(`## ADDED／MODIFIED／REMOVED Requirements` 底下 `### R-n` 區塊)提到的檔案** | 機械 ceiling,不看任何分數。**(2026-10-12 owner 拍板)** 兩個來源都算:`g2auto.build_case` 的 `declared_paths`(`- Paths:`)與 `r_paths`(`g2auto.r_row_paths`,啟發式抓路徑形狀的 token,多抓只會多轉人審);`policy.route_g2` 對兩者聯集判 `risk_paths`。`skills/dev-flow/SKILL.md` 與契約 §7 同口徑 |
+| 4-spec **沒宣告任何檔案路徑** | `- Paths:` 為空(R 列提到檔案**不能**補上這條) | G2 階段還沒有 diff 可推 changed paths,無從判定 → **視同命中** `risk_paths`(fail-closed,不當成「沒命中」) |
+| risk ≥ 2 | 有 Jev:`risk` Score(0–3;與 J5 同為 0–3、門檻同在 2,**但各級文字定義不同**,見下註);無 Jev:4-spec `- Risk:` 映射 | owner 定案 C4:無 Jev 時 `Risk: high` 視同 ≥ 2;`medium`／`low` 視同 < 2。**補充(程式現況)**:`normal`(模板缺省)與未寫也視同 < 2(`policy.G2R_SPEC_RISK_SCORE = {high:2, medium:1, normal:0, low:0}`);C4 原文未提 `normal`,這是補充、不是衝突 |
 | 有未裁決的 Owner Call | `check-spec-gate.sh`／2-decision Owner Calls 無殘留 | Owner Calls 永遠人裁 |
 | 需要 Demo verdict | `_stage3_impl.py` 回 `demo_request=requested`,或 Stage 3 觸發命中但人尚未填 Demo request | Demo verdict human-only 不動 |
 | 當次修改 Jev runtime／questions／config | 既有 P1-G6 規則 | 同 J5 |
 | 缺 `authored_by` | 4-spec 頂欄 | 無法證明四眼 → 轉人 |
 | provenance 不合法或 author == approver | §4／§5 | fail-closed:**不是 unverified 放行,是不過** |
+
+> **risk 刻度註(2026-10-12 校對;~~「與 J5 同刻度」~~ 已被取代)**:G2R `risk`(`policy.G2R_QUESTIONS`,繁體中文,#425)與 J5 `risk`(`jev-questions.json`)都是 0–3、門檻都在 2,但等級定義不同:
+> **權限**——J5 level 2 `persisted_or_external` 含「permission rule」,G2R 把「授權／登入驗證／機密」放 level 3 `critical`;
+> **跨模組介面**——G2R level 2 `sensitive` 含「公開或跨模組的介面」,J5 未列;
+> G2R level 1 另要求「不改資料結構、權限或對外約定」。兩題組的 Jev 分數不可互換比較。
 
 ### 4. author ≠ approver
 
@@ -112,10 +126,21 @@ G1、G3 的審查者順序**逐字不動**。
 - **G2 誤放**:G3 退件(REQUEST_CHANGES／HOLD),且退件原因追得到規格(R/S 錯漏、DD 判錯、
   Verification Profile 漏層、spec 自相矛盾)→ 記一筆 `g2_misrelease`,綁同 feature 的 G2
   evaluation／verdict hash;追不到規格的 G3 退件不算。
+  **事件範圍(2026-10-12 owner 拍板,照程式現況)**:除 G3 退件且 `root_cause: spec` 外,**另**收實作階段三種事件
+  (`policy.G2M_STAGES["implementation"]`:`spec_amended` 實作中回頭改 4-spec、`spec_returned` 被退回 Stage 4、
+  `reverted` 因 spec 問題被 revert;`reported_by` 可為 `human:`／`agent:`),report 以 `misreleased_by_stage` 分格
+  (`w10-g2-misrelease.md` §1)。實作階段事件發生時該 case 通常還沒走到 G3,所以**只列在 `misreleased`、不進誤放率**(見下一條)。
 - 「追得到規格」由 **G3 的人類 reviewer** 在 7-review 退件理由勾 `root_cause: spec`;agent 不得代勾。
   這是 G3 本來就由人做的退件判斷,不是 G2 放行後的額外人工步驟。
-- **G2 誤放率** = `g2_misrelease` 筆數 ÷ 已走到 G3 的自動 G2 筆數。**只進 report**:
-  不阻擋任何 G2、不自動退回、不觸發抽查。要不要因數字改規則,由 owner 另行裁決。
+- **G2 誤放率** = `g2_misrelease` 筆數 ÷ 已走到 G3 的自動 G2 筆數。
+  **分母口徑(2026-10-12 owner 拍板,已改程式)**:只算「已走到 G3 的 agent 自動放行 G2」(`g2-agent-release.jsonl`
+  相異 `(slug, case_hash)` 中,證據顯示已走到 G3 者)。**「已走到 G3」的證據** = `docs/dev/<slug>/7-review.md`
+  頂欄有人簽的 G3 verdict(`verdict` ∈ PASS|REQUEST_CHANGES|HOLD,`verdict_source` ∈ human_attested|owner_self_review,
+  `attested_by: human:<名>`;`g2auto.g3_reached`)。**fail-closed**:檔案不存在、讀不到、verdict 空或 PRE-REVIEW、
+  不是人簽 → 判不出就不進分母,**不是 0%**;分母 0 時 `misrelease_rate=null`、`rate_status=insufficient_data`。
+  分子只算分母內的誤放行;還沒走到 G3 就被發現的(實作階段事件)照樣列在 `misreleased`
+  (`misreleased_not_reached_g3`),不進率。已知限制:以 slug 為單位,不比對 verdict 與放行的先後。
+  **只進 report**:不阻擋任何 G2、不自動退回、不觸發抽查。要不要因數字改規則,由 owner 另行裁決。
 
 ### 7. 不變
 

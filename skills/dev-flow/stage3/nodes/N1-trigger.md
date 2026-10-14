@@ -36,7 +36,7 @@ python3 ${DEVFLOW_ROOT}/scripts/devflow-jev.py handoff --gate J3 --slug <slug> \
 
 `4-spec.md` 或 `3-prototype.md` 已經存在才加 `--spec`／`--prototype`。
 只把 stdout 的 `display` 唸給人（值得人親手 Demo，或 Demo 可選）。
-這句不改「命中就要 Demo」：極性不在這裡翻。禁止把這句寫進 Human verdict、禁止寫 ACCEPTED、
+這句不影響是否 Demo：命中後**由人決定要不要 Demo**（P3-4／W7：人要求才 Demo；舊說法「命中就要 Demo」已被取代）。禁止把這句寫進 Human verdict、禁止寫 ACCEPTED、
 禁止寫 Verdict attestation、禁止寫 G2。`writes_verdict` 必須是 false；檔案內容維持原樣。
 
 跑 `${DEVFLOW_ROOT}/scripts/check-devstage3-graph.sh --write-cursor N1-trigger`。
