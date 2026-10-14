@@ -4066,6 +4066,24 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             收寬成只 postbash detect-after 必須紅。Edit 擋法不準更鬆;
             scope 內寫入仍放行。案例數下限寫死。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>.claude/hooks/run-selftest.sh</code></td>
+        <td>本 repo 自己的 Claude Code session 用的 Stop hook(掛在 <code>.claude/settings.json</code>
+            的 <code>hooks.Stop</code>,與外掛的 <code>hooks/hooks.json</code> 分開):改完要結束時,
+            工作樹有變更或分支有 main 以外 commit 就跑 <code>bash hooks/selftest.sh</code>,沒過
+            exit 2 把尾 40 行擋回給 Claude 修;<code>stop_hook_active</code> 為 true 一律放行。
+            暫時關閉:官方只有 <code>"disableAllHooks": true</code>(可放
+            <code>.claude/settings.local.json</code>)或
+            <code>claude --settings '{"disableAllHooks": true}'</code>,會關掉全部 hook,
+            沒有只關單一 hook 的開關。</td>
+        <td><code>.claude/settings.json</code> 的 Stop 事件</td><td>每次 Claude 要結束回合時</td></tr>
+    <tr><td><code>test-stop-selftest-hook.sh</code></td>
+        <td>Claude Code Stop hook <code>.claude/hooks/run-selftest.sh</code> 的牙(selftest 用
+            <code>DEVFLOW_STOP_SELFTEST_CMD</code> 替身注入):<code>stop_hook_active=true</code>
+            必須放行(防無限迴圈);無變更且無 main 以外 commit 必須放行且不跑;selftest 失敗必須
+            exit 2 並在 stderr 留提示與尾 40 行。另釘 <code>.claude/settings.json</code> 的
+            <code>hooks.Stop</code> 為 exec form、timeout 600、沒有 <code>onFailure</code>。
+            案例數下限寫死。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-host-receipt.sh</code></td>
         <td>host-stack-fit 收據牙:stage4 allow 鑄檔、其餘六站同一套 mint、
             <code>verify_receipt:true</code> 只核對、start-only 不得宣稱武裝。

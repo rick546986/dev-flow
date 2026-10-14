@@ -262,6 +262,9 @@ group_architecture() {
   run "architecture/test-status-update" scripts/test-status-update.sh || return 1
   run "architecture/check-write-scope" scripts/check-write-scope.sh || return 1
   run "architecture/test-write-scope" scripts/test-write-scope.sh || return 1
+  # Claude Code Stop hook(.claude/hooks/run-selftest.sh):stop_hook_active 放行、無變更放行、
+  # selftest 失敗 exit 2 + 提示;並釘 .claude/settings.json 的 Stop 掛載形狀。
+  run "architecture/test-stop-selftest-hook" scripts/test-stop-selftest-hook.sh || return 1
   run "architecture/test-stack-inventory" scripts/test-stack-inventory.sh || return 1
   # Stage 6/7 執行期強制條款(A1 守衛武裝／A3 Verify 案例數／A4 gauntlet 路徑／
   # A5 觀測可執行性)。四條都是 2026-08 order-intake 實際失效過的散文規則。
