@@ -9,5 +9,21 @@
       "mcp__Google_Drive__create_file",
       "mcp__Google_Drive__update_file"
     ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/run-selftest.sh"
+            ],
+            "timeout": 600
+          }
+        ]
+      }
+    ]
   }
 }
