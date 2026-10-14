@@ -282,10 +282,10 @@ owner 保留三欄 grouping：
 
 **J1 live** 是互動式同步 gate：
 
-- 待核定候選：總 wall-clock deadline 2 秒。
+- 已定（2026-10-14 owner 已決定，見 §8.2；仍標「未校準」）：總 wall-clock deadline 2 秒。
 - 不做 foreground retry；失敗直接 no-op 走現況。
 - retry 若日後開啟，必須計入 daily attempt/token budget。
-- 這個 2 秒是工程候選值，不是 owner 裁決或 TypeSafe SLA。
+- 這個 2 秒 2026-10-14 owner 已決定（以 §0 第 11 條照建議落檔為準，仍標「未校準」），但不是 TypeSafe SLA。
 
 **J5 shadow**：
 
