@@ -1,6 +1,8 @@
 """project identity:path-independent、不依賴 GitHub、重跑不換 ID(§3/§31)。"""
 import os
 import shutil
+import socket
+from unittest import mock
 
 from memtools import MemoryCase, git, read_file, write
 from agentmem import identity, ids, yamlmini
@@ -207,9 +209,18 @@ class HostEndpointIsOffMachineTest(MemoryCase):
     def test_resolve_host_ips_fails_closed_on_unresolvable_host(self):
         """解析不到位址(host 不存在、離線、或其實是 SSH config 別名而非可解析
         的名稱)回 None —— 呼叫端必須把它當成沒有證據,不是當成 off-machine。"""
-        self.assertIsNone(
-            identity.resolve_host_ips(
-                "this-host-does-not-resolve.invalid.example.test-devflow"))
+        # mock 掉 identity 實際呼叫的 socket.getaddrinfo,不真的做 DNS 查詢
+        # (會劫持 NXDOMAIN 的網路下,真查詢會解析出位址而誤報失敗)。
+        with mock.patch.object(
+                identity.socket, "getaddrinfo",
+                side_effect=socket.gaierror(socket.EAI_NONAME,
+                                            "Name or service not known")
+        ) as getaddrinfo:
+            self.assertIsNone(
+                identity.resolve_host_ips(
+                    "this-host-does-not-resolve.invalid.example.test-devflow"))
+        getaddrinfo.assert_called_once_with(
+            "this-host-does-not-resolve.invalid.example.test-devflow", None)
 
     def test_local_machine_ips_never_raises_and_returns_a_frozenset(self):
         """盡力而為的偵測 —— 任何一種探測手法失敗都不得讓呼叫端整個炸掉。"""
