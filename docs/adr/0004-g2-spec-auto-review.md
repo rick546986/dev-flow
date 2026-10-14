@@ -129,7 +129,8 @@ G1、G3 的審查者順序**逐字不動**。
   **事件範圍(2026-10-12 owner 拍板,照程式現況)**:除 G3 退件且 `root_cause: spec` 外,**另**收實作階段三種事件
   (`policy.G2M_STAGES["implementation"]`:`spec_amended` 實作中回頭改 4-spec、`spec_returned` 被退回 Stage 4、
   `reverted` 因 spec 問題被 revert;`reported_by` 可為 `human:`／`agent:`),report 以 `misreleased_by_stage` 分格
-  (`w10-g2-misrelease.md` §1)。實作階段事件發生時該 case 通常還沒走到 G3,所以**只列在 `misreleased`、不進誤放率**(見下一條)。
+  (`w10-g2-misrelease.md` §1)。**是否進誤放率看該 case 有沒有走到 G3,不看事件階段**:已走到 G3 的 case,其實作階段事件也進分子;
+  尚未走到 G3 的 case(不論事件階段)只列在 `misreleased`、計入 `misreleased_not_reached_g3`,不進誤放率(見下一條)。實作階段事件多半發生在 G3 前,所以多半落在後者。
 - 「追得到規格」由 **G3 的人類 reviewer** 在 7-review 退件理由勾 `root_cause: spec`;agent 不得代勾。
   這是 G3 本來就由人做的退件判斷,不是 G2 放行後的額外人工步驟。
 - **G2 誤放率** = `g2_misrelease` 筆數 ÷ 已走到 G3 的自動 G2 筆數。

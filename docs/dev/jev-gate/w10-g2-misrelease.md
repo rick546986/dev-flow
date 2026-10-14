@@ -59,8 +59,9 @@ base: research/jev-supermemory 7e105df（W9 G2R 分流 shadow）
 
 **與 v5 §3.3 的差別（2026-10-12 owner 拍板照程式現況）**：v5 原文只把「G3 退件 + `root_cause: spec`」算誤放；本檔依 owner 2026-09-27 的 W10 指示多收「實作階段」三種事件，
 2026-10-12 owner 確認事件範圍就是「G3 退件且 `root_cause: spec`，**另**收實作階段 `spec_amended`／`spec_returned`／`reverted`」。
-report 用 `misreleased_by_stage` 分開列；只想看 v5 原口徑就看 `G3` 那格。實作階段事件發生時該 case 通常還沒走到 G3，
-所以它列在 `misreleased`、**不進誤放率**（見 §4）。
+report 用 `misreleased_by_stage` 分開列；只想看 v5 原口徑就看 `G3` 那格。**是否進誤放率看該 case 有沒有走到 G3，不看事件階段**：
+已走到 G3 的 case，其實作階段事件也進分子；尚未走到 G3 的 case（不論事件階段）只列在 `misreleased`、計入 `misreleased_not_reached_g3`，**不進誤放率**（見 §4）。
+實作階段事件多半發生在 G3 前，所以多半落在後者。
 
 ## 2. 記錄格式（`.devflow/jev/g2-misrelease.jsonl`，schema `devflow-g2-misrelease/1`）
 
