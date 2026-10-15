@@ -87,6 +87,7 @@ def build_evaluation(gate, slug, mode, packet, manifest_hash, route, taken, take
         "route_taken_reason": taken_reason,
         "status": outcome["status"],
         "noop_reason": outcome.get("reason") or None,
+        "noop_detail": outcome.get("detail") or None,     # 傳輸錯誤附註(已遮罩、≤500 字;不進 integrity hash)
         "usage": outcome.get("usage"),
         "n_counted": False,            # graduation n 只在 label 綁定時由 report 決定
         "occurred_at": occurred_at or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -123,6 +124,8 @@ def build_durable_record(evaluation, replay_status):
         "replay": replay_status, "status": ev["status"], "usage": (ev.get("usage") or {}).get("usage_status", "-"),
         "n_counted": str(ev["n_counted"]).lower(),
     }
+    if ev.get("noop_detail"):      # 傳輸錯誤附註(例如服務 400 的 detail;已遮罩),durable 只留前 160 字
+        fields["noop_detail"] = str(ev["noop_detail"]).replace(";", ",").replace("=", ":")[:160]
     record = {
         "event_id": new_ulid("evt"),
         "kind": "jev",

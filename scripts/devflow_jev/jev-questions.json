@@ -5,19 +5,39 @@
     "J1": {
       "goal_clear": {
         "type": "noul",
-        "text": "Given only the discussion record's Goals and Real-world Context sections, can a reader state the single primary outcome this change must produce without asking the author?"
+        "text": "Given only the discussion record's Goals and Real-world Context sections, can a reader state the single primary outcome this change must produce without asking the author?",
+        "instructions": "Judge only from the discussion record's Goals and Real-world Context sections. Answer true only if one reader could restate the single primary outcome of this change without asking the author. If the outcome is missing, vague, or two different outcomes are equally plausible, answer false.",
+        "criteria": {
+          "true": {"what": "Yes: Goals and Real-world Context together state one primary outcome that a reader can repeat back without asking the author.", "examples": ["Goals says 'stop the duplicate login prompt after an SSO redirect' and names the affected user flow"]},
+          "false": {"what": "No: the primary outcome is missing, only a vague direction, or several competing outcomes are listed with no priority.", "examples": ["Goals says 'improve onboarding' with no observable result"]}
+        }
       },
       "scope_clear": {
         "type": "noul",
-        "text": "Does the discussion record name what is inside and outside this change precisely enough that a Decide-stage writer could list the affected files, interfaces or data without guessing?"
+        "text": "Does the discussion record name what is inside and outside this change precisely enough that a Decide-stage writer could list the affected files, interfaces or data without guessing?",
+        "instructions": "Judge whether the record separates what is inside this change from what is outside it. Answer true only if a Decide-stage writer could list the affected files, interfaces or data from the record alone, without guessing. A bare topic name or a list of areas with no boundary is not enough.",
+        "criteria": {
+          "true": {"what": "Yes: the record names what is inside and outside the change precisely enough to list the affected files, interfaces or data.", "examples": ["Record lists 'scripts/foo.py and its test; the public CLI flags stay unchanged; out of scope: the database schema'"]},
+          "false": {"what": "No: the boundary is not stated, or the writer would have to guess which files, interfaces or data are touched.", "examples": ["Record says 'clean up the pipeline' with no files, interfaces or exclusions named"]}
+        }
       },
       "acceptance_clear": {
         "type": "noul",
-        "text": "Does the record contain at least one acceptance statement that could be turned into a pass/fail check, or state exactly what the spec stage still has to define?"
+        "text": "Does the record contain at least one acceptance statement that could be turned into a pass/fail check, or state exactly what the spec stage still has to define?",
+        "instructions": "Look for acceptance statements in the record. Answer true if at least one statement could be turned into a pass/fail check, or if the record says exactly what the spec stage still has to define. Statements such as 'works well' or 'is better' with no observable condition do not count.",
+        "criteria": {
+          "true": {"what": "Yes: at least one acceptance statement is checkable as pass/fail, or the record states exactly what the spec stage must still define.", "examples": ["Acceptance: 'running the checker on the sample file exits 0 and prints no warnings'"]},
+          "false": {"what": "No: acceptance is absent, or only subjective wording with no observable condition and no statement of what is left to define.", "examples": ["Acceptance: 'the result should feel faster and cleaner'"]}
+        }
       },
       "owner_call_pending": {
         "type": "noul",
-        "text": "Does the record contain a product or value choice that only the project owner may decide and that has not yet been decided in the record?"
+        "text": "Does the record contain a product or value choice that only the project owner may decide and that has not yet been decided in the record?",
+        "instructions": "Look for a product or value choice that only the project owner may make (for example priority, scope trade-off, policy or risk appetite) and check whether the record already contains the owner's decision. Answer true only if such a choice exists and is still undecided. Purely technical choices an engineer can make do not count.",
+        "criteria": {
+          "true": {"what": "Yes: the record contains an owner-only product or value choice that has not been decided in the record.", "examples": ["Record asks 'should we drop support for the legacy export format?' and no owner answer is recorded"]},
+          "false": {"what": "No: there is no owner-only choice, or every such choice already has the owner's recorded decision.", "examples": ["Record's only open point is which internal helper to reuse, or the owner's answer is recorded as 'keep the legacy format'"]}
+        }
       },
       "ambiguity": {
         "type": "score",
@@ -42,7 +62,12 @@
     "J3": {
       "demo_worth_it": {
         "type": "noul",
-        "text": "Given the spec's Operational Context and the prototype's trigger assessment, would a human operating the demo be likely to change at least one requirement or scenario?"
+        "text": "Given the spec's Operational Context and the prototype's trigger assessment, would a human operating the demo be likely to change at least one requirement or scenario?",
+        "instructions": "Use the spec's Operational Context and the prototype's trigger assessment. Answer true only if a human who operates the demo would plausibly change at least one requirement or scenario after seeing it. If the demo would only confirm what the spec already says, or the behaviour is fully mechanical with nothing for a human to react to, answer false.",
+        "criteria": {
+          "true": {"what": "Yes: running the demo in front of a human is likely to change at least one requirement or scenario.", "examples": ["The spec's Operational Context has a manual step whose usability is unknown, and the trigger assessment marks it as uncertain"]},
+          "false": {"what": "No: the demo would only confirm the spec as written; a human operating it is unlikely to change any requirement or scenario.", "examples": ["A pure internal refactor whose observable behaviour is covered by existing tests"]}
+        }
       }
     },
     "J5": {
@@ -67,7 +92,12 @@
       },
       "evidence_complete": {
         "type": "noul",
-        "text": "Does the evidence summary cover every layer the spec's Verification Profile requires, with a numeric result for each passed layer?"
+        "text": "Does the evidence summary cover every layer the spec's Verification Profile requires, with a numeric result for each passed layer?",
+        "instructions": "Compare the evidence summary with the layers listed in the spec's Verification Profile. Answer true only if every required layer appears and each layer that passed carries a numeric result (a count, a coverage figure or similar). A layer that is only described as 'passed' with no number, or a required layer that is missing, makes the answer false.",
+        "criteria": {
+          "true": {"what": "Yes: every layer the Verification Profile requires is covered, and each passed layer has a numeric result.", "examples": ["Profile requires unit and e2e; summary says 'unit 128/128 passed, e2e 14/14 passed'"]},
+          "false": {"what": "No: a required layer is missing from the summary, or a passed layer has no numeric result.", "examples": ["Profile requires unit and e2e; summary only says 'tests passed' and never mentions e2e"]}
+        }
       }
     }
   }

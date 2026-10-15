@@ -8,6 +8,7 @@
   決定,`level` 不控制 index:`level != index` 一律拒絕,**不排序**(排序會改變 rubric 語義與 hash)。
 - group key 固定三欄 `(gate, questionset_hash, model_resolved)`,不加第四欄。
 """
+import copy
 import hashlib
 import json
 import os
@@ -82,6 +83,31 @@ def score_criteria_for_api(entries):
     return out
 
 
+def validate_noul_fields(q, where):
+    """noul(是／否機率題)的 instructions／criteria 形狀;有帶才驗,缺不缺由 gate_questions_for_api 擋。
+    Jev 服務要求 noul 至少附 criteria 或 instructions(否則 HTTP 400);criteria 為 {"true": {...}, "false": {...}},
+    各自 {what: 字串, examples?: 非空字串陣列}(形狀同過去實際送成功的請求)。"""
+    problems = []
+    if "instructions" in q and (not isinstance(q["instructions"], str) or not q["instructions"].strip()):
+        problems.append("%s: noul instructions 必須是非空字串" % where)
+    if "criteria" in q:
+        crit = q["criteria"]
+        if not isinstance(crit, dict) or set(crit) != {"true", "false"}:
+            problems.append("%s: noul criteria 必須恰為 {\"true\": {...}, \"false\": {...}}" % where)
+        else:
+            for side, entry in crit.items():
+                if not isinstance(entry, dict) or not isinstance(entry.get("what"), str) or not entry["what"].strip():
+                    problems.append("%s: noul criteria.%s 必須是帶非空 what 的物件" % (where, side))
+                    continue
+                if set(entry) - {"what", "examples"}:
+                    problems.append("%s: noul criteria.%s 多餘欄位 %s" % (where, side, sorted(set(entry) - {"what", "examples"})))
+                examples = entry.get("examples")
+                if "examples" in entry and (not isinstance(examples, list) or not examples
+                                            or any(not isinstance(x, str) or not x.strip() for x in examples)):
+                    problems.append("%s: noul criteria.%s.examples 必須是非空字串陣列" % (where, side))
+    return problems
+
+
 def validate_questions(questions):
     """驗 questions 形狀:{gate: {question_id: {type, text, criteria?}}}。回傳 problems。"""
     problems = []
@@ -107,12 +133,11 @@ def validate_questions(questions):
                 continue
             if not isinstance(q.get("text"), str) or not q["text"].strip():
                 problems.append("%s: text 必填" % where)
-            extra = set(q) - {"type", "text", "criteria", "note"}
+            extra = set(q) - {"type", "text", "criteria", "instructions", "note"}
             if extra:
                 problems.append("%s: 多餘欄位 %s" % (where, sorted(extra)))
             if qtype == "noul":
-                if "criteria" in q:
-                    problems.append("%s: noul 不得帶 criteria" % where)
+                problems.extend(validate_noul_fields(q, where))
             elif qtype == "choice":
                 crit = q.get("criteria")
                 if not isinstance(crit, dict) or len(crit) < 2:
@@ -188,14 +213,24 @@ def questionset_hash(manifest):
 
 
 def gate_questions_for_api(manifest, gate):
-    """把某 gate 的題組轉成 API `questions` 形狀(score criteria 轉有序字串)。"""
+    """把某 gate 的題組轉成 API `questions` 形狀(score criteria 轉有序字串;noul 帶 criteria／instructions)。
+
+    Jev 服務對 noul 題要求至少附 criteria 或 instructions,否則 HTTP 400(「Noul question must have criteria
+    or instructions」)。兩者都缺 → 本機先 raise(fail-loud,不送出、不耗 budget)。"""
     qset = manifest["questions"].get(gate)
     if not qset:
         raise JevError("manifest 沒有 %s 題組" % gate)
     out = {}
     for qid, q in qset.items():
         entry = {"type": q["type"], "text": q["text"]}
-        if q["type"] == "choice":
+        if q["type"] == "noul":
+            if not q.get("criteria") and not q.get("instructions"):
+                raise JevError("%s.%s: noul 題必須帶 criteria 或 instructions(Jev 服務否則回 HTTP 400)" % (gate, qid))
+            if q.get("instructions"):
+                entry["instructions"] = q["instructions"]
+            if q.get("criteria"):
+                entry["criteria"] = copy.deepcopy(q["criteria"])     # 深複本:不與 manifest 共用引用
+        elif q["type"] == "choice":
             entry["criteria"] = dict(q["criteria"])
         elif q["type"] == "score":
             entry["criteria"] = score_criteria_for_api(q["criteria"])

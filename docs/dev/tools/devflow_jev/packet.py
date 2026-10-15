@@ -79,6 +79,28 @@ def privacy_scan(obj):
     return hits
 
 
+# 錯誤 body 遮罩(http_transport 取 400／422 detail 時用)。沿用 _SECRETS 的規則,另補「像 key 的長字串」:
+# 不改 _SECRETS／_ABS_*(那些進 builder_fingerprint),這裡是額外的一層。
+_KEYLIKE = re.compile(r"\b(?:sk|pk|key|tok|ts)[-_][A-Za-z0-9_\-]{8,}|\b[A-Za-z0-9_\-]{32,}\b")
+REDACTED = "[REDACTED]"
+
+
+def redact_secrets(text, literals=()):
+    """把 text 裡的機密換成 [REDACTED] 後回傳(不是偵測,是遮罩)。
+    順序:呼叫端已知的字面機密(例如 transport 持有的 API key)→ _SECRETS 全部規則 → 絕對路徑 → 類 key 長字串。
+    先遮罩、後截長(呼叫端),截長不可能把殘缺機密露出來。"""
+    out = text if isinstance(text, str) else str(text)
+    for literal in literals:
+        if isinstance(literal, str) and len(literal) >= 4:
+            out = out.replace(literal, REDACTED)
+    # api_key_assignment 最後:它會吃掉 `Authorization: Bearer` 兩個字,留下 token 本體,所以 bearer 等先遮
+    for kind, pattern in sorted(_SECRETS, key=lambda item: item[0] == "api_key_assignment"):
+        out = pattern.sub(REDACTED, out)
+    out = _ABS_UNIX.sub(REDACTED, out)
+    out = _ABS_WIN.sub(REDACTED, out)
+    return _KEYLIKE.sub(REDACTED, out)
+
+
 def lint_options(options):
     """選路題形式控制。回傳 problems;空 = 形式合格。**不是**抗 injection 證明。"""
     problems = []

@@ -4,6 +4,8 @@
 - 只做「送 request、收 raw JSON」;形狀驗證仍在 `transport.parse_response`,錯誤一律轉成
   `TransportError(kind)` 讓 `policy.evaluate` 走 no-op(G2)。這裡沒有 retry、沒有 backoff。
 - API key 只存在 transport 物件裡,不進任何 log／錯誤訊息／replay store(`__repr__` 不印)。
+- 400／422 會讀服務回的 body 取 `detail`(限讀 8KB、遮罩機密、截成 ≤500 字)放進 `TransportError.detail`,
+  讓「Noul question must have criteria or instructions」這類驗證錯誤看得見;其餘狀態碼仍只帶狀態碼。
 - endpoint 只准 https;`DEVFLOW_JEV_ENDPOINT` 覆寫只在測試用,且非 loopback 一律要求 https。
 - 未持 key 的呼叫端**不該建這個物件**(runtime 在 `gate.effective_level` 之後才建它);
   建構時 key 空 → fail-loud,不會默默送匿名請求。
@@ -15,6 +17,7 @@ import urllib.parse
 import urllib.request
 
 from . import JevError
+from .packet import redact_secrets
 from .transport import TransportError
 
 ENDPOINT_DEFAULT = "https://api.typesafe.ai/v1/systemone"
@@ -23,6 +26,27 @@ DEFAULT_TIMEOUT_S = 30.0
 USER_AGENT = "devflow-jev/1.0"
 HTTP_STATUS_KINDS = {400: "http_400", 401: "http_401", 422: "http_422", 429: "http_429", 529: "http_529"}
 _LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
+DETAIL_STATUSES = (400, 422)
+DETAIL_MAX_CHARS = 500
+BODY_READ_MAX_BYTES = 8192
+
+
+def error_detail(body, literals=(), max_chars=DETAIL_MAX_CHARS):
+    """服務錯誤 body(bytes)→ 可記錄的 detail 字串:取 JSON 的 `detail`(沒有就用全文)、壓空白、遮罩機密、截長。
+    先遮罩後截長;任何解析失敗回空字串(不得讓取 detail 這件事本身打斷 no-op 路徑)。"""
+    try:
+        text = body.decode("utf-8", errors="replace") if isinstance(body, (bytes, bytearray)) else str(body or "")
+        try:
+            data = json.loads(text)
+        except ValueError:
+            data = None
+        if isinstance(data, dict) and "detail" in data:
+            data = data["detail"]
+            text = data if isinstance(data, str) else json.dumps(data, ensure_ascii=False)
+        text = " ".join(redact_secrets(text, literals).split())
+        return text[:max_chars]
+    except Exception:  # pragma: no cover - 防禦:detail 只是附註
+        return ""
 
 
 def endpoint_host(url):
@@ -90,7 +114,15 @@ class HttpTransport(object):
             if kind is None:
                 # 不在 ERROR_KINDS 的狀態碼歸 network(仍 no-op);detail 只帶狀態碼,不帶 body(可能回顯 key)
                 raise TransportError("network", "http_%s" % exc.code)
-            raise TransportError(kind, "http status %s" % exc.code)
+            detail = "http status %s" % exc.code
+            if exc.code in DETAIL_STATUSES:
+                try:
+                    body_text = error_detail(exc.read(BODY_READ_MAX_BYTES), literals=(self._key,))
+                except Exception:
+                    body_text = ""
+                if body_text:
+                    detail = "%s: %s" % (detail, body_text)
+            raise TransportError(kind, detail)
         except socket.timeout:
             raise TransportError("timeout", "socket timeout after %.1fs" % self.timeout_s)
         except urllib.error.URLError as exc:
