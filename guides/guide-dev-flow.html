@@ -1926,7 +1926,7 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   <strong>核准者不能是該文檔的 owner</strong>。</p>
   <div class="cardgrid">
     <div class="card"><h4>G1 物質 —— 方向對不對</h4><p><code>2-decision</code>:方向核准 + Owner Calls 全裁決,有未裁決 OC 不得 hop。新工作不例行等人按提交判定。</p></div>
-    <div class="card"><h4>G2 物質 —— 契約寫得對不對</h4><p><code>4-spec</code>:R/S 全審 + Drafting Decisions 全裁決 + Verification Profile(依 lane 正確填寫)+ Demo verdict(條件式),有未裁決項不得 hop(條件全文見 契約檔 §7)。新工作不例行等人。</p><p><strong>自動審</strong>:乾淨 context 的 fresh-context agent reviewer 給 PASS <strong>且</strong>機械檢查全過(<code>check-spec-gate.sh</code>、<code>_stage3_impl.py</code>、<code>check-verdict-attestation.sh</code>、author ≠ approver),才由 <code>devflow_gate.py write-g2-auto</code> 寫 <code>verdict_source: fresh_agent_reviewer</code> + <code>g2_mode: auto</code>;人寫的是 <code>human_attested</code>,兩者分得開。Jev G2R(<code>devflow-jev.py g2r</code>)只分流,不 review、不寫 verdict。</p><p><strong>交給人審</strong>(任一成立,只有 agent verdict 會被擋下):Jev 判 HUMAN 或 p(AUTO_PASS) &lt; 0.85(剛好 0.85 交給 agent);命中 risk_paths(<code>- Paths:</code> ∪ R 列提到的檔案)或 spec 沒宣告 <code>- Paths:</code>;risk ≥ 2(有 Jev 只看 Jev 分數,spec 的 <code>Risk: high</code> 不算;沒 Jev 時 <code>Risk: high</code> 就算,不分大小寫);有沒解決的 Owner Call;需要 Demo verdict;當次改到 Jev runtime／questions／config;缺 <code>authored_by</code>;provenance 不合法或 author = approver。<strong>沒有 Jev</strong>(沒 key、沒 opt-in、失敗、逾時、breaker open、budget 用完)= no-op:不擋、不放寬,<code>routed_by: none</code>。agent 放行記 <code>g2-misrelease release</code>,誤放行率只記錄、不設門檻、不自動回滾。全域退回人審:<code>g2auto.py</code> 的 <code>G2_AUTO_LIVE = False</code>。</p></div>
+    <div class="card"><h4>G2 物質 —— 契約寫得對不對</h4><p><code>4-spec</code>:R/S 全審 + Drafting Decisions 全裁決 + Verification Profile(依 lane 正確填寫)+ Demo verdict(條件式),有未裁決項不得 hop(條件全文見 契約檔 §7)。新工作不例行等人。</p><p><strong>自動審</strong>:乾淨 context 的 fresh-context agent reviewer 給 PASS <strong>且</strong>機械檢查全過(<code>check-spec-gate.sh</code>、<code>_stage3_impl.py</code>、<code>check-verdict-attestation.sh</code>、author ≠ approver),才由 <code>devflow_gate.py write-g2-auto</code> 寫 <code>verdict_source: fresh_agent_reviewer</code> + <code>g2_mode: auto</code>;人寫的是 <code>human_attested</code>,兩者分得開。Jev G2R(<code>devflow-jev.py g2r</code>)只分流,不 review、不寫 verdict。</p><p><strong>交給人審</strong>(任一成立,只有 agent verdict 會被擋下):Jev 判 HUMAN 或 p(AUTO_PASS) &lt; 0.85(剛好 0.85 交給 agent);命中 risk_paths(<code>- Paths:</code> ∪ R 列提到的檔案)或 spec 沒宣告 <code>- Paths:</code>;risk ≥ 2(有 Jev 只看 Jev 分數——0..3 的小數期望值,直接和 2 比、不取整;spec 的 <code>Risk: high</code> 不算;沒 Jev 時 <code>Risk: high</code> 就算,不分大小寫);有沒解決的 Owner Call;需要 Demo verdict;當次改到 Jev runtime／questions／config;缺 <code>authored_by</code>;provenance 不合法或 author = approver。<strong>沒有 Jev</strong>(沒 key、沒 opt-in、失敗、逾時、breaker open、budget 用完)= no-op:不擋、不放寬,<code>routed_by: none</code>。agent 放行記 <code>g2-misrelease release</code>,誤放行率只記錄、不設門檻、不自動回滾。全域退回人審:<code>g2auto.py</code> 的 <code>G2_AUTO_LIVE = False</code>。</p></div>
     <div class="card"><h4>Ship / G3 物質 —— 做出來的對不對</h4><p><code>7-review</code>:本次 S 全綠 + 既有測試套件全綠 + 現象證據逐 S 相符 + Evidence 契約全過(八點定義見 契約檔 §7);本模板另要求無 🔴 才 PASS。<strong>這是唯一預設人類停點</strong>;<code>verdict:</code> 人類親寫,agent 禁發明 G3。</p></div>
     <div class="card"><h4>author ≠ approver</h4><p>G1/G2/G3 的核准者不可以是該文檔的 owner。無適格人類第二人不跳過 Agent fallback;只有前兩種 reviewer 都不可用時才記錄 owner 自審,不假裝有四眼。G2 的 agent reviewer(<code>attested_by: agent:&lt;id&gt;</code>)不得等於 4-spec 的 <code>authored_by</code>,也不得共用寫 spec／code 那個 agent 的 context;G1/G3 只收人寫的 verdict。</p></div>
     <div class="card"><h4>Jev MR gate(選配,只到 shadow)</h4><p><code>.dev-flow/jev.yaml</code> 的 <code>gates: MR:</code>(<code>level</code> 必填、<code>min_queries</code> 選填;範本 <code>_templates/jev.yaml</code>)。<code>devflow-jev.py mr-gate</code> 照 mr-eval 同一判定出 <code>pass</code>／<code>fail</code>／<code>insufficient_data</code>(exit 0／1／3),設定缺或錯 exit 2。<code>min_queries</code> 預設 20 是<strong>未校準的暫定值</strong>。MR live 未核准:<code>enforced</code>、<code>live_eligible</code> 恆 false,不擋任何 gate;不是 G1/G2/G3、不寫 verdict。生效等級 = min(mode, MR):<code>mode: off</code> → MR 也 off;shadow 且有 key 時 rerank 會送 Jev 打分,但<strong>不改</strong>回傳順序(原順序 fallback,Jev 排序只記在 <code>shadow_top</code>／<code>shadow_scores</code>);live 才採用分數(MR live 未核准,今天走不到)。只開 MR 要把 J1/J3/J5 明寫 off;關 MR 寫 <code>MR: off</code>;yaml 註解自成一行(值後面接 <code>#</code> → exit 2)。</p></div>
@@ -3717,7 +3717,8 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     <tr><td><code>g2auto.py</code></td>
         <td>G2 自動放行的機械判定:從 docs/dev/&lt;slug&gt;/ 組 G2R case(<code>- Paths:</code>、Risk、未裁決 OC、Stage 3)、
             跑機械檢查(<code>check-spec-gate.sh</code> + <code>_stage3_impl.py</code>)、驗 provenance 與 author ≠ approver;
-            <code>G2_AUTO_LIVE</code> 是全域退回人審開關(改時連 <code>docs/dev/tools/</code> 副本一起改;已放行的 4-spec 不回頭打紅)。「沒宣告 paths」「改到 Jev runtime」只看 4-spec 的 <code>- Paths:</code> 宣告;risk_paths 另加 R 列(<code>### R-n</code> 區塊)提到的檔案(2026-10-12 owner 拍板)。寫入器與事後掃描共用同一支。</td>
+            <code>G2_AUTO_LIVE</code> 是全域退回人審開關(改時連 <code>docs/dev/tools/</code> 副本一起改;已放行的 4-spec 不回頭打紅)。「沒宣告 paths」「改到 Jev runtime」只看 4-spec 的 <code>- Paths:</code> 宣告;risk_paths 另加 R 列(<code>### R-n</code> 區塊)提到的檔案(2026-10-12 owner 拍板)。寫入器與事後掃描共用同一支。
+            <strong>v3.26.6</strong>:頂欄 <code>g2r_jev</code> 快照的 <code>risk=</code> 可以是小數(<code>AUTO_PASS p=0.91 risk=2.13</code>;沒小數點的舊快照仍是整數),<code>p=</code> 也容許指數寫法(<code>1e-05</code>);型別寫入與讀回一致、<code>g2r_case</code> 雜湊不變。</td>
         <td><code>devflow_gate.py write-g2-auto</code>、<code>check-verdict-attestation.sh</code>;<code>test_g2.py</code></td>
         <td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>test_mr_gate.py</code></td>
@@ -4297,7 +4298,11 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>同套件;<code>test_guards.py</code> G1Packet</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>transport.py</code></td>
         <td>fake transport + response schema 驗證(noul 無 confidence、choice/score 分布合法、score 在 criteria 內)。
-            沒有 HTTP;真傳輸在 <code>http_transport.py</code>,兩者回同一種 raw dict 給 <code>policy.evaluate</code>。</td>
+            沒有 HTTP;真傳輸在 <code>http_transport.py</code>,兩者回同一種 raw dict 給 <code>policy.evaluate</code>。
+            <strong>v3.26.6</strong>:score 題收 <strong>0 ≤ score ≤ 級數-1 的有限數字(int 或 float)</strong>——真實 Jev 回的是 0..3 的小數期望值(例如 2.92、2.13),不是整數;
+            超出範圍、NaN、±Infinity、bool、字串、null 照擋(<code>transport:schema</code>)。解析不改值、不取整(只把 -0.0 正規成 0.0);score 的 <code>probabilities</code> 鍵必須是等級 <code>"0".."n-1"</code>;
+            choice 必須是字串(list／dict 不再讓 <code>in</code> 丟 TypeError);usage 的 <code>output_tokens</code> 也驗非負整數(其餘 → null)。
+            <code>valid_score()</code> 是 score 合法性的唯一判準;<code>score_level()</code> 是<strong>唯一</strong>的「小數 → 整數等級」規則(round-half-up:2.5 → 3、2.49 → 2、2.92 → 3),只給報表直方圖用,門檻比較不用它。</td>
         <td>同套件;<code>policy.evaluate</code> 吃它;測試用</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>http_transport.py</code></td>
         <td>真 HTTP transport(W2):套件內**唯一**准 import urllib 的檔。POST 一次、收 raw JSON,錯誤全部轉
@@ -4314,7 +4319,9 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>G2 + route formula:HTTP/JSON/schema/error 一律 no-op 回現況、J1 2s deadline 無 foreground retry、
             breaker、daily budget(reserve 上界、可信 usage 才 reconcile)、shadow enqueue 實測 latency;
             J5/J1/J3 deterministic route(不相乘機率;0.36 argmax 不導出 AUTO;J5 未畢業 route_taken 恆 HUMAN)。
-            W3 的兩輪上限、主題句、J3 封閉顯示文案不住指紋,不換 <code>questionset_hash</code>。<br>G2R 分流 <code>route_g2</code> 以 main #418 為準(轉人條件全列、p ≥ 0.85 才交 agent、有 Jev 只看 Jev risk、沒有 Jev = no-op、當次改 Jev runtime 與缺 authored_by 轉人);<code>spec_risk_of</code> 大小寫不拘、空值／非法值報錯,與 hooks <code>spec_risk_value</code> 同規則;G2 誤放行欄位驗證與率(只記錄)。<br>MR:<code>mr_level</code> 有 <code>gates.MR</code> 時取 min(mode, MR.level)、live cap 成 shadow;<code>mr_min_queries</code> 驗證可設定地板;<code>mr_gate_result</code> 把 mr-eval verdict 對到 gate 結果;<code>mr_rerank_at_level</code> 依等級決定分數採不採用(shadow 只記 <code>shadow_top</code>、回傳原順序;live 且 <code>MR_LIVE_RATIFIED</code> 才採用)。</td>
+            W3 的兩輪上限、主題句、J3 封閉顯示文案不住指紋,不換 <code>questionset_hash</code>。
+            <strong>v3.26.6</strong>:score 是 0..3 的小數期望值,<code>risk_max</code>／<code>ambiguity_max</code>／G2R <code>risk_human_min</code> 一律<strong>直接拿 score 比門檻、不取整</strong>
+            (整數值結果與過去逐值相同;1.4 &gt; 1 轉人、不被四捨五入成 1 放行;缺值規則不變、壞值 NaN／bool／字串／超出範圍 fail-closed 轉人);門檻值本身不動。<br>G2R 分流 <code>route_g2</code> 以 main #418 為準(轉人條件全列、p ≥ 0.85 才交 agent、有 Jev 只看 Jev risk、沒有 Jev = no-op、當次改 Jev runtime 與缺 authored_by 轉人);<code>spec_risk_of</code> 大小寫不拘、空值／非法值報錯,與 hooks <code>spec_risk_value</code> 同規則;G2 誤放行欄位驗證與率(只記錄)。<br>MR:<code>mr_level</code> 有 <code>gates.MR</code> 時取 min(mode, MR.level)、live cap 成 shadow;<code>mr_min_queries</code> 驗證可設定地板;<code>mr_gate_result</code> 把 mr-eval verdict 對到 gate 結果;<code>mr_rerank_at_level</code> 依等級決定分數採不採用(shadow 只記 <code>shadow_top</code>、回傳原順序;live 且 <code>MR_LIVE_RATIFIED</code> 才採用)。</td>
         <td>同套件;<code>test_guards.py</code> G2FailureNoop / RouteFormula</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>state.py</code></td>
         <td>P1-F5 落盤:daily budget(UTC 日切、attempts／tokens 先到者停、unknown usage 不退款)與 breaker
@@ -4325,7 +4332,8 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             每 writer 自己的 session 檔、先過 <code>signal.gate</code>);local replay store(gitignored)存
             sanitized packet/questions/raw response;stored-response deterministic replay 與 remote
             reevaluation(新 id、保 lineage、不覆蓋、同 case 不增 n);feedback record(agree/overturn,
-            suspect 留痕不進 n)。</td>
+            suspect 留痕不進 n)。<strong>v3.26.6</strong>:<code>answers_summary</code> 的 score 原值(小數)照記;durable 白名單之外再驗值型別
+            (score 0..3 有限數字、noul／probability 在 [0,1]、choice 是字串,bool／字串／NaN／inf 擋下)。</td>
         <td>同套件;<code>test_guards.py</code> G4Ledger / G4DurableIntegration(真走 memory/agentmem)</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>provenance.py</code></td>
         <td>G6:derived-only。route 只能由 policy 導出、integrity hash 重算抓 tamper(hash 是完整性不是
@@ -4339,7 +4347,8 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>同套件;<code>test_guards.py</code> G7Attestation</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>report.py</code></td>
         <td>最小 report helper:Wilson 95% 下界、graduation floor(≥.85 且 n≥30,首次 overturn 凍結)、
-            unique case / same-evidence / 可疑 feedback / unverified 排除、分層計數。P2-2 之前的計算器。</td>
+            unique case / same-evidence / 可疑 feedback / unverified 排除、分層計數。P2-2 之前的計算器。
+            <strong>v3.26.6</strong>:<code>question_metrics</code> 的 <code>score_histogram</code> 鍵是整數等級 <code>"0".."3"</code>,小數 score 依 <code>transport.score_level</code>(round-half-up)分組,另給 <code>score_mean</code>(原始 score 平均)與 <code>score_invalid</code>(壞值筆數)。</td>
         <td>同套件;<code>devflow-jev.py report</code>;<code>test_guards.py</code> ReportMinimal</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>test_guards.py</code></td>
         <td>七組守衛的 unittest(負面 fixtures 在 <code>scripts/fixtures/devflow-jev/</code>):quoted injection、

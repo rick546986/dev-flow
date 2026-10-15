@@ -1,0 +1,23 @@
+{
+ "discussion_hash": "sha256:2c2fd11e0b8fe8c5055c453c7cb3413512182fee043ba466728a9e96bd1d1cc3",
+ "effect": "continue_existing_flow",
+ "evaluation_id": "eval_01M4ZF9WSZ2ATWFSX6BQV7KYB8",
+ "gate": "J1",
+ "graduated": false,
+ "idempotent": false,
+ "level": "live",
+ "level_reason": "min(mode=live, gates.J1=live)",
+ "model_route_taken": "HUMAN",
+ "network": true,
+ "noop_detail": "ambiguity.score 2.92 不是 0..3 的整數",
+ "noop_reason": "transport:schema",
+ "slug": "fix-3264",
+ "status": "noop",
+ "steers_flow": false,
+ "writes_g2_verdict": false,
+ "writes_g3_verdict": false,
+ "writes_verdict": false,
+ "written": [
+  "/tmp/jevsel.3Pwv/.dev-flow/events/2026/10/jev-J1-eval_01M4ZF9WSZ2ATWFSX6BQV7KYB8.167c76434e.jsonl"
+ ]
+}

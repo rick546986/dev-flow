@@ -8,6 +8,7 @@ import math
 
 from .attestation import graduation_eligible
 from .provenance import feedback_suspect, verify_evaluation
+from .transport import score_level, valid_score
 
 WILSON_FLOOR = 0.85
 N_FLOOR = 30
@@ -120,18 +121,29 @@ def brier(pairs):
 
 
 def question_metrics(evaluations):
-    """逐題結構化指標(只用 answers_summary,沒有 raw):noul 平均、score 直方、choice 分布。"""
+    """逐題結構化指標(只用 answers_summary,沒有 raw):noul 平均、score 直方＋平均、choice 分布。
+
+    score 是 0..3 的小數期望值:`score_histogram` 的鍵是**整數等級 "0".."3"**,分組規則 = round-half-up
+    (transport.score_level:2.13 → "2"、2.5 → "3"、2.92 → "3"、整數值照舊落在自己那格);`score_mean` 是原始 score 的
+    平均(round 4)。不合法的 score(非數字／NaN／±inf／bool／超出範圍)不進直方與平均,數量記在 `score_invalid`。"""
     acc = {}
     for ev in evaluations:
         if ev.get("status") != "ok":
             continue
         for qid, val in (ev.get("answers_summary") or {}).items():
-            slot = acc.setdefault(qid, {"n": 0, "noul_sum": 0.0, "scores": {}, "choices": {}})
+            slot = acc.setdefault(qid, {"n": 0, "noul_sum": 0.0, "scores": {}, "choices": {},
+                                        "score_sum": 0.0, "score_n": 0, "score_invalid": 0})
             slot["n"] += 1
             if "noul" in val:
                 slot["noul_sum"] += float(val["noul"])
             elif "score" in val:
-                slot["scores"][str(val["score"])] = slot["scores"].get(str(val["score"]), 0) + 1
+                if valid_score(val["score"]):
+                    level = str(score_level(val["score"]))
+                    slot["scores"][level] = slot["scores"].get(level, 0) + 1
+                    slot["score_sum"] += float(val["score"])
+                    slot["score_n"] += 1
+                else:
+                    slot["score_invalid"] += 1
             elif "choice" in val:
                 slot["choices"][val["choice"]] = slot["choices"].get(val["choice"], 0) + 1
     out = {}
@@ -141,6 +153,9 @@ def question_metrics(evaluations):
             row["noul_mean"] = round(slot["noul_sum"] / slot["n"], 4) if slot["n"] else None
         if slot["scores"]:
             row["score_histogram"] = slot["scores"]
+            row["score_mean"] = round(slot["score_sum"] / slot["score_n"], 4)
+        if slot["score_invalid"]:
+            row["score_invalid"] = slot["score_invalid"]
         if slot["choices"]:
             row["choice_distribution"] = slot["choices"]
         out[qid] = row

@@ -1,0 +1,79 @@
+{
+  "model": "jev-1.13.0",
+  "answers": {
+    "next_program": {
+      "type": "choice",
+      "choice": "promote_v4_then_w0",
+      "confidence": 0.89,
+      "probabilities": {
+        "start_w1_guards_parallel": 0.01,
+        "pause_research": 0.0,
+        "w0_on_v3_docs": 0.07,
+        "promote_v4_then_w0": 0.92
+      }
+    },
+    "v4_should_replace_branch_roadmap": {
+      "type": "noul",
+      "noul": 0.35
+    },
+    "p0_5_or_p0_6_blocks_guard_coding": {
+      "type": "noul",
+      "noul": 0.42
+    },
+    "parallel_guard_rework_risk": {
+      "type": "score",
+      "score": 2.12,
+      "confidence": 0.83,
+      "legend": {
+        "0": {
+          "what": "Low rework",
+          "signals": [
+            "P0-5/P0-6 touch only peripheral notes",
+            "G1–G7 schemas and durable/replay shapes stay stable"
+          ]
+        },
+        "1": {
+          "what": "Limited rework",
+          "signals": [
+            "A few field names or optional metadata change after probes",
+            "Core packet and append_events contracts mostly hold"
+          ]
+        },
+        "2": {
+          "what": "Substantial rework",
+          "signals": [
+            "Lifecycle run_id/exec.json or multiwriter/index assumptions shift",
+            "Forces schema and fake-transport redesign"
+          ]
+        },
+        "3": {
+          "what": "Extensive rework",
+          "signals": [
+            "Stage6→7 and durable findings invalidate large parts of G1–G7 packet/replay/evidence contracts already coded"
+          ]
+        }
+      },
+      "probabilities": {
+        "0": 0.0,
+        "1": 0.02,
+        "2": 0.83,
+        "3": 0.15
+      }
+    },
+    "first_deliverable": {
+      "type": "choice",
+      "choice": "probe_p0_5_lifecycle",
+      "confidence": 0.54,
+      "probabilities": {
+        "commit_v4_roadmap": 0.3,
+        "probe_p0_6_durable": 0.02,
+        "scaffold_g1_packet_only": 0.03,
+        "probe_p0_5_lifecycle": 0.65
+      }
+    }
+  },
+  "usage": {
+    "input_tokens": 2626,
+    "output_tokens": 219
+  }
+}

@@ -4,9 +4,16 @@ API 形狀(roadmap §10 P0-1 與 0-draft §3 實測):
   request  {"model": "jev-1.13.0", "state": <json>, "questions": {qid: {type,text,criteria?}}}
   response {"model": "jev-1.13.0", "usage": {"input_tokens": n, "output_tokens": n},
             "answers": {qid: {"noul": p} | {"choice": k, "probabilities": {...}, "confidence": c}
-                            | {"score": i, "legend": [...], "probabilities": {...}, "confidence": c}}}
+                            | {"score": x, "legend": ..., "probabilities": {...}, "confidence": c}}}
 `noul` 無 confidence。任何欄位對不上 = schema error → 呼叫端 no-op(policy.evaluate)。
+
+score 是 **0 ≤ x ≤ len(criteria)-1 的有限數字(int 或 float)**:真實 Jev 服務回的是期望值小數
+(例如 2.92、2.13),不是整數等級。bool、字串、null、NaN、±Infinity、超出範圍一律 schema error。
+解析不改值、不取整(int 仍是 int、float 仍是 float,只把 -0.0 正規成 0.0);下游要整數等級時一律走
+`score_level()`(round-half-up),不得自行 int()／截斷。
 """
+import math
+
 from . import JevError, MODEL_PINNED
 
 ERROR_KINDS = ("http_400", "http_401", "http_422", "http_429", "http_529",
@@ -35,6 +42,36 @@ def _num(value, lo=0.0, hi=1.0):
     return isinstance(value, (int, float)) and not isinstance(value, bool) and lo <= value <= hi
 
 
+SCORE_LEVEL_MAX = 3      # 目前題組的 score 都是 4 級(0..3);valid_score 預設上界
+
+
+def valid_score(value, hi=SCORE_LEVEL_MAX):
+    """score 值合法 ⇔ int／float(非 bool)、有限、0 ≤ value ≤ hi。NaN／±inf／字串／None／bool 都不合法。"""
+    return (isinstance(value, (int, float)) and not isinstance(value, bool)
+            and math.isfinite(value) and 0 <= value <= hi)
+
+
+def score_level(value):
+    """score(期望值小數)→ 整數等級:**round-half-up**(2.5 → 3、2.49 → 2、2.92 → 3、2.13 → 2、3.0 → 3)。
+    只給「必須是整數」的地方用(直方圖分組等);**門檻比較不用它**,門檻直接拿 score 本身比(見 policy.py)。
+    不合法 → None。用 floor＋小數部分比 0.5,不用 floor(x+0.5)(後者在 0.49999999999999994 會誤進位)。"""
+    if not valid_score(value):
+        return None
+    base = math.floor(value)
+    return int(base + 1) if value - base >= 0.5 else int(base)
+
+
+def _count(value):
+    """usage 的 token 數:非負 int,或有限、整數值的 float(→ int)。其餘 → None(不當成已知用量)。"""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value >= 0 else None
+    if isinstance(value, float) and math.isfinite(value) and value >= 0 and value == math.floor(value):
+        return int(value)
+    return None
+
+
 def parse_response(raw, questions):
     """驗 response 形狀並回傳 {"model","usage","answers"};不合 → TransportError("schema")。"""
     if not isinstance(raw, dict):
@@ -60,7 +97,7 @@ def parse_response(raw, questions):
         elif qtype == "choice":
             choice = ans.get("choice")
             probs = ans.get("probabilities")
-            if choice not in q["criteria"]:
+            if not isinstance(choice, str) or choice not in q["criteria"]:     # 非字串(list／dict)不可雜湊,不能丟給 in
                 raise TransportError("schema", "%s.choice %r 不在 criteria" % (qid, choice))
             if not isinstance(probs, dict) or set(probs) != set(q["criteria"]):
                 raise TransportError("schema", "%s.probabilities 的鍵與 criteria 不一致" % qid)
@@ -73,13 +110,17 @@ def parse_response(raw, questions):
         elif qtype == "score":
             n = len(q["criteria"])
             score = ans.get("score")
-            if not isinstance(score, int) or isinstance(score, bool) or not 0 <= score < n:
-                raise TransportError("schema", "%s.score %r 不是 0..%d 的整數" % (qid, score, n - 1))
+            if not valid_score(score, n - 1):
+                raise TransportError("schema", "%s.score %r 不是 0..%d 的有限數字(整數或小數期望值)" % (qid, score, n - 1))
+            if isinstance(score, float):
+                score += 0.0                      # -0.0 → 0.0;其餘值原樣(不取整)
             probs = ans.get("probabilities")
             if isinstance(probs, list):
                 probs = {str(i): p for i, p in enumerate(probs)}
             if not isinstance(probs, dict) or len(probs) != n:
                 raise TransportError("schema", "%s.probabilities 長度 != criteria" % qid)
+            if set(probs) != set(str(i) for i in range(n)):       # 鍵必須是等級 "0".."n-1"(MR 的期望值用 int(key))
+                raise TransportError("schema", "%s.probabilities 的鍵不是 0..%d 等級" % (qid, n - 1))
             vals = list(probs.values())
             if not all(_num(p) for p in vals) or abs(sum(vals) - 1.0) > PROB_TOLERANCE:
                 raise TransportError("schema", "%s.probabilities 不是合法分布" % qid)
@@ -91,10 +132,9 @@ def parse_response(raw, questions):
             raise TransportError("schema", "未知題型 %r" % qtype)
     usage = raw.get("usage")
     usage_out = {"input_tokens": None, "output_tokens": None, "usage_status": "unknown_reserved"}
-    if isinstance(usage, dict) and isinstance(usage.get("input_tokens"), int) \
-            and not isinstance(usage["input_tokens"], bool) and usage["input_tokens"] >= 0:
-        usage_out = {"input_tokens": usage["input_tokens"],
-                     "output_tokens": usage.get("output_tokens"), "usage_status": "known"}
+    if isinstance(usage, dict) and _count(usage.get("input_tokens")) is not None:
+        usage_out = {"input_tokens": _count(usage["input_tokens"]),
+                     "output_tokens": _count(usage.get("output_tokens")), "usage_status": "known"}
     return {"model": model, "usage": usage_out, "answers": parsed}
 
 
@@ -140,6 +180,19 @@ class FakeClock(object):
         return self.now
 
 
+def _level_distribution(score, n):
+    """測試便利:整數 score → one-hot;小數 score → 只在相鄰兩級配比(期望值 = score)。"""
+    if not valid_score(score, n - 1):
+        return {str(i): (1.0 if i == score else 0.0) for i in range(n)}     # 壞 score 原樣進去,讓 parse 去擋
+    lo = int(math.floor(score))
+    frac = score - lo
+    probs = {str(i): 0.0 for i in range(n)}
+    probs[str(lo)] = 1.0 - frac
+    if frac:
+        probs[str(lo + 1)] = frac
+    return probs
+
+
 def canned_response(questions, answers, model=MODEL_PINNED, input_tokens=1000, output_tokens=80):
     """測試便利:依 questions 補齊合法形狀;answers 給部分值即可。"""
     out = {}
@@ -157,7 +210,7 @@ def canned_response(questions, answers, model=MODEL_PINNED, input_tokens=1000, o
         else:
             n = len(q["criteria"])
             score = given.get("score", 0)
-            probs = given.get("probabilities") or {str(i): (1.0 if i == score else 0.0) for i in range(n)}
+            probs = given.get("probabilities") or _level_distribution(score, n)
             out[qid] = {"score": score, "probabilities": probs, "confidence": given.get("confidence", 0.9)}
     return {"model": model, "usage": {"input_tokens": input_tokens, "output_tokens": output_tokens},
             "answers": out}

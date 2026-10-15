@@ -37,6 +37,8 @@
 baseline 目錄不存在則不建立)。沒升 v2 的專案 doctor 照舊不擋,但會印 info 說明 v1 看不出工具檔內容過期、並顯示 plugin 現行指紋;
 升 v2 之後 doctor 會在受管檔內容過期時報 `✗ ship-manifest`。doctor 入口是 `<plugin 根>/hooks/devflow-exec.sh doctor`(在 `hooks/`,不是 `scripts/`)。
 
+**升到 3.26.6:** 同樣兩步(`marketplace update` → `plugin update`),重開 session。修 Jev score 題只收整數的 bug:真實 Jev 服務對 score 題回 0..3 的小數期望值(例如 2.92),舊解析要求整數,J1 實連得到 `transport:schema` → no-op、評估結果被丟掉。現在 score 收 0..級數-1 的有限小數(超出範圍／NaN／Infinity／bool／字串／null 仍擋);門檻(J5 `risk_max`、J1 `ambiguity_max`、G2R `risk_human_min`)**直接拿小數 score 比、不取整**,門檻值不動;需要整數等級的只有報表直方圖,規則是 round-half-up。頂欄 `g2r_jev` 快照的 `risk=` 可為小數(舊的整數快照照常可讀)。`scripts/devflow_jev/` 的散發檔內容改變,ship-manifest 指紋 v2 隨之更新:採用專案要重新散發(`dev-setup upgrade`),否則 doctor 會報 `✗ ship-manifest`。題庫與 policy 指紋常數沒動,`questionset_hash` 不變、校準紀錄延續。旗標、gate 開關與門檻不變(J2／J5／MR 維持 shadow、J4 關閉、GRADUATED 等仍為 False)。
+
 **升到 3.26.5:** 同樣兩步(`marketplace update` → `plugin update`),重開 session。修 Jev noul 題缺 `criteria`／`instructions` 的 bug(Jev 服務回 HTTP 400,J1~J5 實連全失敗、錯誤原因沒記下):題庫補齊、`gate_questions_for_api` 帶出且缺則本機 raise、`http_transport` 的 400／422 detail(已遮機密、≤500 字)記進 `noop_detail`。`scripts/devflow_jev/` 與 `scripts/devflow-jev.py` 的散發檔內容改變,ship-manifest 指紋 v2 隨之更新:採用專案要重新散發(`dev-setup upgrade`),否則 doctor 會報 `✗ ship-manifest`。兩份題庫內容變了,`questionset_hash` 換新、校準紀錄從新群組重開(預期行為)。旗標、gate 開關與門檻不變(J2／J5／MR 維持 shadow、J4 關閉、GRADUATED 等仍為 False)。
 
 **升到 3.26.4:** 同樣兩步(`marketplace update` → `plugin update`),重開 session。只改 `scripts/devflow-upgrade-manifest.py` 的 baseline 同步:「需同意:baseline 沒有此檔」而被跳過(沒加 `--include-custom`)的列,`--apply` 不再把上游新內容新增進 baseline(否則下一輪 dry-run 會把沒客製的檔誤判成「本地客製」),輸出會逐列標出原因。ship-manifest 列與指紋不變,採用專案不必重新散發;之前因此被誤判的專案,若 baseline 已被塞入新版,照 dry-run 看到的「本地客製」逐檔確認即可(該檔本地若是舊版就是被誤判,同意後加 `--include-custom` 覆蓋)。

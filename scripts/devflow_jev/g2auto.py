@@ -19,6 +19,7 @@ import sys
 
 from . import JevError
 from . import attestation, policy
+from .transport import valid_score
 
 # 全域退回人審開關:改成 False → write-g2-auto 一律拒寫,G2 全部回人審(已放行的 4-spec 不回頭打紅)。
 # 不吃環境變數、不吃 CLI 旗標:要關就改這行(= 一個 commit,看得到誰關的);散發副本
@@ -34,7 +35,10 @@ _ACTOR_RE = re.compile(r"^(human|agent):(\S{1,64})$")
 _ROUTED_BY_RE = re.compile(r"^jev:(g2r-[A-Za-z0-9._-]{1,80})$")
 ROUTED_BY_NONE = "none"
 _HASH_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
-_JEV_SNAPSHOT_RE = re.compile(r"^(AUTO_PASS|HUMAN_REVIEW|REQUEST_CHANGES) p=([0-9]*\.?[0-9]+) risk=([0-3])$")
+# p／risk 都是 repr 形狀的數字(可帶 e-05 這種指數:repr(0.00001) = '1e-05');risk 是 0..3 的整數或小數期望值,
+# 小數如 `risk=2.13`、整數如 `risk=1`(舊快照)。範圍由 parse_jev_snapshot 用 valid_score 驗,形狀不對 → False。
+_JEV_SNAPSHOT_RE = re.compile(r"^(AUTO_PASS|HUMAN_REVIEW|REQUEST_CHANGES) p=([0-9]*\.?[0-9]+(?:e-[0-9]+)?) "
+                              r"risk=((?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:e-[0-9]+)?)$")
 _PATHS_LINE_RE = re.compile(r"^\s*-\s*Paths\s*[:：](.*)$")
 _OC_ROW_RE = re.compile(r"^\|\s*OC-\d+\s*\|")
 
@@ -252,19 +256,26 @@ def build_case(root, slug, jev=None, environ=None, stage3=None):
 def jev_snapshot(jev_min):
     """頂欄 g2r_jev 欄位值:`AUTO_PASS p=0.91 risk=1`。"""
     g2 = jev_min["g2_route"]
-    return "%s p=%s risk=%s" % (g2["choice"], repr(float(g2["probabilities"]["AUTO_PASS"])), jev_min["risk"]["score"])
+    score = jev_min["risk"]["score"]
+    risk = repr(score) if isinstance(score, float) else str(score)     # float 用 repr(round-trip 不失真);int 照舊
+    return "%s p=%s risk=%s" % (g2["choice"], repr(float(g2["probabilities"]["AUTO_PASS"])), risk)
 
 
 def parse_jev_snapshot(value):
-    """`AUTO_PASS p=0.91 risk=1` → jev 最小形狀;空／`none` → None(沒有 Jev);形狀不對 → False。"""
+    """`AUTO_PASS p=0.91 risk=1`／`… risk=2.13` → jev 最小形狀(risk 沒小數點就是 int,有就是 float,與寫入時同型);
+    空／`none` → None(沒有 Jev);形狀不對或 risk 不在 0..3 → False。"""
     value = (value or "").strip()
     if value in ("", ROUTED_BY_NONE):
         return None
     m = _JEV_SNAPSHOT_RE.match(value)
     if not m:
         return False
+    raw = m.group(3)
+    score = float(raw) if ("." in raw or "e" in raw) else int(raw)
+    if not valid_score(score):
+        return False
     return {"g2_route": {"choice": m.group(1), "probabilities": {"AUTO_PASS": float(m.group(2))}},
-            "risk": {"score": int(m.group(3))}}
+            "risk": {"score": score}}
 
 
 def read_g2r_records(root):
@@ -348,7 +359,7 @@ def auto_release_problems(root, slug, fm, environ=None, g2r_record=None, require
         problems.append("g2r_case 不是 sha256:<hex>")
     jev_min = parse_jev_snapshot(fm.get("g2r_jev"))
     if jev_min is False:
-        problems.append("g2r_jev 快照形狀不對(AUTO_PASS p=<0..1> risk=<0-3> 或 none)")
+        problems.append("g2r_jev 快照形狀不對(AUTO_PASS p=<0..1> risk=<0..3,可小數> 或 none)")
         jev_min = None
     if evaluation_id and jev_min is None:
         problems.append("routed_by 是 jev:… 卻沒有 g2r_jev 快照 —— Jev 分流結果無從重算")

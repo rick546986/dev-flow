@@ -8,6 +8,11 @@ route 規則(roadmap §11/§12/§13):
     packet 有 truncated/consistency 旗標、risk ceiling 命中、runtime 當次被改 → 一律 HUMAN。
   - J1 ASK_MORE 的弱維度從 atomic clarity signals 取最弱者,**不從 next 分布逆推**。
   - J5 的 route_taken 要 AUTO 還需 graduated=True(W6 前永遠 False)→ 否則 HUMAN。
+score 題(J1 ambiguity／J5 risk／G2R risk／J2 tradeoff_completeness)是 **0..3 的小數期望值**(真實 Jev 回 2.92、2.13…),
+不是整數等級。門檻(risk_max、ambiguity_max、risk_human_min)**直接拿 score 本身比**,不取整、不截斷:
+整數值的比較結果與過去逐值相同;小數落在門檻上方就算超標(例如 risk 1.01 > risk_max 1 → HUMAN,不會被四捨五入成 1 放行)。
+不合法的 score(None 以外的非數字／NaN／±inf／bool／超出 0..3)一律當超標或缺值 → 轉人(fail-closed)。
+需要整數等級的地方只有報表直方圖,走 transport.score_level()(round-half-up)。
 G2R 分流 `route_g2` 與 G2 誤放行驗證以 main #418 為準(ADR 0004:沒有 Jev = no-op、routed_by: none;
 §3 全表轉人條件),research W9/W10 的 shadow 版已被取代。
 """
@@ -15,7 +20,7 @@ import math
 import re
 
 from . import GATES, JevError, POLICY_VERSION, ROUTE_FORMULA_VERSION
-from .transport import TransportError, parse_response
+from .transport import TransportError, parse_response, valid_score
 
 THRESHOLDS = {
     "J5": {"auto_choice_min": 0.85, "evidence_complete_min": 0.90, "risk_max": 1},
@@ -68,8 +73,10 @@ def route_j5(answers, packet_flags=(), truncated=False, risk_ceiling_hit=False, 
         return _route("HUMAN", "g3_route=%s" % choice, signals)
     if p_auto is None or p_auto < t["auto_choice_min"]:
         return _route("HUMAN", "auto_probability_below_threshold(%s<%s)" % (p_auto, t["auto_choice_min"]), signals)
-    if risk.get("score") is None or risk["score"] > t["risk_max"]:
-        return _route("HUMAN", "risk_above_ceiling(%s>%s)" % (risk.get("score"), t["risk_max"]), signals)
+    risk_score = risk.get("score")
+    # 寫成 not (score <= 門檻)且先驗合法:NaN／字串／bool／超出 0..3 都不得因比較為 False 而放行
+    if not valid_score(risk_score) or not risk_score <= t["risk_max"]:
+        return _route("HUMAN", "risk_above_ceiling(%s>%s)" % (risk_score, t["risk_max"]), signals)
     if complete is None or complete < t["evidence_complete_min"]:
         return _route("HUMAN", "evidence_complete_below_threshold(%s<%s)" % (complete, t["evidence_complete_min"]), signals)
     return _route("AUTO", "all_auto_conditions_met", signals)
@@ -95,7 +102,9 @@ def route_j1(answers, truncated=False, packet_flags=()):
     if len(known) < len(J1_CLARITY_DIMS):
         return {"next": "ASK_MORE", "weakest_dimension": weakest,
                 "route_reason": "clarity_signal_missing", "signals": signals}
-    if min(known.values()) < t["clarity_min"] or (ambiguity is not None and ambiguity > t["ambiguity_max"]):
+    # ambiguity 缺(None)不擋;有值就直接拿小數 score 比 ambiguity_max,不合法的值(NaN／字串／bool／超出 0..3)也算超標
+    ambiguity_high = ambiguity is not None and not (valid_score(ambiguity) and ambiguity <= t["ambiguity_max"])
+    if min(known.values()) < t["clarity_min"] or ambiguity_high:
         return {"next": "ASK_MORE", "weakest_dimension": weakest,
                 "route_reason": "weakest_dimension=%s" % weakest, "signals": signals}
     p_start = nxt.get("probabilities", {}).get("START_DECIDE")
@@ -777,9 +786,9 @@ def route_g2(case):
         risk_obj = jev.get("risk") if isinstance(jev.get("risk"), dict) else {}
         score = risk_obj.get("score")
         signals.update({"risk_source": "jev", "risk_score": score})
-        if not isinstance(score, int) or isinstance(score, bool):
-            reasons.append("jev_risk_missing")               # 有 Jev 卻沒給 risk → 無從判 <2,fail-closed
-        elif score >= t["risk_human_min"]:
+        if not valid_score(score):
+            reasons.append("jev_risk_missing")               # 有 Jev 卻沒給合法 risk(缺／NaN／bool／超出 0..3)→ 無從判 <2,fail-closed
+        elif score >= t["risk_human_min"]:                   # 小數 score 直接比:1.99 < 2 不轉人、2.0 轉人(不取整)
             reasons.append("risk>=%s(jev=%s)" % (t["risk_human_min"], score))
     else:
         score = G2R_SPEC_RISK_SCORE[case["spec_risk"] or "normal"]

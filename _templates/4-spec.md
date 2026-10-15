@@ -9,7 +9,7 @@ authored_by:         # agent:<id> 或 human:<名>(寫這份 4-spec 的是誰;G2 
 g2_mode:             # 空 | auto | human(auto = fresh-context agent reviewer 放行,只由 write-g2-auto 寫;命中轉人條件 → human)
 routed_by:           # jev:<evaluation_id> | none(誰分流;Jev 不是 verdict source;沒有 Jev = none,只靠 agent + 機械檢查)
 g2r_case:            # sha256:…(G2R case hash;g2_mode: auto 才有,write-g2-auto 代填)
-g2r_jev:             # AUTO_PASS p=<0..1> risk=<0-3> | none(Jev 分流快照;g2_mode: auto 才有,write-g2-auto 代填)
+g2r_jev:             # AUTO_PASS p=<0..1> risk=<0..3,可小數> | none(Jev 分流快照;g2_mode: auto 才有,write-g2-auto 代填)
 mechanical:          # sha256:…(機械檢查輸出摘要:check-spec-gate + stage3;g2_mode: auto 才有,write-g2-auto 代填)
 owner:
 reviewers: []        # G2 審查者,不可 = owner
