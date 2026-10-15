@@ -388,9 +388,17 @@ class Breaker(object):
             self.failures[key] = self.failures.get(key, 0) + 1
 
 
-def noop(reason, usage=None):
-    return {"status": "noop", "reason": reason, "answers": None, "model": None,
-            "usage": usage or {"input_tokens": None, "output_tokens": None, "usage_status": "unknown_reserved"}}
+NOOP_DETAIL_MAX_CHARS = 500
+
+
+def noop(reason, usage=None, detail=None):
+    """no-op 結果。`detail` 是傳輸錯誤的附註(已遮罩、≤500 字;例如服務 400 的 detail),只記帳,不參與任何判定。"""
+    out = {"status": "noop", "reason": reason, "answers": None, "model": None,
+           "usage": usage or {"input_tokens": None, "output_tokens": None, "usage_status": "unknown_reserved"}}
+    if detail:
+        from .packet import redact_secrets     # 再遮一次:schema 錯誤的 detail 可能回顯服務回的內容
+        out["detail"] = " ".join(redact_secrets(detail).split())[:NOOP_DETAIL_MAX_CHARS]
+    return out
 
 
 def evaluate(transport, request, questions, clock, est_input_tokens, deadline_s=J1_DEADLINE_S,
@@ -415,7 +423,7 @@ def evaluate(transport, request, questions, clock, est_input_tokens, deadline_s=
     except TransportError as exc:
         if breaker is not None:
             breaker.record(breaker_key, False)
-        return noop("transport:" + exc.kind)
+        return noop("transport:" + exc.kind, detail=exc.detail)
     except Exception as exc:  # 任何未預期例外同樣 no-op,不得讓 Jev 例外打斷原流程
         if breaker is not None:
             breaker.record(breaker_key, False)
@@ -430,7 +438,7 @@ def evaluate(transport, request, questions, clock, est_input_tokens, deadline_s=
     except TransportError as exc:
         if breaker is not None:
             breaker.record(breaker_key, False)
-        return noop("transport:" + exc.kind)
+        return noop("transport:" + exc.kind, detail=exc.detail)
     if budget is not None and rid is not None:
         budget.reconcile(rid, parsed["usage"])       # unknown → 保留上界不退款
     if breaker is not None:

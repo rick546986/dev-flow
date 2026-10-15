@@ -4275,7 +4275,9 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>被 <code>devflow-jev.py</code> 與 <code>test_*.py</code> import</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>manifest.py</code></td>
         <td>G5:讀 <code>jev-questions.json</code>、驗題組形狀、Score entry <code>level==index</code> 嚴格驗證
-            (不一致拒絕、不排序)、完整 evaluation manifest 六欄 → <code>questionset_hash</code>、三欄 group key。</td>
+            (不一致拒絕、不排序)、完整 evaluation manifest 六欄 → <code>questionset_hash</code>、三欄 group key。
+            <strong>v3.26.5</strong>:<code>gate_questions_for_api</code> 把 noul 題的 <code>criteria</code>(<code>true</code>／<code>false</code> 各帶 what + examples)
+            與 <code>instructions</code> 帶進 API 題目;兩者都缺 → 本機 raise(Jev 服務對 noul 缺這兩者回 HTTP 400,不送出)。</td>
         <td>同套件;<code>test_guards.py</code> G5Manifest</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>scripts/devflow_jev/jev-questions-experimental.json</code></td>
         <td>W5 實驗題組:J2(厚包:preferred_option／decision_supported／owner_calls_resolved／tradeoff_completeness)與
@@ -4284,7 +4286,8 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td><code>devflow-jev.py j2-shadow</code>／<code>j4-assist</code> 讀</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>scripts/devflow_jev/jev-questions.json</code></td>
         <td>J1/J3/J5 題組正本(roadmap §11/§12;門檻設在 noul/score 值)。任何改動都改變
-            <code>questionset_hash</code>,舊 calibration group 不延續。</td>
+            <code>questionset_hash</code>,舊 calibration group 不延續(v3.26.5 補 noul 題的 <code>criteria</code>／<code>instructions</code>,
+            hash 換新、校準紀錄從新群組重開)。</td>
         <td><code>manifest.py</code> 讀</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>packet.py</code></td>
         <td>G1:evidence packet + reference isolation。header 機械事實永不砍、body 才裁(裁過 →
@@ -4299,7 +4302,9 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     <tr><td><code>http_transport.py</code></td>
         <td>真 HTTP transport(W2):套件內**唯一**准 import urllib 的檔。POST 一次、收 raw JSON,錯誤全部轉
             <code>TransportError(kind)</code> 讓 policy no-op;沒有 retry;endpoint 只准 https(loopback http 僅測試);
-            key 只住物件內、不進 log／錯誤訊息／replay。</td>
+            key 只住物件內、不進 log／錯誤訊息／replay。<strong>v3.26.5</strong>:400／422 讀服務回的 body 取 <code>detail</code>
+            (限讀 8KB、用 <code>packet.redact_secrets</code> 遮 Bearer／TYPESAFE_API_KEY／類 key 字串與自己持有的 key、截 500 字)放進
+            <code>TransportError.detail</code>,經 <code>policy.noop</code> 進 run_ask 結果的 <code>noop_detail</code> 與 durable body;其餘狀態碼仍只帶狀態碼。</td>
         <td><code>devflow-jev.py</code> 在雙閘門通過後才建;<code>test_http_transport.py</code>(假 opener + 閉埠)</td><td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>)</td></tr>
     <tr><td><code>gate.py</code></td>
         <td>G3:雙閘門。<code>TYPESAFE_API_KEY</code> + <code>.dev-flow/jev.yaml</code>;生效等級 =
@@ -4350,7 +4355,8 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td><code>test-devflow-jev.sh</code> 帶起</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test_http_transport.py</code></td>
         <td><code>http_transport.py</code> 的 unittest:假 opener(bearer／JSON／狀態碼→kind／timeout／malformed)、
-            loopback 閉埠實連、key 不外露、endpoint 只准 https 或 loopback。</td>
+            loopback 閉埠實連、key 不外露、endpoint 只准 https 或 loopback;v3.26.5 加 400／422 detail 遮罩與截長、
+            loopback 假 Jev 伺服器(照真服務驗 noul:缺 criteria 且缺 instructions → 400)與舊行為對照組。</td>
         <td><code>test-devflow-jev.sh</code> 帶起</td><td>人工/CI(不在生命週期上)</td></tr>
   </table></div>
 

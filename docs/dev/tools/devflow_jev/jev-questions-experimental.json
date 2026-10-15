@@ -11,8 +11,24 @@
           "NONE_CLEAR": "the recorded material does not clearly favour one alternative"
         }
       },
-      "decision_supported": {"type": "noul", "text": "The recorded Decision is supported by the recorded comparison and rationale."},
-      "owner_calls_resolved": {"type": "noul", "text": "Every recorded Owner Call carries a human answer (status resolved), as opposed to an open question."},
+      "decision_supported": {
+        "type": "noul",
+        "text": "The recorded Decision is supported by the recorded comparison and rationale.",
+        "instructions": "Read the recorded Decision together with the recorded comparison and rationale. Answer true only if the comparison and rationale recorded in the same record actually support the chosen alternative. A decision that rests on facts not in the record, or that contradicts the recorded trade-offs, is not supported.",
+        "criteria": {
+          "true": {"what": "Yes: the recorded comparison and rationale support the recorded Decision.", "examples": ["Decision picks option B; the recorded comparison shows B has the lowest cost and the rationale cites that cost"]},
+          "false": {"what": "No: the recorded Decision is not backed by the recorded comparison and rationale, or contradicts them.", "examples": ["Decision picks option B, but the recorded comparison lists B's cost as the highest and gives no other reason"]}
+        }
+      },
+      "owner_calls_resolved": {
+        "type": "noul",
+        "text": "Every recorded Owner Call carries a human answer (status resolved), as opposed to an open question.",
+        "instructions": "Check every recorded Owner Call. Answer true only if each one carries a human answer (status resolved). If any Owner Call is still an open question, or the answer was filled in by an agent rather than a human, answer false.",
+        "criteria": {
+          "true": {"what": "Yes: every recorded Owner Call has a human answer with status resolved.", "examples": ["Two Owner Calls are listed and both show status resolved with the owner's answer text"]},
+          "false": {"what": "No: at least one recorded Owner Call is still an open question, or its answer was not given by a human.", "examples": ["One Owner Call shows status open with no answer"]}
+        }
+      },
       "tradeoff_completeness": {
         "type": "score",
         "text": "How complete is the recorded trade-off material for the chosen alternative?",
@@ -35,7 +51,15 @@
           "UNKNOWN": "the recorded material does not allow a classification"
         }
       },
-      "retry_same_tier_useful": {"type": "noul", "text": "A retry at the same model tier is likely to resolve the recorded failure."}
+      "retry_same_tier_useful": {
+        "type": "noul",
+        "text": "A retry at the same model tier is likely to resolve the recorded failure.",
+        "instructions": "Read the recorded failure and decide whether running the same task again at the same model tier is likely to resolve it. Answer true for transient or sampling-dependent failures (a flaky run, a near miss). Answer false for failures that point to a missing spec, a broken environment or a defect a retry would repeat.",
+        "criteria": {
+          "true": {"what": "Yes: the failure looks transient or near-miss, so a retry at the same model tier is likely to resolve it.", "examples": ["Test run failed once on a timeout and the same task passed on earlier attempts"]},
+          "false": {"what": "No: the failure is systematic (missing spec, broken environment, repeated defect), so a retry at the same tier would fail the same way.", "examples": ["The same assertion failed on every attempt because the spec contradicts itself"]}
+        }
+      }
     }
   }
 }

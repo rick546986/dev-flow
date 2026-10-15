@@ -359,7 +359,8 @@ def run_ask(root, gate, slug, packet, evidence, author_ref, session_ref, environ
     record = ledger.build_durable_record(evaluation, replay_status)
     written = ledger.write_durable(root, record, memory_dir=memory_dir)
     result.update({
-        "status": outcome["status"], "noop_reason": outcome.get("reason") or None, "network": True,
+        "status": outcome["status"], "noop_reason": outcome.get("reason") or None,
+        "noop_detail": outcome.get("detail") or None, "network": True,
         "evaluation_id": evaluation["evaluation_id"], "case_id": evaluation["case_id"],
         "questionset_hash": qhash, "model_resolved": evaluation["model_resolved"],
         "route_recommended": evaluation["route_recommended"], "route_reason": evaluation["route_reason"],
@@ -815,6 +816,7 @@ def run_handoff_j1(root, slug, author_ref, session_ref, discussion_path=None, en
         return _continue_flow(_classify_failure(exc), "J1", level, level_reason)
     base = {
         "gate": "J1", "slug": slug, "status": ask["status"], "noop_reason": ask.get("noop_reason"),
+        "noop_detail": ask.get("noop_detail"),
         "level": ask["level"], "level_reason": ask.get("level_reason"), "network": ask.get("network"),
         "evaluation_id": ask.get("evaluation_id"), "graduated": GRADUATED, "idempotent": False,
         "written": list(ask.get("written") or []), "writes_verdict": False,
@@ -892,6 +894,7 @@ def run_handoff_j3(root, slug, author_ref, session_ref, stage3_trigger=None, dis
         return _continue_flow(_classify_failure(exc), "J3", level, level_reason)
     base = {
         "gate": "J3", "slug": slug, "status": ask["status"], "noop_reason": ask.get("noop_reason"),
+        "noop_detail": ask.get("noop_detail"),
         "level": ask["level"], "level_reason": ask.get("level_reason"), "network": ask.get("network"),
         "evaluation_id": ask.get("evaluation_id"), "graduated": GRADUATED, "idempotent": False,
         "written": list(ask.get("written") or []), "writes_verdict": False, "writes_attestation": False,
@@ -1173,8 +1176,8 @@ def run_drain(root, environ=None, transport_factory=None, clock=time.monotonic, 
                           item["session_ref"], environ=environ, transport_factory=transport_factory, clock=clock,
                           changed_paths=item.get("changed_paths") or (), run_id=item.get("run_id"), memory_dir=memory_dir)
             network = network or bool(out.get("network"))
-            res = {k: out.get(k) for k in ("status", "noop_reason", "evaluation_id", "case_id", "route_recommended",
-                                            "route_reason", "route_taken", "route_taken_reason", "replay_status", "network")}
+            res = {k: out.get(k) for k in ("status", "noop_reason", "noop_detail", "evaluation_id", "case_id",
+                                            "route_recommended", "route_reason", "route_taken", "route_taken_reason", "replay_status", "network")}
             res["shadow_failure"] = out.get("status") != "ok"
         except JevError as exc:
             res = {"status": "failed", "noop_reason": "shadow_failure:" + str(exc)[:160], "network": False,
@@ -1430,8 +1433,8 @@ def run_j2_shadow(root, slug, author_ref, session_ref, decision_path=None, envir
             return base
         out = run_ask(root, "J2", slug, pkt, evidence, author_ref, session_ref, environ=environ,
                       transport_factory=transport_factory, clock=clock, memory_dir=memory_dir)
-        entry = {k: out.get(k) for k in ("status", "noop_reason", "evaluation_id", "case_id", "route_recommended",
-                                          "route_taken", "route_taken_reason")}
+        entry = {k: out.get(k) for k in ("status", "noop_reason", "noop_detail", "evaluation_id", "case_id",
+                                          "route_recommended", "route_taken", "route_taken_reason")}
         entry["variant_id"] = variant_id
         if out["status"] == "ok":
             stored = ledger.ReplayStore(root).read(out["evaluation_id"])
@@ -1444,6 +1447,7 @@ def run_j2_shadow(root, slug, author_ref, session_ref, decision_path=None, envir
     stability = policy.j2_stability(routes)
     base.update({"status": "ok" if routes else "noop",
                  "noop_reason": None if routes else (results[0].get("noop_reason") if results else "no_variants"),
+                 "noop_detail": None if routes else (results[0].get("noop_detail") if results else None),
                  "results": results, "stability": stability,
                  "case_id": results[0]["case_id"] if results else None, "network": True,
                  "route_taken": "HUMAN", "recorded_decision_letter": parsed.get("decision_letter")})

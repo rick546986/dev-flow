@@ -1973,5 +1973,56 @@ class W11MRRuntime(RuntimeBase):
         self.assertFalse(rt.GRADUATED)
 
 
+class NoulCriteriaEndToEnd(RuntimeBase):
+    """v3.26.5:run_ask 經真 HttpTransport 打 loopback 假 Jev(照真服務驗 noul)。
+    修好 → 5 個 gate 都 ok;400 的 detail 進 result／evaluation／durable,key 不外露。對照組:patch 回舊行為必紅。"""
+
+    def run_gate(self, gate, endpoint):
+        self.optin()
+        pkt = j5_packet() if gate == "J5" else j1_packet()
+        env = dict(self.env_on, DEVFLOW_JEV_ENDPOINT=endpoint)
+        return rt.run_ask(self.tmp, gate, "demo-feature", pkt, evidence(gate), "agent-A", "sess-A", environ=env, clock=self.clock)
+
+    def test_fixed_request_is_accepted_by_validating_server(self):
+        from devflow_jev.test_http_transport import FakeJevServer
+        with FakeJevServer() as server:
+            out = self.run_gate("J5", server.endpoint)
+        self.assertEqual((out["status"], out["noop_reason"], out["noop_detail"]), ("ok", None, None))
+        noul = server.requests[0]["body"]["questions"]["evidence_complete"]
+        self.assertTrue(noul["criteria"] and noul["instructions"])
+
+    def test_http_400_detail_lands_in_result_and_durable_without_the_key(self):
+        from devflow_jev.test_guards import legacy_gate_questions_for_api
+        from devflow_jev.test_http_transport import FakeJevServer
+        saved = manifest.gate_questions_for_api
+        manifest.gate_questions_for_api = legacy_gate_questions_for_api       # 對照組:舊行為 → 服務回 400
+        try:
+            with FakeJevServer() as server:
+                out = self.run_gate("J5", server.endpoint)
+        finally:
+            manifest.gate_questions_for_api = saved
+        self.assertEqual((out["status"], out["noop_reason"], out["route_taken"]), ("noop", "transport:http_400", "HUMAN"))
+        self.assertIn("Noul question must have criteria or instructions: evidence_complete", out["noop_detail"])
+        self.assertNotIn("test-key-not-real", json.dumps(out))
+        records = self.durable_records()
+        self.assertEqual(len(records), 1)
+        self.assertIn("noop_detail=http status 400: Noul question must have criteria or instructions: evidence_complete",
+                      records[0]["body"])
+        self.assertNotIn("test-key-not-real", json.dumps(records[0]))
+
+    def test_all_gates_with_noul_pass_through_a_validating_server(self):
+        from devflow_jev.test_http_transport import FakeJevServer
+        for gate in ("J1", "J5"):
+            with FakeJevServer() as server:
+                out = self.run_gate(gate, server.endpoint)
+            self.assertEqual(out["status"], "ok", (gate, out.get("noop_reason"), out.get("noop_detail")))
+
+    def test_ledger_noop_detail_is_optional_and_only_in_body_when_present(self):
+        self.optin()
+        out = self.ask(fake(perfect_j5()))
+        self.assertEqual((out["status"], out["noop_detail"]), ("ok", None))
+        self.assertNotIn("noop_detail", self.durable_records()[0]["body"])
+
+
 if __name__ == "__main__":
     unittest.main()

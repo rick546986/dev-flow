@@ -178,7 +178,132 @@ class G5Manifest(unittest.TestCase):
     def test_gate_questions_for_api_transforms_score_to_ordered_strings(self):
         self.assertIsInstance(J5_QUESTIONS["risk"]["criteria"], list)
         self.assertEqual(len(J5_QUESTIONS["risk"]["criteria"]), 4)
-        self.assertNotIn("criteria", J5_QUESTIONS["evidence_complete"])
+        # v3.26.5:noul 不再只有題目文字 —— Jev 服務要求 criteria 或 instructions(否則 HTTP 400)
+        self.assertTrue(J5_QUESTIONS["evidence_complete"]["criteria"])
+        self.assertTrue(J5_QUESTIONS["evidence_complete"]["instructions"])
+
+
+EXPERIMENTAL_QUESTIONS_PATH = os.path.join(HERE, "jev-questions-experimental.json")
+
+
+def legacy_gate_questions_for_api(manifest_obj, gate):
+    """v3.26.4 以前的行為(只供對照組):noul 題只送 type+text,不帶 criteria／instructions。"""
+    out = {}
+    for qid, q in manifest_obj["questions"][gate].items():
+        entry = {"type": q["type"], "text": q["text"]}
+        if q["type"] == "choice":
+            entry["criteria"] = dict(q["criteria"])
+        elif q["type"] == "score":
+            entry["criteria"] = manifest.score_criteria_for_api(q["criteria"])
+        out[qid] = entry
+    return out
+
+
+def all_shipped_manifests():
+    """正式題組(J1/J3/J5)與實驗題組(J2/J4)各自的 manifest。"""
+    return (manifest.build_manifest(manifest.load_questions()),
+            manifest.build_manifest(manifest.load_questions(EXPERIMENTAL_QUESTIONS_PATH)))
+
+
+def assert_every_noul_carries_criteria_and_instructions(testcase, build=None):
+    """兩份題庫所有 noul 題:API 題目必須同時帶 criteria(true/false)與 instructions;回傳檢查過的 noul 題數。"""
+    build = build or manifest.gate_questions_for_api
+    checked = 0
+    for man in all_shipped_manifests():
+        for gate, qset in man["questions"].items():
+            api = build(man, gate)
+            for qid, q in qset.items():
+                if q["type"] != "noul":
+                    continue
+                where = "%s.%s" % (gate, qid)
+                testcase.assertTrue(api[qid].get("instructions"), where + " 缺 instructions")
+                testcase.assertEqual(sorted(api[qid].get("criteria") or {}), ["false", "true"], where + " 缺 criteria")
+                testcase.assertEqual(api[qid]["instructions"], q["instructions"], where)
+                testcase.assertEqual(api[qid]["criteria"], q["criteria"], where)
+                checked += 1
+    return checked
+
+
+class W12NoulCriteria(unittest.TestCase):
+    """v3.26.5:Jev 服務對 noul(是／否機率題)要求附 criteria 或 instructions,缺 → HTTP 400
+    (「Noul question must have criteria or instructions」)。題庫補齊、manifest 帶出、缺則本機 raise。"""
+
+    NOUL_EXPECTED = {("J1", "goal_clear"), ("J1", "scope_clear"), ("J1", "acceptance_clear"),
+                     ("J1", "owner_call_pending"), ("J3", "demo_worth_it"), ("J5", "evidence_complete"),
+                     ("J2", "decision_supported"), ("J2", "owner_calls_resolved"),
+                     ("J4", "retry_same_tier_useful")}
+
+    def test_noul_missing_criteria_and_instructions_raises_locally(self):
+        bare = {"questions": {"J1": {"goal_clear": {"type": "noul", "text": "Is the goal clear?"}}}}
+        with self.assertRaises(JevError) as ctx:
+            manifest.gate_questions_for_api(bare, "J1")
+        self.assertIn("J1.goal_clear", str(ctx.exception))
+        empty = {"questions": {"J1": {"goal_clear": {"type": "noul", "text": "t", "criteria": {}, "instructions": ""}}}}
+        with self.assertRaises(JevError):
+            manifest.gate_questions_for_api(empty, "J1")
+
+    def test_noul_with_only_instructions_or_only_criteria_is_carried(self):
+        crit = {"true": {"what": "yes"}, "false": {"what": "no"}}
+        only_ins = {"questions": {"J1": {"q": {"type": "noul", "text": "t", "instructions": "judge x"}}}}
+        only_crit = {"questions": {"J1": {"q": {"type": "noul", "text": "t", "criteria": crit}}}}
+        a = manifest.gate_questions_for_api(only_ins, "J1")["q"]
+        b = manifest.gate_questions_for_api(only_crit, "J1")["q"]
+        self.assertEqual((a["instructions"], "criteria" in a), ("judge x", False))
+        self.assertEqual((b["criteria"], "instructions" in b), (crit, False))
+        b["criteria"]["true"]["what"] = "mutated"
+        self.assertEqual(only_crit["questions"]["J1"]["q"]["criteria"]["true"]["what"], "yes")   # 深複本
+
+    def test_noul_field_shapes_are_validated(self):
+        def noul(**fields):
+            q = {"type": "noul", "text": "t"}
+            q.update(fields)
+            return manifest.validate_questions({"J1": {"q": q}})
+        good = {"true": {"what": "yes", "examples": ["e"]}, "false": {"what": "no"}}
+        self.assertEqual(noul(criteria=good, instructions="x"), [])
+        self.assertEqual(noul(), [])                            # 缺不缺由 gate_questions_for_api 擋(fail-loud 在送出前)
+        for bad in ({}, {"true": {"what": "yes"}}, {"true": {"what": "y"}, "false": {"what": "n"}, "maybe": {"what": "m"}},
+                    {"true": "yes", "false": "no"}, {"true": {"what": ""}, "false": {"what": "n"}},
+                    {"true": {"what": "y", "examples": []}, "false": {"what": "n"}},
+                    {"true": {"what": "y", "examples": [3]}, "false": {"what": "n"}},
+                    {"true": {"what": "y", "extra": 1}, "false": {"what": "n"}}, ["true", "false"]):
+            self.assertTrue(noul(criteria=bad), bad)
+        self.assertTrue(noul(instructions=""))
+        self.assertTrue(noul(instructions=5))
+
+    def test_every_shipped_noul_question_has_criteria_and_instructions_and_is_carried(self):
+        found = set()
+        for man in all_shipped_manifests():
+            for gate, qset in man["questions"].items():
+                for qid, q in qset.items():
+                    if q["type"] == "noul":
+                        found.add((gate, qid))
+                        self.assertTrue(q.get("instructions", "").strip(), "%s.%s" % (gate, qid))
+                        self.assertEqual(manifest.validate_noul_fields(q, qid), [])
+                        self.assertEqual(sorted(q["criteria"]), ["false", "true"])
+        self.assertEqual(found, self.NOUL_EXPECTED)             # 全檔掃:新增 noul 題要同步補齊並更新這張表
+        self.assertEqual(assert_every_noul_carries_criteria_and_instructions(self), len(self.NOUL_EXPECTED))
+
+    def test_counter_legacy_gate_questions_makes_the_carry_check_fail(self):
+        # 對照組:把 gate_questions_for_api 改回不帶 criteria(v3.26.4 行為)→ 上面那個檢查必須失敗
+        with self.assertRaises(AssertionError):
+            assert_every_noul_carries_criteria_and_instructions(self, build=legacy_gate_questions_for_api)
+        saved = manifest.gate_questions_for_api
+        manifest.gate_questions_for_api = legacy_gate_questions_for_api
+        try:
+            with self.assertRaises(AssertionError):
+                self.test_every_shipped_noul_question_has_criteria_and_instructions_and_is_carried()
+            self.assertNotIn("criteria", manifest.gate_questions_for_api(all_shipped_manifests()[0], "J1")["goal_clear"])
+        finally:
+            manifest.gate_questions_for_api = saved
+
+    def test_questionset_hash_follows_noul_criteria(self):
+        base = manifest.build_manifest(manifest.load_questions())
+        changed = copy.deepcopy(base)
+        changed["questions"]["J1"]["goal_clear"]["criteria"]["true"]["what"] += " (edited)"
+        self.assertNotEqual(manifest.questionset_hash(changed), manifest.questionset_hash(base))
+        changed2 = copy.deepcopy(base)
+        changed2["questions"]["J1"]["goal_clear"]["instructions"] += " (edited)"
+        self.assertNotEqual(manifest.questionset_hash(changed2), manifest.questionset_hash(base))
 
 
 # ───────────────────────────────── G1 packet ───────────────────────────────
