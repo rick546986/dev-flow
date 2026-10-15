@@ -18,6 +18,11 @@
 #   ⑨ 手動 devflow-doctor.sh → 找到的路徑以 DEVFLOW_FOUND_PYTHON 交給 doctor;
 #   ⑩ doctor.resolve_printer_python:系統 3.9 + 自動找到 3.12+ → 採用;系統夠用 / 專案 venv / 明示
 #      DEVFLOW_PYTHON 都不被搶;自動找到的跑不起來 → 退回系統(照舊報 ✗);
+#   ⑫ devflow_find_twin_python(gate-twin 用):專案 .venv(3.12+、import markdown_it 成功)優先於 PATH;
+#      .venv 缺 markdown_it／只有 3.11 → 跳過;PATH 上挑「有 markdown_it 的」而非只看版本最新;DEVFLOW_PYTHON
+#      明示仍最優先(缺 markdown_it 只警告);全都沒有 markdown_it → 退回 3.12+ 並印提示(缺 markdown-it-py、
+#      gate-twin 會 exit 3、建議 DEVFLOW_PYTHON／裝 markdown-it-py==4.0.0);devflow_find_py312 沒變嚴;
+#      doctor.sh 的 DEVFLOW_FOUND_PYTHON 改走這支;selftest／Stop hook 仍走 devflow_find_py312(不變嚴);
 #   ⑪ 三處 shell 都 source 共用檔、沒有各抄一份(靜態);共用檔 644 且隨 hooks/ 同目錄(plugin 整包散發)。
 #
 # 用法:scripts/test-find-python.sh [root]
@@ -36,7 +41,7 @@ for f in "$LIB" "$ROOT/hooks/selftest.sh" "$ROOT/hooks/devflow-doctor.sh" \
 done
 REAL_PY=$(command -v python3) || { echo "FATAL: 需要 python3" >&2; exit 2; }
 
-MIN_CASES=31
+MIN_CASES=47
 PASS=0
 FAIL=0
 TOTAL=0
@@ -181,13 +186,15 @@ expect "手動 selftest.sh 前言:明示 DEVFLOW_PYTHON(3.9)照舊尊重、不�
 
 # ⑨ 手動 devflow-doctor.sh:把找到的路徑以 DEVFLOW_FOUND_PYTHON 交給 doctor(換成只印環境的 stub)
 printf '#!/usr/bin/env python3\nimport os, sys\nprint("FOUND=" + os.environ.get("DEVFLOW_FOUND_PYTHON", "(unset)"))\n' >"$HK/_doctor_impl.py"
-env -i HOME="$WORK/home" PATH="$WORK/b1:$WORK/g1:$TOOLS" DEVFLOW_STOP_PY_DIRS="" "$HK/devflow-doctor.sh" >"$WORK/out" 2>&1
+mkdir -p "$WORK/noproj"
+# doctor.sh 現在會看 <git toplevel 或 cwd>/.venv:一律在沒有 .venv 的空目錄跑,免得被跑測試的 repo 自己的 .venv 影響
+( cd "$WORK/noproj" && env -i HOME="$WORK/home" PATH="$WORK/b1:$WORK/g1:$TOOLS" DEVFLOW_STOP_PY_DIRS="" "$HK/devflow-doctor.sh" >"$WORK/out" 2>&1 )
 expect "手動 devflow-doctor.sh:壞的 python3.12 跳過,DEVFLOW_FOUND_PYTHON = 好的 python3.13" \
   "$(grep -qx "FOUND=$WORK/g1/python3.13" "$WORK/out"; echo $?)"
-env -i HOME="$WORK/home" PATH="$WORK/old:$TOOLS" DEVFLOW_STOP_PY_DIRS="" "$HK/devflow-doctor.sh" >"$WORK/out" 2>&1
+( cd "$WORK/noproj" && env -i HOME="$WORK/home" PATH="$WORK/old:$TOOLS" DEVFLOW_STOP_PY_DIRS="" "$HK/devflow-doctor.sh" >"$WORK/out" 2>&1 )
 expect "手動 devflow-doctor.sh:找不到 3.12+ → 不設 DEVFLOW_FOUND_PYTHON(doctor 照原樣報 ✗)" \
   "$(grep -qx "FOUND=(unset)" "$WORK/out"; echo $?)"
-env -i HOME="$WORK/home" PATH="$WORK/g1:$TOOLS" DEVFLOW_STOP_PY_DIRS="" DEVFLOW_PYTHON="$REAL_PY" "$HK/devflow-doctor.sh" >"$WORK/out" 2>&1
+( cd "$WORK/noproj" && env -i HOME="$WORK/home" PATH="$WORK/g1:$TOOLS" DEVFLOW_STOP_PY_DIRS="" DEVFLOW_PYTHON="$REAL_PY" "$HK/devflow-doctor.sh" >"$WORK/out" 2>&1 )
 expect "手動 devflow-doctor.sh:明示 DEVFLOW_PYTHON 時不自動找(不偷換)" \
   "$(grep -qx "FOUND=(unset)" "$WORK/out"; echo $?)"
 
@@ -247,6 +254,72 @@ PY
 for i in 1 2 3 4 5 6 7; do
   expect "⑩ resolve_printer_python mock 案 $i/7" "$(printf '%s\n' "$PYOUT" | grep -qx "CASE$i=ok"; echo $?)"
 done
+
+# ⑫ devflow_find_twin_python(gate-twin 用):專案 .venv 優先、要 import markdown_it;不影響 devflow_find_py312
+# 假直譯器的 `-c 'import markdown_it'` 由旗標決定(exit 0／1),其餘照 fake_py(版本判斷真的被執行)
+mdit_py() {  # mdit_py <路徑> <假版本 X.Y> <yes|no>
+  fake_py "$1.inner" "$2"
+  printf '#!/bin/sh\ncase "$2" in *markdown_it*) exit %s;; esac\nexec "%s.inner" "$@"\n' \
+    "$([ "$3" = yes ] && echo 0 || echo 1)" "$1" >"$1"
+  chmod 755 "$1"
+}
+# find_twin <PATH> <專案根或空字串> [VAR=val ...]:印結果到 $WORK/out、stderr 到 $WORK/err、rc 到 $WORK/rc
+find_twin() {
+  local p=$1 proj=$2; shift 2
+  env -i HOME="$WORK/home" PATH="$p" "$@" bash -c '. "$1"; devflow_find_twin_python "${2:-}"' _ "$LIB" "$proj" >"$WORK/out" 2>"$WORK/err"
+  echo $? >"$WORK/rc"
+}
+twin_ok() {  # twin_ok <期望路徑>:rc=0 且輸出恰為該路徑
+  [ "$(rc)" = 0 ] && [ "$(out)" = "$1" ]
+}
+WARN_RE='markdown-it-py'
+PR="$WORK/tproj"; mkdir -p "$PR/.venv/bin" "$WORK/t1" "$WORK/t2" "$WORK/t3"
+mdit_py "$PR/.venv/bin/python" 3.12 yes
+mdit_py "$WORK/t1/python3.13" 3.13 yes
+find_twin "$WORK/t1:$TOOLS" "$PR" DEVFLOW_STOP_PY_DIRS=""
+expect "⑫ 專案 .venv(3.12、有 markdown_it)優先於 PATH 上同樣有 markdown_it 的 python3.13" \
+  "$(twin_ok "$PR/.venv/bin/python"; echo $?)"
+find_twin "$WORK/t1:$TOOLS" "" DEVFLOW_STOP_PY_DIRS="" CLAUDE_PROJECT_DIR="$PR"
+expect "⑫ 沒給參數時專案根取 \$CLAUDE_PROJECT_DIR" "$(twin_ok "$PR/.venv/bin/python"; echo $?)"
+mdit_py "$PR/.venv/bin/python" 3.12 no
+find_twin "$WORK/t1:$TOOLS" "$PR" DEVFLOW_STOP_PY_DIRS=""
+expect "⑫ 專案 .venv 沒有 markdown_it → 改用 PATH 上有的 python3.13(不輸出提示)" \
+  "$(twin_ok "$WORK/t1/python3.13" && [ ! -s "$WORK/err" ]; echo $?)"
+mdit_py "$PR/.venv/bin/python" 3.11 yes
+find_twin "$WORK/t1:$TOOLS" "$PR" DEVFLOW_STOP_PY_DIRS=""
+expect "⑫ 專案 .venv 只有 3.11(有 markdown_it 也不到 3.12)→ 跳過,用 PATH 上的" \
+  "$(twin_ok "$WORK/t1/python3.13"; echo $?)"
+mdit_py "$WORK/t2/python3.14" 3.14 no; mdit_py "$WORK/t2/python3.12" 3.12 yes
+find_twin "$WORK/t2:$TOOLS" "" DEVFLOW_STOP_PY_DIRS=""
+expect "⑫ PATH 上新版 python3.14 沒 markdown_it、python3.12 有 → 選有的(不是只看版本最新)" \
+  "$(twin_ok "$WORK/t2/python3.12"; echo $?)"
+mdit_py "$PR/.venv/bin/python" 3.12 yes; mdit_py "$WORK/t3/python3.12" 3.12 no
+find_twin "$WORK/t1:$TOOLS" "$PR" DEVFLOW_STOP_PY_DIRS="" DEVFLOW_PYTHON="$WORK/t3/python3.12"
+expect "⑫ DEVFLOW_PYTHON 明示(3.12、沒 markdown_it)最優先:不被有 markdown_it 的 .venv 搶走,且印提示" \
+  "$(twin_ok "$WORK/t3/python3.12" && grep -q "$WARN_RE" "$WORK/err"; echo $?)"
+find_twin "$WORK/t1:$TOOLS" "$PR" DEVFLOW_STOP_PY_DIRS="" DEVFLOW_PYTHON="$WORK/old/python3"
+expect "⑫ DEVFLOW_PYTHON 明示但是 3.9 → 找不到(不偷換)" "$([ "$(rc)" = 1 ] && [ -z "$(out)" ]; echo $?)"
+# 都沒有 markdown_it → 退回 devflow_find_py312 的結果,提示講清楚
+mdit_py "$PR/.venv/bin/python" 3.12 no; mdit_py "$WORK/t1/python3.13" 3.13 no
+find_twin "$WORK/t1:$TOOLS" "$PR" DEVFLOW_STOP_PY_DIRS=""
+expect "⑫ 都沒有 markdown_it → 退回「版本 3.12+」的結果(同 devflow_find_py312)、rc 0" \
+  "$(twin_ok "$WORK/t1/python3.13"; echo $?)"
+expect "⑫ 退回時的提示:缺 markdown-it-py、gate-twin 會 exit 3、建議設 DEVFLOW_PYTHON、裝 markdown-it-py==4.0.0" \
+  "$(grep -q 'markdown-it-py' "$WORK/err" && grep -q 'exit 3' "$WORK/err" && grep -q 'DEVFLOW_PYTHON' "$WORK/err" \
+     && grep -q 'markdown-it-py==4.0.0' "$WORK/err"; echo $?)"
+find_py "$WORK/t1:$TOOLS" DEVFLOW_STOP_PY_DIRS=""
+expect "⑫ devflow_find_py312 沒變嚴:同一組沒有 markdown_it 的環境照樣找到 python3.13、無任何提示" \
+  "$([ "$(rc)" = 0 ] && [ "$(out)" = "$WORK/t1/python3.13" ] && [ ! -s "$WORK/err" ]; echo $?)"
+find_twin "$WORK/old:$TOOLS" "$PR" DEVFLOW_STOP_PY_DIRS=""
+expect "⑫ 連 3.12+ 都沒有 → return 1、不印路徑" "$([ "$(rc)" = 1 ] && [ -z "$(out)" ]; echo $?)"
+# doctor.sh 把「有 markdown_it 的」交給 doctor(而不是版本最新的)
+( cd "$WORK/noproj" && env -i HOME="$WORK/home" PATH="$WORK/t2:$TOOLS" DEVFLOW_STOP_PY_DIRS="" "$HK/devflow-doctor.sh" >"$WORK/out" 2>&1 )
+expect "⑫ 手動 devflow-doctor.sh:DEVFLOW_FOUND_PYTHON = 有 markdown_it 的 python3.12(不是新版但缺相依的 3.14)" \
+  "$(grep -qx "FOUND=$WORK/t2/python3.12" "$WORK/out"; echo $?)"
+expect "⑫ 靜態:devflow-doctor.sh 用 devflow_find_twin_python、Stop hook／selftest 仍用 devflow_find_py312" \
+  "$(grep -q 'devflow_find_twin_python' "$ROOT/hooks/devflow-doctor.sh" && grep -q 'devflow_find_py312' "$ROOT/hooks/selftest.sh" \
+     && grep -q 'devflow_find_py312' "$ROOT/hooks/devflow-stop-selftest.sh" \
+     && ! grep -q 'devflow_find_twin_python' "$ROOT/hooks/selftest.sh" "$ROOT/hooks/devflow-stop-selftest.sh"; echo $?)"
 
 # ⑪ 靜態:三處都 source 共用檔、沒有各抄一份;共用檔 644、與 python-lib 同目錄
 expect "selftest.sh／devflow-doctor.sh／devflow-stop-selftest.sh 都 source devflow-find-python.sh" \

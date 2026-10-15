@@ -14,6 +14,22 @@ if [ -z "${DEVFLOW_PYTHON:-}" ]; then
   export DEVFLOW_PYTHON
 fi
 . "$H/devflow-python-lib.sh"  # 直譯器解析;缺直譯器 fail-open(理由見該檔)
+# 自測內所有「執行 bash 腳本」的地方一律用這支 SELFTEST_BASH,不准直接寫 PATH 上的 `bash`:
+# Apple Silicon 上 PATH 裡的 /usr/local/bin/bash 常是 x86 版(Bad CPU type,exit 126),
+# 直接寫 `bash` 會讓 g1／w2／p1 plan／doctor 內的 gate-consistency 等一批案例以 126 假紅。
+# 優先用「目前正在跑本檔的 $BASH」(它一定跑得起來);拿不到再用共用的 devflow_find_bash
+# (候選先試跑才採用);再不行才退回字面 bash(維持舊行為)。同時 export DEVFLOW_BASH,
+# 讓自測呼叫的 doctor(devflow-doctor.sh → _doctor_impl.py)與內嵌 Python 同樣用它。
+# 外部已設 DEVFLOW_BASH 且跑得起來的照舊尊重。
+if ! { [ -n "${DEVFLOW_BASH:-}" ] && devflow_exe_runs "$DEVFLOW_BASH"; }; then
+  if [ -n "${BASH:-}" ] && devflow_exe_runs "$BASH"; then
+    DEVFLOW_BASH=$BASH
+  else
+    DEVFLOW_BASH=$(devflow_find_bash) || DEVFLOW_BASH=bash
+  fi
+fi
+export DEVFLOW_BASH
+SELFTEST_BASH=$DEVFLOW_BASH
 # devflow:tmpdir-normalize:start
 # 派工單 §2.1:Git Bash 的 /tmp 與 Windows 原生 Python 解讀的 /tmp 不是同一個資料夾。
 # 前者是 C:\Users\<user>\AppData\Local\Temp;後者把開頭的 / 當成「現行磁碟機根目錄
@@ -112,7 +128,10 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 2026-09-28 research/jev-supermemory 合進 main:兩邊新增案例相加(459 + research 14 + main 10)→ 483。
 # 2026-10-15 採用現場缺件(build-gate-twin.py import 的 diagir.py 沒散發、doctor 仍 COMPATIBLE):
 # p3 doctor ship-deps 三案(依賴齊全 ✓／import 沒散發的檔 ✗／try-except 選配不誤報)+3 → 486。
-MIN_CASES=491
+# v3.26.1 p3 doctor memory_local/memory_durable 比對 +5 → 491。
+# v3.26.3 ship-manifest 指紋 v2(含各檔內容雜湊):p3 doctor 內容雜湊一致 ✓／內容過期 ✗／指路 upgrade 預覽／
+# CRLF 不誤判／舊 v1 指紋相容 ✓／v1 info 說明 共 +6 → 497(w2/g1/p1 的 bash 改用 SELFTEST_BASH 不增減案例)。
+MIN_CASES=497
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -405,9 +424,11 @@ printf '#!/bin/sh\necho "C:/faketmp"\n' > "$W2D/cygpath"; chmod +x "$W2D/cygpath
 # bash 先解析好再改 PATH:命令前綴的 PATH 賦值會影響該命令自己的查找。
 # 對照組用**空目錄**當 PATH,不能拿現行 PATH —— Windows 上 cygpath 就在 /usr/bin,
 # 拿現行 PATH 當「沒有 cygpath」的對照,這一案在 Windows 會假紅。
-W2BASH=$(command -v bash)
+W2BASH=$SELFTEST_BASH
 w2() { PATH="$1" TMPDIR=/tmp "$W2BASH" -c "$W2B"$'\nprintf %s "$TMPDIR"' 2>/dev/null; }
-w2v() { [ "$1" = "$2" ] && echo OK || echo "得 '$1'(期望 '$2')"; }
+# 空字串 = 那支 bash 根本沒跑起來(例如 x86 版 Bad CPU type,exit 126;2>/dev/null 把錯誤吃掉了),
+# 不是 TMPDIR 正規化邏輯算出空值 —— 訊息直接講明,免得下次又往 TMPDIR 邏輯查。
+w2v() { [ "$1" = "$2" ] && echo OK || echo "得 '$1'(期望 '$2')$([ -z "$1" ] && echo ';空字串多半是 bash 跑不起來(W2BASH=$W2BASH)')"; }
 ck_msg "w2 有 cygpath → TMPDIR 換成兩邊都認得的形式" 0 "OK" 0 \
   "$(w2v "$(w2 "$W2D")" "C:/faketmp")"
 ck_msg "w2 無 cygpath → TMPDIR 原樣不動(非 Windows 行為零變化)" 0 "OK" 0 \
@@ -1398,7 +1419,7 @@ def c_parallel_init():
 def c_plan():
     # 顯式帶 bash(派工單 §2.2):Windows 沒有 shebang 機制,直接 exec .sh 會噴
     # OSError WinError 193 而本案崩掉。
-    r = subprocess.run(["bash", os.path.join(H, "devflow-exec.sh"), "plan", "pf"],
+    r = subprocess.run([os.environ.get("DEVFLOW_BASH") or "bash", os.path.join(H, "devflow-exec.sh"), "plan", "pf"],
                        cwd=ROOT, capture_output=True, text=True)
     need(r.returncode == 0, r.stdout + r.stderr)
     out = json.loads(r.stdout)
@@ -2216,7 +2237,7 @@ printf '%s\n' '{"schema": "devflow-ship-manifest-v1", "version": "v1-placeholder
   ' {"source": "scripts/sm-a.sh", "destination": "docs/dev/tools/sm-a.sh", "mode": "755"},' \
   ' {"source": "scripts/sm-b.py", "destination": "docs/dev/tools/sm-b.py", "mode": "644"},' \
   ' {"source": "docs/dev/ship-manifest.json", "destination": "docs/dev/ship-manifest.json", "mode": "644"}]}' > "$P3T/docs/dev/ship-manifest.json"
-SMV=$("$DEVFLOW_PY" "${DEVFLOW_MASTER:-$(dirname "$H")}/scripts/devflow_ship_manifest.py" --version "$P3T" 2>/dev/null || echo "v1-unavailable")
+SMV=$("$DEVFLOW_PY" "${DEVFLOW_MASTER:-$(dirname "$H")}/scripts/devflow_ship_manifest.py" --version "$P3T" 2>/dev/null || echo "v2-unavailable")
 "$DEVFLOW_PY" - "$P3T/docs/dev/ship-manifest.json" "$SMV" <<'PY'
 import json, sys
 p, v = sys.argv[1], sys.argv[2]
@@ -2226,6 +2247,20 @@ PY
 printf '%s\n' '{"devflow_contract_version": "2.0.0", "ship_manifest_version": "'"$SMV"'",' \
   ' "required_runtime_capabilities": ["attempt_ledger"],' \
   ' "schema_versions": {"agent_event": "1.1"}}' > "$P3T/contract-sm.json"
+# v2 指紋含各 destination 檔的內容雜湊(3.26.3):下面案例改了散發檔內容之後,要用正本演算法重算,
+# 把 manifest.version 與 contract-sm.json 同步寫回,才是「同一批散發」;不重算 = 受管檔過期(有專案案例)。
+p3_resmv() {
+  SMV=$("$DEVFLOW_PY" "${DEVFLOW_MASTER:-$(dirname "$H")}/scripts/devflow_ship_manifest.py" --version "$P3T" 2>/dev/null || echo "v2-unavailable")
+  "$DEVFLOW_PY" - "$P3T/docs/dev/ship-manifest.json" "$SMV" <<'PY'
+import json, sys
+p, v = sys.argv[1], sys.argv[2]
+d = json.load(open(p)); d["version"] = v
+json.dump(d, open(p, "w"))
+PY
+  printf '%s\n' '{"devflow_contract_version": "2.0.0", "ship_manifest_version": "'"$SMV"'",' \
+    ' "required_runtime_capabilities": ["attempt_ledger"],' \
+    ' "schema_versions": {"agent_event": "1.1"}}' > "$P3T/contract-sm.json"
+}
 p3_doctor "$P3T/contract-ok.json" "$P3T/caps-ok.json"
 ck_msg "p3 doctor 契約無 ship_manifest_version(舊契約)→ 明示略過不擋" 0 "逐列驗證略過" "$P3_RC" "$P3_OUT"
 p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
@@ -2237,9 +2272,42 @@ printf 'import sm_missing_dep\n' > "$P3T/docs/dev/tools/sm-b.py"
 p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
 ck_msg "p3 doctor ship-deps 已散發 .py import 了沒散發的檔 → fail 並點名(逐列仍 ✓)" 1 "sm-b.py:1 import sm_missing_dep" "$P3_RC" "$P3_OUT"
 printf 'try:\n    import sm_missing_dep\nexcept ImportError:\n    sm_missing_dep = None\n' > "$P3T/docs/dev/tools/sm-b.py"
+p3_resmv
 p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
 ck_msg "p3 doctor ship-deps try/except ImportError 內的選配 import 不誤報 → ✓" 0 "✓ ship-deps" "$P3_RC" "$P3_OUT"
+# 3.26.3 指紋 v2:散發檔內容與當次散發不同(契約／manifest 都沒動)→ doctor 要看得出(v1 看不出)
 printf 'x = 1\n' > "$P3T/docs/dev/tools/sm-b.py"; chmod 644 "$P3T/docs/dev/tools/sm-b.py"
+p3_resmv
+p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor v2 指紋:內容雜湊一致 → ✓ 且註明含各檔內容雜湊" 0 "內容雜湊" "$P3_RC" "$P3_OUT"
+printf 'x = 2  # stale copy, manifest/contract unchanged\n' > "$P3T/docs/dev/tools/sm-b.py"
+p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor v2 指紋:受管檔內容與當次散發不同(manifest／契約沒動)→ fail 並指路 upgrade dry-run" 1 "實際檔案內容重算" "$P3_RC" "$P3_OUT"
+ck_msg "p3 doctor v2 指紋:內容過期時仍指向 devflow-upgrade-manifest.py 預覽差異" 1 "devflow-upgrade-manifest.py" "$P3_RC" "$P3_OUT"
+printf 'x = 1\r\n' > "$P3T/docs/dev/tools/sm-b.py"
+p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor v2 指紋:CRLF 行尾(同內容)不誤判過期 → ✓" 0 "✓ ship-manifest" "$P3_RC" "$P3_OUT"
+printf 'x = 1\n' > "$P3T/docs/dev/tools/sm-b.py"
+# 舊契約 v1 指紋(只算列清單):相容比對照舊通過,但要明說 v1 看不出內容過期(不擋)
+SMV1=$("$DEVFLOW_PY" - "$P3T/docs/dev/ship-manifest.json" <<'PY'
+import hashlib, json, sys
+d = json.load(open(sys.argv[1]))
+rows = [{"source": r.get("source"), "destination": r.get("destination"), "mode": r.get("mode")} for r in d["files"]]
+print("v1-" + hashlib.sha256(json.dumps(rows, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()[:16])
+PY
+)
+cp "$P3T/docs/dev/ship-manifest.json" "$P3T/ship-manifest-v2.json.bak"
+"$DEVFLOW_PY" - "$P3T/docs/dev/ship-manifest.json" "$SMV1" <<'PY'
+import json, sys
+p, v = sys.argv[1], sys.argv[2]; d = json.load(open(p)); d["version"] = v; json.dump(d, open(p, "w"))
+PY
+printf '%s\n' '{"devflow_contract_version": "2.0.0", "ship_manifest_version": "'"$SMV1"'",' \
+  ' "required_runtime_capabilities": ["attempt_ledger"],' \
+  ' "schema_versions": {"agent_event": "1.1"}}' > "$P3T/contract-sm-v1.json"
+p3_doctor "$P3T/contract-sm-v1.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor 舊 v1 指紋契約:三值比對照舊 → ✓(相容,不讓舊專案變 INCOMPATIBLE)" 0 "✓ ship-manifest" "$P3_RC" "$P3_OUT"
+ck_msg "p3 doctor 舊 v1 指紋契約:info 說明 v1 只算檔案清單、看不出工具內容過期" 0 "不含檔案內容" "$P3_RC" "$P3_OUT"
+mv "$P3T/ship-manifest-v2.json.bak" "$P3T/docs/dev/ship-manifest.json"
 rm -f "$P3T/docs/dev/tools/sm-b.py"
 p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
 ck_msg "p3 doctor ship-manifest 列 destination 缺 → fail 並點名" 1 "缺 docs/dev/tools/sm-b.py" "$P3_RC" "$P3_OUT"
@@ -2265,7 +2333,7 @@ p = sys.argv[1]; d = json.load(open(p))
 d["files"].append({"source": "scripts/x.sh", "destination": "docs/dev/tools/../../../etc/hostname", "mode": "644"})
 json.dump(d, open(p, "w"))
 PY
-SMV2=$("$DEVFLOW_PY" "${DEVFLOW_MASTER:-$(dirname "$H")}/scripts/devflow_ship_manifest.py" --version "$P3T" 2>/dev/null || echo "v1-unavailable")
+SMV2=$("$DEVFLOW_PY" "${DEVFLOW_MASTER:-$(dirname "$H")}/scripts/devflow_ship_manifest.py" --version "$P3T" 2>/dev/null || echo "v2-unavailable")
 "$DEVFLOW_PY" - "$P3T/docs/dev/ship-manifest.json" "$SMV2" <<'PY'
 import json, sys
 p, v = sys.argv[1], sys.argv[2]; d = json.load(open(p)); d["version"] = v; json.dump(d, open(p, "w"))
@@ -3044,15 +3112,15 @@ mkdir -p "$G1T/docs/dev/tools"
 ( cd "$G1T" && git init -q . && git config user.email t@t && git config user.name t )
 cp "$H/../scripts/history-append.sh" "$G1T/docs/dev/tools/history-append.sh"
 chmod +x "$G1T/docs/dev/tools/history-append.sh"
-( cd "$G1T" && bash docs/dev/tools/history-append.sh --slug g1 --what a --why b --where c >/dev/null 2>&1 )
+( cd "$G1T" && "$SELFTEST_BASH" docs/dev/tools/history-append.sh --slug g1 --what a --why b --where c >/dev/null 2>&1 )
 ck "g1 散發位置不帶 --file → 寫到 <root>/docs/dev/HISTORY.md" 0 "$([ -f "$G1T/docs/dev/HISTORY.md" ]; echo $?)"
 ck "g1 不得建出巢狀 docs/dev/docs 目錄(修前真的建出來)" 0 "$([ ! -e "$G1T/docs/dev/docs" ]; echo $?)"
 mkdir -p "$G1T/scripts" && cp "$H/../scripts/history-append.sh" "$G1T/scripts/history-append.sh"
-( cd "$G1T" && bash scripts/history-append.sh --slug g1b --what a --why b --where c >/dev/null 2>&1 )
+( cd "$G1T" && "$SELFTEST_BASH" scripts/history-append.sh --slug g1b --what a --why b --where c >/dev/null 2>&1 )
 ck "g1 母版位置(scripts/)同一支腳本 → 同樣寫到 <root>/docs/dev/HISTORY.md" 0 "$(grep -q "g1b" "$G1T/docs/dev/HISTORY.md"; echo $?)"
 G1N=$(mktemp -d "${TMPDIR:-/tmp}/devflow-g1-nogit.XXXXXX")
 cp "$H/../scripts/history-append.sh" "$G1N/history-append.sh"
-G1_OUT=$(cd "$G1N" && bash history-append.sh --slug g1 --what a --why b --where c 2>&1); G1_RC=$?
+G1_OUT=$(cd "$G1N" && "$SELFTEST_BASH" history-append.sh --slug g1 --what a --why b --where c 2>&1); G1_RC=$?
 ck_msg "g1 不在 git repo 且未帶 --file → 拒絕並指路 --file" 2 "--file" "$G1_RC" "$G1_OUT"
 rm -rf "$G1T" "$G1N"
 

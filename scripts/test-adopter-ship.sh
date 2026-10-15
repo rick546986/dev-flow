@@ -18,6 +18,8 @@
 #   ④ ship-deps 判準:try/except ImportError 內的選配 import 不誤報;相對 import 的缺件、套件
 #      內缺件要報;標準函式庫在 3.9 地板的探測退路(沒有 sys.stdlib_module_names)判對。
 #   ⑤ 母版自己:每支已散發 .py 的 import 在散發樹內全部解析得到(新增散發 .py 卻漏依賴 → 紅)。
+#   ⑥ 指紋 v2(含各檔內容雜湊):採用樹 build-gate-twin.py 內容過期(manifest／契約沒動)→ doctor ✗ 並指路;
+#      CRLF 不誤判;舊 v1 專案相容(✓ + info 說明 v1 看不出內容 + plugin 現行指紋差異提示);母版與 doctor 兩份算法同值。
 #
 # build-gate-twin.py 的 render 路徑要 3.12+ 且 markdown-it-py==4.0.0(ADR 0002),直譯器取
 # DEVFLOW_RENDER_PYTHON(同 check-gate-twin.sh),缺相依 → exit 2(治具故障,不是靜默跳過)。
@@ -51,7 +53,7 @@ import sys
 import tempfile
 
 root, render_py = sys.argv[1], sys.argv[2]
-MIN_CASES = 21
+MIN_CASES = 31
 passed = failed = 0
 
 
@@ -111,7 +113,7 @@ def rewrite_manifest(adopter, drop_destinations=(), extra_rows=()):
     mpath = os.path.join(adopter, "docs", "dev", "ship-manifest.json")
     data = load_json(mpath)
     data["files"] = [r for r in data["files"] if r["destination"] not in drop_destinations] + list(extra_rows)
-    data["version"] = sm_mod.compute_version(data)
+    data["version"] = sm_mod.compute_version(data, adopter)
     dump_json(mpath, data)
     cpath = os.path.join(adopter, "docs", "dev", "devflow-contract.json")
     contract = load_json(cpath)
@@ -240,6 +242,66 @@ try:
     dests = {r["destination"] for r in rows}
     check({"docs/dev/tools/diagir.py", "docs/dev/tools/devflow_atomic.py"} <= dests,
           "manifest 列了 diagir.py 與 devflow_atomic.py")
+
+    # ── ⑥ 指紋含內容(v2):採用專案工具檔過期要被 doctor 抓到 ─────────────────────
+    # 起因(採用現場回報):3.26.1 改了 build-gate-twin.py 內容,v1 指紋(只算列清單)卻沒變,
+    # 採用專案 docs/dev/tools/build-gate-twin.py 是舊的,doctor 照樣 ✓。v2 把各 destination 檔內容雜湊算進指紋。
+    print("-- ⑥ 指紋 v2:受管檔內容過期 --")
+    rc, out = run_doctor(good)
+    check("v2-" in line_with(out, "✓ ship-manifest") and "內容雜湊" in line_with(out, "✓ ship-manifest"),
+          "完整散發的採用樹:doctor ✓ ship-manifest 且註明含各檔內容雜湊(v2)", line_with(out, "ship-manifest"))
+    stale = os.path.join(work, "stale")
+    install(stale)
+    twin = os.path.join(stale, "docs", "dev", "tools", "build-gate-twin.py")
+    with open(twin, "ab") as f:
+        f.write(b"\n# stale/modified copy\n")
+    rc, out = run_doctor(stale)
+    ln = line_with(out, "✗ ship-manifest")
+    check(ln and "內容" in ln and "devflow-upgrade-manifest.py" in ln,
+          "build-gate-twin.py 內容與當次散發不同(manifest／契約都沒動)→ doctor ✗ ship-manifest 並指路 upgrade dry-run", ln or line_with(out, "ship-manifest"))
+    check(rc == 1 and "INCOMPATIBLE" in out, "內容過期 → 整體 INCOMPATIBLE、exit 1(不再 COMPATIBLE)", "rc=%s" % rc)
+    check("✓ ship-deps" in out, "內容過期時 ship-deps 仍照跑(不被蓋掉)", line_with(out, "ship-deps"))
+    # CRLF 不算過期
+    crlf = os.path.join(work, "crlf")
+    install(crlf)
+    for d_, _dn, fs in os.walk(os.path.join(crlf, "docs", "dev", "tools")):
+        for fn in fs:
+            if fn.endswith((".py", ".sh")):
+                pth = os.path.join(d_, fn)
+                data_ = open(pth, "rb").read()
+                open(pth, "wb").write(data_.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+    rc, out = run_doctor(crlf)
+    check("✓ ship-manifest" in out and "✗ ship-manifest" not in out, "整批改成 CRLF 行尾(Windows autocrlf)→ 仍 ✓,不誤判過期",
+          line_with(out, "ship-manifest"))
+    # 舊 v1 專案:相容(不擋)、說清楚 v1 看不出內容、並顯示與 plugin 現行指紋不同
+    v1 = os.path.join(work, "v1")
+    install(v1)
+    mpath = os.path.join(v1, "docs", "dev", "ship-manifest.json")
+    md = load_json(mpath)
+    md["version"] = sm_mod.compute_version_v1(md)
+    dump_json(mpath, md)
+    cpath = os.path.join(v1, "docs", "dev", "devflow-contract.json")
+    cd = load_json(cpath)
+    cd["ship_manifest_version"] = md["version"]
+    dump_json(cpath, cd)
+    with open(os.path.join(v1, "docs", "dev", "tools", "build-gate-twin.py"), "ab") as f:
+        f.write(b"\n# v1 project with stale tool\n")
+    rc, out = run_doctor(v1)
+    check("✓ ship-manifest" in out and "✗ ship-manifest" not in out,
+          "舊 v1 指紋專案:相容比對照舊 ✓(不因升 v2 讓所有舊專案變 INCOMPATIBLE)", line_with(out, "ship-manifest"))
+    check("v1" in line_with(out, "ship-manifest-v1") and "不含檔案內容" in line_with(out, "ship-manifest-v1"),
+          "舊 v1:印出 info 說明 v1 只算檔案清單、看不出工具內容過期,指向 upgrade", line_with(out, "ship-manifest-v1"))
+    check(md["version"] in line_with(out, "ship-manifest-upstream") and "v2-" in line_with(out, "ship-manifest-upstream"),
+          "舊 v1:印出 info 顯示 plugin 現行指紋(v2-)≠ 專案(v1-),提示專案可能比 plugin 舊",
+          line_with(out, "ship-manifest-upstream"))
+    check(sm_mod.compute_version_v1(load_json(os.path.join(root, "docs", "dev", "ship-manifest.json")))
+          == "v1-8b3e8230958df1be",
+          "compute_version_v1 對目前 manifest 列仍算出舊指紋 v1-8b3e8230958df1be(舊算法沒被改壞)")
+    # master 與 doctor 兩份 v2 算法同值
+    mdata = load_json(os.path.join(root, "docs", "dev", "ship-manifest.json"))
+    dv, dmiss = doctor._ship_manifest_version_v2(mdata["files"], root)
+    check(dv == sm_mod.compute_version(mdata, root) == mdata["version"] and dmiss == [],
+          "母版與 doctor 兩份 v2 算法同值,且等於 manifest.version(母版樹本身)", "%s / %s" % (dv, mdata["version"]))
 finally:
     shutil.rmtree(work, ignore_errors=True)
 

@@ -18,6 +18,8 @@
 #       → python3.15 / 3.14 / 3.13 / 3.12(PATH 各目錄,再加額外目錄)→ PATH 上的 python3。
 # 額外目錄預設 /opt/homebrew/bin /usr/local/bin ~/.local/bin(Claude 從 GUI 起時 PATH 常不含
 # Homebrew);DEVFLOW_STOP_PY_DIRS 覆寫(空白分隔;設成空字串 = 不找額外目錄,測試用)。
+# 另有 devflow_find_twin_python:給 build-gate-twin.py 用(專案 .venv 優先、要 import markdown_it),
+# 見該函式註解;devflow_find_py312 與其呼叫端(selftest、Stop hook)不受影響。
 # PATH 裡的空項與相對路徑會略過(空項 = 目前目錄,不准從專案目錄撿可執行檔來跑)。
 
 devflow_exe_runs() {  # devflow_exe_runs <exe>:是可執行檔,且 `--version` 真的跑得起來
@@ -74,6 +76,66 @@ EOF
 $(devflow__path_dirs)
 EOF
   return 1
+}
+
+# ── gate-twin(build-gate-twin.py)用的直譯器 ─────────────────────────────────────────────
+# devflow_find_py312 只看版本;但 build-gate-twin.py 還要 `import markdown_it`(markdown-it-py==4.0.0,
+# 缺 → exit 3)。版本對、卻沒裝 markdown-it-py 的 3.12+(例如另一個 python3.13)會讓 gate-twin 一跑就 exit 3。
+# 所以「給 gate-twin 用」的另開 devflow_find_twin_python,devflow_find_py312 本身一個字不動 ——
+# 不需要 markdown_it 的呼叫端(Stop hook 自測、手動 selftest、doctor 的備選)不會因此變嚴。
+devflow_py_has_mdit() {  # devflow_py_has_mdit <exe>:`import markdown_it` 成功
+  [ -n "${1:-}" ] && "$1" -c 'import markdown_it' >/dev/null 2>&1
+}
+
+devflow__twin_warn() {  # devflow__twin_warn <exe>:退回「版本 3.12+ 即可」時的提示(stderr)
+  {
+    echo "dev-flow:gate-twin 用的直譯器 $1 是 3.12+,但 import markdown_it 失敗(沒裝 markdown-it-py),"
+    echo "  build-gate-twin.py 在它上面會 exit 3。已找過:DEVFLOW_PYTHON、專案 .venv、PATH 各目錄與額外目錄的 python3.12–3.15,"
+    echo "  沒有任何一支裝了 markdown-it-py。建議:"
+    echo "    ① 設 DEVFLOW_PYTHON 指向已裝好的 3.12+ 直譯器(例如專案 .venv/bin/python);或"
+    echo "    ② 在專案 venv 裝:pip install 'markdown-it-py==4.0.0'(不要覆寫 Apple／系統 Python)。"
+  } >&2
+}
+
+# devflow_find_twin_python [專案根]:印 gate-twin 該用的直譯器並 return 0;連 3.12+ 都沒有 return 1。
+# 順序:① DEVFLOW_PYTHON 明示 → 最優先(3.12+ 且跑得起來才算;沒裝 markdown_it 只警告、不偷換)
+#       ② 專案 .venv(<專案根>/.venv/bin/python、python3;Windows 為 .venv/Scripts/python.exe),
+#          專案根 = 第 1 個參數,沒給用 $CLAUDE_PROJECT_DIR;須 3.12+ 且 import markdown_it 成功
+#       ③ 其餘候選(同 devflow_find_py312 的順序與試跑規則)中第一支 import markdown_it 成功的
+#       ④ 都沒有含 markdown_it 的 → 退回 devflow_find_py312 的結果(版本 3.12+ 即可),並印提示到 stderr。
+devflow_find_twin_python() {
+  local _proj=${1:-${CLAUDE_PROJECT_DIR:-}} _c _name _d _dirs
+  if [ -n "${DEVFLOW_PYTHON:-}" ]; then
+    _c=$DEVFLOW_PYTHON
+    case "$_c" in */*) : ;; *) _c=$(command -v "$_c" 2>/dev/null || true) ;; esac
+    devflow_py_ok "$_c" || return 1
+    devflow_py_has_mdit "$_c" || devflow__twin_warn "$_c"
+    printf '%s\n' "$_c"
+    return 0
+  fi
+  if [ -n "$_proj" ]; then
+    for _c in "$_proj/.venv/bin/python" "$_proj/.venv/bin/python3" "$_proj/.venv/Scripts/python.exe"; do
+      devflow_py_ok "$_c" && devflow_py_has_mdit "$_c" && { printf '%s\n' "$_c"; return 0; }
+    done
+  fi
+  _dirs=$(devflow__path_dirs; devflow__extra_dirs)
+  for _name in python3.15 python3.14 python3.13 python3.12; do
+    while IFS= read -r _d; do
+      [ -n "$_d" ] || continue
+      devflow_py_ok "$_d/$_name" && devflow_py_has_mdit "$_d/$_name" && { printf '%s\n' "$_d/$_name"; return 0; }
+    done <<EOF
+$_dirs
+EOF
+  done
+  while IFS= read -r _d; do
+    [ -n "$_d" ] || continue
+    devflow_py_ok "$_d/python3" && devflow_py_has_mdit "$_d/python3" && { printf '%s\n' "$_d/python3"; return 0; }
+  done <<EOF
+$(devflow__path_dirs)
+EOF
+  _c=$(devflow_find_py312) || return 1
+  devflow__twin_warn "$_c"
+  printf '%s\n' "$_c"
 }
 
 devflow_find_bash() {  # 印第一個跑得起來的 bash;都不行 return 1(呼叫端自行退回字面 bash)

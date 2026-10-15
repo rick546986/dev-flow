@@ -9,8 +9,15 @@
 # 範圍(嚴格):只動 `<pack>/docs/dev/ship-manifest.json` 每一列的 destination,**一個檔都不多碰**。
 #   不在這支的範圍(仍照 skills/dev-setup/SKILL.md 的 upgrade 段):
 #   docs/dev/README.md 剝除版與 docs/dev/_templates/ 的複製、出廠殘件刪除
-#   (devflow-upgrade-leftovers.sh;只做「新增/覆蓋」,上游已移除的舊工具檔不會刪)、baseline 快照(docs/dev/.devflow-baseline/)、.gitignore、
-#   knowledge index bootstrap。baseline 只讀不寫(拿來判斷「本地客製」,見下)。
+#   (devflow-upgrade-leftovers.sh;只做「新增/覆蓋」,上游已移除的舊工具檔不會刪)、README／_templates 的 baseline 快照、.gitignore、
+#   knowledge index bootstrap。
+#   baseline(docs/dev/.devflow-baseline/):語意 = 「上次 install/upgrade 散發下去的上游新內容」,下次 upgrade 拿它當
+#   「上游舊版」做三方比對(本地 ≠ baseline ⇒ 本地客製)。所以 upgrade 成功後 baseline 必須跟著換成這次散發的內容
+#   (SKILL install 步 8;使用者拒絕覆蓋客製時 baseline 仍取上游新內容,不取本地現況)。本腳本 --apply 在「全部列寫入
+#   成功」之後,把 manifest 列(docs/dev/ 底下的,含 tools/)的**上游新內容**同步進 baseline 對應路徑;不寫 baseline 就會
+#   留下過期基準,下次 upgrade 把使用者根本沒改的檔誤判成「需同意」。只在 baseline 目錄已存在時才同步:
+#   不存在 = 過渡態(SKILL:全部視為本地客製),腳本不替人建立只含一部分檔的 baseline。
+#   不做乾淨替換(不刪 baseline 裡上游已移除的舊檔)、不碰 README／_templates 的 baseline —— 那些仍照 SKILL 步 8。
 #
 # 每列的狀態:
 #   新增  採用專案沒有這個檔
@@ -21,6 +28,7 @@
 #                    (dev-setup 規定逐檔徵得使用者同意後才覆蓋)
 #   相同  內容與權限都一樣
 # baseline 路徑 = docs/dev/.devflow-baseline/<destination 去掉開頭的 docs/dev/>。
+# baseline 同步另有三種狀態(只在 baseline 目錄存在時):新增(baseline 沒有此檔)/ 更新(內容不同)/ 相同。
 #
 # 安全:
 #   · 先驗全部列再動手:manifest 結構(缺欄/重複 destination/非 644|755/絕對路徑/..)沿用
@@ -31,6 +39,8 @@
 #   · 寫入是暫存檔 + os.replace(同目錄、單檔原子);失敗不留暫存檔。manifest 自己那一列
 #     (docs/dev/ship-manifest.json)最後寫,且前面有任何一列寫入失敗就不寫 —— 採用專案的 manifest 版本
 #     不會比實際散發的檔還新(doctor 的逐列驗證才看得出缺件,不會被蓋過去)。
+#     baseline 同步在所有列之後、且只在沒有任何寫入失敗時才做;baseline 的路徑也走同一套防跳脫檢查
+#     (整批先驗,越界 → exit 2、一個檔都不寫),不跟著 symlink 寫到專案外。
 #
 # 用法:
 #   python3 <方法包根>/scripts/devflow-upgrade-manifest.py --root <專案根> [--pack <方法包根>]
@@ -40,6 +50,7 @@
 #   --apply          真的寫入(新增 + 母版改寫;需同意的列預設跳過)。不帶 = dry-run,不動任何檔
 #   --include-custom 連「需同意」的列一起覆蓋(只有在你已逐檔徵得使用者同意後才用)
 #   --diff           對「變更」的文字檔印 unified diff(每檔最多 60 行),給使用者過目用
+# doctor 入口:<方法包根>/hooks/devflow-exec.sh doctor(不是 scripts/)。
 # exit:0 = dry-run 完成,或 --apply 全部成功(含有跳過的需同意列)/ 1 = --apply 有寫入失敗 /
 #       2 = 用法或邊界違規(manifest 壞、路徑越界、root==pack…),未寫任何檔
 
@@ -118,6 +129,29 @@ def local_mode_differs(path, want):
     if os.name != "posix":
         return False  # Windows 的 mode 位元不可靠,只比內容
     return stat.S_IMODE(os.stat(path).st_mode) != int(want, 8)
+
+
+def baseline_sync_plan(root, plan):
+    """baseline 目錄存在才有計畫:回傳 [(row, src, bdest, 狀態)],狀態 ∈ 新增/更新/相同(只比內容);
+    baseline 目錄不存在回傳 None(過渡態,不建立)。路徑越界 raise Boundary。"""
+    bdir = os.path.join(root, BASELINE_REL)
+    if not os.path.isdir(bdir) or os.path.islink(bdir):
+        return None
+    out = []
+    for row, src, _dest, _state, _note in plan:
+        bp = baseline_path(root, row["destination"])
+        if bp is None:
+            continue
+        brel = os.path.relpath(bp, root).replace(os.sep, "/")
+        bdest = check_destination(root, brel)
+        if not os.path.lexists(bdest):
+            st = "新增"
+        elif _read(bdest) == _read(src):  # baseline 只比內容(它是三方比對的內容基準;權限差異不值得重寫)
+            st = "相同"
+        else:
+            st = "更新"
+        out.append((row, src, bdest, st))
+    return out
 
 
 def classify(root, row, src, dest):
@@ -204,6 +238,7 @@ def main(argv):
             dest = check_destination(root, row["destination"])
             state, note = classify(root, row, src, dest)
             plan.append((row, src, dest, state, note))
+        bplan = baseline_sync_plan(root, plan)
     except Boundary as exc:
         print("拒絕:邊界違規,一個檔都沒寫:%s" % exc, file=sys.stderr)
         return 2
@@ -231,6 +266,16 @@ def main(argv):
             for ln in text_diff(src, dest, row["destination"]):
                 print(ln)
     print("合計:新增 %d、變更 %d(其中需同意 %d)、相同 %d" % (counts["新增"], counts["變更"], need_consent, counts["相同"]))
+
+    if bplan is None:
+        print("baseline:docs/dev/.devflow-baseline/ 不存在(過渡態或尚未建立)—— 不建立、不同步;"
+              "照 dev-setup SKILL 的過渡態規則處理(受管檔視為本地客製,逐檔徵同意,完成後才建快照)。")
+    else:
+        bc = {"新增": 0, "更新": 0, "相同": 0}
+        for _r, _s, _b, st in bplan:
+            bc[st] += 1
+        print("baseline 同步(docs/dev/.devflow-baseline/,--apply 且全部列寫入成功後才做;內容 = 方法包上游新內容):"
+              "新增 %d、更新 %d、相同 %d" % (bc["新增"], bc["更新"], bc["相同"]))
 
     rc = 0
     if not args.apply:
@@ -263,9 +308,29 @@ def main(argv):
         print("APPLY 完成:寫入 %d、跳過 %d、失敗 %d" % (written, skipped, failed))
         if failed:
             rc = 1
+            if bplan:
+                print("baseline:前面有寫入失敗 —— 不同步 baseline(基準不能比實際散發的檔還新);修好後重跑。")
+        elif bplan:
+            bw = bf = 0
+            for row, src, _bdest, st in bplan:
+                if st == "相同":
+                    continue
+                try:
+                    bdest = check_destination(root, os.path.relpath(
+                        baseline_path(root, row["destination"]), root).replace(os.sep, "/"))
+                    write_one(bdest, _read(src), row["mode"])
+                    bw += 1
+                except (Boundary, OSError) as exc:
+                    bf += 1
+                    print("  baseline 失敗  %s:%s" % (row["destination"], exc), file=sys.stderr)
+            print("baseline 同步完成:寫入 %d、失敗 %d(已相同的略過)" % (bw, bf))
+            if bf:
+                rc = 1
     print("不在這支範圍(仍照 dev-setup SKILL 的 upgrade 段做):README／_templates 複製、"
           "殘件刪除(devflow-upgrade-leftovers.sh;上游已移除、manifest 不再列的舊工具檔這支不會刪)、"
-          "baseline 快照、.gitignore。做完後跑 devflow-exec.sh doctor 確認 ship-manifest 逐列 ✓。")
+          "README／_templates 的 baseline 快照與 baseline 的乾淨替換、.gitignore。"
+          "做完後在專案內跑 doctor 確認 ship-manifest 逐列 ✓:bash %s doctor"
+          "(入口在方法包的 hooks/,不是 scripts/)。" % os.path.join(pack, "hooks", "devflow-exec.sh"))
     return rc
 
 

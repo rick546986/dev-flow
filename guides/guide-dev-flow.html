@@ -3424,7 +3424,9 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             Mac <code>/usr/local/bin</code> 的 x86 版 python／bash 在 Apple Silicon 上 Bad CPU type(exit 126)會被跳過。
             和 <code>devflow-python-lib.sh</code> 分工:python-lib 管 hook 用哪支跑(3.9 夠),這支管要 3.12+ 的場合。
             隨 <code>hooks/</code> 整包進 plugin;644 無執行位元。</td>
-        <td>被 <code>devflow-stop-selftest.sh</code>、<code>selftest.sh</code>、<code>devflow-doctor.sh</code> source,不單獨執行</td><td>隨呼叫者同格(橫跨 Stop／人工,不專屬單一格)</td></tr>
+        <td>被 <code>devflow-stop-selftest.sh</code>、<code>selftest.sh</code>、<code>devflow-doctor.sh</code> source,不單獨執行;
+            另有 <code>devflow_find_twin_python</code>(給 gate-twin:專案 <code>.venv</code> 優先、須 <code>import markdown_it</code>)與
+            <code>devflow_find_bash</code>(selftest／doctor 執行 <code>.sh</code> 用的可用 bash)</td><td>隨呼叫者同格(橫跨 Stop／人工,不專屬單一格)</td></tr>
     <tr><td><code>_prebash_impl.py</code></td><td><code>devflow-prebash.sh</code> 的實作本體。</td>
         <td><code>devflow-prebash.sh</code> 呼叫</td><td>隨 <code>devflow-prebash.sh</code>(同格)</td></tr>
     <tr><td><code>_guard_impl.py</code></td><td><code>devflow-guard.sh</code> 的實作本體。</td>
@@ -3495,14 +3497,17 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>散發清單正本的牙齒:<code>docs/dev/ship-manifest.json</code> 缺欄／重複
             destination／非法 mode 必紅;parity 的 expected set 取自這份正本
             (不掃 <code>docs/dev/tools/</code>,正副本同刪也會紅);檔案地圖
-            「散發面」標註必須與正本 tools 列同一集合。</td>
+            「散發面」標註必須與正本 tools 列同一集合。manifest 版本是 <strong>v2 指紋</strong>(列內容 + 各 destination 檔內容雜湊,CRLF 不影響;
+            manifest 自己與契約兩列不進雜湊):改了任何散發檔卻沒重算 → 紅(舊 v1 指紋只算列清單,3.26.1 改了
+            <code>build-gate-twin.py</code> 內容、指紋卻沒變)。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>devflow_ship_manifest.py</code></td>
         <td>散發清單正本的讀取／校驗庫。install／check／baseline／upgrade／
             dev-release／parity／檔案地圖對帳都讀
             <code>docs/dev/ship-manifest.json</code> 這一份。</td>
         <td>被 <code>check-ship-manifest.sh</code> import;診斷可用
-            <code>--list</code>／<code>--validate</code></td><td>人工/CI(不在生命週期上)</td></tr>
+            <code>--list</code>／<code>--validate</code>／<code>--version</code>(算 v2 指紋)／<code>--refresh</code>
+            (改了散發檔或列之後,一次重算並寫回 manifest 與契約正副本的版本;發版前跑)</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>check-py-floor.sh</code></td>
         <td>拿一個舊版本的 Python 去讀一遍所有會在別人機器上跑的程式檔,讀不進去就判失敗。
             起因是有一支會發給採用專案的產生器用了新版才允許的寫法,在 Mac 內建的那個版本
@@ -4120,29 +4125,37 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             複製/更新進採用專案。預設 dry-run 列「新增／變更／相同」(變更再分「母版改寫」與「需同意」= 本地客製或無 baseline),
             <code>--apply</code> 才寫、需同意的列要再加 <code>--include-custom</code>。只動 manifest 列的 destination,
             路徑防跳脫(<code>..</code>／絕對路徑／<code>.git</code>／symlink 一律拒絕且整批不寫);manifest 自己那列最後寫。
-            不做 README／<code>_templates</code>／殘件刪除／baseline 快照(仍照 SKILL)。</td>
+            <code>--apply</code> 全部列成功後,把 manifest 列(<code>docs/dev/</code> 底下)的上游新內容同步進
+            <code>docs/dev/.devflow-baseline/</code> 對應路徑(baseline 目錄不存在則不建立;baseline 語意 = 上次散發的上游新內容,
+            下次 upgrade 的三方比對用它當「上游舊版」)。輸出的 doctor 入口是 <code>&lt;方法包&gt;/hooks/devflow-exec.sh doctor</code>。
+            不做 README／<code>_templates</code>／殘件刪除／baseline 乾淨替換與 README／<code>_templates</code> 的 baseline(仍照 SKILL)。</td>
         <td>dev-setup upgrade 呼叫;<code>test-upgrade-manifest.sh</code> 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-upgrade-manifest.sh</code></td>
         <td>上一支的牙:dry-run 不寫、<code>--apply</code> 內容與 mode 逐列正確且冪等、本地客製預設跳過、manifest 以外的檔
             (README／STATUS／自己的工具／baseline)連 mtime 都不變、路徑越界與 symlink 全拒絕、寫入失敗時 manifest 列不寫、
-            只用標準庫、套完後 doctor 的 <code>ship-manifest</code>／<code>ship-deps</code> 皆 ✓。案例數下限寫死。</td>
+            只用標準庫、套完後 doctor 的 <code>ship-manifest</code>／<code>ship-deps</code> 皆 ✓。baseline 同步:有 baseline 時 apply 後換成上游新內容
+            (客製被跳過仍取上游新內容、README 不碰、mode 依 manifest、失敗時不同步、baseline 內 symlink 拒絕、不存在不建立、下一輪不再誤判需同意)。案例數下限寫死。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-find-python.sh</code></td>
         <td><code>hooks/devflow-find-python.sh</code> 的牙:壞的(exit 126)候選排前面會被跳過、<code>--version</code> 跑不起來的也跳過、
             PATH 空項／相對路徑不撿、只有 3.9 時手動 <code>selftest.sh</code> exit 2 並說清楚、<code>DEVFLOW_PYTHON</code> 明示不偷換、
-            三條路徑(Stop hook／selftest／doctor)都走同一份而非各抄一份、doctor 取捨(系統夠用不搶、專案 venv 優先)。</td>
+            三條路徑(Stop hook／selftest／doctor)都走同一份而非各抄一份、doctor 取捨(系統夠用不搶、專案 venv 優先);
+            <code>devflow_find_twin_python</code>(gate-twin 用):專案 <code>.venv</code> 且 <code>import markdown_it</code> 成功優先、
+            <code>DEVFLOW_PYTHON</code> 明示仍最優先、都沒有 markdown_it 才退回 3.12+ 並印提示、<code>devflow_find_py312</code> 不變嚴。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-selftest-isolation.sh</code></td>
         <td>selftest／doctor 不共用固定暫存檔、doctor 結果必入 exit code 的牙:hooks/ 無固定 <code>/tmp/&lt;名稱&gt;</code> 路徑(靜態 + 對抗樣本)、
             selftest 每個 doctor 呼叫的結果都由 <code>ck</code> 計入 FAIL、doctor 8+8 並行結果穩定且「rc=0 ⇔ COMPATIBLE」、
-            selftest 被 SIGTERM 中斷後私有暫存根被 EXIT trap 清乾淨。</td>
+            selftest 被 SIGTERM 中斷後私有暫存根被 EXIT trap 清乾淨;PATH 第一個 <code>bash</code> 是壞的(exit 126,x86 版 Bad CPU type)時
+            selftest 與 doctor 仍全過(用 <code>$BASH</code>／<code>devflow_find_bash</code> 選的可用 bash),且字面 <code>bash</code> 的變體必紅。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-adopter-ship.sh</code></td>
         <td>採用專案散發完整性牙:依 <code>ship-manifest.json</code> 把檔複製到臨時目錄(身邊沒有母版 <code>scripts/</code>),
             跑 <code>build-gate-twin.py</code> 不帶參數必須 exit 2 印用法、對 4-spec 模板實跑 exit 0;
             再模擬舊清單(沒列 <code>diagir.py</code>／<code>devflow_atomic.py</code>)重現 ImportError exit 1,
             並釘 doctor 的 <code>ship-deps</code> 必須報錯、整體 INCOMPATIBLE(逐列驗證本來看不到缺依賴)。
-            另釘選配 import 不誤報、相對 import 缺件、3.9 退路的標準庫判斷、母版自己全解析得到。案例數下限寫死。</td>
+            另釘選配 import 不誤報、相對 import 缺件、3.9 退路的標準庫判斷、母版自己全解析得到;
+            指紋 v2:採用樹工具檔內容過期(manifest／契約沒動)doctor 必報 ✗、CRLF 不誤判、舊 v1 專案相容並印 info。案例數下限寫死。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-stop-selftest-hook.sh</code></td>
         <td>Claude Code Stop hook <code>.claude/hooks/run-selftest.sh</code>(本 repo 自用)與 plugin 版
