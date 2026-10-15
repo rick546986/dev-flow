@@ -537,7 +537,7 @@ def run_doctor(root, contract_path="", gate_cmd=""):
                   f"(系統 leftover mdit {mdit} 不擋握手)")
         else:
             extra = (f",markdown-it-py {mdit}" if mdit
-                     else ",markdown-it-py 未裝(gate-twin 會自己 exit 2)")
+                     else ",markdown-it-py 未裝(gate-twin 會自己 exit 3)")
             check(True, "printer-python",
                   f"{exe} Python {ver[0]}.{ver[1]} ≥ "
                   f"{PRINTER_PY_FLOOR[0]}.{PRINTER_PY_FLOOR[1]}{extra}")
@@ -637,10 +637,29 @@ def run_doctor(root, contract_path="", gate_cmd=""):
                   f"wave review 產物互通不可保證(fail-closed;更新 "
                   f"runtime-capabilities.json schema_versions 或同步 runtime)")
 
+    # 6c2. memory_local / memory_durable(Agent Memory v3 的本機 DB / durable 檔 schema 版本)。
+    #      正式欄位:契約與 runtime-capabilities.json 都宣告,值與 memory/agentmem/__init__.py 的
+    #      LOCAL_SCHEMA_VERSION / DURABLE_SCHEMA_VERSION 同值(母版由 check-memory-architecture.sh
+    #      對帳)。採用專案端沒有 agentmem 原始碼可比,所以這裡比「契約 vs runtime 聲明」,與
+    #      wave_review 同形;不比對會讓 6d 每次都報「memory_* 未比對」的假警報。
+    for key in ("memory_local", "memory_durable"):
+        if key not in contract_schemas:
+            continue
+        want_mem = contract_schemas[key]
+        have_mem = (caps.get("schema_versions") or {}).get(key)
+        if str(have_mem) == str(want_mem):
+            check(True, f"schema:{key}", f"contract {want_mem} = runtime 聲明 {have_mem}")
+        else:
+            check(False, f"schema:{key}",
+                  f"contract {want_mem} / runtime 聲明 {have_mem!r} —— "
+                  f"記憶庫 schema 版本不一致(fail-closed;跑 dev-setup 遷移或更新 "
+                  f"runtime-capabilities.json schema_versions)")
+
     # 6d. 契約 schema_versions 出現本 doctor 不認識的 key → 明示未比對(不擋),
     #     防「修法只補已知 key」盲區:新 key 落地時至少看得見。
     known_keys = set(VENDORED_SCHEMAS) | {"exec_state", "gate_result",
-                                          "candidate", "gauntlet", "wave_review"}
+                                          "candidate", "gauntlet", "wave_review",
+                                          "memory_local", "memory_durable"}
     unknown_keys = sorted(set(contract_schemas) - known_keys)
     if unknown_keys:
         info("schema:unknown-keys",

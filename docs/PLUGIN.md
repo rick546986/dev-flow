@@ -22,6 +22,38 @@
 /plugin update dev-flow
 ```
 
+**順序不能顛倒:先 `marketplace update`、再 `update`。** 單打 `plugin update` 不會先刷新 marketplace 目錄;
+本機目錄還是舊的,就會回「already at the latest version」,即使 GitHub 上已發新版。
+
+實測(2026-10-15,Claude Code 2.1.296,拋棄式隔離環境 + 本機 git 假 marketplace,**shell 形式**):
+
+| 動作 | 結果 |
+| --- | --- |
+| 上游已升版,直接 `plugin update` | `already at the latest version (<舊版>)`,版本沒動 ← 這就是「更新前 3.25.0 卻回 already at the latest」可重現的成因 |
+| `marketplace update`(有名稱或不帶名稱都一樣) | 只刷新 marketplace 目錄;`plugin list` 的已裝版本**不變** |
+| 再 `plugin update` | `updated from <舊> to <新> … Restart to apply changes.`,磁碟上已換新版 |
+
+官方文件(`code.claude.com/docs/en/plugins/install`〈Update plugins now〉、`plugins/loading`〈Versions and updates〉)與實測一致:shell 的 `claude plugin marketplace update` 只刷新目錄、不升已裝 plugin;plugin 版本以 `plugin.json` 的 `version` 字串判斷(所以每次發版必須改版號,見 dev-release)。
+
+**未證實**(不要當結論引用):
+- session 內打 `/plugin marketplace update dev-flow` 會不會連已裝 plugin 一起升。官方說 `/plugin` 的 Marketplaces 分頁選「Update marketplace」會一併更新該市集已裝的 plugin;但該 slash 指令帶名稱時只寫「在那裡刷新」,兩者是否等同文件未載明,非互動環境也測不到。保險做法仍是兩步都打。
+- SpaceS 那次的實際成因。上表是可重現的一種;另一種可能是該 marketplace 開了 auto-update(官方:第三方 marketplace 預設關,可手動開),磁碟先升了、正在跑的 session 仍載入舊版。查證要看他當時的 `plugin list` 與 `~/.claude/plugins/installed_plugins.json`。
+
+怎麼確認目前版本(三處,以前兩處為準):
+1. shell:`command claude plugin list`,看 `dev-flow@dev-flow` 底下的 `Version:`(磁碟上已裝的版本)。
+2. 檔案:`~/.claude/plugins/installed_plugins.json` 裡 `dev-flow@dev-flow` 的 `version`,與 `~/.claude/plugins/cache/dev-flow/dev-flow/<version>/` 目錄名。
+3. 正在跑的 session 載入的版本可能比磁碟舊:`plugin update` 完要 `/reload-plugins` 或開新 session 才換(官方:「Restart to apply changes」)。
+
+要在 shell 裡打(不進 Claude session)時,照這樣打:
+
+```
+command claude plugin marketplace update dev-flow
+command claude plugin update dev-flow@dev-flow
+command claude plugin list
+```
+
+為什麼寫 `command claude`:部分使用者的 zsh 把 `claude` 定義成會跳互動選單的 function,直接打 `claude plugin ...` 會被它攔走;`command` 會跳過 function 直接跑執行檔。session 內的 `/plugin ...` 不經 shell,不受影響,不用加。
+
 裝完實際路徑是 `~/.claude/plugins/cache/dev-flow/dev-flow/<version>/`。
 不要把版本路徑寫死在腳本裡。用 `${DEVFLOW_ROOT}`（舊名 `${CLAUDE_PLUGIN_ROOT}` 當別名）,或從自己的位置推。
 Windows 同構,在 `%USERPROFILE%\.claude\plugins\cache\dev-flow\dev-flow\<version>\`。

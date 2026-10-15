@@ -39,7 +39,7 @@ HOOKS_JSON="$ROOT/hooks/hooks.json"
 [ -f "$HOOKS_JSON" ] || { echo "FATAL: 找不到 $HOOKS_JSON" >&2; exit 2; }
 command -v git >/dev/null 2>&1 || { echo "FATAL: 需要 git" >&2; exit 2; }
 
-MIN_CASES=35
+MIN_CASES=44
 PASS=0
 FAIL=0
 TOTAL=0
@@ -57,11 +57,11 @@ expect() {  # expect <label> <condition-rc>
   fi
 }
 
-mkrepo() {  # mkrepo <dir>:建一個 main 上有一個 commit 的假專案
+mkrepo() {  # mkrepo <dir> [分支名,預設 main]:建一個該分支上有一個 commit 的假專案
   rm -rf "$1" && mkdir -p "$1"
   (
     cd "$1" || exit 1
-    git init -q -b main . \
+    git init -q -b "${2:-main}" . \
       && git config user.email t@example.invalid && git config user.name t \
       && echo base > base.txt && git add base.txt && git commit -q -m base
   ) || { echo "FATAL: 建不了假 repo" >&2; exit 2; }
@@ -193,6 +193,53 @@ expect "plugin:本 repo(已掛 .claude Stop)→ exit 0 且不跑" "$([ "$(rc)" =
 mkrepo "$REPO"; rm -f "$MARK"; rm -rf "$WORK/data"
 run_plugin "$REPO" '{}' "$SPY; exit 1" DEVFLOW_PYTHON="$WORK/py-ok"
 expect "plugin:無變更 → exit 0 且不跑" "$([ "$(rc)" = 0 ] && [ ! -e "$MARK" ]; echo $?)"
+
+# P4b 基準分支探測(v3.26.1):主幹叫 master / origin/HEAD 指向非 main / 全無基準
+# master 主幹:乾淨 → 不跑(舊版只認 main,BASE 空、AHEAD=1 → 純問答也觸發)
+mkrepo "$REPO" master; rm -f "$MARK"; rm -rf "$WORK/data"
+run_plugin "$REPO" '{}' "$SPY; exit 1" DEVFLOW_PYTHON="$WORK/py-ok"
+expect "plugin:master 主幹、無變更 → exit 0 且不跑" "$([ "$(rc)" = 0 ] && [ ! -e "$MARK" ]; echo $?)"
+# master 主幹:有未提交變更 → 跑
+mkrepo "$REPO" master; echo dirty >> "$REPO/base.txt"; rm -f "$MARK"; rm -rf "$WORK/data"
+run_plugin "$REPO" '{}' "$FAILCMD" DEVFLOW_PYTHON="$WORK/py-ok"
+expect "plugin:master 主幹、有未提交變更 → 跑(失敗 exit 2)" "$([ "$(rc)" = 2 ]; echo $?)"
+# master 主幹:分支領先 master、工作樹乾淨 → 跑
+mkrepo "$REPO" master; rm -rf "$WORK/data"
+( cd "$REPO" && git checkout -q -b feat && echo x > f.txt && git add f.txt && git commit -q -m feat ) || exit 2
+run_plugin "$REPO" '{}' "$FAILCMD" DEVFLOW_PYTHON="$WORK/py-ok"
+expect "plugin:分支領先 master、工作樹乾淨 → 跑(失敗 exit 2)" "$([ "$(rc)" = 2 ]; echo $?)"
+# origin/master(無本地 master)也認得
+mkrepo "$REPO" master; rm -rf "$WORK/data"
+( cd "$REPO" && git update-ref refs/remotes/origin/master HEAD && git checkout -q -b feat \
+  && git branch -q -D master ) || exit 2
+rm -f "$MARK"; run_plugin "$REPO" '{}' "$SPY; exit 1" DEVFLOW_PYTHON="$WORK/py-ok"
+expect "plugin:只有 origin/master(無本地 master)、HEAD 同它、無變更 → 不跑" "$([ "$(rc)" = 0 ] && [ ! -e "$MARK" ]; echo $?)"
+# origin/HEAD 指向非 main(develop):HEAD 就在 origin/develop、本地另有落後的 main → 不跑
+# (若退回只看 main:main 落後 HEAD 1 個 commit → AHEAD=1 → 會誤跑)
+mkrepo "$REPO" main; rm -rf "$WORK/data"
+( cd "$REPO" && git checkout -q -b develop && echo d > d.txt && git add d.txt && git commit -q -m dev \
+  && git update-ref refs/remotes/origin/develop HEAD \
+  && git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/develop ) || exit 2
+rm -f "$MARK"; run_plugin "$REPO" '{}' "$SPY; exit 1" DEVFLOW_PYTHON="$WORK/py-ok"
+expect "plugin:origin/HEAD→origin/develop、HEAD 在它上面、無變更 → 不跑(優先於 main)" \
+  "$([ "$(rc)" = 0 ] && [ ! -e "$MARK" ]; echo $?)"
+# 同一個 repo,HEAD 再領先 origin/develop 一個 commit → 跑
+( cd "$REPO" && echo e > e.txt && git add e.txt && git commit -q -m ahead ) || exit 2
+run_plugin "$REPO" '{}' "$FAILCMD" DEVFLOW_PYTHON="$WORK/py-ok"
+expect "plugin:領先 origin/HEAD 所指分支 → 跑(失敗 exit 2)" "$([ "$(rc)" = 2 ]; echo $?)"
+# origin/HEAD 懸空(指向不存在的 ref)→ 不炸、退回名單(main)
+mkrepo "$REPO" main; rm -rf "$WORK/data"
+( cd "$REPO" && git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/gone ) || exit 2
+rm -f "$MARK"; run_plugin "$REPO" '{}' "$SPY; exit 1" DEVFLOW_PYTHON="$WORK/py-ok"
+expect "plugin:origin/HEAD 懸空 → 退回 main 名單、無變更 → 不跑" "$([ "$(rc)" = 0 ] && [ ! -e "$MARK" ]; echo $?)"
+# 全無基準(分支叫 trunk、無遠端):乾淨 → 不跑(AHEAD 視為 0);有未提交變更 → 跑
+mkrepo "$REPO" trunk; rm -rf "$WORK/data"
+( cd "$REPO" && echo y > y.txt && git add y.txt && git commit -q -m more ) || exit 2
+rm -f "$MARK"; run_plugin "$REPO" '{}' "$SPY; exit 1" DEVFLOW_PYTHON="$WORK/py-ok"
+expect "plugin:全無基準分支、無變更 → 不跑(不再保守視為有 commit)" "$([ "$(rc)" = 0 ] && [ ! -e "$MARK" ]; echo $?)"
+echo dirty >> "$REPO/base.txt"
+run_plugin "$REPO" '{}' "$FAILCMD" DEVFLOW_PYTHON="$WORK/py-ok"
+expect "plugin:全無基準分支、有未提交變更 → 跑(失敗 exit 2)" "$([ "$(rc)" = 2 ]; echo $?)"
 
 # P5 失敗 → exit 2、尾 40 行、叫 Claude 別改 plugin、失敗不記節流
 dirty_repo

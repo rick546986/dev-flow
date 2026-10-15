@@ -93,7 +93,7 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # 2026-09-28 research/jev-supermemory 合進 main:兩邊新增案例相加(459 + research 14 + main 10)→ 483。
 # 2026-10-15 採用現場缺件(build-gate-twin.py import 的 diagir.py 沒散發、doctor 仍 COMPATIBLE):
 # p3 doctor ship-deps 三案(依賴齊全 ✓／import 沒散發的檔 ✗／try-except 選配不誤報)+3 → 486。
-MIN_CASES=486
+MIN_CASES=491
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -2170,6 +2170,23 @@ printf '%s\n' '{"devflow_contract_version": "2.0.0",' \
   ' "schema_versions": {"agent_event": "1.1", "future_thing": "9.0"}}' > "$P3T/contract-unk.json"
 p3_doctor "$P3T/contract-unk.json" "$P3T/caps-ok.json"
 ck_msg "p3 doctor 未知 schema key → info 不擋" 0 "future_thing" "$P3_RC" "$P3_OUT"
+# v3.26.1:memory_local / memory_durable 是正式 schema 欄位(契約 + runtime 聲明 + agentmem 常數),
+# doctor 要比對而不是報「未比對」假警報;不一致仍 fail。
+printf '%s\n' '{"devflow_contract_version": "2.0.0",' \
+  ' "required_runtime_capabilities": ["attempt_ledger"],' \
+  ' "schema_versions": {"agent_event": "1.1", "memory_local": "2", "memory_durable": "1"}}' > "$P3T/contract-mem.json"
+printf '%s\n' '{"supported_contract_versions": ["2.0.0"], "runtime_version": "2.5.0", "capabilities": ["attempt_ledger"],' \
+  ' "schema_versions": {"agent_event": "1.1", "memory_local": "2", "memory_durable": "1"}}' > "$P3T/caps-mem.json"
+p3_doctor "$P3T/contract-mem.json" "$P3T/caps-mem.json"
+ck_msg "p3 doctor memory_local 契約=runtime → ✓" 0 "✓ schema:memory_local" "$P3_RC" "$P3_OUT"
+ck_msg "p3 doctor memory_durable 契約=runtime → ✓" 0 "✓ schema:memory_durable" "$P3_RC" "$P3_OUT"
+ck "p3 doctor memory_* 已認得 → 不再報 schema:unknown-keys 假警報" 0 "$([[ "$P3_OUT" != *unknown-keys* ]]; echo $?)"
+printf '%s\n' '{"supported_contract_versions": ["2.0.0"], "runtime_version": "2.5.0", "capabilities": ["attempt_ledger"],' \
+  ' "schema_versions": {"agent_event": "1.1", "memory_local": "1", "memory_durable": "1"}}' > "$P3T/caps-mem-bad.json"
+p3_doctor "$P3T/contract-mem.json" "$P3T/caps-mem-bad.json"
+ck_msg "p3 doctor memory_local 版本不符 → fail" 1 "✗ schema:memory_local" "$P3_RC" "$P3_OUT"
+p3_doctor "$P3T/contract-mem.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor memory_durable runtime 未聲明 → fail" 1 "✗ schema:memory_durable" "$P3_RC" "$P3_OUT"
 # W2 C1(2026-09-23,W0 P0-8 結論):ship-manifest 逐列 —— 契約帶 ship_manifest_version 才生效。
 # 版本值用正本演算法(scripts/devflow_ship_manifest.py --version)算,同時釘住 hooks/_doctor_impl.py
 # 那份複本與正本同算法(算法漂移 → 「三值不一致」→ 下面的正向案紅)。

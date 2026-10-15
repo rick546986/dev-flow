@@ -25,7 +25,7 @@ superseded_by: null
 
 解析層(什麼算 fence、什麼算標題)的判斷來源改用 markdown-it-py==4.0.0 的
 CommonMark token stream;等長遮蔽 + span 切原文的骨架不變。**渲染層維持零相依**
-(md_block 的極簡轉換不動)。相依 fail-loud:缺套件或版本不符 → 繁中訊息 + exit 2,
+(md_block 的極簡轉換不動)。相依 fail-loud:缺套件或版本不符 → 繁中訊息 + exit 3(v3.26.1 起;原為 exit 2,與用法錯誤共碼分不開),
 不吐 traceback、不靜默降級回正則(降級 = 兩邊 diverge 卻不吭聲)。
 
 反直覺點:散發工具通常避免相依 —— 但這個 repo 的 renderer 已釘死同一套件同一版本
@@ -45,6 +45,6 @@ CommonMark token stream;等長遮蔽 + span 切原文的骨架不變。**渲染�
 
 - 換到:fence/標題判斷這一整類 bug 的來源消失(P1/P2/P4/N1/N3 同類);
   對母版範例三站 byte-identical 完成替換,行為零漂移。
-- 付出:採用專案跑 twin 需 `pip install 'markdown-it-py==4.0.0'`(缺了 exit 2
+- 付出:採用專案跑 twin 需 `pip install 'markdown-it-py==4.0.0'`(缺了 exit 3
   並印安裝指令);版本釘死,升版要同時動 requirements、render 檢查與本工具。
 - 回滾成本高:回到正則等於重新接受那 28 條 finding 的失敗模式 —— 這正是「難逆轉」。

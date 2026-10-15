@@ -223,7 +223,7 @@
   只有核可架構不變量要動腦。不要把 <code>dev-setup</code> 當成裝方法包。</p>
   <ul class="chk" id="chk-zero">
     <li><input type="checkbox" id="z0"><span><strong>0.</strong> 剛裝好或剛改過方法包 → 依主機刷新(不是每台都打 <code>/reload-plugins</code>)。
-      Claude:<code>/plugin update</code>(必要時再 <code>/reload-plugins</code>)；
+      Claude:先 <code>/plugin marketplace update dev-flow</code> 再 <code>/plugin update dev-flow</code>(順序不能顛倒;單打 <code>update</code> 會回「already at the latest version」;必要時再 <code>/reload-plugins</code>;確認版本見 <code>docs/PLUGIN.md</code>)；
       Cursor:Dashboard → Plugins → Refresh <strong>已匯入的 rick546986/dev-flow 那一列</strong>；
       Codex:<code>codex plugin marketplace upgrade dev-flow</code> 再 <code>codex plugin add dev-flow@dev-flow</code>；
       Grok:跟 Cursor 帳那包走,不要發明 Grok marketplace</span></li>
@@ -238,8 +238,8 @@
   <div class="tablewrap"><table>
     <tr><th>主機</th><th>刷新</th></tr>
     <tr><td>Claude</td>
-        <td><span class="badge you">跟 AI 說</span> <code>/plugin update dev-flow</code>
-            (必要時再 <code>/reload-plugins</code>)</td></tr>
+        <td><span class="badge you">跟 AI 說</span> 先 <code>/plugin marketplace update dev-flow</code>,再 <code>/plugin update dev-flow</code>
+            (順序不能顛倒;必要時再 <code>/reload-plugins</code>)。在 shell 打要寫 <code>command claude plugin …</code>,見 <code>docs/PLUGIN.md</code></td></tr>
     <tr><td>Cursor</td>
         <td>Dashboard → Plugins → Refresh <strong>已匯入的 rick546986/dev-flow 那一列</strong>,
             不是 plugin 詳情卡</td></tr>
@@ -309,7 +309,7 @@
     <li><code>.claude/rules/arch-invariants.md</code> —— <strong>自動產草稿</strong>(不是空殼):收割使用者指名的
     external workflow artifacts 與 <code>CLAUDE.md</code> 的技術規則段 → 派執行層掃 codebase 抓候選（Claude 對照 sonnet）→ 每條標
     <code>【待確認】</code> 列給你逐條核可,見下一步</li>
-    <li><code>.gitignore</code> 加一行 <code>.devflow/</code>(執行守衛的狀態檔目錄)</li>
+    <li><code>.gitignore</code> 加 <code>.devflow/</code>(執行守衛的狀態檔目錄)與 <code>docs/dev/tools/**/__pycache__/</code>(散發的 Python 工具執行後的 <code>.pyc</code>,不擋會被誤 commit)</li>
     <li><code>docs/dev/devflow-contract.json</code> ← cp 母版正本(<strong>版本握手契約</strong>;
     <code>devflow-exec.sh doctor</code> 無明示指定時在此找契約,缺件必 fail-closed)</li>
     <li><code>docs/dev/tools/devflow-evidence-gauntlet.sh</code> ← cp 母版 <code>scripts/</code>

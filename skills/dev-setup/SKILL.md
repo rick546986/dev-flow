@@ -65,7 +65,8 @@ Codex 是 marketplace add／plugin add;Grok 沒有 marketplace)。
 (repo `rick546986/dev-flow`,`marketplace.json` 一個 entry:`./`)。
 安裝 = `/plugin marketplace add rick546986/dev-flow` 後
 `/plugin install dev-flow@dev-flow`(裝一次,dev-talk 隨附,不再是獨立 plugin);
-更新 = `/plugin marketplace update dev-flow` + `/plugin update dev-flow`。
+更新 = `/plugin marketplace update dev-flow` + `/plugin update dev-flow`(**順序固定:先刷新目錄再更新**;
+單打 `plugin update` 會回「already at the latest version」。怎麼確認版本、哪些未證實見 `docs/PLUGIN.md`)。
 Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的 `/plugin`）。
 **實際 plugin root = `~/.claude/plugins/cache/dev-flow/dev-flow/<version>/`**
 ——會隨版本改變,腳本與檢查一律用 `${DEVFLOW_ROOT}` 或由自身位置推導,禁寫死。
@@ -145,7 +146,7 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    以 ship-manifest 為準,別拿這句當清單)。stage:
    `2-decision | 4-spec | 7-review | 5-tasks`。
    `docs/dev/tools/build-gate-twin.py <專案根> <slug> <stage>`。
-   相依:`markdown-it-py==4.0.0`(缺或版本不符 → exit 2,不降級)。
+   相依:`markdown-it-py==4.0.0`(缺或版本不符 → **exit 3**,不降級;v3.26.1 前是 exit 2,與用法錯誤分不開。exit 2 現在只代表用法錯誤／檔案讀不到)。
    缺相依:`pip install 'markdown-it-py==4.0.0'`(不代裝)。
    驗證:①無參數 → 含「用法」且 exit 2;②
    `python3 -c "import markdown_it, sys; sys.exit(0 if markdown_it.__version__ == '4.0.0' else 3)"`
@@ -228,7 +229,8 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    - **預設單檔常駐**(無 `paths` frontmatter = 每 session 自動載入)。只有在
      rules 超過 ~100 行、或前後端等多技術棧同 repo 時,才建議拆多檔 + `paths:`
      frontmatter 做 path-scoped 按需載入(判準見模板頂註);一開始就分是過度工程。
-3. `.gitignore` 加 `.devflow/`。
+3. `.gitignore` 加 `.devflow/` 與 `docs/dev/tools/**/__pycache__/`(後者:散發的 Python 工具
+   一被執行就在 `docs/dev/tools/` 下留 `.pyc`,不擋會被誤 commit)。
 4. 文檔歸位(散檔 git mv 進 specs/dev/adr,引用 sed 歸零)照指南 `#docs`。
 5. 未識別的既有外部 workflow artifacts 與目錄**一律保留**:不移動、
    不覆蓋、不刪除。dev-setup 只安裝 dev-flow 的文檔面,不轉換也不接管外部 workflow。
@@ -300,6 +302,10 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
   安全網搬出來的客製檔備份,不是出貨物、也不是使用者要保留的資產;比照 install
   步 3 的 `.devflow/`,加進採用專案 `.gitignore`,避免這些搬移出來的本地客製
   內容被誤 commit 進版控。
+- **tools 的 `__pycache__` 要進 `.gitignore`**:採用專案 `.gitignore` 若沒有
+  `docs/dev/tools/**/__pycache__/`,補上這一行(install 步 3 的同一條)。已 commit 進去的
+  `.pyc` 不會因為加了 ignore 就消失:列出 `git ls-files docs/dev/tools | grep __pycache__`
+  給使用者,徵得同意再 `git rm --cached`;不要替使用者動 `.gitignore` 以外的版控內容。
 - **diff 摘要必須分兩類,不得只給一份「新舊不同」清單**(否則使用者按下「全部
   升級」時看不到自己的在地修改要被沖掉):
   ①**母版改寫**(上游更新):本地內容 = 上次 install/upgrade 留下的原樣,使用者

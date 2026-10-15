@@ -14,8 +14,10 @@
 #      "disableAllHooks": true 會連所有守衛一起關,這是比較不傷的選項。
 #   ② stop_hook_active 為 true(已因本 hook 續跑過一輪)→ exit 0,避免無限迴圈。
 #   ③ 專案自己的 .claude/settings(.local).json 已提到 run-selftest.sh → exit 0(不重複跑)。
-#   ④ 不是 git 工作樹,或工作樹相對 HEAD 無變更(含未追蹤檔)且本分支沒有 origin/main(無則
-#      main)以外的 commit → exit 0(純問答不浪費時間)。找不到基準分支 → 保守視為有 commit。
+#   ④ 不是 git 工作樹,或工作樹相對 HEAD 無變更(含未追蹤檔)且本分支沒有基準分支以外的
+#      commit → exit 0(純問答不浪費時間)。基準分支依序:origin/HEAD 所指(symbolic-ref)、
+#      origin/main、origin/master、main、master。全都沒有 → 不算領先(AHEAD=0),只看工作區
+#      有無未提交變更(v3.26.1 前是「保守視為有 commit」,主幹叫 master 的專案純問答也觸發)。
 #   ⑤ 節流:同一組「plugin 版本 + 直譯器」在 TTL 內已通過就不再跑。理由:這支自測驗的是
 #      dev-flow 守衛與本機環境,結果不隨產品程式碼變動;每個回合都花 30–75 秒重驗,沒有新資訊。
 #      TTL 預設 21600 秒(6 小時),DEVFLOW_STOP_SELFTEST_TTL=0 → 每次都跑。只記「通過」,
@@ -60,15 +62,25 @@ fi
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
 
 DIRTY=$(git status --porcelain 2>/dev/null)
-AHEAD=1
+# 基準分支:先看 origin/HEAD(遠端預設分支,不論叫 main/master/develop),再依序
+# origin/main、origin/master、main、master。全都沒有(新 repo、無遠端、主幹叫別的名字)→
+# BASE 空、AHEAD 視為 0:只看工作區有無未提交變更。理由:找不到基準時「保守視為有 commit」
+# 會讓每次純問答都跑 30–75 秒自測;沒基準就沒資格說「領先」,未提交變更才是這支 hook 能確定的訊號。
 BASE=""
-for ref in origin/main main; do
-  if git rev-parse --verify --quiet "refs/remotes/$ref" >/dev/null 2>&1 \
-     || git rev-parse --verify --quiet "refs/heads/$ref" >/dev/null 2>&1; then
-    BASE=$ref
-    break
-  fi
-done
+OH=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || true)
+if [ -n "$OH" ] && git rev-parse --verify --quiet "refs/remotes/$OH" >/dev/null 2>&1; then
+  BASE=$OH
+fi
+if [ -z "$BASE" ]; then
+  for ref in origin/main origin/master main master; do
+    if git rev-parse --verify --quiet "refs/remotes/$ref" >/dev/null 2>&1 \
+       || git rev-parse --verify --quiet "refs/heads/$ref" >/dev/null 2>&1; then
+      BASE=$ref
+      break
+    fi
+  done
+fi
+AHEAD=0
 if [ -n "$BASE" ]; then
   AHEAD=$(git rev-list --count "$BASE..HEAD" 2>/dev/null || echo 1)
 fi

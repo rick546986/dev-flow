@@ -31,8 +31,11 @@ gate(無 G 編號、免 reviewer 核准),但一樣不是「md 直轉攤平」,�
 `S_HEAD = ^#{2,6}\\s*S-\\S+` 對齊 —— 母版範例寫 `#### S-1`、採用專案有寫
 `### S-1.1 標題` 的,兩種都要吃得到,否則同一份 spec 會出現「G2 關卡過了但 twin 產不出來」。
 
-exit code:0 = 產出成功 / 1 = 解析不到內容或條數不符 / 2 = 用法錯誤、檔案讀不到、
-           相依 markdown-it-py 缺失或版本不符
+exit code:0 = 產出成功 / 1 = 解析不到內容或條數不符 / 2 = 用法錯誤、檔案讀不到 /
+           3 = 相依 markdown-it-py 缺失或版本不符(環境問題,不是用法問題)
+           (v3.26.1 前相依缺失也是 2,與用法錯誤共用一個碼,自動化分不出「叫錯了」
+           還是「環境沒裝」;全 repo 查無任何東西依賴「缺相依 = 2」,才拆出 3。
+           3 同時是 dev-setup check 步 11 ④ 相依探測既有的「版本不符」碼。)
 """
 import html
 import os
@@ -65,11 +68,11 @@ try:
     from markdown_it import MarkdownIt, __version__ as _MDIT_VERSION
 except ImportError:
     print(f"缺相依 markdown-it-py:{_MDIT_HINT}", file=sys.stderr)
-    sys.exit(2)
+    sys.exit(3)
 if _MDIT_VERSION != _MDIT_REQUIRED:
     print(f"缺相依 markdown-it-py(需要 {_MDIT_REQUIRED},目前是 {_MDIT_VERSION}):{_MDIT_HINT}",
           file=sys.stderr)
-    sys.exit(2)
+    sys.exit(3)
 
 sys.path.insert(0, str(_SCRIPT_DIR))
 import devflow_twin_ui as ui  # noqa: E402  # type: ignore[import-not-found]
