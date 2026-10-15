@@ -4,7 +4,9 @@
 每個 TestCase 對一組守衛;每個 test 名稱後半是 roadmap 驗收句的關鍵字。
 """
 import copy
+import io
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -2571,6 +2573,321 @@ class W11MREval(unittest.TestCase):
         r = policy.mr_eval(mr_fixture([q]))
         self.assertEqual(r["per_query"][0]["mr_mode"], "fallback")
         self.assertEqual(r["delta"], {"recall_at_5": 0.0, "mrr": 0.0})
+
+
+# ─────────────── v3.26.6:score 是 0..3 的小數期望值(真實 Jev 回 2.92、2.13…),不是整數 ───────────────
+def questions_from_real_response(raw):
+    """真實 Jev 回覆 → 對應的 questions(只還原 parse 要用的形狀:choice 的 criteria 鍵、score 的級數)。"""
+    out = {}
+    for qid, ans in raw["answers"].items():
+        if ans["type"] == "noul":
+            out[qid] = {"type": "noul", "text": qid}
+        elif ans["type"] == "choice":
+            out[qid] = {"type": "choice", "text": qid, "criteria": {k: k for k in ans["probabilities"]}}
+        else:
+            out[qid] = {"type": "score", "text": qid, "criteria": ["level-%d" % i for i in range(len(ans["legend"]))]}
+    return out
+
+
+LIVE_LEGEND = {str(i): {"what": "level %d" % i, "signals": ["s"]} for i in range(4)}
+LIVE_AMBIGUITY_PROBS = {2.92: {"0": 0.0, "1": 0.01, "2": 0.06, "3": 0.93},    # 期望值 Σ level·p 約等於 score
+                        2.93: {"0": 0.0, "1": 0.01, "2": 0.05, "3": 0.94},
+                        0.5: {"0": 0.5, "1": 0.5, "2": 0.0, "3": 0.0}}
+
+
+def j1_live_response(score, probs=None, noul=0.9, next_choice="START_DECIDE"):
+    """J1 的真實形狀回覆(含 type／legend／小數 score),題目用正式題組的 J1。"""
+    probs = probs or LIVE_AMBIGUITY_PROBS.get(score) or {"0": 0.25, "1": 0.25, "2": 0.25, "3": 0.25}
+    return {"model": MODEL_PINNED, "usage": {"input_tokens": 2626, "output_tokens": 219}, "answers": {
+        "goal_clear": {"type": "noul", "noul": noul}, "scope_clear": {"type": "noul", "noul": noul},
+        "acceptance_clear": {"type": "noul", "noul": noul}, "owner_call_pending": {"type": "noul", "noul": 0.1},
+        "ambiguity": {"type": "score", "score": score, "confidence": 0.8, "legend": LIVE_LEGEND, "probabilities": probs},
+        "next": {"type": "choice", "choice": next_choice, "confidence": 0.8,
+                 "probabilities": {"START_DECIDE": 0.9, "ASK_MORE": 0.05, "NEEDS_OWNER_DECISION": 0.05}
+                 if next_choice == "START_DECIDE" else {"START_DECIDE": 0.05, "ASK_MORE": 0.9, "NEEDS_OWNER_DECISION": 0.05}}}}
+
+
+def legacy_parse_response(raw, questions):
+    """v3.26.5 以前的行為(只供對照組):score 只收整數,小數(例如 2.92)→ schema error。其餘照現行 parse。"""
+    answers = raw.get("answers") if isinstance(raw, dict) else None
+    for qid, q in questions.items():
+        ans = answers.get(qid) if isinstance(answers, dict) else None
+        if q["type"] == "score" and isinstance(ans, dict):
+            score = ans.get("score")
+            if not isinstance(score, int) or isinstance(score, bool) or not 0 <= score < len(q["criteria"]):
+                raise transport.TransportError("schema", "%s.score %r 不是 0..%d 的整數"
+                                               % (qid, score, len(q["criteria"]) - 1))
+    return _CURRENT_PARSE_RESPONSE(raw, questions)
+
+
+_CURRENT_PARSE_RESPONSE = transport.parse_response
+
+
+class ScoreFloatSchema(unittest.TestCase):
+    """真實 Jev 服務對 score 題回 0..3 的小數;解析要收、不得取整。邊界與壞型別照擋。"""
+
+    def parse_score(self, score, n=4):
+        probs = {str(i): (1.0 if i == 0 else 0.0) for i in range(n)}
+        raw = {"model": MODEL_PINNED, "answers": {"q": {"score": score, "probabilities": probs, "confidence": 0.8}}}
+        return transport.parse_response(raw, {"q": {"type": "score", "text": "t", "criteria": ["c"] * n}})
+
+    def test_real_v2_responses_parse_with_float_score(self):
+        for name, expected in (("real-jev-v2-response.json", 2.13), ("real-jev-v2-response-shuffle.json", 2.12)):
+            raw = fixture(name)
+            parsed = transport.parse_response(raw, questions_from_real_response(raw))
+            ans = parsed["answers"]["parallel_guard_rework_risk"]
+            self.assertEqual(ans["score"], expected, name)
+            self.assertIsInstance(ans["score"], float, name)
+            self.assertEqual(set(ans["probabilities"]), {"0", "1", "2", "3"}, name)
+            self.assertEqual(parsed["answers"]["next_program"]["choice"], "promote_v4_then_w0", name)
+            self.assertIn("noul", parsed["answers"]["v4_should_replace_branch_roadmap"], name)
+            self.assertEqual((parsed["usage"]["usage_status"], parsed["usage"]["input_tokens"],
+                              parsed["usage"]["output_tokens"]), ("known", 2626, 219), name)
+
+    def test_j1_live_3265_failure_shape_now_parses_for_2_92_and_2_93(self):
+        live = fixture("real-j1-live-3265-result.json")           # 3.26.5 實打 J1 的輸出:被丟掉的就是這個
+        self.assertEqual((live["status"], live["noop_reason"]), ("noop", "transport:schema"))
+        self.assertEqual(live["noop_detail"], "ambiguity.score 2.92 不是 0..3 的整數")
+        self.assertEqual((live["gate"], live["level"], live["model_route_taken"]), ("J1", "live", "HUMAN"))
+        for score in (2.92, 2.93):
+            parsed = transport.parse_response(j1_live_response(score), J1_QUESTIONS)
+            self.assertEqual(parsed["answers"]["ambiguity"]["score"], score)
+            self.assertIsInstance(parsed["answers"]["ambiguity"]["score"], float)
+            self.assertNotIn("legend", parsed["answers"]["ambiguity"])      # 只留 score／probabilities／confidence
+
+    def test_score_boundaries_accepted(self):
+        for value in (0, 3, 0.0, 3.0, 1, 2, 2.13, 2.9999999, 1e-9, 0.5):
+            self.assertEqual(self.parse_score(value)["answers"]["q"]["score"], value, value)
+
+    def test_score_boundaries_and_bad_types_rejected(self):
+        bad = (3.0001, -0.0001, -1, 4, float("nan"), float("inf"), float("-inf"), "2", "2.92", True, False, None,
+               [2], {"v": 2}, 10 ** 30)
+        for value in bad:
+            with self.assertRaises(transport.TransportError, msg=repr(value)) as ctx:
+                self.parse_score(value)
+            self.assertEqual(ctx.exception.kind, "schema", repr(value))
+        with self.assertRaises(transport.TransportError):                        # 缺 score 鍵
+            transport.parse_response({"model": "m", "answers": {"q": {"probabilities": [1, 0, 0, 0], "confidence": 0.5}}},
+                                     {"q": {"type": "score", "text": "t", "criteria": ["c"] * 4}})
+
+    def test_score_upper_bound_follows_criteria_count(self):
+        self.assertEqual(self.parse_score(2.0, n=3)["answers"]["q"]["score"], 2.0)      # 3 級 → 上界 2
+        for value in (2.01, 3):
+            with self.assertRaises(transport.TransportError, msg=value):
+                self.parse_score(value, n=3)
+        self.assertEqual(self.parse_score(4.5, n=6)["answers"]["q"]["score"], 4.5)      # 6 級 → 上界 5
+
+    def test_score_value_is_not_rounded_and_type_is_kept(self):
+        self.assertIsInstance(self.parse_score(2)["answers"]["q"]["score"], int)
+        self.assertIsInstance(self.parse_score(2.0)["answers"]["q"]["score"], float)
+        self.assertEqual(self.parse_score(2.92)["answers"]["q"]["score"], 2.92)
+        self.assertEqual(self.parse_score(2.5)["answers"]["q"]["score"], 2.5)        # 不 round、不 floor、不 int()
+        zero = self.parse_score(-0.0)["answers"]["q"]["score"]
+        self.assertEqual(math.copysign(1.0, zero), 1.0)                              # -0.0 正規成 0.0
+
+    def test_score_probabilities_keys_must_be_levels_and_list_form_still_works(self):
+        questions = {"q": {"type": "score", "text": "t", "criteria": ["c"] * 4}}
+        ok = {"model": "m", "answers": {"q": {"score": 2.1, "probabilities": [0.0, 0.1, 0.8, 0.1], "confidence": 0.7}}}
+        self.assertEqual(transport.parse_response(ok, questions)["answers"]["q"]["probabilities"]["2"], 0.8)
+        for probs in ({"a": 0.25, "b": 0.25, "c": 0.25, "d": 0.25}, {"0": 0.5, "1": 0.5, "2": 0.0, "9": 0.0}):
+            bad = copy.deepcopy(ok)
+            bad["answers"]["q"]["probabilities"] = probs
+            with self.assertRaises(transport.TransportError, msg=probs):
+                transport.parse_response(bad, questions)
+
+    def test_canned_response_builds_a_valid_distribution_for_float_scores(self):
+        for score in (0, 2, 2.5, 2.92, 3.0, 0.1):
+            raw = transport.canned_response(J1_QUESTIONS, {"ambiguity": {"score": score}})
+            probs = raw["answers"]["ambiguity"]["probabilities"]
+            self.assertAlmostEqual(sum(probs.values()), 1.0, places=9, msg=score)
+            self.assertAlmostEqual(sum(int(k) * v for k, v in probs.items()), score, places=9, msg=score)
+            self.assertEqual(transport.parse_response(raw, J1_QUESTIONS)["answers"]["ambiguity"]["score"], score)
+        raw = transport.canned_response(J1_QUESTIONS, {"ambiguity": {"score": 2}})
+        self.assertEqual(raw["answers"]["ambiguity"]["probabilities"], {"0": 0.0, "1": 0.0, "2": 1.0, "3": 0.0})
+
+    def test_unhashable_choice_is_schema_error_not_a_crash(self):
+        raw = transport.canned_response(J5_QUESTIONS, perfect_j5_answers())
+        for bad in (["AUTO_SHIP"], {"a": 1}, 7, None):
+            raw["answers"]["g3_route"]["choice"] = bad
+            with self.assertRaises(transport.TransportError, msg=repr(bad)) as ctx:
+                transport.parse_response(raw, J5_QUESTIONS)
+            self.assertEqual(ctx.exception.kind, "schema")
+
+    def test_usage_counts_are_validated_not_passed_through(self):
+        def usage_of(usage):
+            raw = transport.canned_response(J5_QUESTIONS, perfect_j5_answers())
+            raw["usage"] = usage
+            return transport.parse_response(raw, J5_QUESTIONS)["usage"]
+        self.assertEqual(usage_of({"input_tokens": 10, "output_tokens": 5}),
+                         {"input_tokens": 10, "output_tokens": 5, "usage_status": "known"})
+        self.assertEqual(usage_of({"input_tokens": 10.0, "output_tokens": 5.0}),
+                         {"input_tokens": 10, "output_tokens": 5, "usage_status": "known"})      # 整數值的 float → int
+        self.assertEqual(usage_of({"input_tokens": 10, "output_tokens": "lots"})["output_tokens"], None)
+        self.assertEqual(usage_of({"input_tokens": 10, "output_tokens": -3})["output_tokens"], None)
+        self.assertEqual(usage_of({"input_tokens": 10})["output_tokens"], None)
+        for bad_in in (10.5, -1, "10", True, None, float("nan"), float("inf")):
+            self.assertEqual(usage_of({"input_tokens": bad_in, "output_tokens": 5})["usage_status"],
+                             "unknown_reserved", repr(bad_in))
+
+    def test_noul_confidence_and_probability_still_reject_non_finite_and_strings(self):
+        for value in (float("nan"), float("inf"), -0.01, 1.01, "0.5", True, None):
+            raw = transport.canned_response(J5_QUESTIONS, perfect_j5_answers())
+            raw["answers"]["evidence_complete"]["noul"] = value
+            with self.assertRaises(transport.TransportError, msg=repr(value)):
+                transport.parse_response(raw, J5_QUESTIONS)
+            raw = transport.canned_response(J5_QUESTIONS, perfect_j5_answers())
+            raw["answers"]["g3_route"]["confidence"] = value
+            with self.assertRaises(transport.TransportError, msg=repr(value)):
+                transport.parse_response(raw, J5_QUESTIONS)
+        raw = transport.canned_response(J5_QUESTIONS, perfect_j5_answers())
+        raw["answers"]["g3_route"]["probabilities"]["AUTO_SHIP"] = float("nan")
+        with self.assertRaises(transport.TransportError):
+            transport.parse_response(raw, J5_QUESTIONS)
+
+
+class ScoreFloatDownstream(unittest.TestCase):
+    """小數 score 進路由／記錄／報表:哪裡直接比、哪裡必須整數(round-half-up),都有規則、都有測。"""
+
+    def test_valid_score_and_score_level_rule_is_round_half_up(self):
+        for value in (0, 3, 0.0, 3.0, 2.13, 2.92, 1e-9):
+            self.assertTrue(transport.valid_score(value), value)
+        for value in (3.0001, -0.0001, float("nan"), float("inf"), "2", True, None, [1]):
+            self.assertFalse(transport.valid_score(value), repr(value))
+            self.assertIsNone(transport.score_level(value), repr(value))
+        table = {0: 0, 0.0: 0, 0.49: 0, 0.49999999999999994: 0, 0.5: 1, 1: 1, 1.49: 1, 1.5: 2, 2.13: 2, 2.49: 2,
+                 2.5: 3, 2.92: 3, 2.93: 3, 3: 3, 3.0: 3}
+        for value, level in table.items():
+            self.assertEqual(transport.score_level(value), level, value)
+            self.assertIsInstance(transport.score_level(value), int)
+
+    def route_j5(self, risk):
+        answers = perfect_j5_answers()
+        answers["risk"] = {"score": risk}
+        return policy.route_j5(answers)
+
+    def test_route_j5_compares_the_float_risk_directly_with_risk_max(self):
+        self.assertEqual(policy.THRESHOLDS["J5"]["risk_max"], 1)                  # 門檻值不動
+        for risk in (0, 0.0, 0.99, 1, 1.0):
+            self.assertEqual(self.route_j5(risk)["route_recommended"], "AUTO", risk)
+        for risk in (1.0000001, 1.01, 1.4, 1.5, 2, 2.13, 2.92, 3):
+            out = self.route_j5(risk)
+            self.assertEqual(out["route_recommended"], "HUMAN", risk)             # 1.4 不被四捨五入成 1 而放行
+            self.assertTrue(out["route_reason"].startswith("risk_above_ceiling("), risk)
+
+    def test_route_j5_invalid_risk_never_passes(self):
+        for risk in (None, float("nan"), float("inf"), "0", True, False, -1, 3.0001, [0]):
+            out = self.route_j5(risk)
+            self.assertEqual(out["route_recommended"], "HUMAN", repr(risk))
+            self.assertTrue(out["route_reason"].startswith("risk_above_ceiling("), repr(risk))
+
+    def route_j1(self, ambiguity):
+        answers = {"goal_clear": {"noul": 0.95}, "scope_clear": {"noul": 0.9}, "acceptance_clear": {"noul": 0.9},
+                   "owner_call_pending": {"noul": 0.1},
+                   "next": {"choice": "START_DECIDE", "probabilities": {"START_DECIDE": 0.95, "ASK_MORE": 0.03,
+                                                                      "NEEDS_OWNER_DECISION": 0.02}}}
+        if ambiguity != "absent":
+            answers["ambiguity"] = {"score": ambiguity}
+        return policy.route_j1(answers)
+
+    def test_route_j1_compares_the_float_ambiguity_directly_with_ambiguity_max(self):
+        self.assertEqual(policy.THRESHOLDS["J1"]["ambiguity_max"], 1)
+        for ambiguity in ("absent", None, 0, 0.3, 1, 1.0):
+            self.assertEqual(self.route_j1(ambiguity)["next"], "START_DECIDE", ambiguity)     # 缺值不擋(與過去相同)
+        for ambiguity in (1.0000001, 1.4, 2, 2.13, 2.92, 2.93, 3):
+            self.assertEqual(self.route_j1(ambiguity)["next"], "ASK_MORE", ambiguity)
+        for ambiguity in (float("nan"), float("inf"), "0", True, -1, 3.0001):
+            self.assertEqual(self.route_j1(ambiguity)["next"], "ASK_MORE", repr(ambiguity))   # 壞值 fail-closed
+
+    def test_real_shaped_j1_reply_parses_then_routes_ask_more(self):
+        for score in (2.92, 2.93):
+            parsed = transport.parse_response(j1_live_response(score), J1_QUESTIONS)
+            out = policy.route_j1(parsed["answers"])
+            self.assertEqual((out["next"], out["signals"]["ambiguity"]), ("ASK_MORE", score))
+        low = policy.route_j1(transport.parse_response(j1_live_response(0.5), J1_QUESTIONS)["answers"])
+        self.assertEqual(low["next"], "START_DECIDE")
+
+    def test_ledger_and_durable_keep_the_float_score_and_provenance_still_verifies(self):
+        for risk, expected in ((0.5, "AUTO"), (1.5, "HUMAN"), (2.92, "HUMAN")):
+            answers = perfect_j5_answers()
+            answers["risk"] = {"score": risk}
+            ev = make_evaluation(answers)
+            self.assertEqual(ev["answers_summary"]["risk"], {"score": risk})
+            self.assertEqual(ev["route_recommended"], expected, risk)
+            self.assertEqual(provenance.verify_evaluation(ev, "shadow"), [], risk)
+            again = json.loads(json.dumps(ev))                                     # replay store／durable 都走 JSON
+            self.assertEqual(again["answers_summary"]["risk"]["score"], risk)
+            self.assertEqual(provenance.verify_evaluation(again, "shadow"), [], risk)
+            record = ledger.build_durable_record(ev, "ok")
+            self.assertEqual(record["jev"]["answers_summary"]["risk"], {"score": risk})
+            self.assertTrue(ledger.assert_durable_safe(record))
+
+    def test_durable_rejects_non_numeric_non_finite_or_out_of_range_answer_values(self):
+        answers = perfect_j5_answers()
+        answers["risk"] = {"score": 1.5}
+        record = ledger.build_durable_record(make_evaluation(answers), "ok")
+        cases = (("risk", "score", float("nan")), ("risk", "score", "2"), ("risk", "score", True),
+                 ("risk", "score", 3.5), ("risk", "score", -0.5), ("evidence_complete", "noul", 1.5),
+                 ("evidence_complete", "noul", "0.9"), ("g3_route", "probability", float("nan")),
+                 ("g3_route", "choice", 3))
+        for qid, key, value in cases:
+            bad = copy.deepcopy(record)
+            bad["jev"]["answers_summary"][qid][key] = value
+            with self.assertRaises(JevError, msg=(qid, key, value)):
+                ledger.assert_durable_safe(bad)
+
+    def test_question_metrics_histogram_buckets_by_round_half_up_and_reports_the_mean(self):
+        def ev(score):
+            return {"status": "ok", "answers_summary": {"risk": {"score": score}}}
+        rows = report.question_metrics([ev(2.13), ev(2.92), ev(2.5), ev(0.49), ev(3), ev(2), ev(float("nan")), ev("2")])
+        row = rows["risk"]
+        self.assertEqual(row["n"], 8)
+        self.assertEqual(row["score_histogram"], {"2": 2, "3": 3, "0": 1})
+        self.assertEqual(row["score_mean"], round((2.13 + 2.92 + 2.5 + 0.49 + 3 + 2) / 6.0, 4))
+        self.assertEqual(row["score_invalid"], 2)
+        ints = report.question_metrics([ev(0), ev(1), ev(1), ev(3)])["risk"]
+        self.assertEqual(ints["score_histogram"], {"0": 1, "1": 2, "3": 1})      # 整數照舊落在自己那格
+        self.assertNotIn("score_invalid", ints)
+
+    def test_mr_expected_value_from_the_real_score_probabilities(self):
+        raw = fixture("real-jev-v2-response.json")
+        parsed = transport.parse_response(raw, questions_from_real_response(raw))
+        probs = parsed["answers"]["parallel_guard_rework_risk"]["probabilities"]
+        expected = round(sum(int(k) * v for k, v in probs.items()), 9)           # 與 devflow-jev.py _mr_expected 同式
+        self.assertAlmostEqual(expected, 2.12, places=6)
+        self.assertTrue(policy._mr_valid_score(expected))
+
+
+class ScoreFloatControlGroup(unittest.TestCase):
+    """對照組(只在測試內,正式碼沒有後門):把解析改回只收整數 → 新測試必須失敗,v3.26.5 的實連失敗原樣重現。"""
+
+    def test_legacy_integer_only_parser_rejects_the_live_shape_with_the_original_message(self):
+        with self.assertRaises(transport.TransportError) as ctx:
+            legacy_parse_response(j1_live_response(2.92), J1_QUESTIONS)
+        self.assertEqual((ctx.exception.kind, ctx.exception.detail), ("schema", "ambiguity.score 2.92 不是 0..3 的整數"))
+        self.assertEqual(legacy_parse_response(j1_live_response(2), J1_QUESTIONS)["answers"]["ambiguity"]["score"], 2)
+
+    def test_scorefloat_tests_fail_when_the_parser_is_switched_back_to_integer_only(self):
+        def fresh_suite():                  # 跑過的 suite 會釋放測試物件,不能重用
+            loader = unittest.TestLoader()
+            return unittest.TestSuite([loader.loadTestsFromTestCase(ScoreFloatSchema),
+                                       loader.loadTestsFromTestCase(ScoreFloatDownstream)])
+        saved = transport.parse_response
+        transport.parse_response = legacy_parse_response
+        try:
+            result = unittest.TextTestRunner(stream=io.StringIO(), verbosity=0).run(fresh_suite())
+        finally:
+            transport.parse_response = saved
+        failed = {t.id().rsplit(".", 1)[-1] for t, _ in result.failures + result.errors}
+        for name in ("test_real_v2_responses_parse_with_float_score",
+                     "test_j1_live_3265_failure_shape_now_parses_for_2_92_and_2_93",
+                     "test_score_boundaries_accepted", "test_score_value_is_not_rounded_and_type_is_kept",
+                     "test_real_shaped_j1_reply_parses_then_routes_ask_more",
+                     "test_mr_expected_value_from_the_real_score_probabilities"):
+            self.assertIn(name, failed)
+        self.assertGreaterEqual(len(failed), 6)
+        # 沒對照時同一批測試必須全過(證明上面的紅是來自「只收整數」,不是測試本身壞)
+        clean = unittest.TextTestRunner(stream=io.StringIO(), verbosity=0).run(fresh_suite())
+        self.assertTrue(clean.wasSuccessful(), clean.failures + clean.errors)
 
 
 if __name__ == "__main__":

@@ -20,6 +20,7 @@ import time
 from . import JevError, MODEL_PINNED
 from .manifest import canonical_json, sha256_hex
 from .packet import privacy_scan
+from .transport import valid_score
 
 _ULID_ENC = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 TITLE_PREFIX = "[jev]"
@@ -187,6 +188,21 @@ def _durable_answers(summary):
     return out
 
 
+def _answer_value_problem(val):
+    """answers_summary 單題的值型別檢查(鍵白名單之外再驗值):score 是 0..3 的有限數字(int 或小數期望值,
+    不收 bool／字串／NaN／inf／超出範圍);noul／probability 是 [0,1] 的有限數字;choice 是字串。回問題描述或 None。"""
+    for key in ("noul", "probability"):
+        if key in val:
+            v = val[key]
+            if not (isinstance(v, (int, float)) and not isinstance(v, bool) and 0 <= v <= 1):
+                return "%s 必須是 [0,1] 的有限數字(得到 %r)" % (key, v)
+    if "score" in val and not valid_score(val["score"]):
+        return "score 必須是 0..3 的有限數字(整數或小數期望值;得到 %r)" % (val["score"],)
+    if "choice" in val and not isinstance(val["choice"], str):
+        return "choice 必須是字串"
+    return None
+
+
 _QID_RE = __import__("re").compile(r"^[a-z_][a-z0-9_]{0,63}$")   # 與 manifest._is_ident 同一條規則
 
 
@@ -230,6 +246,8 @@ def assert_durable_safe(record):
             problems.append("jev.answers_summary 的 qid %r 不是題目識別字" % (qid,))
         if not isinstance(val, dict) or set(val) - ANSWER_ALLOWED_KEYS:
             problems.append("jev.answers_summary.%s 只准 %s" % (qid, sorted(ANSWER_ALLOWED_KEYS)))
+        elif _answer_value_problem(val):
+            problems.append("jev.answers_summary.%s %s" % (qid, _answer_value_problem(val)))
     if jev.get("usage") is not None and set(jev["usage"]) - USAGE_ALLOWED_KEYS:
         problems.append("jev.usage 只准 %s" % sorted(USAGE_ALLOWED_KEYS))
     if not record.get("event_id", "").startswith("evt_") or len(record["event_id"]) != 30:

@@ -1032,5 +1032,94 @@ class LiveSwitchesStayOff(unittest.TestCase):
             gate.parse_optin("mode: live\ngates:\n  G2R: live\n")
 
 
+# ─────────── v3.26.6:G2R 的 risk 是 0..3 的小數期望值;門檻直接比,不取整 ───────────
+def float_risk_answers(risk, p_auto=0.9):
+    """真實形狀的 G2R 回覆:risk.score 是小數,probabilities 是 0..3 的分布。"""
+    rest = 1.0 - p_auto
+    probs = {"0": 0.0, "1": 0.0, "2": 0.0, "3": 0.0}
+    lo = int(risk) if risk < 3 else 2
+    probs[str(lo)] = round(1.0 - (risk - lo), 6)
+    probs[str(lo + 1)] = round(risk - lo, 6)
+    return canned_response(policy.G2R_QUESTIONS, {
+        "g2_route": {"choice": "AUTO_PASS", "probabilities": {"AUTO_PASS": p_auto, "HUMAN_REVIEW": rest * 2 / 3,
+                                                              "REQUEST_CHANGES": rest / 3}},
+        "risk": {"score": risk, "probabilities": probs}})
+
+
+class G2RFloatRisk(unittest.TestCase):
+    def test_threshold_is_unchanged_and_compared_directly(self):
+        self.assertEqual(policy.G2R_THRESHOLDS["risk_human_min"], 2)
+        for risk in (0, 0.0, 0.5, 1, 1.5, 1.99, 1.9999999):
+            out = policy.route_g2(base_case(jev={"g2_route": {"choice": "AUTO_PASS", "probabilities": {"AUTO_PASS": 0.9}},
+                                                 "risk": {"score": risk}}))
+            self.assertEqual(out["route"], "AUTO", (risk, out["reasons"]))
+            self.assertEqual(out["signals"]["risk_score"], risk)
+        for risk in (2, 2.0, 2.13, 2.92, 2.93, 3, 3.0):
+            out = policy.route_g2(base_case(jev={"g2_route": {"choice": "AUTO_PASS", "probabilities": {"AUTO_PASS": 0.9}},
+                                                 "risk": {"score": risk}}))
+            self.assertEqual(out["route"], "HUMAN", risk)
+            self.assertIn("risk>=2(jev=%s)" % risk, out["reasons"])
+
+    def test_invalid_risk_scores_are_fail_closed(self):
+        for risk in (None, float("nan"), float("inf"), float("-inf"), True, False, "2", "1", 3.0001, -0.0001, [1]):
+            out = policy.route_g2(base_case(jev={"g2_route": {"choice": "AUTO_PASS", "probabilities": {"AUTO_PASS": 0.9}},
+                                                 "risk": {"score": risk}}))
+            self.assertEqual(out["route"], "HUMAN", repr(risk))
+            self.assertIn("jev_risk_missing", out["reasons"], repr(risk))
+
+    def test_snapshot_round_trips_ints_and_floats_with_the_same_type_and_case_hash(self):
+        for risk in (0, 1, 3, 0.5, 2.13, 2.92, 3.0, 0.0, 1e-05, 0.0001, 1.5e-07, 1.9999999999999998):
+            for p in (0.9, 1e-05, 0.85, 1.0):
+                jev_min = {"g2_route": {"choice": "AUTO_PASS", "probabilities": {"AUTO_PASS": p}}, "risk": {"score": risk}}
+                text = g2auto.jev_snapshot(jev_min)
+                back = g2auto.parse_jev_snapshot(text)
+                self.assertEqual(back, jev_min, text)
+                self.assertIs(type(back["risk"]["score"]), type(risk), text)
+                case = base_case(jev=jev_min)
+                self.assertEqual(policy.g2r_case_hash(base_case(jev=back)), policy.g2r_case_hash(case), text)
+        self.assertEqual(g2auto.jev_snapshot({"g2_route": {"choice": "AUTO_PASS", "probabilities": {"AUTO_PASS": 0.91}},
+                                              "risk": {"score": 2.13}}), "AUTO_PASS p=0.91 risk=2.13")
+        self.assertEqual(g2auto.parse_jev_snapshot("AUTO_PASS p=0.9 risk=1"),            # 舊快照(整數)照舊可讀
+                         {"g2_route": {"choice": "AUTO_PASS", "probabilities": {"AUTO_PASS": 0.9}}, "risk": {"score": 1}})
+
+    def test_snapshot_rejects_out_of_range_or_malformed_risk(self):
+        for risk in ("3.0001", "4", "-1", "nan", "inf", "03", "1e", "", "1.", ".5", "1,5", "2.5.1", "two"):
+            self.assertIs(g2auto.parse_jev_snapshot("AUTO_PASS p=0.9 risk=%s" % risk), False, risk)
+        self.assertEqual(g2auto.parse_jev_snapshot("AUTO_PASS p=0.9 risk=2.13 ")["risk"]["score"], 2.13)   # 前後空白照舊容忍
+
+    def test_g2r_run_with_a_real_shaped_float_risk_records_it_and_routes_by_the_threshold(self):
+        repo = Repo(risk_line="- Risk: normal")
+        try:
+            human = repo.g2r(script=[{"response": float_risk_answers(2.13)}])
+            self.assertEqual(human["route"], "HUMAN")
+            self.assertIn("risk>=2(jev=2.13)", human["reasons"])
+            self.assertEqual(human["jev_snapshot"], "AUTO_PASS p=0.9 risk=2.13")
+            self.assertEqual(human["case"]["jev"]["risk"]["score"], 2.13)
+            auto = repo.g2r(script=[{"response": float_risk_answers(1.5)}])
+            self.assertEqual(auto["route"], "AUTO", auto["reasons"])
+            self.assertEqual(auto["jev_snapshot"], "AUTO_PASS p=0.9 risk=1.5")
+            self.assertEqual(repo.release()["g2_mode"], "auto")
+            shutil.rmtree(os.path.join(repo.root, ".devflow"))                          # 只靠頂欄快照事後重判
+            self.assertEqual(g2auto.classify_gate_doc("4-spec", repo.fm()), ("auto", []))
+            self.assertEqual(g2auto.auto_release_problems(repo.root, SLUG, repo.fm(), environ=repo.env), [])
+        finally:
+            repo.cleanup()
+
+    def test_forged_float_risk_snapshot_over_the_threshold_is_red_in_the_static_recheck(self):
+        repo = Repo(risk_line="- Risk: normal")
+        try:
+            repo.g2r(script=[{"response": float_risk_answers(1.5)}])
+            repo.release()
+            shutil.rmtree(os.path.join(repo.root, ".devflow"))
+            text = repo.read().replace("risk=1.5", "risk=2.13", 1)
+            self.assertIn("risk=2.13", text)
+            repo.write("4-spec.md", text)
+            problems = g2auto.auto_release_problems(repo.root, SLUG, repo.fm(), environ=repo.env)
+            self.assertTrue(any("risk>=2(jev=2.13)" in x for x in problems), problems)
+            self.assertTrue(any("g2r_case 與現在的 spec 重算結果不同" in x for x in problems), problems)
+        finally:
+            repo.cleanup()
+
+
 if __name__ == "__main__":
     unittest.main()

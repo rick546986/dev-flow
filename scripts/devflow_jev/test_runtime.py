@@ -2024,5 +2024,119 @@ class NoulCriteriaEndToEnd(RuntimeBase):
         self.assertNotIn("noop_detail", self.durable_records()[0]["body"])
 
 
+class ScoreFloatEndToEnd(RuntimeBase):
+    """v3.26.6:真實 Jev 對 score 題回 0..3 的小數(2.92、2.93、2.13…)。J1 實連曾因此 transport:schema → no-op,
+    評估結果全被丟掉。這裡用真實形狀的回覆走 runtime(J1／J5／MR),確認解析、路由、記錄、replay 都對。
+    對照組:把解析改回只收整數 → 原樣重現 3.26.5 的實連失敗。"""
+
+    def j1_factory(self, score, **kw):
+        from devflow_jev.test_guards import j1_live_response
+        tr = FakeTransport([{"response": j1_live_response(score, **kw), "latency_s": 0.1}])
+        tr.clock = self.clock
+        return lambda: tr
+
+    def handoff(self, score, **kw):
+        path = os.path.join(self.tmp, "docs", "dev", "demo-feature")
+        os.makedirs(path, exist_ok=True)
+        disc = os.path.join(path, "1-discussion.md")
+        with open(disc, "w", encoding="utf-8") as fh:
+            fh.write(discussion_md("把結果變成看得到的差異。"))
+        return rt.run_handoff_j1(self.tmp, "demo-feature", "agent-A", "sess-A", discussion_path=disc,
+                                 environ=self.env_on, transport_factory=self.j1_factory(score, **kw), clock=self.clock)
+
+    def test_j1_live_shape_2_92_and_2_93_are_ok_not_noop(self):
+        self.optin()
+        for score in (2.92, 2.93):
+            out = self.handoff(score)
+            self.assertEqual(out["status"], "ok", (score, out.get("noop_reason"), out.get("noop_detail")))
+            self.assertIsNone(out["noop_reason"], score)
+            self.assertEqual((out["effect"], out["model_next"]), ("ask_more", "ASK_MORE"), score)
+            self.assertTrue(out["network"])
+            stored = ledger.ReplayStore(self.tmp).read(out["evaluation_id"])
+            self.assertEqual(stored["evaluation"]["answers_summary"]["ambiguity"], {"score": score})
+            self.assertEqual(stored["raw_response"]["answers"]["ambiguity"]["score"], score)      # raw 原樣
+            rep = rt.run_replay(self.tmp, out["evaluation_id"])
+            self.assertTrue(rep["consistent"], rep["problems"])
+            os.remove(os.path.join(self.tmp, ".devflow", "jev", "state", "j1-rounds.json"))       # 每個分數各自第一輪
+        summaries = [r["jev"]["answers_summary"]["ambiguity"] for r in self.durable_records()]
+        self.assertEqual(sorted(x["score"] for x in summaries), [2.92, 2.93])
+
+    def test_j1_live_shape_low_ambiguity_still_starts_decide(self):
+        self.optin()
+        out = self.handoff(0.5)
+        self.assertEqual((out["status"], out["effect"]), ("ok", "start_decide"))
+
+    def test_legacy_integer_only_parser_reproduces_the_3265_live_failure(self):
+        from devflow_jev.test_guards import fixture, legacy_parse_response
+        live = fixture("real-j1-live-3265-result.json")
+        self.optin()
+        saved = policy.parse_response
+        policy.parse_response = legacy_parse_response         # 對照組:舊的「score 只收整數」
+        try:
+            out = self.handoff(2.92)
+        finally:
+            policy.parse_response = saved
+        self.assertEqual((out["status"], out["noop_reason"], out["effect"]),
+                         (live["status"], live["noop_reason"], live["effect"]))
+        self.assertEqual(out["noop_detail"], live["noop_detail"])
+        self.assertEqual(out["noop_detail"], "ambiguity.score 2.92 不是 0..3 的整數")
+
+    def j5_raw(self, risk):
+        answers = perfect_j5()
+        lo = int(risk) if risk < 3 else 2
+        probs = {str(i): 0.0 for i in range(4)}
+        probs[str(lo)] = round(1.0 - (risk - lo), 6)
+        probs[str(lo + 1)] = round(risk - lo, 6)
+        answers["risk"] = {"score": risk, "probabilities": probs}
+        return canned_response(api_questions("J5"), answers)
+
+    def test_j5_float_risk_routes_by_direct_comparison_and_replay_verifies(self):
+        self.optin()
+        for risk, route, reason in ((0.5, "AUTO", "all_auto_conditions_met"),
+                                    (1.0, "AUTO", "all_auto_conditions_met"),
+                                    (1.5, "HUMAN", "risk_above_ceiling(1.5>1)"),
+                                    (2.92, "HUMAN", "risk_above_ceiling(2.92>1)")):
+            tr = FakeTransport([{"response": self.j5_raw(risk), "latency_s": 0.1}])
+            out = self.ask(tr, pkt=j5_packet(variant="v%s" % risk))
+            self.assertEqual((out["status"], out["route_recommended"], out["route_reason"]), ("ok", route, reason), risk)
+            self.assertEqual(out["route_taken"], "HUMAN", risk)                      # shadow:永遠 HUMAN
+            rep = rt.run_replay(self.tmp, out["evaluation_id"])
+            self.assertTrue(rep["consistent"], (risk, rep["problems"]))
+            self.assertEqual(rep["route_replayed"], route, risk)
+
+    def test_mr_scores_with_real_shape_float_score_are_recorded_not_dropped(self):
+        self.optin("mode: shadow\n")
+        env = {"query": "breaker 門檻幾次", "retrieval_status": "OK", "results": [
+            {"item_uid": "event:evt_%02d" % i, "item_type": "event", "title": "t%d" % i, "text": "x%d" % i,
+             "status": "high", "channels": {"lexical": i}} for i in range(1, 8)]}
+        _, questions, qmap = rt.build_mr_request(env["query"], policy.mr_pool(env["results"]))
+        dists = [{"0": 0.0, "1": 0.02, "2": 0.81, "3": 0.16}, {"0": 0.0, "1": 0.01, "2": 0.06, "3": 0.93},
+                 {"0": 0.6, "1": 0.3, "2": 0.1, "3": 0.0}]
+        answers = {}
+        for i, (qid, cid) in enumerate(sorted(qmap.items())):
+            probs = dists[i % 3]
+            expected = round(sum(int(k) * v for k, v in probs.items()), 2)
+            answers[qid] = {"score": expected, "probabilities": probs}
+        raw = canned_response(questions, answers)
+        self.assertTrue(any(isinstance(a["score"], float) and a["score"] != int(a["score"]) for a in answers.values()))
+        tr = FakeTransport([{"response": raw, "latency_s": 0.1}])
+        tr.clock = self.clock
+        out = rt.run_mr_rerank(self.tmp, env, environ=self.env_on, transport_factory=lambda: tr, clock=self.clock)
+        self.assertEqual((out["scorer"], out["jev_status"], out["shadow_mode"]), ("jev", "ok", "recorded_only"))
+        self.assertEqual(len(out["shadow_scores"]), 7)
+        self.assertEqual(max(out["shadow_scores"].values()), 2.92)      # Σ level·p(2.92)
+        saved = policy.parse_response
+        from devflow_jev.test_guards import legacy_parse_response
+        policy.parse_response = legacy_parse_response
+        try:
+            tr2 = FakeTransport([{"response": raw, "latency_s": 0.1}])
+            tr2.clock = self.clock
+            legacy = rt.run_mr_rerank(self.tmp, env, environ=self.env_on, transport_factory=lambda: tr2, clock=self.clock)
+        finally:
+            policy.parse_response = saved
+        self.assertTrue(legacy["fallback_reason"].startswith("jev:transport:schema"), legacy["fallback_reason"])
+        self.assertIsNone(legacy["shadow_scores"])
+
+
 if __name__ == "__main__":
     unittest.main()
