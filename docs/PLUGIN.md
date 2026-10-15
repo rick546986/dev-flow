@@ -37,6 +37,8 @@
 baseline 目錄不存在則不建立)。沒升 v2 的專案 doctor 照舊不擋,但會印 info 說明 v1 看不出工具檔內容過期、並顯示 plugin 現行指紋;
 升 v2 之後 doctor 會在受管檔內容過期時報 `✗ ship-manifest`。doctor 入口是 `<plugin 根>/hooks/devflow-exec.sh doctor`(在 `hooks/`,不是 `scripts/`)。
 
+**升到 3.26.4:** 同樣兩步(`marketplace update` → `plugin update`),重開 session。只改 `scripts/devflow-upgrade-manifest.py` 的 baseline 同步:「需同意:baseline 沒有此檔」而被跳過(沒加 `--include-custom`)的列,`--apply` 不再把上游新內容新增進 baseline(否則下一輪 dry-run 會把沒客製的檔誤判成「本地客製」),輸出會逐列標出原因。ship-manifest 列與指紋不變,採用專案不必重新散發;之前因此被誤判的專案,若 baseline 已被塞入新版,照 dry-run 看到的「本地客製」逐檔確認即可(該檔本地若是舊版就是被誤判,同意後加 `--include-custom` 覆蓋)。
+
 實測(2026-10-15,Claude Code 2.1.296,拋棄式隔離環境 + 本機 git 假 marketplace,**shell 形式**):
 
 | 動作 | 結果 |

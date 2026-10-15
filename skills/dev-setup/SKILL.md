@@ -294,7 +294,13 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
   **baseline 同步(v3.26.3 起)**:baseline(`docs/dev/.devflow-baseline/`)的語意是「上次 install/upgrade 散發下去的上游新內容」,
   下次 upgrade 拿它當「上游舊版」做三方比對。`--apply` 在所有列都寫入成功之後,把 manifest 列(`docs/dev/` 底下,含 `tools/`)的
   **上游新內容**同步進 baseline 對應路徑(新增／更新;已相同的略過;內容比對,權限依 manifest 列);有任何一列寫入失敗就不同步。
-  客製被跳過的列,baseline 仍取上游新內容(不取本地現況)。baseline 目錄不存在(尚未有快照的舊安裝)時**不建立、不同步**
+  「需同意:本地內容與 baseline 不同(本地客製)」被跳過的列,baseline 仍取上游新內容(不取本地現況)。
+  **唯一例外(v3.26.4 起)**:「需同意:baseline 沒有此檔,無法判斷是否本地客製」而這次被跳過(沒加 `--include-custom`)的列,
+  **baseline 也不新增該檔**。理由:這種列本地檔不動(仍是舊版),若 baseline 先收了上游新內容,就成了「專案檔舊版、baseline 新版」,
+  下一輪 dry-run 的理由會從「baseline 沒有此檔」變成「本地內容與 baseline 不同(本地客製)」,把沒客製的檔誤判成客製
+  (Prism 在 `docs/dev/ship-manifest.json` 碰到)。不新增則下一輪理由不變;`--include-custom` 寫入該列時才一併新增 baseline。
+  dry-run 與 `--apply` 的輸出會逐列標出「baseline 不新增／未同步」與原因。實際寫入的列、本來就和上游相同的列、母版改寫與新增的列、
+  無 baseline 目錄的舊安裝(尚未有快照),行為都不變;此例外只限本腳本的逐列同步,不改下面 install 步 8 的整棵乾淨替換。baseline 目錄不存在(尚未有快照的舊安裝)時**不建立、不同步**
   —— 避免只含一部分檔的 baseline 讓下面「無快照但 docs/dev/ 已存在」的處置規則失效。路徑同樣防跳脫(baseline 內的 symlink 拒絕)。
   不做 baseline 的乾淨替換(不刪上游已移除的舊檔)、也不碰 README／`_templates/` 的 baseline —— 那些仍照 install 步 8。
   它**不做**:README 剝除版與 `_templates/` 複製、出廠殘件清理(下面那條 devflow-upgrade-leftovers.sh)、README／`_templates/` 的 baseline 快照與 baseline 乾淨替換、`.gitignore`、

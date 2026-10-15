@@ -814,3 +814,8 @@
 - 為什麼:採用專案回報:Apple Silicon 上 selftest g1 三項與 w2 兩項以 126 失敗;gate-twin 取到沒有 markdown-it-py 的 3.12+ 而 exit 3;upgrade 腳本 apply 後 baseline 停在舊版、輸出的 doctor 入口路徑錯;3.26.1 改了 build-gate-twin.py 內容但 v1 指紋只算檔案清單、doctor 看不出專案工具過期
 - 落在哪:hooks/selftest.sh、hooks/devflow-doctor.sh、hooks/_doctor_impl.py、hooks/devflow-find-python.sh、scripts/devflow-upgrade-manifest.py、scripts/devflow_ship_manifest.py、scripts/check-ship-manifest.sh、scripts/test-selftest-isolation.sh、scripts/test-find-python.sh、scripts/test-upgrade-manifest.sh、scripts/test-adopter-ship.sh、scripts/check-dev-setup-discipline.sh、skills/dev-setup/SKILL.md、skills/dev-release/SKILL.md、docs/PLUGIN.md、guides/guide-dev-flow.html、devflow-contract.json 與 docs/dev 副本、docs/dev/ship-manifest.json(指紋 v1-8b3e8230958df1be→v2)、三份 plugin.json 與 hooks/runtime-capabilities.json(3.26.2→3.26.3)
 
+## 2026-10-15 · release-v3-26-4 · v3.26.4
+- 做了什麼:發布 v3.26.4:採用專案(Prism)回報修復——devflow-upgrade-manifest.py --apply 時,「需同意:baseline 沒有此檔,無法判斷是否本地客製」而被跳過(沒加 --include-custom)的列,baseline 同步不再把上游新內容新增進 docs/dev/.devflow-baseline/(只限這一種跳過列);「本地內容與 baseline 不同(本地客製)」被跳過的列 baseline 仍取上游新內容(SKILL 規定不變);實際寫入、本來就和上游相同、母版改寫/新增的列與無 baseline 目錄的過渡態行為不變。dry-run/--apply 輸出逐列標出「baseline 不新增／未同步」與原因。test-upgrade-manifest.sh 65→84(含舊寫法對照組:複製腳本移除新判斷後必須失敗)
+- 為什麼:修前:專案檔仍是舊版、baseline 卻被塞入新版,下一次 dry-run 理由從「baseline 沒有此檔」變成「本地內容與 baseline 不同(本地客製)」,把沒客製的檔誤判成客製(Prism 在 docs/dev/ship-manifest.json 碰到);修法由 owner 拍板(做法 A)
+- 落在哪:scripts/devflow-upgrade-manifest.py、scripts/test-upgrade-manifest.sh、scripts/check-dev-setup-discipline.sh(45→46)、scripts/test-architecture-guards.sh(釘 46)、skills/dev-setup/SKILL.md、docs/PLUGIN.md、guides/guide-dev-flow.html、三份 plugin.json 與 hooks/runtime-capabilities.json(3.26.3→3.26.4);ship-manifest 列與指紋 v2-e1c8bbe4750699db 不變
+
