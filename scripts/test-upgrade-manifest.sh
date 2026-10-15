@@ -37,7 +37,7 @@ import sys
 import tempfile
 
 root, tool = sys.argv[1], sys.argv[2]
-MIN_CASES = 65
+MIN_CASES = 84
 passed = failed = 0
 sys.dont_write_bytecode = True
 
@@ -55,8 +55,8 @@ ENV = {k: v for k, v in os.environ.items() if not k.startswith("DEVFLOW_") and k
 ENV["PYTHONDONTWRITEBYTECODE"] = "1"
 
 
-def run(*args):
-    r = subprocess.run([sys.executable, tool] + list(args), env=ENV, capture_output=True, text=True, timeout=120)
+def run(*args, tool_path=None):
+    r = subprocess.run([sys.executable, tool_path or tool] + list(args), env=ENV, capture_output=True, text=True, timeout=120)
     return r.returncode, r.stdout, r.stderr
 
 
@@ -379,6 +379,100 @@ try:
     rc, out, err = run("--root", a10n, "--pack", pack)
     check("hooks/devflow-exec.sh" in out and "scripts/devflow-exec.sh" not in out and os.path.isfile(os.path.join(root, "hooks", "devflow-exec.sh")),
           "輸出的 doctor 入口是 <方法包>/hooks/devflow-exec.sh(不是 scripts/,且該檔真的存在)")
+
+    # ── ⑪ 「baseline 沒有此檔」被跳過 → baseline 也不新增(v3.26.4)──────────────────
+    # 起因(Prism 在 docs/dev/ship-manifest.json 碰到):baseline 沒有此檔、本地 ≠ 上游、沒加 --include-custom →
+    # 該列被跳過(本地檔不動),但 baseline 同步仍把上游新內容「新增」進去 → 專案檔舊版、baseline 新版,
+    # 下一輪 dry-run 理由變成「本地內容與 baseline 不同(本地客製)」,把沒客製的檔誤判成客製。
+    # 本節以同一份情境 scenario_skip() 跑兩次:正式腳本必須全過;「舊寫法」(測試時複製腳本、移除新判斷的臨時對照組,
+    # 正式程式碼沒有任何開關)必須讓 baseline 被誤新增而失敗 —— 證明這組測試抓得到 bug。
+    print("-- ⑪ baseline 沒有此檔且被跳過 → baseline 不新增 --")
+    T_NOBASE = "docs/dev/tools/diagir.py"            # baseline 沒有此檔、本地 ≠ 上游(Prism 的情境)
+    T_CUSTOM = "docs/dev/tools/devflow_atomic.py"    # baseline 有舊版、本地客製(SKILL:baseline 仍取上游新內容)
+    T_SAME = "docs/dev/tools/publish-pages.sh"       # baseline 沒有此檔、本地 = 上游(本來就相同:baseline 照舊新增)
+
+    def scenario_skip(tag, tool_path, include_custom):
+        """回傳 dict:專案 + 各項觀察。baseline 目錄在、缺 T_NOBASE 與 T_SAME、T_CUSTOM 有舊版 baseline。"""
+        proj = os.path.join(work, "a11-" + tag); os.makedirs(proj)
+        run("--root", proj, "--pack", pack, "--apply", tool_path=tool_path)      # 本地 = 舊版
+        for r in docs_rows:
+            if r["destination"] in (T_NOBASE, T_SAME):
+                continue
+            b = bl(proj, r["destination"]); os.makedirs(os.path.dirname(b), exist_ok=True)
+            shutil.copyfile(os.path.join(proj, *r["destination"].split("/")), b)  # baseline = 舊版
+        pk = make_pack("pack11-" + tag)
+        for rel in ("diagir.py", "devflow_atomic.py"):
+            with open(os.path.join(pk, "scripts", rel), "ab") as f:
+                f.write(b"\n# upstream new for " + rel.encode() + b"\n")
+        cust_p = os.path.join(proj, *T_CUSTOM.split("/"))
+        with open(cust_p, "ab") as f:
+            f.write(b"\n# my edit\n")
+        local_nobase = open(os.path.join(proj, *T_NOBASE.split("/")), "rb").read()
+        local_custom = open(cust_p, "rb").read()
+        args = ["--root", proj, "--pack", pk]
+        if include_custom:
+            args.append("--include-custom")
+        rc_d, out_d, _ = run(*args, tool_path=tool_path)                          # dry-run(預告)
+        rc, out, err = run(*args, "--apply", tool_path=tool_path)
+        rc2, out2, _ = run("--root", proj, "--pack", pk, tool_path=tool_path)    # 第二次 dry-run(不帶 --include-custom)
+        row_of = lambda o, t: next((l for l in o.splitlines() if l.startswith("  變更  ") and t in l or l.startswith("  相同  ") and t in l), "")
+        return {"proj": proj, "pk": pk, "rc": rc, "out": out, "err": err, "dry": out_d, "out2": out2,
+                "local_nobase": local_nobase, "local_custom": local_custom, "row2": row_of(out2, T_NOBASE),
+                "custom2": row_of(out2, T_CUSTOM),
+                "up": lambda t: open(os.path.join(pk, "scripts", t), "rb").read()}
+
+    def nobase_file(proj, t):
+        return bl(proj, t)
+
+    # (1)(2) 不加 --include-custom
+    r1 = scenario_skip("real", None, False)
+    pj = r1["proj"]
+    check(r1["rc"] == 0 and ("跳過  " + T_NOBASE) in r1["out"], "(1) 不加 --include-custom --apply:該列被跳過、exit 0", "rc=%s %s" % (r1["rc"], r1["out"][-300:]))
+    check(not os.path.exists(nobase_file(pj, T_NOBASE)), "(1) baseline 沒有此檔且被跳過 → baseline 仍沒有此檔(不新增)")
+    check(open(os.path.join(pj, *T_NOBASE.split("/")), "rb").read() == r1["local_nobase"], "(1) 本地檔未改")
+    check("需同意" in r1["row2"] and "baseline 沒有此檔" in r1["row2"] and "本地內容與 baseline 不同" not in r1["row2"],
+          "(1) 第二次 dry-run 理由仍是「baseline 沒有此檔」(沒被誤判成本地客製)", r1["row2"])
+    check("baseline 不新增  " + T_NOBASE in r1["dry"] and "不新增 1" in r1["dry"],
+          "(1) dry-run 預告:baseline 不新增這列(逐列標出)", r1["dry"][-400:])
+    check(("baseline 未同步  " + T_NOBASE) in r1["out"] and "baseline 沒有此檔且這列被跳過" in r1["out"] and "--include-custom" in r1["out"].split("baseline 未同步")[-1],
+          "(1) --apply 輸出看得出這列 baseline 沒同步、以及原因與解法", r1["out"][-500:])
+    check("不新增 1" in r1["out"], "(1) --apply 的 baseline 同步完成行帶出「不新增 1」")
+    check(open(bl(pj, T_CUSTOM), "rb").read() == r1["up"]("devflow_atomic.py"),
+          "(2) 本地客製(baseline 有舊版)被跳過 → baseline 仍更新成上游新內容(守住 SKILL 規定)")
+    check(open(os.path.join(pj, *T_CUSTOM.split("/")), "rb").read() == r1["local_custom"], "(2) 本地客製的檔未被動")
+    check("baseline 未同步  " + T_CUSTOM not in r1["out"] and "baseline 不新增  " + T_CUSTOM not in r1["dry"],
+          "(2) 本地客製列不被標成「baseline 不新增」(例外只限 baseline 沒有此檔)")
+    check("本地內容與 baseline 不同" in r1["custom2"], "(2) 第二次 dry-run:客製列理由仍是本地客製", r1["custom2"])
+    check(open(bl(pj, T_SAME), "rb").read() == open(os.path.join(pack, "scripts", "publish-pages.sh"), "rb").read(),
+          "本來就和上游相同、baseline 沒有此檔 → baseline 照舊新增(行為不變)")
+    # (3) 加 --include-custom:該列寫入、baseline 新增
+    r3 = scenario_skip("incl", None, True)
+    pj3 = r3["proj"]
+    check(r3["rc"] == 0 and ("寫入  " + T_NOBASE) in r3["out"] and "baseline 未同步" not in r3["out"] and "不新增 0" in r3["dry"],
+          "(3) 加 --include-custom:該列寫入、不出現「baseline 未同步」、dry-run 預告不新增 0", r3["out"][-300:])
+    check(open(os.path.join(pj3, *T_NOBASE.split("/")), "rb").read() == r3["up"]("diagir.py")
+          and open(nobase_file(pj3, T_NOBASE), "rb").read() == r3["up"]("diagir.py"),
+          "(3) 本地檔 = 上游新內容、baseline 新增且 = 上游新內容")
+    check(open(bl(pj3, T_CUSTOM), "rb").read() == r3["up"]("devflow_atomic.py")
+          and open(os.path.join(pj3, *T_CUSTOM.split("/")), "rb").read() == r3["up"]("devflow_atomic.py"),
+          "(3) 本地客製列也覆蓋、baseline = 上游新內容")
+    # 母版改寫/新增列的 baseline 行為不變:已由 ⑩(母版改寫+新增)覆蓋
+
+    # (4) 對照組:臨時複製腳本、用 replace 移除新判斷(舊寫法);正式程式碼沒有任何後門開關
+    old_tool_dir = os.path.join(work, "old-tool"); os.makedirs(old_tool_dir)
+    src_txt = open(tool, encoding="utf-8").read()
+    new_expr = '"不新增" if (note == NOTE_NO_BASELINE_FILE and is_skipped(state, note, include_custom)) else "新增"'
+    check(src_txt.count(new_expr) == 1, "(4) 對照組前置:正式腳本裡恰有一處新判斷可被移除(patch 不會悄悄落空)", str(src_txt.count(new_expr)))
+    open(os.path.join(old_tool_dir, "devflow-upgrade-manifest.py"), "w", encoding="utf-8").write(src_txt.replace(new_expr, '"新增"'))
+    shutil.copyfile(os.path.join(os.path.dirname(tool), "devflow_ship_manifest.py"), os.path.join(old_tool_dir, "devflow_ship_manifest.py"))
+    old_tool = os.path.join(old_tool_dir, "devflow-upgrade-manifest.py")
+    ro = scenario_skip("old", old_tool, False)
+    bug_reproduced = os.path.exists(nobase_file(ro["proj"], T_NOBASE))
+    check(bug_reproduced, "(4) 對照組(舊寫法)重現 bug:baseline 被誤新增上游新內容 —— 同一測試 (1) 會失敗")
+    check("本地內容與 baseline 不同" in ro["row2"] and "baseline 沒有此檔" not in ro["row2"],
+          "(4) 對照組:第二次 dry-run 理由被誤判成「本地客製」(Prism 現場症狀)", ro["row2"])
+    check(open(os.path.join(ro["proj"], *T_NOBASE.split("/")), "rb").read() == ro["local_nobase"] and "baseline 不新增" not in ro["dry"],
+          "(4) 對照組:本地檔未改、且沒有「baseline 不新增」提示(舊行為)")
 
     # ── ⑧ 只標準庫(靜態)─────────────────────────────────────────────
     print("-- ⑧ 靜態 --")

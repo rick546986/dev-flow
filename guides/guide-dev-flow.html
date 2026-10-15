@@ -4127,14 +4127,14 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             路徑防跳脫(<code>..</code>／絕對路徑／<code>.git</code>／symlink 一律拒絕且整批不寫);manifest 自己那列最後寫。
             <code>--apply</code> 全部列成功後,把 manifest 列(<code>docs/dev/</code> 底下)的上游新內容同步進
             <code>docs/dev/.devflow-baseline/</code> 對應路徑(baseline 目錄不存在則不建立;baseline 語意 = 上次散發的上游新內容,
-            下次 upgrade 的三方比對用它當「上游舊版」)。輸出的 doctor 入口是 <code>&lt;方法包&gt;/hooks/devflow-exec.sh doctor</code>。
+            下次 upgrade 的三方比對用它當「上游舊版」;<strong>例外(v3.26.4)</strong>:「需同意:baseline 沒有此檔」而被跳過的列,baseline 也不新增該檔,否則下一輪會把沒客製的檔誤判成本地客製,輸出逐列標出「baseline 不新增／未同步」與原因;客製被跳過的列 baseline 仍取上游新內容)。輸出的 doctor 入口是 <code>&lt;方法包&gt;/hooks/devflow-exec.sh doctor</code>。
             不做 README／<code>_templates</code>／殘件刪除／baseline 乾淨替換與 README／<code>_templates</code> 的 baseline(仍照 SKILL)。</td>
         <td>dev-setup upgrade 呼叫;<code>test-upgrade-manifest.sh</code> 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-upgrade-manifest.sh</code></td>
         <td>上一支的牙:dry-run 不寫、<code>--apply</code> 內容與 mode 逐列正確且冪等、本地客製預設跳過、manifest 以外的檔
             (README／STATUS／自己的工具／baseline)連 mtime 都不變、路徑越界與 symlink 全拒絕、寫入失敗時 manifest 列不寫、
             只用標準庫、套完後 doctor 的 <code>ship-manifest</code>／<code>ship-deps</code> 皆 ✓。baseline 同步:有 baseline 時 apply 後換成上游新內容
-            (客製被跳過仍取上游新內容、README 不碰、mode 依 manifest、失敗時不同步、baseline 內 symlink 拒絕、不存在不建立、下一輪不再誤判需同意)。案例數下限寫死。</td>
+            (客製被跳過仍取上游新內容、baseline 沒有此檔而被跳過則 baseline 不新增〔含舊寫法對照組必須失敗〕、README 不碰、mode 依 manifest、失敗時不同步、baseline 內 symlink 拒絕、不存在不建立、下一輪不再誤判需同意)。案例數下限寫死。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-find-python.sh</code></td>
         <td><code>hooks/devflow-find-python.sh</code> 的牙:壞的(exit 126)候選排前面會被跳過、<code>--version</code> 跑不起來的也跳過、

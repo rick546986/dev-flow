@@ -18,6 +18,13 @@
 #   留下過期基準,下次 upgrade 把使用者根本沒改的檔誤判成「需同意」。只在 baseline 目錄已存在時才同步:
 #   不存在 = 過渡態(SKILL:全部視為本地客製),腳本不替人建立只含一部分檔的 baseline。
 #   不做乾淨替換(不刪 baseline 裡上游已移除的舊檔)、不碰 README／_templates 的 baseline —— 那些仍照 SKILL 步 8。
+#   **例外(v3.26.4):「需同意:baseline 沒有此檔」而這次被跳過的列,baseline 也不新增該檔。** 理由:這種列本地內容 ≠ 上游,
+#   又因 baseline 沒有此檔而無從判斷是否本地客製;沒加 --include-custom 時本地檔不動,若 baseline 卻先收了上游新內容,
+#   就變成「專案檔仍是舊版、baseline 是新版」,下一輪 dry-run 的理由會從「baseline 沒有此檔」變成
+#   「本地內容與 baseline 不同(本地客製)」,把沒客製的檔誤判成客製(Prism 在 docs/dev/ship-manifest.json 碰到)。
+#   不新增就保持原狀,下一輪理由仍是「baseline 沒有此檔」,等使用者同意(--include-custom 寫入後該列的 baseline 才一併新增)。
+#   只有這一種跳過列有此例外:「需同意:本地內容與 baseline 不同(本地客製)」被跳過的列,baseline 仍取上游新內容
+#   (SKILL 現行規定,行為不變);實際寫入的列、本來就和上游相同的列、無 baseline 目錄的過渡態也都不變。
 #
 # 每列的狀態:
 #   新增  採用專案沒有這個檔
@@ -28,7 +35,8 @@
 #                    (dev-setup 規定逐檔徵得使用者同意後才覆蓋)
 #   相同  內容與權限都一樣
 # baseline 路徑 = docs/dev/.devflow-baseline/<destination 去掉開頭的 docs/dev/>。
-# baseline 同步另有三種狀態(只在 baseline 目錄存在時):新增(baseline 沒有此檔)/ 更新(內容不同)/ 相同。
+# baseline 同步另有四種狀態(只在 baseline 目錄存在時):新增(baseline 沒有此檔)/ 更新(內容不同)/ 相同 /
+# 不新增(上面 v3.26.4 例外:baseline 沒有此檔、該列這次被跳過 —— 輸出會逐列標出並說明原因)。
 #
 # 安全:
 #   · 先驗全部列再動手:manifest 結構(缺欄/重複 destination/非 644|755/絕對路徑/..)沿用
@@ -70,6 +78,9 @@ sys.dont_write_bytecode = True
 BASELINE_REL = os.path.join("docs", "dev", ".devflow-baseline")
 MANIFEST_DEST = "docs/dev/ship-manifest.json"
 DIFF_MAX_LINES = 60
+NOTE_NO_BASELINE_FILE = "需同意:baseline 沒有此檔,無法判斷是否本地客製"
+BASELINE_SKIP_REASON = ("baseline 沒有此檔且這列被跳過、本地檔不動 —— baseline 也不新增,"
+                        "否則下一輪會把沒客製的檔誤判成本地客製;徵得同意加 --include-custom 寫入後才一併新增")
 
 
 class Boundary(Exception):
@@ -131,21 +142,27 @@ def local_mode_differs(path, want):
     return stat.S_IMODE(os.stat(path).st_mode) != int(want, 8)
 
 
-def baseline_sync_plan(root, plan):
-    """baseline 目錄存在才有計畫:回傳 [(row, src, bdest, 狀態)],狀態 ∈ 新增/更新/相同(只比內容);
+def is_skipped(state, note, include_custom):
+    """這一列在這次 --apply 會被跳過(需同意、且沒加 --include-custom)。"""
+    return state == "變更" and note.startswith("需同意") and not include_custom
+
+
+def baseline_sync_plan(root, plan, include_custom):
+    """baseline 目錄存在才有計畫:回傳 [(row, src, bdest, 狀態)],狀態 ∈ 新增/更新/相同(只比內容)/不新增;
+    不新增 = baseline 沒有此檔、且該列這次被跳過(v3.26.4:不讓 baseline 先於專案檔變成上游新內容)。
     baseline 目錄不存在回傳 None(過渡態,不建立)。路徑越界 raise Boundary。"""
     bdir = os.path.join(root, BASELINE_REL)
     if not os.path.isdir(bdir) or os.path.islink(bdir):
         return None
     out = []
-    for row, src, _dest, _state, _note in plan:
+    for row, src, _dest, state, note in plan:
         bp = baseline_path(root, row["destination"])
         if bp is None:
             continue
         brel = os.path.relpath(bp, root).replace(os.sep, "/")
         bdest = check_destination(root, brel)
         if not os.path.lexists(bdest):
-            st = "新增"
+            st = "不新增" if (note == NOTE_NO_BASELINE_FILE and is_skipped(state, note, include_custom)) else "新增"
         elif _read(bdest) == _read(src):  # baseline 只比內容(它是三方比對的內容基準;權限差異不值得重寫)
             st = "相同"
         else:
@@ -168,7 +185,7 @@ def classify(root, row, src, dest):
     if not os.path.isdir(bdir):
         return "變更", "需同意:無 baseline(過渡態,視為可能的本地客製)"
     if bpath is None or not os.path.isfile(bpath):
-        return "變更", "需同意:baseline 沒有此檔,無法判斷是否本地客製"
+        return "變更", NOTE_NO_BASELINE_FILE
     if _read(bpath) == _read(dest):
         return "變更", "母版改寫"
     return "變更", "需同意:本地內容與 baseline 不同(本地客製)"
@@ -238,7 +255,7 @@ def main(argv):
             dest = check_destination(root, row["destination"])
             state, note = classify(root, row, src, dest)
             plan.append((row, src, dest, state, note))
-        bplan = baseline_sync_plan(root, plan)
+        bplan = baseline_sync_plan(root, plan, args.include_custom)
     except Boundary as exc:
         print("拒絕:邊界違規,一個檔都沒寫:%s" % exc, file=sys.stderr)
         return 2
@@ -271,11 +288,14 @@ def main(argv):
         print("baseline:docs/dev/.devflow-baseline/ 不存在(過渡態或尚未建立)—— 不建立、不同步;"
               "照 dev-setup SKILL 的過渡態規則處理(受管檔視為本地客製,逐檔徵同意,完成後才建快照)。")
     else:
-        bc = {"新增": 0, "更新": 0, "相同": 0}
+        bc = {"新增": 0, "更新": 0, "相同": 0, "不新增": 0}
         for _r, _s, _b, st in bplan:
             bc[st] += 1
         print("baseline 同步(docs/dev/.devflow-baseline/,--apply 且全部列寫入成功後才做;內容 = 方法包上游新內容):"
-              "新增 %d、更新 %d、相同 %d" % (bc["新增"], bc["更新"], bc["相同"]))
+              "新增 %d、更新 %d、相同 %d、不新增 %d" % (bc["新增"], bc["更新"], bc["相同"], bc["不新增"]))
+        for row, _s, _b, st in bplan:
+            if st == "不新增":
+                print("  baseline 不新增  %s(%s)" % (row["destination"], BASELINE_SKIP_REASON))
 
     rc = 0
     if not args.apply:
@@ -289,7 +309,7 @@ def main(argv):
         for row, src, dest, state, note in ordered:
             if state == "相同":
                 continue
-            if state == "變更" and note.startswith("需同意") and not args.include_custom:
+            if is_skipped(state, note, args.include_custom):
                 skipped += 1
                 print("  跳過  %s(%s;徵得同意後加 --include-custom)" % (row["destination"], note))
                 continue
@@ -313,7 +333,7 @@ def main(argv):
         elif bplan:
             bw = bf = 0
             for row, src, _bdest, st in bplan:
-                if st == "相同":
+                if st in ("相同", "不新增"):
                     continue
                 try:
                     bdest = check_destination(root, os.path.relpath(
@@ -323,7 +343,10 @@ def main(argv):
                 except (Boundary, OSError) as exc:
                     bf += 1
                     print("  baseline 失敗  %s:%s" % (row["destination"], exc), file=sys.stderr)
-            print("baseline 同步完成:寫入 %d、失敗 %d(已相同的略過)" % (bw, bf))
+            nb = [row["destination"] for row, _s, _b, st in bplan if st == "不新增"]
+            print("baseline 同步完成:寫入 %d、失敗 %d(已相同的略過)%s" % (bw, bf, ("、不新增 %d" % len(nb)) if nb else ""))
+            for d in nb:
+                print("  baseline 未同步  %s(%s)" % (d, BASELINE_SKIP_REASON))
             if bf:
                 rc = 1
     print("不在這支範圍(仍照 dev-setup SKILL 的 upgrade 段做):README／_templates 複製、"
