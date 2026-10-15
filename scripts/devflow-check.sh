@@ -270,6 +270,12 @@ group_architecture() {
   # 採用專案散發完整性:依 manifest 複製到臨時目錄跑 build-gate-twin.py(不帶參數須 exit 2 印用法),
   # 並釘 doctor ship-deps 在「已散發工具的依賴沒散發」時報錯(2026-10-15 採用現場缺 diagir.py)。
   run "architecture/test-adopter-ship" scripts/test-adopter-ship.sh || return 1
+  # v3.26.2 採用專案回報修復:①共用「找跑得起來的 Python 3.12+」(Stop hook／手動 selftest／手動 doctor 同一份,
+  # x86 版 Bad CPU type 的候選跳過);②selftest 私有暫存根 + trap、doctor 結果必入 exit 的靜態/並行牙;
+  # ③upgrade 的 manifest 複製腳本(dry-run 預設、--apply、路徑防跳脫、不碰 manifest 以外的檔)。
+  run "architecture/test-find-python" scripts/test-find-python.sh || return 1
+  run "architecture/test-selftest-isolation" scripts/test-selftest-isolation.sh || return 1
+  run "architecture/test-upgrade-manifest" scripts/test-upgrade-manifest.sh || return 1
   run "architecture/test-stack-inventory" scripts/test-stack-inventory.sh || return 1
   # Stage 6/7 執行期強制條款(A1 守衛武裝／A3 Verify 案例數／A4 gauntlet 路徑／
   # A5 觀測可執行性)。四條都是 2026-08 order-intake 實際失效過的散文規則。

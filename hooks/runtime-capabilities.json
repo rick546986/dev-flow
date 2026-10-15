@@ -3,7 +3,7 @@
     "2.0.0",
     "2.1.0"
   ],
-  "runtime_version": "3.26.1",
+  "runtime_version": "3.26.2",
   "capabilities": [
     "task_scoped_guard",
     "parallel_wave_execution",

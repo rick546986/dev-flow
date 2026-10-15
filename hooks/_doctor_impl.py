@@ -206,11 +206,14 @@ def _python_version(exe):
 
 
 def resolve_printer_python(root):
-    """產圖／gate-twin 直譯器:DEVFLOW_PYTHON → 專案 venv → 系統 python3。
+    """產圖／gate-twin 直譯器:DEVFLOW_PYTHON → 專案 venv → 系統 python3 → 自動找到的 3.12+。
 
     hook 仍走 devflow-python-lib(系統 python3 優先)。這裡管的是
     markdown-it-py==4.0.0 要的 3.12+,不准默默用掉 macOS 3.9。
-    回傳 (exe, ver, kind),kind ∈ env|venv|system。
+    自動找到的 3.12+ 是 devflow-doctor.sh 用共用的 hooks/devflow-find-python.sh 找、經
+    DEVFLOW_FOUND_PYTHON 傳進來的(手動跑 doctor 沒設 DEVFLOW_PYTHON 時,系統 python3 是 3.9
+    就不該直接判 INCOMPATIBLE);只在系統 python3 不夠用時才採用,不搶走夠用的系統／venv。
+    回傳 (exe, ver, kind),kind ∈ env|venv|system|auto。
     """
     env = os.environ.get("DEVFLOW_PYTHON", "").strip()
     if env:
@@ -233,6 +236,7 @@ def resolve_printer_python(root):
     if which:
         candidates.append(which)
     seen = set()
+    system = (None, None, None)
     for cand in candidates:
         if not cand or cand in seen:
             continue
@@ -240,8 +244,16 @@ def resolve_printer_python(root):
         if os.path.isfile(cand) and os.access(cand, os.X_OK):
             ver = _python_version(cand)
             if ver:
-                return cand, ver, "system"
-    return None, None, None
+                system = (cand, ver, "system")
+                break
+    if system[1] is not None and system[1] >= PRINTER_PY_FLOOR:
+        return system
+    found = os.environ.get("DEVFLOW_FOUND_PYTHON", "").strip()
+    if found:
+        ver = _python_version(found)
+        if ver and ver >= PRINTER_PY_FLOOR:
+            return found, ver, "auto"
+    return system
 
 
 def _is_project_printer(exe, kind):
@@ -518,7 +530,11 @@ def run_doctor(root, contract_path="", gate_cmd=""):
               f"{exe} 是 Python {ver[0]}.{ver[1]}。markdown-it-py==4.0.0 要 "
               f"{PRINTER_PY_FLOOR[0]}.{PRINTER_PY_FLOOR[1]}+。"
               "建專案 venv 或設 DEVFLOW_PYTHON 指向 3.12+,"
-              "不要覆寫 Apple／系統 Python。")
+              "不要覆寫 Apple／系統 Python。"
+              "(經 devflow-doctor.sh 跑時,已用共用的 hooks/devflow-find-python.sh 在 PATH、"
+              "/opt/homebrew/bin、/usr/local/bin、~/.local/bin 找過 python3.12–3.15,"
+              "跑不起來的(例如 x86 版 Bad CPU type)會跳過;仍找不到 = 本機沒有可用的 3.12+,"
+              "例:brew install python@3.12 後設 DEVFLOW_PYTHON=/opt/homebrew/bin/python3.12。)")
     else:
         mdit = _mdit_version(exe)
         if mdit and not mdit.startswith("4.") and _is_project_printer(exe, kind):

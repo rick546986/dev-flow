@@ -110,6 +110,13 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    `devflow-contract.json` 的 destination 是 `docs/dev/devflow-contract.json`,
    **不住在 `docs/dev/tools/`**,不得把它塞進 tools/ 清單再刪掉第 10 項獨立比對。
    README 剝除與 `_templates/` 整目錄複製不是 1:1 mode 列,仍按本步既有手續。
+   **`_templates/jev.yaml`(Jev opt-in 範本)刻意不在 manifest**(v3.26.2 查證):所有 `_templates/*`
+   (含 4-spec.md 等七站模板)都走「整目錄複製 + baseline 的 `_templates/*`」,manifest 只放 1:1 mode 列
+   (自 #69 起即如此,manifest 裡沒有任何 `_templates/` 列);jev.yaml 隨 `_templates/` 落到採用專案的
+   `docs/dev/_templates/jev.yaml`,方法包根的正本是 `${DEVFLOW_ROOT}/_templates/jev.yaml`。
+   執行期沒有任何程式讀它(只有母版的 `test_mr_gate.py` 驗它能解析且全 off);要用 Jev 的專案手動複製成
+   `.dev-flow/jev.yaml`(**預設不建**,雙閘門要 key + 該檔)。所以「manifest 沒列它」不是漏散發,
+   不要為了它往 manifest 加列(加列會連帶要重算指紋、改契約與副本)。
 1. `docs/dev/` 建立:cp 方法論 `${DEVFLOW_ROOT}/README.md` 後**剝除 master-only 區塊**
    再落地為 `docs/dev/README.md`(不得直接 cp 未剝除版 —— 母版 README 內
    `<!-- devflow:master-only:start -->` / `<!-- devflow:master-only:end -->` 之間是純母版
@@ -277,6 +284,15 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
   `docs/dev/devflow-contract.json`(版本握手契約,正本列已在 ship-manifest;
   覆蓋後重跑 check 第 10 項,**不得**因它進了正本就刪掉這項獨立比對)——
   先 diff 摘要給使用者過目。
+- **manifest 列複製有現成腳本(v3.26.2 起,不要再手動逐檔 cp)**:
+  `python3 "${DEVFLOW_ROOT}/scripts/devflow-upgrade-manifest.py" --root <專案根>`
+  (只標準庫;`--pack` 預設 = 腳本所在方法包)。**預設 dry-run**:逐列列出「新增／變更／相同」,
+  變更再標「母版改寫」(本地 = baseline,可直接覆蓋)或「需同意」(本地客製、baseline 沒有此檔、或根本沒有 baseline
+  的舊安裝);`--diff` 印文字檔 diff。給使用者過目並徵得同意後才加 `--apply`(寫入新增與母版改寫);
+  「需同意」的列預設跳過,逐檔徵得同意後才再加 `--include-custom`。它**只動 manifest 列的 destination**,
+  路徑越界(`..`／絕對路徑／`.git`／symlink)一律拒絕且整批不寫;manifest 自己那列最後寫、前面有寫入失敗就不寫。
+  它**不做**:README 剝除版與 `_templates/` 複製、出廠殘件清理(下面那條 devflow-upgrade-leftovers.sh)、baseline 快照(只讀不寫)、`.gitignore`、
+  刪除上游已移除的舊工具檔 —— 這些仍照本段其他條目做。套完跑 `devflow-exec.sh doctor` 確認 ship-manifest 逐列 ✓。
 - **manifest 新增列的分類**(2026-09-23,W0 P0-8 結論):三方比對只定義了「本地現況 ≠ 上游舊 blob ⇒ 客製」;
   **本地缺、baseline 也缺**的 destination 一律歸 ①「母版新增」—— 直接散發,且**必須出現在 diff 摘要**
   (列成「新增:<destination>」),不得因為本地沒有這個檔就從摘要漏掉、也不得反過來漏建。
@@ -346,7 +362,10 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
   把「開工前工作樹要乾淨」的前提直接弄壞。
 - **產圖 Python 地板**:upgrade／doctor 必須查 `printer-python`(3.12+ 專案 venv
   或 `DEVFLOW_PYTHON`)。系統 python 是 3.9 時不准默默 `pip install` 出
-  markdown-it-py 3.x,也**不要覆寫** Apple／系統 Python。
+  markdown-it-py 3.x,也**不要覆寫** Apple／系統 Python。手動跑 `devflow-doctor.sh`／`hooks/selftest.sh`
+  且沒設 `DEVFLOW_PYTHON` 時,會用共用的 `hooks/devflow-find-python.sh` 自動找 3.12+(PATH、Homebrew 等目錄的
+  `python3.12–3.15`;`--version` 跑不起來的候選,例如 Apple Silicon 上 Bad CPU type 的 x86 版,會被跳過);
+  找不到時 selftest 以 exit 2 說明、doctor 報 `printer-python` ✗,都不會靜默用 3.9 硬跑。
 - **HISTORY 出廠種子清理是選配**:`docs/dev/tools/history-append.sh --action factory-seed-cleanup`
   只刪可見的出廠四行。認不出種子 vs 真紀錄 → fail-closed。**不准每次 upgrade 自動跑**。
 - **Knowledge index bootstrap(升級必跑)**:受管檔覆蓋與 baseline 換新**之後**,跑
