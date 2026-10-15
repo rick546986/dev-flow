@@ -793,3 +793,9 @@
 - 落在哪:.claude-plugin/plugin.json、.cursor-plugin/plugin.json、.codex-plugin/plugin.json、hooks/runtime-capabilities.json、docs/dev/devflow-contract.json
 - 詳細:https://github.com/rick546986/dev-flow/releases/tag/v3.25.0
 
+## 2026-10-15 · release-v3-26-0 · v3.26.0
+- 做了什麼:發布 v3.26.0:採用專案缺件修復(ship-manifest 補散發 diagir.py／devflow_atomic.py,doctor 新增 ship-deps 偵測『已散發工具的依賴沒散發』)+ plugin 新增 Stop hook(改完自動跑守衛自測,自動找 Python 3.12+、6 小時節流、可關);plugin 3.25.0→3.26.0
+- 為什麼:採用現場 build-gate-twin.py 不帶參數 ImportError exit 1(應印用法 exit 2),而 doctor 仍報 COMPATIBLE;產品專案也要在 Stop 時驗守衛自測。外掛更新比對版本字串,不 bump 其他機器 /plugin update 拿不到
+- 落在哪:docs/dev/ship-manifest.json、docs/dev/tools/diagir.py、docs/dev/tools/devflow_atomic.py、hooks/_doctor_impl.py、hooks/devflow-stop-selftest.sh、hooks/hooks.json、scripts/test-adopter-ship.sh、scripts/test-stop-selftest-hook.sh、四處版本字串
+- 詳細:commit 17d1673
+

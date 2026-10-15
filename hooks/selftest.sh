@@ -91,7 +91,9 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # G2 缺機械檢查+轉人條件前提／G2 子句連帶放寬 G1/G3／原子句仍列 G2／G1/G3 被改成 agent 優先／
 # 4-spec 模板仍用舊子句)→ (main)466;hooks `- Risk:` 大小寫不拘 + 非法值／空值 start 拒 +3 → (main)469。
 # 2026-09-28 research/jev-supermemory 合進 main:兩邊新增案例相加(459 + research 14 + main 10)→ 483。
-MIN_CASES=483
+# 2026-10-15 採用現場缺件(build-gate-twin.py import 的 diagir.py 沒散發、doctor 仍 COMPATIBLE):
+# p3 doctor ship-deps 三案(依賴齊全 ✓／import 沒散發的檔 ✗／try-except 選配不誤報)+3 → 486。
+MIN_CASES=486
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -2192,6 +2194,16 @@ p3_doctor "$P3T/contract-ok.json" "$P3T/caps-ok.json"
 ck_msg "p3 doctor 契約無 ship_manifest_version(舊契約)→ 明示略過不擋" 0 "逐列驗證略過" "$P3_RC" "$P3_OUT"
 p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
 ck_msg "p3 doctor ship-manifest 三值一致、逐列齊全 → ✓" 0 "✓ ship-manifest" "$P3_RC" "$P3_OUT"
+# 2026-10-15 採用現場:清單列的檔都在,但已散發 .py import 了沒散發的檔 → 逐列驗證全綠、跑工具才 ImportError。
+# ship-deps 靜態掃 import:散發樹內解析不到(且非標準庫/核准第三方)→ fail;try/except ImportError 內的選配不算。
+ck_msg "p3 doctor ship-deps 已散發 .py 的 import 都解析得到 → ✓" 0 "✓ ship-deps" "$P3_RC" "$P3_OUT"
+printf 'import sm_missing_dep\n' > "$P3T/docs/dev/tools/sm-b.py"
+p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor ship-deps 已散發 .py import 了沒散發的檔 → fail 並點名(逐列仍 ✓)" 1 "sm-b.py:1 import sm_missing_dep" "$P3_RC" "$P3_OUT"
+printf 'try:\n    import sm_missing_dep\nexcept ImportError:\n    sm_missing_dep = None\n' > "$P3T/docs/dev/tools/sm-b.py"
+p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor ship-deps try/except ImportError 內的選配 import 不誤報 → ✓" 0 "✓ ship-deps" "$P3_RC" "$P3_OUT"
+printf 'x = 1\n' > "$P3T/docs/dev/tools/sm-b.py"; chmod 644 "$P3T/docs/dev/tools/sm-b.py"
 rm -f "$P3T/docs/dev/tools/sm-b.py"
 p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
 ck_msg "p3 doctor ship-manifest 列 destination 缺 → fail 並點名" 1 "缺 docs/dev/tools/sm-b.py" "$P3_RC" "$P3_OUT"

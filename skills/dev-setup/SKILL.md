@@ -139,8 +139,10 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    散發後跑 `bash docs/dev/tools/history-append.sh --print-root` → 專案根且
    exit 0(git toplevel,與散發位置無關);不符即 broken。doctor 項
    `history-append-root`。
-   **gate twin**:`${DEVFLOW_ROOT}/scripts/build-gate-twin.py` 與
-   `devflow_twin_ui.py` → `docs/dev/tools/`(同目錄)。stage:
+   **gate twin**:`${DEVFLOW_ROOT}/scripts/build-gate-twin.py`、
+   `devflow_twin_ui.py`、`diagir.py`、`devflow_atomic.py` → `docs/dev/tools/`(同目錄;
+   後兩支是 `build-gate-twin.py` 的寫檔相依,缺了會 ImportError。實際散發集合
+   以 ship-manifest 為準,別拿這句當清單)。stage:
    `2-decision | 4-spec | 7-review | 5-tasks`。
    `docs/dev/tools/build-gate-twin.py <專案根> <slug> <stage>`。
    相依:`markdown-it-py==4.0.0`(缺或版本不符 → exit 2,不降級)。
@@ -379,21 +381,23 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
 （第 15／16 項）。
 1. **三份 JSON**(僅 Claude；其他主機不要把本項當唯一核可) jq 過:`<root>/.claude-plugin/plugin.json`(dev-flow;dev-talk 併入後
    不再有獨立 plugin.json)、`<root>/.claude-plugin/marketplace.json`(**一份、一 entry**:
-   `./`)、**`<root>/hooks/hooks.json`**。hooks.json 壞掉 → 八條掛載全靜默失效,而自測
+   `./`)、**`<root>/hooks/hooks.json`**。hooks.json 壞掉 → 九條掛載全靜默失效,而自測
    照樣全綠 → 必驗。另比對 plugin.json 的 `version` 與 installed_plugins.json 記錄的
    版本一致(不一致 = 有人改了檔沒 bump,或裝的不是最新)。
 2. 兩帳號 settings `enabledPlugins`(僅 Claude；其他主機不要把本項當唯一核可):`dev-flow@dev-flow` 為 true(dev-talk 已
    併入,不再是獨立 enabledPlugins 項;舊值 `@local` 或 `@dev-flow-plugin` =
    尚未遷到現行 marketplace 名稱散發,應改;`known_marketplaces.json` 的 `dev-flow`
    須為 github source)。
-3. **hooks/ 10 支可執行**:devtalk-guard、devflow-guard、**devflow-prebash**、
+3. **hooks/ 11 支可執行**:devtalk-guard、devflow-guard、**devflow-prebash**、
    devflow-postbash、devflow-exec、selftest、**history-guard**、**devflow-dispatch-guard**、
-   **devflow-report-guard**、**devflow-plainspeak**。
-   **hooks.json 應有 8 條掛載**:
+   **devflow-report-guard**、**devflow-plainspeak**、**devflow-stop-selftest**。
+   **hooks.json 應有 9 條掛載**:
    PreToolUse `Edit|Write|Read`→devflow-guard、PreToolUse `Edit|Write`→history-guard、
    PreToolUse `Bash`→devflow-prebash、PreToolUse `Task|Agent`→devflow-dispatch-guard、
    PostToolUse `Edit|Write`→devtalk-guard、PostToolUse `Edit|Write`→devflow-report-guard、
-   PostToolUse `Bash`→devflow-postbash、UserPromptSubmit `*`→devflow-plainspeak。
+   PostToolUse `Bash`→devflow-postbash、UserPromptSubmit `*`→devflow-plainspeak、
+   Stop `(無)`→devflow-stop-selftest(Stop 事件沒有 matcher;改完要結束時跑守衛自測,
+   需 Python 3.12+,找不到只提醒不擋;`DEVFLOW_STOP_SELFTEST=off` 或 `"disableAllHooks": true` 可關)。
    (本項的支數/掛載數/逐條列舉由 `scripts/check-hooks-accounting.sh` 對
    `hooks/hooks.json` 對帳 —— 第 7 型「不對稱記帳」教訓:曾在 hooks 長到 6 條掛載
    後,本清單靜默停在 5 條,採用專案照本清單健檢會把真實存在的 hook 判成多餘。)
@@ -450,11 +454,12 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
     時的指引:fail-closed 是刻意行為,不得繞過或改綠 —— 修復它列出的不相容項、
     或升級 runtime/方法論後重跑,不靜默退回舊行為。
 11. **gate twin 產生器散發檢查**(在專案內跑時):`docs/dev/tools/build-gate-twin.py`
-    與 `docs/dev/tools/devflow_twin_ui.py` ①兩支皆存在(缺件 = broken,走 install
-    步 1 補),且 `build-gate-twin.py` 可執行(前者為 CLI 入口;`devflow_twin_ui.py`
-    僅供 import,不要求可執行位元);②與方法論 `${DEVFLOW_ROOT}/scripts/build-gate-twin.py`、
-    `${DEVFLOW_ROOT}/scripts/devflow_twin_ui.py` diff 逐字無差異(有差異 = stale,
-    走 upgrade 覆蓋 —— 專案側不得自改這兩支腳本,要改改方法論);③無參數跑
+    與 `docs/dev/tools/devflow_twin_ui.py`、`docs/dev/tools/diagir.py`、
+    `docs/dev/tools/devflow_atomic.py` ①四支皆存在(缺件 = broken,走 install
+    步 1 補),且 `build-gate-twin.py` 可執行(前者為 CLI 入口;其餘僅供 import,
+    不要求可執行位元);②與方法論 `${DEVFLOW_ROOT}/scripts/` 同名檔 diff
+    逐字無差異(有差異 = stale,走 upgrade 覆蓋 —— 專案側不得自改這幾支腳本,
+    要改改方法論);③無參數跑
     `python3 docs/dev/tools/build-gate-twin.py` → 訊息含「用法」且 exit 2;④相依探測:
     `python3 -c "import markdown_it, sys; sys.exit(0 if markdown_it.__version__ == '4.0.0' else 3)"`
     → exit 0(非 0 時把 `pip install 'markdown-it-py==4.0.0'` 回報給使用者,不代裝)。

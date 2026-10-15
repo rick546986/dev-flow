@@ -1,6 +1,6 @@
 {
   "schema": "devflow-ship-manifest-v1",
-  "version": "v1-c724aae86ad134d7",
+  "version": "v1-8b3e8230958df1be",
   "files": [
     {
       "source": "scripts/history-append.sh",
@@ -16,6 +16,16 @@
       "source": "scripts/devflow_twin_ui.py",
       "destination": "docs/dev/tools/devflow_twin_ui.py",
       "mode": "644"
+    },
+    {
+      "source": "scripts/diagir.py",
+      "destination": "docs/dev/tools/diagir.py",
+      "mode": "755"
+    },
+    {
+      "source": "scripts/devflow_atomic.py",
+      "destination": "docs/dev/tools/devflow_atomic.py",
+      "mode": "755"
     },
     {
       "source": "scripts/publish-pages.sh",

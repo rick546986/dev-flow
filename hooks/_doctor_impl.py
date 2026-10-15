@@ -8,11 +8,14 @@ v1)標 legacy compatibility mode(允許但必須明示)。
 契約檔解析順序:--contract / $DEVFLOW_CONTRACT / <受測專案>/docs/dev/
 devflow-contract.json(dev-setup 散發副本);找不到 → 明確報,fail-closed。
 """
+import ast
+import importlib.util
 import json
 import os
 import shutil
 import subprocess
 import sys
+import sysconfig
 
 sys.dont_write_bytecode = True
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -70,6 +73,123 @@ def _ship_manifest_version(rows):
                   for r in rows if isinstance(r, dict)]
     canon = json.dumps(canon_rows, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return "v1-" + hashlib.sha256(canon.encode("utf-8")).hexdigest()[:16]
+
+
+# 已散發 .py 的 import 對帳(ship-deps)。manifest 逐列只驗「列出來的 destination 在不在」,
+# 驗不到「列出來的工具 import 了一支沒列出來的檔」—— build-gate-twin.py import diagir,
+# manifest 卻沒散發 diagir.py,採用專案跑它直接 ImportError,而逐列驗證照樣全綠
+# (2026-10-15 採用現場)。這裡靜態掃每支已散發 .py 的 import,不在標準函式庫、也不在
+# 下面兩份白名單的,必須能在散發樹裡解析得到;解析不到 = 缺件,fail-closed。
+# 不看 `sys.path` 的退路(例如 build-gate-twin 的 _scripts_dir() 會往上找母版 scripts/):
+# 採用專案沒有母版 scripts/,把退路算進去就是在冒充已驗。
+SHIP_DEPS_THIRD_PARTY_OK = frozenset({"markdown_it"})  # ADR 0002 唯一核准的第三方;缺/版本由 printer-python 項報
+SHIP_DEPS_DYNAMIC_OK = frozenset({"agentmem"})         # devflow-jev 自己找 memory/agentmem、缺了 fail-closed 報錯
+
+
+def _is_stdlib(name):
+    names = getattr(sys, "stdlib_module_names", None)       # 3.10+
+    if names is not None:
+        return name in names or name in sys.builtin_module_names
+    if name in sys.builtin_module_names:                     # 3.9 地板:沒有上面那份名單,退回探測
+        return True
+    try:
+        spec = importlib.util.find_spec(name)
+    except (ImportError, ValueError, AttributeError):
+        return False
+    if spec is None:
+        return False
+    origin = spec.origin or ""
+    if origin in ("built-in", "frozen"):
+        return True
+    return origin.startswith(sysconfig.get_paths()["stdlib"]) and "site-packages" not in origin
+
+
+def _py_imports(tree):
+    """回傳 [(level, module, lineno)]。包在 `try: … except ImportError/Exception/裸 except` 內的
+    是選配相依(呼叫端自己處理缺件),略過。"""
+    found = []
+
+    def catches_import_error(handler):
+        t = handler.type
+        if t is None:
+            return True
+        names = [n.id for n in (t.elts if isinstance(t, ast.Tuple) else [t]) if isinstance(n, ast.Name)]
+        return any(n in ("ImportError", "ModuleNotFoundError", "Exception", "BaseException") for n in names)
+
+    def walk(nodes, guarded):
+        for n in nodes:
+            if isinstance(n, ast.Import):
+                if not guarded:
+                    found.extend((0, a.name, n.lineno) for a in n.names)
+            elif isinstance(n, ast.ImportFrom):
+                if not guarded:
+                    found.append((n.level, n.module or "", n.lineno))
+            elif isinstance(n, ast.Try):
+                walk(n.body, guarded or any(catches_import_error(h) for h in n.handlers))
+                for h in n.handlers:
+                    walk(h.body, guarded)
+                walk(n.orelse, guarded)
+                walk(n.finalbody, guarded)
+            else:
+                walk(ast.iter_child_nodes(n), guarded)
+
+    walk([tree], False)
+    return found
+
+
+def _resolves_in(base, dotted):
+    """dotted(a 或 a.b.c)能否在目錄 base 下以 .py 或套件目錄解析。逐層檢查,不看 sys.path。"""
+    cur = base
+    for part in dotted.split("."):
+        if os.path.isfile(os.path.join(cur, part + ".py")):
+            return True            # 後面是這個模組內的屬性,不再往下查
+        cur = os.path.join(cur, part)
+        if not os.path.isdir(cur):
+            return False
+    return True
+
+
+def _ship_dep_problems(root, sm_rows):
+    """掃 manifest 每個已散發的 .py destination 的 import,回傳 [說明字串]。"""
+    problems = []
+    for row in sm_rows:
+        dest = row.get("destination") if isinstance(row, dict) else None
+        if not isinstance(dest, str) or not dest.endswith(".py"):
+            continue
+        path = os.path.join(root, *dest.split("/"))
+        if not os.path.isfile(path):
+            continue                # 缺檔本身由逐列驗證報
+        try:
+            with open(path, encoding="utf-8") as f:
+                tree = ast.parse(f.read(), filename=path)
+        except (OSError, SyntaxError, ValueError) as e:
+            problems.append(f"{dest} 無法解析({type(e).__name__}),不能核對它的 import")
+            continue
+        here = os.path.dirname(path)
+        search = [here]             # 絕對 import 的根:自己所在目錄,以及所屬套件的上一層
+        top = here
+        while os.path.isfile(os.path.join(top, "__init__.py")) and os.path.dirname(top) != top:
+            top = os.path.dirname(top)
+            search.append(top)
+        for level, mod, lineno in _py_imports(tree):
+            if level:
+                if not mod:
+                    continue        # `from . import x`:x 可能是屬性也可能是子模組,不誤判
+                base = here
+                for _ in range(level - 1):
+                    base = os.path.dirname(base)
+                if not _resolves_in(base, mod):
+                    problems.append(f"{dest}:{lineno} 相對 import {'.' * level}{mod},散發樹裡沒有對應檔")
+                continue
+            head = mod.split(".")[0]
+            if (_is_stdlib(head) or head in SHIP_DEPS_THIRD_PARTY_OK
+                    or head in SHIP_DEPS_DYNAMIC_OK):
+                continue
+            if not any(_resolves_in(b, mod) for b in search):
+                problems.append(
+                    f"{dest}:{lineno} import {mod},但 manifest 沒散發它"
+                    f"(找不到 {head}.py 或 {head}/)")
+    return problems
 
 
 def _python_version(exe):
@@ -491,6 +611,17 @@ def run_doctor(root, contract_path="", gate_cmd=""):
                     else:
                         check(True, "ship-manifest",
                               f"版本 {want_sm} 三值一致;{len(sm_rows)} 列 destination 齊全、mode 一致")
+                    # 逐列驗證只證明「清單列的檔在」;已散發 .py 依賴的檔沒列進清單時它照樣全綠,
+                    # 所以另掃 import(缺件在採用專案是跑工具時才 ImportError)。
+                    dep_problems = _ship_dep_problems(root, sm_rows)
+                    if dep_problems:
+                        check(False, "ship-deps",
+                              f"已散發工具 import 了沒散發的檔,{len(dep_problems)} 項:"
+                              + ";".join(dep_problems[:6]) + (" …" if len(dep_problems) > 6 else "")
+                              + " —— fail-closed:這支工具在本專案跑會 ImportError。"
+                              "跑 dev-setup upgrade 取新版散發清單與缺的檔(/plugin update 只更新 plugin,不會補 docs/dev/tools/)。")
+                    else:
+                        check(True, "ship-deps", "已散發 .py 的 import 在散發樹內全部解析得到")
 
     # 6c. wave_review schema(M3:契約 vs runtime-capabilities 聲明;
     #     runtime 實際字串 = devflow-lib wave review 驗證所認 schema)
