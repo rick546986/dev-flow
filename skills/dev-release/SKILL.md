@@ -188,6 +188,9 @@ release notes 內容(不要只貼 commit 標題):
 /reload-plugins            # 當前 session 立刻生效;或開新 session
 ```
 
+順序固定:先 `marketplace update` 刷新目錄,再 `update`;單打 `/plugin update` 會回「already at the latest
+version」。確認版本與在 shell 打的寫法(`command claude plugin ...`)見 `docs/PLUGIN.md`。
+
 到專案目錄再跑 `dev-setup`(它會偵測 stale 並提議 upgrade)。
 
 設了 `autoUpdate: true` 的機器不用打前兩行,開新 session 自動更新。

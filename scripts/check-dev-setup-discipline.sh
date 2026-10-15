@@ -254,6 +254,18 @@ if src:
         "SKILL.md 殘件刪除段落緊接著的下一條 bullet 不是「trash 目錄要進 "
         ".gitignore」獨立條款(缺 .devflow-upgrade-trash 或 .gitignore 字面)—— "
         "雜湊安全網搬出來的客製檔備份會被誤 commit 進版控")
+    # ── ⑭tools 的 __pycache__ 進 .gitignore(v3.26.1,採用專案 .pyc 被 commit)──────
+    # install 步 3 與 upgrade 各要有一處寫死這一行 ignore 規則;缺一邊 = 新裝或升級
+    # 的專案其中之一會把 docs/dev/tools/**/__pycache__/*.pyc 誤 commit 進版控。
+    _pyc_rule = "docs/dev/tools/**/__pycache__/"
+    i_step3 = install_sec.find("3. `.gitignore`")
+    step3_line = install_sec[i_step3:install_sec.find("\n4. ", i_step3)] if i_step3 >= 0 else ""
+    need(_pyc_rule in step3_line,
+         "SKILL.md install 步 3 的 .gitignore 建議清單沒有 docs/dev/tools/**/__pycache__/ —— "
+         "採用專案跑散發的 Python 工具後 .pyc 會被誤 commit")
+    need(_pyc_rule in upg_sec,
+         "SKILL.md upgrade 段沒有要求補 docs/dev/tools/**/__pycache__/ 進 .gitignore —— "
+         "既有採用專案升級後仍會誤 commit .pyc")
     need("0-inventory.json" in src,
          "SKILL.md 沒點名 docs/dev/0-inventory.json —— I2 盤點會從 setup 清單消失")
     need("write-stack-inventory.py" in src,
@@ -279,7 +291,7 @@ if src:
 # ── 檢查數地板:防止有人把上面整段刪成空迴圈仍然 exit 0 ──────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」(同 repo 慣例:
 # check-stage67-enforcement.sh:232、check-no-stale-paths.sh 的 MIN_CHECKS)。
-MIN_CHECKS = 38
+MIN_CHECKS = 40
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")

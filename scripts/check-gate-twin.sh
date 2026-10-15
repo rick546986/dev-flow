@@ -112,7 +112,7 @@ GROUPS_SEEN = {}
 # 之後每加一條檢查都要把這裡同步調高;只有整區塊被砍掉、實得數掉到這個值以下
 # 才會紅(這是本檔唯一的次級防線,見 test-architecture-guards.sh 的 GS-9 靜態互釘
 # ——那邊另外釘了這個數字的字面值,兩處要一起改,見該檔的防禦邊界說明)。
-MIN_CHECKS = 221
+MIN_CHECKS = 223
 
 
 def check(cond, label, detail=""):
@@ -1204,14 +1204,28 @@ check(err.startswith("用法:"), "訊息以「用法:」開頭(與「缺相依�
 check(all(st in err for st in STAGES), "訊息含四個 stage 名", f"缺:{[s for s in STAGES if s not in err]}")
 check("<專案根目錄> <slug> <stage>" in err, "訊息含參數順序 <專案根目錄> <slug> <stage>",
       f"實際:{err.strip()!r}")
-# 用法錯誤與相依失敗共用同一個 exit code(2),光看 rc 分不出是哪一種 —— 訊息前綴才是
-# 唯一能區分的線索。相依失敗這條路徑在有 markdown-it-py 的環境裡跑不到(無法在不
-# 破壞環境的前提下真的觸發),改驗原始碼裡那句訊息的前綴仍是「缺相依」而非「用法:」,
-# 確保兩種錯誤的訊息前綴不會被改成一樣。
+# 用法錯誤(2)與相依失敗(3,v3.26.1 起)exit code 分開:自動化光看 rc 就分得出「叫錯了」
+# 還是「環境沒裝」。訊息前綴仍分開(「用法:」/「缺相依」),兩層都釘。
 _build_src = BUILD.read_text(encoding="utf-8")
 check('缺相依 markdown-it-py' in _build_src,
       "原始碼:相依失敗訊息前綴仍是「缺相依」(與「用法:」可區分)",
       "原始碼裡找不到「缺相依 markdown-it-py」這句前綴")
+# 相依失敗實跑:用 PYTHONPATH 擺一個假的 markdown_it 蓋掉真的(不動使用者環境),
+# 兩種失敗都要走到 exit 3 + 「缺相依」,而且絕不是 2(用法)或 1(traceback)。
+_stub_env = os.environ.copy()
+for _name, _body, _want in (
+        ("wrong-version", 'class MarkdownIt: pass\n__version__ = "0.0.1"\n', "目前是 0.0.1"),
+        ("not-installed", 'raise ImportError("stub: markdown_it not installed")\n', "請跑 pip install")):
+    _sd = TMP / f"mdit-stub-{_name}"
+    (_sd / "markdown_it").mkdir(parents=True)
+    (_sd / "markdown_it" / "__init__.py").write_text(_body, encoding="utf-8")
+    _stub_env["PYTHONPATH"] = str(_sd)
+    _rs = subprocess.run([sys.executable, str(BUILD), str(TMP / "proj"), "demo", "4-spec"],
+                         capture_output=True, text=True, env=_stub_env)
+    check(_rs.returncode == 3 and (_rs.stderr or "").startswith("缺相依 markdown-it-py")
+          and _want in (_rs.stderr or "") and "Traceback" not in (_rs.stderr or ""),
+          f"相依失敗({_name})→ exit 3、訊息以「缺相依」開頭、不吐 traceback",
+          f"rc={_rs.returncode} stderr={(_rs.stderr or '').strip()[:160]!r}")
 
 print("-- 4-spec 審查卡形狀:作業脈絡在 R、S 是問題+GWT+觀測、禁止 claim --")
 CURRENT_GROUP = "spec-review-shape"

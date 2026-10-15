@@ -799,3 +799,8 @@
 - 落在哪:docs/dev/ship-manifest.json、docs/dev/tools/diagir.py、docs/dev/tools/devflow_atomic.py、hooks/_doctor_impl.py、hooks/devflow-stop-selftest.sh、hooks/hooks.json、scripts/test-adopter-ship.sh、scripts/test-stop-selftest-hook.sh、四處版本字串
 - 詳細:commit 17d1673
 
+## 2026-10-15 · release-v3-26-1 · v3.26.1
+- 做了什麼:發布 v3.26.1:採用專案回報的六項修復——①plugin Stop hook 基準分支改看 origin/HEAD→origin/main→origin/master→main→master,全無基準只看未提交變更(master 主幹專案純問答不再觸發自測);②dev-setup install/upgrade 的 .gitignore 建議清單加 docs/dev/tools/**/__pycache__/;③doctor 認得 schema_versions 的 memory_local/memory_durable(正式欄位,改比契約 vs runtime 聲明,消 schema:unknown-keys 假警報);④build-gate-twin.py 缺相依/版本不符改 exit 3(用法錯誤維持 exit 2);⑤⑥文件補 command claude plugin 寫法與更新順序(先 marketplace update 再 plugin update,實測單打 plugin update 會回 already at the latest version,session 內 /plugin marketplace update 是否連已裝 plugin 一起升標未證實)
+- 為什麼:採用專案(SpaceS 等)回報:master 主幹純問答也觸發 Stop 自測、tools 的 .pyc 被 commit、doctor 假警報、gate-twin 缺相依與用法錯誤共用 exit 2、zsh 的 claude function 攔走 plugin 指令、plugin update 回 already at the latest
+- 落在哪:hooks/devflow-stop-selftest.sh、hooks/_doctor_impl.py、scripts/build-gate-twin.py(+docs/dev/tools 鏡像)、skills/dev-setup/SKILL.md、docs/PLUGIN.md、guides/guide-dev-flow.html、docs/adr/0002、selftest/測試與靜態釘、四處版本字串
+
