@@ -3,7 +3,7 @@
 #
 # 誰用:Stop hook(devflow-stop-selftest.sh)、手動跑的 selftest.sh、手動跑的 devflow-doctor.sh。
 # 三條路徑共用這一份,不要各抄一份 —— 抄過一次就漂移過一次(手動路徑沒有這套,macOS 上
-# /usr/bin/python3 是 3.9,未設 DEVFLOW_PYTHON 的手動 doctor/selftest 直接 INCOMPATIBLE)。
+# 系統內建 python3 是 3.9,未設 DEVFLOW_PYTHON 的手動 doctor/selftest 直接 INCOMPATIBLE)。
 #
 # 跟 devflow-python-lib.sh 的分工:python-lib 管「各支 hook 用哪支直譯器跑」(系統 python3
 # 優先,3.9 就夠,找不到 fail-open);本檔管「要 3.12+ 的場合(自測內的 doctor printer-python 項、
