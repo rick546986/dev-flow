@@ -13,9 +13,11 @@
 #     時,舊版①②③全綠 —— ②只掃 tools 列,③只比檔案地圖,兩者都碰不到它)
 #   ⑤負向 fixture:漏記、正副本同刪、mode 不一致、結構壞掉、
 #     第三類列 source 被刪都必須紅
-#   ⑥manifest.version(列內容指紋)與 devflow-contract.json 正副本的 ship_manifest_version
-#     同值(2026-09-23 W2 C1,P0-8 結論:採用側 doctor 逐列驗證靠這個值);加列沒重算、
-#     副本契約漂移都必須紅
+#   ⑥manifest.version(v2 指紋 = 列內容 + 各 destination 檔內容雜湊)與 devflow-contract.json
+#     正副本的 ship_manifest_version 同值(2026-09-23 W2 C1,P0-8 結論:採用側 doctor 逐列驗證
+#     靠這個值);加列沒重算、**改了散發檔內容沒重算**(v1 指紋看不出,3.26.1 改了
+#     build-gate-twin.py 指紋卻沒變)、副本契約漂移都必須紅;CRLF 不影響、契約與 manifest 自己
+#     那兩列不進雜湊(自我循環);重算指令:scripts/devflow_ship_manifest.py --refresh
 #
 # contract 列在正本,但 destination 不住 tools/;獨立比對(dev-release 步驟 2 的
 # `diff -q devflow-contract.json docs/dev/devflow-contract.json`)不得刪 ——
@@ -51,6 +53,8 @@ sys.path.insert(0, sys.argv[2])
 from devflow_ship_manifest import (
     CONTRACT_DEST,
     CONTRACT_VERSION_KEY,
+    _canon_rows,
+    _refresh,
     compute_version,
     version_failures,
     CONTRACT_SOURCE,
@@ -136,7 +140,7 @@ check(not sync_fails,
 print("-- manifest 版本 ↔ 契約 ship_manifest_version(W2 C1;採用側 doctor 逐列驗證的依據)--")
 ver_fails = version_failures(root, data if raw_ok else None)
 check(not ver_fails,
-      "manifest.version = 列內容指紋,且 devflow-contract.json 正副本的 %s 同值" % CONTRACT_VERSION_KEY,
+      "manifest.version = v2 指紋(列內容 + 各檔內容),且 devflow-contract.json 正副本的 %s 同值" % CONTRACT_VERSION_KEY,
       "; ".join(ver_fails))
 
 print("-- 結構負向(缺欄/重複 destination/非法 mode)--")
@@ -224,7 +228,8 @@ try:
         ],
     }
     import json
-    man["version"] = compute_version(man)
+    # version(v2)要讀 destination 檔內容,等檔都建好(下面 self-sync.md 之後)再算並寫回;這裡先寫占位。
+    man["version"] = "v2-0000000000000000"
     os.makedirs(os.path.join(fixture, "docs", "dev"), exist_ok=True)
     with open(os.path.join(fixture, "docs", "dev", "ship-manifest.json"), "w") as fh:
         json.dump(man, fh)
@@ -241,20 +246,25 @@ try:
             with open(path, "w") as fh:
                 fh.write("#!/bin/bash\n")
             os.chmod(path, 0o755)
-    contract_text = json.dumps({CONTRACT_VERSION_KEY: man["version"]}) + "\n"
-    with open(os.path.join(fixture, CONTRACT_SOURCE), "w") as fh:
-        fh.write(contract_text)
-    os.makedirs(os.path.join(fixture, "docs", "dev"), exist_ok=True)
-    with open(os.path.join(fixture, CONTRACT_DEST), "w") as fh:
-        fh.write(contract_text)
-    os.chmod(os.path.join(fixture, CONTRACT_SOURCE), 0o644)
-    os.chmod(os.path.join(fixture, CONTRACT_DEST), 0o644)
     # 第三類列(source == destination 的同步宣告列;issue #92 的殘留就是這種列
     # 完全沒被任何 parity 函式驗過)。
     self_sync = os.path.join(fixture, "docs", "dev", "self-sync.md")
     with open(self_sync, "w") as fh:
         fh.write("third-category fixture\n")
     os.chmod(self_sync, 0o644)
+    # 契約檔先以占位版本建好(契約列不進雜湊,所以內容何時改都不影響指紋),再算 v2 指紋寫回三處。
+    contract_text = json.dumps({CONTRACT_VERSION_KEY: "v2-0000000000000000"}) + "\n"
+    for rel in (CONTRACT_SOURCE, CONTRACT_DEST):
+        with open(os.path.join(fixture, rel), "w") as fh:
+            fh.write(contract_text)
+        os.chmod(os.path.join(fixture, rel), 0o644)
+    man["version"] = compute_version(man, fixture)
+    with open(os.path.join(fixture, "docs", "dev", "ship-manifest.json"), "w") as fh:
+        json.dump(man, fh)
+    contract_text = json.dumps({CONTRACT_VERSION_KEY: man["version"]}) + "\n"
+    for rel in (CONTRACT_SOURCE, CONTRACT_DEST):
+        with open(os.path.join(fixture, rel), "w") as fh:
+            fh.write(contract_text)
 
     check(not parity_failures(fixture),
           "parity 負向 fixture 基線:兩工具齊全 → 綠")
@@ -279,6 +289,54 @@ try:
           "實得 %s" % drift_fails)
     with open(os.path.join(fixture, CONTRACT_DEST), "w") as fh:
         fh.write(contract_text)
+
+    # ── v2 指紋含內容(3.26.3):改散發檔內容、指紋必變 ─────────────────────────
+    dest_x = os.path.join(fixture, "docs", "dev", "tools", "tool-x.sh")
+    base_ver = compute_version(man, fixture)
+    check(base_ver.startswith("v2-") and not version_failures(fixture),
+          "v2 指紋:前綴 v2-,基線 fixture 綠(%s)" % base_ver)
+    with open(dest_x, "a") as fh:
+        fh.write("# content changed, rows unchanged\n")
+    content_fails = version_failures(fixture)
+    check(compute_version(man, fixture) != base_ver and any("過期" in f for f in content_fails),
+          "版本負向:只改散發檔內容(列清單沒動)→ 指紋變、manifest.version 過期 → 紅"
+          "(v1 指紋看不出這種變動:3.26.1 改了 build-gate-twin.py、指紋沒變)",
+          "實得 %s" % content_fails)
+    with open(dest_x, "w") as fh:
+        fh.write("#!/bin/bash\n")
+    check(compute_version(man, fixture) == base_ver and not version_failures(fixture),
+          "還原內容 → 指紋回到原值、轉綠(指紋只由列 + 內容決定,沒有時間/路徑雜訊)")
+    with open(dest_x, "wb") as fh:
+        fh.write(b"#!/bin/bash\r\n")
+    check(compute_version(man, fixture) == base_ver,
+          "CRLF 不影響指紋(Windows autocrlf 簽出的同內容不得被判過期)")
+    with open(dest_x, "w") as fh:
+        fh.write("#!/bin/bash\n")
+    with open(os.path.join(fixture, CONTRACT_DEST), "w") as fh:
+        fh.write(json.dumps({CONTRACT_VERSION_KEY: man["version"], "other": "changed"}) + "\n")
+    check(compute_version(man, fixture) == base_ver,
+          "契約檔其他欄位改動不影響指紋(契約列與 manifest 自己那列不進雜湊,避免自我循環)")
+    with open(os.path.join(fixture, CONTRACT_DEST), "w") as fh:
+        fh.write(contract_text)
+    # --refresh:改了散發檔內容後一個指令把 manifest 與兩份契約的版本都重算寫回(發版流程用)
+    with open(dest_x, "a") as fh:
+        fh.write("# refreshed\n")
+    stale_before = bool(version_failures(fixture))
+    rc_refresh = _refresh(fixture)
+    check(stale_before and rc_refresh == 0 and not version_failures(fixture),
+          "--refresh:改內容 → 紅;跑 --refresh → manifest.version 與兩份契約同步重算、轉綠")
+    with open(dest_x, "w") as fh:
+        fh.write("#!/bin/bash\n")
+    _refresh(fixture)
+    man = load_raw(fixture)
+    contract_text = json.dumps({CONTRACT_VERSION_KEY: man["version"]}) + "\n"
+    old_style = dict(man); old_style["version"] = "v1-8b3e8230958df1be"
+    check(any("前綴" in f for f in schema_problems(old_style)),
+          "母版 manifest 不得再記 v1- 指紋(schema 拒絕;採用專案舊 v1 由 doctor 相容處理)")
+    miss = dict(man); miss["files"] = man["files"] + [
+        {"source": "scripts/tool-gone.sh", "destination": "docs/dev/tools/tool-gone.sh", "mode": "755"}]
+    check("missing" in json.dumps(_canon_rows(miss, fixture)[0]) and _canon_rows(miss, fixture)[1] == ["docs/dev/tools/tool-gone.sh"],
+          "指紋對缺檔的 destination 記 missing(缺檔也會讓指紋變,不會被當成沒事)")
 
     # ── 第三類列(issue #92):source == destination 的同步宣告列 ──────────────
     # 必須在 tool-y.sh 被刪掉(下面)之前做完 —— tool-y.sh 刪掉後不會再復原,
@@ -342,7 +400,7 @@ finally:
     shutil.rmtree(fixture, ignore_errors=True)
 
 # ── 檢查數地板 ──────────────────────────────────────────────────────────
-MIN_CHECKS = 26
+MIN_CHECKS = 34
 if CHECKS < MIN_CHECKS:
     FAILED += 1
     print("  ✗ 檢查數地板:實際只跑了 %s 項(地板 %s)" % (CHECKS, MIN_CHECKS))

@@ -22,7 +22,9 @@
 # 用法(診斷):
 #   python3 scripts/devflow_ship_manifest.py --list [root]
 #   python3 scripts/devflow_ship_manifest.py --validate [root]
-#   python3 scripts/devflow_ship_manifest.py --version [root]   # 依列內容算 manifest.version(W2 C1)
+#   python3 scripts/devflow_ship_manifest.py --version [root]   # 依列內容 + 各 destination 檔內容算 manifest.version(v2)
+#   python3 scripts/devflow_ship_manifest.py --refresh [root]   # 重算並寫回 manifest.version 與兩份契約的 ship_manifest_version
+#                                                               # (改了任何散發檔或列之後、發版前跑;先確認 docs/dev/tools 副本已同步)
 
 from __future__ import print_function
 
@@ -43,21 +45,70 @@ CONTRACT_DEST = "docs/dev/devflow-contract.json"
 
 
 VERSION_KEY = "version"
-VERSION_PREFIX = "v1-"
+VERSION_PREFIX = "v2-"
+LEGACY_VERSION_PREFIX = "v1-"
 CONTRACT_VERSION_KEY = "ship_manifest_version"
+MANIFEST_DEST = "docs/dev/ship-manifest.json"
+# 指紋不含內容的兩列:manifest 自己(指紋存在它裡面)與契約(契約內存著指紋)—— 雜湊它們會自我循環。
+# 這兩列的一致性另由「三值比對」與 dev-release 的 diff -q 負責。
+HASH_EXCLUDED_DESTS = frozenset((MANIFEST_DEST, CONTRACT_DEST))
 
 
-def compute_version(data):
-    """manifest 版本 = 列內容(source/destination/mode)的機械指紋,不是人手填的標籤:
-    任何列增刪改 → 值必變(P0-8:採用側零牙的根因是「沒有任何本地資料能說上游多了一列」)。
-    同一算法在 hooks/_doctor_impl.py::_ship_manifest_version 複製一份(hooks/ 不 import scripts/);
+def content_digest(path):
+    """檔案內容 sha256(hex)。CRLF 先正規化成 LF:採用專案在 Windows 以 autocrlf 簽出時,
+    同樣內容不得因行尾不同被判成「過期」。與 hooks/_doctor_impl.py::_ship_content_digest 同一算法。"""
+    import hashlib
+    with open(path, "rb") as fh:
+        data = fh.read()
+    return hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()
+
+
+def _canon_rows(data, root):
+    """v2 的規格化列:每列 source/destination/mode,加 sha256 = **destination 檔**(在 root 底下)的內容雜湊。
+    讀 destination 而非 source:母版內 destination 副本與 source 逐字相同(parity 釘住),採用專案只有
+    destination —— 同一個定義兩邊都算得出來。排除列(HASH_EXCLUDED_DESTS)記 "-";檔不存在記 "missing"。
+    回傳 (列 list, 缺檔 destination list)。"""
+    out, missing = [], []
+    for r in (data.get("files") or []):
+        if not isinstance(r, dict):
+            continue
+        dest = r.get("destination")
+        if dest in HASH_EXCLUDED_DESTS:
+            digest = "-"
+        elif not isinstance(dest, str) or _bad_path(dest):
+            digest = "bad-path"
+        else:
+            path = os.path.join(root, *dest.split("/"))
+            if os.path.isfile(path):
+                digest = content_digest(path)
+            else:
+                digest = "missing"
+                missing.append(dest)
+        out.append({"source": r.get("source"), "destination": dest, "mode": r.get("mode"), "sha256": digest})
+    return out, missing
+
+
+def compute_version(data, root):
+    """manifest 版本(v2)= 列內容(source/destination/mode)**加上各 destination 檔內容雜湊**的機械指紋,
+    不是人手填的標籤:任何列增刪改、或任何一支散發檔的內容變動 → 值必變。
+    v1(v1-8b3e…)只算列清單:3.26.1 改了 build-gate-twin.py 內容、指紋卻不變,採用專案的 doctor 看不出
+    工具檔過期。v2 補上這一塊。
+    同一算法在 hooks/_doctor_impl.py::_ship_manifest_version_v2 複製一份(hooks/ 不 import scripts/);
     兩邊同值由 hooks/selftest.sh p3「ship-manifest 三值一致」案釘(用本檔 --version 算值餵 doctor,
     doctor 自己重算不同 → 紅)。"""
+    import hashlib
+    rows_, _missing = _canon_rows(data, root)
+    canon = json.dumps(rows_, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return VERSION_PREFIX + hashlib.sha256(canon.encode("utf-8")).hexdigest()[:16]
+
+
+def compute_version_v1(data):
+    """舊指紋(v1-):只算列清單,不含內容。保留給相容測試與說明(採用專案舊 manifest 仍是這種)。"""
     import hashlib
     rows_ = [{"source": r.get("source"), "destination": r.get("destination"), "mode": r.get("mode")}
              for r in (data.get("files") or []) if isinstance(r, dict)]
     canon = json.dumps(rows_, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    return VERSION_PREFIX + hashlib.sha256(canon.encode("utf-8")).hexdigest()[:16]
+    return LEGACY_VERSION_PREFIX + hashlib.sha256(canon.encode("utf-8")).hexdigest()[:16]
 
 
 class ManifestError(Exception):
@@ -265,10 +316,11 @@ def version_failures(root, data=None):
             data = load(root)
         except ManifestError as exc:
             return list(exc.problems)
-    want = compute_version(data)
+    want = compute_version(data, root)
     have = data.get(VERSION_KEY)
     if have != want:
-        fails.append("manifest.version 過期:記 %s,依列內容應為 %s(改列沒重算版本)" % (have, want))
+        fails.append("manifest.version 過期:記 %s,依列內容與各檔內容應為 %s(改了列或改了散發檔沒重算版本;"
+                     "跑 python3 scripts/devflow_ship_manifest.py --refresh)" % (have, want))
     for rel in (CONTRACT_SOURCE, CONTRACT_DEST):
         path = os.path.join(root, rel)
         if not os.path.isfile(path):
@@ -391,12 +443,45 @@ def filemap_sync_failures(root, data=None):
     return fails
 
 
+def _refresh(root):
+    """重算 v2 指紋並寫回 manifest.version 與 devflow-contract.json 正副本的 ship_manifest_version。
+    只做「取代那一個值」的最小文字替換,不重排檔案其餘格式。散發副本缺檔時拒絕(指紋會把缺檔算進去)。"""
+    try:
+        data = load_raw(root)
+    except ManifestError as exc:
+        print("⛔ " + "; ".join(exc.problems), file=sys.stderr)
+        return 1
+    _rows, missing = _canon_rows(data, root)
+    if missing:
+        print("⛔ 散發副本缺檔,不重算(先同步 docs/dev/tools):" + ", ".join(missing), file=sys.stderr)
+        return 1
+    new = compute_version(data, root)
+    targets = [(MANIFEST_REL, VERSION_KEY), (CONTRACT_SOURCE, CONTRACT_VERSION_KEY), (CONTRACT_DEST, CONTRACT_VERSION_KEY)]
+    for rel, key in targets:
+        path = os.path.join(root, rel)
+        text = open(path, encoding="utf-8").read()
+        pat = re.compile(r'("%s"\s*:\s*")([^"]*)(")' % re.escape(key))
+        if len(pat.findall(text)) != 1:
+            print("⛔ %s 找不到唯一的 %s 欄,不改" % (rel, key), file=sys.stderr)
+            return 1
+    for rel, key in targets:
+        path = os.path.join(root, rel)
+        text = open(path, encoding="utf-8").read()
+        pat = re.compile(r'("%s"\s*:\s*")([^"]*)(")' % re.escape(key))
+        out = pat.sub(lambda m: m.group(1) + new + m.group(3), text, count=1)
+        if out != text:
+            with open(path, "w", encoding="utf-8", newline="") as fh:
+                fh.write(out)
+        print("%s %s = %s" % ("寫入" if out != text else "相同", rel, new))
+    return 0
+
+
 def _cli(argv):
     cmd = argv[1] if len(argv) > 1 else "--help"
     root = argv[2] if len(argv) > 2 else os.path.dirname(
         os.path.dirname(os.path.abspath(__file__)))
     if cmd in ("-h", "--help", "help"):
-        print("usage: devflow_ship_manifest.py --list|--validate|--version [root]")
+        print("usage: devflow_ship_manifest.py --list|--validate|--version|--refresh [root]")
         return 0
     if cmd == "--validate":
         try:
@@ -412,8 +497,10 @@ def _cli(argv):
         except ManifestError as exc:
             print("⛔ " + "; ".join(exc.problems), file=sys.stderr)
             return 1
-        print(compute_version(data))
+        print(compute_version(data, root))
         return 0
+    if cmd == "--refresh":
+        return _refresh(root)
     if cmd == "--list":
         try:
             data = load(root)
@@ -423,7 +510,7 @@ def _cli(argv):
         for row in rows(data):
             print("%s\t%s\t%s" % (row["source"], row["destination"], row["mode"]))
         return 0
-    print("usage: devflow_ship_manifest.py --list|--validate|--version [root]", file=sys.stderr)
+    print("usage: devflow_ship_manifest.py --list|--validate|--version|--refresh [root]", file=sys.stderr)
     return 2
 
 

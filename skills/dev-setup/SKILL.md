@@ -291,15 +291,27 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
   的舊安裝);`--diff` 印文字檔 diff。給使用者過目並徵得同意後才加 `--apply`(寫入新增與母版改寫);
   「需同意」的列預設跳過,逐檔徵得同意後才再加 `--include-custom`。它**只動 manifest 列的 destination**,
   路徑越界(`..`／絕對路徑／`.git`／symlink)一律拒絕且整批不寫;manifest 自己那列最後寫、前面有寫入失敗就不寫。
-  它**不做**:README 剝除版與 `_templates/` 複製、出廠殘件清理(下面那條 devflow-upgrade-leftovers.sh)、baseline 快照(只讀不寫)、`.gitignore`、
-  刪除上游已移除的舊工具檔 —— 這些仍照本段其他條目做。套完跑 `devflow-exec.sh doctor` 確認 ship-manifest 逐列 ✓。
+  **baseline 同步(v3.26.3 起)**:baseline(`docs/dev/.devflow-baseline/`)的語意是「上次 install/upgrade 散發下去的上游新內容」,
+  下次 upgrade 拿它當「上游舊版」做三方比對。`--apply` 在所有列都寫入成功之後,把 manifest 列(`docs/dev/` 底下,含 `tools/`)的
+  **上游新內容**同步進 baseline 對應路徑(新增／更新;已相同的略過;內容比對,權限依 manifest 列);有任何一列寫入失敗就不同步。
+  客製被跳過的列,baseline 仍取上游新內容(不取本地現況)。baseline 目錄不存在(尚未有快照的舊安裝)時**不建立、不同步**
+  —— 避免只含一部分檔的 baseline 讓下面「無快照但 docs/dev/ 已存在」的處置規則失效。路徑同樣防跳脫(baseline 內的 symlink 拒絕)。
+  不做 baseline 的乾淨替換(不刪上游已移除的舊檔)、也不碰 README／`_templates/` 的 baseline —— 那些仍照 install 步 8。
+  它**不做**:README 剝除版與 `_templates/` 複製、出廠殘件清理(下面那條 devflow-upgrade-leftovers.sh)、README／`_templates/` 的 baseline 快照與 baseline 乾淨替換、`.gitignore`、
+  刪除上游已移除的舊工具檔 —— 這些仍照本段其他條目做。套完跑 `hooks/devflow-exec.sh doctor`(在方法包的 hooks/,不是 scripts/)確認 ship-manifest 逐列 ✓。
+- **ship-manifest 指紋 v2(v3.26.3 起)含各散發檔的內容雜湊**:舊 v1 指紋(`v1-…`)只算列清單,工具檔內容改了指紋不變
+  (3.26.1 改了 build-gate-twin.py 就是),doctor 看不出採用專案的 `docs/dev/tools/` 過期。v2(`v2-…`)把每個 destination 檔的內容雜湊
+  (CRLF 先正規化)算進去;manifest 自己與契約兩列不進雜湊(自我循環)。doctor 對 v2 契約:契約 = manifest 自稱,且依採用樹實際檔案重算
+  必須相同,否則 `✗ ship-manifest`(指路 `devflow-upgrade-manifest.py` dry-run 看哪幾支「變更」);對舊 v1 契約照舊比對、不擋,
+  但印 info 說明 v1 看不出內容過期;另把專案契約的指紋與 plugin 現行的比,不同就印 info(專案可能比 plugin 舊)。
+  升 v2:跑上面的 `devflow-upgrade-manifest.py`(manifest 列含契約與 manifest 自己,會一起換成 v2)。
 - **manifest 新增列的分類**(2026-09-23,W0 P0-8 結論):三方比對只定義了「本地現況 ≠ 上游舊 blob ⇒ 客製」;
   **本地缺、baseline 也缺**的 destination 一律歸 ①「母版新增」—— 直接散發,且**必須出現在 diff 摘要**
   (列成「新增:<destination>」),不得因為本地沒有這個檔就從摘要漏掉、也不得反過來漏建。
   destination 可能落在 `docs/dev/tools/` 的**子目錄**(例:`docs/dev/tools/devflow_jev/…`),cp 前先
   `mkdir -p "$(dirname <destination>)"`;install 步 1 的 `mkdir -p docs/dev/tools` 不涵蓋子目錄。
   `docs/dev/ship-manifest.json` 本身是散發列之一(source == destination 的同步宣告列),
-  覆蓋後在專案內跑 `devflow-exec.sh doctor`:契約 `ship_manifest_version` 與 manifest `version`
+  覆蓋後在專案內跑 `hooks/devflow-exec.sh doctor`(方法包的 hooks/):契約 `ship_manifest_version` 與 manifest `version`
   是同一批列內容的指紋,doctor 逐列驗 destination 存在與 mode;不一致 = 這次 upgrade 漏列,
   不得手改 manifest 的 `version` 讓它轉綠。
 - **出廠殘件刪除**(覆蓋受管檔與換 baseline **之前**):跑
@@ -366,6 +378,10 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
   且沒設 `DEVFLOW_PYTHON` 時,會用共用的 `hooks/devflow-find-python.sh` 自動找 3.12+(PATH、Homebrew 等目錄的
   `python3.12–3.15`;`--version` 跑不起來的候選,例如 Apple Silicon 上 Bad CPU type 的 x86 版,會被跳過);
   找不到時 selftest 以 exit 2 說明、doctor 報 `printer-python` ✗,都不會靜默用 3.9 硬跑。
+  **給 gate-twin 用的直譯器另有 `devflow_find_twin_python`**(同一檔;doctor 的備選用它):`DEVFLOW_PYTHON` 明示仍最優先,
+  其次專案 `.venv`(要 3.12+ 且 `import markdown_it` 成功),再來其餘候選中第一支有 markdown_it 的;都沒有才退回
+  「版本 3.12+ 即可」並印提示(缺 markdown-it-py,build-gate-twin.py 會 exit 3;建議設 `DEVFLOW_PYTHON` 或裝
+  `markdown-it-py==4.0.0`)。`devflow_find_py312` 本身不變(selftest／Stop hook 不需要 markdown_it,不因此變嚴)。
 - **HISTORY 出廠種子清理是選配**:`docs/dev/tools/history-append.sh --action factory-seed-cleanup`
   只刪可見的出廠四行。認不出種子 vs 真紀錄 → fail-closed。**不准每次 upgrade 自動跑**。
 - **Knowledge index bootstrap(升級必跑)**:受管檔覆蓋與 baseline 換新**之後**,跑
@@ -557,7 +573,7 @@ codebase 會演進,rules 會腐化(規則指的檔案沒了、行為變了、新
 
 ## fix / uninstall
 
-- fix:缺件按 install/upgrade 對應步驟補;陳年旗標 → 問使用者後 `devflow-exec.sh stop`;
+- fix:缺件按 install/upgrade 對應步驟補;陳年旗標 → 問使用者後 `hooks/devflow-exec.sh stop`;
   knowledge index／queue 缺件或過期 → 跑 install 步 1c / upgrade 的 bootstrap
   `--apply`(衝突仍只進 queue,fix **不得**代裁)。
 - uninstall:兩帳號 enabledPlugins 設 false(hooks 隨停);專案文檔面留給使用者決定。

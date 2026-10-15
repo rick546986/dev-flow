@@ -36,7 +36,7 @@ done
 . "$ROOT/hooks/devflow-find-python.sh"
 PY=$(devflow_find_py312) || { echo "FATAL: 找不到 Python 3.12+(設 DEVFLOW_PYTHON)" >&2; exit 2; }
 
-MIN_CASES=14
+MIN_CASES=21
 PASS=0
 FAIL=0
 TOTAL=0
@@ -158,7 +158,7 @@ expect "doctor 並行跑完後私有 TMPDIR 是空的(沒留固定檔或暫存)"
 
 # ── ④ selftest 被中斷:私有暫存根被 EXIT trap 清掉 ──────────────────────
 mkdir -p "$WORK/tmp4"
-( TMPDIR="$WORK/tmp4" DEVFLOW_PYTHON="$PY" exec bash "$ROOT/hooks/selftest.sh" >"$WORK/st.out" 2>&1 ) &
+( TMPDIR="$WORK/tmp4" DEVFLOW_PYTHON="$PY" exec "$BASH" "$ROOT/hooks/selftest.sh" >"$WORK/st.out" 2>&1 ) &
 SPID=$!
 SEEN=1
 for _ in $(seq 1 100); do
@@ -172,6 +172,43 @@ wait "$SPID" 2>/dev/null
 expect "selftest 跑起來後私有暫存根 devflow-selftest-root.* 建在 TMPDIR 底下" "$SEEN"
 expect "selftest 跑的當下,各案例的暫存目錄都在私有根裡面(非空轉)" "$([ -n "$INSIDE" ]; echo $?)"
 expect "selftest 被 SIGTERM 中斷後,TMPDIR 底下清得乾乾淨淨(EXIT trap)" "$([ -z "$(ls -A "$WORK/tmp4")" ]; echo $?)"
+
+# ── ⑤ PATH 上第一個 bash 是壞的(126,x86 版在 Apple Silicon 上 Bad CPU type)──────
+# 起因(採用現場回報):Apple Silicon 上 PATH 的 /usr/local/bin/bash 是 x86 版,selftest 內直接寫
+# `bash …` 的地方(g1 history-append 三案、w2 的 W2BASH=$(command -v bash)、p1 plan 的 Python
+# subprocess、doctor 內的 gate-consistency／gauntlet／history-append)全以 126 假紅。
+# w2 的「TMPDIR 得空字串」根因就是這個:w2() 把 stderr 丟掉、且用壞 bash 跑,輸出為空,
+# 看起來像 TMPDIR 正規化算出空值,實際上 TMPDIR 邏輯沒問題(有 /bin/bash 時 env -i 無 TMPDIR 也全過)。
+# 重現環境照現場:env -i、PATH=<假 bin>:/usr/bin:/bin、不帶 TMPDIR;假 bin 的 bash 一律 exit 126。
+# 負向:同一環境跑「把 SELFTEST_BASH 退回字面 bash」的變體必須紅(證明本測試咬得到)。
+FAKEBIN="$WORK/fakebin"; mkdir -p "$FAKEBIN"
+printf '#!/bin/sh\necho "Bad CPU type in executable" >&2\nexit 126\n' >"$FAKEBIN/bash"; chmod 755 "$FAKEBIN/bash"
+expect "治具:假 bin 的 bash 真的是 exit 126(測試前提)" \
+  "$(PATH="$FAKEBIN:/usr/bin:/bin" bash -c true >/dev/null 2>&1; [ $? = 126 ]; echo $?)"
+env -i HOME="${HOME:-/nonexistent}" PATH="$FAKEBIN:/usr/bin:/bin" DEVFLOW_PYTHON="$PY" \
+  "$BASH" "$ROOT/hooks/selftest.sh" >"$WORK/st5.out" 2>&1; echo $? >"$WORK/st5.rc"
+expect "壞 bash 排 PATH 前面:selftest exit 0(實得 $(cat "$WORK/st5.rc"))" "$([ "$(cat "$WORK/st5.rc")" = 0 ]; echo $?)"
+expect "壞 bash 排 PATH 前面:結論行「守衛自測 N/N 全過」" "$(grep -Eq '守衛自測 ([0-9]+)/\1 全過' "$WORK/st5.out"; echo $?)"
+expect "壞 bash 排 PATH 前面:w2／g1／p1 plan／doctor 相關案例沒有任何一項失敗" \
+  "$(! grep -E '^   - (w2|g1|p1 plan|p3 doctor|pw doctor|p4_doctor)' "$WORK/st5.out" | grep -q .; echo $?)"
+# doctor 單獨(手動路徑 devflow-doctor.sh):gate-consistency 實跑也得過
+( cd "$PROJ" && env -i HOME="${HOME:-/nonexistent}" PATH="$FAKEBIN:/usr/bin:/bin" DEVFLOW_PYTHON="$PY" \
+    DEVFLOW_CONTRACT="$PROJ/contract.json" DEVFLOW_RUNTIME_CAPS="$PROJ/caps-ok.json" DEVFLOW_GATE_CMD=true \
+    "$BASH" "$ROOT/hooks/devflow-doctor.sh" >"$WORK/d5.out" 2>&1; echo $? >"$WORK/d5.rc" )
+expect "壞 bash 排 PATH 前面:手動 devflow-doctor.sh COMPATIBLE、exit 0(gate-consistency 不以 126 死)" \
+  "$([ "$(cat "$WORK/d5.rc")" = 0 ] && grep -q '✅ devflow doctor: COMPATIBLE' "$WORK/d5.out"; echo $?)"
+# 負向變體:SELFTEST_BASH 退回字面 bash 且不 export DEVFLOW_BASH(= 修法前的行為)
+MUTR="$WORK/mutroot"; mkdir -p "$MUTR"
+for d in "$ROOT"/* "$ROOT"/.[!.]*; do
+  b=$(basename "$d"); [ "$b" = hooks ] || [ "$b" = .git ] || ln -s "$d" "$MUTR/$b"
+done
+cp -R "$ROOT/hooks" "$MUTR/hooks"
+sed -i 's|^SELFTEST_BASH=\$DEVFLOW_BASH$|SELFTEST_BASH=bash; unset DEVFLOW_BASH|; s|^export DEVFLOW_BASH$|:|' "$MUTR/hooks/selftest.sh"
+expect "負向前提:變體確實已把 SELFTEST_BASH 改成字面 bash" "$(grep -q '^SELFTEST_BASH=bash; unset DEVFLOW_BASH$' "$MUTR/hooks/selftest.sh"; echo $?)"
+env -i HOME="${HOME:-/nonexistent}" PATH="$FAKEBIN:/usr/bin:/bin" DEVFLOW_PYTHON="$PY" \
+  "$BASH" "$MUTR/hooks/selftest.sh" >"$WORK/st5m.out" 2>&1; echo $? >"$WORK/st5m.rc"
+expect "負向:字面 bash 的變體在同一環境必須紅(exit≠0 且 g1 與 w2 案例失敗;實得 rc=$(cat "$WORK/st5m.rc"))" \
+  "$([ "$(cat "$WORK/st5m.rc")" != 0 ] && grep -q '^   - g1 ' "$WORK/st5m.out" && grep -q '^   - w2 ' "$WORK/st5m.out"; echo $?)"
 
 if [ "$TOTAL" -lt "$MIN_CASES" ]; then
   echo "FATAL: 案例數 $TOTAL 低於下限 $MIN_CASES(案例被刪?)" >&2

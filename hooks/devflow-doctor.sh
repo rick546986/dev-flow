@@ -10,8 +10,20 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 # 未明示 DEVFLOW_PYTHON 時,把共用「找 3.12+」(hooks/devflow-find-python.sh,與 Stop hook、
 # selftest 同一份)找到的路徑交給 doctor 當產圖直譯器的備選;專案 venv 與系統 python3 夠用時
 # doctor 不採用它。找不到就不設,doctor 照原樣報 printer-python ✗ 並說明。
+. "$HERE/devflow-find-python.sh"
 if [ -z "${DEVFLOW_PYTHON:-}" ]; then
-  . "$HERE/devflow-find-python.sh"
-  DEVFLOW_FOUND_PYTHON=$(devflow_find_py312) && export DEVFLOW_FOUND_PYTHON
+  # 這支備選是給 printer-python(= gate-twin 的 markdown-it-py==4.0.0)用的:優先專案 .venv、
+  # 且要 import markdown_it 成功;都沒有才退回「版本 3.12+ 即可」並印提示(見 devflow_find_twin_python)。
+  DEVFLOW_FOUND_PYTHON=$(devflow_find_twin_python "$ROOT") && export DEVFLOW_FOUND_PYTHON
 fi
+# doctor 內要執行 gauntlet／history-append／gate-consistency 等 .sh:用跑得起來的 bash
+# (外部已設且跑得起來的照舊;否則優先目前這支 $BASH,再 devflow_find_bash;都不行維持字面 bash)。
+if ! { [ -n "${DEVFLOW_BASH:-}" ] && devflow_exe_runs "$DEVFLOW_BASH"; }; then
+  if [ -n "${BASH:-}" ] && devflow_exe_runs "$BASH"; then
+    DEVFLOW_BASH=$BASH
+  else
+    DEVFLOW_BASH=$(devflow_find_bash) || DEVFLOW_BASH=bash
+  fi
+fi
+export DEVFLOW_BASH
 PYTHONDONTWRITEBYTECODE=1 exec "$DEVFLOW_PY" "$HERE/_doctor_impl.py" "$ROOT" "$@"

@@ -81,6 +81,12 @@ parity 對帳**讀 ship-manifest,不是寫死支數,也不得掃 `docs/dev/tools
 有差異 → 用根目錄正本覆蓋 `docs/dev/` 副本(正本方向永遠是 根目錄 → docs/dev/),
 覆蓋後重跑步驟 1 的 doctor。
 
+**指紋 v2(v3.26.3 起)含各散發檔的內容雜湊**:只要這次改動動到任何 ship-manifest 列的散發檔(例如
+`scripts/build-gate-twin.py` 與它在 `docs/dev/tools/` 的副本),或增刪改了列,`manifest.version` 與兩份契約的
+`ship_manifest_version` 就必須重算 —— 不重算 `check-ship-manifest.sh` 的版本項會紅。先把 `docs/dev/tools/` 副本
+與正本同步,再跑 `python3 scripts/devflow_ship_manifest.py --refresh`(一次寫回 manifest 與契約正副本),然後重跑上面兩行。
+舊 v1 指紋只算列清單,3.26.1 改了 build-gate-twin.py 內容、指紋卻沒變,採用專案的 doctor 看不出工具檔過期 —— v2 補這一格。
+
 完成 = contract diff 靜默(無輸出)+ parity 守衛全過(✅)。
 
 ### 3. 升版號(兩處,一起改)

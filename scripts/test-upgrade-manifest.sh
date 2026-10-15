@@ -37,7 +37,7 @@ import sys
 import tempfile
 
 root, tool = sys.argv[1], sys.argv[2]
-MIN_CASES = 40
+MIN_CASES = 65
 passed = failed = 0
 sys.dont_write_bytecode = True
 
@@ -102,7 +102,7 @@ try:
     check(out.count("  新增  ") == len(rows), "空專案:每列都標新增(%d)" % len(rows), out[-300:])
     check(os.listdir(a1) == [], "dry-run 沒有寫入任何檔(專案仍是空的)")
     check("dry-run" in out and "沒有寫入任何檔案" in out, "輸出明說 dry-run、沒寫檔")
-    check("baseline 快照" in out and "_templates" in out, "輸出列出不在這支範圍的項目(README/_templates/baseline…)")
+    check("baseline 的乾淨替換" in out and "_templates" in out, "輸出列出不在這支範圍的項目(README/_templates/baseline…)")
     rc, out, err = run("--root", a1, "--pack", pack, "--include-custom")
     check(rc == 0 and os.listdir(a1) == [], "--include-custom 不帶 --apply 仍是 dry-run、不寫")
 
@@ -195,8 +195,12 @@ try:
           "README／STATUS／自己的工具／baseline／_templates／原始碼／CLAUDE.md 內容完全不變")
     check(all(os.stat(os.path.join(a4, *rel.split("/"))).st_mtime_ns == mt[rel] for rel in extras), "它們的 mtime 也沒變(連碰都沒碰)")
     now = set(snapshot(a4))
-    check(now == set(os.path.join(*d.split("/")) for d in dests) | set(os.path.join(*e.split("/")) for e in extras),
-          "專案檔案集合 = 既有檔 ∪ manifest destination(沒憑空多出別的檔)")
+    # baseline 目錄已存在 → manifest 列(docs/dev/ 底下)的上游新內容同步進 baseline 對應路徑(見 ⑩);
+    # 除此之外不得有別的檔。
+    bl_extra = set(os.path.join("docs", "dev", ".devflow-baseline", *d[len("docs/dev/"):].split("/"))
+                   for d in dests if d.startswith("docs/dev/"))
+    check(now == set(os.path.join(*d.split("/")) for d in dests) | set(os.path.join(*e.split("/")) for e in extras) | bl_extra,
+          "專案檔案集合 = 既有檔 ∪ manifest destination ∪ 對應的 baseline 副本(沒憑空多出別的檔)")
 
     # ── ⑤ 路徑防跳脫 ────────────────────────────────────────────────
     print("-- ⑤ 路徑防跳脫 --")
@@ -273,6 +277,108 @@ try:
     rc, out, err = run("--root", a7, "--pack", pack, "--apply")
     wl = [l for l in out.splitlines() if l.startswith("  寫入  ")]
     check(wl and wl[-1].endswith("docs/dev/ship-manifest.json"), "manifest 自己那列排在最後寫入")
+
+    # ── ⑩ baseline 同步(docs/dev/.devflow-baseline/ 對應路徑)───────────────────────
+    # 起因(採用現場回報):--apply 只寫 destination、不更新 baseline 裡的基準副本 → baseline 停在舊版,
+    # 下次 upgrade 把使用者根本沒改的檔判成「本地 ≠ baseline = 需同意」。語意見腳本檔頭:baseline = 上次散發的
+    # 上游新內容。只在 baseline 目錄已存在時同步;不存在不建立(過渡態)。
+    print("-- ⑩ baseline 同步 --")
+
+    def bl(proj, dest):
+        return os.path.join(proj, "docs", "dev", ".devflow-baseline", *dest[len("docs/dev/"):].split("/"))
+
+    def src_of(pk, row):
+        return open(os.path.join(pk, *row["source"].split("/")), "rb").read()
+
+    docs_rows = [r for r in rows if r["destination"].startswith("docs/dev/")]
+    # (a) 無 baseline 目錄:--apply 後仍沒有(不建立只含一部分檔的 baseline)
+    a10n = os.path.join(work, "a10n"); os.makedirs(a10n)
+    rc, out, err = run("--root", a10n, "--pack", pack, "--apply")
+    check(rc == 0 and not os.path.exists(os.path.join(a10n, "docs", "dev", ".devflow-baseline")),
+          "無 baseline 目錄(過渡態)--apply 不建立 baseline", out[-200:])
+    check("baseline:docs/dev/.devflow-baseline/ 不存在" in out, "輸出明說 baseline 不存在、不建立")
+    # (b) 有 baseline(舊版)+ 本地 = 舊版;方法包升版;一份本地客製
+    a10 = os.path.join(work, "a10"); os.makedirs(a10)
+    run("--root", a10, "--pack", pack, "--apply")
+    for r in docs_rows:
+        b = bl(a10, r["destination"]); os.makedirs(os.path.dirname(b), exist_ok=True)
+        shutil.copyfile(os.path.join(a10, *r["destination"].split("/")), b)
+        os.chmod(b, 0o644)  # 舊 baseline 的權限不一定對;baseline 只比內容,被更新時才依 manifest mode 寫
+    readme_b = os.path.join(a10, "docs", "dev", ".devflow-baseline", "README.md")
+    open(readme_b, "wb").write(b"stripped readme baseline\n")
+    pack10 = make_pack("pack10")
+    for rel in ("diagir.py", "devflow_atomic.py", "build-gate-twin.py"):
+        with open(os.path.join(pack10, "scripts", rel), "ab") as f:
+            f.write(b"\n# upstream v2 for " + rel.encode() + b"\n")
+    custom = os.path.join(a10, "docs", "dev", "tools", "devflow_atomic.py")
+    with open(custom, "ab") as f:
+        f.write(b"\n# my edit\n")
+    custom_b = open(custom, "rb").read()
+    old_twin_baseline = open(bl(a10, "docs/dev/tools/build-gate-twin.py"), "rb").read()
+    snap_b = snapshot(os.path.join(a10, "docs", "dev", ".devflow-baseline"))
+    rc, out, err = run("--root", a10, "--pack", pack10)
+    check(rc == 0 and snapshot(os.path.join(a10, "docs", "dev", ".devflow-baseline")) == snap_b,
+          "dry-run 不動 baseline", out[-200:])
+    check("baseline 同步" in out and "更新 3" in out, "dry-run 預告 baseline 同步:更新 3(三個有改的 tools)", next((l for l in out.splitlines() if "baseline 同步" in l), ""))
+    rc, out, err = run("--root", a10, "--pack", pack10, "--apply")
+    check(rc == 0 and "baseline 同步完成:寫入 3、失敗 0" in out, "--apply 後 baseline 同步:寫入 3、失敗 0", out[-300:])
+    check(open(bl(a10, "docs/dev/tools/build-gate-twin.py"), "rb").read() == src_of(pack10, next(r for r in rows if r["destination"].endswith("tools/build-gate-twin.py")))
+          and open(bl(a10, "docs/dev/tools/build-gate-twin.py"), "rb").read() != old_twin_baseline,
+          "baseline/tools/build-gate-twin.py 換成方法包新內容(不再是舊版)")
+    check(all(open(bl(a10, r["destination"]), "rb").read() == src_of(pack10, r) for r in docs_rows),
+          "baseline 裡每個 manifest 列(docs/dev/ 底下)= 方法包上游新內容(逐位元組)")
+    check(open(custom, "rb").read() == custom_b, "本地客製的檔仍被跳過、內容不變")
+    check(open(bl(a10, "docs/dev/tools/devflow_atomic.py"), "rb").read() == src_of(pack10, next(r for r in rows if r["destination"].endswith("tools/devflow_atomic.py"))),
+          "客製被跳過時 baseline 仍取上游新內容(不取本地現況;SKILL 的 baseline 語意)")
+    check(open(readme_b, "rb").read() == b"stripped readme baseline\n", "baseline/README.md(不在 manifest 列)不被碰")
+    twin_b = bl(a10, "docs/dev/tools/build-gate-twin.py")
+    check(stat.S_IMODE(os.stat(twin_b).st_mode) == 0o755, "被更新的 baseline 副本 mode 依 manifest 列(build-gate-twin.py 為 755)")
+    left = [n for d, _x, fs in os.walk(a10) for n in fs if n.startswith(".devflow-upgrade-")]
+    check(not left, "baseline 同步後沒有留下暫存檔")
+    # 下一輪:自動被判成「母版改寫」而不是「需同意」(修前 baseline 停在舊版 → 全部誤判客製)
+    pack11 = make_pack("pack11")
+    with open(os.path.join(pack11, "scripts", "build-gate-twin.py"), "ab") as f:
+        f.write(b"\n# upstream v3\n")
+    rc, out, err = run("--root", a10, "--pack", pack11)
+    lt = next((l for l in out.splitlines() if "tools/build-gate-twin.py" in l), "")
+    check("母版改寫" in lt and "需同意" not in lt, "再升一版:沒改過的 build-gate-twin.py 判成母版改寫(不是誤判需同意)", lt)
+    # 同步後再跑一次(用同一個 pack10):baseline 全部相同、冪等
+    rc, out, err = run("--root", a10, "--pack", pack10)
+    check("新增 0、更新 0" in out and "baseline 同步" in out, "同一方法包再跑:baseline 同步 新增 0、更新 0(冪等)", next((l for l in out.splitlines() if "baseline 同步" in l), ""))
+    # (c) baseline 缺某檔(舊版 baseline 沒收這個檔)→ 新增
+    os.remove(bl(a10, "docs/dev/tools/diagir.py"))
+    rc, out, err = run("--root", a10, "--pack", pack10, "--apply")
+    check(rc == 0 and os.path.isfile(bl(a10, "docs/dev/tools/diagir.py")), "baseline 缺檔 → --apply 補上(新增)", out[-200:])
+    # (d) 寫入失敗 → 不同步 baseline
+    if not (hasattr(os, "geteuid") and os.geteuid() == 0):
+        a10f = os.path.join(work, "a10f")
+        os.makedirs(os.path.join(a10f, "docs", "dev", "tools", "devflow_jev"))
+        os.makedirs(os.path.join(a10f, "docs", "dev", ".devflow-baseline"))
+        os.chmod(os.path.join(a10f, "docs", "dev", "tools", "devflow_jev"), 0o555)
+        try:
+            rc, out, err = run("--root", a10f, "--pack", pack, "--apply")
+        finally:
+            os.chmod(os.path.join(a10f, "docs", "dev", "tools", "devflow_jev"), 0o755)
+        check(rc == 1 and snapshot(os.path.join(a10f, "docs", "dev", ".devflow-baseline")) == {} and "不同步 baseline" in out,
+              "有列寫入失敗 → baseline 一個檔都不同步", "rc=%s %s" % (rc, out[-200:]))
+    # (e) baseline 路徑防跳脫:baseline/tools 是 symlink 到專案外 → exit 2、外面不多檔、整批不寫
+    out_dir = os.path.join(work, "outside10"); os.makedirs(out_dir)
+    a10s = os.path.join(work, "a10s")
+    os.makedirs(os.path.join(a10s, "docs", "dev", ".devflow-baseline"))
+    os.symlink(out_dir, os.path.join(a10s, "docs", "dev", ".devflow-baseline", "tools"))
+    rc, out, err = run("--root", a10s, "--pack", pack, "--apply")
+    check(rc == 2 and os.listdir(out_dir) == [] and not os.path.exists(os.path.join(a10s, "docs", "dev", "tools")),
+          "baseline/tools 是 symlink 指到專案外 → exit 2、外面沒多檔、docs/dev/tools 也沒寫(整批先驗)", "rc=%s %s" % (rc, err[:200]))
+    # (f) baseline 目錄本身是 symlink → 視為不存在(不跟著寫到外面)
+    out_dir2 = os.path.join(work, "outside10b"); os.makedirs(out_dir2)
+    a10l = os.path.join(work, "a10l"); os.makedirs(os.path.join(a10l, "docs", "dev"))
+    os.symlink(out_dir2, os.path.join(a10l, "docs", "dev", ".devflow-baseline"))
+    rc, out, err = run("--root", a10l, "--pack", pack, "--apply")
+    check(os.listdir(out_dir2) == [], "baseline 目錄本身是 symlink → 不跟著寫到專案外", "rc=%s" % rc)
+    # (g) doctor 入口路徑正確:hooks/,不是 scripts/
+    rc, out, err = run("--root", a10n, "--pack", pack)
+    check("hooks/devflow-exec.sh" in out and "scripts/devflow-exec.sh" not in out and os.path.isfile(os.path.join(root, "hooks", "devflow-exec.sh")),
+          "輸出的 doctor 入口是 <方法包>/hooks/devflow-exec.sh(不是 scripts/,且該檔真的存在)")
 
     # ── ⑧ 只標準庫(靜態)─────────────────────────────────────────────
     print("-- ⑧ 靜態 --")

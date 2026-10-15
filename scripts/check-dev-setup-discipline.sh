@@ -207,6 +207,16 @@ if src:
          "SKILL.md 沒交代 _templates/jev.yaml 刻意不在 ship-manifest(走 _templates/ 整目錄複製)"
          " —— 下一個人會再把它當成漏散發去加列、重算指紋")
 
+    # ── ⑯upgrade 腳本同步 baseline、doctor 入口路徑、v2 指紋(v3.26.3)──
+    need("baseline 同步" in upg_sec and "不建立、不同步" in upg_sec and "上游新內容" in upg_sec,
+         "SKILL.md upgrade 段沒交代 devflow-upgrade-manifest.py --apply 會把 manifest 列的上游新內容同步進 baseline、"
+         "且 baseline 不存在時不建立 —— 腳本 apply 後 baseline 停在舊版,下次 upgrade 把沒改過的檔誤判成需同意")
+    need("hooks/devflow-exec.sh doctor" in upg_sec and "scripts/devflow-exec.sh" not in src,
+         "SKILL.md 對 doctor 入口沒寫 hooks/devflow-exec.sh,或出現了 scripts/devflow-exec.sh(那個檔不存在)")
+    need("指紋 v2" in upg_sec and "內容雜湊" in upg_sec and "v1" in upg_sec,
+         "SKILL.md upgrade 段沒交代 ship-manifest 指紋 v2 含各檔內容雜湊、v1 的相容處理 —— "
+         "採用專案 doctor 看不出 docs/dev/tools 內容過期的成因會被忘掉")
+
     # ── ⑪upgrade 殘件刪除:pack 不再出貨的受管檔要刪,live CONTEXT 不准刪 ──
     need("devflow-upgrade-leftovers.sh" in upg_sec,
          "SKILL.md upgrade 段沒有點名 devflow-upgrade-leftovers.sh —— pack 停出的"
@@ -300,7 +310,7 @@ if src:
 # ── 檢查數地板:防止有人把上面整段刪成空迴圈仍然 exit 0 ──────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」(同 repo 慣例:
 # check-stage67-enforcement.sh:232、check-no-stale-paths.sh 的 MIN_CHECKS)。
-MIN_CHECKS = 42
+MIN_CHECKS = 45
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")

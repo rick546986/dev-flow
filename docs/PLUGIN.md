@@ -26,9 +26,16 @@
 本機目錄還是舊的,就會回「already at the latest version」,即使 GitHub 上已發新版。
 
 **升到 3.26.2:** 照上面兩步(`marketplace update` → `plugin update`),重開 session 即可。3.26.2 新增的 `hooks/devflow-find-python.sh`
-隨 `hooks/` 整包進 plugin,不需另外散發;ship-manifest 列未變、指紋 `v1-8b3e8230958df1be` 不變,所以採用專案的
-`docs/dev/tools/` 不必重新散發(不需要跑 dev-setup upgrade)。要核對 manifest 列是否齊全或補齊舊專案缺件,用
+隨 `hooks/` 整包進 plugin,不需另外散發;ship-manifest 列未變、當時指紋 `v1-8b3e8230958df1be` 不變,所以採用專案的
+`docs/dev/tools/` 不必重新散發(不需要跑 dev-setup upgrade;3.26.3 起指紋改 v2,見下)。要核對 manifest 列是否齊全或補齊舊專案缺件,用
 `python3 "<plugin 根>/scripts/devflow-upgrade-manifest.py" --root <專案根>`(預設 dry-run,`--apply` 才寫)。
+
+**升到 3.26.3:** 同樣兩步(`marketplace update` → `plugin update`),重開 session。**這版 ship-manifest 指紋由 v1 升 v2**
+(`v1-8b3e8230958df1be` → 見 `devflow-contract.json` 的 `ship_manifest_version`;v2 把各散發檔的內容雜湊算進去),所以採用專案要重新散發
+`docs/dev/`:`python3 "<plugin 根>/scripts/devflow-upgrade-manifest.py" --root <專案根>` 先 dry-run 看「新增／變更」,確認後 `--apply`
+(manifest 列含 `devflow-contract.json`、`ship-manifest.json` 與 `docs/dev/tools/` 都會換成這版;`--apply` 也會把 baseline 對應檔同步成上游新內容,
+baseline 目錄不存在則不建立)。沒升 v2 的專案 doctor 照舊不擋,但會印 info 說明 v1 看不出工具檔內容過期、並顯示 plugin 現行指紋;
+升 v2 之後 doctor 會在受管檔內容過期時報 `✗ ship-manifest`。doctor 入口是 `<plugin 根>/hooks/devflow-exec.sh doctor`(在 `hooks/`,不是 `scripts/`)。
 
 實測(2026-10-15,Claude Code 2.1.296,拋棄式隔離環境 + 本機 git 假 marketplace,**shell 形式**):
 

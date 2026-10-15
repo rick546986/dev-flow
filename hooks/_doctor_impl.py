@@ -20,6 +20,10 @@ import sysconfig
 sys.dont_write_bytecode = True
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCHEMA_DIR = os.path.join(HERE, "devflow_obs_vendor", "schema")
+# 執行 .sh 用的 bash:外殼(devflow-doctor.sh / selftest.sh)已用 devflow_find_bash 或 $BASH
+# 選出「跑得起來的」並 export DEVFLOW_BASH。沒設就維持字面 bash(舊行為)。
+# 不直接寫 PATH 上的 bash:Apple Silicon 上 /usr/local/bin/bash 常是 x86 版,exit 126。
+BASH = os.environ.get("DEVFLOW_BASH") or "bash"
 
 # 方法論 schema_versions key → vendored schema 檔
 VENDORED_SCHEMAS = {
@@ -64,15 +68,60 @@ def _find_contract(root, cli_path):
 PRINTER_PY_FLOOR = (3, 12)
 
 
-def _ship_manifest_version(rows):
-    """與 scripts/devflow_ship_manifest.py::compute_version 同一算法(hooks/ 不 import scripts/):
-    列內容(source/destination/mode)canonical JSON 的 sha256 前 16 hex,前綴 v1-。
-    兩邊字面同步由 check-ship-manifest.sh(母版側)與 selftest p3(doctor 側)各自釘。"""
+# 指紋不含內容的兩列:manifest 自己(指紋存在它裡面)與契約(契約內存著指紋),雜湊會自我循環。
+SHIP_HASH_EXCLUDED_DESTS = frozenset({"docs/dev/ship-manifest.json", "docs/dev/devflow-contract.json"})
+
+
+def _ship_content_digest(path):
+    """檔案內容 sha256。CRLF 先正規化成 LF(Windows autocrlf 簽出的同內容不得被判過期)。
+    與 scripts/devflow_ship_manifest.py::content_digest 同一算法。"""
+    import hashlib
+    with open(path, "rb") as fh:
+        data = fh.read()
+    return hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()
+
+
+def _ship_manifest_version_v1(rows):
+    """舊指紋(v1-):只算列清單(source/destination/mode canonical JSON 的 sha256 前 16 hex)。
+    不含檔案內容 —— 3.26.1 改了 build-gate-twin.py 內容、指紋卻沒變,看不出採用專案工具過期。
+    保留給舊契約(v1)的採用專案相容比對。"""
     import hashlib
     canon_rows = [{"source": r.get("source"), "destination": r.get("destination"), "mode": r.get("mode")}
                   for r in rows if isinstance(r, dict)]
     canon = json.dumps(canon_rows, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return "v1-" + hashlib.sha256(canon.encode("utf-8")).hexdigest()[:16]
+
+
+def _ship_manifest_version_v2(rows, root):
+    """與 scripts/devflow_ship_manifest.py::compute_version 同一算法(hooks/ 不 import scripts/):
+    每列 source/destination/mode 加上 **destination 檔(在採用樹 root 底下)的內容雜湊**,前綴 v2-。
+    排除列記 "-"、檔不存在記 "missing"、路徑不合法記 "bad-path"。回傳 (版本, 缺檔 destination list)。
+    兩邊字面同步由 check-ship-manifest.sh(母版側)與 selftest p3(doctor 側)各自釘。"""
+    import hashlib
+    out, missing = [], []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        dest = r.get("destination")
+        segs = dest.split("/") if isinstance(dest, str) else []
+        if dest in SHIP_HASH_EXCLUDED_DESTS:
+            digest = "-"
+        elif (not isinstance(dest, str) or not dest or dest.startswith(("/", "\\")) or "\\" in dest
+              or any(seg in ("", ".", "..") for seg in segs)):
+            digest = "bad-path"
+        else:
+            path = os.path.join(root, *segs)
+            if os.path.isfile(path):
+                try:
+                    digest = _ship_content_digest(path)
+                except OSError:
+                    digest = "unreadable"
+            else:
+                digest = "missing"
+                missing.append(dest)
+        out.append({"source": r.get("source"), "destination": dest, "mode": r.get("mode"), "sha256": digest})
+    canon = json.dumps(out, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return "v2-" + hashlib.sha256(canon.encode("utf-8")).hexdigest()[:16], missing
 
 
 # 已散發 .py 的 import 對帳(ship-deps)。manifest 逐列只驗「列出來的 destination 在不在」,
@@ -424,7 +473,7 @@ def run_doctor(root, contract_path="", gate_cmd=""):
         else:
             have_g, detail = None, ""
             try:
-                r = subprocess.run(["bash", gpath, "--version"],
+                r = subprocess.run([BASH, gpath, "--version"],
                                    capture_output=True, text=True, timeout=30)
                 out = (r.stdout or "").strip()
                 if r.returncode == 0 and out:
@@ -453,7 +502,7 @@ def run_doctor(root, contract_path="", gate_cmd=""):
             if have_g is not None:
                 root_out, root_detail = None, ""
                 try:
-                    rr = subprocess.run(["bash", gpath, "--print-root"],
+                    rr = subprocess.run([BASH, gpath, "--print-root"],
                                        capture_output=True, text=True, timeout=30)
                     rout = (rr.stdout or "").strip()
                     if rr.returncode == 0 and rout:
@@ -488,7 +537,7 @@ def run_doctor(root, contract_path="", gate_cmd=""):
     if os.path.exists(hpath):
         h_out, h_detail = None, ""
         try:
-            hr = subprocess.run(["bash", hpath, "--print-root"],
+            hr = subprocess.run([BASH, hpath, "--print-root"],
                                 capture_output=True, text=True, timeout=30)
             hout = (hr.stdout or "").strip()
             if hr.returncode == 0 and hout:
@@ -583,12 +632,20 @@ def run_doctor(root, contract_path="", gate_cmd=""):
                 sm = _load_json(sm_path)
                 sm_rows = sm.get("files") or []
                 have_sm = sm.get("version")
-                calc_sm = _ship_manifest_version(sm_rows)
+                # v2(含各檔內容雜湊)與 v1(只含列清單,舊契約)並存:看契約記的前綴決定怎麼重算。
+                is_v2 = str(want_sm).startswith("v2-")
+                if is_v2:
+                    calc_sm, missing_sm = _ship_manifest_version_v2(sm_rows, root)
+                else:
+                    calc_sm, missing_sm = _ship_manifest_version_v1(sm_rows), []
             except Exception as e:
-                sm, sm_rows, have_sm, calc_sm = None, [], None, None
+                sm, sm_rows, have_sm, calc_sm, is_v2, missing_sm = None, [], None, None, False, []
                 check(False, "ship-manifest", f"{sm_path} 解析失敗({e});fail-closed。")
             if sm is not None:
-                if not (want_sm == have_sm == calc_sm):
+                # v1:三值(契約/自稱/依列重算)必須一致。v2:契約 = 自稱 是結構關;「依內容重算」不在這裡擋,
+                # 留到逐列與 ship-deps 之後單獨判(缺檔由逐列點名,內容過期不能蓋掉其他具體錯誤)。
+                three_ok = (want_sm == have_sm) if is_v2 else (want_sm == have_sm == calc_sm)
+                if not three_ok:
                     check(False, "ship-manifest",
                           f"版本三值不一致:契約 {want_sm} / manifest 自稱 {have_sm} / 依列內容重算 {calc_sm}"
                           f" —— 契約與 manifest 副本不是同一批散發,或 manifest 被手改;fail-closed —— 跑 dev-setup upgrade。")
@@ -624,9 +681,21 @@ def run_doctor(root, contract_path="", gate_cmd=""):
                               f"版本 {want_sm} 一致,但逐列驗證 {len(problems)} 項不符:"
                               + ";".join(problems[:8]) + (" …" if len(problems) > 8 else "")
                               + " —— fail-closed,跑 dev-setup upgrade 逐列重散發。")
+                    elif is_v2 and not missing_sm and calc_sm != want_sm:
+                        check(False, "ship-manifest",
+                              f"版本 {want_sm}(契約與 manifest 一致)但依採用樹實際檔案內容重算得 {calc_sm} —— "
+                              "有受管檔(docs/dev/tools/ 等)的內容與當次散發不同:過期、被本地改過、或漏更新;"
+                              "fail-closed。預覽哪幾支:python3 <方法包>/scripts/devflow-upgrade-manifest.py "
+                              "--root <專案根>(dry-run,標「變更」的就是);確認後跑 dev-setup upgrade。")
                     else:
+                        extra_v = (";含各檔內容雜湊(v2),受管檔內容與當次散發一致" if is_v2 else "")
                         check(True, "ship-manifest",
-                              f"版本 {want_sm} 三值一致;{len(sm_rows)} 列 destination 齊全、mode 一致")
+                              f"版本 {want_sm} 三值一致;{len(sm_rows)} 列 destination 齊全、mode 一致{extra_v}")
+                        if not is_v2:
+                            info("ship-manifest-v1",
+                                 f"指紋 {want_sm} 是 v1:只算檔案清單、不含檔案內容 —— 看不出 docs/dev/tools/ 內"
+                                 "工具檔是否過期(例:3.26.1 改了 build-gate-twin.py,指紋沒變)。"
+                                 "不擋;跑 dev-setup upgrade 取得 v2 契約後,內容過期會被這項抓到。")
                     # 逐列驗證只證明「清單列的檔在」;已散發 .py 依賴的檔沒列進清單時它照樣全綠,
                     # 所以另掃 import(缺件在採用專案是跑工具時才 ImportError)。
                     dep_problems = _ship_dep_problems(root, sm_rows)
@@ -638,6 +707,20 @@ def run_doctor(root, contract_path="", gate_cmd=""):
                               "跑 dev-setup upgrade 取新版散發清單與缺的檔(/plugin update 只更新 plugin,不會補 docs/dev/tools/)。")
                     else:
                         check(True, "ship-deps", "已散發 .py 的 import 在散發樹內全部解析得到")
+
+    # 6e'. 採用專案的散發指紋 vs plugin 這版的現行指紋(info,不擋):專案與 plugin 不是同一批散發 = 專案的
+    #      docs/dev/tools 等可能過期。v1 指紋看不出內容變動,所以 plugin 升版後 v1 專案至少在這裡看得見差異。
+    #      plugin 契約 = <plugin root>/devflow-contract.json(hooks/ 的上一層);讀不到/沒欄位就不比。
+    if want_sm:
+        try:
+            plug = _load_json(os.path.join(os.path.dirname(HERE), "devflow-contract.json")).get("ship_manifest_version")
+        except Exception:
+            plug = None
+        if plug and plug != want_sm:
+            info("ship-manifest-upstream",
+                 f"plugin 現行散發指紋 {plug},本專案契約記 {want_sm} —— 不是同一批散發,專案的 docs/dev/tools 等"
+                 "可能比 plugin 舊。不擋;預覽差異:python3 <方法包>/scripts/devflow-upgrade-manifest.py "
+                 "--root <專案根>(dry-run),確認後 dev-setup upgrade。")
 
     # 6c. wave_review schema(M3:契約 vs runtime-capabilities 聲明;
     #     runtime 實際字串 = devflow-lib wave review 驗證所認 schema)
@@ -690,7 +773,7 @@ def run_doctor(root, contract_path="", gate_cmd=""):
     # 命令,反斜線被 shell 當轉義字元吃掉 → `D:dev-flowhooksgate-consistency.sh:
     # command not found`(exit 127)。非檔案(例:selftest 用的 `true`、帶參數的
     # 自訂命令)照舊走 -c,保持既有語意。
-    argv = ["bash", cmd] if os.path.isfile(cmd) else ["bash", "-c", cmd]
+    argv = [BASH, cmd] if os.path.isfile(cmd) else [BASH, "-c", cmd]
     try:
         r = subprocess.run(argv, capture_output=True,
                            text=True, timeout=120)
