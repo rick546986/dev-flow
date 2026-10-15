@@ -37,7 +37,8 @@ RED → GREEN → scope check → Verify
 
 掛載中的 hook 必須被點名:`devflow-guard`、`devflow-prebash`、
 `devflow-dispatch-guard`、`devtalk-guard`、`devflow-report-guard`、
-`devflow-postbash`、`devflow-plainspeak`(另有 `history-guard` 守 HISTORY,不受旗標影響)。
+`devflow-postbash`、`devflow-plainspeak`、`devflow-stop-selftest`(Stop 事件:改完要結束時跑守衛自測,
+失敗 exit 2;`DEVFLOW_STOP_SELFTEST=off` 或 `disableAllHooks` 可關)(另有 `history-guard` 守 HISTORY,不受旗標影響)。
 L1 出口 = `devflow-exec.sh allow`;L2 = `stop`。
 
 **驗證五律**(適用 T 執行、T review 與各 gate):

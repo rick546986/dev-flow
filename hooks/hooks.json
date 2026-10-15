@@ -81,6 +81,18 @@
         ]
       }
     ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/devflow-stop-selftest.sh",
+            "timeout": 600,
+            "statusMessage": "devflow 守衛自測(改完才跑、通過後 6 小時內不重跑)"
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "matcher": "*",

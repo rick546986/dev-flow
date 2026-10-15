@@ -1,6 +1,6 @@
 {
  "devflow_contract_version": "2.1.0",
- "ship_manifest_version": "v1-c724aae86ad134d7",
+ "ship_manifest_version": "v1-8b3e8230958df1be",
  "required_runtime_capabilities": [
   "task_scoped_guard",
   "parallel_wave_execution",

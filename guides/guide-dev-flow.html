@@ -2412,6 +2412,8 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
     <path class="tick" d="M770,536 L850,536"/>
     <text class="dc" x="858" y="532">dev-run 派工(worker/reviewer</text>
     <text class="dc" x="858" y="544">獨立 context)</text>
+    <path class="tick" d="M770,736 L850,736"/>
+    <text class="dc" x="858" y="740">devflow-stop-selftest</text>
     <path class="tick" d="M770,890 L850,890"/>
     <text class="dc" x="858" y="893">壓縮會裁內容 → 文件才是正本</text>
 
@@ -2553,13 +2555,13 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   start 再換樹)效果等同,不是只有「忘記 start」這一種沉睡成因。</blockquote>
 
   <details class="plain">
-  <summary>這八支掛在哪、註冊了什麼(展開看逐字設定)</summary>
+  <summary>這九支掛在哪、註冊了什麼(展開看逐字設定)</summary>
   <p>hook 有三種掛法,差在「誰的、跟誰走」:<code>~/.claude/settings.json</code> 是<strong>你個人的</strong>,
   裝在你自己電腦上,每個專案都生效;專案自己的 <code>.claude/settings.json</code> 是<strong>只這個
   repo</strong> 的,會進版控、跟著團隊走;plugin 的 <code>hooks/hooks.json</code> 是<strong>隨插件
   散發</strong>的,別人裝了這個 plugin 就自動有,<code>/plugin update</code> 升級 plugin 版本時也跟著更新。
-  dev-flow 這八支<strong>全部是第三種</strong> —— 所以你不需要在任何一份 <code>settings.json</code> 裡手動掛
-  任何一支,只要裝了 dev-flow plugin,這八支就自動註冊好了。</p>
+  dev-flow 這九支<strong>全部是第三種</strong> —— 所以你不需要在任何一份 <code>settings.json</code> 裡手動掛
+  任何一支,只要裝了 dev-flow plugin,這九支就自動註冊好了。</p>
 
   <details>
   <summary><code>devflow-guard.sh</code> —— 你讀寫檔案前的總閘門:契約防篡改 + scope 硬擋</summary>
@@ -2639,7 +2641,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
       <td><code>${CLAUDE_PLUGIN_ROOT}/hooks/devflow-plainspeak.sh</code></td><td>5</td>
       <td><code>plainspeak 白話回覆提醒</code></td></tr>
   </table></div>
-  <p>這支跟其他七支不一樣:<strong>它不擋任何東西</strong>,只在你每次按下送出的時候,順手塞一段
+  <p>這支跟其他八支不一樣:<strong>它不擋任何東西</strong>,只在你每次按下送出的時候,順手塞一段
   「用白話繁體中文回、術語放括號」的提醒給模型。理由是三個關卡(G1/G2/G3)都要你拍板,
   而你要拍板得先看得懂;回覆風格設定只在對話一開始讀一次,講久了就淡掉,這支每一輪都重講一次。</p>
   <p>那段提醒的文字<strong>不寫在程式裡</strong>,而是讀 <code>hooks/plainspeak-rules.md</code>
@@ -2650,6 +2652,29 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
   <p><strong>預設是關的</strong> —— 用 dev-flow 的人不見得講中文,不能替別人決定回覆語言。
   要打開就在你自己的 <code>~/.claude/settings.json</code> 或專案的 <code>.claude/settings.json</code>
   的 <code>"env"</code> 區塊加 <code>"DEVFLOW_PLAINSPEAK": "1"</code>;沒設就什麼都不做。</p>
+  </details>
+
+  <details>
+  <summary><code>devflow-stop-selftest.sh</code> —— 改完要結束時,自動跑 dev-flow 守衛自測,沒過就擋住結束</summary>
+  <div class="tablewrap"><table>
+  <tr><th>event</th><th>matcher</th><th>handler(command)</th><th>timeout</th><th>statusMessage</th></tr>
+  <tr><td><code>Stop</code></td><td><code>(無)</code></td>
+      <td><code>${CLAUDE_PLUGIN_ROOT}/hooks/devflow-stop-selftest.sh</code></td><td>600</td>
+      <td><code>devflow 守衛自測(改完才跑、通過後 6 小時內不重跑)</code></td></tr>
+  </table></div>
+  <p>Stop 事件官方語意上沒有 matcher(上表記「(無)」);exit 2 = 讓 Claude 繼續修、stderr 當理由。
+  這支跑 <code>hooks/selftest.sh</code>(約 30–75 秒,所以 timeout 給 600),驗的是 dev-flow 守衛與本機環境,
+  <strong>不是你的產品程式碼</strong>。三個節流:①工作樹沒變更且分支沒領先 main 的純問答不跑;
+  ②同一組「plugin 版本 + Python」通過後 6 小時內不重跑(<code>DEVFLOW_STOP_SELFTEST_TTL</code> 秒數,0 = 每次跑;
+  只記通過、失敗不記);③<code>stop_hook_active</code> 為 true 一律放行,防無限迴圈。</p>
+  <p><strong>要 Python 3.12+</strong>(自測內 doctor 的 printer-python 項釘 3.12;macOS 系統 <code>python3</code> 是 3.9,
+  只保證語法可解析)。依序找 <code>DEVFLOW_PYTHON</code> → <code>python3.15…3.12</code>(含 <code>/opt/homebrew/bin</code>、
+  <code>/usr/local/bin</code>、<code>~/.local/bin</code>)→ <code>python3</code>。找不到就<strong>不擋</strong>:用
+  <code>systemMessage</code> 說明要哪版、怎麼裝(<code>brew install python@3.12</code>／<code>uv python install 3.12</code>)、
+  怎麼關,24 小時只提醒一次 —— 環境沒備齊不是這次改動的錯,擋住只會讓 Claude 去試著裝 Python。</p>
+  <p><strong>怎麼關</strong>:<code>DEVFLOW_STOP_SELFTEST=off</code>(只關這支)或 <code>"disableAllHooks": true</code>
+  (連所有守衛一起關)。本 repo 自己另有 <code>.claude/hooks/run-selftest.sh</code>(掛 <code>.claude/settings.json</code>),
+  專案 settings 已提到 <code>run-selftest.sh</code> 時這支讓出,不會重複跑。</p>
   </details>
 
   <p class="muted">正本是 <code>hooks/hooks.json</code>,這裡只是人看的鏡像 —— 懷疑這頁跟實際行為漂移了,
@@ -3377,6 +3402,12 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             這支每一輪重講一次。它不擋任何東西。<strong>預設是關的</strong>,設
             <code>DEVFLOW_PLAINSPEAK=1</code> 才啟用 —— 用這套流程的人不見得講中文。</td>
         <td><code>hooks.json</code> 自動掛(UserPromptSubmit;未設環境變數即靜默跳過)</td><td>UserPromptSubmit</td></tr>
+    <tr><td><code>devflow-stop-selftest.sh</code></td>
+        <td>plugin 版 Stop hook:採用專案改完要結束時自動跑 <code>hooks/selftest.sh</code>,沒過 exit 2。
+            通過後 6 小時內不重跑、無變更不跑、<code>stop_hook_active</code> 放行、專案已自掛
+            <code>run-selftest.sh</code> 時讓出;自動找 Python 3.12+,找不到只用 systemMessage 提醒不擋。
+            <code>DEVFLOW_STOP_SELFTEST=off</code> 或 <code>disableAllHooks</code> 可關。</td>
+        <td><code>hooks.json</code> 自動掛(Stop)</td><td>Stop</td></tr>
     <tr><td><code>devflow-lib.py</code></td>
         <td>guard/postbash/prebash/exec/gate 這幾支背後真正判斷「武裝了沒、契約有沒有被動過」的規則都寫在這裡,
             其他檔案只是各自的殼,共用同一套邏輯避免各判各的。</td>
@@ -3711,12 +3742,12 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             綠路徑才 <code>atomic_write</code>;紅路徑收據六鍵、不碰目標。
             <code>route</code> 只印路由表。產器產品寫檔走 <code>require_write</code>。</td>
         <td>產器產品寫檔呼叫;<code>test-diagir.sh</code> 對 lab／envelope 實跑</td>
-        <td>人工/CI(不在生命週期上)</td></tr>
+        <td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>,因 <code>build-gate-twin.py</code> import 它)</td></tr>
     <tr><td><code>devflow_atomic.py</code></td>
         <td>原子寫檔:tmp + <code>os.replace</code>,保證結尾換行。
             給 IR 閘共用,不改既有 inventory 形狀。</td>
         <td>被 <code>diagir.py</code> import</td>
-        <td>人工/CI(不在生命週期上)</td></tr>
+        <td>人工/CI(不在生命週期上;散發面:<code>docs/dev/tools/</code>,因 <code>diagir.py</code> import 它)</td></tr>
     <tr><td><code>build-stage1-html.py</code></td>
         <td>第 1 站審頁產生器:吃 <code>1-discussion.md</code> 的 Problem／Open Questions／
             現況圖／Actors,吐 <code>.sum#scan-sum</code>／直式三框
@@ -4076,8 +4107,17 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             <code>claude --settings '{"disableAllHooks": true}'</code>,會關掉全部 hook,
             沒有只關單一 hook 的開關。</td>
         <td><code>.claude/settings.json</code> 的 Stop 事件</td><td>每次 Claude 要結束回合時</td></tr>
+    <tr><td><code>test-adopter-ship.sh</code></td>
+        <td>採用專案散發完整性牙:依 <code>ship-manifest.json</code> 把檔複製到臨時目錄(身邊沒有母版 <code>scripts/</code>),
+            跑 <code>build-gate-twin.py</code> 不帶參數必須 exit 2 印用法、對 4-spec 模板實跑 exit 0;
+            再模擬舊清單(沒列 <code>diagir.py</code>／<code>devflow_atomic.py</code>)重現 ImportError exit 1,
+            並釘 doctor 的 <code>ship-deps</code> 必須報錯、整體 INCOMPATIBLE(逐列驗證本來看不到缺依賴)。
+            另釘選配 import 不誤報、相對 import 缺件、3.9 退路的標準庫判斷、母版自己全解析得到。案例數下限寫死。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-stop-selftest-hook.sh</code></td>
-        <td>Claude Code Stop hook <code>.claude/hooks/run-selftest.sh</code> 的牙(selftest 用
+        <td>Claude Code Stop hook <code>.claude/hooks/run-selftest.sh</code>(本 repo 自用)與 plugin 版
+            <code>hooks/devflow-stop-selftest.sh</code>(關閉開關、專案已自掛時讓出、TTL 節流、找 Python 3.12+、
+            找不到時 fail-open 的 JSON 提醒、<code>hooks.json</code> Stop 掛載形狀)的牙(selftest 用
             <code>DEVFLOW_STOP_SELFTEST_CMD</code> 替身注入):<code>stop_hook_active=true</code>
             必須放行(防無限迴圈);無變更且無 main 以外 commit 必須放行且不跑;selftest 失敗必須
             exit 2 並在 stderr 留提示與尾 40 行。另釘 <code>.claude/settings.json</code> 的

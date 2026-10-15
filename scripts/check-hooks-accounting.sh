@@ -50,7 +50,8 @@ try:
         for entry in entries:
             for h in entry["hooks"]:
                 name = os.path.basename(h["command"])
-                mounts.append((event, entry["matcher"], name, h.get("timeout")))
+                # Stop 等事件官方語意上沒有 matcher:記成 "(無)",文件列舉與 guide 註冊表照寫「(無)」
+                mounts.append((event, entry.get("matcher", "(無)"), name, h.get("timeout")))
 except Exception as exc:
     print(f"FATAL: 讀不到/解析不了 {hooks_path}:{exc}(機械正本壞了,對帳無從談起)",
           file=sys.stderr)
