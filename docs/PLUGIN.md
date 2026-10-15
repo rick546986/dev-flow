@@ -25,6 +25,11 @@
 **順序不能顛倒:先 `marketplace update`、再 `update`。** 單打 `plugin update` 不會先刷新 marketplace 目錄;
 本機目錄還是舊的,就會回「already at the latest version」,即使 GitHub 上已發新版。
 
+**升到 3.26.2:** 照上面兩步(`marketplace update` → `plugin update`),重開 session 即可。3.26.2 新增的 `hooks/devflow-find-python.sh`
+隨 `hooks/` 整包進 plugin,不需另外散發;ship-manifest 列未變、指紋 `v1-8b3e8230958df1be` 不變,所以採用專案的
+`docs/dev/tools/` 不必重新散發(不需要跑 dev-setup upgrade)。要核對 manifest 列是否齊全或補齊舊專案缺件,用
+`python3 "<plugin 根>/scripts/devflow-upgrade-manifest.py" --root <專案根>`(預設 dry-run,`--apply` 才寫)。
+
 實測(2026-10-15,Claude Code 2.1.296,拋棄式隔離環境 + 本機 git 假 marketplace,**shell 形式**):
 
 | 動作 | 結果 |
@@ -93,7 +98,7 @@ codex plugin marketplace upgrade dev-flow
 不要發明 Grok marketplace。Grok Bot 吃 Cursor 帳裝好的同一包（已見過 `plugins/cache/dev-flow/...`）。本機 Grok 技能庫仍可掛整棵 `.grok/skills`。不要假裝能從產品 repo 自動灌進 Grok。
 
 **環境**:以下 hooks 規則只在 Claude Code 生效。Cursor／Codex 薄殼不掛 hooks,沒有機械擋寫入。非 Claude 主機**沒有 PreToolUse**；共同 runtime 是該站 `--action`（allow 鑄 `.devflow/host-receipt/<slug>/<station>.json`；`verify_receipt:true` 只核對不鑄）。`devflow-exec start` 單獨成功 ≠ 已武裝。不准為了別的主機改鬆 `--action`。hooks 要 python3(只吃標準函式庫,編譯下限 3.9)。hook 找直譯器:`DEVFLOW_PYTHON` → `/usr/bin/python3` → PATH。找不到就印警告後放行 —— 那次呼叫沒有守衛,不是功能壞掉。
-gate-twin／產圖要 `markdown-it-py==4.0.0`(Python **3.12+**)。macOS 系統 python 常是 3.9,裝不出 4.x。用專案 venv 或設 `DEVFLOW_PYTHON` 指向 3.12+,**不要覆寫** Apple 系統 Python。doctor 的 `printer-python` 會查。
+gate-twin／產圖要 `markdown-it-py==4.0.0`(Python **3.12+**)。macOS 系統 python 常是 3.9,裝不出 4.x。用專案 venv 或設 `DEVFLOW_PYTHON` 指向 3.12+,**不要覆寫** Apple 系統 Python。doctor 的 `printer-python` 會查。手動跑 `devflow-doctor.sh`／`hooks/selftest.sh` 且沒設 `DEVFLOW_PYTHON` 時,會自動在 PATH 與 Homebrew 等目錄找 3.12+(共用 `hooks/devflow-find-python.sh`,與 Stop hook 同一份;候選要 `--version` 跑得起來才採用,Apple Silicon 上 Bad CPU type 的 x86 版 python／bash 會被跳過);找不到時 selftest exit 2 並說明怎麼裝,doctor 報 `printer-python` ✗。
 
 Windows(Git Bash)沒有 `/usr/bin/python3`。另外裝 Python 3.12+,或設 `DEVFLOW_PYTHON`(例:`setx DEVFLOW_PYTHON "C:/Python312/python.exe"`)。裝好之後 hook 會生效,但本 repo 的驗證套件在 Windows 上仍跑不全綠。見 `notes/dispatch-windows-parity.md`。
 

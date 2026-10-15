@@ -198,6 +198,15 @@ if src:
          "第 10 項單獨驗 —— 併進 parity 總表就沒有人在驗 contract 副本"
          "(同 dev-release 步 2 把那行 diff -q 單獨留著的理由)")
 
+    # ── ⑮upgrade 的 manifest 列複製腳本(v3.26.2):Prism 回報 upgrade 只能照 manifest 手動 cp ──
+    need("devflow-upgrade-manifest.py" in upg_sec and "--apply" in upg_sec and "dry-run" in upg_sec
+         and "--include-custom" in upg_sec,
+         "SKILL.md upgrade 段沒有點名 devflow-upgrade-manifest.py(預設 dry-run、--apply、--include-custom)"
+         " —— upgrade 退回只能手動逐檔 cp manifest 列(漏列/漏 chmod/漏建子目錄)")
+    need("刻意不在 manifest" in src and "_templates/jev.yaml" in src,
+         "SKILL.md 沒交代 _templates/jev.yaml 刻意不在 ship-manifest(走 _templates/ 整目錄複製)"
+         " —— 下一個人會再把它當成漏散發去加列、重算指紋")
+
     # ── ⑪upgrade 殘件刪除:pack 不再出貨的受管檔要刪,live CONTEXT 不准刪 ──
     need("devflow-upgrade-leftovers.sh" in upg_sec,
          "SKILL.md upgrade 段沒有點名 devflow-upgrade-leftovers.sh —— pack 停出的"
@@ -291,7 +300,7 @@ if src:
 # ── 檢查數地板:防止有人把上面整段刪成空迴圈仍然 exit 0 ──────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」(同 repo 慣例:
 # check-stage67-enforcement.sh:232、check-no-stale-paths.sh 的 MIN_CHECKS)。
-MIN_CHECKS = 40
+MIN_CHECKS = 42
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")

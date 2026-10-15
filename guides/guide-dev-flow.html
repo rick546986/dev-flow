@@ -3417,6 +3417,14 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             系統 <code>/usr/bin/python3</code> → PATH),找不到就印一行警告後放行(只跳過守衛,
             不擋工具呼叫 —— 擋住的代價是把宿主卡死);母版自用的共用邏輯,無執行位元。</td>
         <td>被上列各支 <code>*.sh</code> hook source,不單獨執行</td><td>隨呼叫者同格(橫跨 Pre/Post/人工,不專屬單一格)</td></tr>
+    <tr><td><code>devflow-find-python.sh</code></td>
+        <td>「找跑得起來的 Python 3.12+」的唯一正本(Stop hook、手動跑的 <code>selftest.sh</code>、手動跑的
+            <code>devflow-doctor.sh</code> 共用這一份):<code>DEVFLOW_PYTHON</code> → <code>python3.15…3.12</code>
+            (PATH 每個目錄 + Homebrew 等額外目錄)→ <code>python3</code>。候選要 <code>--version</code> 試跑成功才採用 ——
+            Mac <code>/usr/local/bin</code> 的 x86 版 python／bash 在 Apple Silicon 上 Bad CPU type(exit 126)會被跳過。
+            和 <code>devflow-python-lib.sh</code> 分工:python-lib 管 hook 用哪支跑(3.9 夠),這支管要 3.12+ 的場合。
+            隨 <code>hooks/</code> 整包進 plugin;644 無執行位元。</td>
+        <td>被 <code>devflow-stop-selftest.sh</code>、<code>selftest.sh</code>、<code>devflow-doctor.sh</code> source,不單獨執行</td><td>隨呼叫者同格(橫跨 Stop／人工,不專屬單一格)</td></tr>
     <tr><td><code>_prebash_impl.py</code></td><td><code>devflow-prebash.sh</code> 的實作本體。</td>
         <td><code>devflow-prebash.sh</code> 呼叫</td><td>隨 <code>devflow-prebash.sh</code>(同格)</td></tr>
     <tr><td><code>_guard_impl.py</code></td><td><code>devflow-guard.sh</code> 的實作本體。</td>
@@ -4107,6 +4115,28 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             <code>claude --settings '{"disableAllHooks": true}'</code>,會關掉全部 hook,
             沒有只關單一 hook 的開關。</td>
         <td><code>.claude/settings.json</code> 的 Stop 事件</td><td>每次 Claude 要結束回合時</td></tr>
+    <tr><td><code>devflow-upgrade-manifest.py</code></td>
+        <td>dev-setup upgrade 的 manifest 列複製腳本(只標準庫):照 <code>docs/dev/ship-manifest.json</code> 把方法包的散發檔
+            複製/更新進採用專案。預設 dry-run 列「新增／變更／相同」(變更再分「母版改寫」與「需同意」= 本地客製或無 baseline),
+            <code>--apply</code> 才寫、需同意的列要再加 <code>--include-custom</code>。只動 manifest 列的 destination,
+            路徑防跳脫(<code>..</code>／絕對路徑／<code>.git</code>／symlink 一律拒絕且整批不寫);manifest 自己那列最後寫。
+            不做 README／<code>_templates</code>／殘件刪除／baseline 快照(仍照 SKILL)。</td>
+        <td>dev-setup upgrade 呼叫;<code>test-upgrade-manifest.sh</code> 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-upgrade-manifest.sh</code></td>
+        <td>上一支的牙:dry-run 不寫、<code>--apply</code> 內容與 mode 逐列正確且冪等、本地客製預設跳過、manifest 以外的檔
+            (README／STATUS／自己的工具／baseline)連 mtime 都不變、路徑越界與 symlink 全拒絕、寫入失敗時 manifest 列不寫、
+            只用標準庫、套完後 doctor 的 <code>ship-manifest</code>／<code>ship-deps</code> 皆 ✓。案例數下限寫死。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-find-python.sh</code></td>
+        <td><code>hooks/devflow-find-python.sh</code> 的牙:壞的(exit 126)候選排前面會被跳過、<code>--version</code> 跑不起來的也跳過、
+            PATH 空項／相對路徑不撿、只有 3.9 時手動 <code>selftest.sh</code> exit 2 並說清楚、<code>DEVFLOW_PYTHON</code> 明示不偷換、
+            三條路徑(Stop hook／selftest／doctor)都走同一份而非各抄一份、doctor 取捨(系統夠用不搶、專案 venv 優先)。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
+    <tr><td><code>test-selftest-isolation.sh</code></td>
+        <td>selftest／doctor 不共用固定暫存檔、doctor 結果必入 exit code 的牙:hooks/ 無固定 <code>/tmp/&lt;名稱&gt;</code> 路徑(靜態 + 對抗樣本)、
+            selftest 每個 doctor 呼叫的結果都由 <code>ck</code> 計入 FAIL、doctor 8+8 並行結果穩定且「rc=0 ⇔ COMPATIBLE」、
+            selftest 被 SIGTERM 中斷後私有暫存根被 EXIT trap 清乾淨。</td>
+        <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-adopter-ship.sh</code></td>
         <td>採用專案散發完整性牙:依 <code>ship-manifest.json</code> 把檔複製到臨時目錄(身邊沒有母版 <code>scripts/</code>),
             跑 <code>build-gate-twin.py</code> 不帶參數必須 exit 2 印用法、對 4-spec 模板實跑 exit 0;

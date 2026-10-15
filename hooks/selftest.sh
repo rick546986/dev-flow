@@ -4,6 +4,15 @@
 # 用法:<plugin-root>/hooks/selftest.sh [-v](plugin-root 由安裝方式決定,勿寫死)
 set -u
 H=$(cd "$(dirname "$0")" && pwd)
+# 自測內的 doctor printer-python 項要 Python 3.12+;macOS 系統 python3 是 3.9。未設
+# DEVFLOW_PYTHON 時先用共用的「找 3.12+」(與 Stop hook、手動 doctor 同一份,候選先試跑才採用,
+# x86 版 Bad CPU type 的會跳過);找不到就講清楚並 exit 2,不要硬跑到 p3 才滿屏紅。
+# 明示設了 DEVFLOW_PYTHON 的照舊尊重,不偷換。
+. "$H/devflow-find-python.sh"
+if [ -z "${DEVFLOW_PYTHON:-}" ]; then
+  DEVFLOW_PYTHON=$(devflow_find_py312) || { devflow_no_py312_text >&2; exit 2; }
+  export DEVFLOW_PYTHON
+fi
 . "$H/devflow-python-lib.sh"  # 直譯器解析;缺直譯器 fail-open(理由見該檔)
 # devflow:tmpdir-normalize:start
 # 派工單 §2.1:Git Bash 的 /tmp 與 Windows 原生 Python 解讀的 /tmp 不是同一個資料夾。
@@ -21,6 +30,16 @@ if command -v cygpath >/dev/null 2>&1; then
   TMPDIR=$(cygpath -m "${TMPDIR:-/tmp}") && export TMPDIR
 fi
 # devflow:tmpdir-normalize:end
+# 每次自測用自己的私有暫存根:底下所有 mktemp(本檔 40 多處)與子行程的 tempfile 都改落在這裡,
+# 結束時(含中途被 Ctrl-C／kill／set -u 炸掉)由 EXIT trap 整棵清掉。
+# 理由:同一台機器可能同時有多個自測(Stop hook、人工、CI)在跑 —— 任何固定名稱的 /tmp 檔都會被
+# 別的執行混到(一邊寫、一邊讀到對方的 doctor 輸出)。目前 hooks/ 內已沒有固定名稱的 /tmp 路徑
+# (scripts/test-selftest-isolation.sh 靜態釘住),這層是讓「以後有人加一個」也不會跨執行互相污染。
+# 不放在 tmpdir-normalize 標記內:那段與 scripts/devflow-check.sh 必須逐字相同。
+DEVFLOW_SELFTEST_TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/devflow-selftest-root.XXXXXX") \
+  || { echo "devflow selftest:建不了私有暫存根(TMPDIR=${TMPDIR:-/tmp} 不可寫?)" >&2; exit 2; }
+trap 'cd / 2>/dev/null; rm -rf "$DEVFLOW_SELFTEST_TMPROOT"' EXIT
+export TMPDIR=$DEVFLOW_SELFTEST_TMPROOT
 V=${1:-}
 T=$(mktemp -d "${TMPDIR:-/tmp}/devflow-selftest.XXXXXX")
 C=$(mktemp -d "${TMPDIR:-/tmp}/devflow-gate-selftest.XXXXXX")

@@ -23,9 +23,12 @@
 #      TTL 預設 21600 秒(6 小時),DEVFLOW_STOP_SELFTEST_TTL=0 → 每次都跑。只記「通過」,
 #      失敗不記。狀態檔放 ${CLAUDE_PLUGIN_DATA:-${XDG_CACHE_HOME:-~/.cache}/dev-flow}/stop-selftest/。
 #   ⑥ 找 Python 3.12+(自測內的 doctor printer-python 項釘死 3.12:macOS 系統 python3 是 3.9,
-#      只保證語法層,跑自測會紅)。順序:DEVFLOW_PYTHON → python3.15…3.12 → python3;
+#      只保證語法層,跑自測會紅)。找法在 hooks/devflow-find-python.sh(手動跑的 selftest.sh、
+#      devflow-doctor.sh 共用同一份):DEVFLOW_PYTHON → python3.15…3.12 → python3;
 #      除 PATH 外也找 /opt/homebrew/bin、/usr/local/bin、~/.local/bin(Claude 從 GUI 起時
-#      PATH 常不含 Homebrew)。找不到 → **fail-open**:exit 0 並用 systemMessage 說明要哪版、
+#      PATH 常不含 Homebrew)。候選先 `--version` 試跑成功才採用:Mac /usr/local/bin 的 x86 版
+#      python3.12／bash 在 Apple Silicon 上 Bad CPU type(exit 126),會被跳過、改找下一個。
+#      找不到 → **fail-open**:exit 0 並用 systemMessage 說明要哪版、
 #      怎麼裝、怎麼關(每 24 小時最多提醒一次)。理由同 devflow-python-lib.sh:環境沒備齊
 #      不是這次改動的錯,擋住只會讓 Claude 去試著「裝 Python」。DEVFLOW_PYTHON 明示指定但
 #      不到 3.12 時同樣只提醒、不偷換。
@@ -101,29 +104,12 @@ stamp_write() {  # stamp_write <檔>:寫不進去就算了(節流是優化,不�
   mkdir -p "$STATE_DIR" 2>/dev/null && printf '%s\n' "$NOW" >"$1" 2>/dev/null || true
 }
 
-py_ok() {  # py_ok <exe>:是 3.12+ 的可執行直譯器
-  [ -n "$1" ] && [ -x "$1" ] \
-    && "$1" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)' >/dev/null 2>&1
-}
-find_py() {
-  local v c d
-  if [ -n "${DEVFLOW_PYTHON:-}" ]; then
-    py_ok "$DEVFLOW_PYTHON" && { echo "$DEVFLOW_PYTHON"; return 0; }
-    return 1
-  fi
-  for v in 3.15 3.14 3.13 3.12; do
-    c=$(command -v "python$v" 2>/dev/null || true)
-    py_ok "$c" && { echo "$c"; return 0; }
-    for d in ${DEVFLOW_STOP_PY_DIRS-/opt/homebrew/bin /usr/local/bin ${HOME:-/nonexistent}/.local/bin}; do
-      py_ok "$d/python$v" && { echo "$d/python$v"; return 0; }
-    done
-  done
-  c=$(command -v python3 2>/dev/null || true)
-  py_ok "$c" && { echo "$c"; return 0; }
-  return 1
-}
+# 找 3.12+ 的邏輯是 hooks/devflow-find-python.sh 的 devflow_find_py312(手動跑的 selftest.sh、
+# devflow-doctor.sh 共用同一份,候選要先 `--version` 跑得起來才採用 —— x86 版 python 在
+# Apple Silicon 上 Bad CPU type 會被跳過)。不要在這裡另抄一份。
+. "$HERE/devflow-find-python.sh"
 
-PY=$(find_py) || {
+PY=$(devflow_find_py312) || {
   if [ "$(stamp_age "$STATE_DIR/no-python")" -ge 86400 ]; then
     stamp_write "$STATE_DIR/no-python"
     # 組成 JSON 字串:換行寫成 \n、內文雙引號寫成 \",其餘不含需跳脫字元。
@@ -148,8 +134,11 @@ fi
 OUT=$(mktemp "${TMPDIR:-/tmp}/devflow-stop-selftest.XXXXXX") || exit 0
 trap 'rm -f "$OUT"' EXIT
 
-CMD=${DEVFLOW_STOP_SELFTEST_CMD:-bash "$HERE/selftest.sh"}
-if DEVFLOW_PYTHON="$PY" bash -c "$CMD" >"$OUT" 2>&1; then
+# bash 也先試跑:PATH 上 /usr/local/bin 的 x86 版 bash 在 Apple Silicon 上 Bad CPU type(exit 126),
+# 直接寫 `bash` 會整套自測以 126 死掉;找不到可用的就退回字面 bash(維持舊行為)。
+BASH_BIN=$(devflow_find_bash) || BASH_BIN=bash
+CMD=${DEVFLOW_STOP_SELFTEST_CMD:-$(printf '%q %q' "$BASH_BIN" "$HERE/selftest.sh")}
+if DEVFLOW_PYTHON="$PY" "$BASH_BIN" -c "$CMD" >"$OUT" 2>&1; then
   stamp_write "$STATE_DIR/pass-$KEY"
   exit 0
 fi

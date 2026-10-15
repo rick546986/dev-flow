@@ -14,7 +14,11 @@
 # all_rows() 涵蓋全部列;source_existence_failures()/unclassified_sync_failures()
 # 補上第三類列的存在性/內容/mode 驗證,不再各分類各挑各的。
 #
+# manifest 刻意不含 `_templates/*`(含 _templates/jev.yaml):模板走 dev-setup 的「整目錄複製 +
+# baseline 的 _templates/*」,manifest 只放 1:1 mode 列(#69 起如此;v3.26.2 查證 jev.yaml 不是漏列)。
+#
 # 本檔是庫。牙齒在 scripts/check-ship-manifest.sh。
+# 照 manifest 實際複製進採用專案的指令:scripts/devflow-upgrade-manifest.py(預設 dry-run)。
 # 用法(診斷):
 #   python3 scripts/devflow_ship_manifest.py --list [root]
 #   python3 scripts/devflow_ship_manifest.py --validate [root]

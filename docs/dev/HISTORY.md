@@ -804,3 +804,8 @@
 - 為什麼:採用專案(SpaceS 等)回報:master 主幹純問答也觸發 Stop 自測、tools 的 .pyc 被 commit、doctor 假警報、gate-twin 缺相依與用法錯誤共用 exit 2、zsh 的 claude function 攔走 plugin 指令、plugin update 回 already at the latest
 - 落在哪:hooks/devflow-stop-selftest.sh、hooks/_doctor_impl.py、scripts/build-gate-twin.py(+docs/dev/tools 鏡像)、skills/dev-setup/SKILL.md、docs/PLUGIN.md、guides/guide-dev-flow.html、docs/adr/0002、selftest/測試與靜態釘、四處版本字串
 
+## 2026-10-15 · release-v3-26-2 · v3.26.2
+- 做了什麼:發布 v3.26.2:採用專案回報四項——①共用「找跑得起來的 Python 3.12+」(hooks/devflow-find-python.sh;Stop hook／手動 selftest／手動 doctor 同一份,候選先 --version 試跑成功才採用,Apple Silicon 上 x86 版 python3.12／bash 的 Bad CPU type(exit 126)會跳過,PATH 每個目錄都找);只有 3.9 時手動 selftest exit 2 並說清楚;②_templates/jev.yaml 查證為刻意不進 ship-manifest(所有 _templates 走整目錄複製),文件寫明,指紋 v1-8b3e8230958df1be 不變;③新增 scripts/devflow-upgrade-manifest.py(只標準庫;預設 dry-run 列新增/變更/相同,--apply 才寫,路徑防跳脫,只動 manifest 列);④selftest／doctor 查無固定 /tmp 路徑(假設未證實),selftest 改私有暫存根 + EXIT trap,並加靜態/並行守衛釘住 doctor 結果必入 exit code
+- 為什麼:Mac 手動跑 doctor／selftest 未設 DEVFLOW_PYTHON 時 printer-python 抓到 /usr/bin/python3 3.9 → INCOMPATIBLE;Prism 回報 upgrade 只能照 manifest 手動 cp;selftest 結尾疑似印 doctor INCOMPATIBLE 卻 exit 0(原因未能重現,見 test-selftest-isolation.sh 頭註)
+- 落在哪:hooks/devflow-find-python.sh、hooks/devflow-stop-selftest.sh、hooks/selftest.sh、hooks/devflow-doctor.sh、hooks/_doctor_impl.py、scripts/devflow-upgrade-manifest.py、scripts/test-find-python.sh、scripts/test-selftest-isolation.sh、scripts/test-upgrade-manifest.sh、scripts/test-stop-selftest-hook.sh(44→47)、skills/dev-setup/SKILL.md、docs/PLUGIN.md、guides/guide-dev-flow.html、三份 plugin.json 與 hooks/runtime-capabilities.json(3.26.1→3.26.2)
+

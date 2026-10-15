@@ -39,7 +39,7 @@ HOOKS_JSON="$ROOT/hooks/hooks.json"
 [ -f "$HOOKS_JSON" ] || { echo "FATAL: 找不到 $HOOKS_JSON" >&2; exit 2; }
 command -v git >/dev/null 2>&1 || { echo "FATAL: 需要 git" >&2; exit 2; }
 
-MIN_CASES=44
+MIN_CASES=47
 PASS=0
 FAIL=0
 TOTAL=0
@@ -282,6 +282,37 @@ dirty_repo; rm -f "$WORK/picked"
 run_plugin "$REPO" '{}' 'printf %s "$DEVFLOW_PYTHON" > '"$WORK/picked" PATH="$BIN:$TOOLS" DEVFLOW_STOP_PY_DIRS=""
 expect "plugin:只有 python3 且是 3.12+ → 也接受" \
   "$([ "$(rc)" = 0 ] && [ "$(cat "$WORK/picked" 2>/dev/null)" = "$BIN/python3" ]; echo $?)"
+
+# P7b 壞的候選(Mac /usr/local/bin 的 x86 版 python3.12 在 Apple Silicon 上 Bad CPU type,exit 126)
+# 排在 PATH 前面、好的在後面 → 跳過壞的、選好的(舊版 command -v 只回第一個,壞的在前就整個漏掉)
+rm -rf "$BIN"; mkdir -p "$BIN/bad" "$BIN/good"
+printf '#!/bin/sh\necho "Bad CPU type in executable" >&2\nexit 126\n' >"$BIN/bad/python3.13"; chmod 755 "$BIN/bad/python3.13"
+fake_py "$BIN/good/python3.13" 3.13
+dirty_repo; rm -f "$WORK/picked"
+run_plugin "$REPO" '{}' 'printf %s "$DEVFLOW_PYTHON" > '"$WORK/picked" PATH="$BIN/bad:$BIN/good:$TOOLS" DEVFLOW_STOP_PY_DIRS=""
+expect "plugin:壞的(exit 126)python3.13 排 PATH 前面 → 跳過、選後面好的" \
+  "$([ "$(rc)" = 0 ] && [ "$(cat "$WORK/picked" 2>/dev/null)" = "$BIN/good/python3.13" ]; echo $?)"
+# --version 跑不起來(-c 能跑)的候選也要跳過 → 證明 hook 有先試跑 --version
+rm -rf "$BIN"; mkdir -p "$BIN"
+printf '#!/bin/sh\n[ "$1" = "--version" ] && exit 126\nexec "%s" -c %s "$2" "3.13"\n' "$REAL_PY" \
+  "'import sys; sys.version_info = tuple(int(x) for x in sys.argv[2].split(\".\")) + (0,); exec(sys.argv[1])'" >"$BIN/python3.13"
+chmod 755 "$BIN/python3.13"
+dirty_repo
+run_plugin "$REPO" '{}' "$SPY; exit 1" PATH="$BIN:$TOOLS" DEVFLOW_STOP_PY_DIRS=""
+expect "plugin:--version 跑不起來的 python3.13 → 被跳過(找不到 → fail-open 提醒、不跑自測)" \
+  "$([ "$(rc)" = 0 ] && [ ! -e "$MARK" ] && grep -q '3.12' "$WORK/out"; echo $?)"
+# 壞 bash(126)排在 PATH 前面 → 自測改用能跑的 bash(不以 126 死掉)。hook 本身以絕對路徑 bash 啟動。
+REAL_BASH=$(command -v bash)
+rm -rf "$BIN"; mkdir -p "$BIN/badbash" "$BIN/goodbash"
+printf '#!/bin/sh\necho "Bad CPU type in executable" >&2\nexit 126\n' >"$BIN/badbash/bash"; chmod 755 "$BIN/badbash/bash"
+printf '#!/bin/sh\necho used >> "%s"\nexec "%s" "$@"\n' "$WORK/goodbash-used" "$REAL_BASH" >"$BIN/goodbash/bash"; chmod 755 "$BIN/goodbash/bash"
+dirty_repo; rm -f "$WORK/goodbash-used"
+printf '%s' '{}' | env -u DEVFLOW_STOP_SELFTEST -u DEVFLOW_STOP_SELFTEST_TTL -u DEVFLOW_PYTHON -u DEVFLOW_STOP_PY_DIRS \
+  CLAUDE_PROJECT_DIR="$REPO" CLAUDE_PLUGIN_DATA="$WORK/data" HOME="$WORK/home" PATH="$BIN/badbash:$BIN/goodbash:$TOOLS" \
+  DEVFLOW_PYTHON="$WORK/py-ok" DEVFLOW_STOP_SELFTEST_CMD="$SPY" "$REAL_BASH" "$PHOOK" >"$WORK/out" 2>"$WORK/err"
+echo $? >"$WORK/rc"
+expect "plugin:壞 bash(exit 126)排 PATH 前面 → 自測改用能跑的 bash 跑完(exit 0、有跑)" \
+  "$([ "$(rc)" = 0 ] && [ -e "$MARK" ] && [ -e "$WORK/goodbash-used" ]; echo $?)"
 
 # P8 找不到 3.12+(macOS 只有 3.9):fail-open、合法 JSON systemMessage、說明版本/怎麼裝/怎麼關,24 小時只提醒一次
 rm -rf "$BIN"; mkdir -p "$BIN"; fake_py "$BIN/python3" 3.9; fake_py "$BIN/python3.9" 3.9
