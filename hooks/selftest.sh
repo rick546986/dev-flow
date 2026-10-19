@@ -131,7 +131,8 @@ TOTAL_CASES=$(grep -Ec '^[[:space:]]*(ck|ck_msg) "' "$0")
 # v3.26.1 p3 doctor memory_local/memory_durable 比對 +5 → 491。
 # v3.26.3 ship-manifest 指紋 v2(含各檔內容雜湊):p3 doctor 內容雜湊一致 ✓／內容過期 ✗／指路 upgrade 預覽／
 # CRLF 不誤判／舊 v1 指紋相容 ✓／v1 info 說明 共 +6 → 497(w2/g1/p1 的 bash 改用 SELFTEST_BASH 不增減案例)。
-MIN_CASES=497
+# v3.26.7 `_templates/*` 成為 manifest 1:1 列:p3 doctor 模板內容一致 ✓／內容不同 ✗／缺檔 ✗ 共 +3 → 500。
+MIN_CASES=500
 
 ck() { # ck <名稱> <期望exit> <實際exit>
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); [ "$V" = "-v" ] && echo "  ✓ $1"
@@ -2288,6 +2289,33 @@ printf 'x = 1\r\n' > "$P3T/docs/dev/tools/sm-b.py"
 p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
 ck_msg "p3 doctor v2 指紋:CRLF 行尾(同內容)不誤判過期 → ✓" 0 "✓ ship-manifest" "$P3_RC" "$P3_OUT"
 printf 'x = 1\n' > "$P3T/docs/dev/tools/sm-b.py"
+# 3.26.7 模板列:`_templates/X` → `docs/dev/_templates/X` 也在指紋內。內容與當次散發不同、缺檔都要 ✗(3.26.6 前 manifest 不含模板,看不到)
+p3_tpl_row() {  # $1 = add | del:加／拆一列模板列(後面案例用的 manifest 要還原成沒有它)
+  "$DEVFLOW_PY" - "$P3T/docs/dev/ship-manifest.json" "$1" <<'PY'
+import json, sys
+p, op = sys.argv[1], sys.argv[2]
+d = json.load(open(p))
+d["files"] = [r for r in d["files"] if r.get("destination") != "docs/dev/_templates/sm-t.md"]
+if op == "add":
+    d["files"].insert(0, {"source": "_templates/sm-t.md", "destination": "docs/dev/_templates/sm-t.md", "mode": "644"})
+json.dump(d, open(p, "w"))
+PY
+}
+mkdir -p "$P3T/docs/dev/_templates"
+printf '# template\n' > "$P3T/docs/dev/_templates/sm-t.md"; chmod 644 "$P3T/docs/dev/_templates/sm-t.md"
+p3_tpl_row add
+p3_resmv
+p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor 模板列:模板內容與當次散發一致 → ✓" 0 "✓ ship-manifest" "$P3_RC" "$P3_OUT"
+printf '# template edited locally, manifest/contract unchanged\n' > "$P3T/docs/dev/_templates/sm-t.md"
+p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor 模板列:模板內容與當次散發不同 → fail 並點名 docs/dev/_templates/" 1 "docs/dev/_templates/ 等" "$P3_RC" "$P3_OUT"
+rm -f "$P3T/docs/dev/_templates/sm-t.md"
+p3_doctor "$P3T/contract-sm.json" "$P3T/caps-ok.json"
+ck_msg "p3 doctor 模板列:模板缺檔 → fail 並點名" 1 "缺 docs/dev/_templates/sm-t.md" "$P3_RC" "$P3_OUT"
+p3_tpl_row del
+rmdir "$P3T/docs/dev/_templates" 2>/dev/null || true
+p3_resmv
 # 舊契約 v1 指紋(只算列清單):相容比對照舊通過,但要明說 v1 看不出內容過期(不擋)
 SMV1=$("$DEVFLOW_PY" - "$P3T/docs/dev/ship-manifest.json" <<'PY'
 import hashlib, json, sys

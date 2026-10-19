@@ -19,6 +19,7 @@
 #      內缺件要報;標準函式庫在 3.9 地板的探測退路(沒有 sys.stdlib_module_names)判對。
 #   ⑤ 母版自己:每支已散發 .py 的 import 在散發樹內全部解析得到(新增散發 .py 卻漏依賴 → 紅)。
 #   ⑥ 指紋 v2(含各檔內容雜湊):採用樹 build-gate-twin.py 內容過期(manifest／契約沒動)→ doctor ✗ 並指路;
+#      v3.26.7:模板(docs/dev/_templates/*,manifest 1:1 列)內容過期／缺檔也一樣 ✗,方法包自己當專案時模板列讀 source;
 #      CRLF 不誤判;舊 v1 專案相容(✓ + info 說明 v1 看不出內容 + plugin 現行指紋差異提示);母版與 doctor 兩份算法同值。
 #
 # build-gate-twin.py 的 render 路徑要 3.12+ 且 markdown-it-py==4.0.0(ADR 0002),直譯器取
@@ -53,7 +54,7 @@ import sys
 import tempfile
 
 root, render_py = sys.argv[1], sys.argv[2]
-MIN_CASES = 31
+MIN_CASES = 35
 passed = failed = 0
 
 
@@ -261,6 +262,30 @@ try:
           "build-gate-twin.py 內容與當次散發不同(manifest／契約都沒動)→ doctor ✗ ship-manifest 並指路 upgrade dry-run", ln or line_with(out, "ship-manifest"))
     check(rc == 1 and "INCOMPATIBLE" in out, "內容過期 → 整體 INCOMPATIBLE、exit 1(不再 COMPATIBLE)", "rc=%s" % rc)
     check("✓ ship-deps" in out, "內容過期時 ship-deps 仍照跑(不被蓋掉)", line_with(out, "ship-deps"))
+    # v3.26.7:模板列。採用樹的 docs/dev/_templates/* 內容過期或缺檔,doctor 要抓到(3.26.6 前 manifest 不含模板,看不到)
+    tpl = os.path.join(work, "tpl-stale")
+    install(tpl)
+    t4 = os.path.join(tpl, "docs", "dev", "_templates", "4-spec.md")
+    check(os.path.isfile(t4), "完整散發的採用樹含 docs/dev/_templates/4-spec.md(模板是 manifest 列)")
+    with open(t4, "ab") as f:
+        f.write(b"\n<!-- stale template -->\n")
+    rc, out = run_doctor(tpl)
+    ln = line_with(out, "✗ ship-manifest")
+    check(rc == 1 and ln and "內容" in ln and "docs/dev/_templates/" in ln and "devflow-upgrade-manifest.py" in ln,
+          "模板 4-spec.md 內容與當次散發不同 → doctor ✗ ship-manifest(點名 docs/dev/_templates/)並指路 upgrade dry-run、整體 exit 1",
+          ln or line_with(out, "ship-manifest"))
+    tpl2 = os.path.join(work, "tpl-missing")
+    install(tpl2)
+    os.remove(os.path.join(tpl2, "docs", "dev", "_templates", "4-spec.md"))
+    os.makedirs(os.path.join(tpl2, "_templates"))
+    shutil.copyfile(os.path.join(root, "_templates", "4-spec.md"), os.path.join(tpl2, "_templates", "4-spec.md"))
+    rc, out = run_doctor(tpl2)
+    ln = line_with(out, "✗ ship-manifest")
+    check(rc == 1 and "缺 docs/dev/_templates/4-spec.md" in ln,
+          "採用樹模板缺檔 → doctor ✗ 點名;就算專案根碰巧有自己的 _templates/4-spec.md 也遮不住(source 退路只給方法包自己)", ln)
+    rc, out = run_doctor(root)
+    check("✓ ship-manifest" in out and "✗ ship-manifest" not in out,
+          "方法包自己當專案跑 doctor:模板列在母版沒有鏡像,讀 source 仍 ✓", line_with(out, "ship-manifest"))
     # CRLF 不算過期
     crlf = os.path.join(work, "crlf")
     install(crlf)
@@ -294,9 +319,10 @@ try:
     check(md["version"] in line_with(out, "ship-manifest-upstream") and "v2-" in line_with(out, "ship-manifest-upstream"),
           "舊 v1:印出 info 顯示 plugin 現行指紋(v2-)≠ 專案(v1-),提示專案可能比 plugin 舊",
           line_with(out, "ship-manifest-upstream"))
-    check(sm_mod.compute_version_v1(load_json(os.path.join(root, "docs", "dev", "ship-manifest.json")))
-          == "v1-8b3e8230958df1be",
-          "compute_version_v1 對目前 manifest 列仍算出舊指紋 v1-8b3e8230958df1be(舊算法沒被改壞)")
+    legacy_manifest = load_json(os.path.join(root, "docs", "dev", "ship-manifest.json"))
+    legacy_manifest["files"] = [r for r in legacy_manifest["files"] if not r["source"].startswith("_templates/")]
+    check(sm_mod.compute_version_v1(legacy_manifest) == "v1-8b3e8230958df1be",
+          "compute_version_v1 對 v3.26.7 前的 manifest 列(去掉模板列)仍算出舊指紋 v1-8b3e8230958df1be(舊算法沒被改壞)")
     # master 與 doctor 兩份 v2 算法同值
     mdata = load_json(os.path.join(root, "docs", "dev", "ship-manifest.json"))
     dv, dmiss = doctor._ship_manifest_version_v2(mdata["files"], root)

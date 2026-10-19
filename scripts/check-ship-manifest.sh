@@ -13,6 +13,10 @@
 #     時,舊版①②③全綠 —— ②只掃 tools 列,③只比檔案地圖,兩者都碰不到它)
 #   ⑤負向 fixture:漏記、正副本同刪、mode 不一致、結構壞掉、
 #     第三類列 source 被刪都必須紅
+#   ⑦模板列(v3.26.7):母版 `_templates/` 底下每個檔(含 jev.yaml)都有 1:1 列(`_templates/X` →
+#     `docs/dev/_templates/X`、mode 644);漏列、非 1:1、mode 不對、母版鏡像內容不同都必須紅;
+#     指紋對模板內容敏感(母版端讀 source:改了 _templates/ 沒重算 → 版本過期 → 紅)。
+#     起因:3.26.6 改了 _templates/4-spec.md,manifest 不含模板 → 升級腳本與 doctor 內容雜湊都看不到
 #   ⑥manifest.version(v2 指紋 = 列內容 + 各 destination 檔內容雜湊)與 devflow-contract.json
 #     正副本的 ship_manifest_version 同值(2026-09-23 W2 C1,P0-8 結論:採用側 doctor 逐列驗證
 #     靠這個值);加列沒重算、**改了散發檔內容沒重算**(v1 指紋看不出,3.26.1 改了
@@ -67,6 +71,7 @@ from devflow_ship_manifest import (
     rows,
     schema_problems,
     source_existence_failures,
+    template_failures,
     tools_rows,
     unclassified_sync_failures,
 )
@@ -136,6 +141,16 @@ sync_fails = unclassified_sync_failures(root, data if raw_ok else None)
 check(not sync_fails,
       "第三類列(非 tools/非 contract)若母版內也有同步副本,內容/mode 一致",
       "; ".join(sync_fails))
+
+print("-- 模板列:_templates/* ↔ docs/dev/_templates/*(v3.26.7)--")
+tpl_fails = template_failures(root, data if raw_ok else None)
+check(not tpl_fails,
+      "母版 _templates/ 每個檔都有 1:1 manifest 列(mode 644),且列都是 1:1",
+      "; ".join(tpl_fails))
+n_tpl = len([r for r in (rows(data) if raw_ok else []) if r["source"].startswith("_templates/")])
+n_tpl_files = len([f for f in os.listdir(os.path.join(root, "_templates")) if os.path.isfile(os.path.join(root, "_templates", f))])
+check(raw_ok and n_tpl >= 1 and n_tpl == n_tpl_files,
+      "模板列數 = 母版 _templates/ 檔數(%s/%s)" % (n_tpl, n_tpl_files))
 
 print("-- manifest 版本 ↔ 契約 ship_manifest_version(W2 C1;採用側 doctor 逐列驗證的依據)--")
 ver_fails = version_failures(root, data if raw_ok else None)
@@ -338,6 +353,48 @@ try:
     check("missing" in json.dumps(_canon_rows(miss, fixture)[0]) and _canon_rows(miss, fixture)[1] == ["docs/dev/tools/tool-gone.sh"],
           "指紋對缺檔的 destination 記 missing(缺檔也會讓指紋變,不會被當成沒事)")
 
+    # ── 模板列(v3.26.7):_templates/X → docs/dev/_templates/X,母版不建鏡像 ───────────
+    tdir = os.path.join(fixture, "_templates")
+    os.makedirs(tdir)
+    tpl_file = os.path.join(tdir, "t1.md")
+    with open(tpl_file, "w") as fh:
+        fh.write("template one\n")
+    trow = {"source": "_templates/t1.md", "destination": "docs/dev/_templates/t1.md", "mode": "644"}
+    t_unlisted = template_failures(fixture, man)
+    check(any("_templates/t1.md" in f and "反向" in f for f in t_unlisted),
+          "模板負向:母版 _templates/ 多了檔、manifest 沒列 → 紅(新模板漏列,採用專案升級拿不到)",
+          "實得 %s" % t_unlisted)
+    tman = dict(man)
+    tman["files"] = man["files"] + [trow]
+    check(not template_failures(fixture, tman), "模板基線:列齊 1:1、mode 644 → 綠")
+    t_rows, t_missing = _canon_rows(tman, fixture)
+    check(t_missing == [] and t_rows[-1]["sha256"] not in ("missing", "-"),
+          "模板列母版沒有 destination 鏡像:指紋讀 source,不當缺檔")
+    t_v0 = compute_version(tman, fixture)
+    tman["version"] = t_v0
+    check(not any("manifest.version 過期" in f for f in version_failures(fixture, tman)),
+          "模板基線:manifest.version 記的就是含模板列的 v2 指紋 → 版本項不紅")
+    with open(tpl_file, "a") as fh:
+        fh.write("changed\n")
+    check(compute_version(tman, fixture) != t_v0 and any("manifest.version 過期" in f for f in version_failures(fixture, tman)),
+          "模板負向:只改 _templates 內容(列沒動)→ 指紋變、manifest.version 過期 → 紅(3.26.6 的盲區)")
+    check(compute_version(man, fixture) == base_ver,
+          "對照:manifest 沒有模板列時,改 _templates 內容指紋不變(= 3.26.6 看不到模板落差的原因)")
+    bad_mode = dict(tman)
+    bad_mode["files"] = man["files"] + [dict(trow, mode="755")]
+    check(any("mode" in f for f in template_failures(fixture, bad_mode)), "模板負向:mode 不是 644 → 紅")
+    bad_map = dict(tman)
+    bad_map["files"] = man["files"] + [dict(trow, destination="docs/dev/_templates/other.md")]
+    check(any("不是 1:1" in f for f in template_failures(fixture, bad_map)), "模板負向:source/destination 不是 1:1 → 紅")
+    mirror = os.path.join(fixture, "docs", "dev", "_templates")
+    os.makedirs(mirror)
+    with open(os.path.join(mirror, "t1.md"), "w") as fh:
+        fh.write("diverged mirror\n")
+    check(any("內容不同" in f for f in template_failures(fixture, tman)),
+          "模板負向:母版若建了 docs/dev/_templates/ 鏡像且內容與 source 不同 → 紅")
+    shutil.rmtree(mirror)
+    shutil.rmtree(tdir)
+
     # ── 第三類列(issue #92):source == destination 的同步宣告列 ──────────────
     # 必須在 tool-y.sh 被刪掉(下面)之前做完 —— tool-y.sh 刪掉後不會再復原,
     # 晚做的話 source_existence_failures() 連 tool-y 缺席都一起算進來,
@@ -400,7 +457,7 @@ finally:
     shutil.rmtree(fixture, ignore_errors=True)
 
 # ── 檢查數地板 ──────────────────────────────────────────────────────────
-MIN_CHECKS = 34
+MIN_CHECKS = 45
 if CHECKS < MIN_CHECKS:
     FAILED += 1
     print("  ✗ 檢查數地板:實際只跑了 %s 項(地板 %s)" % (CHECKS, MIN_CHECKS))

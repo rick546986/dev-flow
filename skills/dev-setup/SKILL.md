@@ -109,14 +109,17 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    `cp "${DEVFLOW_ROOT}/<source>" <destination>` 後 `chmod <mode>`。
    `devflow-contract.json` 的 destination 是 `docs/dev/devflow-contract.json`,
    **不住在 `docs/dev/tools/`**,不得把它塞進 tools/ 清單再刪掉第 10 項獨立比對。
-   README 剝除與 `_templates/` 整目錄複製不是 1:1 mode 列,仍按本步既有手續。
-   **`_templates/jev.yaml`(Jev opt-in 範本)刻意不在 manifest**(v3.26.2 查證):所有 `_templates/*`
-   (含 4-spec.md 等七站模板)都走「整目錄複製 + baseline 的 `_templates/*`」,manifest 只放 1:1 mode 列
-   (自 #69 起即如此,manifest 裡沒有任何 `_templates/` 列);jev.yaml 隨 `_templates/` 落到採用專案的
-   `docs/dev/_templates/jev.yaml`,方法包根的正本是 `${DEVFLOW_ROOT}/_templates/jev.yaml`。
-   執行期沒有任何程式讀它(只有母版的 `test_mr_gate.py` 驗它能解析且全 off);要用 Jev 的專案手動複製成
-   `.dev-flow/jev.yaml`(**預設不建**,雙閘門要 key + 該檔)。所以「manifest 沒列它」不是漏散發,
-   不要為了它往 manifest 加列(加列會連帶要重算指紋、改契約與副本)。
+   README 剝除不是 1:1 mode 列,仍按本步既有手續。
+   **`_templates/*` 全部是 manifest 的 1:1 列(v3.26.7 起,含 `_templates/jev.yaml`)**:`_templates/X` →
+   `docs/dev/_templates/X`、mode 644。v3.26.6 以前 manifest 刻意不含模板,結果升級腳本不同步模板、
+   doctor 的 v2 內容雜湊也看不到模板落差(3.26.6 改了 `_templates/4-spec.md`,採用專案只能手動同步)。
+   現在模板與其他列同一套規則:新增／母版改寫／需同意、baseline 同步、指紋含內容雜湊;
+   母版根的 `_templates/` 底下每個檔都必須有一列(`check-ship-manifest.sh` 反向把關,新模板漏列會紅)。
+   `jev.yaml`(Jev opt-in 範本)也列:它本來就隨 `docs/dev/_templates/` 落到採用專案,複製過去不會打開 Jev
+   (執行期沒有任何程式讀它,只有母版的 `test_mr_gate.py` 驗它能解析且全 off;要用 Jev 的專案手動複製成
+   `.dev-flow/jev.yaml`,**預設不建**,雙閘門要 key + 該檔);不列它,它就成了唯一不受升級／doctor 涵蓋的模板。
+   母版**不建** `docs/dev/_templates/` 鏡像(模板沒有「正副本」,多一份會讓掃 `docs/dev/*/` 的守衛多看到一個假 slug):
+   母版端算指紋時模板列讀 `_templates/`(source),採用樹讀 `docs/dev/_templates/`(destination),兩邊同值。
 1. `docs/dev/` 建立:cp 方法論 `${DEVFLOW_ROOT}/README.md` 後**剝除 master-only 區塊**
    再落地為 `docs/dev/README.md`(不得直接 cp 未剝除版 —— 母版 README 內
    `<!-- devflow:master-only:start -->` / `<!-- devflow:master-only:end -->` 之間是純母版
@@ -129,7 +132,8 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    GNU sed 以文字模式讀檔、輸出時會把 CR 拿掉,平台不同就寫出不同行尾 —— 讓平台決定
    寫出什麼,等於在安裝當下就種下與比對端對不起來的不一致(upgrade/check 兩處比對
    同步一律兩側 `tr -d '\r'` 後再比,見下方 upgrade 段與 check 第 6 項)。
-   `_templates/` → `docs/dev/_templates/`、**`devflow-contract.json` →
+   `_templates/` → `docs/dev/_templates/`(與步 0 的模板列是同一批檔、同一份內容;整目錄複製是 install 既有手續,
+   upgrade 改由 manifest 列逐檔處理)、**`devflow-contract.json` →
    `docs/dev/devflow-contract.json`**(版本握手契約;doctor 無 `--contract`/
    `$DEVFLOW_CONTRACT` 明示時在此找,缺件必 fail-closed);從模板建 `STATUS.md`。
    **不再建 repo root `CONTEXT.md`**(v3.10.0 起):業務語言的正本改為
@@ -270,13 +274,21 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
    落地方式:先在暫存目錄把完整 baseline 新樹組好、核對成功後才整棵替換
    `docs/dev/.devflow-baseline/`(**乾淨替換,不准 overlay** —— overlay 會在
    上游移除工具時於 baseline 留下幽靈檔)。
+   **例外(v3.26.4 起,與下面 upgrade 段、`devflow-upgrade-manifest.py` 檔頭同一條,三處說法一致)**:upgrade 時,
+   baseline 目錄已存在、該檔的舊 baseline 卻沒有、且這次因「需同意:baseline 沒有此檔」被跳過(使用者沒同意覆蓋、
+   本地檔不動)的 **manifest 列**(含 `_templates/*` 列、`docs/dev/tools/`、契約),新 baseline 樹**不收這個檔** ——
+   否則成了「專案檔舊版、baseline 新版」,下一輪會把沒客製的檔誤判成本地客製;不新增則下一輪理由不變,
+   同意並寫入該檔時才一併新增。除此之外一律照上面整棵取上游新內容:被跳過的「本地內容與 baseline 不同(本地客製)」列
+   baseline 仍取上游新內容(不取本地現況),寫入的列、本來就相同的列、新增與母版改寫的列、無 baseline 目錄的過渡態都不變。
+   README 不是 manifest 列,此例外目前不涵蓋它(待 owner 決定是否比照)。
 9. **堆疊盤點 I2**:`python3 "${DEVFLOW_ROOT}/scripts/write-stack-inventory.py" --root <專案根>`
    寫 `docs/dev/0-inventory.json`。依賴變了要重跑。預設不寫 `0-stack.md`。
 
 ## upgrade(stale)
 
-- 只覆蓋 `docs/dev/README.md`、`docs/dev/_templates/`、以及
+- 只覆蓋 `docs/dev/README.md`、以及
   `${DEVFLOW_ROOT}/docs/dev/ship-manifest.json` **每一列的 destination**
+  (v3.26.7 起含 `docs/dev/_templates/` 的每個模板 —— 逐檔三方比對,不再整目錄覆蓋)
   (`docs/dev/tools/` 仍**整個 tools/ 目錄**整包覆蓋,以便清掉上游已移除的檔;
   覆蓋後重跑 install 步 6 **與步 7** 的可執行驗證 ——
   步 6 只驗 gauntlet 一支,整合回歸工具的可執行位元驗證在步 7,兩道都要;各列
@@ -294,7 +306,7 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
   **baseline 同步(v3.26.3 起)**:baseline(`docs/dev/.devflow-baseline/`)的語意是「上次 install/upgrade 散發下去的上游新內容」,
   下次 upgrade 拿它當「上游舊版」做三方比對。`--apply` 在所有列都寫入成功之後,把 manifest 列(`docs/dev/` 底下,含 `tools/`)的
   **上游新內容**同步進 baseline 對應路徑(新增／更新;已相同的略過;內容比對,權限依 manifest 列);有任何一列寫入失敗就不同步。
-  「需同意:本地內容與 baseline 不同(本地客製)」被跳過的列,baseline 仍取上游新內容(不取本地現況)。
+  「需同意:本地內容與 baseline 不同(本地客製)」被跳過的列,baseline 仍取上游新內容(不取本地現況;owner 2026-10-19 決定維持此現行行為)。
   **唯一例外(v3.26.4 起)**:「需同意:baseline 沒有此檔,無法判斷是否本地客製」而這次被跳過(沒加 `--include-custom`)的列,
   **baseline 也不新增該檔**。理由:這種列本地檔不動(仍是舊版),若 baseline 先收了上游新內容,就成了「專案檔舊版、baseline 新版」,
   下一輪 dry-run 的理由會從「baseline 沒有此檔」變成「本地內容與 baseline 不同(本地客製)」,把沒客製的檔誤判成客製
@@ -302,15 +314,23 @@ Cursor／Codex／Grok 各自怎麼裝見 `docs/PLUGIN.md`（不要抄 Claude 的
   dry-run 與 `--apply` 的輸出會逐列標出「baseline 不新增／未同步」與原因。實際寫入的列、本來就和上游相同的列、母版改寫與新增的列、
   無 baseline 目錄的舊安裝(尚未有快照),行為都不變;此例外只限本腳本的逐列同步,不改下面 install 步 8 的整棵乾淨替換。baseline 目錄不存在(尚未有快照的舊安裝)時**不建立、不同步**
   —— 避免只含一部分檔的 baseline 讓下面「無快照但 docs/dev/ 已存在」的處置規則失效。路徑同樣防跳脫(baseline 內的 symlink 拒絕)。
-  不做 baseline 的乾淨替換(不刪上游已移除的舊檔)、也不碰 README／`_templates/` 的 baseline —— 那些仍照 install 步 8。
-  它**不做**:README 剝除版與 `_templates/` 複製、出廠殘件清理(下面那條 devflow-upgrade-leftovers.sh)、README／`_templates/` 的 baseline 快照與 baseline 乾淨替換、`.gitignore`、
-  刪除上游已移除的舊工具檔 —— 這些仍照本段其他條目做。套完跑 `hooks/devflow-exec.sh doctor`(在方法包的 hooks/,不是 scripts/)確認 ship-manifest 逐列 ✓。
+  **模板(v3.26.7 起)**:`_templates/*`(含 `jev.yaml`)是 manifest 列(`_templates/X` → `docs/dev/_templates/X`、644),
+  上面每條規則原樣適用:新增／母版改寫(本地 = baseline `.devflow-baseline/_templates/X`)／需同意(本地自改、baseline 沒有此檔、或根本沒有 baseline 目錄的舊安裝)、
+  `--apply` 預設跳過需同意列、`--include-custom` 才覆蓋、baseline 同步與上面的 v3.26.4 例外都一樣;dry-run 不寫任何檔。
+  從 3.26.6 升上來的專案不需要先改 manifest:腳本讀的是方法包的新 manifest,舊 manifest 沒有模板列不影響;
+  模板與 baseline 相同(沒自改)就是「母版改寫」,自動同步並更新 baseline。
+  不做 baseline 的乾淨替換(不刪上游已移除的舊檔,含已退役模板的 baseline 殘件)、也不碰 README 的 baseline —— 那些仍照 install 步 8
+  (步 8 的乾淨替換同樣帶 v3.26.4 例外,見步 8)。
+  它**不做**:README 剝除版複製、出廠殘件清理(下面那條 devflow-upgrade-leftovers.sh)、README 的 baseline 快照與 baseline 乾淨替換、`.gitignore`、
+  刪除上游已移除的舊工具檔與舊模板 —— 這些仍照本段其他條目做。套完跑 `hooks/devflow-exec.sh doctor`(在方法包的 hooks/,不是 scripts/)確認 ship-manifest 逐列 ✓。
 - **ship-manifest 指紋 v2(v3.26.3 起)含各散發檔的內容雜湊**:舊 v1 指紋(`v1-…`)只算列清單,工具檔內容改了指紋不變
   (3.26.1 改了 build-gate-twin.py 就是),doctor 看不出採用專案的 `docs/dev/tools/` 過期。v2(`v2-…`)把每個 destination 檔的內容雜湊
   (CRLF 先正規化)算進去;manifest 自己與契約兩列不進雜湊(自我循環)。doctor 對 v2 契約:契約 = manifest 自稱,且依採用樹實際檔案重算
   必須相同,否則 `✗ ship-manifest`(指路 `devflow-upgrade-manifest.py` dry-run 看哪幾支「變更」);對舊 v1 契約照舊比對、不擋,
   但印 info 說明 v1 看不出內容過期;另把專案契約的指紋與 plugin 現行的比,不同就印 info(專案可能比 plugin 舊)。
   升 v2:跑上面的 `devflow-upgrade-manifest.py`(manifest 列含契約與 manifest 自己,會一起換成 v2)。
+  v3.26.7 起模板也在指紋內(內容雜湊讀採用樹的 `docs/dev/_templates/*`):專案自改過模板、且沒同意覆蓋,doctor 會報 `✗ ship-manifest`
+  (與 `docs/dev/tools/` 被自改同一規則);doctor 對「專案指紋比方法包舊」仍只印 info 不擋(owner 2026-10-19 維持現狀)。
 - **manifest 新增列的分類**(2026-09-23,W0 P0-8 結論):三方比對只定義了「本地現況 ≠ 上游舊 blob ⇒ 客製」;
   **本地缺、baseline 也缺**的 destination 一律歸 ①「母版新增」—— 直接散發,且**必須出現在 diff 摘要**
   (列成「新增:<destination>」),不得因為本地沒有這個檔就從摘要漏掉、也不得反過來漏建。

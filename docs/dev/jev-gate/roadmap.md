@@ -442,6 +442,15 @@ J2 shadow ──▶ 提示 G1 人審注意哪裡（Owner Calls 人裁）
 | J2 rolling window | **50 unique labeled cases** | 待核定；未核定前 shadow |
 | AUTO random audit | ~~10–20% 候選~~ | **v5 移除**（owner 2026-09-26：C1 整項移除，G2 放行後不需人工介入） |
 
+### 8.2a Owner 2026-10-19 決定（owner 依 Rick-dev-flow 建議拍板；只記錄，程式／題庫不動）
+
+| # | 項目 | 決定 | 出處 |
+|---|---|---|---|
+| 1 | Jev 小數 score 與門檻比較 | **直接比、不取整**：G2R risk 1.99 不轉人、≥ 2.0 才轉人；J1 ambiguity 1.2 → `ASK_MORE`；維持 v3.26.6 現行行為 | `policy.py`；`jev-status.md` |
+| 2 | 3.26.5 新增 9 題 noul 的 criteria／instructions（J1 `goal_clear`／`scope_clear`／`acceptance_clear`／`owner_call_pending`；J3 `demo_worth_it`；J5 `evidence_complete`；J2 `decision_supported`／`owner_calls_resolved`；J4 `retry_same_tier_useful`） | **照現狀接受（owner 已接受）**；題目文字不改，`questionset_hash` 不變 | `jev-questions*.json`；`jev-status.md` |
+
+兩項都不是新門檻、不動任何旗標或 gate 開關；原本若在文件裡被當成「待 owner 決定」的說法，以本表為準。
+
 ### 8.3 v5 數值（owner 2026-09-26 定案；說明見 `v5-owner-direction.md` §5）
 
 | # | 項目 | 定案 | 說明摘要 |

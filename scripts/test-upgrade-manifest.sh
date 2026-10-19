@@ -9,7 +9,12 @@
 #   才覆蓋;本地 = baseline 的「母版改寫」直接覆蓋;④ 絕不碰 manifest 以外的檔(含 README／STATUS／
 #   baseline／自己加的工具);⑤ 路徑防跳脫:..／絕對路徑／.git／symlink 上層／symlink 目的檔／
 #   --root==--pack 全拒絕且一個檔都不寫;⑥ 寫入失敗時 manifest 那列最後寫、失敗就不寫;
-#   ⑦ 不留暫存檔;⑧ 只用標準庫(靜態);⑨ 套完後 doctor 的 ship-manifest／ship-deps 皆 ✓。
+#   ⑦ 不留暫存檔;⑧ 只用標準庫(靜態);⑨ 套完後 doctor 的 ship-manifest／ship-deps 皆 ✓;
+#   ⑫ `_templates/*` 納入升級與 doctor 內容雜湊(v3.26.7;3.26.6 改了 4-spec.md 而 manifest 不含模板,
+#      採用專案只能手動同步):S1 本地 = baseline → 母版改寫、覆蓋並更新 baseline;S2 本地自改 → 需同意、預設不覆蓋、
+#      baseline 照現行規則;S3 baseline 沒有此模板且被跳過 → baseline 不新增(v3.26.4);S4 doctor／check-ship-manifest
+#      對模板內容不符會報出;S5 dry-run 不寫任何檔;3.26.6(manifest 無模板列)→ 3.26.7 的實際升級;
+#      對照組:同一組情境用「manifest 排除模板」的 3.26.6 方法包(測試內臨時組出,正式碼沒有開關)跑,必須紅。
 #
 # 用法:scripts/test-upgrade-manifest.sh [root]
 # exit:0 = 全過 / 1 = 案例未依預期 / 2 = 治具故障
@@ -28,8 +33,10 @@ command -v python3 >/dev/null 2>&1 || { echo "FATAL: 缺 python3" >&2; exit 2; }
 
 python3 - "$ROOT" "$TOOL" <<'PY'
 import ast
+import importlib.util
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -37,7 +44,7 @@ import sys
 import tempfile
 
 root, tool = sys.argv[1], sys.argv[2]
-MIN_CASES = 84
+MIN_CASES = 119
 passed = failed = 0
 sys.dont_write_bytecode = True
 
@@ -102,7 +109,7 @@ try:
     check(out.count("  新增  ") == len(rows), "空專案:每列都標新增(%d)" % len(rows), out[-300:])
     check(os.listdir(a1) == [], "dry-run 沒有寫入任何檔(專案仍是空的)")
     check("dry-run" in out and "沒有寫入任何檔案" in out, "輸出明說 dry-run、沒寫檔")
-    check("baseline 的乾淨替換" in out and "_templates" in out, "輸出列出不在這支範圍的項目(README/_templates/baseline…)")
+    check("baseline 的乾淨替換" in out and "README" in out and "不在這支範圍" in out, "輸出列出不在這支範圍的項目(README 剝除版/baseline 乾淨替換/殘件…)")
     rc, out, err = run("--root", a1, "--pack", pack, "--include-custom")
     check(rc == 0 and os.listdir(a1) == [], "--include-custom 不帶 --apply 仍是 dry-run、不寫")
 
@@ -183,7 +190,7 @@ try:
     extras = {
         "docs/dev/README.md": b"readme\n", "docs/dev/STATUS.md": b"status\n",
         "docs/dev/tools/my-own-tool.py": b"mine\n", "docs/dev/.devflow-baseline/README.md": b"b\n",
-        "docs/dev/_templates/jev.yaml": b"mode: off\n", "src/app.py": b"print(1)\n", "CLAUDE.md": b"x\n",
+        "docs/dev/_templates/my-own-template.md": b"mine\n", "src/app.py": b"print(1)\n", "CLAUDE.md": b"x\n",
     }
     for rel, data in extras.items():
         p = os.path.join(a4, *rel.split("/")); os.makedirs(os.path.dirname(p), exist_ok=True)
@@ -192,7 +199,7 @@ try:
     rc, out, err = run("--root", a4, "--pack", pack, "--apply")
     check(rc == 0, "有既有檔的專案 --apply 成功")
     check(all(open(os.path.join(a4, *rel.split("/")), "rb").read() == data for rel, data in extras.items()),
-          "README／STATUS／自己的工具／baseline／_templates／原始碼／CLAUDE.md 內容完全不變")
+          "README／STATUS／自己的工具／baseline／自己的模板(不在 manifest)／原始碼／CLAUDE.md 內容完全不變")
     check(all(os.stat(os.path.join(a4, *rel.split("/"))).st_mtime_ns == mt[rel] for rel in extras), "它們的 mtime 也沒變(連碰都沒碰)")
     now = set(snapshot(a4))
     # baseline 目錄已存在 → manifest 列(docs/dev/ 底下)的上游新內容同步進 baseline 對應路徑(見 ⑩);
@@ -473,6 +480,238 @@ try:
           "(4) 對照組:第二次 dry-run 理由被誤判成「本地客製」(Prism 現場症狀)", ro["row2"])
     check(open(os.path.join(ro["proj"], *T_NOBASE.split("/")), "rb").read() == ro["local_nobase"] and "baseline 不新增" not in ro["dry"],
           "(4) 對照組:本地檔未改、且沒有「baseline 不新增」提示(舊行為)")
+
+    # ── ⑫ `_templates/*` 納入升級與 doctor 內容雜湊(v3.26.7)─────────────────────────
+    # 起因:manifest 刻意不含 `_templates/*`,3.26.6 改了 `_templates/4-spec.md`(g2r_jev risk 可為小數),
+    # 升級腳本不同步模板、doctor 的 v2 內容雜湊也看不到模板落差,採用專案只能手動同步。
+    # 現在模板是 manifest 的 1:1 列(`_templates/X` → `docs/dev/_templates/X`、644),走和其他列完全相同的規則。
+    # 對照組:同一組情境改用「manifest 排除模板」的 3.26.6 方法包(測試內臨時組出;正式碼沒有任何開關),必須紅。
+    print("-- ⑫ _templates/* 納入升級與 doctor --")
+    sm_spec = importlib.util.spec_from_file_location("devflow_ship_manifest", os.path.join(root, "scripts", "devflow_ship_manifest.py"))
+    sm_mod = importlib.util.module_from_spec(sm_spec)
+    sm_spec.loader.exec_module(sm_mod)
+    TPL_ROWS = [r for r in rows if r["source"].startswith("_templates/")]
+    T4, T5, TJ = "docs/dev/_templates/4-spec.md", "docs/dev/_templates/5-tasks.md", "docs/dev/_templates/jev.yaml"
+    check(TPL_ROWS and all(r["destination"] == "docs/dev/" + r["source"] and r["mode"] == "644" for r in TPL_ROWS),
+          "manifest 模板列都是 1:1(_templates/X → docs/dev/_templates/X)、mode 644")
+    check(sorted(r["source"][len("_templates/"):] for r in TPL_ROWS) == sorted(os.listdir(os.path.join(root, "_templates")))
+          and any(r["destination"] == TJ for r in TPL_ROWS),
+          "模板列 = 母版 _templates/ 的全部檔,含 jev.yaml(opt-in 範本也納入)")
+    tool_src = open(tool, encoding="utf-8").read()
+    check("skip-templates" not in tool_src and "exclude-templates" not in tool_src and "no-templates" not in tool_src
+          and "environ" not in tool_src,
+          "正式腳本沒有排除模板的旗標／環境變數後門(對照組只在測試內組出)")
+
+    NEW4 = open(os.path.join(root, "_templates", "4-spec.md"), "rb").read()
+    OLD4 = NEW4.replace("risk=<0..3,可小數>".encode(), "risk=<0-3>".encode())
+    check(OLD4 != NEW4, "測試前置:能由現行 4-spec 還原出 3.26.6 前的舊版(g2r_jev risk 欄位寫法)")
+
+    def make_pack_3266(name):
+        """3.26.6 的方法包:manifest 沒有模板列(版本指紋與契約依實際內容重算,doctor 看起來一致),_templates/4-spec.md 是舊版。"""
+        pk = make_pack(name)
+        scratch = os.path.join(work, name + "-scratch"); os.makedirs(scratch)
+        run("--root", scratch, "--pack", pk, "--apply")
+        mp = os.path.join(pk, "docs", "dev", "ship-manifest.json")
+        data = jload(mp)
+        data["files"] = [r for r in data["files"] if not r["source"].startswith("_templates/")]
+        data["version"] = sm_mod.compute_version(data, scratch)
+        json.dump(data, open(mp, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+        cp = os.path.join(pk, "devflow-contract.json")
+        txt = open(cp, encoding="utf-8").read()
+        open(cp, "w", encoding="utf-8").write(re.sub(r'("ship_manifest_version"\s*:\s*")[^"]*(")', lambda m: m.group(1) + data["version"] + m.group(2), txt, count=1))
+        open(os.path.join(pk, "_templates", "4-spec.md"), "wb").write(OLD4)
+        shutil.rmtree(scratch)
+        return pk
+
+    def install_templates(proj, with_baseline=True, old=True):
+        """模擬 dev-setup 的 `_templates/` 整目錄複製與 baseline 快照(上一版散發下去的內容;old=True 時 4-spec.md 是舊版)。"""
+        for r in TPL_ROWS:
+            data = open(os.path.join(root, *r["source"].split("/")), "rb").read()
+            if old and r["destination"] == T4:
+                data = OLD4
+            for dst in ([os.path.join(proj, *r["destination"].split("/"))] +
+                        ([bl(proj, r["destination"])] if with_baseline else [])):
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                open(dst, "wb").write(data)
+                os.chmod(dst, 0o644)
+
+    def tpl_project(tag, pk, with_baseline=True, old=True):
+        """採用專案:先套 pk 的 manifest 列(舊版內容),再裝模板與 baseline(其他列的 baseline = 當時本地)。"""
+        proj = os.path.join(work, "t12-" + tag); os.makedirs(proj)
+        run("--root", proj, "--pack", pk, "--apply")
+        if with_baseline:
+            for r in docs_rows:
+                if r["source"].startswith("_templates/"):
+                    continue
+                b = bl(proj, r["destination"]); os.makedirs(os.path.dirname(b), exist_ok=True)
+                shutil.copyfile(os.path.join(proj, *r["destination"].split("/")), b)
+        install_templates(proj, with_baseline, old)
+        return proj
+
+    def rd(path):
+        return open(path, "rb").read() if os.path.exists(path) else None
+
+    def prow(o, dest):
+        return next((l for l in o.splitlines() if dest in l and (l.startswith("  變更  ") or l.startswith("  相同  ") or l.startswith("  新增  "))), "")
+
+    def doctor_out(proj):
+        r = subprocess.run([sys.executable, os.path.join(root, "hooks", "_doctor_impl.py"), proj],
+                           cwd=proj, env=ENV, capture_output=True, text=True, timeout=300)
+        return r.stdout + r.stderr
+
+    MASTER_FILES = ["docs/dev/ship-manifest.json", "devflow-contract.json", "docs/dev/devflow-contract.json",
+                    "guides/guide-dev-flow.html", "scripts/devflow_ship_manifest.py", "scripts/check-ship-manifest.sh"]
+
+    def master_copy(tag):
+        """check-ship-manifest.sh 需要的最小母版:manifest/契約/散發檔(source 與母版內存在的 destination 副本)/模板/檔案地圖。"""
+        m = os.path.join(work, tag)
+        need = set(MASTER_FILES)
+        for r in rows:
+            need.add(r["source"])
+            if os.path.isfile(os.path.join(root, *r["destination"].split("/"))):
+                need.add(r["destination"])
+        need |= {"_templates/" + n for n in os.listdir(os.path.join(root, "_templates"))}
+        for rel in sorted(need):
+            dst = os.path.join(m, *rel.split("/")); os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.copy2(os.path.join(root, *rel.split("/")), dst)
+        return m
+
+    def scenarios(pk, rep, master=True):
+        """同一組 S1~S5 + 母版端檢查。pk = 「新版」方法包;rep(label, cond, detail) 記結果(真跑記 check,對照組只收集)。"""
+        snap = lambda proj: snapshot(proj)
+        # S1:baseline 有模板、本地 = baseline(沒自改)、上游較新 → 母版改寫;--apply 覆蓋並更新 baseline
+        p1 = tpl_project("s1-" + os.path.basename(pk), pk)
+        before = snap(p1)
+        rc, out, err = run("--root", p1, "--pack", pk)
+        rep("S5 dry-run 不寫任何檔(專案含 baseline 的整棵樹逐位元組不變)", rc == 0 and snap(p1) == before, out[-200:] + err)
+        row = prow(out, T4)
+        rep("S1 dry-run:本地 = baseline 的 4-spec.md 標「母版改寫」(不是需同意)", "變更" in row and "母版改寫" in row and "需同意" not in row, row)
+        rc, out, err = run("--root", p1, "--pack", pk, "--apply")
+        local4, base4 = rd(os.path.join(p1, *T4.split("/"))), rd(bl(p1, T4))
+        rep("S1 --apply:本地 4-spec.md 覆蓋成上游新內容", rc == 0 and local4 == NEW4, "rc=%s" % rc)
+        rep("S1 --apply:baseline 的 _templates/4-spec.md 同步成上游新內容", base4 == NEW4)
+        rc, out, err = run("--root", p1, "--pack", pk)
+        rep("S1 再跑 dry-run:模板列全部相同(冪等)", all(prow(out, r["destination"]).startswith("  相同  ") for r in TPL_ROWS), prow(out, T4))
+        # S2:本地自改模板 → 需同意、預設不覆蓋;baseline 照現行規則(仍取上游新內容);--include-custom 才覆蓋
+        p2 = tpl_project("s2-" + os.path.basename(pk), pk)
+        edited = OLD4 + b"\n<!-- my local customization -->\n"
+        open(os.path.join(p2, *T4.split("/")), "wb").write(edited)
+        rc, out, err = run("--root", p2, "--pack", pk)
+        row = prow(out, T4)
+        rep("S2 dry-run:自改的模板標「需同意」(本地客製)", "需同意" in row and "本地客製" in row, row)
+        rc, out, err = run("--root", p2, "--pack", pk, "--apply")
+        rep("S2 --apply 預設不覆蓋自改的模板、輸出「跳過」", rd(os.path.join(p2, *T4.split("/"))) == edited and ("跳過  " + T4) in out, out[-300:])
+        rep("S2 被跳過的本地客製列:baseline 仍取上游新內容(現行行為不變,owner 2026-10-19 維持)", rd(bl(p2, T4)) == NEW4)
+        rc, out, err = run("--root", p2, "--pack", pk, "--apply", "--include-custom")
+        rep("S2 --include-custom 才覆蓋自改的模板", rd(os.path.join(p2, *T4.split("/"))) == NEW4, out[-200:])
+        # S3:baseline 沒有此模板、本地 ≠ 上游 → 需同意:baseline 沒有此檔;被跳過 → baseline 不新增(v3.26.4)
+        p3 = tpl_project("s3-" + os.path.basename(pk), pk)
+        os.remove(bl(p3, T4))
+        rc, out, err = run("--root", p3, "--pack", pk)
+        row = prow(out, T4)
+        rep("S3 dry-run:baseline 沒有此模板 → 「需同意:baseline 沒有此檔」", "需同意" in row and "baseline 沒有此檔" in row, row)
+        rep("S3 dry-run 預告「baseline 不新增」這個模板", ("baseline 不新增  " + T4) in out, out[-300:])
+        rc, out, err = run("--root", p3, "--pack", pk, "--apply")
+        rep("S3 --apply:被跳過、本地不動、baseline 不新增該模板",
+            rd(os.path.join(p3, *T4.split("/"))) == OLD4 and not os.path.exists(bl(p3, T4)) and ("baseline 未同步  " + T4) in out, out[-400:])
+        rc, out, err = run("--root", p3, "--pack", pk)
+        row = prow(out, T4)
+        rep("S3 第二次 dry-run:理由仍是「baseline 沒有此檔」(沒被誤判成本地客製)", "baseline 沒有此檔" in row and "本地內容與 baseline 不同" not in row, row)
+        rc, out, err = run("--root", p3, "--pack", pk, "--apply", "--include-custom")
+        rep("S3 --include-custom:寫入且 baseline 一併新增", rd(os.path.join(p3, *T4.split("/"))) == NEW4 and rd(bl(p3, T4)) == NEW4, out[-200:])
+        # S4:doctor 對模板內容不符會報出(整棵由 pk 散發的專案,模板為新內容)
+        p4 = os.path.join(work, "t12-s4-" + os.path.basename(pk)); os.makedirs(p4)
+        run("--root", p4, "--pack", pk, "--apply")
+        install_templates(p4, with_baseline=False, old=False)
+        o = doctor_out(p4)
+        rep("S4 doctor:模板與當次散發一致 → ship-manifest ✓", "✓ ship-manifest:" in o, next((l for l in o.splitlines() if "ship-manifest" in l), ""))
+        t4p = os.path.join(p4, *T4.split("/"))
+        open(t4p, "ab").write(b"\n<!-- local drift -->\n")
+        o = doctor_out(p4)
+        rep("S4 doctor:模板內容與散發不同 → ✗ ship-manifest(內容雜湊重算不符,指路 upgrade 預覽)",
+            "✗ ship-manifest" in o and "重算" in next((l for l in o.splitlines() if "✗ ship-manifest" in l), ""), next((l for l in o.splitlines() if "ship-manifest" in l), ""))
+        open(t4p, "wb").write(NEW4)
+        os.remove(os.path.join(p4, *T5.split("/")))
+        o = doctor_out(p4)
+        rep("S4 doctor:模板缺檔 → ✗ ship-manifest 並點名", "✗ ship-manifest" in o and T5 in o, next((l for l in o.splitlines() if "ship-manifest" in l), ""))
+        # S4 母版端:check-ship-manifest.sh 對 _templates 內容改了沒重算指紋、新模板沒記帳都會紅
+        # (對照組不跑這段:3.26.6 母版沒有這支守衛可比,指紋盲區已由 check-ship-manifest.sh 自己的「對照」案釘住)
+        if not master:
+            return
+        m = master_copy("m12-" + os.path.basename(pk))
+        mdata_rows = jload(os.path.join(pk, "docs", "dev", "ship-manifest.json"))["files"]
+        shutil.copyfile(os.path.join(pk, "docs", "dev", "ship-manifest.json"), os.path.join(m, "docs", "dev", "ship-manifest.json"))
+        shutil.copyfile(os.path.join(pk, "devflow-contract.json"), os.path.join(m, "devflow-contract.json"))
+        shutil.copyfile(os.path.join(pk, "devflow-contract.json"), os.path.join(m, "docs", "dev", "devflow-contract.json"))
+        def run_check(mm):
+            r = subprocess.run(["bash", os.path.join(mm, "scripts", "check-ship-manifest.sh"), mm], env=ENV, capture_output=True, text=True, timeout=300)
+            return r.returncode, r.stdout + r.stderr
+        m4 = os.path.join(m, "_templates", "4-spec.md")
+        # 母版端的模板內容以 pk 為準(3.26.6 方法包的 4-spec 是舊版;對照組的母版就是 3.26.6 母版)
+        shutil.copyfile(os.path.join(pk, "_templates", "4-spec.md"), m4)
+        rc, out = run_check(m)
+        rep("S4 母版端 check-ship-manifest.sh:基線(模板內容與指紋一致)→ exit 0", rc == 0, out[-300:])
+        open(m4, "ab").write(b"\n<!-- edited without --refresh -->\n")
+        rc, out = run_check(m)
+        rep("S4 母版端:只改 _templates/4-spec.md 沒重算指紋 → exit 1 且 manifest.version 過期", rc == 1 and "manifest.version 過期" in out, "rc=%s %s" % (rc, out[-300:]))
+        shutil.copyfile(os.path.join(pk, "_templates", "4-spec.md"), m4)
+        open(os.path.join(m, "_templates", "zz-new-template.md"), "w").write("new template without manifest row\n")
+        rc, out = run_check(m)
+        rep("S4 母版端:新增模板沒進 manifest → exit 1 且反向點名", rc == 1 and ("_templates/zz-new-template.md" in out) and any(r["source"].startswith("_templates/") for r in mdata_rows), "rc=%s %s" % (rc, out[-300:]))
+
+    results = []
+    scenarios(pack, lambda label, cond, detail="": (check(cond, label, detail), results.append(cond)))
+    check(all(results) and len(results) >= 18, "S1~S5 情境全過(%d 項斷言)" % len(results))
+
+    # ── 3.26.6(manifest 沒有模板列)→ 3.26.7 的實際升級 ───────────────────────────
+    pack_old = make_pack_3266("pack-3266")
+    check(not any(r["source"].startswith("_templates/") for r in jload(os.path.join(pack_old, "docs", "dev", "ship-manifest.json"))["files"]),
+          "前置:3.26.6 方法包的 manifest 沒有任何模板列(重現舊狀態)")
+    adopter = os.path.join(work, "adopter-3266"); os.makedirs(adopter)
+    rc, out, err = run("--root", adopter, "--pack", pack_old, "--apply")
+    check(rc == 0 and not os.path.exists(os.path.join(adopter, "docs", "dev", "_templates")),
+          "3.26.6 的腳本只處理 manifest 列:模板由 dev-setup 整目錄複製,腳本沒碰", out[-200:])
+    for r in docs_rows:
+        if r["source"].startswith("_templates/"):
+            continue
+        b = bl(adopter, r["destination"]); os.makedirs(os.path.dirname(b), exist_ok=True)
+        shutil.copyfile(os.path.join(adopter, *r["destination"].split("/")), b)
+    install_templates(adopter, True, True)                     # 3.26.6 安裝下去的模板與 baseline(4-spec.md 舊版)
+    custom5 = open(os.path.join(adopter, *T5.split("/")), "rb").read() + b"\n<!-- project customized 5-tasks -->\n"
+    open(os.path.join(adopter, *T5.split("/")), "wb").write(custom5)
+    o = doctor_out(adopter)
+    check("✓ ship-manifest:" in o, "升級前:3.26.6 採用專案 doctor ship-manifest ✓(舊指紋看不到模板落差,這就是盲區)",
+          next((l for l in o.splitlines() if "ship-manifest" in l), ""))
+    rc, out, err = run("--root", adopter, "--pack", pack)
+    check("母版改寫" in prow(out, T4) and "需同意" in prow(out, T5) and "本地客製" in prow(out, T5)
+          and prow(out, TJ).startswith("  相同  ") and "baseline 不新增" not in out,
+          "升到 3.26.7 dry-run:未自改的 4-spec.md = 母版改寫(自動同步)、自改的 5-tasks.md = 需同意、jev.yaml 相同",
+          prow(out, T4) + " | " + prow(out, T5))
+    rc, out, err = run("--root", adopter, "--pack", pack, "--apply")
+    check(rc == 0 and rd(os.path.join(adopter, *T4.split("/"))) == NEW4 and rd(bl(adopter, T4)) == NEW4,
+          "--apply:4-spec.md 自動同步成新內容、baseline 一併更新", out[-300:])
+    check(rd(os.path.join(adopter, *T5.split("/"))) == custom5 and ("跳過  " + T5) in out,
+          "--apply:自改的 5-tasks.md 沒被覆蓋(預設跳過,需同意)")
+    check(rd(bl(adopter, T5)) == open(os.path.join(root, "_templates", "5-tasks.md"), "rb").read(),
+          "自改且被跳過的 5-tasks.md:baseline 仍取上游新內容(現行行為不變)")
+    o = doctor_out(adopter)
+    check("✗ ship-manifest" in o and "重算" in next((l for l in o.splitlines() if "✗ ship-manifest" in l), ""),
+          "自改模板未同意覆蓋 → doctor ✗ ship-manifest(與 docs/dev/tools 自改同一規則,指路 upgrade 預覽)",
+          next((l for l in o.splitlines() if "ship-manifest" in l), ""))
+    rc, out, err = run("--root", adopter, "--pack", pack, "--apply", "--include-custom")
+    o = doctor_out(adopter)
+    check(rc == 0 and rd(os.path.join(adopter, *T5.split("/"))) == open(os.path.join(root, "_templates", "5-tasks.md"), "rb").read()
+          and "✓ ship-manifest:" in o,
+          "同意覆蓋(--include-custom)後 → 5-tasks.md 還原、doctor ship-manifest ✓", next((l for l in o.splitlines() if "ship-manifest" in l), ""))
+
+    # ── 對照組:「manifest 排除模板」的 3.26.6 方法包跑同一組情境 → 必須紅 ─────────────────────
+    ctl = []
+    scenarios(pack_old, lambda label, cond, detail="": ctl.append((label, cond)), master=False)
+    red = [label for label, cond in ctl if not cond]
+    check(len(red) >= 8 and any(l.startswith("S1 --apply:本地 4-spec.md") for l in red) and any(l.startswith("S4 doctor:模板內容與散發不同") for l in red),
+          "對照組(manifest 排除模板)跑同一組情境:%d/%d 項斷言轉紅,含 S1 不覆蓋、S4 doctor 看不到模板被改" % (len(red), len(ctl)),
+          "紅的:%s" % red)
+    print("  (對照組轉紅 %d/%d:%s)" % (len(red), len(ctl), " | ".join(red)))
 
     # ── ⑧ 只標準庫(靜態)─────────────────────────────────────────────
     print("-- ⑧ 靜態 --")
