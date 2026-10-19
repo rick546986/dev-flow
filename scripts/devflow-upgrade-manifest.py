@@ -8,16 +8,20 @@
 #
 # 範圍(嚴格):只動 `<pack>/docs/dev/ship-manifest.json` 每一列的 destination,**一個檔都不多碰**。
 #   不在這支的範圍(仍照 skills/dev-setup/SKILL.md 的 upgrade 段):
-#   docs/dev/README.md 剝除版與 docs/dev/_templates/ 的複製、出廠殘件刪除
-#   (devflow-upgrade-leftovers.sh;只做「新增/覆蓋」,上游已移除的舊工具檔不會刪)、README／_templates 的 baseline 快照、.gitignore、
-#   knowledge index bootstrap。
+#   docs/dev/README.md 剝除版的複製、出廠殘件刪除(devflow-upgrade-leftovers.sh;只做「新增/覆蓋」,上游已移除的
+#   舊工具檔與舊模板不會刪)、README 的 baseline 快照、.gitignore、knowledge index bootstrap。
+#   `_templates/*`(含 jev.yaml)自 v3.26.7 起是 manifest 的 1:1 列(`_templates/X` → `docs/dev/_templates/X`),
+#   由本腳本照同一套規則升級(新增／母版改寫／需同意、baseline 同步),不再靠 SKILL 的整目錄複製手續:
+#   v3.26.6 以前 manifest 不含它們,模板落差腳本與 doctor 都看不到(3.26.6 改了 4-spec.md,採用專案只能手動同步)。
 #   baseline(docs/dev/.devflow-baseline/):語意 = 「上次 install/upgrade 散發下去的上游新內容」,下次 upgrade 拿它當
 #   「上游舊版」做三方比對(本地 ≠ baseline ⇒ 本地客製)。所以 upgrade 成功後 baseline 必須跟著換成這次散發的內容
 #   (SKILL install 步 8;使用者拒絕覆蓋客製時 baseline 仍取上游新內容,不取本地現況)。本腳本 --apply 在「全部列寫入
 #   成功」之後,把 manifest 列(docs/dev/ 底下的,含 tools/)的**上游新內容**同步進 baseline 對應路徑;不寫 baseline 就會
 #   留下過期基準,下次 upgrade 把使用者根本沒改的檔誤判成「需同意」。只在 baseline 目錄已存在時才同步:
 #   不存在 = 過渡態(SKILL:全部視為本地客製),腳本不替人建立只含一部分檔的 baseline。
-#   不做乾淨替換(不刪 baseline 裡上游已移除的舊檔)、不碰 README／_templates 的 baseline —— 那些仍照 SKILL 步 8。
+#   不做乾淨替換(不刪 baseline 裡上游已移除的舊檔,含已退役模板 —— 那些由 devflow-upgrade-leftovers.sh 與 SKILL 步 8 處理)、
+#   不碰 README 的 baseline(README 不是 manifest 列,仍照 SKILL 步 8)。模板列的 baseline 路徑 =
+#   docs/dev/.devflow-baseline/_templates/X,與其他列同一條規則,包含下面 v3.26.4 例外。
 #   **例外(v3.26.4):「需同意:baseline 沒有此檔」而這次被跳過的列,baseline 也不新增該檔。** 理由:這種列本地內容 ≠ 上游,
 #   又因 baseline 沒有此檔而無從判斷是否本地客製;沒加 --include-custom 時本地檔不動,若 baseline 卻先收了上游新內容,
 #   就變成「專案檔仍是舊版、baseline 是新版」,下一輪 dry-run 的理由會從「baseline 沒有此檔」變成
@@ -349,9 +353,9 @@ def main(argv):
                 print("  baseline 未同步  %s(%s)" % (d, BASELINE_SKIP_REASON))
             if bf:
                 rc = 1
-    print("不在這支範圍(仍照 dev-setup SKILL 的 upgrade 段做):README／_templates 複製、"
-          "殘件刪除(devflow-upgrade-leftovers.sh;上游已移除、manifest 不再列的舊工具檔這支不會刪)、"
-          "README／_templates 的 baseline 快照與 baseline 的乾淨替換、.gitignore。"
+    print("不在這支範圍(仍照 dev-setup SKILL 的 upgrade 段做):README 剝除版複製、"
+          "殘件刪除(devflow-upgrade-leftovers.sh;上游已移除、manifest 不再列的舊工具檔與舊模板這支不會刪)、"
+          "README 的 baseline 快照與 baseline 的乾淨替換、.gitignore。"
           "做完後在專案內跑 doctor 確認 ship-manifest 逐列 ✓:bash %s doctor"
           "(入口在方法包的 hooks/,不是 scripts/)。" % os.path.join(pack, "hooks", "devflow-exec.sh"))
     return rc

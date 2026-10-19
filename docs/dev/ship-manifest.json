@@ -1,6 +1,6 @@
 {
   "schema": "devflow-ship-manifest-v1",
-  "version": "v2-c180dc6d14f07240",
+  "version": "v2-7737127ffc7f4f01",
   "files": [
     {
       "source": "scripts/history-append.sh",
@@ -135,6 +135,81 @@
     {
       "source": "scripts/devflow_jev/transport.py",
       "destination": "docs/dev/tools/devflow_jev/transport.py",
+      "mode": "644"
+    },
+    {
+      "source": "_templates/1-discussion.md",
+      "destination": "docs/dev/_templates/1-discussion.md",
+      "mode": "644"
+    },
+    {
+      "source": "_templates/2-decision.md",
+      "destination": "docs/dev/_templates/2-decision.md",
+      "mode": "644"
+    },
+    {
+      "source": "_templates/3-prototype.md",
+      "destination": "docs/dev/_templates/3-prototype.md",
+      "mode": "644"
+    },
+    {
+      "source": "_templates/4-spec.md",
+      "destination": "docs/dev/_templates/4-spec.md",
+      "mode": "644"
+    },
+    {
+      "source": "_templates/5-tasks.md",
+      "destination": "docs/dev/_templates/5-tasks.md",
+      "mode": "644"
+    },
+    {
+      "source": "_templates/6-implementation-notes.md",
+      "destination": "docs/dev/_templates/6-implementation-notes.md",
+      "mode": "644"
+    },
+    {
+      "source": "_templates/7-review.md",
+      "destination": "docs/dev/_templates/7-review.md",
+      "mode": "644"
+    },
+    {
+      "source": "_templates/HISTORY.md",
+      "destination": "docs/dev/_templates/HISTORY.md",
+      "mode": "644"
+    },
+    {
+      "source": "_templates/STATUS.md",
+      "destination": "docs/dev/_templates/STATUS.md",
+      "mode": "644"
+    },
+    {
+      "source": "_templates/adr.md",
+      "destination": "docs/dev/_templates/adr.md",
+      "mode": "644"
+    },
+    {
+      "source": "_templates/arch-invariants.md",
+      "destination": "docs/dev/_templates/arch-invariants.md",
+      "mode": "644"
+    },
+    {
+      "source": "_templates/diagram-style.md",
+      "destination": "docs/dev/_templates/diagram-style.md",
+      "mode": "644"
+    },
+    {
+      "source": "_templates/html-shell.html",
+      "destination": "docs/dev/_templates/html-shell.html",
+      "mode": "644"
+    },
+    {
+      "source": "_templates/jev.yaml",
+      "destination": "docs/dev/_templates/jev.yaml",
+      "mode": "644"
+    },
+    {
+      "source": "_templates/living-spec.md",
+      "destination": "docs/dev/_templates/living-spec.md",
       "mode": "644"
     },
     {

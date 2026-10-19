@@ -3497,7 +3497,9 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
         <td>散發清單正本的牙齒:<code>docs/dev/ship-manifest.json</code> 缺欄／重複
             destination／非法 mode 必紅;parity 的 expected set 取自這份正本
             (不掃 <code>docs/dev/tools/</code>,正副本同刪也會紅);檔案地圖
-            「散發面」標註必須與正本 tools 列同一集合。manifest 版本是 <strong>v2 指紋</strong>(列內容 + 各 destination 檔內容雜湊,CRLF 不影響;
+            「散發面」標註必須與正本 tools 列同一集合。<strong>v3.26.7</strong>:<code>_templates/*</code>(含 <code>jev.yaml</code>)是 1:1 列
+            (<code>_templates/X</code> → <code>docs/dev/_templates/X</code>、644),母版 <code>_templates/</code> 每個檔都要有一列,新模板漏列、非 1:1、mode 不對必紅
+            (母版不建模板鏡像,指紋讀 source)。manifest 版本是 <strong>v2 指紋</strong>(列內容 + 各 destination 檔內容雜湊,CRLF 不影響;
             manifest 自己與契約兩列不進雜湊):改了任何散發檔卻沒重算 → 紅(舊 v1 指紋只算列清單,3.26.1 改了
             <code>build-gate-twin.py</code> 內容、指紋卻沒變)。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
@@ -4129,13 +4131,15 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             <code>--apply</code> 全部列成功後,把 manifest 列(<code>docs/dev/</code> 底下)的上游新內容同步進
             <code>docs/dev/.devflow-baseline/</code> 對應路徑(baseline 目錄不存在則不建立;baseline 語意 = 上次散發的上游新內容,
             下次 upgrade 的三方比對用它當「上游舊版」;<strong>例外(v3.26.4)</strong>:「需同意:baseline 沒有此檔」而被跳過的列,baseline 也不新增該檔,否則下一輪會把沒客製的檔誤判成本地客製,輸出逐列標出「baseline 不新增／未同步」與原因;客製被跳過的列 baseline 仍取上游新內容)。輸出的 doctor 入口是 <code>&lt;方法包&gt;/hooks/devflow-exec.sh doctor</code>。
-            不做 README／<code>_templates</code>／殘件刪除／baseline 乾淨替換與 README／<code>_templates</code> 的 baseline(仍照 SKILL)。</td>
+            <strong>v3.26.7</strong>:<code>_templates/*</code>(含 <code>jev.yaml</code>)也是 manifest 列,照同一套規則升級(沒自改 = 母版改寫自動同步並更新 baseline、自改／baseline 沒有此檔 = 需同意、v3.26.4 例外一體適用)。
+            不做 README 剝除版複製／殘件刪除／baseline 乾淨替換與 README 的 baseline(仍照 SKILL)。</td>
         <td>dev-setup upgrade 呼叫;<code>test-upgrade-manifest.sh</code> 實跑</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-upgrade-manifest.sh</code></td>
         <td>上一支的牙:dry-run 不寫、<code>--apply</code> 內容與 mode 逐列正確且冪等、本地客製預設跳過、manifest 以外的檔
             (README／STATUS／自己的工具／baseline)連 mtime 都不變、路徑越界與 symlink 全拒絕、寫入失敗時 manifest 列不寫、
             只用標準庫、套完後 doctor 的 <code>ship-manifest</code>／<code>ship-deps</code> 皆 ✓。baseline 同步:有 baseline 時 apply 後換成上游新內容
-            (客製被跳過仍取上游新內容、baseline 沒有此檔而被跳過則 baseline 不新增〔含舊寫法對照組必須失敗〕、README 不碰、mode 依 manifest、失敗時不同步、baseline 內 symlink 拒絕、不存在不建立、下一輪不再誤判需同意)。案例數下限寫死。</td>
+            (客製被跳過仍取上游新內容、baseline 沒有此檔而被跳過則 baseline 不新增〔含舊寫法對照組必須失敗〕、README 不碰、mode 依 manifest、失敗時不同步、baseline 內 symlink 拒絕、不存在不建立、下一輪不再誤判需同意)。模板列(v3.26.7):S1 本地 = baseline → 覆蓋並更新 baseline、S2 自改 → 需同意不覆蓋、S3 baseline 沒有此模板且被跳過 → baseline 不新增、S4 doctor／check-ship-manifest 對模板內容不符會報、S5 dry-run 不寫,
+            以及 3.26.6(manifest 無模板列)→ 3.26.7 的實際升級;對照組用「manifest 排除模板」的 3.26.6 方法包跑同一組情境必須轉紅。案例數下限寫死。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-find-python.sh</code></td>
         <td><code>hooks/devflow-find-python.sh</code> 的牙:壞的(exit 126)候選排前面會被跳過、<code>--version</code> 跑不起來的也跳過、
@@ -4156,7 +4160,7 @@ L1(不動 R/S)→ devflow-exec.sh allow '&lt;path&gt;'
             再模擬舊清單(沒列 <code>diagir.py</code>／<code>devflow_atomic.py</code>)重現 ImportError exit 1,
             並釘 doctor 的 <code>ship-deps</code> 必須報錯、整體 INCOMPATIBLE(逐列驗證本來看不到缺依賴)。
             另釘選配 import 不誤報、相對 import 缺件、3.9 退路的標準庫判斷、母版自己全解析得到;
-            指紋 v2:採用樹工具檔內容過期(manifest／契約沒動)doctor 必報 ✗、CRLF 不誤判、舊 v1 專案相容並印 info。案例數下限寫死。</td>
+            指紋 v2:採用樹工具檔內容過期(manifest／契約沒動)doctor 必報 ✗、CRLF 不誤判、舊 v1 專案相容並印 info;v3.26.7 起模板(<code>docs/dev/_templates/*</code>)內容過期／缺檔同樣報 ✗。案例數下限寫死。</td>
         <td><code>devflow-check.sh</code> architecture 組</td><td>人工/CI(不在生命週期上)</td></tr>
     <tr><td><code>test-stop-selftest-hook.sh</code></td>
         <td>Claude Code Stop hook <code>.claude/hooks/run-selftest.sh</code>(本 repo 自用)與 plugin 版

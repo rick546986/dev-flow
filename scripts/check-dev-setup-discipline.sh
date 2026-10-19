@@ -203,9 +203,13 @@ if src:
          and "--include-custom" in upg_sec,
          "SKILL.md upgrade 段沒有點名 devflow-upgrade-manifest.py(預設 dry-run、--apply、--include-custom)"
          " —— upgrade 退回只能手動逐檔 cp manifest 列(漏列/漏 chmod/漏建子目錄)")
-    need("刻意不在 manifest" in src and "_templates/jev.yaml" in src,
-         "SKILL.md 沒交代 _templates/jev.yaml 刻意不在 ship-manifest(走 _templates/ 整目錄複製)"
-         " —— 下一個人會再把它當成漏散發去加列、重算指紋")
+    need("manifest 的 1:1 列" in src and "_templates/jev.yaml" in src and "`_templates/*`" in src
+         and "刻意不在 manifest" not in src,
+         "SKILL.md 沒交代 `_templates/*`(含 jev.yaml)是 ship-manifest 的 1:1 列(v3.26.7 起),或還留著舊的"
+         "「jev.yaml 刻意不在 manifest」說法 —— 升級腳本與 doctor 看不到模板落差(3.26.6 改了 4-spec.md,採用專案只能手動同步)")
+    need("v3.26.4" in src and "baseline 目錄已存在" in src and "新 baseline 樹" in src and "不收這個檔" in src,
+         "SKILL.md install 步 8 的 baseline 乾淨替換沒交代 v3.26.4 例外(被跳過的「baseline 沒有此檔」列不新增進 baseline)"
+         " —— 步 8、upgrade 段、devflow-upgrade-manifest.py 檔頭三處說法會互相矛盾")
 
     # ── ⑯upgrade 腳本同步 baseline、doctor 入口路徑、v2 指紋(v3.26.3)──
     need("baseline 同步" in upg_sec and "不建立、不同步" in upg_sec and "上游新內容" in upg_sec,
@@ -314,7 +318,7 @@ if src:
 # ── 檢查數地板:防止有人把上面整段刪成空迴圈仍然 exit 0 ──────────────────────
 # ⚠️ 這個數字必須**等於當下的實際檢查數**,不是「大概抓個下限」(同 repo 慣例:
 # check-stage67-enforcement.sh:232、check-no-stale-paths.sh 的 MIN_CHECKS)。
-MIN_CHECKS = 46
+MIN_CHECKS = 47
 if checks < MIN_CHECKS:
     fails.append(f"⛔ 實際只跑了 {checks} 項檢查(地板 {MIN_CHECKS})—— "
                  f"檢查本身被刪掉或迴圈跑了零圈,這比條款失效更嚴重")

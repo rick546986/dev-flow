@@ -81,6 +81,23 @@ def _ship_content_digest(path):
     return hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()
 
 
+def _ship_row_path(root, row):
+    """逐列驗證／指紋要看的檔 = destination(採用樹 root 底下)。例外(與 scripts/devflow_ship_manifest.py::_row_file
+    同一定義):方法包自己當專案跑 doctor 時(root = 方法包根),`_templates/X` → `docs/dev/_templates/X` 的模板列
+    母版沒有 destination 副本,改看 source。只在 root 就是方法包時才退到 source —— 採用樹就算有自己的 `_templates/`
+    也不會遮住 docs/dev/_templates/ 缺檔。"""
+    dest = row.get("destination")
+    path = os.path.join(root, *dest.split("/"))
+    src = row.get("source")
+    if (not os.path.isfile(path) and isinstance(src, str) and src.startswith("_templates/")
+            and dest.startswith("docs/dev/_templates/") and src[len("_templates/"):] == dest[len("docs/dev/_templates/"):]
+            and os.path.realpath(root) == os.path.realpath(os.path.dirname(HERE))):
+        alt = os.path.join(root, *src.split("/"))
+        if os.path.isfile(alt):
+            return alt
+    return path
+
+
 def _ship_manifest_version_v1(rows):
     """舊指紋(v1-):只算列清單(source/destination/mode canonical JSON 的 sha256 前 16 hex)。
     不含檔案內容 —— 3.26.1 改了 build-gate-twin.py 內容、指紋卻沒變,看不出採用專案工具過期。
@@ -110,7 +127,7 @@ def _ship_manifest_version_v2(rows, root):
               or any(seg in ("", ".", "..") for seg in segs)):
             digest = "bad-path"
         else:
-            path = os.path.join(root, *segs)
+            path = _ship_row_path(root, r)
             if os.path.isfile(path):
                 try:
                     digest = _ship_content_digest(path)
@@ -660,7 +677,7 @@ def run_doctor(root, contract_path="", gate_cmd=""):
                         if dest.startswith(("/", "\\")) or "\\" in dest or any(seg in ("", ".", "..") for seg in segs):
                             problems.append(f"destination 路徑不合法(絕對/穿越/反斜線):{dest}")
                             continue
-                        path = os.path.join(root, *segs)
+                        path = _ship_row_path(root, row)
                         if not os.path.isfile(path):
                             problems.append(f"缺 {dest}")
                             continue
@@ -684,7 +701,7 @@ def run_doctor(root, contract_path="", gate_cmd=""):
                     elif is_v2 and not missing_sm and calc_sm != want_sm:
                         check(False, "ship-manifest",
                               f"版本 {want_sm}(契約與 manifest 一致)但依採用樹實際檔案內容重算得 {calc_sm} —— "
-                              "有受管檔(docs/dev/tools/ 等)的內容與當次散發不同:過期、被本地改過、或漏更新;"
+                              "有受管檔(docs/dev/tools/、docs/dev/_templates/ 等)的內容與當次散發不同:過期、被本地改過、或漏更新;"
                               "fail-closed。預覽哪幾支:python3 <方法包>/scripts/devflow-upgrade-manifest.py "
                               "--root <專案根>(dry-run,標「變更」的就是);確認後跑 dev-setup upgrade。")
                     else:
@@ -718,7 +735,7 @@ def run_doctor(root, contract_path="", gate_cmd=""):
             plug = None
         if plug and plug != want_sm:
             info("ship-manifest-upstream",
-                 f"plugin 現行散發指紋 {plug},本專案契約記 {want_sm} —— 不是同一批散發,專案的 docs/dev/tools 等"
+                 f"plugin 現行散發指紋 {plug},本專案契約記 {want_sm} —— 不是同一批散發,專案的 docs/dev/tools、docs/dev/_templates 等"
                  "可能比 plugin 舊。不擋;預覽差異:python3 <方法包>/scripts/devflow-upgrade-manifest.py "
                  "--root <專案根>(dry-run),確認後 dev-setup upgrade。")
 

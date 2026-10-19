@@ -40,3 +40,10 @@
 3. **`risk_paths` 判定來源**＝4-spec Diff Budget 的 `- Paths:` ∪ R 列提到的檔案（`g2auto.r_row_paths`、G2R case 的 `r_paths`）；「沒宣告任何 paths」與「改到 Jev runtime」仍只看 `- Paths:`。出處：`policy.py` `route_g2`、`g2auto.py` `build_case`。
 
 #426 沒動任何旗標（上表值不變）。細節：`docs/adr/0004-g2-spec-auto-review.md`、`docs/dev/jev-gate/w10-g2-misrelease.md`、`docs/dev/jev-gate/roadmap.md`（P2-9／P2-10）。
+
+**2026-10-19 owner 決定（owner 依 Rick-dev-flow 建議拍板；只記錄，程式與題庫不動，各旗標值不變）**：
+
+1. **Jev 小數 score 直接與門檻比較、不取整**（維持 v3.26.6 現行行為）：G2R `risk_human_min`＝2，risk 1.99 **不**轉人、≥ 2.0 才轉人；J1 `ambiguity_max`＝1，ambiguity 1.2 > 1 → `ASK_MORE`；J5 `risk_max`＝1 同理。取整規則只用在報表直方圖（`transport.score_level()`，round-half-up），不參與門檻。出處：`scripts/devflow_jev/policy.py`（`THRESHOLDS`、`route_g2`、J1 路由）。
+2. **3.26.5 新增的 9 題 noul 的 criteria／instructions 照現狀接受（owner 已接受）**：J1 `goal_clear`、`scope_clear`、`acceptance_clear`、`owner_call_pending`；J3 `demo_worth_it`；J5 `evidence_complete`；J2 `decision_supported`、`owner_calls_resolved`；J4 `retry_same_tier_useful`。題目文字不改（改了就是新 `questionset_hash`，舊校準群組不延續）；本次未動題庫，`questionset_hash` 不變。出處：`scripts/devflow_jev/jev-questions.json`、`jev-questions-experimental.json`。
+
+同日另有兩項 dev-setup 面的「維持現狀」決定（不屬 Jev，記在 `skills/dev-setup/SKILL.md` upgrade 段與 `docs/dev/HISTORY.md` v3.26.7）：doctor 對「專案指紋比方法包舊」只警告不擋；自改且被 upgrade 跳過的檔，baseline 維持現行行為（仍取上游新內容）。

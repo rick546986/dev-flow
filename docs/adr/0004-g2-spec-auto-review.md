@@ -30,6 +30,9 @@ superseded_by: null
 > **改程式**(`g2auto.build_case` 新增 `r_paths`);② 誤放率分母(§6):只算「已走到 G3 的 agent 自動放行 G2」→
 > **改程式**(`policy.g2_misrelease_rate`、`devflow-jev.py g2-misrelease report`);③ 誤放行事件範圍(§6):
 > G3 退件且 `root_cause: spec`,**另**收實作階段 `spec_amended`／`spec_returned`／`reverted` → **只改文件**(照程式現況)。
+>
+> **2026-10-19 owner 確認**(維持現行行為,程式不改):Jev 回的 score 是 0..3 的小數期望值,G2R 的 `risk_human_min`(= 2)**直接拿小數 score 比、不取整** ——
+> risk 1.99 不轉人、≥ 2.0 才轉人(見 `docs/dev/jev-gate/jev-status.md`「2026-10-19 owner 決定」)。
 
 ## Context
 

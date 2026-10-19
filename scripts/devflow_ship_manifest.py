@@ -14,8 +14,15 @@
 # all_rows() 涵蓋全部列;source_existence_failures()/unclassified_sync_failures()
 # 補上第三類列的存在性/內容/mode 驗證,不再各分類各挑各的。
 #
-# manifest 刻意不含 `_templates/*`(含 _templates/jev.yaml):模板走 dev-setup 的「整目錄複製 +
-# baseline 的 _templates/*」,manifest 只放 1:1 mode 列(#69 起如此;v3.26.2 查證 jev.yaml 不是漏列)。
+# `_templates/*`(v3.26.7 起,含 _templates/jev.yaml)是 manifest 的 1:1 列:source `_templates/X` →
+# destination `docs/dev/_templates/X`、mode 644,母版 `_templates/` 底下每個檔都要有一列
+# (template_failures() 反向把關,漏列會紅)。v3.26.6 以前 manifest 刻意不含它們,結果
+# devflow-upgrade-manifest.py 不同步模板、doctor 的 v2 內容雜湊也看不到模板落差(3.26.6 改了
+# _templates/4-spec.md,採用專案只能手動同步)。母版**不建** docs/dev/_templates/ 鏡像
+# (模板沒有「正副本」,多一份會讓所有掃 docs/dev/*/ 的守衛多看到一個假 slug),所以母版端算指紋時
+# 模板列的內容雜湊讀 source(_row_file());採用樹沒有 source,讀 destination —— 兩邊同值。
+# jev.yaml 也列(opt-in 範本,複製到 docs/dev/_templates/ 不會打開 Jev;它本來就隨整目錄複製落地,
+# 不列只會讓它成為唯一不受升級／doctor 涵蓋的模板)。
 #
 # 本檔是庫。牙齒在 scripts/check-ship-manifest.sh。
 # 照 manifest 實際複製進採用專案的指令:scripts/devflow-upgrade-manifest.py(預設 dry-run)。
@@ -42,6 +49,9 @@ TOOLS_PREFIX = "docs/dev/tools/"
 FILEMAP_MARK = "散發面:<code>docs/dev/tools/</code>"
 CONTRACT_SOURCE = "devflow-contract.json"
 CONTRACT_DEST = "docs/dev/devflow-contract.json"
+TEMPLATES_SRC_PREFIX = "_templates/"
+TEMPLATES_DEST_PREFIX = "docs/dev/_templates/"
+TEMPLATES_MODE = "644"
 
 
 VERSION_KEY = "version"
@@ -63,10 +73,33 @@ def content_digest(path):
     return hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()
 
 
+def is_template_row(row):
+    """`_templates/X` → `docs/dev/_templates/X` 的 1:1 模板列(母版沒有 destination 副本,見檔頭說明)。"""
+    if not isinstance(row, dict):
+        return False
+    src, dst = row.get("source"), row.get("destination")
+    return (isinstance(src, str) and isinstance(dst, str)
+            and src.startswith(TEMPLATES_SRC_PREFIX) and dst.startswith(TEMPLATES_DEST_PREFIX)
+            and src[len(TEMPLATES_SRC_PREFIX):] == dst[len(TEMPLATES_DEST_PREFIX):])
+
+
+def _row_file(root, row):
+    """指紋要雜湊的檔:destination(在 root 底下);模板列在母版沒有 destination 副本,退而讀 source。
+    採用樹沒有 `_templates/`,只會讀 destination —— 缺檔照樣是 missing。"""
+    dest = row.get("destination")
+    path = os.path.join(root, *dest.split("/"))
+    if not os.path.isfile(path) and is_template_row(row):
+        alt = os.path.join(root, *row["source"].split("/"))
+        if os.path.isfile(alt):
+            return alt
+    return path
+
+
 def _canon_rows(data, root):
     """v2 的規格化列:每列 source/destination/mode,加 sha256 = **destination 檔**(在 root 底下)的內容雜湊。
     讀 destination 而非 source:母版內 destination 副本與 source 逐字相同(parity 釘住),採用專案只有
-    destination —— 同一個定義兩邊都算得出來。排除列(HASH_EXCLUDED_DESTS)記 "-";檔不存在記 "missing"。
+    destination —— 同一個定義兩邊都算得出來。模板列(is_template_row)母版沒有 destination 副本,母版端讀 source
+    (見 _row_file)。排除列(HASH_EXCLUDED_DESTS)記 "-";檔不存在記 "missing"。
     回傳 (列 list, 缺檔 destination list)。"""
     out, missing = [], []
     for r in (data.get("files") or []):
@@ -78,7 +111,7 @@ def _canon_rows(data, root):
         elif not isinstance(dest, str) or _bad_path(dest):
             digest = "bad-path"
         else:
-            path = os.path.join(root, *dest.split("/"))
+            path = _row_file(root, r)
             if os.path.isfile(path):
                 digest = content_digest(path)
             else:
@@ -304,6 +337,46 @@ def unclassified_sync_failures(root, data=None):
         if src_m != dst_m:
             fails.append("可執行位元不一致:%s(正本 %03o vs 副本 %03o)"
                          % (row["destination"], src_m, dst_m))
+    return fails
+
+
+def template_failures(root, data=None):
+    """`_templates/*` ↔ manifest 模板列(v3.26.7)。三件:
+    ①母版 `_templates/` 底下每個檔(含 jev.yaml、不看 __pycache__)都要有一列 `_templates/X` → `docs/dev/_templates/X`
+      (新模板漏列 = 採用專案升級不會拿到、doctor 也看不到落差);
+    ②模板列必須 1:1(destination 相對路徑 = source 相對路徑)、mode 644;
+    ③母版若(不該)建了 docs/dev/_templates/ 鏡像,內容要與 source 一致(指紋會優先讀它)。"""
+    fails = []
+    if data is None:
+        try:
+            data = load(root)
+        except ManifestError as exc:
+            return list(exc.problems)
+    listed = {}
+    for r in rows(data):
+        src, dst = r["source"], r["destination"]
+        if src.startswith(TEMPLATES_SRC_PREFIX) or dst.startswith(TEMPLATES_DEST_PREFIX):
+            if not is_template_row(r):
+                fails.append("模板列不是 1:1:%s → %s(須為 _templates/X → docs/dev/_templates/X)" % (src, dst))
+                continue
+            if r["mode"] != TEMPLATES_MODE:
+                fails.append("模板列 mode 須為 %s:%s 得 %s" % (TEMPLATES_MODE, dst, r["mode"]))
+            listed[src] = r
+    tdir = os.path.join(root, "_templates")
+    if os.path.isdir(tdir):
+        for dirpath, dirnames, filenames in os.walk(tdir):
+            dirnames[:] = sorted(d for d in dirnames if d != "__pycache__")
+            for fname in sorted(filenames):
+                rel = os.path.relpath(os.path.join(dirpath, fname), root).replace(os.sep, "/")
+                if rel not in listed:
+                    fails.append("反向:%s 不在 manifest 模板列裡(新模板沒記帳 → 採用專案升級拿不到、doctor 看不到落差)" % rel)
+    for src, r in sorted(listed.items()):
+        mirror = os.path.join(root, *r["destination"].split("/"))
+        real = os.path.join(root, *src.split("/"))
+        if os.path.isfile(mirror) and os.path.isfile(real):
+            with open(mirror, "rb") as a, open(real, "rb") as b:
+                if a.read() != b.read():
+                    fails.append("內容不同:%s(母版不該有模板鏡像;若有,須與 %s 一致)" % (r["destination"], src))
     return fails
 
 
