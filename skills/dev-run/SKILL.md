@@ -354,8 +354,9 @@ Out-of-system action / Waiting-timeout 與 Recovery / 不得誤導使用者事�
 ### 收尾(並行)
 
 全 T ACCEPTED → 你在 integration 樹跑回歸(全綠)→ 6-notes Self-Review → bookkeeping
-commit → 各 task worktree `devflow-exec.sh stop` + `git worktree remove`(乾淨才移,
-不 --force)→ integration 合回 feature branch → **強制萃取(W6-1)** →
+commit → 各 task worktree `devflow-exec.sh stop`(**不在這裡移 worktree、不刪分支**:
+助手只列「可移除清單」,判準 = 已合進整合／正式分支〔依專案〕+ 無未存修改 + 無未推 commit,
+見指南 `#deploy-runbook`;移除由使用者自己執行,分支一律保留)→ integration 合回 feature branch → **強制萃取(W6-1)** →
 `dev-memory.py checkpoint $MEMORY_SESSION_ID --end`(**W6-2**)→ **memory commit**
 → **發布最終成果:
 integration 合回 feature branch 之後、回報 Stage 7 之前,push feature branch 到

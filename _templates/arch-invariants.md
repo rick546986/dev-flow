@@ -45,7 +45,10 @@
 <!-- 例:DB 欄位 snake_case、Go struct tag 對映規則;測試檔命名 -->
 
 ## 已知地雷(踩過的坑)
-<!-- 例:<某模組> 的 cache 需在 <某動作> 後手動失效,否則計算結果會用到舊資料 -->
+<!-- 例:<某模組> 的 cache 需在 <某動作> 後手動失效,否則計算結果會用到舊資料;
+     前端會部署在 http://<IP>(非 https)時,crypto.randomUUID／navigator.clipboard 只在
+     https 或 localhost 可用 —— 一律走專案的 safeId()／clipboard 工具,不直呼原生 API -->
 
 ## 驗證指令
-<!-- 例:後端 cd backend && PYTHONPATH=. python -m pytest tests/;前端 npm run build -->
+<!-- 例:後端 cd backend && PYTHONPATH=. python -m pytest tests/;前端 npm run build;
+     前端 secure-context grep 守衛(建議指令見指南 #deploy-runbook) -->

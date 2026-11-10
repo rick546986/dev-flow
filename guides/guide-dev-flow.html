@@ -1756,6 +1756,14 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
     2b. <strong>現象複驗</strong>:照 4-spec 每 S 的「觀測方式」<strong>親自實跑一次</strong>(後端打真實請求、
     前端截圖存 <code>evidence/</code>、批次看 log/產出檔),填「現象證據」表。不採信 6-notes
     貼的文字。完成 = 每 S 有實跑證據且與觀測方式相符(無外部現象者註明理由)。
+    ⚠️ <strong>前端 secure-context(部署網址是 <code>http://&lt;IP&gt;</code> 這類非 https 時必查)</strong>:
+    <code>crypto.randomUUID</code>、<code>navigator.clipboard</code> 只在 secure context(https 或
+    localhost)可用 —— localhost 跑得動、部署到 <code>http://&lt;IP&gt;</code> 才壞,所以只在 localhost
+    截圖不算數。①專案前端統一走自己的 <code>safeId()</code>／clipboard 工具(含 fallback),
+    不直呼原生 API,並建議用 grep 守衛擋旁路(建議指令見指南 <code>#deploy-runbook</code>,
+    掛進專案的前端驗證指令;母版不新做檢查引擎);②前端 S 的現象證據必須在
+    <strong>實際部署網址</strong>(非 localhost)點過一次,證據欄寫網址型態,不寫真實主機／IP;
+    部署網址已是 https → 記 <code>n-a:https</code>。
     2c. <strong>整合回歸</strong>(條件式;這是最後一次准許改程式碼 / 改 HEAD):跑
     <code>docs/dev/tools/devflow-integration-regression.sh --integration origin/&lt;整合分支&gt; --fork-sha &lt;6-notes 步 0 記的 FORK_INTEGRATION_SHA&gt;</code>
     (整合分支 = <code>develop</code> 或 <code>main</code>,依專案;工具自己會 fetch;工作樹必須乾淨,
@@ -1851,7 +1859,7 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   <li><strong>0b.</strong> 守衛武裝自檢:跟實作那一站的第一步一樣,先跑狀態檢查指令(<code>devflow-exec.sh status</code>),確認這次執行有被系統正式記錄在案;沒有記錄在案時做審查,範圍保護跟契約防篡改一樣會安靜地不生效,審查者可能在不知情下改到更早期的討論或決定站文件。同時跑版本相容性檢查(<code>devflow-doctor.sh</code>),回報不相容就要停下來回報。完成的樣子是:狀態檢查跟相容性檢查的兩份輸出,都貼進實作那一站的文件裡(這一站沿用同一份記錄,不用另外開新的)。</li>
   <li><strong>1.</strong> 自建 Coverage Matrix:自己動手,把測試檔裡每個編號跟規格文件裡的行為描述清單一一對照,逐列填成一張表(有缺漏的地方標叉),最後固定加一列給既有測試套件的回歸結果;這個當下還不能去看原作者主張了什麼。</li>
   <li><strong>2.</strong> 親跑驗證:親自把這次新增的行為測試,跟原本就有的整套測試都跑一遍,結果記進上面那張表。</li>
-  <li><strong>2b.</strong> 現象複驗:照規格文件每一條行為描述寫的「觀測方式」,自己真的動手做一次——後端就打一次真實請求、前端就截圖存起來、批次類的就去看實際紀錄或產出檔案,不能只相信實作筆記裡貼的文字說法,結果填進「現象證據」表;每一條都要有實跑證據且跟規格寫的觀測方式對得上(真的沒有外部現象可看的要註明原因)。</li>
+  <li><strong>2b.</strong> 現象複驗:照規格文件每一條行為描述寫的「觀測方式」,自己真的動手做一次——後端就打一次真實請求、前端就截圖存起來、批次類的就去看實際紀錄或產出檔案,不能只相信實作筆記裡貼的文字說法,結果填進「現象證據」表;每一條都要有實跑證據且跟規格寫的觀測方式對得上(真的沒有外部現象可看的要註明原因)。前端若部署在 <code>http://&lt;IP&gt;</code> 這類非 https 網址,要在<strong>實際部署網址</strong>(不是 localhost)點過一次——有些瀏覽器功能只在 https 或 localhost 才能用,只在 localhost 驗等於沒驗(細則見 <a href="#deploy-runbook">#deploy-runbook</a>)。</li>
   <li><strong>2c.</strong> 整合回歸(條件式;最後一次准許改程式碼):在 Final Fresh 之前先跟整合分支對齊。合併之後 HEAD 會變,所以必須先合再跑 Final Fresh,核准的樹才是出貨的樹。<code>ALREADY_SYNCED</code> 不能只寫「證據不算數」——要嘛重跑 Final Fresh 綁當下 HEAD,要嘛本項失敗。</li>
   <li><strong>2d.</strong> Final Fresh Run:確認驗證證據那節,是照規格文件指定的入口指令,在當下這個版本重新完整跑一次產生出來的(不是抄舊的),Source SHA 對應到目前這個 commit(<code>git rev-parse HEAD</code>);然後跑一個叫做證據關卡的檢查指令(<code>docs/dev/tools/devflow-evidence-gauntlet.sh</code>)。Gauntlet 自己讀規格文件的必跑層級,漏帶開關不再假裝通過。開工前先確認這個檢查指令真的存在、可以執行;如果不存在,代表專案的安裝步驟沒有跑完整,正確做法是回去把安裝步驟補跑一遍,而不是自己手動複製一支腳本了事。如果實在補不了,就把規格要求的每個驗證層級改成自己逐層手動實跑,並在文件裡清楚寫明「這是降級處理」,不能悄悄假裝跑過了。</li>
   <li><strong>2e.</strong> Operational Walkthrough:拿規格文件裡每條行為描述寫的「實際工作情境」當劇本,自己走一遍「人真正要做的事」,逐一檢查六種常見的坑——表面上系統功能是通的但人根本沒辦法完成工作;看得到資訊但沒有決定權;系統把「還在等」誤標成「已經完成」;系統外面發生的動作沒辦法追蹤;使用者操作到一半中斷後回不去;資訊過期、缺漏,或多人同時在動同一筆資料。把結果填進走查表(純系統內部、沒有實際工作情境可言的行為就標不適用)。</li>
@@ -1894,13 +1902,18 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
   補碼或合併 INTEGRATION_SHA。</li>
   <li>[ ] PR → develop(feature branch,禁直上 master;專案若還用 <code>testing</code>,同一支
   worktree branch 也要併進去。<code>docs/dev</code> 雙生頁跟著 branch 走是預期,
-  不要只留在 worktree)</li>
+  不要只留在 worktree)。多環境專案:環境↔分支對應<strong>以該專案 runbook 明寫的為準</strong>
+  (母版不規定;<code>develop</code>=本機／<code>release</code>=測試／<code>main</code>=正式只是例子,不要硬套);
+  正式只從 runbook 標為正式的分支部署,新功能要沿 runbook 寫明的升途
+  (例如先合 release 再合 main)才會上正式。細則見指南 <code>#deploy-runbook</code></li>
   <li>[ ] 4-spec delta 已併入 <code>docs/specs/&lt;domain&gt;.md</code></li>
   <li>[ ] STATUS.md 已更新為 shipped(這一步在整合分支上、PR 合併後由合併那個 PR 的人
   做,不塞進本 branch 的 PR —— 動線與理由見 STATUS 模板頂註)</li>
   <li>[ ] 7-review frontmatter status: shipped;上游 artifact 可保留 approved(各自 gate 核准紀錄)</li>
   <li>[ ] 7-review.html 已產生(含變更架構圖,規格見指南 <code>#diagram-style</code>;diff 折疊規格見指南 <code>#diff-fold</code>)</li>
-  <li>[ ] feature branch 已刪 / worktree 已清</li>
+  <li>[ ] worktree 收尾:<strong>只列可移除清單,不代刪</strong>。列為可移除 = 已合進整合／正式分支
+  (依專案)+ 無未存修改 + 無未推 commit,三者缺一不列;移除由使用者自己執行,
+  助手不刪 worktree、不刪分支;<strong>分支一律保留</strong>。清單與判準見指南 <code>#deploy-runbook</code></li>
   </ul>
   <p>回看約定</p>
   <!-- 出貨時留下誰／何時／用什麼資料回看、低於何值重開。結果到期用
@@ -2064,6 +2077,76 @@ PLUGIN=~/.claude/plugins/cache/dev-flow/dev-flow/&lt;version&gt;
     <li>執行補修者自己的 checkout 也必須 clean、無 ahead 未推的 commit;任何一條無法觀測就不准宣稱零交集。</li>
   </ol>
   <p>⚠️ revert 之後的坑:走預設回滾,不要在整合分支上 force-push 把別人的工作一併抹掉。</p>
+
+  <h3 id="deploy-runbook">部署、環境對應與 worktree 收尾(專案 runbook 規則)</h3>
+  <p>這一節是<strong>通用規則</strong>,不綁任何一個專案、不放任何真實 token／主機／IP(一律用
+  <code>&lt;佔位&gt;</code>)。母版只規定「專案 runbook 要寫清楚什麼」,不替專案決定環境怎麼切。
+  <span class="muted">背景案例(佐證,不是要照做的事):2026-11-10 採用專案 Prism 回報的四件事。</span></p>
+
+  <h4>1. 環境↔分支對應:寫死在專案 runbook</h4>
+  <ul>
+    <li>規則:<strong>專案 runbook 必須明寫「環境 ↔ 分支」對應</strong>(例如哪個分支是本機、哪個是測試、哪個是正式)。
+      沒寫就不准猜、不准套別的專案的習慣。</li>
+    <li><code>develop</code>＝本機、<code>release</code>＝測試、<code>main</code>＝正式<strong>只是範例</strong>,
+      不要硬套所有專案;有的專案整合分支就是 <code>main</code>(見 <code>#stage6</code> 起手式「依專案」)。</li>
+    <li><strong>正式只能從該專案 runbook 標為正式的分支部署</strong>;新功能要先沿 runbook 寫明的升途
+      (例如先合到 release、再合到 main)才會上正式,不得跳級。</li>
+    <li>合進哪條線、PR 目標分支,仍照 Stage 7 Exit Checklist「PR → …」那一項;本節只補「環境對得上哪條分支」。</li>
+  </ul>
+
+  <h4>2. 前端 secure-context(部署在 <code>http://&lt;IP&gt;</code> 的環境)</h4>
+  <ul>
+    <li><code>crypto.randomUUID</code>、<code>navigator.clipboard</code> 只在 secure context(https 或 localhost)可用;
+      localhost 開發全綠、部署到 <code>http://&lt;IP&gt;</code> 才壞。</li>
+    <li>前端統一走專案自己的 <code>safeId()</code>／clipboard 工具(內含 fallback),不直呼原生 API。
+      建議用 grep 守衛擋旁路,掛進專案的前端驗證指令(<strong>這是建議指令,不是母版新做的檢查引擎</strong>;
+      路徑與副檔名依專案調整):
+      <pre><code class="language-bash">if grep -rnE 'crypto\.randomUUID|navigator\.clipboard' src \
+     --include='*.ts' --include='*.tsx' --include='*.js' --include='*.vue' \
+   | grep -vE 'src/(utils|lib)/(safeId|clipboard)\.'; then
+  echo 'FAIL: 前端直呼 secure-context-only API,請改走 safeId()／clipboard 工具'; exit 1
+fi</code></pre></li>
+    <li>驗收:前端 S 的現象證據必須在<strong>實際部署網址</strong>(非 localhost)點過一次(Stage 7 步 2b);
+      證據欄只寫網址型態,不寫真實主機／IP。部署網址已是 https → 記 <code>n-a:https</code>。</li>
+  </ul>
+
+  <h4>3. 夜間自動部署(以 Jenkins Free-Style ＋ Publish Over SSH 為例)</h4>
+  <ul>
+    <li><strong>Exec timeout 要拉長</strong>:Publish Over SSH 的 Exec timeout 預設約 2 分鐘(採用專案回報;
+      以實際外掛版本為準),build／重啟超過就被砍斷。依專案實際部署耗時留足餘裕。</li>
+    <li><strong>先 fetch 比對,沒變就略過</strong>:Exec command 開頭比對遠端部署目錄的 HEAD 與目標分支,
+      一樣就 <code>exit 0</code>,不重 build、不重啟:
+      <pre><code class="language-bash">cd &lt;遠端部署目錄&gt;
+git fetch origin &lt;目標分支&gt;
+if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/&lt;目標分支&gt;)" ]; then
+  echo '無變更,略過'; exit 0
+fi
+git merge --ff-only origin/&lt;目標分支&gt;
+# 之後接專案自己的 build／重啟指令</code></pre></li>
+    <li><strong>遠端 repo 用專案唯讀 token</strong>(只給 <code>read_repository</code> 這類唯讀範圍;其他平台用等價唯讀範圍)
+      ＋ git credential store 免帳密。token 只放部署主機的 credential store(檔案權限 600),
+      <strong>不進 repo、不進 Jenkins job 說明、不進任何文件</strong>;文件與 runbook 一律寫
+      <code>&lt;project-read-token&gt;</code>、<code>&lt;deploy-host&gt;</code> 這類佔位。</li>
+    <li><strong>排程避開資料匯入時段</strong>:部署時間要跟專案的資料匯入／批次時段錯開,
+      兩個時段都寫進 runbook,不要憑印象。</li>
+  </ul>
+
+  <h4>4. worktree 收尾:助手只列清單,使用者自己移除</h4>
+  <ul>
+    <li><strong>可移除的判準(三條全成立才列)</strong>:①已合進 <code>main</code>(或該專案的整合／正式分支,依專案,
+      與 <code>#stage6</code>「整合分支」的說法一致);②無未存修改;③無未推 commit。</li>
+    <li><strong>移除由使用者自己執行</strong>。助手<strong>不刪 worktree、不刪分支、不 force</strong>,只列清單;
+      <strong>分支一律保留</strong>(含已合併的 feature／task 分支)。</li>
+    <li>建議的唯讀盤點指令(逐棵 worktree 跑,只讀不改):
+      <pre><code class="language-bash">git worktree list --porcelain
+git -C &lt;worktree-path&gt; status --porcelain                     # 必須無輸出
+git -C &lt;worktree-path&gt; log --oneline '@{u}..'                 # 必須無輸出;沒有 upstream → 視為有未推,不列
+git merge-base --is-ancestor &lt;worktree-branch&gt; origin/&lt;整合或正式分支&gt;   # exit 0 才算已合進</code></pre>
+      squash／rebase 合併讀不出祖先關係 → 不自動判定,標「待使用者確認」,不要當成可移除。</li>
+    <li>清單每列寫:路徑、分支、三條判準各自結果、可移除／不可移除與原因。使用者要移除時才自己跑
+      <code>git worktree remove &lt;path&gt;</code>(不加 <code>--force</code>)。
+      dev-run 並行的 task worktree 同樣只列、不代移。</li>
+  </ul>
 
   <h2 id="guard">⑥ 執行守衛:dev-flow 掛在 agent 生命週期的哪裡</h2>
   <p class="lead">這章要你懂:<strong>你被擋的時候,一定是 Claude agent 生命週期的 <code>PreToolUse</code> 或

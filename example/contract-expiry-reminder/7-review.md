@@ -268,7 +268,7 @@ Design Boundary Contract 為 `applicable`,本軸另查四項(4-spec Design Bound
 - [x] STATUS.md 已更新為 shipped
 - [x] 7-review frontmatter status: shipped;上游 artifact 保留 approved(各自 gate 核准紀錄,依 7-review 模板 Exit 規則)
 - [x] 7-review.html 已產生(含變更架構圖 + diff 折疊)
-- [x] feature branch 已刪
+- [x] worktree 收尾:已列可移除清單交使用者(已合進 develop、無未存修改、無未推 commit);移除由使用者自己執行,分支保留
 
 回看約定
 結果到期用 `scripts/history-append.sh` 追加,不另造永久 lookback 檔。
