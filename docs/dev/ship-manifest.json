@@ -1,6 +1,6 @@
 {
   "schema": "devflow-ship-manifest-v1",
-  "version": "v2-7737127ffc7f4f01",
+  "version": "v2-3d2114a91a0c1e27",
   "files": [
     {
       "source": "scripts/history-append.sh",

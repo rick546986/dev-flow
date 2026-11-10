@@ -100,6 +100,14 @@ updated:
 > 2b. **現象複驗**:照 4-spec 每 S 的「觀測方式」**親自實跑一次**(後端打真實請求、
 >    前端截圖存 `evidence/`、批次看 log/產出檔),填「現象證據」表。不採信 6-notes
 >    貼的文字。完成 = 每 S 有實跑證據且與觀測方式相符(無外部現象者註明理由)。
+>    ⚠️ **前端 secure-context(部署網址是 `http://<IP>` 這類非 https 時必查)**:
+>    `crypto.randomUUID`、`navigator.clipboard` 只在 secure context(https 或
+>    localhost)可用 —— localhost 跑得動、部署到 `http://<IP>` 才壞,所以只在 localhost
+>    截圖不算數。①專案前端統一走自己的 `safeId()`／clipboard 工具(含 fallback),
+>    不直呼原生 API,並建議用 grep 守衛擋旁路(建議指令見指南 `#deploy-runbook`,
+>    掛進專案的前端驗證指令;母版不新做檢查引擎);②前端 S 的現象證據必須在
+>    **實際部署網址**(非 localhost)點過一次,證據欄寫網址型態,不寫真實主機／IP;
+>    部署網址已是 https → 記 `n-a:https`。
 > 2c. **整合回歸**(條件式;這是最後一次准許改程式碼 / 改 HEAD):跑
 >    `docs/dev/tools/devflow-integration-regression.sh --integration origin/<整合分支> --fork-sha <6-notes 步 0 記的 FORK_INTEGRATION_SHA>`
 >    (整合分支 = `develop` 或 `main`,依專案;工具自己會 fetch;工作樹必須乾淨,
@@ -222,7 +230,8 @@ updated:
 ## 現象證據(逐 S,對照 4-spec 的「觀測」欄)
 <!-- 測試綠 ≠ 看得到它動起來。每條 S 貼「照觀測方式實跑」的真實輸出:
      後端 → 實際 request/response(curl 或等效,含 status code);
-     前端 → 截圖存 evidence/ 並在此引用;批次/排程 → log 或產出檔片段。
+     前端 → 截圖存 evidence/ 並在此引用(部署在非 https 網址者須在實際部署網址取證,
+     見步 2b 的 secure-context 提醒);批次/排程 → log 或產出檔片段。
      reviewer **親自重跑**一次比對(不採信 6-notes 貼的文字),對不上即 FAIL。
      無法觀測的 S(純內部重構)→ 註明「無外部現象,以測試為準」並說明理由 -->
 
@@ -336,13 +345,18 @@ updated:
       補碼或合併 INTEGRATION_SHA。
 - [ ] PR → develop(feature branch,禁直上 master;專案若還用 `testing`,同一支
       worktree branch 也要併進去。`docs/dev` 雙生頁跟著 branch 走是預期,
-      不要只留在 worktree)
+      不要只留在 worktree)。多環境專案:環境↔分支對應**以該專案 runbook 明寫的為準**
+      (母版不規定;`develop`=本機／`release`=測試／`main`=正式只是例子,不要硬套);
+      正式只從 runbook 標為正式的分支部署,新功能要沿 runbook 寫明的升途
+      (例如先合 release 再合 main)才會上正式。細則見指南 `#deploy-runbook`
 - [ ] 4-spec delta 已併入 `docs/specs/<domain>.md`
 - [ ] STATUS.md 已更新為 shipped(這一步在整合分支上、PR 合併後由合併那個 PR 的人
       做,不塞進本 branch 的 PR —— 動線與理由見 STATUS 模板頂註)
 - [ ] 7-review frontmatter status: shipped;上游 artifact 可保留 approved(各自 gate 核准紀錄)
 - [ ] 7-review.html 已產生(含變更架構圖,規格見指南 `#diagram-style`;diff 折疊規格見指南 `#diff-fold`)
-- [ ] feature branch 已刪 / worktree 已清
+- [ ] worktree 收尾:**只列可移除清單,不代刪**。列為可移除 = 已合進整合／正式分支
+      (依專案)+ 無未存修改 + 無未推 commit,三者缺一不列;移除由使用者自己執行,
+      助手不刪 worktree、不刪分支;**分支一律保留**。清單與判準見指南 `#deploy-runbook`
 
 回看約定
 <!-- 出貨時留下誰／何時／用什麼資料回看、低於何值重開。結果到期用
