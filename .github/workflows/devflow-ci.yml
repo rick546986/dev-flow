@@ -27,7 +27,10 @@ permissions:
 jobs:
   repo-reference:
     name: REPO_REFERENCE (scripts/devflow-check.sh all)
-    runs-on: ubuntu-latest
+    # ubuntu-latest 現已是 Ubuntu 26.04,actions/setup-python 沒有 3.9 可裝
+    # (報 "The version '3.9' with architecture 'x64' was not found for Ubuntu 26.04")。
+    # 本 job 要驗 3.9 地板,所以釘 24.04 才能繼續驗;runtime-selftest.yml 不需 3.9,維持 ubuntu-latest。
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
